@@ -277,6 +277,7 @@ struct gsm_subscriber_connection *bsc_subscr_con_allocate(struct gsm_lchan *lcha
 	conn->bts = lchan->ts->trx->bts;
 	lchan->conn = conn;
 	INIT_LLIST_HEAD(&conn->ho_dtap_cache);
+	INIT_LLIST_HEAD(&conn->ho_penalty_timers);
 	llist_add_tail(&conn->entry, &net->subscr_conns);
 	return conn;
 }
@@ -326,6 +327,8 @@ static void ho_dtap_cache_flush(struct gsm_subscriber_connection *conn, int send
 
 void bsc_subscr_con_free(struct gsm_subscriber_connection *conn)
 {
+	struct ho_penalty_timer *penalty;
+
 	if (!conn)
 		return;
 
@@ -349,6 +352,13 @@ void bsc_subscr_con_free(struct gsm_subscriber_connection *conn)
 
 	/* drop pending messages */
 	ho_dtap_cache_flush(conn, 0);
+
+	/* flush handover penalty timers */
+	while ((penalty = llist_first_entry_or_null(&conn->ho_penalty_timers,
+						    struct ho_penalty_timer, entry))) {
+		llist_del(&penalty->entry);
+		talloc_free(penalty);
+	}
 
 	llist_del(&conn->entry);
 	talloc_free(conn);

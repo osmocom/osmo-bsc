@@ -71,6 +71,13 @@ struct gsm_classmark {
 	uint8_t classmark3[14]; /* if cm3 gets extended by spec, it will be truncated */
 };
 
+/* penalty timers for handover */
+struct ho_penalty_timer {
+	struct llist_head entry;
+	uint8_t bts;
+	time_t timeout;
+};
+
 /* active radio connection of a mobile subscriber */
 struct gsm_subscriber_connection {
 	/* global linked list of subscriber_connections */
@@ -104,6 +111,9 @@ struct gsm_subscriber_connection {
 	/* Cache DTAP messages during handover/assignment (msgb_enqueue()/msgb_dequeue())*/
 	struct llist_head ho_dtap_cache;
 	unsigned int ho_dtap_cache_len;
+
+	/* penalty timers for handover */
+	struct llist_head ho_penalty_timers;
 };
 
 static inline struct gsm_bts *conn_get_bts(struct gsm_subscriber_connection *conn) {
