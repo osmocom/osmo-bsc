@@ -389,3 +389,21 @@ static __attribute__((constructor)) void on_dso_load_ho_logic(void)
 {
 	osmo_signal_register_handler(SS_LCHAN, ho_logic_sig_cb, NULL);
 }
+
+/* Count number of currently ongoing handovers
+ * inter_cell: if true, count only handovers between two cells. If false, count only handovers within one
+ * cell. */
+int bsc_ho_count(struct gsm_bts *bts, bool inter_cell)
+{
+	struct bsc_handover *ho;
+	int count = 0;
+
+	llist_for_each_entry(ho, &bsc_handovers, list) {
+		if (ho->inter_cell != inter_cell)
+			continue;
+		if (ho->new_lchan->ts->trx->bts == bts)
+			count++;
+	}
+
+	return count;
+}
