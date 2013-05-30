@@ -68,6 +68,70 @@ bool trx_is_usable(const struct gsm_bts_trx *trx)
 	return true;
 }
 
+static int trx_count_free_ts(struct gsm_bts_trx *trx, enum gsm_phys_chan_config pchan)
+{
+	struct gsm_bts_trx_ts *ts;
+	int j, ss;
+	int count = 0;
+
+	if (!trx_is_usable(trx))
+		return 0;
+
+	for (j = 0; j < ARRAY_SIZE(trx->ts); j++) {
+		enum gsm_phys_chan_config ts_pchan_is;
+		ts = &trx->ts[j];
+		if (!ts_is_usable(ts))
+			continue;
+
+		ts_pchan_is = ts_pchan(ts);
+
+		if (ts_pchan_is == GSM_PCHAN_PDCH) {
+			/* Dynamic timeslots in PDCH mode will become TCH if needed. */
+			switch (ts->pchan) {
+			case GSM_PCHAN_TCH_F_PDCH:
+				if (pchan == GSM_PCHAN_TCH_F)
+					count++;
+				continue;
+
+			case GSM_PCHAN_TCH_F_TCH_H_PDCH:
+				if (pchan == GSM_PCHAN_TCH_F)
+					count++;
+				else if (pchan == GSM_PCHAN_TCH_H)
+					count += 2;
+				continue;
+
+			default:
+				/* Not dynamic, not applicable. */
+				continue;
+			}
+		}
+
+		if (ts_pchan_is != pchan)
+			continue;
+		/* check if all sub-slots are allocated yet */
+		for (ss = 0; ss < ts_subslots(ts); ss++) {
+			struct gsm_lchan *lc = &ts->lchan[ss];
+			if (lc->type == GSM_LCHAN_NONE &&
+			    lc->state == LCHAN_S_NONE)
+				count++;
+		}
+	}
+
+	return count;
+}
+
+/* Count number of free TS of given pchan type */
+int bts_count_free_ts(struct gsm_bts *bts, enum gsm_phys_chan_config pchan)
+{
+	struct gsm_bts_trx *trx;
+	int count = 0;
+
+	llist_for_each_entry(trx, &bts->trx_list, list)
+		count += trx_count_free_ts(trx, pchan);
+
+	return count;
+}
+
 static struct gsm_lchan *
 _lc_find_trx(struct gsm_bts_trx *trx, enum gsm_phys_chan_config pchan,
 	     enum gsm_phys_chan_config dyn_as_pchan)

@@ -24,6 +24,9 @@
 
 struct gsm_subscriber_connection;
 
+/* Count number of free TS of given pchan type */
+int bts_count_free_ts(struct gsm_bts *bts, enum gsm_phys_chan_config pchan);
+
 /* Allocate a logical channel (SDCCH, TCH, ...) */
 struct gsm_lchan *lchan_alloc(struct gsm_bts *bts, enum gsm_chan_t type, int allow_bigger);
 
