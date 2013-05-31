@@ -1890,8 +1890,26 @@ static int rsl_rx_chan_rqd(struct msgb *msg)
 	 */
 	is_lu = !!(chreq_reason == GSM_CHREQ_REASON_LOCATION_UPD);
 
-	/* check availability / allocate channel */
-	lchan = lchan_alloc(bts, lctype, is_lu);
+	/* check availability / allocate channel
+	 *
+	 * - First try to allocate SDCCH.
+	 * - If SDCCH is not available, try whatever MS requested, if not SDCCH.
+	 * - If there is still no channel available, reject channel request.
+	 *
+	 * lchan_alloc() possibly tries to allocate larger lchans.
+	 *
+	 * Note: If the MS requests not TCH/H, we don't know if the phone
+	 *       supports TCH/H, so we must assign TCH/F or SDCCH.
+	 */
+	lchan = lchan_alloc(bts, GSM_LCHAN_SDCCH, 0);
+	if (!lchan && lctype != GSM_LCHAN_SDCCH) {
+		LOGP(DRSL, LOGL_NOTICE, "BTS %d CHAN RQD: no resources for %s "
+			"0x%x, retrying with %s\n",
+			msg->lchan->ts->trx->bts->nr,
+			gsm_lchant_name(GSM_LCHAN_SDCCH), rqd_ref->ra,
+			gsm_lchant_name(lctype));
+		lchan = lchan_alloc(bts, lctype, 0);
+	}
 	if (!lchan) {
 		LOGP(DRSL, LOGL_NOTICE, "BTS %d CHAN RQD: no resources for %s 0x%x\n",
 		     msg->lchan->ts->trx->bts->nr, gsm_lchant_name(lctype), rqd_ref->ra);
