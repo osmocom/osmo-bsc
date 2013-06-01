@@ -1470,8 +1470,11 @@ static int rsl_rx_meas_res(struct msgb *msg)
 
 	if (!TLVP_PRESENT(&tp, RSL_IE_MEAS_RES_NR) ||
 	    !TLVP_PRESENT(&tp, RSL_IE_UPLINK_MEAS) ||
-	    !TLVP_PRESENT(&tp, RSL_IE_BS_POWER))
+	    !TLVP_PRESENT(&tp, RSL_IE_BS_POWER)) {
+		LOGP(DRSL, LOGL_ERROR, "%s Measurement Report lacks mandatory IEs\n",
+		     gsm_lchan_name(mr->lchan));
 		return -EIO;
+	}
 
 	/* Mandatory Parts */
 	mr->nr = *TLVP_VAL(&tp, RSL_IE_MEAS_RES_NR);
@@ -1516,6 +1519,10 @@ static int rsl_rx_meas_res(struct msgb *msg)
 		if (rc < 0)
 			return rc;
 	}
+
+	mr->lchan->meas_rep_count++;
+	LOGP(DRSL, LOGL_DEBUG, "%s: meas_rep_cnt++=%d\n",
+	     gsm_lchan_name(mr->lchan), mr->lchan->meas_rep_count);
 
 	print_meas_rep(msg->lchan, mr);
 
