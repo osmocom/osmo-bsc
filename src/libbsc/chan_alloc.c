@@ -34,7 +34,7 @@
 
 #include <osmocom/core/talloc.h>
 
-static bool ts_is_usable(const struct gsm_bts_trx_ts *ts)
+bool ts_is_usable(const struct gsm_bts_trx_ts *ts)
 {
 	if (!trx_is_usable(ts->trx))
 		return false;
