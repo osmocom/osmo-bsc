@@ -89,8 +89,8 @@ struct msgb *nanobts_attr_bts_get(struct gsm_bts *bts)
 	}
 	msgb_tv_fixed_put(msgb, NM_ATT_LDAVG_SLOTS, 2, buf);
 
-	/* miliseconds */
-	msgb_tv_put(msgb, NM_ATT_BTS_AIR_TIMER, 128);
+	/* 10 milliseconds */
+	msgb_tv_put(msgb, NM_ATT_BTS_AIR_TIMER, bts->network->T3105 > 0? bts->network->T3105 : 13);
 
 	/* 10 retransmissions of physical config */
 	msgb_tv_put(msgb, NM_ATT_NY1, 10);
