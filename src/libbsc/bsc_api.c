@@ -210,7 +210,7 @@ static void handle_mr_config(struct gsm_subscriber_connection *conn,
 static int handle_new_assignment(struct gsm_subscriber_connection *conn, int chan_mode, int full_rate)
 {
 	struct gsm_lchan *new_lchan;
-	int chan_type;
+	enum gsm_chan_t chan_type;
 
 	chan_type = full_rate ? GSM_LCHAN_TCH_F : GSM_LCHAN_TCH_H;
 
@@ -218,6 +218,17 @@ static int handle_new_assignment(struct gsm_subscriber_connection *conn, int cha
 
 	if (!new_lchan) {
 		LOGP(DMSC, LOGL_NOTICE, "No free channel.\n");
+		return -1;
+	}
+
+	/* check if we are on TCH/F and requested TCH/H, but got TCH/F */
+	if (conn->lchan->type == new_lchan->type
+	    && chan_type != new_lchan->type) {
+		LOGP(DHO, LOGL_NOTICE, "%s -> %s Will not re-assign to identical channel type,"
+		     " %s was requested\n",
+		     gsm_lchan_name(conn->lchan), gsm_lchan_name(new_lchan),
+		     gsm_lchant_name(chan_type));
+		lchan_free(new_lchan);
 		return -1;
 	}
 
