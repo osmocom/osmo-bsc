@@ -1,0 +1,42 @@
+== Running OsmoBSC
+
+The OsmoBSC executable (`osmo-bsc`) offers the following command-line
+arguments:
+
+==== SYNOPSIS
+
+*osmo-bsc* [-h|-V] [-d 'DBGMASK'] [-D] [-c 'CONFIGFILE'] [-s] [-T] [-e 'LOGLEVEL'] [-l 'IP'] [-r 'RFCTL']
+
+==== OPTIONS
+
+*-h, --help*::
+	Print a short help message about the supported options
+*-V, --version*::
+	Print the compile-time version number of the OsmoBTS program
+*-d, --debug 'DBGMASK','DBGLEVELS'*::
+	Set the log subsystems and levels for logging to stderr. This
+	has mostly been superseded by VTY-based logging configuration,
+	see <<logging>> for further information.
+*-D, --daemonize*::
+	Fork the process as a daemon into background.
+*-c, --config-file 'CONFIGFILE'*::
+	Specify the file and path name of the configuration file to be
+	used. If none is specified, use `openbsc.cfg` in the current
+	working directory.
+*-s, --disable-color*::
+	Disable colors for logging to stderr. This has mostly been
+	deprecated by VTY based logging configuration, see <<logging>>
+	for more information.
+*-T, --timestamp*::
+	Enable time-stamping of log messages to stderr. This has mostly
+	been deprecated by VTY based logging configu- ration, see
+	<<logging>> for more information.
+*-e, --log-level 'LOGLEVEL'*::
+	Set the global log level for logging to stderr. This has mostly
+	been deprecated by VTY based logging configuration, see
+	<<logging>> for more information.
+*-l, --local='IP'*::
+	Specify the local IP address of the OsmoBSC-MGCP
+*-r, --rf-ctl 'RFCTL'*::
+	Offer a Unix domain socket for RF control at the path/filename
+	'RFCTL' in the file system.

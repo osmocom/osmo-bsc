@@ -1,0 +1,69 @@
+[[overview]]
+== Overview
+
+This manual should help you getting started with OsmoBSC. It will cover
+aspects of configuring and running the OsmoBSC.
+
+[[intro_overview]]
+=== About OsmoBSC
+
+OsmoBSC is one particular version of the OpenBSC software suite.
+
+Unlike the highly integrated OmsoNITB, OsmoBSC impleents a more classic
+GSM Base Station Controller with A-bis interface towards BTSs and A
+interface towards a MSC.
+
+
+=== Software Components
+
+OsmoBSC contains a variety of different software components, which
+we'll quickly describe in this section.
+
+==== A-bis Implementation
+
+OsmoBSC implements the ETSI/3GPP specified A-bis interface, including
+TS 08.56 (LAPD), TS 08.58 (RSL) and TS 12.21 (OML). In addition, it
+supports a variety of vendor-specific extensions and dialects in order
+to communicate with BTSs from Siemens, Nokia, Ericsson, ip.access and
+sysmocom.
+
+For more information, see <<bts>> and <<bts-examples>>.
+
+==== A Implementation
+
+OsmoBSC implements a minimal sub-set of the GSM A interface as specified
+in TS 08.08.
+
+Unlike classic A interface implementations for E1 interfacs, OsmoBSC
+implements a variant of encapsulating the A interface over IP.  To do
+so, the SCCP messages are wrapped in an IPA multiplex and then
+communicated over TCP.  The audio channels are mapped to RTP streams.
+
+This protcol stacking is sometimes called "SCCPlite".
+
+For more information, see <<alink>>.
+
+
+==== BSC Implementation
+
+The BSC implementation covers the classic functionality of a GSM Base
+Station Controller, i.e.
+
+* configuring and bringing up BTSs with their TRXs and TSs
+* implementing the A-bis interface / protocols for signalling and actual
+  voice data (TRAU frames).
+* processing measurement results from the mobile stations in dedicated
+  mode, performing hand-over decision and execution.
+* Terminating the TS 04.08 RR (Radio Resource) sub-layer from the MS.
+
+For more information, see <<net>>, <<bts>> and <<bts-examples>>.
+
+
+==== TRAU mapper / E1 sub-channel muxer
+
+Unlike classic GSM networks, OsmoBSC does not perform any transcoding.
+Rather, a compatible codec is selected for both legs of a call, and
+codec frames are passed through transparently.  In order to achieve this
+with E1 based BTS, OsmoBSC contains a E1 sub-channel de- and
+re-multiplexer as well as a TRAU mapper that can map uplink to downlink
+frames and vice versa.

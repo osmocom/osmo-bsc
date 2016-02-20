@@ -1,0 +1,14 @@
+<vtydoc xmlns='urn:osmocom:xml:libosmocore:vty:doc:1.0'>
+    <node id='25'>
+      <child_of nodeid='4' />
+      <name>MSC Connection Commands</name>
+      <description>This node allows to configure the MSC connection related
+      settings.</description>
+    </node>
+    <node id='30'>
+      <child_of nodeid='4' />
+      <name>BSC Commands</name>
+      <description>This node allows to configure the BSC connection related
+      settings.</description>
+    </node>
+</vtydoc>
