@@ -1,0 +1,99 @@
+[[control]]
+== Control interface
+
+The actual protocol is described in <<common-control-if>>, the variables
+common to all programs using it are described in <<ctrl_common_vars>>. Here we
+describe variables specific to OsmoBSC. The commands starting with prefix
+"net.btsN." are specific to a certain BTS so N have to be replaced with BTS
+number when issuing command e. g. "net.bts1.channel-load". Similarly the
+TRX-specific commands are additionally prefixed with TRX number e. g.
+"net.bts1.trx2.arfcn".
+
+.Variables available over control interface
+[options="header",width="100%",cols="20%,5%,5%,50%,20%"]
+|===
+|Name|Access|Trap|Value|Comment
+|msc_connection_status|RO|Yes|"connected", "disconnected"|Indicate the status of connection to MSC.
+|bts_connection_status|RO|Yes|"connected", "disconnected"|Indicate the status of connection to BTS.
+|location|RW|Yes|"<unixtime>,(invalid\|fix2d\|fix3d),<lat>,<lon>,<height>"|Set/Get location data.
+|timezone|RW|No|"<hours>,<mins>,<dst>", "off"|-19 \<= hours \<= 19, mins in {0, 15, 30, 45}, and 0 \<= dst \<= 2
+|apply-configuration|WO|No|"restart"|Restart all BTSes.
+|mnc|RW|No|"<mnc>"|Set/Get MNC (value between (0, 999)).
+|mcc|RW|No|"<mcc>"|Set/Get MCC (value between (1, 999)).
+|short-name|RW|No|"<name>"|Set/Get network's short name.
+|long-name|RW|No|"<name>"|Set/Get network's long name.
+|mcc-mnc-apply|WO|No|"<mcc>,<mnc>"|Apply new MCC/MNC values if different from currently used one.
+|notification|WO|Yes|Arbitrary value| See <<notif>> for details.
+|inform-msc-v1|WO|Yes|Arbitrary value| See <<infomsc>> for details.
+|ussd-notify-v1|WO|No|"<cic>,<alert>,<text>"| See <<ussdnot>> for details.
+|rf_locked|RW|No|"0","1"|See <<rfl>> for details.
+|number-of-bts|RO|No|"<num>"|Get number of configured BTS.
+|net.btsN.location-area-code|RW|No|"<lac>"|Set/Get LAC (value between (0, 65535)).
+|net.btsN.cell-identity|RW|No|"<id>"|Set/Get Cell Identity (value between (0, 65535)).
+|net.btsN.apply-configuration|WO|No|Ignored|Restart BTS via OML.
+|net.btsN.send-new-system-informations|WO|No|Ignored|Regenerate System Information messages for given BTS.
+|net.btsN.channel-load|RO|No|"<name>,<used>,<total>"|See <<chanlo>> for details.
+|net.btsN.oml-connection-state|RO|No|"connected", "disconnected"|Indicate the status of OML connection of BTS.
+|net.btsN.gprs-mode|RW|No|"<mode>"|See <<gprsm>> for details.
+|net.btsN.rf_state|RO|No|"<oper>,<admin>,<pol>"|See <<rfs>> for details.
+|net.btsN.trxM.arfcn|RW|No|"<arfcn>"|Set/Get ARFCN (value between (0, 1023)).
+|net.btsN.trxM.max-power-reduction|RW|No|"<mpr>"|See <<mpr>> for details.
+|===
+
+[[notif]]
+=== notification
+
+Setting this variable initiate TRAP "notification" to all the clients connected
+to control interface with the value supplied in SET operation. This is not
+intended to be used outside of local systems.
+
+[[infomsc]]
+=== inform-msc-v1
+
+Setting this variable initiate TRAP "inform-msc-v1" to all connected MSCs 
+control interfaces with the value supplied in SET operation.
+
+[[ussdnot]]
+=== ussd-notify-v1
+
+Setting this variable will send USSD Notify message to subscriber specified in
+command parameters with the text specified in command parameters.
+
+[[chanlo]]
+=== channel-load
+
+Obtain channel load for given BTS. Returns concatenated set of triplets
+("<name>,<used>,<total>") for all channel types configured on the BTS. The
+"<name>" is the channel type. The "<used>" is the number of channels of that
+type currently in use. The "<total>" is the number of channels of that type
+configured on the BTS.
+
+[[gprsm]]
+=== gprs-mode
+
+Set/Get the GPRS mode of the BTS. One of the following is
+accepted/returned: "none", "gprs", "egprs".
+
+[[rfs]]
+=== rf_state
+
+Following triplet is returned: "<oper>,<admin>,<pol>". The "<oper>" might be
+"operational" or "inoperational" representing different operational states. The
+"<admin>" might be "locked" or "unlocked" representing administrative status.
+The "<pol>" might be "off", "on", "grace" or "unknown" representing different
+RF policies.
+
+[[rfl]]
+=== rf_locked
+
+Set/Get RF locked status. The GET operation will return either "0" or "1"
+depending on the RF lock status. The SET operation will set  RF lock status if
+RF Ctrl is enabled in the BSC Configuration.
+
+[[mpr]]
+=== max-power-reduction
+
+Set/Get the value of maximum power reduction. Even values between 0 and 22 are
+accepted.
+
+FIXME: add variables defined in src/ctrl/control_if.c?
