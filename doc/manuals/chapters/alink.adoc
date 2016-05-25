@@ -3,7 +3,7 @@
 OsmoBSC implements a minimal sub-set of the GSM A interface as specified
 in TS 08.08.
 
-Unlike classic A interface implementations for E1 interface, OsmoBSC
+Unlike classic A interface implementations for E1 interfaces, OsmoBSC
 implements a variant of encapsulating the A interface over IP.  To do
 so, the SCCP messages are wrapped in an IPA multiplex and then
 communicated over TCP.  The audio channels are mapped to RTP streams.
