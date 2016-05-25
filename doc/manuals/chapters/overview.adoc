@@ -9,7 +9,7 @@ aspects of configuring and running the OsmoBSC.
 
 OsmoBSC is one particular version of the OpenBSC software suite.
 
-Unlike the highly integrated OmsoNITB, OsmoBSC impleents a more classic
+Unlike the highly integrated OmsoNITB, OsmoBSC implements a more classic
 GSM Base Station Controller with A-bis interface towards BTSs and A
 interface towards a MSC.
 
@@ -39,7 +39,7 @@ implements a variant of encapsulating the A interface over IP.  To do
 so, the SCCP messages are wrapped in an IPA multiplex and then
 communicated over TCP.  The audio channels are mapped to RTP streams.
 
-This protcol stacking is sometimes called "SCCPlite".
+This protocol stacking is sometimes called "SCCPlite".
 
 For more information, see <<alink>>.
 
