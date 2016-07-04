@@ -1,0 +1,19 @@
+msc {
+	bts [label="BTS"], bsc [label="BSC"];
+	# this is for the Central Function Object
+	---		[label="Initial state after initializing OML TEI"];
+
+	bts <= bsc	[label="Start Request"];
+	bts => bsc	[label="Reset Request Accept"];
+
+	bts => bsc	[label="Negotiation Request"];
+	bts <= bsc	[label="Negotiation Request ACK"];
+
+	bts => bsc	[label="Start Result (Started)"];
+	bts <= bsc	[label="Start Result ACK"];
+
+	bts <= bsc	[label="Operational Info (Operational)"];
+	bts => bsc	[label="Operational Info Accept"];
+
+	# continue with IS, TRXC, TF
+}
