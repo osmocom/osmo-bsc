@@ -1,5 +1,5 @@
 msc {
-	bts [label="BTS"], bsc [label="BSC"];
+	bts [label="TRX (TX)"], bsc [label="BSC"];
 	# this is for the TRX Transmitter Object
 	---		[label="Initial state after initializing TRXC"];
 
