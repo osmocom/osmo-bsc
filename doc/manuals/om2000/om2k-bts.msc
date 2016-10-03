@@ -15,7 +15,7 @@ msc {
 
 	cf <=> bsc	[label="Calendar Time"];
 
-	tf <=> bsc	[label="Conncet"];
+	tf <=> bsc	[label="Connect"];
 	tf <=> bsc	[label="Reset"];
 	tf <=> bsc	[label="Start"];
 	tf <=> bsc	[label="Config"];
