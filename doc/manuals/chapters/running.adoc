@@ -3,11 +3,11 @@
 The OsmoBSC executable (`osmo-bsc`) offers the following command-line
 arguments:
 
-==== SYNOPSIS
+=== SYNOPSIS
 
 *osmo-bsc* [-h|-V] [-d 'DBGMASK'] [-D] [-c 'CONFIGFILE'] [-s] [-T] [-e 'LOGLEVEL'] [-l 'IP'] [-r 'RFCTL']
 
-==== OPTIONS
+=== OPTIONS
 
 *-h, --help*::
 	Print a short help message about the supported options
