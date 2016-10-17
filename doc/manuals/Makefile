@@ -23,8 +23,10 @@ include $(TOPDIR)/build/Makefile.inc
 osmobsc-usermanual.pdf: chapters/*.adoc
 
 clean:
-	rm -rf $(cleanfiles)
-	rm -rf osmobsc-usermanual__*.{svg,png,check}
+	-rm -rf $(cleanfiles)
+	-rm osmobsc-usermanual__*.png
+	-rm osmobsc-usermanual__*.svg
+	-rm osmobsc-usermanual*.check
 
 gen-bsc-vty-docbook: FORCE
 	$(call command,xsltproc -o generated/combined1.xml \
