@@ -17,7 +17,7 @@ include::../common/chapters/logging.adoc[]
 
 include::../common/chapters/bts.adoc[]
 
-include::chapters/bts-examples.adoc[]
+include::../OsmoNITB/chapters/bts-examples.adoc[]
 
 include::../common/chapters/bsc.adoc[]
 
