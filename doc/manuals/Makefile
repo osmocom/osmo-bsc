@@ -24,6 +24,7 @@ osmobsc-usermanual.pdf: chapters/*.adoc
 
 clean:
 	rm -rf $(cleanfiles)
+	rm -rf osmobsc-usermanual__*.{svg,png}
 
 gen-bsc-vty-docbook: FORCE
 	$(call command,xsltproc -o generated/combined1.xml \
