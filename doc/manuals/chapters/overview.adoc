@@ -13,6 +13,75 @@ Unlike the highly integrated OmsoNITB, OsmoBSC implements a more classic
 GSM Base Station Controller with A-bis interface towards BTSs and A
 interface towards a MSC.
 
+The difference between classic GSM network architecture and
+the OsmoNITB based GSM network architecture is illustrated in
+<<fig-gsm-classic>> and <<fig-gsm-nitb>>.
+
+[[fig-gsm-classic]]
+.Classic GSM network architecture (simplified)
+[graphviz]
+----
+digraph G {
+        rankdir=LR;
+        MS0 [label="MS"];
+        MS1 [label="MS"];
+        MS2 [label="MS"];
+        MS3 [label="MS"];
+        BTS0 [label="BTS"];
+        BTS1 [label="BTS"];
+        BSC;
+        MSC [label="MSC/VLR"];
+        HLR [label="HLR/AUC"];
+        EIR;
+        SMSC;
+        MS0->BTS0 [label="Um"];
+        MS1->BTS0 [label="Um"];
+        MS2->BTS1 [label="Um"];
+        MS3->BTS1 [label="Um"];
+        BTS0->BSC [label="Abis"];
+        BTS1->BSC [label="Abis"];
+        BSC->MSC [label="A"];
+        MSC->HLR [label="C"];
+        MSC->EIR [label="F"];
+        MSC->SMSC;
+}
+----
+
+[[fig-gsm-nitb]]
+.GSM system architecture using OsmoNITB
+[graphviz]
+----
+digraph G {
+        rankdir=LR;
+        MS0 [label="MS"];
+        MS1 [label="MS"];
+        MS2 [label="MS"];
+        MS3 [label="MS"];
+        BTS0 [label="BTS"];
+        BTS1 [label="BTS"];
+        EXTMNCC [label="Linux Call Router / SoftSwitch / PBX\n(optional)"];
+        MS0->BTS0 [label="Um"];
+        MS1->BTS0 [label="Um"];
+        MS2->BTS1 [label="Um"];
+        MS3->BTS1 [label="Um"];
+        BTS0->BSC [label="Abis"];
+        BTS1->BSC [label="Abis"];
+        subgraph cluster_nitb {
+        label = "OsmoNITB";
+                BSC;
+                MSC [label="MSC/VLR"];
+                SMSC;
+                EIR;
+                HLR [label="HLR/AUC"];
+                BSC->MSC;
+                MSC->HLR;
+                MSC->EIR;
+                MSC->SMSC;
+        }
+        MSC -> EXTMNCC [label="external MNCC"];
+}
+----
+
 
 === Software Components
 
