@@ -63,6 +63,7 @@
 #include <openbsc/ctrl.h>
 #include <openbsc/osmo_bsc_rf.h>
 #include <openbsc/smpp.h>
+#include <osmocom/sigtran/osmo_ss7.h>
 #include <openbsc/mgcpgw_client.h>
 
 #include <openbsc/msc_ifaces.h>
@@ -70,6 +71,7 @@
 #include <openbsc/iu.h>
 #include <openbsc/iucs.h>
 #include <openbsc/iucs_ranap.h>
+#include <openbsc/a_iface.h>
 
 static const char * const osmomsc_copyright =
 	"OsmoMSC - Osmocom Circuit-Switched Core Network implementation\r\n"
@@ -311,8 +313,7 @@ static struct vty_app_info msc_vty_info = {
 	.is_config_node	= bsc_vty_is_config_node,
 };
 
-static int rcvmsg_iu_cs(struct msgb *msg, struct gprs_ra_id *ra_id,
-			uint16_t *sai)
+static int rcvmsg_iu_cs(struct msgb *msg, struct gprs_ra_id *ra_id, uint16_t *sai)
 {
 	DEBUGP(DIUCS, "got IuCS message"
 	       " %d bytes: %s\n",
@@ -335,6 +336,61 @@ static int rx_iu_event(struct ue_conn_ctx *ctx, enum iu_event_type type,
 	return iucs_rx_ranap_event(msc_network, ctx, type, data);
 }
 
+#define DEFAULT_M3UA_REMOTE_IP "127.0.0.1"
+#define DEFAULT_LOCAL_PC (1 << 11) /* pc 1.0.0 in 3-8-3 format */
+
+/* Setup sigtran connection */
+int ss7_setup(void *ctx)
+{
+	char *sccp_inst_name_a = "OsmoMSC-A";
+	char *sccp_inst_name_iu = "OsmoMSC-Iu";
+	uint32_t cs7_instance_a = msc_network->a.cs7_instance;
+	uint32_t cs7_instance_iu = msc_network->iu.cs7_instance;
+
+	LOGP(DMSC, LOGL_NOTICE, "CS7 Instance identifier, A-Interface:  %u\n",
+	     cs7_instance_a);
+#if BUILD_IU
+	LOGP(DMSC, LOGL_NOTICE, "CS7 Instance identifier, Iu-Interface: %u\n",
+	     cs7_instance_iu);
+
+	/* Setup instance names */
+	if (cs7_instance_a == cs7_instance_iu)
+		sccp_inst_name_a = sccp_inst_name_iu = "OsmoMSC";
+
+	/* Create first SCCP instance (Iu and possibly also for A) */
+	msc_network->iu.sccp =
+	    osmo_sccp_simple_client_on_ss7_id(ctx, cs7_instance_iu,
+					      sccp_inst_name_iu,
+					      DEFAULT_LOCAL_PC,
+					      OSMO_SS7_ASP_PROT_M3UA,
+					      0, NULL,
+					      0, DEFAULT_M3UA_REMOTE_IP);
+	if (!msc_network->iu.sccp)
+		return -EINVAL;
+
+	/* If the VTY settings indicate, that the user wants to use only a
+	   single cs7 instance (A and Iu are running on the same instance,
+	   we just copy the pointer and exit early */
+	if (cs7_instance_a == cs7_instance_iu) {
+		msc_network->a.sccp = msc_network->iu.sccp;
+		return 0;
+	}
+#endif
+
+	/* Create second SCCP instance (A) */
+	msc_network->a.sccp =
+	    osmo_sccp_simple_client_on_ss7_id(ctx, cs7_instance_a,
+					      sccp_inst_name_a,
+					      DEFAULT_LOCAL_PC,
+					      OSMO_SS7_ASP_PROT_M3UA,
+					      0, NULL,
+					      0, DEFAULT_M3UA_REMOTE_IP);
+	if (!msc_network->a.sccp)
+		return -EINVAL;
+
+	return 0;
+}
+
 int main(int argc, char **argv)
 {
 	int rc;
@@ -349,6 +405,9 @@ int main(int argc, char **argv)
 
 	/* For --version, vty_init() must be called before handling options */
 	vty_init(&msc_vty_info);
+
+	osmo_ss7_init();
+	osmo_ss7_vty_init_asp(tall_msc_ctx);
 
 	/* Parse options */
 	handle_options(argc, argv);
@@ -491,13 +550,18 @@ TODO: we probably want some of the _net_ ctrl commands from bsc_base_ctrl_cmds_i
 		return 7;
 	}
 
-	/* Set up A-Interface */
-	/* TODO: implement A-Interface and remove above legacy stuff. */
+	if (ss7_setup(tall_msc_ctx)) {
+		printf("Setting up SCCP client failed.\n");
+		return 8;
+	}
 
 #ifdef BUILD_IU
 	/* Set up IuCS */
-	iu_init(tall_msc_ctx, "127.0.0.1", 14001, rcvmsg_iu_cs, rx_iu_event);
+	iu_init(tall_msc_ctx, msc_network->iu.sccp, rcvmsg_iu_cs, rx_iu_event);
 #endif
+
+	/* Set up A interface */
+	a_init(msc_network->a.sccp, msc_network);
 
 	if (msc_cmdline_config.daemonize) {
 		rc = osmo_daemonize();
