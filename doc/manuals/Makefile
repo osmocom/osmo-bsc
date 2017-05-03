@@ -15,18 +15,20 @@ docbooktotypes = pdf
 # htmlcss =
 
 TOPDIR := ..
-ASCIIDOCS := osmobsc-usermanual
+ASCIIDOCS := osmobsc-usermanual osmux-reference
 
 include $(TOPDIR)/build/Makefile.asciidoc.inc
 include $(TOPDIR)/build/Makefile.inc
 
 osmobsc-usermanual.pdf: chapters/*.adoc
+osmux-reference.pdf: osmux-reference.adoc
 
 clean:
 	-rm -rf $(cleanfiles)
 	-rm osmobsc-usermanual__*.png
 	-rm osmobsc-usermanual__*.svg
 	-rm osmobsc-usermanual*.check
+	-rm osmux-reference*.check
 
 gen-bsc-vty-docbook: FORCE
 	$(call command,xsltproc -o generated/combined1.xml \
