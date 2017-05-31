@@ -1,0 +1,39 @@
+# MO Call on a classic E1 Abis BTS with classic E1 A BSC
+# not actually supported by OsmoBSC (nor planned), for refrence only
+msc {
+	hscale=2;
+	ms [label="MS"], bts [label="E1 BTS"], bsc[label="OsmoBSC"], trau[label="TRAU"], m_sc[label="MSC"]; 
+
+	ms box m_sc	[label="We assume a SDCCH is already established"];
+	...;
+
+	ms -> m_sc	[label="DTAP CC SETUP"];
+	ms <- m_sc	[label="DTAP CC CALL PROCEEDING"];
+
+	bsc <- m_sc 	[label="BSSAP ASSGN REQ"];
+	bsc box m_sc	[label="E1 TS for PCM specified by CIC"];
+	bts <- bsc 	[label="RSL CHAN ACT"];
+	bts -> bsc 	[label="RSL CHAN ACT ACK"];
+	bts box bsc	[label="E1 TS + 16k sub-slot configured for given lchan"];
+	ms <-> bsc	[label="Assignment"];
+	bsc -> m_sc	[label="BSSAP ASSGN CMPL"];
+
+	...;
+	trau <- m_sc	[label="PCM Audio in full E1 slot"];
+	bts <- trau	[label="A-bis TRAU frames on 16k sub-slot"];
+
+	...;
+	ms <- m_sc	[label="DTAP CC CONNECT"];
+	ms -> m_sc	[label="DTAP CC CONNECT ACK"];
+	trau <-> m_sc	[label="PCM Audio in full E1 slot"];
+	bts <-> trau	[label="A-bis TRAU frames on 16k sub-slot"];
+	---		[label="Voice Call in Progress"];
+	ms <- m_sc	[label="DTAP CC DISCONNET"];
+	ms <- m_sc	[label="DTAP CC RELEASE"];
+	ms <- m_sc	[label="DTAP CC RELEASE COMPL"];
+	...;
+	bsc <- m_sc	[label="BSSMAP CLEAR CMD"];
+	bsc -> m_sc	[label="BSSMAP CLEAR COMPL"];
+	bsc <- m_sc	[label="SCCP RLSD"];
+	bsc -> m_sc	[label="SCCP RLC"];
+}

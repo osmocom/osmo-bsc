@@ -1,0 +1,77 @@
+= OsmoBSC A / SCCPlite / 3GPP AoIP Options
+
+== Introduction
+
+This document serves as a paper to illustrate the different
+configurations of OsmoBSC in terms of integration with BTSs and MSCs.
+
+The document should accompany us in the 2017 development cycle which
+includes the _death of the NITB_, i.e. the move away from OsmoNITB to
+having OsmoBSC in all configurations, whether with a
+proprietary/external MSC or with OsmoMSC.
+
+Particular attention is spent on the user plane, including aspects
+such as
+
+* user plane transport address handling
+* use of MGCP (Media Gateway Control Protocol)
+* the (required) evolution of `osmo-bsc_mgcp`
+* not loosing classic TDM (E1/T1) BTS support when moving from
+  OsmoNITB to split OsmoBSC + OsmoMSC setup
+
+
+== Overview
+
+=== Classic GSM RAN with E1 based Abis and E1 A
+
+This configuration was actually never supported by OpenBSC, as E1 BTS
+support was so far for NITB only, but not for OsmoBSC.
+
+[mscgen]
+----
+include::mgw/classic-bsc.msc[]
+----
+
+=== OsmoBSC 2010-2017: IPA-style A over SCCPlite
+
+This configuration was introduced as early as 2010 in OpenBSC.  It
+allowed the use of IP based BTSs (ip.access nanoBTS as well as all the
+OsmoBTS supported BTS models) in combination with third-party MSCs
+implementing a pre-standard, proprietary way of transporting the A
+interface over IP at a time where the 3GPP specifications only allowed
+classic TDM transport.
+
+[mscgen]
+----
+include::mgw/osmo-bsc-old-sccplite.msc[]
+----
+
+
+=== OsmoBSC 2017+: 3GPP AoIP + Abis/IP
+
+Release 7 of 3GPP included an official specification on how an
+interoperable A-over-IP (AoIP) interface shall look like.
+
+As more modern MSCs at operators tend to favor implementing 3GPP AoIP
+rather than the proprietary SCCPlite based A interface, it becomes
+neccessary for OsmoBSC to support this.
+
+At the same time, for compatibility reasons, the classic SCCPlite
+support shall be kept, if possible with reasonable effort.
+
+[mscgen]
+----
+include::mgw/osmo-bsc-new-mgw.msc[]
+----
+
+
+=== OsmoBSC 2017+: 3GPP AoIP + Abis/E1
+
+Since OsmoNITB will soon be deprecated, we will use OsmoBSC in all
+Osmocom GSM ntework setups, requiring the support for classic E1/T1
+based BTSs from OsmoBSC.
+
+[mscgen]
+----
+include::mgw/osmo-bsc-new-mgw-e1.msc[]
+----

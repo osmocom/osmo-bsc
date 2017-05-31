@@ -1,0 +1,64 @@
+# MO-Call with OsmoBTS + OsmoBSC using A/IP with IPA/SCCPlite
+# Supported since 2010 using osmo-bsc + osmo-bsc_nat
+msc {
+	hscale=2;
+	ms [label="MS"], bts [label="OsmoBTS"], bsc[label="OsmoBSC"], mgcp[label="osmo-bsc_mgcp"], m_sc[label="MSC"]; 
+
+	ms box m_sc	[label="We assume a SDCCH is already established"];
+	...;
+
+	ms -> m_sc	[label="DTAP CC SETUP"];
+	ms <- m_sc	[label="DTAP CC CALL PROCEEDING"];
+
+	bsc <- m_sc 	[label="BSSAP ASSGN REQ"];
+	bts <- bsc 	[label="RSL CHAN ACT"];
+	bts -> bsc 	[label="RSL CHAN ACT ACK"];
+	ms <-> bsc	[label="Assignment"];
+	bsc -> m_sc	[label="BSSAP ASSGN CMPL"];
+
+	...;
+	bts <- bsc	[label="IPA CRCX"];
+	bts box bts	[label="Bind to BSC-local RTP Port"];
+	bts -> bsc	[label="IPA CRCX ACK"];
+	bts <- bsc	[label="IPA MDCX"];
+	bts box bts	[label="Connect RTP socket to remote (bsc_mgcp) RTP Port"];
+	bts -> bsc	[label="IPA MDCX ACK"];
+
+	mgcp <- m_sc	[label="MGCP CRCX"];
+	mgcp box mgcp	[label="Bind to BTS-local RTP Port"];
+	mgcp -> m_sc	[label="MGCP CRCX OK"];
+	mgcp <- m_sc	[label="MGCP MDCX (recvonly) "];
+	mgcp box mgcp	[label="Connect RTP socket to remote (MSC) RTP Port"];
+	mgcp -> m_sc	[label="MGCP MDCX OK"];
+	mgcp <= m_sc	[label="RTP Audio"];
+	bts <= mgcp	[label="RTP Audio"];
+	ms <= bts	[label="Um Audio (unidirectional)"];
+	ms <- m_sc	[label="DTAP CC ALERTING"];
+
+	...;
+	mgcp <- m_sc	[label="MGCP MDCX (sndrecv) "];
+	mgcp box mgcp	[label="Switch to bi-directional audio"];
+	mgcp -> m_sc	[label="MGCP MDCX OK"];
+	mgcp <=> m_sc	[label="RTP Audio"];
+	bts <=> mgcp	[label="RTP Audio"];
+	ms <=> bts	[label="Um Audio (bidirectional)"];
+	...;
+	ms <- m_sc	[label="DTAP CC CONNECT"];
+	ms -> m_sc	[label="DTAP CC CONNECT ACK"];
+	mgcp <- m_sc	[label="MGCP MDCX (sndrecv) "];
+	mgcp box mgcp	[label="Why?"];
+	mgcp -> m_sc	[label="MGCP MDCX OK"];
+	---		[label="Voice Call in Progress"];
+	ms <- m_sc	[label="DTAP CC DISCONNET"];
+	ms <- m_sc	[label="DTAP CC RELEASE"];
+	ms <- m_sc	[label="DTAP CC RELEASE COMPL"];
+	...;
+	bsc <- m_sc	[label="BSSMAP CLEAR CMD"];
+	bsc -> m_sc	[label="BSSMAP CLEAR COMPL"];
+	bsc <- m_sc	[label="SCCP RLSD"];
+	bsc -> m_sc	[label="SCCP RLC"];
+	...;
+	mgcp <- m_sc	[label="MGCP DLCX"];
+	mgcp box mgcp	[label="Release local RTP port"];
+	mgcp -> m_sc	[label="MGCP DLCX OK"];
+}

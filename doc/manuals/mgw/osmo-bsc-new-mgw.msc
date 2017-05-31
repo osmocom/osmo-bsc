@@ -1,0 +1,71 @@
+# MO-Call with OsmoBTS + OsmoBSC with true 3GPP AoIP (planned)
+msc {
+	hscale=2;
+	ms [label="MS"], bts [label="OsmoBTS"], bsc[label="OsmoBSC"], mgcp[label="osmo-bsc_mgcp"], m_sc[label="MSC"];
+
+	ms box m_sc	[label="We assume a SDCCH is already established"];
+	...;
+
+	ms -> m_sc	[label="DTAP CC SETUP"];
+	ms <- m_sc	[label="DTAP CC CALL PROCEEDING"];
+
+	m_sc box m_sc	[label="Bind arbitrary local port (4000)"];
+	bsc <- m_sc 	[label="BSSAP ASSGN REQ (3GPP AoIP MSC:4000)"];
+	bts <- bsc 	[label="RSL CHAN ACT"];
+	bts -> bsc 	[label="RSL CHAN ACT ACK"];
+	ms <-> bsc	[label="Assignment"];
+	...;
+
+	# connect BTS RTP with BSC-MGW RTP
+	bts <- bsc	[label="IPA CRCX"];
+	bts box bts	[label="Bind to BTS-local RTP Port (1000)"];
+	bts -> bsc	[label="IPA CRCX ACK (BTS:1000)"];
+	bsc -> mgcp	[label="MGCP CRCX 2@abis (BTS:1000)"];
+	mgcp box mgcp	[label="Bind to MGW-local RTP Port (2000)\nConnect to BTS:1000"];
+	bsc <- mgcp	[label="MGCP CRCX 2@abis OK (MGW:2000)"];
+	bts <- bsc	[label="IPA MDCX 2@abis (MGW:2000)"];
+	bts box bts	[label="Connect RTP socket to remote (MGW) RTP Port"];
+	bts -> bsc	[label="IPA MDCX 2@abis ACK"];
+	#bsc -> mgcp	[label="MGCP MDCX 2@abis (optional)"];
+	#bsc <- mgcp	[label="MGCP MDCX 2@abis OK (optional)"];
+	...;
+
+	mgcp <- bsc	[label="MGCP CRCX 1@a (MSC:4000)"];
+	mgcp box mgcp	[label="Bind to MGW-local RTP Port (3000)\nConnect to MSC:4000"];
+	mgcp -> bsc	[label="MGCP CRCX 1@a OK (MGW:3000)"];
+	...;
+
+	bsc -> m_sc	[label="BSSAP ASSGN CMPL (3GPP AoIP MGW:3000)"];
+	m_sc box m_sc	[label="Connect remote RTP to MGW addr from ASSGN CMPL"];
+	...;
+
+	mgcp <=> m_sc	[label="RTP Audio MGW:3000 MSC:4000"];
+	bts <=> mgcp	[label="RTP Audio BTS:1000 MGW:2000"];
+	ms <=> bts	[label="Um Audio (bidirectional)"];
+	ms <-> m_sc	[label="DTAP CC ALERTING"];
+	...;
+
+	ms <- m_sc	[label="DTAP CC CONNECT"];
+	ms -> m_sc	[label="DTAP CC CONNECT ACK"];
+	---		[label="Voice Call in Progress"];
+	ms <- m_sc	[label="DTAP CC DISCONNET"];
+	ms <- m_sc	[label="DTAP CC RELEASE"];
+	ms <- m_sc	[label="DTAP CC RELEASE COMPL"];
+	...;
+	bsc <- m_sc	[label="BSSMAP CLEAR CMD"];
+	bsc -> m_sc	[label="BSSMAP CLEAR COMPL"];
+	bsc <- m_sc	[label="SCCP RLSD"];
+	bsc -> m_sc	[label="SCCP RLC"];
+	...;
+	mgcp <- bsc	[label="MGCP DLCX 1@a"];
+	mgcp box mgcp	[label="Release MSC-facing local RTP port (3000)"];
+	mgcp -> bsc	[label="MGCP DLCX 1@a OK"];
+
+	bsc -> mgcp	[label="MGCP DLCX 2@abis"];
+	mgcp box mgcp	[label="Release BTS-facing local RTP port (2000)"];
+	bsc <- mgcp	[label="MGCP DLCX 2@abis OK"];
+
+	bts <- bsc	[label="IPA DLCX"];
+	bts box bts	[label="Release BTS-local RTP port (1000)"];
+	bts -> bsc	[label="IPA DLCX OK"];
+}

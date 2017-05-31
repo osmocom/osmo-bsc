@@ -15,13 +15,14 @@ docbooktotypes = pdf
 # htmlcss =
 
 TOPDIR := ..
-ASCIIDOCS := osmobsc-usermanual osmux-reference
+ASCIIDOCS := osmobsc-usermanual osmux-reference aoip-mgw-options
 
 include $(TOPDIR)/build/Makefile.asciidoc.inc
 include $(TOPDIR)/build/Makefile.inc
 
 osmobsc-usermanual.pdf: chapters/*.adoc
 osmux-reference.pdf: osmux-reference.adoc
+aoip-mgw-options.pdf: aoip-mgw-options.adoc
 
 clean:
 	-rm -rf $(cleanfiles)
@@ -29,6 +30,9 @@ clean:
 	-rm osmobsc-usermanual__*.svg
 	-rm osmobsc-usermanual*.check
 	-rm osmux-reference*.check
+	-rm aoip-mgw-options*.png
+	-rm aoip-mgw-options*.svg
+	-rm aoip-mgw-options*.check
 
 gen-bsc-vty-docbook: FORCE
 	$(call command,xsltproc -o generated/combined1.xml \
