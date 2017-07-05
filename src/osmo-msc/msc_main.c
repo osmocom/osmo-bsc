@@ -66,9 +66,11 @@
 #include <osmocom/sigtran/osmo_ss7.h>
 #include <openbsc/mgcpgw_client.h>
 
-#include <openbsc/msc_ifaces.h>
+#ifdef BUILD_IU
+#include <osmocom/ranap/iu_client.h>
+#endif
 
-#include <openbsc/iu.h>
+#include <openbsc/msc_ifaces.h>
 #include <openbsc/iucs.h>
 #include <openbsc/iucs_ranap.h>
 #include <openbsc/a_iface.h>
@@ -313,6 +315,7 @@ static struct vty_app_info msc_vty_info = {
 	.is_config_node	= bsc_vty_is_config_node,
 };
 
+#ifdef BUILD_IU
 static int rcvmsg_iu_cs(struct msgb *msg, struct gprs_ra_id *ra_id, uint16_t *sai)
 {
 	DEBUGP(DIUCS, "got IuCS message"
@@ -327,14 +330,15 @@ static int rcvmsg_iu_cs(struct msgb *msg, struct gprs_ra_id *ra_id, uint16_t *sa
 	return gsm0408_rcvmsg_iucs(msc_network, msg, ra_id? &ra_id->lac : NULL);
 }
 
-static int rx_iu_event(struct ue_conn_ctx *ctx, enum iu_event_type type,
+static int rx_iu_event(struct ranap_ue_conn_ctx *ctx, enum ranap_iu_event_type type,
 		       void *data)
 {
 	DEBUGP(DIUCS, "got IuCS event %u: %s\n", type,
-	       iu_event_type_str(type));
+	       ranap_iu_event_type_str(type));
 
 	return iucs_rx_ranap_event(msc_network, ctx, type, data);
 }
+#endif
 
 #define DEFAULT_M3UA_REMOTE_IP "127.0.0.1"
 #define DEFAULT_LOCAL_PC (1 << 11) /* pc 1.0.0 in 3-8-3 format */
@@ -343,9 +347,11 @@ static int rx_iu_event(struct ue_conn_ctx *ctx, enum iu_event_type type,
 int ss7_setup(void *ctx)
 {
 	char *sccp_inst_name_a = "OsmoMSC-A";
-	char *sccp_inst_name_iu = "OsmoMSC-Iu";
 	uint32_t cs7_instance_a = msc_network->a.cs7_instance;
+#if BUILD_IU
+	char *sccp_inst_name_iu = "OsmoMSC-Iu";
 	uint32_t cs7_instance_iu = msc_network->iu.cs7_instance;
+#endif
 
 	LOGP(DMSC, LOGL_NOTICE, "CS7 Instance identifier, A-Interface:  %u\n",
 	     cs7_instance_a);
@@ -557,7 +563,7 @@ TODO: we probably want some of the _net_ ctrl commands from bsc_base_ctrl_cmds_i
 
 #ifdef BUILD_IU
 	/* Set up IuCS */
-	iu_init(tall_msc_ctx, msc_network->iu.sccp, rcvmsg_iu_cs, rx_iu_event);
+	ranap_iu_init(tall_msc_ctx, DRANAP, "OsmoMSC-IuCS", msc_network->iu.sccp, rcvmsg_iu_cs, rx_iu_event);
 #endif
 
 	/* Set up A interface */

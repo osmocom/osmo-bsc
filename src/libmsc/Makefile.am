@@ -34,8 +34,6 @@ libmsc_a_SOURCES = \
 	gsm_04_11.c \
 	gsm_04_80.c \
 	gsm_subscriber.c \
-	iucs.c \
-	iucs_ranap.c \
 	mncc.c \
 	mncc_builtin.c \
 	mncc_sock.c \
@@ -51,7 +49,12 @@ libmsc_a_SOURCES = \
 	meas_feed.c \
 	subscr_conn.c \
 	$(NULL)
-if !BUILD_IU
+if BUILD_IU
+libmsc_a_SOURCES += \
+	iucs.c \
+	iucs_ranap.c \
+	$(NULL)
+else
 libmsc_a_SOURCES += \
 	iu_dummy.c \
 	$(NULL)
