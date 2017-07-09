@@ -33,7 +33,6 @@ bsc_test_SOURCES = \
 bsc_test_LDADD = \
 	$(top_builddir)/src/libbsc/libbsc.a \
 	$(top_builddir)/src/libcommon-cs/libcommon-cs.a \
-	$(top_builddir)/src/libmgcp/libmgcp.a \
 	$(top_builddir)/src/libtrau/libtrau.a \
 	$(top_builddir)/src/libcommon/libcommon.a \
 	$(LIBOSMOCORE_LIBS) \
@@ -41,5 +40,7 @@ bsc_test_LDADD = \
 	$(LIBOSMOSCCP_LIBS) \
 	$(LIBOSMOVTY_LIBS) \
 	$(LIBOSMOABIS_LIBS) \
+	$(LIBOSMOMGCP_LIBS) \
+	$(LIBRARY_GSM) \
 	-lrt \
 	$(NULL)

@@ -205,7 +205,7 @@ AC_ARG_ENABLE([external_tests],
 				[Include the VTY/CTRL tests in make check [default=no]]),
 		[enable_ext_tests="$enableval"],[enable_ext_tests="no"])
 if test "x$enable_ext_tests" = "xyes" ; then
-	AM_PATH_PYTHON
+AM_PATH_PYTHON
 	AC_CHECK_PROG(OSMOTESTEXT_CHECK,osmotestvty.py,yes)
 	 if test "x$OSMOTESTEXT_CHECK" != "xyes" ; then
 		AC_MSG_ERROR([Please install git://osmocom.org/python/osmo-python-tests to run the VTY/CTRL tests.])
@@ -225,17 +225,13 @@ AC_OUTPUT(
     src/Makefile
     src/libtrau/Makefile
     src/libbsc/Makefile
-    src/libmsc/Makefile
-    src/libvlr/Makefile
     src/libcommon/Makefile
     src/libfilter/Makefile
     src/libcommon-cs/Makefile
-    src/osmo-msc/Makefile
     src/osmo-bsc/Makefile
     src/osmo-bsc_nat/Makefile
     src/ipaccess/Makefile
     src/utils/Makefile
-    src/gprs/Makefile
     tests/Makefile
     tests/atlocal
     tests/gsm0408/Makefile
@@ -243,22 +239,10 @@ AC_OUTPUT(
     tests/bsc/Makefile
     tests/bsc-nat/Makefile
     tests/bsc-nat-trie/Makefile
-    tests/gprs/Makefile
-    tests/gbproxy/Makefile
     tests/abis/Makefile
-    tests/smpp/Makefile
     tests/trau/Makefile
-    tests/sgsn/Makefile
     tests/subscr/Makefile
-    tests/oap/Makefile
-    tests/gtphub/Makefile
-    tests/xid/Makefile
-    tests/sndcp_xid/Makefile
-    tests/slhc/Makefile
-    tests/v42bis/Makefile
     tests/nanobts_omlattr/Makefile
-    tests/sms_queue/Makefile
-    tests/msc_vlr/Makefile
     doc/Makefile
     doc/examples/Makefile
     contrib/Makefile

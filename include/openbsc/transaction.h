@@ -4,7 +4,6 @@
 #include <openbsc/gsm_data.h>
 #include <openbsc/gsm_subscriber.h>
 #include <osmocom/core/linuxlist.h>
-#include <openbsc/gsm_04_11.h>
 #include <openbsc/mncc.h>
 #include <osmocom/gsm/gsm0411_smc.h>
 #include <osmocom/gsm/gsm0411_smr.h>

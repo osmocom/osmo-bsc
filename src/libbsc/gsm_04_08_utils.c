@@ -32,11 +32,11 @@
 
 #include <openbsc/abis_rsl.h>
 #include <openbsc/debug.h>
-#include <openbsc/gsm_04_08.h>
 #include <openbsc/transaction.h>
 #include <openbsc/paging.h>
 #include <openbsc/signal.h>
 #include <openbsc/bsc_api.h>
+#include <openbsc/gsm_04_08_utils.h>
 
 /* should ip.access BTS use direct RTP streams between each other (1),
  * or should OpenBSC always act as RTP relay/proxy in between (0) ? */

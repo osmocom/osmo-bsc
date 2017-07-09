@@ -24,12 +24,14 @@
 #include <openbsc/bsc_msc_data.h>
 #include <openbsc/debug.h>
 #include <openbsc/bsc_subscriber.h>
-#include <openbsc/mgcp.h>
+#include <osmocom/legacy_mgcp/mgcp.h>
 #include <openbsc/paging.h>
+#include <openbsc/gsm_04_08_utils.h>
 
 #include <osmocom/gsm/protocol/gsm_08_08.h>
 #include <osmocom/gsm/gsm0808.h>
 #include <osmocom/gsm/gsm0808_utils.h>
+#include <osmocom/gsm/gsm48.h>
 #include <openbsc/osmo_bsc_sigtran.h>
 #include <openbsc/a_reset.h>
 #include <osmocom/core/byteswap.h>
@@ -42,8 +44,7 @@
 
 /* Helper function for match_codec_pref(), looks up a matching permitted speech
  * value for a given msc audio codec pref */
-enum gsm0808_permitted_speech audio_support_to_gsm88(struct gsm_audio_support
-						     *audio)
+enum gsm0808_permitted_speech audio_support_to_gsm88(struct gsm_audio_support *audio)
 {
 	if (audio->hr) {
 		switch (audio->ver) {
@@ -516,9 +517,18 @@ static int bssmap_handle_assignm_req(struct osmo_bsc_sccp_con *conn,
 	 * local preferences of the BSC */
 	rc = match_codec_pref(&full_rate, &chan_mode, &ct, scl_ptr, msc);
 	if (rc < 0) {
-		LOGP(DMSC, LOGL_ERROR, "No supported audio type found.\n");
+		LOGP(DMSC, LOGL_ERROR, "No supported audio type found for channel_type ="
+		     " { ch_indctr=0x%x, ch_rate_type=0x%x, perm_spch=[ %s] }\n",
+		     ct.ch_indctr, ct.ch_rate_type, osmo_hexdump(ct.perm_spch, ct.perm_spch_len));
+		/* TODO: actually output codec names, e.g. implement gsm0808_permitted_speech_names[] and
+		 * iterate perm_spch. */
 		goto reject;
 	}
+	DEBUGP(DMSC, "Found matching audio type: %s %s for channel_type ="
+	       " { ch_indctr=0x%x, ch_rate_type=0x%x, perm_spch=[ %s] }\n",
+	       full_rate? "full rate" : "half rate",
+	       get_value_string(gsm48_chan_mode_names, chan_mode),
+	       ct.ch_indctr, ct.ch_rate_type, osmo_hexdump(ct.perm_spch, ct.perm_spch_len));
 
 	if (aoip == false) {
 		/* map it to a MGCP Endpoint and a RTP port */

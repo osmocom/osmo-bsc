@@ -29,7 +29,6 @@
 #include <openbsc/abis_rsl.h>
 #include <openbsc/debug.h>
 #include <openbsc/gsm_subscriber.h>
-#include <openbsc/vlr.h>
 
 void test_dyn_ts_subslots(void)
 {

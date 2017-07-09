@@ -21,7 +21,6 @@
 
 #include <openbsc/gsm_data.h>
 #include <osmocom/gsm/gsm_utils.h>
-#include <openbsc/gsm_04_08.h>
 #include <openbsc/abis_rsl.h>
 #include <openbsc/abis_nm.h>
 #include <openbsc/debug.h>

@@ -34,6 +34,8 @@
 #include <osmocom/core/utils.h>
 #include <osmocom/gsm/gsm0808.h>
 #include <osmocom/gsm/ipa.h>
+#include <osmocom/gsm/mncc.h>
+#include <osmocom/gsm/gsm48.h>
 
 #include <osmocom/gsm/protocol/gsm_08_08.h>
 #include <osmocom/gsm/protocol/gsm_04_11.h>

@@ -1,12 +1,6 @@
 AT_INIT
 AT_BANNER([Regression tests.])
 
-AT_SETUP([gsm0408])
-AT_KEYWORDS([gsm0408])
-cat $abs_srcdir/gsm0408/gsm0408_test.ok > expout
-AT_CHECK([$abs_top_builddir/tests/gsm0408/gsm0408_test], [], [expout], [ignore])
-AT_CLEANUP
-
 AT_SETUP([bsc_subscr])
 AT_KEYWORDS([bsc_subscr])
 cat $abs_srcdir/subscr/bsc_subscr_test.ok > expout
@@ -18,30 +12,6 @@ AT_SETUP([channel])
 AT_KEYWORDS([channel])
 cat $abs_srcdir/channel/channel_test.ok > expout
 AT_CHECK([$abs_top_builddir/tests/channel/channel_test], [], [expout], [ignore])
-AT_CLEANUP
-
-AT_SETUP([gprs])
-AT_KEYWORDS([gprs])
-cat $abs_srcdir/gprs/gprs_test.ok > expout
-AT_CHECK([$abs_top_builddir/tests/gprs/gprs_test], [], [expout], [ignore])
-AT_CLEANUP
-
-AT_SETUP([bsc-nat])
-AT_KEYWORDS([bsc-nat])
-AT_CHECK([test "$enable_nat_test" != no || exit 77])
-cp $abs_srcdir/bsc-nat/prefixes.csv .
-cp $abs_srcdir/bsc-nat/barr.cfg .
-cp $abs_srcdir/bsc-nat/barr_dup.cfg .
-cat $abs_srcdir/bsc-nat/bsc_nat_test.ok > expout
-AT_CHECK([$abs_top_builddir/tests/bsc-nat/bsc_nat_test], [], [expout], [ignore])
-AT_CLEANUP
-
-AT_SETUP([smpp])
-AT_KEYWORDS([smpp])
-AT_CHECK([test "$enable_smpp_test" != no || exit 77])
-cat $abs_srcdir/smpp/smpp_test.ok > expout
-cat $abs_srcdir/smpp/smpp_test.err > experr
-AT_CHECK([$abs_top_builddir/tests/smpp/smpp_test], [], [expout], [experr])
 AT_CLEANUP
 
 AT_SETUP([bsc-nat-trie])
@@ -65,140 +35,14 @@ cat $abs_srcdir/bsc/bsc_test.ok > expout
 AT_CHECK([$abs_top_builddir/tests/bsc/bsc_test], [], [expout], [ignore])
 AT_CLEANUP
 
-AT_SETUP([gbproxy])
-AT_KEYWORDS([gbproxy])
-cat $abs_srcdir/gbproxy/gbproxy_test.ok > expout
-AT_CHECK([$abs_top_builddir/tests/gbproxy/gbproxy_test], [], [expout], [ignore])
-AT_CLEANUP
-
 AT_SETUP([trau])
 AT_KEYWORDS([trau])
 cat $abs_srcdir/trau/trau_test.ok > expout
 AT_CHECK([$abs_top_builddir/tests/trau/trau_test], [], [expout], [ignore])
 AT_CLEANUP
 
-AT_SETUP([sgsn])
-AT_KEYWORDS([sgsn])
-AT_CHECK([test "$enable_sgsn_test" != no || exit 77])
-cat $abs_srcdir/sgsn/sgsn_test.ok > expout
-AT_CHECK([$abs_top_builddir/tests/sgsn/sgsn_test], [], [expout], [ignore])
-AT_CLEANUP
-
-AT_SETUP([oap])
-AT_KEYWORDS([oap])
-AT_CHECK([test "$enable_oap_test" != no || exit 77])
-cat $abs_srcdir/oap/oap_client_test.ok > expout
-cat $abs_srcdir/oap/oap_client_test.err > experr
-AT_CHECK([$abs_top_builddir/tests/oap/oap_client_test], [], [expout], [experr])
-AT_CLEANUP
-
-AT_SETUP([gtphub])
-AT_KEYWORDS([gtphub])
-AT_CHECK([test "$enable_gtphub_test" != no || exit 77])
-cat $abs_srcdir/gtphub/gtphub_test.ok > expout
-AT_CHECK([$abs_top_builddir/tests/gtphub/gtphub_test], [], [expout], [ignore])
-AT_CLEANUP
-
-AT_SETUP([xid])
-AT_KEYWORDS([xid])
-AT_CHECK([test "$enable_sgsn_test" != no || exit 77])
-cat $abs_srcdir/xid/xid_test.ok > expout
-AT_CHECK([$abs_top_builddir/tests/xid/xid_test], [], [expout], [ignore])
-AT_CLEANUP
-
-AT_SETUP([sndcp_xid])
-AT_KEYWORDS([sndcp_xid])
-AT_CHECK([test "$enable_sgsn_test" != no || exit 77])
-cat $abs_srcdir/sndcp_xid/sndcp_xid_test.ok > expout
-AT_CHECK([$abs_top_builddir/tests/sndcp_xid/sndcp_xid_test], [], [expout], [ignore])
-AT_CLEANUP
-
-AT_SETUP([slhc])
-AT_KEYWORDS([slhc])
-AT_CHECK([test "$enable_sgsn_test" != no || exit 77])
-cat $abs_srcdir/slhc/slhc_test.ok > expout
-AT_CHECK([$abs_top_builddir/tests/slhc/slhc_test], [], [expout], [ignore])
-AT_CLEANUP
-
-AT_SETUP([v42bis])
-AT_KEYWORDS([v42bis])
-AT_CHECK([test "$enable_sgsn_test" != no || exit 77])
-cat $abs_srcdir/v42bis/v42bis_test.ok > expout
-AT_CHECK([$abs_top_builddir/tests/v42bis/v42bis_test], [], [expout], [ignore])
-AT_CLEANUP
-
 AT_SETUP([nanobts_omlattr])
 AT_KEYWORDS([nanobts_omlattr])
 cat $abs_srcdir/nanobts_omlattr/nanobts_omlattr_test.ok > expout
 AT_CHECK([$abs_top_builddir/tests/nanobts_omlattr/nanobts_omlattr_test], [], [expout], [ignore])
-AT_CLEANUP
-
-AT_SETUP([sms_queue_test])
-AT_KEYWORDS([sms_queue_test])
-cat $abs_srcdir/sms_queue/sms_queue_test.ok > expout
-cat $abs_srcdir/sms_queue/sms_queue_test.err > experr
-AT_CHECK([$abs_top_builddir/tests/sms_queue/sms_queue_test], [], [expout], [experr])
-AT_CLEANUP
-
-AT_SETUP([msc_vlr_test_no_authen])
-AT_KEYWORDS([msc_vlr_test_no_authen])
-cat $abs_srcdir/msc_vlr/msc_vlr_test_no_authen.ok > expout
-cat $abs_srcdir/msc_vlr/msc_vlr_test_no_authen.err > experr
-AT_CHECK([$abs_top_builddir/tests/msc_vlr/msc_vlr_test_no_authen], [], [expout], [experr])
-AT_CLEANUP
-
-AT_SETUP([msc_vlr_test_gsm_authen])
-AT_KEYWORDS([msc_vlr_test_gsm_authen])
-cat $abs_srcdir/msc_vlr/msc_vlr_test_gsm_authen.ok > expout
-cat $abs_srcdir/msc_vlr/msc_vlr_test_gsm_authen.err > experr
-AT_CHECK([$abs_top_builddir/tests/msc_vlr/msc_vlr_test_gsm_authen], [], [expout], [experr])
-AT_CLEANUP
-
-AT_SETUP([msc_vlr_test_gsm_ciph])
-AT_KEYWORDS([msc_vlr_test_gsm_ciph])
-cat $abs_srcdir/msc_vlr/msc_vlr_test_gsm_ciph.ok > expout
-cat $abs_srcdir/msc_vlr/msc_vlr_test_gsm_ciph.err > experr
-AT_CHECK([$abs_top_builddir/tests/msc_vlr/msc_vlr_test_gsm_ciph], [], [expout], [experr])
-AT_CLEANUP
-
-AT_SETUP([msc_vlr_test_umts_authen])
-AT_KEYWORDS([msc_vlr_test_umts_authen])
-cat $abs_srcdir/msc_vlr/msc_vlr_test_umts_authen.ok > expout
-cat $abs_srcdir/msc_vlr/msc_vlr_test_umts_authen.err > experr
-AT_CHECK([$abs_top_builddir/tests/msc_vlr/msc_vlr_test_umts_authen], [], [expout], [experr])
-AT_CLEANUP
-
-AT_SETUP([msc_vlr_test_hlr_reject])
-AT_KEYWORDS([msc_vlr_test_hlr_reject])
-cat $abs_srcdir/msc_vlr/msc_vlr_test_hlr_reject.ok > expout
-cat $abs_srcdir/msc_vlr/msc_vlr_test_hlr_reject.err > experr
-AT_CHECK([$abs_top_builddir/tests/msc_vlr/msc_vlr_test_hlr_reject], [], [expout], [experr])
-AT_CLEANUP
-
-AT_SETUP([msc_vlr_test_hlr_timeout])
-AT_KEYWORDS([msc_vlr_test_hlr_timeout])
-cat $abs_srcdir/msc_vlr/msc_vlr_test_hlr_timeout.ok > expout
-cat $abs_srcdir/msc_vlr/msc_vlr_test_hlr_timeout.err > experr
-AT_CHECK([$abs_top_builddir/tests/msc_vlr/msc_vlr_test_hlr_timeout], [], [expout], [experr])
-AT_CLEANUP
-
-AT_SETUP([msc_vlr_test_ms_timeout])
-AT_KEYWORDS([msc_vlr_test_ms_timeout])
-cat $abs_srcdir/msc_vlr/msc_vlr_test_ms_timeout.ok > expout
-cat $abs_srcdir/msc_vlr/msc_vlr_test_ms_timeout.err > experr
-AT_CHECK([$abs_top_builddir/tests/msc_vlr/msc_vlr_test_ms_timeout], [], [expout], [experr])
-AT_CLEANUP
-
-AT_SETUP([msc_vlr_test_reject_concurrency])
-AT_KEYWORDS([msc_vlr_test_reject_concurrency])
-cat $abs_srcdir/msc_vlr/msc_vlr_test_reject_concurrency.ok > expout
-cat $abs_srcdir/msc_vlr/msc_vlr_test_reject_concurrency.err > experr
-AT_CHECK([$abs_top_builddir/tests/msc_vlr/msc_vlr_test_reject_concurrency], [], [expout], [experr])
-AT_CLEANUP
-
-AT_SETUP([msc_vlr_test_rest])
-AT_KEYWORDS([msc_vlr_test_rest])
-cat $abs_srcdir/msc_vlr/msc_vlr_test_rest.ok > expout
-cat $abs_srcdir/msc_vlr/msc_vlr_test_rest.err > experr
-AT_CHECK([$abs_top_builddir/tests/msc_vlr/msc_vlr_test_rest], [], [expout], [experr])
 AT_CLEANUP

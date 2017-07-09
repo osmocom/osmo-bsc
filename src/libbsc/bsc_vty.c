@@ -30,6 +30,7 @@
 #include <osmocom/vty/misc.h>
 #include <osmocom/gsm/protocol/gsm_04_08.h>
 #include <osmocom/gsm/gsm0502.h>
+#include <osmocom/gsm/gsm48.h>
 
 #include <arpa/inet.h>
 
@@ -43,7 +44,6 @@
 #include <osmocom/gsm/abis_nm.h>
 #include <openbsc/chan_alloc.h>
 #include <openbsc/meas_rep.h>
-#include <openbsc/db.h>
 #include <openbsc/vty.h>
 #include <osmocom/gprs/gprs_ns.h>
 #include <openbsc/system_information.h>
@@ -55,7 +55,7 @@
 #include <openbsc/osmo_bsc_rf.h>
 #include <openbsc/pcu_if.h>
 #include <openbsc/common_cs.h>
-#include <openbsc/vlr.h>
+#include <openbsc/gsm_04_08_utils.h>
 
 #include <inttypes.h>
 
@@ -1014,26 +1014,6 @@ DEFUN(show_ts,
 	return CMD_SUCCESS;
 }
 
-static void subscr_dump_vty(struct vty *vty, struct vlr_subscr *vsub)
-{
-	OSMO_ASSERT(vsub);
-	if (strlen(vsub->name))
-		vty_out(vty, "    Name: '%s'%s", vsub->name, VTY_NEWLINE);
-	if (strlen(vsub->msisdn))
-		vty_out(vty, "    Extension: %s%s", vsub->msisdn,
-			VTY_NEWLINE);
-	if (strlen(vsub->imsi))
-		vty_out(vty, "    IMSI: %s%s", vsub->imsi, VTY_NEWLINE);
-	if (vsub->tmsi != GSM_RESERVED_TMSI)
-		vty_out(vty, "    TMSI: %08X%s", vsub->tmsi,
-			VTY_NEWLINE);
-	if (vsub->tmsi_new != GSM_RESERVED_TMSI)
-		vty_out(vty, "    new TMSI: %08X%s", vsub->tmsi_new,
-			VTY_NEWLINE);
-
-	vty_out(vty, "    Use count: %u%s", vsub->use_count, VTY_NEWLINE);
-}
-
 static void bsc_subscr_dump_vty(struct vty *vty, struct bsc_subscr *bsub)
 {
 	if (strlen(bsub->imsi))
@@ -1159,9 +1139,9 @@ static void lchan_dump_full_vty(struct vty *vty, struct gsm_lchan *lchan)
 	vty_out(vty, "  Channel Mode / Codec: %s%s",
 		get_value_string(gsm48_cmode_names, lchan->tch_mode),
 		VTY_NEWLINE);
-	if (lchan->conn && lchan->conn->vsub) {
+	if (lchan->conn && lchan->conn->bsub) {
 		vty_out(vty, "  Subscriber:%s", VTY_NEWLINE);
-		subscr_dump_vty(vty, lchan->conn->vsub);
+		bsc_subscr_dump_vty(vty, lchan->conn->bsub);
 	} else
 		vty_out(vty, "  No Subscriber%s", VTY_NEWLINE);
 	if (is_ipaccess_bts(lchan->ts->trx->bts)) {

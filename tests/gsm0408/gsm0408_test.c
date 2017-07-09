@@ -25,8 +25,6 @@
 #include <arpa/inet.h>
 
 #include <openbsc/common_bsc.h>
-#include <openbsc/gsm_04_08.h>
-#include <openbsc/gsm_04_11.h>
 #include <openbsc/gsm_subscriber.h>
 #include <openbsc/gsm_data_shared.h>
 #include <openbsc/debug.h>
@@ -36,6 +34,7 @@
 
 #include <osmocom/core/application.h>
 #include <osmocom/gsm/sysinfo.h>
+#include <osmocom/gsm/gsm48.h>
 
 #define COMPARE(result, op, value) \
     if (!((result) op (value))) {\
@@ -648,6 +647,7 @@ static void test_si_range_helpers()
 	VERIFY(f0, ==, 1);
 }
 
+#ifdef BEFORE_MSCSPLIT
 static void test_gsm411_rp_ref_wrap(void)
 {
 	struct gsm_subscriber_connection conn;
@@ -670,6 +670,7 @@ static void test_gsm411_rp_ref_wrap(void)
 	printf("Allocated reference: %d\n", res);
 	OSMO_ASSERT(res == 1);
 }
+#endif
 
 int main(int argc, char **argv)
 {
@@ -683,7 +684,9 @@ int main(int argc, char **argv)
 	test_arfcn_filter();
 	test_print_encoding();
 	test_range_encoding();
+#ifdef BEFORE_MSCSPLIT
 	test_gsm411_rp_ref_wrap();
+#endif
 
 	test_si2q_segfault();
 	test_si2q_e();
