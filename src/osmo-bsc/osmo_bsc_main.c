@@ -58,7 +58,7 @@
 #include "../../bscconfig.h"
 
 struct gsm_network *bsc_gsmnet = 0;
-static const char *config_file = "openbsc.cfg";
+static const char *config_file = "osmo-bsc.cfg";
 static const char *rf_ctrl = NULL;
 extern const char *openbsc_copyright;
 static int daemonize = 0;

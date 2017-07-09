@@ -50,7 +50,6 @@
 #include <openbsc/gsm_data.h>
 #include <openbsc/chan_alloc.h>
 #include <openbsc/bsc_api.h>
-#include <openbsc/vlr.h>
 
 void *tall_paging_ctx;
 

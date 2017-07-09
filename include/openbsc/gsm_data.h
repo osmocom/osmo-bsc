@@ -31,6 +31,7 @@ struct bsc_subscr;
 struct vlr_instance;
 struct vlr_subscr;
 struct ranap_ue_conn_ctx;
+struct gprs_ra_id;
 
 #define OBSC_LINKID_CB(__msgb)	(__msgb)->cb[3]
 

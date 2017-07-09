@@ -33,14 +33,14 @@
 #include <openbsc/gsm_data.h>
 #include <osmocom/gsm/gsm_utils.h>
 #include <openbsc/gsm_subscriber.h>
-#include <openbsc/gsm_04_08.h>
 #include <openbsc/abis_rsl.h>
 #include <openbsc/chan_alloc.h>
 #include <openbsc/signal.h>
 #include <osmocom/core/talloc.h>
 #include <openbsc/transaction.h>
 #include <openbsc/trau_mux.h>
-#include <openbsc/vlr.h>
+#include <openbsc/bsc_subscriber.h>
+#include <openbsc/gsm_04_08_utils.h>
 
 struct bsc_handover {
 	struct llist_head list;
@@ -262,7 +262,7 @@ static int ho_gsm48_ho_compl(struct gsm_lchan *new_lchan)
 
 	net = new_lchan->ts->trx->bts->network;
 	LOGP(DHO, LOGL_INFO, "Subscriber %s HO from BTS %u->%u on ARFCN "
-	     "%u->%u\n", vlr_subscr_name(ho->old_lchan->conn->vsub),
+	     "%u->%u\n", bsc_subscr_name(ho->old_lchan->conn->bsub),
 	     ho->old_lchan->ts->trx->bts->nr, new_lchan->ts->trx->bts->nr,
 	     ho->old_lchan->ts->trx->arfcn, new_lchan->ts->trx->arfcn);
 

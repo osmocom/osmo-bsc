@@ -28,7 +28,7 @@
 #include <arpa/inet.h>
 
 #include <openbsc/gsm_data.h>
-#include <openbsc/gsm_04_08.h>
+#include <openbsc/gsm_04_08_utils.h>
 #include <osmocom/gsm/gsm_utils.h>
 #include <openbsc/abis_rsl.h>
 #include <openbsc/chan_alloc.h>
@@ -46,6 +46,7 @@
 #include <osmocom/gsm/rsl.h>
 #include <osmocom/core/talloc.h>
 #include <openbsc/pcu_if.h>
+#include <openbsc/bsc_api.h>
 
 #define RSL_ALLOC_SIZE		1024
 #define RSL_ALLOC_HEADROOM	128

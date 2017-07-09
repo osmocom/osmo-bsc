@@ -28,12 +28,14 @@
 #include <openbsc/gsm_data.h>
 #include <openbsc/debug.h>
 #include <openbsc/ipaccess.h>
+#include <openbsc/common_cs.h>
 
 #include <osmocom/core/talloc.h>
 #include <osmocom/gsm/gsm0808.h>
 
 #include <osmocom/gsm/protocol/gsm_08_08.h>
 #include <osmocom/gsm/protocol/gsm_04_11.h>
+#include <osmocom/gsm/gsm48.h>
 
 int bsc_filter_barr_find(struct rb_root *root, const char *imsi, int *cm, int *lu)
 {

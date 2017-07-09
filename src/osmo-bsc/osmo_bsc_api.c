@@ -22,9 +22,12 @@
 #include <openbsc/debug.h>
 
 #include <openbsc/gsm_04_80.h>
+#include <openbsc/gsm_04_08_utils.h>
 
 #include <osmocom/gsm/protocol/gsm_08_08.h>
 #include <osmocom/gsm/gsm0808.h>
+#include <osmocom/gsm/mncc.h>
+#include <osmocom/gsm/gsm48.h>
 
 #include <osmocom/sccp/sccp.h>
 #include <openbsc/osmo_bsc_sigtran.h>

@@ -32,6 +32,7 @@
 #include <openbsc/debug.h>
 #include <openbsc/rtp_proxy.h>
 #include <openbsc/signal.h>
+#include <openbsc/gsm_04_08_utils.h>
 
 #include <osmocom/core/talloc.h>
 

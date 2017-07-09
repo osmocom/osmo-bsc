@@ -32,6 +32,7 @@
 #include <osmocom/core/talloc.h>
 #include <osmocom/gsm/tlv.h>
 #include <osmocom/gsm/ipa.h>
+#include <osmocom/gsm/gsm0480.h>
 
 #include <osmocom/sccp/sccp.h>
 
@@ -40,6 +41,7 @@
 #include <sys/socket.h>
 #include <string.h>
 #include <unistd.h>
+#include <errno.h>
 
 #define USSD_LAC_IE	0
 #define USSD_CI_IE	1
