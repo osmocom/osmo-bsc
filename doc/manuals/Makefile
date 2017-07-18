@@ -33,6 +33,9 @@ clean:
 	-rm aoip-mgw-options*.png
 	-rm aoip-mgw-options*.svg
 	-rm aoip-mgw-options*.check
+	-rm osmux-reference__*.svg
+	-rm osmux-reference__*.png
+	-rm osmux-reference__*.check
 
 gen-bsc-vty-docbook: FORCE
 	$(call command,xsltproc -o generated/combined1.xml \

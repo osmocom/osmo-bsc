@@ -144,14 +144,22 @@ previous OSmux message.
 
 === LAPD Signalling (0)
 
- 0                   1                   2                   3
- 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|X|FT |X X X X X|   PL-LENGTH   | LAPD header + payload         |
-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+[packetdiag]
+----
+{
+	colwidth = 32
+	node_height = 40
+
+	0:	-
+	1-2:	FT
+	3-7:	----
+	8-15:	PL-LENGTH
+	16-31:	LAPD header + payload
+}
+----
 
 Field Type (FT): 2 bits::
-The Field Type allocated for AMR codec is "0".
+The Field Type allocated for LAPD Signalling is "0".
 
 This frame type is not yet supported inside OsmoCom and may be subject to
 change in future versions of the protocol.
@@ -162,11 +170,23 @@ change in future versions of the protocol.
 This OSmux packet header is used to transport one or more RTP-AMR packets for a
 specific RTP stream identified by the Circuit ID field.
 
- 0                   1                   2                   3
- 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|M|FT | CTR |F|Q| Red. TS/SeqNR |  Circuit ID   |AMR FT |AMR CMR|
-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+[packetdiag]
+----
+{
+	colwidth = 32
+	node_height = 40
+
+	0:	M
+	1-2:	FT
+	3-5:	CTR
+	6:	F
+	7:	Q
+	8-15:	Red. TS/SeqNR
+	16-23:	Circuit ID
+	24-27:	AMR FT
+	28-31:	AMR CMR
+}
+----
 
 Marker (M): 1 bit::
 This is a 1:1 mapping from the RTP Marker (M) bit as specified in RFC3550
@@ -246,11 +266,22 @@ private port and the public port and start sending packets to it.
 When opening a connection, the peer is expected to send dummy packets until it
 starts sending real audio, at which point dummy packets are not needed anymore.
 
- 0                   1                   2                   3
- 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|X|FT | CTR |X X|X X X X X X X X X| Circuit ID  |AMR FT |X X X X|
-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+[packetdiag]
+----
+{
+	colwidth = 32
+	node_height = 40
+
+	0:	-
+	1-2:	FT
+	3-5:	CTR
+	6-7:	--
+	8-15:	----
+	16-23:	Circuit ID
+	24-27:	AMR FT
+	28-31:	----
+}
+----
 
 Field Type (FT): 2 bits::
 The Field Type allocated for AMR codec is "2".
