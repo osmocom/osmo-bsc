@@ -28,6 +28,14 @@
             Update frame bits according to implementation.
     </revremark>
   </revision>
+  <revision>
+    <revnumber>0.4</revnumber>
+    <date>19 July 2017</date>
+    <authorinitials>Pau Espin Pedrol</authorinitials>
+    <revremark>
+            Add sequence charts, generate packet header structure with packetdiag, generate traffic saving plot with pychart.
+    </revremark>
+  </revision>
 </revhistory>
 
 <authorgroup>
