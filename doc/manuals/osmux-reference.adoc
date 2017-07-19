@@ -307,6 +307,195 @@ of 17 bytes is to be allocated after the header.
 * On receival of this kind of OSmux frame, it's usually enough for the reader to
   discard the header plus the calculated padding and keep operating.
 
+== Sequence Charts
+
+=== Trunking
+
+Following chart shows how trunking works for 3 concurrent calls from different
+MS on a given BTS. In this case only uplink data is shown, but downlink follows
+the same idea. Batching factor is set to 1 to easily illustrate trunking mechanism.
+
+It can be seen how 3 RTP packets from 3 different Ms (a, b, and c) arrive to the
+BSC from the BTS. The BSC generates 3 OSmux frames and stores and sends them
+together in one UDP packet to the BSC-NAT. The BSC-NAT decodes the three OSmux
+frames, identifies each of them through CID values and transform them back to
+RTP before sending them to the MGW.
+
+["mscgen"]
+----
+msc {
+	hscale = 2;
+	bts [label="BTS"], bsc [label="BSC"], bscnat [label="BSC-NAT"], mgw [label="MGW"];
+
+	...;
+	--- 		[label="3 Regular RTP-AMR calls using OSmux (has been ongoing for some time)"];
+
+	bts => bsc	[label="RTP-AMR[seq=y,ssrc=MSa]"];
+	bts => bsc	[label="RTP-AMR[seq=x,ssrc=MSb]"];
+	bts => bsc	[label="RTP-AMR[seq=z,ssrc=MSc]"];
+        bsc => bscnat   [label="UDP[Osmux[ft=2,cid=i,seq=m,AMR(y)],Osmux[ft=2,cid=i+1,seq=n,AMR(x)],Osmux[ft=2,cid=i+2,seq=l,AMR(z)]]"];
+        bscnat => mgw	[label="RTP-AMR[seq=o,ssrc=r] (originally seq=y,ssrc=MSa)"];
+	bscnat => mgw	[label="RTP-AMR[seq=p,ssrc=s] (originally seq=x,ssrc=MSb)"];
+	bscnat => mgw	[label="RTP-AMR[seq=q,ssrc=t] (originally seq=z,ssrc=MSc)"];
+        bts => bsc	[label="RTP-AMR[seq=y+1,ssrc=MSa]"];
+	bts => bsc	[label="RTP-AMR[seq=x+1,ssrc=MSb]"];
+	bts => bsc	[label="RTP-AMR[seq=z+1,ssrc=MSc]"];
+        bsc => bscnat   [label="UDP[Osmux[ft=2,cid=i,seq=m+1,AMR(y+1)],Osmux[ft=2,cid=i+1,seq=n+1,AMR(x+1)],Osmux[ft=2,cid=i+2,seq=l+1,AMR(z+1)]]"];
+        bscnat => mgw	[label="RTP-AMR[seq=o+1,ssrc=r] (originally seq=y+1,ssrc=MSa)"];
+	bscnat => mgw	[label="RTP-AMR[seq=p+1,ssrc=s] (originally seq=x+1,ssrc=MSb)"];
+	bscnat => mgw	[label="RTP-AMR[seq=q+1,ssrc=t] (originally seq=z+1,ssrc=MSc)"];
+        bts => bsc	[label="RTP-AMR[seq=y+2,ssrc=MSa]"];
+	bts => bsc	[label="RTP-AMR[seq=x+2,ssrc=MSb]"];
+	bts => bsc	[label="RTP-AMR[seq=z+2,ssrc=MSc]"];
+        bsc => bscnat   [label="UDP[Osmux[ft=2,cid=i,seq=m+2,AMR(y+2)],Osmux[ft=2,cid=i+1,seq=n+2,AMR(x+2)],Osmux[ft=2,cid=i+2,seq=l+2,AMR(z+2)]]"];
+        bscnat => mgw	[label="RTP-AMR[seq=o+2,ssrc=r] (originally seq=y+2,ssrc=MSa)"];
+	bscnat => mgw	[label="RTP-AMR[seq=p+2,ssrc=s] (originally seq=x+2,ssrc=MSb)"];
+	bscnat => mgw	[label="RTP-AMR[seq=q+2,ssrc=t] (originally seq=z+2,ssrc=MSc)"];
+}
+----
+
+=== Batching
+
+Following chart shows how batching with a factor of 3 works. To easilly
+illustrate batching, only uplink and one concurrent call is considered.
+
+It can be seen how 3 RTP packets from MSa arrive to the BSC from the BTS. The
+BSC queues the 3 RTP packets and once the batchfactor is reached, an OSmux frame
+is generated and sent to the BSC-NAT. The BSC-NAT decodes the OSmux frames,
+transforms each AMR payload into an RTP packet and each RTP packet is scheduled
+for delivery according to expected proportional time delay (and timestamp field
+is set accordingly).
+
+["mscgen"]
+----
+msc {
+	hscale = 2;
+	bts [label="BTS"], bsc [label="BSC"], bscnat [label="BSC-NAT"], mgw [label="MGW"];
+
+	...;
+	--- 		[label="Regular RTP-AMR call using OSmux with batch factor 3 (has been ongoing for some time)"];
+
+	bts => bsc	[label="RTP-AMR[seq=x,ssrc=MSa]"];
+	bts => bsc	[label="RTP-AMR[seq=x+1,ssrc=MSa]"];
+	bts => bsc	[label="RTP-AMR[seq=x+2,ssrc=MSa]"];
+        bsc => bscnat   [label="UDP[Osmux[ft=2,cid=i,seq=m,AMR(x),AMR(x+1),AMR(x+2)]]"];
+        bscnat => mgw	[label="RTP-AMR[seq=o,ssrc=r] (originally seq=x,ssrc=MSa)"];
+	bscnat => mgw	[label="RTP-AMR[seq=o+1,ssrc=r] (originally seq=x+1,ssrc=MSa)"];
+	bscnat => mgw	[label="RTP-AMR[seq=o+2,ssrc=r] (originally seq=x+2,ssrc=MSa)"];
+        bts => bsc	[label="RTP-AMR[seq=x+3,ssrc=MSa]"];
+	bts => bsc	[label="RTP-AMR[seq=x+4,ssrc=MSa]"];
+	bts => bsc	[label="RTP-AMR[seq=x+5,ssrc=MSa]"];
+        bsc => bscnat   [label="UDP[Osmux[ft=2,cid=i,seq=m+1,AMR(x+3),AMR(x+4),AMR(x+5)]]"];
+        bscnat => mgw	[label="RTP-AMR[seq=o+3,ssrc=r] (originally seq=x+3,ssrc=MSa)"];
+	bscnat => mgw	[label="RTP-AMR[seq=o+4,ssrc=r] (originally seq=x+4,ssrc=MSa)"];
+	bscnat => mgw	[label="RTP-AMR[seq=o+5,ssrc=r] (originally seq=x+5,ssrc=MSa)"];
+        bts => bsc	[label="RTP-AMR[seq=x+6,ssrc=MSa]"];
+	bts => bsc	[label="RTP-AMR[seq=x+7,ssrc=MSa]"];
+	bts => bsc	[label="RTP-AMR[seq=x+8,ssrc=MSa]"];
+        bsc => bscnat   [label="UDP[Osmux[ft=2,cid=i,seq=m+2,AMR(x+6),AMR(x+7),AMR(x+8)]]"];
+        bscnat => mgw	[label="RTP-AMR[seq=o+6,ssrc=r] (originally seq=x+6,ssrc=MSa)"];
+	bscnat => mgw	[label="RTP-AMR[seq=o+7,ssrc=r] (originally seq=x+7,ssrc=MSa)"];
+	bscnat => mgw	[label="RTP-AMR[seq=o+8,ssrc=r] (originally seq=x+8,ssrc=MSa)"];
+}
+----
+
+=== Trunking and Batching
+
+Following chart shows how trunking and batching work together. The chart shows 2
+concurrent calls from different MS on a given BTS, and BSC is configured with a
+batch factor of 3. Again only uplink data is shown, but downlink follows the
+same idea. Batching factor is set to 1 to easily illustrate trunking mechanism.
+
+["mscgen"]
+----
+msc {
+	hscale = 2;
+	bts [label="BTS"], bsc [label="BSC"], bscnat [label="BSC-NAT"], mgw [label="MGW"];
+
+	...;
+	--- 		[label="2 Regular RTP-AMR call using OSmux with batch factor 3 (has been ongoing for some time)"];
+
+	bts => bsc	[label="RTP-AMR[seq=x,ssrc=MSa]"];
+        bts => bsc	[label="RTP-AMR[seq=y,ssrc=MSb]"];
+	bts => bsc	[label="RTP-AMR[seq=x+1,ssrc=MSa]"];
+        bts => bsc	[label="RTP-AMR[seq=y+1,ssrc=MSb]"];
+	bts => bsc	[label="RTP-AMR[seq=x+2,ssrc=MSa]"];
+        bts => bsc	[label="RTP-AMR[seq=y+2,ssrc=MSb]"];
+        bsc => bscnat   [label="UDP[Osmux[ft=2,cid=i,seq=m,AMR(x),AMR(x+1),AMR(x+2)],Osmux[ft=2,cid=i+1,seq=n,AMR(y),AMR(y+1),AMR(y+2)]]"];
+        bscnat => mgw	[label="RTP-AMR[seq=o,ssrc=r] (originally seq=x,ssrc=MSa)"];
+        bscnat => mgw	[label="RTP-AMR[seq=p,ssrc=s] (originally seq=y,ssrc=MSb)"];
+	bscnat => mgw	[label="RTP-AMR[seq=o+1,ssrc=r] (originally seq=x+1,ssrc=MSa)"];
+        bscnat => mgw	[label="RTP-AMR[seq=p+1,ssrc=s] (originally seq=y+1,ssrc=MSb)"];
+	bscnat => mgw	[label="RTP-AMR[seq=o+2,ssrc=r] (originally seq=x+2,ssrc=MSa)"];
+        bscnat => mgw	[label="RTP-AMR[seq=p+2,ssrc=s] (originally seq=y+2,ssrc=MSb)"];
+        bts => bsc	[label="RTP-AMR[seq=x+3,ssrc=MSa]"];
+        bts => bsc	[label="RTP-AMR[seq=y+3,ssrc=MSb]"];
+	bts => bsc	[label="RTP-AMR[seq=x+4,ssrc=MSa]"];
+        bts => bsc	[label="RTP-AMR[seq=y+4,ssrc=MSb]"];
+	bts => bsc	[label="RTP-AMR[seq=x+5,ssrc=MSa]"];
+        bts => bsc	[label="RTP-AMR[seq=y+5,ssrc=MSb]"];
+        bsc => bscnat   [label="UDP[Osmux[ft=2,cid=i,seq=m+1,AMR(x+3),AMR(x+4),AMR(x+5)],Osmux[ft=2,cid=i+1,seq=n+1,AMR(y+3),AMR(y+4),AMR(y+5)]]"];
+        bscnat => mgw	[label="RTP-AMR[seq=o+3,ssrc=r] (originally seq=x+3,ssrc=MSa)"];
+        bscnat => mgw	[label="RTP-AMR[seq=p+3,ssrc=s] (originally seq=y+3,ssrc=MSb)"];
+	bscnat => mgw	[label="RTP-AMR[seq=o+4,ssrc=r] (originally seq=x+4,ssrc=MSa)"];
+        bscnat => mgw	[label="RTP-AMR[seq=p+4,ssrc=s] (originally seq=y+4,ssrc=MSb)"];
+	bscnat => mgw	[label="RTP-AMR[seq=o+5,ssrc=r] (originally seq=x+5,ssrc=MSa)"];
+        bscnat => mgw	[label="RTP-AMR[seq=p+5,ssrc=s] (originally seq=y+5,ssrc=MSb)"];
+}
+----
+
+=== Marker bit
+
+As described earlier, the Marker bit is always expected to relate to the first
+AMR payload of an OSmux frame. Thus, special considerations may be followed when
+the OSmux encoder receives an RTP packet with a marker bit. For instance,
+previously enqueued RTP packets may be sent even if the configured batch factor
+is not reached.
+
+We again use the scenario with 2 concurrent calls and a batch factor of 3.
+
+["mscgen"]
+----
+msc {
+	hscale = 2;
+	bts [label="BTS"], bsc [label="BSC"], bscnat [label="BSC-NAT"], mgw [label="MGW"];
+
+	...;
+	--- 		[label="2 Regular RTP-AMR call using OSmux with batch factor 3 (has been ongoing for some time)"];
+
+	bts => bsc	[label="RTP-AMR[seq=x,ssrc=MSa]"];
+        bts => bsc	[label="RTP-AMR[seq=y,ssrc=MSb]"];
+	bts => bsc	[label="RTP-AMR[seq=x+1,ssrc=MSa]"];
+        bts => bsc	[label="RTP-AMR[seq=y+1,ssrc=MSb]"];
+	bts => bsc	[label="RTP-AMR[seq=x+2,ssrc=MSa]"];
+        bts => bsc	[label="RTP-AMR[seq=y+2,ssrc=MSb]"];
+        bsc => bscnat   [label="UDP[Osmux[ft=2,cid=i,seq=m,AMR(x),AMR(x+1),AMR(x+2)],Osmux[ft=2,cid=i+1,seq=n,AMR(y),AMR(y+1),AMR(y+2)]]"];
+        bscnat => mgw	[label="RTP-AMR[seq=o,ssrc=r] (originally seq=x,ssrc=MSa)"];
+        bscnat => mgw	[label="RTP-AMR[seq=p,ssrc=r] (originally seq=y,ssrc=MSb)"];
+	bscnat => mgw	[label="RTP-AMR[seq=o+1,ssrc=r] (originally seq=x+1,ssrc=MSa)"];
+        bscnat => mgw	[label="RTP-AMR[seq=p+1,ssrc=s] (originally seq=y+1,ssrc=MSb)"];
+	bscnat => mgw	[label="RTP-AMR[seq=o+2,ssrc=r] (originally seq=x+2,ssrc=MSa)"];
+        bscnat => mgw	[label="RTP-AMR[seq=p+2,ssrc=s] (originally seq=y+2,ssrc=MSb)"];
+        bts => bsc	[label="RTP-AMR[seq=x+3,ssrc=MSa]"];
+        bts => bsc	[label="RTP-AMR[seq=y+3,ssrc=MSb]"];
+	bts => bsc	[label="RTP-AMR[seq=x+4,ssrc=MSa]"];
+        bts => bsc	[label="RTP-AMR[seq=y+4,ssrc=MSb] with Marker bit set M=1"];
+        bsc => bscnat   [label="UDP[Osmux[ft=2,cid=i,seq=m+1,AMR(x+3),AMR(x+4)],Osmux[ft=2,cid=i+1,seq=n+1,AMR(y+3)]]"];
+        bscnat => mgw	[label="RTP-AMR[seq=o+3,ssrc=r] (originally seq=x+3,ssrc=MSa)"];
+        bscnat => mgw	[label="RTP-AMR[seq=p+3,ssrc=s] (originally seq=y+3,ssrc=MSb)"];
+        bscnat => mgw	[label="RTP-AMR[seq=o+4,ssrc=r] (originally seq=x+4,ssrc=MSa)"];
+	bts => bsc	[label="RTP-AMR[seq=x+5,ssrc=MSa]"];
+        bts => bsc	[label="RTP-AMR[seq=y+5,ssrc=MSb]"];
+        bts => bsc	[label="RTP-AMR[seq=x+6,ssrc=MSa]"];
+        bts => bsc	[label="RTP-AMR[seq=y+6,ssrc=MSb]"];
+        bsc => bscnat   [label="UDP[Osmux[ft=2,cid=i,seq=m+2,AMR(x+5),AMR(x+6)],Osmux[ft=2,cid=i+1,seq=n+2,AMR(y+4),AMR(y+5),AMR(y+6)]]"];
+        bscnat => mgw	[label="RTP-AMR[seq=p+4,ssrc=s] (originally seq=y+4,ssrc=MSb)"];
+	bscnat => mgw	[label="RTP-AMR[seq=o+5,ssrc=r] (originally seq=x+5,ssrc=MSa)"];
+        bscnat => mgw	[label="RTP-AMR[seq=p+5,ssrc=s] (originally seq=y+5,ssrc=MSb)"];
+        bscnat => mgw	[label="RTP-AMR[seq=o+6,ssrc=r] (originally seq=x+6,ssrc=MSa)"];
+        bscnat => mgw	[label="RTP-AMR[seq=p+6,ssrc=s] (originally seq=y+6,ssrc=MSb)"];
+}
+----
 
 == Evaluation: Expected traffic savings
 
