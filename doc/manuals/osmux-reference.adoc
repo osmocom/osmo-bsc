@@ -159,7 +159,7 @@ previous OSmux message.
 ----
 
 Field Type (FT): 2 bits::
-The Field Type allocated for LAPD Signalling is "0".
+The Field Type allocated for LAPD Signalling frames is "0".
 
 This frame type is not yet supported inside OsmoCom and may be subject to
 change in future versions of the protocol.
@@ -197,7 +197,7 @@ this OSmux header, it is guaranteed that the first AMR frame is the first in the
 talkspurt.
 
 Field Type (FT): 2 bits::
-The Field Type allocated for AMR codec is "1".
+The Field Type allocated for AMR Codec frames is "1".
 
 Frame Counter (CTR): 2 bits::
 Provides the number of batched AMR payloads (starting 0) after the header. For
@@ -284,7 +284,7 @@ starts sending real audio, at which point dummy packets are not needed anymore.
 ----
 
 Field Type (FT): 2 bits::
-The Field Type allocated for AMR codec is "2".
+The Field Type allocated for Dummy frames is "2".
 
 Frame Counter (CTR): 2 bits::
 Provides the number of dummy batched AMR payloads (starting 0) after the header.
