@@ -219,7 +219,7 @@ int main(int argc, char **argv)
 
 	/* Initalize SS7 */
 	osmo_ss7_init();
-	osmo_ss7_vty_init_sg();
+	osmo_ss7_vty_init_sg(NULL);
 
 	INIT_LLIST_HEAD(&access_lists);
 
