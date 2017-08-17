@@ -17,9 +17,9 @@ msc {
 	ms <-> bsc	[label="Assignment"];
 	...;
 
-	mgcp <- bsc	[label="MGCP CRCX ts1/ss2@abis (MSC:4000)"];
+	mgcp <- bsc	[label="MGCP CRCX ts1/ss2@mgw (MSC:4000)"];
 	mgcp box mgcp	[label="Bind to MGW-local RTP Port (3000)\nConnect to MSC:4000"];
-	mgcp -> bsc	[label="MGCP CRCX ts1/ss2@a OK (MGW:3000)"];
+	mgcp -> bsc	[label="MGCP CRCX ts1/ss2@mgw OK (MGW:3000)"];
 	...;
 
 	bsc -> m_sc	[label="BSSAP ASSGN CMPL (3GPP AoIP MGW:3000)"];
@@ -44,7 +44,7 @@ msc {
 	bsc <- m_sc	[label="SCCP RLSD"];
 	bsc -> m_sc	[label="SCCP RLC"];
 	...;
-	mgcp <- bsc	[label="MGCP DLCX ts1/ss2@a"];
+	mgcp <- bsc	[label="MGCP DLCX ts1/ss2@mgw"];
 	mgcp box mgcp	[label="Release MSC-facing local RTP port (3000)"];
-	mgcp -> bsc	[label="MGCP DLCX ts1/ss2@a OK"];
+	mgcp -> bsc	[label="MGCP DLCX ts1/ss2@mgw OK"];
 }

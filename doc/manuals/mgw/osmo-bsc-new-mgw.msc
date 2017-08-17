@@ -20,19 +20,19 @@ msc {
 	bts <- bsc	[label="IPA CRCX"];
 	bts box bts	[label="Bind to BTS-local RTP Port (1000)"];
 	bts -> bsc	[label="IPA CRCX ACK (BTS:1000)"];
-	bsc -> mgcp	[label="MGCP CRCX 2@abis (BTS:1000)"];
+	bsc -> mgcp	[label="MGCP CRCX rtpbridge/2@mgw (BTS:1000)"];
 	mgcp box mgcp	[label="Bind to MGW-local RTP Port (2000)\nConnect to BTS:1000"];
-	bsc <- mgcp	[label="MGCP CRCX 2@abis OK (MGW:2000)"];
-	bts <- bsc	[label="IPA MDCX 2@abis (MGW:2000)"];
+	bsc <- mgcp	[label="MGCP CRCX rtpbridge/2@mgw OK (MGW:2000)"];
+	bts <- bsc	[label="IPA MDCX (MGW:2000)"];
 	bts box bts	[label="Connect RTP socket to remote (MGW) RTP Port"];
-	bts -> bsc	[label="IPA MDCX 2@abis ACK"];
-	#bsc -> mgcp	[label="MGCP MDCX 2@abis (optional)"];
-	#bsc <- mgcp	[label="MGCP MDCX 2@abis OK (optional)"];
+	bts -> bsc	[label="IPA MDCX ACK"];
+	#bsc -> mgcp	[label="MGCP MDCX rtpbridge/2@mgw (optional)"];
+	#bsc <- mgcp	[label="MGCP MDCX rtpbridge/2@mgw OK (optional)"];
 	...;
 
-	mgcp <- bsc	[label="MGCP CRCX 1@a (MSC:4000)"];
+	mgcp <- bsc	[label="MGCP CRCX rtpbridge/2@mgw (MSC:4000)"];
 	mgcp box mgcp	[label="Bind to MGW-local RTP Port (3000)\nConnect to MSC:4000"];
-	mgcp -> bsc	[label="MGCP CRCX 1@a OK (MGW:3000)"];
+	mgcp -> bsc	[label="MGCP CRCX rtpbridge/2@mgw OK (MGW:3000)"];
 	...;
 
 	bsc -> m_sc	[label="BSSAP ASSGN CMPL (3GPP AoIP MGW:3000)"];
@@ -57,13 +57,13 @@ msc {
 	bsc <- m_sc	[label="SCCP RLSD"];
 	bsc -> m_sc	[label="SCCP RLC"];
 	...;
-	mgcp <- bsc	[label="MGCP DLCX 1@a"];
+	mgcp <- bsc	[label="MGCP DLCX rtpbridge/2@mgw"];
 	mgcp box mgcp	[label="Release MSC-facing local RTP port (3000)"];
-	mgcp -> bsc	[label="MGCP DLCX 1@a OK"];
+	mgcp -> bsc	[label="MGCP DLCX rtpbridge/2@mgw OK"];
 
-	bsc -> mgcp	[label="MGCP DLCX 2@abis"];
+	mgcp <- bsc	[label="MGCP DLCX rtpbridge/2@mgw"];
 	mgcp box mgcp	[label="Release BTS-facing local RTP port (2000)"];
-	bsc <- mgcp	[label="MGCP DLCX 2@abis OK"];
+	mgcp -> bsc	[label="MGCP DLCX rtpbridge/2@mgw OK"];
 
 	bts <- bsc	[label="IPA DLCX"];
 	bts box bts	[label="Release BTS-local RTP port (1000)"];
