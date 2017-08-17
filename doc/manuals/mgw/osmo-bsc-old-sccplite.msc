@@ -24,12 +24,12 @@ msc {
 	bts box bts	[label="Connect RTP socket to remote (bsc_mgcp) RTP Port"];
 	bts -> bsc	[label="IPA MDCX ACK"];
 
-	mgcp <- m_sc	[label="MGCP CRCX"];
+	mgcp <- m_sc	[label="MGCP CRCX 1@mgw"];
 	mgcp box mgcp	[label="Bind to BTS-local RTP Port"];
-	mgcp -> m_sc	[label="MGCP CRCX OK"];
-	mgcp <- m_sc	[label="MGCP MDCX (recvonly) "];
+	mgcp -> m_sc	[label="MGCP CRCX 1@mgw OK"];
+	mgcp <- m_sc	[label="MGCP MDCX 1@mgw (recvonly) "];
 	mgcp box mgcp	[label="Connect RTP socket to remote (MSC) RTP Port"];
-	mgcp -> m_sc	[label="MGCP MDCX OK"];
+	mgcp -> m_sc	[label="MGCP MDCX 1@mgw OK"];
 	mgcp <= m_sc	[label="RTP Audio"];
 	bts <= mgcp	[label="RTP Audio"];
 	ms <= bts	[label="Um Audio (unidirectional)"];
@@ -45,9 +45,9 @@ msc {
 	...;
 	ms <- m_sc	[label="DTAP CC CONNECT"];
 	ms -> m_sc	[label="DTAP CC CONNECT ACK"];
-	mgcp <- m_sc	[label="MGCP MDCX (sndrecv) "];
+	mgcp <- m_sc	[label="MGCP MDCX 1@mgw (sndrecv) "];
 	mgcp box mgcp	[label="Why?"];
-	mgcp -> m_sc	[label="MGCP MDCX OK"];
+	mgcp -> m_sc	[label="MGCP MDCX 1@mgw OK"];
 	---		[label="Voice Call in Progress"];
 	ms <- m_sc	[label="DTAP CC DISCONNET"];
 	ms <- m_sc	[label="DTAP CC RELEASE"];
@@ -58,7 +58,7 @@ msc {
 	bsc <- m_sc	[label="SCCP RLSD"];
 	bsc -> m_sc	[label="SCCP RLC"];
 	...;
-	mgcp <- m_sc	[label="MGCP DLCX"];
+	mgcp <- m_sc	[label="MGCP DLCX 1@mgw"];
 	mgcp box mgcp	[label="Release local RTP port"];
-	mgcp -> m_sc	[label="MGCP DLCX OK"];
+	mgcp -> m_sc	[label="MGCP DLCX 1@mgw OK"];
 }
