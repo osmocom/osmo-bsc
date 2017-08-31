@@ -1,3 +1,5 @@
+:gfdl-enabled:
+
 OsmoBSC User Manual
 ===================
 Harald Welte <hwelte@sysmocom.de>
