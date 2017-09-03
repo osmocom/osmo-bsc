@@ -11,7 +11,6 @@ AM_CFLAGS = \
 	$(LIBOSMOABIS_CFLAGS) \
 	$(COVERAGE_CFLAGS) \
 	$(SQLITE3_CFLAGS) \
-	$(LIBSMPP34_CFLAGS) \
 	$(NULL)
 
 AM_LDFLAGS = \
@@ -43,12 +42,6 @@ bin_PROGRAMS += \
 	$(NULL)
 endif
 
-if BUILD_SMPP
-noinst_PROGRAMS = \
-	smpp_mirror \
-	$(NULL)
-endif
-
 bs11_config_SOURCES = \
 	bs11_config.c \
 	$(NULL)
@@ -65,17 +58,6 @@ bs11_config_LDADD = \
 
 isdnsync_SOURCES = \
 	isdnsync.c \
-	$(NULL)
-
-smpp_mirror_SOURCES = \
-	smpp_mirror.c \
-	$(NULL)
-
-smpp_mirror_LDADD = \
-	$(top_builddir)/src/libcommon/libcommon.a \
-	$(LIBOSMOCORE_LIBS) \
-	$(LIBOSMOGSM_LIBS) \
-	$(LIBSMPP34_LIBS) \
 	$(NULL)
 
 meas_vis_SOURCES = \

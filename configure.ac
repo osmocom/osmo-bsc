@@ -50,16 +50,6 @@ PKG_CHECK_MODULES(LIBCRYPTO, libcrypto >= 0.9.5)
 PKG_CHECK_MODULES(LIBOSMOLEGACYMGCP, libosmo-legacy-mgcp >= 0.0.1)
 PKG_CHECK_MODULES(LIBOSMOSCCP, libosmo-sccp >= 0.0.2)
 
-# Enable/disable smpp support in the msc?
-AC_ARG_ENABLE([smpp], [AS_HELP_STRING([--enable-smpp], [Build the SMPP interface])],
-    [osmo_ac_build_smpp="$enableval"],[osmo_ac_build_smpp="no"])
-if test "$osmo_ac_build_smpp" = "yes" ; then
-    PKG_CHECK_MODULES(LIBSMPP34, libsmpp34 >= 1.12)
-    AC_DEFINE(BUILD_SMPP, 1, [Define if we want to build SMPP])
-fi
-AM_CONDITIONAL(BUILD_SMPP, test "x$osmo_ac_build_smpp" = "xyes")
-AC_SUBST(osmo_ac_build_smpp)
-
 # Enable/disable transcoding within osmo-bsc_mgcp?
 AC_ARG_ENABLE([mgcp-transcoding], [AS_HELP_STRING([--enable-mgcp-transcoding], [Build the MGCP gateway with internal transcoding enabled.])],
     [osmo_ac_mgcp_transcoding="$enableval"],[osmo_ac_mgcp_transcoding="no"])

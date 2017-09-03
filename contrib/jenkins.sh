@@ -27,7 +27,6 @@ export LD_LIBRARY_PATH="$inst/lib"
 osmo-build-dep.sh libosmo-abis
 osmo-build-dep.sh libosmo-netif
 osmo-build-dep.sh libosmo-sccp
-PARALLEL_MAKE="" osmo-build-dep.sh libsmpp34
 osmo-build-dep.sh openggsn
 osmo-build-dep.sh osmo-mgw
 
@@ -47,11 +46,11 @@ set -x
 
 cd "$base"
 autoreconf --install --force
-./configure $SMPP $MGCP $IU --enable-vty-tests --enable-external-tests
+./configure $MGCP $IU --enable-vty-tests --enable-external-tests
 $MAKE $PARALLEL_MAKE
 LD_LIBRARY_PATH="$inst/lib" $MAKE check \
   || cat-testlogs.sh
 LD_LIBRARY_PATH="$inst/lib" \
-  DISTCHECK_CONFIGURE_FLAGS="$SMPP $MGCP $IU --enable-vty-tests --enable-external-tests" \
+  DISTCHECK_CONFIGURE_FLAGS="$MGCP $IU --enable-vty-tests --enable-external-tests" \
   $MAKE distcheck \
   || cat-testlogs.sh
