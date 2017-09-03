@@ -17,7 +17,6 @@
 #include <osmocom/bsc/common.h>
 #include <osmocom/bsc/rest_octets.h>
 #include <osmocom/bsc/common_cs.h>
-#include <osmocom/legacy_mgcp/mgcpgw_client.h>
 
 
 /** annotations for msgb ownership */
@@ -485,11 +484,6 @@ struct gsm_network {
 
 	/* Periodic location update default value */
 	uint8_t t3212;
-
-	struct {
-		struct mgcpgw_client_conf conf;
-		struct mgcpgw_client *client;
-	} mgcpgw;
 
 	struct {
 		/* CS7 instance id number (set via VTY) */
