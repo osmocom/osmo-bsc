@@ -32,17 +32,6 @@ SUBDIRS = \
 SUBDIRS += \
 	utils \
 	ipaccess \
-	$(NULL)
-
-# Conditional Programs
-if BUILD_NAT
-SUBDIRS += \
+	osmo-bsc \
 	osmo-bsc_nat \
 	$(NULL)
-endif
-
-if BUILD_BSC
-SUBDIRS += \
-	osmo-bsc \
-	$(NULL)
-endif

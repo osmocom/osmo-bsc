@@ -48,24 +48,7 @@ PKG_CHECK_MODULES(LIBOSMONETIF, libosmo-netif >= 0.0.1)
 PKG_CHECK_MODULES(LIBOSMOSIGTRAN, libosmo-sigtran) # TODO version?
 PKG_CHECK_MODULES(LIBCRYPTO, libcrypto >= 0.9.5)
 PKG_CHECK_MODULES(LIBOSMOLEGACYMGCP, libosmo-legacy-mgcp >= 0.0.1)
-
-# Enabke/disable the NAT?
-AC_ARG_ENABLE([nat], [AS_HELP_STRING([--enable-nat], [Build the BSC NAT. Requires SCCP])],
-    [osmo_ac_build_nat="$enableval"],[osmo_ac_build_nat="no"])
-if test "$osmo_ac_build_nat" = "yes" ; then
-        PKG_CHECK_MODULES(LIBOSMOSCCP, libosmo-sccp >= 0.0.2)
-fi
-AM_CONDITIONAL(BUILD_NAT, test "x$osmo_ac_build_nat" = "xyes")
-AC_SUBST(osmo_ac_build_nat)
-
-# Enable/disable the BSC?
-AC_ARG_ENABLE([osmo-bsc], [AS_HELP_STRING([--enable-osmo-bsc], [Build the Osmo BSC])],
-    [osmo_ac_build_bsc="$enableval"],[osmo_ac_build_bsc="no"])
-if test "$osmo_ac_build_bsc" = "yes" ; then
-    PKG_CHECK_MODULES(LIBOSMOSCCP, libosmo-sccp >= 0.0.6)
-fi
-AM_CONDITIONAL(BUILD_BSC, test "x$osmo_ac_build_bsc" = "xyes")
-AC_SUBST(osmo_ac_build_bsc)
+PKG_CHECK_MODULES(LIBOSMOSCCP, libosmo-sccp >= 0.0.2)
 
 # Enable/disable smpp support in the msc?
 AC_ARG_ENABLE([smpp], [AS_HELP_STRING([--enable-smpp], [Build the SMPP interface])],

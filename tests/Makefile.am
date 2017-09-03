@@ -1,23 +1,14 @@
 SUBDIRS = \
+	bsc \
 	gsm0408 \
 	channel \
 	abis \
 	trau \
 	subscr \
 	nanobts_omlattr \
-	$(NULL)
-
-if BUILD_NAT
-SUBDIRS += \
 	bsc-nat \
 	bsc-nat-trie \
 	$(NULL)
-endif
-if BUILD_BSC
-SUBDIRS += \
-	bsc \
-	$(NULL)
-endif
 
 # The `:;' works around a Bash 3.2 bug when the output is not writeable.
 $(srcdir)/package.m4: $(top_srcdir)/configure.ac
