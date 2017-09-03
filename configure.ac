@@ -50,18 +50,6 @@ PKG_CHECK_MODULES(LIBCRYPTO, libcrypto >= 0.9.5)
 PKG_CHECK_MODULES(LIBOSMOLEGACYMGCP, libosmo-legacy-mgcp >= 0.0.1)
 PKG_CHECK_MODULES(LIBOSMOSCCP, libosmo-sccp >= 0.0.2)
 
-# Enable/disable 3G aka IuPS + IuCS support?
-AC_ARG_ENABLE([iu], [AS_HELP_STRING([--enable-iu], [Build 3G support, aka IuPS and IuCS interfaces])],
-    [osmo_ac_iu="$enableval"],[osmo_ac_iu="no"])
-if test "x$osmo_ac_iu" = "xyes" ; then
-    PKG_CHECK_MODULES(LIBASN1C, libasn1c) # TODO version?
-    PKG_CHECK_MODULES(LIBOSMORANAP, libosmo-ranap) # TODO version?
-    AC_DEFINE(BUILD_IU, 1, [Define if we want to build IuPS and IuCS interfaces support])
-fi
-AM_CONDITIONAL(BUILD_IU, test "x$osmo_ac_iu" = "xyes")
-AC_SUBST(osmo_ac_iu)
-
-
 found_libgtp=yes
 PKG_CHECK_MODULES(LIBGTP, libgtp >= 0.92, , found_libgtp=no)
 AM_CONDITIONAL(HAVE_LIBGTP, test "$found_libgtp" = yes)

@@ -30,12 +30,6 @@ osmo-build-dep.sh libosmo-sccp
 osmo-build-dep.sh openggsn
 osmo-build-dep.sh osmo-mgw
 
-if [ "x$IU" = "x--enable-iu" ]; then
-	osmo-build-dep.sh libasn1c
-	#osmo-build-dep.sh asn1c aper-prefix # only needed for make regen in osmo-iuh
-	osmo-build-dep.sh osmo-iuh
-fi
-
 set +x
 echo
 echo
@@ -46,11 +40,11 @@ set -x
 
 cd "$base"
 autoreconf --install --force
-./configure $IU --enable-vty-tests --enable-external-tests
+./configure --enable-vty-tests --enable-external-tests
 $MAKE $PARALLEL_MAKE
 LD_LIBRARY_PATH="$inst/lib" $MAKE check \
   || cat-testlogs.sh
 LD_LIBRARY_PATH="$inst/lib" \
-  DISTCHECK_CONFIGURE_FLAGS="$IU --enable-vty-tests --enable-external-tests" \
+  DISTCHECK_CONFIGURE_FLAGS="--enable-vty-tests --enable-external-tests" \
   $MAKE distcheck \
   || cat-testlogs.sh
