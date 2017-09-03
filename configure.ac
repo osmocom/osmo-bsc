@@ -50,25 +50,8 @@ PKG_CHECK_MODULES(LIBCRYPTO, libcrypto >= 0.9.5)
 PKG_CHECK_MODULES(LIBOSMOLEGACYMGCP, libosmo-legacy-mgcp >= 0.0.1)
 PKG_CHECK_MODULES(LIBOSMOSCCP, libosmo-sccp >= 0.0.2)
 
-found_libgtp=yes
-PKG_CHECK_MODULES(LIBGTP, libgtp >= 0.92, , found_libgtp=no)
-AM_CONDITIONAL(HAVE_LIBGTP, test "$found_libgtp" = yes)
-AC_SUBST(found_libgtp)
-
-found_libcares=yes
-PKG_CHECK_MODULES([LIBCARES], [libcares], [], [found_libcares=no])
-AM_CONDITIONAL(HAVE_LIBCARES, test "$found_libcares" = yes)
-AC_SUBST(found_libcares)
-
-found_libgtp_and_libcares=no
-if test "$found_libgtp" = "yes" -a "$found_libcares" = "yes"; then
-    found_libgtp_and_libcares=yes
-fi
-AC_SUBST(found_libgtp_and_libcares)
-
 dnl checks for header files
 AC_HEADER_STDC
-AC_CHECK_HEADERS(dbi/dbd.h,,AC_MSG_ERROR(DBI library is not installed))
 
 found_pcap=yes
 AC_CHECK_HEADERS(pcap/pcap.h,,found_pcap=no)

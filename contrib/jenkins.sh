@@ -27,7 +27,6 @@ export LD_LIBRARY_PATH="$inst/lib"
 osmo-build-dep.sh libosmo-abis
 osmo-build-dep.sh libosmo-netif
 osmo-build-dep.sh libosmo-sccp
-osmo-build-dep.sh openggsn
 osmo-build-dep.sh osmo-mgw
 
 set +x
