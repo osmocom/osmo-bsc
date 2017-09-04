@@ -1,5 +1,5 @@
 SUBDIRS = \
-	openbsc \
+	osmocom \
 	$(NULL)
 
 noinst_HEADERS = \

@@ -36,7 +36,7 @@
 
 #include <osmocom/gsm/gsm_utils.h>
 
-#include <openbsc/meas_feed.h>
+#include <osmocom/bsc/meas_feed.h>
 
 #include "meas_db.h"
 

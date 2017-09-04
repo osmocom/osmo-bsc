@@ -24,13 +24,13 @@
  */
 
 
-#include <openbsc/debug.h>
-#include <openbsc/gsm_data.h>
+#include <osmocom/bsc/debug.h>
+#include <osmocom/bsc/gsm_data.h>
 
-#include <openbsc/osmo_bsc.h>
-#include <openbsc/bsc_msc_data.h>
-#include <openbsc/gsm_04_80.h>
-#include <openbsc/gsm_subscriber.h>
+#include <osmocom/bsc/osmo_bsc.h>
+#include <osmocom/bsc/bsc_msc_data.h>
+#include <osmocom/bsc/gsm_04_80.h>
+#include <osmocom/bsc/gsm_subscriber.h>
 
 #include <osmocom/core/application.h>
 #include <osmocom/core/backtrace.h>

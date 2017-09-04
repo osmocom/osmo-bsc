@@ -18,13 +18,13 @@
  *
  */
 
-#include <openbsc/osmo_bsc_grace.h>
-#include <openbsc/osmo_bsc_rf.h>
-#include <openbsc/bsc_msc_data.h>
-#include <openbsc/gsm_04_80.h>
-#include <openbsc/bsc_subscriber.h>
-#include <openbsc/paging.h>
-#include <openbsc/signal.h>
+#include <osmocom/bsc/osmo_bsc_grace.h>
+#include <osmocom/bsc/osmo_bsc_rf.h>
+#include <osmocom/bsc/bsc_msc_data.h>
+#include <osmocom/bsc/gsm_04_80.h>
+#include <osmocom/bsc/bsc_subscriber.h>
+#include <osmocom/bsc/paging.h>
+#include <osmocom/bsc/signal.h>
 
 int bsc_grace_allow_new_connection(struct gsm_network *network, struct gsm_bts *bts)
 {

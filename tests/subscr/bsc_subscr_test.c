@@ -18,8 +18,8 @@
  *
  */
 
-#include <openbsc/debug.h>
-#include <openbsc/bsc_subscriber.h>
+#include <osmocom/bsc/debug.h>
+#include <osmocom/bsc/bsc_subscriber.h>
 
 #include <osmocom/core/application.h>
 #include <osmocom/core/utils.h>

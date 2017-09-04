@@ -21,14 +21,14 @@
  *
  */
 
-#include <openbsc/bsc_nat.h>
-#include <openbsc/bsc_nat_sccp.h>
-#include <openbsc/bsc_msg_filter.h>
-#include <openbsc/bsc_msc.h>
-#include <openbsc/gsm_data.h>
-#include <openbsc/debug.h>
-#include <openbsc/ipaccess.h>
-#include <openbsc/vty.h>
+#include <osmocom/bsc/bsc_nat.h>
+#include <osmocom/bsc/bsc_nat_sccp.h>
+#include <osmocom/bsc/bsc_msg_filter.h>
+#include <osmocom/bsc/bsc_msc.h>
+#include <osmocom/bsc/gsm_data.h>
+#include <osmocom/bsc/debug.h>
+#include <osmocom/bsc/ipaccess.h>
+#include <osmocom/bsc/vty.h>
 
 #include <osmocom/core/linuxlist.h>
 #include <osmocom/core/talloc.h>

@@ -26,8 +26,8 @@
 #include <osmocom/core/linuxlist.h>
 #include <osmocom/core/timer.h>
 
-#include <openbsc/gsm_data.h>
-#include <openbsc/bsc_subscriber.h>
+#include <osmocom/bsc/gsm_data.h>
+#include <osmocom/bsc/bsc_subscriber.h>
 
 /**
  * A pending paging request

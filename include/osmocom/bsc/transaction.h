@@ -1,10 +1,10 @@
 #ifndef _TRANSACT_H
 #define _TRANSACT_H
 
-#include <openbsc/gsm_data.h>
-#include <openbsc/gsm_subscriber.h>
+#include <osmocom/bsc/gsm_data.h>
+#include <osmocom/bsc/gsm_subscriber.h>
 #include <osmocom/core/linuxlist.h>
-#include <openbsc/mncc.h>
+#include <osmocom/bsc/mncc.h>
 #include <osmocom/gsm/gsm0411_smc.h>
 #include <osmocom/gsm/gsm0411_smr.h>
 

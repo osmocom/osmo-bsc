@@ -19,8 +19,8 @@
  *
  */
 
-#include <openbsc/bsc_msc.h>
-#include <openbsc/debug.h>
+#include <osmocom/bsc/bsc_msc.h>
+#include <osmocom/bsc/debug.h>
 #include <osmocom/abis/ipaccess.h>
 
 #include <osmocom/core/write_queue.h>

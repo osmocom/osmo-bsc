@@ -30,13 +30,13 @@
 #include <osmocom/core/msgb.h>
 #include <osmocom/gsm/gsm48.h>
 
-#include <openbsc/abis_rsl.h>
-#include <openbsc/debug.h>
-#include <openbsc/transaction.h>
-#include <openbsc/paging.h>
-#include <openbsc/signal.h>
-#include <openbsc/bsc_api.h>
-#include <openbsc/gsm_04_08_utils.h>
+#include <osmocom/bsc/abis_rsl.h>
+#include <osmocom/bsc/debug.h>
+#include <osmocom/bsc/transaction.h>
+#include <osmocom/bsc/paging.h>
+#include <osmocom/bsc/signal.h>
+#include <osmocom/bsc/bsc_api.h>
+#include <osmocom/bsc/gsm_04_08_utils.h>
 
 /* should ip.access BTS use direct RTP streams between each other (1),
  * or should OpenBSC always act as RTP relay/proxy in between (0) ? */

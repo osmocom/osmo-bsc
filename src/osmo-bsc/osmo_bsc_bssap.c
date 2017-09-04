@@ -18,22 +18,22 @@
  *
  */
 
-#include <openbsc/osmo_bsc.h>
-#include <openbsc/osmo_bsc_grace.h>
-#include <openbsc/osmo_bsc_rf.h>
-#include <openbsc/bsc_msc_data.h>
-#include <openbsc/debug.h>
-#include <openbsc/bsc_subscriber.h>
+#include <osmocom/bsc/osmo_bsc.h>
+#include <osmocom/bsc/osmo_bsc_grace.h>
+#include <osmocom/bsc/osmo_bsc_rf.h>
+#include <osmocom/bsc/bsc_msc_data.h>
+#include <osmocom/bsc/debug.h>
+#include <osmocom/bsc/bsc_subscriber.h>
 #include <osmocom/legacy_mgcp/mgcp.h>
-#include <openbsc/paging.h>
-#include <openbsc/gsm_04_08_utils.h>
+#include <osmocom/bsc/paging.h>
+#include <osmocom/bsc/gsm_04_08_utils.h>
 
 #include <osmocom/gsm/protocol/gsm_08_08.h>
 #include <osmocom/gsm/gsm0808.h>
 #include <osmocom/gsm/gsm0808_utils.h>
 #include <osmocom/gsm/gsm48.h>
-#include <openbsc/osmo_bsc_sigtran.h>
-#include <openbsc/a_reset.h>
+#include <osmocom/bsc/osmo_bsc_sigtran.h>
+#include <osmocom/bsc/a_reset.h>
 #include <osmocom/core/byteswap.h>
 
 #define IP_V4_ADDR_LEN 4

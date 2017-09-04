@@ -37,7 +37,7 @@
 #define _GNU_SOURCE
 #include <getopt.h>
 
-#include <openbsc/gsm_data.h>
+#include <osmocom/bsc/gsm_data.h>
 #include <osmocom/core/application.h>
 #include <osmocom/core/select.h>
 #include <osmocom/gsm/tlv.h>
@@ -45,9 +45,9 @@
 #include <osmocom/gsm/ipa.h>
 #include <osmocom/abis/ipa.h>
 #include <osmocom/abis/ipaccess.h>
-#include <openbsc/debug.h>
-#include <openbsc/ipaccess.h>
-#include <openbsc/socket.h>
+#include <osmocom/bsc/debug.h>
+#include <osmocom/bsc/ipaccess.h>
+#include <osmocom/bsc/socket.h>
 #include <osmocom/core/talloc.h>
 
 /* one instance of an ip.access protocol proxy */

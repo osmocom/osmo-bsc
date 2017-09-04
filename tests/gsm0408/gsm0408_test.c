@@ -24,13 +24,13 @@
 #include <stdbool.h>
 #include <arpa/inet.h>
 
-#include <openbsc/common_bsc.h>
-#include <openbsc/gsm_subscriber.h>
-#include <openbsc/gsm_data_shared.h>
-#include <openbsc/debug.h>
-#include <openbsc/arfcn_range_encode.h>
-#include <openbsc/system_information.h>
-#include <openbsc/abis_rsl.h>
+#include <osmocom/bsc/common_bsc.h>
+#include <osmocom/bsc/gsm_subscriber.h>
+#include <osmocom/bsc/gsm_data_shared.h>
+#include <osmocom/bsc/debug.h>
+#include <osmocom/bsc/arfcn_range_encode.h>
+#include <osmocom/bsc/system_information.h>
+#include <osmocom/bsc/abis_rsl.h>
 
 #include <osmocom/core/application.h>
 #include <osmocom/gsm/sysinfo.h>

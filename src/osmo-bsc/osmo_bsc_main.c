@@ -18,17 +18,17 @@
  *
  */
 
-#include <openbsc/bss.h>
-#include <openbsc/debug.h>
-#include <openbsc/gsm_data.h>
-#include <openbsc/osmo_bsc.h>
-#include <openbsc/osmo_bsc_rf.h>
-#include <openbsc/bsc_msc_data.h>
-#include <openbsc/signal.h>
-#include <openbsc/vty.h>
-#include <openbsc/ipaccess.h>
-#include <openbsc/ctrl.h>
-#include <openbsc/osmo_bsc_sigtran.h>
+#include <osmocom/bsc/bss.h>
+#include <osmocom/bsc/debug.h>
+#include <osmocom/bsc/gsm_data.h>
+#include <osmocom/bsc/osmo_bsc.h>
+#include <osmocom/bsc/osmo_bsc_rf.h>
+#include <osmocom/bsc/bsc_msc_data.h>
+#include <osmocom/bsc/signal.h>
+#include <osmocom/bsc/vty.h>
+#include <osmocom/bsc/ipaccess.h>
+#include <osmocom/bsc/ctrl.h>
+#include <osmocom/bsc/osmo_bsc_sigtran.h>
 
 #include <osmocom/ctrl/control_cmd.h>
 #include <osmocom/ctrl/control_if.h>

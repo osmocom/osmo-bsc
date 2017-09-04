@@ -18,8 +18,8 @@
  *
  */
 
-#include <openbsc/debug.h>
-#include <openbsc/ipaccess.h>
+#include <osmocom/bsc/debug.h>
+#include <osmocom/bsc/ipaccess.h>
 #include <osmocom/core/talloc.h>
 
 #include <stdio.h>

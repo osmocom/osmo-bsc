@@ -24,9 +24,9 @@
 #include <osmocom/core/utils.h>
 #include <osmocom/gsm/protocol/gsm_12_21.h>
 
-#include <openbsc/gsm_data.h>
-#include <openbsc/abis_nm.h>
-#include <openbsc/debug.h>
+#include <osmocom/bsc/gsm_data.h>
+#include <osmocom/bsc/abis_nm.h>
+#include <osmocom/bsc/debug.h>
 
 static const uint8_t load_config[] = {
 	0x42, 0x12, 0x00, 0x08, 0x31, 0x36, 0x38, 0x64,

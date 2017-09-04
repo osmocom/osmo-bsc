@@ -21,8 +21,8 @@
 
 #include <arpa/inet.h>
 #include <osmocom/core/msgb.h>
-#include <openbsc/gsm_data.h>
-#include <openbsc/abis_nm.h>
+#include <osmocom/bsc/gsm_data.h>
+#include <osmocom/bsc/abis_nm.h>
 
 static void patch_16(uint8_t *data, const uint16_t val)
 {

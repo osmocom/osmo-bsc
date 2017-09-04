@@ -42,15 +42,15 @@
  *
  */
 
-#include <openbsc/bsc_nat.h>
-#include <openbsc/bsc_nat_callstats.h>
-#include <openbsc/bsc_nat_sccp.h>
-#include <openbsc/gsm_data.h>
-#include <openbsc/debug.h>
-#include <openbsc/ipaccess.h>
+#include <osmocom/bsc/bsc_nat.h>
+#include <osmocom/bsc/bsc_nat_callstats.h>
+#include <osmocom/bsc/bsc_nat_sccp.h>
+#include <osmocom/bsc/gsm_data.h>
+#include <osmocom/bsc/debug.h>
+#include <osmocom/bsc/ipaccess.h>
 #include <osmocom/legacy_mgcp/mgcp.h>
 #include <osmocom/legacy_mgcp/mgcp_internal.h>
-#include <openbsc/osmux.h>
+#include <osmocom/bsc/osmux.h>
 
 #include <osmocom/ctrl/control_cmd.h>
 

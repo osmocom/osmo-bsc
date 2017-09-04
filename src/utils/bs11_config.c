@@ -32,14 +32,14 @@
 
 #include <sys/stat.h>
 
-#include <openbsc/common_bsc.h>
-#include <openbsc/abis_nm.h>
+#include <osmocom/bsc/common_bsc.h>
+#include <osmocom/bsc/abis_nm.h>
 #include <osmocom/core/msgb.h>
 #include <osmocom/core/utils.h>
 #include <osmocom/gsm/tlv.h>
-#include <openbsc/debug.h>
+#include <osmocom/bsc/debug.h>
 #include <osmocom/core/select.h>
-#include <openbsc/rs232.h>
+#include <osmocom/bsc/rs232.h>
 #include <osmocom/core/application.h>
 #include <osmocom/core/talloc.h>
 #include <osmocom/abis/abis.h>

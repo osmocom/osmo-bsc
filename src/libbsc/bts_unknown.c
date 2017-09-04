@@ -20,9 +20,9 @@
  */
 
 
-#include <openbsc/gsm_data.h>
+#include <osmocom/bsc/gsm_data.h>
 #include <osmocom/gsm/tlv.h>
-#include <openbsc/abis_nm.h>
+#include <osmocom/bsc/abis_nm.h>
 
 static struct gsm_bts_model model_unknown = {
 	.type = GSM_BTS_TYPE_UNKNOWN,

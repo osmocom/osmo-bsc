@@ -36,28 +36,28 @@
 #include <arpa/inet.h>
 
 #include <osmocom/core/linuxlist.h>
-#include <openbsc/gsm_data.h>
+#include <osmocom/bsc/gsm_data.h>
 #include <osmocom/abis/e1_input.h>
-#include <openbsc/abis_nm.h>
-#include <openbsc/abis_om2000.h>
+#include <osmocom/bsc/abis_nm.h>
+#include <osmocom/bsc/abis_om2000.h>
 #include <osmocom/core/utils.h>
 #include <osmocom/gsm/gsm_utils.h>
 #include <osmocom/gsm/abis_nm.h>
-#include <openbsc/chan_alloc.h>
-#include <openbsc/meas_rep.h>
-#include <openbsc/vty.h>
+#include <osmocom/bsc/chan_alloc.h>
+#include <osmocom/bsc/meas_rep.h>
+#include <osmocom/bsc/vty.h>
 #include <osmocom/gprs/gprs_ns.h>
-#include <openbsc/system_information.h>
-#include <openbsc/debug.h>
-#include <openbsc/paging.h>
-#include <openbsc/ipaccess.h>
-#include <openbsc/abis_rsl.h>
-#include <openbsc/bsc_msc_data.h>
-#include <openbsc/osmo_bsc_rf.h>
-#include <openbsc/pcu_if.h>
-#include <openbsc/common_cs.h>
-#include <openbsc/handover.h>
-#include <openbsc/gsm_04_08_utils.h>
+#include <osmocom/bsc/system_information.h>
+#include <osmocom/bsc/debug.h>
+#include <osmocom/bsc/paging.h>
+#include <osmocom/bsc/ipaccess.h>
+#include <osmocom/bsc/abis_rsl.h>
+#include <osmocom/bsc/bsc_msc_data.h>
+#include <osmocom/bsc/osmo_bsc_rf.h>
+#include <osmocom/bsc/pcu_if.h>
+#include <osmocom/bsc/common_cs.h>
+#include <osmocom/bsc/handover.h>
+#include <osmocom/bsc/gsm_04_08_utils.h>
 
 #include <inttypes.h>
 

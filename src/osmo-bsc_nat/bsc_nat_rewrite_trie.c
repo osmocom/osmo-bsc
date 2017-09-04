@@ -19,9 +19,9 @@
  *
  */
 
-#include <openbsc/nat_rewrite_trie.h>
-#include <openbsc/debug.h>
-#include <openbsc/vty.h>
+#include <osmocom/bsc/nat_rewrite_trie.h>
+#include <osmocom/bsc/debug.h>
+#include <osmocom/bsc/vty.h>
 
 #include <osmocom/core/talloc.h>
 #include <osmocom/core/utils.h>

@@ -26,13 +26,13 @@
 #include <osmocom/core/linuxlist.h>
 #include <osmocom/gsm/gsm0808.h>
 #include <osmocom/core/msgb.h>
-#include <openbsc/bsc_msc_data.h>
-#include <openbsc/debug.h>
-#include <openbsc/osmo_bsc.h>
-#include <openbsc/osmo_bsc_grace.h>
-#include <openbsc/osmo_bsc_sigtran.h>
-#include <openbsc/a_reset.h>
-#include <openbsc/gsm_04_80.h>
+#include <osmocom/bsc/bsc_msc_data.h>
+#include <osmocom/bsc/debug.h>
+#include <osmocom/bsc/osmo_bsc.h>
+#include <osmocom/bsc/osmo_bsc_grace.h>
+#include <osmocom/bsc/osmo_bsc_sigtran.h>
+#include <osmocom/bsc/a_reset.h>
+#include <osmocom/bsc/gsm_04_80.h>
 
 /* A pointer to a list with all involved MSCs
  * (a copy of the pointer location submitted with osmo_bsc_sigtran_init() */

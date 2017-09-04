@@ -36,12 +36,12 @@
 #include <osmocom/core/utils.h>
 #include <osmocom/core/fsm.h>
 
-#include <openbsc/gsm_data.h>
-#include <openbsc/debug.h>
-#include <openbsc/abis_nm.h>
-#include <openbsc/abis_rsl.h>
-#include <openbsc/abis_om2000.h>
-#include <openbsc/signal.h>
+#include <osmocom/bsc/gsm_data.h>
+#include <osmocom/bsc/debug.h>
+#include <osmocom/bsc/abis_nm.h>
+#include <osmocom/bsc/abis_rsl.h>
+#include <osmocom/bsc/abis_om2000.h>
+#include <osmocom/bsc/signal.h>
 #include <osmocom/abis/e1_input.h>
 
 /* FIXME: move to libosmocore */

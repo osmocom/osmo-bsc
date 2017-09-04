@@ -19,9 +19,9 @@
  */
 
 #include <osmocom/core/logging.h>
-#include <openbsc/debug.h>
-#include <openbsc/gsm_data.h>
-#include <openbsc/abis_rsl.h>
+#include <osmocom/bsc/debug.h>
+#include <osmocom/bsc/gsm_data.h>
+#include <osmocom/bsc/abis_rsl.h>
 
 void tchf_pdch_ts_init(struct gsm_bts_trx_ts *ts)
 {

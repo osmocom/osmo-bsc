@@ -17,9 +17,9 @@
  *
  */
 
-#include <openbsc/bsc_msg_filter.h>
-#include <openbsc/gsm_data.h>
-#include <openbsc/vty.h>
+#include <osmocom/bsc/bsc_msg_filter.h>
+#include <osmocom/bsc/gsm_data.h>
+#include <osmocom/bsc/vty.h>
 
 #include <osmocom/vty/misc.h>
 

@@ -23,23 +23,23 @@
 
 #include <osmocom/gsm/tlv.h>
 
-#include <openbsc/gsm_data.h>
-#include <openbsc/signal.h>
-#include <openbsc/abis_nm.h>
+#include <osmocom/bsc/gsm_data.h>
+#include <osmocom/bsc/signal.h>
+#include <osmocom/bsc/abis_nm.h>
 #include <osmocom/abis/e1_input.h>
 #include <osmocom/gsm/tlv.h>
 #include <osmocom/core/msgb.h>
 #include <osmocom/core/talloc.h>
-#include <openbsc/gsm_data.h>
-#include <openbsc/abis_nm.h>
-#include <openbsc/abis_rsl.h>
-#include <openbsc/debug.h>
+#include <osmocom/bsc/gsm_data.h>
+#include <osmocom/bsc/abis_nm.h>
+#include <osmocom/bsc/abis_rsl.h>
+#include <osmocom/bsc/debug.h>
 #include <osmocom/abis/subchan_demux.h>
 #include <osmocom/gsm/ipa.h>
 #include <osmocom/abis/ipaccess.h>
 #include <osmocom/core/logging.h>
-#include <openbsc/ipaccess.h>
-#include <openbsc/bts_ipaccess_nanobts_omlattr.h>
+#include <osmocom/bsc/ipaccess.h>
+#include <osmocom/bsc/bts_ipaccess_nanobts_omlattr.h>
 
 extern struct gsm_network *bsc_gsmnet;
 

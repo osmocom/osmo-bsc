@@ -31,8 +31,8 @@
 #include <osmocom/core/utils.h>
 #include <osmocom/core/logging.h>
 #include <osmocom/gprs/gprs_msgb.h>
-#include <openbsc/gsm_data.h>
-#include <openbsc/debug.h>
+#include <osmocom/bsc/gsm_data.h>
+#include <osmocom/bsc/debug.h>
 
 /* default categories */
 static const struct log_info_cat default_categories[] = {

@@ -22,13 +22,13 @@
 #include <time.h>
 
 #include <osmocom/ctrl/control_cmd.h>
-#include <openbsc/ipaccess.h>
-#include <openbsc/gsm_data.h>
-#include <openbsc/abis_nm.h>
-#include <openbsc/debug.h>
-#include <openbsc/chan_alloc.h>
-#include <openbsc/osmo_bsc_rf.h>
-#include <openbsc/bsc_msc_data.h>
+#include <osmocom/bsc/ipaccess.h>
+#include <osmocom/bsc/gsm_data.h>
+#include <osmocom/bsc/abis_nm.h>
+#include <osmocom/bsc/debug.h>
+#include <osmocom/bsc/chan_alloc.h>
+#include <osmocom/bsc/osmo_bsc_rf.h>
+#include <osmocom/bsc/bsc_msc_data.h>
 
 #define CTRL_CMD_VTY_STRING(cmdname, cmdstr, dtype, element) \
 	CTRL_HELPER_GET_STRING(cmdname, dtype, element) \

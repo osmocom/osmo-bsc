@@ -17,7 +17,7 @@
  */
 
 #include <osmocom/abis/trau_frame.h>
-#include <openbsc/trau_mux.h>
+#include <osmocom/bsc/trau_mux.h>
 #include <osmocom/core/msgb.h>
 
 #include <stdio.h>

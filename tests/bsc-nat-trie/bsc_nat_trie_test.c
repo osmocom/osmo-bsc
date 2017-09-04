@@ -18,8 +18,8 @@
  *
  */
 
-#include <openbsc/nat_rewrite_trie.h>
-#include <openbsc/debug.h>
+#include <osmocom/bsc/nat_rewrite_trie.h>
+#include <osmocom/bsc/debug.h>
 
 #include <osmocom/core/application.h>
 #include <osmocom/core/backtrace.h>

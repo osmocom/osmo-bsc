@@ -21,17 +21,17 @@
  *
  */
 
-#include <openbsc/bsc_api.h>
-#include <openbsc/bsc_rll.h>
-#include <openbsc/gsm_data.h>
-#include <openbsc/gsm_subscriber.h>
-#include <openbsc/signal.h>
-#include <openbsc/abis_rsl.h>
-#include <openbsc/chan_alloc.h>
-#include <openbsc/handover.h>
-#include <openbsc/debug.h>
-#include <openbsc/trau_mux.h>
-#include <openbsc/gsm_04_08_utils.h>
+#include <osmocom/bsc/bsc_api.h>
+#include <osmocom/bsc/bsc_rll.h>
+#include <osmocom/bsc/gsm_data.h>
+#include <osmocom/bsc/gsm_subscriber.h>
+#include <osmocom/bsc/signal.h>
+#include <osmocom/bsc/abis_rsl.h>
+#include <osmocom/bsc/chan_alloc.h>
+#include <osmocom/bsc/handover.h>
+#include <osmocom/bsc/debug.h>
+#include <osmocom/bsc/trau_mux.h>
+#include <osmocom/bsc/gsm_04_08_utils.h>
 
 #include <osmocom/gsm/protocol/gsm_08_08.h>
 #include <osmocom/gsm/gsm48.h>

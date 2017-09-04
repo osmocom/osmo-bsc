@@ -28,14 +28,14 @@
 
 #include <osmocom/gsm/abis_nm.h>
 
-#include <openbsc/gsm_data.h>
+#include <osmocom/bsc/gsm_data.h>
 #include <osmocom/core/msgb.h>
 #include <osmocom/gsm/tlv.h>
 #include <osmocom/core/talloc.h>
-#include <openbsc/debug.h>
-#include <openbsc/signal.h>
-#include <openbsc/abis_nm.h>
-#include <openbsc/vty.h>
+#include <osmocom/bsc/debug.h>
+#include <osmocom/bsc/signal.h>
+#include <osmocom/bsc/abis_nm.h>
+#include <osmocom/bsc/vty.h>
 
 #include <osmocom/vty/vty.h>
 #include <osmocom/vty/command.h>

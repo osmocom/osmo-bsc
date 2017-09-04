@@ -5,9 +5,9 @@
 #include <osmocom/core/msgb.h>
 #include <osmocom/crypt/gprs_cipher.h>
 #include <osmocom/gprs/gprs_ns.h>
-#include <openbsc/gprs_sgsn.h>
-#include <openbsc/oap_client.h>
-#include <openbsc/common.h>
+#include <osmocom/bsc/gprs_sgsn.h>
+#include <osmocom/bsc/oap_client.h>
+#include <osmocom/bsc/common.h>
 
 #include <ares.h>
 

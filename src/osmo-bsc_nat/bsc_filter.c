@@ -20,10 +20,10 @@
  *
  */
 
-#include <openbsc/bsc_nat.h>
-#include <openbsc/bsc_nat_sccp.h>
-#include <openbsc/ipaccess.h>
-#include <openbsc/debug.h>
+#include <osmocom/bsc/bsc_nat.h>
+#include <osmocom/bsc/bsc_nat_sccp.h>
+#include <osmocom/bsc/ipaccess.h>
+#include <osmocom/bsc/debug.h>
 
 #include <osmocom/core/talloc.h>
 #include <osmocom/gsm/protocol/gsm_08_08.h>

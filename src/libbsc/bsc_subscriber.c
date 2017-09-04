@@ -29,8 +29,8 @@
 #include <osmocom/gsm/gsm48.h>
 #include <osmocom/core/logging.h>
 
-#include <openbsc/bsc_subscriber.h>
-#include <openbsc/debug.h>
+#include <osmocom/bsc/bsc_subscriber.h>
+#include <osmocom/bsc/debug.h>
 
 static struct bsc_subscr *bsc_subscr_alloc(struct llist_head *list)
 {

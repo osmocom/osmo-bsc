@@ -126,8 +126,9 @@ AM_CONFIG_HEADER(bscconfig.h)
 
 AC_OUTPUT(
     osmo-bsc.pc
-    include/openbsc/Makefile
     include/Makefile
+    include/osmocom/Makefile
+    include/osmocom/bsc/Makefile
     src/Makefile
     src/libtrau/Makefile
     src/libbsc/Makefile

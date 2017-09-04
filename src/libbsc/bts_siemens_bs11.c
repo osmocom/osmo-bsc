@@ -22,11 +22,11 @@
 
 #include <osmocom/gsm/tlv.h>
 
-#include <openbsc/debug.h>
-#include <openbsc/gsm_data.h>
-#include <openbsc/abis_nm.h>
+#include <osmocom/bsc/debug.h>
+#include <osmocom/bsc/gsm_data.h>
+#include <osmocom/bsc/abis_nm.h>
 #include <osmocom/abis/e1_input.h>
-#include <openbsc/signal.h>
+#include <osmocom/bsc/signal.h>
 
 static int bts_model_bs11_start(struct gsm_network *net);
 

@@ -18,23 +18,23 @@
  *
  */
 
-#include <openbsc/vty.h>
-#include <openbsc/gsm_data.h>
-#include <openbsc/bsc_nat.h>
-#include <openbsc/bsc_nat_sccp.h>
-#include <openbsc/bsc_msg_filter.h>
-#include <openbsc/bsc_msc.h>
+#include <osmocom/bsc/vty.h>
+#include <osmocom/bsc/gsm_data.h>
+#include <osmocom/bsc/bsc_nat.h>
+#include <osmocom/bsc/bsc_nat_sccp.h>
+#include <osmocom/bsc/bsc_msg_filter.h>
+#include <osmocom/bsc/bsc_msc.h>
 #include <osmocom/legacy_mgcp/mgcp.h>
-#include <openbsc/vty.h>
-#include <openbsc/nat_rewrite_trie.h>
-#include <openbsc/debug.h>
+#include <osmocom/bsc/vty.h>
+#include <osmocom/bsc/nat_rewrite_trie.h>
+#include <osmocom/bsc/debug.h>
 
 #include <osmocom/core/talloc.h>
 #include <osmocom/core/rate_ctr.h>
 #include <osmocom/core/utils.h>
 #include <osmocom/vty/logging.h>
 #include <osmocom/vty/misc.h>
-#include <openbsc/osmux.h>
+#include <osmocom/bsc/osmux.h>
 
 #include <osmocom/sccp/sccp.h>
 

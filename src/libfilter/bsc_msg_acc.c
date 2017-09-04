@@ -18,9 +18,9 @@
  *
  */
 
-#include <openbsc/bsc_msg_filter.h>
-#include <openbsc/bsc_nat.h>
-#include <openbsc/debug.h>
+#include <osmocom/bsc/bsc_msg_filter.h>
+#include <osmocom/bsc/bsc_nat.h>
+#include <osmocom/bsc/debug.h>
 
 #include <osmocom/core/rate_ctr.h>
 #include <osmocom/core/stats.h>

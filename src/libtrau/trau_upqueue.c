@@ -18,8 +18,8 @@
  *
  */
 
-#include <openbsc/mncc.h>
-#include <openbsc/gsm_data.h>
+#include <osmocom/bsc/mncc.h>
+#include <osmocom/bsc/gsm_data.h>
 
 void trau_tx_to_mncc(struct gsm_network *net, struct msgb *msg)
 {

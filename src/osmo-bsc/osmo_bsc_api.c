@@ -17,12 +17,12 @@
  *
  */
 
-#include <openbsc/osmo_bsc.h>
-#include <openbsc/bsc_msc_data.h>
-#include <openbsc/debug.h>
+#include <osmocom/bsc/osmo_bsc.h>
+#include <osmocom/bsc/bsc_msc_data.h>
+#include <osmocom/bsc/debug.h>
 
-#include <openbsc/gsm_04_80.h>
-#include <openbsc/gsm_04_08_utils.h>
+#include <osmocom/bsc/gsm_04_80.h>
+#include <osmocom/bsc/gsm_04_08_utils.h>
 
 #include <osmocom/gsm/protocol/gsm_08_08.h>
 #include <osmocom/gsm/gsm0808.h>
@@ -30,7 +30,7 @@
 #include <osmocom/gsm/gsm48.h>
 
 #include <osmocom/sccp/sccp.h>
-#include <openbsc/osmo_bsc_sigtran.h>
+#include <osmocom/bsc/osmo_bsc_sigtran.h>
 
 #define return_when_not_connected(conn) \
 	if (!conn->sccp_con) {\

@@ -30,13 +30,13 @@
 
 #include <osmocom/core/talloc.h>
 #include <osmocom/core/utils.h>
-#include <openbsc/gsm_data.h>
+#include <osmocom/bsc/gsm_data.h>
 #include <osmocom/core/msgb.h>
 #include <osmocom/core/select.h>
-#include <openbsc/debug.h>
-#include <openbsc/rtp_proxy.h>
-#include <openbsc/mncc.h>
-#include <openbsc/trau_upqueue.h>
+#include <osmocom/bsc/debug.h>
+#include <osmocom/bsc/rtp_proxy.h>
+#include <osmocom/bsc/mncc.h>
+#include <osmocom/bsc/trau_upqueue.h>
 
 #include <osmocom/netif/rtp.h>
 

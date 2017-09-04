@@ -18,10 +18,10 @@
  *
  */
 
-#include <openbsc/bsc_nat.h>
-#include <openbsc/bsc_nat_sccp.h>
-#include <openbsc/bsc_msg_filter.h>
-#include <openbsc/debug.h>
+#include <osmocom/bsc/bsc_nat.h>
+#include <osmocom/bsc/bsc_nat_sccp.h>
+#include <osmocom/bsc/bsc_msg_filter.h>
+#include <osmocom/bsc/debug.h>
 
 #include <osmocom/gsm/gsm0808.h>
 

@@ -19,25 +19,25 @@
  *
  */
 
-#include <openbsc/gsm_data.h>
+#include <osmocom/bsc/gsm_data.h>
 #include <osmocom/gsm/gsm_utils.h>
-#include <openbsc/abis_rsl.h>
-#include <openbsc/abis_nm.h>
-#include <openbsc/debug.h>
-#include <openbsc/misdn.h>
+#include <osmocom/bsc/abis_rsl.h>
+#include <osmocom/bsc/abis_nm.h>
+#include <osmocom/bsc/debug.h>
+#include <osmocom/bsc/misdn.h>
 #include <osmocom/vty/telnet_interface.h>
 #include <osmocom/vty/ports.h>
-#include <openbsc/system_information.h>
-#include <openbsc/paging.h>
-#include <openbsc/signal.h>
-#include <openbsc/chan_alloc.h>
+#include <osmocom/bsc/system_information.h>
+#include <osmocom/bsc/paging.h>
+#include <osmocom/bsc/signal.h>
+#include <osmocom/bsc/chan_alloc.h>
 #include <osmocom/core/talloc.h>
-#include <openbsc/ipaccess.h>
+#include <osmocom/bsc/ipaccess.h>
 #include <osmocom/gsm/sysinfo.h>
-#include <openbsc/e1_config.h>
-#include <openbsc/common_bsc.h>
-#include <openbsc/pcu_if.h>
-#include <openbsc/osmo_msc.h>
+#include <osmocom/bsc/e1_config.h>
+#include <osmocom/bsc/common_bsc.h>
+#include <osmocom/bsc/pcu_if.h>
+#include <osmocom/bsc/osmo_msc.h>
 #include <limits.h>
 
 /* global pointer to the gsm network data structure */

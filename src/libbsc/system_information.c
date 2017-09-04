@@ -33,12 +33,12 @@
 #include <osmocom/gsm/gsm48_ie.h>
 #include <osmocom/gsm/gsm48.h>
 
-#include <openbsc/debug.h>
-#include <openbsc/gsm_data.h>
-#include <openbsc/abis_rsl.h>
-#include <openbsc/rest_octets.h>
-#include <openbsc/arfcn_range_encode.h>
-#include <openbsc/gsm_04_08_utils.h>
+#include <osmocom/bsc/debug.h>
+#include <osmocom/bsc/gsm_data.h>
+#include <osmocom/bsc/abis_rsl.h>
+#include <osmocom/bsc/rest_octets.h>
+#include <osmocom/bsc/arfcn_range_encode.h>
+#include <osmocom/bsc/gsm_04_08_utils.h>
 
 /*
  * DCS1800 and PCS1900 have overlapping ARFCNs. We would need to set the

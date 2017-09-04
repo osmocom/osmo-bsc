@@ -1,7 +1,7 @@
 #ifndef _BSS_H_
 #define _BSS_H_
 
-#include <openbsc/gsm_data.h>
+#include <osmocom/bsc/gsm_data.h>
 
 struct msgb;
 

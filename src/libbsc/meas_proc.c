@@ -24,10 +24,10 @@
 
 #include <osmocom/core/talloc.h>
 #include <osmocom/core/msgb.h>
-#include <openbsc/debug.h>
-#include <openbsc/gsm_data.h>
-#include <openbsc/meas_rep.h>
-#include <openbsc/signal.h>
+#include <osmocom/bsc/debug.h>
+#include <osmocom/bsc/gsm_data.h>
+#include <osmocom/bsc/meas_rep.h>
+#include <osmocom/bsc/signal.h>
 
 /* process an already parsed measurement report */
 static int process_meas_rep(struct gsm_meas_rep *mr)

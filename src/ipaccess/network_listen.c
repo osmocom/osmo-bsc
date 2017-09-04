@@ -33,10 +33,10 @@
 #include <osmocom/gsm/rxlev_stat.h>
 #include <osmocom/gsm/gsm48_ie.h>
 
-#include <openbsc/gsm_data.h>
-#include <openbsc/abis_nm.h>
-#include <openbsc/signal.h>
-#include <openbsc/debug.h>
+#include <osmocom/bsc/gsm_data.h>
+#include <osmocom/bsc/abis_nm.h>
+#include <osmocom/bsc/signal.h>
+#include <osmocom/bsc/debug.h>
 #include <osmocom/abis/e1_input.h>
 
 #define WHITELIST_MAX_SIZE ((NUM_ARFCNS*2)+2+1)

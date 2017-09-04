@@ -26,13 +26,13 @@
 #include <errno.h>
 #include <stdbool.h>
 
-#include <openbsc/debug.h>
-#include <openbsc/gsm_data.h>
+#include <osmocom/bsc/debug.h>
+#include <osmocom/bsc/gsm_data.h>
 #include <osmocom/core/bitvec.h>
 #include <osmocom/gsm/bitvec_gsm.h>
-#include <openbsc/rest_octets.h>
-#include <openbsc/arfcn_range_encode.h>
-#include <openbsc/system_information.h>
+#include <osmocom/bsc/rest_octets.h>
+#include <osmocom/bsc/arfcn_range_encode.h>
+#include <osmocom/bsc/system_information.h>
 
 /* generate SI1 rest octets */
 int rest_octets_si1(uint8_t *data, uint8_t *nch_pos, int is1800_net)

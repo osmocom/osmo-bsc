@@ -22,15 +22,15 @@
 
 #include <errno.h>
 
-#include <openbsc/debug.h>
+#include <osmocom/bsc/debug.h>
 #include <osmocom/core/talloc.h>
 #include <osmocom/core/timer.h>
 #include <osmocom/core/linuxlist.h>
-#include <openbsc/bsc_rll.h>
-#include <openbsc/gsm_data.h>
-#include <openbsc/chan_alloc.h>
-#include <openbsc/abis_rsl.h>
-#include <openbsc/signal.h>
+#include <osmocom/bsc/bsc_rll.h>
+#include <osmocom/bsc/gsm_data.h>
+#include <osmocom/bsc/chan_alloc.h>
+#include <osmocom/bsc/abis_rsl.h>
+#include <osmocom/bsc/signal.h>
 
 struct bsc_rll_req {
 	struct llist_head list;

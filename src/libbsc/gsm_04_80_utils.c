@@ -20,7 +20,7 @@
  */
 
 #include <osmocom/gsm/gsm0480.h>
-#include <openbsc/bsc_api.h>
+#include <osmocom/bsc/bsc_api.h>
 
 int bsc_send_ussd_notify(struct gsm_subscriber_connection *conn, int level,
 			 const char *text)

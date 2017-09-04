@@ -20,15 +20,15 @@
  *
  */
 
-#include <openbsc/bsc_msc_data.h>
-#include <openbsc/osmo_bsc.h>
-#include <openbsc/abis_rsl.h>
-#include <openbsc/gsm_data.h>
-#include <openbsc/debug.h>
-#include <openbsc/signal.h>
+#include <osmocom/bsc/bsc_msc_data.h>
+#include <osmocom/bsc/osmo_bsc.h>
+#include <osmocom/bsc/abis_rsl.h>
+#include <osmocom/bsc/gsm_data.h>
+#include <osmocom/bsc/debug.h>
+#include <osmocom/bsc/signal.h>
 #include <osmocom/gsm/gsm0808.h>
 #include <osmocom/gsm/gsm0808_utils.h>
-#include <openbsc/osmo_bsc_sigtran.h>
+#include <osmocom/bsc/osmo_bsc_sigtran.h>
 
 #include <arpa/inet.h>
 

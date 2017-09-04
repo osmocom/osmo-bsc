@@ -23,15 +23,15 @@
 
 #include <netinet/in.h>
 
-#include <openbsc/gsm_data.h>
+#include <osmocom/bsc/gsm_data.h>
 #include <osmocom/abis/e1_input.h>
 #include <osmocom/abis/trau_frame.h>
-#include <openbsc/trau_mux.h>
-#include <openbsc/misdn.h>
+#include <osmocom/bsc/trau_mux.h>
+#include <osmocom/bsc/misdn.h>
 #include <osmocom/abis/ipaccess.h>
 #include <osmocom/core/talloc.h>
-#include <openbsc/debug.h>
-#include <openbsc/abis_rsl.h>
+#include <osmocom/bsc/debug.h>
+#include <osmocom/bsc/abis_rsl.h>
 
 #define SAPI_L2ML	0
 #define SAPI_OML	62

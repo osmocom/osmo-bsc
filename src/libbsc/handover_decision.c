@@ -25,12 +25,12 @@
 #include <errno.h>
 
 #include <osmocom/core/msgb.h>
-#include <openbsc/debug.h>
-#include <openbsc/gsm_data.h>
-#include <openbsc/meas_rep.h>
-#include <openbsc/signal.h>
+#include <osmocom/bsc/debug.h>
+#include <osmocom/bsc/gsm_data.h>
+#include <osmocom/bsc/meas_rep.h>
+#include <osmocom/bsc/signal.h>
 #include <osmocom/core/talloc.h>
-#include <openbsc/handover.h>
+#include <osmocom/bsc/handover.h>
 #include <osmocom/gsm/gsm_utils.h>
 
 /* Get reference to a neighbor cell on a given BCCH ARFCN */

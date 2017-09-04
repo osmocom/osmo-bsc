@@ -42,14 +42,14 @@
 #include <osmocom/gsm/gsm48.h>
 #include <osmocom/gsm/gsm0502.h>
 
-#include <openbsc/bsc_subscriber.h>
-#include <openbsc/paging.h>
-#include <openbsc/debug.h>
-#include <openbsc/signal.h>
-#include <openbsc/abis_rsl.h>
-#include <openbsc/gsm_data.h>
-#include <openbsc/chan_alloc.h>
-#include <openbsc/bsc_api.h>
+#include <osmocom/bsc/bsc_subscriber.h>
+#include <osmocom/bsc/paging.h>
+#include <osmocom/bsc/debug.h>
+#include <osmocom/bsc/signal.h>
+#include <osmocom/bsc/abis_rsl.h>
+#include <osmocom/bsc/gsm_data.h>
+#include <osmocom/bsc/chan_alloc.h>
+#include <osmocom/bsc/bsc_api.h>
 
 void *tall_paging_ctx;
 

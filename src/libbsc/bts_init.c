@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-#include <openbsc/bss.h>
+#include <osmocom/bsc/bss.h>
 
 int bts_init(void)
 {

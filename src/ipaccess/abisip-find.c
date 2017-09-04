@@ -30,7 +30,7 @@
 #include <osmocom/core/timer.h>
 #include <osmocom/gsm/protocol/ipaccess.h>
 #include <osmocom/gsm/ipa.h>
-#include <openbsc/gsm_data.h>
+#include <osmocom/bsc/gsm_data.h>
 
 static int udp_sock(const char *ifname)
 {

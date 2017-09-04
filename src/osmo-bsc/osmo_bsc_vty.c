@@ -18,13 +18,13 @@
  *
  */
 
-#include <openbsc/gsm_data.h>
-#include <openbsc/osmo_bsc.h>
-#include <openbsc/bsc_msc_data.h>
-#include <openbsc/vty.h>
-#include <openbsc/bsc_subscriber.h>
-#include <openbsc/debug.h>
-#include <openbsc/bsc_msg_filter.h>
+#include <osmocom/bsc/gsm_data.h>
+#include <osmocom/bsc/osmo_bsc.h>
+#include <osmocom/bsc/bsc_msc_data.h>
+#include <osmocom/bsc/vty.h>
+#include <osmocom/bsc/bsc_subscriber.h>
+#include <osmocom/bsc/debug.h>
+#include <osmocom/bsc/bsc_msg_filter.h>
 
 #include <osmocom/core/talloc.h>
 #include <osmocom/vty/logging.h>

@@ -29,18 +29,18 @@
 #include <netinet/in.h>
 
 #include <osmocom/core/msgb.h>
-#include <openbsc/debug.h>
-#include <openbsc/gsm_data.h>
+#include <osmocom/bsc/debug.h>
+#include <osmocom/bsc/gsm_data.h>
 #include <osmocom/gsm/gsm_utils.h>
-#include <openbsc/gsm_subscriber.h>
-#include <openbsc/abis_rsl.h>
-#include <openbsc/chan_alloc.h>
-#include <openbsc/signal.h>
+#include <osmocom/bsc/gsm_subscriber.h>
+#include <osmocom/bsc/abis_rsl.h>
+#include <osmocom/bsc/chan_alloc.h>
+#include <osmocom/bsc/signal.h>
 #include <osmocom/core/talloc.h>
-#include <openbsc/transaction.h>
-#include <openbsc/trau_mux.h>
-#include <openbsc/bsc_subscriber.h>
-#include <openbsc/gsm_04_08_utils.h>
+#include <osmocom/bsc/transaction.h>
+#include <osmocom/bsc/trau_mux.h>
+#include <osmocom/bsc/bsc_subscriber.h>
+#include <osmocom/bsc/gsm_04_08_utils.h>
 
 struct bsc_handover {
 	struct llist_head list;

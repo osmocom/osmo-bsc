@@ -20,8 +20,8 @@
  */
 
 
-#include <openbsc/gsm_data.h>
-#include <openbsc/meas_rep.h>
+#include <osmocom/bsc/gsm_data.h>
+#include <osmocom/bsc/meas_rep.h>
 
 static int get_field(const struct gsm_meas_rep *rep,
 		     enum meas_rep_field field)

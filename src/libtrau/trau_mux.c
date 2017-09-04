@@ -22,16 +22,16 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <openbsc/gsm_data.h>
+#include <osmocom/bsc/gsm_data.h>
 #include <osmocom/abis/trau_frame.h>
-#include <openbsc/trau_mux.h>
+#include <osmocom/bsc/trau_mux.h>
 #include <osmocom/abis/subchan_demux.h>
 #include <osmocom/abis/e1_input.h>
-#include <openbsc/debug.h>
+#include <osmocom/bsc/debug.h>
 #include <osmocom/core/talloc.h>
-#include <openbsc/trau_upqueue.h>
+#include <osmocom/bsc/trau_upqueue.h>
 #include <osmocom/core/crcgen.h>
-#include <openbsc/transaction.h>
+#include <osmocom/bsc/transaction.h>
 
 /* this corresponds to the bit-lengths of the individual codec
  * parameters as indicated in Table 1.1 of TS 06.10 */

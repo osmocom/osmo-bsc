@@ -25,14 +25,14 @@
 #include <string.h>
 #include <errno.h>
 
-#include <openbsc/gsm_subscriber.h>
-#include <openbsc/chan_alloc.h>
-#include <openbsc/abis_nm.h>
-#include <openbsc/abis_rsl.h>
-#include <openbsc/debug.h>
-#include <openbsc/rtp_proxy.h>
-#include <openbsc/signal.h>
-#include <openbsc/gsm_04_08_utils.h>
+#include <osmocom/bsc/gsm_subscriber.h>
+#include <osmocom/bsc/chan_alloc.h>
+#include <osmocom/bsc/abis_nm.h>
+#include <osmocom/bsc/abis_rsl.h>
+#include <osmocom/bsc/debug.h>
+#include <osmocom/bsc/rtp_proxy.h>
+#include <osmocom/bsc/signal.h>
+#include <osmocom/bsc/gsm_04_08_utils.h>
 
 #include <osmocom/core/talloc.h>
 

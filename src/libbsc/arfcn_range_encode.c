@@ -20,8 +20,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <openbsc/arfcn_range_encode.h>
-#include <openbsc/debug.h>
+#include <osmocom/bsc/arfcn_range_encode.h>
+#include <osmocom/bsc/debug.h>
 
 #include <osmocom/gsm/protocol/gsm_04_08.h>
 

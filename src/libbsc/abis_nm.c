@@ -34,17 +34,17 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
-#include <openbsc/gsm_data.h>
-#include <openbsc/debug.h>
+#include <osmocom/bsc/gsm_data.h>
+#include <osmocom/bsc/debug.h>
 #include <osmocom/core/msgb.h>
 #include <osmocom/gsm/protocol/gsm_12_21.h>
 #include <osmocom/gsm/tlv.h>
 #include <osmocom/gsm/abis_nm.h>
 #include <osmocom/core/talloc.h>
 #include <osmocom/core/utils.h>
-#include <openbsc/abis_nm.h>
-#include <openbsc/misdn.h>
-#include <openbsc/signal.h>
+#include <osmocom/bsc/abis_nm.h>
+#include <osmocom/bsc/misdn.h>
+#include <osmocom/bsc/signal.h>
 #include <osmocom/abis/e1_input.h>
 
 #define OM_ALLOC_SIZE		1024

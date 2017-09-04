@@ -29,8 +29,8 @@
  */
 
 #include <stdint.h>
-#include <openbsc/gsm_data.h>
-#include <openbsc/mncc.h>
+#include <osmocom/bsc/gsm_data.h>
+#include <osmocom/bsc/mncc.h>
 
 struct decoded_trau_frame;
 

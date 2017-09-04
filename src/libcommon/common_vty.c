@@ -23,12 +23,12 @@
 
 #include <osmocom/core/talloc.h>
 
-#include <openbsc/vty.h>
-#include <openbsc/gsm_data.h>
-#include <openbsc/debug.h>
-#include <openbsc/gsm_subscriber.h>
-#include <openbsc/bsc_nat.h>
-#include <openbsc/abis_om2000.h>
+#include <osmocom/bsc/vty.h>
+#include <osmocom/bsc/gsm_data.h>
+#include <osmocom/bsc/debug.h>
+#include <osmocom/bsc/gsm_subscriber.h>
+#include <osmocom/bsc/bsc_nat.h>
+#include <osmocom/bsc/abis_om2000.h>
 
 #include <osmocom/vty/telnet_interface.h>
 #include <osmocom/vty/command.h>

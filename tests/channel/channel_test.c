@@ -25,10 +25,10 @@
 #include <osmocom/core/application.h>
 #include <osmocom/core/select.h>
 
-#include <openbsc/common_bsc.h>
-#include <openbsc/abis_rsl.h>
-#include <openbsc/debug.h>
-#include <openbsc/gsm_subscriber.h>
+#include <osmocom/bsc/common_bsc.h>
+#include <osmocom/bsc/abis_rsl.h>
+#include <osmocom/bsc/debug.h>
+#include <osmocom/bsc/gsm_subscriber.h>
 
 void test_bts_debug_print(void)
 {
