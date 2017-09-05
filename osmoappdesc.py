@@ -15,7 +15,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 app_configs = {
-    "osmo-bsc": ["doc/examples/osmo-bsc/osmo-bsc.cfg"],
+    "osmo-bsc": ["doc/examples/osmo-bsc/osmo-bsc.cfg",
+                 "doc/examples/osmo-bsc/osmo-bsc_custom-sccp.cfg"],
     "nat": ["doc/examples/osmo-bsc_nat/osmo-bsc_nat.cfg"],
 }
 
