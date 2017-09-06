@@ -34,6 +34,9 @@ struct gsm_bts_trx_ts;
 
 #define GSM48_LEN2PLEN(a)	(((a) << 2) | 1)
 
+#define rsl_lchan_set_state(lch_, st_) \
+	rsl_lchan_set_state_with_log(lch_, st_, __BASE_FILE__, __LINE__)
+
 int rsl_bcch_info(const struct gsm_bts_trx *trx, enum osmo_sysinfo_type si_type, const uint8_t *data, int len);
 int rsl_sacch_filling(struct gsm_bts_trx *trx, uint8_t type,
 		      const uint8_t *data, int len);
@@ -74,7 +77,7 @@ uint64_t str_to_imsi(const char *imsi_str);
 int rsl_release_request(struct gsm_lchan *lchan, uint8_t link_id,
 			enum rsl_rel_mode release_mode);
 
-int rsl_lchan_set_state(struct gsm_lchan *lchan, int);
+int rsl_lchan_set_state_with_log(struct gsm_lchan *lchan, enum gsm_lchan_state state, const char *file, unsigned line);
 int rsl_lchan_mark_broken(struct gsm_lchan *lchan, const char *broken);
 
 /* to be provided by external code */

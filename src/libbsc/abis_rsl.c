@@ -1225,11 +1225,12 @@ int rsl_lchan_mark_broken(struct gsm_lchan *lchan, const char *reason)
 	return 0;
 }
 
-int rsl_lchan_set_state(struct gsm_lchan *lchan, int state)
+int rsl_lchan_set_state_with_log(struct gsm_lchan *lchan, enum gsm_lchan_state state, const char *file, unsigned line)
 {
-	DEBUGP(DRSL, "%s state %s -> %s\n",
-	       gsm_lchan_name(lchan), gsm_lchans_name(lchan->state),
-	       gsm_lchans_name(state));
+	if (lchan->state != state)
+		LOGPSRC(DRSL, LOGL_DEBUG, file, line, "%s state %s -> %s\n",
+			gsm_lchan_name(lchan), gsm_lchans_name(lchan->state), gsm_lchans_name(state));
+
 	lchan->state = state;
 	return 0;
 }

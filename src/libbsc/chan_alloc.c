@@ -448,7 +448,7 @@ void lchan_reset(struct gsm_lchan *lchan)
 	osmo_timer_del(&lchan->error_timer);
 
 	lchan->type = GSM_LCHAN_NONE;
-	lchan->state = LCHAN_S_NONE;
+	rsl_lchan_set_state(lchan, LCHAN_S_NONE);
 
 	if (lchan->abis_ip.rtp_socket) {
 		rtp_socket_free(lchan->abis_ip.rtp_socket);
