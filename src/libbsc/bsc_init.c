@@ -37,7 +37,6 @@
 #include <osmocom/bsc/e1_config.h>
 #include <osmocom/bsc/common_bsc.h>
 #include <osmocom/bsc/pcu_if.h>
-#include <osmocom/bsc/osmo_msc.h>
 #include <limits.h>
 
 /* global pointer to the gsm network data structure */

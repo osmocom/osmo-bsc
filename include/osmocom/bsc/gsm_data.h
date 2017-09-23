@@ -670,7 +670,6 @@ extern const struct value_string bts_type_descs[_NUM_GSM_BTS_TYPE+1];
 
 /* control interface handling */
 int bsc_base_ctrl_cmds_install(void);
-int msc_ctrl_cmds_install(struct gsm_network *net);
 
 /* dependency handling */
 void bts_depend_mark(struct gsm_bts *bts, int dep);

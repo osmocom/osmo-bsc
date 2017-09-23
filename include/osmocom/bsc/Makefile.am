@@ -42,7 +42,6 @@ noinst_HEADERS = \
 	osmo_bsc.h \
 	osmo_bsc_grace.h \
 	osmo_bsc_rf.h \
-	osmo_msc.h \
 	osmo_bsc_sigtran.h \
 	bsc_msc_data.h \
 	osmux.h \

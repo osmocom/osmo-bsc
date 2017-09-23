@@ -647,31 +647,6 @@ static void test_si_range_helpers()
 	VERIFY(f0, ==, 1);
 }
 
-#ifdef BEFORE_MSCSPLIT
-static void test_gsm411_rp_ref_wrap(void)
-{
-	struct gsm_subscriber_connection conn;
-	int res;
-
-	printf("testing RP-Reference wrap\n");
-
-	memset(&conn, 0, sizeof(conn));
-	conn.next_rp_ref = 255;
-
-	res = sms_next_rp_msg_ref(&conn.next_rp_ref);
-	printf("Allocated reference: %d\n", res);
-	OSMO_ASSERT(res == 255);
-
-	res = sms_next_rp_msg_ref(&conn.next_rp_ref);
-	printf("Allocated reference: %d\n", res);
-	OSMO_ASSERT(res == 0);
-
-	res = sms_next_rp_msg_ref(&conn.next_rp_ref);
-	printf("Allocated reference: %d\n", res);
-	OSMO_ASSERT(res == 1);
-}
-#endif
-
 int main(int argc, char **argv)
 {
 	osmo_init_logging(&log_info);
@@ -684,9 +659,6 @@ int main(int argc, char **argv)
 	test_arfcn_filter();
 	test_print_encoding();
 	test_range_encoding();
-#ifdef BEFORE_MSCSPLIT
-	test_gsm411_rp_ref_wrap();
-#endif
 
 	test_si2q_segfault();
 	test_si2q_e();
