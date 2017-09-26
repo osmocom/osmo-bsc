@@ -206,7 +206,7 @@ void bsc_config_free(struct bsc_config *cfg)
 	llist_del(&cfg->entry);
 	rate_ctr_group_free(cfg->stats.ctrg);
 	cfg->nat->num_bsc--;
-	OSMO_ASSERT(cfg->nat->num_bsc >= 0)
+	OSMO_ASSERT(cfg->nat->num_bsc >= 0);
 	talloc_free(cfg);
 }
 
