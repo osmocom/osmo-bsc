@@ -30,5 +30,4 @@ channel_test_LDADD = \
 	$(LIBOSMOCORE_LIBS) \
 	$(LIBOSMOGSM_LIBS) \
 	$(LIBCRYPTO_LIBS) \
-	-ldbi \
 	$(NULL)

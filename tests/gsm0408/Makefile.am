@@ -30,5 +30,4 @@ gsm0408_test_LDADD = \
 	$(LIBOSMOCORE_LIBS) \
 	$(LIBOSMOGSM_LIBS) \
 	$(LIBOSMOABIS_LIBS) \
-	-ldbi \
 	$(NULL)

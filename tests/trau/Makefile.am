@@ -40,6 +40,4 @@ trau_test_LDADD = \
 	$(LIBSMPP34_LIBS) \
 	$(LIBOSMOVTY_LIBS) \
 	$(LIBRARY_DL) \
-	-ldbi \
 	$(NULL)
-
