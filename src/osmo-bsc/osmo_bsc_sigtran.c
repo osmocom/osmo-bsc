@@ -33,6 +33,7 @@
 #include <osmocom/bsc/osmo_bsc_sigtran.h>
 #include <osmocom/bsc/a_reset.h>
 #include <osmocom/bsc/gsm_04_80.h>
+#include <osmocom/bsc/osmo_bsc_mgcp.h>
 
 /* A pointer to a list with all involved MSCs
  * (a copy of the pointer location submitted with osmo_bsc_sigtran_init() */
@@ -383,6 +384,10 @@ int osmo_bsc_sigtran_del_conn(struct osmo_bsc_sccp_con *conn)
 		 * will have to go through the reset procedure again */
 		a_reset_conn_fail(conn->msc->a.reset);
 	}
+
+	/* Remove mgcp context if existant */
+	if (conn->mgcp_ctx)
+		mgcp_free_ctx(conn->mgcp_ctx);
 
 	llist_del(&conn->entry);
 	talloc_free(conn);

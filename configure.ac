@@ -47,8 +47,9 @@ PKG_CHECK_MODULES(LIBOSMOABIS, libosmoabis >= 0.3.2)
 PKG_CHECK_MODULES(LIBOSMONETIF, libosmo-netif >= 0.1.0)
 PKG_CHECK_MODULES(LIBOSMOSIGTRAN, libosmo-sigtran >= 0.8.0)
 PKG_CHECK_MODULES(LIBCRYPTO, libcrypto >= 0.9.5)
-PKG_CHECK_MODULES(LIBOSMOLEGACYMGCP, libosmo-legacy-mgcp >= 0.0.1)
 PKG_CHECK_MODULES(LIBOSMOSCCP, libosmo-sccp >= 0.0.2)
+PKG_CHECK_MODULES(LIBOSMOMGCPCLIENT, libosmo-mgcp-client >= 1.0.0)
+PKG_CHECK_MODULES(LIBOSMOLEGACYMGCP, libosmo-legacy-mgcp >= 1.0.0)
 
 dnl checks for header files
 AC_HEADER_STDC
@@ -135,7 +136,6 @@ AC_OUTPUT(
     src/libfilter/Makefile
     src/libcommon-cs/Makefile
     src/osmo-bsc/Makefile
-    src/osmo-bsc_nat/Makefile
     src/ipaccess/Makefile
     src/utils/Makefile
     tests/Makefile

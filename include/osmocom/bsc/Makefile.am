@@ -41,6 +41,7 @@ noinst_HEADERS = \
 	openbscdefines.h \
 	osmo_bsc.h \
 	osmo_bsc_grace.h \
+	osmo_bsc_mgcp.h \
 	osmo_bsc_rf.h \
 	osmo_bsc_sigtran.h \
 	bsc_msc_data.h \

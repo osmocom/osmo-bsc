@@ -33,5 +33,4 @@ SUBDIRS += \
 	utils \
 	ipaccess \
 	osmo-bsc \
-	osmo-bsc_nat \
 	$(NULL)

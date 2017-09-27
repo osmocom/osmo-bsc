@@ -15,6 +15,7 @@ AM_CFLAGS = \
 	$(COVERAGE_CFLAGS) \
 	$(LIBOSMOABIS_CFLAGS) \
 	$(LIBOSMOSIGTRAN_CFLAGS) \
+	$(LIBOSMOMGCPCLIENT_CFLAGS) \
 	$(NULL)
 
 AM_LDFLAGS = \
@@ -30,6 +31,7 @@ osmo_bsc_SOURCES = \
 	osmo_bsc_vty.c \
 	osmo_bsc_api.c \
 	osmo_bsc_grace.c \
+	osmo_bsc_mgcp.c \
 	osmo_bsc_msc.c \
 	osmo_bsc_sigtran.c \
 	osmo_bsc_filter.c \
@@ -53,4 +55,5 @@ osmo_bsc_LDADD = \
 	$(COVERAGE_LDFLAGS) \
 	$(LIBOSMOABIS_LIBS) \
 	$(LIBOSMOSIGTRAN_LIBS) \
+	$(LIBOSMOMGCPCLIENT_LIBS) \
 	$(NULL)

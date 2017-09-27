@@ -29,6 +29,20 @@ struct osmo_bsc_sccp_con {
 	uint32_t rtp_ip;
 	int rtp_port;
 
+	/* RTP address of the remote end (assigned by MSC through assignment
+	 * request) */
+	struct sockaddr_storage aoip_rtp_addr_remote;
+
+	/* Local RTP address (reported back to the MSC by us with the
+	 * assignment complete message) */
+	struct sockaddr_storage aoip_rtp_addr_local;
+
+	/* storage to keep states of the MGCP connection handler, the
+	 * handler is created when an assignment request is received
+	 * and is terminated when the assignment complete message is
+	 * sent */
+	struct mgcp_ctx *mgcp_ctx;
+
 	/* for advanced ping/pong */
 	int send_ping;
 
@@ -71,5 +85,7 @@ int bsc_ctrl_cmds_install();
 void bsc_gen_location_state_trap(struct gsm_bts *bts);
 
 struct llist_head *bsc_access_lists(void);
+
+int bssmap_send_aoip_ass_compl(struct gsm_lchan *lchan);
 
 #endif

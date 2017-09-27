@@ -29,6 +29,8 @@
 #include <osmocom/core/talloc.h>
 #include <osmocom/vty/logging.h>
 #include <osmocom/sccp/sccp_types.h>
+#include <osmocom/mgcp_client/mgcp_client.h>
+
 
 #include <time.h>
 
@@ -972,6 +974,8 @@ DEFUN(logging_fltr_imsi,
 
 int bsc_vty_init_extra(void)
 {
+	struct gsm_network *net = bsc_gsmnet;
+
 	install_element(CONFIG_NODE, &cfg_net_msc_cmd);
 	install_element(CONFIG_NODE, &cfg_net_bsc_cmd);
 
@@ -1033,6 +1037,8 @@ int bsc_vty_init_extra(void)
 	install_element(ENABLE_NODE, &gen_position_trap_cmd);
 
 	install_element(CFG_LOG_NODE, &logging_fltr_imsi_cmd);
+
+	mgcp_client_vty_init(net, MSC_NODE, net->mgw.conf);
 
 	return 0;
 }

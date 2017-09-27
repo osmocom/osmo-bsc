@@ -44,6 +44,7 @@
 #include <osmocom/abis/abis.h>
 
 #include <osmocom/sccp/sccp.h>
+#include <osmocom/mgcp_client/mgcp_client.h>
 
 #define _GNU_SOURCE
 #include <getopt.h>
@@ -206,6 +207,9 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 
+	bsc_gsmnet->mgw.conf = talloc_zero(bsc_gsmnet, struct mgcp_client_conf);
+	mgcp_client_conf_init(bsc_gsmnet->mgw.conf);
+
 	bts_init();
 	libosmo_abis_init(tall_bsc_ctx);
 
@@ -272,6 +276,15 @@ int main(int argc, char **argv)
 			LOGP(DNAT, LOGL_ERROR, "Failed to start up. Exiting.\n");
 			exit(1);
 		}
+	}
+
+	bsc_gsmnet->mgw.client = mgcp_client_init(bsc_gsmnet, bsc_gsmnet->mgw.conf);
+
+	if (mgcp_client_connect(bsc_gsmnet->mgw.client)) {
+		LOGP(DNM, LOGL_ERROR, "MGW connect failed at (%s:%u)\n",
+		     bsc_gsmnet->mgw.conf->remote_addr,
+		     bsc_gsmnet->mgw.conf->remote_port);
+		exit(1);
 	}
 
 	if (osmo_bsc_sigtran_init(&bsc_gsmnet->bsc_data->mscs) != 0) {

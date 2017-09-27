@@ -479,6 +479,11 @@ struct gsm_network {
 	uint8_t t3212;
 
 	struct {
+		struct mgcp_client_conf *conf;
+		struct mgcp_client *client;
+	} mgw;
+
+	struct {
 		/* CS7 instance id number (set via VTY) */
 		uint32_t cs7_instance;
 		/* A list with the context information about
