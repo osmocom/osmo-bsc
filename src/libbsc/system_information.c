@@ -182,7 +182,7 @@ uint8_t si2q_num(struct gsm_bts *bts)
 	int rc = make_si2quaters(bts, true);
 	uint8_t num = bts->si2q_index + 1; /* number of SI2quater messages */
 
-	/* N. B: si2q_num() should NEVER be called during actualSI2q rest octets generation
+	/* N. B: si2q_num() should NEVER be called during actual SI2q rest octets generation
 	   we're not re-entrant because of the following code: */
 	bts->u_offset = 0;
 	bts->e_offset = 0;
@@ -239,26 +239,40 @@ int bts_earfcn_add(struct gsm_bts *bts, uint16_t earfcn, uint8_t thresh_hi, uint
 	return r;
 }
 
+/* Scrambling Code as defined in 3GPP TS 25.213 is 9 bit long so number below is unreacheable upper bound */
+#define SC_BOUND 600
+
+/* Find position for a given UARFCN (take SC into consideration if it's available) in a sorted list
+   N. B: we rely on the assumption that (uarfcn, scramble) tuple is unique in the lists */
+static int uarfcn_sc_pos(const struct gsm_bts *bts, uint16_t uarfcn, uint16_t scramble)
+{
+	const uint16_t *sc = bts->si_common.data.scramble_list;
+	uint16_t i, scramble0 = encode_fdd(scramble, false), scramble1 = encode_fdd(scramble, true);
+	for (i = 0; i < bts->si_common.uarfcn_length; i++)
+		if (uarfcn == bts->si_common.data.uarfcn_list[i]) {
+			if (scramble < SC_BOUND) {
+				if (scramble0 == sc[i] || scramble1 == sc[i])
+					return i;
+			} else
+				return i;
+		}
+
+	return -1;
+}
+
 int bts_uarfcn_del(struct gsm_bts *bts, uint16_t arfcn, uint16_t scramble)
 {
-	uint16_t sc0 = encode_fdd(scramble, false), sc1 = encode_fdd(scramble, true),
-		*ual = bts->si_common.data.uarfcn_list,
-		*scl = bts->si_common.data.scramble_list;
-	size_t len = bts->si_common.uarfcn_length, i;
-	for (i = 0; i < len; i++) {
-		if (arfcn == ual[i] && (sc0 == scl[i] || sc1 == scl[i])) {
-			/* we rely on the assumption that (uarfcn, scramble)
-			   tuple is unique in the lists */
-			if (i != len - 1) { /* move the tail if necessary */
-				memmove(ual + i, ual + i + 1, 2 * (len - i + 1));
-				memmove(scl + i, scl + i + 1, 2 * (len - i + 1));
-			}
-			break;
-		}
-	}
+	uint16_t *ual = bts->si_common.data.uarfcn_list, *scl = bts->si_common.data.scramble_list;
+	size_t len = bts->si_common.uarfcn_length;
+	int pos = uarfcn_sc_pos(bts, arfcn, scramble);
 
-	if (i == len)
+	if (pos < 0)
 		return -EINVAL;
+
+	if (pos != len - 1) { /* move the tail if necessary */
+		memmove(ual + pos, ual + pos + 1, 2 * (len - pos + 1));
+		memmove(scl + pos, scl + pos + 1, 2 * (len - pos + 1));
+	}
 
 	bts->si_common.uarfcn_length--;
 	return 0;
@@ -267,29 +281,27 @@ int bts_uarfcn_del(struct gsm_bts *bts, uint16_t arfcn, uint16_t scramble)
 int bts_uarfcn_add(struct gsm_bts *bts, uint16_t arfcn, uint16_t scramble, bool diversity)
 {
 	size_t len = bts->si_common.uarfcn_length, i, k = 0;
-	uint16_t scr, chk,
+	uint8_t si2q;
+	int pos = uarfcn_sc_pos(bts, arfcn, scramble);
+	uint16_t scr = diversity ? encode_fdd(scramble, true) : encode_fdd(scramble, false),
 		*ual = bts->si_common.data.uarfcn_list,
-		*scl = bts->si_common.data.scramble_list,
-		scramble1 = encode_fdd(scramble, true),
-		scramble0 = encode_fdd(scramble, false);
-
-	scr = diversity ? scramble1 : scramble0;
-	chk = diversity ? scramble0 : scramble1;
+		*scl = bts->si_common.data.scramble_list;
 
 	if (len == MAX_EARFCN_LIST)
 		return -ENOMEM;
 
-	for (i = 0; i < len; i++) /* find the position of arfcn if any */
-		if (arfcn == ual[i])
-			break;
+	if (pos >= 0)
+		return -EADDRINUSE;
 
-	for (k = 0; i < len; i++) {
-		if (arfcn == ual[i] && (scr == scl[i] || chk == scl[i]))
-			return -EADDRINUSE;
+	/* find the suitable position for arfcn if any */
+	pos = uarfcn_sc_pos(bts, arfcn, SC_BOUND);
+	i = (pos < 0) ? len : pos;
+
+	for (k = 0; i < len; i++)
 		if (scr > scl[i])
 			k = i + 1;
-	}
-	/* we keep lists sorted by scramble code:
+
+	/* we keep lists sorted by scramble code of a given UARFCN:
 	   insert into appropriate position and move the tail */
 	if (len - k) {
 		memmove(ual + k + 1, ual + k, (len - k) * 2);
@@ -299,9 +311,10 @@ int bts_uarfcn_add(struct gsm_bts *bts, uint16_t arfcn, uint16_t scramble, bool 
 	ual[k] = arfcn;
 	scl[k] = scr;
 	bts->si_common.uarfcn_length++;
+	si2q = si2q_num(bts);
 
-	if (si2q_num(bts) <= SI2Q_MAX_NUM) {
-		bts->si2q_count = si2q_num(bts) - 1;
+	if (si2q <= SI2Q_MAX_NUM) {
+		bts->si2q_count = si2q - 1;
 		return 0;
 	}
 

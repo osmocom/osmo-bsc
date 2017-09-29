@@ -232,7 +232,7 @@ static inline int f0_helper(int *sc, size_t length, uint8_t *chan_list)
 }
 
 /* Estimate how many bits it'll take to append single FDD UARFCN */
-static inline int append_utran_fdd_length(uint16_t u, int *sc, size_t sc_len, size_t length)
+static inline int append_utran_fdd_length(uint16_t u, const int *sc, size_t sc_len, size_t length)
 {
 	uint8_t chan_list[16] = { 0 };
 	int tmp[sc_len], f0;
@@ -274,18 +274,42 @@ static inline int append_utran_fdd(struct bitvec *bv, uint16_t u, int *sc, size_
 	return 21 + range1024_p(length);
 }
 
-/* Append multiple FDD UARFCNs */
-static inline int append_uarfcns(struct bitvec *bv, struct gsm_bts *bts, uint8_t budget)
+static inline int try_adding_uarfcn(struct bitvec *bv, struct gsm_bts *bts, uint16_t uarfcn,
+				    uint8_t num_sc, uint8_t start_pos, uint8_t budget)
 {
-	const uint16_t *u = bts->si_common.data.uarfcn_list, *sc = bts->si_common.data.scramble_list;
-	int i, j, k, rc, st = 0, a[bts->si_common.uarfcn_length];
+	int i, k, rc, a[bts->si_common.uarfcn_length];
+
+	if (budget < 23)
+		return -ENOMEM;
+
+	/* copy corresponding Scrambling Codes: range encoder make in-place modifications */
+	for (i = start_pos, k = 0; i < num_sc; a[k++] = bts->si_common.data.scramble_list[i++]);
+
+	/* estimate bit length requirements */
+	rc = append_utran_fdd_length(uarfcn, a, bts->si_common.uarfcn_length, k);
+	if (rc < 0)
+		return rc; /* range encoder failure */
+
+	if (budget - rc <= 0)
+		return -ENOMEM; /* we have ran out of budget in current SI2q */
+
+	/* compute next offset */
+	bts->u_offset += k;
+
+	return budget - append_utran_fdd(bv, uarfcn, a, k);
+}
+
+/* Append multiple FDD UARFCNs */
+static inline void append_uarfcns(struct bitvec *bv, struct gsm_bts *bts, uint8_t budget)
+{
+	const uint16_t *u = bts->si_common.data.uarfcn_list;
+	int i, rem = budget - 7, st = 0; /* account for constant bits right away */
 	uint16_t cu = u[bts->u_offset]; /* caller ensures that length is positive */
-	uint8_t rem = budget - 7, offset_diff; /* account for constant bits right away */
 
 	OSMO_ASSERT(budget <= SI2Q_MAX_LEN);
 
 	if (budget <= 7)
-		return -ENOMEM;
+		return;
 
 	/* 3G Neighbour Cell Description */
 	bitvec_set_bit(bv, 1);
@@ -299,53 +323,24 @@ static inline int append_uarfcns(struct bitvec *bv, struct gsm_bts *bts, uint8_t
 	/* No Bandwidth_FDD */
 	bitvec_set_bit(bv, 0);
 
-	for (i = bts->u_offset; i < bts->si_common.uarfcn_length; i++) {
-		offset_diff = 0;
-		for (j = st, k = 0; j < i; j++) {
-			a[k++] = sc[j]; /* copy corresponding SCs */
-			offset_diff++; /* compute proper offset step */
-		}
+	for (i = bts->u_offset; i <= bts->si_common.uarfcn_length; i++)
 		if (u[i] != cu) { /* we've reached new UARFCN */
-			rc = append_utran_fdd_length(cu, a, bts->si_common.uarfcn_length, k);
-			if (rc < 0) { /* estimate bit length requirements */
-				return rc;
-			}
+			rem = try_adding_uarfcn(bv, bts, cu, i, st, rem);
+			if (rem < 0)
+				break;
 
-			if (rem - rc <= 0)
-				break; /* we have ran out of budget in current SI2q */
-			else {
-				rem -= append_utran_fdd(bv, cu, a, k);
-				bts->u_offset += offset_diff;
-			}
-			cu = u[i];
-			st = i; /* update start position */
+			if (i < bts->si_common.uarfcn_length) {
+				cu = u[i];
+				st = i;
+			} else
+				break;
 		}
-	}
-
-	if (rem > 22) {	/* add last UARFCN not covered by previous cycle if it could possibly fit into budget */
-		offset_diff = 0;
-		for (i = st, k = 0; i < bts->si_common.uarfcn_length; i++) {
-			a[k++] = sc[i];
-			offset_diff++;
-		}
-		rc = append_utran_fdd_length(cu, a, bts->si_common.uarfcn_length, k);
-		if (rc < 0) {
-			return rc;
-		}
-
-		if (rem - rc >= 0) {
-			rem -= append_utran_fdd(bv, cu, a, k);
-			bts->u_offset += offset_diff;
-		}
-	}
 
 	/* stop bit - end of Repeated UTRAN FDD Neighbour Cells */
 	bitvec_set_bit(bv, 0);
 
 	/* UTRAN TDD Description */
 	bitvec_set_bit(bv, 0);
-
-	return 0;
 }
 
 /* generate SI2quater rest octets: 3GPP TS 44.018 § 10.5.2.33b */
@@ -393,15 +388,9 @@ int rest_octets_si2quater(uint8_t *data, struct gsm_bts *bts)
 	bitvec_set_bit(&bv, 0);
 
 	rc = SI2Q_MAX_LEN - (bv.cur_bit + 3);
-	if (rc > 0 && bts->si_common.uarfcn_length - bts->u_offset > 0) {
-		rc = append_uarfcns(&bv, bts, rc);
-		if (rc < 0) {
-			LOGP(DRR, LOGL_ERROR, "SI2quater [%u/%u]: failed to append %zu UARFCNs due to range encoding "
-			     "failure: %s\n",
-			     bts->si2q_index, bts->si2q_count, bts->si_common.uarfcn_length, strerror(-rc));
-			return rc;
-		}
-	} else /* No 3G Neighbour Cell Description */
+	if (rc > 0 && bts->si_common.uarfcn_length - bts->u_offset > 0)
+		append_uarfcns(&bv, bts, rc);
+	else /* No 3G Neighbour Cell Description */
 		bitvec_set_bit(&bv, 0);
 
 	/* No 3G Measurement Parameters Description */
