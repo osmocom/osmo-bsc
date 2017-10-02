@@ -280,7 +280,7 @@ int bts_uarfcn_del(struct gsm_bts *bts, uint16_t arfcn, uint16_t scramble)
 
 int bts_uarfcn_add(struct gsm_bts *bts, uint16_t arfcn, uint16_t scramble, bool diversity)
 {
-	size_t len = bts->si_common.uarfcn_length, i, k = 0;
+	size_t len = bts->si_common.uarfcn_length, i;
 	uint8_t si2q;
 	int pos = uarfcn_sc_pos(bts, arfcn, scramble);
 	uint16_t scr = diversity ? encode_fdd(scramble, true) : encode_fdd(scramble, false),
@@ -297,20 +297,17 @@ int bts_uarfcn_add(struct gsm_bts *bts, uint16_t arfcn, uint16_t scramble, bool 
 	pos = uarfcn_sc_pos(bts, arfcn, SC_BOUND);
 	i = (pos < 0) ? len : pos;
 
-	for (k = 0; i < len; i++)
-		if (scr > scl[i])
-			k = i + 1;
-
-	/* we keep lists sorted by scramble code of a given UARFCN:
-	   insert into appropriate position and move the tail */
-	if (len - k) {
-		memmove(ual + k + 1, ual + k, (len - k) * 2);
-		memmove(scl + k + 1, scl + k, (len - k) * 2);
+	/* move the tail to make space for inserting if necessary */
+	if (i < len) {
+		memmove(ual + i + 1, ual + i, (len - i) * 2);
+		memmove(scl + i + 1, scl + i, (len - i) * 2);
 	}
 
-	ual[k] = arfcn;
-	scl[k] = scr;
+	/* insert into appropriate position */
+	ual[i] = arfcn;
+	scl[i] = scr;
 	bts->si_common.uarfcn_length++;
+	/* try to generate SI2q */
 	si2q = si2q_num(bts);
 
 	if (si2q <= SI2Q_MAX_NUM) {
@@ -318,6 +315,7 @@ int bts_uarfcn_add(struct gsm_bts *bts, uint16_t arfcn, uint16_t scramble, bool 
 		return 0;
 	}
 
+	/* rollback after unsuccessful generation */
 	bts_uarfcn_del(bts, arfcn, scramble);
 	return -ENOSPC;
 }

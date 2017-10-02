@@ -303,7 +303,7 @@ static inline int try_adding_uarfcn(struct bitvec *bv, struct gsm_bts *bts, uint
 static inline void append_uarfcns(struct bitvec *bv, struct gsm_bts *bts, uint8_t budget)
 {
 	const uint16_t *u = bts->si_common.data.uarfcn_list;
-	int i, rem = budget - 7, st = 0; /* account for constant bits right away */
+	int i, rem = budget - 7, st = bts->u_offset; /* account for constant bits right away */
 	uint16_t cu = u[bts->u_offset]; /* caller ensures that length is positive */
 
 	OSMO_ASSERT(budget <= SI2Q_MAX_LEN);
