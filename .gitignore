@@ -7,15 +7,8 @@ Makefile
 Makefile.in
 bscconfig.h
 bscconfig.h.in
-openbsc.pc
-src/osmo-nitb/osmo-nitb
-src/osmo-bsc_mgcp/osmo-bsc_mgcp
-src/osmo-bsc/osmo-bsc
-src/utils/meas_vis
-src/utils/meas_json
-src/utils/osmo-meas-pcap2db
-src/utils/osmo-meas-udp2db
-src/utils/smpp_mirror
+*.pc
+
 *.*~
 *.sw?
 .libs
@@ -38,11 +31,13 @@ missing
 stamp-h1
 libtool
 ltmain.sh
+m4/*.m4
 
 # git-version-gen magic
 .tarball-version
 .version
-
+osmo-bsc-*.tar.bz2
+osmo-bsc-*.tar.gz
 
 # apps and app data
 hlr.sqlite3
@@ -52,24 +47,19 @@ src/ipaccess/abisip-find
 src/ipaccess/ipaccess-firmware
 src/ipaccess/ipaccess-proxy
 src/utils/isdnsync
-src/nat/bsc_nat
-src/gprs/osmo-sgsn
-src/gprs/osmo-gbproxy
-src/gprs/osmo-gtphub
 src/osmo-bsc_nat/osmo-bsc_nat
-src/libcommon/gsup_test_client
-src/osmo-msc/osmo-msc
+src/osmo-bsc_nat/*.cfg*
+src/osmo-bsc/osmo-bsc
+src/osmo-bsc/*.cfg*
+src/utils/meas_vis
+src/utils/meas_json
+src/utils/osmo-meas-pcap2db
+src/utils/osmo-meas-udp2db
+
 
 #tests
 tests/testsuite.dir
 tests/*/*_test
-# ignore compiled binaries like msc_vlr_test_foo; do not ignore
-# msc_vlr_test_foo.{c,ok,err}, but do still ignore the corresponding .o object
-# files:
-tests/msc_vlr/msc_vlr_test_*
-!tests/msc_vlr/msc_vlr_test_*.*
-tests/msc_vlr/msc_vlr_test_*.o
-
 
 tests/atconfig
 tests/atlocal
@@ -77,7 +67,4 @@ tests/package.m4
 tests/testsuite
 tests/testsuite.log
 
-gsn_restart
-src/openbsc.cfg*
 writtenconfig/
-gtphub_restart_count
