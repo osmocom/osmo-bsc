@@ -29,7 +29,6 @@ struct gsm_subscriber_group;
 struct bsc_subscr;
 struct vlr_instance;
 struct vlr_subscr;
-struct ranap_ue_conn_ctx;
 struct gprs_ra_id;
 
 #define OBSC_LINKID_CB(__msgb)	(__msgb)->cb[3]
@@ -200,12 +199,6 @@ struct gsm_subscriber_connection {
 		uint16_t port_subscr;
 		uint16_t port_cn;
 	} rtp;
-
-	/* which Iu-CS connection, if any. */
-	struct {
-		struct ranap_ue_conn_ctx *ue_ctx;
-		uint8_t rab_id;
-	} iu;
 
 	struct {
 		/* A pointer to the SCCP user that handles
@@ -484,13 +477,6 @@ struct gsm_network {
 
 	/* Periodic location update default value */
 	uint8_t t3212;
-
-	struct {
-		/* CS7 instance id number (set via VTY) */
-		uint32_t cs7_instance;
-		int rab_assign_addr_enc;
-		struct osmo_sccp_instance *sccp;
-	} iu;
 
 	struct {
 		/* CS7 instance id number (set via VTY) */
