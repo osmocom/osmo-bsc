@@ -546,6 +546,7 @@ struct gsm_bts_model {
 	bool started;
 	int (*start)(struct gsm_network *net);
 	int (*oml_rcvmsg)(struct msgb *msg);
+	char * (*oml_status)(const struct gsm_bts *bts);
 
 	void (*e1line_bind_ops)(struct e1inp_line *line);
 

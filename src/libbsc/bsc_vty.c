@@ -308,9 +308,8 @@ static void bts_dump_vty(struct vty *vty, struct gsm_bts *bts)
 		paging_pending_requests_nr(bts),
 		bts->paging.available_slots, VTY_NEWLINE);
 	if (is_ipaccess_bts(bts)) {
-		vty_out(vty, "  OML Link state: ");
+		vty_out(vty, "  OML Link state: %s", get_model_oml_status(bts));
 		if (bts->oml_link) {
-			vty_out(vty, "connected");
 			if (bts->uptime) {
 				rc = clock_gettime(CLOCK_MONOTONIC, &tp);
 				if (rc == 0) { /* monotonic clock helps to ensure that conversion below is valid */
@@ -320,8 +319,7 @@ static void bts_dump_vty(struct vty *vty, struct gsm_bts *bts)
 						sec % 60, VTY_NEWLINE);
 				}
 			}
-		} else
-			vty_out(vty, "disconnected.%s", VTY_NEWLINE);
+		}
 	} else {
 		vty_out(vty, "  E1 Signalling Link:%s", VTY_NEWLINE);
 		e1isl_dump_vty(vty, bts->oml_link);

@@ -38,6 +38,7 @@
 #include <osmocom/bsc/common_bsc.h>
 #include <osmocom/bsc/pcu_if.h>
 #include <limits.h>
+#include <stdbool.h>
 
 /* global pointer to the gsm network data structure */
 extern struct gsm_network *bsc_gsmnet;

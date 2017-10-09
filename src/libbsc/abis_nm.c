@@ -683,6 +683,34 @@ static int abis_nm_rx_lmt_event(struct msgb *mb)
 	return 0;
 }
 
+static inline bool all_trx_rsl_connected(const struct gsm_bts *bts)
+{
+	const struct gsm_bts_trx *trx;
+
+	llist_for_each_entry(trx, &bts->trx_list, list) {
+		if (!trx->rsl_link)
+			return false;
+	}
+
+	return true;
+}
+
+char *get_oml_status(const struct gsm_bts *bts)
+{
+	if (bts->oml_link)
+		return all_trx_rsl_connected(bts) ? "connected" : "degraded";
+
+	return "disconnected";
+}
+
+char *get_model_oml_status(const struct gsm_bts *bts)
+{
+	if (bts->model->oml_status)
+		return bts->model->oml_status(bts);
+
+	return "unknown";
+}
+
 void abis_nm_queue_send_next(struct gsm_bts *bts)
 {
 	int wait = 0;

@@ -231,9 +231,10 @@ CTRL_CMD_DEFINE_RO(bts_chan_load, "channel-load");
 
 static int get_bts_oml_conn(struct ctrl_cmd *cmd, void *data)
 {
-	struct gsm_bts *bts = cmd->node;
+	const struct gsm_bts *bts = cmd->node;
 
-	cmd->reply = bts->oml_link ? "connected" : "disconnected";
+	cmd->reply = get_model_oml_status(bts);
+
 	return CTRL_CMD_REPLY;
 }
 

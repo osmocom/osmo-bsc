@@ -52,6 +52,7 @@ struct gsm_bts_model bts_model_nanobts = {
 	.name = "nanobts",
 	.start = bts_model_nanobts_start,
 	.oml_rcvmsg = &abis_nm_rcvmsg,
+	.oml_status = &get_oml_status,
 	.e1line_bind_ops = bts_model_nanobts_e1line_bind_ops, 
 	.nm_att_tlvdef = {
 		.def = {
