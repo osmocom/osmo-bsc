@@ -59,15 +59,16 @@ int rest_octets_si1(uint8_t *data, uint8_t *nch_pos, int is1800_net)
 }
 
 /* Append Repeated E-UTRAN Neighbour Cell to bitvec: see 3GPP TS 44.018 Table 10.5.2.33b.1 */
-static inline void append_eutran_neib_cell(struct bitvec *bv, struct gsm_bts *bts, uint8_t budget)
+static inline bool append_eutran_neib_cell(struct bitvec *bv, struct gsm_bts *bts, uint8_t budget)
 {
 	const struct osmo_earfcn_si2q *e = &bts->si_common.si2quater_neigh_list;
 	unsigned i, skip = 0;
 	size_t offset = bts->e_offset;
-	uint8_t rem = budget - 6, earfcn_budget; /* account for mandatory stop bit and THRESH_E-UTRAN_high */
+	int16_t rem = budget - 6; /* account for mandatory stop bit and THRESH_E-UTRAN_high */
+	uint8_t earfcn_budget;
 
 	if (budget <= 6)
-		return;
+		return false;
 
 	OSMO_ASSERT(budget <= SI2Q_MAX_LEN);
 
@@ -87,6 +88,9 @@ static inline void append_eutran_neib_cell(struct bitvec *bv, struct gsm_bts *bt
 	else
 		rem--;
 
+	if (rem < 0)
+		return false;
+
 	/* now we can proceed with actually adding EARFCNs within adjusted budget limit */
 	for (i = 0; i < e->length; i++) {
 		if (e->arfcn[i] != OSMO_EARFCN_INVALID) {
@@ -104,6 +108,10 @@ static inline void append_eutran_neib_cell(struct bitvec *bv, struct gsm_bts *bt
 				else {
 					bts->e_offset++;
 					rem -= earfcn_budget;
+
+					if (rem < 0)
+						return false;
+
 					bitvec_set_bit(bv, 1); /* EARFCN: */
 					bitvec_set_uint(bv, e->arfcn[i], 16);
 
@@ -146,10 +154,14 @@ static inline void append_eutran_neib_cell(struct bitvec *bv, struct gsm_bts *bt
 		bitvec_set_uint(bv, e->qrxlm, 5);
 	} else
 		bitvec_set_bit(bv, 0);
+
+	return true;
 }
 
 static inline void append_earfcn(struct bitvec *bv, struct gsm_bts *bts, uint8_t budget)
 {
+	bool appended;
+	unsigned int old = bv->cur_bit; /* save current position to make rollback possible */
 	int rem = budget - 25;
 	if (rem <= 0)
 		return;
@@ -203,8 +215,11 @@ static inline void append_earfcn(struct bitvec *bv, struct gsm_bts *bts, uint8_t
 	/* Repeated E-UTRAN Neighbour Cells */
 	bitvec_set_bit(bv, 1);
 
-	/* N. B: 25 bits are set in append_earfcn() - keep it in sync with budget adjustment below: */
-	append_eutran_neib_cell(bv, bts, rem);
+	appended = append_eutran_neib_cell(bv, bts, rem);
+	if (!appended) { /* appending is impossible within current budget: rollback */
+		bv->cur_bit = old;
+		return;
+	}
 
 	/* stop bit - end of Repeated E-UTRAN Neighbour Cells sequence: */
 	bitvec_set_bit(bv, 0);
