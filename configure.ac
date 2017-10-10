@@ -125,7 +125,6 @@ dnl Generate the output
 AM_CONFIG_HEADER(bscconfig.h)
 
 AC_OUTPUT(
-    osmo-bsc.pc
     include/Makefile
     include/osmocom/Makefile
     include/osmocom/bsc/Makefile
