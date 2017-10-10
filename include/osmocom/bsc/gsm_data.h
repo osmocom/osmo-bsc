@@ -657,6 +657,8 @@ extern const struct value_string bts_type_descs[_NUM_GSM_BTS_TYPE+1];
 char *get_oml_status(const struct gsm_bts *bts);
 char *get_model_oml_status(const struct gsm_bts *bts);
 
+unsigned long long bts_uptime(const struct gsm_bts *bts);
+
 /* control interface handling */
 int bsc_base_ctrl_cmds_install(void);
 

@@ -236,8 +236,6 @@ static void bts_dump_vty(struct vty *vty, struct gsm_bts *bts)
 {
 	struct pchan_load pl;
 	unsigned long long sec;
-	struct timespec tp;
-	int rc;
 
 	vty_out(vty, "BTS %u is of %s type in band %s, has CI %u LAC %u, "
 		"BSIC %u (NCC=%u, BCC=%u) and %u TRX%s",
@@ -309,17 +307,11 @@ static void bts_dump_vty(struct vty *vty, struct gsm_bts *bts)
 		bts->paging.available_slots, VTY_NEWLINE);
 	if (is_ipaccess_bts(bts)) {
 		vty_out(vty, "  OML Link state: %s", get_model_oml_status(bts));
-		if (bts->oml_link) {
-			if (bts->uptime) {
-				rc = clock_gettime(CLOCK_MONOTONIC, &tp);
-				if (rc == 0) { /* monotonic clock helps to ensure that conversion below is valid */
-					sec = (unsigned long long)difftime(tp.tv_sec, bts->uptime);
-					vty_out(vty, " %llu days %llu hours %llu min. %llu sec.%s",
-						OSMO_SEC2DAY(sec), OSMO_SEC2HRS(sec), OSMO_SEC2MIN(sec),
-						sec % 60, VTY_NEWLINE);
-				}
-			}
-		}
+		sec = bts_uptime(bts);
+		if (sec)
+			vty_out(vty, " %llu days %llu hours %llu min. %llu sec.%s",
+				OSMO_SEC2DAY(sec), OSMO_SEC2HRS(sec), OSMO_SEC2MIN(sec), sec % 60,
+				VTY_NEWLINE);
 	} else {
 		vty_out(vty, "  E1 Signalling Link:%s", VTY_NEWLINE);
 		e1isl_dump_vty(vty, bts->oml_link);

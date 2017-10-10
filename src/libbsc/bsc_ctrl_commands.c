@@ -240,6 +240,21 @@ static int get_bts_oml_conn(struct ctrl_cmd *cmd, void *data)
 
 CTRL_CMD_DEFINE_RO(bts_oml_conn, "oml-connection-state");
 
+static int get_bts_oml_up(struct ctrl_cmd *cmd, void *data)
+{
+	const struct gsm_bts *bts = cmd->node;
+
+	cmd->reply = talloc_asprintf(cmd, "%llu", bts_uptime(bts));
+	if (!cmd->reply) {
+		cmd->reply = "OOM";
+		return CTRL_CMD_ERROR;
+	}
+
+	return CTRL_CMD_REPLY;
+}
+
+CTRL_CMD_DEFINE_RO(bts_oml_up, "oml-uptime");
+
 static int verify_bts_gprs_mode(struct ctrl_cmd *cmd, const char *value, void *_data)
 {
 	int valid;
@@ -450,6 +465,7 @@ int bsc_base_ctrl_cmds_install(void)
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_si);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_chan_load);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_oml_conn);
+	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_oml_up);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_gprs_mode);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_rf_state);
 
