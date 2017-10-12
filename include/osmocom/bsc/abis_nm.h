@@ -162,6 +162,7 @@ int ipac_parse_bcch_info(struct ipac_bcch_info *binf, uint8_t *buf);
 const char *ipacc_testres_name(uint8_t res);
 
 /* Functions calling into other code parts */
+bool all_trx_rsl_connected(const struct gsm_bts *bts);
 int nm_is_running(struct gsm_nm_state *s);
 
 int abis_nm_vty_init(void);

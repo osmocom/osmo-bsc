@@ -654,7 +654,6 @@ extern struct e1inp_line_ops bts_isdn_e1inp_line_ops;
 extern const struct value_string bts_type_names[_NUM_GSM_BTS_TYPE+1];
 extern const struct value_string bts_type_descs[_NUM_GSM_BTS_TYPE+1];
 
-char *get_oml_status(const struct gsm_bts *bts);
 char *get_model_oml_status(const struct gsm_bts *bts);
 
 unsigned long long bts_uptime(const struct gsm_bts *bts);

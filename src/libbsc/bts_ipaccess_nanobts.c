@@ -47,6 +47,14 @@ extern struct gsm_network *bsc_gsmnet;
 static int bts_model_nanobts_start(struct gsm_network *net);
 static void bts_model_nanobts_e1line_bind_ops(struct e1inp_line *line);
 
+static char *get_oml_status(const struct gsm_bts *bts)
+{
+	if (bts->oml_link)
+		return all_trx_rsl_connected(bts) ? "connected" : "degraded";
+
+	return "disconnected";
+}
+
 struct gsm_bts_model bts_model_nanobts = {
 	.type = GSM_BTS_TYPE_NANOBTS,
 	.name = "nanobts",
