@@ -780,7 +780,8 @@ DEFUN(cfg_msc_cs7_msc_addr,
 DEFUN(cfg_net_bsc_mid_call_text,
       cfg_net_bsc_mid_call_text_cmd,
       "mid-call-text .TEXT",
-      "Set the USSD notification to be send.\n" "Text to be sent\n")
+      "Set the USSD notification sent to running calls when switching from Grace to Off.\n"
+      "Text to be sent\n")
 {
 	struct osmo_bsc_data *data = osmo_bsc_data(vty);
 	char *txt = argv_concat(argv, argc, 0);
