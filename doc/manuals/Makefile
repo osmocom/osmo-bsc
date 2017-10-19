@@ -1,54 +1,11 @@
-# XSL stylesheets downloaded from http://docbook.sourceforge.net/release/xsl/current/html/
-# Makefile from BitBake/OpenEmbedded manuals
+TOPDIR = ..
 
-
-EXTRA_DEPS = gen-bsc-vty-docbook
-
-topdir = .
-bsc_reference = $(topdir)/osmobsc-vty-reference.xml
-manuals = $(bsc_reference)
-# types = pdf txt rtf ps xhtml html man tex texi dvi
-# types = pdf txt
-types = $(docbooktotypes)
-docbooktotypes = pdf
-# htmlcssfile =
-# htmlcss =
-
-TOPDIR := ..
-ASCIIDOCS := osmobsc-usermanual osmux-reference aoip-mgw-options
-
+ASCIIDOC = osmobsc-usermanual.adoc osmux-reference.adoc aoip-mgw-options.adoc
 include $(TOPDIR)/build/Makefile.asciidoc.inc
-include $(TOPDIR)/build/Makefile.inc
-
 osmobsc-usermanual.pdf: chapters/*.adoc
-osmux-reference.pdf: osmux-reference.adoc
-aoip-mgw-options.pdf: aoip-mgw-options.adoc
+aoip-mgw-options.pdf: aoip-mgw-options.adoc mgw/*.msc
 
-clean:
-	-rm -rf $(cleanfiles)
-	-rm osmobsc-usermanual__*.png
-	-rm osmobsc-usermanual__*.svg
-	-rm osmobsc-usermanual*.check
-	-rm osmux-reference*.check
-	-rm aoip-mgw-options*.png
-	-rm aoip-mgw-options*.svg
-	-rm aoip-mgw-options*.check
-	-rm osmux-reference__*.svg
-	-rm osmux-reference__*.png
-	-rm osmux-reference__*.check
+VTY_REFERENCE = osmobsc-vty-reference.xml
+include $(TOPDIR)/build/Makefile.vty-reference.inc
 
-gen-bsc-vty-docbook: FORCE
-	$(call command,xsltproc -o generated/combined1.xml \
-		--stringparam with $(PWD)/../common/vty_additions.xml \
-		$(MERGE_DOC) vty/bsc_vty_reference.xml, \
-		XSLTPROC,Merging Common VTY)
-	$(call command,xsltproc -o generated/combined2.xml \
-		--stringparam with $(PWD)/../common/bsc_vty_additions.xml \
-		$(MERGE_DOC) generated/combined1.xml, \
-		XSLTPROC,Merging Common BSC VTY)
-	$(call command,xsltproc -o generated/combined3.xml \
-		--stringparam with $(PWD)/vty/bsc_vty_additions.xml \
-		$(MERGE_DOC) generated/combined2.xml, \
-		XSLTPROC,Merging BSC VTY)
-	$(call command,xsltproc ../vty_reference.xsl generated/combined3.xml > generated/docbook_vty.xml, \
-		XSLTPROC,Converting BSC VTY to DocBook)
+include $(TOPDIR)/build/Makefile.common.inc

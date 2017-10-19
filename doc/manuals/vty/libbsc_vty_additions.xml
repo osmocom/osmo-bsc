@@ -1,0 +1,244 @@
+<vtydoc xmlns='urn:osmocom:xml:libosmocore:vty:doc:1.0'>
+    <node id='14'>
+      <child_of nodeid='4' />
+      <name>GSM Network Configuration</name>
+      <description>This is the base node for all configuration of
+      GSM network related configuration, it includes the LAC, CI
+      access criteria but also the configuration of each BTS in this
+      network.</description>
+    </node>
+    <node id='15'>
+      <child_of nodeid='14' />
+      <name>BTS Configuration</name>
+      <description>This is the configuration of a single BTS.</description>
+      <command id='oml ip.access stream_id &lt;0-255&gt; line E1_LINE'>
+        <description>
+	  Set the IPA stream identifier for the OML link within the IPA
+	  multiplex.  Must be the same as on the BTS side.  The default
+	  value is 255.  Only applies to BTSs connected via Abis/IP
+	  interface.
+	</description>
+      </command>
+      <command id='is-connection-list (add|del) &lt;0-2047&gt; &lt;0-2047&gt; &lt;0-255&gt;'>
+        <description>
+	  Only applies to Ericsson OML2000 based BTSs.
+	</description>
+      </command>
+      <command id='con-connection-list (add|del) &lt;1-255&gt; &lt;0-1023&gt; deconcentrated'>
+        <description>
+	  Only applies to Ericsson OML2000 based BTSs.
+	</description>
+      </command>
+      <command id='con-connection-list (add|del) &lt;1-255&gt; &lt;0-1023&gt; tei &lt;0-63&gt;'>
+        <description>
+	  Only applies to Ericsson OML2000 based BTSs.
+	</description>
+      </command>
+      <command id='channel-descrption attach (0|1)'>
+        <description>
+	  Configure whether the IMSI ATTACH (and DETACH) procedures
+	  shall be used by MS in this cell.  The default should be enabled.
+	</description>
+      </command>
+      <command id='ip.access rsl-ip A.B.C.D'>
+        <description>
+	  Configure the IP address of the BSC used for RSL.  Abis/IP
+	  BTSs, including OsmoBTS and the nanoBTS will be instructed to
+	  connect their RSL links to that IP address.
+	</description>
+      </command>
+      <command id='base_station_id_code &lt;0-63&gt;'>
+        <description>
+	  Configure the BSIC of the cell.  It is a 6-bit value
+	  consisting of a 3-bit NCC (network color code) in the upper 3
+	  bits, and a 3-bit BCC (base station color code) in the lower 3
+	  bits.
+	</description>
+      </command>
+      <command id='training_sequence_code &lt;0-7&gt;'>
+        <description>
+	  Configure the default TSC for all timeslots on all TRX of the BTS.
+	  The normal default is to use the BCC part of the BSIC as TSC.
+	  Not all BTS models support a TSC != BCC.
+	</description>
+      </command>
+      <command id='si5 neighbor-list (add|del) arfcn &lt;0-1023&gt;'>
+        <description>
+	  Add or remove an ARFCN to/from the list of neighbor cells
+	  advertised in dedicated mode via SACCH.  This command is only
+	  available in manual-si5 neighbor-list mode.
+	</description>
+      </command>
+      <command id='neighbor-list (add|del) arfcn &lt;0-1023&gt;'>
+        <description>
+	  Add or remove an ARFCN to/from the list of neighbor cells.
+	  This command is only available in manual neighbor-list mode.
+	</description>
+      </command>
+      <command id='gprs network-control-order (nc0|nc1|nc2)'>
+        <description>
+	</description>
+      </command>
+      <command id='cell reselection offset &lt;0-126&gt;'>
+        <description>
+	  If a cell advertises a cell reselection offset (CRO), it will
+	  become more attractive during cell re-selection, despite not
+	  being received at a higher level than other cells.   The CRO
+	  of each neighbor cell is added to the respective received
+	  signal level before comparing their values for re-selection.
+	</description>
+      </command>
+      <command id='cell reselection hysteresis &lt;0-14&gt;'>
+        <description>
+	  The Cell Re-Selection Hysteresis determines how many dB a
+	  neighbor cell must be stronger than the current serving cell
+	  before the MS considers that neighbor cell as a candidate for
+	  re-selection.
+	</description>
+      </command>
+      <command id='ip.access unit_id &lt;0-65534&gt; &lt;0-255&gt;'>
+        <description>
+	  The ip.access unit ID is a parameter of the IPA
+	  Signalling-over-IP multiplex.  It is administratively
+	  configured on the BTS side, and used by the BTS to identify
+	  itself to the BSC.  The BSC then selects the BTS configuration
+	  for this Unit ID.  It consists of three parts, the Site ID,
+	  the BTS ID and the TRX ID.  The TRX ID automatically
+	  corresponds to to the transceiver number and is thus not
+	  configurable here.
+	</description>
+      </command>
+      <command id='ms max power &lt;0-40&gt;'>
+        <description>
+	  Configures the maximum transmit power (in dBm) that any MS may
+	  use within this cell.
+	</description>
+      </command>
+      <command id='periodic location update &lt;6-1530&gt;'>
+        <description>
+	  The periodic location updating interval determines how often
+	  the MS will periodically perform a LOCATION UPDATE procedure,
+	  despite not having actuall changed location.  The value is
+	  specified in minutes.
+	</description>
+      </command>
+      <command id='cell barred (0|1)'>
+        <description>
+	  Using this command, you can enable/disable barring of the cell.
+	  Barred cells are  not visible/accessible to regular phones.
+	  Only some special operator testing phones can be configured in
+	  a way to ignore cell barring.
+	</description>
+      </command>
+      <command id='rxlev access min &lt;0-63&gt;'>
+        <description>
+	  Using this command, you can determine the minimum downlink
+	  signal receive level (RxLev), at which the BTS must be
+	  received by the MS in order to attempt establishing dedicated
+	  channels via the RACH.
+	</description>
+      </command>
+      <command id='rach access-control-class (0|1|2|3|4|5|6|7|8|9|11|12|13|14|15) (barred|allowed)'>
+	<description>
+	  Using this command, you can configure which access control
+	  classes are permitted to access this cell.  The access control
+	  class of a MS is determined by the contents of the EF.ACC file
+	  on the SIM card.
+
+	  Access Control Class 10 corresponds to Emergency Calls, and is
+	  thus not configurable this way.
+	</description>
+      </command>
+      <command id='rach emergency call allowed (0|1)'>
+	<description>
+	  Using this command, you can determine if this cell permits the
+	  use of the 'EMERGENCY CALL' feature.
+
+	  <warning>Unless you operate a public network with connection to the
+	  public emergency services in compliance with applicable regulatory
+	  requirements, you should always have emergency calls disabled (allowed
+	  0) - which is also the default configuration.</warning>
+	</description>
+      </command>
+      <command id='channel-descrption bs-ag-blks-res &lt;0-7&gt;'>
+	<description>
+	  Using this command, you can specify how many blocks of the
+	  downlink CCCH should be reserved for exclusive usage as AGCH.
+
+	  <warning>Not all BTS models currently support non-default configuration
+		  of this parameter.</warning>
+        </description>
+      </command>
+      <command id='oml e1 tei &lt;0-63&gt;'>
+	<description>
+	  Set the LAPD TEI used for the OML connection of this BTS.
+	  Only applies to classic E1 based A-bis.
+	</description>
+      </command>
+    </node>
+    <node id='16'>
+      <child_of nodeid='15' />
+      <name>TRX Configuration</name>
+      <description>This is the configuration of a TRX.</description>
+      <command id='nominal power &lt;0-100&gt;'>
+        <description>
+	  Inform the BSC about the nominal RF transmit power of the BTS in dBm.
+	  This value must be entered depending on the BTS model and
+	  external setup such as amplifiers.  Changing this value will
+	  not change the actually transmitted power, it will just affect
+	  the reporting in the BSC VTY.
+	</description>
+      </command>
+      <command id='max_power_red &lt;0-100&gt;'>
+        <description>
+	  Request the actual RF transmit power of the BTS to be reduced
+	  by the specified number of dB.
+	</description>
+      </command>
+      <command id='rsl e1 tei &lt;0-63&gt;'>
+	<description>
+	  Set the LAPD TEI used for the RSL connection of this TRX.
+	  Only applies to classic E1 based A-bis.
+	</description>
+      </command>
+      <command id='rf_locked (0|1)'>
+	<description>
+	  Enable (1) or disable (0) the RF locking for this TRX.  RF
+	  locking is a mechanism by which the transmitter can be shut
+	  down by administrative means, e.g. via the control interface.
+	</description>
+      </command>
+    </node>
+    <node id='17'>
+      <child_of nodeid='16' />
+      <name>TS Configuration</name>
+      <description>This is the configuration of a TS.</description>
+      <command id='training_sequence_code &lt;0-7&gt;'>
+        <description>
+	  Configure the timeslot to run on a different TSC than the
+	  default TSC of the BTS (which is derived from the BCC part of the BSIC).
+	  Please note that not all BTS models support timeslot-specific TSC!
+	</description>
+      </command>
+      <command id='hopping enabled (0|1)'>
+        <description>
+	  Enable or disable frequency hopping for this timeslot.  Please
+	  note that not all BTS models may support frequency hopping,
+	  and that frequency hopping is only permitted for secondary
+	  TRXs, so TRX 0 must always be non-hopping.
+	</description>
+      </command>
+    </node>
+    <node id='22'>
+      <child_of nodeid='3' />
+      <name>OML Commands</name>
+      <description>This node allows to manipulate the OML state of
+      a connected BTS. It is meant for testing during development.</description>
+    </node>
+    <node id='26'>
+      <child_of nodeid='3' />
+      <name>OML2000 Commands</name>
+      <description>This node allows to issue OML2000 commands for
+      Ericsson BTS. It is meant for testing during development.</description>
+    </node>
+</vtydoc>
