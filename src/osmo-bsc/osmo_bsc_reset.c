@@ -33,24 +33,24 @@
 #define RESET_RESEND_TIMER_NO 1234	/* FIXME: dig out the real timer number */
 #define BAD_CONNECTION_THRESOLD 3	/* connection failures */
 
-enum fsm_states {
+enum fsm_bsc_reset_states {
 	ST_DISC,		/* Disconnected from MSC */
 	ST_CONN,		/* We have a confirmed connection to the MSC */
 };
 
-static const struct value_string fsm_state_names[] = {
+static const struct value_string fsm_bsc_reset_state_names[] = {
 	{ST_DISC, "ST_DISC (disconnected)"},
 	{ST_CONN, "ST_CONN (connected)"},
 	{0, NULL},
 };
 
-enum fsm_evt {
+enum fsm_bsc_reset_evt {
 	EV_RESET_ACK,		/* got reset acknowlegement from the MSC */
 	EV_N_DISCONNECT,	/* lost a connection */
 	EV_N_CONNECT,		/* made a successful connection */
 };
 
-static const struct value_string fsm_evt_names[] = {
+static const struct value_string fsm_bsc_reset_evt_names[] = {
 	{EV_RESET_ACK, "EV_RESET_ACK"},
 	{EV_N_DISCONNECT, "EV_N_DISCONNECT"},
 	{EV_N_CONNECT, "EV_N_CONNECT"},
@@ -63,7 +63,7 @@ static void fsm_disc_cb(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 	struct bsc_msc_data *msc = (struct bsc_msc_data *)data;
 
 	LOGP(DMSC, LOGL_NOTICE, "fsm-state (msc-reset): %s, fsm-event: %s, MSC No.: %i\n",
-	     get_value_string(fsm_state_names, ST_DISC), get_value_string(fsm_evt_names, event), msc->nr);
+	     get_value_string(fsm_bsc_reset_state_names, ST_DISC), get_value_string(fsm_bsc_reset_evt_names, event), msc->nr);
 	msc->msc_con->msc_conn_loss_count = 0;
 	osmo_fsm_inst_state_chg(fi, ST_CONN, 0, 0);
 }
@@ -74,7 +74,7 @@ static void fsm_conn_cb(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 	struct bsc_msc_data *msc = (struct bsc_msc_data *)data;
 
 	LOGP(DMSC, LOGL_NOTICE, "fsm-state (msc-reset): %s, fsm-event: %s, MSC No.: %i\n",
-	     get_value_string(fsm_state_names, ST_CONN), get_value_string(fsm_evt_names, event), msc->nr);
+	     get_value_string(fsm_bsc_reset_state_names, ST_CONN), get_value_string(fsm_bsc_reset_evt_names, event), msc->nr);
 
 	OSMO_ASSERT(msc);
 
@@ -98,7 +98,7 @@ static int fsm_reset_ack_timeout_cb(struct osmo_fsm_inst *fi)
 	struct bsc_msc_data *msc = (struct bsc_msc_data *)fi->priv;
 
 	LOGP(DMSC, LOGL_NOTICE, "reset-ack timeout (T%i) in state %s, MSC No.: %i, resending...\n", fi->T,
-	     get_value_string(fsm_state_names, fi->state), msc->nr);
+	     get_value_string(fsm_bsc_reset_state_names, fi->state), msc->nr);
 
 	osmo_bsc_sigtran_reset(msc);
 	osmo_bsc_sigtran_tx_reset(msc);
@@ -107,7 +107,7 @@ static int fsm_reset_ack_timeout_cb(struct osmo_fsm_inst *fi)
 	return 0;
 }
 
-static struct osmo_fsm_state fsm_states[] = {
+static struct osmo_fsm_state fsm_bsc_reset_states[] = {
 	[ST_DISC] = {
 		     .in_event_mask = (1 << EV_RESET_ACK),
 		     .out_state_mask = (1 << ST_DISC) | (1 << ST_CONN),
@@ -125,8 +125,8 @@ static struct osmo_fsm_state fsm_states[] = {
 /* State machine definition */
 static struct osmo_fsm fsm = {
 	.name = "A-CONNECTION",
-	.states = fsm_states,
-	.num_states = ARRAY_SIZE(fsm_states),
+	.states = fsm_bsc_reset_states,
+	.num_states = ARRAY_SIZE(fsm_bsc_reset_states),
 	.log_subsys = DMSC,
 	.timer_cb = fsm_reset_ack_timeout_cb,
 };
