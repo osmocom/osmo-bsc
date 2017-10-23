@@ -331,6 +331,22 @@ int osmo_bsc_sigtran_send(const struct osmo_bsc_sccp_con *conn, struct msgb *msg
 
 	msc = conn->msc;
 
+	/* Log the type of the message we are sending. This is just
+	 * informative, do not stop if detecting the type fails */
+	if (msg->len >= 3) {
+		switch (msg->data[0]) {
+		case BSSAP_MSG_BSS_MANAGEMENT:
+			LOGP(DMSC, LOGL_INFO, "Tx MSC %s\n", gsm0808_bssmap_name(msg->data[2]));
+			break;
+		case BSSAP_MSG_DTAP:
+			LOGP(DMSC, LOGL_INFO, "Tx MSC DTAP\n");
+			break;
+		default:
+			LOGP(DMSC, LOGL_ERROR, "Tx MSC (unknwon message type)\n");
+		}
+	} else
+		LOGP(DMSC, LOGL_ERROR, "Tx MSC (message too short)\n");
+
 	if (a_reset_conn_ready(msc->a.reset) == false) {
 		LOGP(DMSC, LOGL_ERROR, "MSC is not connected. Dropping.\n");
 		return -EINVAL;
