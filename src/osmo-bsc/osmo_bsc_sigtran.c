@@ -356,8 +356,8 @@ int osmo_bsc_sigtran_send(const struct osmo_bsc_sccp_con *conn, struct msgb *msg
 
 	ss7 = osmo_ss7_instance_find(msc->a.cs7_instance);
 	OSMO_ASSERT(ss7);
-	LOGP(DMSC, LOGL_DEBUG, "Sending connection (id=%i) oriented data to MSC: %si\n",
-	     conn_id, osmo_sccp_addr_name(ss7, &msc->a.msc_addr));
+	LOGP(DMSC, LOGL_DEBUG, "Sending connection (id=%i) oriented data to MSC: %s (%s)\n",
+	     conn_id, osmo_sccp_addr_name(ss7, &msc->a.msc_addr), osmo_hexdump(msg->data, msg->len));
 
 	rc = osmo_sccp_tx_data_msg(msc->a.sccp_user, conn_id, msg);
 
