@@ -124,7 +124,7 @@ static struct osmo_fsm_state fsm_states[] = {
 
 /* State machine definition */
 static struct osmo_fsm fsm = {
-	.name = "FSM RESET",
+	.name = "A-CONNECTION",
 	.states = fsm_states,
 	.num_states = ARRAY_SIZE(fsm_states),
 	.log_subsys = DMSC,
@@ -138,7 +138,7 @@ void start_reset_fsm(struct bsc_msc_data *msc)
 	OSMO_ASSERT(msc->msc_con);
 
 	osmo_fsm_register(&fsm);
-	msc->msc_con->fsm_reset = osmo_fsm_inst_alloc(&fsm, NULL, NULL, LOGL_DEBUG, "FSM RESET INST");
+	msc->msc_con->fsm_reset = osmo_fsm_inst_alloc(&fsm, NULL, NULL, LOGL_DEBUG, NULL);
 	OSMO_ASSERT(msc->msc_con->fsm_reset);
 
 	msc->msc_con->fsm_reset->priv = msc;
