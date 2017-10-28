@@ -1,3 +1,13 @@
+osmo-bsc (1.1.1) unstable; urgency=medium
+
+  [ Neels Hofmeyr ]
+  * jenkins: use osmo-clean-workspace.sh before and after build
+
+  [ Harald Welte ]
+  * Debian: re-introduce missing build dependency to libssl-dev
+
+ -- Harald Welte <laforge@gnumonks.org>  Sat, 28 Oct 2017 21:49:00 +0200
+
 osmo-bsc (1.1.0) unstable; urgency=medium
 
   [ Alexander Couzens ]
