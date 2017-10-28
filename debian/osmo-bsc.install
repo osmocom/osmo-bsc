@@ -1,2 +1,3 @@
 usr/bin/osmo-bsc
+usr/bin/abisip-find
 usr/share/doc/osmo-bsc/examples/osmo-bsc
