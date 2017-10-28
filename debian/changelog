@@ -1,5 +1,66 @@
+osmo-bsc (1.1.0) unstable; urgency=medium
+
+  [ Alexander Couzens ]
+  * Initial release.
+  * debian/rules: show testsuite.log when tests are failing
+
+  [ Neels Hofmeyr ]
+  * jenkins: fix build: osmo-mgw from master, not pre_release
+  * drop files unrelated to osmo-bsc
+  * rename openbsc.pc to osmo-bsc.pc
+  * rewrite README
+  * move include/openbsc to include/osmocom/bsc
+  * drop MGCP client from osmo-bsc
+  * fix vty tests: vty no longer goes to parent node implicitly
+  * doc/examples: tweak osmo-bsc.cfg, add osmo-bsc_custom-sccp.cfg
+  * add ';' after OSMO_ASSERT()
+
+  [ Harald Welte ]
+  * configure.ac: No more libosmogb dependency
+  * configure.ac: remove --enable-osmo-bsc, --enable-nat
+  * configure.ac: remove smpp_mirror, which has no relation to a BSC
+  * contrib/jenkins.sh: MGCP is unconditional now
+  * configure.ac: Remove --enable-mgcp-transcoding
+  * configure.ac: Remove --enable-iu
+  * configure.ac: Remove checks for libgtp + c-ares
+  * configure.ac: Remove check for GMTOFF
+  * configure.ac: Package is now called osmo-bsc, not openbsc
+  * libbsc: document arguments of generate_bcch_chan_list()
+  * Make sure BA-IND in all SI2xxx is '0' and in all SI5xxx is '1'
+  * gsm0408_test: Verify that BA-IND is 0 in SI2xxx and 1 in SI5xxx
+  * .gitignore: Update to post-NITB-split realities
+  * Remove any references to RANAP and Iu
+  * Fix nanobts_omlattr unit test
+  * nanobts_omlattra_test: Initialize logging before executing tests
+  * osmo-bsc: Initialize logging before initializing rate_ctr
+  * Rename osmo_fsm to avoid illegal space in name + more meaningful name
+
+  [ Max ]
+  * Make TRX rf locking more visible
+  * SI13: drop PBCCH-related bits
+  * Wrap channel state assignment in macro
+  * Further cleanup leftovers from BSC/MSC split
+  * CTRL: cleanup write-only command functions
+  * Show OML link uptime in vty
+  * Fix repo split aftermath
+  * SI2q: cleanup UARFCN addition
+  * OML: consider RSL link state
+  * SI2q: fix generation for multiple UARFCNs
+  * Remove pkg-config file
+  * ctrl: add oml-uptime command
+  * SI1q: fix EARFCN appender
+
+  [ Pau Espin Pedrol ]
+  * Remove unneeded dbi dependency
+  * bsc_api: Fix NULL secondary_lchan access in handle_ass_fail
+  * libbsc: Use correct printf formatting for uint64_t
+  * bsc_vty: Improve description of mid-call-text cmd
+
+ -- Harald Welte <laforge@gnumonks.org>  Sat, 28 Oct 2017 11:19:03 +0200
+
 osmo-bsc (0.1.0) UNRELEASED; urgency=low
 
-  * Initial release.
+  [ Alexander Couzens ]
+   * Initial release.
 
  -- Alexander Couzens <lynxis@fe80.eu>  Tue, 08 Aug 2017 01:12:56 +0000
