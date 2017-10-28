@@ -33,3 +33,20 @@ Architecture: any
 Multi-Arch: same
 Depends: osmo-bsc (= ${binary:Version}), ${misc:Depends}
 Description: OsmoBSC: Osmocom's Base Station Controller for 2G circuit-switched mobile networks
+
+Package: osmo-bsc-ipaccess-utils
+Architecture: any
+Multi-Arch: foreign
+Depends: ${misc:Depends}, ${shlibs:Depends}
+Description: Command line utilities for ip.access nanoBTS
+ This package contains utilities that are specific for nanoBTS when being used
+ together with OpenBSC. It contains mainly two tools: ipaccess-config and ipaccess-proxy.
+
+Package: osmo-bsc-bs11-utils
+Architecture: any
+Multi-Arch: foreign
+Depends: ${misc:Depends}, ${shlibs:Depends}
+Description: Command line utilities for Siemens BS-11 BTS
+ There is a tool in this package for configuring the Siemens BS-11 BTS.
+ Additionally, it contains one tool for making use of an ISDN-card and the
+ public telephone network as frequency standard for the E1 line.
