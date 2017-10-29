@@ -1,3 +1,10 @@
+osmo-bsc (1.1.2) unstable; urgency=medium
+
+  * Debian: depend on libosmo-sigtran (bsc) and libosmo-sccp (bsc-nat)
+  * debian/control: Specify versions of packages we depend upon
+
+ -- Harald Welte <laforge@gnumonks.org>  Sun, 29 Oct 2017 09:03:33 +0100
+
 osmo-bsc (1.1.1) unstable; urgency=medium
 
   [ Neels Hofmeyr ]
