@@ -10,14 +10,14 @@ Build-Depends: debhelper (>=9),
                libtool,
                pkg-config,
                python-minimal,
-               libssl-dev,
+               libssl-dev (>= 0.9.5),
                libtalloc-dev,
-               libosmocore-dev,
-               libosmo-sccp-dev,
-               libosmo-sigtran-dev,
-               libosmo-abis-dev,
-               libosmo-netif-dev,
-               libosmo-legacy-mgcp-dev
+               libosmocore-dev (>= 0.10.0),
+               libosmo-sccp-dev (>= 0.0.2),
+               libosmo-sigtran-dev (>= 0.8.0),
+               libosmo-abis-dev (>= 0.3.2),
+               libosmo-netif-dev (>= 0.1.0),
+               libosmo-legacy-mgcp-dev (>= 0.0.1)
 Standards-Version: 3.9.8
 Vcs-Git: git://git.osmocom.org/osmo-bsc.git
 Vcs-Browser: https://git.osmocom.org/osmo-bsc/
