@@ -976,7 +976,6 @@ int bsc_vty_init_extra(void)
 	install_element(CONFIG_NODE, &cfg_net_bsc_cmd);
 
 	install_node(&bsc_node, config_write_bsc);
-	vty_install_default(BSC_NODE);
 	install_element(BSC_NODE, &cfg_net_bsc_mid_call_text_cmd);
 	install_element(BSC_NODE, &cfg_net_bsc_mid_call_timeout_cmd);
 	install_element(BSC_NODE, &cfg_net_rf_socket_cmd);
@@ -988,7 +987,6 @@ int bsc_vty_init_extra(void)
 	install_element(BSC_NODE, &cfg_bsc_no_acc_lst_name_cmd);
 
 	install_node(&msc_node, config_write_msc);
-	vty_install_default(MSC_NODE);
 	install_element(MSC_NODE, &cfg_net_bsc_token_cmd);
 	install_element(MSC_NODE, &cfg_net_bsc_key_cmd);
 	install_element(MSC_NODE, &cfg_net_bsc_no_key_cmd);
