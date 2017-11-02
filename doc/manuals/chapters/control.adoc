@@ -4,10 +4,10 @@
 The actual protocol is described in <<common-control-if>>, the variables
 common to all programs using it are described in <<ctrl_common_vars>>. Here we
 describe variables specific to OsmoBSC. The commands starting with prefix
-"net.btsN." are specific to a certain BTS so N have to be replaced with BTS
-number when issuing command e. g. "net.bts1.channel-load". Similarly the
+"bts.N." are specific to a certain BTS so N have to be replaced with BTS
+number when issuing command e. g. "bts.1.channel-load". Similarly the
 TRX-specific commands are additionally prefixed with TRX number e. g.
-"net.bts1.trx2.arfcn".
+"bts.1.trx.2.arfcn".
 
 .Variables available over control interface
 [options="header",width="100%",cols="20%,5%,5%,50%,20%"]
@@ -28,16 +28,17 @@ TRX-specific commands are additionally prefixed with TRX number e. g.
 |ussd-notify-v1|WO|No|"<cic>,<alert>,<text>"| See <<ussdnot>> for details.
 |rf_locked|RW|No|"0","1"|See <<rfl>> for details.
 |number-of-bts|RO|No|"<num>"|Get number of configured BTS.
-|net.btsN.location-area-code|RW|No|"<lac>"|Set/Get LAC (value between (0, 65535)).
-|net.btsN.cell-identity|RW|No|"<id>"|Set/Get Cell Identity (value between (0, 65535)).
-|net.btsN.apply-configuration|WO|No|Ignored|Restart BTS via OML.
-|net.btsN.send-new-system-informations|WO|No|Ignored|Regenerate System Information messages for given BTS.
-|net.btsN.channel-load|RO|No|"<name>,<used>,<total>"|See <<chanlo>> for details.
-|net.btsN.oml-connection-state|RO|No|"connected", "disconnected"|Indicate the status of OML connection of BTS.
-|net.btsN.gprs-mode|RW|No|"<mode>"|See <<gprsm>> for details.
-|net.btsN.rf_state|RO|No|"<oper>,<admin>,<pol>"|See <<rfs>> for details.
-|net.btsN.trxM.arfcn|RW|No|"<arfcn>"|Set/Get ARFCN (value between (0, 1023)).
-|net.btsN.trxM.max-power-reduction|RW|No|"<mpr>"|See <<mpr>> for details.
+|bts.N.location-area-code|RW|No|"<lac>"|Set/Get LAC (value between (0, 65535)).
+|bts.N.cell-identity|RW|No|"<id>"|Set/Get Cell Identity (value between (0, 65535)).
+|bts.N.apply-configuration|WO|No|Ignored|Restart BTS via OML.
+|bts.N.send-new-system-informations|WO|No|Ignored|Regenerate System Information messages for given BTS.
+|bts.N.channel-load|RO|No|"<name>,<used>,<total>"|See <<chanlo>> for details.
+|bts.N.oml-connection-state|RO|No|"connected", "disconnected", "degraded"|Indicate the status of OML connection of BTS.
+|bts.N.oml-uptime|RO|No|<uptime>|Return OML link uptime in seconds.
+|bts.N.gprs-mode|RW|No|"<mode>"|See <<gprsm>> for details.
+|bts.N.rf_state|RO|No|"<oper>,<admin>,<pol>"|See <<rfs>> for details.
+|bts.N.trx.M.arfcn|RW|No|"<arfcn>"|Set/Get ARFCN (value between (0, 1023)).
+|bts.N.trx.M.max-power-reduction|RW|No|"<mpr>"|See <<mpr>> for details.
 |===
 
 [[notif]]
