@@ -233,10 +233,11 @@ static int bssmap_handle_paging(struct bsc_msc_data *msc,
 	struct tlv_parsed tp;
 	char mi_string[GSM48_MI_SIZE];
 	uint32_t tmsi = GSM_RESERVED_TMSI;
-	unsigned int lac = GSM_LAC_RESERVED_ALL_BTS;
+	unsigned int lac;
 	uint8_t data_length;
 	const uint8_t *data;
 	uint8_t chan_needed = RSL_CHANNEED_ANY;
+	uint8_t cell_ident;
 
 	tlv_parse(&tp, gsm0808_att_tlvdef(), msg->l4h + 1, payload_length - 1, 0, 0);
 
@@ -265,19 +266,48 @@ static int bssmap_handle_paging(struct bsc_msc_data *msc,
 			   TLVP_VAL(&tp, GSM0808_IE_IMSI), TLVP_LEN(&tp, GSM0808_IE_IMSI));
 
 	/*
-	 * parse the cell identifier list
+	 * There are various cell identifier list types defined at 3GPP TS § 08.08, we don't support all
+	 * of them yet. To not disrupt paging operation just because we're lacking some implementation,
+	 * interpret any unknown cell identifier type as "page the entire BSS".
 	 */
 	data_length = TLVP_LEN(&tp, GSM0808_IE_CELL_IDENTIFIER_LIST);
 	data = TLVP_VAL(&tp, GSM0808_IE_CELL_IDENTIFIER_LIST);
 
-	/*
-	 * Support paging to all network or one BTS at one LAC
-	 */
-	if (data_length == 3 && data[0] == CELL_IDENT_LAC) {
-		lac = osmo_load16be(&data[1]);
-	} else if (data_length > 1 || (data[0] & 0x0f) != CELL_IDENT_BSS) {
-		LOGP(DMSC, LOGL_ERROR, "Unsupported Cell Identifier List: %s\n", osmo_hexdump(data, data_length));
+	if (data_length < 1) {
+		LOGP(DMSC, LOGL_ERROR, "Paging IMSI %s: Zero length Cell Identifier List\n",
+		     mi_string);
 		return -1;
+	}
+
+	cell_ident = data[0] & 0xf;
+
+	/* Default fallback: page entire BSS */
+	lac = GSM_LAC_RESERVED_ALL_BTS;
+
+	switch (cell_ident) {
+	case CELL_IDENT_LAC:
+		if (data_length != 3) {
+			LOGP(DMSC, LOGL_ERROR, "Paging IMSI %s: Cell Identifier List for LAC (0x%x)"
+			     " has invalid length: %u, paging entire BSS instead (%s)\n",
+			     mi_string, CELL_IDENT_LAC, data_length, osmo_hexdump(data, data_length));
+			break;
+		}
+		lac = osmo_load16be(&data[1]);
+		break;
+
+	case CELL_IDENT_BSS:
+		if (data_length != 1) {
+			LOGP(DMSC, LOGL_ERROR, "Paging IMSI %s: Cell Identifier List for BSS (0x%x)"
+			     " has invalid length: %u, paging entire BSS anyway (%s)\n",
+			     mi_string, CELL_IDENT_BSS, data_length, osmo_hexdump(data, data_length));
+		}
+		break;
+
+	default:
+		LOGP(DMSC, LOGL_NOTICE, "Paging IMSI %s: unimplemented Cell Identifier List (0x%x),"
+		     " paging entire BSS instead (%s)\n",
+		     mi_string, cell_ident, osmo_hexdump(data, data_length));
+		break;
 	}
 
 	if (TLVP_PRESENT(&tp, GSM0808_IE_CHANNEL_NEEDED) && TLVP_LEN(&tp, GSM0808_IE_CHANNEL_NEEDED) == 1)

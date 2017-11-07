@@ -149,6 +149,7 @@ AC_OUTPUT(
     tests/trau/Makefile
     tests/subscr/Makefile
     tests/nanobts_omlattr/Makefile
+    tests/bssap/Makefile
     doc/Makefile
     doc/examples/Makefile
     contrib/Makefile
