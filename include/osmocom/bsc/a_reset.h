@@ -33,9 +33,6 @@ struct a_reset_ctx {
 	 * will be triggered */
 	int conn_loss_counter;
 
-	/* A human readable name to display in the logs */
-	char name[256];
-
 	/* Callback function to be called when a connection
 	 * failure is detected and a rest must occur */
 	void (*cb)(void *priv);
