@@ -11,6 +11,7 @@ AM_CFLAGS = \
 	$(LIBOSMOABIS_CFLAGS) \
 	$(LIBOSMOSIGTRAN_CFLAGS) \
 	$(COVERAGE_CFLAGS) \
+	$(LIBOSMOMGCPCLIENT_CFLAGS) \
 	$(NULL)
 
 EXTRA_DIST = \
@@ -28,6 +29,7 @@ bssap_test_SOURCES = \
 	$(top_srcdir)/src/osmo-bsc/osmo_bsc_sigtran.c \
 	$(top_srcdir)/src/osmo-bsc/osmo_bsc_filter.c \
 	$(top_srcdir)/src/osmo-bsc/osmo_bsc_grace.c \
+	$(top_srcdir)/src/osmo-bsc/osmo_bsc_mgcp.c \
 	$(NULL)
 
 bssap_test_LDADD = \
@@ -39,6 +41,7 @@ bssap_test_LDADD = \
 	$(LIBOSMOGSM_LIBS) \
 	$(LIBOSMOABIS_LIBS) \
 	$(LIBOSMOSIGTRAN_LIBS) \
+	$(LIBOSMOMGCPCLIENT_LIBS) \
 	$(NULL)
 
 bssap_test_LDFLAGS = \
