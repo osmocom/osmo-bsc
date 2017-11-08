@@ -516,8 +516,7 @@ int osmo_bsc_sigtran_init(struct llist_head *mscs)
 		if (!osmo_sccp_check_addr(&msc->a.bsc_addr, OSMO_SCCP_ADDR_T_SSN | OSMO_SCCP_ADDR_T_PC)) {
 			LOGP(DMSC, LOGL_ERROR,
 			     "(%s) A-interface: invalid local (BSC) SCCP address: %s\n",
-			     msc_name,
-			     osmo_sccp_addr_name(osmo_ss7_instance_find(msc->a.cs7_instance), &msc->a.bsc_addr));
+			     msc_name, osmo_sccp_inst_addr_name(msc->a.sccp, &msc->a.bsc_addr));
 			return -EINVAL;
 		}
 
@@ -530,17 +529,14 @@ int osmo_bsc_sigtran_init(struct llist_head *mscs)
 		if (!osmo_sccp_check_addr(&msc->a.msc_addr, OSMO_SCCP_ADDR_T_SSN | OSMO_SCCP_ADDR_T_PC)) {
 			LOGP(DMSC, LOGL_ERROR,
 			     "(%s) A-interface: invalid remote (MSC) SCCP address: %s\n",
-			     msc_name,
-			     osmo_sccp_addr_name(osmo_ss7_instance_find(msc->a.cs7_instance), &msc->a.msc_addr));
+			     msc_name, osmo_sccp_inst_addr_name(msc->a.sccp, &msc->a.msc_addr));
 			return -EINVAL;
 		}
 
 		LOGP(DMSC, LOGL_NOTICE, "(%s) A-interface: local (BSC) SCCP address: %s\n",
-		     msc_name,
-		     osmo_sccp_addr_name(osmo_ss7_instance_find(msc->a.cs7_instance), &msc->a.bsc_addr));
+		     msc_name, osmo_sccp_inst_addr_name(msc->a.sccp, &msc->a.bsc_addr));
 		LOGP(DMSC, LOGL_NOTICE, "(%s) A-interface: remote (MSC) SCCP address: %s\n",
-		     msc_name,
-		     osmo_sccp_addr_name(osmo_ss7_instance_find(msc->a.cs7_instance), &msc->a.msc_addr));
+		     msc_name, osmo_sccp_inst_addr_name(msc->a.sccp, &msc->a.msc_addr));
 
 		/* Bind SCCP user */
 		msc->a.sccp_user = osmo_sccp_user_bind(msc->a.sccp, msc_name, sccp_sap_up, msc->a.bsc_addr.ssn);
