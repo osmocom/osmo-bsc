@@ -903,7 +903,7 @@ static struct osmo_fsm_state fsm_bsc_mgcp_states[] = {
 	/* Startup state machine, send CRCX to BTS. */
 	[ST_CRCX_BTS] = {
 			 .in_event_mask = (1 << EV_INIT),
-			 .out_state_mask = (1 << ST_HALT) | (1 << ST_ASSIGN_PROC),
+			 .out_state_mask = (1 << ST_HALT) | (1 << ST_CALL) | (1 << ST_ASSIGN_PROC),
 			 .name = "ST_CRCX_BTS",
 			 .action = fsm_crcx_bts_cb,
 			 },
