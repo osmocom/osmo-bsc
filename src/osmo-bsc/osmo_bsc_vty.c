@@ -724,18 +724,17 @@ DEFUN(cfg_msc_cs7_bsc_addr,
 
 	ss7 = osmo_sccp_addr_by_name(&msc->a.bsc_addr, bsc_addr_name);
 	if (!ss7) {
-		vty_out(vty, "No sccp address %s found%s", bsc_addr_name,
-			VTY_NEWLINE);
-		return CMD_WARNING;
+		vty_out(vty, "Error: No such SCCP addressbook entry: '%s'%s", bsc_addr_name, VTY_NEWLINE);
+		return CMD_ERR_INCOMPLETE;
 	}
 
 	/* Prevent mixing addresses from different CS7/SS7 instances */
 	if (msc->a.cs7_instance_valid) {
 		if (msc->a.cs7_instance != ss7->cfg.id) {
 			vty_out(vty,
-				"SCCP address %s from different CS7 instance%s",
+				"Error: SCCP addressbook entry from mismatching CS7 instance: '%s'%s",
 				bsc_addr_name, VTY_NEWLINE);
-			return CMD_WARNING;
+			return CMD_ERR_INCOMPLETE;
 		}
 	}
 
@@ -757,18 +756,17 @@ DEFUN(cfg_msc_cs7_msc_addr,
 
 	ss7 = osmo_sccp_addr_by_name(&msc->a.msc_addr, msc_addr_name);
 	if (!ss7) {
-		vty_out(vty, "No sccp address %s found%s", msc_addr_name,
-			VTY_NEWLINE);
-		return CMD_WARNING;
+		vty_out(vty, "Error: No such SCCP addressbook entry: '%s'%s", msc_addr_name, VTY_NEWLINE);
+		return CMD_ERR_INCOMPLETE;
 	}
 
 	/* Prevent mixing addresses from different CS7/SS7 instances */
 	if (msc->a.cs7_instance_valid) {
 		if (msc->a.cs7_instance != ss7->cfg.id) {
 			vty_out(vty,
-				"SCCP address %s from different CS7 instance%s",
+				"Error: SCCP addressbook entry from mismatching CS7 instance: '%s'%s",
 				msc_addr_name, VTY_NEWLINE);
-			return CMD_WARNING;
+			return CMD_ERR_INCOMPLETE;
 		}
 	}
 
