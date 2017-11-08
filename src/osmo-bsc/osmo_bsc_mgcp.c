@@ -575,11 +575,11 @@ static void fsm_send_assignment_complete(struct osmo_fsm_inst *fi, uint32_t even
 		 get_value_string(fsm_bsc_mgcp_state_names, fi->state), get_value_string(fsm_evt_names, event));
 
 	switch (event) {
+	case EV_CRCX_NET_RESP:
+		break;
 	default:
 		handle_error(mgcp_ctx, MGCP_ERR_UNEXP_TEARDOWN);
 		return;
-	case EV_CRCX_NET_RESP:
-		break;
 	}
 
 	lchan = mgcp_ctx->lchan;
