@@ -469,7 +469,7 @@ static void fsm_crcx_net_cb(struct osmo_fsm_inst *fi, uint32_t event, void *data
 	/* Currently we only have support for IPv4 in our MGCP software, the
 	 * AoIP part is ready to support IPv6 in theory, because the IE
 	 * parser/generator uses sockaddr_storage for the AoIP transport
-	 * identifier. However, the MGCP-GW does not support IPv6 yet. This is
+	 * identifier. However, the MGW does not support IPv6 yet. This is
 	 * why we stop here in case some MSC tries to signal IPv6 AoIP
 	 * transport identifiers */
 	if (conn->aoip_rtp_addr_remote.ss_family != AF_INET) {
@@ -872,7 +872,7 @@ static int fsm_timeout_cb(struct osmo_fsm_inst *fi)
 	mgcp_ctx->resp = NULL;
 
 	if (fi->T == MGCP_MGW_TIMEOUT_TIMER_NR) {
-		/* Note: We were unable to communicate with the MGCP-GW,
+		/* Note: We were unable to communicate with the MGW,
 		 * unfortunately there is no meaningful action we can take
 		 * now other than giving up. */
 		LOGPFSML(mgcp_ctx->fsm, LOGL_ERROR, "graceful teardown not possible, terminating...\n");
@@ -886,7 +886,7 @@ static int fsm_timeout_cb(struct osmo_fsm_inst *fi)
 	} else if (fi->T == MGCP_BSS_TIMEOUT_TIMER_NR)
 		/* Note: If the logic that controls the BSS is unable to
 		 * negotiate a connection, we presumably still have a
-		 * working connection to the MGCP-GW, we will try to
+		 * working connection to the MGW, we will try to
 		 * shut down gracefully. */
 		handle_error(mgcp_ctx, MGCP_ERR_BSS_TIMEOUT);
 	else {
@@ -949,7 +949,7 @@ static struct osmo_fsm_state fsm_bsc_mgcp_states[] = {
 			     },
 
 	/* When the call ends, remove all RTP connections from the
-	 * MGCP-GW by sending a wildcarded DLCX. In case of a handover,
+	 * MGW by sending a wildcarded DLCX. In case of a handover,
 	 * go for an extra MDCX to update the connection and land in
 	 * this state again when done. */
 	[ST_CALL] = {
@@ -969,7 +969,7 @@ static struct osmo_fsm_state fsm_bsc_mgcp_states[] = {
 			    .action = fsm_complete_handover,
 			    },
 
-	/* When the MGCP_GW confirms that the connections are terminated,
+	/* When the MGW confirms that the connections are terminated,
 	 * then halt the state machine. */
 	[ST_HALT] = {
 		     .in_event_mask = (1 << EV_TEARDOWN) | (1 << EV_DLCX_ALL_RESP),
@@ -989,7 +989,7 @@ static struct osmo_fsm fsm_bsc_mgcp = {
 };
 
 /* Notify that the a new call begins. This will create a connection for the
- * BTS on the MGCP-GW and set up the port numbers in struct osmo_bsc_sccp_con.
+ * BTS on the MGW and set up the port numbers in struct osmo_bsc_sccp_con.
  * After that gsm0808_assign_req() to proceed.
  * Parameter:
  * ctx: talloc context
@@ -1037,7 +1037,7 @@ struct mgcp_ctx *mgcp_assignm_req(void *ctx, struct mgcp_client *mgcp, struct os
 	return mgcp_ctx;
 }
 
-/* Notify that the call has ended, remove all connections from the MGCP-GW,
+/* Notify that the call has ended, remove all connections from the MGW,
  * then send the clear complete message and destroy the FSM instance
  * Parameter:
  * mgcp_ctx: context information (FSM, and pointer to external system data)
