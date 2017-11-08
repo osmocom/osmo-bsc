@@ -31,7 +31,6 @@ struct mgcp_ctx {
 	/* Copy of the pointer and the data with context information
 	 * needed to process the AoIP and MGCP requests (system data) */
 	struct mgcp_client *mgcp;
-
 	struct osmo_bsc_sccp_con *conn;
 	enum gsm48_chan_mode chan_mode;
 	bool full_rate;
