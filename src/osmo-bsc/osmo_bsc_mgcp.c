@@ -151,12 +151,8 @@ static const struct value_string fsm_evt_names[] = {
 static void handle_error(struct mgcp_ctx *mgcp_ctx, enum int_cause_code cause)
 {
 	struct osmo_fsm_inst *fi;
-	struct osmo_bsc_sccp_con *conn;
 
 	OSMO_ASSERT(mgcp_ctx);
-	conn = mgcp_ctx->conn;
-	OSMO_ASSERT(conn);
-
 	fi = mgcp_ctx->fsm;
 	OSMO_ASSERT(fi);
 
