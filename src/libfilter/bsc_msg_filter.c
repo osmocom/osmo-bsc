@@ -150,8 +150,8 @@ static int auth_imsi(struct bsc_filter_request *req,
 	 * 1.) Check the global IMSI barr list
 	 * 2.) Allow directly if the IMSI is allowed at the BSC
 	 * 3.) Reject if the IMSI is not allowed at the BSC
-	 * 4.) Reject if the IMSI not allowed at the global level.
-	 * 5.) Allow directly if the IMSI is allowed at the global level
+	 * 4.) Allow directly if the IMSI is allowed at the global level
+	 * 5.) Reject if the IMSI not allowed at the global level.
 	 */
 	int cm, lu;
 	struct bsc_msg_acc_lst *nat_lst = NULL;
@@ -189,8 +189,12 @@ static int auth_imsi(struct bsc_filter_request *req,
 
 	}
 
-	/* 4. NAT deny */
 	if (nat_lst) {
+		/* 4. global allow */
+		if (bsc_msg_acc_lst_check_allow(nat_lst, imsi) == 0)
+			return 1;
+
+		/* 5. global deny */
 		if (lst_check_deny(nat_lst, imsi, &cm, &lu) == 0) {
 			LOGP(DFILTER, LOGL_ERROR,
 			     "Filtering %s global imsi_deny on bsc nr: %d.\n", imsi, req->bsc_nr);
