@@ -48,7 +48,7 @@ PKG_CHECK_MODULES(LIBOSMONETIF, libosmo-netif >= 0.1.0)
 PKG_CHECK_MODULES(LIBOSMOSIGTRAN, libosmo-sigtran >= 0.8.0)
 PKG_CHECK_MODULES(LIBCRYPTO, libcrypto >= 0.9.5)
 PKG_CHECK_MODULES(LIBOSMOSCCP, libosmo-sccp >= 0.0.2)
-PKG_CHECK_MODULES(LIBOSMOMGCPCLIENT, libosmo-mgcp-client >= 1.0.0)
+PKG_CHECK_MODULES(LIBOSMOMGCPCLIENT, libosmo-mgcp-client >= 1.2.0)
 PKG_CHECK_MODULES(LIBOSMOLEGACYMGCP, libosmo-legacy-mgcp >= 1.0.0)
 
 dnl checks for header files
