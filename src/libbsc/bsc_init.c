@@ -142,6 +142,7 @@ static int rsl_si(struct gsm_bts_trx *trx, enum osmo_sysinfo_type i, int si_len)
 			rc = rsl_bcch_info(trx, i, NULL, 0);
 			break;
 		}
+		rc = 0;
 		for (j = 0; j <= bts->si2q_count; j++)
 			rc = rsl_bcch_info(trx, i, (const uint8_t *)GSM_BTS_SI2Q(bts, j), GSM_MACBLOCK_LEN);
 		break;
