@@ -395,7 +395,7 @@ struct gsm_network {
 		enum rrlp_mode mode;
 	} rrlp;
 
-	enum gsm_chan_t ctype_by_chreq[18];
+	enum gsm_chan_t ctype_by_chreq[_NUM_CHREQ_T];
 
 	/* Use a TCH for handling requests of type paging any */
 	int pag_any_tch;
