@@ -20,6 +20,8 @@
 
 #pragma once
 
+#include <osmocom/mgcp_client/mgcp_common.h>
+
 /* MGCP state handler context (fsm etc..) */
 struct mgcp_ctx {
 	/* FSM instance, which handles the connection switching procedure */
@@ -27,6 +29,10 @@ struct mgcp_ctx {
 
 	/* RTP endpoint number */
 	uint16_t rtp_endpoint;
+
+	/* RTP connection identifiers */
+	char conn_id_bts[MGCP_CONN_ID_LENGTH];
+	char conn_id_net[MGCP_CONN_ID_LENGTH];
 
 	/* Copy of the pointer and the data with context information
 	 * needed to process the AoIP and MGCP requests (system data) */

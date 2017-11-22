@@ -31,9 +31,6 @@
 #include <osmocom/core/byteswap.h>
 #include <arpa/inet.h>
 
-#define CONN_ID_BTS 1
-#define CONN_ID_NET 2
-
 #define MGCP_MGW_TIMEOUT 4	/* in seconds */
 #define MGCP_MGW_TIMEOUT_TIMER_NR 1
 #define MGCP_BSS_TIMEOUT 4	/* in seconds */
@@ -201,10 +198,8 @@ static void fsm_crcx_bts_cb(struct osmo_fsm_inst *fi, uint32_t event, void *data
 	/* Generate MGCP message string */
 	mgcp_msg = (struct mgcp_msg) {
 		.verb = MGCP_VERB_CRCX,
-		.presence = (MGCP_MSG_PRESENCE_ENDPOINT | MGCP_MSG_PRESENCE_CALL_ID | MGCP_MSG_PRESENCE_CONN_ID |
-			     MGCP_MSG_PRESENCE_CONN_MODE),
+		.presence = (MGCP_MSG_PRESENCE_ENDPOINT | MGCP_MSG_PRESENCE_CALL_ID | MGCP_MSG_PRESENCE_CONN_MODE),
 		.call_id = conn->conn_id,
-		.conn_id = CONN_ID_BTS,
 		.conn_mode = MGCP_CONN_LOOPBACK
 	};
 	if (snprintf(mgcp_msg.endpoint, MGCP_ENDPOINT_MAXLEN, MGCP_ENDPOINT_FORMAT, rtp_endpoint) >=
@@ -249,6 +244,10 @@ static void crcx_for_bts_resp_cb(struct mgcp_response *r, void *priv)
 		handle_error(mgcp_ctx, MGCP_ERR_MGW_FAIL);
 		return;
 	}
+
+	/* memorize connection identifier */
+	osmo_strlcpy(mgcp_ctx->conn_id_bts, r->head.conn_id, sizeof(mgcp_ctx->conn_id_bts));
+	LOGPFSML(mgcp_ctx->fsm, LOGL_DEBUG, "CRCX/BTS: MGW responded with CI: %s\n", mgcp_ctx->conn_id_bts);
 
 	rc = mgcp_response_parse_params(r);
 	if (rc) {
@@ -364,7 +363,7 @@ static void fsm_mdcx_bts_cb(struct osmo_fsm_inst *fi, uint32_t event, void *data
 		.presence = (MGCP_MSG_PRESENCE_ENDPOINT | MGCP_MSG_PRESENCE_CALL_ID | MGCP_MSG_PRESENCE_CONN_ID |
 			     MGCP_MSG_PRESENCE_CONN_MODE | MGCP_MSG_PRESENCE_AUDIO_IP | MGCP_MSG_PRESENCE_AUDIO_PORT),
 		.call_id = conn->conn_id,
-		.conn_id = CONN_ID_BTS,
+		.conn_id = mgcp_ctx->conn_id_bts,
 		.conn_mode = MGCP_CONN_RECV_SEND,
 		.audio_ip = inet_ntoa(addr),
 		.audio_port = lchan->abis_ip.bound_port
@@ -484,10 +483,9 @@ static void fsm_crcx_net_cb(struct osmo_fsm_inst *fi, uint32_t event, void *data
 	/* Generate MGCP message string */
 	mgcp_msg = (struct mgcp_msg) {
 		.verb = MGCP_VERB_CRCX,
-		.presence = (MGCP_MSG_PRESENCE_ENDPOINT | MGCP_MSG_PRESENCE_CALL_ID | MGCP_MSG_PRESENCE_CONN_ID |
-			     MGCP_MSG_PRESENCE_CONN_MODE | MGCP_MSG_PRESENCE_AUDIO_IP | MGCP_MSG_PRESENCE_AUDIO_PORT),
+		.presence = (MGCP_MSG_PRESENCE_ENDPOINT | MGCP_MSG_PRESENCE_CALL_ID | MGCP_MSG_PRESENCE_CONN_MODE |
+			     MGCP_MSG_PRESENCE_AUDIO_IP | MGCP_MSG_PRESENCE_AUDIO_PORT),
 		.call_id = conn->conn_id,
-		.conn_id = CONN_ID_NET,
 		.conn_mode = MGCP_CONN_RECV_SEND,
 		.audio_ip = addr,
 		.audio_port = port
@@ -538,6 +536,10 @@ static void crcx_for_net_resp_cb(struct mgcp_response *r, void *priv)
 		handle_error(mgcp_ctx, MGCP_ERR_MGW_FAIL);
 		return;
 	}
+
+	/* memorize connection identifier */
+	osmo_strlcpy(mgcp_ctx->conn_id_net, r->head.conn_id, sizeof(mgcp_ctx->conn_id_net));
+	LOGPFSML(mgcp_ctx->fsm, LOGL_DEBUG, "CRCX/NET: MGW responded with CI: %s\n", mgcp_ctx->conn_id_net);
 
 	rc = mgcp_response_parse_params(r);
 	if (rc) {
@@ -683,7 +685,8 @@ static void handle_handover(struct mgcp_ctx *mgcp_ctx)
 		.verb = MGCP_VERB_MDCX,
 		.presence = (MGCP_MSG_PRESENCE_ENDPOINT | MGCP_MSG_PRESENCE_CALL_ID | MGCP_MSG_PRESENCE_CONN_ID |
 			     MGCP_MSG_PRESENCE_CONN_MODE | MGCP_MSG_PRESENCE_AUDIO_IP |
-			     MGCP_MSG_PRESENCE_AUDIO_PORT),.call_id = conn->conn_id,.conn_id = CONN_ID_BTS,
+			     MGCP_MSG_PRESENCE_AUDIO_PORT),.call_id = conn->conn_id,
+		.conn_id = mgcp_ctx->conn_id_bts,
 		.conn_mode = MGCP_CONN_RECV_SEND,
 		.audio_ip = inet_ntoa(addr),
 		.audio_port = ho_lchan->abis_ip.bound_port};
