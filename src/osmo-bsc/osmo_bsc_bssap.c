@@ -24,7 +24,6 @@
 #include <osmocom/bsc/bsc_msc_data.h>
 #include <osmocom/bsc/debug.h>
 #include <osmocom/bsc/bsc_subscriber.h>
-#include <osmocom/legacy_mgcp/mgcp.h>
 #include <osmocom/bsc/osmo_bsc_mgcp.h>
 #include <osmocom/bsc/paging.h>
 #include <osmocom/bsc/gsm_04_08_utils.h>
@@ -454,6 +453,19 @@ reject:
 	return -1;
 }
 
+/* Helper function to calculate the port number for a given
+ * timeslot/multiplex. This functionality is needed to support
+ * the sccp-lite scenario where the MGW is handled externally */
+static inline int mgcp_timeslot_to_port(int multiplex, int timeslot, int base)
+{
+	if (timeslot == 0) {
+		LOGP(DLMGCP, LOGL_ERROR, "Timeslot should not be 0\n");
+		timeslot = 255;
+	}
+
+	return base + (timeslot + (32 * multiplex)) * 2;
+}
+
 /*
  * Handle the assignment request message.
  *
@@ -468,7 +480,7 @@ static int bssmap_handle_assignm_req(struct osmo_bsc_sccp_con *conn,
 	uint8_t timeslot = 0;
 	uint8_t multiplex = 0;
 	enum gsm48_chan_mode chan_mode = GSM48_CMODE_SIGN;
-	int port, full_rate = -1;
+	int full_rate = -1;
 	bool aoip = false;
 	struct sockaddr_storage rtp_addr;
 	struct gsm0808_channel_type ct;
@@ -603,8 +615,7 @@ static int bssmap_handle_assignm_req(struct osmo_bsc_sccp_con *conn,
 		 * (the MSC does that for us). We set conn->rtp_ip to 0 and check
 		 * on this later. By this we know that we have to behave accordingly
 		 * to sccp-lite. */
-		port = mgcp_timeslot_to_endpoint(multiplex, timeslot);
-		conn->rtp_port = rtp_calculate_port(port, msc->rtp_base);
+		conn->rtp_port = mgcp_timeslot_to_port(multiplex, timeslot, msc->rtp_base);
 		conn->rtp_ip = 0;
 		return gsm0808_assign_req(conn->conn, chan_mode, full_rate);
 	}
