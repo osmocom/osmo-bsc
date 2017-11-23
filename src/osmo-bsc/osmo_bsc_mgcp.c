@@ -456,6 +456,14 @@ static void fsm_crcx_net_cb(struct osmo_fsm_inst *fi, uint32_t event, void *data
 		 "fsm-state: %s, fsm-event: %s\n",
 		 get_value_string(fsm_bsc_mgcp_state_names, fi->state), get_value_string(fsm_evt_names, event));
 
+	switch (event) {
+	case EV_MDCX_BTS_RESP:
+		break;
+	default:
+		handle_error(mgcp_ctx, MGCP_ERR_UNEXP_TEARDOWN);
+		return;
+	}
+
 	rtp_endpoint = mgcp_ctx->rtp_endpoint;
 
 	LOGPFSML(mgcp_ctx->fsm, LOGL_DEBUG,
