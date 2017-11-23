@@ -193,7 +193,7 @@ static void fsm_crcx_bts_cb(struct osmo_fsm_inst *fi, uint32_t event, void *data
 	mgcp_ctx->rtp_endpoint = rtp_endpoint;
 
 	LOGPFSML(mgcp_ctx->fsm, LOGL_DEBUG,
-		 "creating connection for the BTS side on " "MGW endpoint:%x...\n", rtp_endpoint);
+		 "CRCX/BTS: creating connection for the BTS side on " "MGW endpoint:%x...\n", rtp_endpoint);
 
 	/* Generate MGCP message string */
 	mgcp_msg = (struct mgcp_msg) {
@@ -351,11 +351,11 @@ static void fsm_mdcx_bts_cb(struct osmo_fsm_inst *fi, uint32_t event, void *data
 	rtp_endpoint = mgcp_ctx->rtp_endpoint;
 
 	LOGPFSML(mgcp_ctx->fsm, LOGL_DEBUG,
-		 "completing connection for the BTS side on " "MGW endpoint:%x...\n", rtp_endpoint);
+		 "MDCX/BTS: completing connection for the BTS side on " "MGW endpoint:%x...\n", rtp_endpoint);
 
 	addr.s_addr = osmo_ntohl(lchan->abis_ip.bound_ip);
 	LOGPFSML(mgcp_ctx->fsm, LOGL_DEBUG,
-		 "BTS expects RTP input on address %s:%u\n", inet_ntoa(addr), lchan->abis_ip.bound_port);
+		 "MDCX/BTS: BTS expects RTP input on address %s:%u\n", inet_ntoa(addr), lchan->abis_ip.bound_port);
 
 	/* Generate MGCP message string */
 	mgcp_msg = (struct mgcp_msg) {
@@ -467,7 +467,7 @@ static void fsm_crcx_net_cb(struct osmo_fsm_inst *fi, uint32_t event, void *data
 	rtp_endpoint = mgcp_ctx->rtp_endpoint;
 
 	LOGPFSML(mgcp_ctx->fsm, LOGL_DEBUG,
-		 "creating connection for the NET side on " "MGW endpoint:%x...\n", rtp_endpoint);
+		 "CRCX/NET: creating connection for the NET side on " "MGW endpoint:%x...\n", rtp_endpoint);
 
 	/* Currently we only have support for IPv4 in our MGCP software, the
 	 * AoIP part is ready to support IPv6 in theory, because the IE
@@ -477,7 +477,7 @@ static void fsm_crcx_net_cb(struct osmo_fsm_inst *fi, uint32_t event, void *data
 	 * transport identifiers */
 	if (conn->aoip_rtp_addr_remote.ss_family != AF_INET) {
 		LOGPFSML(mgcp_ctx->fsm, LOGL_ERROR,
-			 "endpoint:%x MSC uses unsupported address format in AoIP transport identifier -- aborting...\n",
+			 "CRCX/NET: endpoint:%x MSC uses unsupported address format in AoIP transport identifier -- aborting...\n",
 			 rtp_endpoint);
 		handle_error(mgcp_ctx, MGCP_ERR_UNSUPP_ADDR_FMT);
 		return;
@@ -486,7 +486,7 @@ static void fsm_crcx_net_cb(struct osmo_fsm_inst *fi, uint32_t event, void *data
 	sin = (struct sockaddr_in *)&conn->aoip_rtp_addr_remote;
 	addr = inet_ntoa(sin->sin_addr);
 	port = osmo_ntohs(sin->sin_port);
-	LOGPFSML(mgcp_ctx->fsm, LOGL_DEBUG, "MSC expects RTP input on address %s:%u\n", addr, port);
+	LOGPFSML(mgcp_ctx->fsm, LOGL_DEBUG, "CRCX/NET: MSC expects RTP input on address %s:%u\n", addr, port);
 
 	/* Generate MGCP message string */
 	mgcp_msg = (struct mgcp_msg) {
