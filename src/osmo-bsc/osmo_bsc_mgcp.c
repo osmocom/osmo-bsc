@@ -185,14 +185,13 @@ static void fsm_crcx_bts_cb(struct osmo_fsm_inst *fi, uint32_t event, void *data
 	mgcp = mgcp_ctx->mgcp;
 	OSMO_ASSERT(mgcp);
 
-	LOGPFSML(mgcp_ctx->fsm, LOGL_DEBUG,
-		 "fsm-state: %s, fsm-event: %s\n",
+	LOGPFSML(fi, LOGL_DEBUG, "fsm-state: %s, fsm-event: %s\n",
 		 get_value_string(fsm_bsc_mgcp_state_names, fi->state), get_value_string(fsm_evt_names, event));
 
 	rtp_endpoint = mgcp_client_next_endpoint(mgcp);
 	mgcp_ctx->rtp_endpoint = rtp_endpoint;
 
-	LOGPFSML(mgcp_ctx->fsm, LOGL_DEBUG,
+	LOGPFSML(fi, LOGL_DEBUG,
 		 "CRCX/BTS: creating connection for the BTS side on " "MGW endpoint:%x...\n", rtp_endpoint);
 
 	/* Generate MGCP message string */
@@ -211,14 +210,14 @@ static void fsm_crcx_bts_cb(struct osmo_fsm_inst *fi, uint32_t event, void *data
 	OSMO_ASSERT(msg);
 
 	/* Transmit MGCP message to MGW */
-	LOGPFSML(mgcp_ctx->fsm, LOGL_DEBUG, "CRCX/BTS: transmitting MGCP message to MGW...\n");
+	LOGPFSML(fi, LOGL_DEBUG, "CRCX/BTS: transmitting MGCP message to MGW...\n");
 	rc = mgcp_client_tx(mgcp, msg, crcx_for_bts_resp_cb, mgcp_ctx);
 	if (rc < 0) {
 		handle_error(mgcp_ctx, MGCP_ERR_MGW_TX_FAIL);
 		return;
 	}
 
-	osmo_fsm_inst_state_chg(mgcp_ctx->fsm, ST_ASSIGN_PROC, MGCP_MGW_TIMEOUT, MGCP_MGW_TIMEOUT_TIMER_NR);
+	osmo_fsm_inst_state_chg(fi, ST_ASSIGN_PROC, MGCP_MGW_TIMEOUT, MGCP_MGW_TIMEOUT_TIMER_NR);
 }
 
 /* Callback for MGCP-Client: handle response for BTS associated CRCX */
@@ -282,8 +281,7 @@ static void fsm_proc_assignmnent_req_cb(struct osmo_fsm_inst *fi, uint32_t event
 	conn = mgcp_ctx->conn;
 	OSMO_ASSERT(conn);
 
-	LOGPFSML(mgcp_ctx->fsm, LOGL_DEBUG,
-		 "fsm-state: %s, fsm-event: %s\n",
+	LOGPFSML(fi, LOGL_DEBUG, "fsm-state: %s, fsm-event: %s\n",
 		 get_value_string(fsm_bsc_mgcp_state_names, fi->state), get_value_string(fsm_evt_names, event));
 
 	switch (event) {
@@ -298,7 +296,7 @@ static void fsm_proc_assignmnent_req_cb(struct osmo_fsm_inst *fi, uint32_t event
 	chan_mode = mgcp_ctx->chan_mode;
 	full_rate = mgcp_ctx->full_rate;
 
-	LOGPFSML(mgcp_ctx->fsm, LOGL_DEBUG, "MGW proceeding assignment request...\n");
+	LOGPFSML(fi, LOGL_DEBUG, "MGW proceeding assignment request...\n");
 	rc = gsm0808_assign_req(conn->conn, chan_mode, full_rate);
 
 	if (rc < 0) {
@@ -329,8 +327,7 @@ static void fsm_mdcx_bts_cb(struct osmo_fsm_inst *fi, uint32_t event, void *data
 	conn = mgcp_ctx->conn;
 	OSMO_ASSERT(conn);
 
-	LOGPFSML(mgcp_ctx->fsm, LOGL_DEBUG,
-		 "fsm-state: %s, fsm-event: %s\n",
+	LOGPFSML(fi, LOGL_DEBUG, "fsm-state: %s, fsm-event: %s\n",
 		 get_value_string(fsm_bsc_mgcp_state_names, fi->state), get_value_string(fsm_evt_names, event));
 
 	switch (event) {
@@ -346,15 +343,15 @@ static void fsm_mdcx_bts_cb(struct osmo_fsm_inst *fi, uint32_t event, void *data
 	lchan = mgcp_ctx->lchan;
 	OSMO_ASSERT(lchan);
 
-	LOGPFSML(mgcp_ctx->fsm, LOGL_DEBUG, "BSS has completed the assignment, now prceed with MDCX towards BTS...\n");
+	LOGPFSML(fi, LOGL_DEBUG, "BSS has completed the assignment, now prceed with MDCX towards BTS...\n");
 
 	rtp_endpoint = mgcp_ctx->rtp_endpoint;
 
-	LOGPFSML(mgcp_ctx->fsm, LOGL_DEBUG,
+	LOGPFSML(fi, LOGL_DEBUG,
 		 "MDCX/BTS: completing connection for the BTS side on " "MGW endpoint:%x...\n", rtp_endpoint);
 
 	addr.s_addr = osmo_ntohl(lchan->abis_ip.bound_ip);
-	LOGPFSML(mgcp_ctx->fsm, LOGL_DEBUG,
+	LOGPFSML(fi, LOGL_DEBUG,
 		 "MDCX/BTS: BTS expects RTP input on address %s:%u\n", inet_ntoa(addr), lchan->abis_ip.bound_port);
 
 	/* Generate MGCP message string */
@@ -377,14 +374,14 @@ static void fsm_mdcx_bts_cb(struct osmo_fsm_inst *fi, uint32_t event, void *data
 	OSMO_ASSERT(msg);
 
 	/* Transmit MGCP message to MGW */
-	LOGPFSML(mgcp_ctx->fsm, LOGL_DEBUG, "MDCX/BTS: transmitting MGCP message to MGW...\n");
+	LOGPFSML(fi, LOGL_DEBUG, "MDCX/BTS: transmitting MGCP message to MGW...\n");
 	rc = mgcp_client_tx(mgcp, msg, mdcx_for_bts_resp_cb, mgcp_ctx);
 	if (rc < 0) {
 		handle_error(mgcp_ctx, MGCP_ERR_MGW_TX_FAIL);
 		return;
 	}
 
-	osmo_fsm_inst_state_chg(mgcp_ctx->fsm, ST_CRCX_NET, MGCP_MGW_TIMEOUT, MGCP_MGW_TIMEOUT_TIMER_NR);
+	osmo_fsm_inst_state_chg(fi, ST_CRCX_NET, MGCP_MGW_TIMEOUT, MGCP_MGW_TIMEOUT_TIMER_NR);
 }
 
 /* Callback for MGCP-Client: handle response for BTS associated MDCX */
@@ -452,8 +449,7 @@ static void fsm_crcx_net_cb(struct osmo_fsm_inst *fi, uint32_t event, void *data
 	mgcp = mgcp_ctx->mgcp;
 	OSMO_ASSERT(mgcp);
 
-	LOGPFSML(mgcp_ctx->fsm, LOGL_DEBUG,
-		 "fsm-state: %s, fsm-event: %s\n",
+	LOGPFSML(fi, LOGL_DEBUG, "fsm-state: %s, fsm-event: %s\n",
 		 get_value_string(fsm_bsc_mgcp_state_names, fi->state), get_value_string(fsm_evt_names, event));
 
 	switch (event) {
@@ -466,7 +462,7 @@ static void fsm_crcx_net_cb(struct osmo_fsm_inst *fi, uint32_t event, void *data
 
 	rtp_endpoint = mgcp_ctx->rtp_endpoint;
 
-	LOGPFSML(mgcp_ctx->fsm, LOGL_DEBUG,
+	LOGPFSML(fi, LOGL_DEBUG,
 		 "CRCX/NET: creating connection for the NET side on " "MGW endpoint:%x...\n", rtp_endpoint);
 
 	/* Currently we only have support for IPv4 in our MGCP software, the
@@ -476,7 +472,7 @@ static void fsm_crcx_net_cb(struct osmo_fsm_inst *fi, uint32_t event, void *data
 	 * why we stop here in case some MSC tries to signal IPv6 AoIP
 	 * transport identifiers */
 	if (conn->aoip_rtp_addr_remote.ss_family != AF_INET) {
-		LOGPFSML(mgcp_ctx->fsm, LOGL_ERROR,
+		LOGPFSML(fi, LOGL_ERROR,
 			 "CRCX/NET: endpoint:%x MSC uses unsupported address format in AoIP transport identifier -- aborting...\n",
 			 rtp_endpoint);
 		handle_error(mgcp_ctx, MGCP_ERR_UNSUPP_ADDR_FMT);
@@ -486,7 +482,7 @@ static void fsm_crcx_net_cb(struct osmo_fsm_inst *fi, uint32_t event, void *data
 	sin = (struct sockaddr_in *)&conn->aoip_rtp_addr_remote;
 	addr = inet_ntoa(sin->sin_addr);
 	port = osmo_ntohs(sin->sin_port);
-	LOGPFSML(mgcp_ctx->fsm, LOGL_DEBUG, "CRCX/NET: MSC expects RTP input on address %s:%u\n", addr, port);
+	LOGPFSML(fi, LOGL_DEBUG, "CRCX/NET: MSC expects RTP input on address %s:%u\n", addr, port);
 
 	/* Generate MGCP message string */
 	mgcp_msg = (struct mgcp_msg) {
@@ -507,14 +503,14 @@ static void fsm_crcx_net_cb(struct osmo_fsm_inst *fi, uint32_t event, void *data
 	OSMO_ASSERT(msg);
 
 	/* Transmit MGCP message to MGW */
-	LOGPFSML(mgcp_ctx->fsm, LOGL_DEBUG, "CRCX/NET: transmitting MGCP message to MGW...\n");
+	LOGPFSML(fi, LOGL_DEBUG, "CRCX/NET: transmitting MGCP message to MGW...\n");
 	rc = mgcp_client_tx(mgcp, msg, crcx_for_net_resp_cb, mgcp_ctx);
 	if (rc < 0) {
 		handle_error(mgcp_ctx, MGCP_ERR_MGW_TX_FAIL);
 		return;
 	}
 
-	osmo_fsm_inst_state_chg(mgcp_ctx->fsm, ST_ASSIGN_COMPL, MGCP_MGW_TIMEOUT, MGCP_MGW_TIMEOUT_TIMER_NR);
+	osmo_fsm_inst_state_chg(fi, ST_ASSIGN_COMPL, MGCP_MGW_TIMEOUT, MGCP_MGW_TIMEOUT_TIMER_NR);
 }
 
 /* Callback for MGCP-Client: handle response for NET associated CRCX */
@@ -576,7 +572,7 @@ static void fsm_send_assignment_complete(struct osmo_fsm_inst *fi, uint32_t even
 
 	OSMO_ASSERT(mgcp_ctx);
 
-	LOGPFSML(mgcp_ctx->fsm, LOGL_DEBUG,
+	LOGPFSML(fi, LOGL_DEBUG,
 		 "fsm-state: %s, fsm-event: %s\n",
 		 get_value_string(fsm_bsc_mgcp_state_names, fi->state), get_value_string(fsm_evt_names, event));
 
@@ -596,9 +592,9 @@ static void fsm_send_assignment_complete(struct osmo_fsm_inst *fi, uint32_t even
 	 * where the MGW expects the RTP input from the MSC side */
 	bssmap_send_aoip_ass_compl(lchan);
 
-	LOGPFSML(mgcp_ctx->fsm, LOGL_DEBUG, "call in progress, waiting for call end...\n");
+	LOGPFSML(fi, LOGL_DEBUG, "call in progress, waiting for call end...\n");
 
-	osmo_fsm_inst_state_chg(mgcp_ctx->fsm, ST_CALL, 0, 0);
+	osmo_fsm_inst_state_chg(fi, ST_CALL, 0, 0);
 }
 
 static void dlcx_for_all_resp_cb(struct mgcp_response *r, void *priv);
@@ -724,8 +720,7 @@ static void fsm_active_call_cb(struct osmo_fsm_inst *fi, uint32_t event, void *d
 
 	OSMO_ASSERT(mgcp_ctx);
 
-	LOGPFSML(mgcp_ctx->fsm, LOGL_DEBUG,
-		 "fsm-state: %s, fsm-event: %s\n",
+	LOGPFSML(fi, LOGL_DEBUG, "fsm-state: %s, fsm-event: %s\n",
 		 get_value_string(fsm_bsc_mgcp_state_names, fi->state), get_value_string(fsm_evt_names, event));
 
 	switch (event) {
@@ -770,8 +765,7 @@ static void fsm_complete_handover(struct osmo_fsm_inst *fi, uint32_t event, void
 
 	OSMO_ASSERT(mgcp_ctx);
 
-	LOGPFSML(mgcp_ctx->fsm, LOGL_DEBUG,
-		 "fsm-state: %s, fsm-event: %s\n",
+	LOGPFSML(fi, LOGL_DEBUG, "fsm-state: %s, fsm-event: %s\n",
 		 get_value_string(fsm_bsc_mgcp_state_names, fi->state), get_value_string(fsm_evt_names, event));
 
 	switch (event) {
@@ -780,8 +774,8 @@ static void fsm_complete_handover(struct osmo_fsm_inst *fi, uint32_t event, void
 		 * towards the BTS is now updated, so we now change back to
 		 * ST_CALL, where we will wait for the call-end (or another
 		 * handover) */
-		LOGPFSML(mgcp_ctx->fsm, LOGL_DEBUG, "MDCX/BTS/HO: handover done, waiting for call end...\n");
-		osmo_fsm_inst_state_chg(mgcp_ctx->fsm, ST_CALL, 0, 0);
+		LOGPFSML(fi, LOGL_DEBUG, "MDCX/BTS/HO: handover done, waiting for call end...\n");
+		osmo_fsm_inst_state_chg(fi, ST_CALL, 0, 0);
 		break;
 	case EV_HANDOVER:
 		/* This handles the rare, but possible situation where another
@@ -843,18 +837,17 @@ static void fsm_halt_cb(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 	conn = mgcp_ctx->conn;
 	OSMO_ASSERT(conn);
 
-	LOGPFSML(mgcp_ctx->fsm, LOGL_DEBUG,
-		 "fsm-state: %s, fsm-event: %s\n",
+	LOGPFSML(fi, LOGL_DEBUG, "fsm-state: %s, fsm-event: %s\n",
 		 get_value_string(fsm_bsc_mgcp_state_names, fi->state), get_value_string(fsm_evt_names, event));
 
 	/* Send pending sigtran message */
 	if (mgcp_ctx->resp) {
-		LOGPFSML(mgcp_ctx->fsm, LOGL_DEBUG, "sending pending sigtran response message...\n");
+		LOGPFSML(fi, LOGL_DEBUG, "sending pending sigtran response message...\n");
 		osmo_bsc_sigtran_send(conn, mgcp_ctx->resp);
 		mgcp_ctx->resp = NULL;
 	}
 
-	LOGPFSML(mgcp_ctx->fsm, LOGL_DEBUG, "state machine halted\n");
+	LOGPFSML(fi, LOGL_DEBUG, "state machine halted\n");
 
 	/* Destroy the state machine and all context information */
 	osmo_fsm_inst_free(mgcp_ctx->fsm);
@@ -871,8 +864,7 @@ static int fsm_timeout_cb(struct osmo_fsm_inst *fi)
 	mgcp = mgcp_ctx->mgcp;
 	OSMO_ASSERT(mgcp);
 
-	LOGPFSML(mgcp_ctx->fsm, LOGL_ERROR,
-		 "timeout (T%i) in state %s, attempting graceful teardown...\n",
+	LOGPFSML(fi, LOGL_ERROR, "timeout (T%i) in state %s, attempting graceful teardown...\n",
 		 fi->T, get_value_string(fsm_bsc_mgcp_state_names, fi->state));
 
 	/* Ensure that no sigtran response, is present. Otherwiese we might try
@@ -883,14 +875,14 @@ static int fsm_timeout_cb(struct osmo_fsm_inst *fi)
 		/* Note: We were unable to communicate with the MGW,
 		 * unfortunately there is no meaningful action we can take
 		 * now other than giving up. */
-		LOGPFSML(mgcp_ctx->fsm, LOGL_ERROR, "graceful teardown not possible, terminating...\n");
+		LOGPFSML(fi, LOGL_ERROR, "graceful teardown not possible, terminating...\n");
 
 		/* At least release the occupied endpoint ID */
 		mgcp_client_release_endpoint(mgcp_ctx->rtp_endpoint, mgcp);
 
 		/* Initiate self destruction of the FSM */
 		osmo_fsm_inst_state_chg(fi, ST_HALT, 0, 0);
-		osmo_fsm_inst_dispatch(mgcp_ctx->fsm, EV_TEARDOWN, mgcp_ctx);
+		osmo_fsm_inst_dispatch(fi, EV_TEARDOWN, mgcp_ctx);
 	} else if (fi->T == MGCP_BSS_TIMEOUT_TIMER_NR)
 		/* Note: If the logic that controls the BSS is unable to
 		 * negotiate a connection, we presumably still have a
