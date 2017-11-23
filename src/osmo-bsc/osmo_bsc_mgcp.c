@@ -171,7 +171,7 @@ static void crcx_for_bts_resp_cb(struct mgcp_response *r, void *priv);
 /* Callback for ST_CRCX_BTS: startup state machine send out CRCX for BTS side */
 static void fsm_crcx_bts_cb(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
-	struct mgcp_ctx *mgcp_ctx = (struct mgcp_ctx *)data;
+	struct mgcp_ctx *mgcp_ctx = data;
 	struct osmo_bsc_sccp_con *conn;
 	struct msgb *msg;
 	struct mgcp_msg mgcp_msg;
@@ -272,7 +272,7 @@ static void crcx_for_bts_resp_cb(struct mgcp_response *r, void *priv)
  * with the assignment request */
 static void fsm_proc_assignmnent_req_cb(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
-	struct mgcp_ctx *mgcp_ctx = (struct mgcp_ctx *)data;
+	struct mgcp_ctx *mgcp_ctx = data;
 	struct osmo_bsc_sccp_con *conn;
 	enum gsm48_chan_mode chan_mode;
 	bool full_rate;
@@ -315,7 +315,7 @@ static void mdcx_for_bts_resp_cb(struct mgcp_response *r, void *priv);
  * proceed with updating the connection for the BTS side */
 static void fsm_mdcx_bts_cb(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
-	struct mgcp_ctx *mgcp_ctx = (struct mgcp_ctx *)data;
+	struct mgcp_ctx *mgcp_ctx = data;
 	struct osmo_bsc_sccp_con *conn;
 	struct gsm_lchan *lchan;
 	struct msgb *msg;
@@ -435,7 +435,7 @@ static void crcx_for_net_resp_cb(struct mgcp_response *r, void *priv);
 /* Callback for ST_CRCX_NET: An mgcp response has been received, proceed... */
 static void fsm_crcx_net_cb(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
-	struct mgcp_ctx *mgcp_ctx = (struct mgcp_ctx *)data;
+	struct mgcp_ctx *mgcp_ctx = data;
 	struct osmo_bsc_sccp_con *conn;
 	struct msgb *msg;
 	struct mgcp_msg mgcp_msg;
@@ -571,7 +571,7 @@ static void crcx_for_net_resp_cb(struct mgcp_response *r, void *priv)
 /* Callback for ST_ASSIGN_COMPL: Send back assignment complete and wait until the call ends */
 static void fsm_send_assignment_complete(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
-	struct mgcp_ctx *mgcp_ctx = (struct mgcp_ctx *)data;
+	struct mgcp_ctx *mgcp_ctx = data;
 	struct gsm_lchan *lchan;
 
 	OSMO_ASSERT(mgcp_ctx);
