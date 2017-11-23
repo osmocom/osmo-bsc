@@ -693,7 +693,8 @@ static void handle_handover(struct mgcp_ctx *mgcp_ctx)
 		.verb = MGCP_VERB_MDCX,
 		.presence = (MGCP_MSG_PRESENCE_ENDPOINT | MGCP_MSG_PRESENCE_CALL_ID | MGCP_MSG_PRESENCE_CONN_ID |
 			     MGCP_MSG_PRESENCE_CONN_MODE | MGCP_MSG_PRESENCE_AUDIO_IP |
-			     MGCP_MSG_PRESENCE_AUDIO_PORT),.call_id = conn->conn_id,
+			     MGCP_MSG_PRESENCE_AUDIO_PORT),
+		.call_id = conn->conn_id,
 		.conn_id = mgcp_ctx->conn_id_bts,
 		.conn_mode = MGCP_CONN_RECV_SEND,
 		.audio_ip = inet_ntoa(addr),
