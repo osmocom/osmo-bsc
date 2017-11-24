@@ -1015,8 +1015,7 @@ struct mgcp_ctx *mgcp_assignm_req(void *ctx, struct mgcp_client *mgcp, struct os
 	OSMO_ASSERT(mgcp);
 	OSMO_ASSERT(conn);
 
-	if(snprintf(name, sizeof(name), "MGW_%i", conn->conn_id) >= sizeof(name))
-		return NULL;
+	OSMO_ASSERT(snprintf(name, sizeof(name), "MGW_%i", conn->conn_id) < sizeof(name));
 
 	/* Register the fsm description (if not already done) */
 	if (fsm_registered == false) {
