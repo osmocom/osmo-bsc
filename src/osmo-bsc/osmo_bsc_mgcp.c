@@ -39,7 +39,7 @@
 #define MGCP_BSS_TIMEOUT 4	/* in seconds */
 #define MGCP_BSS_TIMEOUT_TIMER_NR 2
 
-#define MGCP_ENDPOINT_FORMAT "%i@mgw"
+#define MGCP_ENDPOINT_FORMAT "%x@mgw"
 
 /* Some internal cause codes to indicate fault
  * condition inside the FSM */
