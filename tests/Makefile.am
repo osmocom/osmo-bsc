@@ -47,8 +47,8 @@ if ENABLE_EXT_TESTS
 python-tests: $(BUILT_SOURCES)
 	osmotestvty.py -p $(abs_top_srcdir) -w $(abs_top_builddir) -v
 	osmotestconfig.py -p $(abs_top_srcdir) -w $(abs_top_builddir) -v
-	$(PYTHON) $(srcdir)/vty_test_runner.py -w $(abs_top_builddir) -v
-	$(PYTHON) $(srcdir)/ctrl_test_runner.py -w $(abs_top_builddir) -v
+	$(srcdir)/vty_test_runner.py -w $(abs_top_builddir) -v
+	$(srcdir)/ctrl_test_runner.py -w $(abs_top_builddir) -v
 	rm -f $(top_builddir)/sms.db $(top_builddir)/gsn_restart $(top_builddir)/gtphub_restart_count
 else
 python-tests: $(BUILT_SOURCES)
