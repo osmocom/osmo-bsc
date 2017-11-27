@@ -48,6 +48,9 @@ struct bsc_handover {
 	struct osmo_timer_list T3103;
 
 	uint8_t ho_ref;
+
+	bool inter_cell;
+	bool async;
 };
 
 static LLIST_HEAD(bsc_handovers);
@@ -125,6 +128,10 @@ int bsc_handover_start(struct gsm_lchan *old_lchan, struct gsm_bts *bts)
 	ho->old_lchan = old_lchan;
 	ho->new_lchan = new_lchan;
 	ho->ho_ref = ho_ref++;
+	if (old_lchan->ts->trx->bts != bts) {
+		ho->inter_cell = true;
+		ho->async = true;
+	}
 
 	/* copy some parameters from old lchan */
 	memcpy(&new_lchan->encr, &old_lchan->encr, sizeof(new_lchan->encr));
@@ -139,7 +146,11 @@ int bsc_handover_start(struct gsm_lchan *old_lchan, struct gsm_bts *bts)
 	new_lchan->conn->ho_lchan = new_lchan;
 
 	/* FIXME: do we have a better idea of the timing advance? */
-	rc = rsl_chan_activate_lchan(new_lchan, RSL_ACT_INTER_ASYNC, ho->ho_ref);
+	rc = rsl_chan_activate_lchan(new_lchan,
+				     ho->inter_cell
+				       ? (ho->async ? RSL_ACT_INTER_ASYNC : RSL_ACT_INTER_SYNC)
+				       : RSL_ACT_INTRA_IMM_ASS,
+				     ho->ho_ref);
 	if (rc < 0) {
 		LOGP(DHO, LOGL_ERROR, "could not activate channel\n");
 		new_lchan->conn->ho_lchan = NULL;
