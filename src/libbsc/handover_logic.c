@@ -93,7 +93,7 @@ int bsc_handover_start(struct gsm_lchan *old_lchan, struct gsm_bts *bts)
 {
 	struct gsm_lchan *new_lchan;
 	struct bsc_handover *ho;
-	static uint8_t ho_ref;
+	static uint8_t ho_ref = 0;
 	int rc;
 
 	/* don't attempt multiple handovers for the same lchan at
