@@ -424,7 +424,6 @@ DEFUN(cfg_bts_alt_mode, cfg_bts_alt_mode_cmd,
 	"SuperChannel (Packet Abis)\n")
 {
 	struct gsm_bts *bts = vty->index;
-	struct con_group *cg;
 
 	if (bts->type != GSM_BTS_TYPE_RBS2000) {
 		vty_out(vty, "%% Command only works for RBS2000%s",

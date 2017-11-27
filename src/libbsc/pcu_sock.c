@@ -356,9 +356,6 @@ static int pcu_rx_rr_paging(struct gsm_bts *bts, uint8_t paging_group,
 static int pcu_rx_data_req(struct gsm_bts *bts, uint8_t msg_type,
 	struct gsm_pcu_if_data *data_req)
 {
-	uint8_t is_ptcch;
-	struct gsm_bts_trx *trx;
-	struct gsm_bts_trx_ts *ts;
 	struct msgb *msg;
 	char imsi_digit_buf[4];
 	uint32_t tlli = -1;
