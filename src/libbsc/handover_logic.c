@@ -159,6 +159,7 @@ int bsc_handover_start(struct gsm_lchan *old_lchan, struct gsm_bts *bts)
 	return 0;
 }
 
+/* clear any operation for this connection */
 void bsc_clear_handover(struct gsm_subscriber_connection *conn, int free_lchan)
 {
 	struct bsc_handover *ho;
@@ -366,6 +367,7 @@ static int ho_logic_sig_cb(unsigned int subsys, unsigned int signal,
 	return 0;
 }
 
+/* Return the old lchan or NULL. This is meant for audio handling */
 struct gsm_lchan *bsc_handover_pending(struct gsm_lchan *new_lchan)
 {
 	struct bsc_handover *ho;
