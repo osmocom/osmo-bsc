@@ -261,7 +261,6 @@ struct gsm_bts *gsm_bts_alloc_register(struct gsm_network *net, enum gsm_bts_typ
 
 	net->num_bts++;
 
-	bts->network = net;
 	bts->type = type;
 	bts->model = model;
 	bts->bsic = bsic;
