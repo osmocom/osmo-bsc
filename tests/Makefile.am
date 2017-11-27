@@ -34,6 +34,7 @@ EXTRA_DIST = \
 	$(TESTSUITE) \
 	vty_test_runner.py \
 	ctrl_test_runner.py \
+	handover_cfg.vty \
 	$(NULL)
 
 TESTSUITE = $(srcdir)/testsuite
@@ -44,11 +45,21 @@ DISTCLEANFILES = \
 
 if ENABLE_EXT_TESTS
 python-tests: $(BUILT_SOURCES)
+	$(MAKE) vty-test
 	osmotestvty.py -p $(abs_top_srcdir) -w $(abs_top_builddir) -v
 	osmotestconfig.py -p $(abs_top_srcdir) -w $(abs_top_builddir) -v
 	$(srcdir)/vty_test_runner.py -w $(abs_top_builddir) -v
 	$(srcdir)/ctrl_test_runner.py -w $(abs_top_builddir) -v
 	rm -f $(top_builddir)/sms.db $(top_builddir)/gsn_restart $(top_builddir)/gtphub_restart_count
+
+# To update the VTY script from current application behavior,
+# pass -u to vty_script_runner.py by doing:
+#   make vty-test U=-u
+vty-test:
+	osmo_verify_transcript_vty.py -v \
+		-n OsmoBSC -p 4242 \
+		-r "$(top_builddir)/src/osmo-bsc/osmo-bsc -c $(top_srcdir)/doc/examples/osmo-bsc/osmo-bsc-minimal.cfg" \
+		$(U) $(srcdir)/*.vty
 else
 python-tests: $(BUILT_SOURCES)
 	echo "Not running python-based tests (determined at configure-time)"

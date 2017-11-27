@@ -33,6 +33,7 @@
 #include <osmocom/core/statistics.h>
 
 #include <osmocom/bsc/gsm_data.h>
+#include <osmocom/bsc/handover_cfg.h>
 
 void gsm_abis_mo_reset(struct gsm_abis_mo *mo)
 {
@@ -373,6 +374,8 @@ struct gsm_bts *gsm_bts_alloc(struct gsm_network *net, uint8_t bts_num)
 
 	/* si handling */
 	bts->bcch_change_mark = 1;
+
+	bts->ho = ho_cfg_init(bts, net->ho);
 
 	return bts;
 }

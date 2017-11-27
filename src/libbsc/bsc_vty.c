@@ -58,6 +58,8 @@
 #include <osmocom/bsc/pcu_if.h>
 #include <osmocom/bsc/common_cs.h>
 #include <osmocom/bsc/handover.h>
+#include <osmocom/bsc/handover_cfg.h>
+#include <osmocom/bsc/handover_vty.h>
 #include <osmocom/bsc/gsm_04_08_utils.h>
 
 #include <inttypes.h>
@@ -178,8 +180,27 @@ static void net_dump_vty(struct vty *vty, struct gsm_network *net)
 		VTY_NEWLINE);
 	vty_out(vty, "  Use TCH for Paging any: %d%s", net->pag_any_tch,
 		VTY_NEWLINE);
-	vty_out(vty, "  Handover: %s%s", net->handover.active ? "On" : "Off",
-		VTY_NEWLINE);
+
+	{
+		struct gsm_bts *bts;
+		unsigned int ho_active_count = 0;
+		unsigned int ho_inactive_count = 0;
+
+		llist_for_each_entry(bts, &net->bts_list, list) {
+			if (ho_get_ho_active(bts->ho))
+				ho_active_count ++;
+			else
+				ho_inactive_count ++;
+		}
+
+		if (ho_active_count && ho_inactive_count)
+			vty_out(vty, "  Handover: On at %u BTS, Off at %u BTS%s",
+				ho_active_count, ho_inactive_count, VTY_NEWLINE);
+		else
+			vty_out(vty, "  Handover: %s%s", ho_active_count ? "On" : "Off",
+				VTY_NEWLINE);
+	}
+
 	network_chan_load(&pl, net);
 	vty_out(vty, "  Current Channel Load:%s", VTY_NEWLINE);
 	dump_pchan_load_vty(vty, "    ", &pl);
@@ -778,6 +799,8 @@ static void config_write_bts_single(struct vty *vty, struct gsm_bts *bts)
 	if (bts->pcu_sock_path)
 		vty_out(vty, "  pcu-socket %s%s", bts->pcu_sock_path, VTY_NEWLINE);
 
+	ho_vty_write(vty, "  ", bts->ho);
+
 	config_write_bts_model(vty, bts);
 }
 
@@ -807,19 +830,9 @@ static int config_write_net(struct vty *vty)
 	vty_out(vty, " encryption a5 %u%s", gsmnet->a5_encryption, VTY_NEWLINE);
 	vty_out(vty, " neci %u%s", gsmnet->neci, VTY_NEWLINE);
 	vty_out(vty, " paging any use tch %d%s", gsmnet->pag_any_tch, VTY_NEWLINE);
-	vty_out(vty, " handover %u%s", gsmnet->handover.active, VTY_NEWLINE);
-	vty_out(vty, " handover window rxlev averaging %u%s",
-		gsmnet->handover.win_rxlev_avg, VTY_NEWLINE);
-	vty_out(vty, " handover window rxqual averaging %u%s",
-		gsmnet->handover.win_rxqual_avg, VTY_NEWLINE);
-	vty_out(vty, " handover window rxlev neighbor averaging %u%s",
-		gsmnet->handover.win_rxlev_avg_neigh, VTY_NEWLINE);
-	vty_out(vty, " handover power budget interval %u%s",
-		gsmnet->handover.pwr_interval, VTY_NEWLINE);
-	vty_out(vty, " handover power budget hysteresis %u%s",
-		gsmnet->handover.pwr_hysteresis, VTY_NEWLINE);
-	vty_out(vty, " handover maximum distance %u%s",
-		gsmnet->handover.max_distance, VTY_NEWLINE);
+
+	ho_vty_write(vty, " ", gsmnet->ho);
+
 	VTY_OUT_TIMER(3101);
 	VTY_OUT_TIMER(3103);
 	VTY_OUT_TIMER(3105);
@@ -1646,100 +1659,6 @@ DEFUN(cfg_net_neci,
 
 	gsmnet->neci = atoi(argv[0]);
 	gsm_net_update_ctype(gsmnet);
-	return CMD_SUCCESS;
-}
-
-#define HANDOVER_STR	"Handover Options\n"
-
-DEFUN(cfg_net_handover, cfg_net_handover_cmd,
-      "handover (0|1)",
-	HANDOVER_STR
-	"Don't perform in-call handover\n"
-	"Perform in-call handover\n")
-{
-	int enable = atoi(argv[0]);
-	struct gsm_network *gsmnet = gsmnet_from_vty(vty);
-
-	if (enable && ipacc_rtp_direct) {
-		vty_out(vty, "%% Cannot enable handover unless RTP Proxy mode "
-			"is enabled by using the -P command line option%s",
-			VTY_NEWLINE);
-		return CMD_WARNING;
-	}
-	gsmnet->handover.active = enable;
-
-	return CMD_SUCCESS;
-}
-
-#define HO_WIN_STR HANDOVER_STR "Measurement Window\n"
-#define HO_WIN_RXLEV_STR HO_WIN_STR "Received Level Averaging\n"
-#define HO_WIN_RXQUAL_STR HO_WIN_STR "Received Quality Averaging\n"
-#define HO_PBUDGET_STR HANDOVER_STR "Power Budget\n"
-#define HO_AVG_COUNT_STR "Amount to use for Averaging\n"
-
-DEFUN(cfg_net_ho_win_rxlev_avg, cfg_net_ho_win_rxlev_avg_cmd,
-      "handover window rxlev averaging <1-10>",
-	HO_WIN_RXLEV_STR
-	"How many RxLev measurements are used for averaging\n"
-	HO_AVG_COUNT_STR)
-{
-	struct gsm_network *gsmnet = gsmnet_from_vty(vty);
-	gsmnet->handover.win_rxlev_avg = atoi(argv[0]);
-	return CMD_SUCCESS;
-}
-
-DEFUN(cfg_net_ho_win_rxqual_avg, cfg_net_ho_win_rxqual_avg_cmd,
-      "handover window rxqual averaging <1-10>",
-	HO_WIN_RXQUAL_STR
-	"How many RxQual measurements are used for averaging\n"
-	HO_AVG_COUNT_STR)
-{
-	struct gsm_network *gsmnet = gsmnet_from_vty(vty);
-	gsmnet->handover.win_rxqual_avg = atoi(argv[0]);
-	return CMD_SUCCESS;
-}
-
-DEFUN(cfg_net_ho_win_rxlev_neigh_avg, cfg_net_ho_win_rxlev_avg_neigh_cmd,
-      "handover window rxlev neighbor averaging <1-10>",
-	HO_WIN_RXLEV_STR "Neighbor\n"
-	"How many RxQual measurements are used for averaging\n"
-	HO_AVG_COUNT_STR)
-{
-	struct gsm_network *gsmnet = gsmnet_from_vty(vty);
-	gsmnet->handover.win_rxlev_avg_neigh = atoi(argv[0]);
-	return CMD_SUCCESS;
-}
-
-DEFUN(cfg_net_ho_pwr_interval, cfg_net_ho_pwr_interval_cmd,
-      "handover power budget interval <1-99>",
-	HO_PBUDGET_STR
-	"How often to check if we have a better cell (SACCH frames)\n"
-	"Interval\n" "Number\n")
-{
-	struct gsm_network *gsmnet = gsmnet_from_vty(vty);
-	gsmnet->handover.pwr_interval = atoi(argv[0]);
-	return CMD_SUCCESS;
-}
-
-DEFUN(cfg_net_ho_pwr_hysteresis, cfg_net_ho_pwr_hysteresis_cmd,
-      "handover power budget hysteresis <0-999>",
-	HO_PBUDGET_STR
-	"How many dB does a neighbor to be stronger to become a HO candidate\n"
-	"Hysteresis\n" "Number\n")
-{
-	struct gsm_network *gsmnet = gsmnet_from_vty(vty);
-	gsmnet->handover.pwr_hysteresis = atoi(argv[0]);
-	return CMD_SUCCESS;
-}
-
-DEFUN(cfg_net_ho_max_distance, cfg_net_ho_max_distance_cmd,
-      "handover maximum distance <0-9999>",
-	HANDOVER_STR
-	"How big is the maximum timing advance before HO is forced\n"
-	"Distance\n" "Number\n")
-{
-	struct gsm_network *gsmnet = gsmnet_from_vty(vty);
-	gsmnet->handover.max_distance = atoi(argv[0]);
 	return CMD_SUCCESS;
 }
 
@@ -4387,13 +4306,6 @@ int bsc_vty_init(struct gsm_network *network)
 	logging_vty_add_cmds(NULL);
 
 	install_element(GSMNET_NODE, &cfg_net_neci_cmd);
-	install_element(GSMNET_NODE, &cfg_net_handover_cmd);
-	install_element(GSMNET_NODE, &cfg_net_ho_win_rxlev_avg_cmd);
-	install_element(GSMNET_NODE, &cfg_net_ho_win_rxqual_avg_cmd);
-	install_element(GSMNET_NODE, &cfg_net_ho_win_rxlev_avg_neigh_cmd);
-	install_element(GSMNET_NODE, &cfg_net_ho_pwr_interval_cmd);
-	install_element(GSMNET_NODE, &cfg_net_ho_pwr_hysteresis_cmd);
-	install_element(GSMNET_NODE, &cfg_net_ho_max_distance_cmd);
 	install_element(GSMNET_NODE, &cfg_net_T3101_cmd);
 	install_element(GSMNET_NODE, &cfg_net_T3103_cmd);
 	install_element(GSMNET_NODE, &cfg_net_T3105_cmd);
@@ -4408,6 +4320,7 @@ int bsc_vty_init(struct gsm_network *network)
 	install_element(GSMNET_NODE, &cfg_net_T3141_cmd);
 	install_element(GSMNET_NODE, &cfg_net_dtx_cmd);
 	install_element(GSMNET_NODE, &cfg_net_pag_any_tch_cmd);
+	/* See also handover commands added on net level from handover_vty.c */
 
 	install_element(GSMNET_NODE, &cfg_bts_cmd);
 	install_node(&bts_node, config_write_bts);
@@ -4513,6 +4426,7 @@ int bsc_vty_init(struct gsm_network *network)
 	install_element(BTS_NODE, &cfg_bts_amr_hr_hyst3_cmd);
 	install_element(BTS_NODE, &cfg_bts_amr_hr_start_mode_cmd);
 	install_element(BTS_NODE, &cfg_bts_pcu_sock_cmd);
+	/* See also handover commands added on bts level from handover_vty.c */
 
 	install_element(BTS_NODE, &cfg_trx_cmd);
 	install_node(&trx_node, dummy_config_write);
@@ -4550,6 +4464,8 @@ int bsc_vty_init(struct gsm_network *network)
 	abis_om2k_vty_init();
 	e1inp_vty_init();
 	osmo_fsm_vty_add_cmds();
+
+	ho_vty_init();
 
 	bsc_vty_init_extra();
 

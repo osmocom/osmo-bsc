@@ -799,6 +799,8 @@ struct gsm_bts {
 	struct pcu_sock_state *pcu_state;
 
 	struct rate_ctr_group *bts_ctrs;
+
+	struct handover_cfg *ho;
 };
 
 

@@ -25,7 +25,9 @@ noinst_HEADERS = \
 	gsm_data.h \
 	gsm_data_shared.h \
 	handover.h \
+	handover_cfg.h \
 	handover_decision.h \
+	handover_vty.h \
 	ipaccess.h \
 	meas_feed.h \
 	meas_rep.h \

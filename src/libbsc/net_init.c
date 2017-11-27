@@ -21,6 +21,7 @@
 #include <osmocom/bsc/osmo_bsc.h>
 #include <osmocom/bsc/bsc_msc_data.h>
 #include <osmocom/bsc/gsm_04_08_utils.h>
+#include <osmocom/bsc/handover_cfg.h>
 
 struct gsm_network *bsc_network_init(void *ctx,
 				     uint16_t country_code,
@@ -55,13 +56,7 @@ struct gsm_network *bsc_network_init(void *ctx,
 	net->T3122 = GSM_T3122_DEFAULT;
 	net->T3141 = GSM_T3141_DEFAULT;
 
-	/* default set of handover parameters */
-	net->handover.win_rxlev_avg = 10;
-	net->handover.win_rxqual_avg = 1;
-	net->handover.win_rxlev_avg_neigh = 10;
-	net->handover.pwr_interval = 6;
-	net->handover.pwr_hysteresis = 3;
-	net->handover.max_distance = 9999;
+	net->ho = ho_cfg_init(net, NULL);
 
 	INIT_LLIST_HEAD(&net->bts_list);
 

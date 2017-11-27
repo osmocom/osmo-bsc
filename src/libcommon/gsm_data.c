@@ -37,6 +37,7 @@
 #include <osmocom/bsc/gsm_data.h>
 #include <osmocom/bsc/bsc_msc_data.h>
 #include <osmocom/bsc/abis_nm.h>
+#include <osmocom/bsc/handover_cfg.h>
 
 void *tall_bsc_ctx;
 
