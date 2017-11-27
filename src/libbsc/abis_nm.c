@@ -455,7 +455,7 @@ static inline bool handle_attr(const struct gsm_bts *bts, enum bts_attribute id,
 }
 
 /* Parse Attribute Response Info - return pointer to the actual content */
-static inline uint8_t *parse_attr_resp_info_unreported(uint8_t bts_nr, uint8_t *ari, uint16_t ari_len, uint16_t *out_len)
+static inline const uint8_t *parse_attr_resp_info_unreported(uint8_t bts_nr, const uint8_t *ari, uint16_t ari_len, uint16_t *out_len)
 {
 	uint8_t num_unreported = ari[0], i;
 
@@ -474,7 +474,7 @@ static inline uint8_t *parse_attr_resp_info_unreported(uint8_t bts_nr, uint8_t *
 }
 
 /* Parse Attribute Response Info content for 3GPP TS 52.021 §9.4.30 Manufacturer Id */
-static inline uint8_t *parse_attr_resp_info_manuf_id(struct gsm_bts *bts, uint8_t *data, uint16_t *data_len)
+static inline const uint8_t *parse_attr_resp_info_manuf_id(struct gsm_bts *bts, const uint8_t *data, uint16_t *data_len)
 {
 	struct tlv_parsed tp;
 	uint16_t m_id_len = 0;
@@ -513,7 +513,7 @@ static inline uint8_t *parse_attr_resp_info_manuf_id(struct gsm_bts *bts, uint8_
 }
 
 /* Parse Attribute Response Info content for 3GPP TS 52.021 §9.4.28 Manufacturer Dependent State */
-static inline uint8_t *parse_attr_resp_info_manuf_state(const struct gsm_bts_trx *trx, uint8_t *data, uint16_t *data_len)
+static inline const uint8_t *parse_attr_resp_info_manuf_state(const struct gsm_bts_trx *trx, const uint8_t *data, uint16_t *data_len)
 {
 	struct tlv_parsed tp;
 	const uint8_t *power;
@@ -542,7 +542,8 @@ static int abis_nm_rx_get_attr_resp(struct msgb *mb, const struct gsm_bts_trx *t
 	struct e1inp_sign_link *sign_link = mb->dst;
 	struct gsm_bts *bts = trx ? trx->bts : sign_link->trx->bts;
 	struct tlv_parsed tp;
-	uint8_t *data, i;
+	const uint8_t *data;
+	int i;
 	uint16_t data_len;
 	int rc;
 	struct abis_nm_sw_desc sw_descr[MAX_BTS_ATTR];
