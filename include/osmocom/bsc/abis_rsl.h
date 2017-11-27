@@ -27,6 +27,7 @@
 #include <osmocom/gsm/gsm_utils.h>
 #include <osmocom/gsm/sysinfo.h>
 #include <osmocom/core/msgb.h>
+#include <osmocom/bsc/gsm_data.h>
 
 struct gsm_bts;
 struct gsm_lchan;
