@@ -806,8 +806,6 @@ struct gsm_bts {
 	/* PCU socket state */
 	char *pcu_sock_path;
 	struct pcu_sock_state *pcu_state;
-
-	void *role;
 };
 
 
