@@ -605,7 +605,7 @@ static void config_write_bts_single(struct vty *vty, struct gsm_bts *bts)
 	else
 		vty_out(vty, "  radio-link-timeout %d%s",
 			gsm_bts_get_radio_link_timeout(bts), VTY_NEWLINE);
-	
+
 	vty_out(vty, "  channel allocator %s%s",
 		bts->chan_alloc_reverse ? "descending" : "ascending",
 		VTY_NEWLINE);
@@ -1440,7 +1440,7 @@ DEFUN(show_paging,
 		}
 		bts = gsm_bts_num(net, bts_nr);
 		bts_paging_dump_vty(vty, bts);
-		
+
 		return CMD_SUCCESS;
 	}
 	for (bts_nr = 0; bts_nr < net->num_bts; bts_nr++) {
