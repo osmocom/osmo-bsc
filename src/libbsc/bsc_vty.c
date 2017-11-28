@@ -2377,6 +2377,7 @@ DEFUN(cfg_bts_prs_bvci, cfg_bts_gprs_bvci_cmd,
 	"GPRS BSSGP VC Identifier\n"
 	"GPRS BSSGP VC Identifier")
 {
+	/* ETSI TS 101 343: values 0 and 1 are reserved for signalling and PTM */
 	struct gsm_bts *bts = vty->index;
 
 	if (bts->gprs.mode == BTS_GPRS_NONE) {
