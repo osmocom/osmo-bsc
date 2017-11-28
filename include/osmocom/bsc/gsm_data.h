@@ -368,9 +368,6 @@ struct gsm_network {
 	uint16_t network_code;
 	char *name_long;
 	char *name_short;
-	enum gsm_auth_policy auth_policy;
-	regex_t authorized_regexp;
-	char *authorized_reg_str;
 	enum gsm48_reject_value reject_cause;
 	int a5_encryption;
 	bool authentication_required;

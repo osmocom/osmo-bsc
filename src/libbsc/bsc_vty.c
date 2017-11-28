@@ -171,10 +171,6 @@ static void net_dump_vty(struct vty *vty, struct gsm_network *net)
 		net->name_long, VTY_NEWLINE);
 	vty_out(vty, "  Short network name: '%s'%s",
 		net->name_short, VTY_NEWLINE);
-	vty_out(vty, "  Authentication policy: %s",
-		gsm_auth_policy_name(net->auth_policy));
-	if (net->authorized_reg_str)
-		vty_out(vty, ", authorized regexp: %s", net->authorized_reg_str);
 	vty_out(vty, "%s", VTY_NEWLINE);
 	vty_out(vty, "  Location updating reject cause: %u%s",
 		net->reject_cause, VTY_NEWLINE);
@@ -803,9 +799,6 @@ static int config_write_net(struct vty *vty)
 	vty_out(vty, " mobile network code %u%s", gsmnet->network_code, VTY_NEWLINE);
 	vty_out(vty, " short name %s%s", gsmnet->name_short, VTY_NEWLINE);
 	vty_out(vty, " long name %s%s", gsmnet->name_long, VTY_NEWLINE);
-	vty_out(vty, " auth policy %s%s", gsm_auth_policy_name(gsmnet->auth_policy), VTY_NEWLINE);
-	if (gsmnet->authorized_reg_str)
-		vty_out(vty, " authorized-regexp %s%s", gsmnet->authorized_reg_str, VTY_NEWLINE);
 	vty_out(vty, " location updating reject cause %u%s",
 		gsmnet->reject_cause, VTY_NEWLINE);
 	vty_out(vty, " encryption a5 %u%s", gsmnet->a5_encryption, VTY_NEWLINE);
