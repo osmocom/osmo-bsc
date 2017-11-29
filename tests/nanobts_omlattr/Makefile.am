@@ -26,6 +26,7 @@ nanobts_omlattr_test_LDADD = \
 	$(top_builddir)/src/libbsc/libbsc.a \
 	$(top_builddir)/src/libtrau/libtrau.a \
 	$(top_builddir)/src/libcommon/libcommon.a \
+	$(top_builddir)/src/libcommon-cs/libcommon-cs.a \
 	$(LIBOSMOCORE_LIBS) \
 	$(LIBOSMOGSM_LIBS) \
 	$(LIBOSMOABIS_LIBS) \

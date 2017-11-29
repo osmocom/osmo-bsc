@@ -22,10 +22,10 @@ AM_LDFLAGS = \
 # Libraries
 SUBDIRS = \
 	libcommon \
+	libcommon-cs \
 	libbsc \
 	libtrau \
 	libfilter \
-	libcommon-cs \
 	$(NULL)
 
 # Programs

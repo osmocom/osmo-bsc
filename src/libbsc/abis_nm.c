@@ -46,6 +46,7 @@
 #include <osmocom/bsc/misdn.h>
 #include <osmocom/bsc/signal.h>
 #include <osmocom/abis/e1_input.h>
+#include <osmocom/bsc/chan_alloc.h>
 
 #define OM_ALLOC_SIZE		1024
 #define OM_HEADROOM_SIZE	128
@@ -691,9 +692,25 @@ bool all_trx_rsl_connected_unlocked(const struct gsm_bts *bts)
 	if (bts->mo.nm_state.administrative == NM_STATE_LOCKED)
 		return false;
 
+	if (bts->gprs.mode != BTS_GPRS_NONE) {
+		if (bts->gprs.cell.mo.nm_state.administrative == NM_STATE_LOCKED)
+			return false;
+
+		if (bts->gprs.nse.mo.nm_state.administrative == NM_STATE_LOCKED)
+			return false;
+
+		if (bts->gprs.nsvc[0].mo.nm_state.administrative == NM_STATE_LOCKED &&
+		    bts->gprs.nsvc[1].mo.nm_state.administrative == NM_STATE_LOCKED)
+			return false;
+	}
+
 	llist_for_each_entry(trx, &bts->trx_list, list) {
 		if (!trx->rsl_link)
 			return false;
+
+		if (!trx_is_usable(trx))
+			return false;
+
 		if (trx->mo.nm_state.administrative == NM_STATE_LOCKED)
 			return false;
 	}
