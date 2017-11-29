@@ -802,9 +802,6 @@ static int config_write_net(struct vty *vty)
 	vty_out(vty, " location updating reject cause %u%s",
 		gsmnet->reject_cause, VTY_NEWLINE);
 	vty_out(vty, " encryption a5 %u%s", gsmnet->a5_encryption, VTY_NEWLINE);
-	vty_out(vty, " authentication %s%s",
-		gsmnet->authentication_required ?  "required" : "optional",
-		VTY_NEWLINE);
 	vty_out(vty, " neci %u%s", gsmnet->neci, VTY_NEWLINE);
 	vty_out(vty, " paging any use tch %d%s", gsmnet->pag_any_tch, VTY_NEWLINE);
 	vty_out(vty, " rrlp mode %s%s", rrlp_mode_name(gsmnet->rrlp.mode),

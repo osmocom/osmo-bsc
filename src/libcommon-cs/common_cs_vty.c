@@ -134,20 +134,6 @@ DEFUN(cfg_net_encryption,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_net_authentication,
-      cfg_net_authentication_cmd,
-      "authentication (optional|required)",
-	"Whether to enforce MS authentication in 2G\n"
-	"Allow MS to attach via 2G BSC without authentication\n"
-	"Always do authentication\n")
-{
-	struct gsm_network *gsmnet = gsmnet_from_vty(vty);
-
-	gsmnet->authentication_required = (argv[0][0] == 'r') ? true : false;
-
-	return CMD_SUCCESS;
-}
-
 DEFUN(cfg_net_rrlp_mode, cfg_net_rrlp_mode_cmd,
       "rrlp mode (none|ms-based|ms-preferred|ass-preferred)",
 	"Radio Resource Location Protocol\n"
@@ -297,7 +283,6 @@ int common_cs_vty_init(struct gsm_network *network,
 	install_element(GSMNET_NODE, &cfg_net_name_long_cmd);
 	install_element(GSMNET_NODE, &cfg_net_reject_cause_cmd);
 	install_element(GSMNET_NODE, &cfg_net_encryption_cmd);
-	install_element(GSMNET_NODE, &cfg_net_authentication_cmd);
 	install_element(GSMNET_NODE, &cfg_net_rrlp_mode_cmd);
 	install_element(GSMNET_NODE, &cfg_net_mm_info_cmd);
 	install_element(GSMNET_NODE, &cfg_net_timezone_cmd);

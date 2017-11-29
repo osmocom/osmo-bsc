@@ -335,7 +335,6 @@ struct gsm_network {
 	char *name_short;
 	enum gsm48_reject_value reject_cause;
 	int a5_encryption;
-	bool authentication_required;
 	int neci;
 	int send_mm_info;
 	struct {
