@@ -53,7 +53,6 @@ noinst_HEADERS = \
 	rrlp.h \
 	rs232.h \
 	rtp_proxy.h \
-	sgsn.h \
 	signal.h \
 	silent_call.h \
 	sms_queue.h \
