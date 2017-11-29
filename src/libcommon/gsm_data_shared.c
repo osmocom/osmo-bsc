@@ -485,7 +485,7 @@ char *gsm_lchan_name_compute(const struct gsm_lchan *lchan)
 }
 
 /* obtain the MO structure for a given object instance */
-struct gsm_abis_mo *
+static inline struct gsm_abis_mo *
 gsm_objclass2mo(struct gsm_bts *bts, uint8_t obj_class,
 	    const struct abis_om_obj_inst *obj_inst)
 {
