@@ -55,35 +55,6 @@ typedef int gsm_cbfn(unsigned int hooknum,
 		     struct msgb *msg,
 		     void *data, void *param);
 
-/* Real authentication information containing Ki */
-enum gsm_auth_algo {
-	AUTH_ALGO_NONE,
-	AUTH_ALGO_XOR,
-	AUTH_ALGO_COMP128v1,
-};
-
-struct gsm_auth_info {
-	enum gsm_auth_algo auth_algo;
-	unsigned int a3a8_ki_len;
-	uint8_t a3a8_ki[16];
-};
-
-struct gsm_auth_tuple {
-	int use_count;
-	int key_seq;
-	struct osmo_auth_vector vec;
-};
-#define GSM_KEY_SEQ_INVAL	7	/* GSM 04.08 - 10.5.1.2 */
-
-/*
- * AUTHENTICATION/CIPHERING state
- */
-struct gsm_security_operation {
-	struct gsm_auth_tuple atuple;
-	gsm_cbfn *cb;
-	void *cb_data;
-};
-
 /*
  * A dummy to keep a connection up for at least
  * a couple of seconds to work around MSC issues.
@@ -154,12 +125,6 @@ struct gsm_subscriber_connection {
 	uint8_t expire_timer_stopped;
 	/* SMS helpers for libmsc */
 	uint8_t next_rp_ref;
-
-	/*
-	 * Operations that have a state and might be pending
-	 */
-	struct gsm_security_operation *sec_operation;
-	struct gsm_anchor_operation *anch_operation;
 
 	struct osmo_fsm_inst *conn_fsm;
 
