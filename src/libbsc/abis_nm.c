@@ -683,12 +683,17 @@ static int abis_nm_rx_lmt_event(struct msgb *mb)
 	return 0;
 }
 
-bool all_trx_rsl_connected(const struct gsm_bts *bts)
+bool all_trx_rsl_connected_unlocked(const struct gsm_bts *bts)
 {
 	const struct gsm_bts_trx *trx;
 
+	if (bts->mo.nm_state.administrative == NM_STATE_LOCKED)
+		return false;
+
 	llist_for_each_entry(trx, &bts->trx_list, list) {
 		if (!trx->rsl_link)
+			return false;
+		if (trx->mo.nm_state.administrative == NM_STATE_LOCKED)
 			return false;
 	}
 

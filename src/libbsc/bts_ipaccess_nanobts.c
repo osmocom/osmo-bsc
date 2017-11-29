@@ -50,7 +50,7 @@ static void bts_model_nanobts_e1line_bind_ops(struct e1inp_line *line);
 static char *get_oml_status(const struct gsm_bts *bts)
 {
 	if (bts->oml_link)
-		return all_trx_rsl_connected(bts) ? "connected" : "degraded";
+		return all_trx_rsl_connected_unlocked(bts) ? "connected" : "degraded";
 
 	return "disconnected";
 }
