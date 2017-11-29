@@ -108,11 +108,6 @@ static void write_msc(struct vty *vty, struct bsc_msc_data *msc)
 	struct bsc_msc_dest *dest;
 
 	vty_out(vty, "msc %d%s", msc->nr, VTY_NEWLINE);
-	if (msc->bsc_token)
-		vty_out(vty, " token %s%s", msc->bsc_token, VTY_NEWLINE);
-	if (msc->bsc_key_present)
-		vty_out(vty, " auth-key %s%s",
-			osmo_hexdump(msc->bsc_key, sizeof(msc->bsc_key)), VTY_NEWLINE);
 	if (msc->core_mnc != -1)
 		vty_out(vty, " core-mobile-network-code %d%s",
 			msc->core_mnc, VTY_NEWLINE);
@@ -233,41 +228,6 @@ static int config_write_bsc(struct vty *vty)
 	if (bsc->acc_lst_name)
 		vty_out(vty, " access-list-name %s%s", bsc->acc_lst_name, VTY_NEWLINE);
 
-	return CMD_SUCCESS;
-}
-
-DEFUN(cfg_net_bsc_token,
-      cfg_net_bsc_token_cmd,
-      "token TOKEN",
-      "A token for the BSC to be sent to the MSC\n" "A token\n")
-{
-	struct bsc_msc_data *data = bsc_msc_data(vty);
-
-	osmo_talloc_replace_string(osmo_bsc_data(vty), &data->bsc_token, argv[0]);
-	return CMD_SUCCESS;
-}
-
-DEFUN(cfg_net_bsc_key,
-      cfg_net_bsc_key_cmd,
-      "auth-key KEY",
-      "Authentication (secret) key configuration\n"
-      "Security key\n")
-{
-	struct bsc_msc_data *data = bsc_msc_data(vty);
-
-	osmo_hexparse(argv[0], data->bsc_key, sizeof(data->bsc_key));
-	data->bsc_key_present = 1;
-	return CMD_SUCCESS;
-}
-
-DEFUN(cfg_net_no_bsc_key, cfg_net_bsc_no_key_cmd,
-      "no auth-key",
-      NO_STR "Authentication (secret) key configuration\n")
-{
-	struct bsc_msc_data *data = bsc_msc_data(vty);
-
-	memset(data->bsc_key, 0, sizeof(data->bsc_key));
-	data->bsc_key_present = 0;
 	return CMD_SUCCESS;
 }
 
@@ -989,9 +949,6 @@ int bsc_vty_init_extra(void)
 	install_element(BSC_NODE, &cfg_bsc_no_acc_lst_name_cmd);
 
 	install_node(&msc_node, config_write_msc);
-	install_element(MSC_NODE, &cfg_net_bsc_token_cmd);
-	install_element(MSC_NODE, &cfg_net_bsc_key_cmd);
-	install_element(MSC_NODE, &cfg_net_bsc_no_key_cmd);
 	install_element(MSC_NODE, &cfg_net_bsc_ncc_cmd);
 	install_element(MSC_NODE, &cfg_net_bsc_mcc_cmd);
 	install_element(MSC_NODE, &cfg_net_bsc_lac_cmd);

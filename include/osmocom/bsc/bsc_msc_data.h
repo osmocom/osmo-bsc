@@ -72,10 +72,6 @@ struct bsc_msc_data {
 
 
 	/* Connection data */
-	char *bsc_token;
-	uint8_t bsc_key[16];
-	uint8_t bsc_key_present;
-
 	int ping_timeout;
 	int pong_timeout;
 	struct osmo_timer_list ping_timer;
