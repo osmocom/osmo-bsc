@@ -19,11 +19,6 @@
 #include <osmocom/gsm/protocol/gsm_12_21.h>
 
 #include <osmocom/abis/e1_input.h>
-
-#ifndef ROLE_BSC
-#include <osmocom/gsm/lapdm.h>
-#endif
-
 #include <osmocom/bsc/common_cs.h>
 #include <osmocom/bsc/meas_rep.h>
 
@@ -251,7 +246,6 @@ struct gsm_lchan {
 		uint8_t rtp_payload;
 		uint8_t rtp_payload2;
 		uint8_t speech_mode;
-#ifdef ROLE_BSC
 		struct rtp_socket *rtp_socket;
 
 		/* info we need to postpone the AoIP
@@ -263,16 +257,12 @@ struct gsm_lchan {
 			uint8_t speech_mode;
 			bool valid;
 		} ass_compl;
-#else
-		struct osmo_rtp_socket *rtp_socket;
-#endif
 	} abis_ip;
 
 	uint8_t rqd_ta;
 
 	char *name;
 
-#ifdef ROLE_BSC
 	struct osmo_timer_list T3101;
 	struct osmo_timer_list T3109;
 	struct osmo_timer_list T3111;
@@ -300,88 +290,6 @@ struct gsm_lchan {
 		struct gsm48_req_ref *rqd_ref;
 		uint8_t rqd_ta;
 	} dyn;
-#else
-	/* Number of different GsmL1_Sapi_t used in osmo_bts_sysmo is 23.
-	 * Currently we don't share these headers so this is a magic number. */
-	struct llist_head sapi_cmds;
-	uint8_t sapis_dl[23];
-	uint8_t sapis_ul[23];
-	struct lapdm_channel lapdm_ch;
-	struct llist_head dl_tch_queue;
-	struct {
-		/* bitmask of all SI that are present/valid in si_buf */
-		uint32_t valid;
-		uint32_t last;
-		/* buffers where we put the pre-computed SI:
-		   SI2Q_MAX_NUM is the max number of SI2quater messages (see 3GPP TS 44.018) */
-		sysinfo_buf_t buf[_MAX_SYSINFO_TYPE][SI2Q_MAX_NUM];
-	} si;
-	struct {
-		uint8_t flags;
-		/* RSL measurment result number, 0 at lchan_act */
-		uint8_t res_nr;
-		/* current Tx power level of the BTS */
-		uint8_t bts_tx_pwr;
-		/* number of measurements stored in array below */
-		uint8_t num_ul_meas;
-		struct bts_ul_meas uplink[MAX_NUM_UL_MEAS];
-		/* last L1 header from the MS */
-		uint8_t l1_info[2];
-		struct gsm_meas_rep_unidir ul_res;
-	} meas;
-	struct {
-		struct amr_multirate_conf amr_mr;
-		struct {
-			struct osmo_fsm_inst *dl_amr_fsm;
-			/* TCH cache */
-			uint8_t cache[20];
-			/* FACCH cache */
-			uint8_t facch[GSM_MACBLOCK_LEN];
-			uint8_t len;
-			uint32_t fn;
-			bool is_update;
-			/* set for each SID frame to detect talkspurt for codecs
-			   without explicit ONSET event */
-			bool ul_sid;
-			/* indicates if DTXd was active during DL measurement
-			   period */
-			bool dl_active;
-		} dtx;
-		uint8_t last_cmr;
-		uint32_t last_fn;
-	} tch;
-
-	/* 3GPP TS 48.058 § 9.3.37: [0; 255] ok, -1 means invalid*/
-	int16_t ms_t_offs;
-	/* 3GPP TS 45.010 § 1.2 round trip propagation delay (in symbols) or -1 */
-	int16_t p_offs;
-
-	/* BTS-side ciphering state (rx only, bi-directional, ...) */
-	uint8_t ciph_state;
-	uint8_t ciph_ns;
-	uint8_t loopback;
-	struct {
-		uint8_t active;
-		uint8_t ref;
-		/* T3105: PHYS INF retransmission */
-		struct osmo_timer_list t3105;
-		/* counts up to Ny1 */
-		unsigned int phys_info_count;
-	} ho;
-	/* S counter for link loss */
-	int s;
-	/* Kind of the release/activation. E.g. RSL or PCU */
-	int rel_act_kind;
-	/* RTP header Marker bit to indicate beginning of speech after pause  */
-	bool rtp_tx_marker;
-	/* power handling */
-	struct {
-		uint8_t current;
-		uint8_t fixed;
-	} ms_power_ctrl;
-
-	struct msgb *pending_rel_ind_msg;
-#endif
 };
 
 enum {
@@ -464,15 +372,6 @@ struct gsm_bts_trx {
 	uint16_t arfcn;
 	int nominal_power;		/* in dBm */
 	unsigned int max_power_red;	/* in actual dB */
-
-#ifndef ROLE_BSC
-	struct trx_power_params power_params;
-	int ms_power_control;
-
-	struct {
-		void *l1h;
-	} role_bts;
-#endif
 
 	union {
 		struct {
@@ -847,7 +746,6 @@ struct gsm_bts {
 	int force_combined_si;
 	int bcch_change_mark;
 
-#ifdef ROLE_BSC
 	/* Abis NM queue */
 	struct llist_head abis_queue;
 	int abis_nm_pend;
@@ -909,7 +807,6 @@ struct gsm_bts {
 	char *pcu_sock_path;
 	struct pcu_sock_state *pcu_state;
 
-#endif /* ROLE_BSC */
 	void *role;
 };
 

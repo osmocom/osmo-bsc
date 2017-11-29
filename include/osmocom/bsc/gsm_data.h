@@ -218,7 +218,6 @@ struct gsm_subscriber_connection {
 };
 
 
-#define ROLE_BSC
 #include "gsm_data_shared.h"
 
 
