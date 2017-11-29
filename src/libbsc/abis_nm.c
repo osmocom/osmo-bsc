@@ -159,7 +159,7 @@ static int abis_nm_sendmsg_direct(struct gsm_bts *bts, struct msgb *msg)
 
 static int abis_nm_rcvmsg_sw(struct msgb *mb);
 
-int nm_is_running(struct gsm_nm_state *s) {
+bool nm_is_running(const struct gsm_nm_state *s) {
 	return (s->operational == NM_OPSTATE_ENABLED) && (
 		(s->availability == NM_AVSTATE_OK) ||
 		(s->availability == 0xff)

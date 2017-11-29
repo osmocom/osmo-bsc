@@ -36,41 +36,41 @@
 
 #include <osmocom/core/talloc.h>
 
-static int ts_is_usable(struct gsm_bts_trx_ts *ts)
+static bool ts_is_usable(const struct gsm_bts_trx_ts *ts)
 {
 	/* FIXME: How does this behave for BS-11 ? */
 	if (is_ipaccess_bts(ts->trx->bts)) {
 		if (!nm_is_running(&ts->mo.nm_state))
-			return 0;
+			return false;
 	}
 
 	/* If a TCH/F_PDCH TS is busy changing, it is already taken or not
 	 * yet available. */
 	if (ts->pchan == GSM_PCHAN_TCH_F_PDCH) {
 		if (ts->flags & TS_F_PDCH_PENDING_MASK)
-			return 0;
+			return false;
 	}
 
 	/* If a dynamic channel is busy changing, it is already taken or not
 	 * yet available. */
 	if (ts->pchan == GSM_PCHAN_TCH_F_TCH_H_PDCH) {
 		if (ts->dyn.pchan_is != ts->dyn.pchan_want)
-			return 0;
+			return false;
 	}
 
-	return 1;
+	return true;
 }
 
-int trx_is_usable(struct gsm_bts_trx *trx)
+bool trx_is_usable(const struct gsm_bts_trx *trx)
 {
 	/* FIXME: How does this behave for BS-11 ? */
 	if (is_ipaccess_bts(trx->bts)) {
 		if (!nm_is_running(&trx->mo.nm_state) ||
 		    !nm_is_running(&trx->bb_transc.mo.nm_state))
-			return 0;
+			return false;
 	}
 
-	return 1;
+	return true;
 }
 
 static struct gsm_lchan *
