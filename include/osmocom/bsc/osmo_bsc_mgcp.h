@@ -21,6 +21,7 @@
 #pragma once
 
 #include <osmocom/mgcp_client/mgcp_common.h>
+#include <osmocom/mgcp_client/mgcp_client.h>
 
 /* MGCP state handler context. This context information stores all information
  * to handle the direction of the RTP streams via MGCP. There is one instance
@@ -48,6 +49,7 @@ struct mgcp_ctx {
 	struct gsm_lchan *lchan;
 	struct gsm_lchan *ho_lchan;
 	struct msgb *resp;
+	mgcp_trans_id_t mgw_pending_trans;
 };
 
 struct mgcp_ctx *mgcp_assignm_req(void *ctx, struct mgcp_client *mgcp, struct osmo_bsc_sccp_con *conn,

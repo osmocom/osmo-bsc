@@ -182,6 +182,7 @@ static void fsm_crcx_bts_cb(struct osmo_fsm_inst *fi, uint32_t event, void *data
 	OSMO_ASSERT(msg);
 
 	/* Transmit MGCP message to MGW */
+	mgcp_ctx->mgw_pending_trans = mgcp_msg_trans_id(msg);
 	rc = mgcp_client_tx(mgcp, msg, crcx_for_bts_resp_cb, mgcp_ctx);
 	if (rc < 0) {
 		handle_error(mgcp_ctx, MGCP_ERR_MGW_TX_FAIL);
@@ -335,6 +336,7 @@ static void fsm_mdcx_bts_cb(struct osmo_fsm_inst *fi, uint32_t event, void *data
 	OSMO_ASSERT(msg);
 
 	/* Transmit MGCP message to MGW */
+	mgcp_ctx->mgw_pending_trans = mgcp_msg_trans_id(msg);
 	rc = mgcp_client_tx(mgcp, msg, mdcx_for_bts_resp_cb, mgcp_ctx);
 	if (rc < 0) {
 		handle_error(mgcp_ctx, MGCP_ERR_MGW_TX_FAIL);
@@ -460,6 +462,7 @@ static void fsm_crcx_net_cb(struct osmo_fsm_inst *fi, uint32_t event, void *data
 	OSMO_ASSERT(msg);
 
 	/* Transmit MGCP message to MGW */
+	mgcp_ctx->mgw_pending_trans = mgcp_msg_trans_id(msg);
 	rc = mgcp_client_tx(mgcp, msg, crcx_for_net_resp_cb, mgcp_ctx);
 	if (rc < 0) {
 		handle_error(mgcp_ctx, MGCP_ERR_MGW_TX_FAIL);
@@ -595,6 +598,7 @@ static void handle_teardown(struct mgcp_ctx *mgcp_ctx)
 	OSMO_ASSERT(msg);
 
 	/* Transmit MGCP message to MGW */
+	mgcp_ctx->mgw_pending_trans = mgcp_msg_trans_id(msg);
 	rc = mgcp_client_tx(mgcp, msg, dlcx_for_all_resp_cb, mgcp_ctx);
 	if (rc < 0) {
 		handle_error(mgcp_ctx, MGCP_ERR_MGW_TX_FAIL);
@@ -652,6 +656,8 @@ static void handle_handover(struct mgcp_ctx *mgcp_ctx)
 	msg = mgcp_msg_gen(mgcp, &mgcp_msg);
 	OSMO_ASSERT(msg);
 
+	/* Transmit MGCP message to MGW */
+	mgcp_ctx->mgw_pending_trans = mgcp_msg_trans_id(msg);
 	rc = mgcp_client_tx(mgcp, msg, mdcx_for_bts_ho_resp_cb, mgcp_ctx);
 	if (rc < 0) {
 		handle_error(mgcp_ctx, MGCP_ERR_MGW_TX_FAIL);
@@ -814,6 +820,9 @@ static int fsm_timeout_cb(struct osmo_fsm_inst *fi)
 
 		/* At least release the occupied endpoint ID */
 		mgcp_client_release_endpoint(mgcp_ctx->rtp_endpoint, mgcp);
+
+		/* Cancel the transaction that timed out */
+		mgcp_client_cancel(mgcp, mgcp_ctx->mgw_pending_trans);
 
 		/* Initiate self destruction of the FSM */
 		osmo_fsm_inst_state_chg(fi, ST_HALT, 0, 0);
