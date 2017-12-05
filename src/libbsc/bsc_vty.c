@@ -1342,12 +1342,27 @@ DEFUN(show_subscr_conn,
 	return CMD_SUCCESS;
 }
 
-DEFUN(handover_subscr_conn,
-      handover_subscr_conn_cmd,
-      "handover <0-255> <0-255> <0-7> <0-7> <0-255>",
-      "Handover subscriber connection to other BTS\n"
-      "Current " BTS_TRX_TS_LCHAN_STR
-      "New " BTS_NR_STR)
+static int trigger_ho_or_as(struct vty *vty, struct gsm_lchan *from_lchan, struct gsm_bts *to_bts)
+{
+	int rc;
+
+	if (!to_bts || from_lchan->ts->trx->bts == to_bts) {
+		LOGP(DHO, LOGL_NOTICE, "%s Manually triggering Assignment from VTY\n",
+		     gsm_lchan_name(from_lchan));
+		to_bts = from_lchan->ts->trx->bts;
+	} else
+		LOGP(DHO, LOGL_NOTICE, "%s (ARFCN %u) --> BTS %u Manually triggering Handover from VTY\n",
+		     gsm_lchan_name(from_lchan), from_lchan->ts->trx->arfcn, to_bts->nr);
+	rc = bsc_handover_start(from_lchan, to_bts);
+	if (rc) {
+		vty_out(vty, "bsc_handover_start() returned %d=%s%s", rc,
+			strerror(-rc), VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+	return CMD_SUCCESS;
+}
+
+static int ho_or_as(struct vty *vty, const char *argv[], int argc)
 {
 	struct gsm_network *net = gsmnet_from_vty(vty);
 	struct gsm_subscriber_connection *conn;
@@ -1357,41 +1372,190 @@ DEFUN(handover_subscr_conn,
 	unsigned int trx_nr = atoi(argv[1]);
 	unsigned int ts_nr = atoi(argv[2]);
 	unsigned int ss_nr = atoi(argv[3]);
-	unsigned int bts_nr_new = atoi(argv[4]);
+	unsigned int bts_nr_new;
+	const char *action;
 
-	/* Lookup the BTS where we want to handover to */
-	llist_for_each_entry(bts, &net->bts_list, list) {
-		if (bts->nr == bts_nr_new) {
-			new_bts = bts;
-			break;
+	if (argc > 4) {
+		bts_nr_new = atoi(argv[4]);
+
+		/* Lookup the BTS where we want to handover to */
+		llist_for_each_entry(bts, &net->bts_list, list) {
+			if (bts->nr == bts_nr_new) {
+				new_bts = bts;
+				break;
+			}
+		}
+
+		if (!new_bts) {
+			vty_out(vty, "Unable to trigger handover, specified bts #%u does not exist %s",
+				bts_nr_new, VTY_NEWLINE);
+			return CMD_WARNING;
 		}
 	}
 
-	if (!new_bts) {
-		vty_out(vty, "Unable to trigger handover,"
-			"specified bts #%u does not exist %s", bts_nr_new,
-			VTY_NEWLINE);
-		return CMD_WARNING;
-	}
+	action = new_bts ? "handover" : "assignment";
 
 	/* Find the connection/lchan that we want to handover */
 	llist_for_each_entry(conn, &net->subscr_conns, entry) {
 		if (conn_get_bts(conn)->nr == bts_nr &&
 		    conn->lchan->ts->trx->nr == trx_nr &&
 		    conn->lchan->ts->nr == ts_nr && conn->lchan->nr == ss_nr) {
-			vty_out(vty, "starting handover for lchan %s...%s",
-				conn->lchan->name, VTY_NEWLINE);
+			vty_out(vty, "starting %s for lchan %s...%s", action, conn->lchan->name, VTY_NEWLINE);
 			lchan_dump_full_vty(vty, conn->lchan);
-			bsc_handover_start(conn->lchan, new_bts);
-			return CMD_SUCCESS;
+			return trigger_ho_or_as(vty, conn->lchan, new_bts);
 		}
 	}
 
-	vty_out(vty, "Unable to trigger handover,"
-		"specified connection (bts=%u,trx=%u,ts=%u,ss=%u) does not exist%s",
-		bts_nr, trx_nr, ts_nr, ss_nr, VTY_NEWLINE);
+	vty_out(vty, "Unable to trigger %s, specified connection (bts=%u,trx=%u,ts=%u,ss=%u) does not exist%s",
+		action, bts_nr, trx_nr, ts_nr, ss_nr, VTY_NEWLINE);
 
 	return CMD_WARNING;
+}
+
+#define MANUAL_HANDOVER_STR "Manually trigger handover (for debugging)\n"
+#define MANUAL_ASSIGNMENT_STR "Manually trigger assignment (for debugging)\n"
+
+DEFUN(handover_subscr_conn,
+      handover_subscr_conn_cmd,
+      "handover <0-255> <0-255> <0-7> <0-7> <0-255>",
+      MANUAL_HANDOVER_STR
+      "Current " BTS_TRX_TS_LCHAN_STR
+      "New " BTS_NR_STR)
+{
+	return ho_or_as(vty, argv, argc);
+}
+
+DEFUN(assignment_subscr_conn,
+      assignment_subscr_conn_cmd,
+      "assignment <0-255> <0-255> <0-7> <0-7>",
+      MANUAL_ASSIGNMENT_STR
+      "Current " BTS_TRX_TS_LCHAN_STR)
+{
+	return ho_or_as(vty, argv, argc);
+}
+
+static struct gsm_lchan *find_used_voice_lchan(struct vty *vty)
+{
+	struct gsm_bts *bts;
+	struct gsm_network *network = gsmnet_from_vty(vty);
+
+	llist_for_each_entry(bts, &network->bts_list, list) {
+		struct gsm_bts_trx *trx;
+
+		llist_for_each_entry(trx, &bts->trx_list, list) {
+			int i;
+			for (i = 0; i < ARRAY_SIZE(trx->ts); i++) {
+				struct gsm_bts_trx_ts *ts = &trx->ts[i];
+				int j;
+				int subslots;
+
+				/* skip administratively deactivated timeslots */
+				if (!nm_is_running(&ts->mo.nm_state))
+					continue;
+
+				subslots = ts_subslots(ts);
+				for (j = 0; j < subslots; j++) {
+					struct gsm_lchan *lchan = &ts->lchan[j];
+
+					if (lchan->state == LCHAN_S_ACTIVE
+					    && (lchan->type == GSM_LCHAN_TCH_F
+						|| lchan->type == GSM_LCHAN_TCH_H)) {
+
+						vty_out(vty, "Found voice call: %s%s",
+							gsm_lchan_name(lchan), VTY_NEWLINE);
+						lchan_dump_full_vty(vty, lchan);
+						return lchan;
+					}
+				}
+			}
+		}
+	}
+
+	vty_out(vty, "Cannot find any ongoing voice calls%s", VTY_NEWLINE);
+	return NULL;
+}
+
+static struct gsm_bts *find_other_bts_with_free_slots(struct vty *vty, struct gsm_bts *not_this_bts,
+						      enum gsm_phys_chan_config free_type)
+{
+	struct gsm_bts *bts;
+	struct gsm_network *network = gsmnet_from_vty(vty);
+
+	llist_for_each_entry(bts, &network->bts_list, list) {
+		struct gsm_bts_trx *trx;
+
+		if (bts == not_this_bts)
+			continue;
+
+		llist_for_each_entry(trx, &bts->trx_list, list) {
+			int i;
+			for (i = 0; i < ARRAY_SIZE(trx->ts); i++) {
+				struct gsm_bts_trx_ts *ts = &trx->ts[i];
+				int j;
+				int subslots;
+
+				/* skip administratively deactivated timeslots */
+				if (!nm_is_running(&ts->mo.nm_state))
+					continue;
+
+				if (ts->pchan != free_type)
+					continue;
+
+				subslots = ts_subslots(ts);
+				for (j = 0; j < subslots; j++) {
+					struct gsm_lchan *lchan = &ts->lchan[j];
+
+					if (lchan->state == LCHAN_S_NONE) {
+						vty_out(vty, "Found unused %s slot: %s%s",
+							gsm_pchan_name(free_type),
+							gsm_lchan_name(lchan),
+							VTY_NEWLINE);
+						lchan_dump_full_vty(vty, lchan);
+						return bts;
+					}
+				}
+			}
+		}
+	}
+	vty_out(vty, "Cannot find any BTS (other than BTS %u) with free %s lchan%s",
+		not_this_bts? not_this_bts->nr : 255, gsm_lchant_name(free_type), VTY_NEWLINE);
+	return NULL;
+}
+
+DEFUN(handover_any, handover_any_cmd,
+      "handover any",
+      MANUAL_HANDOVER_STR
+      "Pick any actively used TCH/F or TCH/H lchan and handover to any other BTS."
+      " This is likely to fail if not all BTS are guaranteed to be reachable by the MS.\n")
+{
+	struct gsm_lchan *from_lchan;
+	struct gsm_bts *to_bts;
+
+	from_lchan = find_used_voice_lchan(vty);
+	if (!from_lchan)
+		return CMD_WARNING;
+
+	to_bts = find_other_bts_with_free_slots(vty, from_lchan->ts->trx->bts,
+						ts_pchan(from_lchan->ts));
+	if (!to_bts)
+		return CMD_WARNING;
+
+	return trigger_ho_or_as(vty, from_lchan, to_bts);
+}
+
+DEFUN(assignment_any, assignment_any_cmd,
+      "assignment any",
+      MANUAL_ASSIGNMENT_STR
+      "Pick any actively used TCH/F or TCH/H lchan and re-assign within the same BTS."
+      " This will fail if no lchans of the same type are available besides the used one.\n")
+{
+	struct gsm_lchan *from_lchan;
+
+	from_lchan = find_used_voice_lchan(vty);
+	if (!from_lchan)
+		return CMD_WARNING;
+
+	return trigger_ho_or_as(vty, from_lchan, NULL);
 }
 
 static void paging_dump_vty(struct vty *vty, struct gsm_paging_request *pag)
@@ -4213,6 +4377,9 @@ int bsc_vty_init(struct gsm_network *network)
 
 	install_element_ve(&show_subscr_conn_cmd);
 	install_element_ve(&handover_subscr_conn_cmd);
+	install_element_ve(&handover_any_cmd);
+	install_element_ve(&assignment_subscr_conn_cmd);
+	install_element_ve(&assignment_any_cmd);
 
 	install_element_ve(&show_paging_cmd);
 	install_element_ve(&show_paging_group_cmd);
