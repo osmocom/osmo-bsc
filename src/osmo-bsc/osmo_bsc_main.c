@@ -31,6 +31,7 @@
 #include <osmocom/bsc/osmo_bsc_sigtran.h>
 #include <osmocom/bsc/osmo_bsc_mgcp.h>
 #include <osmocom/bsc/handover_decision.h>
+#include <osmocom/bsc/handover_decision_2.h>
 
 #include <osmocom/ctrl/control_cmd.h>
 #include <osmocom/ctrl/control_if.h>
@@ -513,6 +514,7 @@ int main(int argc, char **argv)
 	mgcp_init(bsc_gsmnet);
 
 	handover_decision_1_init();
+	hodec2_init(bsc_gsmnet);
 
 	signal(SIGINT, &signal_handler);
 	signal(SIGTERM, &signal_handler);

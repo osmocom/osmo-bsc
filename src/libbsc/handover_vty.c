@@ -23,6 +23,7 @@
 #include <osmocom/bsc/gsm_data.h>
 #include <osmocom/bsc/vty.h>
 #include <osmocom/bsc/handover_cfg.h>
+#include <osmocom/bsc/handover_decision_2.h>
 
 static struct handover_cfg *ho_cfg_from_vty(struct vty *vty)
 {
@@ -70,6 +71,41 @@ HO_CFG_ALL_MEMBERS
 #undef HO_CFG_ONE_MEMBER
 
 
+static inline const int a2congestion_check_interval(const char *arg)
+{
+	if (!strcmp(arg, "disabled"))
+		return 0;
+	return atoi(arg);
+}
+
+static inline const char *congestion_check_interval2a(int val)
+{
+	static char str[9];
+	if (val < 1
+	    || snprintf(str, sizeof(str), "%d", val) >= sizeof(str))
+		return "disabled";
+	return str;
+}
+
+DEFUN(cfg_net_ho_congestion_check_interval, cfg_net_ho_congestion_check_interval_cmd,
+      "handover2 congestion-check (disabled|<1-999>|now)",
+      HO_CFG_STR_HANDOVER2
+      "Configure congestion check interval" HO_CFG_STR_2
+      "Disable congestion checking, do not handover based on cell overload\n"
+      "Congestion check interval in seconds (default "
+      OSMO_STRINGIFY_VAL(HO_CFG_CONGESTION_CHECK_DEFAULT) ")\n"
+      "Manually trigger a congestion check to run right now\n")
+{
+	if (!strcmp(argv[0], "now")) {
+		hodec2_congestion_check(gsmnet_from_vty(vty));
+		return CMD_SUCCESS;
+	}
+
+	hodec2_on_change_congestion_check_interval(gsmnet_from_vty(vty),
+								a2congestion_check_interval(argv[0]));
+	return CMD_SUCCESS;
+}
+
 static void ho_vty_write(struct vty *vty, const char *indent, struct handover_cfg *ho)
 {
 #define HO_CFG_ONE_MEMBER(TYPE, NAME, DEFAULT_VAL, \
@@ -93,7 +129,10 @@ void ho_vty_write_net(struct vty *vty, struct gsm_network *net)
 {
 	ho_vty_write(vty, " ", net->ho);
 
-	/* future: net specific vty commands */
+	if (net->hodec2.congestion_check_interval_s != HO_CFG_CONGESTION_CHECK_DEFAULT)
+		vty_out(vty, " handover congestion-check %s%s",
+			congestion_check_interval2a(net->hodec2.congestion_check_interval_s),
+			VTY_NEWLINE);
 }
 
 static void ho_vty_init_cmds(int parent_node)
@@ -108,6 +147,8 @@ static void ho_vty_init_cmds(int parent_node)
 void ho_vty_init()
 {
 	ho_vty_init_cmds(GSMNET_NODE);
+	install_element(GSMNET_NODE, &cfg_net_ho_congestion_check_interval_cmd);
+
 	ho_vty_init_cmds(BTS_NODE);
 }
 

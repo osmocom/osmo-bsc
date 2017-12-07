@@ -60,5 +60,6 @@ libbsc_a_SOURCES = \
 	handover_vty.c \
 	handover_cfg.c \
 	penalty_timers.c \
+	handover_decision_2.c \
 	$(NULL)
 

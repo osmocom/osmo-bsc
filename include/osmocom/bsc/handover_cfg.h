@@ -10,6 +10,8 @@ struct vty;
  * the defaults from 'network' level are used implicitly, and changes take effect immediately. */
 struct handover_cfg;
 
+#define HO_CFG_CONGESTION_CHECK_DEFAULT 10
+
 struct handover_cfg *ho_cfg_init(void *ctx, struct handover_cfg *higher_level_cfg);
 
 #define HO_CFG_STR_HANDOVER1 "Handover options for handover decision algorithm 1\n"

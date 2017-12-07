@@ -190,6 +190,7 @@ OsmoBSC(config-net)# list
   handover2 penalty-time failed-ho (<0-99999>|default)
   handover2 penalty-time failed-assignment (<0-99999>|default)
   handover2 retries (<0-9>|default)
+  handover2 congestion-check (disabled|<1-999>|now)
 ...
 
 OsmoBSC(config-net)# handover?
@@ -219,6 +220,7 @@ OsmoBSC(config-net)# handover2 ?
   max-handovers     Maximum number of concurrent handovers allowed per cell (HO algo 2 only)
   penalty-time      Set penalty times to wait between repeated handovers (HO algo 2 only)
   retries           Immediately retry on handover/assignment failure (HO algo 2 only)
+  congestion-check  Configure congestion check interval (HO algo 2 only)
 
 OsmoBSC(config-net)# handover algorithm ?
   1        Algorithm 1: trigger handover based on comparing current cell and neighbor RxLev and RxQual, only.
@@ -395,8 +397,13 @@ OsmoBSC(config-net)# handover2 retries ?
   <0-9>    Number of retries
   default  Use default (0), remove explicit setting on this node
 
+OsmoBSC(config-net)# handover2 congestion-check ?
+  disabled  Disable congestion checking, do not handover based on cell overload
+  <1-999>   Congestion check interval in seconds (default 10)
+  now       Manually trigger a congestion check to run right now
 
-OsmoBSC(config-net)# ### Same on BTS level
+
+OsmoBSC(config-net)# ### Same on BTS level, except for the congestion-check
 OsmoBSC(config-net)# bts 0
 
 OsmoBSC(config-net-bts)# handover?

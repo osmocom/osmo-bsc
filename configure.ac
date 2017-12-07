@@ -164,6 +164,7 @@ AC_OUTPUT(
     tests/subscr/Makefile
     tests/nanobts_omlattr/Makefile
     tests/bssap/Makefile
+    tests/handover/Makefile
     doc/Makefile
     doc/examples/Makefile
     Makefile)

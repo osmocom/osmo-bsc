@@ -116,6 +116,7 @@ struct gsm_subscriber_connection {
 	unsigned int ho_dtap_cache_len;
 
 	struct {
+		int failures;
 		struct penalty_timers *penalty_timers;
 	} hodec2;
 
@@ -1197,7 +1198,12 @@ struct gsm_network {
 	/* bit-mask of permitted encryption algorithms. LSB=A5/0, MSB=A5/7 */
 	uint8_t a5_encryption_mask;
 	int neci;
+
 	struct handover_cfg *ho;
+	struct {
+		unsigned int congestion_check_interval_s;
+		struct osmo_timer_list congestion_check_timer;
+	} hodec2;
 
 	struct rate_ctr_group *bsc_ctrs;
 

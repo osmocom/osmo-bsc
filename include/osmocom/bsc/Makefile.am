@@ -24,6 +24,7 @@ noinst_HEADERS = \
 	handover.h \
 	handover_cfg.h \
 	handover_decision.h \
+	handover_decision_2.h \
 	handover_vty.h \
 	ipaccess.h \
 	meas_feed.h \

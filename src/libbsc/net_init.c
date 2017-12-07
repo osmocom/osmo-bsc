@@ -87,6 +87,7 @@ struct gsm_network *bsc_network_init(void *ctx,
 	net->T3141 = GSM_T3141_DEFAULT;
 
 	net->ho = ho_cfg_init(net, NULL);
+	net->hodec2.congestion_check_interval_s = HO_CFG_CONGESTION_CHECK_DEFAULT;
 
 	INIT_LLIST_HEAD(&net->bts_list);
 
