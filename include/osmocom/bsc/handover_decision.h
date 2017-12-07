@@ -1,7 +1,3 @@
-#ifndef _HANDOVER_DECISION_H
-#define _HANDOVER_DECISION_H
+#pragma once
 
-void on_dso_load_ho_dec(void);
-
-#endif /* _HANDOVER_DECISION_H */
-
+void handover_decision_1_init(void);

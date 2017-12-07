@@ -343,7 +343,7 @@ static int ho_dec_sig_cb(unsigned int subsys, unsigned int signal,
 	return 0;
 }
 
-void on_dso_load_ho_dec(void)
+void handover_decision_1_init(void)
 {
 	osmo_signal_register_handler(SS_LCHAN, ho_dec_sig_cb, NULL);
 }
