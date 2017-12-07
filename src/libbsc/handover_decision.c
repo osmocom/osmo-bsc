@@ -265,6 +265,10 @@ static int process_meas_rep(struct gsm_meas_rep *mr)
 	int av_rxlev;
 	unsigned int pwr_interval;
 
+	/* If this cell does not use handover algorithm 1, then we're not responsible. */
+	if (ho_get_algorithm(bts->ho) != 1)
+		return 0;
+
 	/* we currently only do handover for TCH channels */
 	switch (mr->lchan->type) {
 	case GSM_LCHAN_TCH_F:

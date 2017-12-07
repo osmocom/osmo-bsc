@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdbool.h>
+#include <string.h>
 
 struct vty;
 
@@ -17,6 +18,11 @@ struct handover_cfg *ho_cfg_init(void *ctx, struct handover_cfg *higher_level_cf
 #define HO_CFG_STR_WIN_RXQUAL HO_CFG_STR_WIN "Received-Quality averaging\n"
 #define HO_CFG_STR_POWER_BUDGET HO_CFG_STR_HANDOVER "Neighbor cell power triggering\n" "Neighbor cell power triggering\n"
 #define HO_CFG_STR_AVG_COUNT "Number of values to average over\n"
+#define HO_CFG_STR_2 " (HO algo 2 only)\n"
+#define HO_CFG_STR_MIN "Minimum Level/Quality thresholds before triggering HO" HO_CFG_STR_2
+#define HO_CFG_STR_AFS_BIAS "Configure bias to prefer AFS (AMR on TCH/F) over other codecs" HO_CFG_STR_2
+#define HO_CFG_STR_MIN_TCH "Minimum free TCH timeslots before cell is considered congested" HO_CFG_STR_2
+#define HO_CFG_STR_PENALTY_TIME "Set penalty times to wait between repeated handovers" HO_CFG_STR_2
 
 #define as_is(x) (x)
 
@@ -30,6 +36,17 @@ static inline int bool2i(bool arg)
 	return arg? 1 : 0;
 }
 
+static inline bool a2tdma(const char *arg)
+{
+	if (!strcmp(arg, "full"))
+		return true;
+	return false;
+}
+
+static inline const char *tdma2a(bool val)
+{
+	return val? "full" : "subset";
+}
 
 /* The HO_CFG_ONE_MEMBER macro gets redefined, depending on whether to define struct members,
  * function declarations or definitions... It is of the format
@@ -59,6 +76,15 @@ static inline int bool2i(bool arg)
 		"Disable in-call handover\n" \
 		"Enable in-call handover\n" \
 		"Enable/disable handover: ") \
+	\
+	HO_CFG_ONE_MEMBER(int, algorithm, 1, \
+		"handover algorithm", "1|2", atoi, "%d", as_is, \
+		HO_CFG_STR_HANDOVER \
+		"Choose algorithm for handover decision\n" \
+		"Algorithm 1: trigger handover based on comparing current cell and neighbor RxLev and RxQual," \
+		" only.\n" \
+		"Algorithm 2: trigger handover on RxLev/RxQual, and also to balance the load across several" \
+		" cells. Consider available codecs. Prevent repeated handover by penalty timers.\n") \
 	\
 	HO_CFG_ONE_MEMBER(unsigned int, rxlev_avg_win, 10, \
 		"handover window rxlev averaging", "<1-10>", atoi, "%u", as_is, \
@@ -97,6 +123,95 @@ static inline int bool2i(bool arg)
 		"Maximum Timing-Advance value (i.e. MS distance) before triggering HO\n" \
 		"Maximum Timing-Advance value (i.e. MS distance) before triggering HO\n" \
 		"Maximum Timing-Advance value (i.e. MS distance) before triggering HO\n") \
+	\
+	HO_CFG_ONE_MEMBER(bool, as_active, 0, \
+		"handover assignment", "0|1", a2bool, "%d", bool2i, \
+		HO_CFG_STR_HANDOVER \
+		"Enable or disable in-call channel re-assignment" HO_CFG_STR_2 \
+		"Disable in-call assignment\n" \
+		"Enable in-call assignment\n") \
+	\
+	HO_CFG_ONE_MEMBER(bool, full_tdma, subset, \
+		"handover tdma-measurement", "full|subset", a2tdma, "%s", tdma2a, \
+		HO_CFG_STR_HANDOVER \
+		"Define measurement set of TDMA frames" HO_CFG_STR_2 \
+		"Full set of 102/104 TDMA frames\n" \
+		"Sub set of 4 TDMA frames (SACCH)\n") \
+	\
+	HO_CFG_ONE_MEMBER(int, min_rxlev, -100, \
+		"handover min rxlev", "<-110--50>", atoi, "%d", as_is, \
+		HO_CFG_STR_HANDOVER \
+		HO_CFG_STR_MIN \
+		"How weak may RxLev of an MS become before triggering HO\n" \
+		"minimum RxLev (dBm)\n") \
+	\
+	HO_CFG_ONE_MEMBER(int, min_rxqual, 5, \
+		"handover min rxqual", "<0-7>", atoi, "%d", as_is, \
+		HO_CFG_STR_HANDOVER \
+		HO_CFG_STR_MIN \
+		"How bad may RxQual of an MS become before triggering HO\n" \
+		"minimum RxQual (dBm)\n") \
+	\
+	HO_CFG_ONE_MEMBER(int, afs_bias_rxlev, 0, \
+		"handover afs-bias rxlev", "<0-20>", atoi, "%d", as_is, \
+		HO_CFG_STR_HANDOVER \
+		HO_CFG_STR_AFS_BIAS \
+		"RxLev improvement bias for AFS over other codecs\n" \
+		"Virtual RxLev improvement (dBm)\n") \
+	\
+	HO_CFG_ONE_MEMBER(int, afs_bias_rxqual, 0, \
+		"handover afs-bias rxqual", "<0-7>", atoi, "%d", as_is, \
+		HO_CFG_STR_HANDOVER \
+		HO_CFG_STR_AFS_BIAS \
+		"RxQual improvement bias for AFS over other codecs\n" \
+		"Virtual RxQual improvement (dBm)\n") \
+	\
+	HO_CFG_ONE_MEMBER(int, tchf_min_slots, 0, \
+		"handover min-free-slots tch/f", "<0-9999>", atoi, "%d", as_is, \
+		HO_CFG_STR_HANDOVER \
+		HO_CFG_STR_MIN_TCH \
+		"Minimum free TCH/F timeslots before cell is considered congested\n" \
+		"Number of TCH/F slots\n") \
+	\
+	HO_CFG_ONE_MEMBER(int, tchh_min_slots, 0, \
+		"handover min-free-slots tch/h", "<0-9999>", atoi, "%d", as_is, \
+		HO_CFG_STR_HANDOVER \
+		HO_CFG_STR_MIN_TCH \
+		"Minimum free TCH/H timeslots before cell is considered congested\n" \
+		"Number of TCH/H slots\n") \
+	\
+	HO_CFG_ONE_MEMBER(int, ho_max, 9999, \
+		"handover max-handovers", "<1-9999>", atoi, "%d", as_is, \
+		HO_CFG_STR_HANDOVER \
+		"Maximum number of concurrent handovers allowed per cell" HO_CFG_STR_2 \
+		"Number\n") \
+	\
+	HO_CFG_ONE_MEMBER(int, penalty_max_dist, 300, \
+		"handover penalty-time max-distance", "<0-99999>", atoi, "%d", as_is, \
+		HO_CFG_STR_HANDOVER \
+		HO_CFG_STR_PENALTY_TIME \
+		"Time to suspend handovers after leaving this cell due to exceeding max distance\n" \
+		"Seconds\n") \
+	\
+	HO_CFG_ONE_MEMBER(int, penalty_failed_ho, 60, \
+		"handover penalty-time failed-ho", "<0-99999>", atoi, "%d", as_is, \
+		HO_CFG_STR_HANDOVER \
+		HO_CFG_STR_PENALTY_TIME \
+		"Time to suspend handovers after handover failure to this cell\n" \
+		"Seconds\n") \
+	\
+	HO_CFG_ONE_MEMBER(int, penalty_failed_as, 60, \
+		"handover penalty-time failed-assignment", "<0-99999>", atoi, "%d", as_is, \
+		HO_CFG_STR_HANDOVER \
+		HO_CFG_STR_PENALTY_TIME \
+		"Time to suspend handovers after assignment failure in this cell\n" \
+		"Seconds\n") \
+	\
+	HO_CFG_ONE_MEMBER(int, retries, 0, \
+		"handover retries", "<0-9>", atoi, "%d", as_is, \
+		HO_CFG_STR_HANDOVER \
+		"Immediately retry on handover/assignment failure" HO_CFG_STR_2 \
+		"Number of retries\n") \
 
 
 /* Declare public API for handover cfg parameters... */
