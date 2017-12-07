@@ -27,8 +27,6 @@ include::../common/chapters/bsc.adoc[]
 
 include::../common/chapters/abis.adoc[]
 
-#include::../common/chapters/alink.adoc[]
-
 include::../common/chapters/control_if.adoc[]
 
 include::../common/chapters/cell-broadcast.adoc[]
