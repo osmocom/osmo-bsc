@@ -245,50 +245,6 @@ static const struct rate_ctr_desc bsc_ctr_description[] = {
 	[BSC_CTR_PAGING_EXPIRED] = 		{"paging:expired", "Paging Request expired because of timeout T3113."},
 };
 
-enum {
-	MSC_CTR_LOC_UPDATE_TYPE_ATTACH,
-	MSC_CTR_LOC_UPDATE_TYPE_NORMAL,
-	MSC_CTR_LOC_UPDATE_TYPE_PERIODIC,
-	MSC_CTR_LOC_UPDATE_TYPE_DETACH,
-	MSC_CTR_LOC_UPDATE_FAILED,
-	MSC_CTR_LOC_UPDATE_COMPLETED,
-	MSC_CTR_SMS_SUBMITTED,
-	MSC_CTR_SMS_NO_RECEIVER,
-	MSC_CTR_SMS_DELIVERED,
-	MSC_CTR_SMS_RP_ERR_MEM,
-	MSC_CTR_SMS_RP_ERR_OTHER,
-	MSC_CTR_SMS_DELIVER_UNKNOWN_ERROR,
-	MSC_CTR_CALL_MO_SETUP,
-	MSC_CTR_CALL_MO_CONNECT_ACK,
-	MSC_CTR_CALL_MT_SETUP,
-	MSC_CTR_CALL_MT_CONNECT,
-	MSC_CTR_CALL_ACTIVE,
-	MSC_CTR_CALL_COMPLETE,
-	MSC_CTR_CALL_INCOMPLETE,
-};
-
-static const struct rate_ctr_desc msc_ctr_description[] = {
-	[MSC_CTR_LOC_UPDATE_TYPE_ATTACH] = 		{"loc_update_type.attach", "Received location update imsi attach requests."},
-	[MSC_CTR_LOC_UPDATE_TYPE_NORMAL] = 		{"loc_update_type.normal", "Received location update normal requests."},
-	[MSC_CTR_LOC_UPDATE_TYPE_PERIODIC] = 		{"loc_update_type.periodic", "Received location update periodic requests."},
-	[MSC_CTR_LOC_UPDATE_TYPE_DETACH] = 		{"loc_update_type.detach", "Received location update detach indication."},
-	[MSC_CTR_LOC_UPDATE_FAILED] = 		{"loc_update_resp.failed", "Rejected location updates."},
-	[MSC_CTR_LOC_UPDATE_COMPLETED] = 	{"loc_update_resp.completed", "Successful location updates."},
-	[MSC_CTR_SMS_SUBMITTED] = 		{"sms.submitted", "Received a RPDU from a MS (MO)."},
-	[MSC_CTR_SMS_NO_RECEIVER] = 		{"sms.no_receiver", "Counts SMS which couldn't routed because no receiver found."},
-	[MSC_CTR_SMS_DELIVERED] = 		{"sms.delivered", "Global SMS Deliver attempts."},
-	[MSC_CTR_SMS_RP_ERR_MEM] = 		{"sms.rp_err_mem", "CAUSE_MT_MEM_EXCEEDED errors of MS responses on a sms deliver attempt."},
-	[MSC_CTR_SMS_RP_ERR_OTHER] = 		{"sms.rp_err_other", "Other error of MS responses on a sms delive attempt."},
-	[MSC_CTR_SMS_DELIVER_UNKNOWN_ERROR] =	{"sms.deliver_unknown_error", "Unknown error occured during sms delivery."},
-	/* FIXME: count also sms delivered */
-	[MSC_CTR_CALL_MO_SETUP] = 		{"call.mo_setup", "Received setup requests from a MS to init a MO call."},
-	[MSC_CTR_CALL_MO_CONNECT_ACK] = 		{"call.mo_connect_ack", "Received a connect ack from MS of a MO call. Call is now succesful connected up."},
-	[MSC_CTR_CALL_MT_SETUP] = 		{"call.mt_setup", "Sent setup requests to the MS (MT)."},
-	[MSC_CTR_CALL_MT_CONNECT] = 		{"call.mt_connect", "Sent a connect to the MS (MT)."},
-	[MSC_CTR_CALL_ACTIVE] =			{"call.active", "Count total amount of calls that ever reached active state."},
-	[MSC_CTR_CALL_COMPLETE] = 		{"call.complete", "Count total amount of calls which got terminated by disconnect req or ind after reaching active state."},
-	[MSC_CTR_CALL_INCOMPLETE] = 		{"call.incomplete", "Count total amount of call which got terminated by any other reason after reaching active state."},
-};
 
 
 static const struct rate_ctr_group_desc bsc_ctrg_desc = {
@@ -297,14 +253,6 @@ static const struct rate_ctr_group_desc bsc_ctrg_desc = {
 	OSMO_STATS_CLASS_GLOBAL,
 	ARRAY_SIZE(bsc_ctr_description),
 	bsc_ctr_description,
-};
-
-static const struct rate_ctr_group_desc msc_ctrg_desc = {
-	"msc",
-	"mobile switching center",
-	OSMO_STATS_CLASS_GLOBAL,
-	ARRAY_SIZE(msc_ctr_description),
-	msc_ctr_description,
 };
 
 enum gsm_auth_policy {
@@ -368,7 +316,6 @@ struct gsm_network {
 	} handover;
 
 	struct rate_ctr_group *bsc_ctrs;
-	struct rate_ctr_group *msc_ctrs;
 	struct osmo_counter *active_calls;
 
 	/* layer 4 */

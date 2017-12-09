@@ -61,12 +61,6 @@ struct gsm_network *gsm_network_init(void *ctx,
 	net->bsc_subscribers = talloc_zero(net, struct llist_head);
 	INIT_LLIST_HEAD(net->bsc_subscribers);
 
-	/* init statistics */
-	net->msc_ctrs = rate_ctr_group_alloc(net, &msc_ctrg_desc, 0);
-	if (!net->msc_ctrs) {
-		talloc_free(net);
-		return NULL;
-	}
 	net->active_calls = osmo_counter_alloc("msc.active_calls");
 
 	net->mncc_recv = mncc_recv;
