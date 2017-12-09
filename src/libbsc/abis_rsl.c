@@ -91,10 +91,10 @@ static void count_codecs(struct gsm_bts *bts, struct gsm_lchan *lchan)
 	if (lchan->type == GSM_LCHAN_TCH_H) {
 		switch (lchan->tch_mode) {
 		case GSM48_CMODE_SPEECH_AMR:
-			rate_ctr_inc(&bts->network->bsc_ctrs->ctr[BSC_CTR_CODEC_AMR_H]);
+			rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_CTR_CODEC_AMR_H]);
 			break;
 		case GSM48_CMODE_SPEECH_V1:
-			rate_ctr_inc(&bts->network->bsc_ctrs->ctr[BSC_CTR_CODEC_V1_HR]);
+			rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_CTR_CODEC_V1_HR]);
 			break;
 		default:
 			break;
@@ -102,13 +102,13 @@ static void count_codecs(struct gsm_bts *bts, struct gsm_lchan *lchan)
 	} else if (lchan->type == GSM_LCHAN_TCH_F) {
 		switch (lchan->tch_mode) {
 		case GSM48_CMODE_SPEECH_AMR:
-			rate_ctr_inc(&bts->network->bsc_ctrs->ctr[BSC_CTR_CODEC_AMR_F]);
+			rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_CTR_CODEC_AMR_F]);
 			break;
 		case GSM48_CMODE_SPEECH_V1:
-			rate_ctr_inc(&bts->network->bsc_ctrs->ctr[BSC_CTR_CODEC_V1_FR]);
+			rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_CTR_CODEC_V1_FR]);
 			break;
 		case GSM48_CMODE_SPEECH_EFR:
-			rate_ctr_inc(&bts->network->bsc_ctrs->ctr[BSC_CTR_CODEC_EFR]);
+			rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_CTR_CODEC_EFR]);
 			break;
 		default:
 			break;
@@ -1366,7 +1366,7 @@ static int rsl_rx_conn_fail(struct msgb *msg)
 				TLVP_LEN(&tp, RSL_IE_CAUSE));
 
 	LOGPC(DRSL, LOGL_NOTICE, "\n");
-	rate_ctr_inc(&msg->lchan->ts->trx->bts->network->bsc_ctrs->ctr[BSC_CTR_CHAN_RF_FAIL]);
+	rate_ctr_inc(&msg->lchan->ts->trx->bts->bts_ctrs->ctr[BTS_CTR_CHAN_RF_FAIL]);
 	return rsl_rf_chan_release_err(msg->lchan);
 }
 
@@ -1872,7 +1872,7 @@ static int rsl_rx_chan_rqd(struct msgb *msg)
 	 * request reference RA */
 	lctype = get_ctype_by_chreq(bts->network, rqd_ref->ra);
 
-	rate_ctr_inc(&bts->network->bsc_ctrs->ctr[BSC_CTR_CHREQ_TOTAL]);
+	rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_CTR_CHREQ_TOTAL]);
 
 	/*
 	 * We want LOCATION UPDATES to succeed and will assign a TCH
@@ -1885,7 +1885,7 @@ static int rsl_rx_chan_rqd(struct msgb *msg)
 	if (!lchan) {
 		LOGP(DRSL, LOGL_NOTICE, "BTS %d CHAN RQD: no resources for %s 0x%x\n",
 		     msg->lchan->ts->trx->bts->nr, gsm_lchant_name(lctype), rqd_ref->ra);
-		rate_ctr_inc(&bts->network->bsc_ctrs->ctr[BSC_CTR_CHREQ_NO_CHANNEL]);
+		rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_CTR_CHREQ_NO_CHANNEL]);
 		/* FIXME gather multiple CHAN RQD and reject up to 4 at the same time */
 		if (bts->network->T3122)
 			rsl_send_imm_ass_rej(bts, 1, rqd_ref, bts->network->T3122 & 0xff);
@@ -2082,7 +2082,7 @@ static int rsl_rx_rll_err_ind(struct msgb *msg)
 	rll_indication(msg->lchan, rllh->link_id, BSC_RLLR_IND_ERR_IND);
 
 	if (rlm_cause == RLL_CAUSE_T200_EXPIRED) {
-		rate_ctr_inc(&msg->lchan->ts->trx->bts->network->bsc_ctrs->ctr[BSC_CTR_CHAN_RLL_ERR]);
+		rate_ctr_inc(&msg->lchan->ts->trx->bts->bts_ctrs->ctr[BTS_CTR_CHAN_RLL_ERR]);
 		return rsl_rf_chan_release_err(msg->lchan);
 	}
 

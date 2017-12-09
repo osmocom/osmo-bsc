@@ -346,9 +346,17 @@ struct gsm_bts *gsm_bts_alloc(struct gsm_network *net, uint8_t bts_num)
 	memcpy(&bts->gprs.cell.rlc_cfg, &rlc_cfg_default,
 		sizeof(bts->gprs.cell.rlc_cfg));
 
+	/* init statistics */
+	bts->bts_ctrs = rate_ctr_group_alloc(bts, &bts_ctrg_desc, 0);
+	if (!bts->bts_ctrs) {
+		talloc_free(bts);
+		return NULL;
+	}
+
 	/* create our primary TRX */
 	bts->c0 = gsm_bts_trx_alloc(bts);
 	if (!bts->c0) {
+		talloc_free(bts->bts_ctrs);
 		talloc_free(bts);
 		return NULL;
 	}

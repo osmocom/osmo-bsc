@@ -321,6 +321,19 @@ static void bts_dump_vty(struct vty *vty, struct gsm_bts *bts)
 	bts_chan_load(&pl, bts);
 	vty_out(vty, "  Current Channel Load:%s", VTY_NEWLINE);
 	dump_pchan_load_vty(vty, "    ", &pl);
+
+	vty_out(vty, "Channel Requests        : %"PRIu64" total, %"PRIu64" no channel%s",
+		bts->bts_ctrs->ctr[BTS_CTR_CHREQ_TOTAL].current,
+		bts->bts_ctrs->ctr[BTS_CTR_CHREQ_NO_CHANNEL].current,
+		VTY_NEWLINE);
+	vty_out(vty, "Channel Failures        : %"PRIu64" rf_failures, %"PRIu64" rll failures%s",
+		bts->bts_ctrs->ctr[BTS_CTR_CHAN_RF_FAIL].current,
+		bts->bts_ctrs->ctr[BTS_CTR_CHAN_RLL_ERR].current,
+		VTY_NEWLINE);
+	vty_out(vty, "BTS failures            : %"PRIu64" OML, %"PRIu64" RSL%s",
+		bts->bts_ctrs->ctr[BTS_CTR_BTS_OML_FAIL].current,
+		bts->bts_ctrs->ctr[BTS_CTR_BTS_RSL_FAIL].current,
+		VTY_NEWLINE);
 }
 
 DEFUN(show_bts, show_bts_cmd, "show bts [<0-255>]",
@@ -3781,22 +3794,10 @@ DEFUN(cfg_ts_e1_subslot,
 
 void openbsc_vty_print_statistics(struct vty *vty, struct gsm_network *net)
 {
-	vty_out(vty, "Channel Requests        : %"PRIu64" total, %"PRIu64" no channel%s",
-		net->bsc_ctrs->ctr[BSC_CTR_CHREQ_TOTAL].current,
-		net->bsc_ctrs->ctr[BSC_CTR_CHREQ_NO_CHANNEL].current,
-		VTY_NEWLINE);
-	vty_out(vty, "Channel Failures        : %"PRIu64" rf_failures, %"PRIu64" rll failures%s",
-		net->bsc_ctrs->ctr[BSC_CTR_CHAN_RF_FAIL].current,
-		net->bsc_ctrs->ctr[BSC_CTR_CHAN_RLL_ERR].current,
-		VTY_NEWLINE);
 	vty_out(vty, "Paging                  : %"PRIu64" attempted, %"PRIu64" complete, %"PRIu64" expired%s",
 		net->bsc_ctrs->ctr[BSC_CTR_PAGING_ATTEMPTED].current,
 		net->bsc_ctrs->ctr[BSC_CTR_PAGING_COMPLETED].current,
 		net->bsc_ctrs->ctr[BSC_CTR_PAGING_EXPIRED].current,
-		VTY_NEWLINE);
-	vty_out(vty, "BTS failures            : %"PRIu64" OML, %"PRIu64" RSL%s",
-		net->bsc_ctrs->ctr[BSC_CTR_BTS_OML_FAIL].current,
-		net->bsc_ctrs->ctr[BSC_CTR_BTS_RSL_FAIL].current,
 		VTY_NEWLINE);
 }
 

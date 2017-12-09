@@ -185,10 +185,43 @@ struct gsm_subscriber_connection {
 
 #include "gsm_data_shared.h"
 
+enum {
+	BTS_CTR_CHREQ_TOTAL,
+	BTS_CTR_CHREQ_NO_CHANNEL,
+	BTS_CTR_CHAN_RF_FAIL,
+	BTS_CTR_CHAN_RLL_ERR,
+	BTS_CTR_BTS_OML_FAIL,
+	BTS_CTR_BTS_RSL_FAIL,
+	BTS_CTR_CODEC_AMR_F,
+	BTS_CTR_CODEC_AMR_H,
+	BTS_CTR_CODEC_EFR,
+	BTS_CTR_CODEC_V1_FR,
+	BTS_CTR_CODEC_V1_HR,
+};
+
+static const struct rate_ctr_desc bts_ctr_description[] = {
+	[BTS_CTR_CHREQ_TOTAL] = 		{"chreq.total", "Received channel requests."},
+	[BTS_CTR_CHREQ_NO_CHANNEL] = 		{"chreq.no_channel", "Sent to MS no channel available."},
+	[BTS_CTR_CHAN_RF_FAIL] = 		{"chan.rf_fail", "Received a RF failure indication from BTS."},
+	[BTS_CTR_CHAN_RLL_ERR] = 		{"chan.rll_err", "Received a RLL failure with T200 cause from BTS."},
+	[BTS_CTR_BTS_OML_FAIL] = 		{"oml_fail", "Received a TEI down on a OML link."},
+	[BTS_CTR_BTS_RSL_FAIL] = 		{"rsl_fail", "Received a TEI down on a OML link."},
+	[BTS_CTR_CODEC_AMR_F] =			{"codec_amr_f", "Count the usage of AMR/F codec by channel mode requested."},
+	[BTS_CTR_CODEC_AMR_H] =			{"codec_amr_h", "Count the usage of AMR/H codec by channel mode requested."},
+	[BTS_CTR_CODEC_EFR] = 			{"codec_efr", "Count the usage of EFR codec by channel mode requested."},
+	[BTS_CTR_CODEC_V1_FR] =			{"codec_fr", "Count the usage of FR codec by channel mode requested."},
+	[BTS_CTR_CODEC_V1_HR] =			{"codec_hr", "Count the usage of HR codec by channel mode requested."},
+};
+
+static const struct rate_ctr_group_desc bts_ctrg_desc = {
+	"bts",
+	"base transceiver station",
+	OSMO_STATS_CLASS_GLOBAL,
+	ARRAY_SIZE(bts_ctr_description),
+	bts_ctr_description,
+};
 
 enum {
-	BSC_CTR_CHREQ_TOTAL,
-	BSC_CTR_CHREQ_NO_CHANNEL,
 	BSC_CTR_HANDOVER_ATTEMPTED,
 	BSC_CTR_HANDOVER_NO_CHANNEL,
 	BSC_CTR_HANDOVER_TIMEOUT,
@@ -198,20 +231,9 @@ enum {
 	BSC_CTR_PAGING_DETACHED,
 	BSC_CTR_PAGING_COMPLETED,
 	BSC_CTR_PAGING_EXPIRED,
-	BSC_CTR_CHAN_RF_FAIL,
-	BSC_CTR_CHAN_RLL_ERR,
-	BSC_CTR_BTS_OML_FAIL,
-	BSC_CTR_BTS_RSL_FAIL,
-	BSC_CTR_CODEC_AMR_F,
-	BSC_CTR_CODEC_AMR_H,
-	BSC_CTR_CODEC_EFR,
-	BSC_CTR_CODEC_V1_FR,
-	BSC_CTR_CODEC_V1_HR,
 };
 
 static const struct rate_ctr_desc bsc_ctr_description[] = {
-	[BSC_CTR_CHREQ_TOTAL] = 		{"chreq.total", "Received channel requests."},
-	[BSC_CTR_CHREQ_NO_CHANNEL] = 		{"chreq.no_channel", "Sent to MS no channel available."},
 	[BSC_CTR_HANDOVER_ATTEMPTED] = 		{"handover.attempted", "Received handover attempts."},
 	[BSC_CTR_HANDOVER_NO_CHANNEL] = 		{"handover.no_channel", "Sent no channel available responses."},
 	[BSC_CTR_HANDOVER_TIMEOUT] = 		{"handover.timeout", "Count the amount of timeouts of timer T3103."},
@@ -221,15 +243,6 @@ static const struct rate_ctr_desc bsc_ctr_description[] = {
 	[BSC_CTR_PAGING_DETACHED] = 		{"paging.detached", "Counts the amount of paging attempts which couldn't sent out any paging request because no responsible bts found."},
 	[BSC_CTR_PAGING_COMPLETED] = 		{"paging.completed", "Paging successful completed."},
 	[BSC_CTR_PAGING_EXPIRED] = 		{"paging.expired", "Paging Request expired because of timeout T3113."},
-	[BSC_CTR_CHAN_RF_FAIL] = 		{"chan.rf_fail", "Received a RF failure indication from BTS."},
-	[BSC_CTR_CHAN_RLL_ERR] = 		{"chan.rll_err", "Received a RLL failure with T200 cause from BTS."},
-	[BSC_CTR_BTS_OML_FAIL] = 		{"bts.oml_fail", "Received a TEI down on a OML link."},
-	[BSC_CTR_BTS_RSL_FAIL] = 		{"bts.rsl_fail", "Received a TEI down on a OML link."},
-	[BSC_CTR_CODEC_AMR_F] =			{"bts.codec_amr_f", "Count the usage of AMR/F codec by channel mode requested."},
-	[BSC_CTR_CODEC_AMR_H] =			{"bts.codec_amr_h", "Count the usage of AMR/H codec by channel mode requested."},
-	[BSC_CTR_CODEC_EFR] = 			{"bts.codec_efr", "Count the usage of EFR codec by channel mode requested."},
-	[BSC_CTR_CODEC_V1_FR] =			{"bts.codec_fr", "Count the usage of FR codec by channel mode requested."},
-	[BSC_CTR_CODEC_V1_HR] =			{"bts.codec_hr", "Count the usage of HR codec by channel mode requested."},
 };
 
 enum {
