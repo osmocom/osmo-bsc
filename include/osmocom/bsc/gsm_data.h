@@ -200,17 +200,17 @@ enum {
 };
 
 static const struct rate_ctr_desc bts_ctr_description[] = {
-	[BTS_CTR_CHREQ_TOTAL] = 		{"chreq.total", "Received channel requests."},
-	[BTS_CTR_CHREQ_NO_CHANNEL] = 		{"chreq.no_channel", "Sent to MS no channel available."},
-	[BTS_CTR_CHAN_RF_FAIL] = 		{"chan.rf_fail", "Received a RF failure indication from BTS."},
-	[BTS_CTR_CHAN_RLL_ERR] = 		{"chan.rll_err", "Received a RLL failure with T200 cause from BTS."},
+	[BTS_CTR_CHREQ_TOTAL] = 		{"chreq:total", "Received channel requests."},
+	[BTS_CTR_CHREQ_NO_CHANNEL] = 		{"chreq:no_channel", "Sent to MS no channel available."},
+	[BTS_CTR_CHAN_RF_FAIL] = 		{"chan:rf_fail", "Received a RF failure indication from BTS."},
+	[BTS_CTR_CHAN_RLL_ERR] = 		{"chan:rll_err", "Received a RLL failure with T200 cause from BTS."},
 	[BTS_CTR_BTS_OML_FAIL] = 		{"oml_fail", "Received a TEI down on a OML link."},
 	[BTS_CTR_BTS_RSL_FAIL] = 		{"rsl_fail", "Received a TEI down on a OML link."},
-	[BTS_CTR_CODEC_AMR_F] =			{"codec_amr_f", "Count the usage of AMR/F codec by channel mode requested."},
-	[BTS_CTR_CODEC_AMR_H] =			{"codec_amr_h", "Count the usage of AMR/H codec by channel mode requested."},
-	[BTS_CTR_CODEC_EFR] = 			{"codec_efr", "Count the usage of EFR codec by channel mode requested."},
-	[BTS_CTR_CODEC_V1_FR] =			{"codec_fr", "Count the usage of FR codec by channel mode requested."},
-	[BTS_CTR_CODEC_V1_HR] =			{"codec_hr", "Count the usage of HR codec by channel mode requested."},
+	[BTS_CTR_CODEC_AMR_F] =			{"codec:amr_f", "Count the usage of AMR/F codec by channel mode requested."},
+	[BTS_CTR_CODEC_AMR_H] =			{"codec:amr_h", "Count the usage of AMR/H codec by channel mode requested."},
+	[BTS_CTR_CODEC_EFR] = 			{"codec:efr", "Count the usage of EFR codec by channel mode requested."},
+	[BTS_CTR_CODEC_V1_FR] =			{"codec:fr", "Count the usage of FR codec by channel mode requested."},
+	[BTS_CTR_CODEC_V1_HR] =			{"codec:hr", "Count the usage of HR codec by channel mode requested."},
 };
 
 static const struct rate_ctr_group_desc bts_ctrg_desc = {
@@ -234,15 +234,15 @@ enum {
 };
 
 static const struct rate_ctr_desc bsc_ctr_description[] = {
-	[BSC_CTR_HANDOVER_ATTEMPTED] = 		{"handover.attempted", "Received handover attempts."},
-	[BSC_CTR_HANDOVER_NO_CHANNEL] = 		{"handover.no_channel", "Sent no channel available responses."},
-	[BSC_CTR_HANDOVER_TIMEOUT] = 		{"handover.timeout", "Count the amount of timeouts of timer T3103."},
-	[BSC_CTR_HANDOVER_COMPLETED] = 		{"handover.completed", "Received handover completed."},
-	[BSC_CTR_HANDOVER_FAILED] = 		{"handover.failed", "Receive HO FAIL messages."},
-	[BSC_CTR_PAGING_ATTEMPTED] = 		{"paging.attempted", "Paging attempts for a MS."},
-	[BSC_CTR_PAGING_DETACHED] = 		{"paging.detached", "Counts the amount of paging attempts which couldn't sent out any paging request because no responsible bts found."},
-	[BSC_CTR_PAGING_COMPLETED] = 		{"paging.completed", "Paging successful completed."},
-	[BSC_CTR_PAGING_EXPIRED] = 		{"paging.expired", "Paging Request expired because of timeout T3113."},
+	[BSC_CTR_HANDOVER_ATTEMPTED] = 		{"handover:attempted", "Received handover attempts."},
+	[BSC_CTR_HANDOVER_NO_CHANNEL] = 	{"handover:no_channel", "Sent no channel available responses."},
+	[BSC_CTR_HANDOVER_TIMEOUT] = 		{"handover:timeout", "Count the amount of timeouts of timer T3103."},
+	[BSC_CTR_HANDOVER_COMPLETED] = 		{"handover:completed", "Received handover completed."},
+	[BSC_CTR_HANDOVER_FAILED] = 		{"handover:failed", "Receive HO FAIL messages."},
+	[BSC_CTR_PAGING_ATTEMPTED] = 		{"paging:attempted", "Paging attempts for a MS."},
+	[BSC_CTR_PAGING_DETACHED] = 		{"paging:detached", "Counts the amount of paging attempts which couldn't sent out any paging request because no responsible bts found."},
+	[BSC_CTR_PAGING_COMPLETED] = 		{"paging:completed", "Paging successful completed."},
+	[BSC_CTR_PAGING_EXPIRED] = 		{"paging:expired", "Paging Request expired because of timeout T3113."},
 };
 
 enum {
