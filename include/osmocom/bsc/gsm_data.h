@@ -197,7 +197,7 @@ static const struct rate_ctr_group_desc bsc_ctrg_desc = {
 #define GSM_T3103_DEFAULT 5	/* s */
 #define GSM_T3105_DEFAULT 100	/* ms */
 #define GSM_T3107_DEFAULT 5	/* s */
-#define GSM_T3109_DEFAULT 19	/* s, must be 2s + radio_link_timeout*0.48 */
+#define GSM_T3109_DEFAULT 5	/* s, must be 2s + radio_link_timeout*0.48 */
 #define GSM_T3111_DEFAULT 2	/* s */
 #define GSM_T3113_DEFAULT 10	/* s */
 #define GSM_T3115_DEFAULT 10
