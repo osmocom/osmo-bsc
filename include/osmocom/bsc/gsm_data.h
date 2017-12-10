@@ -262,7 +262,7 @@ enum gsm_auth_policy {
 	GSM_AUTH_POLICY_REGEXP, /* accept IMSIs matching given regexp */
 };
 
-#define GSM_T3101_DEFAULT 10	/* s */
+#define GSM_T3101_DEFAULT 3	/* s */
 #define GSM_T3103_DEFAULT 5	/* s */
 #define GSM_T3105_DEFAULT 100	/* ms */
 #define GSM_T3107_DEFAULT 5	/* s */
