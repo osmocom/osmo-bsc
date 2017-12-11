@@ -739,7 +739,10 @@ static int generate_si2bis(enum osmo_sysinfo_type t, struct gsm_bts *bts)
 
 	si2b->rach_control = bts->si_common.rach_control;
 
-	return sizeof(*si2b);
+	/* SI2bis Rest Octets as per 3GPP TS 44.018 §10.5.2.33 */
+	rc = rest_octets_si2bis(si2b->rest_octets);
+
+	return sizeof(*si2b) + rc;
 }
 
 static int generate_si2ter(enum osmo_sysinfo_type t, struct gsm_bts *bts)

@@ -478,6 +478,20 @@ int rest_octets_si2ter(uint8_t *data)
 	return bv.data_len;
 }
 
+/* Generate SI2bis Rest Octests 3GPP TS 44.018 Table 10.5.2.33.1 */
+int rest_octets_si2bis(uint8_t *data)
+{
+	struct bitvec bv;
+
+	memset(&bv, 0, sizeof(bv));
+	bv.data = data;
+	bv.data_len = 1;
+
+	bitvec_spare_padding(&bv, (bv.data_len * 8) - 1);
+
+	return bv.data_len;
+}
+
 /* Generate SI3 Rest Octests (Chapter 10.5.2.34 / Table 10.4.72) */
 int rest_octets_si3(uint8_t *data, const struct gsm48_si_ro_info *si3)
 {
