@@ -461,6 +461,22 @@ static void append_gprs_ind(struct bitvec *bv,
 		bitvec_set_bit(bv, L);
 }
 
+/* Generate SI2ter Rest Octests 3GPP TS 44.018 Table 10.5.2.33a.1 */
+int rest_octets_si2ter(uint8_t *data)
+{
+	struct bitvec bv;
+
+	memset(&bv, 0, sizeof(bv));
+	bv.data = data;
+	bv.data_len = 4;
+
+	/* No SI2ter_MP_CHANGE_MARK */
+	bitvec_set_bit(&bv, L);
+
+	bitvec_spare_padding(&bv, (bv.data_len * 8) - 1);
+
+	return bv.data_len;
+}
 
 /* Generate SI3 Rest Octests (Chapter 10.5.2.34 / Table 10.4.72) */
 int rest_octets_si3(uint8_t *data, const struct gsm48_si_ro_info *si3)

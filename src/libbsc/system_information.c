@@ -764,7 +764,10 @@ static int generate_si2ter(enum osmo_sysinfo_type t, struct gsm_bts *bts)
 	if (!n)
 		bts->si_valid &= ~(1 << SYSINFO_TYPE_2ter);
 
-	return sizeof(*si2t);
+	/* SI2ter Rest Octets as per 3GPP TS 44.018 §10.5.2.33a */
+	rc = rest_octets_si2ter(si2t->rest_octets);
+
+	return sizeof(*si2t) + rc;
 }
 
 /* SI2quater messages are optional - we only generate them when neighbor UARFCNs or EARFCNs are configured */
