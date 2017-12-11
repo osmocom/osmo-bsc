@@ -75,4 +75,7 @@ unsigned int paging_pending_requests_nr(struct gsm_bts *bts);
 
 struct bsc_msc_data *paging_get_msc(struct gsm_bts *bts, struct bsc_subscr *bsub);
 
+void paging_flush_bts(struct gsm_bts *bts, struct bsc_msc_data *msc);
+void paging_flush_network(struct gsm_network *net, struct bsc_msc_data *msc);
+
 #endif

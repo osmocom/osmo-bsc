@@ -218,6 +218,9 @@ static int bssmap_handle_reset(struct bsc_msc_data *msc,
 	 * close all active channels on the BTS side as well */
 	osmo_bsc_sigtran_reset(msc);
 
+	/* Drop all ongoing paging requests that this MSC has created on any BTS */
+	paging_flush_network(msc->network, msc);
+
 	/* Inform the MSC that we have received the reset request and
 	 * that we acted accordingly */
 	osmo_bsc_sigtran_tx_reset_ack(msc);

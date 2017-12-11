@@ -467,3 +467,26 @@ struct bsc_msc_data *paging_get_msc(struct gsm_bts *bts, struct bsc_subscr *bsub
 
 	return NULL;
 }
+
+/*! Flush all paging requests at a given BTS for a given MSC*/
+void paging_flush_bts(struct gsm_bts *bts, struct bsc_msc_data *msc)
+{
+	struct gsm_paging_request *req, *req2;
+
+	llist_for_each_entry_safe(req, req2, &bts->paging.pending_requests, entry) {
+		if (msc && req->msc != msc)
+			continue;
+		/* now give up the data structure */
+		LOGP(DPAG, LOGL_DEBUG, "Stop paging %s on bts %d (flush).\n", req->bsub->imsi, bts->nr);
+		paging_remove_request(&bts->paging, req);
+	}
+}
+
+/*! Flush all paging requests issued by \a msc on any BTS in \a net */
+void paging_flush_network(struct gsm_network *net, struct bsc_msc_data *msc)
+{
+	struct gsm_bts *bts;
+
+	llist_for_each_entry(bts, &net->bts_list, list)
+		paging_flush_bts(bts, msc);
+}
