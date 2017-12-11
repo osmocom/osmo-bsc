@@ -186,7 +186,7 @@ paging:
 		return NULL;
 	}
 
-	pag_msc = paging_get_data(conn->bts, subscr);
+	pag_msc = paging_get_msc(conn->bts, subscr);
 	bsc_subscr_put(subscr);
 
 	llist_for_each_entry(msc, &bsc->mscs, entry) {

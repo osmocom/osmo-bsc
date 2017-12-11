@@ -42,12 +42,12 @@ static int normal_paging(struct bsc_subscr *subscr, int chan_needed,
 		struct gsm_bts *bts;
 
 		llist_for_each_entry(bts, &msc->network->bts_list, list)
-			paging_request_bts(bts, subscr, chan_needed, NULL, msc);
+			paging_request_bts(bts, subscr, chan_needed, msc);
 
 		return 0;
 	}
 
-	return paging_request(msc->network, subscr, chan_needed, NULL, msc);
+	return paging_request(msc->network, subscr, chan_needed, msc);
 }
 
 static int locked_paging(struct bsc_subscr *subscr, int chan_needed,
@@ -73,7 +73,7 @@ static int locked_paging(struct bsc_subscr *subscr, int chan_needed,
 		/*
 		 * now page on this bts
 		 */
-		paging_request_bts(bts, subscr, chan_needed, NULL, msc);
+		paging_request_bts(bts, subscr, chan_needed, msc);
 	};
 
 	/* All bts are either off or in the grace period */

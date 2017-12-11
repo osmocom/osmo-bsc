@@ -29,6 +29,8 @@
 #include <osmocom/bsc/gsm_data.h>
 #include <osmocom/bsc/bsc_subscriber.h>
 
+struct bsc_msc_data;
+
 /**
  * A pending paging request
  */
@@ -49,16 +51,15 @@ struct gsm_paging_request {
 	/* How often did we ask the BTS to page? */
 	int attempts;
 
-	/* callback to be called in case paging completes */
-	gsm_cbfn *cbfn;
-	void *cbfn_param;
+	/* MSC that has issued this paging */
+	struct bsc_msc_data *msc;
 };
 
 /* schedule paging request */
-int paging_request(struct gsm_network *network, struct bsc_subscr *bsub,
-		   int type, gsm_cbfn *cbfn, void *data);
-int paging_request_bts(struct gsm_bts *bts, struct bsc_subscr *bsub,
-		       int type, gsm_cbfn *cbfn, void *data);
+int paging_request(struct gsm_network *network, struct bsc_subscr *bsub, int type,
+		   struct bsc_msc_data *msc);
+int paging_request_bts(struct gsm_bts *bts, struct bsc_subscr *bsub, int type,
+			struct bsc_msc_data *msc);
 
 /* stop paging requests */
 void paging_request_stop(struct llist_head *bts_list,
@@ -72,6 +73,6 @@ void paging_update_buffer_space(struct gsm_bts *bts, uint16_t);
 /* pending paging requests */
 unsigned int paging_pending_requests_nr(struct gsm_bts *bts);
 
-void *paging_get_data(struct gsm_bts *bts, struct bsc_subscr *bsub);
+struct bsc_msc_data *paging_get_msc(struct gsm_bts *bts, struct bsc_subscr *bsub);
 
 #endif

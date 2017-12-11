@@ -266,9 +266,6 @@ static int paging_pending_request(struct gsm_bts_paging_state *bts,
 static void paging_T3113_expired(void *data)
 {
 	struct gsm_paging_request *req = (struct gsm_paging_request *)data;
-	void *cbfn_param;
-	gsm_cbfn *cbfn;
-	int msg;
 
 	log_set_context(LOG_CTX_BSC_SUBSCR, req->bsub);
 
@@ -277,30 +274,19 @@ static void paging_T3113_expired(void *data)
 
 	/* must be destroyed before calling cbfn, to prevent double free */
 	rate_ctr_inc(&req->bts->network->bsc_ctrs->ctr[BSC_CTR_PAGING_EXPIRED]);
-	cbfn_param = req->cbfn_param;
-	cbfn = req->cbfn;
-
-	/* did we ever manage to page the subscriber */
-	msg = req->attempts > 0 ? GSM_PAGING_EXPIRED : GSM_PAGING_BUSY;
 
 	/* destroy it now. Do not access req afterwards */
 	paging_remove_request(&req->bts->paging, req);
-
-	if (cbfn)
-		cbfn(GSM_HOOK_RR_PAGING, msg, NULL, NULL,
-			  cbfn_param);
-
 }
 
 /*! Start paging + paging timer for given subscriber on given BTS
  * \param bts BTS on which to page
  * \param[in] bsub subscriber we want to page
  * \param[in] type type of radio channel we're requirign
- * \param[in] cbfn call-back function to call once we see paging response
- * \param[in] data user-data to pass to \a cbfn on paging response
+ * \param[in] msc MSC which has issue this paging
  * \returns 0 on success, negative on error */
-static int _paging_request(struct gsm_bts *bts, struct bsc_subscr *bsub,
-			   int type, gsm_cbfn *cbfn, void *data)
+static int _paging_request(struct gsm_bts *bts, struct bsc_subscr *bsub, int type,
+			   struct bsc_msc_data *msc)
 {
 	struct gsm_bts_paging_state *bts_entry = &bts->paging;
 	struct gsm_paging_request *req;
@@ -318,8 +304,7 @@ static int _paging_request(struct gsm_bts *bts, struct bsc_subscr *bsub,
 	req->bsub = bsc_subscr_get(bsub);
 	req->bts = bts;
 	req->chan_type = type;
-	req->cbfn = cbfn;
-	req->cbfn_param = data;
+	req->msc = msc;
 	osmo_timer_setup(&req->T3113, paging_T3113_expired, req);
 	osmo_timer_schedule(&req->T3113, bts->network->T3113, 0);
 	llist_add_tail(&req->entry, &bts_entry->pending_requests);
@@ -332,11 +317,10 @@ static int _paging_request(struct gsm_bts *bts, struct bsc_subscr *bsub,
  * \param bts BTS on which to page
  * \param[in] bsub subscriber we want to page
  * \param[in] type type of radio channel we're requirign
- * \param[in] cbfn call-back function to call once we see paging response
- * \param[in] data user-data to pass to \a cbfn on paging response
+ * \param[in] msc MSC which has issue this paging
  * returns 1 on success; 0 in case of error (e.g. TRX down) */
-int paging_request_bts(struct gsm_bts *bts, struct bsc_subscr *bsub,
-		       int type, gsm_cbfn *cbfn, void *data)
+int paging_request_bts(struct gsm_bts *bts, struct bsc_subscr *bsub, int type,
+			struct bsc_msc_data *msc)
 {
 	int rc;
 
@@ -348,7 +332,7 @@ int paging_request_bts(struct gsm_bts *bts, struct bsc_subscr *bsub,
 	paging_init_if_needed(bts);
 
 	/* Trigger paging, pass any error to the caller */
-	rc = _paging_request(bts, bsub, type, cbfn, data);
+	rc = _paging_request(bts, bsub, type, msc);
 	if (rc < 0)
 		return rc;
 	return 1;
@@ -358,11 +342,10 @@ int paging_request_bts(struct gsm_bts *bts, struct bsc_subscr *bsub,
  * \param network gsm_network we operate in
  * \param[in] bsub subscriber we want to page
  * \param[in] type type of radio channel we're requirign
- * \param[in] cbfn call-back function to call once we see paging response
- * \param[in] data user-data to pass to \a cbfn on paging response
+ * \param[in] msc MSC which has issue this paging
  * \returns number of BTSs on which we issued the paging */
-int paging_request(struct gsm_network *network, struct bsc_subscr *bsub,
-		   int type, gsm_cbfn *cbfn, void *data)
+int paging_request(struct gsm_network *network, struct bsc_subscr *bsub, int type,
+		   struct bsc_msc_data *msc)
 {
 	struct gsm_bts *bts = NULL;
 	int num_pages = 0;
@@ -377,7 +360,7 @@ int paging_request(struct gsm_network *network, struct bsc_subscr *bsub,
 		if (!bts)
 			break;
 
-		rc = paging_request_bts(bts, bsub, type, cbfn, data);
+		rc = paging_request_bts(bts, bsub, type, msc);
 		if (rc < 0) {
 			paging_request_stop(&network->bts_list, NULL, bsub,
 					    NULL, NULL);
@@ -413,19 +396,9 @@ static void _paging_request_stop(struct gsm_bts *bts, struct bsc_subscr *bsub,
 	llist_for_each_entry_safe(req, req2, &bts_entry->pending_requests,
 				  entry) {
 		if (req->bsub == bsub) {
-			gsm_cbfn *cbfn = req->cbfn;
-			void *param = req->cbfn_param;
-
 			/* now give up the data structure */
 			paging_remove_request(&bts->paging, req);
-			req = NULL;
-
-			if (conn && cbfn) {
-				LOGP(DPAG, LOGL_DEBUG, "Stop paging %s on bts %d, calling cbfn.\n", bsub->imsi, bts->nr);
-				cbfn(GSM_HOOK_RR_PAGING, GSM_PAGING_SUCCEEDED,
-				     msg, conn, param);
-			} else
-				LOGP(DPAG, LOGL_DEBUG, "Stop paging %s on bts %d silently.\n", bsub->imsi, bts->nr);
+			LOGP(DPAG, LOGL_DEBUG, "Stop paging %s on bts %d\n", bsub->imsi, bts->nr);
 			break;
 		}
 	}
@@ -484,13 +457,13 @@ unsigned int paging_pending_requests_nr(struct gsm_bts *bts)
 }
 
 /*! Find any paging data for the given subscriber at the given BTS. */
-void *paging_get_data(struct gsm_bts *bts, struct bsc_subscr *bsub)
+struct bsc_msc_data *paging_get_msc(struct gsm_bts *bts, struct bsc_subscr *bsub)
 {
 	struct gsm_paging_request *req;
 
 	llist_for_each_entry(req, &bts->paging.pending_requests, entry)
 		if (req->bsub == bsub)
-			return req->cbfn_param;
+			return req->msc;
 
 	return NULL;
 }
