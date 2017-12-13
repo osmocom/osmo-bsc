@@ -197,6 +197,10 @@ enum {
 	BTS_CTR_CODEC_EFR,
 	BTS_CTR_CODEC_V1_FR,
 	BTS_CTR_CODEC_V1_HR,
+	BTS_CTR_PAGING_ATTEMPTED,
+	BTS_CTR_PAGING_ALREADY,
+	BTS_CTR_PAGING_RESPONDED,
+	BTS_CTR_PAGING_EXPIRED,
 };
 
 static const struct rate_ctr_desc bts_ctr_description[] = {
@@ -211,6 +215,11 @@ static const struct rate_ctr_desc bts_ctr_description[] = {
 	[BTS_CTR_CODEC_EFR] = 			{"codec:efr", "Count the usage of EFR codec by channel mode requested."},
 	[BTS_CTR_CODEC_V1_FR] =			{"codec:fr", "Count the usage of FR codec by channel mode requested."},
 	[BTS_CTR_CODEC_V1_HR] =			{"codec:hr", "Count the usage of HR codec by channel mode requested."},
+
+	[BTS_CTR_PAGING_ATTEMPTED] = 		{"paging:attempted", "Paging attempts for a subscriber."},
+	[BTS_CTR_PAGING_ALREADY] = 		{"paging:already", "Paging attempts ignored as subsciber was already being paged."},
+	[BTS_CTR_PAGING_RESPONDED] = 		{"paging:responded", "Paging attempts with successful paging response."},
+	[BTS_CTR_PAGING_EXPIRED] = 		{"paging:expired", "Paging Request expired because of timeout T3113."},
 };
 
 static const struct rate_ctr_group_desc bts_ctrg_desc = {
@@ -229,8 +238,7 @@ enum {
 	BSC_CTR_HANDOVER_FAILED,
 	BSC_CTR_PAGING_ATTEMPTED,
 	BSC_CTR_PAGING_DETACHED,
-	BSC_CTR_PAGING_COMPLETED,
-	BSC_CTR_PAGING_EXPIRED,
+	BSC_CTR_PAGING_RESPONDED,
 };
 
 static const struct rate_ctr_desc bsc_ctr_description[] = {
@@ -239,10 +247,10 @@ static const struct rate_ctr_desc bsc_ctr_description[] = {
 	[BSC_CTR_HANDOVER_TIMEOUT] = 		{"handover:timeout", "Count the amount of timeouts of timer T3103."},
 	[BSC_CTR_HANDOVER_COMPLETED] = 		{"handover:completed", "Received handover completed."},
 	[BSC_CTR_HANDOVER_FAILED] = 		{"handover:failed", "Receive HO FAIL messages."},
-	[BSC_CTR_PAGING_ATTEMPTED] = 		{"paging:attempted", "Paging attempts for a MS."},
+
+	[BSC_CTR_PAGING_ATTEMPTED] = 		{"paging:attempted", "Paging attempts for a subscriber."},
 	[BSC_CTR_PAGING_DETACHED] = 		{"paging:detached", "Counts the amount of paging attempts which couldn't sent out any paging request because no responsible bts found."},
-	[BSC_CTR_PAGING_COMPLETED] = 		{"paging:completed", "Paging successful completed."},
-	[BSC_CTR_PAGING_EXPIRED] = 		{"paging:expired", "Paging Request expired because of timeout T3113."},
+	[BSC_CTR_PAGING_RESPONDED] = 		{"paging:responded", "Paging attempts with successful response."},
 };
 
 

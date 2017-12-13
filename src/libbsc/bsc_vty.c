@@ -3794,10 +3794,9 @@ DEFUN(cfg_ts_e1_subslot,
 
 void openbsc_vty_print_statistics(struct vty *vty, struct gsm_network *net)
 {
-	vty_out(vty, "Paging                  : %"PRIu64" attempted, %"PRIu64" complete, %"PRIu64" expired%s",
+	vty_out(vty, "Paging                  : %"PRIu64" attempted, %"PRIu64" responded%s",
 		net->bsc_ctrs->ctr[BSC_CTR_PAGING_ATTEMPTED].current,
-		net->bsc_ctrs->ctr[BSC_CTR_PAGING_COMPLETED].current,
-		net->bsc_ctrs->ctr[BSC_CTR_PAGING_EXPIRED].current,
+		net->bsc_ctrs->ctr[BSC_CTR_PAGING_RESPONDED].current,
 		VTY_NEWLINE);
 }
 

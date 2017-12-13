@@ -277,7 +277,7 @@ static void paging_T3113_expired(void *data)
 	     req, bsc_subscr_name(req->bsub));
 
 	/* must be destroyed before calling cbfn, to prevent double free */
-	rate_ctr_inc(&req->bts->network->bsc_ctrs->ctr[BSC_CTR_PAGING_EXPIRED]);
+	rate_ctr_inc(&req->bts->bts_ctrs->ctr[BTS_CTR_PAGING_EXPIRED]);
 
 	/* destroy it now. Do not access req afterwards */
 	paging_remove_request(&req->bts->paging, req);
@@ -295,9 +295,12 @@ static int _paging_request(struct gsm_bts *bts, struct bsc_subscr *bsub, int typ
 	struct gsm_bts_paging_state *bts_entry = &bts->paging;
 	struct gsm_paging_request *req;
 
+	rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_CTR_PAGING_ATTEMPTED]);
+
 	if (paging_pending_request(bts_entry, bsub)) {
 		LOGP(DPAG, LOGL_INFO, "Paging request already pending for %s\n",
 		     bsc_subscr_name(bsub));
+		rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_CTR_PAGING_ALREADY]);
 		return -EEXIST;
 	}
 
@@ -423,8 +426,11 @@ void paging_request_stop(struct llist_head *bts_list,
 	log_set_context(LOG_CTX_BSC_SUBSCR, bsub);
 
 	/* Stop this first and dispatch the request */
-	if (_bts)
+	if (_bts) {
 		_paging_request_stop(_bts, bsub, conn, msg);
+		rate_ctr_inc(&_bts->bts_ctrs->ctr[BTS_CTR_PAGING_RESPONDED]);
+		rate_ctr_inc(&_bts->network->bsc_ctrs->ctr[BSC_CTR_PAGING_RESPONDED]);
+	}
 
 	/* Make sure to cancel this everywhere else */
 	llist_for_each_entry(bts, bts_list, list) {
