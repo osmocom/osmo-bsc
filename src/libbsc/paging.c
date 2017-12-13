@@ -240,7 +240,11 @@ static void paging_init_if_needed(struct gsm_bts *bts)
 		return;
 
 	bts->paging.bts = bts;
-	INIT_LLIST_HEAD(&bts->paging.pending_requests);
+
+	/* This should be initialized only once. There is currently no code that sets bts->paging.bts
+	 * back to NULL, so let's just assert this one instead of graceful handling. */
+	OSMO_ASSERT(llist_empty(&bts->paging.pending_requests));
+
 	osmo_timer_setup(&bts->paging.work_timer, paging_worker,
 			 &bts->paging);
 
