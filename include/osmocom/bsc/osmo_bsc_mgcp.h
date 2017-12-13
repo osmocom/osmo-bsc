@@ -22,12 +22,17 @@
 
 #include <osmocom/mgcp_client/mgcp_common.h>
 
-/* MGCP state handler context (fsm etc..) */
+/* MGCP state handler context. This context information stores all information
+ * to handle the direction of the RTP streams via MGCP. There is one instance
+ * of this context struct per subscriber connection.
+ * (see also struct osmo_bsc_sccp_con) */
 struct mgcp_ctx {
 	/* FSM instance, which handles the connection switching procedure */
 	struct osmo_fsm_inst *fsm;
 
-	/* RTP endpoint number */
+	/* RTP endpoint number. This number number identifies the endpoint
+	 * on the MGW on which the BTS and NET connection is created. This
+	 * endpoint number is assigned and released automatically. */
 	uint16_t rtp_endpoint;
 
 	/* RTP connection identifiers */
