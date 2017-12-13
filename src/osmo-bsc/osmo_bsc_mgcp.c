@@ -198,6 +198,7 @@ static void crcx_for_bts_resp_cb(struct mgcp_response *r, void *priv)
 	struct mgcp_ctx *mgcp_ctx = priv;
 	int rc;
 	struct osmo_bsc_sccp_con *conn;
+	uint32_t addr;
 
 	OSMO_ASSERT(mgcp_ctx);
 	conn = mgcp_ctx->conn;
@@ -227,13 +228,20 @@ static void crcx_for_bts_resp_cb(struct mgcp_response *r, void *priv)
 		return;
 	}
 
+	addr = inet_addr(r->audio_ip);
+	if (addr == INADDR_NONE) {
+		LOGPFSML(mgcp_ctx->fsm, LOGL_ERROR, "CRCX/BTS: Cannot parse response (invalid IP-address)\n");
+		handle_error(mgcp_ctx, MGCP_ERR_MGW_INVAL_RESP);
+		return;
+	}
+
 	LOGPFSML(mgcp_ctx->fsm, LOGL_DEBUG, "CRCX/BTS: MGW responded with address %s:%u\n", r->audio_ip, r->audio_port);
 
 	/* Set the connection details in the conn struct. The code that
 	 * controls the BTS via RSL will take these values and signal them
 	 * to the BTS via RSL/IPACC */
 	conn->user_plane.rtp_port = r->audio_port;
-	conn->user_plane.rtp_ip = osmo_ntohl(inet_addr(r->audio_ip));
+	conn->user_plane.rtp_ip = osmo_ntohl(addr);
 
 	/* Notify the FSM that we got the response. */
 	osmo_fsm_inst_dispatch(mgcp_ctx->fsm, EV_CRCX_BTS_RESP, mgcp_ctx);
@@ -480,6 +488,7 @@ static void crcx_for_net_resp_cb(struct mgcp_response *r, void *priv)
 	struct osmo_bsc_sccp_con *conn;
 	struct gsm_lchan *lchan;
 	struct sockaddr_in *sin;
+	uint32_t addr;
 
 	OSMO_ASSERT(mgcp_ctx);
 	conn = mgcp_ctx->conn;
@@ -511,13 +520,20 @@ static void crcx_for_net_resp_cb(struct mgcp_response *r, void *priv)
 		return;
 	}
 
+	addr = inet_addr(r->audio_ip);
+	if (addr == INADDR_NONE) {
+		LOGPFSML(mgcp_ctx->fsm, LOGL_ERROR, "CRCX/NET: Cannot parse response (invalid IP-address)\n");
+		handle_error(mgcp_ctx, MGCP_ERR_MGW_INVAL_RESP);
+		return;
+	}
+
 	LOGPFSML(mgcp_ctx->fsm, LOGL_DEBUG, "CRCX/NET: MGW responded with address %s:%u\n",
 		 r->audio_ip, r->audio_port);
 
 	/* Store address */
 	sin = (struct sockaddr_in *)&conn->user_plane.aoip_rtp_addr_local;
 	sin->sin_family = AF_INET;
-	sin->sin_addr.s_addr = inet_addr(r->audio_ip);
+	sin->sin_addr.s_addr = addr;
 	sin->sin_port = osmo_ntohs(r->audio_port);
 
 	/* Notify the FSM that we got the response. */
