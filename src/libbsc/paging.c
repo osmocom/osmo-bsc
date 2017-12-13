@@ -477,6 +477,8 @@ void paging_flush_bts(struct gsm_bts *bts, struct bsc_msc_data *msc)
 {
 	struct gsm_paging_request *req, *req2;
 
+	paging_init_if_needed(bts);
+
 	llist_for_each_entry_safe(req, req2, &bts->paging.pending_requests, entry) {
 		if (msc && req->msc != msc)
 			continue;
