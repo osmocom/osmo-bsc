@@ -1649,6 +1649,7 @@ static int abis_rsl_rx_dchan(struct msgb *msg)
 		break;
 	case RSL_MT_IPAC_PDCH_ACT_NACK:
 		LOGP(DRSL, LOGL_ERROR, "%s IPAC PDCH ACT NACK\n", ts_name);
+		rate_ctr_inc(&sign_link->trx->bts->bts_ctrs->ctr[BTS_CTR_RSL_IPA_NACK]);
 		break;
 	case RSL_MT_IPAC_PDCH_DEACT_ACK:
 		DEBUGP(DRSL, "%s IPAC PDCH DEACT ACK\n", ts_name);
@@ -1656,6 +1657,7 @@ static int abis_rsl_rx_dchan(struct msgb *msg)
 		break;
 	case RSL_MT_IPAC_PDCH_DEACT_NACK:
 		LOGP(DRSL, LOGL_ERROR, "%s IPAC PDCH DEACT NACK\n", ts_name);
+		rate_ctr_inc(&sign_link->trx->bts->bts_ctrs->ctr[BTS_CTR_RSL_IPA_NACK]);
 		break;
 	case RSL_MT_PHY_CONTEXT_CONF:
 	case RSL_MT_PREPROC_MEAS_RES:
@@ -2551,6 +2553,7 @@ static int abis_rsl_rx_ipacc(struct msgb *msg)
 		/* somehow the BTS was unable to bind the lchan to its local
 		 * port?!? */
 		LOGP(DRSL, LOGL_ERROR, "%s IPAC_CRCX_NACK\n", ts_name);
+		rate_ctr_inc(&sign_link->trx->bts->bts_ctrs->ctr[BTS_CTR_RSL_IPA_NACK]);
 		break;
 	case RSL_MT_IPAC_MDCX_ACK:
 		/* the BTS tells us that a connect operation was successful */
@@ -2561,6 +2564,7 @@ static int abis_rsl_rx_ipacc(struct msgb *msg)
 		/* somehow the BTS was unable to connect the lchan to a remote
 		 * port */
 		LOGP(DRSL, LOGL_ERROR, "%s IPAC_MDCX_NACK\n", ts_name);
+		rate_ctr_inc(&sign_link->trx->bts->bts_ctrs->ctr[BTS_CTR_RSL_IPA_NACK]);
 		break;
 	case RSL_MT_IPAC_DLCX_IND:
 		DEBUGP(DRSL, "%s IPAC_DLCX_IND ", ts_name);
