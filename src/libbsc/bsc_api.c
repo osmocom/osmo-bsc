@@ -32,6 +32,7 @@
 #include <osmocom/bsc/debug.h>
 #include <osmocom/bsc/trau_mux.h>
 #include <osmocom/bsc/gsm_04_08_utils.h>
+#include <osmocom/bsc/bsc_subscriber.h>
 
 #include <osmocom/gsm/protocol/gsm_08_08.h>
 #include <osmocom/gsm/gsm48.h>
@@ -729,6 +730,9 @@ int gsm0808_cipher_mode(struct gsm_subscriber_connection *conn, int cipher,
 		LOGP(DRSL, LOGL_ERROR, "The key is too long: %d\n", len);
 		return -1;
 	}
+
+	LOGP(DRSL, LOGL_DEBUG, "(subscr %s) Cipher Mode: cipher=%d key=%s include_imeisv=%d\n",
+	     bsc_subscr_name(conn->bsub), cipher, osmo_hexdump_nospc(key, len), include_imeisv);
 
 	conn->lchan->encr.alg_id = RSL_ENC_ALG_A5(cipher);
 	if (key) {
