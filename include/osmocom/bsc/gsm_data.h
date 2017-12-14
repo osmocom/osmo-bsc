@@ -276,7 +276,7 @@ enum gsm_auth_policy {
 #define GSM_T3107_DEFAULT 5	/* s */
 #define GSM_T3109_DEFAULT 19	/* s, must be 2s + radio_link_timeout*0.48 */
 #define GSM_T3111_DEFAULT 2	/* s */
-#define GSM_T3113_DEFAULT 60
+#define GSM_T3113_DEFAULT 10	/* s */
 #define GSM_T3115_DEFAULT 10
 #define GSM_T3117_DEFAULT 10
 #define GSM_T3119_DEFAULT 10
