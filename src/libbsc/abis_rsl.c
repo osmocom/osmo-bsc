@@ -691,6 +691,8 @@ int rsl_chan_activate_lchan(struct gsm_lchan *lchan, uint8_t act_type,
 
 	msg->dst = lchan->ts->trx->rsl_link;
 
+	rate_ctr_inc(&lchan->ts->trx->bts->bts_ctrs->ctr[BTS_CTR_CHAN_ACT_TOTAL]);
+
 	return abis_rsl_sendmsg(msg);
 }
 
@@ -1313,6 +1315,8 @@ static int rsl_rx_chan_act_nack(struct msgb *msg)
 	struct tlv_parsed tp;
 
 	osmo_timer_del(&msg->lchan->act_timer);
+
+	rate_ctr_inc(&msg->lchan->ts->trx->bts->bts_ctrs->ctr[BTS_CTR_CHAN_ACT_NACK]);
 
 	if (msg->lchan->state == LCHAN_S_BROKEN) {
 		LOGP(DRSL, LOGL_ERROR,
