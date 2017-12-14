@@ -1667,10 +1667,12 @@ static int abis_rsl_rx_dchan(struct msgb *msg)
 	case RSL_MT_MR_CODEC_MOD_PER:
 		LOGP(DRSL, LOGL_NOTICE, "%s Unimplemented Abis RSL DChan "
 			"msg 0x%02x\n", ts_name, rslh->c.msg_type);
+		rate_ctr_inc(&sign_link->trx->bts->bts_ctrs->ctr[BTS_CTR_RSL_UNKNOWN]);
 		break;
 	default:
 		LOGP(DRSL, LOGL_NOTICE, "%s unknown Abis RSL DChan msg 0x%02x\n",
 			ts_name, rslh->c.msg_type);
+		rate_ctr_inc(&sign_link->trx->bts->bts_ctrs->ctr[BTS_CTR_RSL_UNKNOWN]);
 		return -EINVAL;
 	}
 
@@ -1724,6 +1726,7 @@ static int abis_rsl_rx_trx(struct msgb *msg)
 	default:
 		LOGP(DRSL, LOGL_NOTICE, "%s Unknown Abis RSL TRX message "
 			"type 0x%02x\n", gsm_trx_name(sign_link->trx), rslh->msg_type);
+		rate_ctr_inc(&sign_link->trx->bts->bts_ctrs->ctr[BTS_CTR_RSL_UNKNOWN]);
 		return -EINVAL;
 	}
 	return rc;
@@ -2057,6 +2060,7 @@ static int abis_rsl_rx_cchan(struct msgb *msg)
 	default:
 		LOGP(DRSL, LOGL_NOTICE, "Unknown Abis RSL TRX message type "
 			"0x%02x\n", rslh->c.msg_type);
+		rate_ctr_inc(&sign_link->trx->bts->bts_ctrs->ctr[BTS_CTR_RSL_UNKNOWN]);
 		return -EINVAL;
 	}
 
@@ -2197,6 +2201,7 @@ static int abis_rsl_rx_rll(struct msgb *msg)
 		DEBUGPC(DRLL, "UNKNOWN\n");
 		LOGP(DRLL, LOGL_NOTICE, "unknown Abis RLL message "
 			"type 0x%02x\n", rllh->c.msg_type);
+		rate_ctr_inc(&sign_link->trx->bts->bts_ctrs->ctr[BTS_CTR_RSL_UNKNOWN]);
 	}
 	return rc;
 }
@@ -2564,6 +2569,7 @@ static int abis_rsl_rx_ipacc(struct msgb *msg)
 	default:
 		LOGP(DRSL, LOGL_NOTICE, "Unknown ip.access msg_type 0x%02x\n",
 			rllh->c.msg_type);
+		rate_ctr_inc(&sign_link->trx->bts->bts_ctrs->ctr[BTS_CTR_RSL_UNKNOWN]);
 		break;
 	}
 
@@ -2770,6 +2776,7 @@ static void dyn_ts_switchover_complete(struct gsm_lchan *lchan)
 /* Entry-point where L2 RSL from BTS enters */
 int abis_rsl_rcvmsg(struct msgb *msg)
 {
+	struct e1inp_sign_link *sign_link;
 	struct abis_rsl_common_hdr *rslh;
 	int rc = 0;
 
@@ -2784,6 +2791,7 @@ int abis_rsl_rcvmsg(struct msgb *msg)
 		return -1;
 	}
 
+	sign_link = msg->dst;
 	rslh = msgb_l2(msg);
 
 	switch (rslh->msg_discr & 0xfe) {
@@ -2809,6 +2817,7 @@ int abis_rsl_rcvmsg(struct msgb *msg)
 	default:
 		LOGP(DRSL, LOGL_NOTICE, "unknown RSL message discriminator "
 			"0x%02x\n", rslh->msg_discr);
+		rate_ctr_inc(&sign_link->trx->bts->bts_ctrs->ctr[BTS_CTR_RSL_UNKNOWN]);
 		rc = -EINVAL;
 	}
 	msgb_free(msg);

@@ -203,6 +203,7 @@ enum {
 	BTS_CTR_PAGING_EXPIRED,
 	BTS_CTR_CHAN_ACT_TOTAL,
 	BTS_CTR_CHAN_ACT_NACK,
+	BTS_CTR_RSL_UNKNOWN,
 };
 
 static const struct rate_ctr_desc bts_ctr_description[] = {
@@ -224,6 +225,7 @@ static const struct rate_ctr_desc bts_ctr_description[] = {
 	[BTS_CTR_PAGING_EXPIRED] = 		{"paging:expired", "Paging Request expired because of timeout T3113."},
 	[BTS_CTR_CHAN_ACT_TOTAL] =		{"chan_act:total", "Total number of Channel Activations."},
 	[BTS_CTR_CHAN_ACT_NACK] =		{"chan_act:nack", "Number of Channel Activations that the BTS NACKed"},
+	[BTS_CTR_RSL_UNKNOWN] =			{"rsl:unknown", "Number of unknown/unsupported RSL messages received from BTS"},
 };
 
 static const struct rate_ctr_group_desc bts_ctrg_desc = {
