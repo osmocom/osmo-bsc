@@ -1642,6 +1642,7 @@ static int abis_rsl_rx_dchan(struct msgb *msg)
 		break;
 	case RSL_MT_MODE_MODIFY_NACK:
 		LOGP(DRSL, LOGL_ERROR, "%s CHANNEL MODE MODIFY NACK\n", ts_name);
+		rate_ctr_inc(&sign_link->trx->bts->bts_ctrs->ctr[BTS_CTR_MODE_MODIFY_NACK]);
 		break;
 	case RSL_MT_IPAC_PDCH_ACT_ACK:
 		DEBUGP(DRSL, "%s IPAC PDCH ACT ACK\n", ts_name);
