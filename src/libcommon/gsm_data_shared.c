@@ -347,7 +347,7 @@ struct gsm_bts *gsm_bts_alloc(struct gsm_network *net, uint8_t bts_num)
 		sizeof(bts->gprs.cell.rlc_cfg));
 
 	/* init statistics */
-	bts->bts_ctrs = rate_ctr_group_alloc(bts, &bts_ctrg_desc, 0);
+	bts->bts_ctrs = rate_ctr_group_alloc(bts, &bts_ctrg_desc, bts->nr);
 	if (!bts->bts_ctrs) {
 		talloc_free(bts);
 		return NULL;
