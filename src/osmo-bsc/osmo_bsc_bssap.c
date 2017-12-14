@@ -397,6 +397,10 @@ static int bssmap_handle_cipher_mode(struct osmo_bsc_sccp_con *conn,
 	struct msgb *resp;
 	int reject_cause = -1;
 	int include_imeisv = 1;
+	uint8_t *enc_key;
+	uint16_t enc_key_len;
+	uint8_t enc_bits_bsc;
+	uint8_t enc_bits_msc;
 
 	if (!conn->conn) {
 		LOGP(DMSC, LOGL_ERROR, "No lchan/msc_data in cipher mode command.\n");
@@ -430,19 +434,38 @@ static int bssmap_handle_cipher_mode(struct osmo_bsc_sccp_con *conn,
 
 	network = conn->conn->bts->network;
 	data = TLVP_VAL(&tp, GSM0808_IE_ENCRYPTION_INFORMATION);
+	enc_bits_msc = data[0];
+	enc_key = &data[1];
+	enc_key_len = len - 1;
 
 	if (TLVP_PRESENT(&tp, GSM0808_IE_CIPHER_RESPONSE_MODE))
 		include_imeisv = TLVP_VAL(&tp, GSM0808_IE_CIPHER_RESPONSE_MODE)[0] & 0x1;
 
-	if (network->a5_encryption == 0 && (data[0] & 0x1) == 0x1) {
-		gsm0808_cipher_mode(conn->conn, 0, NULL, 0, include_imeisv);
-	} else if (network->a5_encryption != 0 && (data[0] & 0x2) == 0x2) {
-		gsm0808_cipher_mode(conn->conn, 1, &data[1], len - 1, include_imeisv);
-	} else {
-		LOGP(DMSC, LOGL_ERROR, "Can not select encryption...\n");
+	/* FIXME: match up the list of permitted ciphering algorithms received from the MSC with a list
+	 * of ciphering algorithms configured for this BSC (the config of more than one is TODO). Finally
+	 * pick one of the remaining options. */
+
+	/* Identical to the GSM0808_IE_ENCRYPTION_INFORMATION above:
+	 * a5_encryption == 0 --> 0x01
+	 * a5_encryption == 1 --> 0x02
+	 * a5_encryption == 2 --> 0x04 ... */
+	enc_bits_bsc = 1 << network->a5_encryption;
+	enc_bits_msc = data[0];
+
+	if (!(enc_bits_msc & enc_bits_bsc)) {
+		LOGP(DMSC, LOGL_ERROR, "MSC does not permit A5/%d (permitted algorithms mask: 0x%x)\n",
+		     network->a5_encryption, enc_bits_msc);
+		reject_cause = GSM0808_CAUSE_CIPHERING_ALGORITHM_NOT_SUPPORTED;
 		goto reject;
 	}
 
+	/* To complete the confusion, gsm0808_cipher_mode again expects the encryption as a number
+	 * from 0 to 7. */
+	if (gsm0808_cipher_mode(conn->conn, network->a5_encryption, enc_key, enc_key_len,
+				include_imeisv)) {
+		reject_cause = GSM0808_CAUSE_PROTOCOL_ERROR_BETWEEN_BSS_AND_MSC;
+		goto reject;
+	}
 	return 0;
 
 reject:
