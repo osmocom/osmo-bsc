@@ -721,7 +721,7 @@ int gsm0808_cipher_mode(struct gsm_subscriber_connection *conn, int cipher,
 			const uint8_t *key, int len, int include_imeisv)
 {
 	if (cipher > 0 && key == NULL) {
-		LOGP(DRSL, LOGL_ERROR, "Need to have an encrytpion key.\n");
+		LOGP(DRSL, LOGL_ERROR, "Need to have an encryption key.\n");
 		return -1;
 	}
 
