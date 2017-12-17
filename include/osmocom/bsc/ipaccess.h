@@ -2,10 +2,12 @@
 #define _IPACCESS_H
 
 #include <osmocom/abis/e1_input.h>
-#include "gsm_subscriber.h"
 #include <osmocom/core/linuxlist.h>
 #include <osmocom/gsm/protocol/ipaccess.h>
 #include <osmocom/gsm/protocol/gsm_23_003.h>
+
+struct gsm_bts;
+struct gsm_bts_trx;
 
 struct ipac_msgt_sccp_state {
 	uint8_t	src_ref[3];

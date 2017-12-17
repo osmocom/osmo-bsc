@@ -32,8 +32,6 @@ extern void *tall_paging_ctx;
 extern void *tall_sigh_ctx;
 extern void *tall_tqe_ctx;
 extern void *tall_trans_ctx;
-extern void *tall_map_ctx;
-extern void *tall_upq_ctx;
 extern void *tall_ctr_ctx;
 
 void talloc_ctx_init(void *ctx_root)
@@ -49,7 +47,5 @@ void talloc_ctx_init(void *ctx_root)
 	tall_sigh_ctx = talloc_named_const(ctx_root, 0, "signal_handler");
 	tall_tqe_ctx = talloc_named_const(ctx_root, 0, "subch_txq_entry");
 	tall_trans_ctx = talloc_named_const(ctx_root, 0, "transaction");
-	tall_map_ctx = talloc_named_const(ctx_root, 0, "trau_map_entry");
-	tall_upq_ctx = talloc_named_const(ctx_root, 0, "trau_upq_entry");
 	tall_ctr_ctx = talloc_named_const(ctx_root, 0, "counter");
 }

@@ -24,12 +24,11 @@
 
 struct gsm_network *bsc_network_init(void *ctx,
 				     uint16_t country_code,
-				     uint16_t network_code,
-				     mncc_recv_cb_t mncc_recv)
+				     uint16_t network_code)
 {
 	struct gsm_network *net;
 
-	net = gsm_network_init(ctx, country_code, network_code, mncc_recv);
+	net = gsm_network_init(ctx, country_code, network_code);
 
 	net->bsc_data = talloc_zero(net, struct osmo_bsc_data);
 	if (!net->bsc_data) {

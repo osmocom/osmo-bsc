@@ -32,7 +32,6 @@
 
 #include <osmocom/bsc/abis_rsl.h>
 #include <osmocom/bsc/debug.h>
-#include <osmocom/bsc/transaction.h>
 #include <osmocom/bsc/paging.h>
 #include <osmocom/bsc/signal.h>
 #include <osmocom/bsc/bsc_api.h>

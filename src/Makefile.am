@@ -24,7 +24,6 @@ SUBDIRS = \
 	libcommon \
 	libcommon-cs \
 	libbsc \
-	libtrau \
 	libfilter \
 	$(NULL)
 

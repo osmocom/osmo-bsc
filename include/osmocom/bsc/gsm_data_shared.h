@@ -33,7 +33,6 @@
 struct osmo_bsc_data;
 
 struct osmo_bsc_sccp_con;
-struct gsm_sms_queue;
 
 /* RRLP mode of operation */
 enum rrlp_mode {

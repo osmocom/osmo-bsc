@@ -201,7 +201,7 @@ int main(int argc, char **argv)
 	osmo_stats_init(tall_bsc_ctx);
 
 	/* Allocate global gsm_network struct */
-	rc = bsc_network_alloc(NULL);
+	rc = bsc_network_alloc();
 	if (rc) {
 		fprintf(stderr, "Allocation failed. exiting.\n");
 		exit(1);

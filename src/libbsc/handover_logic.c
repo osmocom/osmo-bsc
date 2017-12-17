@@ -32,13 +32,10 @@
 #include <osmocom/bsc/debug.h>
 #include <osmocom/bsc/gsm_data.h>
 #include <osmocom/gsm/gsm_utils.h>
-#include <osmocom/bsc/gsm_subscriber.h>
 #include <osmocom/bsc/abis_rsl.h>
 #include <osmocom/bsc/chan_alloc.h>
 #include <osmocom/bsc/signal.h>
 #include <osmocom/core/talloc.h>
-#include <osmocom/bsc/transaction.h>
-#include <osmocom/bsc/trau_mux.h>
 #include <osmocom/bsc/bsc_subscriber.h>
 #include <osmocom/bsc/gsm_04_08_utils.h>
 
@@ -270,10 +267,6 @@ static int ho_gsm48_ho_compl(struct gsm_lchan *new_lchan)
 	rate_ctr_inc(&net->bsc_ctrs->ctr[BSC_CTR_HANDOVER_COMPLETED]);
 
 	osmo_timer_del(&ho->T3103);
-
-	/* switch TRAU muxer for E1 based BTS from one channel to another */
-	if (is_e1_bts(new_lchan->conn->bts))
-		switch_trau_mux(ho->old_lchan, new_lchan);
 
 	/* Replace the ho lchan with the primary one */
 	if (ho->old_lchan != new_lchan->conn->lchan)

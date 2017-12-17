@@ -40,8 +40,6 @@
 #include <osmocom/bsc/paging.h>
 #include <osmocom/bsc/signal.h>
 #include <osmocom/bsc/meas_rep.h>
-#include <osmocom/bsc/rtp_proxy.h>
-#include <osmocom/bsc/gsm_subscriber.h>
 #include <osmocom/abis/e1_input.h>
 #include <osmocom/gsm/rsl.h>
 #include <osmocom/core/talloc.h>
@@ -50,6 +48,11 @@
 
 #define RSL_ALLOC_SIZE		1024
 #define RSL_ALLOC_HEADROOM	128
+
+#define RTP_PT_GSM_FULL 3
+#define RTP_PT_GSM_HALF 96
+#define RTP_PT_GSM_EFR 97
+#define RTP_PT_AMR 98
 
 enum sacch_deact {
 	SACCH_NONE,
@@ -159,9 +162,6 @@ static struct gsm_lchan *lchan_lookup(struct gsm_bts_trx *trx, uint8_t chan_nr,
 	if (rc < 0)
 		LOGP(DRSL, LOGL_ERROR, "%s %smismatching chan_nr=0x%02x\n",
 		     gsm_ts_and_pchan_name(lchan->ts), log_name, chan_nr);
-
-	if (lchan->conn)
-		log_set_context(LOG_CTX_VLR_SUBSCR, lchan->conn->vsub);
 
 	return lchan;
 }
@@ -2420,20 +2420,6 @@ int rsl_ipacc_mdcx(struct gsm_lchan *lchan, uint32_t ip, uint16_t port,
 	msg->dst = lchan->ts->trx->rsl_link;
 
 	return abis_rsl_sendmsg(msg);
-}
-
-/* tell BTS to connect RTP stream to our local RTP socket */
-int rsl_ipacc_mdcx_to_rtpsock(struct gsm_lchan *lchan)
-{
-	struct rtp_socket *rs = lchan->abis_ip.rtp_socket;
-	int rc;
-
-	rc = rsl_ipacc_mdcx(lchan, ntohl(rs->rtp.sin_local.sin_addr.s_addr),
-				ntohs(rs->rtp.sin_local.sin_port),
-			/* FIXME: use RTP payload of bound socket, not BTS*/
-				lchan->abis_ip.rtp_payload2);
-
-	return rc;
 }
 
 int rsl_ipacc_pdch_activate(struct gsm_bts_trx_ts *ts, int act)

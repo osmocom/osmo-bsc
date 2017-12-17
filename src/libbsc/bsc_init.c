@@ -529,10 +529,10 @@ static int bootstrap_bts(struct gsm_bts *bts)
 	return 0;
 }
 
-int bsc_network_alloc(mncc_recv_cb_t mncc_recv)
+int bsc_network_alloc(void)
 {
 	/* initialize our data structures */
-	bsc_gsmnet = bsc_network_init(tall_bsc_ctx, 1, 1, mncc_recv);
+	bsc_gsmnet = bsc_network_init(tall_bsc_ctx, 1, 1);
 	if (!bsc_gsmnet)
 		return -ENOMEM;
 

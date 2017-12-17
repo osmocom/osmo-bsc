@@ -3,7 +3,6 @@ SUBDIRS = \
 	gsm0408 \
 	channel \
 	abis \
-	trau \
 	subscr \
 	nanobts_omlattr \
 	bsc-nat \

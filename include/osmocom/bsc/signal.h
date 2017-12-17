@@ -34,34 +34,21 @@
  */
 enum signal_subsystems {
 	SS_PAGING,
-	SS_SMS,
 	SS_ABISIP,
 	SS_NM,
 	SS_LCHAN,
-	SS_SUBSCR,
-	SS_SCALL,
 	SS_CHALLOC,
 	SS_IPAC_NWL,
 	SS_RF,
 	SS_MSC,
 	SS_HO,
 	SS_CCCH,
-	SS_SGSN,
 };
 
 /* SS_PAGING signals */
 enum signal_paging {
 	S_PAGING_SUCCEEDED,
 	S_PAGING_EXPIRED,
-};
-
-/* SS_SMS signals */
-enum signal_sms {
-	S_SMS_SUBMITTED,	/* A SMS has been successfully submitted to us */
-	S_SMS_DELIVERED,	/* A SMS has been successfully delivered to a MS */
-	S_SMS_SMMA,		/* A MS tells us it has more space available */
-	S_SMS_MEM_EXCEEDED,	/* A MS tells us it has no more space available */
-	S_SMS_UNKNOWN_ERROR,	/* A MS tells us it has an error */
 };
 
 /* SS_ABISIP signals */
@@ -108,20 +95,6 @@ enum signal_challoc {
 	S_CHALLOC_FREED,	/* lchan has been successfully freed */
 };
 
-/* SS_SUBSCR signals */
-enum signal_subscr {
-	S_SUBSCR_ATTACHED,
-	S_SUBSCR_DETACHED,
-	S_SUBSCR_IDENTITY,		/* we've received some identity information */
-};
-
-/* SS_SCALL signals */
-enum signal_scall {
-	S_SCALL_SUCCESS,
-	S_SCALL_EXPIRED,
-	S_SCALL_DETACHED,
-};
-
 /* SS_IPAC_NWL signals */
 enum signal_ipaccess {
 	S_IPAC_NWL_COMPLETE,
@@ -136,21 +109,6 @@ enum signal_rf {
 	S_RF_OFF,
 	S_RF_ON,
 	S_RF_GRACE,
-};
-
-struct paging_signal_data {
-	struct vlr_subscr *vsub;
-	struct gsm_bts *bts;
-
-	int paging_result;
-
-	/* NULL in case the paging didn't work */
-	struct gsm_subscriber_connection *conn;
-};
-
-struct scall_signal_data {
-	struct gsm_subscriber_connection *conn;
-	void *data;
 };
 
 struct ipacc_ack_signal_data {
@@ -197,15 +155,6 @@ struct rf_signal_data {
 	struct gsm_network *net;
 };
 
-struct sms_signal_data {
-	/* The transaction where this occured */
-	struct gsm_trans *trans;
-	/* Can be NULL for SMMA */
-	struct gsm_sms *sms;
-	/* int paging result. Only the ones with > 0 */
-	int paging_result;
-};
-
 struct lchan_signal_data {
 	/* The lchan the signal happened on */
 	struct gsm_lchan *lchan;
@@ -237,24 +186,6 @@ struct ccch_signal_data {
 	uint16_t rach_slot_count;
 	uint16_t rach_busy_count;
 	uint16_t rach_access_count;
-};
-
-/* GPRS SGSN signals SS_SGSN */
-enum signal_sgsn {
-	S_SGSN_ATTACH,
-	S_SGSN_DETACH,
-	S_SGSN_UPDATE,
-	S_SGSN_PDP_ACT,
-	S_SGSN_PDP_DEACT,
-	S_SGSN_PDP_TERMINATE,
-	S_SGSN_PDP_FREE,
-	S_SGSN_MM_FREE,
-};
-
-struct sgsn_mm_ctx;
-struct sgsn_signal_data {
-	struct sgsn_mm_ctx *mm;
-	struct sgsn_pdp_ctx *pdp;	/* non-NULL for PDP_ACT, PDP_DEACT, PDP_FREE */
 };
 
 #endif

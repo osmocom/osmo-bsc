@@ -25,12 +25,10 @@
 #include <string.h>
 #include <errno.h>
 
-#include <osmocom/bsc/gsm_subscriber.h>
 #include <osmocom/bsc/chan_alloc.h>
 #include <osmocom/bsc/abis_nm.h>
 #include <osmocom/bsc/abis_rsl.h>
 #include <osmocom/bsc/debug.h>
-#include <osmocom/bsc/rtp_proxy.h>
 #include <osmocom/bsc/signal.h>
 #include <osmocom/bsc/gsm_04_08_utils.h>
 
@@ -392,13 +390,6 @@ void lchan_free(struct gsm_lchan *lchan)
 		osmo_signal_dispatch(SS_LCHAN, S_LCHAN_UNEXPECTED_RELEASE, &sig);
 	}
 
-	if (lchan->abis_ip.rtp_socket) {
-		LOGP(DRLL, LOGL_ERROR, "%s RTP Proxy Socket remained open.\n",
-			gsm_lchan_name(lchan));
-		rtp_socket_free(lchan->abis_ip.rtp_socket);
-		lchan->abis_ip.rtp_socket = NULL;
-	}
-
 	/* stop the timer */
 	osmo_timer_del(&lchan->T3101);
 
@@ -449,11 +440,6 @@ void lchan_reset(struct gsm_lchan *lchan)
 
 	lchan->type = GSM_LCHAN_NONE;
 	rsl_lchan_set_state(lchan, LCHAN_S_NONE);
-
-	if (lchan->abis_ip.rtp_socket) {
-		rtp_socket_free(lchan->abis_ip.rtp_socket);
-		lchan->abis_ip.rtp_socket = NULL;
-	}
 }
 
 /* Drive the release process of the lchan */

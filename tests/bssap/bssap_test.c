@@ -82,7 +82,7 @@ void test_cell_identifier()
 	struct gsm_network *net;
 	struct bsc_msc_data *msc;
 
-	net = bsc_network_init(NULL, 1, 1, NULL);
+	net = bsc_network_init(NULL, 1, 1);
 	net->bsc_data->rf_ctrl = talloc_zero(NULL, struct osmo_bsc_rf);
 	net->bsc_data->rf_ctrl->policy = S_RF_ON;
 

@@ -4,7 +4,6 @@ noinst_HEADERS = \
 	abis_om2000.h \
 	abis_rsl.h \
 	arfcn_range_encode.h \
-	auth.h \
 	bsc_msc.h \
 	bsc_msg_filter.h \
 	bsc_nat.h \
@@ -18,7 +17,6 @@ noinst_HEADERS = \
 	common.h \
 	common_bsc.h \
 	common_cs.h \
-	crc24.h \
 	ctrl.h \
 	debug.h \
 	e1_config.h \
@@ -26,16 +24,12 @@ noinst_HEADERS = \
 	gsm_04_80.h \
 	gsm_data.h \
 	gsm_data_shared.h \
-	gsm_subscriber.h \
 	handover.h \
 	handover_decision.h \
 	ipaccess.h \
 	meas_feed.h \
 	meas_rep.h \
 	misdn.h \
-	mncc.h \
-	mncc_int.h \
-	msc_ifaces.h \
 	nat_rewrite_trie.h \
 	network_listen.h \
 	openbscdefines.h \
@@ -52,15 +46,9 @@ noinst_HEADERS = \
 	rest_octets.h \
 	rrlp.h \
 	rs232.h \
-	rtp_proxy.h \
 	signal.h \
-	silent_call.h \
-	sms_queue.h \
 	socket.h \
 	system_information.h \
-	transaction.h \
-	trau_mux.h \
-	trau_upqueue.h \
 	ussd.h \
 	vty.h \
 	bsc_api.h \

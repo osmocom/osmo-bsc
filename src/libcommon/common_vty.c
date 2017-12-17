@@ -26,7 +26,6 @@
 #include <osmocom/bsc/vty.h>
 #include <osmocom/bsc/gsm_data.h>
 #include <osmocom/bsc/debug.h>
-#include <osmocom/bsc/gsm_subscriber.h>
 #include <osmocom/bsc/bsc_nat.h>
 #include <osmocom/bsc/abis_om2000.h>
 

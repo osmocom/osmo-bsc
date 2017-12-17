@@ -24,13 +24,11 @@
 #include <osmocom/bsc/bsc_api.h>
 #include <osmocom/bsc/bsc_rll.h>
 #include <osmocom/bsc/gsm_data.h>
-#include <osmocom/bsc/gsm_subscriber.h>
 #include <osmocom/bsc/signal.h>
 #include <osmocom/bsc/abis_rsl.h>
 #include <osmocom/bsc/chan_alloc.h>
 #include <osmocom/bsc/handover.h>
 #include <osmocom/bsc/debug.h>
-#include <osmocom/bsc/trau_mux.h>
 #include <osmocom/bsc/gsm_04_08_utils.h>
 #include <osmocom/bsc/bsc_subscriber.h>
 
@@ -263,7 +261,6 @@ struct gsm_subscriber_connection *bsc_subscr_con_allocate(struct gsm_lchan *lcha
 	conn->network = net;
 	conn->lchan = lchan;
 	conn->bts = lchan->ts->trx->bts;
-	conn->via_ran = RAN_GERAN_A;
 	conn->lac = conn->bts->location_area_code;
 	lchan->conn = conn;
 	llist_add_tail(&conn->entry, &net->subscr_conns);
@@ -277,11 +274,6 @@ void bsc_subscr_con_free(struct gsm_subscriber_connection *conn)
 
 	if (conn->network->bsc_api->conn_cleanup)
 		conn->network->bsc_api->conn_cleanup(conn);
-
-	if (conn->vsub) {
-		LOGP(DNM, LOGL_ERROR, "conn->vsub should have been cleared.\n");
-		conn->vsub = NULL;
-	}
 
 	if (conn->ho_lchan) {
 		LOGP(DNM, LOGL_ERROR, "The ho_lchan should have been cleared.\n");
@@ -452,10 +444,6 @@ static void handle_ass_compl(struct gsm_subscriber_connection *conn,
 		     msgb_l3len(msg) - sizeof(*gh));
 		return;
 	}
-
-	/* switch TRAU muxer for E1 based BTS from one channel to another */
-	if (is_e1_bts(conn->bts))
-		switch_trau_mux(conn->lchan, conn->secondary_lchan);
 
 	/* swap channels */
 	osmo_timer_del(&conn->T10);

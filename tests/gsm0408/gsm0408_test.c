@@ -25,7 +25,7 @@
 #include <arpa/inet.h>
 
 #include <osmocom/bsc/common_bsc.h>
-#include <osmocom/bsc/gsm_subscriber.h>
+#include <osmocom/bsc/gsm_data.h>
 #include <osmocom/bsc/gsm_data_shared.h>
 #include <osmocom/bsc/debug.h>
 #include <osmocom/bsc/arfcn_range_encode.h>
@@ -715,7 +715,7 @@ int main(int argc, char **argv)
 	osmo_init_logging(&log_info);
 	log_set_log_level(osmo_stderr_target, LOGL_INFO);
 
-	net = bsc_network_init(tall_bsc_ctx, 1, 1, NULL);
+	net = bsc_network_init(tall_bsc_ctx, 1, 1);
 	if (!net) {
 		printf("Network init failure.\n");
 		return EXIT_FAILURE;

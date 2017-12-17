@@ -25,8 +25,6 @@
 
 #include <osmocom/bsc/gsm_data.h>
 #include <osmocom/abis/e1_input.h>
-#include <osmocom/abis/trau_frame.h>
-#include <osmocom/bsc/trau_mux.h>
 #include <osmocom/bsc/misdn.h>
 #include <osmocom/abis/ipaccess.h>
 #include <osmocom/core/talloc.h>
@@ -45,7 +43,6 @@ int e1_reconfig_ts(struct gsm_bts_trx_ts *ts)
 {
 	struct gsm_e1_subslot *e1_link = &ts->e1_link;
 	struct e1inp_line *line;
-	struct e1inp_ts *e1_ts;
 
 	DEBUGP(DLMI, "e1_reconfig_ts(%u,%u,%u)\n", ts->trx->bts->nr, ts->trx->nr, ts->nr);
 
@@ -61,12 +58,6 @@ int e1_reconfig_ts(struct gsm_bts_trx_ts *ts)
 		     "non-existing E1 line %u\n", ts->nr, ts->trx->nr,
 		     ts->trx->bts->nr, e1_link->e1_nr);
 		return -ENOMEM;
-	}
-
-	if (ts_is_tch(ts)) {
-		e1_ts = &line->ts[e1_link->e1_ts-1];
-		e1inp_ts_config_trau(e1_ts, line, subch_cb);
-		subch_demux_activate(&e1_ts->trau.demux, e1_link->e1_ts_ss);
 	}
 
 	return 0;

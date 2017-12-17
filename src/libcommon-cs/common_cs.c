@@ -27,7 +27,6 @@
 
 #include <osmocom/bsc/common_cs.h>
 #include <osmocom/bsc/gsm_data.h>
-#include <osmocom/bsc/gsm_subscriber.h>
 #include <osmocom/bsc/gsm_data.h>
 #include <osmocom/bsc/gsm_04_08_utils.h>
 
@@ -39,8 +38,7 @@
  */
 struct gsm_network *gsm_network_init(void *ctx,
 				     uint16_t country_code,
-				     uint16_t network_code,
-				     mncc_recv_cb_t mncc_recv)
+				     uint16_t network_code)
 {
 	struct gsm_network *net;
 
@@ -55,15 +53,12 @@ struct gsm_network *gsm_network_init(void *ctx,
 	net->t3212 = 5;
 
 	INIT_LLIST_HEAD(&net->trans_list);
-	INIT_LLIST_HEAD(&net->upqueue);
 	INIT_LLIST_HEAD(&net->subscr_conns);
 
 	net->bsc_subscribers = talloc_zero(net, struct llist_head);
 	INIT_LLIST_HEAD(net->bsc_subscribers);
 
 	net->active_calls = osmo_counter_alloc("msc.active_calls");
-
-	net->mncc_recv = mncc_recv;
 
 	net->dyn_ts_allow_tch_f = true;
 
@@ -127,17 +122,4 @@ int gsm48_paging_extract_mi(struct gsm48_pag_resp *resp, int length,
 	uint8_t *classmark2_lv = (uint8_t *) &resp->classmark2;
 	return gsm48_extract_mi(classmark2_lv, length - classmark_offset,
 				mi_string, mi_type);
-}
-
-uint8_t sms_next_rp_msg_ref(uint8_t *next_rp_ref)
-{
-	const uint8_t rp_msg_ref = *next_rp_ref;
-	/*
-	 * This should wrap as the valid range is 0 to 255. We only
-	 * transfer one SMS at a time so we don't need to check if
-	 * the id has been already assigned.
-	 */
-	*next_rp_ref += 1;
-
-	return rp_msg_ref;
 }

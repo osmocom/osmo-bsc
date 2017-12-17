@@ -30,7 +30,6 @@
 #include <osmocom/bsc/osmo_bsc.h>
 #include <osmocom/bsc/bsc_msc_data.h>
 #include <osmocom/bsc/gsm_04_80.h>
-#include <osmocom/bsc/gsm_subscriber.h>
 
 #include <osmocom/core/application.h>
 #include <osmocom/core/backtrace.h>

@@ -24,11 +24,9 @@
 
 #define OBSC_NM_W_ACK_CB(__msgb) (__msgb)->cb[3]
 
-struct mncc_sock_state;
 struct gsm_subscriber_group;
 struct bsc_subscr;
 struct vlr_instance;
-struct vlr_subscr;
 struct gprs_ra_id;
 
 #define OBSC_LINKID_CB(__msgb)	(__msgb)->cb[3]
@@ -107,34 +105,8 @@ struct gsm_subscriber_connection {
 	/* global linked list of subscriber_connections */
 	struct llist_head entry;
 
-	/* usage count. If this drops to zero, we start the release
-	 * towards A/Iu */
-	uint32_t use_count;
-
-	/* The MS has opened the conn with a CM Service Request, and we shall
-	 * keep it open for an actual request (or until timeout). */
-	bool received_cm_service_request;
-
 	/* libbsc subscriber information (if available) */
 	struct bsc_subscr *bsub;
-
-	/* libmsc/libvlr subscriber information (if available) */
-	struct vlr_subscr *vsub;
-
-	/* LU expiration handling */
-	uint8_t expire_timer_stopped;
-	/* SMS helpers for libmsc */
-	uint8_t next_rp_ref;
-
-	struct osmo_fsm_inst *conn_fsm;
-
-	/* Are we part of a special "silent" call */
-	int silent_call;
-
-	/* MNCC rtp bridge markers */
-	int mncc_rtp_bridge;
-	int mncc_rtp_create_pending;
-	int mncc_rtp_connect_pending;
 
 	/* bsc structures */
 	struct osmo_bsc_sccp_con *sccp_con; /* BSC */
@@ -142,7 +114,6 @@ struct gsm_subscriber_connection {
 	/* back pointers */
 	struct gsm_network *network;
 
-	bool in_release;
 	struct gsm_lchan *lchan; /* BSC */
 	struct gsm_lchan *ho_lchan; /* BSC */
 	struct gsm_bts *bts; /* BSC */
@@ -150,9 +121,6 @@ struct gsm_subscriber_connection {
 	/* for assignment handling */
 	struct osmo_timer_list T10; /* BSC */
 	struct gsm_lchan *secondary_lchan; /* BSC */
-
-	/* connected via 2G or 3G? */
-	enum ran_type via_ran;
 
 	struct gsm_classmark classmark;
 
@@ -336,10 +304,6 @@ struct gsm_network {
 	struct rate_ctr_group *bsc_ctrs;
 	struct osmo_counter *active_calls;
 
-	/* layer 4 */
-	struct mncc_sock_state *mncc_state;
-	mncc_recv_cb_t mncc_recv;
-	struct llist_head upqueue;
 	/*
 	 * TODO: Move the trans_list into the subscriber connection and
 	 * create a pending list for MT transactions. These exist before
@@ -380,8 +344,6 @@ struct gsm_network {
 
 	/* MSC data in case we are a true BSC */
 	struct osmo_bsc_data *bsc_data;
-
-	struct gsm_sms_queue *sms_queue;
 
 	/* control interface */
 	struct ctrl_handle *ctrl;
@@ -451,7 +413,6 @@ struct gsm_sms_addr {
 
 struct gsm_sms {
 	unsigned long long id;
-	struct vlr_subscr *receiver;
 	struct gsm_sms_addr src, dst;
 	enum gsm_sms_source_id source;
 

@@ -20,6 +20,8 @@
  *
  */
 
+#include <string.h>
+
 #include <osmocom/bsc/bsc_nat.h>
 #include <osmocom/bsc/bsc_nat_sccp.h>
 #include <osmocom/bsc/ipaccess.h>

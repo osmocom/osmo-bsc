@@ -42,7 +42,6 @@ osmo_bsc_nat_LDADD = \
 	$(top_builddir)/src/libfilter/libfilter.a \
 	$(top_builddir)/src/libbsc/libbsc.a \
 	$(top_builddir)/src/libcommon-cs/libcommon-cs.a \
-	$(top_builddir)/src/libtrau/libtrau.a \
 	$(top_builddir)/src/libcommon/libcommon.a \
 	$(LIBOSMOSCCP_LIBS) \
 	$(LIBOSMOCORE_LIBS) \

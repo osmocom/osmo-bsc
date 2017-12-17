@@ -145,7 +145,6 @@ AC_OUTPUT(
     include/osmocom/Makefile
     include/osmocom/bsc/Makefile
     src/Makefile
-    src/libtrau/Makefile
     src/libbsc/Makefile
     src/libcommon/Makefile
     src/libfilter/Makefile
@@ -161,7 +160,6 @@ AC_OUTPUT(
     tests/bsc-nat/Makefile
     tests/bsc-nat-trie/Makefile
     tests/abis/Makefile
-    tests/trau/Makefile
     tests/subscr/Makefile
     tests/nanobts_omlattr/Makefile
     tests/bssap/Makefile

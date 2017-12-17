@@ -28,7 +28,6 @@
 #include <osmocom/bsc/vty.h>
 
 #include <osmocom/bsc/gsm_data.h>
-#include <osmocom/bsc/gsm_subscriber.h>
 
 struct cmd_node net_node = {
 	GSMNET_NODE,
