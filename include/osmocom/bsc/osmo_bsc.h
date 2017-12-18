@@ -48,9 +48,6 @@ struct osmo_bsc_sccp_con {
 	/* SCCP connection realted */
 	struct bsc_msc_data *msc;
 
-	struct llist_head sccp_queue;
-	unsigned int sccp_queue_size;
-
 	struct gsm_subscriber_connection *conn;
 	uint8_t new_subscriber;
 
