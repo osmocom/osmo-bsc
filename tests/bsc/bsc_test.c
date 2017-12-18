@@ -30,6 +30,7 @@
 #include <osmocom/bsc/osmo_bsc.h>
 #include <osmocom/bsc/bsc_msc_data.h>
 #include <osmocom/bsc/gsm_04_80.h>
+#include <osmocom/bsc/common_bsc.h>
 
 #include <osmocom/core/application.h>
 #include <osmocom/core/backtrace.h>
@@ -121,14 +122,12 @@ static void test_scan(void)
 {
 	int i;
 
-	struct gsm_network *net;
-	struct gsm_bts *bts;
+	struct gsm_network *net = bsc_network_init(NULL, 1, 1);
+	struct gsm_bts *bts = gsm_bts_alloc(net, 0);
 	struct osmo_bsc_sccp_con *sccp_con;
 	struct bsc_msc_data *msc;
 	struct gsm_subscriber_connection *conn;
 
-	net = talloc_zero(NULL, struct gsm_network);
-	bts = talloc_zero(net, struct gsm_bts);
 	sccp_con = talloc_zero(net, struct osmo_bsc_sccp_con);
 	msc = talloc_zero(net, struct bsc_msc_data);
 	conn = talloc_zero(net, struct gsm_subscriber_connection);
@@ -137,6 +136,7 @@ static void test_scan(void)
 	sccp_con->msc = msc;
 	conn->bts = bts;
 	conn->sccp_con = sccp_con;
+	conn->lchan = &bts->c0->ts[1].lchan[0];
 
 	/* start testing with proper messages */
 	printf("Testing BTS<->MSC message scan.\n");
