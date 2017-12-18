@@ -19,8 +19,10 @@ struct bsc_msc_data;
 struct bsc_msc_connection;
 
 struct osmo_bsc_sccp_con {
+	/* list_head anchoring us to gsm_network.subscr_conns */
 	struct llist_head entry;
 
+	/* flag to prevent multiple simultaneous ciphering commands */
 	int ciphering_handled;
 
 	/* for audio handling */
@@ -48,9 +50,12 @@ struct osmo_bsc_sccp_con {
 	/* SCCP connection realted */
 	struct bsc_msc_data *msc;
 
+	/* back-pointer to subscriber connection */
 	struct gsm_subscriber_connection *conn;
+	/* state related to welcome USSD */
 	uint8_t new_subscriber;
 
+	/* state related to osmo_bsc_filter.c */
 	struct bsc_filter_state filter_state;
 
 	/* Sigtran connection ID */
