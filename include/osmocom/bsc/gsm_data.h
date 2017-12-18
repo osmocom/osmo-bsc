@@ -75,20 +75,26 @@ struct gsm_subscriber_connection {
 	/* libbsc subscriber information (if available) */
 	struct bsc_subscr *bsub;
 
-	/* bsc structures */
-	struct osmo_bsc_sccp_con *sccp_con; /* BSC */
+	/* SCCP connection associatd with this subscriber_connection */
+	struct osmo_bsc_sccp_con *sccp_con;
 
 	/* back pointers */
 	struct gsm_network *network;
 
-	struct gsm_lchan *lchan; /* BSC */
-	struct gsm_lchan *ho_lchan; /* BSC */
-	struct gsm_bts *bts; /* BSC */
+	/* the primary / currently active lchan to the BTS/subscriber */
+	struct gsm_lchan *lchan;
+	/* the future/allocated but not yet used lchan during HANDOVER */
+	struct gsm_lchan *ho_lchan;
+	/* a short-hand pointer to the BTS currently serving the subscriber,
+	 * points to gsm_subscriber_connection.lchan->ts->trx->bts */
+	struct gsm_bts *bts;
 
-	/* for assignment handling */
-	struct osmo_timer_list T10; /* BSC */
-	struct gsm_lchan *secondary_lchan; /* BSC */
+	/* timer for assignment handling */
+	struct osmo_timer_list T10;
+	/* the future allocated but not yet used lchan during ASSIGNMENT */
+	struct gsm_lchan *secondary_lchan;
 
+	/* buffer/cache for classmark of the ME of the subscriber */
 	struct gsm_classmark classmark;
 
 	uint16_t lac;
