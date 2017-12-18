@@ -278,8 +278,6 @@ struct gsm_network {
 	/* global parameters */
 	uint16_t country_code;
 	uint16_t network_code;
-	char *name_long;
-	char *name_short;
 	int a5_encryption;
 	int neci;
 	int send_mm_info;

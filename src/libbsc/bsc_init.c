@@ -536,9 +536,6 @@ int bsc_network_alloc(void)
 	if (!bsc_gsmnet)
 		return -ENOMEM;
 
-	bsc_gsmnet->name_long = talloc_strdup(bsc_gsmnet, "OpenBSC");
-	bsc_gsmnet->name_short = talloc_strdup(bsc_gsmnet, "OpenBSC");
-
 	return 0;
 }
 

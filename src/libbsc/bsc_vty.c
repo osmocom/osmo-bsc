@@ -167,18 +167,12 @@ static void net_dump_vty(struct vty *vty, struct gsm_network *net)
 	vty_out(vty, "BSC is on Country Code %u, Network Code %u "
 		"and has %u BTS%s", net->country_code, net->network_code,
 		net->num_bts, VTY_NEWLINE);
-	vty_out(vty, "  Long network name: '%s'%s",
-		net->name_long, VTY_NEWLINE);
-	vty_out(vty, "  Short network name: '%s'%s",
-		net->name_short, VTY_NEWLINE);
 	vty_out(vty, "%s", VTY_NEWLINE);
 	vty_out(vty, "  Encryption: A5/%u%s", net->a5_encryption,
 		VTY_NEWLINE);
 	vty_out(vty, "  NECI (TCH/H): %u%s", net->neci,
 		VTY_NEWLINE);
 	vty_out(vty, "  Use TCH for Paging any: %d%s", net->pag_any_tch,
-		VTY_NEWLINE);
-	vty_out(vty, "  MM Info: %s%s", net->send_mm_info ? "On" : "Off",
 		VTY_NEWLINE);
 	vty_out(vty, "  Handover: %s%s", net->handover.active ? "On" : "Off",
 		VTY_NEWLINE);
@@ -806,12 +800,9 @@ static int config_write_net(struct vty *vty)
 	vty_out(vty, "network%s", VTY_NEWLINE);
 	vty_out(vty, " network country code %u%s", gsmnet->country_code, VTY_NEWLINE);
 	vty_out(vty, " mobile network code %u%s", gsmnet->network_code, VTY_NEWLINE);
-	vty_out(vty, " short name %s%s", gsmnet->name_short, VTY_NEWLINE);
-	vty_out(vty, " long name %s%s", gsmnet->name_long, VTY_NEWLINE);
 	vty_out(vty, " encryption a5 %u%s", gsmnet->a5_encryption, VTY_NEWLINE);
 	vty_out(vty, " neci %u%s", gsmnet->neci, VTY_NEWLINE);
 	vty_out(vty, " paging any use tch %d%s", gsmnet->pag_any_tch, VTY_NEWLINE);
-	vty_out(vty, " mm info %u%s", gsmnet->send_mm_info, VTY_NEWLINE);
 	vty_out(vty, " handover %u%s", gsmnet->handover.active, VTY_NEWLINE);
 	vty_out(vty, " handover window rxlev averaging %u%s",
 		gsmnet->handover.win_rxlev_avg, VTY_NEWLINE);

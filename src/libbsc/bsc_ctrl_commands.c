@@ -30,45 +30,8 @@
 #include <osmocom/bsc/osmo_bsc_rf.h>
 #include <osmocom/bsc/bsc_msc_data.h>
 
-#define CTRL_CMD_VTY_STRING(cmdname, cmdstr, dtype, element) \
-	CTRL_HELPER_GET_STRING(cmdname, dtype, element) \
-	CTRL_HELPER_SET_STRING(cmdname, dtype, element) \
-static struct ctrl_cmd_element cmd_##cmdname = { \
-	.name = cmdstr, \
-	.get = get_##cmdname, \
-	.set = set_##cmdname, \
-	.verify = verify_vty_description_string, \
-}
-
-/**
- * Check that there are no newlines or comments or other things
- * that could make the VTY configuration unparsable.
- */
-static int verify_vty_description_string(struct ctrl_cmd *cmd,
-			const char *value, void *data)
-{
-	int i;
-	const size_t len = strlen(value);
-
-	for (i = 0; i < len; ++i) {
-		switch(value[i]) {
-		case '#':
-		case '\n':
-		case '\r':
-			cmd->reply = "String includes illegal character";
-			return -1;
-		default:
-			break;
-		}
-	}
-
-	return 0;
-}
-
 CTRL_CMD_DEFINE_RANGE(net_mnc, "mnc", struct gsm_network, network_code, 0, 999);
 CTRL_CMD_DEFINE_RANGE(net_mcc, "mcc", struct gsm_network, country_code, 1, 999);
-CTRL_CMD_VTY_STRING(net_short_name, "short-name", struct gsm_network, name_short);
-CTRL_CMD_VTY_STRING(net_long_name, "long-name", struct gsm_network, name_long);
 
 static int set_net_apply_config(struct ctrl_cmd *cmd, void *data)
 {
@@ -452,8 +415,6 @@ int bsc_base_ctrl_cmds_install(void)
 	int rc = 0;
 	rc |= ctrl_cmd_install(CTRL_NODE_ROOT, &cmd_net_mnc);
 	rc |= ctrl_cmd_install(CTRL_NODE_ROOT, &cmd_net_mcc);
-	rc |= ctrl_cmd_install(CTRL_NODE_ROOT, &cmd_net_short_name);
-	rc |= ctrl_cmd_install(CTRL_NODE_ROOT, &cmd_net_long_name);
 	rc |= ctrl_cmd_install(CTRL_NODE_ROOT, &cmd_net_apply_config);
 	rc |= ctrl_cmd_install(CTRL_NODE_ROOT, &cmd_net_mcc_mnc_apply);
 	rc |= ctrl_cmd_install(CTRL_NODE_ROOT, &cmd_net_rf_lock);

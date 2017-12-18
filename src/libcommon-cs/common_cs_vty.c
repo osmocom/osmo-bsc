@@ -80,28 +80,6 @@ DEFUN(cfg_net_mnc,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_net_name_short,
-      cfg_net_name_short_cmd,
-      "short name NAME",
-      "Set the short GSM network name\n" NAME_CMD_STR NAME_STR)
-{
-	struct gsm_network *gsmnet = gsmnet_from_vty(vty);
-
-	osmo_talloc_replace_string(gsmnet, &gsmnet->name_short, argv[0]);
-	return CMD_SUCCESS;
-}
-
-DEFUN(cfg_net_name_long,
-      cfg_net_name_long_cmd,
-      "long name NAME",
-      "Set the long GSM network name\n" NAME_CMD_STR NAME_STR)
-{
-	struct gsm_network *gsmnet = gsmnet_from_vty(vty);
-
-	osmo_talloc_replace_string(gsmnet, &gsmnet->name_long, argv[0]);
-	return CMD_SUCCESS;
-}
-
 DEFUN(cfg_net_encryption,
       cfg_net_encryption_cmd,
       "encryption a5 (0|1|2|3)",
@@ -113,19 +91,6 @@ DEFUN(cfg_net_encryption,
 	struct gsm_network *gsmnet = gsmnet_from_vty(vty);
 
 	gsmnet->a5_encryption = atoi(argv[0]);
-
-	return CMD_SUCCESS;
-}
-
-DEFUN(cfg_net_mm_info, cfg_net_mm_info_cmd,
-      "mm info (0|1)",
-	"Mobility Management\n"
-	"Send MM INFO after LOC UPD ACCEPT\n"
-	"Disable\n" "Enable\n")
-{
-	struct gsm_network *gsmnet = gsmnet_from_vty(vty);
-
-	gsmnet->send_mm_info = atoi(argv[0]);
 
 	return CMD_SUCCESS;
 }
@@ -246,10 +211,7 @@ int common_cs_vty_init(struct gsm_network *network,
 	install_node(&net_node, config_write_net);
 	install_element(GSMNET_NODE, &cfg_net_ncc_cmd);
 	install_element(GSMNET_NODE, &cfg_net_mnc_cmd);
-	install_element(GSMNET_NODE, &cfg_net_name_short_cmd);
-	install_element(GSMNET_NODE, &cfg_net_name_long_cmd);
 	install_element(GSMNET_NODE, &cfg_net_encryption_cmd);
-	install_element(GSMNET_NODE, &cfg_net_mm_info_cmd);
 	install_element(GSMNET_NODE, &cfg_net_timezone_cmd);
 	install_element(GSMNET_NODE, &cfg_net_timezone_dst_cmd);
 	install_element(GSMNET_NODE, &cfg_net_no_timezone_cmd);
