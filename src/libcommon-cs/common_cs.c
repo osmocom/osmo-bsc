@@ -58,11 +58,7 @@ struct gsm_network *gsm_network_init(void *ctx,
 	net->bsc_subscribers = talloc_zero(net, struct llist_head);
 	INIT_LLIST_HEAD(net->bsc_subscribers);
 
-	net->active_calls = osmo_counter_alloc("msc.active_calls");
-
 	net->dyn_ts_allow_tch_f = true;
-
-	INIT_LLIST_HEAD(&net->a.bscs);
 
 	return net;
 }

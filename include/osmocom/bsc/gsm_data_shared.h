@@ -83,7 +83,6 @@ enum bts_gprs_mode {
 };
 
 struct gsm_lchan;
-struct gsm_mncc;
 struct osmo_rtp_socket;
 struct rtp_socket;
 struct bsc_api;

@@ -120,24 +120,6 @@ struct gsm_bts *gsm_bts_by_lac(struct gsm_network *net, unsigned int lac,
 	return NULL;
 }
 
-static const struct value_string auth_policy_names[] = {
-	{ GSM_AUTH_POLICY_CLOSED,	"closed" },
-	{ GSM_AUTH_POLICY_ACCEPT_ALL,	"accept-all" },
-	{ GSM_AUTH_POLICY_TOKEN,	"token" },
-	{ GSM_AUTH_POLICY_REGEXP,	"regexp" },
-	{ 0,				NULL }
-};
-
-enum gsm_auth_policy gsm_auth_policy_parse(const char *arg)
-{
-	return get_string_value(auth_policy_names, arg);
-}
-
-const char *gsm_auth_policy_name(enum gsm_auth_policy policy)
-{
-	return get_value_string(auth_policy_names, policy);
-}
-
 static const struct value_string bts_gprs_mode_names[] = {
 	{ BTS_GPRS_NONE,	"none" },
 	{ BTS_GPRS_GPRS,	"gprs" },
@@ -433,10 +415,3 @@ bool classmark_is_r99(struct gsm_classmark *cm)
 		rev_lev = (cm->classmark2[0] >> 5) & 0x3;
 	return rev_lev >= 2;
 }
-
-const struct value_string ran_type_names[] = {
-	OSMO_VALUE_STRING(RAN_UNKNOWN),
-	OSMO_VALUE_STRING(RAN_GERAN_A),
-	OSMO_VALUE_STRING(RAN_UTRAN_IU),
-	{ 0, NULL }
-};

@@ -24,9 +24,7 @@
 
 #define OBSC_NM_W_ACK_CB(__msgb) (__msgb)->cb[3]
 
-struct gsm_subscriber_group;
 struct bsc_subscr;
-struct vlr_instance;
 struct gprs_ra_id;
 
 #define OBSC_LINKID_CB(__msgb)	(__msgb)->cb[3]
@@ -40,26 +38,11 @@ struct gprs_ra_id;
 #define EARFCN_QRXLV_INVALID 32
 #define EARFCN_THRESH_LOW_INVALID 32
 
-enum gsm_security_event {
-	GSM_SECURITY_NOAVAIL,
-	GSM_SECURITY_AUTH_FAILED,
-	GSM_SECURITY_SUCCEEDED,
-	GSM_SECURITY_ALREADY,
-};
-
 struct msgb;
 typedef int gsm_cbfn(unsigned int hooknum,
 		     unsigned int event,
 		     struct msgb *msg,
 		     void *data, void *param);
-
-/*
- * A dummy to keep a connection up for at least
- * a couple of seconds to work around MSC issues.
- */
-struct gsm_anchor_operation {
-	struct osmo_timer_list timeout;
-};
 
 /* Maximum number of neighbor cells whose average we track */
 #define MAX_NEIGH_MEAS		10
@@ -75,16 +58,6 @@ struct neigh_meas_proc {
 	uint8_t last_seen_nr;
 };
 
-enum ran_type {
-       RAN_UNKNOWN,
-       RAN_GERAN_A,	/* 2G / A-interface */
-       RAN_UTRAN_IU,	/* 3G / Iu-interface (IuCS or IuPS) */
-};
-
-extern const struct value_string ran_type_names[];
-static inline const char *ran_type_name(enum ran_type val)
-{	return get_value_string(ran_type_names, val);	}
-
 struct gsm_classmark {
 	bool classmark1_set;
 	struct gsm48_classmark1 classmark1;
@@ -92,12 +65,6 @@ struct gsm_classmark {
 	uint8_t classmark2[3];
 	uint8_t classmark3_len;
 	uint8_t classmark3[14]; /* if cm3 gets extended by spec, it will be truncated */
-};
-
-enum integrity_protection_state {
-	INTEGRITY_PROTECTION_NONE	= 0,
-	INTEGRITY_PROTECTION_IK		= 1,
-	INTEGRITY_PROTECTION_IK_CK	= 2,
 };
 
 /* active radio connection of a mobile subscriber */
@@ -125,29 +92,6 @@ struct gsm_subscriber_connection {
 	struct gsm_classmark classmark;
 
 	uint16_t lac;
-	struct gsm_encr encr;
-
-	struct {
-		unsigned int mgcp_rtp_endpoint;
-		uint16_t port_subscr;
-		uint16_t port_cn;
-	} rtp;
-
-	struct {
-		/* A pointer to the SCCP user that handles
-		 * the SCCP connections for this subscriber
-		 * connection */
-		struct osmo_sccp_user *scu;
-
-		/* The address of the BSC that is associated
-		 * with this subscriber connection */
-		struct osmo_sccp_addr bsc_addr;
-
-		/* The connection identifier that is used
-		 * to reference the SCCP connection that is
-		 * associated with this subscriber connection */
-		int conn_id;
-	} a;
 };
 
 
@@ -241,13 +185,6 @@ static const struct rate_ctr_group_desc bsc_ctrg_desc = {
 	bsc_ctr_description,
 };
 
-enum gsm_auth_policy {
-	GSM_AUTH_POLICY_CLOSED, /* only subscribers authorized in DB */
-	GSM_AUTH_POLICY_ACCEPT_ALL, /* accept everyone, even if not authorized in DB */
-	GSM_AUTH_POLICY_TOKEN, /* accept first, send token per sms, then revoke authorization */
-	GSM_AUTH_POLICY_REGEXP, /* accept IMSIs matching given regexp */
-};
-
 #define GSM_T3101_DEFAULT 3	/* s */
 #define GSM_T3103_DEFAULT 5	/* s */
 #define GSM_T3105_DEFAULT 100	/* ms */
@@ -280,7 +217,6 @@ struct gsm_network {
 	uint16_t network_code;
 	int a5_encryption;
 	int neci;
-	int send_mm_info;
 	struct {
 		int active;
 		/* Window RXLEV averaging */
@@ -299,7 +235,6 @@ struct gsm_network {
 	} handover;
 
 	struct rate_ctr_group *bsc_ctrs;
-	struct osmo_counter *active_calls;
 
 	/*
 	 * TODO: Move the trans_list into the subscriber connection and
@@ -361,12 +296,6 @@ struct gsm_network {
 	 * pointer is NULL to indicate absence of a bsc_subscribers list. */
 	struct llist_head *bsc_subscribers;
 
-	/* MSC: GSUP server address of the HLR */
-	const char *gsup_server_addr_str;
-	uint16_t gsup_server_port;
-
-	struct vlr_instance *vlr;
-
 	/* Periodic location update default value */
 	uint8_t t3212;
 
@@ -374,65 +303,6 @@ struct gsm_network {
 		struct mgcp_client_conf *conf;
 		struct mgcp_client *client;
 	} mgw;
-
-	struct {
-		/* CS7 instance id number (set via VTY) */
-		uint32_t cs7_instance;
-		/* A list with the context information about
-		 * all BSCs we have connections with */
-		struct llist_head bscs;
-		struct osmo_sccp_instance *sccp;
-	} a;
-};
-
-struct osmo_esme;
-
-enum gsm_sms_source_id {
-	SMS_SOURCE_UNKNOWN = 0,
-	SMS_SOURCE_MS,		/* received from MS */
-	SMS_SOURCE_VTY,		/* received from VTY */
-	SMS_SOURCE_SMPP,	/* received via SMPP */
-};
-
-#define SMS_HDR_SIZE	128
-#define SMS_TEXT_SIZE	256
-
-struct gsm_sms_addr {
-	uint8_t ton;
-	uint8_t npi;
-	char addr[21+1];
-};
-
-struct gsm_sms {
-	unsigned long long id;
-	struct gsm_sms_addr src, dst;
-	enum gsm_sms_source_id source;
-
-	struct {
-		uint8_t transaction_id;
-		uint32_t msg_ref;
-	} gsm411;
-
-	struct {
-		struct osmo_esme *esme;
-		uint32_t sequence_nr;
-		int transaction_mode;
-		char msg_id[16];
-	} smpp;
-
-	unsigned long validity_minutes;
-	time_t created;
-	bool is_report;
-	uint8_t reply_path_req;
-	uint8_t status_rep_req;
-	uint8_t ud_hdr_ind;
-	uint8_t protocol_id;
-	uint8_t data_coding_scheme;
-	uint8_t msg_ref;
-	uint8_t user_data_len;
-	uint8_t user_data[SMS_TEXT_SIZE];
-
-	char text[SMS_TEXT_SIZE];
 };
 
 extern void talloc_ctx_init(void *ctx_root);
@@ -508,9 +378,6 @@ static inline int is_e1_bts(struct gsm_bts *bts)
 
 	return 0;
 }
-
-enum gsm_auth_policy gsm_auth_policy_parse(const char *arg);
-const char *gsm_auth_policy_name(enum gsm_auth_policy policy);
 
 enum bts_gprs_mode bts_gprs_mode_parse(const char *arg, int *valid);
 const char *bts_gprs_mode_name(enum bts_gprs_mode mode);
