@@ -96,8 +96,6 @@ struct gsm_subscriber_connection {
 
 	/* buffer/cache for classmark of the ME of the subscriber */
 	struct gsm_classmark classmark;
-
-	uint16_t lac;
 };
 
 
