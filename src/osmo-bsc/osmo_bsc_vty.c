@@ -28,7 +28,6 @@
 
 #include <osmocom/core/talloc.h>
 #include <osmocom/vty/logging.h>
-#include <osmocom/sccp/sccp_types.h>
 #include <osmocom/mgcp_client/mgcp_client.h>
 
 
@@ -663,14 +662,14 @@ DEFUN(cfg_msc_no_acc_lst_name,
 static void enforce_standard_ssn(struct vty *vty, struct osmo_sccp_addr *addr)
 {
 	if (addr->presence & OSMO_SCCP_ADDR_T_SSN) {
-		if (addr->ssn != SCCP_SSN_BSSAP)
+		if (addr->ssn != OSMO_SCCP_SSN_BSSAP)
 			vty_out(vty,
 				"setting an SSN (%u) different from the standard (%u) is not allowd, will use standard SSN for address: %s%s",
-				addr->ssn, SCCP_SSN_BSSAP, osmo_sccp_addr_dump(addr), VTY_NEWLINE);
+				addr->ssn, OSMO_SCCP_SSN_BSSAP, osmo_sccp_addr_dump(addr), VTY_NEWLINE);
 	}
 
 	addr->presence |= OSMO_SCCP_ADDR_T_SSN;
-	addr->ssn = SCCP_SSN_BSSAP;
+	addr->ssn = OSMO_SCCP_SSN_BSSAP;
 }
 
 DEFUN(cfg_msc_cs7_bsc_addr,

@@ -29,7 +29,6 @@
 #include <osmocom/gsm/mncc.h>
 #include <osmocom/gsm/gsm48.h>
 
-#include <osmocom/sccp/sccp.h>
 #include <osmocom/bsc/osmo_bsc_sigtran.h>
 
 #define return_when_not_connected(conn) \
@@ -296,13 +295,11 @@ static int complete_layer3(struct gsm_subscriber_connection *conn,
 	resp = gsm0808_create_layer3(msg, network_code, country_code, lac, ci);
 	if (!resp) {
 		LOGP(DMSC, LOGL_DEBUG, "Failed to create layer3 message.\n");
-		sccp_connection_free(conn->sccp_con->sccp);
 		osmo_bsc_sigtran_del_conn(conn->sccp_con);
 		return BSC_API_CONN_POL_REJECT;
 	}
 
 	if (osmo_bsc_sigtran_open_conn(conn->sccp_con, resp) != 0) {
-		sccp_connection_free(conn->sccp_con->sccp);
 		osmo_bsc_sigtran_del_conn(conn->sccp_con);
 		msgb_free(resp);
 		return BSC_API_CONN_POL_REJECT;

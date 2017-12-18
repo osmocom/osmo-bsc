@@ -22,7 +22,6 @@
 #include <osmocom/core/logging.h>
 #include <osmocom/sigtran/osmo_ss7.h>
 #include <osmocom/sigtran/sccp_sap.h>
-#include <osmocom/sccp/sccp_types.h>
 #include <osmocom/core/linuxlist.h>
 #include <osmocom/gsm/gsm0808.h>
 #include <osmocom/core/msgb.h>
@@ -511,7 +510,8 @@ int osmo_bsc_sigtran_init(struct llist_head *mscs)
 
 		/* If unset, use default local SCCP address */
 		if (!msc->a.bsc_addr.presence)
-			osmo_sccp_local_addr_by_instance(&msc->a.bsc_addr, msc->a.sccp, SCCP_SSN_BSSAP);
+			osmo_sccp_local_addr_by_instance(&msc->a.bsc_addr, msc->a.sccp,
+							 OSMO_SCCP_SSN_BSSAP);
 
 		if (!osmo_sccp_check_addr(&msc->a.bsc_addr, OSMO_SCCP_ADDR_T_SSN | OSMO_SCCP_ADDR_T_PC)) {
 			LOGP(DMSC, LOGL_ERROR,
@@ -524,7 +524,7 @@ int osmo_bsc_sigtran_init(struct llist_head *mscs)
 		if (!msc->a.msc_addr.presence)
 			osmo_sccp_make_addr_pc_ssn(&msc->a.msc_addr,
 						   osmo_ss7_pointcode_parse(NULL, MSC_DEFAULT_PC),
-						   SCCP_SSN_BSSAP);
+						   OSMO_SCCP_SSN_BSSAP);
 
 		if (!osmo_sccp_check_addr(&msc->a.msc_addr, OSMO_SCCP_ADDR_T_SSN | OSMO_SCCP_ADDR_T_PC)) {
 			LOGP(DMSC, LOGL_ERROR,

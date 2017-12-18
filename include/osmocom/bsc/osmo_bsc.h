@@ -15,7 +15,6 @@ enum bsc_con {
 	BSC_CON_NO_MEM,
 };
 
-struct sccp_connection;
 struct bsc_msc_data;
 struct bsc_msc_connection;
 
@@ -47,10 +46,7 @@ struct osmo_bsc_sccp_con {
 	int send_ping;
 
 	/* SCCP connection realted */
-	struct sccp_connection *sccp;
 	struct bsc_msc_data *msc;
-	struct osmo_timer_list sccp_it_timeout;
-	struct osmo_timer_list sccp_cc_timeout;
 
 	struct llist_head sccp_queue;
 	unsigned int sccp_queue_size;

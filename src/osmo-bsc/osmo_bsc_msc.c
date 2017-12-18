@@ -34,8 +34,6 @@
 
 #include <osmocom/gsm/gsm0808.h>
 
-#include <osmocom/sccp/sccp.h>
-
 #include <osmocom/abis/ipa.h>
 
 #include <sys/socket.h>

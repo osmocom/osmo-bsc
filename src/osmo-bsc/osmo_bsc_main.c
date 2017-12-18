@@ -43,7 +43,6 @@
 
 #include <osmocom/abis/abis.h>
 
-#include <osmocom/sccp/sccp.h>
 #include <osmocom/mgcp_client/mgcp_client.h>
 
 #define _GNU_SOURCE
@@ -233,9 +232,6 @@ int main(int argc, char **argv)
 
 	/* seed the PRNG */
 	srand(time(NULL));
-
-	/* initialize SCCP */
-	sccp_set_log_area(DSCCP);
 
 	/* Read the config */
 	rc = bsc_network_configure(config_file);
