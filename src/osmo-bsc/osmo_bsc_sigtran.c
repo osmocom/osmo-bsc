@@ -385,8 +385,8 @@ int osmo_bsc_sigtran_del_conn(struct osmo_bsc_sccp_con *conn)
 	}
 
 	/* Remove mgcp context if existant */
-	if (conn->mgcp_ctx)
-		mgcp_free_ctx(conn->mgcp_ctx);
+	if (conn->user_plane.mgcp_ctx)
+		mgcp_free_ctx(conn->user_plane.mgcp_ctx);
 
 	llist_del(&conn->entry);
 	talloc_free(conn);

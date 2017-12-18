@@ -552,7 +552,7 @@ static int set_net_ussd_notify(struct ctrl_cmd *cmd, void *data)
 		if (!conn->sccp_con)
 			continue;
 
-		if (conn->sccp_con->cic != cic)
+		if (conn->sccp_con->user_plane.cic != cic)
 			continue;
 
 		/*

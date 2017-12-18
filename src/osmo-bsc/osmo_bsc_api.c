@@ -435,7 +435,7 @@ static void bsc_assign_compl(struct gsm_subscriber_connection *conn, uint8_t rr_
 	struct msgb *resp;
 	return_when_not_connected(conn);
 
-	if (is_ipaccess_bts(conn->bts) && conn->sccp_con->rtp_ip) {
+	if (is_ipaccess_bts(conn->bts) && conn->sccp_con->user_plane.rtp_ip) {
 		/* NOTE: In a network that makes use of an IPA base station
 		 * and AoIP, we have to wait until the BTS reports its RTP
 		 * IP/Port combination back to BSC via RSL. Unfortunately, the

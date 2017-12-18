@@ -57,17 +57,17 @@ static int handle_abisip_signal(unsigned int subsys, unsigned int signal,
 
 		/* we can ask it to connect now */
 		LOGP(DMSC, LOGL_DEBUG, "Connecting BTS to port: %d conn: %d\n",
-		     con->sccp_con->rtp_port, lchan->abis_ip.conn_id);
+		     con->sccp_con->user_plane.rtp_port, lchan->abis_ip.conn_id);
 
 		/* If AoIP is in use, the rtp_ip, which has been communicated
 		 * via the A interface as connect_ip */
-		if(con->sccp_con->rtp_ip)
-			rtp_ip = con->sccp_con->rtp_ip;
+		if(con->sccp_con->user_plane.rtp_ip)
+			rtp_ip = con->sccp_con->user_plane.rtp_ip;
 		else
 			rtp_ip = ntohl(INADDR_ANY);
 
 		rc = rsl_ipacc_mdcx(lchan, rtp_ip,
-				    con->sccp_con->rtp_port,
+				    con->sccp_con->user_plane.rtp_port,
 				    lchan->abis_ip.rtp_payload2);
 		if (rc < 0) {
 			LOGP(DMSC, LOGL_ERROR, "Failed to send MDCX: %d\n", rc);
@@ -84,13 +84,13 @@ static int handle_abisip_signal(unsigned int subsys, unsigned int signal,
 			 * inform the logic that controls the MGW about the new
 			 * connection info */
 			LOGP(DMSC, LOGL_INFO,"RTP connection handover initiated...\n");
-			mgcp_handover(con->sccp_con->mgcp_ctx, con->ho_lchan);
-		} else if (is_ipaccess_bts(con->bts) && con->sccp_con->rtp_ip) {
+			mgcp_handover(con->sccp_con->user_plane.mgcp_ctx, con->ho_lchan);
+		} else if (is_ipaccess_bts(con->bts) && con->sccp_con->user_plane.rtp_ip) {
 			/* NOTE: This is only relevant on AoIP networks with
 			 * IPA based base stations. See also osmo_bsc_api.c,
 			 * function bsc_assign_compl() */
 			LOGP(DMSC, LOGL_INFO, "Tx MSC ASSIGN COMPL (POSTPONED)\n");
-			mgcp_ass_complete(con->sccp_con->mgcp_ctx, lchan);
+			mgcp_ass_complete(con->sccp_con->user_plane.mgcp_ctx, lchan);
 		}
 		break;
 	}

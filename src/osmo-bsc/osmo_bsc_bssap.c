@@ -361,13 +361,13 @@ static int bssmap_handle_clear_command(struct osmo_bsc_sccp_con *conn,
 		return -1;
 	}
 
-	if (conn->mgcp_ctx) {
+	if (conn->user_plane.mgcp_ctx) {
 		/* NOTE: This is the AoIP case, osmo-bsc has to negotiate with
 		 * the MGCP-GW. For this an mgcp_ctx should be created that
 		 * contains the FSM and some system data. When the connection
 		 * is removed from the MGCP-GW, then osmo_bsc_sigtran_send()
 		 * calls osmo_bsc_sigtran_send(). */
-	        mgcp_clear_complete(conn->mgcp_ctx, resp);
+	        mgcp_clear_complete(conn->user_plane.mgcp_ctx, resp);
 	} else {
 		/* NOTE: This is the SCCP-Lite case, since we do not handle
 		 * the MGCP-GW switching ourselves, we may skip everything
@@ -535,11 +535,9 @@ static int bssmap_handle_assignm_req(struct osmo_bsc_sccp_con *conn,
 	/* Detect if a CIC code is present, if so, we use the classic ip.access
 	 * method to calculate the RTP port */
 	if (TLVP_PRESENT(&tp, GSM0808_IE_CIRCUIT_IDENTITY_CODE)) {
-		conn->cic =
-		    osmo_load16be(TLVP_VAL
-				  (&tp, GSM0808_IE_CIRCUIT_IDENTITY_CODE));
-		timeslot = conn->cic & 0x1f;
-		multiplex = (conn->cic & ~0x1f) >> 5;
+		conn->user_plane.cic = osmo_load16be(TLVP_VAL(&tp, GSM0808_IE_CIRCUIT_IDENTITY_CODE));
+		timeslot = conn->user_plane.cic & 0x1f;
+		multiplex = (conn->user_plane.cic & ~0x1f) >> 5;
 	} else if (TLVP_PRESENT(&tp, GSM0808_IE_AOIP_TRASP_ADDR)) {
 		/* Decode AoIP transport address element */
 		data = TLVP_VAL(&tp, GSM0808_IE_AOIP_TRASP_ADDR);
@@ -621,15 +619,16 @@ static int bssmap_handle_assignm_req(struct osmo_bsc_sccp_con *conn,
 		 * reasons, functional wise it would not matter when exactly
 		 * the network side RTP connection is made, as long it is made
 		 * before we return with the assignment complete message. */
-		memcpy(&conn->aoip_rtp_addr_remote, &rtp_addr, sizeof(rtp_addr));
+		memcpy(&conn->user_plane.aoip_rtp_addr_remote, &rtp_addr, sizeof(rtp_addr));
 
 		/* Create an assignment request using the MGCP fsm. This FSM
 		 * is directly started when its created (now) and will also
 		 * take care about the further processing (creating RTP
 		 * endpoints, calling gsm0808_assign_req(), responding to
 		 * the assignment request etc... */
-		conn->mgcp_ctx = mgcp_assignm_req(msc->network, msc->network->mgw.client, conn, chan_mode, full_rate);
-		if (!conn->mgcp_ctx) {
+		conn->user_plane.mgcp_ctx = mgcp_assignm_req(msc->network, msc->network->mgw.client,
+								conn, chan_mode, full_rate);
+		if (!conn->user_plane.mgcp_ctx) {
 			LOGP(DMSC, LOGL_ERROR, "MGCP GW failure, rejecting assignment... (id=%i)\n", conn->conn_id);
 			goto reject;
 		}
@@ -641,8 +640,8 @@ static int bssmap_handle_assignm_req(struct osmo_bsc_sccp_con *conn,
 		 * (the MSC does that for us). We set conn->rtp_ip to 0 and check
 		 * on this later. By this we know that we have to behave accordingly
 		 * to sccp-lite. */
-		conn->rtp_port = mgcp_timeslot_to_port(multiplex, timeslot, msc->rtp_base);
-		conn->rtp_ip = 0;
+		conn->user_plane.rtp_port = mgcp_timeslot_to_port(multiplex, timeslot, msc->rtp_base);
+		conn->user_plane.rtp_ip = 0;
 		return gsm0808_assign_req(conn->conn, chan_mode, full_rate);
 	}
 
@@ -849,7 +848,7 @@ int bssmap_send_aoip_ass_compl(struct gsm_lchan *lchan)
 					lchan->abis_ip.ass_compl.chosen_channel,
 					lchan->abis_ip.ass_compl.encr_alg_id,
 					lchan->abis_ip.ass_compl.speech_mode,
-					&conn->sccp_con->aoip_rtp_addr_local,
+					&conn->sccp_con->user_plane.aoip_rtp_addr_local,
 					&sc,
 					NULL);
 

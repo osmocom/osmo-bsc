@@ -231,8 +231,8 @@ static void crcx_for_bts_resp_cb(struct mgcp_response *r, void *priv)
 	/* Set the connection details in the conn struct. The code that
 	 * controls the BTS via RSL will take these values and signal them
 	 * to the BTS via RSL/IPACC */
-	conn->rtp_port = r->audio_port;
-	conn->rtp_ip = osmo_ntohl(inet_addr(r->audio_ip));
+	conn->user_plane.rtp_port = r->audio_port;
+	conn->user_plane.rtp_ip = osmo_ntohl(inet_addr(r->audio_ip));
 
 	/* Notify the FSM that we got the response. */
 	osmo_fsm_inst_dispatch(mgcp_ctx->fsm, EV_CRCX_BTS_RESP, mgcp_ctx);
@@ -428,7 +428,7 @@ static void fsm_crcx_net_cb(struct osmo_fsm_inst *fi, uint32_t event, void *data
 	 * identifier. However, the MGW does not support IPv6 yet. This is
 	 * why we stop here in case some MSC tries to signal IPv6 AoIP
 	 * transport identifiers */
-	if (conn->aoip_rtp_addr_remote.ss_family != AF_INET) {
+	if (conn->user_plane.aoip_rtp_addr_remote.ss_family != AF_INET) {
 		LOGPFSML(fi, LOGL_ERROR,
 			 "CRCX/NET: endpoint:%x MSC uses unsupported address format in AoIP transport identifier -- aborting...\n",
 			 rtp_endpoint);
@@ -436,7 +436,7 @@ static void fsm_crcx_net_cb(struct osmo_fsm_inst *fi, uint32_t event, void *data
 		return;
 	}
 
-	sin = (struct sockaddr_in *)&conn->aoip_rtp_addr_remote;
+	sin = (struct sockaddr_in *)&conn->user_plane.aoip_rtp_addr_remote;
 	addr = inet_ntoa(sin->sin_addr);
 	port = osmo_ntohs(sin->sin_port);
 	LOGPFSML(fi, LOGL_DEBUG, "CRCX/NET: MSC expects RTP input on address %s:%u\n", addr, port);
@@ -512,7 +512,7 @@ static void crcx_for_net_resp_cb(struct mgcp_response *r, void *priv)
 		 r->audio_ip, r->audio_port);
 
 	/* Store address */
-	sin = (struct sockaddr_in *)&conn->aoip_rtp_addr_local;
+	sin = (struct sockaddr_in *)&conn->user_plane.aoip_rtp_addr_local;
 	sin->sin_family = AF_INET;
 	sin->sin_addr.s_addr = inet_addr(r->audio_ip);
 	sin->sin_port = osmo_ntohs(r->audio_port);
