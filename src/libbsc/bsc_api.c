@@ -274,7 +274,6 @@ struct gsm_subscriber_connection *bsc_subscr_con_allocate(struct gsm_lchan *lcha
 
 	conn->network = net;
 	conn->lchan = lchan;
-	conn->bts = lchan->ts->trx->bts;
 	lchan->conn = conn;
 	INIT_LLIST_HEAD(&conn->ho_dtap_cache);
 	INIT_LLIST_HEAD(&conn->ho_penalty_timers);
@@ -873,7 +872,6 @@ int gsm0808_clear(struct gsm_subscriber_connection *conn)
 	conn->lchan = NULL;
 	conn->secondary_lchan = NULL;
 	conn->ho_lchan = NULL;
-	conn->bts = NULL;
 
 	osmo_timer_del(&conn->T10);
 

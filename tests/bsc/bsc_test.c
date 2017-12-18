@@ -134,7 +134,6 @@ static void test_scan(void)
 
 	bts->network = net;
 	sccp_con->msc = msc;
-	conn->bts = bts;
 	conn->sccp_con = sccp_con;
 	conn->lchan = &bts->c0->ts[1].lchan[0];
 
