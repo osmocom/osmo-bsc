@@ -385,7 +385,7 @@ static int bssmap_handle_clear_command(struct osmo_bsc_sccp_con *conn,
  * a cipher we will have to send cipher mode reject to the MSC,
  * otherwise we will have to pick something that we and the MS
  * is supporting. Currently we are doing it in a rather static
- * way by picking one ecnryption or no encrytpion.
+ * way by picking one encryption or no encryption.
  */
 static int bssmap_handle_cipher_mode(struct osmo_bsc_sccp_con *conn,
 				     struct msgb *msg, unsigned int payload_length)
@@ -613,7 +613,7 @@ static int bssmap_handle_assignm_req(struct osmo_bsc_sccp_con *conn,
 	       get_value_string(gsm48_chan_mode_names, chan_mode),
 	       ct.ch_indctr, ct.ch_rate_type, osmo_hexdump(ct.perm_spch, ct.perm_spch_len));
 
-	/* Forward the assingment request to lower layers */
+	/* Forward the assignment request to lower layers */
 	if (aoip) {
 		/* Store network side RTP connection information, we will
 		 * process this address later after we have established an RTP
@@ -626,7 +626,7 @@ static int bssmap_handle_assignm_req(struct osmo_bsc_sccp_con *conn,
 		/* Create an assignment request using the MGCP fsm. This FSM
 		 * is directly started when its created (now) and will also
 		 * take care about the further processing (creating RTP
-		 * endpoints, calling gsm0808_assign_req(), rsponding to
+		 * endpoints, calling gsm0808_assign_req(), responding to
 		 * the assignment request etc... */
 		conn->mgcp_ctx = mgcp_assignm_req(msc->network, msc->network->mgw.client, conn, chan_mode, full_rate);
 		if (!conn->mgcp_ctx) {
