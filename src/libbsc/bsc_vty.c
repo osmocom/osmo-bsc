@@ -180,8 +180,6 @@ static void net_dump_vty(struct vty *vty, struct gsm_network *net)
 		VTY_NEWLINE);
 	vty_out(vty, "  Use TCH for Paging any: %d%s", net->pag_any_tch,
 		VTY_NEWLINE);
-	vty_out(vty, "  RRLP Mode: %s%s", rrlp_mode_name(net->rrlp.mode),
-		VTY_NEWLINE);
 	vty_out(vty, "  MM Info: %s%s", net->send_mm_info ? "On" : "Off",
 		VTY_NEWLINE);
 	vty_out(vty, "  Handover: %s%s", net->handover.active ? "On" : "Off",
@@ -817,8 +815,6 @@ static int config_write_net(struct vty *vty)
 	vty_out(vty, " encryption a5 %u%s", gsmnet->a5_encryption, VTY_NEWLINE);
 	vty_out(vty, " neci %u%s", gsmnet->neci, VTY_NEWLINE);
 	vty_out(vty, " paging any use tch %d%s", gsmnet->pag_any_tch, VTY_NEWLINE);
-	vty_out(vty, " rrlp mode %s%s", rrlp_mode_name(gsmnet->rrlp.mode),
-		VTY_NEWLINE);
 	vty_out(vty, " mm info %u%s", gsmnet->send_mm_info, VTY_NEWLINE);
 	vty_out(vty, " handover %u%s", gsmnet->handover.active, VTY_NEWLINE);
 	vty_out(vty, " handover window rxlev averaging %u%s",

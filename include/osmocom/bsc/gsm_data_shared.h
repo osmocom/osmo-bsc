@@ -34,14 +34,6 @@ struct osmo_bsc_data;
 
 struct osmo_bsc_sccp_con;
 
-/* RRLP mode of operation */
-enum rrlp_mode {
-	RRLP_MODE_NONE,
-	RRLP_MODE_MS_BASED,
-	RRLP_MODE_MS_PREF,
-	RRLP_MODE_ASS_PREF,
-};
-
 /* Channel Request reason */
 enum gsm_chreq_reason_t {
 	GSM_CHREQ_REASON_EMERG,

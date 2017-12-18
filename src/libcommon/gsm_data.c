@@ -138,24 +138,6 @@ const char *gsm_auth_policy_name(enum gsm_auth_policy policy)
 	return get_value_string(auth_policy_names, policy);
 }
 
-static const struct value_string rrlp_mode_names[] = {
-	{ RRLP_MODE_NONE,	"none" },
-	{ RRLP_MODE_MS_BASED,	"ms-based" },
-	{ RRLP_MODE_MS_PREF,	"ms-preferred" },
-	{ RRLP_MODE_ASS_PREF,	"ass-preferred" },
-	{ 0,			NULL }
-};
-
-enum rrlp_mode rrlp_mode_parse(const char *arg)
-{
-	return get_string_value(rrlp_mode_names, arg);
-}
-
-const char *rrlp_mode_name(enum rrlp_mode mode)
-{
-	return get_value_string(rrlp_mode_names, mode);
-}
-
 static const struct value_string bts_gprs_mode_names[] = {
 	{ BTS_GPRS_NONE,	"none" },
 	{ BTS_GPRS_GPRS,	"gprs" },

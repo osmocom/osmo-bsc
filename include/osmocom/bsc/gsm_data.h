@@ -332,11 +332,6 @@ struct gsm_network {
 	/* timer to expire old location updates */
 	struct osmo_timer_list subscr_expire_timer;
 
-	/* Radio Resource Location Protocol (TS 04.31) */
-	struct {
-		enum rrlp_mode mode;
-	} rrlp;
-
 	enum gsm_chan_t ctype_by_chreq[_NUM_CHREQ_T];
 
 	/* Use a TCH for handling requests of type paging any */
@@ -519,9 +514,6 @@ static inline int is_e1_bts(struct gsm_bts *bts)
 
 enum gsm_auth_policy gsm_auth_policy_parse(const char *arg);
 const char *gsm_auth_policy_name(enum gsm_auth_policy policy);
-
-enum rrlp_mode rrlp_mode_parse(const char *arg);
-const char *rrlp_mode_name(enum rrlp_mode mode);
 
 enum bts_gprs_mode bts_gprs_mode_parse(const char *arg, int *valid);
 const char *bts_gprs_mode_name(enum bts_gprs_mode mode);

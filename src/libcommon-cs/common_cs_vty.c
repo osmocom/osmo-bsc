@@ -133,22 +133,6 @@ DEFUN(cfg_net_encryption,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_net_rrlp_mode, cfg_net_rrlp_mode_cmd,
-      "rrlp mode (none|ms-based|ms-preferred|ass-preferred)",
-	"Radio Resource Location Protocol\n"
-	"Set the Radio Resource Location Protocol Mode\n"
-	"Don't send RRLP request\n"
-	"Request MS-based location\n"
-	"Request any location, prefer MS-based\n"
-	"Request any location, prefer MS-assisted\n")
-{
-	struct gsm_network *gsmnet = gsmnet_from_vty(vty);
-
-	gsmnet->rrlp.mode = rrlp_mode_parse(argv[0]);
-
-	return CMD_SUCCESS;
-}
-
 DEFUN(cfg_net_mm_info, cfg_net_mm_info_cmd,
       "mm info (0|1)",
 	"Mobility Management\n"
@@ -282,7 +266,6 @@ int common_cs_vty_init(struct gsm_network *network,
 	install_element(GSMNET_NODE, &cfg_net_name_long_cmd);
 	install_element(GSMNET_NODE, &cfg_net_reject_cause_cmd);
 	install_element(GSMNET_NODE, &cfg_net_encryption_cmd);
-	install_element(GSMNET_NODE, &cfg_net_rrlp_mode_cmd);
 	install_element(GSMNET_NODE, &cfg_net_mm_info_cmd);
 	install_element(GSMNET_NODE, &cfg_net_timezone_cmd);
 	install_element(GSMNET_NODE, &cfg_net_timezone_dst_cmd);

@@ -44,7 +44,6 @@ noinst_HEADERS = \
 	pcu_if.h \
 	pcuif_proto.h \
 	rest_octets.h \
-	rrlp.h \
 	rs232.h \
 	signal.h \
 	socket.h \
