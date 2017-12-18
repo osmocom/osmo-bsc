@@ -115,7 +115,7 @@ static int bsc_filter_initial(struct osmo_bsc_data *bsc,
 	req.black_list = NULL;
 	req.access_lists = bsc_access_lists();
 	req.local_lst_name = msc->acc_lst_name;
-	req.global_lst_name = conn->bts->network->bsc_data->acc_lst_name;
+	req.global_lst_name = conn_get_bts(conn)->network->bsc_data->acc_lst_name;
 	req.bsc_nr = 0;
 
 	rc = bsc_msg_filter_initial(gh, msgb_l3len(msg), &req,
@@ -136,7 +136,7 @@ static int bsc_filter_data(struct gsm_subscriber_connection *conn,
 	req.black_list = NULL;
 	req.access_lists = bsc_access_lists();
 	req.local_lst_name = conn->sccp_con->msc->acc_lst_name;
-	req.global_lst_name = conn->bts->network->bsc_data->acc_lst_name;
+	req.global_lst_name = conn_get_bts(conn)->network->bsc_data->acc_lst_name;
 	req.bsc_nr = 0;
 
 	rc = bsc_msg_filter_data(gh, msgb_l3len(msg), &req,
@@ -228,7 +228,7 @@ static int bsc_compl_l3(struct gsm_subscriber_connection *conn, struct msgb *msg
 	if (!msc) {
 		LOGP(DMSC, LOGL_ERROR, "Failed to find a MSC for a connection.\n");
 		bsc_send_ussd_no_srv(conn, msg,
-				     conn->bts->network->bsc_data->ussd_no_msc_txt);
+				     conn_get_bts(conn)->network->bsc_data->ussd_no_msc_txt);
 		return -1;
 	}
 
@@ -287,8 +287,8 @@ static int complete_layer3(struct gsm_subscriber_connection *conn,
 
 	network_code = get_network_code_for_msc(conn->sccp_con->msc);
 	country_code = get_country_code_for_msc(conn->sccp_con->msc);
-	lac = get_lac_for_msc(conn->sccp_con->msc, conn->bts);
-	ci = get_ci_for_msc(conn->sccp_con->msc, conn->bts);
+	lac = get_lac_for_msc(conn->sccp_con->msc, conn_get_bts(conn));
+	ci = get_ci_for_msc(conn->sccp_con->msc, conn_get_bts(conn));
 
 	bsc_scan_bts_msg(conn, msg);
 
@@ -383,7 +383,7 @@ static int handle_cc_setup(struct gsm_subscriber_connection *conn,
 	/*
 	 * Check if the connection should be moved...
 	 */
-	llist_for_each_entry(msc, &conn->bts->network->bsc_data->mscs, entry) {
+	llist_for_each_entry(msc, &conn_get_bts(conn)->network->bsc_data->mscs, entry) {
 		if (msc->type != MSC_CON_TYPE_LOCAL)
 			continue;
 		if (!msc->local_pref)
@@ -435,7 +435,7 @@ static void bsc_assign_compl(struct gsm_subscriber_connection *conn, uint8_t rr_
 	struct msgb *resp;
 	return_when_not_connected(conn);
 
-	if (is_ipaccess_bts(conn->bts) && conn->sccp_con->user_plane.rtp_ip) {
+	if (is_ipaccess_bts(conn_get_bts(conn)) && conn->sccp_con->user_plane.rtp_ip) {
 		/* NOTE: In a network that makes use of an IPA base station
 		 * and AoIP, we have to wait until the BTS reports its RTP
 		 * IP/Port combination back to BSC via RSL. Unfortunately, the

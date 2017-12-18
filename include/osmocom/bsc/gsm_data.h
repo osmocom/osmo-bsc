@@ -98,6 +98,10 @@ struct gsm_subscriber_connection {
 	struct gsm_classmark classmark;
 };
 
+static inline struct gsm_bts *conn_get_bts(struct gsm_subscriber_connection *conn) {
+	return conn->bts;
+}
+
 
 #include "gsm_data_shared.h"
 

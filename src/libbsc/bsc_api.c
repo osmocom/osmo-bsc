@@ -214,7 +214,7 @@ static int handle_new_assignment(struct gsm_subscriber_connection *conn, int cha
 
 	chan_type = full_rate ? GSM_LCHAN_TCH_F : GSM_LCHAN_TCH_H;
 
-	new_lchan = lchan_alloc(conn->bts, chan_type, 0);
+	new_lchan = lchan_alloc(conn_get_bts(conn), chan_type, 0);
 
 	if (!new_lchan) {
 		LOGP(DMSC, LOGL_NOTICE, "No free channel.\n");
@@ -451,7 +451,7 @@ static void handle_ass_compl(struct gsm_subscriber_connection *conn,
 	conn->lchan = conn->secondary_lchan;
 	conn->secondary_lchan = NULL;
 
-	if (is_ipaccess_bts(conn->bts) && conn->lchan->tch_mode != GSM48_CMODE_SIGN)
+	if (is_ipaccess_bts(conn_get_bts(conn)) && conn->lchan->tch_mode != GSM48_CMODE_SIGN)
 		rsl_ipacc_crcx(conn->lchan);
 
 	api->assign_compl(conn, gh->data[0],

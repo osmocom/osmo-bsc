@@ -35,19 +35,20 @@ static void handle_lu_request(struct gsm_subscriber_connection *conn,
 	struct gsm48_loc_upd_req *lu;
 	struct gsm48_loc_area_id lai;
 	struct gsm_network *net;
+	struct gsm_bts *bts = conn_get_bts(conn);
 
 	if (msgb_l3len(msg) < sizeof(*gh) + sizeof(*lu)) {
 		LOGP(DMSC, LOGL_ERROR, "LU too small to look at: %u\n", msgb_l3len(msg));
 		return;
 	}
 
-	net = conn->bts->network;
+	net = bts->network;
 
 	gh = msgb_l3(msg);
 	lu = (struct gsm48_loc_upd_req *) gh->data;
 
 	gsm48_generate_lai(&lai, net->country_code, net->network_code,
-			   conn->bts->location_area_code);
+			   bts->location_area_code);
 
 	if (memcmp(&lai, &lu->lai, sizeof(lai)) != 0) {
 		LOGP(DMSC, LOGL_DEBUG, "Marking con for welcome USSD.\n");
@@ -105,7 +106,7 @@ static int handle_page_resp(struct gsm_subscriber_connection *conn, struct msgb 
 		return -1;
 	}
 
-	paging_request_stop(&conn->network->bts_list, conn->bts, subscr, conn,
+	paging_request_stop(&conn->network->bts_list, conn_get_bts(conn), subscr, conn,
 			    msg);
 	bsc_subscr_put(subscr);
 	return 0;
@@ -136,7 +137,7 @@ struct bsc_msc_data *bsc_find_msc(struct gsm_subscriber_connection *conn,
 	struct bsc_subscr *subscr;
 	int is_emerg = 0;
 
-	bsc = conn->bts->network->bsc_data;
+	bsc = conn->network->bsc_data;
 
 	if (msgb_l3len(msg) < sizeof(*gh)) {
 		LOGP(DMSC, LOGL_ERROR, "There is no GSM48 header here.\n");
@@ -185,7 +186,7 @@ paging:
 		return NULL;
 	}
 
-	pag_msc = paging_get_msc(conn->bts, subscr);
+	pag_msc = paging_get_msc(conn_get_bts(conn), subscr);
 	bsc_subscr_put(subscr);
 
 	llist_for_each_entry(msc, &bsc->mscs, entry) {
@@ -260,7 +261,7 @@ static int bsc_patch_mm_info(struct gsm_subscriber_connection *conn,
 {
 	struct tlv_parsed tp;
 	int parse_res;
-	struct gsm_bts *bts = conn->bts;
+	struct gsm_bts *bts = conn_get_bts(conn);
 	int tzunits;
 	uint8_t tzbsd = 0;
 	uint8_t dst = 0;
@@ -337,6 +338,7 @@ static int has_core_identity(struct bsc_msc_data *msc)
 int bsc_scan_msc_msg(struct gsm_subscriber_connection *conn, struct msgb *msg)
 {
 	struct bsc_msc_data *msc;
+	struct gsm_bts *bts = conn_get_bts(conn);
 	struct gsm_network *net;
 	struct gsm48_loc_area_id *lai;
 	struct gsm48_hdr *gh;
@@ -357,7 +359,7 @@ int bsc_scan_msc_msg(struct gsm_subscriber_connection *conn, struct msgb *msg)
 		return 0;
 
 	mtype = gsm48_hdr_msg_type(gh);
-	net = conn->bts->network;
+	net = bts->network;
 	msc = conn->sccp_con->msc;
 
 	if (mtype == GSM48_MT_MM_LOC_UPD_ACCEPT) {
@@ -367,7 +369,7 @@ int bsc_scan_msc_msg(struct gsm_subscriber_connection *conn, struct msgb *msg)
 				lai = (struct gsm48_loc_area_id *) &gh->data[0];
 				gsm48_generate_lai(lai, net->country_code,
 						   net->network_code,
-						   conn->bts->location_area_code);
+						   bts->location_area_code);
 			}
 		}
 

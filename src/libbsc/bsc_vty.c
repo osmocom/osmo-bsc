@@ -1378,7 +1378,7 @@ DEFUN(handover_subscr_conn,
 
 	/* Find the connection/lchan that we want to handover */
 	llist_for_each_entry(conn, &net->subscr_conns, entry) {
-		if (conn->bts->nr == bts_nr &&
+		if (conn_get_bts(conn)->nr == bts_nr &&
 		    conn->lchan->ts->trx->nr == trx_nr &&
 		    conn->lchan->ts->nr == ts_nr && conn->lchan->nr == ss_nr) {
 			vty_out(vty, "starting handover for lchan %s...%s",

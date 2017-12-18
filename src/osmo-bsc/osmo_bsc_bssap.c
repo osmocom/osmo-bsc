@@ -436,7 +436,7 @@ static int bssmap_handle_cipher_mode(struct osmo_bsc_sccp_con *conn,
 		goto reject;
 	}
 
-	network = conn->conn->bts->network;
+	network = conn_get_bts(conn->conn)->network;
 	data = TLVP_VAL(&tp, GSM0808_IE_ENCRYPTION_INFORMATION);
 	enc_bits_msc = data[0];
 	enc_key = &data[1];

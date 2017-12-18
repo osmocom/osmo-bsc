@@ -244,6 +244,7 @@ enum bsc_con osmo_bsc_sigtran_new_conn(struct gsm_subscriber_connection *conn, s
 {
 	struct osmo_ss7_instance *ss7;
 	struct osmo_bsc_sccp_con *bsc_con;
+	struct gsm_bts *bts = conn_get_bts(conn);
 	int conn_id;
 
 	OSMO_ASSERT(conn);
@@ -259,12 +260,12 @@ enum bsc_con osmo_bsc_sigtran_new_conn(struct gsm_subscriber_connection *conn, s
 		return BSC_CON_REJECT_NO_LINK;
 	}
 
-	if (!bsc_grace_allow_new_connection(conn->bts->network, conn->bts)) {
+	if (!bsc_grace_allow_new_connection(bts->network, bts)) {
 		LOGP(DMSC, LOGL_NOTICE, "BSC in grace period. No new connections.\n");
 		return BSC_CON_REJECT_RF_GRACE;
 	}
 
-	bsc_con = talloc_zero(conn->bts, struct osmo_bsc_sccp_con);
+	bsc_con = talloc_zero(bts, struct osmo_bsc_sccp_con);
 	if (!bsc_con) {
 		LOGP(DMSC, LOGL_ERROR, "Failed to allocate new SIGTRAN connection.\n");
 		return BSC_CON_NO_MEM;

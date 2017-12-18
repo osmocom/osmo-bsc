@@ -85,7 +85,7 @@ static int handle_abisip_signal(unsigned int subsys, unsigned int signal,
 			 * connection info */
 			LOGP(DMSC, LOGL_INFO,"RTP connection handover initiated...\n");
 			mgcp_handover(con->sccp_con->user_plane.mgcp_ctx, con->ho_lchan);
-		} else if (is_ipaccess_bts(con->bts) && con->sccp_con->user_plane.rtp_ip) {
+		} else if (is_ipaccess_bts(conn_get_bts(con)) && con->sccp_con->user_plane.rtp_ip) {
 			/* NOTE: This is only relevant on AoIP networks with
 			 * IPA based base stations. See also osmo_bsc_api.c,
 			 * function bsc_assign_compl() */
