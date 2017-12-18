@@ -42,7 +42,6 @@ struct gsm_network *bsc_network_init(void *ctx,
 	INIT_LLIST_HEAD(&net->bsc_data->mscs);
 
 	net->num_bts = 0;
-	net->reject_cause = GSM48_REJECT_ROAMING_NOT_ALLOWED;
 	net->T3101 = GSM_T3101_DEFAULT;
 	net->T3103 = GSM_T3103_DEFAULT;
 	net->T3105 = GSM_T3105_DEFAULT;

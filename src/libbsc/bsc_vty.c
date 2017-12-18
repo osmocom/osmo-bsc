@@ -172,8 +172,6 @@ static void net_dump_vty(struct vty *vty, struct gsm_network *net)
 	vty_out(vty, "  Short network name: '%s'%s",
 		net->name_short, VTY_NEWLINE);
 	vty_out(vty, "%s", VTY_NEWLINE);
-	vty_out(vty, "  Location updating reject cause: %u%s",
-		net->reject_cause, VTY_NEWLINE);
 	vty_out(vty, "  Encryption: A5/%u%s", net->a5_encryption,
 		VTY_NEWLINE);
 	vty_out(vty, "  NECI (TCH/H): %u%s", net->neci,
@@ -810,8 +808,6 @@ static int config_write_net(struct vty *vty)
 	vty_out(vty, " mobile network code %u%s", gsmnet->network_code, VTY_NEWLINE);
 	vty_out(vty, " short name %s%s", gsmnet->name_short, VTY_NEWLINE);
 	vty_out(vty, " long name %s%s", gsmnet->name_long, VTY_NEWLINE);
-	vty_out(vty, " location updating reject cause %u%s",
-		gsmnet->reject_cause, VTY_NEWLINE);
 	vty_out(vty, " encryption a5 %u%s", gsmnet->a5_encryption, VTY_NEWLINE);
 	vty_out(vty, " neci %u%s", gsmnet->neci, VTY_NEWLINE);
 	vty_out(vty, " paging any use tch %d%s", gsmnet->pag_any_tch, VTY_NEWLINE);

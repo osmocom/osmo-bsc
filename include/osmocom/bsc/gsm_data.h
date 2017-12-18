@@ -280,7 +280,6 @@ struct gsm_network {
 	uint16_t network_code;
 	char *name_long;
 	char *name_short;
-	enum gsm48_reject_value reject_cause;
 	int a5_encryption;
 	int neci;
 	int send_mm_info;
