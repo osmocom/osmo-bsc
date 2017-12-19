@@ -167,5 +167,4 @@ AC_OUTPUT(
     tests/bssap/Makefile
     doc/Makefile
     doc/examples/Makefile
-    contrib/Makefile
     Makefile)
