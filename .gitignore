@@ -58,6 +58,8 @@ src/utils/meas_json
 src/utils/osmo-meas-pcap2db
 src/utils/osmo-meas-udp2db
 
+tags
+/deps
 
 #tests
 tests/testsuite.dir
