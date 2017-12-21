@@ -1,0 +1,146 @@
+msc {
+	hscale=2;
+	ms [label="MS"],
+	bts [label="BTS"],
+	bsc_l [label="BSC(lchan SDCCH)"],
+	bsc_l2 [label="BSC(lchan TCH)"],
+	bsc [label="BSC"],
+	mgw [label="MGW@BSC"],
+	m_sc [label="MSC"];
+
+	...;
+	---		[label="MS Requests dedicated channel"];
+	ms -> bts	[label="RACH: REQ"];
+	bts -> bsc	[label="RSL Cchan CHAN RQD"];
+	bsc_l <= bsc	[label="allocate lchan (RR IMM ASS)", textcolor="red", linecolor="red"];
+	bts <- bsc_l	[label="RSL Dchan (SDCCH) CHAN ACT"];
+	bts -> bsc_l	[label="RSL Dchan (SDCCH) CHAN ACT ACK"];
+	bts <- bsc_l	[label="RSL Cchan IMM ASS (RR IMM ASS)"];
+	bsc_l box bsc_l	[label="Start T3101"];
+	ms <- bts	[label="AGCH: RR IMM ASS"];
+	---		[label="MS Establishes SDCCH"];
+	ms -> bts	[label="SDCCH: SABM (CM SERV REQ)"];
+	ms <- bts	[label="SDCCH: UA (CM SERV REQ)"];
+	bts -> bsc_l	[label="RSL RLL (SDCCH, SAPI0, DCCH) EST IND", textcolor="green", linecolor="green"];
+	bsc_l box bsc_l	[label="Stop T3101"];
+	bsc_l => bsc	[label="GSCON_EV_A_CONN_REQ", textcolor="red", linecolor="red"];
+	bsc -> m_sc	[label="SCCP CR (BSSMAP COMPL L3 (CM SERV REQ))"];
+	bsc <- m_sc	[label="SCCP CC"];
+	bsc -> bsc	[label="GSCON_EV_A_CONN_CFM", textcolor="red", linecolor="red"];
+	ms box m_sc	[label="Authentication, MM info, ..."];
+	bsc <- m_sc	[label="SCCP DT1 (DTAP (CM SERV ACK)"];
+	bsc -> bsc	[label="GSCON_EV_MT_DTAP", textcolor="red", linecolor="red"];
+	bsc_l <= bsc	[label="lchan_submit_dtap(CM SERV ACK)", textcolor="red", linecolor="red"];
+	bts <- bsc_l	[label="RSL RLL (SDCCH) DATA REQ (CM SERV ACK)", textcolor="green", linecolor="green"];
+	ms <- bts	[label="SDCCH: I (CM SERV ACK)"];
+	ms -> bts	[label="SDCCH: I (CC SETUP)"];
+	bts -> bsc_l	[label="RSL RLL (SDCCH) DATA IND (CC SETUP)", textcolor="green", linecolor="green"];
+	bsc_l -> bsc	[label="GSCON_EV_MO_DTAP", textcolor="red", linecolor="red"];
+	bsc -> m_sc	[label="SCCP DT1 (DTAP (CC SETUP))"];
+	...;
+
+	---		[label="MSC assigns Voice Channel (TCH)"];
+	bsc <- m_sc	[label="SCCP DT1 (BSSMAP ASSIGNMENT CMD)"];
+	bsc -> bsc	[label="GSCON_EV_A_ASSIGNMENT_CMD", textcolor="red", linecolor="red"];
+	bsc_l2 <= bsc	[label="allocate lchan", textcolor="red", linecolor="red"];
+	bts <- bsc_l2	[label="RSL Dchan (TCH) CHAN ACT"];
+	bts -> bsc_l2	[label="RSL Dchan (TCH) CHAN ACT ACK"];
+	bts <- bsc_l	[label="RSL RLL (SDDCH) DATA REQ (RR ASSIGNMENT CMD)", textcolor="green",
+linecolor="green"];
+	bsc_l2 box bsc_l2	[label="Start T3107"];
+	ms <- bts	[label="SDCCH: I (RR ASSIGNMENT CMD)"];
+	ms box ms	[label="local-end RLL release", textcolor="green", linecolor="green"];
+	bts -> bsc_l	[label="RSL RLL (SDCCH) REL IND", textcolor="gray", linecolor="green"];
+	bsc_l => bsc	[label="GSCON_EV_RLL_REL_IND", textcolor="gray", linecolor="red"];
+	bts -> bsc_l	[label="RSL Dchan (SDCCH) CONN FAIL IND", textcolor="gray", linecolor="green"];
+	bsc_l => bsc	[label="GSCON_EV_CONN_FAIL", textcolor="gray", linecolor="red"];
+	bsc_l box bsc_l	[label="BSC must ignore failures on old channel"];
+	ms -> bts	[label="TCH: SABM (RR ASSIGNMENT CMPL)"];
+	ms <- bts	[label="TCH: UA (RR ASSIGNMENT CMPL)"];
+	bts -> bsc_l2	[label="RSL RLL (TCH, SAPI0, DCCH) EST IND", textcolor="green", linecolor="green"];
+	bsc_l2 box bsc_l2	[label="Stop T3107"];
+	bsc_l2 => bsc	[label="GSCON_EV_RR_ASS_COMPL", textcolor="red", linecolor="red"];
+
+	bsc_l <= bsc	[label="release_lchan(SDCCH)", textcolor="red", linecolor="red"];
+	bts box bsc_l	[label="local-end RLL release", textcolor="green", linecolor="green"];
+	bts <- bsc_l	[label="RSL Dchan (SDCCH) RF CHAN REL"];
+	bts <- bsc_l	[label="RSL RLL (SDCCH, SAPI0, DCCH) REL REQ", textcolor="gray", linecolor="green"];
+	bts <- bsc_l	[label="RSL DChan (SDCCH) DEACTIVATE SACCH", textcolor="gray", linecolor="black"];
+	bts -> bsc_l	[label="RSL RLL (SDCCH, SAPI0, DCCH) RF FAIL IND", textcolor="gray", linecolor="green"];
+	bts -> bsc_l	[label="RSL Dchan (SDCCH, SAPI0, DCCH) RF CHAN REL ACK"];
+
+	# connect BTS RTP with BSC-MGW RTP
+	---		[label="BSC configures RTP on BTS and both sides of MGW"];
+	bts <- bsc	[label="RSL IPA CRCX", textcolor="blue", linecolor="blue"];
+	bts box bts	[label="Bind to BTS-local RTP Port (1000)", textcolor="blue", linecolor="blue"];
+	bts -> bsc	[label="IPA CRCX ACK (BTS:1000)", textcolor="blue", linecolor="blue"];
+	bsc -> mgw	[label="MGCP CRCX rtpbridge/2@mgw (BTS:1000)", textcolor="blue", linecolor="blue"];
+	mgw box mgw	[label="Bind to MGW-local RTP Port (2000)\nConnect to BTS:1000", textcolor="blue", linecolor="blue"];
+	bsc <- mgw	[label="MGCP CRCX rtpbridge/2@mgw OK (MGW:2000)", textcolor="blue", linecolor="blue"];
+	bts <- bsc	[label="IPA MDCX (MGW:2000)", textcolor="blue", linecolor="blue"];
+	bts box bts	[label="Connect RTP socket to remote (MGW) RTP Port", textcolor="blue", linecolor="blue"];
+	bts -> bsc	[label="IPA MDCX ACK", textcolor="blue", linecolor="blue"];
+	bsc >> mgw	[label="MGCP MDCX rtpbridge/2@mgw", textcolor="gray", linecolor="gray"];
+	bsc << mgw	[label="MGCP MDCX rtpbridge/2@mgw OK", textcolor="gray", linecolor="gray"];
+	...;
+
+	---		[label="BSC finally can report successful TCH assignment"];
+	bsc -> m_sc	[label="SCCP DT1 (BSSMAP ASSGN CMPL (3GPP AoIP MGW:3000))"];
+	m_sc box m_sc	[label="Connect remote RTP to MGW addr from ASSGN CMPL"];
+	...;
+
+	mgw <-> m_sc	[label="RTP Audio MGW:3000 MSC:4000", textcolor="blue", linecolor="blue"];
+	bts <-> mgw	[label="RTP Audio BTS:1000 MGW:2000", textcolor="blue", linecolor="blue"];
+	ms <-> bts	[label="Um Audio (bidirectional)", textcolor="blue", linecolor="blue"];
+	ms <-> m_sc	[label="DTAP CC ALERTING"];
+	...;
+
+	---		[label="Further signalling in parallel with RTP (simplified)"];
+	ms <- m_sc	[label="DTAP CC CONNECT"];
+	ms -> m_sc	[label="DTAP CC CONNECT ACK"];
+	---		[label="Voice Call in Progress"];
+	...;
+	---		[label="B-end hangs up"];
+	ms <- m_sc	[label="DTAP CC DISCONNET"];
+	ms <- m_sc	[label="DTAP CC RELEASE"];
+	ms <- m_sc	[label="DTAP CC RELEASE COMPL"];
+	...;
+	bsc <- m_sc	[label="SCCP DT1 (BSSMAP CLEAR CMD)"];
+	bsc -> bsc 	[label="GSCON_EV_A_CLEAR_CMD", textcolor="red", linecolor="red"];
+	---		[label="BSC must release terrestrial resoures before reporting CLEAR COMPLETE"];
+	mgw <- bsc	[label="MGCP DLCX rtpbridge/2@mgw", textcolor="blue", linecolor="blue"];
+	mgw box mgw	[label="Release MSC-facing local RTP port (3000)", textcolor="blue", linecolor="blue"];
+	mgw -> bsc	[label="MGCP DLCX rtpbridge/2@mgw OK", textcolor="blue", linecolor="blue"];
+
+	mgw <- bsc	[label="MGCP DLCX rtpbridge/2@mgw", textcolor="blue", linecolor="blue"];
+	mgw box mgw	[label="Release BTS-facing local RTP port (2000)", textcolor="blue", linecolor="blue"];
+	mgw -> bsc	[label="MGCP DLCX rtpbridge/2@mgw OK", textcolor="blue", linecolor="blue"];
+
+	bts <- bsc	[label="IPA DLCX", textcolor="blue", linecolor="blue"];
+	bts box bts	[label="Release BTS-local RTP port (1000)", textcolor="blue", linecolor="blue"];
+	bts -> bsc	[label="IPA DLCX OK", textcolor="blue", linecolor="blue"];
+
+	bsc -> bsc	[label="GSCON_EV_RSL_CLEAR_COMPL", textcolor="red", linecolor="red"];
+	bsc -> m_sc	[label="SCCP DT1 (BSSMAP CLEAR COMPL)"];
+	bsc <- m_sc	[label="SCCP RLSD"];
+	bsc -> bsc	[label="GSCON_EV_A_DISC_IND", textcolor="red", linecolor="red"];
+	bsc -> m_sc	[label="SCCP RLC"];
+
+	---		[label="BSC releases radio resources after CLEAR COMPLETE"];
+	bsc_l2 <= bsc	[label="release_lchan(TCH)", textcolor="red", linecolor="red"];
+	bts <- bsc_l2	[label="RSL RLL (TCH, SAPI0, DCCH) DATA REQ (RR CHANNEL RELEASE)", textcolor="green", linecolor="green"];
+	bsc_l2 box bsc_l2	[label="Start T3109"];
+	bts <- bsc_l2	[label="RSL Dchan (TCH) DEACTIVATE SACCH"];
+	ms <- bts	[label="TCH: I (RR CHANNEL RELEASE)"];
+	ms -> bts	[label="TCH: DISC (RR CHANNEL RELEASE)"];
+	bts -> bsc_l2	[label="RSL RLL (TCH, SAPI0, DCCH) REL IND", textcolor="green", linecolor="green"];
+	bsc_l2 => bsc	[label="GSCON_EV_RLL_REL_IND", textcolor="red", linecolor="red"];
+	bsc_l2 box bsc_l2	[label="Stop T3109; Start T3111"];
+	# optional: Conn Fail?
+	bts <- bsc_l2	[label="RSL Dchan (TCH, SAPI0, DCCH) RF CHAN REL"];
+	bts -> bsc_l2	[label="RSL Dchan (TCH, SAPI0, DCCH) RF CHAN REL ACK"];
+	bsc_l2 box bsc_l2	[label="T3111 timeout: Channel can be used again"];
+
+	...;
+
+}
