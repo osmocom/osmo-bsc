@@ -333,6 +333,10 @@ static int bssmap_handle_paging(struct bsc_msc_data *msc,
 	LOGP(DMSC, LOGL_INFO, "Paging request from MSC IMSI: '%s' TMSI: '0x%x/%u' LAC: 0x%x\n", mi_string, tmsi, tmsi, lac);
 	bsc_grace_paging_request(msc->network->bsc_data->rf_ctrl->policy,
 				 subscr, chan_needed, msc);
+
+	/* the paging code has grabbed its own references */
+	bsc_subscr_put(subscr);
+
 	return 0;
 }
 
