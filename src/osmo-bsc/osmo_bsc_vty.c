@@ -929,6 +929,28 @@ DEFUN(logging_fltr_imsi,
 	return CMD_SUCCESS;
 }
 
+static void dump_one_sub(struct vty *vty, struct bsc_subscr *bsub)
+{
+	vty_out(vty, " %15s  %08x  %5u  %d%s", bsub->imsi, bsub->tmsi, bsub->lac, bsub->use_count,
+		VTY_NEWLINE);
+}
+
+DEFUN(show_subscr_all,
+	show_subscr_all_cmd,
+	"show subscriber all",
+	SHOW_STR "Display information about subscribers\n" "All Subscribers\n")
+{
+	struct bsc_subscr *bsc_subscr;
+
+	vty_out(vty, " IMSI             TMSI      LAC    Use%s", VTY_NEWLINE);
+	/*           " 001010123456789  ffffffff  65534  1" */
+
+	llist_for_each_entry(bsc_subscr, bsc_gsmnet->bsc_subscribers, entry)
+		dump_one_sub(vty, bsc_subscr);
+
+	return CMD_SUCCESS;
+}
+
 int bsc_vty_init_extra(void)
 {
 	struct gsm_network *net = bsc_gsmnet;
@@ -987,6 +1009,7 @@ int bsc_vty_init_extra(void)
 	install_element_ve(&show_mscs_cmd);
 	install_element_ve(&show_pos_cmd);
 	install_element_ve(&logging_fltr_imsi_cmd);
+	install_element_ve(&show_subscr_all_cmd);
 
 	install_element(ENABLE_NODE, &gen_position_trap_cmd);
 
