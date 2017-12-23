@@ -889,10 +889,7 @@ static int bssmap_handle_assignm_req(struct gsm_subscriber_connection *conn,
 
 reject:
 	resp = gsm0808_create_assignment_failure(cause, NULL);
-	if (!resp) {
-		LOGP(DMSC, LOGL_ERROR, "Channel allocation failure.\n");
-		return -1;
-	}
+	OSMO_ASSERT(resp);
 
 	osmo_bsc_sigtran_send(conn, resp);
 	return -1;
