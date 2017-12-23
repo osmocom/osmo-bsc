@@ -761,6 +761,22 @@ static int bssmap_handle_assignm_req(struct osmo_bsc_sccp_con *conn,
 		goto reject;
 	}
 
+	/* Decode Channel Type element */
+	rc = gsm0808_dec_channel_type(&ct,  TLVP_VAL(&tp, GSM0808_IE_CHANNEL_TYPE),
+				      TLVP_LEN(&tp, GSM0808_IE_CHANNEL_TYPE));
+	if (rc < 0) {
+		LOGP(DMSC, LOGL_ERROR, "unable to decode channel type.\n");
+		goto reject;
+	}
+
+	/* Currently we only support a limited subset of all
+	 * possible channel types. The limitation ends by not using
+	 * multi-slot, limiting the channel coding to speech */
+	if (ct.ch_indctr != GSM0808_CHAN_SPEECH) {
+		LOGP(DMSC, LOGL_ERROR, "Unsupported channel type, currently only speech is supported!\n");
+		goto reject;
+	}
+
 	/* Detect if a CIC code is present, if so, we use the classic ip.access
 	 * method to calculate the RTP port */
 	if (TLVP_PRESENT(&tp, GSM0808_IE_CIRCUIT_IDENTITY_CODE)) {
@@ -801,23 +817,6 @@ static int bssmap_handle_assignm_req(struct osmo_bsc_sccp_con *conn,
 			goto reject;
 		}
 		scl_ptr = &scl;
-	}
-
-	/* Decode Channel Type element */
-	rc = gsm0808_dec_channel_type(&ct,  TLVP_VAL(&tp, GSM0808_IE_CHANNEL_TYPE),
-				      TLVP_LEN(&tp, GSM0808_IE_CHANNEL_TYPE));
-	if (rc < 0) {
-		LOGP(DMSC, LOGL_ERROR, "unable to decode channel type.\n");
-		goto reject;
-	}
-
-	/* Currently we only support a limited subset of all
-	 * possible channel types. The limitation ends by not using
-	 * multi-slot, limiting the channel coding to speech */
-	if (ct.ch_indctr != GSM0808_CHAN_SPEECH) {
-		LOGP(DMSC, LOGL_ERROR,
-		     "Unsupported channel type, currently only speech is supported!\n");
-		goto reject;
 	}
 
 	/* Match codec information from the assignment command against the
