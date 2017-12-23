@@ -744,8 +744,6 @@ static int bssmap_handle_assignm_req(struct osmo_bsc_sccp_con *conn,
 	struct gsm0808_speech_codec_list scl;
 	struct gsm0808_speech_codec_list *scl_ptr = NULL;
 	int rc;
-	const uint8_t *data;
-	char len;
 
 	if (!conn->conn) {
 		LOGP(DMSC, LOGL_ERROR,
@@ -771,9 +769,8 @@ static int bssmap_handle_assignm_req(struct osmo_bsc_sccp_con *conn,
 		multiplex = (conn->user_plane.cic & ~0x1f) >> 5;
 	} else if (TLVP_PRESENT(&tp, GSM0808_IE_AOIP_TRASP_ADDR)) {
 		/* Decode AoIP transport address element */
-		data = TLVP_VAL(&tp, GSM0808_IE_AOIP_TRASP_ADDR);
-		len = TLVP_LEN(&tp, GSM0808_IE_AOIP_TRASP_ADDR);
-		rc = gsm0808_dec_aoip_trasp_addr(&rtp_addr, data, len);
+		rc = gsm0808_dec_aoip_trasp_addr(&rtp_addr, TLVP_VAL(&tp, GSM0808_IE_AOIP_TRASP_ADDR),
+						 TLVP_LEN(&tp, GSM0808_IE_AOIP_TRASP_ADDR));
 		if (rc < 0) {
 			LOGP(DMSC, LOGL_ERROR,
 			     "Unable to decode aoip transport address.\n");
@@ -796,9 +793,8 @@ static int bssmap_handle_assignm_req(struct osmo_bsc_sccp_con *conn,
 		}
 
 		/* Decode Speech Codec list */
-		data = TLVP_VAL(&tp, GSM0808_IE_SPEECH_CODEC_LIST);
-		len = TLVP_LEN(&tp, GSM0808_IE_SPEECH_CODEC_LIST);
-		rc = gsm0808_dec_speech_codec_list(&scl, data, len);
+		rc = gsm0808_dec_speech_codec_list(&scl, TLVP_VAL(&tp, GSM0808_IE_SPEECH_CODEC_LIST),
+						   TLVP_LEN(&tp, GSM0808_IE_SPEECH_CODEC_LIST));
 		if (rc < 0) {
 			LOGP(DMSC, LOGL_ERROR,
 			     "Unable to decode speech codec list\n");
@@ -808,9 +804,8 @@ static int bssmap_handle_assignm_req(struct osmo_bsc_sccp_con *conn,
 	}
 
 	/* Decode Channel Type element */
-	data = TLVP_VAL(&tp, GSM0808_IE_CHANNEL_TYPE);
-	len = TLVP_LEN(&tp, GSM0808_IE_CHANNEL_TYPE);
-	rc = gsm0808_dec_channel_type(&ct, data, len);
+	rc = gsm0808_dec_channel_type(&ct,  TLVP_VAL(&tp, GSM0808_IE_CHANNEL_TYPE),
+				      TLVP_LEN(&tp, GSM0808_IE_CHANNEL_TYPE));
 	if (rc < 0) {
 		LOGP(DMSC, LOGL_ERROR, "unable to decode channel type.\n");
 		goto reject;
