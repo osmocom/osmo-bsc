@@ -799,13 +799,13 @@ static int bssmap_handle_assignm_req(struct gsm_subscriber_connection *conn,
 		rc = gsm0808_dec_aoip_trasp_addr(&rtp_addr, TLVP_VAL(&tp, GSM0808_IE_AOIP_TRASP_ADDR),
 						 TLVP_LEN(&tp, GSM0808_IE_AOIP_TRASP_ADDR));
 		if (rc < 0) {
-			LOGP(DMSC, LOGL_ERROR, "Unable to decode aoip transport address.\n");
+			LOGP(DMSC, LOGL_ERROR, "Unable to decode AoIP transport address.\n");
 			cause = GSM0808_CAUSE_INCORRECT_VALUE;
 			goto reject;
 		}
 		aoip = true;
 	} else {
-		LOGP(DMSC, LOGL_ERROR, "transport address missing. Audio routing will not work.\n");
+		LOGP(DMSC, LOGL_ERROR, "AoIP transport address and CIC missing. Audio will not work.\n");
 		cause = GSM0808_CAUSE_INFORMATION_ELEMENT_OR_FIELD_MISSING;
 		goto reject;
 	}
@@ -869,7 +869,7 @@ static int bssmap_handle_assignm_req(struct gsm_subscriber_connection *conn,
 		conn->user_plane.mgcp_ctx = mgcp_assignm_req(msc->network, msc->network->mgw.client,
 								conn, chan_mode, full_rate);
 		if (!conn->user_plane.mgcp_ctx) {
-			LOGP(DMSC, LOGL_ERROR, "MGCP GW failure, rejecting assignment... (id=%i)\n",
+			LOGP(DMSC, LOGL_ERROR, "MGCP / MGW failure, rejecting assignment... (id=%i)\n",
 				conn->sccp.conn_id);
 			cause = GSM0808_CAUSE_EQUIPMENT_FAILURE;
 			goto reject;
