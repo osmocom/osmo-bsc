@@ -1,5 +1,5 @@
 /* OpenBSC interface to quagga VTY */
-/* (C) 2009-2010 by Harald Welte <laforge@gnumonks.org>
+/* (C) 2009-2017 by Harald Welte <laforge@gnumonks.org>
  * All Rights Reserved
  *
  * This program is free software; you can redistribute it and/or modify
@@ -192,13 +192,18 @@ static void dump_pchan_load_vty(struct vty *vty, char *prefix,
 static void net_dump_vty(struct vty *vty, struct gsm_network *net)
 {
 	struct pchan_load pl;
+	int i;
 
 	vty_out(vty, "BSC is on Country Code %u, Network Code %u "
 		"and has %u BTS%s", net->country_code, net->network_code,
 		net->num_bts, VTY_NEWLINE);
 	vty_out(vty, "%s", VTY_NEWLINE);
-	vty_out(vty, "  Encryption: A5/%u%s", net->a5_encryption,
-		VTY_NEWLINE);
+	vty_out(vty, "  Encryption:");
+	for (i = 0; i < 8; i++) {
+		if (net->a5_encryption_mask & (1 << i))
+			vty_out(vty, " A5/%u", i);
+	}
+	vty_out(vty, "%s", VTY_NEWLINE);
 	vty_out(vty, "  NECI (TCH/H): %u%s", net->neci,
 		VTY_NEWLINE);
 	vty_out(vty, "  Use TCH for Paging any: %d%s", net->pag_any_tch,
@@ -917,11 +922,17 @@ static int config_write_bts(struct vty *v)
 static int config_write_net(struct vty *vty)
 {
 	struct gsm_network *gsmnet = gsmnet_from_vty(vty);
+	int i;
 
 	vty_out(vty, "network%s", VTY_NEWLINE);
 	vty_out(vty, " network country code %u%s", gsmnet->country_code, VTY_NEWLINE);
 	vty_out(vty, " mobile network code %u%s", gsmnet->network_code, VTY_NEWLINE);
-	vty_out(vty, " encryption a5 %u%s", gsmnet->a5_encryption, VTY_NEWLINE);
+	vty_out(vty, " encryption a5");
+	for (i = 0; i < 8; i++) {
+		if (gsmnet->a5_encryption_mask & (1 << i))
+			vty_out(vty, " %u", i);
+	}
+	vty_out(vty, "%s", VTY_NEWLINE);
 	vty_out(vty, " neci %u%s", gsmnet->neci, VTY_NEWLINE);
 	vty_out(vty, " paging any use tch %d%s", gsmnet->pag_any_tch, VTY_NEWLINE);
 
@@ -4410,15 +4421,20 @@ DEFUN(cfg_net_mnc,
 
 DEFUN(cfg_net_encryption,
       cfg_net_encryption_cmd,
-      "encryption a5 (0|1|2|3)",
-	"Encryption options\n"
-	"A5 encryption\n" "A5/0: No encryption\n"
-	"A5/1: Encryption\n" "A5/2: Export-grade Encryption\n"
-	"A5/3: 'New' Secure Encryption\n")
+      "encryption a5 <0-3> [<0-3>] [<0-3>] [<0-3>]",
+      "Encryption options\n"
+      "GSM A5 Air Interface Encryption\n"
+      "A5/n Algorithm Number\n"
+      "A5/n Algorithm Number\n"
+      "A5/n Algorithm Number\n"
+      "A5/n Algorithm Number\n")
 {
 	struct gsm_network *gsmnet = gsmnet_from_vty(vty);
+	unsigned int i;
 
-	gsmnet->a5_encryption = atoi(argv[0]);
+	gsmnet->a5_encryption_mask = 0;
+	for (i = 0; i < argc; i++)
+		gsmnet->a5_encryption_mask |= (1 << atoi(argv[i]));
 
 	return CMD_SUCCESS;
 }

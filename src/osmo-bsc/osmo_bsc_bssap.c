@@ -567,6 +567,19 @@ static int bssmap_handle_paging(struct bsc_msc_data *msc,
 	return 0;
 }
 
+/* select the best cipher permitted by the intersection of both masks */
+static int select_best_cipher(uint8_t msc_mask, uint8_t bsc_mask)
+{
+	uint8_t intersection = msc_mask & bsc_mask;
+	int i;
+
+	for (i = 7; i >= 0; i--) {
+		if (intersection & (1 << i))
+			return i;
+	}
+	return -1;
+}
+
 /*
  * GSM 08.08 § 3.1.9.1 and 3.2.1.21...
  * release our gsm_subscriber_connection and send message
@@ -626,8 +639,8 @@ static int bssmap_handle_cipher_mode(struct gsm_subscriber_connection *conn,
 	int include_imeisv = 1;
 	const uint8_t *enc_key;
 	uint16_t enc_key_len;
-	uint8_t enc_bits_bsc;
 	uint8_t enc_bits_msc;
+	int chosen_cipher;
 
 	if (!conn) {
 		LOGP(DMSC, LOGL_ERROR, "No lchan/msc_data in cipher mode command.\n");
@@ -668,27 +681,26 @@ static int bssmap_handle_cipher_mode(struct gsm_subscriber_connection *conn,
 	if (TLVP_PRESENT(&tp, GSM0808_IE_CIPHER_RESPONSE_MODE))
 		include_imeisv = TLVP_VAL(&tp, GSM0808_IE_CIPHER_RESPONSE_MODE)[0] & 0x1;
 
-	/* FIXME: match up the list of permitted ciphering algorithms received from the MSC with a list
-	 * of ciphering algorithms configured for this BSC (the config of more than one is TODO). Finally
-	 * pick one of the remaining options. */
-
 	/* Identical to the GSM0808_IE_ENCRYPTION_INFORMATION above:
 	 * a5_encryption == 0 --> 0x01
 	 * a5_encryption == 1 --> 0x02
 	 * a5_encryption == 2 --> 0x04 ... */
-	enc_bits_bsc = 1 << network->a5_encryption;
 	enc_bits_msc = data[0];
 
-	if (!(enc_bits_msc & enc_bits_bsc)) {
-		LOGP(DMSC, LOGL_ERROR, "MSC does not permit A5/%d (permitted algorithms mask: 0x%x)\n",
-		     network->a5_encryption, enc_bits_msc);
+	/* The bit-mask of permitted ciphers from the MSC (sent in ASSIGNMENT COMMAND) is intersected
+	 * with the vty-configured mask a the BSC.  Finally, the best (highest) possible cipher is
+	 * chosen. */
+	chosen_cipher = select_best_cipher(enc_bits_msc, network->a5_encryption_mask);
+	if (chosen_cipher < 0) {
+		LOGP(DMSC, LOGL_ERROR, "Reject: no overlapping A5 ciphers between BSC (0x%02x) "
+			"and MSC (0x%02x)\n", network->a5_encryption_mask, enc_bits_msc);
 		reject_cause = GSM0808_CAUSE_CIPHERING_ALGORITHM_NOT_SUPPORTED;
 		goto reject;
 	}
 
 	/* To complete the confusion, gsm0808_cipher_mode again expects the encryption as a number
 	 * from 0 to 7. */
-	if (gsm0808_cipher_mode(conn, network->a5_encryption, enc_key, enc_key_len,
+	if (gsm0808_cipher_mode(conn, chosen_cipher, enc_key, enc_key_len,
 				include_imeisv)) {
 		reject_cause = GSM0808_CAUSE_PROTOCOL_ERROR_BETWEEN_BSS_AND_MSC;
 		goto reject;

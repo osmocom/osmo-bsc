@@ -1191,7 +1191,8 @@ struct gsm_network {
 	/* global parameters */
 	uint16_t country_code;
 	uint16_t network_code;
-	int a5_encryption;
+	/* bit-mask of permitted encryption algorithms. LSB=A5/0, MSB=A5/7 */
+	uint8_t a5_encryption_mask;
 	int neci;
 	struct handover_cfg *ho;
 
