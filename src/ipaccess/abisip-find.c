@@ -25,17 +25,22 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <getopt.h>
+#include <time.h>
+#include <talloc.h>
 
 #include <osmocom/core/select.h>
 #include <osmocom/core/timer.h>
+#include <osmocom/core/linuxlist.h>
 #include <osmocom/gsm/protocol/ipaccess.h>
 #include <osmocom/gsm/ipa.h>
 #include <osmocom/bsc/gsm_data.h>
 
 static struct {
 	const char *ifname;
+	bool list_view;
 } cmdline_opts = {
 	.ifname = NULL,
+	.list_view = false,
 };
 
 static void print_help()
@@ -44,6 +49,9 @@ static void print_help()
 	printf("Usage: abisip-find [-l] [<interface-name>]\n");
 	printf("  <interface-name>  Specify the outgoing network interface,\n"
 	       "                    e.g. 'eth0'\n");
+	printf("  -l --list-view    Instead of printing received responses,\n"
+	       "                    output a sorted list of currently present\n"
+	       "                    base stations and change events.\n");
 }
 
 static void handle_options(int argc, char **argv)
@@ -52,10 +60,11 @@ static void handle_options(int argc, char **argv)
 		int option_index = 0, c;
 		static struct option long_options[] = {
 			{"help", 0, 0, 'h'},
+			{"list-view", 0, 0, 'l'},
 			{0, 0, 0, 0}
 		};
 
-		c = getopt_long(argc, argv, "h",
+		c = getopt_long(argc, argv, "hl",
 				long_options, &option_index);
 		if (c == -1)
 			break;
@@ -64,6 +73,9 @@ static void handle_options(int argc, char **argv)
 		case 'h':
 			print_help();
 			exit(EXIT_SUCCESS);
+		case 'l':
+			cmdline_opts.list_view = true;
+			break;
 		default:
 			/* catch unknown options *as well as* missing arguments. */
 			fprintf(stderr, "Error in command line options. Exiting. Try --help.\n");
@@ -159,22 +171,137 @@ static int bcast_find(int fd)
 	return sendto(fd, find_pkt, sizeof(find_pkt), 0, (struct sockaddr *) &sa, sizeof(sa));
 }
 
-static int parse_response(unsigned char *buf, int len)
+static char *parse_response(void *ctx, unsigned char *buf, int len)
 {
 	uint8_t t_len;
 	uint8_t t_tag;
 	uint8_t *cur = buf;
+	char *out = talloc_zero_size(ctx, 512);
 
 	while (cur < buf + len) {
 		t_len = *cur++;
 		t_tag = *cur++;
 		
-		printf("%s='%s'  ", ipa_ccm_idtag_name(t_tag), cur);
+		out = talloc_asprintf_append(out, "%s='%s'  ", ipa_ccm_idtag_name(t_tag), cur);
 
 		cur += t_len;
 	}
-	printf("\n");
-	return 0;
+
+	return out;
+}
+
+struct base_station {
+	struct llist_head entry;
+	char *line;
+	time_t timestamp;
+};
+
+LLIST_HEAD(base_stations);
+
+void *ctx = NULL;
+
+void print_timestamp()
+{
+	time_t now = time(NULL);
+	printf("\n\n----- %s\n", ctime(&now));
+}
+
+struct base_station *base_station_parse(unsigned char *buf, int len)
+{
+	struct base_station *new_bs = talloc_zero(ctx, struct base_station);
+	new_bs->line = parse_response(new_bs, buf, len);
+	new_bs->timestamp = time(NULL);
+	return new_bs;
+}
+
+bool base_stations_add(struct base_station *new_bs)
+{
+	struct base_station *bs;
+
+	llist_for_each_entry(bs, &base_stations, entry) {
+		int c = strcmp(new_bs->line, bs->line);
+		if (!c) {
+			/* entry already exists. */
+			bs->timestamp = new_bs->timestamp;
+			return false;
+		}
+
+		if (c < 0) {
+			/* found the place to add the entry */
+			break;
+		}
+	}
+
+	print_timestamp();
+	printf("New:\n%s\n", new_bs->line);
+
+	llist_add_tail(&new_bs->entry, &bs->entry);
+	return true;
+}
+
+bool base_stations_timeout()
+{
+	struct base_station *bs, *next_bs;
+	time_t now = time(NULL);
+	bool changed = false;
+
+	llist_for_each_entry_safe(bs, next_bs, &base_stations, entry) {
+		if (now - bs->timestamp < 10)
+			continue;
+		print_timestamp();
+		printf("LOST:\n%s\n", bs->line);
+
+		llist_del(&bs->entry);
+		talloc_free(bs);
+		changed = true;
+	}
+	return changed;
+}
+
+void base_stations_print()
+{
+	struct base_station *bs;
+	int count = 0;
+
+	print_timestamp();
+	llist_for_each_entry(bs, &base_stations, entry) {
+		printf("%3d: %s\n", count, bs->line);
+		count++;
+	}
+	printf("\nTotal: %d\n", count);
+}
+
+static void base_stations_bump(bool known_changed)
+{
+	bool changed = known_changed;
+	if (base_stations_timeout())
+		changed = true;
+
+	if (changed)
+		base_stations_print();
+}
+
+static void handle_response(unsigned char *buf, int len)
+{
+	static unsigned int responses = 0;
+	responses++;
+
+	if (cmdline_opts.list_view) {
+		bool changed = false;
+		struct base_station *bs = base_station_parse(buf, len);
+		if (base_stations_add(bs))
+			changed = true;
+		else
+			talloc_free(bs);
+		base_stations_bump(changed);
+		printf("RX: %u   \r", responses);
+		fflush(stdout);
+	} else {
+		char *line = parse_response(ctx, buf, len);
+		printf(line);
+		printf("\n");
+		talloc_free(line);
+	}
 }
 
 static int read_response(int fd)
@@ -195,7 +322,8 @@ static int read_response(int fd)
 	if (buf[4] != IPAC_MSGT_ID_RESP)
 		return 0;
 
-	return parse_response(buf+6, len-6);
+	handle_response(buf+6, len-6);
+	return 0;
 }
 
 static int bfd_cb(struct osmo_fd *bfd, unsigned int flags)
@@ -217,6 +345,8 @@ static void timer_cb(void *_data)
 
 	bfd->when |= BSC_FD_WRITE;
 
+	base_stations_bump(false);
+
 	osmo_timer_schedule(&timer, 5, 0);
 }
 
@@ -231,8 +361,10 @@ int main(int argc, char **argv)
 	handle_options(argc, argv);
 
 	if (!cmdline_opts.ifname)
-		fprintf(stdout, "you might need to specify the outgoing\n"
-			" network interface, e.g. ``%s eth0''\n", argv[0]);
+		fprintf(stdout, "- You might need to specify the outgoing\n"
+			"  network interface, e.g. ``%s eth0''\n", argv[0]);
+	if (!cmdline_opts.list_view)
+		fprintf(stdout, "- You may find the --list-view option convenient.\n");
 
 	bfd.cb = bfd_cb;
 	bfd.when = BSC_FD_READ | BSC_FD_WRITE;
