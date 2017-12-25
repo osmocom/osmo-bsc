@@ -39,10 +39,12 @@
 
 static struct {
 	const char *ifname;
+	int send_interval;
 	bool list_view;
 	time_t list_view_timeout;
 } cmdline_opts = {
 	.ifname = NULL,
+	.send_interval = 5,
 	.list_view = false,
 	.list_view_timeout = 10,
 };
@@ -53,6 +55,7 @@ static void print_help()
 	printf("Usage: abisip-find [-l] [<interface-name>]\n");
 	printf("  <interface-name>  Specify the outgoing network interface,\n"
 	       "                    e.g. 'eth0'\n");
+	printf("  -i --interval <s> Send broadcast frames every <s> seconds.\n");
 	printf("  -l --list-view    Instead of printing received responses,\n"
 	       "                    output a sorted list of currently present\n"
 	       "                    base stations and change events.\n");
@@ -67,12 +70,13 @@ static void handle_options(int argc, char **argv)
 		int option_index = 0, c;
 		static struct option long_options[] = {
 			{"help", 0, 0, 'h'},
+			{"send-interval", 1, 0, 'i'},
 			{"list-view", 0, 0, 'l'},
 			{"timeout", 1, 0, 't'},
 			{0, 0, 0, 0}
 		};
 
-		c = getopt_long(argc, argv, "hlt:",
+		c = getopt_long(argc, argv, "hi:lt:",
 				long_options, &option_index);
 		if (c == -1)
 			break;
@@ -81,6 +85,14 @@ static void handle_options(int argc, char **argv)
 		case 'h':
 			print_help();
 			exit(EXIT_SUCCESS);
+		case 'i':
+			errno = 0;
+			cmdline_opts.send_interval = strtoul(optarg, NULL, 10);
+			if (errno || cmdline_opts.send_interval < 1) {
+				fprintf(stderr, "Invalid interval value: %s\n", optarg);
+				exit(EXIT_FAILURE);
+			}
+			break;
 		case 't':
 			errno = 0;
 			cmdline_opts.list_view_timeout = strtoul(optarg, NULL, 10);
@@ -359,7 +371,7 @@ static void timer_cb(void *_data)
 
 	base_stations_bump(false);
 
-	osmo_timer_schedule(&timer, 5, 0);
+	osmo_timer_schedule(&timer, cmdline_opts.send_interval, 0);
 }
 
 int main(int argc, char **argv)
@@ -378,6 +390,8 @@ int main(int argc, char **argv)
 			"  network interface, e.g. ``%s eth0''\n", argv[0]);
 	if (!cmdline_opts.list_view)
 		fprintf(stdout, "- You may find the --list-view option convenient.\n");
+	else if (cmdline_opts.send_interval >= cmdline_opts.list_view_timeout)
+		fprintf(stdout, "\nWARNING: the --timeout should be larger than --interval.\n\n");
 
 	bfd.cb = bfd_cb;
 	bfd.when = BSC_FD_READ | BSC_FD_WRITE;
@@ -394,7 +408,7 @@ int main(int argc, char **argv)
 	}
 
 	osmo_timer_setup(&timer, timer_cb, &bfd);
-	osmo_timer_schedule(&timer, 5, 0);
+	osmo_timer_schedule(&timer, cmdline_opts.send_interval, 0);
 
 	printf("Trying to find ip.access BTS by broadcast UDP...\n");
 
