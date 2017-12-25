@@ -1,6 +1,7 @@
 /* ip.access nanoBTS configuration tool */
 
 /* (C) 2009-2010 by Harald Welte <laforge@gnumonks.org>
+ * (C) 2017 by sysmocom - s.f.m.c. GmbH <info@sysmocom.de>
  * All Rights Reserved
  *
  * This program is free software; you can redistribute it and/or modify
@@ -355,7 +356,8 @@ int main(int argc, char **argv)
 	struct osmo_fd bfd;
 	int rc;
 
-	printf("abisip-find (C) 2009 by Harald Welte\n");
+	printf("abisip-find (C) 2009-2010 by Harald Welte\n");
+	printf("            (C) 2017 by sysmocom - s.f.m.c. GmbH\n");
 	printf("This is FREE SOFTWARE with ABSOLUTELY NO WARRANTY\n\n");
 
 	handle_options(argc, argv);
