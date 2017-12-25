@@ -24,13 +24,63 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-
+#include <getopt.h>
 
 #include <osmocom/core/select.h>
 #include <osmocom/core/timer.h>
 #include <osmocom/gsm/protocol/ipaccess.h>
 #include <osmocom/gsm/ipa.h>
 #include <osmocom/bsc/gsm_data.h>
+
+static struct {
+	const char *ifname;
+} cmdline_opts = {
+	.ifname = NULL,
+};
+
+static void print_help()
+{
+	printf("\n");
+	printf("Usage: abisip-find [-l] [<interface-name>]\n");
+	printf("  <interface-name>  Specify the outgoing network interface,\n"
+	       "                    e.g. 'eth0'\n");
+}
+
+static void handle_options(int argc, char **argv)
+{
+	while (1) {
+		int option_index = 0, c;
+		static struct option long_options[] = {
+			{"help", 0, 0, 'h'},
+			{0, 0, 0, 0}
+		};
+
+		c = getopt_long(argc, argv, "h",
+				long_options, &option_index);
+		if (c == -1)
+			break;
+
+		switch (c) {
+		case 'h':
+			print_help();
+			exit(EXIT_SUCCESS);
+		default:
+			/* catch unknown options *as well as* missing arguments. */
+			fprintf(stderr, "Error in command line options. Exiting. Try --help.\n");
+			exit(EXIT_FAILURE);
+			break;
+		}
+	}
+
+	if (argc - optind > 0)
+		cmdline_opts.ifname = argv[optind++];
+
+	if (argc - optind > 0) {
+		fprintf(stderr, "Error: too many arguments\n");
+		print_help();
+		exit(EXIT_FAILURE);
+	}
+}
 
 static int udp_sock(const char *ifname)
 {
@@ -173,22 +223,20 @@ static void timer_cb(void *_data)
 int main(int argc, char **argv)
 {
 	struct osmo_fd bfd;
-	char *ifname = NULL;
 	int rc;
 
 	printf("abisip-find (C) 2009 by Harald Welte\n");
 	printf("This is FREE SOFTWARE with ABSOLUTELY NO WARRANTY\n\n");
 
-	if (argc < 2) {
+	handle_options(argc, argv);
+
+	if (!cmdline_opts.ifname)
 		fprintf(stdout, "you might need to specify the outgoing\n"
 			" network interface, e.g. ``%s eth0''\n", argv[0]);
-	} else {
-		ifname = argv[1];
-	}
 
 	bfd.cb = bfd_cb;
 	bfd.when = BSC_FD_READ | BSC_FD_WRITE;
-	bfd.fd = udp_sock(ifname);
+	bfd.fd = udp_sock(cmdline_opts.ifname);
 	if (bfd.fd < 0) {
 		perror("Cannot create local socket for broadcast udp");
 		exit(1);
