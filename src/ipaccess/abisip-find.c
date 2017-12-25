@@ -28,6 +28,7 @@
 #include <getopt.h>
 #include <time.h>
 #include <talloc.h>
+#include <errno.h>
 
 #include <osmocom/core/select.h>
 #include <osmocom/core/timer.h>
@@ -39,9 +40,11 @@
 static struct {
 	const char *ifname;
 	bool list_view;
+	time_t list_view_timeout;
 } cmdline_opts = {
 	.ifname = NULL,
 	.list_view = false,
+	.list_view_timeout = 10,
 };
 
 static void print_help()
@@ -53,6 +56,9 @@ static void print_help()
 	printf("  -l --list-view    Instead of printing received responses,\n"
 	       "                    output a sorted list of currently present\n"
 	       "                    base stations and change events.\n");
+	printf("  -t --timeout <s>  Drop base stations after <s> seconds of\n"
+	       "                    receiving no more replies from it.\n"
+	       "                    Implies --list-view.\n");
 }
 
 static void handle_options(int argc, char **argv)
@@ -62,10 +68,11 @@ static void handle_options(int argc, char **argv)
 		static struct option long_options[] = {
 			{"help", 0, 0, 'h'},
 			{"list-view", 0, 0, 'l'},
+			{"timeout", 1, 0, 't'},
 			{0, 0, 0, 0}
 		};
 
-		c = getopt_long(argc, argv, "hl",
+		c = getopt_long(argc, argv, "hlt:",
 				long_options, &option_index);
 		if (c == -1)
 			break;
@@ -74,6 +81,14 @@ static void handle_options(int argc, char **argv)
 		case 'h':
 			print_help();
 			exit(EXIT_SUCCESS);
+		case 't':
+			errno = 0;
+			cmdline_opts.list_view_timeout = strtoul(optarg, NULL, 10);
+			if (errno) {
+				fprintf(stderr, "Invalid timeout value: %s\n", optarg);
+				exit(EXIT_FAILURE);
+			}
+			/* fall through to imply list-view: */
 		case 'l':
 			cmdline_opts.list_view = true;
 			break;
@@ -247,7 +262,7 @@ bool base_stations_timeout()
 	bool changed = false;
 
 	llist_for_each_entry_safe(bs, next_bs, &base_stations, entry) {
-		if (now - bs->timestamp < 10)
+		if (now - bs->timestamp < cmdline_opts.list_view_timeout)
 			continue;
 		print_timestamp();
 		printf("LOST:\n%s\n", bs->line);
