@@ -168,6 +168,24 @@ static void fsm_crcx_bts_cb(struct osmo_fsm_inst *fi, uint32_t event, void *data
 
 	/* Generate MGCP message string */
 	mgcp_msg = (struct mgcp_msg) {
+		.verb = MGCP_VERB_DLCX,
+		.presence = (MGCP_MSG_PRESENCE_ENDPOINT),
+	};
+	if (snprintf(mgcp_msg.endpoint, MGCP_ENDPOINT_MAXLEN, MGCP_ENDPOINT_FORMAT, rtp_endpoint) >=
+	    MGCP_ENDPOINT_MAXLEN) {
+		handle_error(mgcp_ctx, MGCP_ERR_NOMEM);
+		return;
+	}
+	msg = mgcp_msg_gen(mgcp, &mgcp_msg);
+	OSMO_ASSERT(msg);
+
+	/* Transmit MGCP message to MGW */
+	mgcp_ctx->mgw_pending_trans = mgcp_msg_trans_id(msg);
+	rc = mgcp_client_tx(mgcp, msg, NULL, NULL);
+
+
+	/* Generate MGCP message string */
+	mgcp_msg = (struct mgcp_msg) {
 		.verb = MGCP_VERB_CRCX,
 		.presence = (MGCP_MSG_PRESENCE_ENDPOINT | MGCP_MSG_PRESENCE_CALL_ID | MGCP_MSG_PRESENCE_CONN_MODE),
 		.call_id = conn->conn_id,
