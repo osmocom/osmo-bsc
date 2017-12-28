@@ -113,6 +113,15 @@ if test "$enable_coverage" = "yes"; then
    AC_SUBST([COVERAGE_LDFLAGS])
 fi
 
+AC_ARG_ENABLE(profile,
+		[AS_HELP_STRING([--enable-profile], [Compile with profiling support enabled], )],
+		[profile=$enableval], [profile="no"])
+if test x"$profile" = x"yes"
+then
+	CFLAGS="$CFLAGS -pg"
+	CPPFLAGS="$CPPFLAGS -pg"
+fi
+
 AC_ARG_ENABLE([vty_tests],
 		AC_HELP_STRING([--enable-vty-tests],
 				[Include the VTY/CTRL tests in make check (deprecated)
