@@ -340,10 +340,10 @@ static char *sms_new_dest_nr(struct bsc_nat *nat, void *ctx,
 /**
  * This is a helper for GSM 04.11 8.2.5.2 Destination address element
  */
-void sms_encode_addr_element(struct msgb *out, const char *new_number,
+static bool sms_encode_addr_element(struct msgb *out, const char *new_number,
 			     int format, int tp_data)
 {
-	uint8_t new_addr_len;
+	int new_addr_len;
 	uint8_t new_addr[26];
 
 	/*
@@ -355,6 +355,9 @@ void sms_encode_addr_element(struct msgb *out, const char *new_number,
 	 */
 	new_addr_len = gsm48_encode_bcd_number(new_addr, ARRAY_SIZE(new_addr),
 					       1, new_number);
+	if (new_addr_len < 0)
+		return false;
+
 	new_addr[1] = format;
 	if (tp_data) {
 		uint8_t *data = msgb_put(out, new_addr_len);
@@ -363,6 +366,8 @@ void sms_encode_addr_element(struct msgb *out, const char *new_number,
 	} else {
 		msgb_lv_put(out, new_addr_len - 1, new_addr + 1);
 	}
+
+	return true;
 }
 
 static struct msgb *sms_create_new(uint8_t type, uint8_t ref,
@@ -391,7 +396,10 @@ static struct msgb *sms_create_new(uint8_t type, uint8_t ref,
 	msgb_v_put(out, ref);
 	msgb_lv_put(out, orig_addr_len, orig_addr_ptr);
 
-	sms_encode_addr_element(out, new_number, 0x91, 0);
+	if (!sms_encode_addr_element(out, new_number, 0x91, 0)) {
+		LOGP(DNAT, LOGL_ERROR, "Failed to encode SMS address.\n");
+		return NULL;
+	}
 
 
 	/* Patch the TPDU from here on */
@@ -411,11 +419,17 @@ static struct msgb *sms_create_new(uint8_t type, uint8_t ref,
 		msgb_v_put(out, data_ptr[1]);
 
 		/* encode the new number and put it */
-		if (strncmp(new_dest_nr, "00", 2) == 0)
-			sms_encode_addr_element(out, new_dest_nr + 2, 0x91, 1);
-		else
-			sms_encode_addr_element(out, new_dest_nr, 0x81, 1);
-
+		if (strncmp(new_dest_nr, "00", 2) == 0) {
+			if (!sms_encode_addr_element(out, new_dest_nr + 2, 0x91, 1)) {
+				LOGP(DNAT, LOGL_ERROR, "Failed to encode SMS address.\n");
+				return NULL;
+			}
+		} else {
+			if (!sms_encode_addr_element(out, new_dest_nr, 0x81, 1)) {
+				LOGP(DNAT, LOGL_ERROR, "Failed to encode SMS address.\n");
+				return NULL;
+			}
+		}
 		/* Copy the rest after the TP-DS */
 		data = msgb_put(out, data_len - 2 - 1 - old_dest_len);
 		memcpy(data, &data_ptr[2 + 1 + old_dest_len], data_len - 2 - 1 - old_dest_len);
