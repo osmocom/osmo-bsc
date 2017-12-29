@@ -312,12 +312,8 @@ static void handle_response(unsigned char *buf, int len)
 		base_stations_bump(changed);
 		printf("RX: %u   \r", responses);
 		fflush(stdout);
-	} else {
-		char *line = parse_response(ctx, buf, len);
-		printf(line);
-		printf("\n");
-		talloc_free(line);
-	}
+	} else
+		printf("%s\n", parse_response(ctx, buf, len));
 }
 
 static int read_response(int fd)
