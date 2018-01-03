@@ -19,6 +19,7 @@
  */
 
 #include <osmocom/ctrl/control_cmd.h>
+#include <osmocom/bsc/ctrl.h>
 #include <osmocom/bsc/debug.h>
 #include <osmocom/bsc/gsm_data.h>
 #include <osmocom/bsc/osmo_bsc.h>
@@ -57,10 +58,27 @@ void osmo_bsc_send_trap(struct ctrl_cmd *cmd, struct bsc_msc_connection *msc_con
 	talloc_free(trap);
 }
 
-CTRL_CMD_DEFINE_RO(msc_connection_status, "msc_connection_status");
-static int msc_connection_status = 0;
-
+CTRL_CMD_DEFINE_RO(msc_connection_status, "connection_status");
 static int get_msc_connection_status(struct ctrl_cmd *cmd, void *data)
+{
+	struct bsc_msc_data *msc = (struct bsc_msc_data *)cmd->node;
+	if (msc == NULL) {
+		cmd->reply = "msc not found";
+		return CTRL_CMD_ERROR;
+	}
+
+	if (msc->msc_con->is_connected)
+		cmd->reply = "connected";
+	else
+		cmd->reply = "disconnected";
+	return CTRL_CMD_REPLY;
+}
+
+/* Backwards compat. */
+CTRL_CMD_DEFINE_RO(msc0_connection_status, "msc_connection_status");
+static int msc_connection_status = 0; /* XXX unused */
+
+static int get_msc0_connection_status(struct ctrl_cmd *cmd, void *data)
 {
 	struct gsm_network *gsmnet = data;
 	struct bsc_msc_data *msc = osmo_msc_data_find(gsmnet, 0);
@@ -96,7 +114,7 @@ static int msc_connection_status_trap_cb(unsigned int subsys, unsigned int signa
 	cmd->id = "0";
 	cmd->variable = "msc_connection_status";
 
-	get_msc_connection_status(cmd, NULL);
+	get_msc0_connection_status(cmd, NULL);
 
 	ctrl_cmd_send_to_all(gsmnet->ctrl, cmd);
 
@@ -627,7 +645,10 @@ int bsc_ctrl_cmds_install(struct gsm_network *net)
 	rc = ctrl_cmd_install(CTRL_NODE_ROOT, &cmd_net_timezone);
 	if (rc)
 		goto end;
-	rc = ctrl_cmd_install(CTRL_NODE_ROOT, &cmd_msc_connection_status);
+	rc = ctrl_cmd_install(CTRL_NODE_MSC, &cmd_msc_connection_status);
+	if (rc)
+		goto end;
+	rc = ctrl_cmd_install(CTRL_NODE_ROOT, &cmd_msc0_connection_status);
 	if (rc)
 		goto end;
 	rc = osmo_signal_register_handler(SS_MSC, &msc_connection_status_trap_cb, net);

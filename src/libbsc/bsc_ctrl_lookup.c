@@ -1,4 +1,4 @@
-/* SNMP-like status interface. Look-up of BTS/TRX
+/* SNMP-like status interface. Look-up of BTS/TRX/MSC
  *
  * (C) 2010-2011 by Daniel Willmann <daniel@totalueberwachung.de>
  * (C) 2010-2011 by On-Waves
@@ -25,12 +25,14 @@
 
 #include <osmocom/vty/command.h>
 #include <osmocom/ctrl/control_if.h>
+#include <osmocom/bsc/ctrl.h>
 #include <osmocom/bsc/debug.h>
 #include <osmocom/bsc/gsm_data.h>
+#include <osmocom/bsc/bsc_msc_data.h>
 
 extern vector ctrl_node_vec;
 
-/*! \brief control interface lookup function for bsc/bts gsm_data
+/*! \brief control interface lookup function for bsc/bts/msc gsm_data
  * \param[in] data Private data passed to controlif_setup()
  * \param[in] vline Vector of the line holding the command string
  * \param[out] node_type type (CTRL_NODE_) that was determined
@@ -44,6 +46,7 @@ static int bsc_ctrl_node_lookup(void *data, vector vline, int *node_type,
 	struct gsm_bts *bts = NULL;
 	struct gsm_bts_trx *trx = NULL;
 	struct gsm_bts_trx_ts *ts = NULL;
+	struct bsc_msc_data *msc = NULL;
 	char *token = vector_slot(vline, *i);
 	long num;
 
@@ -89,6 +92,18 @@ static int bsc_ctrl_node_lookup(void *data, vector vline, int *node_type,
 			goto err_missing;
 		*node_data = ts;
 		*node_type = CTRL_NODE_TS;
+	} else if (!strcmp(token, "msc")) {
+		if (*node_type != CTRL_NODE_ROOT || !net)
+			goto err_missing;
+		(*i)++;
+		if (!ctrl_parse_get_num(vline, *i, &num))
+			goto err_index;
+
+		msc = osmo_msc_data_find(net, num);
+		if (!msc)
+			goto err_missing;
+		*node_data = msc;
+		*node_type = CTRL_NODE_MSC;
 	} else
 		return 0;
 
@@ -102,6 +117,7 @@ err_index:
 struct ctrl_handle *bsc_controlif_setup(struct gsm_network *net,
 					const char *bind_addr, uint16_t port)
 {
-	return ctrl_interface_setup_dynip(net, bind_addr, port,
-					  bsc_ctrl_node_lookup);
+	return ctrl_interface_setup_dynip2(net, bind_addr, port,
+					   bsc_ctrl_node_lookup,
+					   _LAST_CTRL_NODE_BSC);
 }
