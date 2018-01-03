@@ -62,7 +62,10 @@ static int msc_connection_status = 0;
 
 static int get_msc_connection_status(struct ctrl_cmd *cmd, void *data)
 {
-	if (msc_connection_status)
+	struct gsm_network *gsmnet = data;
+	struct bsc_msc_data *msc = osmo_msc_data_find(gsmnet, 0);
+
+	if (msc->msc_con->is_connected)
 		cmd->reply = "connected";
 	else
 		cmd->reply = "disconnected";
