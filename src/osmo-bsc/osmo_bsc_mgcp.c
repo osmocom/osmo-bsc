@@ -811,8 +811,6 @@ static void fsm_halt_cb(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 		mgcp_ctx->resp = NULL;
 	}
 
-	LOGPFSML(fi, LOGL_DEBUG, "state machine halted\n");
-
 	/* Destroy the state machine and all context information */
 	osmo_fsm_inst_free(mgcp_ctx->fsm);
 	mgcp_ctx->fsm = NULL;
