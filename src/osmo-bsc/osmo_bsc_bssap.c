@@ -228,21 +228,52 @@ static int bssmap_handle_reset(struct bsc_msc_data *msc,
 	return 0;
 }
 
+/* Page a subscriber based on TMSI and LAC.
+ * A non-zero return value indicates a fatal out of memory condition. */
+static int
+page_subscriber(struct bsc_msc_data *msc, uint32_t tmsi, uint32_t lac,
+	const char *mi_string, uint8_t chan_needed)
+{
+	struct bsc_subscr *subscr;
+
+	subscr = bsc_subscr_find_or_create_by_imsi(msc->network->bsc_subscribers,
+						   mi_string);
+	if (!subscr) {
+		LOGP(DMSC, LOGL_ERROR, "Failed to allocate a subscriber for %s\n", mi_string);
+		return -1;
+	}
+
+	subscr->lac = lac;
+	subscr->tmsi = tmsi;
+
+	LOGP(DMSC, LOGL_INFO, "Paging request from MSC IMSI: '%s' TMSI: '0x%x/%u' LAC: 0x%x\n", mi_string, tmsi, tmsi, lac);
+	bsc_grace_paging_request(msc->network->bsc_data->rf_ctrl->policy,
+				 subscr, chan_needed, msc);
+
+	/* the paging code has grabbed its own references */
+	bsc_subscr_put(subscr);
+
+	return 0;
+}
+
 /* GSM 08.08 § 3.2.1.19 */
 static int bssmap_handle_paging(struct bsc_msc_data *msc,
 				struct msgb *msg, unsigned int payload_length)
 {
-	struct bsc_subscr *subscr;
 	struct tlv_parsed tp;
 	char mi_string[GSM48_MI_SIZE];
 	uint32_t tmsi = GSM_RESERVED_TMSI;
-	unsigned int lac;
+	uint16_t lac, *lacp_be;
+	uint16_t mcc;
+	uint16_t mnc;
 	uint8_t data_length;
+	int remain;
 	const uint8_t *data;
 	uint8_t chan_needed = RSL_CHANNEED_ANY;
 	uint8_t cell_ident;
 
 	tlv_parse(&tp, gsm0808_att_tlvdef(), msg->l4h + 1, payload_length - 1, 0, 0);
+	remain = payload_length - 1;
 
 	if (!TLVP_PRESENT(&tp, GSM0808_IE_IMSI)) {
 		LOGP(DMSC, LOGL_ERROR, "Mandatory IMSI not present.\n");
@@ -251,6 +282,7 @@ static int bssmap_handle_paging(struct bsc_msc_data *msc,
 		LOGP(DMSC, LOGL_ERROR, "Wrong content in the IMSI\n");
 		return -1;
 	}
+	remain -= TLVP_LEN(&tp, GSM0808_IE_IMSI);
 
 	if (!TLVP_PRESENT(&tp, GSM0808_IE_CELL_IDENTIFIER_LIST)) {
 		LOGP(DMSC, LOGL_ERROR, "Mandatory CELL IDENTIFIER LIST not present.\n");
@@ -260,6 +292,12 @@ static int bssmap_handle_paging(struct bsc_msc_data *msc,
 	if (TLVP_PRESENT(&tp, GSM0808_IE_TMSI) &&
 	    TLVP_LEN(&tp, GSM0808_IE_TMSI) == 4) {
 		tmsi = ntohl(tlvp_val32_unal(&tp, GSM0808_IE_TMSI));
+		remain -= TLVP_LEN(&tp, GSM0808_IE_TMSI);
+	}
+
+	if (remain <= 0) {
+		LOGP(DMSC, LOGL_ERROR, "Payload too short.\n");
+		return -1;
 	}
 
 	/*
@@ -280,38 +318,12 @@ static int bssmap_handle_paging(struct bsc_msc_data *msc,
 		LOGP(DMSC, LOGL_ERROR, "Paging IMSI %s: Zero length Cell Identifier List\n",
 		     mi_string);
 		return -1;
+	} else if (data_length > remain) {
+		LOGP(DMSC, LOGL_ERROR, "Paging IMSI %s: Bogus Cell Identifier List length\n",
+		     mi_string);
+		return -1;
 	}
-
-	cell_ident = data[0] & 0xf;
-
-	/* Default fallback: page entire BSS */
-	lac = GSM_LAC_RESERVED_ALL_BTS;
-
-	switch (cell_ident) {
-	case CELL_IDENT_LAC:
-		if (data_length != 3) {
-			LOGP(DMSC, LOGL_ERROR, "Paging IMSI %s: Cell Identifier List for LAC (0x%x)"
-			     " has invalid length: %u, paging entire BSS instead (%s)\n",
-			     mi_string, CELL_IDENT_LAC, data_length, osmo_hexdump(data, data_length));
-			break;
-		}
-		lac = osmo_load16be(&data[1]);
-		break;
-
-	case CELL_IDENT_BSS:
-		if (data_length != 1) {
-			LOGP(DMSC, LOGL_ERROR, "Paging IMSI %s: Cell Identifier List for BSS (0x%x)"
-			     " has invalid length: %u, paging entire BSS anyway (%s)\n",
-			     mi_string, CELL_IDENT_BSS, data_length, osmo_hexdump(data, data_length));
-		}
-		break;
-
-	default:
-		LOGP(DMSC, LOGL_NOTICE, "Paging IMSI %s: unimplemented Cell Identifier List (0x%x),"
-		     " paging entire BSS instead (%s)\n",
-		     mi_string, cell_ident, osmo_hexdump(data, data_length));
-		break;
-	}
+	remain = data_length; /* ignore payload padding data beyond data_length */
 
 	if (TLVP_PRESENT(&tp, GSM0808_IE_CHANNEL_NEEDED) && TLVP_LEN(&tp, GSM0808_IE_CHANNEL_NEEDED) == 1)
 		chan_needed = TLVP_VAL(&tp, GSM0808_IE_CHANNEL_NEEDED)[0] & 0x03;
@@ -320,22 +332,70 @@ static int bssmap_handle_paging(struct bsc_msc_data *msc,
 		LOGP(DMSC, LOGL_ERROR, "eMLPP is not handled\n");
 	}
 
-	subscr = bsc_subscr_find_or_create_by_imsi(msc->network->bsc_subscribers,
-						   mi_string);
-	if (!subscr) {
-		LOGP(DMSC, LOGL_ERROR, "Failed to allocate a subscriber for %s\n", mi_string);
-		return -1;
+	cell_ident = data[0] & 0xf;
+	remain -= 1; /* cell ident consumed */
+
+	/* Default fallback: page entire BSS */
+	lac = GSM_LAC_RESERVED_ALL_BTS;
+
+	switch (cell_ident) {
+	case CELL_IDENT_LAI_AND_LAC: {
+		struct gsm48_loc_area_id lai;
+		int i = 0;
+		while (remain >= sizeof(lai)) {
+			/* Parse and decode 5-byte LAI list element (see TS 08.08 3.2.2.27).
+			 * Copy data to stack to prevent unaligned access in gsm48_decode_lai(). */
+			memcpy(&lai, &data[1 + i * sizeof(lai)], sizeof(lai)); /* don't byte swap yet */
+			if (gsm48_decode_lai(&lai, &mcc, &mnc, &lac) != 0) {
+				LOGP(DMSC, LOGL_ERROR, "Paging IMSI %s: Invalid LAI in Cell Identifier List "
+				     "for BSS (0x%x), paging entire BSS anyway (%s)\n",
+				     mi_string, CELL_IDENT_BSS, osmo_hexdump(data, data_length));
+				lac = GSM_LAC_RESERVED_ALL_BTS;
+				break;
+			}
+			if (mcc == msc->network->country_code && mnc == msc->network->network_code) {
+				    if (page_subscriber(msc, tmsi, lac, mi_string, chan_needed) != 0)
+						break;
+			} else
+				LOGP(DMSC, LOGL_DEBUG, "Not paging IMSI %s: MCC/MNC in Cell Identifier List "
+				     "(%d/%d) do not match our network (%d/%d)\n", mi_string, mcc, mnc,
+				     msc->network->country_code, msc->network->network_code);
+
+			remain -= sizeof(lai);
+			i++;
+		}
+		break;
 	}
 
-	subscr->lac = lac;
-	subscr->tmsi = tmsi;
+	case CELL_IDENT_LAC:
+		lacp_be = (uint16_t *)(&data[1]);
+		while (remain >= sizeof(*lacp_be)) {
+			lac = osmo_load16be(lacp_be);
+			if (page_subscriber(msc, tmsi, lac, mi_string, chan_needed) != 0)
+				break;
+			remain -= sizeof(*lacp_be);
+			lacp_be++;
+		}
+		break;
 
-	LOGP(DMSC, LOGL_INFO, "Paging request from MSC IMSI: '%s' TMSI: '0x%x/%u' LAC: 0x%x\n", mi_string, tmsi, tmsi, lac);
-	bsc_grace_paging_request(msc->network->bsc_data->rf_ctrl->policy,
-				 subscr, chan_needed, msc);
+	case CELL_IDENT_BSS:
+		if (data_length != 1) {
+			LOGP(DMSC, LOGL_ERROR, "Paging IMSI %s: Cell Identifier List for BSS (0x%x)"
+			     " has invalid length: %u, paging entire BSS anyway (%s)\n",
+			     mi_string, CELL_IDENT_BSS, data_length, osmo_hexdump(data, data_length));
+		}
+		if (page_subscriber(msc, tmsi, GSM_LAC_RESERVED_ALL_BTS, mi_string, chan_needed) != 0)
+			break;
+		break;
 
-	/* the paging code has grabbed its own references */
-	bsc_subscr_put(subscr);
+	default:
+		LOGP(DMSC, LOGL_NOTICE, "Paging IMSI %s: unimplemented Cell Identifier List (0x%x),"
+		     " paging entire BSS instead (%s)\n",
+		     mi_string, cell_ident, osmo_hexdump(data, data_length));
+		if (page_subscriber(msc, tmsi, GSM_LAC_RESERVED_ALL_BTS, mi_string, chan_needed) != 0)
+			break;
+		break;
+	}
 
 	return 0;
 }

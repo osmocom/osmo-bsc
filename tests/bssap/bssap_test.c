@@ -73,6 +73,11 @@ struct {
 		/*                                         ^^^^^^^^^^^^ Cell Identifier List: LAI */
 		GSM_LAC_RESERVED_ALL_BTS, 0
 	},
+	{
+		"001952080859512069000743940904010844601a060400f1100065",
+		/*                                         ^^^^^^^^^^^^ Cell Identifier List: LAI */
+		0x65, 0
+	},
 };
 
 void test_cell_identifier()
