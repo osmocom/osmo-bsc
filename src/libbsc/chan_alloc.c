@@ -36,11 +36,8 @@
 
 static bool ts_is_usable(const struct gsm_bts_trx_ts *ts)
 {
-	/* FIXME: How does this behave for BS-11 ? */
-	if (is_ipaccess_bts(ts->trx->bts)) {
-		if (!nm_is_running(&ts->mo.nm_state))
-			return false;
-	}
+	if (!trx_is_usable(ts->trx))
+		return false;
 
 	/* If a TCH/F_PDCH TS is busy changing, it is already taken or not
 	 * yet available. */

@@ -871,6 +871,13 @@ static void trx_dump_vty(struct vty *vty, struct gsm_bts_trx *trx)
 	}
 }
 
+static inline void print_all_trx(struct vty *vty, const struct gsm_bts *bts)
+{
+	uint8_t trx_nr;
+	for (trx_nr = 0; trx_nr < bts->num_trx; trx_nr++)
+		trx_dump_vty(vty, gsm_bts_trx_num(bts, trx_nr));
+}
+
 DEFUN(show_trx,
       show_trx_cmd,
       "show trx [<0-255>] [<0-255>]",
@@ -880,7 +887,6 @@ DEFUN(show_trx,
 {
 	struct gsm_network *net = gsmnet_from_vty(vty);
 	struct gsm_bts *bts = NULL;
-	struct gsm_bts_trx *trx;
 	int bts_nr, trx_nr;
 
 	if (argc >= 1) {
@@ -900,26 +906,17 @@ DEFUN(show_trx,
 				VTY_NEWLINE);
 			return CMD_WARNING;
 		}
-		trx = gsm_bts_trx_num(bts, trx_nr);
-		trx_dump_vty(vty, trx);
+		trx_dump_vty(vty, gsm_bts_trx_num(bts, trx_nr));
 		return CMD_SUCCESS;
 	}
 	if (bts) {
 		/* print all TRX in this BTS */
-		for (trx_nr = 0; trx_nr < bts->num_trx; trx_nr++) {
-			trx = gsm_bts_trx_num(bts, trx_nr);
-			trx_dump_vty(vty, trx);
-		}
+		print_all_trx(vty, bts);
 		return CMD_SUCCESS;
 	}
 
-	for (bts_nr = 0; bts_nr < net->num_bts; bts_nr++) {
-		bts = gsm_bts_num(net, bts_nr);
-		for (trx_nr = 0; trx_nr < bts->num_trx; trx_nr++) {
-			trx = gsm_bts_trx_num(bts, trx_nr);
-			trx_dump_vty(vty, trx);
-		}
-	}
+	for (bts_nr = 0; bts_nr < net->num_bts; bts_nr++)
+		print_all_trx(vty, gsm_bts_num(net, bts_nr));
 
 	return CMD_SUCCESS;
 }
