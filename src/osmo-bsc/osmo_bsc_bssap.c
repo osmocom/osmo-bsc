@@ -401,7 +401,7 @@ static int bssmap_handle_cipher_mode(struct osmo_bsc_sccp_con *conn,
 	struct msgb *resp;
 	int reject_cause = -1;
 	int include_imeisv = 1;
-	uint8_t *enc_key;
+	const uint8_t *enc_key;
 	uint16_t enc_key_len;
 	uint8_t enc_bits_bsc;
 	uint8_t enc_bits_msc;
