@@ -298,9 +298,9 @@ static void bts_dump_vty(struct vty *vty, struct gsm_bts *bts)
 		vty_out(vty, "  OML Link state: %s", get_model_oml_status(bts));
 		sec = bts_uptime(bts);
 		if (sec)
-			vty_out(vty, " %llu days %llu hours %llu min. %llu sec.%s",
-				OSMO_SEC2DAY(sec), OSMO_SEC2HRS(sec), OSMO_SEC2MIN(sec), sec % 60,
-				VTY_NEWLINE);
+			vty_out(vty, " %llu days %llu hours %llu min. %llu sec.",
+				OSMO_SEC2DAY(sec), OSMO_SEC2HRS(sec), OSMO_SEC2MIN(sec), sec % 60);
+		vty_out(vty, "%s", VTY_NEWLINE);
 	} else {
 		vty_out(vty, "  E1 Signalling Link:%s", VTY_NEWLINE);
 		e1isl_dump_vty(vty, bts->oml_link);
