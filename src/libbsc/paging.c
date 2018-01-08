@@ -86,8 +86,8 @@ static void page_ms(struct gsm_paging_request *request)
 
 	log_set_context(LOG_CTX_BSC_SUBSCR, request->bsub);
 
-	LOGP(DPAG, LOGL_INFO, "Going to send paging commands: imsi: %s tmsi: "
-	     "0x%08x for ch. type %d (attempt %d)\n", request->bsub->imsi,
+	LOGP(DPAG, LOGL_INFO, "(bts=%d) Going to send paging commands: imsi: %s tmsi: "
+	     "0x%08x for ch. type %d (attempt %d)\n", bts->nr, request->bsub->imsi,
 	     request->bsub->tmsi, request->chan_type, request->attempts);
 
 	if (request->bsub->tmsi == GSM_RESERVED_TMSI)
