@@ -36,8 +36,8 @@
 #include <osmocom/bsc/handover_cfg.h>
 
 /* Find BTS by ARFCN and BSIC */
-static struct gsm_bts *bts_by_arfcn_bsic(const struct gsm_network *net,
-					 uint16_t arfcn, uint8_t bsic)
+struct gsm_bts *bts_by_arfcn_bsic(const struct gsm_network *net,
+				  uint16_t arfcn, uint8_t bsic)
 {
 	struct gsm_bts *bts;
 
