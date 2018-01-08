@@ -35,21 +35,16 @@
 #include <osmocom/bsc/handover.h>
 #include <osmocom/bsc/handover_cfg.h>
 
-/* Get reference to a neighbor cell on a given BCCH ARFCN */
-static struct gsm_bts *gsm_bts_neighbor(const struct gsm_bts *bts,
-					uint16_t arfcn, uint8_t bsic)
+/* Find BTS by ARFCN and BSIC */
+static struct gsm_bts *bts_by_arfcn_bsic(const struct gsm_network *net,
+					 uint16_t arfcn, uint8_t bsic)
 {
-	struct gsm_bts *neigh;
-	/* FIXME: use some better heuristics here to determine which cell
-	 * using this ARFCN really is closest to the target cell.  For
-	 * now we simply assume that each ARFCN will only be used by one
-	 * cell */
+	struct gsm_bts *bts;
 
-	llist_for_each_entry(neigh, &bts->network->bts_list, list) {
-		/* FIXME: this is probably returning the same bts again!? */
-		if (neigh->c0->arfcn == arfcn &&
-		    neigh->bsic == bsic)
-			return neigh;
+	llist_for_each_entry(bts, &net->bts_list, list) {
+		if (bts->c0->arfcn == arfcn &&
+		    bts->bsic == bsic)
+			return bts;
 	}
 
 	return NULL;
@@ -63,7 +58,11 @@ static int handover_to_arfcn_bsic(struct gsm_lchan *lchan,
 	struct gsm_bts *new_bts;
 
 	/* resolve the gsm_bts structure for the best neighbor */
-	new_bts = gsm_bts_neighbor(lchan->ts->trx->bts, arfcn, bsic);
+	/* FIXME: use some better heuristics here to determine which cell
+	 * using this ARFCN really is closest to the target cell.  For
+	 * now we simply assume that each ARFCN will only be used by one
+	 * cell */
+	new_bts = bts_by_arfcn_bsic(lchan->ts->trx->bts->network, arfcn, bsic);
 	if (!new_bts) {
 		LOGP(DHODEC, LOGL_NOTICE, "unable to determine neighbor BTS "
 		     "for ARFCN %u BSIC %u ?!?\n", arfcn, bsic);
