@@ -388,6 +388,7 @@ void paging_request_stop(struct llist_head *bts_list,
 	struct gsm_bts *bts;
 
 	log_set_context(LOG_CTX_BSC_SUBSCR, bsub);
+	conn->bsub = bsc_subscr_get(bsub);
 
 	/* Stop this first and dispatch the request */
 	if (_bts) {

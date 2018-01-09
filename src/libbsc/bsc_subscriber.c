@@ -41,7 +41,6 @@ static struct bsc_subscr *bsc_subscr_alloc(struct llist_head *list)
 		return NULL;
 
 	llist_add_tail(&bsub->entry, list);
-	bsub->use_count = 1;
 
 	return bsc_subscr_get(bsub);
 }
@@ -92,7 +91,7 @@ struct bsc_subscr *bsc_subscr_find_or_create_by_imsi(struct llist_head *list,
 		return bsub;
 	bsub = bsc_subscr_alloc(list);
 	bsc_subscr_set_imsi(bsub, imsi);
-	return bsub;
+	return bsc_subscr_get(bsub);
 }
 
 struct bsc_subscr *bsc_subscr_find_or_create_by_tmsi(struct llist_head *list,
@@ -104,7 +103,7 @@ struct bsc_subscr *bsc_subscr_find_or_create_by_tmsi(struct llist_head *list,
 		return bsub;
 	bsub = bsc_subscr_alloc(list);
 	bsub->tmsi = tmsi;
-	return bsub;
+	return bsc_subscr_get(bsub);
 }
 
 const char *bsc_subscr_name(struct bsc_subscr *bsub)

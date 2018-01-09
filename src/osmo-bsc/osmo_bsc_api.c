@@ -20,6 +20,7 @@
 #include <osmocom/bsc/bsc_subscr_conn_fsm.h>
 #include <osmocom/bsc/osmo_bsc.h>
 #include <osmocom/bsc/bsc_msc_data.h>
+#include <osmocom/bsc/bsc_subscriber.h>
 #include <osmocom/bsc/debug.h>
 
 #include <osmocom/bsc/gsm_04_80.h>
@@ -248,6 +249,12 @@ static int complete_layer3(struct gsm_subscriber_connection *conn,
 		bsc_maybe_lu_reject(conn, con_type, lu_cause);
 		return BSC_API_CONN_POL_REJECT;
 	}
+
+	/* TODO: also extract TMSI. We get an IMSI is only because the filtering functions extract the
+	 * IMSI to filter by IMSI. A TMSI identity is never returned here, see e.g. _cr_check_loc_upd()
+	 * and other similar functions called from bsc_msg_filter_initial(). */
+	if (imsi)
+		conn->bsub = bsc_subscr_find_or_create_by_imsi(msc->network->bsc_subscribers, imsi);
 
 	/* allocate resource for a new connection */
 	ret = osmo_bsc_sigtran_new_conn(conn, msc);
