@@ -339,6 +339,10 @@ static int bssmap_handle_paging(struct bsc_msc_data *msc,
 	lac = GSM_LAC_RESERVED_ALL_BTS;
 
 	switch (cell_ident) {
+	case CELL_IDENT_NO_CELL:
+		LOGP(DMSC, LOGL_NOTICE, "Ignoring no-op paging request for IMSI %s\n", mi_string);
+		return 0; /* nothing to do */
+
 	case CELL_IDENT_LAI_AND_LAC: {
 		struct gsm48_loc_area_id lai;
 		int i = 0;
