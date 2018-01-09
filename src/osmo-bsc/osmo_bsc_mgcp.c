@@ -122,7 +122,10 @@ enum bsc_mgcp_fsm_evt {
  * remove a half open connection (if possible). This function will execute
  * a controlled jump to the DLCX phase. From there, the FSM will then just
  * continue like the call were ended normally */
-static void handle_error(struct mgcp_ctx *mgcp_ctx, enum bsc_mgcp_cause_code cause)
+#define handle_error(mgcp_ctx, cause) \
+	_handle_error(mgcp_ctx, cause, __FILE__, __LINE__)
+static void _handle_error(struct mgcp_ctx *mgcp_ctx, enum bsc_mgcp_cause_code cause,
+			  const char *file, int line)
 {
 	struct osmo_fsm_inst *fi;
 
@@ -130,8 +133,8 @@ static void handle_error(struct mgcp_ctx *mgcp_ctx, enum bsc_mgcp_cause_code cau
 	fi = mgcp_ctx->fsm;
 	OSMO_ASSERT(fi);
 
-	LOGPFSML(mgcp_ctx->fsm, LOGL_ERROR, "%s -- graceful shutdown...\n",
-		 get_value_string(bsc_mgcp_cause_codes_names, cause));
+	LOGPFSMLSRC(mgcp_ctx->fsm, LOGL_ERROR, file, line, "%s -- graceful shutdown...\n",
+		    get_value_string(bsc_mgcp_cause_codes_names, cause));
 
 	/* Set the VM into the state where it waits for the call end */
 	osmo_fsm_inst_state_chg(fi, ST_CALL, 0, 0);
