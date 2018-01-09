@@ -50,44 +50,62 @@ static int normal_paging(struct bsc_subscr *subscr, int chan_needed,
 	return paging_request(msc->network, subscr, chan_needed, msc);
 }
 
-static int locked_paging(struct bsc_subscr *subscr, int chan_needed,
-			 struct bsc_msc_data *msc)
-{
-	struct gsm_bts *bts = NULL;
-
-	/*
-	 * Check if there is any BTS that is on for the given lac. Start
-	 * with NULL and iterate through all bts.
-	 */
-	llist_for_each_entry(bts, &msc->network->bts_list, list) {
-		/*
-		 * continue if the BTS is not excluded from the lock
-		 */
-		if (!bts->excl_from_rf_lock)
-			continue;
-
-		/* in case of no lac patching is in place, check the BTS */
-		if (msc->core_lac == -1 && subscr->lac != bts->location_area_code)
-			continue;
-
-		/*
-		 * now page on this bts
-		 */
-		paging_request_bts(bts, subscr, chan_needed, msc);
-	};
-
-	/* All bts are either off or in the grace period */
-	return 0;
-}
-
-/**
- * Try to not page if everything the cell is not on.
- */
-int bsc_grace_paging_request(enum signal_rf rf_policy,
+/* Return value is like paging_request_bts():
+ * returns 1 on success (one BTS was paged); 0 in case of error (e.g. TRX down) */
+static int locked_paging_bts(struct gsm_bts *bts,
 			     struct bsc_subscr *subscr,
 			     int chan_needed,
 			     struct bsc_msc_data *msc)
 {
+	/* Return error if the BTS is not excluded from the lock. */
+	if (!bts->excl_from_rf_lock)
+		return 0;
+
+	/* in case of no lac patching is in place, check the BTS */
+	if (msc->core_lac == -1 && subscr->lac != bts->location_area_code)
+		return 0;
+
+	return paging_request_bts(bts, subscr, chan_needed, msc);
+}
+
+static int locked_paging(struct bsc_subscr *subscr, int chan_needed,
+			 struct bsc_msc_data *msc)
+{
+	struct gsm_bts *bts = NULL;
+	int num_pages = 0;
+
+	/*
+	 * Check if there is any BTS that is on for the given lac. Start
+	 * with NULL and iterate through all bts.
+	 * All other bts are either off or in the grace period.
+	 */
+	llist_for_each_entry(bts, &msc->network->bts_list, list)
+		num_pages += locked_paging_bts(bts, subscr, chan_needed, msc);
+
+	return num_pages;
+}
+
+/**
+ * Page a subscriber in an MSC.
+ * \param[in] rf_policy if not S_RF_ON, page only BTSs which are not excluded from the RF lock
+ * \param[in] subscr subscriber we want to page
+ * \param[in] chan_needed value of the GSM0808_IE_CHANNEL_NEEDED IE
+ * \param[in] msc MSC which has issued this paging
+ * \param[in] bts if not NULL, page via this particular BTS
+ * \returns number of BTS on which we issued the paging
+ */
+int bsc_grace_paging_request(enum signal_rf rf_policy,
+			     struct bsc_subscr *subscr,
+			     int chan_needed,
+			     struct bsc_msc_data *msc,
+			     struct gsm_bts *bts)
+{
+	if (bts) {
+		if (rf_policy == S_RF_ON)
+			return paging_request_bts(bts, subscr, chan_needed, msc);
+		return locked_paging_bts(bts, subscr, chan_needed, msc);
+	}
+
 	if (rf_policy == S_RF_ON)
 		return normal_paging(subscr, chan_needed, msc);
 	return locked_paging(subscr, chan_needed, msc);
