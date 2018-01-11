@@ -395,6 +395,30 @@ static int bssmap_handle_paging(struct bsc_msc_data *msc,
 		}
 	}
 
+	case CELL_IDENT_LAC_AND_CI: {
+		uint16_t ci, *ci_be;
+		lacp_be = (uint16_t *)(&data[1]);
+		ci_be = (uint16_t *)(&data[3]);
+		while (remain >= sizeof(*lacp_be) + sizeof(*ci_be)) {
+			lac = osmo_load16be(lacp_be);
+			ci = osmo_load16be(ci_be);
+
+			llist_for_each_entry(bts, &msc->network->bts_list, list) {
+				if (bts->location_area_code != lac)
+					continue;
+				if (bts->cell_identity != ci)
+					continue;
+				if (page_subscriber(msc, bts, tmsi, lac, mi_string, chan_needed) < 0)
+					break;
+			}
+
+			remain -= sizeof(*lacp_be) + sizeof(*ci_be);
+			lacp_be++;
+			ci_be++;
+		}
+		break;
+	}
+
 	case CELL_IDENT_CI: {
 		uint16_t *ci_be = (uint16_t *)(&data[1]);
 		while (remain >= sizeof(*ci_be)) {
