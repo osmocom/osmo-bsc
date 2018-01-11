@@ -24,6 +24,7 @@
 #include <osmocom/bsc/signal.h>
 #include <osmocom/bsc/bsc_subscriber.h>
 #include <osmocom/bsc/bsc_msc_data.h>
+#include <osmocom/bsc/gsm_data_shared.h>
 #include <osmocom/bsc/common_bsc.h>
 #include <osmocom/bsc/osmo_bsc_rf.h>
 
@@ -41,9 +42,9 @@ uint16_t gl_expect_lac = 0;
 
 /* override, requires '-Wl,--wrap=bsc_grace_paging_request' */
 int __real_bsc_grace_paging_request(enum signal_rf rf_policy, struct bsc_subscr *subscr, int chan_needed,
-				    struct bsc_msc_data *msc);
+				    struct bsc_msc_data *msc, struct gsm_bts *bts);
 int __wrap_bsc_grace_paging_request(enum signal_rf rf_policy, struct bsc_subscr *subscr, int chan_needed,
-				    struct bsc_msc_data *msc)
+				    struct bsc_msc_data *msc, struct gsm_bts *bts)
 {
 	if (subscr->lac == GSM_LAC_RESERVED_ALL_BTS)
 		fprintf(stderr, "BSC paging started on entire BSS (%u)\n", subscr->lac);
@@ -86,6 +87,7 @@ void test_cell_identifier()
 	int rc;
 	struct gsm_network *net;
 	struct bsc_msc_data *msc;
+	struct gsm_bts *bts;
 
 	net = bsc_network_init(NULL, 1, 1);
 	net->bsc_data->rf_ctrl = talloc_zero(NULL, struct osmo_bsc_rf);
@@ -93,6 +95,12 @@ void test_cell_identifier()
 
 	msc = talloc_zero(net, struct bsc_msc_data);
 	msc->network = net;
+
+	bts = gsm_bts_alloc_register(net, GSM_BTS_TYPE_UNKNOWN, 0);
+	if (bts == NULL) {
+		fprintf(stderr, "gsm_bts_alloc_register() returned NULL\n");
+		return;
+	}
 
 	log_set_log_level(osmo_stderr_target, LOGL_DEBUG);
 
@@ -102,6 +110,7 @@ void test_cell_identifier()
 		msg = msgb_from_hex("test_cell_identifier", 1024, cell_identifier_tests[i].msg);
 
 		gl_expect_lac = cell_identifier_tests[i].expect_lac;
+		bts->location_area_code = (gl_expect_lac == GSM_LAC_RESERVED_ALL_BTS ? 0 : gl_expect_lac);
 		rc = bsc_handle_udt(msc, msg, msgb_l2len(msg));
 
 		fprintf(stderr, "bsc_handle_udt() returned %d\n", rc);
