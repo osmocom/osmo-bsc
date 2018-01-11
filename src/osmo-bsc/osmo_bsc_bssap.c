@@ -260,6 +260,19 @@ page_subscriber(struct bsc_msc_data *msc, struct gsm_bts *bts,
 	return ret;
 }
 
+/* Decode 5-byte LAI list element data (see TS 08.08 3.2.2.27) into MCC/MNC/LAC.
+ * Return 0 if successful, negative on error. */
+static int
+decode_lai(const uint8_t *data, uint16_t *mcc, uint16_t *mnc, uint16_t *lac)
+{
+	struct gsm48_loc_area_id lai;
+
+	/* Copy data to stack to prevent unaligned access in gsm48_decode_lai(). */
+	memcpy(&lai, data, sizeof(lai)); /* don't byte swap yet */
+
+	return gsm48_decode_lai(&lai, mcc, mnc, lac) != 0 ? -1 : 0;
+}
+
 /* GSM 08.08 § 3.2.1.19 */
 static int bssmap_handle_paging(struct bsc_msc_data *msc,
 				struct msgb *msg, unsigned int payload_length)
@@ -348,6 +361,40 @@ static int bssmap_handle_paging(struct bsc_msc_data *msc,
 		LOGP(DMSC, LOGL_NOTICE, "Ignoring no-op paging request for IMSI %s\n", mi_string);
 		return 0; /* nothing to do */
 
+	case CELL_IDENT_WHOLE_GLOBAL: {
+		uint16_t ci;
+		int i = 0;
+		while (remain >= sizeof(struct gsm48_loc_area_id) + sizeof(ci)) {
+			uint16_t *ci_be;
+			size_t lai_offset = 1 + i * (sizeof(struct gsm48_loc_area_id) + sizeof(ci));
+			if (decode_lai(&data[lai_offset], &mcc, &mnc, &lac) != 0) {
+				LOGP(DMSC, LOGL_ERROR, "Paging IMSI %s: Invalid LAI in Cell Identifier List "
+				     "for BSS (0x%x), paging entire BSS anyway (%s)\n",
+				     mi_string, CELL_IDENT_BSS, osmo_hexdump(data, data_length));
+				lac = GSM_LAC_RESERVED_ALL_BTS;
+				break;
+			}
+			ci_be = (uint16_t *)(&data[lai_offset + sizeof(struct gsm48_loc_area_id)]);
+			ci = osmo_load16be(ci_be);
+			if (mcc == msc->network->country_code && mnc == msc->network->network_code) {
+				llist_for_each_entry(bts, &msc->network->bts_list, list) {
+					if (bts->location_area_code != lac)
+						continue;
+					if (bts->cell_identity != ci)
+						continue;
+					if (page_subscriber(msc, bts, tmsi, lac, mi_string, chan_needed) < 0)
+						break;
+				}
+			} else {
+				LOGP(DMSC, LOGL_DEBUG, "Not paging IMSI %s: MCC/MNC in Cell Identifier List "
+				     "(%d/%d) do not match our network (%d/%d)\n", mi_string, mcc, mnc,
+				     msc->network->country_code, msc->network->network_code);
+			}
+			remain -= sizeof(struct gsm48_loc_area_id) + sizeof(ci);
+			i++;
+		}
+	}
+
 	case CELL_IDENT_CI: {
 		uint16_t *ci_be = (uint16_t *)(&data[1]);
 		while (remain >= sizeof(*ci_be)) {
@@ -372,13 +419,9 @@ static int bssmap_handle_paging(struct bsc_msc_data *msc,
 	}
 
 	case CELL_IDENT_LAI_AND_LAC: {
-		struct gsm48_loc_area_id lai;
 		int i = 0;
-		while (remain >= sizeof(lai)) {
-			/* Parse and decode 5-byte LAI list element (see TS 08.08 3.2.2.27).
-			 * Copy data to stack to prevent unaligned access in gsm48_decode_lai(). */
-			memcpy(&lai, &data[1 + i * sizeof(lai)], sizeof(lai)); /* don't byte swap yet */
-			if (gsm48_decode_lai(&lai, &mcc, &mnc, &lac) != 0) {
+		while (remain >= sizeof(struct gsm48_loc_area_id)) {
+			if (decode_lai(&data[1 + i * sizeof(struct gsm48_loc_area_id)], &mcc, &mnc, &lac) != 0) {
 				LOGP(DMSC, LOGL_ERROR, "Paging IMSI %s: Invalid LAI in Cell Identifier List "
 				     "for BSS (0x%x), paging entire BSS anyway (%s)\n",
 				     mi_string, CELL_IDENT_BSS, osmo_hexdump(data, data_length));
@@ -397,7 +440,7 @@ static int bssmap_handle_paging(struct bsc_msc_data *msc,
 				     "(%d/%d) do not match our network (%d/%d)\n", mi_string, mcc, mnc,
 				     msc->network->country_code, msc->network->network_code);
 			}
-			remain -= sizeof(lai);
+			remain -= sizeof(struct gsm48_loc_area_id);
 			i++;
 		}
 		break;
