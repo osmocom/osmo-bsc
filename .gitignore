@@ -16,6 +16,8 @@ bscconfig.h.in
 *.gcda
 *.gcno
 
+**/TAGS
+
 #configure
 aclocal.m4
 autom4te.cache/
