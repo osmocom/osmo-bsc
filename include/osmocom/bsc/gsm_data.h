@@ -12,12 +12,14 @@
 #include <osmocom/core/stats.h>
 
 #include <osmocom/crypt/auth.h>
-#include <osmocom/sigtran/sccp_sap.h>
 
 #include <osmocom/bsc/common.h>
 #include <osmocom/bsc/rest_octets.h>
 #include <osmocom/bsc/common_cs.h>
 
+struct mgcp_client_conf;
+struct mgcp_client;
+struct mgcp_ctx;
 
 /** annotations for msgb ownership */
 #define __uses
