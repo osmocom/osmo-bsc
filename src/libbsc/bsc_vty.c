@@ -266,6 +266,22 @@ static void e1isl_dump_vty(struct vty *vty, struct e1inp_sign_link *e1l)
 		e1l->tei, e1l->sapi, VTY_NEWLINE);
 }
 
+static void vty_out_neigh_list(struct vty *vty, struct bitvec *bv)
+{
+	int count = 0;
+	int i;
+	for (i = 0; i < 1024; i++) {
+		if (!bitvec_get_bit_pos(bv, i))
+			continue;
+		vty_out(vty, " %u", i);
+		count ++;
+	}
+	if (!count)
+		vty_out(vty, " (none)");
+	else
+		vty_out(vty, " (%d)", count);
+}
+
 static void bts_dump_vty(struct vty *vty, struct gsm_bts *bts)
 {
 	struct pchan_load pl;
@@ -386,6 +402,28 @@ static void bts_dump_vty(struct vty *vty, struct gsm_bts *bts)
 		vty_out(vty, "  E1 Signalling Link:%s", VTY_NEWLINE);
 		e1isl_dump_vty(vty, bts->oml_link);
 	}
+
+	vty_out(vty, "  Neighbor Cells: ");
+	switch (bts->neigh_list_manual_mode) {
+	default:
+	case NL_MODE_AUTOMATIC:
+		vty_out(vty, "Automatic");
+		/* generate_bcch_chan_list() should populate si_common.neigh_list */
+		break;
+	case NL_MODE_MANUAL:
+		vty_out(vty, "Manual");
+		break;
+	case NL_MODE_MANUAL_SI5SEP:
+		vty_out(vty, "Manual/separate SI5");
+		break;
+	}
+	vty_out(vty, ", ARFCNs:");
+	vty_out_neigh_list(vty, &bts->si_common.neigh_list);
+	if (bts->neigh_list_manual_mode == NL_MODE_MANUAL_SI5SEP) {
+		vty_out(vty, " SI5:");
+		vty_out_neigh_list(vty, &bts->si_common.si5_neigh_list);
+	}
+	vty_out(vty, "%s", VTY_NEWLINE);
 
 	/* FIXME: chan_desc */
 	memset(&pl, 0, sizeof(pl));
