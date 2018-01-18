@@ -270,6 +270,9 @@ static void bts_dump_vty(struct vty *vty, struct gsm_bts *bts)
 {
 	struct pchan_load pl;
 	unsigned long long sec;
+	struct gsm_bts_trx *trx;
+	int ts_hopping_total;
+	int ts_non_hopping_total;
 
 	vty_out(vty, "BTS %u is of %s type in band %s, has CI %u LAC %u, "
 		"BSIC %u (NCC=%u, BCC=%u) and %u TRX%s",
@@ -280,6 +283,36 @@ static void bts_dump_vty(struct vty *vty, struct gsm_bts *bts)
 		bts->num_trx, VTY_NEWLINE);
 	vty_out(vty, "  Description: %s%s",
 		bts->description ? bts->description : "(null)", VTY_NEWLINE);
+
+	vty_out(vty, "  ARFCNs:");
+	ts_hopping_total = 0;
+	ts_non_hopping_total = 0;
+	llist_for_each_entry(trx, &bts->trx_list, list) {
+		int ts_nr;
+		int ts_hopping = 0;
+		int ts_non_hopping = 0;
+		for (ts_nr = 0; ts_nr < TRX_NR_TS; ts_nr++) {
+			struct gsm_bts_trx_ts *ts = &trx->ts[ts_nr];
+			if (ts->hopping.enabled)
+				ts_hopping++;
+			else
+				ts_non_hopping++;
+		}
+
+		if (ts_non_hopping)
+			vty_out(vty, " %u", trx->arfcn);
+		ts_hopping_total += ts_hopping;
+		ts_non_hopping_total += ts_non_hopping;
+	}
+	if (ts_hopping_total) {
+		if (ts_non_hopping_total)
+			vty_out(vty, " / Hopping on %d of %d timeslots",
+				ts_hopping_total, ts_hopping_total + ts_non_hopping_total);
+		else
+			vty_out(vty, " Hopping on all %d timeslots", ts_hopping_total);
+	}
+	vty_out(vty, "%s", VTY_NEWLINE);
+
 	if (strnlen(bts->pcu_version, MAX_VERSION_LENGTH))
 		vty_out(vty, "  PCU version %s connected%s", bts->pcu_version,
 			VTY_NEWLINE);
