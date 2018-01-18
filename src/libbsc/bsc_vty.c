@@ -169,6 +169,7 @@ static void dump_pchan_load_vty(struct vty *vty, char *prefix,
 				const struct pchan_load *pl)
 {
 	int i;
+	int dumped = 0;
 
 	for (i = 0; i < ARRAY_SIZE(pl->pchan); i++) {
 		const struct load_counter *lc = &pl->pchan[i];
@@ -182,7 +183,10 @@ static void dump_pchan_load_vty(struct vty *vty, char *prefix,
 		vty_out(vty, "%s%20s: %3u%% (%u/%u)%s", prefix,
 			gsm_pchan_name(i), percent, lc->used, lc->total,
 			VTY_NEWLINE);
+		dumped ++;
 	}
+	if (!dumped)
+		vty_out(vty, "%s(none)%s", prefix, VTY_NEWLINE);
 }
 
 static void net_dump_vty(struct vty *vty, struct gsm_network *net)
