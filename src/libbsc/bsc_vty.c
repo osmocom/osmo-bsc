@@ -278,48 +278,48 @@ static void bts_dump_vty(struct vty *vty, struct gsm_bts *bts)
 		bts->location_area_code, bts->bsic,
 		bts->bsic >> 3, bts->bsic & 7,
 		bts->num_trx, VTY_NEWLINE);
-	vty_out(vty, "Description: %s%s",
+	vty_out(vty, "  Description: %s%s",
 		bts->description ? bts->description : "(null)", VTY_NEWLINE);
 	if (strnlen(bts->pcu_version, MAX_VERSION_LENGTH))
-		vty_out(vty, "PCU version %s connected%s", bts->pcu_version,
+		vty_out(vty, "  PCU version %s connected%s", bts->pcu_version,
 			VTY_NEWLINE);
-	vty_out(vty, "MS Max power: %u dBm%s", bts->ms_max_power, VTY_NEWLINE);
-	vty_out(vty, "Minimum Rx Level for Access: %i dBm%s",
+	vty_out(vty, "  MS Max power: %u dBm%s", bts->ms_max_power, VTY_NEWLINE);
+	vty_out(vty, "  Minimum Rx Level for Access: %i dBm%s",
 		rxlev2dbm(bts->si_common.cell_sel_par.rxlev_acc_min),
 		VTY_NEWLINE);
-	vty_out(vty, "Cell Reselection Hysteresis: %u dBm%s",
+	vty_out(vty, "  Cell Reselection Hysteresis: %u dBm%s",
 		bts->si_common.cell_sel_par.cell_resel_hyst*2, VTY_NEWLINE);
-	vty_out(vty, "RACH TX-Integer: %u%s", bts->si_common.rach_control.tx_integer,
+	vty_out(vty, "  RACH TX-Integer: %u%s", bts->si_common.rach_control.tx_integer,
 		VTY_NEWLINE);
-	vty_out(vty, "RACH Max transmissions: %u%s",
+	vty_out(vty, "  RACH Max transmissions: %u%s",
 		rach_max_trans_raw2val(bts->si_common.rach_control.max_trans),
 		VTY_NEWLINE);
 	if (bts->si_common.rach_control.cell_bar)
 		vty_out(vty, "  CELL IS BARRED%s", VTY_NEWLINE);
 	if (bts->dtxu != GSM48_DTX_SHALL_NOT_BE_USED)
-		vty_out(vty, "Uplink DTX: %s%s",
+		vty_out(vty, "  Uplink DTX: %s%s",
 			(bts->dtxu != GSM48_DTX_SHALL_BE_USED) ?
 			"enabled" : "forced", VTY_NEWLINE);
 	else
-		vty_out(vty, "Uplink DTX: not enabled%s", VTY_NEWLINE);
-	vty_out(vty, "Downlink DTX: %senabled%s", bts->dtxd ? "" : "not ",
+		vty_out(vty, "  Uplink DTX: not enabled%s", VTY_NEWLINE);
+	vty_out(vty, "  Downlink DTX: %senabled%s", bts->dtxd ? "" : "not ",
 		VTY_NEWLINE);
-	vty_out(vty, "Channel Description Attachment: %s%s",
+	vty_out(vty, "  Channel Description Attachment: %s%s",
 		(bts->si_common.chan_desc.att) ? "yes" : "no", VTY_NEWLINE);
-	vty_out(vty, "Channel Description BS-PA-MFRMS: %u%s",
+	vty_out(vty, "  Channel Description BS-PA-MFRMS: %u%s",
 		bts->si_common.chan_desc.bs_pa_mfrms + 2, VTY_NEWLINE);
-	vty_out(vty, "Channel Description BS-AG_BLKS-RES: %u%s",
+	vty_out(vty, "  Channel Description BS-AG_BLKS-RES: %u%s",
 		bts->si_common.chan_desc.bs_ag_blks_res, VTY_NEWLINE);
-	vty_out(vty, "System Information present: 0x%08x, static: 0x%08x%s",
+	vty_out(vty, "  System Information present: 0x%08x, static: 0x%08x%s",
 		bts->si_valid, bts->si_mode_static, VTY_NEWLINE);
-	vty_out(vty, "Early Classmark Sending: 2G %s, 3G %s%s%s",
+	vty_out(vty, "  Early Classmark Sending: 2G %s, 3G %s%s%s",
 		bts->early_classmark_allowed ? "allowed" : "forbidden",
 		bts->early_classmark_allowed_3g ? "allowed" : "forbidden",
 		bts->early_classmark_allowed_3g && !bts->early_classmark_allowed ?
 		" (forbidden by 2G bit)" : "",
 		VTY_NEWLINE);
 	if (bts->pcu_sock_path)
-		vty_out(vty, "PCU Socket Path: %s%s", bts->pcu_sock_path, VTY_NEWLINE);
+		vty_out(vty, "  PCU Socket Path: %s%s", bts->pcu_sock_path, VTY_NEWLINE);
 	if (is_ipaccess_bts(bts))
 		vty_out(vty, "  Unit ID: %u/%u/0, OML Stream ID 0x%02x%s",
 			bts->ip_access.site_id, bts->ip_access.bts_id,
@@ -360,15 +360,15 @@ static void bts_dump_vty(struct vty *vty, struct gsm_bts *bts)
 	vty_out(vty, "  Current Channel Load:%s", VTY_NEWLINE);
 	dump_pchan_load_vty(vty, "    ", &pl);
 
-	vty_out(vty, "Channel Requests        : %"PRIu64" total, %"PRIu64" no channel%s",
+	vty_out(vty, "  Channel Requests        : %"PRIu64" total, %"PRIu64" no channel%s",
 		bts->bts_ctrs->ctr[BTS_CTR_CHREQ_TOTAL].current,
 		bts->bts_ctrs->ctr[BTS_CTR_CHREQ_NO_CHANNEL].current,
 		VTY_NEWLINE);
-	vty_out(vty, "Channel Failures        : %"PRIu64" rf_failures, %"PRIu64" rll failures%s",
+	vty_out(vty, "  Channel Failures        : %"PRIu64" rf_failures, %"PRIu64" rll failures%s",
 		bts->bts_ctrs->ctr[BTS_CTR_CHAN_RF_FAIL].current,
 		bts->bts_ctrs->ctr[BTS_CTR_CHAN_RLL_ERR].current,
 		VTY_NEWLINE);
-	vty_out(vty, "BTS failures            : %"PRIu64" OML, %"PRIu64" RSL%s",
+	vty_out(vty, "  BTS failures            : %"PRIu64" OML, %"PRIu64" RSL%s",
 		bts->bts_ctrs->ctr[BTS_CTR_BTS_OML_FAIL].current,
 		bts->bts_ctrs->ctr[BTS_CTR_BTS_RSL_FAIL].current,
 		VTY_NEWLINE);
