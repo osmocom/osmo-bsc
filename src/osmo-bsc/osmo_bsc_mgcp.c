@@ -23,6 +23,7 @@
 #include <osmocom/bsc/osmo_bsc_mgcp.h>
 #include <osmocom/bsc/debug.h>
 #include <osmocom/bsc/osmo_bsc.h>
+#include <osmocom/bsc/signal.h>
 #include <osmocom/core/logging.h>
 #include <osmocom/core/utils.h>
 #include <osmocom/core/timer.h>
@@ -1048,7 +1049,7 @@ void mgcp_ass_complete(struct mgcp_ctx *mgcp_ctx, struct gsm_lchan *lchan)
  * Parameter:
  * mgcp_ctx: context information (FSM, and pointer to external system data)
  * ho_lchan: the lchan on the new BTS */
-void mgcp_handover(struct mgcp_ctx *mgcp_ctx, struct gsm_lchan *ho_lchan)
+static void mgcp_handover(struct mgcp_ctx *mgcp_ctx, struct gsm_lchan *ho_lchan)
 {
 	OSMO_ASSERT(mgcp_ctx);
 	OSMO_ASSERT(ho_lchan);
@@ -1066,6 +1067,59 @@ void mgcp_handover(struct mgcp_ctx *mgcp_ctx, struct gsm_lchan *ho_lchan)
 	osmo_fsm_inst_dispatch(mgcp_ctx->fsm, EV_HANDOVER, mgcp_ctx);
 
 	return;
+}
+
+/* GSM 08.58 HANDOVER DETECT has been received */
+static int mgcp_sig_ho_detect(struct gsm_lchan *new_lchan)
+{
+	struct gsm_subscriber_connection *conn;
+	if (!new_lchan) {
+		LOGP(DHO, LOGL_ERROR, "HO Detect signal for NULL lchan\n");
+		return -EINVAL;
+	}
+
+	conn = new_lchan->conn;
+
+	if (!conn) {
+		LOGP(DHO, LOGL_ERROR, "%s HO Detect for lchan without conn\n",
+		     gsm_lchan_name(new_lchan));
+		return -EINVAL;
+	}
+
+	if (!conn->sccp_con) {
+		LOGP(DHO, LOGL_ERROR, "%s HO Detect for conn without sccp_con\n",
+		     gsm_lchan_name(new_lchan));
+		return -EINVAL;
+	}
+
+	if (!conn->sccp_con->user_plane.mgcp_ctx) {
+		LOGP(DHO, LOGL_ERROR, "%s HO Detect for conn without MGCP ctx\n",
+		     gsm_lchan_name(new_lchan));
+		return -EINVAL;
+	}
+
+	mgcp_handover(conn->sccp_con->user_plane.mgcp_ctx, new_lchan);
+	return 0;
+}
+
+static int mgcp_sig_cb(unsigned int subsys, unsigned int signal,
+				void *handler_data, void *signal_data)
+{
+	struct lchan_signal_data *lchan_data;
+
+	switch (subsys) {
+	case SS_LCHAN:
+		lchan_data = signal_data;
+		switch (signal) {
+		case S_LCHAN_HANDOVER_DETECT:
+			return mgcp_sig_ho_detect(lchan_data->lchan);
+		}
+		break;
+	default:
+		break;
+	}
+
+	return 0;
 }
 
 /* Free an existing mgcp context gracefully
@@ -1090,4 +1144,5 @@ void mgcp_free_ctx(struct mgcp_ctx *mgcp_ctx)
 void mgcp_init(struct gsm_network *net)
 {
 	osmo_fsm_register(&fsm_bsc_mgcp);
+	osmo_signal_register_handler(SS_LCHAN, mgcp_sig_cb, NULL);
 }

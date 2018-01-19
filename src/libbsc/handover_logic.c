@@ -325,7 +325,11 @@ static int ho_rsl_detect(struct gsm_lchan *new_lchan)
 		return -ENODEV;
 	}
 
-	/* FIXME: do we actually want to do something here ? */
+	LOGP(DHO, LOGL_DEBUG, "%s Handover RACH detected\n", gsm_lchan_name(new_lchan));
+
+	/* This is just for logging on the DHO category. The actual MGCP switchover happens in
+	 * osmo_bsc_mgcp.c by receiving the same S_LCHAN_HANDOVER_DETECT signal.
+	 * (Calling mgcp_handover() directly currently breaks linking in utils/...) */
 
 	return 0;
 }

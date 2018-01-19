@@ -58,5 +58,4 @@ struct mgcp_ctx *mgcp_assignm_req(void *ctx, struct mgcp_client *mgcp, struct os
 				  enum gsm48_chan_mode chan_mode, bool full_rate);
 void mgcp_clear_complete(struct mgcp_ctx *mgcp_ctx, struct msgb *resp);
 void mgcp_ass_complete(struct mgcp_ctx *mgcp_ctx, struct gsm_lchan *lchan);
-void mgcp_handover(struct mgcp_ctx *mgcp_ctx, struct gsm_lchan *ho_lchan);
 void mgcp_free_ctx(struct mgcp_ctx *mgcp_ctx);

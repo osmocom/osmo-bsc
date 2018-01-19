@@ -50,11 +50,6 @@ static int handle_abisip_signal(unsigned int subsys, unsigned int signal,
 
 	switch (signal) {
 	case S_ABISIP_CRCX_ACK:
-		/*
-		 * TODO: handle handover here... then the audio should go to
-		 * the old mgcp port..
-		 */
-
 		/* we can ask it to connect now */
 		LOGP(DMSC, LOGL_DEBUG, "Connecting BTS to port: %d conn: %d\n",
 		     con->sccp_con->user_plane.rtp_port, lchan->abis_ip.conn_id);
@@ -77,14 +72,11 @@ static int handle_abisip_signal(unsigned int subsys, unsigned int signal,
 
 	case S_ABISIP_MDCX_ACK:
 		if (con->ho_lchan) {
-			/* NOTE: When an ho_lchan exists, the MDCX is part of an
-			 * handover operation (intra-bsc). This means we will not
-			 * inform the MSC about the event, which means that no
-			 * assignment complete message is transmitted, we just
-			 * inform the logic that controls the MGW about the new
-			 * connection info */
-			LOGP(DMSC, LOGL_INFO,"RTP connection handover initiated...\n");
-			mgcp_handover(con->sccp_con->user_plane.mgcp_ctx, con->ho_lchan);
+			LOGP(DHO, LOGL_DEBUG, "%s -> %s BTS sent MDCX ACK\n", gsm_lchan_name(lchan),
+			     gsm_lchan_name(con->ho_lchan));
+			/* No need to do anything for handover here. As soon as a HANDOVER DETECT
+			 * happens, osmo_bsc_mgcp.c will trigger the MGCP MDCX towards MGW by
+			 * receiving an S_LCHAN_HANDOVER_DETECT signal. */
 		} else if (is_ipaccess_bts(conn_get_bts(con)) && con->sccp_con->user_plane.rtp_ip) {
 			/* NOTE: This is only relevant on AoIP networks with
 			 * IPA based base stations. See also osmo_bsc_api.c,
