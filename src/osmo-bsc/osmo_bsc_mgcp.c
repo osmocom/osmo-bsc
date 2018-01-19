@@ -964,18 +964,11 @@ struct mgcp_ctx *mgcp_assignm_req(void *ctx, struct mgcp_client *mgcp, struct os
 {
 	struct mgcp_ctx *mgcp_ctx;
 	char name[32];
-	static bool fsm_registered = false;
 
 	OSMO_ASSERT(mgcp);
 	OSMO_ASSERT(conn);
 
 	OSMO_ASSERT(snprintf(name, sizeof(name), "MGW_%i", conn->conn_id) < sizeof(name));
-
-	/* Register the fsm description (if not already done) */
-	if (fsm_registered == false) {
-		osmo_fsm_register(&fsm_bsc_mgcp);
-		fsm_registered = true;
-	}
 
 	/* Allocate and configure a new fsm instance */
 	mgcp_ctx = talloc_zero(ctx, struct mgcp_ctx);
@@ -1092,4 +1085,9 @@ void mgcp_free_ctx(struct mgcp_ctx *mgcp_ctx)
 
 	osmo_fsm_inst_free(mgcp_ctx->fsm);
 	talloc_free(mgcp_ctx);
+}
+
+void mgcp_init(struct gsm_network *net)
+{
+	osmo_fsm_register(&fsm_bsc_mgcp);
 }

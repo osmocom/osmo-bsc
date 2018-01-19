@@ -52,6 +52,8 @@ struct mgcp_ctx {
 	mgcp_trans_id_t mgw_pending_trans;
 };
 
+void mgcp_init(struct gsm_network *net);
+
 struct mgcp_ctx *mgcp_assignm_req(void *ctx, struct mgcp_client *mgcp, struct osmo_bsc_sccp_con *conn,
 				  enum gsm48_chan_mode chan_mode, bool full_rate);
 void mgcp_clear_complete(struct mgcp_ctx *mgcp_ctx, struct msgb *resp);
