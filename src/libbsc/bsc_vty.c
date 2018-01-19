@@ -1297,7 +1297,7 @@ static int lchan_summary(struct vty *vty, int argc, const char **argv,
 
 DEFUN(show_lchan,
       show_lchan_cmd,
-      "show lchan [<0-255>] [<0-255>] [<0-7>] [lchan_nr]",
+      "show lchan [<0-255>] [<0-255>] [<0-7>] [<0-7>]",
 	SHOW_STR "Display information about a logical channel\n"
 	"BTS Number\n" "TRX Number\n" "Timeslot Number\n"
 	LCHAN_NR_STR)
@@ -1308,7 +1308,7 @@ DEFUN(show_lchan,
 
 DEFUN(show_lchan_summary,
       show_lchan_summary_cmd,
-      "show lchan summary [<0-255>] [<0-255>] [<0-7>] [lchan_nr]",
+      "show lchan summary [<0-255>] [<0-255>] [<0-7>] [<0-7>]",
 	SHOW_STR "Display information about a logical channel\n"
         "Short summary\n"
 	"BTS Number\n" "TRX Number\n" "Timeslot Number\n"
