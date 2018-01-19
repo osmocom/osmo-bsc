@@ -64,9 +64,13 @@
 
 #include "../../bscconfig.h"
 
-
+#define BTS_NR_STR "BTS Number\n"
+#define TRX_NR_STR "TRX Number\n"
+#define TS_NR_STR "Timeslot Number\n"
 #define LCHAN_NR_STR "Logical Channel Number\n"
-
+#define BTS_TRX_STR BTS_NR_STR TRX_NR_STR
+#define BTS_TRX_TS_STR BTS_TRX_STR TS_NR_STR
+#define BTS_TRX_TS_LCHAN_STR BTS_TRX_TS_STR LCHAN_NR_STR
 
 /* FIXME: this should go to some common file */
 static const struct value_string gprs_ns_timer_strs[] = {
@@ -883,8 +887,7 @@ DEFUN(show_trx,
       show_trx_cmd,
       "show trx [<0-255>] [<0-255>]",
 	SHOW_STR "Display information about a TRX\n"
-	"BTS Number\n"
-	"TRX Number\n")
+	BTS_TRX_STR)
 {
 	struct gsm_network *net = gsmnet_from_vty(vty);
 	struct gsm_bts *bts = NULL;
@@ -944,7 +947,7 @@ DEFUN(show_ts,
       show_ts_cmd,
       "show timeslot [<0-255>] [<0-255>] [<0-7>]",
 	SHOW_STR "Display information about a TS\n"
-	"BTS Number\n" "TRX Number\n" "Timeslot Number\n")
+	BTS_TRX_TS_STR)
 {
 	struct gsm_network *net = gsmnet_from_vty(vty);
 	struct gsm_bts *bts = NULL;
@@ -1299,9 +1302,7 @@ DEFUN(show_lchan,
       show_lchan_cmd,
       "show lchan [<0-255>] [<0-255>] [<0-7>] [<0-7>]",
 	SHOW_STR "Display information about a logical channel\n"
-	"BTS Number\n" "TRX Number\n" "Timeslot Number\n"
-	LCHAN_NR_STR)
-
+	BTS_TRX_TS_LCHAN_STR)
 {
 	return lchan_summary(vty, argc, argv, lchan_dump_full_vty);
 }
@@ -1311,8 +1312,7 @@ DEFUN(show_lchan_summary,
       "show lchan summary [<0-255>] [<0-255>] [<0-7>] [<0-7>]",
 	SHOW_STR "Display information about a logical channel\n"
         "Short summary\n"
-	"BTS Number\n" "TRX Number\n" "Timeslot Number\n"
-        LCHAN_NR_STR)
+	BTS_TRX_TS_LCHAN_STR)
 {
 	return lchan_summary(vty, argc, argv, lchan_dump_short_vty);
 }
@@ -1346,8 +1346,8 @@ DEFUN(handover_subscr_conn,
       handover_subscr_conn_cmd,
       "handover <0-255> <0-255> <0-7> <0-7> <0-255>",
       "Handover subscriber connection to other BTS\n"
-      "BTS Number (current)\n" "TRX Number\n" "Timeslot Number\n"
-      LCHAN_NR_STR "BTS Number (new)\n")
+      "Current " BTS_TRX_TS_LCHAN_STR
+      "New " BTS_NR_STR)
 {
 	struct gsm_network *net = gsmnet_from_vty(vty);
 	struct gsm_subscriber_connection *conn;
@@ -1415,7 +1415,7 @@ DEFUN(show_paging,
       show_paging_cmd,
       "show paging [<0-255>]",
 	SHOW_STR "Display information about paging reuqests of a BTS\n"
-	"BTS Number\n")
+	BTS_NR_STR)
 {
 	struct gsm_network *net = gsmnet_from_vty(vty);
 	struct gsm_bts *bts;
@@ -1446,7 +1446,7 @@ DEFUN(show_paging_group,
       show_paging_group_cmd,
       "show paging-group <0-255> IMSI",
       SHOW_STR "Display the paging group\n"
-      "BTS Number\n" "IMSI\n")
+      BTS_NR_STR "IMSI\n")
 {
 	struct gsm_network *net = gsmnet_from_vty(vty);
 	struct gsm_bts *bts;
@@ -1646,7 +1646,7 @@ DEFUN(cfg_bts,
       cfg_bts_cmd,
       "bts <0-255>",
       "Select a BTS to configure\n"
-	"BTS Number\n")
+      BTS_NR_STR)
 {
 	struct gsm_network *gsmnet = gsmnet_from_vty(vty);
 	int bts_nr = atoi(argv[0]);
@@ -3125,7 +3125,8 @@ DEFUN(cfg_bts_codec4, cfg_bts_codec4_cmd,
 
 DEFUN(cfg_bts_depends_on, cfg_bts_depends_on_cmd,
 	"depends-on-bts <0-255>",
-	"This BTS can only be started if another one is up\n" "BTS Number\n")
+	"This BTS can only be started if another one is up\n"
+	BTS_NR_STR)
 {
 	struct gsm_bts *bts = vty->index;
 	struct gsm_bts *other_bts;
@@ -3158,7 +3159,7 @@ DEFUN(cfg_bts_depends_on, cfg_bts_depends_on_cmd,
 DEFUN(cfg_bts_no_depends_on, cfg_bts_no_depends_on_cmd,
 	"depeneds-on-bts <0-255>",
 	NO_STR "This BTS can only be started if another one is up\n"
-	"BTS Number\n")
+	BTS_NR_STR)
 {
 	struct gsm_bts *bts = vty->index;
 	int dep = atoi(argv[0]);
@@ -3834,7 +3835,7 @@ DEFUN(drop_bts,
 DEFUN(restart_bts, restart_bts_cmd,
       "restart-bts <0-65535>",
       "Restart ip.access nanoBTS through OML\n"
-      "BTS Number\n")
+      BTS_NR_STR)
 {
 	struct gsm_network *gsmnet;
 	struct gsm_bts_trx *trx;
@@ -3871,7 +3872,7 @@ DEFUN(restart_bts, restart_bts_cmd,
 
 DEFUN(bts_resend, bts_resend_cmd,
       "bts <0-255> resend-system-information",
-      "BTS Specific Commands\n" "BTS Number\n"
+      "BTS Specific Commands\n" BTS_NR_STR
       "Re-generate + re-send BCCH SYSTEM INFORMATION\n")
 {
 	struct gsm_network *gsmnet;
@@ -3903,7 +3904,7 @@ DEFUN(bts_resend, bts_resend_cmd,
 
 DEFUN(smscb_cmd, smscb_cmd_cmd,
 	"bts <0-255> smscb-command <1-4> HEXSTRING",
-	"BTS related commands\n" "BTS Number\n"
+	"BTS related commands\n" BTS_NR_STR
 	"SMS Cell Broadcast\n" "Last Valid Block\n"
 	"Hex Encoded SMSCB message (up to 88 octets)\n")
 {
@@ -3979,8 +3980,8 @@ static struct gsm_bts_trx_ts *vty_get_ts(struct vty *vty, const char *bts_str, c
 
 DEFUN(pdch_act, pdch_act_cmd,
 	"bts <0-255> trx <0-255> timeslot <0-7> pdch (activate|deactivate)",
-	"BTS related commands\n" "BTS Number\n" "Transceiver\n" "Transceiver Number\n"
-	"TRX Timeslot\n" "Timeslot Number\n" "Packet Data Channel\n"
+	"BTS related commands\n" BTS_NR_STR "Transceiver\n" TRX_NR_STR
+	"TRX Timeslot\n" TS_NR_STR "Packet Data Channel\n"
 	"Activate Dynamic PDCH/TCH (-> PDCH mode)\n"
 	"Deactivate Dynamic PDCH/TCH (-> TCH mode)\n")
 {
@@ -4065,8 +4066,8 @@ static int lchan_set_single_amr_mode(struct gsm_lchan *lchan, uint8_t amr_mode)
  * performance testing (FER/RBER/...) */
 DEFUN(lchan_act, lchan_act_cmd,
 	"bts <0-255> trx <0-255> timeslot <0-7> sub-slot <0-7> (activate|deactivate) (hr|fr|efr|amr) [<0-7>]",
-	"BTS related commands\n" "BTS Number\n" "Transceiver\n" "Transceiver Number\n"
-	"TRX Timeslot\n" "Timeslot Number\n" "Sub-Slot Number\n" "Sub-Slot Number\n"
+	"BTS related commands\n" BTS_NR_STR "Transceiver\n" TRX_NR_STR
+	"TRX Timeslot\n" TS_NR_STR "Sub-Slot Number\n" LCHAN_NR_STR
 	"Manual Channel Activation (e.g. for BER test)\n"
 	"Manual Channel Deactivation (e.g. for BER test)\n"
 	"Half-Rate v1\n" "Full-Rate\n" "Enhanced Full Rate\n" "Adaptive Multi-Rate\n" "AMR Mode\n")
@@ -4133,8 +4134,8 @@ DEFUN(lchan_act, lchan_act_cmd,
 
 DEFUN(lchan_mdcx, lchan_mdcx_cmd,
 	"bts <0-255> trx <0-255> timeslot <0-7> sub-slot <0-7> mdcx A.B.C.D <0-65535>",
-	"BTS related commands\n" "BTS Number\n" "Transceiver\n" "Transceiver Number\n"
-	"TRX Timeslot\n" "Timeslot Number\n" "Sub-Slot\n" "Sub-Slot Number\n"
+	"BTS related commands\n" BTS_NR_STR "Transceiver\n" TRX_NR_STR
+	"TRX Timeslot\n" TS_NR_STR "Sub-Slot\n" LCHAN_NR_STR
 	"Modify RTP Connection\n" "MGW IP Address\n" "MGW UDP Port\n")
 {
 	struct gsm_bts_trx_ts *ts;
