@@ -1344,7 +1344,7 @@ DEFUN(show_subscr_conn,
 
 DEFUN(handover_subscr_conn,
       handover_subscr_conn_cmd,
-      "handover <0-255> <0-255> <0-7> LCHAN_NR <0-255>",
+      "handover <0-255> <0-255> <0-7> <0-7> <0-255>",
       "Handover subscriber connection to other BTS\n"
       "BTS Number (current)\n" "TRX Number\n" "Timeslot Number\n"
       LCHAN_NR_STR "BTS Number (new)\n")
