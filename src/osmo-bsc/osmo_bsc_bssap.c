@@ -412,7 +412,7 @@ page_lai_and_lac(struct bsc_msc_data *msc, const uint8_t *data, size_t data_leng
 				     mi_string, lac);
 			}
 		} else {
-			LOGP(DMSC, LOGL_DEBUG, "Not paging IMSI %s: MCC/MNC in Cell Identifier List "
+			LOGP(DMSC, LOGL_DEBUG, "Paging IMSI %s: MCC/MNC in Cell Identifier List "
 			     "(%d/%d) do not match our network (%d/%d)\n", mi_string, mcc, mnc,
 			     msc->network->country_code, msc->network->network_code);
 		}
