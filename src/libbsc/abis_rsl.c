@@ -1860,7 +1860,6 @@ static int rsl_rx_chan_rqd(struct msgb *msg)
 	enum gsm_chreq_reason_t chreq_reason;
 	struct gsm_lchan *lchan;
 	uint8_t rqd_ta;
-	int is_lu;
 
 	uint16_t arfcn;
 	uint8_t subch;
@@ -1892,12 +1891,6 @@ static int rsl_rx_chan_rqd(struct msgb *msg)
 	lctype = get_ctype_by_chreq(bts->network, rqd_ref->ra);
 
 	rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_CTR_CHREQ_TOTAL]);
-
-	/*
-	 * We want LOCATION UPDATES to succeed and will assign a TCH
-	 * if we have no SDCCH available.
-	 */
-	is_lu = !!(chreq_reason == GSM_CHREQ_REASON_LOCATION_UPD);
 
 	/* check availability / allocate channel
 	 *
