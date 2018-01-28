@@ -1560,7 +1560,7 @@ static const struct log_info log_info = {
 int main(int argc, char **argv)
 {
 	msgb_talloc_ctx_init(NULL, 0);
-	sccp_set_log_area(DSCCP);
+	sccp_set_log_area(DLSCCP);
 	osmo_init_logging(&log_info);
 
 	test_filter();

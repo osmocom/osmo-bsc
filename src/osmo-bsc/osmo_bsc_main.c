@@ -315,12 +315,6 @@ static const struct log_info_cat osmo_bsc_categories[] = {
 		.color = "\033[1;36m",
 		.enabled = 1, .loglevel = LOGL_INFO,
 	},
-	[DMNCC] = {
-		.name = "DMNCC",
-		.description = "MNCC API for Call Control application",
-		.color = "\033[1;39m",
-		.enabled = 1, .loglevel = LOGL_NOTICE,
-	},
 	[DPAG]	= {
 		.name = "DPAG",
 		.description = "Paging Subsystem",
@@ -331,11 +325,6 @@ static const struct log_info_cat osmo_bsc_categories[] = {
 		.name = "DMEAS",
 		.description = "Radio Measurement Processing",
 		.enabled = 0, .loglevel = LOGL_NOTICE,
-	},
-	[DSCCP] = {
-		.name = "DSCCP",
-		.description = "SCCP Protocol",
-		.enabled = 1, .loglevel = LOGL_NOTICE,
 	},
 	[DMSC] = {
 		.name = "DMSC",
@@ -359,40 +348,10 @@ static const struct log_info_cat osmo_bsc_categories[] = {
 		.color = "\033[1;38m",
 		.enabled = 1, .loglevel = LOGL_NOTICE,
 	},
-	[DDB] = {
-		.name = "DDB",
-		.description = "Database Layer",
-		.enabled = 1, .loglevel = LOGL_NOTICE,
-	},
 	[DREF] = {
 		.name = "DREF",
 		.description = "Reference Counting",
 		.enabled = 0, .loglevel = LOGL_NOTICE,
-	},
-	[DGPRS] = {
-		.name = "DGPRS",
-		.description = "GPRS Packet Service",
-		.enabled = 1, .loglevel = LOGL_DEBUG,
-	},
-	[DNS] = {
-		.name = "DNS",
-		.description = "GPRS Network Service (NS)",
-		.enabled = 1, .loglevel = LOGL_INFO,
-	},
-	[DBSSGP] = {
-		.name = "DBSSGP",
-		.description = "GPRS BSS Gateway Protocol (BSSGP)",
-		.enabled = 1, .loglevel = LOGL_DEBUG,
-	},
-	[DLLC] = {
-		.name = "DLLC",
-		.description = "GPRS Logical Link Control Protocol (LLC)",
-		.enabled = 1, .loglevel = LOGL_DEBUG,
-	},
-	[DSNDCP] = {
-		.name = "DSNDCP",
-		.description = "GPRS Sub-Network Dependent Control Protocol (SNDCP)",
-		.enabled = 1, .loglevel = LOGL_DEBUG,
 	},
 	[DNAT] = {
 		.name = "DNAT",
@@ -404,45 +363,14 @@ static const struct log_info_cat osmo_bsc_categories[] = {
 		.description = "Control interface",
 		.enabled = 1, .loglevel = LOGL_NOTICE,
 	},
-	[DSMPP] = {
-		.name = "DSMPP",
-		.description = "SMPP interface for external SMS apps",
-		.enabled = 1, .loglevel = LOGL_DEBUG,
-	},
 	[DFILTER] = {
 		.name = "DFILTER",
 		.description = "BSC/NAT IMSI based filtering",
 		.enabled = 1, .loglevel = LOGL_DEBUG,
 	},
-	[DRANAP] = {
-		.name = "DRANAP",
-		.description = "Radio Access Network Application Part Protocol",
-		.enabled = 1, .loglevel = LOGL_DEBUG,
-	},
-	[DSUA] = {
-		.name = "DSUA",
-		.description = "SCCP User Adaptation Protocol",
-		.enabled = 1, .loglevel = LOGL_DEBUG,
-	},
 	[DPCU] = {
 		.name = "DPCU",
 		.description = "PCU Interface",
-		.enabled = 1, .loglevel = LOGL_DEBUG,
-	},
-	[DVLR] = {
-		.name = "DVLR",
-		.description = "Visitor Location Register",
-		.enabled = 1, .loglevel = LOGL_DEBUG,
-	},
-	[DIUCS] = {
-		.name = "DIUCS",
-		.description = "Iu-CS Protocol",
-		.enabled = 1, .loglevel = LOGL_DEBUG,
-	},
-	[DSIGTRAN] = {
-		.name = "DSIGTRAN",
-		.description = "SIGTRAN Signalling Transport",
-		.color = "\033[1;29m",
 		.enabled = 1, .loglevel = LOGL_DEBUG,
 	},
 };
