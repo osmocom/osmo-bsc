@@ -32,6 +32,7 @@
 #include <osmocom/bsc/gsm_04_08_utils.h>
 #include <osmocom/bsc/bsc_subscriber.h>
 #include <osmocom/bsc/penalty_timers.h>
+#include <osmocom/bsc/osmo_bsc_sigtran.h>
 
 #include <osmocom/gsm/protocol/gsm_08_08.h>
 #include <osmocom/gsm/gsm48.h>
@@ -278,6 +279,7 @@ struct gsm_subscriber_connection *bsc_subscr_con_allocate(struct gsm_lchan *lcha
 	lchan->conn = conn;
 	INIT_LLIST_HEAD(&conn->ho_dtap_cache);
 	conn->ho_penalty_timers = penalty_timers_init(conn);
+	conn->sccp.conn_id = -1;
 	llist_add_tail(&conn->entry, &net->subscr_conns);
 	return conn;
 }

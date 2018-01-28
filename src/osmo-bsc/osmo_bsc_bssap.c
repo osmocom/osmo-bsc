@@ -571,19 +571,15 @@ static int bssmap_handle_paging(struct bsc_msc_data *msc,
  * GSM 08.08 § 3.1.9.1 and 3.2.1.21...
  * release our gsm_subscriber_connection and send message
  */
-static int bssmap_handle_clear_command(struct osmo_bsc_sccp_con *conn,
+static int bssmap_handle_clear_command(struct gsm_subscriber_connection *conn,
 				       struct msgb *msg, unsigned int payload_length)
 {
 	struct msgb *resp;
 
 	/* TODO: handle the cause of this package */
 
-	if (conn->conn) {
-		LOGP(DMSC, LOGL_INFO, "Releasing all transactions on %p\n", conn);
-		gsm0808_clear(conn->conn);
-		bsc_subscr_con_free(conn->conn);
-		conn->conn = NULL;
-	}
+	LOGP(DMSC, LOGL_INFO, "Releasing all transactions on %p\n", conn);
+	gsm0808_clear(conn);
 
 	/* generate the clear complete message */
 	resp = gsm0808_create_clear_complete();
@@ -618,7 +614,7 @@ static int bssmap_handle_clear_command(struct osmo_bsc_sccp_con *conn,
  * is supporting. Currently we are doing it in a rather static
  * way by picking one encryption or no encryption.
  */
-static int bssmap_handle_cipher_mode(struct osmo_bsc_sccp_con *conn,
+static int bssmap_handle_cipher_mode(struct gsm_subscriber_connection *conn,
 				     struct msgb *msg, unsigned int payload_length)
 {
 	uint16_t len;
@@ -633,7 +629,7 @@ static int bssmap_handle_cipher_mode(struct osmo_bsc_sccp_con *conn,
 	uint8_t enc_bits_bsc;
 	uint8_t enc_bits_msc;
 
-	if (!conn->conn) {
+	if (!conn) {
 		LOGP(DMSC, LOGL_ERROR, "No lchan/msc_data in cipher mode command.\n");
 		goto reject;
 	}
@@ -663,7 +659,7 @@ static int bssmap_handle_cipher_mode(struct osmo_bsc_sccp_con *conn,
 		goto reject;
 	}
 
-	network = conn_get_bts(conn->conn)->network;
+	network = conn_get_bts(conn)->network;
 	data = TLVP_VAL(&tp, GSM0808_IE_ENCRYPTION_INFORMATION);
 	enc_bits_msc = data[0];
 	enc_key = &data[1];
@@ -692,7 +688,7 @@ static int bssmap_handle_cipher_mode(struct osmo_bsc_sccp_con *conn,
 
 	/* To complete the confusion, gsm0808_cipher_mode again expects the encryption as a number
 	 * from 0 to 7. */
-	if (gsm0808_cipher_mode(conn->conn, network->a5_encryption, enc_key, enc_key_len,
+	if (gsm0808_cipher_mode(conn, network->a5_encryption, enc_key, enc_key_len,
 				include_imeisv)) {
 		reject_cause = GSM0808_CAUSE_PROTOCOL_ERROR_BETWEEN_BSS_AND_MSC;
 		goto reject;
@@ -728,7 +724,7 @@ static inline int mgcp_timeslot_to_port(int multiplex, int timeslot, int base)
  *
  * See §3.2.1.1 for the message type
  */
-static int bssmap_handle_assignm_req(struct osmo_bsc_sccp_con *conn,
+static int bssmap_handle_assignm_req(struct gsm_subscriber_connection *conn,
 				     struct msgb *msg, unsigned int length)
 {
 	struct msgb *resp;
@@ -744,13 +740,13 @@ static int bssmap_handle_assignm_req(struct osmo_bsc_sccp_con *conn,
 	struct gsm0808_speech_codec_list *scl_ptr = NULL;
 	int rc;
 
-	if (!conn->conn) {
+	if (!conn) {
 		LOGP(DMSC, LOGL_ERROR,
 		     "No lchan/msc_data in cipher mode command.\n");
 		return -1;
 	}
 
-	msc = conn->msc;
+	msc = conn->sccp.msc;
 
 	tlv_parse(&tp, gsm0808_att_tlvdef(), msg->l4h + 1, length - 1, 0, 0);
 
@@ -799,7 +795,7 @@ static int bssmap_handle_assignm_req(struct osmo_bsc_sccp_con *conn,
 	}
 
 	/* Decode speech codec list (AoIP) */
-	conn->conn->codec_list_present = false;
+	conn->codec_list_present = false;
 	if (aoip) {
 		/* Check for speech codec list element */
 		if (!TLVP_PRESENT(&tp, GSM0808_IE_SPEECH_CODEC_LIST)) {
@@ -809,7 +805,7 @@ static int bssmap_handle_assignm_req(struct osmo_bsc_sccp_con *conn,
 		}
 
 		/* Decode Speech Codec list */
-		rc = gsm0808_dec_speech_codec_list(&conn->conn->codec_list,
+		rc = gsm0808_dec_speech_codec_list(&conn->codec_list,
 						   TLVP_VAL(&tp, GSM0808_IE_SPEECH_CODEC_LIST),
 						   TLVP_LEN(&tp, GSM0808_IE_SPEECH_CODEC_LIST));
 		if (rc < 0) {
@@ -817,8 +813,8 @@ static int bssmap_handle_assignm_req(struct osmo_bsc_sccp_con *conn,
 			     "Unable to decode speech codec list\n");
 			goto reject;
 		}
-		conn->conn->codec_list_present = true;
-		scl_ptr = &conn->conn->codec_list;
+		conn->codec_list_present = true;
+		scl_ptr = &conn->codec_list;
 	}
 
 	/* Match codec information from the assignment command against the
@@ -856,7 +852,8 @@ static int bssmap_handle_assignm_req(struct osmo_bsc_sccp_con *conn,
 		conn->user_plane.mgcp_ctx = mgcp_assignm_req(msc->network, msc->network->mgw.client,
 								conn, chan_mode, full_rate);
 		if (!conn->user_plane.mgcp_ctx) {
-			LOGP(DMSC, LOGL_ERROR, "MGCP GW failure, rejecting assignment... (id=%i)\n", conn->conn_id);
+			LOGP(DMSC, LOGL_ERROR, "MGCP GW failure, rejecting assignment... (id=%i)\n",
+				conn->sccp.conn_id);
 			goto reject;
 		}
 
@@ -869,7 +866,7 @@ static int bssmap_handle_assignm_req(struct osmo_bsc_sccp_con *conn,
 		 * to sccp-lite. */
 		conn->user_plane.rtp_port = mgcp_timeslot_to_port(multiplex, timeslot, msc->rtp_base);
 		conn->user_plane.rtp_ip = 0;
-		return gsm0808_assign_req(conn->conn, chan_mode, full_rate);
+		return gsm0808_assign_req(conn, chan_mode, full_rate);
 	}
 
 reject:
@@ -917,7 +914,7 @@ static int bssmap_rcvmsg_udt(struct bsc_msc_data *msc,
 	return ret;
 }
 
-static int bssmap_rcvmsg_dt1(struct osmo_bsc_sccp_con *conn,
+static int bssmap_rcvmsg_dt1(struct gsm_subscriber_connection *conn,
 			     struct msgb *msg, unsigned int length)
 {
 	int ret = 0;
@@ -949,7 +946,7 @@ static int bssmap_rcvmsg_dt1(struct osmo_bsc_sccp_con *conn,
 	return ret;
 }
 
-static int dtap_rcvmsg(struct osmo_bsc_sccp_con *conn,
+static int dtap_rcvmsg(struct gsm_subscriber_connection *conn,
 		       struct msgb *msg, unsigned int length)
 {
 	struct dtap_header *header;
@@ -960,7 +957,7 @@ static int dtap_rcvmsg(struct osmo_bsc_sccp_con *conn,
 	LOGP(DMSC, LOGL_DEBUG, "Rx MSC DTAP: %s\n",
 		osmo_hexdump(msg->l3h, length));
 
-	if (!conn->conn) {
+	if (!conn) {
 		LOGP(DMSC, LOGL_ERROR, "No subscriber connection available\n");
 		return -1;
 	}
@@ -992,10 +989,10 @@ static int dtap_rcvmsg(struct osmo_bsc_sccp_con *conn,
 	memcpy(data, msg->l3h + sizeof(*header), length - sizeof(*header));
 
 	/* pass it to the filter for extra actions */
-	rc = bsc_scan_msc_msg(conn->conn, gsm48);
-	dtap_rc = gsm0808_submit_dtap(conn->conn, gsm48, header->link_id, 1);
+	rc = bsc_scan_msc_msg(conn, gsm48);
+	dtap_rc = gsm0808_submit_dtap(conn, gsm48, header->link_id, 1);
 	if (rc == BSS_SEND_USSD)
-		bsc_send_welcome_ussd(conn->conn);
+		bsc_send_welcome_ussd(conn);
 	return dtap_rc;
 }
 
@@ -1029,7 +1026,7 @@ int bsc_handle_udt(struct bsc_msc_data *msc,
 	return 0;
 }
 
-int bsc_handle_dt(struct osmo_bsc_sccp_con *conn,
+int bsc_handle_dt(struct gsm_subscriber_connection *conn,
 		  struct msgb *msg, unsigned int len)
 {
 	if (len < sizeof(struct bssmap_header)) {
@@ -1063,9 +1060,8 @@ int bssmap_send_aoip_ass_compl(struct gsm_lchan *lchan)
 
 	OSMO_ASSERT(lchan->abis_ip.ass_compl.valid);
 	OSMO_ASSERT(conn);
-	OSMO_ASSERT(conn->sccp_con);
 
-	LOGP(DMSC, LOGL_DEBUG, "Sending assignment complete message... (id=%i)\n", conn->sccp_con->conn_id);
+	LOGP(DMSC, LOGL_DEBUG, "Sending assignment complete message... (id=%i)\n", conn->sccp.conn_id);
 
 	/* Extrapolate speech codec from speech mode */
 	gsm0808_speech_codec_from_chan_type(&sc, lchan->abis_ip.ass_compl.speech_mode);
@@ -1075,15 +1071,15 @@ int bssmap_send_aoip_ass_compl(struct gsm_lchan *lchan)
 					lchan->abis_ip.ass_compl.chosen_channel,
 					lchan->abis_ip.ass_compl.encr_alg_id,
 					lchan->abis_ip.ass_compl.speech_mode,
-					&conn->sccp_con->user_plane.aoip_rtp_addr_local,
+					&conn->user_plane.aoip_rtp_addr_local,
 					&sc,
 					NULL);
 
 	if (!resp) {
 		LOGP(DMSC, LOGL_ERROR, "Failed to generate assignment completed message! (id=%i)\n",
-		     conn->sccp_con->conn_id);
+		     conn->sccp.conn_id);
 		return -EINVAL;
 	}
 
-	return osmo_bsc_sigtran_send(conn->sccp_con, resp);
+	return osmo_bsc_sigtran_send(conn, resp);
 }

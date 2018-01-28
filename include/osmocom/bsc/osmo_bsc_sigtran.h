@@ -28,15 +28,15 @@
 enum bsc_con osmo_bsc_sigtran_new_conn(struct gsm_subscriber_connection *conn, struct bsc_msc_data *msc);
 
 /* Open a new connection oriented sigtran connection */
-int osmo_bsc_sigtran_open_conn(const struct osmo_bsc_sccp_con *conn, struct msgb *msg);
+int osmo_bsc_sigtran_open_conn(struct gsm_subscriber_connection *conn, struct msgb *msg);
 
 /* Send data to MSC */
-int osmo_bsc_sigtran_send(const struct osmo_bsc_sccp_con *conn, struct msgb *msg);
+int osmo_bsc_sigtran_send(struct gsm_subscriber_connection *conn, struct msgb *msg);
 
 /* Delete a connection from the list with open connections
  * (called by osmo_bsc_api.c on failing open connections and
  * locally, when a connection is closed by the MSC */
-int osmo_bsc_sigtran_del_conn(struct osmo_bsc_sccp_con *sccp);
+int osmo_bsc_sigtran_del_conn(struct gsm_subscriber_connection *sccp);
 
 /* Initalize osmo sigtran backhaul */
 int osmo_bsc_sigtran_init(struct llist_head *mscs);

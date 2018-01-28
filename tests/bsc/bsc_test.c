@@ -124,17 +124,14 @@ static void test_scan(void)
 
 	struct gsm_network *net = bsc_network_init(NULL, 1, 1);
 	struct gsm_bts *bts = gsm_bts_alloc(net, 0);
-	struct osmo_bsc_sccp_con *sccp_con;
 	struct bsc_msc_data *msc;
 	struct gsm_subscriber_connection *conn;
 
-	sccp_con = talloc_zero(net, struct osmo_bsc_sccp_con);
 	msc = talloc_zero(net, struct bsc_msc_data);
 	conn = talloc_zero(net, struct gsm_subscriber_connection);
 
 	bts->network = net;
-	sccp_con->msc = msc;
-	conn->sccp_con = sccp_con;
+	conn->sccp.msc = msc;
 	conn->lchan = &bts->c0->ts[1].lchan[0];
 
 	/* start testing with proper messages */

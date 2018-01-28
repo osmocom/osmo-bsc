@@ -45,24 +45,24 @@ static int handle_abisip_signal(unsigned int subsys, unsigned int signal,
 		return 0;
 
 	con = lchan->conn;
-	if (!con || !con->sccp_con)
+	if (!con)
 		return 0;
 
 	switch (signal) {
 	case S_ABISIP_CRCX_ACK:
 		/* we can ask it to connect now */
 		LOGP(DMSC, LOGL_DEBUG, "Connecting BTS to port: %d conn: %d\n",
-		     con->sccp_con->user_plane.rtp_port, lchan->abis_ip.conn_id);
+		     con->user_plane.rtp_port, lchan->abis_ip.conn_id);
 
 		/* If AoIP is in use, the rtp_ip, which has been communicated
 		 * via the A interface as connect_ip */
-		if(con->sccp_con->user_plane.rtp_ip)
-			rtp_ip = con->sccp_con->user_plane.rtp_ip;
+		if(con->user_plane.rtp_ip)
+			rtp_ip = con->user_plane.rtp_ip;
 		else
 			rtp_ip = ntohl(INADDR_ANY);
 
 		rc = rsl_ipacc_mdcx(lchan, rtp_ip,
-				    con->sccp_con->user_plane.rtp_port,
+				    con->user_plane.rtp_port,
 				    lchan->abis_ip.rtp_payload2);
 		if (rc < 0) {
 			LOGP(DMSC, LOGL_ERROR, "Failed to send MDCX: %d\n", rc);
@@ -77,12 +77,22 @@ static int handle_abisip_signal(unsigned int subsys, unsigned int signal,
 			/* No need to do anything for handover here. As soon as a HANDOVER DETECT
 			 * happens, osmo_bsc_mgcp.c will trigger the MGCP MDCX towards MGW by
 			 * receiving an S_LCHAN_HANDOVER_DETECT signal. */
-		} else if (is_ipaccess_bts(conn_get_bts(con)) && con->sccp_con->user_plane.rtp_ip) {
+#if 0
+			/* NOTE: When an ho_lchan exists, the MDCX is part of an
+			 * handover operation (intra-bsc). This means we will not
+			 * inform the MSC about the event, which means that no
+			 * assignment complete message is transmitted, we just
+			 * inform the logic that controls the MGW about the new
+			 * connection info */
+			LOGP(DMSC, LOGL_INFO,"RTP connection handover initiated...\n");
+			mgcp_handover(con->user_plane.mgcp_ctx, con->ho_lchan);
+#endif
+		} else if (is_ipaccess_bts(conn_get_bts(con)) && con->user_plane.rtp_ip) {
 			/* NOTE: This is only relevant on AoIP networks with
 			 * IPA based base stations. See also osmo_bsc_api.c,
 			 * function bsc_assign_compl() */
 			LOGP(DMSC, LOGL_INFO, "Tx MSC ASSIGN COMPL (POSTPONED)\n");
-			mgcp_ass_complete(con->sccp_con->user_plane.mgcp_ctx, lchan);
+			mgcp_ass_complete(con->user_plane.mgcp_ctx, lchan);
 		}
 		break;
 	}

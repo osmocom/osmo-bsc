@@ -32,13 +32,13 @@
 #include <osmocom/bsc/osmo_bsc_sigtran.h>
 
 #define return_when_not_connected(conn) \
-	if (!conn->sccp_con) {\
+	if (conn->sccp.state != SUBSCR_SCCP_ST_CONNECTED) {\
 		LOGP(DMSC, LOGL_ERROR, "MSC Connection not present.\n"); \
 		return; \
 	}
 
 #define return_when_not_connected_val(conn, ret) \
-	if (!conn->sccp_con) {\
+	if (conn->sccp.state != SUBSCR_SCCP_ST_CONNECTED) {\
 		LOGP(DMSC, LOGL_ERROR, "MSC Connection not present.\n"); \
 		return ret; \
 	}
@@ -48,7 +48,7 @@
 		LOGP(DMSC, LOGL_ERROR, "Failed to allocate response.\n"); \
 		return; \
 	} \
-	osmo_bsc_sigtran_send(conn->sccp_con, resp);
+	osmo_bsc_sigtran_send(conn, resp);
 
 static int bsc_clear_request(struct gsm_subscriber_connection *conn, uint32_t cause);
 static int complete_layer3(struct gsm_subscriber_connection *conn,
@@ -135,12 +135,12 @@ static int bsc_filter_data(struct gsm_subscriber_connection *conn,
 	req.ctx = conn;
 	req.black_list = NULL;
 	req.access_lists = bsc_access_lists();
-	req.local_lst_name = conn->sccp_con->msc->acc_lst_name;
+	req.local_lst_name = conn->sccp.msc->acc_lst_name;
 	req.global_lst_name = conn_get_bts(conn)->network->bsc_data->acc_lst_name;
 	req.bsc_nr = 0;
 
 	rc = bsc_msg_filter_data(gh, msgb_l3len(msg), &req,
-				&conn->sccp_con->filter_state,
+				&conn->filter_state,
 				&cause);
 	*lu_cause = cause.lu_reject_cause;
 	return rc;
@@ -280,27 +280,27 @@ static int complete_layer3(struct gsm_subscriber_connection *conn,
 	}
 
 	if (imsi)
-		conn->sccp_con->filter_state.imsi = talloc_steal(conn, imsi);
-	conn->sccp_con->filter_state.con_type = con_type;
+		conn->filter_state.imsi = talloc_steal(conn, imsi);
+	conn->filter_state.con_type = con_type;
 
 	/* check return value, if failed check msg for and send USSD */
 
-	network_code = get_network_code_for_msc(conn->sccp_con->msc);
-	country_code = get_country_code_for_msc(conn->sccp_con->msc);
-	lac = get_lac_for_msc(conn->sccp_con->msc, conn_get_bts(conn));
-	ci = get_ci_for_msc(conn->sccp_con->msc, conn_get_bts(conn));
+	network_code = get_network_code_for_msc(conn->sccp.msc);
+	country_code = get_country_code_for_msc(conn->sccp.msc);
+	lac = get_lac_for_msc(conn->sccp.msc, conn_get_bts(conn));
+	ci = get_ci_for_msc(conn->sccp.msc, conn_get_bts(conn));
 
 	bsc_scan_bts_msg(conn, msg);
 
 	resp = gsm0808_create_layer3(msg, network_code, country_code, lac, ci);
 	if (!resp) {
 		LOGP(DMSC, LOGL_DEBUG, "Failed to create layer3 message.\n");
-		osmo_bsc_sigtran_del_conn(conn->sccp_con);
+		osmo_bsc_sigtran_del_conn(conn);
 		return BSC_API_CONN_POL_REJECT;
 	}
 
-	if (osmo_bsc_sigtran_open_conn(conn->sccp_con, resp) != 0) {
-		osmo_bsc_sigtran_del_conn(conn->sccp_con);
+	if (osmo_bsc_sigtran_open_conn(conn, resp) != 0) {
+		osmo_bsc_sigtran_del_conn(conn);
 		msgb_free(resp);
 		return BSC_API_CONN_POL_REJECT;
 	}
@@ -314,14 +314,11 @@ static int complete_layer3(struct gsm_subscriber_connection *conn,
 static int move_to_msc(struct gsm_subscriber_connection *_conn,
 		       struct msgb *msg, struct bsc_msc_data *msc)
 {
-	struct osmo_bsc_sccp_con *old_con = _conn->sccp_con;
-
 	/*
 	 * 1. Give up the old connection.
 	 * This happens by sending a clear request to the MSC,
 	 * it should end with the MSC releasing the connection.
 	 */
-	old_con->conn = NULL;
 	bsc_clear_request(_conn, 0);
 
 	/*
@@ -329,7 +326,6 @@ static int move_to_msc(struct gsm_subscriber_connection *_conn,
 	 * MSC. If it fails the caller will need to handle this
 	 * properly.
 	 */
-	_conn->sccp_con = NULL;
 	if (complete_layer3(_conn, msg, msc) != BSC_API_CONN_POL_ACCEPT) {
 		gsm0808_clear(_conn);
 		bsc_subscr_con_free(_conn);
@@ -416,7 +412,7 @@ static void bsc_dtap(struct gsm_subscriber_connection *conn, uint8_t link_id, st
 	/* Check the filter */
 	if (bsc_filter_data(conn, msg, &lu_cause) < 0) {
 		bsc_maybe_lu_reject(conn,
-					conn->sccp_con->filter_state.con_type,
+					conn->filter_state.con_type,
 					lu_cause);
 		bsc_clear_request(conn, 0);
 		return;
@@ -435,7 +431,7 @@ static void bsc_assign_compl(struct gsm_subscriber_connection *conn, uint8_t rr_
 	struct msgb *resp;
 	return_when_not_connected(conn);
 
-	if (is_ipaccess_bts(conn_get_bts(conn)) && conn->sccp_con->user_plane.rtp_ip) {
+	if (is_ipaccess_bts(conn_get_bts(conn)) && conn->user_plane.rtp_ip) {
 		/* NOTE: In a network that makes use of an IPA base station
 		 * and AoIP, we have to wait until the BTS reports its RTP
 		 * IP/Port combination back to BSC via RSL. Unfortunately, the
@@ -473,19 +469,10 @@ static void bsc_assign_fail(struct gsm_subscriber_connection *conn,
 
 static int bsc_clear_request(struct gsm_subscriber_connection *conn, uint32_t cause)
 {
-	struct osmo_bsc_sccp_con *sccp;
 	struct msgb *resp;
 	return_when_not_connected_val(conn, 1);
 
 	LOGP(DMSC, LOGL_INFO, "Tx MSC CLEAR REQUEST\n");
-
-	/*
-	 * Remove the connection from BSC<->SCCP part, the SCCP part
-	 * will either be cleared by channel release or MSC disconnect
-	 */
-	sccp = conn->sccp_con;
-	sccp->conn = NULL;
-	conn->sccp_con = NULL;
 
 	resp = gsm0808_create_clear_rqst(GSM0808_CAUSE_RADIO_INTERFACE_FAILURE);
 	if (!resp) {
@@ -493,7 +480,7 @@ static int bsc_clear_request(struct gsm_subscriber_connection *conn, uint32_t ca
 		return 1;
 	}
 
-	osmo_bsc_sigtran_send(sccp, resp);
+	osmo_bsc_sigtran_send(conn, resp);
 	return 1;
 }
 
@@ -515,14 +502,14 @@ static void bsc_mr_config(struct gsm_subscriber_connection *conn,
 	struct bsc_msc_data *msc;
 	struct gsm48_multi_rate_conf *ms_conf, *bts_conf;
 
-	if (!conn->sccp_con) {
+	if (!conn) {
 		LOGP(DMSC, LOGL_ERROR,
 		     "No msc data available on conn %p. Audio will be broken.\n",
 		     conn);
 		return;
 	}
 
-	msc = conn->sccp_con->msc;
+	msc = conn->sccp.msc;
 
 	/* initialize the data structure */
 	lchan->mr_ms_lv[0] = sizeof(*ms_conf);

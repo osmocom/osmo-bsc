@@ -570,10 +570,7 @@ static int set_net_ussd_notify(struct ctrl_cmd *cmd, void *data)
 
 	net = cmd->node;
 	llist_for_each_entry(conn, &net->subscr_conns, entry) {
-		if (!conn->sccp_con)
-			continue;
-
-		if (conn->sccp_con->user_plane.cic != cic)
+		if (conn->user_plane.cic != cic)
 			continue;
 
 		/*

@@ -151,7 +151,7 @@ static void crcx_for_bts_resp_cb(struct mgcp_response *r, void *priv);
 static void fsm_crcx_bts_cb(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
 	struct mgcp_ctx *mgcp_ctx = data;
-	struct osmo_bsc_sccp_con *conn;
+	struct gsm_subscriber_connection *conn;
 	struct msgb *msg;
 	struct mgcp_msg mgcp_msg;
 	struct mgcp_client *mgcp;
@@ -174,7 +174,7 @@ static void fsm_crcx_bts_cb(struct osmo_fsm_inst *fi, uint32_t event, void *data
 	mgcp_msg = (struct mgcp_msg) {
 		.verb = MGCP_VERB_CRCX,
 		.presence = (MGCP_MSG_PRESENCE_ENDPOINT | MGCP_MSG_PRESENCE_CALL_ID | MGCP_MSG_PRESENCE_CONN_MODE),
-		.call_id = conn->conn_id,
+		.call_id = conn->sccp.conn_id,
 		.conn_mode = MGCP_CONN_LOOPBACK
 	};
 	if (snprintf(mgcp_msg.endpoint, MGCP_ENDPOINT_MAXLEN, MGCP_ENDPOINT_FORMAT, rtp_endpoint) >=
@@ -201,7 +201,7 @@ static void crcx_for_bts_resp_cb(struct mgcp_response *r, void *priv)
 {
 	struct mgcp_ctx *mgcp_ctx = priv;
 	int rc;
-	struct osmo_bsc_sccp_con *conn;
+	struct gsm_subscriber_connection *conn;
 	uint32_t addr;
 
 	OSMO_ASSERT(mgcp_ctx);
@@ -256,7 +256,7 @@ static void crcx_for_bts_resp_cb(struct mgcp_response *r, void *priv)
 static void fsm_proc_assignmnent_req_cb(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
 	struct mgcp_ctx *mgcp_ctx = data;
-	struct osmo_bsc_sccp_con *conn;
+	struct gsm_subscriber_connection *conn;
 	enum gsm48_chan_mode chan_mode;
 	bool full_rate;
 	int rc;
@@ -273,12 +273,12 @@ static void fsm_proc_assignmnent_req_cb(struct osmo_fsm_inst *fi, uint32_t event
 		return;
 	}
 
-	OSMO_ASSERT(conn->conn);
+	OSMO_ASSERT(conn);
 	chan_mode = mgcp_ctx->chan_mode;
 	full_rate = mgcp_ctx->full_rate;
 
 	LOGPFSML(fi, LOGL_DEBUG, "MGW proceeding assignment request...\n");
-	rc = gsm0808_assign_req(conn->conn, chan_mode, full_rate);
+	rc = gsm0808_assign_req(conn, chan_mode, full_rate);
 
 	if (rc < 0) {
 		handle_error(mgcp_ctx, MGCP_ERR_ASSGMNT_FAIL);
@@ -295,7 +295,7 @@ static void mdcx_for_bts_resp_cb(struct mgcp_response *r, void *priv);
 static void fsm_mdcx_bts_cb(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
 	struct mgcp_ctx *mgcp_ctx = data;
-	struct osmo_bsc_sccp_con *conn;
+	struct gsm_subscriber_connection *conn;
 	struct gsm_lchan *lchan;
 	struct msgb *msg;
 	struct mgcp_msg mgcp_msg;
@@ -333,7 +333,7 @@ static void fsm_mdcx_bts_cb(struct osmo_fsm_inst *fi, uint32_t event, void *data
 		.verb = MGCP_VERB_MDCX,
 		.presence = (MGCP_MSG_PRESENCE_ENDPOINT | MGCP_MSG_PRESENCE_CALL_ID | MGCP_MSG_PRESENCE_CONN_ID |
 			     MGCP_MSG_PRESENCE_CONN_MODE | MGCP_MSG_PRESENCE_AUDIO_IP | MGCP_MSG_PRESENCE_AUDIO_PORT),
-		.call_id = conn->conn_id,
+		.call_id = conn->sccp.conn_id,
 		.conn_id = mgcp_ctx->conn_id_bts,
 		.conn_mode = MGCP_CONN_RECV_SEND,
 		.audio_ip = inet_ntoa(addr),
@@ -407,7 +407,7 @@ static void crcx_for_net_resp_cb(struct mgcp_response *r, void *priv);
 static void fsm_crcx_net_cb(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
 	struct mgcp_ctx *mgcp_ctx = data;
-	struct osmo_bsc_sccp_con *conn;
+	struct gsm_subscriber_connection *conn;
 	struct msgb *msg;
 	struct mgcp_msg mgcp_msg;
 	struct mgcp_client *mgcp;
@@ -460,7 +460,7 @@ static void fsm_crcx_net_cb(struct osmo_fsm_inst *fi, uint32_t event, void *data
 		.verb = MGCP_VERB_CRCX,
 		.presence = (MGCP_MSG_PRESENCE_ENDPOINT | MGCP_MSG_PRESENCE_CALL_ID | MGCP_MSG_PRESENCE_CONN_MODE |
 			     MGCP_MSG_PRESENCE_AUDIO_IP | MGCP_MSG_PRESENCE_AUDIO_PORT),
-		.call_id = conn->conn_id,
+		.call_id = conn->sccp.conn_id,
 		.conn_mode = MGCP_CONN_RECV_SEND,
 		.audio_ip = addr,
 		.audio_port = port
@@ -489,7 +489,7 @@ static void crcx_for_net_resp_cb(struct mgcp_response *r, void *priv)
 {
 	struct mgcp_ctx *mgcp_ctx = priv;
 	int rc;
-	struct osmo_bsc_sccp_con *conn;
+	struct gsm_subscriber_connection *conn;
 	struct gsm_lchan *lchan;
 	struct sockaddr_in *sin;
 	uint32_t addr;
@@ -581,7 +581,7 @@ static void mdcx_for_bts_ho_resp_cb(struct mgcp_response *r, void *priv);
  * change to ST_HALT when teardown is done. */
 static void handle_teardown(struct mgcp_ctx *mgcp_ctx)
 {
-	struct osmo_bsc_sccp_con *conn;
+	struct gsm_subscriber_connection *conn;
 	struct msgb *msg;
 	struct mgcp_msg mgcp_msg;
 	struct mgcp_client *mgcp;
@@ -607,7 +607,7 @@ static void handle_teardown(struct mgcp_ctx *mgcp_ctx)
 	mgcp_msg = (struct mgcp_msg) {
 		.verb = MGCP_VERB_DLCX,
 		.presence = (MGCP_MSG_PRESENCE_ENDPOINT | MGCP_MSG_PRESENCE_CALL_ID),
-		.call_id = conn->conn_id
+		.call_id = conn->sccp.conn_id
 	};
 	if (snprintf(mgcp_msg.endpoint, sizeof(mgcp_msg.endpoint), MGCP_ENDPOINT_FORMAT, rtp_endpoint) >=
 	    sizeof(mgcp_msg.endpoint)) {
@@ -633,7 +633,7 @@ static void handle_teardown(struct mgcp_ctx *mgcp_ctx)
  * change to ST_CALL when teardown is done. */
 static void handle_handover(struct mgcp_ctx *mgcp_ctx)
 {
-	struct osmo_bsc_sccp_con *conn;
+	struct gsm_subscriber_connection *conn;
 	struct msgb *msg;
 	struct mgcp_msg mgcp_msg;
 	struct mgcp_client *mgcp;
@@ -663,7 +663,7 @@ static void handle_handover(struct mgcp_ctx *mgcp_ctx)
 		.presence = (MGCP_MSG_PRESENCE_ENDPOINT | MGCP_MSG_PRESENCE_CALL_ID | MGCP_MSG_PRESENCE_CONN_ID |
 			     MGCP_MSG_PRESENCE_CONN_MODE | MGCP_MSG_PRESENCE_AUDIO_IP |
 			     MGCP_MSG_PRESENCE_AUDIO_PORT),
-		.call_id = conn->conn_id,
+		.call_id = conn->sccp.conn_id,
 		.conn_id = mgcp_ctx->conn_id_bts,
 		.conn_mode = MGCP_CONN_RECV_SEND,
 		.audio_ip = inet_ntoa(addr),
@@ -766,7 +766,7 @@ static void fsm_complete_handover(struct osmo_fsm_inst *fi, uint32_t event, void
 static void dlcx_for_all_resp_cb(struct mgcp_response *r, void *priv)
 {
 	struct mgcp_ctx *mgcp_ctx = priv;
-	struct osmo_bsc_sccp_con *conn;
+	struct gsm_subscriber_connection *conn;
 	struct mgcp_client *mgcp;
 
 	OSMO_ASSERT(mgcp_ctx);
@@ -799,7 +799,7 @@ static void dlcx_for_all_resp_cb(struct mgcp_response *r, void *priv)
 static void fsm_halt_cb(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
 	struct mgcp_ctx *mgcp_ctx = (struct mgcp_ctx *)data;
-	struct osmo_bsc_sccp_con *conn;
+	struct gsm_subscriber_connection *conn;
 
 	OSMO_ASSERT(mgcp_ctx);
 	conn = mgcp_ctx->conn;
@@ -960,7 +960,8 @@ static struct osmo_fsm fsm_bsc_mgcp = {
  * chan_mode: channel mode (system data, passed through)
  * full_rate: full rate flag (system data, passed through)
  * Returns an mgcp_context that contains system data and the OSMO-FSM */
-struct mgcp_ctx *mgcp_assignm_req(void *ctx, struct mgcp_client *mgcp, struct osmo_bsc_sccp_con *conn,
+struct mgcp_ctx *mgcp_assignm_req(void *ctx, struct mgcp_client *mgcp,
+				  struct gsm_subscriber_connection *conn,
 				  enum gsm48_chan_mode chan_mode, bool full_rate)
 {
 	struct mgcp_ctx *mgcp_ctx;
@@ -969,7 +970,7 @@ struct mgcp_ctx *mgcp_assignm_req(void *ctx, struct mgcp_client *mgcp, struct os
 	OSMO_ASSERT(mgcp);
 	OSMO_ASSERT(conn);
 
-	OSMO_ASSERT(snprintf(name, sizeof(name), "MGW_%i", conn->conn_id) < sizeof(name));
+	OSMO_ASSERT(snprintf(name, sizeof(name), "MGW_%i", conn->sccp.conn_id) < sizeof(name));
 
 	/* Allocate and configure a new fsm instance */
 	mgcp_ctx = talloc_zero(ctx, struct mgcp_ctx);
@@ -997,7 +998,7 @@ struct mgcp_ctx *mgcp_assignm_req(void *ctx, struct mgcp_client *mgcp, struct os
  * respmgcp_ctx: pending clear complete message to send via A-Interface */
 void mgcp_clear_complete(struct mgcp_ctx *mgcp_ctx, struct msgb *resp)
 {
-	struct osmo_bsc_sccp_con *conn;
+	struct gsm_subscriber_connection *conn;
 
 	OSMO_ASSERT(mgcp_ctx);
 	OSMO_ASSERT(resp);
@@ -1086,19 +1087,19 @@ static int mgcp_sig_ho_detect(struct gsm_lchan *new_lchan)
 		return -EINVAL;
 	}
 
-	if (!conn->sccp_con) {
-		LOGP(DHO, LOGL_ERROR, "%s HO Detect for conn without sccp_con\n",
+	if (!conn->sccp.conn_id) {
+		LOGP(DHO, LOGL_ERROR, "%s HO Detect for conn without sccp_conn_id\n",
 		     gsm_lchan_name(new_lchan));
 		return -EINVAL;
 	}
 
-	if (!conn->sccp_con->user_plane.mgcp_ctx) {
+	if (!conn->user_plane.mgcp_ctx) {
 		LOGP(DHO, LOGL_ERROR, "%s HO Detect for conn without MGCP ctx\n",
 		     gsm_lchan_name(new_lchan));
 		return -EINVAL;
 	}
 
-	mgcp_handover(conn->sccp_con->user_plane.mgcp_ctx, new_lchan);
+	mgcp_handover(conn->user_plane.mgcp_ctx, new_lchan);
 	return 0;
 }
 

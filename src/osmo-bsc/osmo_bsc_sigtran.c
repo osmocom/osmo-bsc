@@ -38,13 +38,11 @@
  * (a copy of the pointer location submitted with osmo_bsc_sigtran_init() */
 static struct llist_head *msc_list;
 
+extern struct gsm_network *bsc_gsmnet;
+
 #define RESET_INTERVAL 1	/* sek */
 #define SCCP_MSG_MAXSIZE 1024
 #define CS7_POINTCODE_DEFAULT_OFFSET 2
-
-/* Internal list with connections we currently maintain. This
- * list is of type struct osmo_bsc_sccp_con */
-static LLIST_HEAD(active_connections);
 
 /* The SCCP stack will not assign connection IDs to us automatically, we
  * will do this ourselves using a counter variable, that counts one up
@@ -52,14 +50,14 @@ static LLIST_HEAD(active_connections);
 static uint32_t conn_id_counter;
 
 /* Helper function to Check if the given connection id is already assigned */
-static struct osmo_bsc_sccp_con *get_bsc_conn_by_conn_id(int conn_id)
+static struct gsm_subscriber_connection *get_bsc_conn_by_conn_id(int conn_id)
 {
 	conn_id &= 0xFFFFFF;
-	struct osmo_bsc_sccp_con *bsc_con;
+	struct gsm_subscriber_connection *conn;
 
-	llist_for_each_entry(bsc_con, &active_connections, entry) {
-		if (bsc_con->conn_id == conn_id)
-			return bsc_con;
+	llist_for_each_entry(conn, &bsc_gsmnet->subscr_conns, entry) {
+		if (conn->sccp.conn_id == conn_id)
+			return conn;
 	}
 
 	return NULL;
@@ -131,12 +129,12 @@ static struct bsc_msc_data *get_msc_by_addr(const struct osmo_sccp_addr *msc_add
 /* Send data to MSC, use the connection id which MSC it is */
 static int handle_data_from_msc(int conn_id, struct msgb *msg)
 {
-	struct osmo_bsc_sccp_con *bsc_con = get_bsc_conn_by_conn_id(conn_id);
+	struct gsm_subscriber_connection *conn = get_bsc_conn_by_conn_id(conn_id);
 	int rc = -EINVAL;
 
-	if (bsc_con) {
+	if (conn) {
 		msg->l3h = msgb_l2(msg);
-		rc = bsc_handle_dt(bsc_con, msg, msgb_l2len(msg));
+		rc = bsc_handle_dt(conn, msg, msgb_l2len(msg));
 	} else
 		LOGP(DMSC, LOGL_NOTICE, "incoming data from unknown connection id: %i\n", conn_id);
 
@@ -168,7 +166,7 @@ static int sccp_sap_up(struct osmo_prim_hdr *oph, void *_scu)
 {
 	struct osmo_scu_prim *scu_prim = (struct osmo_scu_prim *)oph;
 	struct osmo_sccp_user *scu = _scu;
-	struct osmo_bsc_sccp_con *bsc_con;
+	struct gsm_subscriber_connection *conn;
 	int rc = 0;
 
 	switch (OSMO_PRIM_HDR(&scu_prim->oph)) {
@@ -187,6 +185,9 @@ static int sccp_sap_up(struct osmo_prim_hdr *oph, void *_scu)
 
 	case OSMO_PRIM(OSMO_SCU_PRIM_N_CONNECT, PRIM_OP_CONFIRM):
 		/* Handle outbound connection confirmation */
+		conn = get_bsc_conn_by_conn_id(scu_prim->u.connect.conn_id);
+		if (conn)
+			conn->sccp.state = SUBSCR_SCCP_ST_CONNECTED;
 		if (msgb_l2len(oph->msg) > 0) {
 			DEBUGP(DMSC, "N-CONNECT.cnf(%u, %s)\n", scu_prim->u.connect.conn_id,
 			       osmo_hexdump(msgb_l2(oph->msg), msgb_l2len(oph->msg)));
@@ -201,32 +202,28 @@ static int sccp_sap_up(struct osmo_prim_hdr *oph, void *_scu)
 		       osmo_hexdump(msgb_l2(oph->msg), msgb_l2len(oph->msg)));
 
 		/* Incoming data is a sign of a vital connection */
-		bsc_con = get_bsc_conn_by_conn_id(scu_prim->u.disconnect.conn_id);
-		if (bsc_con)
-			a_reset_conn_success(bsc_con->msc->a.reset);
+		conn = get_bsc_conn_by_conn_id(scu_prim->u.disconnect.conn_id);
+		if (conn)
+			a_reset_conn_success(conn->sccp.msc->a.reset);
 
 		rc = handle_data_from_msc(scu_prim->u.data.conn_id, oph->msg);
 		break;
 
 	case OSMO_PRIM(OSMO_SCU_PRIM_N_DISCONNECT, PRIM_OP_INDICATION):
 		/* indication of disconnect */
+		conn = get_bsc_conn_by_conn_id(scu_prim->u.disconnect.conn_id);
+		if (conn)
+			conn->sccp.state = SUBSCR_SCCP_ST_NONE;
 		if (msgb_l2len(oph->msg) > 0) {
 			DEBUGP(DMSC, "N-DISCONNECT.ind(%u, %s, cause=%i)\n", scu_prim->u.disconnect.conn_id,
 			       osmo_hexdump(msgb_l2(oph->msg), msgb_l2len(oph->msg)), scu_prim->u.disconnect.cause);
 			handle_data_from_msc(scu_prim->u.disconnect.conn_id, oph->msg);
-		} else
+		} else {
 			DEBUGP(DRANAP, "N-DISCONNECT.ind(%u, cause=%i)\n", scu_prim->u.disconnect.conn_id,
 			       scu_prim->u.disconnect.cause);
-
-		bsc_con = get_bsc_conn_by_conn_id(scu_prim->u.disconnect.conn_id);
-		if (bsc_con) {
-			/* We might have a connectivity problem. Maybe we need to go
-			 * through the reset procedure again? */
-			if (scu_prim->u.disconnect.cause == 0)
-				a_reset_conn_fail(bsc_con->msc->a.reset);
-
-			rc = osmo_bsc_sigtran_del_conn(bsc_con);
 		}
+		if (conn)
+			rc = osmo_bsc_sigtran_del_conn(conn);
 		break;
 
 	default:
@@ -244,9 +241,7 @@ static int sccp_sap_up(struct osmo_prim_hdr *oph, void *_scu)
 enum bsc_con osmo_bsc_sigtran_new_conn(struct gsm_subscriber_connection *conn, struct bsc_msc_data *msc)
 {
 	struct osmo_ss7_instance *ss7;
-	struct osmo_bsc_sccp_con *bsc_con;
 	struct gsm_bts *bts = conn_get_bts(conn);
-	int conn_id;
 
 	OSMO_ASSERT(conn);
 	OSMO_ASSERT(msc);
@@ -266,30 +261,13 @@ enum bsc_con osmo_bsc_sigtran_new_conn(struct gsm_subscriber_connection *conn, s
 		return BSC_CON_REJECT_RF_GRACE;
 	}
 
-	bsc_con = talloc_zero(bts, struct osmo_bsc_sccp_con);
-	if (!bsc_con) {
-		LOGP(DMSC, LOGL_ERROR, "Failed to allocate new SIGTRAN connection.\n");
-		return BSC_CON_NO_MEM;
-	}
-
-	bsc_con->msc = msc;
-	bsc_con->conn = conn;
-	llist_add_tail(&bsc_con->entry, &active_connections);
-	conn->sccp_con = bsc_con;
-
-	/* Pick a free connection id */
-	conn_id = pick_free_conn_id(msc);
-	if (conn_id < 0)
-		return BSC_CON_REJECT_NO_LINK;
-	bsc_con->conn_id = conn_id;
-
-	LOGP(DMSC, LOGL_NOTICE, "Allocated new connection id: %i\n", conn_id);
+	conn->sccp.msc = msc;
 
 	return BSC_CON_SUCCESS;
 }
 
 /* Open a new connection oriented sigtran connection */
-int osmo_bsc_sigtran_open_conn(const struct osmo_bsc_sccp_con *conn, struct msgb *msg)
+int osmo_bsc_sigtran_open_conn(struct gsm_subscriber_connection *conn, struct msgb *msg)
 {
 	struct osmo_ss7_instance *ss7;
 	struct bsc_msc_data *msc;
@@ -298,16 +276,22 @@ int osmo_bsc_sigtran_open_conn(const struct osmo_bsc_sccp_con *conn, struct msgb
 
 	OSMO_ASSERT(conn);
 	OSMO_ASSERT(msg);
-	OSMO_ASSERT(conn->msc);
+	OSMO_ASSERT(conn->sccp.msc);
+	OSMO_ASSERT(conn->sccp.conn_id == -1);
 
-	msc = conn->msc;
+	msc = conn->sccp.msc;
 
 	if (a_reset_conn_ready(msc->a.reset) == false) {
 		LOGP(DMSC, LOGL_ERROR, "MSC is not connected. Dropping.\n");
 		return -EINVAL;
 	}
 
-	conn_id = conn->conn_id;
+	conn->sccp.conn_id = conn_id = pick_free_conn_id(msc);
+	if (conn->sccp.conn_id < 0) {
+		LOGP(DMSC, LOGL_ERROR, "Unable to allocate SCCP Connection ID\n");
+		return -1;
+	}
+	LOGP(DMSC, LOGL_DEBUG, "Allocated new connection id: %d\n", conn->sccp.conn_id);
 	ss7 = osmo_ss7_instance_find(msc->a.cs7_instance);
 	OSMO_ASSERT(ss7);
 	LOGP(DMSC, LOGL_NOTICE, "Opening new SIGTRAN connection (id=%i) to MSC: %s\n", conn_id,
@@ -315,12 +299,14 @@ int osmo_bsc_sigtran_open_conn(const struct osmo_bsc_sccp_con *conn, struct msgb
 
 	rc = osmo_sccp_tx_conn_req_msg(msc->a.sccp_user, conn_id, &msc->a.bsc_addr,
 				       &msc->a.msc_addr, msg);
+	if (rc >= 0)
+		conn->sccp.state = SUBSCR_SCCP_ST_WAIT_CONN_CONF;
 
 	return rc;
 }
 
 /* Send data to MSC */
-int osmo_bsc_sigtran_send(const struct osmo_bsc_sccp_con *conn, struct msgb *msg)
+int osmo_bsc_sigtran_send(struct gsm_subscriber_connection *conn, struct msgb *msg)
 {
 	struct osmo_ss7_instance *ss7;
 	int conn_id;
@@ -329,9 +315,9 @@ int osmo_bsc_sigtran_send(const struct osmo_bsc_sccp_con *conn, struct msgb *msg
 
 	OSMO_ASSERT(conn);
 	OSMO_ASSERT(msg);
-	OSMO_ASSERT(conn->msc);
+	OSMO_ASSERT(conn->sccp.msc);
 
-	msc = conn->msc;
+	msc = conn->sccp.msc;
 
 	/* Log the type of the message we are sending. This is just
 	 * informative, do not stop if detecting the type fails */
@@ -354,7 +340,7 @@ int osmo_bsc_sigtran_send(const struct osmo_bsc_sccp_con *conn, struct msgb *msg
 		return -EINVAL;
 	}
 
-	conn_id = conn->conn_id;
+	conn_id = conn->sccp.conn_id;
 
 	ss7 = osmo_ss7_instance_find(msc->a.cs7_instance);
 	OSMO_ASSERT(ss7);
@@ -369,80 +355,66 @@ int osmo_bsc_sigtran_send(const struct osmo_bsc_sccp_con *conn, struct msgb *msg
 /* Delete a connection from the list with open connections
  * (called by osmo_bsc_api.c on failing open connections and
  * locally, when a connection is closed by the MSC */
-int osmo_bsc_sigtran_del_conn(struct osmo_bsc_sccp_con *conn)
+int osmo_bsc_sigtran_del_conn(struct gsm_subscriber_connection *conn)
 {
 	if (!conn)
 		return 0;
 
-	if (conn->conn) {
-		LOGP(DMSC, LOGL_ERROR,
-		     "sccp connection (id=%i) not cleared (gsm subscriber connection still active) -- forcefully clearing it now!\n",
-		     conn->conn_id);
-		bsc_subscr_con_free(conn->conn);
-		conn->conn = NULL;
+	LOGP(DMSC, LOGL_ERROR,
+	     "sccp connection (id=%i) not cleared (gsm subscriber connection still active) -- forcefully clearing it now!\n", conn->sccp.conn_id);
 
-		/* This bahaviour might be caused by a bad connection. Maybe we
-		 * will have to go through the reset procedure again */
-		a_reset_conn_fail(conn->msc->a.reset);
-	}
+	/* This bahaviour might be caused by a bad connection. Maybe we
+	 * will have to go through the reset procedure again */
+	a_reset_conn_fail(conn->sccp.msc->a.reset);
 
 	/* Remove mgcp context if existant */
 	if (conn->user_plane.mgcp_ctx)
 		mgcp_free_ctx(conn->user_plane.mgcp_ctx);
 
-	llist_del(&conn->entry);
-	talloc_free(conn);
+	/* free the "conn" and make sure any pending lchans are also free'd */
+	bsc_subscr_con_free(conn);
 
 	return 0;
 }
 
 /* Send an USSD notification in case we loose the connection to the MSC */
-static void bsc_notify_msc_lost(const struct osmo_bsc_sccp_con *conn)
+static void bsc_notify_msc_lost(struct gsm_subscriber_connection *conn)
 {
-	struct gsm_subscriber_connection *subscr_conn;
-
 	/* Check if sccp conn is still present */
 	if (!conn)
 		return;
-	subscr_conn = conn->conn;
-
-	/* send USSD notification if string configured and conn->data is set */
-	if (!subscr_conn)
-		return;
 
 	/* check for config string */
-	if (!conn->msc->ussd_msc_lost_txt)
+	if (!conn->sccp.msc->ussd_msc_lost_txt)
 		return;
-	if (conn->msc->ussd_msc_lost_txt[0] == '\0')
+	if (conn->sccp.msc->ussd_msc_lost_txt[0] == '\0')
 		return;
 
 	/* send USSD notification */
-	bsc_send_ussd_notify(subscr_conn, 1, subscr_conn->sccp_con->msc->ussd_msc_lost_txt);
-	bsc_send_ussd_release_complete(subscr_conn);
+	bsc_send_ussd_notify(conn, 1, conn->sccp.msc->ussd_msc_lost_txt);
+	bsc_send_ussd_release_complete(conn);
 }
 
 /* Close all open sigtran connections and channels */
 void osmo_bsc_sigtran_reset(const struct bsc_msc_data *msc)
 {
-	struct osmo_bsc_sccp_con *conn;
-	struct osmo_bsc_sccp_con *conn_temp;
+	struct gsm_subscriber_connection *conn, *conn_temp;
 	OSMO_ASSERT(msc);
 
 	/* Close all open connections */
-	llist_for_each_entry_safe(conn, conn_temp, &active_connections, entry) {
+	llist_for_each_entry_safe(conn, conn_temp, &bsc_gsmnet->subscr_conns, entry) {
 
 		/* We only may close connections which actually belong to this
 		 * MSC. All other open connections are left untouched */
-		if (conn->msc == msc) {
+		if (conn->sccp.msc == msc) {
 			/* Notify active connection users via USSD that the MSC is down */
 			bsc_notify_msc_lost(conn);
 
 			/* Take down all occopied RF channels */
-			if (conn->conn)
-				gsm0808_clear(conn->conn);
+			gsm0808_clear(conn);
 
 			/* Disconnect all Sigtran connections */
-			osmo_sccp_tx_disconn(msc->a.sccp_user, conn->conn_id, &msc->a.bsc_addr, 0);
+			osmo_sccp_tx_disconn(msc->a.sccp_user, conn->sccp.conn_id, &msc->a.bsc_addr, 0);
 
 			/* Delete subscriber connection */
 			osmo_bsc_sigtran_del_conn(conn);
