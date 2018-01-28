@@ -419,6 +419,13 @@ static int chan_compat_with_mode(struct gsm_lchan *lchan, int chan_mode, int ful
 {
 	switch (chan_mode) {
 	case GSM48_CMODE_SIGN:
+		switch (lchan->type) {
+		case GSM_LCHAN_TCH_F:
+		case GSM_LCHAN_TCH_H:
+		case GSM_LCHAN_SDCCH:
+			return 1;
+		}
+		break;
 	case GSM48_CMODE_SPEECH_V1:
 	case GSM48_CMODE_SPEECH_AMR:
 	case GSM48_CMODE_DATA_3k6:
