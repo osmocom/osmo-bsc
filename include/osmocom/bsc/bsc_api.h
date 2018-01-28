@@ -46,6 +46,9 @@ struct bsc_api {
 	void (*conn_cleanup)(struct gsm_subscriber_connection *conn);
 };
 
+uint8_t lchan_to_chosen_channel(struct gsm_lchan *lchan);
+uint8_t chan_mode_to_speech(struct gsm_lchan *lchan);
+
 int bsc_api_init(struct gsm_network *network, struct bsc_api *api);
 int gsm0808_submit_dtap(struct gsm_subscriber_connection *conn, struct msgb *msg, int link_id, int allow_sacch);
 int gsm0808_assign_req(struct gsm_subscriber_connection *conn, int chan_mode, int full_rate);

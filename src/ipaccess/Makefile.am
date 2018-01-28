@@ -24,7 +24,6 @@ OSMO_LIBS = \
 
 bin_PROGRAMS = \
 	abisip-find \
-	ipaccess-config \
 	ipaccess-proxy \
 	$(NULL)
 

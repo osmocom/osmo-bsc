@@ -39,6 +39,4 @@ void bsc_gen_location_state_trap(struct gsm_bts *bts);
 
 struct llist_head *bsc_access_lists(void);
 
-int bssmap_send_aoip_ass_compl(struct gsm_lchan *lchan);
-
 #endif

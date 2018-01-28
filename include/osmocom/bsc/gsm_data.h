@@ -15,10 +15,12 @@
 #include <osmocom/gsm/bts_features.h>
 #include <osmocom/gsm/protocol/gsm_08_08.h>
 #include <osmocom/gsm/gsm48.h>
+#include <osmocom/core/fsm.h>
 
 #include <osmocom/crypt/auth.h>
 
 #include <osmocom/bsc/rest_octets.h>
+#include <osmocom/bsc/handover.h>
 
 #include <osmocom/core/bitvec.h>
 #include <osmocom/gsm/gsm_utils.h>
@@ -95,6 +97,9 @@ struct gsm_subscriber_connection {
 	/* global linked list of subscriber_connections */
 	struct llist_head entry;
 
+	/* FSM instance to control the subscriber connection state (RTP, A) */
+	struct osmo_fsm_inst *fi;
+
 	/* libbsc subscriber information (if available) */
 	struct bsc_subscr *bsub;
 
@@ -103,8 +108,9 @@ struct gsm_subscriber_connection {
 
 	/* the primary / currently active lchan to the BTS/subscriber */
 	struct gsm_lchan *lchan;
-	/* the future/allocated but not yet used lchan during HANDOVER */
-	struct gsm_lchan *ho_lchan;
+
+	/* handover information, if a handover is pending for this conn. */
+	struct bsc_handover *ho;
 
 	/* timer for assignment handling */
 	struct osmo_timer_list T10;
@@ -166,11 +172,21 @@ struct gsm_subscriber_connection {
 		 * assignment complete message) */
 		struct sockaddr_storage aoip_rtp_addr_local;
 
-		/* storage to keep states of the MGCP connection handler, the
-		* handler is created when an assignment request is received
-		* and is terminated when the assignment complete message is
-		* sent */
-		struct mgcp_ctx *mgcp_ctx;
+		/* FSM instance to control the BTS sided RTP connection */
+		struct osmo_fsm_inst *fi_bts;
+
+		/* FSM instance to control the MSC sided RTP connection */
+		struct osmo_fsm_inst *fi_msc;
+
+		/* Endpoint identifier of the MGCP endpoint the connection uses */
+		char *mgw_endpoint;
+
+		/* Channel rate flag, FR=1, HR=0, Invalid=-1 */
+		int full_rate;
+
+		/* Channel mode flage (signaling or voice channel) */
+		enum gsm48_chan_mode chan_mode;
+
 	} user_plane;
 };
 
@@ -1340,8 +1356,7 @@ void gprs_ra_id_by_bts(struct gprs_ra_id *raid, struct gsm_bts *bts);
 
 int gsm_bts_model_register(struct gsm_bts_model *model);
 
-struct gsm_subscriber_connection *bsc_subscr_con_allocate(struct gsm_lchan *lchan);
-void bsc_subscr_con_free(struct gsm_subscriber_connection *conn);
+struct gsm_subscriber_connection *bsc_subscr_con_allocate(struct gsm_network *network);
 
 struct gsm_subscriber_connection *msc_subscr_con_allocate(struct gsm_network *network);
 void msc_subscr_con_free(struct gsm_subscriber_connection *conn);

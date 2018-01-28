@@ -39,8 +39,58 @@
 #include <osmocom/bsc/bss.h>
 #include <osmocom/bsc/bsc_api.h>
 #include <osmocom/bsc/osmo_bsc.h>
+#include <osmocom/bsc/bsc_subscr_conn_fsm.h>
 
 struct gsm_network *bsc_gsmnet;
+
+/* override, requires '-Wl,--wrap=mgcp_conn_modify'.
+ * Catch modification of an MGCP connection. */
+int __real_mgcp_conn_modify(struct osmo_fsm_inst *fi, uint32_t parent_evt, struct mgcp_conn_peer *conn_peer);
+int __wrap_mgcp_conn_modify(struct osmo_fsm_inst *fi, uint32_t parent_evt, struct mgcp_conn_peer *conn_peer)
+{
+	/* CAUTION HACK:
+	 *
+	 * The pointer fi is misused to pass a reference to GSCON FSM !
+	 *
+	 * This function is called from gscon_fsm_wait_ho_compl() from
+	 * bsc_subscr_conn_fsm.c when GSCON_EV_HO_COMPL is dispatched to the
+	 * GSCON FSM. By then, the GSCON FSM has already changed to the state
+	 * ST_WAIT_MDCX_BTS_HO (see gscon_fsm_wait_mdcx_bts_ho()) and waits for
+	 * GSCON_EV_MGW_MDCX_RESP_BTS. The signal GSCON_EV_MGW_MDCX_RESP_BTS
+	 * is sent to this function using the parameter parent_evt. So we
+	 * implicitly know the event that is needed to simulate a successful
+	 * MGW negotiation to the GSCON FSM. All we need to do is to dispatch
+	 * parent_evt back to the GSCON FSM in order to make it think that the
+	 * MGW negotiation is done.
+	 *
+	 * Unfortunately, there is a problem with this test implementation.
+	 * in order to simplfy the test we do not allocate any MGCP Client
+	 * FSM but the GSCON FSM will call this function with the fi pointer
+	 * pointing to the MGCP Client FSM. This means we get a nullpointer
+	 * here and there is no way to distinguish which GSCON FSM called
+	 * the function at all (normally we would know through the parent
+	 * pointer).
+	 *
+	 * To get around this problem we populate the fi pointer with the
+	 * reference to the GSCON FSM itsself, so we can know who called the
+	 * function. This is a misuse of the pointer since it normally would
+	 * hold an MGCP Client FSM instead of a GSCON FSM.
+	 *
+	 * See also note in function create_conn() */
+
+	osmo_fsm_inst_dispatch(fi, parent_evt, NULL);
+	return 0;
+}
+
+/* override, requires '-Wl,--wrap=mgcp_conn_delete'.
+ * Catch deletion of an MGCP connection. */
+int __real_mgcp_conn_delete(struct osmo_fsm_inst *fi);
+int __wrap_mgcp_conn_delete(struct osmo_fsm_inst *fi)
+{
+	/* Just do nothing and pretend that everything went well.
+	 * We never have allocatec any MGCP connections. */
+	return 0;
+}
 
 /* measurement report */
 
@@ -186,7 +236,24 @@ static struct gsm_bts *create_bts(int arfcn)
 
 void create_conn(struct gsm_lchan *lchan)
 {
-	lchan->conn = bsc_subscr_con_allocate(lchan);
+	struct gsm_subscriber_connection *conn;
+	conn = bsc_subscr_con_allocate(lchan->ts->trx->bts->network);
+
+	/* CAUTION HACK: When __real_mgcp_conn_modify() is called by the GSCON
+	 * FSM, then we need to know the reference to caller FSM (GSCON FSM).
+	 * Unfortunately the function __real_mgcp_conn_modify() is called with
+	 * fi_bts, which is unpopulated in this setup. The real function would
+	 * perform the communication with the MGW and then dispatch a signal
+	 * back to the parent FSM. Since we do not have all that in this setup
+	 * we populate the fi_bts pointer with a reference to the GSCON FSM in
+	 * order to have it available later in __real_mgcp_conn_modify(). */
+	conn->user_plane.fi_bts = conn->fi;
+
+	lchan->conn = conn;
+	conn->lchan = lchan;
+	/* kick the FSM from INIT through to the ACTIVE state */
+	osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_A_CONN_REQ, NULL);
+	osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_A_CONN_CFM, NULL);
 }
 
 /* create lchan */
@@ -1256,6 +1323,11 @@ static const struct log_info_cat log_categories[] = {
 		.color = "\033[1;35m",
 		.enabled = 1, .loglevel = LOGL_DEBUG,
 	},
+	[DMSC] = {
+		.name = "DMSC",
+		.description = "Mobile Switching Center",
+		.enabled = 1, .loglevel = LOGL_DEBUG,
+	},
 };
 
 const struct log_info log_info = {
@@ -1592,7 +1664,7 @@ int main(int argc, char **argv)
 		struct gsm_subscriber_connection *conn = lchan[i]->conn;
 		lchan[i]->conn = NULL;
 		conn->lchan = NULL;
-		bsc_subscr_con_free(conn);
+		osmo_fsm_inst_term(conn->fi, OSMO_FSM_TERM_REGULAR, NULL);
 		lchan_free(lchan[i]);
 	}
 
@@ -1615,3 +1687,5 @@ void trau_mux_unmap() {}
 void trau_mux_map_lchan() {}
 void trau_recv_lchan() {}
 void trau_send_frame() {}
+int osmo_bsc_sigtran_send(struct gsm_subscriber_connection *conn, struct msgb *msg) { return 0; }
+int osmo_bsc_sigtran_open_conn(struct gsm_subscriber_connection *conn, struct msgb *msg) { return 0; }

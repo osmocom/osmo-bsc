@@ -4,10 +4,12 @@
 
 #include <osmocom/core/linuxlist.h>
 #include <osmocom/core/timer.h>
+#include <osmocom/gsm/gsm_utils.h>
 
 struct gsm_lchan;
 struct gsm_bts;
 struct gsm_subscriber_connection;
+struct gsm_meas_rep mr;
 
 #define LOGPHOLCHANTOLCHAN(old_lchan, new_lchan, level, fmt, args...) \
 	LOGP(DHODEC, level, "(BTS %u trx %u arfcn %u ts %u lchan %u %s)->(BTS %u trx %u arfcn %u ts %u lchan %u %s) (subscr %s) " fmt, \
@@ -38,21 +40,23 @@ enum hodec_id {
 struct bsc_handover {
 	struct llist_head list;
 
-	enum hodec_id from_hodec_id;
-
+	/* Initial details of what is requested */
 	struct gsm_lchan *old_lchan;
-	struct gsm_lchan *new_lchan;
-
-	struct osmo_timer_list T3103;
-
-	uint8_t ho_ref;
-
-	bool inter_cell;
+	struct gsm_bts *new_bts;
+	enum gsm_chan_t new_lchan_type;
 	bool async;
+
+	/* Derived and resulting state */
+	bool inter_cell;
+	uint8_t ho_ref;
+	enum hodec_id from_hodec_id;
+	struct gsm_lchan *new_lchan;
+	struct osmo_timer_list T3103;
 };
 
 int bsc_handover_start(enum hodec_id from_hodec_id, struct gsm_lchan *old_lchan, struct gsm_bts *new_bts,
 		       enum gsm_chan_t new_lchan_type);
+int bsc_handover_start_gscon(struct gsm_subscriber_connection *conn);
 void bsc_clear_handover(struct gsm_subscriber_connection *conn, int free_lchan);
 struct gsm_lchan *bsc_handover_pending(struct gsm_lchan *new_lchan);
 

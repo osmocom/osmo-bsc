@@ -1,7 +1,6 @@
-/* (C) 2017 by sysmocom s.f.m.c. GmbH
+/* (C) 2017 by sysmocom s.f.m.c. GmbH, Author: Philipp Maier
+ * (C) 2017 by Harald Welte <laforge@gnumonks.org>
  * All Rights Reserved
- *
- * Author: Philipp Maier
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -20,6 +19,7 @@
 
 #include <osmocom/core/utils.h>
 #include <osmocom/core/logging.h>
+#include <osmocom/core/fsm.h>
 #include <osmocom/sigtran/osmo_ss7.h>
 #include <osmocom/sigtran/sccp_sap.h>
 #include <osmocom/core/linuxlist.h>
@@ -32,7 +32,7 @@
 #include <osmocom/bsc/osmo_bsc_sigtran.h>
 #include <osmocom/bsc/a_reset.h>
 #include <osmocom/bsc/gsm_04_80.h>
-#include <osmocom/bsc/osmo_bsc_mgcp.h>
+#include <osmocom/bsc/bsc_subscr_conn_fsm.h>
 
 /* A pointer to a list with all involved MSCs
  * (a copy of the pointer location submitted with osmo_bsc_sigtran_init() */
@@ -127,18 +127,10 @@ static struct bsc_msc_data *get_msc_by_addr(const struct osmo_sccp_addr *msc_add
 }
 
 /* Send data to MSC, use the connection id which MSC it is */
-static int handle_data_from_msc(int conn_id, struct msgb *msg)
+static int handle_data_from_msc(struct gsm_subscriber_connection *conn, struct msgb *msg)
 {
-	struct gsm_subscriber_connection *conn = get_bsc_conn_by_conn_id(conn_id);
-	int rc = -EINVAL;
-
-	if (conn) {
-		msg->l3h = msgb_l2(msg);
-		rc = bsc_handle_dt(conn, msg, msgb_l2len(msg));
-	} else
-		LOGP(DMSC, LOGL_NOTICE, "incoming data from unknown connection id: %i\n", conn_id);
-
-	return rc;
+	msg->l3h = msgb_l2(msg);
+	return bsc_handle_dt(conn, msg, msgb_l2len(msg));
 }
 
 /* Sent unitdata to MSC, use the point code to determine which MSC it is */
@@ -177,23 +169,32 @@ static int sccp_sap_up(struct osmo_prim_hdr *oph, void *_scu)
 		break;
 
 	case OSMO_PRIM(OSMO_SCU_PRIM_N_CONNECT, PRIM_OP_INDICATION):
-		/* Handle (Reject) inbound connections */
+		/* Handle inbound connections */
 		DEBUGP(DMSC, "N-CONNECT.ind(X->%u)\n", scu_prim->u.connect.conn_id);
-		LOGP(DMSC, LOGL_DEBUG, "Rejecting inbound SCCP connection...\n");
-		rc = osmo_sccp_tx_disconn(scu, scu_prim->u.connect.conn_id, &scu_prim->u.connect.called_addr, 0);
+		conn = bsc_subscr_con_allocate(bsc_gsmnet);
+		if (conn) {
+			conn->sccp.msc = get_msc_by_addr(&scu_prim->u.connect.calling_addr);
+			/* MSC may be NULL, let the FSM deal with it */
+			osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_A_CONN_IND, scu_prim);
+		} else
+			LOGP(DMSC, LOGL_ERROR, "Unable to alloc subscr_conn for inbound N-CONNECT.ind\n");
 		break;
 
 	case OSMO_PRIM(OSMO_SCU_PRIM_N_CONNECT, PRIM_OP_CONFIRM):
 		/* Handle outbound connection confirmation */
+		DEBUGP(DMSC, "N-CONNECT.cnf(%u, %s)\n", scu_prim->u.connect.conn_id,
+		       osmo_hexdump(msgb_l2(oph->msg), msgb_l2len(oph->msg)));
 		conn = get_bsc_conn_by_conn_id(scu_prim->u.connect.conn_id);
-		if (conn)
+		if (conn) {
+			osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_A_CONN_CFM, scu_prim);
 			conn->sccp.state = SUBSCR_SCCP_ST_CONNECTED;
-		if (msgb_l2len(oph->msg) > 0) {
-			DEBUGP(DMSC, "N-CONNECT.cnf(%u, %s)\n", scu_prim->u.connect.conn_id,
-			       osmo_hexdump(msgb_l2(oph->msg), msgb_l2len(oph->msg)));
-			rc = handle_data_from_msc(scu_prim->u.connect.conn_id, oph->msg);
-		} else
-			DEBUGP(DMSC, "N-CONNECT.cnf(%u)\n", scu_prim->u.connect.conn_id);
+			if (msgb_l2len(oph->msg) > 0)
+				handle_data_from_msc(conn, oph->msg);
+		} else {
+			LOGP(DMSC, LOGL_ERROR, "N-CONNET.cfm(%u, %s) for unknown conn?!?\n",
+				scu_prim->u.connect.conn_id, osmo_hexdump(msgb_l2(oph->msg),
+				msgb_l2len(oph->msg)));
+		}
 		break;
 
 	case OSMO_PRIM(OSMO_SCU_PRIM_N_DATA, PRIM_OP_INDICATION):
@@ -202,28 +203,25 @@ static int sccp_sap_up(struct osmo_prim_hdr *oph, void *_scu)
 		       osmo_hexdump(msgb_l2(oph->msg), msgb_l2len(oph->msg)));
 
 		/* Incoming data is a sign of a vital connection */
-		conn = get_bsc_conn_by_conn_id(scu_prim->u.disconnect.conn_id);
-		if (conn)
+		conn = get_bsc_conn_by_conn_id(scu_prim->u.data.conn_id);
+		if (conn) {
 			a_reset_conn_success(conn->sccp.msc->a.reset);
-
-		rc = handle_data_from_msc(scu_prim->u.data.conn_id, oph->msg);
+			handle_data_from_msc(conn, oph->msg);
+		}
 		break;
 
 	case OSMO_PRIM(OSMO_SCU_PRIM_N_DISCONNECT, PRIM_OP_INDICATION):
+		DEBUGP(DMSC, "N-DISCONNECT.ind(%u, %s, cause=%i)\n", scu_prim->u.disconnect.conn_id,
+		       osmo_hexdump(msgb_l2(oph->msg), msgb_l2len(oph->msg)),
+		       scu_prim->u.disconnect.cause);
 		/* indication of disconnect */
 		conn = get_bsc_conn_by_conn_id(scu_prim->u.disconnect.conn_id);
-		if (conn)
+		if (conn) {
 			conn->sccp.state = SUBSCR_SCCP_ST_NONE;
-		if (msgb_l2len(oph->msg) > 0) {
-			DEBUGP(DMSC, "N-DISCONNECT.ind(%u, %s, cause=%i)\n", scu_prim->u.disconnect.conn_id,
-			       osmo_hexdump(msgb_l2(oph->msg), msgb_l2len(oph->msg)), scu_prim->u.disconnect.cause);
-			handle_data_from_msc(scu_prim->u.disconnect.conn_id, oph->msg);
-		} else {
-			DEBUGP(DMSC, "N-DISCONNECT.ind(%u, cause=%i)\n", scu_prim->u.disconnect.conn_id,
-			       scu_prim->u.disconnect.cause);
+			if (msgb_l2len(oph->msg) > 0)
+				handle_data_from_msc(conn, oph->msg);
+			osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_A_DISC_IND, scu_prim);
 		}
-		if (conn)
-			rc = osmo_bsc_sigtran_del_conn(conn);
 		break;
 
 	default:
@@ -352,31 +350,6 @@ int osmo_bsc_sigtran_send(struct gsm_subscriber_connection *conn, struct msgb *m
 	return rc;
 }
 
-/* Delete a connection from the list with open connections
- * (called by osmo_bsc_api.c on failing open connections and
- * locally, when a connection is closed by the MSC */
-int osmo_bsc_sigtran_del_conn(struct gsm_subscriber_connection *conn)
-{
-	if (!conn)
-		return 0;
-
-	LOGP(DMSC, LOGL_ERROR,
-	     "sccp connection (id=%i) not cleared (gsm subscriber connection still active) -- forcefully clearing it now!\n", conn->sccp.conn_id);
-
-	/* This bahaviour might be caused by a bad connection. Maybe we
-	 * will have to go through the reset procedure again */
-	a_reset_conn_fail(conn->sccp.msc->a.reset);
-
-	/* Remove mgcp context if existant */
-	if (conn->user_plane.mgcp_ctx)
-		mgcp_free_ctx(conn->user_plane.mgcp_ctx);
-
-	/* free the "conn" and make sure any pending lchans are also free'd */
-	bsc_subscr_con_free(conn);
-
-	return 0;
-}
-
 /* Send an USSD notification in case we loose the connection to the MSC */
 static void bsc_notify_msc_lost(struct gsm_subscriber_connection *conn)
 {
@@ -411,13 +384,9 @@ void osmo_bsc_sigtran_reset(const struct bsc_msc_data *msc)
 			bsc_notify_msc_lost(conn);
 
 			/* Take down all occopied RF channels */
-			gsm0808_clear(conn);
-
 			/* Disconnect all Sigtran connections */
-			osmo_sccp_tx_disconn(msc->a.sccp_user, conn->sccp.conn_id, &msc->a.bsc_addr, 0);
-
 			/* Delete subscriber connection */
-			osmo_bsc_sigtran_del_conn(conn);
+			osmo_fsm_inst_term(conn->fi, OSMO_FSM_TERM_REQUEST, NULL);
 		}
 	}
 }

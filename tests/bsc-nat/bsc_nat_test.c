@@ -1590,3 +1590,5 @@ void bsc_nat_send_mgcp_to_msc(struct bsc_nat *nat, struct msgb *msg)
 {
 	abort();
 }
+
+struct gsm_subscriber_connection *bsc_subscr_con_allocate(struct gsm_network *network) { return NULL; }

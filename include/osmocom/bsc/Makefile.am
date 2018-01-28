@@ -12,6 +12,7 @@ noinst_HEADERS = \
 	bsc_nat_sccp.h \
 	bsc_rll.h \
 	bsc_subscriber.h \
+	bsc_subscr_conn_fsm.h \
 	bss.h \
 	bts_ipaccess_nanobts_omlattr.h \
 	chan_alloc.h \
@@ -36,7 +37,6 @@ noinst_HEADERS = \
 	openbscdefines.h \
 	osmo_bsc.h \
 	osmo_bsc_grace.h \
-	osmo_bsc_mgcp.h \
 	osmo_bsc_rf.h \
 	osmo_bsc_sigtran.h \
 	bsc_msc_data.h \

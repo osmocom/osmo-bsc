@@ -13,6 +13,7 @@ AM_CFLAGS = \
 	$(LIBOSMOMGCP_CFLAGS) \
 	$(LIBOSMOSIGTRAN_CFLAGS) \
 	$(COVERAGE_CFLAGS) \
+	$(LIBOSMOMGCPCLIENT_CFLAGS) \
 	$(NULL)
 
 noinst_LIBRARIES = \
@@ -62,5 +63,6 @@ libbsc_a_SOURCES = \
 	handover_cfg.c \
 	penalty_timers.c \
 	handover_decision_2.c \
+	bsc_subscr_conn_fsm.c \
 	$(NULL)
 

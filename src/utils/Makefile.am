@@ -22,7 +22,6 @@ noinst_HEADERS = \
 	$(NULL)
 
 bin_PROGRAMS = \
-	bs11_config \
 	isdnsync \
 	meas_json \
 	$(NULL)

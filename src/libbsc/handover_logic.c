@@ -40,6 +40,7 @@
 #include <osmocom/bsc/gsm_04_08_utils.h>
 #include <osmocom/bsc/handover.h>
 #include <osmocom/bsc/handover_cfg.h>
+#include <osmocom/bsc/bsc_subscr_conn_fsm.h>
 
 static LLIST_HEAD(bsc_handovers);
 static LLIST_HEAD(handover_decision_callbacks);
@@ -81,70 +82,105 @@ static struct bsc_handover *bsc_ho_by_old_lchan(struct gsm_lchan *old_lchan)
 int bsc_handover_start(enum hodec_id from_hodec_id, struct gsm_lchan *old_lchan, struct gsm_bts *new_bts,
 		       enum gsm_chan_t new_lchan_type)
 {
-	struct gsm_network *network;
-	struct gsm_lchan *new_lchan;
+	struct gsm_subscriber_connection *conn;
 	struct bsc_handover *ho;
 	static uint8_t ho_ref = 0;
-	int rc;
-	bool do_assignment = false;
+	bool do_assignment;
+
+	OSMO_ASSERT(old_lchan);
 
 	/* don't attempt multiple handovers for the same lchan at
 	 * the same time */
 	if (bsc_ho_by_old_lchan(old_lchan))
 		return -EBUSY;
 
-	if (!new_bts)
-		new_bts = old_lchan->ts->trx->bts;
-	do_assignment = (new_bts == old_lchan->ts->trx->bts);
-
-	network = new_bts->network;
-
-	rate_ctr_inc(&network->bsc_ctrs->ctr[BSC_CTR_HANDOVER_ATTEMPTED]);
-
-	if (!old_lchan->conn) {
+	conn = old_lchan->conn;
+	if (!conn) {
 		LOGP(DHO, LOGL_ERROR, "Old lchan lacks connection data.\n");
 		return -ENOSPC;
 	}
 
-	DEBUGP(DHO, "(BTS %u trx %u ts %u lchan %u %s)->(BTS %u lchan %s) Beginning with handover operation...\n",
+	if (!new_bts)
+		new_bts = old_lchan->ts->trx->bts;
+	OSMO_ASSERT(new_bts);
+
+	do_assignment = (new_bts == old_lchan->ts->trx->bts);
+
+	ho = talloc_zero(conn, struct bsc_handover);
+	if (!ho) {
+		LOGP(DHO, LOGL_FATAL, "Out of Memory\n");
+		return -ENOMEM;
+	}
+	ho->from_hodec_id = from_hodec_id;
+	ho->old_lchan = old_lchan;
+	ho->new_bts = new_bts;
+	ho->new_lchan_type = new_lchan_type;
+	ho->ho_ref = ho_ref++;
+	ho->inter_cell = !do_assignment;
+	ho->async = true;
+	llist_add(&ho->list, &bsc_handovers);
+
+	conn->ho = ho;
+
+	DEBUGP(DHO, "(BTS %u trx %u ts %u lchan %u %s)->(BTS %u lchan %s) Initiating %s...\n",
 	       old_lchan->ts->trx->bts->nr,
 	       old_lchan->ts->trx->nr,
 	       old_lchan->ts->nr,
 	       old_lchan->nr,
 	       gsm_pchan_name(old_lchan->ts->pchan),
 	       new_bts->nr,
-	       gsm_lchant_name(new_lchan_type));
+	       gsm_lchant_name(new_lchan_type),
+	       do_assignment ? "Assignment" : "Handover");
 
-	new_lchan = lchan_alloc(new_bts, new_lchan_type, 0);
-	if (!new_lchan) {
-		LOGP(DHO, LOGL_NOTICE, "No free channel for %s\n", gsm_lchant_name(new_lchan_type));
+	return osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_HO_START, NULL);
+}
+
+/*! Start actual handover. Call bsc_handover_start() instead; The only legal caller is the GSCON FSM in
+ * bsc_subscr_conn_fsm.c. */
+int bsc_handover_start_gscon(struct gsm_subscriber_connection *conn)
+{
+	int rc;
+	struct gsm_network *network = conn->network;
+	struct bsc_handover *ho = conn->ho;
+	struct gsm_lchan *old_lchan;
+	struct gsm_lchan *new_lchan;
+
+	if (!ho) {
+		LOGP(DHO, LOGL_ERROR, "%s: Requested to start handover, but conn->ho is NULL\n",
+		     bsc_subscr_name(conn->bsub));
+		return -EINVAL;
+	}
+
+	OSMO_ASSERT(ho->old_lchan && ho->new_bts);
+
+	if (ho->old_lchan->conn != conn) {
+		LOGP(DHO, LOGL_ERROR,
+		     "%s: Requested to start handover, but the lchan does not belong to this conn\n",
+		     bsc_subscr_name(conn->bsub));
+		return -EINVAL;
+	}
+
+	rate_ctr_inc(&network->bsc_ctrs->ctr[BSC_CTR_HANDOVER_ATTEMPTED]);
+
+	ho->new_lchan = lchan_alloc(ho->new_bts, ho->new_lchan_type, 0);
+	if (!ho->new_lchan) {
+		LOGP(DHO, LOGL_NOTICE, "No free channel for %s\n", gsm_lchant_name(ho->new_lchan_type));
 		rate_ctr_inc(&network->bsc_ctrs->ctr[BSC_CTR_HANDOVER_NO_CHANNEL]);
 		return -ENOSPC;
 	}
 
-	ho = talloc_zero(tall_bsc_ctx, struct bsc_handover);
-	if (!ho) {
-		LOGP(DHO, LOGL_FATAL, "Out of Memory\n");
-		lchan_free(new_lchan);
-		return -ENOMEM;
-	}
-	ho->from_hodec_id = from_hodec_id;
-	ho->old_lchan = old_lchan;
-	ho->new_lchan = new_lchan;
-	ho->ho_ref = ho_ref++;
-	ho->inter_cell = !do_assignment;
-	ho->async = true;
-
-	LOGPHO(ho, LOGL_INFO, "Triggering %s\n", do_assignment? "Assignment" : "Handover");
+	LOGPHO(ho, LOGL_INFO, "Triggering %s\n", ho->inter_cell? "Handover" : "Assignment");
 
 	/* copy some parameters from old lchan */
+	old_lchan = ho->old_lchan;
+	new_lchan = ho->new_lchan;
 	memcpy(&new_lchan->encr, &old_lchan->encr, sizeof(new_lchan->encr));
-	if (do_assignment) {
+	if (!ho->inter_cell) {
 		new_lchan->ms_power = old_lchan->ms_power;
 		new_lchan->rqd_ta = old_lchan->rqd_ta;
 	} else {
 		new_lchan->ms_power =
-			ms_pwr_ctl_lvl(new_bts->band, new_bts->ms_max_power);
+			ms_pwr_ctl_lvl(ho->new_bts->band, ho->new_bts->ms_max_power);
 		/* FIXME: do we have a better idea of the timing advance? */
 		//new_lchan->rqd_ta = old_lchan->rqd_ta;
 	}
@@ -154,24 +190,21 @@ int bsc_handover_start(enum hodec_id from_hodec_id, struct gsm_lchan *old_lchan,
 	memcpy(&new_lchan->mr_ms_lv, &old_lchan->mr_ms_lv, sizeof(new_lchan->mr_ms_lv));
 	memcpy(&new_lchan->mr_bts_lv, &old_lchan->mr_bts_lv, sizeof(new_lchan->mr_bts_lv));
 
-	new_lchan->conn = old_lchan->conn;
-	new_lchan->conn->ho_lchan = new_lchan;
+	new_lchan->conn = conn;
 
 	rc = rsl_chan_activate_lchan(new_lchan,
 				     ho->async ? RSL_ACT_INTER_ASYNC : RSL_ACT_INTER_SYNC,
 				     ho->ho_ref);
 	if (rc < 0) {
 		LOGPHO(ho, LOGL_INFO, "%s Failure: activate lchan rc = %d\n",
-		       do_assignment? "Assignment" : "Handover", rc);
-		new_lchan->conn->ho_lchan = NULL;
-		new_lchan->conn = NULL;
-		talloc_free(ho);
+		       ho->inter_cell? "Handover" : "Assignment", rc);
 		lchan_free(new_lchan);
+		ho->new_lchan = NULL;
+		bsc_clear_handover(conn, 0);
 		return rc;
 	}
 
 	rsl_lchan_set_state(new_lchan, LCHAN_S_ACT_REQ);
-	llist_add(&ho->list, &bsc_handovers);
 	/* we continue in the SS_LCHAN handler / ho_chan_activ_ack */
 
 	return 0;
@@ -180,26 +213,20 @@ int bsc_handover_start(enum hodec_id from_hodec_id, struct gsm_lchan *old_lchan,
 /* clear any operation for this connection */
 void bsc_clear_handover(struct gsm_subscriber_connection *conn, int free_lchan)
 {
-	struct bsc_handover *ho;
+	struct bsc_handover *ho = conn->ho;
 
-	ho = bsc_ho_by_new_lchan(conn->ho_lchan);
-
-
-	if (!ho && conn->ho_lchan)
-		LOGP(DHO, LOGL_ERROR, "BUG: We lost some state.\n");
-
-	if (!ho) {
-		LOGP(DHO, LOGL_ERROR, "unable to find HO record\n");
+	if (!ho)
 		return;
+
+	if (ho->new_lchan) {
+		ho->new_lchan->conn = NULL;
+		if (free_lchan)
+			lchan_release(ho->new_lchan, 0, RSL_REL_LOCAL_END);
+		ho->new_lchan = NULL;
 	}
 
-	conn->ho_lchan->conn = NULL;
-	conn->ho_lchan = NULL;
-
-	if (free_lchan)
-		lchan_release(ho->new_lchan, 0, RSL_REL_LOCAL_END);
-
 	handover_free(ho);
+	conn->ho = NULL;
 }
 
 /* T3103 expired: Handover has failed without HO COMPLETE or HO FAIL */
@@ -211,10 +238,10 @@ static void ho_T3103_cb(void *_ho)
 	DEBUGP(DHO, "HO T3103 expired\n");
 	rate_ctr_inc(&net->bsc_ctrs->ctr[BSC_CTR_HANDOVER_TIMEOUT]);
 
-	ho->new_lchan->conn->ho_lchan = NULL;
-	ho->new_lchan->conn = NULL;
-	lchan_release(ho->new_lchan, 0, RSL_REL_LOCAL_END);
-	handover_free(ho);
+	/* Inform the GSCON FSM about the timed out handover */
+	osmo_fsm_inst_dispatch(ho->old_lchan->conn->fi, GSCON_EV_HO_TIMEOUT, NULL);
+
+	bsc_clear_handover(ho->old_lchan->conn, 1);
 }
 
 /* RSL has acknowledged activation of the new lchan */
@@ -263,12 +290,7 @@ static int ho_chan_activ_nack(struct gsm_lchan *new_lchan)
 	if (hdc && hdc->on_ho_chan_activ_nack)
 		hdc->on_ho_chan_activ_nack(ho);
 
-	new_lchan->conn->ho_lchan = NULL;
-	new_lchan->conn = NULL;
-	handover_free(ho);
-
-	/* FIXME: maybe we should try to allocate a new LCHAN here? */
-
+	bsc_clear_handover(new_lchan->conn, 0);
 	return 0;
 }
 
@@ -296,16 +318,19 @@ static int ho_gsm48_ho_compl(struct gsm_lchan *new_lchan)
 	if (ho->old_lchan != new_lchan->conn->lchan)
 		LOGPHO(ho, LOGL_ERROR, "Primary lchan changed during handover.\n");
 
-	if (new_lchan != new_lchan->conn->ho_lchan)
+	if (new_lchan->conn->ho != ho)
 		LOGPHO(ho, LOGL_ERROR, "Handover channel changed during this handover.\n");
 
-	new_lchan->conn->ho_lchan = NULL;
 	new_lchan->conn->lchan = new_lchan;
 	ho->old_lchan->conn = NULL;
 
 	lchan_release(ho->old_lchan, 0, RSL_REL_LOCAL_END);
 
 	handover_free(ho);
+	new_lchan->conn->ho = NULL;
+
+	/* Inform the GSCON FSM that the handover is complete */
+	osmo_fsm_inst_dispatch(new_lchan->conn->fi, GSCON_EV_HO_COMPL, NULL);
 	return 0;
 }
 
@@ -314,7 +339,6 @@ static int ho_gsm48_ho_fail(struct gsm_lchan *old_lchan)
 {
 	struct gsm_network *net = old_lchan->ts->trx->bts->network;
 	struct bsc_handover *ho;
-	struct gsm_lchan *new_lchan;
 	struct handover_decision_callbacks *hdc;
 
 	ho = bsc_ho_by_old_lchan(old_lchan);
@@ -329,16 +353,10 @@ static int ho_gsm48_ho_fail(struct gsm_lchan *old_lchan)
 
 	rate_ctr_inc(&net->bsc_ctrs->ctr[BSC_CTR_HANDOVER_FAILED]);
 
-	new_lchan = ho->new_lchan;
+	bsc_clear_handover(ho->new_lchan->conn, 1);
 
-	/* release the channel and forget about it */
-	ho->new_lchan->conn->ho_lchan = NULL;
-	ho->new_lchan->conn = NULL;
-	handover_free(ho);
-
-	lchan_release(new_lchan, 0, RSL_REL_LOCAL_END);
-
-
+	/* Inform the GSCON FSM that the handover failed */
+	osmo_fsm_inst_dispatch(old_lchan->conn->fi, GSCON_EV_HO_FAIL, NULL);
 	return 0;
 }
 

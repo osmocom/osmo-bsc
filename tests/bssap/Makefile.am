@@ -29,7 +29,6 @@ bssap_test_SOURCES = \
 	$(top_srcdir)/src/osmo-bsc/osmo_bsc_sigtran.c \
 	$(top_srcdir)/src/osmo-bsc/osmo_bsc_filter.c \
 	$(top_srcdir)/src/osmo-bsc/osmo_bsc_grace.c \
-	$(top_srcdir)/src/osmo-bsc/osmo_bsc_mgcp.c \
 	$(NULL)
 
 bssap_test_LDADD = \

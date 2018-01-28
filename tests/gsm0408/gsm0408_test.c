@@ -861,3 +861,7 @@ int main(int argc, char **argv)
 
 	return EXIT_SUCCESS;
 }
+
+struct gsm_subscriber_connection *bsc_subscr_con_allocate(struct gsm_network *net) {
+	OSMO_ASSERT(0);
+}

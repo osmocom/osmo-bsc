@@ -45,6 +45,7 @@
 #include <osmocom/core/talloc.h>
 #include <osmocom/bsc/pcu_if.h>
 #include <osmocom/bsc/bsc_api.h>
+#include <osmocom/bsc/bsc_subscr_conn_fsm.h>
 
 #define RSL_ALLOC_SIZE		1024
 #define RSL_ALLOC_HEADROOM	128
@@ -1357,21 +1358,28 @@ static int rsl_rx_chan_act_nack(struct msgb *msg)
 static int rsl_rx_conn_fail(struct msgb *msg)
 {
 	struct abis_rsl_dchan_hdr *dh = msgb_l2(msg);
+	struct gsm_lchan *lchan = msg->lchan;
 	struct tlv_parsed tp;
+	uint8_t cause = 0;
 
-	LOGP(DRSL, LOGL_NOTICE, "%s CONNECTION FAIL: RELEASING state %s ",
+	LOGP(DRSL, LOGL_NOTICE, "%s CONNECTION FAIL in state %s ",
 	     gsm_lchan_name(msg->lchan),
 	     gsm_lchans_name(msg->lchan->state));
 
 	rsl_tlv_parse(&tp, dh->data, msgb_l2len(msg)-sizeof(*dh));
 
-	if (TLVP_PRESENT(&tp, RSL_IE_CAUSE))
+	if (TLVP_PRESENT(&tp, RSL_IE_CAUSE)) {
 		print_rsl_cause(LOGL_NOTICE, TLVP_VAL(&tp, RSL_IE_CAUSE),
 				TLVP_LEN(&tp, RSL_IE_CAUSE));
+		cause = *TLVP_VAL(&tp, RSL_IE_CAUSE);
+	}
 
 	LOGPC(DRSL, LOGL_NOTICE, "\n");
-	rate_ctr_inc(&msg->lchan->ts->trx->bts->bts_ctrs->ctr[BTS_CTR_CHAN_RF_FAIL]);
-	return rsl_rf_chan_release_err(msg->lchan);
+	rate_ctr_inc(&lchan->ts->trx->bts->bts_ctrs->ctr[BTS_CTR_CHAN_RF_FAIL]);
+
+	osmo_fsm_inst_dispatch(lchan->conn->fi, GSCON_EV_RSL_CONN_FAIL, &cause);
+
+	return 0;
 }
 
 static void print_meas_rep_uni(struct gsm_meas_rep_unidir *mru,
@@ -2232,6 +2240,9 @@ static int abis_rsl_rx_rll(struct msgb *msg)
 		rll_indication(msg->lchan, rllh->link_id,
 				  BSC_RLLR_IND_REL_IND);
 		rsl_handle_release(msg->lchan);
+		/* if it was the main signalling link, let the subscr_conn_fsm know */
+		if (msg->lchan->conn && sapi == 0 && (rllh->link_id >> 6) == 0)
+			osmo_fsm_inst_dispatch(msg->lchan->conn->fi, GSCON_EV_RLL_REL_IND, msg);
 		break;
 	case RSL_MT_REL_CONF:
 		/* BTS informs us of having received UA from MS,

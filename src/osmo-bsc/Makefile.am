@@ -30,7 +30,6 @@ osmo_bsc_SOURCES = \
 	osmo_bsc_vty.c \
 	osmo_bsc_api.c \
 	osmo_bsc_grace.c \
-	osmo_bsc_mgcp.c \
 	osmo_bsc_msc.c \
 	osmo_bsc_sigtran.c \
 	osmo_bsc_filter.c \

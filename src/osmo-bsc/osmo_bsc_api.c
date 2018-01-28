@@ -17,6 +17,7 @@
  *
  */
 
+#include <osmocom/bsc/bsc_subscr_conn_fsm.h>
 #include <osmocom/bsc/osmo_bsc.h>
 #include <osmocom/bsc/bsc_msc_data.h>
 #include <osmocom/bsc/debug.h>
@@ -31,24 +32,23 @@
 
 #include <osmocom/bsc/osmo_bsc_sigtran.h>
 
-#define return_when_not_connected(conn) \
-	if (conn->sccp.state != SUBSCR_SCCP_ST_CONNECTED) {\
-		LOGP(DMSC, LOGL_ERROR, "MSC Connection not present.\n"); \
-		return; \
-	}
+/* Check if we have a proper connection to the MSC */
+static bool msc_connected(struct gsm_subscriber_connection *conn)
+{
+	/* No subscriber conn at all */
+	if (!conn)
+		return false;
 
-#define return_when_not_connected_val(conn, ret) \
-	if (conn->sccp.state != SUBSCR_SCCP_ST_CONNECTED) {\
-		LOGP(DMSC, LOGL_ERROR, "MSC Connection not present.\n"); \
-		return ret; \
-	}
+	/* Connection to MSC not established */
+	if (!conn->sccp.msc)
+		return false;
 
-#define queue_msg_or_return(resp) \
-	if (!resp) { \
-		LOGP(DMSC, LOGL_ERROR, "Failed to allocate response.\n"); \
-		return; \
-	} \
-	osmo_bsc_sigtran_send(conn, resp);
+	/* Reset procedure not (yet) executed */
+	if (a_reset_conn_ready(conn->sccp.msc->a.reset) == false)
+		return false;
+
+	return true;
+}
 
 static int bsc_clear_request(struct gsm_subscriber_connection *conn, uint32_t cause);
 static int complete_layer3(struct gsm_subscriber_connection *conn,
@@ -136,24 +136,33 @@ static int bsc_filter_data(struct gsm_subscriber_connection *conn,
 
 static void bsc_sapi_n_reject(struct gsm_subscriber_connection *conn, int dlci)
 {
+	int rc;
 	struct msgb *resp;
-	return_when_not_connected(conn);
+
+	if (!msc_connected(conn))
+		return;
 
 	LOGP(DMSC, LOGL_NOTICE, "Tx MSC SAPI N REJECT DLCI=0x%02x\n", dlci);
-
 	resp = gsm0808_create_sapi_reject(dlci);
-	queue_msg_or_return(resp);
+	rc = osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_TX_SCCP, resp);
+	if (rc != 0)
+		msgb_free(resp);
 }
 
 static void bsc_cipher_mode_compl(struct gsm_subscriber_connection *conn,
 				  struct msgb *msg, uint8_t chosen_encr)
 {
+	int rc;
 	struct msgb *resp;
-	return_when_not_connected(conn);
+
+	if (!msc_connected(conn))
+		return;
 
 	LOGP(DMSC, LOGL_DEBUG, "CIPHER MODE COMPLETE from MS, forwarding to MSC\n");
 	resp = gsm0808_create_cipher_complete(msg, chosen_encr);
-	queue_msg_or_return(resp);
+	rc = osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_TX_SCCP, resp);
+	if (rc != 0)
+		msgb_free(resp);
 }
 
 static void bsc_send_ussd_no_srv(struct gsm_subscriber_connection *conn,
@@ -274,15 +283,11 @@ static int complete_layer3(struct gsm_subscriber_connection *conn,
 	resp = gsm0808_create_layer3_2(msg, cgi_for_msc(conn->sccp.msc, conn_get_bts(conn)), NULL);
 	if (!resp) {
 		LOGP(DMSC, LOGL_DEBUG, "Failed to create layer3 message.\n");
-		osmo_bsc_sigtran_del_conn(conn);
+		//osmo_bsc_sigtran_del_conn(conn);
 		return BSC_API_CONN_POL_REJECT;
 	}
 
-	if (osmo_bsc_sigtran_open_conn(conn, resp) != 0) {
-		osmo_bsc_sigtran_del_conn(conn);
-		msgb_free(resp);
-		return BSC_API_CONN_POL_REJECT;
-	}
+	osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_A_CONN_REQ, resp);
 
 	return BSC_API_CONN_POL_ACCEPT;
 }
@@ -307,7 +312,7 @@ static int move_to_msc(struct gsm_subscriber_connection *_conn,
 	 */
 	if (complete_layer3(_conn, msg, msc) != BSC_API_CONN_POL_ACCEPT) {
 		gsm0808_clear(_conn);
-		bsc_subscr_con_free(_conn);
+		//bsc_subscr_con_free(_conn);
 		return 1;
 	}
 
@@ -376,8 +381,9 @@ static int handle_cc_setup(struct gsm_subscriber_connection *conn,
 static void bsc_dtap(struct gsm_subscriber_connection *conn, uint8_t link_id, struct msgb *msg)
 {
 	int lu_cause;
-	struct msgb *resp;
-	return_when_not_connected(conn);
+
+	if (!msc_connected(conn))
+		return;
 
 	LOGP(DMSC, LOGL_INFO, "Tx MSC DTAP LINK_ID=0x%02x\n", link_id);
 
@@ -399,16 +405,22 @@ static void bsc_dtap(struct gsm_subscriber_connection *conn, uint8_t link_id, st
 
 	bsc_scan_bts_msg(conn, msg);
 
-	resp = gsm0808_create_dtap(msg, link_id);
-	queue_msg_or_return(resp);
+	/* Store link_id in msg->cb */
+	OBSC_LINKID_CB(msg) = link_id;
+	osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_MO_DTAP, msg);
 }
 
 static void bsc_assign_compl(struct gsm_subscriber_connection *conn, uint8_t rr_cause,
 			     uint8_t chosen_channel, uint8_t encr_alg_id,
 			     uint8_t speech_model)
 {
-	struct msgb *resp;
-	return_when_not_connected(conn);
+	if (!msc_connected(conn))
+		return;
+
+	conn->lchan->abis_ip.ass_compl.rr_cause = rr_cause;
+	conn->lchan->abis_ip.ass_compl.chosen_channel = chosen_channel;
+	conn->lchan->abis_ip.ass_compl.encr_alg_id = encr_alg_id;
+	conn->lchan->abis_ip.ass_compl.speech_mode = speech_model;
 
 	if (is_ipaccess_bts(conn_get_bts(conn)) && conn->user_plane.rtp_ip) {
 		/* NOTE: In a network that makes use of an IPA base station
@@ -419,37 +431,29 @@ static void bsc_assign_compl(struct gsm_subscriber_connection *conn, uint8_t rr_
 		 * postpone the AoIP assignment completed message until we
 		 * know the RTP IP/Port combination. */
 		LOGP(DMSC, LOGL_INFO, "POSTPONE MSC ASSIGN COMPL\n");
-		conn->lchan->abis_ip.ass_compl.rr_cause = rr_cause;
-		conn->lchan->abis_ip.ass_compl.chosen_channel = chosen_channel;
-		conn->lchan->abis_ip.ass_compl.encr_alg_id = encr_alg_id;
-		conn->lchan->abis_ip.ass_compl.speech_mode = speech_model;
 		conn->lchan->abis_ip.ass_compl.valid = true;
 
 	} else {
 		/* NOTE: Send the A assignment complete message immediately. */
 		LOGP(DMSC, LOGL_INFO, "Tx MSC ASSIGN COMPL\n");
-		resp = gsm0808_create_assignment_completed(rr_cause, chosen_channel,
-							   encr_alg_id, speech_model);
-		queue_msg_or_return(resp);
+		osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_RR_ASS_COMPL, NULL);
 	}
 }
 
 static void bsc_assign_fail(struct gsm_subscriber_connection *conn,
 			    uint8_t cause, uint8_t *rr_cause)
 {
-	struct msgb *resp;
-	return_when_not_connected(conn);
-
 	LOGP(DMSC, LOGL_INFO, "Tx MSC ASSIGN FAIL\n");
-
-	resp = gsm0808_create_assignment_failure(cause, rr_cause);
-	queue_msg_or_return(resp);
+	osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_RR_ASS_FAIL, NULL);
 }
 
 static int bsc_clear_request(struct gsm_subscriber_connection *conn, uint32_t cause)
 {
+	int rc;
 	struct msgb *resp;
-	return_when_not_connected_val(conn, 1);
+
+	if (!msc_connected(conn))
+		return 1;
 
 	LOGP(DMSC, LOGL_INFO, "Tx MSC CLEAR REQUEST\n");
 
@@ -459,7 +463,10 @@ static int bsc_clear_request(struct gsm_subscriber_connection *conn, uint32_t ca
 		return 1;
 	}
 
-	osmo_bsc_sigtran_send(conn, resp);
+	rc = osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_TX_SCCP, resp);
+	if (rc != 0)
+		msgb_free(resp);
+
 	return 1;
 }
 
@@ -467,12 +474,16 @@ static void bsc_cm_update(struct gsm_subscriber_connection *conn,
 			  const uint8_t *cm2, uint8_t cm2_len,
 			  const uint8_t *cm3, uint8_t cm3_len)
 {
+	int rc;
 	struct msgb *resp;
-	return_when_not_connected(conn);
+
+	if (!msc_connected(conn))
+		return;
 
 	resp = gsm0808_create_classmark_update(cm2, cm2_len, cm3, cm3_len);
-
-	queue_msg_or_return(resp);
+	rc = osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_TX_SCCP, resp);
+	if (rc != 0)
+		msgb_free(resp);
 }
 
 static void bsc_mr_config(struct gsm_subscriber_connection *conn,

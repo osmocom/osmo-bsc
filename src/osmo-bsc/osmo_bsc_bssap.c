@@ -1,6 +1,7 @@
 /* GSM 08.08 BSSMAP handling						*/
 /* (C) 2009-2012 by Holger Hans Peter Freyther <zecke@selfish.org>
  * (C) 2009-2012 by On-Waves
+ * (C) 2017 by Harald Welte <laforge@gnumonks.org>
  * All Rights Reserved
  *
  * This program is free software; you can redistribute it and/or modify
@@ -24,9 +25,9 @@
 #include <osmocom/bsc/bsc_msc_data.h>
 #include <osmocom/bsc/debug.h>
 #include <osmocom/bsc/bsc_subscriber.h>
-#include <osmocom/bsc/osmo_bsc_mgcp.h>
 #include <osmocom/bsc/paging.h>
 #include <osmocom/bsc/gsm_04_08_utils.h>
+#include <osmocom/bsc/bsc_subscr_conn_fsm.h>
 
 #include <osmocom/gsm/protocol/gsm_08_08.h>
 #include <osmocom/gsm/gsm0808.h>
@@ -536,45 +537,6 @@ static int select_best_cipher(uint8_t msc_mask, uint8_t bsc_mask)
 }
 
 /*
- * GSM 08.08 § 3.1.9.1 and 3.2.1.21...
- * release our gsm_subscriber_connection and send message
- */
-static int bssmap_handle_clear_command(struct gsm_subscriber_connection *conn,
-				       struct msgb *msg, unsigned int payload_length)
-{
-	struct msgb *resp;
-
-	/* TODO: handle the cause of this package */
-
-	LOGP(DMSC, LOGL_INFO, "Releasing all transactions on %p\n", conn);
-	gsm0808_clear(conn);
-
-	/* generate the clear complete message */
-	resp = gsm0808_create_clear_complete();
-	if (!resp) {
-		LOGP(DMSC, LOGL_ERROR, "Sending clear complete failed.\n");
-		return -1;
-	}
-
-	if (conn->user_plane.mgcp_ctx) {
-		/* NOTE: This is the AoIP case, osmo-bsc has to negotiate with
-		 * the MGCP-GW. For this an mgcp_ctx should be created that
-		 * contains the FSM and some system data. When the connection
-		 * is removed from the MGCP-GW, then osmo_bsc_sigtran_send()
-		 * calls osmo_bsc_sigtran_send(). */
-	        mgcp_clear_complete(conn->user_plane.mgcp_ctx, resp);
-	} else {
-		/* NOTE: This is the SCCP-Lite case, since we do not handle
-		 * the MGCP-GW switching ourselves, we may skip everything
-		 * that is MGCP-GW related and sent the clear complete message
-		 * directly */
-		osmo_bsc_sigtran_send(conn, resp);
-	}
-
-	return 0;
-}
-
-/*
  * GSM 08.08 § 3.4.7 cipher mode handling. We will have to pick
  * the cipher to be used for this. In case we are already using
  * a cipher we will have to send cipher mode reject to the MSC,
@@ -669,7 +631,7 @@ reject:
 		return -1;
 	}
 
-	osmo_bsc_sigtran_send(conn, resp);
+	osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_TX_SCCP, resp);
 	return -1;
 }
 
@@ -735,118 +697,129 @@ static int bssmap_handle_assignm_req(struct gsm_subscriber_connection *conn,
 	}
 
 	/* Currently we only support a limited subset of all
-	 * possible channel types. The limitation ends by not using
-	 * multi-slot, limiting the channel coding to speech */
-	if (ct.ch_indctr != GSM0808_CHAN_SPEECH) {
+	 * possible channel types, such as multi-slot or CSD */
+	switch (ct.ch_indctr) {
+	case GSM0808_CHAN_DATA:
 		LOGP(DMSC, LOGL_ERROR, "Unsupported channel type, currently only speech is supported!\n");
 		cause = GSM0808_CAUSE_REQ_CODEC_TYPE_OR_CONFIG_NOT_SUPP;
 		goto reject;
-	}
-
-	/* Detect if a CIC code is present, if so, we use the classic ip.access
-	 * method to calculate the RTP port */
-	if (TLVP_PRESENT(&tp, GSM0808_IE_CIRCUIT_IDENTITY_CODE)) {
-		conn->user_plane.cic = osmo_load16be(TLVP_VAL(&tp, GSM0808_IE_CIRCUIT_IDENTITY_CODE));
-		timeslot = conn->user_plane.cic & 0x1f;
-		multiplex = (conn->user_plane.cic & ~0x1f) >> 5;
-	} else if (TLVP_PRESENT(&tp, GSM0808_IE_AOIP_TRASP_ADDR)) {
-		/* Decode AoIP transport address element */
-		rc = gsm0808_dec_aoip_trasp_addr(&rtp_addr, TLVP_VAL(&tp, GSM0808_IE_AOIP_TRASP_ADDR),
-						 TLVP_LEN(&tp, GSM0808_IE_AOIP_TRASP_ADDR));
-		if (rc < 0) {
-			LOGP(DMSC, LOGL_ERROR, "Unable to decode AoIP transport address.\n");
-			cause = GSM0808_CAUSE_INCORRECT_VALUE;
-			goto reject;
-		}
-		aoip = true;
-	} else {
-		LOGP(DMSC, LOGL_ERROR, "AoIP transport address and CIC missing. Audio will not work.\n");
-		cause = GSM0808_CAUSE_INFORMATION_ELEMENT_OR_FIELD_MISSING;
-		goto reject;
-	}
-
-	/* Decode speech codec list (AoIP) */
-	conn->codec_list_present = false;
-	if (aoip) {
-		/* Check for speech codec list element */
-		if (!TLVP_PRESENT(&tp, GSM0808_IE_SPEECH_CODEC_LIST)) {
-			LOGP(DMSC, LOGL_ERROR, "Mandatory speech codec list not present.\n");
+	case GSM0808_CHAN_SPEECH:
+		/* Detect if a CIC code is present, if so, we use the classic ip.access method to
+		 * calculate the RTP port */
+		if (TLVP_PRESENT(&tp, GSM0808_IE_CIRCUIT_IDENTITY_CODE)) {
+			conn->user_plane.cic =
+				osmo_load16be(TLVP_VAL(&tp, GSM0808_IE_CIRCUIT_IDENTITY_CODE));
+			timeslot = conn->user_plane.cic & 0x1f;
+			multiplex = (conn->user_plane.cic & ~0x1f) >> 5;
+		} else if (TLVP_PRESENT(&tp, GSM0808_IE_AOIP_TRASP_ADDR)) {
+			/* Decode AoIP transport address element */
+			rc = gsm0808_dec_aoip_trasp_addr(&rtp_addr,
+							 TLVP_VAL(&tp, GSM0808_IE_AOIP_TRASP_ADDR),
+							 TLVP_LEN(&tp, GSM0808_IE_AOIP_TRASP_ADDR));
+			if (rc < 0) {
+				LOGP(DMSC, LOGL_ERROR, "Unable to decode AoIP transport address.\n");
+				cause = GSM0808_CAUSE_INCORRECT_VALUE;
+				goto reject;
+			}
+			aoip = true;
+		} else {
+			LOGP(DMSC, LOGL_ERROR, "AoIP transport address and CIC missing. "
+			     "Audio will not work.\n");
 			cause = GSM0808_CAUSE_INFORMATION_ELEMENT_OR_FIELD_MISSING;
 			goto reject;
 		}
 
-		/* Decode Speech Codec list */
-		rc = gsm0808_dec_speech_codec_list(&conn->codec_list,
-						   TLVP_VAL(&tp, GSM0808_IE_SPEECH_CODEC_LIST),
-						   TLVP_LEN(&tp, GSM0808_IE_SPEECH_CODEC_LIST));
-		if (rc < 0) {
-			LOGP(DMSC, LOGL_ERROR, "Unable to decode speech codec list\n");
-			cause = GSM0808_CAUSE_INCORRECT_VALUE;
+		/* FIXME: At the moment osmo-bsc does not support any other
+		 * A-Interface other than AoIP. So we must reject all
+		 * assignment requests that are not AoIP compliant. However,
+		 * might support other A-Interface dialects lateron again,
+		 * thats why we preserve the logic around the AoIP detection
+		 * here. */
+		if (!aoip) {
+			LOGP(DMSC, LOGL_ERROR, "Requested A-Interface type is not supported! (AoIP only!)\n");
+			cause = GSM0808_CAUSE_REQ_A_IF_TYPE_NOT_SUPP;
 			goto reject;
 		}
-		conn->codec_list_present = true;
-		scl_ptr = &conn->codec_list;
-	}
 
-	/* Match codec information from the assignment command against the
-	 * local preferences of the BSC */
-	rc = match_codec_pref(&full_rate, &chan_mode, &ct, scl_ptr, msc);
-	if (rc < 0) {
-		LOGP(DMSC, LOGL_ERROR, "No supported audio type found for channel_type ="
-		     " { ch_indctr=0x%x, ch_rate_type=0x%x, perm_spch=[ %s] }\n",
-		     ct.ch_indctr, ct.ch_rate_type, osmo_hexdump(ct.perm_spch, ct.perm_spch_len));
-		/* TODO: actually output codec names, e.g. implement gsm0808_permitted_speech_names[] and
-		 * iterate perm_spch. */
-		cause = GSM0808_CAUSE_REQ_CODEC_TYPE_OR_CONFIG_UNAVAIL;
+		/* Decode speech codec list (AoIP) */
+		conn->codec_list_present = false;
+		if (aoip) {
+
+			/* Check for speech codec list element */
+			if (!TLVP_PRESENT(&tp, GSM0808_IE_SPEECH_CODEC_LIST)) {
+				LOGP(DMSC, LOGL_ERROR, "Mandatory speech codec list not present.\n");
+				cause = GSM0808_CAUSE_INFORMATION_ELEMENT_OR_FIELD_MISSING;
+				goto reject;
+			}
+
+			/* Decode Speech Codec list */
+			rc = gsm0808_dec_speech_codec_list(&conn->codec_list,
+							   TLVP_VAL(&tp, GSM0808_IE_SPEECH_CODEC_LIST),
+							   TLVP_LEN(&tp, GSM0808_IE_SPEECH_CODEC_LIST));
+			if (rc < 0) {
+				LOGP(DMSC, LOGL_ERROR, "Unable to decode speech codec list\n");
+				cause = GSM0808_CAUSE_INCORRECT_VALUE;
+				goto reject;
+			}
+			conn->codec_list_present = true;
+			scl_ptr = &conn->codec_list;
+		}
+
+		/* Match codec information from the assignment command against the
+		 * local preferences of the BSC */
+		rc = match_codec_pref(&full_rate, &chan_mode, &ct, scl_ptr, msc);
+		if (rc < 0) {
+			LOGP(DMSC, LOGL_ERROR, "No supported audio type found for channel_type ="
+			     " { ch_indctr=0x%x, ch_rate_type=0x%x, perm_spch=[ %s] }\n",
+			     ct.ch_indctr, ct.ch_rate_type, osmo_hexdump(ct.perm_spch, ct.perm_spch_len));
+			/* TODO: actually output codec names, e.g. implement
+			 * gsm0808_permitted_speech_names[] and iterate perm_spch. */
+			cause = GSM0808_CAUSE_REQ_CODEC_TYPE_OR_CONFIG_UNAVAIL;
+			goto reject;
+		}
+
+		DEBUGP(DMSC, "Found matching audio type: %s %s for channel_type ="
+		       " { ch_indctr=0x%x, ch_rate_type=0x%x, perm_spch=[ %s] }\n",
+		       full_rate? "full rate" : "half rate",
+		       get_value_string(gsm48_chan_mode_names, chan_mode),
+		       ct.ch_indctr, ct.ch_rate_type, osmo_hexdump(ct.perm_spch, ct.perm_spch_len));
+
+		/* Forward the assignment request to lower layers */
+		if (aoip) {
+			/* Store network side RTP connection information, we will
+			 * process this address later after we have established an RTP
+			 * connection to the BTS. This is just for organizational
+			 * reasons, functional wise it would not matter when exactly
+			 * the network side RTP connection is made, as long it is made
+			 * before we return with the assignment complete message. */
+			memcpy(&conn->user_plane.aoip_rtp_addr_remote, &rtp_addr, sizeof(rtp_addr));
+		} else {
+			/* Note: In the sccp-lite case we to not perform any mgcp operation,
+			 * (the MSC does that for us). We set conn->rtp_ip to 0 and check
+			 * on this later. By this we know that we have to behave accordingly
+			 * to sccp-lite. */
+			conn->user_plane.rtp_port = mgcp_timeslot_to_port(multiplex, timeslot, msc->rtp_base);
+			conn->user_plane.rtp_ip = 0;
+		}
+		conn->user_plane.chan_mode = chan_mode;
+		conn->user_plane.full_rate = full_rate;
+		osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_A_ASSIGNMENT_CMD, NULL);
+		break;
+	case GSM0808_CHAN_SIGN:
+		conn->user_plane.chan_mode = GSM48_CMODE_SIGN;
+		osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_A_ASSIGNMENT_CMD, NULL);
+		break;
+	default:
+		cause = GSM0808_CAUSE_INVALID_MESSAGE_CONTENTS;
 		goto reject;
 	}
-	DEBUGP(DMSC, "Found matching audio type: %s %s for channel_type ="
-	       " { ch_indctr=0x%x, ch_rate_type=0x%x, perm_spch=[ %s] }\n",
-	       full_rate? "full rate" : "half rate",
-	       get_value_string(gsm48_chan_mode_names, chan_mode),
-	       ct.ch_indctr, ct.ch_rate_type, osmo_hexdump(ct.perm_spch, ct.perm_spch_len));
 
-	/* Forward the assignment request to lower layers */
-	if (aoip) {
-		/* Store network side RTP connection information, we will
-		 * process this address later after we have established an RTP
-		 * connection to the BTS. This is just for organizational
-		 * reasons, functional wise it would not matter when exactly
-		 * the network side RTP connection is made, as long it is made
-		 * before we return with the assignment complete message. */
-		memcpy(&conn->user_plane.aoip_rtp_addr_remote, &rtp_addr, sizeof(rtp_addr));
-
-		/* Create an assignment request using the MGCP fsm. This FSM
-		 * is directly started when its created (now) and will also
-		 * take care about the further processing (creating RTP
-		 * endpoints, calling gsm0808_assign_req(), responding to
-		 * the assignment request etc... */
-		conn->user_plane.mgcp_ctx = mgcp_assignm_req(msc->network, msc->network->mgw.client,
-								conn, chan_mode, full_rate);
-		if (!conn->user_plane.mgcp_ctx) {
-			LOGP(DMSC, LOGL_ERROR, "MGCP / MGW failure, rejecting assignment... (id=%i)\n",
-				conn->sccp.conn_id);
-			cause = GSM0808_CAUSE_EQUIPMENT_FAILURE;
-			goto reject;
-		}
-
-		/* We now may return here, the FSM will do all further work */
-		return 0;
-	} else {
-		/* Note: In the sccp-lite case we to not perform any mgcp operation,
-		 * (the MSC does that for us). We set conn->rtp_ip to 0 and check
-		 * on this later. By this we know that we have to behave accordingly
-		 * to sccp-lite. */
-		conn->user_plane.rtp_port = mgcp_timeslot_to_port(multiplex, timeslot, msc->rtp_base);
-		conn->user_plane.rtp_ip = 0;
-		return gsm0808_assign_req(conn, chan_mode, full_rate);
-	}
-
+	return 0;
 reject:
 	resp = gsm0808_create_assignment_failure(cause, NULL);
 	OSMO_ASSERT(resp);
 
-	osmo_bsc_sigtran_send(conn, resp);
+	osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_TX_SCCP, resp);
 	return -1;
 }
 
@@ -897,7 +870,7 @@ static int bssmap_rcvmsg_dt1(struct gsm_subscriber_connection *conn,
 
 	switch (msg->l4h[0]) {
 	case BSS_MAP_MSG_CLEAR_CMD:
-		ret = bssmap_handle_clear_command(conn, msg, length);
+		osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_A_CLEAR_CMD, msg);
 		break;
 	case BSS_MAP_MSG_CIPHER_MODE_CMD:
 		ret = bssmap_handle_cipher_mode(conn, msg, length);
@@ -958,7 +931,9 @@ static int dtap_rcvmsg(struct gsm_subscriber_connection *conn,
 
 	/* pass it to the filter for extra actions */
 	rc = bsc_scan_msc_msg(conn, gsm48);
-	dtap_rc = gsm0808_submit_dtap(conn, gsm48, header->link_id, 1);
+	/* Store link_id in msgb->cb */
+	OBSC_LINKID_CB(msg) = header->link_id;
+	dtap_rc = osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_MT_DTAP, gsm48);
 	if (rc == BSS_SEND_USSD)
 		bsc_send_welcome_ussd(conn);
 	return dtap_rc;
@@ -1015,39 +990,4 @@ int bsc_handle_dt(struct gsm_subscriber_connection *conn,
 	}
 
 	return -1;
-}
-
-/* Generate and send assignment complete message */
-int bssmap_send_aoip_ass_compl(struct gsm_lchan *lchan)
-{
-	struct msgb *resp;
-	struct gsm0808_speech_codec sc;
-	struct gsm_subscriber_connection *conn;
-
-	conn = lchan->conn;
-
-	OSMO_ASSERT(lchan->abis_ip.ass_compl.valid);
-	OSMO_ASSERT(conn);
-
-	LOGP(DMSC, LOGL_DEBUG, "Sending assignment complete message... (id=%i)\n", conn->sccp.conn_id);
-
-	/* Extrapolate speech codec from speech mode */
-	gsm0808_speech_codec_from_chan_type(&sc, lchan->abis_ip.ass_compl.speech_mode);
-
-	/* Generate message */
-	resp = gsm0808_create_ass_compl(lchan->abis_ip.ass_compl.rr_cause,
-					lchan->abis_ip.ass_compl.chosen_channel,
-					lchan->abis_ip.ass_compl.encr_alg_id,
-					lchan->abis_ip.ass_compl.speech_mode,
-					&conn->user_plane.aoip_rtp_addr_local,
-					&sc,
-					NULL);
-
-	if (!resp) {
-		LOGP(DMSC, LOGL_ERROR, "Failed to generate assignment completed message! (id=%i)\n",
-		     conn->sccp.conn_id);
-		return -EINVAL;
-	}
-
-	return osmo_bsc_sigtran_send(conn, resp);
 }

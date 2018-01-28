@@ -292,3 +292,7 @@ int bssgp_prim_cb(struct osmo_prim_hdr *oph, void *ctx)
 {
 	abort();
 }
+
+struct gsm_subscriber_connection *bsc_subscr_con_allocate(struct gsm_network *net) {
+	OSMO_ASSERT(0);
+}

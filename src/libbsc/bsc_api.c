@@ -2,7 +2,7 @@
 
 /* (C) 2010-2011 by Holger Hans Peter Freyther
  * (C) 2010-2011 by On-Waves
- * (C) 2009 by Harald Welte <laforge@gnumonks.org>
+ * (C) 2009,2017 by Harald Welte <laforge@gnumonks.org>
  *
  * All Rights Reserved
  *
@@ -51,7 +51,7 @@ static void handle_chan_ack(struct gsm_subscriber_connection *conn, struct bsc_a
 static void handle_chan_nack(struct gsm_subscriber_connection *conn, struct bsc_api *bsc, struct  gsm_lchan *lchan);
 
 /* GSM 08.08 3.2.2.33 */
-static uint8_t lchan_to_chosen_channel(struct gsm_lchan *lchan)
+uint8_t lchan_to_chosen_channel(struct gsm_lchan *lchan)
 {
 	uint8_t channel_mode = 0, channel = 0;
 
@@ -100,7 +100,7 @@ static uint8_t lchan_to_chosen_channel(struct gsm_lchan *lchan)
 	return channel_mode << 4 | channel;
 }
 
-static uint8_t chan_mode_to_speech(struct gsm_lchan *lchan)
+uint8_t chan_mode_to_speech(struct gsm_lchan *lchan)
 {
 	int mode = 0;
 
@@ -131,27 +131,6 @@ static uint8_t chan_mode_to_speech(struct gsm_lchan *lchan)
 		mode |= 0x4;
 
         return mode;
-}
-
-static void assignment_t10_timeout(void *_conn)
-{
-	struct bsc_api *api;
-	struct gsm_subscriber_connection *conn =
-		(struct gsm_subscriber_connection *) _conn;
-
-	LOGP(DMSC, LOGL_ERROR, "Assignment T10 timeout on %p\n", conn);
-
-	/*
-	 * normal release on the secondary channel but only if the
-	 * secondary_channel has not been released by the handle_chan_nack.
-	 */
-	if (conn->secondary_lchan)
-		lchan_release(conn->secondary_lchan, 0, RSL_REL_LOCAL_END);
-	conn->secondary_lchan = NULL;
-
-	/* inform them about the failure */
-	api = conn->network->bsc_api;
-	api->assign_fail(conn, GSM0808_CAUSE_NO_RADIO_RESOURCE_AVAILABLE, NULL);
 }
 
 /*! \brief Determine and apply AMR multi-rate configuration to lchan
@@ -265,24 +244,6 @@ static int handle_new_assignment(struct gsm_subscriber_connection *conn, int cha
 	return 0;
 }
 
-struct gsm_subscriber_connection *bsc_subscr_con_allocate(struct gsm_lchan *lchan)
-{
-	struct gsm_subscriber_connection *conn;
-	struct gsm_network *net = lchan->ts->trx->bts->network;
-
-	conn = talloc_zero(net, struct gsm_subscriber_connection);
-	if (!conn)
-		return NULL;
-
-	conn->network = net;
-	conn->lchan = lchan;
-	lchan->conn = conn;
-	INIT_LLIST_HEAD(&conn->ho_dtap_cache);
-	conn->sccp.conn_id = -1;
-	llist_add_tail(&conn->entry, &net->subscr_conns);
-	return conn;
-}
-
 static void ho_dtap_cache_add(struct gsm_subscriber_connection *conn, struct msgb *msg,
 			      int link_id, bool allow_sacch)
 {
@@ -301,12 +262,12 @@ static void ho_dtap_cache_add(struct gsm_subscriber_connection *conn, struct msg
 	msgb_enqueue(&conn->ho_dtap_cache, msg);
 }
 
-static void ho_dtap_cache_flush(struct gsm_subscriber_connection *conn, int send)
+void ho_dtap_cache_flush(struct gsm_subscriber_connection *conn, int send)
 {
 	struct msgb *msg;
 	unsigned int flushed_count = 0;
 
-	if (conn->secondary_lchan || conn->ho_lchan) {
+	if (conn->secondary_lchan || conn->ho) {
 		LOGP(DHO, LOGL_ERROR, "%s: Cannot send cached DTAP messages, handover/assignment is still ongoing\n",
 		     bsc_subscr_name(conn->bsub));
 		send = 0;
@@ -324,38 +285,6 @@ static void ho_dtap_cache_flush(struct gsm_subscriber_connection *conn, int send
 		} else
 			msgb_free(msg);
 	}
-}
-
-void bsc_subscr_con_free(struct gsm_subscriber_connection *conn)
-{
-	if (!conn)
-		return;
-
-	if (conn->network->bsc_api->conn_cleanup)
-		conn->network->bsc_api->conn_cleanup(conn);
-
-	if (conn->ho_lchan) {
-		LOGP(DNM, LOGL_ERROR, "The ho_lchan should have been cleared.\n");
-		conn->ho_lchan->conn = NULL;
-	}
-
-	if (conn->lchan) {
-		LOGP(DNM, LOGL_ERROR, "The lchan should have been cleared.\n");
-		conn->lchan->conn = NULL;
-	}
-
-	if (conn->secondary_lchan) {
-		LOGP(DNM, LOGL_ERROR, "The secondary_lchan should have been cleared.\n");
-		conn->secondary_lchan->conn = NULL;
-	}
-
-	/* drop pending messages */
-	ho_dtap_cache_flush(conn, 0);
-
-	penalty_timers_free(&conn->hodec2.penalty_timers);
-
-	llist_del(&conn->entry);
-	talloc_free(conn);
 }
 
 int bsc_api_init(struct gsm_network *network, struct bsc_api *api)
@@ -379,7 +308,7 @@ int gsm0808_submit_dtap(struct gsm_subscriber_connection *conn,
 	}
 
 	/* buffer message during assignment / handover */
-	if (conn->secondary_lchan || conn->ho_lchan) {
+	if (conn->secondary_lchan || conn->ho) {
 		ho_dtap_cache_add(conn, msg, link_id, !! allow_sacch);
 		return 0;
 	}
@@ -478,9 +407,7 @@ int gsm0808_assign_req(struct gsm_subscriber_connection *conn, int chan_mode, in
 		gsm48_lchan_modify(conn->lchan, chan_mode);
 	}
 
-	/* we will now start the timer to complete the assignment */
-	osmo_timer_setup(&conn->T10, assignment_t10_timeout, conn);
-	osmo_timer_schedule(&conn->T10, GSM0808_T10_VALUE);
+	/* we expect the caller will manage T10 */
 	return 0;
 
 error:
@@ -500,7 +427,7 @@ static void handle_ass_compl(struct gsm_subscriber_connection *conn,
 	struct gsm48_hdr *gh;
 	struct bsc_api *api = conn->network->bsc_api;
 
-	if (conn->ho_lchan) {
+	if (conn->ho) {
 		struct lchan_signal_data sig;
 		struct gsm48_hdr *gh = msgb_l3(msg);
 
@@ -556,7 +483,7 @@ static void handle_ass_fail(struct gsm_subscriber_connection *conn,
 	uint8_t *rr_failure;
 	struct gsm48_hdr *gh;
 
-	if (conn->ho_lchan) {
+	if (conn->ho) {
 		struct lchan_signal_data sig;
 		struct gsm48_hdr *gh = msgb_l3(msg);
 
@@ -796,19 +723,18 @@ int gsm0408_rcvmsg(struct msgb *msg, uint8_t link_id)
 	} else {
 		/* allocate a new connection */
 		rc = BSC_API_CONN_POL_REJECT;
-		lchan->conn = bsc_subscr_con_allocate(msg->lchan);
+		lchan->conn = bsc_subscr_con_allocate(msg->lchan->ts->trx->bts->network);
 		if (!lchan->conn) {
 			lchan_release(lchan, 1, RSL_REL_NORMAL);
 			return -1;
 		}
+		lchan->conn->lchan = lchan;
 
 		/* fwd via bsc_api to send COMPLETE L3 INFO to MSC */
 		rc = api->compl_l3(lchan->conn, msg, 0);
 
 		if (rc != BSC_API_CONN_POL_ACCEPT) {
-			lchan->conn->lchan = NULL;
-			bsc_subscr_con_free(lchan->conn);
-			lchan_release(lchan, 1, RSL_REL_NORMAL);
+			//osmo_fsm_inst_dispatch(lchan->conn->fi, FIXME, NULL);
 		}
 	}
 
@@ -846,7 +772,7 @@ int gsm0808_cipher_mode(struct gsm_subscriber_connection *conn, int cipher,
  */
 int gsm0808_clear(struct gsm_subscriber_connection *conn)
 {
-	if (conn->ho_lchan)
+	if (conn->ho)
 		bsc_clear_handover(conn, 1);
 
 	if (conn->secondary_lchan)
@@ -857,7 +783,6 @@ int gsm0808_clear(struct gsm_subscriber_connection *conn)
 
 	conn->lchan = NULL;
 	conn->secondary_lchan = NULL;
-	conn->ho_lchan = NULL;
 
 	osmo_timer_del(&conn->T10);
 
@@ -959,16 +884,9 @@ static void handle_release(struct gsm_subscriber_connection *conn,
 	/* now give up all channels */
 	if (conn->lchan == lchan)
 		conn->lchan = NULL;
-	if (conn->ho_lchan == lchan) {
+	if (conn->ho && conn->ho->new_lchan == lchan)
 		bsc_clear_handover(conn, 0);
-		conn->ho_lchan = NULL;
-	}
 	lchan->conn = NULL;
-
-	gsm0808_clear(conn);
-
-	if (destruct)
-		bsc_subscr_con_free(conn);
 }
 
 static void handle_chan_ack(struct gsm_subscriber_connection *conn,

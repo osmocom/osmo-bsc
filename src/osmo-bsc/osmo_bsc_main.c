@@ -14,7 +14,7 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * along with this program.  If not, see <http://www.gnu.org/lienses/>.
  *
  */
 
@@ -29,7 +29,6 @@
 #include <osmocom/bsc/ipaccess.h>
 #include <osmocom/bsc/ctrl.h>
 #include <osmocom/bsc/osmo_bsc_sigtran.h>
-#include <osmocom/bsc/osmo_bsc_mgcp.h>
 #include <osmocom/bsc/handover_decision.h>
 #include <osmocom/bsc/handover_decision_2.h>
 
@@ -510,8 +509,6 @@ int main(int argc, char **argv)
 		LOGP(DMSC, LOGL_ERROR, "Failed to register audio support.\n");
 		exit(1);
 	}
-
-	mgcp_init(bsc_gsmnet);
 
 	handover_decision_1_init();
 	hodec2_init(bsc_gsmnet);

@@ -29,7 +29,8 @@
 #include <osmocom/gsm/gsm0808.h>
 #include <osmocom/gsm/gsm0808_utils.h>
 #include <osmocom/bsc/osmo_bsc_sigtran.h>
-#include <osmocom/bsc/osmo_bsc_mgcp.h>
+#include <osmocom/bsc/bsc_subscr_conn_fsm.h>
+#include <osmocom/bsc/bsc_subscriber.h>
 
 #include <arpa/inet.h>
 
@@ -71,13 +72,17 @@ static int handle_abisip_signal(unsigned int subsys, unsigned int signal,
 		break;
 
 	case S_ABISIP_MDCX_ACK:
-		if (con->ho_lchan) {
-			LOGP(DHO, LOGL_DEBUG, "%s -> %s BTS sent MDCX ACK\n", gsm_lchan_name(lchan),
-			     gsm_lchan_name(con->ho_lchan));
+		if (con->ho) {
+			LOGPHO(con->ho, LOGL_DEBUG, "BTS sent MDCX ACK\n");
 			/* No need to do anything for handover here. As soon as a HANDOVER DETECT
 			 * happens, osmo_bsc_mgcp.c will trigger the MGCP MDCX towards MGW by
-			 * receiving an S_LCHAN_HANDOVER_DETECT signal. */
+			 * receiving an S_LCHAN_HANDOVER_DETECT signal.
+			 *
+			 * FIXME: This will not work, osmo_bsc_mgcp.c is now removed. The
+			 * switchover must be handled by the GSCON FSM because there we
+			 * we instantiate the child FSMs which handle the MGCP traffic. */
 #if 0
+/* FIXME: This does not work anymore, we will have to implement this in the GSCON FSM */
 			/* NOTE: When an ho_lchan exists, the MDCX is part of an
 			 * handover operation (intra-bsc). This means we will not
 			 * inform the MSC about the event, which means that no
@@ -92,7 +97,8 @@ static int handle_abisip_signal(unsigned int subsys, unsigned int signal,
 			 * IPA based base stations. See also osmo_bsc_api.c,
 			 * function bsc_assign_compl() */
 			LOGP(DMSC, LOGL_INFO, "Tx MSC ASSIGN COMPL (POSTPONED)\n");
-			mgcp_ass_complete(con->user_plane.mgcp_ctx, lchan);
+			osmo_fsm_inst_dispatch(con->fi, GSCON_EV_RR_ASS_COMPL, NULL);
+
 		}
 		break;
 	}

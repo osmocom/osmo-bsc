@@ -33,11 +33,6 @@ int osmo_bsc_sigtran_open_conn(struct gsm_subscriber_connection *conn, struct ms
 /* Send data to MSC */
 int osmo_bsc_sigtran_send(struct gsm_subscriber_connection *conn, struct msgb *msg);
 
-/* Delete a connection from the list with open connections
- * (called by osmo_bsc_api.c on failing open connections and
- * locally, when a connection is closed by the MSC */
-int osmo_bsc_sigtran_del_conn(struct gsm_subscriber_connection *sccp);
-
 /* Initalize osmo sigtran backhaul */
 int osmo_bsc_sigtran_init(struct llist_head *mscs);
 

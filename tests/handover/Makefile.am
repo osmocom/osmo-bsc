@@ -9,6 +9,8 @@ AM_CFLAGS = \
 	$(LIBOSMOCORE_CFLAGS) \
 	$(LIBOSMOGSM_CFLAGS) \
 	$(LIBOSMOABIS_CFLAGS) \
+	$(LIBOSMOSIGTRAN_CFLAGS) \
+	$(LIBOSMOMGCPCLIENT_CFLAGS) \
 	$(NULL)
 
 AM_LDFLAGS = \
@@ -28,7 +30,7 @@ handover_test_SOURCES = \
 	$(NULL)
 
 handover_test_LDFLAGS =\
-	-Wl,--wrap=abis_rsl_sendmsg \
+	-Wl,--wrap=abis_rsl_sendmsg,--wrap=mgcp_conn_modify,--wrap=mgcp_conn_delete\
 	$(NULL)
 
 handover_test_LDADD = \
@@ -36,4 +38,6 @@ handover_test_LDADD = \
 	$(LIBOSMOCORE_LIBS) \
 	$(LIBOSMOGSM_LIBS) \
 	$(LIBOSMOABIS_LIBS) \
+	$(LIBOSMOSIGTRAN_LIBS) \
+	$(LIBOSMOMGCPCLIENT_LIBS) \
 	$(NULL)

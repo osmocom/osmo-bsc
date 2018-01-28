@@ -119,5 +119,6 @@ void ipa_client_conn_open() {}
 void ipa_client_conn_send() {}
 void ipa_msg_push_header() {}
 void ipaccess_bts_handle_ccm() {}
+struct gsm_subscriber_connection *bsc_subscr_con_allocate(struct gsm_network *network) { return NULL; }
 
 struct tlv_definition nm_att_tlvdef;
