@@ -573,6 +573,12 @@ struct bts_location {
 	double height;
 };
 
+/* Channel load counter */
+struct load_counter {
+	unsigned int total;
+	unsigned int used;
+};
+
 /* One BTS */
 struct gsm_bts {
 	/* list header in net->bts_list */
@@ -802,6 +808,13 @@ struct gsm_bts {
 	struct rate_ctr_group *bts_ctrs;
 
 	struct handover_cfg *ho;
+
+	/* BTS-specific overrides for timer values from struct gsm_network. */
+	uint8_t T3122;	/* ASSIGMENT REJECT wait indication */
+
+	/* Periodic channel load measurements are used to maintain T3122. */
+	struct load_counter chan_load_samples[7];
+	int chan_load_samples_idx;
 };
 
 

@@ -98,12 +98,9 @@ int main(int argc, char **argv)
 	return EXIT_SUCCESS;
 }
 
-void _abis_nm_sendmsg() {}
 void sms_alloc() {}
 void sms_free() {}
-void gsm_net_update_ctype(struct gsm_network *network) {}
 void gsm48_secure_channel() {}
-void paging_request_stop() {}
 void vty_out() {}
 
 void ipa_client_conn_clear_queue() {}

@@ -377,6 +377,9 @@ struct gsm_bts *gsm_bts_alloc(struct gsm_network *net, uint8_t bts_num)
 
 	bts->ho = ho_cfg_init(bts, net->ho);
 
+	/* timer overrides */
+	bts->T3122 = 0; /* not overriden by default */
+
 	return bts;
 }
 
