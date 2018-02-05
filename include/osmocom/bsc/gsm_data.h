@@ -10,6 +10,7 @@
 #include <osmocom/core/rate_ctr.h>
 #include <osmocom/core/select.h>
 #include <osmocom/core/stats.h>
+#include <osmocom/core/stat_item.h>
 
 #include <osmocom/crypt/auth.h>
 
@@ -174,6 +175,11 @@ static const struct rate_ctr_group_desc bts_ctrg_desc = {
 	OSMO_STATS_CLASS_GLOBAL,
 	ARRAY_SIZE(bts_ctr_description),
 	bts_ctr_description,
+};
+
+enum {
+	BTS_STAT_CHAN_LOAD_AVERAGE,
+	BTS_STAT_T3122,
 };
 
 enum {

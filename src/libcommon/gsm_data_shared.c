@@ -30,10 +30,24 @@
 #include <osmocom/core/talloc.h>
 #include <osmocom/gsm/gsm_utils.h>
 #include <osmocom/gsm/abis_nm.h>
-#include <osmocom/core/statistics.h>
+#include <osmocom/core/counter.h>
+#include <osmocom/core/stats.h>
 
 #include <osmocom/bsc/gsm_data.h>
 #include <osmocom/bsc/handover_cfg.h>
+
+static const struct osmo_stat_item_desc bts_stat_desc[] = {
+	{ "chanloadavg", "Channel load average.", "%", 16, 0 },
+	{ "T3122", "T3122 IMMEDIATE ASSIGNMENT REJECT wait indicator.", "s", 16, GSM_T3122_DEFAULT },
+};
+
+static const struct osmo_stat_item_group_desc bts_statg_desc = {
+	.group_name_prefix = "bts",
+	.group_description = "base transceiver station",
+	.class_id = OSMO_STATS_CLASS_GLOBAL,
+	.num_items = ARRAY_SIZE(bts_stat_desc),
+	.item_desc = bts_stat_desc,
+};
 
 void gsm_abis_mo_reset(struct gsm_abis_mo *mo)
 {
@@ -353,11 +367,13 @@ struct gsm_bts *gsm_bts_alloc(struct gsm_network *net, uint8_t bts_num)
 		talloc_free(bts);
 		return NULL;
 	}
+	bts->bts_statg = osmo_stat_item_group_alloc(bts, &bts_statg_desc, 0);
 
 	/* create our primary TRX */
 	bts->c0 = gsm_bts_trx_alloc(bts);
 	if (!bts->c0) {
-		talloc_free(bts->bts_ctrs);
+		rate_ctr_group_free(bts->bts_ctrs);
+		osmo_stat_item_group_free(bts->bts_statg);
 		talloc_free(bts);
 		return NULL;
 	}
