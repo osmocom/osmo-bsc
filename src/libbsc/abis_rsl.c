@@ -2194,6 +2194,21 @@ static int abis_rsl_rx_rll(struct msgb *msg)
 			break;
 		}
 
+		/* Note: Check for MF SACCH on SAPI=0 (not permitted). By
+		 * definition we establish a link in multiframe (MF) mode.
+		 * (see also 3GPP TS 48.058, chapter 3.1. However, on SAPI=0
+		 * SACCH is only allowed in UL mode, not in MF mode.
+		 * (see also 3GPP TS 44.005, figure 5) So we have to drop such
+		 * Establish Indications */
+		if (sapi == 0 && (rllh->link_id >> 6 & 0x03) == 1) {
+			LOGP(DRLL, LOGL_NOTICE, "MS attempted to establish an SACCH in MF mode on SAPI=0 (not permitted)\n");
+
+			/* Note: We do not need to close the channel,
+			 * since we might still get a proper Establish Ind.
+			 * If not, T3101 will close the channel on timeout. */
+			break;
+		}
+
 		msg->lchan->sapis[rllh->link_id & 0x7] = LCHAN_SAPI_MS;
 		osmo_timer_del(&msg->lchan->T3101);
 		if (msgb_l2len(msg) >
