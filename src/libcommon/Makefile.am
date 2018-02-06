@@ -20,6 +20,7 @@ noinst_LIBRARIES = \
 	$(NULL)
 
 libcommon_a_SOURCES = \
+	acc_ramp.c \
 	bsc_version.c \
 	common_vty.c \
 	debug.c \

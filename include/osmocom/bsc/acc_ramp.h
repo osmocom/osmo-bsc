@@ -21,6 +21,7 @@
 #define _ACC_RAMP_H_
 
 #include <stdbool.h>
+#include <stdint.h>
 
 #include <osmocom/core/timer.h>
 
@@ -72,5 +73,9 @@ struct acc_ramp {
 	bool step_interval_is_fixed;
 	struct osmo_timer_list step_timer;
 };
+
+void acc_ramp_init(struct acc_ramp *acc_ramp);
+void acc_ramp_start(struct acc_ramp *acc_ramp);
+void acc_ramp_stop(struct acc_ramp *acc_ramp);
 
 #endif /* _ACC_RAMP_H_ */
