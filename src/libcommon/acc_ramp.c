@@ -89,12 +89,17 @@ static void do_ramping_step(void *data)
 		int idx = ffs(acc_ramp->barred_t3);
 		if (idx <= 0) {
 			idx = ffs(acc_ramp->barred_t2);
-			if (idx == 1 || idx == 2) /* ACC8 or ACC9 is still barred */
+			if (idx == 1 || idx == 2) {
+				/* ACC8 or ACC9 is still barred */
 				allow_one_acc(acc_ramp, idx - 1 + 8);
-			else
-				break; /* all ACCs are now allowed */
-		} else
-			allow_one_acc(acc_ramp, idx - 1); /* one of ACC0-ACC7 is still bared */
+			} else {
+				/* all ACCs are now allowed */
+				break;
+			}
+		} else {
+			/* one of ACC0-ACC7 is still bared */
+			allow_one_acc(acc_ramp, idx - 1);
+		}
 	}
 
 	/* If we have not allowed all ACCs yet, schedule another ramping step. */
