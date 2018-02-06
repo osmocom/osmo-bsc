@@ -22,6 +22,7 @@
 #include <osmocom/bsc/common_cs.h>
 #include <osmocom/bsc/meas_rep.h>
 #include <osmocom/bsc/rest_octets.h>
+#include <osmocom/bsc/acc_ramp.h>
 
 /* 16 is the max. number of SI2quater messages according to 3GPP TS 44.018 Table 10.5.2.33b.1:
    4-bit index is used (2#1111 = 10#15) */
@@ -578,56 +579,6 @@ struct load_counter {
 	unsigned int used;
 };
 
-
-/*
- * Access control class (ACC) ramping is used to slowly make the cell available to
- * an increasing number of MS. This avoids overload at startup time in cases where
- * a lot of MS would discover the new cell and try to connect to it all at once.
- */
-
-enum bts_acc_ramp_step_size {
-	BTS_ACC_RAMP_STEP_SIZE_MIN = 1, /* allow at most 1 new ACC per ramp step */
-	BTS_ACC_RAMP_STEP_SIZE_DEFAULT = BTS_ACC_RAMP_STEP_SIZE_MIN,
-	BTS_ACC_RAMP_STEP_SIZE_MAX = 10, /* allow all ACC in one step (disables ramping) */
-};
-
-enum bts_acc_ramp_step_interval {
-	BTS_ACC_RAMP_STEP_INTERVAL_MIN = 1,		/* 1 second */
-	BTS_ACC_RAMP_STEP_INTERVAL_DEFAULT = 60,	/* 1 minute */
-	BTS_ACC_RAMP_STEP_INTERVAL_MAX = 300,		/* 5 minutes */
-};
-
-struct bts_acc_ramp {
-	/*
-	 * Bitmasks which keep track of access control classes that are currently
-	 * denied access to this BTS. These masks modulate bits from octets 2 and 3
-	 * of the RACH Control Parameters (see 3GPP 44.018 10.5.2.29).
-	 * While a bit in these masks is set, the corresponding ACC is barred.
-	 * Note that t2 contains bits for classes 11-15 which should always be allowed,
-	 * and a bit which denies emergency calls for all ACCs from 0-9 inclusive.
-	 * Ramping is only concerned with those bits which control access for ACCs 0-9.
-	 */
-	uint8_t barred_t2;
-	uint8_t barred_t3;
-
-	/*
-	 * This controls the maximum number of ACCs to allow per ramping step (1 - 10).
-	 * The compile-time default value is BTS_ACC_RAMP_STEP_SIZE_DEFAULT.
-	 * This value can be changed by VTY configuration.
-	 * A value of BTS_ACC_RAMP_STEP_SIZE_MAX effectively disables ramping.
-	 */
-	enum bts_acc_ramp_step_size step_size;
-
-	/*
-	 * Ramping step interval in seconds.
-	 * This value depends on the current BTS channel load average, unless
-	 * it has been overriden by VTY configuration.
-	 */
-	unsigned int step_interval_sec;
-	bool step_interval_is_fixed;
-	struct osmo_timer_list step_timer;
-};
-
 /* One BTS */
 struct gsm_bts {
 	/* list header in net->bts_list */
@@ -838,7 +789,7 @@ struct gsm_bts {
 	uint32_t si_mode_static;
 
 	/* access control class ramping */
-	struct bts_acc_ramp acc_ramp;
+	struct acc_ramp acc_ramp;
 
 	/* exclude the BTS from the global RF Lock handling */
 	int excl_from_rf_lock;
