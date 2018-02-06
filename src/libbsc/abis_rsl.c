@@ -2180,6 +2180,20 @@ static int abis_rsl_rx_rll(struct msgb *msg)
 	case RSL_MT_EST_IND:
 		DEBUGPC(DRLL, "ESTABLISH INDICATION\n");
 		/* lchan is established, stop T3101 */
+
+		/* Note: By definition the first Establish Indication must
+		 * happen first on SAPI 0, once the connection on SAPI 0 is
+		 * made, parallel connections on other SAPIs are permitted */
+		if (sapi != 0 && msg->lchan->sapis[0] != LCHAN_SAPI_MS) {
+			LOGP(DRLL, LOGL_NOTICE, "MS attempted to establish DCCH on SAPI=%d (expected SAPI=0)\n",
+				rllh->link_id & 0x7);
+
+			/* Note: We do not need to close the channel,
+			 * since we might still get a proper Establish Ind.
+			 * If not, T3101 will close the channel on timeout. */
+			break;
+		}
+
 		msg->lchan->sapis[rllh->link_id & 0x7] = LCHAN_SAPI_MS;
 		osmo_timer_del(&msg->lchan->T3101);
 		if (msgb_l2len(msg) >
