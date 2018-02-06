@@ -17,31 +17,123 @@
  *
  */
 
+#include <strings.h>
+#include <errno.h>
+
+#include <osmocom/bsc/debug.h>
 #include <osmocom/bsc/acc_ramp.h>
+#include <osmocom/bsc/gsm_data.h>
 
-static void acc_ramp_timer_step(void *data)
-{
-	struct acc_ramp *acc_ramp = data;
-}
-
-void acc_ramp_init(struct acc_ramp *acc_ramp)
+static void deny_all_accs(struct acc_ramp *acc_ramp)
 {
 	acc_ramp->barred_t2 = 0x03; /* AC8, AC9 barred */
 	acc_ramp->barred_t3 = 0xff; /* AC0 - AC7 barred */
+}
 
+static void allow_all_accs(struct acc_ramp *acc_ramp)
+{
+	acc_ramp->barred_t2 = 0x00; /* AC8, AC9 allowed */
+	acc_ramp->barred_t3 = 0x00; /* AC0 - AC7 allowed */
+}
+
+static unsigned int get_next_step_interval(struct acc_ramp *acc_ramp)
+{
+	struct gsm_bts *bts = acc_ramp->bts;
+
+	if (acc_ramp->step_interval_is_fixed)
+		return acc_ramp->step_interval_sec;
+
+	if (bts->chan_load_avg == 0) {
+		acc_ramp->step_interval_sec = ACC_RAMP_STEP_INTERVAL_MIN;
+	} else {
+		/* Scale the step interval to current channel load average. */
+		uint64_t load = (bts->chan_load_avg << 8); /* convert to fixed-point */
+		acc_ramp->step_interval_sec = ((load * ACC_RAMP_STEP_INTERVAL_MAX) / 100) >> 8;
+		if (acc_ramp->step_interval_sec < ACC_RAMP_STEP_SIZE_MIN)
+			acc_ramp->step_interval_sec = ACC_RAMP_STEP_INTERVAL_MIN;
+		else if (acc_ramp->step_interval_sec > ACC_RAMP_STEP_INTERVAL_MAX)
+			acc_ramp->step_interval_sec = ACC_RAMP_STEP_INTERVAL_MAX;
+	}
+
+	LOGP(DRLL, LOGL_DEBUG, "(bts=%d) ACC ramp interval set to %u sec based on %u%% load average\n",
+	     bts->nr, acc_ramp->step_interval_sec, bts->chan_load_avg);
+	return acc_ramp->step_interval_sec;
+}
+
+static void acc_ramping_step(void *data)
+{
+	struct acc_ramp *acc_ramp = data;
+	int i;
+
+	/* Shortcut in case we only do one ramping step. */
+	if (acc_ramp->step_size == ACC_RAMP_STEP_SIZE_MAX) {
+		allow_all_accs(acc_ramp);
+		return;
+	}
+
+	/* Allow 'step_size' ACCs, starting from ACC0. ACC9 will be allowed last. */
+	for (i = 0; i < acc_ramp->step_size; i++) {
+		int c = ffs(acc_ramp->barred_t3);
+		if (c <= 0) {
+			c = ffs(acc_ramp->barred_t2);
+			if (c > 0 && c <= 2)
+				acc_ramp->barred_t2 &= ~(1 << (c - 1));
+			return;
+		}
+		acc_ramp->barred_t3 &= ~(1 << (c - 1));
+	}
+
+	/* If we have not allowed all ACCs yet, schedule another ramping step. */
+	if (acc_ramp_get_barred_t2(acc_ramp) != 0x00 ||
+	    acc_ramp_get_barred_t3(acc_ramp) != 0x00)
+		osmo_timer_schedule(&acc_ramp->step_timer, get_next_step_interval(acc_ramp), 0);
+}
+
+void acc_ramp_init(struct acc_ramp *acc_ramp, struct gsm_bts *bts)
+{
+	acc_ramp->bts = bts;
+	allow_all_accs(acc_ramp);
 	acc_ramp->step_size = ACC_RAMP_STEP_SIZE_DEFAULT;
 	acc_ramp->step_interval_sec = ACC_RAMP_STEP_INTERVAL_DEFAULT;
 	acc_ramp->step_interval_is_fixed = false;
-	osmo_timer_setup(&acc_ramp->step_timer, acc_ramp_timer_step, acc_ramp);
+	osmo_timer_setup(&acc_ramp->step_timer, acc_ramping_step, acc_ramp);
+}
+
+int acc_ramp_set_step_size(struct acc_ramp *acc_ramp, enum acc_ramp_step_size step_size)
+{
+	if (step_size < ACC_RAMP_STEP_SIZE_MIN || step_size > ACC_RAMP_STEP_SIZE_MAX)
+		return -ERANGE;
+
+	acc_ramp->step_size = step_size;
+	return 0;
+}
+
+int acc_ramp_set_step_interval(struct acc_ramp *acc_ramp, unsigned int step_interval)
+{
+	if (step_interval < ACC_RAMP_STEP_INTERVAL_MIN || step_interval > ACC_RAMP_STEP_INTERVAL_MAX)
+		return -ERANGE;
+
+	acc_ramp->step_interval_sec = step_interval;
+	acc_ramp->step_interval_is_fixed = true;
+	return 0;
+}
+
+void acc_ramp_set_step_interval_dynamic(struct acc_ramp *acc_ramp)
+{
+	acc_ramp->step_interval_is_fixed = false;
 }
 
 void acc_ramp_start(struct acc_ramp *acc_ramp)
 {
-	acc_ramp_stop(acc_ramp);
-	osmo_timer_schedule(&acc_ramp->step_timer, acc_ramp->step_interval_sec, 0);
+	/* Abort any previously running ramping process. */
+	acc_ramp_abort(acc_ramp);
+
+	/* Set all ACCs to denied and start ramping up. */
+	deny_all_accs(acc_ramp);
+	acc_ramping_step(acc_ramp);
 }
 
-void acc_ramp_stop(struct acc_ramp *acc_ramp)
+void acc_ramp_abort(struct acc_ramp *acc_ramp)
 {
 	if (osmo_timer_pending(&acc_ramp->step_timer))
 		osmo_timer_del(&acc_ramp->step_timer);

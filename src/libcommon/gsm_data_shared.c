@@ -396,6 +396,8 @@ struct gsm_bts *gsm_bts_alloc(struct gsm_network *net, uint8_t bts_num)
 	/* timer overrides */
 	bts->T3122 = 0; /* not overriden by default */
 
+	bts->chan_load_avg = 0;
+
 	return bts;
 }
 

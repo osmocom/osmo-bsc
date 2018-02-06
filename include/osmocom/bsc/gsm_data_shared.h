@@ -819,6 +819,7 @@ struct gsm_bts {
 	/* Periodic channel load measurements are used to maintain T3122. */
 	struct load_counter chan_load_samples[7];
 	int chan_load_samples_idx;
+	uint8_t chan_load_avg; /* current channel load average in percent (0 - 100). */
 };
 
 

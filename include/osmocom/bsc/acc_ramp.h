@@ -44,10 +44,12 @@ enum acc_ramp_step_interval {
 };
 
 struct acc_ramp {
+	struct gsm_bts *bts; /* backpointer to BTS using this ACC ramp */
+
 	/*
-	 * Bitmasks which keep track of access control classes that are currently
-	 * denied access to this BTS. These masks modulate bits from octets 2 and 3
-	 * of the RACH Control Parameters (see 3GPP 44.018 10.5.2.29).
+	 * Bitmasks which keep track of access control classes that are currently denied
+	 * access. These masks should be used to modulate bits from octets 2 and 3 of
+	 * the RACH Control Parameters (see 3GPP 44.018 10.5.2.29).
 	 * While a bit in these masks is set, the corresponding ACC is barred.
 	 * Note that t2 contains bits for classes 11-15 which should always be allowed,
 	 * and a bit which denies emergency calls for all ACCs from 0-9 inclusive.
@@ -74,8 +76,55 @@ struct acc_ramp {
 	struct osmo_timer_list step_timer;
 };
 
-void acc_ramp_init(struct acc_ramp *acc_ramp);
+/*
+ * Initialize an acc_ramp data structure.
+ * Storage for this structure must be provided by the caller.
+ * The BTS which uses this ACC ramp must be provided as well to allow for automatic
+ * scaling of the timeout imterval based on BTS channel load average.
+ * All ACCs are allowed by default. Call acc_ramp_start() next to initiate the ramping process.
+ */
+void acc_ramp_init(struct acc_ramp *acc_ramp, struct gsm_bts *bts);
+
+/* Change the ramping step size. Returns negative on error (step_size out of range), else zero. */
+int acc_ramp_set_step_size(struct acc_ramp *acc_ramp, enum acc_ramp_step_size step_size);
+
+/*
+ * Change the ramping step interval to a fixed value. Unless this function is called,
+ * the interval is automatically scaled to the BTS channel load average.
+ */
+int acc_ramp_set_step_interval(struct acc_ramp *acc_ramp, unsigned int step_interval);
+
+/*
+ * Clear a previously set fixed ramping step interval, so that the interval
+ * is again automatically scaled to the BTS channel load average.
+ */
+void acc_ramp_set_step_interval_dynamic(struct acc_ramp *acc_ramp);
+
+/*
+ * Begin the ramping process. This initially sets all ACCs to denied, and then
+ * performs at least one ramping step to allow 'step_size' ACCs.
+ * If 'step_size' is ACC_RAMP_STEP_SIZE_MAX, all ACCs will be allowed immediately,
+ * i.e. ACC ramping becomes a no-op.
+ */
 void acc_ramp_start(struct acc_ramp *acc_ramp);
-void acc_ramp_stop(struct acc_ramp *acc_ramp);
+
+/* Abort the ramping process. If the process has already finished, this function has no effect. */
+void acc_ramp_abort(struct acc_ramp *acc_ramp);
+
+/*
+ * Return bitmasks which correspond to access control classes which are currently
+ * denied access. Ramping is only concerned with those bits which control access
+ * for ACCs 0-9, and any of the other bits will always be set to zero in these masks, i.e.
+ * it is safe to OR these bitmasks with the corresponding fields in struct gsm48_rach_control.
+ */
+static inline uint8_t acc_ramp_get_barred_t2(struct acc_ramp *acc_ramp)
+{
+	return (acc_ramp->barred_t2 & 0x03);
+};
+
+static inline uint8_t acc_ramp_get_barred_t3(struct acc_ramp *acc_ramp)
+{
+	return acc_ramp->barred_t3;
+}
 
 #endif /* _ACC_RAMP_H_ */
