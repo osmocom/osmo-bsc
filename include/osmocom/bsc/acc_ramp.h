@@ -38,7 +38,7 @@ enum acc_ramp_step_size {
 };
 
 enum acc_ramp_step_interval {
-	ACC_RAMP_STEP_INTERVAL_MIN = 1,		/* 1 second */
+	ACC_RAMP_STEP_INTERVAL_MIN = 30,	/* 30 seconds */
 	ACC_RAMP_STEP_INTERVAL_DEFAULT = 60,	/* 1 minute */
 	ACC_RAMP_STEP_INTERVAL_MAX = 600,	/* 10 minutes */
 };
