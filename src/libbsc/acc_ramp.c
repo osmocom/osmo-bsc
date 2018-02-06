@@ -76,12 +76,16 @@ static unsigned int get_next_step_interval(struct acc_ramp *acc_ramp)
 static void update_bts_rach_control(struct acc_ramp *acc_ramp)
 {
 	struct gsm_bts *bts = acc_ramp->bts;
-	struct gsm_bts_trx *trx;
 
 	/* Update RACH control parameters of this BTS. */
 	bts->si_common.rach_control.t2 &= ~0x03;
 	bts->si_common.rach_control.t2 |= acc_ramp_get_barred_t2(acc_ramp);
 	bts->si_common.rach_control.t3 = acc_ramp_get_barred_t3(acc_ramp);
+}
+
+static void send_bts_system_info(struct gsm_bts *bts)
+{
+	struct gsm_bts_trx *trx;
 
 	/* Send updated system information to all TRX. */
 	llist_for_each_entry_reverse(trx, &bts->trx_list, list)
@@ -119,6 +123,7 @@ static void do_ramping_step(void *data)
 
 
 	update_bts_rach_control(acc_ramp);
+	send_bts_system_info(acc_ramp->bts);
 
 	/* If we have not allowed all ACCs yet, schedule another ramping step. */
 	if (acc_ramp_get_barred_t2(acc_ramp) != 0x00 ||
@@ -126,14 +131,19 @@ static void do_ramping_step(void *data)
 		osmo_timer_schedule(&acc_ramp->step_timer, get_next_step_interval(acc_ramp), 0);
 }
 
-void acc_ramp_init(struct acc_ramp *acc_ramp, struct gsm_bts *bts)
+void acc_ramp_init(struct acc_ramp *acc_ramp, struct gsm_bts *bts, bool ramping_enabled)
 {
 	acc_ramp->bts = bts;
-	allow_all_accs(acc_ramp);
 	acc_ramp->step_size = ACC_RAMP_STEP_SIZE_DEFAULT;
 	acc_ramp->step_interval_sec = ACC_RAMP_STEP_INTERVAL_DEFAULT;
 	acc_ramp->step_interval_is_fixed = false;
 	osmo_timer_setup(&acc_ramp->step_timer, do_ramping_step, acc_ramp);
+
+	if (ramping_enabled)
+		deny_all_accs(acc_ramp);
+	else
+		allow_all_accs(acc_ramp);
+	update_bts_rach_control(acc_ramp);
 }
 
 int acc_ramp_set_step_size(struct acc_ramp *acc_ramp, enum acc_ramp_step_size step_size)
