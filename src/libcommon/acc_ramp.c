@@ -44,9 +44,9 @@ static void allow_one_acc(struct acc_ramp *acc_ramp, unsigned int acc)
 	LOGP(DRLL, LOGL_DEBUG, "(bts=%d) ACC RAMP: allowing Access Control Class %u\n", acc_ramp->bts->nr, acc);
 	assert(acc >= 0 && acc <= 9);
 	if (acc == 8 || acc == 9)
-		acc_ramp->barred_t2 &= (1 << (acc - 8));
+		acc_ramp->barred_t2 &= ~(1 << (acc - 8));
 	else
-		acc_ramp->barred_t3 &= (1 << acc);
+		acc_ramp->barred_t3 &= ~(1 << acc);
 }
 
 static unsigned int get_next_step_interval(struct acc_ramp *acc_ramp)
