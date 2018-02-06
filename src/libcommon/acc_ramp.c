@@ -26,14 +26,22 @@
 
 static void deny_all_accs(struct acc_ramp *acc_ramp)
 {
-	acc_ramp->barred_t2 = 0x03; /* AC8, AC9 barred */
-	acc_ramp->barred_t3 = 0xff; /* AC0 - AC7 barred */
+	LOGP(DRLL, LOGL_DEBUG, "(bts=%d) ACC RAMP: denying all Access Control Classes 0-9\n", acc_ramp->bts->nr);
+	acc_ramp->barred_t2 = 0x03; /* ACC8, ACC9 barred */
+	acc_ramp->barred_t3 = 0xff; /* ACC0 - ACC7 barred */
 }
 
 static void allow_all_accs(struct acc_ramp *acc_ramp)
 {
-	acc_ramp->barred_t2 = 0x00; /* AC8, AC9 allowed */
-	acc_ramp->barred_t3 = 0x00; /* AC0 - AC7 allowed */
+	LOGP(DRLL, LOGL_DEBUG, "(bts=%d) ACC RAMP: allowing all Access Control Classes 0-9\n", acc_ramp->bts->nr);
+	acc_ramp->barred_t2 = 0x00; /* ACC8, ACC9 allowed */
+	acc_ramp->barred_t3 = 0x00; /* ACC0 - ACC7 allowed */
+}
+
+static void allow_one_acc(uint8_t *barred, unsigned int acc, struct gsm_bts * bts)
+{
+	LOGP(DRLL, LOGL_DEBUG, "(bts=%d) ACC RAMP: allowing Access Control Class %u\n", bts->nr, acc);
+	*barred &= ~(1 << (acc));
 }
 
 static unsigned int get_next_step_interval(struct acc_ramp *acc_ramp)
@@ -55,7 +63,7 @@ static unsigned int get_next_step_interval(struct acc_ramp *acc_ramp)
 			acc_ramp->step_interval_sec = ACC_RAMP_STEP_INTERVAL_MAX;
 	}
 
-	LOGP(DRLL, LOGL_DEBUG, "(bts=%d) ACC ramp interval set to %u sec based on %u%% load average\n",
+	LOGP(DRLL, LOGL_DEBUG, "(bts=%d) ACC RAMP: step interval set to %u sec based on %u%% load average\n",
 	     bts->nr, acc_ramp->step_interval_sec, bts->chan_load_avg);
 	return acc_ramp->step_interval_sec;
 }
@@ -76,11 +84,12 @@ static void do_ramp_step(void *data)
 		int c = ffs(acc_ramp->barred_t3);
 		if (c <= 0) {
 			c = ffs(acc_ramp->barred_t2);
-			if (c > 0 && c <= 2)
-				acc_ramp->barred_t2 &= ~(1 << (c - 1));
-			return;
-		}
-		acc_ramp->barred_t3 &= ~(1 << (c - 1));
+			if (c == 1 || c == 2) /* ACC8 or ACC9 */
+				allow_one_acc(&acc_ramp->barred_t2, c - 1, acc_ramp->bts);
+			else
+				break; /* all ACCs are now allowed */
+		} else
+			allow_one_acc(&acc_ramp->barred_t3, c - 1, acc_ramp->bts); /* ACC0-ACC7 */
 	}
 
 	/* If we have not allowed all ACCs yet, schedule another ramping step. */
