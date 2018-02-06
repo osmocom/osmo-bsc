@@ -298,6 +298,7 @@ static void bts_dump_vty(struct vty *vty, struct gsm_bts *bts)
 		VTY_NEWLINE);
 	if (bts->pcu_sock_path)
 		vty_out(vty, "PCU Socket Path: %s%s", bts->pcu_sock_path, VTY_NEWLINE);
+	vty_out(vty, "Access Control Class ramping: %senabled%s", bts->acc_ramping_enabled ? "" : "not ",  VTY_NEWLINE);
 	if (is_ipaccess_bts(bts))
 		vty_out(vty, "  Unit ID: %u/%u/0, OML Stream ID 0x%02x%s",
 			bts->ip_access.site_id, bts->ip_access.bts_id,
@@ -799,7 +800,6 @@ static void config_write_bts_single(struct vty *vty, struct gsm_bts *bts)
 	}
 	if (bts->pcu_sock_path)
 		vty_out(vty, "  pcu-socket %s%s", bts->pcu_sock_path, VTY_NEWLINE);
-
 	vty_out(vty, "  acc-ramping %s%s", bts->acc_ramping_enabled ? "enabled" : "disabled", VTY_NEWLINE);
 
 	ho_vty_write(vty, "  ", bts->ho);
@@ -3112,8 +3112,8 @@ DEFUN(cfg_bts_acc_ramping,
       cfg_bts_acc_ramping_cmd,
       "acc-ramping enabled (0|1)",
       "Enable or disable Access Control Class ramping\n"
-      "Disable Access Control Class ramping\n"
-      "Enable Access Control Class ramping\n")
+      "Enable or disable Access Control Class ramping\n"
+      "Disable Access Control Class ramping\n" "Enable Access Control Class ramping\n")
 {
 	struct gsm_bts *bts = vty->index;
 	bool was_enabled = bts->acc_ramping_enabled;

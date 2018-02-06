@@ -39,6 +39,7 @@
 #include <osmocom/bsc/rest_octets.h>
 #include <osmocom/bsc/arfcn_range_encode.h>
 #include <osmocom/bsc/gsm_04_08_utils.h>
+#include <osmocom/bsc/acc_ramp.h>
 
 /*
  * DCS1800 and PCS1900 have overlapping ARFCNs. We would need to set the
@@ -675,6 +676,10 @@ static int generate_si1(enum osmo_sysinfo_type t, struct gsm_bts *bts)
 	list_arfcn(si1->cell_channel_description, 0xce, "Serving cell:");
 
 	si1->rach_control = bts->si_common.rach_control;
+	if (bts->acc_ramping_enabled) {
+		si1->rach_control.t2 |= acc_ramp_get_barred_t2(&bts->acc_ramp);
+		si1->rach_control.t3 |= acc_ramp_get_barred_t3(&bts->acc_ramp);
+	}
 
 	/*
 	 * SI1 Rest Octets (10.5.2.32), contains NCH position and band
@@ -705,6 +710,10 @@ static int generate_si2(enum osmo_sysinfo_type t, struct gsm_bts *bts)
 
 	si2->ncc_permitted = bts->si_common.ncc_permitted;
 	si2->rach_control = bts->si_common.rach_control;
+	if (bts->acc_ramping_enabled) {
+		si2->rach_control.t2 |= acc_ramp_get_barred_t2(&bts->acc_ramp);
+		si2->rach_control.t3 |= acc_ramp_get_barred_t3(&bts->acc_ramp);
+	}
 
 	return sizeof(*si2);
 }
@@ -738,6 +747,10 @@ static int generate_si2bis(enum osmo_sysinfo_type t, struct gsm_bts *bts)
 		bts->si_valid &= ~(1 << SYSINFO_TYPE_2bis);
 
 	si2b->rach_control = bts->si_common.rach_control;
+	if (bts->acc_ramping_enabled) {
+		si2b->rach_control.t2 |= acc_ramp_get_barred_t2(&bts->acc_ramp);
+		si2b->rach_control.t3 |= acc_ramp_get_barred_t3(&bts->acc_ramp);
+	}
 
 	/* SI2bis Rest Octets as per 3GPP TS 44.018 §10.5.2.33 */
 	rc = rest_octets_si2bis(si2b->rest_octets);
@@ -860,6 +873,10 @@ static int generate_si3(enum osmo_sysinfo_type t, struct gsm_bts *bts)
 	si3->cell_options = bts->si_common.cell_options;
 	si3->cell_sel_par = bts->si_common.cell_sel_par;
 	si3->rach_control = bts->si_common.rach_control;
+	if (bts->acc_ramping_enabled) {
+		si3->rach_control.t2 |= acc_ramp_get_barred_t2(&bts->acc_ramp);
+		si3->rach_control.t3 |= acc_ramp_get_barred_t3(&bts->acc_ramp);
+	}
 
 	/* allow/disallow DTXu */
 	gsm48_set_dtx(&si3->cell_options, bts->dtxu, bts->dtxu, true);
@@ -910,6 +927,10 @@ static int generate_si4(enum osmo_sysinfo_type t, struct gsm_bts *bts)
 			   bts->location_area_code);
 	si4->cell_sel_par = bts->si_common.cell_sel_par;
 	si4->rach_control = bts->si_common.rach_control;
+	if (bts->acc_ramping_enabled) {
+		si4->rach_control.t2 |= acc_ramp_get_barred_t2(&bts->acc_ramp);
+		si4->rach_control.t3 |= acc_ramp_get_barred_t3(&bts->acc_ramp);
+	}
 
 	/* Optional: CBCH Channel Description + CBCH Mobile Allocation */
 	cbch_lchan = gsm_bts_get_cbch(bts);
