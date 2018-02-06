@@ -82,13 +82,13 @@ struct acc_ramp {
  *
  * The BTS which uses this ACC ramp must be provided as well.
  *
- * If 'ramping_enabled' is true, all ACCs are denied by default.
+ * If 'bts->acc_ramping_enabled' is true, all ACCs are denied by default.
  * A subsequent call to acc_ramp_start() will begin the ramping process.
  *
- * If 'ramping_enabled' is false, all ACCs will be allowed by default, and
- * there is no need to do anything else.
+ * If 'bts->acc_ramping_enabled' is false, all ACCs will be allowed by default,
+ * and there is no need to do anything else.
  */
-void acc_ramp_init(struct acc_ramp *acc_ramp, struct gsm_bts *bts, bool ramping_enabled);
+void acc_ramp_init(struct acc_ramp *acc_ramp, struct gsm_bts *bts);
 
 /* Change the ramping step size. Returns negative on error (step_size out of range), else zero. */
 int acc_ramp_set_step_size(struct acc_ramp *acc_ramp, enum acc_ramp_step_size step_size);

@@ -61,6 +61,7 @@
 #include <osmocom/bsc/handover_cfg.h>
 #include <osmocom/bsc/handover_vty.h>
 #include <osmocom/bsc/gsm_04_08_utils.h>
+#include <osmocom/bsc/acc_ramp.h>
 
 #include <inttypes.h>
 
@@ -3105,6 +3106,32 @@ DEFUN(cfg_bts_pcu_sock, cfg_bts_pcu_sock_cmd,
 	return CMD_SUCCESS;
 }
 
+DEFUN(cfg_bts_acc_ramping,
+      cfg_bts_acc_ramping_cmd,
+      "acc-ramping enabled (0|1)",
+      "Enable or disable Access Control Class ramping\n"
+      "Disable Access Control Class ramping\n"
+      "Enable Access Control Class ramping\n")
+{
+	struct gsm_bts *bts = vty->index;
+	bool was_enabled = bts->acc_ramping_enabled;
+	bool enable = atoi(argv[0]);
+
+	bts->acc_ramping_enabled = enable ? true : false;
+	if (was_enabled && !bts->acc_ramping_enabled) {
+		struct gsm_bts_trx *trx;
+		acc_ramp_abort(&bts->acc_ramp);
+		acc_ramp_init(&bts->acc_ramp, bts);
+		llist_for_each_entry_reverse(trx, &bts->trx_list, list)
+			gsm_bts_trx_set_system_infos(trx);
+	}
+
+	/* If ramping is now enabled, it only takes effect when the BTS reconnects. */
+
+	return CMD_SUCCESS;
+}
+
+
 #define EXCL_RFLOCK_STR "Exclude this BTS from the global RF Lock\n"
 
 DEFUN(cfg_bts_excl_rf_lock,
@@ -4436,6 +4463,7 @@ int bsc_vty_init(struct gsm_network *network)
 	install_element(BTS_NODE, &cfg_bts_amr_hr_hyst3_cmd);
 	install_element(BTS_NODE, &cfg_bts_amr_hr_start_mode_cmd);
 	install_element(BTS_NODE, &cfg_bts_pcu_sock_cmd);
+	install_element(BTS_NODE, &cfg_bts_acc_ramping_cmd);
 	/* See also handover commands added on bts level from handover_vty.c */
 
 	install_element(BTS_NODE, &cfg_trx_cmd);

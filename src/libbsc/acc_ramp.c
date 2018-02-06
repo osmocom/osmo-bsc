@@ -131,7 +131,7 @@ static void do_ramping_step(void *data)
 		osmo_timer_schedule(&acc_ramp->step_timer, get_next_step_interval(acc_ramp), 0);
 }
 
-void acc_ramp_init(struct acc_ramp *acc_ramp, struct gsm_bts *bts, bool ramping_enabled)
+void acc_ramp_init(struct acc_ramp *acc_ramp, struct gsm_bts *bts)
 {
 	acc_ramp->bts = bts;
 	acc_ramp->step_size = ACC_RAMP_STEP_SIZE_DEFAULT;
@@ -139,7 +139,7 @@ void acc_ramp_init(struct acc_ramp *acc_ramp, struct gsm_bts *bts, bool ramping_
 	acc_ramp->step_interval_is_fixed = false;
 	osmo_timer_setup(&acc_ramp->step_timer, do_ramping_step, acc_ramp);
 
-	if (ramping_enabled)
+	if (bts->acc_ramping_enabled)
 		deny_all_accs(acc_ramp);
 	else
 		allow_all_accs(acc_ramp);

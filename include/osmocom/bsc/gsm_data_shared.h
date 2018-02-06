@@ -790,6 +790,7 @@ struct gsm_bts {
 
 	/* access control class ramping */
 	struct acc_ramp acc_ramp;
+	bool acc_ramping_enabled;
 
 	/* exclude the BTS from the global RF Lock handling */
 	int excl_from_rf_lock;

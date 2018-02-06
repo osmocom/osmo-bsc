@@ -390,13 +390,13 @@ struct gsm_bts *gsm_bts_alloc(struct gsm_network *net, uint8_t bts_num)
 
 	/* si handling */
 	bts->bcch_change_mark = 1;
+	bts->acc_ramping_enabled = false;
+	bts->chan_load_avg = 0;
 
 	bts->ho = ho_cfg_init(bts, net->ho);
 
 	/* timer overrides */
 	bts->T3122 = 0; /* not overriden by default */
-
-	bts->chan_load_avg = 0;
 
 	return bts;
 }
