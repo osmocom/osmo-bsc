@@ -26,6 +26,7 @@
 #include <osmocom/abis/e1_input.h>
 #include <osmocom/bsc/meas_rep.h>
 #include <osmocom/bsc/bsc_msg_filter.h>
+#include <osmocom/bsc/acc_ramp.h>
 
 struct mgcp_client_conf;
 struct mgcp_client;
@@ -948,6 +949,9 @@ struct gsm_bts {
 	/* do we use static (user-defined) system information messages? (bitmask) */
 	uint32_t si_mode_static;
 
+	/* access control class ramping */
+	struct acc_ramp acc_ramp;
+
 	/* exclude the BTS from the global RF Lock handling */
 	int excl_from_rf_lock;
 
@@ -976,6 +980,7 @@ struct gsm_bts {
 	/* Periodic channel load measurements are used to maintain T3122. */
 	struct load_counter chan_load_samples[7];
 	int chan_load_samples_idx;
+	uint8_t chan_load_avg; /* current channel load average in percent (0 - 100). */
 };
 
 
