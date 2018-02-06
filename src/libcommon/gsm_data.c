@@ -38,7 +38,6 @@
 #include <osmocom/bsc/bsc_msc_data.h>
 #include <osmocom/bsc/abis_nm.h>
 #include <osmocom/bsc/handover_cfg.h>
-#include <osmocom/bsc/acc_ramp.h>
 
 void *tall_bsc_ctx;
 
@@ -260,8 +259,6 @@ struct gsm_bts *gsm_bts_alloc_register(struct gsm_network *net, enum gsm_bts_typ
 	bts->si_common.chan_desc.bs_ag_blks_res = 1; /* reserved AGCH blocks */
 	bts->si_common.chan_desc.t3212 = net->t3212; /* Use network's current value */
 	gsm_bts_set_radio_link_timeout(bts, 32); /* Use RADIO LINK TIMEOUT of 32 */
-
-	acc_ramp_init(&bts->acc_ramp, bts);
 
 	llist_add_tail(&bts->list, &net->bts_list);
 
