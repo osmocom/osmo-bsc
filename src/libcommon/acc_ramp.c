@@ -17,6 +17,7 @@
  *
  */
 
+#include <assert.h>
 #include <strings.h>
 #include <errno.h>
 
@@ -38,10 +39,14 @@ static void allow_all_accs(struct acc_ramp *acc_ramp)
 	acc_ramp->barred_t3 = 0x00; /* ACC0 - ACC7 allowed */
 }
 
-static void allow_one_acc(uint8_t *barred, unsigned int acc, struct gsm_bts * bts)
+static void allow_one_acc(struct acc_ramp *acc_ramp, unsigned int acc)
 {
-	LOGP(DRLL, LOGL_DEBUG, "(bts=%d) ACC RAMP: allowing Access Control Class %u\n", bts->nr, acc);
-	*barred &= ~(1 << (acc));
+	LOGP(DRLL, LOGL_DEBUG, "(bts=%d) ACC RAMP: allowing Access Control Class %u\n", acc_ramp->bts->nr, acc);
+	assert(acc >= 0 && acc <= 9);
+	if (acc == 8 || acc == 9)
+		acc_ramp->barred_t2 &= (1 << (acc - 8));
+	else
+		acc_ramp->barred_t3 &= (1 << acc);
 }
 
 static unsigned int get_next_step_interval(struct acc_ramp *acc_ramp)
@@ -85,11 +90,11 @@ static void do_ramp_step(void *data)
 		if (c <= 0) {
 			c = ffs(acc_ramp->barred_t2);
 			if (c == 1 || c == 2) /* ACC8 or ACC9 */
-				allow_one_acc(&acc_ramp->barred_t2, c - 1, acc_ramp->bts);
+				allow_one_acc(acc_ramp, c - 1 + 8);
 			else
 				break; /* all ACCs are now allowed */
 		} else
-			allow_one_acc(&acc_ramp->barred_t3, c - 1, acc_ramp->bts); /* ACC0-ACC7 */
+			allow_one_acc(acc_ramp, c - 1); /* ACC0-ACC7 */
 	}
 
 	/* If we have not allowed all ACCs yet, schedule another ramping step. */
