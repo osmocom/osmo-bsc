@@ -60,7 +60,7 @@ static unsigned int get_next_step_interval(struct acc_ramp *acc_ramp)
 	return acc_ramp->step_interval_sec;
 }
 
-static void acc_ramping_step(void *data)
+static void do_ramp_step(void *data)
 {
 	struct acc_ramp *acc_ramp = data;
 	int i;
@@ -96,7 +96,7 @@ void acc_ramp_init(struct acc_ramp *acc_ramp, struct gsm_bts *bts)
 	acc_ramp->step_size = ACC_RAMP_STEP_SIZE_DEFAULT;
 	acc_ramp->step_interval_sec = ACC_RAMP_STEP_INTERVAL_DEFAULT;
 	acc_ramp->step_interval_is_fixed = false;
-	osmo_timer_setup(&acc_ramp->step_timer, acc_ramping_step, acc_ramp);
+	osmo_timer_setup(&acc_ramp->step_timer, do_ramp_step, acc_ramp);
 }
 
 int acc_ramp_set_step_size(struct acc_ramp *acc_ramp, enum acc_ramp_step_size step_size)
@@ -130,7 +130,7 @@ void acc_ramp_start(struct acc_ramp *acc_ramp)
 
 	/* Set all ACCs to denied and start ramping up. */
 	deny_all_accs(acc_ramp);
-	acc_ramping_step(acc_ramp);
+	do_ramp_step(acc_ramp);
 }
 
 void acc_ramp_abort(struct acc_ramp *acc_ramp)
