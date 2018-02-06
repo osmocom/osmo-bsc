@@ -87,7 +87,10 @@ static void do_ramping_step(void *data)
 	/* Allow 'step_size' ACCs, starting from ACC0. ACC9 will be allowed last. */
 	for (i = 0; i < acc_ramp->step_size; i++) {
 		int idx = ffs(acc_ramp->barred_t3);
-		if (idx <= 0) {
+		if (idx > 0) {
+			/* one of ACC0-ACC7 is still bared */
+			allow_one_acc(acc_ramp, idx - 1);
+		} else {
 			idx = ffs(acc_ramp->barred_t2);
 			if (idx == 1 || idx == 2) {
 				/* ACC8 or ACC9 is still barred */
@@ -96,9 +99,6 @@ static void do_ramping_step(void *data)
 				/* all ACCs are now allowed */
 				break;
 			}
-		} else {
-			/* one of ACC0-ACC7 is still bared */
-			allow_one_acc(acc_ramp, idx - 1);
 		}
 	}
 
