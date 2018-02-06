@@ -73,6 +73,21 @@ static unsigned int get_next_step_interval(struct acc_ramp *acc_ramp)
 	return acc_ramp->step_interval_sec;
 }
 
+static void update_bts_rach_control(struct acc_ramp *acc_ramp)
+{
+	struct gsm_bts *bts = acc_ramp->bts;
+	struct gsm_bts_trx *trx;
+
+	/* Update RACH control parameters of this BTS. */
+	bts->si_common.rach_control.t2 &= ~0x03;
+	bts->si_common.rach_control.t2 |= acc_ramp_get_barred_t2(acc_ramp);
+	bts->si_common.rach_control.t3 = acc_ramp_get_barred_t3(acc_ramp);
+
+	/* Send updated system information to all TRX. */
+	llist_for_each_entry_reverse(trx, &bts->trx_list, list)
+		gsm_bts_trx_set_system_infos(trx);
+}
+
 static void do_ramping_step(void *data)
 {
 	struct acc_ramp *acc_ramp = data;
@@ -101,6 +116,9 @@ static void do_ramping_step(void *data)
 			}
 		}
 	}
+
+
+	update_bts_rach_control(acc_ramp);
 
 	/* If we have not allowed all ACCs yet, schedule another ramping step. */
 	if (acc_ramp_get_barred_t2(acc_ramp) != 0x00 ||
