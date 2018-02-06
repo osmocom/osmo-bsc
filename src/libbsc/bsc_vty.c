@@ -670,6 +670,7 @@ static void config_write_bts_single(struct vty *vty, struct gsm_bts *bts)
 		for (i = 0; i < 8; i++)
 			if ((i != 2) && (bts->si_common.rach_control.t2 & (0x1 << i)))
 				vty_out(vty, "  rach access-control-class %d barred%s", i+8, VTY_NEWLINE);
+	vty_out(vty, "  access-control-class-ramping %s%s", bts->acc_ramping_enabled ? "enabled" : "disabled", VTY_NEWLINE);
 	for (i = SYSINFO_TYPE_1; i < _MAX_SYSINFO_TYPE; i++) {
 		if (bts->si_mode_static & (1 << i)) {
 			vty_out(vty, "  system-information %s mode static%s",
@@ -800,7 +801,6 @@ static void config_write_bts_single(struct vty *vty, struct gsm_bts *bts)
 	}
 	if (bts->pcu_sock_path)
 		vty_out(vty, "  pcu-socket %s%s", bts->pcu_sock_path, VTY_NEWLINE);
-	vty_out(vty, "  acc-ramping %s%s", bts->acc_ramping_enabled ? "enabled" : "disabled", VTY_NEWLINE);
 
 	ho_vty_write(vty, "  ", bts->ho);
 
@@ -3110,7 +3110,7 @@ DEFUN(cfg_bts_pcu_sock, cfg_bts_pcu_sock_cmd,
 
 DEFUN(cfg_bts_acc_ramping,
       cfg_bts_acc_ramping_cmd,
-      "acc-ramping enabled (0|1)",
+      "access-control-class-ramping enabled (0|1)",
       "Enable or disable Access Control Class ramping\n"
       "Enable or disable Access Control Class ramping\n"
       "Disable Access Control Class ramping\n" "Enable Access Control Class ramping\n")
