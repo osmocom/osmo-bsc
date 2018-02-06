@@ -800,6 +800,8 @@ static void config_write_bts_single(struct vty *vty, struct gsm_bts *bts)
 	if (bts->pcu_sock_path)
 		vty_out(vty, "  pcu-socket %s%s", bts->pcu_sock_path, VTY_NEWLINE);
 
+	vty_out(vty, "  acc-ramping %s%s", bts->acc_ramping_enabled ? "enabled" : "disabled", VTY_NEWLINE);
+
 	ho_vty_write(vty, "  ", bts->ho);
 
 	config_write_bts_model(vty, bts);
