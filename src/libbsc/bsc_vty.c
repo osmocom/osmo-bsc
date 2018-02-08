@@ -1756,6 +1756,7 @@ DEFUN(cfg_bts,
 		/* allocate a new one */
 		bts = gsm_bts_alloc_register(gsmnet, GSM_BTS_TYPE_UNKNOWN,
 					     HARDCODED_BSIC);
+		acc_ramp_init(&bts->acc_ramp, bts);
 	} else
 		bts = gsm_bts_num(gsmnet, bts_nr);
 
@@ -3111,7 +3112,7 @@ DEFUN(cfg_bts_pcu_sock, cfg_bts_pcu_sock_cmd,
 DEFUN(cfg_bts_acc_ramping,
       cfg_bts_acc_ramping_cmd,
       "access-control-class-ramping enabled (0|1)",
-      "Enable or disable Access Control Class ramping\n"
+      "Conigure Access Control Class ramping\n"
       "Enable or disable Access Control Class ramping\n"
       "Disable Access Control Class ramping\n" "Enable Access Control Class ramping\n")
 {
@@ -3129,6 +3130,37 @@ DEFUN(cfg_bts_acc_ramping,
 	}
 
 	/* If ramping is now enabled, it only takes effect when the BTS reconnects. */
+
+	return CMD_SUCCESS;
+}
+
+DEFUN(cfg_bts_acc_ramping_step_interval,
+      cfg_bts_acc_ramping_step_interval_cmd,
+      "access-control-class-ramping step-interval (<"
+      OSMO_STRINGIFY_VAL(ACC_RAMP_STEP_INTERVAL_MIN) "-"
+      OSMO_STRINGIFY_VAL(ACC_RAMP_STEP_INTERVAL_MAX) ">|dynamic)",
+      "Conigure Access Control Class ramping\n"
+      "Configure Access Control Class ramping step interval\n"
+      "Set a fixed step interval (in seconds)\n"
+      "Use dynamic step interval based on BTS channel load (this is the default)\n")
+{
+	struct gsm_bts *bts = vty->index;
+	bool dynamic = (strcmp(argv[0], "dynamic") == 0);
+	int error;
+
+	if (dynamic) {
+		acc_ramp_set_step_interval_dynamic(&bts->acc_ramp);
+		return CMD_SUCCESS;
+	}
+
+	error = acc_ramp_set_step_interval(&bts->acc_ramp, atoi(argv[0]));
+	if (error != 0) {
+		if (error == -ERANGE)
+			vty_out(vty, "Unable to set ACC ramp step interval: value out of range%s", VTY_NEWLINE);
+		else
+			vty_out(vty, "Unable to set ACC ramp step interval: unknown error%s", VTY_NEWLINE);
+		return CMD_WARNING;
+	}
 
 	return CMD_SUCCESS;
 }
@@ -4466,6 +4498,7 @@ int bsc_vty_init(struct gsm_network *network)
 	install_element(BTS_NODE, &cfg_bts_amr_hr_start_mode_cmd);
 	install_element(BTS_NODE, &cfg_bts_pcu_sock_cmd);
 	install_element(BTS_NODE, &cfg_bts_acc_ramping_cmd);
+	install_element(BTS_NODE, &cfg_bts_acc_ramping_step_interval_cmd);
 	/* See also handover commands added on bts level from handover_vty.c */
 
 	install_element(BTS_NODE, &cfg_trx_cmd);

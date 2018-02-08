@@ -161,12 +161,13 @@ void acc_ramp_init(struct acc_ramp *acc_ramp, struct gsm_bts *bts)
 		allow_all_allowed_accs(acc_ramp);
 }
 
-int acc_ramp_set_step_size(struct acc_ramp *acc_ramp, enum acc_ramp_step_size step_size)
+int acc_ramp_set_step_size(struct acc_ramp *acc_ramp, unsigned int step_size)
 {
 	if (step_size < ACC_RAMP_STEP_SIZE_MIN || step_size > ACC_RAMP_STEP_SIZE_MAX)
 		return -ERANGE;
 
 	acc_ramp->step_size = step_size;
+	LOGP(DRLL, LOGL_DEBUG, "(bts=%d) ACC RAMP: ramping step size set to %u\n", acc_ramp->bts->nr, step_size);
 	return 0;
 }
 
@@ -177,12 +178,16 @@ int acc_ramp_set_step_interval(struct acc_ramp *acc_ramp, unsigned int step_inte
 
 	acc_ramp->step_interval_sec = step_interval;
 	acc_ramp->step_interval_is_fixed = true;
+	LOGP(DRLL, LOGL_DEBUG, "(bts=%d) ACC RAMP: ramping step interval set to %u seconds\n",
+	     acc_ramp->bts->nr, step_interval);
 	return 0;
 }
 
 void acc_ramp_set_step_interval_dynamic(struct acc_ramp *acc_ramp)
 {
 	acc_ramp->step_interval_is_fixed = false;
+	LOGP(DRLL, LOGL_DEBUG, "(bts=%d) ACC RAMP: ramping step interval set to 'dynamic'\n",
+	     acc_ramp->bts->nr);
 }
 
 void acc_ramp_start(struct acc_ramp *acc_ramp)

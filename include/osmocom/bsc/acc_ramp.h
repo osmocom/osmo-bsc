@@ -31,16 +31,12 @@
  * a lot of MS would discover the new cell and try to connect to it all at once.
  */
 
-enum acc_ramp_step_size {
-	ACC_RAMP_STEP_SIZE_MIN = 1, /* allow at most 1 new ACC per ramp step */
-	ACC_RAMP_STEP_SIZE_DEFAULT = ACC_RAMP_STEP_SIZE_MIN,
-	ACC_RAMP_STEP_SIZE_MAX = 10, /* allow all ACC in one step (effectively disables ramping) */
-};
+#define ACC_RAMP_STEP_SIZE_MIN 1 /* allow at most 1 new ACC per ramp step */
+#define ACC_RAMP_STEP_SIZE_DEFAULT ACC_RAMP_STEP_SIZE_MIN
+#define ACC_RAMP_STEP_SIZE_MAX 10 /* allow all ACC in one step (effectively disables ramping) */
 
-enum acc_ramp_step_interval {
-	ACC_RAMP_STEP_INTERVAL_MIN = 30,	/* 30 seconds */
-	ACC_RAMP_STEP_INTERVAL_MAX = 600,	/* 10 minutes */
-};
+#define ACC_RAMP_STEP_INTERVAL_MIN 30	/* 30 seconds */
+#define ACC_RAMP_STEP_INTERVAL_MAX 600	/* 10 minutes */
 
 struct acc_ramp {
 	struct gsm_bts *bts; /* backpointer to BTS using this ACC ramp */
@@ -63,7 +59,7 @@ struct acc_ramp {
 	 * This value can be changed by VTY configuration.
 	 * A value of ACC_RAMP_STEP_SIZE_MAX effectively disables ramping.
 	 */
-	enum acc_ramp_step_size step_size;
+	unsigned int step_size;
 
 	/*
 	 * Ramping step interval in seconds.
@@ -90,7 +86,7 @@ struct acc_ramp {
 void acc_ramp_init(struct acc_ramp *acc_ramp, struct gsm_bts *bts);
 
 /* Change the ramping step size. Returns negative on error (step_size out of range), else zero. */
-int acc_ramp_set_step_size(struct acc_ramp *acc_ramp, enum acc_ramp_step_size step_size);
+int acc_ramp_set_step_size(struct acc_ramp *acc_ramp, unsigned int step_size);
 
 /*
  * Change the ramping step interval to a fixed value. Unless this function is called,
