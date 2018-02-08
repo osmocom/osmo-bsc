@@ -34,7 +34,7 @@
 enum acc_ramp_step_size {
 	ACC_RAMP_STEP_SIZE_MIN = 1, /* allow at most 1 new ACC per ramp step */
 	ACC_RAMP_STEP_SIZE_DEFAULT = ACC_RAMP_STEP_SIZE_MIN,
-	ACC_RAMP_STEP_SIZE_MAX = 10, /* allow all ACC in one step (disables ramping) */
+	ACC_RAMP_STEP_SIZE_MAX = 10, /* allow all ACC in one step (effectively disables ramping) */
 };
 
 enum acc_ramp_step_interval {
@@ -77,10 +77,10 @@ struct acc_ramp {
 };
 
 /*
- * Initialize the acc_ramp data structure.
+ * Initialize an acc_ramp data structure.
  * Storage for this structure must be provided by the caller.
  *
- * The BTS which uses this ACC ramp must be provided as well.
+ * The BTS which uses this ACC ramp data structure must be provided as well.
  *
  * If 'bts->acc_ramping_enabled' is true, all ACCs are denied by default.
  * A subsequent call to acc_ramp_start() will begin the ramping process.
@@ -106,10 +106,8 @@ int acc_ramp_set_step_interval(struct acc_ramp *acc_ramp, unsigned int step_inte
 void acc_ramp_set_step_interval_dynamic(struct acc_ramp *acc_ramp);
 
 /*
- * Begin the ramping process. This initially sets all ACCs to denied, and then
- * performs at least one ramping step to allow 'step_size' ACCs.
- * If 'step_size' is ACC_RAMP_STEP_SIZE_MAX, all ACCs will be allowed immediately,
- * i.e. ACC ramping becomes a no-op.
+ * Begin the ramping process. Perform at least one ramping step to allow 'step_size' ACCs.
+ * If 'step_size' is ACC_RAMP_STEP_SIZE_MAX, all ACCs will be allowed immediately.
  */
 void acc_ramp_start(struct acc_ramp *acc_ramp);
 
@@ -117,7 +115,7 @@ void acc_ramp_start(struct acc_ramp *acc_ramp);
 void acc_ramp_abort(struct acc_ramp *acc_ramp);
 
 /*
- * Return bitmasks which correspond to access control classes which are currently
+ * Return bitmasks which correspond to access control classes that are currently
  * denied access. Ramping is only concerned with those bits which control access
  * for ACCs 0-9, and any of the other bits will always be set to zero in these masks, i.e.
  * it is safe to OR these bitmasks with the corresponding fields in struct gsm48_rach_control.
