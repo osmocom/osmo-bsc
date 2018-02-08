@@ -94,7 +94,7 @@ static unsigned int get_next_step_interval(struct acc_ramp *acc_ramp)
 			acc_ramp->step_interval_sec = ACC_RAMP_STEP_INTERVAL_MAX;
 	}
 
-	LOGP(DRLL, LOGL_DEBUG, "(bts=%d) ACC RAMP: step interval set to %u sec based on %u%% load average\n",
+	LOGP(DRLL, LOGL_DEBUG, "(bts=%d) ACC RAMP: step interval set to %u seconds based on %u%% channel load average\n",
 	     bts->nr, acc_ramp->step_interval_sec, bts->chan_load_avg);
 	return acc_ramp->step_interval_sec;
 }
