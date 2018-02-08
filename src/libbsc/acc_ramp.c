@@ -116,6 +116,7 @@ static void do_ramping_step(void *data)
 	/* Shortcut in case we only do one ramping step. */
 	if (acc_ramp->step_size == ACC_RAMP_STEP_SIZE_MAX) {
 		allow_all_allowed_accs(acc_ramp);
+		send_bts_system_info(acc_ramp->bts);
 		return;
 	}
 
