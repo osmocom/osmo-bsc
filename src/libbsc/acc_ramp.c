@@ -78,21 +78,18 @@ static void allow_all_allowed_accs(struct acc_ramp *acc_ramp)
 static unsigned int get_next_step_interval(struct acc_ramp *acc_ramp)
 {
 	struct gsm_bts *bts = acc_ramp->bts;
+	uint64_t load;
 
 	if (acc_ramp->step_interval_is_fixed)
 		return acc_ramp->step_interval_sec;
 
-	if (bts->chan_load_avg == 0) {
-		acc_ramp->step_interval_sec = ACC_RAMP_STEP_INTERVAL_DEFAULT;
-	} else {
-		/* Scale the step interval to current channel load average. */
-		uint64_t load = (bts->chan_load_avg << 8); /* convert to fixed-point */
-		acc_ramp->step_interval_sec = ((load * ACC_RAMP_STEP_INTERVAL_MAX) / 100) >> 8;
-		if (acc_ramp->step_interval_sec < ACC_RAMP_STEP_SIZE_MIN)
-			acc_ramp->step_interval_sec = ACC_RAMP_STEP_INTERVAL_MIN;
-		else if (acc_ramp->step_interval_sec > ACC_RAMP_STEP_INTERVAL_MAX)
-			acc_ramp->step_interval_sec = ACC_RAMP_STEP_INTERVAL_MAX;
-	}
+	/* Scale the step interval to current channel load average. */
+	load = (bts->chan_load_avg << 8); /* convert to fixed-point */
+	acc_ramp->step_interval_sec = ((load * ACC_RAMP_STEP_INTERVAL_MAX) / 100) >> 8;
+	if (acc_ramp->step_interval_sec < ACC_RAMP_STEP_SIZE_MIN)
+		acc_ramp->step_interval_sec = ACC_RAMP_STEP_INTERVAL_MIN;
+	else if (acc_ramp->step_interval_sec > ACC_RAMP_STEP_INTERVAL_MAX)
+		acc_ramp->step_interval_sec = ACC_RAMP_STEP_INTERVAL_MAX;
 
 	LOGP(DRLL, LOGL_DEBUG, "(bts=%d) ACC RAMP: step interval set to %u seconds based on %u%% channel load average\n",
 	     bts->nr, acc_ramp->step_interval_sec, bts->chan_load_avg);
@@ -154,7 +151,7 @@ void acc_ramp_init(struct acc_ramp *acc_ramp, struct gsm_bts *bts)
 {
 	acc_ramp->bts = bts;
 	acc_ramp->step_size = ACC_RAMP_STEP_SIZE_DEFAULT;
-	acc_ramp->step_interval_sec = ACC_RAMP_STEP_INTERVAL_DEFAULT;
+	acc_ramp->step_interval_sec = ACC_RAMP_STEP_INTERVAL_MIN;
 	acc_ramp->step_interval_is_fixed = false;
 	osmo_timer_setup(&acc_ramp->step_timer, do_ramping_step, acc_ramp);
 
