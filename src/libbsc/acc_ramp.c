@@ -33,7 +33,7 @@ static bool bts_allows_acc(struct gsm_bts *bts, unsigned int acc)
 	return (bts->si_common.rach_control.t3 & (1 << (acc))) == 0;
 }
 
-static void allow_acc(struct acc_ramp *acc_ramp, unsigned int acc)
+static void allow_one_acc(struct acc_ramp *acc_ramp, unsigned int acc)
 {
 	assert(acc >= 0 && acc <= 9);
 	LOGP(DRLL, LOGL_DEBUG, "(bts=%d) ACC RAMP: allowing Access Control Class %u\n", acc_ramp->bts->nr, acc);
@@ -67,7 +67,7 @@ static void allow_all_allowed_accs(struct acc_ramp *acc_ramp)
 	unsigned int acc;
 	for (acc = 0; acc < 10; acc++) {
 		if (bts_allows_acc(acc_ramp->bts, acc))
-			allow_acc(acc_ramp, acc);
+			allow_one_acc(acc_ramp, acc);
 	}
 }
 
@@ -122,14 +122,14 @@ static void do_ramping_step(void *data)
 			unsigned int acc = idx - 1;
 			/* one of ACC0-ACC7 is still bared */
 			if (bts_allows_acc(acc_ramp->bts, acc))
-				allow_acc(acc_ramp, acc);
+				allow_one_acc(acc_ramp, acc);
 		} else {
 			idx = ffs(acc_ramp->barred_t2);
 			if (idx == 1 || idx == 2) {
 				unsigned int acc = idx - 1 + 8;
 				/* ACC8 or ACC9 is still barred */
 				if (bts_allows_acc(acc_ramp->bts, acc))
-					allow_acc(acc_ramp, acc);
+					allow_one_acc(acc_ramp, acc);
 			} else {
 				/* all ACCs are now allowed */
 				break;
