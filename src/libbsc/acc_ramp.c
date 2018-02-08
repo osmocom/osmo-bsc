@@ -43,7 +43,7 @@ static void allow_acc(struct acc_ramp *acc_ramp, unsigned int acc)
 		acc_ramp->barred_t3 &= ~(1 << acc);
 }
 
-static void barr_acc(struct acc_ramp *acc_ramp, unsigned int acc)
+static void barr_one_acc(struct acc_ramp *acc_ramp, unsigned int acc)
 {
 	assert(acc >= 0 && acc <= 9);
 	LOGP(DRLL, LOGL_DEBUG, "(bts=%d) ACC RAMP: barring Access Control Class %u\n", acc_ramp->bts->nr, acc);
@@ -58,7 +58,7 @@ static void barr_all_allowed_accs(struct acc_ramp *acc_ramp)
 	unsigned int acc;
 	for (acc = 0; acc < 10; acc++) {
 		if (bts_allows_acc(acc_ramp->bts, acc))
-			barr_acc(acc_ramp, acc);
+			barr_one_acc(acc_ramp, acc);
 	}
 }
 
