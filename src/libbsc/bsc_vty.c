@@ -271,10 +271,10 @@ static void bts_dump_vty(struct vty *vty, struct gsm_bts *bts)
 		bts->acc_ramping_enabled ? "" : "not ", VTY_NEWLINE);
 	if (bts->acc_ramping_enabled) {
 		if (bts->acc_ramp.step_interval_is_fixed)
-			vty_out(vty, "  Access Control class ramping step interval: %u seconds%s",
+			vty_out(vty, "  Access Control Class ramping step interval: %u seconds%s",
 				bts->acc_ramp.step_interval_sec, VTY_NEWLINE);
 		else
-			vty_out(vty, "  Access Control class ramping step interval: dynamic%s", VTY_NEWLINE);
+			vty_out(vty, "  Access Control Class ramping step interval: dynamic%s", VTY_NEWLINE);
 	        vty_out(vty, "  enabling %u Access Control Class%s per ramping step%s",
 			bts->acc_ramp.step_size, bts->acc_ramp.step_size > 1 ? "es" : "", VTY_NEWLINE);
 	}
@@ -3175,6 +3175,29 @@ DEFUN(cfg_bts_acc_ramping_step_interval,
 	return CMD_SUCCESS;
 }
 
+DEFUN(cfg_bts_acc_ramping_step_size,
+      cfg_bts_acc_ramping_step_size_cmd,
+      "access-control-class-ramping step-size (<"
+      OSMO_STRINGIFY_VAL(ACC_RAMP_STEP_SIZE_MIN) "-"
+      OSMO_STRINGIFY_VAL(ACC_RAMP_STEP_SIZE_MAX) ">)",
+      "Conigure Access Control Class ramping\n"
+      "Configure Access Control Class ramping step size\n"
+      "Set the number of Access Control Classes to enable per ramping step\n")
+{
+	struct gsm_bts *bts = vty->index;
+	int error;
+
+	error = acc_ramp_set_step_size(&bts->acc_ramp, atoi(argv[0]));
+	if (error != 0) {
+		if (error == -ERANGE)
+			vty_out(vty, "Unable to set ACC ramp step size: value out of range%s", VTY_NEWLINE);
+		else
+			vty_out(vty, "Unable to set ACC ramp step size: unknown error%s", VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	return CMD_SUCCESS;
+}
 
 #define EXCL_RFLOCK_STR "Exclude this BTS from the global RF Lock\n"
 
@@ -4509,6 +4532,7 @@ int bsc_vty_init(struct gsm_network *network)
 	install_element(BTS_NODE, &cfg_bts_pcu_sock_cmd);
 	install_element(BTS_NODE, &cfg_bts_acc_ramping_cmd);
 	install_element(BTS_NODE, &cfg_bts_acc_ramping_step_interval_cmd);
+	install_element(BTS_NODE, &cfg_bts_acc_ramping_step_size_cmd);
 	/* See also handover commands added on bts level from handover_vty.c */
 
 	install_element(BTS_NODE, &cfg_trx_cmd);
