@@ -106,7 +106,10 @@ void acc_ramp_set_step_interval_dynamic(struct acc_ramp *acc_ramp);
  */
 void acc_ramp_start(struct acc_ramp *acc_ramp);
 
-/* Abort the ramping process. If the process has already finished, this function has no effect. */
+/*
+ * Abort the ramping process. If ramping is disabled or has already finished,
+ * then this function has no effect.
+ */
 void acc_ramp_abort(struct acc_ramp *acc_ramp);
 
 /*

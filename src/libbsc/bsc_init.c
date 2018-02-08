@@ -331,6 +331,9 @@ static void bootstrap_rsl(struct gsm_bts_trx *trx)
 		bsc_gsmnet->network_code, trx->bts->location_area_code,
 		trx->bts->cell_identity, trx->bts->bsic);
 
+	if (trx->bts->acc_ramping_enabled)
+		acc_ramp_start(&trx->bts->acc_ramp);
+
 	if (trx->bts->type == GSM_BTS_TYPE_NOKIA_SITE) {
 		rsl_nokia_si_begin(trx);
 	}
@@ -400,8 +403,10 @@ static int inp_sig_cb(unsigned int subsys, unsigned int signal,
 
 		if (isd->link_type == E1INP_SIGN_OML)
 			rate_ctr_inc(&trx->bts->bts_ctrs->ctr[BTS_CTR_BTS_OML_FAIL]);
-		else if (isd->link_type == E1INP_SIGN_RSL)
+		else if (isd->link_type == E1INP_SIGN_RSL) {
 			rate_ctr_inc(&trx->bts->bts_ctrs->ctr[BTS_CTR_BTS_RSL_FAIL]);
+			acc_ramp_abort(&trx->bts->acc_ramp);
+		}
 
 		/*
 		 * free all allocated channels. change the nm_state so the
