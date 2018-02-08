@@ -25,6 +25,10 @@
 #include <osmocom/bsc/acc_ramp.h>
 #include <osmocom/bsc/gsm_data.h>
 
+/*
+ * Check if an ACC has been permanently barred for a BTS,
+ * e.g. with the 'rach access-control-class' VTY command.
+ */
 static bool bts_allows_acc(struct gsm_bts *bts, unsigned int acc)
 {
 	assert(acc >= 0 && acc <= 9);
