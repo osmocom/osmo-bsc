@@ -525,6 +525,8 @@ static int bootstrap_bts(struct gsm_bts *bts)
 
 	bts->chan_load_samples_idx = 0;
 
+	acc_ramp_init(&bts->acc_ramp, bts);
+
 	/* Initialize the BTS state */
 	gsm_bts_mo_reset(bts);
 
