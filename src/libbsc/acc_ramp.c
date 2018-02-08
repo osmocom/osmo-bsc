@@ -124,15 +124,15 @@ static void do_ramping_step(void *data)
 	for (i = 0; i < acc_ramp->step_size; i++) {
 		int idx = ffs(acc_ramp->barred_t3);
 		if (idx > 0) {
+			/* One of ACC0-ACC7 is still bared. */
 			unsigned int acc = idx - 1;
-			/* one of ACC0-ACC7 is still bared */
 			if (bts_allows_acc(acc_ramp->bts, acc))
 				allow_one_acc(acc_ramp, acc);
 		} else {
 			idx = ffs(acc_ramp->barred_t2);
 			if (idx == 1 || idx == 2) {
+				/* ACC8 or ACC9 is still barred. */
 				unsigned int acc = idx - 1 + 8;
-				/* ACC8 or ACC9 is still barred */
 				if (bts_allows_acc(acc_ramp->bts, acc))
 					allow_one_acc(acc_ramp, acc);
 			} else {
