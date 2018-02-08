@@ -267,6 +267,17 @@ static void bts_dump_vty(struct vty *vty, struct gsm_bts *bts)
 		VTY_NEWLINE);
 	vty_out(vty, "Cell Reselection Hysteresis: %u dBm%s",
 		bts->si_common.cell_sel_par.cell_resel_hyst*2, VTY_NEWLINE);
+	vty_out(vty, "Access Control Class ramping: %senabled%s",
+		bts->acc_ramping_enabled ? "" : "not ", VTY_NEWLINE);
+	if (bts->acc_ramping_enabled) {
+		if (bts->acc_ramp.step_interval_is_fixed)
+			vty_out(vty, "  Access Control class ramping step interval: %u seconds%s",
+				bts->acc_ramp.step_interval_sec, VTY_NEWLINE);
+		else
+			vty_out(vty, "  Access Control class ramping step interval: dynamic%s", VTY_NEWLINE);
+	        vty_out(vty, "  enabling %u Access Control Class%s per ramping step%s",
+			bts->acc_ramp.step_size, bts->acc_ramp.step_size > 1 ? "es" : "", VTY_NEWLINE);
+	}
 	vty_out(vty, "RACH TX-Integer: %u%s", bts->si_common.rach_control.tx_integer,
 		VTY_NEWLINE);
 	vty_out(vty, "RACH Max transmissions: %u%s",
@@ -298,7 +309,6 @@ static void bts_dump_vty(struct vty *vty, struct gsm_bts *bts)
 		VTY_NEWLINE);
 	if (bts->pcu_sock_path)
 		vty_out(vty, "PCU Socket Path: %s%s", bts->pcu_sock_path, VTY_NEWLINE);
-	vty_out(vty, "Access Control Class ramping: %senabled%s", bts->acc_ramping_enabled ? "" : "not ",  VTY_NEWLINE);
 	if (is_ipaccess_bts(bts))
 		vty_out(vty, "  Unit ID: %u/%u/0, OML Stream ID 0x%02x%s",
 			bts->ip_access.site_id, bts->ip_access.bts_id,
