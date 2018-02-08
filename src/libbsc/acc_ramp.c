@@ -136,7 +136,7 @@ static void do_ramping_step(void *data)
 				if (bts_allows_acc(acc_ramp->bts, acc))
 					allow_one_acc(acc_ramp, acc);
 			} else {
-				/* all ACCs are now allowed */
+				/* All ACCs are now allowed. */
 				break;
 			}
 		}
