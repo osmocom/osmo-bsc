@@ -83,7 +83,7 @@ static unsigned int get_next_step_interval(struct acc_ramp *acc_ramp)
 		return acc_ramp->step_interval_sec;
 
 	if (bts->chan_load_avg == 0) {
-		acc_ramp->step_interval_sec = ACC_RAMP_STEP_INTERVAL_MIN;
+		acc_ramp->step_interval_sec = ACC_RAMP_STEP_INTERVAL_DEFAULT;
 	} else {
 		/* Scale the step interval to current channel load average. */
 		uint64_t load = (bts->chan_load_avg << 8); /* convert to fixed-point */
