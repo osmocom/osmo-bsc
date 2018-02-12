@@ -70,7 +70,7 @@ HO_CFG_ALL_MEMBERS
 #undef HO_CFG_ONE_MEMBER
 
 
-void ho_vty_write(struct vty *vty, const char *indent, struct handover_cfg *ho)
+static void ho_vty_write(struct vty *vty, const char *indent, struct handover_cfg *ho)
 {
 #define HO_CFG_ONE_MEMBER(TYPE, NAME, DEFAULT_VAL, \
 			  VTY_CMD, VTY_CMD_ARG, VTY_ARG_EVAL, \
@@ -82,6 +82,18 @@ void ho_vty_write(struct vty *vty, const char *indent, struct handover_cfg *ho)
 
 	HO_CFG_ALL_MEMBERS
 #undef HO_CFG_ONE_MEMBER
+}
+
+void ho_vty_write_bts(struct vty *vty, struct gsm_bts *bts)
+{
+	ho_vty_write(vty, "  ", bts->ho);
+}
+
+void ho_vty_write_net(struct vty *vty, struct gsm_network *net)
+{
+	ho_vty_write(vty, " ", net->ho);
+
+	/* future: net specific vty commands */
 }
 
 static void ho_vty_init_cmds(int parent_node)

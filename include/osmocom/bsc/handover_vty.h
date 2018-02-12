@@ -4,4 +4,5 @@
 #include <osmocom/bsc/handover_cfg.h>
 
 void ho_vty_init();
-void ho_vty_write(struct vty *vty, const char *indent, struct handover_cfg *ho);
+void ho_vty_write_net(struct vty *vty, struct gsm_network *net);
+void ho_vty_write_bts(struct vty *vty, struct gsm_bts *bts);

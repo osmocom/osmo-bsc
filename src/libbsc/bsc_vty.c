@@ -822,7 +822,7 @@ static void config_write_bts_single(struct vty *vty, struct gsm_bts *bts)
 	if (bts->pcu_sock_path)
 		vty_out(vty, "  pcu-socket %s%s", bts->pcu_sock_path, VTY_NEWLINE);
 
-	ho_vty_write(vty, "  ", bts->ho);
+	ho_vty_write_bts(vty, bts);
 
 	config_write_bts_model(vty, bts);
 }
@@ -854,7 +854,7 @@ static int config_write_net(struct vty *vty)
 	vty_out(vty, " neci %u%s", gsmnet->neci, VTY_NEWLINE);
 	vty_out(vty, " paging any use tch %d%s", gsmnet->pag_any_tch, VTY_NEWLINE);
 
-	ho_vty_write(vty, " ", gsmnet->ho);
+	ho_vty_write_net(vty, gsmnet);
 
 	VTY_OUT_TIMER(3101);
 	VTY_OUT_TIMER(3103);
