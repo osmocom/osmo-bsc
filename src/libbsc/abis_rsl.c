@@ -1523,8 +1523,9 @@ static int rsl_rx_meas_res(struct msgb *msg)
 	}
 
 	mr->lchan->meas_rep_count++;
-	LOGP(DRSL, LOGL_DEBUG, "%s: meas_rep_cnt++=%d\n",
-	     gsm_lchan_name(mr->lchan), mr->lchan->meas_rep_count);
+	mr->lchan->meas_rep_last_seen_nr = mr->nr;
+	LOGP(DRSL, LOGL_DEBUG, "%s: meas_rep_count++=%d meas_rep_last_seen_nr=%u\n",
+	     gsm_lchan_name(mr->lchan), mr->lchan->meas_rep_count, mr->lchan->meas_rep_last_seen_nr);
 
 	print_meas_rep(msg->lchan, mr);
 

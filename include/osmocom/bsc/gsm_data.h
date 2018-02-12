@@ -422,6 +422,7 @@ struct gsm_lchan {
 	struct gsm_meas_rep meas_rep[MAX_MEAS_REP];
 	int meas_rep_idx;
 	int meas_rep_count;
+	uint8_t meas_rep_last_seen_nr;
 
 	/* GSM Random Access data */
 	struct gsm48_req_ref *rqd_ref;

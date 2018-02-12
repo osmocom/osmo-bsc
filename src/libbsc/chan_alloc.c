@@ -414,6 +414,7 @@ struct gsm_lchan *lchan_alloc(struct gsm_bts *bts, enum gsm_chan_t type,
 		/* reset measurement report counter and index */
 	        lchan->meas_rep_count = 0;
 	        lchan->meas_rep_idx = 0;
+	        lchan->meas_rep_last_seen_nr = 255;
 
 		/* clear sapis */
 		memset(lchan->sapis, 0, ARRAY_SIZE(lchan->sapis));
