@@ -675,8 +675,8 @@ static void handle_rr_ho_fail(struct msgb *msg)
 	struct lchan_signal_data sig;
 	struct gsm48_hdr *gh = msgb_l3(msg);
 
-	DEBUGP(DRR, "HANDOVER FAILED cause = %s\n",
-		rr_cause_name(gh->data[0]));
+	DEBUGP(DRR, "HANDOVER FAILED cause = %s\n", rr_cause_name(gh->data[0]));
+	DEBUGP(DHO, "HANDOVER FAILED cause = %s\n", rr_cause_name(gh->data[0]));
 
 	sig.lchan = msg->lchan;
 	sig.mr = NULL;

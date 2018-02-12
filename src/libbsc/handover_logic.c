@@ -40,6 +40,26 @@
 #include <osmocom/bsc/gsm_04_08_utils.h>
 #include <osmocom/bsc/handover.h>
 
+#define LOGPHOLCHANTOLCHAN(lchan, new_lchan, level, fmt, args...) \
+	LOGP(DHODEC, level, "(BTS %u trx %u arfcn %u ts %u lchan %u %s)->(BTS %u trx %u arfcn %u ts %u lchan %u %s) (subscr %s) " fmt, \
+	     lchan->ts->trx->bts->nr, \
+	     lchan->ts->trx->nr, \
+	     lchan->ts->trx->arfcn, \
+	     lchan->ts->nr, \
+	     lchan->nr, \
+	     gsm_pchan_name(lchan->ts->pchan), \
+	     new_lchan->ts->trx->bts->nr, \
+	     new_lchan->ts->trx->nr, \
+	     new_lchan->ts->trx->arfcn, \
+	     new_lchan->ts->nr, \
+	     new_lchan->nr, \
+	     gsm_pchan_name(new_lchan->ts->pchan), \
+	     bsc_subscr_name(lchan->conn->bsub), \
+	     ## args)
+
+#define LOGPHO(struct_bsc_handover, level, fmt, args ...) \
+	LOGPHOLCHANTOLCHAN(struct_bsc_handover->old_lchan, struct_bsc_handover->new_lchan, level, fmt, ## args)
+
 struct bsc_handover {
 	struct llist_head list;
 
@@ -105,10 +125,6 @@ int bsc_handover_start(struct gsm_lchan *old_lchan, struct gsm_bts *new_bts,
 	if (bsc_ho_by_old_lchan(old_lchan))
 		return -EBUSY;
 
-	DEBUGP(DHO, "Beginning with handover operation"
-	       "(old_lchan on BTS %u, new BTS %u) ...\n",
-		old_lchan->ts->trx->bts->nr, new_bts->nr);
-	/* No new BTS? Then it shall be assignment within the same BTS. */
 	if (!new_bts)
 		new_bts = old_lchan->ts->trx->bts;
 	do_assignment = (new_bts == old_lchan->ts->trx->bts);
@@ -121,6 +137,15 @@ int bsc_handover_start(struct gsm_lchan *old_lchan, struct gsm_bts *new_bts,
 		LOGP(DHO, LOGL_ERROR, "Old lchan lacks connection data.\n");
 		return -ENOSPC;
 	}
+
+	DEBUGP(DHO, "(BTS %u trx %u ts %u lchan %u %s)->(BTS %u lchan %s) Beginning with handover operation...\n",
+	       old_lchan->ts->trx->bts->nr,
+	       old_lchan->ts->trx->nr,
+	       old_lchan->ts->nr,
+	       old_lchan->nr,
+	       gsm_pchan_name(old_lchan->ts->pchan),
+	       new_bts->nr,
+	       gsm_lchant_name(new_lchan_type));
 
 	new_lchan = lchan_alloc(new_bts, new_lchan_type, 0);
 	if (!new_lchan) {
@@ -140,6 +165,8 @@ int bsc_handover_start(struct gsm_lchan *old_lchan, struct gsm_bts *new_bts,
 	ho->ho_ref = ho_ref++;
 	ho->inter_cell = !do_assignment;
 	ho->async = true;
+
+	LOGPHO(ho, LOGL_INFO, "Triggering %s\n", do_assignment? "Assignment" : "Handover");
 
 	/* copy some parameters from old lchan */
 	memcpy(&new_lchan->encr, &old_lchan->encr, sizeof(new_lchan->encr));
@@ -165,7 +192,8 @@ int bsc_handover_start(struct gsm_lchan *old_lchan, struct gsm_bts *new_bts,
 				     ho->async ? RSL_ACT_INTER_ASYNC : RSL_ACT_INTER_SYNC,
 				     ho->ho_ref);
 	if (rc < 0) {
-		LOGP(DHO, LOGL_ERROR, "could not activate channel\n");
+		LOGPHO(ho, LOGL_INFO, "%s Failure: activate lchan rc = %d\n",
+		       do_assignment? "Assignment" : "Handover", rc);
 		new_lchan->conn->ho_lchan = NULL;
 		new_lchan->conn = NULL;
 		talloc_free(ho);
@@ -231,7 +259,7 @@ static int ho_chan_activ_ack(struct gsm_lchan *new_lchan)
 	if (!ho)
 		return -ENODEV;
 
-	DEBUGP(DHO, "handover activate ack, send HO Command\n");
+	LOGPHO(ho, LOGL_INFO, "Channel Activate Ack, send %s COMMAND\n", ho->inter_cell? "HANDOVER" : "ASSIGNMENT");
 
 	/* we can now send the 04.08 HANDOVER COMMAND to the MS
 	 * using the old lchan */
@@ -283,10 +311,8 @@ static int ho_gsm48_ho_compl(struct gsm_lchan *new_lchan)
 	}
 
 	net = new_lchan->ts->trx->bts->network;
-	LOGP(DHO, LOGL_INFO, "Subscriber %s HO from BTS %u->%u on ARFCN "
-	     "%u->%u\n", bsc_subscr_name(ho->old_lchan->conn->bsub),
-	     ho->old_lchan->ts->trx->bts->nr, new_lchan->ts->trx->bts->nr,
-	     ho->old_lchan->ts->trx->arfcn, new_lchan->ts->trx->arfcn);
+
+	LOGPHO(ho, LOGL_INFO, "%s Complete\n", ho->inter_cell ? "Handover" : "Assignment");
 
 	rate_ctr_inc(&net->bsc_ctrs->ctr[BSC_CTR_HANDOVER_COMPLETED]);
 
@@ -294,10 +320,10 @@ static int ho_gsm48_ho_compl(struct gsm_lchan *new_lchan)
 
 	/* Replace the ho lchan with the primary one */
 	if (ho->old_lchan != new_lchan->conn->lchan)
-		LOGP(DHO, LOGL_ERROR, "Primary lchan changed during handover.\n");
+		LOGPHO(ho, LOGL_ERROR, "Primary lchan changed during handover.\n");
 
 	if (new_lchan != new_lchan->conn->ho_lchan)
-		LOGP(DHO, LOGL_ERROR, "Handover channel changed during this handover.\n");
+		LOGPHO(ho, LOGL_ERROR, "Handover channel changed during this handover.\n");
 
 	new_lchan->conn->ho_lchan = NULL;
 	new_lchan->conn->lchan = new_lchan;
@@ -348,7 +374,7 @@ static int ho_rsl_detect(struct gsm_lchan *new_lchan)
 		return -ENODEV;
 	}
 
-	LOGP(DHO, LOGL_DEBUG, "%s Handover RACH detected\n", gsm_lchan_name(new_lchan));
+	LOGPHO(ho, LOGL_DEBUG, "Handover RACH detected\n");
 
 	/* This is just for logging on the DHO category. The actual MGCP switchover happens in
 	 * osmo_bsc_mgcp.c by receiving the same S_LCHAN_HANDOVER_DETECT signal.
