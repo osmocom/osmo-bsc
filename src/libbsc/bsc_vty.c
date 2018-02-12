@@ -1567,9 +1567,10 @@ static int ho_or_as(struct vty *vty, const char *argv[], int argc)
 
 DEFUN(handover_subscr_conn,
       handover_subscr_conn_cmd,
-      "handover <0-255> <0-255> <0-7> <0-7> <0-255>",
+      "bts <0-255> trx <0-255> timeslot <0-7> sub-slot <0-7> handover <0-255>",
+      "BTS related commands\n" BTS_NR_STR "Transceiver\n" TRX_NR_STR
+      "TRX Timeslot\n" TS_NR_STR "Sub-Slot Number\n" LCHAN_NR_STR
       MANUAL_HANDOVER_STR
-      "Current " BTS_TRX_TS_LCHAN_STR
       "New " BTS_NR_STR)
 {
 	return ho_or_as(vty, argv, argc);
@@ -1577,9 +1578,10 @@ DEFUN(handover_subscr_conn,
 
 DEFUN(assignment_subscr_conn,
       assignment_subscr_conn_cmd,
-      "assignment <0-255> <0-255> <0-7> <0-7>",
-      MANUAL_ASSIGNMENT_STR
-      "Current " BTS_TRX_TS_LCHAN_STR)
+      "bts <0-255> trx <0-255> timeslot <0-7> sub-slot <0-7> assignment",
+      "BTS related commands\n" BTS_NR_STR "Transceiver\n" TRX_NR_STR
+      "TRX Timeslot\n" TS_NR_STR "Sub-Slot Number\n" LCHAN_NR_STR
+      MANUAL_ASSIGNMENT_STR)
 {
 	return ho_or_as(vty, argv, argc);
 }
@@ -4700,9 +4702,7 @@ int bsc_vty_init(struct gsm_network *network)
 	install_element_ve(&show_lchan_summary_cmd);
 
 	install_element_ve(&show_subscr_conn_cmd);
-	install_element_ve(&handover_subscr_conn_cmd);
 	install_element_ve(&handover_any_cmd);
-	install_element_ve(&assignment_subscr_conn_cmd);
 	install_element_ve(&assignment_any_cmd);
 
 	install_element_ve(&show_paging_cmd);
@@ -4867,6 +4867,8 @@ int bsc_vty_init(struct gsm_network *network)
 	install_element(ENABLE_NODE, &pdch_act_cmd);
 	install_element(ENABLE_NODE, &lchan_act_cmd);
 	install_element(ENABLE_NODE, &lchan_mdcx_cmd);
+	install_element(ENABLE_NODE, &handover_subscr_conn_cmd);
+	install_element(ENABLE_NODE, &assignment_subscr_conn_cmd);
 	install_element(ENABLE_NODE, &smscb_cmd_cmd);
 	install_element(ENABLE_NODE, &ctrl_trap_cmd);
 
