@@ -12,6 +12,7 @@
 #include <osmocom/core/select.h>
 #include <osmocom/core/stats.h>
 #include <osmocom/core/stat_item.h>
+#include <osmocom/gsm/protocol/gsm_08_08.h>
 
 #include <osmocom/crypt/auth.h>
 
@@ -111,6 +112,15 @@ struct gsm_subscriber_connection {
 	unsigned int ho_dtap_cache_len;
 
 	struct penalty_timers *ho_penalty_timers;
+
+	/* "Codec List (MSC Preferred)" as received by the BSSAP Assignment Request. 3GPP 48.008
+	 * 3.2.2.103 says:
+	 *         The "Codec List (MSC Preferred)" shall not include codecs
+	 *         that are not supported by the MS.
+	 * i.e. by heeding the "Codec list (MSC Preferred)", we inherently heed the MS bearer
+	 * capabilities, which the MSC is required to translate into the codec list. */
+	struct gsm0808_speech_codec_list codec_list;
+	bool codec_list_present;
 };
 
 
