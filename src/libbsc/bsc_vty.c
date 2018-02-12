@@ -69,10 +69,18 @@
 #define BTS_NR_STR "BTS Number\n"
 #define TRX_NR_STR "TRX Number\n"
 #define TS_NR_STR "Timeslot Number\n"
+#define SS_NR_STR "Sub-slot Number\n"
 #define LCHAN_NR_STR "Logical Channel Number\n"
 #define BTS_TRX_STR BTS_NR_STR TRX_NR_STR
 #define BTS_TRX_TS_STR BTS_TRX_STR TS_NR_STR
 #define BTS_TRX_TS_LCHAN_STR BTS_TRX_TS_STR LCHAN_NR_STR
+#define BTS_NR_TRX_TS_STR2 \
+	"BTS for manual command\n" BTS_NR_STR \
+	"TRX for manual command\n" TRX_NR_STR \
+	"Timeslot for manual command\n" TS_NR_STR
+#define BTS_NR_TRX_TS_SS_STR2 \
+	BTS_NR_TRX_TS_STR2 \
+	"Sub-slot for manual command\n" SS_NR_STR
 
 /* FIXME: this should go to some common file */
 static const struct value_string gprs_ns_timer_strs[] = {
@@ -1568,8 +1576,7 @@ static int ho_or_as(struct vty *vty, const char *argv[], int argc)
 DEFUN(handover_subscr_conn,
       handover_subscr_conn_cmd,
       "bts <0-255> trx <0-255> timeslot <0-7> sub-slot <0-7> handover <0-255>",
-      "BTS related commands\n" BTS_NR_STR "Transceiver\n" TRX_NR_STR
-      "TRX Timeslot\n" TS_NR_STR "Sub-Slot Number\n" LCHAN_NR_STR
+      BTS_NR_TRX_TS_SS_STR2
       MANUAL_HANDOVER_STR
       "New " BTS_NR_STR)
 {
@@ -1579,8 +1586,7 @@ DEFUN(handover_subscr_conn,
 DEFUN(assignment_subscr_conn,
       assignment_subscr_conn_cmd,
       "bts <0-255> trx <0-255> timeslot <0-7> sub-slot <0-7> assignment",
-      "BTS related commands\n" BTS_NR_STR "Transceiver\n" TRX_NR_STR
-      "TRX Timeslot\n" TS_NR_STR "Sub-Slot Number\n" LCHAN_NR_STR
+      BTS_NR_TRX_TS_SS_STR2
       MANUAL_ASSIGNMENT_STR)
 {
 	return ho_or_as(vty, argv, argc);
@@ -4289,8 +4295,8 @@ static struct gsm_bts_trx_ts *vty_get_ts(struct vty *vty, const char *bts_str, c
 
 DEFUN(pdch_act, pdch_act_cmd,
 	"bts <0-255> trx <0-255> timeslot <0-7> pdch (activate|deactivate)",
-	"BTS related commands\n" BTS_NR_STR "Transceiver\n" TRX_NR_STR
-	"TRX Timeslot\n" TS_NR_STR "Packet Data Channel\n"
+	BTS_NR_TRX_TS_STR2
+	"Packet Data Channel\n"
 	"Activate Dynamic PDCH/TCH (-> PDCH mode)\n"
 	"Deactivate Dynamic PDCH/TCH (-> TCH mode)\n")
 {
@@ -4375,8 +4381,7 @@ static int lchan_set_single_amr_mode(struct gsm_lchan *lchan, uint8_t amr_mode)
  * performance testing (FER/RBER/...) */
 DEFUN(lchan_act, lchan_act_cmd,
 	"bts <0-255> trx <0-255> timeslot <0-7> sub-slot <0-7> (activate|deactivate) (hr|fr|efr|amr) [<0-7>]",
-	"BTS related commands\n" BTS_NR_STR "Transceiver\n" TRX_NR_STR
-	"TRX Timeslot\n" TS_NR_STR "Sub-Slot Number\n" LCHAN_NR_STR
+	BTS_NR_TRX_TS_SS_STR2
 	"Manual Channel Activation (e.g. for BER test)\n"
 	"Manual Channel Deactivation (e.g. for BER test)\n"
 	"Half-Rate v1\n" "Full-Rate\n" "Enhanced Full Rate\n" "Adaptive Multi-Rate\n" "AMR Mode\n")
@@ -4443,8 +4448,7 @@ DEFUN(lchan_act, lchan_act_cmd,
 
 DEFUN(lchan_mdcx, lchan_mdcx_cmd,
 	"bts <0-255> trx <0-255> timeslot <0-7> sub-slot <0-7> mdcx A.B.C.D <0-65535>",
-	"BTS related commands\n" BTS_NR_STR "Transceiver\n" TRX_NR_STR
-	"TRX Timeslot\n" TS_NR_STR "Sub-Slot\n" LCHAN_NR_STR
+	BTS_NR_TRX_TS_SS_STR2
 	"Modify RTP Connection\n" "MGW IP Address\n" "MGW UDP Port\n")
 {
 	struct gsm_bts_trx_ts *ts;
