@@ -289,10 +289,7 @@ DEFUN(cfg_net_bsc_codec_list,
       "List of audio codecs, e.g. fr3 fr1 hr3\n")
 {
 	struct bsc_msc_data *data = bsc_msc_data(vty);
-	int saw_fr, saw_hr;
 	int i;
-
-	saw_fr = saw_hr = 0;
 
 	/* free the old list... if it exists */
 	if (data->audio_support) {
@@ -319,19 +316,10 @@ DEFUN(cfg_net_bsc_codec_list,
 				struct gsm_audio_support);
 		data->audio_support[i]->ver = atoi(argv[i] + 2);
 
-		if (strncmp("hr", argv[i], 2) == 0) {
+		if (strncmp("hr", argv[i], 2) == 0)
 			data->audio_support[i]->hr = 1;
-			saw_hr = 1;
-		} else if (strncmp("fr", argv[i], 2) == 0) {
+		else if (strncmp("fr", argv[i], 2) == 0)
 			data->audio_support[i]->hr = 0;
-			saw_fr = 1;
-		}
-
-		if (saw_hr && saw_fr) {
-			vty_out(vty, "Can not have full-rate and half-rate codec.%s",
-					VTY_NEWLINE);
-			return CMD_ERR_INCOMPLETE;
-		}
 	}
 
 	return CMD_SUCCESS;
