@@ -2660,6 +2660,7 @@ static int abis_nm_rx_ipacc(struct msgb *msg)
 			DEBUGPC(DNM, "STREAM=0x%02x ",
 					*TLVP_VAL(&tp, NM_ATT_IPACC_STREAM_ID));
 		DEBUGPC(DNM, "\n");
+		osmo_timer_del(&sign_link->trx->rsl_connect_timeout);
 		break;
 	case NM_MT_IPACC_RSL_CONNECT_NACK:
 		LOGP(DNM, LOGL_ERROR, "RSL CONNECT NACK ");
@@ -2668,6 +2669,7 @@ static int abis_nm_rx_ipacc(struct msgb *msg)
 				abis_nm_nack_cause_name(*TLVP_VAL(&tp, NM_ATT_NACK_CAUSES)));
 		else
 			LOGPC(DNM, LOGL_ERROR, "\n");
+		osmo_timer_del(&sign_link->trx->rsl_connect_timeout);
 		break;
 	case NM_MT_IPACC_SET_NVATTR_ACK:
 		DEBUGPC(DNM, "SET NVATTR ACK\n");
@@ -2776,6 +2778,19 @@ int abis_nm_ipaccess_set_nvattr(struct gsm_bts_trx *trx, uint8_t *attr,
 				    attr_len);
 }
 
+static void rsl_connect_timeout(void *data)
+{
+	struct gsm_bts_trx *trx = data;
+	struct ipacc_ack_signal_data signal;
+
+	LOGP(DRSL, LOGL_NOTICE, "(bts=%d,trx=%d) RSL connection request timed out\n", trx->bts->nr, trx->nr);
+
+	/* Fake an RSL CONECT NACK message from the BTS. */
+	signal.trx = trx;
+	signal.msg_type = NM_MT_IPACC_RSL_CONNECT_NACK;
+	osmo_signal_dispatch(SS_NM, S_NM_IPACC_NACK, &signal);
+}
+
 int abis_nm_ipaccess_rsl_connect(struct gsm_bts_trx *trx,
 				 uint32_t ip, uint16_t port, uint8_t stream)
 {
@@ -2785,6 +2800,9 @@ int abis_nm_ipaccess_rsl_connect(struct gsm_bts_trx *trx,
 			    NM_ATT_IPACC_DST_IP, 0, 0, 0, 0 };
 
 	int attr_len = sizeof(attr);
+	int error;
+
+	osmo_timer_setup(&trx->rsl_connect_timeout, rsl_connect_timeout, trx);
 
 	ia.s_addr = htonl(ip);
 	attr[1] = stream;
@@ -2799,9 +2817,13 @@ int abis_nm_ipaccess_rsl_connect(struct gsm_bts_trx *trx,
 	DEBUGP(DNM, "ip.access RSL CONNECT IP=%s PORT=%u STREAM=0x%02x\n",
 		inet_ntoa(ia), port, stream);
 
-	return abis_nm_ipaccess_msg(trx->bts, NM_MT_IPACC_RSL_CONNECT,
-				    NM_OC_BASEB_TRANSC, trx->bts->bts_nr,
-				    trx->nr, 0xff, attr, attr_len);
+	error = abis_nm_ipaccess_msg(trx->bts, NM_MT_IPACC_RSL_CONNECT,
+				     NM_OC_BASEB_TRANSC, trx->bts->bts_nr,
+				     trx->nr, 0xff, attr, attr_len);
+	if (error == 0)
+		osmo_timer_schedule(&trx->rsl_connect_timeout, 60, 0);
+
+	return error;
 }
 
 /* restart / reboot an ip.access nanoBTS */

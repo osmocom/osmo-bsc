@@ -351,6 +351,9 @@ struct gsm_bts_trx {
 	uint8_t rsl_tei;
 	struct e1inp_sign_link *rsl_link;
 
+	/* Timeout for initiating the RSL connection. */
+	struct osmo_timer_list rsl_connect_timeout;
+
 	/* Some BTS (specifically Ericsson RBS) have a per-TRX OML Link */
 	struct e1inp_sign_link *oml_link;
 

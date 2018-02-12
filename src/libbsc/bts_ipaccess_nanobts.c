@@ -470,15 +470,19 @@ static void ipaccess_sign_link_down(struct e1inp_line *line)
 {
 	/* No matter what link went down, we close both signal links. */
 	struct e1inp_ts *ts = &line->ts[E1INP_SIGN_OML-1];
+	struct gsm_bts *bts = NULL;
 	struct e1inp_sign_link *link;
 
 	llist_for_each_entry(link, &ts->sign.sign_links, list) {
-		struct gsm_bts *bts = link->trx->bts;
-
-		ipaccess_drop_oml(bts);
-		/* Yes, we only use the first element of the list. */
-		break;
+		/* Get bts pointer from the first element of the list. */
+		if (bts == NULL)
+			bts = link->trx->bts;
+		/* Cancel RSL connection timeout in case are still waiting for an RSL connection. */
+		if (link->trx->mo.nm_state.administrative == NM_STATE_UNLOCKED)
+			osmo_timer_del(&link->trx->rsl_connect_timeout);
 	}
+	if (bts != NULL)
+		ipaccess_drop_oml(bts);
 }
 
 /* This function is called if we receive one OML/RSL message. */

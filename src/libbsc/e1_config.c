@@ -131,10 +131,17 @@ static int bts_isdn_sign_link(struct msgb *msg)
 		ret = bts->model->oml_rcvmsg(msg);
 		break;
 	case E1INP_SIGN_RSL:
+		if (link->trx->mo.nm_state.administrative == NM_STATE_LOCKED) {
+			LOGP(DLMI, LOGL_ERROR, "(bts=%d/trx=%d) discarding RSL message received "
+			     "in locked administrative state\n", link->trx->bts->nr, link->trx->nr);
+			msgb_free(msg);
+			break;
+		}
 		ret = abis_rsl_rcvmsg(msg);
 		break;
 	default:
 		LOGP(DLMI, LOGL_ERROR, "unknown link type %u\n", link->type);
+		msgb_free(msg);
 		break;
 	}
 	return ret;
