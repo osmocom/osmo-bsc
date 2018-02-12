@@ -1399,7 +1399,7 @@ static int trigger_ho_or_as(struct vty *vty, struct gsm_lchan *from_lchan, struc
 	} else
 		LOGP(DHO, LOGL_NOTICE, "%s (ARFCN %u) --> BTS %u Manually triggering Handover from VTY\n",
 		     gsm_lchan_name(from_lchan), from_lchan->ts->trx->arfcn, to_bts->nr);
-	rc = bsc_handover_start(from_lchan, to_bts);
+	rc = bsc_handover_start(from_lchan, to_bts, from_lchan->type);
 	if (rc) {
 		vty_out(vty, "bsc_handover_start() returned %d=%s%s", rc,
 			strerror(-rc), VTY_NEWLINE);

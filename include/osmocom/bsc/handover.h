@@ -4,7 +4,8 @@ struct gsm_lchan;
 struct gsm_bts;
 struct gsm_subscriber_connection;
 
-int bsc_handover_start(struct gsm_lchan *old_lchan, struct gsm_bts *bts);
+int bsc_handover_start(struct gsm_lchan *old_lchan, struct gsm_bts *new_bts,
+		       enum gsm_chan_t new_lchan_type);
 void bsc_clear_handover(struct gsm_subscriber_connection *conn, int free_lchan);
 struct gsm_lchan *bsc_handover_pending(struct gsm_lchan *new_lchan);
 

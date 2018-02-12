@@ -38,6 +38,7 @@
 #include <osmocom/core/talloc.h>
 #include <osmocom/bsc/bsc_subscriber.h>
 #include <osmocom/bsc/gsm_04_08_utils.h>
+#include <osmocom/bsc/handover.h>
 
 struct bsc_handover {
 	struct llist_head list;
@@ -86,10 +87,11 @@ static struct bsc_handover *bsc_ho_by_old_lchan(struct gsm_lchan *old_lchan)
 	return NULL;
 }
 
-/*! \brief Hand over the specified logical channel to the specified new BTS.
- * This is the main entry point for the actual handover algorithm, after the
- * decision whether to initiate HO to a specific BTS. */
-int bsc_handover_start(struct gsm_lchan *old_lchan, struct gsm_bts *bts)
+/*! Hand over the specified logical channel to the specified new BTS and possibly change the lchan type.
+ * This is the main entry point for the actual handover algorithm, after the decision whether to initiate
+ * HO to a specific BTS. To not change the lchan type, pass old_lchan->type. */
+int bsc_handover_start(struct gsm_lchan *old_lchan, struct gsm_bts *new_bts,
+		       enum gsm_chan_t new_lchan_type)
 {
 	struct gsm_lchan *new_lchan;
 	struct bsc_handover *ho;
@@ -103,19 +105,19 @@ int bsc_handover_start(struct gsm_lchan *old_lchan, struct gsm_bts *bts)
 
 	DEBUGP(DHO, "Beginning with handover operation"
 	       "(old_lchan on BTS %u, new BTS %u) ...\n",
-		old_lchan->ts->trx->bts->nr, bts->nr);
+		old_lchan->ts->trx->bts->nr, new_bts->nr);
 
-	rate_ctr_inc(&bts->network->bsc_ctrs->ctr[BSC_CTR_HANDOVER_ATTEMPTED]);
+	rate_ctr_inc(&new_bts->network->bsc_ctrs->ctr[BSC_CTR_HANDOVER_ATTEMPTED]);
 
 	if (!old_lchan->conn) {
 		LOGP(DHO, LOGL_ERROR, "Old lchan lacks connection data.\n");
 		return -ENOSPC;
 	}
 
-	new_lchan = lchan_alloc(bts, old_lchan->type, 0);
+	new_lchan = lchan_alloc(new_bts, new_lchan_type, 0);
 	if (!new_lchan) {
-		LOGP(DHO, LOGL_NOTICE, "No free channel\n");
-		rate_ctr_inc(&bts->network->bsc_ctrs->ctr[BSC_CTR_HANDOVER_NO_CHANNEL]);
+		LOGP(DHO, LOGL_NOTICE, "No free channel for %s\n", gsm_lchant_name(new_lchan_type));
+		rate_ctr_inc(&new_bts->network->bsc_ctrs->ctr[BSC_CTR_HANDOVER_NO_CHANNEL]);
 		return -ENOSPC;
 	}
 
@@ -128,7 +130,7 @@ int bsc_handover_start(struct gsm_lchan *old_lchan, struct gsm_bts *bts)
 	ho->old_lchan = old_lchan;
 	ho->new_lchan = new_lchan;
 	ho->ho_ref = ho_ref++;
-	if (old_lchan->ts->trx->bts != bts) {
+	if (old_lchan->ts->trx->bts != new_bts) {
 		ho->inter_cell = true;
 		ho->async = true;
 	}
