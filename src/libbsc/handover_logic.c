@@ -93,10 +93,12 @@ static struct bsc_handover *bsc_ho_by_old_lchan(struct gsm_lchan *old_lchan)
 int bsc_handover_start(struct gsm_lchan *old_lchan, struct gsm_bts *new_bts,
 		       enum gsm_chan_t new_lchan_type)
 {
+	struct gsm_network *network;
 	struct gsm_lchan *new_lchan;
 	struct bsc_handover *ho;
 	static uint8_t ho_ref = 0;
 	int rc;
+	bool do_assignment = false;
 
 	/* don't attempt multiple handovers for the same lchan at
 	 * the same time */
@@ -106,8 +108,14 @@ int bsc_handover_start(struct gsm_lchan *old_lchan, struct gsm_bts *new_bts,
 	DEBUGP(DHO, "Beginning with handover operation"
 	       "(old_lchan on BTS %u, new BTS %u) ...\n",
 		old_lchan->ts->trx->bts->nr, new_bts->nr);
+	/* No new BTS? Then it shall be assignment within the same BTS. */
+	if (!new_bts)
+		new_bts = old_lchan->ts->trx->bts;
+	do_assignment = (new_bts == old_lchan->ts->trx->bts);
 
-	rate_ctr_inc(&new_bts->network->bsc_ctrs->ctr[BSC_CTR_HANDOVER_ATTEMPTED]);
+	network = new_bts->network;
+
+	rate_ctr_inc(&network->bsc_ctrs->ctr[BSC_CTR_HANDOVER_ATTEMPTED]);
 
 	if (!old_lchan->conn) {
 		LOGP(DHO, LOGL_ERROR, "Old lchan lacks connection data.\n");
@@ -117,7 +125,7 @@ int bsc_handover_start(struct gsm_lchan *old_lchan, struct gsm_bts *new_bts,
 	new_lchan = lchan_alloc(new_bts, new_lchan_type, 0);
 	if (!new_lchan) {
 		LOGP(DHO, LOGL_NOTICE, "No free channel for %s\n", gsm_lchant_name(new_lchan_type));
-		rate_ctr_inc(&new_bts->network->bsc_ctrs->ctr[BSC_CTR_HANDOVER_NO_CHANNEL]);
+		rate_ctr_inc(&network->bsc_ctrs->ctr[BSC_CTR_HANDOVER_NO_CHANNEL]);
 		return -ENOSPC;
 	}
 
@@ -130,7 +138,7 @@ int bsc_handover_start(struct gsm_lchan *old_lchan, struct gsm_bts *new_bts,
 	ho->old_lchan = old_lchan;
 	ho->new_lchan = new_lchan;
 	ho->ho_ref = ho_ref++;
-	if (old_lchan->ts->trx->bts != new_bts) {
+	if (!do_assignment) {
 		ho->inter_cell = true;
 		ho->async = true;
 	}
