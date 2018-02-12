@@ -49,4 +49,5 @@ noinst_HEADERS = \
 	ussd.h \
 	vty.h \
 	bsc_api.h \
+	penalty_timers.h \
 	$(NULL)

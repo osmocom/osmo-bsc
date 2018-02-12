@@ -59,5 +59,6 @@ libbsc_a_SOURCES = \
 	bts_ipaccess_nanobts_omlattr.c \
 	handover_vty.c \
 	handover_cfg.c \
+	penalty_timers.c \
 	$(NULL)
 

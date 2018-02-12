@@ -31,6 +31,7 @@
 #include <osmocom/bsc/debug.h>
 #include <osmocom/bsc/gsm_04_08_utils.h>
 #include <osmocom/bsc/bsc_subscriber.h>
+#include <osmocom/bsc/penalty_timers.h>
 
 #include <osmocom/gsm/protocol/gsm_08_08.h>
 #include <osmocom/gsm/gsm48.h>
@@ -276,7 +277,7 @@ struct gsm_subscriber_connection *bsc_subscr_con_allocate(struct gsm_lchan *lcha
 	conn->lchan = lchan;
 	lchan->conn = conn;
 	INIT_LLIST_HEAD(&conn->ho_dtap_cache);
-	INIT_LLIST_HEAD(&conn->ho_penalty_timers);
+	conn->ho_penalty_timers = penalty_timers_init(conn);
 	llist_add_tail(&conn->entry, &net->subscr_conns);
 	return conn;
 }
@@ -326,8 +327,6 @@ static void ho_dtap_cache_flush(struct gsm_subscriber_connection *conn, int send
 
 void bsc_subscr_con_free(struct gsm_subscriber_connection *conn)
 {
-	struct ho_penalty_timer *penalty;
-
 	if (!conn)
 		return;
 
@@ -352,12 +351,7 @@ void bsc_subscr_con_free(struct gsm_subscriber_connection *conn)
 	/* drop pending messages */
 	ho_dtap_cache_flush(conn, 0);
 
-	/* flush handover penalty timers */
-	while ((penalty = llist_first_entry_or_null(&conn->ho_penalty_timers,
-						    struct ho_penalty_timer, entry))) {
-		llist_del(&penalty->entry);
-		talloc_free(penalty);
-	}
+	penalty_timers_free(&conn->ho_penalty_timers);
 
 	llist_del(&conn->entry);
 	talloc_free(conn);
