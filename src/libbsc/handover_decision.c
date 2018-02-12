@@ -321,6 +321,9 @@ static int process_meas_rep(struct gsm_meas_rep *mr)
 
 	/* Power Budget AKA Better Cell */
 	pwr_interval = ho_get_pwr_interval(bts->ho);
+	/* handover_cfg.h defines pwr_interval as [1..99], but since we're using it in a modulo below,
+	 * assert non-zero to clarify. */
+	OSMO_ASSERT(pwr_interval);
 	if ((mr->nr % pwr_interval) == pwr_interval - 1)
 		return attempt_handover(mr);
 
