@@ -143,7 +143,15 @@ int bsc_handover_start(struct gsm_lchan *old_lchan, struct gsm_bts *new_bts,
 
 	/* copy some parameters from old lchan */
 	memcpy(&new_lchan->encr, &old_lchan->encr, sizeof(new_lchan->encr));
-	new_lchan->ms_power = old_lchan->ms_power;
+	if (do_assignment) {
+		new_lchan->ms_power = old_lchan->ms_power;
+		new_lchan->rqd_ta = old_lchan->rqd_ta;
+	} else {
+		new_lchan->ms_power =
+			ms_pwr_ctl_lvl(new_bts->band, new_bts->ms_max_power);
+		/* FIXME: do we have a better idea of the timing advance? */
+		//new_lchan->rqd_ta = old_lchan->rqd_ta;
+	}
 	new_lchan->bs_power = old_lchan->bs_power;
 	new_lchan->rsl_cmode = old_lchan->rsl_cmode;
 	new_lchan->tch_mode = old_lchan->tch_mode;
@@ -153,7 +161,6 @@ int bsc_handover_start(struct gsm_lchan *old_lchan, struct gsm_bts *new_bts,
 	new_lchan->conn = old_lchan->conn;
 	new_lchan->conn->ho_lchan = new_lchan;
 
-	/* FIXME: do we have a better idea of the timing advance? */
 	rc = rsl_chan_activate_lchan(new_lchan,
 				     ho->async ? RSL_ACT_INTER_ASYNC : RSL_ACT_INTER_SYNC,
 				     ho->ho_ref);
