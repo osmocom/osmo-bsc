@@ -115,6 +115,12 @@ const struct value_string bts_loc_fix_names[] = {
 	{ 0, NULL }
 };
 
+struct cmd_node net_node = {
+	GSMNET_NODE,
+	"%s(config-net)# ",
+	1,
+};
+
 struct cmd_node bts_node = {
 	BTS_NODE,
 	"%s(config-net-bts)# ",
@@ -132,6 +138,20 @@ struct cmd_node ts_node = {
 	"%s(config-net-bts-trx-ts)# ",
 	1,
 };
+
+static struct gsm_network *vty_global_gsm_network = NULL;
+
+struct gsm_network *gsmnet_from_vty(struct vty *v)
+{
+	/* It can't hurt to force callers to continue to pass the vty instance
+	 * to this function, in case we'd like to retrieve the global
+	 * gsm_network instance from the vty at some point in the future. But
+	 * until then, just return the global pointer, which should have been
+	 * initialized by common_cs_vty_init().
+	 */
+	OSMO_ASSERT(vty_global_gsm_network);
+	return vty_global_gsm_network;
+}
 
 static int dummy_config_write(struct vty *v)
 {
@@ -4269,6 +4289,167 @@ DEFUN(ctrl_trap, ctrl_trap_cmd,
 	return CMD_SUCCESS;
 }
 
+#define NETWORK_STR "Configure the GSM network\n"
+#define CODE_CMD_STR "Code commands\n"
+#define NAME_CMD_STR "Name Commands\n"
+#define NAME_STR "Name to use\n"
+
+DEFUN(cfg_net,
+      cfg_net_cmd,
+      "network", NETWORK_STR)
+{
+	vty->index = gsmnet_from_vty(vty);
+	vty->node = GSMNET_NODE;
+
+	return CMD_SUCCESS;
+}
+
+DEFUN(cfg_net_ncc,
+      cfg_net_ncc_cmd,
+      "network country code <1-999>",
+      "Set the GSM network country code\n"
+      "Country commands\n"
+      CODE_CMD_STR
+      "Network Country Code to use\n")
+{
+	struct gsm_network *gsmnet = gsmnet_from_vty(vty);
+
+	gsmnet->country_code = atoi(argv[0]);
+
+	return CMD_SUCCESS;
+}
+
+DEFUN(cfg_net_mnc,
+      cfg_net_mnc_cmd,
+      "mobile network code <0-999>",
+      "Set the GSM mobile network code\n"
+      "Network Commands\n"
+      CODE_CMD_STR
+      "Mobile Network Code to use\n")
+{
+	struct gsm_network *gsmnet = gsmnet_from_vty(vty);
+
+	gsmnet->network_code = atoi(argv[0]);
+
+	return CMD_SUCCESS;
+}
+
+DEFUN(cfg_net_encryption,
+      cfg_net_encryption_cmd,
+      "encryption a5 (0|1|2|3)",
+	"Encryption options\n"
+	"A5 encryption\n" "A5/0: No encryption\n"
+	"A5/1: Encryption\n" "A5/2: Export-grade Encryption\n"
+	"A5/3: 'New' Secure Encryption\n")
+{
+	struct gsm_network *gsmnet = gsmnet_from_vty(vty);
+
+	gsmnet->a5_encryption = atoi(argv[0]);
+
+	return CMD_SUCCESS;
+}
+
+DEFUN(cfg_net_dyn_ts_allow_tch_f,
+      cfg_net_dyn_ts_allow_tch_f_cmd,
+      "dyn_ts_allow_tch_f (0|1)",
+      "Allow or disallow allocating TCH/F on TCH_F_TCH_H_PDCH timeslots\n"
+      "Disallow TCH/F on TCH_F_TCH_H_PDCH (default)\n"
+      "Allow TCH/F on TCH_F_TCH_H_PDCH\n")
+{
+	struct gsm_network *gsmnet = gsmnet_from_vty(vty);
+	gsmnet->dyn_ts_allow_tch_f = atoi(argv[0]) ? true : false;
+	return CMD_SUCCESS;
+}
+
+DEFUN(cfg_net_timezone,
+      cfg_net_timezone_cmd,
+      "timezone <-19-19> (0|15|30|45)",
+      "Set the Timezone Offset of the network\n"
+      "Timezone offset (hours)\n"
+      "Timezone offset (00 minutes)\n"
+      "Timezone offset (15 minutes)\n"
+      "Timezone offset (30 minutes)\n"
+      "Timezone offset (45 minutes)\n"
+      )
+{
+	struct gsm_network *net = vty->index;
+	int tzhr = atoi(argv[0]);
+	int tzmn = atoi(argv[1]);
+
+	net->tz.hr = tzhr;
+	net->tz.mn = tzmn;
+	net->tz.dst = 0;
+	net->tz.override = 1;
+
+	return CMD_SUCCESS;
+}
+
+DEFUN(cfg_net_timezone_dst,
+      cfg_net_timezone_dst_cmd,
+      "timezone <-19-19> (0|15|30|45) <0-2>",
+      "Set the Timezone Offset of the network\n"
+      "Timezone offset (hours)\n"
+      "Timezone offset (00 minutes)\n"
+      "Timezone offset (15 minutes)\n"
+      "Timezone offset (30 minutes)\n"
+      "Timezone offset (45 minutes)\n"
+      "DST offset (hours)\n"
+      )
+{
+	struct gsm_network *net = vty->index;
+	int tzhr = atoi(argv[0]);
+	int tzmn = atoi(argv[1]);
+	int tzdst = atoi(argv[2]);
+
+	net->tz.hr = tzhr;
+	net->tz.mn = tzmn;
+	net->tz.dst = tzdst;
+	net->tz.override = 1;
+
+	return CMD_SUCCESS;
+}
+
+DEFUN(cfg_net_no_timezone,
+      cfg_net_no_timezone_cmd,
+      "no timezone",
+      NO_STR
+      "Disable network timezone override, use system tz\n")
+{
+	struct gsm_network *net = vty->index;
+
+	net->tz.override = 0;
+
+	return CMD_SUCCESS;
+}
+
+DEFUN(cfg_net_per_loc_upd, cfg_net_per_loc_upd_cmd,
+      "periodic location update <6-1530>",
+      "Periodic Location Updating Interval\n"
+      "Periodic Location Updating Interval\n"
+      "Periodic Location Updating Interval\n"
+      "Periodic Location Updating Interval in Minutes\n")
+{
+	struct gsm_network *net = vty->index;
+
+	net->t3212 = atoi(argv[0]) / 6;
+
+	return CMD_SUCCESS;
+}
+
+DEFUN(cfg_net_no_per_loc_upd, cfg_net_no_per_loc_upd_cmd,
+      "no periodic location update",
+      NO_STR
+      "Periodic Location Updating Interval\n"
+      "Periodic Location Updating Interval\n"
+      "Periodic Location Updating Interval\n")
+{
+	struct gsm_network *net = vty->index;
+
+	net->t3212 = 0;
+
+	return CMD_SUCCESS;
+}
+
 extern int bsc_vty_init_extra(void);
 
 int bsc_vty_init(struct gsm_network *network)
@@ -4295,7 +4476,22 @@ int bsc_vty_init(struct gsm_network *network)
 					   "BTS Vendor/Type\n",
 					   "\n", "", 0);
 
-	common_cs_vty_init(network, config_write_net);
+	OSMO_ASSERT(vty_global_gsm_network == NULL);
+	vty_global_gsm_network = network;
+
+	osmo_stats_vty_add_cmds();
+
+	install_element(CONFIG_NODE, &cfg_net_cmd);
+	install_node(&net_node, config_write_net);
+	install_element(GSMNET_NODE, &cfg_net_ncc_cmd);
+	install_element(GSMNET_NODE, &cfg_net_mnc_cmd);
+	install_element(GSMNET_NODE, &cfg_net_encryption_cmd);
+	install_element(GSMNET_NODE, &cfg_net_timezone_cmd);
+	install_element(GSMNET_NODE, &cfg_net_timezone_dst_cmd);
+	install_element(GSMNET_NODE, &cfg_net_no_timezone_cmd);
+	install_element(GSMNET_NODE, &cfg_net_per_loc_upd_cmd);
+	install_element(GSMNET_NODE, &cfg_net_no_per_loc_upd_cmd);
+	install_element(GSMNET_NODE, &cfg_net_dyn_ts_allow_tch_f_cmd);
 
 	install_element_ve(&bsc_show_net_cmd);
 	install_element_ve(&show_bts_cmd);
