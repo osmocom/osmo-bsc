@@ -28,6 +28,14 @@
 
 #include <string.h>
 
+static const struct log_info_cat log_categories[] = {
+};
+
+static const struct log_info log_info = {
+	.cat = log_categories,
+	.num_cat = ARRAY_SIZE(log_categories),
+};
+
 int main(int argc, char **argv)
 {
 	struct nat_rewrite *trie;

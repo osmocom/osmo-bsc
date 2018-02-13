@@ -1200,6 +1200,20 @@ static void handle_options(int argc, char** argv)
 	}
 }
 
+static const struct log_info_cat log_categories[] = {
+	[DMM] = {
+		.name = "DMM",
+		.description = "Layer3 Mobility Management (MM)",
+		.color = "\033[1;33m",
+		.enabled = 1, .loglevel = LOGL_NOTICE,
+	},
+};
+
+const struct log_info log_info = {
+	.cat = log_categories,
+	.num_cat = ARRAY_SIZE(log_categories),
+};
+
 int main(int argc, char **argv)
 {
 	int rc;

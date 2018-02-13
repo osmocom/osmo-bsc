@@ -708,6 +708,14 @@ static void test_si_ba_ind(struct gsm_network *net)
 	OSMO_ASSERT(si5ter->bcch_frequency_list[0] & 0x10);
 }
 
+static const struct log_info_cat log_categories[] = {
+};
+
+static const struct log_info log_info = {
+	.cat = log_categories,
+	.num_cat = ARRAY_SIZE(log_categories),
+};
+
 int main(int argc, char **argv)
 {
 	struct gsm_network *net;

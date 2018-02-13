@@ -183,6 +183,14 @@ static void test_nanobts_attr_radio_get(struct gsm_bts *bts,
 	printf("\n");
 }
 
+static const struct log_info_cat log_categories[] = {
+};
+
+static const struct log_info log_info = {
+	.cat = log_categories,
+	.num_cat = ARRAY_SIZE(log_categories),
+};
+
 int main(int argc, char **argv)
 {
 	void *ctx;

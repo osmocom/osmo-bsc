@@ -194,6 +194,39 @@ out:
 	talloc_free(net);
 }
 
+static const struct log_info_cat log_categories[] = {
+	[DNM] = {
+		.name = "DNM",
+		.description = "A-bis Network Management / O&M (NM/OML)",
+		.color = "\033[1;36m",
+		.enabled = 1, .loglevel = LOGL_INFO,
+	},
+	[DNAT] = {
+		.name = "DNAT",
+		.description = "GSM 08.08 NAT/Multiplexer",
+		.enabled = 1, .loglevel = LOGL_NOTICE,
+	},
+	[DMSC] = {
+		.name = "DMSC",
+		.description = "Mobile Switching Center",
+		.enabled = 1, .loglevel = LOGL_NOTICE,
+	},
+	[DCTRL] = {
+		.name = "DCTRL",
+		.description = "Control interface",
+		.enabled = 1, .loglevel = LOGL_NOTICE,
+	},
+	[DFILTER] = {
+		.name = "DFILTER",
+		.description = "BSC/NAT IMSI based filtering",
+		.enabled = 1, .loglevel = LOGL_DEBUG,
+	},
+};
+
+static const struct log_info log_info = {
+	.cat = log_categories,
+	.num_cat = ARRAY_SIZE(log_categories),
+};
 
 int main(int argc, char **argv)
 {

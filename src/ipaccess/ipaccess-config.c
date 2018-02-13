@@ -838,6 +838,20 @@ static void print_options(void)
 
 extern void bts_model_nanobts_init();
 
+static const struct log_info_cat log_categories[] = {
+	[DNM] = {
+		.name = "DNM",
+		.description = "A-bis Network Management / O&M (NM/OML)",
+		.color = "\033[1;36m",
+		.enabled = 1, .loglevel = LOGL_INFO,
+	},
+};
+
+static const struct log_info log_info = {
+	.cat = log_categories,
+	.num_cat = ARRAY_SIZE(log_categories),
+};
+
 int main(int argc, char **argv)
 {
 	struct gsm_bts *bts;

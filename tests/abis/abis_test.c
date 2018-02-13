@@ -83,6 +83,14 @@ static void test_sw_selection(void)
 	printf("%s(): OK\n", __func__);
 }
 
+static const struct log_info_cat log_categories[] = {
+};
+
+static const struct log_info log_info = {
+	.cat = log_categories,
+	.num_cat = ARRAY_SIZE(log_categories),
+};
+
 int main(int argc, char **argv)
 {
 	osmo_init_logging(&log_info);

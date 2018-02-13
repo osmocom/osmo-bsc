@@ -884,6 +884,20 @@ struct e1inp_line_ops bs11cfg_e1inp_line_ops = {
 	.sign_link	= bs11cfg_sign_link,
 };
 
+static const struct log_info_cat bs11_categories[] = {
+	[DNM] =	{
+		.name = "DNM",
+		.description = "A-bis Network Management / O&M (NM/OML)",
+		.color = "\033[1;36m",
+		.enabled = 1, .loglevel = LOGL_INFO,
+	},
+};
+
+const struct log_info log_info = {
+	.cat = bs11_categories,
+	.num_cat = ARRAY_SIZE(bs11_categories),
+};
+
 extern int bts_model_bs11_init(void);
 int main(int argc, char **argv)
 {

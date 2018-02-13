@@ -44,5 +44,3 @@ enum {
 	DSIGTRAN,
 	Debug_LastEntry,
 };
-
-extern const struct log_info log_info;

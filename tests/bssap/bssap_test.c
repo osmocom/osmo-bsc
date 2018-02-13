@@ -120,6 +120,24 @@ void test_cell_identifier()
 	}
 }
 
+static const struct log_info_cat log_categories[] = {
+	[DMSC] = {
+		.name = "DMSC",
+		.description = "Mobile Switching Center",
+		.enabled = 1, .loglevel = LOGL_NOTICE,
+	},
+	[DREF] = {
+		.name = "DREF",
+		.description = "Reference Counting",
+		.enabled = 0, .loglevel = LOGL_DEBUG,
+	},
+};
+
+static const struct log_info log_info = {
+	.cat = log_categories,
+	.num_cat = ARRAY_SIZE(log_categories),
+};
+
 int main(int argc, char **argv)
 {
 	osmo_init_logging(&log_info);

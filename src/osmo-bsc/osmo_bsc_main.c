@@ -278,6 +278,192 @@ static void signal_handler(int signal)
 	}
 }
 
+static const struct log_info_cat osmo_bsc_categories[] = {
+	[DRLL] = {
+		.name = "DRLL",
+		.description = "A-bis Radio Link Layer (RLL)",
+		.color = "\033[1;31m",
+		.enabled = 1, .loglevel = LOGL_NOTICE,
+	},
+	[DCC] = {
+		.name = "DCC",
+		.description = "Layer3 Call Control (CC)",
+		.color = "\033[1;32m",
+		.enabled = 1, .loglevel = LOGL_NOTICE,
+	},
+	[DMM] = {
+		.name = "DMM",
+		.description = "Layer3 Mobility Management (MM)",
+		.color = "\033[1;33m",
+		.enabled = 1, .loglevel = LOGL_NOTICE,
+	},
+	[DRR] = {
+		.name = "DRR",
+		.description = "Layer3 Radio Resource (RR)",
+		.color = "\033[1;34m",
+		.enabled = 1, .loglevel = LOGL_NOTICE,
+	},
+	[DRSL] = {
+		.name = "DRSL",
+		.description = "A-bis Radio Siganlling Link (RSL)",
+		.color = "\033[1;35m",
+		.enabled = 1, .loglevel = LOGL_NOTICE,
+	},
+	[DNM] =	{
+		.name = "DNM",
+		.description = "A-bis Network Management / O&M (NM/OML)",
+		.color = "\033[1;36m",
+		.enabled = 1, .loglevel = LOGL_INFO,
+	},
+	[DMNCC] = {
+		.name = "DMNCC",
+		.description = "MNCC API for Call Control application",
+		.color = "\033[1;39m",
+		.enabled = 1, .loglevel = LOGL_NOTICE,
+	},
+	[DPAG]	= {
+		.name = "DPAG",
+		.description = "Paging Subsystem",
+		.color = "\033[1;38m",
+		.enabled = 1, .loglevel = LOGL_NOTICE,
+	},
+	[DMEAS] = {
+		.name = "DMEAS",
+		.description = "Radio Measurement Processing",
+		.enabled = 0, .loglevel = LOGL_NOTICE,
+	},
+	[DSCCP] = {
+		.name = "DSCCP",
+		.description = "SCCP Protocol",
+		.enabled = 1, .loglevel = LOGL_NOTICE,
+	},
+	[DMSC] = {
+		.name = "DMSC",
+		.description = "Mobile Switching Center",
+		.enabled = 1, .loglevel = LOGL_NOTICE,
+	},
+	[DMGCP] = {
+		.name = "DMGCP",
+		.description = "Media Gateway Control Protocol",
+		.enabled = 1, .loglevel = LOGL_NOTICE,
+	},
+	[DHO] = {
+		.name = "DHO",
+		.description = "Hand-Over Process",
+		.color = "\033[1;38m",
+		.enabled = 1, .loglevel = LOGL_NOTICE,
+	},
+	[DHODEC] = {
+		.name = "DHODEC",
+		.description = "Hand-Over Decision",
+		.color = "\033[1;38m",
+		.enabled = 1, .loglevel = LOGL_NOTICE,
+	},
+	[DDB] = {
+		.name = "DDB",
+		.description = "Database Layer",
+		.enabled = 1, .loglevel = LOGL_NOTICE,
+	},
+	[DREF] = {
+		.name = "DREF",
+		.description = "Reference Counting",
+		.enabled = 0, .loglevel = LOGL_NOTICE,
+	},
+	[DGPRS] = {
+		.name = "DGPRS",
+		.description = "GPRS Packet Service",
+		.enabled = 1, .loglevel = LOGL_DEBUG,
+	},
+	[DNS] = {
+		.name = "DNS",
+		.description = "GPRS Network Service (NS)",
+		.enabled = 1, .loglevel = LOGL_INFO,
+	},
+	[DBSSGP] = {
+		.name = "DBSSGP",
+		.description = "GPRS BSS Gateway Protocol (BSSGP)",
+		.enabled = 1, .loglevel = LOGL_DEBUG,
+	},
+	[DLLC] = {
+		.name = "DLLC",
+		.description = "GPRS Logical Link Control Protocol (LLC)",
+		.enabled = 1, .loglevel = LOGL_DEBUG,
+	},
+	[DSNDCP] = {
+		.name = "DSNDCP",
+		.description = "GPRS Sub-Network Dependent Control Protocol (SNDCP)",
+		.enabled = 1, .loglevel = LOGL_DEBUG,
+	},
+	[DNAT] = {
+		.name = "DNAT",
+		.description = "GSM 08.08 NAT/Multiplexer",
+		.enabled = 1, .loglevel = LOGL_NOTICE,
+	},
+	[DCTRL] = {
+		.name = "DCTRL",
+		.description = "Control interface",
+		.enabled = 1, .loglevel = LOGL_NOTICE,
+	},
+	[DSMPP] = {
+		.name = "DSMPP",
+		.description = "SMPP interface for external SMS apps",
+		.enabled = 1, .loglevel = LOGL_DEBUG,
+	},
+	[DFILTER] = {
+		.name = "DFILTER",
+		.description = "BSC/NAT IMSI based filtering",
+		.enabled = 1, .loglevel = LOGL_DEBUG,
+	},
+	[DRANAP] = {
+		.name = "DRANAP",
+		.description = "Radio Access Network Application Part Protocol",
+		.enabled = 1, .loglevel = LOGL_DEBUG,
+	},
+	[DSUA] = {
+		.name = "DSUA",
+		.description = "SCCP User Adaptation Protocol",
+		.enabled = 1, .loglevel = LOGL_DEBUG,
+	},
+	[DPCU] = {
+		.name = "DPCU",
+		.description = "PCU Interface",
+		.enabled = 1, .loglevel = LOGL_DEBUG,
+	},
+	[DVLR] = {
+		.name = "DVLR",
+		.description = "Visitor Location Register",
+		.enabled = 1, .loglevel = LOGL_DEBUG,
+	},
+	[DIUCS] = {
+		.name = "DIUCS",
+		.description = "Iu-CS Protocol",
+		.enabled = 1, .loglevel = LOGL_DEBUG,
+	},
+	[DSIGTRAN] = {
+		.name = "DSIGTRAN",
+		.description = "SIGTRAN Signalling Transport",
+		.color = "\033[1;29m",
+		.enabled = 1, .loglevel = LOGL_DEBUG,
+	},
+};
+
+static int filter_fn(const struct log_context *ctx, struct log_target *tar)
+{
+	const struct bsc_subscr *bsub = ctx->ctx[LOG_CTX_BSC_SUBSCR];
+
+	if ((tar->filter_map & (1 << LOG_FLT_BSC_SUBSCR)) != 0
+	    && bsub && bsub == tar->filter_data[LOG_FLT_BSC_SUBSCR])
+		return 1;
+
+	return 0;
+}
+
+const struct log_info log_info = {
+	.filter_fn = filter_fn,
+	.cat = osmo_bsc_categories,
+	.num_cat = ARRAY_SIZE(osmo_bsc_categories),
+};
+
 int main(int argc, char **argv)
 {
 	struct bsc_msc_data *msc;

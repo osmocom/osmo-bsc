@@ -110,6 +110,19 @@ static void test_bsc_subscr(void)
 	OSMO_ASSERT(llist_empty(bsc_subscribers));
 }
 
+static const struct log_info_cat log_categories[] = {
+	[DREF] = {
+		.name = "DREF",
+		.description = "Reference Counting",
+		.enabled = 1, .loglevel = LOGL_DEBUG,
+	},
+};
+
+static const struct log_info log_info = {
+	.cat = log_categories,
+	.num_cat = ARRAY_SIZE(log_categories),
+};
+
 int main()
 {
 	printf("Testing BSC subscriber core code.\n");
@@ -118,7 +131,6 @@ int main()
 	log_set_print_timestamp(osmo_stderr_target, 0);
 	log_set_use_color(osmo_stderr_target, 0);
 	log_set_print_category(osmo_stderr_target, 1);
-	log_set_category_filter(osmo_stderr_target, DREF, 1, LOGL_DEBUG);
 
 	bsc_subscribers = talloc_zero(NULL, struct llist_head);
 	INIT_LLIST_HEAD(bsc_subscribers);
