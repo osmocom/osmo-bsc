@@ -47,7 +47,7 @@
 #include <osmocom/abis/ipaccess.h>
 #include <osmocom/bsc/debug.h>
 #include <osmocom/bsc/ipaccess.h>
-#include <osmocom/bsc/socket.h>
+#include <osmocom/core/socket.h>
 #include <osmocom/core/talloc.h>
 
 /* one instance of an ip.access protocol proxy */
@@ -369,8 +369,11 @@ static int ipbc_alloc_connect(struct ipa_proxy_conn *ipc, struct osmo_fd *bfd,
 
 	/* Create UDP socket for BTS packet injection */
 	udp_port = 10000 + (site_id % 1000)*100 + (bts_id % 100);
-	ret = make_sock(&ipbc->udp_bts_fd, IPPROTO_UDP, INADDR_ANY, udp_port,
-			UDP_TO_BTS, udp_fd_cb, ipbc);
+	ipbc->udp_bts_fd.priv_nr = UDP_TO_BTS;
+	ipbc->udp_bts_fd.cb = udp_fd_cb;
+	ipbc->udp_bts_fd.data = ipbc;
+	ret = osmo_sock_init_ofd(&ipbc->udp_bts_fd, AF_INET, SOCK_DGRAM, IPPROTO_UDP,
+				 NULL, udp_port, OSMO_SOCK_F_BIND);
 	if (ret < 0)
 		goto err_udp_bts;
 	DEBUGP(DLINP, "(%u/%u/%u) Created UDP socket for injection "
@@ -378,8 +381,11 @@ static int ipbc_alloc_connect(struct ipa_proxy_conn *ipc, struct osmo_fd *bfd,
 
 	/* Create UDP socket for BSC packet injection */
 	udp_port = 20000 + (site_id % 1000)*100 + (bts_id % 100);
-	ret = make_sock(&ipbc->udp_bsc_fd, IPPROTO_UDP, INADDR_ANY, udp_port,
-			UDP_TO_BSC, udp_fd_cb, ipbc);
+	ipbc->udp_bsc_fd.priv_nr = UDP_TO_BSC;
+	ipbc->udp_bsc_fd.cb = udp_fd_cb;
+	ipbc->udp_bsc_fd.data = ipbc;
+	ret = osmo_sock_init_ofd(&ipbc->udp_bsc_fd, AF_INET, SOCK_DGRAM, IPPROTO_UDP,
+				 NULL, udp_port, OSMO_SOCK_F_BIND);
 	if (ret < 0)
 		goto err_udp_bsc;
 	DEBUGP(DLINP, "(%u/%u/%u) Created UDP socket for injection "
@@ -390,13 +396,12 @@ static int ipbc_alloc_connect(struct ipa_proxy_conn *ipc, struct osmo_fd *bfd,
 	if (gprs_ns_ipaddr) {
 		struct sockaddr_in sock;
 		socklen_t len = sizeof(sock);
-		struct in_addr addr;
-		uint32_t ip;
 
-		inet_aton(listen_ipaddr, &addr);
-		ip = ntohl(addr.s_addr); /* make_sock() needs host byte order */
-		ret = make_sock(&ipbc->gprs_ns_fd, IPPROTO_UDP, ip, 0, 0,
-				gprs_ns_cb, ipbc);
+		ipbc->gprs_ns_fd.priv_nr = 0;
+		ipbc->gprs_ns_fd.cb = gprs_ns_cb;
+		ipbc->gprs_ns_fd.data = ipbc;
+		ret = osmo_sock_init_ofd(&ipbc->gprs_ns_fd, AF_INET, SOCK_DGRAM, IPPROTO_UDP,
+					 listen_ipaddr, 0, OSMO_SOCK_F_BIND);
 		if (ret < 0) {
 			LOGP(DLINP, LOGL_ERROR, "Creating the GPRS socket failed.\n");
 			goto err_udp_bsc;
@@ -1062,15 +1067,18 @@ static int ipaccess_proxy_setup(void)
 	osmo_timer_setup(&ipp->reconn_timer, reconn_tmr_cb, ipp);
 
 	/* Listen for OML connections */
-	ret = make_sock(&ipp->oml_listen_fd, IPPROTO_TCP, INADDR_ANY,
-			IPA_TCP_PORT_OML, OML_FROM_BTS, listen_fd_cb, NULL);
+	ipp->oml_listen_fd.priv_nr = OML_FROM_BTS;
+	ipp->oml_listen_fd.cb = listen_fd_cb;
+	ret = osmo_sock_init_ofd(&ipp->oml_listen_fd, AF_INET, SOCK_STREAM, IPPROTO_TCP,
+				 NULL, IPA_TCP_PORT_OML, OSMO_SOCK_F_BIND);
 	if (ret < 0)
 		return ret;
 
 	/* Listen for RSL connections */
-	ret = make_sock(&ipp->rsl_listen_fd, IPPROTO_TCP, INADDR_ANY,
-			IPA_TCP_PORT_RSL, RSL_FROM_BTS, listen_fd_cb, NULL);
-
+	ipp->rsl_listen_fd.priv_nr = RSL_FROM_BTS;
+	ipp->rsl_listen_fd.cb = listen_fd_cb;
+	ret = osmo_sock_init_ofd(&ipp->rsl_listen_fd, AF_INET, SOCK_STREAM, IPPROTO_TCP,
+				 NULL, IPA_TCP_PORT_RSL, OSMO_SOCK_F_BIND);
 	if (ret < 0)
 		return ret;
 

@@ -20,11 +20,12 @@
  *
  */
 
+#include <osmocom/core/socket.h>
+
 #include <osmocom/bsc/bsc_nat.h>
 #include <osmocom/bsc/bsc_nat_sccp.h>
 #include <osmocom/bsc/bsc_msg_filter.h>
 #include <osmocom/bsc/ipaccess.h>
-#include <osmocom/bsc/socket.h>
 #include <osmocom/bsc/debug.h>
 
 #include <osmocom/gsm/protocol/gsm_08_08.h>
@@ -282,15 +283,10 @@ static int ussd_listen_cb(struct osmo_fd *bfd, unsigned int what)
 
 int bsc_ussd_init(struct bsc_nat *nat)
 {
-	struct in_addr addr;
-
-	addr.s_addr = INADDR_ANY;
-	if (nat->ussd_local)
-		inet_aton(nat->ussd_local, &addr);
-
+	nat->ussd_listen.cb = ussd_listen_cb;
 	nat->ussd_listen.data = nat;
-	return make_sock(&nat->ussd_listen, IPPROTO_TCP,
-			 ntohl(addr.s_addr), 5001, 0, ussd_listen_cb, nat);
+	return osmo_sock_init_ofd(&nat->ussd_listen, AF_INET, SOCK_STREAM, IPPROTO_TCP, 
+				  nat->ussd_local, 5001, OSMO_SOCK_F_BIND);
 }
 
 static int forward_ussd_simple(struct nat_sccp_connection *con, struct msgb *input)

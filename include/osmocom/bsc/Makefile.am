@@ -48,7 +48,6 @@ noinst_HEADERS = \
 	rest_octets.h \
 	rs232.h \
 	signal.h \
-	socket.h \
 	system_information.h \
 	ussd.h \
 	vty.h \
