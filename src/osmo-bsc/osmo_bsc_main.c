@@ -44,6 +44,7 @@
 #include <osmocom/gsm/protocol/gsm_12_21.h>
 
 #include <osmocom/abis/abis.h>
+#include <osmocom/bsc/abis_om2000.h>
 
 #include <osmocom/mgcp_client/mgcp_client.h>
 
@@ -146,7 +147,89 @@ static void handle_options(int argc, char **argv)
 	}
 }
 
-extern int bsc_vty_go_parent(struct vty *vty);
+static int bsc_vty_go_parent(struct vty *vty)
+{
+	switch (vty->node) {
+	case GSMNET_NODE:
+		vty->node = CONFIG_NODE;
+		vty->index = NULL;
+		break;
+	case BTS_NODE:
+		vty->node = GSMNET_NODE;
+		{
+			/* set vty->index correctly ! */
+			struct gsm_bts *bts = vty->index;
+			vty->index = bts->network;
+			vty->index_sub = NULL;
+		}
+		break;
+	case TRX_NODE:
+		vty->node = BTS_NODE;
+		{
+			/* set vty->index correctly ! */
+			struct gsm_bts_trx *trx = vty->index;
+			vty->index = trx->bts;
+			vty->index_sub = &trx->bts->description;
+		}
+		break;
+	case TS_NODE:
+		vty->node = TRX_NODE;
+		{
+			/* set vty->index correctly ! */
+			struct gsm_bts_trx_ts *ts = vty->index;
+			vty->index = ts->trx;
+			vty->index_sub = &ts->trx->description;
+		}
+		break;
+	case OML_NODE:
+	case OM2K_NODE:
+		vty->node = ENABLE_NODE;
+		/* NOTE: this only works because it's not part of the config
+		 * tree, where outer commands are searched via vty_go_parent()
+		 * and only (!) executed when a matching one is found.
+		 */
+		talloc_free(vty->index);
+		vty->index = NULL;
+		break;
+	case OM2K_CON_GROUP_NODE:
+		vty->node = BTS_NODE;
+		{
+			struct con_group *cg = vty->index;
+			struct gsm_bts *bts = cg->bts;
+			vty->index = bts;
+			vty->index_sub = &bts->description;
+		}
+		break;
+	case BSC_NODE:
+	case MSC_NODE:
+		vty->node = CONFIG_NODE;
+		vty->index = NULL;
+		break;
+	default:
+		osmo_ss7_vty_go_parent(vty);
+	}
+
+	return vty->node;
+}
+
+static int bsc_vty_is_config_node(struct vty *vty, int node)
+{
+	/* Check if libosmo-sccp declares the node in
+	 * question as config node */
+	if (osmo_ss7_is_config_node(vty, node))
+		return 1;
+
+	switch (node) {
+	/* add items that are not config */
+	case OML_NODE:
+	case OM2K_NODE:
+	case CONFIG_NODE:
+		return 0;
+
+	default:
+		return 1;
+	}
+}
 
 static struct vty_app_info vty_info = {
 	.name 		= "OsmoBSC",

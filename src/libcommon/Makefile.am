@@ -20,7 +20,6 @@ noinst_LIBRARIES = \
 	$(NULL)
 
 libcommon_a_SOURCES = \
-	common_vty.c \
 	debug.c \
 	gsm_data.c \
 	gsm_data_shared.c \

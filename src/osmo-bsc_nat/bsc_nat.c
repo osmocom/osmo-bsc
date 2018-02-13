@@ -1574,7 +1574,51 @@ static void talloc_init_ctx()
 	tall_ctr_ctx = talloc_named_const(tall_bsc_ctx, 0, "counter");
 }
 
-extern int bsc_vty_go_parent(struct vty *vty);
+static int bsc_vty_go_parent(struct vty *vty)
+{
+       switch (vty->node) {
+       case NAT_BSC_NODE:
+               vty->node = NAT_NODE;
+               {
+                       struct bsc_config *bsc_config = vty->index;
+                       vty->index = bsc_config->nat;
+               }
+               break;
+       case PGROUP_NODE:
+               vty->node = NAT_NODE;
+               vty->index = NULL;
+               break;
+       case TRUNK_NODE:
+               vty->node = MGCP_NODE;
+               vty->index = NULL;
+               break;
+       case NAT_NODE:
+               vty->node = CONFIG_NODE;
+               vty->index = NULL;
+               break;
+       default:
+               osmo_ss7_vty_go_parent(vty);
+       }
+
+       return vty->node;
+}
+
+static int bsc_vty_is_config_node(struct vty *vty, int node)
+{
+	/* Check if libosmo-sccp declares the node in
+	 * question as config node */
+	if (osmo_ss7_is_config_node(vty, node))
+		return 1;
+
+	switch (node) {
+	/* add items that are not config */
+	case CONFIG_NODE:
+		return 0;
+
+	default:
+		return 1;
+	}
+}
 
 static struct vty_app_info vty_info = {
 	.name 		= "OsmoBSCNAT",
