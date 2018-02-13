@@ -464,6 +464,12 @@ const struct log_info log_info = {
 	.num_cat = ARRAY_SIZE(osmo_bsc_categories),
 };
 
+extern void *tall_paging_ctx;
+extern void *tall_fle_ctx;
+extern void *tall_sigh_ctx;
+extern void *tall_tqe_ctx;
+extern void *tall_ctr_ctx;
+
 int main(int argc, char **argv)
 {
 	struct bsc_msc_data *msc;
@@ -473,6 +479,12 @@ int main(int argc, char **argv)
 	tall_bsc_ctx = talloc_named_const(NULL, 1, "openbsc");
 	msgb_talloc_ctx_init(tall_bsc_ctx, 0);
 	vty_info.tall_ctx = tall_bsc_ctx;
+
+	tall_paging_ctx = talloc_named_const(tall_bsc_ctx, 0, "paging_request");
+	tall_fle_ctx = talloc_named_const(tall_bsc_ctx, 0, "bs11_file_list_entry");
+	tall_sigh_ctx = talloc_named_const(tall_bsc_ctx, 0, "signal_handler");
+	tall_tqe_ctx = talloc_named_const(tall_bsc_ctx, 0, "subch_txq_entry");
+	tall_ctr_ctx = talloc_named_const(tall_bsc_ctx, 0, "counter");
 
 	osmo_init_logging(&log_info);
 	osmo_stats_init(tall_bsc_ctx);

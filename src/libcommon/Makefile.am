@@ -22,6 +22,5 @@ noinst_LIBRARIES = \
 libcommon_a_SOURCES = \
 	gsm_data.c \
 	gsm_data_shared.c \
-	talloc_ctx.c \
 	handover_cfg.c \
 	$(NULL)

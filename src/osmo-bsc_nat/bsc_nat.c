@@ -1566,11 +1566,15 @@ out:
 	osmo_timer_schedule(&sccp_close, SCCP_CLOSE_TIME, 0);
 }
 
+extern void *tall_sigh_ctx;
 extern void *tall_ctr_ctx;
+
 static void talloc_init_ctx()
 {
 	tall_bsc_ctx = talloc_named_const(NULL, 0, "nat");
 	msgb_talloc_ctx_init(tall_bsc_ctx, 0);
+
+	tall_sigh_ctx = talloc_named_const(tall_bsc_ctx, 0, "signal_handler");
 	tall_ctr_ctx = talloc_named_const(tall_bsc_ctx, 0, "counter");
 }
 

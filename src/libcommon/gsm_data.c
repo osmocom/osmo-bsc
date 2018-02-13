@@ -39,7 +39,7 @@
 #include <osmocom/bsc/abis_nm.h>
 #include <osmocom/bsc/handover_cfg.h>
 
-void *tall_bsc_ctx;
+void *tall_bsc_ctx = NULL;
 
 static LLIST_HEAD(bts_models);
 

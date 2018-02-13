@@ -121,7 +121,7 @@ enum ipp_fd_type {
 };
 
 /* some of the code against we link from OpenBSC needs this */
-void *tall_bsc_ctx;
+void *tall_bsc_ctx = NULL;
 
 static char *listen_ipaddr;
 static char *bsc_ipaddr;

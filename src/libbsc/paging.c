@@ -51,7 +51,7 @@
 #include <osmocom/bsc/chan_alloc.h>
 #include <osmocom/bsc/bsc_api.h>
 
-void *tall_paging_ctx;
+void *tall_paging_ctx = NULL;
 
 #define PAGING_TIMER 0, 500000
 

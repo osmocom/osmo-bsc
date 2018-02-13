@@ -2374,7 +2374,7 @@ int abis_nm_bs11_get_state(struct gsm_bts *bts)
 
 /* BS11 SWL */
 
-void *tall_fle_ctx;
+void *tall_fle_ctx = NULL;
 
 struct abis_nm_bs11_sw {
 	struct gsm_bts *bts;

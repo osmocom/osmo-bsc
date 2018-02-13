@@ -899,12 +899,16 @@ const struct log_info log_info = {
 };
 
 extern int bts_model_bs11_init(void);
+
+extern void *tall_fle_ctx;
+
 int main(int argc, char **argv)
 {
 	struct gsm_network *gsmnet;
 	struct e1inp_line *line;
 
 	tall_bs11cfg_ctx = talloc_named_const(NULL, 0, "bs11-config");
+	tall_fle_ctx = talloc_named_const(tall_bs11cfg_ctx, 0, "bs11_file_list_entry");
 	msgb_talloc_ctx_init(tall_bs11cfg_ctx, 0);
 
 	osmo_init_logging(&log_info);
