@@ -149,7 +149,6 @@ AC_OUTPUT(
     include/osmocom/bsc/Makefile
     src/Makefile
     src/libbsc/Makefile
-    src/libcommon/Makefile
     src/libfilter/Makefile
     src/libcommon-cs/Makefile
     src/osmo-bsc/Makefile

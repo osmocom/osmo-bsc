@@ -49,7 +49,6 @@ bs11_config_SOURCES = \
 bs11_config_LDADD = \
 	$(top_builddir)/src/libbsc/libbsc.a \
 	$(top_builddir)/src/libcommon-cs/libcommon-cs.a \
-	$(top_builddir)/src/libcommon/libcommon.a \
 	$(LIBOSMOCORE_LIBS) \
 	$(LIBOSMOGSM_LIBS) \
 	$(LIBOSMOABIS_LIBS) \
@@ -115,7 +114,7 @@ meas_json_SOURCES = \
 	$(NULL)
 
 meas_json_LDADD = \
-	$(top_builddir)/src/libcommon/libcommon.a \
+	$(top_builddir)/src/libbsc/libbsc.a \
 	$(LIBOSMOCORE_LIBS) \
 	$(LIBOSMOGSM_LIBS) \
 	$(NULL)

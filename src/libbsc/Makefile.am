@@ -37,6 +37,7 @@ libbsc_a_SOURCES = \
 	bts_unknown.c \
 	bts_sysmobts.c \
 	chan_alloc.c \
+	gsm_data.c \
 	handover_decision.c \
 	handover_logic.c \
 	meas_rep.c \
@@ -58,5 +59,6 @@ libbsc_a_SOURCES = \
 	bsc_dyn_ts.c \
 	bts_ipaccess_nanobts_omlattr.c \
 	handover_vty.c \
+	handover_cfg.c \
 	$(NULL)
 

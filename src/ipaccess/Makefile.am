@@ -30,7 +30,6 @@ bin_PROGRAMS = \
 
 abisip_find_LDADD = \
 	$(top_builddir)/src/libbsc/libbsc.a \
-	$(top_builddir)/src/libcommon/libcommon.a \
 	$(OSMO_LIBS) \
 	$(NULL)
 
@@ -48,7 +47,6 @@ ipaccess_config_SOURCES = \
 ipaccess_config_LDADD = \
 	$(top_builddir)/src/libbsc/libbsc.a \
 	$(top_builddir)/src/libcommon-cs/libcommon-cs.a \
-	$(top_builddir)/src/libcommon/libcommon.a \
 	$(OSMO_LIBS) \
 	$(NULL)
 
@@ -58,6 +56,5 @@ ipaccess_proxy_SOURCES = \
 
 ipaccess_proxy_LDADD = \
 	$(top_builddir)/src/libbsc/libbsc.a \
-	$(top_builddir)/src/libcommon/libcommon.a \
 	$(OSMO_LIBS) \
 	$(NULL)
