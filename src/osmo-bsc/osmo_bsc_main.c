@@ -62,7 +62,6 @@
 struct gsm_network *bsc_gsmnet = 0;
 static const char *config_file = "osmo-bsc.cfg";
 static const char *rf_ctrl = NULL;
-extern const char *openbsc_copyright;
 static int daemonize = 0;
 static struct llist_head access_lists;
 
@@ -151,6 +150,13 @@ extern int bsc_vty_go_parent(struct vty *vty);
 
 static struct vty_app_info vty_info = {
 	.name 		= "OsmoBSC",
+	.copyright	=
+	"Copyright (C) 2008-2018 Harald Welte, Holger Freyther\r\n"
+	"Contributions by Daniel Willmann, Jan Lübbe, Stefan Schmidt\r\n"
+	"Dieter Spaar, Andreas Eversberg, Sylvain Munaut, Neels Hofmeyr\r\n\r\n"
+	"License AGPLv3+: GNU AGPL version 3 or later <http://gnu.org/licenses/agpl-3.0.html>\r\n"
+	"This is free software: you are free to change and redistribute it.\r\n"
+	"There is NO WARRANTY, to the extent permitted by law.\r\n",
 	.version	= PACKAGE_VERSION,
 	.go_parent_cb	= bsc_vty_go_parent,
 	.is_config_node	= bsc_vty_is_config_node,
@@ -218,7 +224,6 @@ int main(int argc, char **argv)
 	/* enable filters */
 
 	/* This needs to precede handle_options() */
-	vty_info.copyright = openbsc_copyright;
 	vty_init(&vty_info);
 	bsc_vty_init(bsc_gsmnet);
 	bsc_msg_lst_vty_init(tall_bsc_ctx, &access_lists, BSC_NODE);
