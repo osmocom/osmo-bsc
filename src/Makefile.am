@@ -21,7 +21,6 @@ AM_LDFLAGS = \
 
 # Libraries
 SUBDIRS = \
-	libcommon-cs \
 	libbsc \
 	libfilter \
 	$(NULL)

@@ -40,7 +40,6 @@ osmo_bsc_nat_SOURCES = \
 osmo_bsc_nat_LDADD = \
 	$(top_builddir)/src/libfilter/libfilter.a \
 	$(top_builddir)/src/libbsc/libbsc.a \
-	$(top_builddir)/src/libcommon-cs/libcommon-cs.a \
 	$(LIBOSMOSCCP_LIBS) \
 	$(LIBOSMOCORE_LIBS) \
 	$(LIBOSMOGSM_LIBS) \

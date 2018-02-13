@@ -19,8 +19,6 @@ noinst_LIBRARIES = \
 	libbsc.a \
 	$(NULL)
 
-libbsc_a_LIBADD = $(top_builddir)/src/libcommon-cs/libcommon-cs.a
-
 libbsc_a_SOURCES = \
 	abis_nm.c \
 	abis_nm_vty.c \

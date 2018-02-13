@@ -56,7 +56,6 @@
 #include <osmocom/bsc/bsc_msc_data.h>
 #include <osmocom/bsc/osmo_bsc_rf.h>
 #include <osmocom/bsc/pcu_if.h>
-#include <osmocom/bsc/common_cs.h>
 #include <osmocom/bsc/handover.h>
 #include <osmocom/bsc/handover_cfg.h>
 #include <osmocom/bsc/handover_vty.h>

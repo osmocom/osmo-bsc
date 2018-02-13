@@ -32,7 +32,6 @@ bsc_subscr_test_SOURCES = \
 
 bsc_subscr_test_LDADD = \
 	$(top_builddir)/src/libbsc/libbsc.a \
-	$(top_builddir)/src/libcommon-cs/libcommon-cs.a \
 	$(LIBOSMOCORE_LIBS) \
 	$(LIBOSMOABIS_LIBS) \
 	$(LIBOSMOGSM_LIBS) \

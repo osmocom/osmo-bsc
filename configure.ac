@@ -150,7 +150,6 @@ AC_OUTPUT(
     src/Makefile
     src/libbsc/Makefile
     src/libfilter/Makefile
-    src/libcommon-cs/Makefile
     src/osmo-bsc/Makefile
     src/ipaccess/Makefile
     src/utils/Makefile

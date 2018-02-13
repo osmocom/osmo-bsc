@@ -16,7 +16,6 @@ noinst_HEADERS = \
 	chan_alloc.h \
 	common.h \
 	common_bsc.h \
-	common_cs.h \
 	ctrl.h \
 	debug.h \
 	e1_config.h \

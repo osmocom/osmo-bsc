@@ -47,6 +47,7 @@
 #include <osmocom/bsc/ipaccess.h>
 #include <osmocom/bsc/abis_nm.h>
 #include <osmocom/bsc/vty.h>
+#include <osmocom/bsc/gsm_04_08_utils.h>
 
 #include <osmocom/ctrl/control_cmd.h>
 #include <osmocom/ctrl/control_if.h>
