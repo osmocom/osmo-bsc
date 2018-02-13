@@ -27,6 +27,7 @@ libbsc_a_SOURCES = \
 	abis_om2000.c \
 	abis_om2000_vty.c \
 	abis_rsl.c \
+	a_reset.c \
 	bsc_rll.c \
 	bsc_subscriber.c \
 	paging.c \
