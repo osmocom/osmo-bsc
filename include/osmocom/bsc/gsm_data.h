@@ -15,7 +15,6 @@
 
 #include <osmocom/crypt/auth.h>
 
-#include <osmocom/bsc/common.h>
 #include <osmocom/bsc/rest_octets.h>
 
 #include <osmocom/core/bitvec.h>

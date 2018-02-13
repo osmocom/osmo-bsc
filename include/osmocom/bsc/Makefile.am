@@ -14,7 +14,6 @@ noinst_HEADERS = \
 	bss.h \
 	bts_ipaccess_nanobts_omlattr.h \
 	chan_alloc.h \
-	common.h \
 	common_bsc.h \
 	ctrl.h \
 	debug.h \
