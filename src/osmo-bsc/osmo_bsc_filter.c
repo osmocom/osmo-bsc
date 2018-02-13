@@ -22,6 +22,7 @@
 #include <osmocom/bsc/osmo_bsc.h>
 #include <osmocom/bsc/bsc_msc_data.h>
 #include <osmocom/bsc/gsm_04_80.h>
+#include <osmocom/bsc/gsm_04_08_utils.h>
 #include <osmocom/bsc/bsc_subscriber.h>
 #include <osmocom/bsc/debug.h>
 #include <osmocom/bsc/paging.h>

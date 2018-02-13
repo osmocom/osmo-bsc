@@ -22,6 +22,12 @@ int gsm48_tx_mm_serv_ack(struct gsm_subscriber_connection *conn);
 int gsm48_tx_mm_serv_rej(struct gsm_subscriber_connection *conn,
 			 enum gsm48_reject_value value);
 
+struct msgb *gsm48_create_mm_serv_rej(enum gsm48_reject_value value);
+int gsm48_extract_mi(uint8_t *classmark2_lv, int length, char *mi_string, uint8_t *mi_type);
+int gsm48_paging_extract_mi(struct gsm48_pag_resp *resp, int length,
+			    char *mi_string, uint8_t *mi_type);
+struct msgb *gsm48_create_loc_upd_rej(uint8_t cause);
+
 #define GSM48_ALLOC_SIZE        2048
 #define GSM48_ALLOC_HEADROOM    256
 
