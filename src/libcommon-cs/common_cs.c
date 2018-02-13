@@ -30,39 +30,6 @@
 #include <osmocom/bsc/gsm_data.h>
 #include <osmocom/bsc/gsm_04_08_utils.h>
 
-/* Warning: if bsc_network_init() is not called, some of the members of
- * gsm_network are not initialized properly and must not be used! (In
- * particular the llist heads and stats counters.)
- * The long term aim should be to have entirely separate structs for libbsc and
- * libmsc with some common general items.
- */
-struct gsm_network *gsm_network_init(void *ctx,
-				     uint16_t country_code,
-				     uint16_t network_code)
-{
-	struct gsm_network *net;
-
-	net = talloc_zero(ctx, struct gsm_network);
-	if (!net)
-		return NULL;
-
-	net->country_code = country_code;
-	net->network_code = network_code;
-
-	/* Use 30 min periodic update interval as sane default */
-	net->t3212 = 5;
-
-	INIT_LLIST_HEAD(&net->trans_list);
-	INIT_LLIST_HEAD(&net->subscr_conns);
-
-	net->bsc_subscribers = talloc_zero(net, struct llist_head);
-	INIT_LLIST_HEAD(net->bsc_subscribers);
-
-	net->dyn_ts_allow_tch_f = true;
-
-	return net;
-}
-
 struct msgb *gsm48_create_mm_serv_rej(enum gsm48_reject_value value)
 {
 	struct msgb *msg;

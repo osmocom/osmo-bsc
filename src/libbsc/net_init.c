@@ -45,7 +45,21 @@ struct gsm_network *bsc_network_init(void *ctx,
 {
 	struct gsm_network *net;
 
-	net = gsm_network_init(ctx, country_code, network_code);
+	net = talloc_zero(ctx, struct gsm_network);
+	if (!net)
+		return NULL;
+
+	net->country_code = country_code;
+	net->network_code = network_code;
+
+	/* Use 30 min periodic update interval as sane default */
+	net->t3212 = 5;
+
+	INIT_LLIST_HEAD(&net->trans_list);
+	INIT_LLIST_HEAD(&net->subscr_conns);
+
+	net->bsc_subscribers = talloc_zero(net, struct llist_head);
+	INIT_LLIST_HEAD(net->bsc_subscribers);
 
 	net->bsc_data = talloc_zero(net, struct osmo_bsc_data);
 	if (!net->bsc_data) {
