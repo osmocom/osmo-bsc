@@ -24,7 +24,6 @@
 #include <osmocom/bsc/signal.h>
 #include <osmocom/bsc/bsc_subscriber.h>
 #include <osmocom/bsc/bsc_msc_data.h>
-#include <osmocom/bsc/gsm_data_shared.h>
 #include <osmocom/bsc/common_bsc.h>
 #include <osmocom/bsc/osmo_bsc_rf.h>
 

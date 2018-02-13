@@ -38,7 +38,6 @@
 #include <osmocom/gsm/gsm_utils.h>
 
 #include <osmocom/bsc/gsm_data.h>
-#include <osmocom/bsc/gsm_data_shared.h>
 #include <osmocom/bsc/meas_feed.h>
 
 static void print_meas_rep_uni_json(struct gsm_meas_rep_unidir *mru)

@@ -26,7 +26,6 @@
 
 #include <osmocom/bsc/common_bsc.h>
 #include <osmocom/bsc/gsm_data.h>
-#include <osmocom/bsc/gsm_data_shared.h>
 #include <osmocom/bsc/debug.h>
 #include <osmocom/bsc/arfcn_range_encode.h>
 #include <osmocom/bsc/system_information.h>

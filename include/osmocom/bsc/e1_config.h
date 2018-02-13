@@ -1,7 +1,9 @@
 #ifndef _E1_CONFIG_H
 #define _E1_CONFIG_H
 
-#include <osmocom/bsc/gsm_data_shared.h>
+struct gsm_bts_trx_ts;
+struct gsm_bts_trx;
+struct gsm_bts;
 
 int e1_reconfig_ts(struct gsm_bts_trx_ts *ts);
 int e1_reconfig_trx(struct gsm_bts_trx *trx);
