@@ -4314,6 +4314,7 @@ int bsc_vty_init(struct gsm_network *network)
 	install_element_ve(&show_paging_group_cmd);
 
 	logging_vty_add_cmds(NULL);
+	osmo_talloc_vty_add_cmds();
 
 	install_element(GSMNET_NODE, &cfg_net_neci_cmd);
 	install_element(GSMNET_NODE, &cfg_net_T3101_cmd);
