@@ -120,8 +120,7 @@ enum ipp_fd_type {
 	UDP_TO_BSC = 6,
 };
 
-/* some of the code against we link from OpenBSC needs this */
-void *tall_bsc_ctx = NULL;
+extern void *tall_bsc_ctx;
 
 static char *listen_ipaddr;
 static char *bsc_ipaddr;
