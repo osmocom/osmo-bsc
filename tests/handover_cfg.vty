@@ -144,19 +144,19 @@ network
 ... !handover
 
 OsmoBSC(config-net-bts)# ### Verify that 'min rxlev' value range stops at -50
-OsmoBSC(config-net-bts)# handover min rxlev ?
+OsmoBSC(config-net-bts)# handover2 min rxlev ?
   <-110--50>  minimum RxLev (dBm)
   default     Use default (-100), remove explicit setting on this node
-OsmoBSC(config-net-bts)# handover min rxlev -111
+OsmoBSC(config-net-bts)# handover2 min rxlev -111
 % Unknown command.
-OsmoBSC(config-net-bts)# handover min rxlev -110
-OsmoBSC(config-net-bts)# handover min rxlev -50
-OsmoBSC(config-net-bts)# handover min rxlev -49
+OsmoBSC(config-net-bts)# handover2 min rxlev -110
+OsmoBSC(config-net-bts)# handover2 min rxlev -50
+OsmoBSC(config-net-bts)# handover2 min rxlev -49
 % Unknown command.
-OsmoBSC(config-net-bts)# handover min rxlev 50
+OsmoBSC(config-net-bts)# handover2 min rxlev 50
 % Unknown command.
-OsmoBSC(config-net-bts)# handover min rxlev default
-% 'handover min rxlev' setting removed, now is -100
+OsmoBSC(config-net-bts)# handover2 min rxlev default
+% 'handover2 min rxlev' setting removed, now is -100
 
 
 OsmoBSC(config-net-bts)# ### Checking online help
@@ -171,29 +171,43 @@ OsmoBSC(config-net)# list
   handover power budget interval (<1-99>|default)
   handover power budget hysteresis (<0-999>|default)
   handover maximum distance (<0-9999>|default)
-  handover assignment (0|1|default)
-  handover tdma-measurement (full|subset|default)
-  handover min rxlev (<-110--50>|default)
-  handover min rxqual (<0-7>|default)
-  handover afs-bias rxlev (<0-20>|default)
-  handover afs-bias rxqual (<0-7>|default)
-  handover min-free-slots tch/f (<0-9999>|default)
-  handover min-free-slots tch/h (<0-9999>|default)
-  handover max-handovers (<1-9999>|default)
-  handover penalty-time max-distance (<0-99999>|default)
-  handover penalty-time failed-ho (<0-99999>|default)
-  handover penalty-time failed-assignment (<0-99999>|default)
-  handover retries (<0-9>|default)
+  handover2 window rxlev averaging (<1-10>|default)
+  handover2 window rxqual averaging (<1-10>|default)
+  handover2 window rxlev neighbor averaging (<1-10>|default)
+  handover2 power budget interval (<1-99>|default)
+  handover2 power budget hysteresis (<0-999>|default)
+  handover2 maximum distance (<0-9999>|default)
+  handover2 assignment (0|1|default)
+  handover2 tdma-measurement (full|subset|default)
+  handover2 min rxlev (<-110--50>|default)
+  handover2 min rxqual (<0-7>|default)
+  handover2 afs-bias rxlev (<0-20>|default)
+  handover2 afs-bias rxqual (<0-7>|default)
+  handover2 min-free-slots tch/f (<0-9999>|default)
+  handover2 min-free-slots tch/h (<0-9999>|default)
+  handover2 max-handovers (<1-9999>|default)
+  handover2 penalty-time max-distance (<0-99999>|default)
+  handover2 penalty-time failed-ho (<0-99999>|default)
+  handover2 penalty-time failed-assignment (<0-99999>|default)
+  handover2 retries (<0-9>|default)
 ...
 
 OsmoBSC(config-net)# handover?
-  handover  Handover options
+  handover  Handover general config
+
+OsmoBSC(config-net)# handover2?
+  handover2  Handover options for handover decision algorithm 2
 
 OsmoBSC(config-net)# handover ?
-  0                 Disable in-call handover
-  1                 Enable in-call handover
-  default           Enable/disable handover: Use default (0), remove explicit setting on this node
-  algorithm         Choose algorithm for handover decision
+  0          Disable in-call handover
+  1          Enable in-call handover
+  default    Enable/disable handover: Use default (0), remove explicit setting on this node
+  algorithm  Choose algorithm for handover decision
+  window     Measurement averaging settings
+  power      Neighbor cell power triggering
+  maximum    Maximum Timing-Advance value (i.e. MS distance) before triggering HO
+
+OsmoBSC(config-net)# handover2 ?
   window            Measurement averaging settings
   power             Neighbor cell power triggering
   maximum           Maximum Timing-Advance value (i.e. MS distance) before triggering HO
@@ -259,91 +273,148 @@ OsmoBSC(config-net)# handover maximum distance ?
   <0-9999>  Maximum Timing-Advance value (i.e. MS distance) before triggering HO
   default   Use default (9999), remove explicit setting on this node
 
-OsmoBSC(config-net)# handover assignment ?
+OsmoBSC(config-net)# handover2 window ?
+  rxlev   Received-Level averaging
+  rxqual  Received-Quality averaging
+
+OsmoBSC(config-net)# handover2 window rxlev ?
+  averaging  How many RxLev measurements are used for averaging
+  neighbor   How many Neighbor RxLev measurements are used for averaging
+
+OsmoBSC(config-net)# handover2 window rxlev averaging ?
+  <1-10>   RxLev averaging: Number of values to average over
+  default  Use default (10), remove explicit setting on this node
+
+OsmoBSC(config-net)# handover2 window rxlev neighbor ?
+  averaging  How many Neighbor RxLev measurements are used for averaging
+
+OsmoBSC(config-net)# handover2 window rxlev neighbor averaging ?
+  <1-10>   Neighbor RxLev averaging: Number of values to average over
+  default  Use default (10), remove explicit setting on this node
+
+OsmoBSC(config-net)# handover2 window rxqual ?
+  averaging  How many RxQual measurements are used for averaging
+
+OsmoBSC(config-net)# handover2 window rxqual averaging ?
+  <1-10>   RxQual averaging: Number of values to average over
+  default  Use default (1), remove explicit setting on this node
+
+OsmoBSC(config-net)# handover2 power ?
+  budget  Neighbor cell power triggering
+
+OsmoBSC(config-net)# handover2 power budget ?
+  interval    How often to check for a better cell (SACCH frames)
+  hysteresis  How many dBm stronger must a neighbor be to become a HO candidate
+
+OsmoBSC(config-net)# handover2 power budget interval ?
+  <1-99>   Check for stronger neighbor every N number of SACCH frames
+  default  Use default (6), remove explicit setting on this node
+
+OsmoBSC(config-net)# handover2 power budget hysteresis ?
+  <0-999>  Neighbor's strength difference in dBm
+  default  Use default (3), remove explicit setting on this node
+
+OsmoBSC(config-net)# handover2 maximum ?
+  distance  Maximum Timing-Advance value (i.e. MS distance) before triggering HO
+
+OsmoBSC(config-net)# handover2 maximum distance ?
+  <0-9999>  Maximum Timing-Advance value (i.e. MS distance) before triggering HO
+  default   Use default (9999), remove explicit setting on this node
+
+OsmoBSC(config-net)# handover2 assignment ?
   0        Disable in-call assignment
   1        Enable in-call assignment
   default  Use default (0), remove explicit setting on this node
 
-OsmoBSC(config-net)# handover tdma-measurement ?
+OsmoBSC(config-net)# handover2 tdma-measurement ?
   full     Full set of 102/104 TDMA frames
   subset   Sub set of 4 TDMA frames (SACCH)
   default  Use default (subset), remove explicit setting on this node
 
-OsmoBSC(config-net)# handover min ?
+OsmoBSC(config-net)# handover2 min ?
   rxlev   How weak may RxLev of an MS become before triggering HO
   rxqual  How bad may RxQual of an MS become before triggering HO
 
-OsmoBSC(config-net)# handover min rxlev ?
+OsmoBSC(config-net)# handover2 min rxlev ?
   <-110--50>  minimum RxLev (dBm)
   default     Use default (-100), remove explicit setting on this node
 
-OsmoBSC(config-net)# handover min rxqual ?
+OsmoBSC(config-net)# handover2 min rxqual ?
   <0-7>    minimum RxQual (dBm)
   default  Use default (5), remove explicit setting on this node
 
-OsmoBSC(config-net)# handover afs-bias ?
+OsmoBSC(config-net)# handover2 afs-bias ?
   rxlev   RxLev improvement bias for AFS over other codecs
   rxqual  RxQual improvement bias for AFS over other codecs
 
-OsmoBSC(config-net)# handover afs-bias rxlev ?
+OsmoBSC(config-net)# handover2 afs-bias rxlev ?
   <0-20>   Virtual RxLev improvement (dBm)
   default  Use default (0), remove explicit setting on this node
 
-OsmoBSC(config-net)# handover afs-bias rxqual ?
+OsmoBSC(config-net)# handover2 afs-bias rxqual ?
   <0-7>    Virtual RxQual improvement (dBm)
   default  Use default (0), remove explicit setting on this node
 
-OsmoBSC(config-net)# handover min-free-slots ?
+OsmoBSC(config-net)# handover2 min-free-slots ?
   tch/f  Minimum free TCH/F timeslots before cell is considered congested
   tch/h  Minimum free TCH/H timeslots before cell is considered congested
 
-OsmoBSC(config-net)# handover min-free-slots tch/f ?
+OsmoBSC(config-net)# handover2 min-free-slots tch/f ?
   <0-9999>  Number of TCH/F slots
   default   Use default (0), remove explicit setting on this node
 
-OsmoBSC(config-net)# handover min-free-slots TCH/F ?
+OsmoBSC(config-net)# handover2 min-free-slots TCH/F ?
 % There is no matched command.
 
-OsmoBSC(config-net)# handover min-free-slots tch/h ?
+OsmoBSC(config-net)# handover2 min-free-slots tch/h ?
   <0-9999>  Number of TCH/H slots
   default   Use default (0), remove explicit setting on this node
 
-OsmoBSC(config-net)# handover max-handovers ?
+OsmoBSC(config-net)# handover2 max-handovers ?
   <1-9999>  Number
   default   Use default (9999), remove explicit setting on this node
 
-OsmoBSC(config-net)# handover penalty-time ?
+OsmoBSC(config-net)# handover2 penalty-time ?
   max-distance       Time to suspend handovers after leaving this cell due to exceeding max distance
   failed-ho          Time to suspend handovers after handover failure to this cell
   failed-assignment  Time to suspend handovers after assignment failure in this cell
 
-OsmoBSC(config-net)# handover penalty-time max-distance ?
+OsmoBSC(config-net)# handover2 penalty-time max-distance ?
   <0-99999>  Seconds
   default    Use default (300), remove explicit setting on this node
 
-OsmoBSC(config-net)# handover penalty-time failed-ho ?
+OsmoBSC(config-net)# handover2 penalty-time failed-ho ?
   <0-99999>  Seconds
   default    Use default (60), remove explicit setting on this node
 
-OsmoBSC(config-net)# handover penalty-time failed-assignment ?
+OsmoBSC(config-net)# handover2 penalty-time failed-assignment ?
   <0-99999>  Seconds
   default    Use default (60), remove explicit setting on this node
 
-OsmoBSC(config-net)# handover retries ?
+OsmoBSC(config-net)# handover2 retries ?
   <0-9>    Number of retries
   default  Use default (0), remove explicit setting on this node
 
 
 OsmoBSC(config-net)# ### Same on BTS level
 OsmoBSC(config-net)# bts 0
+
 OsmoBSC(config-net-bts)# handover?
-  handover  Handover options
+  handover  Handover general config
+
+OsmoBSC(config-net-bts)# handover2?
+  handover2  Handover options for handover decision algorithm 2
 
 OsmoBSC(config-net-bts)# handover ?
-  0                 Disable in-call handover
-  1                 Enable in-call handover
-  default           Enable/disable handover: Use default (0), remove explicit setting on this node
-  algorithm         Choose algorithm for handover decision
+  0          Disable in-call handover
+  1          Enable in-call handover
+  default    Enable/disable handover: Use default (0), remove explicit setting on this node
+  algorithm  Choose algorithm for handover decision
+  window     Measurement averaging settings
+  power      Neighbor cell power triggering
+  maximum    Maximum Timing-Advance value (i.e. MS distance) before triggering HO
+
+OsmoBSC(config-net-bts)# handover2 ?
   window            Measurement averaging settings
   power             Neighbor cell power triggering
   maximum           Maximum Timing-Advance value (i.e. MS distance) before triggering HO
@@ -409,76 +480,124 @@ OsmoBSC(config-net-bts)# handover maximum distance ?
   <0-9999>  Maximum Timing-Advance value (i.e. MS distance) before triggering HO
   default   Use default (9999), remove explicit setting on this node
 
-OsmoBSC(config-net-bts)# handover assignment ?
+OsmoBSC(config-net-bts)# handover2 window ?
+  rxlev   Received-Level averaging
+  rxqual  Received-Quality averaging
+
+OsmoBSC(config-net-bts)# handover2 window rxlev ?
+  averaging  How many RxLev measurements are used for averaging
+  neighbor   How many Neighbor RxLev measurements are used for averaging
+
+OsmoBSC(config-net-bts)# handover2 window rxlev averaging ?
+  <1-10>   RxLev averaging: Number of values to average over
+  default  Use default (10), remove explicit setting on this node
+
+OsmoBSC(config-net-bts)# handover2 window rxlev neighbor ?
+  averaging  How many Neighbor RxLev measurements are used for averaging
+
+OsmoBSC(config-net-bts)# handover2 window rxlev neighbor averaging ?
+  <1-10>   Neighbor RxLev averaging: Number of values to average over
+  default  Use default (10), remove explicit setting on this node
+
+OsmoBSC(config-net-bts)# handover2 window rxqual ?
+  averaging  How many RxQual measurements are used for averaging
+
+OsmoBSC(config-net-bts)# handover2 window rxqual averaging ?
+  <1-10>   RxQual averaging: Number of values to average over
+  default  Use default (1), remove explicit setting on this node
+
+OsmoBSC(config-net-bts)# handover2 power ?
+  budget  Neighbor cell power triggering
+
+OsmoBSC(config-net-bts)# handover2 power budget ?
+  interval    How often to check for a better cell (SACCH frames)
+  hysteresis  How many dBm stronger must a neighbor be to become a HO candidate
+
+OsmoBSC(config-net-bts)# handover2 power budget interval ?
+  <1-99>   Check for stronger neighbor every N number of SACCH frames
+  default  Use default (6), remove explicit setting on this node
+
+OsmoBSC(config-net-bts)# handover2 power budget hysteresis ?
+  <0-999>  Neighbor's strength difference in dBm
+  default  Use default (3), remove explicit setting on this node
+
+OsmoBSC(config-net-bts)# handover2 maximum ?
+  distance  Maximum Timing-Advance value (i.e. MS distance) before triggering HO
+
+OsmoBSC(config-net-bts)# handover2 maximum distance ?
+  <0-9999>  Maximum Timing-Advance value (i.e. MS distance) before triggering HO
+  default   Use default (9999), remove explicit setting on this node
+
+OsmoBSC(config-net-bts)# handover2 assignment ?
   0        Disable in-call assignment
   1        Enable in-call assignment
   default  Use default (0), remove explicit setting on this node
 
-OsmoBSC(config-net-bts)# handover tdma-measurement ?
+OsmoBSC(config-net-bts)# handover2 tdma-measurement ?
   full     Full set of 102/104 TDMA frames
   subset   Sub set of 4 TDMA frames (SACCH)
   default  Use default (subset), remove explicit setting on this node
 
-OsmoBSC(config-net-bts)# handover min ?
+OsmoBSC(config-net-bts)# handover2 min ?
   rxlev   How weak may RxLev of an MS become before triggering HO
   rxqual  How bad may RxQual of an MS become before triggering HO
 
-OsmoBSC(config-net-bts)# handover min rxlev ?
+OsmoBSC(config-net-bts)# handover2 min rxlev ?
   <-110--50>  minimum RxLev (dBm)
   default     Use default (-100), remove explicit setting on this node
 
-OsmoBSC(config-net-bts)# handover min rxqual ?
+OsmoBSC(config-net-bts)# handover2 min rxqual ?
   <0-7>    minimum RxQual (dBm)
   default  Use default (5), remove explicit setting on this node
 
-OsmoBSC(config-net-bts)# handover afs-bias ?
+OsmoBSC(config-net-bts)# handover2 afs-bias ?
   rxlev   RxLev improvement bias for AFS over other codecs
   rxqual  RxQual improvement bias for AFS over other codecs
 
-OsmoBSC(config-net-bts)# handover afs-bias rxlev ?
+OsmoBSC(config-net-bts)# handover2 afs-bias rxlev ?
   <0-20>   Virtual RxLev improvement (dBm)
   default  Use default (0), remove explicit setting on this node
 
-OsmoBSC(config-net-bts)# handover afs-bias rxqual ?
+OsmoBSC(config-net-bts)# handover2 afs-bias rxqual ?
   <0-7>    Virtual RxQual improvement (dBm)
   default  Use default (0), remove explicit setting on this node
 
-OsmoBSC(config-net-bts)# handover min-free-slots ?
+OsmoBSC(config-net-bts)# handover2 min-free-slots ?
   tch/f  Minimum free TCH/F timeslots before cell is considered congested
   tch/h  Minimum free TCH/H timeslots before cell is considered congested
 
-OsmoBSC(config-net-bts)# handover min-free-slots tch/f ?
+OsmoBSC(config-net-bts)# handover2 min-free-slots tch/f ?
   <0-9999>  Number of TCH/F slots
   default   Use default (0), remove explicit setting on this node
 
-OsmoBSC(config-net-bts)# handover min-free-slots TCH/F ?
+OsmoBSC(config-net-bts)# handover2 min-free-slots TCH/F ?
 % There is no matched command.
 
-OsmoBSC(config-net-bts)# handover min-free-slots tch/h ?
+OsmoBSC(config-net-bts)# handover2 min-free-slots tch/h ?
   <0-9999>  Number of TCH/H slots
   default   Use default (0), remove explicit setting on this node
 
-OsmoBSC(config-net-bts)# handover max-handovers ?
+OsmoBSC(config-net-bts)# handover2 max-handovers ?
   <1-9999>  Number
   default   Use default (9999), remove explicit setting on this node
 
-OsmoBSC(config-net-bts)# handover penalty-time ?
+OsmoBSC(config-net-bts)# handover2 penalty-time ?
   max-distance       Time to suspend handovers after leaving this cell due to exceeding max distance
   failed-ho          Time to suspend handovers after handover failure to this cell
   failed-assignment  Time to suspend handovers after assignment failure in this cell
 
-OsmoBSC(config-net-bts)# handover penalty-time max-distance ?
+OsmoBSC(config-net-bts)# handover2 penalty-time max-distance ?
   <0-99999>  Seconds
   default    Use default (300), remove explicit setting on this node
 
-OsmoBSC(config-net-bts)# handover penalty-time failed-ho ?
+OsmoBSC(config-net-bts)# handover2 penalty-time failed-ho ?
   <0-99999>  Seconds
   default    Use default (60), remove explicit setting on this node
 
-OsmoBSC(config-net-bts)# handover penalty-time failed-assignment ?
+OsmoBSC(config-net-bts)# handover2 penalty-time failed-assignment ?
   <0-99999>  Seconds
   default    Use default (60), remove explicit setting on this node
 
-OsmoBSC(config-net-bts)# handover retries ?
+OsmoBSC(config-net-bts)# handover2 retries ?
   <0-9>    Number of retries
   default  Use default (0), remove explicit setting on this node

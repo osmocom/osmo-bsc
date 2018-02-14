@@ -215,10 +215,10 @@ static int attempt_handover(struct gsm_meas_rep *mr)
 			continue;
 
 		/* caculate average rxlev for this cell over the window */
-		avg = neigh_meas_avg(nmp, ho_get_rxlev_neigh_avg_win(bts->ho));
+		avg = neigh_meas_avg(nmp, ho_get_hodec1_rxlev_neigh_avg_win(bts->ho));
 
 		/* check if hysteresis is fulfilled */
-		if (avg < mr->dl.full.rx_lev + ho_get_pwr_hysteresis(bts->ho))
+		if (avg < mr->dl.full.rx_lev + ho_get_hodec1_pwr_hysteresis(bts->ho))
 			continue;
 
 		better = avg - mr->dl.full.rx_lev;
@@ -290,7 +290,7 @@ static int process_meas_rep(struct gsm_meas_rep *mr)
 		process_meas_neigh(mr);
 
 	av_rxlev = get_meas_rep_avg(mr->lchan, dlev,
-				    ho_get_rxlev_avg_win(bts->ho));
+				    ho_get_hodec1_rxlev_avg_win(bts->ho));
 
 	/* Interference HO */
 	if (rxlev2dbm(av_rxlev) > -85 &&
@@ -313,14 +313,14 @@ static int process_meas_rep(struct gsm_meas_rep *mr)
 	}
 
 	/* Distance */
-	if (mr->ms_l1.ta > ho_get_max_distance(bts->ho)) {
+	if (mr->ms_l1.ta > ho_get_hodec1_max_distance(bts->ho)) {
 		LOGPC(DHO, LOGL_INFO, "HO cause: Distance av_rxlev=%d dBm ta=%d \n",
 					rxlev2dbm(av_rxlev), mr->ms_l1.ta);
 		return attempt_handover(mr);
 	}
 
 	/* Power Budget AKA Better Cell */
-	pwr_interval = ho_get_pwr_interval(bts->ho);
+	pwr_interval = ho_get_hodec1_pwr_interval(bts->ho);
 	/* handover_cfg.h defines pwr_interval as [1..99], but since we're using it in a modulo below,
 	 * assert non-zero to clarify. */
 	OSMO_ASSERT(pwr_interval);

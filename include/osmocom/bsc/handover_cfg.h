@@ -12,11 +12,12 @@ struct handover_cfg;
 
 struct handover_cfg *ho_cfg_init(void *ctx, struct handover_cfg *higher_level_cfg);
 
-#define HO_CFG_STR_HANDOVER "Handover options\n"
-#define HO_CFG_STR_WIN HO_CFG_STR_HANDOVER "Measurement averaging settings\n"
+#define HO_CFG_STR_HANDOVER1 "Handover options for handover decision algorithm 1\n"
+#define HO_CFG_STR_HANDOVER2 "Handover options for handover decision algorithm 2\n"
+#define HO_CFG_STR_WIN "Measurement averaging settings\n"
 #define HO_CFG_STR_WIN_RXLEV HO_CFG_STR_WIN "Received-Level averaging\n"
 #define HO_CFG_STR_WIN_RXQUAL HO_CFG_STR_WIN "Received-Quality averaging\n"
-#define HO_CFG_STR_POWER_BUDGET HO_CFG_STR_HANDOVER "Neighbor cell power triggering\n" "Neighbor cell power triggering\n"
+#define HO_CFG_STR_POWER_BUDGET "Neighbor cell power triggering\n" "Neighbor cell power triggering\n"
 #define HO_CFG_STR_AVG_COUNT "Number of values to average over\n"
 #define HO_CFG_STR_2 " (HO algo 2 only)\n"
 #define HO_CFG_STR_MIN "Minimum Level/Quality thresholds before triggering HO" HO_CFG_STR_2
@@ -68,150 +69,209 @@ static inline const char *tdma2a(bool val)
  * VTY_WRITE_CONV: function name to convert struct value to VTY_WRITE_FMT, e.g. 'as_is'.
  * VTY_DOC: VTY documentation strings to match VTY_CMD and VTY_CMD_ARGs.
  */
-#define HO_CFG_ALL_MEMBERS \
+#define HO_GENERAL_CFG_ALL_MEMBERS \
 	\
 	HO_CFG_ONE_MEMBER(bool, ho_active, 0, \
 		"handover", "0|1", a2bool, "%d", bool2i, \
-		HO_CFG_STR_HANDOVER \
+		"Handover general config\n" \
 		"Disable in-call handover\n" \
 		"Enable in-call handover\n" \
 		"Enable/disable handover: ") \
 	\
 	HO_CFG_ONE_MEMBER(int, algorithm, 1, \
 		"handover algorithm", "1|2", atoi, "%d", as_is, \
-		HO_CFG_STR_HANDOVER \
+		"Handover general config\n" \
 		"Choose algorithm for handover decision\n" \
 		"Algorithm 1: trigger handover based on comparing current cell and neighbor RxLev and RxQual," \
 		" only.\n" \
 		"Algorithm 2: trigger handover on RxLev/RxQual, and also to balance the load across several" \
 		" cells. Consider available codecs. Prevent repeated handover by penalty timers.\n") \
+
+
+#define HODEC1_CFG_ALL_MEMBERS \
 	\
-	HO_CFG_ONE_MEMBER(unsigned int, rxlev_avg_win, 10, \
+	HO_CFG_ONE_MEMBER(unsigned int, hodec1_rxlev_avg_win, 10, \
 		"handover window rxlev averaging", "<1-10>", atoi, "%u", as_is, \
+		HO_CFG_STR_HANDOVER1 \
 		HO_CFG_STR_WIN_RXLEV \
 		"How many RxLev measurements are used for averaging\n" \
 		"RxLev averaging: " HO_CFG_STR_AVG_COUNT) \
 	\
-	HO_CFG_ONE_MEMBER(unsigned int, rxqual_avg_win, 1, \
+	HO_CFG_ONE_MEMBER(unsigned int, hodec1_rxqual_avg_win, 1, \
 		"handover window rxqual averaging", "<1-10>", atoi, "%u", as_is, \
+		HO_CFG_STR_HANDOVER1 \
 		HO_CFG_STR_WIN_RXQUAL \
 		"How many RxQual measurements are used for averaging\n" \
 		"RxQual averaging: " HO_CFG_STR_AVG_COUNT) \
 	\
-	HO_CFG_ONE_MEMBER(unsigned int, rxlev_neigh_avg_win, 10, \
+	HO_CFG_ONE_MEMBER(unsigned int, hodec1_rxlev_neigh_avg_win, 10, \
 		"handover window rxlev neighbor averaging", "<1-10>", atoi, "%u", as_is, \
+		HO_CFG_STR_HANDOVER1 \
 		HO_CFG_STR_WIN_RXLEV \
 		"How many Neighbor RxLev measurements are used for averaging\n" \
 		"How many Neighbor RxLev measurements are used for averaging\n" \
 		"Neighbor RxLev averaging: " HO_CFG_STR_AVG_COUNT) \
 	\
-	HO_CFG_ONE_MEMBER(unsigned int, pwr_interval, 6, \
+	HO_CFG_ONE_MEMBER(unsigned int, hodec1_pwr_interval, 6, \
 		"handover power budget interval", "<1-99>", atoi, "%u", as_is, \
+		HO_CFG_STR_HANDOVER1 \
 		HO_CFG_STR_POWER_BUDGET \
 		"How often to check for a better cell (SACCH frames)\n" \
 		"Check for stronger neighbor every N number of SACCH frames\n") \
 	\
-	HO_CFG_ONE_MEMBER(unsigned int, pwr_hysteresis, 3, \
+	HO_CFG_ONE_MEMBER(unsigned int, hodec1_pwr_hysteresis, 3, \
 		"handover power budget hysteresis", "<0-999>", atoi, "%u", as_is, \
+		HO_CFG_STR_HANDOVER1 \
 		HO_CFG_STR_POWER_BUDGET \
 		"How many dBm stronger must a neighbor be to become a HO candidate\n" \
 		"Neighbor's strength difference in dBm\n") \
 	\
-	HO_CFG_ONE_MEMBER(unsigned int, max_distance, 9999, \
+	HO_CFG_ONE_MEMBER(unsigned int, hodec1_max_distance, 9999, \
 		"handover maximum distance" , "<0-9999>", atoi, "%u", as_is, \
-		HO_CFG_STR_HANDOVER \
+		HO_CFG_STR_HANDOVER1 \
+		"Maximum Timing-Advance value (i.e. MS distance) before triggering HO\n" \
+		"Maximum Timing-Advance value (i.e. MS distance) before triggering HO\n" \
+		"Maximum Timing-Advance value (i.e. MS distance) before triggering HO\n") \
+
+
+#define HODEC2_CFG_ALL_MEMBERS \
+	\
+	HO_CFG_ONE_MEMBER(unsigned int, hodec2_rxlev_avg_win, 10, \
+		"handover2 window rxlev averaging", "<1-10>", atoi, "%u", as_is, \
+		HO_CFG_STR_HANDOVER2 \
+		HO_CFG_STR_WIN_RXLEV \
+		"How many RxLev measurements are used for averaging\n" \
+		"RxLev averaging: " HO_CFG_STR_AVG_COUNT) \
+	\
+	HO_CFG_ONE_MEMBER(unsigned int, hodec2_rxqual_avg_win, 1, \
+		"handover2 window rxqual averaging", "<1-10>", atoi, "%u", as_is, \
+		HO_CFG_STR_HANDOVER2 \
+		HO_CFG_STR_WIN_RXQUAL \
+		"How many RxQual measurements are used for averaging\n" \
+		"RxQual averaging: " HO_CFG_STR_AVG_COUNT) \
+	\
+	HO_CFG_ONE_MEMBER(unsigned int, hodec2_rxlev_neigh_avg_win, 10, \
+		"handover2 window rxlev neighbor averaging", "<1-10>", atoi, "%u", as_is, \
+		HO_CFG_STR_HANDOVER2 \
+		HO_CFG_STR_WIN_RXLEV \
+		"How many Neighbor RxLev measurements are used for averaging\n" \
+		"How many Neighbor RxLev measurements are used for averaging\n" \
+		"Neighbor RxLev averaging: " HO_CFG_STR_AVG_COUNT) \
+	\
+	HO_CFG_ONE_MEMBER(unsigned int, hodec2_pwr_interval, 6, \
+		"handover2 power budget interval", "<1-99>", atoi, "%u", as_is, \
+		HO_CFG_STR_HANDOVER2 \
+		HO_CFG_STR_POWER_BUDGET \
+		"How often to check for a better cell (SACCH frames)\n" \
+		"Check for stronger neighbor every N number of SACCH frames\n") \
+	\
+	HO_CFG_ONE_MEMBER(unsigned int, hodec2_pwr_hysteresis, 3, \
+		"handover2 power budget hysteresis", "<0-999>", atoi, "%u", as_is, \
+		HO_CFG_STR_HANDOVER2 \
+		HO_CFG_STR_POWER_BUDGET \
+		"How many dBm stronger must a neighbor be to become a HO candidate\n" \
+		"Neighbor's strength difference in dBm\n") \
+	\
+	HO_CFG_ONE_MEMBER(unsigned int, hodec2_max_distance, 9999, \
+		"handover2 maximum distance" , "<0-9999>", atoi, "%u", as_is, \
+		HO_CFG_STR_HANDOVER2 \
 		"Maximum Timing-Advance value (i.e. MS distance) before triggering HO\n" \
 		"Maximum Timing-Advance value (i.e. MS distance) before triggering HO\n" \
 		"Maximum Timing-Advance value (i.e. MS distance) before triggering HO\n") \
 	\
-	HO_CFG_ONE_MEMBER(bool, as_active, 0, \
-		"handover assignment", "0|1", a2bool, "%d", bool2i, \
-		HO_CFG_STR_HANDOVER \
+	HO_CFG_ONE_MEMBER(bool, hodec2_as_active, 0, \
+		"handover2 assignment", "0|1", a2bool, "%d", bool2i, \
+		HO_CFG_STR_HANDOVER2 \
 		"Enable or disable in-call channel re-assignment" HO_CFG_STR_2 \
 		"Disable in-call assignment\n" \
 		"Enable in-call assignment\n") \
 	\
-	HO_CFG_ONE_MEMBER(bool, full_tdma, subset, \
-		"handover tdma-measurement", "full|subset", a2tdma, "%s", tdma2a, \
-		HO_CFG_STR_HANDOVER \
+	HO_CFG_ONE_MEMBER(bool, hodec2_full_tdma, subset, \
+		"handover2 tdma-measurement", "full|subset", a2tdma, "%s", tdma2a, \
+		HO_CFG_STR_HANDOVER2 \
 		"Define measurement set of TDMA frames" HO_CFG_STR_2 \
 		"Full set of 102/104 TDMA frames\n" \
 		"Sub set of 4 TDMA frames (SACCH)\n") \
 	\
-	HO_CFG_ONE_MEMBER(int, min_rxlev, -100, \
-		"handover min rxlev", "<-110--50>", atoi, "%d", as_is, \
-		HO_CFG_STR_HANDOVER \
+	HO_CFG_ONE_MEMBER(int, hodec2_min_rxlev, -100, \
+		"handover2 min rxlev", "<-110--50>", atoi, "%d", as_is, \
+		HO_CFG_STR_HANDOVER2 \
 		HO_CFG_STR_MIN \
 		"How weak may RxLev of an MS become before triggering HO\n" \
 		"minimum RxLev (dBm)\n") \
 	\
-	HO_CFG_ONE_MEMBER(int, min_rxqual, 5, \
-		"handover min rxqual", "<0-7>", atoi, "%d", as_is, \
-		HO_CFG_STR_HANDOVER \
+	HO_CFG_ONE_MEMBER(int, hodec2_min_rxqual, 5, \
+		"handover2 min rxqual", "<0-7>", atoi, "%d", as_is, \
+		HO_CFG_STR_HANDOVER2 \
 		HO_CFG_STR_MIN \
 		"How bad may RxQual of an MS become before triggering HO\n" \
 		"minimum RxQual (dBm)\n") \
 	\
-	HO_CFG_ONE_MEMBER(int, afs_bias_rxlev, 0, \
-		"handover afs-bias rxlev", "<0-20>", atoi, "%d", as_is, \
-		HO_CFG_STR_HANDOVER \
+	HO_CFG_ONE_MEMBER(int, hodec2_afs_bias_rxlev, 0, \
+		"handover2 afs-bias rxlev", "<0-20>", atoi, "%d", as_is, \
+		HO_CFG_STR_HANDOVER2 \
 		HO_CFG_STR_AFS_BIAS \
 		"RxLev improvement bias for AFS over other codecs\n" \
 		"Virtual RxLev improvement (dBm)\n") \
 	\
-	HO_CFG_ONE_MEMBER(int, afs_bias_rxqual, 0, \
-		"handover afs-bias rxqual", "<0-7>", atoi, "%d", as_is, \
-		HO_CFG_STR_HANDOVER \
+	HO_CFG_ONE_MEMBER(int, hodec2_afs_bias_rxqual, 0, \
+		"handover2 afs-bias rxqual", "<0-7>", atoi, "%d", as_is, \
+		HO_CFG_STR_HANDOVER2 \
 		HO_CFG_STR_AFS_BIAS \
 		"RxQual improvement bias for AFS over other codecs\n" \
 		"Virtual RxQual improvement (dBm)\n") \
 	\
-	HO_CFG_ONE_MEMBER(int, tchf_min_slots, 0, \
-		"handover min-free-slots tch/f", "<0-9999>", atoi, "%d", as_is, \
-		HO_CFG_STR_HANDOVER \
+	HO_CFG_ONE_MEMBER(int, hodec2_tchf_min_slots, 0, \
+		"handover2 min-free-slots tch/f", "<0-9999>", atoi, "%d", as_is, \
+		HO_CFG_STR_HANDOVER2 \
 		HO_CFG_STR_MIN_TCH \
 		"Minimum free TCH/F timeslots before cell is considered congested\n" \
 		"Number of TCH/F slots\n") \
 	\
-	HO_CFG_ONE_MEMBER(int, tchh_min_slots, 0, \
-		"handover min-free-slots tch/h", "<0-9999>", atoi, "%d", as_is, \
-		HO_CFG_STR_HANDOVER \
+	HO_CFG_ONE_MEMBER(int, hodec2_tchh_min_slots, 0, \
+		"handover2 min-free-slots tch/h", "<0-9999>", atoi, "%d", as_is, \
+		HO_CFG_STR_HANDOVER2 \
 		HO_CFG_STR_MIN_TCH \
 		"Minimum free TCH/H timeslots before cell is considered congested\n" \
 		"Number of TCH/H slots\n") \
 	\
-	HO_CFG_ONE_MEMBER(int, ho_max, 9999, \
-		"handover max-handovers", "<1-9999>", atoi, "%d", as_is, \
-		HO_CFG_STR_HANDOVER \
+	HO_CFG_ONE_MEMBER(int, hodec2_ho_max, 9999, \
+		"handover2 max-handovers", "<1-9999>", atoi, "%d", as_is, \
+		HO_CFG_STR_HANDOVER2 \
 		"Maximum number of concurrent handovers allowed per cell" HO_CFG_STR_2 \
 		"Number\n") \
 	\
-	HO_CFG_ONE_MEMBER(int, penalty_max_dist, 300, \
-		"handover penalty-time max-distance", "<0-99999>", atoi, "%d", as_is, \
-		HO_CFG_STR_HANDOVER \
+	HO_CFG_ONE_MEMBER(int, hodec2_penalty_max_dist, 300, \
+		"handover2 penalty-time max-distance", "<0-99999>", atoi, "%d", as_is, \
+		HO_CFG_STR_HANDOVER2 \
 		HO_CFG_STR_PENALTY_TIME \
 		"Time to suspend handovers after leaving this cell due to exceeding max distance\n" \
 		"Seconds\n") \
 	\
-	HO_CFG_ONE_MEMBER(int, penalty_failed_ho, 60, \
-		"handover penalty-time failed-ho", "<0-99999>", atoi, "%d", as_is, \
-		HO_CFG_STR_HANDOVER \
+	HO_CFG_ONE_MEMBER(int, hodec2_penalty_failed_ho, 60, \
+		"handover2 penalty-time failed-ho", "<0-99999>", atoi, "%d", as_is, \
+		HO_CFG_STR_HANDOVER2 \
 		HO_CFG_STR_PENALTY_TIME \
 		"Time to suspend handovers after handover failure to this cell\n" \
 		"Seconds\n") \
 	\
-	HO_CFG_ONE_MEMBER(int, penalty_failed_as, 60, \
-		"handover penalty-time failed-assignment", "<0-99999>", atoi, "%d", as_is, \
-		HO_CFG_STR_HANDOVER \
+	HO_CFG_ONE_MEMBER(int, hodec2_penalty_failed_as, 60, \
+		"handover2 penalty-time failed-assignment", "<0-99999>", atoi, "%d", as_is, \
+		HO_CFG_STR_HANDOVER2 \
 		HO_CFG_STR_PENALTY_TIME \
 		"Time to suspend handovers after assignment failure in this cell\n" \
 		"Seconds\n") \
 	\
-	HO_CFG_ONE_MEMBER(int, retries, 0, \
-		"handover retries", "<0-9>", atoi, "%d", as_is, \
-		HO_CFG_STR_HANDOVER \
+	HO_CFG_ONE_MEMBER(int, hodec2_retries, 0, \
+		"handover2 retries", "<0-9>", atoi, "%d", as_is, \
+		HO_CFG_STR_HANDOVER2 \
 		"Immediately retry on handover/assignment failure" HO_CFG_STR_2 \
 		"Number of retries\n") \
+
+#define HO_CFG_ALL_MEMBERS \
+	HO_GENERAL_CFG_ALL_MEMBERS \
+	HODEC1_CFG_ALL_MEMBERS \
+	HODEC2_CFG_ALL_MEMBERS \
 
 
 /* Declare public API for handover cfg parameters... */
