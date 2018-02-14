@@ -55,7 +55,6 @@ struct gsm_network *bsc_network_init(void *ctx,
 	/* Use 30 min periodic update interval as sane default */
 	net->t3212 = 5;
 
-	INIT_LLIST_HEAD(&net->trans_list);
 	INIT_LLIST_HEAD(&net->subscr_conns);
 
 	net->bsc_subscribers = talloc_zero(net, struct llist_head);

@@ -1144,12 +1144,6 @@ struct gsm_network {
 
 	struct rate_ctr_group *bsc_ctrs;
 
-	/*
-	 * TODO: Move the trans_list into the subscriber connection and
-	 * create a pending list for MT transactions. These exist before
-	 * we have a subscriber connection.
-	 */
-	struct llist_head trans_list;
 	struct bsc_api *bsc_api;
 
 	unsigned int num_bts;
