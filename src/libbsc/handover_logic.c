@@ -138,10 +138,8 @@ int bsc_handover_start(struct gsm_lchan *old_lchan, struct gsm_bts *new_bts,
 	ho->old_lchan = old_lchan;
 	ho->new_lchan = new_lchan;
 	ho->ho_ref = ho_ref++;
-	if (!do_assignment) {
-		ho->inter_cell = true;
-		ho->async = true;
-	}
+	ho->inter_cell = !do_assignment;
+	ho->async = true;
 
 	/* copy some parameters from old lchan */
 	memcpy(&new_lchan->encr, &old_lchan->encr, sizeof(new_lchan->encr));
