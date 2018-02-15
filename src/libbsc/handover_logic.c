@@ -255,8 +255,8 @@ static int ho_chan_activ_nack(struct gsm_lchan *new_lchan)
 
 	ho = bsc_ho_by_new_lchan(new_lchan);
 	if (!ho) {
-		LOGP(DHO, LOGL_INFO, "ACT NACK: unable to find HO record\n");
-		return -ENODEV;
+		/* This lchan is not involved in a handover. */
+		return 0;
 	}
 
 	hdc = handover_decision_callbacks_get(ho->from_hodec_id);
