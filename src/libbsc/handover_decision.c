@@ -257,7 +257,7 @@ static int attempt_handover(struct gsm_meas_rep *mr)
 
 /* process an already parsed measurement report and decide if we want to
  * attempt a handover */
-static int process_meas_rep(struct gsm_meas_rep *mr)
+static void process_meas_rep(struct gsm_meas_rep *mr)
 {
 	struct gsm_bts *bts = mr->lchan->ts->trx->bts;
 	enum meas_rep_field dlev, dqual;
@@ -266,7 +266,7 @@ static int process_meas_rep(struct gsm_meas_rep *mr)
 
 	/* If this cell does not use handover algorithm 1, then we're not responsible. */
 	if (ho_get_algorithm(bts->ho) != 1)
-		return 0;
+		return;
 
 	/* we currently only do handover for TCH channels */
 	switch (mr->lchan->type) {
@@ -274,7 +274,7 @@ static int process_meas_rep(struct gsm_meas_rep *mr)
 	case GSM_LCHAN_TCH_H:
 		break;
 	default:
-		return 0;
+		return;
 	}
 
 	if (mr->flags & MEAS_REP_F_DL_DTX) {
@@ -297,26 +297,30 @@ static int process_meas_rep(struct gsm_meas_rep *mr)
 	    meas_rep_n_out_of_m_be(mr->lchan, dqual, 3, 4, 5)) {
 		LOGPC(DHO, LOGL_INFO, "HO cause: Interference HO av_rxlev=%d dBm\n",
 		      rxlev2dbm(av_rxlev));
-		return attempt_handover(mr);
+		attempt_handover(mr);
+		return;
 	}
 
 	/* Bad Quality */
 	if (meas_rep_n_out_of_m_be(mr->lchan, dqual, 3, 4, 5)) {
 		LOGPC(DHO, LOGL_INFO, "HO cause: Bad Quality av_rxlev=%d dBm\n", rxlev2dbm(av_rxlev));
-		return attempt_handover(mr);
+		attempt_handover(mr);
+		return;
 	}
 
 	/* Low Level */
 	if (rxlev2dbm(av_rxlev) <= -110) {
 		LOGPC(DHO, LOGL_INFO, "HO cause: Low Level av_rxlev=%d dBm\n", rxlev2dbm(av_rxlev));
-		return attempt_handover(mr);
+		attempt_handover(mr);
+		return;
 	}
 
 	/* Distance */
 	if (mr->ms_l1.ta > ho_get_hodec1_max_distance(bts->ho)) {
 		LOGPC(DHO, LOGL_INFO, "HO cause: Distance av_rxlev=%d dBm ta=%d \n",
 					rxlev2dbm(av_rxlev), mr->ms_l1.ta);
-		return attempt_handover(mr);
+		attempt_handover(mr);
+		return;
 	}
 
 	/* Power Budget AKA Better Cell */
@@ -325,10 +329,7 @@ static int process_meas_rep(struct gsm_meas_rep *mr)
 	 * assert non-zero to clarify. */
 	OSMO_ASSERT(pwr_interval);
 	if ((mr->nr % pwr_interval) == pwr_interval - 1)
-		return attempt_handover(mr);
-
-	return 0;
-
+		attempt_handover(mr);
 }
 
 static int ho_dec_sig_cb(unsigned int subsys, unsigned int signal,
