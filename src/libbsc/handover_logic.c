@@ -147,9 +147,7 @@ int bsc_handover_start(struct gsm_lchan *old_lchan, struct gsm_bts *bts)
 
 	/* FIXME: do we have a better idea of the timing advance? */
 	rc = rsl_chan_activate_lchan(new_lchan,
-				     ho->inter_cell
-				       ? (ho->async ? RSL_ACT_INTER_ASYNC : RSL_ACT_INTER_SYNC)
-				       : RSL_ACT_INTRA_IMM_ASS,
+				     ho->async ? RSL_ACT_INTER_ASYNC : RSL_ACT_INTER_SYNC,
 				     ho->ho_ref);
 	if (rc < 0) {
 		LOGP(DHO, LOGL_ERROR, "could not activate channel\n");
