@@ -30,7 +30,7 @@
 struct handover_cfg {
 	struct handover_cfg *higher_level_cfg;
 
-#define HO_CFG_ONE_MEMBER(TYPE, NAME, DEFAULT_VAL, VTY1, VTY2, VTY3, VTY4, VTY5, VTY6) \
+#define HO_CFG_ONE_MEMBER(TYPE, NAME, DEFAULT_VAL, VTY0, VTY1, VTY2, VTY3, VTY4, VTY5, VTY6) \
 	TYPE NAME; \
 	bool has_##NAME;
 
@@ -46,7 +46,7 @@ struct handover_cfg *ho_cfg_init(void *ctx, struct handover_cfg *higher_level_cf
 	return ho;
 }
 
-#define HO_CFG_ONE_MEMBER(TYPE, NAME, DEFAULT_VAL, VTY1, VTY2, VTY_ARG_EVAL, VTY4, VTY5, VTY6) \
+#define HO_CFG_ONE_MEMBER(TYPE, NAME, DEFAULT_VAL, VTY0, VTY1, VTY2, VTY_ARG_EVAL, VTY4, VTY5, VTY6) \
 TYPE ho_get_##NAME(struct handover_cfg *ho) \
 { \
 	if (ho->has_##NAME) \

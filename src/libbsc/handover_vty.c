@@ -40,11 +40,11 @@ static struct handover_cfg *ho_cfg_from_vty(struct vty *vty)
 
 
 #define HO_CFG_ONE_MEMBER(TYPE, NAME, DEFAULT_VAL, \
-			  VTY_CMD, VTY_CMD_ARG, VTY_ARG_EVAL, \
+			  VTY_CMD_PREFIX, VTY_CMD, VTY_CMD_ARG, VTY_ARG_EVAL, \
 			  VTY_WRITE_FMT, VTY_WRITE_CONV, \
 			  VTY_DOC) \
 DEFUN(cfg_ho_##NAME, cfg_ho_##NAME##_cmd, \
-      VTY_CMD " (" VTY_CMD_ARG "|default)", \
+      VTY_CMD_PREFIX VTY_CMD " (" VTY_CMD_ARG "|default)", \
       VTY_DOC \
       "Use default (" #DEFAULT_VAL "), remove explicit setting on this node\n") \
 { \
@@ -57,7 +57,7 @@ DEFUN(cfg_ho_##NAME, cfg_ho_##NAME##_cmd, \
 			msg = "setting removed, now is"; \
 		} else \
 			msg = "already was unset, still is"; \
-		vty_out(vty, "%% '" VTY_CMD "' %s " VTY_WRITE_FMT "%s%s", \
+		vty_out(vty, "%% '" VTY_CMD_PREFIX VTY_CMD "' %s " VTY_WRITE_FMT "%s%s", \
 			msg, VTY_WRITE_CONV( ho_get_##NAME(ho) ), \
 			ho_isset_on_parent_##NAME(ho)? " (set on higher level node)" : "", \
 			VTY_NEWLINE); \
@@ -70,6 +70,19 @@ DEFUN(cfg_ho_##NAME, cfg_ho_##NAME##_cmd, \
 HO_CFG_ALL_MEMBERS
 #undef HO_CFG_ONE_MEMBER
 
+
+/* Aliases of 'handover' for 'handover1' for backwards compat */
+#define HO_CFG_ONE_MEMBER(TYPE, NAME, DEFAULT_VAL, \
+			  VTY_CMD_PREFIX, VTY_CMD, VTY_CMD_ARG, VTY_ARG_EVAL, \
+			  VTY_WRITE_FMT, VTY_WRITE_CONV, \
+			  VTY_DOC) \
+ALIAS(cfg_ho_##NAME, cfg_ho_##NAME##_cmd_alias, \
+      "handover " VTY_CMD " (" VTY_CMD_ARG "|default)", \
+      VTY_DOC \
+      "Use default (" #DEFAULT_VAL "), remove explicit setting on this node\n");
+
+HODEC1_CFG_ALL_MEMBERS
+#undef HO_CFG_ONE_MEMBER
 
 static inline const int a2congestion_check_interval(const char *arg)
 {
@@ -109,11 +122,11 @@ DEFUN(cfg_net_ho_congestion_check_interval, cfg_net_ho_congestion_check_interval
 static void ho_vty_write(struct vty *vty, const char *indent, struct handover_cfg *ho)
 {
 #define HO_CFG_ONE_MEMBER(TYPE, NAME, DEFAULT_VAL, \
-			  VTY_CMD, VTY_CMD_ARG, VTY_ARG_EVAL, \
+			  VTY_CMD_PREFIX, VTY_CMD, VTY_CMD_ARG, VTY_ARG_EVAL, \
 			  VTY_WRITE_FMT, VTY_WRITE_CONV, \
 			  VTY_DOC) \
 	if (ho_isset_##NAME(ho)) \
-		vty_out(vty, "%s" VTY_CMD " " VTY_WRITE_FMT "%s", indent, \
+		vty_out(vty, "%s" VTY_CMD_PREFIX VTY_CMD " " VTY_WRITE_FMT "%s", indent, \
 			VTY_WRITE_CONV( ho_get_##NAME(ho) ), VTY_NEWLINE);
 
 	HO_CFG_ALL_MEMBERS
@@ -130,17 +143,24 @@ void ho_vty_write_net(struct vty *vty, struct gsm_network *net)
 	ho_vty_write(vty, " ", net->ho);
 
 	if (net->hodec2.congestion_check_interval_s != HO_CFG_CONGESTION_CHECK_DEFAULT)
-		vty_out(vty, " handover congestion-check %s%s",
+		vty_out(vty, " handover2 congestion-check %s%s",
 			congestion_check_interval2a(net->hodec2.congestion_check_interval_s),
 			VTY_NEWLINE);
 }
 
 static void ho_vty_init_cmds(int parent_node)
 {
-#define HO_CFG_ONE_MEMBER(TYPE, NAME, DEFAULT_VAL, VTY1, VTY2, VTY3, VTY4, VTY5, VTY6) \
+#define HO_CFG_ONE_MEMBER(TYPE, NAME, DEFAULT_VAL, VTY0, VTY1, VTY2, VTY3, VTY4, VTY5, VTY6) \
 	install_element(parent_node, &cfg_ho_##NAME##_cmd);
 
 	HO_CFG_ALL_MEMBERS
+#undef HO_CFG_ONE_MEMBER
+
+	/* Aliases of 'handover' for 'handover1' for backwards compat */
+#define HO_CFG_ONE_MEMBER(TYPE, NAME, DEFAULT_VAL, VTY0, VTY1, VTY2, VTY3, VTY4, VTY5, VTY6) \
+	install_element(parent_node, &cfg_ho_##NAME##_cmd_alias);
+
+HODEC1_CFG_ALL_MEMBERS
 #undef HO_CFG_ONE_MEMBER
 }
 

@@ -38,7 +38,7 @@ OsmoBSC(config-net-bts)# do show network
 ...
 
 OsmoBSC(config-net-bts)# ### Add arbitrary handover config item for bts 1:
-OsmoBSC(config-net-bts)# handover power budget interval 23
+OsmoBSC(config-net-bts)# handover1 power budget interval 23
 OsmoBSC(config-net-bts)# exit
 OsmoBSC(config-net)# ### HO is 'on' globally, bts 0 disables it, bts 1 tweaks a param:
 OsmoBSC(config-net)# show running-config
@@ -53,7 +53,7 @@ network
 ... !handover
  bts 1
 ... !handover
-  handover power budget interval 23
+  handover1 power budget interval 23
 ... !handover
 
 OsmoBSC(config-net)# ### Set global default to 'off', now bts 1 also uses the global default of 'off':
@@ -74,7 +74,7 @@ network
 ... !handover
  bts 1
 ... !handover
-  handover power budget interval 23
+  handover1 power budget interval 23
 ... !handover
 
 OsmoBSC(config-net)# ### Remove the global setting, i.e. use the factory default net level, with same effect:
@@ -96,7 +96,7 @@ network
 ... !handover
  bts 1
 ... !handover
-  handover power budget interval 23
+  handover1 power budget interval 23
 ... !handover
 
 OsmoBSC(config-net)# ### Re-enable net-level handover, but bts 0 remains disabled explicitly
@@ -117,7 +117,7 @@ network
 ... !handover
  bts 1
 ... !handover
-  handover power budget interval 23
+  handover1 power budget interval 23
 ... !handover
 
 OsmoBSC(config-net)# ### Remove explicit setting of bts 0 to also use the global setting:
@@ -140,7 +140,7 @@ network
 ... !handover
  bts 1
 ... !handover
-  handover power budget interval 23
+  handover1 power budget interval 23
 ... !handover
 
 OsmoBSC(config-net-bts)# ### Verify that 'min rxlev' value range stops at -50
@@ -165,12 +165,12 @@ OsmoBSC(config-net)# list
 ...
   handover (0|1|default)
   handover algorithm (1|2|default)
-  handover window rxlev averaging (<1-10>|default)
-  handover window rxqual averaging (<1-10>|default)
-  handover window rxlev neighbor averaging (<1-10>|default)
-  handover power budget interval (<1-99>|default)
-  handover power budget hysteresis (<0-999>|default)
-  handover maximum distance (<0-9999>|default)
+  handover1 window rxlev averaging (<1-10>|default)
+  handover1 window rxqual averaging (<1-10>|default)
+  handover1 window rxlev neighbor averaging (<1-10>|default)
+  handover1 power budget interval (<1-99>|default)
+  handover1 power budget hysteresis (<0-999>|default)
+  handover1 maximum distance (<0-9999>|default)
   handover2 window rxlev averaging (<1-10>|default)
   handover2 window rxqual averaging (<1-10>|default)
   handover2 window rxlev neighbor averaging (<1-10>|default)
@@ -190,11 +190,15 @@ OsmoBSC(config-net)# list
   handover2 penalty-time failed-ho (<0-99999>|default)
   handover2 penalty-time failed-assignment (<0-99999>|default)
   handover2 retries (<0-9>|default)
+... !handover2
   handover2 congestion-check (disabled|<1-999>|now)
 ...
 
 OsmoBSC(config-net)# handover?
   handover  Handover general config
+
+OsmoBSC(config-net)# handover1?
+  handover1  Handover options for handover decision algorithm 1
 
 OsmoBSC(config-net)# handover2?
   handover2  Handover options for handover decision algorithm 2
@@ -204,9 +208,12 @@ OsmoBSC(config-net)# handover ?
   1          Enable in-call handover
   default    Enable/disable handover: Use default (0), remove explicit setting on this node
   algorithm  Choose algorithm for handover decision
-  window     Measurement averaging settings
-  power      Neighbor cell power triggering
-  maximum    Maximum Timing-Advance value (i.e. MS distance) before triggering HO
+...
+
+OsmoBSC(config-net)# handover1 ?
+  window   Measurement averaging settings
+  power    Neighbor cell power triggering
+  maximum  Maximum Timing-Advance value (i.e. MS distance) before triggering HO
 
 OsmoBSC(config-net)# handover2 ?
   window            Measurement averaging settings
@@ -227,51 +234,51 @@ OsmoBSC(config-net)# handover algorithm ?
   2        Algorithm 2: trigger handover on RxLev/RxQual, and also to balance the load across several cells. Consider available codecs. Prevent repeated handover by penalty timers.
   default  Use default (1), remove explicit setting on this node
 
-OsmoBSC(config-net)# handover window ?
+OsmoBSC(config-net)# handover1 window ?
   rxlev   Received-Level averaging
   rxqual  Received-Quality averaging
 
-OsmoBSC(config-net)# handover window rxlev ?
+OsmoBSC(config-net)# handover1 window rxlev ?
   averaging  How many RxLev measurements are used for averaging
   neighbor   How many Neighbor RxLev measurements are used for averaging
 
-OsmoBSC(config-net)# handover window rxlev averaging ?
+OsmoBSC(config-net)# handover1 window rxlev averaging ?
   <1-10>   RxLev averaging: Number of values to average over
   default  Use default (10), remove explicit setting on this node
 
-OsmoBSC(config-net)# handover window rxlev neighbor ?
+OsmoBSC(config-net)# handover1 window rxlev neighbor ?
   averaging  How many Neighbor RxLev measurements are used for averaging
 
-OsmoBSC(config-net)# handover window rxlev neighbor averaging ?
+OsmoBSC(config-net)# handover1 window rxlev neighbor averaging ?
   <1-10>   Neighbor RxLev averaging: Number of values to average over
   default  Use default (10), remove explicit setting on this node
 
-OsmoBSC(config-net)# handover window rxqual ?
+OsmoBSC(config-net)# handover1 window rxqual ?
   averaging  How many RxQual measurements are used for averaging
 
-OsmoBSC(config-net)# handover window rxqual averaging ?
+OsmoBSC(config-net)# handover1 window rxqual averaging ?
   <1-10>   RxQual averaging: Number of values to average over
   default  Use default (1), remove explicit setting on this node
 
-OsmoBSC(config-net)# handover power ?
+OsmoBSC(config-net)# handover1 power ?
   budget  Neighbor cell power triggering
 
-OsmoBSC(config-net)# handover power budget ?
+OsmoBSC(config-net)# handover1 power budget ?
   interval    How often to check for a better cell (SACCH frames)
   hysteresis  How many dBm stronger must a neighbor be to become a HO candidate
 
-OsmoBSC(config-net)# handover power budget interval ?
+OsmoBSC(config-net)# handover1 power budget interval ?
   <1-99>   Check for stronger neighbor every N number of SACCH frames
   default  Use default (6), remove explicit setting on this node
 
-OsmoBSC(config-net)# handover power budget hysteresis ?
+OsmoBSC(config-net)# handover1 power budget hysteresis ?
   <0-999>  Neighbor's strength difference in dBm
   default  Use default (3), remove explicit setting on this node
 
-OsmoBSC(config-net)# handover maximum ?
+OsmoBSC(config-net)# handover1 maximum ?
   distance  Maximum Timing-Advance value (i.e. MS distance) before triggering HO
 
-OsmoBSC(config-net)# handover maximum distance ?
+OsmoBSC(config-net)# handover1 maximum distance ?
   <0-9999>  Maximum Timing-Advance value (i.e. MS distance) before triggering HO
   default   Use default (9999), remove explicit setting on this node
 
@@ -409,6 +416,9 @@ OsmoBSC(config-net)# bts 0
 OsmoBSC(config-net-bts)# handover?
   handover  Handover general config
 
+OsmoBSC(config-net-bts)# handover1?
+  handover1  Handover options for handover decision algorithm 1
+
 OsmoBSC(config-net-bts)# handover2?
   handover2  Handover options for handover decision algorithm 2
 
@@ -417,9 +427,12 @@ OsmoBSC(config-net-bts)# handover ?
   1          Enable in-call handover
   default    Enable/disable handover: Use default (0), remove explicit setting on this node
   algorithm  Choose algorithm for handover decision
-  window     Measurement averaging settings
-  power      Neighbor cell power triggering
-  maximum    Maximum Timing-Advance value (i.e. MS distance) before triggering HO
+...
+
+OsmoBSC(config-net-bts)# handover1 ?
+  window   Measurement averaging settings
+  power    Neighbor cell power triggering
+  maximum  Maximum Timing-Advance value (i.e. MS distance) before triggering HO
 
 OsmoBSC(config-net-bts)# handover2 ?
   window            Measurement averaging settings
@@ -439,51 +452,51 @@ OsmoBSC(config-net-bts)# handover algorithm ?
   2        Algorithm 2: trigger handover on RxLev/RxQual, and also to balance the load across several cells. Consider available codecs. Prevent repeated handover by penalty timers.
   default  Use default (1), remove explicit setting on this node
 
-OsmoBSC(config-net-bts)# handover window ?
+OsmoBSC(config-net-bts)# handover1 window ?
   rxlev   Received-Level averaging
   rxqual  Received-Quality averaging
 
-OsmoBSC(config-net-bts)# handover window rxlev ?
+OsmoBSC(config-net-bts)# handover1 window rxlev ?
   averaging  How many RxLev measurements are used for averaging
   neighbor   How many Neighbor RxLev measurements are used for averaging
 
-OsmoBSC(config-net-bts)# handover window rxlev averaging ?
+OsmoBSC(config-net-bts)# handover1 window rxlev averaging ?
   <1-10>   RxLev averaging: Number of values to average over
   default  Use default (10), remove explicit setting on this node
 
-OsmoBSC(config-net-bts)# handover window rxlev neighbor ?
+OsmoBSC(config-net-bts)# handover1 window rxlev neighbor ?
   averaging  How many Neighbor RxLev measurements are used for averaging
 
-OsmoBSC(config-net-bts)# handover window rxlev neighbor averaging ?
+OsmoBSC(config-net-bts)# handover1 window rxlev neighbor averaging ?
   <1-10>   Neighbor RxLev averaging: Number of values to average over
   default  Use default (10), remove explicit setting on this node
 
-OsmoBSC(config-net-bts)# handover window rxqual ?
+OsmoBSC(config-net-bts)# handover1 window rxqual ?
   averaging  How many RxQual measurements are used for averaging
 
-OsmoBSC(config-net-bts)# handover window rxqual averaging ?
+OsmoBSC(config-net-bts)# handover1 window rxqual averaging ?
   <1-10>   RxQual averaging: Number of values to average over
   default  Use default (1), remove explicit setting on this node
 
-OsmoBSC(config-net-bts)# handover power ?
+OsmoBSC(config-net-bts)# handover1 power ?
   budget  Neighbor cell power triggering
 
-OsmoBSC(config-net-bts)# handover power budget ?
+OsmoBSC(config-net-bts)# handover1 power budget ?
   interval    How often to check for a better cell (SACCH frames)
   hysteresis  How many dBm stronger must a neighbor be to become a HO candidate
 
-OsmoBSC(config-net-bts)# handover power budget interval ?
+OsmoBSC(config-net-bts)# handover1 power budget interval ?
   <1-99>   Check for stronger neighbor every N number of SACCH frames
   default  Use default (6), remove explicit setting on this node
 
-OsmoBSC(config-net-bts)# handover power budget hysteresis ?
+OsmoBSC(config-net-bts)# handover1 power budget hysteresis ?
   <0-999>  Neighbor's strength difference in dBm
   default  Use default (3), remove explicit setting on this node
 
-OsmoBSC(config-net-bts)# handover maximum ?
+OsmoBSC(config-net-bts)# handover1 maximum ?
   distance  Maximum Timing-Advance value (i.e. MS distance) before triggering HO
 
-OsmoBSC(config-net-bts)# handover maximum distance ?
+OsmoBSC(config-net-bts)# handover1 maximum distance ?
   <0-9999>  Maximum Timing-Advance value (i.e. MS distance) before triggering HO
   default   Use default (9999), remove explicit setting on this node
 
