@@ -39,42 +39,10 @@
 #include <osmocom/bsc/bsc_subscriber.h>
 #include <osmocom/bsc/gsm_04_08_utils.h>
 #include <osmocom/bsc/handover.h>
-
-#define LOGPHOLCHANTOLCHAN(lchan, new_lchan, level, fmt, args...) \
-	LOGP(DHODEC, level, "(BTS %u trx %u arfcn %u ts %u lchan %u %s)->(BTS %u trx %u arfcn %u ts %u lchan %u %s) (subscr %s) " fmt, \
-	     lchan->ts->trx->bts->nr, \
-	     lchan->ts->trx->nr, \
-	     lchan->ts->trx->arfcn, \
-	     lchan->ts->nr, \
-	     lchan->nr, \
-	     gsm_pchan_name(lchan->ts->pchan), \
-	     new_lchan->ts->trx->bts->nr, \
-	     new_lchan->ts->trx->nr, \
-	     new_lchan->ts->trx->arfcn, \
-	     new_lchan->ts->nr, \
-	     new_lchan->nr, \
-	     gsm_pchan_name(new_lchan->ts->pchan), \
-	     bsc_subscr_name(lchan->conn->bsub), \
-	     ## args)
-
-#define LOGPHO(struct_bsc_handover, level, fmt, args ...) \
-	LOGPHOLCHANTOLCHAN(struct_bsc_handover->old_lchan, struct_bsc_handover->new_lchan, level, fmt, ## args)
-
-struct bsc_handover {
-	struct llist_head list;
-
-	struct gsm_lchan *old_lchan;
-	struct gsm_lchan *new_lchan;
-
-	struct osmo_timer_list T3103;
-
-	uint8_t ho_ref;
-
-	bool inter_cell;
-	bool async;
-};
+#include <osmocom/bsc/handover_cfg.h>
 
 static LLIST_HEAD(bsc_handovers);
+static LLIST_HEAD(handover_decision_callbacks);
 
 static void handover_free(struct bsc_handover *ho)
 {
@@ -110,7 +78,7 @@ static struct bsc_handover *bsc_ho_by_old_lchan(struct gsm_lchan *old_lchan)
 /*! Hand over the specified logical channel to the specified new BTS and possibly change the lchan type.
  * This is the main entry point for the actual handover algorithm, after the decision whether to initiate
  * HO to a specific BTS. To not change the lchan type, pass old_lchan->type. */
-int bsc_handover_start(struct gsm_lchan *old_lchan, struct gsm_bts *new_bts,
+int bsc_handover_start(enum hodec_id from_hodec_id, struct gsm_lchan *old_lchan, struct gsm_bts *new_bts,
 		       enum gsm_chan_t new_lchan_type)
 {
 	struct gsm_network *network;
@@ -160,6 +128,7 @@ int bsc_handover_start(struct gsm_lchan *old_lchan, struct gsm_bts *new_bts,
 		lchan_free(new_lchan);
 		return -ENOMEM;
 	}
+	ho->from_hodec_id = from_hodec_id;
 	ho->old_lchan = old_lchan;
 	ho->new_lchan = new_lchan;
 	ho->ho_ref = ho_ref++;
@@ -282,12 +251,17 @@ static int ho_chan_activ_ack(struct gsm_lchan *new_lchan)
 static int ho_chan_activ_nack(struct gsm_lchan *new_lchan)
 {
 	struct bsc_handover *ho;
+	struct handover_decision_callbacks *hdc;
 
 	ho = bsc_ho_by_new_lchan(new_lchan);
 	if (!ho) {
 		LOGP(DHO, LOGL_INFO, "ACT NACK: unable to find HO record\n");
 		return -ENODEV;
 	}
+
+	hdc = handover_decision_callbacks_get(ho->from_hodec_id);
+	if (hdc && hdc->on_ho_chan_activ_nack)
+		hdc->on_ho_chan_activ_nack(ho);
 
 	new_lchan->conn->ho_lchan = NULL;
 	new_lchan->conn = NULL;
@@ -341,12 +315,17 @@ static int ho_gsm48_ho_fail(struct gsm_lchan *old_lchan)
 	struct gsm_network *net = old_lchan->ts->trx->bts->network;
 	struct bsc_handover *ho;
 	struct gsm_lchan *new_lchan;
+	struct handover_decision_callbacks *hdc;
 
 	ho = bsc_ho_by_old_lchan(old_lchan);
 	if (!ho) {
 		LOGP(DHO, LOGL_ERROR, "unable to find HO record\n");
 		return -ENODEV;
 	}
+
+	hdc = handover_decision_callbacks_get(ho->from_hodec_id);
+	if (hdc && hdc->on_ho_failure)
+		hdc->on_ho_failure(ho);
 
 	rate_ctr_inc(&net->bsc_ctrs->ctr[BSC_CTR_HANDOVER_FAILED]);
 
@@ -383,6 +362,18 @@ static int ho_rsl_detect(struct gsm_lchan *new_lchan)
 	return 0;
 }
 
+static int ho_meas_rep(struct gsm_meas_rep *mr)
+{
+	struct handover_decision_callbacks *hdc;
+	enum hodec_id hodec_id = ho_get_algorithm(mr->lchan->ts->trx->bts->ho);
+
+	hdc = handover_decision_callbacks_get(hodec_id);
+	if (!hdc || !hdc->on_measurement_report)
+		return 0;
+	hdc->on_measurement_report(mr);
+	return 0;
+}
+
 static int ho_logic_sig_cb(unsigned int subsys, unsigned int signal,
 			   void *handler_data, void *signal_data)
 {
@@ -404,6 +395,8 @@ static int ho_logic_sig_cb(unsigned int subsys, unsigned int signal,
 			return ho_gsm48_ho_compl(lchan);
 		case S_LCHAN_HANDOVER_FAIL:
 			return ho_gsm48_ho_fail(lchan);
+		case S_LCHAN_MEAS_REP:
+			return ho_meas_rep(lchan_data->mr);
 		}
 		break;
 	default:
@@ -444,4 +437,19 @@ int bsc_ho_count(struct gsm_bts *bts, bool inter_cell)
 	}
 
 	return count;
+}
+
+void handover_decision_callbacks_register(struct handover_decision_callbacks *hdc)
+{
+	llist_add_tail(&hdc->entry, &handover_decision_callbacks);
+}
+
+struct handover_decision_callbacks *handover_decision_callbacks_get(int hodec_id)
+{
+	struct handover_decision_callbacks *hdc;
+	llist_for_each_entry(hdc, &handover_decision_callbacks, entry) {
+		if (hdc->hodec_id == hodec_id)
+			return hdc;
+	}
+	return NULL;
 }

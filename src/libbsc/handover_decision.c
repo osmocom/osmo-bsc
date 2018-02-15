@@ -70,7 +70,7 @@ static int handover_to_arfcn_bsic(struct gsm_lchan *lchan,
 	}
 
 	/* and actually try to handover to that cell */
-	return bsc_handover_start(lchan, new_bts, lchan->type);
+	return bsc_handover_start(HODEC1, lchan, new_bts, lchan->type);
 }
 
 /* did we get a RXLEV for a given cell in the given report? */
@@ -257,7 +257,7 @@ static int attempt_handover(struct gsm_meas_rep *mr)
 
 /* process an already parsed measurement report and decide if we want to
  * attempt a handover */
-static void process_meas_rep(struct gsm_meas_rep *mr)
+static void on_measurement_report(struct gsm_meas_rep *mr)
 {
 	struct gsm_bts *bts = mr->lchan->ts->trx->bts;
 	enum meas_rep_field dlev, dqual;
@@ -332,25 +332,12 @@ static void process_meas_rep(struct gsm_meas_rep *mr)
 		attempt_handover(mr);
 }
 
-static int ho_dec_sig_cb(unsigned int subsys, unsigned int signal,
-			   void *handler_data, void *signal_data)
-{
-	struct lchan_signal_data *lchan_data;
-
-	if (subsys != SS_LCHAN)
-		return 0;
-
-	lchan_data = signal_data;
-	switch (signal) {
-	case S_LCHAN_MEAS_REP:
-		process_meas_rep(lchan_data->mr);
-		break;
-	}
-
-	return 0;
-}
+struct handover_decision_callbacks hodec1_callbacks = {
+	.hodec_id = HODEC1,
+	.on_measurement_report = on_measurement_report,
+};
 
 void handover_decision_1_init(void)
 {
-	osmo_signal_register_handler(SS_LCHAN, ho_dec_sig_cb, NULL);
+	handover_decision_callbacks_register(&hodec1_callbacks);
 }
