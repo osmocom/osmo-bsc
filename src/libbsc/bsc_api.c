@@ -278,7 +278,6 @@ struct gsm_subscriber_connection *bsc_subscr_con_allocate(struct gsm_lchan *lcha
 	conn->lchan = lchan;
 	lchan->conn = conn;
 	INIT_LLIST_HEAD(&conn->ho_dtap_cache);
-	conn->ho_penalty_timers = penalty_timers_init(conn);
 	conn->sccp.conn_id = -1;
 	llist_add_tail(&conn->entry, &net->subscr_conns);
 	return conn;
@@ -353,7 +352,7 @@ void bsc_subscr_con_free(struct gsm_subscriber_connection *conn)
 	/* drop pending messages */
 	ho_dtap_cache_flush(conn, 0);
 
-	penalty_timers_free(&conn->ho_penalty_timers);
+	penalty_timers_free(&conn->hodec2.penalty_timers);
 
 	llist_del(&conn->entry);
 	talloc_free(conn);

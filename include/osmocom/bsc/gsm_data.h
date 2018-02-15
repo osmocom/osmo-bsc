@@ -115,7 +115,9 @@ struct gsm_subscriber_connection {
 	struct llist_head ho_dtap_cache;
 	unsigned int ho_dtap_cache_len;
 
-	struct penalty_timers *ho_penalty_timers;
+	struct {
+		struct penalty_timers *penalty_timers;
+	} hodec2;
 
 	/* "Codec List (MSC Preferred)" as received by the BSSAP Assignment Request. 3GPP 48.008
 	 * 3.2.2.103 says:
