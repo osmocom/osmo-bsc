@@ -1,9 +1,12 @@
 /* OsmoBSC handover configuration implementation */
-/* (C) 2017 by sysmocom - s.f.m.c. GmbH <info@sysmocom.de>
+/* (C) 2009-2010 by Andreas Eversberg <jolly@eversberg.eu>
  * (C) 2009-2010 by Harald Welte <laforge@gnumonks.org>
+ * (C) 2017-2018 by sysmocom - s.f.m.c. GmbH <info@sysmocom.de>
+ *
  * All Rights Reserved
  *
- * Author: Neels Hofmeyr <nhofmeyr@sysmocom.de>
+ * Author: Andreas Eversberg <jolly@eversberg.eu>
+ *         Neels Hofmeyr <nhofmeyr@sysmocom.de>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
