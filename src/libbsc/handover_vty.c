@@ -79,9 +79,9 @@ HO_CFG_ALL_MEMBERS
 			  VTY_CMD_PREFIX, VTY_CMD, VTY_CMD_ARG, VTY_ARG_EVAL, \
 			  VTY_WRITE_FMT, VTY_WRITE_CONV, \
 			  VTY_DOC) \
-ALIAS(cfg_ho_##NAME, cfg_ho_##NAME##_cmd_alias, \
+ALIAS_DEPRECATED(cfg_ho_##NAME, cfg_ho_##NAME##_cmd_alias, \
       "handover " VTY_CMD " (" VTY_CMD_ARG "|default)", \
-      VTY_DOC \
+      "Legacy alias for 'handover1': " VTY_DOC \
       "Use default (" #DEFAULT_VAL "), remove explicit setting on this node\n");
 
 HODEC1_CFG_ALL_MEMBERS

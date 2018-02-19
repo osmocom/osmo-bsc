@@ -190,7 +190,6 @@ OsmoBSC(config-net)# list
   handover2 penalty-time failed-ho (<0-99999>|default)
   handover2 penalty-time failed-assignment (<0-99999>|default)
   handover2 retries (<0-9>|default)
-... !handover2
   handover2 congestion-check (disabled|<1-999>|now)
 ...
 
