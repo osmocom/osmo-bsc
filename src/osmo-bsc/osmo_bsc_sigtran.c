@@ -193,7 +193,7 @@ static int sccp_sap_up(struct osmo_prim_hdr *oph, void *_scu)
 			       osmo_hexdump(msgb_l2(oph->msg), msgb_l2len(oph->msg)));
 			rc = handle_data_from_msc(scu_prim->u.connect.conn_id, oph->msg);
 		} else
-			DEBUGP(DRANAP, "N-CONNECT.cnf(%u)\n", scu_prim->u.connect.conn_id);
+			DEBUGP(DMSC, "N-CONNECT.cnf(%u)\n", scu_prim->u.connect.conn_id);
 		break;
 
 	case OSMO_PRIM(OSMO_SCU_PRIM_N_DATA, PRIM_OP_INDICATION):
@@ -219,7 +219,7 @@ static int sccp_sap_up(struct osmo_prim_hdr *oph, void *_scu)
 			       osmo_hexdump(msgb_l2(oph->msg), msgb_l2len(oph->msg)), scu_prim->u.disconnect.cause);
 			handle_data_from_msc(scu_prim->u.disconnect.conn_id, oph->msg);
 		} else {
-			DEBUGP(DRANAP, "N-DISCONNECT.ind(%u, cause=%i)\n", scu_prim->u.disconnect.conn_id,
+			DEBUGP(DMSC, "N-DISCONNECT.ind(%u, cause=%i)\n", scu_prim->u.disconnect.conn_id,
 			       scu_prim->u.disconnect.cause);
 		}
 		if (conn)
