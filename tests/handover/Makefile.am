@@ -28,8 +28,8 @@ handover_test_SOURCES = \
 	$(NULL)
 
 handover_test_LDADD = \
+	$(top_builddir)/src/libbsc/libbsc.a \
 	$(LIBOSMOCORE_LIBS) \
 	$(LIBOSMOGSM_LIBS) \
 	$(LIBOSMOABIS_LIBS) \
-	$(top_builddir)/src/libbsc/libbsc.a \
 	$(NULL)
