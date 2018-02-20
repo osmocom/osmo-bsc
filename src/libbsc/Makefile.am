@@ -64,5 +64,6 @@ libbsc_a_SOURCES = \
 	penalty_timers.c \
 	handover_decision_2.c \
 	bsc_subscr_conn_fsm.c \
+	meas_feed.c \
 	$(NULL)
 
