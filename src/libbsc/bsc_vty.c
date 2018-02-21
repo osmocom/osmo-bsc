@@ -295,6 +295,24 @@ static void vty_out_neigh_list(struct vty *vty, struct bitvec *bv)
 		vty_out(vty, " (%d)", count);
 }
 
+static void bts_dump_vty_features(struct vty *vty, struct gsm_bts *bts)
+{
+	unsigned int i;
+	bool no_features = true;
+	vty_out(vty, "  Features:%s", VTY_NEWLINE);
+
+	for (i = 0; i < _NUM_BTS_FEAT; i++) {
+		if (osmo_bts_has_feature(&bts->features, i)) {
+			vty_out(vty, "    %03u ", i);
+			vty_out(vty, "%-40s%s", osmo_bts_feature_name(i), VTY_NEWLINE);
+			no_features = false;
+		}
+	}
+
+	if (no_features)
+		vty_out(vty, "    (not available)%s", VTY_NEWLINE);
+}
+
 static void bts_dump_vty(struct vty *vty, struct gsm_bts *bts)
 {
 	struct pchan_load pl;
@@ -468,6 +486,8 @@ static void bts_dump_vty(struct vty *vty, struct gsm_bts *bts)
 		bts->bts_ctrs->ctr[BTS_CTR_BTS_OML_FAIL].current,
 		bts->bts_ctrs->ctr[BTS_CTR_BTS_RSL_FAIL].current,
 		VTY_NEWLINE);
+
+	bts_dump_vty_features(vty, bts);
 }
 
 DEFUN(show_bts, show_bts_cmd, "show bts [<0-255>]",
