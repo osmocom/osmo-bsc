@@ -47,6 +47,7 @@
 #include <osmocom/bsc/signal.h>
 #include <osmocom/abis/e1_input.h>
 #include <osmocom/bsc/chan_alloc.h>
+#include <osmocom/gsm/bts_features.h>
 
 #define OM_ALLOC_SIZE		1024
 #define OM_HEADROOM_SIZE	128
@@ -501,11 +502,11 @@ static inline const uint8_t *parse_attr_resp_info_manuf_id(struct gsm_bts *bts, 
 		adjust = m_id_len + 3; /* adjust for parsed TL16V struct */
 
 		for (i = 0; i < _NUM_BTS_FEAT; i++)
-			if (gsm_bts_has_feature(bts, i) != gsm_btsmodel_has_feature(bts->model, i))
+			if (osmo_bts_has_feature(&bts->features, i) != osmo_bts_has_feature(&bts->model->features, i))
 				LOGP(DNM, LOGL_NOTICE, "BTS%u feature '%s' reported via OML does not match statically "
 				     "set feature: %u != %u. Please fix.\n", bts->nr,
-				     get_value_string(gsm_bts_features_descs, i),
-				     gsm_bts_has_feature(bts, i), gsm_btsmodel_has_feature(bts->model, i));
+				     get_value_string(osmo_bts_features_descs, i),
+				     osmo_bts_has_feature(&bts->features, i), osmo_bts_has_feature(&bts->model->features, i));
 	}
 
 	*data_len -= adjust;

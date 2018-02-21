@@ -146,27 +146,15 @@ const char *bts_gprs_mode_name(enum bts_gprs_mode mode)
 int bts_gprs_mode_is_compat(struct gsm_bts *bts, enum bts_gprs_mode mode)
 {
 	if (mode != BTS_GPRS_NONE &&
-	    !gsm_btsmodel_has_feature(bts->model, BTS_FEAT_GPRS)) {
+	    !osmo_bts_has_feature(&bts->model->features, BTS_FEAT_GPRS)) {
 		return 0;
 	}
 	if (mode == BTS_GPRS_EGPRS &&
-	    !gsm_btsmodel_has_feature(bts->model, BTS_FEAT_EGPRS)) {
+	    !osmo_bts_has_feature(&bts->model->features, BTS_FEAT_EGPRS)) {
 		return 0;
 	}
 
 	return 1;
-}
-
-int gsm_btsmodel_set_feature(struct gsm_bts_model *model, enum gsm_bts_features feat)
-{
-	OSMO_ASSERT(_NUM_BTS_FEAT < MAX_BTS_FEATURES);
-	return bitvec_set_bit_pos(&model->features, feat, 1);
-}
-
-bool gsm_btsmodel_has_feature(struct gsm_bts_model *model, enum gsm_bts_features feat)
-{
-	OSMO_ASSERT(_NUM_BTS_FEAT < MAX_BTS_FEATURES);
-	return bitvec_get_bit_pos(&model->features, feat);
 }
 
 int gsm_set_bts_type(struct gsm_bts *bts, enum gsm_bts_type type)
@@ -504,19 +492,6 @@ const char *btstype2str(enum gsm_bts_type type)
 {
 	return get_value_string(bts_type_names, type);
 }
-
-const struct value_string gsm_bts_features_descs[] = {
-	{ BTS_FEAT_HSCSD,		"HSCSD" },
-	{ BTS_FEAT_GPRS,		"GPRS" },
-	{ BTS_FEAT_EGPRS,		"EGPRS" },
-	{ BTS_FEAT_ECSD,		"ECSD" },
-	{ BTS_FEAT_HOPPING,		"Frequency Hopping" },
-	{ BTS_FEAT_MULTI_TSC,		"Multi-TSC" },
-	{ BTS_FEAT_OML_ALERTS,		"OML Alerts" },
-	{ BTS_FEAT_AGCH_PCH_PROP,	"AGCH/PCH proportional allocation" },
-	{ BTS_FEAT_CBCH,		"CBCH" },
-	{ 0, NULL }
-};
 
 const struct value_string gsm_chreq_descs[] = {
 	{ GSM_CHREQ_REASON_EMERG,	"emergency call" },

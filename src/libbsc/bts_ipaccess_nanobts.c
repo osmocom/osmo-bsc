@@ -328,9 +328,9 @@ int bts_model_nanobts_init(void)
 	bts_model_nanobts.features.data_len =
 				sizeof(bts_model_nanobts._features_data);
 
-	gsm_btsmodel_set_feature(&bts_model_nanobts, BTS_FEAT_GPRS);
-	gsm_btsmodel_set_feature(&bts_model_nanobts, BTS_FEAT_EGPRS);
-	gsm_btsmodel_set_feature(&bts_model_nanobts, BTS_FEAT_MULTI_TSC);
+	osmo_bts_set_feature(&bts_model_nanobts.features, BTS_FEAT_GPRS);
+	osmo_bts_set_feature(&bts_model_nanobts.features, BTS_FEAT_EGPRS);
+	osmo_bts_set_feature(&bts_model_nanobts.features, BTS_FEAT_MULTI_TSC);
 
 	return gsm_bts_model_register(&bts_model_nanobts);
 }

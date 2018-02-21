@@ -1720,9 +1720,9 @@ static int bts_model_nokia_site_start(struct gsm_network *net)
 	model_nokia_site.features.data_len =
 	    sizeof(model_nokia_site._features_data);
 
-	gsm_btsmodel_set_feature(&model_nokia_site, BTS_FEAT_HOPPING);
-	gsm_btsmodel_set_feature(&model_nokia_site, BTS_FEAT_HSCSD);
-	gsm_btsmodel_set_feature(&model_nokia_site, BTS_FEAT_MULTI_TSC);
+	osmo_bts_set_feature(&model_nokia_site.features, BTS_FEAT_HOPPING);
+	osmo_bts_set_feature(&model_nokia_site.features, BTS_FEAT_HSCSD);
+        osmo_bts_set_feature(&model_nokia_site.features, BTS_FEAT_MULTI_TSC);
 
 	osmo_signal_register_handler(SS_L_INPUT, inp_sig_cb, NULL);
 	osmo_signal_register_handler(SS_L_GLOBAL, gbl_sig_cb, NULL);

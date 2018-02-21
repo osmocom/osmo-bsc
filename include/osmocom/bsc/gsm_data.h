@@ -12,6 +12,7 @@
 #include <osmocom/core/select.h>
 #include <osmocom/core/stats.h>
 #include <osmocom/core/stat_item.h>
+#include <osmocom/gsm/bts_features.h>
 #include <osmocom/gsm/protocol/gsm_08_08.h>
 #include <osmocom/gsm/gsm48.h>
 
@@ -211,8 +212,6 @@ enum gsm_chreq_reason_t {
 #define HARDCODED_BTS2_TS	11
 
 #define MAX_VERSION_LENGTH 64
-
-#define MAX_BTS_FEATURES 128
 
 enum gsm_hooks {
 	GSM_HOOK_NM_SWLOAD,
@@ -614,22 +613,7 @@ struct gsm_bts_model {
 	uint8_t _features_data[MAX_BTS_FEATURES/8];
 };
 
-/* N. B: always add new features to the end of the list (right before _NUM_BTS_FEAT) to avoid breaking compatibility
-   with BTS compiled against earlier version of this header */
-enum gsm_bts_features {
-	BTS_FEAT_HSCSD,
-	BTS_FEAT_GPRS,
-	BTS_FEAT_EGPRS,
-	BTS_FEAT_ECSD,
-	BTS_FEAT_HOPPING,
-	BTS_FEAT_MULTI_TSC,
-	BTS_FEAT_OML_ALERTS,
-	BTS_FEAT_AGCH_PCH_PROP,
-	BTS_FEAT_CBCH,
-	_NUM_BTS_FEAT
-};
 
-extern const struct value_string gsm_bts_features_descs[];
 
 /*
  * This keeps track of the paging status of one BTS. It
@@ -1018,18 +1002,6 @@ static inline char *gsm_lchan_name(const struct gsm_lchan *lchan)
 	return lchan->name;
 }
 
-static inline int gsm_bts_set_feature(struct gsm_bts *bts, enum gsm_bts_features feat)
-{
-	OSMO_ASSERT(_NUM_BTS_FEAT < MAX_BTS_FEATURES);
-	return bitvec_set_bit_pos(&bts->features, feat, 1);
-}
-
-static inline bool gsm_bts_has_feature(const struct gsm_bts *bts, enum gsm_bts_features feat)
-{
-	OSMO_ASSERT(_NUM_BTS_FEAT < MAX_BTS_FEATURES);
-	return bitvec_get_bit_pos(&bts->features, feat);
-}
-
 void gsm_abis_mo_reset(struct gsm_abis_mo *mo);
 
 struct gsm_nm_state *
@@ -1366,7 +1338,6 @@ int bts_gprs_mode_is_compat(struct gsm_bts *bts, enum bts_gprs_mode mode);
 void gsm48_ra_id_by_bts(struct gsm48_ra_id *buf, struct gsm_bts *bts);
 void gprs_ra_id_by_bts(struct gprs_ra_id *raid, struct gsm_bts *bts);
 
-int gsm_btsmodel_set_feature(struct gsm_bts_model *model, enum gsm_bts_features feat);
 int gsm_bts_model_register(struct gsm_bts_model *model);
 
 struct gsm_subscriber_connection *bsc_subscr_con_allocate(struct gsm_lchan *lchan);
@@ -1383,7 +1354,6 @@ void set_ts_e1link(struct gsm_bts_trx_ts *ts, uint8_t e1_nr,
 		   uint8_t e1_ts, uint8_t e1_ts_ss);
 
 void gsm_trx_lock_rf(struct gsm_bts_trx *trx, bool locked, const char *reason);
-bool gsm_btsmodel_has_feature(struct gsm_bts_model *model, enum gsm_bts_features feat);
 struct gsm_bts_trx *gsm_bts_trx_by_nr(struct gsm_bts *bts, int nr);
 int gsm_bts_trx_set_system_infos(struct gsm_bts_trx *trx);
 int gsm_bts_set_system_infos(struct gsm_bts *bts);
