@@ -1223,7 +1223,6 @@ static char **test_cases[] =  {
 	test_case_26,
 	test_case_27,
 	test_case_28,
-	NULL
 };
 
 static const struct log_info_cat log_categories[] = {
@@ -1269,21 +1268,21 @@ int main(int argc, char **argv)
 	int bts_num = 0;
 	struct gsm_lchan *lchan[256];
 	int lchan_num = 0;
-	int test_count = 0;
 	int i;
 	int algorithm;
 	struct bsc_api bsc_api = {};
+	int test_case_i;
+	int last_test_i;
 
-	for (i = 0; test_cases[i]; i++)
-		test_count++;
+	test_case_i = argc > 1? atoi(argv[1]) : -1;
+	last_test_i = ARRAY_SIZE(test_cases) - 1;
 
-	if (argc <= 1 || atoi(argv[1]) >= test_count) {
-		for (i = 0; test_cases[i]; i++) {
+	if (test_case_i < 0 || test_case_i > last_test_i) {
+		for (i = 0; i <= last_test_i; i++) {
 			printf("Test #%d (algorithm %s):\n%s\n", i,
 				test_cases[i][0], test_cases[i][1]);
 		}
-		printf("\nPlease specify test case number 0..%d\n",
-			test_count - 1);
+		printf("\nPlease specify test case number 0..%d\n", last_test_i);
 		return EXIT_FAILURE;
 	}
 
@@ -1320,11 +1319,11 @@ int main(int argc, char **argv)
 
 	bts_model_sysmobts_init();
 
-	test_case = test_cases[atoi(argv[1])];
+	test_case = test_cases[test_case_i];
 
 	fprintf(stderr, "--------------------\n");
 	fprintf(stderr, "Performing the following test %d (algorithm %s):\n%s",
-		atoi(argv[1]), test_case[0], test_case[1]);
+		test_case_i, test_case[0], test_case[1]);
 	algorithm = atoi(test_case[0]);
 	test_case += 2;
 	fprintf(stderr, "--------------------\n");
@@ -1343,9 +1342,10 @@ int main(int argc, char **argv)
 				"TS(1-4) are TCH/F, TS(5-6) are TCH/H)\n", n);
 			for (i = 0; i < n; i++)
 				bts[bts_num + i] = create_bts(arfcn++);
-			for (i = 0; i < n; i++)
-				gsm_generate_si(bts[bts_num + i],
-					SYSINFO_TYPE_2);
+			for (i = 0; i < n; i++) {
+				if (gsm_generate_si(bts[bts_num + i], SYSINFO_TYPE_2))
+					fprintf(stderr, "Error generating SI2\n");
+			}
 			bts_num += n;
 			test_case += 2;
 		} else

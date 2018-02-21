@@ -46,7 +46,7 @@
 	     lchan->ts->nr, \
 	     lchan->nr, \
 	     gsm_pchan_name(lchan->ts->pchan), \
-	     bsc_subscr_name(lchan->conn->bsub), \
+	     bsc_subscr_name(lchan->conn? lchan->conn->bsub : NULL), \
 	     ## args)
 
 #define LOGPHOLCHANTOBTS(lchan, new_bts, level, fmt, args...) \
@@ -57,7 +57,7 @@
 	     lchan->nr, \
 	     gsm_pchan_name(lchan->ts->pchan), \
 	     new_bts->nr, \
-	     bsc_subscr_name(lchan->conn->bsub), \
+	     bsc_subscr_name(lchan->conn? lchan->conn->bsub : NULL), \
 	     ## args)
 
 #define REQUIREMENT_A_TCHF	0x01
@@ -1114,6 +1114,7 @@ static void on_measurement_report(struct gsm_meas_rep *mr)
 	struct gsm_lchan *lchan = mr->lchan;
 	struct gsm_bts *bts = lchan->ts->trx->bts;
 	int av_rxlev = -EINVAL, av_rxqual = -EINVAL;
+	unsigned int pwr_interval;
 
 	/* we currently only do handover for TCH channels */
 	switch (mr->lchan->type) {
@@ -1234,8 +1235,12 @@ static void on_measurement_report(struct gsm_meas_rep *mr)
 		return;
 	}
 
+	/* pwr_interval's range is 1-99, clarifying that no div-zero shall happen in modulo below: */
+	pwr_interval = ho_get_hodec2_pwr_interval(bts->ho);
+	OSMO_ASSERT(pwr_interval);
+
 	/* try handover to a better cell */
-	if (av_rxlev >= 0 && (mr->nr % ho_get_hodec2_pwr_interval(bts->ho)) == 0) {
+	if (av_rxlev >= 0 && (mr->nr % pwr_interval) == 0) {
 		LOGPHOLCHAN(lchan, LOGL_INFO, "Looking whether a cell has better RXLEV\n");
 		global_ho_reason = HO_REASON_BETTER_CELL;
 		find_alternative_lchan(lchan, false);
