@@ -20,6 +20,7 @@
 #include <osmocom/bsc/bsc_subscr_conn_fsm.h>
 #include <osmocom/bsc/osmo_bsc.h>
 #include <osmocom/bsc/bsc_msc_data.h>
+#include <osmocom/bsc/bsc_subscriber.h>
 #include <osmocom/bsc/debug.h>
 
 #include <osmocom/bsc/gsm_04_80.h>
@@ -258,8 +259,22 @@ static int complete_layer3(struct gsm_subscriber_connection *conn,
 		return BSC_API_CONN_POL_REJECT;
 	}
 
-	if (imsi)
+	/* TODO: also extract TMSI. We get an IMSI only when an initial L3 Complete comes in that
+	 * contains an IMSI. We filter by IMSI. A TMSI identity is never returned here, see e.g.
+	 * _cr_check_loc_upd() and other similar functions called from bsc_msg_filter_initial(). */
+	if (imsi) {
 		conn->filter_state.imsi = talloc_steal(conn, imsi);
+		if (conn->bsub) {
+			/* Already a subscriber on L3 Complete? Should never happen... */
+			if (conn->bsub->imsi[0]
+			    && strcmp(conn->bsub->imsi, imsi))
+				LOGP(DMSC, LOGL_ERROR, "Subscriber's IMSI changes from %s to %s\n",
+				     conn->bsub->imsi, imsi);
+			bsc_subscr_set_imsi(conn->bsub, imsi);
+		} else
+			conn->bsub = bsc_subscr_find_or_create_by_imsi(msc->network->bsc_subscribers,
+								       imsi);
+	}
 	conn->filter_state.con_type = con_type;
 
 	/* check return value, if failed check msg for and send USSD */
