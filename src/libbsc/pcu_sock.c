@@ -154,7 +154,7 @@ static int pcu_tx_info_ind(struct gsm_bts *bts)
 	/* RAI */
 	info_ind->mcc = bts->network->plmn.mcc;
 	info_ind->mnc = bts->network->plmn.mnc;
-	/* TODO: plmn.mnc_3_digits */
+	info_ind->mnc_3_digits = bts->network->plmn.mnc_3_digits;
 	info_ind->lac = bts->location_area_code;
 	info_ind->rac = bts->gprs.rac;
 
