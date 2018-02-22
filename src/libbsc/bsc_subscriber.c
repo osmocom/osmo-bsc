@@ -43,7 +43,7 @@ static struct bsc_subscr *bsc_subscr_alloc(struct llist_head *list)
 	llist_add_tail(&bsub->entry, list);
 	bsub->use_count = 1;
 
-	return bsub;
+	return bsc_subscr_get(bsub);
 }
 
 struct bsc_subscr *bsc_subscr_find_by_imsi(struct llist_head *list,
