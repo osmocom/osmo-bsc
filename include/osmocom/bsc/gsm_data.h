@@ -1353,7 +1353,7 @@ enum bts_gprs_mode bts_gprs_mode_parse(const char *arg, int *valid);
 const char *bts_gprs_mode_name(enum bts_gprs_mode mode);
 int bts_gprs_mode_is_compat(struct gsm_bts *bts, enum bts_gprs_mode mode);
 
-int gsm48_ra_id_by_bts(uint8_t *buf, struct gsm_bts *bts);
+void gsm48_ra_id_by_bts(struct gsm48_ra_id *buf, struct gsm_bts *bts);
 void gprs_ra_id_by_bts(struct gprs_ra_id *raid, struct gsm_bts *bts);
 
 int gsm_btsmodel_set_feature(struct gsm_bts_model *model, enum gsm_bts_features feat);

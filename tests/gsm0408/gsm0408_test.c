@@ -801,7 +801,7 @@ static void test_gsm48_ra_id_by_bts()
 		bts.location_area_code = t->lac;
 		bts.gprs.rac = t->rac;
 
-		gsm48_ra_id_by_bts((uint8_t*)&result, &bts);
+		gsm48_ra_id_by_bts(&result, &bts);
 
 		ok = (t->expect.digits[0] == result.digits[0])
 		     && (t->expect.digits[1] == result.digits[1])

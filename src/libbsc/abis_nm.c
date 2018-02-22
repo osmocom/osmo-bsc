@@ -2850,10 +2850,12 @@ int abis_nm_ipaccess_set_attr(struct gsm_bts *bts, uint8_t obj_class,
 
 void abis_nm_ipaccess_cgi(uint8_t *buf, struct gsm_bts *bts)
 {
-	/* we simply reuse the GSM48 function and overwrite the RAC
-	 * with the Cell ID */
-	gsm48_ra_id_by_bts(buf, bts);
-	*((uint16_t *)(buf + 5)) = htons(bts->cell_identity);
+	struct gsm48_ra_id *_buf = (struct gsm48_ra_id*)buf;
+	uint16_t ci = htons(bts->cell_identity);
+	/* we simply reuse the GSM48 function and write the Cell ID over the position where the RAC
+	 * starts */
+	gsm48_ra_id_by_bts(_buf, bts);
+	memcpy(&_buf->rac, &ci, sizeof(ci));
 }
 
 void gsm_trx_lock_rf(struct gsm_bts_trx *trx, bool locked, const char *reason)
