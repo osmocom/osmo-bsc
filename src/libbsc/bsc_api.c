@@ -773,14 +773,10 @@ static void dispatch_dtap(struct gsm_subscriber_connection *conn,
 				api->dtap(conn, link_id, msg);
 			break;
 		default:
-			/* Normally, a MSC should never receive RR
-			 * messages, but we'd rather forward what we
-			 * don't know than drop it... */
+			/* Drop unknown RR message */
 			LOGP(DRR, LOGL_NOTICE,
-			     "BSC: Passing %s 04.08 RR message to MSC\n",
-			     gsm48_rr_msg_name(msg_type));
-			if (api->dtap)
-				api->dtap(conn, link_id, msg);
+			     "%s Dropping %s 04.08 RR message from %s\n",
+			     gsm_lchan_name(conn->lchan), gsm48_rr_msg_name(msg_type));
 		}
 		break;
 	default:
