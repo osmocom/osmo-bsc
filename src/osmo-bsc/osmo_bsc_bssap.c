@@ -524,8 +524,8 @@ static int bssmap_handle_paging(struct bsc_msc_data *msc,
 
 	switch (cell_ident) {
 	case CELL_IDENT_NO_CELL:
-		LOGP(DMSC, LOGL_NOTICE, "Ignoring no-op paging request for IMSI %s\n", mi_string);
-		return 0; /* nothing to do */
+		page_all_bts(msc, tmsi, mi_string, chan_needed);
+		break;
 
 	case CELL_IDENT_WHOLE_GLOBAL:
 		page_cgi(msc, data, data_length, remain, tmsi, mi_string, chan_needed);
