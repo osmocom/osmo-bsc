@@ -345,44 +345,6 @@ int paging_request_bts(struct gsm_bts *bts, struct bsc_subscr *bsub, int type,
 	return 1;
 }
 
-/*! Receive a new PAGING request from the MSC
- * \param network gsm_network we operate in
- * \param[in] bsub subscriber we want to page
- * \param[in] type type of radio channel we're requirign
- * \param[in] msc MSC which has issue this paging
- * \returns number of BTSs on which we issued the paging */
-int paging_request(struct gsm_network *network, struct bsc_subscr *bsub, int type,
-		   struct bsc_msc_data *msc)
-{
-	struct gsm_bts *bts = NULL;
-	int num_pages = 0;
-
-	rate_ctr_inc(&network->bsc_ctrs->ctr[BSC_CTR_PAGING_ATTEMPTED]);
-
-	/* start paging subscriber on all BTS within Location Area */
-	do {
-		int rc;
-
-		bts = gsm_bts_by_lac(network, bsub->lac, bts);
-		if (!bts)
-			break;
-
-		rc = paging_request_bts(bts, bsub, type, msc);
-		if (rc < 0) {
-			paging_request_stop(&network->bts_list, NULL, bsub,
-					    NULL, NULL);
-			return rc;
-		}
-		num_pages += rc;
-	} while (1);
-
-	if (num_pages == 0)
-		rate_ctr_inc(&network->bsc_ctrs->ctr[BSC_CTR_PAGING_DETACHED]);
-
-	return num_pages;
-}
-
-
 /*! Stop paging a given subscriber on a given BTS.
  *  If \a conn is non-NULL, we also call the paging call-back function
  *  to notify the paging originator that paging has completed.

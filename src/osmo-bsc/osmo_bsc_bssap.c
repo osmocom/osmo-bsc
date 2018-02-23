@@ -522,6 +522,8 @@ static int bssmap_handle_paging(struct bsc_msc_data *msc,
 	cell_ident = data[0] & 0xf;
 	remain -= 1; /* cell ident consumed */
 
+	rate_ctr_inc(&msc->network->bsc_ctrs->ctr[BSC_CTR_PAGING_ATTEMPTED]);
+
 	switch (cell_ident) {
 	case CELL_IDENT_NO_CELL:
 		page_all_bts(msc, tmsi, mi_string, chan_needed);
