@@ -775,7 +775,7 @@ static void dispatch_dtap(struct gsm_subscriber_connection *conn,
 		default:
 			/* Drop unknown RR message */
 			LOGP(DRR, LOGL_NOTICE,
-			     "%s Dropping %s 04.08 RR message from %s\n",
+			     "%s Dropping %s 04.08 RR message\n",
 			     gsm_lchan_name(conn->lchan), gsm48_rr_msg_name(msg_type));
 		}
 		break;
