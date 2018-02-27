@@ -1293,7 +1293,7 @@ int main(int argc, char **argv)
 	log_set_print_filename2(osmo_stderr_target, LOG_FILENAME_BASENAME);
 
 	/* Create a dummy network */
-	bsc_gsmnet = bsc_network_init(NULL, 1, 1);
+	bsc_gsmnet = bsc_network_init(NULL);
 	if (!bsc_gsmnet)
 		exit(1);
 

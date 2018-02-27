@@ -22,6 +22,7 @@
 #include <osmocom/bsc/gsm_04_08_utils.h>
 #include <osmocom/bsc/handover_cfg.h>
 #include <osmocom/bsc/chan_alloc.h>
+#include <osmocom/bsc/common_bsc.h>
 
 /* XXX hard-coded for now */
 #define T3122_CHAN_LOAD_SAMPLE_INTERVAL 1 /* in seconds */
@@ -38,9 +39,7 @@ static void update_t3122_chan_load_timer(void *data)
 	osmo_timer_schedule(&net->t3122_chan_load_timer, T3122_CHAN_LOAD_SAMPLE_INTERVAL, 0);
 }
 
-struct gsm_network *bsc_network_init(void *ctx,
-				     uint16_t country_code,
-				     uint16_t network_code)
+struct gsm_network *bsc_network_init(void *ctx)
 {
 	struct gsm_network *net;
 
@@ -48,8 +47,9 @@ struct gsm_network *bsc_network_init(void *ctx,
 	if (!net)
 		return NULL;
 
-	net->country_code = country_code;
-	net->network_code = network_code;
+	net->country_code = 1;
+	net->network_code = 1;
+
 	/* Permit a compile-time default of A5/3 and A5/1 */
 	net->a5_encryption_mask = (1 << 3) | (1 << 1);
 

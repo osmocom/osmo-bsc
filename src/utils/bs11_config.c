@@ -915,7 +915,7 @@ int main(int argc, char **argv)
 	handle_options(argc, argv);
 	bts_model_bs11_init();
 
-	gsmnet = bsc_network_init(tall_bs11cfg_ctx, 1, 1);
+	gsmnet = bsc_network_init(tall_bs11cfg_ctx);
 	if (!gsmnet) {
 		fprintf(stderr, "Unable to allocate gsm network\n");
 		exit(1);

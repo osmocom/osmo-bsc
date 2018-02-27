@@ -547,7 +547,7 @@ static int bootstrap_bts(struct gsm_bts *bts)
 int bsc_network_alloc(void)
 {
 	/* initialize our data structures */
-	bsc_gsmnet = bsc_network_init(tall_bsc_ctx, 1, 1);
+	bsc_gsmnet = bsc_network_init(tall_bsc_ctx);
 	if (!bsc_gsmnet)
 		return -ENOMEM;
 

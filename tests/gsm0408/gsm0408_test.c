@@ -834,7 +834,7 @@ int main(int argc, char **argv)
 	osmo_init_logging(&log_info);
 	log_set_log_level(osmo_stderr_target, LOGL_INFO);
 
-	net = bsc_network_init(tall_bsc_ctx, 1, 1);
+	net = bsc_network_init(tall_bsc_ctx);
 	if (!net) {
 		printf("Network init failure.\n");
 		return EXIT_FAILURE;

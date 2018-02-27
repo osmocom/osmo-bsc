@@ -122,7 +122,7 @@ static void test_scan(void)
 {
 	int i;
 
-	struct gsm_network *net = bsc_network_init(NULL, 1, 1);
+	struct gsm_network *net = bsc_network_init(NULL);
 	struct gsm_bts *bts = gsm_bts_alloc(net, 0);
 	struct bsc_msc_data *msc;
 	struct gsm_subscriber_connection *conn;
