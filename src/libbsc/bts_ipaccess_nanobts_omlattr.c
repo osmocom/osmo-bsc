@@ -75,7 +75,7 @@ struct msgb *nanobts_attr_bts_get(struct gsm_bts *bts)
 	msgb_tv_put(msgb, NM_ATT_CCCH_L_I_P, 1);
 
 	/* busy threshold in - dBm */
-	buf[0] = 10;
+	buf[0] = 90;	/* -90 dBm as default "busy" threshold */
 	if (bts->rach_b_thresh != -1)
 		buf[0] = bts->rach_b_thresh & 0xff;
 	msgb_tv_put(msgb, NM_ATT_RACH_B_THRESH, buf[0]);
