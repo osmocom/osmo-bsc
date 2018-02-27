@@ -423,8 +423,9 @@ static int chan_compat_with_mode(struct gsm_lchan *lchan, int chan_mode, int ful
 		case GSM_LCHAN_TCH_H:
 		case GSM_LCHAN_SDCCH:
 			return 1;
+		default:
+			return 0;
 		}
-		break;
 	case GSM48_CMODE_SPEECH_V1:
 	case GSM48_CMODE_SPEECH_AMR:
 	case GSM48_CMODE_DATA_3k6:
@@ -433,33 +434,20 @@ static int chan_compat_with_mode(struct gsm_lchan *lchan, int chan_mode, int ful
 		 * an explicit override by the 'full_rate' argument */
 		switch (lchan->type) {
 		case GSM_LCHAN_TCH_F:
-			if (full_rate)
-				return 1;
-			else
-				return 0;
-			break;
+			return full_rate ? 1 : 0;
 		case GSM_LCHAN_TCH_H:
-			if (full_rate)
-				return 0;
-			else
-				return 1;
-			break;
+			return full_rate ? 0 : 1;
 		default:
 			return 0;
 		}
-		break;
 	case GSM48_CMODE_DATA_12k0:
 	case GSM48_CMODE_DATA_14k5:
 	case GSM48_CMODE_SPEECH_EFR:
 		/* these services all explicitly require a TCH/F */
-		if (lchan->type == GSM_LCHAN_TCH_F)
-			return 1;
-		else
-			return 0;
-		break;
+		return (lchan->type == GSM_LCHAN_TCH_F) ? 1 : 0;
+	default:
+		return 0;
 	}
-
-	return 0;
 }
 
 /**
