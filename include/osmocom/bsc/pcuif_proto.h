@@ -52,7 +52,7 @@ struct gsm_pcu_if_data {
 	uint8_t		ts_nr;
 	uint8_t		block_nr;
 	int8_t		rssi;
-	uint16_t	ber10k;		/*!< \brief BER in units of 0.01% */
+	uint16_t	ber10k;		/* !< \brief BER in units of 0.01% */
 	int16_t		ta_offs_qbits;	/* !< \brief Burst TA Offset in quarter bits */
 	int16_t		lqual_cb;	/* !< \brief Link quality in centiBel */
 } __attribute__ ((packed));
@@ -67,9 +67,9 @@ struct gsm_pcu_if_data_cnf_dt {
 	uint8_t		ts_nr;
 	uint8_t		block_nr;
 	int8_t		rssi;
-	uint16_t ber10k;	/*!< \brief BER in units of 0.01% */
-	int16_t ta_offs_qbits;	/* !< \brief Burst TA Offset in quarter bits */
-	int16_t lqual_cb;	/* !< \brief Link quality in centiBel */
+	uint16_t	ber10k;		/* !< \brief BER in units of 0.01% */
+	int16_t		ta_offs_qbits;	/* !< \brief Burst TA Offset in quarter bits */
+	int16_t		lqual_cb;	/* !< \brief Link quality in centiBel */
 } __attribute__ ((packed));
 
 struct gsm_pcu_if_rts_req {
@@ -89,7 +89,7 @@ struct gsm_pcu_if_rach_ind {
 	uint32_t	fn;
 	uint16_t	arfcn;
 	uint8_t		is_11bit;
-	uint8_t 	burst_type;
+	uint8_t		burst_type;
 } __attribute__ ((packed));
 
 struct gsm_pcu_if_info_trx {
