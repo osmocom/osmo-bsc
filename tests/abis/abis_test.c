@@ -23,6 +23,7 @@
 #include <osmocom/core/application.h>
 #include <osmocom/core/utils.h>
 #include <osmocom/gsm/protocol/gsm_12_21.h>
+#include <osmocom/gsm/gsm23003.h>
 
 #include <osmocom/bsc/gsm_data.h>
 #include <osmocom/bsc/abis_nm.h>
@@ -83,6 +84,91 @@ static void test_sw_selection(void)
 	printf("%s(): OK\n", __func__);
 }
 
+struct test_abis_nm_ipaccess_cgi {
+	struct osmo_plmn_id plmn;
+	uint16_t lac;
+	uint16_t cell_identity;
+	const char *expect;
+};
+static const struct test_abis_nm_ipaccess_cgi test_abis_nm_ipaccess_cgi_data[] = {
+	{
+		.plmn = { .mcc = 1, .mnc = 2, .mnc_3_digits = false },
+		.lac = 3,
+		.cell_identity = 4,
+		.expect = "00f120" "0003" "0004",
+	},
+	{
+		.plmn = { .mcc = 1, .mnc = 2, .mnc_3_digits = true },
+		.lac = 3,
+		.cell_identity = 4,
+		.expect = "00f120" /* FAIL: should be "002100" */
+			"0003" "0004",
+	},
+	{
+		.plmn = { .mcc = 0, .mnc = 0, .mnc_3_digits = false },
+		.lac = 0,
+		.cell_identity = 0,
+		.expect = "00f000" "0000" "0000",
+	},
+	{
+		.plmn = { .mcc = 0, .mnc = 0, .mnc_3_digits = true },
+		.lac = 0,
+		.cell_identity = 0,
+		.expect = "00f000" /* FAIL: should be "000000" */
+			"0000" "0000",
+	},
+	{
+		.plmn = { .mcc = 999, .mnc = 999, .mnc_3_digits = false },
+		.lac = 65535,
+		.cell_identity = 65535,
+		.expect = "999999" "ffff" "ffff",
+	},
+	{
+		.plmn = { .mcc = 909, .mnc = 90, .mnc_3_digits = false },
+		.lac = 0xabcd,
+		.cell_identity = 0x2345,
+		.expect = "09f909" "abcd" "2345",
+	},
+	{
+		.plmn = { .mcc = 909, .mnc = 90, .mnc_3_digits = true },
+		.lac = 0xabcd,
+		.cell_identity = 0x2345,
+		.expect = "09f909" /* FAIL: should be "090990" */
+			"abcd" "2345",
+	},
+};
+
+static void test_abis_nm_ipaccess_cgi()
+{
+	int i;
+	bool pass = true;
+
+	for (i = 0; i < ARRAY_SIZE(test_abis_nm_ipaccess_cgi_data); i++) {
+		struct gsm_network net;
+		struct gsm_bts bts;
+		const struct test_abis_nm_ipaccess_cgi *t = &test_abis_nm_ipaccess_cgi_data[i];
+		uint8_t result_buf[7] = {};
+		char *result;
+		bool ok;
+
+		net.country_code = t->plmn.mcc;
+		net.network_code = t->plmn.mnc;
+		bts.network = &net;
+		bts.location_area_code = t->lac;
+		bts.cell_identity = t->cell_identity;
+
+		abis_nm_ipaccess_cgi(result_buf, &bts);
+		result = osmo_hexdump_nospc(result_buf, sizeof(result_buf));
+
+		ok = (strcmp(result, t->expect) == 0);
+		printf("%s[%d]: result=%s %s\n", __func__, i, result, ok ? "pass" : "FAIL");
+		pass = pass && ok;
+	}
+
+	OSMO_ASSERT(pass);
+}
+
+
 static const struct log_info_cat log_categories[] = {
 };
 
@@ -96,6 +182,7 @@ int main(int argc, char **argv)
 	osmo_init_logging(&log_info);
 
 	test_sw_selection();
+	test_abis_nm_ipaccess_cgi();
 
 	return EXIT_SUCCESS;
 }
