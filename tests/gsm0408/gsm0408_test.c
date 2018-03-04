@@ -32,6 +32,7 @@
 #include <osmocom/bsc/abis_rsl.h>
 
 #include <osmocom/core/application.h>
+#include <osmocom/core/byteswap.h>
 #include <osmocom/gsm/sysinfo.h>
 #include <osmocom/gsm/gsm48.h>
 
@@ -707,6 +708,117 @@ static void test_si_ba_ind(struct gsm_network *net)
 	OSMO_ASSERT(si5ter->bcch_frequency_list[0] & 0x10);
 }
 
+struct test_gsm48_ra_id_by_bts {
+	struct osmo_plmn_id plmn;
+	uint16_t lac;
+	uint8_t rac;
+	struct gsm48_ra_id expect;
+};
+static const struct test_gsm48_ra_id_by_bts test_gsm48_ra_id_by_bts_data[] = {
+	{
+		.plmn = { .mcc = 1, .mnc = 2, .mnc_3_digits = false },
+		.lac = 3,
+		.rac = 4,
+		.expect = {
+			.digits = { 0x00, 0xf1, 0x20 },
+			.lac = 0x0300, /* network byte order of 3 */
+			.rac = 4,
+		},
+	},
+	{
+		.plmn = { .mcc = 1, .mnc = 2, .mnc_3_digits = true },
+		.lac = 3,
+		.rac = 4,
+		.expect = {
+			.digits = { 0x00, 0xf1, 0x20 }, /* FAIL: should be { 0x00, 0x21, 0x00 }, */
+			.lac = 0x0300, /* network byte order of 3 */
+			.rac = 4,
+		},
+	},
+	{
+		.plmn = { .mcc = 0, .mnc = 0, .mnc_3_digits = false },
+		.lac = 0,
+		.rac = 0,
+		.expect = {
+			.digits = { 0x00, 0xf0, 0x00 },
+		},
+	},
+	{
+		.plmn = { .mcc = 0, .mnc = 0, .mnc_3_digits = true },
+		.lac = 0,
+		.rac = 0,
+		.expect = {
+			.digits = { 0x00, 0xf0, 0x00 }, /* FAIL: should be { 0, 0, 0 } */
+		},
+	},
+	{
+		.plmn = { .mcc = 999, .mnc = 999, .mnc_3_digits = false },
+		.lac = 65535,
+		.rac = 255,
+		.expect = {
+			.digits = { 0x99, 0x99, 0x99 },
+			.lac = 0xffff,
+			.rac = 0xff,
+		},
+	},
+	{
+		.plmn = { .mcc = 909, .mnc = 90, .mnc_3_digits = false },
+		.lac = 0xabcd,
+		.rac = 0xab,
+		.expect = {
+			.digits = { 0x09, 0xf9, 0x09 },
+			.lac = 0xcdab,
+			.rac = 0xab,
+		},
+	},
+	{
+		.plmn = { .mcc = 909, .mnc = 90, .mnc_3_digits = true },
+		.lac = 0xabcd,
+		.rac = 0xab,
+		.expect = {
+			.digits = { 0x09, 0xf9, 0x09 }, /* FAIL: should be { 0x09, 0x09, 0x90 }, */
+			.lac = 0xcdab,
+			.rac = 0xab,
+		},
+	},
+};
+
+static void test_gsm48_ra_id_by_bts()
+{
+	int i;
+	bool pass = true;
+
+	for (i = 0; i < ARRAY_SIZE(test_gsm48_ra_id_by_bts_data); i++) {
+		struct gsm_network net;
+		struct gsm_bts bts;
+		const struct test_gsm48_ra_id_by_bts *t = &test_gsm48_ra_id_by_bts_data[i];
+		struct gsm48_ra_id result = {};
+		bool ok;
+
+		net.country_code = t->plmn.mcc;
+		net.network_code = t->plmn.mnc;
+		bts.network = &net;
+		bts.location_area_code = t->lac;
+		bts.gprs.rac = t->rac;
+
+		gsm48_ra_id_by_bts((uint8_t*)&result, &bts);
+
+		ok = (t->expect.digits[0] == result.digits[0])
+		     && (t->expect.digits[1] == result.digits[1])
+		     && (t->expect.digits[2] == result.digits[2])
+		     && (t->expect.lac == result.lac)
+		     && (t->expect.rac == result.rac);
+		printf("%s[%d]: digits='%02x%02x%02x' lac=0x%04x=htons(%u) rac=0x%02x=%u %s\n",
+		       __func__, i,
+		       result.digits[0], result.digits[1], result.digits[2],
+		       result.lac, osmo_ntohs(result.lac), result.rac, result.rac,
+		       ok ? "pass" : "FAIL");
+		pass = pass && ok;
+	}
+
+	OSMO_ASSERT(pass);
+}
+
 static const struct log_info_cat log_categories[] = {
 };
 
@@ -743,6 +855,8 @@ int main(int argc, char **argv)
 	test_si2q_long(net);
 
 	test_si_ba_ind(net);
+
+	test_gsm48_ra_id_by_bts();
 
 	printf("Done.\n");
 
