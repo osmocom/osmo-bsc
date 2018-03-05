@@ -43,6 +43,8 @@
 #include <osmocom/bsc/osmo_bsc.h>
 #include <osmocom/bsc/bsc_subscr_conn_fsm.h>
 
+void *ctx;
+
 struct gsm_network *bsc_gsmnet;
 
 /* override, requires '-Wl,--wrap=mgcp_conn_modify'.
@@ -213,7 +215,7 @@ static struct gsm_bts *create_bts(int arfcn)
 	bts->codec.hr = 1;
 	bts->codec.amr = 1;
 
-	rsl_link = talloc_zero(0, struct e1inp_sign_link);
+	rsl_link = talloc_zero(ctx, struct e1inp_sign_link);
 	rsl_link->trx = bts->c0;
 	bts->c0->rsl_link = rsl_link;
 
@@ -1350,6 +1352,9 @@ int main(int argc, char **argv)
 	int test_case_i;
 	int last_test_i;
 
+	ctx = talloc_named_const(NULL, 0, "handover_test");
+	msgb_talloc_ctx_init(ctx, 0);
+
 	test_case_i = argc > 1? atoi(argv[1]) : -1;
 	last_test_i = ARRAY_SIZE(test_cases) - 1;
 
@@ -1362,14 +1367,14 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 
-	osmo_init_logging(&log_info);
+	osmo_init_logging2(ctx, &log_info);
 
 	log_set_print_category(osmo_stderr_target, 1);
 	log_set_print_category_hex(osmo_stderr_target, 0);
 	log_set_print_filename2(osmo_stderr_target, LOG_FILENAME_BASENAME);
 
 	/* Create a dummy network */
-	bsc_gsmnet = bsc_network_init(NULL);
+	bsc_gsmnet = bsc_network_init(ctx);
 	if (!bsc_gsmnet)
 		exit(1);
 
@@ -1676,6 +1681,7 @@ int main(int argc, char **argv)
 
 	fprintf(stderr, "--------------------\n");
 
+	talloc_free(ctx);
 	return EXIT_SUCCESS;
 }
 

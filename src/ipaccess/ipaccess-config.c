@@ -900,7 +900,7 @@ int main(int argc, char **argv)
 	tall_ctx_config = talloc_named_const(NULL, 0, "ipaccess-config");
 	msgb_talloc_ctx_init(tall_ctx_config, 0);
 
-	osmo_init_logging(&log_info);
+	osmo_init_logging2(tall_ctx_config, &log_info);
 	bts_model_nanobts_init();
 
 	printf("ipaccess-config (C) 2009-2010 by Harald Welte and others\n");

@@ -812,7 +812,9 @@ int main(int argc, char **argv)
 {
 	struct gsm_network *net;
 
-	osmo_init_logging(&log_info);
+	tall_bsc_ctx = talloc_named_const(NULL, 0, "gsm0408_test");
+
+	osmo_init_logging2(tall_bsc_ctx, &log_info);
 	log_set_log_level(osmo_stderr_target, LOGL_INFO);
 
 	net = bsc_network_init(tall_bsc_ctx);

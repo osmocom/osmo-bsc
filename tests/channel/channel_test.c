@@ -98,7 +98,7 @@ static const struct log_info log_info = {
 
 int main(int argc, char **argv)
 {
-	osmo_init_logging(&log_info);
+	osmo_init_logging2(NULL, &log_info);
 
 	test_dyn_ts_subslots();
 	test_bts_debug_print();

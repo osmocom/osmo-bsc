@@ -199,10 +199,10 @@ int main(int argc, char **argv)
 	struct gsm_network *net;
 	struct gsm_bts_trx *trx;
 
-	osmo_init_logging(&log_info);
-	log_set_log_level(osmo_stderr_target, LOGL_INFO);
-
 	ctx = talloc_named_const(NULL, 0, "ctx");
+
+	osmo_init_logging2(ctx, &log_info);
+	log_set_log_level(osmo_stderr_target, LOGL_INFO);
 
 	/* Allocate environmental structs (bts, net, trx) */
 	net = talloc_zero(ctx, struct gsm_network);
@@ -282,7 +282,16 @@ int main(int argc, char **argv)
 	talloc_free(net);
 	talloc_free(trx);
 	talloc_report_full(ctx, stderr);
-	OSMO_ASSERT(talloc_total_blocks(ctx) == 1);
+	/* Expecting something like:
+	 * full talloc report on 'ctx' (total    813 bytes in   6 blocks)
+	 *     logging                        contains    813 bytes in   5 blocks (ref 0) 0x60b0000000a0
+	 * 	struct log_target              contains    196 bytes in   2 blocks (ref 0) 0x6110000000a0
+	 * 	    struct log_category            contains     36 bytes in   1 blocks (ref 0) 0x60d0000003e0
+	 * 	struct log_info                contains    616 bytes in   2 blocks (ref 0) 0x60d000000310
+	 * 	    struct log_info_cat            contains    576 bytes in   1 blocks (ref 0) 0x6170000000e0
+	 * That's the root ctx + 5x logging: */
+	OSMO_ASSERT(talloc_total_blocks(ctx) == 6);
+	talloc_free(ctx);
 	return 0;
 }
 

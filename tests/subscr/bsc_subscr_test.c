@@ -125,14 +125,15 @@ static const struct log_info log_info = {
 
 int main()
 {
+	void *ctx = talloc_named_const(NULL, 0, "bsc_subscr_test");
 	printf("Testing BSC subscriber core code.\n");
-	osmo_init_logging(&log_info);
+	osmo_init_logging2(ctx, &log_info);
 	log_set_print_filename(osmo_stderr_target, 0);
 	log_set_print_timestamp(osmo_stderr_target, 0);
 	log_set_use_color(osmo_stderr_target, 0);
 	log_set_print_category(osmo_stderr_target, 1);
 
-	bsc_subscribers = talloc_zero(NULL, struct llist_head);
+	bsc_subscribers = talloc_zero(ctx, struct llist_head);
 	INIT_LLIST_HEAD(bsc_subscribers);
 
 	test_bsc_subscr();

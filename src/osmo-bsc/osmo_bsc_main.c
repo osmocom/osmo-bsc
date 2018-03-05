@@ -414,7 +414,7 @@ int main(int argc, char **argv)
 	tall_tqe_ctx = talloc_named_const(tall_bsc_ctx, 0, "subch_txq_entry");
 	tall_ctr_ctx = talloc_named_const(tall_bsc_ctx, 0, "counter");
 
-	osmo_init_logging(&log_info);
+	osmo_init_logging2(tall_bsc_ctx, &log_info);
 	osmo_stats_init(tall_bsc_ctx);
 
 	/* Allocate global gsm_network struct */

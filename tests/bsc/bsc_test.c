@@ -39,6 +39,8 @@
 #include <stdio.h>
 #include <search.h>
 
+void *ctx = NULL;
+
 enum test {
 	TEST_SCAN_TO_BTS,
 	TEST_SCAN_TO_MSC,
@@ -122,7 +124,7 @@ static void test_scan(void)
 {
 	int i;
 
-	struct gsm_network *net = bsc_network_init(NULL);
+	struct gsm_network *net = bsc_network_init(ctx);
 	struct gsm_bts *bts = gsm_bts_alloc(net, 0);
 	struct bsc_msc_data *msc;
 	struct gsm_subscriber_connection *conn;
@@ -227,12 +229,14 @@ static const struct log_info log_info = {
 
 int main(int argc, char **argv)
 {
-	msgb_talloc_ctx_init(NULL, 0);
-	osmo_init_logging(&log_info);
+	ctx = talloc_named_const(NULL, 0, "bsc-test");
+	msgb_talloc_ctx_init(ctx, 0);
+	osmo_init_logging2(ctx, &log_info);
 
 	test_scan();
 
 	printf("Testing execution completed.\n");
+	talloc_free(ctx);
 	return 0;
 }
 

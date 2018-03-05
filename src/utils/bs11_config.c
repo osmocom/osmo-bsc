@@ -911,7 +911,7 @@ int main(int argc, char **argv)
 	tall_fle_ctx = talloc_named_const(tall_bs11cfg_ctx, 0, "bs11_file_list_entry");
 	msgb_talloc_ctx_init(tall_bs11cfg_ctx, 0);
 
-	osmo_init_logging(&log_info);
+	osmo_init_logging2(tall_bs11cfg_ctx, &log_info);
 	handle_options(argc, argv);
 	bts_model_bs11_init();
 
