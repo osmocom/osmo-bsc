@@ -339,8 +339,10 @@ static void send_ho_complete(struct gsm_lchan *lchan, bool success)
 	abis_rsl_rcvmsg(msg);
 }
 
-/* RSL messages from BSC */
-int abis_rsl_sendmsg(struct msgb *msg)
+/* override, requires '-Wl,--wrap=abis_rsl_sendmsg'.
+ * Catch RSL messages sent towards the BTS. */
+int __real_abis_rsl_sendmsg(struct msgb *msg);
+int __wrap_abis_rsl_sendmsg(struct msgb *msg)
 {
 	struct abis_rsl_dchan_hdr *dh = (struct abis_rsl_dchan_hdr *) msg->data;
 	struct e1inp_sign_link *sign_link = msg->dst;

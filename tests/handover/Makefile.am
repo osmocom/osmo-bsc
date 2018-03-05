@@ -27,6 +27,10 @@ handover_test_SOURCES = \
 	handover_test.c \
 	$(NULL)
 
+handover_test_LDFLAGS =\
+	-Wl,--wrap=abis_rsl_sendmsg \
+	$(NULL)
+
 handover_test_LDADD = \
 	$(top_builddir)/src/libbsc/libbsc.a \
 	$(LIBOSMOCORE_LIBS) \
