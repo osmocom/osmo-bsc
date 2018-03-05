@@ -730,7 +730,7 @@ static const struct test_gsm48_ra_id_by_bts test_gsm48_ra_id_by_bts_data[] = {
 		.lac = 3,
 		.rac = 4,
 		.expect = {
-			.digits = { 0x00, 0xf1, 0x20 }, /* FAIL: should be { 0x00, 0x21, 0x00 }, */
+			.digits = { 0x00, 0x21, 0x00 },
 			.lac = 0x0300, /* network byte order of 3 */
 			.rac = 4,
 		},
@@ -748,7 +748,7 @@ static const struct test_gsm48_ra_id_by_bts test_gsm48_ra_id_by_bts_data[] = {
 		.lac = 0,
 		.rac = 0,
 		.expect = {
-			.digits = { 0x00, 0xf0, 0x00 }, /* FAIL: should be { 0, 0, 0 } */
+			.digits = {},
 		},
 	},
 	{
@@ -776,7 +776,7 @@ static const struct test_gsm48_ra_id_by_bts test_gsm48_ra_id_by_bts_data[] = {
 		.lac = 0xabcd,
 		.rac = 0xab,
 		.expect = {
-			.digits = { 0x09, 0xf9, 0x09 }, /* FAIL: should be { 0x09, 0x09, 0x90 }, */
+			.digits = { 0x09, 0x09, 0x90 },
 			.lac = 0xcdab,
 			.rac = 0xab,
 		},
@@ -795,8 +795,7 @@ static void test_gsm48_ra_id_by_bts()
 		struct gsm48_ra_id result = {};
 		bool ok;
 
-		net.country_code = t->plmn.mcc;
-		net.network_code = t->plmn.mnc;
+		net.plmn = t->plmn;
 		bts.network = &net;
 		bts.location_area_code = t->lac;
 		bts.gprs.rac = t->rac;

@@ -262,15 +262,14 @@ page_subscriber(struct bsc_msc_data *msc, struct gsm_bts *bts,
 
 /* Decode 5-byte LAI list element data (see TS 08.08 3.2.2.27) into MCC/MNC/LAC.
  * Return 0 if successful, negative on error. */
-static int
-decode_lai(const uint8_t *data, uint16_t *mcc, uint16_t *mnc, uint16_t *lac)
+static void
+decode_lai(const uint8_t *data, struct osmo_location_area_id *laid)
 {
 	struct gsm48_loc_area_id lai;
 
 	/* Copy data to stack to prevent unaligned access in gsm48_decode_lai(). */
 	memcpy(&lai, data, sizeof(lai)); /* don't byte swap yet */
-
-	return gsm48_decode_lai(&lai, mcc, mnc, lac) != 0 ? -1 : 0;
+	gsm48_decode_lai2(&lai, laid);
 }
 
 static void
@@ -290,37 +289,33 @@ page_cgi(struct bsc_msc_data *msc, const uint8_t *data, uint8_t data_length, siz
 	uint16_t ci;
 	int i = 0;
 	while (remain >= sizeof(struct gsm48_loc_area_id) + sizeof(ci)) {
-		uint16_t mcc, mnc, lac, *ci_be;
+		struct osmo_location_area_id lai;
+		uint16_t *ci_be;
 		size_t lai_offset = 1 + i * (sizeof(struct gsm48_loc_area_id) + sizeof(ci));
-		if (decode_lai(&data[lai_offset], &mcc, &mnc, &lac) != 0) {
-			LOGP(DMSC, LOGL_ERROR, "Paging IMSI %s: Invalid LAI in Cell Identifier List "
-			     "for BSS (0x%x), paging entire BSS anyway (%s)\n",
-			     mi_string, CELL_IDENT_BSS, osmo_hexdump(data, data_length));
-			page_all_bts(msc, tmsi, mi_string, chan_needed);
-			return;
-		}
+		decode_lai(&data[lai_offset], &lai);
 		ci_be = (uint16_t *)(&data[lai_offset + sizeof(struct gsm48_loc_area_id)]);
 		ci = osmo_load16be(ci_be);
-		if (mcc == msc->network->country_code && mnc == msc->network->network_code) {
+		if (!osmo_plmn_cmp(&lai.plmn, &msc->network->plmn)) {
 			int paged = 0;
 			struct gsm_bts *bts;
 			llist_for_each_entry(bts, &msc->network->bts_list, list) {
-				if (bts->location_area_code != lac)
+				if (bts->location_area_code != lai.lac)
 					continue;
 				if (bts->cell_identity != ci)
 					continue;
 				/* ignore errors from page_subscriber(); keep trying other BTS */
-				page_subscriber(msc, bts, tmsi, lac, mi_string, chan_needed);
+				page_subscriber(msc, bts, tmsi, lai.lac, mi_string, chan_needed);
 				paged = 1;
 			}
 			if (!paged) {
 				LOGP(DMSC, LOGL_NOTICE, "Paging IMSI %s: BTS with LAC %d and CI %d not found\n",
-				     mi_string, lac, ci);
+				     mi_string, lai.lac, ci);
 			}
 		} else {
-			LOGP(DMSC, LOGL_DEBUG, "Paging IMSI %s: MCC/MNC in Cell Identifier List "
-			     "(%d/%d) do not match our network (%d/%d)\n", mi_string, mcc, mnc,
-			     msc->network->country_code, msc->network->network_code);
+			LOGP(DMSC, LOGL_DEBUG, "Paging IMSI %s: MCC-MNC in Cell Identifier List "
+			     "(%s) do not match our network (%s)\n",
+			     mi_string, osmo_plmn_name(&lai.plmn),
+			     osmo_plmn_name2(&msc->network->plmn));
 		}
 		remain -= sizeof(struct gsm48_loc_area_id) + sizeof(ci);
 		i++;
@@ -389,32 +384,27 @@ page_lai_and_lac(struct bsc_msc_data *msc, const uint8_t *data, size_t data_leng
 {
 	int i = 0;
 	while (remain >= sizeof(struct gsm48_loc_area_id)) {
-		uint16_t mcc, mnc, lac;
-		if (decode_lai(&data[1 + i * sizeof(struct gsm48_loc_area_id)], &mcc, &mnc, &lac) != 0) {
-			LOGP(DMSC, LOGL_ERROR, "Paging IMSI %s: Invalid LAI in Cell Identifier List "
-			     "for BSS (0x%x), paging entire BSS anyway (%s)\n",
-			     mi_string, CELL_IDENT_BSS, osmo_hexdump(data, data_length));
-			page_all_bts(msc, tmsi, mi_string, chan_needed);
-			return;
-		}
-		if (mcc == msc->network->country_code && mnc == msc->network->network_code) {
+		struct osmo_location_area_id lai;
+		decode_lai(&data[1 + i * sizeof(struct gsm48_loc_area_id)], &lai);
+		if (!osmo_plmn_cmp(&lai.plmn, &msc->network->plmn)) {
 			int paged = 0;
 			struct gsm_bts *bts;
 			llist_for_each_entry(bts, &msc->network->bts_list, list) {
-				if (bts->location_area_code != lac)
+				if (bts->location_area_code != lai.lac)
 					continue;
 				/* ignore errors from page_subscriber(); keep trying other BTS */
-				page_subscriber(msc, bts, tmsi, lac, mi_string, chan_needed);
+				page_subscriber(msc, bts, tmsi, lai.lac, mi_string, chan_needed);
 				paged = 1;
 			}
 			if (!paged) {
 				LOGP(DMSC, LOGL_NOTICE, "Paging IMSI %s: BTS with LAC %d not found\n",
-				     mi_string, lac);
+				     mi_string, lai.lac);
 			}
 		} else {
-			LOGP(DMSC, LOGL_DEBUG, "Paging IMSI %s: MCC/MNC in Cell Identifier List "
-			     "(%d/%d) do not match our network (%d/%d)\n", mi_string, mcc, mnc,
-			     msc->network->country_code, msc->network->network_code);
+			LOGP(DMSC, LOGL_DEBUG, "Paging IMSI %s: MCC-MNC in Cell Identifier List "
+			     "(%s) do not match our network (%s)\n",
+			     mi_string, osmo_plmn_name(&lai.plmn),
+			     osmo_plmn_name2(&msc->network->plmn));
 		}
 		remain -= sizeof(struct gsm48_loc_area_id);
 		i++;

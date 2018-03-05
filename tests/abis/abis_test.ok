@@ -8,9 +8,9 @@ SELECTED: 1
 SELECTED: 0
 test_sw_selection(): OK
 test_abis_nm_ipaccess_cgi[0]: result=00f12000030004 pass
-test_abis_nm_ipaccess_cgi[1]: result=00f12000030004 pass
+test_abis_nm_ipaccess_cgi[1]: result=00210000030004 pass
 test_abis_nm_ipaccess_cgi[2]: result=00f00000000000 pass
-test_abis_nm_ipaccess_cgi[3]: result=00f00000000000 pass
+test_abis_nm_ipaccess_cgi[3]: result=00000000000000 pass
 test_abis_nm_ipaccess_cgi[4]: result=999999ffffffff pass
 test_abis_nm_ipaccess_cgi[5]: result=09f909abcd2345 pass
-test_abis_nm_ipaccess_cgi[6]: result=09f909abcd2345 pass
+test_abis_nm_ipaccess_cgi[6]: result=090990abcd2345 pass

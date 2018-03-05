@@ -13,6 +13,7 @@
 #include <osmocom/core/stats.h>
 #include <osmocom/core/stat_item.h>
 #include <osmocom/gsm/protocol/gsm_08_08.h>
+#include <osmocom/gsm/gsm48.h>
 
 #include <osmocom/crypt/auth.h>
 
@@ -1197,9 +1198,8 @@ struct gsm_network {
 	 * these have in common, like country and network code, put in yet
 	 * separate structs and placed as members in osmo_bsc and osmo_msc. */
 
-	/* global parameters */
-	uint16_t country_code;
-	uint16_t network_code;
+	struct osmo_plmn_id plmn;
+
 	/* bit-mask of permitted encryption algorithms. LSB=A5/0, MSB=A5/7 */
 	uint8_t a5_encryption_mask;
 	int neci;
@@ -1274,6 +1274,16 @@ struct gsm_network {
 		struct mgcp_client *client;
 	} mgw;
 };
+
+static inline const struct osmo_location_area_id *bts_lai(struct gsm_bts *bts)
+{
+	static struct osmo_location_area_id lai;
+	lai = (struct osmo_location_area_id){
+		.plmn = bts->network->plmn,
+		.lac = bts->location_area_code,
+	};
+	return &lai;
+}
 
 extern void talloc_ctx_init(void *ctx_root);
 

@@ -215,10 +215,10 @@ SI5: 06 1d 10 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 SI5bis: 06 05 10 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
 SI5ter: 06 06 10 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
 test_gsm48_ra_id_by_bts[0]: digits='00f120' lac=0x0300=htons(3) rac=0x04=4 pass
-test_gsm48_ra_id_by_bts[1]: digits='00f120' lac=0x0300=htons(3) rac=0x04=4 pass
+test_gsm48_ra_id_by_bts[1]: digits='002100' lac=0x0300=htons(3) rac=0x04=4 pass
 test_gsm48_ra_id_by_bts[2]: digits='00f000' lac=0x0000=htons(0) rac=0x00=0 pass
-test_gsm48_ra_id_by_bts[3]: digits='00f000' lac=0x0000=htons(0) rac=0x00=0 pass
+test_gsm48_ra_id_by_bts[3]: digits='000000' lac=0x0000=htons(0) rac=0x00=0 pass
 test_gsm48_ra_id_by_bts[4]: digits='999999' lac=0xffff=htons(65535) rac=0xff=255 pass
 test_gsm48_ra_id_by_bts[5]: digits='09f909' lac=0xcdab=htons(43981) rac=0xab=171 pass
-test_gsm48_ra_id_by_bts[6]: digits='09f909' lac=0xcdab=htons(43981) rac=0xab=171 pass
+test_gsm48_ra_id_by_bts[6]: digits='090990' lac=0xcdab=htons(43981) rac=0xab=171 pass
 Done.

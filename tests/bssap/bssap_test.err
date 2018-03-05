@@ -16,7 +16,7 @@ bsc_handle_udt() returned 0
 2:
 DMSC Rx MSC UDT: 00 19 52 08 08 59 51 20 69 00 07 43 94 09 04 01 08 44 60 1a 06 04 15 f5 49 00 65 
 DMSC Rx MSC UDT BSSMAP PAGING
-DMSC Paging IMSI 515029600703449: MCC/MNC in Cell Identifier List (515/94) do not match our network (1/1)
+DMSC Paging IMSI 515029600703449: MCC-MNC in Cell Identifier List (515-94) do not match our network (001-01)
 bsc_handle_udt() returned 0
 
 3:

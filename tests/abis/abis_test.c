@@ -101,8 +101,7 @@ static const struct test_abis_nm_ipaccess_cgi test_abis_nm_ipaccess_cgi_data[] =
 		.plmn = { .mcc = 1, .mnc = 2, .mnc_3_digits = true },
 		.lac = 3,
 		.cell_identity = 4,
-		.expect = "00f120" /* FAIL: should be "002100" */
-			"0003" "0004",
+		.expect = "002100" "0003" "0004",
 	},
 	{
 		.plmn = { .mcc = 0, .mnc = 0, .mnc_3_digits = false },
@@ -114,8 +113,7 @@ static const struct test_abis_nm_ipaccess_cgi test_abis_nm_ipaccess_cgi_data[] =
 		.plmn = { .mcc = 0, .mnc = 0, .mnc_3_digits = true },
 		.lac = 0,
 		.cell_identity = 0,
-		.expect = "00f000" /* FAIL: should be "000000" */
-			"0000" "0000",
+		.expect = "000000" "0000" "0000",
 	},
 	{
 		.plmn = { .mcc = 999, .mnc = 999, .mnc_3_digits = false },
@@ -133,8 +131,7 @@ static const struct test_abis_nm_ipaccess_cgi test_abis_nm_ipaccess_cgi_data[] =
 		.plmn = { .mcc = 909, .mnc = 90, .mnc_3_digits = true },
 		.lac = 0xabcd,
 		.cell_identity = 0x2345,
-		.expect = "09f909" /* FAIL: should be "090990" */
-			"abcd" "2345",
+		.expect = "090990" "abcd" "2345",
 	},
 };
 
@@ -151,8 +148,7 @@ static void test_abis_nm_ipaccess_cgi()
 		char *result;
 		bool ok;
 
-		net.country_code = t->plmn.mcc;
-		net.network_code = t->plmn.mnc;
+		net.plmn = t->plmn;
 		bts.network = &net;
 		bts.location_area_code = t->lac;
 		bts.cell_identity = t->cell_identity;

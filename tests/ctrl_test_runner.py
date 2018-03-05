@@ -371,32 +371,32 @@ class TestCtrlBSC(TestCtrlBase):
         r = self.do_get('mcc')
         self.assertEquals(r['mtype'], 'GET_REPLY')
         self.assertEquals(r['var'], 'mcc')
-        self.assertEquals(r['value'], '23')
+        self.assertEquals(r['value'], '023')
 
         r = self.do_set('mcc', '023')
         r = self.do_get('mcc')
         self.assertEquals(r['mtype'], 'GET_REPLY')
         self.assertEquals(r['var'], 'mcc')
-        self.assertEquals(r['value'], '23')
+        self.assertEquals(r['value'], '023')
 
     def testMnc(self):
         r = self.do_set('mnc', '9')
         r = self.do_get('mnc')
         self.assertEquals(r['mtype'], 'GET_REPLY')
         self.assertEquals(r['var'], 'mnc')
-        self.assertEquals(r['value'], '9')
+        self.assertEquals(r['value'], '09')
 
         r = self.do_set('mnc', '09')
         r = self.do_get('mnc')
         self.assertEquals(r['mtype'], 'GET_REPLY')
         self.assertEquals(r['var'], 'mnc')
-        self.assertEquals(r['value'], '9')
+        self.assertEquals(r['value'], '09')
 
         r = self.do_set('mnc', '009')
         r = self.do_get('mnc')
         self.assertEquals(r['mtype'], 'GET_REPLY')
         self.assertEquals(r['var'], 'mnc')
-        self.assertEquals(r['value'], '9') # FAIL: expecting '009'
+        self.assertEquals(r['value'], '009')
 
 
     def testMccMncApply(self):
@@ -434,7 +434,7 @@ class TestCtrlBSC(TestCtrlBase):
         r = self.do_get('mnc')
         self.assertEquals(r['mtype'], 'GET_REPLY')
         self.assertEquals(r['var'], 'mnc')
-        self.assertEquals(r['value'], '4')
+        self.assertEquals(r['value'], '04')
 
         r = self.do_get('mcc')
         self.assertEquals(r['mtype'], 'GET_REPLY')
@@ -450,7 +450,7 @@ class TestCtrlBSC(TestCtrlBase):
         r = self.do_get('mnc')
         self.assertEquals(r['mtype'], 'GET_REPLY')
         self.assertEquals(r['var'], 'mnc')
-        self.assertEquals(r['value'], '3')
+        self.assertEquals(r['value'], '03')
 
         r = self.do_get('mcc')
         self.assertEquals(r['mtype'], 'GET_REPLY')
@@ -466,12 +466,12 @@ class TestCtrlBSC(TestCtrlBase):
         r = self.do_get('mnc')
         self.assertEquals(r['mtype'], 'GET_REPLY')
         self.assertEquals(r['var'], 'mnc')
-        self.assertEquals(r['value'], '3') # FAIL: expecting '003'
+        self.assertEquals(r['value'], '003')
 
         r = self.do_get('mcc')
         self.assertEquals(r['mtype'], 'GET_REPLY')
         self.assertEquals(r['var'], 'mcc')
-        self.assertEquals(r['value'], '2')
+        self.assertEquals(r['value'], '002')
 
         # Set same MNC with 3 digits
         r = self.do_set('mcc-mnc-apply', '2,003')
@@ -482,12 +482,12 @@ class TestCtrlBSC(TestCtrlBase):
         r = self.do_get('mnc')
         self.assertEquals(r['mtype'], 'GET_REPLY')
         self.assertEquals(r['var'], 'mnc')
-        self.assertEquals(r['value'], '3') # FAIL: expecting '003'
+        self.assertEquals(r['value'], '003')
 
         r = self.do_get('mcc')
         self.assertEquals(r['mtype'], 'GET_REPLY')
         self.assertEquals(r['var'], 'mcc')
-        self.assertEquals(r['value'], '2')
+        self.assertEquals(r['value'], '002')
 
 class TestCtrlNAT(TestCtrlBase):
 

@@ -272,8 +272,9 @@ struct gsm_bts *gsm_bts_alloc_register(struct gsm_network *net, enum gsm_bts_typ
 void gprs_ra_id_by_bts(struct gprs_ra_id *raid, struct gsm_bts *bts)
 {
 	*raid = (struct gprs_ra_id){
-		.mcc = bts->network->country_code,
-		.mnc = bts->network->network_code,
+		.mcc = bts->network->plmn.mcc,
+		.mnc = bts->network->plmn.mnc,
+		.mnc_3_digits = bts->network->plmn.mnc_3_digits,
 		.lac = bts->location_area_code,
 		.rac = bts->gprs.rac,
 	};

@@ -203,9 +203,8 @@ static void net_dump_vty(struct vty *vty, struct gsm_network *net)
 	struct pchan_load pl;
 	int i;
 
-	vty_out(vty, "BSC is on Country Code %u, Network Code %u "
-		"and has %u BTS%s", net->country_code, net->network_code,
-		net->num_bts, VTY_NEWLINE);
+	vty_out(vty, "BSC is on MCC-MNC %s and has %u BTS%s",
+		osmo_plmn_name(&net->plmn), net->num_bts, VTY_NEWLINE);
 	vty_out(vty, "%s", VTY_NEWLINE);
 	vty_out(vty, "  Encryption:");
 	for (i = 0; i < 8; i++) {
@@ -955,8 +954,9 @@ static int config_write_net(struct vty *vty)
 	int i;
 
 	vty_out(vty, "network%s", VTY_NEWLINE);
-	vty_out(vty, " network country code %u%s", gsmnet->country_code, VTY_NEWLINE);
-	vty_out(vty, " mobile network code %u%s", gsmnet->network_code, VTY_NEWLINE);
+	vty_out(vty, " network country code %s%s", osmo_mcc_name(gsmnet->plmn.mcc), VTY_NEWLINE);
+	vty_out(vty, " mobile network code %s%s",
+		osmo_mnc_name(gsmnet->plmn.mnc, gsmnet->plmn.mnc_3_digits), VTY_NEWLINE);
 	vty_out(vty, " encryption a5");
 	for (i = 0; i < 8; i++) {
 		if (gsmnet->a5_encryption_mask & (1 << i))
@@ -4516,8 +4516,14 @@ DEFUN(cfg_net_ncc,
       "Network Country Code to use\n")
 {
 	struct gsm_network *gsmnet = gsmnet_from_vty(vty);
+	uint16_t mcc;
 
-	gsmnet->country_code = atoi(argv[0]);
+	if (osmo_mcc_from_str(argv[0], &mcc)) {
+		vty_out(vty, "%% Error decoding MCC: %s%s", argv[0], VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	gsmnet->plmn.mcc = mcc;
 
 	return CMD_SUCCESS;
 }
@@ -4531,8 +4537,16 @@ DEFUN(cfg_net_mnc,
       "Mobile Network Code to use\n")
 {
 	struct gsm_network *gsmnet = gsmnet_from_vty(vty);
+	uint16_t mnc;
+	bool mnc_3_digits;
 
-	gsmnet->network_code = atoi(argv[0]);
+	if (osmo_mnc_from_str(argv[0], &mnc, &mnc_3_digits)) {
+		vty_out(vty, "%% Error decoding MNC: %s%s", argv[0], VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	gsmnet->plmn.mnc = mnc;
+	gsmnet->plmn.mnc_3_digits = mnc_3_digits;
 
 	return CMD_SUCCESS;
 }
