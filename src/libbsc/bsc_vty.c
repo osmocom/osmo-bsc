@@ -4258,6 +4258,9 @@ DEFUN(smscb_cmd, smscb_cmd_cmd,
 	case 4:
 		cb_cmd.last_block = RSL_CB_CMD_LASTBLOCK_4;
 		break;
+	default:
+		vty_out(vty, "Error parsing LASTBLOCK%s", VTY_NEWLINE);
+		return CMD_WARNING;
 	}
 
 	rsl_sms_cb_command(bts, RSL_CHAN_SDCCH4_ACCH, cb_cmd, buf, rc);
