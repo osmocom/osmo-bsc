@@ -1167,7 +1167,7 @@ static void on_measurement_report(struct gsm_meas_rep *mr)
 				     MEAS_REP_DL_RXQUAL_FULL : MEAS_REP_DL_RXQUAL_SUB,
 				     ho_get_hodec2_rxqual_avg_win(bts->ho));
 	if (av_rxlev < 0 && av_rxqual < 0) {
-		LOGPHOLCHAN(lchan, LOGL_INFO, "Skipping, Not enough recent measuements\n");
+		LOGPHOLCHAN(lchan, LOGL_INFO, "Skipping, Not enough recent measurements\n");
 		return;
 	}
 	if (av_rxlev >= 0) {
