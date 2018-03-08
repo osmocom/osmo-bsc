@@ -1127,7 +1127,8 @@ static void on_measurement_report(struct gsm_meas_rep *mr)
 
 	if (log_check_level(DHODEC, LOGL_DEBUG)) {
 		int i;
-		LOGPHOLCHAN(lchan, LOGL_DEBUG, "MEASUREMENT REPORT\n");
+		LOGPHOLCHAN(lchan, LOGL_DEBUG, "MEASUREMENT REPORT (%d neighbors)\n",
+			    mr->num_cell);
 		for (i = 0; i < mr->num_cell; i++) {
 			struct gsm_meas_rep_cell *mrc = &mr->cell[i];
 			LOGPHOLCHAN(lchan, LOGL_DEBUG,
