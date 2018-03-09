@@ -36,6 +36,12 @@ Multi-Arch: same
 Depends: osmo-bsc (= ${binary:Version}), ${misc:Depends}
 Description: OsmoBSC: Osmocom's Base Station Controller for 2G circuit-switched mobile networks
 
+Package: abisip-find
+Architecture: any
+Multi-Arch: foreign
+Depends: ${misc:Depends}, ${shlibs:Depends}
+Description: Command line utility to find ip.access compatible BTS
+
 Package: osmo-bsc-ipaccess-utils
 Architecture: any
 Multi-Arch: foreign
