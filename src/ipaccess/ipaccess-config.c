@@ -858,6 +858,7 @@ int main(int argc, char **argv)
 {
 	struct gsm_bts *bts;
 	struct sockaddr_in sin;
+	char *bts_ip;
 	int rc, option_index = 0, stream_id = 0xff;
 
 	tall_ctx_config = talloc_named_const(NULL, 0, "ipaccess-config");
@@ -982,15 +983,17 @@ int main(int argc, char **argv)
 		}
 	};
 
-	if (firmware_analysis)
+	if (firmware_analysis) {
 		analyze_firmware(firmware_analysis);
-
-	if (optind >= argc) {
-		/* only warn if we have not done anything else */
-		if (!firmware_analysis)
-			fprintf(stderr, "you have to specify the IP address of the BTS. Use --help for more information\n");
+		if (argc == optind) /* Nothing more to do, exit successfully */
+			exit(EXIT_SUCCESS);
+	}
+	if (argc - optind != 1) {
+		fprintf(stderr, "you have to specify the IP address of the BTS. Use --help for more information\n");
 		exit(2);
 	}
+	bts_ip = argv[optind++];
+
 	libosmo_abis_init(tall_ctx_config);
 
 	bsc_gsmnet = bsc_network_init(tall_bsc_ctx);
@@ -1010,11 +1013,11 @@ int main(int argc, char **argv)
 
 	ipac_nwl_init();
 
-	printf("Trying to connect to ip.access BTS ...\n");
+	printf("Trying to connect to ip.access BTS %s...\n", bts_ip);
 
 	memset(&sin, 0, sizeof(sin));
 	sin.sin_family = AF_INET;
-	inet_aton(argv[optind], &sin.sin_addr);
+	inet_aton(bts_ip, &sin.sin_addr);
 	rc = ia_config_connect(bts, &sin);
 	if (rc < 0) {
 		perror("Error connecting to the BTS");
