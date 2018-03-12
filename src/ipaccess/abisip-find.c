@@ -43,12 +43,14 @@ static struct {
 	int send_interval;
 	bool list_view;
 	time_t list_view_timeout;
+	bool format_json;
 } cmdline_opts = {
 	.ifname = NULL,
 	.bind_ip = NULL,
 	.send_interval = 5,
 	.list_view = false,
 	.list_view_timeout = 10,
+	.format_json = false,
 };
 
 static void print_help()
@@ -66,6 +68,7 @@ static void print_help()
 	printf("  -t --timeout <s>  Drop base stations after <s> seconds of\n"
 	       "                    receiving no more replies from it.\n"
 	       "                    Implies --list-view.\n");
+	printf("  -j --format-json  Print BTS information using json syntax.\n");
 }
 
 static void handle_options(int argc, char **argv)
@@ -78,10 +81,11 @@ static void handle_options(int argc, char **argv)
 			{"send-interval", 1, 0, 'i'},
 			{"list-view", 0, 0, 'l'},
 			{"timeout", 1, 0, 't'},
+			{"format-json", 0, 0, 'j'},
 			{0, 0, 0, 0}
 		};
 
-		c = getopt_long(argc, argv, "hb:i:lt:",
+		c = getopt_long(argc, argv, "hb:i:lt:j",
 				long_options, &option_index);
 		if (c == -1)
 			break;
@@ -111,6 +115,9 @@ static void handle_options(int argc, char **argv)
 			/* fall through to imply list-view: */
 		case 'l':
 			cmdline_opts.list_view = true;
+			break;
+		case 'j':
+			cmdline_opts.format_json = true;
 			break;
 		default:
 			/* catch unknown options *as well as* missing arguments. */
@@ -217,18 +224,32 @@ static int bcast_find(int fd)
 
 static char *parse_response(void *ctx, unsigned char *buf, int len)
 {
+	unsigned int out_len;
 	uint8_t t_len;
 	uint8_t t_tag;
 	uint8_t *cur = buf;
 	char *out = talloc_zero_size(ctx, 512);
 
+	if (cmdline_opts.format_json)
+		out = talloc_asprintf_append(out,"{ ");
+
 	while (cur < buf + len) {
 		t_len = *cur++;
 		t_tag = *cur++;
-		
-		out = talloc_asprintf_append(out, "%s='%s'  ", ipa_ccm_idtag_name(t_tag), cur);
+
+		if (cmdline_opts.format_json)
+			out = talloc_asprintf_append(out, "\"%s\": \"%s\", ", ipa_ccm_idtag_name(t_tag), cur);
+		else
+			out = talloc_asprintf_append(out, "%s='%s'  ", ipa_ccm_idtag_name(t_tag), cur);
 
 		cur += t_len;
+	}
+
+	if (cmdline_opts.format_json) {
+		out_len = strlen(out);
+		if (out[out_len-2] == ',')
+			out[out_len-2] = ' ';
+		out[out_len-1] = '}';
 	}
 
 	return out;
@@ -308,10 +329,23 @@ void base_stations_print()
 	int count = 0;
 
 	print_timestamp();
+	if (cmdline_opts.format_json)
+		printf("[");
+
 	llist_for_each_entry(bs, &base_stations, entry) {
-		printf("%3d: %s\n", count, bs->line);
+		if (cmdline_opts.format_json) {
+			if (count)
+				printf(",");
+			printf("\n%s", bs->line);
+		} else {
+			printf("%3d: %s\n", count, bs->line);
+		}
 		count++;
 	}
+
+	if (cmdline_opts.format_json)
+		printf("%c]\n", count ? '\n': ' ');
+
 	printf("\nTotal: %d\n", count);
 }
 
