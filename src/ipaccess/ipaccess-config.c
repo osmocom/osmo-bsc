@@ -843,7 +843,8 @@ static const struct log_info_cat log_categories[] = {
 		.name = "DNM",
 		.description = "A-bis Network Management / O&M (NM/OML)",
 		.color = "\033[1;36m",
-		.enabled = 1, .loglevel = LOGL_INFO,
+		.loglevel = LOGL_DEBUG,
+		.enabled = 1,
 	},
 };
 
@@ -862,7 +863,6 @@ int main(int argc, char **argv)
 	msgb_talloc_ctx_init(tall_ctx_config, 0);
 
 	osmo_init_logging(&log_info);
-	log_parse_category_mask(osmo_stderr_target, "DNM,0");
 	bts_model_nanobts_init();
 
 	printf("ipaccess-config (C) 2009-2010 by Harald Welte and others\n");
