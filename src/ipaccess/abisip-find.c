@@ -39,11 +39,13 @@
 
 static struct {
 	const char *ifname;
+	const char *bind_ip;
 	int send_interval;
 	bool list_view;
 	time_t list_view_timeout;
 } cmdline_opts = {
 	.ifname = NULL,
+	.bind_ip = NULL,
 	.send_interval = 5,
 	.list_view = false,
 	.list_view_timeout = 10,
@@ -55,6 +57,8 @@ static void print_help()
 	printf("Usage: abisip-find [-l] [<interface-name>]\n");
 	printf("  <interface-name>  Specify the outgoing network interface,\n"
 	       "                    e.g. 'eth0'\n");
+	printf("  -b --bind-ip <ip> Specify the local IP to bind to,\n"
+	       "                    e.g. '192.168.1.10'\n");
 	printf("  -i --interval <s> Send broadcast frames every <s> seconds.\n");
 	printf("  -l --list-view    Instead of printing received responses,\n"
 	       "                    output a sorted list of currently present\n"
@@ -70,13 +74,14 @@ static void handle_options(int argc, char **argv)
 		int option_index = 0, c;
 		static struct option long_options[] = {
 			{"help", 0, 0, 'h'},
+			{"bind-ip", 1, 0, 'b'},
 			{"send-interval", 1, 0, 'i'},
 			{"list-view", 0, 0, 'l'},
 			{"timeout", 1, 0, 't'},
 			{0, 0, 0, 0}
 		};
 
-		c = getopt_long(argc, argv, "hi:lt:",
+		c = getopt_long(argc, argv, "hb:i:lt:",
 				long_options, &option_index);
 		if (c == -1)
 			break;
@@ -85,6 +90,9 @@ static void handle_options(int argc, char **argv)
 		case 'h':
 			print_help();
 			exit(EXIT_SUCCESS);
+		case 'b':
+			cmdline_opts.bind_ip = optarg;
+			break;
 		case 'i':
 			errno = 0;
 			cmdline_opts.send_interval = strtoul(optarg, NULL, 10);
@@ -122,7 +130,7 @@ static void handle_options(int argc, char **argv)
 	}
 }
 
-static int udp_sock(const char *ifname)
+static int udp_sock(const char *ifname, const char *bind_ip)
 {
 	int fd, rc, bc = 1;
 	struct sockaddr_in sa;
@@ -146,7 +154,15 @@ static int udp_sock(const char *ifname)
 	memset(&sa, 0, sizeof(sa));
 	sa.sin_family = AF_INET;
 	sa.sin_port = htons(3006);
-	sa.sin_addr.s_addr = INADDR_ANY;
+	if (bind_ip) {
+		rc = inet_pton(AF_INET, bind_ip, &sa.sin_addr);
+		if (rc != 1) {
+			fprintf(stderr, "bind ip addr: inet_pton failed, returned %d\n", rc);
+			goto err;
+		}
+	} else {
+		sa.sin_addr.s_addr = INADDR_ANY;
+	}
 
 	rc = bind(fd, (struct sockaddr *)&sa, sizeof(sa));
 	if (rc < 0)
@@ -395,7 +411,7 @@ int main(int argc, char **argv)
 
 	bfd.cb = bfd_cb;
 	bfd.when = BSC_FD_READ | BSC_FD_WRITE;
-	bfd.fd = udp_sock(cmdline_opts.ifname);
+	bfd.fd = udp_sock(cmdline_opts.ifname, cmdline_opts.bind_ip);
 	if (bfd.fd < 0) {
 		perror("Cannot create local socket for broadcast udp");
 		exit(1);
