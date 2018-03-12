@@ -117,6 +117,7 @@ static int ipaccess_connect(struct e1inp_line *line, struct sockaddr_in *sa)
 
 	ret = osmo_fd_register(bfd);
 	if (ret < 0) {
+		LOGP(DLINP, LOGL_ERROR, "unable to register socket fd\n");
 		close(bfd->fd);
 		return ret;
 	}
