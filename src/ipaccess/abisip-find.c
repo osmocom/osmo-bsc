@@ -339,9 +339,10 @@ static void handle_response(unsigned char *buf, int len)
 			talloc_free(bs);
 		base_stations_bump(changed);
 		printf("RX: %u   \r", responses);
-		fflush(stdout);
-	} else
+	} else {
 		printf("%s\n", parse_response(ctx, buf, len));
+	}
+	fflush(stdout);
 }
 
 static int read_response(int fd)
