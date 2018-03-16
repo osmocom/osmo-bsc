@@ -436,9 +436,11 @@ int main(int argc, char **argv)
 
 	handle_options(argc, argv);
 
-	if (!cmdline_opts.ifname)
-		fprintf(stdout, "- You might need to specify the outgoing\n"
-			"  network interface, e.g. ``%s eth0''\n", argv[0]);
+	if (!cmdline_opts.ifname && !cmdline_opts.bind_ip)
+		fprintf(stdout, "- You might need to specify the outgoing network interface,\n"
+			"  e.g. ``%s eth0'' (requires root permissions),\n"
+			"  or alternatively use -b to bind to the source address\n"
+			"  assigned to that interface\n", argv[0]);
 	if (!cmdline_opts.list_view)
 		fprintf(stdout, "- You may find the --list-view option convenient.\n");
 	else if (cmdline_opts.send_interval >= cmdline_opts.list_view_timeout)
