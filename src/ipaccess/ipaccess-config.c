@@ -26,6 +26,7 @@
 #include <string.h>
 #include <getopt.h>
 #include <errno.h>
+#include <ctype.h>
 #include <sys/fcntl.h>
 #include <sys/stat.h>
 
@@ -782,6 +783,41 @@ static void analyze_firmware(const char *filename)
 	talloc_free(tall_firm_ctx);
 }
 
+static bool check_unitid_fmt(const char* unit_id)
+{
+	const char *p = unit_id;
+	bool must_digit = true;
+	uint8_t remain_slash = 2;
+
+	if (strlen(unit_id) < 5)
+		goto wrong_fmt;
+
+	while (*p != '\0') {
+		if (*p != '/' && !isdigit(*p))
+			goto wrong_fmt;
+		if (*p == '/' && must_digit)
+			goto wrong_fmt;
+		if (*p == '/') {
+			must_digit = true;
+			remain_slash--;
+			if (remain_slash < 0)
+				goto wrong_fmt;
+		} else {
+			must_digit = false;
+		}
+		p++;
+	}
+
+	if (*(p-1) == '/')
+		goto wrong_fmt;
+
+	return true;
+
+wrong_fmt:
+	fprintf(stderr, "ERROR: unit-id wrong format. Must be '\\d+/\\d+/\\d+'\n");
+	return false;
+}
+
 static void print_usage(void)
 {
 	printf("Usage: ipaccess-config IP_OF_BTS\n");
@@ -904,6 +940,8 @@ int main(int argc, char **argv)
 
 		switch (c) {
 		case 'u':
+			if (!check_unitid_fmt(optarg))
+				exit(2);
 			unit_id = optarg;
 			break;
 		case 'o':
