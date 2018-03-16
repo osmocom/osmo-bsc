@@ -866,8 +866,6 @@ static int bsc_handle_lchan_signal(unsigned int subsys, unsigned int signal,
 static void handle_release(struct gsm_subscriber_connection *conn,
 			   struct bsc_api *bsc, struct gsm_lchan *lchan)
 {
-	int destruct = 1;
-
 	if (conn->secondary_lchan == lchan) {
 		osmo_timer_del(&conn->T10);
 		conn->secondary_lchan = NULL;
@@ -879,7 +877,7 @@ static void handle_release(struct gsm_subscriber_connection *conn,
 
 	/* clear the connection now */
 	if (bsc->clear_request)
-		destruct = bsc->clear_request(conn, 0);
+		bsc->clear_request(conn, 0);
 
 	/* now give up all channels */
 	if (conn->lchan == lchan)
@@ -914,4 +912,3 @@ static __attribute__((constructor)) void on_dso_load_bsc(void)
 {
 	osmo_signal_register_handler(SS_LCHAN, bsc_handle_lchan_signal, NULL);
 }
-
