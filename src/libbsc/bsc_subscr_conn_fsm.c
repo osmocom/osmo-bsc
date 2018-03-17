@@ -369,7 +369,7 @@ static void gscon_fsm_active(struct osmo_fsm_inst *fi, uint32_t event, void *dat
 			/* An unsupported channel is requested, so we have to
 			 * reject this request by sending an assignment failure
 			 * message immediately */
-			LOGPFSML(fi, LOGL_ERROR, "Requested channel mode is not supported!\n",
+			LOGPFSML(fi, LOGL_ERROR, "Requested channel mode is not supported! chan_mode=%s full_rate=%d\n",
 				 get_value_string(gsm48_chan_mode_names, conn->user_plane.chan_mode),
 				 conn->user_plane.full_rate);
 
