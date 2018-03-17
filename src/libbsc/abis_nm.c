@@ -1,7 +1,7 @@
 /* GSM Network Management (OML) messages on the A-bis interface
  * 3GPP TS 12.21 version 8.0.0 Release 1999 / ETSI TS 100 623 V8.0.0 */
 
-/* (C) 2008-2009 by Harald Welte <laforge@gnumonks.org>
+/* (C) 2008-2018 by Harald Welte <laforge@gnumonks.org>
  *
  * All Rights Reserved
  *
@@ -52,6 +52,9 @@
 #define OM_ALLOC_SIZE		1024
 #define OM_HEADROOM_SIZE	128
 #define IPACC_SEGMENT_SIZE	245
+
+#define LOGPFOH(ss, lvl, foh, fmt, args ...) LOGP(ss, lvl, "%s: " fmt, abis_nm_dump_foh(foh), ## args)
+#define DEBUGPFOH(ss, foh, fmt, args ...) LOGPFOH(ss, LOGL_DEBUG, foh, fmt, ## args)
 
 int abis_nm_tlv_parse(struct tlv_parsed *tp, struct gsm_bts *bts, const uint8_t *buf, int len)
 {
@@ -209,18 +212,17 @@ static int abis_nm_rx_statechg_rep(struct msgb *mb)
 	struct tlv_parsed tp;
 	struct gsm_nm_state *nm_state, new_state;
 
-	DEBUGPC(DNM, "STATE CHG: ");
-
 	memset(&new_state, 0, sizeof(new_state));
 
 	nm_state = gsm_objclass2nmstate(bts, foh->obj_class, &foh->obj_inst);
 	if (!nm_state) {
-		DEBUGPC(DNM, "unknown object class\n");
+		LOGPFOH(DNM, LOGL_ERROR, foh, "unknown managed object\n");
 		return -EINVAL;
 	}
 
 	new_state = *nm_state;
-	
+
+	DEBUGPFOH(DNM, foh, "STATE CHG: ");
 	abis_nm_tlv_parse(&tp, bts, foh->data, oh->length-sizeof(*foh));
 	if (TLVP_PRESENT(&tp, NM_ATT_OPER_STATE)) {
 		new_state.operational = *TLVP_VAL(&tp, NM_ATT_OPER_STATE);
@@ -364,8 +366,8 @@ static int rx_fail_evt_rep(struct msgb *mb, struct gsm_bts *bts)
 			log_oml_fail_rep(bts, e_type, severity, p_val, p_text);
 		};
 	} else {
-		LOGPC(DNM, LOGL_ERROR, "BTS%u: Failure Event Report without "
-		      "Probable Cause?!\n", bts->nr);
+		LOGPFOH(DNM, LOGL_ERROR, foh, "BTS%u: Failure Event Report without "
+			"Probable Cause?!\n", bts->nr);
 		rc = -EINVAL;
 	}
 
@@ -380,16 +382,12 @@ static int abis_nm_rcvmsg_report(struct msgb *mb, struct gsm_bts *bts)
 	struct abis_om_fom_hdr *foh = msgb_l3(mb);
 	uint8_t mt = foh->msg_type;
 
-	abis_nm_debugp_foh(DNM, foh);
-
-	//nmh->cfg->report_cb(mb, foh);
-
 	switch (mt) {
 	case NM_MT_STATECHG_EVENT_REP:
 		return abis_nm_rx_statechg_rep(mb);
 		break;
 	case NM_MT_SW_ACTIVATED_REP:
-		DEBUGPC(DNM, "Software Activated Report\n");
+		DEBUGPFOH(DNM, foh, "Software Activated Report\n");
 		osmo_signal_dispatch(SS_NM, S_NM_SW_ACTIV_REP, mb);
 		break;
 	case NM_MT_FAILURE_EVENT_REP:
@@ -397,13 +395,12 @@ static int abis_nm_rcvmsg_report(struct msgb *mb, struct gsm_bts *bts)
 		osmo_signal_dispatch(SS_NM, S_NM_FAIL_REP, mb);
 		break;
 	case NM_MT_TEST_REP:
-		DEBUGPC(DNM, "Test Report\n");
+		DEBUGPFOH(DNM, foh, "Test Report\n");
 		osmo_signal_dispatch(SS_NM, S_NM_TEST_REP, mb);
 		break;
 	default:
-		DEBUGPC(DNM, "reporting NM MT 0x%02x\n", mt);
+		LOGPFOH(DNM, LOGL_NOTICE, foh, "unknown NM report MT 0x%02x\n", mt);
 		break;
-		
 	};
 
 	return 0;
@@ -550,13 +547,12 @@ static int abis_nm_rx_get_attr_resp(struct msgb *mb, const struct gsm_bts_trx *t
 	int rc;
 	struct abis_nm_sw_desc sw_descr[MAX_BTS_ATTR];
 
-	abis_nm_debugp_foh(DNM, foh);
-
-	DEBUGPC(DNM, "Get Attributes Response for BTS%u\n", bts->nr);
+	DEBUGPFOH(DNM, foh, "Get Attributes Response for BTS%u\n", bts->nr);
 
 	abis_nm_tlv_parse(&tp, bts, foh->data, oh->length-sizeof(*foh));
 	if (!TLVP_PRES_LEN(&tp, NM_ATT_GET_ARI, 1)) {
-		LOGP(DNM, LOGL_ERROR, "BTS%u: Get Attributes Response without Response Info?!\n", bts->nr);
+		LOGPFOH(DNM, LOGL_ERROR, foh, "BTS%u: Get Attr Response without Response Info?!\n",
+			bts->nr);
 		return -EINVAL;
 	}
 
@@ -572,12 +568,14 @@ static int abis_nm_rx_get_attr_resp(struct msgb *mb, const struct gsm_bts_trx *t
 		for (i = 0; i < rc; i++) {
 			if (!handle_attr(bts, str2btsattr((const char *)sw_descr[i].file_id),
 					 sw_descr[i].file_version, sw_descr[i].file_version_len))
-				LOGP(DNM, LOGL_NOTICE, "BTS%u: ARI reported sw[%d/%d]: %s is %s\n",
-				     bts->nr, i, rc, sw_descr[i].file_id, sw_descr[i].file_version);
+				LOGPFOH(DNM, LOGL_NOTICE, foh, "BTS%u: ARI reported sw[%d/%d]: %s "
+					"is %s\n", bts->nr, i, rc, sw_descr[i].file_id,
+					sw_descr[i].file_version);
 		}
-	} else
-		LOGP(DNM, LOGL_ERROR, "BTS%u: failed to parse SW-Config part of Get Attribute Response Info: %s\n",
-		     bts->nr, strerror(-rc));
+	} else {
+		LOGPFOH(DNM, LOGL_ERROR, foh, "BTS%u: failed to parse SW-Config part of "
+			"Get Attribute Response Info: %s\n", bts->nr, strerror(-rc));
+	}
 
 	return 0;
 }
@@ -593,11 +591,7 @@ static int abis_nm_rx_sw_act_req(struct msgb *mb)
 	int ret, sw_config_len, len;
 	struct abis_nm_sw_desc sw_descr[MAX_BTS_ATTR];
 
-	abis_nm_debugp_foh(DNM, foh);
-
-	DEBUGPC(DNM, "SW Activate Request: ");
-
-	DEBUGP(DNM, "Software Activate Request, ACKing and Activating\n");
+	DEBUGPFOH(DNM, foh, "Software Activate Request, ACKing and Activating\n");
 
 	ret = abis_nm_sw_act_req_ack(sign_link->trx->bts, foh->obj_class,
 				      foh->obj_inst.bts_nr,
@@ -605,8 +599,7 @@ static int abis_nm_rx_sw_act_req(struct msgb *mb)
 				      foh->obj_inst.ts_nr, 0,
 				      foh->data, oh->length-sizeof(*foh));
 	if (ret != 0) {
-		LOGP(DNM, LOGL_ERROR,
-			"Sending SW ActReq ACK failed: %d\n", ret);
+		LOGPFOH(DNM, LOGL_ERROR, foh, "Sending SW ActReq ACK failed: %d\n", ret);
 		return ret;
 	}
 
@@ -614,8 +607,7 @@ static int abis_nm_rx_sw_act_req(struct msgb *mb)
 	sw_config = TLVP_VAL(&tp, NM_ATT_SW_CONFIG);
 	sw_config_len = TLVP_LEN(&tp, NM_ATT_SW_CONFIG);
 	if (!TLVP_PRESENT(&tp, NM_ATT_SW_CONFIG)) {
-		LOGP(DNM, LOGL_ERROR,
-			"SW config not found! Can't continue.\n");
+		LOGPFOH(DNM, LOGL_ERROR, foh, "SW config not found! Can't continue.\n");
 		return -EINVAL;
 	} else {
 		DEBUGP(DNM, "Found SW config: %s\n", osmo_hexdump(sw_config, sw_config_len));
@@ -625,12 +617,12 @@ static int abis_nm_rx_sw_act_req(struct msgb *mb)
 	len = abis_nm_get_sw_conf(sw_config, sw_config_len, &sw_descr[0],
 				  ARRAY_SIZE(sw_descr));
 	if (len <= 0) {
-		LOGP(DNM, LOGL_ERROR, "Failed to parse SW Config.\n");
+		LOGPFOH(DNM, LOGL_ERROR, foh, "Failed to parse SW Config.\n");
 		return -EINVAL;
 	}
 
 	ret = abis_nm_select_newest_sw(&sw_descr[0], len);
-	DEBUGP(DNM, "Selected sw description %d of %d\n", ret, len);
+	DEBUGPFOH(DNM, foh, "Selected sw description %d of %d\n", ret, len);
 
 	return ipacc_sw_activate(sign_link->trx->bts, foh->obj_class,
 				 foh->obj_inst.bts_nr,
@@ -664,7 +656,7 @@ static int abis_nm_rx_lmt_event(struct msgb *mb)
 	struct e1inp_sign_link *sign_link = mb->dst;
 	struct tlv_parsed tp;
 
-	DEBUGP(DNM, "LMT Event ");
+	DEBUGPFOH(DNM, foh, "LMT Event ");
 	abis_nm_tlv_parse(&tp, sign_link->trx->bts, foh->data, oh->length-sizeof(*foh));
 	if (TLVP_PRESENT(&tp, NM_ATT_BS11_LMT_LOGON_SESSION) &&
 	    TLVP_LEN(&tp, NM_ATT_BS11_LMT_LOGON_SESSION) >= 1) {
@@ -766,9 +758,7 @@ static int abis_nm_rcvmsg_fom(struct msgb *mb)
 		struct nm_nack_signal_data nack_data;
 		struct tlv_parsed tp;
 
-		abis_nm_debugp_foh(DNM, foh);
-
-		DEBUGPC(DNM, "%s NACK ", abis_nm_nack_name(mt));
+		LOGPFOH(DNM, LOGL_NOTICE, foh, "%s NACK ", abis_nm_nack_name(mt));
 
 		abis_nm_tlv_parse(&tp, bts, foh->data, oh->length-sizeof(*foh));
 		if (TLVP_PRESENT(&tp, NM_ATT_NACK_CAUSES))
@@ -812,36 +802,34 @@ static int abis_nm_rcvmsg_fom(struct msgb *mb)
 		ret = abis_nm_rx_lmt_event(mb);
 		break;
 	case NM_MT_OPSTART_ACK:
-		abis_nm_debugp_foh(DNM, foh);
-		DEBUGPC(DNM, "Opstart ACK\n");
+		DEBUGPFOH(DNM, foh, "Opstart ACK\n");
 		break;
 	case NM_MT_SET_CHAN_ATTR_ACK:
-		abis_nm_debugp_foh(DNM, foh);
-		DEBUGPC(DNM, "Set Channel Attributes ACK\n");
+		DEBUGPFOH(DNM, foh, "Set Channel Attributes ACK\n");
 		break;
 	case NM_MT_SET_RADIO_ATTR_ACK:
-		abis_nm_debugp_foh(DNM, foh);
-		DEBUGPC(DNM, "Set Radio Carrier Attributes ACK\n");
+		DEBUGPFOH(DNM, foh, "Set Radio Carrier Attributes ACK\n");
 		break;
 	case NM_MT_CONN_MDROP_LINK_ACK:
-		abis_nm_debugp_foh(DNM, foh);
-		DEBUGPC(DNM, "CONN MDROP LINK ACK\n");
+		DEBUGPFOH(DNM, foh, "CONN MDROP LINK ACK\n");
 		break;
 	case NM_MT_IPACC_RESTART_ACK:
+		DEBUGPFOH(DNM, foh, "IPA Restart ACK\n");
 		osmo_signal_dispatch(SS_NM, S_NM_IPACC_RESTART_ACK, NULL);
 		break;
 	case NM_MT_IPACC_RESTART_NACK:
+		LOGPFOH(DNM, LOGL_NOTICE, foh, "IPA Restart NACK\n");
 		osmo_signal_dispatch(SS_NM, S_NM_IPACC_RESTART_NACK, NULL);
 		break;
 	case NM_MT_SET_BTS_ATTR_ACK:
+		DEBUGPFOH(DNM, foh, "Set BTS Attribute ACK\n");
 		break;
 	case NM_MT_GET_ATTR_RESP:
 		ret = abis_nm_rx_get_attr_resp(mb, gsm_bts_trx_num(bts, (foh)->obj_inst.trx_nr));
 		break;
 	default:
-		abis_nm_debugp_foh(DNM, foh);
-		LOGPC(DNM, LOGL_ERROR, "Unhandled message %s\n",
-		      get_value_string(abis_nm_msgtype_names, mt));
+		LOGPFOH(DNM, LOGL_ERROR, foh, "Unhandled message %s\n",
+			get_value_string(abis_nm_msgtype_names, mt));
 	}
 
 	abis_nm_queue_send_next(bts);
@@ -1314,8 +1302,7 @@ static int abis_nm_rcvmsg_sw(struct msgb *mb)
 			break;
 		case NM_MT_LOAD_INIT_NACK:
 			if (sw->forced) {
-				DEBUGP(DNM, "FORCED: Ignoring Software Load "
-					"Init NACK\n");
+				DEBUGPFOH(DNM, foh, "FORCED: Ignoring Software Load Init NACK\n");
 				if (sw->cbfn)
 					sw->cbfn(GSM_HOOK_NM_SWLOAD,
 						 NM_MT_LOAD_INIT_ACK, mb,
@@ -1323,7 +1310,7 @@ static int abis_nm_rcvmsg_sw(struct msgb *mb)
 				rc = sw_fill_window(sw);
 				sw->state = SW_STATE_WAIT_SEGACK;
 			} else {
-				DEBUGP(DNM, "Software Load Init NACK\n");
+				LOGPFOH(DNM, LOGL_NOTICE, foh, "Software Load Init NACK\n");
 				/* FIXME: cause */
 				if (sw->cbfn)
 					sw->cbfn(GSM_HOOK_NM_SWLOAD,
@@ -1366,8 +1353,7 @@ static int abis_nm_rcvmsg_sw(struct msgb *mb)
 		switch (foh->msg_type) {
 		case NM_MT_LOAD_END_ACK:
 			sw_close_file(sw);
-			DEBUGP(DNM, "Software Load End (BTS %u)\n",
-				sw->bts->nr);
+			DEBUGPFOH(DNM, foh, "Software Load End (BTS %u)\n", sw->bts->nr);
 			sw->state = SW_STATE_NONE;
 			if (sw->cbfn)
 				sw->cbfn(GSM_HOOK_NM_SWLOAD,
@@ -1378,15 +1364,14 @@ static int abis_nm_rcvmsg_sw(struct msgb *mb)
 			break;
 		case NM_MT_LOAD_END_NACK:
 			if (sw->forced) {
-				DEBUGP(DNM, "FORCED: Ignoring Software Load"
-					"End NACK\n");
+				DEBUGPFOH(DNM, foh, "FORCED: Ignoring Software Load End NACK\n");
 				sw->state = SW_STATE_NONE;
 				if (sw->cbfn)
 					sw->cbfn(GSM_HOOK_NM_SWLOAD,
 						 NM_MT_LOAD_END_ACK, mb,
 						 sw->cb_data, NULL);
 			} else {
-				DEBUGP(DNM, "Software Load End NACK\n");
+				LOGPFOH(DNM, LOGL_NOTICE, foh, "Software Load End NACK\n");
 				/* FIXME: cause */
 				sw->state = SW_STATE_ERROR;
 				if (sw->cbfn)
@@ -1401,7 +1386,7 @@ static int abis_nm_rcvmsg_sw(struct msgb *mb)
 		switch (foh->msg_type) {
 		case NM_MT_ACTIVATE_SW_ACK:
 			/* we're done */
-			DEBUGP(DNM, "Activate Software DONE!\n");
+			LOGPFOH(DNM, LOGL_INFO, foh, "Activate Software DONE!\n");
 			sw->state = SW_STATE_NONE;
 			rc = 0;
 			if (sw->cbfn)
@@ -1411,7 +1396,7 @@ static int abis_nm_rcvmsg_sw(struct msgb *mb)
 			abis_nm_queue_send_next(sign_link->trx->bts);
 			break;
 		case NM_MT_ACTIVATE_SW_NACK:
-			DEBUGP(DNM, "Activate Software NACK\n");
+			LOGPFOH(DNM, LOGL_ERROR, foh, "Activate Software NACK\n");
 			/* FIXME: cause */
 			sw->state = SW_STATE_ERROR;
 			if (sw->cbfn)
@@ -1433,7 +1418,7 @@ static int abis_nm_rcvmsg_sw(struct msgb *mb)
 	}
 
 	if (rc)
-		DEBUGP(DNM, "unexpected NM MT 0x%02x in state %u -> %u\n",
+		LOGPFOH(DNM, LOGL_ERROR, foh, "unexpected NM MT 0x%02x in state %u -> %u\n",
 			foh->msg_type, old_state, sw->state);
 
 	return rc;
@@ -1447,8 +1432,7 @@ int abis_nm_software_load(struct gsm_bts *bts, int trx_nr, const char *fname,
 	struct abis_nm_sw *sw = &g_sw;
 	int rc;
 
-	DEBUGP(DNM, "Software Load (BTS %u, File \"%s\")\n",
-		bts->nr, fname);
+	DEBUGP(DNM, "Software Load (BTS %u, File \"%s\")\n", bts->nr, fname);
 
 	if (sw->state != SW_STATE_NONE)
 		return -EBUSY;
@@ -1516,8 +1500,7 @@ int abis_nm_software_activate(struct gsm_bts *bts, const char *fname,
 	struct abis_nm_sw *sw = &g_sw;
 	int rc;
 
-	DEBUGP(DNM, "Activating Software (BTS %u, File \"%s\")\n",
-		bts->nr, fname);
+	DEBUGP(DNM, "Activating Software (BTS %u, File \"%s\")\n", bts->nr, fname);
 
 	if (sw->state != SW_STATE_NONE)
 		return -EBUSY;
@@ -1864,6 +1847,7 @@ int abis_nm_set_channel_attr(struct gsm_bts_trx_ts *ts, uint8_t chan_comb)
 {
 	struct gsm_bts *bts = ts->trx->bts;
 	struct abis_om_hdr *oh;
+	struct abis_om_fom_hdr *foh;
 	uint8_t zero = 0x00;
 	struct msgb *msg = nm_msgb_alloc();
 	uint8_t len = 2 + 2;
@@ -1872,20 +1856,19 @@ int abis_nm_set_channel_attr(struct gsm_bts_trx_ts *ts, uint8_t chan_comb)
 	if (bts->type == GSM_BTS_TYPE_BS11)
 		len += 4 + 2 + 2 + 3;
 
-	DEBUGP(DNM, "Set Chan Attr %s\n", gsm_ts_name(ts));
+	oh = (struct abis_om_hdr *) msgb_put(msg, ABIS_OM_FOM_HDR_SIZE);
+	foh = fill_om_fom_hdr(oh, len, NM_MT_SET_CHAN_ATTR, NM_OC_CHANNEL, bts->bts_nr,
+			      ts->trx->nr, ts->nr);
+
+	DEBUGPFOH(DNM, foh, "Set Chan Attr %s\n", gsm_ts_name(ts));
 	if (verify_chan_comb(ts, chan_comb, &reason) < 0) {
 		msgb_free(msg);
-		LOGP(DNM, LOGL_ERROR,
-			"Invalid Channel Combination %d on %s. Reason: %s\n",
+		LOGPFOH(DNM, LOGL_ERROR, foh, "Invalid Channel Combination %d on %s. Reason: %s\n",
 			chan_comb, gsm_ts_name(ts), reason);
 		return -EINVAL;
 	}
 	ts->nm_chan_comb = chan_comb;
 
-	oh = (struct abis_om_hdr *) msgb_put(msg, ABIS_OM_FOM_HDR_SIZE);
-	fill_om_fom_hdr(oh, len, NM_MT_SET_CHAN_ATTR,
-			NM_OC_CHANNEL, bts->bts_nr,
-			ts->trx->nr, ts->nr);
 	msgb_tv_put(msg, NM_ATT_CHAN_COMB, chan_comb);
 	if (ts->hopping.enabled) {
 		unsigned int i;
@@ -1979,8 +1962,7 @@ int abis_nm_opstart(struct gsm_bts *bts, uint8_t obj_class, uint8_t i0, uint8_t 
 	oh = (struct abis_om_hdr *) msgb_put(msg, ABIS_OM_FOM_HDR_SIZE);
 	foh = fill_om_fom_hdr(oh, 0, NM_MT_OPSTART, obj_class, i0, i1, i2);
 
-	abis_nm_debugp_foh(DNM, foh);
-	DEBUGPC(DNM, "Sending OPSTART\n");
+	DEBUGPFOH(DNM, foh, "Sending OPSTART\n");
 
 	return abis_nm_sendmsg(bts, msg);
 }
@@ -2632,17 +2614,16 @@ static int abis_nm_rx_ipacc(struct msgb *msg)
 	struct ipacc_ack_signal_data signal;
 	struct e1inp_sign_link *sign_link = msg->dst;
 
+	foh = (struct abis_om_fom_hdr *) (oh->data + 1 + idstrlen);
+
 	if (strncmp((char *)&oh->data[1], ipaccess_magic, idstrlen)) {
-		LOGP(DNM, LOGL_ERROR, "id string is not com.ipaccess !?!\n");
+		LOGPFOH(DNM, LOGL_ERROR, foh, "id string is not com.ipaccess !?!\n");
 		return -EINVAL;
 	}
 
-	foh = (struct abis_om_fom_hdr *) (oh->data + 1 + idstrlen);
 	abis_nm_tlv_parse(&tp, sign_link->trx->bts, foh->data, oh->length-sizeof(*foh));
 
-	abis_nm_debugp_foh(DNM, foh);
-
-	DEBUGPC(DNM, "IPACCESS(0x%02x): ", foh->msg_type);
+	DEBUGPFOH(DNM, foh, "IPACCESS(0x%02x): ", foh->msg_type);
 
 	switch (foh->msg_type) {
 	case NM_MT_IPACC_RSL_CONNECT_ACK:
@@ -2664,7 +2645,7 @@ static int abis_nm_rx_ipacc(struct msgb *msg)
 		osmo_timer_del(&sign_link->trx->rsl_connect_timeout);
 		break;
 	case NM_MT_IPACC_RSL_CONNECT_NACK:
-		LOGP(DNM, LOGL_ERROR, "RSL CONNECT NACK ");
+		LOGPFOH(DNM, LOGL_ERROR, foh, "RSL CONNECT NACK ");
 		if (TLVP_PRESENT(&tp, NM_ATT_NACK_CAUSES))
 			LOGPC(DNM, LOGL_ERROR, " CAUSE=%s\n",
 				abis_nm_nack_cause_name(*TLVP_VAL(&tp, NM_ATT_NACK_CAUSES)));
@@ -2673,11 +2654,11 @@ static int abis_nm_rx_ipacc(struct msgb *msg)
 		osmo_timer_del(&sign_link->trx->rsl_connect_timeout);
 		break;
 	case NM_MT_IPACC_SET_NVATTR_ACK:
-		DEBUGPC(DNM, "SET NVATTR ACK\n");
+		DEBUGPFOH(DNM, foh, "SET NVATTR ACK\n");
 		/* FIXME: decode and show the actual attributes */
 		break;
 	case NM_MT_IPACC_SET_NVATTR_NACK:
-		LOGP(DNM, LOGL_ERROR, "SET NVATTR NACK ");
+		LOGPFOH(DNM, LOGL_ERROR, foh, "SET NVATTR NACK ");
 		if (TLVP_PRESENT(&tp, NM_ATT_NACK_CAUSES))
 			LOGPC(DNM, LOGL_ERROR, " CAUSE=%s\n",
 				abis_nm_nack_cause_name(*TLVP_VAL(&tp, NM_ATT_NACK_CAUSES)));
@@ -2685,11 +2666,11 @@ static int abis_nm_rx_ipacc(struct msgb *msg)
 			LOGPC(DNM, LOGL_ERROR, "\n");
 		break;
 	case NM_MT_IPACC_GET_NVATTR_ACK:
-		DEBUGPC(DNM, "GET NVATTR ACK\n");
+		DEBUGPFOH(DNM, foh, "GET NVATTR ACK\n");
 		/* FIXME: decode and show the actual attributes */
 		break;
 	case NM_MT_IPACC_GET_NVATTR_NACK:
-		LOGPC(DNM, LOGL_ERROR, "GET NVATTR NACK ");
+		LOGPFOH(DNM, LOGL_ERROR, foh, "GET NVATTR NACK ");
 		if (TLVP_PRESENT(&tp, NM_ATT_NACK_CAUSES))
 			LOGPC(DNM, LOGL_ERROR, " CAUSE=%s\n",
 				abis_nm_nack_cause_name(*TLVP_VAL(&tp, NM_ATT_NACK_CAUSES)));
@@ -2697,10 +2678,10 @@ static int abis_nm_rx_ipacc(struct msgb *msg)
 			LOGPC(DNM, LOGL_ERROR, "\n");
 		break;
 	case NM_MT_IPACC_SET_ATTR_ACK:
-		DEBUGPC(DNM, "SET ATTR ACK\n");
+		DEBUGPFOH(DNM, foh, "SET ATTR ACK\n");
 		break;
 	case NM_MT_IPACC_SET_ATTR_NACK:
-		LOGPC(DNM, LOGL_ERROR, "SET ATTR NACK ");
+		LOGPFOH(DNM, LOGL_ERROR, foh, "SET ATTR NACK ");
 		if (TLVP_PRESENT(&tp, NM_ATT_NACK_CAUSES))
 			LOGPC(DNM, LOGL_ERROR, " CAUSE=%s\n",
 				abis_nm_nack_cause_name(*TLVP_VAL(&tp, NM_ATT_NACK_CAUSES)));
@@ -2815,7 +2796,7 @@ int abis_nm_ipaccess_rsl_connect(struct gsm_bts_trx *trx,
 	if (ip == 0)
 		attr_len -= 5;
 
-	DEBUGP(DNM, "ip.access RSL CONNECT IP=%s PORT=%u STREAM=0x%02x\n",
+	LOGP(DNM, LOGL_INFO, "IPA RSL CONNECT IP=%s PORT=%u STREAM=0x%02x\n",
 		inet_ntoa(ia), port, stream);
 
 	error = abis_nm_ipaccess_msg(trx->bts, NM_MT_IPACC_RSL_CONNECT,
