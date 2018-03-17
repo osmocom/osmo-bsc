@@ -646,6 +646,7 @@ static void dispatch_dtap(struct gsm_subscriber_connection *conn,
 			* L3 Info of 08.58 MEASUREMENT REPORT different by calling
 			* directly into gsm48_parse_meas_rep */
 			LOGP(DMEAS, LOGL_ERROR, "DIRECT GSM48 MEASUREMENT REPORT ?!? ");
+			gsm48_tx_rr_status(conn, GSM48_RR_CAUSE_MSG_TYPE_N_COMPAT);
 			break;
 		case GSM48_MT_RR_HANDO_COMPL:
 			handle_rr_ho_compl(msg);
@@ -692,6 +693,8 @@ static void dispatch_dtap(struct gsm_subscriber_connection *conn,
 			LOGP(DRR, LOGL_NOTICE,
 			     "%s Dropping %s 04.08 RR message\n",
 			     gsm_lchan_name(conn->lchan), gsm48_rr_msg_name(msg_type));
+			gsm48_tx_rr_status(conn, GSM48_RR_CAUSE_MSG_TYPE_N);
+			break;
 		}
 		break;
 	default:

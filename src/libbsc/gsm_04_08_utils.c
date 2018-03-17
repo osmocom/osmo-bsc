@@ -640,6 +640,33 @@ int gsm48_tx_mm_serv_rej(struct gsm_subscriber_connection *conn,
 	return gsm0808_submit_dtap(conn, msg, 0, 0);
 }
 
+/* 9.1.29 RR Status */
+struct msgb *gsm48_create_rr_status(uint8_t cause)
+{
+	struct msgb *msg;
+	struct gsm48_hdr *gh;
+
+	msg = gsm48_msgb_alloc_name("GSM 04.08 RR STATUS");
+	if (!msg)
+		return NULL;
+
+	gh = (struct gsm48_hdr *) msgb_put(msg, sizeof(*gh) + 1);
+	gh->proto_discr = GSM48_PDISC_RR;
+	gh->msg_type = GSM48_MT_RR_STATUS;
+	gh->data[0] = cause;
+
+	return msg;
+}
+
+/* 9.1.29 RR Status */
+int gsm48_tx_rr_status(struct gsm_subscriber_connection *conn, uint8_t cause)
+{
+	struct msgb *msg = gsm48_create_rr_status(cause);
+	if (!msg)
+		return -1;
+	return gsm0808_submit_dtap(conn, msg, 0, 0);
+}
+
 struct msgb *gsm48_create_mm_serv_rej(enum gsm48_reject_value value)
 {
 	struct msgb *msg;

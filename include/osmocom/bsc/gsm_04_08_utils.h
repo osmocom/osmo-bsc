@@ -28,6 +28,9 @@ int gsm48_paging_extract_mi(struct gsm48_pag_resp *resp, int length,
 			    char *mi_string, uint8_t *mi_type);
 struct msgb *gsm48_create_loc_upd_rej(uint8_t cause);
 
+struct msgb *gsm48_create_rr_status(uint8_t cause);
+int gsm48_tx_rr_status(struct gsm_subscriber_connection *conn, uint8_t cause);
+
 #define GSM48_ALLOC_SIZE        2048
 #define GSM48_ALLOC_HEADROOM    256
 
