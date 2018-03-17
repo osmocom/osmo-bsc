@@ -40,12 +40,12 @@ set -x
 
 cd "$base"
 autoreconf --install --force
-./configure --enable-sanitize --enable-external-tests
+./configure --enable-sanitize --enable-external-tests --enable-werror
 $MAKE $PARALLEL_MAKE
 LD_LIBRARY_PATH="$inst/lib" $MAKE check \
   || cat-testlogs.sh
 LD_LIBRARY_PATH="$inst/lib" \
-  DISTCHECK_CONFIGURE_FLAGS="--enable-vty-tests --enable-external-tests" \
+  DISTCHECK_CONFIGURE_FLAGS="--enable-vty-tests --enable-external-tests --enable-werror" \
   $MAKE distcheck \
   || cat-testlogs.sh
 
