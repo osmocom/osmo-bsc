@@ -116,7 +116,8 @@ static void paging_give_credit(void *data)
 {
 	struct gsm_bts_paging_state *paging_bts = data;
 
-	LOGP(DPAG, LOGL_NOTICE, "No slots available on bts nr %d\n", paging_bts->bts->nr);
+	LOGP(DPAG, LOGL_NOTICE, "(bts=%d) No PCH LOAD IND, adding 20 slots)\n",
+	     paging_bts->bts->nr);
 	paging_bts->available_slots = 20;
 	paging_handle_pending_requests(paging_bts);
 }
@@ -298,14 +299,14 @@ static int _paging_request(struct gsm_bts *bts, struct bsc_subscr *bsub, int typ
 	rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_CTR_PAGING_ATTEMPTED]);
 
 	if (paging_pending_request(bts_entry, bsub)) {
-		LOGP(DPAG, LOGL_INFO, "Paging request already pending for %s\n",
-		     bsc_subscr_name(bsub));
+		LOGP(DPAG, LOGL_INFO, "(bts=%d) Paging request already pending for %s\n",
+		     bts->nr, bsc_subscr_name(bsub));
 		rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_CTR_PAGING_ALREADY]);
 		return -EEXIST;
 	}
 
-	LOGP(DPAG, LOGL_DEBUG, "Start paging of subscriber %s on bts %d.\n",
-	     bsc_subscr_name(bsub), bts->nr);
+	LOGP(DPAG, LOGL_DEBUG, "(bts=%d) Start paging of subscriber %s\n", bts->nr,
+	     bsc_subscr_name(bsub));
 	req = talloc_zero(tall_paging_ctx, struct gsm_paging_request);
 	OSMO_ASSERT(req);
 	req->bsub = bsc_subscr_get(bsub);
@@ -367,7 +368,8 @@ static void _paging_request_stop(struct gsm_bts *bts, struct bsc_subscr *bsub,
 		if (req->bsub == bsub) {
 			/* now give up the data structure */
 			paging_remove_request(&bts->paging, req);
-			LOGP(DPAG, LOGL_DEBUG, "Stop paging %s on bts %d\n", bsub->imsi, bts->nr);
+			LOGP(DPAG, LOGL_DEBUG, "(bts=%d) Stop paging %s\n", bts->nr,
+			     bsc_subscr_name(bsub));
 			break;
 		}
 	}
@@ -451,7 +453,8 @@ void paging_flush_bts(struct gsm_bts *bts, struct bsc_msc_data *msc)
 		if (msc && req->msc != msc)
 			continue;
 		/* now give up the data structure */
-		LOGP(DPAG, LOGL_DEBUG, "Stop paging %s on bts %d (flush).\n", req->bsub->imsi, bts->nr);
+		LOGP(DPAG, LOGL_DEBUG, "(bts=%d) Stop paging %s (flush)\n", bts->nr,
+		     bsc_subscr_name(req->bsub));
 		paging_remove_request(&bts->paging, req);
 	}
 }
