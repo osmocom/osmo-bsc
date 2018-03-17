@@ -27,6 +27,8 @@
 #include <osmocom/core/select.h>
 #include <osmocom/core/talloc.h>
 
+#include <osmocom/mgcp_client/mgcp_client_fsm.h>
+
 #include <osmocom/bsc/abis_rsl.h>
 #include <osmocom/bsc/debug.h>
 #include <osmocom/bsc/bsc_subscriber.h>
