@@ -463,7 +463,7 @@ static int bssmap_handle_paging(struct bsc_msc_data *msc,
 	data_length = TLVP_LEN(&tp, GSM0808_IE_CELL_IDENTIFIER_LIST);
 	data = TLVP_VAL(&tp, GSM0808_IE_CELL_IDENTIFIER_LIST);
 	if (gsm0808_dec_cell_id_list2(&cil, data, data_length) < 0) {
-		LOGP(DMSC, LOGL_ERROR, "Paging IMSI %s: Bogus Cell Identifier List length\n",
+		LOGP(DMSC, LOGL_ERROR, "Paging IMSI %s: Could not parse Cell Identifier List\n",
 		     mi_string);
 		return -1;
 	}
