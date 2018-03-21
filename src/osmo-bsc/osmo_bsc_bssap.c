@@ -153,8 +153,14 @@ static bool test_codec_pref(const struct gsm0808_channel_type *ct,
 	return false;
 }
 
-/* Helper function for bssmap_handle_assignm_req(), matches the codec
- * preferences from the MSC with the codec preferences */
+/*! Helper function for bssmap_handle_assignm_req(), matches the codec
+ *  preferences from the MSC with the codec preferences
+ *  \param[out] full_rate '1' if full-rate, '0' if half-rate, '-1' if no match
+ *  \param[out] chan_mode GSM 04.08 channel mode
+ *  \param[in] ct GSM 08.08 channel type
+ *  \param[in] scl GSM 08.08 speech codec list
+ *  \param[in] msc MSC data [for configuration]
+ *  \returns 0 on success, -1 in case no match was found */
 static int match_codec_pref(int *full_rate, enum gsm48_chan_mode *chan_mode,
 			    const struct gsm0808_channel_type *ct,
 			    const struct gsm0808_speech_codec_list *scl,
