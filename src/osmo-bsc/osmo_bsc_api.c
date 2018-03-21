@@ -408,17 +408,12 @@ static void bsc_dtap(struct gsm_subscriber_connection *conn, uint8_t link_id, st
 	osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_MO_DTAP, msg);
 }
 
-static void bsc_assign_compl(struct gsm_subscriber_connection *conn, uint8_t rr_cause,
-			     uint8_t chosen_channel, uint8_t encr_alg_id,
-			     uint8_t speech_model)
+static void bsc_assign_compl(struct gsm_subscriber_connection *conn, uint8_t rr_cause)
 {
 	if (!msc_connected(conn))
 		return;
 
 	conn->lchan->abis_ip.ass_compl.rr_cause = rr_cause;
-	conn->lchan->abis_ip.ass_compl.chosen_channel = chosen_channel;
-	conn->lchan->abis_ip.ass_compl.encr_alg_id = encr_alg_id;
-	conn->lchan->abis_ip.ass_compl.speech_mode = speech_model;
 
 	if (is_ipaccess_bts(conn_get_bts(conn)) && conn->user_plane.rtp_ip) {
 		/* NOTE: In a network that makes use of an IPA base station

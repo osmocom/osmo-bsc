@@ -21,9 +21,7 @@ struct bsc_api {
 	void (*dtap)(struct gsm_subscriber_connection *conn, uint8_t link_id,
 			struct msgb *msg);
 	/*! \brief BSC->MSC: Assignment of lchan successful */
-	void (*assign_compl)(struct gsm_subscriber_connection *conn,
-			  uint8_t rr_cause, uint8_t chosen_channel,
-			  uint8_t encr_alg_id, uint8_t speech_mode);
+	void (*assign_compl)(struct gsm_subscriber_connection *conn, uint8_t rr_cause);
 	/*! \brief BSC->MSC: Assignment of lchan failed */
 	void (*assign_fail)(struct gsm_subscriber_connection *conn,
 			 uint8_t cause, uint8_t *rr_cause);
@@ -45,9 +43,6 @@ struct bsc_api {
 	/** Callback for additional actions during conn cleanup */
 	void (*conn_cleanup)(struct gsm_subscriber_connection *conn);
 };
-
-uint8_t lchan_to_chosen_channel(struct gsm_lchan *lchan);
-uint8_t chan_mode_to_speech(struct gsm_lchan *lchan);
 
 int bsc_api_init(struct gsm_network *network, struct bsc_api *api);
 int gsm0808_submit_dtap(struct gsm_subscriber_connection *conn, struct msgb *msg, int link_id, int allow_sacch);

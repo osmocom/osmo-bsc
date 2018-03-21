@@ -416,9 +416,6 @@ struct gsm_lchan {
 		 * assignment completed message */
 		struct {
 			uint8_t rr_cause;
-			uint8_t chosen_channel;
-			uint8_t encr_alg_id;
-			uint8_t speech_mode;
 			bool valid;
 		} ass_compl;
 	} abis_ip;
