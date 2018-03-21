@@ -146,7 +146,7 @@ static bool test_codec_pref(const struct gsm0808_channel_type *ct,
 	/* Try to find extrapolated speech codec data in
 	 * the speech codec list */
 	for (i = 0; i < scl->len; i++) {
-		if (memcmp(&sc, &scl->codec[i], sizeof(sc)) == 0)
+		if (sc.type == scl->codec[i].type)
 			return true;
 	}
 
