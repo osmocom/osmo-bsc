@@ -415,8 +415,8 @@ static void gscon_fsm_wait_crcx_bts(struct osmo_fsm_inst *fi, uint32_t event, vo
 	case GSCON_EV_MGW_CRCX_RESP_BTS:
 		conn_peer = data;
 
-		/* Check if the MGW has assigned an enpoint to us, we can not
-		 * proceed */
+		/* Check if the MGW has assigned an enpoint to us, otherwise we
+		 * can not proceed. */
 		if (strlen(conn_peer->endpoint) <= 0) {
 			resp = gsm0808_create_assignment_failure(GSM0808_CAUSE_EQUIPMENT_FAILURE, NULL);
 			sigtran_send(conn, resp, fi);
