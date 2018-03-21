@@ -2871,23 +2871,11 @@ const char *ipacc_testres_name(uint8_t res)
 	return get_value_string(ipacc_testres_names, res);
 }
 
-void ipac_parse_cgi(struct cell_global_id *cid, const uint8_t *buf)
+void ipac_parse_cgi(struct osmo_cell_global_id *cid, const uint8_t *buf)
 {
-	cid->mcc = (buf[0] & 0xf) * 100;
-	cid->mcc += (buf[0] >> 4) *  10;
-	cid->mcc += (buf[1] & 0xf) *  1;
-
-	if (buf[1] >> 4 == 0xf) {
-		cid->mnc = (buf[2] & 0xf) * 10;
-		cid->mnc += (buf[2] >> 4) *  1;
-	} else {
-		cid->mnc = (buf[2] & 0xf) * 100;
-		cid->mnc += (buf[2] >> 4) *  10;
-		cid->mnc += (buf[1] >> 4) *   1;
-	}
-
-	cid->lac = ntohs(*((uint16_t *)&buf[3]));
-	cid->ci = ntohs(*((uint16_t *)&buf[5]));
+	osmo_plmn_from_bcd(buf, &cid->lai.plmn);
+	cid->lai.lac = ntohs(*((uint16_t *)&buf[3]));
+	cid->cell_identity = ntohs(*((uint16_t *)&buf[5]));
 }
 
 /* parse BCCH information IEI from wire format to struct ipac_bcch_info */
