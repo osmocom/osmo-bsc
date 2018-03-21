@@ -196,8 +196,7 @@ static void submit_dtap(struct gsm_subscriber_connection *conn, struct msgb *msg
 }
 
 /* forward MO DTAP from RSL side to BSSAP side */
-/* FIXME: move fi parameter to the beginning */
-static void forward_dtap(struct msgb *msg, struct gsm_subscriber_connection *conn, struct osmo_fsm_inst *fi)
+static void forward_dtap(struct gsm_subscriber_connection *conn, struct msgb *msg, struct osmo_fsm_inst *fi)
 {
 	struct msgb *resp = NULL;
 
@@ -397,7 +396,7 @@ static void gscon_fsm_active(struct osmo_fsm_inst *fi, uint32_t event, void *dat
 		/* FIXME: reject any handover requests with HO FAIL until implemented */
 		break;
 	case GSCON_EV_MO_DTAP:
-		forward_dtap((struct msgb *)data, conn, fi);
+		forward_dtap(conn, (struct msgb *)data, fi);
 		break;
 	case GSCON_EV_MT_DTAP:
 		submit_dtap(conn, (struct msgb *)data, fi);
@@ -457,7 +456,7 @@ static void gscon_fsm_wait_crcx_bts(struct osmo_fsm_inst *fi, uint32_t event, vo
 		osmo_fsm_inst_state_chg(fi, ST_WAIT_ASS_CMPL, GSM0808_T10_VALUE, GSM0808_T10_TIMER_NR);
 		break;
 	case GSCON_EV_MO_DTAP:
-		forward_dtap((struct msgb *)data, conn, fi);
+		forward_dtap(conn, (struct msgb *)data, fi);
 		break;
 	case GSCON_EV_MT_DTAP:
 		submit_dtap(conn, (struct msgb *)data, fi);
@@ -532,7 +531,7 @@ static void gscon_fsm_wait_ass_cmpl(struct osmo_fsm_inst *fi, uint32_t event, vo
 		osmo_fsm_inst_state_chg(fi, ST_ACTIVE, 0, 0);
 		break;
 	case GSCON_EV_MO_DTAP:
-		forward_dtap((struct msgb *)data, conn, fi);
+		forward_dtap(conn, (struct msgb *)data, fi);
 		break;
 	case GSCON_EV_MT_DTAP:
 		submit_dtap(conn, (struct msgb *)data, fi);
@@ -583,7 +582,7 @@ static void gscon_fsm_wait_mdcx_bts(struct osmo_fsm_inst *fi, uint32_t event, vo
 
 		break;
 	case GSCON_EV_MO_DTAP:
-		forward_dtap((struct msgb *)data, conn, fi);
+		forward_dtap(conn, (struct msgb *)data, fi);
 		break;
 	case GSCON_EV_MT_DTAP:
 		submit_dtap(conn, (struct msgb *)data, fi);
@@ -621,7 +620,7 @@ static void gscon_fsm_wait_crcx_msc(struct osmo_fsm_inst *fi, uint32_t event, vo
 
 		break;
 	case GSCON_EV_MO_DTAP:
-		forward_dtap((struct msgb *)data, conn, fi);
+		forward_dtap(conn, (struct msgb *)data, fi);
 		break;
 	case GSCON_EV_MT_DTAP:
 		submit_dtap(conn, (struct msgb *)data, fi);
@@ -654,7 +653,7 @@ static void gscon_fsm_wait_mode_modify_ack(struct osmo_fsm_inst *fi, uint32_t ev
 		break;
 		/* FIXME: Do we need to handle DTAP traffic in this state? Maybe yes? Needs to be checked. */
 	case GSCON_EV_MO_DTAP:
-		forward_dtap((struct msgb *)data, conn, fi);
+		forward_dtap(conn, (struct msgb *)data, fi);
 		break;
 	case GSCON_EV_MT_DTAP:
 		submit_dtap(conn, (struct msgb *)data, fi);
@@ -748,7 +747,7 @@ static void gscon_fsm_wait_mdcx_bts_ho(struct osmo_fsm_inst *fi, uint32_t event,
 		osmo_fsm_inst_state_chg(fi, ST_ACTIVE, 0, 0);
 		break;
 	case GSCON_EV_MO_DTAP:
-		forward_dtap((struct msgb *)data, conn, fi);
+		forward_dtap(conn, (struct msgb *)data, fi);
 		break;
 	case GSCON_EV_MT_DTAP:
 		submit_dtap(conn, (struct msgb *)data, fi);
