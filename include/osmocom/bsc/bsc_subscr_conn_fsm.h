@@ -24,12 +24,6 @@ enum gscon_fsm_event {
 	/* RR MODE MODIFY ACK received */
 	GSCON_EV_RR_MODE_MODIFY_ACK,
 
-	/* RR HO ACC (access burst on ext HO) */
-	GSCON_EV_RR_HO_ACC,	/* NOT USED YET! */
-	/* RR HANDOVER COMPLETE received */
-	GSCON_EV_RR_HO_COMPL,	/* NOT USED YET! */
-	GSCON_EV_RR_HO_FAIL,	/* NOT USED YET! */
-
 	/* RSL RLL Release Indication */
 	GSCON_EV_RLL_REL_IND,
 	/* RSL CONNection FAILure Indication */
