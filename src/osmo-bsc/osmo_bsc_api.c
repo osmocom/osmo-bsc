@@ -259,7 +259,6 @@ static int complete_layer3(struct gsm_subscriber_connection *conn,
 	}
 
 	/* allocate resource for a new connection */
-	//ret = bsc_create_new_connection(conn, msc, send_ping);
 	ret = osmo_bsc_sigtran_new_conn(conn, msc);
 
 	if (ret != BSC_CON_SUCCESS) {
@@ -283,7 +282,6 @@ static int complete_layer3(struct gsm_subscriber_connection *conn,
 	resp = gsm0808_create_layer3_2(msg, cgi_for_msc(conn->sccp.msc, conn_get_bts(conn)), NULL);
 	if (!resp) {
 		LOGP(DMSC, LOGL_DEBUG, "Failed to create layer3 message.\n");
-		//osmo_bsc_sigtran_del_conn(conn);
 		return BSC_API_CONN_POL_REJECT;
 	}
 
