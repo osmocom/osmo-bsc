@@ -345,7 +345,8 @@ static void gscon_fsm_active(struct osmo_fsm_inst *fi, uint32_t event, void *dat
 			 * conn->user_plane.chan_mode parameter that this
 			 * assignment is for a signalling channel and will then
 			 * change back to ST_ACTIVE (here) immediately. */
-			rc = gsm0808_assign_req(conn, conn->user_plane.full_rate, conn->user_plane.chan_mode);
+			rc = gsm0808_assign_req(conn, conn->user_plane.chan_mode,
+						conn->user_plane.full_rate);
 			if (rc != 0) {
 				resp = gsm0808_create_assignment_failure(GSM0808_CAUSE_EQUIPMENT_FAILURE, NULL);
 				sigtran_send(conn, resp, fi);
@@ -437,7 +438,7 @@ static void gscon_fsm_wait_crcx_bts(struct osmo_fsm_inst *fi, uint32_t event, vo
 		 * then start the channel assignment. */
 		conn->user_plane.rtp_port = conn_peer->port;
 		conn->user_plane.rtp_ip = osmo_ntohl(inet_addr(conn_peer->addr));
-		rc = gsm0808_assign_req(conn, conn->user_plane.full_rate, conn->user_plane.chan_mode);
+		rc = gsm0808_assign_req(conn, conn->user_plane.chan_mode, conn->user_plane.full_rate);
 		if (rc != 0) {
 			resp = gsm0808_create_assignment_failure(GSM0808_CAUSE_RQSTED_SPEECH_VERSION_UNAVAILABLE, NULL);
 			sigtran_send(conn, resp, fi);
