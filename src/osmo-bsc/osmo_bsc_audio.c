@@ -75,23 +75,8 @@ static int handle_abisip_signal(unsigned int subsys, unsigned int signal,
 		if (con->ho) {
 			LOGPHO(con->ho, LOGL_DEBUG, "BTS sent MDCX ACK\n");
 			/* No need to do anything for handover here. As soon as a HANDOVER DETECT
-			 * happens, osmo_bsc_mgcp.c will trigger the MGCP MDCX towards MGW by
-			 * receiving an S_LCHAN_HANDOVER_DETECT signal.
-			 *
-			 * FIXME: This will not work, osmo_bsc_mgcp.c is now removed. The
-			 * switchover must be handled by the GSCON FSM because there we
-			 * we instantiate the child FSMs which handle the MGCP traffic. */
-#if 0
-/* FIXME: This does not work anymore, we will have to implement this in the GSCON FSM */
-			/* NOTE: When an ho_lchan exists, the MDCX is part of an
-			 * handover operation (intra-bsc). This means we will not
-			 * inform the MSC about the event, which means that no
-			 * assignment complete message is transmitted, we just
-			 * inform the logic that controls the MGW about the new
-			 * connection info */
-			LOGP(DMSC, LOGL_INFO,"RTP connection handover initiated...\n");
-			mgcp_handover(con->user_plane.mgcp_ctx, con->ho_lchan);
-#endif
+			 * happens, handover_logic.c and bsc_subscr_conn_fsm.c  will trigger the
+			 * MGCP MDCX towards MGW by receiving an S_LCHAN_HANDOVER_DETECT signal. */
 		} else if (is_ipaccess_bts(conn_get_bts(con)) && con->user_plane.rtp_ip) {
 			/* NOTE: This is only relevant on AoIP networks with
 			 * IPA based base stations. See also osmo_bsc_api.c,
