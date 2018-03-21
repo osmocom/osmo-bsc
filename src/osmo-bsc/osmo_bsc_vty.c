@@ -122,17 +122,6 @@ static void write_msc(struct vty *vty, struct bsc_msc_data *msc)
 			msc->core_ci, VTY_NEWLINE);
 	vty_out(vty, " ip.access rtp-base %d%s", msc->rtp_base, VTY_NEWLINE);
 
-	if (msc->ping_timeout == -1)
-		vty_out(vty, " no timeout-ping%s", VTY_NEWLINE);
-	else {
-		vty_out(vty, " timeout-ping %d%s", msc->ping_timeout, VTY_NEWLINE);
-		vty_out(vty, " timeout-pong %d%s", msc->pong_timeout, VTY_NEWLINE);
-		if (msc->advanced_ping)
-			vty_out(vty, " timeout-ping advanced%s", VTY_NEWLINE);
-		else
-			vty_out(vty, " no timeout-ping advanced%s", VTY_NEWLINE);
-	}
-
 	if (msc->ussd_welcome_txt)
 		vty_out(vty, " bsc-welcome-text %s%s", msc->ussd_welcome_txt, VTY_NEWLINE);
 	else
@@ -393,64 +382,6 @@ DEFUN(cfg_net_msc_no_dest,
 		talloc_free(dest);
 	}
 
-	return CMD_SUCCESS;
-}
-
-DEFUN(cfg_net_msc_no_ping_time,
-      cfg_net_msc_no_ping_time_cmd,
-      "no timeout-ping",
-      NO_STR "Disable the ping/pong handling on A-link\n")
-{
-	struct bsc_msc_data *data = bsc_msc_data(vty);
-	data->ping_timeout = -1;
-	return CMD_SUCCESS;
-}
-
-DEFUN(cfg_net_msc_ping_time,
-      cfg_net_msc_ping_time_cmd,
-      "timeout-ping <1-2147483647>",
-      "Set the PING interval, negative for not sending PING\n"
-      "Timeout in seconds\n")
-{
-	struct bsc_msc_data *data = bsc_msc_data(vty);
-	data->ping_timeout = atoi(argv[0]);
-	return CMD_SUCCESS;
-}
-
-DEFUN(cfg_net_msc_pong_time,
-      cfg_net_msc_pong_time_cmd,
-      "timeout-pong <1-2147483647>",
-      "Set the time to wait for a PONG\n" "Timeout in seconds\n")
-{
-	struct bsc_msc_data *data = bsc_msc_data(vty);
-	data->pong_timeout = atoi(argv[0]);
-	return CMD_SUCCESS;
-}
-
-DEFUN(cfg_net_msc_advanced_ping,
-      cfg_net_msc_advanced_ping_cmd,
-      "timeout-ping advanced",
-      "Ping timeout handling\nEnable advanced mode during SCCP\n")
-{
-	struct bsc_msc_data *data = bsc_msc_data(vty);
-
-	if (data->ping_timeout == -1) {
-		vty_out(vty, "%%ping handling is disabled. Enable it first.%s",
-			VTY_NEWLINE);
-		return CMD_WARNING;
-	}
-
-	data->advanced_ping = 1;
-	return CMD_SUCCESS;
-}
-
-DEFUN(cfg_no_net_msc_advanced_ping,
-      cfg_no_net_msc_advanced_ping_cmd,
-      "no timeout-ping advanced",
-      NO_STR "Ping timeout handling\nEnable advanced mode during SCCP\n")
-{
-	struct bsc_msc_data *data = bsc_msc_data(vty);
-	data->advanced_ping = 0;
 	return CMD_SUCCESS;
 }
 
@@ -980,11 +911,6 @@ int bsc_vty_init_extra(void)
 	install_element(MSC_NODE, &cfg_net_bsc_codec_list_cmd);
 	install_element(MSC_NODE, &cfg_net_msc_dest_cmd);
 	install_element(MSC_NODE, &cfg_net_msc_no_dest_cmd);
-	install_element(MSC_NODE, &cfg_net_msc_no_ping_time_cmd);
-	install_element(MSC_NODE, &cfg_net_msc_ping_time_cmd);
-	install_element(MSC_NODE, &cfg_net_msc_pong_time_cmd);
-	install_element(MSC_NODE, &cfg_net_msc_advanced_ping_cmd);
-	install_element(MSC_NODE, &cfg_no_net_msc_advanced_ping_cmd);
 	install_element(MSC_NODE, &cfg_net_msc_welcome_ussd_cmd);
 	install_element(MSC_NODE, &cfg_net_msc_no_welcome_ussd_cmd);
 	install_element(MSC_NODE, &cfg_net_msc_lost_ussd_cmd);

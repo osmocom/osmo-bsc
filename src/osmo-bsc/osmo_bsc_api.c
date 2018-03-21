@@ -237,18 +237,8 @@ static int complete_layer3(struct gsm_subscriber_connection *conn,
 {
 	int con_type, rc, lu_cause;
 	char *imsi = NULL;
-	struct timeval tv;
 	struct msgb *resp;
 	enum bsc_con ret;
-	int send_ping = msc->advanced_ping;
-
-	/* Advanced ping/pong handling */
-	if (osmo_timer_pending(&msc->pong_timer))
-		send_ping = 0;
-	if (msc->ping_timeout <= 0)
-		send_ping = 0;
-	if (send_ping && osmo_timer_remaining(&msc->ping_timer, NULL, &tv) == -1)
-		send_ping = 0;
 
 	/* Check the filter */
 	rc = bsc_filter_initial(msc->network->bsc_data, msc, conn, msg,
