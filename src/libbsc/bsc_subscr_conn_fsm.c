@@ -316,14 +316,6 @@ static void gscon_fsm_active(struct osmo_fsm_inst *fi, uint32_t event, void *dat
 		/* FIXME: We need to check if current channel is sufficient. If
 		 * yes, do MODIFY. If not, do assignment (see commented lines below) */
 
-		/* FIXME: At the moment, the FSM is constructed in an
-		 * unfortunate way. In case of a voice channel assignment
-		 * we first go through a couple of MGCP related states,
-		 * then reach the state where the actual channel assignment
-		 * happens and then again we perform some MGCP related
-		 * actions and eventually end up in ST_ACTIVE again. This
-		 * could be restructured */
-
 		switch (conn->user_plane.chan_mode) {
 		case GSM48_CMODE_SPEECH_V1:
 		case GSM48_CMODE_SPEECH_EFR:
