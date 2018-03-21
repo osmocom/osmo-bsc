@@ -184,7 +184,7 @@ struct gsm_subscriber_connection {
 		/* Channel rate flag, FR=1, HR=0, Invalid=-1 */
 		int full_rate;
 
-		/* Channel mode flage (signaling or voice channel) */
+		/* Channel mode flag (signaling or voice channel) */
 		enum gsm48_chan_mode chan_mode;
 
 	} user_plane;
