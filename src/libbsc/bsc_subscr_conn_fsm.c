@@ -866,9 +866,9 @@ static void gscon_fsm_allstate(struct osmo_fsm_inst *fi, uint32_t event, void *d
 		/* Note: An MGW connection die per definition at any time.
 		 * However, if it dies during the assignment we must return
 		 * with an assignment failure */
-		OSMO_ASSERT(fi->state != ST_INIT && fi->state != ST_WAIT_CC)
-		    if (fi->state == ST_WAIT_CRCX_BTS || fi->state == ST_WAIT_ASS_CMPL || fi->state == ST_WAIT_MDCX_BTS
-			|| fi->state == ST_WAIT_CRCX_MSC) {
+		OSMO_ASSERT(fi->state != ST_INIT && fi->state != ST_WAIT_CC);
+		if (fi->state == ST_WAIT_CRCX_BTS || fi->state == ST_WAIT_ASS_CMPL || fi->state == ST_WAIT_MDCX_BTS
+		    || fi->state == ST_WAIT_CRCX_MSC) {
 			resp = gsm0808_create_assignment_failure(GSM0808_CAUSE_EQUIPMENT_FAILURE, NULL);
 			sigtran_send(conn, resp, fi);
 			osmo_fsm_inst_state_chg(fi, ST_ACTIVE, 0, 0);
