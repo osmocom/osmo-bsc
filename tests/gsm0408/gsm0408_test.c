@@ -58,32 +58,6 @@
 
 
 
-/*
- * Test Location Area Identifier formatting. Table 10.5.3 of 04.08
- */
-static void test_location_area_identifier(void)
-{
-    struct gsm48_loc_area_id lai48;
-
-    printf("Testing test location area identifier\n");
-
-    /*
-     * Test the default/test setup. Coming from
-     * bsc_hack.c dumps
-     */
-    gsm48_generate_lai(&lai48, 1, 1, 1);
-    COMPARE(lai48.digits[0], ==, 0x00);
-    COMPARE(lai48.digits[1], ==, 0xF1);
-    COMPARE(lai48.digits[2], ==, 0x10);
-    COMPARE(lai48.lac, ==, htons(0x0001));
-
-    gsm48_generate_lai(&lai48, 602, 1, 15);
-    COMPARE(lai48.digits[0], ==, 0x06);
-    COMPARE(lai48.digits[1], ==, 0xF2);
-    COMPARE(lai48.digits[2], ==, 0x10);
-    COMPARE(lai48.lac, ==, htons(0x000f));
-}
-
 static inline void gen(struct gsm_bts *bts, const char *s)
 {
 	int r;
@@ -839,7 +813,6 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 
-	test_location_area_identifier();
 	test_mi_functionality();
 
 	test_si_range_helpers();
