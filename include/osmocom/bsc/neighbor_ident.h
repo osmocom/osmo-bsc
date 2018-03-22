@@ -12,19 +12,14 @@ struct gsm_bts;
 struct neighbor_ident_list;
 struct gsm0808_cell_id_list2;
 
-enum bsic_kind {
-	BSIC_NONE,
-	BSIC_6BIT,
-	BSIC_9BIT,
-};
-
 #define NEIGHBOR_IDENT_KEY_ANY_BTS -1
+
+#define BSIC_ANY 0xff
 
 struct neighbor_ident_key {
 	int from_bts; /*< BTS nr 0..255 or NEIGHBOR_IDENT_KEY_ANY_BTS */
 	uint16_t arfcn;
-	enum bsic_kind bsic_kind;
-	uint16_t bsic;
+	uint8_t bsic;
 };
 
 const char *neighbor_ident_key_name(const struct neighbor_ident_key *ni_key);
@@ -52,10 +47,10 @@ void neighbor_ident_iter(const struct neighbor_ident_list *nil,
 void neighbor_ident_vty_init(struct gsm_network *net, struct neighbor_ident_list *nil);
 void neighbor_ident_vty_write(struct vty *vty, const char *indent, struct gsm_bts *bts);
 
-#define NEIGHBOR_IDENT_VTY_KEY_PARAMS "arfcn <0-1023> (bsic|bsic9) (<0-511>|any)"
+#define NEIGHBOR_IDENT_VTY_KEY_PARAMS "arfcn <0-1023> bsic (<0-63>|any)"
 #define NEIGHBOR_IDENT_VTY_KEY_DOC \
 	"ARFCN of neighbor cell\n" "ARFCN value\n" \
-	"BSIC of neighbor cell\n" "9-bit BSIC of neighbor cell\n" "BSIC value\n" \
+	"BSIC of neighbor cell\n" "BSIC value\n" \
 	"for all BSICs / use any BSIC in this ARFCN\n"
 bool neighbor_ident_vty_parse_key_params(struct vty *vty, const char **argv,
 					 struct neighbor_ident_key *key);

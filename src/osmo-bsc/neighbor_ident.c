@@ -67,18 +67,10 @@ const char *_neighbor_ident_key_name(char *buf, size_t buflen, const struct neig
 		APPEND_STR("invalid(%d)", ni_key->from_bts);
 
 	APPEND_STR(" to ");
-	switch (ni_key->bsic_kind) {
-	default:
-	case BSIC_NONE:
+	if (ni_key->bsic == BSIC_ANY)
 		APPEND_STR("ARFCN %u (any BSIC)", ni_key->arfcn);
-		break;
-	case BSIC_6BIT:
+	else
 		APPEND_STR("ARFCN %u BSIC %u", ni_key->arfcn, ni_key->bsic & 0x3f);
-		break;
-	case BSIC_9BIT:
-		APPEND_STR("ARFCN %u BSIC %u(9bit)", ni_key->arfcn, ni_key->bsic & 0x1ff);
-		break;
-	}
 	return buf;
 }
 
@@ -104,18 +96,16 @@ void neighbor_ident_free(struct neighbor_ident_list *nil)
 }
 
 /* Return true when the entry matches the search_for requirements.
- * If exact_match is false, a BSIC_NONE entry acts as wildcard to match any search_for on that ARFCN,
- * and a BSIC_NONE in search_for likewise returns any one entry that matches the ARFCN;
+ * If exact_match is false, a BSIC_ANY entry acts as wildcard to match any search_for on that ARFCN,
+ * and a BSIC_ANY in search_for likewise returns any one entry that matches the ARFCN;
  * also a from_bts == NEIGHBOR_IDENT_KEY_ANY_BTS in either entry or search_for will match.
- * If exact_match is true, only identical bsic_kind values and identical from_bts values return a match.
+ * If exact_match is true, only identical bsic values and identical from_bts values return a match.
  * Note, typically wildcard BSICs are only in entry, e.g. the user configured list, and search_for
  * contains a specific BSIC, e.g. as received from a Measurement Report. */
 bool neighbor_ident_key_match(const struct neighbor_ident_key *entry,
 			      const struct neighbor_ident_key *search_for,
 			      bool exact_match)
 {
-	uint16_t bsic_mask;
-
 	if (exact_match
 	    && entry->from_bts != search_for->from_bts)
 		return false;
@@ -128,32 +118,13 @@ bool neighbor_ident_key_match(const struct neighbor_ident_key *entry,
 	if (entry->arfcn != search_for->arfcn)
 		return false;
 
-	switch (entry->bsic_kind) {
-	default:
+	if (exact_match && entry->bsic != search_for->bsic)
 		return false;
-	case BSIC_NONE:
-		if (!exact_match) {
-			/* The neighbor identifier list entry matches any BSIC for this ARFCN. */
-			return true;
-		}
-		/* Match exact entry */
-		bsic_mask = 0;
-		break;
-	case BSIC_6BIT:
-		bsic_mask = 0x3f;
-		break;
-	case BSIC_9BIT:
-		bsic_mask = 0x1ff;
-		break;
-	}
-	if (!exact_match && search_for->bsic_kind == BSIC_NONE) {
-		/* The search is looking only for an ARFCN with any BSIC */
+
+	if (entry->bsic == BSIC_ANY || search_for->bsic == BSIC_ANY)
 		return true;
-	}
-	if (search_for->bsic_kind == entry->bsic_kind
-	    && (search_for->bsic & bsic_mask) == (entry->bsic & bsic_mask))
-		return true;
-	return false;
+
+	return entry->bsic == search_for->bsic;
 }
 
 static struct neighbor_ident *_neighbor_ident_get(const struct neighbor_ident_list *nil,
@@ -189,20 +160,8 @@ bool neighbor_ident_key_valid(const struct neighbor_ident_key *key)
 	    && (key->from_bts < 0 || key->from_bts > 255))
 		return false;
 
-	switch (key->bsic_kind) {
-	case BSIC_6BIT:
-		if (key->bsic > 0x3f)
-			return false;
-		break;
-	case BSIC_9BIT:
-		if (key->bsic > 0x1ff)
-			return false;
-		break;
-	case BSIC_NONE:
-		break;
-	default:
+	if (key->bsic != BSIC_ANY && key->bsic > 0x3f)
 		return false;
-	}
 	return true;
 }
 

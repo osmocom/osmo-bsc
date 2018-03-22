@@ -400,7 +400,6 @@ struct gsm_bts *bts_by_neighbor_ident(const struct gsm_network *net,
 		struct neighbor_ident_key entry = {
 			.from_bts = NEIGHBOR_IDENT_KEY_ANY_BTS,
 			.arfcn = bts->c0->arfcn,
-			.bsic_kind = BSIC_6BIT,
 			.bsic = bts->bsic,
 		};
 		if (neighbor_ident_key_match(&entry, search_for, true)) {
@@ -427,7 +426,6 @@ struct neighbor_ident_key *bts_ident_key(const struct gsm_bts *bts)
 	static struct neighbor_ident_key key;
 	key = (struct neighbor_ident_key){
 		.arfcn = bts->c0->arfcn,
-		.bsic_kind = BSIC_6BIT,
 		.bsic = bts->bsic,
 	};
 	return &key;

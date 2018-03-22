@@ -52,8 +52,7 @@ bool neighbor_ident_bts_parse_key_params(struct vty *vty, struct gsm_bts *bts, c
 					 struct neighbor_ident_key *key)
 {
 	const char *arfcn_str = argv[0];
-	const char *bsic_kind = argv[1];
-	const char *bsic_str = argv[2];
+	const char *bsic_str = argv[1];
 
 	OSMO_ASSERT(bts);
 
@@ -63,16 +62,9 @@ bool neighbor_ident_bts_parse_key_params(struct vty *vty, struct gsm_bts *bts, c
 	};
 
 	if (!strcmp(bsic_str, "any"))
-		key->bsic_kind = BSIC_NONE;
-	else {
-		key->bsic_kind = (!strcmp(bsic_kind, "bsic9")) ? BSIC_9BIT : BSIC_6BIT;
+		key->bsic = BSIC_ANY;
+	else
 		key->bsic = atoi(bsic_str);
-		if (key->bsic_kind == BSIC_6BIT && key->bsic > 0x3f) {
-			vty_out(vty, "%% Error: BSIC value surpasses 6-bit range: %u, use 'bsic9' instead%s",
-				key->bsic, VTY_NEWLINE);
-			return false;
-		}
-	}
 	return true;
 }
 
@@ -239,7 +231,7 @@ bool neighbor_ident_key_matches_bts(const struct neighbor_ident_key *key, struct
 	if (!bts || !key)
 		return false;
 	return key->arfcn == bts->c0->arfcn
-		&& (key->bsic_kind == BSIC_NONE || key->bsic == bts->bsic);
+		&& (key->bsic == BSIC_ANY || key->bsic == bts->bsic);
 }
 
 static int add_remote_or_local_bts(struct vty *vty, const struct gsm0808_cell_id *cell_id,
@@ -431,18 +423,10 @@ static bool write_neighbor_ident_list(const struct neighbor_ident_key *key,
 
 #define NEIGH_BSS_WRITE(fmt, args...) do { \
 		vty_out(vty, "%sneighbor add " fmt " arfcn %u ", d->indent, ## args, key->arfcn); \
-		switch (key->bsic_kind) { \
-		default: \
-		case BSIC_NONE: \
+		if (key->bsic == BSIC_ANY) \
 			vty_out(vty, "bsic any"); \
-			break; \
-		case BSIC_6BIT: \
+		else \
 			vty_out(vty, "bsic %u", key->bsic & 0x3f); \
-			break; \
-		case BSIC_9BIT: \
-			vty_out(vty, "bsic9 %u", key->bsic & 0x1ff); \
-			break; \
-		} \
 		vty_out(vty, "%s", VTY_NEWLINE); \
 	} while(0)
 

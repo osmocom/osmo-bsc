@@ -30,13 +30,12 @@
 
 struct neighbor_ident_list *nil;
 
-static const struct neighbor_ident_key *k(int from_bts, uint16_t arfcn, enum bsic_kind kind, uint16_t bsic)
+static const struct neighbor_ident_key *k(int from_bts, uint16_t arfcn, uint8_t bsic)
 {
 	static struct neighbor_ident_key key;
 	key = (struct neighbor_ident_key){
 		.from_bts = from_bts,
 		.arfcn = arfcn,
-		.bsic_kind = kind,
 		.bsic = bsic,
 	};
 	return &key;
@@ -187,61 +186,54 @@ int main(void)
 
 	printf("\n--- testing NULL neighbor_ident_list\n");
 	nil = NULL;
-	check_add(k(0, 1, BSIC_6BIT, 2), &cgi1, -ENOMEM);
-	check_get(k(0, 1, BSIC_6BIT, 2), false);
-	check_del(k(0, 1, BSIC_6BIT, 2), false);
+	check_add(k(0, 1, 2), &cgi1, -ENOMEM);
+	check_get(k(0, 1, 2), false);
+	check_del(k(0, 1, 2), false);
 
 	printf("\n--- adding entries, test that no two identical entries are added\n");
 	nil = neighbor_ident_init(ctx);
-	check_add(k(0, 1, BSIC_6BIT, 2), &cgi1, 1);
-	check_get(k(0, 1, BSIC_6BIT, 2), true);
-	check_add(k(0, 1, BSIC_6BIT, 2), &cgi1, 1);
-	check_add(k(0, 1, BSIC_6BIT, 2), &cgi2, 2);
-	check_add(k(0, 1, BSIC_6BIT, 2), &cgi2, 2);
-	check_del(k(0, 1, BSIC_6BIT, 2), true);
+	check_add(k(0, 1, 2), &cgi1, 1);
+	check_get(k(0, 1, 2), true);
+	check_add(k(0, 1, 2), &cgi1, 1);
+	check_add(k(0, 1, 2), &cgi2, 2);
+	check_add(k(0, 1, 2), &cgi2, 2);
+	check_del(k(0, 1, 2), true);
 
 	printf("\n--- Cannot mix cell identifier types for one entry\n");
-	check_add(k(0, 1, BSIC_6BIT, 2), &cgi1, 1);
-	check_add(k(0, 1, BSIC_6BIT, 2), &lac1, -EINVAL);
-	check_del(k(0, 1, BSIC_6BIT, 2), true);
+	check_add(k(0, 1, 2), &cgi1, 1);
+	check_add(k(0, 1, 2), &lac1, -EINVAL);
+	check_del(k(0, 1, 2), true);
 	neighbor_ident_free(nil);
 
 	printf("\n--- BTS matching: specific BTS is stronger\n");
 	nil = neighbor_ident_init(ctx);
-	check_add(k(NEIGHBOR_IDENT_KEY_ANY_BTS, 1, BSIC_6BIT, 2), &lac1, 1);
-	check_add(k(3, 1, BSIC_6BIT, 2), &lac2, 2);
-	check_get(k(2, 1, BSIC_6BIT, 2), true);
-	check_get(k(3, 1, BSIC_6BIT, 2), true);
-	check_get(k(4, 1, BSIC_6BIT, 2), true);
-	check_get(k(NEIGHBOR_IDENT_KEY_ANY_BTS, 1, BSIC_6BIT, 2), true);
+	check_add(k(NEIGHBOR_IDENT_KEY_ANY_BTS, 1, 2), &lac1, 1);
+	check_add(k(3, 1, 2), &lac2, 2);
+	check_get(k(2, 1, 2), true);
+	check_get(k(3, 1, 2), true);
+	check_get(k(4, 1, 2), true);
+	check_get(k(NEIGHBOR_IDENT_KEY_ANY_BTS, 1, 2), true);
 	neighbor_ident_free(nil);
 
 	printf("\n--- BSIC matching: 6bit and 9bit are different realms, and wildcard match is weaker\n");
 	nil = neighbor_ident_init(ctx);
-	check_add(k(0, 1, BSIC_NONE, 0), &cgi1, 1);
-	check_add(k(0, 1, BSIC_6BIT, 2), &lac1, 1);
-	check_add(k(0, 1, BSIC_9BIT, 2), &lac2, 2);
-	check_get(k(0, 1, BSIC_6BIT, 2), true);
-	check_get(k(0, 1, BSIC_9BIT, 2), true);
-	printf("--- wildcard matches both 6bit and 9bit BSIC regardless:\n");
-	check_get(k(0, 1, BSIC_6BIT, 23), true);
-	check_get(k(0, 1, BSIC_9BIT, 23), true);
+	check_add(k(0, 1, BSIC_ANY), &cgi1, 1);
+	check_add(k(0, 1, 2), &lac1, 1);
+	check_add(k(0, 1, 2), &lac2, 2);
+	check_get(k(0, 1, 2), true);
+	check_get(k(0, 1, 2), true);
 	neighbor_ident_free(nil);
 
 	printf("\n--- Value ranges\n");
 	nil = neighbor_ident_init(ctx);
-	check_add(k(0, 6, BSIC_6BIT, 1 << 6), &lac1, -ERANGE);
-	check_add(k(0, 9, BSIC_9BIT, 1 << 9), &lac1, -ERANGE);
-	check_add(k(0, 6, BSIC_6BIT, -1), &lac1, -ERANGE);
-	check_add(k(0, 9, BSIC_9BIT, -1), &lac1, -ERANGE);
-	check_add(k(NEIGHBOR_IDENT_KEY_ANY_BTS - 1, 1, BSIC_NONE, 1), &cgi2, -ERANGE);
-	check_add(k(256, 1, BSIC_NONE, 1), &cgi2, -ERANGE);
-	check_add(k(0, 0, BSIC_NONE, 0), &cgi1, 1);
-	check_add(k(255, 65535, BSIC_NONE, 65535), &lac1, 1);
-	check_add(k(0, 0, BSIC_6BIT, 0), &cgi2, 2);
-	check_add(k(255, 65535, BSIC_6BIT, 0x3f), &lac2, 2);
-	check_add(k(0, 0, BSIC_9BIT, 0), &cgi1, 1);
-	check_add(k(255, 65535, BSIC_9BIT, 0x1ff), &cgi2, 2);
+	check_add(k(0, 6, 1 << 6), &lac1, -ERANGE);
+	check_add(k(0, 6, BSIC_ANY - 1), &lac1, -ERANGE);
+	check_add(k(NEIGHBOR_IDENT_KEY_ANY_BTS - 1, 1, BSIC_ANY), &cgi2, -ERANGE);
+	check_add(k(256, 1, BSIC_ANY), &cgi2, -ERANGE);
+	check_add(k(0, 0, BSIC_ANY), &cgi1, 1);
+	check_add(k(255, 65535, BSIC_ANY), &lac1, 1);
+	check_add(k(0, 0, 0), &cgi2, 2);
+	check_add(k(255, 65535, 0x3f), &lac2, 2);
 
 	neighbor_ident_free(nil);
 
@@ -262,9 +254,9 @@ int main(void)
 
 		nil = neighbor_ident_init(ctx);
 
-		i = neighbor_ident_add(nil, k(0, 1, BSIC_6BIT, 2), &a);
+		i = neighbor_ident_add(nil, k(0, 1, 2), &a);
 		printf("Added first cell identifier list (added %u) --> rc = %d\n", a.id_list_len, i);
-		i = neighbor_ident_add(nil, k(0, 1, BSIC_6BIT, 2), &b);
+		i = neighbor_ident_add(nil, k(0, 1, 2), &b);
 		printf("Added second cell identifier list (tried to add %u) --> rc = %d\n", b.id_list_len, i);
 		if (i != -ENOSPC)
 			printf("ERROR: expected rc=%d\n", -ENOSPC);
