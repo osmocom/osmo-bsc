@@ -389,6 +389,50 @@ static int ho_meas_rep(struct gsm_meas_rep *mr)
 	return 0;
 }
 
+struct gsm_bts *bts_by_neighbor_ident(const struct gsm_network *net,
+				      const struct neighbor_ident_key *search_for)
+{
+	struct gsm_bts *found = NULL;
+	struct gsm_bts *bts;
+	struct gsm_bts *wildcard_match = NULL;
+
+	llist_for_each_entry(bts, &net->bts_list, list) {
+		struct neighbor_ident_key entry = {
+			.from_bts = NEIGHBOR_IDENT_KEY_ANY_BTS,
+			.arfcn = bts->c0->arfcn,
+			.bsic_kind = BSIC_6BIT,
+			.bsic = bts->bsic,
+		};
+		if (neighbor_ident_key_match(&entry, search_for, true)) {
+			if (found) {
+				LOGP(DHO, LOGL_ERROR, "CONFIG ERROR: Multiple BTS match %s: %d and %d\n",
+				     neighbor_ident_key_name(search_for),
+				     found->nr, bts->nr);
+				return found;
+			}
+			found = bts;
+		}
+		if (neighbor_ident_key_match(&entry, search_for, false))
+			wildcard_match = bts;
+	}
+
+	if (found)
+		return found;
+
+	return wildcard_match;
+}
+
+struct neighbor_ident_key *bts_ident_key(const struct gsm_bts *bts)
+{
+	static struct neighbor_ident_key key;
+	key = (struct neighbor_ident_key){
+		.arfcn = bts->c0->arfcn,
+		.bsic_kind = BSIC_6BIT,
+		.bsic = bts->bsic,
+	};
+	return &key;
+}
+
 static int ho_logic_sig_cb(unsigned int subsys, unsigned int signal,
 			   void *handler_data, void *signal_data)
 {

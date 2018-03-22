@@ -33,6 +33,7 @@
 #include <osmocom/core/statistics.h>
 #include <osmocom/gsm/protocol/gsm_04_08.h>
 #include <osmocom/gsm/gsm48.h>
+#include <osmocom/gsm/gsm0808_utils.h>
 
 #include <osmocom/bsc/gsm_data.h>
 #include <osmocom/bsc/bsc_msc_data.h>
@@ -563,6 +564,118 @@ struct gsm_bts *gsm_bts_num(struct gsm_network *net, int num)
 	return NULL;
 }
 
+bool gsm_bts_matches_lai(const struct gsm_bts *bts, const struct osmo_location_area_id *lai)
+{
+	return osmo_plmn_cmp(&lai->plmn, &bts->network->plmn) == 0
+		&& lai->lac == bts->location_area_code;
+}
+
+bool gsm_bts_matches_cell_id(const struct gsm_bts *bts, const struct gsm0808_cell_id *cell_id)
+{
+	const union gsm0808_cell_id_u *id = &cell_id->id;
+	if (!bts || !cell_id)
+		return false;
+
+	switch (cell_id->id_discr) {
+	case CELL_IDENT_WHOLE_GLOBAL:
+		return gsm_bts_matches_lai(bts, &id->global.lai)
+			&& id->global.cell_identity == bts->cell_identity;
+	case CELL_IDENT_LAC_AND_CI:
+		return id->lac_and_ci.lac == bts->location_area_code
+			&& id->lac_and_ci.ci == bts->cell_identity;
+	case CELL_IDENT_CI:
+		return id->ci == bts->cell_identity;
+	case CELL_IDENT_NO_CELL:
+		return false;
+	case CELL_IDENT_LAI_AND_LAC:
+		return gsm_bts_matches_lai(bts, &id->lai_and_lac);
+	case CELL_IDENT_LAC:
+		return id->lac == bts->location_area_code;
+	case CELL_IDENT_BSS:
+		return true;
+	case CELL_IDENT_UTRAN_PLMN_LAC_RNC:
+	case CELL_IDENT_UTRAN_RNC:
+	case CELL_IDENT_UTRAN_LAC_RNC:
+		return false;
+	default:
+		OSMO_ASSERT(false);
+	}
+}
+
+/* From a list of local BTSes that match the cell_id, return the Nth one, or NULL if there is no such
+ * match. */
+struct gsm_bts *gsm_bts_by_cell_id(const struct gsm_network *net,
+				   const struct gsm0808_cell_id *cell_id,
+				   int match_idx)
+{
+	struct gsm_bts *bts;
+	int i = 0;
+	llist_for_each_entry(bts, &net->bts_list, list) {
+		if (!gsm_bts_matches_cell_id(bts, cell_id))
+			continue;
+		if (i < match_idx) {
+			/* this is only the i'th match, we're looking for a later one... */
+			i++;
+			continue;
+		}
+		return bts;
+	}
+	return NULL;
+}
+
+struct gsm_bts_ref *gsm_bts_ref_find(const struct llist_head *list, const struct gsm_bts *bts)
+{
+	struct gsm_bts_ref *ref;
+	if (!bts)
+		return NULL;
+	llist_for_each_entry(ref, list, entry) {
+		if (ref->bts == bts)
+			return ref;
+	}
+	return NULL;
+}
+
+/* Add a BTS reference to the local_neighbors list.
+ * Return 1 if added, 0 if such an entry already existed, and negative on errors. */
+int gsm_bts_local_neighbor_add(struct gsm_bts *bts, struct gsm_bts *neighbor)
+{
+	struct gsm_bts_ref *ref;
+	if (!bts || !neighbor)
+		return -ENOMEM;
+
+	if (bts == neighbor)
+		return -EINVAL;
+
+	/* Already got this entry? */
+	ref = gsm_bts_ref_find(&bts->local_neighbors, neighbor);
+	if (ref)
+		return 0;
+
+	ref = talloc_zero(bts, struct gsm_bts_ref);
+	if (!ref)
+		return -ENOMEM;
+	ref->bts = neighbor;
+	llist_add_tail(&ref->entry, &bts->local_neighbors);
+	return 1;
+}
+
+/* Remove a BTS reference from the local_neighbors list.
+ * Return 1 if removed, 0 if no such entry existed, and negative on errors. */
+int gsm_bts_local_neighbor_del(struct gsm_bts *bts, const struct gsm_bts *neighbor)
+{
+	struct gsm_bts_ref *ref;
+	if (!bts || !neighbor)
+		return -ENOMEM;
+
+	ref = gsm_bts_ref_find(&bts->local_neighbors, neighbor);
+	if (!ref)
+		return 0;
+
+	llist_del(&ref->entry);
+	talloc_free(ref);
+	return 1;
+}
+
 struct gsm_bts_trx *gsm_bts_trx_alloc(struct gsm_bts *bts)
 {
 	struct gsm_bts_trx *trx = talloc_zero(bts, struct gsm_bts_trx);
@@ -756,6 +869,7 @@ struct gsm_bts *gsm_bts_alloc(struct gsm_network *net, uint8_t bts_num)
 
 	INIT_LLIST_HEAD(&bts->abis_queue);
 	INIT_LLIST_HEAD(&bts->loc_list);
+	INIT_LLIST_HEAD(&bts->local_neighbors);
 
 	/* Enable all codecs by default. These get reset to a more fine grained selection IF a
 	 * 'codec-support' config appears in the config file (see bsc_vty.c). */

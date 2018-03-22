@@ -19,10 +19,13 @@ AM_LDFLAGS = \
 
 EXTRA_DIST = \
 	handover_test.ok \
+	neighbor_ident_test.ok \
+	neighbor_ident_test.err \
 	$(NULL)
 
 noinst_PROGRAMS = \
 	handover_test \
+	neighbor_ident_test \
 	$(NULL)
 
 handover_test_SOURCES = \
@@ -56,6 +59,7 @@ handover_test_LDADD = \
 	$(top_builddir)/src/osmo-bsc/handover_decision_2.o \
 	$(top_builddir)/src/osmo-bsc/handover_logic.o \
 	$(top_builddir)/src/osmo-bsc/meas_rep.o \
+	$(top_builddir)/src/osmo-bsc/neighbor_ident.o \
 	$(top_builddir)/src/osmo-bsc/osmo_bsc_lcls.o \
 	$(top_builddir)/src/osmo-bsc/net_init.o \
 	$(top_builddir)/src/osmo-bsc/paging.o \
@@ -69,3 +73,17 @@ handover_test_LDADD = \
 	$(LIBOSMOSIGTRAN_LIBS) \
 	$(LIBOSMOMGCPCLIENT_LIBS) \
 	$(NULL)
+
+neighbor_ident_test_SOURCES = \
+	neighbor_ident_test.c \
+	$(NULL)
+
+neighbor_ident_test_LDADD = \
+	$(top_builddir)/src/osmo-bsc/neighbor_ident.o \
+	$(LIBOSMOCORE_LIBS) \
+	$(LIBOSMOGSM_LIBS) \
+	$(NULL)
+
+.PHONY: update_exp
+update_exp:
+	$(builddir)/neighbor_ident_test >$(srcdir)/neighbor_ident_test.ok 2>$(srcdir)/neighbor_ident_test.err

@@ -40,6 +40,9 @@
 #include <osmocom/bsc/arfcn_range_encode.h>
 #include <osmocom/bsc/gsm_04_08_utils.h>
 #include <osmocom/bsc/acc_ramp.h>
+#include <osmocom/bsc/neighbor_ident.h>
+
+struct gsm0808_cell_id_list2;
 
 /*
  * DCS1800 and PCS1900 have overlapping ARFCNs. We would need to set the
@@ -588,6 +591,25 @@ static int bitvec2freq_list(uint8_t *chan_list, struct bitvec *bv,
 	return bitvec2freq_list(chan_list, bv, bts, false, false);
 }
 
+struct generate_bcch_chan_list__ni_iter_data {
+	struct gsm_bts *bts;
+	struct bitvec *bv;
+};
+
+static bool generate_bcch_chan_list__ni_iter_cb(const struct neighbor_ident_key *key,
+						const struct gsm0808_cell_id_list2 *val,
+						void *cb_data)
+{
+	struct generate_bcch_chan_list__ni_iter_data *data = cb_data;
+
+	if (key->from_bts != NEIGHBOR_IDENT_KEY_ANY_BTS
+	    && key->from_bts != data->bts->nr)
+		return true;
+
+	bitvec_set_bit_pos(data->bv, key->arfcn, 1);
+	return true;
+}
+
 /*! generate a cell channel list as per Section 10.5.2.22 of 04.08
  *  \param[out] chan_list caller-provided output buffer
  *  \param[in] bts BTS descriptor used for input data
@@ -602,6 +624,7 @@ static int generate_bcch_chan_list(uint8_t *chan_list, struct gsm_bts *bts,
 	struct bitvec *bv;
 	int rc;
 
+	/* first we generate a bitvec of the BCCH ARFCN's in our BSC */
 	if (si5 && bts->neigh_list_manual_mode == NL_MODE_MANUAL_SI5SEP)
 		bv = &bts->si_common.si5_neigh_list;
 	else
@@ -612,11 +635,29 @@ static int generate_bcch_chan_list(uint8_t *chan_list, struct gsm_bts *bts,
 		/* Zero-initialize the bit-vector */
 		memset(bv->data, 0, bv->data_len);
 
-		/* first we generate a bitvec of the BCCH ARFCN's in our BSC */
-		llist_for_each_entry(cur_bts, &bts->network->bts_list, list) {
-			if (cur_bts == bts)
-				continue;
-			bitvec_set_bit_pos(bv, cur_bts->c0->arfcn, 1);
+		if (llist_empty(&bts->local_neighbors)) {
+			/* There are no explicit neighbors, assume all BTS are. */
+			llist_for_each_entry(cur_bts, &bts->network->bts_list, list) {
+				if (cur_bts == bts)
+					continue;
+				bitvec_set_bit_pos(bv, cur_bts->c0->arfcn, 1);
+			}
+		} else {
+			/* Only add explicit neighbor cells */
+			struct gsm_bts_ref *neigh;
+			llist_for_each_entry(neigh, &bts->local_neighbors, entry) {
+				bitvec_set_bit_pos(bv, neigh->bts->c0->arfcn, 1);
+			}
+		}
+
+		/* Also add neighboring BSS cells' ARFCNs */
+		{
+			struct generate_bcch_chan_list__ni_iter_data data = {
+				.bv = bv,
+				.bts = bts,
+			};
+			neighbor_ident_iter(bts->network->neighbor_bss_cells,
+					    generate_bcch_chan_list__ni_iter_cb, &data);
 		}
 	}
 

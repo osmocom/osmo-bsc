@@ -65,6 +65,8 @@ osmo_bsc_SOURCES = \
 	handover_vty.c \
 	meas_feed.c \
 	meas_rep.c \
+	neighbor_ident.c \
+	neighbor_ident_vty.c \
 	net_init.c \
 	osmo_bsc_api.c \
 	osmo_bsc_audio.c \

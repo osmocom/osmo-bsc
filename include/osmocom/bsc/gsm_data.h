@@ -35,6 +35,7 @@
 struct mgcp_client_conf;
 struct mgcp_client;
 struct mgcp_ctx;
+struct gsm0808_cell_id;
 
 /** annotations for msgb ownership */
 #define __uses
@@ -750,6 +751,12 @@ struct load_counter {
 	unsigned int used;
 };
 
+/* Useful to track N-N relations between BTS, for example neighbors. */
+struct gsm_bts_ref {
+	struct llist_head entry;
+	struct gsm_bts *bts;
+};
+
 /* One BTS */
 struct gsm_bts {
 	/* list header in net->bts_list */
@@ -984,6 +991,11 @@ struct gsm_bts {
 
 	struct handover_cfg *ho;
 
+	/* A list of struct gsm_bts_ref, indicating neighbors of this BTS.
+	 * When the si_common neigh_list is in automatic mode, it is populated from this list as well as
+	 * gsm_network->neighbor_bss_cells. */
+	struct llist_head local_neighbors;
+
 	/* BTS-specific overrides for timer values from struct gsm_network. */
 	uint8_t T3122;	/* ASSIGMENT REJECT wait indication */
 
@@ -998,6 +1010,13 @@ struct gsm_network *gsm_network_init(void *ctx);
 
 struct gsm_bts *gsm_bts_alloc(struct gsm_network *net, uint8_t bts_num);
 struct gsm_bts *gsm_bts_num(struct gsm_network *net, int num);
+bool gsm_bts_matches_lai(const struct gsm_bts *bts, const struct osmo_location_area_id *lai);
+bool gsm_bts_matches_cell_id(const struct gsm_bts *bts, const struct gsm0808_cell_id *cell_id);
+struct gsm_bts *gsm_bts_by_cell_id(const struct gsm_network *net,
+				   const struct gsm0808_cell_id *cell_id,
+				   int match_idx);
+int gsm_bts_local_neighbor_add(struct gsm_bts *bts, struct gsm_bts *neighbor);
+int gsm_bts_local_neighbor_del(struct gsm_bts *bts, const struct gsm_bts *neighbor);
 
 struct gsm_bts_trx *gsm_bts_trx_alloc(struct gsm_bts *bts);
 struct gsm_bts_trx *gsm_bts_trx_num(const struct gsm_bts *bts, int num);
@@ -1281,6 +1300,9 @@ struct gsm_network {
 		struct mgcp_client_conf *conf;
 		struct mgcp_client *client;
 	} mgw;
+
+	/* Remote BSS Cell Identifier Lists */
+	struct neighbor_ident_list *neighbor_bss_cells;
 };
 
 static inline const struct osmo_location_area_id *bts_lai(struct gsm_bts *bts)

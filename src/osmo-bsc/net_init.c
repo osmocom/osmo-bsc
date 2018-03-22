@@ -22,6 +22,7 @@
 #include <osmocom/bsc/gsm_04_08_utils.h>
 #include <osmocom/bsc/handover_cfg.h>
 #include <osmocom/bsc/chan_alloc.h>
+#include <osmocom/bsc/neighbor_ident.h>
 
 /* Initialize the bare minimum of struct gsm_network, minimizing required dependencies.
  * This part is shared among the thin programs in osmo-bsc/src/utils/.

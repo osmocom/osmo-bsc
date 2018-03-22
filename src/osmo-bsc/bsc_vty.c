@@ -62,6 +62,8 @@
 #include <osmocom/bsc/gsm_04_08_utils.h>
 #include <osmocom/bsc/acc_ramp.h>
 #include <osmocom/bsc/meas_feed.h>
+#include <osmocom/bsc/neighbor_ident.h>
+#include <osmocom/bsc/handover.h>
 
 #include <inttypes.h>
 
@@ -908,6 +910,8 @@ static void config_write_bts_single(struct vty *vty, struct gsm_bts *bts)
 			(bts->si_common.data.scramble_list[i] >> 9) & 1,
 			VTY_NEWLINE);
 	}
+
+	neighbor_ident_vty_write(vty, "  ", bts);
 
 	vty_out(vty, "  codec-support fr");
 	if (bts->codec.hr)
@@ -4969,6 +4973,7 @@ int bsc_vty_init(struct gsm_network *network)
 	install_element(BTS_NODE, &cfg_bts_no_acc_ramping_cmd);
 	install_element(BTS_NODE, &cfg_bts_acc_ramping_step_interval_cmd);
 	install_element(BTS_NODE, &cfg_bts_acc_ramping_step_size_cmd);
+	neighbor_ident_vty_init(network, network->neighbor_bss_cells);
 	/* See also handover commands added on bts level from handover_vty.c */
 
 	install_element(BTS_NODE, &cfg_trx_cmd);

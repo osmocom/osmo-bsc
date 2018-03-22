@@ -247,6 +247,7 @@ static struct gsm_network *bsc_network_init(void *ctx)
 
 	net->ho = ho_cfg_init(net, NULL);
 	net->hodec2.congestion_check_interval_s = HO_CFG_CONGESTION_CHECK_DEFAULT;
+	net->neighbor_bss_cells = neighbor_ident_init(net);
 
 	/* init statistics */
 	net->bsc_ctrs = rate_ctr_group_alloc(net, &bsc_ctrg_desc, 0);

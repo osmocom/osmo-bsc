@@ -28,6 +28,7 @@ gsm0408_test_LDADD = \
 	$(top_builddir)/src/osmo-bsc/net_init.o \
 	$(top_builddir)/src/osmo-bsc/rest_octets.o \
 	$(top_builddir)/src/osmo-bsc/system_information.o \
+	$(top_builddir)/src/osmo-bsc/neighbor_ident.o \
 	$(LIBOSMOCORE_LIBS) \
 	$(LIBOSMOGSM_LIBS) \
 	$(LIBOSMOABIS_LIBS) \

@@ -6,6 +6,8 @@
 #include <osmocom/core/timer.h>
 #include <osmocom/gsm/gsm_utils.h>
 
+#include <osmocom/bsc/neighbor_ident.h>
+
 struct gsm_lchan;
 struct gsm_bts;
 struct gsm_subscriber_connection;
@@ -94,3 +96,7 @@ struct handover_decision_callbacks {
 
 void handover_decision_callbacks_register(struct handover_decision_callbacks *hdc);
 struct handover_decision_callbacks *handover_decision_callbacks_get(int hodec_id);
+
+struct gsm_bts *bts_by_neighbor_ident(const struct gsm_network *net,
+				      const struct neighbor_ident_key *search_for);
+struct neighbor_ident_key *bts_ident_key(const struct gsm_bts *bts);

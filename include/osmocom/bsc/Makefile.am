@@ -28,6 +28,7 @@ noinst_HEADERS = \
 	meas_feed.h \
 	meas_rep.h \
 	misdn.h \
+	neighbor_ident.h \
 	network_listen.h \
 	openbscdefines.h \
 	osmo_bsc.h \

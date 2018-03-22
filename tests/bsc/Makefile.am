@@ -45,6 +45,7 @@ bsc_test_LDADD = \
 	$(top_builddir)/src/osmo-bsc/gsm_data.o \
 	$(top_builddir)/src/osmo-bsc/handover_cfg.o \
 	$(top_builddir)/src/osmo-bsc/handover_logic.o \
+	$(top_builddir)/src/osmo-bsc/neighbor_ident.o \
 	$(top_builddir)/src/osmo-bsc/net_init.o \
 	$(top_builddir)/src/osmo-bsc/paging.o \
 	$(top_builddir)/src/osmo-bsc/pcu_sock.o \
