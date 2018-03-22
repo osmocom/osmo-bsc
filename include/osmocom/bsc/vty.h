@@ -20,32 +20,18 @@ enum bsc_vty_node {
 	BTS_NODE,
 	TRX_NODE,
 	TS_NODE,
-	SUBSCR_NODE,
-	MGCP_NODE,
-	GBPROXY_NODE,
-	SGSN_NODE,
 	OML_NODE,
 	NAT_NODE,
 	NAT_BSC_NODE,
 	MSC_NODE,
 	OM2K_NODE,
 	OM2K_CON_GROUP_NODE,
-	TRUNK_NODE,
-	PGROUP_NODE,
-	MNCC_INT_NODE,
-	NITB_NODE,
 	BSC_NODE,
-	SMPP_NODE,
-	SMPP_ESME_NODE,
-	GTPHUB_NODE,
-	HLR_NODE,
 };
 
 struct log_info;
 int bsc_vty_init(struct gsm_network *network);
 int bsc_vty_init_extra(void);
-
-void msc_vty_init(struct gsm_network *msc_network);
 
 struct gsm_network *gsmnet_from_vty(struct vty *vty);
 
