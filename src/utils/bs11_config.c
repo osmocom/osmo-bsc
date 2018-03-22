@@ -969,3 +969,15 @@ int main(int argc, char **argv)
 
 	exit(0);
 }
+
+/* Stub */
+int osmo_bsc_sigtran_send(struct gsm_subscriber_connection *conn, struct msgb *msg)
+{
+	return 0;
+}
+
+/* Stub */
+int osmo_bsc_sigtran_open_conn(struct gsm_subscriber_connection *conn, struct msgb *msg)
+{
+	return 0;
+}

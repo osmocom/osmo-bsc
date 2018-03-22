@@ -11,6 +11,8 @@ AM_CFLAGS = \
 	$(LIBOSMOABIS_CFLAGS) \
 	$(COVERAGE_CFLAGS) \
 	$(SQLITE3_CFLAGS) \
+	$(LIBOSMOSIGTRAN_CFLAGS) \
+	$(LIBOSMOMGCPCLIENT_CFLAGS) \
 	$(NULL)
 
 AM_LDFLAGS = \
@@ -22,6 +24,7 @@ noinst_HEADERS = \
 	$(NULL)
 
 bin_PROGRAMS = \
+	bs11_config \
 	isdnsync \
 	meas_json \
 	$(NULL)
@@ -50,6 +53,8 @@ bs11_config_LDADD = \
 	$(LIBOSMOCORE_LIBS) \
 	$(LIBOSMOGSM_LIBS) \
 	$(LIBOSMOABIS_LIBS) \
+	$(LIBOSMOSIGTRAN_LIBS) \
+	$(LIBOSMOMGCPCLIENT_LIBS) \
 	$(NULL)
 
 isdnsync_SOURCES = \
