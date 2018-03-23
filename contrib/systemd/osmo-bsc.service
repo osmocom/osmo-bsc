@@ -1,6 +1,6 @@
 [Unit]
 Description=Osmocom Base Station Controller (BSC)
-Wants=osmo-bsc-mgcp.service
+Wants=osmo-mgw.service
 
 [Service]
 Type=simple
