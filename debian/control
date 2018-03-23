@@ -57,3 +57,9 @@ Description: Command line utilities for Siemens BS-11 BTS
  There is a tool in this package for configuring the Siemens BS-11 BTS.
  Additionally, it contains one tool for making use of an ISDN-card and the
  public telephone network as frequency standard for the E1 line.
+
+Package: osmo-bsc-meas-utils
+Architecture: any
+Multi-Arch: foreign
+Depends: ${misc:Depends}, ${shlibs:Depends}
+Description: Command line utilities to manage measurement reports.
