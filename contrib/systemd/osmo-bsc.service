@@ -1,5 +1,5 @@
 [Unit]
-Description=OpenBSC BSC
+Description=Osmocom Base Station Controller (BSC)
 Wants=osmo-bsc-mgcp.service
 
 [Service]
