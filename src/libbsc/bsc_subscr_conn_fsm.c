@@ -417,7 +417,6 @@ static void gscon_fsm_active(struct osmo_fsm_inst *fi, uint32_t event, void *dat
 			if (!conn->user_plane.fi_bts) {
 				resp = gsm0808_create_assignment_failure(GSM0808_CAUSE_EQUIPMENT_FAILURE, NULL);
 				sigtran_send(conn, resp, fi);
-				osmo_fsm_inst_state_chg(fi, ST_ACTIVE, 0, 0);
 				return;
 			}
 			break;
@@ -916,7 +915,7 @@ static const struct osmo_fsm_state gscon_fsm_states[] = {
 	[ST_WAIT_HO_COMPL] = {
 		.name = OSMO_STRINGIFY(WAIT_HO_COMPL),
 		.in_event_mask = S(GSCON_EV_HO_COMPL) | S(GSCON_EV_HO_FAIL) | S(GSCON_EV_HO_TIMEOUT),
-		.out_state_mask = S(ST_ACTIVE) | S(ST_WAIT_MDCX_BTS_HO),
+		.out_state_mask = S(ST_ACTIVE) | S(ST_WAIT_MDCX_BTS_HO) | S(ST_CLEARING),
 		.action = gscon_fsm_wait_ho_compl,
 	},
 	[ST_WAIT_MDCX_BTS_HO] = {
