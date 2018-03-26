@@ -342,7 +342,7 @@ int paging_request_bts(struct gsm_bts *bts, struct bsc_subscr *bsub, int type,
 	/* Trigger paging, pass any error to the caller */
 	rc = _paging_request(bts, bsub, type, msc);
 	if (rc < 0)
-		return rc;
+		return 0;
 	return 1;
 }
 
