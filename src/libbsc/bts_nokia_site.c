@@ -1245,7 +1245,8 @@ static int abis_nm_send_multi_segments(struct gsm_bts *bts, uint8_t msg_type,
 		data += len_to_send;
 		seq++;
 	}
-	return ret;
+
+	return 0;
 }
 
 /* TODO: put in a separate file ? */
