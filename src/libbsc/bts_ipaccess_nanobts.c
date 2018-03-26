@@ -438,6 +438,11 @@ ipaccess_sign_link_up(void *unit_data, struct e1inp_line *line,
 						bts->oml_tei, 0);
 		rc = clock_gettime(CLOCK_MONOTONIC, &tp);
 		bts->uptime = (rc < 0) ? 0 : tp.tv_sec; /* we don't need sub-second precision for uptime */
+		if (!(sign_link->trx->bts->ip_access.flags & OML_UP)) {
+			e1inp_event(sign_link->ts, S_L_INP_TEI_UP,
+					sign_link->tei, sign_link->sapi);
+			sign_link->trx->bts->ip_access.flags |= OML_UP;
+		}
 		break;
 	case E1INP_SIGN_RSL: {
 		struct e1inp_ts *ts;
@@ -458,6 +463,13 @@ ipaccess_sign_link_up(void *unit_data, struct e1inp_line *line,
 				e1inp_sign_link_create(ts, E1INP_SIGN_RSL,
 						       trx, trx->rsl_tei, 0);
 		trx->rsl_link->ts->sign.delay = 0;
+		if (!(sign_link->trx->bts->ip_access.flags &
+					(RSL_UP << sign_link->trx->nr))) {
+			e1inp_event(sign_link->ts, S_L_INP_TEI_UP,
+					sign_link->tei, sign_link->sapi);
+			sign_link->trx->bts->ip_access.flags |=
+					(RSL_UP << sign_link->trx->nr);
+		}
 		break;
 	}
 	default:
@@ -490,25 +502,12 @@ static int ipaccess_sign_link(struct msgb *msg)
 {
 	int ret = 0;
 	struct e1inp_sign_link *link = msg->dst;
-	struct e1inp_ts *e1i_ts = link->ts;
 
 	switch (link->type) {
 	case E1INP_SIGN_RSL:
-		if (!(link->trx->bts->ip_access.flags &
-					(RSL_UP << link->trx->nr))) {
-			e1inp_event(e1i_ts, S_L_INP_TEI_UP,
-					link->tei, link->sapi);
-			link->trx->bts->ip_access.flags |=
-					(RSL_UP << link->trx->nr);
-		}
 	        ret = abis_rsl_rcvmsg(msg);
 	        break;
 	case E1INP_SIGN_OML:
-		if (!(link->trx->bts->ip_access.flags & OML_UP)) {
-			e1inp_event(e1i_ts, S_L_INP_TEI_UP,
-					link->tei, link->sapi);
-			link->trx->bts->ip_access.flags |= OML_UP;
-		}
 	        ret = abis_nm_rcvmsg(msg);
 	        break;
 	default:
