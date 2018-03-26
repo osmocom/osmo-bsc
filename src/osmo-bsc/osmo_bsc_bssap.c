@@ -260,6 +260,8 @@ page_subscriber(struct bsc_msc_data *msc, struct gsm_bts *bts,
 	    bts->nr, mi_string, tmsi, tmsi, lac);
 
 	ret = bsc_grace_paging_request(msc->network->bsc_data->rf_ctrl->policy, subscr, chan_needed, msc, bts);
+	if (!ret)
+		LOGP(DMSC, LOGL_ERROR, "Paging request not handled!\n");
 
 	/* the paging code has grabbed its own references */
 	bsc_subscr_put(subscr);
