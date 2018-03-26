@@ -48,6 +48,11 @@ int osmo_bsc_msc_init(struct bsc_msc_data *data)
 		return -1;
 	}
 
+	/* FIXME: This is a leftover from the old architecture that used
+	 * sccp-lite with osmocom specific authentication. Since we now
+	 * changed to AoIP the connected status and the authentication
+	 * status is managed differently. However osmo_bsc_filter.c still
+	 * needs the flags to be set to one. See also: OS#3112 */
 	data->msc_con->is_connected = 1;
 	data->msc_con->is_authenticated = 1;
 
