@@ -237,46 +237,42 @@ static int bssmap_handle_reset(struct bsc_msc_data *msc,
 
 /* Page a subscriber based on TMSI and LAC via the specified BTS.
  * The msc parameter is the MSC which issued the corresponding paging request.
- * Returns 1 if the paging request could be issued, 0 if not.
- * A negative return value indicates an error. */
-static int
+ * Log an error if paging failed. */
+static void
 page_subscriber(struct bsc_msc_data *msc, struct gsm_bts *bts,
     uint32_t tmsi, uint32_t lac, const char *mi_string, uint8_t chan_needed)
 {
 	struct bsc_subscr *subscr;
 	int ret;
 
+	LOGP(DMSC, LOGL_INFO, "Paging request from MSC BTS: %d IMSI: '%s' TMSI: '0x%x/%u' LAC: 0x%x\n",
+	    bts->nr, mi_string, tmsi, tmsi, lac);
+
 	subscr = bsc_subscr_find_or_create_by_imsi(msc->network->bsc_subscribers,
 						   mi_string);
 	if (!subscr) {
-		LOGP(DMSC, LOGL_ERROR, "Failed to allocate a subscriber for %s\n", mi_string);
-		return -1;
+		LOGP(DMSC, LOGL_ERROR, "Paging request failed: Could not allocate subscriber for %s\n", mi_string);
+		return;
 	}
 
 	subscr->lac = lac;
 	subscr->tmsi = tmsi;
 
-	LOGP(DMSC, LOGL_INFO, "Paging request from MSC BTS: %d IMSI: '%s' TMSI: '0x%x/%u' LAC: 0x%x\n",
-	    bts->nr, mi_string, tmsi, tmsi, lac);
-
 	ret = bsc_grace_paging_request(msc->network->bsc_data->rf_ctrl->policy, subscr, chan_needed, msc, bts);
-	if (!ret)
-		LOGP(DMSC, LOGL_ERROR, "Paging request not handled!\n");
+	if (ret == 0)
+		LOGP(DMSC, LOGL_ERROR, "Paging request failed: BTS: %d IMSI: '%s' TMSI: '0x%x/%u' LAC: 0x%x\n",
+		     bts->nr, mi_string, tmsi, tmsi, lac);
 
 	/* the paging code has grabbed its own references */
 	bsc_subscr_put(subscr);
-
-	return ret;
 }
 
 static void
 page_all_bts(struct bsc_msc_data *msc, uint32_t tmsi, const char *mi_string, uint8_t chan_needed)
 {
 	struct gsm_bts *bts;
-	llist_for_each_entry(bts, &msc->network->bts_list, list) {
-		/* ignore errors from page_subscriber(); try all BTS */
+	llist_for_each_entry(bts, &msc->network->bts_list, list)
 		page_subscriber(msc, bts, tmsi, GSM_LAC_RESERVED_ALL_BTS, mi_string, chan_needed);
-	}
 }
 
 static void
@@ -294,7 +290,6 @@ page_cgi(struct bsc_msc_data *msc, struct gsm0808_cell_id_list2 *cil,
 					continue;
 				if (bts->cell_identity != id->cell_identity)
 					continue;
-				/* ignore errors from page_subscriber(); keep trying other BTS */
 				page_subscriber(msc, bts, tmsi, id->lai.lac, mi_string, chan_needed);
 				paged = 1;
 			}
@@ -326,7 +321,6 @@ page_lac_and_ci(struct bsc_msc_data *msc, struct gsm0808_cell_id_list2 *cil,
 				continue;
 			if (bts->cell_identity != id->ci)
 				continue;
-			/* ignore errors from page_subscriber(); keep trying other BTS */
 			page_subscriber(msc, bts, tmsi, id->lac, mi_string, chan_needed);
 			paged = 1;
 		}
@@ -350,7 +344,6 @@ page_ci(struct bsc_msc_data *msc, struct gsm0808_cell_id_list2 *cil,
 		llist_for_each_entry(bts, &msc->network->bts_list, list) {
 			if (bts->cell_identity != ci)
 				continue;
-			/* ignore errors from page_subscriber(); keep trying other BTS */
 			page_subscriber(msc, bts, tmsi, GSM_LAC_RESERVED_ALL_BTS, mi_string, chan_needed);
 			paged = 1;
 		}
@@ -375,7 +368,6 @@ page_lai_and_lac(struct bsc_msc_data *msc, struct gsm0808_cell_id_list2 *cil,
 			llist_for_each_entry(bts, &msc->network->bts_list, list) {
 				if (bts->location_area_code != id->lac)
 					continue;
-				/* ignore errors from page_subscriber(); keep trying other BTS */
 				page_subscriber(msc, bts, tmsi, id->lac, mi_string, chan_needed);
 				paged = 1;
 			}
@@ -405,7 +397,6 @@ page_lac(struct bsc_msc_data *msc, struct gsm0808_cell_id_list2 *cil,
 		llist_for_each_entry(bts, &msc->network->bts_list, list) {
 			if (bts->location_area_code != lac)
 				continue;
-			/* ignore errors from page_subscriber(); keep trying other BTS */
 			page_subscriber(msc, bts, tmsi, lac, mi_string, chan_needed);
 			paged = 1;
 		}

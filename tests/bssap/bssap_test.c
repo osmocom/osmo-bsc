@@ -50,7 +50,7 @@ int __wrap_bsc_grace_paging_request(enum signal_rf rf_policy, struct bsc_subscr 
 	else
 		fprintf(stderr, "BSC paging started with LAC %u\n", subscr->lac);
 	OSMO_ASSERT(gl_expect_lac == subscr->lac);
-	return 1;
+	return 1; /* pretend one BTS was paged */
 }
 
 struct {
