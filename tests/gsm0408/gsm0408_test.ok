@@ -65,6 +65,7 @@ generating SI2quater for 0 EARFCNs and 2 UARFCNs...
 generated valid SI2quater [00/00]: [23] 59 06 07 40 00 25 52 88 0a 7f 52 e8 0a 7e 0b 2b 2b 2b 2b 2b 2b 2b 2b 
 generating SI2quater for 0 EARFCNs and 2 UARFCNs...
 generated valid SI2quater [00/00]: [23] 59 06 07 40 00 25 52 88 0a 7f 52 e8 0a 7e 0b 2b 2b 2b 2b 2b 2b 2b 2b 
+BTS deallocated OK in test_si2q_segfault()
 BTS allocation OK in test_si2q_e()
 Testing SYSINFO_TYPE_2quater EARFCN generation:
 generating SI2quater for 0 EARFCNs and 0 UARFCNs...
@@ -89,6 +90,7 @@ generated valid SI2quater [01/01]: [23] 59 06 07 42 20 04 86 59 83 d7 e0 50 0b 2
 added EARFCN 1982 - generating SI2quater for 7 EARFCNs and 0 UARFCNs...
 generated valid SI2quater [00/01]: [23] 59 06 07 40 20 04 86 59 83 be cc 1e 31 07 91 a8 3c ca 0f 5a 0a 03 2b 
 generated valid SI2quater [01/01]: [23] 59 06 07 42 20 04 86 59 83 d7 e4 1e fa c2 80 2b 2b 2b 2b 2b 2b 2b 2b 
+BTS deallocated OK in test_si2q_e()
 BTS allocation OK in test_si2q_u()
 Testing SYSINFO_TYPE_2quater UARFCN generation:
 generating SI2quater for 0 EARFCNs and 0 UARFCNs...
@@ -115,6 +117,7 @@ generating SI2quater for 0 EARFCNs and 10 UARFCNs...
 generated valid SI2quater [00/00]: [23] 59 06 07 40 00 25 0f 7c 50 1c 3b 31 fa dd 88 85 7b c4 1c 2b 2b 2b 2b 
 generating SI2quater for 0 EARFCNs and 11 UARFCNs...
 generated valid SI2quater [00/00]: [23] 59 06 07 40 00 25 0f 7c 58 1c 3b 25 7a ea 08 91 fb c4 1f b0 2b 2b 2b 
+BTS deallocated OK in test_si2q_u()
 BTS allocation OK in test_si2q_mu()
 Test SI2quater multiple UARFCNs:
 generating SI2quater for 0 EARFCNs and 1 UARFCNs...
@@ -131,6 +134,7 @@ generating SI2quater for 0 EARFCNs and 6 UARFCNs...
 generated valid SI2quater [00/00]: [23] 59 06 07 40 00 25 52 88 0a 7d 52 e8 18 3f f4 90 54 ba 84 52 67 03 2b 
 generating SI2quater for 0 EARFCNs and 7 UARFCNs...
 generated valid SI2quater [00/00]: [23] 59 06 07 40 00 25 52 88 0a 7d 52 e8 18 3f f4 90 54 ba 86 20 73 8c 81 
+BTS deallocated OK in test_si2q_mu()
 BTS allocation OK in test_si2q_long()
 Testing SYSINFO_TYPE_2quater combined EARFCN & UARFCN generation:
 generating SI2quater for 17 EARFCNs and 1 UARFCNs...
@@ -205,6 +209,7 @@ generated valid SI2quater [02/05]: [23] 59 06 07 44 a0 04 86 59 83 c2 ec 20 ff 6
 generated valid SI2quater [03/05]: [23] 59 06 07 46 a0 04 86 59 84 21 54 21 4f 61 0a 99 08 55 b7 2e ca c1 2b 
 generated valid SI2quater [04/05]: [23] 59 06 07 48 a0 04 86 59 84 2b 54 21 27 61 09 59 08 4b b7 2e ca c1 2b 
 generated valid SI2quater [05/05]: [23] 59 06 07 4a a0 04 86 59 84 26 53 97 65 60 2b 2b 2b 2b 2b 2b 2b 2b 2b 
+BTS deallocated OK in test_si2q_long()
 BTS allocation OK in test_si_ba_ind()
 Testing if BA-IND is set as expected in SI2xxx and SI5xxx
 SI2: 59 06 1a 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
@@ -213,6 +218,7 @@ SI2ter: 59 06 03 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 2b 2b 2b 2b
 SI5: 06 1d 10 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
 SI5bis: 06 05 10 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
 SI5ter: 06 06 10 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
+BTS deallocated OK in test_si_ba_ind()
 test_gsm48_ra_id_by_bts[0]: digits='00f120' lac=0x0300=htons(3) rac=0x04=4 pass
 test_gsm48_ra_id_by_bts[1]: digits='002100' lac=0x0300=htons(3) rac=0x04=4 pass
 test_gsm48_ra_id_by_bts[2]: digits='00f000' lac=0x0000=htons(0) rac=0x00=0 pass

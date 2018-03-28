@@ -132,6 +132,16 @@ static inline struct gsm_bts *bts_init(void *ctx, struct gsm_network *net, const
 	return bts;
 }
 
+#define bts_del(bts) _bts_del(bts, __func__)
+static inline void _bts_del(struct gsm_bts *bts, const char *msg)
+{
+	osmo_stat_item_group_free(bts->bts_statg);
+	rate_ctr_group_free(bts->bts_ctrs);
+	/* no need to llist_del(&bts->list), we never registered the bts there. */
+	talloc_free(bts);
+	printf("BTS deallocated OK in %s()\n", msg);
+}
+
 static inline void test_si2q_segfault(struct gsm_network *net)
 {
 	struct gsm_bts *bts = bts_init(tall_bsc_ctx, net, __func__);
@@ -141,8 +151,7 @@ static inline void test_si2q_segfault(struct gsm_network *net)
 	_bts_uarfcn_add(bts, 10612, 319, 0);
 	gen(bts, __func__);
 
-	rate_ctr_group_free(bts->bts_ctrs);
-	talloc_free(bts);
+	bts_del(bts);
 }
 
 static inline void test_si2q_mu(struct gsm_network *net)
@@ -158,8 +167,7 @@ static inline void test_si2q_mu(struct gsm_network *net)
 	_bts_uarfcn_add(bts, 10613, 164, 0);
 	_bts_uarfcn_add(bts, 10613, 14, 0);
 
-	rate_ctr_group_free(bts->bts_ctrs);
-	talloc_free(bts);
+	bts_del(bts);
 }
 
 static inline void test_si2q_u(struct gsm_network *net)
@@ -183,8 +191,7 @@ static inline void test_si2q_u(struct gsm_network *net)
 	_bts_uarfcn_add(bts, 1982, 14, 0);
 	_bts_uarfcn_add(bts, 1982, 88, 0);
 
-	rate_ctr_group_free(bts->bts_ctrs);
-	talloc_free(bts);
+	bts_del(bts);
 }
 
 static inline void test_si2q_e(struct gsm_network *net)
@@ -213,8 +220,7 @@ static inline void test_si2q_e(struct gsm_network *net)
 	add_earfcn_b(bts, 1967, 4);
 	add_earfcn_b(bts, 1982, 3);
 
-	rate_ctr_group_free(bts->bts_ctrs);
-	talloc_free(bts);
+	bts_del(bts);
 }
 
 static inline void test_si2q_long(struct gsm_network *net)
@@ -258,8 +264,7 @@ static inline void test_si2q_long(struct gsm_network *net)
 	_bts_uarfcn_add(bts, 1976, 225, 1);
 	_bts_uarfcn_add(bts, 1976, 226, 1);
 
-	rate_ctr_group_free(bts->bts_ctrs);
-	talloc_free(bts);
+	bts_del(bts);
 }
 
 static void test_mi_functionality(void)
@@ -680,6 +685,8 @@ static void test_si_ba_ind(struct gsm_network *net)
 	printf("SI5ter: %s\n", osmo_hexdump((uint8_t *)si5ter, rc));
 	/* Validate BA-IND == 1 */
 	OSMO_ASSERT(si5ter->bcch_frequency_list[0] & 0x10);
+
+	bts_del(bts);
 }
 
 struct test_gsm48_ra_id_by_bts {
