@@ -118,7 +118,8 @@ static inline void _bts_uarfcn_add(struct gsm_bts *bts, uint16_t arfcn, uint16_t
 	}
 }
 
-static inline struct gsm_bts *bts_init(void *ctx, struct gsm_network *net, const char *msg)
+#define bts_init(net) _bts_init(net, __func__)
+static inline struct gsm_bts *_bts_init(struct gsm_network *net, const char *msg)
 {
 	struct gsm_bts *bts = gsm_bts_alloc(net, 0);
 	if (!bts) {
@@ -144,7 +145,7 @@ static inline void _bts_del(struct gsm_bts *bts, const char *msg)
 
 static inline void test_si2q_segfault(struct gsm_network *net)
 {
-	struct gsm_bts *bts = bts_init(tall_bsc_ctx, net, __func__);
+	struct gsm_bts *bts = bts_init(net);
 	printf("Test SI2quater UARFCN (same scrambling code and diversity):\n");
 
 	_bts_uarfcn_add(bts, 10564, 319, 0);
@@ -156,7 +157,7 @@ static inline void test_si2q_segfault(struct gsm_network *net)
 
 static inline void test_si2q_mu(struct gsm_network *net)
 {
-	struct gsm_bts *bts = bts_init(tall_bsc_ctx, net, __func__);
+	struct gsm_bts *bts = bts_init(net);
 	printf("Test SI2quater multiple UARFCNs:\n");
 
 	_bts_uarfcn_add(bts, 10564, 318, 0);
@@ -172,7 +173,7 @@ static inline void test_si2q_mu(struct gsm_network *net)
 
 static inline void test_si2q_u(struct gsm_network *net)
 {
-	struct gsm_bts *bts = bts_init(tall_bsc_ctx, net, __func__);
+	struct gsm_bts *bts = bts_init(net);
 	printf("Testing SYSINFO_TYPE_2quater UARFCN generation:\n");
 
 	/* first generate invalid SI as no UARFCN added */
@@ -196,7 +197,7 @@ static inline void test_si2q_u(struct gsm_network *net)
 
 static inline void test_si2q_e(struct gsm_network *net)
 {
-	struct gsm_bts *bts = bts_init(tall_bsc_ctx, net, __func__);
+	struct gsm_bts *bts = bts_init(net);
 	printf("Testing SYSINFO_TYPE_2quater EARFCN generation:\n");
 
 	bts->si_common.si2quater_neigh_list.arfcn = bts->si_common.data.earfcn_list;
@@ -225,7 +226,7 @@ static inline void test_si2q_e(struct gsm_network *net)
 
 static inline void test_si2q_long(struct gsm_network *net)
 {
-	struct gsm_bts *bts = bts_init(tall_bsc_ctx, net, __func__);
+	struct gsm_bts *bts = bts_init(net);
 	printf("Testing SYSINFO_TYPE_2quater combined EARFCN & UARFCN generation:\n");
 
 	bts->si_common.si2quater_neigh_list.arfcn = bts->si_common.data.earfcn_list;
@@ -629,7 +630,7 @@ static void test_si_range_helpers()
 
 static void test_si_ba_ind(struct gsm_network *net)
 {
-	struct gsm_bts *bts = bts_init(tall_bsc_ctx, net, __func__);
+	struct gsm_bts *bts = bts_init(net);
 
 	const struct gsm48_system_information_type_2 *si2 =
 		(struct gsm48_system_information_type_2 *) GSM_BTS_SI(bts, SYSINFO_TYPE_2);
