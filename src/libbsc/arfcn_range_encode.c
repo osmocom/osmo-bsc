@@ -74,14 +74,8 @@ int range_enc_find_index(enum gsm48_range range, const int *freqs, const int siz
 	return -1;
 }
 
-/**
- * Range encode the ARFCN list.
- * \param range The range to use.
- * \param arfcns The list of ARFCNs
- * \param size The size of the list of ARFCNs
- * \param out Place to store the W(i) output.
- */
-int range_enc_arfcns(enum gsm48_range range,
+/* Worker for range_enc_arfcns(), do not call directly. */
+int _range_enc_arfcns(enum gsm48_range range,
 		const int *arfcns, int size, int *out,
 		const int index)
 {
@@ -98,16 +92,6 @@ int range_enc_arfcns(enum gsm48_range range,
 	int r_size;
 	int l_origin;
 	int r_origin;
-
-
-	/* Test the two recursion anchors and stop processing */
-	if (size == 0)
-		return 0;
-
-	if (size == 1) {
-		out[index] = 1 + arfcns[0];
-		return 0;
-	}
 
 	/* Now do the processing */
 	split_at = range_enc_find_index(range, arfcns, size);
@@ -138,6 +122,28 @@ int range_enc_arfcns(enum gsm48_range range,
 		range_enc_arfcns((range - 1) / 2, arfcns_right, r_size,
 			 out, index + (2 * greatest_power_of_2_lesser_or_equal_to(index + 1)));
 	return 0;
+}
+
+/**
+ * Range encode the ARFCN list.
+ * \param range The range to use.
+ * \param arfcns The list of ARFCNs
+ * \param size The size of the list of ARFCNs
+ * \param out Place to store the W(i) output.
+ */
+int range_enc_arfcns(enum gsm48_range range,
+		const int *arfcns, int size, int *out,
+		const int index)
+{
+	if (size <= 0)
+		return 0;
+
+	if (size == 1) {
+		out[index] = 1 + arfcns[0];
+		return 0;
+	}
+
+	return _range_enc_arfcns(range, arfcns, size, out, index);
 }
 
 /*
