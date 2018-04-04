@@ -884,6 +884,22 @@ DEFUN(show_subscr_all,
 	return CMD_SUCCESS;
 }
 
+#define LEGACY_STR "This command has no effect, it is kept to support legacy config files\n"
+
+DEFUN_DEPRECATED(cfg_net_msc_ping_time, cfg_net_msc_ping_time_cmd,
+      "timeout-ping ARG", LEGACY_STR "-\n")
+{
+	vty_out(vty, "%% timeout-ping / timeout-pong config is deprecated and has no effect%s",
+		VTY_NEWLINE);
+	return CMD_WARNING;
+}
+
+ALIAS_DEPRECATED(cfg_net_msc_ping_time, cfg_net_msc_no_ping_time_cmd,
+      "no timeout-ping [ARG]", NO_STR LEGACY_STR "-\n");
+
+ALIAS_DEPRECATED(cfg_net_msc_ping_time, cfg_net_msc_pong_time_cmd,
+      "timeout-pong ARG", LEGACY_STR "-\n");
+
 int bsc_vty_init_extra(void)
 {
 	struct gsm_network *net = bsc_gsmnet;
@@ -932,6 +948,11 @@ int bsc_vty_init_extra(void)
 	install_element(MSC_NODE, &cfg_msc_no_acc_lst_name_cmd);
 	install_element(MSC_NODE, &cfg_msc_cs7_bsc_addr_cmd);
 	install_element(MSC_NODE, &cfg_msc_cs7_msc_addr_cmd);
+
+	/* Deprecated: ping time config, kept to support legacy config files. */
+	install_element(MSC_NODE, &cfg_net_msc_no_ping_time_cmd);
+	install_element(MSC_NODE, &cfg_net_msc_ping_time_cmd);
+	install_element(MSC_NODE, &cfg_net_msc_pong_time_cmd);
 
 	install_element_ve(&show_statistics_cmd);
 	install_element_ve(&show_mscs_cmd);
