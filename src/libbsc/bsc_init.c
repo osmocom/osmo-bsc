@@ -350,8 +350,10 @@ static void bootstrap_rsl(struct gsm_bts_trx *trx)
 		rsl_nokia_si_end(trx);
 	}
 
-	for (i = 0; i < ARRAY_SIZE(trx->ts); i++)
+	for (i = 0; i < ARRAY_SIZE(trx->ts); i++) {
 		generate_ma_for_ts(&trx->ts[i]);
+		dyn_ts_init(&trx->ts[i]);
+	}
 
 	if (acc_ramp_is_enabled(&trx->bts->acc_ramp))
 		acc_ramp_start(&trx->bts->acc_ramp);
