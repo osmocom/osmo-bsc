@@ -1099,9 +1099,12 @@ static void ts_dump_vty(struct vty *vty, struct gsm_bts_trx_ts *ts)
 	vty_out(vty, "BTS %u, TRX %u, Timeslot %u, phys cfg %s, TSC %u",
 		ts->trx->bts->nr, ts->trx->nr, ts->nr,
 		gsm_pchan_name(ts->pchan), gsm_ts_tsc(ts));
-	if (ts->pchan == GSM_PCHAN_TCH_F_PDCH)
+	if (ts->pchan == GSM_PCHAN_TCH_F_PDCH) {
 		vty_out(vty, " (%s mode)",
 			ts->flags & TS_F_PDCH_ACTIVE ? "PDCH" : "TCH/F");
+	} else if (ts->pchan == GSM_PCHAN_TCH_F_TCH_H_PDCH) {
+		vty_out(vty, " (%s mode)", gsm_pchan_name(ts->dyn.pchan_is));
+	}
 	vty_out(vty, "%s", VTY_NEWLINE);
 	vty_out(vty, "  NM State: ");
 	net_dump_nmstate(vty, &ts->mo.nm_state);
