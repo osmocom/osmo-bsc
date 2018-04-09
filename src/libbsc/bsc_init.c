@@ -332,16 +332,13 @@ static void bootstrap_rsl(struct gsm_bts_trx *trx)
 		trx->bts->location_area_code,
 		trx->bts->cell_identity, trx->bts->bsic);
 
-	/*
-	 * Re-initialize ACC ramping to ensure ACCs are barred/allowed
-	 * according to our current VTY configuration.
-	 */
-	acc_ramp_init(&trx->bts->acc_ramp, acc_ramp_is_enabled(&trx->bts->acc_ramp), trx->bts);
-
 	if (trx->bts->type == GSM_BTS_TYPE_NOKIA_SITE) {
 		rsl_nokia_si_begin(trx);
 	}
 
+	/* Configure ACC ramping before sending system information to BTS. */
+	if (acc_ramp_is_enabled(&trx->bts->acc_ramp))
+		acc_ramp_start(&trx->bts->acc_ramp);
 	gsm_bts_trx_set_system_infos(trx);
 
 	if (trx->bts->type == GSM_BTS_TYPE_NOKIA_SITE) {
@@ -354,9 +351,6 @@ static void bootstrap_rsl(struct gsm_bts_trx *trx)
 		generate_ma_for_ts(&trx->ts[i]);
 		dyn_ts_init(&trx->ts[i]);
 	}
-
-	if (acc_ramp_is_enabled(&trx->bts->acc_ramp))
-		acc_ramp_start(&trx->bts->acc_ramp);
 }
 
 /* Callback function to be called every time we receive a signal from INPUT */
@@ -539,7 +533,7 @@ static int bootstrap_bts(struct gsm_bts *bts)
 
 	bts->chan_load_samples_idx = 0;
 
-	acc_ramp_init(&bts->acc_ramp, false, bts);
+	/* ACC ramping is initialized from vty/config */
 
 	/* Initialize the BTS state */
 	gsm_bts_mo_reset(bts);
