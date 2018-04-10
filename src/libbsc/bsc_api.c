@@ -117,17 +117,17 @@ static int handle_new_assignment(struct gsm_subscriber_connection *conn, int cha
 	new_lchan = lchan_alloc(conn_get_bts(conn), chan_type, 0);
 
 	if (!new_lchan) {
-		LOGP(DMSC, LOGL_NOTICE, "No free channel.\n");
+		LOGP(DMSC, LOGL_NOTICE, "%s No free channel for %s\n",
+		     bsc_subscr_name(conn->bsub), gsm_lchant_name(chan_type));
 		return -1;
 	}
 
 	/* check if we are on TCH/F and requested TCH/H, but got TCH/F */
 	if (conn->lchan->type == new_lchan->type
 	    && chan_type != new_lchan->type) {
-		LOGP(DHO, LOGL_NOTICE, "%s -> %s Will not re-assign to identical channel type,"
-		     " %s was requested\n",
-		     gsm_lchan_name(conn->lchan), gsm_lchan_name(new_lchan),
-		     gsm_lchant_name(chan_type));
+		LOGPLCHAN(conn->lchan, DHO, LOGL_NOTICE,
+			  "-> %s Will not re-assign to identical channel type, %s was requested\n",
+			  gsm_lchan_name(new_lchan), gsm_lchant_name(chan_type));
 		lchan_free(new_lchan);
 		return -1;
 	}
@@ -148,7 +148,7 @@ static int handle_new_assignment(struct gsm_subscriber_connection *conn, int cha
 		handle_mr_config(conn, new_lchan, full_rate);
 
 	if (rsl_chan_activate_lchan(new_lchan, 0x1, 0) < 0) {
-		LOGP(DHO, LOGL_ERROR, "could not activate channel\n");
+		LOGPLCHAN(new_lchan, DHO, LOGL_ERROR, "could not activate channel\n");
 		lchan_free(new_lchan);
 		return -1;
 	}
@@ -217,7 +217,8 @@ int gsm0808_submit_dtap(struct gsm_subscriber_connection *conn,
 
 	if (!conn->lchan) {
 		LOGP(DMSC, LOGL_ERROR,
-		     "Called submit dtap without an lchan.\n");
+		     "%s Called submit dtap without an lchan.\n",
+		     bsc_subscr_name(conn->bsub));
 		msgb_free(msg);
 		return -1;
 	}
@@ -320,11 +321,9 @@ int gsm0808_assign_req(struct gsm_subscriber_connection *conn, int chan_mode, in
 		if (chan_mode == GSM48_CMODE_SPEECH_AMR)
 			handle_mr_config(conn, conn->lchan, full_rate);
 
-		LOGP(DMSC, LOGL_NOTICE,
-		     "Sending %s ChanModify for speech: %s on channel %s\n",
-		     gsm_lchan_name(conn->lchan),
-		     get_value_string(gsm48_chan_mode_names, chan_mode),
-		     get_value_string(gsm_chan_t_names, conn->lchan->type));
+		LOGPLCHAN(conn->lchan, DMSC, LOGL_NOTICE,
+			  "Sending ChanModify for speech: %s\n",
+			  get_value_string(gsm48_chan_mode_names, chan_mode));
 		gsm48_lchan_modify(conn->lchan, chan_mode);
 	}
 
@@ -352,8 +351,8 @@ static void handle_ass_compl(struct gsm_subscriber_connection *conn,
 		struct lchan_signal_data sig;
 		struct gsm48_hdr *gh = msgb_l3(msg);
 
-		DEBUGP(DRR, "ASSIGNMENT COMPLETE cause = %s\n",
-			rr_cause_name(gh->data[0]));
+		LOGPLCHAN(msg->lchan, DRR, LOGL_DEBUG, "ASSIGNMENT COMPLETE cause = %s\n",
+			  rr_cause_name(gh->data[0]));
 
 		sig.lchan = msg->lchan;
 		sig.mr = NULL;
@@ -367,14 +366,15 @@ static void handle_ass_compl(struct gsm_subscriber_connection *conn,
 	}
 
 	if (conn->secondary_lchan != msg->lchan) {
-		LOGP(DMSC, LOGL_ERROR, "Assignment Compl should occur on second lchan.\n");
+		LOGPLCHAN(msg->lchan, DMSC, LOGL_ERROR,
+			  "Assignment Compl should occur on second lchan.\n");
 		return;
 	}
 
 	gh = msgb_l3(msg);
 	if (msgb_l3len(msg) - sizeof(*gh) != 1) {
-		LOGP(DMSC, LOGL_ERROR, "Assignment Compl invalid: %zu\n",
-		     msgb_l3len(msg) - sizeof(*gh));
+		LOGPLCHAN(msg->lchan, DMSC, LOGL_ERROR, "Assignment Compl invalid: %zu\n",
+			  msgb_l3len(msg) - sizeof(*gh));
 		return;
 	}
 
@@ -405,8 +405,8 @@ static void handle_ass_fail(struct gsm_subscriber_connection *conn,
 		struct lchan_signal_data sig;
 		struct gsm48_hdr *gh = msgb_l3(msg);
 
-		DEBUGP(DRR, "ASSIGNMENT FAILED cause = %s\n",
-			rr_cause_name(gh->data[0]));
+		LOGPLCHAN(msg->lchan, DRR, LOGL_DEBUG, "ASSIGNMENT FAILED cause = %s\n",
+			  rr_cause_name(gh->data[0]));
 
 		sig.lchan = msg->lchan;
 		sig.mr = NULL;
@@ -420,7 +420,8 @@ static void handle_ass_fail(struct gsm_subscriber_connection *conn,
 	}
 
 	if (conn->lchan != msg->lchan) {
-		LOGP(DMSC, LOGL_ERROR, "Assignment failure should occur on primary lchan.\n");
+		LOGPLCHAN(msg->lchan, DMSC, LOGL_ERROR,
+			  "Assignment failure should occur on primary lchan.\n");
 		return;
 	}
 
@@ -436,8 +437,8 @@ static void handle_ass_fail(struct gsm_subscriber_connection *conn,
 
 	gh = msgb_l3(msg);
 	if (msgb_l3len(msg) - sizeof(*gh) != 1) {
-		LOGP(DMSC, LOGL_ERROR, "assignment failure unhandled: %zu\n",
-		     msgb_l3len(msg) - sizeof(*gh));
+		LOGPLCHAN(conn->lchan, DMSC, LOGL_ERROR, "assignment failure unhandled: %zu\n",
+			  msgb_l3len(msg) - sizeof(*gh));
 		rr_failure = NULL;
 	} else {
 		rr_failure = &gh->data[0];
@@ -457,7 +458,7 @@ static void handle_classmark_chg(struct gsm_subscriber_connection *conn,
 	uint8_t cm2_len, cm3_len = 0;
 	uint8_t *cm2, *cm3 = NULL;
 
-	DEBUGP(DRR, "CLASSMARK CHANGE ");
+	LOGPLCHAN(msg->lchan, DRR, LOGL_DEBUG, "CLASSMARK CHANGE ");
 
 	/* classmark 2 */
 	cm2_len = gh->data[0];
@@ -492,8 +493,8 @@ static void handle_rr_ho_compl(struct msgb *msg)
 	struct lchan_signal_data sig;
 	struct gsm48_hdr *gh = msgb_l3(msg);
 
-	DEBUGP(DRR, "HANDOVER COMPLETE cause = %s\n",
-		rr_cause_name(gh->data[0]));
+	LOGPLCHAN(msg->lchan, DRR, LOGL_DEBUG,
+		  "HANDOVER COMPLETE cause = %s\n", rr_cause_name(gh->data[0]));
 
 	sig.lchan = msg->lchan;
 	sig.mr = NULL;
@@ -510,8 +511,12 @@ static void handle_rr_ho_fail(struct msgb *msg)
 	struct lchan_signal_data sig;
 	struct gsm48_hdr *gh = msgb_l3(msg);
 
-	DEBUGP(DRR, "HANDOVER FAILED cause = %s\n", rr_cause_name(gh->data[0]));
-	DEBUGP(DHO, "HANDOVER FAILED cause = %s\n", rr_cause_name(gh->data[0]));
+	/* Log on both RR and HO categories: it is an RR message, but is still quite important when
+	 * filtering on HO. */
+	LOGPLCHAN(msg->lchan, DRR, LOGL_DEBUG,
+		  "HANDOVER FAILED cause = %s\n", rr_cause_name(gh->data[0]));
+	LOGPLCHAN(msg->lchan, DHO, LOGL_DEBUG,
+		  "HANDOVER FAILED cause = %s\n", rr_cause_name(gh->data[0]));
 
 	sig.lchan = msg->lchan;
 	sig.mr = NULL;
@@ -533,7 +538,8 @@ static void dispatch_dtap(struct gsm_subscriber_connection *conn,
 	int rc;
 
 	if (msgb_l3len(msg) < sizeof(*gh)) {
-		LOGP(DMSC, LOGL_ERROR, "Message too short for a GSM48 header.\n");
+		LOGP(DMSC, LOGL_ERROR, "(%s) Message too short for a GSM48 header.\n",
+		     bsc_subscr_name(conn->bsub));
 		return;
 	}
 
@@ -551,19 +557,20 @@ static void dispatch_dtap(struct gsm_subscriber_connection *conn,
 	case GSM48_PDISC_RR:
 		switch (msg_type) {
 		case GSM48_MT_RR_GPRS_SUSP_REQ:
-			DEBUGP(DRR, "%s\n",
-			       gsm48_rr_msg_name(GSM48_MT_RR_GPRS_SUSP_REQ));
+			LOGPLCHAN(msg->lchan, DRR, LOGL_DEBUG,
+				  "%s\n", gsm48_rr_msg_name(GSM48_MT_RR_GPRS_SUSP_REQ));
 			break;
 		case GSM48_MT_RR_STATUS:
-			LOGP(DRR, LOGL_NOTICE, "%s (cause: %s)\n",
-			     gsm48_rr_msg_name(GSM48_MT_RR_STATUS),
-			     rr_cause_name(gh->data[0]));
+			LOGPLCHAN(msg->lchan, DRR, LOGL_NOTICE,
+				  "%s (cause: %s)\n", gsm48_rr_msg_name(GSM48_MT_RR_STATUS),
+				  rr_cause_name(gh->data[0]));
 			break;
 		case GSM48_MT_RR_MEAS_REP:
 			/* This shouldn't actually end up here, as RSL treats
 			* L3 Info of 08.58 MEASUREMENT REPORT different by calling
 			* directly into gsm48_parse_meas_rep */
-			LOGP(DMEAS, LOGL_ERROR, "DIRECT GSM48 MEASUREMENT REPORT ?!? ");
+			LOGPLCHAN(msg->lchan, DMEAS, LOGL_ERROR,
+				  "DIRECT GSM48 MEASUREMENT REPORT ?!?\n");
 			gsm48_tx_rr_status(conn, GSM48_RR_CAUSE_MSG_TYPE_N_COMPAT);
 			break;
 		case GSM48_MT_RR_HANDO_COMPL:
@@ -605,9 +612,8 @@ static void dispatch_dtap(struct gsm_subscriber_connection *conn,
 			break;
 		default:
 			/* Drop unknown RR message */
-			LOGP(DRR, LOGL_NOTICE,
-			     "%s Dropping %s 04.08 RR message\n",
-			     gsm_lchan_name(conn->lchan), gsm48_rr_msg_name(msg_type));
+			LOGPLCHAN(msg->lchan, DRR, LOGL_NOTICE,
+				  "Dropping %s 04.08 RR message\n", gsm48_rr_msg_name(msg_type));
 			gsm48_tx_rr_status(conn, GSM48_RR_CAUSE_MSG_TYPE_N);
 			break;
 		}
@@ -628,8 +634,7 @@ int gsm0408_rcvmsg(struct msgb *msg, uint8_t link_id)
 
 	lchan = msg->lchan;
 	if (lchan->state != LCHAN_S_ACTIVE) {
-		LOGP(DRSL, LOGL_INFO, "Got data in non active state(%s), "
-		     "discarding.\n", gsm_lchans_name(lchan->state));
+		LOGPLCHAN(msg->lchan, DRSL, LOGL_INFO, "Got data in non active state, discarding.\n");
 		return -1;
 	}
 
@@ -664,12 +669,14 @@ int gsm0808_cipher_mode(struct gsm_subscriber_connection *conn, int cipher,
 			const uint8_t *key, int len, int include_imeisv)
 {
 	if (cipher > 0 && key == NULL) {
-		LOGP(DRSL, LOGL_ERROR, "Need to have an encryption key.\n");
+		LOGP(DRSL, LOGL_ERROR, "%s: Need to have an encryption key.\n",
+		     bsc_subscr_name(conn->bsub));
 		return -1;
 	}
 
 	if (len > MAX_A5_KEY_LEN) {
-		LOGP(DRSL, LOGL_ERROR, "The key is too long: %d\n", len);
+		LOGP(DRSL, LOGL_ERROR, "%s: The key is too long: %d\n",
+		     bsc_subscr_name(conn->bsub), len);
 		return -1;
 	}
 
@@ -811,7 +818,7 @@ static void handle_chan_ack(struct gsm_subscriber_connection *conn,
 	if (conn->secondary_lchan != lchan)
 		return;
 
-	LOGP(DMSC, LOGL_NOTICE, "Sending assignment on chan: %p\n", lchan);
+	LOGPLCHAN(lchan, DMSC, LOGL_NOTICE, "Sending RR Assignment\n");
 	gsm48_send_rr_ass_cmd(conn->lchan, lchan, lchan->ms_power);
 }
 
@@ -821,7 +828,7 @@ static void handle_chan_nack(struct gsm_subscriber_connection *conn,
 	if (conn->secondary_lchan != lchan)
 		return;
 
-	LOGP(DMSC, LOGL_ERROR, "Channel activation failed. Waiting for timeout now\n");
+	LOGPLCHAN(lchan, DMSC, LOGL_ERROR, "Channel activation failed. Waiting for timeout now\n");
 	conn->secondary_lchan->conn = NULL;
 	conn->secondary_lchan = NULL;
 }

@@ -366,6 +366,14 @@ struct gsm_encr {
 	uint8_t key[MAX_A5_KEY_LEN];
 };
 
+#define LOGPLCHAN(lchan, ss, level, fmt, args...) \
+	LOGP(ss, level, "%s (ss=%d,%s) (%s) " fmt, \
+	     lchan ? gsm_ts_and_pchan_name(lchan->ts) : "-", \
+	     lchan ? lchan->nr : 0, \
+	     lchan ? gsm_lchant_name(lchan->type) : "-", \
+	     bsc_subscr_name(lchan && lchan->conn ? lchan->conn->bsub : NULL), \
+	     ## args)
+
 struct gsm_lchan {
 	/* The TS that we're part of */
 	struct gsm_bts_trx_ts *ts;
