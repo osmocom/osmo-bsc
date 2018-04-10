@@ -1915,7 +1915,7 @@ DEFUN(cfg_bts,
 		 * Initalize bts->acc_ramp here. Else we could segfault while
 		 * processing a configuration file with ACC ramping settings.
 		 */
-		acc_ramp_init(&bts->acc_ramp, false, bts);
+		acc_ramp_init(&bts->acc_ramp, bts);
 	} else
 		bts = gsm_bts_num(gsmnet, bts_nr);
 
@@ -3275,7 +3275,8 @@ DEFUN(cfg_bts_acc_ramping,
 {
 	struct gsm_bts *bts = vty->index;
 
-	acc_ramp_init(&bts->acc_ramp, true, bts);
+	if (!acc_ramp_is_enabled(&bts->acc_ramp))
+		acc_ramp_set_enabled(&bts->acc_ramp, true);
 
 	/* ACC ramping takes effect when the BTS reconnects. */
 	return CMD_SUCCESS;
@@ -3290,7 +3291,7 @@ DEFUN(cfg_bts_no_acc_ramping, cfg_bts_no_acc_ramping_cmd,
 
 	if (acc_ramp_is_enabled(&bts->acc_ramp)) {
 		acc_ramp_abort(&bts->acc_ramp);
-		acc_ramp_init(&bts->acc_ramp, false, bts);
+		acc_ramp_set_enabled(&bts->acc_ramp, false);
 		gsm_bts_set_system_infos(bts);
 	}
 
