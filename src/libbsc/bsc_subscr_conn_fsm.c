@@ -1058,8 +1058,15 @@ static int gscon_timer_cb(struct osmo_fsm_inst *fi)
 
 	switch (fi->T) {
 	case 993210:
-		/* MSC has not responded/confirmed connection witH CC */
-		/* N-DISCONNET.req is sent in gscon_cleanup() above */
+		/* MSC has not responded/confirmed connection with CC, this
+		 * could indicate a bad SCCP connection. We now inform the the
+		 * FSM that controls the BSSMAP reset about the event. Maybe
+		 * a BSSMAP reset is necessary. */
+		a_reset_conn_fail(conn->sccp.msc->a.reset);
+
+		/* Since we could not reach the MSC, we give up and terminate
+		 * the FSM instance now (N-DISCONNET.req is sent in
+		 * gscon_cleanup() above) */
 		osmo_fsm_inst_term(fi, OSMO_FSM_TERM_REGULAR, NULL);
 		break;
 	case GSM0808_T10_TIMER_NR:	/* Assignment Failed */
