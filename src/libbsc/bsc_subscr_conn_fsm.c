@@ -56,8 +56,6 @@ enum gscon_fsm_states {
 	ST_ACTIVE,
 	/* during assignment; waiting for ASS_CMPL */
 	ST_WAIT_ASS_CMPL,
-	/* during assignment; waiting for MODE_MODIFY_ACK */
-	ST_WAIT_MODE_MODIFY_ACK,
 	/* BSSMAP CLEAR has been received */
 	ST_CLEARING,
 
@@ -99,7 +97,6 @@ static const struct value_string gscon_fsm_event_names[] = {
 
 	{GSCON_EV_RR_ASS_COMPL, "RR_ASSIGN_COMPL"},
 	{GSCON_EV_RR_ASS_FAIL, "RR_ASSIGN_FAIL"},
-	{GSCON_EV_RR_MODE_MODIFY_ACK, "RR_MODE_MODIFY_ACK"},
 	{GSCON_EV_RLL_REL_IND, "RLL_RELEASE.ind"},
 	{GSCON_EV_RSL_CONN_FAIL, "RSL_CONN_FAIL.ind"},
 	{GSCON_EV_RSL_CLEAR_COMPL, "RSL_CLEAR_COMPLETE"},
@@ -722,39 +719,6 @@ static void gscon_fsm_wait_crcx_msc(struct osmo_fsm_inst *fi, uint32_t event, vo
 	}
 }
 
-/* We're waiting for a MODE MODIFY ACK from MS + BTS */
-static void gscon_fsm_wait_mode_modify_ack(struct osmo_fsm_inst *fi, uint32_t event, void *data)
-{
-	struct gsm_subscriber_connection *conn = fi->priv;
-	struct gsm_lchan *lchan = conn->lchan;
-
-	switch (event) {
-	case GSCON_EV_RR_MODE_MODIFY_ACK:
-		/* we assume that not only have we received the RR MODE_MODIFY_ACK, but
-		 * actually that also the BTS side of the channel mode has been changed accordingly */
-		osmo_fsm_inst_state_chg(fi, ST_ACTIVE, 0, 0);
-
-		/* FIXME: Check if this requires special handling. For now I assume that the send_ass_compl()
-		 * can be used. But I am not sure. */
-		send_ass_compl(lchan, fi, false);
-
-		break;
-		/* FIXME: Do we need to handle DTAP traffic in this state? Maybe yes? Needs to be checked. */
-	case GSCON_EV_MO_DTAP:
-		forward_dtap(conn, (struct msgb *)data, fi);
-		break;
-	case GSCON_EV_MT_DTAP:
-		submit_dtap(conn, (struct msgb *)data, fi);
-		break;
-	case GSCON_EV_TX_SCCP:
-		sigtran_send(conn, (struct msgb *)data, fi);
-		break;
-	default:
-		OSMO_ASSERT(false);
-		break;
-	}
-}
-
 static void gscon_fsm_clearing(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
 	struct gsm_subscriber_connection *conn = fi->priv;
@@ -869,7 +833,7 @@ static const struct osmo_fsm_state gscon_fsm_states[] = {
 		.in_event_mask = EV_TRANSPARENT_SCCP | S(GSCON_EV_A_ASSIGNMENT_CMD) |
 				 S(GSCON_EV_A_HO_REQ) | S(GSCON_EV_HO_START),
 		.out_state_mask = S(ST_CLEARING) | S(ST_WAIT_CRCX_BTS) | S(ST_WAIT_ASS_CMPL) |
-				  S(ST_WAIT_MODE_MODIFY_ACK) | S(ST_WAIT_MO_HO_CMD) | S(ST_WAIT_HO_COMPL),
+				  S(ST_WAIT_MO_HO_CMD) | S(ST_WAIT_HO_COMPL),
 		.action = gscon_fsm_active,
 	},
 	[ST_WAIT_CRCX_BTS] = {
@@ -895,12 +859,6 @@ static const struct osmo_fsm_state gscon_fsm_states[] = {
 		.in_event_mask = EV_TRANSPARENT_SCCP | S(GSCON_EV_MGW_CRCX_RESP_MSC),
 		.out_state_mask = S(ST_ACTIVE),
 		.action = gscon_fsm_wait_crcx_msc,
-	},
-	[ST_WAIT_MODE_MODIFY_ACK] = {
-		.name = OSMO_STRINGIFY(WAIT_MODE_MODIFY_ACK),
-		.in_event_mask = EV_TRANSPARENT_SCCP | S(GSCON_EV_RR_MODE_MODIFY_ACK),
-		.out_state_mask = S(ST_ACTIVE) | S(ST_CLEARING),
-		.action = gscon_fsm_wait_mode_modify_ack,
 	},
 	[ST_CLEARING] = {
 		.name = OSMO_STRINGIFY(CLEARING),

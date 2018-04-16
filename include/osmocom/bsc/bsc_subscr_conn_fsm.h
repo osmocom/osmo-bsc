@@ -21,8 +21,6 @@ enum gscon_fsm_event {
 	GSCON_EV_RR_ASS_COMPL,
 	/* RR ASSIGNMENT FAIL received */
 	GSCON_EV_RR_ASS_FAIL,
-	/* RR MODE MODIFY ACK received */
-	GSCON_EV_RR_MODE_MODIFY_ACK,
 
 	/* RSL RLL Release Indication */
 	GSCON_EV_RLL_REL_IND,
