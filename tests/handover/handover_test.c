@@ -1323,7 +1323,7 @@ static const struct log_info_cat log_categories[] = {
 	},
 	[DRSL] = {
 		.name = "DRSL",
-		.description = "A-bis Radio Siganlling Link (RSL)",
+		.description = "A-bis Radio Signalling Link (RSL)",
 		.color = "\033[1;35m",
 		.enabled = 1, .loglevel = LOGL_DEBUG,
 	},

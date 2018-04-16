@@ -305,7 +305,7 @@ static const struct log_info_cat osmo_bsc_categories[] = {
 	},
 	[DRSL] = {
 		.name = "DRSL",
-		.description = "A-bis Radio Siganlling Link (RSL)",
+		.description = "A-bis Radio Signalling Link (RSL)",
 		.color = "\033[1;35m",
 		.enabled = 1, .loglevel = LOGL_NOTICE,
 	},
