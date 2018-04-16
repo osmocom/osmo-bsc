@@ -226,29 +226,38 @@ static uint8_t lchan_to_chosen_channel(struct gsm_lchan *lchan)
 }
 
 /* Generate and send assignment complete message */
-static void send_ass_compl(struct gsm_lchan *lchan, struct osmo_fsm_inst *fi)
+static void send_ass_compl(struct gsm_lchan *lchan, struct osmo_fsm_inst *fi, bool voice)
 {
 	struct msgb *resp;
 	struct gsm0808_speech_codec sc;
+	struct gsm0808_speech_codec *sc_ptr = NULL;
 	struct gsm_subscriber_connection *conn;
-	int perm_spch = bssap_speech_from_lchan(lchan);
+	struct sockaddr_storage *addr_local = NULL;
+	int perm_spch = 0;
 
 	conn = lchan->conn;
-
-	OSMO_ASSERT(lchan->abis_ip.ass_compl.valid);
 	OSMO_ASSERT(conn);
 
 	LOGPFSML(fi, LOGL_DEBUG, "Sending assignment complete message... (id=%i)\n", conn->sccp.conn_id);
 
-	/* Extrapolate speech codec from speech mode */
-	gsm0808_speech_codec_from_chan_type(&sc, perm_spch);
-	/* FIXME: AMR codec configuration must be derived from lchan1! */
+	/* Generate voice related fields */
+	if (voice) {
+		OSMO_ASSERT(lchan->abis_ip.ass_compl.valid);
+		perm_spch = bssap_speech_from_lchan(lchan);
+		addr_local = &conn->user_plane.aoip_rtp_addr_local;
+
+		/* Extrapolate speech codec from speech mode */
+		gsm0808_speech_codec_from_chan_type(&sc, perm_spch);
+		sc_ptr = &sc;
+
+		/* FIXME: AMR codec configuration must be derived from lchan1! */
+	}
 
 	/* Generate message */
 	resp = gsm0808_create_ass_compl(lchan->abis_ip.ass_compl.rr_cause,
 					lchan_to_chosen_channel(lchan),
 					lchan->encr.alg_id, perm_spch,
-					&conn->user_plane.aoip_rtp_addr_local, &sc, NULL);
+					addr_local, sc_ptr, NULL);
 
 	if (!resp) {
 		LOGPFSML(fi, LOGL_ERROR, "Failed to generate assignment completed message! (id=%i)\n",
@@ -586,7 +595,7 @@ static void gscon_fsm_wait_ass_cmpl(struct osmo_fsm_inst *fi, uint32_t event, vo
 		case GSM48_CMODE_SIGN:
 			/* Confirm the successful assignment on BSSMAP and
 			 * change back into active state */
-			send_ass_compl(lchan, fi);
+			send_ass_compl(lchan, fi, false);
 			osmo_fsm_inst_state_chg(fi, ST_ACTIVE, 0, 0);
 			break;
 		default:
@@ -689,7 +698,7 @@ static void gscon_fsm_wait_crcx_msc(struct osmo_fsm_inst *fi, uint32_t event, vo
 		sin->sin_port = osmo_ntohs(conn_peer->port);
 
 		/* Send assignment complete message to the MSC */
-		send_ass_compl(lchan, fi);
+		send_ass_compl(lchan, fi, true);
 
 		osmo_fsm_inst_state_chg(fi, ST_ACTIVE, 0, 0);
 
@@ -723,7 +732,7 @@ static void gscon_fsm_wait_mode_modify_ack(struct osmo_fsm_inst *fi, uint32_t ev
 
 		/* FIXME: Check if this requires special handling. For now I assume that the send_ass_compl()
 		 * can be used. But I am not sure. */
-		send_ass_compl(lchan, fi);
+		send_ass_compl(lchan, fi, false);
 
 		break;
 		/* FIXME: Do we need to handle DTAP traffic in this state? Maybe yes? Needs to be checked. */
