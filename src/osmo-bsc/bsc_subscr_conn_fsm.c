@@ -143,88 +143,6 @@ static void sigtran_send(struct gsm_subscriber_connection *conn, struct msgb *ms
 		LOGPFSML(fi, LOGL_ERROR, "Unable to deliver SCCP message!\n");
 }
 
-
-/* See TS 48.008 3.2.2.11 Channel Type Octet 5 */
-static int bssap_speech_from_lchan(const struct gsm_lchan *lchan)
-{
-	switch (lchan->type) {
-	case GSM_LCHAN_TCH_H:
-		switch (lchan->tch_mode) {
-		case GSM48_CMODE_SPEECH_V1:
-			return 0x05;
-		case GSM48_CMODE_SPEECH_AMR:
-			return 0x25;
-		default:
-			return -1;
-		}
-		break;
-	case GSM_LCHAN_TCH_F:
-		switch (lchan->tch_mode) {
-		case GSM48_CMODE_SPEECH_V1:
-			return 0x01;
-		case GSM48_CMODE_SPEECH_EFR:
-			return 0x11;
-		case GSM48_CMODE_SPEECH_AMR:
-			return 0x21;
-		default:
-			return -1;
-		}
-		break;
-	default:
-		return -1;
-	}
-}
-
-/* GSM 08.08 3.2.2.33 */
-static uint8_t lchan_to_chosen_channel(struct gsm_lchan *lchan)
-{
-	uint8_t channel_mode = 0, channel = 0;
-
-	switch (lchan->tch_mode) {
-	case GSM48_CMODE_SPEECH_V1:
-	case GSM48_CMODE_SPEECH_EFR:
-	case GSM48_CMODE_SPEECH_AMR:
-		channel_mode = 0x9;
-		break;
-	case GSM48_CMODE_SIGN:
-		channel_mode = 0x8;
-		break;
-	case GSM48_CMODE_DATA_14k5:
-		channel_mode = 0xe;
-		break;
-	case GSM48_CMODE_DATA_12k0:
-		channel_mode = 0xb;
-		break;
-	case GSM48_CMODE_DATA_6k0:
-		channel_mode = 0xc;
-		break;
-	case GSM48_CMODE_DATA_3k6:
-		channel_mode = 0xd;
-		break;
-	}
-
-	switch (lchan->type) {
-	case GSM_LCHAN_NONE:
-		channel = 0x0;
-		break;
-	case GSM_LCHAN_SDCCH:
-		channel = 0x1;
-		break;
-	case GSM_LCHAN_TCH_F:
-		channel = 0x8;
-		break;
-	case GSM_LCHAN_TCH_H:
-		channel = 0x9;
-		break;
-	case GSM_LCHAN_UNKNOWN:
-	default:
-		LOGP(DMSC, LOGL_ERROR, "Unknown lchan type: %p\n", lchan);
-		break;
-	}
-
-	return channel_mode << 4 | channel;
-}
-
 /* Add the LCLS BSS Status IE to a BSSMAP message. We assume this is
  * called on a msgb that was returned by gsm0808_create_ass_compl() */
 static void bssmap_add_lcls_status(struct msgb *msg, enum gsm0808_lcls_status status)
@@ -265,6 +183,7 @@ static void send_ass_compl(struct gsm_lchan *lchan, struct osmo_fsm_inst *fi, bo
 	struct gsm_subscriber_connection *conn;
 	struct sockaddr_storage *addr_local = NULL;
 	int perm_spch = 0;
+	uint8_t chosen_channel;
 
 	conn = lchan->conn;
 	OSMO_ASSERT(conn);
@@ -276,7 +195,7 @@ static void send_ass_compl(struct gsm_lchan *lchan, struct osmo_fsm_inst *fi, bo
 
 	/* Generate voice related fields */
 	if (voice) {
-		perm_spch = bssap_speech_from_lchan(lchan);
+		perm_spch = gsm0808_permitted_speech(lchan->type, lchan->tch_mode);
 		switch (conn->sccp.msc->a.asp_proto) {
 		case OSMO_SS7_ASP_PROT_IPA:
 			/* don't add any AoIP specific fields. CIC allocated by MSC */
@@ -293,9 +212,13 @@ static void send_ass_compl(struct gsm_lchan *lchan, struct osmo_fsm_inst *fi, bo
 		/* FIXME: AMR codec configuration must be derived from lchan1! */
 	}
 
+	chosen_channel = gsm0808_chosen_channel(lchan->tch_mode, lchan->type);
+	if (!chosen_channel)
+		LOGP(DMSC, LOGL_ERROR, "Unknown lchan type or TCH mode: %s\n", gsm_lchan_name(lchan));
+
 	/* Generate message */
 	resp = gsm0808_create_ass_compl(lchan->abis_ip.ass_compl.rr_cause,
-					lchan_to_chosen_channel(lchan),
+					chosen_channel,
 					lchan->encr.alg_id, perm_spch,
 					addr_local, sc_ptr, NULL);
 
