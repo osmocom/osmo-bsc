@@ -39,8 +39,8 @@ static const struct log_info log_info = {
 int main(int argc, char **argv)
 {
 	struct nat_rewrite *trie;
-
-	osmo_init_logging(&log_info);
+	void *tall_ctx = talloc_named_const(NULL, 1, "bsc_nat_trie_test");
+	osmo_init_logging2(tall_ctx, &log_info);
 
 	printf("Testing the trie\n");
 

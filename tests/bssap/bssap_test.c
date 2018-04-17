@@ -140,7 +140,9 @@ static const struct log_info log_info = {
 
 int main(int argc, char **argv)
 {
-	osmo_init_logging(&log_info);
+	void *tall_ctx = talloc_named_const(NULL, 1, "bssap_test");
+	msgb_talloc_ctx_init(tall_ctx, 0);
+	osmo_init_logging2(tall_ctx, &log_info);
 	log_set_use_color(osmo_stderr_target, 0);
 	log_set_print_timestamp(osmo_stderr_target, 0);
 	log_set_print_filename(osmo_stderr_target, 0);

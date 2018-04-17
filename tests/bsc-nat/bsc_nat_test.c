@@ -1559,9 +1559,10 @@ static const struct log_info log_info = {
 
 int main(int argc, char **argv)
 {
-	msgb_talloc_ctx_init(NULL, 0);
+	void *tall_ctx = talloc_named_const(NULL, 1, "bsc_nat_test");
+	msgb_talloc_ctx_init(tall_ctx, 0);
 	sccp_set_log_area(DLSCCP);
-	osmo_init_logging(&log_info);
+	osmo_init_logging2(tall_ctx, &log_info);
 
 	test_filter();
 	test_contrack();
