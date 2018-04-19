@@ -442,7 +442,7 @@ struct bsc_msc_data *paging_get_msc(struct gsm_bts *bts, struct bsc_subscr *bsub
 	return NULL;
 }
 
-/*! Flush all paging requests at a given BTS for a given MSC*/
+/*! Flush all paging requests at a given BTS for a given MSC (or NULL if all MSC should be flushed). */
 void paging_flush_bts(struct gsm_bts *bts, struct bsc_msc_data *msc)
 {
 	struct gsm_paging_request *req, *req2;
