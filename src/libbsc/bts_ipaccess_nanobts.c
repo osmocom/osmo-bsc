@@ -41,6 +41,7 @@
 #include <osmocom/core/logging.h>
 #include <osmocom/bsc/ipaccess.h>
 #include <osmocom/bsc/bts_ipaccess_nanobts_omlattr.h>
+#include <osmocom/bsc/paging.h>
 
 extern struct gsm_network *bsc_gsmnet;
 
@@ -357,8 +358,12 @@ void ipaccess_drop_rsl(struct gsm_bts_trx *trx)
 	if (!trx->rsl_link)
 		return;
 
+	LOGP(DLINP, LOGL_NOTICE, "(bts=%d,trx=%d) Dropping RSL link.\n", trx->bts->nr, trx->nr);
 	e1inp_sign_link_destroy(trx->rsl_link);
 	trx->rsl_link = NULL;
+
+	if (trx->bts->c0 == trx)
+		paging_flush_bts(trx->bts, NULL);
 }
 
 void ipaccess_drop_oml(struct gsm_bts *bts)
@@ -369,6 +374,7 @@ void ipaccess_drop_oml(struct gsm_bts *bts)
 	if (!bts->oml_link)
 		return;
 
+	LOGP(DLINP, LOGL_NOTICE, "(bts=%d) Dropping OML link.\n", bts->nr);
 	e1inp_sign_link_destroy(bts->oml_link);
 	bts->oml_link = NULL;
 	bts->uptime = 0;
