@@ -80,10 +80,6 @@ static void page_ms(struct gsm_paging_request *request)
 	unsigned int page_group;
 	struct gsm_bts *bts = request->bts;
 
-	/* the bts is down.. we will just wait for the paging to expire */
-	if (!bts->oml_link)
-		return;
-
 	log_set_context(LOG_CTX_BSC_SUBSCR, request->bsub);
 
 	LOGP(DPAG, LOGL_INFO, "(bts=%d) Going to send paging commands: imsi: %s tmsi: "
@@ -213,6 +209,10 @@ static void paging_handle_pending_requests(struct gsm_bts_paging_state *paging_b
 		if (can_send_pag_req(request->bts, request->chan_type) != 0)
 			goto skip_paging;
 	}
+
+	/* Skip paging if the bts is down. */
+	if (!request->bts->oml_link)
+		goto skip_paging;
 
 	/* handle the paging request now */
 	page_ms(request);
