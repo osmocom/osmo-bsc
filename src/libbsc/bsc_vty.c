@@ -61,6 +61,7 @@
 #include <osmocom/bsc/handover_vty.h>
 #include <osmocom/bsc/gsm_04_08_utils.h>
 #include <osmocom/bsc/acc_ramp.h>
+#include <osmocom/bsc/meas_feed.h>
 
 #include <inttypes.h>
 
@@ -1016,6 +1017,22 @@ static int config_write_net(struct vty *vty)
 	else
 		vty_out(vty, " periodic location update %u%s",
 			gsmnet->t3212 * 6, VTY_NEWLINE);
+
+	{
+		uint16_t meas_port;
+		char *meas_host;
+		const char *meas_scenario;
+
+		meas_feed_cfg_get(&meas_host, &meas_port);
+		meas_scenario = meas_feed_scenario_get();
+
+		if (meas_port)
+			vty_out(vty, " meas-feed destination %s %u%s",
+				meas_host, meas_port, VTY_NEWLINE);
+		if (strlen(meas_scenario) > 0)
+			vty_out(vty, " meas-feed scenario %s%s",
+				meas_scenario, VTY_NEWLINE);
+	}
 
 	return CMD_SUCCESS;
 }
@@ -4699,6 +4716,32 @@ DEFUN(cfg_net_no_per_loc_upd, cfg_net_no_per_loc_upd_cmd,
 	return CMD_SUCCESS;
 }
 
+#define MEAS_FEED_STR "Measurement Report export\n"
+
+DEFUN(cfg_net_meas_feed_dest, cfg_net_meas_feed_dest_cmd,
+	"meas-feed destination ADDR <0-65535>",
+	MEAS_FEED_STR "Where to forward Measurement Report feeds\n" "address or hostname\n" "port number\n")
+{
+	int rc;
+	const char *host = argv[0];
+	uint16_t port = atoi(argv[1]);
+
+	rc = meas_feed_cfg_set(host, port);
+	if (rc < 0)
+		return CMD_WARNING;
+
+	return CMD_SUCCESS;
+}
+
+DEFUN(cfg_net_meas_feed_scenario, cfg_net_meas_feed_scenario_cmd,
+	"meas-feed scenario NAME",
+	MEAS_FEED_STR "Set a name to include in the Measurement Report feeds\n" "Name string, up to 31 characters\n")
+{
+	meas_feed_scenario_set(argv[0]);
+
+	return CMD_SUCCESS;
+}
+
 extern int bsc_vty_init_extra(void);
 
 int bsc_vty_init(struct gsm_network *network)
@@ -4741,6 +4784,8 @@ int bsc_vty_init(struct gsm_network *network)
 	install_element(GSMNET_NODE, &cfg_net_per_loc_upd_cmd);
 	install_element(GSMNET_NODE, &cfg_net_no_per_loc_upd_cmd);
 	install_element(GSMNET_NODE, &cfg_net_dyn_ts_allow_tch_f_cmd);
+	install_element(GSMNET_NODE, &cfg_net_meas_feed_dest_cmd);
+	install_element(GSMNET_NODE, &cfg_net_meas_feed_scenario_cmd);
 
 	install_element_ve(&bsc_show_net_cmd);
 	install_element_ve(&show_bts_cmd);

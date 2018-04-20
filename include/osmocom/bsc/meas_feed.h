@@ -1,5 +1,4 @@
-#ifndef _OPENBSC_MEAS_FEED_H
-#define _OPENBSC_MEAS_FEED_H
+#pragma once
 
 #include <stdint.h>
 
@@ -37,5 +36,8 @@ enum meas_feed_msgtype {
 
 #define MEAS_FEED_VERSION	1
 
+int meas_feed_cfg_set(const char *dst_host, uint16_t dst_port);
+void meas_feed_scenario_set(const char *name);
 
-#endif
+void meas_feed_cfg_get(char **host, uint16_t *port);
+const char *meas_feed_scenario_get(void);

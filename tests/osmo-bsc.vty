@@ -1,0 +1,19 @@
+OsmoBSC> enable
+
+OsmoBSC# configure terminal
+OsmoBSC(config)# network
+OsmoBSC(config-net)# list
+...
+  meas-feed destination ADDR <0-65535>
+  meas-feed scenario NAME
+...
+
+OsmoBSC(config-net)# meas-feed destination 127.0.0.23 4223
+OsmoBSC(config-net)# meas-feed scenario foo23
+OsmoBSC(config-net)# show running-config
+...
+network
+...
+ meas-feed destination 127.0.0.23 4223
+ meas-feed scenario foo23
+...
