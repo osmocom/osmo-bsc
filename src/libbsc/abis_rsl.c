@@ -2072,7 +2072,7 @@ static int abis_rsl_rx_cchan(struct msgb *msg)
 	case RSL_MT_CBCH_LOAD_IND:
 		/* current load on the CBCH */
 		LOGP(DRSL, LOGL_NOTICE, "Unimplemented Abis RSL TRX message "
-			"type 0x%02x\n", rslh->c.msg_type);
+			"type %s\n", rsl_msg_name(rslh->c.msg_type));
 		break;
 	case 0x10: /* Ericsson specific: Immediate Assign Sent */
 		/* FIXME: Replace the messy message parsing below
