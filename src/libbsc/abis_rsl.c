@@ -2048,12 +2048,34 @@ static int rsl_rx_ccch_load(struct msgb *msg)
 	return 0;
 }
 
+/* Ericsson specific: Immediate Assign Sent */
+static int rsl_rx_ericsson_imm_assign_sent(struct msgb *msg)
+{
+	struct e1inp_sign_link *sign_link = msg->dst;
+	struct abis_rsl_dchan_hdr *dh = msgb_l2(msg);
+	uint32_t tlli;
+
+	LOGP(DRSL, LOGL_INFO, "IMM.ass sent\n");
+	msgb_pull(msg, sizeof(*dh));
+
+	/* FIXME: Move to TLV once we support defining TV types with V having len != 1 byte */
+	if(msg->len < 5)
+		LOGP(DRSL, LOGL_ERROR, "short IMM.ass sent message!\n");
+	else if(msg->data[0] != RSL_IE_ERIC_MOBILE_ID)
+		LOGP(DRSL, LOGL_ERROR, "unsupported IMM.ass message format! (please fix)\n");
+	else {
+		msgb_pull(msg, 1); /* drop previous data to use msg_pull_u32 */
+		tlli = msgb_pull_u32(msg);
+		pcu_tx_imm_ass_sent(sign_link->trx->bts, tlli);
+	}
+	return 0;
+}
+
 static int abis_rsl_rx_cchan(struct msgb *msg)
 {
 	struct e1inp_sign_link *sign_link = msg->dst;
 	struct abis_rsl_dchan_hdr *rslh = msgb_l2(msg);
 	int rc = 0;
-	uint32_t tlli;
 
 	msg->lchan = lchan_lookup(sign_link->trx, rslh->chan_nr,
 				  "Abis RSL rx CCHAN: ");
@@ -2074,19 +2096,8 @@ static int abis_rsl_rx_cchan(struct msgb *msg)
 		LOGP(DRSL, LOGL_NOTICE, "Unimplemented Abis RSL TRX message "
 			"type %s\n", rsl_msg_name(rslh->c.msg_type));
 		break;
-	case 0x10: /* Ericsson specific: Immediate Assign Sent */
-		/* FIXME: Replace the messy message parsing below
-		 * with proper TV parser */
-		LOGP(DRSL, LOGL_INFO, "IMM.ass sent\n");
-		if(msg->len < 9)
-			LOGP(DRSL, LOGL_ERROR, "short IMM.ass sent message!\n");
-		else if(msg->data[4] != 0xf1)
-			LOGP(DRSL, LOGL_ERROR, "unsupported IMM.ass message format! (please fix)\n");
-		else {
-			msgb_pull(msg, 5); /* drop previous data to use msg_pull_u32 */
-			tlli = msgb_pull_u32(msg);
-			pcu_tx_imm_ass_sent(sign_link->trx->bts, tlli);
-		}
+	case RSL_MT_ERICSSON_IMM_ASS_SENT:
+		rc = rsl_rx_ericsson_imm_assign_sent(msg);
 		break;
 	default:
 		LOGP(DRSL, LOGL_NOTICE, "Unknown Abis RSL TRX message type "
