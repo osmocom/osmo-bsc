@@ -48,6 +48,9 @@ PKG_CHECK_MODULES(LIBOSMONETIF, libosmo-netif >= 0.1.0)
 PKG_CHECK_MODULES(LIBOSMOSIGTRAN, libosmo-sigtran >= 0.8.0)
 PKG_CHECK_MODULES(LIBOSMOSCCP, libosmo-sccp >= 0.0.2)
 PKG_CHECK_MODULES(LIBOSMOMGCPCLIENT, libosmo-mgcp-client >= 1.2.0)
+
+#NOTE: osmo-bsc does not depend on libosmo-legacy-mgcp anymore, but we still
+#      need the dependancy for osmo-bsc-nat, which still uses the old API.
 PKG_CHECK_MODULES(LIBOSMOLEGACYMGCP, libosmo-legacy-mgcp >= 1.0.0)
 
 dnl checks for header files
