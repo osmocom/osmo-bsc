@@ -448,6 +448,22 @@ static const char *get_mgw_ep_name(struct gsm_subscriber_connection *conn)
 	return ep_name;
 }
 
+#define assignment_failed(fi, cause) \
+	_assignment_failed(fi, cause, __FILE__, __LINE__)
+static void _assignment_failed(struct osmo_fsm_inst *fi, enum gsm0808_cause cause,
+			       const char *file, int line)
+{
+	struct gsm_subscriber_connection *conn = fi->priv;
+	struct msgb *resp = NULL;
+
+	LOGPFSMLSRC(fi, LOGL_ERROR, file, line, "Assignment failed: %s\n", gsm0808_cause_name(cause));
+
+	resp = gsm0808_create_assignment_failure(cause, NULL);
+	sigtran_send(conn, resp, fi);
+	if (fi->state != ST_ACTIVE)
+		osmo_fsm_inst_state_chg(fi, ST_ACTIVE, 0, 0);
+}
+
 /* We're on an active subscriber connection, passing DTAP back and forth */
 static void gscon_fsm_active(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
@@ -486,8 +502,7 @@ static void gscon_fsm_active(struct osmo_fsm_inst *fi, uint32_t event, void *dat
 			    mgcp_conn_create(conn->network->mgw.client, fi, GSCON_EV_MGW_FAIL_BTS,
 					     GSCON_EV_MGW_CRCX_RESP_BTS, &conn_peer);
 			if (!conn->user_plane.fi_bts) {
-				resp = gsm0808_create_assignment_failure(GSM0808_CAUSE_EQUIPMENT_FAILURE, NULL);
-				sigtran_send(conn, resp, fi);
+				assignment_failed(fi, GSM0808_CAUSE_EQUIPMENT_FAILURE);
 				return;
 			}
 			break;
@@ -505,8 +520,7 @@ static void gscon_fsm_active(struct osmo_fsm_inst *fi, uint32_t event, void *dat
 				send_ass_compl(conn->lchan, fi, false);
 				return;
 			} else if (rc != 0) {
-				resp = gsm0808_create_assignment_failure(GSM0808_CAUSE_EQUIPMENT_FAILURE, NULL);
-				sigtran_send(conn, resp, fi);
+				assignment_failed(fi, GSM0808_CAUSE_EQUIPMENT_FAILURE);
 				return;
 			}
 
@@ -521,8 +535,7 @@ static void gscon_fsm_active(struct osmo_fsm_inst *fi, uint32_t event, void *dat
 				 conn->user_plane.full_rate);
 
 			/* The requested channel mode is not supported  */
-			resp = gsm0808_create_assignment_failure(GSM0808_CAUSE_REQ_CODEC_TYPE_OR_CONFIG_NOT_SUPP, NULL);
-			sigtran_send(conn, resp, fi);
+			assignment_failed(fi, GSM0808_CAUSE_REQ_CODEC_TYPE_OR_CONFIG_NOT_SUPP);
 			break;
 		}
 		break;
@@ -566,7 +579,6 @@ static void gscon_fsm_wait_crcx_bts(struct osmo_fsm_inst *fi, uint32_t event, vo
 {
 	struct gsm_subscriber_connection *conn = fi->priv;
 	struct mgcp_conn_peer *conn_peer = NULL;
-	struct msgb *resp = NULL;
 	int rc;
 
 	switch (event) {
@@ -576,9 +588,7 @@ static void gscon_fsm_wait_crcx_bts(struct osmo_fsm_inst *fi, uint32_t event, vo
 		/* Check if the MGW has assigned an enpoint to us, otherwise we
 		 * can not proceed. */
 		if (strlen(conn_peer->endpoint) <= 0) {
-			resp = gsm0808_create_assignment_failure(GSM0808_CAUSE_EQUIPMENT_FAILURE, NULL);
-			sigtran_send(conn, resp, fi);
-			osmo_fsm_inst_state_chg(fi, ST_ACTIVE, 0, 0);
+			assignment_failed(fi, GSM0808_CAUSE_EQUIPMENT_FAILURE);
 			return;
 		}
 
@@ -597,9 +607,7 @@ static void gscon_fsm_wait_crcx_bts(struct osmo_fsm_inst *fi, uint32_t event, vo
 		conn->user_plane.rtp_ip = osmo_ntohl(inet_addr(conn_peer->addr));
 		rc = gsm0808_assign_req(conn, conn->user_plane.chan_mode, conn->user_plane.full_rate);
 		if (rc != 0) {
-			resp = gsm0808_create_assignment_failure(GSM0808_CAUSE_RQSTED_SPEECH_VERSION_UNAVAILABLE, NULL);
-			sigtran_send(conn, resp, fi);
-			osmo_fsm_inst_state_chg(fi, ST_ACTIVE, 0, 0);
+			assignment_failed(fi, GSM0808_CAUSE_RQSTED_SPEECH_VERSION_UNAVAILABLE);
 			return;
 		}
 
@@ -627,7 +635,6 @@ static void gscon_fsm_wait_ass_cmpl(struct osmo_fsm_inst *fi, uint32_t event, vo
 	struct gsm_lchan *lchan = conn->lchan;
 	struct mgcp_conn_peer conn_peer;
 	struct in_addr addr;
-	struct msgb *resp = NULL;
 	int rc;
 
 	switch (event) {
@@ -652,9 +659,7 @@ static void gscon_fsm_wait_ass_cmpl(struct osmo_fsm_inst *fi, uint32_t event, vo
 			osmo_fsm_inst_state_chg(fi, ST_WAIT_MDCX_BTS, MGCP_MGW_TIMEOUT, MGCP_MGW_TIMEOUT_TIMER_NR);
 			rc = mgcp_conn_modify(conn->user_plane.fi_bts, GSCON_EV_MGW_MDCX_RESP_BTS, &conn_peer);
 			if (rc != 0) {
-				resp = gsm0808_create_assignment_failure(GSM0808_CAUSE_EQUIPMENT_FAILURE, NULL);
-				sigtran_send(conn, resp, fi);
-				osmo_fsm_inst_state_chg(fi, ST_ACTIVE, 0, 0);
+				assignment_failed(fi, GSM0808_CAUSE_EQUIPMENT_FAILURE);
 				return;
 			}
 			break;
@@ -676,9 +681,12 @@ static void gscon_fsm_wait_ass_cmpl(struct osmo_fsm_inst *fi, uint32_t event, vo
 
 		break;
 	case GSCON_EV_RR_ASS_FAIL:
-		resp = gsm0808_create_assignment_failure(GSM0808_CAUSE_RQSTED_TERRESTRIAL_RESOURCE_UNAVAILABLE, NULL);
-		sigtran_send(conn, resp, fi);
-		osmo_fsm_inst_state_chg(fi, ST_ACTIVE, 0, 0);
+		{
+			enum gsm0808_cause cause = GSM0808_CAUSE_RQSTED_TERRESTRIAL_RESOURCE_UNAVAILABLE;
+			if (data)
+				cause = *((enum gsm0808_cause*)data);
+			assignment_failed(fi, cause);
+		}
 		break;
 	case GSCON_EV_MO_DTAP:
 		forward_dtap(conn, (struct msgb *)data, fi);
@@ -701,7 +709,6 @@ static void gscon_fsm_wait_mdcx_bts(struct osmo_fsm_inst *fi, uint32_t event, vo
 	struct gsm_subscriber_connection *conn = fi->priv;
 	struct mgcp_conn_peer conn_peer;
 	struct sockaddr_in *sin = NULL;
-	struct msgb *resp = NULL;
 
 	switch (event) {
 	case GSCON_EV_MGW_MDCX_RESP_BTS:
@@ -732,9 +739,7 @@ static void gscon_fsm_wait_mdcx_bts(struct osmo_fsm_inst *fi, uint32_t event, vo
 								  GSCON_EV_MGW_FAIL_MSC,
 								  GSCON_EV_MGW_CRCX_RESP_MSC, &conn_peer);
 			if (!conn->user_plane.fi_msc) {
-				resp = gsm0808_create_assignment_failure(GSM0808_CAUSE_EQUIPMENT_FAILURE, NULL);
-				sigtran_send(conn, resp, fi);
-				osmo_fsm_inst_state_chg(fi, ST_ACTIVE, 0, 0);
+				assignment_failed(fi, GSM0808_CAUSE_EQUIPMENT_FAILURE);
 				return;
 			}
 			break;
@@ -997,11 +1002,8 @@ static void gscon_fsm_allstate(struct osmo_fsm_inst *fi, uint32_t event, void *d
 		 * with an assignment failure */
 		OSMO_ASSERT(fi->state != ST_INIT && fi->state != ST_WAIT_CC);
 		if (fi->state == ST_WAIT_CRCX_BTS || fi->state == ST_WAIT_ASS_CMPL || fi->state == ST_WAIT_MDCX_BTS
-		    || fi->state == ST_WAIT_CRCX_MSC) {
-			resp = gsm0808_create_assignment_failure(GSM0808_CAUSE_EQUIPMENT_FAILURE, NULL);
-			sigtran_send(conn, resp, fi);
-			osmo_fsm_inst_state_chg(fi, ST_ACTIVE, 0, 0);
-		}
+		    || fi->state == ST_WAIT_CRCX_MSC)
+			assignment_failed(fi, GSM0808_CAUSE_EQUIPMENT_FAILURE);
 		break;
 	case GSCON_EV_A_CLEAR_CMD:
 		/* MSC tells us to cleanly shut down */
@@ -1111,7 +1113,6 @@ static void gscon_pre_term(struct osmo_fsm_inst *fi, enum osmo_fsm_term_cause ca
 static int gscon_timer_cb(struct osmo_fsm_inst *fi)
 {
 	struct gsm_subscriber_connection *conn = fi->priv;
-	struct msgb *resp = NULL;
 
 	switch (fi->T) {
 	case 993210:
@@ -1127,14 +1128,10 @@ static int gscon_timer_cb(struct osmo_fsm_inst *fi)
 		osmo_fsm_inst_term(fi, OSMO_FSM_TERM_REGULAR, NULL);
 		break;
 	case GSM0808_T10_TIMER_NR:	/* Assignment Failed */
-		resp = gsm0808_create_assignment_failure(GSM0808_CAUSE_RADIO_INTERFACE_FAILURE, NULL);
-		sigtran_send(conn, resp, fi);
-		osmo_fsm_inst_state_chg(fi, ST_ACTIVE, 0, 0);
+		assignment_failed(fi, GSM0808_CAUSE_RADIO_INTERFACE_FAILURE);
 		break;
 	case MGCP_MGW_TIMEOUT_TIMER_NR:	/* Assignment failed (no response from MGW) */
-		resp = gsm0808_create_assignment_failure(GSM0808_CAUSE_EQUIPMENT_FAILURE, NULL);
-		sigtran_send(conn, resp, fi);
-		osmo_fsm_inst_state_chg(fi, ST_ACTIVE, 0, 0);
+		assignment_failed(fi, GSM0808_CAUSE_EQUIPMENT_FAILURE);
 		break;
 	case MGCP_MGW_HO_TIMEOUT_TIMER_NR:	/* Handover failed (no response from MGW) */
 		osmo_fsm_inst_state_chg(fi, ST_ACTIVE, 0, 0);
