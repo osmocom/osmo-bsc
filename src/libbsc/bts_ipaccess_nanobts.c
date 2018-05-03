@@ -294,6 +294,46 @@ static int sw_activ_rep(struct msgb *mb)
 	return 0;
 }
 
+static struct gsm_bts_trx_ts *gsm_bts_trx_ts(struct gsm_network *net,
+					     int bts_nr, int trx_nr, int ts_nr)
+{
+	struct gsm_bts *bts;
+	struct gsm_bts_trx *trx;
+	bts = gsm_bts_num(net, bts_nr);
+	if (!bts)
+		return NULL;
+	trx = gsm_bts_trx_by_nr(bts, trx_nr);
+	if (!trx)
+		return NULL;
+	if (ts_nr < 0 || ts_nr > ARRAY_SIZE(trx->ts))
+		return NULL;
+	return &trx->ts[ts_nr];
+}
+
+static void nm_rx_opstart_ack_chan(struct abis_om_fom_hdr *foh)
+{
+	struct gsm_bts_trx_ts *ts;
+	ts = gsm_bts_trx_ts(bsc_gsmnet, foh->obj_inst.bts_nr, foh->obj_inst.trx_nr, foh->obj_inst.ts_nr);
+	if (!ts) {
+		LOGP(DNM, LOGL_ERROR, "%s Channel OPSTART ACK for non-existent TS\n",
+		     abis_nm_dump_foh(foh));
+		return;
+	}
+
+	dyn_ts_init(ts);
+}
+
+static void nm_rx_opstart_ack(struct abis_om_fom_hdr *foh)
+{
+	switch (foh->obj_class) {
+	case NM_OC_CHANNEL:
+		nm_rx_opstart_ack_chan(foh);
+		break;
+	default:
+		break;
+	}
+}
+
 /* Callback function to be called every time we receive a signal from NM */
 static int bts_ipa_nm_sig_cb(unsigned int subsys, unsigned int signal,
 		     void *handler_data, void *signal_data)
@@ -307,6 +347,9 @@ static int bts_ipa_nm_sig_cb(unsigned int subsys, unsigned int signal,
 	case S_NM_STATECHG_OPER:
 	case S_NM_STATECHG_ADM:
 		return nm_statechg_event(signal, signal_data);
+	case S_NM_OPSTART_ACK:
+		nm_rx_opstart_ack(signal_data);
+		return 0;
 	default:
 		break;
 	}

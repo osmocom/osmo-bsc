@@ -678,6 +678,14 @@ static int abis_nm_rx_lmt_event(struct msgb *mb)
 	return 0;
 }
 
+static int abis_nm_rx_opstart_ack(struct msgb *mb)
+{
+	struct abis_om_fom_hdr *foh = msgb_l3(mb);
+	DEBUGPFOH(DNM, foh, "Opstart ACK\n");
+	osmo_signal_dispatch(SS_NM, S_NM_OPSTART_ACK, foh);
+	return 0;
+}
+
 bool all_trx_rsl_connected_unlocked(const struct gsm_bts *bts)
 {
 	const struct gsm_bts_trx *trx;
@@ -802,7 +810,7 @@ static int abis_nm_rcvmsg_fom(struct msgb *mb)
 		ret = abis_nm_rx_lmt_event(mb);
 		break;
 	case NM_MT_OPSTART_ACK:
-		DEBUGPFOH(DNM, foh, "Opstart ACK\n");
+		abis_nm_rx_opstart_ack(mb);
 		break;
 	case NM_MT_SET_CHAN_ATTR_ACK:
 		DEBUGPFOH(DNM, foh, "Set Channel Attributes ACK\n");
@@ -1896,6 +1904,7 @@ int abis_nm_set_channel_attr(struct gsm_bts_trx_ts *ts, uint8_t chan_comb)
 	if (bts->type == GSM_BTS_TYPE_BS11)
 		msgb_tlv_put(msg, 0x59, 1, &zero);
 
+	DEBUGPFOH(DNM, foh, "%s(): sending %s\n", __func__, msgb_hexdump(msg));
 	return abis_nm_sendmsg(bts, msg);
 }
 
