@@ -438,7 +438,11 @@ static void gscon_fsm_active(struct osmo_fsm_inst *fi, uint32_t event, void *dat
 			 * change back to ST_ACTIVE (here) immediately. */
 			rc = gsm0808_assign_req(conn, conn->user_plane.chan_mode,
 						conn->user_plane.full_rate);
-			if (rc != 0) {
+
+			if (rc == 1) {
+				send_ass_compl(conn->lchan, fi, false);
+				return;
+			} else if (rc != 0) {
 				resp = gsm0808_create_assignment_failure(GSM0808_CAUSE_EQUIPMENT_FAILURE, NULL);
 				sigtran_send(conn, resp, fi);
 				return;

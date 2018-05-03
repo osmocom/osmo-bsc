@@ -296,16 +296,17 @@ static int chan_compat_with_mode(struct gsm_lchan *lchan, int chan_mode, int ful
 	}
 }
 
-/**
- * Send a GSM08.08 Assignment Request. Right now this does not contain the
- * audio codec type or the allowed rates for the config. It is assumed that
- * this is for audio handling only. In case the current channel does not allow
- * the selected mode a new one will be allocated.
- *
- * TODO: Add multirate configuration, make it work for more than audio.
- */
+/*! Send a GSM08.08 Assignment Request. Right now this does not contain the
+ *  audio codec type or the allowed rates for the config. In case the current
+ *  channel does not allow the selected mode a new one will be allocated.
+ *  \param[out] conn related subscriber connection
+ *  \param[in] chan_mode mode of the channel (see enum gsm48_chan_mode)
+ *  \param[in] full_rate select full rate or half rate channel
+ *  \returns 0 on success, 1 when no operation is neccessary, -1 on failure */
 int gsm0808_assign_req(struct gsm_subscriber_connection *conn, int chan_mode, int full_rate)
 {
+	/* TODO: Add multirate configuration, make it work for more than audio. */
+
 	struct bsc_api *api;
 	api = conn->network->bsc_api;
 
@@ -313,6 +314,11 @@ int gsm0808_assign_req(struct gsm_subscriber_connection *conn, int chan_mode, in
 		if (handle_new_assignment(conn, chan_mode, full_rate) != 0)
 			goto error;
 	} else {
+		/* Check if the channel is already in the requested mode, if
+		 * yes, we skip unnecessary channel mode modify operations. */
+		if (conn->lchan->tch_mode == chan_mode)
+			return 1;
+
 		if (chan_mode == GSM48_CMODE_SPEECH_AMR)
 			handle_mr_config(conn, conn->lchan, full_rate);
 
