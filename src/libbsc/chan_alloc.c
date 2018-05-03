@@ -37,21 +37,29 @@
 
 bool ts_is_usable(const struct gsm_bts_trx_ts *ts)
 {
-	if (!trx_is_usable(ts->trx))
+	if (!trx_is_usable(ts->trx)) {
+		LOGP(DRLL, LOGL_DEBUG, "%s not usable\n", gsm_trx_name(ts->trx));
 		return false;
+	}
 
 	/* If a TCH/F_PDCH TS is busy changing, it is already taken or not
 	 * yet available. */
 	if (ts->pchan == GSM_PCHAN_TCH_F_PDCH) {
-		if (ts->flags & TS_F_PDCH_PENDING_MASK)
+		if (ts->flags & TS_F_PDCH_PENDING_MASK) {
+			LOGP(DRLL, LOGL_DEBUG, "%s in switchover, not available\n",
+			     gsm_ts_and_pchan_name(ts));
 			return false;
+		}
 	}
 
 	/* If a dynamic channel is busy changing, it is already taken or not
 	 * yet available. */
 	if (ts->pchan == GSM_PCHAN_TCH_F_TCH_H_PDCH) {
-		if (ts->dyn.pchan_is != ts->dyn.pchan_want)
+		if (ts->dyn.pchan_is != ts->dyn.pchan_want) {
+			LOGP(DRLL, LOGL_DEBUG, "%s in switchover, not available\n",
+			     gsm_ts_and_pchan_name(ts));
 			return false;
+		}
 	}
 
 	return true;
@@ -218,8 +226,14 @@ _lc_find_trx(struct gsm_bts_trx *trx, enum gsm_phys_chan_config pchan,
 	int j, start, stop, dir, ss;
 	int check_subslots;
 
-	if (!trx_is_usable(trx))
+#define LOGPLCHANALLOC(fmt, args...) \
+		LOGP(DRLL, LOGL_DEBUG, "looking for lchan %s as %s: " fmt, \
+		     gsm_pchan_name(pchan), gsm_pchan_name(as_pchan), ## args)
+
+	if (!trx_is_usable(trx)) {
+		LOGPLCHANALLOC("%s trx not usable\n", gsm_trx_name(trx));
 		return NULL;
+	}
 
 	if (trx->bts->chan_alloc_reverse) {
 		/* check TS 7..0 */
@@ -239,28 +253,44 @@ _lc_find_trx(struct gsm_bts_trx *trx, enum gsm_phys_chan_config pchan,
 			continue;
 		/* The caller first selects what kind of TS to search in, e.g. looking for exact
 		 * GSM_PCHAN_TCH_F, or maybe among dynamic GSM_PCHAN_TCH_F_TCH_H_PDCH... */
-		if (ts->pchan != pchan)
+		if (ts->pchan != pchan) {
+			LOGPLCHANALLOC("%s is != %s\n", gsm_ts_and_pchan_name(ts),
+				       gsm_pchan_name(pchan));
 			continue;
+		}
 		/* Next, is this timeslot in or can it be switched to the pchan we want to use it for? */
-		if (!ts_usable_as_pchan(ts, as_pchan))
+		if (!ts_usable_as_pchan(ts, as_pchan)) {
+			LOGPLCHANALLOC("%s is not usable as %s\n", gsm_ts_and_pchan_name(ts),
+				       gsm_pchan_name(as_pchan));
 			continue;
+		}
 		/* If we need to switch it, after above check we are also allowed to switch it, and we
 		 * will always use the first lchan after the switch. Return that lchan and rely on the
 		 * caller to perform the pchan switchover. */
-		if (ts_pchan(ts) != as_pchan)
+		if (ts_pchan(ts) != as_pchan) {
+			LOGPLCHANALLOC("%s is a match, will switch to %s\n", gsm_ts_and_pchan_name(ts),
+				       gsm_pchan_name(as_pchan));
 			return ts->lchan;
+		}
 
 		/* TS is in desired pchan mode. Go ahead and check for an available lchan. */
 		check_subslots = ts_subslots(ts);
 		for (ss = 0; ss < check_subslots; ss++) {
 			struct gsm_lchan *lc = &ts->lchan[ss];
 			if (lc->type == GSM_LCHAN_NONE &&
-			    lc->state == LCHAN_S_NONE)
+			    lc->state == LCHAN_S_NONE) {
+				LOGPLCHANALLOC("%s ss=%d is available\n", gsm_ts_and_pchan_name(ts),
+					       lc->nr);
 				return lc;
+			}
+			LOGPLCHANALLOC("%s ss=%d in type=%s,state=%s not suitable\n",
+				       gsm_ts_and_pchan_name(ts), lc->nr, gsm_lchant_name(lc->type),
+				       gsm_lchans_name(lc->state));
 		}
 	}
 
 	return NULL;
+#undef LOGPLCHANALLOC
 }
 
 static struct gsm_lchan *
@@ -307,6 +337,8 @@ struct gsm_lchan *lchan_alloc(struct gsm_bts *bts, enum gsm_chan_t type,
 {
 	struct gsm_lchan *lchan = NULL;
 	enum gsm_phys_chan_config first, first_cbch, second, second_cbch;
+
+	LOGP(DRLL, LOGL_DEBUG, "bts-%d lchan_alloc(%s)\n", bts->nr, gsm_lchant_name(type));
 
 	switch (type) {
 	case GSM_LCHAN_SDCCH:
