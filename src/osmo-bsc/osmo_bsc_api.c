@@ -425,8 +425,9 @@ void bsc_assign_compl(struct gsm_subscriber_connection *conn, uint8_t rr_cause)
 /*! BSC->MSC: Assignment of lchan failed. */
 void bsc_assign_fail(struct gsm_subscriber_connection *conn, uint8_t cause, uint8_t *rr_cause)
 {
-	LOGP(DMSC, LOGL_INFO, "Tx MSC ASSIGN FAIL\n");
-	osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_RR_ASS_FAIL, NULL);
+	LOGPFSML(conn->fi, LOGL_ERROR, "Assignment failure: BSSMAP: '%s' from RR: '%s'\n",
+		 gsm0808_cause_name(cause), rr_cause ? rr_cause_name(*rr_cause) : "(none)");
+	osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_RR_ASS_FAIL, &cause);
 }
 
 /*! BSC->MSC: RR conn has been cleared. */
