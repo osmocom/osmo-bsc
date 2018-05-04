@@ -448,7 +448,9 @@ void lchan_free(struct gsm_lchan *lchan)
 	lchan->type = GSM_LCHAN_NONE;
 
 
-	if (lchan->conn) {
+	if (lchan->conn
+	    && !(lchan->ts->pchan == GSM_PCHAN_TCH_F_TCH_H_PDCH
+		 && lchan->ts->dyn.pchan_is != lchan->ts->dyn.pchan_want)) {
 		struct lchan_signal_data sig;
 
 		/* We might kill an active channel... */
@@ -479,7 +481,9 @@ void lchan_free(struct gsm_lchan *lchan)
 	sig.bts = lchan->ts->trx->bts;
 	osmo_signal_dispatch(SS_CHALLOC, S_CHALLOC_FREED, &sig);
 
-	if (lchan->conn) {
+	if (lchan->conn
+	    && !(lchan->ts->pchan == GSM_PCHAN_TCH_F_TCH_H_PDCH
+		 && lchan->ts->dyn.pchan_is != lchan->ts->dyn.pchan_want)) {
 		LOGP(DRLL, LOGL_ERROR, "the subscriber connection should be gone.\n");
 		lchan->conn = NULL;
 	}
