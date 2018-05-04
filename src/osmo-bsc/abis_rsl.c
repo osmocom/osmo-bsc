@@ -1328,18 +1328,21 @@ static int rsl_rx_chan_act_nack(struct msgb *msg)
 		return -1;
 	}
 
-	LOGP(DRSL, LOGL_ERROR, "%s CHANNEL ACTIVATE NACK ",
-		gsm_lchan_name(msg->lchan));
-
 	/* BTS has rejected channel activation ?!? */
-	if (dh->ie_chan != RSL_IE_CHAN_NR)
+	if (dh->ie_chan != RSL_IE_CHAN_NR) {
+		LOGP(DRSL, LOGL_ERROR, "%s CHANNEL ACTIVATE NACK, and chan nr mismatches\n",
+		     gsm_lchan_name(msg->lchan));
 		return -EINVAL;
+	}
 
 	rsl_tlv_parse(&tp, dh->data, msgb_l2len(msg)-sizeof(*dh));
 	if (TLVP_PRESENT(&tp, RSL_IE_CAUSE)) {
 		const uint8_t *cause = TLVP_VAL(&tp, RSL_IE_CAUSE);
+		LOGP(DRSL, LOGL_ERROR, "%s CHANNEL ACTIVATE NACK: ",
+		     gsm_lchan_name(msg->lchan));
 		print_rsl_cause(LOGL_ERROR, cause,
 				TLVP_LEN(&tp, RSL_IE_CAUSE));
+		LOGPC(DRSL, LOGL_ERROR, "\n");
 		msg->lchan->error_cause = *cause;
 		if (*cause != RSL_ERR_RCH_ALR_ACTV_ALLOC) {
 			rsl_lchan_mark_broken(msg->lchan, "NACK on activation");
@@ -1347,10 +1350,10 @@ static int rsl_rx_chan_act_nack(struct msgb *msg)
 			rsl_rf_chan_release(msg->lchan, 1, SACCH_DEACTIVATE);
 
 	} else {
+		LOGP(DRSL, LOGL_ERROR, "%s CHANNEL ACTIVATE NACK, no cause IE\n",
+		     gsm_lchan_name(msg->lchan));
 		rsl_lchan_mark_broken(msg->lchan, "NACK on activation no IE");
 	}
-
-	LOGPC(DRSL, LOGL_ERROR, "\n");
 
 	send_lchan_signal(S_LCHAN_ACTIVATE_NACK, msg->lchan, NULL);
 	return 0;
