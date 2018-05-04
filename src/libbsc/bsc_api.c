@@ -156,8 +156,6 @@ static int handle_new_assignment(struct gsm_subscriber_connection *conn, int cha
 	/* remember that we have the channel */
 	conn->secondary_lchan = new_lchan;
 	new_lchan->conn = conn;
-
-	rsl_lchan_set_state(new_lchan, LCHAN_S_ACT_REQ);
 	return 0;
 }
 

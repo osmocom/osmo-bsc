@@ -694,7 +694,10 @@ int rsl_chan_activate_lchan(struct gsm_lchan *lchan, uint8_t act_type,
 
 	rate_ctr_inc(&lchan->ts->trx->bts->bts_ctrs->ctr[BTS_CTR_CHAN_ACT_TOTAL]);
 
-	return abis_rsl_sendmsg(msg);
+	rc = abis_rsl_sendmsg(msg);
+	if (!rc)
+		rsl_lchan_set_state(lchan, LCHAN_S_ACT_REQ);
+	return rc;
 }
 
 /* Chapter 8.4.9: Modify channel mode on BTS side */
