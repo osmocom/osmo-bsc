@@ -181,6 +181,9 @@ static void write_msc(struct vty *vty, struct bsc_msc_data *msc)
 		vty_out(vty, " msc-addr %s%s",
 			msc->a.msc_addr_name, VTY_NEWLINE);
 	}
+
+	/* write MGW configuration */
+	mgcp_client_config_write(vty, " ");
 }
 
 static int config_write_msc(struct vty *vty)
