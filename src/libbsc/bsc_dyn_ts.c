@@ -23,7 +23,7 @@
 #include <osmocom/bsc/gsm_data.h>
 #include <osmocom/bsc/abis_rsl.h>
 
-void tchf_pdch_ts_init(struct gsm_bts_trx_ts *ts)
+static void tchf_pdch_ts_init(struct gsm_bts_trx_ts *ts)
 {
 	int rc;
 
@@ -33,7 +33,7 @@ void tchf_pdch_ts_init(struct gsm_bts_trx_ts *ts)
 		     gsm_ts_name(ts), gsm_pchan_name(ts->pchan));
 }
 
-void tchf_tchh_pdch_ts_init(struct gsm_bts_trx_ts *ts)
+static void tchf_tchh_pdch_ts_init(struct gsm_bts_trx_ts *ts)
 {
 	dyn_ts_switchover_start(ts, GSM_PCHAN_PDCH);
 }
