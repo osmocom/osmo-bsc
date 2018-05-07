@@ -2495,6 +2495,16 @@ int rsl_ipacc_mdcx(struct gsm_lchan *lchan, uint32_t ip, uint16_t port,
 	return abis_rsl_sendmsg(msg);
 }
 
+static bool check_gprs_enabled(struct gsm_bts_trx_ts *ts)
+{
+	if (ts->trx->bts->gprs.mode == BTS_GPRS_NONE) {
+		LOGP(DRSL, LOGL_NOTICE, "%s: GPRS mode is 'none': not activating PDCH.\n",
+		     gsm_ts_and_pchan_name(ts));
+		return false;
+	}
+	return true;
+}
+
 int rsl_ipacc_pdch_activate(struct gsm_bts_trx_ts *ts, int act)
 {
 	struct msgb *msg = rsl_msgb_alloc();
@@ -2512,8 +2522,9 @@ int rsl_ipacc_pdch_activate(struct gsm_bts_trx_ts *ts, int act)
 	}
 
 	if (act){
-		/* Callers should heed the GPRS mode. */
-		OSMO_ASSERT(ts->trx->bts->gprs.mode != BTS_GPRS_NONE);
+		if (!check_gprs_enabled(ts))
+			return -ENOTSUP;
+
 		msg_type = RSL_MT_IPAC_PDCH_ACT;
 		ts->flags |= TS_F_PDCH_ACT_PENDING;
 	} else {
@@ -2647,8 +2658,6 @@ int dyn_ts_switchover_start(struct gsm_bts_trx_ts *ts,
 	int rc = -EIO;
 
 	OSMO_ASSERT(ts->pchan == GSM_PCHAN_TCH_F_TCH_H_PDCH);
-	DEBUGP(DRSL, "%s starting switchover to %s\n",
-	       gsm_ts_and_pchan_name(ts), gsm_pchan_name(to_pchan));
 
 	if (ts->dyn.pchan_is != ts->dyn.pchan_want) {
 		LOGP(DRSL, LOGL_ERROR,
@@ -2679,6 +2688,12 @@ int dyn_ts_switchover_start(struct gsm_bts_trx_ts *ts,
 			return -EAGAIN;
 		}
 	}
+
+	if (to_pchan == GSM_PCHAN_PDCH && !check_gprs_enabled(ts))
+		return -ENOTSUP;
+
+	DEBUGP(DRSL, "%s starting switchover to %s\n",
+	       gsm_ts_and_pchan_name(ts), gsm_pchan_name(to_pchan));
 
 	/* Record that we're busy switching. */
 	ts->dyn.pchan_want = to_pchan;

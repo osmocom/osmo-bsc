@@ -27,31 +27,14 @@ void tchf_pdch_ts_init(struct gsm_bts_trx_ts *ts)
 {
 	int rc;
 
-	if (ts->trx->bts->gprs.mode == BTS_GPRS_NONE) {
-		LOGP(DRSL, LOGL_NOTICE, "%s: GPRS mode is 'none':"
-		     " not activating PDCH.\n",
-		     gsm_ts_and_pchan_name(ts));
-		return;
-	}
-
-	LOGP(DRSL, LOGL_DEBUG, "%s: trying to PDCH ACT\n",
-	     gsm_ts_and_pchan_name(ts));
-
 	rc = rsl_ipacc_pdch_activate(ts, 1);
-	if (rc != 0)
+	if (rc != 0 && rc != -ENOTSUP)
 		LOGP(DRSL, LOGL_ERROR, "%s %s: PDCH ACT failed\n",
 		     gsm_ts_name(ts), gsm_pchan_name(ts->pchan));
 }
 
 void tchf_tchh_pdch_ts_init(struct gsm_bts_trx_ts *ts)
 {
-	if (ts->trx->bts->gprs.mode == BTS_GPRS_NONE) {
-		LOGP(DRSL, LOGL_NOTICE, "%s: GPRS mode is 'none':"
-		     " not activating PDCH.\n",
-		     gsm_ts_and_pchan_name(ts));
-		return;
-	}
-
 	dyn_ts_switchover_start(ts, GSM_PCHAN_PDCH);
 }
 
