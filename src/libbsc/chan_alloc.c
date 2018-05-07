@@ -133,9 +133,86 @@ int bts_count_free_ts(struct gsm_bts *bts, enum gsm_phys_chan_config pchan)
 	return count;
 }
 
+static bool ts_usable_as_pchan(struct gsm_bts_trx_ts *ts,
+			       enum gsm_phys_chan_config as_pchan)
+{
+	switch (ts->pchan) {
+	case GSM_PCHAN_TCH_F_PDCH:
+		if (ts->flags & TS_F_PDCH_PENDING_MASK) {
+			/* currently being switched over. Not usable. */
+			return false;
+		}
+		switch (as_pchan) {
+		case GSM_PCHAN_TCH_F:
+		case GSM_PCHAN_PDCH:
+			/* continue to check below. */
+			break;
+		default:
+			return false;
+		}
+		break;
+
+	case GSM_PCHAN_TCH_F_TCH_H_PDCH:
+		if (ts->dyn.pchan_is != ts->dyn.pchan_want) {
+			/* currently being switched over. Not usable. */
+			return false;
+		}
+		switch (as_pchan) {
+		case GSM_PCHAN_TCH_F:
+		case GSM_PCHAN_TCH_H:
+		case GSM_PCHAN_PDCH:
+			/* continue to check below. */
+			break;
+		default:
+			return false;
+		}
+		break;
+
+	default:
+		/* static timeslots never switch. */
+		return ts->pchan == as_pchan;
+	}
+
+	/* Dynamic timeslots -- Checks depending on the current actual pchan mode: */
+	switch (ts_pchan(ts)) {
+	case GSM_PCHAN_NONE:
+		/* Not initialized, possibly because GPRS was disabled. We may switch. */
+		return true;
+
+	case GSM_PCHAN_PDCH:
+		/* This slot is in PDCH mode and available to switch pchan mode. But check for
+		 * error states: */
+		if (ts->lchan->state != LCHAN_S_NONE && ts->lchan->state != LCHAN_S_ACTIVE)
+			return false;
+		return true;
+
+	case GSM_PCHAN_TCH_F:
+	case GSM_PCHAN_TCH_H:
+		/* No need to switch at all? */
+		if (ts_pchan(ts) == as_pchan)
+			return true;
+
+		/* If any lchan is in use, we can't change the pchan kind */
+		{
+			int ss;
+			int subslots = ts_subslots(ts);
+			for (ss = 0; ss < subslots; ss++) {
+				struct gsm_lchan *lc = &ts->lchan[ss];
+				if (lc->type != GSM_LCHAN_NONE || lc->state != LCHAN_S_NONE)
+					return false;
+			}
+		}
+		return true;
+
+	default:
+		/* Not implemented. */
+		return false;
+	}
+}
+
 static struct gsm_lchan *
 _lc_find_trx(struct gsm_bts_trx *trx, enum gsm_phys_chan_config pchan,
-	     enum gsm_phys_chan_config dyn_as_pchan)
+	     enum gsm_phys_chan_config as_pchan)
 {
 	struct gsm_bts_trx_ts *ts;
 	int j, start, stop, dir, ss;
@@ -160,72 +237,21 @@ _lc_find_trx(struct gsm_bts_trx *trx, enum gsm_phys_chan_config pchan,
 		ts = &trx->ts[j];
 		if (!ts_is_usable(ts))
 			continue;
+		/* The caller first selects what kind of TS to search in, e.g. looking for exact
+		 * GSM_PCHAN_TCH_F, or maybe among dynamic GSM_PCHAN_TCH_F_TCH_H_PDCH... */
 		if (ts->pchan != pchan)
 			continue;
-
-		/*
-		 * Allocation for fully dynamic timeslots
-		 * (does not apply for ip.access style GSM_PCHAN_TCH_F_PDCH)
-		 *
-		 * Note the special nature of a dynamic timeslot in PDCH mode:
-		 * in PDCH mode, typically, lchan->type is GSM_LCHAN_NONE and
-		 * lchan->state is LCHAN_S_NONE -- an otherwise unused slot
-		 * becomes PDCH implicitly. In the same sense, this channel
-		 * allocator will never be asked to find an available PDCH
-		 * slot; only TCH/F or TCH/H will be requested, and PDCH mode
-		 * means that it is available for switchover.
-		 *
-		 * A dynamic timeslot in PDCH mode may be switched to TCH/F or
-		 * TCH/H. If a dyn TS is already in TCH/F or TCH/H mode, it
-		 * means that it is in use and its mode can't be switched.
-		 *
-		 * The logic concerning channels for TCH/F is trivial: there is
-		 * only one channel, so a dynamic TS in TCH/F mode is already
-		 * taken and not available for allocation. For TCH/H, we need
-		 * to check whether a dynamic timeslot is already in TCH/H mode
-		 * and whether one of the two channels is still available.
-		 */
-		switch (pchan) {
-		case GSM_PCHAN_TCH_F_TCH_H_PDCH:
-			if (ts->dyn.pchan_is != ts->dyn.pchan_want) {
-				/* The TS's mode is being switched. Not
-				 * available anymore/yet. */
-				DEBUGP(DRLL, "%s already in switchover\n",
-				       gsm_ts_and_pchan_name(ts));
-				continue;
-			}
-			if (ts->dyn.pchan_is == GSM_PCHAN_PDCH) {
-				/* This slot is available. Still check for
-				 * error states to be sure; in all cases the
-				 * first lchan will be used. */
-				if (ts->lchan->state != LCHAN_S_NONE
-				    && ts->lchan->state != LCHAN_S_ACTIVE)
-					continue;
-				return ts->lchan;
-			}
-			if (ts->dyn.pchan_is != dyn_as_pchan)
-				/* not applicable. */
-				continue;
-			/* The requested type matches the dynamic timeslot's
-			 * current mode. A channel may still be available
-			 * (think TCH/H). */
-			check_subslots = ts_subslots(ts);
-			break;
-
-		case GSM_PCHAN_TCH_F_PDCH:
-			/* Available for voice when in PDCH mode */
-			if (ts_pchan(ts) != GSM_PCHAN_PDCH)
-				continue;
-			/* Subslots of a PDCH ts don't need to be checked. */
+		/* Next, is this timeslot in or can it be switched to the pchan we want to use it for? */
+		if (!ts_usable_as_pchan(ts, as_pchan))
+			continue;
+		/* If we need to switch it, after above check we are also allowed to switch it, and we
+		 * will always use the first lchan after the switch. Return that lchan and rely on the
+		 * caller to perform the pchan switchover. */
+		if (ts_pchan(ts) != as_pchan)
 			return ts->lchan;
 
-		default:
-			/* Not a dynamic channel, there is only one pchan kind: */
-			check_subslots = ts_subslots(ts);
-			break;
-		}
-
-		/* Is a sub-slot still available? */
+		/* TS is in desired pchan mode. Go ahead and check for an available lchan. */
+		check_subslots = ts_subslots(ts);
 		for (ss = 0; ss < check_subslots; ss++) {
 			struct gsm_lchan *lc = &ts->lchan[ss];
 			if (lc->type == GSM_LCHAN_NONE &&
@@ -264,7 +290,7 @@ _lc_dyn_find_bts(struct gsm_bts *bts, enum gsm_phys_chan_config pchan,
 static struct gsm_lchan *
 _lc_find_bts(struct gsm_bts *bts, enum gsm_phys_chan_config pchan)
 {
-	return _lc_dyn_find_bts(bts, pchan, GSM_PCHAN_NONE);
+	return _lc_dyn_find_bts(bts, pchan, pchan);
 }
 
 /* Allocate a logical channel.
@@ -320,7 +346,8 @@ struct gsm_lchan *lchan_alloc(struct gsm_bts *bts, enum gsm_chan_t type,
 
 			/* try dynamic TCH/F_PDCH */
 			if (lchan == NULL) {
-				lchan = _lc_find_bts(bts, GSM_PCHAN_TCH_F_PDCH);
+				lchan = _lc_dyn_find_bts(bts, GSM_PCHAN_TCH_F_PDCH,
+							 GSM_PCHAN_TCH_F);
 				/* TCH/F_PDCH will be used as TCH/F */
 				if (lchan)
 					type = GSM_LCHAN_TCH_F;
@@ -349,7 +376,8 @@ struct gsm_lchan *lchan_alloc(struct gsm_bts *bts, enum gsm_chan_t type,
 		}
 		/* If we don't have TCH/H either, try dynamic TCH/F_PDCH */
 		if (!lchan) {
-			lchan = _lc_find_bts(bts, GSM_PCHAN_TCH_F_PDCH);
+			lchan = _lc_dyn_find_bts(bts, GSM_PCHAN_TCH_F_PDCH,
+						 GSM_PCHAN_TCH_F);
 			/* TCH/F_PDCH used as TCH/F -- here, type is already
 			 * set to GSM_LCHAN_TCH_F, but for clarity's sake... */
 			if (lchan)
@@ -396,7 +424,8 @@ struct gsm_lchan *lchan_alloc(struct gsm_bts *bts, enum gsm_chan_t type,
 		 */
 		/* If we don't have TCH/F either, try dynamic TCH/F_PDCH */
 		if (!lchan) {
-			lchan = _lc_find_bts(bts, GSM_PCHAN_TCH_F_PDCH);
+			lchan = _lc_dyn_find_bts(bts, GSM_PCHAN_TCH_F_PDCH,
+						 GSM_PCHAN_TCH_F);
 			if (lchan)
 				type = GSM_LCHAN_TCH_F;
 		}

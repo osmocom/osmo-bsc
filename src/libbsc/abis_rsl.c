@@ -569,7 +569,6 @@ int rsl_chan_activate_lchan(struct gsm_lchan *lchan, uint8_t act_type,
 	 * released.
 	 */
 	if (lchan->ts->pchan == GSM_PCHAN_TCH_F_TCH_H_PDCH
-	    && lchan->ts->dyn.pchan_is == GSM_PCHAN_PDCH
 	    && lchan->ts->dyn.pchan_is == lchan->ts->dyn.pchan_want) {
 		enum gsm_phys_chan_config pchan_want;
 		pchan_want = pchan_for_lchant(lchan->type);
