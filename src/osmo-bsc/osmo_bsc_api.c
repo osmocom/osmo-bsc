@@ -44,7 +44,7 @@ static bool msc_connected(struct gsm_subscriber_connection *conn)
 		return false;
 
 	/* Reset procedure not (yet) executed */
-	if (a_reset_conn_ready(conn->sccp.msc->a.reset) == false)
+	if (a_reset_conn_ready(conn->sccp.msc->a.reset_fsm) == false)
 		return false;
 
 	return true;

@@ -124,7 +124,9 @@ struct bsc_msc_data {
 		struct osmo_sccp_addr msc_addr;
 		char *msc_addr_name;
 
-		struct a_reset_ctx *reset;
+		/* Pointer to the osmo-fsm that controls the
+		 * BSSMAP RESET procedure */
+		struct osmo_fsm_inst *reset_fsm;
 	} a;
 };
 
