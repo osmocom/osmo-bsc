@@ -55,6 +55,8 @@ static void bootstrap_om_bts(struct gsm_bts *bts)
 {
 	LOGP(DNM, LOGL_NOTICE, "bootstrapping OML for BTS %u\n", bts->nr);
 
+	gsm_bts_mark_all_ts_uninitialized(bts);
+
 	if (!bts->nokia.skip_reset) {
 		if (!bts->nokia.did_reset)
 			abis_nm_reset(bts, 1);
@@ -66,6 +68,8 @@ static void bootstrap_om_trx(struct gsm_bts_trx *trx)
 {
 	LOGP(DNM, LOGL_NOTICE, "bootstrapping OML for TRX %u/%u\n",
 	     trx->bts->nr, trx->nr);
+
+	gsm_trx_mark_all_ts_uninitialized(trx);
 }
 
 static int shutdown_om(struct gsm_bts *bts)

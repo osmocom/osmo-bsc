@@ -56,12 +56,18 @@ static char *get_oml_status(const struct gsm_bts *bts)
 	return "disconnected";
 }
 
+static bool oml_is_ts_ready(const struct gsm_bts_trx_ts *ts)
+{
+	return ts && ts->mo.nm_state.operational == NM_OPSTATE_ENABLED;
+}
+
 struct gsm_bts_model bts_model_nanobts = {
 	.type = GSM_BTS_TYPE_NANOBTS,
 	.name = "nanobts",
 	.start = bts_model_nanobts_start,
 	.oml_rcvmsg = &abis_nm_rcvmsg,
 	.oml_status = &get_oml_status,
+	.oml_is_ts_ready = oml_is_ts_ready,
 	.e1line_bind_ops = bts_model_nanobts_e1line_bind_ops, 
 	.nm_att_tlvdef = {
 		.def = {
@@ -320,7 +326,7 @@ static void nm_rx_opstart_ack_chan(struct abis_om_fom_hdr *foh)
 		return;
 	}
 
-	dyn_ts_init(ts);
+	gsm_ts_check_init(ts);
 }
 
 static void nm_rx_opstart_ack(struct abis_om_fom_hdr *foh)
@@ -425,6 +431,8 @@ void ipaccess_drop_oml(struct gsm_bts *bts)
 	/* we have issues reconnecting RSL, drop everything. */
 	llist_for_each_entry(trx, &bts->trx_list, list)
 		ipaccess_drop_rsl(trx);
+
+	gsm_bts_mark_all_ts_uninitialized(bts);
 
 	bts->ip_access.flags = 0;
 

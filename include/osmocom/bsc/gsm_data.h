@@ -459,6 +459,8 @@ enum {
 /* One Timeslot in a TRX */
 struct gsm_bts_trx_ts {
 	struct gsm_bts_trx *trx;
+	bool initialized;
+
 	/* number of this timeslot at the TRX */
 	uint8_t nr;
 
@@ -605,6 +607,7 @@ struct gsm_bts_model {
 	int (*start)(struct gsm_network *net);
 	int (*oml_rcvmsg)(struct msgb *msg);
 	char * (*oml_status)(const struct gsm_bts *bts);
+	bool (*oml_is_ts_ready)(const struct gsm_bts_trx_ts *ts);
 
 	void (*e1line_bind_ops)(struct e1inp_line *line);
 
@@ -1386,5 +1389,9 @@ int gsm_bts_get_radio_link_timeout(const struct gsm_bts *bts);
 void gsm_bts_set_radio_link_timeout(struct gsm_bts *bts, int value);
 
 bool classmark_is_r99(struct gsm_classmark *cm);
+
+void gsm_ts_check_init(struct gsm_bts_trx_ts *ts);
+void gsm_trx_mark_all_ts_uninitialized(struct gsm_bts_trx *trx);
+void gsm_bts_mark_all_ts_uninitialized(struct gsm_bts *bts);
 
 #endif /* _GSM_DATA_H */

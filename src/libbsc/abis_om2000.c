@@ -2737,8 +2737,10 @@ void abis_om2k_trx_init(struct gsm_bts_trx *trx)
 		     bts->nr, 255, trx->nr);
 
 	for (i = 0; i < ARRAY_SIZE(trx->ts); i++) {
-		om2k_mo_init(&trx->ts[i].rbs2000.om2k_mo, OM2K_MO_CLS_TS,
+		struct gsm_bts_trx_ts *ts = &trx->ts[i];
+		om2k_mo_init(&ts->rbs2000.om2k_mo, OM2K_MO_CLS_TS,
 				bts->nr, trx->nr, i);
+		gsm_ts_check_init(ts);
 	}
 }
 
