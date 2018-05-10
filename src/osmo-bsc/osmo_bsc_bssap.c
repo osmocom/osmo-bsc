@@ -59,7 +59,7 @@ enum gsm0808_permitted_speech audio_support_to_gsm88(struct gsm_audio_support *a
 			return GSM0808_PERM_HR3;
 			break;
 		default:
-			LOGP(DMSC, LOGL_ERROR, "Wrong speech mode: %d\n",
+			LOGP(DMSC, LOGL_ERROR, "Wrong speech mode: hr%d, using hr1 instead\n",
 			     audio->ver);
 			return GSM0808_PERM_HR1;
 		}
@@ -75,7 +75,7 @@ enum gsm0808_permitted_speech audio_support_to_gsm88(struct gsm_audio_support *a
 			return GSM0808_PERM_FR3;
 			break;
 		default:
-			LOGP(DMSC, LOGL_ERROR, "Wrong speech mode: %d\n",
+			LOGP(DMSC, LOGL_ERROR, "Wrong speech mode: fr%d, using fr1 instead\n",
 			     audio->ver);
 			return GSM0808_PERM_FR1;
 		}
