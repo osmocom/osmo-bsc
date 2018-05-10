@@ -1001,8 +1001,8 @@ static int config_write_net(struct vty *vty)
 	VTY_OUT_TIMER(3119);
 	VTY_OUT_TIMER(3122);
 	VTY_OUT_TIMER(3141);
-	vty_out(vty, " dyn_ts_allow_tch_f %d%s",
-		gsmnet->dyn_ts_allow_tch_f ? 1 : 0, VTY_NEWLINE);
+	if (!gsmnet->dyn_ts_allow_tch_f)
+		vty_out(vty, " dyn_ts_allow_tch_f 0%s", VTY_NEWLINE);
 	if (gsmnet->tz.override != 0) {
 		if (gsmnet->tz.dst)
 			vty_out(vty, " timezone %d %d %d%s",
@@ -4615,7 +4615,7 @@ DEFUN(cfg_net_encryption,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_net_dyn_ts_allow_tch_f,
+DEFUN_DEPRECATED(cfg_net_dyn_ts_allow_tch_f,
       cfg_net_dyn_ts_allow_tch_f_cmd,
       "dyn_ts_allow_tch_f (0|1)",
       "Allow or disallow allocating TCH/F on TCH_F_TCH_H_PDCH timeslots\n"
@@ -4624,6 +4624,8 @@ DEFUN(cfg_net_dyn_ts_allow_tch_f,
 {
 	struct gsm_network *gsmnet = gsmnet_from_vty(vty);
 	gsmnet->dyn_ts_allow_tch_f = atoi(argv[0]) ? true : false;
+	vty_out(vty, "%% dyn_ts_allow_tch_f is deprecated, rather use msc/codec-list to pick codecs%s",
+		VTY_NEWLINE);
 	return CMD_SUCCESS;
 }
 

@@ -52,6 +52,8 @@ struct gsm_network *bsc_network_init(void *ctx)
 		.mnc = 1,
 	};
 
+	net->dyn_ts_allow_tch_f = true;
+
 	/* Permit a compile-time default of A5/3 and A5/1 */
 	net->a5_encryption_mask = (1 << 3) | (1 << 1);
 
