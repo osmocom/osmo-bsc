@@ -1187,6 +1187,9 @@ static const struct rate_ctr_group_desc bsc_ctrg_desc = {
 #define GSM_T3119_DEFAULT 10
 #define GSM_T3122_DEFAULT 10
 #define GSM_T3141_DEFAULT 10
+#define GSM_T7_DEFAULT 10	/* inter-BSC MO Handover first timeout, in seconds */
+#define GSM_T8_DEFAULT 10	/* inter-BSC MO Handover second timeout, in seconds */
+#define GSM_T101_DEFAULT 10	/* inter-BSC MT Handover timeout, in seconds */
 
 struct gsm_tz {
 	int override; /* if 0, use system's time zone instead. */
@@ -1221,7 +1224,7 @@ struct gsm_network {
 
 	/* timer values */
 	int T3101;
-	int T3103;
+	int T3103; /*< Handover timeout */
 	int T3105;
 	int T3107;
 	int T3109;
@@ -1232,6 +1235,9 @@ struct gsm_network {
 	int T3119;
 	int T3122;
 	int T3141;
+	int T7; /*< inter-BSC handover MO timeout from Handover Required to Handover Command */
+	int T8; /*< inter-BSC handover MO timeout from Handover Command to final Clear*/
+	int T101; /*< inter-BSC handover MT timeout from Handover Request to Handover Accept */
 
 	enum gsm_chan_t ctype_by_chreq[_NUM_CHREQ_T];
 

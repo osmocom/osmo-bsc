@@ -64,6 +64,9 @@ struct gsm_network *gsm_network_init(void *ctx)
 	net->T3119 = GSM_T3119_DEFAULT;
 	net->T3122 = GSM_T3122_DEFAULT;
 	net->T3141 = GSM_T3141_DEFAULT;
+	net->T7 = GSM_T7_DEFAULT;
+	net->T8 = GSM_T8_DEFAULT;
+	net->T101 = GSM_T101_DEFAULT;
 
 	return net;
 }
