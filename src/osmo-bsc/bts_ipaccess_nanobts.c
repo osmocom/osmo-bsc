@@ -42,6 +42,7 @@
 #include <osmocom/bsc/ipaccess.h>
 #include <osmocom/bsc/bts_ipaccess_nanobts_omlattr.h>
 #include <osmocom/bsc/paging.h>
+#include <osmocom/bsc/timeslot_fsm.h>
 
 static int bts_model_nanobts_start(struct gsm_network *net);
 static void bts_model_nanobts_e1line_bind_ops(struct e1inp_line *line);
@@ -169,7 +170,7 @@ static int nm_statechg_event(int evt, struct nm_statechg_signal_data *nsd)
 		if (new_state->operational == NM_OPSTATE_DISABLED &&
 		    new_state->availability == NM_AVSTATE_DEPENDENCY) {
 			enum abis_nm_chan_comb ccomb =
-						abis_nm_chcomb4pchan(ts->pchan);
+						abis_nm_chcomb4pchan(ts->pchan_from_config);
 			if (abis_nm_set_channel_attr(ts, ccomb) == -EINVAL) {
 				ipaccess_drop_oml(trx->bts);
 				return -1;
@@ -305,8 +306,12 @@ static void nm_rx_opstart_ack_chan(struct msgb *oml_msg)
 	if (!ts)
 		/* error already logged in abis_nm_get_ts() */
 		return;
+	if (!ts->fi) {
+		LOG_TS(ts, LOGL_ERROR, "Channel OPSTART ACK for uninitialized TS\n");
+		return;
+	}
 
-	gsm_ts_check_init(ts);
+	osmo_fsm_inst_dispatch(ts->fi, TS_EV_OML_READY, NULL);
 }
 
 static void nm_rx_opstart_ack(struct msgb *oml_msg)
@@ -413,7 +418,7 @@ void ipaccess_drop_oml(struct gsm_bts *bts)
 	llist_for_each_entry(trx, &bts->trx_list, list)
 		ipaccess_drop_rsl(trx);
 
-	gsm_bts_mark_all_ts_uninitialized(bts);
+	gsm_bts_all_ts_dispatch(bts, TS_EV_OML_DOWN, NULL);
 
 	bts->ip_access.flags = 0;
 

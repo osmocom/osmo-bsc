@@ -28,6 +28,7 @@
 #include <osmocom/bsc/bsc_subscr_conn_fsm.h>
 #include <osmocom/bsc/gsm_data.h>
 #include <osmocom/bsc/osmo_bsc_lcls.h>
+#include <osmocom/bsc/mgw_endpoint_fsm.h>
 #include <osmocom/mgcp_client/mgcp_client_fsm.h>
 
 struct value_string lcls_event_names[] = {
@@ -228,24 +229,24 @@ void lcls_apply_config(struct gsm_subscriber_connection *conn)
 
 static void lcls_break_local_switching(struct gsm_subscriber_connection *conn)
 {
-	struct mgcp_conn_peer peer;
-	struct sockaddr_in *sin;
+	struct mgcp_conn_peer mdcx_info;
 
 	LOGPFSM(conn->lcls.fi, "=== HERE IS WHERE WE DISABLE LCLS\n");
-	if (!conn->user_plane.fi_msc) {
+	if (!conn->user_plane.mgw_endpoint_ci_msc) {
 		/* the MGCP FSM has died, e.g. due to some MGCP/SDP parsing error */
 		LOGPFSML(conn->lcls.fi, LOGL_NOTICE, "Cannot disable LCLS without MSC-side MGCP FSM\n");
 		return;
 	}
 
-	sin = (struct sockaddr_in *)&conn->user_plane.aoip_rtp_addr_remote;
-	OSMO_ASSERT(sin->sin_family == AF_INET);
+	mdcx_info = (struct mgcp_conn_peer){
+		.port = conn->user_plane.msc_assigned_rtp_port,
+	};
+	osmo_strlcpy(mdcx_info.addr, conn->user_plane.msc_assigned_rtp_addr, sizeof(mdcx_info.addr));
+	mgcp_pick_codec(&mdcx_info, conn->lchan);
 
-	memset(&peer, 0, sizeof(peer));
-	peer.port = htons(sin->sin_port);
-	osmo_strlcpy(peer.addr, inet_ntoa(sin->sin_addr), sizeof(peer.addr));
-	bsc_subscr_pick_codec(&peer, conn);
-	mgcp_conn_modify(conn->user_plane.fi_msc, 0, &peer);
+	mgw_endpoint_ci_request(conn->user_plane.mgw_endpoint_ci_msc,
+				MGCP_VERB_MDCX, &mdcx_info,
+				NULL, 0, 0, NULL);
 }
 
 static bool lcls_enable_possible(struct gsm_subscriber_connection *conn)
@@ -547,26 +548,35 @@ static void lcls_locally_switched_onenter(struct osmo_fsm_inst *fi, uint32_t pre
 {
 	struct gsm_subscriber_connection *conn = fi->priv;
 	struct gsm_subscriber_connection *conn_other = conn->lcls.other;
-	struct mgcp_conn_peer peer;
-	struct sockaddr_in *sin;
+	const struct mgcp_conn_peer *other_mgw_info;
+	struct mgcp_conn_peer mdcx_info;
 
 	OSMO_ASSERT(conn_other);
 
 	LOGPFSM(fi, "=== HERE IS WHERE WE ENABLE LCLS\n");
-	if (!conn->user_plane.fi_msc) {
+	if (!conn->user_plane.mgw_endpoint_ci_msc) {
+		LOGPFSML(fi, LOGL_ERROR, "Cannot enable LCLS without MSC-side MGCP FSM. FIXME\n");
+		return;
+	}
+	if (!conn_other->user_plane.mgw_endpoint_ci_msc) {
 		LOGPFSML(fi, LOGL_ERROR, "Cannot enable LCLS without MSC-side MGCP FSM. FIXME\n");
 		return;
 	}
 
-	sin = (struct sockaddr_in *)&conn_other->user_plane.aoip_rtp_addr_local;
-	OSMO_ASSERT(sin->sin_family == AF_INET);
+	other_mgw_info = mgwep_ci_get_rtp_info(conn_other->user_plane.mgw_endpoint_ci_msc);
+	if (!other_mgw_info) {
+		LOGPFSML(fi, LOGL_ERROR, "Cannot enable LCLS without RTP port info of MSC-side"
+			 " -- missing CRCX?\n");
+		return;
+	}
 
-	memset(&peer, 0, sizeof(peer));
-	peer.port = htons(sin->sin_port);
-	osmo_strlcpy(peer.addr, inet_ntoa(sin->sin_addr), sizeof(peer.addr));
-	bsc_subscr_pick_codec(&peer, conn);
-	mgcp_conn_modify(conn->user_plane.fi_msc, 0, &peer);
-
+	mdcx_info = *other_mgw_info;
+	/* Make sure the request doesn't want to use the other side's endpoint string. */
+	mdcx_info.endpoint[0] = 0;
+	mgcp_pick_codec(&mdcx_info, conn->lchan);
+	mgw_endpoint_ci_request(conn->user_plane.mgw_endpoint_ci_msc,
+				MGCP_VERB_MDCX, &mdcx_info,
+				NULL, 0, 0, NULL);
 }
 
 static void lcls_locally_switched_wait_break_fn(struct osmo_fsm_inst *fi, uint32_t event, void *data)
@@ -766,3 +776,35 @@ struct osmo_fsm lcls_fsm = {
 	.log_subsys = DLCLS,
 	.event_names = lcls_event_names,
 };
+
+/* Add the LCLS BSS Status IE to a BSSMAP message. We assume this is
+ * called on a msgb that was returned by gsm0808_create_ass_compl() */
+static void bssmap_add_lcls_status(struct msgb *msg, enum gsm0808_lcls_status status)
+{
+	OSMO_ASSERT(msg->l3h[0] == BSSAP_MSG_BSS_MANAGEMENT);
+	OSMO_ASSERT(msg->l3h[2] == BSS_MAP_MSG_ASSIGMENT_COMPLETE ||
+		    msg->l3h[2] == BSS_MAP_MSG_HANDOVER_RQST_ACKNOWLEDGE ||
+		    msg->l3h[2] == BSS_MAP_MSG_HANDOVER_COMPLETE ||
+		    msg->l3h[2] == BSS_MAP_MSG_HANDOVER_PERFORMED);
+	OSMO_ASSERT(msgb_tailroom(msg) >= 2);
+
+	/* append IE to end of message */
+	msgb_tv_put(msg, GSM0808_IE_LCLS_BSS_STATUS, status);
+	/* increment the "length" byte in the BSSAP header */
+	msg->l3h[1] += 2;
+}
+
+/* Add (append) the LCLS BSS Status IE to a BSSMAP message, if there is any LCLS
+ * active on the given \a conn */
+void bssmap_add_lcls_status_if_needed(struct gsm_subscriber_connection *conn, struct msgb *msg)
+{
+	enum gsm0808_lcls_status status = lcls_get_status(conn);
+	if (status != 0xff) {
+		LOGPFSM(conn->fi, "Adding LCLS BSS-Status (%s) to %s\n",
+			gsm0808_lcls_status_name(status),
+			gsm0808_bssmap_name(msg->l3h[2]));
+		bssmap_add_lcls_status(msg, status);
+	}
+}
+
+

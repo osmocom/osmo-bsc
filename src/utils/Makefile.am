@@ -46,7 +46,6 @@ endif
 
 bs11_config_SOURCES = \
 	bs11_config.c \
-	stubs.c \
 	$(NULL)
 
 bs11_config_LDADD = \
@@ -118,7 +117,6 @@ osmo_meas_udp2db_CFLAGS = \
 
 meas_json_SOURCES = \
 	meas_json.c \
-	stubs.c \
 	$(NULL)
 
 meas_json_LDADD = \

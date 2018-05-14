@@ -54,8 +54,8 @@ ipaccess_config_LDADD = \
 	$(top_builddir)/src/osmo-bsc/bts_ipaccess_nanobts.o \
 	$(top_builddir)/src/osmo-bsc/bts_ipaccess_nanobts_omlattr.o \
 	$(top_builddir)/src/osmo-bsc/gsm_data.o \
-	$(top_builddir)/src/osmo-bsc/net_init.o \
 	$(top_builddir)/src/osmo-bsc/gsm_timers.o \
+	$(top_builddir)/src/osmo-bsc/net_init.o \
 	$(OSMO_LIBS) \
 	$(NULL)
 

@@ -19,6 +19,7 @@ struct bsc_subscr {
 };
 
 const char *bsc_subscr_name(struct bsc_subscr *bsub);
+const char *bsc_subscr_id(struct bsc_subscr *bsub);
 
 struct bsc_subscr *bsc_subscr_find_or_create_by_imsi(struct llist_head *list,
 						     const char *imsi);

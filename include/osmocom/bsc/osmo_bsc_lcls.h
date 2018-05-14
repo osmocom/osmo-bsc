@@ -38,3 +38,4 @@ void lcls_apply_config(struct gsm_subscriber_connection *conn);
 
 extern struct osmo_fsm lcls_fsm;
 
+void bssmap_add_lcls_status_if_needed(struct gsm_subscriber_connection *conn, struct msgb *msg);

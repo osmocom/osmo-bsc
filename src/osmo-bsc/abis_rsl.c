@@ -31,7 +31,6 @@
 #include <osmocom/bsc/gsm_04_08_rr.h>
 #include <osmocom/gsm/gsm_utils.h>
 #include <osmocom/bsc/abis_rsl.h>
-#include <osmocom/bsc/chan_alloc.h>
 #include <osmocom/bsc/bsc_rll.h>
 #include <osmocom/bsc/debug.h>
 #include <osmocom/gsm/tlv.h>
@@ -45,9 +44,13 @@
 #include <osmocom/core/talloc.h>
 #include <osmocom/bsc/pcu_if.h>
 #include <osmocom/bsc/bsc_api.h>
-#include <osmocom/bsc/bsc_subscr_conn_fsm.h>
 #include <osmocom/netif/rtp.h>
 #include <osmocom/bsc/gsm_timers.h>
+#include <osmocom/bsc/bsc_subscr_conn_fsm.h>
+#include <osmocom/bsc/timeslot_fsm.h>
+#include <osmocom/bsc/lchan_select.h>
+#include <osmocom/bsc/lchan_fsm.h>
+#include <osmocom/bsc/handover_fsm.h>
 
 #define RSL_ALLOC_SIZE		1024
 #define RSL_ALLOC_HEADROOM	128
@@ -57,12 +60,6 @@ enum sacch_deact {
 	SACCH_DEACTIVATE,
 };
 
-static int rsl_send_imm_assignment(struct gsm_lchan *lchan);
-static void error_timeout_cb(void *data);
-static int dyn_ts_switchover_continue(struct gsm_bts_trx_ts *ts);
-static int dyn_ts_switchover_failed(struct gsm_bts_trx_ts *ts, int rc);
-static void dyn_ts_switchover_complete(struct gsm_lchan *lchan);
-
 static void send_lchan_signal(int sig_no, struct gsm_lchan *lchan,
 			      struct gsm_meas_rep *resp)
 {
@@ -70,21 +67,6 @@ static void send_lchan_signal(int sig_no, struct gsm_lchan *lchan,
 	sig.lchan = lchan;
 	sig.mr = resp;
 	osmo_signal_dispatch(SS_LCHAN, sig_no, &sig);
-}
-
-static void do_lchan_free(struct gsm_lchan *lchan)
-{
-	/* We start the error timer to make the channel available again */
-	if (lchan->state == LCHAN_S_REL_ERR) {
-		osmo_timer_setup(&lchan->error_timer, error_timeout_cb, lchan);
-		osmo_timer_schedule(&lchan->error_timer,
-				    T_def_get(lchan->ts->trx->bts->network->T_defs,
-					      993111, T_S, -1),
-				    0);
-	} else {
-		rsl_lchan_set_state(lchan, LCHAN_S_NONE);
-	}
-	lchan_free(lchan);
 }
 
 static void count_codecs(struct gsm_bts *bts, struct gsm_lchan *lchan)
@@ -189,32 +171,28 @@ static int build_encr_info(uint8_t *out, struct gsm_lchan *lchan)
 	return lchan->encr.key_len + 1;
 }
 
-static void print_rsl_cause(int lvl, const uint8_t *cause_v, uint8_t cause_len)
+/* If the TLV contain an RSL Cause IE, return the RSL cause name and point *rsl_cause_pp at the cause
+ * value. If there is no Cause IE, return NULL and write NULL to *rsl_cause_pp. If NULL is passed as
+ * rsl_cause_pp, ignore it. Implementation choice: presence of a Cause IE cannot be indicated by a zero
+ * cause, because that would mean RSL_ERR_RADIO_IF_FAIL; a pointer-to-pointer can return NULL or point to
+ * a cause value. */
+static const char *rsl_cause_name(struct tlv_parsed *tp, const uint8_t **rsl_cause_pp)
 {
-	int i;
+	static char buf[128];
+	if (rsl_cause_pp)
+		*rsl_cause_pp = NULL;
 
-	LOGPC(DRSL, lvl, "CAUSE=0x%02x(%s) ",
-		cause_v[0], rsl_err_name(cause_v[0]));
-	for (i = 1; i < cause_len-1; i++)
-		LOGPC(DRSL, lvl, "%02x ", cause_v[i]);
+	if (TLVP_PRESENT(tp, RSL_IE_CAUSE)) {
+		const uint8_t *cause = TLVP_VAL(tp, RSL_IE_CAUSE);
+		if (rsl_cause_pp)
+			*rsl_cause_pp = cause;
+		snprintf(buf, sizeof(buf), " (cause=%s [ %s])",
+			 rsl_err_name(*cause),
+			 osmo_hexdump(cause, TLVP_LEN(tp, RSL_IE_CAUSE)));
+		return buf;
+	} else
+		return "";
 }
-
-static void lchan_act_tmr_cb(void *data)
-{
-	struct gsm_lchan *lchan = data;
-
-	rsl_lchan_mark_broken(lchan, "activation timeout");
-	lchan_free(lchan);
-}
-
-static void lchan_deact_tmr_cb(void *data)
-{
-	struct gsm_lchan *lchan = data;
-
-	rsl_lchan_mark_broken(lchan, "de-activation timeout");
-	lchan_free(lchan);
-}
-
 
 /* Send a BCCH_INFO message as per Chapter 8.5.1 */
 int rsl_bcch_info(const struct gsm_bts_trx *trx, enum osmo_sysinfo_type si_type, const uint8_t *data, int len)
@@ -465,64 +443,22 @@ static int channel_mode_from_lchan(struct rsl_ie_chan_mode *cm,
 
 static void mr_config_for_bts(struct gsm_lchan *lchan, struct msgb *msg)
 {
-	if (lchan->tch_mode == GSM48_CMODE_SPEECH_AMR)
-		msgb_tlv_put(msg, RSL_IE_MR_CONFIG, lchan->mr_bts_lv[0],
-			     lchan->mr_bts_lv + 1);
-}
+	uint8_t len;
 
-static enum gsm_phys_chan_config pchan_for_lchant(enum gsm_chan_t type)
-{
-	switch (type) {
-	case GSM_LCHAN_TCH_F:
-		return GSM_PCHAN_TCH_F;
-	case GSM_LCHAN_TCH_H:
-		return GSM_PCHAN_TCH_H;
-	case GSM_LCHAN_NONE:
-	case GSM_LCHAN_PDTCH:
-		/* TODO: so far lchan->type is NONE in PDCH mode. PDTCH is only
-		 * used in osmo-bts. Maybe set PDTCH and drop the NONE case
-		 * here. */
-		return GSM_PCHAN_PDCH;
-	default:
-		return GSM_PCHAN_UNKNOWN;
+	if (lchan->tch_mode != GSM48_CMODE_SPEECH_AMR)
+		return;
+
+	len = lchan->mr_bts_lv[0];
+	if (!len) {
+		LOG_LCHAN(lchan, LOGL_ERROR, "Missing Multirate Config (len is zero)\n");
+		return;
 	}
-}
-
-/*! Tx simplified channel activation message for non-standard PDCH type. */
-static int rsl_chan_activate_lchan_as_pdch(struct gsm_lchan *lchan)
-{
-	struct msgb *msg;
-	struct abis_rsl_dchan_hdr *dh;
-
-	/* This might be called after release of the second lchan of a TCH/H,
-	 * but PDCH activation must always happen on the first lchan. Make sure
-	 * the calling code passes the correct lchan. */
-	OSMO_ASSERT(lchan == lchan->ts->lchan);
-
-	rsl_lchan_set_state(lchan, LCHAN_S_ACT_REQ);
-
-	msg = rsl_msgb_alloc();
-	dh = (struct abis_rsl_dchan_hdr *) msgb_put(msg, sizeof(*dh));
-	init_dchan_hdr(dh, RSL_MT_CHAN_ACTIV);
-	dh->chan_nr = gsm_lchan_as_pchan2chan_nr(lchan, GSM_PCHAN_PDCH);
-
-	msgb_tv_put(msg, RSL_IE_ACT_TYPE, RSL_ACT_OSMO_PDCH);
-
-	if (lchan->ts->trx->bts->type == GSM_BTS_TYPE_RBS2000 &&
-	    lchan->ts->trx->bts->rbs2000.use_superchannel) {
-		const uint8_t eric_pgsl_tmr[] = { 30, 1 };
-		msgb_tv_fixed_put(msg, RSL_IE_ERIC_PGSL_TIMERS,
-				  sizeof(eric_pgsl_tmr), eric_pgsl_tmr);
-	}
-
-	msg->dst = lchan->ts->trx->rsl_link;
-
-	return abis_rsl_sendmsg(msg);
+	msgb_tlv_put(msg, RSL_IE_MR_CONFIG, lchan->mr_bts_lv[0],
+		     lchan->mr_bts_lv + 1);
 }
 
 /* Chapter 8.4.1 */
-int rsl_chan_activate_lchan(struct gsm_lchan *lchan, uint8_t act_type,
-			    uint8_t ho_ref)
+int rsl_tx_chan_activ(struct gsm_lchan *lchan, uint8_t act_type, uint8_t ho_ref)
 {
 	struct abis_rsl_dchan_hdr *dh;
 	struct msgb *msg;
@@ -533,75 +469,12 @@ int rsl_chan_activate_lchan(struct gsm_lchan *lchan, uint8_t act_type,
 	struct rsl_ie_chan_mode cm;
 	struct gsm48_chan_desc cd;
 
-	/* If a TCH_F/PDCH TS is in PDCH mode, deactivate PDCH first. */
-	if (lchan->ts->pchan == GSM_PCHAN_TCH_F_PDCH
-	    && (lchan->ts->flags & TS_F_PDCH_ACTIVE)) {
-		/* store activation type and handover reference */
-		lchan->dyn.act_type = act_type;
-		lchan->dyn.ho_ref = ho_ref;
-		return rsl_ipacc_pdch_activate(lchan->ts, 0);
-	}
-
-	/*
-	 * If necessary, release PDCH on dynamic TS. Note that sending a
-	 * release here is only necessary when in PDCH mode; for TCH types, an
-	 * RSL RF Chan Release is initiated by the BTS when a voice call ends,
-	 * so when we reach this, it will already be released. If a dyn TS is
-	 * in PDCH mode, it is still active and we need to initiate a release
-	 * from the BSC side here.
-	 *
-	 * If pchan_is != pchan_want, the PDCH has already been taken down and
-	 * the switchover now needs to enable the TCH lchan.
-	 *
-	 * To switch a dyn TS between TCH/H and TCH/F, it is sufficient to send
-	 * a chan activ with the new lchan type, because it will already be
-	 * released.
-	 */
-	if (lchan->ts->pchan == GSM_PCHAN_TCH_F_TCH_H_PDCH
-	    && lchan->ts->dyn.pchan_is == lchan->ts->dyn.pchan_want) {
-		enum gsm_phys_chan_config pchan_want;
-		pchan_want = pchan_for_lchant(lchan->type);
-		if (lchan->ts->dyn.pchan_is != pchan_want) {
-			/*
-			 * Make sure to record on lchan[0] so that we'll find
-			 * it after the PDCH release.
-			 */
-			struct gsm_lchan *lchan0 = lchan->ts->lchan;
-			lchan0->dyn.act_type = act_type,
-			lchan0->dyn.ho_ref = ho_ref;
-			lchan0->dyn.rqd_ref = lchan->rqd_ref;
-			lchan0->dyn.rqd_ta = lchan->rqd_ta;
-			lchan->rqd_ref = NULL;
-			lchan->rqd_ta = 0;
-			DEBUGP(DRSL, "%s saved rqd_ref=%p ta=%u\n",
-			       gsm_lchan_name(lchan0), lchan0->rqd_ref,
-			       lchan0->rqd_ta);
-			return dyn_ts_switchover_start(lchan->ts, pchan_want);
-		}
-	}
-
 	DEBUGP(DRSL, "%s Tx RSL Channel Activate with act_type=%s\n",
 	       gsm_ts_and_pchan_name(lchan->ts),
 	       rsl_act_type_name(act_type));
 
-	if (act_type == RSL_ACT_OSMO_PDCH) {
-		if (lchan->ts->pchan != GSM_PCHAN_TCH_F_TCH_H_PDCH) {
-			LOGP(DRSL, LOGL_ERROR,
-			     "%s PDCH channel activation only allowed on %s\n",
-			     gsm_ts_and_pchan_name(lchan->ts),
-			     gsm_pchan_name(GSM_PCHAN_TCH_F_TCH_H_PDCH));
-			return -EINVAL;
-		}
-		return rsl_chan_activate_lchan_as_pdch(lchan);
-	}
-
-	if (lchan->ts->pchan == GSM_PCHAN_TCH_F_TCH_H_PDCH
-	    && lchan->ts->dyn.pchan_want == GSM_PCHAN_PDCH) {
-		LOGP(DRSL, LOGL_ERROR,
-		     "%s Expected PDCH activation kind\n",
-		     gsm_ts_and_pchan_name(lchan->ts));
-		return -EINVAL;
-	}
+	/* PDCH activation is a job for rsl_tx_dyn_ts_pdch_act_deact(); */
+	OSMO_ASSERT(act_type != RSL_ACT_OSMO_PDCH);
 
 	rc = channel_mode_from_lchan(&cm, lchan);
 	if (rc < 0) {
@@ -610,8 +483,6 @@ int rsl_chan_activate_lchan(struct gsm_lchan *lchan, uint8_t act_type,
 		     gsm_ts_and_pchan_name(lchan->ts));
 		return rc;
 	}
-
-	rsl_lchan_set_state(lchan, LCHAN_S_ACT_REQ);
 
 	ta = lchan->rqd_ta;
 
@@ -626,11 +497,7 @@ int rsl_chan_activate_lchan(struct gsm_lchan *lchan, uint8_t act_type,
 	dh = (struct abis_rsl_dchan_hdr *) msgb_put(msg, sizeof(*dh));
 	init_dchan_hdr(dh, RSL_MT_CHAN_ACTIV);
 
-	if (lchan->ts->pchan == GSM_PCHAN_TCH_F_TCH_H_PDCH)
-		dh->chan_nr = gsm_lchan_as_pchan2chan_nr(
-					lchan, lchan->ts->dyn.pchan_want);
-	else
-		dh->chan_nr = gsm_lchan2chan_nr(lchan);
+	dh->chan_nr = gsm_lchan2chan_nr(lchan);
 
 	msgb_tv_put(msg, RSL_IE_ACT_TYPE, act_type);
 	msgb_tlv_put(msg, RSL_IE_CHAN_MODE, sizeof(cm),
@@ -682,10 +549,7 @@ int rsl_chan_activate_lchan(struct gsm_lchan *lchan, uint8_t act_type,
 
 	rate_ctr_inc(&lchan->ts->trx->bts->bts_ctrs->ctr[BTS_CTR_CHAN_ACT_TOTAL]);
 
-	rc = abis_rsl_sendmsg(msg);
-	if (!rc)
-		rsl_lchan_set_state(lchan, LCHAN_S_ACT_REQ);
-	return rc;
+	return abis_rsl_sendmsg(msg);
 }
 
 /* Chapter 8.4.9: Modify channel mode on BTS side */
@@ -774,80 +638,11 @@ int rsl_deact_sacch(struct gsm_lchan *lchan)
 	return abis_rsl_sendmsg(msg);
 }
 
-static bool dyn_ts_should_switch_to_pdch(struct gsm_bts_trx_ts *ts)
-{
-	int ss;
-
-	if (ts->pchan != GSM_PCHAN_TCH_F_TCH_H_PDCH)
-		return false;
-
-	if (ts->trx->bts->gprs.mode == BTS_GPRS_NONE)
-		return false;
-
-	/* Already in PDCH mode? */
-	if (ts->dyn.pchan_is == GSM_PCHAN_PDCH)
-		return false;
-
-	/* See if all lchans are released. */
-	for (ss = 0; ss < ts_subslots(ts); ss++) {
-		struct gsm_lchan *lc = &ts->lchan[ss];
-		if (lc->state != LCHAN_S_NONE) {
-			DEBUGP(DRSL, "%s lchan %u still in use"
-			       " (type=%s,state=%s)\n",
-			       gsm_ts_and_pchan_name(ts), lc->nr,
-			       gsm_lchant_name(lc->type),
-			       gsm_lchans_name(lc->state));
-			/* An lchan is still used. */
-			return false;
-		}
-	}
-
-	/* All channels are released, go to PDCH mode. */
-	DEBUGP(DRSL, "%s back to PDCH\n",
-	       gsm_ts_and_pchan_name(ts));
-	return true;
-}
-
-static void error_timeout_cb(void *data)
-{
-	struct gsm_lchan *lchan = data;
-	if (lchan->state != LCHAN_S_REL_ERR) {
-		LOGP(DRSL, LOGL_ERROR, "%s error timeout but not in error state: %d\n",
-		     gsm_lchan_name(lchan), lchan->state);
-		return;
-	}
-
-	/* go back to the none state */
-	LOGP(DRSL, LOGL_INFO, "%s is back in operation.\n", gsm_lchan_name(lchan));
-	rsl_lchan_set_state(lchan, LCHAN_S_NONE);
-
-	/* Put PDCH channel back into PDCH mode, if GPRS is enabled */
-	if (lchan->ts->pchan == GSM_PCHAN_TCH_F_PDCH
-	    && lchan->ts->trx->bts->gprs.mode != BTS_GPRS_NONE)
-		rsl_ipacc_pdch_activate(lchan->ts, 1);
-
-	if (dyn_ts_should_switch_to_pdch(lchan->ts))
-		dyn_ts_switchover_start(lchan->ts, GSM_PCHAN_PDCH);
-}
-
-static int rsl_rx_rf_chan_rel_ack(struct gsm_lchan *lchan);
-
 /* Chapter 8.4.14 / 4.7: Tell BTS to release the radio channel */
-static int rsl_rf_chan_release(struct gsm_lchan *lchan, int error,
-				enum sacch_deact deact_sacch)
+int rsl_tx_rf_chan_release(struct gsm_lchan *lchan)
 {
 	struct abis_rsl_dchan_hdr *dh;
 	struct msgb *msg;
-	int rc;
-
-	/* Stop timers that should lead to a channel release */
-	osmo_timer_del(&lchan->T3109);
-
-	if (lchan->state == LCHAN_S_REL_ERR) {
-		LOGP(DRSL, LOGL_NOTICE, "%s is in error state, not sending release.\n",
-		     gsm_lchan_name(lchan));
-		return -1;
-	}
 
 	msg = rsl_msgb_alloc();
 	dh = (struct abis_rsl_dchan_hdr *) msgb_put(msg, sizeof(*dh));
@@ -857,157 +652,7 @@ static int rsl_rf_chan_release(struct gsm_lchan *lchan, int error,
 	msg->lchan = lchan;
 	msg->dst = lchan->ts->trx->rsl_link;
 
-	if (error)
-		DEBUGP(DRSL, "%s RF Channel Release due to error: %d\n",
-		       gsm_lchan_name(lchan), error);
-	else
-		DEBUGP(DRSL, "%s RF Channel Release\n", gsm_lchan_name(lchan));
-
-	if (error) {
-		/*
-		 * FIXME: GSM 04.08 gives us two options for the abnormal
-		 * chanel release. This can be either like in the non-existent
-		 * sub-lcuase 3.5.1 or for the main signalling link deactivate
-		 * the SACCH, start timer T3109 and consider the channel as
-		 * released.
-		 *
-		 * This code is doing the later for all raido links and not
-		 * only the main link. Right now all SAPIs are released on the
-		 * local end, the SACCH will be de-activated and right now the
-		 * T3111 will be started. First T3109 should be started and then
-		 * the T3111.
-		 *
-		 * TODO: Move this out of the function.
-		 */
-
-		/*
-		 * sacch de-activate and "local end release"
-		 */
-		if (deact_sacch == SACCH_DEACTIVATE)
-			rsl_deact_sacch(lchan);
-		rsl_release_sapis_from(lchan, 0, RSL_REL_LOCAL_END);
-
-		/*
-		 * TODO: start T3109 now.
-		 */
-		rsl_lchan_set_state(lchan, LCHAN_S_REL_ERR);
-	}
-
-	/* Start another timer or assume the BTS sends a ACK/NACK? */
-	osmo_timer_setup(&lchan->act_timer, lchan_deact_tmr_cb, lchan);
-	osmo_timer_schedule(&lchan->act_timer, 4, 0);
-
-	rc =  abis_rsl_sendmsg(msg);
-
-	/* BTS will respond by RF CHAN REL ACK */
-	return rc;
-}
-
-/*
- * Special handling for channel releases in the error case.
- */
-static int rsl_rf_chan_release_err(struct gsm_lchan *lchan)
-{
-	enum sacch_deact sacch_deact;
-	if (lchan->state != LCHAN_S_ACTIVE)
-		return 0;
-	switch (ts_pchan(lchan->ts)) {
-	case GSM_PCHAN_TCH_F:
-	case GSM_PCHAN_TCH_H:
-	case GSM_PCHAN_CCCH_SDCCH4:
-	case GSM_PCHAN_CCCH_SDCCH4_CBCH:
-	case GSM_PCHAN_SDCCH8_SACCH8C:
-	case GSM_PCHAN_SDCCH8_SACCH8C_CBCH:
-		sacch_deact = SACCH_DEACTIVATE;
-		break;
-	default:
-		sacch_deact = SACCH_NONE;
-		break;
-	}
-	return rsl_rf_chan_release(lchan, 1, sacch_deact);
-}
-
-static int rsl_rx_rf_chan_rel_ack(struct gsm_lchan *lchan)
-{
-	struct gsm_bts_trx_ts *ts = lchan->ts;
-
-	DEBUGP(DRSL, "%s RF CHANNEL RELEASE ACK\n", gsm_lchan_name(lchan));
-
-	/* Stop all pending timers */
-	osmo_timer_del(&lchan->act_timer);
-	osmo_timer_del(&lchan->T3111);
-
-	/*
-	 * The BTS didn't respond within the timeout to our channel
-	 * release request and we have marked the channel as broken.
-	 * Now we do receive an ACK and let's be conservative. If it
-	 * is a sysmoBTS we know that only one RF Channel Release ACK
-	 * will be sent. So let's "repair" the channel.
-	 */
-	if (lchan->state == LCHAN_S_BROKEN) {
-		int do_free = is_sysmobts_v2(ts->trx->bts);
-		LOGP(DRSL, LOGL_NOTICE,
-			"%s CHAN REL ACK for broken channel. %s.\n",
-			gsm_lchan_name(lchan),
-			do_free ? "Releasing it" : "Keeping it broken");
-		if (do_free)
-			do_lchan_free(lchan);
-		if (dyn_ts_should_switch_to_pdch(lchan->ts))
-			dyn_ts_switchover_start(lchan->ts, GSM_PCHAN_PDCH);
-		return 0;
-	}
-
-	if (lchan->state != LCHAN_S_REL_REQ && lchan->state != LCHAN_S_REL_ERR)
-		LOGP(DRSL, LOGL_NOTICE, "%s CHAN REL ACK but state %s\n",
-			gsm_lchan_name(lchan),
-			gsm_lchans_name(lchan->state));
-
-	do_lchan_free(lchan);
-
-	/*
-	 * Check Osmocom RSL CHAN ACT style dynamic TCH/F_TCH/H_PDCH TS for pending
-	 * transitions in these cases:
-	 *
-	 * a) after PDCH was released due to switchover request, activate TCH.
-	 *    BSC initiated this switchover, so dyn.pchan_is != pchan_want and
-	 *    lchan->type has been set to the desired GSM_LCHAN_*.
-	 *
-	 * b) Voice call ended and a TCH is released. If the TS is now unused,
-	 *    switch to PDCH. Here still dyn.pchan_is == dyn.pchan_want because
-	 *    we're only just notified and may decide to switch to PDCH now.
-	 */
-	if (ts->pchan == GSM_PCHAN_TCH_F_TCH_H_PDCH) {
-		DEBUGP(DRSL, "%s Rx RSL Channel Release ack for lchan %u\n",
-		       gsm_ts_and_pchan_name(ts), lchan->nr);
-
-		/* (a) */
-		if (ts->dyn.pchan_is != ts->dyn.pchan_want)
-			return dyn_ts_switchover_continue(ts);
-
-		/* (b) */
-		if (dyn_ts_should_switch_to_pdch(ts))
-			return dyn_ts_switchover_start(ts, GSM_PCHAN_PDCH);
-	}
-
-	/*
-	 * Put a dynamic TCH/F_PDCH channel back to PDCH mode iff it was
-	 * released successfully. If in error, the PDCH ACT will follow after
-	 * T3111 in error_timeout_cb().
-	 *
-	 * Any state other than LCHAN_S_REL_ERR became LCHAN_S_NONE after above
-	 * do_lchan_free(). Assert this, because that's what ensures a PDCH ACT
-	 * on a TCH/F_PDCH TS in all cases.
-	 *
-	 * If GPRS is disabled, always skip the PDCH ACT.
-	 */
-	OSMO_ASSERT(lchan->state == LCHAN_S_NONE
-		    || lchan->state == LCHAN_S_REL_ERR);
-	if (ts->trx->bts->gprs.mode == BTS_GPRS_NONE)
-		return 0;
-	if (ts->pchan == GSM_PCHAN_TCH_F_PDCH
-	    && lchan->state == LCHAN_S_NONE)
-		return rsl_ipacc_pdch_activate(ts, 1);
-	return 0;
+	return abis_rsl_sendmsg(msg);
 }
 
 int rsl_paging_cmd(struct gsm_bts *bts, uint8_t paging_group, uint8_t len,
@@ -1032,6 +677,22 @@ int rsl_paging_cmd(struct gsm_bts *bts, uint8_t paging_group, uint8_t len,
 	msg->dst = bts->c0->rsl_link;
 
 	return abis_rsl_sendmsg(msg);
+}
+
+int rsl_forward_layer3_info(struct gsm_lchan *lchan, const uint8_t *l3_info, uint8_t l3_info_len)
+{
+	struct msgb *msg;
+	uint8_t *dst;
+
+	if (!l3_info || !l3_info_len)
+		return -EINVAL;
+
+	msg = rsl_msgb_alloc();
+	dst = msgb_put(msg, l3_info_len);
+	memcpy(dst, l3_info, l3_info_len);
+
+	msg->lchan = lchan;
+	return rsl_data_request(msg, 0);
 }
 
 int imsi_str2bcd(uint8_t *bcd_out, const char *str_in)
@@ -1156,22 +817,6 @@ int rsl_establish_request(struct gsm_lchan *lchan, uint8_t link_id)
 	return abis_rsl_sendmsg(msg);
 }
 
-static void rsl_handle_release(struct gsm_lchan *lchan);
-
-/* Special work handler to handle missing RSL_MT_REL_CONF message from
- * Nokia InSite BTS */
-static void lchan_rel_work_cb(void *data)
-{
-	struct gsm_lchan *lchan = data;
-	int sapi;
-
-	for (sapi = 0; sapi < ARRAY_SIZE(lchan->sapis); ++sapi) {
-		if (lchan->sapis[sapi] == LCHAN_SAPI_REL)
-			lchan->sapis[sapi] = LCHAN_SAPI_UNUSED;
-	}
-	rsl_handle_release(lchan);
-}
-
 /* Chapter 8.3.7 Request the release of multiframe mode of RLL connection.
    This is what higher layers should call.  The BTS then responds with
    RELEASE CONFIRM, which we in turn use to trigger RSL CHANNEL RELEASE,
@@ -1188,8 +833,6 @@ int rsl_release_request(struct gsm_lchan *lchan, uint8_t link_id,
 	/* 0 is normal release, 1 is local end */
 	msgb_tv_put(msg, RSL_IE_RELEASE_MODE, release_mode);
 
-	/* FIXME: start some timer in case we don't receive a REL ACK ? */
-
 	msg->dst = lchan->ts->trx->rsl_link;
 
 	DEBUGP(DRLL, "%s RSL RLL RELEASE REQ (link_id=0x%02x, reason=%u)\n",
@@ -1197,107 +840,18 @@ int rsl_release_request(struct gsm_lchan *lchan, uint8_t link_id,
 
 	abis_rsl_sendmsg(msg);
 
-	/* Do not wait for Nokia BTS to send the confirm. */
-	if (is_nokia_bts(lchan->ts->trx->bts)
-	 && lchan->ts->trx->bts->nokia.no_loc_rel_cnf
-	 && release_mode == RSL_REL_LOCAL_END) {
-		DEBUGP(DRLL, "Scheduling release, becasuse Nokia InSite BTS does not send a RELease CONFirm.\n");
-		lchan->sapis[link_id & 0x7] = LCHAN_SAPI_REL;
-		osmo_timer_setup(&lchan->rel_work, lchan_rel_work_cb, lchan);
-		osmo_timer_schedule(&lchan->rel_work, 0, 0);
-	}
-
 	return 0;
 }
 
-int rsl_lchan_mark_broken(struct gsm_lchan *lchan, const char *reason)
-{
-	LOGP(DRSL, LOGL_ERROR, "%s %s lchan broken: %s\n",
-	     gsm_lchan_name(lchan), gsm_lchant_name(lchan->type), reason);
-	rsl_lchan_set_state(lchan, LCHAN_S_BROKEN);
-	lchan->broken_reason = reason;
-	return 0;
-}
-
-int rsl_lchan_set_state_with_log(struct gsm_lchan *lchan, enum gsm_lchan_state state, const char *file, unsigned line)
-{
-	if (lchan->state != state)
-		LOGPSRC(DRSL, LOGL_DEBUG, file, line, "%s state %s -> %s\n",
-			gsm_lchan_name(lchan), gsm_lchans_name(lchan->state), gsm_lchans_name(state));
-
-	lchan->state = state;
-	return 0;
-}
-
-/* Chapter 8.4.2: Channel Activate Acknowledge */
-static int rsl_rx_chan_act_ack(struct msgb *msg)
+static bool msg_for_osmocom_dyn_ts(struct msgb *msg)
 {
 	struct abis_rsl_dchan_hdr *rslh = msgb_l2(msg);
-	struct gsm_lchan *lchan = msg->lchan;
-	struct gsm_bts_trx_ts *ts = lchan->ts;
-
-	/* BTS has confirmed channel activation, we now need
-	 * to assign the activated channel to the MS */
-	if (rslh->ie_chan != RSL_IE_CHAN_NR)
-		return -EINVAL;
-
-	osmo_timer_del(&lchan->act_timer);
-
-	if (lchan->state == LCHAN_S_BROKEN) {
-		int do_release = is_sysmobts_v2(ts->trx->bts);
-		LOGP(DRSL, LOGL_NOTICE, "%s CHAN ACT ACK for broken channel. %s\n",
-			gsm_lchan_name(lchan),
-			do_release ? "Releasing it" : "Keeping it broken");
-		if (do_release) {
-			talloc_free(lchan->rqd_ref);
-			lchan->rqd_ref = NULL;
-			lchan->rqd_ta = 0;
-			rsl_lchan_set_state(msg->lchan, LCHAN_S_ACTIVE);
-			if (ts->pchan == GSM_PCHAN_TCH_F_TCH_H_PDCH) {
-				/*
-				 * lchan_act_tmr_cb() already called
-				 * lchan_free() and cleared the lchan->type, so
-				 * calling dyn_ts_switchover_complete() here
-				 * would not have the desired effect of
-				 * mimicking an activated lchan that we can
-				 * release. Instead hack the dyn ts state to
-				 * make sure that rsl_rx_rf_chan_rel_ack() will
-				 * switch back to PDCH, i.e. have pchan_is ==
-				 * pchan_want, both != GSM_PCHAN_PDCH:
-				 */
-				ts->dyn.pchan_is = GSM_PCHAN_NONE;
-				ts->dyn.pchan_want = GSM_PCHAN_NONE;
-			}
-			rsl_rf_chan_release(msg->lchan, 0, SACCH_NONE);
-		}
-		return 0;
-	}
-
-	if (lchan->state != LCHAN_S_ACT_REQ)
-		LOGP(DRSL, LOGL_NOTICE, "%s CHAN ACT ACK, but state %s\n",
-			gsm_lchan_name(lchan),
-			gsm_lchans_name(lchan->state));
-	rsl_lchan_set_state(lchan, LCHAN_S_ACTIVE);
-
-	if (ts->pchan == GSM_PCHAN_TCH_F_TCH_H_PDCH)
-		dyn_ts_switchover_complete(lchan);
-
-	if (lchan->rqd_ref) {
-		rsl_send_imm_assignment(lchan);
-		talloc_free(lchan->rqd_ref);
-		lchan->rqd_ref = NULL;
-		lchan->rqd_ta = 0;
-	}
-
-	send_lchan_signal(S_LCHAN_ACTIVATE_ACK, lchan, NULL);
-
-	/* Update bts attributes inside the PCU */
-	if (ts->pchan == GSM_PCHAN_TCH_F_TCH_H_PDCH ||
-	    ts->pchan == GSM_PCHAN_TCH_F_PDCH ||
-	    ts->pchan == GSM_PCHAN_PDCH)
-		pcu_info_update(ts->trx->bts);
-
-	return 0;
+	if (msg->lchan->ts->pchan_on_init != GSM_PCHAN_TCH_F_TCH_H_PDCH)
+		return false;
+	/* dyn TS messages always come in on the first lchan of a timeslot */
+	if (msg->lchan->nr != 0)
+		return false;
+	return (rslh->chan_nr & RSL_CHAN_OSMO_PDCH) == RSL_CHAN_OSMO_PDCH;
 }
 
 /* Chapter 8.4.3: Channel Activate NACK */
@@ -1305,46 +859,24 @@ static int rsl_rx_chan_act_nack(struct msgb *msg)
 {
 	struct abis_rsl_dchan_hdr *dh = msgb_l2(msg);
 	struct tlv_parsed tp;
-
-	osmo_timer_del(&msg->lchan->act_timer);
+	struct gsm_lchan *lchan = msg->lchan;
+	const uint8_t *cause_p;
 
 	rate_ctr_inc(&msg->lchan->ts->trx->bts->bts_ctrs->ctr[BTS_CTR_CHAN_ACT_NACK]);
 
-	if (msg->lchan->state == LCHAN_S_BROKEN) {
-		LOGP(DRSL, LOGL_ERROR,
-			"%s CHANNEL ACTIVATE NACK for broken channel.\n",
-			gsm_lchan_name(msg->lchan));
-		return -1;
-	}
-
-	/* BTS has rejected channel activation ?!? */
 	if (dh->ie_chan != RSL_IE_CHAN_NR) {
-		LOGP(DRSL, LOGL_ERROR, "%s CHANNEL ACTIVATE NACK, and chan nr mismatches\n",
-		     gsm_lchan_name(msg->lchan));
+		LOG_LCHAN(msg->lchan, LOGL_ERROR, "Invalid IE: expected CHAN_NR IE (0x%x), got 0x%x\n",
+			  RSL_IE_CHAN_NR, dh->ie_chan);
 		return -EINVAL;
 	}
 
 	rsl_tlv_parse(&tp, dh->data, msgb_l2len(msg)-sizeof(*dh));
-	if (TLVP_PRESENT(&tp, RSL_IE_CAUSE)) {
-		const uint8_t *cause = TLVP_VAL(&tp, RSL_IE_CAUSE);
-		LOGP(DRSL, LOGL_ERROR, "%s CHANNEL ACTIVATE NACK: ",
-		     gsm_lchan_name(msg->lchan));
-		print_rsl_cause(LOGL_ERROR, cause,
-				TLVP_LEN(&tp, RSL_IE_CAUSE));
-		LOGPC(DRSL, LOGL_ERROR, "\n");
-		msg->lchan->error_cause = *cause;
-		if (*cause != RSL_ERR_RCH_ALR_ACTV_ALLOC) {
-			rsl_lchan_mark_broken(msg->lchan, "NACK on activation");
-		} else
-			rsl_rf_chan_release(msg->lchan, 1, SACCH_DEACTIVATE);
+	LOG_LCHAN(lchan, LOGL_ERROR, "CHANNEL ACTIVATE NACK%s\n", rsl_cause_name(&tp, &cause_p));
 
-	} else {
-		LOGP(DRSL, LOGL_ERROR, "%s CHANNEL ACTIVATE NACK, no cause IE\n",
-		     gsm_lchan_name(msg->lchan));
-		rsl_lchan_mark_broken(msg->lchan, "NACK on activation no IE");
-	}
-
-	send_lchan_signal(S_LCHAN_ACTIVATE_NACK, msg->lchan, NULL);
+	if (msg_for_osmocom_dyn_ts(msg))
+		osmo_fsm_inst_dispatch(lchan->ts->fi, TS_EV_PDCH_ACT_NACK, (void*)cause_p);
+	else
+		osmo_fsm_inst_dispatch(lchan->fi, LCHAN_EV_RSL_CHAN_ACTIV_NACK, (void*)cause_p);
 	return 0;
 }
 
@@ -1354,25 +886,21 @@ static int rsl_rx_conn_fail(struct msgb *msg)
 	struct abis_rsl_dchan_hdr *dh = msgb_l2(msg);
 	struct gsm_lchan *lchan = msg->lchan;
 	struct tlv_parsed tp;
-	uint8_t cause = 0;
-
-	LOGP(DRSL, LOGL_NOTICE, "%s CONNECTION FAIL in state %s ",
-	     gsm_lchan_name(msg->lchan),
-	     gsm_lchans_name(msg->lchan->state));
+	const uint8_t *cause_p;
 
 	rsl_tlv_parse(&tp, dh->data, msgb_l2len(msg)-sizeof(*dh));
 
-	if (TLVP_PRESENT(&tp, RSL_IE_CAUSE)) {
-		print_rsl_cause(LOGL_NOTICE, TLVP_VAL(&tp, RSL_IE_CAUSE),
-				TLVP_LEN(&tp, RSL_IE_CAUSE));
-		cause = *TLVP_VAL(&tp, RSL_IE_CAUSE);
-	}
+	LOG_LCHAN(lchan, LOGL_ERROR, "CONNECTION FAIL%s\n", rsl_cause_name(&tp, &cause_p));
 
-	LOGPC(DRSL, LOGL_NOTICE, "\n");
 	rate_ctr_inc(&lchan->ts->trx->bts->bts_ctrs->ctr[BTS_CTR_CHAN_RF_FAIL]);
 
-	if (lchan->conn)
-		osmo_fsm_inst_dispatch(lchan->conn->fi, GSCON_EV_RSL_CONN_FAIL, &cause);
+	/* If the lchan is associated with a conn, we shall notify the MSC of the RSL Conn Failure, and
+	 * the connection will presumably be torn down and lead to an lchan release. During initial
+	 * Channel Request from the MS, an lchan has no conn yet, so in that case release now. */
+	if (!lchan->conn) {
+		lchan_release(lchan, false, true, *cause_p);
+	} else
+		osmo_fsm_inst_dispatch(lchan->conn->fi, GSCON_EV_RSL_CONN_FAIL, (void*)cause_p);
 
 	return 0;
 }
@@ -1458,11 +986,8 @@ static int rsl_rx_meas_res(struct msgb *msg)
 	const uint8_t *val;
 	int rc;
 
-	/* check if this channel is actually active */
-	/* FIXME: maybe this check should be way more generic/centralized */
-	if (msg->lchan->state != LCHAN_S_ACTIVE) {
-		LOGP(DRSL, LOGL_DEBUG, "%s: MEAS RES for inactive channel\n",
-			gsm_lchan_name(msg->lchan));
+	if (!lchan_may_receive_data(msg->lchan)) {
+		LOG_LCHAN(msg->lchan, LOGL_DEBUG, "MEAS RES for inactive channel\n");
 		return 0;
 	}
 
@@ -1542,76 +1067,37 @@ static int rsl_rx_hando_det(struct msgb *msg)
 {
 	struct abis_rsl_dchan_hdr *dh = msgb_l2(msg);
 	struct tlv_parsed tp;
-
-	DEBUGP(DRSL, "%s HANDOVER DETECT ", gsm_lchan_name(msg->lchan));
+	struct handover_rr_detect_data d = {
+		.msg = msg,
+	};
 
 	rsl_tlv_parse(&tp, dh->data, msgb_l2len(msg)-sizeof(*dh));
 
 	if (TLVP_PRESENT(&tp, RSL_IE_ACCESS_DELAY))
-		DEBUGPC(DRSL, "access delay = %u\n",
-			*TLVP_VAL(&tp, RSL_IE_ACCESS_DELAY));
-	else
-		DEBUGPC(DRSL, "\n");
+		d.access_delay = TLVP_VAL(&tp, RSL_IE_ACCESS_DELAY);
 
-	send_lchan_signal(S_LCHAN_HANDOVER_DETECT, msg->lchan, NULL);
+	if (!msg->lchan->conn || !msg->lchan->conn->ho.fi) {
+		LOGP(DRSL, LOGL_ERROR, "%s HANDOVER DETECT but no handover is ongoing\n",
+		     gsm_lchan_name(msg->lchan));
+		return 0;
+	}
+
+	osmo_fsm_inst_dispatch(msg->lchan->conn->ho.fi, HO_EV_RR_HO_DETECT, &d);
 
 	return 0;
 }
 
-static bool lchan_may_change_pdch(struct gsm_lchan *lchan, bool pdch_act)
+static int rsl_rx_ipacc_pdch(struct msgb *msg, char *name, uint32_t ts_ev)
 {
-	struct gsm_bts_trx_ts *ts;
+	struct gsm_bts_trx_ts *ts = msg->lchan->ts;
 
-	OSMO_ASSERT(lchan);
-
-	ts = lchan->ts;
-	OSMO_ASSERT(ts);
-	OSMO_ASSERT(ts->trx);
-	OSMO_ASSERT(ts->trx->bts);
-
-	if (lchan->ts->pchan != GSM_PCHAN_TCH_F_PDCH) {
-		LOGP(DRSL, LOGL_ERROR, "%s pchan=%s Rx PDCH %s ACK"
-		     " for channel that is no TCH/F_PDCH\n",
-		     gsm_lchan_name(lchan),
-		     gsm_pchan_name(ts->pchan),
-		     pdch_act? "ACT" : "DEACT");
-		return false;
+	if (ts->pchan_on_init != GSM_PCHAN_TCH_F_PDCH) {
+		LOG_TS(ts, LOGL_ERROR, "Rx RSL ip.access PDCH %s acceptable only for %s\n",
+		       name, gsm_pchan_name(GSM_PCHAN_TCH_F_PDCH));
+		return -EINVAL;
 	}
 
-	if (lchan->state != LCHAN_S_NONE) {
-		LOGP(DRSL, LOGL_ERROR, "%s pchan=%s Rx PDCH %s ACK"
-		     " in unexpected state: %s\n",
-		     gsm_lchan_name(lchan),
-		     gsm_pchan_name(ts->pchan),
-		     pdch_act? "ACT" : "DEACT",
-		     gsm_lchans_name(lchan->state));
-		return false;
-	}
-	return true;
-}
-
-static int rsl_rx_pdch_act_ack(struct msgb *msg)
-{
-	if (!lchan_may_change_pdch(msg->lchan, true))
-		return -EINVAL;
-
-	msg->lchan->ts->flags |= TS_F_PDCH_ACTIVE;
-	msg->lchan->ts->flags &= ~TS_F_PDCH_ACT_PENDING;
-
-	return 0;
-}
-
-static int rsl_rx_pdch_deact_ack(struct msgb *msg)
-{
-	if (!lchan_may_change_pdch(msg->lchan, false))
-		return -EINVAL;
-
-	msg->lchan->ts->flags &= ~TS_F_PDCH_ACTIVE;
-	msg->lchan->ts->flags &= ~TS_F_PDCH_DEACT_PENDING;
-
-	rsl_chan_activate_lchan(msg->lchan, msg->lchan->dyn.act_type,
-				msg->lchan->dyn.ho_ref);
-
+	osmo_fsm_inst_dispatch(ts->fi, ts_ev, NULL);
 	return 0;
 }
 
@@ -1619,20 +1105,39 @@ static int abis_rsl_rx_dchan(struct msgb *msg)
 {
 	struct abis_rsl_dchan_hdr *rslh = msgb_l2(msg);
 	int rc = 0;
-	char *ts_name;
 	struct e1inp_sign_link *sign_link = msg->dst;
+
+	if (rslh->ie_chan != RSL_IE_CHAN_NR) {
+		LOGP(DRSL, LOGL_ERROR,
+		     "Rx RSL DCHAN: invalid RSL header, expecting Channel Number IE tag, got 0x%x\n",
+		     rslh->ie_chan);
+		return -EINVAL;
+	}
 
 	msg->lchan = lchan_lookup(sign_link->trx, rslh->chan_nr,
 				  "Abis RSL rx DCHAN: ");
-	if (!msg->lchan)
-		return -1;
-	ts_name = gsm_lchan_name(msg->lchan);
+	if (!msg->lchan) {
+		LOGP(DRSL, LOGL_ERROR,
+		     "Rx RSL DCHAN: unable to match RSL message to an lchan: chan_nr=0x%x\n",
+		     rslh->chan_nr);
+		return -EINVAL;
+	}
+
+	LOG_LCHAN(msg->lchan, LOGL_DEBUG, "Rx %s\n", rsl_or_ipac_msg_name(rslh->c.msg_type));
+
+	if (!msg->lchan->fi) {
+		LOG_LCHAN(msg->lchan, LOGL_ERROR, "Rx RSL DCHAN: RSL message for unconfigured lchan\n");
+		return -EINVAL;
+	}
 
 	switch (rslh->c.msg_type) {
 	case RSL_MT_CHAN_ACTIV_ACK:
-		DEBUGP(DRSL, "%s CHANNEL ACTIVATE ACK\n", ts_name);
-		rc = rsl_rx_chan_act_ack(msg);
-		count_codecs(sign_link->trx->bts, msg->lchan);
+		if (msg_for_osmocom_dyn_ts(msg))
+			osmo_fsm_inst_dispatch(msg->lchan->ts->fi, TS_EV_PDCH_ACT_ACK, NULL);
+		else {
+			osmo_fsm_inst_dispatch(msg->lchan->fi, LCHAN_EV_RSL_CHAN_ACTIV_ACK, NULL);
+			count_codecs(sign_link->trx->bts, msg->lchan);
+		}
 		break;
 	case RSL_MT_CHAN_ACTIV_NACK:
 		rc = rsl_rx_chan_act_nack(msg);
@@ -1647,31 +1152,30 @@ static int abis_rsl_rx_dchan(struct msgb *msg)
 		rc = rsl_rx_hando_det(msg);
 		break;
 	case RSL_MT_RF_CHAN_REL_ACK:
-		rc = rsl_rx_rf_chan_rel_ack(msg->lchan);
+		if (msg_for_osmocom_dyn_ts(msg))
+			osmo_fsm_inst_dispatch(msg->lchan->ts->fi, TS_EV_PDCH_DEACT_ACK, NULL);
+		else
+			osmo_fsm_inst_dispatch(msg->lchan->fi, LCHAN_EV_RSL_RF_CHAN_REL_ACK, NULL);
 		break;
 	case RSL_MT_MODE_MODIFY_ACK:
+		LOG_LCHAN(msg->lchan, LOGL_DEBUG, "CHANNEL MODE MODIFY ACK\n");
 		count_codecs(sign_link->trx->bts, msg->lchan);
-		DEBUGP(DRSL, "%s CHANNEL MODE MODIFY ACK\n", ts_name);
 		break;
 	case RSL_MT_MODE_MODIFY_NACK:
-		LOGP(DRSL, LOGL_ERROR, "%s CHANNEL MODE MODIFY NACK\n", ts_name);
+		LOG_LCHAN(msg->lchan, LOGL_DEBUG, "CHANNEL MODE MODIFY NACK\n");
 		rate_ctr_inc(&sign_link->trx->bts->bts_ctrs->ctr[BTS_CTR_MODE_MODIFY_NACK]);
 		break;
 	case RSL_MT_IPAC_PDCH_ACT_ACK:
-		DEBUGP(DRSL, "%s IPAC PDCH ACT ACK\n", ts_name);
-		rc = rsl_rx_pdch_act_ack(msg);
+		rc = rsl_rx_ipacc_pdch(msg, "ACT ACK", TS_EV_PDCH_ACT_ACK);
 		break;
 	case RSL_MT_IPAC_PDCH_ACT_NACK:
-		LOGP(DRSL, LOGL_ERROR, "%s IPAC PDCH ACT NACK\n", ts_name);
-		rate_ctr_inc(&sign_link->trx->bts->bts_ctrs->ctr[BTS_CTR_RSL_IPA_NACK]);
+		rc = rsl_rx_ipacc_pdch(msg, "ACT NACK", TS_EV_PDCH_ACT_NACK);
 		break;
 	case RSL_MT_IPAC_PDCH_DEACT_ACK:
-		DEBUGP(DRSL, "%s IPAC PDCH DEACT ACK\n", ts_name);
-		rc = rsl_rx_pdch_deact_ack(msg);
+		rc = rsl_rx_ipacc_pdch(msg, "DEACT ACK", TS_EV_PDCH_DEACT_ACK);
 		break;
 	case RSL_MT_IPAC_PDCH_DEACT_NACK:
-		LOGP(DRSL, LOGL_ERROR, "%s IPAC PDCH DEACT NACK\n", ts_name);
-		rate_ctr_inc(&sign_link->trx->bts->bts_ctrs->ctr[BTS_CTR_RSL_IPA_NACK]);
+		rc = rsl_rx_ipacc_pdch(msg, "DEACT NACK", TS_EV_PDCH_DEACT_NACK);
 		break;
 	case RSL_MT_PHY_CONTEXT_CONF:
 	case RSL_MT_PREPROC_MEAS_RES:
@@ -1681,13 +1185,13 @@ static int abis_rsl_rx_dchan(struct msgb *msg)
 	case RSL_MT_MR_CODEC_MOD_ACK:
 	case RSL_MT_MR_CODEC_MOD_NACK:
 	case RSL_MT_MR_CODEC_MOD_PER:
-		LOGP(DRSL, LOGL_NOTICE, "%s Unimplemented Abis RSL DChan "
-			"msg 0x%02x\n", ts_name, rslh->c.msg_type);
+		LOG_LCHAN(msg->lchan, LOGL_NOTICE, "Unimplemented Abis RSL DChan msg 0x%02x\n",
+			  rslh->c.msg_type);
 		rate_ctr_inc(&sign_link->trx->bts->bts_ctrs->ctr[BTS_CTR_RSL_UNKNOWN]);
 		break;
 	default:
-		LOGP(DRSL, LOGL_NOTICE, "%s unknown Abis RSL DChan msg 0x%02x\n",
-			ts_name, rslh->c.msg_type);
+		LOG_LCHAN(msg->lchan, LOGL_NOTICE, "Unknown Abis RSL DChan msg 0x%02x\n",
+			  rslh->c.msg_type);
 		rate_ctr_inc(&sign_link->trx->bts->bts_ctrs->ctr[BTS_CTR_RSL_UNKNOWN]);
 		return -EINVAL;
 	}
@@ -1701,15 +1205,10 @@ static int rsl_rx_error_rep(struct msgb *msg)
 	struct tlv_parsed tp;
 	struct e1inp_sign_link *sign_link = msg->dst;
 
-	LOGP(DRSL, LOGL_ERROR, "%s ERROR REPORT ", gsm_trx_name(sign_link->trx));
-
 	rsl_tlv_parse(&tp, rslh->data, msgb_l2len(msg)-sizeof(*rslh));
 
-	if (TLVP_PRESENT(&tp, RSL_IE_CAUSE))
-		print_rsl_cause(LOGL_ERROR, TLVP_VAL(&tp, RSL_IE_CAUSE),
-				TLVP_LEN(&tp, RSL_IE_CAUSE));
-
-	LOGPC(DRSL, LOGL_ERROR, "\n");
+	LOGP(DRSL, LOGL_ERROR, "%s ERROR REPORT%s\n",
+	     gsm_trx_name(sign_link->trx), rsl_cause_name(&tp, NULL));
 
 	return 0;
 }
@@ -1748,36 +1247,6 @@ static int abis_rsl_rx_trx(struct msgb *msg)
 	return rc;
 }
 
-/* If T3101 expires, we never received a response to IMMEDIATE ASSIGN */
-static void t3101_expired(void *data)
-{
-	struct gsm_lchan *lchan = data;
-	LOGP(DRSL, LOGL_NOTICE,
-	     "%s T3101 expired: no response to IMMEDIATE ASSIGN\n",
-	     gsm_lchan_name(lchan));
-	rsl_rf_chan_release(lchan, 1, SACCH_DEACTIVATE);
-}
-
-/* If T3111 expires, we will send the RF Channel Request */
-static void t3111_expired(void *data)
-{
-	struct gsm_lchan *lchan = data;
-	LOGP(DRSL, LOGL_NOTICE,
-	     "%s T3111 expired: releasing RF Channel\n",
-	     gsm_lchan_name(lchan));
-	rsl_rf_chan_release(lchan, 0, SACCH_NONE);
-}
-
-/* If T3109 expires the MS has not send a UA/UM do the error release */
-static void t3109_expired(void *data)
-{
-	struct gsm_lchan *lchan = data;
-
-	LOGP(DRSL, LOGL_ERROR,
-		"%s SACCH deactivation timeout.\n", gsm_lchan_name(lchan));
-	rsl_rf_chan_release(lchan, 1, SACCH_NONE);
-}
-
 /* Format an IMM ASS REJ according to 04.08 Chapter 9.1.20 */
 static int rsl_send_imm_ass_rej(struct gsm_bts *bts,
 				struct gsm48_req_ref *rqd_ref,
@@ -1811,6 +1280,18 @@ static int rsl_send_imm_ass_rej(struct gsm_bts *bts,
 	iar->l2_plen = GSM48_LEN2PLEN((sizeof(*iar)-1));
 
 	return rsl_imm_assign_cmd(bts, sizeof(*iar), (uint8_t *) iar);
+}
+
+int rsl_tx_imm_ass_rej(struct gsm_bts *bts, struct gsm48_req_ref *rqd_ref)
+{
+	uint8_t wait_ind;
+	wait_ind = bts->T3122;
+	if (!wait_ind)
+		wait_ind = T_def_get(bts->network->T_defs, 3122, T_S, -1);
+	if (!wait_ind)
+		wait_ind = GSM_T3122_DEFAULT;
+	/* The BTS will gather multiple CHAN RQD and reject up to 4 MS at the same time. */
+	return rsl_send_imm_ass_rej(bts, rqd_ref, wait_ind);
 }
 
 /* Handle packet channel rach requests */
@@ -1849,6 +1330,7 @@ static int rsl_rx_pchan_rqd(struct msgb *msg, struct gsm_bts *bts)
 /* MS has requested a channel on the RACH */
 static int rsl_rx_chan_rqd(struct msgb *msg)
 {
+	struct lchan_activate_info info;
 	struct e1inp_sign_link *sign_link = msg->dst;
 	struct gsm_bts *bts = sign_link->trx->bts;
 	struct abis_rsl_dchan_hdr *rqd_hdr = msgb_l2(msg);
@@ -1857,9 +1339,6 @@ static int rsl_rx_chan_rqd(struct msgb *msg)
 	enum gsm_chreq_reason_t chreq_reason;
 	struct gsm_lchan *lchan;
 	uint8_t rqd_ta;
-
-	uint16_t arfcn;
-	uint8_t subch;
 
 	/* parse request reference to be used in immediate assign */
 	if (rqd_hdr->data[0] != RSL_IE_REQ_REFERENCE)
@@ -1900,78 +1379,42 @@ static int rsl_rx_chan_rqd(struct msgb *msg)
 	 * Note: If the MS requests not TCH/H, we don't know if the phone
 	 *       supports TCH/H, so we must assign TCH/F or SDCCH.
 	 */
-	lchan = lchan_alloc(bts, GSM_LCHAN_SDCCH, 0);
+	lchan = lchan_select_by_type(bts, GSM_LCHAN_SDCCH);
 	if (!lchan && lctype != GSM_LCHAN_SDCCH) {
 		LOGP(DRSL, LOGL_NOTICE, "(bts=%d) CHAN RQD: no resources for %s "
 			"0x%x, retrying with %s\n",
 			msg->lchan->ts->trx->bts->nr,
 			gsm_lchant_name(GSM_LCHAN_SDCCH), rqd_ref->ra,
 			gsm_lchant_name(lctype));
-		lchan = lchan_alloc(bts, lctype, 0);
+		lchan = lchan_select_by_type(bts, lctype);
 	}
 	if (!lchan) {
-		uint8_t wait_ind;
 		LOGP(DRSL, LOGL_NOTICE, "(bts=%d) CHAN RQD: no resources for %s 0x%x\n",
 		     msg->lchan->ts->trx->bts->nr, gsm_lchant_name(lctype), rqd_ref->ra);
 		rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_CTR_CHREQ_NO_CHANNEL]);
-		wait_ind = bts->T3122;
-		if (!wait_ind)
-			wait_ind = T_def_get(bts->network->T_defs, 3122, T_S, -1);
-		if (!wait_ind)
-			wait_ind = GSM_T3122_DEFAULT;
-		/* The BTS will gather multiple CHAN RQD and reject up to 4 MS at the same time. */
-		rsl_send_imm_ass_rej(bts, rqd_ref, wait_ind);
+		rsl_tx_imm_ass_rej(bts, rqd_ref);
 		return 0;
 	}
 
-	/*
-	 * Expecting lchan state to be NONE, except for dyn TS in PDCH mode.
-	 * Those are expected to be ACTIVE: the PDCH release will be sent from
-	 * rsl_chan_activate_lchan() below.
-	 */
-	if (lchan->state != LCHAN_S_NONE
-	    && !(lchan->ts->pchan == GSM_PCHAN_TCH_F_TCH_H_PDCH
-		 && lchan->ts->dyn.pchan_is == GSM_PCHAN_PDCH
-		 && lchan->state == LCHAN_S_ACTIVE))
-		LOGP(DRSL, LOGL_NOTICE, "%s lchan_alloc() returned channel "
-		     "in state %s\n", gsm_lchan_name(lchan),
-		     gsm_lchans_name(lchan->state));
-
 	/* save the RACH data as we need it after the CHAN ACT ACK */
 	lchan->rqd_ref = talloc_zero(bts, struct gsm48_req_ref);
-	if (!lchan->rqd_ref) {
-		LOGP(DRSL, LOGL_ERROR, "Failed to allocate gsm48_req_ref.\n");
-		lchan_free(lchan);
-		return -ENOMEM;
-	}
+	OSMO_ASSERT(lchan->rqd_ref);
 
-	memcpy(lchan->rqd_ref, rqd_ref, sizeof(*rqd_ref));
+	*(lchan->rqd_ref) = *rqd_ref;
 	lchan->rqd_ta = rqd_ta;
 
-	arfcn = lchan->ts->trx->arfcn;
-	subch = lchan->nr;
+	LOG_LCHAN(lchan, LOGL_DEBUG, "MS: Channel Request: reason=%s ra=0x%02x ta=%d\n",
+		  gsm_chreq_name(chreq_reason), rqd_ref->ra, rqd_ta);
+	info = (struct lchan_activate_info){
+		.activ_for = FOR_MS_CHANNEL_REQUEST,
+		.chan_mode = GSM48_CMODE_SIGN,
+	};
 
-	lchan->encr.alg_id = RSL_ENC_ALG_A5(0);	/* no encryption */
-	lchan->ms_power = ms_pwr_ctl_lvl(bts->band, bts->ms_max_power);
-	lchan->bs_power = 0; /* 0dB reduction, output power = Pn */
-	lchan->rsl_cmode = RSL_CMOD_SPD_SIGN;
-	lchan->tch_mode = GSM48_CMODE_SIGN;
-
-	/* Start another timer or assume the BTS sends a ACK/NACK? */
-	osmo_timer_setup(&lchan->act_timer, lchan_act_tmr_cb, lchan);
-	osmo_timer_schedule(&lchan->act_timer, 4, 0);
-
-	DEBUGP(DRSL, "%s Activating ARFCN(%u) SS(%u) lctype %s "
-		"r=%s ra=0x%02x ta=%d\n", gsm_lchan_name(lchan), arfcn, subch,
-		gsm_lchant_name(lchan->type), gsm_chreq_name(chreq_reason),
-		rqd_ref->ra, rqd_ta);
-
-	rsl_chan_activate_lchan(lchan, RSL_ACT_INTRA_IMM_ASS, 0);
-
+	lchan_activate(lchan, &info);
 	return 0;
 }
 
-static int rsl_send_imm_assignment(struct gsm_lchan *lchan)
+int rsl_tx_imm_assignment(struct gsm_lchan *lchan)
 {
 	struct gsm_bts *bts = lchan->ts->trx->bts;
 	uint8_t buf[GSM_MACBLOCK_LEN];
@@ -1996,10 +1439,6 @@ static int rsl_send_imm_assignment(struct gsm_lchan *lchan)
 	}
 	/* we need to subtract 1 byte from sizeof(*ia) since ia includes the l2_plen field */
 	ia->l2_plen = GSM48_LEN2PLEN((sizeof(*ia)-1) + ia->mob_alloc_len);
-
-	/* Start timer T3101 to wait for GSM48_MT_RR_PAG_RESP */
-	osmo_timer_setup(&lchan->T3101, t3101_expired, lchan);
-	osmo_timer_schedule(&lchan->T3101, T_def_get(bts->network->T_defs, 3101, T_S, -1), 0);
 
 	/* send IMMEDIATE ASSIGN CMD on RSL to BTS (to send on CCCH to MS) */
 	return rsl_imm_assign_cmd(bts, sizeof(*ia)+ia->mob_alloc_len, (uint8_t *) ia);
@@ -2111,55 +1550,20 @@ static int rsl_rx_rll_err_ind(struct msgb *msg)
 
 	rsl_tlv_parse(&tp, rllh->data, msgb_l2len(msg) - sizeof(*rllh));
 	if (!TLVP_PRESENT(&tp, RSL_IE_RLM_CAUSE)) {
-		LOGP(DRLL, LOGL_ERROR,
-			"%s ERROR INDICATION without mandantory cause.\n",
-			gsm_lchan_name(msg->lchan));
+		LOG_LCHAN(msg->lchan, LOGL_ERROR, "ERROR INDICATION without mandantory cause.\n");
 		return -1;
 	}
 
 	rlm_cause = *TLVP_VAL(&tp, RSL_IE_RLM_CAUSE);
-	LOGP(DRLL, LOGL_ERROR, "%s ERROR INDICATION cause=%s in state=%s\n",
-		gsm_lchan_name(msg->lchan),
-		rsl_rlm_cause_name(rlm_cause),
-		gsm_lchans_name(msg->lchan->state));
+	LOG_LCHAN(msg->lchan, LOGL_ERROR, "ERROR INDICATION cause=%s\n", rsl_rlm_cause_name(rlm_cause));
 
 	rll_indication(msg->lchan, rllh->link_id, BSC_RLLR_IND_ERR_IND);
 
-	if (rlm_cause == RLL_CAUSE_T200_EXPIRED) {
-		rate_ctr_inc(&msg->lchan->ts->trx->bts->bts_ctrs->ctr[BTS_CTR_CHAN_RLL_ERR]);
-		return rsl_rf_chan_release_err(msg->lchan);
-	}
+	rate_ctr_inc(&msg->lchan->ts->trx->bts->bts_ctrs->ctr[BTS_CTR_CHAN_RLL_ERR]);
+
+	osmo_fsm_inst_dispatch(msg->lchan->fi, LCHAN_EV_RLL_ERR_IND, &rlm_cause);
 
 	return 0;
-}
-
-static void rsl_handle_release(struct gsm_lchan *lchan)
-{
-	int sapi;
-	struct gsm_bts *bts;
-
-	/*
-	 * Maybe only one link/SAPI was releasd or the error handling
-	 * was activated. Just return now and let the other code handle
-	 * it.
-	 */
-	if (lchan->state != LCHAN_S_REL_REQ)
-		return;
-
-	for (sapi = 0; sapi < ARRAY_SIZE(lchan->sapis); ++sapi) {
-		if (lchan->sapis[sapi] == LCHAN_SAPI_UNUSED)
-			continue;
-		LOGP(DRSL, LOGL_DEBUG, "%s waiting for SAPI=%d to be released.\n",
-		     gsm_lchan_name(lchan), sapi);
-		return;
-	}
-
-
-	/* Stop T3109 and wait for T3111 before re-using the channel */
-	osmo_timer_del(&lchan->T3109);
-	osmo_timer_setup(&lchan->T3111, t3111_expired, lchan);
-	bts = lchan->ts->trx->bts;
-	osmo_timer_schedule(&lchan->T3111, T_def_get(bts->network->T_defs, 3111, T_S, -1), 0);
 }
 
 /*	ESTABLISH INDICATION, LOCATION AREA UPDATE REQUEST
@@ -2173,17 +1577,13 @@ static int abis_rsl_rx_rll(struct msgb *msg)
 	struct e1inp_sign_link *sign_link = msg->dst;
 	struct abis_rsl_rll_hdr *rllh = msgb_l2(msg);
 	int rc = 0;
-	char *ts_name;
-	uint8_t sapi = rllh->link_id & 7;
+	uint8_t sapi = rllh->link_id & 0x7;
 
-	msg->lchan = lchan_lookup(sign_link->trx, rllh->chan_nr,
-				  "Abis RSL rx RLL: ");
-	ts_name = gsm_lchan_name(msg->lchan);
-	DEBUGP(DRLL, "%s SAPI=%u ", ts_name, sapi);
+	msg->lchan = lchan_lookup(sign_link->trx, rllh->chan_nr, "Abis RSL rx RLL: ");
 
 	switch (rllh->c.msg_type) {
 	case RSL_MT_DATA_IND:
-		DEBUGPC(DRLL, "DATA INDICATION\n");
+		LOG_LCHAN(msg->lchan, LOGL_DEBUG, "SAPI=%u DATA INDICATION\n", sapi);
 		if (msgb_l2len(msg) >
 		    sizeof(struct abis_rsl_common_hdr) + sizeof(*rllh) &&
 		    rllh->data[0] == RSL_IE_L3_INFO) {
@@ -2192,16 +1592,16 @@ static int abis_rsl_rx_rll(struct msgb *msg)
 		}
 		break;
 	case RSL_MT_EST_IND:
-		DEBUGPC(DRLL, "ESTABLISH INDICATION\n");
+		LOG_LCHAN(msg->lchan, LOGL_DEBUG, "SAPI=%u ESTABLISH INDICATION\n", sapi);
 		/* lchan is established, stop T3101 */
 
 		/* Note: By definition the first Establish Indication must
 		 * happen first on SAPI 0, once the connection on SAPI 0 is
 		 * made, parallel connections on other SAPIs are permitted */
 		if (sapi != 0 && msg->lchan->sapis[0] != LCHAN_SAPI_MS) {
-			LOGP(DRLL, LOGL_NOTICE, "MS attempted to establish DCCH on SAPI=%d (expected SAPI=0)\n",
-				rllh->link_id & 0x7);
-
+			LOG_LCHAN(msg->lchan, LOGL_NOTICE,
+				  "MS attempted to establish DCCH on SAPI=%d (expected SAPI=0)\n",
+				  sapi);
 			/* Note: We do not need to close the channel,
 			 * since we might still get a proper Establish Ind.
 			 * If not, T3101 will close the channel on timeout. */
@@ -2215,7 +1615,8 @@ static int abis_rsl_rx_rll(struct msgb *msg)
 		 * (see also 3GPP TS 44.005, figure 5) So we have to drop such
 		 * Establish Indications */
 		if (sapi == 0 && (rllh->link_id >> 6 & 0x03) == 1) {
-			LOGP(DRLL, LOGL_NOTICE, "MS attempted to establish an SACCH in MF mode on SAPI=0 (not permitted)\n");
+			LOG_LCHAN(msg->lchan, LOGL_NOTICE,
+				  "MS attempted to establish an SACCH in MF mode on SAPI=0 (not permitted)\n");
 
 			/* Note: We do not need to close the channel,
 			 * since we might still get a proper Establish Ind.
@@ -2223,8 +1624,9 @@ static int abis_rsl_rx_rll(struct msgb *msg)
 			break;
 		}
 
-		msg->lchan->sapis[rllh->link_id & 0x7] = LCHAN_SAPI_MS;
-		osmo_timer_del(&msg->lchan->T3101);
+		msg->lchan->sapis[sapi] = LCHAN_SAPI_MS;
+		osmo_fsm_inst_dispatch(msg->lchan->fi, LCHAN_EV_RLL_ESTABLISH_IND, msg);
+
 		if (msgb_l2len(msg) >
 		    sizeof(struct abis_rsl_common_hdr) + sizeof(*rllh) &&
 		    rllh->data[0] == RSL_IE_L3_INFO) {
@@ -2233,52 +1635,42 @@ static int abis_rsl_rx_rll(struct msgb *msg)
 		}
 		break;
 	case RSL_MT_EST_CONF:
-		DEBUGPC(DRLL, "ESTABLISH CONFIRM\n");
-		msg->lchan->sapis[rllh->link_id & 0x7] = LCHAN_SAPI_NET;
+		LOG_LCHAN(msg->lchan, LOGL_ERROR, "SAPI=%u ESTABLISH CONFIRM\n", sapi);
+		msg->lchan->sapis[sapi] = LCHAN_SAPI_NET;
 		rll_indication(msg->lchan, rllh->link_id,
 				  BSC_RLLR_IND_EST_CONF);
 		break;
 	case RSL_MT_REL_IND:
 		/* BTS informs us of having received  DISC from MS */
-		DEBUGPC(DRLL, "RELEASE INDICATION\n");
-		msg->lchan->sapis[rllh->link_id & 0x7] = LCHAN_SAPI_UNUSED;
-		rll_indication(msg->lchan, rllh->link_id,
-				  BSC_RLLR_IND_REL_IND);
-		rsl_handle_release(msg->lchan);
-		/* if it was the main signalling link, let the subscr_conn_fsm know */
-		if (msg->lchan->conn && sapi == 0 && (rllh->link_id >> 6) == 0)
-			osmo_fsm_inst_dispatch(msg->lchan->conn->fi, GSCON_EV_RLL_REL_IND, msg);
+		osmo_fsm_inst_dispatch(msg->lchan->fi, LCHAN_EV_RLL_REL_IND, &rllh->link_id);
 		break;
 	case RSL_MT_REL_CONF:
 		/* BTS informs us of having received UA from MS,
 		 * in response to DISC that we've sent earlier */
-		DEBUGPC(DRLL, "RELEASE CONFIRMATION\n");
-		msg->lchan->sapis[rllh->link_id & 0x7] = LCHAN_SAPI_UNUSED;
-		rsl_handle_release(msg->lchan);
+		osmo_fsm_inst_dispatch(msg->lchan->fi, LCHAN_EV_RLL_REL_CONF, &rllh->link_id);
 		break;
 	case RSL_MT_ERROR_IND:
-		DEBUGPC(DRLL, "ERROR INDICATION\n");
+		LOG_LCHAN(msg->lchan, LOGL_DEBUG, "SAPI=%u ERROR INDICATION\n", sapi);
 		rc = rsl_rx_rll_err_ind(msg);
 		break;
 	case RSL_MT_UNIT_DATA_IND:
-		DEBUGPC(DRLL, "UNIT DATA INDICATION\n");
-		LOGP(DRLL, LOGL_NOTICE, "unimplemented Abis RLL message "
-			"type 0x%02x\n", rllh->c.msg_type);
+		LOG_LCHAN(msg->lchan, LOGL_NOTICE, "SAPI=%u UNIT DATA INDICATION:"
+			  " unimplemented Abis RLL message type 0x%02x\n", sapi, rllh->c.msg_type);
 		break;
 	default:
-		DEBUGPC(DRLL, "UNKNOWN\n");
-		LOGP(DRLL, LOGL_NOTICE, "unknown Abis RLL message "
-			"type 0x%02x\n", rllh->c.msg_type);
+		LOG_LCHAN(msg->lchan, LOGL_NOTICE, "SAPI=%u Unknown Abis RLL message type 0x%02x\n",
+			  sapi, rllh->c.msg_type);
 		rate_ctr_inc(&sign_link->trx->bts->bts_ctrs->ctr[BTS_CTR_RSL_UNKNOWN]);
 	}
 	return rc;
 }
 
-static uint8_t ipa_smod_s_for_lchan(struct gsm_lchan *lchan)
+/* Return an ip.access BTS speech mode value (uint8_t) or negative on error. */
+int ipacc_speech_mode(enum gsm48_chan_mode tch_mode, enum gsm_chan_t type)
 {
-	switch (lchan->tch_mode) {
+	switch (tch_mode) {
 	case GSM48_CMODE_SPEECH_V1:
-		switch (lchan->type) {
+		switch (type) {
 		case GSM_LCHAN_TCH_F:
 			return 0x00;
 		case GSM_LCHAN_TCH_H:
@@ -2288,7 +1680,7 @@ static uint8_t ipa_smod_s_for_lchan(struct gsm_lchan *lchan)
 		}
 		break;
 	case GSM48_CMODE_SPEECH_EFR:
-		switch (lchan->type) {
+		switch (type) {
 		case GSM_LCHAN_TCH_F:
 			return 0x01;
 		/* there's no half-rate EFR */
@@ -2297,7 +1689,7 @@ static uint8_t ipa_smod_s_for_lchan(struct gsm_lchan *lchan)
 		}
 		break;
 	case GSM48_CMODE_SPEECH_AMR:
-		switch (lchan->type) {
+		switch (type) {
 		case GSM_LCHAN_TCH_F:
 			return 0x02;
 		case GSM_LCHAN_TCH_H:
@@ -2309,16 +1701,24 @@ static uint8_t ipa_smod_s_for_lchan(struct gsm_lchan *lchan)
 	default:
 		break;
 	}
-	LOGP(DRSL, LOGL_ERROR, "Cannot determine ip.access speech mode for "
-		"tch_mode == 0x%02x\n", lchan->tch_mode);
-	return 0;
+	return -EINVAL;
 }
 
-static uint8_t ipa_rtp_pt_for_lchan(struct gsm_lchan *lchan)
+void ipacc_speech_mode_set_direction(uint8_t *speech_mode, bool send)
 {
-	switch (lchan->tch_mode) {
+	const uint8_t recv_only_flag = 0x10;
+	if (send)
+		*speech_mode = *speech_mode & ~recv_only_flag;
+	else
+		*speech_mode = *speech_mode | recv_only_flag;
+}
+
+/* Return an ip.access BTS payload type value (uint8_t) or negative on error. */
+int ipacc_payload_type(enum gsm48_chan_mode tch_mode, enum gsm_chan_t type)
+{
+	switch (tch_mode) {
 	case GSM48_CMODE_SPEECH_V1:
-		switch (lchan->type) {
+		switch (type) {
 		case GSM_LCHAN_TCH_F:
 			return RTP_PT_GSM_FULL;
 		case GSM_LCHAN_TCH_H:
@@ -2328,7 +1728,7 @@ static uint8_t ipa_rtp_pt_for_lchan(struct gsm_lchan *lchan)
 		}
 		break;
 	case GSM48_CMODE_SPEECH_EFR:
-		switch (lchan->type) {
+		switch (type) {
 		case GSM_LCHAN_TCH_F:
 			return RTP_PT_GSM_EFR;
 		/* there's no half-rate EFR */
@@ -2337,7 +1737,7 @@ static uint8_t ipa_rtp_pt_for_lchan(struct gsm_lchan *lchan)
 		}
 		break;
 	case GSM48_CMODE_SPEECH_AMR:
-		switch (lchan->type) {
+		switch (type) {
 		case GSM_LCHAN_TCH_F:
 		case GSM_LCHAN_TCH_H:
 			return RTP_PT_AMR;
@@ -2348,72 +1748,70 @@ static uint8_t ipa_rtp_pt_for_lchan(struct gsm_lchan *lchan)
 	default:
 		break;
 	}
-	LOGP(DRSL, LOGL_ERROR, "Cannot determine ip.access rtp payload type for "
-		"tch_mode == 0x%02x & lchan_type == %d\n",
-		lchan->tch_mode, lchan->type);
-	return 0;
+	return -EINVAL;
+}
+
+static const char *ip_to_a(uint32_t ip)
+{
+	struct in_addr ia;
+	ia.s_addr = htonl(ip);
+	return inet_ntoa(ia);
 }
 
 /* ip.access specific RSL extensions */
-static void ipac_parse_rtp(struct gsm_lchan *lchan, struct tlv_parsed *tv)
+static void ipac_parse_rtp(struct gsm_lchan *lchan, struct tlv_parsed *tv, const char *label)
 {
 	struct in_addr ip;
 	uint16_t port, conn_id;
 
 	if (TLVP_PRESENT(tv, RSL_IE_IPAC_LOCAL_IP)) {
 		ip.s_addr = tlvp_val32_unal(tv, RSL_IE_IPAC_LOCAL_IP);
-		DEBUGPC(DRSL, "LOCAL_IP=%s ", inet_ntoa(ip));
 		lchan->abis_ip.bound_ip = ntohl(ip.s_addr);
 	}
 
 	if (TLVP_PRESENT(tv, RSL_IE_IPAC_LOCAL_PORT)) {
 		port = tlvp_val16_unal(tv, RSL_IE_IPAC_LOCAL_PORT);
 		port = ntohs(port);
-		DEBUGPC(DRSL, "LOCAL_PORT=%u ", port);
 		lchan->abis_ip.bound_port = port;
 	}
 
 	if (TLVP_PRESENT(tv, RSL_IE_IPAC_CONN_ID)) {
 		conn_id = tlvp_val16_unal(tv, RSL_IE_IPAC_CONN_ID);
 		conn_id = ntohs(conn_id);
-		DEBUGPC(DRSL, "CON_ID=%u ", conn_id);
 		lchan->abis_ip.conn_id = conn_id;
 	}
 
 	if (TLVP_PRESENT(tv, RSL_IE_IPAC_RTP_PAYLOAD2)) {
 		lchan->abis_ip.rtp_payload2 =
 				*TLVP_VAL(tv, RSL_IE_IPAC_RTP_PAYLOAD2);
-		DEBUGPC(DRSL, "RTP_PAYLOAD2=0x%02x ",
-			lchan->abis_ip.rtp_payload2);
 	}
 
 	if (TLVP_PRESENT(tv, RSL_IE_IPAC_SPEECH_MODE)) {
 		lchan->abis_ip.speech_mode =
 				*TLVP_VAL(tv, RSL_IE_IPAC_SPEECH_MODE);
-		DEBUGPC(DRSL, "speech_mode=0x%02x ",
-			lchan->abis_ip.speech_mode);
 	}
 
+	/* Why would we receive the MGW IP and port back from the BTS, and why would we care?? */
 	if (TLVP_PRESENT(tv, RSL_IE_IPAC_REMOTE_IP)) {
 		ip.s_addr = tlvp_val32_unal(tv, RSL_IE_IPAC_REMOTE_IP);
-		DEBUGPC(DRSL, "REMOTE_IP=%s ", inet_ntoa(ip));
 		lchan->abis_ip.connect_ip = ntohl(ip.s_addr);
 	}
-
 	if (TLVP_PRESENT(tv, RSL_IE_IPAC_REMOTE_PORT)) {
 		port = tlvp_val16_unal(tv, RSL_IE_IPAC_REMOTE_PORT);
 		port = ntohs(port);
-		DEBUGPC(DRSL, "REMOTE_PORT=%u ", port);
 		lchan->abis_ip.connect_port = port;
 	}
 
-	DEBUGPC(DRSL, "\n");
+	LOG_LCHAN(lchan, LOGL_DEBUG, "Rx IPACC %s ACK:"
+		  " BTS=%s:%u conn_id=%u rtp_payload2=0x%02x speech_mode=0x%02x\n",
+		  label, ip_to_a(lchan->abis_ip.bound_ip), lchan->abis_ip.bound_port,
+		  lchan->abis_ip.conn_id, lchan->abis_ip.rtp_payload2, lchan->abis_ip.speech_mode);
 }
 
-/*! \brief Issue IPA RSL CRCX to configure RTP on BTS side
- *  \param[in] lchan Logical Channel for which we issue CRCX
+/*! Send Issue IPA RSL CRCX to configure the RTP port of the BTS.
+ * \param[in] lchan Logical Channel for which we issue CRCX
  */
-int rsl_ipacc_crcx(struct gsm_lchan *lchan)
+int rsl_tx_ipacc_crcx(struct gsm_lchan *lchan)
 {
 	struct msgb *msg = rsl_msgb_alloc();
 	struct abis_rsl_dchan_hdr *dh;
@@ -2424,116 +1822,52 @@ int rsl_ipacc_crcx(struct gsm_lchan *lchan)
 	dh->chan_nr = gsm_lchan2chan_nr(lchan);
 
 	/* 0x1- == receive-only, 0x-1 == EFR codec */
-	lchan->abis_ip.speech_mode = 0x10 | ipa_smod_s_for_lchan(lchan);
-	lchan->abis_ip.rtp_payload = ipa_rtp_pt_for_lchan(lchan);
 	msgb_tv_put(msg, RSL_IE_IPAC_SPEECH_MODE, lchan->abis_ip.speech_mode);
 	msgb_tv_put(msg, RSL_IE_IPAC_RTP_PAYLOAD, lchan->abis_ip.rtp_payload);
 
-	DEBUGP(DRSL, "%s IPAC_BIND speech_mode=0x%02x RTP_PAYLOAD=%d\n",
-		gsm_lchan_name(lchan), lchan->abis_ip.speech_mode,
-		lchan->abis_ip.rtp_payload);
+	LOG_LCHAN(lchan, LOGL_DEBUG, "Sending IPACC CRCX to BTS: speech_mode=0x%02x RTP_PAYLOAD=%d\n",
+		  lchan->abis_ip.speech_mode, lchan->abis_ip.rtp_payload);
 
 	msg->dst = lchan->ts->trx->rsl_link;
 
 	return abis_rsl_sendmsg(msg);
 }
 
-/*! \brief Issue IPA RSL MDCX to configure MGW-side of RTP
- *  \param[in] lchan Logical Channel for which we issue MDCX
- *  \param[in] ip Remote (MGW) IP address for RTP
- *  \param[in] port Remote (MGW) UDP port number for RTP
- *  \param[in] rtp_payload2 Contents of RTP PAYLOAD 2 IE
+/*! Send IPA RSL MDCX to configure the RTP port the BTS sends to (MGW).
+ * \param[in] lchan Logical Channel for which we issue MDCX
+ * Remote (MGW) IP address, port and payload types for RTP are determined from lchan->abis_ip.
  */
-int rsl_ipacc_mdcx(struct gsm_lchan *lchan, uint32_t ip, uint16_t port,
-		   uint8_t rtp_payload2)
+int rsl_tx_ipacc_mdcx(struct gsm_lchan *lchan)
 {
 	struct msgb *msg = rsl_msgb_alloc();
 	struct abis_rsl_dchan_hdr *dh;
 	uint32_t *att_ip;
-	struct in_addr ia;
 
 	dh = (struct abis_rsl_dchan_hdr *) msgb_put(msg, sizeof(*dh));
 	init_dchan_hdr(dh, RSL_MT_IPAC_MDCX);
 	dh->c.msg_discr = ABIS_RSL_MDISC_IPACCESS;
 	dh->chan_nr = gsm_lchan2chan_nr(lchan);
 
-	/* we need to store these now as MDCX_ACK does not return them :( */
-	lchan->abis_ip.rtp_payload2 = rtp_payload2;
-	lchan->abis_ip.connect_port = port;
-	lchan->abis_ip.connect_ip = ip;
-
-	/* 0x0- == both directions, 0x-1 == EFR codec */
-	lchan->abis_ip.speech_mode = 0x00 | ipa_smod_s_for_lchan(lchan);
-	lchan->abis_ip.rtp_payload = ipa_rtp_pt_for_lchan(lchan);
-
-	ia.s_addr = htonl(ip);
-	DEBUGP(DRSL, "%s IPAC_MDCX IP=%s PORT=%d RTP_PAYLOAD=%d RTP_PAYLOAD2=%d "
-		"CONN_ID=%d speech_mode=0x%02x\n", gsm_lchan_name(lchan),
-		inet_ntoa(ia), port, lchan->abis_ip.rtp_payload, rtp_payload2,
-		lchan->abis_ip.conn_id, lchan->abis_ip.speech_mode);
-
 	msgb_tv16_put(msg, RSL_IE_IPAC_CONN_ID, lchan->abis_ip.conn_id);
 	msgb_v_put(msg, RSL_IE_IPAC_REMOTE_IP);
-	att_ip = (uint32_t *) msgb_put(msg, sizeof(ip));
-	*att_ip = ia.s_addr;
-	msgb_tv16_put(msg, RSL_IE_IPAC_REMOTE_PORT, port);
+	att_ip = (uint32_t *)msgb_put(msg, sizeof(uint32_t));
+	*att_ip = htonl(lchan->abis_ip.connect_ip);
+	msgb_tv16_put(msg, RSL_IE_IPAC_REMOTE_PORT, lchan->abis_ip.connect_port);
 	msgb_tv_put(msg, RSL_IE_IPAC_SPEECH_MODE, lchan->abis_ip.speech_mode);
 	msgb_tv_put(msg, RSL_IE_IPAC_RTP_PAYLOAD, lchan->abis_ip.rtp_payload);
-	if (rtp_payload2)
-		msgb_tv_put(msg, RSL_IE_IPAC_RTP_PAYLOAD2, rtp_payload2);
+	if (lchan->abis_ip.rtp_payload2)
+		msgb_tv_put(msg, RSL_IE_IPAC_RTP_PAYLOAD2, lchan->abis_ip.rtp_payload2);
 
 	msg->dst = lchan->ts->trx->rsl_link;
 
-	return abis_rsl_sendmsg(msg);
-}
-
-static bool check_gprs_enabled(struct gsm_bts_trx_ts *ts)
-{
-	if (ts->trx->bts->gprs.mode == BTS_GPRS_NONE) {
-		LOGP(DRSL, LOGL_NOTICE, "%s: GPRS mode is 'none': not activating PDCH.\n",
-		     gsm_ts_and_pchan_name(ts));
-		return false;
-	}
-	return true;
-}
-
-int rsl_ipacc_pdch_activate(struct gsm_bts_trx_ts *ts, int act)
-{
-	struct msgb *msg = rsl_msgb_alloc();
-	struct abis_rsl_dchan_hdr *dh;
-	uint8_t msg_type;
-
-	if (ts->flags & TS_F_PDCH_PENDING_MASK) {
-		LOGP(DRSL, LOGL_ERROR,
-		     "%s PDCH %s requested, but a PDCH%s%s is still pending\n",
-		     gsm_ts_name(ts),
-		     act ? "ACT" : "DEACT",
-		     ts->flags & TS_F_PDCH_ACT_PENDING? " ACT" : "",
-		     ts->flags & TS_F_PDCH_DEACT_PENDING? " DEACT" : "");
-		return -EINVAL;
-	}
-
-	if (act){
-		if (!check_gprs_enabled(ts))
-			return -ENOTSUP;
-
-		msg_type = RSL_MT_IPAC_PDCH_ACT;
-		ts->flags |= TS_F_PDCH_ACT_PENDING;
-	} else {
-		msg_type = RSL_MT_IPAC_PDCH_DEACT;
-		ts->flags |= TS_F_PDCH_DEACT_PENDING;
-	}
-	/* TODO add timeout to cancel PDCH DE/ACT */
-
-	dh = (struct abis_rsl_dchan_hdr *) msgb_put(msg, sizeof(*dh));
-	init_dchan_hdr(dh, msg_type);
-	dh->c.msg_discr = ABIS_RSL_MDISC_DED_CHAN;
-	dh->chan_nr = gsm_pchan2chan_nr(GSM_PCHAN_TCH_F, ts->nr, 0);
-
-	DEBUGP(DRSL, "%s IPAC PDCH %sACT\n", gsm_ts_name(ts),
-		act ? "" : "DE");
-
-	msg->dst = ts->trx->rsl_link;
+	LOG_LCHAN(lchan, LOGL_DEBUG, "Sending IPACC MDCX to BTS:"
+		  " %s:%u rtp_payload=%u rtp_payload2=%u conn_id=%u speech_mode=0x%02x\n",
+		  ip_to_a(lchan->abis_ip.connect_ip),
+		  lchan->abis_ip.connect_port,
+		  lchan->abis_ip.rtp_payload,
+		  lchan->abis_ip.rtp_payload2,
+		  lchan->abis_ip.conn_id,
+		  lchan->abis_ip.speech_mode);
 
 	return abis_rsl_sendmsg(msg);
 }
@@ -2552,13 +1886,13 @@ static int abis_rsl_rx_ipacc_crcx_ack(struct msgb *msg)
 	if (!TLVP_PRESENT(&tv, RSL_IE_IPAC_LOCAL_PORT) ||
 	    !TLVP_PRESENT(&tv, RSL_IE_IPAC_LOCAL_IP) ||
 	    !TLVP_PRESENT(&tv, RSL_IE_IPAC_CONN_ID)) {
-		LOGP(DRSL, LOGL_NOTICE, "mandatory IE missing");
+		LOGP(DRSL, LOGL_NOTICE, "mandatory IE missing\n");
 		return -EINVAL;
 	}
 
-	ipac_parse_rtp(lchan, &tv);
+	ipac_parse_rtp(lchan, &tv, "CRCX");
 
-	osmo_signal_dispatch(SS_ABISIP, S_ABISIP_CRCX_ACK, msg->lchan);
+	osmo_fsm_inst_dispatch(lchan->fi, LCHAN_EV_IPACC_CRCX_ACK, 0);
 
 	return 0;
 }
@@ -2574,8 +1908,9 @@ static int abis_rsl_rx_ipacc_mdcx_ack(struct msgb *msg)
 	 * connected the given logical channel */
 
 	rsl_tlv_parse(&tv, dh->data, msgb_l2len(msg)-sizeof(*dh));
-	ipac_parse_rtp(lchan, &tv);
-	osmo_signal_dispatch(SS_ABISIP, S_ABISIP_MDCX_ACK, msg->lchan);
+	ipac_parse_rtp(lchan, &tv, "MDCX");
+
+	osmo_fsm_inst_dispatch(lchan->fi, LCHAN_EV_IPACC_MDCX_ACK, 0);
 
 	return 0;
 }
@@ -2586,12 +1921,8 @@ static int abis_rsl_rx_ipacc_dlcx_ind(struct msgb *msg)
 	struct tlv_parsed tv;
 
 	rsl_tlv_parse(&tv, dh->data, msgb_l2len(msg)-sizeof(*dh));
-
-	if (TLVP_PRESENT(&tv, RSL_IE_CAUSE))
-		print_rsl_cause(LOGL_DEBUG, TLVP_VAL(&tv, RSL_IE_CAUSE),
-				TLVP_LEN(&tv, RSL_IE_CAUSE));
-
-	osmo_signal_dispatch(SS_ABISIP, S_ABISIP_DLCX_IND, msg->lchan);
+	LOG_LCHAN(msg->lchan, LOGL_NOTICE, "Rx IPACC DLCX IND%s\n",
+		  rsl_cause_name(&tv, NULL));
 
 	return 0;
 }
@@ -2600,42 +1931,51 @@ static int abis_rsl_rx_ipacc(struct msgb *msg)
 {
 	struct e1inp_sign_link *sign_link = msg->dst;
 	struct abis_rsl_rll_hdr *rllh = msgb_l2(msg);
-	char *ts_name;
 	int rc = 0;
 
 	msg->lchan = lchan_lookup(sign_link->trx, rllh->chan_nr,
 				  "Abis RSL rx IPACC: ");
-	ts_name = gsm_lchan_name(msg->lchan);
+
+	if (!msg->lchan) {
+		LOGP(DRSL, LOGL_ERROR,
+		     "Rx RSL IPACC: unable to match RSL message to an lchan: chan_nr=0x%x\n",
+		     rllh->chan_nr);
+		return -EINVAL;
+	}
+
+	if (!msg->lchan->fi) {
+		LOG_LCHAN(msg->lchan, LOGL_ERROR, "Rx RSL IPACC: RSL message for unconfigured lchan\n");
+		return -EINVAL;
+	}
+
+	LOG_LCHAN(msg->lchan, LOGL_DEBUG, "Rx %s\n", rsl_or_ipac_msg_name(rllh->c.msg_type));
 
 	switch (rllh->c.msg_type) {
 	case RSL_MT_IPAC_CRCX_ACK:
-		DEBUGP(DRSL, "%s IPAC_CRCX_ACK ", ts_name);
 		rc = abis_rsl_rx_ipacc_crcx_ack(msg);
 		break;
 	case RSL_MT_IPAC_CRCX_NACK:
 		/* somehow the BTS was unable to bind the lchan to its local
 		 * port?!? */
-		LOGP(DRSL, LOGL_ERROR, "%s IPAC_CRCX_NACK\n", ts_name);
 		rate_ctr_inc(&sign_link->trx->bts->bts_ctrs->ctr[BTS_CTR_RSL_IPA_NACK]);
+		osmo_fsm_inst_dispatch(msg->lchan->fi, LCHAN_EV_IPACC_CRCX_NACK, 0);
 		break;
 	case RSL_MT_IPAC_MDCX_ACK:
 		/* the BTS tells us that a connect operation was successful */
-		DEBUGP(DRSL, "%s IPAC_MDCX_ACK ", ts_name);
 		rc = abis_rsl_rx_ipacc_mdcx_ack(msg);
 		break;
 	case RSL_MT_IPAC_MDCX_NACK:
 		/* somehow the BTS was unable to connect the lchan to a remote
 		 * port */
-		LOGP(DRSL, LOGL_ERROR, "%s IPAC_MDCX_NACK\n", ts_name);
 		rate_ctr_inc(&sign_link->trx->bts->bts_ctrs->ctr[BTS_CTR_RSL_IPA_NACK]);
+		osmo_fsm_inst_dispatch(msg->lchan->fi, LCHAN_EV_IPACC_MDCX_NACK, 0);
 		break;
 	case RSL_MT_IPAC_DLCX_IND:
-		DEBUGP(DRSL, "%s IPAC_DLCX_IND ", ts_name);
 		rc = abis_rsl_rx_ipacc_dlcx_ind(msg);
 		break;
 	default:
-		LOGP(DRSL, LOGL_NOTICE, "Unknown ip.access msg_type 0x%02x\n",
-			rllh->c.msg_type);
+		LOG_LCHAN(msg->lchan, LOGL_NOTICE, "Unknown ip.access msg_type 0x%02x\n",
+			  rllh->c.msg_type);
 		rate_ctr_inc(&sign_link->trx->bts->bts_ctrs->ctr[BTS_CTR_RSL_UNKNOWN]);
 		break;
 	}
@@ -2643,205 +1983,82 @@ static int abis_rsl_rx_ipacc(struct msgb *msg)
 	return rc;
 }
 
-int dyn_ts_switchover_start(struct gsm_bts_trx_ts *ts,
-			    enum gsm_phys_chan_config to_pchan)
+/*! Tx simplified channel (de-)activation message for non-standard Osmocom dyn TS PDCH type. */
+static int send_osmocom_style_pdch_chan_act(struct gsm_bts_trx_ts *ts, bool activate)
 {
-	int ss;
-	int rc = -EIO;
+	struct msgb *msg;
+	struct abis_rsl_dchan_hdr *dh;
 
-	OSMO_ASSERT(ts->pchan == GSM_PCHAN_TCH_F_TCH_H_PDCH);
+	msg = rsl_msgb_alloc();
+	dh = (struct abis_rsl_dchan_hdr *) msgb_put(msg, sizeof(*dh));
+	init_dchan_hdr(dh, activate ? RSL_MT_CHAN_ACTIV : RSL_MT_RF_CHAN_REL);
 
-	if (ts->dyn.pchan_is != ts->dyn.pchan_want) {
-		LOGP(DRSL, LOGL_ERROR,
-		     "%s: Attempt to switch dynamic channel to %s,"
-		     " but is already in switchover.\n",
-		     gsm_ts_and_pchan_name(ts),
-		     gsm_pchan_name(to_pchan));
-		return ts->dyn.pchan_want == to_pchan? 0 : -EAGAIN;
-	}
+	dh->chan_nr = RSL_CHAN_OSMO_PDCH | (ts->nr & ~RSL_CHAN_NR_MASK);
 
-	if (ts->dyn.pchan_is == to_pchan) {
-		LOGP(DRSL, LOGL_INFO,
-		     "%s %s Already is in %s mode, cannot switchover.\n",
-		     gsm_ts_name(ts), gsm_pchan_name(ts->pchan),
-		     gsm_pchan_name(to_pchan));
-		return -EINVAL;
-	}
+	if (activate) {
+		msgb_tv_put(msg, RSL_IE_ACT_TYPE, RSL_ACT_OSMO_PDCH);
 
-	/* Paranoia: let's make sure all is indeed released. */
-	for (ss = 0; ss < ts_subslots(ts); ss++) {
-		struct gsm_lchan *lc = &ts->lchan[ss];
-		if (lc->state != LCHAN_S_NONE) {
-			LOGP(DRSL, LOGL_ERROR,
-			     "%s Attempt to switch dynamic channel to %s,"
-			     " but is not fully released.\n",
-			     gsm_ts_and_pchan_name(ts),
-			     gsm_pchan_name(to_pchan));
-			return -EAGAIN;
+		if (ts->trx->bts->type == GSM_BTS_TYPE_RBS2000
+		    && ts->trx->bts->rbs2000.use_superchannel) {
+			const uint8_t eric_pgsl_tmr[] = { 30, 1 };
+			msgb_tv_fixed_put(msg, RSL_IE_ERIC_PGSL_TIMERS,
+					  sizeof(eric_pgsl_tmr), eric_pgsl_tmr);
 		}
 	}
 
-	if (to_pchan == GSM_PCHAN_PDCH && !check_gprs_enabled(ts))
-		return -ENOTSUP;
-
-	DEBUGP(DRSL, "%s starting switchover to %s\n",
-	       gsm_ts_and_pchan_name(ts), gsm_pchan_name(to_pchan));
-
-	/* Record that we're busy switching. */
-	ts->dyn.pchan_want = to_pchan;
-
-	/*
-	 * To switch from PDCH, we need to initiate the release from the BSC
-	 * side. dyn_ts_switchover_continue() will be called from
-	 * rsl_rx_rf_chan_rel_ack(). PDCH is always on lchan[0].
-	 */
-	if (ts->dyn.pchan_is == GSM_PCHAN_PDCH) {
-		rsl_lchan_set_state(ts->lchan, LCHAN_S_REL_REQ);
-		rc = rsl_rf_chan_release(ts->lchan, 0, SACCH_NONE);
-		if (rc) {
-			LOGP(DRSL, LOGL_ERROR,
-			     "%s RSL RF Chan Release failed\n",
-			     gsm_ts_and_pchan_name(ts));
-			return dyn_ts_switchover_failed(ts, rc);
-		}
-		return 0;
-	}
-
-	/*
-	 * To switch from TCH/F and TCH/H pchans, this has been called from
-	 * rsl_rx_rf_chan_rel_ack(), i.e. release is complete. Go ahead and
-	 * activate as new type. This will always be PDCH.
-	 */
-	return dyn_ts_switchover_continue(ts);
+	msg->dst = ts->trx->rsl_link;
+	return abis_rsl_sendmsg(msg);
 }
 
-static int dyn_ts_switchover_continue(struct gsm_bts_trx_ts *ts)
+/*! Tx simplified channel (de-)activation message for non-standard ip.access dyn TS PDCH type. */
+static int send_ipacc_style_pdch_act(struct gsm_bts_trx_ts *ts, bool activate)
+{
+	struct msgb *msg = rsl_msgb_alloc();
+	struct abis_rsl_dchan_hdr *dh;
+
+	dh = (struct abis_rsl_dchan_hdr *) msgb_put(msg, sizeof(*dh));
+	init_dchan_hdr(dh, activate ? RSL_MT_IPAC_PDCH_ACT : RSL_MT_IPAC_PDCH_DEACT);
+	dh->c.msg_discr = ABIS_RSL_MDISC_DED_CHAN;
+	dh->chan_nr = gsm_pchan2chan_nr(GSM_PCHAN_TCH_F, ts->nr, 0);
+
+	msg->dst = ts->trx->rsl_link;
+	return abis_rsl_sendmsg(msg);
+}
+
+int rsl_tx_dyn_ts_pdch_act_deact(struct gsm_bts_trx_ts *ts, bool activate)
 {
 	int rc;
-	uint8_t act_type;
-	uint8_t ho_ref;
-	int ss;
-	struct gsm_lchan *lchan;
+	const char *what;
+	const char *act;
 
-	OSMO_ASSERT(ts->pchan == GSM_PCHAN_TCH_F_TCH_H_PDCH);
-	DEBUGP(DRSL, "%s switchover: release complete,"
-	       " activating new pchan type\n",
-	       gsm_ts_and_pchan_name(ts));
+	switch (ts->pchan_on_init) {
+	case GSM_PCHAN_TCH_F_TCH_H_PDCH:
+		what = "Osmocom dyn TS";
+		act = activate? "PDCH Chan Activ" : "PDCH Chan RF Release";
 
-	if (ts->dyn.pchan_is == ts->dyn.pchan_want) {
-		LOGP(DRSL, LOGL_ERROR,
-		     "%s Requested to switchover dynamic channel to the"
-		     " same type it is already in.\n",
-		     gsm_ts_and_pchan_name(ts));
-		return 0;
-	}
-
-	for (ss = 0; ss < ts_subslots(ts); ss++) {
-		lchan = &ts->lchan[ss];
-		if (lchan->rqd_ref) {
-			LOGP(DRSL, LOGL_ERROR,
-			     "%s During dyn TS switchover, expecting no"
-			     " Request Reference to be pending. Discarding!\n",
-			     gsm_lchan_name(lchan));
-			talloc_free(lchan->rqd_ref);
-			lchan->rqd_ref = NULL;
-		}
-	}
-
-	/*
-	 * When switching pchan modes, all lchans are unused. So always
-	 * activate whatever wants to be activated on the first lchan.  (We
-	 * wouldn't remember to use lchan[1] across e.g. a PDCH deact anyway)
-	 */
-	lchan = ts->lchan;
-
-	/*
-	 * For TCH/x, the lchan->type has been set in lchan_alloc(), but it may
-	 * have been lost during channel release due to dynamic switchover.
-	 *
-	 * For PDCH, the lchan->type will actually remain NONE.
-	 * TODO: set GSM_LCHAN_PDTCH?
-	 */
-	switch (ts->dyn.pchan_want) {
-	case GSM_PCHAN_TCH_F:
-		lchan->type = GSM_LCHAN_TCH_F;
+		rc = send_osmocom_style_pdch_chan_act(ts, activate);
 		break;
-	case GSM_PCHAN_TCH_H:
-		lchan->type = GSM_LCHAN_TCH_H;
+
+	case GSM_PCHAN_TCH_F_PDCH:
+		what = "ip.access dyn TS";
+		act = activate? "PDCH ACT" : "PDCH DEACT";
+
+		rc = send_ipacc_style_pdch_act(ts, activate);
 		break;
-	case GSM_PCHAN_PDCH:
-		lchan->type = GSM_LCHAN_NONE;
-		break;
+
 	default:
-		LOGP(DRSL, LOGL_ERROR,
-		     "%s Invalid target pchan for dynamic TS\n",
-		     gsm_ts_and_pchan_name(ts));
+		what = "static timeslot";
+		act = activate? "dynamic PDCH activation" : "dynamic PDCH deactivation";
+		rc = -EINVAL;
+		break;
 	}
 
-	act_type = (ts->dyn.pchan_want == GSM_PCHAN_PDCH)
-		? RSL_ACT_OSMO_PDCH
-		: lchan->dyn.act_type;
-	ho_ref = (ts->dyn.pchan_want == GSM_PCHAN_PDCH)
-		? 0
-		: lchan->dyn.ho_ref;
-
-	/* Fetch the rqd_ref back from before switchover started. */
-	lchan->rqd_ref = lchan->dyn.rqd_ref;
-	lchan->rqd_ta = lchan->dyn.rqd_ta;
-	lchan->dyn.rqd_ref = NULL;
-	lchan->dyn.rqd_ta = 0;
-
-	/* During switchover, we have received a release ack, which means that
-	 * the act_timer has been stopped. Start the timer again so we mark
-	 * this channel broken if the activation ack comes too late. */
-	osmo_timer_setup(&lchan->act_timer, lchan_act_tmr_cb, lchan);
-	osmo_timer_schedule(&lchan->act_timer, 4, 0);
-
-	rc = rsl_chan_activate_lchan(lchan, act_type, ho_ref);
-	if (rc) {
-		LOGP(DRSL, LOGL_ERROR,
-		     "%s RSL Chan Activate failed\n",
-		     gsm_ts_and_pchan_name(ts));
-		return dyn_ts_switchover_failed(ts, rc);
-	}
-	return 0;
-}
-
-static int dyn_ts_switchover_failed(struct gsm_bts_trx_ts *ts, int rc)
-{
-	ts->dyn.pchan_want = ts->dyn.pchan_is;
-	LOGP(DRSL, LOGL_ERROR, "%s Error %d during dynamic channel switchover."
-	     " Going back to previous pchan.\n", gsm_ts_and_pchan_name(ts),
-	     rc);
+	if (rc)
+		LOG_TS(ts, LOGL_ERROR, "Tx FAILED: %s: %s: %d (%s)\n",
+		       what, act, rc, strerror(-rc));
+	else
+		LOG_TS(ts, LOGL_DEBUG, "Tx: %s: %s\n", what, act);
 	return rc;
-}
-
-static void dyn_ts_switchover_complete(struct gsm_lchan *lchan)
-{
-	enum gsm_phys_chan_config pchan_act;
-	enum gsm_phys_chan_config pchan_was;
-	struct gsm_bts_trx_ts *ts = lchan->ts;
-
-	OSMO_ASSERT(ts->pchan == GSM_PCHAN_TCH_F_TCH_H_PDCH);
-
-	pchan_act = pchan_for_lchant(lchan->type);
-	/*
-	 * Paranoia: do the types match?
-	 * In case of errors: we've received an act ack already, so what to do
-	 * about it? Logging the error should suffice for now.
-	 */
-	if (pchan_act != ts->dyn.pchan_want)
-		LOGP(DRSL, LOGL_ERROR,
-		     "%s Requested transition does not match lchan type %s\n",
-		     gsm_ts_and_pchan_name(ts),
-		     gsm_lchant_name(lchan->type));
-
-	pchan_was = ts->dyn.pchan_is;
-	ts->dyn.pchan_is = ts->dyn.pchan_want = pchan_act;
-
-	if (pchan_was != ts->dyn.pchan_is)
-		LOGP(DRSL, LOGL_INFO, "%s switchover from %s complete.\n",
-		     gsm_ts_and_pchan_name(ts), gsm_pchan_name(pchan_was));
 }
 
 /* Entry-point where L2 RSL from BTS enters */
@@ -2964,69 +2181,4 @@ int rsl_bs_power_control(struct gsm_bts_trx *trx, uint8_t channel, uint8_t reduc
 	msg->dst = trx->rsl_link;
 
 	return abis_rsl_sendmsg(msg);
-}
-
-/**
- * Release all allocated SAPIs starting from @param start and
- * release them with the given release mode. Once the release
- * confirmation arrives it will be attempted to release the
- * the RF channel.
- */
-int rsl_release_sapis_from(struct gsm_lchan *lchan, int start,
-			enum rsl_rel_mode release_mode)
-{
-	int no_sapi = 1;
-	int sapi;
-
-	for (sapi = start; sapi < ARRAY_SIZE(lchan->sapis); ++sapi) {
-		uint8_t link_id;
-		if (lchan->sapis[sapi] == LCHAN_SAPI_UNUSED)
-			continue;
-
-		link_id = sapi;
-		if (lchan->type == GSM_LCHAN_TCH_F || lchan->type == GSM_LCHAN_TCH_H)
-			link_id |= 0x40;
-		rsl_release_request(lchan, link_id, release_mode);
-		no_sapi = 0;
-	}
-
-	return no_sapi;
-}
-
-int rsl_start_t3109(struct gsm_lchan *lchan)
-{
-	struct gsm_bts *bts = lchan->ts->trx->bts;
-
-	osmo_timer_setup(&lchan->T3109, t3109_expired, lchan);
-	osmo_timer_schedule(&lchan->T3109, T_def_get(bts->network->T_defs, 3109, T_S, -1), 0);
-	return 0;
-}
-
-/**
- * \brief directly RF Channel Release the lchan
- *
- * When no SAPI was allocated, directly release the logical channel. This
- * should only be called from chan_alloc.c on channel release handling. In
- * case no SAPI was established the RF Channel can be directly released,
- */
-int rsl_direct_rf_release(struct gsm_lchan *lchan)
-{
-	int i;
-	for (i = 0; i < ARRAY_SIZE(lchan->sapis); ++i) {
-		if (lchan->sapis[i] != LCHAN_SAPI_UNUSED) {
-			LOGP(DRSL, LOGL_ERROR, "%s SAPI(%d) still allocated.\n",
-				gsm_lchan_name(lchan), i);
-			return -1;
-		}
-	}
-
-	/* Now release it */
-	return rsl_rf_chan_release(lchan, 0, SACCH_NONE);
-}
-
-/* Initial timeslot actions when a timeslot first comes into operation. */
-bool on_gsm_ts_init(struct gsm_bts_trx_ts *ts)
-{
-	dyn_ts_init(ts);
-	return true;
 }

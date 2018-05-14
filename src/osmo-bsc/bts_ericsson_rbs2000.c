@@ -28,6 +28,7 @@
 #include <osmocom/bsc/abis_nm.h>
 #include <osmocom/abis/e1_input.h>
 #include <osmocom/bsc/signal.h>
+#include <osmocom/bsc/timeslot_fsm.h>
 
 #include <osmocom/abis/lapd.h>
 
@@ -52,7 +53,7 @@ static void bootstrap_om_trx(struct gsm_bts_trx *trx)
 
 static int shutdown_om(struct gsm_bts *bts)
 {
-	gsm_bts_mark_all_ts_uninitialized(bts);
+	gsm_bts_all_ts_dispatch(bts, TS_EV_OML_DOWN, NULL);
 
 	/* FIXME */
 	return 0;

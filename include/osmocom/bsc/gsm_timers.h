@@ -31,7 +31,7 @@ struct T_def {
 #define for_each_T_def(d, T_defs) \
 	for (d = T_defs; d && (d->T || d->default_val || d->desc); d++)
 
-int T_def_get(struct T_def *T_defs, int T, enum T_unit as_unit, int val_if_not_present);
+int T_def_get(const struct T_def *T_defs, int T, enum T_unit as_unit, int val_if_not_present);
 void T_defs_reset(struct T_def *T_defs);
 struct T_def *T_def_get_entry(struct T_def *T_defs, int T);
 
@@ -44,12 +44,13 @@ struct state_timeout {
 	bool keep_timer;
 };
 
-struct state_timeout *get_state_timeout(uint32_t state, struct state_timeout *timeouts_array);
+const struct state_timeout *get_state_timeout(uint32_t state,
+					      const struct state_timeout *timeouts_array);
 
 #define fsm_inst_state_chg_T(fi, state, timeouts_array, T_defs, default_timeout) \
 	_fsm_inst_state_chg_T(fi, state, timeouts_array, T_defs, default_timeout, \
 			      __FILE__, __LINE__)
 int _fsm_inst_state_chg_T(struct osmo_fsm_inst *fi, uint32_t state,
-			  struct state_timeout *timeouts_array,
-			  struct T_def *T_defs, int default_timeout,
+			  const struct state_timeout *timeouts_array,
+			  const struct T_def *T_defs, int default_timeout,
 			  const char *file, int line);

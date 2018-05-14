@@ -14,13 +14,13 @@
 #include <osmocom/core/stat_item.h>
 #include <osmocom/gsm/bts_features.h>
 #include <osmocom/gsm/protocol/gsm_08_08.h>
+#include <osmocom/gsm/gsm0808.h>
 #include <osmocom/gsm/gsm48.h>
 #include <osmocom/core/fsm.h>
 
 #include <osmocom/crypt/auth.h>
 
 #include <osmocom/bsc/rest_octets.h>
-#include <osmocom/bsc/handover.h>
 
 #include <osmocom/core/bitvec.h>
 #include <osmocom/gsm/gsm_utils.h>
@@ -31,6 +31,8 @@
 #include <osmocom/bsc/meas_rep.h>
 #include <osmocom/bsc/bsc_msg_filter.h>
 #include <osmocom/bsc/acc_ramp.h>
+#include <osmocom/bsc/gsm_timers.h>
+#include <osmocom/bsc/neighbor_ident.h>
 
 #define GSM_T3122_DEFAULT 10
 
@@ -38,6 +40,7 @@ struct mgcp_client_conf;
 struct mgcp_client;
 struct mgcp_ctx;
 struct gsm0808_cell_id;
+struct mgw_endpoint;
 
 /** annotations for msgb ownership */
 #define __uses
@@ -46,6 +49,7 @@ struct gsm0808_cell_id;
 
 struct bsc_subscr;
 struct gprs_ra_id;
+struct handover;
 
 #define OBSC_LINKID_CB(__msgb)	(__msgb)->cb[3]
 
@@ -95,6 +99,96 @@ enum subscr_sccp_state {
 	SUBSCR_SCCP_ST_CONNECTED
 };
 
+struct assignment_request {
+	bool aoip;
+
+	uint16_t msc_assigned_cic;
+
+	char msc_rtp_addr[INET_ADDRSTRLEN];
+	uint16_t msc_rtp_port;
+
+	enum gsm48_chan_mode chan_mode;
+	bool full_rate;
+};
+
+struct assignment_fsm_data {
+	struct assignment_request req;
+	bool requires_voice_stream;
+
+	struct osmo_fsm_inst *fi;
+	struct gsm_lchan *new_lchan;
+
+	/* Whether this assignment triggered creation of the MGW endpoint: if the assignment
+	 * fails, we will release that again as soon as possible. (If false, the endpoint already
+	 * existed before or isn't needed at all.)*/
+	struct mgwep_ci *created_ci_for_msc;
+
+	enum gsm0808_cause failure_cause;
+	enum gsm48_rr_cause rr_cause;
+
+	bool result_rate_ctr_done;
+};
+
+enum hodec_id {
+	HODEC_NONE,
+	HODEC1 = 1,
+	HODEC2 = 2,
+	HODEC_USER,
+	HODEC_REMOTE,
+};
+
+/* For example, to count specific kinds of ongoing handovers, it is useful to be able to OR-combine
+ * scopes. */
+enum handover_scope {
+	HO_NO_HANDOVER = 0,
+	HO_INTRA_CELL = 0x1,
+	HO_INTRA_BSC = 0x2,
+	HO_INTER_BSC_OUT = 0x4,
+	HO_INTER_BSC_IN = 0x8,
+	HO_SCOPE_ALL = 0xffff,
+};
+
+extern const struct value_string handover_scope_names[];
+inline static const char *handover_scope_name(enum handover_scope val)
+{ return get_value_string(handover_scope_names, val); }
+
+struct handover_out_req {
+	enum hodec_id from_hodec_id;
+	struct gsm_lchan *old_lchan;
+	struct neighbor_ident_key target_nik;
+	enum gsm_chan_t new_lchan_type; /*< leave GSM_LCHAN_NONE to use same as old_lchan */
+};
+
+struct handover_in_req {
+	struct gsm0808_channel_type ct;
+	struct gsm0808_speech_codec_list scl;
+	struct gsm0808_encrypt_info ei;
+	struct gsm_classmark classmark;
+	struct gsm0808_cell_id cell_id_serving;
+	char cell_id_serving_name[64];
+	struct gsm0808_cell_id cell_id_target;
+	char cell_id_target_name[64];
+	uint16_t msc_assigned_cic;
+	char msc_assigned_rtp_addr[INET_ADDRSTRLEN];
+	uint16_t msc_assigned_rtp_port;
+};
+
+struct handover {
+	struct osmo_fsm_inst *fi;
+
+	enum hodec_id from_hodec_id;
+	enum handover_scope scope;
+	enum gsm_chan_t new_lchan_type;
+	struct neighbor_ident_key target_cell;
+
+	uint8_t ho_ref;
+	struct gsm_bts *new_bts;
+	struct gsm_lchan *new_lchan;
+	bool async;
+	struct handover_in_req inter_bsc_in;
+	struct mgwep_ci *created_ci_for_msc;
+};
+
 /* active radio connection of a mobile subscriber */
 struct gsm_subscriber_connection {
 	/* global linked list of subscriber_connections */
@@ -112,11 +206,10 @@ struct gsm_subscriber_connection {
 	/* the primary / currently active lchan to the BTS/subscriber */
 	struct gsm_lchan *lchan;
 
-	/* handover information, if a handover is pending for this conn. */
-	struct bsc_handover *ho;
+	struct assignment_fsm_data assignment;
 
-	/* the future allocated but not yet used lchan during ASSIGNMENT */
-	struct gsm_lchan *secondary_lchan;
+	/* handover information, if a handover is pending for this conn. */
+	struct handover ho;
 
 	/* buffer/cache for classmark of the ME of the subscriber */
 	struct gsm_classmark classmark;
@@ -137,7 +230,6 @@ struct gsm_subscriber_connection {
 	 * i.e. by heeding the "Codec list (MSC Preferred)", we inherently heed the MS bearer
 	 * capabilities, which the MSC is required to translate into the codec list. */
 	struct gsm0808_speech_codec_list codec_list;
-	bool codec_list_present;
 
 	/* flag to prevent multiple simultaneous ciphering commands */
 	int ciphering_handled;
@@ -163,29 +255,24 @@ struct gsm_subscriber_connection {
 
 	/* for audio handling */
 	struct {
-		uint16_t cic;
-		uint32_t rtp_ip;
-		int rtp_port;
-		/* RTP address of the remote end (assigned by MSC through assignment request) */
-		struct sockaddr_storage aoip_rtp_addr_remote;
+		uint16_t msc_assigned_cic;
 
-		/* Local RTP address (reported back to the MSC by us with the
-		 * assignment complete message) */
-		struct sockaddr_storage aoip_rtp_addr_local;
+		/* RTP address where the MSC expects us to send the RTP stream coming from the BTS. */
+		char msc_assigned_rtp_addr[INET_ADDRSTRLEN];
+		uint16_t msc_assigned_rtp_port;
 
-		/* FSM instance to control the BTS sided RTP connection */
-		struct osmo_fsm_inst *fi_bts;
+		/* The endpoint at the MGW used to join both BTS and MSC side connections, e.g.
+		 * "rtpbridge/23@mgw". */
+		struct mgw_endpoint *mgw_endpoint;
 
-		/* FSM instance to control the MSC sided RTP connection */
-		struct osmo_fsm_inst *fi_msc;
+		/* The connection identifier of the mgw_endpoint used to transceive RTP towards the MSC.
+		 * (The BTS side CI is handled by struct gsm_lchan and the lchan_fsm.) */
+		struct mgwep_ci *mgw_endpoint_ci_msc;
 
-		/* Endpoint identifier of the MGCP endpoint the connection uses */
-		char *mgw_endpoint;
-
-		/* Channel rate flag, FR=1, HR=0, Invalid=-1 */
+		/* Channel rate flag requested by the MSC, FR=1, HR=0, Invalid=-1 */
 		int full_rate;
 
-		/* Channel mode flag (signaling or voice channel) */
+		/* Channel mode requested by the MSC (signalling or voice channel) */
 		enum gsm48_chan_mode chan_mode;
 
 	} user_plane;
@@ -298,18 +385,6 @@ struct om2k_mo {
 #define LCHAN_SAPI_UNUSED	0
 #define LCHAN_SAPI_MS		1
 #define LCHAN_SAPI_NET		2
-#define LCHAN_SAPI_REL		3
-
-/* state of a logical channel */
-enum gsm_lchan_state {
-	LCHAN_S_NONE,		/* channel is not active */
-	LCHAN_S_ACT_REQ,	/* channel activation requested */
-	LCHAN_S_ACTIVE,		/* channel is active and operational */
-	LCHAN_S_REL_REQ,	/* channel release has been requested */
-	LCHAN_S_REL_ERR,	/* channel is in an error state */
-	LCHAN_S_BROKEN,		/* channel is somehow unusable */
-	LCHAN_S_INACTIVE,	/* channel is set inactive */
-};
 
 /* BTS ONLY */
 #define MAX_NUM_UL_MEAS	104
@@ -386,11 +461,68 @@ struct gsm_encr {
 	     bsc_subscr_name(lchan && lchan->conn ? lchan->conn->bsub : NULL), \
 	     ## args)
 
+/* usage:
+ * struct gsm_lchan *lchan;
+ * struct gsm_bts_trx_ts *ts = get_some_timeslot();
+ * ts_for_each_lchan(lchan, ts) {
+ * 	LOGPLCHAN(DMAIN, LOGL_DEBUG, "hello world\n");
+ * }
+ * Iterate only those lchans that have an FSM allocated. */
+#define ts_for_each_lchan(lchan, ts) ts_as_pchan_for_each_lchan(lchan, ts, (ts)->pchan_is)
+
+/* Same as ts_for_each_lchan() but with an explicit pchan kind (GSM_PCHAN_* constant).
+ * Iterate only those lchans that have an FSM allocated. */
+#define ts_as_pchan_for_each_lchan(lchan, ts, as_pchan) \
+	for (lchan = (ts)->lchan; \
+	     ((lchan - (ts)->lchan) < ARRAY_SIZE((ts)->lchan)) \
+	     && lchan->fi \
+	     && lchan->nr < pchan_subslots(as_pchan); \
+	     lchan++)
+
+enum lchan_activate_mode {
+	FOR_NONE,
+	FOR_MS_CHANNEL_REQUEST,
+	FOR_ASSIGNMENT,
+	FOR_HANDOVER,
+	FOR_VTY,
+};
+
+extern const struct value_string lchan_activate_mode_names[];
+static inline const char *lchan_activate_mode_name(enum lchan_activate_mode activ_for)
+{ return get_value_string(lchan_activate_mode_names, activ_for); }
+
 struct gsm_lchan {
 	/* The TS that we're part of */
 	struct gsm_bts_trx_ts *ts;
 	/* The logical subslot number in the TS */
 	uint8_t nr;
+	char *name;
+
+	struct osmo_fsm_inst *fi;
+	struct mgwep_ci *mgw_endpoint_ci_bts;
+
+	struct {
+		enum lchan_activate_mode activ_for;
+		bool concluded; /*< true as soon as LCHAN_ST_ESTABLISHED is reached */
+		bool requires_voice_stream;
+		bool mgw_endpoint_available;
+		uint16_t msc_assigned_cic;
+		enum gsm0808_cause gsm0808_error_cause;
+		struct gsm_lchan *re_use_mgw_endpoint_from_lchan;
+	} activate;
+
+	/* If an event to release the lchan comes in while still waiting for responses, just mark this
+	 * flag, so that the lchan will gracefully release at the next sensible junction. */
+	bool release_requested;
+	bool deact_sacch;
+
+	char *last_error;
+
+	/* There is an RSL error cause of value 0, so we need a separate flag. */
+	bool release_in_error;
+	/* RSL error code, RSL_ERR_* */
+	uint8_t rsl_error_cause;
+
 	/* The logical channel type */
 	enum gsm_chan_t type;
 	/* RSL channel mode */
@@ -398,9 +530,6 @@ struct gsm_lchan {
 	/* If TCH, traffic channel mode */
 	enum gsm48_chan_mode tch_mode;
 	enum lchan_csd_mode csd_mode;
-	/* State */
-	enum gsm_lchan_state state;
-	const char *broken_reason;
 	/* Power levels for MS and BTS */
 	uint8_t bs_power;
 	uint8_t ms_power;
@@ -415,15 +544,14 @@ struct gsm_lchan {
 	uint8_t sapis[8];
 
 	struct {
-		uint32_t bound_ip;
-		uint32_t connect_ip;
+		uint32_t bound_ip; /*< where the BTS receives RTP */
 		uint16_t bound_port;
+		uint32_t connect_ip; /*< where the BTS sends RTP to (MGW) */
 		uint16_t connect_port;
 		uint16_t conn_id;
 		uint8_t rtp_payload;
 		uint8_t rtp_payload2;
 		uint8_t speech_mode;
-		struct rtp_socket *rtp_socket;
 
 		/* info we need to postpone the AoIP
 		 * assignment completed message */
@@ -435,16 +563,6 @@ struct gsm_lchan {
 
 	uint8_t rqd_ta;
 
-	char *name;
-
-	struct osmo_timer_list T3101;
-	struct osmo_timer_list T3109;
-	struct osmo_timer_list T3111;
-	struct osmo_timer_list error_timer;
-	struct osmo_timer_list act_timer;
-	struct osmo_timer_list rel_work;
-	uint8_t error_cause;
-
 	/* table of neighbor cell measurements */
 	struct neigh_meas_proc neigh_meas[MAX_NEIGH_MEAS];
 
@@ -455,43 +573,38 @@ struct gsm_lchan {
 	uint8_t meas_rep_last_seen_nr;
 
 	/* GSM Random Access data */
+	/* TODO: don't allocate this, rather keep an "is_present" flag */
 	struct gsm48_req_ref *rqd_ref;
 
 	struct gsm_subscriber_connection *conn;
-
-	struct {
-		/* channel activation type and handover ref */
-		uint8_t act_type;
-		uint8_t ho_ref;
-		struct gsm48_req_ref *rqd_ref;
-		uint8_t rqd_ta;
-	} dyn;
 };
-
-enum {
-	TS_F_PDCH_ACTIVE =		0x1000,
-	TS_F_PDCH_ACT_PENDING =		0x2000,
-	TS_F_PDCH_DEACT_PENDING =	0x4000,
-	TS_F_PDCH_PENDING_MASK =	(TS_F_PDCH_ACT_PENDING | TS_F_PDCH_DEACT_PENDING),
-} gsm_bts_trx_ts_flags;
 
 /* One Timeslot in a TRX */
 struct gsm_bts_trx_ts {
 	struct gsm_bts_trx *trx;
-	bool initialized;
-
 	/* number of this timeslot at the TRX */
 	uint8_t nr;
 
-	enum gsm_phys_chan_config pchan;
+	struct osmo_fsm_inst *fi;
+	char *last_errmsg;
 
-	struct {
-		enum gsm_phys_chan_config pchan_is;
-		enum gsm_phys_chan_config pchan_want;
-		struct msgb *pending_chan_activ;
-	} dyn;
+	/* vty phys_chan_config setting, not necessarily in effect in case it was changed in the telnet
+	 * vty after OML activation. Gets written on vty 'write file'. */
+	enum gsm_phys_chan_config pchan_from_config;
+	/* When the timeslot OML is established, pchan_from_config is copied here. This is the pchan
+	 * currently in effect; for dynamic ts, this is the dyn kind (GSM_PCHAN_TCH_F_TCH_H_PDCH or
+	 * GSM_PCHAN_TCH_F_PDCH) and does not show the pchan type currently active. */
+	enum gsm_phys_chan_config pchan_on_init;
+	/* This is the *actual* pchan type currently active. For dynamic timeslots, this reflects either
+	 * GSM_PCHAN_NONE or one of the standard GSM_PCHAN_TCH_F, GSM_PCHAN_TCH_H, GSM_PCHAN_PDCH.
+	 * Callers can use this transparently without being aware of dyn ts. */
+	enum gsm_phys_chan_config pchan_is;
 
-	unsigned int flags;
+	/* After a PDCH ACT NACK, we shall not infinitely loop to try and ACT again.
+	 * Also marks a timeslot where PDCH was deactivated by VTY. This is cleared whenever a timeslot
+	 * enters IN_USE state, i.e. after each TCH use we try to PDCH ACT once again. */
+	bool pdch_act_allowed;
+
 	struct gsm_abis_mo mo;
 	struct tlv_parsed nm_attr;
 	uint8_t nm_chan_comb;
@@ -1033,9 +1146,12 @@ enum gsm_bts_type_variant str2btsvariant(const char *arg);
 const char *btsvariant2str(enum gsm_bts_type_variant v);
 
 extern const struct value_string gsm_chreq_descs[];
-const struct value_string gsm_pchant_names[13];
-const struct value_string gsm_pchant_descs[13];
+extern const struct value_string gsm_pchant_names[];
+extern const struct value_string gsm_pchant_descs[];
+extern const struct value_string gsm_pchan_ids[];
 const char *gsm_pchan_name(enum gsm_phys_chan_config c);
+static inline const char *gsm_pchan_id(enum gsm_phys_chan_config c)
+{ return get_value_string(gsm_pchan_ids, c); }
 enum gsm_phys_chan_config gsm_pchan_parse(const char *name);
 const char *gsm_lchant_name(enum gsm_chan_t c);
 const char *gsm_chreq_name(enum gsm_chreq_reason_t c);
@@ -1043,7 +1159,6 @@ char *gsm_trx_name(const struct gsm_bts_trx *trx);
 char *gsm_ts_name(const struct gsm_bts_trx_ts *ts);
 char *gsm_ts_and_pchan_name(const struct gsm_bts_trx_ts *ts);
 char *gsm_lchan_name_compute(const struct gsm_lchan *lchan);
-const char *gsm_lchans_name(enum gsm_lchan_state s);
 
 static inline char *gsm_lchan_name(const struct gsm_lchan *lchan)
 {
@@ -1089,7 +1204,7 @@ struct gsm_lchan *rsl_lchan_lookup(struct gsm_bts_trx *trx, uint8_t chan_nr,
 				   int *rc);
 
 enum gsm_phys_chan_config ts_pchan(struct gsm_bts_trx_ts *ts);
-uint8_t ts_subslots(struct gsm_bts_trx_ts *ts);
+uint8_t pchan_subslots(enum gsm_phys_chan_config pchan);
 bool ts_is_tch(struct gsm_bts_trx_ts *ts);
 
 
@@ -1159,11 +1274,32 @@ enum {
 };
 
 enum {
+	BSC_CTR_ASSIGNMENT_ATTEMPTED,
+	BSC_CTR_ASSIGNMENT_COMPLETED,
+	BSC_CTR_ASSIGNMENT_STOPPED,
+	BSC_CTR_ASSIGNMENT_NO_CHANNEL,
+	BSC_CTR_ASSIGNMENT_TIMEOUT,
+	BSC_CTR_ASSIGNMENT_FAILED,
+	BSC_CTR_ASSIGNMENT_ERROR,
 	BSC_CTR_HANDOVER_ATTEMPTED,
+	BSC_CTR_HANDOVER_COMPLETED,
+	BSC_CTR_HANDOVER_STOPPED,
 	BSC_CTR_HANDOVER_NO_CHANNEL,
 	BSC_CTR_HANDOVER_TIMEOUT,
-	BSC_CTR_HANDOVER_COMPLETED,
 	BSC_CTR_HANDOVER_FAILED,
+	BSC_CTR_HANDOVER_ERROR,
+	BSC_CTR_INTER_BSC_HO_OUT_ATTEMPTED,
+	BSC_CTR_INTER_BSC_HO_OUT_COMPLETED,
+	BSC_CTR_INTER_BSC_HO_OUT_STOPPED,
+	BSC_CTR_INTER_BSC_HO_OUT_TIMEOUT,
+	BSC_CTR_INTER_BSC_HO_OUT_ERROR,
+	BSC_CTR_INTER_BSC_HO_IN_ATTEMPTED,
+	BSC_CTR_INTER_BSC_HO_IN_COMPLETED,
+	BSC_CTR_INTER_BSC_HO_IN_STOPPED,
+	BSC_CTR_INTER_BSC_HO_IN_NO_CHANNEL,
+	BSC_CTR_INTER_BSC_HO_IN_FAILED,
+	BSC_CTR_INTER_BSC_HO_IN_TIMEOUT,
+	BSC_CTR_INTER_BSC_HO_IN_ERROR,
 	BSC_CTR_PAGING_ATTEMPTED,
 	BSC_CTR_PAGING_DETACHED,
 	BSC_CTR_PAGING_RESPONDED,
@@ -1171,11 +1307,42 @@ enum {
 };
 
 static const struct rate_ctr_desc bsc_ctr_description[] = {
-	[BSC_CTR_HANDOVER_ATTEMPTED] = 		{"handover:attempted", "Received handover attempts."},
-	[BSC_CTR_HANDOVER_NO_CHANNEL] = 	{"handover:no_channel", "Sent no channel available responses."},
-	[BSC_CTR_HANDOVER_TIMEOUT] = 		{"handover:timeout", "Timeouts of timer T3103."},
-	[BSC_CTR_HANDOVER_COMPLETED] = 		{"handover:completed", "Received handover completed."},
-	[BSC_CTR_HANDOVER_FAILED] = 		{"handover:failed", "Received HO FAIL messages."},
+	[BSC_CTR_ASSIGNMENT_ATTEMPTED] =	{"assignment:attempted", "Intra-cell re-assignment attempts."},
+	[BSC_CTR_ASSIGNMENT_COMPLETED] =	{"assignment:completed", "Intra-cell re-assignment completed."},
+	[BSC_CTR_ASSIGNMENT_STOPPED] = 		{"assignment:stopped", "Connection ended during re-assignment."},
+	[BSC_CTR_ASSIGNMENT_NO_CHANNEL] = 	{"assignment:no_channel", "Failure to allocate lchan for re-assignment."},
+	[BSC_CTR_ASSIGNMENT_TIMEOUT] = 		{"assignment:timeout", "Re-assignment timed out."},
+	[BSC_CTR_ASSIGNMENT_FAILED] = 		{"assignment:failed", "Received FAIL message."},
+	[BSC_CTR_ASSIGNMENT_ERROR] = 		{"assignment:error", "Re-assigment failed for other reason."},
+
+	[BSC_CTR_HANDOVER_ATTEMPTED] = 		{"handover:attempted", "Intra-BSC handover attempts."},
+	[BSC_CTR_HANDOVER_COMPLETED] = 		{"handover:completed", "Intra-BSC handover completed."},
+	[BSC_CTR_HANDOVER_STOPPED] = 		{"handover:stopped", "Connection ended during HO."},
+	[BSC_CTR_HANDOVER_NO_CHANNEL] = 	{"handover:no_channel", "Failure to allocate lchan for HO."},
+	[BSC_CTR_HANDOVER_TIMEOUT] = 		{"handover:timeout", "Handover timed out."},
+	[BSC_CTR_HANDOVER_FAILED] = 		{"handover:failed", "Received Handover Fail messages."},
+	[BSC_CTR_HANDOVER_ERROR] = 		{"handover:error", "Re-assigment failed for other reason."},
+
+	[BSC_CTR_INTER_BSC_HO_OUT_ATTEMPTED] =	{"interbsc_ho_out:attempted",
+						 "Attempts to handover to remote BSS."},
+	[BSC_CTR_INTER_BSC_HO_OUT_COMPLETED] =	{"interbsc_ho_out:completed",
+						 "Handover to remote BSS completed."},
+	[BSC_CTR_INTER_BSC_HO_OUT_STOPPED] =	{"interbsc_ho_out:stopped", "Connection ended during HO."},
+	[BSC_CTR_INTER_BSC_HO_OUT_TIMEOUT] =	{"interbsc_ho_out:timeout", "Handover timed out."},
+	[BSC_CTR_INTER_BSC_HO_OUT_ERROR] =	{"interbsc_ho_out:error",
+						 "Handover to remote BSS failed for other reason."},
+
+	[BSC_CTR_INTER_BSC_HO_IN_ATTEMPTED] =	{"interbsc_ho_in:attempted",
+						 "Attempts to handover from remote BSS."},
+	[BSC_CTR_INTER_BSC_HO_IN_COMPLETED] =	{"interbsc_ho_in:completed",
+						 "Handover from remote BSS completed."},
+	[BSC_CTR_INTER_BSC_HO_IN_STOPPED] =	{"interbsc_ho_in:stopped", "Connection ended during HO."},
+	[BSC_CTR_INTER_BSC_HO_IN_NO_CHANNEL] =	{"interbsc_ho_in:no_channel",
+						 "Failure to allocate lchan for HO."},
+	[BSC_CTR_INTER_BSC_HO_IN_TIMEOUT] =	{"interbsc_ho_in:timeout", "Handover from remote BSS timed out."},
+	[BSC_CTR_INTER_BSC_HO_IN_FAILED] =	{"interbsc_ho_in:failed", "Received Handover Fail message."},
+	[BSC_CTR_INTER_BSC_HO_IN_ERROR] =	{"interbsc_ho_in:error",
+						 "Handover from remote BSS failed for other reason."},
 
 	[BSC_CTR_PAGING_ATTEMPTED] = 		{"paging:attempted", "Paging attempts for a subscriber."},
 	[BSC_CTR_PAGING_DETACHED] = 		{"paging:detached", "Paging request send failures because no responsible BTS was found."},
@@ -1270,6 +1437,11 @@ struct gsm_network {
 
 	/* Remote BSS Cell Identifier Lists */
 	struct neighbor_ident_list *neighbor_bss_cells;
+};
+
+struct gsm_audio_support {
+        uint8_t hr  : 1,
+                ver : 7;
 };
 
 static inline const struct osmo_location_area_id *bts_lai(struct gsm_bts *bts)
@@ -1407,12 +1579,15 @@ void gsm_bts_set_radio_link_timeout(struct gsm_bts *bts, int value);
 
 bool classmark_is_r99(struct gsm_classmark *cm);
 
-void gsm_ts_check_init(struct gsm_bts_trx_ts *ts);
-void gsm_trx_mark_all_ts_uninitialized(struct gsm_bts_trx *trx);
-void gsm_bts_mark_all_ts_uninitialized(struct gsm_bts *bts);
-
 bool trx_is_usable(const struct gsm_bts_trx *trx);
+bool ts_is_usable(const struct gsm_bts_trx_ts *ts);
 
-bool on_gsm_ts_init(struct gsm_bts_trx_ts *ts);
+int gsm_lchan_type_by_pchan(enum gsm_phys_chan_config pchan);
+enum gsm_phys_chan_config gsm_pchan_by_lchan_type(enum gsm_chan_t type);
+
+void gsm_bts_all_ts_dispatch(struct gsm_bts *bts, uint32_t ts_ev, void *data);
+void gsm_trx_all_ts_dispatch(struct gsm_bts_trx *trx, uint32_t ts_ev, void *data);
+
+int bts_count_free_ts(struct gsm_bts *bts, enum gsm_phys_chan_config pchan);
 
 #endif /* _GSM_DATA_H */

@@ -24,18 +24,11 @@
 
 struct gsm_subscriber_connection;
 
-/* Count number of free TS of given pchan type */
-int bts_count_free_ts(struct gsm_bts *bts, enum gsm_phys_chan_config pchan);
-
 /* Allocate a logical channel (SDCCH, TCH, ...) */
 struct gsm_lchan *lchan_alloc(struct gsm_bts *bts, enum gsm_chan_t type, int allow_bigger);
 
 /* Free a logical channel (SDCCH, TCH, ...) */
 void lchan_free(struct gsm_lchan *lchan);
-void lchan_reset(struct gsm_lchan *lchan);
-
-/* Release the given lchan */
-int lchan_release(struct gsm_lchan *lchan, int sacch_deact, enum rsl_rel_mode release_mode);
 
 struct pchan_load {
 	struct load_counter pchan[_GSM_PCHAN_MAX];
@@ -44,7 +37,5 @@ struct pchan_load {
 void bts_chan_load(struct pchan_load *cl, const struct gsm_bts *bts);
 void network_chan_load(struct pchan_load *pl, struct gsm_network *net);
 void bts_update_t3122_chan_load(struct gsm_bts *bts);
-
-bool ts_is_usable(const struct gsm_bts_trx_ts *ts);
 
 #endif /* _CHAN_ALLOC_H */

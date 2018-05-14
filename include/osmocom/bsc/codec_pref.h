@@ -1,6 +1,17 @@
 #pragma once
 
-struct gsm_bts;
+#include <stdbool.h>
+#include <osmocom/gsm/protocol/gsm_04_08.h>
 
-int match_codec_pref(int *full_rate, enum gsm48_chan_mode *chan_mode, const struct gsm0808_channel_type *ct,
-		      const struct gsm0808_speech_codec_list *scl, const struct bsc_msc_data *msc, struct gsm_bts *bts);
+struct gsm0808_channel_type;
+struct gsm0808_speech_codec_list;
+struct gsm_audio_support;
+struct bts_codec_conf;
+
+int match_codec_pref(enum gsm48_chan_mode *chan_mode,
+		     bool *full_rate,
+		     const struct gsm0808_channel_type *ct,
+		     const struct gsm0808_speech_codec_list *scl,
+		     struct gsm_audio_support * const *audio_support,
+		     int audio_length,
+		     const struct bts_codec_conf *bts_codec);

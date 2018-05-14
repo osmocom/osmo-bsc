@@ -35,19 +35,18 @@ struct gsm_bts_trx_ts;
 
 #define GSM48_LEN2PLEN(a)	(((a) << 2) | 1)
 
-#define rsl_lchan_set_state(lch_, st_) \
-	rsl_lchan_set_state_with_log(lch_, st_, __BASE_FILE__, __LINE__)
-
 int rsl_bcch_info(const struct gsm_bts_trx *trx, enum osmo_sysinfo_type si_type, const uint8_t *data, int len);
 int rsl_sacch_filling(struct gsm_bts_trx *trx, uint8_t type,
 		      const uint8_t *data, int len);
-int rsl_chan_activate_lchan(struct gsm_lchan *lchan, uint8_t act_type,
-			    uint8_t ho_ref);
+int rsl_tx_chan_activ(struct gsm_lchan *lchan, uint8_t act_type, uint8_t ho_ref);
 int rsl_chan_mode_modify_req(struct gsm_lchan *ts);
 int rsl_encryption_cmd(struct msgb *msg);
 int rsl_paging_cmd(struct gsm_bts *bts, uint8_t paging_group, uint8_t len,
 		   uint8_t *ms_ident, uint8_t chan_needed, bool is_gprs);
 int rsl_imm_assign_cmd(struct gsm_bts *bts, uint8_t len, uint8_t *val);
+int rsl_tx_imm_assignment(struct gsm_lchan *lchan);
+int rsl_tx_imm_ass_rej(struct gsm_bts *bts, struct gsm48_req_ref *rqd_ref);
+int gsm48_send_rr_ass_cmd(struct gsm_lchan *dest_lchan, struct gsm_lchan *lchan, uint8_t power_command);
 
 int rsl_data_request(struct msgb *msg, uint8_t link_id);
 int rsl_establish_request(struct gsm_lchan *lchan, uint8_t link_id);
@@ -60,9 +59,8 @@ int rsl_ericsson_imm_assign_cmd(struct gsm_bts *bts, uint32_t tlli, uint8_t len,
 int rsl_siemens_mrpci(struct gsm_lchan *lchan, struct rsl_mrpci *mrpci);
 
 /* ip.access specfic RSL extensions */
-int rsl_ipacc_crcx(struct gsm_lchan *lchan);
-int rsl_ipacc_mdcx(struct gsm_lchan *lchan, uint32_t ip,
-		   uint16_t port, uint8_t rtp_payload2);
+int rsl_tx_ipacc_crcx(struct gsm_lchan *lchan);
+int rsl_tx_ipacc_mdcx(struct gsm_lchan *lchan);
 int rsl_ipacc_mdcx_to_rtpsock(struct gsm_lchan *lchan);
 int rsl_ipacc_pdch_activate(struct gsm_bts_trx_ts *ts, int act);
 
@@ -71,7 +69,6 @@ int abis_rsl_rcvmsg(struct msgb *msg);
 int rsl_release_request(struct gsm_lchan *lchan, uint8_t link_id,
 			enum rsl_rel_mode release_mode);
 
-int rsl_lchan_set_state_with_log(struct gsm_lchan *lchan, enum gsm_lchan_state state, const char *file, unsigned line);
 int rsl_lchan_mark_broken(struct gsm_lchan *lchan, const char *broken);
 
 /* to be provided by external code */
@@ -106,9 +103,15 @@ int rsl_start_t3109(struct gsm_lchan *lchan);
 
 int rsl_direct_rf_release(struct gsm_lchan *lchan);
 
-void dyn_ts_init(struct gsm_bts_trx_ts *ts);
-int dyn_ts_switchover_start(struct gsm_bts_trx_ts *ts,
-			    enum gsm_phys_chan_config to_pchan);
+int rsl_tx_dyn_ts_pdch_act_deact(struct gsm_bts_trx_ts *ts, bool activate);
+
+int rsl_forward_layer3_info(struct gsm_lchan *lchan, const uint8_t *l3_info, uint8_t l3_info_len);
+
+int ipacc_speech_mode(enum gsm48_chan_mode tch_mode, enum gsm_chan_t type);
+void ipacc_speech_mode_set_direction(uint8_t *speech_mode, bool send);
+int ipacc_payload_type(enum gsm48_chan_mode tch_mode, enum gsm_chan_t type);
+
+int rsl_tx_rf_chan_release(struct gsm_lchan *lchan);
 
 #endif /* RSL_MT_H */
 

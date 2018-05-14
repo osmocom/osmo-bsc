@@ -34,10 +34,10 @@ osmo_bsc_SOURCES = \
 	abis_rsl.c \
 	acc_ramp.c \
 	arfcn_range_encode.c \
+	assignment_fsm.c \
 	bsc_api.c \
 	bsc_ctrl_commands.c \
 	bsc_ctrl_lookup.c \
-	bsc_dyn_ts.c \
 	bsc_init.c \
 	bsc_rf_ctrl.c \
 	bsc_rll.c \
@@ -63,15 +63,18 @@ osmo_bsc_SOURCES = \
 	handover_cfg.c \
 	handover_decision.c \
 	handover_decision_2.c \
+	handover_fsm.c \
 	handover_logic.c \
 	handover_vty.c \
+	lchan_fsm.c \
+	lchan_select.c \
 	meas_feed.c \
 	meas_rep.c \
+	mgw_endpoint_fsm.c \
 	neighbor_ident.c \
 	neighbor_ident_vty.c \
 	net_init.c \
 	osmo_bsc_api.c \
-	osmo_bsc_audio.c \
 	osmo_bsc_bssap.c \
 	osmo_bsc_ctrl.c \
 	osmo_bsc_filter.c \
@@ -86,6 +89,7 @@ osmo_bsc_SOURCES = \
 	penalty_timers.c \
 	rest_octets.c \
 	system_information.c \
+	timeslot_fsm.c \
 	$(NULL)
 
 osmo_bsc_LDADD = \

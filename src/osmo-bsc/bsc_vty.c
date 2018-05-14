@@ -33,6 +33,7 @@
 #include <osmocom/gsm/gsm0502.h>
 #include <osmocom/ctrl/control_if.h>
 #include <osmocom/gsm/gsm48.h>
+#include <osmocom/gsm/gsm0808.h>
 
 #include <arpa/inet.h>
 
@@ -56,7 +57,7 @@
 #include <osmocom/bsc/bsc_msc_data.h>
 #include <osmocom/bsc/osmo_bsc_rf.h>
 #include <osmocom/bsc/pcu_if.h>
-#include <osmocom/bsc/handover.h>
+#include <osmocom/bsc/handover_fsm.h>
 #include <osmocom/bsc/handover_cfg.h>
 #include <osmocom/bsc/handover_vty.h>
 #include <osmocom/bsc/gsm_04_08_rr.h>
@@ -65,6 +66,10 @@
 #include <osmocom/bsc/neighbor_ident.h>
 #include <osmocom/bsc/handover.h>
 #include <osmocom/bsc/gsm_timers.h>
+#include <osmocom/bsc/timeslot_fsm.h>
+#include <osmocom/bsc/lchan_fsm.h>
+#include <osmocom/bsc/gsm_timers.h>
+#include <osmocom/bsc/mgw_endpoint_fsm.h>
 
 #include <inttypes.h>
 
@@ -552,9 +557,9 @@ static void config_write_ts_single(struct vty *vty, struct gsm_bts_trx_ts *ts)
 	vty_out(vty, "   timeslot %u%s", ts->nr, VTY_NEWLINE);
 	if (ts->tsc != -1)
 		vty_out(vty, "    training_sequence_code %u%s", ts->tsc, VTY_NEWLINE);
-	if (ts->pchan != GSM_PCHAN_NONE)
+	if (ts->pchan_from_config != GSM_PCHAN_NONE)
 		vty_out(vty, "    phys_chan_config %s%s",
-			gsm_pchan_name(ts->pchan), VTY_NEWLINE);
+			gsm_pchan_name(ts->pchan_from_config), VTY_NEWLINE);
 	vty_out(vty, "    hopping enabled %u%s",
 		ts->hopping.enabled, VTY_NEWLINE);
 	if (ts->hopping.enabled) {
@@ -1100,17 +1105,12 @@ DEFUN(show_trx,
 
 static void ts_dump_vty(struct vty *vty, struct gsm_bts_trx_ts *ts)
 {
-	vty_out(vty, "BTS %u, TRX %u, Timeslot %u, phys cfg %s, TSC %u",
+	vty_out(vty, "BTS %u, TRX %u, Timeslot %u, phys cfg %s",
 		ts->trx->bts->nr, ts->trx->nr, ts->nr,
-		gsm_pchan_name(ts->pchan), gsm_ts_tsc(ts));
-	if (ts->pchan == GSM_PCHAN_TCH_F_PDCH) {
-		vty_out(vty, " (%s mode)",
-			ts->flags & TS_F_PDCH_ACTIVE ? "PDCH" : "TCH/F");
-	} else if (ts->pchan == GSM_PCHAN_TCH_F_TCH_H_PDCH) {
-		vty_out(vty, " (%s mode)", gsm_pchan_name(ts->dyn.pchan_is));
-	}
-	vty_out(vty, "%s", VTY_NEWLINE);
-	vty_out(vty, "  NM State: ");
+		gsm_pchan_name(ts->pchan_on_init));
+	if (ts->pchan_is != ts->pchan_on_init)
+		vty_out(vty, " (%s mode)", gsm_pchan_name(ts->pchan_is));
+	vty_out(vty, ", TSC %u%s  NM State: ", gsm_ts_tsc(ts), VTY_NEWLINE);
 	net_dump_nmstate(vty, &ts->mo.nm_state);
 	if (!is_ipaccess_bts(ts->trx->bts))
 		vty_out(vty, "  E1 Line %u, Timeslot %u, Subslot %u%s",
@@ -1237,48 +1237,17 @@ static void meas_rep_dump_vty(struct vty *vty, struct gsm_meas_rep *mr,
 	meas_rep_dump_uni_vty(vty, &mr->ul, prefix, "ul");
 }
 
-/* FIXME: move this to libosmogsm */
-static const struct value_string gsm48_cmode_names[] = {
-	{ GSM48_CMODE_SIGN,		"signalling" },
-	{ GSM48_CMODE_SPEECH_V1,	"FR or HR" },
-	{ GSM48_CMODE_SPEECH_EFR,	"EFR" },
-	{ GSM48_CMODE_SPEECH_AMR,	"AMR" },
-	{ GSM48_CMODE_DATA_14k5,	"CSD(14k5)" },
-	{ GSM48_CMODE_DATA_12k0,	"CSD(12k0)" },
-	{ GSM48_CMODE_DATA_6k0,		"CSD(6k0)" },
-	{ GSM48_CMODE_DATA_3k6,		"CSD(3k6)" },
-	{ 0, NULL }
-};
 
 /* call vty_out() to print a string like " as TCH/H" for dynamic timeslots.
  * Don't do anything if the ts is not dynamic. */
 static void vty_out_dyn_ts_status(struct vty *vty, struct gsm_bts_trx_ts *ts)
 {
-	switch (ts->pchan) {
-	case GSM_PCHAN_TCH_F_TCH_H_PDCH:
-		if (ts->dyn.pchan_is == ts->dyn.pchan_want)
-			vty_out(vty, " as %s",
-				gsm_pchan_name(ts->dyn.pchan_is));
-		else
-			vty_out(vty, " switching %s -> %s",
-				gsm_pchan_name(ts->dyn.pchan_is),
-				gsm_pchan_name(ts->dyn.pchan_want));
-		break;
-	case GSM_PCHAN_TCH_F_PDCH:
-		if ((ts->flags & TS_F_PDCH_PENDING_MASK) == 0)
-			vty_out(vty, " as %s",
-				(ts->flags & TS_F_PDCH_ACTIVE)? "PDCH"
-							      : "TCH/F");
-		else
-			vty_out(vty, " switching %s -> %s",
-				(ts->flags & TS_F_PDCH_ACTIVE)? "PDCH"
-							      : "TCH/F",
-				(ts->flags & TS_F_PDCH_ACT_PENDING)? "PDCH"
-								   : "TCH/F");
-		break;
-	default:
-		/* no dyn ts */
-		break;
+	enum gsm_phys_chan_config target;
+	if (ts_is_pchan_switching(ts, &target)) {
+		vty_out(vty, " switching %s -> %s", gsm_pchan_name(ts->pchan_is),
+			gsm_pchan_name(target));
+	} else if (ts->pchan_is != ts->pchan_on_init) {
+		vty_out(vty, " as %s", gsm_pchan_name(ts->pchan_is));
 	}
 }
 
@@ -1290,7 +1259,7 @@ static void lchan_dump_full_vty(struct vty *vty, struct gsm_lchan *lchan)
 		lchan->ts->trx->bts->nr, lchan->ts->trx->nr, lchan->ts->nr,
 		lchan->nr, gsm_lchant_name(lchan->type), VTY_NEWLINE);
 	/* show dyn TS details, if applicable */
-	switch (lchan->ts->pchan) {
+	switch (lchan->ts->pchan_on_init) {
 	case GSM_PCHAN_TCH_F_TCH_H_PDCH:
 		vty_out(vty, "  Osmocom Dyn TS:");
 		vty_out_dyn_ts_status(vty, lchan->ts);
@@ -1306,10 +1275,9 @@ static void lchan_dump_full_vty(struct vty *vty, struct gsm_lchan *lchan)
 		break;
 	}
 	vty_out(vty, "  Connection: %u, State: %s%s%s%s",
-		lchan->conn ? 1: 0,
-		gsm_lchans_name(lchan->state),
-		lchan->state == LCHAN_S_BROKEN ? " Error reason: " : "",
-		lchan->state == LCHAN_S_BROKEN ? lchan->broken_reason : "",
+		lchan->conn ? 1: 0, lchan_state_name(lchan),
+		lchan->fi && lchan->fi->state == LCHAN_ST_BORKEN ? " Error reason: " : "",
+		lchan->fi && lchan->fi->state == LCHAN_ST_BORKEN ? lchan->last_error : "",
 		VTY_NEWLINE);
 	vty_out(vty, "  BS Power: %u dBm, MS Power: %u dBm%s",
 		lchan->ts->trx->nominal_power - lchan->ts->trx->max_power_red
@@ -1317,7 +1285,7 @@ static void lchan_dump_full_vty(struct vty *vty, struct gsm_lchan *lchan)
 		ms_pwr_dbm(lchan->ts->trx->bts->band, lchan->ms_power),
 		VTY_NEWLINE);
 	vty_out(vty, "  Channel Mode / Codec: %s%s",
-		get_value_string(gsm48_cmode_names, lchan->tch_mode),
+		gsm48_chan_mode_name(lchan->tch_mode),
 		VTY_NEWLINE);
 	if (lchan->conn && lchan->conn->bsub) {
 		vty_out(vty, "  Subscriber:%s", VTY_NEWLINE);
@@ -1361,12 +1329,12 @@ static void lchan_dump_short_vty(struct vty *vty, struct gsm_lchan *lchan)
 
 	vty_out(vty, "BTS %u, TRX %u, Timeslot %u %s",
 		lchan->ts->trx->bts->nr, lchan->ts->trx->nr, lchan->ts->nr,
-		gsm_pchan_name(lchan->ts->pchan));
+		gsm_pchan_name(lchan->ts->pchan_on_init));
 	vty_out_dyn_ts_status(vty, lchan->ts);
 	vty_out(vty, ", Lchan %u, Type %s, State %s - "
 		"L1 MS Power: %u dBm RXL-FULL-dl: %4d dBm RXL-FULL-ul: %4d dBm%s",
 		lchan->nr,
-		gsm_lchant_name(lchan->type), gsm_lchans_name(lchan->state),
+		gsm_lchant_name(lchan->type), lchan_state_name(lchan),
 		mr->ms_l1.pwr,
 		rxlev2dbm(mr->dl.full.rx_lev),
 		rxlev2dbm(mr->ul.full.rx_lev),
@@ -1377,10 +1345,9 @@ static void lchan_dump_short_vty(struct vty *vty, struct gsm_lchan *lchan)
 static int dump_lchan_trx_ts(struct gsm_bts_trx_ts *ts, struct vty *vty,
 			     void (*dump_cb)(struct vty *, struct gsm_lchan *))
 {
-	int lchan_nr;
-	for (lchan_nr = 0; lchan_nr < TS_MAX_LCHAN; lchan_nr++) {
-		struct gsm_lchan *lchan = &ts->lchan[lchan_nr];
-		if ((lchan->type == GSM_LCHAN_NONE) && (lchan->state == LCHAN_S_NONE))
+	struct gsm_lchan *lchan;
+	ts_for_each_lchan(lchan, ts) {
+		if (lchan_state_is(lchan, LCHAN_ST_UNUSED))
 			continue;
 		dump_cb(vty, lchan);
 	}
@@ -1507,7 +1474,7 @@ static void dump_one_subscr_conn(struct vty *vty, const struct gsm_subscriber_co
 	vty_out(vty, "conn ID=%u, MSC=%u, hodec2_fail=%d, mode=%s, mgw_ep=%s%s",
 		conn->sccp.conn_id, conn->sccp.msc->nr, conn->hodec2.failures,
 		get_value_string(gsm48_chan_mode_names, conn->user_plane.chan_mode),
-		conn->user_plane.mgw_endpoint, VTY_NEWLINE);
+		mgw_endpoint_name(conn->user_plane.mgw_endpoint), VTY_NEWLINE);
 	if (conn->lcls.global_call_ref_len) {
 		vty_out(vty, " LCLS GCR: %s%s",
 			osmo_hexdump_nospc(conn->lcls.global_call_ref, conn->lcls.global_call_ref_len),
@@ -1518,8 +1485,8 @@ static void dump_one_subscr_conn(struct vty *vty, const struct gsm_subscriber_co
 	}
 	if (conn->lchan)
 		lchan_dump_full_vty(vty, conn->lchan);
-	if (conn->secondary_lchan)
-		lchan_dump_full_vty(vty, conn->secondary_lchan);
+	if (conn->assignment.new_lchan)
+		lchan_dump_full_vty(vty, conn->assignment.new_lchan);
 }
 
 DEFUN(show_subscr_conn,
@@ -1548,8 +1515,6 @@ DEFUN(show_subscr_conn,
 
 static int trigger_ho_or_as(struct vty *vty, struct gsm_lchan *from_lchan, struct gsm_bts *to_bts)
 {
-	int rc;
-
 	if (!to_bts || from_lchan->ts->trx->bts == to_bts) {
 		LOGP(DHO, LOGL_NOTICE, "%s Manually triggering Assignment from VTY\n",
 		     gsm_lchan_name(from_lchan));
@@ -1557,11 +1522,13 @@ static int trigger_ho_or_as(struct vty *vty, struct gsm_lchan *from_lchan, struc
 	} else
 		LOGP(DHO, LOGL_NOTICE, "%s (ARFCN %u) --> BTS %u Manually triggering Handover from VTY\n",
 		     gsm_lchan_name(from_lchan), from_lchan->ts->trx->arfcn, to_bts->nr);
-	rc = bsc_handover_start(HODEC_NONE, from_lchan, to_bts, from_lchan->type);
-	if (rc) {
-		vty_out(vty, "bsc_handover_start() returned %d=%s%s", rc,
-			strerror(-rc), VTY_NEWLINE);
-		return CMD_WARNING;
+	{
+		struct handover_out_req req = {
+			.from_hodec_id = HODEC_USER,
+			.old_lchan = from_lchan,
+			.target_nik = *bts_ident_key(to_bts),
+		};
+		handover_request(&req);
 	}
 	return CMD_SUCCESS;
 }
@@ -1650,18 +1617,13 @@ static struct gsm_lchan *find_used_voice_lchan(struct vty *vty)
 			int i;
 			for (i = 0; i < ARRAY_SIZE(trx->ts); i++) {
 				struct gsm_bts_trx_ts *ts = &trx->ts[i];
-				int j;
-				int subslots;
+				struct gsm_lchan *lchan;
 
-				/* skip administratively deactivated timeslots */
-				if (!nm_is_running(&ts->mo.nm_state))
+				if (ts->fi->state != TS_ST_IN_USE)
 					continue;
 
-				subslots = ts_subslots(ts);
-				for (j = 0; j < subslots; j++) {
-					struct gsm_lchan *lchan = &ts->lchan[j];
-
-					if (lchan->state == LCHAN_S_ACTIVE
+				ts_for_each_lchan(lchan, ts) {
+					if (lchan_state_is(lchan, LCHAN_ST_ESTABLISHED)
 					    && (lchan->type == GSM_LCHAN_TCH_F
 						|| lchan->type == GSM_LCHAN_TCH_H)) {
 
@@ -1693,30 +1655,27 @@ static struct gsm_bts *find_other_bts_with_free_slots(struct vty *vty, struct gs
 
 		llist_for_each_entry(trx, &bts->trx_list, list) {
 			int i;
+			/* FIXME: use lchan_select_by_type() instead */
 			for (i = 0; i < ARRAY_SIZE(trx->ts); i++) {
 				struct gsm_bts_trx_ts *ts = &trx->ts[i];
-				int j;
-				int subslots;
+				struct gsm_lchan *lchan;
 
 				/* skip administratively deactivated timeslots */
 				if (!nm_is_running(&ts->mo.nm_state))
 					continue;
 
-				if (ts->pchan != free_type)
+				if (ts->pchan_is != free_type)
 					continue;
 
-				subslots = ts_subslots(ts);
-				for (j = 0; j < subslots; j++) {
-					struct gsm_lchan *lchan = &ts->lchan[j];
-
-					if (lchan->state == LCHAN_S_NONE) {
-						vty_out(vty, "Found unused %s slot: %s%s",
-							gsm_pchan_name(free_type),
-							gsm_lchan_name(lchan),
-							VTY_NEWLINE);
-						lchan_dump_full_vty(vty, lchan);
-						return bts;
-					}
+				ts_for_each_lchan(lchan, ts) {
+					if (lchan->fi->state != LCHAN_ST_UNUSED)
+						continue;
+					vty_out(vty, "Found unused %s slot: %s%s",
+						gsm_pchan_name(free_type),
+						gsm_lchan_name(lchan),
+						VTY_NEWLINE);
+					lchan_dump_full_vty(vty, lchan);
+					return bts;
 				}
 			}
 		}
@@ -1740,7 +1699,7 @@ DEFUN(handover_any, handover_any_cmd,
 		return CMD_WARNING;
 
 	to_bts = find_other_bts_with_free_slots(vty, from_lchan->ts->trx->bts,
-						ts_pchan(from_lchan->ts));
+						from_lchan->ts->pchan_is);
 	if (!to_bts)
 		return CMD_WARNING;
 
@@ -1760,6 +1719,38 @@ DEFUN(assignment_any, assignment_any_cmd,
 		return CMD_WARNING;
 
 	return trigger_ho_or_as(vty, from_lchan, NULL);
+}
+
+DEFUN(handover_any_to_arfcn_bsic, handover_any_to_arfcn_bsic_cmd,
+      "handover any to " NEIGHBOR_IDENT_VTY_KEY_PARAMS,
+      MANUAL_HANDOVER_STR
+      "Pick any actively used TCH/F or TCH/H lchan to handover to another cell."
+      " This is likely to fail outside of a lab setup where you are certain that"
+      " all MS are able to see the target cell.\n"
+      "'to'\n"
+      NEIGHBOR_IDENT_VTY_KEY_DOC)
+{
+	struct handover_out_req req;
+	struct gsm_lchan *from_lchan;
+
+	from_lchan = find_used_voice_lchan(vty);
+	if (!from_lchan)
+		return CMD_WARNING;
+
+	req = (struct handover_out_req){
+		.from_hodec_id = HODEC_USER,
+		.old_lchan = from_lchan,
+	};
+
+	if (!neighbor_ident_bts_parse_key_params(vty, from_lchan->ts->trx->bts,
+						 argv, &req.target_nik)) {
+		vty_out(vty, "%% BTS %u does not know about this neighbor%s",
+			from_lchan->ts->trx->bts->nr, VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	handover_request(&req);
+	return CMD_SUCCESS;
 }
 
 static void paging_dump_vty(struct vty *vty, struct gsm_paging_request *pag)
@@ -3956,7 +3947,7 @@ DEFUN(cfg_ts_pchan,
 	if (pchanc < 0)
 		return CMD_WARNING;
 
-	ts->pchan = pchanc;
+	ts->pchan_from_config = pchanc;
 
 	return CMD_SUCCESS;
 }
@@ -3977,7 +3968,7 @@ DEFUN_HIDDEN(cfg_ts_pchan_compat,
 		return CMD_ERR_NO_MATCH;
 	}
 
-	ts->pchan = pchanc;
+	ts->pchan_from_config = pchanc;
 
 	return CMD_SUCCESS;
 }
@@ -4325,8 +4316,10 @@ DEFUN(pdch_act, pdch_act_cmd,
 	int activate;
 
 	ts = vty_get_ts(vty, argv[0], argv[1], argv[2]);
-	if (!ts)
+	if (!ts || !ts->fi || ts->fi->state == TS_ST_NOT_INITIALIZED || ts->fi->state == TS_ST_BORKEN) {
+		vty_out(vty, "%% Timeslot is not usable%s", VTY_NEWLINE);
 		return CMD_WARNING;
+	}
 
 	if (!is_ipaccess_bts(ts->trx->bts)) {
 		vty_out(vty, "%% This command only works for ipaccess BTS%s",
@@ -4334,9 +4327,10 @@ DEFUN(pdch_act, pdch_act_cmd,
 		return CMD_WARNING;
 	}
 
-	if (ts->pchan != GSM_PCHAN_TCH_F_PDCH) {
-		vty_out(vty, "%% Timeslot %u is not in dynamic TCH_F/PDCH "
-			"mode%s", ts->nr, VTY_NEWLINE);
+	if (ts->pchan_on_init != GSM_PCHAN_TCH_F_TCH_H_PDCH
+	    && ts->pchan_on_init != GSM_PCHAN_TCH_F_PDCH) {
+		vty_out(vty, "%% Timeslot %u is not dynamic TCH/F_TCH/H_PDCH or TCH/F_PDCH%s",
+			ts->nr, VTY_NEWLINE);
 		return CMD_WARNING;
 	}
 
@@ -4345,28 +4339,22 @@ DEFUN(pdch_act, pdch_act_cmd,
 	else
 		activate = 0;
 
-	rsl_ipacc_pdch_activate(ts, activate);
+	if (activate && ts->fi->state != TS_ST_UNUSED) {
+		vty_out(vty, "%% Timeslot %u is still in use%s",
+			ts->nr, VTY_NEWLINE);
+		return CMD_WARNING;
+	} else if (!activate && ts->fi->state != TS_ST_PDCH) {
+		vty_out(vty, "%% Timeslot %u is not in PDCH mode%s",
+			ts->nr, VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	LOG_TS(ts, LOGL_NOTICE, "telnet VTY user asks to %s\n", activate ? "PDCH ACT" : "PDCH DEACT");
+	ts->pdch_act_allowed = activate;
+	osmo_fsm_inst_state_chg(ts->fi, activate ? TS_ST_WAIT_PDCH_ACT : TS_ST_WAIT_PDCH_DEACT, 4, 0);
 
 	return CMD_SUCCESS;
 
-}
-
-/* determine the logical channel type based on the physical channel type */
-static int lchan_type_by_pchan(enum gsm_phys_chan_config pchan)
-{
-	switch (pchan) {
-	case GSM_PCHAN_TCH_F:
-		return GSM_LCHAN_TCH_F;
-	case GSM_PCHAN_TCH_H:
-		return GSM_LCHAN_TCH_H;
-	case GSM_PCHAN_SDCCH8_SACCH8C:
-	case GSM_PCHAN_SDCCH8_SACCH8C_CBCH:
-	case GSM_PCHAN_CCCH_SDCCH4:
-	case GSM_PCHAN_CCCH_SDCCH4_CBCH:
-		return GSM_LCHAN_SDCCH;
-	default:
-		return -1;
-	}
 }
 
 /* configure the lchan for a single AMR mode (as specified) */
@@ -4425,19 +4413,21 @@ DEFUN(lchan_act, lchan_act_cmd,
 	else
 		activate = 0;
 
-	if (ss_nr >= ts_subslots(ts)) {
-		vty_out(vty, "%% subslot %d >= permitted %d for physical channel %s%s",
-			ss_nr, ts_subslots(ts), gsm_pchan_name(ts->pchan), VTY_NEWLINE);
+	/* FIXME: allow dynamic channels with switchover, lchan_activate(lchan, FOR_VTY) */
+	if (ss_nr >= pchan_subslots(ts->pchan_is)) {
+		vty_out(vty, "%% subslot index %d too large for physical channel %s (%u slots)%s",
+			ss_nr, gsm_pchan_name(ts->pchan_is), pchan_subslots(ts->pchan_is),
+			VTY_NEWLINE);
 		return CMD_WARNING;
 	}
 
 	if (activate) {
 		int lchan_t;
-		if (lchan->state != LCHAN_S_NONE) {
+		if (lchan->fi->state != LCHAN_ST_UNUSED) {
 			vty_out(vty, "%% Cannot activate: Channel busy!%s", VTY_NEWLINE);
 			return CMD_WARNING;
 		}
-		lchan_t = lchan_type_by_pchan(ts->pchan);
+		lchan_t = gsm_lchan_type_by_pchan(ts->pchan_is);
 		if (lchan_t < 0)
 			return CMD_WARNING;
 		/* configure the lchan */
@@ -4458,10 +4448,16 @@ DEFUN(lchan_act, lchan_act_cmd,
 			lchan_set_single_amr_mode(lchan, amr_mode);
 		}
 		vty_out(vty, "%% activating lchan %s%s", gsm_lchan_name(lchan), VTY_NEWLINE);
-		rsl_chan_activate_lchan(lchan, RSL_ACT_TYPE_INITIAL, 0);
-		rsl_ipacc_crcx(lchan);
+		rsl_tx_chan_activ(lchan, RSL_ACT_TYPE_INITIAL, 0);
+		rsl_tx_ipacc_crcx(lchan);
 	} else {
-		rsl_direct_rf_release(lchan);
+		if (!lchan->fi) {
+			vty_out(vty, "%% Cannot release: Channel not initialized%s", VTY_NEWLINE);
+			return CMD_WARNING;
+		}
+		vty_out(vty, "%% Asking for release of %s in state %s%s", gsm_lchan_name(lchan),
+			osmo_fsm_inst_state_name(lchan->fi), VTY_NEWLINE);
+		lchan_release(lchan, false, false, 0);
 	}
 
 	return CMD_SUCCESS;
@@ -4485,15 +4481,18 @@ DEFUN(lchan_mdcx, lchan_mdcx_cmd,
 
 	lchan = &ts->lchan[ss_nr];
 
-	if (ss_nr >= ts_subslots(ts)) {
-		vty_out(vty, "%% subslot %d >= permitted %d for physical channel %s%s",
-			ss_nr, ts_subslots(ts), gsm_pchan_name(ts->pchan), VTY_NEWLINE);
+	if (ss_nr >= pchan_subslots(ts->pchan_is)) {
+		vty_out(vty, "%% subslot index %d too large for physical channel %s (%u slots)%s",
+			ss_nr, gsm_pchan_name(ts->pchan_is), pchan_subslots(ts->pchan_is),
+			VTY_NEWLINE);
 		return CMD_WARNING;
 	}
 
 	vty_out(vty, "%% connecting RTP of %s to %s:%u%s", gsm_lchan_name(lchan),
 		inet_ntoa(ia), port, VTY_NEWLINE);
-	rsl_ipacc_mdcx(lchan, ntohl(ia.s_addr), port, 0);
+	lchan->abis_ip.connect_ip = ia.s_addr;
+	lchan->abis_ip.connect_port = port;
+	rsl_tx_ipacc_mdcx(lchan);
 	return CMD_SUCCESS;
 }
 
@@ -4775,11 +4774,13 @@ int bsc_vty_init(struct gsm_network *network)
 	install_element_ve(&show_lchan_summary_cmd);
 
 	install_element_ve(&show_subscr_conn_cmd);
-	install_element_ve(&handover_any_cmd);
-	install_element_ve(&assignment_any_cmd);
 
 	install_element_ve(&show_paging_cmd);
 	install_element_ve(&show_paging_group_cmd);
+
+	install_element(ENABLE_NODE, &handover_any_cmd);
+	install_element(ENABLE_NODE, &assignment_any_cmd);
+	install_element(ENABLE_NODE, &handover_any_to_arfcn_bsic_cmd);
 
 	logging_vty_add_cmds(NULL);
 	osmo_talloc_vty_add_cmds();

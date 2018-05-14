@@ -36,14 +36,16 @@
 #include <osmocom/bsc/signal.h>
 #include <osmocom/bsc/bsc_subscr_conn_fsm.h>
 #include <osmocom/bsc/gsm_04_08_rr.h>
-#include <osmocom/bsc/chan_alloc.h>
+#include <osmocom/bsc/lchan_fsm.h>
+#include <osmocom/bsc/assignment_fsm.h>
+#include <osmocom/bsc/handover_fsm.h>
 #include <osmocom/bsc/bsc_api.h>
 
 /* should ip.access BTS use direct RTP streams between each other (1),
  * or should OpenBSC always act as RTP relay/proxy in between (0) ? */
 int ipacc_rtp_direct = 1;
 
-static int gsm48_sendmsg(struct msgb *msg)
+int gsm48_sendmsg(struct msgb *msg)
 {
 	if (msg->lchan)
 		msg->dst = msg->lchan->ts->trx->rsl_link;
@@ -352,15 +354,13 @@ int gsm48_multirate_config(uint8_t *lv, const struct amr_multirate_conf *mr, con
 #define GSM48_HOCMD_CCHDESC_LEN	16
 
 /* Chapter 9.1.15: Handover Command */
-int gsm48_send_ho_cmd(struct gsm_lchan *old_lchan, struct gsm_lchan *new_lchan,
-		      uint8_t power_command, uint8_t ho_ref)
+struct msgb *gsm48_make_ho_cmd(struct gsm_lchan *new_lchan, uint8_t power_command, uint8_t ho_ref)
 {
 	struct msgb *msg = gsm48_msgb_alloc_name("GSM 04.08 HO CMD");
 	struct gsm48_hdr *gh = (struct gsm48_hdr *) msgb_put(msg, sizeof(*gh));
 	struct gsm48_ho_cmd *ho =
 		(struct gsm48_ho_cmd *) msgb_put(msg, sizeof(*ho));
 
-	msg->lchan = old_lchan;
 	gh->proto_discr = GSM48_PDISC_RR;
 	gh->msg_type = GSM48_MT_RR_HANDO_CMD;
 
@@ -395,6 +395,16 @@ int gsm48_send_ho_cmd(struct gsm_lchan *old_lchan, struct gsm_lchan *new_lchan,
 		msgb_tlv_put(msg, GSM48_IE_MUL_RATE_CFG, new_lchan->mr_ms_lv[0],
 			new_lchan->mr_ms_lv + 1);
 
+	return msg;
+}
+
+int gsm48_send_ho_cmd(struct gsm_lchan *old_lchan, struct gsm_lchan *new_lchan,
+		      uint8_t power_command, uint8_t ho_ref)
+{
+	struct msgb *msg = gsm48_make_ho_cmd(new_lchan, power_command, ho_ref);
+	if (!msg)
+		return -EINVAL;
+	msg->lchan = old_lchan;
 	return gsm48_sendmsg(msg);
 }
 
@@ -472,11 +482,14 @@ int gsm48_rx_rr_modif_ack(struct msgb *msg)
 	struct gsm48_chan_mode_modify *mod =
 				(struct gsm48_chan_mode_modify *) gh->data;
 
-	DEBUGP(DRR, "CHANNEL MODE MODIFY ACK\n");
+	LOG_LCHAN(msg->lchan, LOGL_DEBUG, "CHANNEL MODE MODIFY ACK for %s\n",
+		  gsm48_chan_mode_name(mod->mode));
 
 	if (mod->mode != msg->lchan->tch_mode) {
-		LOGP(DRR, LOGL_ERROR, "CHANNEL MODE change failed. Wanted: %d Got: %d\n",
-			msg->lchan->tch_mode, mod->mode);
+		LOG_LCHAN(msg->lchan, LOGL_ERROR,
+			  "CHANNEL MODE MODIFY ACK has wrong mode: Wanted: %s Got: %s\n",
+			  gsm48_chan_mode_name(msg->lchan->tch_mode),
+			  gsm48_chan_mode_name(mod->mode));
 		return -1;
 	}
 
@@ -505,7 +518,7 @@ int gsm48_rx_rr_modif_ack(struct msgb *msg)
 	/* FIXME: we not only need to do this after mode modify, but
 	 * also after channel activation */
 	if (is_ipaccess_bts(msg->lchan->ts->trx->bts) && mod->mode != GSM48_CMODE_SIGN)
-		rsl_ipacc_crcx(msg->lchan);
+		rsl_tx_ipacc_crcx(msg->lchan);
 	return rc;
 }
 
@@ -586,41 +599,6 @@ int gsm48_parse_meas_rep(struct gsm_meas_rep *rep, struct msgb *msg)
 	mrc->arfcn = bitvec_get_nth_set_bit(nbv, mrc->neigh_idx + 1);
 	mrc->bsic = data[15] & 0x3f;
 
-	return 0;
-}
-
-/* 9.2.5 CM service accept */
-int gsm48_tx_mm_serv_ack(struct gsm_subscriber_connection *conn)
-{
-	struct msgb *msg = gsm48_msgb_alloc_name("GSM 04.08 SERV ACK");
-	struct gsm48_hdr *gh = (struct gsm48_hdr *) msgb_put(msg, sizeof(*gh));
-
-	msg->lchan = conn->lchan;
-
-	gh->proto_discr = GSM48_PDISC_MM;
-	gh->msg_type = GSM48_MT_MM_CM_SERV_ACC;
-
-	DEBUGP(DMM, "-> CM SERVICE ACK\n");
-
-	gscon_submit_rsl_dtap(conn, msg, 0, 0);
-	return 0;
-}
-
-/* 9.2.6 CM service reject */
-int gsm48_tx_mm_serv_rej(struct gsm_subscriber_connection *conn,
-				enum gsm48_reject_value value)
-{
-	struct msgb *msg;
-
-	msg = gsm48_create_mm_serv_rej(value);
-	if (!msg) {
-		LOGP(DMM, LOGL_ERROR, "Failed to allocate CM Service Reject.\n");
-		return -1;
-	}
-
-	DEBUGP(DMM, "-> CM SERVICE Reject cause: %d\n", value);
-
-	gscon_submit_rsl_dtap(conn, msg, 0, 0);
 	return 0;
 }
 
@@ -719,108 +697,6 @@ uint64_t str_to_imsi(const char *imsi_str)
 	return ret;
 }
 
-static void handle_ass_compl(struct gsm_subscriber_connection *conn,
-			     struct msgb *msg)
-{
-	struct gsm48_hdr *gh = msgb_l3(msg);
-	enum gsm48_rr_cause cause;
-
-	/* Expecting gsm48_hdr + cause value */
-	if (msgb_l3len(msg) != sizeof(*gh) + 1) {
-		LOGPLCHAN(msg->lchan, DRR, LOGL_ERROR,
-			  "RR Assignment Complete: length invalid: %u, expected %zu\n",
-			  msgb_l3len(msg), sizeof(*gh) + 1);
-		return;
-	}
-
-	cause = gh->data[0];
-
-	LOGPLCHAN(msg->lchan, DRR, LOGL_DEBUG, "ASSIGNMENT COMPLETE cause = %s\n",
-		  rr_cause_name(cause));
-
-	if (conn->ho) {
-		struct lchan_signal_data sig = {
-			.lchan = msg->lchan,
-		};
-		osmo_signal_dispatch(SS_LCHAN, S_LCHAN_ASSIGNMENT_COMPL, &sig);
-		/* FIXME: release old channel */
-
-		/* send pending messages, if any */
-		gscon_dtap_queue_flush(conn, 1);
-
-		return;
-	}
-
-	if (conn->secondary_lchan != msg->lchan) {
-		LOGPLCHAN(msg->lchan, DRR, LOGL_ERROR,
-			  "RR Assignment Complete does not match conn's secondary lchan.\n");
-		return;
-	}
-
-	lchan_release(conn->lchan, 0, RSL_REL_LOCAL_END);
-	conn->lchan = conn->secondary_lchan;
-	conn->secondary_lchan = NULL;
-
-	/* send pending messages, if any */
-	gscon_dtap_queue_flush(conn, 1);
-
-	if (is_ipaccess_bts(conn_get_bts(conn)) && conn->lchan->tch_mode != GSM48_CMODE_SIGN)
-		rsl_ipacc_crcx(conn->lchan);
-
-	bsc_assign_compl(conn, cause);
-}
-
-static void handle_ass_fail(struct gsm_subscriber_connection *conn,
-			    struct msgb *msg)
-{
-	uint8_t *rr_failure;
-	struct gsm48_hdr *gh;
-
-	if (conn->ho) {
-		struct lchan_signal_data sig;
-		struct gsm48_hdr *gh = msgb_l3(msg);
-
-		LOGPLCHAN(msg->lchan, DRR, LOGL_DEBUG, "ASSIGNMENT FAILED cause = %s\n",
-			  rr_cause_name(gh->data[0]));
-
-		sig.lchan = msg->lchan;
-		sig.mr = NULL;
-		osmo_signal_dispatch(SS_LCHAN, S_LCHAN_ASSIGNMENT_FAIL, &sig);
-		/* FIXME: release allocated new channel */
-
-		/* send pending messages, if any */
-		gscon_dtap_queue_flush(conn, 1);
-
-		return;
-	}
-
-	if (conn->lchan != msg->lchan) {
-		LOGPLCHAN(msg->lchan, DMSC, LOGL_ERROR,
-			  "Assignment failure should occur on primary lchan.\n");
-		return;
-	}
-
-	/* stop the timer and release it */
-	if (conn->secondary_lchan) {
-		lchan_release(conn->secondary_lchan, 0, RSL_REL_LOCAL_END);
-		conn->secondary_lchan = NULL;
-	}
-
-	/* send pending messages, if any */
-	gscon_dtap_queue_flush(conn, 1);
-
-	gh = msgb_l3(msg);
-	if (msgb_l3len(msg) - sizeof(*gh) != 1) {
-		LOGPLCHAN(conn->lchan, DMSC, LOGL_ERROR, "assignment failure unhandled: %zu\n",
-			  msgb_l3len(msg) - sizeof(*gh));
-		rr_failure = NULL;
-	} else {
-		rr_failure = &gh->data[0];
-	}
-
-	bsc_assign_fail(conn, GSM0808_CAUSE_RADIO_INTERFACE_MESSAGE_FAILURE, rr_failure);
-}
-
 static void handle_classmark_chg(struct gsm_subscriber_connection *conn,
 				 struct msgb *msg)
 {
@@ -829,73 +705,35 @@ static void handle_classmark_chg(struct gsm_subscriber_connection *conn,
 	uint8_t cm2_len, cm3_len = 0;
 	uint8_t *cm2, *cm3 = NULL;
 
-	LOGPLCHAN(msg->lchan, DRR, LOGL_DEBUG, "CLASSMARK CHANGE ");
 
 	/* classmark 2 */
 	cm2_len = gh->data[0];
 	cm2 = &gh->data[1];
-	DEBUGPC(DRR, "CM2(len=%u) ", cm2_len);
+
+	if (cm2_len > 3) {
+		LOG_LCHAN(msg->lchan, LOGL_ERROR, "CLASSMARK CHANGE: CM2 too long: %u\n", cm2_len);
+		return;
+	}
 
 	if (payload_len > cm2_len + 1) {
 		/* we must have a classmark3 */
 		if (gh->data[cm2_len+1] != 0x20) {
-			DEBUGPC(DRR, "ERR CM3 TAG\n");
-			return;
-		}
-		if (cm2_len > 3) {
-			DEBUGPC(DRR, "CM2 too long!\n");
+			LOG_LCHAN(msg->lchan, LOGL_ERROR, "CLASSMARK CHANGE: invalid CM3 TAG\n");
 			return;
 		}
 
 		cm3_len = gh->data[cm2_len+2];
 		cm3 = &gh->data[cm2_len+3];
 		if (cm3_len > 14) {
-			DEBUGPC(DRR, "CM3 len %u too long!\n", cm3_len);
+			LOG_LCHAN(msg->lchan, LOGL_ERROR, "CLASSMARK CHANGE: CM3 too long: %u\n",
+				  cm3_len);
 			return;
 		}
-		DEBUGPC(DRR, "CM3(len=%u)\n", cm3_len);
 	}
+
+	LOG_LCHAN(msg->lchan, LOGL_DEBUG, "CLASSMARK CHANGE CM2(len=%u) CM3(len=%u)\n",
+		  cm2_len, cm3_len);
 	bsc_cm_update(conn, cm2, cm2_len, cm3, cm3_len);
-}
-
-/* Chapter 9.1.16 Handover complete */
-static void handle_rr_ho_compl(struct msgb *msg)
-{
-	struct lchan_signal_data sig;
-	struct gsm48_hdr *gh = msgb_l3(msg);
-
-	LOGPLCHAN(msg->lchan, DRR, LOGL_DEBUG,
-		  "HANDOVER COMPLETE cause = %s\n", rr_cause_name(gh->data[0]));
-
-	sig.lchan = msg->lchan;
-	sig.mr = NULL;
-	osmo_signal_dispatch(SS_LCHAN, S_LCHAN_HANDOVER_COMPL, &sig);
-	/* FIXME: release old channel */
-
-	/* send pending messages, if any */
-	gscon_dtap_queue_flush(msg->lchan->conn, 1);
-}
-
-/* Chapter 9.1.17 Handover Failure */
-static void handle_rr_ho_fail(struct msgb *msg)
-{
-	struct lchan_signal_data sig;
-	struct gsm48_hdr *gh = msgb_l3(msg);
-
-	/* Log on both RR and HO categories: it is an RR message, but is still quite important when
-	 * filtering on HO. */
-	LOGPLCHAN(msg->lchan, DRR, LOGL_DEBUG,
-		  "HANDOVER FAILED cause = %s\n", rr_cause_name(gh->data[0]));
-	LOGPLCHAN(msg->lchan, DHO, LOGL_DEBUG,
-		  "HANDOVER FAILED cause = %s\n", rr_cause_name(gh->data[0]));
-
-	sig.lchan = msg->lchan;
-	sig.mr = NULL;
-	osmo_signal_dispatch(SS_LCHAN, S_LCHAN_HANDOVER_FAIL, &sig);
-	/* FIXME: release allocated new channel */
-
-	/* send pending messages, if any */
-	gscon_dtap_queue_flush(msg->lchan->conn, 1);
 }
 
 static void dispatch_dtap(struct gsm_subscriber_connection *conn,
@@ -907,8 +745,8 @@ static void dispatch_dtap(struct gsm_subscriber_connection *conn,
 	int rc;
 
 	if (msgb_l3len(msg) < sizeof(*gh)) {
-		LOGP(DMSC, LOGL_ERROR, "(%s) Message too short for a GSM48 header.\n",
-		     bsc_subscr_name(conn->bsub));
+		LOG_LCHAN(msg->lchan, LOGL_ERROR,
+			  "Message too short for a GSM48 header (%u)\n", msgb_l3len(msg));
 		return;
 	}
 
@@ -924,45 +762,63 @@ static void dispatch_dtap(struct gsm_subscriber_connection *conn,
 	 * will call api->compl_l3() for it */
 	switch (pdisc) {
 	case GSM48_PDISC_RR:
+		LOG_LCHAN(msg->lchan, LOGL_DEBUG, "Rx %s\n", gsm48_rr_msg_name(msg_type));
 		switch (msg_type) {
 		case GSM48_MT_RR_GPRS_SUSP_REQ:
-			LOGPLCHAN(msg->lchan, DRR, LOGL_DEBUG,
-				  "%s\n", gsm48_rr_msg_name(GSM48_MT_RR_GPRS_SUSP_REQ));
+			/* do something? */
 			break;
 		case GSM48_MT_RR_STATUS:
-			LOGPLCHAN(msg->lchan, DRR, LOGL_NOTICE,
-				  "%s (cause: %s)\n", gsm48_rr_msg_name(GSM48_MT_RR_STATUS),
-				  rr_cause_name(gh->data[0]));
+			LOG_LCHAN(msg->lchan, LOGL_NOTICE, "RR Status: %s\n", rr_cause_name(gh->data[0]));
+			/* do something? */
 			break;
 		case GSM48_MT_RR_MEAS_REP:
 			/* This shouldn't actually end up here, as RSL treats
 			* L3 Info of 08.58 MEASUREMENT REPORT different by calling
 			* directly into gsm48_parse_meas_rep */
-			LOGPLCHAN(msg->lchan, DMEAS, LOGL_ERROR,
-				  "DIRECT GSM48 MEASUREMENT REPORT ?!?\n");
+			LOG_LCHAN(msg->lchan, LOGL_ERROR, "DIRECT GSM48 MEASUREMENT REPORT ?!?\n");
 			gsm48_tx_rr_status(conn, GSM48_RR_CAUSE_MSG_TYPE_N_COMPAT);
 			break;
 		case GSM48_MT_RR_HANDO_COMPL:
-			handle_rr_ho_compl(msg);
+			/* Chapter 9.1.16 Handover complete */
+			if (!conn->ho.fi)
+				LOG_LCHAN(msg->lchan, LOGL_ERROR,
+					  "Rx RR Handover Complete, but no handover is ongoing\n");
+			else
+				osmo_fsm_inst_dispatch(conn->ho.fi, HO_EV_RR_HO_COMPLETE, msg);
 			break;
 		case GSM48_MT_RR_HANDO_FAIL:
-			handle_rr_ho_fail(msg);
+			/* Chapter 9.1.17 Handover Failure */
+			if (!conn->ho.fi)
+				LOG_LCHAN(msg->lchan, LOGL_ERROR,
+					  "Rx RR Handover Fail, but no handover is ongoing\n");
+			else
+				osmo_fsm_inst_dispatch(conn->ho.fi, HO_EV_RR_HO_FAIL, msg);
 			break;
 		case GSM48_MT_RR_CIPH_M_COMPL:
 			bsc_cipher_mode_compl(conn, msg, conn->lchan->encr.alg_id);
 			break;
 		case GSM48_MT_RR_ASS_COMPL:
-			handle_ass_compl(conn, msg);
+			if (conn->assignment.fi)
+				osmo_fsm_inst_dispatch(conn->assignment.fi,
+						       ASSIGNMENT_EV_RR_ASSIGNMENT_COMPLETE, msg);
+			else
+				LOGPLCHAN(msg->lchan, DRR, LOGL_ERROR,
+					  "Rx RR Assignment Complete, but no assignment is ongoing\n");
 			break;
 		case GSM48_MT_RR_ASS_FAIL:
-			handle_ass_fail(conn, msg);
+			if (conn->assignment.fi)
+				osmo_fsm_inst_dispatch(conn->assignment.fi,
+						       ASSIGNMENT_EV_RR_ASSIGNMENT_FAIL, msg);
+			else
+				LOGPLCHAN(msg->lchan, DRR, LOGL_ERROR,
+					  "Rx RR Assignment Failure, but no assignment is ongoing\n");
 			break;
 		case GSM48_MT_RR_CHAN_MODE_MODIF_ACK:
 			rc = gsm48_rx_rr_modif_ack(msg);
 			if (rc < 0)
-				bsc_assign_fail(conn, GSM0808_CAUSE_NO_RADIO_RESOURCE_AVAILABLE, NULL);
+				osmo_fsm_inst_dispatch(msg->lchan->fi, LCHAN_EV_CHAN_MODE_MODIF_ERROR, &rc);
 			else
-				bsc_assign_compl(conn, 0);
+				osmo_fsm_inst_dispatch(msg->lchan->fi, LCHAN_EV_CHAN_MODE_MODIF_ACK, msg);
 			break;
 		case GSM48_MT_RR_CLSM_CHG:
 			handle_classmark_chg(conn, msg);
@@ -974,8 +830,8 @@ static void dispatch_dtap(struct gsm_subscriber_connection *conn,
 			break;
 		default:
 			/* Drop unknown RR message */
-			LOGPLCHAN(msg->lchan, DRR, LOGL_NOTICE,
-				  "Dropping %s 04.08 RR message\n", gsm48_rr_msg_name(msg_type));
+			LOG_LCHAN(msg->lchan, LOGL_NOTICE, "Unknown RR message: %s\n",
+				  gsm48_rr_msg_name(msg_type));
 			gsm48_tx_rr_status(conn, GSM48_RR_CAUSE_MSG_TYPE_N);
 			break;
 		}
@@ -989,15 +845,13 @@ static void dispatch_dtap(struct gsm_subscriber_connection *conn,
 /*! \brief RSL has received a DATA INDICATION with L3 from MS */
 int gsm0408_rcvmsg(struct msgb *msg, uint8_t link_id)
 {
-	int rc;
 	struct gsm_lchan *lchan;
 
 	lchan = msg->lchan;
-	if (lchan->state != LCHAN_S_ACTIVE) {
-		LOGPLCHAN(msg->lchan, DRSL, LOGL_INFO, "Got data in non active state, discarding.\n");
+	if (!lchan_may_receive_data(lchan)) {
+		LOG_LCHAN(msg->lchan, LOGL_INFO, "Got data in non active state, discarding.\n");
 		return -1;
 	}
-
 
 	if (lchan->conn) {
 		/* if we already have a connection, forward via DTAP to
@@ -1005,20 +859,16 @@ int gsm0408_rcvmsg(struct msgb *msg, uint8_t link_id)
 		dispatch_dtap(lchan->conn, link_id, msg);
 	} else {
 		/* allocate a new connection */
-		rc = BSC_API_CONN_POL_REJECT;
 		lchan->conn = bsc_subscr_con_allocate(msg->lchan->ts->trx->bts->network);
 		if (!lchan->conn) {
-			lchan_release(lchan, 1, RSL_REL_NORMAL);
+			lchan_release(lchan, false, true, RSL_ERR_EQUIPMENT_FAIL);
 			return -1;
 		}
 		lchan->conn->lchan = lchan;
 
 		/* fwd via bsc_api to send COMPLETE L3 INFO to MSC */
-		rc = bsc_compl_l3(lchan->conn, msg, 0);
-
-		if (rc != BSC_API_CONN_POL_ACCEPT) {
-			//osmo_fsm_inst_dispatch(lchan->conn->fi, FIXME, NULL);
-		}
+		bsc_compl_l3(lchan->conn, msg, 0);
+		/* conn shall release lchan on teardown, also if this Layer 3 Complete is rejected. */
 	}
 
 	return 0;

@@ -118,6 +118,20 @@ const char *bsc_subscr_name(struct bsc_subscr *bsub)
 	return buf;
 }
 
+/* Like bsc_subscr_name() but returns only characters approved by osmo_identifier_valid(), useful for
+ * osmo_fsm_inst IDs. */
+const char *bsc_subscr_id(struct bsc_subscr *bsub)
+{
+	static char buf[32];
+	if (!bsub)
+		return "unknown";
+	if (bsub->imsi[0])
+		snprintf(buf, sizeof(buf), "IMSI%s", bsub->imsi);
+	else
+		snprintf(buf, sizeof(buf), "TMSI%08x", bsub->tmsi);
+	return buf;
+}
+
 static void bsc_subscr_free(struct bsc_subscr *bsub)
 {
 	llist_del(&bsub->entry);

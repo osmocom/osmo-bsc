@@ -1,10 +1,9 @@
-/* OpenBSC BSC code */
+#pragma once
 
-#ifndef OSMO_BSC_H
-#define OSMO_BSC_H
+#include <osmocom/gsm/protocol/gsm_04_08.h>
 
-#include "bsc_api.h"
-#include "bsc_msg_filter.h"
+#include <osmocom/bsc/bsc_api.h>
+#include <osmocom/bsc/bsc_msg_filter.h>
 
 #define BSS_SEND_USSD 1
 
@@ -16,6 +15,9 @@ enum bsc_con {
 };
 
 struct bsc_msc_data;
+struct gsm0808_channel_type;
+struct gsm0808_speech_codec_list;
+struct gsm_audio_support;
 
 struct bsc_api *osmo_bsc_api();
 
@@ -38,5 +40,3 @@ int bsc_ctrl_cmds_install();
 void bsc_gen_location_state_trap(struct gsm_bts *bts);
 
 struct llist_head *bsc_access_lists(void);
-
-#endif

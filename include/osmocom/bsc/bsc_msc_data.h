@@ -48,11 +48,6 @@
 struct osmo_bsc_rf;
 struct gsm_network;
 
-struct gsm_audio_support {
-        uint8_t hr  : 1,
-                ver : 7;
-};
-
 enum {
 	MSC_CON_TYPE_NORMAL,
 	MSC_CON_TYPE_LOCAL,

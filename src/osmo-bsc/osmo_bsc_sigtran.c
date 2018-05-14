@@ -153,6 +153,47 @@ static int handle_unitdata_from_msc(const struct osmo_sccp_addr *msc_addr, struc
 	return rc;
 }
 
+static int handle_n_connect_from_msc(struct osmo_sccp_user *scu, struct osmo_scu_prim *scu_prim)
+{
+	struct bsc_msc_data *msc = get_msc_by_addr(&scu_prim->u.connect.calling_addr);
+	struct gsm_subscriber_connection *conn;
+	int rc = 0;
+
+	conn = get_bsc_conn_by_conn_id(scu_prim->u.connect.conn_id);
+	if (conn) {
+		LOGP(DMSC, LOGL_NOTICE,
+		     "(calling_addr=%s conn_id=%u) N-CONNECT.ind with already used conn_id, ignoring\n",
+		     osmo_sccp_addr_dump(&scu_prim->u.connect.calling_addr),
+		     scu_prim->u.connect.conn_id);
+		/* The situation is illogical. A conn was already established with this conn id, if we
+		 * would like to reply with a disconn onto this conn id, we would close the existing
+		 * conn. So just ignore this impossible N-CONNECT completely (including the BSSMAP PDU). */
+		return -EINVAL;
+	}
+
+	if (!msc) {
+		LOGP(DMSC, LOGL_NOTICE, "(calling_addr=%s conn_id=%u) N-CONNECT.ind from unknown MSC\n",
+		     osmo_sccp_addr_dump(&scu_prim->u.connect.calling_addr),
+		     scu_prim->u.connect.conn_id);
+		rc = -ENOENT;
+		goto refuse;
+	}
+
+	conn = bsc_subscr_con_allocate(bsc_gsmnet);
+	if (!conn)
+		return -ENOMEM;
+	conn->sccp.msc = msc;
+	conn->sccp.conn_id = scu_prim->u.connect.conn_id;
+
+	/* Take actions asked for by the enclosed PDU */
+	osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_A_CONN_IND, scu_prim);
+
+	return 0;
+refuse:
+	osmo_sccp_tx_disconn(scu, scu_prim->u.connect.conn_id, &scu_prim->u.connect.called_addr, 0);
+	return rc;
+}
+
 /* Callback function, called by the SSCP stack when data arrives */
 static int sccp_sap_up(struct osmo_prim_hdr *oph, void *_scu)
 {
@@ -171,13 +212,7 @@ static int sccp_sap_up(struct osmo_prim_hdr *oph, void *_scu)
 	case OSMO_PRIM(OSMO_SCU_PRIM_N_CONNECT, PRIM_OP_INDICATION):
 		/* Handle inbound connections */
 		DEBUGP(DMSC, "N-CONNECT.ind(X->%u)\n", scu_prim->u.connect.conn_id);
-		conn = bsc_subscr_con_allocate(bsc_gsmnet);
-		if (conn) {
-			conn->sccp.msc = get_msc_by_addr(&scu_prim->u.connect.calling_addr);
-			/* MSC may be NULL, let the FSM deal with it */
-			osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_A_CONN_IND, scu_prim);
-		} else
-			LOGP(DMSC, LOGL_ERROR, "Unable to alloc subscr_conn for inbound N-CONNECT.ind\n");
+		rc = handle_n_connect_from_msc(scu, scu_prim);
 		break;
 
 	case OSMO_PRIM(OSMO_SCU_PRIM_N_CONNECT, PRIM_OP_CONFIRM):
@@ -191,7 +226,7 @@ static int sccp_sap_up(struct osmo_prim_hdr *oph, void *_scu)
 			if (msgb_l2len(oph->msg) > 0)
 				handle_data_from_msc(conn, oph->msg);
 		} else {
-			LOGP(DMSC, LOGL_ERROR, "N-CONNET.cfm(%u, %s) for unknown conn?!?\n",
+			LOGP(DMSC, LOGL_ERROR, "N-CONNECT.cfm(%u, %s) for unknown conn?!?\n",
 				scu_prim->u.connect.conn_id, osmo_hexdump(msgb_l2(oph->msg),
 				msgb_l2len(oph->msg)));
 		}

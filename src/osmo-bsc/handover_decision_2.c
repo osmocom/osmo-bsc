@@ -27,14 +27,16 @@
 
 #include <osmocom/bsc/debug.h>
 #include <osmocom/bsc/gsm_data.h>
-#include <osmocom/bsc/handover.h>
+#include <osmocom/bsc/handover_fsm.h>
 #include <osmocom/bsc/handover_decision.h>
 #include <osmocom/bsc/handover_decision_2.h>
 #include <osmocom/bsc/handover_cfg.h>
 #include <osmocom/bsc/bsc_subscriber.h>
-#include <osmocom/bsc/chan_alloc.h>
+#include <osmocom/bsc/lchan_fsm.h>
 #include <osmocom/bsc/signal.h>
 #include <osmocom/bsc/penalty_timers.h>
+#include <osmocom/bsc/neighbor_ident.h>
+#include <osmocom/bsc/timeslot_fsm.h>
 
 #define LOGPHOBTS(bts, level, fmt, args...) \
 	LOGP(DHODEC, level, "(BTS %u) " fmt, bts->nr, ## args)
@@ -76,7 +78,8 @@
 
 struct ho_candidate {
 	struct gsm_lchan *lchan;	/* candidate for whom */
-	struct gsm_bts *bts;		/* target BTS */
+	struct gsm_bts *bts;		/* target BTS in local BSS */
+	struct gsm0808_cell_id_list2 *cil; /* target cells in remote BSS */
 	uint8_t requirements;		/* what is fulfilled */
 	int avg;			/* average RX level */
 };
@@ -149,22 +152,47 @@ void hodec2_on_change_congestion_check_interval(struct gsm_network *net, unsigne
 	reinit_congestion_timer(net);
 }
 
-static void conn_penalty_time_add(struct gsm_subscriber_connection *conn, struct gsm_bts *bts,
+static void _conn_penalty_time_add(struct gsm_subscriber_connection *conn,
+				   const void *for_object,
 				   int penalty_time)
 {
+	if (!for_object) {
+		LOGP(DHODEC, LOGL_ERROR, "%s Unable to set Handover-2 penalty timer:"
+		     " no target cell pointer\n",
+		     bsc_subscr_name(conn->bsub));
+		return;
+	}
+
 	if (!conn->hodec2.penalty_timers) {
 		conn->hodec2.penalty_timers = penalty_timers_init(conn);
 		OSMO_ASSERT(conn->hodec2.penalty_timers);
 	}
-	penalty_timers_add(conn->hodec2.penalty_timers, bts, penalty_time);
+
+	penalty_timers_add(conn->hodec2.penalty_timers, for_object, penalty_time);
+}
+
+static void nik_penalty_time_add(struct gsm_subscriber_connection *conn,
+				 struct neighbor_ident_key *nik,
+				 int penalty_time)
+{
+	_conn_penalty_time_add(conn,
+			       neighbor_ident_get(conn->network->neighbor_bss_cells, nik),
+			       penalty_time);
+}
+
+static void bts_penalty_time_add(struct gsm_subscriber_connection *conn,
+				 struct gsm_bts *bts,
+				 int penalty_time)
+{
+	_conn_penalty_time_add(conn, bts, penalty_time);
 }
 
 static unsigned int conn_penalty_time_remaining(struct gsm_subscriber_connection *conn,
-						struct gsm_bts *bts)
+						const void *for_object)
 {
 	if (!conn->hodec2.penalty_timers)
 		return 0;
-	return penalty_timers_remaining(conn->hodec2.penalty_timers, bts);
+	return penalty_timers_remaining(conn->hodec2.penalty_timers, for_object);
 }
 
 /* did we get a RXLEV for a given cell in the given report? Mark matches as MRC_F_PROCESSED. */
@@ -298,7 +326,7 @@ static bool codec_type_is_supported(struct gsm_subscriber_connection *conn,
 	int i;
 	struct gsm0808_speech_codec_list *clist = &conn->codec_list;
 
-	if (!conn->codec_list_present) {
+	if (!conn->codec_list.len) {
 		/* We don't have a list of supported codecs. This should never happen. */
 		LOGPHOLCHAN(conn->lchan, LOGL_ERROR,
 			    "No Speech Codec List present, accepting all codecs\n");
@@ -530,7 +558,7 @@ static uint8_t check_requirements(struct gsm_lchan *lchan, struct gsm_bts *bts, 
 
 	/* the maximum number of unsynchonized handovers must no be exceeded */
 	if (current_bts != bts
-	    && bsc_ho_count(bts, true) >= ho_get_hodec2_ho_max(bts->ho)) {
+	    && bts_handover_count(bts, HO_SCOPE_ALL) >= ho_get_hodec2_ho_max(bts->ho)) {
 		LOGPHOLCHANTOBTS(lchan, bts, LOGL_DEBUG,
 				 "not a candidate, number of allowed handovers (%d) would be exceeded\n",
 				 ho_get_hodec2_ho_max(bts->ho));
@@ -573,6 +601,7 @@ static uint8_t check_requirements(struct gsm_lchan *lchan, struct gsm_bts *bts, 
 /* Trigger handover or assignment depending on the target BTS */
 static int trigger_handover_or_assignment(struct gsm_lchan *lchan, struct gsm_bts *new_bts, uint8_t requirements)
 {
+	struct handover_out_req req;
 	struct gsm_bts *current_bts = lchan->ts->trx->bts;
 	int afs_bias = 0;
 	bool full_rate = false;
@@ -640,8 +669,14 @@ static int trigger_handover_or_assignment(struct gsm_lchan *lchan, struct gsm_bt
 				 full_rate ? "TCH/F" : "TCH/H",
 				 ho_reason_name(global_ho_reason));
 
-	return bsc_handover_start(HODEC2, lchan, current_bts == new_bts? NULL : new_bts,
-				  full_rate? GSM_LCHAN_TCH_F : GSM_LCHAN_TCH_H);
+	req = (struct handover_out_req){
+		.from_hodec_id = HODEC2,
+		.old_lchan = lchan,
+		.target_nik = *bts_ident_key(new_bts),
+		.new_lchan_type = full_rate? GSM_LCHAN_TCH_F : GSM_LCHAN_TCH_H,
+	};
+	handover_request(&req);
+	return 0;
 }
 
 /* debug collected candidates */
@@ -706,6 +741,12 @@ static void collect_handover_candidate(struct gsm_lchan *lchan, struct neigh_mea
 	struct gsm_bts *bts = lchan->ts->trx->bts;
 	int tchf_count, tchh_count;
 	struct gsm_bts *neighbor_bts;
+	const struct gsm0808_cell_id_list2 *neighbor_cil;
+	struct neighbor_ident_key ni = {
+		.from_bts = bts->nr,
+		.arfcn = nmp->arfcn,
+		.bsic = nmp->bsic,
+	};
 	int avg;
 	struct ho_candidate *c;
 	int min_rxlev;
@@ -719,16 +760,24 @@ static void collect_handover_candidate(struct gsm_lchan *lchan, struct neigh_mea
 
 	/* skip if measurement report is old */
 	if (nmp->last_seen_nr != lchan->meas_rep_last_seen_nr) {
-		LOGPHOLCHAN(lchan, LOGL_DEBUG, "neighbor ARFCN %u measurement report is old"
+		LOGPHOLCHAN(lchan, LOGL_DEBUG, "neighbor ARFCN %u BSIC %u measurement report is old"
 			    " (nmp->last_seen_nr=%u lchan->meas_rep_last_seen_nr=%u)\n",
-			    nmp->arfcn, nmp->last_seen_nr, lchan->meas_rep_last_seen_nr);
+			    nmp->arfcn, nmp->bsic, nmp->last_seen_nr, lchan->meas_rep_last_seen_nr);
 		return;
 	}
 
-	neighbor_bts = bts_by_arfcn_bsic(bts->network, nmp->arfcn, nmp->bsic);
+	neighbor_bts = bts_by_neighbor_ident(bts->network, &ni);
 	if (!neighbor_bts) {
-		LOGPHOBTS(bts, LOGL_DEBUG, "neighbor ARFCN %u does not belong to this network\n",
-			  nmp->arfcn);
+		neighbor_cil = neighbor_ident_get(bts->network->neighbor_bss_cells, &ni);
+		if (neighbor_cil) {
+			LOGPHOBTS(bts, LOGL_ERROR, "would inter-BSC handover to ARFCN %u BSIC %u,"
+				  " but inter-BSC handover not implemented for ho decision 2\n",
+				  nmp->arfcn, nmp->bsic);
+			return;
+		}
+
+		LOGPHOBTS(bts, LOGL_DEBUG, "no neighbor ARFCN %u BSIC %u configured for this cell\n",
+			  nmp->arfcn, nmp->bsic);
 		return;
 	}
 
@@ -738,7 +787,7 @@ static void collect_handover_candidate(struct gsm_lchan *lchan, struct neigh_mea
 		return;
 	}
 
-	/* caculate average rxlev for this cell over the window */
+	/* calculate average rxlev for this cell over the window */
 	avg = neigh_meas_avg(nmp, ho_get_hodec2_rxlev_neigh_avg_win(bts->ho));
 
 	/* Heed rxlev hysteresis only if the RXLEV/RXQUAL/TA levels of the MS aren't critically bad and
@@ -1054,12 +1103,12 @@ static void on_measurement_report(struct gsm_meas_rep *mr)
 		LOGPHOLCHAN(lchan, LOGL_ERROR, "Skipping, No subscriber connection???\n");
 		return;
 	}
-	if (lchan->conn->secondary_lchan) {
+	if (lchan->conn->assignment.new_lchan) {
 		LOGPHOLCHAN(lchan, LOGL_INFO, "Skipping, Initial Assignment is still ongoing\n");
 		return;
 	}
-	if (lchan->conn->ho) {
-		LOGPHOLCHAN(lchan, LOGL_INFO, "Skipping, Handover already triggered\n");
+	if (lchan->conn->ho.fi) {
+		LOGPHOLCHAN(lchan, LOGL_INFO, "Skipping, Handover still ongoing\n");
 		return;
 	}
 
@@ -1130,11 +1179,11 @@ static void on_measurement_report(struct gsm_meas_rep *mr)
 		global_ho_reason = HO_REASON_MAX_DISTANCE;
 		LOGPHOLCHAN(lchan, LOGL_NOTICE, "TA is TOO HIGH: %u > %d\n",
 			    lchan->rqd_ta, ho_get_hodec2_max_distance(bts->ho));
-		/* start penalty timer to prevent comming back too
+		/* start penalty timer to prevent coming back too
 		 * early. it must be started before selecting a better cell,
 		 * so there is no assignment selected, due to running
 		 * penalty timer. */
-		conn_penalty_time_add(lchan->conn, bts, ho_get_hodec2_penalty_max_dist(bts->ho));
+		bts_penalty_time_add(lchan->conn, bts, ho_get_hodec2_penalty_max_dist(bts->ho));
 		find_alternative_lchan(lchan, true);
 		return;
 	}
@@ -1242,16 +1291,16 @@ static int bts_resolve_congestion(struct gsm_bts *bts, int tchf_congestion, int 
 				continue;
 
 			/* (Do not consider dynamic TS that are in PDCH mode) */
-			switch (ts_pchan(ts)) {
+			switch (ts->pchan_is) {
 			case GSM_PCHAN_TCH_F:
 				lc = &ts->lchan[0];
 				/* omit if channel not active */
 				if (lc->type != GSM_LCHAN_TCH_F
-				    || lc->state != LCHAN_S_ACTIVE)
+				    || !lchan_state_is(lc, LCHAN_ST_ESTABLISHED))
 					break;
 				/* omit if there is an ongoing ho/as */
-				if (!lc->conn || lc->conn->secondary_lchan
-				    || lc->conn->ho)
+				if (!lc->conn || lc->conn->assignment.new_lchan
+				    || lc->conn->ho.fi)
 					break;
 				/* We desperately want to resolve congestion, ignore rxlev when
 				 * collecting candidates by passing include_weaker_rxlev=true. */
@@ -1262,12 +1311,12 @@ static int bts_resolve_congestion(struct gsm_bts *bts, int tchf_congestion, int 
 					lc = &ts->lchan[j];
 					/* omit if channel not active */
 					if (lc->type != GSM_LCHAN_TCH_H
-					    || lc->state != LCHAN_S_ACTIVE)
+					    || !lchan_state_is(lc, LCHAN_ST_ESTABLISHED))
 						continue;
 					/* omit of there is an ongoing ho/as */
 					if (!lc->conn
-					    || lc->conn->secondary_lchan
-					    || lc->conn->ho)
+					    || lc->conn->assignment.new_lchan
+					    || lc->conn->ho.fi)
 						continue;
 					/* We desperately want to resolve congestion, ignore rxlev when
 					 * collecting candidates by passing include_weaker_rxlev=true. */
@@ -1663,50 +1712,58 @@ static void congestion_check_cb(void *arg)
 	reinit_congestion_timer(net);
 }
 
-void on_ho_chan_activ_nack(struct bsc_handover *ho)
+static void on_handover_end(struct gsm_subscriber_connection *conn, enum handover_result result)
 {
-	struct gsm_bts *new_bts = ho->new_lchan->ts->trx->bts;
+	struct gsm_bts *old_bts = NULL;
+	struct gsm_bts *new_bts = NULL;
+	int penalty;
+	struct handover *ho = &conn->ho;
 
-	LOGPHO(ho, LOGL_ERROR, "Channel Activate Nack for %s, starting penalty timer\n", ho->inter_cell? "Handover" : "Assignment");
+	/* If all went fine, then there are no penalty timers to set. */
+	if (result == HO_RESULT_OK)
+		return;
 
-	/* if channel failed, wait 10 seconds before allowing to retry handover */
-	conn_penalty_time_add(ho->old_lchan->conn, new_bts, 10); /* FIXME configurable */
-}
+	if (conn->lchan)
+		old_bts = conn->lchan->ts->trx->bts;
+	if (ho->new_lchan)
+		new_bts = ho->new_lchan->ts->trx->bts;
 
-void on_ho_failure(struct bsc_handover *ho)
-{
-	struct gsm_bts *old_bts = ho->old_lchan->ts->trx->bts;
-	struct gsm_bts *new_bts = ho->new_lchan->ts->trx->bts;
-	struct gsm_subscriber_connection *conn = ho->old_lchan->conn;
+	/* Only interested in handovers within this BSS or going out into another BSS. Incoming handovers
+	 * from another BSS are accounted for in the other BSS. */
+	if (!old_bts)
+		return;
 
-	if (!conn) {
-		LOGPHO(ho, LOGL_ERROR, "HO failure, but no conn\n");
+	if (conn->hodec2.failures < ho_get_hodec2_retries(old_bts->ho)) {
+		conn->hodec2.failures++;
+		LOG_HO(conn, LOGL_NOTICE, "Failed, allowing handover decision to try again"
+		       " (%d/%d attempts)\n",
+		       conn->hodec2.failures, ho_get_hodec2_retries(old_bts->ho));
 		return;
 	}
 
-	if (conn->hodec2.failures >= ho_get_hodec2_retries(old_bts->ho)) {
-		int penalty = ho->inter_cell
-			? ho_get_hodec2_penalty_failed_ho(old_bts->ho)
-			: ho_get_hodec2_penalty_failed_as(old_bts->ho);
-		LOGPHO(ho, LOGL_NOTICE, "%s failed, starting penalty timer (%d s)\n",
-		       ho->inter_cell ? "Handover" : "Assignment",
-		       penalty);
-		conn->hodec2.failures = 0;
-		conn_penalty_time_add(conn, new_bts, penalty);
-	} else {
-		conn->hodec2.failures++;
-		LOGPHO(ho, LOGL_NOTICE, "%s failed, allowing handover decision to try again"
-		       " (%d/%d attempts)\n",
-		       ho->inter_cell ? "Handover" : "Assignment",
-		       conn->hodec2.failures, ho_get_hodec2_retries(old_bts->ho));
+	switch (ho->scope) {
+	case HO_INTRA_CELL:
+		penalty = ho_get_hodec2_penalty_failed_as(old_bts->ho);
+		break;
+	default:
+		/* TODO: separate penalty for inter-BSC HO? */
+		penalty = ho_get_hodec2_penalty_failed_ho(old_bts->ho);
+		break;
 	}
+
+	LOG_HO(conn, LOGL_NOTICE, "Failed, starting penalty timer (%d s)\n", penalty);
+	conn->hodec2.failures = 0;
+
+	if (new_bts)
+		bts_penalty_time_add(conn, new_bts, penalty);
+	else
+		nik_penalty_time_add(conn, &ho->target_cell, penalty);
 }
 
-struct handover_decision_callbacks hodec2_callbacks = {
+static struct handover_decision_callbacks hodec2_callbacks = {
 	.hodec_id = 2,
 	.on_measurement_report = on_measurement_report,
-	.on_ho_chan_activ_nack = on_ho_chan_activ_nack,
-	.on_ho_failure = on_ho_failure,
+	.on_handover_end = on_handover_end,
 };
 
 void hodec2_init(struct gsm_network *net)

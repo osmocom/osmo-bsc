@@ -8,27 +8,19 @@ enum gscon_fsm_event {
 	GSCON_EV_A_CONN_REQ,
 	/* MSC confirms the SCCP connection */
 	GSCON_EV_A_CONN_CFM,
-	/* MSC requests assignment */
-	GSCON_EV_A_ASSIGNMENT_CMD,
 	/* MSC has sent BSSMAP CLEAR CMD */
 	GSCON_EV_A_CLEAR_CMD,
 	/* MSC SCCP disconnect indication */
 	GSCON_EV_A_DISC_IND,
-	/* MSC sends Handover Request (in CR) */
-	GSCON_EV_A_HO_REQ,
 
-	/* RR ASSIGNMENT COMPLETE received */
-	GSCON_EV_RR_ASS_COMPL,
-	/* RR ASSIGNMENT FAIL received */
-	GSCON_EV_RR_ASS_FAIL,
+	GSCON_EV_ASSIGNMENT_START,
+	GSCON_EV_ASSIGNMENT_END,
 
-	/* RSL RLL Release Indication */
-	GSCON_EV_RLL_REL_IND,
+	GSCON_EV_HANDOVER_START,
+	GSCON_EV_HANDOVER_END,
+
 	/* RSL CONNection FAILure Indication */
 	GSCON_EV_RSL_CONN_FAIL,
-
-	/* RSL/lchan tells us clearing is complete */
-	GSCON_EV_RSL_CLEAR_COMPL,
 
 	/* Mobile-originated DTAP (from MS) */
 	GSCON_EV_MO_DTAP,
@@ -38,42 +30,53 @@ enum gscon_fsm_event {
 	/* Transmit custom SCCP message */
 	GSCON_EV_TX_SCCP,
 
-	/* MGW is indicating failure (BTS) */
-	GSCON_EV_MGW_FAIL_BTS,
-	/* MGW is indicating failure (MSC) */
-	GSCON_EV_MGW_FAIL_MSC,
-	/* CRCX response received (BTS) */
-	GSCON_EV_MGW_CRCX_RESP_BTS,
-	/* MDCX response received (BTS) */
-	GSCON_EV_MGW_MDCX_RESP_BTS,
-	/* CRCX response received (MSC) */
-	GSCON_EV_MGW_CRCX_RESP_MSC,
 	/* MDCX response received (MSC) - triggered by LCLS */
 	GSCON_EV_MGW_MDCX_RESP_MSC,
 
-	/* Internal handover request (intra-BSC handover) */
-	GSCON_EV_HO_START,
-	/* Handover timed out (T3103 in handover_logic.c) */
-	GSCON_EV_HO_TIMEOUT,
-	/* Handover failed (handover_logic.c) */
-	GSCON_EV_HO_FAIL,
-	/* Handover completed successfully (handover_logic.c) */
-	GSCON_EV_HO_COMPL,
-
 	/* LCLS child FSM has terminated due to hard failure */
 	GSCON_EV_LCLS_FAIL,
+
+	GSCON_EV_FORGET_LCHAN,
+	GSCON_EV_FORGET_MGW_ENDPOINT,
 };
 
 struct gsm_subscriber_connection;
 struct gsm_network;
-struct mgcp_conn_peer;
 struct msgb;
+struct mgwep_ci;
+struct assignment_request;
+struct gsm_lchan;
+
+void bsc_subscr_conn_fsm_init();
 
 /* Allocate a subscriber connection and its associated FSM */
 struct gsm_subscriber_connection *bsc_subscr_con_allocate(struct gsm_network *net);
-
-void bsc_subscr_pick_codec(struct mgcp_conn_peer *conn_peer, struct gsm_subscriber_connection *conn);
+void gscon_update_id(struct gsm_subscriber_connection *conn);
 
 void gscon_submit_rsl_dtap(struct gsm_subscriber_connection *conn,
 			   struct msgb *msg, int link_id, int allow_sacch);
-void gscon_dtap_queue_flush(struct gsm_subscriber_connection *conn, int send);
+int gscon_sigtran_send(struct gsm_subscriber_connection *conn, struct msgb *msg);
+
+struct mgw_endpoint *gscon_ensure_mgw_endpoint(struct gsm_subscriber_connection *conn,
+					       uint16_t msc_assigned_cic);
+bool gscon_connect_mgw_to_msc(struct gsm_subscriber_connection *conn,
+			      struct gsm_lchan *for_lchan,
+			      const char *addr, uint16_t port,
+			      struct osmo_fsm_inst *notify,
+			      uint32_t event_success, uint32_t event_failure,
+			      void *notify_data,
+			      struct mgwep_ci **created_ci);
+
+void gscon_start_assignment(struct gsm_subscriber_connection *conn,
+			    struct assignment_request *req);
+
+void gscon_change_primary_lchan(struct gsm_subscriber_connection *conn, struct gsm_lchan *new_lchan);
+void gscon_release_lchans(struct gsm_subscriber_connection *conn, bool do_sacch_deact);
+
+void gscon_lchan_releasing(struct gsm_subscriber_connection *conn, struct gsm_lchan *lchan);
+void gscon_forget_lchan(struct gsm_subscriber_connection *conn, struct gsm_lchan *lchan);
+
+void gscon_forget_mgw_endpoint_ci(struct gsm_subscriber_connection *conn, struct mgwep_ci *ci);
+
+bool gscon_is_aoip(struct gsm_subscriber_connection *conn);
+bool gscon_is_sccplite(struct gsm_subscriber_connection *conn);

@@ -22,6 +22,7 @@
 #include <osmocom/bsc/bsc_msc_data.h>
 #include <osmocom/bsc/bsc_subscriber.h>
 #include <osmocom/bsc/debug.h>
+#include <osmocom/bsc/paging.h>
 
 #include <osmocom/bsc/gsm_04_80.h>
 #include <osmocom/bsc/gsm_04_08_rr.h>
@@ -35,7 +36,7 @@
 #include <osmocom/bsc/osmo_bsc_sigtran.h>
 
 /* Check if we have a proper connection to the MSC */
-static bool msc_connected(struct gsm_subscriber_connection *conn)
+bool msc_connected(struct gsm_subscriber_connection *conn)
 {
 	/* No subscriber conn at all */
 	if (!conn)
@@ -167,6 +168,23 @@ void bsc_cipher_mode_compl(struct gsm_subscriber_connection *conn, struct msgb *
 		msgb_free(resp);
 }
 
+/* 9.2.5 CM service accept */
+int gsm48_tx_mm_serv_ack(struct gsm_subscriber_connection *conn)
+{
+	struct msgb *msg = gsm48_msgb_alloc_name("GSM 04.08 SERV ACK");
+	struct gsm48_hdr *gh = (struct gsm48_hdr *) msgb_put(msg, sizeof(*gh));
+
+	msg->lchan = conn->lchan;
+
+	gh->proto_discr = GSM48_PDISC_MM;
+	gh->msg_type = GSM48_MT_MM_CM_SERV_ACC;
+
+	DEBUGP(DMM, "-> CM SERVICE ACK\n");
+
+	gscon_submit_rsl_dtap(conn, msg, 0, 0);
+	return 0;
+}
+
 static void bsc_send_ussd_no_srv(struct gsm_subscriber_connection *conn,
 				 struct msgb *msg, const char *text)
 {
@@ -211,6 +229,141 @@ static void bsc_send_ussd_no_srv(struct gsm_subscriber_connection *conn,
 	bsc_send_ussd_release_complete(conn);
 }
 
+static int is_cm_service_for_emerg(struct msgb *msg)
+{
+	struct gsm48_service_request *cm;
+	struct gsm48_hdr *gh = msgb_l3(msg);
+
+	if (msgb_l3len(msg) < sizeof(*gh) + sizeof(*cm)) {
+		LOGP(DMSC, LOGL_ERROR, "CM ServiceRequest does not fit.\n");
+		return 0;
+	}
+
+	cm = (struct gsm48_service_request *) &gh->data[0];
+	return cm->cm_service_type == GSM48_CMSERV_EMERGENCY;
+}
+
+/* extract a subscriber from the paging response */
+static struct bsc_subscr *extract_sub(struct gsm_subscriber_connection *conn,
+				   struct msgb *msg)
+{
+	uint8_t mi_type;
+	char mi_string[GSM48_MI_SIZE];
+	struct gsm48_hdr *gh;
+	struct gsm48_pag_resp *resp;
+	struct bsc_subscr *subscr;
+
+	if (msgb_l3len(msg) < sizeof(*gh) + sizeof(*resp)) {
+		LOGP(DMSC, LOGL_ERROR, "PagingResponse too small: %u\n", msgb_l3len(msg));
+		return NULL;
+	}
+
+	gh = msgb_l3(msg);
+	resp = (struct gsm48_pag_resp *) &gh->data[0];
+
+	gsm48_paging_extract_mi(resp, msgb_l3len(msg) - sizeof(*gh),
+				mi_string, &mi_type);
+	DEBUGP(DRR, "PAGING RESPONSE: MI(%s)=%s\n",
+		gsm48_mi_type_name(mi_type), mi_string);
+
+	switch (mi_type) {
+	case GSM_MI_TYPE_TMSI:
+		subscr = bsc_subscr_find_by_tmsi(conn->network->bsc_subscribers,
+					      tmsi_from_string(mi_string));
+		break;
+	case GSM_MI_TYPE_IMSI:
+		subscr = bsc_subscr_find_by_imsi(conn->network->bsc_subscribers,
+					      mi_string);
+		break;
+	default:
+		subscr = NULL;
+		break;
+	}
+
+	return subscr;
+}
+
+struct bsc_msc_data *bsc_find_msc(struct gsm_subscriber_connection *conn,
+				   struct msgb *msg)
+{
+	struct gsm48_hdr *gh;
+	int8_t pdisc;
+	uint8_t mtype;
+	struct osmo_bsc_data *bsc;
+	struct bsc_msc_data *msc, *pag_msc;
+	struct bsc_subscr *subscr;
+	int is_emerg = 0;
+
+	bsc = conn->network->bsc_data;
+
+	if (msgb_l3len(msg) < sizeof(*gh)) {
+		LOGP(DMSC, LOGL_ERROR, "There is no GSM48 header here.\n");
+		return NULL;
+	}
+
+	gh = msgb_l3(msg);
+	pdisc = gsm48_hdr_pdisc(gh);
+	mtype = gsm48_hdr_msg_type(gh);
+
+	/*
+	 * We are asked to select a MSC here but they are not equal. We
+	 * want to respond to a paging request on the MSC where we got the
+	 * request from. This is where we need to decide where this connection
+	 * will go.
+	 */
+	if (pdisc == GSM48_PDISC_RR && mtype == GSM48_MT_RR_PAG_RESP)
+		goto paging;
+	else if (pdisc == GSM48_PDISC_MM && mtype == GSM48_MT_MM_CM_SERV_REQ) {
+		is_emerg = is_cm_service_for_emerg(msg);
+		goto round_robin;
+	} else
+		goto round_robin;
+
+round_robin:
+	llist_for_each_entry(msc, &bsc->mscs, entry) {
+		if (!msc->is_authenticated)
+			continue;
+		if (!is_emerg && msc->type != MSC_CON_TYPE_NORMAL)
+			continue;
+		if (is_emerg && !msc->allow_emerg)
+			continue;
+
+		/* force round robin by moving it to the end */
+		llist_move_tail(&msc->entry, &bsc->mscs);
+		return msc;
+	}
+
+	return NULL;
+
+paging:
+	subscr = extract_sub(conn, msg);
+
+	if (!subscr) {
+		LOGP(DMSC, LOGL_ERROR, "Got paged but no subscriber found.\n");
+		return NULL;
+	}
+
+	pag_msc = paging_get_msc(conn_get_bts(conn), subscr);
+	bsc_subscr_put(subscr);
+
+	llist_for_each_entry(msc, &bsc->mscs, entry) {
+		if (msc != pag_msc)
+			continue;
+
+		/*
+		 * We don't check if the MSC is connected. In case it
+		 * is not the connection will be dropped.
+		 */
+
+		/* force round robin by moving it to the end */
+		llist_move_tail(&msc->entry, &bsc->mscs);
+		return msc;
+	}
+
+	LOGP(DMSC, LOGL_ERROR, "Got paged but no request found.\n");
+	return NULL;
+}
+
 /*! MS->MSC: New MM context with L3 payload. */
 int bsc_compl_l3(struct gsm_subscriber_connection *conn, struct msgb *msg, uint16_t chosen_channel)
 {
@@ -228,6 +381,61 @@ int bsc_compl_l3(struct gsm_subscriber_connection *conn, struct msgb *msg, uint1
 	}
 
 	return complete_layer3(conn, msg, msc);
+}
+
+static int handle_page_resp(struct gsm_subscriber_connection *conn, struct msgb *msg)
+{
+	struct bsc_subscr *subscr = extract_sub(conn, msg);
+
+	if (!subscr) {
+		LOGP(DMSC, LOGL_ERROR, "Non active subscriber got paged.\n");
+		return -1;
+	}
+
+	paging_request_stop(&conn->network->bts_list, conn_get_bts(conn), subscr, conn,
+			    msg);
+	bsc_subscr_put(subscr);
+	return 0;
+}
+
+static void handle_lu_request(struct gsm_subscriber_connection *conn,
+			      struct msgb *msg)
+{
+	struct gsm48_hdr *gh;
+	struct gsm48_loc_upd_req *lu;
+	struct gsm48_loc_area_id lai;
+
+	if (msgb_l3len(msg) < sizeof(*gh) + sizeof(*lu)) {
+		LOGP(DMSC, LOGL_ERROR, "LU too small to look at: %u\n", msgb_l3len(msg));
+		return;
+	}
+
+	gh = msgb_l3(msg);
+	lu = (struct gsm48_loc_upd_req *) gh->data;
+
+	gsm48_generate_lai2(&lai, bts_lai(conn_get_bts(conn)));
+
+	if (memcmp(&lai, &lu->lai, sizeof(lai)) != 0) {
+		LOGP(DMSC, LOGL_DEBUG, "Marking con for welcome USSD.\n");
+		conn->new_subscriber = 1;
+	}
+}
+
+int bsc_scan_bts_msg(struct gsm_subscriber_connection *conn, struct msgb *msg)
+{
+	struct gsm48_hdr *gh = msgb_l3(msg);
+	uint8_t pdisc = gsm48_hdr_pdisc(gh);
+	uint8_t mtype = gsm48_hdr_msg_type(gh);
+
+	if (pdisc == GSM48_PDISC_MM) {
+		if (mtype == GSM48_MT_MM_LOC_UPD_REQUEST)
+			handle_lu_request(conn, msg);
+	} else if (pdisc == GSM48_PDISC_RR) {
+		if (mtype == GSM48_MT_RR_PAG_RESP)
+			handle_page_resp(conn, msg);
+	}
+
+	return 0;
 }
 
 static int complete_layer3(struct gsm_subscriber_connection *conn,
@@ -274,6 +482,7 @@ static int complete_layer3(struct gsm_subscriber_connection *conn,
 		} else
 			conn->bsub = bsc_subscr_find_or_create_by_imsi(msc->network->bsc_subscribers,
 								       imsi);
+		gscon_update_id(conn);
 	}
 	conn->filter_state.con_type = con_type;
 
@@ -311,8 +520,10 @@ static int move_to_msc(struct gsm_subscriber_connection *_conn,
 	 * properly.
 	 */
 	if (complete_layer3(_conn, msg, msc) != BSC_API_CONN_POL_ACCEPT) {
-		gsm0808_clear(_conn);
-		//bsc_subscr_con_free(_conn);
+		/* FIXME: I have not the slightest idea what move_to_msc() intends to do; during lchan
+		 * FSM introduction, I changed this and hope it is the appropriate action. I actually
+		 * assume this is unused legacy code for osmo-bsc_nat?? */
+		gscon_release_lchans(_conn, false);
 		return 1;
 	}
 
@@ -411,40 +622,6 @@ void bsc_dtap(struct gsm_subscriber_connection *conn, uint8_t link_id, struct ms
 	osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_MO_DTAP, msg);
 }
 
-/*! BSC->MSC: Assignment of lchan successful. */
-void bsc_assign_compl(struct gsm_subscriber_connection *conn, uint8_t rr_cause)
-{
-	if (!msc_connected(conn))
-		return;
-
-	conn->lchan->abis_ip.ass_compl.rr_cause = rr_cause;
-
-	if (is_ipaccess_bts(conn_get_bts(conn)) && conn->user_plane.rtp_ip) {
-		/* NOTE: In a network that makes use of an IPA base station
-		 * and AoIP, we have to wait until the BTS reports its RTP
-		 * IP/Port combination back to BSC via RSL. Unfortunately, the
-		 * IPA protocol sends its Abis assignment complete message
-		 * before it sends its RTP IP/Port via IPACC. So we will now
-		 * postpone the AoIP assignment completed message until we
-		 * know the RTP IP/Port combination. */
-		LOGP(DMSC, LOGL_INFO, "POSTPONE MSC ASSIGN COMPL\n");
-		conn->lchan->abis_ip.ass_compl.valid = true;
-
-	} else {
-		/* NOTE: Send the A assignment complete message immediately. */
-		LOGP(DMSC, LOGL_INFO, "Tx MSC ASSIGN COMPL\n");
-		osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_RR_ASS_COMPL, NULL);
-	}
-}
-
-/*! BSC->MSC: Assignment of lchan failed. */
-void bsc_assign_fail(struct gsm_subscriber_connection *conn, uint8_t cause, uint8_t *rr_cause)
-{
-	LOGPFSML(conn->fi, LOGL_ERROR, "Assignment failure: BSSMAP: '%s' from RR: '%s'\n",
-		 gsm0808_cause_name(cause), rr_cause ? rr_cause_name(*rr_cause) : "(none)");
-	osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_RR_ASS_FAIL, &cause);
-}
-
 /*! BSC->MSC: RR conn has been cleared. */
 int bsc_clear_request(struct gsm_subscriber_connection *conn, uint32_t cause)
 {
@@ -484,46 +661,4 @@ void bsc_cm_update(struct gsm_subscriber_connection *conn,
 	rc = osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_TX_SCCP, resp);
 	if (rc != 0)
 		msgb_free(resp);
-}
-
-/*! Configure the multirate setting on this channel. */
-void bsc_mr_config(struct gsm_subscriber_connection *conn, struct gsm_lchan *lchan, int full_rate)
-{
-	struct bsc_msc_data *msc;
-	struct gsm48_multi_rate_conf *ms_conf, *bts_conf;
-
-	if (!conn) {
-		LOGP(DMSC, LOGL_ERROR,
-		     "No msc data available on conn %p. Audio will be broken.\n",
-		     conn);
-		return;
-	}
-
-	msc = conn->sccp.msc;
-
-	/* initialize the data structure */
-	lchan->mr_ms_lv[0] = sizeof(*ms_conf);
-	lchan->mr_bts_lv[0] = sizeof(*bts_conf);
-	ms_conf = (struct gsm48_multi_rate_conf *) &lchan->mr_ms_lv[1];
-	bts_conf = (struct gsm48_multi_rate_conf *) &lchan->mr_bts_lv[1];
-	memset(ms_conf, 0, sizeof(*ms_conf));
-	memset(bts_conf, 0, sizeof(*bts_conf));
-
-	bts_conf->ver = ms_conf->ver = 1;
-	bts_conf->icmi = ms_conf->icmi = 1;
-
-	/* maybe gcc see's it is copy of _one_ byte */
-	bts_conf->m4_75 = ms_conf->m4_75 = msc->amr_conf.m4_75;
-	bts_conf->m5_15 = ms_conf->m5_15 = msc->amr_conf.m5_15;
-	bts_conf->m5_90 = ms_conf->m5_90 = msc->amr_conf.m5_90;
-	bts_conf->m6_70 = ms_conf->m6_70 = msc->amr_conf.m6_70;
-	bts_conf->m7_40 = ms_conf->m7_40 = msc->amr_conf.m7_40;
-	bts_conf->m7_95 = ms_conf->m7_95 = msc->amr_conf.m7_95;
-	if (full_rate) {
-		bts_conf->m10_2 = ms_conf->m10_2 = msc->amr_conf.m10_2;
-		bts_conf->m12_2 = ms_conf->m12_2 = msc->amr_conf.m12_2;
-	}
-
-	/* now copy this into the bts structure */
-	memcpy(lchan->mr_bts_lv, lchan->mr_ms_lv, sizeof(lchan->mr_ms_lv));
 }

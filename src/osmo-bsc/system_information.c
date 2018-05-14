@@ -1224,6 +1224,7 @@ static const gen_si_fn_t gen_si_fn[_MAX_SYSINFO_TYPE] = {
 
 int gsm_generate_si(struct gsm_bts *bts, enum osmo_sysinfo_type si_type)
 {
+	int rc;
 	gen_si_fn_t gen_si;
 
 	switch (bts->gprs.mode) {
@@ -1244,8 +1245,15 @@ int gsm_generate_si(struct gsm_bts *bts, enum osmo_sysinfo_type si_type)
 	       sizeof(struct gsm48_si_selection_params));
 
 	gen_si = gen_si_fn[si_type];
-	if (!gen_si)
+	if (!gen_si) {
+		LOGP(DRR, LOGL_ERROR, "bts %u: no gen_si_fn() for SI%s\n",
+		     bts->nr, get_value_string(osmo_sitype_strs, si_type));
 		return -EINVAL;
+	}
 
-	return gen_si(si_type, bts);
+	rc = gen_si(si_type, bts);
+	if (rc < 0)
+		LOGP(DRR, LOGL_ERROR, "bts %u: Error while generating SI%s: %s (%d)\n",
+		     bts->nr, get_value_string(osmo_sitype_strs, si_type), strerror(-rc), rc);
+	return rc;
 }

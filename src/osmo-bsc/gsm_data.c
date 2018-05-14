@@ -25,9 +25,10 @@
 #include <ctype.h>
 #include <stdbool.h>
 #include <netinet/in.h>
+#include <talloc.h>
 
 #include <osmocom/core/linuxlist.h>
-#include <osmocom/core/talloc.h>
+#include <osmocom/core/byteswap.h>
 #include <osmocom/gsm/gsm_utils.h>
 #include <osmocom/gsm/abis_nm.h>
 #include <osmocom/core/statistics.h>
@@ -40,6 +41,9 @@
 #include <osmocom/bsc/abis_nm.h>
 #include <osmocom/bsc/handover_cfg.h>
 #include <osmocom/bsc/gsm_timers.h>
+#include <osmocom/bsc/timeslot_fsm.h>
+#include <osmocom/bsc/lchan_fsm.h>
+#include <osmocom/bsc/mgw_endpoint_fsm.h>
 
 void *tall_bsc_ctx = NULL;
 
@@ -471,7 +475,7 @@ const struct value_string gsm_chreq_descs[] = {
 	{ 0,				NULL }
 };
 
-const struct value_string gsm_pchant_names[13] = {
+const struct value_string gsm_pchant_names[] = {
 	{ GSM_PCHAN_NONE,	"NONE" },
 	{ GSM_PCHAN_CCCH,	"CCCH" },
 	{ GSM_PCHAN_CCCH_SDCCH4,"CCCH+SDCCH4" },
@@ -484,6 +488,22 @@ const struct value_string gsm_pchant_names[13] = {
 	{ GSM_PCHAN_CCCH_SDCCH4_CBCH, "CCCH+SDCCH4+CBCH" },
 	{ GSM_PCHAN_SDCCH8_SACCH8C_CBCH, "SDCCH8+CBCH" },
 	{ GSM_PCHAN_TCH_F_TCH_H_PDCH, "TCH/F_TCH/H_PDCH" },
+	{ 0,			NULL }
+};
+
+const struct value_string gsm_pchan_ids[] = {
+	{ GSM_PCHAN_NONE,	"NONE" },
+	{ GSM_PCHAN_CCCH,	"CCCH" },
+	{ GSM_PCHAN_CCCH_SDCCH4,"CCCH_SDCCH4" },
+	{ GSM_PCHAN_TCH_F,	"TCH_F" },
+	{ GSM_PCHAN_TCH_H,	"TCH_H" },
+	{ GSM_PCHAN_SDCCH8_SACCH8C, "SDCCH8" },
+	{ GSM_PCHAN_PDCH,	"PDCH" },
+	{ GSM_PCHAN_TCH_F_PDCH,	"TCH_F_PDCH" },
+	{ GSM_PCHAN_UNKNOWN,	"UNKNOWN" },
+	{ GSM_PCHAN_CCCH_SDCCH4_CBCH, "CCCH_SDCCH4_CBCH" },
+	{ GSM_PCHAN_SDCCH8_SACCH8C_CBCH, "SDCCH8_CBCH" },
+	{ GSM_PCHAN_TCH_F_TCH_H_PDCH, "TCH_F_TCH_H_PDCH" },
 	{ 0,			NULL }
 };
 
@@ -518,22 +538,6 @@ enum gsm_phys_chan_config gsm_pchan_parse(const char *name)
 const char *gsm_lchant_name(enum gsm_chan_t c)
 {
 	return get_value_string(gsm_chan_t_names, c);
-}
-
-static const struct value_string lchan_s_names[] = {
-	{ LCHAN_S_NONE,		"NONE" },
-	{ LCHAN_S_ACT_REQ,	"ACTIVATION REQUESTED" },
-	{ LCHAN_S_ACTIVE,	"ACTIVE" },
-	{ LCHAN_S_INACTIVE,	"INACTIVE" },
-	{ LCHAN_S_REL_REQ,	"RELEASE REQUESTED" },
-	{ LCHAN_S_REL_ERR,	"RELEASE DUE ERROR" },
-	{ LCHAN_S_BROKEN,	"BROKEN UNUSABLE" },
-	{ 0,			NULL }
-};
-
-const char *gsm_lchans_name(enum gsm_lchan_state s)
-{
-	return get_value_string(lchan_s_names, s);
 }
 
 static const struct value_string chreq_names[] = {
@@ -698,12 +702,13 @@ struct gsm_bts_trx *gsm_bts_trx_alloc(struct gsm_bts *bts)
 		struct gsm_bts_trx_ts *ts = &trx->ts[k];
 		int l;
 
+
 		ts->trx = trx;
 		ts->nr = k;
-		ts->pchan = GSM_PCHAN_NONE;
-		ts->dyn.pchan_is = GSM_PCHAN_NONE;
-		ts->dyn.pchan_want = GSM_PCHAN_NONE;
+		ts->pchan_from_config = ts->pchan_on_init = ts->pchan_is = GSM_PCHAN_NONE;
 		ts->tsc = -1;
+
+		ts_fsm_alloc(ts);
 
 		gsm_mo_init(&ts->mo, bts, NM_OC_CHANNEL,
 			    bts->nr, trx->nr, ts->nr);
@@ -819,7 +824,7 @@ struct gsm_bts *gsm_bts_alloc(struct gsm_network *net, uint8_t bts_num)
 		talloc_free(bts);
 		return NULL;
 	}
-	bts->c0->ts[0].pchan = GSM_PCHAN_CCCH_SDCCH4;
+	bts->c0->ts[0].pchan_from_config = GSM_PCHAN_CCCH_SDCCH4; /* TODO: really?? */
 
 	bts->rach_b_thresh = -1;
 	bts->rach_ldavg_slots = -1;
@@ -947,49 +952,30 @@ char *gsm_ts_name(const struct gsm_bts_trx_ts *ts)
 /*! Log timeslot number with full pchan information */
 char *gsm_ts_and_pchan_name(const struct gsm_bts_trx_ts *ts)
 {
-	switch (ts->pchan) {
-	case GSM_PCHAN_TCH_F_TCH_H_PDCH:
-		if (ts->dyn.pchan_is == ts->dyn.pchan_want)
-			snprintf(ts2str, sizeof(ts2str),
-				 "(bts=%d,trx=%d,ts=%d,pchan=%s as %s)",
-				 ts->trx->bts->nr, ts->trx->nr, ts->nr,
-				 gsm_pchan_name(ts->pchan),
-				 gsm_pchan_name(ts->dyn.pchan_is));
-		else
-			snprintf(ts2str, sizeof(ts2str),
-				 "(bts=%d,trx=%d,ts=%d,pchan=%s"
-				 " switching %s -> %s)",
-				 ts->trx->bts->nr, ts->trx->nr, ts->nr,
-				 gsm_pchan_name(ts->pchan),
-				 gsm_pchan_name(ts->dyn.pchan_is),
-				 gsm_pchan_name(ts->dyn.pchan_want));
-		break;
-	case GSM_PCHAN_TCH_F_PDCH:
-		if ((ts->flags & TS_F_PDCH_PENDING_MASK) == 0)
-			snprintf(ts2str, sizeof(ts2str),
-				 "(bts=%d,trx=%d,ts=%d,pchan=%s as %s)",
-				 ts->trx->bts->nr, ts->trx->nr, ts->nr,
-				 gsm_pchan_name(ts->pchan),
-				 (ts->flags & TS_F_PDCH_ACTIVE)? "PDCH"
-							       : "TCH/F");
-		else
-			snprintf(ts2str, sizeof(ts2str),
-				 "(bts=%d,trx=%d,ts=%d,pchan=%s"
-				 " switching %s -> %s)",
-				 ts->trx->bts->nr, ts->trx->nr, ts->nr,
-				 gsm_pchan_name(ts->pchan),
-				 (ts->flags & TS_F_PDCH_ACTIVE)? "PDCH"
-							       : "TCH/F",
-				 (ts->flags & TS_F_PDCH_ACT_PENDING)? "PDCH"
-								    : "TCH/F");
-		break;
-	default:
-		snprintf(ts2str, sizeof(ts2str), "(bts=%d,trx=%d,ts=%d,pchan=%s)",
+	if (!ts->fi)
+		snprintf(ts2str, sizeof(ts2str),
+			 "(bts=%d,trx=%d,ts=%d,pchan_from_config=%s, not allocated)",
 			 ts->trx->bts->nr, ts->trx->nr, ts->nr,
-			 gsm_pchan_name(ts->pchan));
-		break;
-	}
-
+			 gsm_pchan_name(ts->pchan_from_config));
+	else if (ts->fi->state == TS_ST_NOT_INITIALIZED)
+		snprintf(ts2str, sizeof(ts2str),
+			 "(bts=%d,trx=%d,ts=%d,pchan_from_config=%s,state=%s)",
+			 ts->trx->bts->nr, ts->trx->nr, ts->nr,
+			 gsm_pchan_name(ts->pchan_from_config),
+			 osmo_fsm_inst_state_name(ts->fi));
+	else if (ts->pchan_is == ts->pchan_on_init)
+		snprintf(ts2str, sizeof(ts2str),
+			 "(bts=%d,trx=%d,ts=%d,pchan=%s,state=%s)",
+			 ts->trx->bts->nr, ts->trx->nr, ts->nr,
+			 gsm_pchan_name(ts->pchan_is),
+			 osmo_fsm_inst_state_name(ts->fi));
+	else
+		snprintf(ts2str, sizeof(ts2str),
+			 "(bts=%d,trx=%d,ts=%d,pchan_on_init=%s,pchan=%s,state=%s)",
+			 ts->trx->bts->nr, ts->trx->nr, ts->nr,
+			 gsm_pchan_name(ts->pchan_on_init),
+			 gsm_pchan_name(ts->pchan_is),
+			 osmo_fsm_inst_state_name(ts->fi));
 	return ts2str;
 }
 
@@ -1207,20 +1193,9 @@ uint8_t gsm_pchan2chan_nr(enum gsm_phys_chan_config pchan,
 
 uint8_t gsm_lchan2chan_nr(const struct gsm_lchan *lchan)
 {
-	enum gsm_phys_chan_config pchan = lchan->ts->pchan;
-	if (pchan == GSM_PCHAN_TCH_F_TCH_H_PDCH)
-		return gsm_lchan_as_pchan2chan_nr(lchan,
-						  lchan->ts->dyn.pchan_is);
-	return gsm_pchan2chan_nr(lchan->ts->pchan, lchan->ts->nr, lchan->nr);
-}
-
-uint8_t gsm_lchan_as_pchan2chan_nr(const struct gsm_lchan *lchan,
-				   enum gsm_phys_chan_config as_pchan)
-{
-	if (lchan->ts->pchan == GSM_PCHAN_TCH_F_TCH_H_PDCH
-	    && as_pchan == GSM_PCHAN_PDCH)
-		return RSL_CHAN_OSMO_PDCH | (lchan->ts->nr & ~RSL_CHAN_NR_MASK);
-	return gsm_pchan2chan_nr(as_pchan, lchan->ts->nr, lchan->nr);
+	/* Note: non-standard Osmocom style dyn TS PDCH mode chan_nr is only used within
+	 * rsl_tx_dyn_ts_pdch_act_deact(). */
+	return gsm_pchan2chan_nr(lchan->ts->pchan_is, lchan->ts->nr, lchan->nr);
 }
 
 /* return the gsm_lchan for the CBCH (if it exists at all) */
@@ -1229,12 +1204,12 @@ struct gsm_lchan *gsm_bts_get_cbch(struct gsm_bts *bts)
 	struct gsm_lchan *lchan = NULL;
 	struct gsm_bts_trx *trx = bts->c0;
 
-	if (trx->ts[0].pchan == GSM_PCHAN_CCCH_SDCCH4_CBCH)
+	if (trx->ts[0].pchan_is == GSM_PCHAN_CCCH_SDCCH4_CBCH)
 		lchan = &trx->ts[0].lchan[2];
 	else {
 		int i;
 		for (i = 0; i < 8; i++) {
-			if (trx->ts[i].pchan == GSM_PCHAN_SDCCH8_SACCH8C_CBCH) {
+			if (trx->ts[i].pchan_is == GSM_PCHAN_SDCCH8_SACCH8C_CBCH) {
 				lchan = &trx->ts[i].lchan[2];
 				break;
 			}
@@ -1252,48 +1227,31 @@ struct gsm_lchan *rsl_lchan_lookup(struct gsm_bts_trx *trx, uint8_t chan_nr,
 	uint8_t cbits = chan_nr >> 3;
 	uint8_t lch_idx;
 	struct gsm_bts_trx_ts *ts = &trx->ts[ts_nr];
-	bool ok = true;
+	bool ok;
 
 	if (rc)
 		*rc = -EINVAL;
 
 	if (cbits == 0x01) {
-		lch_idx = 0;	/* TCH/F */	
-		if (ts->pchan != GSM_PCHAN_TCH_F &&
-		    ts->pchan != GSM_PCHAN_PDCH &&
-		    ts->pchan != GSM_PCHAN_TCH_F_PDCH
-		    && !(ts->pchan == GSM_PCHAN_TCH_F_TCH_H_PDCH
-			 && (ts->dyn.pchan_is == GSM_PCHAN_TCH_F
-			     || ts->dyn.pchan_want == GSM_PCHAN_TCH_F)))
-			ok = false;
+		lch_idx = 0;	/* TCH/F */
+		ok = ts_is_capable_of_pchan(ts, GSM_PCHAN_TCH_F)
+			|| ts->pchan_on_init == GSM_PCHAN_PDCH; /* PDCH? really? */
 	} else if ((cbits & 0x1e) == 0x02) {
 		lch_idx = cbits & 0x1;	/* TCH/H */
-		if (ts->pchan != GSM_PCHAN_TCH_H
-		    && !(ts->pchan == GSM_PCHAN_TCH_F_TCH_H_PDCH
-			 && (ts->dyn.pchan_is == GSM_PCHAN_TCH_H
-			     || ts->dyn.pchan_want == GSM_PCHAN_TCH_H)))
-			ok = false;
+		ok = ts_is_capable_of_pchan(ts, GSM_PCHAN_TCH_H);
 	} else if ((cbits & 0x1c) == 0x04) {
 		lch_idx = cbits & 0x3;	/* SDCCH/4 */
-		if (ts->pchan != GSM_PCHAN_CCCH_SDCCH4 &&
-		    ts->pchan != GSM_PCHAN_CCCH_SDCCH4_CBCH)
-			ok = false;
+		ok = ts_is_capable_of_pchan(ts, GSM_PCHAN_CCCH_SDCCH4);
 	} else if ((cbits & 0x18) == 0x08) {
 		lch_idx = cbits & 0x7;	/* SDCCH/8 */
-		if (ts->pchan != GSM_PCHAN_SDCCH8_SACCH8C &&
-		    ts->pchan != GSM_PCHAN_SDCCH8_SACCH8C_CBCH)
-			ok = false;
+		ok = ts_is_capable_of_pchan(ts, GSM_PCHAN_SDCCH8_SACCH8C);
 	} else if (cbits == 0x10 || cbits == 0x11 || cbits == 0x12) {
-		lch_idx = 0;
-		if (ts->pchan != GSM_PCHAN_CCCH &&
-		    ts->pchan != GSM_PCHAN_CCCH_SDCCH4 &&
-		    ts->pchan != GSM_PCHAN_CCCH_SDCCH4_CBCH)
-			ok = false;
+		lch_idx = 0; /* CCCH? */
+		ok = ts_is_capable_of_pchan(ts, GSM_PCHAN_CCCH);
 		/* FIXME: we should not return first sdcch4 !!! */
 	} else if ((chan_nr & RSL_CHAN_NR_MASK) == RSL_CHAN_OSMO_PDCH) {
 		lch_idx = 0;
-		if (ts->pchan != GSM_PCHAN_TCH_F_TCH_H_PDCH)
-			ok = false;
+		ok = (ts->pchan_on_init == GSM_PCHAN_TCH_F_TCH_H_PDCH);
 	} else
 		return NULL;
 
@@ -1313,33 +1271,18 @@ static const uint8_t subslots_per_pchan[] = {
 	[GSM_PCHAN_SDCCH8_SACCH8C] = 8,
 	[GSM_PCHAN_CCCH_SDCCH4_CBCH] = 4,
 	[GSM_PCHAN_SDCCH8_SACCH8C_CBCH] = 8,
-	/*
-	 * GSM_PCHAN_TCH_F_PDCH and GSM_PCHAN_TCH_F_TCH_H_PDCH should not be
-	 * part of this, those TS are handled according to their dynamic state.
-	 */
+	/* Dyn TS: maximum allowed subslots */
+	[GSM_PCHAN_TCH_F_TCH_H_PDCH] = 2,
+	[GSM_PCHAN_TCH_F_PDCH] = 1,
 };
-
-/*! Return the actual pchan type, also heeding dynamic TS. */
-enum gsm_phys_chan_config ts_pchan(struct gsm_bts_trx_ts *ts)
-{
-	switch (ts->pchan) {
-	case GSM_PCHAN_TCH_F_TCH_H_PDCH:
-		return ts->dyn.pchan_is;
-	case GSM_PCHAN_TCH_F_PDCH:
-		if (ts->flags & TS_F_PDCH_ACTIVE)
-			return GSM_PCHAN_PDCH;
-		else
-			return GSM_PCHAN_TCH_F;
-	default:
-		return ts->pchan;
-	}
-}
 
 /*! According to ts->pchan and possibly ts->dyn_pchan, return the number of
  * logical channels available in the timeslot. */
-uint8_t ts_subslots(struct gsm_bts_trx_ts *ts)
+uint8_t pchan_subslots(enum gsm_phys_chan_config pchan)
 {
-	return subslots_per_pchan[ts_pchan(ts)];
+	if (pchan < 0 || pchan >= ARRAY_SIZE(subslots_per_pchan))
+		return 0;
+	return subslots_per_pchan[pchan];
 }
 
 static bool pchan_is_tch(enum gsm_phys_chan_config pchan)
@@ -1355,7 +1298,7 @@ static bool pchan_is_tch(enum gsm_phys_chan_config pchan)
 
 bool ts_is_tch(struct gsm_bts_trx_ts *ts)
 {
-	return pchan_is_tch(ts_pchan(ts));
+	return pchan_is_tch(ts->pchan_is);
 }
 
 bool trx_is_usable(const struct gsm_bts_trx *trx)
@@ -1370,34 +1313,20 @@ bool trx_is_usable(const struct gsm_bts_trx *trx)
 	return true;
 }
 
-void gsm_trx_mark_all_ts_uninitialized(struct gsm_bts_trx *trx)
+void gsm_trx_all_ts_dispatch(struct gsm_bts_trx *trx, uint32_t ts_ev, void *data)
 {
 	int i;
 	for (i = 0; i < ARRAY_SIZE(trx->ts); i++) {
 		struct gsm_bts_trx_ts *ts = &trx->ts[i];
-		ts->initialized = false;
+		osmo_fsm_inst_dispatch(ts->fi, ts_ev, data);
 	}
 }
 
-void gsm_bts_mark_all_ts_uninitialized(struct gsm_bts *bts)
+void gsm_bts_all_ts_dispatch(struct gsm_bts *bts, uint32_t ts_ev, void *data)
 {
 	struct gsm_bts_trx *trx;
 	llist_for_each_entry(trx, &bts->trx_list, list)
-		gsm_trx_mark_all_ts_uninitialized(trx);
-}
-
-/* Trigger initial timeslot actions iff both OML and RSL are setup. */
-void gsm_ts_check_init(struct gsm_bts_trx_ts *ts)
-{
-	struct gsm_bts *bts = ts->trx->bts;
-	if (bts->model->oml_is_ts_ready
-	    && !bts->model->oml_is_ts_ready(ts))
-		return;
-	if (!ts->trx->rsl_link)
-		return;
-	if (ts->initialized)
-		return;
-	ts->initialized = on_gsm_ts_init(ts);
+		gsm_trx_all_ts_dispatch(trx, ts_ev, data);
 }
 
 void gsm48_lchan2chan_desc(struct gsm48_chan_desc *cd,
@@ -1426,3 +1355,258 @@ bool nm_is_running(const struct gsm_nm_state *s) {
 		(s->availability == 0xff)
 	);
 }
+
+/* determine the logical channel type based on the physical channel type */
+int gsm_lchan_type_by_pchan(enum gsm_phys_chan_config pchan)
+{
+	switch (pchan) {
+	case GSM_PCHAN_TCH_F:
+		return GSM_LCHAN_TCH_F;
+	case GSM_PCHAN_TCH_H:
+		return GSM_LCHAN_TCH_H;
+	case GSM_PCHAN_SDCCH8_SACCH8C:
+	case GSM_PCHAN_SDCCH8_SACCH8C_CBCH:
+	case GSM_PCHAN_CCCH_SDCCH4:
+	case GSM_PCHAN_CCCH_SDCCH4_CBCH:
+		return GSM_LCHAN_SDCCH;
+	default:
+		return -1;
+	}
+}
+
+enum gsm_phys_chan_config gsm_pchan_by_lchan_type(enum gsm_chan_t type)
+{
+	switch (type) {
+	case GSM_LCHAN_TCH_F:
+		return GSM_PCHAN_TCH_F;
+	case GSM_LCHAN_TCH_H:
+		return GSM_PCHAN_TCH_H;
+	case GSM_LCHAN_NONE:
+	case GSM_LCHAN_PDTCH:
+		/* TODO: so far lchan->type is NONE in PDCH mode. PDTCH is only
+		 * used in osmo-bts. Maybe set PDTCH and drop the NONE case
+		 * here. */
+		return GSM_PCHAN_PDCH;
+	default:
+		return GSM_PCHAN_UNKNOWN;
+	}
+}
+
+/* Can the timeslot in principle be used as this PCHAN kind? */
+bool ts_is_capable_of_pchan(struct gsm_bts_trx_ts *ts, enum gsm_phys_chan_config pchan)
+{
+	switch (ts->pchan_on_init) {
+	case GSM_PCHAN_TCH_F_PDCH:
+		switch (pchan) {
+		case GSM_PCHAN_TCH_F:
+		case GSM_PCHAN_PDCH:
+			return true;
+		default:
+			return false;
+		}
+
+	case GSM_PCHAN_TCH_F_TCH_H_PDCH:
+		switch (pchan) {
+		case GSM_PCHAN_TCH_F:
+		case GSM_PCHAN_TCH_H:
+		case GSM_PCHAN_PDCH:
+			return true;
+		default:
+			return false;
+		}
+
+	case GSM_PCHAN_CCCH_SDCCH4_CBCH:
+		switch (pchan) {
+		case GSM_PCHAN_CCCH_SDCCH4_CBCH:
+		case GSM_PCHAN_CCCH_SDCCH4:
+		case GSM_PCHAN_CCCH:
+			return true;
+		default:
+			return false;
+		}
+
+	case GSM_PCHAN_CCCH_SDCCH4:
+		switch (pchan) {
+		case GSM_PCHAN_CCCH_SDCCH4:
+		case GSM_PCHAN_CCCH:
+			return true;
+		default:
+			return false;
+		}
+
+	case GSM_PCHAN_SDCCH8_SACCH8C_CBCH:
+		switch (pchan) {
+		case GSM_PCHAN_SDCCH8_SACCH8C_CBCH:
+		case GSM_PCHAN_SDCCH8_SACCH8C:
+			return true;
+		default:
+			return false;
+		}
+
+	default:
+		return ts->pchan_on_init == pchan;
+	}
+}
+
+bool ts_is_capable_of_lchant(struct gsm_bts_trx_ts *ts, enum gsm_chan_t type)
+{
+	switch (ts->pchan_on_init) {
+
+	case GSM_PCHAN_TCH_F:
+		switch (type) {
+		case GSM_LCHAN_TCH_F:
+			return true;
+		default:
+			return false;
+		}
+
+	case GSM_PCHAN_TCH_H:
+		switch (type) {
+		case GSM_LCHAN_TCH_H:
+			return true;
+		default:
+			return false;
+		}
+
+	case GSM_PCHAN_TCH_F_PDCH:
+		switch (type) {
+		case GSM_LCHAN_TCH_F:
+		case GSM_LCHAN_PDTCH:
+			return true;
+		default:
+			return false;
+		}
+
+	case GSM_PCHAN_TCH_F_TCH_H_PDCH:
+		switch (type) {
+		case GSM_LCHAN_TCH_F:
+		case GSM_LCHAN_TCH_H:
+		case GSM_LCHAN_PDTCH:
+			return true;
+		default:
+			return false;
+		}
+
+	case GSM_PCHAN_PDCH:
+		switch (type) {
+		case GSM_LCHAN_PDTCH:
+			return true;
+		default:
+			return false;
+		}
+
+	case GSM_PCHAN_CCCH:
+		switch (type) {
+		case GSM_LCHAN_CCCH:
+			return true;
+		default:
+			return false;
+		}
+		break;
+
+	case GSM_PCHAN_CCCH_SDCCH4_CBCH:
+	case GSM_PCHAN_CCCH_SDCCH4:
+	case GSM_PCHAN_SDCCH8_SACCH8C:
+	case GSM_PCHAN_SDCCH8_SACCH8C_CBCH:
+		switch (type) {
+		case GSM_LCHAN_CCCH:
+		case GSM_LCHAN_SDCCH:
+			return true;
+		default:
+			return false;
+		}
+
+	default:
+		return false;
+	}
+}
+
+static int trx_count_free_ts(struct gsm_bts_trx *trx, enum gsm_phys_chan_config pchan)
+{
+	struct gsm_bts_trx_ts *ts;
+	struct gsm_lchan *lchan;
+	int j;
+	int count = 0;
+
+	if (!trx_is_usable(trx))
+		return 0;
+
+	for (j = 0; j < ARRAY_SIZE(trx->ts); j++) {
+		ts = &trx->ts[j];
+		if (!ts_is_usable(ts))
+			continue;
+
+		if (ts->pchan_is == GSM_PCHAN_PDCH) {
+			/* Dynamic timeslots in PDCH mode will become TCH if needed. */
+			switch (ts->pchan_on_init) {
+			case GSM_PCHAN_TCH_F_PDCH:
+				if (pchan == GSM_PCHAN_TCH_F)
+					count++;
+				continue;
+
+			case GSM_PCHAN_TCH_F_TCH_H_PDCH:
+				if (pchan == GSM_PCHAN_TCH_F)
+					count++;
+				else if (pchan == GSM_PCHAN_TCH_H)
+					count += 2;
+				continue;
+
+			default:
+				/* Not dynamic, not applicable. */
+				continue;
+			}
+		}
+
+		if (ts->pchan_is != pchan)
+			continue;
+
+		ts_for_each_lchan(lchan, ts) {
+			if (lchan_state_is(lchan, LCHAN_ST_UNUSED))
+				count++;
+		}
+	}
+
+	return count;
+}
+
+/* Count number of free TS of given pchan type */
+int bts_count_free_ts(struct gsm_bts *bts, enum gsm_phys_chan_config pchan)
+{
+	struct gsm_bts_trx *trx;
+	int count = 0;
+
+	llist_for_each_entry(trx, &bts->trx_list, list)
+		count += trx_count_free_ts(trx, pchan);
+
+	return count;
+}
+
+bool ts_is_usable(const struct gsm_bts_trx_ts *ts)
+{
+	if (!trx_is_usable(ts->trx)) {
+		LOGP(DRLL, LOGL_DEBUG, "%s not usable\n", gsm_trx_name(ts->trx));
+		return false;
+	}
+
+	if (!ts->fi)
+		return false;
+
+	switch (ts->fi->state) {
+	case TS_ST_NOT_INITIALIZED:
+	case TS_ST_BORKEN:
+		return false;
+	default:
+		break;
+	}
+
+	return true;
+}
+
+const struct value_string lchan_activate_mode_names[] = {
+	OSMO_VALUE_STRING(FOR_NONE),
+	OSMO_VALUE_STRING(FOR_MS_CHANNEL_REQUEST),
+	OSMO_VALUE_STRING(FOR_ASSIGNMENT),
+	OSMO_VALUE_STRING(FOR_HANDOVER),
+	OSMO_VALUE_STRING(FOR_VTY),
+	{}
+};

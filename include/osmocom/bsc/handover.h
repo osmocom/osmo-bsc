@@ -5,72 +5,38 @@
 #include <osmocom/core/linuxlist.h>
 #include <osmocom/core/timer.h>
 #include <osmocom/gsm/gsm_utils.h>
+#include <osmocom/gsm/gsm0808.h>
 
 #include <osmocom/bsc/neighbor_ident.h>
+#include <osmocom/bsc/gsm_data.h>
 
+struct gsm_network;
 struct gsm_lchan;
 struct gsm_bts;
 struct gsm_subscriber_connection;
 struct gsm_meas_rep mr;
 
-#define LOGPHOLCHANTOLCHAN(old_lchan, new_lchan, level, fmt, args...) \
-	LOGP(DHODEC, level, "(BTS %u trx %u arfcn %u ts %u lchan %u %s %s)->(BTS %u trx %u arfcn %u ts %u lchan %u %s) (subscr %s) " fmt, \
-	     old_lchan->ts->trx->bts->nr, \
-	     old_lchan->ts->trx->nr, \
-	     old_lchan->ts->trx->arfcn, \
-	     old_lchan->ts->nr, \
-	     old_lchan->nr, \
-	     gsm_lchant_name(old_lchan->type), \
-	     gsm48_chan_mode_name(old_lchan->tch_mode), \
-	     new_lchan->ts->trx->bts->nr, \
-	     new_lchan->ts->trx->nr, \
-	     new_lchan->ts->trx->arfcn, \
-	     new_lchan->ts->nr, \
-	     new_lchan->nr, \
-	     gsm_pchan_name(new_lchan->ts->pchan), \
-	     bsc_subscr_name(old_lchan->conn? old_lchan->conn->bsub : NULL), \
-	     ## args)
-
-#define LOGPHO(struct_bsc_handover, level, fmt, args ...) \
-	LOGPHOLCHANTOLCHAN(struct_bsc_handover->old_lchan, struct_bsc_handover->new_lchan, level, fmt, ## args)
-
-enum hodec_id {
-	HODEC_NONE,
-	HODEC1 = 1,
-	HODEC2 = 2,
+enum handover_result {
+	HO_RESULT_OK,
+	HO_RESULT_FAIL_NO_CHANNEL,
+	HO_RESULT_FAIL_RR_HO_FAIL,
+	HO_RESULT_FAIL_TIMEOUT,
+	HO_RESULT_CONN_RELEASE,
+	HO_RESULT_ERROR,
 };
 
-struct bsc_handover {
-	struct llist_head list;
+extern const struct value_string handover_result_names[];
+inline static const char *handover_result_name(enum handover_result val)
+{ return get_value_string(handover_result_names, val); }
 
-	/* Initial details of what is requested */
-	struct gsm_lchan *old_lchan;
-	struct gsm_bts *new_bts;
-	enum gsm_chan_t new_lchan_type;
-	bool async;
-
-	/* Derived and resulting state */
-	bool inter_cell;
-	uint8_t ho_ref;
-	enum hodec_id from_hodec_id;
-	struct gsm_lchan *new_lchan;
-	struct osmo_timer_list T3103;
-};
-
-int bsc_handover_start(enum hodec_id from_hodec_id, struct gsm_lchan *old_lchan, struct gsm_bts *new_bts,
-		       enum gsm_chan_t new_lchan_type);
-int bsc_handover_start_gscon(struct gsm_subscriber_connection *conn);
-void bsc_clear_handover(struct gsm_subscriber_connection *conn, int free_lchan);
-struct gsm_lchan *bsc_handover_pending(struct gsm_lchan *new_lchan);
-
-int bsc_ho_count(struct gsm_bts *bts, bool inter_cell);
+int bts_handover_count(struct gsm_bts *bts, int ho_scopes);
 
 /* Handover decision algorithms' actions to take on incoming handover-relevant events.
  *
  * All events that are interesting for handover decision are actually communicated by S_LCHAN_* signals,
  * so theoretically, each handover algorithm could evaluate those.  However, handover_logic.c cleans up
  * handover operation state upon receiving some of these signals. To allow a handover decision algorithm
- * to take advantage of e.g. the struct bsc_handover before it is discarded, the handover decision event
+ * to take advantage of e.g. the struct handover before it is discarded, the handover decision event
  * handler needs to be invoked before handover_logic.c discards the state. For example, if the handover
  * decision wants to place a penalty timer upon a handover failure, it still needs to know which target
  * cell the handover failed for; handover_logic.c erases that knowledge on handover failure, since it
@@ -90,13 +56,26 @@ struct handover_decision_callbacks {
 	int hodec_id;
 
 	void (*on_measurement_report)(struct gsm_meas_rep *mr);
-	void (*on_ho_chan_activ_nack)(struct bsc_handover *ho);
-	void (*on_ho_failure)(struct bsc_handover *ho);
+	void (*on_handover_end)(struct gsm_subscriber_connection *conn, enum handover_result result);
 };
 
 void handover_decision_callbacks_register(struct handover_decision_callbacks *hdc);
 struct handover_decision_callbacks *handover_decision_callbacks_get(int hodec_id);
 
+int bsc_tx_bssmap_ho_required(struct gsm_lchan *lchan, const struct gsm0808_cell_id_list2 *target_cells);
+int bsc_tx_bssmap_ho_request_ack(struct gsm_subscriber_connection *conn,
+				 struct msgb *rr_ho_command);
+int bsc_tx_bssmap_ho_detect(struct gsm_subscriber_connection *conn);
+enum handover_result bsc_tx_bssmap_ho_complete(struct gsm_subscriber_connection *conn,
+					       struct gsm_lchan *lchan);
+void bsc_tx_bssmap_ho_failure(struct gsm_subscriber_connection *conn);
+
 struct gsm_bts *bts_by_neighbor_ident(const struct gsm_network *net,
 				      const struct neighbor_ident_key *search_for);
 struct neighbor_ident_key *bts_ident_key(const struct gsm_bts *bts);
+
+void handover_parse_inter_bsc_mt(struct gsm_subscriber_connection *conn,
+				 struct msgb *ho_request_msg);
+
+void handover_mt_allocate_lchan(struct handover *ho);
+int handover_mt_send_rr_ho_command(struct handover *ho);

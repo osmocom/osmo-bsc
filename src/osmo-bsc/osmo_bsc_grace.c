@@ -25,6 +25,7 @@
 #include <osmocom/bsc/bsc_subscriber.h>
 #include <osmocom/bsc/paging.h>
 #include <osmocom/bsc/signal.h>
+#include <osmocom/bsc/lchan_fsm.h>
 
 int bsc_grace_allow_new_connection(struct gsm_network *network, struct gsm_bts *bts)
 {
@@ -89,7 +90,7 @@ static int handle_sub(struct gsm_lchan *lchan, const char *text)
 		return -1;
 
 	/* only when active */
-	if (lchan->state != LCHAN_S_ACTIVE)
+	if (lchan->fi->state != LCHAN_ST_ESTABLISHED)
 		return -1;
 
 	bsc_send_ussd_notify(conn, 0, text);

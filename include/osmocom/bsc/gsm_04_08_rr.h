@@ -12,6 +12,7 @@ int gsm48_send_rr_ciph_mode(struct gsm_lchan *lchan, int want_imeisv);
 void gsm48_lchan2chan_desc(struct gsm48_chan_desc *cd,
 			   const struct gsm_lchan *lchan);
 int gsm48_multirate_config(uint8_t *lv, const struct amr_multirate_conf *mr, const struct amr_mode *modes);
+struct msgb *gsm48_make_ho_cmd(struct gsm_lchan *new_lchan, uint8_t power_command, uint8_t ho_ref);
 int gsm48_send_ho_cmd(struct gsm_lchan *old_lchan, struct gsm_lchan *new_lchan,
 		      uint8_t power_command, uint8_t ho_ref);
 int gsm48_send_rr_ass_cmd(struct gsm_lchan *dest_lchan, struct gsm_lchan *lchan, uint8_t power_command);
@@ -42,4 +43,5 @@ static inline struct msgb *gsm48_msgb_alloc_name(const char *name)
 
 uint64_t str_to_imsi(const char *imsi_str);
 
+int gsm48_sendmsg(struct msgb *msg);
 int gsm0408_rcvmsg(struct msgb *msg, uint8_t link_id);

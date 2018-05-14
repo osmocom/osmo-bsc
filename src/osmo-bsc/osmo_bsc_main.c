@@ -31,6 +31,12 @@
 #include <osmocom/bsc/osmo_bsc_sigtran.h>
 #include <osmocom/bsc/handover_decision.h>
 #include <osmocom/bsc/handover_decision_2.h>
+#include <osmocom/bsc/timeslot_fsm.h>
+#include <osmocom/bsc/lchan_fsm.h>
+#include <osmocom/bsc/mgw_endpoint_fsm.h>
+#include <osmocom/bsc/bsc_subscr_conn_fsm.h>
+#include <osmocom/bsc/assignment_fsm.h>
+#include <osmocom/bsc/handover_fsm.h>
 
 #include <osmocom/ctrl/control_cmd.h>
 #include <osmocom/ctrl/control_if.h>
@@ -298,7 +304,8 @@ static void bootstrap_rsl(struct gsm_bts_trx *trx)
 	for (i = 0; i < ARRAY_SIZE(trx->ts); i++) {
 		struct gsm_bts_trx_ts *ts = &trx->ts[i];
 		generate_ma_for_ts(ts);
-		gsm_ts_check_init(ts);
+		OSMO_ASSERT(ts->fi);
+		osmo_fsm_inst_dispatch(ts->fi, TS_EV_RSL_READY, NULL);
 	}
 }
 
@@ -308,7 +315,7 @@ static int inp_sig_cb(unsigned int subsys, unsigned int signal,
 {
 	struct input_signal_data *isd = signal_data;
 	struct gsm_bts_trx *trx = isd->trx;
-	int ts_no, lchan_no;
+	int ts_no;
 	/* N. B: we rely on attribute order when parsing response in abis_nm_rx_get_attr_resp() */
 	const uint8_t bts_attr[] = { NM_ATT_MANUF_ID, NM_ATT_SW_CONFIG, };
 	const uint8_t trx_attr[] = { NM_ATT_MANUF_STATE, NM_ATT_SW_CONFIG, };
@@ -367,12 +374,8 @@ static int inp_sig_cb(unsigned int subsys, unsigned int signal,
 		 */
 		for (ts_no = 0; ts_no < ARRAY_SIZE(trx->ts); ++ts_no) {
 			struct gsm_bts_trx_ts *ts = &trx->ts[ts_no];
-
-			for (lchan_no = 0; lchan_no < ARRAY_SIZE(ts->lchan); ++lchan_no) {
-				if (ts->lchan[lchan_no].state != LCHAN_S_NONE)
-					lchan_free(&ts->lchan[lchan_no]);
-				lchan_reset(&ts->lchan[lchan_no]);
-			}
+			if (ts->fi)
+				osmo_fsm_inst_dispatch(ts->fi, TS_EV_OML_DOWN, 0);
 		}
 
 		gsm_bts_mo_reset(trx->bts);
@@ -436,11 +439,9 @@ static int bootstrap_bts(struct gsm_bts *bts)
 
 	/* Control Channel Description is set from vty/config */
 
-	/* T3212 is set from vty/config */
-
 	/* Set ccch config by looking at ts config */
 	for (n=0, i=0; i<8; i++)
-		n += bts->c0->ts[i].pchan == GSM_PCHAN_CCCH ? 1 : 0;
+		n += bts->c0->ts[i].pchan_is == GSM_PCHAN_CCCH ? 1 : 0;
 
 	/* Indicate R99 MSC in SI3 */
 	bts->si_common.chan_desc.mscr = 1;
@@ -821,6 +822,13 @@ int main(int argc, char **argv)
 	/* seed the PRNG */
 	srand(time(NULL));
 
+	ts_fsm_init();
+	lchan_fsm_init();
+	bsc_subscr_conn_fsm_init();
+	assignment_fsm_init();
+	mgw_endpoint_fsm_init(bsc_gsmnet->T_defs);
+	handover_fsm_init();
+
 	/* Read the config */
 	rc = bsc_network_configure(config_file);
 	if (rc < 0) {
@@ -872,11 +880,6 @@ int main(int argc, char **argv)
 
 	if (osmo_bsc_sigtran_init(&bsc_gsmnet->bsc_data->mscs) != 0) {
 		LOGP(DNM, LOGL_ERROR, "Failed to initalize sigtran backhaul.\n");
-		exit(1);
-	}
-
-	if (osmo_bsc_audio_init(bsc_gsmnet) != 0) {
-		LOGP(DMSC, LOGL_ERROR, "Failed to register audio support.\n");
 		exit(1);
 	}
 

@@ -41,3 +41,6 @@ void paging_flush_bts(struct gsm_bts *bts, struct bsc_msc_data *msc)
 {
 	/* No paging flushing */
 }
+
+void ts_fsm_alloc(struct gsm_bts_trx_ts *ts)
+{}

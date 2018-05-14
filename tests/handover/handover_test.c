@@ -32,67 +32,45 @@
 #include <osmocom/bsc/abis_rsl.h>
 #include <osmocom/bsc/debug.h>
 #include <osmocom/bsc/bsc_subscriber.h>
-#include <osmocom/bsc/chan_alloc.h>
+#include <osmocom/bsc/lchan_select.h>
+#include <osmocom/bsc/lchan_fsm.h>
 #include <osmocom/bsc/handover_decision.h>
 #include <osmocom/bsc/system_information.h>
+#include <osmocom/bsc/handover.h>
 #include <osmocom/bsc/handover_cfg.h>
 #include <osmocom/bsc/handover_decision_2.h>
 #include <osmocom/bsc/bss.h>
 #include <osmocom/bsc/bsc_api.h>
 #include <osmocom/bsc/osmo_bsc.h>
 #include <osmocom/bsc/bsc_subscr_conn_fsm.h>
+#include <osmocom/bsc/timeslot_fsm.h>
+#include <osmocom/bsc/lchan_fsm.h>
+#include <osmocom/bsc/mgw_endpoint_fsm.h>
+#include <osmocom/bsc/handover_fsm.h>
+#include <osmocom/bsc/bsc_msc_data.h>
 
 void *ctx;
 
 struct gsm_network *bsc_gsmnet;
 
-/* override, requires '-Wl,--wrap=mgcp_conn_modify'.
+/* override, requires '-Wl,--wrap=mgw_endpoint_ci_request'.
  * Catch modification of an MGCP connection. */
-int __real_mgcp_conn_modify(struct osmo_fsm_inst *fi, uint32_t parent_evt, struct mgcp_conn_peer *conn_peer);
-int __wrap_mgcp_conn_modify(struct osmo_fsm_inst *fi, uint32_t parent_evt, struct mgcp_conn_peer *conn_peer)
+void __real_mgw_endpoint_ci_request(struct mgwep_ci *ci,
+				    enum mgcp_verb verb, const struct mgcp_conn_peer *verb_info,
+				    struct osmo_fsm_inst *notify,
+				    uint32_t event_success, uint32_t event_failure,
+				    void *notify_data);
+void __wrap_mgw_endpoint_ci_request(struct mgwep_ci *ci,
+				    enum mgcp_verb verb, const struct mgcp_conn_peer *verb_info,
+				    struct osmo_fsm_inst *notify,
+				    uint32_t event_success, uint32_t event_failure,
+				    void *notify_data)
 {
-	/* CAUTION HACK:
-	 *
-	 * The pointer fi is misused to pass a reference to GSCON FSM !
-	 *
-	 * This function is called from gscon_fsm_wait_ho_compl() from
-	 * bsc_subscr_conn_fsm.c when GSCON_EV_HO_COMPL is dispatched to the
-	 * GSCON FSM. By then, the GSCON FSM has already changed to the state
-	 * ST_WAIT_MDCX_BTS_HO (see gscon_fsm_wait_mdcx_bts_ho()) and waits for
-	 * GSCON_EV_MGW_MDCX_RESP_BTS. The signal GSCON_EV_MGW_MDCX_RESP_BTS
-	 * is sent to this function using the parameter parent_evt. So we
-	 * implicitly know the event that is needed to simulate a successful
-	 * MGW negotiation to the GSCON FSM. All we need to do is to dispatch
-	 * parent_evt back to the GSCON FSM in order to make it think that the
-	 * MGW negotiation is done.
-	 *
-	 * Unfortunately, there is a problem with this test implementation.
-	 * in order to simplfy the test we do not allocate any MGCP Client
-	 * FSM but the GSCON FSM will call this function with the fi pointer
-	 * pointing to the MGCP Client FSM. This means we get a nullpointer
-	 * here and there is no way to distinguish which GSCON FSM called
-	 * the function at all (normally we would know through the parent
-	 * pointer).
-	 *
-	 * To get around this problem we populate the fi pointer with the
-	 * reference to the GSCON FSM itsself, so we can know who called the
-	 * function. This is a misuse of the pointer since it normally would
-	 * hold an MGCP Client FSM instead of a GSCON FSM.
-	 *
-	 * See also note in function create_conn() */
-
-	osmo_fsm_inst_dispatch(fi, parent_evt, NULL);
-	return 0;
-}
-
-/* override, requires '-Wl,--wrap=mgcp_conn_delete'.
- * Catch deletion of an MGCP connection. */
-int __real_mgcp_conn_delete(struct osmo_fsm_inst *fi);
-int __wrap_mgcp_conn_delete(struct osmo_fsm_inst *fi)
-{
-	/* Just do nothing and pretend that everything went well.
-	 * We never have allocatec any MGCP connections. */
-	return 0;
+	struct mgcp_conn_peer fake_data = {};
+	/* All MGCP shall be successful */
+	if (!notify)
+		return;
+	osmo_fsm_inst_dispatch(notify, event_success, &fake_data);
 }
 
 /* measurement report */
@@ -225,36 +203,34 @@ static struct gsm_bts *create_bts(int arfcn)
 
 	/* 4 full rate and 4 half rate channels */
 	for (i = 1; i <= 6; i++) {
-		bts->c0->ts[i].pchan =
-			(i < 5) ? GSM_PCHAN_TCH_F : GSM_PCHAN_TCH_H;
+		bts->c0->ts[i].pchan_from_config = (i < 5) ? GSM_PCHAN_TCH_F : GSM_PCHAN_TCH_H;
 		bts->c0->ts[i].mo.nm_state.operational = NM_OPSTATE_ENABLED;
 		bts->c0->ts[i].mo.nm_state.availability = NM_AVSTATE_OK;
-		bts->c0->ts[i].lchan[0].type = GSM_LCHAN_NONE;
-		bts->c0->ts[i].lchan[0].state = LCHAN_S_NONE;
-		bts->c0->ts[i].lchan[1].type = GSM_LCHAN_NONE;
-		bts->c0->ts[i].lchan[1].state = LCHAN_S_NONE;
+	}
+
+	for (i = 0; i < ARRAY_SIZE(bts->c0->ts); i++) {
+		/* make sure ts->lchans[] get initialized */
+		osmo_fsm_inst_dispatch(bts->c0->ts[i].fi, TS_EV_OML_READY, 0);
 	}
 	return bts;
 }
 
 void create_conn(struct gsm_lchan *lchan)
 {
+	static struct bsc_msc_data fake_msc_data = {};
 	static unsigned int next_imsi = 0;
 	char imsi[sizeof(lchan->conn->bsub->imsi)];
 	struct gsm_network *net = lchan->ts->trx->bts->network;
 	struct gsm_subscriber_connection *conn;
+	struct mgcp_client *fake_mgcp_client = (void*)talloc_zero(net, int);
 
 	conn = bsc_subscr_con_allocate(net);
 
-	/* CAUTION HACK: When __real_mgcp_conn_modify() is called by the GSCON
-	 * FSM, then we need to know the reference to caller FSM (GSCON FSM).
-	 * Unfortunately the function __real_mgcp_conn_modify() is called with
-	 * fi_bts, which is unpopulated in this setup. The real function would
-	 * perform the communication with the MGW and then dispatch a signal
-	 * back to the parent FSM. Since we do not have all that in this setup
-	 * we populate the fi_bts pointer with a reference to the GSCON FSM in
-	 * order to have it available later in __real_mgcp_conn_modify(). */
-	conn->user_plane.fi_bts = conn->fi;
+	conn->user_plane.mgw_endpoint = mgw_endpoint_alloc(conn->fi,
+							   GSCON_EV_FORGET_MGW_ENDPOINT,
+							   fake_mgcp_client, "test",
+							   "fake endpoint");
+	conn->sccp.msc = &fake_msc_data;
 
 	lchan->conn = conn;
 	conn->lchan = lchan;
@@ -274,13 +250,17 @@ struct gsm_lchan *create_lchan(struct gsm_bts *bts, int full_rate, char *codec)
 {
 	struct gsm_lchan *lchan;
 
-	lchan = lchan_alloc(bts,
-		(full_rate) ? GSM_LCHAN_TCH_F : GSM_LCHAN_TCH_H, 0);
+	lchan = lchan_select_by_type(bts, (full_rate) ? GSM_LCHAN_TCH_F : GSM_LCHAN_TCH_H);
 	if (!lchan) {
 		printf("No resource for lchan\n");
 		exit(EXIT_FAILURE);
 	}
-	lchan->state = LCHAN_S_ACTIVE;
+
+	/* serious hack into osmo_fsm */
+	lchan->fi->state = LCHAN_ST_ESTABLISHED;
+	lchan->ts->fi->state = TS_ST_IN_USE;
+	LOG_LCHAN(lchan, LOGL_DEBUG, "activated by handover_test.c\n");
+
 	create_conn(lchan);
 	if (!strcasecmp(codec, "FR") && full_rate)
 		lchan->tch_mode = GSM48_CMODE_SPEECH_V1;
@@ -305,7 +285,6 @@ struct gsm_lchan *create_lchan(struct gsm_bts *bts, int full_rate, char *codec)
 		},
 		.len = 5,
 	};
-	lchan->conn->codec_list_present = true;
 
 	return lchan;
 }
@@ -382,6 +361,27 @@ static void send_chan_act_ack(struct gsm_lchan *lchan, int act)
 	abis_rsl_rcvmsg(msg);
 }
 
+/* Send RLL Est Ind for SAPI[0] */
+static void send_est_ind(struct gsm_lchan *lchan)
+{
+	struct msgb *msg = msgb_alloc_headroom(256, 64, "RSL");
+	struct abis_rsl_rll_hdr *rh;
+	uint8_t chan_nr = gsm_lchan2chan_nr(lchan);
+
+	rh = (struct abis_rsl_rll_hdr *) msgb_put(msg, sizeof(*rh));
+	rh->c.msg_discr = ABIS_RSL_MDISC_RLL;
+	rh->c.msg_type = RSL_MT_EST_IND;
+	rh->ie_chan = RSL_IE_CHAN_NR;
+	rh->chan_nr = chan_nr;
+	rh->ie_link_id = RSL_IE_LINK_IDENT;
+	rh->link_id = 0x00;
+
+	msg->dst = lchan->ts->trx->bts->c0->rsl_link;
+	msg->l2h = (unsigned char *)rh;
+
+	abis_rsl_rcvmsg(msg);
+}
+
 /* send handover complete */
 static void send_ho_complete(struct gsm_lchan *lchan, bool success)
 {
@@ -391,6 +391,8 @@ static void send_ho_complete(struct gsm_lchan *lchan, bool success)
 	uint8_t *buf;
 	struct gsm48_hdr *gh;
 	struct gsm48_ho_cpl *hc;
+
+	send_est_ind(lchan);
 
 	rh = (struct abis_rsl_rll_hdr *) msgb_put(msg, sizeof(*rh));
 	rh->c.msg_discr = ABIS_RSL_MDISC_RLL;
@@ -1336,6 +1338,18 @@ static const struct log_info_cat log_categories[] = {
 		.color = "\033[1;35m",
 		.enabled = 1, .loglevel = LOGL_DEBUG,
 	},
+	[DRR] = {
+		.name = "DRR",
+		.description = "RR",
+		.color = "\033[1;35m",
+		.enabled = 1, .loglevel = LOGL_DEBUG,
+	},
+	[DRLL] = {
+		.name = "DRLL",
+		.description = "RLL",
+		.color = "\033[1;35m",
+		.enabled = 1, .loglevel = LOGL_DEBUG,
+	},
 	[DMSC] = {
 		.name = "DMSC",
 		.description = "Mobile Switching Center",
@@ -1380,10 +1394,17 @@ int main(int argc, char **argv)
 	log_set_print_category(osmo_stderr_target, 1);
 	log_set_print_category_hex(osmo_stderr_target, 0);
 	log_set_print_filename2(osmo_stderr_target, LOG_FILENAME_BASENAME);
+	osmo_fsm_log_addr(false);
 
 	bsc_network_alloc();
 	if (!bsc_gsmnet)
 		exit(1);
+
+	ts_fsm_init();
+	lchan_fsm_init();
+	mgw_endpoint_fsm_init(bsc_gsmnet->T_defs);
+	bsc_subscr_conn_fsm_init();
+	handover_fsm_init();
 
 	ho_set_algorithm(bsc_gsmnet->ho, 2);
 	ho_set_ho_active(bsc_gsmnet->ho, true);
@@ -1429,7 +1450,7 @@ int main(int argc, char **argv)
 			for (i = 0; i < n; i++)
 				bts[bts_num + i] = create_bts(arfcn++);
 			for (i = 0; i < n; i++) {
-				if (gsm_generate_si(bts[bts_num + i], SYSINFO_TYPE_2))
+				if (gsm_generate_si(bts[bts_num + i], SYSINFO_TYPE_2) <= 0)
 					fprintf(stderr, "Error generating SI2\n");
 			}
 			bts_num += n;
@@ -1670,6 +1691,27 @@ int main(int argc, char **argv)
 				*test_case);
 			return EXIT_FAILURE;
 		}
+
+		{
+			/* Help the lchan out of releasing states */
+			struct gsm_bts *bts;
+			llist_for_each_entry(bts, &bsc_gsmnet->bts_list, list) {
+				struct gsm_bts_trx *trx;
+				llist_for_each_entry(trx, &bts->trx_list, list) {
+					int ts_nr;
+					for (ts_nr = 0; ts_nr < TRX_NR_TS; ts_nr++) {
+						struct gsm_lchan *lchan;
+						ts_for_each_lchan(lchan, &trx->ts[ts_nr]) {
+
+							if (lchan->fi && lchan->fi->state == LCHAN_ST_WAIT_BEFORE_RF_RELEASE) {
+								osmo_fsm_inst_state_chg(lchan->fi, LCHAN_ST_WAIT_RF_RELEASE_ACK, 0, 0);
+								osmo_fsm_inst_dispatch(lchan->fi, LCHAN_EV_RSL_RF_CHAN_REL_ACK, 0);
+							}
+						}
+					}
+				}
+			}
+		}
 	}
 
 	for (i = 0; i < lchan_num; i++) {
@@ -1677,7 +1719,6 @@ int main(int argc, char **argv)
 		lchan[i]->conn = NULL;
 		conn->lchan = NULL;
 		osmo_fsm_inst_term(conn->fi, OSMO_FSM_TERM_REGULAR, NULL);
-		lchan_free(lchan[i]);
 	}
 
 	fprintf(stderr, "--------------------\n");
@@ -1708,10 +1749,17 @@ int bsc_compl_l3(struct gsm_subscriber_connection *conn, struct msgb *msg, uint1
 { return 0; }
 void bsc_dtap(struct gsm_subscriber_connection *conn, uint8_t link_id, struct msgb *msg) {}
 void bsc_assign_compl(struct gsm_subscriber_connection *conn, uint8_t rr_cause) {}
-void bsc_assign_fail(struct gsm_subscriber_connection *conn, uint8_t cause, uint8_t *rr_cause) {}
 int bsc_clear_request(struct gsm_subscriber_connection *conn, uint32_t cause)
 { return 0; }
 void bsc_cm_update(struct gsm_subscriber_connection *conn,
 		   const uint8_t *cm2, uint8_t cm2_len,
 		   const uint8_t *cm3, uint8_t cm3_len) {}
-void bsc_mr_config(struct gsm_subscriber_connection *conn, struct gsm_lchan *lchan, int full_rate) {}
+struct gsm0808_handover_required;
+int bsc_tx_bssmap_ho_required(struct gsm_lchan *lchan, const struct gsm0808_cell_id_list2 *target_cells)
+{ return 0; }
+int bsc_tx_bssmap_ho_request_ack(struct gsm_subscriber_connection *conn, struct msgb *rr_ho_command)
+{ return 0; }
+int bsc_tx_bssmap_ho_detect(struct gsm_subscriber_connection *conn) { return 0; }
+enum handover_result bsc_tx_bssmap_ho_complete(struct gsm_subscriber_connection *conn,
+					       struct gsm_lchan *lchan) { return HO_RESULT_OK; }
+void bsc_tx_bssmap_ho_failure(struct gsm_subscriber_connection *conn) {}

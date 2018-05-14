@@ -95,9 +95,9 @@ static int T_round(int val, enum T_unit from_unit, enum T_unit to_unit)
  *
  * 	val = T_def_get(global_T_defs, 99, T_S, 3); // not defined, returns 3
  */
-int T_def_get(struct T_def *T_defs, int T, enum T_unit as_unit, int val_if_not_present)
+int T_def_get(const struct T_def *T_defs, int T, enum T_unit as_unit, int val_if_not_present)
 {
-	struct T_def *d = T_def_get_entry(T_defs, T);
+	const struct T_def *d = T_def_get_entry((struct T_def*)T_defs, T);
 	if (!d) {
 		OSMO_ASSERT(val_if_not_present >= 0);
 		return val_if_not_present;
@@ -142,9 +142,10 @@ struct T_def *T_def_get_entry(struct T_def *T_defs, int T)
  * The intention is then to obtain the timer like T_def_get(global_T_defs, T=235); see also
  * fsm_inst_state_chg_T() below.
  */
-struct state_timeout *get_state_timeout(uint32_t state, struct state_timeout *timeouts_array)
+const struct state_timeout *get_state_timeout(uint32_t state,
+					      const struct state_timeout *timeouts_array)
 {
-	struct state_timeout *t;
+	const struct state_timeout *t;
 	OSMO_ASSERT(state < 32);
 	t = &timeouts_array[state];
 	if (!t->keep_timer && !t->T)
@@ -176,11 +177,11 @@ struct state_timeout *get_state_timeout(uint32_t state, struct state_timeout *ti
  *
  */
 int _fsm_inst_state_chg_T(struct osmo_fsm_inst *fi, uint32_t state,
-			  struct state_timeout *timeouts_array,
-			  struct T_def *T_defs, int default_timeout,
+			  const struct state_timeout *timeouts_array,
+			  const struct T_def *T_defs, int default_timeout,
 			  const char *file, int line)
 {
-	struct state_timeout *t = get_state_timeout(state, timeouts_array);
+	const struct state_timeout *t = get_state_timeout(state, timeouts_array);
 	int val;
 
 	/* No timeout defined for this state? */

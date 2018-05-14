@@ -28,6 +28,7 @@
 #include <osmocom/abis/e1_input.h>
 #include <osmocom/bsc/signal.h>
 #include <osmocom/bsc/gsm_timers.h>
+#include <osmocom/bsc/timeslot_fsm.h>
 
 static int bts_model_bs11_start(struct gsm_network *net);
 
@@ -393,7 +394,7 @@ static void patch_nm_tables(struct gsm_bts *bts)
 
 static void nm_reconfig_ts(struct gsm_bts_trx_ts *ts)
 {
-	enum abis_nm_chan_comb ccomb = abis_nm_chcomb4pchan(ts->pchan);
+	enum abis_nm_chan_comb ccomb = abis_nm_chcomb4pchan(ts->pchan_from_config);
 	struct gsm_e1_subslot *e1l = &ts->e1_link;
 
 	abis_nm_set_channel_attr(ts, ccomb);
@@ -537,7 +538,7 @@ static int shutdown_om(struct gsm_bts *bts)
 	/* Reset BTS Site manager resource */
 	abis_nm_bs11_reset_resource(bts);
 
-	gsm_bts_mark_all_ts_uninitialized(bts);
+	gsm_bts_all_ts_dispatch(bts, TS_EV_OML_DOWN, NULL);
 
 	return 0;
 }

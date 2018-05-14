@@ -317,3 +317,5 @@ struct gsm_subscriber_connection *bsc_subscr_con_allocate(struct gsm_network *ne
 
 bool on_gsm_ts_init(struct gsm_bts_trx_ts *ts)
 { return true; }
+
+void ts_fsm_alloc(struct gsm_bts_trx_ts *ts) {}

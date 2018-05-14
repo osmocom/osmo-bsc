@@ -187,3 +187,6 @@ int main(int argc, char **argv)
 
 	exit(0);
 }
+
+void ts_fsm_alloc(struct gsm_bts_trx_ts *ts) {}
+int abis_rsl_rcvmsg(struct msgb *msg) { return 0; }

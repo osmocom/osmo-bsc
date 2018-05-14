@@ -94,33 +94,6 @@ struct msgb *pcu_msgb_alloc(uint8_t msg_type, uint8_t bts_nr)
 	return msg;
 }
 
-/* Helper function exclusivly used by pcu_if_signal_cb() */
-static bool ts_should_be_pdch(struct gsm_bts_trx_ts *ts) {
-	if (ts->pchan == GSM_PCHAN_PDCH)
-		return true;
-	if (ts->pchan == GSM_PCHAN_TCH_F_PDCH) {
-		/* When we're busy deactivating the PDCH, we first set
-		 * DEACT_PENDING, tell the PCU about it and wait for a
-		 * response. So DEACT_PENDING means "no PDCH" to the PCU.
-		 * Similarly, when we're activating PDCH, we set the
-		 * ACT_PENDING and wait for an activation response from the
-		 * PCU, so ACT_PENDING means "is PDCH". */
-		if (ts->flags & TS_F_PDCH_ACTIVE)
-			return !(ts->flags & TS_F_PDCH_DEACT_PENDING);
-		else
-			return (ts->flags & TS_F_PDCH_ACT_PENDING);
-	}
-	if (ts->pchan == GSM_PCHAN_TCH_F_TCH_H_PDCH) {
-		/*
-		 * When we're busy de-/activating the PDCH, we first set
-		 * ts->dyn.pchan_want, tell the PCU about it and wait for a
-		 * response. So only care about dyn.pchan_want here.
-		 */
-		return ts->dyn.pchan_want == GSM_PCHAN_PDCH;
-	}
-	return false;
-}
-
 /* Send BTS properties to the PCU */
 static int pcu_tx_info_ind(struct gsm_bts *bts)
 {
@@ -232,7 +205,7 @@ static int pcu_tx_info_ind(struct gsm_bts *bts)
 		for (j = 0; j < ARRAY_SIZE(trx->ts); j++) {
 			ts = &trx->ts[j];
 			if (ts->mo.nm_state.operational == NM_OPSTATE_ENABLED
-			    && ts_should_be_pdch(ts)) {
+			    && ts->pchan_is == GSM_PCHAN_PDCH) {
 				info_ind->trx[i].pdch_mask |= (1 << j);
 				info_ind->trx[i].tsc[j] =
 					(ts->tsc >= 0) ? ts->tsc : bts->bsic & 7;
@@ -521,7 +494,7 @@ static void pcu_sock_close(struct pcu_sock_state *state)
 		for (j = 0; j < 8; j++) {
 			ts = &trx->ts[j];
 			if (ts->mo.nm_state.operational == NM_OPSTATE_ENABLED
-			 && ts->pchan == GSM_PCHAN_PDCH) {
+			    && ts->pchan_is == GSM_PCHAN_PDCH) {
 				printf("l1sap_chan_rel(trx,gsm_lchan2chan_nr(ts->lchan));\n");
 			}
 		}

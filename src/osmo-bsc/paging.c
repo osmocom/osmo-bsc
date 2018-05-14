@@ -52,6 +52,7 @@
 #include <osmocom/bsc/bsc_api.h>
 #include <osmocom/bsc/gsm_04_08_rr.h>
 #include <osmocom/bsc/gsm_timers.h>
+#include <osmocom/bsc/bsc_subscr_conn_fsm.h>
 
 void *tall_paging_ctx = NULL;
 
@@ -394,6 +395,7 @@ void paging_request_stop(struct llist_head *bts_list,
 
 	log_set_context(LOG_CTX_BSC_SUBSCR, bsub);
 	conn->bsub = bsc_subscr_get(bsub);
+	gscon_update_id(conn);
 
 	/* Stop this first and dispatch the request */
 	if (_bts) {

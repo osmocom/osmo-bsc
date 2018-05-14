@@ -35,6 +35,7 @@
 #include <osmocom/bsc/abis_nm.h>
 #include <osmocom/abis/e1_input.h>
 #include <osmocom/bsc/signal.h>
+#include <osmocom/bsc/timeslot_fsm.h>
 
 #include <osmocom/core/timer.h>
 
@@ -55,13 +56,13 @@ static void bootstrap_om_bts(struct gsm_bts *bts)
 {
 	LOGP(DNM, LOGL_NOTICE, "bootstrapping OML for BTS %u\n", bts->nr);
 
-	gsm_bts_mark_all_ts_uninitialized(bts);
-
 	if (!bts->nokia.skip_reset) {
 		if (!bts->nokia.did_reset)
 			abis_nm_reset(bts, 1);
 	} else
 		bts->nokia.did_reset = 1;
+
+	gsm_bts_all_ts_dispatch(bts, TS_EV_OML_READY, NULL);
 }
 
 static void bootstrap_om_trx(struct gsm_bts_trx *trx)
@@ -69,7 +70,7 @@ static void bootstrap_om_trx(struct gsm_bts_trx *trx)
 	LOGP(DNM, LOGL_NOTICE, "bootstrapping OML for TRX %u/%u\n",
 	     trx->bts->nr, trx->nr);
 
-	gsm_trx_mark_all_ts_uninitialized(trx);
+	gsm_trx_all_ts_dispatch(trx, TS_EV_OML_READY, NULL);
 }
 
 static int shutdown_om(struct gsm_bts *bts)
@@ -779,24 +780,32 @@ static int make_fu_config(struct gsm_bts_trx *trx, uint8_t id,
 		   0xFF = spare TS
 		 */
 
-		if (ts->pchan == GSM_PCHAN_NONE)
+		switch (ts->pchan_from_config) {
+		case GSM_PCHAN_NONE:
 			chan_config = 0xFF;
-		else if (ts->pchan == GSM_PCHAN_CCCH)
+			break;
+		case GSM_PCHAN_CCCH:
 			chan_config = 0;
-		else if (ts->pchan == GSM_PCHAN_CCCH_SDCCH4)
+			break;
+		case GSM_PCHAN_CCCH_SDCCH4:
 			chan_config = 1;
-		else if (ts->pchan == GSM_PCHAN_TCH_F)
+			break;
+		case GSM_PCHAN_TCH_F:
 			chan_config = 6;	/* 9 should work too */
-		else if (ts->pchan == GSM_PCHAN_TCH_H)
+			break;
+		case GSM_PCHAN_TCH_H:
 			chan_config = 9;
-		else if (ts->pchan == GSM_PCHAN_SDCCH8_SACCH8C)
+			break;
+		case GSM_PCHAN_SDCCH8_SACCH8C:
 			chan_config = 4;
-		else if (ts->pchan == GSM_PCHAN_PDCH)
+			break;
+		case GSM_PCHAN_PDCH:
 			chan_config = 11;
-		else {
+			break;
+		default:
 			fprintf(stderr,
-				"unsupported channel config %d for timeslot %d\n",
-				ts->pchan, i);
+				"unsupported channel config %s for timeslot %d\n",
+				gsm_pchan_name(ts->pchan_from_config), i);
 			return 0;
 		}
 

@@ -32,46 +32,8 @@
 #include <osmocom/core/talloc.h>
 #include <osmocom/gsm/gsm_utils.h>
 
-#include <osmocom/bsc/handover.h>
+#include <osmocom/bsc/handover_fsm.h>
 #include <osmocom/bsc/handover_cfg.h>
-
-/* Find BTS by ARFCN and BSIC */
-struct gsm_bts *bts_by_arfcn_bsic(const struct gsm_network *net,
-				  uint16_t arfcn, uint8_t bsic)
-{
-	struct gsm_bts *bts;
-
-	llist_for_each_entry(bts, &net->bts_list, list) {
-		if (bts->c0->arfcn == arfcn &&
-		    bts->bsic == bsic)
-			return bts;
-	}
-
-	return NULL;
-}
-
-
-/* issue handover to a cell identified by ARFCN and BSIC */
-static int handover_to_arfcn_bsic(struct gsm_lchan *lchan,
-				  uint16_t arfcn, uint8_t bsic)
-{
-	struct gsm_bts *new_bts;
-
-	/* resolve the gsm_bts structure for the best neighbor */
-	/* FIXME: use some better heuristics here to determine which cell
-	 * using this ARFCN really is closest to the target cell.  For
-	 * now we simply assume that each ARFCN will only be used by one
-	 * cell */
-	new_bts = bts_by_arfcn_bsic(lchan->ts->trx->bts->network, arfcn, bsic);
-	if (!new_bts) {
-		LOGP(DHODEC, LOGL_NOTICE, "unable to determine neighbor BTS "
-		     "for ARFCN %u BSIC %u ?!?\n", arfcn, bsic);
-		return -EINVAL;
-	}
-
-	/* and actually try to handover to that cell */
-	return bsc_handover_start(HODEC1, lchan, new_bts, lchan->type);
-}
 
 /* did we get a RXLEV for a given cell in the given report? */
 static int rxlev_for_cell_in_rep(struct gsm_meas_rep *mr,
@@ -196,15 +158,16 @@ static void process_meas_neigh(struct gsm_meas_rep *mr)
 }
 
 /* attempt to do a handover */
-static int attempt_handover(struct gsm_meas_rep *mr)
+static void attempt_handover(struct gsm_meas_rep *mr)
 {
+	struct handover_out_req req;
 	struct gsm_bts *bts = mr->lchan->ts->trx->bts;
 	struct neigh_meas_proc *best_cell = NULL;
 	unsigned int best_better_db = 0;
 	int i;
 
 	if (!ho_get_ho_active(bts->ho))
-		return 0;
+		return;
 
 	/* find the best cell in this report that is at least RXLEV_HYST
 	 * better than the current serving cell */
@@ -232,9 +195,18 @@ static int attempt_handover(struct gsm_meas_rep *mr)
 	}
 
 	if (!best_cell)
-		return 0;
+		return;
 
-	return handover_to_arfcn_bsic(mr->lchan, best_cell->arfcn, best_cell->bsic);
+	req = (struct handover_out_req){
+		.from_hodec_id = HODEC1,
+		.old_lchan = mr->lchan,
+		.target_nik = {
+			.from_bts = bts->nr,
+			.arfcn = best_cell->arfcn,
+			.bsic = best_cell->bsic,
+		},
+	};
+	handover_request(&req);
 }
 
 /* process an already parsed measurement report and decide if we want to
