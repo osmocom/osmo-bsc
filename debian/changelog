@@ -1,3 +1,26 @@
+osmo-bsc (1.2.1) unstable; urgency=medium
+
+  [ Philipp Maier ]
+  * bsc_api/GSCON: prevent unnecessary channel mode modifications
+
+  [ Neels Hofmeyr ]
+  * resurrect meas_feed.c: vty, vty-test
+  * dyn ts, bts_ipaccess_nanobts.c: init PDCH on Chan OPSTART ACK
+  * dyn TS, assignment: set lchan state to LCHAN_S_ACT_REQ in the proper place
+  * dyn TS, assignment: allow switch from PDCH with associated conn
+  * dyn TS: init only when both RSL and the Channel OM are established
+  * dyn TS: allow any pchan type changes, fix for gprs mode none
+  * debug log: verbosely log all lchan alloc choices
+  * deprecate dyn_ts_allow_tch_f and by default allow all TCH
+  * fix default fallbacks in audio_support_to_gsm88()
+  * log: indicate hr/fr in audio_support_to_gsm88() error
+  * cosmetic: dyn ts init: undup logging for gprs = none
+
+  [ Vadim Yanitskiy ]
+  * osmo_bsc_vty.c: fix: write MGW configuration
+
+ -- Pau Espin Pedrol <pespin@sysmocom.de>  Tue, 15 May 2018 14:10:38 +0200
+
 osmo-bsc (1.2.0) unstable; urgency=medium
 
   [ Neels Hofmeyr ]
