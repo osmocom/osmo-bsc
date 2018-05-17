@@ -468,6 +468,7 @@ ipaccess_sign_link_up(void *unit_data, struct e1inp_line *line,
 		LOGP(DLINP, LOGL_ERROR, "Unable to find BTS configuration for "
 			" %u/%u/%u, disconnecting\n", dev->site_id,
 			dev->bts_id, dev->trx_id);
+		rate_ctr_inc(&bsc_gsmnet->bsc_ctrs->ctr[BSC_CTR_UNKNOWN_UNIT_ID]);
 		return NULL;
 	}
 	DEBUGP(DLINP, "Identified BTS %u/%u/%u\n",
