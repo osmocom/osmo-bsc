@@ -41,12 +41,6 @@ struct gsm_bts_trx_ts;
 int rsl_bcch_info(const struct gsm_bts_trx *trx, enum osmo_sysinfo_type si_type, const uint8_t *data, int len);
 int rsl_sacch_filling(struct gsm_bts_trx *trx, uint8_t type,
 		      const uint8_t *data, int len);
-int rsl_chan_activate(struct gsm_bts_trx *trx, uint8_t chan_nr,
-		      uint8_t act_type,
-		      struct rsl_ie_chan_mode *chan_mode,
-		      struct rsl_ie_chan_ident *chan_ident,
-		      uint8_t bs_power, uint8_t ms_power,
-		      uint8_t ta);
 int rsl_chan_activate_lchan(struct gsm_lchan *lchan, uint8_t act_type,
 			    uint8_t ho_ref);
 int rsl_chan_mode_modify_req(struct gsm_lchan *ts);
