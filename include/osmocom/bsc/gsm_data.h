@@ -1133,12 +1133,12 @@ enum {
 static const struct rate_ctr_desc bsc_ctr_description[] = {
 	[BSC_CTR_HANDOVER_ATTEMPTED] = 		{"handover:attempted", "Received handover attempts."},
 	[BSC_CTR_HANDOVER_NO_CHANNEL] = 	{"handover:no_channel", "Sent no channel available responses."},
-	[BSC_CTR_HANDOVER_TIMEOUT] = 		{"handover:timeout", "Count the amount of timeouts of timer T3103."},
+	[BSC_CTR_HANDOVER_TIMEOUT] = 		{"handover:timeout", "Timeouts of timer T3103."},
 	[BSC_CTR_HANDOVER_COMPLETED] = 		{"handover:completed", "Received handover completed."},
-	[BSC_CTR_HANDOVER_FAILED] = 		{"handover:failed", "Receive HO FAIL messages."},
+	[BSC_CTR_HANDOVER_FAILED] = 		{"handover:failed", "Received HO FAIL messages."},
 
 	[BSC_CTR_PAGING_ATTEMPTED] = 		{"paging:attempted", "Paging attempts for a subscriber."},
-	[BSC_CTR_PAGING_DETACHED] = 		{"paging:detached", "Counts the amount of paging attempts which couldn't sent out any paging request because no responsible bts found."},
+	[BSC_CTR_PAGING_DETACHED] = 		{"paging:detached", "Paging request send failures because no responsible BTS was found."},
 	[BSC_CTR_PAGING_RESPONDED] = 		{"paging:responded", "Paging attempts with successful response."},
 };
 

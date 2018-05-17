@@ -4133,12 +4133,16 @@ DEFUN(cfg_ts_e1_subslot,
 	return CMD_SUCCESS;
 }
 
+int print_counter(struct rate_ctr_group *bsc_ctrs, struct rate_ctr *ctr, const struct rate_ctr_desc *desc, void *data)
+{
+	struct vty *vty = data;
+	vty_out(vty, "%25s: %10"PRIu64" %s%s", desc->name, ctr->current, desc->description, VTY_NEWLINE);
+	return 0;
+}
+
 void openbsc_vty_print_statistics(struct vty *vty, struct gsm_network *net)
 {
-	vty_out(vty, "Paging                  : %"PRIu64" attempted, %"PRIu64" responded%s",
-		net->bsc_ctrs->ctr[BSC_CTR_PAGING_ATTEMPTED].current,
-		net->bsc_ctrs->ctr[BSC_CTR_PAGING_RESPONDED].current,
-		VTY_NEWLINE);
+	rate_ctr_for_each_counter(net->bsc_ctrs, print_counter, vty);
 }
 
 DEFUN(drop_bts,
