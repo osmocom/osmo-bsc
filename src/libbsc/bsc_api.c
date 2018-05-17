@@ -344,18 +344,27 @@ int gsm0808_page(struct gsm_bts *bts, unsigned int page_group, unsigned int mi_l
 static void handle_ass_compl(struct gsm_subscriber_connection *conn,
 			     struct msgb *msg)
 {
-	struct gsm48_hdr *gh;
+	struct gsm48_hdr *gh = msgb_l3(msg);
 	struct bsc_api *api = conn->network->bsc_api;
+	enum gsm48_rr_cause cause;
+
+	/* Expecting gsm48_hdr + cause value */
+	if (msgb_l3len(msg) != sizeof(*gh) + 1) {
+		LOGPLCHAN(msg->lchan, DRR, LOGL_ERROR,
+			  "RR Assignment Complete: length invalid: %u, expected %zu\n",
+			  msgb_l3len(msg), sizeof(*gh) + 1);
+		return;
+	}
+
+	cause = gh->data[0];
+
+	LOGPLCHAN(msg->lchan, DRR, LOGL_DEBUG, "ASSIGNMENT COMPLETE cause = %s\n",
+		  rr_cause_name(cause));
 
 	if (conn->ho) {
-		struct lchan_signal_data sig;
-		struct gsm48_hdr *gh = msgb_l3(msg);
-
-		LOGPLCHAN(msg->lchan, DRR, LOGL_DEBUG, "ASSIGNMENT COMPLETE cause = %s\n",
-			  rr_cause_name(gh->data[0]));
-
-		sig.lchan = msg->lchan;
-		sig.mr = NULL;
+		struct lchan_signal_data sig = {
+			.lchan = msg->lchan,
+		};
 		osmo_signal_dispatch(SS_LCHAN, S_LCHAN_ASSIGNMENT_COMPL, &sig);
 		/* FIXME: release old channel */
 
@@ -366,15 +375,8 @@ static void handle_ass_compl(struct gsm_subscriber_connection *conn,
 	}
 
 	if (conn->secondary_lchan != msg->lchan) {
-		LOGPLCHAN(msg->lchan, DMSC, LOGL_ERROR,
-			  "Assignment Compl should occur on second lchan.\n");
-		return;
-	}
-
-	gh = msgb_l3(msg);
-	if (msgb_l3len(msg) - sizeof(*gh) != 1) {
-		LOGPLCHAN(msg->lchan, DMSC, LOGL_ERROR, "Assignment Compl invalid: %zu\n",
-			  msgb_l3len(msg) - sizeof(*gh));
+		LOGPLCHAN(msg->lchan, DRR, LOGL_ERROR,
+			  "RR Assignment Complete does not match conn's secondary lchan.\n");
 		return;
 	}
 
@@ -391,7 +393,7 @@ static void handle_ass_compl(struct gsm_subscriber_connection *conn,
 	if (is_ipaccess_bts(conn_get_bts(conn)) && conn->lchan->tch_mode != GSM48_CMODE_SIGN)
 		rsl_ipacc_crcx(conn->lchan);
 
-	api->assign_compl(conn, gh->data[0]);
+	api->assign_compl(conn, cause);
 }
 
 static void handle_ass_fail(struct gsm_subscriber_connection *conn,
