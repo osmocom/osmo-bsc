@@ -10,24 +10,29 @@ struct penalty_timers;
  * returns an empty struct penalty_timers.  */
 struct penalty_timers *penalty_timers_init(void *ctx);
 
-/* Add a penalty timer for a BTS.
+/* Add a penalty timer for an arbitary object.
+ * Note: the ownership of for_object remains with the caller; it is handled as a mere void* value, so
+ * invalid pointers can be handled without problems, while common sense dictates that invalidated
+ * pointers (freed objects) should probably be removed from this list. More importantly, the pointer must
+ * match any pointers used to query penalty timers, so for_object should reference some global/singleton
+ * object that tends to stay around longer than the penalty timers.
  * param pt: penalty timers list as from penalty_timers_init().
  * param for_object: arbitrary pointer reference to store a penalty timer for (passing NULL is possible,
  *         but note that penalty_timers_clear() will clear all timers if given for_object=NULL).
  * param timeout: penalty time in seconds. */
-void penalty_timers_add(struct penalty_timers *pt, void *for_object, int timeout);
+void penalty_timers_add(struct penalty_timers *pt, const void *for_object, int timeout);
 
-/* Return the amount of penalty time remaining for a BTS.
+/* Return the amount of penalty time remaining for an object.
  * param pt: penalty timers list as from penalty_timers_init().
  * param for_object: arbitrary pointer reference to query penalty timers for.
  * returns seconds remaining until all penalty time has expired. */
-unsigned int penalty_timers_remaining(struct penalty_timers *pt, void *for_object);
+unsigned int penalty_timers_remaining(struct penalty_timers *pt, const void *for_object);
 
-/* Clear penalty timers for one or all BTS.
+/* Clear penalty timers for one or all objects.
  * param pt: penalty timers list as from penalty_timers_init().
  * param for_object: arbitrary pointer reference to clear penalty time for,
  *                   or NULL to clear all timers. */
-void penalty_timers_clear(struct penalty_timers *pt, void *for_object);
+void penalty_timers_clear(struct penalty_timers *pt, const void *for_object);
 
 /* Free a struct as returned from penalty_timers_init().
  * Clear all timers from the list, deallocate the list and set the pointer to NULL.

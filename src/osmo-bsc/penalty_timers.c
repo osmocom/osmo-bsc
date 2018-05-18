@@ -34,7 +34,7 @@ struct penalty_timers {
 
 struct penalty_timer {
 	struct llist_head entry;
-	void *for_object;
+	const void *for_object;
 	unsigned int timeout;
 };
 
@@ -55,7 +55,7 @@ struct penalty_timers *penalty_timers_init(void *ctx)
 	return pt;
 }
 
-void penalty_timers_add(struct penalty_timers *pt, void *for_object, int timeout)
+void penalty_timers_add(struct penalty_timers *pt, const void *for_object, int timeout)
 {
 	struct penalty_timer *timer;
 	unsigned int now;
@@ -89,7 +89,7 @@ void penalty_timers_add(struct penalty_timers *pt, void *for_object, int timeout
 	llist_add_tail(&timer->entry, &pt->timers);
 }
 
-unsigned int penalty_timers_remaining(struct penalty_timers *pt, void *for_object)
+unsigned int penalty_timers_remaining(struct penalty_timers *pt, const void *for_object)
 {
 	struct penalty_timer *timer;
 	unsigned int now = time_now();
@@ -107,7 +107,7 @@ unsigned int penalty_timers_remaining(struct penalty_timers *pt, void *for_objec
 	return max_remaining;
 }
 
-void penalty_timers_clear(struct penalty_timers *pt, void *for_object)
+void penalty_timers_clear(struct penalty_timers *pt, const void *for_object)
 {
 	struct penalty_timer *timer, *timer2;
 	llist_for_each_entry_safe(timer, timer2, &pt->timers, entry) {
