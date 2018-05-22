@@ -2799,7 +2799,7 @@ int abis_nm_ipaccess_rsl_connect(struct gsm_bts_trx *trx,
 	attr[1] = stream;
 	attr[3] = port >> 8;
 	attr[4] = port & 0xff;
-	*(uint32_t *)(attr+6) = ia.s_addr;
+	memcpy(attr + 6, &ia.s_addr, sizeof(uint32_t));
 
 	/* if ip == 0, we use the default IP */
 	if (ip == 0)
