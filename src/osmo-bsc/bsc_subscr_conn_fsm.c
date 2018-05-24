@@ -995,12 +995,6 @@ static void gscon_cleanup(struct osmo_fsm_inst *fi, enum osmo_fsm_term_cause cau
 		conn->lchan = NULL;
 	}
 
-	if (conn->bsub) {
-		LOGPFSML(fi, LOGL_DEBUG, "Putting bsc_subscr\n");
-		bsc_subscr_put(conn->bsub);
-		conn->bsub = NULL;
-	}
-
 	if (conn->sccp.state != SUBSCR_SCCP_ST_NONE) {
 		LOGPFSML(fi, LOGL_DEBUG, "Disconnecting SCCP\n");
 		struct bsc_msc_data *msc = conn->sccp.msc;
@@ -1013,6 +1007,12 @@ static void gscon_cleanup(struct osmo_fsm_inst *fi, enum osmo_fsm_term_cause cau
 	ho_dtap_cache_flush(conn, 0);
 
 	penalty_timers_free(&conn->hodec2.penalty_timers);
+
+	if (conn->bsub) {
+		LOGPFSML(fi, LOGL_DEBUG, "Putting bsc_subscr\n");
+		bsc_subscr_put(conn->bsub);
+		conn->bsub = NULL;
+	}
 
 	llist_del(&conn->entry);
 	talloc_free(conn);
