@@ -239,8 +239,12 @@ static struct gsm_bts *create_bts(int arfcn)
 
 void create_conn(struct gsm_lchan *lchan)
 {
+	static unsigned int next_imsi = 0;
+	char imsi[sizeof(lchan->conn->bsub->imsi)];
+	struct gsm_network *net = lchan->ts->trx->bts->network;
 	struct gsm_subscriber_connection *conn;
-	conn = bsc_subscr_con_allocate(lchan->ts->trx->bts->network);
+
+	conn = bsc_subscr_con_allocate(net);
 
 	/* CAUTION HACK: When __real_mgcp_conn_modify() is called by the GSCON
 	 * FSM, then we need to know the reference to caller FSM (GSCON FSM).
@@ -254,6 +258,12 @@ void create_conn(struct gsm_lchan *lchan)
 
 	lchan->conn = conn;
 	conn->lchan = lchan;
+
+	/* Make up a new IMSI for this test, for logging the subscriber */
+	next_imsi ++;
+	snprintf(imsi, sizeof(imsi), "%06u", next_imsi);
+	lchan->conn->bsub = bsc_subscr_find_or_create_by_imsi(net->bsc_subscribers, imsi);
+
 	/* kick the FSM from INIT through to the ACTIVE state */
 	osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_A_CONN_REQ, NULL);
 	osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_A_CONN_CFM, NULL);
