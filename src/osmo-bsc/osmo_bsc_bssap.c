@@ -634,19 +634,6 @@ reject:
 	return -1;
 }
 
-/* Helper function to calculate the port number for a given
- * timeslot/multiplex. This functionality is needed to support
- * the sccp-lite scenario where the MGW is handled externally */
-static inline int mgcp_timeslot_to_port(int multiplex, int timeslot, int base)
-{
-	if (timeslot == 0) {
-		LOGP(DLMGCP, LOGL_ERROR, "Timeslot should not be 0\n");
-		timeslot = 255;
-	}
-
-	return base + (timeslot + (32 * multiplex)) * 2;
-}
-
 /*
  * Handle the assignment request message.
  *

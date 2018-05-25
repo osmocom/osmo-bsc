@@ -28,6 +28,7 @@
 #define _OSMO_MSC_DATA_H
 
 #include "bsc_msc.h"
+#include "debug.h"
 
 #include <osmocom/core/timer.h>
 #include <osmocom/gsm/protocol/gsm_04_08.h>
@@ -42,6 +43,7 @@
 #include <osmocom/gsm/gsm23003.h>
 
 #include <regex.h>
+#include <errno.h>
 
 struct osmo_bsc_rf;
 struct gsm_network;
@@ -163,6 +165,26 @@ int osmo_bsc_audio_init(struct gsm_network *network);
 
 struct bsc_msc_data *osmo_msc_data_find(struct gsm_network *, int);
 struct bsc_msc_data *osmo_msc_data_alloc(struct gsm_network *, int);
+
+/* Helper function to calculate the port number for a given
+ * timeslot/multiplex. This functionality is needed to support
+ * the sccp-lite scenario where the MGW is handled externally */
+static inline int mgcp_timeslot_to_port(int multiplex, int timeslot, int base)
+{
+	if (timeslot == 0) {
+		LOGP(DLMGCP, LOGL_ERROR, "Timeslot should not be 0\n");
+		timeslot = 255;
+	}
+
+	return base + (timeslot + (32 * multiplex)) * 2;
+}
+
+static inline int mgcp_port_to_cic(uint16_t port, uint16_t base)
+{
+	if (port < base)
+		return -EINVAL;
+	return (port - base) / 2;
+}
 
 
 #endif
