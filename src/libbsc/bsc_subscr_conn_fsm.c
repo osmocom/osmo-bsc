@@ -383,6 +383,25 @@ static void gscon_fsm_wait_cc(struct osmo_fsm_inst *fi, uint32_t event, void *da
 	}
 }
 
+static const char *get_mgw_ep_name(struct gsm_subscriber_connection *conn)
+{
+	static char ep_name[256];
+	struct bsc_msc_data *msc = conn->sccp.msc;
+
+	switch (conn->sccp.msc->a.asp_proto) {
+	case OSMO_SS7_ASP_PROT_IPA:
+		/* derive endpoint name from CIC on A interface side */
+		snprintf(ep_name, sizeof(ep_name), "%x@mgw",
+			 mgcp_port_to_cic(conn->user_plane.rtp_port, msc->rtp_base));
+		break;
+	default:
+		/* use dynamic RTPBRIDGE endpoint allocation in MGW */
+		osmo_strlcpy(ep_name, ENDPOINT_ID, sizeof(ep_name));
+		break;
+	}
+	return ep_name;
+}
+
 /* We're on an active subscriber connection, passing DTAP back and forth */
 static void gscon_fsm_active(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
@@ -413,7 +432,7 @@ static void gscon_fsm_active(struct osmo_fsm_inst *fi, uint32_t event, void *dat
 			 * mgcp-ass-mgcp state-chain (see FIXME above) */
 			memset(&conn_peer, 0, sizeof(conn_peer));
 			conn_peer.call_id = conn->sccp.conn_id;
-			osmo_strlcpy(conn_peer.endpoint, ENDPOINT_ID, sizeof(conn_peer.endpoint));
+			osmo_strlcpy(conn_peer.endpoint, get_mgw_ep_name(conn), sizeof(conn_peer.endpoint));
 
 			/* (Pre)Change state and create the connection */
 			osmo_fsm_inst_state_chg(fi, ST_WAIT_CRCX_BTS, MGCP_MGW_TIMEOUT, MGCP_MGW_TIMEOUT_TIMER_NR);
