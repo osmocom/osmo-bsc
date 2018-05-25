@@ -678,16 +678,26 @@ static void gscon_fsm_wait_mdcx_bts(struct osmo_fsm_inst *fi, uint32_t event, vo
 		 * BTS connection. */
 		osmo_strlcpy(conn_peer.endpoint, conn->user_plane.mgw_endpoint, sizeof(conn_peer.endpoint));
 
-		/* (Pre)Change state and create the connection */
-		osmo_fsm_inst_state_chg(fi, ST_WAIT_CRCX_MSC, MGCP_MGW_TIMEOUT, MGCP_MGW_TIMEOUT_TIMER_NR);
-		conn->user_plane.fi_msc =
-		    mgcp_conn_create(conn->network->mgw.client, fi, GSCON_EV_MGW_FAIL_MSC, GSCON_EV_MGW_CRCX_RESP_MSC,
-				     &conn_peer);
-		if (!conn->user_plane.fi_msc) {
-			resp = gsm0808_create_assignment_failure(GSM0808_CAUSE_EQUIPMENT_FAILURE, NULL);
-			sigtran_send(conn, resp, fi);
+		switch (conn->sccp.msc->a.asp_proto) {
+		case OSMO_SS7_ASP_PROT_IPA:
+			/* Send assignment complete message to the MSC */
+			send_ass_compl(conn->lchan, fi, true);
 			osmo_fsm_inst_state_chg(fi, ST_ACTIVE, 0, 0);
-			return;
+			break;
+		default:
+			/* (Pre)Change state and create the connection */
+			osmo_fsm_inst_state_chg(fi, ST_WAIT_CRCX_MSC, MGCP_MGW_TIMEOUT,
+						MGCP_MGW_TIMEOUT_TIMER_NR);
+			conn->user_plane.fi_msc = mgcp_conn_create(conn->network->mgw.client, fi,
+								  GSCON_EV_MGW_FAIL_MSC,
+								  GSCON_EV_MGW_CRCX_RESP_MSC, &conn_peer);
+			if (!conn->user_plane.fi_msc) {
+				resp = gsm0808_create_assignment_failure(GSM0808_CAUSE_EQUIPMENT_FAILURE, NULL);
+				sigtran_send(conn, resp, fi);
+				osmo_fsm_inst_state_chg(fi, ST_ACTIVE, 0, 0);
+				return;
+			}
+			break;
 		}
 
 		break;
