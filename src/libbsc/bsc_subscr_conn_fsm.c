@@ -239,14 +239,20 @@ static void send_ass_compl(struct gsm_lchan *lchan, struct osmo_fsm_inst *fi, bo
 
 	/* Generate voice related fields */
 	if (voice) {
-		OSMO_ASSERT(lchan->abis_ip.ass_compl.valid);
 		perm_spch = bssap_speech_from_lchan(lchan);
-		addr_local = &conn->user_plane.aoip_rtp_addr_local;
+		switch (conn->sccp.msc->a.asp_proto) {
+		case OSMO_SS7_ASP_PROT_IPA:
+			/* don't add any AoIP specific fields. CIC allocated by MSC */
+			break;
+		default:
+			OSMO_ASSERT(lchan->abis_ip.ass_compl.valid);
+			addr_local = &conn->user_plane.aoip_rtp_addr_local;
 
-		/* Extrapolate speech codec from speech mode */
-		gsm0808_speech_codec_from_chan_type(&sc, perm_spch);
-		sc_ptr = &sc;
-
+			/* Extrapolate speech codec from speech mode */
+			gsm0808_speech_codec_from_chan_type(&sc, perm_spch);
+			sc_ptr = &sc;
+			break;
+		}
 		/* FIXME: AMR codec configuration must be derived from lchan1! */
 	}
 
