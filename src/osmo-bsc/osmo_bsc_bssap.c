@@ -710,20 +710,8 @@ static int bssmap_handle_assignm_req(struct gsm_subscriber_connection *conn,
 			aoip = true;
 		} else {
 			LOGP(DMSC, LOGL_ERROR, "AoIP transport address and CIC missing. "
-			     "Audio will not work.\n");
+			     "Audio would not work; rejecting\n");
 			cause = GSM0808_CAUSE_INFORMATION_ELEMENT_OR_FIELD_MISSING;
-			goto reject;
-		}
-
-		/* FIXME: At the moment osmo-bsc does not support any other
-		 * A-Interface other than AoIP. So we must reject all
-		 * assignment requests that are not AoIP compliant. However,
-		 * might support other A-Interface dialects lateron again,
-		 * thats why we preserve the logic around the AoIP detection
-		 * here. */
-		if (!aoip) {
-			LOGP(DMSC, LOGL_ERROR, "Requested A-Interface type is not supported! (AoIP only!)\n");
-			cause = GSM0808_CAUSE_REQ_A_IF_TYPE_NOT_SUPP;
 			goto reject;
 		}
 
