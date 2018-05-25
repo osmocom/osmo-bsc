@@ -447,7 +447,7 @@ int osmo_bsc_sigtran_init(struct llist_head *mscs)
 		default_pc = osmo_ss7_pointcode_parse(NULL, BSC_DEFAULT_PC);
 		msc->a.sccp =
 		    osmo_sccp_simple_client_on_ss7_id(msc, msc->a.cs7_instance, msc_name, default_pc,
-						      OSMO_SS7_ASP_PROT_M3UA, 0, NULL, 0, NULL);
+						      msc->a.asp_proto, 0, NULL, 0, NULL);
 		if (!msc->a.sccp)
 			return -EINVAL;
 

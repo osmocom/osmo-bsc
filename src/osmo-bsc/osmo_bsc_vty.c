@@ -181,6 +181,7 @@ static void write_msc(struct vty *vty, struct bsc_msc_data *msc)
 		vty_out(vty, " msc-addr %s%s",
 			msc->a.msc_addr_name, VTY_NEWLINE);
 	}
+	vty_out(vty, " asp-protocol %s%s", osmo_ss7_asp_protocol_name(msc->a.asp_proto), VTY_NEWLINE);
 
 	/* write MGW configuration */
 	mgcp_client_config_write(vty, " ");
@@ -672,6 +673,20 @@ DEFUN(cfg_msc_cs7_msc_addr,
 	return CMD_SUCCESS;
 }
 
+DEFUN(cfg_msc_cs7_asp_proto,
+      cfg_msc_cs7_asp_proto_cmd,
+      "asp-protocol (m3ua|sua|ipa)",
+      "A interface protocol to use for this MSC)\n"
+      "MTP3 User Adaptation\n"
+      "SCCP User Adaptation\n"
+      "IPA Multiplex (SCCP Lite)\n")
+{
+	struct bsc_msc_data *msc = bsc_msc_data(vty);
+
+	msc->a.asp_proto = get_string_value(osmo_ss7_asp_protocol_vals, argv[0]);
+	return CMD_SUCCESS;
+}
+
 DEFUN(cfg_net_bsc_mid_call_text,
       cfg_net_bsc_mid_call_text_cmd,
       "mid-call-text .TEXT",
@@ -951,6 +966,7 @@ int bsc_vty_init_extra(void)
 	install_element(MSC_NODE, &cfg_msc_no_acc_lst_name_cmd);
 	install_element(MSC_NODE, &cfg_msc_cs7_bsc_addr_cmd);
 	install_element(MSC_NODE, &cfg_msc_cs7_msc_addr_cmd);
+	install_element(MSC_NODE, &cfg_msc_cs7_asp_proto_cmd);
 
 	/* Deprecated: ping time config, kept to support legacy config files. */
 	install_element(MSC_NODE, &cfg_net_msc_no_ping_time_cmd);

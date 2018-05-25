@@ -110,6 +110,9 @@ struct bsc_msc_data {
 		struct osmo_sccp_instance *sccp;
 		struct osmo_sccp_user *sccp_user;
 
+		/* IPA or M3UA or SUA? */
+		enum osmo_ss7_asp_protocol asp_proto;
+
 		/* Holds a copy of the our local MSC address,
 		 * this will be the sccp-address that is associated
 		 * with the A interface of this particular BSC,
