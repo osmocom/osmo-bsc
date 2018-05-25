@@ -658,7 +658,7 @@ static void gscon_fsm_wait_mdcx_bts(struct osmo_fsm_inst *fi, uint32_t event, vo
 		conn->user_plane.fi_msc =
 		    mgcp_conn_create(conn->network->mgw.client, fi, GSCON_EV_MGW_FAIL_MSC, GSCON_EV_MGW_CRCX_RESP_MSC,
 				     &conn_peer);
-		if (!conn->user_plane.fi_bts) {
+		if (!conn->user_plane.fi_msc) {
 			resp = gsm0808_create_assignment_failure(GSM0808_CAUSE_EQUIPMENT_FAILURE, NULL);
 			sigtran_send(conn, resp, fi);
 			osmo_fsm_inst_state_chg(fi, ST_ACTIVE, 0, 0);
