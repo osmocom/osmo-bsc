@@ -31,6 +31,7 @@
 #include "debug.h"
 
 #include <osmocom/core/timer.h>
+#include <osmocom/core/select.h>
 #include <osmocom/gsm/protocol/gsm_04_08.h>
 
 
@@ -140,6 +141,16 @@ struct bsc_msc_data {
 
 	uint32_t x_osmo_ign;
 	bool x_osmo_ign_configured;
+
+	/* Proxy between IPA/SCCPlite encapsulated MGCP and UDP */
+	struct {
+		/* local (BSC) IP address to be used */
+		char *local_addr;
+		/* local (BSC) UDP port to be usd to talk with MGW */
+		uint16_t local_port;
+		/* UDP socket for proxying MGCP via SCCPlite/IPA */
+		struct osmo_fd ofd;
+	} mgcp_ipa;
 };
 
 /*

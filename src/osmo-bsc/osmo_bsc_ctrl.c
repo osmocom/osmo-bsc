@@ -52,6 +52,39 @@ static struct osmo_ss7_as *msc_get_ss7_as(struct bsc_msc_data *msc)
 	return rt->dest.as;
 }
 
+static int _ss7_as_send(struct osmo_ss7_as *as, struct msgb *msg)
+{
+	struct osmo_ss7_asp *asp;
+	unsigned int i;
+
+	/* FIXME: unify with xua_as_transmit_msg() and perform proper ASP lookup */
+	for (i = 0; i < ARRAY_SIZE(as->cfg.asps); i++) {
+		asp = as->cfg.asps[i];
+		if (!asp)
+			continue;
+		/* FIXME: deal with multiple ASPs per AS */
+		return osmo_ss7_asp_send(asp, msg);
+	}
+	msgb_free(msg);
+	return -1;
+}
+
+int bsc_sccplite_msc_send(struct bsc_msc_data *msc, struct msgb *msg)
+{
+	struct osmo_ss7_as *as;
+
+	as = msc_get_ss7_as(msc);
+	if (!as) {
+		msgb_free(msg);
+		return -1;
+	}
+
+	/* don't attempt to send CTRL on a non-SCCPlite AS */
+	if (as->cfg.proto != OSMO_SS7_ASP_PROT_IPA)
+		return 0;
+
+	return _ss7_as_send(as, msg);
+}
 
 /* Encode a CTRL command and send it to the given ASP
  * \param[in] asp ASP through which we shall send the encoded message
@@ -83,30 +116,20 @@ static int sccplite_asp_ctrl_cmd_send(struct osmo_ss7_asp *asp, struct ctrl_cmd 
  * Caller must hence free 'cmd' itself. */
 static int sccplite_msc_ctrl_cmd_send(struct bsc_msc_data *msc, struct ctrl_cmd *cmd)
 {
-	struct osmo_ss7_as *as;
-	struct osmo_ss7_asp *asp;
-	unsigned int i;
+	struct msgb *msg;
 
-	as = msc_get_ss7_as(msc);
-	if (!as)
+	msg = ctrl_cmd_make(cmd);
+	if (!msg)
 		return -1;
 
-	/* don't attempt to send CTRL on a non-SCCPlite AS */
-	if (as->cfg.proto != OSMO_SS7_ASP_PROT_IPA)
-		return 0;
+	ipa_prepend_header_ext(msg, IPAC_PROTO_EXT_CTRL);
+	ipa_prepend_header(msg, IPAC_PROTO_OSMO);
 
-	/* FIXME: unify with xua_as_transmit_msg() and perform proper ASP lookup */
-	for (i = 0; i < ARRAY_SIZE(as->cfg.asps); i++) {
-		asp = as->cfg.asps[i];
-		if (!asp)
-			continue;
-		/* FIXME: deal with multiple ASPs per AS */
-		return sccplite_asp_ctrl_cmd_send(asp, cmd);
-	}
-	return -1;
+	return bsc_sccplite_msc_send(msc, msg);
 }
 
-/* receive + process a CTRL command from the piggy-back on the IPA/SCCPlite link */
+/* receive + process a CTRL command from the piggy-back on the IPA/SCCPlite link.
+ * Transfers msg ownership. */
 int bsc_sccplite_rx_ctrl(struct osmo_ss7_asp *asp, struct msgb *msg)
 {
 	struct ctrl_cmd *cmd;
