@@ -54,14 +54,17 @@ msc {
 	bsc_gscon abox bsc_gscon [label="ST_WAIT_ASS_COMPL (GSM0808_T10_VALUE=6s)"];
 	...;
 	bts note bsc_gscon [linecolor="red",
-	  label="There seems to be no timer watching over Chan Release nor dyn TS switchover!"];
+		label="Osmocom style dyn TS use lchan->act_timer to watch over RF Chan Release, but there
+		seems to be no timer watching over PDCH Deact!"];
 	...;
 	bts => bsc [label="i) RSL RF Chan Release ACK (Osmocom dyn TS)"];
 	bts => bsc [label="OR ii) RSL PDCH Deact ACK (ip.access dyn TS)"];
 	bsc box bsc [label="rsl_chan_activate_lchan() re-invoked"];
+	bsc box bsc [label="lchan->state = LCHAN_S_ACT_REQ"];
 	bts <= bsc [label="RSL Chan Activ"];
 	--- [label="else (no dyn TS switchover)"];
 
+	bsc box bsc [label="lchan->state = LCHAN_S_ACT_REQ"];
 	bts <= bsc [label="RSL Chan Activ"];
 	bsc -> bsc_gscon [label="gsm0808_assign_req() returns"];
 	bsc_gscon abox bsc_gscon [label="ST_WAIT_ASS_COMPL (GSM0808_T10_VALUE=6s)"];
@@ -79,6 +82,10 @@ msc {
 	...;
 
 	bts => bsc [label="RSL Chan Activ ACK"];
+	bsc box bsc [label="rsl_rx_chan_act_ack()"];
+	bsc box bsc [label="Stop lchan->act_timer"];
+	bsc box bsc [label="lchan->state = LCHAN_S_ACTIVE"];
+	bsc -> bsc [label="S_LCHAN_ACTIVATE_ACK"];
 	bsc box bsc [label="bsc_api.c handle_chan_ack()"];
 	ms <= bsc [label="RR Assignment Command"];
 
@@ -135,6 +142,8 @@ msc {
 	--- [label="End: 'On timeout'"];
 	...;
 	bts => bsc [label="RSL RF Channel Release Ack"];
+	bsc box bsc [label="Stop lchan->act_timer"];
+	bsc box bsc [label="Stop lchan->T3111"];
 	--- [label="End: 'Release old lchan'"];
 	bsc box bsc [label="still in handle_ass_compl()"];
 	bsc note bsc [label="officially take over new lchan: conn->lchan = conn->secondary_lchan"];

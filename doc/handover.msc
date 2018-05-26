@@ -20,7 +20,8 @@ msc {
 	bsc_gscon abox bsc_gscon [label="ST_WAIT_HO_COMPL (no timeout, relies on T3103 below)"];
 	...;
 	bts note bsc_gscon [linecolor="red",
-	  label="There seems to be no timer watching over Chan Release nor dyn TS switchover!"];
+		label="Osmocom style dyn TS use lchan->act_timer to watch over RF Chan Release, but there
+		seems to be no timer watching over PDCH Deact!"];
 	...;
 	bts => bsc [label="i) RSL RF Chan Release ACK (Osmocom dyn TS)"];
 	bts => bsc [label="OR ii) RSL PDCH Deact ACK (ip.access dyn TS)"];
@@ -38,6 +39,9 @@ msc {
 	  label="There seems to be no timer watching out for RSL Chan Activ ACK/NACK!"];
 	...;
 	bts => bsc [label="RSL Chan Activ ACK"];
+	bsc box bsc [label="rsl_rx_chan_act_ack()"];
+	bsc box bsc [label="Stop lchan->act_timer"];
+	bsc box bsc [label="lchan->state = LCHAN_S_ACTIVE"];
 	bsc -> bsc [label="S_LCHAN_ACTIVATE_ACK"];
 	bsc box bsc [label="handover_logic.c ho_logic_sig_cb()"];
 	bsc box bsc [label="ho_chan_activ_ack()"];
@@ -132,6 +136,8 @@ msc {
 	--- [label="End: 'On timeout'"];
 	...;
 	bts => bsc [label="RSL RF Channel Release Ack"];
+	bsc box bsc [label="Stop lchan->act_timer"];
+	bsc box bsc [label="Stop lchan->T3111"];
 	---;
 
 	bsc box bsc [label="still in ho_gsm48_ho_compl()"];
