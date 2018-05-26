@@ -1,0 +1,164 @@
+# Handover between cells, intra-BSC
+msc {
+	hscale=3;
+	ms [label="MS"], bts [label="BTS"], bsc[label="BSC"], bsc_gscon[label="BSC conn FSM"], bsc_mgcp[label="BSC mgcp FSM"], mgw[label="MGW"];
+
+	ms note mgw [label="intra-BSC Handover sequence"];
+
+	bsc_gscon abox bsc_gscon [label="ST_ACTIVE"];
+	bsc box bsc [label="bsc_handover_start(): init conn->ho"];
+	bsc -> bsc_gscon [label="GSCON_EV_HO_START"];
+	bsc <- bsc_gscon [label="bsc_handover_start_gscon()"];
+
+	bsc box bsc [label="lchan_alloc(): pick available lchan"];
+	bsc box bsc [label="rsl_chan_activate_lchan()"];
+
+	--- [label="is the chosen lchan on dynamic timeslot that is currently used as PDCH?"];
+	bts <= bsc [label="i) RSL RF Chan Release of PDCH (Osmocom dyn TS)"];
+	bts <= bsc [label="OR ii) RSL PDCH Deact (ip.access dyn TS)"];
+	bsc -> bsc_gscon [label="bsc_handover_start_gscon() returns early"];
+	bsc_gscon abox bsc_gscon [label="ST_WAIT_HO_COMPL (no timeout, relies on T3103 below)"];
+	...;
+	bts note bsc_gscon [linecolor="red",
+	  label="There seems to be no timer watching over Chan Release nor dyn TS switchover!"];
+	...;
+	bts => bsc [label="i) RSL RF Chan Release ACK (Osmocom dyn TS)"];
+	bts => bsc [label="OR ii) RSL PDCH Deact ACK (ip.access dyn TS)"];
+	bsc box bsc [label="rsl_chan_activate_lchan() re-invoked"];
+	bts <= bsc [label="RSL Chan Activ"];
+	--- [label="else (no dyn TS switchover)"];
+
+	bts <= bsc [label="RSL Chan Activ"];
+	bsc -> bsc_gscon [label="bsc_handover_start_gscon() returns"];
+	---;
+	bsc_gscon abox bsc_gscon [label="ST_WAIT_HO_COMPL (no timeout, relies on T3103 below)"];
+
+	...;
+	bts note bsc_gscon [linecolor="red",
+	  label="There seems to be no timer watching out for RSL Chan Activ ACK/NACK!"];
+	...;
+	bts => bsc [label="RSL Chan Activ ACK"];
+	bsc -> bsc [label="S_LCHAN_ACTIVATE_ACK"];
+	bsc box bsc [label="handover_logic.c ho_logic_sig_cb()"];
+	bsc box bsc [label="ho_chan_activ_ack()"];
+	bsc note bsc [label="gsm48_send_ho_cmd()"];
+	ms <= bsc [label="RR Handover Command"];
+	bsc abox bsc [label="start T3103"];
+	--- [label="is BTS using IPA Abis? (osmo-bts, ip.access)"];
+	bts <= bsc [label="IPACC CRCX"];
+	bsc -> bsc [label="ho_chan_activ_ack() returns"];
+	bts note bsc [linecolor="red",
+	  label="There seems to be no timer watching over IPACC CRCX ACK/NACK!
+	         If no response is received, we simply ignore that fact and carry on as if
+		 everything was fine."];
+	...;
+	bts note bsc [label="The IPACC CRCX and MDCX ACKs may come back at any time:
+			     before or after the Handover Detect, before or after Handover Complete."];
+	bts note bsc_mgcp [linecolor="red",
+	  label="The CRCX ACK contains vital information for routing the RTP stream.
+	         If the CRCX ACK were very slow, we would not know which RTP/RTPC ports
+		 to point the MGW at, below at mgcp_conn_modify()!
+		 Even though this being unrealistic, we must make sure to receive a CRCX ACK."];
+	...;
+	bsc box bsc [label="osmo_bsc_audio.c"];
+	bts => bsc [label="IPACC CRCX ACK"];
+	bts <= bsc [label="IPACC MDCX"];
+	...;
+	bts note bsc [linecolor="red",
+	  label="There seems to be no timer watching over IPACC MDCX ACK/NACK!
+	         If no response is received, we simply ignore that fact and carry on as if
+		 everything was fine."];
+	...;
+	bts => bsc [label="IPACC MDCX ACK"];
+	bts note bsc [label="IPACC MDCX ACK triggers no events or actions"];
+	---;
+
+	...;
+	ms => bsc [label="RR Handover Detect"];
+	bsc -> bsc [label="S_LCHAN_HANDOVER_DETECT"];
+	bsc box bsc [label="ho_rsl_detect(): no action, only logging"];
+	bsc note bsc_gscon [label="Handover Detect triggers no events or actions"];
+	bsc note bsc_gscon [linecolor="red",
+	  label="upon Handover Detect, we should already start re-routing the RTP!
+	         Instead we wait for Handover Complete."];
+
+	...;
+	ms => bsc [label="RR Handover Complete"];
+	bsc -> bsc [label="S_LCHAN_HANDOVER_COMPL"];
+	bsc box bsc [label="handover_logic.c ho_logic_sig_cb()"];
+	bsc box bsc [label="ho_gsm48_ho_compl()"];
+	bsc box bsc [label="stop T3103"];
+	bts note bsc_gscon [label="If anything goes wrong from this point on, we will not move back
+	                           to the old lchan: would be pointless after Handover Complete."];
+	bsc note bsc [label="officially take over new lchan: conn->lchan = ho->new_lchan"];
+
+	--- [label="Release old lchan"];
+	bsc box bsc [label="_lchan_handle_release(sacch_deact=0)"];
+	bsc box bsc [label="rsl_release_sapis_from(start=1)"];
+	bts <= bsc [label="RSL Release Request (Local End)..."];
+	bts <= bsc [label="...for each SAPI except link_id=0"];
+	bsc box bsc [label="rsl_release_request(link_id=0)"];
+	bts <= bsc [label="RSL Release Request (Local End) for link_id=0"];
+	bsc box bsc [label="_lchan_handle_release() returns here, the remaining release is asynchronous;
+	                    see `End: 'Release old lchan'` below."];
+	...;
+	bts note bsc_gscon [linecolor="red",
+	  label="There seems to be no timer watching over RSL Release Request!"];
+	...;
+	bts => bsc [label="RSL Release Confirm..."];
+	bts => bsc [label="...for each SAPI and link_id=0"];
+	bsc abox bsc [label="start T3111"];
+	...;
+	bsc box bsc [label="T3111 expires"];
+	bsc abox bsc [label="Start lchan->act_timer with lchan_deact_tmr_cb"];
+	bts <= bsc [label="RSL RF Channel Release"];
+	...;
+	--- [label="On timeout"];
+	bsc box bsc [label="lchan_deact_tmr_cb()"];
+	bsc box bsc [label="rsl_lchan_mark_broken(): state=LCHAN_S_BROKEN"];
+	bsc box bsc [label="lchan_free()"];
+	bsc -> bsc [label="S_LCHAN_UNEXPECTED_RELEASE"];
+	bsc box bsc [label="bsc_api.c handle_release()"];
+	bsc box bsc [label="bsc->clear_request()"];
+	bsc box bsc [label="bsc_clear_request encodes a BSSMAP Clear Request message and passes it on
+	                    to the conn FSM as data argument via:"];
+	bsc -> bsc_gscon [label="GSCON_EV_TX_SCCP"];
+	bsc_gscon rbox bsc_gscon [label="BSSMAP Clear Request to MSC"];
+	bsc note bsc_gscon [linecolor="red",
+	  label="During Handover, we actually release the entire conn just because we failed to
+	         gracefully release the old lchan. That is obviously nonsense."];
+	bsc note bsc [label="Stop T3101 (but was not active in this code path)"];
+	bsc -> bsc [label="S_CHALLOC_FREED"];
+	--- [label="End: 'On timeout'"];
+	...;
+	bts => bsc [label="RSL RF Channel Release Ack"];
+	---;
+
+	bsc box bsc [label="still in ho_gsm48_ho_compl()"];
+	bsc note bsc [label="handover_free(), conn->ho = NULL"];
+	bsc -> bsc_gscon [label="GSCON_EV_HO_COMPL"];
+	bsc note bsc_gscon [linecolor="orange",
+	  label="Handover information is cleared before signalling the conn FSM.
+	         That means the conn FSM cannot possibly log sensible information about exactly
+		 which Handover has just completed."];
+
+	bsc_gscon abox bsc_gscon [label="ST_WAIT_MDCX_BTS_HO
+					 (MGCP_MGW_TIMEOUT=4s with MGCP_MGW_HO_TIMEOUT_TIMER_NR)"];
+
+	bsc_gscon -> bsc_mgcp [label="mgcp_conn_modify()"];
+	bsc_mgcp note bsc_mgcp [label="mgcp FSM that was established for old lchan, for BTS side"];
+	bsc_mgcp => mgw [label="MDCX (for BTS)"];
+	...;
+	bsc_gscon note mgw [
+	  label="If we get no MDCX ACK, the MGCP FSM terminates, and emits GSCON_EV_MGW_FAIL_BTS.
+		 Besides invalidating the MGCP FSM pointer, this event has no
+		 effect in ST_WAIT_MDCX_BTS_HO, and we rely on above conn FSM
+		 timeout instead."];
+	bsc_gscon note bsc_gscon [linecolor="red",
+	  label="A timeout of ST_WAIT_MDCX_BTS_HO simply transitions back to ST_ACTIVE!
+	         Even though the MGW failed, we carry on as if everything were fine."];
+	...;
+	bsc_mgcp <= mgw [label="MDCX OK"];
+	bsc_mgcp -> bsc_gscon [label="GSCON_EV_MGW_MDCX_RESP_BTS"];
+	bsc_gscon abox bsc_gscon [label="ST_ACTIVE"];
+}
