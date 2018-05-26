@@ -47,7 +47,7 @@ libbsc_a_SOURCES = \
 	system_information.c \
 	e1_config.c \
 	bsc_api.c \
-	bsc_msc.c bsc_vty.c \
+	bsc_vty.c \
 	gsm_04_08_utils.c \
 	gsm_04_80_utils.c \
 	bsc_init.c \

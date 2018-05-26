@@ -3,6 +3,7 @@
  *
  * (C) 2010-2015 by Holger Hans Peter Freyther <zecke@selfish.org>
  * (C) 2010-2015 by On-Waves
+ * (C) 2018 by Harald Welte <laforge@gnumonks.org>
  * All Rights Reserved
  *
  * This program is free software; you can redistribute it and/or modify
@@ -27,7 +28,6 @@
 #ifndef _OSMO_MSC_DATA_H
 #define _OSMO_MSC_DATA_H
 
-#include "bsc_msc.h"
 #include "debug.h"
 
 #include <osmocom/core/timer.h>
@@ -75,25 +75,19 @@ struct bsc_msc_data {
 
 
 	/* Connection data */
-	struct bsc_msc_connection *msc_con;
 	struct osmo_plmn_id core_plmn;
 	int core_lac;
 	int core_ci;
 	int rtp_base;
+	bool is_authenticated;
 
 	/* audio codecs */
 	struct gsm48_multi_rate_conf amr_conf;
 	struct gsm_audio_support **audio_support;
 	int audio_length;
 
-	/* destinations */
-	struct llist_head dests;
-
 	/* ussd welcome text */
 	char *ussd_welcome_txt;
-
-	/* mgcp agent */
-	struct osmo_wqueue mgcp_agent;
 
 	int nr;
 

@@ -161,7 +161,7 @@ struct bsc_msc_data *bsc_find_msc(struct gsm_subscriber_connection *conn,
 
 round_robin:
 	llist_for_each_entry(msc, &bsc->mscs, entry) {
-		if (!msc->msc_con->is_authenticated)
+		if (!msc->is_authenticated)
 			continue;
 		if (!is_emerg && msc->type != MSC_CON_TYPE_NORMAL)
 			continue;

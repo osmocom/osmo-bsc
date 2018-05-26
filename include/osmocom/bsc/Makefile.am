@@ -5,7 +5,6 @@ noinst_HEADERS = \
 	abis_rsl.h \
 	acc_ramp.h \
 	arfcn_range_encode.h \
-	bsc_msc.h \
 	bsc_msg_filter.h \
 	bsc_rll.h \
 	bsc_subscriber.h \

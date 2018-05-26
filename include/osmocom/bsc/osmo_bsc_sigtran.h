@@ -41,3 +41,6 @@ void osmo_bsc_sigtran_reset(const struct bsc_msc_data *msc);
 
 /* Send reset-ack to MSC */
 void osmo_bsc_sigtran_tx_reset_ack(const struct bsc_msc_data *msc);
+
+/* receive + process a CTRL command from the piggy-back on the IPA/SCCPlite link */
+int bsc_sccplite_rx_ctrl(struct osmo_ss7_asp *asp, struct msgb *msg);

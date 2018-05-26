@@ -23,6 +23,7 @@
 #include <osmocom/gsm/gsm0808_utils.h>
 
 #include <osmocom/bsc/debug.h>
+#include <osmocom/bsc/a_reset.h>
 #include <osmocom/bsc/bsc_api.h>
 #include <osmocom/bsc/gsm_data.h>
 #include <osmocom/bsc/handover.h>

@@ -30,30 +30,126 @@
 
 #include <osmocom/core/linuxlist.h>
 #include <osmocom/core/signal.h>
-#include <osmocom/core/talloc.h>
+
+#include <osmocom/ctrl/control_if.h>
+
+#include <osmocom/gsm/protocol/ipaccess.h>
+#include <osmocom/gsm/ipa.h>
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
 #include <unistd.h>
 
-void osmo_bsc_send_trap(struct ctrl_cmd *cmd, struct bsc_msc_connection *msc_con)
+extern struct gsm_network *bsc_gsmnet;
+
+/* Obtain SS7 application server currently handling given MSC (DPC) */
+static struct osmo_ss7_as *msc_get_ss7_as(struct bsc_msc_data *msc)
+{
+	struct osmo_ss7_route *rt;
+	struct osmo_ss7_instance *ss7 = osmo_sccp_get_ss7(msc->a.sccp);
+	rt = osmo_ss7_route_lookup(ss7, msc->a.msc_addr.pc);
+	if (!rt)
+		return NULL;
+	return rt->dest.as;
+}
+
+
+/* Encode a CTRL command and send it to the given ASP
+ * \param[in] asp ASP through which we shall send the encoded message
+ * \param[in] cmd decoded CTRL command to be encoded and sent. Ownership is *NOT*
+ * 		  transferred, to permit caller to send the same CMD to several ASPs.
+ * 		  Caller must hence free 'cmd' itself.
+ * \returns 0 on success; negative on error */
+static int sccplite_asp_ctrl_cmd_send(struct osmo_ss7_asp *asp, struct ctrl_cmd *cmd)
+{
+	/* this is basically like libosmoctrl:ctrl_cmd_send(), not for a dedicated
+	 * CTRL connection but for the CTRL piggy-back on the IPA/SCCPlite link */
+	struct msgb *msg;
+
+	/* don't attempt to send CTRL on a non-SCCPlite ASP */
+	if (asp->cfg.proto != OSMO_SS7_ASP_PROT_IPA)
+		return 0;
+
+	msg = ctrl_cmd_make(cmd);
+	if (!msg)
+		return -1;
+
+	ipa_prepend_header_ext(msg, IPAC_PROTO_EXT_CTRL);
+	ipa_prepend_header(msg, IPAC_PROTO_OSMO);
+
+	return osmo_ss7_asp_send(asp, msg);
+}
+
+/* Ownership of 'cmd' is *NOT* transferred, to permit caller to send the same CMD to several ASPs.
+ * Caller must hence free 'cmd' itself. */
+static int sccplite_msc_ctrl_cmd_send(struct bsc_msc_data *msc, struct ctrl_cmd *cmd)
+{
+	struct osmo_ss7_as *as;
+	struct osmo_ss7_asp *asp;
+	unsigned int i;
+
+	as = msc_get_ss7_as(msc);
+	if (!as)
+		return -1;
+
+	/* don't attempt to send CTRL on a non-SCCPlite AS */
+	if (as->cfg.proto != OSMO_SS7_ASP_PROT_IPA)
+		return 0;
+
+	/* FIXME: unify with xua_as_transmit_msg() and perform proper ASP lookup */
+	for (i = 0; i < ARRAY_SIZE(as->cfg.asps); i++) {
+		asp = as->cfg.asps[i];
+		if (!asp)
+			continue;
+		/* FIXME: deal with multiple ASPs per AS */
+		return sccplite_asp_ctrl_cmd_send(asp, cmd);
+	}
+	return -1;
+}
+
+/* receive + process a CTRL command from the piggy-back on the IPA/SCCPlite link */
+int bsc_sccplite_rx_ctrl(struct osmo_ss7_asp *asp, struct msgb *msg)
+{
+	struct ctrl_cmd *cmd;
+	int rc;
+
+	/* caller has already ensured ipaccess_head + ipaccess_head_ext */
+	OSMO_ASSERT(msg->l2h);
+
+	/* prase raw (ASCII) CTRL command into ctrl_cmd */
+	cmd = ctrl_cmd_parse2(asp, msg);
+	OSMO_ASSERT(cmd);
+	msgb_free(msg);
+	if (cmd->type == CTRL_TYPE_ERROR)
+		goto send_reply;
+
+	/* handle the CTRL command */
+	ctrl_cmd_handle(bsc_gsmnet->ctrl, cmd, bsc_gsmnet);
+
+send_reply:
+	rc = sccplite_asp_ctrl_cmd_send(asp, cmd);
+	talloc_free(cmd);
+	return rc;
+}
+
+
+void osmo_bsc_send_trap(struct ctrl_cmd *cmd, struct bsc_msc_data *msc_data)
 {
 	struct ctrl_cmd *trap;
 	struct ctrl_handle *ctrl;
-	struct bsc_msc_data *msc_data;
 
-	msc_data = (struct bsc_msc_data *) msc_con->write_queue.bfd.data;
 	ctrl = msc_data->network->ctrl;
 
 	trap = ctrl_cmd_trap(cmd);
 	if (!trap) {
+
 		LOGP(DCTRL, LOGL_ERROR, "Failed to create trap.\n");
 		return;
 	}
 
 	ctrl_cmd_send_to_all(ctrl, trap);
-	ctrl_cmd_send(&msc_con->write_queue, trap);
+	sccplite_msc_ctrl_cmd_send(msc_data, trap);
 
 	talloc_free(trap);
 }
@@ -62,12 +158,21 @@ CTRL_CMD_DEFINE_RO(msc_connection_status, "connection_status");
 static int get_msc_connection_status(struct ctrl_cmd *cmd, void *data)
 {
 	struct bsc_msc_data *msc = (struct bsc_msc_data *)cmd->node;
+	struct osmo_ss7_as *as;
+	const char *as_state_name;
+
 	if (msc == NULL) {
 		cmd->reply = "msc not found";
 		return CTRL_CMD_ERROR;
 	}
+	as = msc_get_ss7_as(msc);
+	if (!as) {
+		cmd->reply = "AS not found for MSC";
+		return CTRL_CMD_ERROR;
+	}
 
-	if (msc->msc_con->is_connected)
+	as_state_name = osmo_fsm_inst_state_name(as->fi);
+	if (!strcmp(as_state_name, "AS_ACTIVE"))
 		cmd->reply = "connected";
 	else
 		cmd->reply = "disconnected";
@@ -80,14 +185,15 @@ static int msc_connection_status = 0; /* XXX unused */
 
 static int get_msc0_connection_status(struct ctrl_cmd *cmd, void *data)
 {
-	struct gsm_network *gsmnet = data;
-	struct bsc_msc_data *msc = osmo_msc_data_find(gsmnet, 0);
+	struct bsc_msc_data *msc = osmo_msc_data_find(bsc_gsmnet, 0);
+	void *old_node = cmd->node;
+	int rc;
 
-	if (msc->msc_con->is_connected)
-		cmd->reply = "connected";
-	else
-		cmd->reply = "disconnected";
-	return CTRL_CMD_REPLY;
+	cmd->node = msc;
+	rc = get_msc_connection_status(cmd, data);
+	cmd->node = old_node;
+
+	return rc;
 }
 
 static int msc_connection_status_trap_cb(unsigned int subsys, unsigned int signal, void *handler_data, void *signal_data)
@@ -184,12 +290,12 @@ static int bts_connection_status_trap_cb(unsigned int subsys, unsigned int signa
 
 static int get_bts_loc(struct ctrl_cmd *cmd, void *data);
 
-static void generate_location_state_trap(struct gsm_bts *bts, struct bsc_msc_connection *msc_con)
+static void generate_location_state_trap(struct gsm_bts *bts, struct bsc_msc_data *msc)
 {
 	struct ctrl_cmd *cmd;
 	const char *oper, *admin, *policy;
 
-	cmd = ctrl_cmd_create(msc_con, CTRL_TYPE_TRAP);
+	cmd = ctrl_cmd_create(msc, CTRL_TYPE_TRAP);
 	if (!cmd) {
 		LOGP(DCTRL, LOGL_ERROR, "Failed to create TRAP command.\n");
 		return;
@@ -213,7 +319,7 @@ static void generate_location_state_trap(struct gsm_bts *bts, struct bsc_msc_con
 				osmo_mnc_name(bts->network->plmn.mnc,
 					      bts->network->plmn.mnc_3_digits));
 
-	osmo_bsc_send_trap(cmd, msc_con);
+	osmo_bsc_send_trap(cmd, msc);
 	talloc_free(cmd);
 }
 
@@ -222,7 +328,7 @@ void bsc_gen_location_state_trap(struct gsm_bts *bts)
 	struct bsc_msc_data *msc;
 
 	llist_for_each_entry(msc, &bts->network->bsc_data->mscs, entry)
-		generate_location_state_trap(bts, msc->msc_con);
+		generate_location_state_trap(bts, msc);
 }
 
 static int location_equal(struct bts_location *a, struct bts_location *b)
@@ -537,7 +643,7 @@ static int set_net_inform_msc(struct ctrl_cmd *cmd, void *data)
 		trap->id = "0";
 		trap->variable = "inform-msc-v1";
 		trap->reply = talloc_strdup(trap, cmd->value);
-		ctrl_cmd_send(&msc->msc_con->write_queue, trap);
+		sccplite_msc_ctrl_cmd_send(msc, trap);
 		talloc_free(trap);
 	}
 
@@ -625,7 +731,7 @@ static int msc_signal_handler(unsigned int subsys, unsigned int signal,
 
 	net = msc->data->network;
 	llist_for_each_entry(bts, &net->bts_list, list)
-		generate_location_state_trap(bts, msc->data->msc_con);	
+		generate_location_state_trap(bts, msc->data);
 
 	return 0;
 }

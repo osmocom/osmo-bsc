@@ -1,6 +1,6 @@
 /*
  * Handle the connection to the MSC. This include ping/timeout/reconnect
- * (C) 2008-2009 by Harald Welte <laforge@gnumonks.org>
+ * (C) 2008-2018 by Harald Welte <laforge@gnumonks.org>
  * (C) 2009-2015 by Holger Hans Peter Freyther <zecke@selfish.org>
  * (C) 2009-2015 by On-Waves
  * All Rights Reserved
@@ -41,19 +41,12 @@
 
 int osmo_bsc_msc_init(struct bsc_msc_data *data)
 {
-	data->msc_con = bsc_msc_create(data, &data->dests);
-	if (!data->msc_con) {
-		LOGP(DMSC, LOGL_ERROR, "Creating the MSC network connection failed.\n");
-		return -1;
-	}
-
 	/* FIXME: This is a leftover from the old architecture that used
 	 * sccp-lite with osmocom specific authentication. Since we now
 	 * changed to AoIP the connected status and the authentication
 	 * status is managed differently. However osmo_bsc_filter.c still
 	 * needs the flags to be set to one. See also: OS#3112 */
-	data->msc_con->is_connected = 1;
-	data->msc_con->is_authenticated = 1;
+	data->is_authenticated = 1;
 
 	return 0;
 }
@@ -86,7 +79,6 @@ struct bsc_msc_data *osmo_msc_data_alloc(struct gsm_network *net, int nr)
 	/* Init back pointer */
 	msc_data->network = net;
 
-	INIT_LLIST_HEAD(&msc_data->dests);
 	msc_data->core_plmn = (struct osmo_plmn_id){
 		.mcc = GSM_MCC_MNC_INVALID,
 		.mnc = GSM_MCC_MNC_INVALID,

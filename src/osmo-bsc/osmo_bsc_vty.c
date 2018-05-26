@@ -1,6 +1,7 @@
 /* Osmo BSC VTY Configuration */
 /* (C) 2009-2015 by Holger Hans Peter Freyther
  * (C) 2009-2014 by On-Waves
+ * (C) 2018 by Harald Welte <laforge@gnumonks.org>
  * All Rights Reserved
  *
  * This program is free software; you can redistribute it and/or modify
@@ -105,8 +106,6 @@ static void write_msc_amr_options(struct vty *vty, struct bsc_msc_data *msc)
 
 static void write_msc(struct vty *vty, struct bsc_msc_data *msc)
 {
-	struct bsc_msc_dest *dest;
-
 	vty_out(vty, "msc %d%s", msc->nr, VTY_NEWLINE);
 	if (msc->core_plmn.mnc != GSM_MCC_MNC_INVALID)
 		vty_out(vty, " core-mobile-network-code %s%s",
@@ -153,10 +152,6 @@ static void write_msc(struct vty *vty, struct bsc_msc_data *msc)
 		vty_out(vty, "%s", VTY_NEWLINE);
 
 	}
-
-	llist_for_each_entry(dest, &msc->dests, list)
-		vty_out(vty, " dest %s %d %d%s", dest->ip, dest->port,
-			dest->dscp, VTY_NEWLINE);
 
 	vty_out(vty, " type %s%s", msc->type == MSC_CON_TYPE_NORMAL ?
 					"normal" : "local", VTY_NEWLINE);
@@ -335,58 +330,6 @@ error:
 	vty_out(vty, "Codec name must be hrX or frX. Was '%s'%s",
 			argv[i], VTY_NEWLINE);
 	return CMD_ERR_INCOMPLETE;
-}
-
-DEFUN(cfg_net_msc_dest,
-      cfg_net_msc_dest_cmd,
-      "dest A.B.C.D <1-65000> <0-255>",
-      "Add a destination to a MUX/MSC\n"
-      "IP Address\n" "Port\n" "DSCP\n")
-{
-	struct bsc_msc_dest *dest;
-	struct bsc_msc_data *data = bsc_msc_data(vty);
-
-	dest = talloc_zero(osmo_bsc_data(vty), struct bsc_msc_dest);
-	if (!dest) {
-		vty_out(vty, "%%Failed to create structure.%s", VTY_NEWLINE);
-		return CMD_WARNING;
-	}
-
-	dest->ip = talloc_strdup(dest, argv[0]);
-	if (!dest->ip) {
-		vty_out(vty, "%%Failed to copy dest ip.%s", VTY_NEWLINE);
-		talloc_free(dest);
-		return CMD_WARNING;
-	}
-
-	dest->port = atoi(argv[1]);
-	dest->dscp = atoi(argv[2]);
-	llist_add_tail(&dest->list, &data->dests);
-	return CMD_SUCCESS;
-}
-
-DEFUN(cfg_net_msc_no_dest,
-      cfg_net_msc_no_dest_cmd,
-      "no dest A.B.C.D <1-65000> <0-255>",
-      NO_STR "Remove a destination to a MUX/MSC\n"
-      "IP Address\n" "Port\n" "DSCP\n")
-{
-	struct bsc_msc_dest *dest, *tmp;
-	struct bsc_msc_data *data = bsc_msc_data(vty);
-
-	int port = atoi(argv[1]);
-	int dscp = atoi(argv[2]);
-
-	llist_for_each_entry_safe(dest, tmp, &data->dests, list) {
-		if (port != dest->port || dscp != dest->dscp
-		    || strcmp(dest->ip, argv[0]) != 0)
-			continue;
-
-		llist_del(&dest->list);
-		talloc_free(dest);
-	}
-
-	return CMD_SUCCESS;
 }
 
 DEFUN(cfg_net_msc_welcome_ussd,
@@ -787,10 +730,12 @@ DEFUN(show_mscs,
 {
 	struct bsc_msc_data *msc;
 	llist_for_each_entry(msc, &bsc_gsmnet->bsc_data->mscs, entry) {
-		vty_out(vty, "MSC Nr: %d is connected: %d auth: %d.%s",
-			msc->nr,
-			msc->msc_con ? msc->msc_con->is_connected : -1,
-			msc->msc_con ? msc->msc_con->is_authenticated : -1,
+		vty_out(vty, "%d %s %s ",
+			msc->a.cs7_instance,
+			osmo_ss7_asp_protocol_name(msc->a.asp_proto),
+			osmo_sccp_inst_addr_name(msc->a.sccp, &msc->a.bsc_addr));
+		vty_out(vty, "%s%s",
+			osmo_sccp_inst_addr_name(msc->a.sccp, &msc->a.msc_addr),
 			VTY_NEWLINE);
 	}
 
@@ -943,8 +888,6 @@ int bsc_vty_init_extra(void)
 	install_element(MSC_NODE, &cfg_net_bsc_ci_cmd);
 	install_element(MSC_NODE, &cfg_net_bsc_rtp_base_cmd);
 	install_element(MSC_NODE, &cfg_net_bsc_codec_list_cmd);
-	install_element(MSC_NODE, &cfg_net_msc_dest_cmd);
-	install_element(MSC_NODE, &cfg_net_msc_no_dest_cmd);
 	install_element(MSC_NODE, &cfg_net_msc_welcome_ussd_cmd);
 	install_element(MSC_NODE, &cfg_net_msc_no_welcome_ussd_cmd);
 	install_element(MSC_NODE, &cfg_net_msc_lost_ussd_cmd);

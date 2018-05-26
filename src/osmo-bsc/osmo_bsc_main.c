@@ -248,8 +248,6 @@ static struct vty_app_info vty_info = {
 extern int bsc_shutdown_net(struct gsm_network *net);
 static void signal_handler(int signal)
 {
-	struct bsc_msc_data *msc;
-
 	fprintf(stdout, "signal %u received\n", signal);
 
 	switch (signal) {
@@ -270,8 +268,6 @@ static void signal_handler(int signal)
 	case SIGUSR2:
 		if (!bsc_gsmnet->bsc_data)
 			return;
-		llist_for_each_entry(msc, &bsc_gsmnet->bsc_data->mscs, entry)
-			bsc_msc_lost(msc->msc_con);
 		break;
 	default:
 		break;

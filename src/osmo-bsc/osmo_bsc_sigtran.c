@@ -24,6 +24,7 @@
 #include <osmocom/sigtran/sccp_sap.h>
 #include <osmocom/core/linuxlist.h>
 #include <osmocom/gsm/gsm0808.h>
+#include <osmocom/gsm/protocol/ipaccess.h>
 #include <osmocom/core/msgb.h>
 #include <osmocom/bsc/bsc_msc_data.h>
 #include <osmocom/bsc/debug.h>
@@ -511,4 +512,38 @@ fail_auto_cofiguration:
 	LOGP(DMSC, LOGL_ERROR,
 	     "A-interface: More than one invalid/inclomplete configuration detected, unable to revover - check config file!\n");
 	return -EINVAL;
+}
+
+/* this function receives all messages received on an ASP for a PPID / StreamID that
+ * libosmo-sigtran doesn't know about, such as piggy-backed CTRL and/or MGCP */
+int osmo_ss7_asp_rx_unknown(struct osmo_ss7_asp *asp, int ppid_mux, struct msgb *msg)
+{
+	struct ipaccess_head *iph;
+	struct ipaccess_head_ext *iph_ext;
+
+	if (asp->cfg.proto != OSMO_SS7_ASP_PROT_IPA) {
+		msgb_free(msg);
+		return 0;
+	}
+
+	switch (ppid_mux) {
+	case IPAC_PROTO_OSMO:
+		if (msg->len < sizeof(*iph) + sizeof(*iph_ext)) {
+			LOGP(DMSC, LOGL_ERROR, "The message is too short.\n");
+			msgb_free(msg);
+			return -EINVAL;
+		}
+		iph = (struct ipaccess_head *) msg->data;
+		iph_ext = (struct ipaccess_head_ext *) iph->data;
+		msg->l2h = iph_ext->data;
+		switch (iph_ext->proto) {
+		case IPAC_PROTO_EXT_CTRL:
+			return bsc_sccplite_rx_ctrl(asp, msg);
+		}
+		break;
+	default:
+		break;
+	}
+	msgb_free(msg);
+	return 0; /* OSMO_SS7_UNKNOWN? */
 }
