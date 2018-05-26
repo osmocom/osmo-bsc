@@ -27,26 +27,49 @@
 #include <osmocom/bsc/gsm_data.h>
 #include <osmocom/bsc/ipaccess.h>
 #include <osmocom/bsc/bsc_msc_data.h>
+#include <osmocom/bsc/osmo_bsc_sigtran.h>
 #include <osmocom/bsc/signal.h>
 
 #include <osmocom/core/talloc.h>
+#include <osmocom/core/socket.h>
 
 #include <osmocom/gsm/gsm0808.h>
 
 #include <osmocom/abis/ipa.h>
 
+#include <osmocom/mgcp_client/mgcp_client.h>
+
 #include <sys/socket.h>
 #include <netinet/tcp.h>
 #include <unistd.h>
 
-int osmo_bsc_msc_init(struct bsc_msc_data *data)
+int osmo_bsc_msc_init(struct bsc_msc_data *msc)
 {
+	struct gsm_network *net = msc->network;
+	uint16_t mgw_port;
+	int rc;
+
 	/* FIXME: This is a leftover from the old architecture that used
 	 * sccp-lite with osmocom specific authentication. Since we now
 	 * changed to AoIP the connected status and the authentication
 	 * status is managed differently. However osmo_bsc_filter.c still
 	 * needs the flags to be set to one. See also: OS#3112 */
-	data->is_authenticated = 1;
+	msc->is_authenticated = 1;
+
+	if (net->mgw.conf->remote_port >= 0)
+		mgw_port = net->mgw.conf->remote_port;
+	else
+		mgw_port = MGCP_CLIENT_REMOTE_PORT_DEFAULT;
+
+	rc = osmo_sock_init2_ofd(&msc->mgcp_ipa.ofd, AF_INET, SOCK_DGRAM, IPPROTO_UDP,
+				 msc->mgcp_ipa.local_addr, msc->mgcp_ipa.local_port,
+				 net->mgw.conf->remote_addr, mgw_port,
+				 OSMO_SOCK_F_BIND | OSMO_SOCK_F_CONNECT);
+	if (rc < 0) {
+		LOGP(DMSC, LOGL_ERROR, "msc %u: Could not create/connect/bind MGCP proxy socket: %d\n",
+			msc->nr, rc);
+		return rc;
+	}
 
 	return 0;
 }
@@ -116,6 +139,10 @@ struct bsc_msc_data *osmo_msc_data_alloc(struct gsm_network *net, int nr)
 	msc_data->audio_support[3]->hr = 0;
 	msc_data->audio_support[4]->ver = 3;
 	msc_data->audio_support[4]->hr = 1;
+
+	osmo_fd_setup(&msc_data->mgcp_ipa.ofd, -1, BSC_FD_READ, &bsc_sccplite_mgcp_proxy_cb, msc_data, 0);
+	msc_data->mgcp_ipa.local_addr = talloc_strdup(msc_data, "0.0.0.0");
+	msc_data->mgcp_ipa.local_port = 0; /* dynamic */
 
 	return msc_data;
 }

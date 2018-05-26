@@ -33,6 +33,7 @@
 #include "osmux.h"
 
 #include <osmocom/core/timer.h>
+#include <osmocom/core/select.h>
 #include <osmocom/gsm/protocol/gsm_04_08.h>
 
 
@@ -135,6 +136,16 @@ struct bsc_msc_data {
 	enum osmux_usage use_osmux;
 	/* Whether we detected the MSC supports Osmux (during BSSMAP_RESET) */
 	bool remote_supports_osmux;
+
+	/* Proxy between IPA/SCCPlite encapsulated MGCP and UDP */
+	struct {
+		/* local (BSC) IP address to be used */
+		char *local_addr;
+		/* local (BSC) UDP port to be used to talk with MGW */
+		uint16_t local_port;
+		/* UDP socket for proxying MGCP via SCCPlite/IPA */
+		struct osmo_fd ofd;
+	} mgcp_ipa;
 };
 
 /*

@@ -44,3 +44,12 @@ void osmo_bsc_sigtran_tx_reset_ack(const struct bsc_msc_data *msc);
 
 /* receive + process a CTRL command from the piggy-back on the IPA/SCCPlite link */
 int bsc_sccplite_rx_ctrl(struct osmo_ss7_asp *asp, struct msgb *msg);
+
+/* receive + process a MGCP message from the piggy-back on the IPA/SCCPlite link */
+int bsc_sccplite_rx_mgcp(struct osmo_ss7_asp *asp, struct msgb *msg);
+
+/* send a message via SCCPLite to given MSC */
+int bsc_sccplite_msc_send(struct bsc_msc_data *msc, struct msgb *msg);
+
+/* we received some data on the UDP proxy socket from the MGW. Pass it to MSC via IPA */
+int bsc_sccplite_mgcp_proxy_cb(struct osmo_fd *ofd, unsigned int what);

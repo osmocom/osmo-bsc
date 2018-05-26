@@ -8,6 +8,8 @@ AM_CFLAGS = \
 	-ggdb3 \
 	$(LIBOSMOCORE_CFLAGS) \
 	$(LIBOSMOGSM_CFLAGS) \
+	$(LIBOSMOCTRL_CFLAGS) \
+	$(LIBOSMOVTY_CFLAGS) \
 	$(LIBOSMOABIS_CFLAGS) \
 	$(LIBOSMOSIGTRAN_CFLAGS) \
 	$(LIBOSMOMGCPCLIENT_CFLAGS) \
@@ -38,15 +40,24 @@ handover_test_LDFLAGS = \
 	$(NULL)
 
 handover_test_LDADD = \
+	$(top_builddir)/src/libfilter/bsc_msg_acc.o \
+	$(top_builddir)/src/libfilter/bsc_msg_vty.o \
 	$(top_builddir)/src/osmo-bsc/a_reset.o \
 	$(top_builddir)/src/osmo-bsc/abis_nm.o \
+	$(top_builddir)/src/osmo-bsc/abis_nm_vty.o \
+	$(top_builddir)/src/osmo-bsc/abis_om2000.o \
+	$(top_builddir)/src/osmo-bsc/abis_om2000_vty.o \
 	$(top_builddir)/src/osmo-bsc/abis_rsl.o \
+	$(top_builddir)/src/osmo-bsc/acc_ramp.o \
 	$(top_builddir)/src/osmo-bsc/arfcn_range_encode.o \
 	$(top_builddir)/src/osmo-bsc/assignment_fsm.o \
+	$(top_builddir)/src/osmo-bsc/bsc_ctrl_commands.o \
 	$(top_builddir)/src/osmo-bsc/bsc_init.o \
+	$(top_builddir)/src/osmo-bsc/bsc_rf_ctrl.o \
 	$(top_builddir)/src/osmo-bsc/bsc_rll.o \
 	$(top_builddir)/src/osmo-bsc/bsc_subscr_conn_fsm.o \
 	$(top_builddir)/src/osmo-bsc/bsc_subscriber.o \
+	$(top_builddir)/src/osmo-bsc/bsc_vty.o \
 	$(top_builddir)/src/osmo-bsc/bts_ipaccess_nanobts.o \
 	$(top_builddir)/src/osmo-bsc/bts_ipaccess_nanobts_omlattr.o \
 	$(top_builddir)/src/osmo-bsc/bts_sysmobts.o \
@@ -60,14 +71,20 @@ handover_test_LDADD = \
 	$(top_builddir)/src/osmo-bsc/handover_decision_2.o \
 	$(top_builddir)/src/osmo-bsc/handover_fsm.o \
 	$(top_builddir)/src/osmo-bsc/handover_logic.o \
+	$(top_builddir)/src/osmo-bsc/handover_vty.o \
 	$(top_builddir)/src/osmo-bsc/lchan_fsm.o \
 	$(top_builddir)/src/osmo-bsc/lchan_rtp_fsm.o \
 	$(top_builddir)/src/osmo-bsc/lchan_select.o \
+	$(top_builddir)/src/osmo-bsc/meas_feed.o \
 	$(top_builddir)/src/osmo-bsc/meas_rep.o \
 	$(top_builddir)/src/osmo-bsc/neighbor_ident.o \
+	$(top_builddir)/src/osmo-bsc/neighbor_ident_vty.o \
 	$(top_builddir)/src/osmo-bsc/net_init.o \
+	$(top_builddir)/src/osmo-bsc/osmo_bsc_ctrl.o \
 	$(top_builddir)/src/osmo-bsc/osmo_bsc_lcls.o \
+	$(top_builddir)/src/osmo-bsc/osmo_bsc_mgcp.o \
 	$(top_builddir)/src/osmo-bsc/osmo_bsc_msc.o \
+	$(top_builddir)/src/osmo-bsc/osmo_bsc_vty.o \
 	$(top_builddir)/src/osmo-bsc/paging.o \
 	$(top_builddir)/src/osmo-bsc/pcu_sock.o \
 	$(top_builddir)/src/osmo-bsc/penalty_timers.o \
@@ -76,6 +93,8 @@ handover_test_LDADD = \
 	$(top_builddir)/src/osmo-bsc/timeslot_fsm.o \
 	$(LIBOSMOCORE_LIBS) \
 	$(LIBOSMOGSM_LIBS) \
+	$(LIBOSMOCTRL_LIBS) \
+	$(LIBOSMOVTY_LIBS) \
 	$(LIBOSMOABIS_LIBS) \
 	$(LIBOSMOSIGTRAN_LIBS) \
 	$(LIBOSMOMGCPCLIENT_LIBS) \
@@ -89,6 +108,7 @@ neighbor_ident_test_LDADD = \
 	$(top_builddir)/src/osmo-bsc/neighbor_ident.o \
 	$(LIBOSMOCORE_LIBS) \
 	$(LIBOSMOGSM_LIBS) \
+	$(LIBOSMOCTRL_LIBS) \
 	$(NULL)
 
 .PHONY: update_exp
