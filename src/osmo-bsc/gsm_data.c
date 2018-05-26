@@ -648,6 +648,10 @@ static const struct gprs_rlc_cfg rlc_cfg_default = {
 	.initial_mcs = 6,
 };
 
+/* Initialize those parts that don't require osmo-bsc specific dependencies.
+ * This part is shared among the thin programs in osmo-bsc/src/utils/.
+ * osmo-bsc requires further initialization that pulls in more dependencies (see
+ * bsc_bts_alloc_register()). */
 struct gsm_bts *gsm_bts_alloc(struct gsm_network *net, uint8_t bts_num)
 {
 	struct gsm_bts *bts = talloc_zero(net, struct gsm_bts);
@@ -715,8 +719,6 @@ struct gsm_bts *gsm_bts_alloc(struct gsm_network *net, uint8_t bts_num)
 	/* si handling */
 	bts->bcch_change_mark = 1;
 	bts->chan_load_avg = 0;
-
-	bts->ho = ho_cfg_init(bts, net->ho);
 
 	/* timer overrides */
 	bts->T3122 = 0; /* not overriden by default */
@@ -1231,4 +1233,73 @@ static bool pchan_is_tch(enum gsm_phys_chan_config pchan)
 bool ts_is_tch(struct gsm_bts_trx_ts *ts)
 {
 	return pchan_is_tch(ts_pchan(ts));
+}
+
+bool trx_is_usable(const struct gsm_bts_trx *trx)
+{
+	/* FIXME: How does this behave for BS-11 ? */
+	if (is_ipaccess_bts(trx->bts)) {
+		if (!nm_is_running(&trx->mo.nm_state) ||
+		    !nm_is_running(&trx->bb_transc.mo.nm_state))
+			return false;
+	}
+
+	return true;
+}
+
+void gsm_trx_mark_all_ts_uninitialized(struct gsm_bts_trx *trx)
+{
+	int i;
+	for (i = 0; i < ARRAY_SIZE(trx->ts); i++) {
+		struct gsm_bts_trx_ts *ts = &trx->ts[i];
+		ts->initialized = false;
+	}
+}
+
+void gsm_bts_mark_all_ts_uninitialized(struct gsm_bts *bts)
+{
+	struct gsm_bts_trx *trx;
+	llist_for_each_entry(trx, &bts->trx_list, list)
+		gsm_trx_mark_all_ts_uninitialized(trx);
+}
+
+/* Trigger initial timeslot actions iff both OML and RSL are setup. */
+void gsm_ts_check_init(struct gsm_bts_trx_ts *ts)
+{
+	struct gsm_bts *bts = ts->trx->bts;
+	if (bts->model->oml_is_ts_ready
+	    && !bts->model->oml_is_ts_ready(ts))
+		return;
+	if (!ts->trx->rsl_link)
+		return;
+	if (ts->initialized)
+		return;
+	ts->initialized = on_gsm_ts_init(ts);
+}
+
+void gsm48_lchan2chan_desc(struct gsm48_chan_desc *cd,
+			   const struct gsm_lchan *lchan)
+{
+	uint16_t arfcn = lchan->ts->trx->arfcn & 0x3ff;
+
+	cd->chan_nr = gsm_lchan2chan_nr(lchan);
+	if (!lchan->ts->hopping.enabled) {
+		cd->h0.tsc = gsm_ts_tsc(lchan->ts);
+		cd->h0.h = 0;
+		cd->h0.arfcn_high = arfcn >> 8;
+		cd->h0.arfcn_low = arfcn & 0xff;
+	} else {
+		cd->h1.tsc = gsm_ts_tsc(lchan->ts);
+		cd->h1.h = 1;
+		cd->h1.maio_high = lchan->ts->hopping.maio >> 2;
+		cd->h1.maio_low = lchan->ts->hopping.maio & 0x03;
+		cd->h1.hsn = lchan->ts->hopping.hsn;
+	}
+}
+
+bool nm_is_running(const struct gsm_nm_state *s) {
+	return (s->operational == NM_OPSTATE_ENABLED) && (
+		(s->availability == NM_AVSTATE_OK) ||
+		(s->availability == 0xff)
+	);
 }

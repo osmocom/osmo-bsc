@@ -26,21 +26,65 @@ bin_PROGRAMS = \
 	$(NULL)
 
 osmo_bsc_SOURCES = \
-	osmo_bsc_main.c \
-	osmo_bsc_vty.c \
+	a_reset.c \
+	abis_nm.c \
+	abis_nm_vty.c \
+	abis_om2000.c \
+	abis_om2000_vty.c \
+	abis_rsl.c \
+	acc_ramp.c \
+	arfcn_range_encode.c \
+	bsc_api.c \
+	bsc_ctrl_commands.c \
+	bsc_ctrl_lookup.c \
+	bsc_dyn_ts.c \
+	bsc_init.c \
+	bsc_rf_ctrl.c \
+	bsc_rll.c \
+	bsc_subscr_conn_fsm.c \
+	bsc_subscriber.c \
+	bsc_vty.c \
+	bts_ericsson_rbs2000.c \
+	bts_init.c \
+	bts_ipaccess_nanobts.c \
+	bts_ipaccess_nanobts_omlattr.c \
+	bts_nokia_site.c \
+	bts_siemens_bs11.c \
+	bts_sysmobts.c \
+	bts_unknown.c \
+	chan_alloc.c \
+	e1_config.c \
+	gsm_04_08_utils.c \
+	gsm_04_80_utils.c \
+	gsm_data.c \
+	handover_cfg.c \
+	handover_decision.c \
+	handover_decision_2.c \
+	handover_logic.c \
+	handover_vty.c \
+	meas_feed.c \
+	meas_rep.c \
+	net_init.c \
 	osmo_bsc_api.c \
+	osmo_bsc_audio.c \
+	osmo_bsc_bssap.c \
+	osmo_bsc_ctrl.c \
+	osmo_bsc_filter.c \
 	osmo_bsc_grace.c \
+	osmo_bsc_lcls.c \
+	osmo_bsc_main.c \
 	osmo_bsc_msc.c \
 	osmo_bsc_sigtran.c \
-	osmo_bsc_filter.c \
-	osmo_bsc_bssap.c \
-	osmo_bsc_audio.c \
-	osmo_bsc_ctrl.c \
+	osmo_bsc_vty.c \
+	paging.c \
+	pcu_sock.c \
+	penalty_timers.c \
+	rest_octets.c \
+	system_information.c \
 	$(NULL)
 
 osmo_bsc_LDADD = \
 	$(top_builddir)/src/libfilter/libfilter.a \
-	$(top_builddir)/src/libbsc/libbsc.a \
 	$(LIBOSMOCORE_LIBS) \
 	$(LIBOSMOGSM_LIBS) \
 	$(LIBOSMOVTY_LIBS) \

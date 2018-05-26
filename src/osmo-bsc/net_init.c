@@ -22,28 +22,13 @@
 #include <osmocom/bsc/gsm_04_08_utils.h>
 #include <osmocom/bsc/handover_cfg.h>
 #include <osmocom/bsc/chan_alloc.h>
-#include <osmocom/bsc/common_bsc.h>
 
-/* XXX hard-coded for now */
-#define T3122_CHAN_LOAD_SAMPLE_INTERVAL 1 /* in seconds */
-
-static void update_t3122_chan_load_timer(void *data)
+/* Initialize the bare minimum of struct gsm_network, minimizing required dependencies.
+ * This part is shared among the thin programs in osmo-bsc/src/utils/.
+ * osmo-bsc requires further initialization that pulls in more dependencies (see bsc_network_init()). */
+struct gsm_network *gsm_network_init(void *ctx)
 {
-	struct gsm_network *net = data;
-	struct gsm_bts *bts;
-
-	llist_for_each_entry(bts, &net->bts_list, list)
-		bts_update_t3122_chan_load(bts);
-
-	/* Keep this timer ticking. */
-	osmo_timer_schedule(&net->t3122_chan_load_timer, T3122_CHAN_LOAD_SAMPLE_INTERVAL, 0);
-}
-
-struct gsm_network *bsc_network_init(void *ctx)
-{
-	struct gsm_network *net;
-
-	net = talloc_zero(ctx, struct gsm_network);
+	struct gsm_network *net = talloc_zero(ctx, struct gsm_network);
 	if (!net)
 		return NULL;
 
@@ -65,17 +50,7 @@ struct gsm_network *bsc_network_init(void *ctx)
 	net->bsc_subscribers = talloc_zero(net, struct llist_head);
 	INIT_LLIST_HEAD(net->bsc_subscribers);
 
-	net->bsc_data = talloc_zero(net, struct osmo_bsc_data);
-	if (!net->bsc_data) {
-		talloc_free(net);
-		return NULL;
-	}
-
-	/* Init back pointer */
-	net->bsc_data->auto_off_timeout = -1;
-	net->bsc_data->network = net;
-	INIT_LLIST_HEAD(&net->bsc_data->mscs);
-
+	INIT_LLIST_HEAD(&net->bts_list);
 	net->num_bts = 0;
 	net->T3101 = GSM_T3101_DEFAULT;
 	net->T3103 = GSM_T3103_DEFAULT;
@@ -90,28 +65,5 @@ struct gsm_network *bsc_network_init(void *ctx)
 	net->T3122 = GSM_T3122_DEFAULT;
 	net->T3141 = GSM_T3141_DEFAULT;
 
-	net->ho = ho_cfg_init(net, NULL);
-	net->hodec2.congestion_check_interval_s = HO_CFG_CONGESTION_CHECK_DEFAULT;
-
-	INIT_LLIST_HEAD(&net->bts_list);
-
-	/*
-	 * At present all BTS in the network share one channel load timeout.
-	 * If this becomes a problem for networks with a lot of BTS, this
-	 * code could be refactored to run the timeout individually per BTS.
-	 */
-	osmo_timer_setup(&net->t3122_chan_load_timer, update_t3122_chan_load_timer, net);
-	osmo_timer_schedule(&net->t3122_chan_load_timer, T3122_CHAN_LOAD_SAMPLE_INTERVAL, 0);
-
-	/* init statistics */
-	net->bsc_ctrs = rate_ctr_group_alloc(net, &bsc_ctrg_desc, 0);
-	if (!net->bsc_ctrs) {
-		talloc_free(net);
-		return NULL;
-	}
-
-	gsm_net_update_ctype(net);
-
 	return net;
 }
-

@@ -997,6 +997,8 @@ struct gsm_bts {
 };
 
 
+struct gsm_network *gsm_network_init(void *ctx);
+
 struct gsm_bts *gsm_bts_alloc(struct gsm_network *net, uint8_t bts_num);
 struct gsm_bts *gsm_bts_num(struct gsm_network *net, int num);
 
@@ -1378,9 +1380,8 @@ struct gsm_subscriber_connection *bsc_subscr_con_allocate(struct gsm_network *ne
 struct gsm_subscriber_connection *msc_subscr_con_allocate(struct gsm_network *network);
 void msc_subscr_con_free(struct gsm_subscriber_connection *conn);
 
-struct gsm_bts *gsm_bts_alloc_register(struct gsm_network *net,
-					enum gsm_bts_type type,
-					uint8_t bsic);
+struct gsm_bts *gsm_bts_alloc_register(struct gsm_network *net, enum gsm_bts_type type, uint8_t bsic);
+struct gsm_bts *bsc_bts_alloc_register(struct gsm_network *net, enum gsm_bts_type type, uint8_t bsic);
 
 void set_ts_e1link(struct gsm_bts_trx_ts *ts, uint8_t e1_nr,
 		   uint8_t e1_ts, uint8_t e1_ts_ss);
@@ -1417,5 +1418,9 @@ bool classmark_is_r99(struct gsm_classmark *cm);
 void gsm_ts_check_init(struct gsm_bts_trx_ts *ts);
 void gsm_trx_mark_all_ts_uninitialized(struct gsm_bts_trx *trx);
 void gsm_bts_mark_all_ts_uninitialized(struct gsm_bts *bts);
+
+bool trx_is_usable(const struct gsm_bts_trx *trx);
+
+bool on_gsm_ts_init(struct gsm_bts_trx_ts *ts);
 
 #endif /* _GSM_DATA_H */

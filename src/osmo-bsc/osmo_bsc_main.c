@@ -42,9 +42,15 @@
 #include <osmocom/core/talloc.h>
 #include <osmocom/core/stats.h>
 #include <osmocom/gsm/protocol/gsm_12_21.h>
+#include <osmocom/vty/telnet_interface.h>
+#include <osmocom/vty/ports.h>
 
 #include <osmocom/abis/abis.h>
 #include <osmocom/bsc/abis_om2000.h>
+#include <osmocom/bsc/abis_nm.h>
+#include <osmocom/bsc/abis_rsl.h>
+#include <osmocom/bsc/chan_alloc.h>
+#include <osmocom/bsc/e1_config.h>
 
 #include <osmocom/mgcp_client/mgcp_client.h>
 
@@ -145,6 +151,369 @@ static void handle_options(int argc, char **argv)
 			break;
 		}
 	}
+}
+
+/* Callback function for NACK on the OML NM */
+static int oml_msg_nack(struct nm_nack_signal_data *nack)
+{
+	if (nack->mt == NM_MT_GET_ATTR_NACK) {
+		LOGP(DNM, LOGL_ERROR, "BTS%u does not support Get Attributes "
+		     "OML message.\n", nack->bts->nr);
+		return 0;
+	}
+
+	if (nack->mt == NM_MT_SET_BTS_ATTR_NACK)
+		LOGP(DNM, LOGL_ERROR, "Failed to set BTS attributes. That is fatal. "
+		     "Was the bts type and frequency properly specified?\n");
+	else
+		LOGP(DNM, LOGL_ERROR, "Got %s NACK going to drop the OML links.\n",
+		     abis_nm_nack_name(nack->mt));
+
+	if (!nack->bts) {
+		LOGP(DNM, LOGL_ERROR, "Unknown bts. Can not drop it.\n");
+		return 0;
+	}
+
+	if (is_ipaccess_bts(nack->bts))
+		ipaccess_drop_oml(nack->bts);
+
+	return 0;
+}
+
+/* Callback function to be called every time we receive a signal from NM */
+static int nm_sig_cb(unsigned int subsys, unsigned int signal,
+		     void *handler_data, void *signal_data)
+{
+	struct nm_nack_signal_data *nack;
+
+	switch (signal) {
+	case S_NM_NACK:
+		nack = signal_data;
+		return oml_msg_nack(nack);
+	default:
+		break;
+	}
+	return 0;
+}
+
+/* Produce a MA as specified in 10.5.2.21 */
+static int generate_ma_for_ts(struct gsm_bts_trx_ts *ts)
+{
+	/* we have three bitvecs: the per-timeslot ARFCNs, the cell chan ARFCNs
+	 * and the MA */
+	struct bitvec *cell_chan = &ts->trx->bts->si_common.cell_alloc;
+	struct bitvec *ts_arfcn = &ts->hopping.arfcns;
+	struct bitvec *ma = &ts->hopping.ma;
+	unsigned int num_cell_arfcns, bitnum, n_chan;
+	int i;
+
+	/* re-set the MA to all-zero */
+	ma->cur_bit = 0;
+	ts->hopping.ma_len = 0;
+	memset(ma->data, 0, ma->data_len);
+
+	if (!ts->hopping.enabled)
+		return 0;
+
+	/* count the number of ARFCNs in the cell channel allocation */
+	num_cell_arfcns = 0;
+	for (i = 0; i < 1024; i++) {
+		if (bitvec_get_bit_pos(cell_chan, i))
+			num_cell_arfcns++;
+	}
+
+	/* pad it to octet-aligned number of bits */
+	ts->hopping.ma_len = num_cell_arfcns / 8;
+	if (num_cell_arfcns % 8)
+		ts->hopping.ma_len++;
+
+	n_chan = 0;
+	for (i = 0; i < 1024; i++) {
+		if (!bitvec_get_bit_pos(cell_chan, i))
+			continue;
+		/* set the corresponding bit in the MA */
+		bitnum = (ts->hopping.ma_len * 8) - 1 - n_chan;
+		if (bitvec_get_bit_pos(ts_arfcn, i))
+			bitvec_set_bit_pos(ma, bitnum, 1);
+		else
+			bitvec_set_bit_pos(ma, bitnum, 0);
+		n_chan++;
+	}
+
+	/* ARFCN 0 is special: It is coded last in the bitmask */
+	if (bitvec_get_bit_pos(cell_chan, 0)) {
+		n_chan++;
+		/* set the corresponding bit in the MA */
+		bitnum = (ts->hopping.ma_len * 8) - 1 - n_chan;
+		if (bitvec_get_bit_pos(ts_arfcn, 0))
+			bitvec_set_bit_pos(ma, bitnum, 1);
+		else
+			bitvec_set_bit_pos(ma, bitnum, 0);
+	}
+
+	return 0;
+}
+
+static void bootstrap_rsl(struct gsm_bts_trx *trx)
+{
+	unsigned int i;
+
+	LOGP(DRSL, LOGL_NOTICE, "bootstrapping RSL for BTS/TRX (%u/%u) "
+		"on ARFCN %u using MCC-MNC %s LAC=%u CID=%u BSIC=%u\n",
+		trx->bts->nr, trx->nr, trx->arfcn,
+		osmo_plmn_name(&bsc_gsmnet->plmn),
+		trx->bts->location_area_code,
+		trx->bts->cell_identity, trx->bts->bsic);
+
+	if (trx->bts->type == GSM_BTS_TYPE_NOKIA_SITE) {
+		rsl_nokia_si_begin(trx);
+	}
+
+	/*
+	 * Trigger ACC ramping before sending system information to BTS.
+	 * This ensures that RACH control in system information is configured correctly.
+	 * TRX 0 should be usable and unlocked, otherwise starting ACC ramping is pointless.
+	 */
+	if (trx_is_usable(trx) && trx->mo.nm_state.administrative == NM_STATE_UNLOCKED)
+		acc_ramp_trigger(&trx->bts->acc_ramp);
+
+	gsm_bts_trx_set_system_infos(trx);
+
+	if (trx->bts->type == GSM_BTS_TYPE_NOKIA_SITE) {
+		/* channel unspecific, power reduction in 2 dB steps */
+		rsl_bs_power_control(trx, 0xFF, trx->max_power_red / 2);
+		rsl_nokia_si_end(trx);
+	}
+
+	for (i = 0; i < ARRAY_SIZE(trx->ts); i++) {
+		struct gsm_bts_trx_ts *ts = &trx->ts[i];
+		generate_ma_for_ts(ts);
+		gsm_ts_check_init(ts);
+	}
+}
+
+/* Callback function to be called every time we receive a signal from INPUT */
+static int inp_sig_cb(unsigned int subsys, unsigned int signal,
+		      void *handler_data, void *signal_data)
+{
+	struct input_signal_data *isd = signal_data;
+	struct gsm_bts_trx *trx = isd->trx;
+	int ts_no, lchan_no;
+	/* N. B: we rely on attribute order when parsing response in abis_nm_rx_get_attr_resp() */
+	const uint8_t bts_attr[] = { NM_ATT_MANUF_ID, NM_ATT_SW_CONFIG, };
+	const uint8_t trx_attr[] = { NM_ATT_MANUF_STATE, NM_ATT_SW_CONFIG, };
+
+	/* we should not request more attributes than we're ready to handle */
+	OSMO_ASSERT(sizeof(bts_attr) < MAX_BTS_ATTR);
+	OSMO_ASSERT(sizeof(trx_attr) < MAX_BTS_ATTR);
+
+	if (subsys != SS_L_INPUT)
+		return -EINVAL;
+
+	LOGP(DLMI, LOGL_DEBUG, "%s(): Input signal '%s' received\n", __func__,
+		get_value_string(e1inp_signal_names, signal));
+	switch (signal) {
+	case S_L_INP_TEI_UP:
+		if (isd->link_type == E1INP_SIGN_OML) {
+			/* TODO: this is required for the Nokia BTS, hopping is configured
+			   during OML, other MA is not set.  */
+			struct gsm_bts_trx *cur_trx;
+			/* was static in system_information.c */
+			extern int generate_cell_chan_list(uint8_t *chan_list, struct gsm_bts *bts);
+			uint8_t ca[20];
+			/* has to be called before generate_ma_for_ts to
+			  set bts->si_common.cell_alloc */
+			generate_cell_chan_list(ca, trx->bts);
+
+			/* Request generic BTS-level attributes */
+			abis_nm_get_attr(trx->bts, NM_OC_BTS, 0xFF, 0xFF, 0xFF, bts_attr, sizeof(bts_attr));
+
+			llist_for_each_entry(cur_trx, &trx->bts->trx_list, list) {
+				int i;
+				/* Request TRX-level attributes */
+				abis_nm_get_attr(cur_trx->bts, NM_OC_BASEB_TRANSC, 0, cur_trx->nr, 0xFF,
+						 trx_attr, sizeof(trx_attr));
+				for (i = 0; i < ARRAY_SIZE(cur_trx->ts); i++)
+					generate_ma_for_ts(&cur_trx->ts[i]);
+			}
+		}
+		if (isd->link_type == E1INP_SIGN_RSL)
+			bootstrap_rsl(trx);
+		break;
+	case S_L_INP_TEI_DN:
+		LOGP(DLMI, LOGL_ERROR, "Lost some E1 TEI link: %d %p\n", isd->link_type, trx);
+
+		if (isd->link_type == E1INP_SIGN_OML)
+			rate_ctr_inc(&trx->bts->bts_ctrs->ctr[BTS_CTR_BTS_OML_FAIL]);
+		else if (isd->link_type == E1INP_SIGN_RSL) {
+			rate_ctr_inc(&trx->bts->bts_ctrs->ctr[BTS_CTR_BTS_RSL_FAIL]);
+			acc_ramp_abort(&trx->bts->acc_ramp);
+		}
+
+		/*
+		 * free all allocated channels. change the nm_state so the
+		 * trx and trx_ts becomes unusable and chan_alloc.c can not
+		 * allocate from it.
+		 */
+		for (ts_no = 0; ts_no < ARRAY_SIZE(trx->ts); ++ts_no) {
+			struct gsm_bts_trx_ts *ts = &trx->ts[ts_no];
+
+			for (lchan_no = 0; lchan_no < ARRAY_SIZE(ts->lchan); ++lchan_no) {
+				if (ts->lchan[lchan_no].state != LCHAN_S_NONE)
+					lchan_free(&ts->lchan[lchan_no]);
+				lchan_reset(&ts->lchan[lchan_no]);
+			}
+		}
+
+		gsm_bts_mo_reset(trx->bts);
+
+		abis_nm_clear_queue(trx->bts);
+		break;
+	default:
+		break;
+	}
+
+	return 0;
+}
+
+static int bootstrap_bts(struct gsm_bts *bts)
+{
+	int i, n;
+
+	if (!bts->model)
+		return -EFAULT;
+
+	if (bts->model->start && !bts->model->started) {
+		int ret = bts->model->start(bts->network);
+		if (ret < 0)
+			return ret;
+
+		bts->model->started = true;
+	}
+
+	/* FIXME: What about secondary TRX of a BTS?  What about a BTS that has TRX
+	 * in different bands? Why is 'band' a parameter of the BTS and not of the TRX? */
+	switch (bts->band) {
+	case GSM_BAND_1800:
+		if (bts->c0->arfcn < 512 || bts->c0->arfcn > 885) {
+			LOGP(DNM, LOGL_ERROR, "GSM1800 channel must be between 512-885.\n");
+			return -EINVAL;
+		}
+		break;
+	case GSM_BAND_1900:
+		if (bts->c0->arfcn < 512 || bts->c0->arfcn > 810) {
+			LOGP(DNM, LOGL_ERROR, "GSM1900 channel must be between 512-810.\n");
+			return -EINVAL;
+		}
+		break;
+	case GSM_BAND_900:
+		if ((bts->c0->arfcn > 124 && bts->c0->arfcn < 955) ||
+		    bts->c0->arfcn > 1023)  {
+			LOGP(DNM, LOGL_ERROR, "GSM900 channel must be between 0-124, 955-1023.\n");
+			return -EINVAL;
+		}
+		break;
+	case GSM_BAND_850:
+		if (bts->c0->arfcn < 128 || bts->c0->arfcn > 251) {
+			LOGP(DNM, LOGL_ERROR, "GSM850 channel must be between 128-251.\n");
+			return -EINVAL;
+		}
+		break;
+	default:
+		LOGP(DNM, LOGL_ERROR, "Unsupported frequency band.\n");
+		return -EINVAL;
+	}
+
+	/* Control Channel Description is set from vty/config */
+
+	/* T3212 is set from vty/config */
+
+	/* Set ccch config by looking at ts config */
+	for (n=0, i=0; i<8; i++)
+		n += bts->c0->ts[i].pchan == GSM_PCHAN_CCCH ? 1 : 0;
+
+	/* Indicate R99 MSC in SI3 */
+	bts->si_common.chan_desc.mscr = 1;
+
+	switch (n) {
+	case 0:
+		bts->si_common.chan_desc.ccch_conf = RSL_BCCH_CCCH_CONF_1_C;
+		/* Limit reserved block to 2 on combined channel according to
+		   3GPP TS 44.018 Table 10.5.2.11.1 */
+		if (bts->si_common.chan_desc.bs_ag_blks_res > 2) {
+			LOGP(DNM, LOGL_NOTICE, "CCCH is combined with SDCCHs, "
+			     "reducing BS-AG-BLKS-RES value %d -> 2\n",
+			     bts->si_common.chan_desc.bs_ag_blks_res);
+			bts->si_common.chan_desc.bs_ag_blks_res = 2;
+		}
+		break;
+	case 1:
+		bts->si_common.chan_desc.ccch_conf = RSL_BCCH_CCCH_CONF_1_NC;
+		break;
+	case 2:
+		bts->si_common.chan_desc.ccch_conf = RSL_BCCH_CCCH_CONF_2_NC;
+		break;
+	case 3:
+		bts->si_common.chan_desc.ccch_conf = RSL_BCCH_CCCH_CONF_3_NC;
+		break;
+	case 4:
+		bts->si_common.chan_desc.ccch_conf = RSL_BCCH_CCCH_CONF_4_NC;
+		break;
+	default:
+		LOGP(DNM, LOGL_ERROR, "Unsupported CCCH timeslot configuration\n");
+		return -EINVAL;
+	}
+
+	bts->si_common.cell_options.pwrc = 0; /* PWRC not set */
+
+	bts->si_common.cell_sel_par.acs = 0;
+
+	bts->si_common.ncc_permitted = 0xff;
+
+	bts->chan_load_samples_idx = 0;
+
+	/* ACC ramping is initialized from vty/config */
+
+	/* Initialize the BTS state */
+	gsm_bts_mo_reset(bts);
+
+	return 0;
+}
+
+static int bsc_network_configure(const char *config_file)
+{
+	struct gsm_bts *bts;
+	int rc;
+
+	rc = vty_read_config_file(config_file, NULL);
+	if (rc < 0) {
+		LOGP(DNM, LOGL_FATAL, "Failed to parse the config file: '%s'\n", config_file);
+		return rc;
+	}
+
+	/* start telnet after reading config for vty_get_bind_addr() */
+	rc = telnet_init_dynif(tall_bsc_ctx, bsc_gsmnet, vty_get_bind_addr(),
+			       OSMO_VTY_PORT_NITB_BSC);
+	if (rc < 0)
+		return rc;
+
+	osmo_signal_register_handler(SS_NM, nm_sig_cb, NULL);
+	osmo_signal_register_handler(SS_L_INPUT, inp_sig_cb, NULL);
+
+	llist_for_each_entry(bts, &bsc_gsmnet->bts_list, list) {
+		rc = bootstrap_bts(bts);
+		if (rc < 0) {
+			LOGP(DNM, LOGL_FATAL, "Error bootstrapping BTS\n");
+			return rc;
+		}
+		rc = e1_reconfig_bts(bts);
+		if (rc < 0) {
+			LOGP(DNM, LOGL_FATAL, "Error enabling E1 input driver\n");
+			return rc;
+		}
+	}
+
+	return 0;
 }
 
 static int bsc_vty_go_parent(struct vty *vty)

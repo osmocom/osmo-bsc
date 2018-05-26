@@ -37,7 +37,6 @@
 #include <osmocom/bsc/system_information.h>
 #include <osmocom/bsc/handover_cfg.h>
 #include <osmocom/bsc/handover_decision_2.h>
-#include <osmocom/bsc/common_bsc.h>
 #include <osmocom/bsc/bss.h>
 #include <osmocom/bsc/bsc_api.h>
 #include <osmocom/bsc/osmo_bsc.h>
@@ -202,7 +201,7 @@ static struct gsm_bts *create_bts(int arfcn)
 	struct e1inp_sign_link *rsl_link;
 	int i;
 
-	bts = gsm_bts_alloc_register(bsc_gsmnet, GSM_BTS_TYPE_OSMOBTS, 0x3f);
+	bts = bsc_bts_alloc_register(bsc_gsmnet, GSM_BTS_TYPE_OSMOBTS, 0x3f);
 	if (!bts) {
 		printf("No resource for bts1\n");
 		return NULL;
@@ -1347,8 +1346,8 @@ int main(int argc, char **argv)
 	struct gsm_lchan *lchan[256];
 	int lchan_num = 0;
 	int i;
-	int algorithm;
 	struct bsc_api bsc_api = {};
+	int algorithm;
 	int test_case_i;
 	int last_test_i;
 
@@ -1373,8 +1372,7 @@ int main(int argc, char **argv)
 	log_set_print_category_hex(osmo_stderr_target, 0);
 	log_set_print_filename2(osmo_stderr_target, LOG_FILENAME_BASENAME);
 
-	/* Create a dummy network */
-	bsc_gsmnet = bsc_network_init(ctx);
+	bsc_network_alloc();
 	if (!bsc_gsmnet)
 		exit(1);
 

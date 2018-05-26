@@ -34,7 +34,35 @@ handover_test_LDFLAGS =\
 	$(NULL)
 
 handover_test_LDADD = \
-	$(top_builddir)/src/libbsc/libbsc.a \
+	$(top_builddir)/src/osmo-bsc/a_reset.o \
+	$(top_builddir)/src/osmo-bsc/abis_nm.o \
+	$(top_builddir)/src/osmo-bsc/abis_rsl.o \
+	$(top_builddir)/src/osmo-bsc/arfcn_range_encode.o \
+	$(top_builddir)/src/osmo-bsc/bsc_api.o \
+	$(top_builddir)/src/osmo-bsc/bsc_dyn_ts.o \
+	$(top_builddir)/src/osmo-bsc/bsc_init.o \
+	$(top_builddir)/src/osmo-bsc/bsc_rll.o \
+	$(top_builddir)/src/osmo-bsc/bsc_subscr_conn_fsm.o \
+	$(top_builddir)/src/osmo-bsc/bsc_subscriber.o \
+	$(top_builddir)/src/osmo-bsc/bts_ipaccess_nanobts.o \
+	$(top_builddir)/src/osmo-bsc/bts_ipaccess_nanobts_omlattr.o \
+	$(top_builddir)/src/osmo-bsc/bts_sysmobts.o \
+	$(top_builddir)/src/osmo-bsc/chan_alloc.o \
+	$(top_builddir)/src/osmo-bsc/gsm_04_08_utils.o \
+	$(top_builddir)/src/osmo-bsc/gsm_04_80_utils.o \
+	$(top_builddir)/src/osmo-bsc/gsm_data.o \
+	$(top_builddir)/src/osmo-bsc/handover_cfg.o \
+	$(top_builddir)/src/osmo-bsc/handover_decision.o \
+	$(top_builddir)/src/osmo-bsc/handover_decision_2.o \
+	$(top_builddir)/src/osmo-bsc/handover_logic.o \
+	$(top_builddir)/src/osmo-bsc/meas_rep.o \
+	$(top_builddir)/src/osmo-bsc/osmo_bsc_lcls.o \
+	$(top_builddir)/src/osmo-bsc/net_init.o \
+	$(top_builddir)/src/osmo-bsc/paging.o \
+	$(top_builddir)/src/osmo-bsc/pcu_sock.o \
+	$(top_builddir)/src/osmo-bsc/penalty_timers.o \
+	$(top_builddir)/src/osmo-bsc/rest_octets.o \
+	$(top_builddir)/src/osmo-bsc/system_information.o \
 	$(LIBOSMOCORE_LIBS) \
 	$(LIBOSMOGSM_LIBS) \
 	$(LIBOSMOABIS_LIBS) \

@@ -164,13 +164,6 @@ static int abis_nm_sendmsg_direct(struct gsm_bts *bts, struct msgb *msg)
 
 static int abis_nm_rcvmsg_sw(struct msgb *mb);
 
-bool nm_is_running(const struct gsm_nm_state *s) {
-	return (s->operational == NM_OPSTATE_ENABLED) && (
-		(s->availability == NM_AVSTATE_OK) ||
-		(s->availability == 0xff)
-	);
-}
-
 /* Update the administrative state of a given object in our in-memory data
  * structures and send an event to the higher layer */
 static int update_admstate(struct gsm_bts *bts, uint8_t obj_class,

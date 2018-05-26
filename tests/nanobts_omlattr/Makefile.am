@@ -23,7 +23,9 @@ nanobts_omlattr_test_SOURCES = \
 	$(NULL)
 
 nanobts_omlattr_test_LDADD = \
-	$(top_builddir)/src/libbsc/libbsc.a \
+	$(top_builddir)/src/osmo-bsc/abis_nm.o \
+	$(top_builddir)/src/osmo-bsc/bts_ipaccess_nanobts_omlattr.o \
+	$(top_builddir)/src/osmo-bsc/gsm_data.o \
 	$(LIBOSMOCORE_LIBS) \
 	$(LIBOSMOGSM_LIBS) \
 	$(LIBOSMOABIS_LIBS) \

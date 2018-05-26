@@ -65,18 +65,6 @@ bool ts_is_usable(const struct gsm_bts_trx_ts *ts)
 	return true;
 }
 
-bool trx_is_usable(const struct gsm_bts_trx *trx)
-{
-	/* FIXME: How does this behave for BS-11 ? */
-	if (is_ipaccess_bts(trx->bts)) {
-		if (!nm_is_running(&trx->mo.nm_state) ||
-		    !nm_is_running(&trx->bb_transc.mo.nm_state))
-			return false;
-	}
-
-	return true;
-}
-
 static int trx_count_free_ts(struct gsm_bts_trx *trx, enum gsm_phys_chan_config pchan)
 {
 	struct gsm_bts_trx_ts *ts;

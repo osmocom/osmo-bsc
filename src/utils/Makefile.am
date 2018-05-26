@@ -46,15 +46,18 @@ endif
 
 bs11_config_SOURCES = \
 	bs11_config.c \
+	stubs.c \
 	$(NULL)
 
 bs11_config_LDADD = \
-	$(top_builddir)/src/libbsc/libbsc.a \
+	$(top_builddir)/src/osmo-bsc/abis_nm.o \
+	$(top_builddir)/src/osmo-bsc/bts_siemens_bs11.o \
+	$(top_builddir)/src/osmo-bsc/e1_config.o \
+	$(top_builddir)/src/osmo-bsc/gsm_data.o \
+	$(top_builddir)/src/osmo-bsc/net_init.o \
 	$(LIBOSMOCORE_LIBS) \
 	$(LIBOSMOGSM_LIBS) \
 	$(LIBOSMOABIS_LIBS) \
-	$(LIBOSMOSIGTRAN_LIBS) \
-	$(LIBOSMOMGCPCLIENT_LIBS) \
 	$(NULL)
 
 isdnsync_SOURCES = \
@@ -114,12 +117,14 @@ osmo_meas_udp2db_CFLAGS = \
 
 meas_json_SOURCES = \
 	meas_json.c \
+	stubs.c \
 	$(NULL)
 
 meas_json_LDADD = \
-	$(top_builddir)/src/libbsc/libbsc.a \
+	$(top_builddir)/src/osmo-bsc/gsm_data.o \
 	$(LIBOSMOCORE_LIBS) \
 	$(LIBOSMOGSM_LIBS) \
+	$(LIBOSMOABIS_LIBS) \
 	$(NULL)
 
 meas_json_CFLAGS = \

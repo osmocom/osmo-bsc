@@ -39,7 +39,6 @@
 #include <osmocom/core/select.h>
 #include <osmocom/core/timer.h>
 #include <osmocom/bsc/ipaccess.h>
-#include <osmocom/bsc/common_bsc.h>
 #include <osmocom/abis/e1_input.h>
 #include <osmocom/bsc/abis_nm.h>
 #include <osmocom/bsc/signal.h>
@@ -54,6 +53,7 @@
 #include <osmocom/core/talloc.h>
 #include <osmocom/abis/abis.h>
 #include <osmocom/gsm/protocol/gsm_12_21.h>
+#include <osmocom/bsc/bss.h>
 
 struct gsm_network *bsc_gsmnet;
 
@@ -873,8 +873,6 @@ static void print_options(void)
 	print_value_string(&ipa_test_strs[0], ARRAY_SIZE(ipa_test_strs));
 }
 
-extern void bts_model_nanobts_init();
-
 static const struct log_info_cat log_categories[] = {
 	[DNM] = {
 		.name = "DNM",
@@ -898,6 +896,7 @@ int main(int argc, char **argv)
 	int rc, option_index = 0, stream_id = 0xff;
 
 	tall_ctx_config = talloc_named_const(NULL, 0, "ipaccess-config");
+	tall_bsc_ctx = tall_ctx_config;
 	msgb_talloc_ctx_init(tall_ctx_config, 0);
 
 	osmo_init_logging2(tall_ctx_config, &log_info);
@@ -1034,7 +1033,7 @@ int main(int argc, char **argv)
 
 	libosmo_abis_init(tall_ctx_config);
 
-	bsc_gsmnet = bsc_network_init(tall_bsc_ctx);
+	bsc_gsmnet = gsm_network_init(tall_ctx_config);
 	if (!bsc_gsmnet)
 		exit(1);
 

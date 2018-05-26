@@ -45,7 +45,6 @@ void bts_chan_load(struct pchan_load *cl, const struct gsm_bts *bts);
 void network_chan_load(struct pchan_load *pl, struct gsm_network *net);
 void bts_update_t3122_chan_load(struct gsm_bts *bts);
 
-bool trx_is_usable(const struct gsm_bts_trx *trx);
 bool ts_is_usable(const struct gsm_bts_trx_ts *ts);
 
 #endif /* _CHAN_ALLOC_H */

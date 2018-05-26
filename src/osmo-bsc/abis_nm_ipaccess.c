@@ -20,6 +20,8 @@
  *
  */
 
+#include <stdint.h>
+
 /* A list of all the 'embedded' attributes of ip.access */
 enum ipa_embedded_att {
 	IPA_ATT_ARFCN_WHITELIST		= 0x01,

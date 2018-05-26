@@ -305,3 +305,6 @@ int bssgp_prim_cb(struct osmo_prim_hdr *oph, void *ctx)
 struct gsm_subscriber_connection *bsc_subscr_con_allocate(struct gsm_network *net) {
 	OSMO_ASSERT(0);
 }
+
+bool on_gsm_ts_init(struct gsm_bts_trx_ts *ts)
+{ return true; }

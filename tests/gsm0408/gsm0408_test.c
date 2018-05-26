@@ -24,7 +24,6 @@
 #include <stdbool.h>
 #include <arpa/inet.h>
 
-#include <osmocom/bsc/common_bsc.h>
 #include <osmocom/bsc/gsm_data.h>
 #include <osmocom/bsc/debug.h>
 #include <osmocom/bsc/arfcn_range_encode.h>
@@ -817,7 +816,7 @@ int main(int argc, char **argv)
 	osmo_init_logging2(tall_bsc_ctx, &log_info);
 	log_set_log_level(osmo_stderr_target, LOGL_INFO);
 
-	net = bsc_network_init(tall_bsc_ctx);
+	net = gsm_network_init(tall_bsc_ctx);
 	if (!net) {
 		printf("Network init failure.\n");
 		return EXIT_FAILURE;
@@ -847,4 +846,9 @@ int main(int argc, char **argv)
 
 struct gsm_subscriber_connection *bsc_subscr_con_allocate(struct gsm_network *net) {
 	OSMO_ASSERT(0);
+}
+
+bool on_gsm_ts_init(struct gsm_bts_trx_ts *ts)
+{
+	return true;
 }

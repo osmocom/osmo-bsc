@@ -1945,7 +1945,7 @@ DEFUN(cfg_bts,
 		return CMD_WARNING;
 	} else if (bts_nr == gsmnet->num_bts) {
 		/* allocate a new one */
-		bts = gsm_bts_alloc_register(gsmnet, GSM_BTS_TYPE_UNKNOWN,
+		bts = bsc_bts_alloc_register(gsmnet, GSM_BTS_TYPE_UNKNOWN,
 					     HARDCODED_BSIC);
 		/*
 		 * Initalize bts->acc_ramp here. Else we could segfault while

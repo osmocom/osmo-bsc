@@ -31,7 +31,7 @@ bsc_subscr_test_SOURCES = \
 	$(NULL)
 
 bsc_subscr_test_LDADD = \
-	$(top_builddir)/src/libbsc/libbsc.a \
+	$(top_builddir)/src/osmo-bsc/bsc_subscriber.o \
 	$(LIBOSMOCORE_LIBS) \
 	$(LIBOSMOABIS_LIBS) \
 	$(LIBOSMOGSM_LIBS) \

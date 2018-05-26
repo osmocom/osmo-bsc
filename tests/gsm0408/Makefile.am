@@ -23,7 +23,11 @@ gsm0408_test_SOURCES = \
 	$(NULL)
 
 gsm0408_test_LDADD = \
-	$(top_builddir)/src/libbsc/libbsc.a \
+	$(top_builddir)/src/osmo-bsc/arfcn_range_encode.o \
+	$(top_builddir)/src/osmo-bsc/gsm_data.o \
+	$(top_builddir)/src/osmo-bsc/net_init.o \
+	$(top_builddir)/src/osmo-bsc/rest_octets.o \
+	$(top_builddir)/src/osmo-bsc/system_information.o \
 	$(LIBOSMOCORE_LIBS) \
 	$(LIBOSMOGSM_LIBS) \
 	$(LIBOSMOABIS_LIBS) \

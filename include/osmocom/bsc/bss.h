@@ -7,7 +7,6 @@ struct msgb;
 
 /* start and stop network */
 extern int bsc_network_alloc(void);
-extern int bsc_network_configure(const char *cfg_file);
 extern int bsc_shutdown_net(struct gsm_network *net);
 
 /* register all supported BTS */

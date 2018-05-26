@@ -19,15 +19,9 @@ AM_LDFLAGS = \
 	$(COVERAGE_LDFLAGS) \
 	$(NULL)
 
-# Libraries
 SUBDIRS = \
-	libbsc \
 	libfilter \
-	$(NULL)
-
-# Programs
-SUBDIRS += \
+	osmo-bsc \
 	utils \
 	ipaccess \
-	osmo-bsc \
 	$(NULL)

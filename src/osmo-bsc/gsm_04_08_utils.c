@@ -302,26 +302,6 @@ static void gsm48_cell_desc(struct gsm48_cell_desc *cd,
 	cd->arfcn_lo = bts->c0->arfcn & 0xff;
 }
 
-void gsm48_lchan2chan_desc(struct gsm48_chan_desc *cd,
-			   const struct gsm_lchan *lchan)
-{
-	uint16_t arfcn = lchan->ts->trx->arfcn & 0x3ff;
-
-	cd->chan_nr = gsm_lchan2chan_nr(lchan);
-	if (!lchan->ts->hopping.enabled) {
-		cd->h0.tsc = gsm_ts_tsc(lchan->ts);
-		cd->h0.h = 0;
-		cd->h0.arfcn_high = arfcn >> 8;
-		cd->h0.arfcn_low = arfcn & 0xff;
-	} else {
-		cd->h1.tsc = gsm_ts_tsc(lchan->ts);
-		cd->h1.h = 1;
-		cd->h1.maio_high = lchan->ts->hopping.maio >> 2;
-		cd->h1.maio_low = lchan->ts->hopping.maio & 0x03;
-		cd->h1.hsn = lchan->ts->hopping.hsn;
-	}
-}
-
 /*! \brief Encode a TS 04.08 multirate config LV according to 10.5.2.21aa
  *  \param[out] lv caller-allocated buffer of 7 bytes. First octet is IS length
  *  \param[in] mr multi-rate configuration to encode

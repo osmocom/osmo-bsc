@@ -32,7 +32,6 @@
 
 #include <sys/stat.h>
 
-#include <osmocom/bsc/common_bsc.h>
 #include <osmocom/bsc/abis_nm.h>
 #include <osmocom/core/msgb.h>
 #include <osmocom/core/utils.h>
@@ -915,7 +914,7 @@ int main(int argc, char **argv)
 	handle_options(argc, argv);
 	bts_model_bs11_init();
 
-	gsmnet = bsc_network_init(tall_bs11cfg_ctx);
+	gsmnet = gsm_network_init(tall_bs11cfg_ctx);
 	if (!gsmnet) {
 		fprintf(stderr, "Unable to allocate gsm network\n");
 		exit(1);

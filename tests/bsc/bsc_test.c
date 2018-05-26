@@ -30,7 +30,6 @@
 #include <osmocom/bsc/osmo_bsc.h>
 #include <osmocom/bsc/bsc_msc_data.h>
 #include <osmocom/bsc/gsm_04_80.h>
-#include <osmocom/bsc/common_bsc.h>
 
 #include <osmocom/core/application.h>
 #include <osmocom/core/backtrace.h>
@@ -123,7 +122,7 @@ static void test_scan(void)
 {
 	int i;
 
-	struct gsm_network *net = bsc_network_init(ctx);
+	struct gsm_network *net = gsm_network_init(ctx);
 	struct gsm_bts *bts = gsm_bts_alloc(net, 0);
 	struct bsc_msc_data *msc;
 	struct gsm_subscriber_connection *conn;

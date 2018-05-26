@@ -3033,38 +3033,8 @@ int rsl_direct_rf_release(struct gsm_lchan *lchan)
 }
 
 /* Initial timeslot actions when a timeslot first comes into operation. */
-static bool gsm_ts_init(struct gsm_bts_trx_ts *ts)
+bool on_gsm_ts_init(struct gsm_bts_trx_ts *ts)
 {
 	dyn_ts_init(ts);
 	return true;
-}
-
-/* Trigger initial timeslot actions iff both OML and RSL are setup. */
-void gsm_ts_check_init(struct gsm_bts_trx_ts *ts)
-{
-	struct gsm_bts *bts = ts->trx->bts;
-	if (bts->model->oml_is_ts_ready
-	    && !bts->model->oml_is_ts_ready(ts))
-		return;
-	if (!ts->trx->rsl_link)
-		return;
-	if (ts->initialized)
-		return;
-	ts->initialized = gsm_ts_init(ts);
-}
-
-void gsm_trx_mark_all_ts_uninitialized(struct gsm_bts_trx *trx)
-{
-	int i;
-	for (i = 0; i < ARRAY_SIZE(trx->ts); i++) {
-		struct gsm_bts_trx_ts *ts = &trx->ts[i];
-		ts->initialized = false;
-	}
-}
-
-void gsm_bts_mark_all_ts_uninitialized(struct gsm_bts *bts)
-{
-	struct gsm_bts_trx *trx;
-	llist_for_each_entry(trx, &bts->trx_list, list)
-		gsm_trx_mark_all_ts_uninitialized(trx);
 }
