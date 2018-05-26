@@ -23,7 +23,6 @@
 
 #include <osmocom/bsc/bsc_msg_filter.h>
 
-#include <osmocom/bsc/bsc_nat.h>
 #include <osmocom/bsc/bsc_msc.h>
 #include <osmocom/bsc/gsm_data.h>
 #include <osmocom/bsc/debug.h>

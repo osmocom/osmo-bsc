@@ -16,7 +16,6 @@ Build-Depends: debhelper (>=9),
                libosmo-sigtran-dev (>= 0.8.0),
                libosmo-abis-dev (>= 0.3.2),
                libosmo-netif-dev (>= 0.1.0),
-               libosmo-legacy-mgcp-dev (>= 1.0.0),
                libosmo-mgcp-client-dev (>= 1.2.0)
 Standards-Version: 3.9.8
 Vcs-Git: git://git.osmocom.org/osmo-bsc.git

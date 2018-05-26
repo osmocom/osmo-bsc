@@ -20,7 +20,6 @@
  *
  */
 
-#include <osmocom/bsc/bsc_nat.h>
 #include <osmocom/ctrl/control_cmd.h>
 #include <osmocom/ctrl/control_if.h>
 #include <osmocom/crypt/auth.h>

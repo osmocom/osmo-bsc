@@ -49,10 +49,6 @@ PKG_CHECK_MODULES(LIBOSMOSIGTRAN, libosmo-sigtran >= 0.9.0)
 PKG_CHECK_MODULES(LIBOSMOSCCP, libosmo-sccp >= 0.9.0)
 PKG_CHECK_MODULES(LIBOSMOMGCPCLIENT, libosmo-mgcp-client >= 1.3.0)
 
-#NOTE: osmo-bsc does not depend on libosmo-legacy-mgcp anymore, but we still
-#      need the dependancy for osmo-bsc-nat, which still uses the old API.
-PKG_CHECK_MODULES(LIBOSMOLEGACYMGCP, libosmo-legacy-mgcp >= 1.3.0)
-
 dnl checks for header files
 AC_HEADER_STDC
 
@@ -182,8 +178,6 @@ AC_OUTPUT(
     tests/gsm0408/Makefile
     tests/channel/Makefile
     tests/bsc/Makefile
-    tests/bsc-nat/Makefile
-    tests/bsc-nat-trie/Makefile
     tests/abis/Makefile
     tests/subscr/Makefile
     tests/nanobts_omlattr/Makefile

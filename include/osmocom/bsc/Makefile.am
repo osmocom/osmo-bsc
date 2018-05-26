@@ -7,9 +7,6 @@ noinst_HEADERS = \
 	arfcn_range_encode.h \
 	bsc_msc.h \
 	bsc_msg_filter.h \
-	bsc_nat.h \
-	bsc_nat_callstats.h \
-	bsc_nat_sccp.h \
 	bsc_rll.h \
 	bsc_subscriber.h \
 	bsc_subscr_conn_fsm.h \
@@ -32,7 +29,6 @@ noinst_HEADERS = \
 	meas_feed.h \
 	meas_rep.h \
 	misdn.h \
-	nat_rewrite_trie.h \
 	network_listen.h \
 	openbscdefines.h \
 	osmo_bsc.h \
