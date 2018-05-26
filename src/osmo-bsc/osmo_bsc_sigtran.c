@@ -538,8 +538,12 @@ int osmo_ss7_asp_rx_unknown(struct osmo_ss7_asp *asp, int ppid_mux, struct msgb 
 		switch (iph_ext->proto) {
 		case IPAC_PROTO_EXT_CTRL:
 			return bsc_sccplite_rx_ctrl(asp, msg);
+		case IPAC_PROTO_EXT_MGCP:
+			return bsc_sccplite_rx_mgcp(asp, msg);
 		}
 		break;
+	case IPAC_PROTO_MGCP_OLD:
+		return bsc_sccplite_rx_mgcp(asp, msg);
 	default:
 		break;
 	}

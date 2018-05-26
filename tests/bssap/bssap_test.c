@@ -160,3 +160,7 @@ struct gsm_subscriber_connection *bsc_subscr_con_allocate(struct gsm_network *ne
 int bsc_sccplite_rx_ctrl(struct osmo_ss7_asp *asp, struct msgb *msg) {
 	OSMO_ASSERT(0);
 }
+
+int bsc_sccplite_rx_mgcp(struct osmo_ss7_asp *asp, struct msgb *msg) {
+	OSMO_ASSERT(0);
+}
