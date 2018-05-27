@@ -1,5 +1,5 @@
 /* (C) 2017 by sysmocom s.f.m.c. GmbH, Author: Philipp Maier
- * (C) 2017 by Harald Welte <laforge@gnumonks.org>
+ * (C) 2017-2018 by Harald Welte <laforge@gnumonks.org>
  * All Rights Reserved
  *
  * This program is free software; you can redistribute it and/or modify
@@ -34,12 +34,11 @@
 #include <osmocom/bsc/a_reset.h>
 #include <osmocom/bsc/gsm_04_80.h>
 #include <osmocom/bsc/bsc_subscr_conn_fsm.h>
+#include <osmocom/bsc/gsm_data.h>
 
 /* A pointer to a list with all involved MSCs
  * (a copy of the pointer location submitted with osmo_bsc_sigtran_init() */
 static struct llist_head *msc_list;
-
-extern struct gsm_network *bsc_gsmnet;
 
 #define RESET_INTERVAL 1	/* sek */
 #define SCCP_MSG_MAXSIZE 1024

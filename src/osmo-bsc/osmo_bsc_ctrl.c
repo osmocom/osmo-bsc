@@ -41,8 +41,6 @@
 #include <time.h>
 #include <unistd.h>
 
-extern struct gsm_network *bsc_gsmnet;
-
 /* Obtain SS7 application server currently handling given MSC (DPC) */
 static struct osmo_ss7_as *msc_get_ss7_as(struct bsc_msc_data *msc)
 {

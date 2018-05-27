@@ -1,6 +1,6 @@
 /* ip.access nanoBTS specific code */
 
-/* (C) 2009-2010 by Harald Welte <laforge@gnumonks.org>
+/* (C) 2009-2018 by Harald Welte <laforge@gnumonks.org>
  *
  * All Rights Reserved
  *
@@ -42,8 +42,6 @@
 #include <osmocom/bsc/ipaccess.h>
 #include <osmocom/bsc/bts_ipaccess_nanobts_omlattr.h>
 #include <osmocom/bsc/paging.h>
-
-extern struct gsm_network *bsc_gsmnet;
 
 static int bts_model_nanobts_start(struct gsm_network *net);
 static void bts_model_nanobts_e1line_bind_ops(struct e1inp_line *line);

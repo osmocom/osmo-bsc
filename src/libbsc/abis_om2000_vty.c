@@ -1,6 +1,6 @@
 /* VTY interface for A-bis OM2000 */
 
-/* (C) 2010-2011 by Harald Welte <laforge@gnumonks.org>
+/* (C) 2010-2018 by Harald Welte <laforge@gnumonks.org>
  *
  * All Rights Reserved
  *
@@ -39,8 +39,6 @@
 #include <osmocom/vty/command.h>
 #include <osmocom/vty/logging.h>
 #include <osmocom/vty/telnet_interface.h>
-
-extern struct gsm_network *bsc_gsmnet;
 
 static struct cmd_node om2k_node = {
 	OM2K_NODE,

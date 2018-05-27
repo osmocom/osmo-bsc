@@ -1,6 +1,6 @@
 /* VTY interface for A-bis OML (Netowrk Management) */
 
-/* (C) 2009-2010 by Harald Welte <laforge@gnumonks.org>
+/* (C) 2009-2018 by Harald Welte <laforge@gnumonks.org>
  *
  * All Rights Reserved
  *
@@ -41,8 +41,6 @@
 #include <osmocom/vty/command.h>
 #include <osmocom/vty/logging.h>
 #include <osmocom/vty/telnet_interface.h>
-
-extern struct gsm_network *bsc_gsmnet;
 
 static struct cmd_node oml_node = {
 	OML_NODE,

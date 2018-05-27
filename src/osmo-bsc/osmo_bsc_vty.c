@@ -38,8 +38,6 @@
 
 #define IPA_STR "IP.ACCESS specific\n"
 
-extern struct gsm_network *bsc_gsmnet;
-
 static struct osmo_bsc_data *osmo_bsc_data(struct vty *vty)
 {
 	return bsc_gsmnet->bsc_data;

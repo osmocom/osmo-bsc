@@ -1350,6 +1350,8 @@ static inline int is_e1_bts(struct gsm_bts *bts)
 	return 0;
 }
 
+extern struct gsm_network *bsc_gsmnet;
+
 enum bts_gprs_mode bts_gprs_mode_parse(const char *arg, int *valid);
 const char *bts_gprs_mode_name(enum bts_gprs_mode mode);
 int bts_gprs_mode_is_compat(struct gsm_bts *bts, enum bts_gprs_mode mode);

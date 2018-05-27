@@ -1,6 +1,6 @@
 /* A hackish minimal BSC (+MSC +HLR) implementation */
 
-/* (C) 2008-2010 by Harald Welte <laforge@gnumonks.org>
+/* (C) 2008-2018 by Harald Welte <laforge@gnumonks.org>
  * (C) 2009 by Holger Hans Peter Freyther <zecke@selfish.org>
  * All Rights Reserved
  *
@@ -41,9 +41,6 @@
 #include <time.h>
 #include <limits.h>
 #include <stdbool.h>
-
-/* global pointer to the gsm network data structure */
-extern struct gsm_network *bsc_gsmnet;
 
 /* Callback function for NACK on the OML NM */
 static int oml_msg_nack(struct nm_nack_signal_data *nack)
