@@ -256,7 +256,6 @@ enum bts_gprs_mode {
 struct gsm_lchan;
 struct osmo_rtp_socket;
 struct rtp_socket;
-struct bsc_api;
 
 /* Network Management State */
 struct gsm_nm_state {
@@ -1216,8 +1215,6 @@ struct gsm_network {
 	} hodec2;
 
 	struct rate_ctr_group *bsc_ctrs;
-
-	struct bsc_api *bsc_api;
 
 	unsigned int num_bts;
 	struct llist_head bts_list;

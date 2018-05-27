@@ -827,7 +827,6 @@ int main(int argc, char **argv)
 		fprintf(stderr, "Bootstrapping the network failed. exiting.\n");
 		exit(1);
 	}
-	bsc_api_init(bsc_gsmnet, osmo_bsc_api());
 
 	/* start control interface after reading config for
 	 * ctrl_vty_get_bind_addr() */

@@ -235,3 +235,17 @@ int main(int argc, char **argv)
 struct gsm_subscriber_connection *bsc_subscr_con_allocate(struct gsm_network *net) {
 	OSMO_ASSERT(0);
 }
+
+void bsc_sapi_n_reject(struct gsm_subscriber_connection *conn, int dlci) {}
+void bsc_cipher_mode_compl(struct gsm_subscriber_connection *conn, struct msgb *msg, uint8_t chosen_encr) {}
+int bsc_compl_l3(struct gsm_subscriber_connection *conn, struct msgb *msg, uint16_t chosen_channel)
+{ return 0; }
+void bsc_dtap(struct gsm_subscriber_connection *conn, uint8_t link_id, struct msgb *msg) {}
+void bsc_assign_compl(struct gsm_subscriber_connection *conn, uint8_t rr_cause) {}
+void bsc_assign_fail(struct gsm_subscriber_connection *conn, uint8_t cause, uint8_t *rr_cause) {}
+int bsc_clear_request(struct gsm_subscriber_connection *conn, uint32_t cause)
+{ return 0; }
+void bsc_cm_update(struct gsm_subscriber_connection *conn,
+		   const uint8_t *cm2, uint8_t cm2_len,
+		   const uint8_t *cm3, uint8_t cm3_len) {}
+void bsc_mr_config(struct gsm_subscriber_connection *conn, struct gsm_lchan *lchan, int full_rate) {}

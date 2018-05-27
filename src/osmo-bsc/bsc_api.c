@@ -45,52 +45,9 @@
 #define HO_DTAP_CACHE_MSGB_CB_ALLOW_SACCH 1
 
 static void rll_ind_cb(struct gsm_lchan *, uint8_t, void *, enum bsc_rllr_ind);
-static void send_sapi_reject(struct gsm_subscriber_connection *conn, int link_id);
-static void handle_release(struct gsm_subscriber_connection *conn, struct bsc_api *bsc, struct  gsm_lchan *lchan);
-static void handle_chan_ack(struct gsm_subscriber_connection *conn, struct bsc_api *bsc, struct  gsm_lchan *lchan);
-static void handle_chan_nack(struct gsm_subscriber_connection *conn, struct bsc_api *bsc, struct  gsm_lchan *lchan);
-
-/*! \brief Determine and apply AMR multi-rate configuration to lchan
- *  Determine which AMR multi-rate configuration to use and apply it to
- *  the lchan (so it can be communicated to BTS and MS during channel
- *  activation.
- *  \param[in] conn subscriber connection (used to resolve bsc_api)
- *  \param[out] lchan logical channel to which to apply mr config
- *  \param[in] full_rate whether to use full-rate (1) or half-rate (0) config
- */
-static void handle_mr_config(struct gsm_subscriber_connection *conn,
-			     struct gsm_lchan *lchan, int full_rate)
-{
-	struct bsc_api *api;
-	api = conn->network->bsc_api;
-	struct amr_multirate_conf *mr;
-	struct gsm48_multi_rate_conf *mr_conf;
-
-	/* BSC api override for this method, used in OsmoBSC mode with
-	 * bsc_mr_config() to use MSC-specific/specified configuration */
-	if (api->mr_config)
-		return api->mr_config(conn, lchan, full_rate);
-
-	/* NITB case: use the BTS-specic multi-rate configuration from
-	 * the vty/configuration file */
-	if (full_rate)
-		mr = &lchan->ts->trx->bts->mr_full;
-	else
-		mr = &lchan->ts->trx->bts->mr_half;
-
-	mr_conf = (struct gsm48_multi_rate_conf *) mr->gsm48_ie;
-	mr_conf->ver = 1;
-
-	/* default, if no AMR codec defined */
-	if (!mr->gsm48_ie[1]) {
-		mr_conf->icmi = 1;
-		mr_conf->m5_90 = 1;
-	}
-	/* store encoded MR config IE lchan for both MS (uplink) and BTS
-	 * (downlink) directions */
-	gsm48_multirate_config(lchan->mr_ms_lv, mr, mr->ms_mode);
-	gsm48_multirate_config(lchan->mr_bts_lv, mr, mr->bts_mode);
-}
+static void handle_release(struct gsm_subscriber_connection *conn, struct  gsm_lchan *lchan);
+static void handle_chan_ack(struct gsm_subscriber_connection *conn, struct  gsm_lchan *lchan);
+static void handle_chan_nack(struct gsm_subscriber_connection *conn, struct  gsm_lchan *lchan);
 
 /*
  * Start a new assignment and make sure that it is completed within T10 either
@@ -145,7 +102,7 @@ static int handle_new_assignment(struct gsm_subscriber_connection *conn, int cha
 
 	/* handle AMR correctly */
 	if (chan_mode == GSM48_CMODE_SPEECH_AMR)
-		handle_mr_config(conn, new_lchan, full_rate);
+		bsc_mr_config(conn, new_lchan, full_rate);
 
 	if (rsl_chan_activate_lchan(new_lchan, 0x1, 0) < 0) {
 		LOGPLCHAN(new_lchan, DHO, LOGL_ERROR, "could not activate channel\n");
@@ -202,12 +159,6 @@ void ho_dtap_cache_flush(struct gsm_subscriber_connection *conn, int send)
 	}
 }
 
-int bsc_api_init(struct gsm_network *network, struct bsc_api *api)
-{
-	network->bsc_api = api;
-	return 0;
-}
-
 /*! \brief process incoming 08.08 DTAP from MSC (send via BTS to MS) */
 int gsm0808_submit_dtap(struct gsm_subscriber_connection *conn,
 			struct msgb *msg, int link_id, int allow_sacch)
@@ -246,7 +197,7 @@ int gsm0808_submit_dtap(struct gsm_subscriber_connection *conn,
 		OBSC_LINKID_CB(msg) = link_id;
 		if (rll_establish(msg->lchan, sapi, rll_ind_cb, msg) != 0) {
 			msgb_free(msg);
-			send_sapi_reject(conn, link_id);
+			bsc_sapi_n_reject(conn, link_id);
 			return -1;
 		}
 		return 0;
@@ -306,9 +257,6 @@ int gsm0808_assign_req(struct gsm_subscriber_connection *conn, int chan_mode, in
 {
 	/* TODO: Add multirate configuration, make it work for more than audio. */
 
-	struct bsc_api *api;
-	api = conn->network->bsc_api;
-
 	if (!chan_compat_with_mode(conn->lchan, chan_mode, full_rate)) {
 		if (handle_new_assignment(conn, chan_mode, full_rate) != 0)
 			goto error;
@@ -319,7 +267,7 @@ int gsm0808_assign_req(struct gsm_subscriber_connection *conn, int chan_mode, in
 			return 1;
 
 		if (chan_mode == GSM48_CMODE_SPEECH_AMR)
-			handle_mr_config(conn, conn->lchan, full_rate);
+			bsc_mr_config(conn, conn->lchan, full_rate);
 
 		LOGPLCHAN(conn->lchan, DMSC, LOGL_NOTICE,
 			  "Sending ChanModify for speech: %s\n",
@@ -331,7 +279,7 @@ int gsm0808_assign_req(struct gsm_subscriber_connection *conn, int chan_mode, in
 	return 0;
 
 error:
-	api->assign_fail(conn, 0, NULL);
+	bsc_assign_fail(conn, 0, NULL);
 	return -1;
 }
 
@@ -345,7 +293,6 @@ static void handle_ass_compl(struct gsm_subscriber_connection *conn,
 			     struct msgb *msg)
 {
 	struct gsm48_hdr *gh = msgb_l3(msg);
-	struct bsc_api *api = conn->network->bsc_api;
 	enum gsm48_rr_cause cause;
 
 	/* Expecting gsm48_hdr + cause value */
@@ -393,13 +340,12 @@ static void handle_ass_compl(struct gsm_subscriber_connection *conn,
 	if (is_ipaccess_bts(conn_get_bts(conn)) && conn->lchan->tch_mode != GSM48_CMODE_SIGN)
 		rsl_ipacc_crcx(conn->lchan);
 
-	api->assign_compl(conn, cause);
+	bsc_assign_compl(conn, cause);
 }
 
 static void handle_ass_fail(struct gsm_subscriber_connection *conn,
 			    struct msgb *msg)
 {
-	struct bsc_api *api = conn->network->bsc_api;
 	uint8_t *rr_failure;
 	struct gsm48_hdr *gh;
 
@@ -446,15 +392,12 @@ static void handle_ass_fail(struct gsm_subscriber_connection *conn,
 		rr_failure = &gh->data[0];
 	}
 
-	api->assign_fail(conn,
-			 GSM0808_CAUSE_RADIO_INTERFACE_MESSAGE_FAILURE,
-			 rr_failure);
+	bsc_assign_fail(conn, GSM0808_CAUSE_RADIO_INTERFACE_MESSAGE_FAILURE, rr_failure);
 }
 
 static void handle_classmark_chg(struct gsm_subscriber_connection *conn,
 				 struct msgb *msg)
 {
-	struct bsc_api *api = msg->lchan->ts->trx->bts->network->bsc_api;
 	struct gsm48_hdr *gh = msgb_l3(msg);
 	unsigned int payload_len = msgb_l3len(msg) - sizeof(*gh);
 	uint8_t cm2_len, cm3_len = 0;
@@ -486,7 +429,7 @@ static void handle_classmark_chg(struct gsm_subscriber_connection *conn,
 		}
 		DEBUGPC(DRR, "CM3(len=%u)\n", cm3_len);
 	}
-	api->classmark_chg(conn, cm2, cm2_len, cm3, cm3_len);
+	bsc_cm_update(conn, cm2, cm2_len, cm3, cm3_len);
 }
 
 /* Chapter 9.1.16 Handover complete */
@@ -533,7 +476,6 @@ static void handle_rr_ho_fail(struct msgb *msg)
 static void dispatch_dtap(struct gsm_subscriber_connection *conn,
 			  uint8_t link_id, struct msgb *msg)
 {
-	struct bsc_api *api = msg->lchan->ts->trx->bts->network->bsc_api;
 	struct gsm48_hdr *gh;
 	uint8_t pdisc;
 	uint8_t msg_type;
@@ -582,9 +524,7 @@ static void dispatch_dtap(struct gsm_subscriber_connection *conn,
 			handle_rr_ho_fail(msg);
 			break;
 		case GSM48_MT_RR_CIPH_M_COMPL:
-			if (api->cipher_mode_compl)
-				api->cipher_mode_compl(conn, msg,
-						conn->lchan->encr.alg_id);
+			bsc_cipher_mode_compl(conn, msg, conn->lchan->encr.alg_id);
 			break;
 		case GSM48_MT_RR_ASS_COMPL:
 			handle_ass_compl(conn, msg);
@@ -595,13 +535,10 @@ static void dispatch_dtap(struct gsm_subscriber_connection *conn,
 		case GSM48_MT_RR_CHAN_MODE_MODIF_ACK:
 			osmo_timer_del(&conn->T10);
 			rc = gsm48_rx_rr_modif_ack(msg);
-			if (rc < 0) {
-				api->assign_fail(conn,
-						 GSM0808_CAUSE_NO_RADIO_RESOURCE_AVAILABLE,
-						 NULL);
-			} else if (rc >= 0) {
-				api->assign_compl(conn, 0);
-			}
+			if (rc < 0)
+				bsc_assign_fail(conn, GSM0808_CAUSE_NO_RADIO_RESOURCE_AVAILABLE, NULL);
+			else
+				bsc_assign_compl(conn, 0);
 			break;
 		case GSM48_MT_RR_CLSM_CHG:
 			handle_classmark_chg(conn, msg);
@@ -609,8 +546,7 @@ static void dispatch_dtap(struct gsm_subscriber_connection *conn,
 		case GSM48_MT_RR_APP_INFO:
 			/* Passing RR APP INFO to MSC, not quite
 			 * according to spec */
-			if (api->dtap)
-				api->dtap(conn, link_id, msg);
+			bsc_dtap(conn, link_id, msg);
 			break;
 		default:
 			/* Drop unknown RR message */
@@ -621,8 +557,7 @@ static void dispatch_dtap(struct gsm_subscriber_connection *conn,
 		}
 		break;
 	default:
-		if (api->dtap)
-			api->dtap(conn, link_id, msg);
+		bsc_dtap(conn, link_id, msg);
 		break;
 	}
 }
@@ -631,7 +566,6 @@ static void dispatch_dtap(struct gsm_subscriber_connection *conn,
 int gsm0408_rcvmsg(struct msgb *msg, uint8_t link_id)
 {
 	int rc;
-	struct bsc_api *api = msg->lchan->ts->trx->bts->network->bsc_api;
 	struct gsm_lchan *lchan;
 
 	lchan = msg->lchan;
@@ -656,7 +590,7 @@ int gsm0408_rcvmsg(struct msgb *msg, uint8_t link_id)
 		lchan->conn->lchan = lchan;
 
 		/* fwd via bsc_api to send COMPLETE L3 INFO to MSC */
-		rc = api->compl_l3(lchan->conn, msg, 0);
+		rc = bsc_compl_l3(lchan->conn, msg, 0);
 
 		if (rc != BSC_API_CONN_POL_ACCEPT) {
 			//osmo_fsm_inst_dispatch(lchan->conn->fi, FIXME, NULL);
@@ -716,20 +650,6 @@ int gsm0808_clear(struct gsm_subscriber_connection *conn)
 	return 0;
 }
 
-static void send_sapi_reject(struct gsm_subscriber_connection *conn, int link_id)
-{
-	struct bsc_api *api;
-
-	if (!conn)
-		return;
-
-	api = conn->network->bsc_api;
-	if (!api || !api->sapi_n_reject)
-		return;
-
-	api->sapi_n_reject(conn, link_id);
-}
-
 static void rll_ind_cb(struct gsm_lchan *lchan, uint8_t link_id, void *_data, enum bsc_rllr_ind rllr_ind)
 {
 	struct msgb *msg = _data;
@@ -749,7 +669,7 @@ static void rll_ind_cb(struct gsm_lchan *lchan, uint8_t link_id, void *_data, en
 	case BSC_RLLR_IND_REL_IND:
 	case BSC_RLLR_IND_ERR_IND:
 	case BSC_RLLR_IND_TIMEOUT:
-		send_sapi_reject(lchan->conn, OBSC_LINKID_CB(msg));
+		bsc_sapi_n_reject(lchan->conn, OBSC_LINKID_CB(msg));
 		msgb_free(msg);
 		break;
 	}
@@ -758,7 +678,6 @@ static void rll_ind_cb(struct gsm_lchan *lchan, uint8_t link_id, void *_data, en
 static int bsc_handle_lchan_signal(unsigned int subsys, unsigned int signal,
 				   void *handler_data, void *signal_data)
 {
-	struct bsc_api *bsc;
 	struct gsm_lchan *lchan;
 	struct lchan_signal_data *lchan_data;
 
@@ -771,40 +690,33 @@ static int bsc_handle_lchan_signal(unsigned int subsys, unsigned int signal,
 		return 0;
 
 	lchan = lchan_data->lchan;
-	bsc = lchan->ts->trx->bts->network->bsc_api;
-	if (!bsc)
-		return 0;
 
 	switch (signal) {
 	case S_LCHAN_UNEXPECTED_RELEASE:
-		handle_release(lchan->conn, bsc, lchan);
+		handle_release(lchan->conn, lchan);
 		break;
 	case S_LCHAN_ACTIVATE_ACK:
-		handle_chan_ack(lchan->conn, bsc, lchan);
+		handle_chan_ack(lchan->conn, lchan);
 		break;
 	case S_LCHAN_ACTIVATE_NACK:
-		handle_chan_nack(lchan->conn, bsc, lchan);
+		handle_chan_nack(lchan->conn, lchan);
 		break;
 	}
 
 	return 0;
 }
 
-static void handle_release(struct gsm_subscriber_connection *conn,
-			   struct bsc_api *bsc, struct gsm_lchan *lchan)
+static void handle_release(struct gsm_subscriber_connection *conn, struct gsm_lchan *lchan)
 {
 	if (conn->secondary_lchan == lchan) {
 		osmo_timer_del(&conn->T10);
 		conn->secondary_lchan = NULL;
 
-		bsc->assign_fail(conn,
-				 GSM0808_CAUSE_RADIO_INTERFACE_FAILURE,
-				 NULL);
+		bsc_assign_fail(conn, GSM0808_CAUSE_RADIO_INTERFACE_FAILURE, NULL);
 	}
 
 	/* clear the connection now */
-	if (bsc->clear_request)
-		bsc->clear_request(conn, 0);
+	bsc_clear_request(conn, 0);
 
 	/* now give up all channels */
 	if (conn->lchan == lchan)
@@ -814,8 +726,7 @@ static void handle_release(struct gsm_subscriber_connection *conn,
 	lchan->conn = NULL;
 }
 
-static void handle_chan_ack(struct gsm_subscriber_connection *conn,
-			    struct bsc_api *api, struct gsm_lchan *lchan)
+static void handle_chan_ack(struct gsm_subscriber_connection *conn, struct gsm_lchan *lchan)
 {
 	if (conn->secondary_lchan != lchan)
 		return;
@@ -824,8 +735,7 @@ static void handle_chan_ack(struct gsm_subscriber_connection *conn,
 	gsm48_send_rr_ass_cmd(conn->lchan, lchan, lchan->ms_power);
 }
 
-static void handle_chan_nack(struct gsm_subscriber_connection *conn,
-			     struct bsc_api *api, struct gsm_lchan *lchan)
+static void handle_chan_nack(struct gsm_subscriber_connection *conn, struct gsm_lchan *lchan)
 {
 	if (conn->secondary_lchan != lchan)
 		return;

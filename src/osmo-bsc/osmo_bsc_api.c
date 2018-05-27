@@ -51,7 +51,6 @@ static bool msc_connected(struct gsm_subscriber_connection *conn)
 	return true;
 }
 
-static int bsc_clear_request(struct gsm_subscriber_connection *conn, uint32_t cause);
 static int complete_layer3(struct gsm_subscriber_connection *conn,
 			   struct msgb *msg, struct bsc_msc_data *msc);
 
@@ -135,12 +134,13 @@ static int bsc_filter_data(struct gsm_subscriber_connection *conn,
 	return rc;
 }
 
-static void bsc_sapi_n_reject(struct gsm_subscriber_connection *conn, int dlci)
+/*! BTS->MSC: tell MSC a SAPI was not established. */
+void bsc_sapi_n_reject(struct gsm_subscriber_connection *conn, int dlci)
 {
 	int rc;
 	struct msgb *resp;
 
-	if (!msc_connected(conn))
+	if (!conn || !msc_connected(conn))
 		return;
 
 	LOGP(DMSC, LOGL_NOTICE, "Tx MSC SAPI N REJECT DLCI=0x%02x\n", dlci);
@@ -150,8 +150,8 @@ static void bsc_sapi_n_reject(struct gsm_subscriber_connection *conn, int dlci)
 		msgb_free(resp);
 }
 
-static void bsc_cipher_mode_compl(struct gsm_subscriber_connection *conn,
-				  struct msgb *msg, uint8_t chosen_encr)
+/*! MS->MSC: Tell MSC that ciphering has been enabled. */
+void bsc_cipher_mode_compl(struct gsm_subscriber_connection *conn, struct msgb *msg, uint8_t chosen_encr)
 {
 	int rc;
 	struct msgb *resp;
@@ -210,12 +210,8 @@ static void bsc_send_ussd_no_srv(struct gsm_subscriber_connection *conn,
 	bsc_send_ussd_release_complete(conn);
 }
 
-/*
- * Instruct to reserve data for a new connectiom, create the complete
- * layer three message, send it to open the connection.
- */
-static int bsc_compl_l3(struct gsm_subscriber_connection *conn, struct msgb *msg,
-			uint16_t chosen_channel)
+/*! MS->MSC: New MM context with L3 payload. */
+int bsc_compl_l3(struct gsm_subscriber_connection *conn, struct msgb *msg, uint16_t chosen_channel)
 {
 	struct bsc_msc_data *msc;
 
@@ -367,7 +363,8 @@ static int handle_cc_setup(struct gsm_subscriber_connection *conn,
 }
 
 
-static void bsc_dtap(struct gsm_subscriber_connection *conn, uint8_t link_id, struct msgb *msg)
+/*! MS->BSC/MSC: Um L3 message. */
+void bsc_dtap(struct gsm_subscriber_connection *conn, uint8_t link_id, struct msgb *msg)
 {
 	int lu_cause;
 
@@ -399,7 +396,8 @@ static void bsc_dtap(struct gsm_subscriber_connection *conn, uint8_t link_id, st
 	osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_MO_DTAP, msg);
 }
 
-static void bsc_assign_compl(struct gsm_subscriber_connection *conn, uint8_t rr_cause)
+/*! BSC->MSC: Assignment of lchan successful. */
+void bsc_assign_compl(struct gsm_subscriber_connection *conn, uint8_t rr_cause)
 {
 	if (!msc_connected(conn))
 		return;
@@ -424,14 +422,15 @@ static void bsc_assign_compl(struct gsm_subscriber_connection *conn, uint8_t rr_
 	}
 }
 
-static void bsc_assign_fail(struct gsm_subscriber_connection *conn,
-			    uint8_t cause, uint8_t *rr_cause)
+/*! BSC->MSC: Assignment of lchan failed. */
+void bsc_assign_fail(struct gsm_subscriber_connection *conn, uint8_t cause, uint8_t *rr_cause)
 {
 	LOGP(DMSC, LOGL_INFO, "Tx MSC ASSIGN FAIL\n");
 	osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_RR_ASS_FAIL, NULL);
 }
 
-static int bsc_clear_request(struct gsm_subscriber_connection *conn, uint32_t cause)
+/*! BSC->MSC: RR conn has been cleared. */
+int bsc_clear_request(struct gsm_subscriber_connection *conn, uint32_t cause)
 {
 	int rc;
 	struct msgb *resp;
@@ -454,9 +453,10 @@ static int bsc_clear_request(struct gsm_subscriber_connection *conn, uint32_t ca
 	return 1;
 }
 
-static void bsc_cm_update(struct gsm_subscriber_connection *conn,
-			  const uint8_t *cm2, uint8_t cm2_len,
-			  const uint8_t *cm3, uint8_t cm3_len)
+/*! BSC->MSC: Classmark Update. */
+void bsc_cm_update(struct gsm_subscriber_connection *conn,
+		   const uint8_t *cm2, uint8_t cm2_len,
+		   const uint8_t *cm3, uint8_t cm3_len)
 {
 	int rc;
 	struct msgb *resp;
@@ -470,8 +470,8 @@ static void bsc_cm_update(struct gsm_subscriber_connection *conn,
 		msgb_free(resp);
 }
 
-static void bsc_mr_config(struct gsm_subscriber_connection *conn,
-				struct gsm_lchan *lchan, int full_rate)
+/*! Configure the multirate setting on this channel. */
+void bsc_mr_config(struct gsm_subscriber_connection *conn, struct gsm_lchan *lchan, int full_rate)
 {
 	struct bsc_msc_data *msc;
 	struct gsm48_multi_rate_conf *ms_conf, *bts_conf;
@@ -510,21 +510,4 @@ static void bsc_mr_config(struct gsm_subscriber_connection *conn,
 
 	/* now copy this into the bts structure */
 	memcpy(lchan->mr_bts_lv, lchan->mr_ms_lv, sizeof(lchan->mr_ms_lv));
-}
-
-static struct bsc_api bsc_handler = {
-	.sapi_n_reject = bsc_sapi_n_reject,
-	.cipher_mode_compl = bsc_cipher_mode_compl,
-	.compl_l3 = bsc_compl_l3,
-	.dtap = bsc_dtap,
-	.assign_compl = bsc_assign_compl,
-	.assign_fail = bsc_assign_fail,
-	.clear_request = bsc_clear_request,
-	.classmark_chg = bsc_cm_update,
-	.mr_config = bsc_mr_config,
-};
-
-struct bsc_api *osmo_bsc_api()
-{
-	return &bsc_handler;
 }
