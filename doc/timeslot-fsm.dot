@@ -1,0 +1,36 @@
+digraph G {
+rankdir=TB;
+	
+	invisible [style="invisible"]
+	invisible2 [style="invisible"]
+	NOT_INITIALIZED
+	lchan [label="lchan FSM",shape=box3d];
+	UNUSED
+	IN_USE
+	BORKEN
+	PDCH
+	WAIT_PDCH_ACT
+	WAIT_PDCH_DEACT
+
+	invisible -> NOT_INITIALIZED [label="OML\nOpstart ACK",style=dotted]
+	invisible2 -> NOT_INITIALIZED [label="RSL\nbootstrapped",style=dotted]
+	
+	NOT_INITIALIZED -> UNUSED [label="OML+RSL ready"]
+
+	UNUSED -> IN_USE [label="first\nlchan\nrequested\nby lchan\nFSM"]
+	IN_USE -> UNUSED [label="last lchan\nunused"]
+
+	UNUSED -> PDCH [label="onenter:\ndedicated PDCH\nand GPRS\nis enabled"]
+	UNUSED -> WAIT_PDCH_ACT [label="onenter:\ndyn TS\nand GPRS\nis enabled"]
+	WAIT_PDCH_ACT -> PDCH [label="dyn TS:\nPDCH activated"]
+
+	PDCH -> WAIT_PDCH_DEACT [label="dyn TS:\nlchan of specific\npchan requested"]
+	WAIT_PDCH_DEACT -> UNUSED [label="lchan\nunused\n(e.g. error)",style=dashed]
+	WAIT_PDCH_DEACT -> IN_USE [label="dyn TS:\nPDCH released"]
+
+	lchan -> {UNUSED} [label="TS_EV_LCHAN_\nREQUESTED",style=dotted]
+	{IN_USE} -> lchan [label="LCHAN_EV_\nTS_READY",style=dotted]
+	lchan -> IN_USE [label="TS_EV_LCHAN_\nUNUSED",style=dotted]
+
+	{WAIT_PDCH_ACT,WAIT_PDCH_DEACT} -> BORKEN [label=timeout,style=dashed]
+}

@@ -1,0 +1,53 @@
+digraph G {
+rankdir=TB;
+	
+	invisible [style="invisible"]
+	UNUSED [penwidth=3.0]
+	WAIT_TS_READY
+	WAIT_MGW_ENDPOINT_AVAILABLE
+	WAIT_ACTIV_ACK
+	WAIT_IPACC_CRCX_ACK
+	WAIT_IPACC_MDCX_ACK
+	WAIT_RLL_ESTABLISH
+	ACTIVE [penwidth=3.0]
+	WAIT_SAPIS_RELEASED
+	WAIT_BEFORE_RF_RELEASE
+	WAIT_RF_RELEASE_ACK
+	WAIT_AFTER_ERROR
+	BORKEN
+	
+	ts [label="timeslot FSM",shape=box3d];
+	gscon [label="conn FSM",shape=box3d];
+
+	UNUSED -> WAIT_TS_READY [label="lchan_allocate()"]
+	WAIT_TS_READY -> WAIT_ACTIV_ACK
+	WAIT_ACTIV_ACK -> WAIT_RLL_ESTABLISH
+	WAIT_RLL_ESTABLISH -> WAIT_MGW_ENDPOINT_AVAILABLE [label="TCH"]
+	WAIT_MGW_ENDPOINT_AVAILABLE -> WAIT_IPACC_CRCX_ACK [label="IPACC BTS"]
+	WAIT_MGW_ENDPOINT_AVAILABLE -> ACTIVE
+	WAIT_IPACC_CRCX_ACK -> WAIT_IPACC_MDCX_ACK
+	WAIT_IPACC_MDCX_ACK -> ACTIVE
+	WAIT_RLL_ESTABLISH -> ACTIVE [label="non-TCH"];
+	WAIT_RLL_ESTABLISH -> WAIT_RF_RELEASE_ACK [label="timeout",style=dashed,constraint=false]
+
+	ACTIVE -> WAIT_SAPIS_RELEASED [label="LCHAN_EV_\nRELEASE"]
+	WAIT_SAPIS_RELEASED -> WAIT_BEFORE_RF_RELEASE
+	WAIT_SAPIS_RELEASED -> WAIT_RF_RELEASE_ACK [label="timeout",style=dashed,constraint=false]
+
+	WAIT_BEFORE_RF_RELEASE -> WAIT_RF_RELEASE_ACK [label="T3111"]
+	WAIT_RF_RELEASE_ACK -> UNUSED
+	WAIT_RF_RELEASE_ACK -> WAIT_AFTER_ERROR [label="release was\ndue to error"]
+	WAIT_AFTER_ERROR -> UNUSED [label="T3111+2s"]
+
+	WAIT_TS_READY -> ts [label="TS_EV_\nLCHAN_\nREQUESTED",style=dotted,penwidth=3]
+	UNUSED -> ts [label="TS_EV_\nLCHAN_\nUNUSED",style=dotted,penwidth=3]
+	ts -> WAIT_TS_READY [label="LCHAN_EV_\nTS_READY",style=dotted]
+
+	WAIT_TS_READY -> UNUSED [label="error/timeout",style=dashed,constraint=false]
+	{WAIT_ACTIV_ACK,WAIT_RF_RELEASE_ACK} -> BORKEN [label="error/timeout",style=dashed]
+	{WAIT_MGW_ENDPOINT_AVAILABLE,WAIT_IPACC_CRCX_ACK,WAIT_IPACC_MDCX_ACK} -> WAIT_SAPIS_RELEASED [label=error,style=dashed]
+
+	WAIT_TS_READY -> gscon [label="GSCON_EV_\nENSURE_\nMGW_ENDPOINT",style=dotted]
+	gscon -> WAIT_MGW_ENDPOINT_AVAILABLE [label="LCHAN_EV_\nMGW_ENDPOINT_\n{AVAILABLE,ERROR}",style=dotted]
+
+}

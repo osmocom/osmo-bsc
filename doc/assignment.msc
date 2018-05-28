@@ -1,190 +1,126 @@
 msc {
 	hscale=3;
-	ms [label="MS"], bts [label="BTS"], bsc[label="BSC"], bsc_gscon[label="BSC conn FSM"], bsc_mgcp[label="BSC mgcp FSM"], mgw[label="MGW"], msc_[label="MSC"];
+	ms [label="MS/BTS"], bsc_lchan[label="BSC lchan FSM"],
+	bsc_gscon[label="BSC conn FSM"], bsc_mgcp[label="BSC mgcp FSM"], mgw_msc[label="MGW/MSC"];
 
-	ms note msc_ [label="lchan allocation sequence for BSSMAP Assignment Request"];
+	ms note mgw_msc [label="lchan allocation sequence for BSSMAP Assignment Request"];
 
-	bsc <= msc_ [label="BSSMAP Assignment Request"];
-	bsc box bsc [label="bssmap_handle_assignm_req()"];
-	bsc -> bsc_gscon [label="GSCON_EV_A_ASSIGNMENT_CMD"];
+	bsc_gscon <= mgw_msc [label="BSSMAP Assignment Request"];
+	bsc_gscon abox bsc_gscon [label="ST_ASSIGNMENT_\nWAIT_LCHAN"];
 
-	--- [label="is the chan_mode a speech mode?"];
+	bsc_lchan <- bsc_gscon [label="lchan_select_by_chan_mode(chan_mode)"];
+	|||;
+	--- [label="IF returned lchan is NULL"];
+	bsc_gscon => mgw_msc [label="BSSMAP Assignment Failure"];
+	bsc_gscon abox bsc_gscon [label="ST_ACTIVE"];
+	---;
+	|||;
+	bsc_gscon box bsc_gscon [label="store lchan pointer in conn->lchan_for_assignment"];
+	bsc_lchan <- bsc_gscon [label="lchan_activate(FOR_ASSIGNMENT)"];
+	...;
+	|||;
+	--- [label="on lchan FSM error or timeout"];
+	bsc_lchan -> bsc_gscon [label="GSCON_EV_LCHAN_ALLOC_ERROR"];
+	bsc_gscon box bsc_gscon [label="'forget' all about conn->lchan_for_assignment"];
+	bsc_gscon => mgw_msc [label="BSSMAP Assignment Failure"];
+	bsc_gscon abox bsc_gscon [label="ST_ACTIVE"];
+	--- [label="END: 'on error'"];
+	...;
+	...;
 
-	bsc_gscon abox bsc_gscon [label="ST_WAIT_CRCX_BTS (MGCP_MGW_TIMEOUT = 4s)"];
+	--- [label="IF lchan FSM decides that it is an lchan for speech"];
+	bsc_lchan -> bsc_gscon [label="GSCON_EV_ENSURE_MGW_ENDPOINT"];
+	--- [label="IF there is an MGW endpoint for the BTS already (conn->user_plane.fi_bts)"];
+	bsc_gscon -> bsc_lchan [label="LCHAN_EV_MGW_ENDPOINT_AVAILABLE"];
+	--- [label="ELSE: no MGW endpoint for the BTS side yet"];
+	bsc_gscon abox bsc_gscon [label="ST_ASSIGNMENT_\nWAIT_CRCX_BTS"];
+	bsc_gscon box bsc_gscon [label="assignment_created_mgw_endpoint = true"];
 	bsc_gscon -> bsc_mgcp [label="mgcp_conn_create()"];
-	bsc_mgcp => mgw [label="CRCX (for BTS)"];
-	bsc_mgcp abox bsc_mgcp [label="ST_CRCX (MGCP_MGW_TIMEOUT = 4s)"];
-	bsc_gscon note bsc_mgcp [label="two timeouts running in parallel"];
-	bsc_gscon note bsc_mgcp [label="note: #define MGCP_MGW_TIMEOUT exists twice,
-				       once in libosmo-mgcp-client,
-				       once in bsc_subscr_conn_fsm.c"];
-	bsc_mgcp -> bsc_gscon [label="mgcp_conn_create() exits"];
-	bsc_gscon -> bsc [label="bssmap_handle_assignm_req() exits"];
+	bsc_mgcp abox bsc_mgcp [label="ST_CRCX_RESP (MGCP_MGW_TIMEOUT = 4s)"];
+	bsc_mgcp => mgw_msc [label="CRCX (for BTS)"];
+	bsc_gscon note bsc_mgcp [label="conn FSM relies on mgcp FSM timeout"];
 	...;
 	--- [label="On Timeout"];
-	bsc_gscon note bsc_gscon [label="The conn FSM likely timeouts first"];
-	bsc_gscon => msc_ [label="BSSMAP Assignment Failure"];
-	bsc_gscon abox bsc_gscon [label="ST_ACTIVE"];
-	bsc_mgcp note bsc_mgcp [label="The MGCP FSM will timeout right after that, and terminate itself,
-				      emitting the parent_term event set upon mgcp_conn_create():"];
+	bsc_mgcp note bsc_mgcp [label="On timeouit, the MGCP FSM will terminate, emitting the parent_term
+		event set upon mgcp_conn_create():"];
 	bsc_mgcp -> bsc_gscon [label="GSCON_EV_MGW_FAIL_BTS"];
 	bsc_gscon note bsc_gscon [label="GSCON_EV_MGW_FAIL_BTS is handled by the conn FSM allstate
-					handler. It sets conn->user_plane.fi_bts = NULL. There is code
-					that would emit a BSSMAP Assignment Failure, but not in
-					ST_ACTIVE"];
-	--- [label="end: 'On Timeout'"];
+		handler. It sets conn->user_plane.fi_bts = NULL."];
+	bsc_gscon -> bsc_lchan [label="LCHAN_EV_MGW_ENDPOINT_ERROR"];
+	bsc_lchan note bsc_gscon [label="conn FSM timeout handler exits and relies on the lchan FSM
+		signalling error, which should actually happen immediately:"];
+	bsc_gscon <- bsc_lchan [label="GSCON_EV_LCHAN_ALLOC_ERROR"];
+	bsc_gscon abox bsc_gscon [label="ST_ACTIVE"];
+	bsc_gscon box bsc_gscon [label="'forget' all about conn->lchan_for_assignment"];
+	bsc_gscon => mgw_msc [label="BSSMAP Assignment Failure"];
+	--- [label="END: 'On Timeout'"];
 	...;
 
-	bsc_mgcp <= mgw [label="CRCX OK (for BTS)"];
+	bsc_mgcp <= mgw_msc [label="CRCX OK (for BTS)"];
 	bsc_mgcp box bsc_mgcp [label="libosmo-mgcp-client fsm_crcx_resp_cb()"];
+	bsc_mgcp abox bsc_mgcp [label="ST_READY"];
 	bsc_mgcp -> bsc_gscon [label="GSCON_EV_MGW_CRCX_RESP_BTS"];
-	--- [label="end: 'is the chan_mode a speech mode?'"];
-
-	bsc_gscon note bsc_gscon [label="for mode=sign, we're still handling GSCON_EV_A_ASSIGNMENT_CMD;
-					 for speech mode, we're handling GSCON_EV_MGW_CRCX_RESP_BTS"];
-	bsc <- bsc_gscon [label="gsm0808_assign_req()"];
-
-	bsc box bsc [label="lchan_alloc(): pick available lchan"];
-	bsc box bsc [label="rsl_chan_activate_lchan()"];
-
-	--- [label="is the chosen lchan on dynamic timeslot that is currently used as PDCH?"];
-	bts <= bsc [label="i) RSL RF Chan Release of PDCH (Osmocom dyn TS)"];
-	bts <= bsc [label="OR ii) RSL PDCH Deact (ip.access dyn TS)"];
-	bsc -> bsc_gscon [label="gsm0808_assign_req() returns early"];
-	bsc_gscon abox bsc_gscon [label="ST_WAIT_ASS_COMPL (GSM0808_T10_VALUE=6s)"];
+	bsc_gscon abox bsc_gscon [label="ST_ASSIGNMENT_\nWAIT_LCHAN"];
+	bsc_gscon -> bsc_lchan [label="LCHAN_EV_MGW_ENDPOINT_AVAILABLE"];
+	--- [label="END: lchan FSM decides that it is an lchan for speech"];
 	...;
-	bts note bsc_gscon [linecolor="red",
-		label="Osmocom style dyn TS use lchan->act_timer to watch over RF Chan Release, but there
-		seems to be no timer watching over PDCH Deact!"];
 	...;
-	bts => bsc [label="i) RSL RF Chan Release ACK (Osmocom dyn TS)"];
-	bts => bsc [label="OR ii) RSL PDCH Deact ACK (ip.access dyn TS)"];
-	bsc box bsc [label="rsl_chan_activate_lchan() re-invoked"];
-	bsc box bsc [label="lchan->state = LCHAN_S_ACT_REQ"];
-	bts <= bsc [label="RSL Chan Activ"];
-	--- [label="else (no dyn TS switchover)"];
 
-	bsc box bsc [label="lchan->state = LCHAN_S_ACT_REQ"];
-	bts <= bsc [label="RSL Chan Activ"];
-	bsc -> bsc_gscon [label="gsm0808_assign_req() returns"];
-	bsc_gscon abox bsc_gscon [label="ST_WAIT_ASS_COMPL (GSM0808_T10_VALUE=6s)"];
-	---;
-
+	bsc_lchan -> bsc_gscon [label="GSCON_EV_LCHAN_ACTIVE"];
+	bsc_gscon abox bsc_gscon [label="ST_ASSIGNMENT_\nWAIT_COMPLETE\nT10, 6s"];
+	ms <= bsc_gscon [label="RR Assignment"];
 	...;
 	--- [label="On Timeout"];
-	bsc_gscon => msc_ [label="BSSMAP Assignment Failure"];
+	bsc_gscon => mgw_msc [label="BSSMAP Assignment Failure"];
+	bsc_gscon -> bsc_lchan [label="LCHAN_EV_LCHAN_RELEASE"];
+	bsc_gscon box bsc_gscon [label="'forget' all about conn->lchan_for_assignment"];
+	--- [label="IF assignment_created_mgw_endpoint == true"];
+	bsc_gscon -> bsc_mgcp [label="mgcp_conn_delete()"];
+	bsc_gscon note bsc_mgcp [label="If the MGW endpoint didn't exist before the Assignment, release
+		it now. If there was one before this, it is probably still in use by a previous lchan, so
+		keep it in place."];
 	bsc_gscon abox bsc_gscon [label="ST_ACTIVE"];
-	bsc_gscon note bsc_mgcp [linecolor="red",
-	  label="The mgcp FSM from CRCX above apparently lacks a cleanup action for this case.
-	         It should be cleaned up eventually when the conn is torn down, but we should
-		 release RTP endpoints as soon as possible."];
-	--- [label="end: 'On Timeout'"];
+	--- [label="END: 'On Timeout'"];
 	...;
-
-	bts => bsc [label="RSL Chan Activ ACK"];
-	bsc box bsc [label="rsl_rx_chan_act_ack()"];
-	bsc box bsc [label="Stop lchan->act_timer"];
-	bsc box bsc [label="lchan->state = LCHAN_S_ACTIVE"];
-	bsc -> bsc [label="S_LCHAN_ACTIVATE_ACK"];
-	bsc box bsc [label="bsc_api.c handle_chan_ack()"];
-	ms <= bsc [label="RR Assignment Command"];
-
-	...;
-	ms note bsc_gscon [label="We rely on the overall conn FSM ST_WAIT_ASS_COMPL timeout."];
-	...;
-
-	ms => bsc [label="RR Assignment Complete"];
-	bsc box bsc [label="handle_ass_compl()"];
-	--- [label="Release old lchan"];
-	bsc box bsc [label="_lchan_handle_release(sacch_deact=0)"];
-	bsc box bsc [label="rsl_release_sapis_from(start=1)"];
-	bts <= bsc [label="RSL Release Request (Local End)..."];
-	bts <= bsc [label="...for each SAPI except link_id=0"];
-	bsc box bsc [label="rsl_release_request(link_id=0)"];
-	bts <= bsc [label="RSL Release Request (Local End) for link_id=0"];
-	bsc box bsc [label="_lchan_handle_release() returns here, the remaining release is asynchronous;
-	                    see `End: 'Release old lchan'` below."];
-	...;
-	bts note bsc_gscon [linecolor="red",
-	  label="There seems to be no timer watching over RSL Release Request!"];
-	...;
-	bts => bsc [label="RSL Release Confirm..."];
-	bts => bsc [label="...for each SAPI and link_id=0"];
-	bsc abox bsc [label="start T3111"];
-	...;
-	bsc box bsc [label="T3111 expires"];
-	bsc abox bsc [label="Start lchan->act_timer with lchan_deact_tmr_cb"];
-	bts <= bsc [label="RSL RF Channel Release"];
-	...;
-	--- [label="On timeout"];
-	bsc box bsc [label="lchan_deact_tmr_cb()"];
-	bsc box bsc [label="rsl_lchan_mark_broken(): state=LCHAN_S_BROKEN"];
-	bsc box bsc [label="lchan_free()"];
-	bsc -> bsc [label="S_LCHAN_UNEXPECTED_RELEASE"];
-	bsc box bsc [label="bsc_api.c handle_release()"];
-	bsc box bsc [label="bsc->assign_fail()"];
-	bsc -> bsc_gscon [label="GSCON_EV_RR_ASS_FAIL"];
-	bsc note bsc_gscon [linecolor="orange",
-	  label="The name 'RR_ASS_FAIL' might suggest the event means an actual RR Assignment
-		 Failure message being received. Maybe this should be called GSCON_EV_ASSIGNMENT_ERROR."];
-	...;
-	bsc box bsc [label="bsc->clear_request()"];
-	bsc box bsc [label="bsc_clear_request encodes a BSSMAP Clear Request message and passes it on
-	                    to the conn FSM as data argument via:"];
-	bsc -> bsc_gscon [label="GSCON_EV_TX_SCCP"];
-	bsc_gscon => msc_ [label="BSSMAP Clear Request"];
-	bsc note bsc_gscon [linecolor="red",
-	  label="Instead of sending an arbitrary message, the conn FSM should
-		 be explicitly instructed to clear the connection, to be able
-		 to notice if the MSC failed to respond to the Clear Request.
-		 Currently, this relies on the MSC responding with a Clear
-		 Command, hopefully, some time later."];
-	--- [label="End: 'On timeout'"];
-	...;
-	bts => bsc [label="RSL RF Channel Release Ack"];
-	bsc box bsc [label="Stop lchan->act_timer"];
-	bsc box bsc [label="Stop lchan->T3111"];
-	--- [label="End: 'Release old lchan'"];
-	bsc box bsc [label="still in handle_ass_compl()"];
-	bsc note bsc [label="officially take over new lchan: conn->lchan = conn->secondary_lchan"];
-	--- [label="is BTS using IPA Abis? (osmo-bts, ip.access)"];
-	bts <= bsc [label="IPACC CRCX"];
-	---;
-	bsc -> bsc [label="handle_ass_compl() calls bsc_api->assign_compl()"];
-	--- [label="is BTS using IPA Abis? (osmo-bts, ip.access) && conn->user_plane.rtp_ip"];
-	bsc box bsc [label="bsc_assign_compl()"];
-	bsc note bsc [label="set ass_compl.valid = true,
-			    postponing GSCON_EV_RR_ASS_COMPL until after the
-			    IPACC MDCX ACK received in osmo_bsc_audio.c"];
-	bsc box bsc [label="exit early: bsc_assign_compl()"];
-	bsc box bsc [label="exit early: handle_ass_compl()"];
-	bsc box bsc [label="osmo_bsc_audio.c"];
-	bts => bsc [label="IPACC CRCX ACK"];
-	bts <= bsc [label="IPACC MDCX"];
-	bts => bsc [label="IPACC MDCX ACK"];
-	bsc box bsc [label="handle_abisip_signal()"];
-	bsc -> bsc_gscon [label="GSCON_EV_RR_ASS_COMPL"];
-	--- [label="else"];
-	bsc box bsc [label="bsc_assign_compl()"];
-	bsc -> bsc_gscon [label="GSCON_EV_RR_ASS_COMPL"];
-	--- ;
-
-	--- [label="is chan_mode a speech mode?"];
+	ms => bsc_gscon [label="RR Assignment Complete"];
+	bsc_gscon -> bsc_lchan [label="OLD lchan: LCHAN_EV_LCHAN_RELEASE"];
+	bsc_gscon box bsc_gscon [label="conn->lchan = conn->lchan_for_assignment"];
+	--- [label="IF: chan_mode a speech mode?"];
 	bsc_gscon abox bsc_gscon [label="ST_WAIT_MDCX_BTS"];
 	bsc_gscon -> bsc_mgcp [label="mgcp_conn_modify()"];
 	bsc_mgcp note bsc_mgcp [label="same mgcp FSM as above, for BTS side"];
-	bsc_mgcp => mgw [label="MDCX (for BTS)"];
-	bsc_mgcp <= mgw [label="MDCX OK"];
+	bsc_mgcp abox bsc_mgcp [label="ST_MDCX_RESP"];
+	bsc_mgcp => mgw_msc [label="MDCX (for BTS)"];
+	...;
+	--- [label="On Timeout"];
+	bsc_gscon -> bsc_lchan [label="LCHAN_EV_RELEASE"];
+	bsc_gscon -> bsc_mgcp [label="mgcp_conn_delete()"];
+	bsc_gscon => mgw_msc [label="BSSMAP Assignment Failure"];
+	bsc_gscon abox bsc_gscon [label="ST_WAIT_CLEAR_CMD"];
+	bsc_gscon => mgw_msc [label="BSSMAP Clear Request"];
+	--- [label="END: 'On Timeout'"];
+	...;
+	bsc_mgcp <= mgw_msc [label="MDCX OK"];
+	bsc_mgcp abox bsc_mgcp [label="ST_READY"];
 	bsc_mgcp -> bsc_gscon [label="GSCON_EV_MGW_MDCX_RESP_BTS"];
 	bsc_gscon abox bsc_gscon [label="ST_WAIT_CRCX_MSC"];
 	bsc_gscon -> bsc_mgcp [label="mgcp_conn_create()"];
 	bsc_mgcp note bsc_mgcp [label="second mgcp FSM for MSC side"];
-	bsc_mgcp => mgw [label="CRCX (for MSC)"];
-	bsc_mgcp <= mgw [label="CRCX OK (for MSC)"];
+	bsc_mgcp => mgw_msc [label="CRCX (for MSC)"];
+	...;
+	--- [label="On Timeout"];
+	bsc_gscon -> bsc_lchan [label="LCHAN_EV_RELEASE"];
+	bsc_gscon -> bsc_mgcp [label="mgcp_conn_delete()"];
+	bsc_gscon => mgw_msc [label="BSSMAP Assignment Failure"];
+	bsc_gscon abox bsc_gscon [label="ST_WAIT_CLEAR_CMD"];
+	bsc_gscon => mgw_msc [label="BSSMAP Clear Request"];
+	--- [label="END: 'On Timeout'"];
+	...;
+	bsc_mgcp <= mgw_msc [label="CRCX OK (for MSC)"];
 	bsc_gscon <- bsc_mgcp [label="GSCON_EV_MGW_CRCX_RESP_MSC"];
-	---;
+	--- [label="END: chan_mode a speech mode?"];
 
-	bsc_gscon => msc_ [label="BSSMAP Assignment Complete"];
+	bsc_gscon => mgw_msc [label="BSSMAP Assignment Complete"];
 
 	bsc_gscon abox bsc_gscon [label="ST_ACTIVE"];
 }

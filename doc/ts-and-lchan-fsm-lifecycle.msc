@@ -1,0 +1,116 @@
+msc {
+	hscale=2;
+	bts [label="MS/BTS"], bsc[label="BSC"], bsc_ts[label="BSC timeslot FSM"], bsc_lchan[label="BSC lchan FSM"];
+
+	bsc box bsc [label="gsm_bts_alloc()"];
+	bsc box bsc [label="bts->c0 = gsm_bts_trx_alloc()"];
+	bsc -> bsc_ts;
+	bsc_ts box bsc_ts [label="trx->ts[*].fi = osmo_fsm_inst_alloc(timeslot_fsm)"];
+	bsc_ts abox bsc_ts [label="TS_ST_NOT_INITIALIZED"];
+	bsc -> bsc_lchan;
+	bsc_lchan box bsc_lchan [label="ts->lchan[*].ts = ts;\nts->lchan[*].nr = i;"];
+	bsc_lchan box bsc_lchan [label="ts->lchan[*].fi = NULL"];
+	bsc_ts note bsc_lchan [label="lchan_select() will only pick lchans from initialized timeslots of
+		the right pchan kind. lchan_select() shall OSMO_ASSERT(lchan->fi)."];
+	...;
+	...;
+
+	bts rbox bsc_lchan [label="reading config file"];
+	...;
+	bsc box bsc [label="timeslot N"];
+	bsc box bsc [label="phys_chan_config X"];
+	bsc_ts box bsc_ts [label="ts->pchan_from_config = X"];
+	bsc_ts note bsc_ts [label="still TS_ST_NOT_INITIALIZED"];
+	...;
+	bsc box bsc [label="trx 1..*"];
+	bsc box bsc [label="bts->trx_list add gsm_bts_trx_alloc()"];
+	bsc_ts rbox bsc_lchan [label="same as for c0 above"];
+	...;
+	...;
+	bts rbox bsc_lchan [label="Starting Operation"];
+	bts => bsc_ts [label="OML Channel OPSTART ACK"];
+	bsc_ts box bsc_ts [label="ts_on_oml_opstart()"];
+	bsc_ts box bsc_ts [label="ts->pchan_on_init = pchan_from_config"];
+	--- [label="IF dedicated TS"];
+	bsc_ts box bsc_ts [label="ts->pchan = ts->pchan_on_init"];
+	--- [label="ELSE: dyn TS"];
+	bsc_ts box bsc_ts [label="ts->pchan = NONE"];
+	--- [label="END: dyn TS"];
+	bsc_ts note bsc_lchan [label="Normally, the lchan FSM never terminates. Logic dictates that
+		the lchan is a child of the timeslot FSM, but it's not actually of functional importance
+		beyond basic sanity. Parent term event: TS_EV_LCHAN_UNUSED"];
+	bsc_ts box bsc_ts [label="Determine N = maximum number of lchans applicable to pchan_on_init"];
+	bsc_ts -> bsc_lchan;
+	bsc_lchan box bsc_lchan [label="ts->lchan[all N].type = osmo_fsm_inst_alloc(lchan_fsm)"];
+	bsc_lchan abox bsc_lchan [label="LCHAN_ST_UNUSED\n(initial state)"];
+	bsc_ts -> bsc_ts [label="ts_check_init()"];
+	...;
+	bsc -> bsc_ts [label="RSL bootstrapped"];
+	bsc_ts -> bsc_ts [label="ts_check_init()"];
+	...;
+	bsc_ts box bsc_ts [label="ts_check_init()"];
+	--- [label="as soon as both OML and RSL are ready:"];
+	bsc_ts box bsc_ts [label="ts_on_init()"];
+	bsc_ts abox bsc_ts [label="TS_ST_UNUSED"];
+	--- [label="dyn TS"];
+	bsc_ts box bsc_ts [label="onenter of TS_ST_UNUSED:"];
+	bsc_ts abox bsc_ts [label="TS_ST_WAIT_PDCH_ACT"];
+	...;
+	bsc_ts abox bsc_ts [label="PDCH"];
+	--- [label="END: dyn TS"];
+	--- [label="END: OML and RSL ready"];
+	...;
+	bsc box bsc [label="lchan_select() picks an unused lchan"];
+	bsc -> bsc_lchan [label="lchan_allocate()"];
+	bsc_lchan -> bsc_ts [label="TS_EV_LCHAN_REQUESTED"];
+	
+	--- [label="dyn TS"];
+	bsc_ts note bsc_ts [label="possibly switch from PDCH...\n(see timeslot FSM)"];
+	bsc_ts box bsc_ts [label="ts->pchan =\n requested GSM_PCHAN_XXX type"];
+	---;
+
+	bsc_ts -> bsc_lchan [label="LCHAN_EV_TS_READY"];
+	bsc_lchan note bsc_lchan [label="RSL Chan Alloc and so fort..."];
+	bsc_lchan abox bsc_lchan [label="LCHAN_ST_ACTIVE"];
+	...;
+	bsc -> bsc_lchan [label="LCHAN_EV_RELEASE"];
+	bsc_lchan note bsc_lchan [label="...RSL RF Chan Release..."];
+	bsc_lchan abox bsc_lchan [label="LCHAN_ST_UNUSED"];
+	bsc_ts <- bsc_lchan [label="TS_EV_LCHAN_UNUSED"];
+	bsc_ts abox bsc_ts [label="TS_ST_UNUSED"];
+	--- [label="dyn TS"];
+	bsc_ts note bsc_ts [label="possibly switch to PDCH"];
+	---;
+	...;
+	...;
+	bts rbox bsc_lchan [label="BTS RSL is dropped"];
+	bsc box bsc [label="ipaccess_drop_rsl()"];
+	bsc -> bsc_ts [label="ts[*]:"];
+	bsc_ts abox bsc_ts [label="TS_ST_NOT_INITIALIZED"];
+	bsc_ts note bsc_lchan [label="If it's just the RSL being dropped, transition lchan FSMs to
+		LCHAN_ST_UNUSED, but keep them allocated. Unless OML is re-established, any vty pchan
+		modifications must not take effect."];
+	bsc_ts -> bsc_lchan [label="lchan[*]:"];
+	bsc_lchan abox bsc_lchan [label="LCHAN_ST_UNUSED"];
+	bsc_ts <- bsc_lchan [label="TS_EV_LCHAN_UNUSED (ignored)"];
+	...;
+	--- [label="when RSL comes back later:"];
+	bsc -> bsc_ts [label="RSL bootstrapped"];
+	bsc_ts box bsc_ts [label="ts_check_init()"];
+	bsc_ts rbox bsc_ts [label="see ts_check_init() above"];
+	...;
+	...;
+	bts rbox bsc_lchan [label="BTS OML is dropped"];
+	bsc note bsc [label="As part of OML drop, RSL is also dropped:"];
+	bsc box bsc [label="ipaccess_drop_rsl()"];
+	bsc -> bsc_ts [label="ts[*]:"];
+	bsc_ts abox bsc_ts [label="TS_ST_NOT_INITIALIZED"];
+	bsc rbox bsc [label="see 'BTS RSL is dropped' above"];
+	bsc -> bsc_ts [label="ts[*]:"];
+	bsc_ts -> bsc_lchan [label="lchan[*]:"];
+	bsc_lchan box bsc_lchan [label="osmo_fsm_inst_term()"];
+	bsc_ts <- bsc_lchan [label="TS_EV_LCHAN_UNUSED (ignored)"];
+	bsc_lchan box bsc_lchan [label="lchan->fi = NULL"];
+	bsc rbox bsc [label="Continue at 'Starting Operation'"];
+
+}

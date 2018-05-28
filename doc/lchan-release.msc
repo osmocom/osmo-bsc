@@ -1,149 +1,83 @@
 msc {
 	hscale=2;
-	ms [label="MS"], bts [label="BTS"], bsc[label="BSC"], bsc_gscon[label="BSC conn FSM"];
+	ms [label="MS"], bts [label="BTS"], bsc[label="BSC"], bsc_lchan[label="BSC lchan FSM"],
+	bsc_gscon[label="BSC conn FSM"], msc_[label="MSC"];
 
 	ms note bsc_gscon [label="various lchan release scenarios"];
 	
-
-	ms rbox bsc_gscon [label="IF BSC releases, from BSSMAP Clear Request"];
-	bsc note bsc [label="lchan_release() may be called with sacch_deact=true or false.
-		Currently, the only time lchan_release(sacch_deact=true) is invoked is upon BSSMAP Clear
-		Command, i.e. when the MSC instructs to stop using an active lchan.
-		Some error handling code paths however directly invoke
-		rsl_rf_chan_release(error=1, SACCH_DEACTIVATE)."];
-
-	---;
-	bsc_gscon note bsc_gscon [label="Rx: BSSMAP Clear Request from MSC"];
-	bsc <- bsc_gscon [label="gsm0808_clear()"];
-	bsc box bsc [label="lchan_release(sacch_deact=1)"];
-	bsc box bsc [label="lchan->state = LCHAN_S_REL_REQ"];
-	bsc box bsc [label="_lchan_handle_release(sacch_deact=1)"];
-	bsc box bsc [label="rsl_release_sapis_from(start=1)"];
-	bts <= bsc [label="RSL Release Request (Local End)..."];
-	bts <= bsc [label="...for each SAPI, except link_id=0"];
-	ms <= bsc [label="RR Channel Release"];
-	ms note bsc [label="There is no ACK for RR Channel Release"];
-	bsc box bsc [label="rsl_deact_sacch()"];
-	bts <= bsc [label="RSL Deactivate SACCH"];
-	bsc abox bsc [label="Start T3109 (net->T3109, t3109_expired())"];
+	ms rbox msc_ [label="MSC releases"];
+	bsc_lchan abox bsc_lchan [label="LCHAN_ST_ACTIVE"];
+	bsc_gscon abox bsc_gscon [label="ST_ACTIVE"];
+	bsc_gscon <= msc_ [label="BSSMAP Clear Command"];
+	bsc_gscon abox bsc_gscon [label="ST_CLEARING"];
+	bsc_gscon => msc_ [label="BSSMAP Clear Complete"];
+	bsc_gscon -> bsc_lchan [label="LCHAN_EV_RELEASE"];
+	--- [label="IF SAPIs besides SAPI[0] are active"];
+	bsc_lchan abox bsc_lchan [label="LCHAN_ST_WAIT_\nSAPIS_RELEASED\nT3109"];
+	bts <= bsc_lchan [label="RSL Release Request (Local End)..."];
+	bts <= bsc_lchan [label="...for each SAPI, except link_id=0"];
+	ms <= bsc_lchan [label="RR Channel Release"];
+	bts <= bsc_lchan [label="RSL Deactivate SACCH",ID="if appropriate pchan"];
 	...;
-	--- [label="If T3109 expires"];
-	bsc box bsc [label="t3109_expired()"];
-	bsc box bsc [label="rsl_rf_chan_release(error=1)"];
-	bts <= bsc [label="RSL Release Request (Local End)..."];
-	bts <= bsc [label="...for each SAPI, except link_id=0"];
-	bsc box bsc [label="lchan->state = LCHAN_S_REL_REQ"];
-	bts <= bsc [label="RSL RF Channel Release"];
-	---;
+	bts => bsc_lchan [label="RSL Release ACKs"];
+	--- [label="END: SAPIs besides SAPI[0] are active"];
+	bsc_lchan abox bsc_lchan [label="LCHAN_ST_WAIT_\nBEFORE_RF_RELEASE\nT3111"];
+	bsc_lchan -> bsc_gscon [label="GSCON_EV_FORGET_LCHAN"];
+	bsc_gscon note bsc_gscon [label="has already forgotten the lchan above."];
 	...;
-	bsc rbox bsc [label="continue in the 'Common' part"];
-	--- [label="END: 'BSSMAP Clear Request'"];
+	bsc_lchan abox bsc_lchan [label="LCHAN_ST_WAIT_\nRF_RELEASE_ACK\n4s"];
+	bts <= bsc_lchan [label="RSL RF Channel Release"];
+	...;
+	bts => bsc_lchan [label="RSL RF Channel Release ACK"];
+	bsc_lchan abox bsc_lchan [label="LCHAN_ST_UNUSED"];
 	...;
 	...;
 
-	ms rbox bsc_gscon [label="IF BSC releases, from implicitly unused lchan"];
-	bsc note bsc [label="The BSC may release old unused lchans after Handover, or release lchans
-		after some error condition."];
-	bsc note bsc [label="BSC decides to release an unused lchan"];
-	bsc box bsc [label="lchan_release(sacch_deact=0)"];
-	bsc box bsc [label="lchan->state = LCHAN_S_REL_REQ"];
-	bsc box bsc [label="_lchan_handle_release(sacch_deact=0)"];
-	bts <= bsc [label="RSL Release Request (Local End)..."];
-	bts <= bsc [label="...for all SAPIs"];
+	ms rbox msc_ [label="BSC releases, outside of conn FSM's flow"];
+	bsc -> bsc_lchan [label="LCHAN_EV_RELEASE"];
+	--- [label="IF SAPIs besides SAPI[0] are active"];
+	bsc_lchan abox bsc_lchan [label="LCHAN_ST_WAIT_\nSAPIS_RELEASED\nT3109"];
+	bts <= bsc_lchan [label="RSL Release Request (Local End)..."];
+	bts <= bsc_lchan [label="...for each SAPI, except link_id=0"];
+	ms <= bsc_lchan [label="RR Channel Release",ID="if conn is present"];
+	bts <= bsc_lchan [label="RSL Deactivate SACCH",ID="if appropriate pchan"];
 	...;
-	bts note bsc_gscon [linecolor="red",
-	  label="There seems to be no timer watching over RSL Release Request!"];
+	bts => bsc_lchan [label="RSL Release ACKs"];
+	--- [label="END: SAPIs besides SAPI[0] are active"];
+	bsc_lchan abox bsc_lchan [label="LCHAN_ST_WAIT_\nBEFORE_RF_RELEASE\nT3111"];
+	bsc_lchan -> bsc_gscon [label="GSCON_EV_FORGET_LCHAN"];
+	bsc_gscon note bsc_gscon [label="conn FSM notices that its primary lchan is gone"];
+	bsc_gscon => msc_ [label="BSSMAP Clear Request"];
+	bsc_gscon abox bsc_gscon [label="ST_WAIT_CLEAR_CMD"];
 	...;
-	bts => bsc [label="RSL Release Confirm..."];
-	bts => bsc [label="...for all SAPIs"];
-	bsc rbox bsc [label="continue in the 'Common' part"];
-	---;
+	bsc_lchan abox bsc_lchan [label="LCHAN_ST_WAIT_\nRF_RELEASE_ACK\n4s"];
+	bts <= bsc_lchan [label="RSL RF Channel Release"];
+	...;
+	bts => bsc_lchan [label="RSL RF Channel Release ACK"];
+	bsc_lchan abox bsc_lchan [label="LCHAN_ST_UNUSED"];
+	...;
+	bsc_gscon <= msc_ [label="BSSMAP Clear Command"];
+	bsc_gscon abox bsc_gscon [label="ST_CLEARING"];
+	bsc_gscon => msc_ [label="BSSMAP Clear Complete"];
 	...;
 	...;
 
-	ms rbox bsc_gscon [label="IF MS releases"];
+	ms rbox msc_ [label="MS releases"];
 	ms => bts [label="DISC"];
-	bts => bsc [label="RLL Release Ind..."];
-	bts => bsc [label="...for each SAPI"];
-	bsc rbox bsc [label="continue in the 'Common' part"];
-	---;
+	bts => bsc_lchan [label="RLL Release Ind..."];
+	bts => bsc_lchan [label="...for each SAPI"];
+	bsc_lchan note bsc_lchan [label="The lchan FSM notices when all SAPIs have been released"];
+	bsc_lchan abox bsc_lchan [label="LCHAN_ST_WAIT_\nBEFORE_RF_RELEASE\nT3111"];
 	...;
+	bsc_lchan abox bsc_lchan [label="LCHAN_ST_WAIT_\nRF_RELEASE_ACK\n4s"];
+	bts <= bsc_lchan [label="RSL RF Channel Release"];
+	bsc_lchan -> bsc_gscon [label="GSCON_EV_FORGET_LCHAN"];
+	bsc_gscon note bsc_gscon [label="conn FSM notices that its primary lchan is gone"];
+	bsc_gscon => msc_ [label="BSSMAP Clear Request"];
+	bsc_gscon abox bsc_gscon [label="ST_WAIT_CLEAR_CMD"];
 	...;
-	ms rbox bsc_gscon [label="Common"];
-	--- [label="for each SAPI (?)"];
-	bts => bsc [label="RLL Release Confirm / RLL Release Ind"];
-	bsc box bsc [label="abis_rsl_rx_rll()"];
-	bsc box bsc [label="mark lchan->sapis[link_id] = LCHAN_SAPI_UNUSED"];
-	bsc box bsc [label="rll_indication()"];
-	bsc box bsc [label="for each bsc_rll_req matching this link_id:
-		disable timer, call cb(BSC_RLLR_IND_REL_IND)"];
-	bsc box bsc [label="rsl_handle_release()"];
-	--- [label="IF all SAPIs are unused"];
-	bsc box bsc [label="Stop T3109"];
-	bsc note bsc [label="T3109 was started if the MSC requested the release"];
-	bsc abox bsc [label="Start T3111 (net->T3111 value, t3111_expired())"];
-	--- [label="END: all SAPIs are unused"];
-	bsc -> bsc_gscon [label="GSCON_EV_RLL_REL_IND (only if RLL Release Ind)"];
-	--- [label="END: for each SAPI"];
-
+	bts => bsc_lchan [label="RSL RF Channel Release ACK"];
 	...;
-	bsc box bsc [label="T3111 expires"];
-	bsc box bsc [label="rsl_rf_chan_release()"];
-	bsc box bsc [label="Stop T3109"];
-	bsc note bsc [label="[If lchan->state is LCHAN_S_REL_ERR, don't do anything]"];
-	bsc abox bsc [label="Start lchan->act_timer (4s, lchan_deact_tmr_cb())"];
-	bts <= bsc [label="RSL RF Channel Release"];
-
-	...;
-	--- [label="IF lchan->act_timer expires"];
-	bsc box bsc [label="lchan_deact_tmr_cb()"];
-	bsc box bsc [label="rsl_lchan_mark_broken(): lchan->state = LCHAN_S_BROKEN"];
-	bsc box bsc [label="lchan_free() (see below)"];
-	--- [label="END: 'lchan->act_timer expires'"];
-	...;
-
-	bts => bsc [label="RSL RF Channel Release ACK"];
-	bsc box bsc [label="rsl_rx_rf_chan_rel_ack()"];
-	bsc box bsc [label="Stop lchan->act_timer"];
-	bsc box bsc [label="Stop T3111"];
-
-	--- [label="IF lchan->state == LCHAN_S_BROKEN"];
-	bsc note bsc [label="If an ACK comes in late, for specific BTS models, we may choose to 'repair'
-		the lchan so that it is usable again, by calling do_lchan_free() directly (see below)."];
-	bsc box bsc [label="rsl_rx_rf_chan_rel_ack() exits here and none of below actions happen.
-		The lchan remains LCHAN_S_BROKEN indefinitely."];
-	--- [label="END: lchan->state == LCHAN_S_BROKEN"];
-	bsc box bsc [label="do_lchan_free()"];
-	--- [label="IF lchan->state == LCHAN_S_REL_ERR"];
-	bsc note bsc [label="If release failed, we take the lchan back into operation after due
-		timeout"];
-	bsc abox bsc [label="Start lchan->error_timer (T3111+2, error_timeout_cb())"];
-	bsc note bsc [label="do_lchan_free() continues, async:"];
-	...;
-	bsc box bsc [label="error_timeout_cb()"];
-	bsc box bsc [label="lchan->state = LCHAN_S_NONE"];
-	bsc box bsc [label="dyn TS: activate PDCH..."];
-	--- [label="ELSE"];
-	bsc box bsc [label="lchan->state = LCHAN_S_NONE"];
-	--- [label="END: lchan->state == LCHAN_S_REL_ERR"];
-	bsc box bsc [label="lchan_free()"];
-	--- [label="IF conn is still associated (and not dyn TS in switchover)"];
-	bsc -> bsc [label="S_LCHAN_UNEXPECTED_RELEASE"];
-	bsc box bsc [label="handle_release()"];
-	bsc box bsc [label="Stop T10"];
-	bsc note bsc [linecolor=orange,label="conn->T10 is actually dead code, it is never started.
-		Instead, the conn FSM starts ST_WAIT_ASS_COMPL with a T10 value."];
-	bsc -> bsc_gscon [label="GSCON_EV_RR_ASS_FAIL"];
-	bsc -> bsc_gscon [label="GSCON_EV_TX_SCCP: BSSMAP Clear Request"];
-	bsc box bsc [label="bsc_clear_handover()"];
-	bsc box bsc [label="Stop T3103"];
-	bsc box bsc [label="free handover struct"];
-	bsc box bsc [label="lchan->conn = NULL"];
-	--- [label="END: 'conn is still associated'"];
-	bsc box bsc [label="Stop T3101"];
-	bsc note bsc [label="T3101 is started when sending an RR Immediate Assignment"];
-	bsc -> bsc [label="S_CHALLOC_FREED"];
-	bsc -> bsc [label="rll_lchan_signal()"];
-	bsc box bsc [label="for each bsc_rll_req matching this lchan:
-		disable timer, call cb(BSC_RLLR_IND_REL_IND)"];
+	bsc_gscon <= msc_ [label="BSSMAP Clear Command"];
+	bsc_gscon => msc_ [label="BSSMAP Clear Complete"];
 }

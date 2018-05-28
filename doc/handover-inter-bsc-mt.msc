@@ -1,32 +1,28 @@
-# Handover between cells, intra-BSC
 msc {
 	hscale=3;
 	ms [label="MS via BTS"], bsc_lchan[label="BSC lchan FSM"], bsc_gscon[label="BSC conn FSM"],
 	bsc_mgcp[label="BSC mgcp FSM"], mgw_msc[label="MGW/MSC"];
 
-	ms note mgw_msc [label="intra-BSC Handover sequence"];
+	ms note mgw_msc [label="inter-BSC Handover, from remote BSS"];
 
-	bsc_gscon abox bsc_gscon [label="ST_ACTIVE"];
-	bsc_gscon box bsc_gscon [label="bsc_handover_start(): init conn->ho"];
-	bsc_gscon -> bsc_gscon [label="GSCON_EV_HO_START (intra-BSC)"];
-	bsc_gscon abox bsc_gscon [label="ST_HANDOVER_\nWAIT_LCHAN"];
+	bsc_gscon <= mgw_msc [label="N-Connect: BSSMAP Handover Request"];
+	bsc_gscon box bsc_gscon [label="bsc_subscr_con_allocate()"];
+	bsc_gscon abox bsc_gscon [label="ST_HANDOVER_MT_WAIT_LCHAN"];
+	bsc_gscon box bsc_gscon [label="lchan_select_by_chan_mode()"];
 	bsc_lchan <- bsc_gscon [label="lchan_activate(lchan, FOR_HANDOVER)"];
+	bsc_lchan abox bsc_lchan [label="LCHAN_ST_WAIT_TS_READY"];
 	...;
-	--- [label="on lchan FSM error or timeout"];
+	--- [label="on no lchan, lchan FSM error or timeout"];
 	bsc_lchan -> bsc_gscon [label="GSCON_EV_LCHAN_ALLOC_ERROR"];
 	bsc_gscon box bsc_gscon [label="handover_end(fail)"];
+	bsc_gscon => mgw_msc [label="BSSMAP Handover Failure"];
 	ms note bsc_gscon [label="MS happily continues on the old lchan."];
-	bsc_gscon abox bsc_gscon [label="ST_ACTIVE"];
 	--- [label="END: 'on error'"];
-	...;
 	...;
 
 	--- [label="IF lchan FSM decides that it is an lchan for speech"];
+	bsc_lchan abox bsc_lchan [label="LCHAN_ST_WAIT_MGW_ENDPOINT_AVAILABLE"];
 	bsc_lchan -> bsc_gscon [label="GSCON_EV_ENSURE_MGW_ENDPOINT"];
-	--- [label="IF there is an MGW endpoint for the BTS already (conn->user_plane.fi_bts)"];
-	bsc_gscon box bsc_gscon [label="handover_created_mgw_endpoint = false"];
-	bsc_gscon -> bsc_lchan [label="LCHAN_EV_MGW_ENDPOINT_AVAILABLE"];
-	--- [label="ELSE: no MGW endpoint for the BTS side yet"];
 	bsc_gscon abox bsc_gscon [label="ST_HANDOVER_\nWAIT_CRCX_BTS"];
 	bsc_gscon box bsc_gscon [label="handover_created_mgw_endpoint = true"];
 	bsc_gscon -> bsc_mgcp [label="mgcp_conn_create()"];
@@ -44,12 +40,10 @@ msc {
 	bsc_lchan note bsc_gscon [label="conn FSM error handler exits and relies on the lchan FSM
 		signalling error, which should actually happen immediately:"];
 	bsc_gscon <- bsc_lchan [label="GSCON_EV_LCHAN_ALLOC_ERROR"];
-	bsc_gscon box bsc_gscon [label="handover_end(fail)"];
-	--- [label="IF handover_created_mgw_endpoint == true"];
 	bsc_gscon -> bsc_mgcp [label="mgcp_conn_delete()"];
-	---;
+	bsc_gscon box bsc_gscon [label="handover_end(fail)"];
+	bsc_gscon => mgw_msc [label="BSSMAP Handover Failure"];
 	ms note bsc_gscon [label="MS happily continues on the old lchan."];
-	bsc_gscon abox bsc_gscon [label="ST_ACTIVE"];
 	--- [label="END: 'On Timeout'"];
 	...;
 
@@ -57,37 +51,72 @@ msc {
 	bsc_mgcp box bsc_mgcp [label="libosmo-mgcp-client fsm_crcx_resp_cb()"];
 	bsc_mgcp abox bsc_mgcp [label="ST_READY"];
 	bsc_mgcp -> bsc_gscon [label="GSCON_EV_MGW_CRCX_RESP_BTS"];
-	bsc_gscon abox bsc_gscon [label="ST_HANDOVER_\nWAIT_LCHAN"];
 	bsc_gscon -> bsc_lchan [label="LCHAN_EV_MGW_ENDPOINT_AVAILABLE"];
+	bsc_lchan abox bsc_lchan [label="LCHAN_ST_WAIT_ACTIV_ACK"];
+	bsc_gscon note bsc_gscon [label="MSC-side CRCX needs from Handover Required the RTP IP address
+		and port of the MSC's MGW; from MGW CRCX ACK (BTS) the conn->user_plane.mgw_endpoint; The
+		Call-ID, which we actually derive from the SCCP connection ID"];
+	bsc_gscon abox bsc_gscon [label="ST_HANDOVER_MT_WAIT_CRCX_MSC"];
+	bsc_gscon -> bsc_mgcp [label="mgcp_conn_create()"];
+	bsc_mgcp note bsc_mgcp [label="second mgcp FSM for MSC side"];
+	bsc_mgcp => mgw_msc [label="CRCX (for MSC)"];
+	...;
+	--- [label="On Timeout"];
+	bsc_mgcp note bsc_mgcp [label="On timeout, the MGCP FSM will terminate, emitting the parent_term
+		event set upon mgcp_conn_create():"];
+	bsc_mgcp -> bsc_gscon [label="GSCON_EV_MGW_FAIL_MSC"];
+	bsc_gscon note bsc_gscon [label="GSCON_EV_MGW_FAIL_MSC is handled by the conn FSM allstate
+		handler. It sets conn->user_plane.fi_msc = NULL."];
+	bsc_gscon -> bsc_lchan [label="LCHAN_EV_RELEASE"];
+	bsc_gscon -> bsc_mgcp [label="mgcp_conn_delete() (FSM for BTS)"];
+	bsc_gscon box bsc_gscon [label="handover_end(fail)"];
+	bsc_gscon => mgw_msc [label="BSSMAP Handover Failure"];
+	ms note bsc_gscon [label="MS happily continues on the old lchan."];
+	--- [label="END: 'On Timeout'"];
+	...;
+	bsc_mgcp <= mgw_msc [label="CRCX OK (for MSC)"];
+	bsc_gscon <- bsc_mgcp [label="GSCON_EV_MGW_CRCX_RESP_MSC"];
+	bsc_gscon abox bsc_gscon [label="ST_HANDOVER_MT_WAIT_LCHAN"];
+	--- [label="END: chan_mode a speech mode?"];
 	--- [label="END: lchan FSM decides that it is an lchan for speech"];
 	...;
 	...;
 
+	bsc_lchan note bsc_lchan [label="TODO: when does the MS send RLL Establish Ind? I guess like
+		this:"];
+	bsc_lchan abox bsc_lchan [label="LCHAN_ST_WAIT_RLL_ESTABLISH"];
+	ms => bsc_lchan [label="RLL Establish Ind"];
+	bsc_lchan abox bsc_lchan [label="LCHAN_ST_ACTIVE"];
 	bsc_lchan -> bsc_gscon [label="GSCON_EV_LCHAN_ACTIVE"];
-	bsc_gscon abox bsc_gscon [label="ST_HANDOVER_\nWAIT_DETECT\nT3103"];
-	bsc_gscon box bsc_gscon [label="gsm48_send_ho_cmd()"];
-	ms <= bsc_gscon [label="RR Handover Command"];
+	bsc_gscon abox bsc_gscon [label="ST_HANDOVER_MT_\nWAIT_HO_ACCEPT\nsanity timer?"];
+	bsc_gscon box bsc_gscon [label="Compose RR Handover Command"];
+	bsc_gscon => mgw_msc [label="BSSMAP Handover Request Acknowledge"];
+	mgw_msc note mgw_msc [label="MSC forwards the RR HO Cmd to the remote BSS"];
 
 	...;
 	--- [label="On timeout"];
 	bsc_lchan <- bsc_gscon [label="NEW lchan: LCHAN_EV_RELEASE"];
 	ms <=> bsc_lchan [label="release procedure (async)"];
 	bsc_gscon box bsc_gscon [label="handover_end(fail)"];
-	--- [label="IF handover_created_mgw_endpoint == true"];
+	bsc_gscon abox bsc_gscon [label="ST_WAIT_CLEAR_CMD"];
+	bsc_gscon => mgw_msc [label="BSSMAP Clear Request"];
 	bsc_gscon -> bsc_mgcp [label="mgcp_conn_delete()"];
-	---;
 	ms note bsc_gscon [label="MS happily continues on the old lchan."];
-	bsc_gscon abox bsc_gscon [label="ST_ACTIVE"];
 	--- [label="END: On timeout"];
 	...;
-	ms => bsc_gscon [label="RR Handover Detect"];
-
-	bsc_gscon abox bsc_gscon [label="ST_HANDOVER_\nWAIT_MDCX_BTS\ncontinue T3103"];
-	bsc_gscon -> bsc_lchan [label="OLD lchan: LCHAN_EV_RELEASE"];
-	ms <=> bsc_lchan [label="release procedure (async)"];
-	bsc_lchan note bsc_gscon [label="officially take over new lchan: conn->lchan = ho->new_lchan"];
+	ms => bsc_gscon [label="RR Handover Accept"];
+	bsc_gscon => mgw_msc [label="BSSMAP Handover Detect"];
+	mgw_msc note mgw_msc [label="MSC switches call to new path"];
+	bsc_gscon abox bsc_gscon [label="ST_HANDOVER_MT_WAIT_SABM\nT3105"];
+	...;
+	ms => bsc_gscon [label="SABM"];
+	bsc_lchan note bsc_lchan [label="SABM: Layer 2 message containing ?"];
+	bsc_gscon abox bsc_gscon [label="ST_HANDOVER_MT_\nWAIT_MDCX_BTS\nT?"];
+	bsc_lchan note bsc_lchan [label="TODO: what is UA?"];
+	ms <= bsc_gscon [label="RR UA"];
+	bsc_gscon note bsc_gscon [label="TODO: at what point do we know the information needed for BTS
+		MDCX?"];
 	bsc_gscon -> bsc_mgcp [label="mgcp_conn_modify()"];
-	bsc_mgcp note bsc_mgcp [label="mgcp FSM that was established for old lchan, for BTS side"];
 	bsc_mgcp abox bsc_mgcp [label="ST_MDCX_RESP"];
 	bsc_mgcp => mgw_msc [label="MDCX (for BTS)"];
 	...;
@@ -106,18 +135,20 @@ msc {
 	bsc_lchan <- bsc_gscon [label="NEW lchan: LCHAN_EV_RELEASE"];
 	ms <=> bsc_lchan [label="release procedure (async)"];
 	bsc_gscon -> bsc_mgcp [label="mgcp_conn_delete()"];
+	--- [label="END: On timeout of the mgcp FSM"];
 	...;
 	bsc_mgcp <= mgw_msc [label="MDCX OK"];
 	bsc_mgcp abox bsc_mgcp [label="ST_READY"];
 	bsc_mgcp -> bsc_gscon [label="GSCON_EV_MGW_MDCX_RESP_BTS"];
 	--- [label="IF !handover_complete_received"];
-	bsc_gscon abox bsc_gscon [label="ST_HANDOVER_\nWAIT_COMPLETE\ncontinue T3103"];
+	bsc_gscon abox bsc_gscon [label="ST_HANDOVER_MT_WAIT_HO_COMPL\nT?"];
 	--- [label="ELSE"];
 	bsc_gscon -> bsc_gscon [label="gscon_handover_post_complete()"];
 	---;
 	...;
 	ms => bsc_gscon [label="RR Handover Complete"];
 	bsc_gscon box bsc_gscon [label="gscon_handover_post_complete()"];
+	bsc_gscon => mgw_msc [label="BSSMAP Handover Complete"];
 	bsc_gscon note bsc_gscon [label="handover_end(success), conn->ho = NULL"];
 	bsc_gscon abox bsc_gscon [label="ST_ACTIVE"];
 }
