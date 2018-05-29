@@ -369,6 +369,12 @@ static const struct log_info_cat osmo_bsc_categories[] = {
 		.description = "PCU Interface",
 		.enabled = 1, .loglevel = LOGL_DEBUG,
 	},
+	[DLCLS] = {
+		.name = "DLCLS",
+		.description = "Local Call, Local Switch",
+		.enabled = 1, .loglevel = LOGL_NOTICE,
+	},
+
 };
 
 static int filter_fn(const struct log_context *ctx, struct log_target *tar)

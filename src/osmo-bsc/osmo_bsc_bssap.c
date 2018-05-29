@@ -34,8 +34,10 @@
 #include <osmocom/gsm/gsm0808_utils.h>
 #include <osmocom/gsm/gsm48.h>
 #include <osmocom/bsc/osmo_bsc_sigtran.h>
+#include <osmocom/bsc/osmo_bsc_lcls.h>
 #include <osmocom/bsc/a_reset.h>
 #include <osmocom/core/byteswap.h>
+#include <osmocom/core/fsm.h>
 
 #define IP_V4_ADDR_LEN 4
 
@@ -634,6 +636,83 @@ reject:
 	return -1;
 }
 
+/* handle LCLS specific IES in BSSMAP ASS REQ */
+static void bssmap_handle_ass_req_lcls(struct gsm_subscriber_connection *conn,
+					const struct tlv_parsed *tp)
+{
+	const struct tlv_p_entry *tlv;
+	const uint8_t *config, *control;
+
+	tlv = TLVP_GET(tp, GSM0808_IE_GLOBAL_CALL_REF);
+	if (tlv) {
+		if (tlv->len > sizeof(conn->lcls.global_call_ref))
+			LOGPFSML(conn->fi, LOGL_ERROR, "Global Call Ref IE of %u bytes is too long\n",
+				tlv->len);
+		else {
+			LOGPFSM(conn->fi, "Setting GCR to %s\n", osmo_hexdump_nospc(tlv->val, tlv->len));
+			memcpy(&conn->lcls.global_call_ref, tlv->val, tlv->len);
+			conn->lcls.global_call_ref_len = tlv->len;
+		}
+	}
+
+	config = TLVP_VAL_MINLEN(tp, GSM0808_IE_LCLS_CONFIG, 1);
+	control = TLVP_VAL_MINLEN(tp, GSM0808_IE_LCLS_CONN_STATUS_CTRL, 1);
+
+	if (config || control) {
+		LOGPFSM(conn->fi, "BSSMAP ASS REQ contains LCLS (%s / %s)\n",
+			config ? gsm0808_lcls_config_name(*config) : "NULL",
+			control ? gsm0808_lcls_control_name(*control) : "NULL");
+	}
+
+	/* Update the LCLS state with Config + CSC (if any) */
+	lcls_update_config(conn, config, control);
+
+	/* Do not attempt to perform correlation yet, as during processing of the ASS REQ
+	 * we don't have the MGCP/MGW connections yet, and hence couldn't enable LS. */
+}
+
+/* TS 48.008 3.2.1.91 */
+static int bssmap_handle_lcls_connect_ctrl(struct gsm_subscriber_connection *conn,
+					   struct msgb *msg, unsigned int length)
+{
+	struct msgb *resp;
+	struct tlv_parsed tp;
+	const uint8_t *config, *control;
+	int rc;
+
+	OSMO_ASSERT(conn);
+
+	rc = tlv_parse(&tp, gsm0808_att_tlvdef(), msg->l4h + 1, length - 1, 0, 0);
+	if (rc < 0) {
+		LOGPFSML(conn->fi, LOGL_ERROR, "Error parsing TLVs of LCLS CONNT CTRL: %s\n",
+			 msgb_hexdump(msg));
+		return rc;
+	}
+	config = TLVP_VAL_MINLEN(&tp, GSM0808_IE_LCLS_CONFIG, 1);
+	control = TLVP_VAL_MINLEN(&tp, GSM0808_IE_LCLS_CONN_STATUS_CTRL, 1);
+
+	LOGPFSM(conn->fi, "Rx LCLS CONNECT CTRL (%s / %s)\n",
+		config ? gsm0808_lcls_config_name(*config) : "NULL",
+		control ? gsm0808_lcls_control_name(*control) : "NULL");
+
+	if (conn->lcls.global_call_ref_len == 0) {
+		LOGPFSML(conn->fi, LOGL_ERROR, "Ignoring LCLS as no GCR was set before\n");
+		return 0;
+	}
+	/* Update the LCLS state with Config + CSC (if any) */
+	lcls_update_config(conn, TLVP_VAL_MINLEN(&tp, GSM0808_IE_LCLS_CONFIG, 1),
+				TLVP_VAL_MINLEN(&tp, GSM0808_IE_LCLS_CONN_STATUS_CTRL, 1));
+	lcls_apply_config(conn);
+
+	LOGPFSM(conn->fi, "Tx LCLS CONNECT CTRL ACK (%s)\n",
+		gsm0808_lcls_status_name(lcls_get_status(conn)));
+	resp = gsm0808_create_lcls_conn_ctrl_ack(lcls_get_status(conn));
+	osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_TX_SCCP, resp);
+
+	return 0;
+}
+
+
 /*
  * Handle the assignment request message.
  *
@@ -681,6 +760,8 @@ static int bssmap_handle_assignm_req(struct gsm_subscriber_connection *conn,
 		cause = GSM0808_CAUSE_INCORRECT_VALUE;
 		goto reject;
 	}
+
+	bssmap_handle_ass_req_lcls(conn, &tp);
 
 	/* Currently we only support a limited subset of all
 	 * possible channel types, such as multi-slot or CSD */
@@ -851,6 +932,9 @@ static int bssmap_rcvmsg_dt1(struct gsm_subscriber_connection *conn,
 		break;
 	case BSS_MAP_MSG_ASSIGMENT_RQST:
 		ret = bssmap_handle_assignm_req(conn, msg, length);
+		break;
+	case BSS_MAP_MSG_LCLS_CONNECT_CTRL:
+		ret = bssmap_handle_lcls_connect_ctrl(conn, msg, length);
 		break;
 	default:
 		LOGP(DMSC, LOGL_NOTICE, "Unimplemented msg type: %s\n",

@@ -65,5 +65,6 @@ libbsc_a_SOURCES = \
 	handover_decision_2.c \
 	bsc_subscr_conn_fsm.c \
 	meas_feed.c \
+	osmo_bsc_lcls.c \
 	$(NULL)
 

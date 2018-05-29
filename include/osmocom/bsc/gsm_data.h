@@ -188,6 +188,18 @@ struct gsm_subscriber_connection {
 		enum gsm48_chan_mode chan_mode;
 
 	} user_plane;
+
+	/* LCLS (local call, local switch) related state */
+	struct {
+		uint8_t global_call_ref[15];
+		uint8_t global_call_ref_len; /* length of global_call_ref */
+		uint8_t config;	/* TS 48.008 3.2.2.116 */
+		uint8_t control;/* TS 48.008 3.2.2.117 */
+		/* LCLS FSM */
+		struct osmo_fsm_inst *fi;
+		/* pointer to "other" connection, if Call Leg Relocation was successful */
+		struct gsm_subscriber_connection *other;
+	} lcls;
 };
 
 

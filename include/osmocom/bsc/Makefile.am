@@ -47,4 +47,5 @@ noinst_HEADERS = \
 	vty.h \
 	bsc_api.h \
 	penalty_timers.h \
+	osmo_bsc_lcls.h \
 	$(NULL)

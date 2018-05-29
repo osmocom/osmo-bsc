@@ -30,6 +30,7 @@
 #include <osmocom/bsc/chan_alloc.h>
 #include <osmocom/bsc/bsc_subscriber.h>
 #include <osmocom/bsc/osmo_bsc_sigtran.h>
+#include <osmocom/bsc/osmo_bsc_lcls.h>
 #include <osmocom/bsc/bsc_subscr_conn_fsm.h>
 #include <osmocom/bsc/osmo_bsc.h>
 #include <osmocom/bsc/penalty_timers.h>
@@ -111,6 +112,7 @@ static const struct value_string gscon_fsm_event_names[] = {
 	{GSCON_EV_MGW_CRCX_RESP_BTS, "MGW_CRCX_RESPONSE_BTS"},
 	{GSCON_EV_MGW_MDCX_RESP_BTS, "MGW_MDCX_RESPONSE_BTS"},
 	{GSCON_EV_MGW_CRCX_RESP_MSC, "MGW_CRCX_RESPONSE_MSC"},
+	{GSCON_EV_MGW_MDCX_RESP_MSC, "MGW_MDCX_RESPONSE_MSC"},
 
 	{GSCON_EV_HO_START, "HO_START"},
 	{GSCON_EV_HO_TIMEOUT, "HO_TIMEOUT"},
@@ -223,6 +225,37 @@ static uint8_t lchan_to_chosen_channel(struct gsm_lchan *lchan)
 	return channel_mode << 4 | channel;
 }
 
+/* Add the LCLS BSS Status IE to a BSSMAP message. We assume this is
+ * called on a msgb that was returned by gsm0808_create_ass_compl() */
+static void bssmap_add_lcls_status(struct msgb *msg, enum gsm0808_lcls_status status)
+{
+	OSMO_ASSERT(msg->l3h[0] == BSSAP_MSG_BSS_MANAGEMENT);
+	OSMO_ASSERT(msg->l3h[2] == BSS_MAP_MSG_ASSIGMENT_COMPLETE ||
+		    msg->l3h[2] == BSS_MAP_MSG_HANDOVER_RQST_ACKNOWLEDGE ||
+		    msg->l3h[2] == BSS_MAP_MSG_HANDOVER_COMPLETE ||
+		    msg->l3h[2] == BSS_MAP_MSG_HANDOVER_PERFORMED);
+	OSMO_ASSERT(msgb_tailroom(msg) >= 2);
+
+	/* append IE to end of message */
+	msgb_tv_put(msg, GSM0808_IE_LCLS_BSS_STATUS, status);
+	/* increment the "length" byte in the BSSAP header */
+	msg->l3h[1] += 2;
+}
+
+/* Add (append) the LCLS BSS Status IE to a BSSMAP message, if there is any LCLS
+ * active on the given \a conn */
+static void bssmap_add_lcls_status_if_needed(struct gsm_subscriber_connection *conn,
+					     struct msgb *msg)
+{
+	enum gsm0808_lcls_status status = lcls_get_status(conn);
+	if (status != 0xff) {
+		LOGPFSM(conn->fi, "Adding LCLS BSS-Status (%s) to %s\n",
+			gsm0808_lcls_status_name(status),
+			gsm0808_bssmap_name(msg->l3h[2]));
+		bssmap_add_lcls_status(msg, status);
+	}
+}
+
 /* Generate and send assignment complete message */
 static void send_ass_compl(struct gsm_lchan *lchan, struct osmo_fsm_inst *fi, bool voice)
 {
@@ -235,6 +268,9 @@ static void send_ass_compl(struct gsm_lchan *lchan, struct osmo_fsm_inst *fi, bo
 
 	conn = lchan->conn;
 	OSMO_ASSERT(conn);
+
+	/* apply LCLS configuration (if any) */
+	lcls_apply_config(conn);
 
 	LOGPFSML(fi, LOGL_DEBUG, "Sending assignment complete message... (id=%i)\n", conn->sccp.conn_id);
 
@@ -267,6 +303,9 @@ static void send_ass_compl(struct gsm_lchan *lchan, struct osmo_fsm_inst *fi, bo
 		LOGPFSML(fi, LOGL_ERROR, "Failed to generate assignment completed message! (id=%i)\n",
 			 conn->sccp.conn_id);
 	}
+
+	/* Add LCLS BSS-Status IE in case there is any LCLS status for this connection */
+	bssmap_add_lcls_status_if_needed(conn, resp);
 
 	sigtran_send(conn, resp, fi);
 }
@@ -997,6 +1036,11 @@ static void gscon_fsm_allstate(struct osmo_fsm_inst *fi, uint32_t event, void *d
 		resp = gsm0808_create_clear_rqst(GSM0808_CAUSE_RADIO_INTERFACE_FAILURE);
 		sigtran_send(conn, resp, fi);
 		break;
+	case GSCON_EV_MGW_MDCX_RESP_MSC:
+		LOGPFSML(fi, LOGL_DEBUG, "Rx MDCX of MSC side (LCLS?)\n");
+		break;
+	case GSCON_EV_LCLS_FAIL:
+		break;
 	default:
 		OSMO_ASSERT(false);
 		break;
@@ -1056,6 +1100,12 @@ static void gscon_pre_term(struct osmo_fsm_inst *fi, enum osmo_fsm_term_cause ca
 
 	/* Make sure all possibly still open MGCP connections get closed */
 	toss_mgcp_conn(conn, fi);
+
+	if (conn->lcls.fi) {
+		/* request termination of LCLS FSM */
+		osmo_fsm_inst_term(conn->lcls.fi, cause, NULL);
+		conn->lcls.fi = NULL;
+	}
 }
 
 static int gscon_timer_cb(struct osmo_fsm_inst *fi)
@@ -1100,7 +1150,8 @@ static struct osmo_fsm gscon_fsm = {
 	.states = gscon_fsm_states,
 	.num_states = ARRAY_SIZE(gscon_fsm_states),
 	.allstate_event_mask = S(GSCON_EV_A_DISC_IND) | S(GSCON_EV_A_CLEAR_CMD) | S(GSCON_EV_RSL_CONN_FAIL) |
-	    S(GSCON_EV_RLL_REL_IND) | S(GSCON_EV_MGW_FAIL_BTS) | S(GSCON_EV_MGW_FAIL_MSC),
+	    S(GSCON_EV_RLL_REL_IND) | S(GSCON_EV_MGW_FAIL_BTS) | S(GSCON_EV_MGW_FAIL_MSC) |
+	    S(GSCON_EV_MGW_MDCX_RESP_MSC) | S(GSCON_EV_LCLS_FAIL),
 	.allstate_action = gscon_fsm_allstate,
 	.cleanup = gscon_cleanup,
 	.pre_term = gscon_pre_term,
@@ -1117,6 +1168,7 @@ struct gsm_subscriber_connection *bsc_subscr_con_allocate(struct gsm_network *ne
 
 	if (!g_initialized) {
 		osmo_fsm_register(&gscon_fsm);
+		osmo_fsm_register(&lcls_fsm);
 		g_initialized = true;
 	}
 
@@ -1136,6 +1188,16 @@ struct gsm_subscriber_connection *bsc_subscr_con_allocate(struct gsm_network *ne
 		talloc_free(conn);
 		return NULL;
 	}
+
+	/* initialize to some magic values that indicate "IE not [yet] received" */
+	conn->lcls.config = 0xff;
+	conn->lcls.control = 0xff;
+	conn->lcls.fi = osmo_fsm_inst_alloc_child(&lcls_fsm, conn->fi, GSCON_EV_LCLS_FAIL);
+	if (!conn->lcls.fi) {
+		osmo_fsm_inst_term(conn->fi, OSMO_FSM_TERM_ERROR, NULL);
+		return NULL;
+	}
+	conn->lcls.fi->priv = conn;
 
 	llist_add_tail(&conn->entry, &net->subscr_conns);
 	return conn;

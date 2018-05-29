@@ -25,5 +25,6 @@ enum {
 	DCTRL,
 	DFILTER,
 	DPCU,
+	DLCLS,
 	Debug_LastEntry,
 };

@@ -48,6 +48,8 @@ enum gscon_fsm_event {
 	GSCON_EV_MGW_MDCX_RESP_BTS,
 	/* CRCX response received (MSC) */
 	GSCON_EV_MGW_CRCX_RESP_MSC,
+	/* MDCX response received (MSC) - triggered by LCLS */
+	GSCON_EV_MGW_MDCX_RESP_MSC,
 
 	/* Internal handover request (intra-BSC handover) */
 	GSCON_EV_HO_START,
@@ -57,6 +59,9 @@ enum gscon_fsm_event {
 	GSCON_EV_HO_FAIL,
 	/* Handover completed successfully (handover_logic.c) */
 	GSCON_EV_HO_COMPL,
+
+	/* LCLS child FSM has terminated due to hard failure */
+	GSCON_EV_LCLS_FAIL,
 };
 
 struct gsm_subscriber_connection;
