@@ -1,0 +1,63 @@
+msc {
+	hscale=3;
+	ms [label="MS"], bts [label="BTS"], bsc[label="BSC"], bsc_gscon[label="BSC conn FSM"];
+
+	ms note bsc_gscon [label="lchan allocation sequence for RSL Channel Request"];
+
+	ms => bts [label="RR Channel Request"];
+	bts => bsc [label="RSL Channel Request"];
+	bsc box bsc [label="rsl_rx_chan_rqd()"];
+	bsc note bsc [label="Obtain RACH data from Request: - Reference - Access Delay (TA)
+		- Request Reason - Channel Type"];
+	bsc note bsc [label="If the reason is PDCH, the RACH Request is forwarded to PCU and BSC is no
+		longer concerned (rsl_rx_pchan_rqd())."];
+	bsc note bsc [label="Always try to allocate an SDCCH regardless of the requested type, only if no
+		SDCCH is available, look for the actually requested channel type."];
+	bsc box bsc [label="lchan_alloc(SDCCH, allow_bigger=0)"];
+
+	--- [label="IF no lchan is available (neither SDCCH nor requested type)"];
+	bsc note bsc [label="Figure out T3122 value from bts->T3122, network->T3122 or
+		GSM_T3122_DEFAULT"];
+	bsc box bsc [label="rsl_send_imm_ass_rej()"];
+	bsc note bsc [label="..."];
+	bts <= bsc [label="RR Immediate Assign Reject"];
+	ms <= bts [label="RR Immediate Assign Reject (possibly grouped with up to 4 others)"];
+	bsc note bsc [label="rsl_rx_pchan_rqd() exits, no channel is allocated."];
+	---;
+
+	bsc box bsc [label="Store RACH data in lchan->rqd_ref, rqd_ta"];
+	bsc abox bsc [label="Start lchan->act_timer (4s, lchan_act_tmr_cb())"];
+
+	bsc box bsc [label="rsl_chan_activate_lchan(RSL_ACT_INTRA_IMM_ASS)"];
+	--- [label="is the chosen lchan on dynamic timeslot that is currently used as PDCH?"];
+	bsc box bsc [linecolor=red,label="Osmocom style dyn TS use the lchan->act_timer for an RSL RF
+		Channel Release, to release PDCH mode. This will actually overwrite above act_timer!"];
+	bts <= bsc [label="i) RSL RF Chan Release of PDCH (Osmocom dyn TS)"];
+	bts <= bsc [label="OR ii) RSL PDCH Deact (ip.access dyn TS)"];
+	bsc -> bsc_gscon [label="gsm0808_assign_req() returns early"];
+	bsc_gscon abox bsc_gscon [label="ST_WAIT_ASS_COMPL (GSM0808_T10_VALUE=6s)"];
+	...;
+	bts note bsc_gscon [linecolor="red",
+		label="Osmocom style dyn TS use lchan->act_timer to watch over RF Chan Release, but there
+		seems to be no timer watching over PDCH Deact!"];
+	...;
+	bts => bsc [label="i) RSL RF Chan Release ACK (Osmocom dyn TS)"];
+	bts => bsc [label="OR ii) RSL PDCH Deact ACK (ip.access dyn TS)"];
+	bsc box bsc [label="rsl_chan_activate_lchan() re-invoked"];
+	---;
+
+	bsc box bsc [label="lchan->state = LCHAN_S_ACT_REQ"];
+	bts <= bsc [label="RSL Chan Activ: Immediate Assignment"];
+	...;
+	bsc note bsc [label="Timeout of lchan->act_timer causes the
+		lchan->state to go to LCHAN_S_BROKEN, but no events or actions
+		are triggered."];
+	...;
+	bts => bsc [label="RSL Chan Activ ACK"];
+	bsc box bsc [label="rsl_rx_chan_act_ack()"];
+	bsc box bsc [label="Stop lchan->act_timer"];
+	bsc box bsc [label="lchan->state = LCHAN_S_ACTIVE"];
+	bsc -> bsc [label="S_LCHAN_ACTIVATE_ACK (has no effect)"];
+	bsc note bsc [label="Since this was an Immediate Assignment, no further action is required on
+		behalf of the BSC. The MS is now free to use the lchan."];
+}

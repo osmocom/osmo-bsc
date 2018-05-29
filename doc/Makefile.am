@@ -6,6 +6,7 @@ msc: \
 	$(builddir)/handover.png \
 	$(builddir)/assignment.png \
 	$(builddir)/lchan-release.png \
+	$(builddir)/ms-channel-request.png \
 	$(NULL)
 
 $(builddir)/%.png: $(srcdir)/%.msc
