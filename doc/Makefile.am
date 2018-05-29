@@ -5,6 +5,7 @@ SUBDIRS = \
 msc: \
 	$(builddir)/handover.png \
 	$(builddir)/assignment.png \
+	$(builddir)/lchan-release.png \
 	$(NULL)
 
 $(builddir)/%.png: $(srcdir)/%.msc
