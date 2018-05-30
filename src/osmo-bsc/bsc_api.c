@@ -104,7 +104,7 @@ static int handle_new_assignment(struct gsm_subscriber_connection *conn, int cha
 	if (chan_mode == GSM48_CMODE_SPEECH_AMR)
 		bsc_mr_config(conn, new_lchan, full_rate);
 
-	if (rsl_chan_activate_lchan(new_lchan, 0x1, 0) < 0) {
+	if (rsl_chan_activate_lchan(new_lchan, RSL_ACT_INTRA_NORM_ASS, 0) < 0) {
 		LOGPLCHAN(new_lchan, DHO, LOGL_ERROR, "could not activate channel\n");
 		lchan_free(new_lchan);
 		return -1;
