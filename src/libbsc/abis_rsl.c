@@ -135,7 +135,7 @@ static uint8_t mdisc_by_msgtype(uint8_t msg_type)
 	}
 	if ((msg_type & 0xe0) == 0x20)
 		return ABIS_RSL_MDISC_DED_CHAN;
-	
+
 	return ABIS_RSL_MDISC_LOC;
 }
 
@@ -316,7 +316,7 @@ int rsl_chan_bs_power_ctrl(struct gsm_lchan *lchan, unsigned int fpc, int db)
 	lchan->bs_power = db/2;
 	if (fpc)
 		lchan->bs_power |= 0x10;
-	
+
 	dh = (struct abis_rsl_dchan_hdr *) msgb_put(msg, sizeof(*dh));
 	init_dchan_hdr(dh, RSL_MT_BS_POWER_CONTROL);
 	dh->chan_nr = chan_nr;
@@ -345,7 +345,7 @@ int rsl_chan_ms_power_ctrl(struct gsm_lchan *lchan, unsigned int fpc, int dbm)
 
 	if (fpc)
 		lchan->ms_power |= 0x20;
-	
+
 	dh = (struct abis_rsl_dchan_hdr *) msgb_put(msg, sizeof(*dh));
 	init_dchan_hdr(dh, RSL_MT_MS_POWER_CONTROL);
 	dh->chan_nr = chan_nr;
@@ -994,7 +994,7 @@ static int rsl_rx_rf_chan_rel_ack(struct gsm_lchan *lchan)
 		/* (a) */
 		if (ts->dyn.pchan_is != ts->dyn.pchan_want)
 			return dyn_ts_switchover_continue(ts);
-		
+
 		/* (b) */
 		if (dyn_ts_should_switch_to_pdch(ts))
 			return dyn_ts_switchover_start(ts, GSM_PCHAN_PDCH);
@@ -1958,7 +1958,7 @@ static int rsl_rx_chan_rqd(struct msgb *msg)
 
 	arfcn = lchan->ts->trx->arfcn;
 	subch = lchan->nr;
-	
+
 	lchan->encr.alg_id = RSL_ENC_ALG_A5(0);	/* no encryption */
 	lchan->ms_power = ms_pwr_ctl_lvl(bts->band, bts->ms_max_power);
 	lchan->bs_power = 0; /* 0dB reduction, output power = Pn */
@@ -2188,7 +2188,7 @@ static int abis_rsl_rx_rll(struct msgb *msg)
 				  "Abis RSL rx RLL: ");
 	ts_name = gsm_lchan_name(msg->lchan);
 	DEBUGP(DRLL, "%s SAPI=%u ", ts_name, sapi);
-	
+
 	switch (rllh->c.msg_type) {
 	case RSL_MT_DATA_IND:
 		DEBUGPC(DRLL, "DATA INDICATION\n");
@@ -2614,7 +2614,7 @@ static int abis_rsl_rx_ipacc(struct msgb *msg)
 	msg->lchan = lchan_lookup(sign_link->trx, rllh->chan_nr,
 				  "Abis RSL rx IPACC: ");
 	ts_name = gsm_lchan_name(msg->lchan);
-	
+
 	switch (rllh->c.msg_type) {
 	case RSL_MT_IPAC_CRCX_ACK:
 		DEBUGP(DRSL, "%s IPAC_CRCX_ACK ", ts_name);
@@ -2762,7 +2762,7 @@ static int dyn_ts_switchover_continue(struct gsm_bts_trx_ts *ts)
 	 * wouldn't remember to use lchan[1] across e.g. a PDCH deact anyway)
 	 */
 	lchan = ts->lchan;
-	
+
 	/*
 	 * For TCH/x, the lchan->type has been set in lchan_alloc(), but it may
 	 * have been lost during channel release due to dynamic switchover.
