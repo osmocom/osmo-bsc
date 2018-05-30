@@ -44,6 +44,7 @@
 #include <osmocom/gsm/protocol/gsm_12_21.h>
 #include <osmocom/vty/telnet_interface.h>
 #include <osmocom/vty/ports.h>
+#include <osmocom/vty/logging.h>
 
 #include <osmocom/abis/abis.h>
 #include <osmocom/bsc/abis_om2000.h>
@@ -87,7 +88,7 @@ static void print_help()
 	printf("  Some useful help...\n");
 	printf("  -h --help this text\n");
 	printf("  -D --daemonize Fork the process into a background daemon\n");
-	printf("  -d option --debug=DRLL:DCC:DMM:DRR:DRSL:DNM enable debugging\n");
+	printf("  -d option --debug=DRLL:DMM:DRR:DRSL:DNM enable debugging\n");
 	printf("  -s --disable-color\n");
 	printf("  -T --timestamp. Print a timestamp in the debug output.\n");
 	printf("  -c --config-file filename The config file to use.\n");
@@ -650,12 +651,6 @@ static const struct log_info_cat osmo_bsc_categories[] = {
 		.color = "\033[1;31m",
 		.enabled = 1, .loglevel = LOGL_NOTICE,
 	},
-	[DCC] = {
-		.name = "DCC",
-		.description = "Layer3 Call Control (CC)",
-		.color = "\033[1;32m",
-		.enabled = 1, .loglevel = LOGL_NOTICE,
-	},
 	[DMM] = {
 		.name = "DMM",
 		.description = "Layer3 Mobility Management (MM)",
@@ -694,11 +689,6 @@ static const struct log_info_cat osmo_bsc_categories[] = {
 	[DMSC] = {
 		.name = "DMSC",
 		.description = "Mobile Switching Center",
-		.enabled = 1, .loglevel = LOGL_NOTICE,
-	},
-	[DMGCP] = {
-		.name = "DMGCP",
-		.description = "Media Gateway Control Protocol",
 		.enabled = 1, .loglevel = LOGL_NOTICE,
 	},
 	[DHO] = {
@@ -808,6 +798,8 @@ int main(int argc, char **argv)
 	bsc_vty_init(bsc_gsmnet);
 	bsc_msg_lst_vty_init(tall_bsc_ctx, &access_lists, BSC_NODE);
 	ctrl_vty_init(tall_bsc_ctx);
+	logging_vty_add_deprecated_subsys(tall_bsc_ctx, "cc");
+	logging_vty_add_deprecated_subsys(tall_bsc_ctx, "mgcp");
 
 	/* Initalize SS7 */
 	osmo_ss7_init();

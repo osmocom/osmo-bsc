@@ -9,7 +9,6 @@
 /* Debug Areas of the code */
 enum {
 	DRLL,
-	DCC,
 	DMM,
 	DRR,
 	DRSL,
@@ -17,7 +16,6 @@ enum {
 	DPAG,
 	DMEAS,
 	DMSC,
-	DMGCP,
 	DHO,
 	DHODEC,
 	DREF,
