@@ -1515,6 +1515,18 @@ DEFUN(show_lchan_summary,
 	return lchan_summary(vty, argc, argv, lchan_dump_short_vty);
 }
 
+static void dump_one_subscr_conn(struct vty *vty, const struct gsm_subscriber_connection *conn)
+{
+	vty_out(vty, "conn ID=%u, MSC=%u, hodec2_fail=%d, mode=%s, mgw_ep=%s%s",
+		conn->sccp.conn_id, conn->sccp.msc->nr, conn->hodec2.failures,
+		get_value_string(gsm48_chan_mode_names, conn->user_plane.chan_mode),
+		conn->user_plane.mgw_endpoint, VTY_NEWLINE);
+	if (conn->lchan)
+		lchan_dump_full_vty(vty, conn->lchan);
+	if (conn->secondary_lchan)
+		lchan_dump_full_vty(vty, conn->secondary_lchan);
+}
+
 DEFUN(show_subscr_conn,
       show_subscr_conn_cmd,
       "show conns",
@@ -1528,8 +1540,7 @@ DEFUN(show_subscr_conn,
 	vty_out(vty, "Active subscriber connections: %s", VTY_NEWLINE);
 
 	llist_for_each_entry(conn, &net->subscr_conns, entry) {
-		vty_out(vty, "conn nr #%u:%s", count, VTY_NEWLINE);
-		lchan_dump_full_vty(vty, conn->lchan);
+		dump_one_subscr_conn(vty, conn);
 		no_conns = false;
 		count++;
 	}
