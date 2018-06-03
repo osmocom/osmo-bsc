@@ -286,6 +286,12 @@ static void lcls_no_lcls_fn(struct osmo_fsm_inst *fi, uint32_t event, void *data
 	/* we're just starting and cannot yet have a correlated call */
 	OSMO_ASSERT(conn->lcls.other == NULL);
 
+	if (conn->sccp.msc->lcls_mode == BSC_LCLS_MODE_DISABLED) {
+		LOGPFSML(fi, LOGL_DEBUG, "LCLS disabled for this MSC, ignoring %s\n",
+			 osmo_fsm_event_name(fi->fsm, event));
+		return;
+	}
+
 	/* If there's no GCR set, we can never leave this state */
 	if (conn->lcls.global_call_ref_len == 0) {
 		LOGPFSML(fi, LOGL_NOTICE, "No GCR set, ignoring %s\n",

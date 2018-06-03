@@ -38,6 +38,12 @@
 
 #define IPA_STR "IP.ACCESS specific\n"
 
+static const struct value_string bsc_lcls_mode_names[] = {
+	{ BSC_LCLS_MODE_DISABLED,	"disabled" },
+	{ BSC_LCLS_MODE_MGW_LOOP,	"mgw-loop" },
+	{ 0, NULL }
+};
+
 static struct osmo_bsc_data *osmo_bsc_data(struct vty *vty)
 {
 	return bsc_gsmnet->bsc_data;
@@ -175,6 +181,8 @@ static void write_msc(struct vty *vty, struct bsc_msc_data *msc)
 			msc->a.msc_addr_name, VTY_NEWLINE);
 	}
 	vty_out(vty, " asp-protocol %s%s", osmo_ss7_asp_protocol_name(msc->a.asp_proto), VTY_NEWLINE);
+	vty_out(vty, " lcls-mode %s%s", get_value_string(bsc_lcls_mode_names, msc->lcls_mode),
+		VTY_NEWLINE);
 
 	/* write MGW configuration */
 	mgcp_client_config_write(vty, " ");
@@ -628,6 +636,18 @@ DEFUN(cfg_msc_cs7_asp_proto,
 	return CMD_SUCCESS;
 }
 
+DEFUN(cfg_net_msc_lcls_mode,
+      cfg_net_msc_lcls_mode_cmd,
+      "lcls-mode (disabled|mgw-loop)",
+      "Configure 3GPP LCLS (Local Call, Local Switch)\n"
+      "Disable LCLS for all calls of this MSC\n"
+      "Enable LCLS with loopping traffic in MGW\n")
+{
+	struct bsc_msc_data *data = bsc_msc_data(vty);
+	data->lcls_mode = get_string_value(bsc_lcls_mode_names, argv[0]);
+	return CMD_SUCCESS;
+}
+
 DEFUN(cfg_net_bsc_mid_call_text,
       cfg_net_bsc_mid_call_text_cmd,
       "mid-call-text .TEXT",
@@ -903,6 +923,7 @@ int bsc_vty_init_extra(void)
 	install_element(MSC_NODE, &cfg_net_msc_amr_5_90_cmd);
 	install_element(MSC_NODE, &cfg_net_msc_amr_5_15_cmd);
 	install_element(MSC_NODE, &cfg_net_msc_amr_4_75_cmd);
+	install_element(MSC_NODE, &cfg_net_msc_lcls_mode_cmd);
 	install_element(MSC_NODE, &cfg_msc_acc_lst_name_cmd);
 	install_element(MSC_NODE, &cfg_msc_no_acc_lst_name_cmd);
 	install_element(MSC_NODE, &cfg_msc_cs7_bsc_addr_cmd);

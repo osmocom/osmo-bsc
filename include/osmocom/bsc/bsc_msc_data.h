@@ -58,6 +58,12 @@ enum {
 	MSC_CON_TYPE_LOCAL,
 };
 
+enum bsc_lcls_mode {
+	BSC_LCLS_MODE_DISABLED,
+	BSC_LCLS_MODE_MGW_LOOP,
+	/* we may later introduce BTS_LOOP here: direct RTP between BTSs */
+};
+
 /*! /brief Information on a remote MSC for libbsc.
  */
 struct bsc_msc_data {
@@ -85,6 +91,7 @@ struct bsc_msc_data {
 	struct gsm48_multi_rate_conf amr_conf;
 	struct gsm_audio_support **audio_support;
 	int audio_length;
+	enum bsc_lcls_mode lcls_mode;
 
 	/* ussd welcome text */
 	char *ussd_welcome_txt;
