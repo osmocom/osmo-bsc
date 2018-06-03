@@ -881,6 +881,16 @@ ALIAS_DEPRECATED(cfg_net_msc_ping_time, cfg_net_msc_no_ping_time_cmd,
 ALIAS_DEPRECATED(cfg_net_msc_ping_time, cfg_net_msc_pong_time_cmd,
       "timeout-pong ARG", LEGACY_STR "-\n");
 
+DEFUN_DEPRECATED(cfg_net_msc_dest, cfg_net_msc_dest_cmd,
+      "dest A.B.C.D <1-65000> <0-255>", LEGACY_STR "-\n" "-\n" "-\n")
+{
+	vty_out(vty, "%% dest config is deprecated and has no effect%s", VTY_NEWLINE);
+	return CMD_WARNING;
+}
+
+ALIAS_DEPRECATED(cfg_net_msc_dest, cfg_net_msc_no_dest_cmd,
+      "no dest A.B.C.D <1-65000> <0-255>", NO_STR LEGACY_STR "-\n" "-\n" "-\n");
+
 int bsc_vty_init_extra(void)
 {
 	struct gsm_network *net = bsc_gsmnet;
@@ -906,6 +916,8 @@ int bsc_vty_init_extra(void)
 	install_element(MSC_NODE, &cfg_net_bsc_ci_cmd);
 	install_element(MSC_NODE, &cfg_net_bsc_rtp_base_cmd);
 	install_element(MSC_NODE, &cfg_net_bsc_codec_list_cmd);
+	install_element(MSC_NODE, &cfg_net_msc_dest_cmd);
+	install_element(MSC_NODE, &cfg_net_msc_no_dest_cmd);
 	install_element(MSC_NODE, &cfg_net_msc_welcome_ussd_cmd);
 	install_element(MSC_NODE, &cfg_net_msc_no_welcome_ussd_cmd);
 	install_element(MSC_NODE, &cfg_net_msc_lost_ussd_cmd);
