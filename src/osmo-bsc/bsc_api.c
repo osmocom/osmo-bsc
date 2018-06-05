@@ -327,9 +327,6 @@ static void handle_ass_compl(struct gsm_subscriber_connection *conn,
 		return;
 	}
 
-	/* swap channels */
-	osmo_timer_del(&conn->T10);
-
 	lchan_release(conn->lchan, 0, RSL_REL_LOCAL_END);
 	conn->lchan = conn->secondary_lchan;
 	conn->secondary_lchan = NULL;
@@ -374,7 +371,6 @@ static void handle_ass_fail(struct gsm_subscriber_connection *conn,
 	}
 
 	/* stop the timer and release it */
-	osmo_timer_del(&conn->T10);
 	if (conn->secondary_lchan) {
 		lchan_release(conn->secondary_lchan, 0, RSL_REL_LOCAL_END);
 		conn->secondary_lchan = NULL;
@@ -533,7 +529,6 @@ static void dispatch_dtap(struct gsm_subscriber_connection *conn,
 			handle_ass_fail(conn, msg);
 			break;
 		case GSM48_MT_RR_CHAN_MODE_MODIF_ACK:
-			osmo_timer_del(&conn->T10);
 			rc = gsm48_rx_rr_modif_ack(msg);
 			if (rc < 0)
 				bsc_assign_fail(conn, GSM0808_CAUSE_NO_RADIO_RESOURCE_AVAILABLE, NULL);
@@ -645,8 +640,6 @@ int gsm0808_clear(struct gsm_subscriber_connection *conn)
 	conn->lchan = NULL;
 	conn->secondary_lchan = NULL;
 
-	osmo_timer_del(&conn->T10);
-
 	return 0;
 }
 
@@ -712,7 +705,6 @@ static void handle_release(struct gsm_subscriber_connection *conn, struct gsm_lc
 	if (conn->secondary_lchan == lchan) {
 		LOGPLCHAN(lchan, DMSC, LOGL_NOTICE,
 			  "lchan release on new lchan, Assignment failed\n");
-		osmo_timer_del(&conn->T10);
 		conn->secondary_lchan = NULL;
 
 		bsc_assign_fail(conn, GSM0808_CAUSE_RADIO_INTERFACE_FAILURE, NULL);

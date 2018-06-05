@@ -112,8 +112,6 @@ struct gsm_subscriber_connection {
 	/* handover information, if a handover is pending for this conn. */
 	struct bsc_handover *ho;
 
-	/* timer for assignment handling */
-	struct osmo_timer_list T10;
 	/* the future allocated but not yet used lchan during ASSIGNMENT */
 	struct gsm_lchan *secondary_lchan;
 
