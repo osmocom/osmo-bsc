@@ -742,6 +742,8 @@ static int bssmap_handle_assignm_req(struct gsm_subscriber_connection *conn,
 	}
 
 	msc = conn->sccp.msc;
+	if (msc->a.asp_proto != OSMO_SS7_ASP_PROT_IPA)
+		aoip = true;
 
 	tlv_parse(&tp, gsm0808_att_tlvdef(), msg->l4h + 1, length - 1, 0, 0);
 
@@ -771,14 +773,27 @@ static int bssmap_handle_assignm_req(struct gsm_subscriber_connection *conn,
 		cause = GSM0808_CAUSE_REQ_CODEC_TYPE_OR_CONFIG_NOT_SUPP;
 		goto reject;
 	case GSM0808_CHAN_SPEECH:
-		/* Detect if a CIC code is present, if so, we use the classic ip.access method to
-		 * calculate the RTP port */
 		if (TLVP_PRESENT(&tp, GSM0808_IE_CIRCUIT_IDENTITY_CODE)) {
+			/* CIC is permitted in both AoIP and SCCPlite */
 			conn->user_plane.cic =
 				osmo_load16be(TLVP_VAL(&tp, GSM0808_IE_CIRCUIT_IDENTITY_CODE));
 			timeslot = conn->user_plane.cic & 0x1f;
 			multiplex = (conn->user_plane.cic & ~0x1f) >> 5;
-		} else if (TLVP_PRESENT(&tp, GSM0808_IE_AOIP_TRASP_ADDR)) {
+		} else {
+			if (!aoip) {
+				/* no CIC but SCCPlite: illegal */
+				LOGP(DMSC, LOGL_ERROR, "SCCPlite MSC, but no CIC in ASSIGN REQ?\n");
+				cause = GSM0808_CAUSE_INFORMATION_ELEMENT_OR_FIELD_MISSING;
+				goto reject;
+			}
+		}
+		if (TLVP_PRESENT(&tp, GSM0808_IE_AOIP_TRASP_ADDR)) {
+			if (!aoip) {
+				/* SCCPlite and AoIP transport address: illegal */
+				LOGP(DMSC, LOGL_ERROR, "AoIP Transport address over IPA ?!?\n");
+				cause = GSM0808_CAUSE_INCORRECT_VALUE;
+				goto reject;
+			}
 			/* Decode AoIP transport address element */
 			rc = gsm0808_dec_aoip_trasp_addr(&rtp_addr,
 							 TLVP_VAL(&tp, GSM0808_IE_AOIP_TRASP_ADDR),
@@ -788,12 +803,14 @@ static int bssmap_handle_assignm_req(struct gsm_subscriber_connection *conn,
 				cause = GSM0808_CAUSE_INCORRECT_VALUE;
 				goto reject;
 			}
-			aoip = true;
 		} else {
-			LOGP(DMSC, LOGL_ERROR, "AoIP transport address and CIC missing. "
-			     "Audio would not work; rejecting\n");
-			cause = GSM0808_CAUSE_INFORMATION_ELEMENT_OR_FIELD_MISSING;
-			goto reject;
+			if (aoip) {
+				/* no AoIP transport level address but AoIP transport: illegal */
+				LOGP(DMSC, LOGL_ERROR, "AoIP transport address missing in ASSIGN REQ, "
+				     "audio would not work; rejecting\n");
+				cause = GSM0808_CAUSE_INFORMATION_ELEMENT_OR_FIELD_MISSING;
+				goto reject;
+			}
 		}
 
 		/* Decode speech codec list (AoIP) */
