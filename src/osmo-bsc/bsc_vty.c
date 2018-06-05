@@ -1001,6 +1001,7 @@ static int config_write_net(struct vty *vty)
 	VTY_OUT_TIMER(3119);
 	VTY_OUT_TIMER(3122);
 	VTY_OUT_TIMER(3141);
+	VTY_OUT_TIMER(10);
 	VTY_OUT_TIMER(7);
 	VTY_OUT_TIMER(8);
 	VTY_OUT_TIMER(101);
@@ -1921,6 +1922,7 @@ DECLARE_TIMER(3117, "Currently not used")
 DECLARE_TIMER(3119, "Currently not used")
 DECLARE_TIMER(3122, "Default waiting time (seconds) after IMM ASS REJECT")
 DECLARE_TIMER(3141, "Currently not used")
+DECLARE_TIMER(10, "Assignment Command timeout in seconds")
 DECLARE_TIMER(7, "Set the outgoing inter-BSC Handover timeout, from Handover Required to Handover Command")
 DECLARE_TIMER(8, "Set the outgoing inter-BSC Handover timeout, from Handover Command to final Clear")
 DECLARE_TIMER(101, "Set the incoming inter-BSC Handover timeout, from Handover Request to Accept")
@@ -4849,6 +4851,7 @@ int bsc_vty_init(struct gsm_network *network)
 	install_element(GSMNET_NODE, &cfg_net_T3119_cmd);
 	install_element(GSMNET_NODE, &cfg_net_T3122_cmd);
 	install_element(GSMNET_NODE, &cfg_net_T3141_cmd);
+	install_element(GSMNET_NODE, &cfg_net_T10_cmd);
 	install_element(GSMNET_NODE, &cfg_net_T7_cmd);
 	install_element(GSMNET_NODE, &cfg_net_T8_cmd);
 	install_element(GSMNET_NODE, &cfg_net_T101_cmd);

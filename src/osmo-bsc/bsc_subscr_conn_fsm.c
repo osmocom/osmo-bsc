@@ -45,9 +45,6 @@
 #define MGCP_MGW_HO_TIMEOUT 4	/* in seconds */
 #define MGCP_MGW_HO_TIMEOUT_TIMER_NR 2
 
-#define GSM0808_T10_TIMER_NR 10
-#define GSM0808_T10_VALUE 6
-
 #define ENDPOINT_ID "rtpbridge/*@mgw"
 
 enum gscon_fsm_states {
@@ -447,7 +444,7 @@ static void gscon_fsm_active(struct osmo_fsm_inst *fi, uint32_t event, void *dat
 				return;
 			}
 
-			osmo_fsm_inst_state_chg(fi, ST_WAIT_ASS_CMPL, GSM0808_T10_VALUE, GSM0808_T10_TIMER_NR);
+			osmo_fsm_inst_state_chg(fi, ST_WAIT_ASS_CMPL, conn->network->T10, 10);
 			break;
 		default:
 			/* An unsupported channel is requested, so we have to
@@ -534,7 +531,7 @@ static void gscon_fsm_wait_crcx_bts(struct osmo_fsm_inst *fi, uint32_t event, vo
 			return;
 		}
 
-		osmo_fsm_inst_state_chg(fi, ST_WAIT_ASS_CMPL, GSM0808_T10_VALUE, GSM0808_T10_TIMER_NR);
+		osmo_fsm_inst_state_chg(fi, ST_WAIT_ASS_CMPL, conn->network->T10, 10);
 		break;
 	case GSCON_EV_MO_DTAP:
 		forward_dtap(conn, (struct msgb *)data, fi);
@@ -1050,7 +1047,7 @@ static int gscon_timer_cb(struct osmo_fsm_inst *fi)
 		 * gscon_cleanup() above) */
 		osmo_fsm_inst_term(fi, OSMO_FSM_TERM_REGULAR, NULL);
 		break;
-	case GSM0808_T10_TIMER_NR:	/* Assignment Failed */
+	case 10:	/* Assignment Failed */
 		assignment_failed(fi, GSM0808_CAUSE_RADIO_INTERFACE_FAILURE);
 		break;
 	case MGCP_MGW_TIMEOUT_TIMER_NR:	/* Assignment failed (no response from MGW) */
