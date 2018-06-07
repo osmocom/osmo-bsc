@@ -14,12 +14,6 @@ cat $abs_srcdir/subscr/bsc_subscr_test.err > experr
 AT_CHECK([$abs_top_builddir/tests/subscr/bsc_subscr_test], [], [expout], [experr])
 AT_CLEANUP
 
-AT_SETUP([channel])
-AT_KEYWORDS([channel])
-cat $abs_srcdir/channel/channel_test.ok > expout
-AT_CHECK([$abs_top_builddir/tests/channel/channel_test], [], [expout], [ignore])
-AT_CLEANUP
-
 AT_SETUP([abis])
 AT_KEYWORDS([abis])
 cat $abs_srcdir/abis/abis_test.ok > expout

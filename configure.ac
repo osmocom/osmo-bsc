@@ -176,7 +176,6 @@ AC_OUTPUT(
     tests/Makefile
     tests/atlocal
     tests/gsm0408/Makefile
-    tests/channel/Makefile
     tests/bsc/Makefile
     tests/abis/Makefile
     tests/subscr/Makefile

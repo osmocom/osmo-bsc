@@ -1,7 +1,6 @@
 SUBDIRS = \
 	bsc \
 	gsm0408 \
-	channel \
 	abis \
 	subscr \
 	nanobts_omlattr \
