@@ -352,11 +352,12 @@ int paging_request_bts(struct gsm_bts *bts, struct bsc_subscr *bsub, int type,
  * \param[in] bts BTS on which we shall stop paging
  * \param[in] bsub subscriber which we shall stop paging
  * \param[in] conn connection to the subscriber (if any)
- * \param[in] msg message received from subscrbier (if any) */
+ * \param[in] msg message received from subscrbier (if any)
+ * \returns 0 if an active paging request was stopped, an error code otherwise. */
 /* we consciously ignore the type of the request here */
-static void _paging_request_stop(struct gsm_bts *bts, struct bsc_subscr *bsub,
-				 struct gsm_subscriber_connection *conn,
-				 struct msgb *msg)
+static int _paging_request_stop(struct gsm_bts *bts, struct bsc_subscr *bsub,
+				struct gsm_subscriber_connection *conn,
+				struct msgb *msg)
 {
 	struct gsm_bts_paging_state *bts_entry = &bts->paging;
 	struct gsm_paging_request *req, *req2;
@@ -370,9 +371,11 @@ static void _paging_request_stop(struct gsm_bts *bts, struct bsc_subscr *bsub,
 			paging_remove_request(&bts->paging, req);
 			LOGP(DPAG, LOGL_DEBUG, "(bts=%d) Stop paging %s\n", bts->nr,
 			     bsc_subscr_name(bsub));
-			break;
+			return 0;
 		}
 	}
+
+	return -ENOENT;
 }
 
 /*! Stop paging on all other bts'
@@ -391,9 +394,10 @@ void paging_request_stop(struct llist_head *bts_list,
 
 	/* Stop this first and dispatch the request */
 	if (_bts) {
-		_paging_request_stop(_bts, bsub, conn, msg);
-		rate_ctr_inc(&_bts->bts_ctrs->ctr[BTS_CTR_PAGING_RESPONDED]);
-		rate_ctr_inc(&_bts->network->bsc_ctrs->ctr[BSC_CTR_PAGING_RESPONDED]);
+		if (_paging_request_stop(_bts, bsub, conn, msg) == 0) {
+			rate_ctr_inc(&_bts->bts_ctrs->ctr[BTS_CTR_PAGING_RESPONDED]);
+			rate_ctr_inc(&_bts->network->bsc_ctrs->ctr[BSC_CTR_PAGING_RESPONDED]);
+		}
 	}
 
 	/* Make sure to cancel this everywhere else */
