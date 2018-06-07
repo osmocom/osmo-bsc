@@ -43,7 +43,6 @@ void *ctx = NULL;
 
 enum test {
 	TEST_SCAN_TO_BTS,
-	TEST_SCAN_TO_MSC,
 };
 
 /* GSM 04.08 MM INFORMATION test message */
@@ -157,12 +156,6 @@ static void test_scan(void)
 		case TEST_SCAN_TO_BTS:
 			/* override timezone of msg coming from the MSC */
 			result = bsc_scan_msc_msg(conn, msg);
-			break;
-		case TEST_SCAN_TO_MSC:
-			/* override timezone of msg coming from the BSC */
-			/* FIXME: no test for this case is defined in
-			 * test_scan_defs[], so this is never used. */
-			result = bsc_scan_bts_msg(conn, msg);
 			break;
 		default:
 			abort();
