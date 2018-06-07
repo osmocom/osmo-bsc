@@ -5,7 +5,6 @@ SUBDIRS = \
 	abis \
 	subscr \
 	nanobts_omlattr \
-	bssap \
 	handover \
 	$(NULL)
 
