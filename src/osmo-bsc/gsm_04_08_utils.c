@@ -703,3 +703,13 @@ int gsm48_paging_extract_mi(struct gsm48_pag_resp *resp, int length,
 	return gsm48_extract_mi(classmark2_lv, length - classmark_offset,
 				mi_string, mi_type);
 }
+
+/* As per TS 03.03 Section 2.2, the IMSI has 'not more than 15 digits' */
+uint64_t str_to_imsi(const char *imsi_str)
+{
+	uint64_t ret;
+
+	ret = strtoull(imsi_str, NULL, 10);
+
+	return ret;
+}

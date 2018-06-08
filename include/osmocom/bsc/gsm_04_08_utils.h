@@ -39,3 +39,5 @@ static inline struct msgb *gsm48_msgb_alloc_name(const char *name)
         return msgb_alloc_headroom(GSM48_ALLOC_SIZE, GSM48_ALLOC_HEADROOM,
                                    name);
 }
+
+uint64_t str_to_imsi(const char *imsi_str);

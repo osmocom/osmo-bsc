@@ -68,7 +68,6 @@ int rsl_ipacc_pdch_activate(struct gsm_bts_trx_ts *ts, int act);
 
 int abis_rsl_rcvmsg(struct msgb *msg);
 
-uint64_t str_to_imsi(const char *imsi_str);
 int rsl_release_request(struct gsm_lchan *lchan, uint8_t link_id,
 			enum rsl_rel_mode release_mode);
 

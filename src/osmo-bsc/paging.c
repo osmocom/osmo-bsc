@@ -50,6 +50,7 @@
 #include <osmocom/bsc/gsm_data.h>
 #include <osmocom/bsc/chan_alloc.h>
 #include <osmocom/bsc/bsc_api.h>
+#include <osmocom/bsc/gsm_04_08_utils.h>
 
 void *tall_paging_ctx = NULL;
 

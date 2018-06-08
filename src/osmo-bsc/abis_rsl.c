@@ -167,16 +167,6 @@ static struct gsm_lchan *lchan_lookup(struct gsm_bts_trx *trx, uint8_t chan_nr,
 	return lchan;
 }
 
-/* As per TS 03.03 Section 2.2, the IMSI has 'not more than 15 digits' */
-uint64_t str_to_imsi(const char *imsi_str)
-{
-	uint64_t ret;
-
-	ret = strtoull(imsi_str, NULL, 10);
-
-	return ret;
-}
-
 static struct msgb *rsl_msgb_alloc(void)
 {
 	return msgb_alloc_headroom(RSL_ALLOC_SIZE, RSL_ALLOC_HEADROOM,
