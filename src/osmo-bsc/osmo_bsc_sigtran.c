@@ -409,6 +409,8 @@ static void osmo_bsc_sigtran_reset_cb(const void *priv)
 /* Default point-code to be used as remote address (MSC) */
 #define MSC_DEFAULT_PC "0.23.1"
 
+static int asp_rx_unknown(struct osmo_ss7_asp *asp, int ppid_mux, struct msgb *msg);
+
 /* Initalize osmo sigtran backhaul */
 int osmo_bsc_sigtran_init(struct llist_head *mscs)
 {
@@ -418,6 +420,8 @@ int osmo_bsc_sigtran_init(struct llist_head *mscs)
 	struct bsc_msc_data *msc;
 	char msc_name[32];
 	uint32_t default_pc;
+
+	osmo_ss7_register_rx_unknown_cb(&asp_rx_unknown);
 
 	OSMO_ASSERT(mscs);
 	msc_list = mscs;
@@ -515,7 +519,7 @@ fail_auto_cofiguration:
 
 /* this function receives all messages received on an ASP for a PPID / StreamID that
  * libosmo-sigtran doesn't know about, such as piggy-backed CTRL and/or MGCP */
-int osmo_ss7_asp_rx_unknown(struct osmo_ss7_asp *asp, int ppid_mux, struct msgb *msg)
+static int asp_rx_unknown(struct osmo_ss7_asp *asp, int ppid_mux, struct msgb *msg)
 {
 	struct ipaccess_head *iph;
 	struct ipaccess_head_ext *iph_ext;
