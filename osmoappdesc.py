@@ -16,12 +16,10 @@
 
 app_configs = {
     "osmo-bsc": ["doc/examples/osmo-bsc/osmo-bsc.cfg",
-                 "doc/examples/osmo-bsc/osmo-bsc_custom-sccp.cfg"],
-    "nat": ["doc/examples/osmo-bsc_nat/osmo-bsc_nat.cfg"],
+                 "doc/examples/osmo-bsc/osmo-bsc_custom-sccp.cfg"]
 }
 
-apps = [(4242, "src/osmo-bsc/osmo-bsc", "OsmoBSC", "osmo-bsc"),
-        (4244, "src/osmo-bsc_nat/osmo-bsc_nat",  "OsmoBSCNAT", "nat"),
+apps = [(4242, "src/osmo-bsc/osmo-bsc", "OsmoBSC", "osmo-bsc")
         ]
 
 vty_command = ["./src/osmo-bsc/osmo-bsc", "-c",

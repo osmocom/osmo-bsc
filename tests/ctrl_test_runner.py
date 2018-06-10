@@ -489,87 +489,11 @@ class TestCtrlBSC(TestCtrlBase):
         self.assertEquals(r['var'], 'mcc')
         self.assertEquals(r['value'], '002')
 
-class TestCtrlNAT(TestCtrlBase):
-
-    def ctrl_command(self):
-        return ["./src/osmo-bsc_nat/osmo-bsc_nat", "-c",
-                "doc/examples/osmo-bsc_nat/osmo-bsc_nat.cfg"]
-
-    def ctrl_app(self):
-        return (4250, "./src/osmo-bsc_nat/osmo-bsc_nat", "OsmoNAT", "nat")
-
-    def testAccessList(self):
-        r = self.do_get('net.0.bsc_cfg.0.access-list-name')
-        self.assertEquals(r['mtype'], 'GET_REPLY')
-        self.assertEquals(r['var'], 'net')
-        self.assertEquals(r['value'], None)
-
-        r = self.do_set('net.0.bsc_cfg.0.access-list-name', 'bla')
-        self.assertEquals(r['mtype'], 'SET_REPLY')
-        self.assertEquals(r['var'], 'net')
-        self.assertEquals(r['value'], 'bla')
-
-        r = self.do_get('net.0.bsc_cfg.0.access-list-name')
-        self.assertEquals(r['mtype'], 'GET_REPLY')
-        self.assertEquals(r['var'], 'net')
-        self.assertEquals(r['value'], 'bla')
-
-        r = self.do_set('net.0.bsc_cfg.0.no-access-list-name', '1')
-        self.assertEquals(r['mtype'], 'SET_REPLY')
-        self.assertEquals(r['var'], 'net')
-        self.assertEquals(r['value'], None)
-
-        r = self.do_get('net.0.bsc_cfg.0.access-list-name')
-        self.assertEquals(r['mtype'], 'GET_REPLY')
-        self.assertEquals(r['var'], 'net')
-        self.assertEquals(r['value'], None)
-
-    def testAccessListManagement(self):
-        r = self.do_set("net.0.add.allow.access-list.404", "abc")
-        self.assertEquals(r['mtype'], 'ERROR')
-
-        r = self.do_set("net.0.add.allow.access-list.bla", "^234$")
-        self.assertEquals(r['mtype'], 'SET_REPLY')
-        self.assertEquals(r['var'], 'net.0.add.allow.access-list.bla')
-        self.assertEquals(r['value'], 'IMSI allow added to access list')
-
-        # TODO.. find a way to actually see if this rule has been
-        # added. e.g. by implementing a get for the list.
-
-class TestCtrlSGSN(TestCtrlBase):
-    def ctrl_command(self):
-        return ["./src/gprs/osmo-sgsn", "-c",
-                "doc/examples/osmo-sgsn/osmo-sgsn.cfg"]
-
-    def ctrl_app(self):
-        return (4251, "./src/gprs/osmo-sgsn", "OsmoSGSN", "sgsn")
-
-    def testListSubscribers(self):
-        # TODO. Add command to mark a subscriber as active
-        r = self.do_get('subscriber-list-active-v1')
-        self.assertEquals(r['mtype'], 'GET_REPLY')
-        self.assertEquals(r['var'], 'subscriber-list-active-v1')
-        self.assertEquals(r['value'], None)
-
 def add_bsc_test(suite, workdir):
     if not os.path.isfile(os.path.join(workdir, "src/osmo-bsc/osmo-bsc")):
         print("Skipping the BSC test")
         return
     test = unittest.TestLoader().loadTestsFromTestCase(TestCtrlBSC)
-    suite.addTest(test)
-
-def add_nat_test(suite, workdir):
-    if not os.path.isfile(os.path.join(workdir, "src/osmo-bsc_nat/osmo-bsc_nat")):
-        print("Skipping the NAT test")
-        return
-    test = unittest.TestLoader().loadTestsFromTestCase(TestCtrlNAT)
-    suite.addTest(test)
-
-def add_sgsn_test(suite, workdir):
-    if not os.path.isfile(os.path.join(workdir, "src/gprs/osmo-sgsn")):
-        print("Skipping the SGSN test")
-        return
-    test = unittest.TestLoader().loadTestsFromTestCase(TestCtrlSGSN)
     suite.addTest(test)
 
 if __name__ == '__main__':
@@ -603,7 +527,5 @@ if __name__ == '__main__':
     print "Running tests for specific control commands"
     suite = unittest.TestSuite()
     add_bsc_test(suite, workdir)
-    add_nat_test(suite, workdir)
-    add_sgsn_test(suite, workdir)
     res = unittest.TextTestRunner(verbosity=verbose_level).run(suite)
     sys.exit(len(res.errors) + len(res.failures))
