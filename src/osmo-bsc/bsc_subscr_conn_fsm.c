@@ -115,6 +115,7 @@ static const struct value_string gscon_fsm_event_names[] = {
 	{GSCON_EV_HO_TIMEOUT, "HO_TIMEOUT"},
 	{GSCON_EV_HO_FAIL, "HO_FAIL"},
 	{GSCON_EV_HO_COMPL, "HO_COMPL"},
+	{GSCON_EV_LCLS_FAIL, "LCLS_FAIL"},
 
 	{0, NULL}
 };
