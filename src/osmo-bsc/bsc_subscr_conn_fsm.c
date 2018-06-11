@@ -729,7 +729,9 @@ static void gscon_fsm_clearing(struct osmo_fsm_inst *fi, uint32_t event, void *d
 	case GSCON_EV_RSL_CLEAR_COMPL:
 		resp = gsm0808_create_clear_complete();
 		sigtran_send(conn, resp, fi);
-		osmo_fsm_inst_term(fi, OSMO_FSM_TERM_REGULAR, data);
+		/* we cannot terminate the FSM here, as that would send N-DISCCONNET.req
+		 * and 3GPP TS 48.006 Section 9.2 clearly states that SCCP connections must
+		 * always be released from the MSC side*/
 		break;
 	default:
 		OSMO_ASSERT(false);
