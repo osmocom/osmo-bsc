@@ -1382,7 +1382,8 @@ static int rsl_rx_conn_fail(struct msgb *msg)
 	LOGPC(DRSL, LOGL_NOTICE, "\n");
 	rate_ctr_inc(&lchan->ts->trx->bts->bts_ctrs->ctr[BTS_CTR_CHAN_RF_FAIL]);
 
-	osmo_fsm_inst_dispatch(lchan->conn->fi, GSCON_EV_RSL_CONN_FAIL, &cause);
+	if (lchan->conn)
+		osmo_fsm_inst_dispatch(lchan->conn->fi, GSCON_EV_RSL_CONN_FAIL, &cause);
 
 	return 0;
 }
