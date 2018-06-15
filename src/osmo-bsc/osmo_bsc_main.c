@@ -86,16 +86,16 @@ static void print_usage()
 static void print_help()
 {
 	printf("  Some useful help...\n");
-	printf("  -h --help this text\n");
-	printf("  -D --daemonize Fork the process into a background daemon\n");
-	printf("  -d option --debug=DRLL:DMM:DRR:DRSL:DNM enable debugging\n");
-	printf("  -s --disable-color\n");
-	printf("  -T --timestamp. Print a timestamp in the debug output.\n");
-	printf("  -c --config-file filename The config file to use.\n");
-	printf("  -l --local=IP. The local address of the MGCP.\n");
-	printf("  -e --log-level number. Set a global loglevel.\n");
-	printf("  -r --rf-ctl NAME. A unix domain socket to listen for cmds.\n");
-	printf("  -t --testmode. A special mode to provoke failures at the MSC.\n");
+	printf("  -h --help 			This text.\n");
+	printf("  -D --daemonize 		Fork the process into a background daemon.\n");
+	printf("  -d  --debug option 		--debug=DRLL:DMM:DRR:DRSL:DNM enable debugging.\n");
+	printf("  -s --disable-color		Disable coloring log in stderr.\n");
+	printf("  -T --timestamp		Print a timestamp in the debug output.\n");
+	printf("  -c --config-file filename	The config file to use.\n");
+	printf("  -l --local IP			The local address of the MGCP.\n");
+	printf("  -e --log-level number		Set a global loglevel.\n");
+	printf("  -r --rf-ctl NAME		A unix domain socket to listen for cmds.\n");
+	printf("  -t --testmode			A special mode to provoke failures at the MSC.\n");
 }
 
 static void handle_options(int argc, char **argv)
