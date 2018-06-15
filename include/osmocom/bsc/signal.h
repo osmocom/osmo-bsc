@@ -71,7 +71,7 @@ enum signal_nm {
 	S_NM_STATECHG_OPER,	/* Operational State changed*/
 	S_NM_STATECHG_ADM,	/* Administrative State changed */
 	S_NM_OM2K_CONF_RES,	/* OM2K Configuration Result */
-	S_NM_OPSTART_ACK,	/* Received OPSTART ACK, arg is struct abis_om_fom_hdr* */
+	S_NM_OPSTART_ACK,	/* Received OPSTART ACK, arg is struct msgb *oml_msg */
 };
 
 /* SS_LCHAN signals */

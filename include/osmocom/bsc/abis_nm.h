@@ -171,4 +171,6 @@ int abis_nm_select_newest_sw(const struct abis_nm_sw_desc *sw, const size_t len)
 /* Helper functions for updating attributes */
 int abis_nm_update_max_power_red(struct gsm_bts_trx *trx);
 
+struct gsm_bts_trx_ts *abis_nm_get_ts(const struct msgb *oml_msg);
+
 #endif /* _NM_H */

@@ -298,40 +298,23 @@ static int sw_activ_rep(struct msgb *mb)
 	return 0;
 }
 
-static struct gsm_bts_trx_ts *gsm_bts_trx_ts(struct gsm_network *net,
-					     int bts_nr, int trx_nr, int ts_nr)
-{
-	struct gsm_bts *bts;
-	struct gsm_bts_trx *trx;
-	bts = gsm_bts_num(net, bts_nr);
-	if (!bts)
-		return NULL;
-	trx = gsm_bts_trx_by_nr(bts, trx_nr);
-	if (!trx)
-		return NULL;
-	if (ts_nr < 0 || ts_nr > ARRAY_SIZE(trx->ts))
-		return NULL;
-	return &trx->ts[ts_nr];
-}
-
-static void nm_rx_opstart_ack_chan(struct abis_om_fom_hdr *foh)
+static void nm_rx_opstart_ack_chan(struct msgb *oml_msg)
 {
 	struct gsm_bts_trx_ts *ts;
-	ts = gsm_bts_trx_ts(bsc_gsmnet, foh->obj_inst.bts_nr, foh->obj_inst.trx_nr, foh->obj_inst.ts_nr);
-	if (!ts) {
-		LOGP(DNM, LOGL_ERROR, "%s Channel OPSTART ACK for non-existent TS\n",
-		     abis_nm_dump_foh(foh));
+	ts = abis_nm_get_ts(oml_msg);
+	if (!ts)
+		/* error already logged in abis_nm_get_ts() */
 		return;
-	}
 
 	gsm_ts_check_init(ts);
 }
 
-static void nm_rx_opstart_ack(struct abis_om_fom_hdr *foh)
+static void nm_rx_opstart_ack(struct msgb *oml_msg)
 {
+	struct abis_om_fom_hdr *foh = msgb_l3(oml_msg);
 	switch (foh->obj_class) {
 	case NM_OC_CHANNEL:
-		nm_rx_opstart_ack_chan(foh);
+		nm_rx_opstart_ack_chan(oml_msg);
 		break;
 	default:
 		break;
