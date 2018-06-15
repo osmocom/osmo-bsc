@@ -45,6 +45,7 @@
 #include <osmocom/vty/telnet_interface.h>
 #include <osmocom/vty/ports.h>
 #include <osmocom/vty/logging.h>
+#include <osmocom/vty/command.h>
 
 #include <osmocom/abis/abis.h>
 #include <osmocom/bsc/abis_om2000.h>
@@ -91,6 +92,7 @@ static void print_help()
 	printf("  -d  --debug option 		--debug=DRLL:DMM:DRR:DRSL:DNM enable debugging.\n");
 	printf("  -s --disable-color		Disable coloring log in stderr.\n");
 	printf("  -T --timestamp		Print a timestamp in the debug output.\n");
+	printf("  -V --version               	Print the version of OsmoBSC.\n");
 	printf("  -c --config-file filename	The config file to use.\n");
 	printf("  -l --local IP			The local address of the MGCP.\n");
 	printf("  -e --log-level number		Set a global loglevel.\n");
@@ -109,6 +111,7 @@ static void handle_options(int argc, char **argv)
 			{"config-file", 1, 0, 'c'},
 			{"disable-color", 0, 0, 's'},
 			{"timestamp", 0, 0, 'T'},
+			{"version", 0, 0, 'V' },
 			{"local", 1, 0, 'l'},
 			{"log-level", 1, 0, 'e'},
 			{"rf-ctl", 1, 0, 'r'},
@@ -116,7 +119,7 @@ static void handle_options(int argc, char **argv)
 			{0, 0, 0, 0}
 		};
 
-		c = getopt_long(argc, argv, "hd:DsTc:e:r:t",
+		c = getopt_long(argc, argv, "hd:DsTVc:e:r:t",
 				long_options, &option_index);
 		if (c == -1)
 			break;
@@ -140,6 +143,10 @@ static void handle_options(int argc, char **argv)
 			break;
 		case 'T':
 			log_set_print_timestamp(osmo_stderr_target, 1);
+			break;
+		case 'V':
+			print_version(1);
+			exit(0);
 			break;
 		case 'e':
 			log_set_log_level(osmo_stderr_target, atoi(optarg));
