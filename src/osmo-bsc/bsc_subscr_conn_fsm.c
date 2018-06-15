@@ -120,6 +120,32 @@ static const struct value_string gscon_fsm_event_names[] = {
 	{0, NULL}
 };
 
+/* Depending on the channel mode and rate, set the codec type that is signalled
+ * towards the MGW. */
+static void mgcp_pick_codec(struct gsm_subscriber_connection *conn,
+			    struct mgcp_conn_peer *conn_peer)
+{
+	switch (conn->user_plane.chan_mode) {
+	case GSM48_CMODE_SPEECH_V1:
+		if (conn->user_plane.full_rate)
+			conn_peer->codecs[0] = CODEC_GSM_8000_1;
+		else
+			conn_peer->codecs[0] = CODEC_GSMHR_8000_1;
+		conn_peer->codecs_len = 1;
+		break;
+	case GSM48_CMODE_SPEECH_EFR:
+		conn_peer->codecs[0] = CODEC_GSMEFR_8000_1;
+		conn_peer->codecs_len = 1;
+		break;
+	case GSM48_CMODE_SPEECH_AMR:
+		conn_peer->codecs[0] = CODEC_AMR_8000_1;
+		conn_peer->codecs_len = 1;
+		break;
+	default:
+		conn_peer->codecs_len = 0;
+	}
+}
+
 /* Send data SCCP message through SCCP connection. All sigtran messages
  * that are send from this FSM must use this function. Never use
  * osmo_bsc_sigtran_send() directly since this would defeat the checks
@@ -414,7 +440,9 @@ static void gscon_fsm_active(struct osmo_fsm_inst *fi, uint32_t event, void *dat
 			/* A voice channel is requested, so we run down the
 			 * mgcp-ass-mgcp state-chain (see FIXME above) */
 			memset(&conn_peer, 0, sizeof(conn_peer));
+			mgcp_pick_codec(conn, &conn_peer);
 			conn_peer.call_id = conn->sccp.conn_id;
+			conn_peer.ptime = 20;
 			osmo_strlcpy(conn_peer.endpoint, get_mgw_ep_name(conn), sizeof(conn_peer.endpoint));
 
 			/* (Pre)Change state and create the connection */
@@ -572,9 +600,11 @@ static void gscon_fsm_wait_ass_cmpl(struct osmo_fsm_inst *fi, uint32_t event, vo
 
 			/* Prepare parameters with the information we got during the assignment */
 			memset(&conn_peer, 0, sizeof(conn_peer));
+			mgcp_pick_codec(conn, &conn_peer);
 			addr.s_addr = osmo_ntohl(lchan->abis_ip.bound_ip);
 			osmo_strlcpy(conn_peer.addr, inet_ntoa(addr), sizeof(conn_peer.addr));
 			conn_peer.port = lchan->abis_ip.bound_port;
+			conn_peer.ptime = 20;
 
 			/* (Pre)Change state and modify the connection */
 			osmo_fsm_inst_state_chg(fi, ST_WAIT_MDCX_BTS, MGCP_MGW_TIMEOUT, MGCP_MGW_TIMEOUT_TIMER_NR);
@@ -637,10 +667,12 @@ static void gscon_fsm_wait_mdcx_bts(struct osmo_fsm_inst *fi, uint32_t event, vo
 		/* Prepare parameters with the connection information we got
 		 * with the assignment command */
 		memset(&conn_peer, 0, sizeof(conn_peer));
+		mgcp_pick_codec(conn, &conn_peer);
 		conn_peer.call_id = conn->sccp.conn_id;
 		sin = (struct sockaddr_in *)&conn->user_plane.aoip_rtp_addr_remote;
 		conn_peer.port = osmo_ntohs(sin->sin_port);
 		osmo_strlcpy(conn_peer.addr, inet_ntoa(sin->sin_addr), sizeof(conn_peer.addr));
+		conn_peer.ptime = 20;
 
 		/* Make sure we use the same endpoint where we created the
 		 * BTS connection. */
@@ -760,9 +792,11 @@ static void gscon_fsm_wait_ho_compl(struct osmo_fsm_inst *fi, uint32_t event, vo
 		/* Prepare parameters with the information we got during the
 		 * handover procedure (via IPACC) */
 		memset(&conn_peer, 0, sizeof(conn_peer));
+		mgcp_pick_codec(conn, &conn_peer);
 		addr.s_addr = osmo_ntohl(lchan->abis_ip.bound_ip);
 		osmo_strlcpy(conn_peer.addr, inet_ntoa(addr), sizeof(conn_peer.addr));
 		conn_peer.port = lchan->abis_ip.bound_port;
+		conn_peer.ptime = 20;
 
 		/* (Pre)Change state and modify the connection */
 		osmo_fsm_inst_state_chg(fi, ST_WAIT_MDCX_BTS_HO, MGCP_MGW_TIMEOUT, MGCP_MGW_HO_TIMEOUT_TIMER_NR);
