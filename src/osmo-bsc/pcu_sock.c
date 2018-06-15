@@ -715,6 +715,8 @@ int pcu_sock_init(const char *path, struct gsm_bts *bts)
 		return rc;
 	}
 
+	LOGP(DPCU, LOGL_INFO, "Started listening on PCU socket: %s\n", path);
+
 	bts->pcu_state = state;
 	return 0;
 }
