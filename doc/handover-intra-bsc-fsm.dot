@@ -1,0 +1,30 @@
+digraph G {
+rankdir=TB
+labelloc=t; label="Handover FSM: Intra-BSC"
+
+        lchan [label="lchan FSM",shape=box3d]
+        intra [label="intra-BSC HO",shape=box]
+        old_lchan [label="old lchan",shape=box3d]
+	terminate [shape=octagon]
+
+	invisible [style="invisible"]
+	invisible -> intra [label="Measurement Report",style=dotted]
+	invisible -> old_lchan [style=invisible,arrowhead=none]
+
+	intra -> WAIT_LCHAN_ACTIVE [label="handover_start()",style=dotted]
+        WAIT_LCHAN_ACTIVE -> lchan [label="lchan_activate(FOR_HANDOVER)",style=dotted]
+	lchan -> WAIT_LCHAN_ACTIVE [label="HO_EV_\nLCHAN_\nACTIVE,ERROR",style=dotted,constraint=false]
+        WAIT_LCHAN_ACTIVE -> WAIT_RR_HO_DETECT
+        WAIT_RR_HO_DETECT -> old_lchan [label="RR Handover\nCommand",style=dotted,constraint=false]
+	
+	lchan -> WAIT_RR_HO_DETECT [label="RR Handover\nDetect",style=dotted]
+	WAIT_RR_HO_DETECT -> WAIT_RR_HO_COMPLETE
+
+	lchan -> WAIT_RR_HO_COMPLETE [label="RR Handover\nComplete",style=dotted]
+	WAIT_RR_HO_COMPLETE -> WAIT_LCHAN_ESTABLISHED
+	lchan -> WAIT_LCHAN_ESTABLISHED [label="HO_EV_LCHAN_\nESTABLISHED",style=dotted]
+
+	WAIT_LCHAN_ESTABLISHED -> terminate [label="non-TCH"]
+	WAIT_LCHAN_ESTABLISHED -> WAIT_MGW_ENDPOINT_TO_MSC
+	WAIT_MGW_ENDPOINT_TO_MSC -> terminate [label="handover_end()"]
+}

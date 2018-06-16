@@ -1,59 +1,49 @@
-# Handover between cells, intra-BSC
 msc {
 	hscale=2;
-	ms [label="MS via BTS"], lchan[label="BSC lchan FSM"], ho[label="BSC Handover FSM"],
+	ms [label="MS/BTS"], lchan[label="BSC lchan FSM"], ho[label="BSC Handover FSM"],
 	gscon[label="BSC conn FSM"], msc_[label="MSC"];
 
-	ms note msc_ [label="intra-BSC Handover"];
+	ms note msc_ [label="inter-BSC Handover Incoming"];
 
-	gscon abox gscon [label="ST_ACTIVE"];
+	gscon <= msc_ [label="N-Connect: BSSMAP Handover Request"];
+	gscon box gscon [label="bsc_subscr_con_allocate()"];
+	gscon abox gscon [label="ST_INIT"];
+	gscon -> gscon [label="GSCON_EV_A_CONN_IND"];
+	ho <- gscon [label="handover_start_inter_bsc_in()"];
 
-	ms => ho [label="Measurement Report"];
-	ho box ho [label="Handover Decision"];
-	ho box ho [label="handover_request\n(struct handover_out_req)"];
-	ho note gscon [label="To make sure the conn FSM permits a handover, trigger an event:"];
-	ho -> gscon [label="GSCON_EV_HANDOVER_START\ndata=handover_out_req"];
-	gscon abox gscon [label="ST_HANDOVER"];
-	ho <- gscon [label="handover_start\n(handover_out_req)"];
-	ho box ho [label="handover_start_intra_bsc()"];
 	ho abox ho [label="allocate\nHO_ST_NOT_STARTED"];
-
-	...;
-	...;
-	--- [label="On any error or timeout"];
-	ho box ho [label="handover_end(fail)"];
-	ho -> gscon [label="GSCON_EV_HANDOVER_END"];
-	gscon abox gscon [label="ST_ACTIVE"];
-	ms note gscon [label="MS happily continues on the old lchan."];
-	--- [label="END: 'On any error or timeout'"];
-	...;
-	...;
-
-	ho box ho [label="lchan_select_by_type()"];
+	ho box ho [label="lchan_select_by_chan_mode()"];
 	ho abox ho [label="HO_ST_WAIT_\nLCHAN_ACTIVE"];
 	lchan <- ho [label="lchan_activate(FOR_HANDOVER)"];
 	lchan rbox lchan [label="(most details omitted, see lchan_fsm diagrams)"];
 
 	...;
 	...;
-	--- [label="On lchan error or timeout"];
-	lchan -> ho [label="HO_EV_LCHAN_ERROR"];
-	ho rbox gscon [label="same as above"];
-	--- [label="END: 'On lchan error or timeout'"];
+	--- [label="On any error or timeout"];
+	ho box ho [label="handover_end(fail)"];
+	ho -> gscon [label="GSCON_EV_HANDOVER_END"];
+	gscon note msc_ [label="There is no specific BSSMAP Handover Request NACK message."];
+	gscon => msc_ [label="BSSMAP Clear Request"];
+	gscon abox gscon [label="ST_CLEARING"];
+	gscon rbox msc_ [label="the usual disconnect dance"];
+	--- [label="END: 'On any error or timeout'"];
 	...;
 	...;
 
-	lchan abox lchan [label="LCHAN_ST_WAIT_ACTIV_ACK"];
+	lchan abox lchan [label="LCHAN_ST_WAIT_\nACTIV_ACK"];
 	ms <= lchan [label="RSL Chan Activ"];
 	...;
 	ms => lchan [label="RSL Chan Activ ACK"];
 	lchan -> ho [label="HO_EV_LCHAN_ACTIVE"];
 	ho abox ho [label="HO_ST_WAIT_\nRR_HO_DETECT"];
+	ho => msc_ [label="BSSMAP Handover Request Acknowledge\nwith RR Handover Command"];
+
 	...;
+
 	ms => ho [label="RR Handover Detect\nHO_EV_RR_HO_DETECT"];
-	lchan note ho [label="At this point we should start to switch the MGW over to the new lchan.
-		But this is not implemented yet, as was not before introducing these FSMs."];
+	ho => msc_ [label="BSSMAP Handover Detect"];
 	ho abox ho [label="HO_ST_WAIT_\nRR_HO_COMPLETE"];
+
 	...;
 	lchan note ho [label="The lchan FSM will continue with RSL and RTP while the HO FSM waits.
 		HO_EV_LCHAN_ESTABLISHED means that both RSL and RTP are established.
@@ -73,6 +63,8 @@ msc {
 	...;
 	ho <- gscon [label="HO_EV_MSC_MGW_OK"];
 	ho box ho [label="handover_end(OK)"];
+	ho => msc_ [label="BSSMAP Handover Complete"];
+
 	ho -> gscon [label="gscon_change_primary_lchan()"];
 	lchan <- gscon [label="LCHAN_RTP_EV_ESTABLISHED"];
 	ho -> gscon [label="GSCON_EV_HANDOVER_END"];

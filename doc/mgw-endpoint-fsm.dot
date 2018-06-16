@@ -1,0 +1,24 @@
+digraph G {
+rankdir=TB
+labelloc=t; label="MGW Endpoint FSM"
+
+	gscon_ensure_mgw_endpoint [label="gscon_ensure_mgw_endpoint()",shape="box"]
+	UNUSED
+	WAIT_MGW_RESPONSE
+	IN_USE
+	terminate [shape=octagon]
+	mgcp [label="mgcp client FSM\n(libosmo-mgcp-client)",shape=box3d]
+	notify [label="notify target FI",shape=box3d]
+	gscon [label="parent FI\n(gscon)",shape=box3d]
+
+	gscon_ensure_mgw_endpoint -> UNUSED
+	UNUSED -> WAIT_MGW_RESPONSE [label="first\nmgw_endpoint_ci_request(CRCX)"]
+	WAIT_MGW_RESPONSE -> mgcp [label="mgcp_conn_create()\nmgcp_conn_modify()\nmgcp_conn_delete()",style=dotted]
+	mgcp -> WAIT_MGW_RESPONSE [label="CI[i] event",style=dotted]
+	WAIT_MGW_RESPONSE -> IN_USE
+	IN_USE -> notify [label="notify event for\nindividual CI request",style=dotted]
+	IN_USE -> WAIT_MGW_RESPONSE [label="additional\nmgw_endpoint_ci_request()\nCRCX,MDCX,DLCX"]
+
+	WAIT_MGW_RESPONSE -> terminate [label="all CI DLCX'd"]
+	terminate -> gscon [label="GSCON_EV_FORGET_MGW_ENDPOINT",style=dotted]
+}

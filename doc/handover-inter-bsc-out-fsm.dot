@@ -1,0 +1,27 @@
+digraph G {
+rankdir=TB
+labelloc=t; label="Handover FSM: Inter-BSC Outgoing"
+
+	invisible [style=invisible]
+	invisible -> ho_out [label="Measurement Report\nincluding neighbor\nBSS ARFCN",style=dotted]
+        ho_out [label="inter-BSC HO Outgoing",shape=box]
+        msc [label="MSC",shape=box3d]
+	new_bsc [label="new BSC",shape=box3d]
+	lchan [label="lchan",shape=box3d]
+        terminate [shape=octagon]
+
+	ho_out -> HO_OUT_ST_WAIT_HO_COMMAND [label="handover_start()"]
+	HO_OUT_ST_WAIT_HO_COMMAND -> msc [label="BSSMAP Handover\nRequired",style=dotted]
+	msc -> new_bsc [label="BSSMAP Handover\nRequest",style=dotted]
+	new_bsc -> msc [label="BSSMAP Handover\nRequest Ack",style=dotted]
+	msc -> HO_OUT_ST_WAIT_HO_COMMAND [label="BSSMAP Handover\nCommand",style=dotted]
+
+	HO_OUT_ST_WAIT_HO_COMMAND -> lchan [label="RR Handover\nCommand\nfrom new BSC",style=dotted]
+
+	HO_OUT_ST_WAIT_HO_COMMAND -> HO_OUT_ST_WAIT_CLEAR
+	msc -> HO_OUT_ST_WAIT_CLEAR [label="BSSMAP\nClear\nCommand",style=dotted]
+
+	HO_OUT_ST_WAIT_CLEAR -> terminate
+
+
+}

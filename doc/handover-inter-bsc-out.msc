@@ -1,0 +1,47 @@
+msc {
+	hscale=2;
+	ms [label="MS/BTS"], ho[label="BSC Handover FSM"], gscon[label="BSC conn FSM"], msc_[label="MSC"];
+
+	ms note msc_ [label="inter-BSC Handover to another BSS"];
+
+	gscon abox gscon [label="ST_ACTIVE"];
+
+	ms => ho [label="Measurement Report"];
+	ho box ho [label="Handover Decision"];
+	ho box ho [label="handover_request\n(struct handover_out_req)"];
+	ho note gscon [label="To make sure the conn FSM permits a handover, trigger an event:"];
+	ho -> gscon [label="GSCON_EV_HANDOVER_START\ndata=handover_out_req"];
+	gscon abox gscon [label="ST_HANDOVER"];
+	ho <- gscon [label="handover_start\n(handover_out_req)"];
+	ho box ho [label="handover_start_inter_bsc_out()"];
+	ho => msc_ [label="BSSMAP Handover Required"];
+	ho abox ho [label="HO_OUT_ST_WAIT_HO_COMMAND"];
+	...;
+	...;
+	--- [label="On Timeout"];
+	ho box ho [label="handover_end(fail)"];
+	ho -> gscon [label="GSCON_EV_HANDOVER_END"];
+	gscon abox gscon [label="ST_ACTIVE"];
+	ms note gscon [label="MS happily continues on the old lchan."];
+	--- [label="END: 'On Timeout'"];
+	...;
+	...;
+	ho <= msc_ [label="BSSMAP Handover Command\n HO_OUT_EV_BSSMAP_HO_COMMAND"];
+	ms <= ho [label="Forward L3 Info (RR Handover Command from new BSS)"];
+	ho abox ho [label="HO_OUT_ST_WAIT_CLEAR"];
+	...;
+	gscon abox gscon [label="ST_HANDOVER_MO_\nWAIT_CLEAR_CMD\nT8"];
+	ms <= gscon [label="RR Handover Command"];
+	...;
+	ho rbox gscon [label="On Timeout: same as above"];
+	...;
+	msc_ note msc_ [label="Remote BSS reported Handover Complete to the MSC,
+	     this connection has been superseded."];
+	gscon <= msc_ [label="BSSMAP Clear Command\n GSCON_EV_A_CLEAR_CMD"];
+	gscon abox gscon [label="ST_CLEARING"];
+	gscon => msc_ [label="BSSMAP Clear Complete"];
+	...;
+	gscon <= msc_ [label="DISC IND\n GSCON_EV_A_DISC_IND"];
+	ho abox ho [label="terminate\n(child of conn FSM)"];
+	gscon abox gscon [label="terminate"];
+}

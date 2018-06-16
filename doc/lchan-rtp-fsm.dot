@@ -1,0 +1,44 @@
+digraph G {
+rankdir=TB
+labelloc=t; label="lchan RTP FSM"
+	
+	lchan [label="lchan\nFSM",shape=box3d]
+	lchan2 [label="lchan\nFSM",shape=box3d]
+	ho_as [label="Handover or Assignment FSM",shape=box3d]
+	invisible [style=invisible]
+	ho [label="Handover FSM",shape=box3d]
+	mgwep [label="mgw endpoint\nFSM",shape=box3d]
+	start [label="lchan_rtp_fsm_start()",shape=box]
+	WAIT_READY_TO_SWITCH_RTP [label="WAIT_READY_TO_SWITCH_RTP\nonly if wait_before_switching_rtp"]
+	terminate [shape=octagon]
+
+	lchan -> start [style=dashed]
+	start -> WAIT_MGW_ENDPOINT_AVAILABLE
+	start -> WAIT_LCHAN_READY [label="re-use existing\nendpoint CI"]
+
+	WAIT_MGW_ENDPOINT_AVAILABLE -> mgwep [label="gscon_ensure_mgw_endpoint()\nand CRCX to-BTS",style=dashed]
+	mgwep -> WAIT_MGW_ENDPOINT_AVAILABLE [label="LCHAN_RTP_EV_\nMGW_ENDPOINT_\n{AVAILABLE,ERROR}",style=dashed]
+	WAIT_MGW_ENDPOINT_AVAILABLE -> WAIT_LCHAN_READY
+
+	lchan -> WAIT_LCHAN_READY [label="LCHAN_RTP_EV_LCHAN_READY",style=dashed]
+	WAIT_LCHAN_READY -> WAIT_IPACC_CRCX_ACK [label="IPACC BTS"]
+	WAIT_LCHAN_READY -> WAIT_READY_TO_SWITCH_RTP
+	WAIT_IPACC_CRCX_ACK -> WAIT_IPACC_MDCX_ACK
+	WAIT_IPACC_MDCX_ACK -> WAIT_READY_TO_SWITCH_RTP
+	invisible -> ho [label="HO DETECT",style=dashed]
+	ho -> WAIT_READY_TO_SWITCH_RTP [label="LCHAN_RTP_EV_READY_TO_SWITCH",style=dashed]
+	WAIT_READY_TO_SWITCH_RTP -> WAIT_MGW_ENDPOINT_CONFIGURED
+	WAIT_MGW_ENDPOINT_CONFIGURED -> mgwep [label="MDCX",style=dashed]
+	mgwep -> WAIT_MGW_ENDPOINT_CONFIGURED [label="LCHAN_RTP_EV_\nMGW_ENDPOINT_\nCONFIGURED",style=dashed]
+	WAIT_MGW_ENDPOINT_CONFIGURED -> RTP_READY
+	RTP_READY -> lchan2 [label="LCHAN_EV_\nRTP_READY",style=dashed]
+	RTP_READY -> RTP_ESTABLISHED
+	lchan2 -> RTP_ESTABLISHED [label="LCHAN_RTP_EV_\nRELEASE",style=dashed]
+	RTP_ESTABLISHED -> terminate
+	RTP_READY -> RTP_ROLLBACK
+	RTP_ROLLBACK -> terminate
+	terminate -> lchan2 [label="LCHAN_EV_\nRTP_RELEASED",style=dashed]
+
+	lchan2 -> ho_as [label="XX_EV_LCHAN_\nESTABLISHED",style=dashed]
+	ho_as -> RTP_READY [label="LCHAN_RTP_EV_\n{ESTABLISHED,\nROLLBACK}",style=dashed]
+}

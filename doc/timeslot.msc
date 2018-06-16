@@ -1,25 +1,24 @@
 msc {
-	hscale=2;
 	bts [label="MS/BTS"], bsc[label="BSC"], bsc_ts[label="BSC timeslot FSM"], bsc_lchan[label="BSC lchan FSM"];
 
-	bsc_ts abox bsc_ts [label="NOT_INITIALIZED (no timeout)"];
+	bsc_ts abox bsc_ts [label="NOT_INITIALIZED"];
 
 	...;
 	bsc note bsc_ts [label="OML and RSL may be established in any order"];
 	bts => bsc_ts [label="OML: Channel OPSTART ACK"];
 	bsc -> bsc_ts [label="RSL bootstrapped"];
-	bsc_ts abox bsc_ts [label="UNUSED (no timeout)"];
+	bsc_ts abox bsc_ts [label="UNUSED"];
 
 	|||;
 	bts rbox bsc_lchan [label="UNUSED, onenter"];
 	bsc_ts abox bsc_ts [label="UNUSED"];
 	--- [label="GPRS enabled?"];
 	--- [label="IF: dedicated PDCH?"];
-	bsc_ts abox bsc_ts [label="PDCH (no timeout)"];
+	bsc_ts abox bsc_ts [label="PDCH"];
 
 	|||;
 	--- [label="IF: dynamic timeslot"];
-	bsc_ts abox bsc_ts [label="WAIT_PDCH_ACT (?s, Tnnnn)"];
+	bsc_ts abox bsc_ts [label="WAIT_PDCH_ACT (4s, T23001)"];
 	bts <= bsc_ts [label="RSL Chan Activ of PDCH",ID="Osmocom style"];
 	bts <= bsc_ts [label="RSL PDCH Act",ID="ip.access style"];
 	...;
@@ -29,7 +28,7 @@ msc {
 	...;
 	bts => bsc_ts [label="RSL RF Chan Activ ACK",ID="Osmocom style"];
 	bts => bsc_ts [label="RSL PDCH Act ACK",ID="ip.access style"];
-	bsc_ts abox bsc_ts [label="PDCH (no timeout)"];
+	bsc_ts abox bsc_ts [label="PDCH"];
 
 	--- [label="END: GPRS enabled?"];
 	...;
@@ -43,12 +42,14 @@ msc {
 	bts <= bsc_lchan [label="RSL Chan Activ (and so on)"];
 	...;
 	bts rbox bsc_lchan [label="IN_USE, second lchan"];
+	bsc_ts abox bsc_ts [label="IN_USE"];
 	bsc_ts <- bsc_lchan [label="TS_EV_LCHAN_REQUESTED (data=lchan)"];
 	bsc_ts -> bsc_lchan [label="LCHAN_EV_TS_READY"];
 	bts <= bsc_lchan [label="RSL Chan Activ (and so on)"];
 	...;
 	...;
 	bts rbox bsc_lchan [label="IN_USE, when lchan FSM releases (both regularly, or due to error)"];
+	bsc_ts abox bsc_ts [label="IN_USE"];
 	bsc_ts <- bsc_lchan [label="TS_EV_LCHAN_UNUSED (data=lchan)"];
 	--- [label="IF all lchan->fi->state == LCHAN_ST_UNUSED"];
 	bsc_ts abox bsc_ts [label="UNUSED"];
@@ -57,13 +58,14 @@ msc {
 	...;
 
 
-	bts rbox bsc_lchan [label="PDCH on lchan request"];
+	bts rbox bsc_lchan [label="PDCH, on lchan request"];
 	bsc_ts note bsc_lchan [label="TS_EV_LCHAN_REQUESTED should only come in on
 		lchans where it makes sense, both from TS kind as well as not
 		conflicting with other users of the lchan."];
 
+	bsc_ts abox bsc_ts [label="PDCH"];
 	bsc_ts <- bsc_lchan [label="TS_EV_LCHAN_REQUESTED"];
-	bsc_ts abox bsc_ts [label="WAIT_PDCH_DEACT (?s, Tnnnn)"];
+	bsc_ts abox bsc_ts [label="WAIT_PDCH_DEACT (4s, T23001)"];
 	bts <= bsc_ts [label="RSL RF Chan Release of PDCH",ID="Osmocom style"];
 	bts <= bsc_ts [label="RSL PDCH Deact",ID="ip.access style"];
 	...;

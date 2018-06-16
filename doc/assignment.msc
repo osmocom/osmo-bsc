@@ -1,126 +1,72 @@
 msc {
-	hscale=3;
-	ms [label="MS/BTS"], bsc_lchan[label="BSC lchan FSM"],
-	bsc_gscon[label="BSC conn FSM"], bsc_mgcp[label="BSC mgcp FSM"], mgw_msc[label="MGW/MSC"];
+	hscale=2;
+	ms [label="MS/BTS"], lchan[label="BSC lchan FSM"], ass[label="BSC Assignment FSM"],
+	gscon[label="BSC conn FSM"], msc_[label="MSC"];
 
-	ms note mgw_msc [label="lchan allocation sequence for BSSMAP Assignment Request"];
+	ms note msc_ [label="lchan allocation sequence for BSSMAP Assignment Request"];
 
-	bsc_gscon <= mgw_msc [label="BSSMAP Assignment Request"];
-	bsc_gscon abox bsc_gscon [label="ST_ASSIGNMENT_\nWAIT_LCHAN"];
+	gscon <= msc_ [label="BSSMAP Assignment Request"];
+	gscon note gscon [label="GSCON_EV_ASSIGNMENT_START\n data=struct assignment_request"];
+	gscon abox gscon [label="ST_ASSIGNMENT"];
+	ass <- gscon [label="assignment_fsm_start()"];
+	ass abox ass [label="ASSIGNMENT_ST_\nWAIT_LCHAN_ACTIVE"];
 
-	bsc_lchan <- bsc_gscon [label="lchan_select_by_chan_mode(chan_mode)"];
 	|||;
-	--- [label="IF returned lchan is NULL"];
-	bsc_gscon => mgw_msc [label="BSSMAP Assignment Failure"];
-	bsc_gscon abox bsc_gscon [label="ST_ACTIVE"];
+	--- [label="On any error (no lchan, etc.)"];
+	ass box ass [label="on_assignment_failure()"];
+	ass => msc_ [label="BSSMAP Assignment Failure"];
+	ass abox ass [label="terminate"];
+	ass -> gscon [label="GSCON_EV_ASSIGNMENT_END"];
+	gscon abox gscon [label="ST_ACTIVE"];
 	---;
 	|||;
-	bsc_gscon box bsc_gscon [label="store lchan pointer in conn->lchan_for_assignment"];
-	bsc_lchan <- bsc_gscon [label="lchan_activate(FOR_ASSIGNMENT)"];
+	lchan abox lchan [label="UNUSED"];
+	ass box ass [label="conn->assignment.new_lchan = lchan_select_by_chan_mode()"];
+	lchan <- ass [label="lchan_activate(FOR_ASSIGNMENT)"];
+	lchan abox lchan [label="WAIT_TS_READY"];
+	lchan rbox lchan [label="most details omitted, see lchan_fsm and lchan_rtp_fsm diagrams"];
 	...;
 	|||;
 	--- [label="on lchan FSM error or timeout"];
-	bsc_lchan -> bsc_gscon [label="GSCON_EV_LCHAN_ALLOC_ERROR"];
-	bsc_gscon box bsc_gscon [label="'forget' all about conn->lchan_for_assignment"];
-	bsc_gscon => mgw_msc [label="BSSMAP Assignment Failure"];
-	bsc_gscon abox bsc_gscon [label="ST_ACTIVE"];
+	lchan -> ass [label="ASSIGNMENT_EV_LCHAN_ERROR"];
+	ass box ass [label="on_assignment_failure()"];
+	ass rbox gscon [label="See 'On any error' above"];
 	--- [label="END: 'on error'"];
 	...;
 	...;
 
-	--- [label="IF lchan FSM decides that it is an lchan for speech"];
-	bsc_lchan -> bsc_gscon [label="GSCON_EV_ENSURE_MGW_ENDPOINT"];
-	--- [label="IF there is an MGW endpoint for the BTS already (conn->user_plane.fi_bts)"];
-	bsc_gscon -> bsc_lchan [label="LCHAN_EV_MGW_ENDPOINT_AVAILABLE"];
-	--- [label="ELSE: no MGW endpoint for the BTS side yet"];
-	bsc_gscon abox bsc_gscon [label="ST_ASSIGNMENT_\nWAIT_CRCX_BTS"];
-	bsc_gscon box bsc_gscon [label="assignment_created_mgw_endpoint = true"];
-	bsc_gscon -> bsc_mgcp [label="mgcp_conn_create()"];
-	bsc_mgcp abox bsc_mgcp [label="ST_CRCX_RESP (MGCP_MGW_TIMEOUT = 4s)"];
-	bsc_mgcp => mgw_msc [label="CRCX (for BTS)"];
-	bsc_gscon note bsc_mgcp [label="conn FSM relies on mgcp FSM timeout"];
+	lchan abox lchan [label="LCHAN_ST_WAIT_ACTIV_ACK"];
+	ms <= lchan [label="RSL Chan Activ"];
 	...;
-	--- [label="On Timeout"];
-	bsc_mgcp note bsc_mgcp [label="On timeouit, the MGCP FSM will terminate, emitting the parent_term
-		event set upon mgcp_conn_create():"];
-	bsc_mgcp -> bsc_gscon [label="GSCON_EV_MGW_FAIL_BTS"];
-	bsc_gscon note bsc_gscon [label="GSCON_EV_MGW_FAIL_BTS is handled by the conn FSM allstate
-		handler. It sets conn->user_plane.fi_bts = NULL."];
-	bsc_gscon -> bsc_lchan [label="LCHAN_EV_MGW_ENDPOINT_ERROR"];
-	bsc_lchan note bsc_gscon [label="conn FSM timeout handler exits and relies on the lchan FSM
-		signalling error, which should actually happen immediately:"];
-	bsc_gscon <- bsc_lchan [label="GSCON_EV_LCHAN_ALLOC_ERROR"];
-	bsc_gscon abox bsc_gscon [label="ST_ACTIVE"];
-	bsc_gscon box bsc_gscon [label="'forget' all about conn->lchan_for_assignment"];
-	bsc_gscon => mgw_msc [label="BSSMAP Assignment Failure"];
-	--- [label="END: 'On Timeout'"];
+	ms => lchan [label="RSL Chan Activ ACK"];
+	lchan -> ass [label="ASSIGNMENT_EV_LCHAN_ACTIVE"];
+	ass abox ass [label="ASSIGNMENT_ST_\nWAIT_RR_ASS_COMPLETE"];
+	ms <= ass [label="RR Assignment Command"];
+	lchan note ass [label="The lchan FSM will continue with RSL and RTP while the Assignment FSM waits.
+		ASSIGNMENT_EV_LCHAN_ESTABLISHED means that both RSL and RTP are established.
+		Usually, RTP will be done first, and the ASSIGNMENT_EV_LCHAN_ESTABLISHED may be
+		received even before ASSIGNMENT_EV_RR_ASSIGNMENT_COMPLETE.
+		assignment_fsm_wait_lchan_established_onenter() decides whether to wait or not."];
 	...;
+	ms => lchan [label="RSL EST IND"];
+	lchan -> ass [label="ASSIGNMENT_EV_LCHAN_ESTABLISHED",ID="(may come as early as this, or...)"];
+	ms => ass [label="RR Assignment Complete (came with EST IND)"];
+	ass abox ass [label="ASSIGNMENT_ST_\nWAIT_LCHAN_ESTABLISHED"];
+	--- [label="IF lchan is not in LCHAN_ST_ESTABLISHED yet (waiting for RTP)"];
+	...;
+	lchan rbox lchan [label="when lchan RTP FSM is done with setting up RTP"];
+	lchan -> ass [label="ASSIGNMENT_EV_LCHAN_ESTABLISHED",ID="(...may come only now)"];
+	---;
+	ass abox ass [label="ASSIGNMENT_ST_WAIT_\nMGW_ENDPOINT_TO_MSC"];
+	ass -> gscon [label="gscon_connect_mgw_to_msc()"];
+	...;
+	ass <- gscon [label="ASSIGNMENT_EV_MSC_MGW_OK"];
+	ass box ass [label="assignment_success()"];
+	ass => msc_ [label="BSSMAP Assignment Complete"];
+	ass -> gscon [label="gscon_change_primary_lchan()"];
+	lchan <- gscon [label="LCHAN_RTP_EV_ESTABLISHED"];
+	ass abox ass [label="terminate"];
+	ass -> gscon [label="GSCON_EV_ASSIGNMENT_END"];
+	gscon abox gscon [label="ST_ACTIVE"];
 
-	bsc_mgcp <= mgw_msc [label="CRCX OK (for BTS)"];
-	bsc_mgcp box bsc_mgcp [label="libosmo-mgcp-client fsm_crcx_resp_cb()"];
-	bsc_mgcp abox bsc_mgcp [label="ST_READY"];
-	bsc_mgcp -> bsc_gscon [label="GSCON_EV_MGW_CRCX_RESP_BTS"];
-	bsc_gscon abox bsc_gscon [label="ST_ASSIGNMENT_\nWAIT_LCHAN"];
-	bsc_gscon -> bsc_lchan [label="LCHAN_EV_MGW_ENDPOINT_AVAILABLE"];
-	--- [label="END: lchan FSM decides that it is an lchan for speech"];
-	...;
-	...;
-
-	bsc_lchan -> bsc_gscon [label="GSCON_EV_LCHAN_ACTIVE"];
-	bsc_gscon abox bsc_gscon [label="ST_ASSIGNMENT_\nWAIT_COMPLETE\nT10, 6s"];
-	ms <= bsc_gscon [label="RR Assignment"];
-	...;
-	--- [label="On Timeout"];
-	bsc_gscon => mgw_msc [label="BSSMAP Assignment Failure"];
-	bsc_gscon -> bsc_lchan [label="LCHAN_EV_LCHAN_RELEASE"];
-	bsc_gscon box bsc_gscon [label="'forget' all about conn->lchan_for_assignment"];
-	--- [label="IF assignment_created_mgw_endpoint == true"];
-	bsc_gscon -> bsc_mgcp [label="mgcp_conn_delete()"];
-	bsc_gscon note bsc_mgcp [label="If the MGW endpoint didn't exist before the Assignment, release
-		it now. If there was one before this, it is probably still in use by a previous lchan, so
-		keep it in place."];
-	bsc_gscon abox bsc_gscon [label="ST_ACTIVE"];
-	--- [label="END: 'On Timeout'"];
-	...;
-	ms => bsc_gscon [label="RR Assignment Complete"];
-	bsc_gscon -> bsc_lchan [label="OLD lchan: LCHAN_EV_LCHAN_RELEASE"];
-	bsc_gscon box bsc_gscon [label="conn->lchan = conn->lchan_for_assignment"];
-	--- [label="IF: chan_mode a speech mode?"];
-	bsc_gscon abox bsc_gscon [label="ST_WAIT_MDCX_BTS"];
-	bsc_gscon -> bsc_mgcp [label="mgcp_conn_modify()"];
-	bsc_mgcp note bsc_mgcp [label="same mgcp FSM as above, for BTS side"];
-	bsc_mgcp abox bsc_mgcp [label="ST_MDCX_RESP"];
-	bsc_mgcp => mgw_msc [label="MDCX (for BTS)"];
-	...;
-	--- [label="On Timeout"];
-	bsc_gscon -> bsc_lchan [label="LCHAN_EV_RELEASE"];
-	bsc_gscon -> bsc_mgcp [label="mgcp_conn_delete()"];
-	bsc_gscon => mgw_msc [label="BSSMAP Assignment Failure"];
-	bsc_gscon abox bsc_gscon [label="ST_WAIT_CLEAR_CMD"];
-	bsc_gscon => mgw_msc [label="BSSMAP Clear Request"];
-	--- [label="END: 'On Timeout'"];
-	...;
-	bsc_mgcp <= mgw_msc [label="MDCX OK"];
-	bsc_mgcp abox bsc_mgcp [label="ST_READY"];
-	bsc_mgcp -> bsc_gscon [label="GSCON_EV_MGW_MDCX_RESP_BTS"];
-	bsc_gscon abox bsc_gscon [label="ST_WAIT_CRCX_MSC"];
-	bsc_gscon -> bsc_mgcp [label="mgcp_conn_create()"];
-	bsc_mgcp note bsc_mgcp [label="second mgcp FSM for MSC side"];
-	bsc_mgcp => mgw_msc [label="CRCX (for MSC)"];
-	...;
-	--- [label="On Timeout"];
-	bsc_gscon -> bsc_lchan [label="LCHAN_EV_RELEASE"];
-	bsc_gscon -> bsc_mgcp [label="mgcp_conn_delete()"];
-	bsc_gscon => mgw_msc [label="BSSMAP Assignment Failure"];
-	bsc_gscon abox bsc_gscon [label="ST_WAIT_CLEAR_CMD"];
-	bsc_gscon => mgw_msc [label="BSSMAP Clear Request"];
-	--- [label="END: 'On Timeout'"];
-	...;
-	bsc_mgcp <= mgw_msc [label="CRCX OK (for MSC)"];
-	bsc_gscon <- bsc_mgcp [label="GSCON_EV_MGW_CRCX_RESP_MSC"];
-	--- [label="END: chan_mode a speech mode?"];
-
-	bsc_gscon => mgw_msc [label="BSSMAP Assignment Complete"];
-
-	bsc_gscon abox bsc_gscon [label="ST_ACTIVE"];
 }

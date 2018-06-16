@@ -1,0 +1,24 @@
+digraph G {
+rankdir=TB
+labelloc=t; label="LEGEND FOR FSM GRAPHS"
+
+	box [label="function_call()\nputs FSM into state",shape="box"]
+	STATE [label="FSM_STATE"]
+	STATE2 [label="FSM_STATE"]
+	STATE3 [label="FSM_STATE"]
+	box -> STATE
+	STATE -> STATE2 [label="state transition"]
+	STATE2 -> STATE3
+
+	STATE -> STATE3 [label="transition\non error",style=dashed]
+
+	other [label="other FSM\ninstance\nor remote program",shape=box3d]
+	STATE2 -> other [label="event",style=dotted]
+	other -> STATE2 [label="event",style=dotted]
+
+	terminate [shape=octagon]
+	STATE3 -> terminate
+
+	err [label="common error\ntransition",shape=box,style=dashed]
+	err -> STATE3 [style=dashed]
+}

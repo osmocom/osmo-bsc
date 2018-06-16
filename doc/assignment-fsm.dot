@@ -1,0 +1,42 @@
+digraph G {
+rankdir=TB
+labelloc=t; label="Assignment FSM"
+	
+	WAIT_LCHAN_ACTIVE
+	WAIT_RR_ASS_COMPLETE
+	WAIT_LCHAN_ESTABLISHED
+	WAIT_MGW_ENDPOINT_TO_MSC
+	terminate [shape=octagon]
+	
+	gscon [label="conn FSM",shape=box3d]
+	gscon2 [label="conn FSM",shape=box3d]
+	lchan [label="lchan FSM\n(new lchan)",shape=box3d]
+	old_lchan [label="old lchan",shape=box3d]
+
+	bssap [label="osmo_bsc_bssap.c",shape=box]
+
+	invisible [style="invisible"]
+	invisible -> bssap [label="BSSMAP Assignment Request",style=dotted]
+	invisible -> old_lchan [style=invisible,arrowhead=none]
+
+	bssap -> gscon [label="GSCON_EV_ASSIGNMENT_START\ndata=struct assignment_request",style=dotted]
+
+	gscon -> WAIT_LCHAN_ACTIVE [label="assignment_fsm_start()",style=dotted]
+        WAIT_LCHAN_ACTIVE -> lchan [label="lchan_activate()\nFOR_ASSIGNMENT",style=dotted]
+	lchan -> WAIT_LCHAN_ACTIVE [label="ASSIGNMENT_EV_\nLCHAN_\nACTIVE,ERROR",style=dotted]
+	lchan -> WAIT_LCHAN_ESTABLISHED [label="ASSIGNMENT_EV_\nLCHAN_\nESTABLISHED,ERROR",style=dotted]
+
+	WAIT_LCHAN_ACTIVE -> WAIT_RR_ASS_COMPLETE
+
+	WAIT_RR_ASS_COMPLETE -> old_lchan [label="RR Assignment\nCommand",style=dotted,constraint=false]
+	lchan -> WAIT_RR_ASS_COMPLETE [label="RR Assignment\nComplete",style=dotted]
+
+	WAIT_RR_ASS_COMPLETE -> WAIT_LCHAN_ESTABLISHED
+
+	WAIT_LCHAN_ESTABLISHED -> WAIT_MGW_ENDPOINT_TO_MSC [label="TCH"]
+	WAIT_LCHAN_ESTABLISHED -> terminate [label="non-TCH"]
+	WAIT_MGW_ENDPOINT_TO_MSC -> terminate
+	WAIT_MGW_ENDPOINT_TO_MSC -> gscon2 [label="gscon_connect_\nmgw_to_msc()",style=dotted]
+	gscon2 -> WAIT_MGW_ENDPOINT_TO_MSC [label="ASSIGNMENT_EV_\nMSC_MGW_OK",style=dotted]
+	terminate -> gscon2 [label="GSCON_EV_\nASSIGNMENT_END",style=dotted]
+}

@@ -1,306 +1,216 @@
 msc {
 	hscale=2;
-	bts [label="MS/BTS"], bsc[label="BSC"], bsc_ts [label="BSC timeslot FSM"],
-	bsc_lchan[label="BSC lchan FSM"], bsc_gscon[label="BSC conn FSM"],
-	mgw_msc[label="MGW/MSC"];
+	ms [label="MS/BTS"], ts [label="BSC timeslot FSM"],
+	lchan[label="BSC lchan FSM"], rtp[label="BSC lchan RTP FSM"],mgwep[label="BSC MGW endpoint FSM"];
 
-	bts box mgw_msc [label="lchan allocation sequence"];
-	bsc_lchan abox bsc_lchan [label="LCHAN_ST_UNUSED"];
+	ms box mgwep [label="lchan allocation sequence"];
+	lchan abox lchan [label="LCHAN_ST_UNUSED"];
+	...;
+	lchan rbox lchan [label="lchan_activate(activate_info)"];
+	lchan note lchan [label="Dispatching event to make sure the lchan FSM permits activation."];
+	lchan -> lchan [label="LCHAN_EV_ACTIVATE\ndata = activate_info"];
+	lchan abox lchan [label="LCHAN_ST_\nWAIT_TS_READY"];
+	ts <- lchan [label="TS_EV_LCHAN_REQUESTED"];
+	ts rbox ts [label="Most details omitted. See timeslot FSM diagrams."];
+	ts note ts [label="A dyn TS may be in PDCH mode and will asynchronously switch off PDCH first. A
+		non-dynamic TS is ready immediately."];
+	|||;
+	--- [label="IF requires_voice_stream"];
+	lchan -> rtp [label="lchan_rtp_fsm_start()"];
+	rtp abox rtp [label="allocate\n LCHAN_RTP_ST_\nWAIT_MGW_ENDPOINT_\nAVAILABLE"];
+	--- [label="IF no endpoint-CI yet"];
+	rtp box rtp [label="gscon_ensure_mgw_endpoint()"];
+	rtp -> mgwep [label="mgw_endpoint_ci_add(to-BTS)"];
+	rtp -> mgwep [label="CRCX to-BTS"];
+	mgwep rbox mgwep [label="MGCP: CRCX"];
+	...;
+	mgwep rbox mgwep [label="MGCP: CRCX OK"];
+	rtp <- mgwep [label="LCHAN_RTP_EV_MGW_ENDPOINT_AVAILABLE"];
+	rtp note mgwep [label="The CRCX OK has assigned us a new endpoint CI number"];
+	rtp abox rtp [label="LCHAN_RTP_ST_WAIT_LCHAN_READY"];
+	--- [label="END: no endpoint-CI yet"];
+	--- [label="END: requires_voice_stream"];
+	|||;
+	...;
+	ts -> lchan [label="LCHAN_EV_TS_READY"];
+	lchan abox lchan [label="LCHAN_ST_\nWAIT_ACTIV_ACK"];
+	--- [label="IF FOR_MS_CHANNEL_REQUEST"];
+	ms <= lchan [label="RSL Chan Activ (RSL_ACT_INTRA_IMM_ASS)"];
+	--- [label="ELSE: FOR_ASSIGNMENT"];
+	ms <= lchan [label="RSL Chan Activ (RSL_ACT_INTRA_NORM_ASS)"];
+	--- [label="ELSE: FOR_HANDOVER"];
+	ms <= lchan [label="RSL Chan Activ (RSL_ACT_INTER_ASYNC)"];
+	--- [label="END"];
+	...;
+	ms rbox lchan [label="On timeout or Chan Activ NACK, see: 'On any error', 'unrecoverable'"];
+	...;
+	ms => lchan [label="RSL Chan Activ ACK"];
+	lchan box lchan [label="lchan_fsm_post_activ_ack()"];
 
-	bts rbox mgw_msc [label="Channel Request from MS"];
-	bts => bsc [label="RSL Channel Request"];
-	bsc box bsc [label="lchan_select_by_type(chan_type)"];
-	bsc -> bsc_lchan [label="lchan_activate(lchan, FOR_MS_CHANNEL_REQUEST)"];
-	bsc_lchan rbox bsc_lchan [label="Continue at\nlchan_activate()\n"];
-	|||;
-	|||;
+	--- [label="IF FOR_MS_CHANNEL_REQUEST"];
+	ms <= lchan [label="RR Immediate Assignment"];
+	--- [label="ELSE: FOR_ASSIGNMENT"];
+	lchan rbox lchan [label="dispatch\nASSIGNMENT_EV_\nLCHAN_ACTIVE\n(see Assignment FSM diagrams)"];
+	ms <= lchan [label="RR Assignment Command"];
+	--- [label="ELSE: FOR_HANDOVER"];
+	lchan rbox lchan [label="dispatch\nHO_EV_LCHAN_ACTIVE\n(see Handover FSM diagrams)"];
+	--- [label="END"];
 
-	bts rbox mgw_msc [label="Channel Request from BSSMAP Assignment"];
-	bsc_gscon <= mgw_msc [label="BSSMAP Assignment request"];
-	bsc_gscon box bsc_gscon [label="lchan_select_by_chan_mode(chan_mode)"];
-	bsc_lchan <- bsc_gscon [label="lchan_activate(lchan, FOR_ASSIGNMENT)"];
-	bsc_lchan rbox bsc_lchan [label="Continue at\nlchan_activate()\n"];
-	|||;
-	|||;
 
-	bts rbox mgw_msc [label="Channel Request from Handover Decision"];
-	bsc note bsc [label="target lchan typically already chosen by Handover Decision"];
-	bsc -> bsc_gscon [label="GSCON_EV_HO_START (intra-BSC)"];
-	bsc_lchan <- bsc_gscon [label="lchan_activate(lchan, FOR_HANDOVER)"];
-	bsc_lchan rbox bsc_lchan [label="Continue at\nlchan_activate()\n"];
+	lchan abox lchan [label="LCHAN_ST_WAIT_\nRLL_RTP_ESTABLISH\nT3101"];
 	|||;
 	|||;
-
-	bts rbox mgw_msc [label="Channel Request from intra-BSC-MT-Handover"];
-	bsc_gscon <- mgw_msc [label="BSSMAP Handover Request"];
-	bsc_gscon box bsc_gscon [label="lchan_select_by_chan_mode(chan_mode)"];
-	bsc box bsc [label="lchan_activate(lchan, FOR_HANDOVER)"];
-	bsc_lchan rbox bsc_lchan [label="Continue at\nlchan_activate()\n"];
+	--- [label="IF requires_voice_stream"];
+	lchan -> rtp [label="LCHAN_RTP_EV_LCHAN_READY"];
 	|||;
-	|||;
-	bts rbox mgw_msc [label="lchan_activate()"];
-	bsc_lchan abox bsc_lchan [label="LCHAN_ST_\nWAIT_TS_READY\n(timeout: ? s, Tnnnn)"];
-	|||;
-	|||;
-	--- [label="TCH?"];
-	bsc_lchan note bsc_gscon [label="This is skipped when FOR_MS_CHANNEL_REQUEST. If the MS requests
-		a TCH lchan, and we end up actually giving it a TCH because no SDCCH are available, we
-		can not set up an RTP stream because there is not even an L3 conn yet."];
-	bsc_lchan note bsc_gscon [label="The lchan FSM asks the conn FSM to have an MGW endpoint ready as
-		early as possible. Either the conn already has such MGW endpoint from a previous lchan,
-		in which case it immediately replies, or it requests one from the MGW, in which case we
-		wait for a response in 'TCH? (2)' below."];
-	bsc_lchan -> bsc_gscon [label="GSCON_EV_ENSURE_MGW_ENDPOINT"];
-	--- [label="IF conn has user_plane.fi_bts in state ST_READY"];
-	bsc_lchan <- bsc_gscon [label="LCHAN_EV_MGW_ENDPOINT_AVAILABLE"];
-	bsc_lchan box bsc_lchan [label="mgw_endpoint_available = true"];
-	bsc_lchan note bsc_lchan [label="lchan_activate() continues"];
-	--- [label="ELSE (no MGW endpoint available yet)"];
-	bsc_gscon => mgw_msc [label="CRCX (for BTS) via mgcp_conn_create()"];
-	bsc_gscon abox bsc_gscon [label="ST_WAIT_CRCX_BTS\n(timeout: ? s, Tnnnn)"];
-	bsc_lchan <- bsc_gscon [label="(event dispatch returns)"];
-	bsc_lchan note bsc_lchan [label="lchan_activate() continues"];
+	--- [label="IF ip.access style BTS"];
+	rtp abox rtp [label="LCHAN_RTP_ST_WAIT_IPACC_CRCX_ACK"];
+	ms <= rtp [label="IPACC CRCX"];
 	...;
-	bsc_gscon note bsc_gscon [label="async:"];
-	bsc_gscon <= mgw_msc [label="CRCX OK (for BTS)"];
-	bsc_lchan <- bsc_gscon [label="LCHAN_EV_MGW_ENDPOINT_AVAILABLE"];
-	bsc_lchan box bsc_lchan [label="mgw_endpoint_available = true"];
-	bsc_lchan note bsc_lchan [label="As soon as we reach LCHAN_ST_WAIT_MGW_ENDPOINT_AVAILABLE, this triggers
-		immedate action (s.b.), but until then, only the flag gets set to true."];
+	ms => rtp [label="IPACC CRCX ACK (BTS RTP port info)"];
+	rtp abox rtp [label="LCHAN_RTP_ST_WAIT_IPACC_MDCX_ACK"];
+	ms <= rtp [label="IPACC MDCX (MGW RTP port info)"];
 	...;
-	--- [label="CRCX timeout"];
-	bsc_gscon note bsc_gscon [label="conn FSM should fire on CRCX timeout"];
-	bsc_lchan <- bsc_gscon [label="LCHAN_EV_MGW_ENDPOINT_ERROR"];
-	bsc_gscon note bsc_gscon [label="conn FSM should not assume anything and wait for
-		GSCON_EV_LCHAN_ALLOC_ERROR"];
-	bsc_lchan rbox bsc_lchan [label="Do 'On any error'"];
-	bsc_lchan abox bsc_lchan [label="LCHAN_ST_UNUSED"];
-	bsc_ts <- bsc_lchan [label="TS_EV_LCHAN_UNUSED"];
-	--- [label="END: 'TCH?'"];
+	ms => rtp [label="IPACC MDCX ACK"];
+	--- [label="END ip.access style BTS"];
 	|||;
+	rtp box rtp [label="lchan_rtp_fsm_switch_rtp()"];
 	|||;
-
-	bsc_lchan box bsc_lchan [label="lchan_activate() exits"];
-	bsc_lchan note bsc_lchan [label="still in\nlchan_request()\nLCHAN_ST_WAIT_\nTS_READY"];
-	bsc_ts <- bsc_lchan [label="TS_EV_LCHAN_REQUESTED"];
+	--- [label="IF wait_before_switching_rtp"];
+	rtp note rtp [label="During Handover, wait for HO DETECT before redirecting an existing endpoint
+		CI towards the new lchan."];
+	rtp abox rtp [label="LCHAN_RTP_ST_WAIT_READY_TO_SWITCH_RTP"];
 	...;
-	--- [label="on error from TS or timeout:"];
-	bsc_ts -> bsc_lchan [label="LCHAN_EV_TS_ERROR"];
-	bsc_lchan rbox bsc_lchan [label="Do 'On any error'"];
-	bsc_lchan abox bsc_lchan [label="LCHAN_ST_UNUSED"];
-	bsc_ts <- bsc_lchan [label="TS_EV_LCHAN_UNUSED"];
-	---;
-	...;
-	bsc_ts abox bsc_ts [label="TS_ST_IN_USE"];
-	bsc_ts -> bsc_lchan [label="LCHAN_EV_TS_READY"];
-	bsc_lchan box bsc_lchan [label="lchan_fsm_\npre_lchan_activ()"];
-
+	ms => rtp [label="HO DETECT (via Handover FSM)"];
+	--- [label="END: wait_before_switching_rtp"];
 	|||;
+	rtp abox rtp [label="LCHAN_RTP_ST_WAIT_MGW_ENDPOINT_CONFIGURED"];
+	rtp box rtp [label="connect_mgw_endpoint_to_lchan()"];
+	rtp -> mgwep [label="MDCX to-BTS"];
+	mgwep rbox mgwep [label="MGCP: MDCX"];
+	...;
+	mgwep rbox mgwep [label="MGCP: MDCX OK"];
+	rtp <- mgwep [label="LCHAN_RTP_EV_MGW_ENDPOINT_CONFIGURED"];
+	rtp abox rtp [label="LCHAN_RTP_ST_READY"];
+	lchan <- rtp [label="LCHAN_EV_RTP_READY"];
+	rtp note rtp [label="RTP FSM stays ready for Rollback until final establish event"];
+	...;
+	lchan -> rtp [label="LCHAN_RTP_EV_ESTABLISHED\nvia gscon_change_primary_lchan()"];
+	rtp abox rtp [label="LCHAN_RTP_ST_\nESTABLISHED"];
+	--- [label="END: requires_voice_stream"];
 	|||;
-	bts rbox mgw_msc [label="mode FOR_MS_CHANNEL_REQUEST"];
-	bts note bsc_lchan [label="This is the simple case where the MS requested a channel, and there is no
-		L3 conn to the MSC; no matter if this is SDDCH or a TCH channel type, we will not prepare
-		an RTP stream."];
-
-	bsc_lchan note bsc_lchan [label="still in lchan_fsm_\npre_lchan_activ()"];
-	bsc_lchan abox bsc_lchan [label="LCHAN_ST_WAIT_\nACTIV_ACK\n(timeout: ? s, Tnnnn)"];
-	bts <= bsc_lchan [label="RSL Chan Activ (RSL_ACT_INTRA_IMM_ASS)"];
-	bts note bsc_lchan [label="If any errors occur from now on, we don't want to send an RR Immediate
-		Assignment Reject anymore."];
-	bsc_lchan box bsc_lchan [label="sent_chan_activ = true"];
-	...;
-	--- [label="on timeout"];
-	bsc_lchan rbox bsc_lchan [label="Continue at: 'On any error', 'unrecoverable'"];
-	---;
-	...;
-	bts => bsc_lchan [label="RSL Chan Activ ACK"];
-	bsc_lchan abox bsc_lchan [label="LCHAN_ST_WAIT_\nRLL_ESTABLISH\nT3101"];
-	bsc_lchan note bsc_lchan [label="Now the lchan is assigned, but has no L3 conn yet. On errors,
-		this will either go into graceful release or into broken state, but will not trigger any
-		events to a (non-existing) conn."];
-	...;
-	--- [label="on timeout"];
-	bts <= bsc_lchan [label="RSL RF Channel Release"];
-	bsc_lchan abox bsc_lchan [label="LCHAN_ST_WAIT_RF_RELEASE_ACK\n(T?, 4s)"];
-	---;
-	...;
-	bts => bsc_lchan [label="RLL Establish Ind"];
-	bsc_lchan abox bsc_lchan [label="LCHAN_ST_ACTIVE"];
-	|||;
-	|||;
-	bts rbox mgw_msc [label="modes FOR_ASSIGNMENT and FOR_HANDOVER"];
-
-	bsc_lchan note bsc_lchan [label="still in lchan_fsm_\npre_lchan_activ()"];
-	bsc_lchan abox bsc_lchan [label="LCHAN_ST_WAIT_\nACTIV_ACK\n(timeout: ? s, Tnnnn)"];
-	bts <= bsc_lchan [label="RSL Chan Activ (RSL_ACT_INTRA_NORM_ASS)",ID=FOR_ASSIGNMENT];
-	bts <= bsc_lchan [label="RSL Chan Activ (RSL_ACT_INTER_ASYNC)",ID=FOR_HANDOVER];
-	...;
-	--- [label="on timeout"];
-	bsc_lchan rbox bsc_lchan [label="Continue at: 'On any error', 'unrecoverable'"];
-	---;
-	bts => bsc_lchan [label="RSL Chan Activ ACK"];
-	bsc_lchan abox bsc_lchan [label="LCHAN_ST_WAIT_\nRLL_ESTABLISH\nT3101"];
-	...;
-	--- [label="on timeout"];
-	bsc_lchan -> bsc_gscon [label="GSCON_EV_LCHAN_ALLOC_ERROR"];
-	bsc_lchan -> bsc_lchan [label="lchan_fsm_pre_rf_release()"];
-	---;
-	...;
-	bts => bsc_lchan [label="RLL Establish Indication"];
 	|||;
 
-	--- [label="TCH? (2)"];
-	--- [label="mgw_endpoint_available == false?"];
-	bsc_lchan abox bsc_lchan [label="LCHAN_ST_WAIT_\nMGW_ENDPOINT_\nAVAILABLE"];
-	bsc_lchan note bsc_lchan [label="rely on conn FSM timeout; apply only a long sanity timeout."];
 	...;
-	bsc_gscon <= mgw_msc [label="CRCX OK (for BTS)"];
-	bsc_lchan <- bsc_gscon [label="LCHAN_EV_MGW_ENDPOINT_AVAILABLE"];
-	bsc_lchan box bsc_lchan [label="mgw_endpoint_available = true"];
-	bsc_lchan <- bsc_lchan [label="re-invoke lchan_fsm_pre_lchan_activ()"];
-	--- [label="END: 'TCH? (2)'"];
-	|||;
-
-	--- [label="is BTS using IPA Abis? (osmo-bts, ip.access)"];
-	bsc_lchan abox bsc_lchan [label="LCHAN_ST_WAIT_\nIPACC_CRCX_ACK\n(timeout: ? s, Tnnnn)"];
-	bts <= bsc_lchan [label="IPACC CRCX"];
+	ms => lchan [label="RLL Establish Ind"];
+	lchan abox lchan [label="LCHAN_ST_\nESTABLISHED"];
+	lchan box lchan [label="lchan_on_fully_established()"];
+	--- [label="IF FOR_MS_CHANNEL_REQUEST"];
+	ms note lchan [label="No action required. The MS will have sent an L3 message in the RLL
+		Establish Ind and is then free to dispatch DTAP."];
+	--- [label="ELSE: FOR_ASSIGNMENT"];
+	lchan rbox lchan [label="dispatch\nASSIGNMENT_EV_\nLCHAN_ESTABLISHED\n(see Assignment FSM diagrams)"];
+	--- [label="ELSE: FOR_HANDOVER"];
+	lchan rbox lchan [label="dispatch\nHO_EV_LCHAN_ESTABLISHED\n(see Handover FSM diagrams)"];
+	--- [label="END"];
 	...;
-	--- [label="on timeout"];
-	bsc_lchan -> bsc_gscon [label="GSCON_EV_LCHAN_ALLOC_ERROR"];
-	bsc_lchan -> bsc_lchan [label="lchan_graceful_release()"];
-	---;
+	--- [label="IF requires_voice_stream"];
+	lchan rbox lchan [label="Assignment or Handover FSM:"];
+	lchan -> mgwep [label="CRCX/MDCX to-MSC"];
 	...;
-	bts => bsc_lchan [label="IPACC CRCX ACK"];
-	bts note bsc_lchan [label="The IPACC CRCX ACK tells us what port the IPA Abis based BTS has
-		assigned to this lchan. AoIP: we need to forward this to the MGW (BTS side) with an MDCX;
-		SCCPlite: we forward this to the MSC during BSSMAP Assignment Complete (TODO: is this
-		correct??)"];
-	bsc_lchan abox bsc_lchan [label="LCHAN_ST_WAIT_\nIPACC_MDCX_ACK\n(timeout: ? s, Tnnnn)"];
-	bts <= bsc_lchan [label="IPACC MDCX"];
-	bts note bsc_lchan [label="The IPACC MDCX tells IPA Abis based BTSes the IP address and RTP port
-		assigned by the BTS side of the MGW. AoIP: the MGW CRCX (BTS) must thus happen before
-		this; SCCPlite: the RTP port is already known from the timeslot+multiplex information."];
-	...;
-	--- [label="on timeout"];
-	bsc_lchan -> bsc_gscon [label="GSCON_EV_LCHAN_ALLOC_ERROR"];
-	bsc_lchan -> bsc_lchan [label="lchan_graceful_release()"];
-	---;
-	...;
-	bts => bsc_lchan [label="IPACC MDCX ACK"];
-	--- [label="END: is BTS using IPA Abis? (osmo-bts, ip.access)"];
-	|||;
-	bsc_lchan abox bsc_lchan [label="LCHAN_ST_ACTIVE"];
-	bsc_lchan box bsc_lchan [label="lchan_fsm_post_lchan_activ()"];
-	bsc_lchan -> bsc_gscon [label="GSCON_EV_LCHAN_ACTIVE"];
-	bts <= bsc_gscon [label="RR Assignment",ID="BSSMAP Assignment Request"];
-	bts <= bsc_gscon [label="RR Handover Command",ID="intra-BSC HO"];
-	bsc_gscon => mgw_msc [label="BSSMAP Handover\nRequest Acknowledge",ID="inter-BSC-MT HO"];
-	...;
-	---[label="On error"];
-	bsc_lchan rbox bsc_lchan [label="Continue at 'When the lchan is no longer used'"];
-	---;
-	...;
-
-	bts => bsc_gscon [label="RR Assignment Complete",ID="BSSMAP Assignment Request"];
-	bts => bsc_gscon [label="RR Handover Detect",ID="intra-BSC HO"];
-	bts => bsc_gscon [label="RR Handover Accept",ID="inter-BSC-MT HO"];
-	bsc_gscon note bsc_gscon [label="conn FSM takes care of MGW endpoints for BTS side (possibly
-		redirect) and MSC side (possibly create). More information in e.g. assignment.msc and
-		handover.msc"];
+	lchan <- mgwep [label="OK"];
+	lchan box lchan [label="gscon_change_primary_lchan()"];
+	lchan -> rtp [label="LCHAN_RTP_EV_ESTABLISHED"];
+	rtp abox rtp [label="LCHAN_RTP_ST_\nESTABLISHED"];
+	rtp box rtp [label="Forget any Rollback info"];
+	--- [label="END: requires_voice_stream"];
 
 	...;
 	...;
 	...;
 
-	bts rbox mgw_msc [label="When the lchan is no longer used"];
-	--- [label="IF the MS or BTS release the lchan"];
-	bts -> bsc_lchan [label="RLL Release Ind for SAPI=0"];
-	--- [label="IF the BSC other than the conn FSM decides to release"];
-	bsc -> bsc_lchan [label="LCHAN_EV_RELEASE"];
-	--- [label="IF the MSC or conn FSM release the lchan"];
-	bsc_lchan <- bsc_gscon [label="LCHAN_EV_RELEASE"];
-	---;
-	bsc note bsc_gscon [label="The LCHAN_EV_RELEASE's data pointer possibly indicates an error
-		cause"];
-	bsc_lchan note bsc_gscon [label="If the conn FSM requested a release, it probably has already
-	forgotten about this lchan. However, if the MS/BTS initiated the release, make sure the conn FSM
-	is informed:"];
-	bsc_lchan box bsc_lchan [label="lchan_graceful_release()"];
-	bsc_lchan abox bsc_lchan [label="LCHAN_ST_WAIT_\nSAPIS_RELEASED\nT3109"];
-	--- [label="TCH and got as far as Chan Activ Ack?"];
-	bts <= bsc_lchan [label="RSL Deactivate SACCH"];
-	---;
-	bts <= bsc_lchan [label="RLL Release Request (Local End)..."];
-	bts <= bsc_lchan [label="...for all SAPIs except [0]"];
-	|||;
-	--- [label="SAPI[0] in use?"];
-	bsc_lchan note bsc_lchan [label="for bts->nokia.no_loc_rel_cnf we do not expect Release Confirm
-		messages and this state immediately advances to lchan_fsm_pre_rf_release()"];
+	ms rbox mgwep [label="When the MS or BTS release the lchan"];
+	lchan abox lchan [label="LCHAN_ST_\nESTABLISHED"];
+	ms -> lchan [label="RLL Release Ind for SAPI=0"];
+	lchan abox lchan [label="LCHAN_ST_WAIT_RLL_RTP_RELEASED"];
+	lchan rbox lchan [label="Continue at 'common release' below"];
 	...;
-	--- [label="on timeout"];
-	bsc_lchan box bsc_lchan [label="Anyway try RF Channel Release, continue
-		with lchan_fsm_wait_before_rf_release()"];
-	---;
 	...;
-	bts => bsc_lchan [label="RLL Release Confirm..."];
-	bts => bsc_lchan [label="...for each SAPI except [0]"];
-	bsc_lchan box bsc_lchan [label="Stay in\nLCHAN_ST_WAIT_\nSAPIS_RELEASED\nuntil only SAPI[0] remains active"];
-	--- [label="END: 'SAPI[0] in use?'"];
-	|||;
+	ms rbox mgwep [label="When the BSC decides to release the lchan"];
+	lchan box lchan [label="lchan_release()"];
+	lchan abox lchan [label="LCHAN_ST_WAIT_RLL_RTP_RELEASED"];
+	ms <= lchan [label="RR Release"];
+	lchan rbox lchan [label="common release"];
+	--- [label="IF RTP FSM present"];
+	lchan -> rtp [label="LCHAN_RTP_EV_RELEASE"];
+	--- [label="END: RTP FSM present"];
+	ms <= lchan [label="RSL Deactivate SACCH"];
+	ms <= lchan [label="RSL Release Request (Local End)",ID="for each SAPI except [0]"];
+	lchan note lchan [label="for ms->nokia.no_loc_rel_cnf we do not expect Release Confirm
+		messages and immediately mark all SAPIs as released"];
 
-	bsc_lchan box bsc_lchan [label="lchan_fsm_wait_before_rf_release()"];
-	bsc_lchan abox bsc_lchan [label="LCHAN_ST_WAIT_\nBEFORE_RF_RELEASE\nT3111"];
-	bsc_lchan -> bsc_gscon [label="GSCON_EV_FORGET_LCHAN (data=lchan)"];
-	bsc_gscon note bsc_gscon [label="conn FSM immediately forgets about the lchan"];
-	bsc_gscon => mgw_msc [label="BSSMAP Clear Request?"];
 	...;
-	bsc_lchan box bsc_lchan [label="T3111 expires"];
-	bsc_lchan box bsc_lchan [label="lchan_fsm_pre_rf_release()"];
-	bsc_lchan abox bsc_lchan [label="LCHAN_ST_WAIT_\nRF_RELEASE_ACK\nT3111"];
-	bsc_lchan box bsc_lchan [label="for each bsc_rll_req matching this lchan: disable timer, call
-		cb(BSC_RLLR_IND_REL_IND)"];
-	bts <= bsc_lchan [label="RSL RF Channel Release"];
+	lchan <- rtp [label="LCHAN_EV_RTP_RELEASED"];
 	...;
-	--- [label="on timeout"];
-	bsc_lchan rbox bsc_lchan [label="Continue at: 'On any error', 'unrecoverable'"];
-	---;
+	ms => lchan [label="RLL Release Confirm",ID="for each SAPI except [0]"];
 	...;
-	bts => bsc_lchan [label="RSL RF Channel Release Ack"];
-
-	bsc_lchan box bsc_lchan [label="lchan_fsm_post_rf_release()"];
+	lchan box lchan [label="Stay in\nLCHAN_ST_WAIT_\nRLL_RTP_RELEASED\nuntil only SAPI[0] remains active"];
+	lchan abox lchan [label="LCHAN_ST_WAIT_\nBEFORE_RF_RELEASE\nT3111"];
+	...;
+	lchan box lchan [label="T3111 expires"];
+	lchan box lchan [label="lchan_fsm_pre_rf_release()"];
+	lchan abox lchan [label="LCHAN_ST_WAIT_\nRF_RELEASE_ACK\nT3111"];
+	ms <= lchan [label="RSL RF Channel Release"];
+	...;
+	lchan rbox lchan [label="On timeout, continue at: 'On any error', 'unrecoverable'"];
+	...;
+	ms => lchan [label="RSL RF Channel Release Ack"];
 	|||;
-	--- [label="IF an error cause was indicated on LCHAN_EV_RELEASE"];
-	bsc_lchan abox bsc_lchan [label="LCHAN_ST_WAIT_\nAFTER_ERROR\n(timeout: T3111+2 s, T?)"];
+	--- [label="IF release_in_error"];
+	lchan abox lchan [label="LCHAN_ST_WAIT_\nAFTER_ERROR\n(timeout: T3111+2 s, T993111)"];
 	...;
-	bsc_lchan box bsc_lchan [label="timer expires"];
-	--- [label="END: 'an error cause was indicated on LCHAN_EV_RELEASE'"];
+	lchan box lchan [label="timer expires"];
+	--- [label="END: release_in_error"];
 	|||;
-	bsc_lchan box bsc_lchan [label="lchan_fsm_release_complete()"];
-	bsc_lchan abox bsc_lchan [label="LCHAN_ST_UNUSED"];
-	bsc_ts <- bsc_lchan [label="TS_EV_LCHAN_UNUSED"];
-	bsc_ts abox bsc_ts [label="TS_ST_UNUSED"];
+	lchan abox lchan [label="LCHAN_ST_UNUSED"];
+	ts <- lchan [label="TS_EV_LCHAN_UNUSED"];
+	|||;
 	|||;
 	|||;
 
-	bts rbox mgw_msc [label="On any error"];
+	ms rbox mgwep [label="On any error"];
 	|||;
-	--- [label="IF FOR_MS_CHANNEL_REQUEST && !sent_chan_activ"];
-	bts <= bsc_lchan [label="RR Immediate Assign Reject"];
+	--- [label="IF FOR_MS_CHANNEL_REQUEST"];
+	ms <= lchan [label="RR Immediate Assign Reject"];
+	--- [label="ELSE: FOR_ASSIGNMENT"];
+	lchan rbox lchan [label="dispatch\nASSIGNMENT_EV_\nLCHAN_ERROR\n(see Assignment FSM diagrams)"];
+	--- [label="ELSE: FOR_HANDOVER"];
+	lchan rbox lchan [label="dispatch\nHO_EV_LCHAN_ERROR\n(see Handover FSM diagrams)"];
+	--- [label="END"];
 	|||;
-	--- [label="IF FOR_ASSIGNMENT or FOR_HANDOVER"];
-	bsc_lchan -> bsc_gscon [label="GSCON_EV_LCHAN_ALLOC_ERROR"];
-	bsc_gscon note bsc_gscon [label="conn FSM shall immediately 'forget' the lchan"];
-	bsc_gscon => mgw_msc [label="BSSMAP\nAssignment Failure",ID=FOR_ASSIGNMENT];
-	bsc_gscon => mgw_msc [label="BSSMAP\nHandover Failure",ID="inter-BSC-MT HO"];
-	---;
+	--- [label="IF fi_rtp present"];
+	lchan -> rtp [label="LCHAN_RTP_EV_ROLLBACK"];
+	rtp rbox rtp [label="If to-BTS is not established yet, ROLLBACK is synonymous to LCHAN_RTP_EV_RELEASE"];
+	rtp rbox rtp [label="If there is no old_lchan, just DLCX instead"];
+	rtp abox rtp [label="LCHAN_RTP_ST_ROLLBACK"];
+	rtp box rtp [label="connect_mgw_endpoint_to_lchan()\nusing old_lchan"];
+	rtp -> mgwep [label="MDCX to-BTS"];
+	mgwep rbox mgwep [label="MGCP: MDCX"];
+	...;
+	mgwep rbox mgwep [label="MGCP: MDCX OK"];
+	rtp <- mgwep [label="LCHAN_RTP_EV_MGW_ENDPOINT_CONFIGURED"];
+	rtp abox rtp [label="terminate"];
+	lchan <- rtp [label="LCHAN_EV_RTP_RELEASED"];
+	--- [label="END: fi_rtp present"];
+	|||;
 	|||;
 	--- [label="IF unrecoverable error"];
-	bsc_lchan abox bsc_lchan [label="LCHAN_ST_BORKEN"];
-	bsc_lchan note bsc_lchan [label="The broken state usually stays around
+	lchan abox lchan [label="LCHAN_ST_BORKEN"];
+	ms note lchan [label="The broken state usually stays around
 		until the BTS disconnects."];
 	...;
-	bts note bsc_lchan [label="If an ACK comes in late, for specific BTS models, we may choose to
+	ms note lchan [label="If an ACK comes in late, for specific BTS models, we may choose to
 		'repair' the lchan so that it is usable again."];
-	bts -> bsc_lchan [label="Chan Release ACK"];
-	bsc_lchan -> bsc_lchan [label="lchan_fsm_post_rf_release()"];
+	ms -> lchan [label="RF Chan Release ACK"];
+	lchan rbox lchan [label="continue above at\nLCHAN_ST_WAIT_\nAFTER_ERROR"];
 }

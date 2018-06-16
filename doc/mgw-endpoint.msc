@@ -1,0 +1,105 @@
+msc {
+	hscale=2;
+	notify [label="calling FSM"], mgwep[label="MGW endpoint FSM"], mgcp[label="mgcp client FSM"],
+	mgw[label="MGW"];
+
+	notify note mgw [label="MGW endpoint FSM\nmanages multiple CI for one endpoint"];
+
+	|||;
+
+	notify rbox notify [label="conn FSM"];
+	notify box notify [label="gscon_ensure_mgw_endpoint()"];
+	notify -> mgwep [label="mgw_endpoint_alloc()"];
+	mgwep abox mgwep [label="MGWEP_ST_UNUSED"];
+
+	...;
+	...;
+	...;
+	notify rbox mgw [label="CRCX"];
+
+	notify rbox notify [label="lchan RTP FSM"];
+	notify -> mgwep [label="mgw_endpoint_ci_add()"];
+	mgwep note mgwep [label="Return an unassigned endpoint CI slot in the local array"];
+	...;
+	mgwep note mgwep [label="First request on a CI must be a CRCX"];
+	notify -> mgwep [label="mgw_endpoint_ci_request(CRCX)"];
+	notify note mgwep [label="verb=CRCX\nverb_info='rtpbridge/*@mgw'\nnotify_event"];
+	mgwep box mgwep [label="CI[x].pending=true"];
+	mgwep abox mgwep [label="MGWEP_ST_WAIT_MGW_RESPONSE"];
+	|||;
+	notify note mgwep [label="If more mgw_endpoint_ci_request() are triggered, they will be set to
+		'pending' and wait until all ongoing requests are through and MGWEP_ST_IN_USE is
+		reached."];
+	|||;
+	mgwep box mgwep [label="for each pending CI:\nsend_verb()"];
+	mgwep -> mgcp [label="CI[x]: mgcp_conn_create()"];
+	mgwep note mgcp [label="Each CI[i] has two events from the FSM instance event range assigned, one
+		for success, one for failure. These are passed to the mgcp client FSM."];
+	mgcp => mgw [label="CRCX"];
+	...;
+	mgcp <= mgw [label="CRCX OK"];
+	mgcp note mgw [label="MGW returns:\n'rtpbridge/123@mgw',\nnew CI identifier '123abc',\n
+		MGW side RTP IP:port"];
+	mgwep <- mgcp [label="CI[x] success event"];
+	mgwep box mgwep [label="on_success(CI[x])"];
+	mgwep note mgwep [label="CI[x].rtp_info = IP:port\nmgcp_ci_str = '123abc'\n
+		endpoint name = 'rtpbridge/123@mgw'"];
+	notify <- mgwep [label="notify_event from mgw_endpoint_ci_request()"];
+	notify note mgwep [label="notify_event will be one of:\n
+		LCHAN_RTP_EV_MGW_ENDPOINT_AVAILABLE (towards BTS)\n
+		ASSIGNMENT_EV_MSC_MGW_OK (towards MSC)\n
+		HO_EV_MSC_MGW_OK (towards MSC)"];
+	mgwep abox mgwep [label="MGWEP_ST_IN_USE"];
+
+	...;
+	...;
+	...;
+	notify rbox mgw [label="MDCX"];
+
+	mgwep note mgwep [label="Second or later request on a CI must be MDCX or DLCX"];
+	notify -> mgwep [label="mgw_endpoint_ci_request(MDCX)"];
+	notify note mgwep [label="verb=MDCX\nverb_info=BTS RTP IP:port\n
+		automatic: full endpoint name as from CRCX OK\n
+		notify_event\n"];
+	mgwep box mgwep [label="CI[x].pending=true"];
+	mgwep abox mgwep [label="MGWEP_ST_WAIT_MGW_RESPONSE"];
+	mgwep box mgwep [label="for each pending CI:\nsend_verb()"];
+	mgwep -> mgcp [label="CI[x]: mgcp_conn_modify()"];
+	mgcp => mgw [label="MDCX"];
+	...;
+	mgcp <= mgw [label="MDCX OK"];
+	mgwep <- mgcp [label="CI[x] success event"];
+	mgwep box mgwep [label="on_success(CI[x])"];
+	notify <- mgwep [label="notify_event from mgw_endpoint_ci_request()"];
+	notify note mgwep [label="notify_event will be one of:\n
+		LCHAN_RTP_EV_MGW_ENDPOINT_CONFIGURED (towards BTS)\n
+		ASSIGNMENT_EV_MSC_MGW_OK (towards MSC)\n
+		HO_EV_MSC_MGW_OK (towards MSC)"];
+	mgwep abox mgwep [label="MGWEP_ST_IN_USE"];
+
+	...;
+	...;
+	...;
+	notify rbox mgw [label="DLCX"];
+
+	notify -> mgwep [label="mgw_endpoint_ci_dlcx()"];
+	mgwep box mgwep [label="mgw_endpoint_ci_request(DLCX)"];
+	mgwep box mgwep [label="CI[x].pending=true"];
+	mgwep abox mgwep [label="MGWEP_ST_WAIT_MGW_RESPONSE"];
+	mgwep box mgwep [label="for each pending CI:\nsend_verb()"];
+	mgwep -> mgcp [label="CI[x]: mgcp_conn_delete()"];
+	mgcp => mgw [label="DLCX"];
+	mgcp box mgcp [label="detach from parent fi"];
+	mgwep box mgwep [label="forget and clear CI[x]"];
+	--- [label="IF other CI remain valid"];
+	mgwep abox mgwep [label="MGWEP_ST_IN_USE"];
+	--- [label="IF no CI remain on endpoint"];
+	mgwep abox mgwep [label="terminate"];
+	notify rbox notify [label="conn FSM"];
+	notify <- mgwep [label="GSCON_EV_FORGET_MGW_ENDPOINT"];
+	---;
+	...;
+	mgcp <= mgw [label="DLCX OK"];
+	mgcp abox mgcp [label="terminate"];
+
+}

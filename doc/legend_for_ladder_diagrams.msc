@@ -1,0 +1,29 @@
+msc {
+	A [label="FSM instance"],B [label="FSM instance"], C [label="remote program"];
+	|||;
+	||| [label="LADDER DIAGRAM LEGEND"];
+	|||;
+
+	A rbox C [label="Group Heading"];
+
+	A box A [label="function call or action"];
+	A -> B [label="event within program"];
+	B abox B [label="enter FSM state"];
+	B => C [label="network protocol message"];
+	...;
+	... [label="asynchronous wait time"];
+	...;
+	B <= C [label="network protocol message"];
+	|||;
+	||| [label="continue synchronously"];
+	|||;
+	A <- B [label="event within program"];
+	A rbox A [label="flow detail: 'continue at...'"];
+	...;
+	...;
+	--- [label="IF conditional"];
+	||| [label="..."];
+	--- [label="END: conditional"];
+	...;
+	B note B [label="arbitrary prose"];
+}

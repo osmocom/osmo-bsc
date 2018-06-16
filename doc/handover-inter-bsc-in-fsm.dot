@@ -1,0 +1,42 @@
+digraph G {
+rankdir=TB
+labelloc=t; label="Handover FSM: Inter-BSC Incoming"
+
+	old_bss [label="old BSS",shape=box3d]
+	msc [label="MSC",shape=box3d]
+	ho_in [label="inter-BSC HO Incoming",shape=box]
+	gscon [label="gscon FSM",shape=box3d]
+	lchan [label="lchan FSM",shape=box3d]
+	msc2 [label="msc",shape=box3d]
+	old_bsc2 [label="old BSC",shape=box3d]
+	old_lchan [label="old lchan",shape=box3d]
+	terminate [shape=octagon]
+
+	old_bss -> msc [label="BSSMAP Handover Required",style=dotted]
+	msc -> ho_in [label="BSSMAP Handover Request",style=dotted]
+	ho_in -> gscon [label="GSCON_EV_A_CONN_IND\nBSSMAP Handover Request",style=dotted]
+	gscon -> HO_ST_WAIT_LCHAN_ACTIVE [label="handover_start_inter_bsc_in()",style=dotted]
+	HO_ST_WAIT_LCHAN_ACTIVE -> lchan [label="lchan_activate()\nFOR_HANDOVER",style=dotted]
+	lchan -> HO_ST_WAIT_LCHAN_ACTIVE [label="HO_EV_\nLCHAN_ACTIVE,\n_ERROR",style=dotted,constraint=false]
+	HO_ST_WAIT_LCHAN_ACTIVE -> HO_ST_WAIT_RR_HO_DETECT
+	
+	HO_ST_WAIT_RR_HO_DETECT -> msc2 [label="BSSMAP\nHandover\nAccept\nwith\nRR Handover\nCommand",style=dotted]
+	msc2 -> old_bsc2 -> old_lchan [label="RR Handover\nCommand",style=dotted]
+	old_lchan -> lchan [label="MS moves",style=dotted,constraint=false]
+
+	lchan -> HO_ST_WAIT_RR_HO_DETECT [label="RR Handover\nDetect",style=dotted]
+	HO_ST_WAIT_RR_HO_DETECT -> WAIT_RR_HO_COMPLETE
+
+	lchan -> WAIT_RR_HO_COMPLETE [label="RR Handover\nComplete",style=dotted]
+	WAIT_RR_HO_COMPLETE -> WAIT_LCHAN_ESTABLISHED
+	lchan -> WAIT_LCHAN_ESTABLISHED [label="HO_EV_LCHAN_\nESTABLISHED",style=dotted]
+
+	WAIT_LCHAN_ESTABLISHED -> terminate [label="non-TCH"]
+	WAIT_LCHAN_ESTABLISHED -> WAIT_MGW_ENDPOINT_TO_MSC
+	WAIT_MGW_ENDPOINT_TO_MSC -> terminate [label="handover_end()"]
+	terminate -> msc2 [label="BSSMAP Handover\nComplete\n/ Failure",style=dotted,constraint=false]
+
+	err [label="on error",shape=box,style=dashed]
+	err -> terminate [style=dashed]
+
+}
