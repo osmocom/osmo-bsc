@@ -34,7 +34,7 @@
 #include <osmocom/bsc/debug.h>
 #include <osmocom/bsc/paging.h>
 #include <osmocom/bsc/signal.h>
-#include <osmocom/bsc/bsc_api.h>
+#include <osmocom/bsc/bsc_subscr_conn_fsm.h>
 #include <osmocom/bsc/gsm_04_08_utils.h>
 
 /* should ip.access BTS use direct RTP streams between each other (1),
@@ -600,7 +600,8 @@ int gsm48_tx_mm_serv_ack(struct gsm_subscriber_connection *conn)
 
 	DEBUGP(DMM, "-> CM SERVICE ACK\n");
 
-	return gsm0808_submit_dtap(conn, msg, 0, 0);
+	gscon_submit_rsl_dtap(conn, msg, 0, 0);
+	return 0;
 }
 
 /* 9.2.6 CM service reject */
@@ -617,7 +618,8 @@ int gsm48_tx_mm_serv_rej(struct gsm_subscriber_connection *conn,
 
 	DEBUGP(DMM, "-> CM SERVICE Reject cause: %d\n", value);
 
-	return gsm0808_submit_dtap(conn, msg, 0, 0);
+	gscon_submit_rsl_dtap(conn, msg, 0, 0);
+	return 0;
 }
 
 /* 9.1.29 RR Status */
@@ -644,7 +646,8 @@ int gsm48_tx_rr_status(struct gsm_subscriber_connection *conn, uint8_t cause)
 	struct msgb *msg = gsm48_create_rr_status(cause);
 	if (!msg)
 		return -1;
-	return gsm0808_submit_dtap(conn, msg, 0, 0);
+	gscon_submit_rsl_dtap(conn, msg, 0, 0);
+	return 0;
 }
 
 struct msgb *gsm48_create_mm_serv_rej(enum gsm48_reject_value value)

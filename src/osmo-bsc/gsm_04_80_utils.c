@@ -20,7 +20,7 @@
  */
 
 #include <osmocom/gsm/gsm0480.h>
-#include <osmocom/bsc/bsc_api.h>
+#include <osmocom/bsc/bsc_subscr_conn_fsm.h>
 
 int bsc_send_ussd_notify(struct gsm_subscriber_connection *conn, int level,
 			 const char *text)
@@ -28,7 +28,8 @@ int bsc_send_ussd_notify(struct gsm_subscriber_connection *conn, int level,
 	struct msgb *msg = gsm0480_create_ussd_notify(level, text);
 	if (!msg)
 		return -1;
-	return gsm0808_submit_dtap(conn, msg, 0, 0);
+	gscon_submit_rsl_dtap(conn, msg, 0, 0);
+	return 0;
 }
 
 int bsc_send_ussd_release_complete(struct gsm_subscriber_connection *conn)
@@ -36,5 +37,6 @@ int bsc_send_ussd_release_complete(struct gsm_subscriber_connection *conn)
 	struct msgb *msg = gsm0480_create_ussd_release_complete();
 	if (!msg)
 		return -1;
-	return gsm0808_submit_dtap(conn, msg, 0, 0);
+	gscon_submit_rsl_dtap(conn, msg, 0, 0);
+	return 0;
 }

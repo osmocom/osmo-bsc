@@ -249,3 +249,6 @@ void bsc_cm_update(struct gsm_subscriber_connection *conn,
 		   const uint8_t *cm2, uint8_t cm2_len,
 		   const uint8_t *cm3, uint8_t cm3_len) {}
 void bsc_mr_config(struct gsm_subscriber_connection *conn, struct gsm_lchan *lchan, int full_rate) {}
+void gscon_submit_rsl_dtap(struct gsm_subscriber_connection *conn,
+			   struct msgb *msg, int link_id, int allow_sacch) {}
+void gscon_dtap_queue_flush(struct gsm_subscriber_connection *conn, int send) {}

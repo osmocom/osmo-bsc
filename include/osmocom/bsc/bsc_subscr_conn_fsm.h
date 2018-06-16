@@ -67,8 +67,13 @@ enum gscon_fsm_event {
 struct gsm_subscriber_connection;
 struct gsm_network;
 struct mgcp_conn_peer;
+struct msgb;
 
 /* Allocate a subscriber connection and its associated FSM */
 struct gsm_subscriber_connection *bsc_subscr_con_allocate(struct gsm_network *net);
 
 void bsc_subscr_pick_codec(struct mgcp_conn_peer *conn_peer, struct gsm_subscriber_connection *conn);
+
+void gscon_submit_rsl_dtap(struct gsm_subscriber_connection *conn,
+			   struct msgb *msg, int link_id, int allow_sacch);
+void gscon_dtap_queue_flush(struct gsm_subscriber_connection *conn, int send);

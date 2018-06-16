@@ -34,6 +34,8 @@
 #include <osmocom/bsc/bsc_subscr_conn_fsm.h>
 #include <osmocom/bsc/osmo_bsc.h>
 #include <osmocom/bsc/penalty_timers.h>
+#include <osmocom/bsc/bsc_rll.h>
+#include <osmocom/bsc/abis_rsl.h>
 #include <osmocom/mgcp_client/mgcp_client_fsm.h>
 #include <osmocom/core/byteswap.h>
 
@@ -145,6 +147,16 @@ void bsc_subscr_pick_codec(struct mgcp_conn_peer *conn_peer, struct gsm_subscrib
 	}
 }
 
+/* forward MT DTAP from BSSAP side to RSL side */
+static inline void submit_dtap(struct gsm_subscriber_connection *conn, struct msgb *msg,
+			       struct osmo_fsm_inst *fi)
+{
+	OSMO_ASSERT(fi);
+	OSMO_ASSERT(msg);
+	OSMO_ASSERT(conn);
+	gscon_submit_rsl_dtap(conn, msg, OBSC_LINKID_CB(msg), 1);
+}
+
 /* Send data SCCP message through SCCP connection. All sigtran messages
  * that are send from this FSM must use this function. Never use
  * osmo_bsc_sigtran_send() directly since this would defeat the checks
@@ -254,26 +266,6 @@ static void send_ass_compl(struct gsm_lchan *lchan, struct osmo_fsm_inst *fi, bo
 	bssmap_add_lcls_status_if_needed(conn, resp);
 
 	sigtran_send(conn, resp, fi);
-}
-
-/* forward MT DTAP from BSSAP side to RSL side */
-static void submit_dtap(struct gsm_subscriber_connection *conn, struct msgb *msg, struct osmo_fsm_inst *fi)
-{
-	int rc;
-	struct msgb *resp = NULL;
-
-	OSMO_ASSERT(fi);
-	OSMO_ASSERT(msg);
-	OSMO_ASSERT(conn);
-
-	rc = gsm0808_submit_dtap(conn, msg, OBSC_LINKID_CB(msg), 1);
-	if (rc != 0) {
-		LOGPFSML(fi, LOGL_ERROR, "Tx BSSMAP CLEAR REQUEST to MSC\n");
-		resp = gsm0808_create_clear_rqst(GSM0808_CAUSE_EQUIPMENT_FAILURE);
-		sigtran_send(conn, resp, fi);
-		osmo_fsm_inst_state_chg(fi, ST_ACTIVE, 0, 0);
-		return;
-	}
 }
 
 /* forward MO DTAP from RSL side to BSSAP side */
@@ -1005,8 +997,6 @@ static void gscon_fsm_allstate(struct osmo_fsm_inst *fi, uint32_t event, void *d
 	}
 }
 
-void ho_dtap_cache_flush(struct gsm_subscriber_connection *conn, int send);
-
 static void gscon_cleanup(struct osmo_fsm_inst *fi, enum osmo_fsm_term_cause cause)
 {
 	struct gsm_subscriber_connection *conn = fi->priv;
@@ -1037,7 +1027,7 @@ static void gscon_cleanup(struct osmo_fsm_inst *fi, enum osmo_fsm_term_cause cau
 	}
 
 	/* drop pending messages */
-	ho_dtap_cache_flush(conn, 0);
+	gscon_dtap_queue_flush(conn, 0);
 
 	penalty_timers_free(&conn->hodec2.penalty_timers);
 
@@ -1130,7 +1120,7 @@ struct gsm_subscriber_connection *bsc_subscr_con_allocate(struct gsm_network *ne
 		return NULL;
 
 	conn->network = net;
-	INIT_LLIST_HEAD(&conn->ho_dtap_cache);
+	INIT_LLIST_HEAD(&conn->dtap_queue);
 	/* BTW, penalty timers will be initialized on-demand. */
 	conn->sccp.conn_id = -1;
 
@@ -1154,4 +1144,144 @@ struct gsm_subscriber_connection *bsc_subscr_con_allocate(struct gsm_network *ne
 
 	llist_add_tail(&conn->entry, &net->subscr_conns);
 	return conn;
+}
+
+static void gsm0808_send_rsl_dtap(struct gsm_subscriber_connection *conn,
+				  struct msgb *msg, int link_id, int allow_sacch);
+
+#define GSCON_DTAP_QUEUE_MSGB_CB_LINK_ID 0
+#define GSCON_DTAP_QUEUE_MSGB_CB_ALLOW_SACCH 1
+
+static void gscon_dtap_queue_add(struct gsm_subscriber_connection *conn, struct msgb *msg,
+				 int link_id, bool allow_sacch)
+{
+	if (conn->dtap_queue_len >= 8) {
+		LOGP(DMSC, LOGL_ERROR, "%s: Cannot queue more DTAP messages,"
+		     " already reached sane maximum of %u queued messages\n",
+		     bsc_subscr_name(conn->bsub), conn->dtap_queue_len);
+		msgb_free(msg);
+		return;
+	}
+	conn->dtap_queue_len ++;
+	LOGP(DMSC, LOGL_DEBUG, "%s: Queueing DTAP message during handover/assignment (%u)\n",
+	     bsc_subscr_name(conn->bsub), conn->dtap_queue_len);
+	msg->cb[GSCON_DTAP_QUEUE_MSGB_CB_LINK_ID] = (unsigned long)link_id;
+	msg->cb[GSCON_DTAP_QUEUE_MSGB_CB_ALLOW_SACCH] = allow_sacch ? 1 : 0;
+	msgb_enqueue(&conn->dtap_queue, msg);
+}
+
+void gscon_dtap_queue_flush(struct gsm_subscriber_connection *conn, int send)
+{
+	struct msgb *msg;
+	unsigned int flushed_count = 0;
+
+	if (conn->secondary_lchan || conn->ho) {
+		LOGP(DMSC, LOGL_ERROR, "%s: Cannot send queued DTAP messages, handover/assignment is still ongoing\n",
+		     bsc_subscr_name(conn->bsub));
+		send = 0;
+	}
+
+	while ((msg = msgb_dequeue(&conn->dtap_queue))) {
+		conn->dtap_queue_len --;
+		flushed_count ++;
+		if (send) {
+			int link_id = (int)msg->cb[GSCON_DTAP_QUEUE_MSGB_CB_LINK_ID];
+			bool allow_sacch = !!msg->cb[GSCON_DTAP_QUEUE_MSGB_CB_ALLOW_SACCH];
+			LOGP(DMSC, LOGL_DEBUG, "%s: Sending queued DTAP message after handover/assignment (%u/%u)\n",
+			     bsc_subscr_name(conn->bsub), flushed_count, conn->dtap_queue_len);
+			gsm0808_send_rsl_dtap(conn, msg, link_id, allow_sacch);
+		} else
+			msgb_free(msg);
+	}
+}
+
+static void rll_ind_cb(struct gsm_lchan *lchan, uint8_t link_id, void *_data, enum bsc_rllr_ind rllr_ind)
+{
+	struct msgb *msg = _data;
+
+	/*
+	 * There seems to be a small window that the RLL timer can
+	 * fire after a lchan_release call and before the S_CHALLOC_FREED
+	 * is called. Check if a conn is set before proceeding.
+	 */
+	if (!lchan->conn)
+		return;
+
+	switch (rllr_ind) {
+	case BSC_RLLR_IND_EST_CONF:
+		rsl_data_request(msg, OBSC_LINKID_CB(msg));
+		break;
+	case BSC_RLLR_IND_REL_IND:
+	case BSC_RLLR_IND_ERR_IND:
+	case BSC_RLLR_IND_TIMEOUT:
+		bsc_sapi_n_reject(lchan->conn, OBSC_LINKID_CB(msg));
+		msgb_free(msg);
+		break;
+	}
+}
+
+/*! \brief process incoming 08.08 DTAP from MSC (send via BTS to MS) */
+static void gsm0808_send_rsl_dtap(struct gsm_subscriber_connection *conn,
+				  struct msgb *msg, int link_id, int allow_sacch)
+{
+	uint8_t sapi;
+	int rc;
+	struct msgb *resp = NULL;
+
+	if (!conn->lchan) {
+		LOGP(DMSC, LOGL_ERROR,
+		     "%s Called submit dtap without an lchan.\n",
+		     bsc_subscr_name(conn->bsub));
+		msgb_free(msg);
+		rc = -EINVAL;
+		goto failed_to_send;
+	}
+
+	sapi = link_id & 0x7;
+	msg->lchan = conn->lchan;
+	msg->dst = msg->lchan->ts->trx->rsl_link;
+
+	/* If we are on a TCH and need to submit a SMS (on SAPI=3) we need to use the SACH */
+	if (allow_sacch && sapi != 0) {
+		if (conn->lchan->type == GSM_LCHAN_TCH_F || conn->lchan->type == GSM_LCHAN_TCH_H)
+			link_id |= 0x40;
+	}
+
+	msg->l3h = msg->data;
+	/* is requested SAPI already up? */
+	if (conn->lchan->sapis[sapi] == LCHAN_SAPI_UNUSED) {
+		/* Establish L2 for additional SAPI */
+		OBSC_LINKID_CB(msg) = link_id;
+		rc = rll_establish(msg->lchan, sapi, rll_ind_cb, msg);
+		if (rc) {
+			msgb_free(msg);
+			bsc_sapi_n_reject(conn, link_id);
+			goto failed_to_send;
+		}
+		return;
+	} else {
+		/* Directly forward via RLL/RSL to BTS */
+		rc = rsl_data_request(msg, link_id);
+		if (rc)
+			goto failed_to_send;
+	}
+	return;
+
+failed_to_send:
+	LOGPFSML(conn->fi, LOGL_ERROR, "Tx BSSMAP CLEAR REQUEST to MSC\n");
+	resp = gsm0808_create_clear_rqst(GSM0808_CAUSE_EQUIPMENT_FAILURE);
+	sigtran_send(conn, resp, conn->fi);
+	osmo_fsm_inst_state_chg(conn->fi, ST_ACTIVE, 0, 0);
+}
+
+void gscon_submit_rsl_dtap(struct gsm_subscriber_connection *conn,
+			   struct msgb *msg, int link_id, int allow_sacch)
+{
+	/* buffer message during assignment / handover */
+	if (conn->secondary_lchan || conn->ho) {
+		gscon_dtap_queue_add(conn, msg, link_id, !! allow_sacch);
+		return;
+	}
+
+	gsm0808_send_rsl_dtap(conn, msg, link_id, allow_sacch);
 }

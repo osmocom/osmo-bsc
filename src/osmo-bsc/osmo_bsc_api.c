@@ -86,7 +86,7 @@ static void bsc_maybe_lu_reject(struct gsm_subscriber_connection *conn, int con_
 	}
 
 	msg->lchan = conn->lchan;
-	gsm0808_submit_dtap(conn, msg, 0, 0);
+	gscon_submit_rsl_dtap(conn, msg, 0, 0);
 }
 
 static int bsc_filter_initial(struct osmo_bsc_data *bsc,

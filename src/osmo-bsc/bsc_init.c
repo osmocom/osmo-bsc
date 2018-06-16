@@ -35,6 +35,7 @@
 #include <osmocom/bsc/bsc_msc_data.h>
 #include <osmocom/bsc/handover_cfg.h>
 #include <osmocom/bsc/gsm_04_08_utils.h>
+#include <osmocom/bsc/neighbor_ident.h>
 
 #include <time.h>
 #include <limits.h>
