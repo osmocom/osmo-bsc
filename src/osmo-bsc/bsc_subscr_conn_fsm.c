@@ -36,6 +36,7 @@
 #include <osmocom/bsc/penalty_timers.h>
 #include <osmocom/bsc/bsc_rll.h>
 #include <osmocom/bsc/abis_rsl.h>
+#include <osmocom/bsc/gsm_timers.h>
 #include <osmocom/mgcp_client/mgcp_client_fsm.h>
 #include <osmocom/core/byteswap.h>
 
@@ -146,6 +147,25 @@ void bsc_subscr_pick_codec(struct mgcp_conn_peer *conn_peer, struct gsm_subscrib
 		conn_peer->codecs_len = 0;
 	}
 }
+
+struct state_timeout conn_fsm_timeouts[32] = {
+	[ST_WAIT_ASS_CMPL] = { .T = 10 },
+	[ST_WAIT_CRCX_BTS] = { .T = 992427 },
+	[ST_WAIT_MDCX_BTS] = { .T = 992427 },
+	[ST_WAIT_CRCX_MSC] = { .T = 992427 },
+	[ST_WAIT_MDCX_BTS_HO] = { .T = 992427 },
+	[ST_WAIT_CC] = { .T = 993210 },
+	[ST_CLEARING] = { .T = 999 },
+};
+
+/* Transition to a state, using the T timer defined in conn_fsm_timeouts.
+ * The actual timeout value is in turn obtained from network->T_defs.
+ * Assumes local variable 'conn' exists. */
+#define conn_fsm_state_chg(state) \
+	fsm_inst_state_chg_T(conn->fi, state, \
+			     conn_fsm_timeouts, \
+			     conn->network->T_defs, \
+			     -1)
 
 /* forward MT DTAP from BSSAP side to RSL side */
 static inline void submit_dtap(struct gsm_subscriber_connection *conn, struct msgb *msg,
@@ -324,7 +344,7 @@ static void gscon_fsm_init(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 		} else {
 			/* SCCP T(conn est) is 1-2 minutes, way too long. The MS will timeout
 			 * using T3210 (20s), T3220 (5s) or T3230 (10s) */
-			osmo_fsm_inst_state_chg(fi, ST_WAIT_CC, 20, 993210);
+			conn_fsm_state_chg(ST_WAIT_CC);
 		}
 		break;
 	case GSCON_EV_A_CONN_IND:
@@ -353,11 +373,12 @@ static void gscon_fsm_init(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 /* We've sent the CONNECTION.req to the SCCP provider and are waiting for CC from MSC */
 static void gscon_fsm_wait_cc(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
+	struct gsm_subscriber_connection *conn = fi->priv;
 	switch (event) {
 	case GSCON_EV_A_CONN_CFM:
 		/* MSC has confirmed the connection, we now change into the
 		 * active state and wait there for further operations */
-		osmo_fsm_inst_state_chg(fi, ST_ACTIVE, 0, 0);
+		conn_fsm_state_chg(ST_ACTIVE);
 		/* if there's user payload, forward it just like EV_MT_DTAP */
 		/* FIXME: Question: if there's user payload attached to the CC, forward it like EV_MT_DTAP? */
 		break;
@@ -399,7 +420,7 @@ static void _assignment_failed(struct osmo_fsm_inst *fi, enum gsm0808_cause caus
 	resp = gsm0808_create_assignment_failure(cause, NULL);
 	sigtran_send(conn, resp, fi);
 	if (fi->state != ST_ACTIVE)
-		osmo_fsm_inst_state_chg(fi, ST_ACTIVE, 0, 0);
+		conn_fsm_state_chg(ST_ACTIVE);
 }
 
 /* We're on an active subscriber connection, passing DTAP back and forth */
@@ -437,7 +458,7 @@ static void gscon_fsm_active(struct osmo_fsm_inst *fi, uint32_t event, void *dat
 			osmo_strlcpy(conn_peer.endpoint, get_mgw_ep_name(conn), sizeof(conn_peer.endpoint));
 
 			/* (Pre)Change state and create the connection */
-			osmo_fsm_inst_state_chg(fi, ST_WAIT_CRCX_BTS, MGCP_MGW_TIMEOUT, MGCP_MGW_TIMEOUT_TIMER_NR);
+			conn_fsm_state_chg(ST_WAIT_CRCX_BTS);
 			conn->user_plane.fi_bts =
 			    mgcp_conn_create(conn->network->mgw.client, fi, GSCON_EV_MGW_FAIL_BTS,
 					     GSCON_EV_MGW_CRCX_RESP_BTS, &conn_peer);
@@ -464,7 +485,7 @@ static void gscon_fsm_active(struct osmo_fsm_inst *fi, uint32_t event, void *dat
 				return;
 			}
 
-			osmo_fsm_inst_state_chg(fi, ST_WAIT_ASS_CMPL, conn->network->T10, 10);
+			conn_fsm_state_chg(ST_WAIT_ASS_CMPL);
 			break;
 		default:
 			/* An unsupported channel is requested, so we have to
@@ -484,7 +505,7 @@ static void gscon_fsm_active(struct osmo_fsm_inst *fi, uint32_t event, void *dat
 		if (rc) {
 			resp = gsm0808_create_clear_rqst(GSM0808_CAUSE_EQUIPMENT_FAILURE);
 			sigtran_send(conn, resp, fi);
-			osmo_fsm_inst_state_chg(fi, ST_CLEARING, 0, 0);
+			conn_fsm_state_chg(ST_CLEARING);
 			return;
 		}
 
@@ -493,7 +514,7 @@ static void gscon_fsm_active(struct osmo_fsm_inst *fi, uint32_t event, void *dat
 		 * handover time out, so we do not need another timeout
 		 * here (maybe its worth to think about giving GSCON
 		 * more power over the actual handover process). */
-		osmo_fsm_inst_state_chg(fi, ST_WAIT_HO_COMPL, 0, 0);
+		conn_fsm_state_chg(ST_WAIT_HO_COMPL);
 		break;
 	case GSCON_EV_A_HO_REQ:
 		/* FIXME: reject any handover requests with HO FAIL until implemented */
@@ -551,7 +572,7 @@ static void gscon_fsm_wait_crcx_bts(struct osmo_fsm_inst *fi, uint32_t event, vo
 			return;
 		}
 
-		osmo_fsm_inst_state_chg(fi, ST_WAIT_ASS_CMPL, conn->network->T10, 10);
+		conn_fsm_state_chg(ST_WAIT_ASS_CMPL);
 		break;
 	case GSCON_EV_MO_DTAP:
 		forward_dtap(conn, (struct msgb *)data, fi);
@@ -598,7 +619,7 @@ static void gscon_fsm_wait_ass_cmpl(struct osmo_fsm_inst *fi, uint32_t event, vo
 			conn_peer.ptime = 20;
 
 			/* (Pre)Change state and modify the connection */
-			osmo_fsm_inst_state_chg(fi, ST_WAIT_MDCX_BTS, MGCP_MGW_TIMEOUT, MGCP_MGW_TIMEOUT_TIMER_NR);
+			conn_fsm_state_chg(ST_WAIT_MDCX_BTS);
 			rc = mgcp_conn_modify(conn->user_plane.fi_bts, GSCON_EV_MGW_MDCX_RESP_BTS, &conn_peer);
 			if (rc != 0) {
 				assignment_failed(fi, GSM0808_CAUSE_EQUIPMENT_FAILURE);
@@ -609,7 +630,7 @@ static void gscon_fsm_wait_ass_cmpl(struct osmo_fsm_inst *fi, uint32_t event, vo
 			/* Confirm the successful assignment on BSSMAP and
 			 * change back into active state */
 			send_ass_compl(lchan, fi, false);
-			osmo_fsm_inst_state_chg(fi, ST_ACTIVE, 0, 0);
+			conn_fsm_state_chg(ST_ACTIVE);
 			break;
 		default:
 			/* Unsupported modes should have been already filtered
@@ -673,12 +694,11 @@ static void gscon_fsm_wait_mdcx_bts(struct osmo_fsm_inst *fi, uint32_t event, vo
 		case OSMO_SS7_ASP_PROT_IPA:
 			/* Send assignment complete message to the MSC */
 			send_ass_compl(conn->lchan, fi, true);
-			osmo_fsm_inst_state_chg(fi, ST_ACTIVE, 0, 0);
+			conn_fsm_state_chg(ST_ACTIVE);
 			break;
 		default:
 			/* (Pre)Change state and create the connection */
-			osmo_fsm_inst_state_chg(fi, ST_WAIT_CRCX_MSC, MGCP_MGW_TIMEOUT,
-						MGCP_MGW_TIMEOUT_TIMER_NR);
+			conn_fsm_state_chg(ST_WAIT_CRCX_MSC);
 			conn->user_plane.fi_msc = mgcp_conn_create(conn->network->mgw.client, fi,
 								  GSCON_EV_MGW_FAIL_MSC,
 								  GSCON_EV_MGW_CRCX_RESP_MSC, &conn_peer);
@@ -725,7 +745,7 @@ static void gscon_fsm_wait_crcx_msc(struct osmo_fsm_inst *fi, uint32_t event, vo
 		/* Send assignment complete message to the MSC */
 		send_ass_compl(lchan, fi, true);
 
-		osmo_fsm_inst_state_chg(fi, ST_ACTIVE, 0, 0);
+		conn_fsm_state_chg(ST_ACTIVE);
 
 		break;
 	case GSCON_EV_MO_DTAP:
@@ -790,12 +810,12 @@ static void gscon_fsm_wait_ho_compl(struct osmo_fsm_inst *fi, uint32_t event, vo
 		conn_peer.ptime = 20;
 
 		/* (Pre)Change state and modify the connection */
-		osmo_fsm_inst_state_chg(fi, ST_WAIT_MDCX_BTS_HO, MGCP_MGW_TIMEOUT, MGCP_MGW_HO_TIMEOUT_TIMER_NR);
+		conn_fsm_state_chg(ST_WAIT_MDCX_BTS_HO);
 		rc = mgcp_conn_modify(conn->user_plane.fi_bts, GSCON_EV_MGW_MDCX_RESP_BTS, &conn_peer);
 		if (rc != 0) {
 			resp = gsm0808_create_clear_rqst(GSM0808_CAUSE_EQUIPMENT_FAILURE);
 			sigtran_send(conn, resp, fi);
-			osmo_fsm_inst_state_chg(fi, ST_CLEARING, 0, 0);
+			conn_fsm_state_chg(ST_CLEARING);
 			return;
 		}
 		break;
@@ -805,7 +825,7 @@ static void gscon_fsm_wait_ho_compl(struct osmo_fsm_inst *fi, uint32_t event, vo
 		 * some reason. This means the phone stays on the TS/BTS on
 		 * which it currently is. We will change back to the active
 		 * state again as there are no further operations needed */
-		osmo_fsm_inst_state_chg(fi, ST_ACTIVE, 0, 0);
+		conn_fsm_state_chg(ST_ACTIVE);
 		break;
 	default:
 		OSMO_ASSERT(false);
@@ -824,7 +844,7 @@ static void gscon_fsm_wait_mdcx_bts_ho(struct osmo_fsm_inst *fi, uint32_t event,
 		/* The MGW has confirmed the handover MDCX, and the handover
 		 * is now also done on the RTP side. We may now change back
 		 * to the active state. */
-		osmo_fsm_inst_state_chg(fi, ST_ACTIVE, 0, 0);
+		conn_fsm_state_chg(ST_ACTIVE);
 		break;
 	case GSCON_EV_MO_DTAP:
 		forward_dtap(conn, (struct msgb *)data, fi);
@@ -955,7 +975,7 @@ static void gscon_fsm_allstate(struct osmo_fsm_inst *fi, uint32_t event, void *d
 		break;
 	case GSCON_EV_A_CLEAR_CMD:
 		/* MSC tells us to cleanly shut down */
-		osmo_fsm_inst_state_chg(fi, ST_CLEARING, 0, 0);
+		conn_fsm_state_chg(ST_CLEARING);
 		gsm0808_clear(conn);
 		/* FIXME: Release all terestrial resources in ST_CLEARING */
 		/* According to 3GPP 48.008 3.1.9.1. "The BSS need not wait for the radio channel
@@ -1080,7 +1100,7 @@ static int gscon_timer_cb(struct osmo_fsm_inst *fi)
 		assignment_failed(fi, GSM0808_CAUSE_EQUIPMENT_FAILURE);
 		break;
 	case MGCP_MGW_HO_TIMEOUT_TIMER_NR:	/* Handover failed (no response from MGW) */
-		osmo_fsm_inst_state_chg(fi, ST_ACTIVE, 0, 0);
+		conn_fsm_state_chg(ST_ACTIVE);
 		break;
 	default:
 		OSMO_ASSERT(false);

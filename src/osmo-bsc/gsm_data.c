@@ -39,6 +39,7 @@
 #include <osmocom/bsc/bsc_msc_data.h>
 #include <osmocom/bsc/abis_nm.h>
 #include <osmocom/bsc/handover_cfg.h>
+#include <osmocom/bsc/gsm_timers.h>
 
 void *tall_bsc_ctx = NULL;
 
@@ -864,7 +865,7 @@ struct gsm_bts *gsm_bts_alloc(struct gsm_network *net, uint8_t bts_num)
 	bts->si_common.chan_desc.att = 1; /* attachment required */
 	bts->si_common.chan_desc.bs_pa_mfrms = RSL_BS_PA_MFRMS_5; /* paging frames */
 	bts->si_common.chan_desc.bs_ag_blks_res = 1; /* reserved AGCH blocks */
-	bts->si_common.chan_desc.t3212 = net->t3212; /* Use network's current value */
+	bts->si_common.chan_desc.t3212 = T_def_get(net->T_defs, 3212, T_CUSTOM, -1);
 	gsm_bts_set_radio_link_timeout(bts, 32); /* Use RADIO LINK TIMEOUT of 32 */
 
 	INIT_LLIST_HEAD(&bts->abis_queue);

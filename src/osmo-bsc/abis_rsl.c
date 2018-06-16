@@ -47,6 +47,7 @@
 #include <osmocom/bsc/bsc_api.h>
 #include <osmocom/bsc/bsc_subscr_conn_fsm.h>
 #include <osmocom/netif/rtp.h>
+#include <osmocom/bsc/gsm_timers.h>
 
 #define RSL_ALLOC_SIZE		1024
 #define RSL_ALLOC_HEADROOM	128
@@ -77,7 +78,9 @@ static void do_lchan_free(struct gsm_lchan *lchan)
 	if (lchan->state == LCHAN_S_REL_ERR) {
 		osmo_timer_setup(&lchan->error_timer, error_timeout_cb, lchan);
 		osmo_timer_schedule(&lchan->error_timer,
-				   lchan->ts->trx->bts->network->T3111 + 2, 0);
+				    T_def_get(lchan->ts->trx->bts->network->T_defs,
+					      993111, T_S, -1),
+				    0);
 	} else {
 		rsl_lchan_set_state(lchan, LCHAN_S_NONE);
 	}
@@ -1911,11 +1914,10 @@ static int rsl_rx_chan_rqd(struct msgb *msg)
 		LOGP(DRSL, LOGL_NOTICE, "(bts=%d) CHAN RQD: no resources for %s 0x%x\n",
 		     msg->lchan->ts->trx->bts->nr, gsm_lchant_name(lctype), rqd_ref->ra);
 		rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_CTR_CHREQ_NO_CHANNEL]);
-		if (bts->T3122)
-			wait_ind = bts->T3122;
-		else if (bts->network->T3122)
-			wait_ind = bts->network->T3122 & 0xff;
-		else
+		wait_ind = bts->T3122;
+		if (!wait_ind)
+			wait_ind = T_def_get(bts->network->T_defs, 3122, T_S, -1);
+		if (!wait_ind)
 			wait_ind = GSM_T3122_DEFAULT;
 		/* The BTS will gather multiple CHAN RQD and reject up to 4 MS at the same time. */
 		rsl_send_imm_ass_rej(bts, rqd_ref, wait_ind);
@@ -1997,7 +1999,7 @@ static int rsl_send_imm_assignment(struct gsm_lchan *lchan)
 
 	/* Start timer T3101 to wait for GSM48_MT_RR_PAG_RESP */
 	osmo_timer_setup(&lchan->T3101, t3101_expired, lchan);
-	osmo_timer_schedule(&lchan->T3101, bts->network->T3101, 0);
+	osmo_timer_schedule(&lchan->T3101, T_def_get(bts->network->T_defs, 3101, T_S, -1), 0);
 
 	/* send IMMEDIATE ASSIGN CMD on RSL to BTS (to send on CCCH to MS) */
 	return rsl_imm_assign_cmd(bts, sizeof(*ia)+ia->mob_alloc_len, (uint8_t *) ia);
@@ -2157,7 +2159,7 @@ static void rsl_handle_release(struct gsm_lchan *lchan)
 	osmo_timer_del(&lchan->T3109);
 	osmo_timer_setup(&lchan->T3111, t3111_expired, lchan);
 	bts = lchan->ts->trx->bts;
-	osmo_timer_schedule(&lchan->T3111, bts->network->T3111, 0);
+	osmo_timer_schedule(&lchan->T3111, T_def_get(bts->network->T_defs, 3111, T_S, -1), 0);
 }
 
 /*	ESTABLISH INDICATION, LOCATION AREA UPDATE REQUEST
@@ -2996,7 +2998,7 @@ int rsl_start_t3109(struct gsm_lchan *lchan)
 	struct gsm_bts *bts = lchan->ts->trx->bts;
 
 	osmo_timer_setup(&lchan->T3109, t3109_expired, lchan);
-	osmo_timer_schedule(&lchan->T3109, bts->network->T3109, 0);
+	osmo_timer_schedule(&lchan->T3109, T_def_get(bts->network->T_defs, 3109, T_S, -1), 0);
 	return 0;
 }
 

@@ -64,6 +64,7 @@
 #include <osmocom/bsc/meas_feed.h>
 #include <osmocom/bsc/neighbor_ident.h>
 #include <osmocom/bsc/handover.h>
+#include <osmocom/bsc/gsm_timers.h>
 
 #include <inttypes.h>
 
@@ -968,11 +969,6 @@ static int config_write_bts(struct vty *v)
 	return CMD_SUCCESS;
 }
 
-/* small helper macro for conditional dumping of timer */
-#define VTY_OUT_TIMER(number)	\
-	if (gsmnet->T##number != GSM_T##number##_DEFAULT)	\
-		vty_out(vty, " timer t"#number" %u%s", gsmnet->T##number, VTY_NEWLINE)
-
 static int config_write_net(struct vty *vty)
 {
 	struct gsm_network *gsmnet = gsmnet_from_vty(vty);
@@ -993,22 +989,7 @@ static int config_write_net(struct vty *vty)
 
 	ho_vty_write_net(vty, gsmnet);
 
-	VTY_OUT_TIMER(3101);
-	VTY_OUT_TIMER(3103);
-	VTY_OUT_TIMER(3105);
-	VTY_OUT_TIMER(3107);
-	VTY_OUT_TIMER(3109);
-	VTY_OUT_TIMER(3111);
-	VTY_OUT_TIMER(3113);
-	VTY_OUT_TIMER(3115);
-	VTY_OUT_TIMER(3117);
-	VTY_OUT_TIMER(3119);
-	VTY_OUT_TIMER(3122);
-	VTY_OUT_TIMER(3141);
-	VTY_OUT_TIMER(10);
-	VTY_OUT_TIMER(7);
-	VTY_OUT_TIMER(8);
-	VTY_OUT_TIMER(101);
+	T_defs_vty_write(vty, " ");
 
 	if (!gsmnet->dyn_ts_allow_tch_f)
 		vty_out(vty, " dyn_ts_allow_tch_f 0%s", VTY_NEWLINE);
@@ -1021,11 +1002,8 @@ static int config_write_net(struct vty *vty)
 			vty_out(vty, " timezone %d %d%s",
 				gsmnet->tz.hr, gsmnet->tz.mn, VTY_NEWLINE);
 	}
-	if (gsmnet->t3212 == 0)
-		vty_out(vty, " no periodic location update%s", VTY_NEWLINE);
-	else
-		vty_out(vty, " periodic location update %u%s",
-			gsmnet->t3212 * 6, VTY_NEWLINE);
+
+	/* writing T3212 from the common T_defs_vty_write() instead. */
 
 	{
 		uint16_t meas_port;
@@ -1888,48 +1866,6 @@ DEFUN(cfg_net_pag_any_tch,
 	gsm_net_update_ctype(gsmnet);
 	return CMD_SUCCESS;
 }
-
-#define DEFAULT_TIMER(number) GSM_T##number##_DEFAULT
-/* Add another expansion so that DEFAULT_TIMER() becomes its value */
-#define EXPAND_AND_STRINGIFY(x) OSMO_STRINGIFY(x)
-
-#define DECLARE_TIMER(number, doc) \
-    DEFUN(cfg_net_T##number,					\
-      cfg_net_T##number##_cmd,					\
-      "timer t" #number  " (default|<1-65535>)",		\
-      "Configure GSM Timers\n"					\
-      doc " (default: " EXPAND_AND_STRINGIFY(DEFAULT_TIMER(number)) " seconds)\n" \
-      "Set to default timer value"				\
-	  " (" EXPAND_AND_STRINGIFY(DEFAULT_TIMER(number)) " seconds)\n" \
-      "Timer Value in seconds\n")				\
-{								\
-	struct gsm_network *gsmnet = gsmnet_from_vty(vty);	\
-	int value;						\
-	if (strcmp(argv[0], "default") == 0)			\
-		value = DEFAULT_TIMER(number);			\
-	else							\
-		value = atoi(argv[0]);				\
-								\
-	gsmnet->T##number = value;				\
-	return CMD_SUCCESS;					\
-}
-
-DECLARE_TIMER(3101, "Set the timeout value for IMMEDIATE ASSIGNMENT")
-DECLARE_TIMER(3103, "Set the timeout value for HANDOVER")
-DECLARE_TIMER(3105, "Set the timer for repetition of PHYSICAL INFORMATION")
-DECLARE_TIMER(3107, "Currently not used")
-DECLARE_TIMER(3109, "Set the RSL SACCH deactivation timeout")
-DECLARE_TIMER(3111, "Set the RSL timeout to wait before releasing the RF Channel")
-DECLARE_TIMER(3113, "Set the time to try paging a subscriber")
-DECLARE_TIMER(3115, "Currently not used")
-DECLARE_TIMER(3117, "Currently not used")
-DECLARE_TIMER(3119, "Currently not used")
-DECLARE_TIMER(3122, "Default waiting time (seconds) after IMM ASS REJECT")
-DECLARE_TIMER(3141, "Currently not used")
-DECLARE_TIMER(10, "Assignment Command timeout in seconds")
-DECLARE_TIMER(7, "Set the outgoing inter-BSC Handover timeout, from Handover Required to Handover Command")
-DECLARE_TIMER(8, "Set the outgoing inter-BSC Handover timeout, from Handover Command to final Clear")
-DECLARE_TIMER(101, "Set the incoming inter-BSC Handover timeout, from Handover Request to Accept")
 
 DEFUN_DEPRECATED(cfg_net_dtx,
 		 cfg_net_dtx_cmd,
@@ -4736,9 +4672,11 @@ DEFUN(cfg_net_per_loc_upd, cfg_net_per_loc_upd_cmd,
       "Periodic Location Updating Interval in Minutes\n")
 {
 	struct gsm_network *net = vty->index;
+	struct T_def *d = T_def_get_entry(net->T_defs, 3212);
 
-	net->t3212 = atoi(argv[0]) / 6;
-
+	OSMO_ASSERT(d);
+	d->val = atoi(argv[0]) / 6;
+	vty_out(vty, "T%d = %u %s (%s)%s", d->T, d->val, "* 6min", d->desc, VTY_NEWLINE);
 	return CMD_SUCCESS;
 }
 
@@ -4750,9 +4688,11 @@ DEFUN(cfg_net_no_per_loc_upd, cfg_net_no_per_loc_upd_cmd,
       "Periodic Location Updating Interval\n")
 {
 	struct gsm_network *net = vty->index;
+	struct T_def *d = T_def_get_entry(net->T_defs, 3212);
 
-	net->t3212 = 0;
-
+	OSMO_ASSERT(d);
+	d->val = 0;
+	vty_out(vty, "T%d = %u %s (%s)%s", d->T, d->val, "* 6min", d->desc, VTY_NEWLINE);
 	return CMD_SUCCESS;
 }
 
@@ -4844,23 +4784,9 @@ int bsc_vty_init(struct gsm_network *network)
 	logging_vty_add_cmds(NULL);
 	osmo_talloc_vty_add_cmds();
 
+	T_defs_vty_init(network->T_defs, GSMNET_NODE);
+
 	install_element(GSMNET_NODE, &cfg_net_neci_cmd);
-	install_element(GSMNET_NODE, &cfg_net_T3101_cmd);
-	install_element(GSMNET_NODE, &cfg_net_T3103_cmd);
-	install_element(GSMNET_NODE, &cfg_net_T3105_cmd);
-	install_element(GSMNET_NODE, &cfg_net_T3107_cmd);
-	install_element(GSMNET_NODE, &cfg_net_T3109_cmd);
-	install_element(GSMNET_NODE, &cfg_net_T3111_cmd);
-	install_element(GSMNET_NODE, &cfg_net_T3113_cmd);
-	install_element(GSMNET_NODE, &cfg_net_T3115_cmd);
-	install_element(GSMNET_NODE, &cfg_net_T3117_cmd);
-	install_element(GSMNET_NODE, &cfg_net_T3119_cmd);
-	install_element(GSMNET_NODE, &cfg_net_T3122_cmd);
-	install_element(GSMNET_NODE, &cfg_net_T3141_cmd);
-	install_element(GSMNET_NODE, &cfg_net_T10_cmd);
-	install_element(GSMNET_NODE, &cfg_net_T7_cmd);
-	install_element(GSMNET_NODE, &cfg_net_T8_cmd);
-	install_element(GSMNET_NODE, &cfg_net_T101_cmd);
 	install_element(GSMNET_NODE, &cfg_net_dtx_cmd);
 	install_element(GSMNET_NODE, &cfg_net_pag_any_tch_cmd);
 	/* See also handover commands added on net level from handover_vty.c */

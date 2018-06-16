@@ -23,6 +23,7 @@
 #include <osmocom/core/msgb.h>
 #include <osmocom/bsc/gsm_data.h>
 #include <osmocom/bsc/abis_nm.h>
+#include <osmocom/bsc/gsm_timers.h>
 
 static void patch_16(uint8_t *data, const uint16_t val)
 {
@@ -90,7 +91,7 @@ struct msgb *nanobts_attr_bts_get(struct gsm_bts *bts)
 	msgb_tv_fixed_put(msgb, NM_ATT_LDAVG_SLOTS, 2, buf);
 
 	/* 10 milliseconds */
-	msgb_tv_put(msgb, NM_ATT_BTS_AIR_TIMER, bts->network->T3105 > 0? bts->network->T3105 : 13);
+	msgb_tv_put(msgb, NM_ATT_BTS_AIR_TIMER, T_def_get(bts->network->T_defs, 3105, T_MS, -1));
 
 	/* 10 retransmissions of physical config */
 	msgb_tv_put(msgb, NM_ATT_NY1, 10);

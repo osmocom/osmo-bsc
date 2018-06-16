@@ -32,6 +32,8 @@
 #include <osmocom/bsc/bsc_msg_filter.h>
 #include <osmocom/bsc/acc_ramp.h>
 
+#define GSM_T3122_DEFAULT 10
+
 struct mgcp_client_conf;
 struct mgcp_client;
 struct mgcp_ctx;
@@ -1192,23 +1194,6 @@ static const struct rate_ctr_group_desc bsc_ctrg_desc = {
 	bsc_ctr_description,
 };
 
-#define GSM_T3101_DEFAULT 3	/* s */
-#define GSM_T3103_DEFAULT 5	/* s */
-#define GSM_T3105_DEFAULT 100	/* ms */
-#define GSM_T3107_DEFAULT 5	/* s */
-#define GSM_T3109_DEFAULT 5	/* s, must be 2s + radio_link_timeout*0.48 */
-#define GSM_T3111_DEFAULT 2	/* s */
-#define GSM_T3113_DEFAULT 10	/* s */
-#define GSM_T3115_DEFAULT 10
-#define GSM_T3117_DEFAULT 10
-#define GSM_T3119_DEFAULT 10
-#define GSM_T3122_DEFAULT 10
-#define GSM_T3141_DEFAULT 10
-#define GSM_T10_DEFAULT 6	/* RR Assignment timeout, in seconds */
-#define GSM_T7_DEFAULT 10	/* inter-BSC MO Handover first timeout, in seconds */
-#define GSM_T8_DEFAULT 10	/* inter-BSC MO Handover second timeout, in seconds */
-#define GSM_T101_DEFAULT 10	/* inter-BSC MT Handover timeout, in seconds */
-
 struct gsm_tz {
 	int override; /* if 0, use system's time zone instead. */
 	int hr; /* hour */
@@ -1240,23 +1225,8 @@ struct gsm_network {
 	unsigned int num_bts;
 	struct llist_head bts_list;
 
-	/* timer values */
-	int T3101;
-	int T3103; /*< Handover timeout */
-	int T3105;
-	int T3107;
-	int T3109;
-	int T3111;
-	int T3113;
-	int T3115;
-	int T3117;
-	int T3119;
-	int T3122;
-	int T3141;
-	int T10; /*< RR Assignment timeout, in seconds */
-	int T7; /*< inter-BSC handover MO timeout from Handover Required to Handover Command */
-	int T8; /*< inter-BSC handover MO timeout from Handover Command to final Clear*/
-	int T101; /*< inter-BSC handover MT timeout from Handover Request to Handover Accept */
+	/* shall reference gsm_network_T[] */
+	struct T_def *T_defs;
 
 	enum gsm_chan_t ctype_by_chreq[_NUM_CHREQ_T];
 
@@ -1289,9 +1259,6 @@ struct gsm_network {
 	 * not require gsm_data.h). In an MSC-without-BSC environment, this
 	 * pointer is NULL to indicate absence of a bsc_subscribers list. */
 	struct llist_head *bsc_subscribers;
-
-	/* Periodic location update default value */
-	uint8_t t3212;
 
 	/* Timer for periodic channel load measurements to maintain each BTS's T3122. */
 	struct osmo_timer_list t3122_chan_load_timer;

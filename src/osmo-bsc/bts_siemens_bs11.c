@@ -27,6 +27,7 @@
 #include <osmocom/bsc/abis_nm.h>
 #include <osmocom/abis/e1_input.h>
 #include <osmocom/bsc/signal.h>
+#include <osmocom/bsc/gsm_timers.h>
 
 static int bts_model_bs11_start(struct gsm_network *net);
 
@@ -358,7 +359,7 @@ static void patch_nm_tables(struct gsm_bts *bts)
 	uint8_t arfcn_high = (bts->c0->arfcn >> 8) & 0x0f;
 
 	/* T3105 attribute in units of 10ms */
-	bs11_attr_bts[2] = bts->network->T3105 / 10;
+	bs11_attr_bts[2] = T_def_get(bts->network->T_defs, 3105, T_MS, -1) / 10;
 
 	/* patch ARFCN into BTS Attributes */
 	bs11_attr_bts[69] &= 0xf0;
