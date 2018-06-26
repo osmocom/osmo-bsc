@@ -122,8 +122,7 @@ static const struct value_string gscon_fsm_event_names[] = {
 
 /* Depending on the channel mode and rate, set the codec type that is signalled
  * towards the MGW. */
-static void mgcp_pick_codec(struct gsm_subscriber_connection *conn,
-			    struct mgcp_conn_peer *conn_peer)
+void bsc_subscr_pick_codec(struct mgcp_conn_peer *conn_peer, struct gsm_subscriber_connection *conn)
 {
 	switch (conn->user_plane.chan_mode) {
 	case GSM48_CMODE_SPEECH_V1:
@@ -440,7 +439,7 @@ static void gscon_fsm_active(struct osmo_fsm_inst *fi, uint32_t event, void *dat
 			/* A voice channel is requested, so we run down the
 			 * mgcp-ass-mgcp state-chain (see FIXME above) */
 			memset(&conn_peer, 0, sizeof(conn_peer));
-			mgcp_pick_codec(conn, &conn_peer);
+			bsc_subscr_pick_codec(&conn_peer, conn);
 			conn_peer.call_id = conn->sccp.conn_id;
 			conn_peer.ptime = 20;
 			osmo_strlcpy(conn_peer.endpoint, get_mgw_ep_name(conn), sizeof(conn_peer.endpoint));
@@ -600,7 +599,7 @@ static void gscon_fsm_wait_ass_cmpl(struct osmo_fsm_inst *fi, uint32_t event, vo
 
 			/* Prepare parameters with the information we got during the assignment */
 			memset(&conn_peer, 0, sizeof(conn_peer));
-			mgcp_pick_codec(conn, &conn_peer);
+			bsc_subscr_pick_codec(&conn_peer, conn);
 			addr.s_addr = osmo_ntohl(lchan->abis_ip.bound_ip);
 			osmo_strlcpy(conn_peer.addr, inet_ntoa(addr), sizeof(conn_peer.addr));
 			conn_peer.port = lchan->abis_ip.bound_port;
@@ -667,7 +666,7 @@ static void gscon_fsm_wait_mdcx_bts(struct osmo_fsm_inst *fi, uint32_t event, vo
 		/* Prepare parameters with the connection information we got
 		 * with the assignment command */
 		memset(&conn_peer, 0, sizeof(conn_peer));
-		mgcp_pick_codec(conn, &conn_peer);
+		bsc_subscr_pick_codec(&conn_peer, conn);
 		conn_peer.call_id = conn->sccp.conn_id;
 		sin = (struct sockaddr_in *)&conn->user_plane.aoip_rtp_addr_remote;
 		conn_peer.port = osmo_ntohs(sin->sin_port);
@@ -792,7 +791,7 @@ static void gscon_fsm_wait_ho_compl(struct osmo_fsm_inst *fi, uint32_t event, vo
 		/* Prepare parameters with the information we got during the
 		 * handover procedure (via IPACC) */
 		memset(&conn_peer, 0, sizeof(conn_peer));
-		mgcp_pick_codec(conn, &conn_peer);
+		bsc_subscr_pick_codec(&conn_peer, conn);
 		addr.s_addr = osmo_ntohl(lchan->abis_ip.bound_ip);
 		osmo_strlcpy(conn_peer.addr, inet_ntoa(addr), sizeof(conn_peer.addr));
 		conn_peer.port = lchan->abis_ip.bound_port;

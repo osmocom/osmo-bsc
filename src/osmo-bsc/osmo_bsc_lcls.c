@@ -244,6 +244,7 @@ static void lcls_break_local_switching(struct gsm_subscriber_connection *conn)
 	memset(&peer, 0, sizeof(peer));
 	peer.port = htons(sin->sin_port);
 	osmo_strlcpy(peer.addr, inet_ntoa(sin->sin_addr), sizeof(peer.addr));
+	bsc_subscr_pick_codec(&peer, conn);
 	mgcp_conn_modify(conn->user_plane.fi_msc, 0, &peer);
 }
 
@@ -563,6 +564,7 @@ static void lcls_locally_switched_onenter(struct osmo_fsm_inst *fi, uint32_t pre
 	memset(&peer, 0, sizeof(peer));
 	peer.port = htons(sin->sin_port);
 	osmo_strlcpy(peer.addr, inet_ntoa(sin->sin_addr), sizeof(peer.addr));
+	bsc_subscr_pick_codec(&peer, conn);
 	mgcp_conn_modify(conn->user_plane.fi_msc, 0, &peer);
 
 }

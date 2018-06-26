@@ -66,6 +66,9 @@ enum gscon_fsm_event {
 
 struct gsm_subscriber_connection;
 struct gsm_network;
+struct mgcp_conn_peer;
 
 /* Allocate a subscriber connection and its associated FSM */
 struct gsm_subscriber_connection *bsc_subscr_con_allocate(struct gsm_network *net);
+
+void bsc_subscr_pick_codec(struct mgcp_conn_peer *conn_peer, struct gsm_subscriber_connection *conn);
