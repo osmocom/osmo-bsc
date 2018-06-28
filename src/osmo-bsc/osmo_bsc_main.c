@@ -72,7 +72,7 @@ struct gsm_network *bsc_gsmnet = 0;
 static const char *config_file = "osmo-bsc.cfg";
 static const char *rf_ctrl = NULL;
 static int daemonize = 0;
-static struct llist_head access_lists;
+static LLIST_HEAD(access_lists);
 
 struct llist_head *bsc_access_lists(void)
 {
@@ -811,8 +811,6 @@ int main(int argc, char **argv)
 	/* Initalize SS7 */
 	osmo_ss7_init();
 	osmo_ss7_vty_init_asp(tall_bsc_ctx);
-
-	INIT_LLIST_HEAD(&access_lists);
 
 	/* parse options */
 	handle_options(argc, argv);
