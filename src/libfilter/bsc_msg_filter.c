@@ -35,7 +35,7 @@
 #include <osmocom/gsm/protocol/gsm_04_11.h>
 #include <osmocom/gsm/gsm48.h>
 
-int bsc_filter_barr_find(struct rb_root *root, const char *imsi, int *cm, int *lu)
+static int bsc_filter_barr_find(struct rb_root *root, const char *imsi, int *cm, int *lu)
 {
 	struct bsc_filter_barr_entry *n;
 	n = rb_entry(root->rb_node, struct bsc_filter_barr_entry, node);
@@ -54,69 +54,6 @@ int bsc_filter_barr_find(struct rb_root *root, const char *imsi, int *cm, int *l
 	};
 
 	return 0;
-}
-
-static int insert_barr_node(struct bsc_filter_barr_entry *entry, struct rb_root *root)
-{
-	struct rb_node **new = &root->rb_node, *parent = NULL;
-
-	while (*new) {
-		int rc;
-		struct bsc_filter_barr_entry *this;
-		this = rb_entry(*new, struct bsc_filter_barr_entry, node);
-		parent = *new;
-
-		rc = strcmp(entry->imsi, this->imsi);
-		if (rc < 0)
-			new = &((*new)->rb_left);
-		else if (rc > 0)
-			new = &((*new)->rb_right);
-		else {
-			LOGP(DFILTER, LOGL_ERROR,
-				"Duplicate entry for IMSI(%s)\n", entry->imsi);
-			talloc_free(entry);
-			return -1;
-		}
-	}
-
-	rb_link_node(&entry->node, parent, new);
-	rb_insert_color(&entry->node, root);
-	return 0;
-}
-
-int bsc_filter_barr_adapt(void *ctx, struct rb_root *root,
-			const struct osmo_config_list *list)
-{
-	struct osmo_config_entry *cfg_entry;
-	int err = 0;
-
-	/* free the old data */
-	while (!RB_EMPTY_ROOT(root)) {
-		struct rb_node *node = rb_first(root);
-		rb_erase(node, root);
-		talloc_free(node);
-	}
-
-	if (!list)
-		return 0;
-
-	/* now adapt the new list */
-	llist_for_each_entry(cfg_entry, &list->entry, list) {
-		struct bsc_filter_barr_entry *entry;
-		entry = talloc_zero(ctx, struct bsc_filter_barr_entry);
-		if (!entry) {
-			LOGP(DFILTER, LOGL_ERROR,
-				"Allocation of the barr entry failed.\n");
-			continue;
-		}
-
-		entry->imsi = talloc_strdup(entry, cfg_entry->mcc);
-		entry->cm_reject_cause = atoi(cfg_entry->mnc);
-		entry->lu_reject_cause = atoi(cfg_entry->option);
-		err |= insert_barr_node(entry, root);
-	}
-
-	return err;
 }
 
 

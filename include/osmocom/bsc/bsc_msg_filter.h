@@ -79,10 +79,6 @@ struct bsc_filter_request {
 	int bsc_nr;
 };
 
-
-int bsc_filter_barr_adapt(void *ctx, struct rb_root *rbtree, const struct osmo_config_list *);
-int bsc_filter_barr_find(struct rb_root *root, const char *imsi, int *cm, int *lu);
-
 /**
  * Content filtering.
  */
