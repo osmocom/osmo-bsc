@@ -46,14 +46,10 @@
 #include <osmocom/bsc/pcu_if.h>
 #include <osmocom/bsc/bsc_api.h>
 #include <osmocom/bsc/bsc_subscr_conn_fsm.h>
+#include <osmocom/netif/rtp.h>
 
 #define RSL_ALLOC_SIZE		1024
 #define RSL_ALLOC_HEADROOM	128
-
-#define RTP_PT_GSM_FULL 3
-#define RTP_PT_GSM_HALF 96
-#define RTP_PT_GSM_EFR 97
-#define RTP_PT_AMR 98
 
 enum sacch_deact {
 	SACCH_NONE,
