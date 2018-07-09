@@ -554,7 +554,7 @@ const char *gsm_chreq_name(enum gsm_chreq_reason_t c)
 	return get_value_string(chreq_names, c);
 }
 
-struct gsm_bts *gsm_bts_num(struct gsm_network *net, int num)
+struct gsm_bts *gsm_bts_num(const struct gsm_network *net, int num)
 {
 	struct gsm_bts *bts;
 

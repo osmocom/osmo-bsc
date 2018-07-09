@@ -1134,7 +1134,7 @@ struct gsm_bts {
 struct gsm_network *gsm_network_init(void *ctx);
 
 struct gsm_bts *gsm_bts_alloc(struct gsm_network *net, uint8_t bts_num);
-struct gsm_bts *gsm_bts_num(struct gsm_network *net, int num);
+struct gsm_bts *gsm_bts_num(const struct gsm_network *net, int num);
 bool gsm_bts_matches_lai(const struct gsm_bts *bts, const struct osmo_location_area_id *lai);
 bool gsm_bts_matches_cell_id(const struct gsm_bts *bts, const struct gsm0808_cell_id *cell_id);
 struct gsm_bts *gsm_bts_by_cell_id(const struct gsm_network *net,
