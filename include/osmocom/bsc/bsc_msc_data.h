@@ -87,6 +87,7 @@ struct bsc_msc_data {
 	struct gsm_audio_support **audio_support;
 	int audio_length;
 	enum bsc_lcls_mode lcls_mode;
+	bool lcls_codec_mismatch_allow;
 
 	/* ussd welcome text */
 	char *ussd_welcome_txt;

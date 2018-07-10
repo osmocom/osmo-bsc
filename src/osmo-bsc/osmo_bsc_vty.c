@@ -184,6 +184,11 @@ static void write_msc(struct vty *vty, struct bsc_msc_data *msc)
 	vty_out(vty, " lcls-mode %s%s", get_value_string(bsc_lcls_mode_names, msc->lcls_mode),
 		VTY_NEWLINE);
 
+	if (msc->lcls_codec_mismatch_allow)
+		vty_out(vty, " lcls-codec-mismatch allowed%s", VTY_NEWLINE);
+	else
+		vty_out(vty, " lcls-codec-mismatch forbidden%s", VTY_NEWLINE);
+
 	/* write MGW configuration */
 	mgcp_client_config_write(vty, " ");
 }
@@ -650,6 +655,23 @@ DEFUN(cfg_net_msc_lcls_mode,
 	return CMD_SUCCESS;
 }
 
+DEFUN(cfg_net_msc_lcls_mismtch,
+      cfg_net_msc_lcls_mismtch_cmd,
+      "lcls-codec-mismatch (allowed|forbidden)",
+      "Allow 3GPP LCLS (Local Call, Local Switch) when call legs use different codec/rate\n"
+      "Allow LCLS only only for calls that use the same codec/rate on both legs\n"
+      "Do not Allow LCLS for calls that use a different codec/rate on both legs\n")
+{
+	struct bsc_msc_data *data = bsc_msc_data(vty);
+
+	if (strcmp(argv[0], "allowed") == 0)
+		data->lcls_codec_mismatch_allow = true;
+	else
+		data->lcls_codec_mismatch_allow = false;
+
+	return CMD_SUCCESS;
+}
+
 DEFUN(cfg_net_bsc_mid_call_text,
       cfg_net_bsc_mid_call_text_cmd,
       "mid-call-text .TEXT",
@@ -938,6 +960,7 @@ int bsc_vty_init_extra(void)
 	install_element(MSC_NODE, &cfg_net_msc_amr_5_15_cmd);
 	install_element(MSC_NODE, &cfg_net_msc_amr_4_75_cmd);
 	install_element(MSC_NODE, &cfg_net_msc_lcls_mode_cmd);
+	install_element(MSC_NODE, &cfg_net_msc_lcls_mismtch_cmd);
 	install_element(MSC_NODE, &cfg_msc_acc_lst_name_cmd);
 	install_element(MSC_NODE, &cfg_msc_no_acc_lst_name_cmd);
 	install_element(MSC_NODE, &cfg_msc_cs7_bsc_addr_cmd);
