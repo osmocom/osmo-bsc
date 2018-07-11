@@ -56,6 +56,8 @@
 
 #include <osmocom/mgcp_client/mgcp_client.h>
 
+#include <osmocom/sigtran/xua_msg.h>
+
 #define _GNU_SOURCE
 #include <getopt.h>
 
@@ -774,6 +776,7 @@ int main(int argc, char **argv)
 
 	tall_bsc_ctx = talloc_named_const(NULL, 1, "osmo-bsc");
 	msgb_talloc_ctx_init(tall_bsc_ctx, 0);
+	osmo_xua_msg_tall_ctx_init(tall_bsc_ctx);
 	vty_info.tall_ctx = tall_bsc_ctx;
 
 	tall_paging_ctx = talloc_named_const(tall_bsc_ctx, 0, "paging_request");
