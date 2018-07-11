@@ -1311,13 +1311,13 @@ enum {
 };
 
 static const struct rate_ctr_desc bsc_ctr_description[] = {
-	[BSC_CTR_ASSIGNMENT_ATTEMPTED] =	{"assignment:attempted", "Intra-cell re-assignment attempts."},
-	[BSC_CTR_ASSIGNMENT_COMPLETED] =	{"assignment:completed", "Intra-cell re-assignment completed."},
-	[BSC_CTR_ASSIGNMENT_STOPPED] = 		{"assignment:stopped", "Connection ended during re-assignment."},
-	[BSC_CTR_ASSIGNMENT_NO_CHANNEL] = 	{"assignment:no_channel", "Failure to allocate lchan for re-assignment."},
-	[BSC_CTR_ASSIGNMENT_TIMEOUT] = 		{"assignment:timeout", "Re-assignment timed out."},
-	[BSC_CTR_ASSIGNMENT_FAILED] = 		{"assignment:failed", "Received FAIL message."},
-	[BSC_CTR_ASSIGNMENT_ERROR] = 		{"assignment:error", "Re-assigment failed for other reason."},
+	[BSC_CTR_ASSIGNMENT_ATTEMPTED] =	{"assignment:attempted", "Assignment attempts."},
+	[BSC_CTR_ASSIGNMENT_COMPLETED] =	{"assignment:completed", "Assignment completed."},
+	[BSC_CTR_ASSIGNMENT_STOPPED] = 		{"assignment:stopped", "Connection ended during Assignment."},
+	[BSC_CTR_ASSIGNMENT_NO_CHANNEL] = 	{"assignment:no_channel", "Failure to allocate lchan for Assignment."},
+	[BSC_CTR_ASSIGNMENT_TIMEOUT] = 		{"assignment:timeout", "Assignment timed out."},
+	[BSC_CTR_ASSIGNMENT_FAILED] = 		{"assignment:failed", "Received Assignment Failure message."},
+	[BSC_CTR_ASSIGNMENT_ERROR] = 		{"assignment:error", "Assigment failed for other reason."},
 
 	[BSC_CTR_HANDOVER_ATTEMPTED] = 		{"handover:attempted", "Intra-BSC handover attempts."},
 	[BSC_CTR_HANDOVER_COMPLETED] = 		{"handover:completed", "Intra-BSC handover completed."},
