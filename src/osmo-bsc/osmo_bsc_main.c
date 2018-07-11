@@ -772,7 +772,7 @@ int main(int argc, char **argv)
 	struct osmo_bsc_data *data;
 	int rc;
 
-	tall_bsc_ctx = talloc_named_const(NULL, 1, "openbsc");
+	tall_bsc_ctx = talloc_named_const(NULL, 1, "osmo-bsc");
 	msgb_talloc_ctx_init(tall_bsc_ctx, 0);
 	vty_info.tall_ctx = tall_bsc_ctx;
 
