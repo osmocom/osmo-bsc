@@ -679,6 +679,24 @@ static const struct log_info_cat osmo_bsc_categories[] = {
 		.color = "\033[1;35m",
 		.enabled = 1, .loglevel = LOGL_NOTICE,
 	},
+	[DCHAN] = {
+		.name = "DCHAN",
+		.description = "lchan FSM",
+		.color = "\033[1;32m",
+		.enabled = 1, .loglevel = LOGL_NOTICE,
+	},
+	[DTS] = {
+		.name = "DTS",
+		.description = "timeslot FSM",
+		.color = "\033[1;31m",
+		.enabled = 1, .loglevel = LOGL_NOTICE,
+	},
+	[DAS] = {
+		.name = "DAS",
+		.description = "assignment FSM",
+		.color = "\033[1;33m",
+		.enabled = 1, .loglevel = LOGL_NOTICE,
+	},
 	[DNM] =	{
 		.name = "DNM",
 		.description = "A-bis Network Management / O&M (NM/OML)",

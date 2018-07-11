@@ -24,5 +24,8 @@ enum {
 	DFILTER,
 	DPCU,
 	DLCLS,
+	DCHAN,
+	DTS,
+	DAS,
 	Debug_LastEntry,
 };

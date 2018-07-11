@@ -1357,6 +1357,24 @@ static const struct log_info_cat log_categories[] = {
 		.description = "Mobile Switching Center",
 		.enabled = 1, .loglevel = LOGL_DEBUG,
 	},
+	[DCHAN] = {
+		.name = "DCHAN",
+		.description = "lchan FSM",
+		.color = "\033[1;32m",
+		.enabled = 1, .loglevel = LOGL_DEBUG,
+	},
+	[DTS] = {
+		.name = "DTS",
+		.description = "timeslot FSM",
+		.color = "\033[1;31m",
+		.enabled = 1, .loglevel = LOGL_DEBUG,
+	},
+	[DAS] = {
+		.name = "DAS",
+		.description = "assignment FSM",
+		.color = "\033[1;33m",
+		.enabled = 1, .loglevel = LOGL_DEBUG,
+	},
 };
 
 const struct log_info log_info = {

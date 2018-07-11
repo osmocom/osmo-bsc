@@ -834,7 +834,7 @@ static struct osmo_fsm ts_fsm = {
 	.states = ts_fsm_states,
 	.num_states = ARRAY_SIZE(ts_fsm_states),
 	.timer_cb = ts_fsm_timer_cb,
-	.log_subsys = DRSL,
+	.log_subsys = DTS,
 	.event_names = ts_fsm_event_names,
 	.allstate_event_mask = 0
 		| S(TS_EV_OML_DOWN)
