@@ -82,6 +82,7 @@ static struct bsc_handover *bsc_ho_by_old_lchan(struct gsm_lchan *old_lchan)
 int bsc_handover_start(enum hodec_id from_hodec_id, struct gsm_lchan *old_lchan, struct gsm_bts *new_bts,
 		       enum gsm_chan_t new_lchan_type)
 {
+	int rc;
 	struct gsm_subscriber_connection *conn;
 	struct bsc_handover *ho;
 	static uint8_t ho_ref = 0;
@@ -132,7 +133,14 @@ int bsc_handover_start(enum hodec_id from_hodec_id, struct gsm_lchan *old_lchan,
 	       gsm_lchant_name(new_lchan_type),
 	       do_assignment ? "Assignment" : "Handover");
 
-	return osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_HO_START, NULL);
+	rc = osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_HO_START, NULL);
+
+	if (rc < 0) {
+		LOGPHO(ho, LOGL_ERROR, "Failed to trigger handover, conn state does not allow it\n");
+		conn->ho = NULL;
+		talloc_free(ho);
+	}
+	return rc;
 }
 
 /*! Start actual handover. Call bsc_handover_start() instead; The only legal caller is the GSCON FSM in
