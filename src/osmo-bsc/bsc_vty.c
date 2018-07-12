@@ -68,6 +68,7 @@
 #include <osmocom/bsc/gsm_timers.h>
 #include <osmocom/bsc/timeslot_fsm.h>
 #include <osmocom/bsc/lchan_fsm.h>
+#include <osmocom/bsc/lchan_select.h>
 #include <osmocom/bsc/gsm_timers.h>
 #include <osmocom/bsc/mgw_endpoint_fsm.h>
 
@@ -1605,36 +1606,48 @@ DEFUN(assignment_subscr_conn,
 	return ho_or_as(vty, argv, argc);
 }
 
-static struct gsm_lchan *find_used_voice_lchan(struct vty *vty)
+static struct gsm_lchan *find_used_voice_lchan(struct vty *vty, int random_idx)
 {
 	struct gsm_bts *bts;
 	struct gsm_network *network = gsmnet_from_vty(vty);
 
-	llist_for_each_entry(bts, &network->bts_list, list) {
-		struct gsm_bts_trx *trx;
+	while (1) {
+		int count = 0;
+		llist_for_each_entry(bts, &network->bts_list, list) {
+			struct gsm_bts_trx *trx;
 
-		llist_for_each_entry(trx, &bts->trx_list, list) {
-			int i;
-			for (i = 0; i < ARRAY_SIZE(trx->ts); i++) {
-				struct gsm_bts_trx_ts *ts = &trx->ts[i];
-				struct gsm_lchan *lchan;
+			llist_for_each_entry(trx, &bts->trx_list, list) {
+				int i;
+				for (i = 0; i < ARRAY_SIZE(trx->ts); i++) {
+					struct gsm_bts_trx_ts *ts = &trx->ts[i];
+					struct gsm_lchan *lchan;
 
-				if (ts->fi->state != TS_ST_IN_USE)
-					continue;
+					if (ts->fi->state != TS_ST_IN_USE)
+						continue;
 
-				ts_for_each_lchan(lchan, ts) {
-					if (lchan_state_is(lchan, LCHAN_ST_ESTABLISHED)
-					    && (lchan->type == GSM_LCHAN_TCH_F
-						|| lchan->type == GSM_LCHAN_TCH_H)) {
+					ts_for_each_lchan(lchan, ts) {
+						if (lchan_state_is(lchan, LCHAN_ST_ESTABLISHED)
+						    && (lchan->type == GSM_LCHAN_TCH_F
+							|| lchan->type == GSM_LCHAN_TCH_H)) {
 
-						vty_out(vty, "Found voice call: %s%s",
-							gsm_lchan_name(lchan), VTY_NEWLINE);
-						lchan_dump_full_vty(vty, lchan);
-						return lchan;
+							if (count == random_idx) {
+								vty_out(vty, "Found voice call: %s%s",
+									gsm_lchan_name(lchan),
+									VTY_NEWLINE);
+								lchan_dump_full_vty(vty, lchan);
+								return lchan;
+							}
+							count ++;
+						}
 					}
 				}
 			}
 		}
+
+		if (!count)
+			break;
+		/* there are used lchans, but random_idx is > count. Iterate again. */
+		random_idx %= count;
 	}
 
 	vty_out(vty, "Cannot find any ongoing voice calls%s", VTY_NEWLINE);
@@ -1642,7 +1655,7 @@ static struct gsm_lchan *find_used_voice_lchan(struct vty *vty)
 }
 
 static struct gsm_bts *find_other_bts_with_free_slots(struct vty *vty, struct gsm_bts *not_this_bts,
-						      enum gsm_phys_chan_config free_type)
+						      enum gsm_chan_t free_type)
 {
 	struct gsm_bts *bts;
 	struct gsm_network *network = gsmnet_from_vty(vty);
@@ -1654,30 +1667,14 @@ static struct gsm_bts *find_other_bts_with_free_slots(struct vty *vty, struct gs
 			continue;
 
 		llist_for_each_entry(trx, &bts->trx_list, list) {
-			int i;
-			/* FIXME: use lchan_select_by_type() instead */
-			for (i = 0; i < ARRAY_SIZE(trx->ts); i++) {
-				struct gsm_bts_trx_ts *ts = &trx->ts[i];
-				struct gsm_lchan *lchan;
+			struct gsm_lchan *lchan = lchan_select_by_type(bts, free_type);
+			if (!lchan)
+				continue;
 
-				/* skip administratively deactivated timeslots */
-				if (!nm_is_running(&ts->mo.nm_state))
-					continue;
-
-				if (ts->pchan_is != free_type)
-					continue;
-
-				ts_for_each_lchan(lchan, ts) {
-					if (lchan->fi->state != LCHAN_ST_UNUSED)
-						continue;
-					vty_out(vty, "Found unused %s slot: %s%s",
-						gsm_pchan_name(free_type),
-						gsm_lchan_name(lchan),
-						VTY_NEWLINE);
-					lchan_dump_full_vty(vty, lchan);
-					return bts;
-				}
-			}
+			vty_out(vty, "Found unused %s slot: %s%s",
+				gsm_lchant_name(free_type), gsm_lchan_name(lchan), VTY_NEWLINE);
+			lchan_dump_full_vty(vty, lchan);
+			return bts;
 		}
 	}
 	vty_out(vty, "Cannot find any BTS (other than BTS %u) with free %s lchan%s",
@@ -1694,12 +1691,11 @@ DEFUN(handover_any, handover_any_cmd,
 	struct gsm_lchan *from_lchan;
 	struct gsm_bts *to_bts;
 
-	from_lchan = find_used_voice_lchan(vty);
+	from_lchan = find_used_voice_lchan(vty, random());
 	if (!from_lchan)
 		return CMD_WARNING;
 
-	to_bts = find_other_bts_with_free_slots(vty, from_lchan->ts->trx->bts,
-						from_lchan->ts->pchan_is);
+	to_bts = find_other_bts_with_free_slots(vty, from_lchan->ts->trx->bts, from_lchan->type);
 	if (!to_bts)
 		return CMD_WARNING;
 
@@ -1714,7 +1710,7 @@ DEFUN(assignment_any, assignment_any_cmd,
 {
 	struct gsm_lchan *from_lchan;
 
-	from_lchan = find_used_voice_lchan(vty);
+	from_lchan = find_used_voice_lchan(vty, random());
 	if (!from_lchan)
 		return CMD_WARNING;
 
@@ -1733,7 +1729,7 @@ DEFUN(handover_any_to_arfcn_bsic, handover_any_to_arfcn_bsic_cmd,
 	struct handover_out_req req;
 	struct gsm_lchan *from_lchan;
 
-	from_lchan = find_used_voice_lchan(vty);
+	from_lchan = find_used_voice_lchan(vty, random());
 	if (!from_lchan)
 		return CMD_WARNING;
 
