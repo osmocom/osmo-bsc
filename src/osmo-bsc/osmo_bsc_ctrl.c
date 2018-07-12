@@ -110,16 +110,17 @@ static int sccplite_msc_ctrl_cmd_send(struct bsc_msc_data *msc, struct ctrl_cmd 
 int bsc_sccplite_rx_ctrl(struct osmo_ss7_asp *asp, struct msgb *msg)
 {
 	struct ctrl_cmd *cmd;
+	bool parse_failed;
 	int rc;
 
 	/* caller has already ensured ipaccess_head + ipaccess_head_ext */
 	OSMO_ASSERT(msg->l2h);
 
 	/* prase raw (ASCII) CTRL command into ctrl_cmd */
-	cmd = ctrl_cmd_parse2(asp, msg);
+	cmd = ctrl_cmd_parse3(asp, msg, &parse_failed);
 	OSMO_ASSERT(cmd);
 	msgb_free(msg);
-	if (cmd->type == CTRL_TYPE_ERROR)
+	if (cmd->type == CTRL_TYPE_ERROR && parse_failed)
 		goto send_reply;
 
 	/* handle the CTRL command */
