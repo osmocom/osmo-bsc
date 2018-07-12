@@ -432,8 +432,9 @@ static void assignment_fsm_wait_rr_ass_complete(struct osmo_fsm_inst *fi, uint32
 		return;
 
 	case ASSIGNMENT_EV_LCHAN_ESTABLISHED:
-		/* The lchan is already done with all of its RTP setup. We will notice the lchan state to
-		 * be established in assignment_fsm_wait_lchan_established_onenter(). */
+		LOG_ASSIGNMENT(conn, LOGL_DEBUG, "lchan established, still waiting for RR Assignment Complete\n");
+		/* The lchan is already done with all of its RTP setup. We will notice the lchan state
+		 * being LCHAN_ST_ESTABLISHED in assignment_fsm_wait_lchan_established_onenter(). */
 		return;
 
 	case ASSIGNMENT_EV_RR_ASSIGNMENT_FAIL:
@@ -452,8 +453,10 @@ static void assignment_fsm_wait_lchan_established_onenter(struct osmo_fsm_inst *
 {
 	struct gsm_subscriber_connection *conn = assignment_fi_conn(fi);
 	/* Do we still need to wait for the RTP stream at all? */
-	if (lchan_state_is(conn->assignment.new_lchan, LCHAN_ST_ESTABLISHED))
+	if (lchan_state_is(conn->assignment.new_lchan, LCHAN_ST_ESTABLISHED)) {
+		LOG_ASSIGNMENT(conn, LOGL_DEBUG, "lchan fully established, no need to wait");
 		assignment_fsm_post_lchan_established(fi);
+	}
 }
 
 static void assignment_fsm_wait_lchan_established(struct osmo_fsm_inst *fi, uint32_t event, void *data)
@@ -557,6 +560,7 @@ static const struct osmo_fsm_state assignment_fsm_states[] = {
 		.in_event_mask = 0
 			| S(ASSIGNMENT_EV_RR_ASSIGNMENT_COMPLETE)
 			| S(ASSIGNMENT_EV_RR_ASSIGNMENT_FAIL)
+			| S(ASSIGNMENT_EV_LCHAN_ESTABLISHED)
 			,
 		.out_state_mask = 0
 			| S(ASSIGNMENT_ST_WAIT_LCHAN_ESTABLISHED)

@@ -870,6 +870,16 @@ static void ho_fsm_wait_rr_ho_complete(struct osmo_fsm_inst *fi, uint32_t event,
 
 	switch (event) {
 
+	case HO_EV_RR_HO_DETECT:
+		/* Numerous HO Detect RACH bursts may follow after the initial one, ignore. */
+		return;
+
+	case HO_EV_LCHAN_ESTABLISHED:
+		LOG_HO(conn, LOGL_DEBUG, "lchan established, still waiting for RR Handover Complete\n");
+		/* The lchan is already done with all of its RTP setup. We will notice the lchan state
+		 * being LCHAN_ST_ESTABLISHED in ho_fsm_wait_lchan_established_onenter(). */
+		return;
+
 	case HO_EV_RR_HO_COMPLETE:
 		ho_fsm_state_chg(HO_ST_WAIT_LCHAN_ESTABLISHED);
 		return;
@@ -889,8 +899,10 @@ static void ho_fsm_wait_lchan_established_onenter(struct osmo_fsm_inst *fi, uint
 {
 	struct gsm_subscriber_connection *conn = ho_fi_conn(fi);
 
-	if (conn->ho.fi && lchan_state_is(conn->ho.new_lchan, LCHAN_ST_ESTABLISHED))
+	if (conn->ho.fi && lchan_state_is(conn->ho.new_lchan, LCHAN_ST_ESTABLISHED)) {
+		LOG_HO(conn, LOGL_DEBUG, "lchan already established earlier\n");
 		ho_fsm_post_lchan_established(fi);
+	}
 }
 
 static void ho_fsm_wait_lchan_established(struct osmo_fsm_inst *fi, uint32_t event, void *data)
@@ -1066,6 +1078,8 @@ static const struct osmo_fsm_state ho_fsm_states[] = {
 		.name = "WAIT_RR_HO_COMPLETE",
 		.action = ho_fsm_wait_rr_ho_complete,
 		.in_event_mask = 0
+			| S(HO_EV_RR_HO_DETECT) /* ignore extra HO RACH */
+			| S(HO_EV_LCHAN_ESTABLISHED)
 			| S(HO_EV_RR_HO_COMPLETE)
 			| S(HO_EV_RR_HO_FAIL)
 			,

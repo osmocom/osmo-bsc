@@ -755,7 +755,11 @@ static void lchan_fsm_wait_mgw_endpoint_available(struct osmo_fsm_inst *fi, uint
 	case LCHAN_EV_MGW_ENDPOINT_AVAILABLE:
 		lchan->activate.mgw_endpoint_available = true;
 		lchan_fsm_tch_post_endpoint_available(fi);
-		break;
+		return;
+
+	case LCHAN_EV_RLL_ESTABLISH_IND:
+		/* abis_rsl.c has noticed that a SAPI was established, no need to take action here. */
+		return;
 
 	default:
 		OSMO_ASSERT(false);
@@ -828,6 +832,10 @@ static void lchan_fsm_wait_ipacc_crcx_ack(struct osmo_fsm_inst *fi, uint32_t eve
 		lchan_fail("Received NACK on IPACC CRCX");
 		return;
 
+	case LCHAN_EV_RLL_ESTABLISH_IND:
+		/* abis_rsl.c has noticed that a SAPI was established, no need to take action here. */
+		return;
+
 	default:
 		OSMO_ASSERT(false);
 	}
@@ -877,6 +885,10 @@ static void lchan_fsm_wait_ipacc_mdcx_ack(struct osmo_fsm_inst *fi, uint32_t eve
 
 	case LCHAN_EV_IPACC_MDCX_NACK:
 		lchan_fail("Received NACK on IPACC MDCX");
+		return;
+
+	case LCHAN_EV_RLL_ESTABLISH_IND:
+		/* abis_rsl.c has noticed that a SAPI was established, no need to take action here. */
 		return;
 
 	default:
@@ -944,6 +956,10 @@ static void lchan_fsm_wait_mgw_endpoint_configured(struct osmo_fsm_inst *fi, uin
 
 	case LCHAN_EV_MGW_ENDPOINT_ERROR:
 		lchan_fail("Error while redirecting the MGW to the BTS' RTP port");
+		return;
+
+	case LCHAN_EV_RLL_ESTABLISH_IND:
+		/* abis_rsl.c has noticed that a SAPI was established, no need to take action here. */
 		return;
 
 	default:
@@ -1033,7 +1049,19 @@ static void handle_rll_rel_ind_or_conf(struct osmo_fsm_inst *fi, uint32_t event,
 
 static void lchan_fsm_established(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
-	handle_rll_rel_ind_or_conf(fi, event, data, true);
+	switch (event) {
+	case LCHAN_EV_RLL_ESTABLISH_IND:
+		/* abis_rsl.c has noticed that a SAPI was established, no need to take action here. */
+		return;
+
+	case LCHAN_EV_RLL_REL_IND:
+	case LCHAN_EV_RLL_REL_CONF:
+		handle_rll_rel_ind_or_conf(fi, event, data, true);
+		return;
+
+	default:
+		OSMO_ASSERT(false);
+	}
 }
 
 static bool should_sacch_deact(struct gsm_lchan *lchan)
@@ -1236,6 +1264,7 @@ static const struct osmo_fsm_state lchan_fsm_states[] = {
 		.action = lchan_fsm_wait_mgw_endpoint_available,
 		.in_event_mask = 0
 			| S(LCHAN_EV_MGW_ENDPOINT_AVAILABLE)
+			| S(LCHAN_EV_RLL_ESTABLISH_IND) /* ignored */
 			,
 		.out_state_mask = 0
 			| S(LCHAN_ST_UNUSED)
@@ -1252,6 +1281,7 @@ static const struct osmo_fsm_state lchan_fsm_states[] = {
 		.in_event_mask = 0
 			| S(LCHAN_EV_IPACC_CRCX_ACK)
 			| S(LCHAN_EV_IPACC_CRCX_NACK)
+			| S(LCHAN_EV_RLL_ESTABLISH_IND) /* ignored */
 			,
 		.out_state_mask = 0
 			| S(LCHAN_ST_UNUSED)
@@ -1267,6 +1297,7 @@ static const struct osmo_fsm_state lchan_fsm_states[] = {
 		.in_event_mask = 0
 			| S(LCHAN_EV_IPACC_MDCX_ACK)
 			| S(LCHAN_EV_IPACC_MDCX_NACK)
+			| S(LCHAN_EV_RLL_ESTABLISH_IND) /* ignored */
 			,
 		.out_state_mask = 0
 			| S(LCHAN_ST_UNUSED)
@@ -1281,6 +1312,7 @@ static const struct osmo_fsm_state lchan_fsm_states[] = {
 		.action = lchan_fsm_wait_mgw_endpoint_configured,
 		.in_event_mask = 0
 			| S(LCHAN_EV_MGW_ENDPOINT_CONFIGURED)
+			| S(LCHAN_EV_RLL_ESTABLISH_IND) /* ignored */
 			,
 		.out_state_mask = 0
 			| S(LCHAN_ST_UNUSED)
@@ -1296,6 +1328,7 @@ static const struct osmo_fsm_state lchan_fsm_states[] = {
 		.in_event_mask = 0
 			| S(LCHAN_EV_RLL_REL_IND)
 			| S(LCHAN_EV_RLL_REL_CONF)
+			| S(LCHAN_EV_RLL_ESTABLISH_IND) /* ignored */
 			,
 		.out_state_mask = 0
 			| S(LCHAN_ST_UNUSED)
@@ -1320,6 +1353,9 @@ static const struct osmo_fsm_state lchan_fsm_states[] = {
 	},
 	[LCHAN_ST_WAIT_BEFORE_RF_RELEASE] = {
 		.name = "WAIT_BEFORE_RF_RELEASE",
+		.in_event_mask = 0
+			| S(LCHAN_EV_RLL_REL_IND) /* allow late REL_IND of SAPI[0] */
+			,
 		.out_state_mask = 0
 			| S(LCHAN_ST_UNUSED)
 			| S(LCHAN_ST_WAIT_RF_RELEASE_ACK)
