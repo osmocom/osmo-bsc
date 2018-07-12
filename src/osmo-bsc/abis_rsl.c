@@ -50,6 +50,7 @@
 #include <osmocom/bsc/timeslot_fsm.h>
 #include <osmocom/bsc/lchan_select.h>
 #include <osmocom/bsc/lchan_fsm.h>
+#include <osmocom/bsc/lchan_rtp_fsm.h>
 #include <osmocom/bsc/handover_fsm.h>
 
 #define RSL_ALLOC_SIZE		1024
@@ -1878,6 +1879,11 @@ static int abis_rsl_rx_ipacc_crcx_ack(struct msgb *msg)
 	struct tlv_parsed tv;
 	struct gsm_lchan *lchan = msg->lchan;
 
+	if (!lchan->fi_rtp) {
+		LOG_LCHAN(msg->lchan, LOGL_ERROR, "Rx RSL IPACC: CRCX ACK message for unconfigured lchan");
+		return -EINVAL;
+	}
+
 	/* the BTS has acknowledged a local bind, it now tells us the IP
 	* address and port number to which it has bound the given logical
 	* channel */
@@ -1892,8 +1898,23 @@ static int abis_rsl_rx_ipacc_crcx_ack(struct msgb *msg)
 
 	ipac_parse_rtp(lchan, &tv, "CRCX");
 
-	osmo_fsm_inst_dispatch(lchan->fi, LCHAN_EV_IPACC_CRCX_ACK, 0);
+	osmo_fsm_inst_dispatch(lchan->fi_rtp, LCHAN_RTP_EV_IPACC_CRCX_ACK, 0);
 
+	return 0;
+}
+
+static int abis_rsl_rx_ipacc_crcx_nack(struct msgb *msg)
+{
+	struct e1inp_sign_link *sign_link = msg->dst;
+	struct gsm_lchan *lchan = msg->lchan;
+
+	rate_ctr_inc(&sign_link->trx->bts->bts_ctrs->ctr[BTS_CTR_RSL_IPA_NACK]);
+
+	if (!lchan->fi_rtp) {
+		LOG_LCHAN(msg->lchan, LOGL_ERROR, "Rx RSL IPACC: CRCX NACK message for unconfigured lchan");
+		return -EINVAL;
+	}
+	osmo_fsm_inst_dispatch(msg->lchan->fi_rtp, LCHAN_RTP_EV_IPACC_CRCX_NACK, 0);
 	return 0;
 }
 
@@ -1903,6 +1924,11 @@ static int abis_rsl_rx_ipacc_mdcx_ack(struct msgb *msg)
 	struct tlv_parsed tv;
 	struct gsm_lchan *lchan = msg->lchan;
 
+	if (!lchan->fi_rtp) {
+		LOG_LCHAN(msg->lchan, LOGL_ERROR, "Rx RSL IPACC: MDCX ACK message for unconfigured lchan");
+		return -EINVAL;
+	}
+
 	/* the BTS has acknowledged a remote connect request and
 	 * it now tells us the IP address and port number to which it has
 	 * connected the given logical channel */
@@ -1910,8 +1936,23 @@ static int abis_rsl_rx_ipacc_mdcx_ack(struct msgb *msg)
 	rsl_tlv_parse(&tv, dh->data, msgb_l2len(msg)-sizeof(*dh));
 	ipac_parse_rtp(lchan, &tv, "MDCX");
 
-	osmo_fsm_inst_dispatch(lchan->fi, LCHAN_EV_IPACC_MDCX_ACK, 0);
+	osmo_fsm_inst_dispatch(lchan->fi_rtp, LCHAN_RTP_EV_IPACC_MDCX_ACK, 0);
 
+	return 0;
+}
+
+static int abis_rsl_rx_ipacc_mdcx_nack(struct msgb *msg)
+{
+	struct e1inp_sign_link *sign_link = msg->dst;
+	struct gsm_lchan *lchan = msg->lchan;
+
+	rate_ctr_inc(&sign_link->trx->bts->bts_ctrs->ctr[BTS_CTR_RSL_IPA_NACK]);
+
+	if (!lchan->fi_rtp) {
+		LOG_LCHAN(msg->lchan, LOGL_ERROR, "Rx RSL IPACC: MDCX NACK message for unconfigured lchan");
+		return -EINVAL;
+	}
+	osmo_fsm_inst_dispatch(msg->lchan->fi_rtp, LCHAN_RTP_EV_IPACC_MDCX_NACK, 0);
 	return 0;
 }
 
@@ -1957,8 +1998,7 @@ static int abis_rsl_rx_ipacc(struct msgb *msg)
 	case RSL_MT_IPAC_CRCX_NACK:
 		/* somehow the BTS was unable to bind the lchan to its local
 		 * port?!? */
-		rate_ctr_inc(&sign_link->trx->bts->bts_ctrs->ctr[BTS_CTR_RSL_IPA_NACK]);
-		osmo_fsm_inst_dispatch(msg->lchan->fi, LCHAN_EV_IPACC_CRCX_NACK, 0);
+		rc = abis_rsl_rx_ipacc_crcx_nack(msg);
 		break;
 	case RSL_MT_IPAC_MDCX_ACK:
 		/* the BTS tells us that a connect operation was successful */
@@ -1967,8 +2007,7 @@ static int abis_rsl_rx_ipacc(struct msgb *msg)
 	case RSL_MT_IPAC_MDCX_NACK:
 		/* somehow the BTS was unable to connect the lchan to a remote
 		 * port */
-		rate_ctr_inc(&sign_link->trx->bts->bts_ctrs->ctr[BTS_CTR_RSL_IPA_NACK]);
-		osmo_fsm_inst_dispatch(msg->lchan->fi, LCHAN_EV_IPACC_MDCX_NACK, 0);
+		rc = abis_rsl_rx_ipacc_mdcx_nack(msg);
 		break;
 	case RSL_MT_IPAC_DLCX_IND:
 		rc = abis_rsl_rx_ipacc_dlcx_ind(msg);

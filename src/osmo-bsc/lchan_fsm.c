@@ -1,5 +1,4 @@
-/* osmo-bsc API to allocate an lchan, complete with dyn TS switchover and MGCP communication to allocate
- * RTP endpoints.
+/* osmo-bsc API to allocate an lchan, complete with dyn TS switchover.
  *
  * (C) 2018 by sysmocom - s.f.m.c. GmbH <info@sysmocom.de>
  * All Rights Reserved
@@ -26,6 +25,7 @@
 
 #include <osmocom/bsc/debug.h>
 #include <osmocom/bsc/lchan_fsm.h>
+#include <osmocom/bsc/lchan_rtp_fsm.h>
 #include <osmocom/bsc/timeslot_fsm.h>
 #include <osmocom/bsc/mgw_endpoint_fsm.h>
 #include <osmocom/bsc/bsc_subscr_conn_fsm.h>
@@ -53,11 +53,7 @@ bool lchan_may_receive_data(struct gsm_lchan *lchan)
 		return false;
 
 	switch (lchan->fi->state) {
-	case LCHAN_ST_WAIT_RLL_ESTABLISH:
-	case LCHAN_ST_WAIT_MGW_ENDPOINT_AVAILABLE:
-	case LCHAN_ST_WAIT_IPACC_CRCX_ACK:
-	case LCHAN_ST_WAIT_IPACC_MDCX_ACK:
-	case LCHAN_ST_WAIT_MGW_ENDPOINT_CONFIGURED:
+	case LCHAN_ST_WAIT_RLL_RTP_ESTABLISH:
 	case LCHAN_ST_ESTABLISHED:
 		return true;
 	default:
@@ -65,7 +61,7 @@ bool lchan_may_receive_data(struct gsm_lchan *lchan)
 	}
 }
 
-static void lchan_set_last_error(struct gsm_lchan *lchan, const char *fmt, ...)
+void lchan_set_last_error(struct gsm_lchan *lchan, const char *fmt, ...)
 {
 	va_list ap;
 	/* This dance allows using an existing error reason in above fmt */
@@ -137,11 +133,12 @@ static void _lchan_on_activation_failure(struct gsm_lchan *lchan, enum lchan_act
 	}
 }
 
-static void lchan_on_activation_success(struct gsm_lchan *lchan)
+static void lchan_on_fully_established(struct gsm_lchan *lchan)
 {
 	switch (lchan->activate.activ_for) {
 	case FOR_MS_CHANNEL_REQUEST:
-		/* Nothing to do here, MS is free to use the channel. */
+		/* No signalling to do here, MS is free to use the channel, and should go on to connect
+		 * to the MSC and establish a subscriber connection. */
 		break;
 
 	case FOR_ASSIGNMENT:
@@ -161,6 +158,9 @@ static void lchan_on_activation_success(struct gsm_lchan *lchan)
 		}
 		osmo_fsm_inst_dispatch(lchan->conn->assignment.fi, ASSIGNMENT_EV_LCHAN_ESTABLISHED,
 				       lchan);
+		/* The lchan->fi_rtp will be notified of LCHAN_RTP_EV_ESTABLISHED in
+		 * gscon_change_primary_lchan() upon assignment_success(). On failure before then, we
+		 * will try to roll back a modified RTP connection. */
 		break;
 
 	case FOR_HANDOVER:
@@ -178,6 +178,9 @@ static void lchan_on_activation_success(struct gsm_lchan *lchan)
 			break;
 		}
 		osmo_fsm_inst_dispatch(lchan->conn->ho.fi, HO_EV_LCHAN_ESTABLISHED, lchan);
+		/* The lchan->fi_rtp will be notified of LCHAN_RTP_EV_ESTABLISHED in
+		 * gscon_change_primary_lchan() upon handover_end(HO_RESULT_OK). On failure before then,
+		 * we will try to roll back a modified RTP connection. */
 		break;
 
 	default:
@@ -190,12 +193,8 @@ static void lchan_on_activation_success(struct gsm_lchan *lchan)
 struct state_timeout lchan_fsm_timeouts[32] = {
 	[LCHAN_ST_WAIT_TS_READY]	= { .T=23001 },
 	[LCHAN_ST_WAIT_ACTIV_ACK]	= { .T=23002 },
-	[LCHAN_ST_WAIT_RLL_ESTABLISH]	= { .T=3101 },
-	[LCHAN_ST_WAIT_MGW_ENDPOINT_AVAILABLE] = { .T=23004 },
-	[LCHAN_ST_WAIT_IPACC_CRCX_ACK]	= { .T=23005 },
-	[LCHAN_ST_WAIT_IPACC_MDCX_ACK]	= { .T=23006 },
-	[LCHAN_ST_WAIT_MGW_ENDPOINT_CONFIGURED] = { .T=23004 },
-	[LCHAN_ST_WAIT_SAPIS_RELEASED]	= { .T=3109 },
+	[LCHAN_ST_WAIT_RLL_RTP_ESTABLISH]	= { .T=3101 },
+	[LCHAN_ST_WAIT_RLL_RTP_RELEASED]	= { .T=3109 },
 	[LCHAN_ST_WAIT_BEFORE_RF_RELEASE]	= { .T=3111 },
 	[LCHAN_ST_WAIT_RF_RELEASE_ACK]	= { .T=3111 },
 	[LCHAN_ST_WAIT_AFTER_ERROR]	= { .T=993111 },
@@ -215,7 +214,7 @@ struct state_timeout lchan_fsm_timeouts[32] = {
 #define lchan_fail_to(state_chg, fmt, args...) do { \
 		struct gsm_lchan *_lchan = fi->priv; \
 		uint32_t state_was = fi->state; \
-		lchan_set_last_error(fi->priv, "lchan %s in state %s: " fmt, \
+		lchan_set_last_error(_lchan, "lchan %s in state %s: " fmt, \
 				     _lchan->activate.concluded ? "failure" : "allocation failed", \
 				     osmo_fsm_state_name(fi->fsm, state_was), ## args); \
 		if (!_lchan->activate.concluded) \
@@ -229,13 +228,9 @@ uint32_t lchan_fsm_on_error[32] = {
 	[LCHAN_ST_UNUSED] 			= LCHAN_ST_UNUSED,
 	[LCHAN_ST_WAIT_TS_READY] 		= LCHAN_ST_UNUSED,
 	[LCHAN_ST_WAIT_ACTIV_ACK] 		= LCHAN_ST_BORKEN,
-	[LCHAN_ST_WAIT_RLL_ESTABLISH] 		= LCHAN_ST_WAIT_RF_RELEASE_ACK,
-	[LCHAN_ST_WAIT_MGW_ENDPOINT_AVAILABLE] 	= LCHAN_ST_WAIT_SAPIS_RELEASED,
-	[LCHAN_ST_WAIT_IPACC_CRCX_ACK] 		= LCHAN_ST_WAIT_SAPIS_RELEASED,
-	[LCHAN_ST_WAIT_IPACC_MDCX_ACK] 		= LCHAN_ST_WAIT_SAPIS_RELEASED,
-	[LCHAN_ST_WAIT_MGW_ENDPOINT_CONFIGURED]	= LCHAN_ST_WAIT_SAPIS_RELEASED,
-	[LCHAN_ST_ESTABLISHED] 			= LCHAN_ST_WAIT_SAPIS_RELEASED,
-	[LCHAN_ST_WAIT_SAPIS_RELEASED] 		= LCHAN_ST_WAIT_RF_RELEASE_ACK,
+	[LCHAN_ST_WAIT_RLL_RTP_ESTABLISH] 	= LCHAN_ST_WAIT_RF_RELEASE_ACK,
+	[LCHAN_ST_ESTABLISHED] 			= LCHAN_ST_WAIT_RLL_RTP_RELEASED,
+	[LCHAN_ST_WAIT_RLL_RTP_RELEASED] 		= LCHAN_ST_WAIT_RF_RELEASE_ACK,
 	[LCHAN_ST_WAIT_BEFORE_RF_RELEASE] 	= LCHAN_ST_WAIT_RF_RELEASE_ACK,
 	[LCHAN_ST_WAIT_RF_RELEASE_ACK] 		= LCHAN_ST_BORKEN,
 	[LCHAN_ST_WAIT_AFTER_ERROR] 		= LCHAN_ST_UNUSED,
@@ -322,11 +317,16 @@ static void lchan_fsm_update_id(struct gsm_lchan *lchan)
 	osmo_fsm_inst_update_id_f(lchan->fi, "%u-%u-%u-%s-%u",
 				  lchan->ts->trx->bts->nr, lchan->ts->trx->nr, lchan->ts->nr,
 				  gsm_pchan_id(lchan->ts->pchan_on_init), lchan->nr);
+	if (lchan->fi_rtp)
+		osmo_fsm_inst_update_id_f(lchan->fi_rtp, lchan->fi->id);
 }
+
+extern void lchan_rtp_fsm_init();
 
 void lchan_fsm_init()
 {
 	OSMO_ASSERT(osmo_fsm_register(&lchan_fsm) == 0);
+	lchan_rtp_fsm_init();
 }
 
 void lchan_fsm_alloc(struct gsm_lchan *lchan)
@@ -357,6 +357,8 @@ static void lchan_reset(struct gsm_lchan *lchan)
 		talloc_free(lchan->rqd_ref);
 		lchan->rqd_ref = NULL;
 	}
+	if (lchan->fi_rtp)
+		osmo_fsm_inst_term(lchan->fi_rtp, OSMO_FSM_TERM_REQUEST, 0);
 	if (lchan->mgw_endpoint_ci_bts) {
 		mgw_endpoint_ci_dlcx(lchan->mgw_endpoint_ci_bts);
 		lchan->mgw_endpoint_ci_bts = NULL;
@@ -424,6 +426,7 @@ static void lchan_fsm_unused(struct osmo_fsm_inst *fi, uint32_t event, void *dat
 		lchan->conn = info->for_conn;
 		lchan->activate.activ_for = info->activ_for;
 		lchan->activate.requires_voice_stream = info->requires_voice_stream;
+		lchan->activate.wait_before_switching_rtp = info->wait_before_switching_rtp;
 		lchan->activate.msc_assigned_cic = info->msc_assigned_cic;
 		lchan->activate.concluded = false;
 		lchan->activate.re_use_mgw_endpoint_from_lchan = info->old_lchan;
@@ -477,24 +480,8 @@ static void lchan_fsm_unused(struct osmo_fsm_inst *fi, uint32_t event, void *dat
 	}
 }
 
-/* While activating an lchan, for example for Handover, we may want to re-use another lchan's MGW
- * endpoint CI. If Handover fails half way, the old lchan must keep its MGW endpoint CI, and we must not
- * clean it up. Hence keep another lchan's mgw_endpoint_ci_bts out of lchan until all is done. */
-static struct mgwep_ci *lchan_use_mgw_endpoint_ci_bts(struct gsm_lchan *lchan)
-{
-	if (lchan->mgw_endpoint_ci_bts)
-		return lchan->mgw_endpoint_ci_bts;
-	if (lchan_state_is(lchan, LCHAN_ST_ESTABLISHED))
-		return NULL;
-	if (lchan->activate.re_use_mgw_endpoint_from_lchan)
-		return lchan->activate.re_use_mgw_endpoint_from_lchan->mgw_endpoint_ci_bts;
-	return NULL;
-}
-
 static void lchan_fsm_wait_ts_ready_onenter(struct osmo_fsm_inst *fi, uint32_t prev_state)
 {
-	struct mgw_endpoint *mgwep;
-	struct mgcp_conn_peer crcx_info = {};
 	struct gsm_lchan *lchan = lchan_fi_lchan(fi);
 	struct mgwep_ci *use_mgwep_ci = lchan_use_mgw_endpoint_ci_bts(lchan);
 
@@ -518,32 +505,8 @@ static void lchan_fsm_wait_ts_ready_onenter(struct osmo_fsm_inst *fi, uint32_t p
 	osmo_fsm_inst_dispatch(lchan->ts->fi, TS_EV_LCHAN_REQUESTED, lchan);
 
 	/* Prepare an MGW endpoint CI if appropriate. */
-	if (!lchan->activate.requires_voice_stream)
-		return;
-
-	if (use_mgwep_ci) {
-		lchan->activate.mgw_endpoint_available = true;
-		return;
-	}
-
-	mgwep = gscon_ensure_mgw_endpoint(lchan->conn, lchan->activate.msc_assigned_cic);
-	if (!mgwep) {
-		lchan_fail("Internal error: cannot obtain MGW endpoint handle for conn");
-		return;
-	}
-
-	lchan->mgw_endpoint_ci_bts = mgw_endpoint_ci_add(mgwep, "to-BTS");
-
-	if (lchan->conn)
-		crcx_info.call_id = lchan->conn->sccp.conn_id;
-	crcx_info.ptime = 20;
-	mgcp_pick_codec(&crcx_info, lchan);
-
-	mgw_endpoint_ci_request(lchan->mgw_endpoint_ci_bts,
-				MGCP_VERB_CRCX, &crcx_info,
-				lchan->fi,
-				LCHAN_EV_MGW_ENDPOINT_AVAILABLE,
-				LCHAN_EV_MGW_ENDPOINT_ERROR, 0);
+	if (lchan->activate.requires_voice_stream)
+		lchan_rtp_fsm_start(lchan);
 }
 
 static void lchan_fsm_wait_ts_ready(struct osmo_fsm_inst *fi, uint32_t event, void *data)
@@ -556,10 +519,18 @@ static void lchan_fsm_wait_ts_ready(struct osmo_fsm_inst *fi, uint32_t event, vo
 		lchan_fsm_state_chg(LCHAN_ST_WAIT_ACTIV_ACK);
 		break;
 
-	case LCHAN_EV_MGW_ENDPOINT_AVAILABLE:
-		/* conn FSM is already done preparing an MGW endpoint. Remember that. */
-		lchan->activate.mgw_endpoint_available = true;
-		break;
+	case LCHAN_EV_RTP_RELEASED:
+	case LCHAN_EV_RTP_ERROR:
+		if (lchan->release_requested) {
+			/* Already in release, the RTP is not the initial cause of failure.
+			 * Just ignore. */
+			return;
+		}
+
+		lchan_fail("Failed to setup RTP stream: %s in state %s\n",
+			   osmo_fsm_event_name(fi->fsm, event),
+			   osmo_fsm_inst_state_name(fi));
+		return;
 
 	default:
 		OSMO_ASSERT(false);
@@ -597,18 +568,16 @@ static void lchan_fsm_wait_activ_ack_onenter(struct osmo_fsm_inst *fi, uint32_t 
 		lchan_fail_to(LCHAN_ST_UNUSED, "Tx Chan Activ failed: %s (%d)", strerror(-rc), rc);
 }
 
+static void lchan_fsm_post_activ_ack(struct osmo_fsm_inst *fi);
+
 static void lchan_fsm_wait_activ_ack(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
 	struct gsm_lchan *lchan = lchan_fi_lchan(fi);
 	switch (event) {
 
-	case LCHAN_EV_MGW_ENDPOINT_AVAILABLE:
-		lchan->activate.mgw_endpoint_available = true;
-		break;
-
 	case LCHAN_EV_RSL_CHAN_ACTIV_ACK:
-		/* Chan Activ was ack'd, but we need an RLL Establish to be sure it's working out. */
-		lchan_fsm_state_chg(LCHAN_ST_WAIT_RLL_ESTABLISH);
+		lchan->activate.activ_ack = true;
+		lchan_fsm_post_activ_ack(fi);
 		break;
 
 	case LCHAN_EV_RSL_CHAN_ACTIV_NACK:
@@ -632,12 +601,26 @@ static void lchan_fsm_wait_activ_ack(struct osmo_fsm_inst *fi, uint32_t event, v
 		}
 		break;
 
+	case LCHAN_EV_RTP_RELEASED:
+	case LCHAN_EV_RTP_ERROR:
+		if (lchan->release_requested) {
+			/* Already in release, the RTP is not the initial cause of failure.
+			 * Just ignore. */
+			return;
+		}
+
+		lchan_fail_to(LCHAN_ST_WAIT_RF_RELEASE_ACK,
+			      "Failed to setup RTP stream: %s in state %s\n",
+			      osmo_fsm_event_name(fi->fsm, event),
+			      osmo_fsm_inst_state_name(fi));
+		return;
+
 	default:
 		OSMO_ASSERT(false);
 	}
 }
 
-static void lchan_fsm_wait_rll_establish_onenter(struct osmo_fsm_inst *fi, uint32_t prev_state)
+static void lchan_fsm_post_activ_ack(struct osmo_fsm_inst *fi)
 {
 	int rc;
 	struct gsm_lchan *lchan = lchan_fi_lchan(fi);
@@ -703,270 +686,50 @@ static void lchan_fsm_wait_rll_establish_onenter(struct osmo_fsm_inst *fi, uint3
 			  lchan_activate_mode_name(lchan->activate.activ_for));
 		break;
 	}
+
+	lchan_fsm_state_chg(LCHAN_ST_WAIT_RLL_RTP_ESTABLISH);
 }
 
-static void lchan_fsm_wait_rll_establish(struct osmo_fsm_inst *fi, uint32_t event, void *data)
+static void lchan_fsm_wait_rll_rtp_establish_onenter(struct osmo_fsm_inst *fi, uint32_t prev_state)
+{
+	struct gsm_lchan *lchan = lchan_fi_lchan(fi);
+	if (lchan->fi_rtp)
+		osmo_fsm_inst_dispatch(lchan->fi_rtp, LCHAN_RTP_EV_LCHAN_READY, 0);
+}
+
+static void lchan_fsm_wait_rll_rtp_establish(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
 	struct gsm_lchan *lchan = lchan_fi_lchan(fi);
 	switch (event) {
 
-	case LCHAN_EV_MGW_ENDPOINT_AVAILABLE:
-		lchan->activate.mgw_endpoint_available = true;
-		break;
-
 	case LCHAN_EV_RLL_ESTABLISH_IND:
-		lchan->sapis[0] = LCHAN_SAPI_MS;
-		if (lchan->activate.requires_voice_stream) {
-			/* For Abis/IP, we would technically only need the MGW endpoint one step later,
-			 * on IPACC MDCX. But usually the MGW endpoint is anyway done by now, so keep one
-			 * common endpoint wait state for all BTS types. */
-			lchan_fsm_state_chg(LCHAN_ST_WAIT_MGW_ENDPOINT_AVAILABLE);
-		} else
+		if (!lchan->activate.requires_voice_stream
+		    || lchan_rtp_established(lchan))
 			lchan_fsm_state_chg(LCHAN_ST_ESTABLISHED);
-		break;
-
-	default:
-		OSMO_ASSERT(false);
-	}
-}
-
-static void lchan_fsm_tch_post_endpoint_available(struct osmo_fsm_inst *fi);
-
-static void lchan_fsm_wait_mgw_endpoint_available_onenter(struct osmo_fsm_inst *fi, uint32_t prev_state)
-{
-	struct gsm_lchan *lchan = lchan_fi_lchan(fi);
-
-	if (lchan->release_requested) {
-		lchan_fail("Release requested while activating");
-		return;
-	}
-
-	if (lchan->activate.mgw_endpoint_available) {
-		LOG_LCHAN(lchan, LOGL_DEBUG, "MGW endpoint already available\n");
-		lchan_fsm_tch_post_endpoint_available(fi);
-	}
-}
-
-static void lchan_fsm_wait_mgw_endpoint_available(struct osmo_fsm_inst *fi, uint32_t event, void *data)
-{
-	struct gsm_lchan *lchan = lchan_fi_lchan(fi);
-	switch (event) {
-
-	case LCHAN_EV_MGW_ENDPOINT_AVAILABLE:
-		lchan->activate.mgw_endpoint_available = true;
-		lchan_fsm_tch_post_endpoint_available(fi);
 		return;
 
-	case LCHAN_EV_RLL_ESTABLISH_IND:
-		/* abis_rsl.c has noticed that a SAPI was established, no need to take action here. */
+	case LCHAN_EV_RTP_READY:
+		if (lchan->sapis[0] != LCHAN_SAPI_UNUSED)
+			lchan_fsm_state_chg(LCHAN_ST_ESTABLISHED);
+		return;
+
+	case LCHAN_EV_RTP_RELEASED:
+	case LCHAN_EV_RTP_ERROR:
+		if (lchan->release_requested) {
+			/* Already in release, the RTP is not the initial cause of failure.
+			 * Just ignore. */
+			return;
+		}
+
+		lchan_fail("Failed to setup RTP stream: %s in state %s\n",
+			   osmo_fsm_event_name(fi->fsm, event),
+			   osmo_fsm_inst_state_name(fi));
 		return;
 
 	default:
 		OSMO_ASSERT(false);
 	}
 }
-
-static void lchan_fsm_tch_post_endpoint_available(struct osmo_fsm_inst *fi)
-{
-	struct gsm_lchan *lchan = lchan_fi_lchan(fi);
-
-	LOG_LCHAN(lchan, LOGL_DEBUG, "MGW endpoint: %s\n",
-		  mgwep_ci_name(lchan_use_mgw_endpoint_ci_bts(lchan)));
-
-	if (is_ipaccess_bts(lchan->ts->trx->bts))
-		lchan_fsm_state_chg(LCHAN_ST_WAIT_IPACC_CRCX_ACK);
-	else
-		lchan_fsm_state_chg(LCHAN_ST_WAIT_MGW_ENDPOINT_CONFIGURED);
-}
-
-static void lchan_fsm_wait_ipacc_crcx_ack_onenter(struct osmo_fsm_inst *fi, uint32_t prev_state)
-{
-	int rc;
-	int val;
-	struct gsm_lchan *lchan = lchan_fi_lchan(fi);
-
-	if (lchan->release_requested) {
-		lchan_fail("Release requested while activating");
-		return;
-	}
-
-	val = ipacc_speech_mode(lchan->tch_mode, lchan->type);
-	if (val < 0) {
-		lchan_fail("Cannot determine Abis/IP speech mode for tch_mode=%s type=%s\n",
-			   get_value_string(gsm48_chan_mode_names, lchan->tch_mode),
-			   gsm_lchant_name(lchan->type));
-		return;
-	}
-	lchan->abis_ip.speech_mode = val;
-
-	val = ipacc_payload_type(lchan->tch_mode, lchan->type);
-	if (val < 0) {
-		lchan_fail("Cannot determine Abis/IP payload type for tch_mode=%s type=%s\n",
-			   get_value_string(gsm48_chan_mode_names, lchan->tch_mode),
-			   gsm_lchant_name(lchan->type));
-		return;
-	}
-	lchan->abis_ip.rtp_payload = val;
-
-	/* recv-only */
-	ipacc_speech_mode_set_direction(&lchan->abis_ip.speech_mode, false);
-
-	rc = rsl_tx_ipacc_crcx(lchan);
-	if (rc)
-		lchan_fail("Failure to transmit IPACC CRCX to BTS (rc=%d, %s)",
-			   rc, strerror(-rc));
-}
-
-static void lchan_fsm_wait_ipacc_crcx_ack(struct osmo_fsm_inst *fi, uint32_t event, void *data)
-{
-	switch (event) {
-
-	case LCHAN_EV_IPACC_CRCX_ACK:
-		/* the CRCX ACK parsing has already noted the RTP port information at
-		 * lchan->abis_ip.bound_*, see ipac_parse_rtp(). We'll use that in
-		 * lchan_fsm_wait_mgw_endpoint_configured_onenter(). */
-		lchan_fsm_state_chg(LCHAN_ST_WAIT_IPACC_MDCX_ACK);
-		return;
-
-	case LCHAN_EV_IPACC_CRCX_NACK:
-		lchan_fail("Received NACK on IPACC CRCX");
-		return;
-
-	case LCHAN_EV_RLL_ESTABLISH_IND:
-		/* abis_rsl.c has noticed that a SAPI was established, no need to take action here. */
-		return;
-
-	default:
-		OSMO_ASSERT(false);
-	}
-}
-
-static void lchan_fsm_wait_ipacc_mdcx_ack_onenter(struct osmo_fsm_inst *fi, uint32_t prev_state)
-{
-	int rc;
-	struct gsm_lchan *lchan = lchan_fi_lchan(fi);
-	const struct mgcp_conn_peer *mgw_rtp;
-
-	if (lchan->release_requested) {
-		lchan_fail("Release requested while activating");
-		return;
-	}
-
-	mgw_rtp = mgwep_ci_get_rtp_info(lchan_use_mgw_endpoint_ci_bts(lchan));
-
-	if (!mgw_rtp) {
-		lchan_fail("Cannot send IPACC MDCX to BTS:"
-			   " there is no RTP IP+port set that the BTS should send RTP to.");
-		return;
-	}
-
-	/* Other RTP settings were already setup in lchan_fsm_wait_ipacc_crcx_ack_onenter() */
-	lchan->abis_ip.connect_ip = ntohl(inet_addr(mgw_rtp->addr));
-	lchan->abis_ip.connect_port = mgw_rtp->port;
-
-	/* send-recv */
-	ipacc_speech_mode_set_direction(&lchan->abis_ip.speech_mode, true);
-
-	rc = rsl_tx_ipacc_mdcx(lchan);
-	if (rc)
-		lchan_fail("Failure to transmit IPACC MDCX to BTS (rc=%d, %s)",
-			   rc, strerror(-rc));
-
-}
-
-static void lchan_fsm_wait_ipacc_mdcx_ack(struct osmo_fsm_inst *fi, uint32_t event, void *data)
-{
-	switch (event) {
-
-	case LCHAN_EV_IPACC_MDCX_ACK:
-		/* Finally, the lchan and its RTP are established. */
-		lchan_fsm_state_chg(LCHAN_ST_WAIT_MGW_ENDPOINT_CONFIGURED);
-		return;
-
-	case LCHAN_EV_IPACC_MDCX_NACK:
-		lchan_fail("Received NACK on IPACC MDCX");
-		return;
-
-	case LCHAN_EV_RLL_ESTABLISH_IND:
-		/* abis_rsl.c has noticed that a SAPI was established, no need to take action here. */
-		return;
-
-	default:
-		OSMO_ASSERT(false);
-	}
-}
-
-/* Tell the MGW endpoint about the RTP port allocated on BTS side. */
-static void lchan_fsm_wait_mgw_endpoint_configured_onenter(struct osmo_fsm_inst *fi, uint32_t prev_state)
-{
-	int rc;
-	struct mgcp_conn_peer mdcx_info;
-	struct in_addr addr;
-	const char *addr_str;
-	struct gsm_lchan *lchan = lchan_fi_lchan(fi);
-
-	if (lchan->release_requested) {
-		lchan_fail("Release requested while activating");
-		return;
-	}
-
-	mdcx_info = (struct mgcp_conn_peer){
-		.port = lchan->abis_ip.bound_port,
-		.ptime = 20,
-	};
-	mgcp_pick_codec(&mdcx_info, lchan);
-
-	addr.s_addr = osmo_ntohl(lchan->abis_ip.bound_ip);
-	addr_str = inet_ntoa(addr);
-	rc = osmo_strlcpy(mdcx_info.addr, addr_str, sizeof(mdcx_info.addr));
-	if (rc <= 0 || rc >= sizeof(mdcx_info.addr)) {
-		lchan_fail("Cannot compose BTS side RTP IP address to send to MGW: '%s'",
-			   addr_str);
-		return;
-	}
-
-	/* At this point, we are taking over an old lchan's MGW endpoint (if any). */
-	if (!lchan->mgw_endpoint_ci_bts
-	    && lchan->activate.re_use_mgw_endpoint_from_lchan) {
-		lchan->mgw_endpoint_ci_bts =
-			lchan->activate.re_use_mgw_endpoint_from_lchan->mgw_endpoint_ci_bts;
-		/* The old lchan shall forget the enpoint now. */
-		lchan->activate.re_use_mgw_endpoint_from_lchan->mgw_endpoint_ci_bts = NULL;
-	}
-
-	if (!lchan->mgw_endpoint_ci_bts) {
-		lchan_fail("No MGW endpoint ci configured");
-		return;
-	}
-
-	LOG_LCHAN(lchan, LOGL_DEBUG, "Sending BTS side RTP port info %s:%u to MGW %s\n",
-		  mdcx_info.addr, mdcx_info.port, mgwep_ci_name(lchan->mgw_endpoint_ci_bts));
-	mgw_endpoint_ci_request(lchan->mgw_endpoint_ci_bts, MGCP_VERB_MDCX,
-				&mdcx_info, fi, LCHAN_EV_MGW_ENDPOINT_CONFIGURED,
-				LCHAN_EV_MGW_ENDPOINT_ERROR, 0);
-}
-
-static void lchan_fsm_wait_mgw_endpoint_configured(struct osmo_fsm_inst *fi, uint32_t event, void *data)
-{
-	switch (event) {
-
-	case LCHAN_EV_MGW_ENDPOINT_CONFIGURED:
-		lchan_fsm_state_chg(LCHAN_ST_ESTABLISHED);
-		return;
-
-	case LCHAN_EV_MGW_ENDPOINT_ERROR:
-		lchan_fail("Error while redirecting the MGW to the BTS' RTP port");
-		return;
-
-	case LCHAN_EV_RLL_ESTABLISH_IND:
-		/* abis_rsl.c has noticed that a SAPI was established, no need to take action here. */
-		return;
-
-	default:
-		OSMO_ASSERT(false);
-	}
-}
-
 
 static void lchan_fsm_established_onenter(struct osmo_fsm_inst *fi, uint32_t prev_state)
 {
@@ -981,7 +744,7 @@ static void lchan_fsm_established_onenter(struct osmo_fsm_inst *fi, uint32_t pre
 	 * like Immediate Assignment or BSSMAP Assignment Complete, and if then, way later, some other
 	 * error occurs, e.g. during release, that we don't send a NACK out of context. */
 	lchan->activate.concluded = true;
-	lchan_on_activation_success(lchan);
+	lchan_on_fully_established(lchan);
 }
 
 #define for_each_sapi(sapi, start, lchan) \
@@ -1015,8 +778,7 @@ static int lchan_active_sapis(struct gsm_lchan *lchan, int start)
 	return sapis;
 }
 
-static void handle_rll_rel_ind_or_conf(struct osmo_fsm_inst *fi, uint32_t event, void *data,
-				       bool wait_for_sapi0_rel)
+static void handle_rll_rel_ind_or_conf(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
 	uint8_t link_id;
 	uint8_t sapi;
@@ -1043,12 +805,13 @@ static void handle_rll_rel_ind_or_conf(struct osmo_fsm_inst *fi, uint32_t event,
 		gscon_lchan_releasing(lchan->conn, lchan);
 	}
 
-	if (!lchan_active_sapis(lchan, wait_for_sapi0_rel? 0 : 1))
-		lchan_fsm_state_chg(LCHAN_ST_WAIT_BEFORE_RF_RELEASE);
+	/* The caller shall check whether all SAPIs are released and cause a state chg */
 }
 
 static void lchan_fsm_established(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
+	struct gsm_lchan *lchan = lchan_fi_lchan(fi);
+
 	switch (event) {
 	case LCHAN_EV_RLL_ESTABLISH_IND:
 		/* abis_rsl.c has noticed that a SAPI was established, no need to take action here. */
@@ -1056,7 +819,22 @@ static void lchan_fsm_established(struct osmo_fsm_inst *fi, uint32_t event, void
 
 	case LCHAN_EV_RLL_REL_IND:
 	case LCHAN_EV_RLL_REL_CONF:
-		handle_rll_rel_ind_or_conf(fi, event, data, true);
+		handle_rll_rel_ind_or_conf(fi, event, data);
+		if (!lchan_active_sapis(lchan, 0))
+			lchan_fsm_state_chg(LCHAN_ST_WAIT_RLL_RTP_RELEASED);
+		return;
+
+	case LCHAN_EV_RTP_RELEASED:
+	case LCHAN_EV_RTP_ERROR:
+		if (lchan->release_requested) {
+			/* Already in release, the RTP is not the initial cause of failure.
+			 * Just ignore. */
+			return;
+		}
+
+		lchan_fail("RTP stream closed unexpectedly: %s in state %s\n",
+			   osmo_fsm_event_name(fi->fsm, event),
+			   osmo_fsm_inst_state_name(fi));
 		return;
 
 	default:
@@ -1079,7 +857,7 @@ static bool should_sacch_deact(struct gsm_lchan *lchan)
 	}
 }
 
-static void lchan_fsm_wait_sapis_released_onenter(struct osmo_fsm_inst *fi, uint32_t prev_state)
+static void lchan_fsm_wait_rll_rtp_released_onenter(struct osmo_fsm_inst *fi, uint32_t prev_state)
 {
 	int sapis;
 	int sapi;
@@ -1089,8 +867,11 @@ static void lchan_fsm_wait_sapis_released_onenter(struct osmo_fsm_inst *fi, uint
 		if (lchan->sapis[sapi])
 			LOG_LCHAN(lchan, LOGL_DEBUG, "SAPI[%d] = %d\n", sapi, lchan->sapis[sapi]);
 
-	if (lchan->conn)
+	if (lchan->conn && lchan->sapis[0] != LCHAN_SAPI_UNUSED)
 		gsm48_send_rr_release(lchan);
+
+	if (lchan->fi_rtp)
+		osmo_fsm_inst_dispatch(lchan->fi_rtp, LCHAN_RTP_EV_RELEASE, 0);
 
 	if (lchan->deact_sacch && should_sacch_deact(lchan))
 		rsl_deact_sacch(lchan);
@@ -1117,16 +898,33 @@ static void lchan_fsm_wait_sapis_released_onenter(struct osmo_fsm_inst *fi, uint
 		sapis = 0;
 	}
 
-	if (!sapis)
+	if (!sapis && !lchan->fi_rtp)
 		lchan_fsm_state_chg(LCHAN_ST_WAIT_BEFORE_RF_RELEASE);
 }
 
-static void lchan_fsm_wait_sapis_released(struct osmo_fsm_inst *fi, uint32_t event, void *data)
+static void lchan_fsm_wait_rll_rtp_released(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
-	/* When we're telling the MS to release, we're fine to carry on with RF Channel Release when SAPI
-	 * 0 release is not confirmed yet.
-	 * TODO: that's how the code was before lchan FSM, is this correct/useful? */
-	handle_rll_rel_ind_or_conf(fi, event, data, false);
+	struct gsm_lchan *lchan = lchan_fi_lchan(fi);
+	switch (event) {
+
+	case LCHAN_EV_RLL_REL_IND:
+	case LCHAN_EV_RLL_REL_CONF:
+		/* When we're telling the MS to release, we're fine to carry on with RF Channel Release
+		 * when SAPI 0 release is not confirmed yet.
+		 * TODO: that's how the code was before lchan FSM, is this correct/useful? */
+		handle_rll_rel_ind_or_conf(fi, event, data);
+		break;
+	
+	case LCHAN_EV_RTP_RELEASED:
+	case LCHAN_EV_RTP_ERROR:
+		break;
+
+	default:
+		OSMO_ASSERT(false);
+	}
+
+	if (!lchan_active_sapis(lchan, 1) && !lchan->fi_rtp)
+		lchan_fsm_state_chg(LCHAN_ST_WAIT_BEFORE_RF_RELEASE);
 }
 
 static void lchan_fsm_wait_rf_release_ack_onenter(struct osmo_fsm_inst *fi, uint32_t prev_state)
@@ -1194,6 +992,10 @@ static void lchan_fsm_borken(struct osmo_fsm_inst *fi, uint32_t event, void *dat
 		 * independently from the BTS model, right?? */
 		return;
 
+	case LCHAN_EV_RTP_RELEASED:
+	case LCHAN_EV_RTP_ERROR:
+		return;
+
 	default:
 		OSMO_ASSERT(false);
 	}
@@ -1219,7 +1021,8 @@ static const struct osmo_fsm_state lchan_fsm_states[] = {
 		.action = lchan_fsm_wait_ts_ready,
 		.in_event_mask = 0
 			| S(LCHAN_EV_TS_READY)
-			| S(LCHAN_EV_MGW_ENDPOINT_AVAILABLE)
+			| S(LCHAN_EV_RTP_ERROR)
+			| S(LCHAN_EV_RTP_RELEASED)
 			,
 		.out_state_mask = 0
 			| S(LCHAN_ST_UNUSED)
@@ -1231,94 +1034,33 @@ static const struct osmo_fsm_state lchan_fsm_states[] = {
 		.onenter = lchan_fsm_wait_activ_ack_onenter,
 		.action = lchan_fsm_wait_activ_ack,
 		.in_event_mask = 0
-			| S(LCHAN_EV_MGW_ENDPOINT_AVAILABLE)
 			| S(LCHAN_EV_RSL_CHAN_ACTIV_ACK)
 			| S(LCHAN_EV_RSL_CHAN_ACTIV_NACK)
+			| S(LCHAN_EV_RTP_ERROR)
+			| S(LCHAN_EV_RTP_RELEASED)
 			,
 		.out_state_mask = 0
 			| S(LCHAN_ST_UNUSED)
-			| S(LCHAN_ST_WAIT_RLL_ESTABLISH)
+			| S(LCHAN_ST_WAIT_RLL_RTP_ESTABLISH)
 			| S(LCHAN_ST_BORKEN)
 			| S(LCHAN_ST_WAIT_RF_RELEASE_ACK)
 			,
 	},
-	[LCHAN_ST_WAIT_RLL_ESTABLISH] = {
-		.name = "WAIT_RLL_ESTABLISH",
-		.onenter = lchan_fsm_wait_rll_establish_onenter,
-		.action = lchan_fsm_wait_rll_establish,
+	[LCHAN_ST_WAIT_RLL_RTP_ESTABLISH] = {
+		.name = "WAIT_RLL_RTP_ESTABLISH",
+		.onenter = lchan_fsm_wait_rll_rtp_establish_onenter,
+		.action = lchan_fsm_wait_rll_rtp_establish,
 		.in_event_mask = 0
-			| S(LCHAN_EV_MGW_ENDPOINT_AVAILABLE)
 			| S(LCHAN_EV_RLL_ESTABLISH_IND)
-			,
-		.out_state_mask = 0
-			| S(LCHAN_ST_UNUSED)
-			| S(LCHAN_ST_WAIT_MGW_ENDPOINT_AVAILABLE)
-			| S(LCHAN_ST_ESTABLISHED)
-			| S(LCHAN_ST_WAIT_RF_RELEASE_ACK)
-			| S(LCHAN_ST_WAIT_SAPIS_RELEASED)
-			,
-	},
-	[LCHAN_ST_WAIT_MGW_ENDPOINT_AVAILABLE] = {
-		.name = "WAIT_MGW_ENDPOINT_AVAILABLE",
-		.onenter = lchan_fsm_wait_mgw_endpoint_available_onenter,
-		.action = lchan_fsm_wait_mgw_endpoint_available,
-		.in_event_mask = 0
-			| S(LCHAN_EV_MGW_ENDPOINT_AVAILABLE)
-			| S(LCHAN_EV_RLL_ESTABLISH_IND) /* ignored */
-			,
-		.out_state_mask = 0
-			| S(LCHAN_ST_UNUSED)
-			| S(LCHAN_ST_WAIT_IPACC_CRCX_ACK)
-			| S(LCHAN_ST_WAIT_MGW_ENDPOINT_CONFIGURED)
-			| S(LCHAN_ST_WAIT_SAPIS_RELEASED)
-			| S(LCHAN_ST_WAIT_RF_RELEASE_ACK)
-			,
-	},
-	[LCHAN_ST_WAIT_IPACC_CRCX_ACK] = {
-		.name = "WAIT_IPACC_CRCX_ACK",
-		.onenter = lchan_fsm_wait_ipacc_crcx_ack_onenter,
-		.action = lchan_fsm_wait_ipacc_crcx_ack,
-		.in_event_mask = 0
-			| S(LCHAN_EV_IPACC_CRCX_ACK)
-			| S(LCHAN_EV_IPACC_CRCX_NACK)
-			| S(LCHAN_EV_RLL_ESTABLISH_IND) /* ignored */
-			,
-		.out_state_mask = 0
-			| S(LCHAN_ST_UNUSED)
-			| S(LCHAN_ST_WAIT_IPACC_MDCX_ACK)
-			| S(LCHAN_ST_WAIT_SAPIS_RELEASED)
-			| S(LCHAN_ST_WAIT_RF_RELEASE_ACK)
-			,
-	},
-	[LCHAN_ST_WAIT_IPACC_MDCX_ACK] = {
-		.name = "WAIT_IPACC_MDCX_ACK",
-		.onenter = lchan_fsm_wait_ipacc_mdcx_ack_onenter,
-		.action = lchan_fsm_wait_ipacc_mdcx_ack,
-		.in_event_mask = 0
-			| S(LCHAN_EV_IPACC_MDCX_ACK)
-			| S(LCHAN_EV_IPACC_MDCX_NACK)
-			| S(LCHAN_EV_RLL_ESTABLISH_IND) /* ignored */
-			,
-		.out_state_mask = 0
-			| S(LCHAN_ST_UNUSED)
-			| S(LCHAN_ST_WAIT_MGW_ENDPOINT_CONFIGURED)
-			| S(LCHAN_ST_WAIT_SAPIS_RELEASED)
-			| S(LCHAN_ST_WAIT_RF_RELEASE_ACK)
-			,
-	},
-	[LCHAN_ST_WAIT_MGW_ENDPOINT_CONFIGURED] = {
-		.name = "WAIT_MGW_ENDPOINT_CONFIGURED",
-		.onenter = lchan_fsm_wait_mgw_endpoint_configured_onenter,
-		.action = lchan_fsm_wait_mgw_endpoint_configured,
-		.in_event_mask = 0
-			| S(LCHAN_EV_MGW_ENDPOINT_CONFIGURED)
-			| S(LCHAN_EV_RLL_ESTABLISH_IND) /* ignored */
+			| S(LCHAN_EV_RTP_READY)
+			| S(LCHAN_EV_RTP_ERROR)
+			| S(LCHAN_EV_RTP_RELEASED)
 			,
 		.out_state_mask = 0
 			| S(LCHAN_ST_UNUSED)
 			| S(LCHAN_ST_ESTABLISHED)
-			| S(LCHAN_ST_WAIT_SAPIS_RELEASED)
 			| S(LCHAN_ST_WAIT_RF_RELEASE_ACK)
+			| S(LCHAN_ST_WAIT_RLL_RTP_RELEASED)
 			,
 	},
 	[LCHAN_ST_ESTABLISHED] = {
@@ -1329,21 +1071,25 @@ static const struct osmo_fsm_state lchan_fsm_states[] = {
 			| S(LCHAN_EV_RLL_REL_IND)
 			| S(LCHAN_EV_RLL_REL_CONF)
 			| S(LCHAN_EV_RLL_ESTABLISH_IND) /* ignored */
+			| S(LCHAN_EV_RTP_ERROR)
+			| S(LCHAN_EV_RTP_RELEASED)
 			,
 		.out_state_mask = 0
 			| S(LCHAN_ST_UNUSED)
-			| S(LCHAN_ST_WAIT_SAPIS_RELEASED)
+			| S(LCHAN_ST_WAIT_RLL_RTP_RELEASED)
 			| S(LCHAN_ST_WAIT_BEFORE_RF_RELEASE)
 			| S(LCHAN_ST_WAIT_RF_RELEASE_ACK)
 			,
 	},
-	[LCHAN_ST_WAIT_SAPIS_RELEASED] = {
-		.name = "WAIT_SAPIS_RELEASED",
-		.onenter = lchan_fsm_wait_sapis_released_onenter,
-		.action = lchan_fsm_wait_sapis_released,
+	[LCHAN_ST_WAIT_RLL_RTP_RELEASED] = {
+		.name = "WAIT_RLL_RTP_RELEASED",
+		.onenter = lchan_fsm_wait_rll_rtp_released_onenter,
+		.action = lchan_fsm_wait_rll_rtp_released,
 		.in_event_mask = 0
 			| S(LCHAN_EV_RLL_REL_IND)
 			| S(LCHAN_EV_RLL_REL_CONF)
+			| S(LCHAN_EV_RTP_ERROR)
+			| S(LCHAN_EV_RTP_RELEASED)
 			,
 		.out_state_mask = 0
 			| S(LCHAN_ST_UNUSED)
@@ -1388,6 +1134,8 @@ static const struct osmo_fsm_state lchan_fsm_states[] = {
 			| S(LCHAN_EV_RSL_CHAN_ACTIV_ACK)
 			| S(LCHAN_EV_RSL_CHAN_ACTIV_NACK)
 			| S(LCHAN_EV_RSL_RF_CHAN_REL_ACK)
+			| S(LCHAN_EV_RTP_ERROR)
+			| S(LCHAN_EV_RTP_RELEASED)
 			,
 		.out_state_mask = 0
 			| S(LCHAN_ST_UNUSED)
@@ -1403,13 +1151,9 @@ static const struct value_string lchan_fsm_event_names[] = {
 	OSMO_VALUE_STRING(LCHAN_EV_RSL_CHAN_ACTIV_ACK),
 	OSMO_VALUE_STRING(LCHAN_EV_RSL_CHAN_ACTIV_NACK),
 	OSMO_VALUE_STRING(LCHAN_EV_RLL_ESTABLISH_IND),
-	OSMO_VALUE_STRING(LCHAN_EV_MGW_ENDPOINT_AVAILABLE),
-	OSMO_VALUE_STRING(LCHAN_EV_MGW_ENDPOINT_CONFIGURED),
-	OSMO_VALUE_STRING(LCHAN_EV_MGW_ENDPOINT_ERROR),
-	OSMO_VALUE_STRING(LCHAN_EV_IPACC_CRCX_ACK),
-	OSMO_VALUE_STRING(LCHAN_EV_IPACC_CRCX_NACK),
-	OSMO_VALUE_STRING(LCHAN_EV_IPACC_MDCX_ACK),
-	OSMO_VALUE_STRING(LCHAN_EV_IPACC_MDCX_NACK),
+	OSMO_VALUE_STRING(LCHAN_EV_RTP_READY),
+	OSMO_VALUE_STRING(LCHAN_EV_RTP_ERROR),
+	OSMO_VALUE_STRING(LCHAN_EV_RTP_RELEASED),
 	OSMO_VALUE_STRING(LCHAN_EV_RLL_REL_IND),
 	OSMO_VALUE_STRING(LCHAN_EV_RLL_REL_CONF),
 	OSMO_VALUE_STRING(LCHAN_EV_RSL_RF_CHAN_REL_ACK),
@@ -1421,25 +1165,10 @@ static const struct value_string lchan_fsm_event_names[] = {
 
 void lchan_fsm_allstate_action(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
-	struct gsm_lchan *lchan = lchan_fi_lchan(fi);
-
 	switch (event) {
 
 	case LCHAN_EV_TS_ERROR:
 		lchan_fail_to(LCHAN_ST_UNUSED, "LCHAN_EV_TS_ERROR");
-		return;
-
-	case LCHAN_EV_MGW_ENDPOINT_ERROR:
-		/* This event during activation means that it was not possible to establish an endpoint.
-		 * After activation was successful, it could also come in at any point to signal that the
-		 * MGW side has become unavailable, which should lead to graceful release. */
-		if (fi->state == LCHAN_ST_WAIT_MGW_ENDPOINT_AVAILABLE) {
-			/* This state is actually waiting for availability. Fail it immediately. */
-			lchan_fail("LCHAN_EV_MGW_ENDPOINT_ERROR");
-			return;
-		}
-		LOG_LCHAN(lchan, LOGL_ERROR, "Releasing due to MGW endpoint error\n");
-		lchan_release(lchan, false, true, RSL_ERR_EQUIPMENT_FAIL);
 		return;
 
 	default:
@@ -1477,28 +1206,26 @@ void lchan_release(struct gsm_lchan *lchan, bool sacch_deact,
 	lchan->rsl_error_cause = cause_rr;
 	lchan->deact_sacch = sacch_deact;
 
-	/* This would also happen later, but better to do this a sooner. */
-	if (lchan->mgw_endpoint_ci_bts) {
-		mgw_endpoint_ci_dlcx(lchan->mgw_endpoint_ci_bts);
-		lchan->mgw_endpoint_ci_bts = NULL;
-	}
-
 	/* States waiting for events will notice the desire to release when done waiting, so it is enough
 	 * to mark for release. */
 	lchan->release_requested = true;
 
-	/* But when in error, shortcut that. */
+	/* If we took the RTP over from another lchan, put it back. */
+	if (lchan->fi_rtp && lchan->release_in_error)
+		osmo_fsm_inst_dispatch(lchan->fi_rtp, LCHAN_RTP_EV_ROLLBACK, 0);
+
+	/* But when in error, don't wait for the next state to pick up release_requested. */
 	if (lchan->release_in_error) {
 		switch (lchan->fi->state) {
 		default:
-			/* Normally we deact SACCH in lchan_fsm_wait_sapis_released_onenter(). When
+			/* Normally we deact SACCH in lchan_fsm_wait_rll_rtp_released_onenter(). When
 			 * skipping that, but asked to SACCH deact, do it now. */
 			if (lchan->deact_sacch)
 				rsl_deact_sacch(lchan);
 			lchan_fsm_state_chg(LCHAN_ST_WAIT_RF_RELEASE_ACK);
 			return;
 		case LCHAN_ST_WAIT_TS_READY:
-			lchan_fsm_state_chg(LCHAN_ST_UNUSED);
+			lchan_fsm_state_chg(LCHAN_ST_WAIT_RLL_RTP_RELEASED);
 			return;
 		case LCHAN_ST_WAIT_RF_RELEASE_ACK:
 		case LCHAN_ST_BORKEN:
@@ -1509,7 +1236,7 @@ void lchan_release(struct gsm_lchan *lchan, bool sacch_deact,
 	/* The only non-broken state that would stay stuck without noticing the release_requested flag
 	 * is: */
 	if (fi->state == LCHAN_ST_ESTABLISHED)
-		lchan_fsm_state_chg(LCHAN_ST_WAIT_SAPIS_RELEASED);
+		lchan_fsm_state_chg(LCHAN_ST_WAIT_RLL_RTP_RELEASED);
 }
 
 void lchan_fsm_cleanup(struct osmo_fsm_inst *fi, enum osmo_fsm_term_cause cause)
@@ -1523,14 +1250,6 @@ void lchan_fsm_cleanup(struct osmo_fsm_inst *fi, enum osmo_fsm_term_cause cause)
 		lchan->last_error = NULL;
 	}
 	lchan->fi = NULL;
-}
-
-/* The mgw_endpoint was invalidated, just and simply forget the pointer without cleanup. */
-void lchan_forget_mgw_endpoint(struct gsm_lchan *lchan)
-{
-	if (!lchan)
-		return;
-	lchan->mgw_endpoint_ci_bts = NULL;
 }
 
 /* The conn is deallocating, just forget all about it */
@@ -1551,7 +1270,6 @@ static struct osmo_fsm lchan_fsm = {
 	.allstate_action = lchan_fsm_allstate_action,
 	.allstate_event_mask = 0
 		| S(LCHAN_EV_TS_ERROR)
-		| S(LCHAN_EV_MGW_ENDPOINT_ERROR)
 		,
 	.timer_cb = lchan_fsm_timer_cb,
 	.cleanup = lchan_fsm_cleanup,

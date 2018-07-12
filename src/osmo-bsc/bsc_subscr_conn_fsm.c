@@ -28,6 +28,7 @@
 #include <osmocom/bsc/gsm_data.h>
 #include <osmocom/bsc/handover_fsm.h>
 #include <osmocom/bsc/lchan_fsm.h>
+#include <osmocom/bsc/lchan_rtp_fsm.h>
 #include <osmocom/bsc/bsc_subscriber.h>
 #include <osmocom/bsc/osmo_bsc_sigtran.h>
 #include <osmocom/bsc/osmo_bsc_lcls.h>
@@ -597,7 +598,10 @@ void gscon_change_primary_lchan(struct gsm_subscriber_connection *conn, struct g
 	conn->lchan = new_lchan;
 	conn->lchan->conn = conn;
 
-	if (old_lchan) {
+	if (conn->lchan->fi_rtp)
+		osmo_fsm_inst_dispatch(conn->lchan->fi_rtp, LCHAN_RTP_EV_ESTABLISHED, 0);
+
+	if (old_lchan && (old_lchan != new_lchan)) {
 		lchan_forget_conn(old_lchan);
 		lchan_release(old_lchan, false, false, 0);
 	}

@@ -32,6 +32,7 @@
 #include <osmocom/bsc/bsc_subscr_conn_fsm.h>
 #include <osmocom/bsc/lchan_select.h>
 #include <osmocom/bsc/lchan_fsm.h>
+#include <osmocom/bsc/lchan_rtp_fsm.h>
 #include <osmocom/bsc/gsm_04_08_rr.h>
 #include <osmocom/bsc/abis_rsl.h>
 #include <osmocom/bsc/bsc_msc_data.h>
@@ -359,6 +360,7 @@ static void handover_start_intra_bsc(struct gsm_subscriber_connection *conn)
 		.requires_voice_stream = conn->lchan->mgw_endpoint_ci_bts ? true : false,
 		.msc_assigned_cic = conn->ho.inter_bsc_in.msc_assigned_cic,
 		.old_lchan = conn->lchan,
+		.wait_before_switching_rtp = true,
 	};
 
 	lchan_activate(ho->new_lchan, &info);
@@ -843,6 +845,9 @@ static void ho_fsm_wait_rr_ho_detect(struct osmo_fsm_inst *fi, uint32_t event, v
 			}
 		}
 
+		if (ho->new_lchan->fi_rtp)
+			osmo_fsm_inst_dispatch(ho->new_lchan->fi_rtp,
+					       LCHAN_RTP_EV_READY_TO_SWITCH_RTP, 0);
 		ho_fsm_state_chg(HO_ST_WAIT_RR_HO_COMPLETE);
 		/* The lchan FSM will already start to redirect the RTP stream */
 		return;
@@ -851,7 +856,9 @@ static void ho_fsm_wait_rr_ho_detect(struct osmo_fsm_inst *fi, uint32_t event, v
 		LOG_HO(conn, LOGL_ERROR,
 			"Received RR Handover Complete, but haven't even seen a Handover Detect yet;"
 			" Accepting handover anyway\n");
-
+		if (ho->new_lchan->fi_rtp)
+			osmo_fsm_inst_dispatch(ho->new_lchan->fi_rtp,
+					       LCHAN_RTP_EV_READY_TO_SWITCH_RTP, 0);
 		ho_fsm_state_chg(HO_ST_WAIT_LCHAN_ESTABLISHED);
 		return;
 

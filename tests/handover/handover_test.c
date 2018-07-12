@@ -394,6 +394,7 @@ static void send_ho_complete(struct gsm_lchan *lchan, bool success)
 	struct gsm48_ho_cpl *hc;
 
 	send_est_ind(lchan);
+	osmo_fsm_inst_dispatch(lchan->fi, LCHAN_EV_RTP_READY, 0);
 
 	rh = (struct abis_rsl_rll_hdr *) msgb_put(msg, sizeof(*rh));
 	rh->c.msg_discr = ABIS_RSL_MDISC_RLL;

@@ -29,6 +29,7 @@ noinst_HEADERS = \
 	handover_vty.h \
 	ipaccess.h \
 	lchan_fsm.h \
+	lchan_rtp_fsm.h \
 	lchan_select.h \
 	meas_feed.h \
 	meas_rep.h \

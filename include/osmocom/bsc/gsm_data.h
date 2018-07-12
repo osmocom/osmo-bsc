@@ -499,13 +499,15 @@ struct gsm_lchan {
 	char *name;
 
 	struct osmo_fsm_inst *fi;
+	struct osmo_fsm_inst *fi_rtp;
 	struct mgwep_ci *mgw_endpoint_ci_bts;
 
 	struct {
 		enum lchan_activate_mode activ_for;
+		bool activ_ack; /*< true as soon as RSL Chan Activ Ack is received */
 		bool concluded; /*< true as soon as LCHAN_ST_ESTABLISHED is reached */
 		bool requires_voice_stream;
-		bool mgw_endpoint_available;
+		bool wait_before_switching_rtp; /*< true = requires LCHAN_EV_READY_TO_SWITCH_RTP */
 		uint16_t msc_assigned_cic;
 		enum gsm0808_cause gsm0808_error_cause;
 		struct gsm_lchan *re_use_mgw_endpoint_from_lchan;

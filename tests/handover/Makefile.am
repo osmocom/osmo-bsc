@@ -63,6 +63,7 @@ handover_test_LDADD = \
 	$(top_builddir)/src/osmo-bsc/handover_fsm.o \
 	$(top_builddir)/src/osmo-bsc/handover_logic.o \
 	$(top_builddir)/src/osmo-bsc/lchan_fsm.o \
+	$(top_builddir)/src/osmo-bsc/lchan_rtp_fsm.o \
 	$(top_builddir)/src/osmo-bsc/lchan_select.o \
 	$(top_builddir)/src/osmo-bsc/meas_rep.o \
 	$(top_builddir)/src/osmo-bsc/mgw_endpoint_fsm.o \

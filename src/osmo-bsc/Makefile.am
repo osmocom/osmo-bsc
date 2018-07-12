@@ -67,6 +67,7 @@ osmo_bsc_SOURCES = \
 	handover_logic.c \
 	handover_vty.c \
 	lchan_fsm.c \
+	lchan_rtp_fsm.c \
 	lchan_select.c \
 	meas_feed.c \
 	meas_rep.c \
