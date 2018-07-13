@@ -680,7 +680,7 @@ static int bssmap_handle_assignm_req(struct gsm_subscriber_connection *conn,
 
 		/* Match codec information from the assignment command against the
 		 * local preferences of the BSC */
-		rc = match_codec_pref(&full_rate, &chan_mode, &ct, scl_ptr, msc);
+		rc = match_codec_pref(&full_rate, &chan_mode, &ct, scl_ptr, msc, conn_get_bts(conn));
 		if (rc < 0) {
 			LOGP(DMSC, LOGL_ERROR, "No supported audio type found for channel_type ="
 			     " { ch_indctr=0x%x, ch_rate_type=0x%x, perm_spch=[ %s] }\n",

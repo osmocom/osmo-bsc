@@ -270,9 +270,62 @@ static void make_msc_config(struct bsc_msc_data *msc, uint8_t config_no)
 	}
 }
 
+/* Generate a realitically looking bts codec configuration */
+static void make_bts_config(struct gsm_bts *bts, uint8_t config_no)
+{
+	/* Note: FR is supported by all BTSs, so there is no flag for it */
+
+	OSMO_ASSERT(config_no < N_CONFIG_VARIANTS);
+
+	bts->codec.hr = 0;
+	bts->codec.efr = 0;
+	bts->codec.amr = 0;
+
+	switch (config_no) {
+	case 0:
+		/* FR1 (implicit) only */
+		break;
+	case 1:
+		/* HR1 only (+FR implicit) */
+		bts->codec.hr = 1;
+		break;
+	case 2:
+		/* FR2 only (+FR implicit)  */
+		bts->codec.efr = 1;
+		break;
+	case 3:
+		/* FR3 only (+FR implicit) */
+		bts->codec.amr = 1;
+		break;
+	case 4:
+		/* HR3 only (+FR implicit) */
+		bts->codec.amr = 1;
+		break;
+	case 5:
+		/* FR1 (implicit) and HR1 */
+		bts->codec.hr = 1;
+		break;
+	case 6:
+		/* FR1 (implicit), FR2 and HR1 */
+		bts->codec.efr = 1;
+		bts->codec.hr = 1;
+		break;
+	case 7:
+		/* FR1 (implicit), FR3 and HR3 */
+		bts->codec.amr = 1;
+		break;
+	case 8:
+		/* FR1 (implicit), FR2, FR3, HR1 and HR3 */
+		bts->codec.hr = 1;
+		bts->codec.efr = 1;
+		bts->codec.amr = 1;
+		break;
+	}
+}
+
 /* Try execute match_codec_pref(), display input and output parameters */
-static int test_match_codec_pref(const struct gsm0808_channel_type *ct,
-				 const struct gsm0808_speech_codec_list *scl, const struct bsc_msc_data *msc)
+static int test_match_codec_pref(const struct gsm0808_channel_type *ct, const struct gsm0808_speech_codec_list *scl,
+				 const struct bsc_msc_data *msc, struct gsm_bts *bts)
 {
 	int rc;
 	unsigned int i;
@@ -296,7 +349,13 @@ static int test_match_codec_pref(const struct gsm0808_channel_type *ct,
 		else
 			printf("   audio_support[%u]=FR%u\n", i, msc->audio_support[i]->ver);
 
-	rc = match_codec_pref(&full_rate, &chan_mode, ct, scl, msc);
+	printf(" * BTS: audio support settings:\n");
+	printf("   (GSM-FR implicitly supported)\n");
+	printf("   codec->hr=%u\n", bts->codec.hr);
+	printf("   codec->efr=%u\n", bts->codec.efr);
+	printf("   codec->amr=%u\n", bts->codec.amr);
+
+	rc = match_codec_pref(&full_rate, &chan_mode, ct, scl, msc, bts);
 	printf(" * result: rc=%i, full_rate=%i, chan_mode=%s\n", rc, full_rate, gsm48_chan_mode_name(chan_mode));
 
 	printf("\n");
@@ -311,6 +370,7 @@ static void test_one_to_one(void)
 	struct gsm0808_channel_type ct_msc;
 	struct gsm0808_speech_codec_list scl_ms;
 	struct bsc_msc_data msc_local;
+	struct gsm_bts bts_local;
 	int rc;
 
 	printf("============== test_one_to_one ==============\n\n");
@@ -321,7 +381,8 @@ static void test_one_to_one(void)
 		make_msc_config(&msc_local, i);
 		make_scl_config(&scl_ms, i);
 		make_ct_config(&ct_msc, i);
-		rc = test_match_codec_pref(&ct_msc, &scl_ms, &msc_local);
+		make_bts_config(&bts_local, i);
+		rc = test_match_codec_pref(&ct_msc, &scl_ms, &msc_local, &bts_local);
 		OSMO_ASSERT(rc == 0);
 	}
 
@@ -335,6 +396,7 @@ static void test_ms(void)
 	struct gsm0808_channel_type ct_msc;
 	struct gsm0808_speech_codec_list scl_ms;
 	struct bsc_msc_data msc_local;
+	struct gsm_bts bts_local;
 	int rc;
 
 	printf("============== test_ms ==============\n\n");
@@ -343,9 +405,10 @@ static void test_ms(void)
 
 	make_msc_config(&msc_local, 8);
 	make_ct_config(&ct_msc, 8);
+	make_bts_config(&bts_local, 8);
 	for (i = 0; i < N_CONFIG_VARIANTS; i++) {
 		make_scl_config(&scl_ms, i);
-		rc = test_match_codec_pref(&ct_msc, &scl_ms, &msc_local);
+		rc = test_match_codec_pref(&ct_msc, &scl_ms, &msc_local, &bts_local);
 		OSMO_ASSERT(rc == 0);
 	}
 
@@ -359,6 +422,7 @@ static void test_ct(void)
 	struct gsm0808_channel_type ct_msc;
 	struct gsm0808_speech_codec_list scl_ms;
 	struct bsc_msc_data msc_local;
+	struct gsm_bts bts_local;
 	int rc;
 
 	printf("============== test_ct ==============\n\n");
@@ -367,9 +431,10 @@ static void test_ct(void)
 
 	make_msc_config(&msc_local, 8);
 	make_scl_config(&scl_ms, 8);
+	make_bts_config(&bts_local, 8);
 	for (i = 0; i < N_CONFIG_VARIANTS; i++) {
 		make_ct_config(&ct_msc, i);
-		rc = test_match_codec_pref(&ct_msc, &scl_ms, &msc_local);
+		rc = test_match_codec_pref(&ct_msc, &scl_ms, &msc_local, &bts_local);
 		OSMO_ASSERT(rc == 0);
 	}
 
@@ -383,6 +448,7 @@ static void test_msc(void)
 	struct gsm0808_channel_type ct_msc;
 	struct gsm0808_speech_codec_list scl_ms;
 	struct bsc_msc_data msc_local;
+	struct gsm_bts bts_local;
 	int rc;
 
 	printf("============== test_msc ==============\n\n");
@@ -391,9 +457,10 @@ static void test_msc(void)
 
 	make_ct_config(&ct_msc, 8);
 	make_scl_config(&scl_ms, 8);
+	make_bts_config(&bts_local, 8);
 	for (i = 0; i < N_CONFIG_VARIANTS; i++) {
 		make_msc_config(&msc_local, 8);
-		rc = test_match_codec_pref(&ct_msc, &scl_ms, &msc_local);
+		rc = test_match_codec_pref(&ct_msc, &scl_ms, &msc_local, &bts_local);
 		OSMO_ASSERT(rc == 0);
 	}
 
@@ -406,6 +473,7 @@ static void test_selected_working(void)
 	struct gsm0808_channel_type ct_msc;
 	struct gsm0808_speech_codec_list scl_ms;
 	struct bsc_msc_data msc_local;
+	struct gsm_bts bts_local;
 	int rc;
 
 	printf("============== test_selected_working ==============\n\n");
@@ -415,19 +483,43 @@ static void test_selected_working(void)
 	make_scl_config(&scl_ms, 6);
 	make_ct_config(&ct_msc, 5);
 	make_msc_config(&msc_local, 7);
-	rc = test_match_codec_pref(&ct_msc, &scl_ms, &msc_local);
+	make_bts_config(&bts_local, 8);
+	rc = test_match_codec_pref(&ct_msc, &scl_ms, &msc_local, &bts_local);
 	OSMO_ASSERT(rc == 0);
 
 	make_scl_config(&scl_ms, 0);
 	make_ct_config(&ct_msc, 5);
 	make_msc_config(&msc_local, 7);
-	rc = test_match_codec_pref(&ct_msc, &scl_ms, &msc_local);
+	make_bts_config(&bts_local, 8);
+	rc = test_match_codec_pref(&ct_msc, &scl_ms, &msc_local, &bts_local);
 	OSMO_ASSERT(rc == 0);
 
 	make_scl_config(&scl_ms, 1);
 	make_ct_config(&ct_msc, 5);
 	make_msc_config(&msc_local, 6);
-	rc = test_match_codec_pref(&ct_msc, &scl_ms, &msc_local);
+	make_bts_config(&bts_local, 8);
+	rc = test_match_codec_pref(&ct_msc, &scl_ms, &msc_local, &bts_local);
+	OSMO_ASSERT(rc == 0);
+
+	make_scl_config(&scl_ms, 6);
+	make_ct_config(&ct_msc, 5);
+	make_msc_config(&msc_local, 7);
+	make_bts_config(&bts_local, 4);
+	rc = test_match_codec_pref(&ct_msc, &scl_ms, &msc_local, &bts_local);
+	OSMO_ASSERT(rc == 0);
+
+	make_scl_config(&scl_ms, 0);
+	make_ct_config(&ct_msc, 5);
+	make_msc_config(&msc_local, 7);
+	make_bts_config(&bts_local, 2);
+	rc = test_match_codec_pref(&ct_msc, &scl_ms, &msc_local, &bts_local);
+	OSMO_ASSERT(rc == 0);
+
+	make_scl_config(&scl_ms, 1);
+	make_ct_config(&ct_msc, 5);
+	make_msc_config(&msc_local, 6);
+	make_bts_config(&bts_local, 1);
+	rc = test_match_codec_pref(&ct_msc, &scl_ms, &msc_local, &bts_local);
 	OSMO_ASSERT(rc == 0);
 
 	free_msc_config(&msc_local);
@@ -439,6 +531,7 @@ static void test_selected_non_working(void)
 	struct gsm0808_channel_type ct_msc;
 	struct gsm0808_speech_codec_list scl_ms;
 	struct bsc_msc_data msc_local;
+	struct gsm_bts bts_local;
 	int rc;
 
 	printf("============== test_selected_non_working ==============\n\n");
@@ -448,19 +541,43 @@ static void test_selected_non_working(void)
 	make_scl_config(&scl_ms, 1);
 	make_ct_config(&ct_msc, 5);
 	make_msc_config(&msc_local, 7);
-	rc = test_match_codec_pref(&ct_msc, &scl_ms, &msc_local);
+	make_bts_config(&bts_local, 8);
+	rc = test_match_codec_pref(&ct_msc, &scl_ms, &msc_local, &bts_local);
 	OSMO_ASSERT(rc == -1);
 
 	make_scl_config(&scl_ms, 1);
 	make_ct_config(&ct_msc, 5);
 	make_msc_config(&msc_local, 7);
-	rc = test_match_codec_pref(&ct_msc, &scl_ms, &msc_local);
+	make_bts_config(&bts_local, 8);
+	rc = test_match_codec_pref(&ct_msc, &scl_ms, &msc_local, &bts_local);
 	OSMO_ASSERT(rc == -1);
 
 	make_scl_config(&scl_ms, 1);
 	make_ct_config(&ct_msc, 4);
 	make_msc_config(&msc_local, 6);
-	rc = test_match_codec_pref(&ct_msc, &scl_ms, &msc_local);
+	make_bts_config(&bts_local, 8);
+	rc = test_match_codec_pref(&ct_msc, &scl_ms, &msc_local, &bts_local);
+	OSMO_ASSERT(rc == -1);
+
+	make_scl_config(&scl_ms, 1);
+	make_ct_config(&ct_msc, 2);
+	make_msc_config(&msc_local, 7);
+	make_bts_config(&bts_local, 8);
+	rc = test_match_codec_pref(&ct_msc, &scl_ms, &msc_local, &bts_local);
+	OSMO_ASSERT(rc == -1);
+
+	make_scl_config(&scl_ms, 1);
+	make_ct_config(&ct_msc, 5);
+	make_msc_config(&msc_local, 4);
+	make_bts_config(&bts_local, 8);
+	rc = test_match_codec_pref(&ct_msc, &scl_ms, &msc_local, &bts_local);
+	OSMO_ASSERT(rc == -1);
+
+	make_scl_config(&scl_ms, 8);
+	make_ct_config(&ct_msc, 4);
+	make_msc_config(&msc_local, 6);
+	make_bts_config(&bts_local, 7);
+	rc = test_match_codec_pref(&ct_msc, &scl_ms, &msc_local, &bts_local);
 	OSMO_ASSERT(rc == -1);
 
 	free_msc_config(&msc_local);
