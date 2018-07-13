@@ -53,6 +53,7 @@ osmo_bsc_SOURCES = \
 	bts_sysmobts.c \
 	bts_unknown.c \
 	chan_alloc.c \
+	codec_pref.c \
 	e1_config.c \
 	gsm_04_08_utils.c \
 	gsm_04_80_utils.c \

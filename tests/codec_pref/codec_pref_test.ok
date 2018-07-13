@@ -1,0 +1,707 @@
+============== test_one_to_one ==============
+
+Determining channel mode and rate:
+ * MS: speech codec list (1 items):
+   codec[0]->type=FR1
+ * MSC: channel type permitted speech (1 items):
+   perm_spch[0]=FR1
+ * BSS: audio support settings (1 items):
+   audio_support[0]=FR1
+ * result: rc=0, full_rate=1, chan_mode=SPEECH_V1
+
+Determining channel mode and rate:
+ * MS: speech codec list (1 items):
+   codec[0]->type=HR1
+ * MSC: channel type permitted speech (1 items):
+   perm_spch[0]=HR1
+ * BSS: audio support settings (1 items):
+   audio_support[0]=HR1
+ * result: rc=0, full_rate=0, chan_mode=SPEECH_V1
+
+Determining channel mode and rate:
+ * MS: speech codec list (1 items):
+   codec[0]->type=FR2
+ * MSC: channel type permitted speech (1 items):
+   perm_spch[0]=FR2
+ * BSS: audio support settings (1 items):
+   audio_support[0]=FR2
+ * result: rc=0, full_rate=1, chan_mode=SPEECH_EFR
+
+Determining channel mode and rate:
+ * MS: speech codec list (1 items):
+   codec[0]->type=FR3
+ * MSC: channel type permitted speech (1 items):
+   perm_spch[0]=FR3
+ * BSS: audio support settings (1 items):
+   audio_support[0]=FR3
+ * result: rc=0, full_rate=1, chan_mode=SPEECH_AMR
+
+Determining channel mode and rate:
+ * MS: speech codec list (1 items):
+   codec[0]->type=HR3
+ * MSC: channel type permitted speech (1 items):
+   perm_spch[0]=HR3
+ * BSS: audio support settings (1 items):
+   audio_support[0]=HR3
+ * result: rc=0, full_rate=0, chan_mode=SPEECH_AMR
+
+Determining channel mode and rate:
+ * MS: speech codec list (2 items):
+   codec[0]->type=FR1
+   codec[1]->type=HR1
+ * MSC: channel type permitted speech (2 items):
+   perm_spch[0]=FR1
+   perm_spch[1]=HR1
+ * BSS: audio support settings (2 items):
+   audio_support[0]=FR1
+   audio_support[1]=HR1
+ * result: rc=0, full_rate=1, chan_mode=SPEECH_V1
+
+Determining channel mode and rate:
+ * MS: speech codec list (3 items):
+   codec[0]->type=FR1
+   codec[1]->type=FR2
+   codec[2]->type=HR1
+ * MSC: channel type permitted speech (3 items):
+   perm_spch[0]=FR1
+   perm_spch[1]=FR2
+   perm_spch[2]=HR1
+ * BSS: audio support settings (3 items):
+   audio_support[0]=FR1
+   audio_support[1]=FR2
+   audio_support[2]=HR1
+ * result: rc=0, full_rate=1, chan_mode=SPEECH_V1
+
+Determining channel mode and rate:
+ * MS: speech codec list (3 items):
+   codec[0]->type=FR1
+   codec[1]->type=FR3
+   codec[2]->type=HR3
+ * MSC: channel type permitted speech (3 items):
+   perm_spch[0]=FR1
+   perm_spch[1]=FR3
+   perm_spch[2]=HR3
+ * BSS: audio support settings (3 items):
+   audio_support[0]=FR1
+   audio_support[1]=FR3
+   audio_support[2]=HR3
+ * result: rc=0, full_rate=1, chan_mode=SPEECH_V1
+
+Determining channel mode and rate:
+ * MS: speech codec list (5 items):
+   codec[0]->type=FR1
+   codec[1]->type=FR2
+   codec[2]->type=FR3
+   codec[3]->type=HR1
+   codec[4]->type=HR3
+ * MSC: channel type permitted speech (5 items):
+   perm_spch[0]=FR1
+   perm_spch[1]=FR2
+   perm_spch[2]=FR3
+   perm_spch[3]=HR1
+   perm_spch[4]=HR3
+ * BSS: audio support settings (5 items):
+   audio_support[0]=FR1
+   audio_support[1]=FR2
+   audio_support[2]=FR3
+   audio_support[3]=HR1
+   audio_support[4]=HR3
+ * result: rc=0, full_rate=1, chan_mode=SPEECH_V1
+
+============== test_ms ==============
+
+Determining channel mode and rate:
+ * MS: speech codec list (1 items):
+   codec[0]->type=FR1
+ * MSC: channel type permitted speech (5 items):
+   perm_spch[0]=FR1
+   perm_spch[1]=FR2
+   perm_spch[2]=FR3
+   perm_spch[3]=HR1
+   perm_spch[4]=HR3
+ * BSS: audio support settings (5 items):
+   audio_support[0]=FR1
+   audio_support[1]=FR2
+   audio_support[2]=FR3
+   audio_support[3]=HR1
+   audio_support[4]=HR3
+ * result: rc=0, full_rate=1, chan_mode=SPEECH_V1
+
+Determining channel mode and rate:
+ * MS: speech codec list (1 items):
+   codec[0]->type=HR1
+ * MSC: channel type permitted speech (5 items):
+   perm_spch[0]=FR1
+   perm_spch[1]=FR2
+   perm_spch[2]=FR3
+   perm_spch[3]=HR1
+   perm_spch[4]=HR3
+ * BSS: audio support settings (5 items):
+   audio_support[0]=FR1
+   audio_support[1]=FR2
+   audio_support[2]=FR3
+   audio_support[3]=HR1
+   audio_support[4]=HR3
+ * result: rc=0, full_rate=0, chan_mode=SPEECH_V1
+
+Determining channel mode and rate:
+ * MS: speech codec list (1 items):
+   codec[0]->type=FR2
+ * MSC: channel type permitted speech (5 items):
+   perm_spch[0]=FR1
+   perm_spch[1]=FR2
+   perm_spch[2]=FR3
+   perm_spch[3]=HR1
+   perm_spch[4]=HR3
+ * BSS: audio support settings (5 items):
+   audio_support[0]=FR1
+   audio_support[1]=FR2
+   audio_support[2]=FR3
+   audio_support[3]=HR1
+   audio_support[4]=HR3
+ * result: rc=0, full_rate=1, chan_mode=SPEECH_EFR
+
+Determining channel mode and rate:
+ * MS: speech codec list (1 items):
+   codec[0]->type=FR3
+ * MSC: channel type permitted speech (5 items):
+   perm_spch[0]=FR1
+   perm_spch[1]=FR2
+   perm_spch[2]=FR3
+   perm_spch[3]=HR1
+   perm_spch[4]=HR3
+ * BSS: audio support settings (5 items):
+   audio_support[0]=FR1
+   audio_support[1]=FR2
+   audio_support[2]=FR3
+   audio_support[3]=HR1
+   audio_support[4]=HR3
+ * result: rc=0, full_rate=1, chan_mode=SPEECH_AMR
+
+Determining channel mode and rate:
+ * MS: speech codec list (1 items):
+   codec[0]->type=HR3
+ * MSC: channel type permitted speech (5 items):
+   perm_spch[0]=FR1
+   perm_spch[1]=FR2
+   perm_spch[2]=FR3
+   perm_spch[3]=HR1
+   perm_spch[4]=HR3
+ * BSS: audio support settings (5 items):
+   audio_support[0]=FR1
+   audio_support[1]=FR2
+   audio_support[2]=FR3
+   audio_support[3]=HR1
+   audio_support[4]=HR3
+ * result: rc=0, full_rate=0, chan_mode=SPEECH_AMR
+
+Determining channel mode and rate:
+ * MS: speech codec list (2 items):
+   codec[0]->type=FR1
+   codec[1]->type=HR1
+ * MSC: channel type permitted speech (5 items):
+   perm_spch[0]=FR1
+   perm_spch[1]=FR2
+   perm_spch[2]=FR3
+   perm_spch[3]=HR1
+   perm_spch[4]=HR3
+ * BSS: audio support settings (5 items):
+   audio_support[0]=FR1
+   audio_support[1]=FR2
+   audio_support[2]=FR3
+   audio_support[3]=HR1
+   audio_support[4]=HR3
+ * result: rc=0, full_rate=1, chan_mode=SPEECH_V1
+
+Determining channel mode and rate:
+ * MS: speech codec list (3 items):
+   codec[0]->type=FR1
+   codec[1]->type=FR2
+   codec[2]->type=HR1
+ * MSC: channel type permitted speech (5 items):
+   perm_spch[0]=FR1
+   perm_spch[1]=FR2
+   perm_spch[2]=FR3
+   perm_spch[3]=HR1
+   perm_spch[4]=HR3
+ * BSS: audio support settings (5 items):
+   audio_support[0]=FR1
+   audio_support[1]=FR2
+   audio_support[2]=FR3
+   audio_support[3]=HR1
+   audio_support[4]=HR3
+ * result: rc=0, full_rate=1, chan_mode=SPEECH_V1
+
+Determining channel mode and rate:
+ * MS: speech codec list (3 items):
+   codec[0]->type=FR1
+   codec[1]->type=FR3
+   codec[2]->type=HR3
+ * MSC: channel type permitted speech (5 items):
+   perm_spch[0]=FR1
+   perm_spch[1]=FR2
+   perm_spch[2]=FR3
+   perm_spch[3]=HR1
+   perm_spch[4]=HR3
+ * BSS: audio support settings (5 items):
+   audio_support[0]=FR1
+   audio_support[1]=FR2
+   audio_support[2]=FR3
+   audio_support[3]=HR1
+   audio_support[4]=HR3
+ * result: rc=0, full_rate=1, chan_mode=SPEECH_V1
+
+Determining channel mode and rate:
+ * MS: speech codec list (5 items):
+   codec[0]->type=FR1
+   codec[1]->type=FR2
+   codec[2]->type=FR3
+   codec[3]->type=HR1
+   codec[4]->type=HR3
+ * MSC: channel type permitted speech (5 items):
+   perm_spch[0]=FR1
+   perm_spch[1]=FR2
+   perm_spch[2]=FR3
+   perm_spch[3]=HR1
+   perm_spch[4]=HR3
+ * BSS: audio support settings (5 items):
+   audio_support[0]=FR1
+   audio_support[1]=FR2
+   audio_support[2]=FR3
+   audio_support[3]=HR1
+   audio_support[4]=HR3
+ * result: rc=0, full_rate=1, chan_mode=SPEECH_V1
+
+============== test_ct ==============
+
+Determining channel mode and rate:
+ * MS: speech codec list (5 items):
+   codec[0]->type=FR1
+   codec[1]->type=FR2
+   codec[2]->type=FR3
+   codec[3]->type=HR1
+   codec[4]->type=HR3
+ * MSC: channel type permitted speech (1 items):
+   perm_spch[0]=FR1
+ * BSS: audio support settings (5 items):
+   audio_support[0]=FR1
+   audio_support[1]=FR2
+   audio_support[2]=FR3
+   audio_support[3]=HR1
+   audio_support[4]=HR3
+ * result: rc=0, full_rate=1, chan_mode=SPEECH_V1
+
+Determining channel mode and rate:
+ * MS: speech codec list (5 items):
+   codec[0]->type=FR1
+   codec[1]->type=FR2
+   codec[2]->type=FR3
+   codec[3]->type=HR1
+   codec[4]->type=HR3
+ * MSC: channel type permitted speech (1 items):
+   perm_spch[0]=HR1
+ * BSS: audio support settings (5 items):
+   audio_support[0]=FR1
+   audio_support[1]=FR2
+   audio_support[2]=FR3
+   audio_support[3]=HR1
+   audio_support[4]=HR3
+ * result: rc=0, full_rate=0, chan_mode=SPEECH_V1
+
+Determining channel mode and rate:
+ * MS: speech codec list (5 items):
+   codec[0]->type=FR1
+   codec[1]->type=FR2
+   codec[2]->type=FR3
+   codec[3]->type=HR1
+   codec[4]->type=HR3
+ * MSC: channel type permitted speech (1 items):
+   perm_spch[0]=FR2
+ * BSS: audio support settings (5 items):
+   audio_support[0]=FR1
+   audio_support[1]=FR2
+   audio_support[2]=FR3
+   audio_support[3]=HR1
+   audio_support[4]=HR3
+ * result: rc=0, full_rate=1, chan_mode=SPEECH_EFR
+
+Determining channel mode and rate:
+ * MS: speech codec list (5 items):
+   codec[0]->type=FR1
+   codec[1]->type=FR2
+   codec[2]->type=FR3
+   codec[3]->type=HR1
+   codec[4]->type=HR3
+ * MSC: channel type permitted speech (1 items):
+   perm_spch[0]=FR3
+ * BSS: audio support settings (5 items):
+   audio_support[0]=FR1
+   audio_support[1]=FR2
+   audio_support[2]=FR3
+   audio_support[3]=HR1
+   audio_support[4]=HR3
+ * result: rc=0, full_rate=1, chan_mode=SPEECH_AMR
+
+Determining channel mode and rate:
+ * MS: speech codec list (5 items):
+   codec[0]->type=FR1
+   codec[1]->type=FR2
+   codec[2]->type=FR3
+   codec[3]->type=HR1
+   codec[4]->type=HR3
+ * MSC: channel type permitted speech (1 items):
+   perm_spch[0]=HR3
+ * BSS: audio support settings (5 items):
+   audio_support[0]=FR1
+   audio_support[1]=FR2
+   audio_support[2]=FR3
+   audio_support[3]=HR1
+   audio_support[4]=HR3
+ * result: rc=0, full_rate=0, chan_mode=SPEECH_AMR
+
+Determining channel mode and rate:
+ * MS: speech codec list (5 items):
+   codec[0]->type=FR1
+   codec[1]->type=FR2
+   codec[2]->type=FR3
+   codec[3]->type=HR1
+   codec[4]->type=HR3
+ * MSC: channel type permitted speech (2 items):
+   perm_spch[0]=FR1
+   perm_spch[1]=HR1
+ * BSS: audio support settings (5 items):
+   audio_support[0]=FR1
+   audio_support[1]=FR2
+   audio_support[2]=FR3
+   audio_support[3]=HR1
+   audio_support[4]=HR3
+ * result: rc=0, full_rate=1, chan_mode=SPEECH_V1
+
+Determining channel mode and rate:
+ * MS: speech codec list (5 items):
+   codec[0]->type=FR1
+   codec[1]->type=FR2
+   codec[2]->type=FR3
+   codec[3]->type=HR1
+   codec[4]->type=HR3
+ * MSC: channel type permitted speech (3 items):
+   perm_spch[0]=FR1
+   perm_spch[1]=FR2
+   perm_spch[2]=HR1
+ * BSS: audio support settings (5 items):
+   audio_support[0]=FR1
+   audio_support[1]=FR2
+   audio_support[2]=FR3
+   audio_support[3]=HR1
+   audio_support[4]=HR3
+ * result: rc=0, full_rate=1, chan_mode=SPEECH_V1
+
+Determining channel mode and rate:
+ * MS: speech codec list (5 items):
+   codec[0]->type=FR1
+   codec[1]->type=FR2
+   codec[2]->type=FR3
+   codec[3]->type=HR1
+   codec[4]->type=HR3
+ * MSC: channel type permitted speech (3 items):
+   perm_spch[0]=FR1
+   perm_spch[1]=FR3
+   perm_spch[2]=HR3
+ * BSS: audio support settings (5 items):
+   audio_support[0]=FR1
+   audio_support[1]=FR2
+   audio_support[2]=FR3
+   audio_support[3]=HR1
+   audio_support[4]=HR3
+ * result: rc=0, full_rate=1, chan_mode=SPEECH_V1
+
+Determining channel mode and rate:
+ * MS: speech codec list (5 items):
+   codec[0]->type=FR1
+   codec[1]->type=FR2
+   codec[2]->type=FR3
+   codec[3]->type=HR1
+   codec[4]->type=HR3
+ * MSC: channel type permitted speech (5 items):
+   perm_spch[0]=FR1
+   perm_spch[1]=FR2
+   perm_spch[2]=FR3
+   perm_spch[3]=HR1
+   perm_spch[4]=HR3
+ * BSS: audio support settings (5 items):
+   audio_support[0]=FR1
+   audio_support[1]=FR2
+   audio_support[2]=FR3
+   audio_support[3]=HR1
+   audio_support[4]=HR3
+ * result: rc=0, full_rate=1, chan_mode=SPEECH_V1
+
+============== test_msc ==============
+
+Determining channel mode and rate:
+ * MS: speech codec list (5 items):
+   codec[0]->type=FR1
+   codec[1]->type=FR2
+   codec[2]->type=FR3
+   codec[3]->type=HR1
+   codec[4]->type=HR3
+ * MSC: channel type permitted speech (5 items):
+   perm_spch[0]=FR1
+   perm_spch[1]=FR2
+   perm_spch[2]=FR3
+   perm_spch[3]=HR1
+   perm_spch[4]=HR3
+ * BSS: audio support settings (5 items):
+   audio_support[0]=FR1
+   audio_support[1]=FR2
+   audio_support[2]=FR3
+   audio_support[3]=HR1
+   audio_support[4]=HR3
+ * result: rc=0, full_rate=1, chan_mode=SPEECH_V1
+
+Determining channel mode and rate:
+ * MS: speech codec list (5 items):
+   codec[0]->type=FR1
+   codec[1]->type=FR2
+   codec[2]->type=FR3
+   codec[3]->type=HR1
+   codec[4]->type=HR3
+ * MSC: channel type permitted speech (5 items):
+   perm_spch[0]=FR1
+   perm_spch[1]=FR2
+   perm_spch[2]=FR3
+   perm_spch[3]=HR1
+   perm_spch[4]=HR3
+ * BSS: audio support settings (5 items):
+   audio_support[0]=FR1
+   audio_support[1]=FR2
+   audio_support[2]=FR3
+   audio_support[3]=HR1
+   audio_support[4]=HR3
+ * result: rc=0, full_rate=1, chan_mode=SPEECH_V1
+
+Determining channel mode and rate:
+ * MS: speech codec list (5 items):
+   codec[0]->type=FR1
+   codec[1]->type=FR2
+   codec[2]->type=FR3
+   codec[3]->type=HR1
+   codec[4]->type=HR3
+ * MSC: channel type permitted speech (5 items):
+   perm_spch[0]=FR1
+   perm_spch[1]=FR2
+   perm_spch[2]=FR3
+   perm_spch[3]=HR1
+   perm_spch[4]=HR3
+ * BSS: audio support settings (5 items):
+   audio_support[0]=FR1
+   audio_support[1]=FR2
+   audio_support[2]=FR3
+   audio_support[3]=HR1
+   audio_support[4]=HR3
+ * result: rc=0, full_rate=1, chan_mode=SPEECH_V1
+
+Determining channel mode and rate:
+ * MS: speech codec list (5 items):
+   codec[0]->type=FR1
+   codec[1]->type=FR2
+   codec[2]->type=FR3
+   codec[3]->type=HR1
+   codec[4]->type=HR3
+ * MSC: channel type permitted speech (5 items):
+   perm_spch[0]=FR1
+   perm_spch[1]=FR2
+   perm_spch[2]=FR3
+   perm_spch[3]=HR1
+   perm_spch[4]=HR3
+ * BSS: audio support settings (5 items):
+   audio_support[0]=FR1
+   audio_support[1]=FR2
+   audio_support[2]=FR3
+   audio_support[3]=HR1
+   audio_support[4]=HR3
+ * result: rc=0, full_rate=1, chan_mode=SPEECH_V1
+
+Determining channel mode and rate:
+ * MS: speech codec list (5 items):
+   codec[0]->type=FR1
+   codec[1]->type=FR2
+   codec[2]->type=FR3
+   codec[3]->type=HR1
+   codec[4]->type=HR3
+ * MSC: channel type permitted speech (5 items):
+   perm_spch[0]=FR1
+   perm_spch[1]=FR2
+   perm_spch[2]=FR3
+   perm_spch[3]=HR1
+   perm_spch[4]=HR3
+ * BSS: audio support settings (5 items):
+   audio_support[0]=FR1
+   audio_support[1]=FR2
+   audio_support[2]=FR3
+   audio_support[3]=HR1
+   audio_support[4]=HR3
+ * result: rc=0, full_rate=1, chan_mode=SPEECH_V1
+
+Determining channel mode and rate:
+ * MS: speech codec list (5 items):
+   codec[0]->type=FR1
+   codec[1]->type=FR2
+   codec[2]->type=FR3
+   codec[3]->type=HR1
+   codec[4]->type=HR3
+ * MSC: channel type permitted speech (5 items):
+   perm_spch[0]=FR1
+   perm_spch[1]=FR2
+   perm_spch[2]=FR3
+   perm_spch[3]=HR1
+   perm_spch[4]=HR3
+ * BSS: audio support settings (5 items):
+   audio_support[0]=FR1
+   audio_support[1]=FR2
+   audio_support[2]=FR3
+   audio_support[3]=HR1
+   audio_support[4]=HR3
+ * result: rc=0, full_rate=1, chan_mode=SPEECH_V1
+
+Determining channel mode and rate:
+ * MS: speech codec list (5 items):
+   codec[0]->type=FR1
+   codec[1]->type=FR2
+   codec[2]->type=FR3
+   codec[3]->type=HR1
+   codec[4]->type=HR3
+ * MSC: channel type permitted speech (5 items):
+   perm_spch[0]=FR1
+   perm_spch[1]=FR2
+   perm_spch[2]=FR3
+   perm_spch[3]=HR1
+   perm_spch[4]=HR3
+ * BSS: audio support settings (5 items):
+   audio_support[0]=FR1
+   audio_support[1]=FR2
+   audio_support[2]=FR3
+   audio_support[3]=HR1
+   audio_support[4]=HR3
+ * result: rc=0, full_rate=1, chan_mode=SPEECH_V1
+
+Determining channel mode and rate:
+ * MS: speech codec list (5 items):
+   codec[0]->type=FR1
+   codec[1]->type=FR2
+   codec[2]->type=FR3
+   codec[3]->type=HR1
+   codec[4]->type=HR3
+ * MSC: channel type permitted speech (5 items):
+   perm_spch[0]=FR1
+   perm_spch[1]=FR2
+   perm_spch[2]=FR3
+   perm_spch[3]=HR1
+   perm_spch[4]=HR3
+ * BSS: audio support settings (5 items):
+   audio_support[0]=FR1
+   audio_support[1]=FR2
+   audio_support[2]=FR3
+   audio_support[3]=HR1
+   audio_support[4]=HR3
+ * result: rc=0, full_rate=1, chan_mode=SPEECH_V1
+
+Determining channel mode and rate:
+ * MS: speech codec list (5 items):
+   codec[0]->type=FR1
+   codec[1]->type=FR2
+   codec[2]->type=FR3
+   codec[3]->type=HR1
+   codec[4]->type=HR3
+ * MSC: channel type permitted speech (5 items):
+   perm_spch[0]=FR1
+   perm_spch[1]=FR2
+   perm_spch[2]=FR3
+   perm_spch[3]=HR1
+   perm_spch[4]=HR3
+ * BSS: audio support settings (5 items):
+   audio_support[0]=FR1
+   audio_support[1]=FR2
+   audio_support[2]=FR3
+   audio_support[3]=HR1
+   audio_support[4]=HR3
+ * result: rc=0, full_rate=1, chan_mode=SPEECH_V1
+
+============== test_selected_working ==============
+
+Determining channel mode and rate:
+ * MS: speech codec list (3 items):
+   codec[0]->type=FR1
+   codec[1]->type=FR2
+   codec[2]->type=HR1
+ * MSC: channel type permitted speech (2 items):
+   perm_spch[0]=FR1
+   perm_spch[1]=HR1
+ * BSS: audio support settings (3 items):
+   audio_support[0]=FR1
+   audio_support[1]=FR3
+   audio_support[2]=HR3
+ * result: rc=0, full_rate=1, chan_mode=SPEECH_V1
+
+Determining channel mode and rate:
+ * MS: speech codec list (1 items):
+   codec[0]->type=FR1
+ * MSC: channel type permitted speech (2 items):
+   perm_spch[0]=FR1
+   perm_spch[1]=HR1
+ * BSS: audio support settings (3 items):
+   audio_support[0]=FR1
+   audio_support[1]=FR3
+   audio_support[2]=HR3
+ * result: rc=0, full_rate=1, chan_mode=SPEECH_V1
+
+Determining channel mode and rate:
+ * MS: speech codec list (1 items):
+   codec[0]->type=HR1
+ * MSC: channel type permitted speech (2 items):
+   perm_spch[0]=FR1
+   perm_spch[1]=HR1
+ * BSS: audio support settings (3 items):
+   audio_support[0]=FR1
+   audio_support[1]=FR2
+   audio_support[2]=HR1
+ * result: rc=0, full_rate=0, chan_mode=SPEECH_V1
+
+============== test_selected_non_working ==============
+
+Determining channel mode and rate:
+ * MS: speech codec list (1 items):
+   codec[0]->type=HR1
+ * MSC: channel type permitted speech (2 items):
+   perm_spch[0]=FR1
+   perm_spch[1]=HR1
+ * BSS: audio support settings (3 items):
+   audio_support[0]=FR1
+   audio_support[1]=FR3
+   audio_support[2]=HR3
+ * result: rc=-1, full_rate=-1, chan_mode=SIGNALLING
+
+Determining channel mode and rate:
+ * MS: speech codec list (1 items):
+   codec[0]->type=HR1
+ * MSC: channel type permitted speech (2 items):
+   perm_spch[0]=FR1
+   perm_spch[1]=HR1
+ * BSS: audio support settings (3 items):
+   audio_support[0]=FR1
+   audio_support[1]=FR3
+   audio_support[2]=HR3
+ * result: rc=-1, full_rate=-1, chan_mode=SIGNALLING
+
+Determining channel mode and rate:
+ * MS: speech codec list (1 items):
+   codec[0]->type=HR1
+ * MSC: channel type permitted speech (1 items):
+   perm_spch[0]=HR3
+ * BSS: audio support settings (3 items):
+   audio_support[0]=FR1
+   audio_support[1]=FR2
+   audio_support[2]=HR1
+ * result: rc=-1, full_rate=-1, chan_mode=SIGNALLING
+
+Testing execution completed.

@@ -176,6 +176,7 @@ AC_OUTPUT(
     tests/atlocal
     tests/gsm0408/Makefile
     tests/bsc/Makefile
+    tests/codec_pref/Makefile
     tests/abis/Makefile
     tests/subscr/Makefile
     tests/nanobts_omlattr/Makefile
