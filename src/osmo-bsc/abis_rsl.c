@@ -1389,6 +1389,22 @@ static int rsl_rx_chan_rqd(struct msgb *msg)
 			gsm_lchant_name(lctype));
 		lchan = lchan_select_by_type(bts, lctype);
 	}
+	if (!lchan && lctype == GSM_LCHAN_SDCCH) {
+		LOGP(DRSL, LOGL_NOTICE, "(bts=%d) CHAN RQD: no resources for %s "
+			"0x%x, retrying with %s\n",
+			msg->lchan->ts->trx->bts->nr,
+			gsm_lchant_name(GSM_LCHAN_SDCCH), rqd_ref->ra,
+			gsm_lchant_name(GSM_LCHAN_TCH_H));
+		lchan = lchan_select_by_type(bts, GSM_LCHAN_TCH_H);
+	}
+	if (!lchan && lctype == GSM_LCHAN_SDCCH) {
+		LOGP(DRSL, LOGL_NOTICE, "(bts=%d) CHAN RQD: no resources for %s "
+			"0x%x, retrying with %s\n",
+			msg->lchan->ts->trx->bts->nr,
+			gsm_lchant_name(GSM_LCHAN_SDCCH), rqd_ref->ra,
+			gsm_lchant_name(GSM_LCHAN_TCH_F));
+		lchan = lchan_select_by_type(bts, GSM_LCHAN_TCH_F);
+	}
 	if (!lchan) {
 		LOGP(DRSL, LOGL_NOTICE, "(bts=%d) CHAN RQD: no resources for %s 0x%x\n",
 		     msg->lchan->ts->trx->bts->nr, gsm_lchant_name(lctype), rqd_ref->ra);
