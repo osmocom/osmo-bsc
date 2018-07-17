@@ -4032,8 +4032,10 @@ DEFUN_HIDDEN(cfg_ts_pchan_compat,
 	int pchanc;
 
 	pchanc = gsm_pchan_parse(argv[0]);
-	if (pchanc < 0)
-		return CMD_WARNING;
+	if (pchanc < 0) {
+		vty_out(vty, "Unknown physical channel name '%s'%s", argv[0], VTY_NEWLINE);
+		return CMD_ERR_NO_MATCH;
+	}
 
 	ts->pchan = pchanc;
 
