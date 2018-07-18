@@ -539,6 +539,9 @@ void lchan_free(struct gsm_lchan *lchan)
 
 	/* FIXME: ts_free() the timeslot, if we're the last logical
 	 * channel using it */
+
+	/* reset RTP voice connection related data */
+	memset(&lchan->abis_ip, 0, sizeof(lchan->abis_ip));
 }
 
 /*
