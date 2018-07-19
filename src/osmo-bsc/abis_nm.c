@@ -1214,11 +1214,11 @@ static int parse_sdp_header(struct abis_nm_sw *sw)
 
 	/* go back to the start as we checked the whole filesize.. */
 	lseek(sw->fd, 0l, SEEK_SET);
-	LOGP(DNM, LOGL_NOTICE, "The ipaccess SDP header is not fully understood.\n"
-			       "There might be checksums in the file that are not\n"
-			       "verified and incomplete firmware might be flashed.\n"
-			       "There is absolutely no WARRANTY that flashing will\n"
-			       "work.\n");
+	LOGP(DNM, LOGL_NOTICE, "The ipaccess SDP header is not fully understood."
+			       " There might be checksums in the file that are not"
+			       " verified and incomplete firmware might be flashed."
+			       " There is absolutely no WARRANTY that flashing will"
+			       " work.\n");
 	return 0;
 }
 

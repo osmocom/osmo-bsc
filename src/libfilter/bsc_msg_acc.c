@@ -96,7 +96,7 @@ struct bsc_msg_acc_lst *bsc_msg_acc_lst_get(void *ctx, struct llist_head *head, 
 
 	lst = talloc_zero(ctx, struct bsc_msg_acc_lst);
 	if (!lst) {
-		LOGP(DNAT, LOGL_ERROR, "Failed to allocate access list");
+		LOGP(DNAT, LOGL_ERROR, "Failed to allocate access list\n");
 		return NULL;
 	}
 

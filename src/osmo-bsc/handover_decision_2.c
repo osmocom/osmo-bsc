@@ -1680,7 +1680,7 @@ void on_ho_failure(struct bsc_handover *ho)
 	struct gsm_subscriber_connection *conn = ho->old_lchan->conn;
 
 	if (!conn) {
-		LOGPHO(ho, LOGL_ERROR, "HO failure, but no conn");
+		LOGPHO(ho, LOGL_ERROR, "HO failure, but no conn\n");
 		return;
 	}
 

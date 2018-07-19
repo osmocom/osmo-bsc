@@ -556,7 +556,7 @@ static int bitvec2freq_list(uint8_t *chan_list, struct bitvec *bv,
 		return 0;
 
 	LOGP(DRR, LOGL_ERROR, "min_arfcn=%u, max_arfcn=%u, arfcns=%d "
-		"can not generate ARFCN list", min, max, arfcns);
+		"can not generate ARFCN list\n", min, max, arfcns);
 	return -EINVAL;
 }
 

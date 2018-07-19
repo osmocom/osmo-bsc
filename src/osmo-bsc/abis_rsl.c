@@ -2351,7 +2351,7 @@ static uint8_t ipa_rtp_pt_for_lchan(struct gsm_lchan *lchan)
 		break;
 	}
 	LOGP(DRSL, LOGL_ERROR, "Cannot determine ip.access rtp payload type for "
-		"tch_mode == 0x%02x\n & lchan_type == %d",
+		"tch_mode == 0x%02x & lchan_type == %d\n",
 		lchan->tch_mode, lchan->type);
 	return 0;
 }
