@@ -122,17 +122,6 @@ int bsc_handover_start(enum hodec_id from_hodec_id, struct gsm_lchan *old_lchan,
 	llist_add(&ho->list, &bsc_handovers);
 
 	conn->ho = ho;
-
-	DEBUGP(DHO, "(BTS %u trx %u ts %u lchan %u %s)->(BTS %u lchan %s) Initiating %s...\n",
-	       old_lchan->ts->trx->bts->nr,
-	       old_lchan->ts->trx->nr,
-	       old_lchan->ts->nr,
-	       old_lchan->nr,
-	       gsm_pchan_name(old_lchan->ts->pchan),
-	       new_bts->nr,
-	       gsm_lchant_name(new_lchan_type),
-	       do_assignment ? "Assignment" : "Handover");
-
 	rc = osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_HO_START, NULL);
 
 	if (rc < 0) {

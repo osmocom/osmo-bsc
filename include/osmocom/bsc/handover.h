@@ -12,13 +12,14 @@ struct gsm_subscriber_connection;
 struct gsm_meas_rep mr;
 
 #define LOGPHOLCHANTOLCHAN(old_lchan, new_lchan, level, fmt, args...) \
-	LOGP(DHODEC, level, "(BTS %u trx %u arfcn %u ts %u lchan %u %s)->(BTS %u trx %u arfcn %u ts %u lchan %u %s) (subscr %s) " fmt, \
+	LOGP(DHODEC, level, "(BTS %u trx %u arfcn %u ts %u lchan %u %s %s)->(BTS %u trx %u arfcn %u ts %u lchan %u %s) (subscr %s) " fmt, \
 	     old_lchan->ts->trx->bts->nr, \
 	     old_lchan->ts->trx->nr, \
 	     old_lchan->ts->trx->arfcn, \
 	     old_lchan->ts->nr, \
 	     old_lchan->nr, \
-	     gsm_pchan_name(old_lchan->ts->pchan), \
+	     gsm_lchant_name(old_lchan->type), \
+	     gsm48_chan_mode_name(old_lchan->tch_mode), \
 	     new_lchan->ts->trx->bts->nr, \
 	     new_lchan->ts->trx->nr, \
 	     new_lchan->ts->trx->arfcn, \

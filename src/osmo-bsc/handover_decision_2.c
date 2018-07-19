@@ -40,22 +40,24 @@
 	LOGP(DHODEC, level, "(BTS %u) " fmt, bts->nr, ## args)
 
 #define LOGPHOLCHAN(lchan, level, fmt, args...) \
-	LOGP(DHODEC, level, "(lchan %u.%u%u%u %s) (subscr %s) " fmt, \
+	LOGP(DHODEC, level, "(lchan %u.%u%u%u %s %s) (subscr %s) " fmt, \
 	     lchan->ts->trx->bts->nr, \
 	     lchan->ts->trx->nr, \
 	     lchan->ts->nr, \
 	     lchan->nr, \
-	     gsm_pchan_name(lchan->ts->pchan), \
+	     gsm_lchant_name(lchan->type), \
+	     gsm48_chan_mode_name(lchan->tch_mode), \
 	     bsc_subscr_name(lchan->conn? lchan->conn->bsub : NULL), \
 	     ## args)
 
 #define LOGPHOLCHANTOBTS(lchan, new_bts, level, fmt, args...) \
-	LOGP(DHODEC, level, "(lchan %u.%u%u%u %s)->(BTS %u) (subscr %s) " fmt, \
+	LOGP(DHODEC, level, "(lchan %u.%u%u%u %s %s)->(BTS %u) (subscr %s) " fmt, \
 	     lchan->ts->trx->bts->nr, \
 	     lchan->ts->trx->nr, \
 	     lchan->ts->nr, \
 	     lchan->nr, \
-	     gsm_pchan_name(lchan->ts->pchan), \
+	     gsm_lchant_name(lchan->type), \
+	     gsm48_chan_mode_name(lchan->tch_mode), \
 	     new_bts->nr, \
 	     bsc_subscr_name(lchan->conn? lchan->conn->bsub : NULL), \
 	     ## args)
@@ -257,13 +259,9 @@ static void process_meas_neigh(struct gsm_meas_rep *mr)
 		if (mrc) {
 			nmp->rxlev[idx] = mrc->rxlev;
 			nmp->last_seen_nr = mr->nr;
-			LOGPHOLCHAN(mr->lchan, LOGL_DEBUG, "neigh %u rxlev=%d last_seen_nr=%u\n",
-				    nmp->arfcn, mrc->rxlev, nmp->last_seen_nr);
 			mrc->flags |= MRC_F_PROCESSED;
 		} else {
 			nmp->rxlev[idx] = 0;
-			LOGPHOLCHAN(mr->lchan, LOGL_DEBUG, "neigh %u not in report (last_seen_nr=%u)\n",
-				    nmp->arfcn, nmp->last_seen_nr);
 		}
 		nmp->rxlev_cnt++;
 	}
@@ -308,11 +306,8 @@ static bool codec_type_is_supported(struct gsm_subscriber_connection *conn,
 	}
 
 	for (i = 0; i < clist->len; i++) {
-		if (clist->codec[i].type == type) {
-			LOGPHOLCHAN(conn->lchan, LOGL_DEBUG, "%s supported\n",
-				    gsm0808_speech_codec_type_name(type));
+		if (clist->codec[i].type == type)
 			return true;
-		}
 	}
 	LOGPHOLCHAN(conn->lchan, LOGL_DEBUG, "Codec not supported by MS or not allowed by MSC: %s\n",
 		    gsm0808_speech_codec_type_name(type));
@@ -402,10 +397,6 @@ static uint8_t check_requirements(struct gsm_lchan *lchan, struct gsm_bts *bts, 
 		return 0;
 	}
 
-	LOGPHOLCHANTOBTS(lchan, bts, LOGL_DEBUG, "tch_mode='%s' type='%s'\n",
-			 get_value_string(gsm48_chan_mode_names, lchan->tch_mode),
-			 gsm_lchant_name(lchan->type));
-
 	/* compatibility check for codecs.
 	 * if so, the candidates for full rate and half rate are selected */
 	switch (lchan->tch_mode) {
@@ -413,9 +404,6 @@ static uint8_t check_requirements(struct gsm_lchan *lchan, struct gsm_bts *bts, 
 		switch (lchan->type) {
 		case GSM_LCHAN_TCH_F: /* mandatory */
 			requirement |= REQUIREMENT_A_TCHF;
-			LOGPHOLCHANTOBTS(lchan, bts, LOGL_DEBUG, "tch_mode='%s' type='%s' supported\n",
-					 get_value_string(gsm48_chan_mode_names, lchan->tch_mode),
-					 gsm_lchant_name(lchan->type));
 			break;
 		case GSM_LCHAN_TCH_H:
 			if (!bts->codec.hr) {
@@ -485,13 +473,9 @@ static uint8_t check_requirements(struct gsm_lchan *lchan, struct gsm_bts *bts, 
 	if (bts == current_bts) {
 		switch (lchan->type) {
 		case GSM_LCHAN_TCH_F:
-			LOGPHOLCHANTOBTS(lchan, bts, LOGL_DEBUG,
-					 "removing TCH/F, already on TCH/F in this cell\n");
 			requirement &= ~(REQUIREMENT_A_TCHF);
 			break;
 		case GSM_LCHAN_TCH_H:
-			LOGPHOLCHANTOBTS(lchan, bts, LOGL_DEBUG,
-					 "removing TCH/H, already on TCH/H in this cell\n");
 			requirement &= ~(REQUIREMENT_A_TCHH);
 			break;
 		default:
@@ -558,24 +542,12 @@ static uint8_t check_requirements(struct gsm_lchan *lchan, struct gsm_bts *bts, 
 	/* the minimum free timeslots that are defined for this cell must
 	 * be maintained _after_ handover/assignment */
 	if (requirement & REQUIREMENT_A_TCHF) {
-		if (tchf_count - 1 >= ho_get_hodec2_tchf_min_slots(bts->ho)) {
-			LOGPHOLCHANTOBTS(lchan, bts, LOGL_DEBUG,
-					 "TCH/F would not be congested after HO\n");
+		if (tchf_count - 1 >= ho_get_hodec2_tchf_min_slots(bts->ho))
 			requirement |= REQUIREMENT_B_TCHF;
-		} else {
-			LOGPHOLCHANTOBTS(lchan, bts, LOGL_DEBUG,
-					 "TCH/F would be congested after HO\n");
-		}
 	}
 	if (requirement & REQUIREMENT_A_TCHH) {
-		if (tchh_count - 1 >= ho_get_hodec2_tchh_min_slots(bts->ho)) {
-			LOGPHOLCHANTOBTS(lchan, bts, LOGL_DEBUG,
-					 "TCH/H would not be congested after HO\n");
+		if (tchh_count - 1 >= ho_get_hodec2_tchh_min_slots(bts->ho))
 			requirement |= REQUIREMENT_B_TCHH;
-		} else {
-			LOGPHOLCHANTOBTS(lchan, bts, LOGL_DEBUG,
-					 "TCH/H would be congested after HO\n");
-		}
 	}
 
 	/* Requirement C */
@@ -584,29 +556,15 @@ static uint8_t check_requirements(struct gsm_lchan *lchan, struct gsm_bts *bts, 
 	 * free slots of the current cell _after_ handover/assignment */
 	count = bts_count_free_ts(current_bts,
 				  (lchan->type == GSM_LCHAN_TCH_H) ?
-				  	GSM_PCHAN_TCH_H : GSM_PCHAN_TCH_F);
+				   GSM_PCHAN_TCH_H : GSM_PCHAN_TCH_F);
 	if (requirement & REQUIREMENT_A_TCHF) {
-		if (tchf_count - 1 >= count + 1) {
-			LOGPHOLCHANTOBTS(lchan, bts, LOGL_DEBUG,
-					 "TCH/F would be less congested in target than source cell after HO\n");
+		if (tchf_count - 1 >= count + 1)
 			requirement |= REQUIREMENT_C_TCHF;
-		} else {
-			LOGPHOLCHANTOBTS(lchan, bts, LOGL_DEBUG,
-					 "TCH/F would not be less congested in target than source cell after HO\n");
-		}
 	}
 	if (requirement & REQUIREMENT_A_TCHH) {
-		if (tchh_count - 1 >= count + 1) {
-			LOGPHOLCHANTOBTS(lchan, bts, LOGL_DEBUG,
-					 "TCH/H would be less congested in target than source cell after HO\n");
+		if (tchh_count - 1 >= count + 1)
 			requirement |= REQUIREMENT_C_TCHH;
-		} else {
-			LOGPHOLCHANTOBTS(lchan, bts, LOGL_DEBUG,
-					 "TCH/H would not be less congested in target than source cell after HO\n");
-		}
 	}
-
-	LOGPHOLCHANTOBTS(lchan, bts, LOGL_DEBUG, "requirements=0x%x\n", requirement);
 
 	/* return mask of fulfilled requirements */
 	return requirement;
@@ -618,11 +576,6 @@ static int trigger_handover_or_assignment(struct gsm_lchan *lchan, struct gsm_bt
 	struct gsm_bts *current_bts = lchan->ts->trx->bts;
 	int afs_bias = 0;
 	bool full_rate = false;
-
-	if (current_bts == new_bts)
-		LOGPHOLCHAN(lchan, LOGL_NOTICE, "Triggering Assignment\n");
-	else
-		LOGPHOLCHANTOBTS(lchan, new_bts, LOGL_NOTICE, "Triggering Handover\n");
 
 	/* afs_bias becomes > 0, if AFS is used and is improved */
 	if (lchan->tch_mode == GSM48_CMODE_SPEECH_AMR)
@@ -682,7 +635,7 @@ static int trigger_handover_or_assignment(struct gsm_lchan *lchan, struct gsm_bt
 			    full_rate ? "TCH/F" : "TCH/H",
 			    ho_reason_name(global_ho_reason));
 	else
-		LOGPHOLCHANTOBTS(lchan, new_bts, LOGL_NOTICE,
+		LOGPHOLCHANTOBTS(lchan, new_bts, LOGL_INFO,
 				 "Triggering handover to %s, due to %s\n",
 				 full_rate ? "TCH/F" : "TCH/H",
 				 ho_reason_name(global_ho_reason));
@@ -692,71 +645,36 @@ static int trigger_handover_or_assignment(struct gsm_lchan *lchan, struct gsm_bt
 }
 
 /* debug collected candidates */
-static inline void debug_candidate(struct ho_candidate *candidate,
-	int neighbor, int8_t rxlev, int tchf_count, int tchh_count)
+static inline void debug_candidate(struct gsm_lchan *lchan, struct ho_candidate *candidate,
+	struct gsm_bts *neighbor, int8_t rxlev, int tchf_count, int tchh_count)
 {
+#define HO_CANDIDATE_FMT(tchx, TCHX) "TCH/" #TCHX "={free %d (want %d), [%s%s%s]%s}"
+#define HO_CANDIDATE_ARGS(tchx, TCHX) \
+	     tch##tchx##_count, ho_get_hodec2_tch##tchx##_min_slots(candidate->bts->ho), \
+	     candidate->requirements & REQUIREMENT_A_TCH##TCHX ? "A" : \
+		(candidate->requirements & REQUIREMENT_TCH##TCHX##_MASK) == 0? "-" : "", \
+	     candidate->requirements & REQUIREMENT_B_TCH##TCHX ? "B" : "", \
+	     candidate->requirements & REQUIREMENT_B_TCH##TCHX ? "C" : "", \
+	     (candidate->requirements & REQUIREMENT_TCH##TCHX##_MASK) == 0 ? " not a candidate" : \
+	       ((candidate->requirements & REQUIREMENT_TCH##TCHX##_MASK) == REQUIREMENT_A_TCH##TCHX ? \
+	        " more congestion" : \
+		(candidate->requirements & REQUIREMENT_B_TCH##TCHX ? \
+		 " good" : \
+		  /* now has to be candidate->requirements & REQUIREMENT_C_TCHX != 0: */ \
+		  " less-or-equal congestion"))
+
 	if (neighbor)
-		LOGP(DHODEC, LOGL_DEBUG, " - neighbor BTS %d, RX level "
-			"%d -> %d\n", candidate->bts->nr, rxlev2dbm(rxlev),
-			rxlev2dbm(candidate->avg));
+		LOGPHOLCHANTOBTS(lchan, neighbor, LOGL_DEBUG,
+		     "RX level %d -> %d; "
+		     HO_CANDIDATE_FMT(f, F) "; " HO_CANDIDATE_FMT(h, H) "\n",
+		     rxlev2dbm(rxlev), rxlev2dbm(candidate->avg),
+		     HO_CANDIDATE_ARGS(f, F), HO_CANDIDATE_ARGS(h, H));
 	else
-		LOGP(DHODEC, LOGL_DEBUG, " - current BTS %d, RX level %d\n",
-			candidate->bts->nr, rxlev2dbm(candidate->avg));
-
-	LOGP(DHODEC, LOGL_DEBUG, "   o free TCH/F slots %d, minimum required "
-		"%d\n", tchf_count, ho_get_hodec2_tchf_min_slots(candidate->bts->ho));
-	LOGP(DHODEC, LOGL_DEBUG, "   o free TCH/H slots %d, minimum required "
-		"%d\n", tchh_count, ho_get_hodec2_tchh_min_slots(candidate->bts->ho));
-
-	if ((candidate->requirements & REQUIREMENT_TCHF_MASK))
-		LOGP(DHODEC, LOGL_DEBUG, "   o requirement ");
-	else
-		LOGP(DHODEC, LOGL_DEBUG, "   o no requirement ");
-	if ((candidate->requirements & REQUIREMENT_A_TCHF))
-		LOGPC(DHODEC, LOGL_DEBUG, "A ");
-	if ((candidate->requirements & REQUIREMENT_B_TCHF))
-		LOGPC(DHODEC, LOGL_DEBUG, "B ");
-	if ((candidate->requirements & REQUIREMENT_C_TCHF))
-		LOGPC(DHODEC, LOGL_DEBUG, "C ");
-	LOGPC(DHODEC, LOGL_DEBUG, "fulfilled for TCHF");
-	if (!(candidate->requirements & REQUIREMENT_TCHF_MASK)) /* nothing */
-		LOGPC(DHODEC, LOGL_DEBUG, " (no %s possible)\n",
-			(neighbor) ? "handover" : "assignment");
-	else if ((candidate->requirements & REQUIREMENT_TCHF_MASK)
-					== REQUIREMENT_A_TCHF) /* only A */
-		LOGPC(DHODEC, LOGL_DEBUG, " (more congestion after %s)\n",
-			(neighbor) ? "handover" : "assignment");
-	else if ((candidate->requirements & REQUIREMENT_B_TCHF)) /* B incl. */
-		LOGPC(DHODEC, LOGL_DEBUG, " (not congested after %s)\n",
-			(neighbor) ? "handover" : "assignment");
-	else /* so it must include C */
-		LOGPC(DHODEC, LOGL_DEBUG, " (less or equally congested after "
-			"%s)\n", (neighbor) ? "handover" : "assignment");
-
-	if ((candidate->requirements & REQUIREMENT_TCHH_MASK))
-		LOGP(DHODEC, LOGL_DEBUG, "   o requirement ");
-	else
-		LOGP(DHODEC, LOGL_DEBUG, "   o no requirement ");
-	if ((candidate->requirements & REQUIREMENT_A_TCHH))
-		LOGPC(DHODEC, LOGL_DEBUG, "A ");
-	if ((candidate->requirements & REQUIREMENT_B_TCHH))
-		LOGPC(DHODEC, LOGL_DEBUG, "B ");
-	if ((candidate->requirements & REQUIREMENT_C_TCHH))
-		LOGPC(DHODEC, LOGL_DEBUG, "C ");
-	LOGPC(DHODEC, LOGL_DEBUG, "fulfilled for TCHH");
-	if (!(candidate->requirements & REQUIREMENT_TCHH_MASK)) /* nothing */
-		LOGPC(DHODEC, LOGL_DEBUG, " (no %s possible)\n",
-			(neighbor) ? "handover" : "assignment");
-	else if ((candidate->requirements & REQUIREMENT_TCHH_MASK)
-					== REQUIREMENT_A_TCHH) /* only A */
-		LOGPC(DHODEC, LOGL_DEBUG, " (more congestion after %s)\n",
-			(neighbor) ? "handover" : "assignment");
-	else if ((candidate->requirements & REQUIREMENT_B_TCHH)) /* B incl. */
-		LOGPC(DHODEC, LOGL_DEBUG, " (not congested after %s)\n",
-			(neighbor) ? "handover" : "assignment");
-	else /* so it must include C */
-		LOGPC(DHODEC, LOGL_DEBUG, " (less or equally congested after "
-			"%s)\n", (neighbor) ? "handover" : "assignment");
+		LOGPHOLCHANTOBTS(lchan, lchan->ts->trx->bts, LOGL_DEBUG,
+		     "RX level %d; "
+		     HO_CANDIDATE_FMT(f, F) "; " HO_CANDIDATE_FMT(h, H) "\n",
+		     rxlev2dbm(candidate->avg),
+		     HO_CANDIDATE_ARGS(f, F), HO_CANDIDATE_ARGS(h, H));
 }
 
 /* add candidate for re-assignment within the current cell */
@@ -775,7 +693,7 @@ static void collect_assignment_candidate(struct gsm_lchan *lchan, struct ho_cand
 	c->bts = bts;
 	c->requirements = check_requirements(lchan, bts, tchf_count, tchh_count);
 	c->avg = av_rxlev;
-	debug_candidate(c, 0, 0, tchf_count, tchh_count);
+	debug_candidate(lchan, c, NULL, 0, tchf_count, tchh_count);
 	(*candidates)++;
 }
 
@@ -855,7 +773,7 @@ static void collect_handover_candidate(struct gsm_lchan *lchan, struct neigh_mea
 	c->requirements = check_requirements(lchan, neighbor_bts, tchf_count,
 					     tchh_count);
 	c->avg = avg;
-	debug_candidate(c, 1, av_rxlev, tchf_count, tchh_count);
+	debug_candidate(lchan, c, neighbor_bts, av_rxlev, tchf_count, tchh_count);
 	(*candidates)++;
 }
 
@@ -865,14 +783,12 @@ static void collect_candidates_for_lchan(struct gsm_lchan *lchan,
 {
 	struct gsm_bts *bts = lchan->ts->trx->bts;
 	int av_rxlev;
-	unsigned int candidates_was;
 	bool assignment;
 	bool handover;
 	int neighbors_count = 0;
 	unsigned int rxlev_avg_win = ho_get_hodec2_rxlev_avg_win(bts->ho);
 
 	OSMO_ASSERT(candidates);
-	candidates_was = *candidates;
 
 	/* caculate average rxlev for this cell over the window */
 	av_rxlev = get_meas_rep_avg(lchan,
@@ -893,11 +809,6 @@ static void collect_candidates_for_lchan(struct gsm_lchan *lchan,
 	assignment = ho_get_hodec2_as_active(bts->ho);
 	handover = ho_get_ho_active(bts->ho);
 
-	LOGPHOLCHAN(lchan, LOGL_DEBUG, "Collecting candidates for%s%s%s\n",
-		    assignment ? " Assignment" : "",
-		    assignment && handover ? " and" : "",
-		    handover ? " Handover" : "");
-
 	if (assignment)
 		collect_assignment_candidate(lchan, clist, candidates, av_rxlev);
 
@@ -909,9 +820,6 @@ static void collect_candidates_for_lchan(struct gsm_lchan *lchan,
 						   include_weaker_rxlev, av_rxlev, &neighbors_count);
 		}
 	}
-
-	LOGPHOLCHAN(lchan, LOGL_DEBUG, "adding %u candidates from %u neighbors, total %u\n",
-		    *candidates - candidates_was, neighbors_count, *candidates);
 }
 
 /*
@@ -1155,8 +1063,6 @@ static void on_measurement_report(struct gsm_meas_rep *mr)
 		return;
 	}
 
-	LOGPHOLCHAN(lchan, LOGL_DEBUG, "HODEC2: evaluating measurement report\n");
-
 	/* get average levels. if not enought measurements yet, value is < 0 */
 	av_rxlev = get_meas_rep_avg(lchan,
 				    ho_get_hodec2_full_tdma(bts->ho) ?
@@ -1170,34 +1076,29 @@ static void on_measurement_report(struct gsm_meas_rep *mr)
 		LOGPHOLCHAN(lchan, LOGL_INFO, "Skipping, Not enough recent measurements\n");
 		return;
 	}
-	if (av_rxlev >= 0) {
-		LOGPHOLCHAN(lchan, LOGL_DEBUG, "Measurement report: average RX level = %d\n",
-			    rxlev2dbm(av_rxlev));
-	}
-	if (av_rxqual >= 0) {
-		LOGPHOLCHAN(lchan, LOGL_DEBUG, "Measurement report: average RX quality = %d\n",
-			    av_rxqual);
-	}
 
 	/* improve levels in case of AFS, if defined */
 	if (lchan->type == GSM_LCHAN_TCH_F
 	 && lchan->tch_mode == GSM48_CMODE_SPEECH_AMR) {
+		int av_rxlev_was = av_rxlev;
+		int av_rxqual_was = av_rxqual;
 		int rxlev_bias = ho_get_hodec2_afs_bias_rxlev(bts->ho);
 		int rxqual_bias = ho_get_hodec2_afs_bias_rxqual(bts->ho);
-		if (av_rxlev >= 0 && rxlev_bias) {
-			int imp = av_rxlev + rxlev_bias;
-			LOGPHOLCHAN(lchan, LOGL_INFO, "Virtually improving RX level from %d to %d,"
-				    " due to AFS bias\n", rxlev2dbm(av_rxlev), rxlev2dbm(imp));
-			av_rxlev = imp;
-		}
-		if (av_rxqual >= 0 && rxqual_bias) {
-			int imp = av_rxqual - rxqual_bias;
-			if (imp < 0)
-				imp = 0;
-			LOGPHOLCHAN(lchan, LOGL_INFO, "Virtually improving RX quality from %d to %d,"
-				    " due to AFS bias\n", rxlev2dbm(av_rxqual), rxlev2dbm(imp));
-			av_rxqual = imp;
-		}
+		if (av_rxlev >= 0)
+			av_rxlev = av_rxlev + rxlev_bias;
+		if (av_rxqual >= 0)
+			av_rxqual = OSMO_MAX(0, av_rxqual - rxqual_bias);
+
+		LOGPHOLCHAN(lchan, LOGL_DEBUG,
+			    "Avg RX level = %d dBm, %+d dBm AFS bias = %d dBm;"
+			    " Avg RX quality = %d%s, %+d AFS bias = %d\n",
+			    rxlev2dbm(av_rxlev_was), rxlev_bias, rxlev2dbm(av_rxlev),
+			    OSMO_MAX(-1, av_rxqual_was), av_rxqual_was < 0 ? " (invalid)" : "",
+			    -rxqual_bias, OSMO_MAX(-1, av_rxqual));
+	} else {
+		LOGPHOLCHAN(lchan, LOGL_DEBUG, "Avg RX level = %d dBm; Avg RX quality = %d%s\n",
+			    rxlev2dbm(av_rxlev),
+			    OSMO_MAX(-1, av_rxqual), av_rxqual < 0 ? " (invalid)" : "");
 	}
 
 	/* Bad Quality */
@@ -1217,7 +1118,8 @@ static void on_measurement_report(struct gsm_meas_rep *mr)
 	/* Low Level */
 	if (av_rxlev >= 0 && rxlev2dbm(av_rxlev) < ho_get_hodec2_min_rxlev(bts->ho)) {
 		global_ho_reason = HO_REASON_LOW_RXLEVEL;
-		LOGPHOLCHAN(lchan, LOGL_INFO, "Attempting handover/assignment due to low rxlev\n");
+		LOGPHOLCHAN(lchan, LOGL_NOTICE, "RX level is TOO LOW: %d < %d\n",
+			    rxlev2dbm(av_rxlev), ho_get_hodec2_min_rxlev(bts->ho));
 		find_alternative_lchan(lchan, true);
 		return;
 	}
@@ -1226,7 +1128,8 @@ static void on_measurement_report(struct gsm_meas_rep *mr)
 	if (lchan->meas_rep_count > 0
 	    && lchan->rqd_ta > ho_get_hodec2_max_distance(bts->ho)) {
 		global_ho_reason = HO_REASON_MAX_DISTANCE;
-		LOGPHOLCHAN(lchan, LOGL_INFO, "Attempting handover due to high TA\n");
+		LOGPHOLCHAN(lchan, LOGL_NOTICE, "TA is TOO HIGH: %u > %d\n",
+			    lchan->rqd_ta, ho_get_hodec2_max_distance(bts->ho));
 		/* start penalty timer to prevent comming back too
 		 * early. it must be started before selecting a better cell,
 		 * so there is no assignment selected, due to running
@@ -1242,7 +1145,6 @@ static void on_measurement_report(struct gsm_meas_rep *mr)
 
 	/* try handover to a better cell */
 	if (av_rxlev >= 0 && (mr->nr % pwr_interval) == 0) {
-		LOGPHOLCHAN(lchan, LOGL_INFO, "Looking whether a cell has better RXLEV\n");
 		global_ho_reason = HO_REASON_BETTER_CELL;
 		find_alternative_lchan(lchan, false);
 	}
@@ -1439,12 +1341,10 @@ next_b1:
 	/* perform handover, if there is a candidate */
 	if (best_cand) {
 		any_ho = 1;
-		LOGPHOLCHAN(best_cand->lchan, LOGL_INFO,
-			    "Best candidate BTS %u (RX level %d) without congestion found\n",
-			    best_cand->bts->nr, rxlev2dbm(best_cand->avg));
-		if (is_improved)
-			LOGP(DHODEC, LOGL_INFO, "(is improved due to "
-				"AHS -> AFS)\n");
+		LOGPHOLCHAN(best_cand->lchan, LOGL_DEBUG,
+			    "Best candidate BTS %u (RX level %d%s) without congestion found\n",
+			    best_cand->bts->nr, rxlev2dbm(best_cand->avg),
+			    is_improved ? ", RX quality improved by AHS->AFS" : "");
 		trigger_handover_or_assignment(best_cand->lchan, best_cand->bts,
 			best_cand->requirements & REQUIREMENT_B_MASK);
 #if 0
@@ -1467,9 +1367,6 @@ next_b1:
 #endif
 		goto exit;
 	}
-
-	LOGPHOBTS(bts, LOGL_DEBUG, "Did not find a best candidate that fulfills requirement B"
-		  " (omitting change from AHS to AFS)\n");
 
 #if 0
 next_b2:
@@ -1504,8 +1401,6 @@ next_b2:
 				is_improved = 1;
 			} else
 				is_improved = 0;
-			LOGP(DHODEC, LOGL_DEBUG, "candidate %d: avg=%d worst_avg_db=%d\n", i, avg,
-			     worst_avg_db);
 			if (avg < worst_avg_db) {
 				worst_cand = &clist[i];
 				worst_avg_db = avg;
@@ -1517,11 +1412,9 @@ next_b2:
 	if (worst_cand) {
 		any_ho = 1;
 		LOGP(DHODEC, LOGL_INFO, "Worst candidate for assignment "
-			"(RX level %d) from TCH/H -> TCH/F without congestion "
-			"found\n", rxlev2dbm(worst_cand->avg));
-		if (is_improved)
-			LOGP(DHODEC, LOGL_INFO, "(is improved due to "
-				"AHS -> AFS)\n");
+			"(RX level %d%s) from TCH/H -> TCH/F without congestion "
+			"found\n", rxlev2dbm(worst_cand->avg),
+			is_improved ? ", RX quality improved by AHS->AFS" : "");
 		trigger_handover_or_assignment(worst_cand->lchan,
 			worst_cand->bts,
 			worst_cand->requirements & REQUIREMENT_B_MASK);
@@ -1542,9 +1435,6 @@ next_b2:
 #endif
 		goto exit;
 	}
-
-	LOGPHOBTS(bts, LOGL_DEBUG, "Did not find a worst candidate that fulfills requirement B,"
-		  " selecting candidates that change from AHS to AFS only\n");
 
 #if 0
 next_c1:
@@ -1584,7 +1474,6 @@ next_c1:
 			is_improved = 1;
 		} else
 			is_improved = 0;
-		LOGP(DHODEC, LOGL_DEBUG, "candidate %d: avg=%d best_avg_db=%d\n", i, avg, best_avg_db);
 		if (avg > best_avg_db) {
 			best_cand = &clist[i];
 			best_avg_db = avg;
@@ -1672,11 +1561,9 @@ next_c2:
 	if (worst_cand) {
 		any_ho = 1;
 		LOGP(DHODEC, LOGL_INFO, "Worst candidate for assignment "
-			"(RX level %d) from TCH/H -> TCH/F with less or equal "
-			"congestion found\n", rxlev2dbm(worst_cand->avg));
-		if (is_improved)
-			LOGP(DHODEC, LOGL_INFO, "(is improved due to "
-				"AHS -> AFS)\n");
+			"(RX level %d%s) from TCH/H -> TCH/F with less or equal "
+			"congestion found\n", rxlev2dbm(worst_cand->avg),
+			is_improved ? ", RX quality improved by AHS->AFS" : "");
 		trigger_handover_or_assignment(worst_cand->lchan,
 			worst_cand->bts,
 			worst_cand->requirements & REQUIREMENT_C_MASK);

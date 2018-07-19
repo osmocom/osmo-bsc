@@ -201,7 +201,10 @@ static int attempt_handover(struct gsm_meas_rep *mr)
 	struct gsm_bts *bts = mr->lchan->ts->trx->bts;
 	struct neigh_meas_proc *best_cell = NULL;
 	unsigned int best_better_db = 0;
-	int i, rc;
+	int i;
+
+	if (!ho_get_ho_active(bts->ho))
+		return 0;
 
 	/* find the best cell in this report that is at least RXLEV_HYST
 	 * better than the current serving cell */
@@ -231,28 +234,7 @@ static int attempt_handover(struct gsm_meas_rep *mr)
 	if (!best_cell)
 		return 0;
 
-	LOGP(DHODEC, LOGL_INFO, "%s: Cell on ARFCN %u is better: ",
-		gsm_ts_name(mr->lchan->ts), best_cell->arfcn);
-	if (!ho_get_ho_active(bts->ho)) {
-		LOGPC(DHODEC, LOGL_INFO, "Skipping, Handover disabled\n");
-		return 0;
-	}
-
-	rc = handover_to_arfcn_bsic(mr->lchan, best_cell->arfcn, best_cell->bsic);
-	switch (rc) {
-	case 0:
-		LOGPC(DHODEC, LOGL_INFO, "Starting handover: meas report number %d \n", mr->nr);
-		break;
-	case -ENOSPC:
-		LOGPC(DHODEC, LOGL_INFO, "No channel available\n");
-		break;
-	case -EBUSY:
-		LOGPC(DHODEC, LOGL_INFO, "Handover already active\n");
-		break;
-	default:
-		LOGPC(DHODEC, LOGL_ERROR, "Unknown error\n");
-	}
-	return rc;
+	return handover_to_arfcn_bsic(mr->lchan, best_cell->arfcn, best_cell->bsic);
 }
 
 /* process an already parsed measurement report and decide if we want to
