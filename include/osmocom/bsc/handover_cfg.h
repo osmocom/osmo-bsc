@@ -126,8 +126,8 @@ static inline const char *tdma2a(bool val)
 		"handover1 ", "power budget hysteresis", "<0-999>", atoi, "%u", as_is, \
 		HO_CFG_STR_HANDOVER1 \
 		HO_CFG_STR_POWER_BUDGET \
-		"How many dBm stronger must a neighbor be to become a HO candidate\n" \
-		"Neighbor's strength difference in dBm\n") \
+		"How many dB stronger must a neighbor be to become a HO candidate\n" \
+		"Neighbor's strength difference in dB\n") \
 	\
 	HO_CFG_ONE_MEMBER(unsigned int, hodec1_max_distance, 9999, \
 		"handover1 ", "maximum distance" , "<0-9999>", atoi, "%u", as_is, \
@@ -172,8 +172,8 @@ static inline const char *tdma2a(bool val)
 		"handover2 ", "power budget hysteresis", "<0-999>", atoi, "%u", as_is, \
 		HO_CFG_STR_HANDOVER2 \
 		HO_CFG_STR_POWER_BUDGET \
-		"How many dBm stronger must a neighbor be to become a HO candidate\n" \
-		"Neighbor's strength difference in dBm\n") \
+		"How many dB stronger must a neighbor be to become a HO candidate\n" \
+		"Neighbor's strength difference in dB\n") \
 	\
 	HO_CFG_ONE_MEMBER(unsigned int, hodec2_max_distance, 9999, \
 		"handover2 ", "maximum distance" , "<0-9999>", atoi, "%u", as_is, \
@@ -208,21 +208,21 @@ static inline const char *tdma2a(bool val)
 		HO_CFG_STR_HANDOVER2 \
 		HO_CFG_STR_MIN \
 		"How bad may RxQual of an MS become before triggering HO\n" \
-		"minimum RxQual (dBm)\n") \
+		"minimum RxQual\n") \
 	\
 	HO_CFG_ONE_MEMBER(int, hodec2_afs_bias_rxlev, 0, \
 		"handover2 ", "afs-bias rxlev", "<0-20>", atoi, "%d", as_is, \
 		HO_CFG_STR_HANDOVER2 \
 		HO_CFG_STR_AFS_BIAS \
 		"RxLev improvement bias for AFS over other codecs\n" \
-		"Virtual RxLev improvement (dBm)\n") \
+		"Virtual RxLev improvement (dB)\n") \
 	\
 	HO_CFG_ONE_MEMBER(int, hodec2_afs_bias_rxqual, 0, \
 		"handover2 ", "afs-bias rxqual", "<0-7>", atoi, "%d", as_is, \
 		HO_CFG_STR_HANDOVER2 \
 		HO_CFG_STR_AFS_BIAS \
 		"RxQual improvement bias for AFS over other codecs\n" \
-		"Virtual RxQual improvement (dBm)\n") \
+		"Virtual RxQual improvement\n") \
 	\
 	HO_CFG_ONE_MEMBER(int, hodec2_tchf_min_slots, 0, \
 		"handover2 ", "min-free-slots tch/f", "<0-9999>", atoi, "%d", as_is, \

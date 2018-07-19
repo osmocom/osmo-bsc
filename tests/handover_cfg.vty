@@ -264,14 +264,14 @@ OsmoBSC(config-net)# handover1 power ?
 
 OsmoBSC(config-net)# handover1 power budget ?
   interval    How often to check for a better cell (SACCH frames)
-  hysteresis  How many dBm stronger must a neighbor be to become a HO candidate
+  hysteresis  How many dB stronger must a neighbor be to become a HO candidate
 
 OsmoBSC(config-net)# handover1 power budget interval ?
   <1-99>   Check for stronger neighbor every N number of SACCH frames
   default  Use default (6), remove explicit setting on this node
 
 OsmoBSC(config-net)# handover1 power budget hysteresis ?
-  <0-999>  Neighbor's strength difference in dBm
+  <0-999>  Neighbor's strength difference in dB
   default  Use default (3), remove explicit setting on this node
 
 OsmoBSC(config-net)# handover1 maximum ?
@@ -312,14 +312,14 @@ OsmoBSC(config-net)# handover2 power ?
 
 OsmoBSC(config-net)# handover2 power budget ?
   interval    How often to check for a better cell (SACCH frames)
-  hysteresis  How many dBm stronger must a neighbor be to become a HO candidate
+  hysteresis  How many dB stronger must a neighbor be to become a HO candidate
 
 OsmoBSC(config-net)# handover2 power budget interval ?
   <1-99>   Check for stronger neighbor every N number of SACCH frames
   default  Use default (6), remove explicit setting on this node
 
 OsmoBSC(config-net)# handover2 power budget hysteresis ?
-  <0-999>  Neighbor's strength difference in dBm
+  <0-999>  Neighbor's strength difference in dB
   default  Use default (3), remove explicit setting on this node
 
 OsmoBSC(config-net)# handover2 maximum ?
@@ -348,7 +348,7 @@ OsmoBSC(config-net)# handover2 min rxlev ?
   default     Use default (-100), remove explicit setting on this node
 
 OsmoBSC(config-net)# handover2 min rxqual ?
-  <0-7>    minimum RxQual (dBm)
+  <0-7>    minimum RxQual
   default  Use default (5), remove explicit setting on this node
 
 OsmoBSC(config-net)# handover2 afs-bias ?
@@ -356,11 +356,11 @@ OsmoBSC(config-net)# handover2 afs-bias ?
   rxqual  RxQual improvement bias for AFS over other codecs
 
 OsmoBSC(config-net)# handover2 afs-bias rxlev ?
-  <0-20>   Virtual RxLev improvement (dBm)
+  <0-20>   Virtual RxLev improvement (dB)
   default  Use default (0), remove explicit setting on this node
 
 OsmoBSC(config-net)# handover2 afs-bias rxqual ?
-  <0-7>    Virtual RxQual improvement (dBm)
+  <0-7>    Virtual RxQual improvement
   default  Use default (0), remove explicit setting on this node
 
 OsmoBSC(config-net)# handover2 min-free-slots ?
@@ -482,14 +482,14 @@ OsmoBSC(config-net-bts)# handover1 power ?
 
 OsmoBSC(config-net-bts)# handover1 power budget ?
   interval    How often to check for a better cell (SACCH frames)
-  hysteresis  How many dBm stronger must a neighbor be to become a HO candidate
+  hysteresis  How many dB stronger must a neighbor be to become a HO candidate
 
 OsmoBSC(config-net-bts)# handover1 power budget interval ?
   <1-99>   Check for stronger neighbor every N number of SACCH frames
   default  Use default (6), remove explicit setting on this node
 
 OsmoBSC(config-net-bts)# handover1 power budget hysteresis ?
-  <0-999>  Neighbor's strength difference in dBm
+  <0-999>  Neighbor's strength difference in dB
   default  Use default (3), remove explicit setting on this node
 
 OsmoBSC(config-net-bts)# handover1 maximum ?
@@ -530,14 +530,14 @@ OsmoBSC(config-net-bts)# handover2 power ?
 
 OsmoBSC(config-net-bts)# handover2 power budget ?
   interval    How often to check for a better cell (SACCH frames)
-  hysteresis  How many dBm stronger must a neighbor be to become a HO candidate
+  hysteresis  How many dB stronger must a neighbor be to become a HO candidate
 
 OsmoBSC(config-net-bts)# handover2 power budget interval ?
   <1-99>   Check for stronger neighbor every N number of SACCH frames
   default  Use default (6), remove explicit setting on this node
 
 OsmoBSC(config-net-bts)# handover2 power budget hysteresis ?
-  <0-999>  Neighbor's strength difference in dBm
+  <0-999>  Neighbor's strength difference in dB
   default  Use default (3), remove explicit setting on this node
 
 OsmoBSC(config-net-bts)# handover2 maximum ?
@@ -566,7 +566,7 @@ OsmoBSC(config-net-bts)# handover2 min rxlev ?
   default     Use default (-100), remove explicit setting on this node
 
 OsmoBSC(config-net-bts)# handover2 min rxqual ?
-  <0-7>    minimum RxQual (dBm)
+  <0-7>    minimum RxQual
   default  Use default (5), remove explicit setting on this node
 
 OsmoBSC(config-net-bts)# handover2 afs-bias ?
@@ -574,11 +574,11 @@ OsmoBSC(config-net-bts)# handover2 afs-bias ?
   rxqual  RxQual improvement bias for AFS over other codecs
 
 OsmoBSC(config-net-bts)# handover2 afs-bias rxlev ?
-  <0-20>   Virtual RxLev improvement (dBm)
+  <0-20>   Virtual RxLev improvement (dB)
   default  Use default (0), remove explicit setting on this node
 
 OsmoBSC(config-net-bts)# handover2 afs-bias rxqual ?
-  <0-7>    Virtual RxQual improvement (dBm)
+  <0-7>    Virtual RxQual improvement
   default  Use default (0), remove explicit setting on this node
 
 OsmoBSC(config-net-bts)# handover2 min-free-slots ?
