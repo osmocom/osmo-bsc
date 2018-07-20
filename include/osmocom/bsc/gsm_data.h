@@ -525,6 +525,10 @@ struct gsm_lchan {
 	/* RSL error code, RSL_ERR_* */
 	uint8_t rsl_error_cause;
 
+	/* If a release event is being handled, ignore other ricocheting release events until that
+	 * release handling has concluded. */
+	bool in_release_handler;
+
 	/* The logical channel type */
 	enum gsm_chan_t type;
 	/* RSL channel mode */
