@@ -20,10 +20,6 @@ void bsc_cm_update(struct gsm_subscriber_connection *conn,
 int gsm0808_submit_dtap(struct gsm_subscriber_connection *conn, struct msgb *msg, uint8_t link_id,
 			bool allow_sacch);
 int gsm0808_assign_req(struct gsm_subscriber_connection *conn, int chan_mode, int full_rate);
-int gsm0808_cipher_mode(struct gsm_subscriber_connection *conn, int cipher,
-			const uint8_t *key, int len, int include_imeisv);
-int gsm0808_page(struct gsm_bts *bts, unsigned int page_group,
-		 unsigned int mi_len, uint8_t *mi, int chan_type);
 int gsm0808_clear(struct gsm_subscriber_connection *conn);
 
 bool msc_connected(struct gsm_subscriber_connection *conn);

@@ -96,7 +96,7 @@ static void page_ms(struct gsm_paging_request *request)
 
 	page_group = gsm0502_calc_paging_group(&bts->si_common.chan_desc,
 					       str_to_imsi(request->bsub->imsi));
-	gsm0808_page(bts, page_group, mi_len, mi, request->chan_type);
+	rsl_paging_cmd(bts, page_group, mi_len, mi, request->chan_type, false);
 	log_set_context(LOG_CTX_BSC_SUBSCR, NULL);
 }
 

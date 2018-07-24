@@ -35,7 +35,6 @@ osmo_bsc_SOURCES = \
 	acc_ramp.c \
 	arfcn_range_encode.c \
 	assignment_fsm.c \
-	bsc_api.c \
 	bsc_ctrl_commands.c \
 	bsc_ctrl_lookup.c \
 	bsc_init.c \

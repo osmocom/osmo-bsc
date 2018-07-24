@@ -43,7 +43,6 @@ handover_test_LDADD = \
 	$(top_builddir)/src/osmo-bsc/abis_rsl.o \
 	$(top_builddir)/src/osmo-bsc/arfcn_range_encode.o \
 	$(top_builddir)/src/osmo-bsc/assignment_fsm.o \
-	$(top_builddir)/src/osmo-bsc/bsc_api.o \
 	$(top_builddir)/src/osmo-bsc/bsc_init.o \
 	$(top_builddir)/src/osmo-bsc/bsc_rll.o \
 	$(top_builddir)/src/osmo-bsc/bsc_subscr_conn_fsm.o \

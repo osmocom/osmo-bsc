@@ -386,6 +386,34 @@ static int select_best_cipher(uint8_t msc_mask, uint8_t bsc_mask)
 	return -1;
 }
 
+/*! We received a GSM 08.08 CIPHER MODE from the MSC */
+static int gsm0808_cipher_mode(struct gsm_subscriber_connection *conn, int cipher,
+			       const uint8_t *key, int len, int include_imeisv)
+{
+	if (cipher > 0 && key == NULL) {
+		LOGP(DRSL, LOGL_ERROR, "%s: Need to have an encryption key.\n",
+		     bsc_subscr_name(conn->bsub));
+		return -1;
+	}
+
+	if (len > MAX_A5_KEY_LEN) {
+		LOGP(DRSL, LOGL_ERROR, "%s: The key is too long: %d\n",
+		     bsc_subscr_name(conn->bsub), len);
+		return -1;
+	}
+
+	LOGP(DRSL, LOGL_DEBUG, "(subscr %s) Cipher Mode: cipher=%d key=%s include_imeisv=%d\n",
+	     bsc_subscr_name(conn->bsub), cipher, osmo_hexdump_nospc(key, len), include_imeisv);
+
+	conn->lchan->encr.alg_id = RSL_ENC_ALG_A5(cipher);
+	if (key) {
+		conn->lchan->encr.key_len = len;
+		memcpy(conn->lchan->encr.key, key, len);
+	}
+
+	return gsm48_send_rr_ciph_mode(conn->lchan, include_imeisv);
+}
+
 /*
  * GSM 08.08 § 3.4.7 cipher mode handling. We will have to pick
  * the cipher to be used for this. In case we are already using
