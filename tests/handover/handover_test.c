@@ -40,7 +40,7 @@
 #include <osmocom/bsc/handover_cfg.h>
 #include <osmocom/bsc/handover_decision_2.h>
 #include <osmocom/bsc/bss.h>
-#include <osmocom/bsc/bsc_api.h>
+#include <osmocom/bsc/gsm_08_08.h>
 #include <osmocom/bsc/osmo_bsc.h>
 #include <osmocom/bsc/bsc_subscr_conn_fsm.h>
 #include <osmocom/bsc/timeslot_fsm.h>

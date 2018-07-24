@@ -54,7 +54,7 @@ noinst_HEADERS = \
 	timeslot_fsm.h \
 	ussd.h \
 	vty.h \
-	bsc_api.h \
+	gsm_08_08.h \
 	penalty_timers.h \
 	osmo_bsc_lcls.h \
 	$(NULL)

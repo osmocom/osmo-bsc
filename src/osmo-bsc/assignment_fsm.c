@@ -32,7 +32,7 @@
 #include <osmocom/bsc/bsc_subscr_conn_fsm.h>
 #include <osmocom/bsc/osmo_bsc_lcls.h>
 #include <osmocom/bsc/bsc_msc_data.h>
-#include <osmocom/bsc/bsc_api.h>
+#include <osmocom/bsc/gsm_08_08.h>
 #include <osmocom/bsc/lchan_select.h>
 #include <osmocom/bsc/abis_rsl.h>
 

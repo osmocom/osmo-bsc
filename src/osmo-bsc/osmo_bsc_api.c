@@ -23,7 +23,7 @@
 #include <osmocom/bsc/bsc_subscriber.h>
 #include <osmocom/bsc/debug.h>
 #include <osmocom/bsc/paging.h>
-#include <osmocom/bsc/bsc_api.h>
+#include <osmocom/bsc/gsm_08_08.h>
 
 #include <osmocom/bsc/gsm_04_80.h>
 #include <osmocom/bsc/gsm_04_08_rr.h>

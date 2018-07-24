@@ -43,7 +43,7 @@
 #include <osmocom/gsm/rsl.h>
 #include <osmocom/core/talloc.h>
 #include <osmocom/bsc/pcu_if.h>
-#include <osmocom/bsc/bsc_api.h>
+#include <osmocom/bsc/gsm_08_08.h>
 #include <osmocom/netif/rtp.h>
 #include <osmocom/bsc/gsm_timers.h>
 #include <osmocom/bsc/bsc_subscr_conn_fsm.h>

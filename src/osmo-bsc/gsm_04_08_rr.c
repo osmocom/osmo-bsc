@@ -39,7 +39,7 @@
 #include <osmocom/bsc/lchan_fsm.h>
 #include <osmocom/bsc/assignment_fsm.h>
 #include <osmocom/bsc/handover_fsm.h>
-#include <osmocom/bsc/bsc_api.h>
+#include <osmocom/bsc/gsm_08_08.h>
 
 /* should ip.access BTS use direct RTP streams between each other (1),
  * or should OpenBSC always act as RTP relay/proxy in between (0) ? */

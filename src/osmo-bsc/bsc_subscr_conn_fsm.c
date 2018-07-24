@@ -24,7 +24,7 @@
 
 #include <osmocom/bsc/debug.h>
 #include <osmocom/bsc/a_reset.h>
-#include <osmocom/bsc/bsc_api.h>
+#include <osmocom/bsc/gsm_08_08.h>
 #include <osmocom/bsc/gsm_data.h>
 #include <osmocom/bsc/handover_fsm.h>
 #include <osmocom/bsc/lchan_fsm.h>

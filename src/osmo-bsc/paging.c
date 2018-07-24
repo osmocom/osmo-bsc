@@ -49,7 +49,7 @@
 #include <osmocom/bsc/abis_rsl.h>
 #include <osmocom/bsc/gsm_data.h>
 #include <osmocom/bsc/chan_alloc.h>
-#include <osmocom/bsc/bsc_api.h>
+#include <osmocom/bsc/gsm_08_08.h>
 #include <osmocom/bsc/gsm_04_08_rr.h>
 #include <osmocom/bsc/gsm_timers.h>
 #include <osmocom/bsc/bsc_subscr_conn_fsm.h>
