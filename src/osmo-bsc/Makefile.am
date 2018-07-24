@@ -74,7 +74,7 @@ osmo_bsc_SOURCES = \
 	neighbor_ident.c \
 	neighbor_ident_vty.c \
 	net_init.c \
-	osmo_bsc_api.c \
+	gsm_08_08.c \
 	osmo_bsc_bssap.c \
 	osmo_bsc_ctrl.c \
 	osmo_bsc_filter.c \
