@@ -28,5 +28,4 @@ int gsm0808_page(struct gsm_bts *bts, unsigned int page_group,
 		 unsigned int mi_len, uint8_t *mi, int chan_type);
 int gsm0808_clear(struct gsm_subscriber_connection *conn);
 
-int gsm0408_rcvmsg(struct msgb *msg, uint8_t link_id);
 #endif

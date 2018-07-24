@@ -41,3 +41,5 @@ static inline struct msgb *gsm48_msgb_alloc_name(const char *name)
 }
 
 uint64_t str_to_imsi(const char *imsi_str);
+
+int gsm0408_rcvmsg(struct msgb *msg, uint8_t link_id);
