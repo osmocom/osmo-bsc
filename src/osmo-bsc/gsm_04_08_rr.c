@@ -35,7 +35,7 @@
 #include <osmocom/bsc/paging.h>
 #include <osmocom/bsc/signal.h>
 #include <osmocom/bsc/bsc_subscr_conn_fsm.h>
-#include <osmocom/bsc/gsm_04_08_utils.h>
+#include <osmocom/bsc/gsm_04_08_rr.h>
 
 /* should ip.access BTS use direct RTP streams between each other (1),
  * or should OpenBSC always act as RTP relay/proxy in between (0) ? */

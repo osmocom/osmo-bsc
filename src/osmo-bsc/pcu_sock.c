@@ -43,7 +43,7 @@
 #include <osmocom/bsc/signal.h>
 #include <osmocom/bsc/debug.h>
 #include <osmocom/bsc/abis_rsl.h>
-#include <osmocom/bsc/gsm_04_08_utils.h>
+#include <osmocom/bsc/gsm_04_08_rr.h>
 
 static int pcu_sock_send(struct gsm_bts *bts, struct msgb *msg);
 uint32_t trx_get_hlayer1(struct gsm_bts_trx *trx);

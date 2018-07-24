@@ -25,7 +25,7 @@
 #include <osmocom/bsc/debug.h>
 #include <osmocom/bsc/bsc_subscriber.h>
 #include <osmocom/bsc/paging.h>
-#include <osmocom/bsc/gsm_04_08_utils.h>
+#include <osmocom/bsc/gsm_04_08_rr.h>
 #include <osmocom/bsc/bsc_subscr_conn_fsm.h>
 #include <osmocom/bsc/codec_pref.h>
 #include <osmocom/gsm/gsm0808.h>

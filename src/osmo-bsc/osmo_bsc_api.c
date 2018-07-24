@@ -24,7 +24,7 @@
 #include <osmocom/bsc/debug.h>
 
 #include <osmocom/bsc/gsm_04_80.h>
-#include <osmocom/bsc/gsm_04_08_utils.h>
+#include <osmocom/bsc/gsm_04_08_rr.h>
 #include <osmocom/bsc/a_reset.h>
 
 #include <osmocom/gsm/protocol/gsm_08_08.h>

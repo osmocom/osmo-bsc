@@ -55,7 +55,7 @@ osmo_bsc_SOURCES = \
 	chan_alloc.c \
 	codec_pref.c \
 	e1_config.c \
-	gsm_04_08_utils.c \
+	gsm_04_08_rr.c \
 	gsm_04_80_utils.c \
 	gsm_data.c \
 	handover_cfg.c \

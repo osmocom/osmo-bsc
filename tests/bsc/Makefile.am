@@ -40,7 +40,7 @@ bsc_test_LDADD = \
 	$(top_builddir)/src/osmo-bsc/bsc_rll.o \
 	$(top_builddir)/src/osmo-bsc/bsc_subscriber.o \
 	$(top_builddir)/src/osmo-bsc/chan_alloc.o \
-	$(top_builddir)/src/osmo-bsc/gsm_04_08_utils.o \
+	$(top_builddir)/src/osmo-bsc/gsm_04_08_rr.o \
 	$(top_builddir)/src/osmo-bsc/gsm_04_80_utils.o \
 	$(top_builddir)/src/osmo-bsc/gsm_data.o \
 	$(top_builddir)/src/osmo-bsc/handover_cfg.o \

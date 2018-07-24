@@ -59,7 +59,7 @@
 #include <osmocom/bsc/handover.h>
 #include <osmocom/bsc/handover_cfg.h>
 #include <osmocom/bsc/handover_vty.h>
-#include <osmocom/bsc/gsm_04_08_utils.h>
+#include <osmocom/bsc/gsm_04_08_rr.h>
 #include <osmocom/bsc/acc_ramp.h>
 #include <osmocom/bsc/meas_feed.h>
 #include <osmocom/bsc/neighbor_ident.h>

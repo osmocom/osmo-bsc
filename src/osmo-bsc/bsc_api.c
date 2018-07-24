@@ -29,7 +29,7 @@
 #include <osmocom/bsc/chan_alloc.h>
 #include <osmocom/bsc/handover.h>
 #include <osmocom/bsc/debug.h>
-#include <osmocom/bsc/gsm_04_08_utils.h>
+#include <osmocom/bsc/gsm_04_08_rr.h>
 #include <osmocom/bsc/bsc_subscriber.h>
 #include <osmocom/bsc/penalty_timers.h>
 #include <osmocom/bsc/osmo_bsc_sigtran.h>

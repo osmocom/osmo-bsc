@@ -37,7 +37,7 @@
 #include <osmocom/bsc/signal.h>
 #include <osmocom/core/talloc.h>
 #include <osmocom/bsc/bsc_subscriber.h>
-#include <osmocom/bsc/gsm_04_08_utils.h>
+#include <osmocom/bsc/gsm_04_08_rr.h>
 #include <osmocom/bsc/handover.h>
 #include <osmocom/bsc/handover_cfg.h>
 #include <osmocom/bsc/bsc_subscr_conn_fsm.h>

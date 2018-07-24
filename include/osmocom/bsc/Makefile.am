@@ -16,7 +16,7 @@ noinst_HEADERS = \
 	ctrl.h \
 	debug.h \
 	e1_config.h \
-	gsm_04_08_utils.h \
+	gsm_04_08_rr.h \
 	gsm_04_80.h \
 	gsm_data.h \
 	handover.h \

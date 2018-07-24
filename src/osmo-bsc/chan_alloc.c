@@ -31,7 +31,7 @@
 #include <osmocom/bsc/abis_rsl.h>
 #include <osmocom/bsc/debug.h>
 #include <osmocom/bsc/signal.h>
-#include <osmocom/bsc/gsm_04_08_utils.h>
+#include <osmocom/bsc/gsm_04_08_rr.h>
 
 #include <osmocom/core/talloc.h>
 

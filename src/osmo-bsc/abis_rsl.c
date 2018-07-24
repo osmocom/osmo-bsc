@@ -28,7 +28,7 @@
 #include <arpa/inet.h>
 
 #include <osmocom/bsc/gsm_data.h>
-#include <osmocom/bsc/gsm_04_08_utils.h>
+#include <osmocom/bsc/gsm_04_08_rr.h>
 #include <osmocom/gsm/gsm_utils.h>
 #include <osmocom/bsc/abis_rsl.h>
 #include <osmocom/bsc/chan_alloc.h>

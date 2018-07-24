@@ -26,7 +26,7 @@
 #include <osmocom/bsc/gsm_data.h>
 #include <osmocom/bsc/debug.h>
 #include <osmocom/bsc/ipaccess.h>
-#include <osmocom/bsc/gsm_04_08_utils.h>
+#include <osmocom/bsc/gsm_04_08_rr.h>
 
 #include <osmocom/core/talloc.h>
 #include <osmocom/gsm/gsm0808.h>
