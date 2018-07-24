@@ -23,6 +23,7 @@
 #include <osmocom/bsc/bsc_subscriber.h>
 #include <osmocom/bsc/debug.h>
 #include <osmocom/bsc/paging.h>
+#include <osmocom/bsc/bsc_api.h>
 
 #include <osmocom/bsc/gsm_04_80.h>
 #include <osmocom/bsc/gsm_04_08_rr.h>
@@ -36,7 +37,7 @@
 #include <osmocom/bsc/osmo_bsc_sigtran.h>
 
 /* Check if we have a proper connection to the MSC */
-bool msc_connected(struct gsm_subscriber_connection *conn)
+static bool msc_connected(struct gsm_subscriber_connection *conn)
 {
 	/* No subscriber conn at all */
 	if (!conn)
@@ -53,8 +54,8 @@ bool msc_connected(struct gsm_subscriber_connection *conn)
 	return true;
 }
 
-static int complete_layer3(struct gsm_subscriber_connection *conn,
-			   struct msgb *msg, struct bsc_msc_data *msc);
+static bool complete_layer3(struct gsm_subscriber_connection *conn,
+			    struct msgb *msg, struct bsc_msc_data *msc);
 
 static struct osmo_cell_global_id *cgi_for_msc(struct bsc_msc_data *msc, struct gsm_bts *bts)
 {
@@ -438,8 +439,8 @@ int bsc_scan_bts_msg(struct gsm_subscriber_connection *conn, struct msgb *msg)
 	return 0;
 }
 
-static int complete_layer3(struct gsm_subscriber_connection *conn,
-			   struct msgb *msg, struct bsc_msc_data *msc)
+static bool complete_layer3(struct gsm_subscriber_connection *conn,
+			    struct msgb *msg, struct bsc_msc_data *msc)
 {
 	int con_type, rc, lu_cause;
 	char *imsi = NULL;
@@ -451,7 +452,7 @@ static int complete_layer3(struct gsm_subscriber_connection *conn,
 				&imsi, &con_type, &lu_cause);
 	if (rc < 0) {
 		bsc_maybe_lu_reject(conn, con_type, lu_cause);
-		return BSC_API_CONN_POL_REJECT;
+		return false;
 	}
 
 	/* allocate resource for a new connection */
@@ -464,7 +465,7 @@ static int complete_layer3(struct gsm_subscriber_connection *conn,
 		else if (ret == BSC_CON_REJECT_RF_GRACE)
 			bsc_send_ussd_no_srv(conn, msg, msc->ussd_grace_txt);
 
-		return BSC_API_CONN_POL_REJECT;
+		return false;
 	}
 
 	/* TODO: also extract TMSI. We get an IMSI only when an initial L3 Complete comes in that
@@ -493,12 +494,12 @@ static int complete_layer3(struct gsm_subscriber_connection *conn,
 	resp = gsm0808_create_layer3_2(msg, cgi_for_msc(conn->sccp.msc, conn_get_bts(conn)), NULL);
 	if (!resp) {
 		LOGP(DMSC, LOGL_DEBUG, "Failed to create layer3 message.\n");
-		return BSC_API_CONN_POL_REJECT;
+		return false;
 	}
 
 	osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_A_CONN_REQ, resp);
 
-	return BSC_API_CONN_POL_ACCEPT;
+	return true;
 }
 
 /*
@@ -519,7 +520,7 @@ static int move_to_msc(struct gsm_subscriber_connection *_conn,
 	 * MSC. If it fails the caller will need to handle this
 	 * properly.
 	 */
-	if (complete_layer3(_conn, msg, msc) != BSC_API_CONN_POL_ACCEPT) {
+	if (!complete_layer3(_conn, msg, msc)) {
 		/* FIXME: I have not the slightest idea what move_to_msc() intends to do; during lchan
 		 * FSM introduction, I changed this and hope it is the appropriate action. I actually
 		 * assume this is unused legacy code for osmo-bsc_nat?? */

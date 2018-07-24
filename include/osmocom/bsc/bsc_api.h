@@ -1,12 +1,10 @@
-/* GSM 08.08 like API for OpenBSC */
+/* GSM 08.08 function declarations for osmo-bsc */
 
-#ifndef OPENBSC_BSC_API_H
-#define OPENBSC_BSC_API_H
+#pragma once
 
-#include "gsm_data.h"
+#include <stdint.h>
 
-#define BSC_API_CONN_POL_ACCEPT	0
-#define BSC_API_CONN_POL_REJECT	1
+struct gsm_subscriber_connection;
 
 void bsc_sapi_n_reject(struct gsm_subscriber_connection *conn, int dlci);
 void bsc_cipher_mode_compl(struct gsm_subscriber_connection *conn, struct msgb *msg, uint8_t chosen_encr);
@@ -16,11 +14,3 @@ int bsc_clear_request(struct gsm_subscriber_connection *conn, uint32_t cause);
 void bsc_cm_update(struct gsm_subscriber_connection *conn,
 		   const uint8_t *cm2, uint8_t cm2_len,
 		   const uint8_t *cm3, uint8_t cm3_len);
-
-int gsm0808_submit_dtap(struct gsm_subscriber_connection *conn, struct msgb *msg, uint8_t link_id,
-			bool allow_sacch);
-int gsm0808_assign_req(struct gsm_subscriber_connection *conn, int chan_mode, int full_rate);
-int gsm0808_clear(struct gsm_subscriber_connection *conn);
-
-bool msc_connected(struct gsm_subscriber_connection *conn);
-#endif

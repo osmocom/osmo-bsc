@@ -1,5 +1,18 @@
 #pragma once
 
+#include <stdint.h>
+
+struct amr_mode;
+struct amr_multirate_conf;
+struct bsc_subscr;
+struct gsm48_chan_desc;
+struct gsm48_pag_resp;
+struct gsm_lchan;
+struct gsm_meas_rep;
+struct gsm_network;
+struct gsm_subscriber_connection;
+struct msgb;
+
 void gsm_net_update_ctype(struct gsm_network *network);
 enum gsm_chan_t get_ctype_by_chreq(struct gsm_network *network, uint8_t ra);
 int get_reason_by_chreq(uint8_t ra, int neci);

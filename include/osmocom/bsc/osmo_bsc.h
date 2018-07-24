@@ -2,7 +2,6 @@
 
 #include <osmocom/gsm/protocol/gsm_04_08.h>
 
-#include <osmocom/bsc/bsc_api.h>
 #include <osmocom/bsc/bsc_msg_filter.h>
 
 #define BSS_SEND_USSD 1
@@ -18,6 +17,8 @@ struct bsc_msc_data;
 struct gsm0808_channel_type;
 struct gsm0808_speech_codec_list;
 struct gsm_audio_support;
+struct gsm_subscriber_connection;
+struct gsm_bts;
 
 struct bsc_api *osmo_bsc_api();
 
