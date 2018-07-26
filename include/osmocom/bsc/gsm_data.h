@@ -605,6 +605,11 @@ struct gsm_bts_trx_ts {
 	 * enters IN_USE state, i.e. after each TCH use we try to PDCH ACT once again. */
 	bool pdch_act_allowed;
 
+	/* Whether TS_EV_OML_READY was received */
+	bool is_oml_ready;
+	/* Whether TS_EV_RSL_READY was received */
+	bool is_rsl_ready;
+
 	struct gsm_abis_mo mo;
 	struct tlv_parsed nm_attr;
 	uint8_t nm_chan_comb;
@@ -739,7 +744,6 @@ struct gsm_bts_model {
 	int (*start)(struct gsm_network *net);
 	int (*oml_rcvmsg)(struct msgb *msg);
 	char * (*oml_status)(const struct gsm_bts *bts);
-	bool (*oml_is_ts_ready)(const struct gsm_bts_trx_ts *ts);
 
 	void (*e1line_bind_ops)(struct e1inp_line *line);
 

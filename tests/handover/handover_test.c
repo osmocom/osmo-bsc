@@ -210,6 +210,7 @@ static struct gsm_bts *create_bts(int arfcn)
 
 	for (i = 0; i < ARRAY_SIZE(bts->c0->ts); i++) {
 		/* make sure ts->lchans[] get initialized */
+		osmo_fsm_inst_dispatch(bts->c0->ts[i].fi, TS_EV_RSL_READY, 0);
 		osmo_fsm_inst_dispatch(bts->c0->ts[i].fi, TS_EV_OML_READY, 0);
 	}
 	return bts;

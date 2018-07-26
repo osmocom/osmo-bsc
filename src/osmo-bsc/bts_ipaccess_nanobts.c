@@ -55,18 +55,12 @@ static char *get_oml_status(const struct gsm_bts *bts)
 	return "disconnected";
 }
 
-static bool oml_is_ts_ready(const struct gsm_bts_trx_ts *ts)
-{
-	return ts && ts->mo.nm_state.operational == NM_OPSTATE_ENABLED;
-}
-
 struct gsm_bts_model bts_model_nanobts = {
 	.type = GSM_BTS_TYPE_NANOBTS,
 	.name = "nanobts",
 	.start = bts_model_nanobts_start,
 	.oml_rcvmsg = &abis_nm_rcvmsg,
 	.oml_status = &get_oml_status,
-	.oml_is_ts_ready = oml_is_ts_ready,
 	.e1line_bind_ops = bts_model_nanobts_e1line_bind_ops, 
 	.nm_att_tlvdef = {
 		.def = {

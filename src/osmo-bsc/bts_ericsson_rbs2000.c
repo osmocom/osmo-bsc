@@ -175,17 +175,11 @@ static void bts_model_rbs2k_e1line_bind_ops(struct e1inp_line *line)
 	e1inp_line_bind_ops(line, &bts_isdn_e1inp_line_ops);
 }
 
-static bool bts_model_rbs2k_is_ts_ready(const struct gsm_bts_trx_ts *ts)
-{
-	return ts && ts->mo.nm_state.operational == NM_OPSTATE_ENABLED;
-}
-
 static struct gsm_bts_model model_rbs2k = {
 	.type = GSM_BTS_TYPE_RBS2000,
 	.name = "rbs2000",
 	.start = bts_model_rbs2k_start,
 	.oml_rcvmsg = &abis_om2k_rcvmsg,
-	.oml_is_ts_ready = bts_model_rbs2k_is_ts_ready,
 	.config_write_bts = &config_write_bts,
 	.e1line_bind_ops = &bts_model_rbs2k_e1line_bind_ops,
 };

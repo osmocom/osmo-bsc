@@ -220,13 +220,13 @@ static void ts_setup_lchans(struct gsm_bts_trx_ts *ts)
 static void ts_fsm_not_initialized(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
 	struct gsm_bts_trx_ts *ts = ts_fi_ts(fi);
-	struct gsm_bts *bts = ts->trx->bts;
 	switch (event) {
 
 	case TS_EV_OML_READY:
 		ts->pdch_act_allowed = true;
+		ts->is_oml_ready = true;
 		ts_setup_lchans(ts);
-		if (!ts->trx->rsl_link) {
+		if (!ts->is_rsl_ready) {
 			LOG_TS(ts, LOGL_DEBUG, "No RSL link yet\n");
 			return;
 		}
@@ -235,8 +235,8 @@ static void ts_fsm_not_initialized(struct osmo_fsm_inst *fi, uint32_t event, voi
 
 	case TS_EV_RSL_READY:
 		ts->pdch_act_allowed = true;
-		if (bts->model->oml_is_ts_ready
-		    && !bts->model->oml_is_ts_ready(ts)) {
+		ts->is_rsl_ready = true;
+		if (!ts->is_oml_ready) {
 			LOG_TS(ts, LOGL_DEBUG, "OML not ready yet\n");
 			return;
 		}
@@ -680,6 +680,7 @@ static void ts_fsm_allstate(struct osmo_fsm_inst *fi, uint32_t event, void *data
 	struct gsm_bts_trx_ts *ts = ts_fi_ts(fi);
 	switch (event) {
 	case TS_EV_OML_DOWN:
+		ts->is_oml_ready = false;
 		if (fi->state != TS_ST_NOT_INITIALIZED)
 			osmo_fsm_inst_state_chg(fi, TS_ST_NOT_INITIALIZED, 0, 0);
 		OSMO_ASSERT(fi->state == TS_ST_NOT_INITIALIZED);
@@ -689,6 +690,7 @@ static void ts_fsm_allstate(struct osmo_fsm_inst *fi, uint32_t event, void *data
 		break;
 
 	case TS_EV_RSL_DOWN:
+		ts->is_rsl_ready = false;
 		if (fi->state != TS_ST_NOT_INITIALIZED)
 			osmo_fsm_inst_state_chg(fi, TS_ST_NOT_INITIALIZED, 0, 0);
 		OSMO_ASSERT(fi->state == TS_ST_NOT_INITIALIZED);
