@@ -345,9 +345,11 @@ static void ts_fsm_wait_pdch_act_onenter(struct osmo_fsm_inst *fi, uint32_t prev
 
 	rc = rsl_tx_dyn_ts_pdch_act_deact(ts, true);
 
-	/* On error, we couldn't send the activation message and remain unused. */
+	/* On error, we couldn't send the activation message. If we can't send messages, we're broken.
+	 * (Also avoiding a recursion loop: enter UNUSED, try to PDCH act, fail, enter UNUSED, try to
+	 * PDCH act,...). */
 	if (rc)
-		ts_fsm_error(fi, TS_ST_UNUSED, "Unable to send PDCH activation");
+		ts_fsm_error(fi, TS_ST_BORKEN, "Unable to send PDCH activation");
 }
 
 static void ts_fsm_wait_pdch_act(struct osmo_fsm_inst *fi, uint32_t event, void *data)
@@ -464,9 +466,10 @@ static void ts_fsm_wait_pdch_deact_onenter(struct osmo_fsm_inst *fi, uint32_t pr
 
 	rc = rsl_tx_dyn_ts_pdch_act_deact(ts, false);
 
-	/* On error, we couldn't send the deactivation message and remain in PDCH. */
+	/* On error, we couldn't send the deactivation message. If we can't send messages, we're broken.
+	 */
 	if (rc)
-		ts_fsm_error(fi, TS_ST_PDCH, "Unable to send PDCH deactivation");
+		ts_fsm_error(fi, TS_ST_BORKEN, "Unable to send PDCH deactivation");
 }
 
 static void ts_fsm_wait_pdch_deact(struct osmo_fsm_inst *fi, uint32_t event, void *data)
