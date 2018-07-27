@@ -290,7 +290,8 @@ static void gscon_fsm_init(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 			       osmo_fsm_inst_state_name(conn->fi));
 		}
 		gscon_bssmap_clear(conn, GSM0808_CAUSE_EQUIPMENT_FAILURE);
-		osmo_fsm_inst_state_chg(fi, ST_CLEARING, 60, 999);
+		if (conn->fi->state != ST_CLEARING)
+			osmo_fsm_inst_state_chg(fi, ST_CLEARING, 60, 999);
 		return;
 	default:
 		OSMO_ASSERT(false);
@@ -626,7 +627,8 @@ void gscon_lchan_releasing(struct gsm_subscriber_connection *conn, struct gsm_lc
 		conn->lchan = NULL;
 	}
 	if (!conn->lchan) {
-		osmo_fsm_inst_state_chg(conn->fi, ST_CLEARING, 60, 999);
+		if (conn->fi->state != ST_CLEARING)
+			osmo_fsm_inst_state_chg(conn->fi, ST_CLEARING, 60, 999);
 		gscon_bssmap_clear(conn, GSM0808_CAUSE_EQUIPMENT_FAILURE);
 	}
 }
@@ -670,7 +672,8 @@ static void gscon_fsm_allstate(struct osmo_fsm_inst *fi, uint32_t event, void *d
 	switch (event) {
 	case GSCON_EV_A_CLEAR_CMD:
 		/* MSC tells us to cleanly shut down */
-		osmo_fsm_inst_state_chg(fi, ST_CLEARING, 60, 999);
+		if (conn->fi->state != ST_CLEARING)
+			osmo_fsm_inst_state_chg(fi, ST_CLEARING, 60, 999);
 		LOGPFSML(fi, LOGL_DEBUG, "Releasing all lchans (if any) after BSSMAP Clear Command\n");
 		gscon_release_lchans(conn, true);
 		/* FIXME: Release all terestrial resources in ST_CLEARING */
