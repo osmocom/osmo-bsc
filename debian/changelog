@@ -1,3 +1,111 @@
+osmo-bsc (1.3.0) unstable; urgency=medium
+
+  [ Philipp Maier ]
+  * a_reset: cleanup + remove dead code
+  * gscon: remove dead code
+  * gscon: pick suitable payload type / encoding name for MGCP
+  * lcls: set codec info when performing MGW operation
+  * codec_pref: move match_codec_pref() to separate c-file and add unit-test
+  * codec_pref: check bts codec support
+  * chan_alloc: reset rtp voice related bits in lchan_free()
+  * rsl: use 3GPP assigned payload type constants from libosmo-netif
+
+  [ Stefan Sperling ]
+  * show all global counters of osmo-bsc in vty
+  * add counter for connection attempts from BTS with unknown unit id
+  * fix misaligned memory write access in abis_nm_ipaccess_rsl_connect()
+  * increment 'paging responded' counter for active paging only
+  * fix handling of invalid pchan names in vty
+
+  [ Pau Espin Pedrol ]
+  * nat: Add jitter buffer on the uplink receiver
+  * acc_ramp: Increase log level of some messages
+  * chan_alloc: Print bts nr on chan alloc failure
+  * abis_rsl.c: Fix whitespace
+  * abis_rsl: rsl_rx_chan_rqd: Format bts log string as in everywhere else
+  * pcu_sock: Log event pcu_sock created
+  * osmo-bsc: Clean help description of cmd line parameters
+  * osmo-bsc: Add -V param to print version
+  * debian: Move meas related binaries into new package osmo-bsc-meas-utils
+  * bsc-filter: Remove unused func barr_adapt and set barr_find static
+  * bsc_vty: Write access list entries when storing bsc config
+  * Init access_lists before passing it as a parameter
+  * Rename bsc_msg_acc_lst_vty_init to have more uniform prefix
+  * filter: vty: Print policy list in cmd show access-list
+  * filter: Replace '.' in counter names with ':'
+  * filter: Allocate each ctr group with a different idx
+  * ctrl: Avoid sending back received ERROR msgs
+
+  [ Neels Hofmeyr ]
+  * bsc_api.c: actually log with context
+  * abis_rsl.h: drop unused rsl_chan_activate() declaration
+  * cosmetic: bsc_dyn_ts.c: make local functions static
+  * cosmetic: define TCH_F_PDCH_PENDING_MASK as actual bitwise or
+  * cosmetic: logging and ordering in handle_ass_compl()
+  * doc: add msc charts on Assignment/Handover internals
+  * tests: remove bssap_test
+  * tests: remove channel_test
+  * bsc_test: drop "scan to MSC" code path
+  * dissolve libbsc: move all to src/osmo-bsc, link .o files
+  * remove struct bsc_api
+  * cosmetic: magic number: use RSL_ACT_ constant for chan act
+  * cosmetic: gscon: undup code: add common assignment_failed()
+  * assignment: signal assignment failure on chan act nack
+  * log: fix logging in rsl_rx_chan_act_nack()
+  * log: assignment: add two logs on unexpected lchan release
+  * use libosmocore's gsm0808_permitted_speech(), gsm0808_chosen_channel()
+  * cosmetic: penalty timers: constify, tweak doc
+  * cosmetic: bsc_subscr_alloc: log initial get
+  * gscon: put subscriber a little later
+  * try to pick up subsrc IMSI on l3-compl
+  * store subscriber identity on paging
+  * cosmetic: handover_test: add IMSI to subscr for logging
+  * doc: tweak msc charts on Assignment/Handover: act_timer
+  * doc: add lchan-release.msc
+  * doc: add ms-channel-request.msc
+  * doc: charts: illustrate new plan for ts and lchans
+  * cosmetic: gscon: drop odd use of OSMO_STRINGIFY
+  * HO: introduce T7, T8, T101 timers
+  * drop dead code: conn->T10, handled by gscon instead
+  * make T10 configurable like the rest of them
+  * fix dyn TS init: properly identify BTS on OML OPSTART ACK
+  * cosmetic / linking: move str_to_imsi() out of abis_rsl.c
+  * cosmetic: name osmo-bsc's root ctx 'osmo-bsc', not 'openbsc'
+  * call osmo_xua_msg_tall_ctx_init()
+  * fix handover start: dealloc ho if event not permitted
+  * ho cfg: fix unit strings
+  * hodec2 log: less verbose, more concise logging
+  * various logging: fix missing/extra newlines
+  * BTS codec pref legacy compat: allow all codecs per default
+
+  [ Harald Welte ]
+  * bsc: Fix check for MSC-side FSM allocation failure
+  * vty: Permit selection of other ASP protocol than M3UA
+  * bsc: Add mgcp_port_to_cic() to determine CIC from RTP Port
+  * bsc: Use correct MGCP endpoint name for IPA/SCCPlite
+  * bsc: Don't reject ASSIGNMENT for Audio in IPA/SCCPlite case
+  * bsc: Don't include AoIP IEs in ASSIGNMENT COMPLETE over SCCPlite
+  * bsc: Don't create MSC-side MGCP connection in IPA/SCCPlite case
+  * remove remaining bits of osmo-bsc_nat
+  * Remove 'struct bsc_msc_connection' + fix IPA-encapsulated CTRL
+  * move 'extern struct gsm_network *bsc_gsmnet" to header file
+  * VTY: Print some more information in "show conns"
+  * Add initial 3GPP LCLS support to OsmoBSC
+  * LCLS: add VTY config to enable/disable LCLS on per-MSC basis
+  * Reject ASSIGNMENT REQ with CIC but no AoIP transp addr in AoIP case
+  * Ignore "dest" command in MSC node
+  * Explicitly register CTRL-over-IPA callback with libosmo-sigtran
+  * Remove unused logging subsystems DCC and DMGCP
+  * remove traces of osmo-bsc_nat in python test (osmoappdesc/test_runner)
+  * Add missing event string name for GSCON_EV_LCLS_FAIL
+  * bsc_subscr_conn_fsm: BSC must not release SCCP connection
+  * absi_rsl: Fix segfault in rsl_rx_conn_fail()
+
+  [ Daniel Willmann ]
+  * git-version-gen: Don't check for .git directory
+
+ -- Pau Espin Pedrol <pespin@sysmocom.de>  Fri, 27 Jul 2018 19:25:05 +0200
+
 osmo-bsc (1.2.1) unstable; urgency=medium
 
   [ Philipp Maier ]
