@@ -309,13 +309,22 @@ static void bootstrap_rsl(struct gsm_bts_trx *trx)
 	}
 }
 
+static void all_ts_dispatch_event(struct gsm_bts_trx *trx, uint32_t event)
+{
+	int ts_i;
+	for (ts_i = 0; ts_i < ARRAY_SIZE(trx->ts); ts_i++) {
+		struct gsm_bts_trx_ts *ts = &trx->ts[ts_i];
+		if (ts->fi)
+			osmo_fsm_inst_dispatch(ts->fi, event, 0);
+	}
+}
+
 /* Callback function to be called every time we receive a signal from INPUT */
 static int inp_sig_cb(unsigned int subsys, unsigned int signal,
 		      void *handler_data, void *signal_data)
 {
 	struct input_signal_data *isd = signal_data;
 	struct gsm_bts_trx *trx = isd->trx;
-	int ts_no;
 	/* N. B: we rely on attribute order when parsing response in abis_nm_rx_get_attr_resp() */
 	const uint8_t bts_attr[] = { NM_ATT_MANUF_ID, NM_ATT_SW_CONFIG, };
 	const uint8_t trx_attr[] = { NM_ATT_MANUF_STATE, NM_ATT_SW_CONFIG, };
@@ -360,22 +369,13 @@ static int inp_sig_cb(unsigned int subsys, unsigned int signal,
 	case S_L_INP_TEI_DN:
 		LOGP(DLMI, LOGL_ERROR, "Lost some E1 TEI link: %d %p\n", isd->link_type, trx);
 
-		if (isd->link_type == E1INP_SIGN_OML)
+		if (isd->link_type == E1INP_SIGN_OML) {
 			rate_ctr_inc(&trx->bts->bts_ctrs->ctr[BTS_CTR_BTS_OML_FAIL]);
-		else if (isd->link_type == E1INP_SIGN_RSL) {
+			all_ts_dispatch_event(trx, TS_EV_OML_DOWN);
+		} else if (isd->link_type == E1INP_SIGN_RSL) {
 			rate_ctr_inc(&trx->bts->bts_ctrs->ctr[BTS_CTR_BTS_RSL_FAIL]);
 			acc_ramp_abort(&trx->bts->acc_ramp);
-		}
-
-		/*
-		 * free all allocated channels. change the nm_state so the
-		 * trx and trx_ts becomes unusable and chan_alloc.c can not
-		 * allocate from it.
-		 */
-		for (ts_no = 0; ts_no < ARRAY_SIZE(trx->ts); ++ts_no) {
-			struct gsm_bts_trx_ts *ts = &trx->ts[ts_no];
-			if (ts->fi)
-				osmo_fsm_inst_dispatch(ts->fi, TS_EV_OML_DOWN, 0);
+			all_ts_dispatch_event(trx, TS_EV_RSL_DOWN);
 		}
 
 		gsm_bts_mo_reset(trx->bts);
