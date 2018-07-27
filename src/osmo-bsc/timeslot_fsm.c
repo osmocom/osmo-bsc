@@ -720,6 +720,7 @@ static const struct osmo_fsm_state ts_fsm_states[] = {
 			,
 		.out_state_mask = 0
 			| S(TS_ST_UNUSED)
+			| S(TS_ST_BORKEN)
 			,
 	},
 	[TS_ST_UNUSED] = {
@@ -734,6 +735,7 @@ static const struct osmo_fsm_state ts_fsm_states[] = {
 			| S(TS_ST_WAIT_PDCH_ACT)
 			| S(TS_ST_IN_USE)
 			| S(TS_ST_NOT_INITIALIZED)
+			| S(TS_ST_BORKEN)
 			,
 	},
 	[TS_ST_WAIT_PDCH_ACT] = {
@@ -764,6 +766,7 @@ static const struct osmo_fsm_state ts_fsm_states[] = {
 		.out_state_mask = 0
 			| S(TS_ST_WAIT_PDCH_DEACT)
 			| S(TS_ST_NOT_INITIALIZED)
+			| S(TS_ST_BORKEN)
 			,
 	},
 	[TS_ST_WAIT_PDCH_DEACT] = {
@@ -781,6 +784,7 @@ static const struct osmo_fsm_state ts_fsm_states[] = {
 			| S(TS_ST_UNUSED)
 			| S(TS_ST_BORKEN)
 			| S(TS_ST_NOT_INITIALIZED)
+			| S(TS_ST_BORKEN)
 			,
 	},
 	[TS_ST_IN_USE] = {
@@ -794,6 +798,7 @@ static const struct osmo_fsm_state ts_fsm_states[] = {
 		.out_state_mask = 0
 			| S(TS_ST_UNUSED)
 			| S(TS_ST_NOT_INITIALIZED)
+			| S(TS_ST_BORKEN)
 			,
 	},
 	[TS_ST_BORKEN] = {
