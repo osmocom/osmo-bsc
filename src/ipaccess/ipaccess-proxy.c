@@ -458,8 +458,7 @@ static int ipaccess_rcvmsg(struct ipa_proxy_conn *ipc, struct msgb *msg,
 	case IPAC_MSGT_ID_RESP:
 		DEBUGP(DLMI, "ID_RESP ");
 		/* parse tags, search for Unit ID */
-		ipa_ccm_idtag_parse(&tlvp, (uint8_t *)msg->l2h + 2,
-				     msgb_l2len(msg)-2);
+		ipa_ccm_id_resp_parse(&tlvp, (uint8_t *)msg->l2h+1, msgb_l2len(msg)-1);
 		DEBUGP(DLMI, "\n");
 
 		if (!TLVP_PRESENT(&tlvp, IPAC_IDTAG_UNIT)) {
