@@ -474,8 +474,7 @@ static bool parse_ho_request(struct gsm_subscriber_connection *conn, const struc
 	}
 	/* LOG_HO() also calls gsm0808_cell_id_name(), so to be able to use gsm0808_cell_id_name() in
 	 * logging without getting mixed up with those static buffers, store the result. */
-	snprintf(req->cell_id_serving_name, sizeof(req->cell_id_serving_name),
-		 gsm0808_cell_id_name(&req->cell_id_serving));
+	OSMO_STRLCPY_ARRAY(req->cell_id_serving_name, gsm0808_cell_id_name(&req->cell_id_serving));
 
 	if (!(e = TLVP_GET(tp2, GSM0808_IE_CELL_IDENTIFIER))) {
 		LOG_HO(conn, LOGL_ERROR, "Missing IE: Cell Identifier (Target)\n");
@@ -485,8 +484,7 @@ static bool parse_ho_request(struct gsm_subscriber_connection *conn, const struc
 		LOG_HO(conn, LOGL_ERROR, "Invalid IE: Cell Identifier (Target)\n");
 		return false;
 	}
-	snprintf(req->cell_id_target_name, sizeof(req->cell_id_target_name),
-		 gsm0808_cell_id_name(&req->cell_id_target));
+	OSMO_STRLCPY_ARRAY(req->cell_id_target_name, gsm0808_cell_id_name(&req->cell_id_target));
 
 	if ((e = TLVP_GET(tp, GSM0808_IE_CIRCUIT_IDENTITY_CODE))) {
 		int timeslot;
