@@ -739,6 +739,7 @@ void mgcp_pick_codec(struct mgcp_conn_peer *verb_info, const struct gsm_lchan *l
 			  "Unable to determine MGCP codec type for %s in chan-mode %s\n",
 			  gsm_lchant_name(lchan->type), gsm48_chan_mode_name(lchan->tch_mode));
 		verb_info->codecs_len = 0;
+		return;
 	}
 
 	verb_info->codecs[0] = codec;
