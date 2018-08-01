@@ -491,7 +491,7 @@ bool gscon_connect_mgw_to_msc(struct gsm_subscriber_connection *conn,
 		.call_id = conn->sccp.conn_id,
 		.ptime = 20,
 	};
-	mgcp_pick_codec(&mgw_info, for_lchan);
+	mgcp_pick_codec(&mgw_info, for_lchan, false);
 
 	rc = osmo_strlcpy(mgw_info.addr, addr, sizeof(mgw_info.addr));
 	if (rc <= 0 || rc >= sizeof(mgw_info.addr)) {

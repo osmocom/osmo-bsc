@@ -26,6 +26,7 @@
 
 #include <osmocom/core/fsm.h>
 #include <osmocom/core/byteswap.h>
+#include <osmocom/netif/rtp.h>
 
 #include <osmocom/bsc/debug.h>
 #include <osmocom/bsc/gsm_timers.h>
@@ -730,10 +731,31 @@ enum mgcp_codecs chan_mode_to_mgcp_codec(enum gsm48_chan_mode chan_mode, bool fu
 	}
 }
 
-void mgcp_pick_codec(struct mgcp_conn_peer *verb_info, const struct gsm_lchan *lchan)
+int chan_mode_to_mgcp_bss_pt(enum mgcp_codecs codec)
+{
+	switch (codec) {
+	case CODEC_GSMHR_8000_1:
+		return RTP_PT_GSM_HALF;
+
+	case CODEC_GSMEFR_8000_1:
+		return RTP_PT_GSM_EFR;
+
+	case CODEC_AMR_8000_1:
+		return RTP_PT_AMR;
+
+	default:
+		/* Not an error, we just leave it to libosmo-mgcp-client to
+		 * decide over the PT. */
+		return -1;
+	}
+}
+
+void mgcp_pick_codec(struct mgcp_conn_peer *verb_info, const struct gsm_lchan *lchan, bool bss_side)
 {
 	enum mgcp_codecs codec = chan_mode_to_mgcp_codec(lchan->tch_mode,
 							 lchan->type == GSM_LCHAN_TCH_H? false : true);
+	int custom_pt;
+
 	if (codec < 0) {
 		LOG_LCHAN(lchan, LOGL_ERROR,
 			  "Unable to determine MGCP codec type for %s in chan-mode %s\n",
@@ -744,4 +766,12 @@ void mgcp_pick_codec(struct mgcp_conn_peer *verb_info, const struct gsm_lchan *l
 
 	verb_info->codecs[0] = codec;
 	verb_info->codecs_len = 1;
+
+	/* Setup custom payload types (only for BSS side and when required) */
+	custom_pt = chan_mode_to_mgcp_bss_pt(codec);
+	if (bss_side && custom_pt > 0) {
+		verb_info->ptmap[0].codec = codec;
+	        verb_info->ptmap[0].pt = custom_pt;
+	        verb_info->ptmap_len = 1;
+	}
 }

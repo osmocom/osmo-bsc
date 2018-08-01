@@ -242,7 +242,7 @@ static void lcls_break_local_switching(struct gsm_subscriber_connection *conn)
 		.port = conn->user_plane.msc_assigned_rtp_port,
 	};
 	osmo_strlcpy(mdcx_info.addr, conn->user_plane.msc_assigned_rtp_addr, sizeof(mdcx_info.addr));
-	mgcp_pick_codec(&mdcx_info, conn->lchan);
+	mgcp_pick_codec(&mdcx_info, conn->lchan, false);
 
 	mgw_endpoint_ci_request(conn->user_plane.mgw_endpoint_ci_msc,
 				MGCP_VERB_MDCX, &mdcx_info,
@@ -573,7 +573,7 @@ static void lcls_locally_switched_onenter(struct osmo_fsm_inst *fi, uint32_t pre
 	mdcx_info = *other_mgw_info;
 	/* Make sure the request doesn't want to use the other side's endpoint string. */
 	mdcx_info.endpoint[0] = 0;
-	mgcp_pick_codec(&mdcx_info, conn->lchan);
+	mgcp_pick_codec(&mdcx_info, conn->lchan, false);
 	mgw_endpoint_ci_request(conn->user_plane.mgw_endpoint_ci_msc,
 				MGCP_VERB_MDCX, &mdcx_info,
 				NULL, 0, 0, NULL);

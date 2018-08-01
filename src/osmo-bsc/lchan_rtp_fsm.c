@@ -157,7 +157,7 @@ static void lchan_rtp_fsm_wait_mgw_endpoint_available_onenter(struct osmo_fsm_in
 	if (lchan->conn)
 		crcx_info.call_id = lchan->conn->sccp.conn_id;
 	crcx_info.ptime = 20;
-	mgcp_pick_codec(&crcx_info, lchan);
+	mgcp_pick_codec(&crcx_info, lchan, true);
 
 	mgw_endpoint_ci_request(lchan->mgw_endpoint_ci_bts, MGCP_VERB_CRCX, &crcx_info,
 				fi, LCHAN_RTP_EV_MGW_ENDPOINT_AVAILABLE, LCHAN_RTP_EV_MGW_ENDPOINT_ERROR,
@@ -406,7 +406,7 @@ static void connect_mgw_endpoint_to_lchan(struct osmo_fsm_inst *fi,
 		.port = to_lchan->abis_ip.bound_port,
 		.ptime = 20,
 	};
-	mgcp_pick_codec(&mdcx_info, to_lchan);
+	mgcp_pick_codec(&mdcx_info, to_lchan, true);
 
 	addr.s_addr = ntohl(to_lchan->abis_ip.bound_ip);
 	addr_str = inet_ntoa(addr);

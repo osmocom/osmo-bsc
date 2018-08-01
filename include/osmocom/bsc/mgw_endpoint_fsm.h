@@ -56,4 +56,4 @@ const char *mgwep_ci_name(const struct mgwep_ci *ci);
 const char *mgcp_conn_peer_name(const struct mgcp_conn_peer *info);
 
 enum mgcp_codecs chan_mode_to_mgcp_codec(enum gsm48_chan_mode chan_mode, bool full_rate);
-void mgcp_pick_codec(struct mgcp_conn_peer *verb_info, const struct gsm_lchan *lchan);
+void mgcp_pick_codec(struct mgcp_conn_peer *verb_info, const struct gsm_lchan *lchan, bool bss_side);
