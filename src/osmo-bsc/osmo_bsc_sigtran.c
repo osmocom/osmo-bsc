@@ -348,7 +348,12 @@ int osmo_bsc_sigtran_send(struct gsm_subscriber_connection *conn, struct msgb *m
 
 	OSMO_ASSERT(conn);
 	OSMO_ASSERT(msg);
-	OSMO_ASSERT(conn->sccp.msc);
+
+	if (!conn->sccp.msc) {
+		LOGP(DMSC, LOGL_ERROR, "MSC is not connected. Dropping.\n");
+		msgb_free(msg);
+		return -EINVAL;
+	}
 
 	msc = conn->sccp.msc;
 
