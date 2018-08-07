@@ -338,7 +338,7 @@ int osmo_bsc_sigtran_open_conn(struct gsm_subscriber_connection *conn, struct ms
 	return rc;
 }
 
-/* Send data to MSC */
+/* Send data to MSC, the function will take ownership of *msg */
 int osmo_bsc_sigtran_send(struct gsm_subscriber_connection *conn, struct msgb *msg)
 {
 	struct osmo_ss7_instance *ss7;
@@ -370,6 +370,7 @@ int osmo_bsc_sigtran_send(struct gsm_subscriber_connection *conn, struct msgb *m
 
 	if (a_reset_conn_ready(msc->a.reset_fsm) == false) {
 		LOGP(DMSC, LOGL_ERROR, "MSC is not connected. Dropping.\n");
+		msgb_free(msg);
 		return -EINVAL;
 	}
 
