@@ -240,7 +240,7 @@ static int sccp_sap_up(struct osmo_prim_hdr *oph, void *_scu)
 		/* Incoming data is a sign of a vital connection */
 		conn = get_bsc_conn_by_conn_id(scu_prim->u.data.conn_id);
 		if (conn) {
-			a_reset_conn_success(conn->sccp.msc->a.reset_fsm);
+			a_reset_conn_success(conn->sccp.msc);
 			handle_data_from_msc(conn, oph->msg);
 		}
 		break;
@@ -284,7 +284,7 @@ enum bsc_con osmo_bsc_sigtran_new_conn(struct gsm_subscriber_connection *conn, s
 	LOGP(DMSC, LOGL_NOTICE, "Initializing resources for new SIGTRAN connection to MSC: %s...\n",
 	     osmo_sccp_addr_name(ss7, &msc->a.msc_addr));
 
-	if (a_reset_conn_ready(msc->a.reset_fsm) == false) {
+	if (a_reset_conn_ready(msc) == false) {
 		LOGP(DMSC, LOGL_ERROR, "MSC is not connected. Dropping.\n");
 		return BSC_CON_REJECT_NO_LINK;
 	}
@@ -314,7 +314,7 @@ int osmo_bsc_sigtran_open_conn(struct gsm_subscriber_connection *conn, struct ms
 
 	msc = conn->sccp.msc;
 
-	if (a_reset_conn_ready(msc->a.reset_fsm) == false) {
+	if (a_reset_conn_ready(msc) == false) {
 		LOGP(DMSC, LOGL_ERROR, "MSC is not connected. Dropping.\n");
 		return -EINVAL;
 	}
@@ -373,7 +373,7 @@ int osmo_bsc_sigtran_send(struct gsm_subscriber_connection *conn, struct msgb *m
 	} else
 		LOGP(DMSC, LOGL_ERROR, "Tx MSC (message too short)\n");
 
-	if (a_reset_conn_ready(msc->a.reset_fsm) == false) {
+	if (a_reset_conn_ready(msc) == false) {
 		LOGP(DMSC, LOGL_ERROR, "MSC is not connected. Dropping.\n");
 		msgb_free(msg);
 		return -EINVAL;
@@ -532,9 +532,7 @@ int osmo_bsc_sigtran_init(struct llist_head *mscs)
 			return -EINVAL;
 
 		/* Start MSC-Reset procedure */
-		msc->a.reset_fsm = a_reset_alloc(msc, msc_name, osmo_bsc_sigtran_reset_cb, msc);
-		if (!msc->a.reset_fsm)
-			return -EINVAL;
+		a_reset_alloc(msc, msc_name, osmo_bsc_sigtran_reset_cb);
 
 		/* If we have detected that the SS7 configuration of the MSC we have just initalized
 		 * was incomplete or completely missing, we can not tolerate another incomplete

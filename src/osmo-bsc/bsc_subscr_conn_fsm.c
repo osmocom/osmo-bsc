@@ -771,7 +771,7 @@ static int gscon_timer_cb(struct osmo_fsm_inst *fi)
 		 * could indicate a bad SCCP connection. We now inform the the
 		 * FSM that controls the BSSMAP reset about the event. Maybe
 		 * a BSSMAP reset is necessary. */
-		a_reset_conn_fail(conn->sccp.msc->a.reset_fsm);
+		a_reset_conn_fail(conn->sccp.msc);
 
 		/* Since we could not reach the MSC, we give up and terminate
 		 * the FSM instance now (N-DISCONNET.req is sent in
@@ -783,7 +783,7 @@ static int gscon_timer_cb(struct osmo_fsm_inst *fi)
 		 * disconnected. */
 		LOGPFSML(fi, LOGL_ERROR, "Long after a BSSMAP Clear Command, the conn is still not"
 			 " released. For sanity, discarding this conn now.\n");
-		a_reset_conn_fail(conn->sccp.msc->a.reset_fsm);
+		a_reset_conn_fail(conn->sccp.msc);
 		osmo_fsm_inst_term(fi, OSMO_FSM_TERM_ERROR, NULL);
 		break;
 	default:

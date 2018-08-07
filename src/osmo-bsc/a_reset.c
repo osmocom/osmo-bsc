@@ -137,68 +137,83 @@ static struct osmo_fsm fsm = {
 };
 
 /* Create and start state machine which handles the reset/reset-ack procedure */
-struct osmo_fsm_inst *a_reset_alloc(void *ctx, const char *name, void *cb, void *priv)
+void a_reset_alloc(struct bsc_msc_data *msc, const char *name, void *cb)
 {
-	OSMO_ASSERT(name);
-
 	struct reset_ctx *reset_ctx;
 	struct osmo_fsm_inst *reset_fsm;
+
+	OSMO_ASSERT(msc);
+	OSMO_ASSERT(name);
+	OSMO_ASSERT(cb);
+
+	/* There must not be any double allocation! */
+	OSMO_ASSERT(msc->a.reset_fsm == NULL);
 
 	/* Register the fsm description (if not already done) */
 	if (osmo_fsm_find_by_name(fsm.name) != &fsm)
 		osmo_fsm_register(&fsm);
 
 	/* Allocate and configure a new fsm instance */
-	reset_ctx = talloc_zero(ctx, struct reset_ctx);
+	reset_ctx = talloc_zero(msc, struct reset_ctx);
 	OSMO_ASSERT(reset_ctx);
-	reset_ctx->priv = priv;
+	reset_ctx->priv = msc;
 	reset_ctx->cb = cb;
 	reset_ctx->conn_loss_counter = 0;
-	reset_fsm = osmo_fsm_inst_alloc(&fsm, ctx, reset_ctx, LOGL_DEBUG, name);
+	reset_fsm = osmo_fsm_inst_alloc(&fsm, msc, reset_ctx, LOGL_DEBUG, name);
 	OSMO_ASSERT(reset_fsm);
 
 	/* kick off reset-ack sending mechanism */
 	osmo_fsm_inst_state_chg(reset_fsm, ST_DISC, RESET_RESEND_INTERVAL, RESET_RESEND_TIMER_NO);
 
-	return reset_fsm;
+	msc->a.reset_fsm = reset_fsm;
 }
 
 /* Confirm that we sucessfully received a reset acknowlege message */
-void a_reset_ack_confirm(struct osmo_fsm_inst *reset_fsm)
+void a_reset_ack_confirm(struct bsc_msc_data *msc)
 {
-	OSMO_ASSERT(reset_fsm);
-	osmo_fsm_inst_dispatch(reset_fsm, EV_RESET_ACK, NULL);
+	if (!msc)
+		return;
+
+	if (!msc->a.reset_fsm)
+		return;
+
+	osmo_fsm_inst_dispatch(msc->a.reset_fsm, EV_RESET_ACK, NULL);
 }
 
 /* Report a failed connection */
-void a_reset_conn_fail(struct osmo_fsm_inst *reset_fsm)
+void a_reset_conn_fail(struct bsc_msc_data *msc)
 {
-	/* If no reset context is supplied, just drop the info */
-	if (!reset_fsm)
+	if (!msc)
 		return;
 
-	osmo_fsm_inst_dispatch(reset_fsm, EV_N_DISCONNECT, NULL);
+	if (!msc->a.reset_fsm)
+		return;
+
+	osmo_fsm_inst_dispatch(msc->a.reset_fsm, EV_N_DISCONNECT, NULL);
 }
 
 /* Report a successful connection */
-void a_reset_conn_success(struct osmo_fsm_inst *reset_fsm)
+void a_reset_conn_success(struct bsc_msc_data *msc)
 {
-	/* If no reset context is supplied, just drop the info */
-	if (!reset_fsm)
+	if (!msc)
 		return;
 
-	osmo_fsm_inst_dispatch(reset_fsm, EV_N_CONNECT, NULL);
+	if (!msc->a.reset_fsm)
+		return;
+
+	osmo_fsm_inst_dispatch(msc->a.reset_fsm, EV_N_CONNECT, NULL);
 }
 
 /* Check if we have a connection to a specified msc */
-bool a_reset_conn_ready(struct osmo_fsm_inst *reset_fsm)
+bool a_reset_conn_ready(struct bsc_msc_data *msc)
 {
-	/* If no reset context is supplied, we assume that
-	 * the connection can't be ready! */
-	if (!reset_fsm)
+	if (!msc)
 		return false;
 
-	if (reset_fsm->state == ST_CONN)
+	if (!msc->a.reset_fsm)
+		return false;
+
+	if (msc->a.reset_fsm->state == ST_CONN)
 		return true;
 
 	return false;
