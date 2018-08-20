@@ -37,8 +37,8 @@ struct bsc_subscr *_bsc_subscr_get(struct bsc_subscr *bsub,
 				   const char *file, int line);
 struct bsc_subscr *_bsc_subscr_put(struct bsc_subscr *bsub,
 				   const char *file, int line);
-#define bsc_subscr_get(bsub) _bsc_subscr_get(bsub, __BASE_FILE__, __LINE__)
-#define bsc_subscr_put(bsub) _bsc_subscr_put(bsub, __BASE_FILE__, __LINE__)
+#define bsc_subscr_get(bsub) _bsc_subscr_get(bsub, __FILE__, __LINE__)
+#define bsc_subscr_put(bsub) _bsc_subscr_put(bsub, __FILE__, __LINE__)
 
 void log_set_filter_bsc_subscr(struct log_target *target,
 			       struct bsc_subscr *bsub);
