@@ -467,6 +467,14 @@ static void lchan_rtp_fsm_wait_mgw_endpoint_configured(struct osmo_fsm_inst *fi,
 		lchan_rtp_fail("Error while redirecting the MGW to the lchan's RTP port");
 		return;
 
+	case LCHAN_RTP_EV_ROLLBACK:
+		lchan_rtp_fsm_state_chg(LCHAN_RTP_ST_ROLLBACK);
+		return;
+
+	case LCHAN_RTP_EV_RELEASE:
+		osmo_fsm_inst_term(fi, OSMO_FSM_TERM_REGULAR, 0);
+		return;
+
 	default:
 		OSMO_ASSERT(false);
 	}
@@ -531,6 +539,11 @@ static void lchan_rtp_fsm_rollback(struct osmo_fsm_inst *fi, uint32_t event, voi
 			      mgwep_ci_name(lchan->mgw_endpoint_ci_bts),
 			      gsm_lchan_name(old_lchan));
 		osmo_fsm_inst_term(fi, OSMO_FSM_TERM_ERROR, 0);
+		return;
+
+	case LCHAN_RTP_EV_RELEASE:
+	case LCHAN_RTP_EV_ROLLBACK:
+		/* Already rolling back, ignore. */
 		return;
 
 	default:
