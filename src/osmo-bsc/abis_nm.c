@@ -1041,7 +1041,7 @@ static int sw_load_init(struct abis_nm_sw *sw)
 
 	sw_add_file_id_and_ver(sw, msg);
 	msgb_tv_put(msg, NM_ATT_WINDOW_SIZE, sw->window_size);
-	
+
 	return abis_nm_sendmsg(sw->bts, msg);
 }
 
@@ -1252,7 +1252,7 @@ static int sw_open_file(struct abis_nm_sw *sw, const char *fname)
 		sw->file_version_len = strlen(file_version);
 		/* rewind to start of file */
 		rewind(sw->stream);
-		break;	
+		break;
 	case GSM_BTS_TYPE_NANOBTS:
 		/* TODO: extract that from the filename or content */
 		rc = parse_sdp_header(sw);
@@ -1274,7 +1274,7 @@ static int sw_open_file(struct abis_nm_sw *sw, const char *fname)
 
 	return 0;
 }
-	
+
 static void sw_close_file(struct abis_nm_sw *sw)
 {
 	switch (sw->bts->type) {
@@ -1310,7 +1310,7 @@ static int abis_nm_rcvmsg_sw(struct msgb *mb)
 	int rc = -1;
 	struct abis_nm_sw *sw = &g_sw;
 	enum sw_state old_state = sw->state;
-	
+
 	//DEBUGP(DNM, "state %u, NM MT 0x%02x\n", sw->state, foh->msg_type);
 
 	switch (sw->state) {
@@ -1557,7 +1557,7 @@ static void fill_nm_channel(struct abis_nm_channel *ch, uint8_t bts_port,
 	ch->attrib = NM_ATT_ABIS_CHANNEL;
 	ch->bts_port = bts_port;
 	ch->timeslot = ts_nr;
-	ch->subslot = subslot_nr;	
+	ch->subslot = subslot_nr;
 }
 
 int abis_nm_establish_tei(struct gsm_bts *bts, uint8_t trx_nr,
@@ -1572,7 +1572,7 @@ int abis_nm_establish_tei(struct gsm_bts *bts, uint8_t trx_nr,
 	oh = (struct abis_om_hdr *) msgb_put(msg, ABIS_OM_FOM_HDR_SIZE);
 	fill_om_fom_hdr(oh, len, NM_MT_ESTABLISH_TEI, NM_OC_RADIO_CARRIER,
 			bts->bts_nr, trx_nr, 0xff);
-	
+
 	msgb_tv_put(msg, NM_ATT_TEI, tei);
 
 	ch = (struct abis_nm_channel *) msgb_put(msg, sizeof(*ch));
@@ -1593,7 +1593,7 @@ int abis_nm_conn_terr_sign(struct gsm_bts_trx *trx,
 	oh = (struct abis_om_hdr *) msgb_put(msg, ABIS_OM_FOM_HDR_SIZE);
 	fill_om_fom_hdr(oh, sizeof(*ch), NM_MT_CONN_TERR_SIGN,
 			NM_OC_RADIO_CARRIER, bts->bts_nr, trx->nr, 0xff);
-	
+
 	ch = (struct abis_nm_channel *) msgb_put(msg, sizeof(*ch));
 	fill_nm_channel(ch, e1_port, e1_timeslot, e1_subslot);
 
@@ -2313,7 +2313,7 @@ int abis_nm_bs11_logon(struct gsm_bts *bts, uint8_t level, const char *name, int
 		fill_om_fom_hdr(oh, 0, NM_MT_BS11_LMT_LOGOFF,
 				NM_OC_BS11_BTSE, 0xff, 0xff, 0xff);
 	}
-	
+
 	return abis_nm_sendmsg(bts, msg);
 }
 
@@ -2340,7 +2340,7 @@ int abis_nm_bs11_set_pll_locked(struct gsm_bts *bts, int locked)
 	struct abis_om_hdr *oh;
 	struct msgb *msg;
 	uint8_t tlv_value;
-	
+
 	msg = nm_msgb_alloc();
 	oh = (struct abis_om_hdr *) msgb_put(msg, ABIS_OM_FOM_HDR_SIZE);
 	fill_om_fom_hdr(oh, 3, NM_MT_BS11_SET_ATTR, NM_OC_BS11,
@@ -2350,9 +2350,9 @@ int abis_nm_bs11_set_pll_locked(struct gsm_bts *bts, int locked)
 		tlv_value = BS11_LI_PLL_LOCKED;
 	else
 		tlv_value = BS11_LI_PLL_STANDALONE;
-	
+
 	msgb_tlv_put(msg, NM_ATT_BS11_PLL_MODE, 1, &tlv_value);
-	
+
 	return abis_nm_sendmsg(bts, msg);
 }
 
@@ -2410,7 +2410,7 @@ struct file_list_entry *fl_dequeue(struct llist_head *queue)
 
 	lh = queue->next;
 	llist_del(lh);
-	
+
 	return llist_entry(lh, struct file_list_entry, list);
 }
 
@@ -2439,7 +2439,7 @@ static int bs11_read_swl_file(struct abis_nm_bs11_sw *bs11_sw)
 
 		if (strlen(linebuf) < 4)
 			continue;
-	
+
 		rc = sscanf(linebuf+4, "%12s:%80s\r\n", file_id, file_version);
 		if (rc < 0) {
 			perror("ERR parsing SWL file");
@@ -2460,7 +2460,7 @@ static int bs11_read_swl_file(struct abis_nm_bs11_sw *bs11_sw)
 		strncat(fle->fname, dirname(dir), sizeof(fle->fname) - 1);
 		strcat(fle->fname, "/");
 		strncat(fle->fname, file_id, sizeof(fle->fname) - 1 -strlen(fle->fname));
-		
+
 		llist_add_tail(&fle->list, &bs11_sw->file_list);
 	}
 
@@ -2562,7 +2562,7 @@ static uint8_t req_attr_btsm[] = {
 	NM_ATT_FILE_VERSION, NM_ATT_OPER_STATE, 0xe8, NM_ATT_BS11_ALL_TEST_CATG,
 	NM_ATT_SW_DESCR, NM_ATT_GET_ARI };
 #endif
-	
+
 static uint8_t req_attr[] = {
 	NM_ATT_ADM_STATE, NM_ATT_AVAIL_STATUS, 0xa8, NM_ATT_OPER_STATE,
 	0xd5, 0xa1, NM_ATT_BS11_ESN_FW_CODE_NO, NM_ATT_BS11_ESN_HW_CODE_NO,
