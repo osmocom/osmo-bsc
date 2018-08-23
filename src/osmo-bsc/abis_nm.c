@@ -2823,8 +2823,8 @@ int abis_nm_ipaccess_rsl_connect(struct gsm_bts_trx *trx,
 	if (ip == 0)
 		attr_len -= 5;
 
-	LOGP(DNM, LOGL_INFO, "IPA RSL CONNECT IP=%s PORT=%u STREAM=0x%02x\n",
-		inet_ntoa(ia), port, stream);
+	LOGP(DNM, LOGL_INFO, "(bts=%d,trx=%d) IPA RSL CONNECT IP=%s PORT=%u STREAM=0x%02x\n",
+		trx->bts->nr, trx->nr, inet_ntoa(ia), port, stream);
 
 	error = abis_nm_ipaccess_msg(trx->bts, NM_MT_IPACC_RSL_CONNECT,
 				     NM_OC_BASEB_TRANSC, trx->bts->bts_nr,
