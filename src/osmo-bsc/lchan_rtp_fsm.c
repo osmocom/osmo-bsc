@@ -29,6 +29,7 @@
 #include <osmocom/bsc/mgw_endpoint_fsm.h>
 #include <osmocom/bsc/bsc_subscr_conn_fsm.h>
 #include <osmocom/bsc/abis_rsl.h>
+#include <osmocom/bsc/bsc_msc_data.h>
 
 static struct osmo_fsm lchan_rtp_fsm;
 
@@ -154,8 +155,11 @@ static void lchan_rtp_fsm_wait_mgw_endpoint_available_onenter(struct osmo_fsm_in
 
 	lchan->mgw_endpoint_ci_bts = mgw_endpoint_ci_add(mgwep, "to-BTS");
 
-	if (lchan->conn)
+	if (lchan->conn) {
 		crcx_info.call_id = lchan->conn->sccp.conn_id;
+		if (lchan->conn->sccp.msc)
+			crcx_info.x_osmo_ign = lchan->conn->sccp.msc->x_osmo_ign;
+	}
 	crcx_info.ptime = 20;
 	mgcp_pick_codec(&crcx_info, lchan, true);
 

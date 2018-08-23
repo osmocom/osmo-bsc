@@ -191,6 +191,13 @@ static void write_msc(struct vty *vty, struct bsc_msc_data *msc)
 
 	/* write MGW configuration */
 	mgcp_client_config_write(vty, " ");
+
+	if (msc->x_osmo_ign_configured) {
+		if (!msc->x_osmo_ign)
+			vty_out(vty, " no mgw x-osmo-ign%s", VTY_NEWLINE);
+		else
+			vty_out(vty, " mgw x-osmo-ign call-id%s", VTY_NEWLINE);
+	}
 }
 
 static int config_write_msc(struct vty *vty)
@@ -672,6 +679,35 @@ DEFUN(cfg_net_msc_lcls_mismtch,
 	return CMD_SUCCESS;
 }
 
+DEFUN(cfg_msc_mgw_x_osmo_ign,
+      cfg_msc_mgw_x_osmo_ign_cmd,
+      "mgw x-osmo-ign call-id",
+      MGCP_CLIENT_MGW_STR
+      "Set a (non-standard) X-Osmo-IGN header in all CRCX messages for RTP streams"
+      " associated with this MSC, useful for A/SCCPlite MSCs, since osmo-bsc cannot know"
+      " the MSC's chosen CallID. This is enabled by default for A/SCCPlite connections,"
+      " disabled by default for all others.\n"
+      "Send 'X-Osmo-IGN: C' to ignore CallID mismatches. See OsmoMGW.\n")
+{
+	struct bsc_msc_data *msc = bsc_msc_data(vty);
+	msc->x_osmo_ign |= MGCP_X_OSMO_IGN_CALLID;
+	msc->x_osmo_ign_configured = true;
+	return CMD_SUCCESS;
+}
+
+DEFUN(cfg_msc_no_mgw_x_osmo_ign,
+      cfg_msc_no_mgw_x_osmo_ign_cmd,
+      "no mgw x-osmo-ign",
+      NO_STR
+      MGCP_CLIENT_MGW_STR
+      "Do not send X-Osmo-IGN MGCP header to this MSC\n")
+{
+	struct bsc_msc_data *msc = bsc_msc_data(vty);
+	msc->x_osmo_ign = 0;
+	msc->x_osmo_ign_configured = true;
+	return CMD_SUCCESS;
+}
+
 DEFUN(cfg_net_bsc_mid_call_text,
       cfg_net_bsc_mid_call_text_cmd,
       "mid-call-text .TEXT",
@@ -983,6 +1019,8 @@ int bsc_vty_init_extra(void)
 	install_element(CFG_LOG_NODE, &logging_fltr_imsi_cmd);
 
 	mgcp_client_vty_init(net, MSC_NODE, net->mgw.conf);
+	install_element(MSC_NODE, &cfg_msc_mgw_x_osmo_ign_cmd);
+	install_element(MSC_NODE, &cfg_msc_no_mgw_x_osmo_ign_cmd);
 
 	return 0;
 }

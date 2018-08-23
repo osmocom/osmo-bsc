@@ -35,6 +35,7 @@
 #include <osmocom/bsc/gsm_04_80.h>
 #include <osmocom/bsc/bsc_subscr_conn_fsm.h>
 #include <osmocom/bsc/gsm_data.h>
+#include <osmocom/mgcp/mgcp_common.h>
 
 /* A pointer to a list with all involved MSCs
  * (a copy of the pointer location submitted with osmo_bsc_sigtran_init() */
@@ -495,6 +496,15 @@ int osmo_bsc_sigtran_init(struct llist_head *mscs)
 						      msc->a.asp_proto, 0, NULL, 0, NULL);
 		if (!msc->a.sccp)
 			return -EINVAL;
+
+		/* In SCCPlite, the MSC side of the MGW endpoint is configured by the MSC. Since we have
+		 * no way to figure out which CallID ('C:') the MSC will issue in its CRCX command, set
+		 * an X-Osmo-IGN flag telling osmo-mgw to ignore CallID mismatches for this endpoint.
+		 * If an explicit VTY command has already indicated whether or not to send X-Osmo-IGN, do
+		 * not overwrite that setting. */
+		if (msc->a.asp_proto == OSMO_SS7_ASP_PROT_IPA
+		    && !msc->x_osmo_ign_configured)
+			msc->x_osmo_ign |= MGCP_X_OSMO_IGN_CALLID;
 
 		/* If unset, use default local SCCP address */
 		if (!msc->a.bsc_addr.presence)

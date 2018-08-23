@@ -130,6 +130,9 @@ struct bsc_msc_data {
 		 * BSSMAP RESET procedure */
 		struct osmo_fsm_inst *reset_fsm;
 	} a;
+
+	uint32_t x_osmo_ign;
+	bool x_osmo_ign_configured;
 };
 
 /*
