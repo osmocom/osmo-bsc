@@ -77,7 +77,7 @@ bool neighbor_ident_bts_parse_key_params(struct vty *vty, struct gsm_bts *bts, c
 #define LAC_PARAMS "lac <0-65535>"
 #define LAC_DOC "Neighbor cell by LAC\n" "LAC\n"
 
-#define LAC_CI_PARAMS "lac-ci <0-65535> <0-255>"
+#define LAC_CI_PARAMS "lac-ci <0-65535> <0-65535>"
 #define LAC_CI_DOC "Neighbor cell by LAC and CI\n" "LAC\n" "CI\n"
 
 #define LOCAL_BTS_PARAMS "bts <0-255>"
@@ -379,7 +379,7 @@ DEFUN(cfg_neighbor_add_lac_ci_arfcn_bsic, cfg_neighbor_add_lac_ci_arfcn_bsic_cmd
 }
 
 DEFUN(cfg_neighbor_add_cgi_arfcn_bsic, cfg_neighbor_add_cgi_arfcn_bsic_cmd,
-	NEIGHBOR_ADD_CMD "cgi <0-999> <0-999> <0-65535> <0-255> " NEIGHBOR_IDENT_VTY_KEY_PARAMS,
+	NEIGHBOR_ADD_CMD "cgi <0-999> <0-999> <0-65535> <0-65535> " NEIGHBOR_IDENT_VTY_KEY_PARAMS,
 	NEIGHBOR_ADD_DOC "Neighbor cell by cgi\n" "MCC\n" "MNC\n" "LAC\n" "CI\n" NEIGHBOR_IDENT_VTY_KEY_DOC)
 {
 	struct neighbor_ident_key nik;

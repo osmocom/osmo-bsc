@@ -38,7 +38,7 @@ OsmoBSC(config-net)# bts 2
 OsmoBSC(config-net-bts)# type sysmobts
 OsmoBSC(config-net-bts)# base_station_id_code 12
 OsmoBSC(config-net-bts)# location_area_code 22
-OsmoBSC(config-net-bts)# cell_identity 32
+OsmoBSC(config-net-bts)# cell_identity 65535
 OsmoBSC(config-net-bts)# trx 0
 OsmoBSC(config-net-bts-trx)# arfcn 42
 OsmoBSC(config-net-bts-trx)# exit
@@ -68,7 +68,7 @@ OsmoBSC(config-net)# show running-config
 ...
  bts 2
 ...
-  cell_identity 32
+  cell_identity 65535
   location_area_code 22
   base_station_id_code 12
 ...
@@ -82,10 +82,10 @@ OsmoBSC(config-net-bts)# list
 ...
   neighbor add bts <0-255>
   neighbor add lac <0-65535>
-  neighbor add lac-ci <0-65535> <0-255>
+  neighbor add lac-ci <0-65535> <0-65535>
   neighbor add lac <0-65535> arfcn <0-1023> bsic (<0-63>|any)
-  neighbor add lac-ci <0-65535> <0-255> arfcn <0-1023> bsic (<0-63>|any)
-  neighbor add cgi <0-999> <0-999> <0-65535> <0-255> arfcn <0-1023> bsic (<0-63>|any)
+  neighbor add lac-ci <0-65535> <0-65535> arfcn <0-1023> bsic (<0-63>|any)
+  neighbor add cgi <0-999> <0-999> <0-65535> <0-65535> arfcn <0-1023> bsic (<0-63>|any)
   neighbor del bts <0-255>
   neighbor del arfcn <0-1023> bsic (<0-63>|any)
 ...
@@ -106,7 +106,7 @@ OsmoBSC(config-net-bts)# neighbor add bts 1
 % BTS 0 now has local neighbor BTS 1 with LAC 21 CI 31 and ARFCN 41 BSIC 11
 
 OsmoBSC(config-net-bts)# neighbor add lac 22
-% BTS 0 now has local neighbor BTS 2 with LAC 22 CI 32 and ARFCN 42 BSIC 12
+% BTS 0 now has local neighbor BTS 2 with LAC 22 CI 65535 and ARFCN 42 BSIC 12
 
 OsmoBSC(config-net-bts)# neighbor add cgi 23 42 423 5 arfcn 23 bsic 42
 % BTS 0 to ARFCN 23 BSIC 42 now has 1 remote BSS Cell Identifier List entry
@@ -148,7 +148,7 @@ network
  bts 0
 ... !neighbor add
   neighbor add lac-ci 21 31
-  neighbor add lac-ci 22 32
+  neighbor add lac-ci 22 65535
   neighbor add cgi 023 42 423 5 arfcn 23 bsic 42
   neighbor add cgi 023 042 423 6 arfcn 23 bsic 42
   neighbor add cgi 023 042 234 56 arfcn 23 bsic 42
@@ -179,7 +179,7 @@ OsmoBSC(config-net-bts)# neighbor del arfcn 23 bsic 42
 OsmoBSC(config-net-bts)# show running-config
 ... !neighbor add
   neighbor add lac-ci 21 31
-  neighbor add lac-ci 22 32
+  neighbor add lac-ci 22 65535
   neighbor add lac 456 arfcn 123 bsic 45
   neighbor add lac-ci 789 10 arfcn 423 bsic any
   neighbor add lac-ci 789 10 arfcn 423 bsic 63
@@ -192,7 +192,7 @@ OsmoBSC(config-net-bts)# neighbor del arfcn 123 bsic 45
 OsmoBSC(config-net-bts)# show running-config
 ... !neighbor add
   neighbor add lac-ci 21 31
-  neighbor add lac-ci 22 32
+  neighbor add lac-ci 22 65535
   neighbor add lac-ci 789 10 arfcn 423 bsic any
   neighbor add lac-ci 789 10 arfcn 423 bsic 63
   neighbor add lac-ci 789 10 arfcn 423 bsic 1
@@ -204,7 +204,7 @@ OsmoBSC(config-net-bts)# neighbor del arfcn 423 bsic any
 OsmoBSC(config-net-bts)# show running-config
 ... !neighbor add
   neighbor add lac-ci 21 31
-  neighbor add lac-ci 22 32
+  neighbor add lac-ci 22 65535
   neighbor add lac-ci 789 10 arfcn 423 bsic 63
   neighbor add lac-ci 789 10 arfcn 423 bsic 1
 ... !neighbor add
@@ -215,7 +215,7 @@ OsmoBSC(config-net-bts)# neighbor del arfcn 423 bsic 63
 OsmoBSC(config-net-bts)# show running-config
 ... !neighbor add
   neighbor add lac-ci 21 31
-  neighbor add lac-ci 22 32
+  neighbor add lac-ci 22 65535
   neighbor add lac-ci 789 10 arfcn 423 bsic 1
 ... !neighbor add
 
@@ -225,7 +225,7 @@ OsmoBSC(config-net-bts)# neighbor del arfcn 423 bsic 1
 OsmoBSC(config-net-bts)# show running-config
 ... !neighbor add
   neighbor add lac-ci 21 31
-  neighbor add lac-ci 22 32
+  neighbor add lac-ci 22 65535
 ... !neighbor add
 
 OsmoBSC(config-net-bts)# neighbor del arfcn 41 bsic any
@@ -233,7 +233,7 @@ OsmoBSC(config-net-bts)# neighbor del arfcn 41 bsic any
 
 OsmoBSC(config-net-bts)# show running-config
 ... !neighbor add
-  neighbor add lac-ci 22 32
+  neighbor add lac-ci 22 65535
 ... !neighbor add
 
 OsmoBSC(config-net-bts)# neighbor del arfcn 41 bsic any
@@ -241,7 +241,7 @@ OsmoBSC(config-net-bts)# neighbor del arfcn 41 bsic any
 
 OsmoBSC(config-net-bts)# show running-config
 ... !neighbor add
-  neighbor add lac-ci 22 32
+  neighbor add lac-ci 22 65535
 ... !neighbor add
 
 OsmoBSC(config-net-bts)# neighbor del arfcn 42 bsic 12
