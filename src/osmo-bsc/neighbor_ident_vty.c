@@ -74,6 +74,15 @@ bool neighbor_ident_bts_parse_key_params(struct vty *vty, struct gsm_bts *bts, c
 #define NEIGHBOR_ADD_DOC NEIGHBOR_DOC "Add local or remote-BSS neighbor cell\n"
 #define NEIGHBOR_DEL_DOC NEIGHBOR_DOC "Remove local or remote-BSS neighbor cell\n"
 
+#define LAC_PARAMS "lac <0-65535>"
+#define LAC_DOC "Neighbor cell by LAC\n" "LAC\n"
+
+#define LAC_CI_PARAMS "lac-ci <0-65535> <0-255>"
+#define LAC_CI_DOC "Neighbor cell by LAC and CI\n" "LAC\n" "CI\n"
+
+#define LOCAL_BTS_PARAMS "bts <0-255>"
+#define LOCAL_BTS_DOC "Neighbor cell by local BTS number\n" "BTS number\n"
+
 static struct gsm_bts *neighbor_ident_vty_parse_bts_nr(struct vty *vty, const char **argv)
 {
 	const char *bts_nr_str = argv[0];
@@ -206,22 +215,22 @@ static int del_local_bts(struct vty *vty, struct gsm_bts *neigh)
 }
 
 DEFUN(cfg_neighbor_add_bts_nr, cfg_neighbor_add_bts_nr_cmd,
-	NEIGHBOR_ADD_CMD "bts <0-255>",
-	NEIGHBOR_ADD_DOC "Neighbor cell by local BTS number\n" "BTS number\n")
+	NEIGHBOR_ADD_CMD LOCAL_BTS_PARAMS,
+	NEIGHBOR_ADD_DOC LOCAL_BTS_DOC)
 {
 	return add_local_bts(vty, neighbor_ident_vty_parse_bts_nr(vty, argv));
 }
 
 DEFUN(cfg_neighbor_add_lac, cfg_neighbor_add_lac_cmd,
-	NEIGHBOR_ADD_CMD "lac <0-65535>",
-	NEIGHBOR_ADD_DOC "Neighbor cell by LAC\n" "LAC\n")
+	NEIGHBOR_ADD_CMD LAC_PARAMS,
+	NEIGHBOR_ADD_DOC LAC_DOC)
 {
 	return add_local_bts(vty, bts_by_cell_id(vty, neighbor_ident_vty_parse_lac(vty, argv)));
 }
 
 DEFUN(cfg_neighbor_add_lac_ci, cfg_neighbor_add_lac_ci_cmd,
-	NEIGHBOR_ADD_CMD "lac-ci <0-65535> <0-255>",
-	NEIGHBOR_ADD_DOC "Neighbor cell by LAC and CI\n" "LAC\n" "CI\n")
+	NEIGHBOR_ADD_CMD LAC_CI_PARAMS,
+	NEIGHBOR_ADD_DOC LAC_CI_DOC)
 {
 	return add_local_bts(vty, bts_by_cell_id(vty, neighbor_ident_vty_parse_lac_ci(vty, argv)));
 }
@@ -344,8 +353,8 @@ static int del_by_key(struct vty *vty, const struct neighbor_ident_key *key)
 }
 
 DEFUN(cfg_neighbor_add_lac_arfcn_bsic, cfg_neighbor_add_lac_arfcn_bsic_cmd,
-	NEIGHBOR_ADD_CMD "lac <0-65535> " NEIGHBOR_IDENT_VTY_KEY_PARAMS,
-	NEIGHBOR_ADD_DOC "Neighbor cell by lac\n" "lac\n" NEIGHBOR_IDENT_VTY_KEY_DOC)
+	NEIGHBOR_ADD_CMD LAC_PARAMS " " NEIGHBOR_IDENT_VTY_KEY_PARAMS,
+	NEIGHBOR_ADD_DOC LAC_DOC NEIGHBOR_IDENT_VTY_KEY_DOC)
 {
 	struct neighbor_ident_key nik;
 	struct gsm0808_cell_id *cell_id = neighbor_ident_vty_parse_lac(vty, argv);
@@ -357,8 +366,8 @@ DEFUN(cfg_neighbor_add_lac_arfcn_bsic, cfg_neighbor_add_lac_arfcn_bsic_cmd,
 }
 
 DEFUN(cfg_neighbor_add_lac_ci_arfcn_bsic, cfg_neighbor_add_lac_ci_arfcn_bsic_cmd,
-	NEIGHBOR_ADD_CMD "lac-ci <0-65535> <0-255> " NEIGHBOR_IDENT_VTY_KEY_PARAMS,
-	NEIGHBOR_ADD_DOC "Neighbor cell by LAC and CI\n" "LAC\n" "CI\n" NEIGHBOR_IDENT_VTY_KEY_DOC)
+	NEIGHBOR_ADD_CMD LAC_CI_PARAMS " " NEIGHBOR_IDENT_VTY_KEY_PARAMS,
+	NEIGHBOR_ADD_DOC LAC_CI_DOC NEIGHBOR_IDENT_VTY_KEY_DOC)
 {
 	struct neighbor_ident_key nik;
 	struct gsm0808_cell_id *cell_id = neighbor_ident_vty_parse_lac_ci(vty, argv);
@@ -383,8 +392,8 @@ DEFUN(cfg_neighbor_add_cgi_arfcn_bsic, cfg_neighbor_add_cgi_arfcn_bsic_cmd,
 }
 
 DEFUN(cfg_neighbor_del_bts_nr, cfg_neighbor_del_bts_nr_cmd,
-	NEIGHBOR_DEL_CMD "bts <0-255>",
-	NEIGHBOR_DEL_DOC "Neighbor cell by local BTS number\n" "BTS number\n")
+	NEIGHBOR_DEL_CMD LOCAL_BTS_PARAMS,
+	NEIGHBOR_DEL_DOC LOCAL_BTS_DOC)
 {
 	return del_local_bts(vty, neighbor_ident_vty_parse_bts_nr(vty, argv));
 }
