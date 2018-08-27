@@ -213,16 +213,23 @@ struct state_timeout lchan_fsm_timeouts[32] = {
  * continue with (using state timeouts from lchan_fsm_timeouts[]). Assumes local variable fi exists. */
 #define lchan_fail_to(STATE_CHG, fmt, args...) do { \
 		struct gsm_lchan *_lchan = fi->priv; \
+		struct osmo_fsm *fsm = fi->fsm; \
 		uint32_t state_was = fi->state; \
 		/* Snapshot the target state, in case the macro argument evaluates differently later */ \
 		const uint32_t state_chg = STATE_CHG; \
+		LOG_LCHAN(_lchan, LOGL_DEBUG, "Handling failure, will then transition to state %s\n", \
+			  osmo_fsm_state_name(fsm, state_chg)); \
 		lchan_set_last_error(_lchan, "lchan %s in state %s: " fmt, \
 				     _lchan->activate.concluded ? "failure" : "allocation failed", \
-				     osmo_fsm_state_name(fi->fsm, state_was), ## args); \
+				     osmo_fsm_state_name(fsm, state_was), ## args); \
 		if (!_lchan->activate.concluded) \
 			lchan_on_activation_failure(_lchan, _lchan->activate.activ_for, _lchan->conn); \
 		_lchan->activate.concluded = true; \
-		lchan_fsm_state_chg(state_chg); \
+		if (fi->state != state_chg) \
+			lchan_fsm_state_chg(state_chg); \
+		else \
+			LOG_LCHAN(_lchan, LOGL_DEBUG, "After failure handling, already in state %s\n", \
+				  osmo_fsm_state_name(fsm, state_chg)); \
 	} while(0)
 
 /* Which state to transition to when lchan_fail() is called in a given state. */
