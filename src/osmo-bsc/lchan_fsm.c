@@ -88,6 +88,10 @@ static void _lchan_on_activation_failure(struct gsm_lchan *lchan, enum lchan_act
 					 struct gsm_subscriber_connection *for_conn,
 					 const char *file, int line)
 {
+	if (lchan->activate.concluded)
+		return;
+	lchan->activate.concluded = true;
+
 	switch (activ_for) {
 
 	case FOR_MS_CHANNEL_REQUEST:
@@ -135,6 +139,10 @@ static void _lchan_on_activation_failure(struct gsm_lchan *lchan, enum lchan_act
 
 static void lchan_on_fully_established(struct gsm_lchan *lchan)
 {
+	if (lchan->activate.concluded)
+		return;
+	lchan->activate.concluded = true;
+
 	switch (lchan->activate.activ_for) {
 	case FOR_MS_CHANNEL_REQUEST:
 		/* No signalling to do here, MS is free to use the channel, and should go on to connect
@@ -222,9 +230,7 @@ struct state_timeout lchan_fsm_timeouts[32] = {
 		lchan_set_last_error(_lchan, "lchan %s in state %s: " fmt, \
 				     _lchan->activate.concluded ? "failure" : "allocation failed", \
 				     osmo_fsm_state_name(fsm, state_was), ## args); \
-		if (!_lchan->activate.concluded) \
-			lchan_on_activation_failure(_lchan, _lchan->activate.activ_for, _lchan->conn); \
-		_lchan->activate.concluded = true; \
+		lchan_on_activation_failure(_lchan, _lchan->activate.activ_for, _lchan->conn); \
 		if (fi->state != state_chg) \
 			lchan_fsm_state_chg(state_chg); \
 		else \
@@ -751,10 +757,6 @@ static void lchan_fsm_established_onenter(struct osmo_fsm_inst *fi, uint32_t pre
 		return;
 	}
 
-	/* This flag ensures that when an lchan activation has succeeded, and we have already sent ACKs
-	 * like Immediate Assignment or BSSMAP Assignment Complete, and if then, way later, some other
-	 * error occurs, e.g. during release, that we don't send a NACK out of context. */
-	lchan->activate.concluded = true;
 	lchan_on_fully_established(lchan);
 }
 
