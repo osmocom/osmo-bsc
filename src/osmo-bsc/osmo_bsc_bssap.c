@@ -1041,6 +1041,7 @@ int bsc_tx_bssmap_ho_request_ack(struct gsm_subscriber_connection *conn, struct 
 	struct msgb *msg;
 	struct gsm_lchan *new_lchan = conn->ho.new_lchan;
 
+	LOG_HO(conn, LOGL_DEBUG, "Sending BSSMAP Handover Request Acknowledge\n");
 	msg = gsm0808_create_handover_request_ack(rr_ho_command->data, rr_ho_command->len,
 						  gsm0808_chosen_channel(new_lchan->type,
 									 new_lchan->tch_mode),
