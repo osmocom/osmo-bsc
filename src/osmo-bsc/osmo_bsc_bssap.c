@@ -1121,7 +1121,7 @@ void bsc_tx_bssmap_ho_failure(struct gsm_subscriber_connection *conn)
 		return;
 	}
 
-	rc = gscon_sigtran_send(conn, msg);
+	rc = osmo_bsc_sigtran_send(conn, msg);
 	if (rc)
 		LOG_HO(conn, LOGL_ERROR, "Cannot send BSSMAP Handover Failure message (rc=%d %s)\n",
 		       rc, strerror(-rc));
