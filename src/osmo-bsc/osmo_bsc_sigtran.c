@@ -363,16 +363,18 @@ int osmo_bsc_sigtran_send(struct gsm_subscriber_connection *conn, struct msgb *m
 	if (msg->len >= 3) {
 		switch (msg->data[0]) {
 		case BSSAP_MSG_BSS_MANAGEMENT:
-			LOGP(DMSC, LOGL_INFO, "Tx MSC %s\n", gsm0808_bssmap_name(msg->data[2]));
+			LOGP(DMSC, LOGL_INFO, "Tx MSC: BSSMAP: %s\n",
+			     gsm0808_bssmap_name(msg->data[2]));
 			break;
 		case BSSAP_MSG_DTAP:
-			LOGP(DMSC, LOGL_INFO, "Tx MSC DTAP\n");
+			LOGP(DMSC, LOGL_INFO, "Tx MSC: DTAP\n");
 			break;
 		default:
-			LOGP(DMSC, LOGL_ERROR, "Tx MSC (unknwon message type)\n");
+			LOGP(DMSC, LOGL_ERROR, "Tx MSC: unknown message type: 0x%x\n",
+			     msg->data[0]);
 		}
 	} else
-		LOGP(DMSC, LOGL_ERROR, "Tx MSC (message too short)\n");
+		LOGP(DMSC, LOGL_ERROR, "Tx MSC: message too short: %u\n", msg->len);
 
 	if (a_reset_conn_ready(msc) == false) {
 		LOGP(DMSC, LOGL_ERROR, "MSC is not connected. Dropping.\n");
