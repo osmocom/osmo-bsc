@@ -424,10 +424,10 @@ static bool parse_ho_request(struct gsm_subscriber_connection *conn, const struc
 		}
 		memcpy(&req->classmark.classmark2, e->val, len);
 		req->classmark.classmark2_len = len;
-	} else {
-		LOG_HO(conn, LOGL_ERROR, "Missing IE: either Classmark Information 1 or 2 required\n");
-		return false;
-	}
+	} else
+		LOG_HO(conn, LOGL_INFO,
+		       "Missing mandatory IE: 3GPP mandates either Classmark Information 1 or 2"
+		       " in BSSMAP Handover Request, but neither are present. Will continue without.\n");
 
 	if (TLVP_PRESENT(tp, GSM0808_IE_AOIP_TRASP_ADDR)) {
 		int rc;
