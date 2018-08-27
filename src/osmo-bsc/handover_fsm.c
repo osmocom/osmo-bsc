@@ -487,25 +487,8 @@ static bool parse_ho_request(struct gsm_subscriber_connection *conn, const struc
 	OSMO_STRLCPY_ARRAY(req->cell_id_target_name, gsm0808_cell_id_name(&req->cell_id_target));
 
 	if ((e = TLVP_GET(tp, GSM0808_IE_CIRCUIT_IDENTITY_CODE))) {
-		int timeslot;
-		int multiplex;
-
 		/* CIC is permitted in both AoIP and SCCPlite */
 		req->msc_assigned_cic = osmo_load16be(e->val);
-
-		/* For SCCPlite, the CIC implies the RTP port to use */
-		if (sccplite) {
-			timeslot = req->msc_assigned_cic & 0x1f;
-			multiplex = (req->msc_assigned_cic & ~0x1f) >> 5;
-			req->msc_assigned_rtp_port = mgcp_timeslot_to_port(multiplex, timeslot,
-									   conn->sccp.msc->rtp_base);
-			LOG_HO(conn, LOGL_DEBUG, "Derived RTP port from MSC assigned CIC:"
-			       " CIC=0x%x (timeslot=%d multiplex=%d) rtp_base=%d=0x%x RTP-port=%u\n",
-			       req->msc_assigned_cic, timeslot, multiplex,
-			       conn->sccp.msc->rtp_base, conn->sccp.msc->rtp_base,
-			       req->msc_assigned_rtp_port);
-		}
-
 	} else if (sccplite) {
 		/* no CIC but SCCPlite: illegal */
 		LOG_HO(conn, LOGL_ERROR, "SCCPlite MSC, but no CIC in incoming inter-BSC Handover\n");
