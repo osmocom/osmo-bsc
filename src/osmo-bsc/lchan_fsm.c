@@ -211,9 +211,11 @@ struct state_timeout lchan_fsm_timeouts[32] = {
 
 /* Set a failure message, trigger the common actions to take on failure, transition to a state to
  * continue with (using state timeouts from lchan_fsm_timeouts[]). Assumes local variable fi exists. */
-#define lchan_fail_to(state_chg, fmt, args...) do { \
+#define lchan_fail_to(STATE_CHG, fmt, args...) do { \
 		struct gsm_lchan *_lchan = fi->priv; \
 		uint32_t state_was = fi->state; \
+		/* Snapshot the target state, in case the macro argument evaluates differently later */ \
+		const uint32_t state_chg = STATE_CHG; \
 		lchan_set_last_error(_lchan, "lchan %s in state %s: " fmt, \
 				     _lchan->activate.concluded ? "failure" : "allocation failed", \
 				     osmo_fsm_state_name(fi->fsm, state_was), ## args); \
