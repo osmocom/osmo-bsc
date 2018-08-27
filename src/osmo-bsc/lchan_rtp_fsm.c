@@ -141,7 +141,7 @@ static void lchan_rtp_fsm_wait_mgw_endpoint_available_onenter(struct osmo_fsm_in
 	struct mgcp_conn_peer crcx_info = {};
 
 	if (use_mgwep_ci) {
-		LOG_LCHAN_RTP(lchan, LOGL_DEBUG, "MGW endpoint already available: %s",
+		LOG_LCHAN_RTP(lchan, LOGL_DEBUG, "MGW endpoint already available: %s\n",
 			      mgwep_ci_name(use_mgwep_ci));
 		lchan_rtp_fsm_state_chg(LCHAN_RTP_ST_WAIT_LCHAN_READY);
 		return;
@@ -174,7 +174,7 @@ static void lchan_rtp_fsm_wait_mgw_endpoint_available(struct osmo_fsm_inst *fi, 
 	switch (event) {
 
 	case LCHAN_RTP_EV_MGW_ENDPOINT_AVAILABLE:
-		LOG_LCHAN_RTP(lchan, LOGL_DEBUG, "MGW endpoint: %s",
+		LOG_LCHAN_RTP(lchan, LOGL_DEBUG, "MGW endpoint: %s\n",
 			      mgwep_ci_name(lchan_use_mgw_endpoint_ci_bts(lchan)));
 		lchan_rtp_fsm_state_chg(LCHAN_RTP_ST_WAIT_LCHAN_READY);
 		return;
@@ -205,7 +205,7 @@ static void lchan_rtp_fsm_wait_lchan_ready_onenter(struct osmo_fsm_inst *fi, uin
 	struct gsm_lchan *lchan = lchan_rtp_fi_lchan(fi);
 
 	if (lchan->activate.activ_ack) {
-		LOG_LCHAN_RTP(lchan, LOGL_DEBUG, "Activ Ack received earlier, no need to wait");
+		LOG_LCHAN_RTP(lchan, LOGL_DEBUG, "Activ Ack received earlier, no need to wait\n");
 		lchan_rtp_fsm_post_lchan_ready(fi);
 	}
 }
@@ -426,7 +426,7 @@ static void connect_mgw_endpoint_to_lchan(struct osmo_fsm_inst *fi,
 		return;
 	}
 
-	LOG_LCHAN_RTP(lchan, LOGL_DEBUG, "Sending BTS side RTP port info %s:%u to MGW %s",
+	LOG_LCHAN_RTP(lchan, LOGL_DEBUG, "Sending BTS side RTP port info %s:%u to MGW %s\n",
 		      mdcx_info.addr, mdcx_info.port, mgwep_ci_name(ci));
 	mgw_endpoint_ci_request(ci, MGCP_VERB_MDCX, &mdcx_info,
 				fi, LCHAN_RTP_EV_MGW_ENDPOINT_CONFIGURED,
