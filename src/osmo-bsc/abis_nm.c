@@ -29,6 +29,7 @@
 #include <libgen.h>
 #include <time.h>
 #include <limits.h>
+#include <inttypes.h>
 
 #include <sys/stat.h>
 #include <netinet/in.h>
@@ -2662,9 +2663,7 @@ static int abis_nm_rx_ipacc(struct msgb *msg)
 			DEBUGPC(DNM, "IP=%s ", inet_ntoa(addr));
 		}
 		if (TLVP_PRESENT(&tp, NM_ATT_IPACC_DST_IP_PORT))
-			DEBUGPC(DNM, "PORT=%u ",
-				ntohs(*((uint16_t *)
-					TLVP_VAL(&tp, NM_ATT_IPACC_DST_IP_PORT))));
+			DEBUGPC(DNM, "PORT=%" SCNu16 " ", osmo_load16be(TLVP_VAL(&tp, NM_ATT_IPACC_DST_IP_PORT)));
 		if (TLVP_PRESENT(&tp, NM_ATT_IPACC_STREAM_ID))
 			DEBUGPC(DNM, "STREAM=0x%02x ",
 					*TLVP_VAL(&tp, NM_ATT_IPACC_STREAM_ID));
