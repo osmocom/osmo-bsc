@@ -460,8 +460,6 @@ static void lchan_fsm_unused(struct osmo_fsm_inst *fi, uint32_t event, void *dat
 			};
 			lchan->ms_power = ms_pwr_ctl_lvl(bts->band, bts->ms_max_power);
 			lchan->bs_power = 0; /* 0dB reduction, output power = Pn */
-			memset(&lchan->mr_ms_lv, 0, sizeof(lchan->mr_ms_lv));
-			memset(&lchan->mr_bts_lv, 0, sizeof(lchan->mr_bts_lv));
 		}
 
 		if (info->chan_mode == GSM48_CMODE_SPEECH_AMR)
