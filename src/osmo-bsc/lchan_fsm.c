@@ -447,14 +447,12 @@ static void lchan_fsm_unused(struct osmo_fsm_inst *fi, uint32_t event, void *dat
 		lchan->activate.re_use_mgw_endpoint_from_lchan = info->old_lchan;
 
 		if (info->old_lchan) {
-			/* TODO: rather take info->for_conn->encr? */
 			lchan->encr = info->old_lchan->encr;
 			lchan->ms_power = info->old_lchan->ms_power;
 			lchan->bs_power = info->old_lchan->bs_power;
 			lchan->rqd_ta = info->old_lchan->rqd_ta;
 		} else {
 			struct gsm_bts *bts = lchan->ts->trx->bts;
-			/* TODO: rather take info->for_conn->encr? */
 			lchan->encr = (struct gsm_encr){
 				.alg_id = RSL_ENC_ALG_A5(0),	/* no encryption */
 			};
