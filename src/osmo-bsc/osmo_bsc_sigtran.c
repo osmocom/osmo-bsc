@@ -35,7 +35,7 @@
 #include <osmocom/bsc/gsm_04_80.h>
 #include <osmocom/bsc/bsc_subscr_conn_fsm.h>
 #include <osmocom/bsc/gsm_data.h>
-#include <osmocom/mgcp/mgcp_common.h>
+#include <osmocom/mgcp_client/mgcp_common.h>
 
 /* A pointer to a list with all involved MSCs
  * (a copy of the pointer location submitted with osmo_bsc_sigtran_init() */
