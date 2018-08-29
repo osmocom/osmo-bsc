@@ -429,6 +429,8 @@ static void lchan_fsm_unused(struct osmo_fsm_inst *fi, uint32_t event, void *dat
 {
 	struct lchan_activate_info *info = data;
 	struct gsm_lchan *lchan = lchan_fi_lchan(fi);
+	struct gsm_bts *bts = lchan->ts->trx->bts;
+
 	switch (event) {
 
 	case LCHAN_EV_ACTIVATE:
@@ -446,18 +448,25 @@ static void lchan_fsm_unused(struct osmo_fsm_inst *fi, uint32_t event, void *dat
 		lchan->activate.concluded = false;
 		lchan->activate.re_use_mgw_endpoint_from_lchan = info->old_lchan;
 
-		if (info->old_lchan) {
+		if (info->old_lchan)
 			lchan->encr = info->old_lchan->encr;
+		else {
+			lchan->encr = (struct gsm_encr){
+				.alg_id = RSL_ENC_ALG_A5(0),	/* no encryption */
+			};
+		}
+
+		/* If there is a previous lchan, and the new lchan is on the same cell as previous one,
+		 * take over power and TA values. Otherwise, use max power and zero TA. */
+		if (info->old_lchan && info->old_lchan->ts->trx->bts == bts) {
 			lchan->ms_power = info->old_lchan->ms_power;
 			lchan->bs_power = info->old_lchan->bs_power;
 			lchan->rqd_ta = info->old_lchan->rqd_ta;
 		} else {
-			struct gsm_bts *bts = lchan->ts->trx->bts;
-			lchan->encr = (struct gsm_encr){
-				.alg_id = RSL_ENC_ALG_A5(0),	/* no encryption */
-			};
 			lchan->ms_power = ms_pwr_ctl_lvl(bts->band, bts->ms_max_power);
-			lchan->bs_power = 0; /* 0dB reduction, output power = Pn */
+			/* From lchan_reset():
+			 * - bs_power is still zero, 0dB reduction, output power = Pn.
+			 * - TA is still zero, to be determined by RACH. */
 		}
 
 		if (info->chan_mode == GSM48_CMODE_SPEECH_AMR)
