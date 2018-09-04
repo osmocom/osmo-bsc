@@ -20,6 +20,7 @@
  */
 
 #include <osmocom/core/msgb.h>
+#include <osmocom/gsm/protocol/gsm_08_08.h>
 #include <osmocom/gsm/gsm0808_utils.h>
 #include <osmocom/bsc/bsc_msc_data.h>
 #include <osmocom/bsc/codec_pref.h>
@@ -43,7 +44,9 @@ static enum gsm48_chan_mode gsm88_to_chan_mode(enum gsm0808_permitted_speech spe
 		return GSM48_CMODE_SPEECH_AMR;
 		break;
 	default:
-		LOGP(DMSC, LOGL_FATAL, "Unsupported permitted speech selected, assuming AMR as channel mode...\n");
+		LOGP(DMSC, LOGL_FATAL, "Unsupported permitted speech %s selected, "
+		     "assuming AMR as channel mode...\n",
+		     gsm0808_permitted_speech_name(speech));
 		return GSM48_CMODE_SPEECH_AMR;
 	}
 }
