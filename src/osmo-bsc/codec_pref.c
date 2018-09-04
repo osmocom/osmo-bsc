@@ -35,7 +35,6 @@ static enum gsm48_chan_mode gsm88_to_chan_mode(enum gsm0808_permitted_speech spe
 	case GSM0808_PERM_FR1:
 		return GSM48_CMODE_SPEECH_V1;
 		break;
-	case GSM0808_PERM_HR2:
 	case GSM0808_PERM_FR2:
 		return GSM48_CMODE_SPEECH_EFR;
 		break;
@@ -43,6 +42,8 @@ static enum gsm48_chan_mode gsm88_to_chan_mode(enum gsm0808_permitted_speech spe
 	case GSM0808_PERM_FR3:
 		return GSM48_CMODE_SPEECH_AMR;
 		break;
+	case GSM0808_PERM_HR2:
+		LOGP(DMSC, LOGL_FATAL, "Speech HR2 was never specified!\n");
 	default:
 		LOGP(DMSC, LOGL_FATAL, "Unsupported permitted speech %s selected, "
 		     "assuming AMR as channel mode...\n",
