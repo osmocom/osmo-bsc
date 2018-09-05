@@ -171,8 +171,6 @@ static void send_assignment_complete(struct gsm_subscriber_connection *conn, str
 		/* FIXME: AMR codec configuration must be derived from lchan1! */
 	}
 
-	gsm0808_speech_codec_from_chan_type(&sc, perm_spch);
-
 	resp = gsm0808_create_ass_compl(lchan->abis_ip.ass_compl.rr_cause,
 					chosen_channel,
 					lchan->encr.alg_id, perm_spch,
