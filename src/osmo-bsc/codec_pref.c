@@ -44,6 +44,7 @@ static enum gsm48_chan_mode gsm88_to_chan_mode(enum gsm0808_permitted_speech spe
 		break;
 	case GSM0808_PERM_HR2:
 		LOGP(DMSC, LOGL_FATAL, "Speech HR2 was never specified!\n");
+		/* fall through */
 	default:
 		LOGP(DMSC, LOGL_FATAL, "Unsupported permitted speech %s selected, "
 		     "assuming AMR as channel mode...\n",
