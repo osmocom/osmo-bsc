@@ -683,14 +683,13 @@ int rsl_paging_cmd(struct gsm_bts *bts, uint8_t paging_group, uint8_t len,
 int rsl_forward_layer3_info(struct gsm_lchan *lchan, const uint8_t *l3_info, uint8_t l3_info_len)
 {
 	struct msgb *msg;
-	uint8_t *dst;
 
 	if (!l3_info || !l3_info_len)
 		return -EINVAL;
 
 	msg = rsl_msgb_alloc();
-	dst = msgb_put(msg, l3_info_len);
-	memcpy(dst, l3_info, l3_info_len);
+	msg->l3h = msgb_put(msg, l3_info_len);
+	memcpy(msg->l3h, l3_info, l3_info_len);
 
 	msg->lchan = lchan;
 	return rsl_data_request(msg, 0);
