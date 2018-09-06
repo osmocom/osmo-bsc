@@ -1100,7 +1100,7 @@ enum handover_result bsc_tx_bssmap_ho_complete(struct gsm_subscriber_connection 
 		return HO_RESULT_ERROR;
 	}
 
-	rc = gscon_sigtran_send(conn, msg);
+	rc = osmo_bsc_sigtran_send(conn, msg);
 	if (rc) {
 		LOG_HO(conn, LOGL_ERROR, "Cannot send BSSMAP Handover Complete message\n");
 		return HO_RESULT_ERROR;
