@@ -163,12 +163,12 @@ static void send_assignment_complete(struct gsm_subscriber_connection *conn, str
 				return;
 			}
 			addr_local_p = &addr_local;
-
-			/* Extrapolate speech codec from speech mode */
-			gsm0808_speech_codec_from_chan_type(&sc, perm_spch);
-			sc_ptr = &sc;
 		}
+
+		/* Extrapolate speech codec from speech mode */
 		/* FIXME: AMR codec configuration must be derived from lchan1! */
+		gsm0808_speech_codec_from_chan_type(&sc, perm_spch);
+		sc_ptr = &sc;
 	}
 
 	resp = gsm0808_create_ass_compl(lchan->abis_ip.ass_compl.rr_cause,
