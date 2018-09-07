@@ -1025,6 +1025,18 @@ static void ho_out_fsm_wait_ho_command(struct osmo_fsm_inst *fi, uint32_t event,
 	}
 }
 
+static void ho_out_fsm_wait_clear(struct osmo_fsm_inst *fi, uint32_t event, void *data)
+{
+	struct gsm_subscriber_connection *conn = ho_fi_conn(fi);
+	switch (event) {
+	case HO_EV_RR_HO_FAIL:
+		ho_fail(HO_RESULT_FAIL_RR_HO_FAIL, "Received RR Handover Failure message");
+		return;
+
+	default:
+		OSMO_ASSERT(false);
+	}
+}
 
 #define S(x)	(1 << (x))
 
@@ -1108,6 +1120,10 @@ static const struct osmo_fsm_state ho_fsm_states[] = {
 	},
 	[HO_OUT_ST_WAIT_CLEAR] = {
 		.name = "inter-BSC-OUT:WAIT_CLEAR",
+		.in_event_mask = 0
+			| S(HO_EV_RR_HO_FAIL)
+			,
+		.action = ho_out_fsm_wait_clear,
 	},
 };
 
