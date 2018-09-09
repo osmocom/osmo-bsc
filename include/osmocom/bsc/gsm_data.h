@@ -1198,6 +1198,9 @@ uint8_t gsm_lchan2chan_nr(const struct gsm_lchan *lchan);
 uint8_t gsm_lchan_as_pchan2chan_nr(const struct gsm_lchan *lchan,
 				   enum gsm_phys_chan_config as_pchan);
 
+void gsm48_lchan2chan_desc(struct gsm48_chan_desc *cd,
+			   const struct gsm_lchan *lchan);
+
 /* return the gsm_lchan for the CBCH (if it exists at all) */
 struct gsm_lchan *gsm_bts_get_cbch(struct gsm_bts *bts);
 
