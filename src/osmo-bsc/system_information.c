@@ -963,7 +963,7 @@ static int generate_si4(enum osmo_sysinfo_type t, struct gsm_bts *bts)
 	cbch_lchan = gsm_bts_get_cbch(bts);
 	if (cbch_lchan) {
 		struct gsm48_chan_desc cd;
-		gsm48_lchan2chan_desc(&cd, cbch_lchan);
+		gsm48_lchan2chan_desc_as_configured(&cd, cbch_lchan);
 		tv_fixed_put(si4->data, GSM48_IE_CBCH_CHAN_DESC, 3,
 			     (uint8_t *) &cd);
 		l2_plen += 3 + 1;
