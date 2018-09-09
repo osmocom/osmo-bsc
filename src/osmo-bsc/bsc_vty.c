@@ -4240,6 +4240,10 @@ DEFUN(smscb_cmd, smscb_cmd_cmd,
 		vty_out(vty, "%% No such BTS (%d)%s", bts_nr, VTY_NEWLINE);
 		return CMD_WARNING;
 	}
+	if (!gsm_bts_get_cbch(bts)) {
+		vty_out(vty, "%% BTS %d doesn't have a CBCH%s", bts_nr, VTY_NEWLINE);
+		return CMD_WARNING;
+	}
 	rc = osmo_hexparse(argv[2], buf, sizeof(buf));
 	if (rc < 0 || rc > sizeof(buf)) {
 		vty_out(vty, "Error parsing HEXSTRING%s", VTY_NEWLINE);
