@@ -1204,12 +1204,12 @@ struct gsm_lchan *gsm_bts_get_cbch(struct gsm_bts *bts)
 	struct gsm_lchan *lchan = NULL;
 	struct gsm_bts_trx *trx = bts->c0;
 
-	if (trx->ts[0].pchan_is == GSM_PCHAN_CCCH_SDCCH4_CBCH)
+	if (trx->ts[0].pchan_from_config == GSM_PCHAN_CCCH_SDCCH4_CBCH)
 		lchan = &trx->ts[0].lchan[2];
 	else {
 		int i;
 		for (i = 0; i < 8; i++) {
-			if (trx->ts[i].pchan_is == GSM_PCHAN_SDCCH8_SACCH8C_CBCH) {
+			if (trx->ts[i].pchan_from_config == GSM_PCHAN_SDCCH8_SACCH8C_CBCH) {
 				lchan = &trx->ts[i].lchan[2];
 				break;
 			}
