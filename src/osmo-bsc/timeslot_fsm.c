@@ -295,6 +295,15 @@ static void ts_fsm_unused_onenter(struct osmo_fsm_inst *fi, uint32_t prev_state)
 					T_CHAN_ACT_DEACT);
 		break;
 
+	case GSM_PCHAN_CCCH_SDCCH4_CBCH:
+	case GSM_PCHAN_SDCCH8_SACCH8C_CBCH:
+		/* For any pchans containing a CBCH, lchan[2] is reserved for CBCH and cannot be
+		 * allocated for SDCCH. */
+		OSMO_ASSERT(ts->lchan[2].fi);
+		ts->lchan[2].type = GSM_LCHAN_CBCH;
+		osmo_fsm_inst_state_chg(ts->lchan[2].fi, LCHAN_ST_CBCH, 0, 0);
+		break;
+
 	default:
 		/* nothing to do */
 		break;

@@ -14,6 +14,7 @@
 
 enum lchan_fsm_state {
 	LCHAN_ST_UNUSED,
+	LCHAN_ST_CBCH, /*< Blocked by CBCH channel combination, not usable as SDCCH. */
 	LCHAN_ST_WAIT_TS_READY,
 	LCHAN_ST_WAIT_ACTIV_ACK, /*< After RSL Chan Act Ack, lchan is active but RTP not configured. */
 	LCHAN_ST_WAIT_RLL_RTP_ESTABLISH,
