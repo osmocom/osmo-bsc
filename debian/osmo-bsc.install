@@ -1,3 +1,4 @@
+lib/systemd/system/osmo-bsc.service
 usr/bin/osmo-bsc
 usr/share/doc/osmo-bsc/examples/osmo-bsc/osmo-bsc_custom-sccp.cfg usr/share/doc/osmo-bsc/examples
 usr/share/doc/osmo-bsc/examples/osmo-bsc/osmo-bsc.cfg usr/share/doc/osmo-bsc/examples
