@@ -268,10 +268,6 @@ struct gsm_subscriber_connection {
 		/* The connection identifier of the mgw_endpoint used to transceive RTP towards the MSC.
 		 * (The BTS side CI is handled by struct gsm_lchan and the lchan_fsm.) */
 		struct mgwep_ci *mgw_endpoint_ci_msc;
-
-		/* Channel mode requested by the MSC (signalling or voice channel) */
-		enum gsm48_chan_mode chan_mode;
-
 	} user_plane;
 
 	/* LCLS (local call, local switch) related state */
