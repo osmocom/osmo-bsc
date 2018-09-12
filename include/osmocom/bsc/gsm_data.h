@@ -269,9 +269,6 @@ struct gsm_subscriber_connection {
 		 * (The BTS side CI is handled by struct gsm_lchan and the lchan_fsm.) */
 		struct mgwep_ci *mgw_endpoint_ci_msc;
 
-		/* Channel rate flag requested by the MSC, FR=1, HR=0, Invalid=-1 */
-		int full_rate;
-
 		/* Channel mode requested by the MSC (signalling or voice channel) */
 		enum gsm48_chan_mode chan_mode;
 
