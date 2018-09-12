@@ -274,15 +274,15 @@ static bool lcls_enable_possible(struct gsm_subscriber_connection *conn)
 		return false;
 	}
 
-	if (conn->user_plane.full_rate != conn->lcls.other->user_plane.full_rate
+	if (conn->lchan->type != conn->lcls.other->lchan->type
 	    && conn->sccp.msc->lcls_codec_mismatch_allow == false) {
-		LOGPFSM(conn->lcls.fi, "Not enabling LS due to codec mismiatch (channel rate)\n");
+		LOGPFSM(conn->lcls.fi, "Not enabling LS due to codec mismatch (channel type)\n");
 		return false;
 	}
 
-	if (conn->user_plane.chan_mode != conn->lcls.other->user_plane.chan_mode
+	if (conn->lchan->tch_mode != conn->lcls.other->lchan->tch_mode
 	    && conn->sccp.msc->lcls_codec_mismatch_allow == false) {
-		LOGPFSM(conn->lcls.fi, "Not enabling LS due to codec mismiatch (channel mode)\n");
+		LOGPFSM(conn->lcls.fi, "Not enabling LS due to codec mismatch (TCH-Mode)\n");
 		return false;
 	}
 
