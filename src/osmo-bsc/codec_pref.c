@@ -242,3 +242,68 @@ int match_codec_pref(enum gsm48_chan_mode *chan_mode,
 
 	return 0;
 }
+
+/*! Determine the BSS supported speech codec list that is sent to the MSC with
+ * the COMPLETE LAYER 3 INFORMATION message.
+ *  \param[out] scl GSM 08.08 speech codec list with BSS supported codecs.
+ *  \param[in] msc associated msc (current codec settings).
+ *  \param[in] bts associated bts (current codec settings). */
+void gen_bss_supported_codec_list(struct gsm0808_speech_codec_list *scl,
+				  const struct bsc_msc_data *msc, const struct gsm_bts *bts)
+{
+	uint8_t perm_spch;
+	unsigned int i;
+	int rc;
+	uint16_t amr_s15_s0_bts;
+	uint16_t amr_s15_s0_msc;
+	uint16_t amr_s15_s0;
+	const struct gsm48_multi_rate_conf *amr_cfg_bts;
+	const struct gsm48_multi_rate_conf *amr_cfg_msc;
+
+	memset(scl, 0, sizeof(*scl));
+
+	for (i = 0; i < msc->audio_length; i++) {
+
+		/* Pick a permitted speech value from the global codec configuration list */
+		perm_spch = audio_support_to_gsm88(msc->audio_support[i]);
+
+		/* Check this permitted speech value against the BTS specific parameters.
+		 * if the BTS does not support the codec, try the next one */
+		if (!test_codec_support_bts(&bts->codec, perm_spch))
+			continue;
+
+		/* Write item into codec list */
+		rc = gsm0808_speech_codec_from_chan_type(&scl->codec[scl->len], perm_spch);
+		if (rc != 0)
+			continue;
+
+		/* AMR (HR/FR version 3) is the only codec that requires a codec
+		 * configuration (S0-S15). Determine the current configuration and update
+		 * the cfg flag. */
+		if (msc->audio_support[i]->ver == 3) {
+
+			/* First lookup the BTS specific AMR rate configuration. Thsi config
+			 * is set via the VTY for each BTS individually. In cases where no
+			 * configuration is set we will assume a safe default */
+			if (msc->audio_support[i]->hr) {
+				amr_cfg_bts = (struct gsm48_multi_rate_conf *)&bts->mr_half.gsm48_ie;
+				amr_s15_s0_bts = gsm0808_sc_cfg_from_gsm48_mr_cfg(amr_cfg_bts, false);
+			} else {
+				amr_cfg_bts = (struct gsm48_multi_rate_conf *)&bts->mr_full.gsm48_ie;
+				amr_s15_s0_bts = gsm0808_sc_cfg_from_gsm48_mr_cfg(amr_cfg_bts, true);
+			}
+
+			/* At next, lookup the AMR rate configuration that is set for the MSC */
+			amr_cfg_msc = &msc->amr_conf;
+			amr_s15_s0_msc = gsm0808_sc_cfg_from_gsm48_mr_cfg(amr_cfg_msc, true);
+
+			/* Calculate the intersection of the two configurations and update S0-S15
+			 * in the codec list. */
+			amr_s15_s0 = amr_s15_s0_bts & amr_s15_s0_msc;
+			scl->codec[scl->len].cfg = amr_s15_s0;
+		}
+
+		scl->len++;
+	}
+}
+

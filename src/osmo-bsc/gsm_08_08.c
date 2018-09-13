@@ -24,6 +24,7 @@
 #include <osmocom/bsc/debug.h>
 #include <osmocom/bsc/paging.h>
 #include <osmocom/bsc/gsm_08_08.h>
+#include <osmocom/bsc/codec_pref.h>
 
 #include <osmocom/bsc/gsm_04_80.h>
 #include <osmocom/bsc/gsm_04_08_rr.h>
@@ -446,6 +447,7 @@ static bool complete_layer3(struct gsm_subscriber_connection *conn,
 	char *imsi = NULL;
 	struct msgb *resp;
 	enum bsc_con ret;
+	struct gsm0808_speech_codec_list scl;
 
 	/* Check the filter */
 	rc = bsc_filter_initial(msc->network->bsc_data, msc, conn, msg,
@@ -491,7 +493,12 @@ static bool complete_layer3(struct gsm_subscriber_connection *conn,
 
 	bsc_scan_bts_msg(conn, msg);
 
-	resp = gsm0808_create_layer3_2(msg, cgi_for_msc(conn->sccp.msc, conn_get_bts(conn)), NULL);
+	if (gscon_is_aoip(conn)) {
+		gen_bss_supported_codec_list(&scl, msc, conn_get_bts(conn));
+		resp = gsm0808_create_layer3_2(msg, cgi_for_msc(conn->sccp.msc, conn_get_bts(conn)), &scl);
+	} else
+		resp = gsm0808_create_layer3_2(msg, cgi_for_msc(conn->sccp.msc, conn_get_bts(conn)), NULL);
+
 	if (!resp) {
 		LOGP(DMSC, LOGL_DEBUG, "Failed to create layer3 message.\n");
 		return false;

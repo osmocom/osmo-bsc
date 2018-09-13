@@ -201,6 +201,17 @@ static void make_msc_config(struct bsc_msc_data *msc, uint8_t config_no)
 
 	OSMO_ASSERT(config_no < N_CONFIG_VARIANTS);
 
+	/* Setup an AMR configuration, this configuration is separate and does
+	 * not influence other codecs than AMR */
+	msc->amr_conf.m4_75 = 1;
+	msc->amr_conf.m5_15 = 1;
+	msc->amr_conf.m5_90 = 1;
+	msc->amr_conf.m6_70 = 1;
+	msc->amr_conf.m7_40 = 1;
+	msc->amr_conf.m7_95 = 1;
+	msc->amr_conf.m10_2 = 1;
+	msc->amr_conf.m12_2 = 1;
+
 	switch (config_no) {
 	case 0:
 		/* FR1 only */
@@ -282,11 +293,36 @@ static void make_bts_config(struct gsm_bts *bts, uint8_t config_no)
 {
 	/* Note: FR is supported by all BTSs, so there is no flag for it */
 
+	struct gsm48_multi_rate_conf *cfg;
+
 	OSMO_ASSERT(config_no < N_CONFIG_VARIANTS);
 
 	bts->codec.hr = 0;
 	bts->codec.efr = 0;
 	bts->codec.amr = 0;
+	memset(&bts->mr_full.gsm48_ie, 0, sizeof(bts->mr_full.gsm48_ie));
+	memset(&bts->mr_full.gsm48_ie, 0, sizeof(bts->mr_half.gsm48_ie));
+
+	/* Setup an AMR configuration, this configuration is separate and does
+	 * not influence other codecs than AMR */
+	cfg = (struct gsm48_multi_rate_conf*) &bts->mr_full.gsm48_ie;
+	cfg->m4_75 = 1;
+	cfg->m5_15 = 1;
+	cfg->m5_90 = 1;
+	cfg->m6_70 = 1;
+	cfg->m7_40 = 1;
+	cfg->m7_95 = 1;
+	cfg->m10_2 = 1;
+	cfg->m12_2 = 1;
+	cfg = (struct gsm48_multi_rate_conf*) &bts->mr_half.gsm48_ie;
+	cfg->m4_75 = 1;
+	cfg->m5_15 = 1;
+	cfg->m5_90 = 1;
+	cfg->m6_70 = 1;
+	cfg->m7_40 = 1;
+	cfg->m7_95 = 1;
+	cfg->m10_2 = 0;
+	cfg->m12_2 = 0;
 
 	switch (config_no) {
 	case 0:
@@ -590,6 +626,62 @@ static void test_selected_non_working(void)
 	free_msc_config(&msc_local);
 }
 
+/* Try execute bss_supp_codec_list(), display input and output parameters */
+static void test_gen_bss_supported_codec_list(const struct bsc_msc_data *msc, struct gsm_bts *bts)
+{
+	unsigned int i;
+	struct gsm0808_speech_codec_list scl;
+
+	printf("Determining Codec List (BSS Supported):\n");
+
+	printf(" * BSS: audio support settings (%u items):\n", msc->audio_length);
+	for (i = 0; i < msc->audio_length; i++)
+		if (msc->audio_support[i]->hr)
+			printf("   audio_support[%u]=HR%u\n", i, msc->audio_support[i]->ver);
+		else
+			printf("   audio_support[%u]=FR%u\n", i, msc->audio_support[i]->ver);
+
+	printf(" * BTS: audio support settings:\n");
+	printf("   (GSM-FR implicitly supported)\n");
+	printf("   codec->hr=%u\n", bts->codec.hr);
+	printf("   codec->efr=%u\n", bts->codec.efr);
+	printf("   codec->amr=%u\n", bts->codec.amr);
+
+	gen_bss_supported_codec_list(&scl, msc, bts);
+
+	printf(" * result: speech codec list (%u items):\n", scl.len);
+	for (i = 0; i < scl.len; i++) {
+		printf("   codec[%u]->type=%s", i, gsm0808_speech_codec_type_name(scl.codec[i].type));
+		if (msc->audio_support[i]->ver == 3)
+			printf(" S15-S0=%04x", scl.codec[i].cfg);
+		printf("\n");
+	}
+	printf("\n");
+}
+
+/* Test gen_bss_supported_codec_list() with some mixed configurations */
+static void test_gen_bss_supported_codec_list_cfgs(void)
+{
+	struct bsc_msc_data msc_local;
+	struct gsm_bts bts_local;
+	uint8_t i;
+	uint8_t k;
+
+	printf("============== test_gen_bss_supp_codec_list_cfgs ==============\n\n");
+	init_msc_config(&msc_local);
+
+	for (i = 0; i < N_CONFIG_VARIANTS; i++) {
+		for (k = 0; k < N_CONFIG_VARIANTS; k++) {
+			make_msc_config(&msc_local, i);
+			make_bts_config(&bts_local, k);
+			printf("MSC config: %u, BTS config: %u\n", i, k);
+			test_gen_bss_supported_codec_list(&msc_local, &bts_local);
+		}
+	}
+
+	free_msc_config(&msc_local);
+}
+
 static const struct log_info_cat log_categories[] = {
 	[DMSC] = {
 		  .name = "DMSC",
@@ -615,6 +707,7 @@ int main(int argc, char **argv)
 	test_msc();
 	test_selected_working();
 	test_selected_non_working();
+	test_gen_bss_supported_codec_list_cfgs();
 
 	printf("Testing execution completed.\n");
 	talloc_free(ctx);
