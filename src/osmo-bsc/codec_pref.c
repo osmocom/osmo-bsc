@@ -167,7 +167,7 @@ static bool test_codec_support_bts(const struct bts_codec_conf *bts_codec, uint8
 /*! Match the codec preferences from local config with a received codec preferences IEs received from the
  * MSC and the BTS' codec configuration.
  *  \param[out] chan_mode GSM 04.08 channel mode.
- *  \param[out] full_rate true iff full-rate.
+ *  \param[out] full_rate true if full-rate.
  *  \param[in] ct GSM 08.08 channel type received from MSC.
  *  \param[in] scl GSM 08.08 speech codec list received from MSC (optional).
  *  \param[in] audio_support List of allowed codecs as from local config.
