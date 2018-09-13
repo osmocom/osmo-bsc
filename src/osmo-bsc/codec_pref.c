@@ -148,15 +148,19 @@ static bool test_codec_support_bts(const struct bts_codec_conf *bts_codec, uint8
 	case GSM0808_PERM_FR2:
 		if (bts_codec->efr)
 			return true;
+		break;
 	case GSM0808_PERM_FR3:
 		if (bts_codec->amr)
 			return true;
+		break;
 	case GSM0808_PERM_HR1:
 		if (bts_codec->hr)
 			return true;
+		break;
 	case GSM0808_PERM_HR3:
 		if (bts_codec->amr)
 			return true;
+		break;
 	default:
 		return false;
 	}
