@@ -870,6 +870,9 @@ static int bssmap_rcvmsg_dt1(struct gsm_subscriber_connection *conn,
 	case BSS_MAP_MSG_HANDOVER_CMD:
 		ret = bssmap_handle_handover_cmd(conn, msg, length);
 		break;
+	case BSS_MAP_MSG_CLASSMARK_RQST:
+		ret = gsm48_send_rr_classmark_enquiry(conn->lchan);
+		break;
 	default:
 		LOGP(DMSC, LOGL_NOTICE, "Unimplemented msg type: %s\n",
 			gsm0808_bssmap_name(msg->l4h[0]));

@@ -273,6 +273,21 @@ int send_siemens_mrpci(struct gsm_lchan *lchan,
 	return rsl_siemens_mrpci(lchan, &mrpci);
 }
 
+/* 3GPP 44.018 9.1.12 Classmark Enquiry */
+int gsm48_send_rr_classmark_enquiry(struct gsm_lchan *lchan)
+{
+	struct msgb *msg = gsm48_msgb_alloc_name("GSM 44.018 Classmark Enquiry");
+	struct gsm48_hdr *gh = (struct gsm48_hdr *) msgb_put(msg, sizeof(*gh));
+
+	msg->lchan = lchan;
+	gh->proto_discr = GSM48_PDISC_RR;
+	gh->msg_type = GSM48_MT_RR_CLSM_ENQ;
+
+	DEBUGP(DRR, "%s TX CLASSMARK ENQUIRY %u\n", gsm_lchan_name(lchan), msgb_length(msg));
+
+	return gsm48_sendmsg(msg);
+}
+
 /* Chapter 9.1.9: Ciphering Mode Command */
 int gsm48_send_rr_ciph_mode(struct gsm_lchan *lchan, int want_imeisv)
 {
