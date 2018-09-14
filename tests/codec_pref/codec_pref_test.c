@@ -78,11 +78,13 @@ static void make_scl_config(struct gsm0808_speech_codec_list *scl, uint8_t confi
 	case 3:
 		/* FR3 only */
 		scl->codec[0].type = GSM0808_SCT_FR3;
+		scl->codec[0].cfg = GSM0808_SC_CFG_DEFAULT_FR_AMR;
 		scl->len = 1;
 		break;
 	case 4:
 		/* HR3 only */
 		scl->codec[0].type = GSM0808_SCT_HR3;
+		scl->codec[0].cfg = GSM0808_SC_CFG_DEFAULT_HR_AMR;
 		scl->len = 1;
 		break;
 	case 5:
@@ -102,7 +104,9 @@ static void make_scl_config(struct gsm0808_speech_codec_list *scl, uint8_t confi
 		/* FR1, FR3 and HR3 */
 		scl->codec[0].type = GSM0808_SCT_FR1;
 		scl->codec[1].type = GSM0808_SCT_FR3;
+		scl->codec[1].cfg = GSM0808_SC_CFG_DEFAULT_FR_AMR;
 		scl->codec[2].type = GSM0808_SCT_HR3;
+		scl->codec[2].cfg = GSM0808_SC_CFG_DEFAULT_HR_AMR;
 		scl->len = 3;
 		break;
 	case 8:
@@ -110,8 +114,10 @@ static void make_scl_config(struct gsm0808_speech_codec_list *scl, uint8_t confi
 		scl->codec[0].type = GSM0808_SCT_FR1;
 		scl->codec[1].type = GSM0808_SCT_FR2;
 		scl->codec[2].type = GSM0808_SCT_FR3;
+		scl->codec[2].cfg = GSM0808_SC_CFG_DEFAULT_FR_AMR;
 		scl->codec[3].type = GSM0808_SCT_HR1;
 		scl->codec[4].type = GSM0808_SCT_HR3;
+		scl->codec[4].cfg = GSM0808_SC_CFG_DEFAULT_HR_AMR;
 		scl->len = 5;
 		break;
 	}
