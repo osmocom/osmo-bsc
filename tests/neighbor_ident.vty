@@ -90,6 +90,95 @@ OsmoBSC(config-net-bts)# list
   neighbor del arfcn <0-1023> bsic (<0-63>|any)
 ...
 
+OsmoBSC(config-net-bts)# neighbor?
+  neighbor  Neighbor cell list
+
+OsmoBSC(config-net-bts)# neighbor ?
+  add  Add local or remote-BSS neighbor cell
+  del  Remove local or remote-BSS neighbor cell
+
+OsmoBSC(config-net-bts)# neighbor add ?
+  bts     Neighbor cell by local BTS number
+  lac     Neighbor cell by LAC
+  lac-ci  Neighbor cell by LAC and CI
+  cgi     Neighbor cell by cgi
+
+OsmoBSC(config-net-bts)# neighbor add bts ?
+  <0-255>  BTS number
+OsmoBSC(config-net-bts)# neighbor add bts 0 ?
+  <cr>  
+
+OsmoBSC(config-net-bts)# neighbor add lac ?
+  <0-65535>  LAC
+OsmoBSC(config-net-bts)# neighbor add lac 0 ?
+  arfcn  ARFCN of neighbor cell
+  <cr>   
+OsmoBSC(config-net-bts)# neighbor add lac 0 arfcn ?
+  <0-1023>  ARFCN value
+OsmoBSC(config-net-bts)# neighbor add lac 0 arfcn 0 ?
+  bsic  BSIC of neighbor cell
+OsmoBSC(config-net-bts)# neighbor add lac 0 arfcn 0 bsic ?
+  <0-63>  BSIC value
+  any     for all BSICs / use any BSIC in this ARFCN
+OsmoBSC(config-net-bts)# neighbor add lac 0 arfcn 0 bsic 0 ?
+  <cr>  
+
+OsmoBSC(config-net-bts)# neighbor add lac-ci ?
+  <0-65535>  LAC
+OsmoBSC(config-net-bts)# neighbor add lac-ci 0 ?
+  <0-65535>  CI
+OsmoBSC(config-net-bts)# neighbor add lac-ci 0 0 ?
+  arfcn  ARFCN of neighbor cell
+  <cr>   
+OsmoBSC(config-net-bts)# neighbor add lac-ci 0 0 arfcn ?
+  <0-1023>  ARFCN value
+OsmoBSC(config-net-bts)# neighbor add lac-ci 0 0 arfcn 0 ?
+  bsic  BSIC of neighbor cell
+OsmoBSC(config-net-bts)# neighbor add lac-ci 0 0 arfcn 0 bsic ?
+  <0-63>  BSIC value
+  any     for all BSICs / use any BSIC in this ARFCN
+OsmoBSC(config-net-bts)# neighbor add lac-ci 0 0 arfcn 0 bsic 0 ?
+  <cr>  
+
+OsmoBSC(config-net-bts)# neighbor add cgi ?
+  <0-999>  MCC
+OsmoBSC(config-net-bts)# neighbor add cgi 0 ?
+  <0-999>  MNC
+OsmoBSC(config-net-bts)# neighbor add cgi 0 0 ?
+  <0-65535>  LAC
+OsmoBSC(config-net-bts)# neighbor add cgi 0 0 0 ?
+  <0-65535>  CI
+OsmoBSC(config-net-bts)# neighbor add cgi 0 0 0 0 ?
+  arfcn  ARFCN of neighbor cell
+OsmoBSC(config-net-bts)# neighbor add cgi 0 0 0 0 arfcn ?
+  <0-1023>  ARFCN value
+OsmoBSC(config-net-bts)# neighbor add cgi 0 0 0 0 arfcn 0 ?
+  bsic  BSIC of neighbor cell
+OsmoBSC(config-net-bts)# neighbor add cgi 0 0 0 0 arfcn 0 bsic ?
+  <0-63>  BSIC value
+  any     for all BSICs / use any BSIC in this ARFCN
+OsmoBSC(config-net-bts)# neighbor add cgi 0 0 0 0 arfcn 0 bsic 0 ?
+  <cr>  
+
+OsmoBSC(config-net-bts)# neighbor del ?
+  bts    Neighbor cell by local BTS number
+  arfcn  ARFCN of neighbor cell
+
+OsmoBSC(config-net-bts)# neighbor del bts ?
+  <0-255>  BTS number
+OsmoBSC(config-net-bts)# neighbor del bts 0 ?
+  <cr>  
+
+OsmoBSC(config-net-bts)# neighbor del arfcn ?
+  <0-1023>  ARFCN value
+OsmoBSC(config-net-bts)# neighbor del arfcn 0 ?
+  bsic  BSIC of neighbor cell
+OsmoBSC(config-net-bts)# neighbor del arfcn 0 bsic ?
+  <0-63>  BSIC value
+  any     for all BSICs / use any BSIC in this ARFCN
+OsmoBSC(config-net-bts)# neighbor del arfcn 0 bsic 0 ?
+  <cr>  
+
 OsmoBSC(config-net-bts)# show running-config
 ... !neighbor add
 
