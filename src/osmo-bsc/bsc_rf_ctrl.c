@@ -450,8 +450,12 @@ static int rf_create_socket(struct osmo_bsc_rf *rf, const char *path)
 	}
 
 	local.sun_family = AF_UNIX;
-	osmo_strlcpy(local.sun_path, path, sizeof(local.sun_path));
 	unlink(local.sun_path);
+	if (osmo_strlcpy(local.sun_path, path, sizeof(local.sun_path)) >= sizeof(local.sun_path)) {
+		LOGP(DLINP, LOGL_ERROR, "Socket path exceeds maximum length of %zd bytes: %s\n",
+		     sizeof(local.sun_path), path);
+		return -1;
+	}
 
 	/* we use the same magic that X11 uses in Xtranssock.c for
 	 * calculating the proper length of the sockaddr */
