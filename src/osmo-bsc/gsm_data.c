@@ -774,6 +774,7 @@ static const struct gprs_rlc_cfg rlc_cfg_default = {
 struct gsm_bts *gsm_bts_alloc(struct gsm_network *net, uint8_t bts_num)
 {
 	struct gsm_bts *bts = talloc_zero(net, struct gsm_bts);
+	struct gsm48_multi_rate_conf mr_cfg;
 	int i;
 
 	if (!bts)
@@ -884,6 +885,33 @@ struct gsm_bts *gsm_bts_alloc(struct gsm_network *net, uint8_t bts_num)
 		.efr = 1,
 		.amr = 1,
 	};
+
+	/* Set reasonable defaults for AMR-FR and AMR-HR rate configuration.
+	 * It is possible to set up to 4 codecs per active set, while 5,15K must
+	 * be selected. */
+	mr_cfg = (struct gsm48_multi_rate_conf) {
+		.m4_75 = 0,
+		.m5_15 = 1,
+		.m5_90 = 1,
+		.m6_70 = 0,
+		.m7_40 = 0,
+		.m7_95 = 0,
+		.m10_2 = 1,
+		.m12_2 = 1
+	};
+	memcpy(bts->mr_full.gsm48_ie, &mr_cfg, sizeof(bts->mr_full.gsm48_ie));
+
+	mr_cfg = (struct gsm48_multi_rate_conf) {
+		.m4_75 = 0,
+		.m5_15 = 1,
+		.m5_90 = 1,
+		.m6_70 = 0,
+		.m7_40 = 1,
+		.m7_95 = 1,
+		.m10_2 = 0,
+		.m12_2 = 0
+	};
+	memcpy(bts->mr_half.gsm48_ie, &mr_cfg, sizeof(bts->mr_half.gsm48_ie));
 
 	return bts;
 }
