@@ -49,6 +49,10 @@ python-tests: $(BUILT_SOURCES)
 	$(srcdir)/vty_test_runner.py -w $(abs_top_builddir) -v
 	$(srcdir)/ctrl_test_runner.py -w $(abs_top_builddir) -v
 	rm -f $(top_builddir)/sms.db $(top_builddir)/gsn_restart $(top_builddir)/gtphub_restart_count
+else
+python-tests: $(BUILT_SOURCES)
+	echo "Not running python-based tests (determined at configure-time)"
+endif
 
 # To update the VTY script from current application behavior,
 # pass -u to vty_script_runner.py by doing:
@@ -58,10 +62,6 @@ vty-test:
 		-n OsmoBSC -p 4242 \
 		-r "$(top_builddir)/src/osmo-bsc/osmo-bsc -c $(top_srcdir)/doc/examples/osmo-bsc/osmo-bsc-minimal.cfg" \
 		$(U) $(srcdir)/*.vty
-else
-python-tests: $(BUILT_SOURCES)
-	echo "Not running python-based tests (determined at configure-time)"
-endif
 
 check-local: atconfig $(TESTSUITE)
 	$(SHELL) '$(TESTSUITE)' $(TESTSUITEFLAGS)
