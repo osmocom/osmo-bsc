@@ -68,10 +68,10 @@ bool neighbor_ident_bts_parse_key_params(struct vty *vty, struct gsm_bts *bts, c
 	return true;
 }
 
-#define NEIGHBOR_ADD_CMD "neighbor add "
+#define NEIGHBOR_ADD_CMD "neighbor "
 #define NEIGHBOR_DEL_CMD "neighbor del "
-#define NEIGHBOR_DOC "Neighbor cell list\n"
-#define NEIGHBOR_ADD_DOC NEIGHBOR_DOC "Add local or remote-BSS neighbor cell\n"
+#define NEIGHBOR_DOC "Manage local and remote-BSS neighbor cells\n"
+#define NEIGHBOR_ADD_DOC NEIGHBOR_DOC "Add "
 #define NEIGHBOR_DEL_DOC NEIGHBOR_DOC "Remove local or remote-BSS neighbor cell\n"
 
 #define LAC_PARAMS "lac <0-65535>"
@@ -431,7 +431,7 @@ static bool write_neighbor_ident_list(const struct neighbor_ident_key *key,
 			return true;
 
 #define NEIGH_BSS_WRITE(fmt, args...) do { \
-		vty_out(vty, "%sneighbor add " fmt " arfcn %u ", d->indent, ## args, key->arfcn); \
+		vty_out(vty, "%sneighbor " fmt " arfcn %u ", d->indent, ## args, key->arfcn); \
 		if (key->bsic == BSIC_ANY) \
 			vty_out(vty, "bsic any"); \
 		else \
@@ -485,7 +485,7 @@ void neighbor_ident_vty_write_local_neighbors(struct vty *vty, const char *inden
 	struct gsm_bts_ref *neigh;
 
 	llist_for_each_entry(neigh, &bts->local_neighbors, entry) {
-		vty_out(vty, "%sneighbor add lac-ci %u %u%s",
+		vty_out(vty, "%sneighbor lac-ci %u %u%s",
 			indent, neigh->bts->location_area_code, neigh->bts->cell_identity,
 			VTY_NEWLINE);
 	}

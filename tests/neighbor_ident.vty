@@ -80,84 +80,81 @@ OsmoBSC(config-net)# show running-config
 OsmoBSC(config-net)# bts 0
 OsmoBSC(config-net-bts)# list
 ...
-  neighbor add bts <0-255>
-  neighbor add lac <0-65535>
-  neighbor add lac-ci <0-65535> <0-65535>
-  neighbor add lac <0-65535> arfcn <0-1023> bsic (<0-63>|any)
-  neighbor add lac-ci <0-65535> <0-65535> arfcn <0-1023> bsic (<0-63>|any)
-  neighbor add cgi <0-999> <0-999> <0-65535> <0-65535> arfcn <0-1023> bsic (<0-63>|any)
+  neighbor bts <0-255>
+  neighbor lac <0-65535>
+  neighbor lac-ci <0-65535> <0-65535>
+  neighbor lac <0-65535> arfcn <0-1023> bsic (<0-63>|any)
+  neighbor lac-ci <0-65535> <0-65535> arfcn <0-1023> bsic (<0-63>|any)
+  neighbor cgi <0-999> <0-999> <0-65535> <0-65535> arfcn <0-1023> bsic (<0-63>|any)
   neighbor del bts <0-255>
   neighbor del arfcn <0-1023> bsic (<0-63>|any)
 ...
 
 OsmoBSC(config-net-bts)# neighbor?
-  neighbor  Neighbor cell list
+  neighbor  Manage local and remote-BSS neighbor cells
 
 OsmoBSC(config-net-bts)# neighbor ?
-  add  Add local or remote-BSS neighbor cell
-  del  Remove local or remote-BSS neighbor cell
+  bts     Add Neighbor cell by local BTS number
+  lac     Add Neighbor cell by LAC
+  lac-ci  Add Neighbor cell by LAC and CI
+  cgi     Add Neighbor cell by cgi
+  del     Remove local or remote-BSS neighbor cell
 
-OsmoBSC(config-net-bts)# neighbor add ?
-  bts     Neighbor cell by local BTS number
-  lac     Neighbor cell by LAC
-  lac-ci  Neighbor cell by LAC and CI
-  cgi     Neighbor cell by cgi
-
-OsmoBSC(config-net-bts)# neighbor add bts ?
+OsmoBSC(config-net-bts)# neighbor bts ?
   <0-255>  BTS number
-OsmoBSC(config-net-bts)# neighbor add bts 0 ?
+OsmoBSC(config-net-bts)# neighbor bts 0 ?
   <cr>  
 
-OsmoBSC(config-net-bts)# neighbor add lac ?
+OsmoBSC(config-net-bts)# neighbor lac ?
   <0-65535>  LAC
-OsmoBSC(config-net-bts)# neighbor add lac 0 ?
+OsmoBSC(config-net-bts)# neighbor lac 0 ?
   arfcn  ARFCN of neighbor cell
   <cr>   
-OsmoBSC(config-net-bts)# neighbor add lac 0 arfcn ?
+OsmoBSC(config-net-bts)# neighbor lac 0 arfcn ?
   <0-1023>  ARFCN value
-OsmoBSC(config-net-bts)# neighbor add lac 0 arfcn 0 ?
+OsmoBSC(config-net-bts)# neighbor lac 0 arfcn 0 ?
   bsic  BSIC of neighbor cell
-OsmoBSC(config-net-bts)# neighbor add lac 0 arfcn 0 bsic ?
+OsmoBSC(config-net-bts)# neighbor lac 0 arfcn 0 bsic ?
   <0-63>  BSIC value
   any     for all BSICs / use any BSIC in this ARFCN
-OsmoBSC(config-net-bts)# neighbor add lac 0 arfcn 0 bsic 0 ?
+OsmoBSC(config-net-bts)# neighbor lac 0 arfcn 0 bsic 0 ?
   <cr>  
 
-OsmoBSC(config-net-bts)# neighbor add lac-ci ?
+OsmoBSC(config-net-bts)# neighbor lac-ci ?
   <0-65535>  LAC
-OsmoBSC(config-net-bts)# neighbor add lac-ci 0 ?
+OsmoBSC(config-net-bts)# neighbor lac-ci 0 ?
   <0-65535>  CI
-OsmoBSC(config-net-bts)# neighbor add lac-ci 0 0 ?
+OsmoBSC(config-net-bts)# neighbor lac-ci 0 0 ?
   arfcn  ARFCN of neighbor cell
   <cr>   
-OsmoBSC(config-net-bts)# neighbor add lac-ci 0 0 arfcn ?
+OsmoBSC(config-net-bts)# neighbor lac-ci 0 0 arfcn ?
   <0-1023>  ARFCN value
-OsmoBSC(config-net-bts)# neighbor add lac-ci 0 0 arfcn 0 ?
+OsmoBSC(config-net-bts)# neighbor lac-ci 0 0 arfcn 0 ?
   bsic  BSIC of neighbor cell
-OsmoBSC(config-net-bts)# neighbor add lac-ci 0 0 arfcn 0 bsic ?
+OsmoBSC(config-net-bts)# neighbor lac-ci 0 0 arfcn 0 bsic ?
   <0-63>  BSIC value
   any     for all BSICs / use any BSIC in this ARFCN
-OsmoBSC(config-net-bts)# neighbor add lac-ci 0 0 arfcn 0 bsic 0 ?
+OsmoBSC(config-net-bts)# neighbor lac-ci 0 0 arfcn 0 bsic 0 ?
   <cr>  
 
-OsmoBSC(config-net-bts)# neighbor add cgi ?
+OsmoBSC(config-net-bts)# neighbor cgi ?
   <0-999>  MCC
-OsmoBSC(config-net-bts)# neighbor add cgi 0 ?
+OsmoBSC(config-net-bts)# neighbor cgi 0 ?
   <0-999>  MNC
-OsmoBSC(config-net-bts)# neighbor add cgi 0 0 ?
+OsmoBSC(config-net-bts)# neighbor cgi 0 0 ?
   <0-65535>  LAC
-OsmoBSC(config-net-bts)# neighbor add cgi 0 0 0 ?
+OsmoBSC(config-net-bts)# neighbor cgi 0 0 0 ?
   <0-65535>  CI
-OsmoBSC(config-net-bts)# neighbor add cgi 0 0 0 0 ?
+OsmoBSC(config-net-bts)# neighbor cgi 0 0 0 0 ?
   arfcn  ARFCN of neighbor cell
-OsmoBSC(config-net-bts)# neighbor add cgi 0 0 0 0 arfcn ?
+OsmoBSC(config-net-bts)# neighbor cgi 0 0 0 0 arfcn ?
   <0-1023>  ARFCN value
-OsmoBSC(config-net-bts)# neighbor add cgi 0 0 0 0 arfcn 0 ?
+OsmoBSC(config-net-bts)# neighbor cgi 0 0 0 0 arfcn 0 ?
   bsic  BSIC of neighbor cell
-OsmoBSC(config-net-bts)# neighbor add cgi 0 0 0 0 arfcn 0 bsic ?
+OsmoBSC(config-net-bts)# neighbor cgi 0 0 0 0 arfcn 0 bsic ?
   <0-63>  BSIC value
   any     for all BSICs / use any BSIC in this ARFCN
-OsmoBSC(config-net-bts)# neighbor add cgi 0 0 0 0 arfcn 0 bsic 0 ?
+OsmoBSC(config-net-bts)# neighbor cgi 0 0 0 0 arfcn 0 bsic 0 ?
   <cr>  
 
 OsmoBSC(config-net-bts)# neighbor del ?
@@ -180,72 +177,73 @@ OsmoBSC(config-net-bts)# neighbor del arfcn 0 bsic 0 ?
   <cr>  
 
 OsmoBSC(config-net-bts)# show running-config
-... !neighbor add
+... !neighbor 
 
-OsmoBSC(config-net-bts)# neighbor add cgi 23 42 423 5 arfcn 23 bsic 64
+OsmoBSC(config-net-bts)# ! BSIC out of range
+OsmoBSC(config-net-bts)# neighbor cgi 23 42 423 5 arfcn 23 bsic 64
 % Unknown command.
 
-OsmoBSC(config-net-bts)# neighbor add bts 0
+OsmoBSC(config-net-bts)# neighbor bts 0
 % Error: cannot add local BTS 0 as neighbor to BTS 0: Invalid argument
 
 OsmoBSC(config-net-bts)# show running-config
-... !neighbor add
+... !neighbor 
 
-OsmoBSC(config-net-bts)# neighbor add bts 1
+OsmoBSC(config-net-bts)# neighbor bts 1
 % BTS 0 now has local neighbor BTS 1 with LAC 21 CI 31 and ARFCN 41 BSIC 11
 
-OsmoBSC(config-net-bts)# neighbor add lac 22
+OsmoBSC(config-net-bts)# neighbor lac 22
 % BTS 0 now has local neighbor BTS 2 with LAC 22 CI 65535 and ARFCN 42 BSIC 12
 
-OsmoBSC(config-net-bts)# neighbor add cgi 23 42 423 5 arfcn 23 bsic 42
+OsmoBSC(config-net-bts)# neighbor cgi 23 42 423 5 arfcn 23 bsic 42
 % BTS 0 to ARFCN 23 BSIC 42 now has 1 remote BSS Cell Identifier List entry
 
 OsmoBSC(config-net-bts)# ### adding the same entry again results in no change
-OsmoBSC(config-net-bts)# neighbor add bts 1
+OsmoBSC(config-net-bts)# neighbor bts 1
 % BTS 0 already had local neighbor BTS 1 with LAC 21 CI 31 and ARFCN 41 BSIC 11
-OsmoBSC(config-net-bts)# neighbor add lac-ci 21 31
+OsmoBSC(config-net-bts)# neighbor lac-ci 21 31
 % BTS 0 already had local neighbor BTS 1 with LAC 21 CI 31 and ARFCN 41 BSIC 11
-OsmoBSC(config-net-bts)# neighbor add cgi 23 42 423 5 arfcn 23 bsic 42
+OsmoBSC(config-net-bts)# neighbor cgi 23 42 423 5 arfcn 23 bsic 42
 % BTS 0 to ARFCN 23 BSIC 42 now has 1 remote BSS Cell Identifier List entry
-OsmoBSC(config-net-bts)# neighbor add cgi 23 42 423 5 arfcn 23 bsic 42
+OsmoBSC(config-net-bts)# neighbor cgi 23 42 423 5 arfcn 23 bsic 42
 % BTS 0 to ARFCN 23 BSIC 42 now has 1 remote BSS Cell Identifier List entry
-OsmoBSC(config-net-bts)# neighbor add cgi 23 42 423 5 arfcn 23 bsic 42
+OsmoBSC(config-net-bts)# neighbor cgi 23 42 423 5 arfcn 23 bsic 42
 % BTS 0 to ARFCN 23 BSIC 42 now has 1 remote BSS Cell Identifier List entry
 
-OsmoBSC(config-net-bts)# neighbor add cgi 23 042 423 6 arfcn 23 bsic 42
+OsmoBSC(config-net-bts)# neighbor cgi 23 042 423 6 arfcn 23 bsic 42
 % BTS 0 to ARFCN 23 BSIC 42 now has 2 remote BSS Cell Identifier List entries
 
-OsmoBSC(config-net-bts)# neighbor add lac 456 arfcn 123 bsic 45
+OsmoBSC(config-net-bts)# neighbor lac 456 arfcn 123 bsic 45
 % BTS 0 to ARFCN 123 BSIC 45 now has 1 remote BSS Cell Identifier List entry
 
-OsmoBSC(config-net-bts)# neighbor add cgi 23 042 234 56 arfcn 23 bsic 42
+OsmoBSC(config-net-bts)# neighbor cgi 23 042 234 56 arfcn 23 bsic 42
 % BTS 0 to ARFCN 23 BSIC 42 now has 3 remote BSS Cell Identifier List entries
 
-OsmoBSC(config-net-bts)# neighbor add lac-ci 789 10 arfcn 423 bsic any
+OsmoBSC(config-net-bts)# neighbor lac-ci 789 10 arfcn 423 bsic any
 % BTS 0 to ARFCN 423 (any BSIC) now has 1 remote BSS Cell Identifier List entry
 
-OsmoBSC(config-net-bts)# neighbor add lac-ci 789 10 arfcn 423 bsic 63
+OsmoBSC(config-net-bts)# neighbor lac-ci 789 10 arfcn 423 bsic 63
 % BTS 0 to ARFCN 423 BSIC 63 now has 1 remote BSS Cell Identifier List entry
 
-OsmoBSC(config-net-bts)# neighbor add lac-ci 789 10 arfcn 423 bsic 1
+OsmoBSC(config-net-bts)# neighbor lac-ci 789 10 arfcn 423 bsic 1
 % BTS 0 to ARFCN 423 BSIC 1 now has 1 remote BSS Cell Identifier List entry
 
 OsmoBSC(config-net-bts)# show running-config
 ...
 network
-... !neighbor add
+... !neighbor 
  bts 0
-... !neighbor add
-  neighbor add lac-ci 21 31
-  neighbor add lac-ci 22 65535
-  neighbor add cgi 023 42 423 5 arfcn 23 bsic 42
-  neighbor add cgi 023 042 423 6 arfcn 23 bsic 42
-  neighbor add cgi 023 042 234 56 arfcn 23 bsic 42
-  neighbor add lac 456 arfcn 123 bsic 45
-  neighbor add lac-ci 789 10 arfcn 423 bsic any
-  neighbor add lac-ci 789 10 arfcn 423 bsic 63
-  neighbor add lac-ci 789 10 arfcn 423 bsic 1
-... !neighbor add
+... !neighbor 
+  neighbor lac-ci 21 31
+  neighbor lac-ci 22 65535
+  neighbor cgi 023 42 423 5 arfcn 23 bsic 42
+  neighbor cgi 023 042 423 6 arfcn 23 bsic 42
+  neighbor cgi 023 042 234 56 arfcn 23 bsic 42
+  neighbor lac 456 arfcn 123 bsic 45
+  neighbor lac-ci 789 10 arfcn 423 bsic any
+  neighbor lac-ci 789 10 arfcn 423 bsic 63
+  neighbor lac-ci 789 10 arfcn 423 bsic 1
+... !neighbor 
 
 OsmoBSC(config-net-bts)# do show bts 0 neighbor arfcn 99 bsic any
 % No entry for BTS 0 to ARFCN 99 (any BSIC)
@@ -254,10 +252,10 @@ OsmoBSC(config-net-bts)# do show bts 0 neighbor arfcn 41 bsic any
 % BTS 0 to ARFCN 41 (any BSIC) resolves to local BTS 1 lac-ci 21 31
 
 OsmoBSC(config-net-bts)# do show bts 0 neighbor arfcn 423 bsic 1
-% neighbor add lac-ci 789 10 arfcn 423 bsic 1
+% neighbor lac-ci 789 10 arfcn 423 bsic 1
 
 OsmoBSC(config-net-bts)# do show bts 0 neighbor arfcn 423 bsic 23
-% neighbor add lac-ci 789 10 arfcn 423 bsic 23
+% neighbor lac-ci 789 10 arfcn 423 bsic 23
 
 OsmoBSC(config-net-bts)# neighbor del arfcn 99 bsic 7
 % Cannot remove, no such neighbor: BTS 0 to ARFCN 99 BSIC 7
@@ -266,75 +264,75 @@ OsmoBSC(config-net-bts)# neighbor del arfcn 23 bsic 42
 % Removed remote BSS neighbor BTS 0 to ARFCN 23 BSIC 42
 
 OsmoBSC(config-net-bts)# show running-config
-... !neighbor add
-  neighbor add lac-ci 21 31
-  neighbor add lac-ci 22 65535
-  neighbor add lac 456 arfcn 123 bsic 45
-  neighbor add lac-ci 789 10 arfcn 423 bsic any
-  neighbor add lac-ci 789 10 arfcn 423 bsic 63
-  neighbor add lac-ci 789 10 arfcn 423 bsic 1
-... !neighbor add
+... !neighbor 
+  neighbor lac-ci 21 31
+  neighbor lac-ci 22 65535
+  neighbor lac 456 arfcn 123 bsic 45
+  neighbor lac-ci 789 10 arfcn 423 bsic any
+  neighbor lac-ci 789 10 arfcn 423 bsic 63
+  neighbor lac-ci 789 10 arfcn 423 bsic 1
+... !neighbor 
 
 OsmoBSC(config-net-bts)# neighbor del arfcn 123 bsic 45
 % Removed remote BSS neighbor BTS 0 to ARFCN 123 BSIC 45
 
 OsmoBSC(config-net-bts)# show running-config
-... !neighbor add
-  neighbor add lac-ci 21 31
-  neighbor add lac-ci 22 65535
-  neighbor add lac-ci 789 10 arfcn 423 bsic any
-  neighbor add lac-ci 789 10 arfcn 423 bsic 63
-  neighbor add lac-ci 789 10 arfcn 423 bsic 1
-... !neighbor add
+... !neighbor 
+  neighbor lac-ci 21 31
+  neighbor lac-ci 22 65535
+  neighbor lac-ci 789 10 arfcn 423 bsic any
+  neighbor lac-ci 789 10 arfcn 423 bsic 63
+  neighbor lac-ci 789 10 arfcn 423 bsic 1
+... !neighbor 
 
 OsmoBSC(config-net-bts)# neighbor del arfcn 423 bsic any
 % Removed remote BSS neighbor BTS 0 to ARFCN 423 (any BSIC)
 
 OsmoBSC(config-net-bts)# show running-config
-... !neighbor add
-  neighbor add lac-ci 21 31
-  neighbor add lac-ci 22 65535
-  neighbor add lac-ci 789 10 arfcn 423 bsic 63
-  neighbor add lac-ci 789 10 arfcn 423 bsic 1
-... !neighbor add
+... !neighbor 
+  neighbor lac-ci 21 31
+  neighbor lac-ci 22 65535
+  neighbor lac-ci 789 10 arfcn 423 bsic 63
+  neighbor lac-ci 789 10 arfcn 423 bsic 1
+... !neighbor 
 
 OsmoBSC(config-net-bts)# neighbor del arfcn 423 bsic 63
 % Removed remote BSS neighbor BTS 0 to ARFCN 423 BSIC 63
 
 OsmoBSC(config-net-bts)# show running-config
-... !neighbor add
-  neighbor add lac-ci 21 31
-  neighbor add lac-ci 22 65535
-  neighbor add lac-ci 789 10 arfcn 423 bsic 1
-... !neighbor add
+... !neighbor 
+  neighbor lac-ci 21 31
+  neighbor lac-ci 22 65535
+  neighbor lac-ci 789 10 arfcn 423 bsic 1
+... !neighbor 
 
 OsmoBSC(config-net-bts)# neighbor del arfcn 423 bsic 1
 % Removed remote BSS neighbor BTS 0 to ARFCN 423 BSIC 1
 
 OsmoBSC(config-net-bts)# show running-config
-... !neighbor add
-  neighbor add lac-ci 21 31
-  neighbor add lac-ci 22 65535
-... !neighbor add
+... !neighbor 
+  neighbor lac-ci 21 31
+  neighbor lac-ci 22 65535
+... !neighbor 
 
 OsmoBSC(config-net-bts)# neighbor del arfcn 41 bsic any
 % Removed local neighbor bts 0 to bts 1
 
 OsmoBSC(config-net-bts)# show running-config
-... !neighbor add
-  neighbor add lac-ci 22 65535
-... !neighbor add
+... !neighbor 
+  neighbor lac-ci 22 65535
+... !neighbor 
 
 OsmoBSC(config-net-bts)# neighbor del arfcn 41 bsic any
 % Cannot remove, no such neighbor: BTS 0 to ARFCN 41 (any BSIC)
 
 OsmoBSC(config-net-bts)# show running-config
-... !neighbor add
-  neighbor add lac-ci 22 65535
-... !neighbor add
+... !neighbor 
+  neighbor lac-ci 22 65535
+... !neighbor 
 
 OsmoBSC(config-net-bts)# neighbor del arfcn 42 bsic 12
 % Removed local neighbor bts 0 to bts 2
 
 OsmoBSC(config-net-bts)# show running-config
-... !neighbor add
+... !neighbor 
