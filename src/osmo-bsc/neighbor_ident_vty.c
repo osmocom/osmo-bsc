@@ -69,10 +69,10 @@ bool neighbor_ident_bts_parse_key_params(struct vty *vty, struct gsm_bts *bts, c
 }
 
 #define NEIGHBOR_ADD_CMD "neighbor "
-#define NEIGHBOR_DEL_CMD "neighbor del "
+#define NEIGHBOR_DEL_CMD "no neighbor "
 #define NEIGHBOR_DOC "Manage local and remote-BSS neighbor cells\n"
 #define NEIGHBOR_ADD_DOC NEIGHBOR_DOC "Add "
-#define NEIGHBOR_DEL_DOC NEIGHBOR_DOC "Remove local or remote-BSS neighbor cell\n"
+#define NEIGHBOR_DEL_DOC NO_STR "Remove local or remote-BSS neighbor cell\n"
 
 #define LAC_PARAMS "lac <0-65535>"
 #define LAC_DOC "Neighbor cell by LAC\n" "LAC\n"
