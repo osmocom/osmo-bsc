@@ -7,6 +7,15 @@
       Initial OsmoBSC manual, recycling OsmoNITB sections
     </revremark>
   </revision>
+  <revision>
+    <revnumber>2</revnumber>
+    <date>October 2018</date>
+    <authorinitials>NH</authorinitials>
+    <revremark>
+      Add Handover chapter: document new neighbor configuration, HO algorithm 2
+      and inter-BSC handover.
+    </revremark>
+  </revision>
 </revhistory>
 
 <authorgroup>
@@ -32,10 +41,21 @@
       <jobtitle>Managing Director</jobtitle>
     </affiliation>
   </author>
+  <author>
+    <firstname>Neels</firstname>
+    <surname>Hofmeyr</surname>
+    <email>nhofmeyr@sysmocom.de</email>
+    <authorinitials>NH</authorinitials>
+    <affiliation>
+      <shortaffil>sysmocom</shortaffil>
+      <orgname>sysmocom - s.f.m.c. GmbH</orgname>
+      <jobtitle>Developer</jobtitle>
+    </affiliation>
+  </author>
 </authorgroup>
 
 <copyright>
-  <year>2012-2016</year>
+  <year>2012-2018</year>
   <holder>sysmocom - s.f.m.c. GmbH</holder>
 </copyright>
 

@@ -2,7 +2,7 @@ TOPDIR = ..
 
 ASCIIDOC = osmobsc-usermanual.adoc osmux-reference.adoc aoip-mgw-options.adoc
 include $(TOPDIR)/build/Makefile.asciidoc.inc
-osmobsc-usermanual.pdf: chapters/*.adoc
+osmobsc-usermanual.pdf: chapters/*.adoc chapters/*.dot
 aoip-mgw-options.pdf: aoip-mgw-options.adoc mgw/*.msc
 
 VTY_REFERENCE = osmobsc-vty-reference.xml

@@ -1,0 +1,35 @@
+digraph G {
+rankdir=LR
+	
+subgraph cluster_bss_a {
+	label="BSS Alpha"
+	BTS_a0 [rank=min,label="bts 0\nARFCN=1 BSIC=1\nLAC=23 CI=5"]
+	BTS_a1 [rank=min,label="bts 1\nARFCN=2 BSIC=2\nLAC=23 CI=6"]
+	BSC_a [label="BSC Alpha"];
+	{BTS_a0,BTS_a1} -> BSC_a [arrowhead=none,label=Abis]
+}
+
+subgraph cluster_bss_b {
+	label="BSS Beta"
+	BTS_b0 [rank=min,label="bts 0\nARFCN=1 BSIC=3\nLAC=42 CI=3"]
+	BTS_b1 [rank=min,label="bts 1\nARFCN=2 BSIC=4\nLAC=42 CI=1"]
+	BSC_b [label="BSC Beta"]
+	{BTS_b0,BTS_b1} -> BSC_b [arrowhead=none,label=Abis]
+}
+
+MS -> BTS_a1 [label="(3) Measurement:\nARFCN=1 BSIC=3 RXLEV"]
+BTS_a1 -> MS [label="(1) my neighbors:\nARFCN=1 BSIC=1\nARFCN=1 BSIC=3"]
+BTS_b0 -> MS [label="(2) good RXLEV",style=dotted]
+MS -> {BTS_a0,BTS_b0,BTS_b1} [style=invisible,arrowhead=none]
+
+BTS_a1 -> BSC_a [label="(4) Measurement\nReport",style=dashed]
+BTS_a1 -> BTS_b0 [label="(5) BSC decides to do\ninter-BSC Handover",style=dashed,constraint=false]
+
+{BSC_a,BSC_b} -> MSC [arrowhead=none,label=A]
+
+BSC_a -> MSC [label="(6) --> Handover Required\nto LAC=42 CI=6\n(10) <-- Handover Command",style=dashed,constraint=false,arrowhead=none]
+MSC -> BSC_b [label="(7) <-- Handover Request\n(9) --> Handover Request ACK",style=dashed,constraint=false,arrowhead=none]
+
+BSC_b -> BTS_b0 [label="(8) activate new lchan",style=dashed,constraint=false]
+
+}
