@@ -169,8 +169,8 @@ static void send_assignment_complete(struct gsm_subscriber_connection *conn)
 		 * assignment complete message. */
 		if (gscon_is_aoip(conn)) {
 			/* Extrapolate speech codec from speech mode */
-			/* FIXME: AMR codec configuration must be derived from lchan1! */
 			gsm0808_speech_codec_from_chan_type(&sc, perm_spch);
+			sc.cfg = conn->assignment.req.s15_s0;
 			sc_ptr = &sc;
 		}
 	}
@@ -382,6 +382,7 @@ void assignment_fsm_start(struct gsm_subscriber_connection *conn, struct gsm_bts
 		.activ_for = FOR_ASSIGNMENT,
 		.for_conn = conn,
 		.chan_mode = req->chan_mode,
+		.s15_s0 = req->s15_s0,
 		.requires_voice_stream = conn->assignment.requires_voice_stream,
 		.msc_assigned_cic = req->msc_assigned_cic,
 		.old_lchan = conn->lchan,

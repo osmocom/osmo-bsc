@@ -109,6 +109,7 @@ struct assignment_request {
 
 	enum gsm48_chan_mode chan_mode;
 	bool full_rate;
+	uint16_t s15_s0;
 };
 
 struct assignment_fsm_data {

@@ -58,6 +58,7 @@ struct lchan_activate_info {
 	/* This always is for a specific lchan, so its lchan->type indicates full or half rate.
 	 * When a dyn TS was selected, the lchan->type has been set to the desired rate. */
 	enum gsm48_chan_mode chan_mode;
+	uint16_t s15_s0;
 	bool requires_voice_stream;
 	bool wait_before_switching_rtp;
 	uint16_t msc_assigned_cic;

@@ -94,13 +94,17 @@ static enum gsm0808_permitted_speech audio_support_to_gsm88(const struct gsm_aud
  * matches one of the permitted speech settings of the channel type element.
  * The matched permitted speech value is then also compared against the
  * speech codec list. (optional, only relevant for AoIP) */
-static bool test_codec_pref(const struct gsm0808_channel_type *ct,
-			    const struct gsm0808_speech_codec_list *scl, uint8_t perm_spch)
+static bool test_codec_pref(const struct gsm0808_speech_codec **sc_match,
+			    const struct gsm0808_speech_codec_list *scl,
+			    const struct gsm0808_channel_type *ct,
+			    uint8_t perm_spch)
 {
 	unsigned int i;
 	bool match = false;
 	struct gsm0808_speech_codec sc;
 	int rc;
+
+	*sc_match = NULL;
 
 	/* Try to find the given permitted speech value in the
 	 * codec list of the channel type element */
@@ -129,8 +133,10 @@ static bool test_codec_pref(const struct gsm0808_channel_type *ct,
 	/* Try to find extrapolated speech codec data in
 	 * the speech codec list */
 	for (i = 0; i < scl->len; i++) {
-		if (sc.type == scl->codec[i].type)
+		if (sc.type == scl->codec[i].type) {
+			*sc_match = &scl->codec[i];
 			return true;
+		}
 	}
 
 	return false;
@@ -168,40 +174,74 @@ static bool test_codec_support_bts(const struct bts_codec_conf *bts_codec, uint8
 	return false;
 }
 
+/* Generate the bss supported amr configuration bits (S0-S15) */
+static uint16_t gen_bss_supported_amr_s15_s0(const struct bsc_msc_data *msc, const struct gsm_bts *bts, bool hr)
+{
+	const struct gsm48_multi_rate_conf *amr_cfg_bts;
+	const struct gsm48_multi_rate_conf *amr_cfg_msc;
+	uint16_t amr_s15_s0_bts;
+	uint16_t amr_s15_s0_msc;
+
+	/* Lookup the BTS specific AMR rate configuration. This config is set
+	 * via the VTY for each BTS individually. In cases where no configuration
+	 * is set we will assume a safe default */
+	if (hr) {
+		amr_cfg_bts = (struct gsm48_multi_rate_conf *)&bts->mr_half.gsm48_ie;
+		amr_s15_s0_bts = gsm0808_sc_cfg_from_gsm48_mr_cfg(amr_cfg_bts, false);
+	} else {
+		amr_cfg_bts = (struct gsm48_multi_rate_conf *)&bts->mr_full.gsm48_ie;
+		amr_s15_s0_bts = gsm0808_sc_cfg_from_gsm48_mr_cfg(amr_cfg_bts, true);
+	}
+
+	/* Lookup the AMR rate configuration that is set for the MSC */
+	amr_cfg_msc = &msc->amr_conf;
+	amr_s15_s0_msc = gsm0808_sc_cfg_from_gsm48_mr_cfg(amr_cfg_msc, true);
+
+	/* Calculate the intersection of the two configurations and update S0-S15
+	 * in the codec list. */
+	return amr_s15_s0_bts & amr_s15_s0_msc;
+}
+
 /*! Match the codec preferences from local config with a received codec preferences IEs received from the
  * MSC and the BTS' codec configuration.
  *  \param[out] chan_mode GSM 04.08 channel mode.
  *  \param[out] full_rate true if full-rate.
+ *  \param[out] s15_s0 codec configuration bits S15-S0 (AMR)
  *  \param[in] ct GSM 08.08 channel type received from MSC.
  *  \param[in] scl GSM 08.08 speech codec list received from MSC (optional).
- *  \param[in] audio_support List of allowed codecs as from local config.
- *  \param[in] audio_length Number of items in audio_support.
- *  \param[in] bts_codec BTS codec configuration.
+ *  \param[in] msc associated msc (current codec settings).
+ *  \param[in] bts associated bts (current codec settings).
  *  \returns 0 on success, -1 in case no match was found */
 int match_codec_pref(enum gsm48_chan_mode *chan_mode,
 		     bool *full_rate,
+		     uint16_t *s15_s0,
 		     const struct gsm0808_channel_type *ct,
 		     const struct gsm0808_speech_codec_list *scl,
-		     struct gsm_audio_support * const *audio_support,
-		     int audio_length,
-		     const struct bts_codec_conf *bts_codec)
+		     const struct bsc_msc_data *msc,
+		     const struct gsm_bts *bts)
 {
 	unsigned int i;
 	uint8_t perm_spch;
 	bool match = false;
+	const struct gsm0808_speech_codec *sc_match = NULL;
+	uint16_t amr_s15_s0_supported;
 
-	for (i = 0; i < audio_length; i++) {
+	/* Note: Normally the MSC should never try to advertise a codec that
+	 * we did not advertise as supported before. In order to ensure that
+	 * no unsupported codec is accepted, we make sure that the codec is
+	 * indeed available with the current BTS and MSC configuration */
+	for (i = 0; i < msc->audio_length; i++) {
 		/* Pick a permitted speech value from the global codec configuration list */
-		perm_spch = audio_support_to_gsm88(audio_support[i]);
+		perm_spch = audio_support_to_gsm88(msc->audio_support[i]);
 
 		/* Check this permitted speech value against the BTS specific parameters.
 		 * if the BTS does not support the codec, try the next one */
-		if (!test_codec_support_bts(bts_codec, perm_spch))
+		if (!test_codec_support_bts(&bts->codec, perm_spch))
 			continue;
 
 		/* Match the permitted speech value against the codec lists that were
 		 * advertised by the MS and the MSC */
-		if (test_codec_pref(ct, scl, perm_spch)) {
+		if (test_codec_pref(&sc_match, scl, ct, perm_spch)) {
 			match = true;
 			break;
 		}
@@ -211,6 +251,7 @@ int match_codec_pref(enum gsm48_chan_mode *chan_mode,
 	if (!match) {
 		*full_rate = false;
 		*chan_mode = GSM48_CMODE_SIGN;
+		*s15_s0 = 0;
 		return -1;
 	}
 
@@ -240,6 +281,31 @@ int match_codec_pref(enum gsm48_chan_mode *chan_mode,
 	/* Lookup a channel mode for the selected codec */
 	*chan_mode = gsm88_to_chan_mode(perm_spch);
 
+	/* Special handling for AMR */
+	if (perm_spch == GSM0808_PERM_HR3 || perm_spch == GSM0808_PERM_FR3) {
+		/* Normally the MSC should never try to advertise an AMR codec
+		 * configuration that we did not previously advertise as
+		 * supported. However, to ensure that no unsupported AMR codec
+		 * configuration enters the further processing steps we again
+		 * lookup what we support and generate an intersection. All
+		 * further processing is then done with this intersection
+		 * result */
+		amr_s15_s0_supported = gen_bss_supported_amr_s15_s0(msc, bts, (perm_spch == GSM0808_PERM_HR3));
+		if (sc_match)
+			*s15_s0 = sc_match->cfg & amr_s15_s0_supported;
+		else
+			*s15_s0 = amr_s15_s0_supported;
+
+		/* NOTE: The function test_codec_pref() will populate the
+		 * sc_match pointer from the searched speech codec list. For
+		 * AoIP based networks, no speech codec list will be present
+		 * and therefore no sc_match will be populated. For those
+		 * cases only the local configuration will influence s15_s0.
+		 * However s15_s0 is always populated with a meaningful value,
+		 * regardless if AoIP is in use or not. */
+	} else
+		*s15_s0 = 0;
+
 	return 0;
 }
 
@@ -254,11 +320,6 @@ void gen_bss_supported_codec_list(struct gsm0808_speech_codec_list *scl,
 	uint8_t perm_spch;
 	unsigned int i;
 	int rc;
-	uint16_t amr_s15_s0_bts;
-	uint16_t amr_s15_s0_msc;
-	uint16_t amr_s15_s0;
-	const struct gsm48_multi_rate_conf *amr_cfg_bts;
-	const struct gsm48_multi_rate_conf *amr_cfg_msc;
 
 	memset(scl, 0, sizeof(*scl));
 
@@ -280,28 +341,8 @@ void gen_bss_supported_codec_list(struct gsm0808_speech_codec_list *scl,
 		/* AMR (HR/FR version 3) is the only codec that requires a codec
 		 * configuration (S0-S15). Determine the current configuration and update
 		 * the cfg flag. */
-		if (msc->audio_support[i]->ver == 3) {
-
-			/* First lookup the BTS specific AMR rate configuration. Thsi config
-			 * is set via the VTY for each BTS individually. In cases where no
-			 * configuration is set we will assume a safe default */
-			if (msc->audio_support[i]->hr) {
-				amr_cfg_bts = (struct gsm48_multi_rate_conf *)&bts->mr_half.gsm48_ie;
-				amr_s15_s0_bts = gsm0808_sc_cfg_from_gsm48_mr_cfg(amr_cfg_bts, false);
-			} else {
-				amr_cfg_bts = (struct gsm48_multi_rate_conf *)&bts->mr_full.gsm48_ie;
-				amr_s15_s0_bts = gsm0808_sc_cfg_from_gsm48_mr_cfg(amr_cfg_bts, true);
-			}
-
-			/* At next, lookup the AMR rate configuration that is set for the MSC */
-			amr_cfg_msc = &msc->amr_conf;
-			amr_s15_s0_msc = gsm0808_sc_cfg_from_gsm48_mr_cfg(amr_cfg_msc, true);
-
-			/* Calculate the intersection of the two configurations and update S0-S15
-			 * in the codec list. */
-			amr_s15_s0 = amr_s15_s0_bts & amr_s15_s0_msc;
-			scl->codec[scl->len].cfg = amr_s15_s0;
-		}
+		if (msc->audio_support[i]->ver == 3)
+			scl->codec[scl->len].cfg = gen_bss_supported_amr_s15_s0(msc, bts, msc->audio_support[i]->hr);
 
 		scl->len++;
 	}

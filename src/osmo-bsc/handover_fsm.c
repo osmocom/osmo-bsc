@@ -522,6 +522,7 @@ void handover_start_inter_bsc_in(struct gsm_subscriber_connection *conn,
 	int match_idx;
 	enum gsm48_chan_mode mode;
 	bool full_rate;
+	uint16_t s15_s0;
 	struct osmo_fsm_inst *fi;
 
 	handover_fsm_alloc(conn);
@@ -560,8 +561,7 @@ void handover_start_inter_bsc_in(struct gsm_subscriber_connection *conn,
 		       bts->nr, req->cell_id_target_name);
 
 		/* Figure out channel type */
-		if (match_codec_pref(&mode, &full_rate, &req->ct, &req->scl, msc->audio_support,
-				     msc->audio_length, &bts->codec)) {
+		if (match_codec_pref(&mode, &full_rate, &s15_s0, &req->ct, &req->scl, msc, bts)) {
 			LOG_HO(conn, LOGL_DEBUG,
 			       "BTS %u has no matching channel codec (%s, speech codec list len = %u)",
 			       bts->nr, gsm0808_channel_type_name(&req->ct), req->scl.len);
@@ -606,6 +606,7 @@ void handover_start_inter_bsc_in(struct gsm_subscriber_connection *conn,
 		.activ_for = FOR_HANDOVER,
 		.for_conn = conn,
 		.chan_mode = mode,
+		.s15_s0 = s15_s0,
 		.requires_voice_stream = chan_mode_is_tch(mode),
 		.msc_assigned_cic = req->msc_assigned_cic,
 	};

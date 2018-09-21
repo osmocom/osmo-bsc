@@ -603,6 +603,7 @@ static int bssmap_handle_assignm_req(struct gsm_subscriber_connection *conn,
 	uint16_t cic = 0;
 	enum gsm48_chan_mode chan_mode = GSM48_CMODE_SIGN;
 	bool full_rate = false;
+	uint16_t s15_s0 = 0;
 	bool aoip = false;
 	struct sockaddr_storage rtp_addr;
 	struct gsm0808_channel_type ct;
@@ -706,9 +707,8 @@ static int bssmap_handle_assignm_req(struct gsm_subscriber_connection *conn,
 
 		/* Match codec information from the assignment command against the
 		 * local preferences of the BSC and BTS */
-		rc = match_codec_pref(&chan_mode, &full_rate, &ct, &conn->codec_list,
-				      msc->audio_support, msc->audio_length,
-				      &conn_get_bts(conn)->codec);
+		rc = match_codec_pref(&chan_mode, &full_rate, &s15_s0, &ct, &conn->codec_list,
+				      msc, conn_get_bts(conn));
 		if (rc < 0) {
 			LOGP(DMSC, LOGL_ERROR, "No supported audio type found for channel_type ="
 			     " { ch_indctr=0x%x, ch_rate_type=0x%x, perm_spch=[ %s] }\n",
@@ -730,6 +730,7 @@ static int bssmap_handle_assignm_req(struct gsm_subscriber_connection *conn,
 			.msc_assigned_cic = cic,
 			.chan_mode = chan_mode,
 			.full_rate = full_rate,
+			.s15_s0 = s15_s0
 		};
 		if (aoip) {
 			unsigned int rc = osmo_sockaddr_to_str_and_uint(req.msc_rtp_addr,

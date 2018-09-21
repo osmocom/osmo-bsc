@@ -425,11 +425,48 @@ void lchan_mr_config(struct gsm_lchan *lchan, struct gsm48_multi_rate_conf *mr_c
 	};
 }
 
+/* Mask all rates instead of the highest possible */
+static void lchan_mr_config_mask(struct gsm48_multi_rate_conf *mr_conf)
+{
+	unsigned int i;
+	bool highest_seen = false;
+	uint8_t *_mr_conf = (uint8_t *) mr_conf;
+
+	/* FIXME: At the moment we can not support multiple codec rates in one
+	 * struct gsm48_multi_rate_conf, because the struct lacks the fields
+	 * for Threshold and Hysteresis. Those fields are not needed when only
+	 * a single codec rate is in place, but as soon as multiple codec
+	 * rates are used the parameters are mandatory. The layout for the
+	 * struct would then also be different because each rate needs its
+	 * own Threshold and Hysteresis value. (See also 3GPP TS 04.08,
+	 * chapter 10.5.2.21aa MultiRate configuration).
+	 *
+	 * Since we are unable to signal multiple codec rates properly, we just
+	 * remove all codec rates from the active set, except the highest
+	 * possible. Doing so we lack the functionality to switch towards the
+	 * other, lower codec rates that were offered by the MSC, but it is
+	 * still guaranteed that a rate is selected that is supported by all
+	 * entities.
+	 *
+	 * To fix this problem, we should implement a proper encoder for
+	 * struct gsm48_multi_rate_conf, in libosmocore and use it here.
+	 * struct amr_mode already seems to have members for threshold and
+	 * hysteresis we can use. */
+
+	for (i = 7; i > 0; i--) {
+		if (_mr_conf[1] & (1 << i) && highest_seen == false) {
+			highest_seen = true;
+		} else if (highest_seen)
+			_mr_conf[1] &= ~(1 << i);
+	}
+}
+
 static void lchan_fsm_unused(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
 	struct lchan_activate_info *info = data;
 	struct gsm_lchan *lchan = lchan_fi_lchan(fi);
 	struct gsm_bts *bts = lchan->ts->trx->bts;
+	struct gsm48_multi_rate_conf mr_conf;
 
 	switch (event) {
 
@@ -469,8 +506,12 @@ static void lchan_fsm_unused(struct osmo_fsm_inst *fi, uint32_t event, void *dat
 			 * - TA is still zero, to be determined by RACH. */
 		}
 
-		if (info->chan_mode == GSM48_CMODE_SPEECH_AMR)
-			lchan_mr_config(lchan, &info->for_conn->sccp.msc->amr_conf);
+		if (info->chan_mode == GSM48_CMODE_SPEECH_AMR) {
+			gsm48_mr_cfg_from_gsm0808_sc_cfg(&mr_conf, info->s15_s0);
+			/* FIXME: See above. */
+			lchan_mr_config_mask(&mr_conf);
+			lchan_mr_config(lchan, &mr_conf);
+		}
 
 		switch (info->chan_mode) {
 

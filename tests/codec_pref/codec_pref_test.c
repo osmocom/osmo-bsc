@@ -374,6 +374,7 @@ static int test_match_codec_pref(const struct gsm0808_channel_type *ct, const st
 	unsigned int i;
 	bool full_rate;
 	enum gsm48_chan_mode chan_mode;
+	uint16_t s15_s0;
 
 	printf("Determining channel mode and rate:\n");
 
@@ -398,8 +399,9 @@ static int test_match_codec_pref(const struct gsm0808_channel_type *ct, const st
 	printf("   codec->efr=%u\n", bts->codec.efr);
 	printf("   codec->amr=%u\n", bts->codec.amr);
 
-	rc = match_codec_pref(&chan_mode, &full_rate, ct, scl, msc->audio_support, msc->audio_length, &bts->codec);
-	printf(" * result: rc=%i, full_rate=%i, chan_mode=%s\n", rc, full_rate, gsm48_chan_mode_name(chan_mode));
+	rc = match_codec_pref(&chan_mode, &full_rate, &s15_s0, ct, scl, msc, bts);
+	printf(" * result: rc=%i, full_rate=%i, s15_s0=%04x, chan_mode=%s\n",
+	       rc, full_rate, s15_s0, gsm48_chan_mode_name(chan_mode));
 
 	printf("\n");
 
