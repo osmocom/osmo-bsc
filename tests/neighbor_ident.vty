@@ -83,6 +83,7 @@ OsmoBSC(config-net-bts)# list
   neighbor bts <0-255>
   neighbor lac <0-65535>
   neighbor lac-ci <0-65535> <0-65535>
+  neighbor cgi <0-999> <0-999> <0-65535> <0-65535>
   neighbor lac <0-65535> arfcn <0-1023> bsic (<0-63>|any)
   neighbor lac-ci <0-65535> <0-65535> arfcn <0-1023> bsic (<0-63>|any)
   neighbor cgi <0-999> <0-999> <0-65535> <0-65535> arfcn <0-1023> bsic (<0-63>|any)
@@ -146,6 +147,7 @@ OsmoBSC(config-net-bts)# neighbor cgi 0 0 0 ?
   <0-65535>  CI
 OsmoBSC(config-net-bts)# neighbor cgi 0 0 0 0 ?
   arfcn  ARFCN of neighbor cell
+  <cr>   
 OsmoBSC(config-net-bts)# neighbor cgi 0 0 0 0 arfcn ?
   <0-1023>  ARFCN value
 OsmoBSC(config-net-bts)# neighbor cgi 0 0 0 0 arfcn 0 ?
@@ -195,6 +197,9 @@ OsmoBSC(config-net-bts)# neighbor bts 1
 % BTS 0 now has local neighbor BTS 1 with LAC 21 CI 31 and ARFCN 41 BSIC 11
 
 OsmoBSC(config-net-bts)# neighbor lac 22
+% BTS 0 now has local neighbor BTS 2 with LAC 22 CI 65535 and ARFCN 42 BSIC 12
+OsmoBSC(config-net-bts)# no neighbor bts 2
+OsmoBSC(config-net-bts)# neighbor cgi 901 70 22 65535
 % BTS 0 now has local neighbor BTS 2 with LAC 22 CI 65535 and ARFCN 42 BSIC 12
 
 OsmoBSC(config-net-bts)# neighbor cgi 23 42 423 5 arfcn 23 bsic 42

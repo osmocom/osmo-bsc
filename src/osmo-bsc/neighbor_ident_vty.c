@@ -80,6 +80,9 @@ bool neighbor_ident_bts_parse_key_params(struct vty *vty, struct gsm_bts *bts, c
 #define LAC_CI_PARAMS "lac-ci <0-65535> <0-65535>"
 #define LAC_CI_DOC "Neighbor cell by LAC and CI\n" "LAC\n" "CI\n"
 
+#define CGI_PARAMS "cgi <0-999> <0-999> <0-65535> <0-65535>"
+#define CGI_DOC "Neighbor cell by cgi\n" "MCC\n" "MNC\n" "LAC\n" "CI\n"
+
 #define LOCAL_BTS_PARAMS "bts <0-255>"
 #define LOCAL_BTS_DOC "Neighbor cell by local BTS number\n" "BTS number\n"
 
@@ -235,6 +238,13 @@ DEFUN(cfg_neighbor_add_lac_ci, cfg_neighbor_add_lac_ci_cmd,
 	return add_local_bts(vty, bts_by_cell_id(vty, neighbor_ident_vty_parse_lac_ci(vty, argv)));
 }
 
+DEFUN(cfg_neighbor_add_cgi, cfg_neighbor_add_cgi_cmd,
+	NEIGHBOR_ADD_CMD CGI_PARAMS,
+	NEIGHBOR_ADD_DOC CGI_DOC)
+{
+	return add_local_bts(vty, bts_by_cell_id(vty, neighbor_ident_vty_parse_cgi(vty, argv)));
+}
+
 bool neighbor_ident_key_matches_bts(const struct neighbor_ident_key *key, struct gsm_bts *bts)
 {
 	if (!bts || !key)
@@ -379,8 +389,8 @@ DEFUN(cfg_neighbor_add_lac_ci_arfcn_bsic, cfg_neighbor_add_lac_ci_arfcn_bsic_cmd
 }
 
 DEFUN(cfg_neighbor_add_cgi_arfcn_bsic, cfg_neighbor_add_cgi_arfcn_bsic_cmd,
-	NEIGHBOR_ADD_CMD "cgi <0-999> <0-999> <0-65535> <0-65535> " NEIGHBOR_IDENT_VTY_KEY_PARAMS,
-	NEIGHBOR_ADD_DOC "Neighbor cell by cgi\n" "MCC\n" "MNC\n" "LAC\n" "CI\n" NEIGHBOR_IDENT_VTY_KEY_DOC)
+	NEIGHBOR_ADD_CMD CGI_PARAMS " " NEIGHBOR_IDENT_VTY_KEY_PARAMS,
+	NEIGHBOR_ADD_DOC CGI_DOC NEIGHBOR_IDENT_VTY_KEY_DOC)
 {
 	struct neighbor_ident_key nik;
 	struct gsm0808_cell_id *cell_id = neighbor_ident_vty_parse_cgi(vty, argv);
@@ -552,6 +562,7 @@ void neighbor_ident_vty_init(struct gsm_network *net, struct neighbor_ident_list
 	install_element(BTS_NODE, &cfg_neighbor_add_bts_nr_cmd);
 	install_element(BTS_NODE, &cfg_neighbor_add_lac_cmd);
 	install_element(BTS_NODE, &cfg_neighbor_add_lac_ci_cmd);
+	install_element(BTS_NODE, &cfg_neighbor_add_cgi_cmd);
 	install_element(BTS_NODE, &cfg_neighbor_add_lac_arfcn_bsic_cmd);
 	install_element(BTS_NODE, &cfg_neighbor_add_lac_ci_arfcn_bsic_cmd);
 	install_element(BTS_NODE, &cfg_neighbor_add_cgi_arfcn_bsic_cmd);
