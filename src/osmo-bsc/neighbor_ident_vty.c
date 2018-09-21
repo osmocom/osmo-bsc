@@ -86,6 +86,13 @@ bool neighbor_ident_bts_parse_key_params(struct vty *vty, struct gsm_bts *bts, c
 #define LOCAL_BTS_PARAMS "bts <0-255>"
 #define LOCAL_BTS_DOC "Neighbor cell by local BTS number\n" "BTS number\n"
 
+#define SHOW_BTS_PARAMS "show " LOCAL_BTS_PARAMS
+#define SHOW_BTS_DOC SHOW_STR "Display information about a BTS\n" "BTS number\n"
+
+#define SHOW_BTS_NEIGHBOR_PARAMS SHOW_BTS_PARAMS " neighbor"
+#define SHOW_BTS_NEIGHBOR_DOC SHOW_BTS_DOC \
+      "List this cell's neighbors matching the given criteria\n"
+
 static struct gsm_bts *neighbor_ident_vty_parse_bts_nr(struct vty *vty, const char **argv)
 {
 	const char *bts_nr_str = argv[0];
@@ -186,7 +193,7 @@ static int add_local_bts(struct vty *vty, struct gsm_bts *neigh)
 	return CMD_SUCCESS;
 }
 
-static int del_local_bts(struct vty *vty, struct gsm_bts *neigh)
+static int del_local_bts_neighbor(struct vty *vty, struct gsm_bts *neigh)
 {
 	int rc;
 	struct gsm_bts *bts = vty->index;
@@ -211,11 +218,122 @@ static int del_local_bts(struct vty *vty, struct gsm_bts *neigh)
 			neigh->nr, bts->nr, strerror(-rc), VTY_NEWLINE);
 		return CMD_WARNING;
 	}
-	if (rc == 0)
+	if (rc == 0) {
 		vty_out(vty, "%% BTS %u is no neighbor of BTS %u%s",
 			neigh->nr, bts->nr, VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+	vty_out(vty, "%% Removed from BTS %u local neighbor BTS %u%s", bts->nr, neigh->nr, VTY_NEWLINE);
 	return CMD_SUCCESS;
 }
+
+static int del_remote_neighbor(struct vty *vty, const struct neighbor_ident_key *key,
+			       const struct gsm0808_cell_id_list2 *val)
+{
+	vty_out(vty, "%% Removing remote neighbor: %s %s%s",
+		neighbor_ident_key_name(key),
+		gsm0808_cell_id_list_name(val),
+		VTY_NEWLINE);
+	if (!neighbor_ident_del(g_neighbor_cells, key)) {
+		vty_out(vty, "%% Error: removing neighbor failed%s", VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+	return CMD_SUCCESS;
+}
+
+struct del_local_or_remote_neighbor_iter_data {
+	struct vty *vty;
+	struct gsm_bts *bts;
+	const struct gsm0808_cell_id *id;
+	int count_local;
+	int count_remote;
+};
+
+static bool del_local_or_remote_neighbor_iter_cb_count(struct gsm_bts *from_bts,
+						       struct gsm_bts *neighbor_bts,
+						       const struct neighbor_ident_key *key,
+						       const struct gsm0808_cell_id_list2 *val,
+						       int val_idx,
+						       void *cb_data)
+{
+	struct del_local_or_remote_neighbor_iter_data *d = cb_data;
+	if (neighbor_bts)
+		d->count_local++;
+	else
+		d->count_remote++;
+	return true;
+}
+
+static bool del_local_or_remote_neighbor_iter_cb_list(struct gsm_bts *from_bts,
+						      struct gsm_bts *neighbor_bts,
+						      const struct neighbor_ident_key *key,
+						      const struct gsm0808_cell_id_list2 *val,
+						      int val_idx,
+						      void *cb_data)
+{
+	struct del_local_or_remote_neighbor_iter_data *d = cb_data;
+	struct vty *vty = d->vty;
+	if (neighbor_bts)
+		vty_out(vty, "%% BTS %u has local neighbor BTS %u%s",
+			d->bts->nr, neighbor_bts->nr, VTY_NEWLINE);
+	else
+		vty_out(vty, "%% Remote neighbor %s %s%s",
+			neighbor_ident_key_name(key),
+			gsm0808_cell_id_list_name(val), VTY_NEWLINE);
+	return true;
+}
+
+static bool del_local_or_remote_neighbor_iter_cb_del(struct gsm_bts *from_bts,
+						     struct gsm_bts *neighbor_bts,
+						     const struct neighbor_ident_key *key,
+						     const struct gsm0808_cell_id_list2 *val,
+						     int val_idx,
+						     void *cb_data)
+{
+	struct del_local_or_remote_neighbor_iter_data *d = cb_data;
+
+	if (neighbor_bts)
+		del_local_bts_neighbor(d->vty, neighbor_bts);
+	else
+		del_remote_neighbor(d->vty, key, val);
+	return true;
+}
+
+static int del_local_or_remote_neighbor(struct vty *vty, const struct gsm0808_cell_id *id,
+					bool allow_multiple_matches)
+{
+	struct del_local_or_remote_neighbor_iter_data d = {
+		.vty = vty,
+		.bts = vty->index,
+		.id = id,
+	};
+	int total;
+
+	if (vty->node != BTS_NODE)
+		d.bts = NULL;
+
+	neighbors_find_by_cell_id(g_net, d.bts, g_neighbor_cells, id, true, true,
+				  del_local_or_remote_neighbor_iter_cb_count, &d);
+
+	total = d.count_local + d.count_remote;
+	if (!total) {
+		vty_out(vty, "%% No matching neighbor%s", VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	if (total > 1 && !allow_multiple_matches) {
+		vty_out(vty, "%% More than one match found:%s", VTY_NEWLINE);
+		neighbors_find_by_cell_id(g_net, d.bts, g_neighbor_cells, id, true, true,
+					  del_local_or_remote_neighbor_iter_cb_list,
+					  &d);
+		return CMD_WARNING;
+	}
+
+	total = neighbors_find_by_cell_id(g_net, d.bts, g_neighbor_cells, id, true, true,
+					  del_local_or_remote_neighbor_iter_cb_del, &d);
+	return CMD_SUCCESS;
+}
+
 
 DEFUN(cfg_neighbor_add_bts_nr, cfg_neighbor_add_bts_nr_cmd,
 	NEIGHBOR_ADD_CMD LOCAL_BTS_PARAMS,
@@ -352,7 +470,7 @@ static int del_by_key(struct vty *vty, const struct neighbor_ident_key *key)
 			continue;
 		rc = gsm_bts_local_neighbor_del(bts, neigh->bts);
 		if (rc > 0) {
-			vty_out(vty, "%% Removed local neighbor bts %u to bts %u%s",
+			vty_out(vty, "%% Removed from BTS %u local neighbor BTS %u%s",
 				bts->nr, neigh_bts->nr, VTY_NEWLINE);
 			removed += rc;
 		}
@@ -415,7 +533,7 @@ DEFUN(cfg_neighbor_del_bts_nr, cfg_neighbor_del_bts_nr_cmd,
 	NEIGHBOR_DEL_CMD LOCAL_BTS_PARAMS,
 	NEIGHBOR_DEL_DOC LOCAL_BTS_DOC)
 {
-	return del_local_bts(vty, neighbor_ident_vty_parse_bts_nr(vty, argv));
+	return del_local_bts_neighbor(vty, neighbor_ident_vty_parse_bts_nr(vty, argv));
 }
 
 DEFUN(cfg_neighbor_del_arfcn_bsic, cfg_neighbor_del_arfcn_bsic_cmd,
@@ -430,11 +548,75 @@ DEFUN(cfg_neighbor_del_arfcn_bsic, cfg_neighbor_del_arfcn_bsic_cmd,
 	return del_by_key(vty, &key);
 }
 
+DEFUN(cfg_neighbor_del_lac, cfg_neighbor_del_lac_cmd,
+	NEIGHBOR_DEL_CMD LAC_PARAMS,
+	NEIGHBOR_DEL_DOC LAC_DOC)
+{
+	return del_local_or_remote_neighbor(vty, neighbor_ident_vty_parse_lac(vty, argv), false);
+}
+
+DEFUN(cfg_neighbor_del_lac_ci, cfg_neighbor_del_lac_ci_cmd,
+	NEIGHBOR_DEL_CMD LAC_CI_PARAMS,
+	NEIGHBOR_DEL_DOC LAC_CI_DOC)
+{
+	return del_local_or_remote_neighbor(vty, neighbor_ident_vty_parse_lac(vty, argv), false);
+}
+
+DEFUN(cfg_neighbor_del_cgi, cfg_neighbor_del_cgi_cmd,
+	NEIGHBOR_DEL_CMD CGI_PARAMS,
+	NEIGHBOR_DEL_DOC CGI_DOC)
+{
+	return del_local_or_remote_neighbor(vty, neighbor_ident_vty_parse_lac(vty, argv), false);
+}
+
+
 struct write_neighbor_ident_entry_data {
 	struct vty *vty;
 	const char *indent;
 	struct gsm_bts *bts;
 };
+
+static void write_neighbor_ident_list_entry(struct vty *vty,
+					    const char *indent,
+					    const struct neighbor_ident_key *key,
+					    const struct gsm0808_cell_id_list2 *val,
+					    int idx)
+{
+	if (idx >= val->id_list_len)
+		return;
+
+#define NEIGH_BSS_WRITE(fmt, args...) do { \
+		vty_out(vty, "%sneighbor " fmt " arfcn %u ", indent, ## args, key->arfcn); \
+		if (key->bsic == BSIC_ANY) \
+			vty_out(vty, "bsic any"); \
+		else \
+			vty_out(vty, "bsic %u", key->bsic & 0x3f); \
+		vty_out(vty, "%s", VTY_NEWLINE); \
+	} while(0)
+
+	switch (val->id_discr) {
+	case CELL_IDENT_LAC:
+		NEIGH_BSS_WRITE("lac %u", val->id_list[idx].lac);
+		break;
+	case CELL_IDENT_LAC_AND_CI:
+		NEIGH_BSS_WRITE("lac-ci %u %u",
+				val->id_list[idx].lac_and_ci.lac,
+				val->id_list[idx].lac_and_ci.ci);
+		break;
+	case CELL_IDENT_WHOLE_GLOBAL:
+		{
+			const struct osmo_cell_global_id *cgi = &val->id_list[idx].global;
+			NEIGH_BSS_WRITE("cgi %s %s %u %u",
+					osmo_mcc_name(cgi->lai.plmn.mcc),
+					osmo_mnc_name(cgi->lai.plmn.mnc, cgi->lai.plmn.mnc_3_digits),
+					cgi->lai.lac, cgi->cell_identity);
+		}
+		break;
+	default:
+		vty_out(vty, "%% Unsupported Cell Identity type: %d%s", val->id_discr, VTY_NEWLINE);
+	}
+#undef NEIGH_BSS_WRITE
+}
 
 static bool write_neighbor_ident_list(const struct neighbor_ident_key *key,
 				      const struct gsm0808_cell_id_list2 *val,
@@ -450,42 +632,9 @@ static bool write_neighbor_ident_list(const struct neighbor_ident_key *key,
 	} else if (key->from_bts != NEIGHBOR_IDENT_KEY_ANY_BTS)
 			return true;
 
-#define NEIGH_BSS_WRITE(fmt, args...) do { \
-		vty_out(vty, "%sneighbor " fmt " arfcn %u ", d->indent, ## args, key->arfcn); \
-		if (key->bsic == BSIC_ANY) \
-			vty_out(vty, "bsic any"); \
-		else \
-			vty_out(vty, "bsic %u", key->bsic & 0x3f); \
-		vty_out(vty, "%s", VTY_NEWLINE); \
-	} while(0)
-
-	switch (val->id_discr) {
-	case CELL_IDENT_LAC:
-		for (i = 0; i < val->id_list_len; i++) {
-			NEIGH_BSS_WRITE("lac %u", val->id_list[i].lac);
-		}
-		break;
-	case CELL_IDENT_LAC_AND_CI:
-		for (i = 0; i < val->id_list_len; i++) {
-			NEIGH_BSS_WRITE("lac-ci %u %u",
-					val->id_list[i].lac_and_ci.lac,
-					val->id_list[i].lac_and_ci.ci);
-		}
-		break;
-	case CELL_IDENT_WHOLE_GLOBAL:
-		for (i = 0; i < val->id_list_len; i++) {
-			const struct osmo_cell_global_id *cgi = &val->id_list[i].global;
-			NEIGH_BSS_WRITE("cgi %s %s %u %u",
-					osmo_mcc_name(cgi->lai.plmn.mcc),
-					osmo_mnc_name(cgi->lai.plmn.mnc, cgi->lai.plmn.mnc_3_digits),
-					cgi->lai.lac, cgi->cell_identity);
-		}
-		break;
-	default:
-		vty_out(vty, "%% Unsupported Cell Identity%s", VTY_NEWLINE);
+	for (i = 0; i < val->id_list_len; i++) {
+		write_neighbor_ident_list_entry(vty, d->indent, key, val, i);
 	}
-#undef NEIGH_BSS_WRITE
-
 	return true;
 }
 
@@ -500,12 +649,17 @@ void neighbor_ident_vty_write_remote_bss(struct vty *vty, const char *indent, st
 	neighbor_ident_iter(g_neighbor_cells, write_neighbor_ident_list, &d);
 }
 
+void neighbor_ident_vty_write_local_neighbor(struct vty *vty, const char *indent, struct gsm_bts *neighbor_bts)
+{
+	vty_out(vty, "%sneighbor bts %u%s", indent, neighbor_bts->nr, VTY_NEWLINE);
+}
+
 void neighbor_ident_vty_write_local_neighbors(struct vty *vty, const char *indent, struct gsm_bts *bts)
 {
 	struct gsm_bts_ref *neigh;
 
 	llist_for_each_entry(neigh, &bts->local_neighbors, entry) {
-		vty_out(vty, "%sneighbor bts %u%s", indent, neigh->bts->nr, VTY_NEWLINE);
+		neighbor_ident_vty_write_local_neighbor(vty, indent, neigh->bts);
 	}
 }
 
@@ -515,11 +669,25 @@ void neighbor_ident_vty_write(struct vty *vty, const char *indent, struct gsm_bt
 	neighbor_ident_vty_write_remote_bss(vty, indent, bts);
 }
 
-DEFUN(show_bts_neighbor, show_bts_neighbor_cmd,
-      "show bts <0-255> neighbor " NEIGHBOR_IDENT_VTY_KEY_PARAMS,
-      SHOW_STR "Display information about a BTS\n" "BTS number\n"
-      "Query which cell would be the target for this neighbor ARFCN+BSIC\n"
-      NEIGHBOR_IDENT_VTY_KEY_DOC)
+DEFUN(show_bts_neighbor_all, show_bts_neighbor_all_cmd,
+      SHOW_BTS_NEIGHBOR_PARAMS " all",
+      SHOW_BTS_NEIGHBOR_DOC "List all neighbors\n")
+{
+	struct gsm_bts *bts = gsm_bts_num(g_net, atoi(argv[0]));
+
+	if (!bts) {
+		vty_out(vty, "%% Error: cannot find BTS '%s'%s", argv[0],
+			VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	neighbor_ident_vty_write(vty, "% ", bts);
+	return CMD_SUCCESS;
+}
+
+DEFUN(show_bts_neighbor_arfcn, show_bts_neighbor_arfcn_cmd,
+      SHOW_BTS_NEIGHBOR_PARAMS " " NEIGHBOR_IDENT_VTY_KEY_PARAMS,
+      SHOW_BTS_NEIGHBOR_DOC NEIGHBOR_IDENT_VTY_KEY_DOC)
 {
 	int found = 0;
 	struct neighbor_ident_key key;
@@ -563,6 +731,57 @@ DEFUN(show_bts_neighbor, show_bts_neighbor_cmd,
 	return CMD_SUCCESS;
 }
 
+static bool show_neighbor_by_cell_id_cb(struct gsm_bts *from_bts,
+					struct gsm_bts *neighbor_bts,
+					const struct neighbor_ident_key *key,
+					const struct gsm0808_cell_id_list2 *val,
+					int val_idx,
+					void *cb_data)
+{
+	struct vty *vty = cb_data;
+	if (neighbor_bts)
+		neighbor_ident_vty_write_local_neighbor(vty, "% ", neighbor_bts);
+	else
+		write_neighbor_ident_list_entry(vty, "% ", key, val, val_idx);
+	return true;
+}
+
+static int show_neighbor_by_cell_id(struct vty *vty, const char **argv, const struct gsm0808_cell_id *id)
+{
+	struct gsm_bts *bts = gsm_bts_num(g_net, atoi(argv[0]));
+
+	if (!bts) {
+		vty_out(vty, "%% Error: cannot find BTS '%s'%s", argv[0],
+			VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	neighbors_find_by_cell_id(g_net, bts, g_neighbor_cells, id, false, true,
+				  show_neighbor_by_cell_id_cb, vty);
+	return CMD_SUCCESS;
+}
+
+DEFUN(show_bts_neighbor_lac, show_bts_neighbor_lac_cmd,
+      SHOW_BTS_NEIGHBOR_PARAMS " " LAC_PARAMS,
+      SHOW_BTS_NEIGHBOR_DOC LAC_DOC)
+{
+	return show_neighbor_by_cell_id(vty, argv, neighbor_ident_vty_parse_lac(vty, &argv[1]));
+}
+
+DEFUN(show_bts_neighbor_lac_ci, show_bts_neighbor_lac_ci_cmd,
+      SHOW_BTS_NEIGHBOR_PARAMS " " LAC_CI_PARAMS,
+      SHOW_BTS_NEIGHBOR_DOC LAC_CI_DOC)
+{
+	return show_neighbor_by_cell_id(vty, argv, neighbor_ident_vty_parse_lac_ci(vty, &argv[1]));
+}
+
+DEFUN(show_bts_neighbor_cgi, show_bts_neighbor_cgi_cmd,
+      SHOW_BTS_NEIGHBOR_PARAMS " " CGI_PARAMS,
+      SHOW_BTS_NEIGHBOR_DOC CGI_DOC)
+{
+	return show_neighbor_by_cell_id(vty, argv, neighbor_ident_vty_parse_cgi(vty, &argv[1]));
+}
+
 void neighbor_ident_vty_init(struct gsm_network *net, struct neighbor_ident_list *nil)
 {
 	g_net = net;
@@ -576,5 +795,12 @@ void neighbor_ident_vty_init(struct gsm_network *net, struct neighbor_ident_list
 	install_element(BTS_NODE, &cfg_neighbor_add_cgi_arfcn_bsic_cmd);
 	install_element(BTS_NODE, &cfg_neighbor_del_bts_nr_cmd);
 	install_element(BTS_NODE, &cfg_neighbor_del_arfcn_bsic_cmd);
-	install_element_ve(&show_bts_neighbor_cmd);
+	install_element(BTS_NODE, &cfg_neighbor_del_lac_cmd);
+	install_element(BTS_NODE, &cfg_neighbor_del_lac_ci_cmd);
+	install_element(BTS_NODE, &cfg_neighbor_del_cgi_cmd);
+	install_element_ve(&show_bts_neighbor_all_cmd);
+	install_element_ve(&show_bts_neighbor_arfcn_cmd);
+	install_element_ve(&show_bts_neighbor_lac_cmd);
+	install_element_ve(&show_bts_neighbor_lac_ci_cmd);
+	install_element_ve(&show_bts_neighbor_cgi_cmd);
 }

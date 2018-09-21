@@ -73,6 +73,7 @@ osmo_bsc_SOURCES = \
 	mgw_endpoint_fsm.c \
 	neighbor_ident.c \
 	neighbor_ident_vty.c \
+	neighbor_iter.c \
 	net_init.c \
 	gsm_08_08.c \
 	osmo_bsc_bssap.c \

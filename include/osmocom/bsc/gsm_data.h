@@ -1152,6 +1152,21 @@ struct gsm_bts *gsm_bts_by_cell_id(const struct gsm_network *net,
 int gsm_bts_local_neighbor_add(struct gsm_bts *bts, struct gsm_bts *neighbor);
 int gsm_bts_local_neighbor_del(struct gsm_bts *bts, const struct gsm_bts *neighbor);
 
+typedef bool (*neighbors_find_by_cell_id_cb_t)(struct gsm_bts *from_bts,
+					       struct gsm_bts *neighbor_bts,
+					       const struct neighbor_ident_key *key,
+					       const struct gsm0808_cell_id_list2 *val,
+					       int val_idx,
+					       void *cb_data);
+int neighbors_find_by_cell_id(struct gsm_network *net,
+			      struct gsm_bts *for_bts,
+			      struct neighbor_ident_list *neighbor_bss_cells,
+			      const struct gsm0808_cell_id *id,
+			      bool remote_neighbors_exact_match,
+			      bool remote_neighbors_all_matches,
+			      neighbors_find_by_cell_id_cb_t cb,
+			      void *cb_data);
+
 struct gsm_bts_trx *gsm_bts_trx_alloc(struct gsm_bts *bts);
 struct gsm_bts_trx *gsm_bts_trx_num(const struct gsm_bts *bts, int num);
 
