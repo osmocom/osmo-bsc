@@ -200,18 +200,22 @@ static void send_assignment_complete(struct gsm_subscriber_connection *conn, str
 
 static void assignment_success(struct gsm_subscriber_connection *conn)
 {
-	/* apply LCLS configuration (if any) */
-	lcls_apply_config(conn);
-
-	send_assignment_complete(conn, conn->assignment.new_lchan);
-	/* If something went wrong during send_assignment_complete(), the fi will be gone from
-	 * error handling in there. Almost a success, but then again the whole thing failed. */
-	if (!conn->assignment.fi)
-		return;
-
 	/* Take on the new lchan */
 	gscon_change_primary_lchan(conn, conn->assignment.new_lchan);
 	conn->assignment.new_lchan = NULL;
+
+	/* apply LCLS configuration (if any) */
+	lcls_apply_config(conn);
+
+	send_assignment_complete(conn, conn->lchan);
+	/* If something went wrong during send_assignment_complete(), the fi will be gone from
+	 * error handling in there. Almost a success, but then again the whole thing failed. */
+	if (!conn->assignment.fi) {
+		/* The lchan was ready, and we failed to tell the MSC about it. By releasing this lchan,
+		 * the conn will notice that its primary lchan is gone and should clean itself up. */
+		lchan_release(conn->lchan, false, true, RSL_ERR_EQUIPMENT_FAIL);
+		return;
+	}
 
 	/* Rembered this only for error handling: should assignment fail, assignment_reset() will release
 	 * the MGW endpoint right away. If successful, the conn continues to use the endpoint. */
