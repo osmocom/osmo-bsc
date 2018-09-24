@@ -241,8 +241,8 @@ network
 ... !neighbor 
  bts 0
 ... !neighbor 
-  neighbor lac-ci 21 31
-  neighbor lac-ci 22 65535
+  neighbor bts 1
+  neighbor bts 2
   neighbor cgi 023 42 423 5 arfcn 23 bsic 42
   neighbor cgi 023 042 423 6 arfcn 23 bsic 42
   neighbor cgi 023 042 234 56 arfcn 23 bsic 42
@@ -272,8 +272,8 @@ OsmoBSC(config-net-bts)# no neighbor arfcn 23 bsic 42
 
 OsmoBSC(config-net-bts)# show running-config
 ... !neighbor 
-  neighbor lac-ci 21 31
-  neighbor lac-ci 22 65535
+  neighbor bts 1
+  neighbor bts 2
   neighbor lac 456 arfcn 123 bsic 45
   neighbor lac-ci 789 10 arfcn 423 bsic any
   neighbor lac-ci 789 10 arfcn 423 bsic 63
@@ -285,8 +285,8 @@ OsmoBSC(config-net-bts)# no neighbor arfcn 123 bsic 45
 
 OsmoBSC(config-net-bts)# show running-config
 ... !neighbor 
-  neighbor lac-ci 21 31
-  neighbor lac-ci 22 65535
+  neighbor bts 1
+  neighbor bts 2
   neighbor lac-ci 789 10 arfcn 423 bsic any
   neighbor lac-ci 789 10 arfcn 423 bsic 63
   neighbor lac-ci 789 10 arfcn 423 bsic 1
@@ -297,8 +297,8 @@ OsmoBSC(config-net-bts)# no neighbor arfcn 423 bsic any
 
 OsmoBSC(config-net-bts)# show running-config
 ... !neighbor 
-  neighbor lac-ci 21 31
-  neighbor lac-ci 22 65535
+  neighbor bts 1
+  neighbor bts 2
   neighbor lac-ci 789 10 arfcn 423 bsic 63
   neighbor lac-ci 789 10 arfcn 423 bsic 1
 ... !neighbor 
@@ -308,8 +308,8 @@ OsmoBSC(config-net-bts)# no neighbor arfcn 423 bsic 63
 
 OsmoBSC(config-net-bts)# show running-config
 ... !neighbor 
-  neighbor lac-ci 21 31
-  neighbor lac-ci 22 65535
+  neighbor bts 1
+  neighbor bts 2
   neighbor lac-ci 789 10 arfcn 423 bsic 1
 ... !neighbor 
 
@@ -318,8 +318,8 @@ OsmoBSC(config-net-bts)# no neighbor arfcn 423 bsic 1
 
 OsmoBSC(config-net-bts)# show running-config
 ... !neighbor 
-  neighbor lac-ci 21 31
-  neighbor lac-ci 22 65535
+  neighbor bts 1
+  neighbor bts 2
 ... !neighbor 
 
 OsmoBSC(config-net-bts)# no neighbor arfcn 41 bsic any
@@ -327,7 +327,7 @@ OsmoBSC(config-net-bts)# no neighbor arfcn 41 bsic any
 
 OsmoBSC(config-net-bts)# show running-config
 ... !neighbor 
-  neighbor lac-ci 22 65535
+  neighbor bts 2
 ... !neighbor 
 
 OsmoBSC(config-net-bts)# no neighbor arfcn 41 bsic any
@@ -335,7 +335,7 @@ OsmoBSC(config-net-bts)# no neighbor arfcn 41 bsic any
 
 OsmoBSC(config-net-bts)# show running-config
 ... !neighbor 
-  neighbor lac-ci 22 65535
+  neighbor bts 2
 ... !neighbor 
 
 OsmoBSC(config-net-bts)# no neighbor arfcn 42 bsic 12

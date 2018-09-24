@@ -495,9 +495,7 @@ void neighbor_ident_vty_write_local_neighbors(struct vty *vty, const char *inden
 	struct gsm_bts_ref *neigh;
 
 	llist_for_each_entry(neigh, &bts->local_neighbors, entry) {
-		vty_out(vty, "%sneighbor lac-ci %u %u%s",
-			indent, neigh->bts->location_area_code, neigh->bts->cell_identity,
-			VTY_NEWLINE);
+		vty_out(vty, "%sneighbor bts %u%s", indent, neigh->bts->nr, VTY_NEWLINE);
 	}
 }
 
