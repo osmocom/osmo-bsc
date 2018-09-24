@@ -129,7 +129,7 @@ static void on_assignment_failure(struct gsm_subscriber_connection *conn)
 	}
 }
 
-static void send_assignment_complete(struct gsm_subscriber_connection *conn, struct gsm_lchan *new_lchan)
+static void send_assignment_complete(struct gsm_subscriber_connection *conn)
 {
 	int rc;
 	struct gsm0808_speech_codec sc;
@@ -139,7 +139,7 @@ static void send_assignment_complete(struct gsm_subscriber_connection *conn, str
 	int perm_spch = 0;
 	uint8_t chosen_channel;
 	struct msgb *resp;
-	struct gsm_lchan *lchan = new_lchan;
+	struct gsm_lchan *lchan = conn->lchan;
 	struct osmo_fsm_inst *fi = conn->fi;
 
 	chosen_channel = gsm0808_chosen_channel(lchan->type, lchan->tch_mode);
@@ -207,7 +207,7 @@ static void assignment_success(struct gsm_subscriber_connection *conn)
 	/* apply LCLS configuration (if any) */
 	lcls_apply_config(conn);
 
-	send_assignment_complete(conn, conn->lchan);
+	send_assignment_complete(conn);
 	/* If something went wrong during send_assignment_complete(), the fi will be gone from
 	 * error handling in there. Almost a success, but then again the whole thing failed. */
 	if (!conn->assignment.fi) {
@@ -348,7 +348,7 @@ void assignment_fsm_start(struct gsm_subscriber_connection *conn, struct gsm_bts
 				       " requested chan_mode=%s; current lchan is %s\n",
 				       gsm48_chan_mode_name(req->chan_mode),
 				       gsm_lchan_name(conn->lchan));
-			send_assignment_complete(conn, conn->lchan);
+			send_assignment_complete(conn);
 			return;
 		}
 
