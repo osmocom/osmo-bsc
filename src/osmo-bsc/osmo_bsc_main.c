@@ -832,6 +832,7 @@ int main(int argc, char **argv)
 	/* Initalize SS7 */
 	osmo_ss7_init();
 	osmo_ss7_vty_init_asp(tall_bsc_ctx);
+	osmo_sccp_vty_init();
 
 	/* parse options */
 	handle_options(argc, argv);
