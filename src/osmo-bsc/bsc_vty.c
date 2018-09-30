@@ -1768,7 +1768,7 @@ static void bts_paging_dump_vty(struct vty *vty, struct gsm_bts *bts)
 DEFUN(show_paging,
       show_paging_cmd,
       "show paging [<0-255>]",
-	SHOW_STR "Display information about paging reuqests of a BTS\n"
+	SHOW_STR "Display information about paging requests of a BTS\n"
 	BTS_NR_STR)
 {
 	struct gsm_network *net = gsmnet_from_vty(vty);
