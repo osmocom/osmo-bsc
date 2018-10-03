@@ -673,14 +673,15 @@ static int abis_nm_rx_lmt_event(struct msgb *mb)
 }
 
 /* From a received OML message, determine the matching struct gsm_bts_trx_ts instance.
- * Note that the BTS-TRX-TS numbers received in the FOM header do not correspond to the local bts->nr and
- * bts->trx->nr. Rather, the trx is identified by the e1inp_sign_link* found in msg->dst, and the TS is
- * then obtained by the FOM header's TS number. */
+ * Note that the BTS-TRX-TS numbers received in the FOM header do not correspond
+ * to the local bts->nr. Rather, the BTS is identified by the e1inp_sign_link*
+ * found in msg->dst which points to OML connection and thus to its 1st TRX, and the
+ * TRX and TS is then obtained by the FOM header's TS number. */
 struct gsm_bts_trx_ts *abis_nm_get_ts(const struct msgb *oml_msg)
 {
 	struct abis_om_fom_hdr *foh = msgb_l3(oml_msg);
 	struct e1inp_sign_link *sign_link = oml_msg->dst;
-	struct gsm_bts_trx *trx = sign_link->trx;
+	struct gsm_bts_trx *trx = gsm_bts_trx_by_nr(sign_link->trx->bts, foh->obj_inst.trx_nr);
 	uint8_t ts_nr = foh->obj_inst.ts_nr;
 	if (!trx) {
 		LOGP(DNM, LOGL_ERROR, "%s Channel OPSTART ACK for sign_link without trx\n",
@@ -699,8 +700,7 @@ static int abis_nm_rx_opstart_ack(struct msgb *mb)
 {
 	struct abis_om_fom_hdr *foh = msgb_l3(mb);
 	struct e1inp_sign_link *sign_link = mb->dst;
-	struct gsm_bts_trx *trx = sign_link->trx;
-	DEBUGPFOH(DNM, foh, "bts=%u trx=%u Opstart ACK\n", trx->bts->nr, trx->nr);
+	DEBUGPFOH(DNM, foh, "bts=%u Opstart ACK\n", sign_link->trx->bts->nr);
 	osmo_signal_dispatch(SS_NM, S_NM_OPSTART_ACK, mb);
 	return 0;
 }
