@@ -579,6 +579,8 @@ static int inp_sig_cb(unsigned int subsys, unsigned int signal,
 			if (isd->trx->bts->type == GSM_BTS_TYPE_BS11)
 				bootstrap_om_bs11(isd->trx->bts);
 			break;
+		default:
+			break;
 		}
 	}
 

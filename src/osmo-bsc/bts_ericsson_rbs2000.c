@@ -130,6 +130,8 @@ static int inp_sig_cb(unsigned int subsys, unsigned int signal,
 			else
 				bootstrap_om_trx(isd->trx);
 			break;
+		default:
+			break;
 		}
 		break;
 	case S_L_INP_TEI_DN:
