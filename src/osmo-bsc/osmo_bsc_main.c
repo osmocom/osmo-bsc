@@ -805,6 +805,7 @@ int main(int argc, char **argv)
 
 	osmo_init_logging2(tall_bsc_ctx, &log_info);
 	osmo_stats_init(tall_bsc_ctx);
+	rate_ctr_init(tall_bsc_ctx);
 
 	/* Allocate global gsm_network struct */
 	rc = bsc_network_alloc();
