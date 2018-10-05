@@ -21,3 +21,5 @@ int match_codec_pref(enum gsm48_chan_mode *chan_mode,
 void gen_bss_supported_codec_list(struct gsm0808_speech_codec_list *scl,
 				  const struct bsc_msc_data *msc,
 				  const struct gsm_bts *bts);
+
+int check_codec_pref(struct llist_head *mscs);

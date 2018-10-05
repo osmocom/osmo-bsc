@@ -59,6 +59,7 @@
 #include <osmocom/bsc/abis_rsl.h>
 #include <osmocom/bsc/chan_alloc.h>
 #include <osmocom/bsc/e1_config.h>
+#include <osmocom/bsc/codec_pref.h>
 
 #include <osmocom/mgcp_client/mgcp_client.h>
 
@@ -880,6 +881,10 @@ int main(int argc, char **argv)
 		fprintf(stderr, "Failed to create the RF service.\n");
 		exit(1);
 	}
+
+	rc = check_codec_pref(&bsc_gsmnet->bsc_data->mscs);
+	if (rc < 0)
+		LOGP(DMSC, LOGL_ERROR, "Configuration contains mutually exclusive codec settings -- check configuration!\n");
 
 	llist_for_each_entry(msc, &bsc_gsmnet->bsc_data->mscs, entry) {
 		if (osmo_bsc_msc_init(msc) != 0) {

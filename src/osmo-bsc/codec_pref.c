@@ -348,3 +348,29 @@ void gen_bss_supported_codec_list(struct gsm0808_speech_codec_list *scl,
 	}
 }
 
+/*! Visit the codec settings for the MSC and for each BTS in order to make sure
+ *  that the configuration does not contain any combinations that lead into a
+ *  mutually exclusive codec configuration (empty intersection).
+ *  \param[in] mscs list head of the msc list.
+ *  \returns 0 on success, -1 in case an invalid setting is found. */
+int check_codec_pref(struct llist_head *mscs)
+{
+	struct bsc_msc_data *msc;
+	struct gsm_bts *bts;
+	struct gsm0808_speech_codec_list scl;
+	int rc = 0;
+
+	llist_for_each_entry(msc, mscs, entry) {
+		llist_for_each_entry(bts, &msc->network->bts_list, list) {
+			gen_bss_supported_codec_list(&scl, msc, bts);
+			if (scl.len <= 0) {
+				LOGP(DMSC, LOGL_FATAL,
+				     "codec-support of BTS %u does not intersect with codec-list of MSC %u\n",
+				     bts->nr, msc->nr);
+				rc = -1;
+			}
+		}
+	}
+
+	return rc;
+}
