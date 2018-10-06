@@ -1781,6 +1781,7 @@ static int verify_chan_comb(struct gsm_bts_trx_ts *ts, uint8_t chan_comb,
 				/* only on TRX0 */
 				switch (chan_comb) {
 				case NM_CHANC_BCCH:
+				case NM_CHANC_BCCH_CBCH:
 				case NM_CHANC_mainBCCH:
 				case NM_CHANC_BCCHComb:
 					return 0;
