@@ -40,6 +40,7 @@
 #include <osmocom/bsc/osmo_bsc_lcls.h>
 #include <osmocom/bsc/mgw_endpoint_fsm.h>
 #include <osmocom/bsc/codec_pref.h>
+#include <osmocom/bsc/gsm_08_08.h>
 
 #define LOG_FMT_BTS "bts %u lac-ci %u-%u arfcn-bsic %d-%d"
 #define LOG_ARGS_BTS(bts) \
@@ -697,9 +698,39 @@ void handover_end(struct gsm_subscriber_connection *conn, enum handover_result r
 				result = HO_RESULT_ERROR;
 			} else
 				result = bsc_tx_bssmap_ho_complete(conn, ho->new_lchan);
-		} else {
+		}
+		/* Not 'else': above checks may still result in HO_RESULT_ERROR. */
+		if (result == HO_RESULT_ERROR) {
+			/* Return a BSSMAP Handover Failure, as described in 3GPP TS 48.008 3.1.5.2.2
+			 * "Handover Resource Allocation Failure" */
 			bsc_tx_bssmap_ho_failure(conn);
-			/* TODO: Also send BSSMAP Clear Request? */
+		}
+	} else if (ho->scope & HO_INTER_BSC_OUT) {
+		switch (result) {
+		case HO_RESULT_OK:
+			break;
+		case HO_RESULT_FAIL_RR_HO_FAIL:
+			/* Return a BSSMAP Handover Failure, as described in 3GPP TS 48.008 3.1.5.3.2
+			 * "Handover Failure" */
+			bsc_tx_bssmap_ho_failure(conn);
+			break;
+		default:
+		case HO_RESULT_FAIL_TIMEOUT:
+			switch (ho->fi->state) {
+			case HO_OUT_ST_WAIT_HO_COMMAND:
+				/* MSC never replied with a Handover Command. Fail and ignore the
+				 * handover, continue to use the lchan. */
+				break;
+			default:
+			case HO_OUT_ST_WAIT_CLEAR:
+				/* 3GPP TS 48.008 3.1.5.3.3 "Abnormal Conditions": if neither MS reports
+				 * HO Failure nor the MSC sends a Clear Command, we should release the
+				 * dedicated radio resources and send a Clear Request to the MSC. */
+				lchan_release(conn->lchan, false, true, GSM48_RR_CAUSE_ABNORMAL_TIMER);
+				/* Once the channel release is through, the BSSMAP Clear will follow. */
+				break;
+			}
+			break;
 		}
 	}
 
