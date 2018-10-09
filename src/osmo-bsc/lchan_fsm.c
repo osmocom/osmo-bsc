@@ -368,6 +368,9 @@ static void lchan_reset(struct gsm_lchan *lchan)
 {
 	LOG_LCHAN(lchan, LOGL_DEBUG, "Clearing lchan state\n");
 
+	if (lchan->conn)
+		gscon_forget_lchan(lchan->conn, lchan);
+
 	if (lchan->rqd_ref) {
 		talloc_free(lchan->rqd_ref);
 		lchan->rqd_ref = NULL;
