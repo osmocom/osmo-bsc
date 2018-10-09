@@ -886,15 +886,21 @@ DEFUN(logging_fltr_imsi,
 	struct log_target *tgt = osmo_log_vty2tgt(vty);
 	const char *imsi = argv[0];
 
-	bsc_subscr = bsc_subscr_find_by_imsi(bsc_gsmnet->bsc_subscribers, imsi);
+	if (!tgt)
+		return CMD_WARNING;
+
+	bsc_subscr = bsc_subscr_find_or_create_by_imsi(bsc_gsmnet->bsc_subscribers, imsi);
 
 	if (!bsc_subscr) {
-		vty_out(vty, "%%no subscriber with IMSI(%s)%s",
+		vty_out(vty, "%%failed to enable logging for subscriber with IMSI(%s)%s",
 			imsi, VTY_NEWLINE);
 		return CMD_WARNING;
 	}
 
 	log_set_filter_bsc_subscr(tgt, bsc_subscr);
+	/* log_set_filter has grabbed its own reference  */
+	bsc_subscr_put(bsc_subscr);
+
 	return CMD_SUCCESS;
 }
 
