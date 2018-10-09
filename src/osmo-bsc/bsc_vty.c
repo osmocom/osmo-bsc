@@ -38,6 +38,7 @@
 #include <arpa/inet.h>
 
 #include <osmocom/core/linuxlist.h>
+#include <osmocom/core/socket.h>
 #include <osmocom/bsc/gsm_data.h>
 #include <osmocom/abis/e1_input.h>
 #include <osmocom/bsc/abis_nm.h>
@@ -289,6 +290,19 @@ static void e1isl_dump_vty(struct vty *vty, struct e1inp_sign_link *e1l)
 		e1l->tei, e1l->sapi, VTY_NEWLINE);
 }
 
+/*! Dump the IP addresses and ports of the input signal link's timeslot.
+ *  This only makes sense for links connected with ipaccess.
+ *  Example output: "(r=10.1.42.1:55416<->l=10.1.42.123:3003)" */
+static void e1isl_dump_vty_tcp(struct vty *vty, const struct e1inp_sign_link *e1l)
+{
+	if (e1l) {
+		char *name = osmo_sock_get_name(NULL, e1l->ts->driver.ipaccess.fd.fd);
+		vty_out(vty, "%s", name);
+		talloc_free(name);
+	}
+	vty_out(vty, "%s", VTY_NEWLINE);
+}
+
 static void vty_out_neigh_list(struct vty *vty, struct bitvec *bv)
 {
 	int count = 0;
@@ -445,6 +459,8 @@ static void bts_dump_vty(struct vty *vty, struct gsm_bts *bts)
 		paging_pending_requests_nr(bts),
 		bts->paging.available_slots, VTY_NEWLINE);
 	if (is_ipaccess_bts(bts)) {
+		vty_out(vty, "  OML Link: ");
+		e1isl_dump_vty_tcp(vty, bts->oml_link);
 		vty_out(vty, "  OML Link state: %s", get_model_oml_status(bts));
 		sec = bts_uptime(bts);
 		if (sec)
@@ -1046,8 +1062,8 @@ static void trx_dump_vty(struct vty *vty, struct gsm_bts_trx *trx)
 	vty_out(vty, "  Baseband Transceiver NM State: ");
 	net_dump_nmstate(vty, &trx->bb_transc.mo.nm_state);
 	if (is_ipaccess_bts(trx->bts)) {
-		vty_out(vty, "  ip.access stream ID: 0x%02x%s",
-			trx->rsl_tei, VTY_NEWLINE);
+		vty_out(vty, "  ip.access stream ID: 0x%02x ", trx->rsl_tei);
+		e1isl_dump_vty_tcp(vty, trx->rsl_link);
 	} else {
 		vty_out(vty, "  E1 Signalling Link:%s", VTY_NEWLINE);
 		e1isl_dump_vty(vty, trx->rsl_link);
