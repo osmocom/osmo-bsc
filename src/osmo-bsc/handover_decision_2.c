@@ -700,9 +700,11 @@ static int trigger_handover_or_assignment(struct gsm_lchan *lchan, struct gsm_bt
 }
 
 /* verbosely log about a handover candidate */
-static inline void debug_candidate(struct gsm_lchan *lchan, struct ho_candidate *candidate,
-	struct gsm_bts *neighbor, int8_t rxlev, int tchf_count, int tchh_count)
+static inline void debug_candidate(struct ho_candidate *candidate,
+				   int8_t rxlev, int tchf_count, int tchh_count)
 {
+	struct gsm_lchan *lchan = candidate->lchan;
+
 #define HO_CANDIDATE_FMT(tchx, TCHX) "TCH/" #TCHX "={free %d (want %d), [%s%s%s]%s}"
 #define HO_CANDIDATE_ARGS(tchx, TCHX) \
 	     tch##tchx##_count, ho_get_hodec2_tch##tchx##_min_slots(candidate->bts->ho), \
@@ -718,17 +720,17 @@ static inline void debug_candidate(struct gsm_lchan *lchan, struct ho_candidate 
 		  /* now has to be candidate->requirements & REQUIREMENT_C_TCHX != 0: */ \
 		  " less-or-equal congestion"))
 
-	if (neighbor)
-		LOGPHOLCHANTOBTS(lchan, neighbor, LOGL_DEBUG,
-		     "RX level %d -> %d; "
-		     HO_CANDIDATE_FMT(f, F) "; " HO_CANDIDATE_FMT(h, H) "\n",
-		     rxlev2dbm(rxlev), rxlev2dbm(candidate->avg),
-		     HO_CANDIDATE_ARGS(f, F), HO_CANDIDATE_ARGS(h, H));
-	else
-		LOGPHOLCHANTOBTS(lchan, lchan->ts->trx->bts, LOGL_DEBUG,
+	if (candidate->bts == lchan->ts->trx->bts)
+		LOGPHOLCHANTOBTS(lchan, candidate->bts, LOGL_DEBUG,
 		     "RX level %d; "
 		     HO_CANDIDATE_FMT(f, F) "; " HO_CANDIDATE_FMT(h, H) "\n",
 		     rxlev2dbm(candidate->avg),
+		     HO_CANDIDATE_ARGS(f, F), HO_CANDIDATE_ARGS(h, H));
+	else if (candidate->bts)
+		LOGPHOLCHANTOBTS(lchan, candidate->bts, LOGL_DEBUG,
+		     "RX level %d -> %d; "
+		     HO_CANDIDATE_FMT(f, F) "; " HO_CANDIDATE_FMT(h, H) "\n",
+		     rxlev2dbm(rxlev), rxlev2dbm(candidate->avg),
 		     HO_CANDIDATE_ARGS(f, F), HO_CANDIDATE_ARGS(h, H));
 }
 
@@ -748,7 +750,7 @@ static void collect_assignment_candidate(struct gsm_lchan *lchan, struct ho_cand
 	c->bts = bts;
 	c->requirements = check_requirements(lchan, bts, tchf_count, tchh_count);
 	c->avg = av_rxlev;
-	debug_candidate(lchan, c, NULL, 0, tchf_count, tchh_count);
+	debug_candidate(c, 0, tchf_count, tchh_count);
 	(*candidates)++;
 }
 
@@ -844,7 +846,7 @@ static void collect_handover_candidate(struct gsm_lchan *lchan, struct neigh_mea
 	tchh_count = bts_count_free_ts(neighbor_bts, GSM_PCHAN_TCH_H);
 	c.requirements = check_requirements(lchan, neighbor_bts, tchf_count, tchh_count);
 
-	debug_candidate(lchan, &c, neighbor_bts, av_rxlev, tchf_count, tchh_count);
+	debug_candidate(&c, av_rxlev, tchf_count, tchh_count);
 
 	clist[*candidates] = c;
 	(*candidates)++;
