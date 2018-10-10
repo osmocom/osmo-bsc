@@ -64,6 +64,26 @@
 	     bsc_subscr_name(lchan->conn? lchan->conn->bsub : NULL), \
 	     ## args)
 
+#define LOGPHOLCHANTOREMOTE(lchan, remote_cil, level, fmt, args...) \
+	LOGP(DHODEC, level, "(lchan %u.%u%u%u %s %s)->(remote-BSS %s) (subscr %s) " fmt, \
+	     lchan->ts->trx->bts->nr, \
+	     lchan->ts->trx->nr, \
+	     lchan->ts->nr, \
+	     lchan->nr, \
+	     gsm_lchant_name(lchan->type), \
+	     gsm48_chan_mode_name(lchan->tch_mode), \
+	     gsm0808_cell_id_list_name(remote_cil), \
+	     bsc_subscr_name(lchan->conn? lchan->conn->bsub : NULL), \
+	     ## args)
+
+#define LOGPHOCAND(candidate, level, fmt, args...) do {\
+	if ((candidate)->bts) \
+		LOGPHOLCHANTOBTS((candidate)->lchan, (candidate)->bts, level, fmt, ## args); \
+	else if ((candidate)->cil) \
+		LOGPHOLCHANTOREMOTE((candidate)->lchan, (candidate)->cil, level, fmt, ## args); \
+	} while(0)
+
+
 #define REQUIREMENT_A_TCHF	0x01
 #define REQUIREMENT_B_TCHF	0x02
 #define REQUIREMENT_C_TCHF	0x04
@@ -634,7 +654,6 @@ static int trigger_handover_or_assignment(struct gsm_lchan *lchan, struct gsm_bt
 		/* change to full rate if AFS is improved and a candidate */
 		if (afs_bias > 0 && (requirements & REQUIREMENT_TCHF_MASK)) {
 			full_rate = true;
-			LOGPHOLCHAN(lchan, LOGL_DEBUG, "[Improve AHS->AFS]\n");
 			break;
 		}
 		/* change to full rate if the only candidate */
@@ -749,7 +768,7 @@ static void collect_handover_candidate(struct gsm_lchan *lchan, struct neigh_mea
 		.bsic = nmp->bsic,
 	};
 	int avg;
-	struct ho_candidate *c;
+	struct ho_candidate c;
 	int min_rxlev;
 
 	/* skip empty slots */
@@ -791,16 +810,22 @@ static void collect_handover_candidate(struct gsm_lchan *lchan, struct neigh_mea
 	/* calculate average rxlev for this cell over the window */
 	avg = neigh_meas_avg(nmp, ho_get_hodec2_rxlev_neigh_avg_win(bts->ho));
 
+	c = (struct ho_candidate){
+		.lchan = lchan,
+		.avg = avg,
+		.bts = neighbor_bts,
+	};
+
 	/* Heed rxlev hysteresis only if the RXLEV/RXQUAL/TA levels of the MS aren't critically bad and
 	 * we're just looking for an improvement. If levels are critical, we desperately need a handover
 	 * and thus skip the hysteresis check. */
 	if (!include_weaker_rxlev) {
 		unsigned int pwr_hyst = ho_get_hodec2_pwr_hysteresis(bts->ho);
 		if (avg <= (av_rxlev + pwr_hyst)) {
-			LOGPHOLCHAN(lchan, LOGL_DEBUG,
-				    "BTS %d is not a candidate, because RX level (%d) is lower"
-				    " or equal than current RX level (%d) + hysteresis (%d)\n",
-				    neighbor_bts->nr, rxlev2dbm(avg), rxlev2dbm(av_rxlev), pwr_hyst);
+			LOGPHOCAND(&c, LOGL_DEBUG,
+				   "Not a candidate, because RX level (%d) is lower"
+				   " or equal than current RX level (%d) + hysteresis (%d)\n",
+				   rxlev2dbm(avg), rxlev2dbm(av_rxlev), pwr_hyst);
 			return;
 		}
 	}
@@ -808,22 +833,20 @@ static void collect_handover_candidate(struct gsm_lchan *lchan, struct neigh_mea
 	/* if the minimum level is not reached */
 	min_rxlev = ho_get_hodec2_min_rxlev(neighbor_bts->ho);
 	if (rxlev2dbm(avg) < min_rxlev) {
-		LOGPHOLCHAN(lchan, LOGL_DEBUG,
-			    "BTS %d is not a candidate, because RX level (%d) is lower"
-			    " than its minimum required RX level (%d)\n",
-			    neighbor_bts->nr, rxlev2dbm(avg), min_rxlev);
+		LOGPHOCAND(&c, LOGL_DEBUG,
+			   "Not a candidate, because RX level (%d) is lower"
+			   " than the minimum required RX level (%d)\n",
+			   rxlev2dbm(avg), min_rxlev);
 		return;
 	}
 
 	tchf_count = bts_count_free_ts(neighbor_bts, GSM_PCHAN_TCH_F);
 	tchh_count = bts_count_free_ts(neighbor_bts, GSM_PCHAN_TCH_H);
-	c = &clist[*candidates];
-	c->lchan = lchan;
-	c->bts = neighbor_bts;
-	c->requirements = check_requirements(lchan, neighbor_bts, tchf_count,
-					     tchh_count);
-	c->avg = avg;
-	debug_candidate(lchan, c, neighbor_bts, av_rxlev, tchf_count, tchh_count);
+	c.requirements = check_requirements(lchan, neighbor_bts, tchf_count, tchh_count);
+
+	debug_candidate(lchan, &c, neighbor_bts, av_rxlev, tchf_count, tchh_count);
+
+	clist[*candidates] = c;
 	(*candidates)++;
 }
 
@@ -973,9 +996,9 @@ static int find_alternative_lchan(struct gsm_lchan *lchan, bool include_weaker_r
 
 	/* perform handover, if there is a candidate */
 	if (best_cand) {
-		LOGPHOLCHANTOBTS(lchan, best_cand->bts, LOGL_INFO, "Best candidate, RX level %d%s\n",
-				 rxlev2dbm(best_cand->avg),
-				 best_applied_afs_bias ? " (applied AHS -> AFS rxlev bias)" : "");
+		LOGPHOCAND(best_cand, LOGL_INFO, "Best candidate, RX level %d%s\n",
+			   rxlev2dbm(best_cand->avg),
+			   best_applied_afs_bias ? " (applied AHS -> AFS rxlev bias)" : "");
 		return trigger_handover_or_assignment(lchan, best_cand->bts,
 						      best_cand->requirements & REQUIREMENT_B_MASK);
 	}
@@ -1002,9 +1025,9 @@ static int find_alternative_lchan(struct gsm_lchan *lchan, bool include_weaker_r
 
 	/* perform handover, if there is a candidate */
 	if (best_cand) {
-		LOGPHOLCHANTOBTS(lchan, best_cand->bts, LOGL_INFO, "Best candidate, RX level %d%s\n",
-				 rxlev2dbm(best_cand->avg),
-				 best_applied_afs_bias? " (applied AHS -> AFS rxlev bias)" : "");
+		LOGPHOCAND(best_cand, LOGL_INFO, "Best candidate, RX level %d%s\n",
+			   rxlev2dbm(best_cand->avg),
+			   best_applied_afs_bias? " (applied AHS -> AFS rxlev bias)" : "");
 		return trigger_handover_or_assignment(lchan, best_cand->bts,
 						      best_cand->requirements & REQUIREMENT_C_MASK);
 	}
@@ -1037,10 +1060,9 @@ static int find_alternative_lchan(struct gsm_lchan *lchan, bool include_weaker_r
 
 	/* perform handover, if there is a candidate */
 	if (best_cand) {
-		LOGPHOLCHANTOBTS(lchan, best_cand->bts, LOGL_INFO, "Best candidate, RX level %d"
-			" with greater congestion found%s\n",
-			rxlev2dbm(best_cand->avg),
-			best_applied_afs_bias ? " (applied AHS -> AFS rxlev bias)" : "");
+		LOGPHOCAND(best_cand, LOGL_INFO, "Best candidate: RX level %d%s\n",
+			   rxlev2dbm(best_cand->avg),
+			   best_applied_afs_bias ? " (applied AHS -> AFS rxlev bias)" : "");
 		return trigger_handover_or_assignment(lchan, best_cand->bts,
 						      best_cand->requirements & REQUIREMENT_A_MASK);
 	}
@@ -1337,9 +1359,8 @@ static int bts_resolve_congestion(struct gsm_bts *bts, int tchf_congestion, int 
 	if (log_check_level(DHODEC, LOGL_DEBUG)) {
 		LOGPHOBTS(bts, LOGL_DEBUG, "Considering %u candidates to solve congestion:\n", candidates);
 		for (i = 0; i < candidates; i++) {
-			LOGPHOLCHANTOBTS(clist[i].lchan, clist[i].bts, LOGL_DEBUG,
-					 "#%d: req=0x%x avg-rxlev=%d\n",
-					 i, clist[i].requirements, clist[i].avg);
+			LOGPHOCAND(&clist[i], LOGL_DEBUG, "#%d: req=0x%x avg-rxlev=%d\n",
+				   i, clist[i].requirements, clist[i].avg);
 		}
 	}
 
@@ -1381,7 +1402,8 @@ next_b1:
 			is_improved = 1;
 		} else
 			is_improved = 0;
-		LOGP(DHODEC, LOGL_DEBUG, "candidate %d: avg=%d best_avg_db=%d\n", i, avg, best_avg_db);
+		LOGPHOCAND(&clist[i], LOGL_DEBUG, "candidate %d: avg=%d best_avg_db=%d\n",
+			   i, avg, best_avg_db);
 		if (avg > best_avg_db) {
 			best_cand = &clist[i];
 			best_avg_db = avg;
@@ -1391,10 +1413,9 @@ next_b1:
 	/* perform handover, if there is a candidate */
 	if (best_cand) {
 		any_ho = 1;
-		LOGPHOLCHAN(best_cand->lchan, LOGL_DEBUG,
-			    "Best candidate BTS %u (RX level %d%s) without congestion found\n",
-			    best_cand->bts->nr, rxlev2dbm(best_cand->avg),
-			    is_improved ? ", RX quality improved by AHS->AFS" : "");
+		LOGPHOCAND(best_cand, LOGL_DEBUG, "Best candidate: RX level %d%s\n",
+			   rxlev2dbm(best_cand->avg),
+			   is_improved ? " (applied AHS->AFS bias)" : "");
 		trigger_handover_or_assignment(best_cand->lchan, best_cand->bts,
 			best_cand->requirements & REQUIREMENT_B_MASK);
 #if 0
@@ -1461,10 +1482,9 @@ next_b2:
 	/* perform handover, if there is a candidate */
 	if (worst_cand) {
 		any_ho = 1;
-		LOGP(DHODEC, LOGL_INFO, "Worst candidate for assignment "
-			"(RX level %d%s) from TCH/H -> TCH/F without congestion "
-			"found\n", rxlev2dbm(worst_cand->avg),
-			is_improved ? ", RX quality improved by AHS->AFS" : "");
+		LOGPHOCAND(worst_cand, LOGL_INFO, "Worst candidate: RX level %d from TCH/H -> TCH/F%s\n",
+			   rxlev2dbm(worst_cand->avg),
+			   is_improved ? " (applied AHS -> AFS rxlev bias)" : "");
 		trigger_handover_or_assignment(worst_cand->lchan,
 			worst_cand->bts,
 			worst_cand->requirements & REQUIREMENT_B_MASK);
@@ -1533,12 +1553,9 @@ next_c1:
 	/* perform handover, if there is a candidate */
 	if (best_cand) {
 		any_ho = 1;
-		LOGP(DHODEC, LOGL_INFO, "Best candidate BTS %d (RX level %d) "
-			"with less or equal congestion found\n",
-			best_cand->bts->nr, rxlev2dbm(best_cand->avg));
-		if (is_improved)
-			LOGP(DHODEC, LOGL_INFO, "(is improved due to "
-				"AHS -> AFS)\n");
+		LOGPHOCAND(best_cand, LOGL_INFO, "Best candidate: RX level %d%s\n",
+			   rxlev2dbm(best_cand->avg),
+			   is_improved ? " (applied AHS -> AFS rxlev bias)" : "");
 		trigger_handover_or_assignment(best_cand->lchan, best_cand->bts,
 			best_cand->requirements & REQUIREMENT_C_MASK);
 #if 0
@@ -1610,10 +1627,9 @@ next_c2:
 	/* perform handover, if there is a candidate */
 	if (worst_cand) {
 		any_ho = 1;
-		LOGP(DHODEC, LOGL_INFO, "Worst candidate for assignment "
-			"(RX level %d%s) from TCH/H -> TCH/F with less or equal "
-			"congestion found\n", rxlev2dbm(worst_cand->avg),
-			is_improved ? ", RX quality improved by AHS->AFS" : "");
+		LOGPHOCAND(worst_cand, LOGL_INFO, "Worst candidate: RX level %d from TCH/H -> TCH/F%s\n",
+			   rxlev2dbm(worst_cand->avg),
+			   is_improved ? " (applied AHS -> AFS rxlev bias)" : "");
 		trigger_handover_or_assignment(worst_cand->lchan,
 			worst_cand->bts,
 			worst_cand->requirements & REQUIREMENT_C_MASK);
