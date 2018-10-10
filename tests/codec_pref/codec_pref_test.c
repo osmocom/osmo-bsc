@@ -294,6 +294,7 @@ static void make_bts_config(struct gsm_bts *bts, uint8_t config_no)
 	/* Note: FR is supported by all BTSs, so there is no flag for it */
 
 	struct gsm48_multi_rate_conf *cfg;
+	static struct gsm_bts_trx trx;
 
 	OSMO_ASSERT(config_no < N_CONFIG_VARIANTS);
 
@@ -323,6 +324,13 @@ static void make_bts_config(struct gsm_bts *bts, uint8_t config_no)
 	cfg->m7_95 = 1;
 	cfg->m10_2 = 0;
 	cfg->m12_2 = 0;
+
+	/* Initalize TRX with a TCH/F and a TCH/H channel */
+	memset(&trx, 0, sizeof(trx));
+	INIT_LLIST_HEAD(&bts->trx_list);
+	llist_add(&trx.list, &bts->trx_list);
+	trx.ts[0].pchan_from_config = GSM_PCHAN_TCH_F;
+	trx.ts[1].pchan_from_config = GSM_PCHAN_TCH_H;
 
 	switch (config_no) {
 	case 0:

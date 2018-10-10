@@ -176,8 +176,38 @@ static bool test_codec_pref(const struct gsm0808_speech_codec **sc_match,
 
 /* Helper function to check if the given permitted speech value is supported
  * by the BTS. (vty option bts->codec-support). */
-static bool test_codec_support_bts(const struct bts_codec_conf *bts_codec, uint8_t perm_spch)
+static bool test_codec_support_bts(const struct gsm_bts *bts, uint8_t perm_spch)
 {
+	struct gsm_bts_trx *trx;
+	const struct bts_codec_conf *bts_codec = &bts->codec;
+	unsigned int i;
+	bool full_rate;
+	int rc;
+	enum gsm_phys_chan_config pchan;
+	bool rate_match = false;
+
+	/* Check if the BTS provides a physical channel that matches the
+	 * bandwith of the desired codec. */
+	rc = full_rate_from_perm_spch(&full_rate, perm_spch);
+	if (rc < 0)
+		return false;
+	llist_for_each_entry(trx, &bts->trx_list, list) {
+		for (i = 0; i < TRX_NR_TS; i++) {
+			pchan = trx->ts[i].pchan_from_config;
+			if (pchan == GSM_PCHAN_TCH_F_TCH_H_PDCH)
+				rate_match = true;
+			else if (full_rate && pchan == GSM_PCHAN_TCH_F)
+				rate_match = true;
+			else if (full_rate && pchan == GSM_PCHAN_TCH_F_PDCH)
+				rate_match = true;
+			else if (!full_rate && pchan == GSM_PCHAN_TCH_H)
+				rate_match = true;
+		}
+	}
+	if (!rate_match)
+		return false;
+
+	/* Check codec support */
 	switch (perm_spch) {
 	case GSM0808_PERM_FR1:
 		/* GSM-FR is always supported by all BTSs. There is also no way to
@@ -269,7 +299,7 @@ int match_codec_pref(enum gsm48_chan_mode *chan_mode,
 
 		/* Check this permitted speech value against the BTS specific parameters.
 		 * if the BTS does not support the codec, try the next one */
-		if (!test_codec_support_bts(&bts->codec, perm_spch))
+		if (!test_codec_support_bts(bts, perm_spch))
 			continue;
 
 		/* Match the permitted speech value against the codec lists that were
@@ -345,7 +375,7 @@ void gen_bss_supported_codec_list(struct gsm0808_speech_codec_list *scl,
 
 		/* Check this permitted speech value against the BTS specific parameters.
 		 * if the BTS does not support the codec, try the next one */
-		if (!test_codec_support_bts(&bts->codec, perm_spch))
+		if (!test_codec_support_bts(bts, perm_spch))
 			continue;
 
 		/* Write item into codec list */
@@ -380,7 +410,7 @@ int check_codec_pref(struct llist_head *mscs)
 			gen_bss_supported_codec_list(&scl, msc, bts);
 			if (scl.len <= 0) {
 				LOGP(DMSC, LOGL_FATAL,
-				     "codec-support of BTS %u does not intersect with codec-list of MSC %u\n",
+				     "codec-support/trx config of BTS %u does not intersect with codec-list of MSC %u\n",
 				     bts->nr, msc->nr);
 				rc = -1;
 			}
