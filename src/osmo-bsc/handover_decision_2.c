@@ -971,8 +971,10 @@ static int find_alternative_lchan(struct gsm_lchan *lchan, bool include_weaker_r
 
 	/* If assignment is disabled and no neighbor cell report exists, or no neighbor cell qualifies,
 	 * we may not even have any candidates. */
-	if (!candidates)
-		goto no_candidates;
+	if (!candidates) {
+		LOGPHOLCHAN(lchan, LOGL_INFO, "No viable neighbor cells found\n");
+		return 0;
+	}
 
 	/* select best candidate that fulfills requirement B: no congestion after HO */
 	best_better_db = 0;
@@ -1033,8 +1035,10 @@ static int find_alternative_lchan(struct gsm_lchan *lchan, bool include_weaker_r
 	}
 
 	/* we are done in case the MS RXLEV/RXQUAL/TA aren't critical and we're avoiding congestion. */
-	if (!include_weaker_rxlev)
-		goto no_candidates;
+	if (!include_weaker_rxlev) {
+		LOGPHOLCHAN(lchan, LOGL_INFO, "No better/less congested neighbor cell found\n");
+		return 0;
+	}
 
 	/* Select best candidate that fulfills requirement A: can service the call.
 	 * From above we know that there are no options that avoid congestion. Here we're trying to find
@@ -1069,13 +1073,7 @@ static int find_alternative_lchan(struct gsm_lchan *lchan, bool include_weaker_r
 
 	/* Damn, all is congested, has too low RXLEV or cannot service the voice call due to codec
 	 * restrictions or because all lchans are taken. */
-
-no_candidates:
-	if (include_weaker_rxlev)
-		LOGPHOLCHAN(lchan, LOGL_INFO, "No alternative lchan found\n");
-	else
-		LOGPHOLCHAN(lchan, LOGL_INFO, "No better/less congested neighbor cell found\n");
-
+	LOGPHOLCHAN(lchan, LOGL_INFO, "No alternative lchan found\n");
 	return 0;
 }
 
