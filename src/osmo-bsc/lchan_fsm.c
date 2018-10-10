@@ -993,6 +993,13 @@ static void lchan_fsm_wait_rf_release_ack_onenter(struct osmo_fsm_inst *fi, uint
 {
 	int rc;
 	struct gsm_lchan *lchan = lchan_fi_lchan(fi);
+
+	/* For planned releases, a conn has already forgotten about the lchan. And later on, in
+	 * lchan_reset(), we make sure it does. But in case of releases from error handling, the
+	 * conn might as well notice now already that its lchan is becoming unusable. */
+	if (lchan->conn)
+		gscon_forget_lchan(lchan->conn, lchan);
+
 	rc = rsl_tx_rf_chan_release(lchan);
 	if (rc)
 		LOG_LCHAN(lchan, LOGL_ERROR, "Failed to Tx RSL RF Channel Release: rc=%d %s\n",
