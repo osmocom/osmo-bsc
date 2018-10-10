@@ -26,6 +26,38 @@
 #include <osmocom/bsc/codec_pref.h>
 #include <osmocom/bsc/gsm_data.h>
 
+/* Determine whether a permitted speech value is specifies a half rate or full
+ * rate codec */
+static int full_rate_from_perm_spch(bool * full_rate,
+				    enum gsm0808_permitted_speech perm_spch)
+{
+	/* Check if the result is a half or full rate codec */
+	switch (perm_spch) {
+	case GSM0808_PERM_HR1:
+	case GSM0808_PERM_HR2:
+	case GSM0808_PERM_HR3:
+	case GSM0808_PERM_HR4:
+	case GSM0808_PERM_HR6:
+		*full_rate = false;
+		break;
+
+	case GSM0808_PERM_FR1:
+	case GSM0808_PERM_FR2:
+	case GSM0808_PERM_FR3:
+	case GSM0808_PERM_FR4:
+	case GSM0808_PERM_FR5:
+		*full_rate = true;
+		break;
+
+	default:
+		LOGP(DMSC, LOGL_ERROR, "Invalid permitted-speech value: %u\n",
+		     perm_spch);
+		return -EINVAL;
+	}
+
+	return 0;
+}
+
 /* Helper function for match_codec_pref(), looks up a matching chan mode for
  * a given permitted speech value */
 static enum gsm48_chan_mode gsm88_to_chan_mode(enum gsm0808_permitted_speech speech)
@@ -225,6 +257,7 @@ int match_codec_pref(enum gsm48_chan_mode *chan_mode,
 	bool match = false;
 	const struct gsm0808_speech_codec *sc_match = NULL;
 	uint16_t amr_s15_s0_supported;
+	int rc;
 
 	/* Note: Normally the MSC should never try to advertise a codec that
 	 * we did not advertise as supported before. In order to ensure that
@@ -255,28 +288,10 @@ int match_codec_pref(enum gsm48_chan_mode *chan_mode,
 		return -1;
 	}
 
-	/* Check if the result is a half or full rate codec */
-	switch (perm_spch) {
-	case GSM0808_PERM_HR1:
-	case GSM0808_PERM_HR2:
-	case GSM0808_PERM_HR3:
-	case GSM0808_PERM_HR4:
-	case GSM0808_PERM_HR6:
-		*full_rate = false;
-		break;
-
-	case GSM0808_PERM_FR1:
-	case GSM0808_PERM_FR2:
-	case GSM0808_PERM_FR3:
-	case GSM0808_PERM_FR4:
-	case GSM0808_PERM_FR5:
-		*full_rate = true;
-		break;
-
-	default:
-		LOGP(DMSC, LOGL_ERROR, "Invalid permitted-speech value: %u\n", perm_spch);
+	/* Determine if the result is a half or full rate codec */
+	rc = full_rate_from_perm_spch(full_rate, perm_spch);
+	if (rc < 0)
 		return -EINVAL;
-	}
 
 	/* Lookup a channel mode for the selected codec */
 	*chan_mode = gsm88_to_chan_mode(perm_spch);
