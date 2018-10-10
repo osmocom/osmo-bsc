@@ -149,6 +149,24 @@ static void forward_dtap(struct gsm_subscriber_connection *conn, struct msgb *ms
 	gscon_sigtran_send(conn, resp);
 }
 
+
+/* Release an lchan in such a way that it doesn't fire events back to the conn. */
+static void gscon_release_lchan(struct gsm_subscriber_connection *conn, struct gsm_lchan *lchan,
+				bool do_sacch_deact, bool err, enum gsm48_rr_cause cause_rr)
+{
+	if (!lchan || !conn)
+		return;
+	if (lchan->conn == conn)
+		lchan_forget_conn(lchan);
+	if (conn->lchan == lchan)
+		conn->lchan = NULL;
+	if (conn->ho.fi && conn->ho.new_lchan == lchan)
+		conn->ho.new_lchan = NULL;
+	if (conn->assignment.new_lchan == lchan)
+		conn->assignment.new_lchan = NULL;
+	lchan_release(lchan, do_sacch_deact, err, cause_rr);
+}
+
 void gscon_release_lchans(struct gsm_subscriber_connection *conn, bool do_sacch_deact)
 {
 	if (conn->ho.fi)
@@ -156,9 +174,7 @@ void gscon_release_lchans(struct gsm_subscriber_connection *conn, bool do_sacch_
 
 	assignment_reset(conn);
 
-	lchan_release(conn->lchan, do_sacch_deact, false, 0);
-	lchan_forget_conn(conn->lchan);
-	conn->lchan = NULL;
+	gscon_release_lchan(conn, conn->lchan, do_sacch_deact, false, 0);
 }
 
 static void handle_bssap_n_connect(struct osmo_fsm_inst *fi, struct osmo_scu_prim *scu_prim)
@@ -602,10 +618,8 @@ void gscon_change_primary_lchan(struct gsm_subscriber_connection *conn, struct g
 	if (conn->lchan->fi_rtp)
 		osmo_fsm_inst_dispatch(conn->lchan->fi_rtp, LCHAN_RTP_EV_ESTABLISHED, 0);
 
-	if (old_lchan && (old_lchan != new_lchan)) {
-		lchan_forget_conn(old_lchan);
-		lchan_release(old_lchan, false, false, 0);
-	}
+	if (old_lchan && (old_lchan != new_lchan))
+		gscon_release_lchan(conn, old_lchan, false, false, 0);
 }
 
 void gscon_lchan_releasing(struct gsm_subscriber_connection *conn, struct gsm_lchan *lchan)
@@ -769,7 +783,7 @@ static int gscon_timer_cb(struct osmo_fsm_inst *fi)
 
 	switch (fi->T) {
 	case 993210:
-		lchan_release(conn->lchan, false, true, RSL_ERR_INTERWORKING);
+		gscon_release_lchan(conn, conn->lchan, false, true, RSL_ERR_INTERWORKING);
 
 		/* MSC has not responded/confirmed connection with CC, this
 		 * could indicate a bad SCCP connection. We now inform the the
