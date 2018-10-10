@@ -98,8 +98,9 @@
 
 struct ho_candidate {
 	struct gsm_lchan *lchan;	/* candidate for whom */
+	struct neighbor_ident_key nik;	/* neighbor ARFCN+BSIC */
 	struct gsm_bts *bts;		/* target BTS in local BSS */
-	struct gsm0808_cell_id_list2 *cil; /* target cells in remote BSS */
+	const struct gsm0808_cell_id_list2 *cil; /* target cells in remote BSS */
 	uint8_t requirements;		/* what is fulfilled */
 	int avg;			/* average RX level */
 };
@@ -619,6 +620,75 @@ static uint8_t check_requirements(struct gsm_lchan *lchan, struct gsm_bts *bts, 
 	return requirement;
 }
 
+static uint8_t check_requirements_remote_bss(struct gsm_lchan *lchan,
+					     const struct gsm0808_cell_id_list2 *cil)
+{
+	uint8_t requirement = 0;
+	unsigned int penalty_time;
+
+	/* Requirement A */
+
+	/* the handover penalty timer must not run for this bts */
+	penalty_time = conn_penalty_time_remaining(lchan->conn, cil);
+	if (penalty_time) {
+		LOGPHOLCHANTOREMOTE(lchan, cil, LOGL_DEBUG,
+				    "not a candidate, target BSS still in penalty time"
+				    " (%u seconds left)\n", penalty_time);
+		return 0;
+	}
+
+	/* compatibility check for codecs -- we have no notion of what the remote BSS supports. We can
+	 * only assume that a handover would work, and use only the local requirements. */
+	switch (lchan->tch_mode) {
+	case GSM48_CMODE_SPEECH_V1:
+		switch (lchan->type) {
+		case GSM_LCHAN_TCH_F: /* mandatory */
+			requirement |= REQUIREMENT_A_TCHF;
+			break;
+		case GSM_LCHAN_TCH_H:
+			if (codec_type_is_supported(lchan->conn, GSM0808_SCT_HR1))
+				requirement |= REQUIREMENT_A_TCHH;
+			break;
+		default:
+			LOGPHOLCHAN(lchan, LOGL_ERROR, "Unexpected channel type: neither TCH/F nor TCH/H for %s\n",
+				    get_value_string(gsm48_chan_mode_names, lchan->tch_mode));
+			return 0;
+		}
+		break;
+	case GSM48_CMODE_SPEECH_EFR:
+		if (codec_type_is_supported(lchan->conn, GSM0808_SCT_FR2))
+			requirement |= REQUIREMENT_A_TCHF;
+		break;
+	case GSM48_CMODE_SPEECH_AMR:
+		if (codec_type_is_supported(lchan->conn, GSM0808_SCT_FR3))
+			requirement |= REQUIREMENT_A_TCHF;
+		if (codec_type_is_supported(lchan->conn, GSM0808_SCT_HR3))
+			requirement |= REQUIREMENT_A_TCHH;
+		break;
+	default:
+		LOGPHOLCHAN(lchan, LOGL_DEBUG, "Not even considering: src is not a SPEECH mode lchan\n");
+		/* FIXME: should allow handover of non-speech lchans */
+		return 0;
+	}
+
+	if (!requirement) {
+		LOGPHOLCHAN(lchan, LOGL_ERROR, "lchan doesn't fit its own requirements??\n");
+		return 0;
+	}
+
+	/* Requirement B and C */
+
+	/* We don't know how many timeslots are free in the remote BSS. We can only indicate that it
+	 * would work out and hope for the best. */
+	if (requirement & REQUIREMENT_A_TCHF)
+		requirement |= REQUIREMENT_B_TCHF | REQUIREMENT_C_TCHF;
+	if (requirement & REQUIREMENT_A_TCHH)
+		requirement |= REQUIREMENT_B_TCHH | REQUIREMENT_C_TCHH;
+
+	/* return mask of fulfilled requirements */
+	return requirement;
+}
+
 /* Trigger handover or assignment depending on the target BTS */
 static int trigger_local_ho_or_as(struct ho_candidate *c, uint8_t requirements)
 {
@@ -701,12 +771,29 @@ static int trigger_local_ho_or_as(struct ho_candidate *c, uint8_t requirements)
 	return 0;
 }
 
+static int trigger_remote_bss_ho(struct ho_candidate *c, uint8_t requirements)
+{
+	struct handover_out_req req;
+
+	LOGPHOLCHANTOREMOTE(c->lchan, c->cil, LOGL_INFO,
+			    "Triggering inter-BSC handover, due to %s\n",
+			    ho_reason_name(global_ho_reason));
+
+	req = (struct handover_out_req){
+		.from_hodec_id = HODEC2,
+		.old_lchan = c->lchan,
+		.target_nik = c->nik,
+	};
+	handover_request(&req);
+	return 0;
+}
+
 static int trigger_ho(struct ho_candidate *c, uint8_t requirements)
 {
 	if (c->bts)
 		return trigger_local_ho_or_as(c, requirements);
 	else
-		return 0; /* TODO: remote candidates */
+		return trigger_remote_bss_ho(c, requirements);
 }
 
 /* verbosely log about a handover candidate */
@@ -730,6 +817,16 @@ static inline void debug_candidate(struct ho_candidate *candidate,
 		  /* now has to be candidate->requirements & REQUIREMENT_C_TCHX != 0: */ \
 		  " less-or-equal congestion"))
 
+	if (!candidate->bts && !candidate->cil)
+		LOGPHOLCHAN(lchan, LOGL_DEBUG, "Empty candidate\n");
+	if (candidate->bts && candidate->cil)
+		LOGPHOLCHAN(lchan, LOGL_ERROR, "Invalid candidate: both local- and remote-BSS target\n");
+
+	if (candidate->cil)
+		LOGPHOLCHANTOREMOTE(lchan, candidate->cil, LOGL_DEBUG,
+				    "RX level %d -> %d\n",
+				    rxlev2dbm(rxlev), rxlev2dbm(candidate->avg));
+
 	if (candidate->bts == lchan->ts->trx->bts)
 		LOGPHOLCHANTOBTS(lchan, candidate->bts, LOGL_DEBUG,
 		     "RX level %d; "
@@ -750,17 +847,20 @@ static void collect_assignment_candidate(struct gsm_lchan *lchan, struct ho_cand
 {
 	struct gsm_bts *bts = lchan->ts->trx->bts;
 	int tchf_count, tchh_count;
-	struct ho_candidate *c;
+	struct ho_candidate c;
 
 	tchf_count = bts_count_free_ts(bts, GSM_PCHAN_TCH_F);
 	tchh_count = bts_count_free_ts(bts, GSM_PCHAN_TCH_H);
 
-	c = &clist[*candidates];
-	c->lchan = lchan;
-	c->bts = bts;
-	c->requirements = check_requirements(lchan, bts, tchf_count, tchh_count);
-	c->avg = av_rxlev;
-	debug_candidate(c, 0, tchf_count, tchh_count);
+	c = (struct ho_candidate){
+		.lchan = lchan,
+		.bts = bts,
+		.requirements = check_requirements(lchan, bts, tchf_count, tchh_count),
+		.avg = av_rxlev,
+	};
+
+	debug_candidate(&c, 0, tchf_count, tchh_count);
+	clist[*candidates] = c;
 	(*candidates)++;
 }
 
@@ -771,7 +871,8 @@ static void collect_handover_candidate(struct gsm_lchan *lchan, struct neigh_mea
 				       int *neighbors_count)
 {
 	struct gsm_bts *bts = lchan->ts->trx->bts;
-	int tchf_count, tchh_count;
+	int tchf_count = 0;
+	int tchh_count = 0;
 	struct gsm_bts *neighbor_bts;
 	const struct gsm0808_cell_id_list2 *neighbor_cil;
 	struct neighbor_ident_key ni = {
@@ -782,6 +883,7 @@ static void collect_handover_candidate(struct gsm_lchan *lchan, struct neigh_mea
 	int avg;
 	struct ho_candidate c;
 	int min_rxlev;
+	struct handover_cfg *neigh_cfg;
 
 	/* skip empty slots */
 	if (nmp->arfcn == 0)
@@ -799,15 +901,19 @@ static void collect_handover_candidate(struct gsm_lchan *lchan, struct neigh_mea
 	}
 
 	neighbor_bts = bts_by_neighbor_ident(bts->network, &ni);
-	if (!neighbor_bts) {
-		neighbor_cil = neighbor_ident_get(bts->network->neighbor_bss_cells, &ni);
-		if (neighbor_cil) {
-			LOGPHOBTS(bts, LOGL_ERROR, "would inter-BSC handover to ARFCN %u BSIC %u,"
-				  " but inter-BSC handover not implemented for ho decision 2\n",
-				  nmp->arfcn, nmp->bsic);
-			return;
-		}
 
+	neighbor_cil = neighbor_ident_get(bts->network->neighbor_bss_cells, &ni);
+
+	if (neighbor_bts && neighbor_cil) {
+		LOGPHOBTS(bts, LOGL_ERROR, "Configuration error: %s exists as both local"
+			  " neighbor (bts %u) and remote-BSS neighbor (%s). Will consider only"
+			  " the local-BSS neighbor.\n",
+			  neighbor_ident_key_name(&ni),
+			  neighbor_bts->nr, gsm0808_cell_id_list_name(neighbor_cil));
+		neighbor_cil = NULL;
+	}
+
+	if (!neighbor_bts && !neighbor_cil) {
 		LOGPHOBTS(bts, LOGL_DEBUG, "no neighbor ARFCN %u BSIC %u configured for this cell\n",
 			  nmp->arfcn, nmp->bsic);
 		return;
@@ -819,13 +925,19 @@ static void collect_handover_candidate(struct gsm_lchan *lchan, struct neigh_mea
 		return;
 	}
 
+	/* For cells in a remote BSS, we cannot query the target cell's handover config, and hence
+	 * instead assume the local BTS' config to apply. */
+	neigh_cfg = (neighbor_bts ? : bts)->ho;
+
 	/* calculate average rxlev for this cell over the window */
 	avg = neigh_meas_avg(nmp, ho_get_hodec2_rxlev_neigh_avg_win(bts->ho));
 
 	c = (struct ho_candidate){
 		.lchan = lchan,
 		.avg = avg,
+		.nik = ni,
 		.bts = neighbor_bts,
+		.cil = neighbor_cil,
 	};
 
 	/* Heed rxlev hysteresis only if the RXLEV/RXQUAL/TA levels of the MS aren't critically bad and
@@ -842,8 +954,9 @@ static void collect_handover_candidate(struct gsm_lchan *lchan, struct neigh_mea
 		}
 	}
 
-	/* if the minimum level is not reached */
-	min_rxlev = ho_get_hodec2_min_rxlev(neighbor_bts->ho);
+	/* if the minimum level is not reached.
+	 * In case of a remote-BSS, use the current BTS' configuration. */
+	min_rxlev = ho_get_hodec2_min_rxlev(neigh_cfg);
 	if (rxlev2dbm(avg) < min_rxlev) {
 		LOGPHOCAND(&c, LOGL_DEBUG,
 			   "Not a candidate, because RX level (%d) is lower"
@@ -852,9 +965,13 @@ static void collect_handover_candidate(struct gsm_lchan *lchan, struct neigh_mea
 		return;
 	}
 
-	tchf_count = bts_count_free_ts(neighbor_bts, GSM_PCHAN_TCH_F);
-	tchh_count = bts_count_free_ts(neighbor_bts, GSM_PCHAN_TCH_H);
-	c.requirements = check_requirements(lchan, neighbor_bts, tchf_count, tchh_count);
+	if (neighbor_bts) {
+		tchf_count = bts_count_free_ts(neighbor_bts, GSM_PCHAN_TCH_F);
+		tchh_count = bts_count_free_ts(neighbor_bts, GSM_PCHAN_TCH_H);
+		c.requirements = check_requirements(lchan, neighbor_bts, tchf_count,
+						    tchh_count);
+	} else
+		c.requirements = check_requirements_remote_bss(lchan, neighbor_cil);
 
 	debug_candidate(&c, av_rxlev, tchf_count, tchh_count);
 
@@ -988,11 +1105,17 @@ static int find_alternative_lchan(struct gsm_lchan *lchan, bool include_weaker_r
 		return 0;
 	}
 
-	/* select best candidate that fulfills requirement B: no congestion after HO */
+	/* select best candidate that fulfills requirement B: no congestion after HO.
+	 * Exclude remote-BSS neighbors: to avoid oscillation between neighboring BSS,
+	 * rather keep subscribers in the local BSS unless there is critical RXLEV/TA. */
 	best_better_db = 0;
 	for (i = 0; i < candidates; i++) {
 		int afs_bias;
 		if (!(clist[i].requirements & REQUIREMENT_B_MASK))
+			continue;
+
+		/* Only consider Local-BSS cells */
+		if (!clist[i].bts)
 			continue;
 
 		better = clist[i].avg - av_rxlev;
@@ -1016,11 +1139,16 @@ static int find_alternative_lchan(struct gsm_lchan *lchan, bool include_weaker_r
 		return trigger_ho(best_cand, best_cand->requirements & REQUIREMENT_B_MASK);
 	}
 
-	/* select best candidate that fulfills requirement C: less or equal congestion after HO */
+	/* select best candidate that fulfills requirement C: less or equal congestion after HO,
+	 * again excluding remote-BSS neighbors. */
 	best_better_db = 0;
 	for (i = 0; i < candidates; i++) {
 		int afs_bias;
 		if (!(clist[i].requirements & REQUIREMENT_C_MASK))
+			continue;
+
+		/* Only consider Local-BSS cells */
+		if (!clist[i].bts)
 			continue;
 
 		better = clist[i].avg - av_rxlev;
@@ -1052,7 +1180,8 @@ static int find_alternative_lchan(struct gsm_lchan *lchan, bool include_weaker_r
 
 	/* Select best candidate that fulfills requirement A: can service the call.
 	 * From above we know that there are no options that avoid congestion. Here we're trying to find
-	 * *any* free lchan that has no critically low RXLEV and is able to handle the MS. */
+	 * *any* free lchan that has no critically low RXLEV and is able to handle the MS.
+	 * We're also prepared to handover to remote BSS. */
 	best_better_db = 0;
 	for (i = 0; i < candidates; i++) {
 		int afs_bias;
@@ -1060,9 +1189,11 @@ static int find_alternative_lchan(struct gsm_lchan *lchan, bool include_weaker_r
 			continue;
 
 		better = clist[i].avg - av_rxlev;
-		/* Apply AFS bias? */
+		/* Apply AFS bias?
+		 * (never to remote-BSS neighbors, since we will not change the lchan type for those.) */
 		afs_bias = 0;
-		if (ahs && (clist[i].requirements & REQUIREMENT_A_TCHF))
+		if (ahs && (clist[i].requirements & REQUIREMENT_A_TCHF)
+		    && clist[i].bts)
 			afs_bias = ho_get_hodec2_afs_bias_rxlev(clist[i].bts->ho);
 		better += afs_bias;
 		if (better > best_better_db) {
@@ -1385,6 +1516,14 @@ next_b1:
 		if (!clist[i].lchan)
 			continue;
 
+		/* Do not resolve congestion towards remote BSS, which would cause oscillation if the
+		 * remote BSS is also congested. */
+		/* TODO: attempt inter-BSC HO if no local cells qualify, and rely on the remote BSS to
+		 * deny receiving the handover if it also considers itself congested. Maybe do that only
+		 * when the cell is absolutely full, i.e. not only min-free-slots. (x) */
+		if (!clist[i].bts)
+			continue;
+
 		if (!(clist[i].requirements & REQUIREMENT_B_MASK))
 			continue;
 		/* omit assignment from AHS to AFS */
@@ -1462,6 +1601,12 @@ next_b2:
 			if (!clist[i].lchan)
 				continue;
 
+			/* Do not resolve congestion towards remote BSS, which would cause oscillation if
+			 * the remote BSS is also congested. */
+			/* TODO: see (x) above */
+			if (!clist[i].bts)
+				continue;
+
 			if (!(clist[i].requirements & REQUIREMENT_B_MASK))
 				continue;
 			/* omit all but assignment from AHS to AFS */
@@ -1522,6 +1667,12 @@ next_c1:
 			clist[i].lchan = NULL;
 		/* omit all subscribers that are handovered */
 		if (!clist[i].lchan)
+			continue;
+
+		/* Do not resolve congestion towards remote BSS, which would cause oscillation if
+		 * the remote BSS is also congested. */
+		/* TODO: see (x) above */
+		if (!clist[i].bts)
 			continue;
 
 		if (!(clist[i].requirements & REQUIREMENT_C_MASK))
@@ -1600,6 +1751,12 @@ next_c2:
 				clist[i].lchan = NULL;
 			/* omit all subscribers that are handovered */
 			if (!clist[i].lchan)
+				continue;
+
+			/* Do not resolve congestion towards remote BSS, which would cause oscillation if
+			 * the remote BSS is also congested. */
+			/* TODO: see (x) above */
+			if (!clist[i].bts)
 				continue;
 
 			if (!(clist[i].requirements & REQUIREMENT_C_MASK))
