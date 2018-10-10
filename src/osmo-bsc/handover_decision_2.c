@@ -620,8 +620,10 @@ static uint8_t check_requirements(struct gsm_lchan *lchan, struct gsm_bts *bts, 
 }
 
 /* Trigger handover or assignment depending on the target BTS */
-static int trigger_handover_or_assignment(struct gsm_lchan *lchan, struct gsm_bts *new_bts, uint8_t requirements)
+static int trigger_local_ho_or_as(struct ho_candidate *c, uint8_t requirements)
 {
+	struct gsm_lchan *lchan = c->lchan;
+	struct gsm_bts *new_bts = c->bts;
 	struct handover_out_req req;
 	struct gsm_bts *current_bts = lchan->ts->trx->bts;
 	int afs_bias = 0;
@@ -697,6 +699,14 @@ static int trigger_handover_or_assignment(struct gsm_lchan *lchan, struct gsm_bt
 	};
 	handover_request(&req);
 	return 0;
+}
+
+static int trigger_ho(struct ho_candidate *c, uint8_t requirements)
+{
+	if (c->bts)
+		return trigger_local_ho_or_as(c, requirements);
+	else
+		return 0; /* TODO: remote candidates */
 }
 
 /* verbosely log about a handover candidate */
@@ -1003,8 +1013,7 @@ static int find_alternative_lchan(struct gsm_lchan *lchan, bool include_weaker_r
 		LOGPHOCAND(best_cand, LOGL_INFO, "Best candidate, RX level %d%s\n",
 			   rxlev2dbm(best_cand->avg),
 			   best_applied_afs_bias ? " (applied AHS -> AFS rxlev bias)" : "");
-		return trigger_handover_or_assignment(lchan, best_cand->bts,
-						      best_cand->requirements & REQUIREMENT_B_MASK);
+		return trigger_ho(best_cand, best_cand->requirements & REQUIREMENT_B_MASK);
 	}
 
 	/* select best candidate that fulfills requirement C: less or equal congestion after HO */
@@ -1032,8 +1041,7 @@ static int find_alternative_lchan(struct gsm_lchan *lchan, bool include_weaker_r
 		LOGPHOCAND(best_cand, LOGL_INFO, "Best candidate, RX level %d%s\n",
 			   rxlev2dbm(best_cand->avg),
 			   best_applied_afs_bias? " (applied AHS -> AFS rxlev bias)" : "");
-		return trigger_handover_or_assignment(lchan, best_cand->bts,
-						      best_cand->requirements & REQUIREMENT_C_MASK);
+		return trigger_ho(best_cand, best_cand->requirements & REQUIREMENT_C_MASK);
 	}
 
 	/* we are done in case the MS RXLEV/RXQUAL/TA aren't critical and we're avoiding congestion. */
@@ -1069,8 +1077,7 @@ static int find_alternative_lchan(struct gsm_lchan *lchan, bool include_weaker_r
 		LOGPHOCAND(best_cand, LOGL_INFO, "Best candidate: RX level %d%s\n",
 			   rxlev2dbm(best_cand->avg),
 			   best_applied_afs_bias ? " (applied AHS -> AFS rxlev bias)" : "");
-		return trigger_handover_or_assignment(lchan, best_cand->bts,
-						      best_cand->requirements & REQUIREMENT_A_MASK);
+		return trigger_ho(best_cand, best_cand->requirements & REQUIREMENT_A_MASK);
 	}
 
 	/* Damn, all is congested, has too low RXLEV or cannot service the voice call due to codec
@@ -1416,8 +1423,7 @@ next_b1:
 		LOGPHOCAND(best_cand, LOGL_DEBUG, "Best candidate: RX level %d%s\n",
 			   rxlev2dbm(best_cand->avg),
 			   is_improved ? " (applied AHS->AFS bias)" : "");
-		trigger_handover_or_assignment(best_cand->lchan, best_cand->bts,
-			best_cand->requirements & REQUIREMENT_B_MASK);
+		trigger_ho(best_cand, best_cand->requirements & REQUIREMENT_B_MASK);
 #if 0
 		/* if there is still congestion, mark lchan as deleted
 		 * and redo this process */
@@ -1485,9 +1491,7 @@ next_b2:
 		LOGPHOCAND(worst_cand, LOGL_INFO, "Worst candidate: RX level %d from TCH/H -> TCH/F%s\n",
 			   rxlev2dbm(worst_cand->avg),
 			   is_improved ? " (applied AHS -> AFS rxlev bias)" : "");
-		trigger_handover_or_assignment(worst_cand->lchan,
-			worst_cand->bts,
-			worst_cand->requirements & REQUIREMENT_B_MASK);
+		trigger_ho(worst_cand, worst_cand->requirements & REQUIREMENT_B_MASK);
 #if 0
 		/* if there is still congestion, mark lchan as deleted
 		 * and redo this process */
@@ -1556,8 +1560,7 @@ next_c1:
 		LOGPHOCAND(best_cand, LOGL_INFO, "Best candidate: RX level %d%s\n",
 			   rxlev2dbm(best_cand->avg),
 			   is_improved ? " (applied AHS -> AFS rxlev bias)" : "");
-		trigger_handover_or_assignment(best_cand->lchan, best_cand->bts,
-			best_cand->requirements & REQUIREMENT_C_MASK);
+		trigger_ho(best_cand, best_cand->requirements & REQUIREMENT_C_MASK);
 #if 0
 		/* if there is still congestion, mark lchan as deleted
 		 * and redo this process */
@@ -1630,9 +1633,7 @@ next_c2:
 		LOGPHOCAND(worst_cand, LOGL_INFO, "Worst candidate: RX level %d from TCH/H -> TCH/F%s\n",
 			   rxlev2dbm(worst_cand->avg),
 			   is_improved ? " (applied AHS -> AFS rxlev bias)" : "");
-		trigger_handover_or_assignment(worst_cand->lchan,
-			worst_cand->bts,
-			worst_cand->requirements & REQUIREMENT_C_MASK);
+		trigger_ho(worst_cand, worst_cand->requirements & REQUIREMENT_C_MASK);
 #if 0
 		/* if there is still congestion, mark lchan as deleted
 		 * and redo this process */
