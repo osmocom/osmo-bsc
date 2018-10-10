@@ -471,6 +471,7 @@ static uint8_t check_requirements(struct gsm_lchan *lchan, struct gsm_bts *bts, 
 		break;
 	default:
 		LOGPHOLCHANTOBTS(lchan, bts, LOGL_DEBUG, "Not even considering: src is not a SPEECH mode lchan\n");
+		/* FIXME: should allow handover of non-speech lchans */
 		return 0;
 	}
 
@@ -556,7 +557,7 @@ static uint8_t check_requirements(struct gsm_lchan *lchan, struct gsm_bts *bts, 
 	}
 #endif
 
-	/* the maximum number of unsynchonized handovers must no be exceeded */
+	/* the maximum number of unsynchronized handovers must no be exceeded */
 	if (current_bts != bts
 	    && bts_handover_count(bts, HO_SCOPE_ALL) >= ho_get_hodec2_ho_max(bts->ho)) {
 		LOGPHOLCHANTOBTS(lchan, bts, LOGL_DEBUG,
@@ -679,7 +680,7 @@ static int trigger_handover_or_assignment(struct gsm_lchan *lchan, struct gsm_bt
 	return 0;
 }
 
-/* debug collected candidates */
+/* verbosely log about a handover candidate */
 static inline void debug_candidate(struct gsm_lchan *lchan, struct ho_candidate *candidate,
 	struct gsm_bts *neighbor, int8_t rxlev, int tchf_count, int tchh_count)
 {
