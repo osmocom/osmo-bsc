@@ -646,7 +646,9 @@ void gscon_forget_lchan(struct gsm_subscriber_connection *conn, struct gsm_lchan
 		conn->lchan = NULL;
 
 	if (conn->fi->state != ST_CLEARING
-	    && !conn->lchan)
+	    && !conn->lchan
+	    && !conn->ho.new_lchan
+	    && !conn->assignment.new_lchan)
 		gscon_bssmap_clear(conn, GSM0808_CAUSE_EQUIPMENT_FAILURE);
 }
 
