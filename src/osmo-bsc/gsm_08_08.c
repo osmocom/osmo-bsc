@@ -495,12 +495,7 @@ static bool complete_layer3(struct gsm_subscriber_connection *conn,
 
 	if (gscon_is_aoip(conn)) {
 		gen_bss_supported_codec_list(&scl, msc, conn_get_bts(conn));
-		if (scl.len > 0)
-			resp = gsm0808_create_layer3_2(msg, cgi_for_msc(conn->sccp.msc, conn_get_bts(conn)), &scl);
-		else {
-			LOGP(DMSC, LOGL_ERROR, "Failed to create layer3 message due to empty speech codec list.\n");
-			return false;
-		}
+		resp = gsm0808_create_layer3_2(msg, cgi_for_msc(conn->sccp.msc, conn_get_bts(conn)), &scl);
 	} else
 		resp = gsm0808_create_layer3_2(msg, cgi_for_msc(conn->sccp.msc, conn_get_bts(conn)), NULL);
 
