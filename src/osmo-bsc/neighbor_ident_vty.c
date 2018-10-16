@@ -258,6 +258,7 @@ static int add_remote_or_local_bts(struct vty *vty, const struct gsm0808_cell_id
 {
 	int rc;
 	struct gsm_bts *local_neigh;
+	const struct gsm0808_cell_id_list2 *exists;
 	struct gsm0808_cell_id_list2 cil;
 	struct gsm_bts *bts = vty->index;
 
@@ -287,6 +288,15 @@ static int add_remote_or_local_bts(struct vty *vty, const struct gsm0808_cell_id
 			return CMD_WARNING;
 		}
 		return add_local_bts(vty, local_neigh);
+	}
+
+	/* Allow only one cell ID per remote-BSS neighbor, see OS#3656 */
+	exists = neighbor_ident_get(g_neighbor_cells, key);
+	if (exists) {
+		vty_out(vty, "%% Error: only one Cell Identifier entry is allowed per remote neighbor."
+			" Already have: %s -> %s%s", neighbor_ident_key_name(key),
+			gsm0808_cell_id_list_name(exists), VTY_NEWLINE);
+		return CMD_WARNING;
 	}
 
 	/* The cell_id is not known in this BSS, so it must be a remote cell. */
