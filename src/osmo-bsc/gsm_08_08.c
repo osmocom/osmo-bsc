@@ -495,7 +495,17 @@ static bool complete_layer3(struct gsm_subscriber_connection *conn,
 
 	if (gscon_is_aoip(conn)) {
 		gen_bss_supported_codec_list(&scl, msc, conn_get_bts(conn));
-		resp = gsm0808_create_layer3_2(msg, cgi_for_msc(conn->sccp.msc, conn_get_bts(conn)), &scl);
+		if (scl.len > 0)
+			resp = gsm0808_create_layer3_2(msg, cgi_for_msc(conn->sccp.msc, conn_get_bts(conn)), &scl);
+		else {
+			/* Note: 3GPP TS 48.008 3.2.1.32, COMPLETE LAYER 3 INFORMATION clearly states that
+			 * Codec List (BSS Supported) shall be included, if the radio access network
+			 * supports an IP based user plane interface. It may be intentional that the
+			 * current configuration does not support any voice codecs, in those cases the
+			 * network does not support an IP based user plane interface, and therefore the
+			 * Codec List (BSS Supported) IE can be left out in those situations. */
+			resp = gsm0808_create_layer3_2(msg, cgi_for_msc(conn->sccp.msc, conn_get_bts(conn)), NULL);
+		}
 	} else
 		resp = gsm0808_create_layer3_2(msg, cgi_for_msc(conn->sccp.msc, conn_get_bts(conn)), NULL);
 
