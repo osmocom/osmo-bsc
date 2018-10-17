@@ -415,7 +415,7 @@ static int gsm0808_cipher_mode(struct gsm_subscriber_connection *conn, int ciphe
 }
 
 /*
- * GSM 08.08 § 3.4.7 cipher mode handling. We will have to pick
+ * GSM 08.08 § 3.1.14 cipher mode handling. We will have to pick
  * the cipher to be used for this. In case we are already using
  * a cipher we will have to send cipher mode reject to the MSC,
  * otherwise we will have to pick something that we and the MS
