@@ -276,8 +276,9 @@ static void gscon_fsm_init(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 		if (!conn->sccp.msc) {
 			LOGPFSML(fi, LOGL_NOTICE, "N-CONNECT.ind from unknown MSC %s\n",
 				 osmo_sccp_addr_dump(&scu_prim->u.connect.calling_addr));
-			osmo_sccp_tx_disconn(conn->sccp.msc->a.sccp_user, scu_prim->u.connect.conn_id,
-					     &scu_prim->u.connect.called_addr, 0);
+			/* We cannot find a way to the sccp_user without the MSC, so we cannot
+			 * use osmo_sccp_tx_disconn() :( */
+			//osmo_sccp_tx_disconn(conn->sccp.msc->a.sccp_user, scu_prim->u.connect.conn_id, &scu_prim->u.connect.called_addr, 0);
 			osmo_fsm_inst_term(fi, OSMO_FSM_TERM_REGULAR, NULL);
 			return;
 		}
