@@ -36,7 +36,7 @@
  */
 static bool acc_is_permanently_barred(struct gsm_bts *bts, unsigned int acc)
 {
-	OSMO_ASSERT(acc >= 0 && acc <= 9);
+	OSMO_ASSERT(acc <= 9);
 	if (acc == 8 || acc == 9)
 		return (bts->si_common.rach_control.t2 & (1 << (acc - 8)));
 	return (bts->si_common.rach_control.t3 & (1 << (acc)));
@@ -44,7 +44,7 @@ static bool acc_is_permanently_barred(struct gsm_bts *bts, unsigned int acc)
 
 static void allow_one_acc(struct acc_ramp *acc_ramp, unsigned int acc)
 {
-	OSMO_ASSERT(acc >= 0 && acc <= 9);
+	OSMO_ASSERT(acc <= 9);
 	if (acc_ramp->barred_accs & (1 << acc))
 		LOGP(DRSL, LOGL_NOTICE, "(bts=%d) ACC RAMP: allowing Access Control Class %u\n", acc_ramp->bts->nr, acc);
 	acc_ramp->barred_accs &= ~(1 << acc);
@@ -52,7 +52,7 @@ static void allow_one_acc(struct acc_ramp *acc_ramp, unsigned int acc)
 
 static void barr_one_acc(struct acc_ramp *acc_ramp, unsigned int acc)
 {
-	OSMO_ASSERT(acc >= 0 && acc <= 9);
+	OSMO_ASSERT(acc <= 9);
 	if ((acc_ramp->barred_accs & (1 << acc)) == 0)
 		LOGP(DRSL, LOGL_NOTICE, "(bts=%d) ACC RAMP: barring Access Control Class %u\n", acc_ramp->bts->nr, acc);
 	acc_ramp->barred_accs |= (1 << acc);
