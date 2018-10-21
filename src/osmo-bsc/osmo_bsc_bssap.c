@@ -439,7 +439,7 @@ static int bssmap_handle_cipher_mode(struct gsm_subscriber_connection *conn,
 
 	if (!conn) {
 		LOGP(DMSC, LOGL_ERROR, "No lchan/msc_data in cipher mode command.\n");
-		goto reject;
+		return -1;
 	}
 
 	if (conn->ciphering_handled) {
