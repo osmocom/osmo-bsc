@@ -522,7 +522,7 @@ void handover_start_inter_bsc_in(struct gsm_subscriber_connection *conn,
 	struct handover_in_req *req = &ho->inter_bsc_in;
 	int match_idx;
 	enum gsm48_chan_mode mode;
-	bool full_rate;
+	bool full_rate = false;
 	uint16_t s15_s0;
 	struct osmo_fsm_inst *fi;
 
