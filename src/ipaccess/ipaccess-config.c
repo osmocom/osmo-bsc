@@ -634,7 +634,7 @@ static int find_sw_load_params(const char *filename)
 	INIT_LLIST_HEAD(entry);
 
 	fd = open(filename, O_RDONLY);
-	if (!fd) {
+	if (fd < 0) {
 		perror("nada");
 		return -1;
 	}
@@ -729,7 +729,7 @@ static void analyze_firmware(const char *filename)
 
 	printf("Opening possible firmware '%s'\n", filename);
 	fd = open(filename, O_RDONLY);
-	if (!fd) {
+	if (fd < 0) {
 		perror("nada");
 		return;
 	}
