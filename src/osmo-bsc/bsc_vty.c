@@ -3511,11 +3511,45 @@ static void get_amr_from_arg(struct vty *vty, int argc, const char *argv[], int 
 	struct gsm48_multi_rate_conf *mr_conf =
 				(struct gsm48_multi_rate_conf *) mr->gsm48_ie;
 	int i;
+	int mode;
+	int mode_prev = -1;
 
+	/* Check if mode parameters are in order */
+	for (i = 0; i < argc; i++) {
+		mode = atoi(argv[i]);
+		if (mode_prev > mode) {
+			vty_out(vty, "Modes must be listed in order%s",
+				VTY_NEWLINE);
+			return;
+		}
+
+		if (mode_prev == mode) {
+			vty_out(vty, "Modes must be unique %s", VTY_NEWLINE);
+			return;
+		}
+		mode_prev = mode;
+	}
+
+	/* Prepare the multirate configuration IE */
 	mr->gsm48_ie[1] = 0;
 	for (i = 0; i < argc; i++)
 		mr->gsm48_ie[1] |= 1 << atoi(argv[i]);
 	mr_conf->icmi = 0;
+
+	/* Store actual mode identifier values */
+	for (i = 0; i < argc; i++) {
+		mr->ms_mode[i].mode = atoi(argv[i]);
+		mr->bts_mode[i].mode = atoi(argv[i]);
+	}
+	mr->num_modes = argc;
+
+	/* Trim excess threshold and hysteresis values from previous config */
+	for (i = argc - 1; i < 4; i++) {
+		mr->ms_mode[i].threshold = 0;
+		mr->bts_mode[i].threshold = 0;
+		mr->ms_mode[i].hysteresis = 0;
+		mr->bts_mode[i].hysteresis = 0;
+	}
 }
 
 static void get_amr_th_from_arg(struct vty *vty, int argc, const char *argv[], int full)
@@ -3567,6 +3601,55 @@ static void get_amr_start_from_arg(struct vty *vty, const char *argv[], int full
 	}
 }
 
+/* Give the current amr configuration a final consistency chack by feeding the
+ * the configuration into the gsm48 multirate IE generator function */
+static int check_amr_config(struct vty *vty)
+{
+	int rc = 0;
+	struct amr_multirate_conf *mr;
+	const struct gsm48_multi_rate_conf *mr_conf;
+	struct gsm_bts *bts = vty->index;
+	int vty_rc = CMD_SUCCESS;
+
+	mr = &bts->mr_full;
+	mr_conf = (struct gsm48_multi_rate_conf*) mr->gsm48_ie;
+	rc = gsm48_multirate_config(NULL, mr_conf, mr->ms_mode, mr->num_modes);
+	if (rc != 0) {
+		vty_out(vty,
+			"Invalid AMR multirate configuration (tch-f, ms) - check parameters%s",
+			VTY_NEWLINE);
+		vty_rc = CMD_WARNING;
+	}
+
+	rc = gsm48_multirate_config(NULL, mr_conf, mr->bts_mode, mr->num_modes);
+	if (rc != 0) {
+		vty_out(vty,
+			"Invalid AMR multirate configuration (tch-f, bts) - check parameters%s",
+			VTY_NEWLINE);
+		vty_rc = CMD_WARNING;
+	}
+
+	mr = &bts->mr_half;
+	mr_conf = (struct gsm48_multi_rate_conf*) mr->gsm48_ie;
+	rc = gsm48_multirate_config(NULL, mr_conf, mr->ms_mode, mr->num_modes);
+	if (rc != 0) {
+		vty_out(vty,
+			"Invalid AMR multirate configuration (tch-h, ms) - check parameters%s",
+			VTY_NEWLINE);
+		vty_rc = CMD_WARNING;
+	}
+
+	rc = gsm48_multirate_config(NULL, mr_conf, mr->bts_mode, mr->num_modes);
+	if (rc != 0) {
+		vty_out(vty,
+			"Invalid AMR multirate configuration (tch-h, bts) - check parameters%s",
+			VTY_NEWLINE);
+		vty_rc = CMD_WARNING;
+	}
+
+	return vty_rc;
+}
+
 #define AMR_TCHF_PAR_STR " (0|1|2|3|4|5|6|7)"
 #define AMR_TCHF_HELP_STR "4,75k\n5,15k\n5,90k\n6,70k\n7,40k\n7,95k\n" \
 	"10,2k\n12,2k\n"
@@ -3583,7 +3666,7 @@ DEFUN(cfg_bts_amr_fr_modes1, cfg_bts_amr_fr_modes1_cmd,
 	AMR_TCHF_HELP_STR)
 {
 	get_amr_from_arg(vty, 1, argv, 1);
-	return CMD_SUCCESS;
+	return check_amr_config(vty);
 }
 
 DEFUN(cfg_bts_amr_fr_modes2, cfg_bts_amr_fr_modes2_cmd,
@@ -3592,7 +3675,7 @@ DEFUN(cfg_bts_amr_fr_modes2, cfg_bts_amr_fr_modes2_cmd,
 	AMR_TCHF_HELP_STR AMR_TCHF_HELP_STR)
 {
 	get_amr_from_arg(vty, 2, argv, 1);
-	return CMD_SUCCESS;
+	return check_amr_config(vty);
 }
 
 DEFUN(cfg_bts_amr_fr_modes3, cfg_bts_amr_fr_modes3_cmd,
@@ -3601,7 +3684,7 @@ DEFUN(cfg_bts_amr_fr_modes3, cfg_bts_amr_fr_modes3_cmd,
 	AMR_TCHF_HELP_STR AMR_TCHF_HELP_STR AMR_TCHF_HELP_STR)
 {
 	get_amr_from_arg(vty, 3, argv, 1);
-	return CMD_SUCCESS;
+	return check_amr_config(vty);
 }
 
 DEFUN(cfg_bts_amr_fr_modes4, cfg_bts_amr_fr_modes4_cmd,
@@ -3610,7 +3693,7 @@ DEFUN(cfg_bts_amr_fr_modes4, cfg_bts_amr_fr_modes4_cmd,
 	AMR_TCHF_HELP_STR AMR_TCHF_HELP_STR AMR_TCHF_HELP_STR AMR_TCHF_HELP_STR)
 {
 	get_amr_from_arg(vty, 4, argv, 1);
-	return CMD_SUCCESS;
+	return check_amr_config(vty);
 }
 
 DEFUN(cfg_bts_amr_fr_start_mode, cfg_bts_amr_fr_start_mode_cmd,
@@ -3618,7 +3701,7 @@ DEFUN(cfg_bts_amr_fr_start_mode, cfg_bts_amr_fr_start_mode_cmd,
 	AMR_TEXT "Full Rate\n" AMR_START_TEXT)
 {
 	get_amr_start_from_arg(vty, argv, 1);
-	return CMD_SUCCESS;
+	return check_amr_config(vty);
 }
 
 DEFUN(cfg_bts_amr_fr_thres1, cfg_bts_amr_fr_thres1_cmd,
@@ -3627,7 +3710,7 @@ DEFUN(cfg_bts_amr_fr_thres1, cfg_bts_amr_fr_thres1_cmd,
 	AMR_TH_HELP_STR)
 {
 	get_amr_th_from_arg(vty, 2, argv, 1);
-	return CMD_SUCCESS;
+	return check_amr_config(vty);
 }
 
 DEFUN(cfg_bts_amr_fr_thres2, cfg_bts_amr_fr_thres2_cmd,
@@ -3636,7 +3719,7 @@ DEFUN(cfg_bts_amr_fr_thres2, cfg_bts_amr_fr_thres2_cmd,
 	AMR_TH_HELP_STR AMR_TH_HELP_STR)
 {
 	get_amr_th_from_arg(vty, 3, argv, 1);
-	return CMD_SUCCESS;
+	return check_amr_config(vty);
 }
 
 DEFUN(cfg_bts_amr_fr_thres3, cfg_bts_amr_fr_thres3_cmd,
@@ -3645,7 +3728,7 @@ DEFUN(cfg_bts_amr_fr_thres3, cfg_bts_amr_fr_thres3_cmd,
 	AMR_TH_HELP_STR AMR_TH_HELP_STR AMR_TH_HELP_STR)
 {
 	get_amr_th_from_arg(vty, 4, argv, 1);
-	return CMD_SUCCESS;
+	return check_amr_config(vty);
 }
 
 DEFUN(cfg_bts_amr_fr_hyst1, cfg_bts_amr_fr_hyst1_cmd,
@@ -3654,7 +3737,7 @@ DEFUN(cfg_bts_amr_fr_hyst1, cfg_bts_amr_fr_hyst1_cmd,
 	AMR_HY_HELP_STR)
 {
 	get_amr_hy_from_arg(vty, 2, argv, 1);
-	return CMD_SUCCESS;
+	return check_amr_config(vty);
 }
 
 DEFUN(cfg_bts_amr_fr_hyst2, cfg_bts_amr_fr_hyst2_cmd,
@@ -3672,7 +3755,7 @@ DEFUN(cfg_bts_amr_fr_hyst3, cfg_bts_amr_fr_hyst3_cmd,
 	AMR_HY_HELP_STR AMR_HY_HELP_STR AMR_HY_HELP_STR)
 {
 	get_amr_hy_from_arg(vty, 4, argv, 1);
-	return CMD_SUCCESS;
+	return check_amr_config(vty);
 }
 
 DEFUN(cfg_bts_amr_hr_modes1, cfg_bts_amr_hr_modes1_cmd,
@@ -3681,7 +3764,7 @@ DEFUN(cfg_bts_amr_hr_modes1, cfg_bts_amr_hr_modes1_cmd,
 	AMR_TCHH_HELP_STR)
 {
 	get_amr_from_arg(vty, 1, argv, 0);
-	return CMD_SUCCESS;
+	return check_amr_config(vty);
 }
 
 DEFUN(cfg_bts_amr_hr_modes2, cfg_bts_amr_hr_modes2_cmd,
@@ -3690,7 +3773,7 @@ DEFUN(cfg_bts_amr_hr_modes2, cfg_bts_amr_hr_modes2_cmd,
 	AMR_TCHH_HELP_STR AMR_TCHH_HELP_STR)
 {
 	get_amr_from_arg(vty, 2, argv, 0);
-	return CMD_SUCCESS;
+	return check_amr_config(vty);
 }
 
 DEFUN(cfg_bts_amr_hr_modes3, cfg_bts_amr_hr_modes3_cmd,
@@ -3699,7 +3782,7 @@ DEFUN(cfg_bts_amr_hr_modes3, cfg_bts_amr_hr_modes3_cmd,
 	AMR_TCHH_HELP_STR AMR_TCHH_HELP_STR AMR_TCHH_HELP_STR)
 {
 	get_amr_from_arg(vty, 3, argv, 0);
-	return CMD_SUCCESS;
+	return check_amr_config(vty);
 }
 
 DEFUN(cfg_bts_amr_hr_modes4, cfg_bts_amr_hr_modes4_cmd,
@@ -3708,7 +3791,7 @@ DEFUN(cfg_bts_amr_hr_modes4, cfg_bts_amr_hr_modes4_cmd,
 	AMR_TCHH_HELP_STR AMR_TCHH_HELP_STR AMR_TCHH_HELP_STR AMR_TCHH_HELP_STR)
 {
 	get_amr_from_arg(vty, 4, argv, 0);
-	return CMD_SUCCESS;
+	return check_amr_config(vty);
 }
 
 DEFUN(cfg_bts_amr_hr_start_mode, cfg_bts_amr_hr_start_mode_cmd,
@@ -3716,7 +3799,7 @@ DEFUN(cfg_bts_amr_hr_start_mode, cfg_bts_amr_hr_start_mode_cmd,
 	AMR_TEXT "Half Rate\n" AMR_START_TEXT)
 {
 	get_amr_start_from_arg(vty, argv, 0);
-	return CMD_SUCCESS;
+	return check_amr_config(vty);
 }
 
 DEFUN(cfg_bts_amr_hr_thres1, cfg_bts_amr_hr_thres1_cmd,
@@ -3725,7 +3808,7 @@ DEFUN(cfg_bts_amr_hr_thres1, cfg_bts_amr_hr_thres1_cmd,
 	AMR_TH_HELP_STR)
 {
 	get_amr_th_from_arg(vty, 2, argv, 0);
-	return CMD_SUCCESS;
+	return check_amr_config(vty);
 }
 
 DEFUN(cfg_bts_amr_hr_thres2, cfg_bts_amr_hr_thres2_cmd,
@@ -3734,7 +3817,7 @@ DEFUN(cfg_bts_amr_hr_thres2, cfg_bts_amr_hr_thres2_cmd,
 	AMR_TH_HELP_STR AMR_TH_HELP_STR)
 {
 	get_amr_th_from_arg(vty, 3, argv, 0);
-	return CMD_SUCCESS;
+	return check_amr_config(vty);
 }
 
 DEFUN(cfg_bts_amr_hr_thres3, cfg_bts_amr_hr_thres3_cmd,
@@ -3743,7 +3826,7 @@ DEFUN(cfg_bts_amr_hr_thres3, cfg_bts_amr_hr_thres3_cmd,
 	AMR_TH_HELP_STR AMR_TH_HELP_STR AMR_TH_HELP_STR)
 {
 	get_amr_th_from_arg(vty, 4, argv, 0);
-	return CMD_SUCCESS;
+	return check_amr_config(vty);
 }
 
 DEFUN(cfg_bts_amr_hr_hyst1, cfg_bts_amr_hr_hyst1_cmd,
@@ -3752,7 +3835,7 @@ DEFUN(cfg_bts_amr_hr_hyst1, cfg_bts_amr_hr_hyst1_cmd,
 	AMR_HY_HELP_STR)
 {
 	get_amr_hy_from_arg(vty, 2, argv, 0);
-	return CMD_SUCCESS;
+	return check_amr_config(vty);
 }
 
 DEFUN(cfg_bts_amr_hr_hyst2, cfg_bts_amr_hr_hyst2_cmd,
@@ -3761,7 +3844,7 @@ DEFUN(cfg_bts_amr_hr_hyst2, cfg_bts_amr_hr_hyst2_cmd,
 	AMR_HY_HELP_STR AMR_HY_HELP_STR)
 {
 	get_amr_hy_from_arg(vty, 3, argv, 0);
-	return CMD_SUCCESS;
+	return check_amr_config(vty);
 }
 
 DEFUN(cfg_bts_amr_hr_hyst3, cfg_bts_amr_hr_hyst3_cmd,
@@ -3770,7 +3853,7 @@ DEFUN(cfg_bts_amr_hr_hyst3, cfg_bts_amr_hr_hyst3_cmd,
 	AMR_HY_HELP_STR AMR_HY_HELP_STR AMR_HY_HELP_STR)
 {
 	get_amr_hy_from_arg(vty, 4, argv, 0);
-	return CMD_SUCCESS;
+	return check_amr_config(vty);
 }
 
 #define TRX_TEXT "Radio Transceiver\n"
