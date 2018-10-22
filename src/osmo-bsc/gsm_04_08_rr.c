@@ -321,47 +321,113 @@ static void gsm48_cell_desc(struct gsm48_cell_desc *cd,
 	cd->arfcn_lo = bts->c0->arfcn & 0xff;
 }
 
-/*! \brief Encode a TS 04.08 multirate config LV according to 10.5.2.21aa
- *  \param[out] lv caller-allocated buffer of 7 bytes. First octet is IS length
- *  \param[in] mr multi-rate configuration to encode
- *  \param[in] modes array describing the AMR modes
- *  \returns 0 on success */
-int gsm48_multirate_config(uint8_t *lv, const struct amr_multirate_conf *mr, const struct amr_mode *modes)
+/*! \brief Encode a TS 04.08 multirate config LV according to 10.5.2.21aa.
+ *  \param[out] lv caller-allocated buffer of 7 bytes. First octet is is length.
+ *  \param[in] mr_conf multi-rate configuration to encode (selected modes).
+ *  \param[in] modes array describing the AMR modes.
+ *  \param[in] num_modes length of the modes array.
+ *  \returns 0 on success, -EINVAL on failure. */
+int gsm48_multirate_config(uint8_t *lv,
+			   const struct gsm48_multi_rate_conf *mr_conf,
+			   const struct amr_mode *modes, unsigned int num_modes)
 {
-	int num = 0, i;
+	int num = 0;
+	unsigned int i;
+	unsigned int k;
+	unsigned int m = 0;
+	bool mode_valid;
+	uint8_t *gsm48_ie = (uint8_t *) mr_conf;
+	const struct amr_mode *modes_selected[4];
 
+	/* Check if modes for consistency (order and duplicates) */
+	for (i = 0; i < num_modes; i++) {
+		if (i > 0 && modes[i - 1].mode > modes[i].mode) {
+			LOGP(DRR, LOGL_ERROR,
+			     "BUG: Multirate codec with inconsistant config (mode order).\n");
+			return -EINVAL;
+		}
+		if (i > 0 && modes[i - 1].mode == modes[i].mode) {
+			LOGP(DRR, LOGL_ERROR,
+			     "BUG: Multirate codec with inconsistant config (duplicate modes).\n");
+			return -EINVAL;
+		}
+	}
+
+	/* Check if the active set that is defined in mr_conf has at least one
+	 * mode but not more than 4 modes set */
 	for (i = 0; i < 8; i++) {
-		if (((mr->gsm48_ie[1] >> i) & 1))
+		if (((gsm48_ie[1] >> i) & 1))
 			num++;
 	}
 	if (num > 4) {
-		LOGP(DRR, LOGL_ERROR, "BUG: Using multirate codec with too "
-				"many modes in config.\n");
-		num = 4;
+		LOGP(DRR, LOGL_ERROR,
+		     "BUG: Multirate codec with too many modes in config.\n");
+		return -EINVAL;
 	}
 	if (num < 1) {
-		LOGP(DRR, LOGL_ERROR, "BUG: Using multirate codec with no "
-				"mode in config.\n");
-		num = 1;
+		LOGP(DRR, LOGL_ERROR,
+		     "BUG: Multirate codec with no mode in config.\n");
+		return -EINVAL;
 	}
 
+	/* Do not accept excess hysteresis or threshold values */
+	for (i = 0; i < num_modes; i++) {
+		if (modes[i].threshold >= 64) {
+			LOGP(DRR, LOGL_ERROR,
+			     "BUG: Multirate codec with excessive threshold values.\n");
+			return -EINVAL;
+		}
+		if (modes[i].hysteresis >= 16) {
+			LOGP(DRR, LOGL_ERROR,
+			     "BUG: Multirate codec with excessive hysteresis values.\n");
+			return -EINVAL;
+		}
+	}
+
+	/* Scan through the selected modes and find a matching threshold/
+	 * hysteresis value for that mode. */
+	for (i = 0; i < 8; i++) {
+		if (((gsm48_ie[1] >> i) & 1)) {
+			mode_valid = false;
+			for (k = 0; k < num_modes; k++) {
+				if (modes[k].mode == i) {
+					mode_valid = true;
+					modes_selected[m] = &modes[k];
+					m++;
+				}
+			}
+			if (!mode_valid) {
+				LOGP(DRR, LOGL_ERROR,
+				     "BUG: Multirate codec with inconsistant config (no mode defined).\n");
+				return -EINVAL;
+			}
+		}
+	}
+	OSMO_ASSERT(m <= 4);
+
+	/* When the caller is not interested in any result, skip the actual
+	 * composition of the IE (dry run) */
+	if (!lv)
+		return 0;
+
+	/* Compose output buffer */
 	lv[0] = (num == 1) ? 2 : (num + 2);
-	memcpy(lv + 1, mr->gsm48_ie, 2);
+	memcpy(lv + 1, gsm48_ie, 2);
 	if (num == 1)
 		return 0;
 
-	lv[3] = modes[0].threshold & 0x3f;
-	lv[4] = modes[0].hysteresis << 4;
+	lv[3] = modes_selected[0]->threshold & 0x3f;
+	lv[4] = modes_selected[0]->hysteresis << 4;
 	if (num == 2)
 		return 0;
-	lv[4] |= (modes[1].threshold & 0x3f) >> 2;
-	lv[5] = modes[1].threshold << 6;
-	lv[5] |= (modes[1].hysteresis & 0x0f) << 2;
+	lv[4] |= (modes_selected[1]->threshold & 0x3f) >> 2;
+	lv[5] = modes_selected[1]->threshold << 6;
+	lv[5] |= (modes_selected[1]->hysteresis & 0x0f) << 2;
 	if (num == 3)
 		return 0;
-	lv[5] |= (modes[2].threshold & 0x3f) >> 4;
-	lv[6] = modes[2].threshold << 4;
-	lv[6] |= modes[2].hysteresis & 0x0f;
+	lv[5] |= (modes_selected[2]->threshold & 0x3f) >> 4;
+	lv[6] = modes_selected[2]->threshold << 4;
+	lv[6] |= modes_selected[2]->hysteresis & 0x0f;
 
 	return 0;
 }

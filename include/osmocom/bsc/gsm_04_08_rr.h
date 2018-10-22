@@ -23,7 +23,8 @@ int gsm48_handle_paging_resp(struct gsm_subscriber_connection *conn,
 			     struct msgb *msg, struct bsc_subscr *bsub);
 int gsm48_send_rr_classmark_enquiry(struct gsm_lchan *lchan);
 int gsm48_send_rr_ciph_mode(struct gsm_lchan *lchan, int want_imeisv);
-int gsm48_multirate_config(uint8_t *lv, const struct amr_multirate_conf *mr, const struct amr_mode *modes);
+int gsm48_multirate_config(uint8_t *lv, const struct gsm48_multi_rate_conf *mr_conf,
+			   const struct amr_mode *modes, unsigned int num_modes);
 struct msgb *gsm48_make_ho_cmd(struct gsm_lchan *new_lchan, uint8_t power_command, uint8_t ho_ref);
 int gsm48_send_ho_cmd(struct gsm_lchan *old_lchan, struct gsm_lchan *new_lchan,
 		      uint8_t power_command, uint8_t ho_ref);

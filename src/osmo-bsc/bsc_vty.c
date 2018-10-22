@@ -4391,11 +4391,12 @@ static int lchan_set_single_amr_mode(struct gsm_lchan *lchan, uint8_t amr_mode)
 
 	mr.ms_mode[0].mode = amr_mode;
 	mr.bts_mode[0].mode = amr_mode;
+	mr.num_modes = 1;
 
 	/* encode this configuration into the lchan for both uplink and
 	 * downlink direction */
-	gsm48_multirate_config(lchan->mr_ms_lv, &mr, mr.ms_mode);
-	gsm48_multirate_config(lchan->mr_bts_lv, &mr, mr.bts_mode);
+	gsm48_multirate_config(lchan->mr_ms_lv, mr_conf, mr.ms_mode, mr.num_modes);
+	gsm48_multirate_config(lchan->mr_bts_lv, mr_conf, mr.bts_mode, mr.num_modes);
 
 	return 0;
 }

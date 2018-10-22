@@ -226,4 +226,8 @@ test_gsm48_ra_id_by_bts[3]: digits='000000' lac=0x0000=htons(0) rac=0x00=0 pass
 test_gsm48_ra_id_by_bts[4]: digits='999999' lac=0xffff=htons(65535) rac=0xff=255 pass
 test_gsm48_ra_id_by_bts[5]: digits='09f909' lac=0xcdab=htons(43981) rac=0xab=171 pass
 test_gsm48_ra_id_by_bts[6]: digits='090990' lac=0xcdab=htons(43981) rac=0xab=171 pass
+gsm48_multirate_config(): rc=0, lv=0620b40bf330
+gsm48_multirate_config(): rc=0, lv=0520340bf3
+gsm48_multirate_config(): rc=0, lv=0420140b
+gsm48_multirate_config(): rc=0, lv=0220
 Done.

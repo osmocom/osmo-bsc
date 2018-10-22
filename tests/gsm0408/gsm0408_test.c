@@ -35,6 +35,8 @@
 #include <osmocom/gsm/sysinfo.h>
 #include <osmocom/gsm/gsm48.h>
 
+#include <osmocom/bsc/gsm_04_08_rr.h>
+
 #define COMPARE(result, op, value) \
     if (!((result) op (value))) {\
 	fprintf(stderr, "Compare failed. Was %x should be %x in %s:%d\n",result, value, __FILE__, __LINE__); \
@@ -799,6 +801,106 @@ static void test_gsm48_ra_id_by_bts()
 	OSMO_ASSERT(pass);
 }
 
+static void test_gsm48_multirate_config()
+{
+	uint8_t lv[7];
+	struct gsm48_multi_rate_conf *gsm48_ie;
+	struct amr_multirate_conf mr;
+	int rc;
+
+	memset(&mr, 0, sizeof(mr));
+
+	/* Use some made up threshold and hysteresis values */
+	mr.ms_mode[0].threshold = 11;
+	mr.ms_mode[1].threshold = 12;
+	mr.ms_mode[2].threshold = 13;
+	mr.ms_mode[0].hysteresis = 15;
+	mr.ms_mode[1].hysteresis = 12;
+	mr.ms_mode[2].hysteresis = 8;
+
+	gsm48_ie = (struct gsm48_multi_rate_conf *)&mr.gsm48_ie;
+	gsm48_ie->ver = 1;
+	gsm48_ie->m5_90 = 1;
+	gsm48_ie->m7_40 = 1;
+	gsm48_ie->m7_95 = 1;
+	gsm48_ie->m12_2 = 1;
+
+	/* Test #1: Normal configuration with 4 active set members */
+	mr.ms_mode[0].mode = 2;
+	mr.ms_mode[1].mode = 4;
+	mr.ms_mode[2].mode = 5;
+	mr.ms_mode[3].mode = 7;
+	rc = gsm48_multirate_config(lv, gsm48_ie, mr.ms_mode, 4);
+	OSMO_ASSERT(rc == 0);
+	printf("gsm48_multirate_config(): rc=%i, lv=%s\n", rc,
+	       osmo_hexdump_nospc(lv, lv[0]));
+
+	/* Test #2: 4 active set members, but wrong mode order: */
+	mr.ms_mode[3].mode = 2;
+	mr.ms_mode[2].mode = 4;
+	mr.ms_mode[1].mode = 5;
+	mr.ms_mode[0].mode = 7;
+	rc = gsm48_multirate_config(lv, gsm48_ie, mr.ms_mode, 4);
+	OSMO_ASSERT(rc == -EINVAL);
+
+	/* Test #3: Normal configuration with 3 active set members */
+	mr.ms_mode[0].mode = 2;
+	mr.ms_mode[1].mode = 4;
+	mr.ms_mode[2].mode = 5;
+	mr.ms_mode[3].mode = 0;
+	gsm48_ie->m12_2 = 0;
+	mr.ms_mode[2].threshold = 0;
+	mr.ms_mode[2].hysteresis = 0;
+
+	rc = gsm48_multirate_config(lv, gsm48_ie, mr.ms_mode, 3);
+	OSMO_ASSERT(rc == 0);
+	printf("gsm48_multirate_config(): rc=%i, lv=%s\n", rc,
+	       osmo_hexdump_nospc(lv, lv[0]));
+
+	/* Test #4: 3 active set members, but wrong mode order: */
+	mr.ms_mode[0].mode = 2;
+	mr.ms_mode[2].mode = 4;
+	mr.ms_mode[1].mode = 5;
+	rc = gsm48_multirate_config(lv, gsm48_ie, mr.ms_mode, 3);
+	OSMO_ASSERT(rc == -EINVAL);
+
+	/* Test #5: Normal configuration with 2 active set members */
+	mr.ms_mode[0].mode = 2;
+	mr.ms_mode[1].mode = 4;
+	mr.ms_mode[2].mode = 0;
+	gsm48_ie->m7_95 = 0;
+	mr.ms_mode[1].threshold = 0;
+	mr.ms_mode[1].hysteresis = 0;
+
+	rc = gsm48_multirate_config(lv, gsm48_ie, mr.ms_mode, 2);
+	OSMO_ASSERT(rc == 0);
+	printf("gsm48_multirate_config(): rc=%i, lv=%s\n", rc,
+	       osmo_hexdump_nospc(lv, lv[0]));
+
+	/* Test #6: 2 active set members, but wrong mode order: */
+	mr.ms_mode[1].mode = 2;
+	mr.ms_mode[0].mode = 4;
+	rc = gsm48_multirate_config(lv, gsm48_ie, mr.ms_mode, 2);
+	OSMO_ASSERT(rc == -EINVAL);
+
+	/* Test #7: Normal configuration with 1 active set member */
+	mr.ms_mode[0].mode = 2;
+	mr.ms_mode[1].mode = 0;
+	gsm48_ie->m7_40 = 0;
+	mr.ms_mode[0].threshold = 0;
+	mr.ms_mode[0].hysteresis = 0;
+
+	rc = gsm48_multirate_config(lv, gsm48_ie, mr.ms_mode, 1);
+	OSMO_ASSERT(rc == 0);
+	printf("gsm48_multirate_config(): rc=%i, lv=%s\n", rc,
+	       osmo_hexdump_nospc(lv, lv[0]));
+
+	/* Test #8: 0 active set members: */
+	mr.ms_mode[0].mode = 0;
+	rc = gsm48_multirate_config(lv, gsm48_ie, mr.ms_mode, 1);
+	OSMO_ASSERT(rc == -EINVAL);
+}
+
 static const struct log_info_cat log_categories[] = {
 };
 
@@ -839,6 +941,8 @@ int main(int argc, char **argv)
 
 	test_gsm48_ra_id_by_bts();
 
+	test_gsm48_multirate_config();
+
 	printf("Done.\n");
 
 	return EXIT_SUCCESS;
@@ -854,3 +958,37 @@ bool on_gsm_ts_init(struct gsm_bts_trx_ts *ts)
 }
 
 void ts_fsm_alloc(struct gsm_bts_trx_ts *ts) {}
+
+void bsc_cm_update(struct gsm_subscriber_connection *conn,
+		   const uint8_t *cm2, uint8_t cm2_len,
+		   const uint8_t *cm3, uint8_t cm3_len) {}
+
+int rsl_siemens_mrpci(struct gsm_lchan *lchan, struct rsl_mrpci *mrpci)
+{ return 0; }
+
+int rsl_chan_mode_modify_req(struct gsm_lchan *ts) { return 0; }
+
+int rsl_tx_ipacc_crcx(struct gsm_lchan *lchan) { return 0; }
+
+void gscon_submit_rsl_dtap(struct gsm_subscriber_connection *conn,
+			   struct msgb *msg, int link_id, int allow_sacch) {}
+
+bool lchan_may_receive_data(struct gsm_lchan *lchan) { return  true; }
+
+int bsc_compl_l3(struct gsm_subscriber_connection *conn, struct msgb *msg,
+		 uint16_t chosen_channel) { return 0; }
+
+void bsc_dtap(struct gsm_subscriber_connection *conn, uint8_t link_id,
+	      struct msgb *msg) {}
+
+void bsc_cipher_mode_compl(struct gsm_subscriber_connection *conn,
+			   struct msgb *msg, uint8_t chosen_encr) {}
+
+const char *bsc_subscr_name(struct bsc_subscr *bsub) { return NULL; }
+
+void lchan_release(struct gsm_lchan *lchan, bool sacch_deact,
+		   bool err, enum gsm48_rr_cause cause_rr) {}
+
+int rsl_data_request(struct msgb *msg, uint8_t link_id) { return 0; }
+
+int rsl_encryption_cmd(struct msgb *msg) { return 0; }
