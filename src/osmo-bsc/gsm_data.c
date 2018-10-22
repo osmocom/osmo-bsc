@@ -900,6 +900,21 @@ struct gsm_bts *gsm_bts_alloc(struct gsm_network *net, uint8_t bts_num)
 		.m12_2 = 1
 	};
 	memcpy(bts->mr_full.gsm48_ie, &mr_cfg, sizeof(bts->mr_full.gsm48_ie));
+	bts->mr_full.ms_mode[0].mode = 1;
+	bts->mr_full.ms_mode[1].mode = 2;
+	bts->mr_full.ms_mode[2].mode = 6;
+	bts->mr_full.ms_mode[3].mode = 7;
+	bts->mr_full.bts_mode[0].mode = 1;
+	bts->mr_full.bts_mode[1].mode = 2;
+	bts->mr_full.bts_mode[2].mode = 6;
+	bts->mr_full.bts_mode[3].mode = 7;
+	for (i = 0; i < 3; i++) {
+		bts->mr_full.ms_mode[i].hysteresis = 8;
+		bts->mr_full.ms_mode[i].threshold = 32;
+		bts->mr_full.bts_mode[i].hysteresis = 8;
+		bts->mr_full.bts_mode[i].threshold = 32;
+	}
+	bts->mr_full.num_modes = 4;
 
 	mr_cfg = (struct gsm48_multi_rate_conf) {
 		.m4_75 = 0,
@@ -912,6 +927,21 @@ struct gsm_bts *gsm_bts_alloc(struct gsm_network *net, uint8_t bts_num)
 		.m12_2 = 0
 	};
 	memcpy(bts->mr_half.gsm48_ie, &mr_cfg, sizeof(bts->mr_half.gsm48_ie));
+	bts->mr_half.ms_mode[0].mode = 1;
+	bts->mr_half.ms_mode[1].mode = 2;
+	bts->mr_half.ms_mode[2].mode = 4;
+	bts->mr_half.ms_mode[3].mode = 5;
+	bts->mr_half.bts_mode[0].mode = 1;
+	bts->mr_half.bts_mode[1].mode = 2;
+	bts->mr_half.bts_mode[2].mode = 4;
+	bts->mr_half.bts_mode[3].mode = 5;
+	for (i = 0; i < 3; i++) {
+		bts->mr_half.ms_mode[i].hysteresis = 8;
+		bts->mr_half.ms_mode[i].threshold = 32;
+		bts->mr_half.bts_mode[i].hysteresis = 8;
+		bts->mr_half.bts_mode[i].threshold = 32;
+	}
+	bts->mr_half.num_modes = 4;
 
 	return bts;
 }
