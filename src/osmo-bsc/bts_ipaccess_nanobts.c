@@ -30,6 +30,7 @@
 #include <osmocom/abis/e1_input.h>
 #include <osmocom/gsm/tlv.h>
 #include <osmocom/core/msgb.h>
+#include <osmocom/core/socket.h>
 #include <osmocom/core/talloc.h>
 #include <osmocom/bsc/gsm_data.h>
 #include <osmocom/bsc/abis_nm.h>
@@ -458,6 +459,56 @@ void ipaccess_drop_oml_deferred(struct gsm_bts *bts)
 	}
 }
 
+/* Reject BTS because of an unknown unit ID */
+static void ipaccess_sign_link_reject(const struct ipaccess_unit *dev, const struct e1inp_ts* ts)
+{
+	uint16_t site_id = dev->site_id;
+	uint16_t bts_id = dev->bts_id;
+	uint16_t trx_id = dev->trx_id;
+	char ip[INET6_ADDRSTRLEN];
+	struct gsm_bts_rejected *entry = NULL;
+	struct gsm_bts_rejected *pos;
+
+	/* Write to log and increase counter */
+	LOGP(DLINP, LOGL_ERROR, "Unable to find BTS configuration for %u/%u/%u, disconnecting\n", site_id, bts_id,
+		trx_id);
+	rate_ctr_inc(&bsc_gsmnet->bsc_ctrs->ctr[BSC_CTR_UNKNOWN_UNIT_ID]);
+
+	/* Get remote IP */
+	if (osmo_sock_get_remote_ip(ts->driver.ipaccess.fd.fd, ip, sizeof(ip)))
+		return;
+
+	/* Rejected list: unlink existing entry */
+	llist_for_each_entry(pos, &bsc_gsmnet->bts_rejected, list) {
+		if (pos->site_id == site_id && pos->bts_id == bts_id && !strcmp(pos->ip, ip)) {
+			entry = pos;
+			llist_del(&entry->list);
+			break;
+		}
+	}
+
+	/* Allocate new entry */
+	if (!entry) {
+		entry = talloc_zero(tall_bsc_ctx, struct gsm_bts_rejected);
+		if (!entry)
+			return;
+		entry->site_id = site_id;
+		entry->bts_id = bts_id;
+		strncpy(entry->ip, ip, sizeof(entry->ip));
+	}
+
+	/* Add to beginning with current timestamp */
+	llist_add(&entry->list, &bsc_gsmnet->bts_rejected);
+	entry->time = time(NULL);
+
+	/* Cut off last (oldest) element if we have too many */
+	if (llist_count(&bsc_gsmnet->bts_rejected) > 25) {
+		pos = llist_last_entry(&bsc_gsmnet->bts_rejected, struct gsm_bts_rejected, list);
+		llist_del(&pos->list);
+		talloc_free(pos);
+	}
+}
+
 /* This function is called once the OML/RSL link becomes up. */
 static struct e1inp_sign_link *
 ipaccess_sign_link_up(void *unit_data, struct e1inp_line *line,
@@ -471,10 +522,7 @@ ipaccess_sign_link_up(void *unit_data, struct e1inp_line *line,
 
 	bts = find_bts_by_unitid(bsc_gsmnet, dev->site_id, dev->bts_id);
 	if (!bts) {
-		LOGP(DLINP, LOGL_ERROR, "Unable to find BTS configuration for "
-			" %u/%u/%u, disconnecting\n", dev->site_id,
-			dev->bts_id, dev->trx_id);
-		rate_ctr_inc(&bsc_gsmnet->bsc_ctrs->ctr[BSC_CTR_UNKNOWN_UNIT_ID]);
+		ipaccess_sign_link_reject(dev, &line->ts[E1INP_SIGN_OML - 1]);
 		return NULL;
 	}
 	DEBUGP(DLINP, "Identified BTS %u/%u/%u\n",

@@ -541,6 +541,33 @@ DEFUN(show_bts, show_bts_cmd, "show bts [<0-255>]",
 	return CMD_SUCCESS;
 }
 
+DEFUN(show_rejected_bts, show_rejected_bts_cmd, "show rejected-bts",
+	SHOW_STR "Display recently rejected BTS devices\n")
+{
+	struct gsm_bts_rejected *pos;
+
+	/* empty list */
+	struct llist_head *rejected = &gsmnet_from_vty(vty)->bts_rejected;
+	if (llist_empty(rejected)) {
+		vty_out(vty, "No BTS has been rejected.%s", VTY_NEWLINE);
+		return CMD_SUCCESS;
+	}
+
+	/* table head */
+	vty_out(vty, "Date                Site ID BTS ID IP%s", VTY_NEWLINE);
+	vty_out(vty, "------------------- ------- ------ ---------------%s", VTY_NEWLINE);
+
+	/* table body */
+	llist_for_each_entry(pos, rejected, list) {
+		/* timestamp formatted like: "2018-10-24 15:04:52" */
+		char buf[20];
+		strftime(buf, sizeof(buf), "%F %T", localtime(&pos->time));
+
+		vty_out(vty, "%s %7u %6u %15s%s", buf, pos->site_id, pos->bts_id, pos->ip, VTY_NEWLINE);
+	}
+	return CMD_SUCCESS;
+}
+
 /* utility functions */
 static void parse_e1_link(struct gsm_e1_subslot *e1_link, const char *line,
 			  const char *ts, const char *ss)
@@ -4867,6 +4894,7 @@ int bsc_vty_init(struct gsm_network *network)
 
 	install_element_ve(&bsc_show_net_cmd);
 	install_element_ve(&show_bts_cmd);
+	install_element_ve(&show_rejected_bts_cmd);
 	install_element_ve(&show_trx_cmd);
 	install_element_ve(&show_ts_cmd);
 	install_element_ve(&show_lchan_cmd);

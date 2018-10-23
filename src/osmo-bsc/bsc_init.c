@@ -257,6 +257,7 @@ static struct gsm_network *bsc_network_init(void *ctx)
 		return NULL;
 	}
 
+	INIT_LLIST_HEAD(&net->bts_rejected);
 	gsm_net_update_ctype(net);
 
 	/*

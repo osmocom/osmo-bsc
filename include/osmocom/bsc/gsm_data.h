@@ -1129,6 +1129,16 @@ struct gsm_bts {
 	uint8_t chan_load_avg; /* current channel load average in percent (0 - 100). */
 };
 
+/* One rejected BTS */
+struct gsm_bts_rejected {
+	/* list header in net->bts_rejected */
+	struct llist_head list;
+
+	uint16_t site_id;
+	uint16_t bts_id;
+	char ip[INET6_ADDRSTRLEN];
+	time_t time;
+};
 
 struct gsm_network *gsm_network_init(void *ctx);
 
@@ -1404,6 +1414,7 @@ struct gsm_network {
 
 	unsigned int num_bts;
 	struct llist_head bts_list;
+	struct llist_head bts_rejected;
 
 	/* shall reference gsm_network_T[] */
 	struct T_def *T_defs;
