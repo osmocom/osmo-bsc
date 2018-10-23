@@ -444,6 +444,7 @@ static int bssmap_handle_cipher_mode(struct gsm_subscriber_connection *conn,
 
 	if (conn->ciphering_handled) {
 		LOGP(DMSC, LOGL_ERROR, "Already seen ciphering command. Protocol Error.\n");
+		reject_cause = GSM0808_CAUSE_PROTOCOL_ERROR_BETWEEN_BSS_AND_MSC;
 		goto reject;
 	}
 
@@ -452,6 +453,7 @@ static int bssmap_handle_cipher_mode(struct gsm_subscriber_connection *conn,
 	tlv_parse(&tp, gsm0808_att_tlvdef(), msg->l4h + 1, payload_length - 1, 0, 0);
 	if (!TLVP_PRESENT(&tp, GSM0808_IE_ENCRYPTION_INFORMATION)) {
 		LOGP(DMSC, LOGL_ERROR, "IE Encryption Information missing.\n");
+		reject_cause = GSM0808_CAUSE_INFORMATION_ELEMENT_OR_FIELD_MISSING;
 		goto reject;
 	}
 
@@ -464,6 +466,7 @@ static int bssmap_handle_cipher_mode(struct gsm_subscriber_connection *conn,
 	len = TLVP_LEN(&tp, GSM0808_IE_ENCRYPTION_INFORMATION);
 	if (len < 1) {
 		LOGP(DMSC, LOGL_ERROR, "IE Encryption Information is too short.\n");
+		reject_cause = GSM0808_CAUSE_INCORRECT_VALUE;
 		goto reject;
 	}
 
