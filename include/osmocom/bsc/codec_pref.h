@@ -22,4 +22,8 @@ void gen_bss_supported_codec_list(struct gsm0808_speech_codec_list *scl,
 				  const struct bsc_msc_data *msc,
 				  const struct gsm_bts *bts);
 
+int calc_amr_rate_intersection(struct gsm48_multi_rate_conf *c,
+			       const struct gsm48_multi_rate_conf *b,
+			       const struct gsm48_multi_rate_conf *a);
+
 int check_codec_pref(struct llist_head *mscs);

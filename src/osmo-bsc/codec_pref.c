@@ -393,6 +393,35 @@ void gen_bss_supported_codec_list(struct gsm0808_speech_codec_list *scl,
 	}
 }
 
+/*! Calculate the intersection of the rate configuration of two multirate configuration
+ *  IE structures. The result c will be a copy of a, but the rate configuration bits
+ *  will be the intersection of the rate configuration bits in a and b.
+ *  \param[out] c user provided memory to store the result.
+ *  \param[in] a multi rate configuration a.
+ *  \param[in] b multi rate configuration b.
+ *  \returns 0 on success, -1 when the result contains an empty set of modes. */
+int calc_amr_rate_intersection(struct gsm48_multi_rate_conf *c,
+			       const struct gsm48_multi_rate_conf *b,
+			       const struct gsm48_multi_rate_conf *a)
+{
+	struct gsm48_multi_rate_conf res;
+	uint8_t *_a = (uint8_t *) a;
+	uint8_t *_b = (uint8_t *) b;
+	uint8_t *_res = (uint8_t *) & res;
+
+	memcpy(&res, a, sizeof(res));
+
+	_res[1] = _a[1] & _b[1];
+
+	if (_res[1] == 0x00)
+		return -1;
+
+	if (c)
+		memcpy(c, &res, sizeof(*c));
+
+	return 0;
+}
+
 /*! Visit the codec settings for the MSC and for each BTS in order to make sure
  *  that the configuration does not contain any combinations that lead into a
  *  mutually exclusive codec configuration (empty intersection).
@@ -404,6 +433,8 @@ int check_codec_pref(struct llist_head *mscs)
 	struct gsm_bts *bts;
 	struct gsm0808_speech_codec_list scl;
 	int rc = 0;
+	int rc_rate;
+	const struct gsm48_multi_rate_conf *bts_gsm48_ie;
 
 	llist_for_each_entry(msc, mscs, entry) {
 		llist_for_each_entry(bts, &msc->network->bts_list, list) {
@@ -411,6 +442,24 @@ int check_codec_pref(struct llist_head *mscs)
 			if (scl.len <= 0) {
 				LOGP(DMSC, LOGL_FATAL,
 				     "codec-support/trx config of BTS %u does not intersect with codec-list of MSC %u\n",
+				     bts->nr, msc->nr);
+				rc = -1;
+			}
+
+			bts_gsm48_ie = (struct gsm48_multi_rate_conf *)&bts->mr_full.gsm48_ie;
+			rc_rate = calc_amr_rate_intersection(NULL, &msc->amr_conf, bts_gsm48_ie);
+			if (rc_rate < 0) {
+				LOGP(DMSC, LOGL_FATAL,
+				     "network amr tch-f mode config of BTS %u does not intersect with amr-config of MSC %u\n",
+				     bts->nr, msc->nr);
+				rc = -1;
+			}
+
+			bts_gsm48_ie = (struct gsm48_multi_rate_conf *)&bts->mr_half.gsm48_ie;
+			rc_rate = calc_amr_rate_intersection(NULL, &msc->amr_conf, bts_gsm48_ie);
+			if (rc_rate < 0) {
+				LOGP(DMSC, LOGL_FATAL,
+				     "network amr tch-h mode config of BTS %u does not intersect with amr-config of MSC %u\n",
 				     bts->nr, msc->nr);
 				rc = -1;
 			}
