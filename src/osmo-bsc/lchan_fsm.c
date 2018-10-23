@@ -36,6 +36,8 @@
 #include <osmocom/bsc/assignment_fsm.h>
 #include <osmocom/bsc/handover_fsm.h>
 #include <osmocom/bsc/bsc_msc_data.h>
+#include <osmocom/bsc/codec_pref.h>
+
 
 static struct osmo_fsm lchan_fsm;
 
@@ -402,66 +404,71 @@ static void lchan_fsm_unused_onenter(struct osmo_fsm_inst *fi, uint32_t prev_sta
 	osmo_fsm_inst_dispatch(lchan->ts->fi, TS_EV_LCHAN_UNUSED, lchan);
 }
 
-/*! Configure the multirate setting on this channel. */
-void lchan_mr_config(struct gsm_lchan *lchan, struct gsm48_multi_rate_conf *mr_conf)
+/* Configure the multirate setting on this channel. */
+static int lchan_mr_config(struct gsm_lchan *lchan, const struct gsm48_multi_rate_conf *mr_conf)
 {
-	struct gsm48_multi_rate_conf *ms_conf, *bts_conf;
 	bool full_rate = (lchan->type == GSM_LCHAN_TCH_F);
+	struct gsm_bts *bts = lchan->ts->trx->bts;
+	struct bsc_msc_data *msc = lchan->conn->sccp.msc;
+	struct amr_multirate_conf *mr;
+	int rc;
+	int rc_rate;
+	struct gsm48_multi_rate_conf mr_conf_filtered;
+	const struct gsm48_multi_rate_conf *mr_conf_bts;
 
-	/* initialize the data structure */
-	lchan->mr_ms_lv[0] = sizeof(*ms_conf);
-	lchan->mr_bts_lv[0] = sizeof(*bts_conf);
-	ms_conf = (struct gsm48_multi_rate_conf *) &lchan->mr_ms_lv[1];
-	bts_conf = (struct gsm48_multi_rate_conf *) &lchan->mr_bts_lv[1];
+	/* There are two different active sets, depending on the channel rate,
+	 * make sure the appropate one is selected. */
+	if (full_rate)
+		mr = &bts->mr_full;
+	else
+		mr = &bts->mr_half;
 
-	*ms_conf = *bts_conf = (struct gsm48_multi_rate_conf){
-		.ver = 1,
-		.icmi = 1,
-		.m4_75 = mr_conf->m4_75,
-		.m5_15 = mr_conf->m5_15,
-		.m5_90 = mr_conf->m5_90,
-		.m6_70 = mr_conf->m6_70,
-		.m7_40 = mr_conf->m7_40,
-		.m7_95 = mr_conf->m7_95,
-		.m10_2 = full_rate? mr_conf->m10_2 : 0,
-		.m12_2 = full_rate? mr_conf->m12_2 : 0,
-	};
-}
-
-/* Mask all rates instead of the highest possible */
-static void lchan_mr_config_mask(struct gsm48_multi_rate_conf *mr_conf)
-{
-	unsigned int i;
-	bool highest_seen = false;
-	uint8_t *_mr_conf = (uint8_t *) mr_conf;
-
-	/* FIXME: At the moment we can not support multiple codec rates in one
-	 * struct gsm48_multi_rate_conf, because the struct lacks the fields
-	 * for Threshold and Hysteresis. Those fields are not needed when only
-	 * a single codec rate is in place, but as soon as multiple codec
-	 * rates are used the parameters are mandatory. The layout for the
-	 * struct would then also be different because each rate needs its
-	 * own Threshold and Hysteresis value. (See also 3GPP TS 04.08,
-	 * chapter 10.5.2.21aa MultiRate configuration).
-	 *
-	 * Since we are unable to signal multiple codec rates properly, we just
-	 * remove all codec rates from the active set, except the highest
-	 * possible. Doing so we lack the functionality to switch towards the
-	 * other, lower codec rates that were offered by the MSC, but it is
-	 * still guaranteed that a rate is selected that is supported by all
-	 * entities.
-	 *
-	 * To fix this problem, we should implement a proper encoder for
-	 * struct gsm48_multi_rate_conf, in libosmocore and use it here.
-	 * struct amr_mode already seems to have members for threshold and
-	 * hysteresis we can use. */
-
-	for (i = 7; i > 0; i--) {
-		if (_mr_conf[1] & (1 << i) && highest_seen == false) {
-			highest_seen = true;
-		} else if (highest_seen)
-			_mr_conf[1] &= ~(1 << i);
+	/* The VTY allows to forbid certain codec rates. Unfortunately we can
+	 * not articulate all of the prohibitions on through S0-S15 on the A
+	 * interface. To ensure that the VTY settings are observed we create
+	 * a manipulated copy of the mr_conf that ensures forbidden codec rates
+	 * are not used in the multirate configuration IE. */
+	rc_rate = calc_amr_rate_intersection(&mr_conf_filtered, &msc->amr_conf, mr_conf);
+	if (rc_rate < 0) {
+		LOG_LCHAN(lchan, LOGL_ERROR,
+			  "can not encode multirate configuration (invalid amr rate setting, MSC)\n");
+		return -EINVAL;
 	}
+
+	/* The two last codec rates which are defined for AMR do only work with
+	 * full rate channels. We will pinch off those rates für half-rate
+	 * channels to ensure they are not included accidently. */
+	if (!full_rate) {
+		if (mr_conf_filtered.m10_2 || mr_conf_filtered.m12_2)
+			LOG_LCHAN(lchan, LOGL_ERROR, "ignoring unsupported amr codec rates\n");
+		mr_conf_filtered.m10_2 = 0;
+		mr_conf_filtered.m12_2 = 0;
+	}
+
+	/* Ensure that the resulting filtered conf is coherent with the
+	 * configuration that is set for the BTS and the specified rate */
+	mr_conf_bts = (struct gsm48_multi_rate_conf *)mr->gsm48_ie;
+	rc_rate = calc_amr_rate_intersection(&mr_conf_filtered, mr_conf_bts, &mr_conf_filtered);
+	if (rc_rate < 0) {
+		LOG_LCHAN(lchan, LOGL_ERROR,
+			  "can not encode multirate configuration (invalid amr rate setting, BTS)\n");
+		return -EINVAL;
+	}
+
+	/* Proceed with the generation of the multirate configuration IE
+	 * (MS and BTS) */
+	rc = gsm48_multirate_config(lchan->mr_ms_lv, &mr_conf_filtered, mr->ms_mode, mr->num_modes);
+	if (rc != 0) {
+		LOG_LCHAN(lchan, LOGL_ERROR, "can not encode multirate configuration (MS)\n");
+		return -EINVAL;
+	}
+	rc = gsm48_multirate_config(lchan->mr_bts_lv, &mr_conf_filtered, mr->bts_mode, mr->num_modes);
+	if (rc != 0) {
+		LOG_LCHAN(lchan, LOGL_ERROR, "can not encode multirate configuration (BTS)\n");
+		return -EINVAL;
+	}
+
+	return 0;
 }
 
 static void lchan_fsm_unused(struct osmo_fsm_inst *fi, uint32_t event, void *data)
@@ -511,9 +518,10 @@ static void lchan_fsm_unused(struct osmo_fsm_inst *fi, uint32_t event, void *dat
 
 		if (info->chan_mode == GSM48_CMODE_SPEECH_AMR) {
 			gsm48_mr_cfg_from_gsm0808_sc_cfg(&mr_conf, info->s15_s0);
-			/* FIXME: See above. */
-			lchan_mr_config_mask(&mr_conf);
-			lchan_mr_config(lchan, &mr_conf);
+			if (lchan_mr_config(lchan, &mr_conf) < 0) {
+				lchan_fail("Can not generate multirate configuration IE\n");
+				return;
+			}
 		}
 
 		switch (info->chan_mode) {
