@@ -564,7 +564,7 @@ void handover_start_inter_bsc_in(struct gsm_subscriber_connection *conn,
 		/* Figure out channel type */
 		if (match_codec_pref(&mode, &full_rate, &s15_s0, &req->ct, &req->scl, msc, bts)) {
 			LOG_HO(conn, LOGL_DEBUG,
-			       "BTS %u has no matching channel codec (%s, speech codec list len = %u)",
+			       "BTS %u has no matching channel codec (%s, speech codec list len = %u)\n",
 			       bts->nr, gsm0808_channel_type_name(&req->ct), req->scl.len);
 			continue;
 		}
