@@ -592,9 +592,8 @@ void handover_start_inter_bsc_in(struct gsm_subscriber_connection *conn,
 	}
 
 	if (!ho->new_lchan) {
-		ho_fail(HO_RESULT_ERROR, "No free/matching lchan found for %s %s %s\n",
-			req->cell_id_target_name,
-			gsm48_chan_mode_name(mode), full_rate ? "full-rate" : "half-rate");
+		ho_fail(HO_RESULT_ERROR, "No free/matching lchan found for %s %s (speech codec list len = %u)",
+			req->cell_id_target_name, gsm0808_channel_type_name(&req->ct), req->scl.len);
 		return;
 	}
 
