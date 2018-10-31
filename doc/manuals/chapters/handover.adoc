@@ -307,6 +307,15 @@ list items. Hence, to be able to send several alternative remote neighbors to
 the MSC, the configured cell identifiers must be of the same type. If in doubt,
 use the full CGI identifier everywhere.
 
+==== Reconfiguring Neighbors in a Running OsmoBSC
+
+When modifying a cell's neighbor configuration in a telnet VTY session while a cell is already active,
+the neighbor configuration will merely be cached in the BSC's local config. To take actual effect, it is
+necessary to
+
+- either, re-connect the cell to the BSC (e.g. via `drop bts connection <0-255> oml`)
+- or, re-send the System Information using `bts <0-255> resend-system-information`.
+
 === Configuring Handover Decisions
 
 For a long time, OsmoBSC has supported handover based on reception level
