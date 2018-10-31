@@ -166,6 +166,22 @@ new `neighbor` configuration described below.
 | ✓ | ✓ | neighbor cgi 001 01 200 3 arfcn 123 bsic 1
 |====
 
+==== Default: All Local Cells are Neighbors
+
+For historical reasons, the default behavior of OsmoBSC is to add all local-BSS cells as neighbors. To
+maintain a backwards compatible configuration file format, this is still the case: as soon as no explicit
+neighbor cell is configured with a `neighbor` command (either none was configured, or all configured
+neighbors have been removed again), a cell automatically lists all of the local-BSS cells as neighbors.
+These are implicit mappings in terms of the legacy neighbor configuration scheme, and re-using ARFCN+BSIC
+combinations within a BSS will not work well this way.
+
+As soon as the first explicit neighbor relation is added to a cell, the legacy behavior is switched off,
+and only explicit neighbors are in effect.
+
+NOTE: If a cell is required to not have any neighbors, it is recommended to rather switch off handover
+for that cell with `handover 0`. An alternative solution is to set `neighbor-list mode manual` and not
+configure any `neighbor-list` entries.
+
 ==== Local-BSS Neighbors
 
 Local neighbors can be configured by just the local BTS number, or by LAC+CI,
