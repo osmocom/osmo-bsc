@@ -32,6 +32,7 @@
 #include <osmocom/core/msgb.h>
 #include <osmocom/core/socket.h>
 #include <osmocom/core/talloc.h>
+#include <osmocom/core/utils.h>
 #include <osmocom/bsc/gsm_data.h>
 #include <osmocom/bsc/abis_nm.h>
 #include <osmocom/bsc/abis_rsl.h>
@@ -494,7 +495,7 @@ static void ipaccess_sign_link_reject(const struct ipaccess_unit *dev, const str
 			return;
 		entry->site_id = site_id;
 		entry->bts_id = bts_id;
-		strncpy(entry->ip, ip, sizeof(entry->ip));
+		osmo_strlcpy(entry->ip, ip, sizeof(entry->ip));
 	}
 
 	/* Add to beginning with current timestamp */
