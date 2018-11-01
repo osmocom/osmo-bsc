@@ -227,6 +227,15 @@ void lcls_apply_config(struct gsm_subscriber_connection *conn)
 	osmo_fsm_inst_dispatch(conn->lcls.fi, LCLS_EV_APPLY_CFG_CSC, NULL);
 }
 
+/* Close the loop for LCLS using MGCP */
+static inline void lcls_mdcx(const struct gsm_subscriber_connection *conn, struct mgcp_conn_peer *mdcx_info)
+{
+	mgcp_pick_codec(mdcx_info, conn->lchan, false);
+
+	mgw_endpoint_ci_request(conn->user_plane.mgw_endpoint_ci_msc, MGCP_VERB_MDCX, mdcx_info,
+				NULL, 0, 0, NULL);
+}
+
 static void lcls_break_local_switching(struct gsm_subscriber_connection *conn)
 {
 	struct mgcp_conn_peer mdcx_info;
@@ -242,11 +251,7 @@ static void lcls_break_local_switching(struct gsm_subscriber_connection *conn)
 		.port = conn->user_plane.msc_assigned_rtp_port,
 	};
 	osmo_strlcpy(mdcx_info.addr, conn->user_plane.msc_assigned_rtp_addr, sizeof(mdcx_info.addr));
-	mgcp_pick_codec(&mdcx_info, conn->lchan, false);
-
-	mgw_endpoint_ci_request(conn->user_plane.mgw_endpoint_ci_msc,
-				MGCP_VERB_MDCX, &mdcx_info,
-				NULL, 0, 0, NULL);
+	lcls_mdcx(conn, &mdcx_info);
 }
 
 static bool lcls_enable_possible(struct gsm_subscriber_connection *conn)
@@ -596,10 +601,7 @@ static void lcls_locally_switched_onenter(struct osmo_fsm_inst *fi, uint32_t pre
 	mdcx_info = *other_mgw_info;
 	/* Make sure the request doesn't want to use the other side's endpoint string. */
 	mdcx_info.endpoint[0] = 0;
-	mgcp_pick_codec(&mdcx_info, conn->lchan, false);
-	mgw_endpoint_ci_request(conn->user_plane.mgw_endpoint_ci_msc,
-				MGCP_VERB_MDCX, &mdcx_info,
-				NULL, 0, 0, NULL);
+	lcls_mdcx(conn, &mdcx_info);
 }
 
 static void lcls_locally_switched_wait_break_fn(struct osmo_fsm_inst *fi, uint32_t event, void *data)
