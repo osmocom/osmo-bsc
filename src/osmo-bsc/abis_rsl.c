@@ -901,7 +901,7 @@ static int rsl_rx_conn_fail(struct msgb *msg)
 	 * the connection will presumably be torn down and lead to an lchan release. During initial
 	 * Channel Request from the MS, an lchan has no conn yet, so in that case release now. */
 	if (!lchan->conn) {
-		lchan_release(lchan, false, true, *cause_p);
+		lchan_release(lchan, false, false, true, *cause_p);
 	} else
 		osmo_fsm_inst_dispatch(lchan->conn->fi, GSCON_EV_RSL_CONN_FAIL, (void*)cause_p);
 

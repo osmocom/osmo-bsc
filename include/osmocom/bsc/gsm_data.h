@@ -514,6 +514,7 @@ struct gsm_lchan {
 	 * flag, so that the lchan will gracefully release at the next sensible junction. */
 	bool release_requested;
 	bool deact_sacch;
+	bool do_rr_release;
 
 	char *last_error;
 

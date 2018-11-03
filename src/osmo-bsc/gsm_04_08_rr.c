@@ -942,7 +942,7 @@ int gsm0408_rcvmsg(struct msgb *msg, uint8_t link_id)
 		/* allocate a new connection */
 		lchan->conn = bsc_subscr_con_allocate(msg->lchan->ts->trx->bts->network);
 		if (!lchan->conn) {
-			lchan_release(lchan, false, true, RSL_ERR_EQUIPMENT_FAIL);
+			lchan_release(lchan, false, false, true, RSL_ERR_EQUIPMENT_FAIL);
 			return -1;
 		}
 		lchan->conn->lchan = lchan;

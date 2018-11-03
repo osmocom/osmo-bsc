@@ -152,7 +152,7 @@ static void forward_dtap(struct gsm_subscriber_connection *conn, struct msgb *ms
 
 /* Release an lchan in such a way that it doesn't fire events back to the conn. */
 static void gscon_release_lchan(struct gsm_subscriber_connection *conn, struct gsm_lchan *lchan,
-				bool do_sacch_deact, bool err, enum gsm48_rr_cause cause_rr)
+				bool do_sacch_deact, bool do_rr_release, bool err, enum gsm48_rr_cause cause_rr)
 {
 	if (!lchan || !conn)
 		return;
@@ -164,17 +164,17 @@ static void gscon_release_lchan(struct gsm_subscriber_connection *conn, struct g
 		conn->ho.new_lchan = NULL;
 	if (conn->assignment.new_lchan == lchan)
 		conn->assignment.new_lchan = NULL;
-	lchan_release(lchan, do_sacch_deact, err, cause_rr);
+	lchan_release(lchan, do_sacch_deact, do_rr_release, err, cause_rr);
 }
 
-void gscon_release_lchans(struct gsm_subscriber_connection *conn, bool do_sacch_deact)
+void gscon_release_lchans(struct gsm_subscriber_connection *conn, bool do_sacch_deact, bool do_rr_release)
 {
 	if (conn->ho.fi)
 		handover_end(conn, HO_RESULT_CONN_RELEASE);
 
 	assignment_reset(conn);
 
-	gscon_release_lchan(conn, conn->lchan, do_sacch_deact, false, 0);
+	gscon_release_lchan(conn, conn->lchan, do_sacch_deact, do_rr_release, false, 0);
 }
 
 static void handle_bssap_n_connect(struct osmo_fsm_inst *fi, struct osmo_scu_prim *scu_prim)
@@ -620,7 +620,7 @@ void gscon_change_primary_lchan(struct gsm_subscriber_connection *conn, struct g
 		osmo_fsm_inst_dispatch(conn->lchan->fi_rtp, LCHAN_RTP_EV_ESTABLISHED, 0);
 
 	if (old_lchan && (old_lchan != new_lchan))
-		gscon_release_lchan(conn, old_lchan, false, false, 0);
+		gscon_release_lchan(conn, old_lchan, false, false, false, 0);
 }
 
 void gscon_lchan_releasing(struct gsm_subscriber_connection *conn, struct gsm_lchan *lchan)
@@ -716,7 +716,7 @@ static void gscon_fsm_allstate(struct osmo_fsm_inst *fi, uint32_t event, void *d
 		if (conn->fi->state != ST_CLEARING)
 			osmo_fsm_inst_state_chg(fi, ST_CLEARING, 60, 999);
 		LOGPFSML(fi, LOGL_DEBUG, "Releasing all lchans (if any) after BSSMAP Clear Command\n");
-		gscon_release_lchans(conn, true);
+		gscon_release_lchans(conn, true, true);
 		/* FIXME: Release all terestrial resources in ST_CLEARING */
 		/* According to 3GPP 48.008 3.1.9.1. "The BSS need not wait for the radio channel
 		 * release to be completed or for the guard timer to expire before returning the
@@ -792,7 +792,7 @@ static void gscon_pre_term(struct osmo_fsm_inst *fi, enum osmo_fsm_term_cause ca
 	}
 
 	LOGPFSML(fi, LOGL_DEBUG, "Releasing all lchans (if any) because this conn is terminating\n");
-	gscon_release_lchans(conn, false);
+	gscon_release_lchans(conn, false, true);
 
 	/* drop pending messages */
 	gscon_dtap_queue_flush(conn, 0);
@@ -806,7 +806,7 @@ static int gscon_timer_cb(struct osmo_fsm_inst *fi)
 
 	switch (fi->T) {
 	case 993210:
-		gscon_release_lchan(conn, conn->lchan, false, true, RSL_ERR_INTERWORKING);
+		gscon_release_lchan(conn, conn->lchan, false, true, true, RSL_ERR_INTERWORKING);
 
 		/* MSC has not responded/confirmed connection with CC, this
 		 * could indicate a bad SCCP connection. We now inform the the

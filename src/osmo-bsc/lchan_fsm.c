@@ -156,14 +156,14 @@ static void lchan_on_fully_established(struct gsm_lchan *lchan)
 			LOG_LCHAN(lchan, LOGL_ERROR,
 				  "lchan activation for assignment succeeded, but lchan has no conn:"
 				  " cannot trigger appropriate actions. Release.\n");
-			lchan_release(lchan, false, true, RSL_ERR_EQUIPMENT_FAIL);
+			lchan_release(lchan, false, false, true, RSL_ERR_EQUIPMENT_FAIL);
 			break;
 		}
 		if (!lchan->conn->assignment.fi) {
 			LOG_LCHAN(lchan, LOGL_ERROR,
 				  "lchan activation for assignment succeeded, but lchan has no"
 				  " assignment ongoing: cannot trigger appropriate actions. Release.\n");
-			lchan_release(lchan, false, true, RSL_ERR_EQUIPMENT_FAIL);
+			lchan_release(lchan, false, false, true, RSL_ERR_EQUIPMENT_FAIL);
 			break;
 		}
 		osmo_fsm_inst_dispatch(lchan->conn->assignment.fi, ASSIGNMENT_EV_LCHAN_ESTABLISHED,
@@ -177,14 +177,14 @@ static void lchan_on_fully_established(struct gsm_lchan *lchan)
 		if (!lchan->conn) {
 			LOG_LCHAN(lchan, LOGL_ERROR,
 				  "lchan activation for handover succeeded, but lchan has no conn\n");
-			lchan_release(lchan, false, true, RSL_ERR_EQUIPMENT_FAIL);
+			lchan_release(lchan, false, false, true, RSL_ERR_EQUIPMENT_FAIL);
 			break;
 		}
 		if (!lchan->conn->ho.fi) {
 			LOG_LCHAN(lchan, LOGL_ERROR,
 				  "lchan activation for handover succeeded, but lchan has no"
 				  " handover ongoing\n");
-			lchan_release(lchan, false, true, RSL_ERR_EQUIPMENT_FAIL);
+			lchan_release(lchan, false, false, true, RSL_ERR_EQUIPMENT_FAIL);
 			break;
 		}
 		osmo_fsm_inst_dispatch(lchan->conn->ho.fi, HO_EV_LCHAN_ESTABLISHED, lchan);
@@ -720,14 +720,14 @@ static void lchan_fsm_post_activ_ack(struct osmo_fsm_inst *fi)
 			LOG_LCHAN(lchan, LOGL_ERROR,
 				  "lchan activation for assignment succeeded, but lchan has no conn:"
 				  " cannot trigger appropriate actions. Release.\n");
-			lchan_release(lchan, false, true, RSL_ERR_EQUIPMENT_FAIL);
+			lchan_release(lchan, false, false, true, RSL_ERR_EQUIPMENT_FAIL);
 			break;
 		}
 		if (!lchan->conn->assignment.fi) {
 			LOG_LCHAN(lchan, LOGL_ERROR,
 				  "lchan activation for assignment succeeded, but lchan has no"
 				  " assignment ongoing: cannot trigger appropriate actions. Release.\n");
-			lchan_release(lchan, false, true, RSL_ERR_EQUIPMENT_FAIL);
+			lchan_release(lchan, false, false, true, RSL_ERR_EQUIPMENT_FAIL);
 			break;
 		}
 		/* After the Chan Activ Ack, the MS expects to receive an RR Assignment Command.
@@ -740,14 +740,14 @@ static void lchan_fsm_post_activ_ack(struct osmo_fsm_inst *fi)
 			LOG_LCHAN(lchan, LOGL_ERROR,
 				  "lchan activation for handover succeeded, but lchan has no conn:"
 				  " cannot trigger appropriate actions. Release.\n");
-			lchan_release(lchan, false, true, RSL_ERR_EQUIPMENT_FAIL);
+			lchan_release(lchan, false, false, true, RSL_ERR_EQUIPMENT_FAIL);
 			break;
 		}
 		if (!lchan->conn->ho.fi) {
 			LOG_LCHAN(lchan, LOGL_ERROR,
 				  "lchan activation for handover succeeded, but lchan has no"
 				  " handover ongoing: cannot trigger appropriate actions. Release.\n");
-			lchan_release(lchan, false, true, RSL_ERR_EQUIPMENT_FAIL);
+			lchan_release(lchan, false, false, true, RSL_ERR_EQUIPMENT_FAIL);
 			break;
 		}
 		/* After the Chan Activ Ack of the new lchan, send the MS an RR Handover Command on the
@@ -937,7 +937,7 @@ static void lchan_fsm_wait_rll_rtp_released_onenter(struct osmo_fsm_inst *fi, ui
 		if (lchan->sapis[sapi])
 			LOG_LCHAN(lchan, LOGL_DEBUG, "SAPI[%d] = %d\n", sapi, lchan->sapis[sapi]);
 
-	if (lchan->conn && lchan->sapis[0] != LCHAN_SAPI_UNUSED)
+	if (lchan->do_rr_release && lchan->sapis[0] != LCHAN_SAPI_UNUSED)
 		gsm48_send_rr_release(lchan);
 
 	if (lchan->fi_rtp)
@@ -1291,7 +1291,7 @@ int lchan_fsm_timer_cb(struct osmo_fsm_inst *fi)
 	}
 }
 
-void lchan_release(struct gsm_lchan *lchan, bool sacch_deact,
+void lchan_release(struct gsm_lchan *lchan, bool sacch_deact, bool do_rr_release,
 		   bool err, enum gsm48_rr_cause cause_rr)
 {
 	if (!lchan || !lchan->fi)
@@ -1305,6 +1305,7 @@ void lchan_release(struct gsm_lchan *lchan, bool sacch_deact,
 	lchan->release_in_error = err;
 	lchan->rsl_error_cause = cause_rr;
 	lchan->deact_sacch = sacch_deact;
+	lchan->do_rr_release = do_rr_release;
 
 	/* States waiting for events will notice the desire to release when done waiting, so it is enough
 	 * to mark for release. */

@@ -49,7 +49,7 @@ enum lchan_fsm_event {
 void lchan_fsm_init();
 
 void lchan_fsm_alloc(struct gsm_lchan *lchan);
-void lchan_release(struct gsm_lchan *lchan, bool sacch_deact,
+void lchan_release(struct gsm_lchan *lchan, bool do_deact_sacch, bool do_rr_release,
 		   bool err, enum gsm48_rr_cause cause_rr);
 
 struct lchan_activate_info {

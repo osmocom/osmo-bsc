@@ -4588,7 +4588,7 @@ DEFUN(lchan_act, lchan_act_cmd,
 		}
 		vty_out(vty, "%% Asking for release of %s in state %s%s", gsm_lchan_name(lchan),
 			osmo_fsm_inst_state_name(lchan->fi), VTY_NEWLINE);
-		lchan_release(lchan, false, false, 0);
+		lchan_release(lchan, false, !!(lchan->conn), false, 0);
 	}
 
 	return CMD_SUCCESS;

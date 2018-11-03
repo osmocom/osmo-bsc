@@ -243,7 +243,7 @@ static void handover_reset(struct gsm_subscriber_connection *conn)
 	struct mgwep_ci *ci;
 	if (conn->ho.new_lchan)
 		/* New lchan was activated but never passed to a conn */
-		lchan_release(conn->ho.new_lchan, true, true, RSL_ERR_EQUIPMENT_FAIL);
+		lchan_release(conn->ho.new_lchan, true, false, true, RSL_ERR_EQUIPMENT_FAIL);
 
 	ci = conn->ho.created_ci_for_msc;
 	if (ci) {
@@ -725,7 +725,7 @@ void handover_end(struct gsm_subscriber_connection *conn, enum handover_result r
 				/* 3GPP TS 48.008 3.1.5.3.3 "Abnormal Conditions": if neither MS reports
 				 * HO Failure nor the MSC sends a Clear Command, we should release the
 				 * dedicated radio resources and send a Clear Request to the MSC. */
-				lchan_release(conn->lchan, false, true, GSM48_RR_CAUSE_ABNORMAL_TIMER);
+				lchan_release(conn->lchan, false, true, true, GSM48_RR_CAUSE_ABNORMAL_TIMER);
 				/* Once the channel release is through, the BSSMAP Clear will follow. */
 				break;
 			}
@@ -756,7 +756,7 @@ void handover_end(struct gsm_subscriber_connection *conn, enum handover_result r
 	/* Detach the new_lchan last, so we can still see it in above logging */
 	if (ho->new_lchan) {
 		/* Release new lchan, it didn't work out */
-		lchan_release(ho->new_lchan, false, true, RSL_ERR_EQUIPMENT_FAIL);
+		lchan_release(ho->new_lchan, false, false, true, RSL_ERR_EQUIPMENT_FAIL);
 		ho->new_lchan = NULL;
 	}
 
