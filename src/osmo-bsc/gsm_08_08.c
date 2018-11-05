@@ -366,7 +366,7 @@ int bsc_compl_l3(struct gsm_subscriber_connection *conn, struct msgb *msg, uint1
 		return -1;
 	}
 
-	return complete_layer3(conn, msg, msc);
+	return complete_layer3(conn, msg, msc) ? 0 : -2;
 }
 
 static int handle_page_resp(struct gsm_subscriber_connection *conn, struct msgb *msg)
