@@ -927,6 +927,7 @@ static void dispatch_dtap(struct gsm_subscriber_connection *conn,
 int gsm0408_rcvmsg(struct msgb *msg, uint8_t link_id)
 {
 	struct gsm_lchan *lchan;
+	int rc;
 
 	lchan = msg->lchan;
 	if (!lchan_may_receive_data(lchan)) {
@@ -948,7 +949,11 @@ int gsm0408_rcvmsg(struct msgb *msg, uint8_t link_id)
 		lchan->conn->lchan = lchan;
 
 		/* fwd via bsc_api to send COMPLETE L3 INFO to MSC */
-		bsc_compl_l3(lchan->conn, msg, 0);
+		rc = bsc_compl_l3(lchan->conn, msg, 0);
+		if (rc < 0) {
+			gscon_release_lchans(lchan->conn, true);
+			return rc;
+		}
 		/* conn shall release lchan on teardown, also if this Layer 3 Complete is rejected. */
 	}
 
