@@ -85,12 +85,6 @@
         <param name='length' doc='Set number of lines on a screen' />
       </params>
     </command>
-    <command id='echo .MESSAGE'>
-      <params>
-        <param name='echo' doc='Echo a message back to the vty' />
-        <param name='.MESSAGE' doc='The message to echo' />
-      </params>
-    </command>
     <command id='who'>
       <params>
         <param name='who' doc='Display who is on vty' />
@@ -125,6 +119,12 @@
         <param name='counters' doc='Generate table of all registered counters' />
       </params>
     </command>
+    <command id='show rate-counters'>
+      <params>
+        <param name='show' doc='Show running system information' />
+        <param name='rate-counters' doc='Show all rate counters' />
+      </params>
+    </command>
     <command id='show network'>
       <params>
         <param name='show' doc='Show running system information' />
@@ -136,6 +136,12 @@
         <param name='show' doc='Show running system information' />
         <param name='bts' doc='Display information about a BTS' />
         <param name='[&lt;0-255&gt;]' doc='BTS number' />
+      </params>
+    </command>
+    <command id='show rejected-bts'>
+      <params>
+        <param name='show' doc='Show running system information' />
+        <param name='rejected-bts' doc='Display recently rejected BTS devices' />
       </params>
     </command>
     <command id='show trx [&lt;0-255&gt;] [&lt;0-255&gt;]'>
@@ -182,22 +188,10 @@
         <param name='conns' doc='Display currently active subscriber connections' />
       </params>
     </command>
-    <command id='handover any'>
-      <params>
-        <param name='handover' doc='Manually trigger handover (for debugging)' />
-        <param name='any' doc='Pick any actively used TCH/F or TCH/H lchan and handover to any other BTS. This is likely to fail if not all BTS are guaranteed to be reachable by the MS.' />
-      </params>
-    </command>
-    <command id='assignment any'>
-      <params>
-        <param name='assignment' doc='Manually trigger assignment (for debugging)' />
-        <param name='any' doc='Pick any actively used TCH/F or TCH/H lchan and re-assign within the same BTS. This will fail if no lchans of the same type are available besides the used one.' />
-      </params>
-    </command>
     <command id='show paging [&lt;0-255&gt;]'>
       <params>
         <param name='show' doc='Show running system information' />
-        <param name='paging' doc='Display information about paging reuqests of a BTS' />
+        <param name='paging' doc='Display information about paging requests of a BTS' />
         <param name='[&lt;0-255&gt;]' doc='BTS Number' />
       </params>
     </command>
@@ -282,7 +276,7 @@
         <param name='1' doc='Prefix each log message with the log level name' />
       </params>
     </command>
-    <command id='logging print file (0|1|basename)'>
+    <command id='logging print file (0|1|basename) [last]'>
       <params>
         <param name='logging' doc='Configure logging' />
         <param name='print' doc='Log output settings' />
@@ -290,6 +284,7 @@
         <param name='0' doc='Don&apos;t prefix each log message' />
         <param name='1' doc='Prefix each log message with the source file and line' />
         <param name='basename' doc='Prefix each log message with the source file&apos;s basename (strip leading paths) and line' />
+        <param name='[last]' doc='Log source file info at the end of a log line. If omitted, log source file info just before the log text.' />
       </params>
     </command>
     <command id='logging set-log-mask MASK'>
@@ -299,30 +294,18 @@
         <param name='MASK' doc='List of logging categories to log, e.g. &apos;abc:mno:xyz&apos;. Available log categories depend on the specific application, refer to the &apos;logging level&apos; command. Optionally add individual log levels like &apos;abc,1:mno,3:xyz,5&apos;, where the level numbers are LOGL_DEBUG=1 LOGL_INFO=3 LOGL_NOTICE=5 LOGL_ERROR=7 LOGL_FATAL=8' />
       </params>
     </command>
-    <command id='logging set log mask MASK'>
-      <params>
-        <param name='logging' doc='Configure logging' />
-        <param name='set' doc='Decide which categories to output.' />
-        <param name='log' doc='Log commands' />
-        <param name='mask' doc='Mask commands' />
-        <param name='MASK' doc='&apos;set log mask&apos; is deprecated, please refer to the docs of &apos;set-log-mask&apos; instead' />
-      </params>
-    </command>
-    <command id='logging level (all|rll|cc|mm|rr|rsl|nm|pag|meas|msc|mgcp|ho|hodec|ref|nat|ctrl|filter|pcu|lglobal|llapd|linp|lmux|lmi|lmib|lsms|lctrl|lgtp|lstats|lgsup|loap|lss7|lsccp|lsua|lm3ua|lmgcp|ljibuf) (everything|debug|info|notice|error|fatal)'>
+    <command id='logging level (rll|mm|rr|rsl|nm|pag|meas|msc|ho|hodec|ref|nat|ctrl|filter|pcu|lcls|chan|ts|as|lglobal|llapd|linp|lmux|lmi|lmib|lsms|lctrl|lgtp|lstats|lgsup|loap|lss7|lsccp|lsua|lm3ua|lmgcp|ljibuf) (debug|info|notice|error|fatal)'>
       <params>
         <param name='logging' doc='Configure logging' />
         <param name='level' doc='Set the log level for a specified category' />
-        <param name='all' doc='Global setting for all subsystems' />
         <param name='rll' doc='A-bis Radio Link Layer (RLL)' />
-        <param name='cc' doc='Layer3 Call Control (CC)' />
         <param name='mm' doc='Layer3 Mobility Management (MM)' />
         <param name='rr' doc='Layer3 Radio Resource (RR)' />
-        <param name='rsl' doc='A-bis Radio Siganlling Link (RSL)' />
+        <param name='rsl' doc='A-bis Radio Signalling Link (RSL)' />
         <param name='nm' doc='A-bis Network Management / O&amp;M (NM/OML)' />
         <param name='pag' doc='Paging Subsystem' />
         <param name='meas' doc='Radio Measurement Processing' />
         <param name='msc' doc='Mobile Switching Center' />
-        <param name='mgcp' doc='Media Gateway Control Protocol' />
         <param name='ho' doc='Hand-Over Process' />
         <param name='hodec' doc='Hand-Over Decision' />
         <param name='ref' doc='Reference Counting' />
@@ -330,6 +313,10 @@
         <param name='ctrl' doc='Control interface' />
         <param name='filter' doc='BSC/NAT IMSI based filtering' />
         <param name='pcu' doc='PCU Interface' />
+        <param name='lcls' doc='Local Call, Local Switch' />
+        <param name='chan' doc='lchan FSM' />
+        <param name='ts' doc='timeslot FSM' />
+        <param name='as' doc='assignment FSM' />
         <param name='lglobal' doc='Library-internal global log family' />
         <param name='llapd' doc='LAPD in libosmogsm' />
         <param name='linp' doc='A-bis Intput Subsystem' />
@@ -348,12 +335,43 @@
         <param name='lm3ua' doc='libosmo-sigtran MTP3 User Adaptation' />
         <param name='lmgcp' doc='libosmo-mgcp Media Gateway Control Protocol' />
         <param name='ljibuf' doc='libosmo-netif Jitter Buffer' />
-        <param name='everything' doc='Don&apos;t use. It doesn&apos;t log anything' />
         <param name='debug' doc='Log debug messages and higher levels' />
         <param name='info' doc='Log informational messages and higher levels' />
         <param name='notice' doc='Log noticeable messages and higher levels' />
         <param name='error' doc='Log error messages and higher levels' />
         <param name='fatal' doc='Log only fatal messages' />
+      </params>
+    </command>
+    <command id='logging level set-all (debug|info|notice|error|fatal)'>
+      <params>
+        <param name='logging' doc='Configure logging' />
+        <param name='level' doc='Set the log level for a specified category' />
+        <param name='set-all' doc='Once-off set all categories to the given log level. There is no single command to take back these changes -- each category is set to the given level, period.' />
+        <param name='debug' doc='Log debug messages and higher levels' />
+        <param name='info' doc='Log informational messages and higher levels' />
+        <param name='notice' doc='Log noticeable messages and higher levels' />
+        <param name='error' doc='Log error messages and higher levels' />
+        <param name='fatal' doc='Log only fatal messages' />
+      </params>
+    </command>
+    <command id='logging level force-all (debug|info|notice|error|fatal)'>
+      <params>
+        <param name='logging' doc='Configure logging' />
+        <param name='level' doc='Set the log level for a specified category' />
+        <param name='force-all' doc='Globally force all logging categories to a specific level. This is released by the &apos;no logging level force-all&apos; command. Note: any &apos;logging level &lt;category&gt; &lt;level&gt;&apos; commands will have no visible effect after this, until the forced level is released.' />
+        <param name='debug' doc='Log debug messages and higher levels' />
+        <param name='info' doc='Log informational messages and higher levels' />
+        <param name='notice' doc='Log noticeable messages and higher levels' />
+        <param name='error' doc='Log error messages and higher levels' />
+        <param name='fatal' doc='Log only fatal messages' />
+      </params>
+    </command>
+    <command id='no logging level force-all'>
+      <params>
+        <param name='no' doc='Negate a command or set its defaults' />
+        <param name='logging' doc='Configure logging' />
+        <param name='level' doc='Set the log level for a specified category' />
+        <param name='force-all' doc='Release any globally forced log level set with &apos;logging level force-all &lt;level&gt;&apos;' />
       </params>
     </command>
     <command id='show logging vty'>
@@ -404,6 +422,26 @@
         <param name='DEPTH' doc='Specify required maximal depth value' />
         <param name='filter' doc='Filter chunks using regular expression' />
         <param name='REGEXP' doc='Regular expression' />
+      </params>
+    </command>
+    <command id='show timer [TNNNN]'>
+      <params>
+        <param name='show' doc='Show running system information' />
+        <param name='timer' doc='GSM Timers' />
+        <param name='[TNNNN]' doc='Specific timer to show, or all timers if omitted.' />
+      </params>
+    </command>
+    <command id='show bts &lt;0-255&gt; neighbor arfcn &lt;0-1023&gt; bsic (&lt;0-63&gt;|any)'>
+      <params>
+        <param name='show' doc='Show running system information' />
+        <param name='bts' doc='Display information about a BTS' />
+        <param name='&lt;0-255&gt;' doc='BTS number' />
+        <param name='neighbor' doc='Query which cell would be the target for this neighbor ARFCN+BSIC' />
+        <param name='arfcn' doc='ARFCN of neighbor cell' />
+        <param name='&lt;0-1023&gt;' doc='ARFCN value' />
+        <param name='bsic' doc='BSIC of neighbor cell' />
+        <param name='&lt;0-63&gt;' doc='BSIC value' />
+        <param name='any' doc='for all BSICs / use any BSIC in this ARFCN' />
       </params>
     </command>
     <command id='show e1_driver'>
@@ -537,6 +575,57 @@
         <param name='sua' doc='Display all SUA ASs' />
       </params>
     </command>
+    <command id='show cs7 instance &lt;0-15&gt; sccp addressbook'>
+      <params>
+        <param name='show' doc='Show running system information' />
+        <param name='cs7' doc='ITU-T Signaling System 7' />
+        <param name='instance' doc='An instance of the SS7 stack' />
+        <param name='&lt;0-15&gt;' doc='An instance of the SS7 stack' />
+        <param name='sccp' doc='Signalling Connection Control Part' />
+        <param name='addressbook' doc='List all SCCP addressbook entries' />
+      </params>
+    </command>
+    <command id='show cs7 instance &lt;0-15&gt; sccp users'>
+      <params>
+        <param name='show' doc='Show running system information' />
+        <param name='cs7' doc='ITU-T Signaling System 7' />
+        <param name='instance' doc='An instance of the SS7 stack' />
+        <param name='&lt;0-15&gt;' doc='An instance of the SS7 stack' />
+        <param name='sccp' doc='Signalling Connection Control Part' />
+        <param name='users' doc='Show List of SCCP Users registered' />
+      </params>
+    </command>
+    <command id='show cs7 instance &lt;0-15&gt; sccp ssn &lt;0-65535&gt;'>
+      <params>
+        <param name='show' doc='Show running system information' />
+        <param name='cs7' doc='ITU-T Signaling System 7' />
+        <param name='instance' doc='An instance of the SS7 stack' />
+        <param name='&lt;0-15&gt;' doc='An instance of the SS7 stack' />
+        <param name='sccp' doc='Signalling Connection Control Part' />
+        <param name='ssn' doc='Find an SCCP User registered for the given SSN' />
+        <param name='&lt;0-65535&gt;' doc='Subsystem Number (SSN)' />
+      </params>
+    </command>
+    <command id='show cs7 instance &lt;0-15&gt; sccp connections'>
+      <params>
+        <param name='show' doc='Show running system information' />
+        <param name='cs7' doc='ITU-T Signaling System 7' />
+        <param name='instance' doc='An instance of the SS7 stack' />
+        <param name='&lt;0-15&gt;' doc='An instance of the SS7 stack' />
+        <param name='sccp' doc='Signalling Connection Control Part' />
+        <param name='connections' doc='Show List of active SCCP connections' />
+      </params>
+    </command>
+    <command id='show cs7 instance &lt;0-15&gt; sccp timers'>
+      <params>
+        <param name='show' doc='Show running system information' />
+        <param name='cs7' doc='ITU-T Signaling System 7' />
+        <param name='instance' doc='An instance of the SS7 stack' />
+        <param name='&lt;0-15&gt;' doc='An instance of the SS7 stack' />
+        <param name='sccp' doc='Signaling Connection Control Part' />
+        <param name='timers' doc='Show List of SCCP timers' />
+      </params>
+    </command>
   </node>
   <node id='enable'>
     <name>enable</name>
@@ -590,12 +679,6 @@
         <param name='length' doc='Set number of lines on a screen' />
       </params>
     </command>
-    <command id='echo .MESSAGE'>
-      <params>
-        <param name='echo' doc='Echo a message back to the vty' />
-        <param name='.MESSAGE' doc='The message to echo' />
-      </params>
-    </command>
     <command id='who'>
       <params>
         <param name='who' doc='Display who is on vty' />
@@ -643,6 +726,12 @@
         <param name='counters' doc='Generate table of all registered counters' />
       </params>
     </command>
+    <command id='show rate-counters'>
+      <params>
+        <param name='show' doc='Show running system information' />
+        <param name='rate-counters' doc='Show all rate counters' />
+      </params>
+    </command>
     <command id='show network'>
       <params>
         <param name='show' doc='Show running system information' />
@@ -654,6 +743,12 @@
         <param name='show' doc='Show running system information' />
         <param name='bts' doc='Display information about a BTS' />
         <param name='[&lt;0-255&gt;]' doc='BTS number' />
+      </params>
+    </command>
+    <command id='show rejected-bts'>
+      <params>
+        <param name='show' doc='Show running system information' />
+        <param name='rejected-bts' doc='Display recently rejected BTS devices' />
       </params>
     </command>
     <command id='show trx [&lt;0-255&gt;] [&lt;0-255&gt;]'>
@@ -700,6 +795,21 @@
         <param name='conns' doc='Display currently active subscriber connections' />
       </params>
     </command>
+    <command id='show paging [&lt;0-255&gt;]'>
+      <params>
+        <param name='show' doc='Show running system information' />
+        <param name='paging' doc='Display information about paging requests of a BTS' />
+        <param name='[&lt;0-255&gt;]' doc='BTS Number' />
+      </params>
+    </command>
+    <command id='show paging-group &lt;0-255&gt; IMSI'>
+      <params>
+        <param name='show' doc='Show running system information' />
+        <param name='paging-group' doc='Display the paging group' />
+        <param name='&lt;0-255&gt;' doc='BTS Number' />
+        <param name='IMSI' doc='IMSI' />
+      </params>
+    </command>
     <command id='handover any'>
       <params>
         <param name='handover' doc='Manually trigger handover (for debugging)' />
@@ -712,19 +822,16 @@
         <param name='any' doc='Pick any actively used TCH/F or TCH/H lchan and re-assign within the same BTS. This will fail if no lchans of the same type are available besides the used one.' />
       </params>
     </command>
-    <command id='show paging [&lt;0-255&gt;]'>
+    <command id='handover any to arfcn &lt;0-1023&gt; bsic (&lt;0-63&gt;|any)'>
       <params>
-        <param name='show' doc='Show running system information' />
-        <param name='paging' doc='Display information about paging reuqests of a BTS' />
-        <param name='[&lt;0-255&gt;]' doc='BTS Number' />
-      </params>
-    </command>
-    <command id='show paging-group &lt;0-255&gt; IMSI'>
-      <params>
-        <param name='show' doc='Show running system information' />
-        <param name='paging-group' doc='Display the paging group' />
-        <param name='&lt;0-255&gt;' doc='BTS Number' />
-        <param name='IMSI' doc='IMSI' />
+        <param name='handover' doc='Manually trigger handover (for debugging)' />
+        <param name='any' doc='Pick any actively used TCH/F or TCH/H lchan to handover to another cell. This is likely to fail outside of a lab setup where you are certain that all MS are able to see the target cell.' />
+        <param name='to' doc='&apos;to&apos;' />
+        <param name='arfcn' doc='ARFCN of neighbor cell' />
+        <param name='&lt;0-1023&gt;' doc='ARFCN value' />
+        <param name='bsic' doc='BSIC of neighbor cell' />
+        <param name='&lt;0-63&gt;' doc='BSIC value' />
+        <param name='any' doc='for all BSICs / use any BSIC in this ARFCN' />
       </params>
     </command>
     <command id='logging enable'>
@@ -800,7 +907,7 @@
         <param name='1' doc='Prefix each log message with the log level name' />
       </params>
     </command>
-    <command id='logging print file (0|1|basename)'>
+    <command id='logging print file (0|1|basename) [last]'>
       <params>
         <param name='logging' doc='Configure logging' />
         <param name='print' doc='Log output settings' />
@@ -808,6 +915,7 @@
         <param name='0' doc='Don&apos;t prefix each log message' />
         <param name='1' doc='Prefix each log message with the source file and line' />
         <param name='basename' doc='Prefix each log message with the source file&apos;s basename (strip leading paths) and line' />
+        <param name='[last]' doc='Log source file info at the end of a log line. If omitted, log source file info just before the log text.' />
       </params>
     </command>
     <command id='logging set-log-mask MASK'>
@@ -817,30 +925,18 @@
         <param name='MASK' doc='List of logging categories to log, e.g. &apos;abc:mno:xyz&apos;. Available log categories depend on the specific application, refer to the &apos;logging level&apos; command. Optionally add individual log levels like &apos;abc,1:mno,3:xyz,5&apos;, where the level numbers are LOGL_DEBUG=1 LOGL_INFO=3 LOGL_NOTICE=5 LOGL_ERROR=7 LOGL_FATAL=8' />
       </params>
     </command>
-    <command id='logging set log mask MASK'>
-      <params>
-        <param name='logging' doc='Configure logging' />
-        <param name='set' doc='Decide which categories to output.' />
-        <param name='log' doc='Log commands' />
-        <param name='mask' doc='Mask commands' />
-        <param name='MASK' doc='&apos;set log mask&apos; is deprecated, please refer to the docs of &apos;set-log-mask&apos; instead' />
-      </params>
-    </command>
-    <command id='logging level (all|rll|cc|mm|rr|rsl|nm|pag|meas|msc|mgcp|ho|hodec|ref|nat|ctrl|filter|pcu|lglobal|llapd|linp|lmux|lmi|lmib|lsms|lctrl|lgtp|lstats|lgsup|loap|lss7|lsccp|lsua|lm3ua|lmgcp|ljibuf) (everything|debug|info|notice|error|fatal)'>
+    <command id='logging level (rll|mm|rr|rsl|nm|pag|meas|msc|ho|hodec|ref|nat|ctrl|filter|pcu|lcls|chan|ts|as|lglobal|llapd|linp|lmux|lmi|lmib|lsms|lctrl|lgtp|lstats|lgsup|loap|lss7|lsccp|lsua|lm3ua|lmgcp|ljibuf) (debug|info|notice|error|fatal)'>
       <params>
         <param name='logging' doc='Configure logging' />
         <param name='level' doc='Set the log level for a specified category' />
-        <param name='all' doc='Global setting for all subsystems' />
         <param name='rll' doc='A-bis Radio Link Layer (RLL)' />
-        <param name='cc' doc='Layer3 Call Control (CC)' />
         <param name='mm' doc='Layer3 Mobility Management (MM)' />
         <param name='rr' doc='Layer3 Radio Resource (RR)' />
-        <param name='rsl' doc='A-bis Radio Siganlling Link (RSL)' />
+        <param name='rsl' doc='A-bis Radio Signalling Link (RSL)' />
         <param name='nm' doc='A-bis Network Management / O&amp;M (NM/OML)' />
         <param name='pag' doc='Paging Subsystem' />
         <param name='meas' doc='Radio Measurement Processing' />
         <param name='msc' doc='Mobile Switching Center' />
-        <param name='mgcp' doc='Media Gateway Control Protocol' />
         <param name='ho' doc='Hand-Over Process' />
         <param name='hodec' doc='Hand-Over Decision' />
         <param name='ref' doc='Reference Counting' />
@@ -848,6 +944,10 @@
         <param name='ctrl' doc='Control interface' />
         <param name='filter' doc='BSC/NAT IMSI based filtering' />
         <param name='pcu' doc='PCU Interface' />
+        <param name='lcls' doc='Local Call, Local Switch' />
+        <param name='chan' doc='lchan FSM' />
+        <param name='ts' doc='timeslot FSM' />
+        <param name='as' doc='assignment FSM' />
         <param name='lglobal' doc='Library-internal global log family' />
         <param name='llapd' doc='LAPD in libosmogsm' />
         <param name='linp' doc='A-bis Intput Subsystem' />
@@ -866,12 +966,43 @@
         <param name='lm3ua' doc='libosmo-sigtran MTP3 User Adaptation' />
         <param name='lmgcp' doc='libosmo-mgcp Media Gateway Control Protocol' />
         <param name='ljibuf' doc='libosmo-netif Jitter Buffer' />
-        <param name='everything' doc='Don&apos;t use. It doesn&apos;t log anything' />
         <param name='debug' doc='Log debug messages and higher levels' />
         <param name='info' doc='Log informational messages and higher levels' />
         <param name='notice' doc='Log noticeable messages and higher levels' />
         <param name='error' doc='Log error messages and higher levels' />
         <param name='fatal' doc='Log only fatal messages' />
+      </params>
+    </command>
+    <command id='logging level set-all (debug|info|notice|error|fatal)'>
+      <params>
+        <param name='logging' doc='Configure logging' />
+        <param name='level' doc='Set the log level for a specified category' />
+        <param name='set-all' doc='Once-off set all categories to the given log level. There is no single command to take back these changes -- each category is set to the given level, period.' />
+        <param name='debug' doc='Log debug messages and higher levels' />
+        <param name='info' doc='Log informational messages and higher levels' />
+        <param name='notice' doc='Log noticeable messages and higher levels' />
+        <param name='error' doc='Log error messages and higher levels' />
+        <param name='fatal' doc='Log only fatal messages' />
+      </params>
+    </command>
+    <command id='logging level force-all (debug|info|notice|error|fatal)'>
+      <params>
+        <param name='logging' doc='Configure logging' />
+        <param name='level' doc='Set the log level for a specified category' />
+        <param name='force-all' doc='Globally force all logging categories to a specific level. This is released by the &apos;no logging level force-all&apos; command. Note: any &apos;logging level &lt;category&gt; &lt;level&gt;&apos; commands will have no visible effect after this, until the forced level is released.' />
+        <param name='debug' doc='Log debug messages and higher levels' />
+        <param name='info' doc='Log informational messages and higher levels' />
+        <param name='notice' doc='Log noticeable messages and higher levels' />
+        <param name='error' doc='Log error messages and higher levels' />
+        <param name='fatal' doc='Log only fatal messages' />
+      </params>
+    </command>
+    <command id='no logging level force-all'>
+      <params>
+        <param name='no' doc='Negate a command or set its defaults' />
+        <param name='logging' doc='Configure logging' />
+        <param name='level' doc='Set the log level for a specified category' />
+        <param name='force-all' doc='Release any globally forced log level set with &apos;logging level force-all &lt;level&gt;&apos;' />
       </params>
     </command>
     <command id='show logging vty'>
@@ -922,6 +1053,26 @@
         <param name='DEPTH' doc='Specify required maximal depth value' />
         <param name='filter' doc='Filter chunks using regular expression' />
         <param name='REGEXP' doc='Regular expression' />
+      </params>
+    </command>
+    <command id='show timer [TNNNN]'>
+      <params>
+        <param name='show' doc='Show running system information' />
+        <param name='timer' doc='GSM Timers' />
+        <param name='[TNNNN]' doc='Specific timer to show, or all timers if omitted.' />
+      </params>
+    </command>
+    <command id='show bts &lt;0-255&gt; neighbor arfcn &lt;0-1023&gt; bsic (&lt;0-63&gt;|any)'>
+      <params>
+        <param name='show' doc='Show running system information' />
+        <param name='bts' doc='Display information about a BTS' />
+        <param name='&lt;0-255&gt;' doc='BTS number' />
+        <param name='neighbor' doc='Query which cell would be the target for this neighbor ARFCN+BSIC' />
+        <param name='arfcn' doc='ARFCN of neighbor cell' />
+        <param name='&lt;0-1023&gt;' doc='ARFCN value' />
+        <param name='bsic' doc='BSIC of neighbor cell' />
+        <param name='&lt;0-63&gt;' doc='BSIC value' />
+        <param name='any' doc='for all BSICs / use any BSIC in this ARFCN' />
       </params>
     </command>
     <command id='drop bts connection &lt;0-65535&gt; (oml|rsl)'>
@@ -1247,6 +1398,57 @@
         <param name='all' doc='Display all ASs (default)' />
         <param name='m3ua' doc='Display all m3ua ASs' />
         <param name='sua' doc='Display all SUA ASs' />
+      </params>
+    </command>
+    <command id='show cs7 instance &lt;0-15&gt; sccp addressbook'>
+      <params>
+        <param name='show' doc='Show running system information' />
+        <param name='cs7' doc='ITU-T Signaling System 7' />
+        <param name='instance' doc='An instance of the SS7 stack' />
+        <param name='&lt;0-15&gt;' doc='An instance of the SS7 stack' />
+        <param name='sccp' doc='Signalling Connection Control Part' />
+        <param name='addressbook' doc='List all SCCP addressbook entries' />
+      </params>
+    </command>
+    <command id='show cs7 instance &lt;0-15&gt; sccp users'>
+      <params>
+        <param name='show' doc='Show running system information' />
+        <param name='cs7' doc='ITU-T Signaling System 7' />
+        <param name='instance' doc='An instance of the SS7 stack' />
+        <param name='&lt;0-15&gt;' doc='An instance of the SS7 stack' />
+        <param name='sccp' doc='Signalling Connection Control Part' />
+        <param name='users' doc='Show List of SCCP Users registered' />
+      </params>
+    </command>
+    <command id='show cs7 instance &lt;0-15&gt; sccp ssn &lt;0-65535&gt;'>
+      <params>
+        <param name='show' doc='Show running system information' />
+        <param name='cs7' doc='ITU-T Signaling System 7' />
+        <param name='instance' doc='An instance of the SS7 stack' />
+        <param name='&lt;0-15&gt;' doc='An instance of the SS7 stack' />
+        <param name='sccp' doc='Signalling Connection Control Part' />
+        <param name='ssn' doc='Find an SCCP User registered for the given SSN' />
+        <param name='&lt;0-65535&gt;' doc='Subsystem Number (SSN)' />
+      </params>
+    </command>
+    <command id='show cs7 instance &lt;0-15&gt; sccp connections'>
+      <params>
+        <param name='show' doc='Show running system information' />
+        <param name='cs7' doc='ITU-T Signaling System 7' />
+        <param name='instance' doc='An instance of the SS7 stack' />
+        <param name='&lt;0-15&gt;' doc='An instance of the SS7 stack' />
+        <param name='sccp' doc='Signalling Connection Control Part' />
+        <param name='connections' doc='Show List of active SCCP connections' />
+      </params>
+    </command>
+    <command id='show cs7 instance &lt;0-15&gt; sccp timers'>
+      <params>
+        <param name='show' doc='Show running system information' />
+        <param name='cs7' doc='ITU-T Signaling System 7' />
+        <param name='instance' doc='An instance of the SS7 stack' />
+        <param name='&lt;0-15&gt;' doc='An instance of the SS7 stack' />
+        <param name='sccp' doc='Signaling Connection Control Part' />
+        <param name='timers' doc='Show List of SCCP timers' />
       </params>
     </command>
   </node>
@@ -1577,7 +1779,7 @@
         <param name='1' doc='Prefix each log message with the log level name' />
       </params>
     </command>
-    <command id='logging print file (0|1|basename)'>
+    <command id='logging print file (0|1|basename) [last]'>
       <params>
         <param name='logging' doc='Configure logging' />
         <param name='print' doc='Log output settings' />
@@ -1585,23 +1787,21 @@
         <param name='0' doc='Don&apos;t prefix each log message' />
         <param name='1' doc='Prefix each log message with the source file and line' />
         <param name='basename' doc='Prefix each log message with the source file&apos;s basename (strip leading paths) and line' />
+        <param name='[last]' doc='Log source file info at the end of a log line. If omitted, log source file info just before the log text.' />
       </params>
     </command>
-    <command id='logging level (all|rll|cc|mm|rr|rsl|nm|pag|meas|msc|mgcp|ho|hodec|ref|nat|ctrl|filter|pcu|lglobal|llapd|linp|lmux|lmi|lmib|lsms|lctrl|lgtp|lstats|lgsup|loap|lss7|lsccp|lsua|lm3ua|lmgcp|ljibuf) (everything|debug|info|notice|error|fatal)'>
+    <command id='logging level (rll|mm|rr|rsl|nm|pag|meas|msc|ho|hodec|ref|nat|ctrl|filter|pcu|lcls|chan|ts|as|lglobal|llapd|linp|lmux|lmi|lmib|lsms|lctrl|lgtp|lstats|lgsup|loap|lss7|lsccp|lsua|lm3ua|lmgcp|ljibuf) (debug|info|notice|error|fatal)'>
       <params>
         <param name='logging' doc='Configure logging' />
         <param name='level' doc='Set the log level for a specified category' />
-        <param name='all' doc='Global setting for all subsystems' />
         <param name='rll' doc='A-bis Radio Link Layer (RLL)' />
-        <param name='cc' doc='Layer3 Call Control (CC)' />
         <param name='mm' doc='Layer3 Mobility Management (MM)' />
         <param name='rr' doc='Layer3 Radio Resource (RR)' />
-        <param name='rsl' doc='A-bis Radio Siganlling Link (RSL)' />
+        <param name='rsl' doc='A-bis Radio Signalling Link (RSL)' />
         <param name='nm' doc='A-bis Network Management / O&amp;M (NM/OML)' />
         <param name='pag' doc='Paging Subsystem' />
         <param name='meas' doc='Radio Measurement Processing' />
         <param name='msc' doc='Mobile Switching Center' />
-        <param name='mgcp' doc='Media Gateway Control Protocol' />
         <param name='ho' doc='Hand-Over Process' />
         <param name='hodec' doc='Hand-Over Decision' />
         <param name='ref' doc='Reference Counting' />
@@ -1609,6 +1809,10 @@
         <param name='ctrl' doc='Control interface' />
         <param name='filter' doc='BSC/NAT IMSI based filtering' />
         <param name='pcu' doc='PCU Interface' />
+        <param name='lcls' doc='Local Call, Local Switch' />
+        <param name='chan' doc='lchan FSM' />
+        <param name='ts' doc='timeslot FSM' />
+        <param name='as' doc='assignment FSM' />
         <param name='lglobal' doc='Library-internal global log family' />
         <param name='llapd' doc='LAPD in libosmogsm' />
         <param name='linp' doc='A-bis Intput Subsystem' />
@@ -1627,12 +1831,43 @@
         <param name='lm3ua' doc='libosmo-sigtran MTP3 User Adaptation' />
         <param name='lmgcp' doc='libosmo-mgcp Media Gateway Control Protocol' />
         <param name='ljibuf' doc='libosmo-netif Jitter Buffer' />
-        <param name='everything' doc='Don&apos;t use. It doesn&apos;t log anything' />
         <param name='debug' doc='Log debug messages and higher levels' />
         <param name='info' doc='Log informational messages and higher levels' />
         <param name='notice' doc='Log noticeable messages and higher levels' />
         <param name='error' doc='Log error messages and higher levels' />
         <param name='fatal' doc='Log only fatal messages' />
+      </params>
+    </command>
+    <command id='logging level set-all (debug|info|notice|error|fatal)'>
+      <params>
+        <param name='logging' doc='Configure logging' />
+        <param name='level' doc='Set the log level for a specified category' />
+        <param name='set-all' doc='Once-off set all categories to the given log level. There is no single command to take back these changes -- each category is set to the given level, period.' />
+        <param name='debug' doc='Log debug messages and higher levels' />
+        <param name='info' doc='Log informational messages and higher levels' />
+        <param name='notice' doc='Log noticeable messages and higher levels' />
+        <param name='error' doc='Log error messages and higher levels' />
+        <param name='fatal' doc='Log only fatal messages' />
+      </params>
+    </command>
+    <command id='logging level force-all (debug|info|notice|error|fatal)'>
+      <params>
+        <param name='logging' doc='Configure logging' />
+        <param name='level' doc='Set the log level for a specified category' />
+        <param name='force-all' doc='Globally force all logging categories to a specific level. This is released by the &apos;no logging level force-all&apos; command. Note: any &apos;logging level &lt;category&gt; &lt;level&gt;&apos; commands will have no visible effect after this, until the forced level is released.' />
+        <param name='debug' doc='Log debug messages and higher levels' />
+        <param name='info' doc='Log informational messages and higher levels' />
+        <param name='notice' doc='Log noticeable messages and higher levels' />
+        <param name='error' doc='Log error messages and higher levels' />
+        <param name='fatal' doc='Log only fatal messages' />
+      </params>
+    </command>
+    <command id='no logging level force-all'>
+      <params>
+        <param name='no' doc='Negate a command or set its defaults' />
+        <param name='logging' doc='Configure logging' />
+        <param name='level' doc='Set the log level for a specified category' />
+        <param name='force-all' doc='Release any globally forced log level set with &apos;logging level force-all &lt;level&gt;&apos;' />
       </params>
     </command>
     <command id='logging filter imsi IMSI'>
@@ -1903,15 +2138,6 @@
         <param name='NAME' doc='Name of AS' />
       </params>
     </command>
-    <command id='show cs7 instance &lt;0-15&gt; sccp-addressbook'>
-      <params>
-        <param name='show' doc='Show running system information' />
-        <param name='cs7' doc='ITU-T Signaling System 7' />
-        <param name='instance' doc='An instance of the SS7 stack' />
-        <param name='&lt;0-15&gt;' doc='An instance of the SS7 stack' />
-        <param name='sccp-addressbook' doc='List all SCCP addressbook entries' />
-      </params>
-    </command>
     <command id='sccp-address NAME'>
       <params>
         <param name='sccp-address' doc='Create/Modify an SCCP addressbook entry' />
@@ -1923,6 +2149,21 @@
         <param name='no' doc='Negate a command or set its defaults' />
         <param name='sccp-address' doc='Delete an SCCP addressbook entry' />
         <param name='NAME' doc='Name of the SCCP Address' />
+      </params>
+    </command>
+    <command id='sccp-timer (conn_est|ias|iar|rel|repeat_rel|int|guard|reset|reassembly) &lt;1-999999&gt;'>
+      <params>
+        <param name='sccp-timer' doc='Configure SCCP timer values, see ITU-T Q.714' />
+        <param name='conn_est' doc='Waiting for connection confirm message, 1 to 2 minutes (default: 60)' />
+        <param name='ias' doc='Send keep-alive: on an idle connection, delay before sending an Idle Timer message, 5 to 10 minutes (default: 420)' />
+        <param name='iar' doc='Receive keep-alive: on an idle connection, delay until considering a connection as stale, 11 to 21 minutes (default: 900)' />
+        <param name='rel' doc='Waiting for release complete message, 10 to 20 seconds (default: 10)' />
+        <param name='repeat_rel' doc='Waiting for release complete message; or to repeat sending released message after the initial expiry, 10 to 20 seconds (default: 10)' />
+        <param name='int' doc='Waiting for release complete message; or to release connection resources, freeze the LRN and alert a maintenance function after the initial expiry, extending to 1 minute (default: 60)' />
+        <param name='guard' doc='Waiting to resume normal procedure for temporary connection sections during the restart procedure, 23 to 25 minutes (default: 1380)' />
+        <param name='reset' doc='Waiting to release temporary connection section or alert maintenance function after reset request message is sent, 10 to 20 seconds (default: 10)' />
+        <param name='reassembly' doc='Waiting to receive all the segments of the remaining segments, single segmented message after receiving the first segment, 10 to 20 seconds (default: 10)' />
+        <param name='&lt;1-999999&gt;' doc='Timer value, in seconds' />
       </params>
     </command>
   </node>
@@ -2214,11 +2455,27 @@
         <param name='update' doc='Periodic Location Updating Interval' />
       </params>
     </command>
-    <command id='dyn_ts_allow_tch_f (0|1)'>
+    <command id='meas-feed destination ADDR &lt;0-65535&gt;'>
       <params>
-        <param name='dyn_ts_allow_tch_f' doc='Allow or disallow allocating TCH/F on TCH_F_TCH_H_PDCH timeslots' />
-        <param name='0' doc='Disallow TCH/F on TCH_F_TCH_H_PDCH (default)' />
-        <param name='1' doc='Allow TCH/F on TCH_F_TCH_H_PDCH' />
+        <param name='meas-feed' doc='Measurement Report export' />
+        <param name='destination' doc='Where to forward Measurement Report feeds' />
+        <param name='ADDR' doc='address or hostname' />
+        <param name='&lt;0-65535&gt;' doc='port number' />
+      </params>
+    </command>
+    <command id='meas-feed scenario NAME'>
+      <params>
+        <param name='meas-feed' doc='Measurement Report export' />
+        <param name='scenario' doc='Set a name to include in the Measurement Report feeds' />
+        <param name='NAME' doc='Name string, up to 31 characters' />
+      </params>
+    </command>
+    <command id='timer TNNNN (default|&lt;1-65535&gt;)'>
+      <params>
+        <param name='timer' doc='Configure GSM Timers' />
+        <param name='TNNNN' doc='T-number, optionally preceded by &apos;t&apos; or &apos;T&apos;.See also &apos;show timer&apos; for a list of available timers.' />
+        <param name='default' doc='Set to default timer value' />
+        <param name='&lt;1-65535&gt;' doc='Timer value' />
       </params>
     </command>
     <command id='neci (0|1)'>
@@ -2226,109 +2483,6 @@
         <param name='neci' doc='New Establish Cause Indication' />
         <param name='0' doc='Don&apos;t set the NECI bit' />
         <param name='1' doc='Set the NECI bit' />
-      </params>
-    </command>
-    <command id='timer t3101 (default|&lt;1-65535&gt;)'>
-      <params>
-        <param name='timer' doc='Configure GSM Timers' />
-        <param name='t3101' doc='Set the timeout value for IMMEDIATE ASSIGNMENT (default: 3 seconds)' />
-        <param name='default' doc='Set to default timer value (3 seconds)' />
-        <param name='&lt;1-65535&gt;' doc='Timer Value in seconds' />
-      </params>
-    </command>
-    <command id='timer t3103 (default|&lt;1-65535&gt;)'>
-      <params>
-        <param name='timer' doc='Configure GSM Timers' />
-        <param name='t3103' doc='Set the timeout value for HANDOVER (default: 5 seconds)' />
-        <param name='default' doc='Set to default timer value (5 seconds)' />
-        <param name='&lt;1-65535&gt;' doc='Timer Value in seconds' />
-      </params>
-    </command>
-    <command id='timer t3105 (default|&lt;1-65535&gt;)'>
-      <params>
-        <param name='timer' doc='Configure GSM Timers' />
-        <param name='t3105' doc='Set the timer for repetition of PHYSICAL INFORMATION (default: 100 seconds)' />
-        <param name='default' doc='Set to default timer value (100 seconds)' />
-        <param name='&lt;1-65535&gt;' doc='Timer Value in seconds' />
-      </params>
-    </command>
-    <command id='timer t3107 (default|&lt;1-65535&gt;)'>
-      <params>
-        <param name='timer' doc='Configure GSM Timers' />
-        <param name='t3107' doc='Currently not used (default: 5 seconds)' />
-        <param name='default' doc='Set to default timer value (5 seconds)' />
-        <param name='&lt;1-65535&gt;' doc='Timer Value in seconds' />
-      </params>
-    </command>
-    <command id='timer t3109 (default|&lt;1-65535&gt;)'>
-      <params>
-        <param name='timer' doc='Configure GSM Timers' />
-        <param name='t3109' doc='Set the RSL SACCH deactivation timeout (default: 5 seconds)' />
-        <param name='default' doc='Set to default timer value (5 seconds)' />
-        <param name='&lt;1-65535&gt;' doc='Timer Value in seconds' />
-      </params>
-    </command>
-    <command id='timer t3111 (default|&lt;1-65535&gt;)'>
-      <params>
-        <param name='timer' doc='Configure GSM Timers' />
-        <param name='t3111' doc='Set the RSL timeout to wait before releasing the RF Channel (default: 2 seconds)' />
-        <param name='default' doc='Set to default timer value (2 seconds)' />
-        <param name='&lt;1-65535&gt;' doc='Timer Value in seconds' />
-      </params>
-    </command>
-    <command id='timer t3113 (default|&lt;1-65535&gt;)'>
-      <params>
-        <param name='timer' doc='Configure GSM Timers' />
-        <param name='t3113' doc='Set the time to try paging a subscriber (default: 10 seconds)' />
-        <param name='default' doc='Set to default timer value (10 seconds)' />
-        <param name='&lt;1-65535&gt;' doc='Timer Value in seconds' />
-      </params>
-    </command>
-    <command id='timer t3115 (default|&lt;1-65535&gt;)'>
-      <params>
-        <param name='timer' doc='Configure GSM Timers' />
-        <param name='t3115' doc='Currently not used (default: 10 seconds)' />
-        <param name='default' doc='Set to default timer value (10 seconds)' />
-        <param name='&lt;1-65535&gt;' doc='Timer Value in seconds' />
-      </params>
-    </command>
-    <command id='timer t3117 (default|&lt;1-65535&gt;)'>
-      <params>
-        <param name='timer' doc='Configure GSM Timers' />
-        <param name='t3117' doc='Currently not used (default: 10 seconds)' />
-        <param name='default' doc='Set to default timer value (10 seconds)' />
-        <param name='&lt;1-65535&gt;' doc='Timer Value in seconds' />
-      </params>
-    </command>
-    <command id='timer t3119 (default|&lt;1-65535&gt;)'>
-      <params>
-        <param name='timer' doc='Configure GSM Timers' />
-        <param name='t3119' doc='Currently not used (default: 10 seconds)' />
-        <param name='default' doc='Set to default timer value (10 seconds)' />
-        <param name='&lt;1-65535&gt;' doc='Timer Value in seconds' />
-      </params>
-    </command>
-    <command id='timer t3122 (default|&lt;1-65535&gt;)'>
-      <params>
-        <param name='timer' doc='Configure GSM Timers' />
-        <param name='t3122' doc='Default waiting time (seconds) after IMM ASS REJECT (default: 10 seconds)' />
-        <param name='default' doc='Set to default timer value (10 seconds)' />
-        <param name='&lt;1-65535&gt;' doc='Timer Value in seconds' />
-      </params>
-    </command>
-    <command id='timer t3141 (default|&lt;1-65535&gt;)'>
-      <params>
-        <param name='timer' doc='Configure GSM Timers' />
-        <param name='t3141' doc='Currently not used (default: 10 seconds)' />
-        <param name='default' doc='Set to default timer value (10 seconds)' />
-        <param name='&lt;1-65535&gt;' doc='Timer Value in seconds' />
-      </params>
-    </command>
-    <command id='dtx-used (0|1)'>
-      <params>
-        <param name='dtx-used' doc='.HIDDEN' />
-        <param name='0' doc='Obsolete' />
-        <param name='1' doc='Obsolete' />
       </params>
     </command>
     <command id='paging any use tch (0|1)'>
@@ -2410,8 +2564,8 @@
         <param name='handover1' doc='Handover options for handover decision algorithm 1' />
         <param name='power' doc='Neighbor cell power triggering' />
         <param name='budget' doc='Neighbor cell power triggering' />
-        <param name='hysteresis' doc='How many dBm stronger must a neighbor be to become a HO candidate' />
-        <param name='&lt;0-999&gt;' doc='Neighbor&apos;s strength difference in dBm' />
+        <param name='hysteresis' doc='How many dB stronger must a neighbor be to become a HO candidate' />
+        <param name='&lt;0-999&gt;' doc='Neighbor&apos;s strength difference in dB' />
         <param name='default' doc='Use default (3), remove explicit setting on this node' />
       </params>
     </command>
@@ -2470,8 +2624,8 @@
         <param name='handover2' doc='Handover options for handover decision algorithm 2' />
         <param name='power' doc='Neighbor cell power triggering' />
         <param name='budget' doc='Neighbor cell power triggering' />
-        <param name='hysteresis' doc='How many dBm stronger must a neighbor be to become a HO candidate' />
-        <param name='&lt;0-999&gt;' doc='Neighbor&apos;s strength difference in dBm' />
+        <param name='hysteresis' doc='How many dB stronger must a neighbor be to become a HO candidate' />
+        <param name='&lt;0-999&gt;' doc='Neighbor&apos;s strength difference in dB' />
         <param name='default' doc='Use default (3), remove explicit setting on this node' />
       </params>
     </command>
@@ -2487,7 +2641,7 @@
     <command id='handover2 assignment (0|1|default)'>
       <params>
         <param name='handover2' doc='Handover options for handover decision algorithm 2' />
-        <param name='assignment' doc='Enable or disable in-call channel re-assignment (HO algo 2 only)' />
+        <param name='assignment' doc='Enable or disable in-call channel re-assignment' />
         <param name='0' doc='Disable in-call assignment' />
         <param name='1' doc='Enable in-call assignment' />
         <param name='default' doc='Use default (0), remove explicit setting on this node' />
@@ -2496,7 +2650,7 @@
     <command id='handover2 tdma-measurement (full|subset|default)'>
       <params>
         <param name='handover2' doc='Handover options for handover decision algorithm 2' />
-        <param name='tdma-measurement' doc='Define measurement set of TDMA frames (HO algo 2 only)' />
+        <param name='tdma-measurement' doc='Define measurement set of TDMA frames' />
         <param name='full' doc='Full set of 102/104 TDMA frames' />
         <param name='subset' doc='Sub set of 4 TDMA frames (SACCH)' />
         <param name='default' doc='Use default (subset), remove explicit setting on this node' />
@@ -2505,7 +2659,7 @@
     <command id='handover2 min rxlev (&lt;-110--50&gt;|default)'>
       <params>
         <param name='handover2' doc='Handover options for handover decision algorithm 2' />
-        <param name='min' doc='Minimum Level/Quality thresholds before triggering HO (HO algo 2 only)' />
+        <param name='min' doc='Minimum Level/Quality thresholds before triggering HO' />
         <param name='rxlev' doc='How weak may RxLev of an MS become before triggering HO' />
         <param name='&lt;-110--50&gt;' doc='minimum RxLev (dBm)' />
         <param name='default' doc='Use default (-100), remove explicit setting on this node' />
@@ -2514,34 +2668,34 @@
     <command id='handover2 min rxqual (&lt;0-7&gt;|default)'>
       <params>
         <param name='handover2' doc='Handover options for handover decision algorithm 2' />
-        <param name='min' doc='Minimum Level/Quality thresholds before triggering HO (HO algo 2 only)' />
+        <param name='min' doc='Minimum Level/Quality thresholds before triggering HO' />
         <param name='rxqual' doc='How bad may RxQual of an MS become before triggering HO' />
-        <param name='&lt;0-7&gt;' doc='minimum RxQual (dBm)' />
+        <param name='&lt;0-7&gt;' doc='minimum RxQual' />
         <param name='default' doc='Use default (5), remove explicit setting on this node' />
       </params>
     </command>
     <command id='handover2 afs-bias rxlev (&lt;0-20&gt;|default)'>
       <params>
         <param name='handover2' doc='Handover options for handover decision algorithm 2' />
-        <param name='afs-bias' doc='Configure bias to prefer AFS (AMR on TCH/F) over other codecs (HO algo 2 only)' />
+        <param name='afs-bias' doc='Configure bias to prefer AFS (AMR on TCH/F) over other codecs' />
         <param name='rxlev' doc='RxLev improvement bias for AFS over other codecs' />
-        <param name='&lt;0-20&gt;' doc='Virtual RxLev improvement (dBm)' />
+        <param name='&lt;0-20&gt;' doc='Virtual RxLev improvement (dB)' />
         <param name='default' doc='Use default (0), remove explicit setting on this node' />
       </params>
     </command>
     <command id='handover2 afs-bias rxqual (&lt;0-7&gt;|default)'>
       <params>
         <param name='handover2' doc='Handover options for handover decision algorithm 2' />
-        <param name='afs-bias' doc='Configure bias to prefer AFS (AMR on TCH/F) over other codecs (HO algo 2 only)' />
+        <param name='afs-bias' doc='Configure bias to prefer AFS (AMR on TCH/F) over other codecs' />
         <param name='rxqual' doc='RxQual improvement bias for AFS over other codecs' />
-        <param name='&lt;0-7&gt;' doc='Virtual RxQual improvement (dBm)' />
+        <param name='&lt;0-7&gt;' doc='Virtual RxQual improvement' />
         <param name='default' doc='Use default (0), remove explicit setting on this node' />
       </params>
     </command>
     <command id='handover2 min-free-slots tch/f (&lt;0-9999&gt;|default)'>
       <params>
         <param name='handover2' doc='Handover options for handover decision algorithm 2' />
-        <param name='min-free-slots' doc='Minimum free TCH timeslots before cell is considered congested (HO algo 2 only)' />
+        <param name='min-free-slots' doc='Minimum free TCH timeslots before cell is considered congested' />
         <param name='tch/f' doc='Minimum free TCH/F timeslots before cell is considered congested' />
         <param name='&lt;0-9999&gt;' doc='Number of TCH/F slots' />
         <param name='default' doc='Use default (0), remove explicit setting on this node' />
@@ -2550,7 +2704,7 @@
     <command id='handover2 min-free-slots tch/h (&lt;0-9999&gt;|default)'>
       <params>
         <param name='handover2' doc='Handover options for handover decision algorithm 2' />
-        <param name='min-free-slots' doc='Minimum free TCH timeslots before cell is considered congested (HO algo 2 only)' />
+        <param name='min-free-slots' doc='Minimum free TCH timeslots before cell is considered congested' />
         <param name='tch/h' doc='Minimum free TCH/H timeslots before cell is considered congested' />
         <param name='&lt;0-9999&gt;' doc='Number of TCH/H slots' />
         <param name='default' doc='Use default (0), remove explicit setting on this node' />
@@ -2559,7 +2713,7 @@
     <command id='handover2 max-handovers (&lt;1-9999&gt;|default)'>
       <params>
         <param name='handover2' doc='Handover options for handover decision algorithm 2' />
-        <param name='max-handovers' doc='Maximum number of concurrent handovers allowed per cell (HO algo 2 only)' />
+        <param name='max-handovers' doc='Maximum number of concurrent handovers allowed per cell' />
         <param name='&lt;1-9999&gt;' doc='Number' />
         <param name='default' doc='Use default (9999), remove explicit setting on this node' />
       </params>
@@ -2567,7 +2721,7 @@
     <command id='handover2 penalty-time max-distance (&lt;0-99999&gt;|default)'>
       <params>
         <param name='handover2' doc='Handover options for handover decision algorithm 2' />
-        <param name='penalty-time' doc='Set penalty times to wait between repeated handovers (HO algo 2 only)' />
+        <param name='penalty-time' doc='Set penalty times to wait between repeated handovers' />
         <param name='max-distance' doc='Time to suspend handovers after leaving this cell due to exceeding max distance' />
         <param name='&lt;0-99999&gt;' doc='Seconds' />
         <param name='default' doc='Use default (300), remove explicit setting on this node' />
@@ -2576,7 +2730,7 @@
     <command id='handover2 penalty-time failed-ho (&lt;0-99999&gt;|default)'>
       <params>
         <param name='handover2' doc='Handover options for handover decision algorithm 2' />
-        <param name='penalty-time' doc='Set penalty times to wait between repeated handovers (HO algo 2 only)' />
+        <param name='penalty-time' doc='Set penalty times to wait between repeated handovers' />
         <param name='failed-ho' doc='Time to suspend handovers after handover failure to this cell' />
         <param name='&lt;0-99999&gt;' doc='Seconds' />
         <param name='default' doc='Use default (60), remove explicit setting on this node' />
@@ -2585,7 +2739,7 @@
     <command id='handover2 penalty-time failed-assignment (&lt;0-99999&gt;|default)'>
       <params>
         <param name='handover2' doc='Handover options for handover decision algorithm 2' />
-        <param name='penalty-time' doc='Set penalty times to wait between repeated handovers (HO algo 2 only)' />
+        <param name='penalty-time' doc='Set penalty times to wait between repeated handovers' />
         <param name='failed-assignment' doc='Time to suspend handovers after assignment failure in this cell' />
         <param name='&lt;0-99999&gt;' doc='Seconds' />
         <param name='default' doc='Use default (60), remove explicit setting on this node' />
@@ -2594,75 +2748,15 @@
     <command id='handover2 retries (&lt;0-9&gt;|default)'>
       <params>
         <param name='handover2' doc='Handover options for handover decision algorithm 2' />
-        <param name='retries' doc='Immediately retry on handover/assignment failure (HO algo 2 only)' />
+        <param name='retries' doc='Immediately retry on handover/assignment failure' />
         <param name='&lt;0-9&gt;' doc='Number of retries' />
         <param name='default' doc='Use default (0), remove explicit setting on this node' />
-      </params>
-    </command>
-    <command id='handover window rxlev averaging (&lt;1-10&gt;|default)'>
-      <params>
-        <param name='handover' doc='Legacy alias for &apos;handover1&apos;: Handover options for handover decision algorithm 1' />
-        <param name='window' doc='Measurement averaging settings' />
-        <param name='rxlev' doc='Received-Level averaging' />
-        <param name='averaging' doc='How many RxLev measurements are used for averaging' />
-        <param name='&lt;1-10&gt;' doc='RxLev averaging: Number of values to average over' />
-        <param name='default' doc='Use default (10), remove explicit setting on this node' />
-      </params>
-    </command>
-    <command id='handover window rxqual averaging (&lt;1-10&gt;|default)'>
-      <params>
-        <param name='handover' doc='Legacy alias for &apos;handover1&apos;: Handover options for handover decision algorithm 1' />
-        <param name='window' doc='Measurement averaging settings' />
-        <param name='rxqual' doc='Received-Quality averaging' />
-        <param name='averaging' doc='How many RxQual measurements are used for averaging' />
-        <param name='&lt;1-10&gt;' doc='RxQual averaging: Number of values to average over' />
-        <param name='default' doc='Use default (1), remove explicit setting on this node' />
-      </params>
-    </command>
-    <command id='handover window rxlev neighbor averaging (&lt;1-10&gt;|default)'>
-      <params>
-        <param name='handover' doc='Legacy alias for &apos;handover1&apos;: Handover options for handover decision algorithm 1' />
-        <param name='window' doc='Measurement averaging settings' />
-        <param name='rxlev' doc='Received-Level averaging' />
-        <param name='neighbor' doc='How many Neighbor RxLev measurements are used for averaging' />
-        <param name='averaging' doc='How many Neighbor RxLev measurements are used for averaging' />
-        <param name='&lt;1-10&gt;' doc='Neighbor RxLev averaging: Number of values to average over' />
-        <param name='default' doc='Use default (10), remove explicit setting on this node' />
-      </params>
-    </command>
-    <command id='handover power budget interval (&lt;1-99&gt;|default)'>
-      <params>
-        <param name='handover' doc='Legacy alias for &apos;handover1&apos;: Handover options for handover decision algorithm 1' />
-        <param name='power' doc='Neighbor cell power triggering' />
-        <param name='budget' doc='Neighbor cell power triggering' />
-        <param name='interval' doc='How often to check for a better cell (SACCH frames)' />
-        <param name='&lt;1-99&gt;' doc='Check for stronger neighbor every N number of SACCH frames' />
-        <param name='default' doc='Use default (6), remove explicit setting on this node' />
-      </params>
-    </command>
-    <command id='handover power budget hysteresis (&lt;0-999&gt;|default)'>
-      <params>
-        <param name='handover' doc='Legacy alias for &apos;handover1&apos;: Handover options for handover decision algorithm 1' />
-        <param name='power' doc='Neighbor cell power triggering' />
-        <param name='budget' doc='Neighbor cell power triggering' />
-        <param name='hysteresis' doc='How many dBm stronger must a neighbor be to become a HO candidate' />
-        <param name='&lt;0-999&gt;' doc='Neighbor&apos;s strength difference in dBm' />
-        <param name='default' doc='Use default (3), remove explicit setting on this node' />
-      </params>
-    </command>
-    <command id='handover maximum distance (&lt;0-9999&gt;|default)'>
-      <params>
-        <param name='handover' doc='Legacy alias for &apos;handover1&apos;: Handover options for handover decision algorithm 1' />
-        <param name='maximum' doc='Maximum Timing-Advance value (i.e. MS distance) before triggering HO' />
-        <param name='distance' doc='Maximum Timing-Advance value (i.e. MS distance) before triggering HO' />
-        <param name='&lt;0-9999&gt;' doc='Maximum Timing-Advance value (i.e. MS distance) before triggering HO' />
-        <param name='default' doc='Use default (9999), remove explicit setting on this node' />
       </params>
     </command>
     <command id='handover2 congestion-check (disabled|&lt;1-999&gt;|now)'>
       <params>
         <param name='handover2' doc='Handover options for handover decision algorithm 2' />
-        <param name='congestion-check' doc='Configure congestion check interval (HO algo 2 only)' />
+        <param name='congestion-check' doc='Configure congestion check interval' />
         <param name='disabled' doc='Disable congestion checking, do not handover based on cell overload' />
         <param name='&lt;1-999&gt;' doc='Congestion check interval in seconds (default 10)' />
         <param name='now' doc='Manually trigger a congestion check to run right now' />
@@ -2737,12 +2831,6 @@
       <params>
         <param name='location_area_code' doc='Set the Location Area Code (LAC) of this BTS' />
         <param name='&lt;0-65535&gt;' doc='LAC' />
-      </params>
-    </command>
-    <command id='training_sequence_code &lt;0-7&gt;'>
-      <params>
-        <param name='training_sequence_code' doc='Set the Training Sequence Code (TSC) of this BTS' />
-        <param name='&lt;0-7&gt;' doc='TSC' />
       </params>
     </command>
     <command id='base_station_id_code &lt;0-63&gt;'>
@@ -3780,6 +3868,97 @@
         <param name='&lt;1-10&gt;' doc='Set the number of Access Control Classes to enable per ramping step' />
       </params>
     </command>
+    <command id='neighbor bts &lt;0-255&gt;'>
+      <params>
+        <param name='neighbor' doc='Manage local and remote-BSS neighbor cells' />
+        <param name='bts' doc='Add Neighbor cell by local BTS number' />
+        <param name='&lt;0-255&gt;' doc='BTS number' />
+      </params>
+    </command>
+    <command id='neighbor lac &lt;0-65535&gt;'>
+      <params>
+        <param name='neighbor' doc='Manage local and remote-BSS neighbor cells' />
+        <param name='lac' doc='Add Neighbor cell by LAC' />
+        <param name='&lt;0-65535&gt;' doc='LAC' />
+      </params>
+    </command>
+    <command id='neighbor lac-ci &lt;0-65535&gt; &lt;0-65535&gt;'>
+      <params>
+        <param name='neighbor' doc='Manage local and remote-BSS neighbor cells' />
+        <param name='lac-ci' doc='Add Neighbor cell by LAC and CI' />
+        <param name='&lt;0-65535&gt;' doc='LAC' />
+        <param name='&lt;0-65535&gt;' doc='CI' />
+      </params>
+    </command>
+    <command id='neighbor cgi &lt;0-999&gt; &lt;0-999&gt; &lt;0-65535&gt; &lt;0-65535&gt;'>
+      <params>
+        <param name='neighbor' doc='Manage local and remote-BSS neighbor cells' />
+        <param name='cgi' doc='Add Neighbor cell by cgi' />
+        <param name='&lt;0-999&gt;' doc='MCC' />
+        <param name='&lt;0-999&gt;' doc='MNC' />
+        <param name='&lt;0-65535&gt;' doc='LAC' />
+        <param name='&lt;0-65535&gt;' doc='CI' />
+      </params>
+    </command>
+    <command id='neighbor lac &lt;0-65535&gt; arfcn &lt;0-1023&gt; bsic (&lt;0-63&gt;|any)'>
+      <params>
+        <param name='neighbor' doc='Manage local and remote-BSS neighbor cells' />
+        <param name='lac' doc='Add Neighbor cell by LAC' />
+        <param name='&lt;0-65535&gt;' doc='LAC' />
+        <param name='arfcn' doc='ARFCN of neighbor cell' />
+        <param name='&lt;0-1023&gt;' doc='ARFCN value' />
+        <param name='bsic' doc='BSIC of neighbor cell' />
+        <param name='&lt;0-63&gt;' doc='BSIC value' />
+        <param name='any' doc='for all BSICs / use any BSIC in this ARFCN' />
+      </params>
+    </command>
+    <command id='neighbor lac-ci &lt;0-65535&gt; &lt;0-65535&gt; arfcn &lt;0-1023&gt; bsic (&lt;0-63&gt;|any)'>
+      <params>
+        <param name='neighbor' doc='Manage local and remote-BSS neighbor cells' />
+        <param name='lac-ci' doc='Add Neighbor cell by LAC and CI' />
+        <param name='&lt;0-65535&gt;' doc='LAC' />
+        <param name='&lt;0-65535&gt;' doc='CI' />
+        <param name='arfcn' doc='ARFCN of neighbor cell' />
+        <param name='&lt;0-1023&gt;' doc='ARFCN value' />
+        <param name='bsic' doc='BSIC of neighbor cell' />
+        <param name='&lt;0-63&gt;' doc='BSIC value' />
+        <param name='any' doc='for all BSICs / use any BSIC in this ARFCN' />
+      </params>
+    </command>
+    <command id='neighbor cgi &lt;0-999&gt; &lt;0-999&gt; &lt;0-65535&gt; &lt;0-65535&gt; arfcn &lt;0-1023&gt; bsic (&lt;0-63&gt;|any)'>
+      <params>
+        <param name='neighbor' doc='Manage local and remote-BSS neighbor cells' />
+        <param name='cgi' doc='Add Neighbor cell by cgi' />
+        <param name='&lt;0-999&gt;' doc='MCC' />
+        <param name='&lt;0-999&gt;' doc='MNC' />
+        <param name='&lt;0-65535&gt;' doc='LAC' />
+        <param name='&lt;0-65535&gt;' doc='CI' />
+        <param name='arfcn' doc='ARFCN of neighbor cell' />
+        <param name='&lt;0-1023&gt;' doc='ARFCN value' />
+        <param name='bsic' doc='BSIC of neighbor cell' />
+        <param name='&lt;0-63&gt;' doc='BSIC value' />
+        <param name='any' doc='for all BSICs / use any BSIC in this ARFCN' />
+      </params>
+    </command>
+    <command id='no neighbor bts &lt;0-255&gt;'>
+      <params>
+        <param name='no' doc='Negate a command or set its defaults' />
+        <param name='neighbor' doc='Remove local or remote-BSS neighbor cell' />
+        <param name='bts' doc='Neighbor cell by local BTS number' />
+        <param name='&lt;0-255&gt;' doc='BTS number' />
+      </params>
+    </command>
+    <command id='no neighbor arfcn &lt;0-1023&gt; bsic (&lt;0-63&gt;|any)'>
+      <params>
+        <param name='no' doc='Negate a command or set its defaults' />
+        <param name='neighbor' doc='Remove local or remote-BSS neighbor cell' />
+        <param name='arfcn' doc='ARFCN of neighbor cell' />
+        <param name='&lt;0-1023&gt;' doc='ARFCN value' />
+        <param name='bsic' doc='BSIC of neighbor cell' />
+        <param name='&lt;0-63&gt;' doc='BSIC value' />
+        <param name='any' doc='for all BSICs / use any BSIC in this ARFCN' />
+      </params>
+    </command>
     <command id='trx &lt;0-255&gt;'>
       <params>
         <param name='trx' doc='Radio Transceiver' />
@@ -3878,8 +4057,8 @@
         <param name='handover1' doc='Handover options for handover decision algorithm 1' />
         <param name='power' doc='Neighbor cell power triggering' />
         <param name='budget' doc='Neighbor cell power triggering' />
-        <param name='hysteresis' doc='How many dBm stronger must a neighbor be to become a HO candidate' />
-        <param name='&lt;0-999&gt;' doc='Neighbor&apos;s strength difference in dBm' />
+        <param name='hysteresis' doc='How many dB stronger must a neighbor be to become a HO candidate' />
+        <param name='&lt;0-999&gt;' doc='Neighbor&apos;s strength difference in dB' />
         <param name='default' doc='Use default (3), remove explicit setting on this node' />
       </params>
     </command>
@@ -3938,8 +4117,8 @@
         <param name='handover2' doc='Handover options for handover decision algorithm 2' />
         <param name='power' doc='Neighbor cell power triggering' />
         <param name='budget' doc='Neighbor cell power triggering' />
-        <param name='hysteresis' doc='How many dBm stronger must a neighbor be to become a HO candidate' />
-        <param name='&lt;0-999&gt;' doc='Neighbor&apos;s strength difference in dBm' />
+        <param name='hysteresis' doc='How many dB stronger must a neighbor be to become a HO candidate' />
+        <param name='&lt;0-999&gt;' doc='Neighbor&apos;s strength difference in dB' />
         <param name='default' doc='Use default (3), remove explicit setting on this node' />
       </params>
     </command>
@@ -3955,7 +4134,7 @@
     <command id='handover2 assignment (0|1|default)'>
       <params>
         <param name='handover2' doc='Handover options for handover decision algorithm 2' />
-        <param name='assignment' doc='Enable or disable in-call channel re-assignment (HO algo 2 only)' />
+        <param name='assignment' doc='Enable or disable in-call channel re-assignment' />
         <param name='0' doc='Disable in-call assignment' />
         <param name='1' doc='Enable in-call assignment' />
         <param name='default' doc='Use default (0), remove explicit setting on this node' />
@@ -3964,7 +4143,7 @@
     <command id='handover2 tdma-measurement (full|subset|default)'>
       <params>
         <param name='handover2' doc='Handover options for handover decision algorithm 2' />
-        <param name='tdma-measurement' doc='Define measurement set of TDMA frames (HO algo 2 only)' />
+        <param name='tdma-measurement' doc='Define measurement set of TDMA frames' />
         <param name='full' doc='Full set of 102/104 TDMA frames' />
         <param name='subset' doc='Sub set of 4 TDMA frames (SACCH)' />
         <param name='default' doc='Use default (subset), remove explicit setting on this node' />
@@ -3973,7 +4152,7 @@
     <command id='handover2 min rxlev (&lt;-110--50&gt;|default)'>
       <params>
         <param name='handover2' doc='Handover options for handover decision algorithm 2' />
-        <param name='min' doc='Minimum Level/Quality thresholds before triggering HO (HO algo 2 only)' />
+        <param name='min' doc='Minimum Level/Quality thresholds before triggering HO' />
         <param name='rxlev' doc='How weak may RxLev of an MS become before triggering HO' />
         <param name='&lt;-110--50&gt;' doc='minimum RxLev (dBm)' />
         <param name='default' doc='Use default (-100), remove explicit setting on this node' />
@@ -3982,34 +4161,34 @@
     <command id='handover2 min rxqual (&lt;0-7&gt;|default)'>
       <params>
         <param name='handover2' doc='Handover options for handover decision algorithm 2' />
-        <param name='min' doc='Minimum Level/Quality thresholds before triggering HO (HO algo 2 only)' />
+        <param name='min' doc='Minimum Level/Quality thresholds before triggering HO' />
         <param name='rxqual' doc='How bad may RxQual of an MS become before triggering HO' />
-        <param name='&lt;0-7&gt;' doc='minimum RxQual (dBm)' />
+        <param name='&lt;0-7&gt;' doc='minimum RxQual' />
         <param name='default' doc='Use default (5), remove explicit setting on this node' />
       </params>
     </command>
     <command id='handover2 afs-bias rxlev (&lt;0-20&gt;|default)'>
       <params>
         <param name='handover2' doc='Handover options for handover decision algorithm 2' />
-        <param name='afs-bias' doc='Configure bias to prefer AFS (AMR on TCH/F) over other codecs (HO algo 2 only)' />
+        <param name='afs-bias' doc='Configure bias to prefer AFS (AMR on TCH/F) over other codecs' />
         <param name='rxlev' doc='RxLev improvement bias for AFS over other codecs' />
-        <param name='&lt;0-20&gt;' doc='Virtual RxLev improvement (dBm)' />
+        <param name='&lt;0-20&gt;' doc='Virtual RxLev improvement (dB)' />
         <param name='default' doc='Use default (0), remove explicit setting on this node' />
       </params>
     </command>
     <command id='handover2 afs-bias rxqual (&lt;0-7&gt;|default)'>
       <params>
         <param name='handover2' doc='Handover options for handover decision algorithm 2' />
-        <param name='afs-bias' doc='Configure bias to prefer AFS (AMR on TCH/F) over other codecs (HO algo 2 only)' />
+        <param name='afs-bias' doc='Configure bias to prefer AFS (AMR on TCH/F) over other codecs' />
         <param name='rxqual' doc='RxQual improvement bias for AFS over other codecs' />
-        <param name='&lt;0-7&gt;' doc='Virtual RxQual improvement (dBm)' />
+        <param name='&lt;0-7&gt;' doc='Virtual RxQual improvement' />
         <param name='default' doc='Use default (0), remove explicit setting on this node' />
       </params>
     </command>
     <command id='handover2 min-free-slots tch/f (&lt;0-9999&gt;|default)'>
       <params>
         <param name='handover2' doc='Handover options for handover decision algorithm 2' />
-        <param name='min-free-slots' doc='Minimum free TCH timeslots before cell is considered congested (HO algo 2 only)' />
+        <param name='min-free-slots' doc='Minimum free TCH timeslots before cell is considered congested' />
         <param name='tch/f' doc='Minimum free TCH/F timeslots before cell is considered congested' />
         <param name='&lt;0-9999&gt;' doc='Number of TCH/F slots' />
         <param name='default' doc='Use default (0), remove explicit setting on this node' />
@@ -4018,7 +4197,7 @@
     <command id='handover2 min-free-slots tch/h (&lt;0-9999&gt;|default)'>
       <params>
         <param name='handover2' doc='Handover options for handover decision algorithm 2' />
-        <param name='min-free-slots' doc='Minimum free TCH timeslots before cell is considered congested (HO algo 2 only)' />
+        <param name='min-free-slots' doc='Minimum free TCH timeslots before cell is considered congested' />
         <param name='tch/h' doc='Minimum free TCH/H timeslots before cell is considered congested' />
         <param name='&lt;0-9999&gt;' doc='Number of TCH/H slots' />
         <param name='default' doc='Use default (0), remove explicit setting on this node' />
@@ -4027,7 +4206,7 @@
     <command id='handover2 max-handovers (&lt;1-9999&gt;|default)'>
       <params>
         <param name='handover2' doc='Handover options for handover decision algorithm 2' />
-        <param name='max-handovers' doc='Maximum number of concurrent handovers allowed per cell (HO algo 2 only)' />
+        <param name='max-handovers' doc='Maximum number of concurrent handovers allowed per cell' />
         <param name='&lt;1-9999&gt;' doc='Number' />
         <param name='default' doc='Use default (9999), remove explicit setting on this node' />
       </params>
@@ -4035,7 +4214,7 @@
     <command id='handover2 penalty-time max-distance (&lt;0-99999&gt;|default)'>
       <params>
         <param name='handover2' doc='Handover options for handover decision algorithm 2' />
-        <param name='penalty-time' doc='Set penalty times to wait between repeated handovers (HO algo 2 only)' />
+        <param name='penalty-time' doc='Set penalty times to wait between repeated handovers' />
         <param name='max-distance' doc='Time to suspend handovers after leaving this cell due to exceeding max distance' />
         <param name='&lt;0-99999&gt;' doc='Seconds' />
         <param name='default' doc='Use default (300), remove explicit setting on this node' />
@@ -4044,7 +4223,7 @@
     <command id='handover2 penalty-time failed-ho (&lt;0-99999&gt;|default)'>
       <params>
         <param name='handover2' doc='Handover options for handover decision algorithm 2' />
-        <param name='penalty-time' doc='Set penalty times to wait between repeated handovers (HO algo 2 only)' />
+        <param name='penalty-time' doc='Set penalty times to wait between repeated handovers' />
         <param name='failed-ho' doc='Time to suspend handovers after handover failure to this cell' />
         <param name='&lt;0-99999&gt;' doc='Seconds' />
         <param name='default' doc='Use default (60), remove explicit setting on this node' />
@@ -4053,7 +4232,7 @@
     <command id='handover2 penalty-time failed-assignment (&lt;0-99999&gt;|default)'>
       <params>
         <param name='handover2' doc='Handover options for handover decision algorithm 2' />
-        <param name='penalty-time' doc='Set penalty times to wait between repeated handovers (HO algo 2 only)' />
+        <param name='penalty-time' doc='Set penalty times to wait between repeated handovers' />
         <param name='failed-assignment' doc='Time to suspend handovers after assignment failure in this cell' />
         <param name='&lt;0-99999&gt;' doc='Seconds' />
         <param name='default' doc='Use default (60), remove explicit setting on this node' />
@@ -4062,69 +4241,9 @@
     <command id='handover2 retries (&lt;0-9&gt;|default)'>
       <params>
         <param name='handover2' doc='Handover options for handover decision algorithm 2' />
-        <param name='retries' doc='Immediately retry on handover/assignment failure (HO algo 2 only)' />
+        <param name='retries' doc='Immediately retry on handover/assignment failure' />
         <param name='&lt;0-9&gt;' doc='Number of retries' />
         <param name='default' doc='Use default (0), remove explicit setting on this node' />
-      </params>
-    </command>
-    <command id='handover window rxlev averaging (&lt;1-10&gt;|default)'>
-      <params>
-        <param name='handover' doc='Legacy alias for &apos;handover1&apos;: Handover options for handover decision algorithm 1' />
-        <param name='window' doc='Measurement averaging settings' />
-        <param name='rxlev' doc='Received-Level averaging' />
-        <param name='averaging' doc='How many RxLev measurements are used for averaging' />
-        <param name='&lt;1-10&gt;' doc='RxLev averaging: Number of values to average over' />
-        <param name='default' doc='Use default (10), remove explicit setting on this node' />
-      </params>
-    </command>
-    <command id='handover window rxqual averaging (&lt;1-10&gt;|default)'>
-      <params>
-        <param name='handover' doc='Legacy alias for &apos;handover1&apos;: Handover options for handover decision algorithm 1' />
-        <param name='window' doc='Measurement averaging settings' />
-        <param name='rxqual' doc='Received-Quality averaging' />
-        <param name='averaging' doc='How many RxQual measurements are used for averaging' />
-        <param name='&lt;1-10&gt;' doc='RxQual averaging: Number of values to average over' />
-        <param name='default' doc='Use default (1), remove explicit setting on this node' />
-      </params>
-    </command>
-    <command id='handover window rxlev neighbor averaging (&lt;1-10&gt;|default)'>
-      <params>
-        <param name='handover' doc='Legacy alias for &apos;handover1&apos;: Handover options for handover decision algorithm 1' />
-        <param name='window' doc='Measurement averaging settings' />
-        <param name='rxlev' doc='Received-Level averaging' />
-        <param name='neighbor' doc='How many Neighbor RxLev measurements are used for averaging' />
-        <param name='averaging' doc='How many Neighbor RxLev measurements are used for averaging' />
-        <param name='&lt;1-10&gt;' doc='Neighbor RxLev averaging: Number of values to average over' />
-        <param name='default' doc='Use default (10), remove explicit setting on this node' />
-      </params>
-    </command>
-    <command id='handover power budget interval (&lt;1-99&gt;|default)'>
-      <params>
-        <param name='handover' doc='Legacy alias for &apos;handover1&apos;: Handover options for handover decision algorithm 1' />
-        <param name='power' doc='Neighbor cell power triggering' />
-        <param name='budget' doc='Neighbor cell power triggering' />
-        <param name='interval' doc='How often to check for a better cell (SACCH frames)' />
-        <param name='&lt;1-99&gt;' doc='Check for stronger neighbor every N number of SACCH frames' />
-        <param name='default' doc='Use default (6), remove explicit setting on this node' />
-      </params>
-    </command>
-    <command id='handover power budget hysteresis (&lt;0-999&gt;|default)'>
-      <params>
-        <param name='handover' doc='Legacy alias for &apos;handover1&apos;: Handover options for handover decision algorithm 1' />
-        <param name='power' doc='Neighbor cell power triggering' />
-        <param name='budget' doc='Neighbor cell power triggering' />
-        <param name='hysteresis' doc='How many dBm stronger must a neighbor be to become a HO candidate' />
-        <param name='&lt;0-999&gt;' doc='Neighbor&apos;s strength difference in dBm' />
-        <param name='default' doc='Use default (3), remove explicit setting on this node' />
-      </params>
-    </command>
-    <command id='handover maximum distance (&lt;0-9999&gt;|default)'>
-      <params>
-        <param name='handover' doc='Legacy alias for &apos;handover1&apos;: Handover options for handover decision algorithm 1' />
-        <param name='maximum' doc='Maximum Timing-Advance value (i.e. MS distance) before triggering HO' />
-        <param name='distance' doc='Maximum Timing-Advance value (i.e. MS distance) before triggering HO' />
-        <param name='&lt;0-9999&gt;' doc='Maximum Timing-Advance value (i.e. MS distance) before triggering HO' />
-        <param name='default' doc='Use default (9999), remove explicit setting on this node' />
       </params>
     </command>
   </node>
@@ -4216,12 +4335,6 @@
         <param name='ccch+sdcch4+cbch' doc='FCCH + SCH + BCCH + CCCH + CBCH + 3 SDCCH + 2 SACCH (Comb. V)' />
         <param name='sdcch8+cbch' doc='7 SDCCH + 4 SACCH + CBCH (Comb. VII)' />
         <param name='tch/f_tch/h_pdch' doc='Dynamic TCH/F or TCH/H or GPRS PDCH' />
-      </params>
-    </command>
-    <command id='phys_chan_config PCHAN'>
-      <params>
-        <param name='phys_chan_config' doc='Physical Channel configuration (TCH/SDCCH/...)' />
-        <param name='PCHAN' doc='Physical Channel' />
       </params>
     </command>
     <command id='training_sequence_code &lt;0-7&gt;'>
@@ -4338,54 +4451,6 @@
       <params>
         <param name='codec-list' doc='Set the allowed audio codecs' />
         <param name='.LIST' doc='List of audio codecs, e.g. fr3 fr1 hr3' />
-      </params>
-    </command>
-    <command id='dest A.B.C.D &lt;1-65000&gt; &lt;0-255&gt;'>
-      <params>
-        <param name='dest' doc='Add a destination to a MUX/MSC' />
-        <param name='A.B.C.D' doc='IP Address' />
-        <param name='&lt;1-65000&gt;' doc='Port' />
-        <param name='&lt;0-255&gt;' doc='DSCP' />
-      </params>
-    </command>
-    <command id='no dest A.B.C.D &lt;1-65000&gt; &lt;0-255&gt;'>
-      <params>
-        <param name='no' doc='Negate a command or set its defaults' />
-        <param name='dest' doc='Remove a destination to a MUX/MSC' />
-        <param name='A.B.C.D' doc='IP Address' />
-        <param name='&lt;1-65000&gt;' doc='Port' />
-        <param name='&lt;0-255&gt;' doc='DSCP' />
-      </params>
-    </command>
-    <command id='no timeout-ping'>
-      <params>
-        <param name='no' doc='Negate a command or set its defaults' />
-        <param name='timeout-ping' doc='Disable the ping/pong handling on A-link' />
-      </params>
-    </command>
-    <command id='timeout-ping &lt;1-2147483647&gt;'>
-      <params>
-        <param name='timeout-ping' doc='Set the PING interval, negative for not sending PING' />
-        <param name='&lt;1-2147483647&gt;' doc='Timeout in seconds' />
-      </params>
-    </command>
-    <command id='timeout-pong &lt;1-2147483647&gt;'>
-      <params>
-        <param name='timeout-pong' doc='Set the time to wait for a PONG' />
-        <param name='&lt;1-2147483647&gt;' doc='Timeout in seconds' />
-      </params>
-    </command>
-    <command id='timeout-ping advanced'>
-      <params>
-        <param name='timeout-ping' doc='Ping timeout handling' />
-        <param name='advanced' doc='Enable advanced mode during SCCP' />
-      </params>
-    </command>
-    <command id='no timeout-ping advanced'>
-      <params>
-        <param name='no' doc='Negate a command or set its defaults' />
-        <param name='timeout-ping' doc='Ping timeout handling' />
-        <param name='advanced' doc='Enable advanced mode during SCCP' />
       </params>
     </command>
     <command id='bsc-welcome-text .TEXT'>
@@ -4508,6 +4573,20 @@
         <param name='forbidden' doc='Forbidden' />
       </params>
     </command>
+    <command id='lcls-mode (disabled|mgw-loop)'>
+      <params>
+        <param name='lcls-mode' doc='Configure 3GPP LCLS (Local Call, Local Switch)' />
+        <param name='disabled' doc='Disable LCLS for all calls of this MSC' />
+        <param name='mgw-loop' doc='Enable LCLS with loopping traffic in MGW' />
+      </params>
+    </command>
+    <command id='lcls-codec-mismatch (allowed|forbidden)'>
+      <params>
+        <param name='lcls-codec-mismatch' doc='Allow 3GPP LCLS (Local Call, Local Switch) when call legs use different codec/rate' />
+        <param name='allowed' doc='Allow LCLS only only for calls that use the same codec/rate on both legs' />
+        <param name='forbidden' doc='Do not Allow LCLS for calls that use a different codec/rate on both legs' />
+      </params>
+    </command>
     <command id='access-list-name NAME'>
       <params>
         <param name='access-list-name' doc='Set the name of the access list to use.' />
@@ -4530,6 +4609,14 @@
       <params>
         <param name='msc-addr' doc='Called Address (remote address of the MSC)' />
         <param name='NAME' doc='SCCP address name' />
+      </params>
+    </command>
+    <command id='asp-protocol (m3ua|sua|ipa)'>
+      <params>
+        <param name='asp-protocol' doc='A interface protocol to use for this MSC)' />
+        <param name='m3ua' doc='MTP3 User Adaptation' />
+        <param name='sua' doc='SCCP User Adaptation' />
+        <param name='ipa' doc='IPA Multiplex (SCCP Lite)' />
       </params>
     </command>
     <command id='mgw local-ip A.B.C.D'>
@@ -4575,47 +4662,18 @@
         <param name='&lt;0-65534&gt;' doc='UDP Port number' />
       </params>
     </command>
-    <command id='mgcpgw local-ip A.B.C.D'>
+    <command id='mgw x-osmo-ign call-id'>
       <params>
-        <param name='mgcpgw' doc='Configure MGCP connection to Media Gateway' />
-        <param name='local-ip' doc='local bind to connect to MGCP gateway with' />
-        <param name='A.B.C.D' doc='local bind IP address' />
+        <param name='mgw' doc='Configure MGCP connection to Media Gateway' />
+        <param name='x-osmo-ign' doc='Set a (non-standard) X-Osmo-IGN header in all CRCX messages for RTP streams associated with this MSC, useful for A/SCCPlite MSCs, since osmo-bsc cannot know the MSC&apos;s chosen CallID. This is enabled by default for A/SCCPlite connections, disabled by default for all others.' />
+        <param name='call-id' doc='Send &apos;X-Osmo-IGN: C&apos; to ignore CallID mismatches. See OsmoMGW.' />
       </params>
     </command>
-    <command id='mgcpgw local-port &lt;0-65535&gt;'>
+    <command id='no mgw x-osmo-ign'>
       <params>
-        <param name='mgcpgw' doc='Configure MGCP connection to Media Gateway' />
-        <param name='local-port' doc='local bind to connect to MGCP gateway with' />
-        <param name='&lt;0-65535&gt;' doc='local bind port' />
-      </params>
-    </command>
-    <command id='mgcpgw remote-ip A.B.C.D'>
-      <params>
-        <param name='mgcpgw' doc='Configure MGCP connection to Media Gateway' />
-        <param name='remote-ip' doc='remote bind to connect to MGCP gateway with' />
-        <param name='A.B.C.D' doc='remote bind IP address' />
-      </params>
-    </command>
-    <command id='mgcpgw remote-port &lt;0-65535&gt;'>
-      <params>
-        <param name='mgcpgw' doc='Configure MGCP connection to Media Gateway' />
-        <param name='remote-port' doc='remote bind to connect to MGCP gateway with' />
-        <param name='&lt;0-65535&gt;' doc='remote bind port' />
-      </params>
-    </command>
-    <command id='mgcpgw endpoint-range &lt;1-65534&gt; &lt;1-65534&gt;'>
-      <params>
-        <param name='mgcpgw' doc='Configure MGCP connection to Media Gateway' />
-        <param name='endpoint-range' doc='usable range of endpoint identifiers' />
-        <param name='&lt;1-65534&gt;' doc='set first useable endpoint identifier' />
-        <param name='&lt;1-65534&gt;' doc='set the last useable endpoint identifier' />
-      </params>
-    </command>
-    <command id='mgcpgw bts-base &lt;0-65534&gt;'>
-      <params>
-        <param name='mgcpgw' doc='Configure MGCP connection to Media Gateway' />
-        <param name='bts-base' doc='First UDP port allocated for the BTS side' />
-        <param name='&lt;0-65534&gt;' doc='UDP Port number' />
+        <param name='no' doc='Negate a command or set its defaults' />
+        <param name='mgw' doc='Configure MGCP connection to Media Gateway' />
+        <param name='x-osmo-ign' doc='Do not send X-Osmo-IGN MGCP header to this MSC' />
       </params>
     </command>
   </node>
