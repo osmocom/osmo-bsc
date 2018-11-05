@@ -106,7 +106,7 @@ static inline const char *congestion_check_interval2a(int val)
 DEFUN(cfg_net_ho_congestion_check_interval, cfg_net_ho_congestion_check_interval_cmd,
       "handover2 congestion-check (disabled|<1-999>|now)",
       HO_CFG_STR_HANDOVER2
-      "Configure congestion check interval" HO_CFG_STR_2
+      "Configure congestion check interval\n"
       "Disable congestion checking, do not handover based on cell overload\n"
       "Congestion check interval in seconds (default "
       OSMO_STRINGIFY_VAL(HO_CFG_CONGESTION_CHECK_DEFAULT) ")\n"

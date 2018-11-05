@@ -21,11 +21,10 @@ struct handover_cfg *ho_cfg_init(void *ctx, struct handover_cfg *higher_level_cf
 #define HO_CFG_STR_WIN_RXQUAL HO_CFG_STR_WIN "Received-Quality averaging\n"
 #define HO_CFG_STR_POWER_BUDGET "Neighbor cell power triggering\n" "Neighbor cell power triggering\n"
 #define HO_CFG_STR_AVG_COUNT "Number of values to average over\n"
-#define HO_CFG_STR_2 " (HO algo 2 only)\n"
-#define HO_CFG_STR_MIN "Minimum Level/Quality thresholds before triggering HO" HO_CFG_STR_2
-#define HO_CFG_STR_AFS_BIAS "Configure bias to prefer AFS (AMR on TCH/F) over other codecs" HO_CFG_STR_2
-#define HO_CFG_STR_MIN_TCH "Minimum free TCH timeslots before cell is considered congested" HO_CFG_STR_2
-#define HO_CFG_STR_PENALTY_TIME "Set penalty times to wait between repeated handovers" HO_CFG_STR_2
+#define HO_CFG_STR_MIN "Minimum Level/Quality thresholds before triggering HO\n"
+#define HO_CFG_STR_AFS_BIAS "Configure bias to prefer AFS (AMR on TCH/F) over other codecs\n"
+#define HO_CFG_STR_MIN_TCH "Minimum free TCH timeslots before cell is considered congested\n"
+#define HO_CFG_STR_PENALTY_TIME "Set penalty times to wait between repeated handovers\n"
 
 #define as_is(x) (x)
 
@@ -185,14 +184,14 @@ static inline const char *tdma2a(bool val)
 	HO_CFG_ONE_MEMBER(bool, hodec2_as_active, 0, \
 		"handover2 ", "assignment", "0|1", a2bool, "%d", bool2i, \
 		HO_CFG_STR_HANDOVER2 \
-		"Enable or disable in-call channel re-assignment" HO_CFG_STR_2 \
+		"Enable or disable in-call channel re-assignment\n" \
 		"Disable in-call assignment\n" \
 		"Enable in-call assignment\n") \
 	\
 	HO_CFG_ONE_MEMBER(bool, hodec2_full_tdma, subset, \
 		"handover2 ", "tdma-measurement", "full|subset", a2tdma, "%s", tdma2a, \
 		HO_CFG_STR_HANDOVER2 \
-		"Define measurement set of TDMA frames" HO_CFG_STR_2 \
+		"Define measurement set of TDMA frames\n" \
 		"Full set of 102/104 TDMA frames\n" \
 		"Sub set of 4 TDMA frames (SACCH)\n") \
 	\
@@ -241,7 +240,7 @@ static inline const char *tdma2a(bool val)
 	HO_CFG_ONE_MEMBER(int, hodec2_ho_max, 9999, \
 		"handover2 ", "max-handovers", "<1-9999>", atoi, "%d", as_is, \
 		HO_CFG_STR_HANDOVER2 \
-		"Maximum number of concurrent handovers allowed per cell" HO_CFG_STR_2 \
+		"Maximum number of concurrent handovers allowed per cell\n" \
 		"Number\n") \
 	\
 	HO_CFG_ONE_MEMBER(int, hodec2_penalty_max_dist, 300, \
@@ -268,7 +267,7 @@ static inline const char *tdma2a(bool val)
 	HO_CFG_ONE_MEMBER(int, hodec2_retries, 0, \
 		"handover2 ", "retries", "<0-9>", atoi, "%d", as_is, \
 		HO_CFG_STR_HANDOVER2 \
-		"Immediately retry on handover/assignment failure" HO_CFG_STR_2 \
+		"Immediately retry on handover/assignment failure\n" \
 		"Number of retries\n") \
 
 #define HO_CFG_ALL_MEMBERS \

@@ -218,15 +218,15 @@ OsmoBSC(config-net)# handover2 ?
   window            Measurement averaging settings
   power             Neighbor cell power triggering
   maximum           Maximum Timing-Advance value (i.e. MS distance) before triggering HO
-  assignment        Enable or disable in-call channel re-assignment (HO algo 2 only)
-  tdma-measurement  Define measurement set of TDMA frames (HO algo 2 only)
-  min               Minimum Level/Quality thresholds before triggering HO (HO algo 2 only)
-  afs-bias          Configure bias to prefer AFS (AMR on TCH/F) over other codecs (HO algo 2 only)
-  min-free-slots    Minimum free TCH timeslots before cell is considered congested (HO algo 2 only)
-  max-handovers     Maximum number of concurrent handovers allowed per cell (HO algo 2 only)
-  penalty-time      Set penalty times to wait between repeated handovers (HO algo 2 only)
-  retries           Immediately retry on handover/assignment failure (HO algo 2 only)
-  congestion-check  Configure congestion check interval (HO algo 2 only)
+  assignment        Enable or disable in-call channel re-assignment
+  tdma-measurement  Define measurement set of TDMA frames
+  min               Minimum Level/Quality thresholds before triggering HO
+  afs-bias          Configure bias to prefer AFS (AMR on TCH/F) over other codecs
+  min-free-slots    Minimum free TCH timeslots before cell is considered congested
+  max-handovers     Maximum number of concurrent handovers allowed per cell
+  penalty-time      Set penalty times to wait between repeated handovers
+  retries           Immediately retry on handover/assignment failure
+  congestion-check  Configure congestion check interval
 
 OsmoBSC(config-net)# handover algorithm ?
   1        Algorithm 1: trigger handover based on comparing current cell and neighbor RxLev and RxQual, only.
@@ -437,14 +437,14 @@ OsmoBSC(config-net-bts)# handover2 ?
   window            Measurement averaging settings
   power             Neighbor cell power triggering
   maximum           Maximum Timing-Advance value (i.e. MS distance) before triggering HO
-  assignment        Enable or disable in-call channel re-assignment (HO algo 2 only)
-  tdma-measurement  Define measurement set of TDMA frames (HO algo 2 only)
-  min               Minimum Level/Quality thresholds before triggering HO (HO algo 2 only)
-  afs-bias          Configure bias to prefer AFS (AMR on TCH/F) over other codecs (HO algo 2 only)
-  min-free-slots    Minimum free TCH timeslots before cell is considered congested (HO algo 2 only)
-  max-handovers     Maximum number of concurrent handovers allowed per cell (HO algo 2 only)
-  penalty-time      Set penalty times to wait between repeated handovers (HO algo 2 only)
-  retries           Immediately retry on handover/assignment failure (HO algo 2 only)
+  assignment        Enable or disable in-call channel re-assignment
+  tdma-measurement  Define measurement set of TDMA frames
+  min               Minimum Level/Quality thresholds before triggering HO
+  afs-bias          Configure bias to prefer AFS (AMR on TCH/F) over other codecs
+  min-free-slots    Minimum free TCH timeslots before cell is considered congested
+  max-handovers     Maximum number of concurrent handovers allowed per cell
+  penalty-time      Set penalty times to wait between repeated handovers
+  retries           Immediately retry on handover/assignment failure
 
 OsmoBSC(config-net-bts)# handover algorithm ?
   1        Algorithm 1: trigger handover based on comparing current cell and neighbor RxLev and RxQual, only.
