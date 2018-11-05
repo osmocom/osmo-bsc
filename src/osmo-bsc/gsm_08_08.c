@@ -58,22 +58,6 @@ static bool msc_connected(struct gsm_subscriber_connection *conn)
 static bool complete_layer3(struct gsm_subscriber_connection *conn,
 			    struct msgb *msg, struct bsc_msc_data *msc);
 
-static struct osmo_cell_global_id *cgi_for_msc(struct bsc_msc_data *msc, struct gsm_bts *bts)
-{
-	static struct osmo_cell_global_id cgi;
-	cgi.lai.plmn = msc->network->plmn;
-	if (msc->core_plmn.mcc != GSM_MCC_MNC_INVALID)
-		cgi.lai.plmn.mcc = msc->core_plmn.mcc;
-	if (msc->core_plmn.mnc != GSM_MCC_MNC_INVALID) {
-		cgi.lai.plmn.mnc = msc->core_plmn.mnc;
-		cgi.lai.plmn.mnc_3_digits = msc->core_plmn.mnc_3_digits;
-	}
-	cgi.lai.lac = (msc->core_lac != -1) ? msc->core_lac : bts->location_area_code;
-	cgi.cell_identity = (msc->core_ci != -1) ? msc->core_ci : bts->cell_identity;
-
-	return &cgi;
-}
-
 static void bsc_maybe_lu_reject(struct gsm_subscriber_connection *conn, int con_type, int cause)
 {
 	struct msgb *msg;
