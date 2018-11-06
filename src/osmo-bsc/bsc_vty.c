@@ -4493,10 +4493,11 @@ DEFUN(pdch_act, pdch_act_cmd,
 }
 
 /* configure the lchan for a single AMR mode (as specified) */
-static int lchan_set_single_amr_mode(struct gsm_lchan *lchan, uint8_t amr_mode)
+static int lchan_set_single_amr_mode(struct vty *vty, struct gsm_lchan *lchan, uint8_t amr_mode)
 {
 	struct amr_multirate_conf mr;
 	struct gsm48_multi_rate_conf *mr_conf;
+	int rc, vty_rc = CMD_SUCCESS;
 	mr_conf = (struct gsm48_multi_rate_conf *) &mr.gsm48_ie;
 
 	if (amr_mode > 7)
@@ -4515,10 +4516,22 @@ static int lchan_set_single_amr_mode(struct gsm_lchan *lchan, uint8_t amr_mode)
 
 	/* encode this configuration into the lchan for both uplink and
 	 * downlink direction */
-	gsm48_multirate_config(lchan->mr_ms_lv, mr_conf, mr.ms_mode, mr.num_modes);
-	gsm48_multirate_config(lchan->mr_bts_lv, mr_conf, mr.bts_mode, mr.num_modes);
+	rc = gsm48_multirate_config(lchan->mr_ms_lv, mr_conf, mr.ms_mode, mr.num_modes);
+	if (rc != 0) {
+		vty_out(vty,
+			"Invalid AMR multirate configuration (%s, amr mode %d, ms) - check parameters%s",
+			gsm_lchant_name(lchan->type), amr_mode, VTY_NEWLINE);
+		vty_rc = CMD_WARNING;
+	}
+	rc = gsm48_multirate_config(lchan->mr_bts_lv, mr_conf, mr.bts_mode, mr.num_modes);
+	if (rc != 0) {
+		vty_out(vty,
+			"Invalid AMR multirate configuration (%s, amr mode %d, bts) - check parameters%s",
+			gsm_lchant_name(lchan->type), amr_mode, VTY_NEWLINE);
+		vty_rc = CMD_WARNING;
+	}
 
-	return 0;
+	return vty_rc;
 }
 
 /* Debug/Measurement command to activate a given logical channel
@@ -4574,14 +4587,16 @@ DEFUN(lchan_act, lchan_act_cmd,
 		else if (!strcmp(codec_str, "efr"))
 			lchan->tch_mode = GSM48_CMODE_SPEECH_EFR;
 		else if (!strcmp(codec_str, "amr")) {
-			int amr_mode;
+			int amr_mode, vty_rc;
 			if (argc < 7) {
 				vty_out(vty, "%% AMR requires specification of AMR mode%s", VTY_NEWLINE);
 				return CMD_WARNING;
 			}
 			amr_mode = atoi(argv[6]);
 			lchan->tch_mode = GSM48_CMODE_SPEECH_AMR;
-			lchan_set_single_amr_mode(lchan, amr_mode);
+			vty_rc = lchan_set_single_amr_mode(vty, lchan, amr_mode);
+			if (vty_rc != CMD_SUCCESS)
+				return vty_rc;
 		}
 		vty_out(vty, "%% activating lchan %s%s", gsm_lchan_name(lchan), VTY_NEWLINE);
 		rsl_tx_chan_activ(lchan, RSL_ACT_TYPE_INITIAL, 0);
