@@ -27,6 +27,7 @@
 #include <getopt.h>
 #include <errno.h>
 #include <ctype.h>
+#include <inttypes.h>
 #include <sys/fcntl.h>
 #include <sys/stat.h>
 
@@ -59,6 +60,7 @@ struct gsm_network *bsc_gsmnet;
 
 static int net_listen_testnr;
 static int restart;
+static bool get_attr;
 static char *prim_oml_ip;
 static char *bts_ip_addr, *bts_ip_mask, *bts_ip_gw;
 static char *unit_id;
@@ -269,6 +271,33 @@ static int nwl_sig_cb(unsigned int subsys, unsigned int signal,
 	return 0;
 }
 
+static int print_attr_rep(struct msgb *mb)
+{
+	/* Parse using nanoBTS own formatting for Get Attribute Response */
+	struct abis_om_hdr *oh = msgb_l2(mb);
+	struct abis_om_fom_hdr *foh = msgb_l3(mb);
+	struct e1inp_sign_link *sign_link = mb->dst;
+	struct gsm_bts_trx *trx = sign_link->trx;
+	struct gsm_bts *bts = trx->bts;
+	struct tlv_parsed tp;
+	struct in_addr ia = {0};
+	char oml_ip[20] = {0};
+	uint16_t oml_port = 0;
+	char unit_id[40]  = {0};
+
+
+	abis_nm_tlv_parse(&tp, bts, foh->data, oh->length-sizeof(*foh));
+
+	abis_nm_tlv_attr_primary_oml(&tp, &ia, &oml_port);
+	osmo_strlcpy(oml_ip, inet_ntoa(ia), sizeof(oml_ip));
+
+	abis_nm_tlv_attr_unit_id(&tp, unit_id,  sizeof(unit_id));
+
+	fprintf(stdout, "{ primary_oml_ip: \"%s\", primary_oml_port: %" PRIu16 ", unit_id: \"%s\" }\n",
+		oml_ip, oml_port, unit_id);
+	return 0;
+}
+
 static int nm_state_event(int evt, uint8_t obj_class, void *obj,
 			  struct gsm_nm_state *old_state, struct gsm_nm_state *new_state,
 			  struct abis_om_obj_inst *obj_inst);
@@ -278,6 +307,7 @@ static int nm_sig_cb(unsigned int subsys, unsigned int signal,
 {
 	struct ipacc_ack_signal_data *ipacc_data;
 	struct nm_statechg_signal_data *nsd;
+	struct msgb *oml_msg;
 
 	switch (signal) {
 	case S_NM_IPACC_NACK:
@@ -300,6 +330,11 @@ static int nm_sig_cb(unsigned int subsys, unsigned int signal,
 		nm_state_event(signal, nsd->obj_class, nsd->obj, nsd->old_state,
 				nsd->new_state, nsd->obj_inst);
 		break;
+	case S_NM_GET_ATTR_REP:
+		fprintf(stderr, "Received SIGNAL S_NM_GET_ATTR_REP\n");
+		oml_msg = signal_data;
+		print_attr_rep(oml_msg);
+		exit(0);
 	default:
 		break;
 	}
@@ -493,18 +528,23 @@ static int ipa_nvflag_set(uint16_t *flags, uint16_t *mask, const char *name, int
 
 static void bootstrap_om(struct gsm_bts_trx *trx)
 {
-	struct msgb *nmsg = msgb_alloc(1024, "nested msgb");
+	struct msgb *nmsg_get = msgb_alloc(1024, "nested get msgb");
+	struct msgb *nmsg_set = msgb_alloc(1024, "nested set msgb");
 	int need_to_set_attr = 0;
 	int len;
 
 	printf("OML link established using TRX %d\n", trx->nr);
 
+	if (get_attr) {
+		msgb_put_u8(nmsg_get, NM_ATT_IPACC_PRIM_OML_CFG);
+		msgb_put_u8(nmsg_get, NM_ATT_IPACC_UNIT_ID);
+	}
 	if (unit_id) {
 		len = strlen(unit_id);
-		if (len > nmsg->data_len-10)
+		if (len > nmsg_set->data_len-10)
 			goto out_err;
 		printf("setting Unit ID to '%s'\n", unit_id);
-		nv_put_unit_id(nmsg, unit_id);
+		nv_put_unit_id(nmsg_set, unit_id);
 		need_to_set_attr = 1;
 	}
 	if (prim_oml_ip) {
@@ -517,13 +557,13 @@ static void bootstrap_om(struct gsm_bts_trx *trx)
 		}
 
 		printf("setting primary OML link IP to '%s'\n", inet_ntoa(ia));
-		nv_put_prim_oml(nmsg, ntohl(ia.s_addr), 0);
+		nv_put_prim_oml(nmsg_set, ntohl(ia.s_addr), 0);
 		need_to_set_attr = 1;
 	}
 	if (nv_mask) {
 		printf("setting NV Flags/Mask to 0x%04x/0x%04x\n",
 			nv_flags, nv_mask);
-		nv_put_flags(nmsg, nv_flags, nv_mask);
+		nv_put_flags(nmsg_set, nv_flags, nv_mask);
 		need_to_set_attr = 1;
 	}
 	if (bts_ip_addr && bts_ip_mask) {
@@ -542,7 +582,7 @@ static void bootstrap_om(struct gsm_bts_trx *trx)
 		}
 
 		printf("setting static IP Address/Mask\n");
-		nv_put_ip_if_cfg(nmsg, ntohl(ia_addr.s_addr), ntohl(ia_mask.s_addr));
+		nv_put_ip_if_cfg(nmsg_set, ntohl(ia_addr.s_addr), ntohl(ia_mask.s_addr));
 		need_to_set_attr = 1;
 	}
 	if (bts_ip_gw) {
@@ -556,12 +596,18 @@ static void bootstrap_om(struct gsm_bts_trx *trx)
 
 		printf("setting static IP Gateway\n");
 		/* we only set the default gateway with zero addr/mask */
-		nv_put_gw_cfg(nmsg, 0, 0, ntohl(ia_gw.s_addr));
+		nv_put_gw_cfg(nmsg_set, 0, 0, ntohl(ia_gw.s_addr));
 		need_to_set_attr = 1;
 	}
 
+	if (get_attr) {
+		fprintf(stderr, "getting Attributes (%d): %s\n", nmsg_get->len, osmo_hexdump(msgb_data(nmsg_get), msgb_length(nmsg_get)));
+		abis_nm_get_attr(trx->bts, NM_OC_BASEB_TRANSC, 0, trx->nr, 0xff, nmsg_get->head, nmsg_get->len);
+		oml_state = 1;
+	}
+
 	if (need_to_set_attr) {
-		abis_nm_ipaccess_set_nvattr(trx, nmsg->head, nmsg->len);
+		abis_nm_ipaccess_set_nvattr(trx, nmsg_set->head, nmsg_set->len);
 		oml_state = 1;
 	}
 
@@ -571,7 +617,8 @@ static void bootstrap_om(struct gsm_bts_trx *trx)
 	}
 
 out_err:
-	msgb_free(nmsg);
+	msgb_free(nmsg_get);
+	msgb_free(nmsg_set);
 }
 
 static int nm_state_event(int evt, uint8_t obj_class, void *obj,
@@ -833,6 +880,7 @@ static void print_help(void)
 	printf("Commands for writing to the BTS:\n");
 	printf("  -u --unit-id UNIT_ID\t\tSet the Unit ID of the BTS\n");
 	printf("  -o --oml-ip IP\t\tSet primary OML IP (IP of your BSC)\n");
+	printf("  -G --get-attr\t\tGet several attributes from BTS\n");
 	printf("  -i --ip-address IP/MASK\tSet static IP address + netmask of BTS\n");
 	printf("  -g --ip-gateway IP\t\tSet static IP gateway of BTS\n");
 	printf("  -r --restart\t\t\tRestart the BTS (after other operations)\n");
@@ -910,6 +958,7 @@ int main(int argc, char **argv)
 		unsigned long ul;
 		char *slash;
 		static struct option long_options[] = {
+			{ "get-attr", 0, 0, 'G' },
 			{ "unit-id", 1, 0, 'u' },
 			{ "oml-ip", 1, 0, 'o' },
 			{ "ip-address", 1, 0, 'i' },
@@ -931,13 +980,16 @@ int main(int argc, char **argv)
 			{ 0, 0, 0, 0 },
 		};
 
-		c = getopt_long(argc, argv, "u:o:i:g:rn:S:U:l:L:hs:d:f:wcpH", long_options,
+		c = getopt_long(argc, argv, "Gu:o:i:g:rn:S:U:l:L:hs:d:f:wcpH", long_options,
 				&option_index);
 
 		if (c == -1)
 			break;
 
 		switch (c) {
+		case 'G':
+			get_attr = true;
+			break;
 		case 'u':
 			if (!check_unitid_fmt(optarg))
 				exit(2);
