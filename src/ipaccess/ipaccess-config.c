@@ -409,7 +409,7 @@ static void nv_put_prim_oml(struct msgb *nmsg, uint32_t ip, uint16_t port)
 	msgb_put_u8(nmsg, NM_ATT_IPACC_PRIM_OML_CFG_LIST);
 	msgb_put_u16(nmsg, len);
 
-	msgb_put_u8(nmsg, 0x88);
+	msgb_put_u8(nmsg, NM_ATT_IPACC_PRIM_OML_CFG);
 
 	/* IP address */
 	msgb_put_u32(nmsg, ip);
