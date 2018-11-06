@@ -462,6 +462,8 @@ int __wrap_abis_rsl_sendmsg(struct msgb *msg)
 		break;
 	case RSL_MT_IPAC_CRCX:
 		break;
+	case RSL_MT_DEACTIVATE_SACCH:
+		break;
 	default:
 		printf("unknown rsl message=0x%x\n", dh->c.msg_type);
 	}

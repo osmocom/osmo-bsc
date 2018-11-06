@@ -986,7 +986,7 @@ void bsc_cipher_mode_compl(struct gsm_subscriber_connection *conn,
 
 const char *bsc_subscr_name(struct bsc_subscr *bsub) { return NULL; }
 
-void lchan_release(struct gsm_lchan *lchan, bool do_deact_sacch, bool do_rr_release,
+void lchan_release(struct gsm_lchan *lchan, bool do_rr_release,
 		   bool err, enum gsm48_rr_cause cause_rr) {}
 
 int rsl_data_request(struct msgb *msg, uint8_t link_id) { return 0; }

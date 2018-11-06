@@ -525,7 +525,7 @@ static int move_to_msc(struct gsm_subscriber_connection *_conn,
 		/* FIXME: I have not the slightest idea what move_to_msc() intends to do; during lchan
 		 * FSM introduction, I changed this and hope it is the appropriate action. I actually
 		 * assume this is unused legacy code for osmo-bsc_nat?? */
-		gscon_release_lchans(_conn, false, false);
+		gscon_release_lchans(_conn, false);
 		return 1;
 	}
 

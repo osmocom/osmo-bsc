@@ -71,7 +71,7 @@ void gscon_start_assignment(struct gsm_subscriber_connection *conn,
 			    struct assignment_request *req);
 
 void gscon_change_primary_lchan(struct gsm_subscriber_connection *conn, struct gsm_lchan *new_lchan);
-void gscon_release_lchans(struct gsm_subscriber_connection *conn, bool do_sacch_deact, bool do_rr_release);
+void gscon_release_lchans(struct gsm_subscriber_connection *conn, bool do_rr_release);
 
 void gscon_lchan_releasing(struct gsm_subscriber_connection *conn, struct gsm_lchan *lchan);
 void gscon_forget_lchan(struct gsm_subscriber_connection *conn, struct gsm_lchan *lchan);
