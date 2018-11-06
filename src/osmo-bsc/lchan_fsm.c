@@ -927,6 +927,18 @@ static bool should_sacch_deact(struct gsm_lchan *lchan)
 	}
 }
 
+static void lchan_do_release(struct gsm_lchan *lchan)
+{
+	if (lchan->do_rr_release && lchan->sapis[0] != LCHAN_SAPI_UNUSED)
+		gsm48_send_rr_release(lchan);
+
+	if (lchan->fi_rtp)
+		osmo_fsm_inst_dispatch(lchan->fi_rtp, LCHAN_RTP_EV_RELEASE, 0);
+
+	if (lchan->deact_sacch && should_sacch_deact(lchan))
+		rsl_deact_sacch(lchan);
+}
+
 static void lchan_fsm_wait_rll_rtp_released_onenter(struct osmo_fsm_inst *fi, uint32_t prev_state)
 {
 	int sapis;
@@ -937,14 +949,7 @@ static void lchan_fsm_wait_rll_rtp_released_onenter(struct osmo_fsm_inst *fi, ui
 		if (lchan->sapis[sapi])
 			LOG_LCHAN(lchan, LOGL_DEBUG, "SAPI[%d] = %d\n", sapi, lchan->sapis[sapi]);
 
-	if (lchan->do_rr_release && lchan->sapis[0] != LCHAN_SAPI_UNUSED)
-		gsm48_send_rr_release(lchan);
-
-	if (lchan->fi_rtp)
-		osmo_fsm_inst_dispatch(lchan->fi_rtp, LCHAN_RTP_EV_RELEASE, 0);
-
-	if (lchan->deact_sacch && should_sacch_deact(lchan))
-		rsl_deact_sacch(lchan);
+	lchan_do_release(lchan);
 
 	sapis = 0;
 	for_each_active_sapi(sapi, 1, lchan) {
@@ -1319,10 +1324,11 @@ void lchan_release(struct gsm_lchan *lchan, bool sacch_deact, bool do_rr_release
 	if (lchan->release_in_error) {
 		switch (lchan->fi->state) {
 		default:
-			/* Normally we deact SACCH in lchan_fsm_wait_rll_rtp_released_onenter(). When
-			 * skipping that, but asked to SACCH deact, do it now. */
-			if (lchan->deact_sacch)
-				rsl_deact_sacch(lchan);
+			/* Normally we signal release in lchan_fsm_wait_rll_rtp_released_onenter(). When
+			 * skipping that, do it now. */
+			lchan_do_release(lchan);
+			/* fall thru */
+		case LCHAN_ST_WAIT_RLL_RTP_RELEASED:
 			lchan_fsm_state_chg(LCHAN_ST_WAIT_RF_RELEASE_ACK);
 			goto exit_release_handler;
 		case LCHAN_ST_WAIT_TS_READY:
