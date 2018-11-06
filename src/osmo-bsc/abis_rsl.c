@@ -56,11 +56,6 @@
 #define RSL_ALLOC_SIZE		1024
 #define RSL_ALLOC_HEADROOM	128
 
-enum sacch_deact {
-	SACCH_NONE,
-	SACCH_DEACTIVATE,
-};
-
 static void send_lchan_signal(int sig_no, struct gsm_lchan *lchan,
 			      struct gsm_meas_rep *resp)
 {
