@@ -492,6 +492,8 @@ struct gsm_lchan {
 	uint8_t nr;
 	char *name;
 
+	char *last_error;
+
 	struct osmo_fsm_inst *fi;
 	struct osmo_fsm_inst *fi_rtp;
 	struct mgwep_ci *mgw_endpoint_ci_bts;
@@ -510,21 +512,21 @@ struct gsm_lchan {
 		struct gsm_lchan *re_use_mgw_endpoint_from_lchan;
 	} activate;
 
-	/* If an event to release the lchan comes in while still waiting for responses, just mark this
-	 * flag, so that the lchan will gracefully release at the next sensible junction. */
-	bool release_requested;
-	bool do_rr_release;
+	struct {
+		/* If an event to release the lchan comes in while still waiting for responses, just mark this
+		 * flag, so that the lchan will gracefully release at the next sensible junction. */
+		bool requested;
+		bool do_rr_release;
 
-	char *last_error;
+		/* There is an RSL error cause of value 0, so we need a separate flag. */
+		bool in_error;
+		/* RSL error code, RSL_ERR_* */
+		uint8_t rsl_error_cause;
 
-	/* There is an RSL error cause of value 0, so we need a separate flag. */
-	bool release_in_error;
-	/* RSL error code, RSL_ERR_* */
-	uint8_t rsl_error_cause;
-
-	/* If a release event is being handled, ignore other ricocheting release events until that
-	 * release handling has concluded. */
-	bool in_release_handler;
+		/* If a release event is being handled, ignore other ricocheting release events until that
+		 * release handling has concluded. */
+		bool in_release_handler;
+	} release;
 
 	/* The logical channel type */
 	enum gsm_chan_t type;

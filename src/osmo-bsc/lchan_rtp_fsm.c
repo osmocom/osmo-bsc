@@ -256,7 +256,7 @@ static void lchan_rtp_fsm_wait_ipacc_crcx_ack_onenter(struct osmo_fsm_inst *fi, 
 	int val;
 	struct gsm_lchan *lchan = lchan_rtp_fi_lchan(fi);
 
-	if (lchan->release_requested) {
+	if (lchan->release.requested) {
 		lchan_rtp_fail("Release requested while activating");
 		return;
 	}
@@ -324,7 +324,7 @@ static void lchan_rtp_fsm_wait_ipacc_mdcx_ack_onenter(struct osmo_fsm_inst *fi, 
 	struct gsm_lchan *lchan = lchan_rtp_fi_lchan(fi);
 	const struct mgcp_conn_peer *mgw_rtp;
 
-	if (lchan->release_requested) {
+	if (lchan->release.requested) {
 		lchan_rtp_fail("Release requested while activating");
 		return;
 	}
@@ -439,7 +439,7 @@ static void lchan_rtp_fsm_wait_mgw_endpoint_configured_onenter(struct osmo_fsm_i
 	struct gsm_lchan *lchan = lchan_rtp_fi_lchan(fi);
 	struct gsm_lchan *old_lchan = lchan->activate.re_use_mgw_endpoint_from_lchan;
 
-	if (lchan->release_requested) {
+	if (lchan->release.requested) {
 		lchan_rtp_fail("Release requested while activating");
 		return;
 	}
@@ -724,7 +724,7 @@ static const struct value_string lchan_rtp_fsm_event_names[] = {
 int lchan_rtp_fsm_timer_cb(struct osmo_fsm_inst *fi)
 {
 	struct gsm_lchan *lchan = lchan_rtp_fi_lchan(fi);
-	lchan->release_in_error = true;
+	lchan->release.in_error = true;
 	lchan_rtp_fail("Timeout");
 	return 0;
 }

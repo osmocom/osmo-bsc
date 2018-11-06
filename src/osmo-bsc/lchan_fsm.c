@@ -485,7 +485,7 @@ static void lchan_fsm_unused(struct osmo_fsm_inst *fi, uint32_t event, void *dat
 		OSMO_ASSERT(!lchan->conn);
 		OSMO_ASSERT(!lchan->mgw_endpoint_ci_bts);
 		lchan_set_last_error(lchan, NULL);
-		lchan->release_requested = false;
+		lchan->release.requested = false;
 
 		lchan->conn = info->for_conn;
 		lchan->activate.activ_for = info->activ_for;
@@ -557,7 +557,7 @@ static void lchan_fsm_wait_ts_ready_onenter(struct osmo_fsm_inst *fi, uint32_t p
 	struct gsm_lchan *lchan = lchan_fi_lchan(fi);
 	struct mgwep_ci *use_mgwep_ci = lchan_use_mgw_endpoint_ci_bts(lchan);
 
-	if (lchan->release_requested) {
+	if (lchan->release.requested) {
 		lchan_fail("Release requested while activating");
 		return;
 	}
@@ -593,7 +593,7 @@ static void lchan_fsm_wait_ts_ready(struct osmo_fsm_inst *fi, uint32_t event, vo
 
 	case LCHAN_EV_RTP_RELEASED:
 	case LCHAN_EV_RTP_ERROR:
-		if (lchan->in_release_handler) {
+		if (lchan->release.in_release_handler) {
 			/* Already in release, the RTP is not the initial cause of failure.
 			 * Just ignore. */
 			return;
@@ -616,7 +616,7 @@ static void lchan_fsm_wait_activ_ack_onenter(struct osmo_fsm_inst *fi, uint32_t 
 	uint8_t ho_ref = 0;
 	struct gsm_lchan *lchan = lchan_fi_lchan(fi);
 
-	if (lchan->release_requested) {
+	if (lchan->release.requested) {
 		lchan_fail_to(LCHAN_ST_UNUSED, "Release requested while activating");
 		return;
 	}
@@ -653,12 +653,12 @@ static void lchan_fsm_wait_activ_ack(struct osmo_fsm_inst *fi, uint32_t event, v
 		break;
 
 	case LCHAN_EV_RSL_CHAN_ACTIV_NACK:
-		lchan->in_release_handler = true;
+		lchan->release.in_release_handler = true;
 		if (data) {
 			uint32_t next_state;
-			lchan->rsl_error_cause = *(uint8_t*)data;
-			lchan->release_in_error = true;
-			if (lchan->rsl_error_cause != RSL_ERR_RCH_ALR_ACTV_ALLOC)
+			lchan->release.rsl_error_cause = *(uint8_t*)data;
+			lchan->release.in_error = true;
+			if (lchan->release.rsl_error_cause != RSL_ERR_RCH_ALR_ACTV_ALLOC)
 				next_state = LCHAN_ST_BORKEN;
 			else
 				/* Taking this over from legacy code: send an RF Chan Release even though
@@ -666,18 +666,18 @@ static void lchan_fsm_wait_activ_ack(struct osmo_fsm_inst *fi, uint32_t event, v
 				next_state = LCHAN_ST_WAIT_RF_RELEASE_ACK;
 
 			lchan_fail_to(next_state, "Chan Activ NACK: %s (0x%x)",
-				      rsl_err_name(lchan->rsl_error_cause), lchan->rsl_error_cause);
+				      rsl_err_name(lchan->release.rsl_error_cause), lchan->release.rsl_error_cause);
 		} else {
-			lchan->rsl_error_cause = RSL_ERR_IE_NONEXIST;
-			lchan->release_in_error = true;
+			lchan->release.rsl_error_cause = RSL_ERR_IE_NONEXIST;
+			lchan->release.in_error = true;
 			lchan_fail_to(LCHAN_ST_BORKEN, "Chan Activ NACK without cause IE");
 		}
-		lchan->in_release_handler = false;
+		lchan->release.in_release_handler = false;
 		break;
 
 	case LCHAN_EV_RTP_RELEASED:
 	case LCHAN_EV_RTP_ERROR:
-		if (lchan->in_release_handler) {
+		if (lchan->release.in_release_handler) {
 			/* Already in release, the RTP is not the initial cause of failure.
 			 * Just ignore. */
 			return;
@@ -698,7 +698,7 @@ static void lchan_fsm_post_activ_ack(struct osmo_fsm_inst *fi)
 {
 	int rc;
 	struct gsm_lchan *lchan = lchan_fi_lchan(fi);
-	if (lchan->release_requested) {
+	if (lchan->release.requested) {
 		lchan_fail_to(LCHAN_ST_WAIT_RF_RELEASE_ACK, "Release requested while activating");
 		return;
 	}
@@ -789,7 +789,7 @@ static void lchan_fsm_wait_rll_rtp_establish(struct osmo_fsm_inst *fi, uint32_t 
 
 	case LCHAN_EV_RTP_RELEASED:
 	case LCHAN_EV_RTP_ERROR:
-		if (lchan->in_release_handler) {
+		if (lchan->release.in_release_handler) {
 			/* Already in release, the RTP is not the initial cause of failure.
 			 * Just ignore. */
 			return;
@@ -809,7 +809,7 @@ static void lchan_fsm_established_onenter(struct osmo_fsm_inst *fi, uint32_t pre
 {
 	struct gsm_lchan *lchan = lchan_fi_lchan(fi);
 
-	if (lchan->release_requested) {
+	if (lchan->release.requested) {
 		lchan_fail("Release requested while activating");
 		return;
 	}
@@ -896,7 +896,7 @@ static void lchan_fsm_established(struct osmo_fsm_inst *fi, uint32_t event, void
 
 	case LCHAN_EV_RTP_RELEASED:
 	case LCHAN_EV_RTP_ERROR:
-		if (lchan->in_release_handler) {
+		if (lchan->release.in_release_handler) {
 			/* Already in release, the RTP is not the initial cause of failure.
 			 * Just ignore. */
 			return;
@@ -929,7 +929,7 @@ static bool should_sacch_deact(struct gsm_lchan *lchan)
 
 static void lchan_do_release(struct gsm_lchan *lchan)
 {
-	if (lchan->do_rr_release && lchan->sapis[0] != LCHAN_SAPI_UNUSED)
+	if (lchan->release.do_rr_release && lchan->sapis[0] != LCHAN_SAPI_UNUSED)
 		gsm48_send_rr_release(lchan);
 
 	if (lchan->fi_rtp)
@@ -1027,7 +1027,7 @@ static void lchan_fsm_wait_rf_release_ack(struct osmo_fsm_inst *fi, uint32_t eve
 	switch (event) {
 
 	case LCHAN_EV_RSL_RF_CHAN_REL_ACK:
-		if (lchan->rsl_error_cause)
+		if (lchan->release.in_error)
 			lchan_fsm_state_chg(LCHAN_ST_WAIT_AFTER_ERROR);
 		else
 			lchan_fsm_state_chg(LCHAN_ST_UNUSED);
@@ -1055,7 +1055,7 @@ static void lchan_fsm_borken(struct osmo_fsm_inst *fi, uint32_t event, void *dat
 
 	case LCHAN_EV_RSL_CHAN_ACTIV_ACK:
 		/* A late Chan Activ ACK? Release. */
-		lchan->release_in_error = true;
+		lchan->release.in_error = true;
 		lchan_fsm_state_chg(LCHAN_ST_WAIT_RF_RELEASE_ACK);
 		return;
 
@@ -1066,7 +1066,7 @@ static void lchan_fsm_borken(struct osmo_fsm_inst *fi, uint32_t event, void *dat
 
 	case LCHAN_EV_RSL_RF_CHAN_REL_ACK:
 		/* A late Release ACK? */
-		lchan->release_in_error = true;
+		lchan->release.in_error = true;
 		lchan_fsm_state_chg(LCHAN_ST_WAIT_AFTER_ERROR);
 		/* TODO: we used to do this only for sysmobts:
 			int do_free = is_sysmobts_v2(ts->trx->bts);
@@ -1290,7 +1290,7 @@ int lchan_fsm_timer_cb(struct osmo_fsm_inst *fi)
 		return 0;
 
 	default:
-		lchan->release_in_error = true;
+		lchan->release.in_error = true;
 		lchan_fail("Timeout");
 		return 0;
 	}
@@ -1302,25 +1302,26 @@ void lchan_release(struct gsm_lchan *lchan, bool do_rr_release,
 	if (!lchan || !lchan->fi)
 		return;
 
-	if (lchan->in_release_handler)
+	if (lchan->release.in_release_handler)
 		return;
-	lchan->in_release_handler = true;
+	lchan->release.in_release_handler = true;
 
 	struct osmo_fsm_inst *fi = lchan->fi;
-	lchan->release_in_error = err;
-	lchan->rsl_error_cause = cause_rr;
-	lchan->do_rr_release = do_rr_release;
+
+	lchan->release.in_error = err;
+	lchan->release.rsl_error_cause = cause_rr;
+	lchan->release.do_rr_release = do_rr_release;
 
 	/* States waiting for events will notice the desire to release when done waiting, so it is enough
 	 * to mark for release. */
-	lchan->release_requested = true;
+	lchan->release.requested = true;
 
 	/* If we took the RTP over from another lchan, put it back. */
-	if (lchan->fi_rtp && lchan->release_in_error)
+	if (lchan->fi_rtp && lchan->release.in_error)
 		osmo_fsm_inst_dispatch(lchan->fi_rtp, LCHAN_RTP_EV_ROLLBACK, 0);
 
 	/* But when in error, don't wait for the next state to pick up release_requested. */
-	if (lchan->release_in_error) {
+	if (lchan->release.in_error) {
 		switch (lchan->fi->state) {
 		default:
 			/* Normally we signal release in lchan_fsm_wait_rll_rtp_released_onenter(). When
@@ -1345,7 +1346,7 @@ void lchan_release(struct gsm_lchan *lchan, bool do_rr_release,
 		lchan_fsm_state_chg(LCHAN_ST_WAIT_RLL_RTP_RELEASED);
 
 exit_release_handler:
-	lchan->in_release_handler = false;
+	lchan->release.in_release_handler = false;
 }
 
 void lchan_fsm_cleanup(struct osmo_fsm_inst *fi, enum osmo_fsm_term_cause cause)

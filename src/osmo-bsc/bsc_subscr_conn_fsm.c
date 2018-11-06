@@ -737,8 +737,8 @@ static void gscon_fsm_allstate(struct osmo_fsm_inst *fi, uint32_t event, void *d
 		break;
 	case GSCON_EV_RSL_CONN_FAIL:
 		if (conn->lchan) {
-			conn->lchan->release_in_error = true;
-			conn->lchan->rsl_error_cause = data ? *(uint8_t*)data : RSL_ERR_IE_ERROR;
+			conn->lchan->release.in_error = true;
+			conn->lchan->release.rsl_error_cause = data ? *(uint8_t*)data : RSL_ERR_IE_ERROR;
 		}
 		gscon_bssmap_clear(conn, GSM0808_CAUSE_RADIO_INTERFACE_FAILURE);
 		break;
