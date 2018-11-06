@@ -1056,6 +1056,7 @@ static void lchan_fsm_borken(struct osmo_fsm_inst *fi, uint32_t event, void *dat
 	case LCHAN_EV_RSL_CHAN_ACTIV_ACK:
 		/* A late Chan Activ ACK? Release. */
 		lchan->release.in_error = true;
+		lchan->release.rsl_error_cause = RSL_ERR_INTERWORKING;
 		lchan_fsm_state_chg(LCHAN_ST_WAIT_RF_RELEASE_ACK);
 		return;
 
@@ -1067,6 +1068,7 @@ static void lchan_fsm_borken(struct osmo_fsm_inst *fi, uint32_t event, void *dat
 	case LCHAN_EV_RSL_RF_CHAN_REL_ACK:
 		/* A late Release ACK? */
 		lchan->release.in_error = true;
+		lchan->release.rsl_error_cause = RSL_ERR_INTERWORKING;
 		lchan_fsm_state_chg(LCHAN_ST_WAIT_AFTER_ERROR);
 		/* TODO: we used to do this only for sysmobts:
 			int do_free = is_sysmobts_v2(ts->trx->bts);
@@ -1291,6 +1293,7 @@ int lchan_fsm_timer_cb(struct osmo_fsm_inst *fi)
 
 	default:
 		lchan->release.in_error = true;
+		lchan->release.rsl_error_cause = RSL_ERR_INTERWORKING;
 		lchan_fail("Timeout");
 		return 0;
 	}

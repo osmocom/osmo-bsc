@@ -725,6 +725,7 @@ int lchan_rtp_fsm_timer_cb(struct osmo_fsm_inst *fi)
 {
 	struct gsm_lchan *lchan = lchan_rtp_fi_lchan(fi);
 	lchan->release.in_error = true;
+	lchan->release.rsl_error_cause = RSL_ERR_EQUIPMENT_FAIL;
 	lchan_rtp_fail("Timeout");
 	return 0;
 }
