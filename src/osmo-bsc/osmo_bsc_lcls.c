@@ -227,6 +227,26 @@ void lcls_apply_config(struct gsm_subscriber_connection *conn)
 	osmo_fsm_inst_dispatch(conn->lcls.fi, LCLS_EV_APPLY_CFG_CSC, NULL);
 }
 
+static inline bool lcls_check_toggle_allowed(const struct gsm_subscriber_connection *conn, bool enable)
+{
+	if (conn->lcls.other &&
+	    conn->sccp.msc->lcls_mode != conn->lcls.other->sccp.msc->lcls_mode) {
+		LOGPFSM(conn->lcls.fi, "FIXME: LCLS connection mode mismatch: %s != %s\n",
+			get_value_string(bsc_lcls_mode_names, conn->sccp.msc->lcls_mode),
+			get_value_string(bsc_lcls_mode_names, conn->lcls.other->sccp.msc->lcls_mode));
+		return false;
+	}
+
+	if (conn->sccp.msc->lcls_mode == BSC_LCLS_MODE_MGW_LOOP && !conn->user_plane.mgw_endpoint_ci_msc) {
+		/* the MGCP FSM has died, e.g. due to some MGCP/SDP parsing error */
+		LOGPFSML(conn->lcls.fi, LOGL_NOTICE, "Cannot %s LCLS without MSC-side MGCP FSM\n",
+			 enable ? "enable" : "disable");
+		return false;
+	}
+
+	return true;
+}
+
 /* Close the loop for LCLS using MGCP */
 static inline void lcls_mdcx(const struct gsm_subscriber_connection *conn, struct mgcp_conn_peer *mdcx_info)
 {
@@ -242,11 +262,8 @@ static void lcls_break_local_switching(struct gsm_subscriber_connection *conn)
 	LOGPFSM(conn->lcls.fi, "=== HERE IS WHERE WE DISABLE LCLS(%s)\n",
 		bsc_lcls_mode_name(conn->sccp.msc->lcls_mode));
 
-	if (!conn->user_plane.mgw_endpoint_ci_msc) {
-		/* the MGCP FSM has died, e.g. due to some MGCP/SDP parsing error */
-		LOGPFSML(conn->lcls.fi, LOGL_NOTICE, "Cannot disable LCLS without MSC-side MGCP FSM\n");
+	if (!lcls_check_toggle_allowed(conn, false))
 		return;
-	}
 
 	if (conn->sccp.msc->lcls_mode == BSC_LCLS_MODE_MGW_LOOP) {
 		struct mgcp_conn_peer mdcx_info = (struct mgcp_conn_peer){
@@ -583,12 +600,12 @@ static void lcls_locally_switched_onenter(struct osmo_fsm_inst *fi, uint32_t pre
 
 	OSMO_ASSERT(conn_other);
 
+	if (!lcls_check_toggle_allowed(conn, true))
+		return;
+
 	LOGPFSM(fi, "=== HERE IS WHERE WE ENABLE LCLS(%s)\n",
 		bsc_lcls_mode_name(conn->sccp.msc->lcls_mode));
-	if (!conn->user_plane.mgw_endpoint_ci_msc) {
-		LOGPFSML(fi, LOGL_ERROR, "Cannot enable LCLS without MSC-side MGCP FSM. FIXME\n");
-		return;
-	}
+
 	if (!conn_other->user_plane.mgw_endpoint_ci_msc) {
 		LOGPFSML(fi, LOGL_ERROR, "Cannot enable LCLS without MSC-side MGCP FSM. FIXME\n");
 		return;
