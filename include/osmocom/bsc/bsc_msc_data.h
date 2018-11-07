@@ -59,6 +59,13 @@ enum bsc_lcls_mode {
 	/* we may later introduce BTS_LOOP here: direct RTP between BTSs */
 };
 
+extern const struct value_string bsc_lcls_mode_names[];
+
+static inline const char *bsc_lcls_mode_name(enum bsc_lcls_mode m)
+{
+	return get_value_string(bsc_lcls_mode_names, m);
+}
+
 /*! /brief Information on a remote MSC for libbsc.
  */
 struct bsc_msc_data {

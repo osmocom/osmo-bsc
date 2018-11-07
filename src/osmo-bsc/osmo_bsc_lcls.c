@@ -240,7 +240,9 @@ static void lcls_break_local_switching(struct gsm_subscriber_connection *conn)
 {
 	struct mgcp_conn_peer mdcx_info;
 
-	LOGPFSM(conn->lcls.fi, "=== HERE IS WHERE WE DISABLE LCLS\n");
+	LOGPFSM(conn->lcls.fi, "=== HERE IS WHERE WE DISABLE LCLS(%s)\n",
+		bsc_lcls_mode_name(conn->sccp.msc->lcls_mode));
+
 	if (!conn->user_plane.mgw_endpoint_ci_msc) {
 		/* the MGCP FSM has died, e.g. due to some MGCP/SDP parsing error */
 		LOGPFSML(conn->lcls.fi, LOGL_NOTICE, "Cannot disable LCLS without MSC-side MGCP FSM\n");
@@ -581,7 +583,8 @@ static void lcls_locally_switched_onenter(struct osmo_fsm_inst *fi, uint32_t pre
 
 	OSMO_ASSERT(conn_other);
 
-	LOGPFSM(fi, "=== HERE IS WHERE WE ENABLE LCLS\n");
+	LOGPFSM(fi, "=== HERE IS WHERE WE ENABLE LCLS(%s)\n",
+		bsc_lcls_mode_name(conn->sccp.msc->lcls_mode));
 	if (!conn->user_plane.mgw_endpoint_ci_msc) {
 		LOGPFSML(fi, LOGL_ERROR, "Cannot enable LCLS without MSC-side MGCP FSM. FIXME\n");
 		return;

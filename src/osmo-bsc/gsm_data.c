@@ -47,6 +47,12 @@
 
 void *tall_bsc_ctx = NULL;
 
+const struct value_string bsc_lcls_mode_names[] = {
+	{ BSC_LCLS_MODE_DISABLED,	"disabled" },
+	{ BSC_LCLS_MODE_MGW_LOOP,	"mgw-loop" },
+	{ 0, NULL }
+};
+
 static LLIST_HEAD(bts_models);
 
 void set_ts_e1link(struct gsm_bts_trx_ts *ts, uint8_t e1_nr,

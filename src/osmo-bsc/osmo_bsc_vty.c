@@ -38,12 +38,6 @@
 
 #define IPA_STR "IP.ACCESS specific\n"
 
-static const struct value_string bsc_lcls_mode_names[] = {
-	{ BSC_LCLS_MODE_DISABLED,	"disabled" },
-	{ BSC_LCLS_MODE_MGW_LOOP,	"mgw-loop" },
-	{ 0, NULL }
-};
-
 static struct osmo_bsc_data *osmo_bsc_data(struct vty *vty)
 {
 	return bsc_gsmnet->bsc_data;
