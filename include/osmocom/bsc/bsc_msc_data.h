@@ -56,7 +56,7 @@ enum {
 enum bsc_lcls_mode {
 	BSC_LCLS_MODE_DISABLED,
 	BSC_LCLS_MODE_MGW_LOOP,
-	/* we may later introduce BTS_LOOP here: direct RTP between BTSs */
+	BSC_LCLS_MODE_BTS_LOOP,
 };
 
 extern const struct value_string bsc_lcls_mode_names[];

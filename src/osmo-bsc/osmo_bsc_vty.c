@@ -646,10 +646,11 @@ DEFUN(cfg_msc_cs7_asp_proto,
 
 DEFUN(cfg_net_msc_lcls_mode,
       cfg_net_msc_lcls_mode_cmd,
-      "lcls-mode (disabled|mgw-loop)",
+      "lcls-mode (disabled|mgw-loop|bts-loop)",
       "Configure 3GPP LCLS (Local Call, Local Switch)\n"
       "Disable LCLS for all calls of this MSC\n"
-      "Enable LCLS with loopping traffic in MGW\n")
+      "Enable LCLS with looping traffic in MGW\n"
+      "Enable LCLS with looping traffic between BTS\n")
 {
 	struct bsc_msc_data *data = bsc_msc_data(vty);
 	data->lcls_mode = get_string_value(bsc_lcls_mode_names, argv[0]);

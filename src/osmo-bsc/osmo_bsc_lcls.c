@@ -22,6 +22,7 @@
 #include <osmocom/core/linuxlist.h>
 #include <osmocom/gsm/gsm0808.h>
 #include <osmocom/core/msgb.h>
+#include <osmocom/bsc/abis_rsl.h>
 #include <osmocom/bsc/bsc_msc_data.h>
 #include <osmocom/bsc/debug.h>
 #include <osmocom/bsc/osmo_bsc.h>
@@ -227,6 +228,26 @@ void lcls_apply_config(struct gsm_subscriber_connection *conn)
 	osmo_fsm_inst_dispatch(conn->lcls.fi, LCLS_EV_APPLY_CFG_CSC, NULL);
 }
 
+/* Redirect BTS's RTP traffic via RSL MDCX command:
+ * when enable == true, redirect to remote BTS's IP:port
+ * when enable == false, redirect back to the MGW's IP:port
+ */
+static inline void lcls_rsl(const struct gsm_subscriber_connection *conn, bool enable)
+{
+       const struct gsm_lchan *lchan = conn->lchan;
+       /* RSL_IE_IPAC_REMOTE_IP */
+       uint32_t ip = enable ? conn->lcls.other->lchan->abis_ip.bound_ip : lchan->abis_ip.connect_ip;
+       /* RSL_IE_IPAC_REMOTE_PORT */
+       uint16_t port = enable ? conn->lcls.other->lchan->abis_ip.bound_port : lchan->abis_ip.connect_port;
+
+       if (!conn->lcls.other) {
+	       LOGPFSM(conn->lcls.fi, "%s LCLS: other conn is not available!\n", enable ? "enable" : "disable");
+               return;
+       }
+
+       abis_rsl_sendmsg(rsl_make_ipacc_mdcx(lchan, ip, port));
+}
+
 static inline bool lcls_check_toggle_allowed(const struct gsm_subscriber_connection *conn, bool enable)
 {
 	if (conn->lcls.other &&
@@ -258,6 +279,7 @@ static inline void lcls_mdcx(const struct gsm_subscriber_connection *conn, struc
 
 static void lcls_break_local_switching(struct gsm_subscriber_connection *conn)
 {
+	struct mgcp_conn_peer mdcx_info;
 
 	LOGPFSM(conn->lcls.fi, "=== HERE IS WHERE WE DISABLE LCLS(%s)\n",
 		bsc_lcls_mode_name(conn->sccp.msc->lcls_mode));
@@ -265,12 +287,21 @@ static void lcls_break_local_switching(struct gsm_subscriber_connection *conn)
 	if (!lcls_check_toggle_allowed(conn, false))
 		return;
 
-	if (conn->sccp.msc->lcls_mode == BSC_LCLS_MODE_MGW_LOOP) {
-		struct mgcp_conn_peer mdcx_info = (struct mgcp_conn_peer){
-			.port = conn->user_plane.msc_assigned_rtp_port,
-		};
+	switch(conn->sccp.msc->lcls_mode) {
+	case BSC_LCLS_MODE_MGW_LOOP:
+		mdcx_info.port = conn->user_plane.msc_assigned_rtp_port;
 		osmo_strlcpy(mdcx_info.addr, conn->user_plane.msc_assigned_rtp_addr, sizeof(mdcx_info.addr));
 		lcls_mdcx(conn, &mdcx_info);
+		break;
+	case BSC_LCLS_MODE_BTS_LOOP:
+		lcls_rsl(conn, false);
+		break;
+	case BSC_LCLS_MODE_DISABLED:
+		LOGPFSM(conn->lcls.fi, "FIXME: attempt to break LCLS loop while LCLS is disabled?!\n");
+		break;
+	default:
+		LOGPFSM(conn->lcls.fi, "FIXME: unknown LCLS mode %s\n",
+			bsc_lcls_mode_name(conn->sccp.msc->lcls_mode));
 	}
 }
 
@@ -597,6 +628,7 @@ static void lcls_locally_switched_onenter(struct osmo_fsm_inst *fi, uint32_t pre
 	struct gsm_subscriber_connection *conn = fi->priv;
 	struct gsm_subscriber_connection *conn_other = conn->lcls.other;
 	const struct mgcp_conn_peer *other_mgw_info;
+	struct mgcp_conn_peer mdcx_info;
 
 	OSMO_ASSERT(conn_other);
 
@@ -618,11 +650,22 @@ static void lcls_locally_switched_onenter(struct osmo_fsm_inst *fi, uint32_t pre
 		return;
 	}
 
-	if (conn->sccp.msc->lcls_mode == BSC_LCLS_MODE_MGW_LOOP) {
-		struct mgcp_conn_peer mdcx_info = *other_mgw_info;
+	switch(conn->sccp.msc->lcls_mode) {
+	case BSC_LCLS_MODE_MGW_LOOP:
+		mdcx_info = *other_mgw_info;
 		/* Make sure the request doesn't want to use the other side's endpoint string. */
 		mdcx_info.endpoint[0] = 0;
 		lcls_mdcx(conn, &mdcx_info);
+		break;
+	case BSC_LCLS_MODE_BTS_LOOP:
+		lcls_rsl(conn, true);
+		break;
+	case BSC_LCLS_MODE_DISABLED:
+		LOGPFSM(conn->lcls.fi, "FIXME: attempt to close LCLS loop while LCLS is disabled?!\n");
+		break;
+	default:
+		LOGPFSM(conn->lcls.fi, "FIXME: unknown LCLS mode %s\n",
+			bsc_lcls_mode_name(conn->sccp.msc->lcls_mode));
 	}
 }
 
