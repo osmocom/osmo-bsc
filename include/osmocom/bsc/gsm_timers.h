@@ -37,7 +37,7 @@ struct T_def *T_def_get_entry(struct T_def *T_defs, int T);
 
 void T_defs_vty_init(struct T_def *T_defs, int cfg_parent_node);
 void T_defs_vty_write(struct vty *vty, const char *indent);
-
+struct T_def *parse_T_arg(struct vty *vty, const char *T_str);
 
 struct state_timeout {
 	int T;

@@ -37,7 +37,7 @@ static struct T_def gsm_network_T_defs[] = {
 	{ .T=3109, .default_val=5, .desc="RSL SACCH deactivation" },
 	{ .T=3111, .default_val=2, .desc="Wait time before RSL RF Channel Release" },
 	{ .T=993111, .default_val=4, .desc="Wait time after lchan was released in error (should be T3111 + 2s)" },
-	{ .T=3113, .default_val=10, .desc="Paging"},
+	{ .T=3113, .default_val=7, .desc="Paging"},
 	{ .T=3115, .default_val=10, .desc="(unused)" },
 	{ .T=3117, .default_val=10, .desc="(unused)" },
 	{ .T=3119, .default_val=10, .desc="(unused)" },

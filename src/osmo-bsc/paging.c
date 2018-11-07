@@ -287,6 +287,32 @@ static void paging_T3113_expired(void *data)
 	paging_remove_request(&req->bts->paging, req);
 }
 
+#define GSM_FRAME_DURATION_us	4615
+#define GSM51_MFRAME_DURATION_us (51 * GSM_FRAME_DURATION_us) /* 235365 us */
+static unsigned int calculate_timer_3113(struct gsm_bts *bts)
+{
+	unsigned int to_us, to;
+	struct T_def *d = T_def_get_entry(bts->network->T_defs, 3113);
+
+	if (!bts->T3113_dynamic)
+		return d->val;
+
+	/* TODO: take into account load of paging group for req->bsub */
+
+	/* MFRMS defines repeat interval of paging messages for MSs that belong
+	 * to same paging group accross multiple 51 frame multiframes.
+	 * MAXTRANS defines maximum number of RACH retransmissions.
+	 */
+	to_us = GSM51_MFRAME_DURATION_us * (bts->si_common.chan_desc.bs_pa_mfrms + 2) *
+		bts->si_common.rach_control.max_trans;
+
+	/* ceiling in seconds + extra time */
+	to = (to_us + 999999) / 1000000 + d->val;
+	LOGP(DPAG, LOGL_DEBUG, "(bts=%d) Paging request: T3113 expires in %u seconds\n",
+	     bts->nr, to);
+	return to;
+}
+
 /*! Start paging + paging timer for given subscriber on given BTS
  * \param bts BTS on which to page
  * \param[in] bsub subscriber we want to page
@@ -298,6 +324,7 @@ static int _paging_request(struct gsm_bts *bts, struct bsc_subscr *bsub, int typ
 {
 	struct gsm_bts_paging_state *bts_entry = &bts->paging;
 	struct gsm_paging_request *req;
+	unsigned int t3113_timeout_s;
 
 	rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_CTR_PAGING_ATTEMPTED]);
 
@@ -317,7 +344,8 @@ static int _paging_request(struct gsm_bts *bts, struct bsc_subscr *bsub, int typ
 	req->chan_type = type;
 	req->msc = msc;
 	osmo_timer_setup(&req->T3113, paging_T3113_expired, req);
-	osmo_timer_schedule(&req->T3113, T_def_get(bts->network->T_defs, 3113, T_S, -1), 0);
+	t3113_timeout_s = calculate_timer_3113(bts);
+	osmo_timer_schedule(&req->T3113, t3113_timeout_s, 0);
 	llist_add_tail(&req->entry, &bts_entry->pending_requests);
 	paging_schedule_if_needed(bts_entry);
 

@@ -32,7 +32,7 @@ static struct T_def *g_vty_T_defs = NULL;
 
 /* Parse an argument like "T1234", "t1234" or "1234" and return the corresponding T_def entry from
  * g_vty_T_defs, if any. */
-static struct T_def *parse_T_arg(struct vty *vty, const char *T_str)
+struct T_def *parse_T_arg(struct vty *vty, const char *T_str)
 {
 	int T;
 	struct T_def *d;

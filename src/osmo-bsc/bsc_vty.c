@@ -3951,6 +3951,56 @@ DEFUN(cfg_bts_amr_hr_hyst3, cfg_bts_amr_hr_hyst3_cmd,
 	return check_amr_config(vty);
 }
 
+#define TNUM_STR "T-number, optionally preceded by 't' or 'T'\n"
+DEFUN(cfg_bts_t3113_dynamic, cfg_bts_t3113_dynamic_cmd,
+	"timer-dynamic TNNNN",
+	"Calculate T3113 dynamically based on channel config and load\n"
+	TNUM_STR)
+{
+	struct T_def *d;
+	struct gsm_bts *bts = vty->index;
+
+	d = parse_T_arg(vty, argv[0]);
+	if (!d)
+		return CMD_WARNING;
+
+	switch (d->T) {
+	case 3113:
+		bts->T3113_dynamic = true;
+		break;
+	default:
+		vty_out(vty, "T%d cannot be set to dynamic%s", d->T, VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	return CMD_SUCCESS;
+}
+
+DEFUN(cfg_bts_no_t3113_dynamic, cfg_bts_no_t3113_dynamic_cmd,
+	"no timer-dynamic TNNNN",
+	NO_STR
+	"Set given timer to non-dynamic and use the default or user provided fixed value\n"
+	TNUM_STR)
+{
+	struct T_def *d;
+	struct gsm_bts *bts = vty->index;
+
+	d = parse_T_arg(vty, argv[0]);
+	if (!d)
+		return CMD_WARNING;
+
+	switch (d->T) {
+	case 3113:
+		bts->T3113_dynamic = false;
+		break;
+	default:
+		vty_out(vty, "T%d already is non-dynamic%s", d->T, VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	return CMD_SUCCESS;
+}
+
 #define TRX_TEXT "Radio Transceiver\n"
 
 /* per TRX configuration */
@@ -5129,6 +5179,8 @@ int bsc_vty_init(struct gsm_network *network)
 	install_element(BTS_NODE, &cfg_bts_no_acc_ramping_cmd);
 	install_element(BTS_NODE, &cfg_bts_acc_ramping_step_interval_cmd);
 	install_element(BTS_NODE, &cfg_bts_acc_ramping_step_size_cmd);
+	install_element(BTS_NODE, &cfg_bts_t3113_dynamic_cmd);
+	install_element(BTS_NODE, &cfg_bts_no_t3113_dynamic_cmd);
 	neighbor_ident_vty_init(network, network->neighbor_bss_cells);
 	/* See also handover commands added on bts level from handover_vty.c */
 

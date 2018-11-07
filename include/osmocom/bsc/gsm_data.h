@@ -1147,6 +1147,7 @@ struct gsm_bts {
 
 	/* BTS-specific overrides for timer values from struct gsm_network. */
 	uint8_t T3122;	/* ASSIGMENT REJECT wait indication */
+	bool T3113_dynamic; /* Calculate T3113 timeout dynamically based on BTS channel config and load */
 
 	/* Periodic channel load measurements are used to maintain T3122. */
 	struct load_counter chan_load_samples[7];
