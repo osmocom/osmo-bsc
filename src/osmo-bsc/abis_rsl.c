@@ -1770,7 +1770,7 @@ int ipacc_payload_type(enum gsm48_chan_mode tch_mode, enum gsm_chan_t type)
 	return -EINVAL;
 }
 
-static const char *ip_to_a(uint32_t ip)
+const char *ip_to_a(uint32_t ip)
 {
 	struct in_addr ia;
 	ia.s_addr = htonl(ip);
