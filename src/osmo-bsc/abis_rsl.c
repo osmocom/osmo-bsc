@@ -1830,7 +1830,7 @@ static void ipac_parse_rtp(struct gsm_lchan *lchan, struct tlv_parsed *tv, const
 /*! Send Issue IPA RSL CRCX to configure the RTP port of the BTS.
  * \param[in] lchan Logical Channel for which we issue CRCX
  */
-int rsl_tx_ipacc_crcx(struct gsm_lchan *lchan)
+int rsl_tx_ipacc_crcx(const struct gsm_lchan *lchan)
 {
 	struct msgb *msg = rsl_msgb_alloc();
 	struct abis_rsl_dchan_hdr *dh;
@@ -1856,7 +1856,7 @@ int rsl_tx_ipacc_crcx(struct gsm_lchan *lchan)
  * \param[in] lchan Logical Channel for which we issue MDCX
  * Remote (MGW) IP address, port and payload types for RTP are determined from lchan->abis_ip.
  */
-int rsl_tx_ipacc_mdcx(struct gsm_lchan *lchan)
+int rsl_tx_ipacc_mdcx(const struct gsm_lchan *lchan)
 {
 	struct msgb *msg = rsl_msgb_alloc();
 	struct abis_rsl_dchan_hdr *dh;

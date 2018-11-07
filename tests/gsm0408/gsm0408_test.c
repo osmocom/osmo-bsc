@@ -968,7 +968,7 @@ int rsl_siemens_mrpci(struct gsm_lchan *lchan, struct rsl_mrpci *mrpci)
 
 int rsl_chan_mode_modify_req(struct gsm_lchan *ts) { return 0; }
 
-int rsl_tx_ipacc_crcx(struct gsm_lchan *lchan) { return 0; }
+int rsl_tx_ipacc_crcx(const struct gsm_lchan *lchan) { return 0; }
 
 void gscon_submit_rsl_dtap(struct gsm_subscriber_connection *conn,
 			   struct msgb *msg, int link_id, int allow_sacch) {}
