@@ -238,7 +238,6 @@ static inline void lcls_mdcx(const struct gsm_subscriber_connection *conn, struc
 
 static void lcls_break_local_switching(struct gsm_subscriber_connection *conn)
 {
-	struct mgcp_conn_peer mdcx_info;
 
 	LOGPFSM(conn->lcls.fi, "=== HERE IS WHERE WE DISABLE LCLS(%s)\n",
 		bsc_lcls_mode_name(conn->sccp.msc->lcls_mode));
@@ -249,11 +248,13 @@ static void lcls_break_local_switching(struct gsm_subscriber_connection *conn)
 		return;
 	}
 
-	mdcx_info = (struct mgcp_conn_peer){
-		.port = conn->user_plane.msc_assigned_rtp_port,
-	};
-	osmo_strlcpy(mdcx_info.addr, conn->user_plane.msc_assigned_rtp_addr, sizeof(mdcx_info.addr));
-	lcls_mdcx(conn, &mdcx_info);
+	if (conn->sccp.msc->lcls_mode == BSC_LCLS_MODE_MGW_LOOP) {
+		struct mgcp_conn_peer mdcx_info = (struct mgcp_conn_peer){
+			.port = conn->user_plane.msc_assigned_rtp_port,
+		};
+		osmo_strlcpy(mdcx_info.addr, conn->user_plane.msc_assigned_rtp_addr, sizeof(mdcx_info.addr));
+		lcls_mdcx(conn, &mdcx_info);
+	}
 }
 
 static bool lcls_enable_possible(struct gsm_subscriber_connection *conn)
@@ -579,7 +580,6 @@ static void lcls_locally_switched_onenter(struct osmo_fsm_inst *fi, uint32_t pre
 	struct gsm_subscriber_connection *conn = fi->priv;
 	struct gsm_subscriber_connection *conn_other = conn->lcls.other;
 	const struct mgcp_conn_peer *other_mgw_info;
-	struct mgcp_conn_peer mdcx_info;
 
 	OSMO_ASSERT(conn_other);
 
@@ -601,10 +601,12 @@ static void lcls_locally_switched_onenter(struct osmo_fsm_inst *fi, uint32_t pre
 		return;
 	}
 
-	mdcx_info = *other_mgw_info;
-	/* Make sure the request doesn't want to use the other side's endpoint string. */
-	mdcx_info.endpoint[0] = 0;
-	lcls_mdcx(conn, &mdcx_info);
+	if (conn->sccp.msc->lcls_mode == BSC_LCLS_MODE_MGW_LOOP) {
+		struct mgcp_conn_peer mdcx_info = *other_mgw_info;
+		/* Make sure the request doesn't want to use the other side's endpoint string. */
+		mdcx_info.endpoint[0] = 0;
+		lcls_mdcx(conn, &mdcx_info);
+	}
 }
 
 static void lcls_locally_switched_wait_break_fn(struct osmo_fsm_inst *fi, uint32_t event, void *data)
