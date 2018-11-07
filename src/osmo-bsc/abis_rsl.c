@@ -1847,11 +1847,12 @@ int rsl_tx_ipacc_crcx(const struct gsm_lchan *lchan)
 	return abis_rsl_sendmsg(msg);
 }
 
-/*! Send IPA RSL MDCX to configure the RTP port the BTS sends to (MGW).
- * \param[in] lchan Logical Channel for which we issue MDCX
- * Remote (MGW) IP address, port and payload types for RTP are determined from lchan->abis_ip.
+/*! Allocate buffer for IPA RSL MDCX and populate it with given parameters.
+ * \param[in] lchan Logical Channel for which we make MDCX
+ * \param[in] dest_ip The IP address to connect to
+ * \param[in] dest_port The port to connect to
  */
-int rsl_tx_ipacc_mdcx(const struct gsm_lchan *lchan)
+struct msgb *rsl_make_ipacc_mdcx(const struct gsm_lchan *lchan, uint32_t dest_ip, uint16_t dest_port)
 {
 	struct msgb *msg = rsl_msgb_alloc();
 	struct abis_rsl_dchan_hdr *dh;
@@ -1865,14 +1866,25 @@ int rsl_tx_ipacc_mdcx(const struct gsm_lchan *lchan)
 	msgb_tv16_put(msg, RSL_IE_IPAC_CONN_ID, lchan->abis_ip.conn_id);
 	msgb_v_put(msg, RSL_IE_IPAC_REMOTE_IP);
 	att_ip = (uint32_t *)msgb_put(msg, sizeof(uint32_t));
-	*att_ip = htonl(lchan->abis_ip.connect_ip);
-	msgb_tv16_put(msg, RSL_IE_IPAC_REMOTE_PORT, lchan->abis_ip.connect_port);
+	*att_ip = htonl(dest_ip);
+	msgb_tv16_put(msg, RSL_IE_IPAC_REMOTE_PORT, dest_port);
 	msgb_tv_put(msg, RSL_IE_IPAC_SPEECH_MODE, lchan->abis_ip.speech_mode);
 	msgb_tv_put(msg, RSL_IE_IPAC_RTP_PAYLOAD, lchan->abis_ip.rtp_payload);
 	if (lchan->abis_ip.rtp_payload2)
 		msgb_tv_put(msg, RSL_IE_IPAC_RTP_PAYLOAD2, lchan->abis_ip.rtp_payload2);
 
 	msg->dst = lchan->ts->trx->rsl_link;
+
+	return msg;
+}
+
+/*! Send IPA RSL MDCX to configure the RTP port the BTS sends to (MGW).
+ * \param[in] lchan Logical Channel for which we issue MDCX
+ * Remote (MGW) IP address, port and payload types for RTP are determined from lchan->abis_ip.
+ */
+int rsl_tx_ipacc_mdcx(const struct gsm_lchan *lchan)
+{
+	struct msgb *msg = rsl_make_ipacc_mdcx(lchan, lchan->abis_ip.connect_ip, lchan->abis_ip.connect_port);
 
 	LOG_LCHAN(lchan, LOGL_DEBUG, "Sending IPACC MDCX to BTS:"
 		  " %s:%u rtp_payload=%u rtp_payload2=%u conn_id=%u speech_mode=0x%02x\n",

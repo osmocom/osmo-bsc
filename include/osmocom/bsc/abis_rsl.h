@@ -61,6 +61,7 @@ int rsl_ericsson_imm_assign_cmd(struct gsm_bts *bts, uint32_t tlli, uint8_t len,
 int rsl_siemens_mrpci(struct gsm_lchan *lchan, struct rsl_mrpci *mrpci);
 
 /* ip.access specfic RSL extensions */
+struct msgb *rsl_make_ipacc_mdcx(const struct gsm_lchan *lchan, uint32_t dest_ip, uint16_t dest_port);
 int rsl_tx_ipacc_crcx(const struct gsm_lchan *lchan);
 int rsl_tx_ipacc_mdcx(const struct gsm_lchan *lchan);
 int rsl_ipacc_mdcx_to_rtpsock(struct gsm_lchan *lchan);
