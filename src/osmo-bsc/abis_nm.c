@@ -466,16 +466,18 @@ static inline const uint8_t *parse_attr_resp_info_unreported(uint8_t bts_nr, con
 	return ari + num_unreported + 1; /* we have to account for 1st byte with number of unreported attributes */
 }
 
-/* Parse Attribute Response Info content for 3GPP TS 52.021 §9.4.30 Manufacturer Id */
-static inline const uint8_t *parse_attr_resp_info_manuf_id(struct gsm_bts *bts, const uint8_t *data, uint16_t *data_len)
+/* Handle 3GPP TS 52.021 §8.11.3 Get Attribute Response (with nanoBTS specific attribute formatting) */
+static int parse_attr_resp_info_attr(struct gsm_bts *bts, const struct gsm_bts_trx *trx, struct abis_om_fom_hdr *foh, struct tlv_parsed *tp)
 {
-	struct tlv_parsed tp;
-	uint16_t len = 0;
-	uint8_t adjust = 0, i;
+	const uint8_t* data;
+	uint16_t len;
+	int i;
+	int rc;
+	struct abis_nm_sw_desc sw_descr[MAX_BTS_ATTR];
 
-	abis_nm_tlv_parse(&tp, bts, data, *data_len);
-	if (TLVP_PRES_LEN(&tp, NM_ATT_MANUF_ID, 2)) {
-		len = TLVP_LEN(&tp, NM_ATT_MANUF_ID);
+	/* Parse Attribute Response Info content for 3GPP TS 52.021 §9.4.30 Manufacturer Id */
+	if (TLVP_PRES_LEN(tp, NM_ATT_MANUF_ID, 2)) {
+		len = TLVP_LEN(tp, NM_ATT_MANUF_ID);
 
 		/* log potential BTS feature vector overflow */
 		if (len > sizeof(bts->_features_data))
@@ -489,8 +491,7 @@ static inline const uint8_t *parse_attr_resp_info_manuf_id(struct gsm_bts *bts, 
 			     "Consider upgrading your BSC to later version.\n",
 			     bts->nr, len);
 
-		memcpy(bts->_features_data, TLVP_VAL(&tp, NM_ATT_MANUF_ID), sizeof(bts->_features_data));
-		adjust = len + 3; /* adjust for parsed TL16V struct */
+		memcpy(bts->_features_data, TLVP_VAL(tp, NM_ATT_MANUF_ID), sizeof(bts->_features_data));
 
 		for (i = 0; i < _NUM_BTS_FEAT; i++)
 			if (osmo_bts_has_feature(&bts->features, i) != osmo_bts_has_feature(&bts->model->features, i))
@@ -500,41 +501,41 @@ static inline const uint8_t *parse_attr_resp_info_manuf_id(struct gsm_bts *bts, 
 				     osmo_bts_has_feature(&bts->features, i), osmo_bts_has_feature(&bts->model->features, i));
 	}
 
-	*data_len -= adjust;
-
-	return data + adjust;
-}
-
-/* Parse Attribute Response Info content for 3GPP TS 52.021 §9.4.28 Manufacturer Dependent State */
-static inline const uint8_t *parse_attr_resp_info_manuf_state(const struct gsm_bts_trx *trx, const uint8_t *data, uint16_t *data_len)
-{
-	struct tlv_parsed tp;
-	const uint8_t *power;
-	uint8_t adjust = 0;
-
-	if (!trx) /* this attribute does not make sense on BTS level, only on TRX level */
-		return data;
-
-	abis_nm_tlv_parse(&tp, trx->bts, data, *data_len);
-	if (TLVP_PRES_LEN(&tp, NM_ATT_MANUF_STATE, 1)) {
-		power = TLVP_VAL(&tp, NM_ATT_MANUF_STATE);
-		LOGP(DNM, LOGL_NOTICE, "%s Get Attributes Response: nominal power is %u\n", gsm_trx_name(trx), *power);
-		adjust = 2; /* adjust for parsed TV struct */
+	/* Parse Attribute Response Info content for 3GPP TS 52.021 §9.4.28 Manufacturer Dependent State */
+	/* this attribute does not make sense on BTS level, only on TRX level */
+	if (trx && TLVP_PRES_LEN(tp, NM_ATT_MANUF_STATE, 1)) {
+		data = TLVP_VAL(tp, NM_ATT_MANUF_STATE);
+		LOGPFOH(DNM, LOGL_NOTICE, foh, "%s Get Attributes Response: nominal power is %u\n", gsm_trx_name(trx), *data);
 	}
 
-	*data_len -= adjust;
+	/* Parse Attribute Response Info content for 3GPP TS 52.021 §9.4.61 SW Configuration */
+	if (TLVP_PRESENT(tp, NM_ATT_SW_CONFIG)) {
+		data = TLVP_VAL(tp, NM_ATT_SW_CONFIG);
+		len = TLVP_LEN(tp, NM_ATT_SW_CONFIG);
+		/* after parsing manufacturer-specific attributes there's list of replies in form of sw-conf structure: */
+		rc = abis_nm_get_sw_conf(data, len, &sw_descr[0], ARRAY_SIZE(sw_descr));
+		if (rc > 0) {
+			for (i = 0; i < rc; i++) {
+				if (!handle_attr(bts, str2btsattr((const char *)sw_descr[i].file_id),
+						 sw_descr[i].file_version, sw_descr[i].file_version_len))
+					LOGPFOH(DNM, LOGL_NOTICE, foh, "BTS%u: ARI reported sw[%d/%d]: %s "
+						"is %s\n", bts->nr, i, rc, sw_descr[i].file_id,
+						sw_descr[i].file_version);
+			}
+		} else {
+			LOGPFOH(DNM, LOGL_ERROR, foh, "BTS%u: failed to parse SW-Config part of "
+				"Get Attribute Response Info: %s\n", bts->nr, strerror(-rc));
+		}
+	}
 
-	return data + adjust;
+	return 0;
 }
 
 /* Handle 3GPP TS 52.021 §9.4.64 Get Attribute Response Info */
 static int parse_attr_resp_info(struct gsm_bts *bts, const struct gsm_bts_trx *trx, struct abis_om_fom_hdr *foh, struct tlv_parsed *tp)
 {
 	const uint8_t *data;
-	int i;
 	uint16_t data_len;
-	int rc;
-	struct abis_nm_sw_desc sw_descr[MAX_BTS_ATTR];
 
 	if (!TLVP_PRES_LEN(tp, NM_ATT_GET_ARI, 1)) {
 		LOGPFOH(DNM, LOGL_ERROR, foh, "BTS%u: Get Attr Response without Response Info?!\n",
@@ -545,24 +546,11 @@ static int parse_attr_resp_info(struct gsm_bts *bts, const struct gsm_bts_trx *t
 	data = parse_attr_resp_info_unreported(bts->nr, TLVP_VAL(tp, NM_ATT_GET_ARI), TLVP_LEN(tp, NM_ATT_GET_ARI),
 					       &data_len);
 
-	data = parse_attr_resp_info_manuf_state(trx, data, &data_len);
-	data = parse_attr_resp_info_manuf_id(bts, data, &data_len);
-
-	/* after parsing manufacturer-specific attributes there's list of replies in form of sw-conf structure: */
-	rc = abis_nm_get_sw_conf(data, data_len, &sw_descr[0], ARRAY_SIZE(sw_descr));
-	if (rc > 0) {
-		for (i = 0; i < rc; i++) {
-			if (!handle_attr(bts, str2btsattr((const char *)sw_descr[i].file_id),
-					 sw_descr[i].file_version, sw_descr[i].file_version_len))
-				LOGPFOH(DNM, LOGL_NOTICE, foh, "BTS%u: ARI reported sw[%d/%d]: %s "
-					"is %s\n", bts->nr, i, rc, sw_descr[i].file_id,
-					sw_descr[i].file_version);
-		}
-	} else {
-		LOGPFOH(DNM, LOGL_ERROR, foh, "BTS%u: failed to parse SW-Config part of "
-			"Get Attribute Response Info: %s\n", bts->nr, strerror(-rc));
-	}
-	return 0;
+	/* After parsing unreported attribute id list inside Response info,
+	   there's a list of reported attribute ids and their values, in a TLV
+	   list form. */
+	abis_nm_tlv_parse(tp, bts, data, data_len);
+	return parse_attr_resp_info_attr(bts, trx, foh, tp);
 }
 
 /* Handle 3GPP TS 52.021 §8.11.3 Get Attribute Response */
