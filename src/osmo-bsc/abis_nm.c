@@ -495,7 +495,7 @@ static inline const uint8_t *parse_attr_resp_info_unreported(uint8_t bts_nr, con
 
 	/* the data starts right after the list of unreported attributes + space for length of that list */
 	if (out_len)
-		*out_len = ari_len - (num_unreported + 2);
+		*out_len = ari_len - (num_unreported + 1);
 
 	return ari + num_unreported + 1; /* we have to account for 1st byte with number of unreported attributes */
 }
