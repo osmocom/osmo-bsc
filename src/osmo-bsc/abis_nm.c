@@ -569,7 +569,8 @@ static int abis_nm_rx_get_attr_resp(struct msgb *mb, const struct gsm_bts_trx *t
 	/* nanoBTS doesn't send Get Attribute Response Info, uses its own format */
 	if (bts->type != GSM_BTS_TYPE_NANOBTS)
 		return parse_attr_resp_info(bts, trx, foh, &tp);
-	return 0;
+	else
+		return parse_attr_resp_info_attr(bts, trx, foh, &tp);
 }
 
 /* 3GPP TS 52.021 §6.2.5 */
