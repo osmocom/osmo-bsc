@@ -494,7 +494,8 @@ static inline const uint8_t *parse_attr_resp_info_unreported(uint8_t bts_nr, con
 		     bts_nr, get_value_string(abis_nm_att_names, ari[i + 1]));
 
 	/* the data starts right after the list of unreported attributes + space for length of that list */
-	*out_len = ari_len - (num_unreported + 2);
+	if (out_len)
+		*out_len = ari_len - (num_unreported + 2);
 
 	return ari + num_unreported + 1; /* we have to account for 1st byte with number of unreported attributes */
 }
@@ -573,6 +574,13 @@ static int parse_attr_resp_info_attr(struct gsm_bts *bts, const struct gsm_bts_t
 	if (abis_nm_tlv_attr_unit_id(tp, unit_id, sizeof(unit_id)) == 0) {
 		LOGPFOH(DNM, LOGL_NOTICE, foh, "BTS%u Get Attributes Response: Unit ID is %s\n",
 			bts->nr, unit_id);
+	}
+
+	/* nanoBTS provides Get Attribute Response Info at random position and only the unreported part of it. */
+	if (TLVP_PRES_LEN(tp, NM_ATT_GET_ARI, 1)) {
+		data = TLVP_VAL(tp, NM_ATT_GET_ARI);
+		len = TLVP_LEN(tp, NM_ATT_GET_ARI);
+		parse_attr_resp_info_unreported(bts->nr, data, len, NULL);
 	}
 
 	return 0;
