@@ -512,8 +512,9 @@ static int get_net_timezone(struct ctrl_cmd *cmd, void *data)
 static int set_net_timezone(struct ctrl_cmd *cmd, void *data)
 {
 	char *saveptr, *hourstr, *minstr, *dststr, *tmp = 0;
-	int override;
+	int override = 0;
 	struct gsm_network *net = (struct gsm_network*)cmd->node;
+	struct gsm_tz *tz = &net->tz;
 
 	tmp = talloc_strdup(cmd, cmd->value);
 	if (!tmp)
@@ -523,19 +524,17 @@ static int set_net_timezone(struct ctrl_cmd *cmd, void *data)
 	minstr = strtok_r(NULL, ",", &saveptr);
 	dststr = strtok_r(NULL, ",", &saveptr);
 
-	override = 0;
-
-	if (hourstr != NULL)
+	if (hourstr != NULL) {
 		override = strcasecmp(hourstr, "off") != 0;
+		if (override) {
+			tz->hr  = atol(hourstr);
+			tz->mn  = minstr ? atol(minstr) : 0;
+			tz->dst = dststr ? atol(dststr) : 0;
+		}
+	}
 
-	struct gsm_tz *tz = &net->tz;
 	tz->override = override;
 
-	if (override) {
-		tz->hr  = hourstr ? atol(hourstr) : 0;
-		tz->mn  = minstr ? atol(minstr) : 0;
-		tz->dst = dststr ? atol(dststr) : 0;
-	}
 
 	talloc_free(tmp);
 	tmp = NULL;
