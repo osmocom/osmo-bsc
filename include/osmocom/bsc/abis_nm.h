@@ -67,6 +67,8 @@ struct abis_nm_cfg {
 extern int abis_nm_rcvmsg(struct msgb *msg);
 
 int abis_nm_tlv_parse(struct tlv_parsed *tp, struct gsm_bts *bts, const uint8_t *buf, int len);
+int abis_nm_tlv_attr_primary_oml(struct tlv_parsed *tp, struct in_addr *ia, uint16_t *oml_port);
+int abis_nm_tlv_attr_unit_id(struct tlv_parsed *tp, char* unit_id, size_t buf_len);
 int abis_nm_rx(struct msgb *msg);
 int abis_nm_opstart(struct gsm_bts *bts, uint8_t obj_class, uint8_t i0, uint8_t i1, uint8_t i2);
 int abis_nm_chg_adm_state(struct gsm_bts *bts, uint8_t obj_class, uint8_t i0,

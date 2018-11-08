@@ -64,6 +64,39 @@ int abis_nm_tlv_parse(struct tlv_parsed *tp, struct gsm_bts *bts, const uint8_t 
 	return tlv_parse(tp, &bts->model->nm_att_tlvdef, buf, len, 0, 0);
 }
 
+/* Parse OML Primary IP and port from tlv_parsed containing list of Reported Attributes */
+int abis_nm_tlv_attr_primary_oml(struct tlv_parsed *tp, struct in_addr *ia, uint16_t *oml_port)
+{
+	const uint8_t* data;
+	if (TLVP_PRES_LEN(tp, NM_ATT_IPACC_PRIM_OML_CFG_LIST, 7)) {
+		data = TLVP_VAL(tp, NM_ATT_IPACC_PRIM_OML_CFG_LIST);
+		if (NM_ATT_IPACC_PRIM_OML_CFG == *data) {
+			ia->s_addr = htonl(osmo_load32be(data+1));
+			*oml_port = osmo_load16be(data+5);
+			return 0;
+		}else {
+			LOGP(DNM, LOGL_ERROR,
+			     "Get Attributes Response: PRIM_OML_CFG_LIST has unexpected format: %s\n",
+			     osmo_hexdump(data, TLVP_LEN(tp, NM_ATT_IPACC_PRIM_OML_CFG_LIST)));
+		}
+	}
+	return -1;
+}
+
+/* Parse OML Primary IP and port from tlv_parsed containing list of Reported Attributes */
+int abis_nm_tlv_attr_unit_id(struct tlv_parsed *tp, char* unit_id, size_t buf_len)
+{
+	const uint8_t* data;
+	uint16_t len;
+	if (TLVP_PRES_LEN(tp, NM_ATT_IPACC_UNIT_ID, 1)) {
+		data = TLVP_VAL(tp, NM_ATT_IPACC_UNIT_ID);
+		len = TLVP_LEN(tp, NM_ATT_IPACC_UNIT_ID);
+		osmo_strlcpy(unit_id, (char*)data, OSMO_MIN(len, buf_len));
+		return 0;
+	}
+	return -1;
+}
+
 static int is_in_arr(enum abis_nm_msgtype mt, const enum abis_nm_msgtype *arr, int size)
 {
 	int i;
@@ -473,6 +506,9 @@ static int parse_attr_resp_info_attr(struct gsm_bts *bts, const struct gsm_bts_t
 	uint16_t len;
 	int i;
 	int rc;
+	uint16_t port;
+	struct in_addr ia = {0};
+	char unit_id[40];
 	struct abis_nm_sw_desc sw_descr[MAX_BTS_ATTR];
 
 	/* Parse Attribute Response Info content for 3GPP TS 52.021 §9.4.30 Manufacturer Id */
@@ -526,6 +562,17 @@ static int parse_attr_resp_info_attr(struct gsm_bts *bts, const struct gsm_bts_t
 			LOGPFOH(DNM, LOGL_ERROR, foh, "BTS%u: failed to parse SW-Config part of "
 				"Get Attribute Response Info: %s\n", bts->nr, strerror(-rc));
 		}
+	}
+
+	if (abis_nm_tlv_attr_primary_oml(tp, &ia, &port) == 0) {
+		LOGPFOH(DNM, LOGL_NOTICE, foh,
+			"BTS%u Get Attributes Response: Primary OML IP is %s:%u\n",
+			bts->nr, inet_ntoa(ia), port);
+	}
+
+	if (abis_nm_tlv_attr_unit_id(tp, unit_id, sizeof(unit_id)) == 0) {
+		LOGPFOH(DNM, LOGL_NOTICE, foh, "BTS%u Get Attributes Response: Unit ID is %s\n",
+			bts->nr, unit_id);
 	}
 
 	return 0;
