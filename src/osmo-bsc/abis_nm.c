@@ -470,27 +470,27 @@ static inline const uint8_t *parse_attr_resp_info_unreported(uint8_t bts_nr, con
 static inline const uint8_t *parse_attr_resp_info_manuf_id(struct gsm_bts *bts, const uint8_t *data, uint16_t *data_len)
 {
 	struct tlv_parsed tp;
-	uint16_t m_id_len = 0;
+	uint16_t len = 0;
 	uint8_t adjust = 0, i;
 
 	abis_nm_tlv_parse(&tp, bts, data, *data_len);
 	if (TLVP_PRES_LEN(&tp, NM_ATT_MANUF_ID, 2)) {
-		m_id_len = TLVP_LEN(&tp, NM_ATT_MANUF_ID);
+		len = TLVP_LEN(&tp, NM_ATT_MANUF_ID);
 
 		/* log potential BTS feature vector overflow */
-		if (m_id_len > sizeof(bts->_features_data))
+		if (len > sizeof(bts->_features_data))
 			LOGP(DNM, LOGL_NOTICE, "BTS%u Get Attributes Response: feature vector is truncated to %u bytes\n",
 			     bts->nr, MAX_BTS_FEATURES/8);
 
 		/* check that max. expected BTS attribute is above given feature vector length */
-		if (m_id_len > OSMO_BYTES_FOR_BITS(_NUM_BTS_FEAT))
+		if (len > OSMO_BYTES_FOR_BITS(_NUM_BTS_FEAT))
 			LOGP(DNM, LOGL_NOTICE, "BTS%u Get Attributes Response: reported unexpectedly long (%u bytes) "
 			     "feature vector - most likely it was compiled against newer BSC headers. "
 			     "Consider upgrading your BSC to later version.\n",
-			     bts->nr, m_id_len);
+			     bts->nr, len);
 
 		memcpy(bts->_features_data, TLVP_VAL(&tp, NM_ATT_MANUF_ID), sizeof(bts->_features_data));
-		adjust = m_id_len + 3; /* adjust for parsed TL16V struct */
+		adjust = len + 3; /* adjust for parsed TL16V struct */
 
 		for (i = 0; i < _NUM_BTS_FEAT; i++)
 			if (osmo_bts_has_feature(&bts->features, i) != osmo_bts_has_feature(&bts->model->features, i))
