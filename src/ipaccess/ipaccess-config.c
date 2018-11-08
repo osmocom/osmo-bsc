@@ -1044,7 +1044,7 @@ int main(int argc, char **argv)
 	gsm_bts_trx_alloc(bts);
 	gsm_bts_trx_alloc(bts);
 	bts->oml_tei = stream_id;
-	
+
 	osmo_signal_register_handler(SS_NM, nm_sig_cb, NULL);
 	osmo_signal_register_handler(SS_IPAC_NWL, nwl_sig_cb, NULL);
 
@@ -1060,7 +1060,7 @@ int main(int argc, char **argv)
 		perror("Error connecting to the BTS");
 		exit(1);
 	}
-	
+
 	bts->oml_link->ts->sign.delay = 10;
 	bts->c0->rsl_link->ts->sign.delay = 10;
 	while (1) {
