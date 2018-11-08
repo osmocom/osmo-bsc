@@ -528,29 +528,21 @@ static inline const uint8_t *parse_attr_resp_info_manuf_state(const struct gsm_b
 }
 
 /* Handle 3GPP TS 52.021 §9.4.64 Get Attribute Response Info */
-static int abis_nm_rx_get_attr_resp(struct msgb *mb, const struct gsm_bts_trx *trx)
+static int parse_attr_resp_info(struct gsm_bts *bts, const struct gsm_bts_trx *trx, struct abis_om_fom_hdr *foh, struct tlv_parsed *tp)
 {
-	struct abis_om_hdr *oh = msgb_l2(mb);
-	struct abis_om_fom_hdr *foh = msgb_l3(mb);
-	struct e1inp_sign_link *sign_link = mb->dst;
-	struct gsm_bts *bts = trx ? trx->bts : sign_link->trx->bts;
-	struct tlv_parsed tp;
 	const uint8_t *data;
 	int i;
 	uint16_t data_len;
 	int rc;
 	struct abis_nm_sw_desc sw_descr[MAX_BTS_ATTR];
 
-	DEBUGPFOH(DNM, foh, "Get Attributes Response for BTS%u\n", bts->nr);
-
-	abis_nm_tlv_parse(&tp, bts, foh->data, oh->length-sizeof(*foh));
-	if (!TLVP_PRES_LEN(&tp, NM_ATT_GET_ARI, 1)) {
+	if (!TLVP_PRES_LEN(tp, NM_ATT_GET_ARI, 1)) {
 		LOGPFOH(DNM, LOGL_ERROR, foh, "BTS%u: Get Attr Response without Response Info?!\n",
 			bts->nr);
 		return -EINVAL;
 	}
 
-	data = parse_attr_resp_info_unreported(bts->nr, TLVP_VAL(&tp, NM_ATT_GET_ARI), TLVP_LEN(&tp, NM_ATT_GET_ARI),
+	data = parse_attr_resp_info_unreported(bts->nr, TLVP_VAL(tp, NM_ATT_GET_ARI), TLVP_LEN(tp, NM_ATT_GET_ARI),
 					       &data_len);
 
 	data = parse_attr_resp_info_manuf_state(trx, data, &data_len);
@@ -570,8 +562,23 @@ static int abis_nm_rx_get_attr_resp(struct msgb *mb, const struct gsm_bts_trx *t
 		LOGPFOH(DNM, LOGL_ERROR, foh, "BTS%u: failed to parse SW-Config part of "
 			"Get Attribute Response Info: %s\n", bts->nr, strerror(-rc));
 	}
-
 	return 0;
+}
+
+/* Handle 3GPP TS 52.021 §8.11.3 Get Attribute Response */
+static int abis_nm_rx_get_attr_resp(struct msgb *mb, const struct gsm_bts_trx *trx)
+{
+	struct abis_om_hdr *oh = msgb_l2(mb);
+	struct abis_om_fom_hdr *foh = msgb_l3(mb);
+	struct e1inp_sign_link *sign_link = mb->dst;
+	struct gsm_bts *bts = trx ? trx->bts : sign_link->trx->bts;
+	struct tlv_parsed tp;
+
+	DEBUGPFOH(DNM, foh, "Get Attributes Response for BTS%u\n", bts->nr);
+
+	abis_nm_tlv_parse(&tp, bts, foh->data, oh->length-sizeof(*foh));
+
+	return parse_attr_resp_info(bts, trx, foh, &tp);
 }
 
 /* 3GPP TS 52.021 §6.2.5 */
