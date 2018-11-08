@@ -78,11 +78,6 @@ static void *tall_ctx_config = NULL;
 static struct abis_nm_sw_desc *sw_load1 = NULL;
 static struct abis_nm_sw_desc *sw_load2 = NULL;
 
-/*
-static uint8_t prim_oml_attr[] = { 0x95, 0x00, 7, 0x88, 192, 168, 100, 11, 0x00, 0x00 };
-static uint8_t unit_id_attr[] = { 0x91, 0x00, 9, '2', '3', '4', '2', '/' , '0', '/', '0', 0x00 };
-*/
-
 extern int ipaccess_fd_cb(struct osmo_fd *bfd, unsigned int what);
 extern struct e1inp_line_ops ipaccess_e1inp_line_ops;
 
