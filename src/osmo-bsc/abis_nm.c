@@ -616,6 +616,7 @@ static int abis_nm_rx_get_attr_resp(struct msgb *mb, const struct gsm_bts_trx *t
 	struct e1inp_sign_link *sign_link = mb->dst;
 	struct gsm_bts *bts = trx ? trx->bts : sign_link->trx->bts;
 	struct tlv_parsed tp;
+	int rc;
 
 	DEBUGPFOH(DNM, foh, "Get Attributes Response for BTS%u\n", bts->nr);
 
@@ -623,9 +624,13 @@ static int abis_nm_rx_get_attr_resp(struct msgb *mb, const struct gsm_bts_trx *t
 
 	/* nanoBTS doesn't send Get Attribute Response Info, uses its own format */
 	if (bts->type != GSM_BTS_TYPE_NANOBTS)
-		return parse_attr_resp_info(bts, trx, foh, &tp);
+		rc = parse_attr_resp_info(bts, trx, foh, &tp);
 	else
-		return parse_attr_resp_info_attr(bts, trx, foh, &tp);
+		rc = parse_attr_resp_info_attr(bts, trx, foh, &tp);
+
+	osmo_signal_dispatch(SS_NM, S_NM_GET_ATTR_REP, mb);
+
+	return rc;
 }
 
 /* 3GPP TS 52.021 §6.2.5 */
