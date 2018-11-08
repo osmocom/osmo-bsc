@@ -566,7 +566,10 @@ static int abis_nm_rx_get_attr_resp(struct msgb *mb, const struct gsm_bts_trx *t
 
 	abis_nm_tlv_parse(&tp, bts, foh->data, oh->length-sizeof(*foh));
 
-	return parse_attr_resp_info(bts, trx, foh, &tp);
+	/* nanoBTS doesn't send Get Attribute Response Info, uses its own format */
+	if (bts->type != GSM_BTS_TYPE_NANOBTS)
+		return parse_attr_resp_info(bts, trx, foh, &tp);
+	return 0;
 }
 
 /* 3GPP TS 52.021 §6.2.5 */
@@ -1641,7 +1644,7 @@ int abis_nm_get_attr(struct gsm_bts *bts, uint8_t obj_class, uint8_t bts_nr, uin
 	struct abis_om_hdr *oh;
 	struct msgb *msg;
 
-	if (bts->type != GSM_BTS_TYPE_OSMOBTS) {
+	if (bts->type != GSM_BTS_TYPE_OSMOBTS && bts->type != GSM_BTS_TYPE_NANOBTS) {
 		LOGPC(DNM, LOGL_NOTICE, "Getting attributes from BTS%d type %s is not supported.\n",
 		      bts->nr, btstype2str(bts->type));
 		return -EINVAL;
