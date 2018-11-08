@@ -520,19 +520,20 @@ reject:
 static void bssmap_handle_ass_req_lcls(struct gsm_subscriber_connection *conn,
 					const struct tlv_parsed *tp)
 {
-	const struct tlv_p_entry *tlv;
-	const uint8_t *config, *control;
+	const uint8_t *config, *control, *gcr, gcr_len = TLVP_LEN(tp, GSM0808_IE_GLOBAL_CALL_REF);
 
-	tlv = TLVP_GET(tp, GSM0808_IE_GLOBAL_CALL_REF);
-	if (tlv) {
-		if (tlv->len > sizeof(conn->lcls.global_call_ref))
-			LOGPFSML(conn->fi, LOGL_ERROR, "Global Call Ref IE of %u bytes is too long\n",
-				tlv->len);
-		else {
-			LOGPFSM(conn->fi, "Setting GCR to %s\n", osmo_hexdump_nospc(tlv->val, tlv->len));
-			memcpy(&conn->lcls.global_call_ref, tlv->val, tlv->len);
-			conn->lcls.global_call_ref_len = tlv->len;
-		}
+	if (gcr_len > sizeof(conn->lcls.global_call_ref))
+		LOGPFSML(conn->fi, LOGL_ERROR, "Global Call Ref IE of %u bytes is too long\n",
+			 gcr_len);
+	else {
+		gcr = TLVP_VAL_MINLEN(tp, GSM0808_IE_GLOBAL_CALL_REF, 13);
+		if (gcr) {
+			LOGPFSM(conn->fi, "Setting GCR to %s\n", osmo_hexdump_nospc(gcr, gcr_len));
+			memcpy(&conn->lcls.global_call_ref, gcr, gcr_len);
+			conn->lcls.global_call_ref_len = gcr_len;
+		} else
+			LOGPFSML(conn->fi, LOGL_ERROR, "Global Call Ref IE of %u bytes is too short\n",
+				 gcr_len);
 	}
 
 	config = TLVP_VAL_MINLEN(tp, GSM0808_IE_LCLS_CONFIG, 1);
