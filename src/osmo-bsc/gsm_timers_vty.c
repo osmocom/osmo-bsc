@@ -102,6 +102,7 @@ DEFUN(show_timer, show_timer_cmd,
 /* Install GSM timer configuration commands in the VTY. */
 void T_defs_vty_init(struct T_def *T_defs, int cfg_parent_node)
 {
+	g_vty_T_defs = T_defs;
 	install_element_ve(&show_timer_cmd);
 	install_element(cfg_parent_node, &cfg_timer_cmd);
 }
