@@ -1005,8 +1005,10 @@ static void lchan_fsm_wait_rf_release_ack_onenter(struct osmo_fsm_inst *fi, uint
 	/* For planned releases, a conn has already forgotten about the lchan. And later on, in
 	 * lchan_reset(), we make sure it does. But in case of releases from error handling, the
 	 * conn might as well notice now already that its lchan is becoming unusable. */
-	if (lchan->conn)
+	if (lchan->conn) {
 		gscon_forget_lchan(lchan->conn, lchan);
+		lchan_forget_conn(lchan);
+	}
 
 	rc = rsl_tx_rf_chan_release(lchan);
 	if (rc)
