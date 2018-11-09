@@ -1356,8 +1356,21 @@ void lchan_fsm_cleanup(struct osmo_fsm_inst *fi, enum osmo_fsm_term_cause cause)
 /* The conn is deallocating, just forget all about it */
 void lchan_forget_conn(struct gsm_lchan *lchan)
 {
+	struct gsm_subscriber_connection *conn;
 	if (!lchan)
 		return;
+
+	conn = lchan->conn;
+	if (conn) {
+		/* Log for both lchan FSM and conn FSM to ease reading the log in case of problems */
+		if (lchan->fi)
+			LOGPFSML(lchan->fi, LOGL_DEBUG, "lchan detaches from conn %s\n",
+				 conn->fi? osmo_fsm_inst_name(conn->fi) : "(conn without FSM)");
+		if (conn->fi)
+			LOGPFSML(conn->fi, LOGL_DEBUG, "lchan %s detaches from conn\n",
+				 lchan->fi? osmo_fsm_inst_name(lchan->fi) : gsm_lchan_name(lchan));
+	}
+
 	lchan_forget_mgw_endpoint(lchan);
 	lchan->conn = NULL;
 }

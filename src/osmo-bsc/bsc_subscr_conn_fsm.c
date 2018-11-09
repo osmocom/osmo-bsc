@@ -651,14 +651,36 @@ void gscon_lchan_releasing(struct gsm_subscriber_connection *conn, struct gsm_lc
 /* An lchan was deallocated. */
 void gscon_forget_lchan(struct gsm_subscriber_connection *conn, struct gsm_lchan *lchan)
 {
+	const char *detach_label = NULL;
+	if (!conn)
+		return;
 	if (!lchan)
 		return;
-	if (conn->assignment.new_lchan == lchan)
+
+	if (conn->assignment.new_lchan == lchan) {
 		conn->assignment.new_lchan = NULL;
-	if (conn->ho.new_lchan == lchan)
+		detach_label = "assignment.new_lchan";
+	}
+	if (conn->ho.new_lchan == lchan) {
 		conn->ho.new_lchan = NULL;
-	if (conn->lchan == lchan)
+		detach_label = "ho.new_lchan";
+	}
+	if (conn->lchan == lchan) {
 		conn->lchan = NULL;
+		detach_label = "primary lchan";
+	}
+
+	/* Log for both lchan FSM and conn FSM to ease reading the log in case of problems */
+	if (detach_label) {
+		if (conn->fi)
+			LOGPFSML(conn->fi, LOGL_DEBUG, "conn detaches lchan %s\n",
+				 lchan->fi? osmo_fsm_inst_name(lchan->fi) : gsm_lchan_name(lchan));
+
+		if (lchan->fi)
+			LOGPFSML(lchan->fi, LOGL_DEBUG, "conn %s detaches lchan (%s)\n",
+				 conn->fi? osmo_fsm_inst_name(conn->fi) : "(conn without FSM)",
+				 detach_label);
+	}
 
 	if (conn->fi->state != ST_CLEARING
 	    && !conn->lchan
