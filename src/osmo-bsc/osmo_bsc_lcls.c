@@ -156,22 +156,16 @@ static int lcls_perform_correlation(struct gsm_subscriber_connection *conn_local
 	return 0;
 }
 
-
-struct lcls_cfg_csc {
-	enum gsm0808_lcls_config config;
-	enum gsm0808_lcls_control control;
-};
-
 /* Update the connections LCLS configuration and return old/previous configuration.
  * \returns (staticallly allocated) old configuration; NULL if new config not supported */
-static struct lcls_cfg_csc *update_lcls_cfg_csc(struct gsm_subscriber_connection *conn,
-						struct lcls_cfg_csc *new_cfg_csc)
+static struct osmo_lcls *update_lcls_cfg_csc(struct gsm_subscriber_connection *conn,
+					     struct osmo_lcls *new_cfg_csc)
 {
-	static struct lcls_cfg_csc old_cfg_csc;
+	static struct osmo_lcls old_cfg_csc = { 0 };
 	old_cfg_csc.config = conn->lcls.config;
 	old_cfg_csc.control = conn->lcls.control;
 
-	if (new_cfg_csc->config != 0xff) {
+	if (new_cfg_csc->config != GSM0808_LCLS_CFG_NA) {
 		if (!lcls_is_supported_config(new_cfg_csc->config))
 			return NULL;
 		if (conn->lcls.config != new_cfg_csc->config) {
@@ -179,7 +173,7 @@ static struct lcls_cfg_csc *update_lcls_cfg_csc(struct gsm_subscriber_connection
 			conn->lcls.config = new_cfg_csc->config;
 		}
 	}
-	if (new_cfg_csc->control != 0xff) {
+	if (new_cfg_csc->control != GSM0808_LCLS_CSC_NA) {
 		if (conn->lcls.control != new_cfg_csc->control) {
 			/* TODO: logging */
 			conn->lcls.control = new_cfg_csc->control;
@@ -193,9 +187,9 @@ static struct lcls_cfg_csc *update_lcls_cfg_csc(struct gsm_subscriber_connection
  * unsupported, change into LCLS NOT SUPPORTED state and return -EINVAL. */
 static int lcls_handle_cfg_update(struct gsm_subscriber_connection *conn, void *data)
 {
-	struct lcls_cfg_csc *new_cfg_csc, *old_cfg_csc;
+	struct osmo_lcls *new_cfg_csc, *old_cfg_csc;
 
-	new_cfg_csc = (struct lcls_cfg_csc *) data;
+	new_cfg_csc = (struct osmo_lcls *) data;
 	old_cfg_csc = update_lcls_cfg_csc(conn, new_cfg_csc);
 	if (!old_cfg_csc) {
 		osmo_fsm_inst_state_chg(conn->lcls.fi, ST_REQ_LCLS_NOT_SUPP, 0, 0);
@@ -208,9 +202,9 @@ static int lcls_handle_cfg_update(struct gsm_subscriber_connection *conn, void *
 void lcls_update_config(struct gsm_subscriber_connection *conn,
 			const uint8_t *config, const uint8_t *control)
 {
-	struct lcls_cfg_csc new_cfg = {
-		.config = 0xff,
-		.control = 0xff,
+	struct osmo_lcls new_cfg = {
+		.config = GSM0808_LCLS_CFG_NA,
+		.control = GSM0808_LCLS_CSC_NA,
 	};
 	/* nothing to update, skip it */
 	if (!config && !control)

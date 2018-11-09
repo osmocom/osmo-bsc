@@ -883,9 +883,9 @@ struct gsm_subscriber_connection *bsc_subscr_con_allocate(struct gsm_network *ne
 		return NULL;
 	}
 
-	/* initialize to some magic values that indicate "IE not [yet] received" */
-	conn->lcls.config = 0xff;
-	conn->lcls.control = 0xff;
+	/* indicate "IE not [yet] received" */
+	conn->lcls.config = GSM0808_LCLS_CFG_NA;
+	conn->lcls.control = GSM0808_LCLS_CSC_NA;
 	conn->lcls.fi = osmo_fsm_inst_alloc_child(&lcls_fsm, conn->fi, GSCON_EV_LCLS_FAIL);
 	if (!conn->lcls.fi) {
 		osmo_fsm_inst_term(conn->fi, OSMO_FSM_TERM_ERROR, NULL);
