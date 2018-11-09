@@ -1343,8 +1343,6 @@ exit_release_handler:
 void lchan_fsm_cleanup(struct osmo_fsm_inst *fi, enum osmo_fsm_term_cause cause)
 {
 	struct gsm_lchan *lchan = lchan_fi_lchan(fi);
-	if (lchan->conn)
-		gscon_forget_lchan(lchan->conn, lchan);
 	lchan_reset(lchan);
 	if (lchan->last_error) {
 		talloc_free(lchan->last_error);
