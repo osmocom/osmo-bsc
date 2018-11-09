@@ -134,7 +134,14 @@ static void gscon_bssmap_clear(struct gsm_subscriber_connection *conn,
 			       enum gsm0808_cause cause)
 {
 	struct msgb *resp = gsm0808_create_clear_rqst(cause);
-	gscon_sigtran_send(conn, resp);
+	int rc;
+	if (!resp) {
+		LOGPFSML(conn->fi, LOGL_ERROR, "Unable to compose BSSMAP Clear Request message\n");
+		return;
+	}
+	rc = osmo_bsc_sigtran_send(conn, resp);
+	if (rc < 0)
+		LOGPFSML(conn->fi, LOGL_ERROR, "Unable to deliver BSSMAP Clear Request message\n");
 }
 
 /* forward MO DTAP from RSL side to BSSAP side */
