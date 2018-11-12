@@ -219,6 +219,7 @@ static struct gsm_bts *create_bts(int arfcn)
 void create_conn(struct gsm_lchan *lchan)
 {
 	static struct bsc_msc_data fake_msc_data = {};
+	fake_msc_data.network = bsc_gsmnet;
 	static unsigned int next_imsi = 0;
 	char imsi[sizeof(lchan->conn->bsub->imsi)];
 	struct gsm_network *net = lchan->ts->trx->bts->network;

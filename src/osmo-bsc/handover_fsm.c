@@ -670,6 +670,70 @@ static int result_counter(enum handover_scope scope, enum handover_result result
 	}
 }
 
+static void send_handover_performed(struct gsm_subscriber_connection *conn)
+{
+	struct gsm_lchan *lchan = conn->lchan;
+	struct handover *ho = &conn->ho;
+	struct osmo_cell_global_id *cell;
+	struct gsm0808_handover_performed ho_perf_params = {};
+	struct msgb *msg;
+	struct gsm0808_speech_codec sc;
+	int rc;
+
+	/* Cause 3.2.2.5 */
+	ho_perf_params.cause = GSM0808_CAUSE_HANDOVER_SUCCESSFUL;
+
+	/* Cell Identifier 3.2.2.17 */
+	cell = cgi_for_msc(conn->sccp.msc, conn_get_bts(conn));
+	if (!cell) {
+		LOG_HO(conn, LOGL_ERROR, "Failed to generate Cell Identifier IE, can't send HANDOVER PERFORMED!\n");
+		return;
+	}
+	ho_perf_params.cell_id = (struct gsm0808_cell_id){
+		.id_discr = CELL_IDENT_WHOLE_GLOBAL,
+		.id.global = *cell
+	};
+
+	/* Chosen Channel 3.2.2.33 */
+	ho_perf_params.chosen_channel = gsm0808_chosen_channel(lchan->type, lchan->tch_mode);
+	if (!ho_perf_params.chosen_channel) {
+		LOG_HO(conn, LOGL_ERROR, "Failed to generate Chosen Channel IE, can't send HANDOVER PERFORMED!\n");
+		return;
+	}
+	ho_perf_params.chosen_channel_present = true;
+
+	/* Chosen Encryption Algorithm 3.2.2.44 */
+	ho_perf_params.chosen_encr_alg = lchan->encr.alg_id;
+	ho_perf_params.chosen_encr_alg_present = true;
+
+	if (ho->new_lchan->activate.requires_voice_stream) {
+		/* Speech Version (chosen) 3.2.2.51 */
+		ho_perf_params.speech_version_chosen = gsm0808_permitted_speech(lchan->type, lchan->tch_mode);
+		ho_perf_params.speech_version_chosen_present = true;
+
+		/* Speech Codec (chosen) 3.2.2.104 */
+		if (gscon_is_aoip(conn)) {
+			/* Extrapolate speech codec from speech mode */
+			gsm0808_speech_codec_from_chan_type(&sc, ho_perf_params.speech_version_chosen);
+			sc.cfg = conn->assignment.req.s15_s0;
+			memcpy(&ho_perf_params.speech_codec_chosen, &sc, sizeof(sc));
+			ho_perf_params.speech_codec_chosen_present = true;
+		}
+	}
+
+	msg = gsm0808_create_handover_performed(&ho_perf_params);
+	if (!msg) {
+		LOG_HO(conn, LOGL_ERROR, "Failed to generate message, can't send HANDOVER PERFORMED!\n");
+		return;
+	}
+
+	rc = gscon_sigtran_send(conn, msg);
+	if (rc < 0) {
+		LOG_HO(conn, LOGL_ERROR, "message sending failed, can't send HANDOVER PERFORMED!\n");
+		return;
+	}
+}
+
 /* Notify the handover decision algorithm of failure and clear out any handover state. */
 void handover_end(struct gsm_subscriber_connection *conn, enum handover_result result)
 {
@@ -737,6 +801,10 @@ void handover_end(struct gsm_subscriber_connection *conn, enum handover_result r
 	 * MGW endpoint right away. If successful, the conn continues to use the endpoint. */
 	if (result == HO_RESULT_OK)
 		conn->ho.created_ci_for_msc = NULL;
+
+	/* If the performed handover was an INTRA BSC HANDOVER, inform the MSC that a handover has happend */
+	if (result == HO_RESULT_OK && ((ho->scope & HO_INTRA_CELL) || (ho->scope & HO_INTRA_BSC)))
+		send_handover_performed(conn);
 
 	hdc = handover_decision_callbacks_get(ho->from_hodec_id);
 	if (hdc && hdc->on_handover_end)
