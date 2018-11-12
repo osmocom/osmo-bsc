@@ -672,14 +672,12 @@ void gscon_forget_lchan(struct gsm_subscriber_connection *conn, struct gsm_lchan
 
 	/* Log for both lchan FSM and conn FSM to ease reading the log in case of problems */
 	if (detach_label) {
-		if (conn->fi)
-			LOGPFSML(conn->fi, LOGL_DEBUG, "conn detaches lchan %s\n",
-				 lchan->fi? osmo_fsm_inst_name(lchan->fi) : gsm_lchan_name(lchan));
+		LOGPFSML(conn->fi, LOGL_DEBUG, "conn detaches lchan %s\n",
+			 lchan->fi? osmo_fsm_inst_name(lchan->fi) : gsm_lchan_name(lchan));
 
 		if (lchan->fi)
 			LOGPFSML(lchan->fi, LOGL_DEBUG, "conn %s detaches lchan (%s)\n",
-				 conn->fi? osmo_fsm_inst_name(conn->fi) : "(conn without FSM)",
-				 detach_label);
+				 osmo_fsm_inst_name(conn->fi), detach_label);
 	}
 
 	if (conn->fi->state != ST_CLEARING
