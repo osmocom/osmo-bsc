@@ -1151,6 +1151,38 @@ DEFUN(show_trx,
 	return CMD_SUCCESS;
 }
 
+/* call vty_out() to print a string like " as TCH/H" for dynamic timeslots.
+ * Don't do anything if the ts is not dynamic. */
+static void vty_out_dyn_ts_status(struct vty *vty, struct gsm_bts_trx_ts *ts)
+{
+	enum gsm_phys_chan_config target;
+	if (ts_is_pchan_switching(ts, &target)) {
+		vty_out(vty, " switching %s -> %s", gsm_pchan_name(ts->pchan_is),
+			gsm_pchan_name(target));
+	} else if (ts->pchan_is != ts->pchan_on_init) {
+		vty_out(vty, " as %s", gsm_pchan_name(ts->pchan_is));
+	}
+}
+
+static void vty_out_dyn_ts_details(struct vty *vty, struct gsm_bts_trx_ts *ts)
+{
+	/* show dyn TS details, if applicable */
+	switch (ts->pchan_on_init) {
+	case GSM_PCHAN_TCH_F_TCH_H_PDCH:
+		vty_out(vty, "  Osmocom Dyn TS:");
+		vty_out_dyn_ts_status(vty, ts);
+		vty_out(vty, VTY_NEWLINE);
+		break;
+	case GSM_PCHAN_TCH_F_PDCH:
+		vty_out(vty, "  IPACC Dyn PDCH TS:");
+		vty_out_dyn_ts_status(vty, ts);
+		vty_out(vty, VTY_NEWLINE);
+		break;
+	default:
+		/* no dyn ts */
+		break;
+	}
+}
 
 static void ts_dump_vty(struct vty *vty, struct gsm_bts_trx_ts *ts)
 {
@@ -1160,6 +1192,7 @@ static void ts_dump_vty(struct vty *vty, struct gsm_bts_trx_ts *ts)
 	if (ts->pchan_is != ts->pchan_on_init)
 		vty_out(vty, " (%s mode)", gsm_pchan_name(ts->pchan_is));
 	vty_out(vty, ", TSC %u%s  NM State: ", gsm_ts_tsc(ts), VTY_NEWLINE);
+	vty_out_dyn_ts_details(vty, ts);
 	net_dump_nmstate(vty, &ts->mo.nm_state);
 	if (!is_ipaccess_bts(ts->trx->bts))
 		vty_out(vty, "  E1 Line %u, Timeslot %u, Subslot %u%s",
@@ -1287,19 +1320,6 @@ static void meas_rep_dump_vty(struct vty *vty, struct gsm_meas_rep *mr,
 }
 
 
-/* call vty_out() to print a string like " as TCH/H" for dynamic timeslots.
- * Don't do anything if the ts is not dynamic. */
-static void vty_out_dyn_ts_status(struct vty *vty, struct gsm_bts_trx_ts *ts)
-{
-	enum gsm_phys_chan_config target;
-	if (ts_is_pchan_switching(ts, &target)) {
-		vty_out(vty, " switching %s -> %s", gsm_pchan_name(ts->pchan_is),
-			gsm_pchan_name(target));
-	} else if (ts->pchan_is != ts->pchan_on_init) {
-		vty_out(vty, " as %s", gsm_pchan_name(ts->pchan_is));
-	}
-}
-
 static void lchan_dump_full_vty(struct vty *vty, struct gsm_lchan *lchan)
 {
 	int idx;
@@ -1307,22 +1327,7 @@ static void lchan_dump_full_vty(struct vty *vty, struct gsm_lchan *lchan)
 	vty_out(vty, "BTS %u, TRX %u, Timeslot %u, Lchan %u: Type %s%s",
 		lchan->ts->trx->bts->nr, lchan->ts->trx->nr, lchan->ts->nr,
 		lchan->nr, gsm_lchant_name(lchan->type), VTY_NEWLINE);
-	/* show dyn TS details, if applicable */
-	switch (lchan->ts->pchan_on_init) {
-	case GSM_PCHAN_TCH_F_TCH_H_PDCH:
-		vty_out(vty, "  Osmocom Dyn TS:");
-		vty_out_dyn_ts_status(vty, lchan->ts);
-		vty_out(vty, VTY_NEWLINE);
-		break;
-	case GSM_PCHAN_TCH_F_PDCH:
-		vty_out(vty, "  IPACC Dyn PDCH TS:");
-		vty_out_dyn_ts_status(vty, lchan->ts);
-		vty_out(vty, VTY_NEWLINE);
-		break;
-	default:
-		/* no dyn ts */
-		break;
-	}
+	vty_out_dyn_ts_details(vty, lchan->ts);
 	vty_out(vty, "  Connection: %u, State: %s%s%s%s",
 		lchan->conn ? 1: 0, lchan_state_name(lchan),
 		lchan->fi && lchan->fi->state == LCHAN_ST_BORKEN ? " Error reason: " : "",
