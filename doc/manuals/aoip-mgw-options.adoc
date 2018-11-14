@@ -29,7 +29,7 @@ support was so far for NITB only, but not for OsmoBSC.
 
 [mscgen]
 ----
-include::mgw/classic-bsc.msc[]
+include::{srcdir}/mgw/classic-bsc.msc[]
 ----
 
 === OsmoBSC 2010-2017: IPA-style A over SCCPlite
@@ -43,7 +43,7 @@ classic TDM transport.
 
 [mscgen]
 ----
-include::mgw/osmo-bsc-old-sccplite.msc[]
+include::{srcdir}/mgw/osmo-bsc-old-sccplite.msc[]
 ----
 
 
@@ -61,7 +61,7 @@ support shall be kept, if possible with reasonable effort.
 
 [mscgen]
 ----
-include::mgw/osmo-bsc-new-mgw.msc[]
+include::{srcdir}/mgw/osmo-bsc-new-mgw.msc[]
 ----
 
 
@@ -73,5 +73,5 @@ based BTSs from OsmoBSC.
 
 [mscgen]
 ----
-include::mgw/osmo-bsc-new-mgw-e1.msc[]
+include::{srcdir}/mgw/osmo-bsc-new-mgw-e1.msc[]
 ----

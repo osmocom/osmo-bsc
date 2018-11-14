@@ -1,5 +1,6 @@
 SUBDIRS = \
 	examples \
+	manuals \
 	$(NULL)
 
 msc: \
