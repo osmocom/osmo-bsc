@@ -3112,7 +3112,7 @@ DEFUN(cfg_bts_neigh, cfg_bts_neigh_cmd,
 	struct bitvec *bv = &bts->si_common.neigh_list;
 	uint16_t arfcn = atoi(argv[1]);
 
-	if (!bts->neigh_list_manual_mode) {
+	if (bts->neigh_list_manual_mode == NL_MODE_AUTOMATIC) {
 		vty_out(vty, "%% Cannot configure neighbor list in "
 			"automatic mode%s", VTY_NEWLINE);
 		return CMD_WARNING;
