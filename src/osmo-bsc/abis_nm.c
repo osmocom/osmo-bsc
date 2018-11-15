@@ -1463,6 +1463,7 @@ static int abis_nm_rcvmsg_sw(struct msgb *mb)
 			abis_nm_queue_send_next(sign_link->trx->bts);
 			break;
 		}
+		break;
 	case SW_STATE_WAIT_ACTACK:
 		switch (foh->msg_type) {
 		case NM_MT_ACTIVATE_SW_ACK:
@@ -1487,6 +1488,7 @@ static int abis_nm_rcvmsg_sw(struct msgb *mb)
 			abis_nm_queue_send_next(sign_link->trx->bts);
 			break;
 		}
+		break;
 	case SW_STATE_NONE:
 		switch (foh->msg_type) {
 		case NM_MT_ACTIVATE_SW_ACK:
