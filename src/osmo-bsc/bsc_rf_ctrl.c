@@ -450,10 +450,14 @@ static int rf_create_socket(struct osmo_bsc_rf *rf, const char *path)
 	}
 
 	local.sun_family = AF_UNIX;
-	unlink(local.sun_path);
 	if (osmo_strlcpy(local.sun_path, path, sizeof(local.sun_path)) >= sizeof(local.sun_path)) {
 		LOGP(DLINP, LOGL_ERROR, "Socket path exceeds maximum length of %zd bytes: %s\n",
 		     sizeof(local.sun_path), path);
+		return -1;
+	}
+	if (unlink(local.sun_path) < 0 && errno != ENOENT) {
+		LOGP(DLINP, LOGL_ERROR, "Could not unlink socket path %s: %d/%s\n",
+		     path, errno, strerror(errno));
 		return -1;
 	}
 
