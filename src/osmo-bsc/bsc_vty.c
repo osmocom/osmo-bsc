@@ -3114,10 +3114,16 @@ DEFUN(cfg_bts_neigh, cfg_bts_neigh_cmd,
 	struct gsm_bts *bts = vty->index;
 	struct bitvec *bv = &bts->si_common.neigh_list;
 	uint16_t arfcn = atoi(argv[1]);
+	enum gsm_band unused;
 
 	if (bts->neigh_list_manual_mode == NL_MODE_AUTOMATIC) {
 		vty_out(vty, "%% Cannot configure neighbor list in "
 			"automatic mode%s", VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	if (gsm_arfcn2band_rc(arfcn, &unused) < 0) {
+		vty_out(vty, "%% Invalid arfcn %" PRIu16 " detected%s", arfcn, VTY_NEWLINE);
 		return CMD_WARNING;
 	}
 
@@ -3257,6 +3263,7 @@ DEFUN(cfg_bts_si5_neigh, cfg_bts_si5_neigh_cmd,
 	"Delete from SI5 manual neighbor list\n" "ARFCN of neighbor\n"
 	"ARFCN of neighbor\n")
 {
+	enum gsm_band unused;
 	struct gsm_bts *bts = vty->index;
 	struct bitvec *bv = &bts->si_common.si5_neigh_list;
 	uint16_t arfcn = atoi(argv[1]);
@@ -3264,6 +3271,11 @@ DEFUN(cfg_bts_si5_neigh, cfg_bts_si5_neigh_cmd,
 	if (!bts->neigh_list_manual_mode) {
 		vty_out(vty, "%% Cannot configure neighbor list in "
 			"automatic mode%s", VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	if (gsm_arfcn2band_rc(arfcn, &unused) < 0) {
+		vty_out(vty, "%% Invalid arfcn %" PRIu16 " detected%s", arfcn, VTY_NEWLINE);
 		return CMD_WARNING;
 	}
 
@@ -3937,8 +3949,14 @@ DEFUN(cfg_trx_arfcn,
       "Set the ARFCN for this TRX\n"
       "Absolute Radio Frequency Channel Number\n")
 {
-	int arfcn = atoi(argv[0]);
+	enum gsm_band unused;
 	struct gsm_bts_trx *trx = vty->index;
+	int arfcn = atoi(argv[0]);
+
+	if (gsm_arfcn2band_rc(arfcn, &unused) < 0) {
+		vty_out(vty, "%% Invalid arfcn %" PRIu16 " detected%s", arfcn, VTY_NEWLINE);
+		return CMD_WARNING;
+	}
 
 	/* FIXME: check if this ARFCN is supported by this TRX */
 
@@ -4186,8 +4204,14 @@ DEFUN(cfg_ts_arfcn_add,
 	HOPPING_STR "Configure hopping ARFCN list\n"
       "Add an entry to the hopping ARFCN list\n" "ARFCN\n")
 {
+	enum gsm_band unused;
 	struct gsm_bts_trx_ts *ts = vty->index;
 	int arfcn = atoi(argv[0]);
+
+	if (gsm_arfcn2band_rc(arfcn, &unused) < 0) {
+		vty_out(vty, "%% Invalid arfcn %" PRIu16 " detected%s", arfcn, VTY_NEWLINE);
+		return CMD_WARNING;
+	}
 
 	bitvec_set_bit_pos(&ts->hopping.arfcns, arfcn, 1);
 
@@ -4200,8 +4224,14 @@ DEFUN(cfg_ts_arfcn_del,
 	HOPPING_STR "Configure hopping ARFCN list\n"
       "Delete an entry to the hopping ARFCN list\n" "ARFCN\n")
 {
+	enum gsm_band unused;
 	struct gsm_bts_trx_ts *ts = vty->index;
 	int arfcn = atoi(argv[0]);
+
+	if (gsm_arfcn2band_rc(arfcn, &unused) < 0) {
+		vty_out(vty, "%% Invalid arfcn %" PRIu16 " detected%s", arfcn, VTY_NEWLINE);
+		return CMD_WARNING;
+	}
 
 	bitvec_set_bit_pos(&ts->hopping.arfcns, arfcn, 0);
 
