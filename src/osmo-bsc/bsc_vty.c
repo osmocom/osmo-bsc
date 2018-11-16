@@ -1532,8 +1532,10 @@ static void dump_one_subscr_conn(struct vty *vty, const struct gsm_subscriber_co
 		vty_out(vty, " LCLS GCR: %s%s",
 			osmo_hexdump_nospc(conn->lcls.global_call_ref, conn->lcls.global_call_ref_len),
 			VTY_NEWLINE);
-		vty_out(vty, " LCLS Config: 0x%02x, LCLS Control: 0x%02x, LCLS BSS Status: %s%s",
-			conn->lcls.config, conn->lcls.control, osmo_fsm_inst_state_name(conn->lcls.fi),
+		vty_out(vty, " LCLS Config: %s, LCLS Control: %s, LCLS BSS Status: %s%s",
+			gsm0808_lcls_config_name(conn->lcls.config),
+			gsm0808_lcls_control_name(conn->lcls.control),
+			osmo_fsm_inst_state_name(conn->lcls.fi),
 			VTY_NEWLINE);
 	}
 	if (conn->lchan)
