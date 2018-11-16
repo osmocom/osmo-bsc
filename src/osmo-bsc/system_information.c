@@ -53,7 +53,12 @@ struct gsm0808_cell_id_list2;
  */
 static int band_compatible(const struct gsm_bts *bts, int arfcn)
 {
-	enum gsm_band band = gsm_arfcn2band(arfcn);
+	enum gsm_band band;
+
+	if (gsm_arfcn2band_rc(arfcn, &band) < 0) {
+		LOGP(DRR, LOGL_ERROR, "Invalid arfcn %d detected!\n", arfcn);
+		return 0;
+	}
 
 	/* normal case */
 	if (band == bts->band)
