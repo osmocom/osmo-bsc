@@ -773,7 +773,7 @@ static int generate_si2bis(enum osmo_sysinfo_type t, struct gsm_bts *bts)
 	if (rc < 0)
 		return rc;
 	n = list_arfcn(si2b->bcch_frequency_list, 0xce,
-		"Neighbour cells in same band, but outside P-GSM:");
+		"SI2bis Neighbour cells in same band, but outside P-GSM:");
 	if (n) {
 		/* indicate in SI2 and SI2bis: there is an extension */
 		struct gsm48_system_information_type_2 *si2 =
@@ -811,7 +811,7 @@ static int generate_si2ter(enum osmo_sysinfo_type t, struct gsm_bts *bts)
 	if (rc < 0)
 		return rc;
 	n = list_arfcn(si2t->ext_bcch_frequency_list, 0x8e,
-		"Neighbour cells in different band:");
+		"SI2ter Neighbour cells in different band:");
 	if (!n)
 		bts->si_valid &= ~(1 << SYSINFO_TYPE_2ter);
 
@@ -1046,7 +1046,7 @@ static int generate_si5bis(enum osmo_sysinfo_type t, struct gsm_bts *bts)
 	if (rc < 0)
 		return rc;
 	n = list_arfcn(si5b->bcch_frequency_list, 0xce,
-		"Neighbour cells in same band, but outside P-GSM:");
+		"SI5bis Neighbour cells in same band, but outside P-GSM:");
 	if (n) {
 		/* indicate in SI5 and SI5bis: there is an extension */
 		struct gsm48_system_information_type_5 *si5 =
@@ -1090,7 +1090,7 @@ static int generate_si5ter(enum osmo_sysinfo_type t, struct gsm_bts *bts)
 	if (rc < 0)
 		return rc;
 	n = list_arfcn(si5t->bcch_frequency_list, 0x8e,
-		"Neighbour cells in different band:");
+		"SI5ter Neighbour cells in different band:");
 	if (!n)
 		bts->si_valid &= ~(1 << SYSINFO_TYPE_5ter);
 
