@@ -213,7 +213,7 @@ BTS deallocated OK in test_si2q_long()
 BTS allocation OK in test_si_ba_ind()
 Testing if BA-IND is set as expected in SI2xxx and SI5xxx
 SI2: 59 06 1a 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 e5 04 00 
-SI2bis: 59 06 02 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 e5 04 00 2b 
+SI2bis: 55 06 02 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 e5 04 00 2b 
 SI2ter: 59 06 03 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 2b 2b 2b 2b 
 SI5: 06 1d 10 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
 SI5bis: 06 05 10 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 

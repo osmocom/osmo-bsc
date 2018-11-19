@@ -764,7 +764,7 @@ static int generate_si2bis(enum osmo_sysinfo_type t, struct gsm_bts *bts)
 
 	memset(si2b, GSM_MACBLOCK_PADDING, GSM_MACBLOCK_LEN);
 
-	si2b->header.l2_plen = GSM48_LEN2PLEN(22);
+	si2b->header.l2_plen = GSM48_LEN2PLEN(21);
 	si2b->header.rr_protocol_discriminator = GSM48_PDISC_RR;
 	si2b->header.skip_indicator = 0;
 	si2b->header.system_information = GSM48_MT_RR_SYSINFO_2bis;
