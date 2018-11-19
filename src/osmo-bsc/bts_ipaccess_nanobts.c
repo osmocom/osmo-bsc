@@ -63,7 +63,12 @@ struct gsm_bts_model bts_model_nanobts = {
 	.start = bts_model_nanobts_start,
 	.oml_rcvmsg = &abis_nm_rcvmsg,
 	.oml_status = &get_oml_status,
-	.e1line_bind_ops = bts_model_nanobts_e1line_bind_ops, 
+	.e1line_bind_ops = bts_model_nanobts_e1line_bind_ops,
+	/* Some nanoBTS firmwares (if not all) don't support SI2ter and cause
+	 * problems on some MS if it is enabled, see OS#3063. Disable it by
+	 * default, can still be enabled through VTY cmd with same name.
+	 */
+	.force_combined_si = true,
 	.nm_att_tlvdef = {
 		.def = {
 			/* ip.access specifics */

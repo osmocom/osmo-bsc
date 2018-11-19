@@ -985,8 +985,9 @@ static void config_write_bts_single(struct vty *vty, struct gsm_bts *bts)
 	if (bts->excl_from_rf_lock)
 		vty_out(vty, "  rf-lock-exclude%s", VTY_NEWLINE);
 
-	vty_out(vty, "  %sforce-combined-si%s",
-		bts->force_combined_si ? "" : "no ", VTY_NEWLINE);
+	if (bts->force_combined_si_set)
+		vty_out(vty, "  %sforce-combined-si%s",
+			bts->force_combined_si ? "" : "no ", VTY_NEWLINE);
 
 	for (i = 0; i < ARRAY_SIZE(bts->depends_on); ++i) {
 		int j;
@@ -3411,6 +3412,7 @@ DEFUN(cfg_bts_force_comb_si,
 {
 	struct gsm_bts *bts = vty->index;
 	bts->force_combined_si = 1;
+	bts->force_combined_si_set = true;
 	return CMD_SUCCESS;
 }
 
@@ -3421,6 +3423,7 @@ DEFUN(cfg_bts_no_force_comb_si,
 {
 	struct gsm_bts *bts = vty->index;
 	bts->force_combined_si = 0;
+	bts->force_combined_si_set = true;
 	return CMD_SUCCESS;
 }
 

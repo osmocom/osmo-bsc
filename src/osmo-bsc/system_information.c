@@ -327,7 +327,7 @@ int bts_uarfcn_add(struct gsm_bts *bts, uint16_t arfcn, uint16_t scramble, bool 
 static inline int use_arfcn(const struct gsm_bts *bts, const bool bis, const bool ter,
 			const bool pgsm, const int arfcn)
 {
-	if (bts->force_combined_si)
+	if (bts->force_combined_si_set ? bts->force_combined_si : bts->model->force_combined_si)
 		return !bis && !ter;
 	if (!bis && !ter && band_compatible(bts, arfcn))
 		return 1;

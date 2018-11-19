@@ -756,6 +756,9 @@ struct gsm_bts_model {
 	void (*config_write_trx)(struct vty *vty, struct gsm_bts_trx *trx);
 	void (*config_write_ts)(struct vty *vty, struct gsm_bts_trx_ts *ts);
 
+	/* Should SI2bis and SI2ter be disabled by default on this BTS model? */
+	bool force_combined_si;
+
 	struct tlv_definition nm_att_tlvdef;
 
 	/* features of a given BTS model set via gsm_bts_model_register() locally */
@@ -1046,6 +1049,7 @@ struct gsm_bts {
 
 	/* SI related items */
 	int force_combined_si;
+	bool force_combined_si_set;
 	int bcch_change_mark;
 
 	/* Abis NM queue */

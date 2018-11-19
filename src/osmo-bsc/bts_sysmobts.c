@@ -48,6 +48,9 @@ int bts_model_sysmobts_init(void)
 	model_sysmobts.name = "sysmobts";
 	model_sysmobts.type = GSM_BTS_TYPE_OSMOBTS;
 
+	/* Unlike nanoBTS, sysmoBTS supports SI2bis and SI2ter fine */
+	model_sysmobts.force_combined_si = false;
+
 	model_sysmobts.features.data = &model_sysmobts._features_data[0];
 	model_sysmobts.features.data_len =
 				sizeof(model_sysmobts._features_data);
