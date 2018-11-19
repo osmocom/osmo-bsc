@@ -1079,8 +1079,14 @@ static int config_write_net(struct vty *vty)
 	return CMD_SUCCESS;
 }
 
-static void trx_dump_vty(struct vty *vty, struct gsm_bts_trx *trx)
+static void trx_dump_vty(struct vty *vty, struct gsm_bts_trx *trx, bool print_rsl, bool show_connected)
 {
+	if (show_connected && !trx->rsl_link)
+		return;
+
+	if (!show_connected && trx->rsl_link)
+		return;
+
 	vty_out(vty, "TRX %u of BTS %u is on ARFCN %u%s",
 		trx->nr, trx->bts->nr, trx->arfcn, VTY_NEWLINE);
 	vty_out(vty, "Description: %s%s",
@@ -1091,7 +1097,8 @@ static void trx_dump_vty(struct vty *vty, struct gsm_bts_trx *trx)
 		trx->nominal_power - trx->max_power_red, VTY_NEWLINE);
 	vty_out(vty, "  NM State: ");
 	net_dump_nmstate(vty, &trx->mo.nm_state);
-	vty_out(vty, "  RSL State: %s%s", trx->rsl_link? "connected" : "disconnected", VTY_NEWLINE);
+	if (print_rsl)
+		vty_out(vty, "  RSL State: %s%s", trx->rsl_link? "connected" : "disconnected", VTY_NEWLINE);
 	vty_out(vty, "  Baseband Transceiver NM State: ");
 	net_dump_nmstate(vty, &trx->bb_transc.mo.nm_state);
 	if (is_ipaccess_bts(trx->bts)) {
@@ -1103,11 +1110,17 @@ static void trx_dump_vty(struct vty *vty, struct gsm_bts_trx *trx)
 	}
 }
 
+static void trx_dump_vty_all(struct vty *vty, struct gsm_bts_trx *trx)
+{
+	trx_dump_vty(vty, trx, true, true);
+	trx_dump_vty(vty, trx, true, false);
+}
+
 static inline void print_all_trx(struct vty *vty, const struct gsm_bts *bts)
 {
 	uint8_t trx_nr;
 	for (trx_nr = 0; trx_nr < bts->num_trx; trx_nr++)
-		trx_dump_vty(vty, gsm_bts_trx_num(bts, trx_nr));
+		trx_dump_vty_all(vty, gsm_bts_trx_num(bts, trx_nr));
 }
 
 DEFUN(show_trx,
@@ -1137,7 +1150,8 @@ DEFUN(show_trx,
 				VTY_NEWLINE);
 			return CMD_WARNING;
 		}
-		trx_dump_vty(vty, gsm_bts_trx_num(bts, trx_nr));
+		trx_dump_vty_all(vty, gsm_bts_trx_num(bts, trx_nr));
+
 		return CMD_SUCCESS;
 	}
 	if (bts) {
@@ -1320,6 +1334,33 @@ static void meas_rep_dump_vty(struct vty *vty, struct gsm_meas_rep *mr,
 	meas_rep_dump_uni_vty(vty, &mr->ul, prefix, "ul");
 }
 
+static inline void print_all_trx_ext(struct vty *vty, bool show_connected)
+{
+	struct gsm_network *net = gsmnet_from_vty(vty);
+	struct gsm_bts *bts = NULL;
+	uint8_t bts_nr;
+	for (bts_nr = 0; bts_nr < net->num_bts; bts_nr++) {
+		uint8_t trx_nr;
+		bts = gsm_bts_num(net, bts_nr);
+		for (trx_nr = 0; trx_nr < bts->num_trx; trx_nr++)
+			trx_dump_vty(vty, gsm_bts_trx_num(bts, trx_nr), false, show_connected);
+	}
+}
+
+DEFUN(show_trx_con,
+      show_trx_con_cmd,
+      "show trx (connected|disconnected)",
+      SHOW_STR "Display information about a TRX\n"
+      "Show TRX with RSL connected\n"
+      "Show TRX with RSL disconnected\n")
+{
+	if (!strcmp(argv[0], "connected"))
+		print_all_trx_ext(vty, true);
+	else
+		print_all_trx_ext(vty, false);
+
+	return CMD_SUCCESS;
+}
 
 static void lchan_dump_full_vty(struct vty *vty, struct gsm_lchan *lchan)
 {
@@ -4956,6 +4997,7 @@ int bsc_vty_init(struct gsm_network *network)
 	install_element_ve(&show_bts_cmd);
 	install_element_ve(&show_rejected_bts_cmd);
 	install_element_ve(&show_trx_cmd);
+	install_element_ve(&show_trx_con_cmd);
 	install_element_ve(&show_ts_cmd);
 	install_element_ve(&show_lchan_cmd);
 	install_element_ve(&show_lchan_summary_cmd);
