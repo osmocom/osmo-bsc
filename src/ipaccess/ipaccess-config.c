@@ -73,6 +73,7 @@ static int dump_files = 0;
 static char *firmware_analysis = NULL;
 static int found_trx = 0;
 static int loop_tests = 0;
+static bool quiet = false;
 
 static void *tall_ctx_config = NULL;
 static struct abis_nm_sw_desc *sw_load1 = NULL;
@@ -312,11 +313,13 @@ static int nm_sig_cb(unsigned int subsys, unsigned int signal,
 		ipacc_data = signal_data;
 		return ipacc_msg_ack(ipacc_data->msg_type, ipacc_data->trx);
 	case S_NM_IPACC_RESTART_ACK:
-		printf("The BTS has acked the restart. Exiting.\n");
+		if (!quiet)
+			printf("The BTS has acked the restart. Exiting.\n");
 		exit(0);
 		break;
 	case S_NM_IPACC_RESTART_NACK:
-		printf("The BTS has nacked the restart. Exiting.\n");
+		if (!quiet)
+			printf("The BTS has nacked the restart. Exiting.\n");
 		exit(0);
 		break;
 	case S_NM_STATECHG_OPER:
@@ -353,7 +356,8 @@ static int swload_cbfn(unsigned int hook, unsigned int event, struct msgb *_msg,
 
 	switch (event) {
 	case NM_MT_LOAD_INIT_ACK:
-		fprintf(stdout, "Software Load Initiate ACK\n");
+		if (!quiet)
+			fprintf(stdout, "Software Load Initiate ACK\n");
 		break;
 	case NM_MT_LOAD_INIT_NACK:
 		fprintf(stderr, "ERROR: Software Load Initiate NACK\n");
@@ -379,7 +383,9 @@ static int swload_cbfn(unsigned int hook, unsigned int event, struct msgb *_msg,
 		msg->l2h[0] = NM_ATT_IPACC_CUR_SW_CFG;
 		msg->l2h[1] = msgb_l3len(msg) >> 8;
 		msg->l2h[2] = msgb_l3len(msg) & 0xff;
-		printf("Foo l2h: %p l3h: %p... length l2: %u  l3: %u\n", msg->l2h, msg->l3h, msgb_l2len(msg), msgb_l3len(msg));
+		if (!quiet)
+			printf("Foo l2h: %p l3h: %p... length l2: %u  l3: %u\n",
+			       msg->l2h, msg->l3h, msgb_l2len(msg), msgb_l3len(msg));
 		abis_nm_ipaccess_set_nvattr(trx, msg->l2h, msgb_l2len(msg));
 		msgb_free(msg);
 		break;
@@ -395,7 +401,7 @@ static int swload_cbfn(unsigned int hook, unsigned int event, struct msgb *_msg,
 		break;
 	case NM_MT_LOAD_SEG_ACK:
 		percent = abis_nm_software_load_status(trx->bts);
-		if (percent > percent_old)
+		if (!quiet && percent > percent_old)
 			printf("Software Download Progress: %d%%\n", percent);
 		percent_old = percent;
 		break;
@@ -528,7 +534,8 @@ static void bootstrap_om(struct gsm_bts_trx *trx)
 	int need_to_set_attr = 0;
 	int len;
 
-	printf("OML link established using TRX %d\n", trx->nr);
+	if (!quiet)
+		printf("OML link established using TRX %d\n", trx->nr);
 
 	if (get_attr) {
 		msgb_put_u8(nmsg_get, NM_ATT_IPACC_PRIM_OML_CFG);
@@ -538,7 +545,8 @@ static void bootstrap_om(struct gsm_bts_trx *trx)
 		len = strlen(unit_id);
 		if (len > nmsg_set->data_len-10)
 			goto out_err;
-		printf("setting Unit ID to '%s'\n", unit_id);
+		if (!quiet)
+			printf("setting Unit ID to '%s'\n", unit_id);
 		nv_put_unit_id(nmsg_set, unit_id);
 		need_to_set_attr = 1;
 	}
@@ -551,13 +559,15 @@ static void bootstrap_om(struct gsm_bts_trx *trx)
 			goto out_err;
 		}
 
-		printf("setting primary OML link IP to '%s'\n", inet_ntoa(ia));
+		if (!quiet)
+			printf("setting primary OML link IP to '%s'\n", inet_ntoa(ia));
 		nv_put_prim_oml(nmsg_set, ntohl(ia.s_addr), 0);
 		need_to_set_attr = 1;
 	}
 	if (nv_mask) {
-		printf("setting NV Flags/Mask to 0x%04x/0x%04x\n",
-			nv_flags, nv_mask);
+		if (!quiet)
+			printf("setting NV Flags/Mask to 0x%04x/0x%04x\n",
+			       nv_flags, nv_mask);
 		nv_put_flags(nmsg_set, nv_flags, nv_mask);
 		need_to_set_attr = 1;
 	}
@@ -576,7 +586,8 @@ static void bootstrap_om(struct gsm_bts_trx *trx)
 			goto out_err;
 		}
 
-		printf("setting static IP Address/Mask\n");
+		if (!quiet)
+			printf("setting static IP Address/Mask\n");
 		nv_put_ip_if_cfg(nmsg_set, ntohl(ia_addr.s_addr), ntohl(ia_mask.s_addr));
 		need_to_set_attr = 1;
 	}
@@ -589,7 +600,8 @@ static void bootstrap_om(struct gsm_bts_trx *trx)
 			goto out_err;
 		}
 
-		printf("setting static IP Gateway\n");
+		if (!quiet)
+			printf("setting static IP Gateway\n");
 		/* we only set the default gateway with zero addr/mask */
 		nv_put_gw_cfg(nmsg_set, 0, 0, ntohl(ia_gw.s_addr));
 		need_to_set_attr = 1;
@@ -607,7 +619,8 @@ static void bootstrap_om(struct gsm_bts_trx *trx)
 	}
 
 	if (restart && !prim_oml_ip && !software) {
-		printf("restarting BTS\n");
+		if (!quiet)
+			printf("restarting BTS\n");
 		abis_nm_ipaccess_restart(trx);
 	}
 
@@ -636,7 +649,8 @@ static int nm_state_event(int evt, uint8_t obj_class, void *obj,
 					    phys_conf_min, sizeof(phys_conf_min));
 		else if (software) {
 			int rc;
-			printf("Attempting software upload with '%s'\n", software);
+			if (!quiet)
+				printf("Attempting software upload with '%s'\n", software);
 			rc = abis_nm_software_load(trx->bts, trx->nr, software, 19, 0, swload_cbfn, trx);
 			if (rc < 0) {
 				fprintf(stderr, "Failed to start software load\n");
@@ -769,7 +783,8 @@ static void analyze_firmware(const char *filename)
 	entry = talloc_zero(tall_firm_ctx, struct llist_head);
 	INIT_LLIST_HEAD(entry);
 
-	printf("Opening possible firmware '%s'\n", filename);
+	if (!quiet)
+		printf("Opening possible firmware '%s'\n", filename);
 	fd = open(filename, O_RDONLY);
 	if (fd < 0) {
 		perror("nada");
@@ -893,6 +908,7 @@ static void print_help(void)
 	printf("  -f --firmware FIRMWARE\tProvide firmware information\n");
 	printf("  -w --write-firmware\t\tThis will dump the firmware parts to the filesystem. Use with -f.\n");
 	printf("  -p --loop\t\t\tLoop the tests executed with the --listen command.\n");
+	printf("  -q --quiet\t\t\tAvoid printing unformatted logging to stdout, useful with -G.\n");
 }
 
 static void print_value_string(const struct value_string *val, int size)
@@ -945,9 +961,6 @@ int main(int argc, char **argv)
 	osmo_init_logging2(tall_ctx_config, &log_info);
 	bts_model_nanobts_init();
 
-	printf("ipaccess-config (C) 2009-2010 by Harald Welte and others\n");
-	printf("This is FREE SOFTWARE with ABSOLUTELY NO WARRANTY\n\n");
-
 	while (1) {
 		int c;
 		unsigned long ul;
@@ -972,10 +985,11 @@ int main(int argc, char **argv)
 			{ "write-firmware", 0, 0, 'w' },
 			{ "disable-color", 0, 0, 'c'},
 			{ "loop", 0, 0, 'p' },
+			{ "quiet", 0, 0, 'q' },
 			{ 0, 0, 0, 0 },
 		};
 
-		c = getopt_long(argc, argv, "Gu:o:i:g:rn:S:U:l:L:hs:d:f:wcpH", long_options,
+		c = getopt_long(argc, argv, "Gu:o:i:g:rn:S:U:l:L:hs:d:f:wcpqH", long_options,
 				&option_index);
 
 		if (c == -1)
@@ -1057,6 +1071,9 @@ int main(int argc, char **argv)
 		case 'p':
 			loop_tests = 1;
 			break;
+		case 'q':
+			quiet = true;
+			break;
 		case 'h':
 			print_usage();
 			print_help();
@@ -1066,6 +1083,11 @@ int main(int argc, char **argv)
 			exit(0);
 		}
 	};
+
+	if (!quiet) {
+		printf("ipaccess-config (C) 2009-2010 by Harald Welte and others\n");
+		printf("This is FREE SOFTWARE with ABSOLUTELY NO WARRANTY\n\n");
+	}
 
 	if (firmware_analysis) {
 		analyze_firmware(firmware_analysis);
@@ -1097,7 +1119,8 @@ int main(int argc, char **argv)
 
 	ipac_nwl_init();
 
-	printf("Trying to connect to ip.access BTS %s...\n", bts_ip);
+	if (!quiet)
+		printf("Trying to connect to ip.access BTS %s...\n", bts_ip);
 
 	memset(&sin, 0, sizeof(sin));
 	sin.sin_family = AF_INET;
