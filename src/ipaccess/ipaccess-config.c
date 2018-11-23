@@ -289,7 +289,7 @@ static int print_attr_rep(struct msgb *mb)
 
 	abis_nm_tlv_attr_unit_id(&tp, unit_id,  sizeof(unit_id));
 
-	fprintf(stdout, "{ primary_oml_ip: \"%s\", primary_oml_port: %" PRIu16 ", unit_id: \"%s\" }\n",
+	fprintf(stdout, "{ \"primary_oml_ip\": \"%s\", \"primary_oml_port\": %" PRIu16 ", \"unit_id\": \"%s\" }\n",
 		oml_ip, oml_port, unit_id);
 	return 0;
 }
