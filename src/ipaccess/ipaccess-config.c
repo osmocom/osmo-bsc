@@ -890,12 +890,12 @@ static void print_help(void)
 	printf("Commands for writing to the BTS:\n");
 	printf("  -u --unit-id UNIT_ID\t\tSet the Unit ID of the BTS\n");
 	printf("  -o --oml-ip IP\t\tSet primary OML IP (IP of your BSC)\n");
-	printf("  -G --get-attr\t\tGet several attributes from BTS\n");
+	printf("  -G --get-attr\t\t\tGet several attributes from BTS\n");
 	printf("  -i --ip-address IP/MASK\tSet static IP address + netmask of BTS\n");
 	printf("  -g --ip-gateway IP\t\tSet static IP gateway of BTS\n");
 	printf("  -r --restart\t\t\tRestart the BTS (after other operations)\n");
 	printf("  -n --nvram-flags FLAGS/MASK\tSet NVRAM attributes\n");
-	printf("  -S --nvattr-set FLAG\tSet one additional NVRAM attribute\n");
+	printf("  -S --nvattr-set FLAG\t\tSet one additional NVRAM attribute\n");
 	printf("  -U --nvattr-unset FLAG\tSet one additional NVRAM attribute\n");
 	printf("  -l --listen TESTNR\t\tPerform specified test number\n");
 	printf("  -L --Listen TEST_NAME\t\tPerform specified test\n");
