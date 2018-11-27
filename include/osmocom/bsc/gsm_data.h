@@ -501,6 +501,7 @@ struct gsm_lchan {
 	struct {
 		enum lchan_activate_mode activ_for;
 		bool activ_ack; /*< true as soon as RSL Chan Activ Ack is received */
+		bool immediate_assignment_sent;
 		/*! This flag ensures that when an lchan activation has succeeded, and we have already
 		 * sent ACKs like Immediate Assignment or BSSMAP Assignment Complete, and if other errors
 		 * occur later, e.g. during release, that we don't send a NACK out of context. */
