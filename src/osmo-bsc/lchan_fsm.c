@@ -97,17 +97,15 @@ static void _lchan_on_activation_failure(struct gsm_lchan *lchan, enum lchan_act
 	switch (activ_for) {
 
 	case FOR_MS_CHANNEL_REQUEST:
-		if (lchan->activate.immediate_assignment_sent) {
-			LOG_LCHAN(lchan, LOGL_ERROR,
-				  "lchan activation failed, after Immediate Assignment message was sent (%s)\n",
-				  lchan->last_error ? : "unknown error");
-			/* Likely the MS never showed up. Just tear down the lchan. */
-		} else {
+		if (!lchan->activate.immediate_assignment_sent) {
 			/* Failure before Immediate Assignment message, send a reject. */
 			LOG_LCHAN(lchan, LOGL_NOTICE, "Tx Immediate Assignment Reject (%s)\n",
 				  lchan->last_error ? : "unknown error");
 			rsl_tx_imm_ass_rej(lchan->ts->trx->bts, lchan->rqd_ref);
 		}
+		/* Otherwise, likely the MS never showed up after the Assignment, and the failure cause
+		 * (Timeout?) was already logged elsewhere. Just continue to tear down the lchan after
+		 * lchan_on_activation_failure(), no additional action or logging needed. */
 		break;
 
 	case FOR_ASSIGNMENT:
