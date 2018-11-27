@@ -1,0 +1,577 @@
+== Handover
+
+Handover is the process of moving a continuously used channel (lchan) from one
+cell to another. Usually, that is an ongoing call, so that phones are able to
+move across cell coverage areas without interrupting the voice transmission.
+
+A handover can
+
+- stay within one given cell (intra-cell, i.e. simply a new RR Assignment Command);
+- occur between two cells that belong to the same BSS (intra-BSC, via RR Handover Command);
+- cross BSS boundaries (inter-BSC, via BSSMAP handover procedures);
+- move to another MSC (inter-MSC, inter-PLMN);
+- move to another RAN type, e.g. from 2G to 3G (inter-RAT, inter-Radio-Access-Technology).
+
+The physical distance is by definition always very near, but handover
+negotiation may range from being invisible to the MSC all the way to
+orchestrating completely separate RAN stacks.
+
+OsmoBSC currently supports handover within one BSS and between separate BSS.
+Whether inter-MSC is supported depends on the MSC implementation (to the BSC,
+inter-MSC handover looks identical to inter-BSC handover). Inter-RAT handover
+is currently not implemented.
+
+At the time of writing, OsmoMSC's inter-BSC handover support is not complete
+yet, so OsmoBSC can perform handover between separate BSS only in conjunction
+with a 3rd party MSC implementation.
+
+.Handover support in Osmocom at the time of writing
+[cols="^,^,^,^,^"]
+|====
+|  | intra-BSC HO (local BSS) | inter-BSC HO (remote BSS) | inter-MSC HO | inter-RAT HO
+| OsmoBSC | rxlev, load-based | rxlev | (planned) | -
+| OsmoMSC | (not involved, except for codec changes) | (planned)  | (planned)  | -
+|====
+
+
+=== How Handover Works
+
+This chapter generally explains handover operations between 2G cells.
+
+==== Internal / Intra-BSC Handover
+
+The BSS is configured to know which cell is physically adjacent to which other
+cells, its "neighbors". On the MS/BTS/BSS level, individual cells are
+identified by ARFCN+BSIC (frequency + 6-bit identification code).
+
+Each BTS is told by the BSC which cells identified by ARFCN+BSIC are its
+adjacent cells. Via System Information, each MS receives a list of these
+ARFCN+BSIC, and the MS then return measurements of reception levels.
+
+The BSC is the point of decision whether to do handover or not. This can be a
+hugely complex combination of heuristics, knowledge of cell load and codec
+capabilites. The most important indicator for handover though is: does an MS
+report a neighbor with a better signal than the current cell? See
+<<intra_bsc_ho_dot>>.
+
+[[intra_bsc_ho_dot]]
+.Intra-BSC Handover stays within the BSS (shows steps only up to activation of the new lchan -- this would be followed by an RR Handover Command, RACH causing Handover Detection, Handover Complete, ...)
+[graphviz]
+----
+include::handover_intra_bsc.dot[]
+----
+
+If the BSC sees the need for handover, it will:
+
+- activate a new lchan (with a handover reference ID),
+- send an RR Handover Command to the current lchan, and
+- wait for the MS to send a Handover RACH to the new lchan ("Handover Detect").
+- The RTP stream then is switched over to the new lchan,
+- an RSL Establish Indication is expected on the new lchan,
+- and the old lchan is released.
+
+Should handover fail at any point, e.g. the new lchan never receives a RACH, or
+the MS reports a Handover Failure, then the new lchan is simply released again,
+and the old lchan remains in use. If the RTP stream has already been switched
+over to the new lchan, it may actually be switched back to the old lchan.
+
+This is simple enough if the new cell is managed by the same BSC: the OsmoMGW
+is simply instructed to relay the BTS-side of the RTP stream to another IP
+address and port, and the BSC continues to forward DTAP to the MSC
+transparently. The operation happens completely within the BSS. If the voice
+codec has remained unchanged, the MSC/MNCC may not even be notified that
+anything has happened at all.
+
+==== External / Inter-BSC Handover
+
+If the adjacent target cell belongs to a different BSS, the RR procedure for
+handover remains the same, but we need to tell the _remote_ BSC to allocate the
+new lchan.
+
+The only way to reach the remote BSC is via the MSC, so the MSC must be able
+to:
+
+- identify which other BSC we want to talk to,
+- forward various BSSMAP Handover messages between old and new BSC,
+- redirect the core-side RTP stream to the new BSS at the appropriate time,
+- and must finally BSSMAP Clear the connection to the old BSS to conclude the
+  inter-BSC handover.
+
+[[inter_bsc_ho_dot]]
+.Inter-BSC Handover requires the MSC to relay between two BSCs (shows steps only up to the BSSMAP Handover Command -- this would be followed by an RR Handover Command, RACH causing Handover Detection, Handover Complete, ...)
+[graphviz]
+----
+include::handover_inter_bsc.dot[]
+----
+
+The first part, identifying the remote BSC, is not as trivial as it sounds: as
+mentioned above, on the level of cell information seen by BTS and MS, the
+neighbor cells are identified by ARFCN+BSIC. However, on the A-interface and in
+the MSC, there is no knowledge of ARFCN+BSIC configurations, and instead each
+cell is identified by a LAC and CI (Location Area Code and Cell Identifier).
+
+NOTE: There are several different cell identification types on the A-interface:
+from Cell Global Identifier (MCC+MNC+LAC+CI) down to only LAC. OsmoBSC supports
+most of these (see <<neighbor_conf_list>>). For simplicity, this description
+focuses on LAC+CI identification.
+
+The most obvious reason for using LAC+CI is that identical ARFCN+BSIC are
+typically re-used across many cells of the same network operator: an operator
+will have only very few ARFCNs available, and the 6bit BSIC opens only a very
+limited range of distinction between cells. As long as each cell has no more
+than one neighbor per given ARFCN+BSIC, these values can be re-used any number
+of times across a network, and even between cells managed by one and the same
+BSC.
+
+The consequence of this is that
+
+- the BSC needs to know which remote-BSS cells' ARFCN+BSIC correspond to
+  exactly which global LAC+CI, and
+- the MSC needs to know which LAC+CI are managed by which BSC.
+
+In other words, each BSC requires prior knowledge about the cell configuration
+of its remote-BSS neighbor cells, and the MSC requires prior knowledge about
+each BSC's cell identifiers; i.e. these config items are spread reduntantly.
+
+=== Configuring Neighbors
+
+The most important step to enable handover in OsmoBSC is to configure each cell
+with the ARFCN+BSIC identities of its adjacent neighbors -- both local-BSS and
+remote-BSS.
+
+For a long time, OsmoBSC has offered configuration to manually enter the
+ARFCN+BSIC sent out as neighbors on various System Information messages (all
+`neighbor-list` related commands). This is still possible, however,
+particularly for re-using ARFCN+BSIC within one BSS, this method will not work
+well.
+
+With the addition of inter-BSC handover support, the new `neighbor` config item
+has been added to the `bts` config, to maintain explicit cell-to-cell neighbor
+relations, with the possibility to re-use ARFCN+BSIC in each cell.
+
+It is recommended to completely replace `neighbor-list` configurations with the
+new `neighbor` configuration described below.
+
+[[neighbor_conf_list]]
+.Overview of neighbor configuration on the `bts` config node
+[frame="none",grid="none",cols="^10%,^10%,80%"]
+|====
+| Local | Remote BSS |
+| ✓ |   | neighbor bts 5
+| ✓ |   | neighbor lac 200
+| ✓ |   | neighbor lac-ci 200 3
+| ✓ |   | neighbor cgi 001 01 200 3
+| ✓ | ✓ | neighbor lac 200 arfcn 123 bsic 1
+| ✓ | ✓ | neighbor lac-ci 200 3 arfcn 123 bsic 1
+| ✓ | ✓ | neighbor cgi 001 01 200 3 arfcn 123 bsic 1
+|====
+
+==== Default: All Local Cells are Neighbors
+
+For historical reasons, the default behavior of OsmoBSC is to add all local-BSS cells as neighbors. To
+maintain a backwards compatible configuration file format, this is still the case: as soon as no explicit
+neighbor cell is configured with a `neighbor` command (either none was configured, or all configured
+neighbors have been removed again), a cell automatically lists all of the local-BSS cells as neighbors.
+These are implicit mappings in terms of the legacy neighbor configuration scheme, and re-using ARFCN+BSIC
+combinations within a BSS will not work well this way.
+
+As soon as the first explicit neighbor relation is added to a cell, the legacy behavior is switched off,
+and only explicit neighbors are in effect.
+
+NOTE: If a cell is required to not have any neighbors, it is recommended to rather switch off handover
+for that cell with `handover 0`. An alternative solution is to set `neighbor-list mode manual` and not
+configure any `neighbor-list` entries.
+
+==== Local-BSS Neighbors
+
+Local neighbors can be configured by just the local BTS number, or by LAC+CI,
+or any other supported A-interface type cell identification; also including the
+ARFCN+BSIC is optional, it will be derived from the local configuration if
+omitted.
+
+OsmoBSC will log errors in case the configuration includes ambiguous ARFCN+BSIC
+relations (when one given cell has more than one neighbor for any one
+ARFCN+BSIC).
+
+Neighbor relations must be configured explicitly in both directions, i.e. each
+cell has to name all of its neighbors, even if the other cell already has an
+identical neighbor relation in the reverse direction.
+
+.Example: configuring neighbors within the local BSS in osmo-bsc.cfg, identified by local BTS number
+----
+network
+ bts 0
+  neighbor bts 1
+ bts 1
+  neighbor bts 0
+----
+
+.Example: configuring neighbors within the local BSS in osmo-bsc.cfg, identified by LAC+CI
+----
+network
+
+ bts 0
+  # this cell's LAC=23 CI=5
+  location_area_code 23
+  cell_identity 5
+  # reference bts 1
+  neighbor lac-ci 23 6
+
+ bts 1
+  # this cell's LAC=23 CI=6
+  location_area_code 23
+  cell_identity 6
+  # reference bts 0
+  neighbor lac-ci 23 5
+----
+
+It is allowed to include the ARFCN and BSIC of local neighbor cells, even
+though that is redundant with the already known local configuration of the
+other cell. The idea is to ease generating the neighbor configuration
+automatically, since local-BSS and remote-BSS neighbors then share identical
+configuration formatting. For human readability and maintainability, it may
+instead be desirable to use the `neighbor bts <0-255>` format.
+
+.Example: configuring neighbors within the local BSS in osmo-bsc.cfg, redundantly identified by LAC+CI as well as ARFCN+BSIC
+----
+network
+
+ bts 0
+  # this cell's LAC=23 CI=5
+  location_area_code 23
+  cell_identity 5
+  # this cell's ARFCN=1 BSIC=1
+  trx 0
+   arfcn 1
+  base_station_id_code 1
+  # reference bts 1
+  neighbor lac-ci 23 6 arfcn 2 bsic 2
+
+ bts 1
+  # LAC=23 CI=6
+  location_area_code 23
+  cell_identity 6
+  # this cell's ARFCN=2 BSIC=2
+  trx 0
+   arfcn 2
+  base_station_id_code 2
+  # reference bts 0
+  neighbor lac-ci 23 5 arfcn 1 bsic 1
+----
+
+If the cell identification matches a local cell, OsmoBSC will report errors if
+the provided ARFCN+BSIC do not match.
+
+==== Remote-BSS Neighbors
+
+Remote-BSS neighbors _always_ need to be configured with full A-interface
+identification _and_ ARFCN+BSIC, to allow mapping a cell's neighbor ARFCN+BSIC
+to a _BSSMAP Cell Identifier_ (see 3GPP TS 48.008 3.1.5.1 Handover Required
+Indication and 3.2.1.9 HANDOVER REQUIRED).
+
+.Example: configuring remote-BSS neighbors in osmo-bsc.cfg, identified by LAC+CI (showing both BSCs' configurations)
+----
+# BSC Alpha's osmo-bsc.cfg
+network
+ bts 0
+  # this cell's LAC=23 CI=6
+  location_area_code 23
+  cell_identity 6
+  # this cell's ARFCN=2 BSIC=2
+  trx 0
+   arfcn 2
+  base_station_id_code 2
+  # fully describe the remote cell by LAC+CI and ARFCN+BSIC
+  neighbor lac-ci 42 3 arfcn 1 bsic 3
+
+# BSC Beta's osmo-bsc.cfg
+network
+ bts 0
+  # this cell's LAC=42 CI=3
+  location_area_code 42
+  cell_identity 3
+  # this cell's ARFCN=1 BSIC=3
+  trx 0
+   arfcn 1
+  base_station_id_code 3
+  # fully describe the remote cell by LAC+CI and ARFCN+BSIC
+  neighbor lac-ci 23 6 arfcn 2 bsic 2
+----
+
+NOTE: It is strongly recommended to stick to a single format for remote-BSS
+neighbors' cell identifiers all across an OsmoBSC configuration; i.e. decide
+once to use `lac`, `lac-ci` or `cgi` and then stick to that within a given
+osmo-bsc.cfg. The reason is that the _Cell Identifier List_ sent in the _BSSMAP
+Handover Required_ message must have one single cell identifier type for all
+list items. Hence, to be able to send several alternative remote neighbors to
+the MSC, the configured cell identifiers must be of the same type. If in doubt,
+use the full CGI identifier everywhere.
+
+==== Reconfiguring Neighbors in a Running OsmoBSC
+
+When modifying a cell's neighbor configuration in a telnet VTY session while a cell is already active,
+the neighbor configuration will merely be cached in the BSC's local config. To take actual effect, it is
+necessary to
+
+- either, re-connect the cell to the BSC (e.g. via `drop bts connection <0-255> oml`)
+- or, re-send the System Information using `bts <0-255> resend-system-information`.
+
+=== Configuring Handover Decisions
+
+For a long time, OsmoBSC has supported handover based on reception level
+hysteresis (RXLEV) and distance (TA, Timing Advance), known has `algorithm 1`.
+
+Since 2018, OsmoBSC also supports a load-based handover decision algorithm,
+known as `algorithm 2`, which also takes cell load, available codecs and
+oscillation into consideration. Algorithm 2 had actually been implemented for
+the legacy OsmoNITB program many years before the OsmoMSC split, but remained
+on a branch, until it was forward-ported to OsmoBSC in 2018.
+
+.What handover decision algorithms take into account
+[frame="none",grid="none",cols="^10%,^10%,80%"]
+|====
+| algorithm 1 | algorithm 2 |
+| ✓ | ✓| RXLEV
+| ✓ | ✓| RXQUAL
+| ✓ | ✓| TA (distance)
+| ✓ | ✓| interference (good RXLEV, bad RXQUAL)
+|   | ✓| load (nr of free lchans, minimum RXLEV and RXQUAL)
+|   | ✓| penalty time to avoid oscillation
+|   | ✓| voice rate / codec bias
+| ✓ |  | inter-BSC: RXLEV hysteresis
+|   | ✓| inter-BSC: only below minimum RXLEV, RXQUAL
+|====
+
+==== Common Configuration
+
+Handover is disabled by default; to disable/enable handover, use `handover
+(0|1)`.
+
+Once enabled, algorithm 1 is used by default; choose a handover algorithm with
+`handover algorithm (1|2)`:
+
+----
+network
+ # Enable handover
+ handover 1
+
+ # Choose algorithm
+ handover algorithm 2
+
+ # Tweak parameters for algorithm 2 (optional)
+ handover2 min-free-slots tch/f 4
+ handover2 penalty-time failed-ho 30
+ handover2 retries 1
+----
+
+All handover algorithms share a common configuration scheme, with an overlay of
+three levels:
+
+* immutable compile-time default values,
+* configuration on the `network` level for all cells,
+* individual cells' configuration on each `bts` node.
+
+Configuration settings relevant for algorithm 1 start with `handover1`, for
+algorithm 2 with `handover2`.
+
+The following example overrides the compile-time default for all cells, and
+furthermore sets one particular cell on its own individual setting, for the
+`min-free-slots tch/f` value:
+
+----
+network
+ handover2 min-free-slots tch/f 4
+ bts 23
+  handover2 min-free-slots tch/f 2
+----
+
+The order in which these settings are issued makes no difference for the
+overlay; i.e., this configuration is perfectly identical to the above, and the
+individual cell's value remains in force:
+
+----
+network
+ bts 23
+  handover2 min-free-slots tch/f 2
+ handover2 min-free-slots tch/f 4
+----
+
+Each setting can be reset to a default value with the `default` keyword. When
+resetting an individual cell's value, the globally configured value is used.
+When resetting the global value, the compile-time default is used (unless
+individual cells still have explicit values configured). For example, this
+telnet VTY session removes above configuration first from the cell, then from
+the global level:
+
+----
+OsmoBSC(config)# network
+OsmoBSC(config-net)# bts 23
+OsmoBSC(config-net-bts)# handover2 min-free-slots tch/f default
+% 'handover2 min-free-slots tch/f' setting removed, now is 4
+OsmoBSC(config-net-bts)# exit
+OsmoBSC(config-net)# handover2 min-free-slots tch/f default
+% 'handover2 min-free-slots tch/f' setting removed, now is 0
+----
+
+==== Handover Algorithm 1
+
+Algorithm 1 takes action only when RR Measurement Reports are received from a
+BTS. As soon as a neighbor's average RXLEV is higher than the current cell's
+average RXLEV plus a hysteresis distance, handover is triggered.
+
+If a handover fails, algorithm 1 will again attempt handover to the same cell
+with the next Measurement Report received.
+
+Configuration settings relevant for algorithm 1 start with `handover1`. For
+further details, please refer to the OsmoBSC VTY Reference
+(<<vty-ref-osmobsc>>) or the telnet VTY online documentation.
+
+==== Handover Algorithm 2
+
+Algorithm 2 is specifically designed to distribute load across cells. A
+subscriber will not necessarily remain attached to the cell that has the best
+RXLEV average, if that cell is heavily loaded and a less loaded neighbor is
+above the minimum allowed RXLEV.
+
+Algorithm 2 also features penalty timers to avoid oscillation: for each
+subscriber, if handover to a specific neighbor failed (for a configurable
+number of retries), a holdoff timer prevents repeated attempts to handover to
+that same neighbor. Several hold-off timeouts following specific situations are
+configurable (see `handover2 penalty-time` configuration items).
+
+Configuration settings relevant for algorithm 2 start with `handover2`. For
+further details, please refer to the OsmoBSC VTY Reference
+<<vty-ref-osmobsc>> or the telnet VTY online documentation.
+
+===== Load Distribution
+
+Load distribution is only supported by algorithm 2.
+
+Load distribution occurs:
+
+- explicitly: every N seconds, OsmoBSC considers all local cells and actively
+  triggers handover operations to reduce congestion, if any. See
+  `min-free-slots` below, and the `congestion-check` setting.
+
+- implicitly: when choosing the best neighbor candidate for a handover
+  triggered otherwise, a congested cell (in terms of `min-free-slots`) is only
+  used as handover target if there is no alternative that causes less cell
+  load.
+
+In either case, load distribution will only occur towards neighbor cells that
+adhere to minimum reception levels and distance, see `min rxlev` and `max
+distance`.
+
+Load distribution will take effect only for already established voice channels.
+An MS will always first establish a voice call with its current cell choice; in
+load situations, it might be moved to another cell shortly after that.
+Considering the best neighbor _before_ starting a new voice call might be
+desirable, but is currently not implemented. Consider that RXLEV/RXQUAL ratings
+are averaged over a given number of measurement reports, so that the neighbor
+ratings may not be valid/reliable yet during early call establishment. In
+consequence, it is recommended to ensure a sufficient number of unused logical
+channels at all times, though there is no single correct configuration for all
+situations.
+
+Most important for load distribution are the `min-free-slots tch/f` and
+`min-free-slots tch/h` settings. The default is zero, meaning _no_ load
+distribution. To enable, set `min-free-slots` >= 1 for `tch/f` and/or `tch/h`
+as appropriate. This setting refers to the minimum number of voice channels
+that should ideally remain unused in each individual BTS at all times.
+
+NOTE: it is not harmful to configure `min-free-slots` for a TCH kind that is
+not actually present. Such settings will simply be ignored.
+
+NOTE: the number of TCH/F timeslots corresponds 1:1 to the number indicated by
+`min-free-slots tch/f`, because each TCH/F physical channel has exactly one
+logical channel. In contrast, for each TCH/H timeslot, there are two logical
+channels, hence `min-free-slots tch/h` corresponds to twice the number of TCH/H
+timeslots configured per cell. In fact, a more accurate naming would have been
+"min-free-lchans".
+
+Think of the `min-free-slots` setting as the threshold at which load
+distribution is considered. If as many logical channels as required by this
+setting are available in a given cell, only changes in RXLEV/RXQUAL/TA trigger
+handover away from that cell. As soon as less logical channels remain free, the
+periodical congestion check attempts to distribute MS to less loaded neighbor
+cells. Every time, the one MS that will suffer the least RXLEV loss while still
+reducing congestion will be instructed to move first.
+
+If a cell and its neighbors are all loaded past their `min-free-slots`
+settings, the algorithmic aim is equal load: a load-based handover will never
+cause the target cell to be more congested than the source cell.
+
+The min-free-slots setting is a tradeoff between immediate voice service
+availability and optimal reception levels. A sane choice could be:
+
+- Start off with `min-free-slots` set to half the available logical channels.
+- Increase `min-free-slots` if you see MS being rejected too often even though
+  close neighbors had unused logical channels.
+- Decrease `min-free-slots` if you see too many handovers happening for no
+  apparent reason.
+
+Choosing the optimal setting is not trivial, consider these examples:
+
+- Configure `min-free-slots` = 1: load distribution to other cells will occur
+  exactly when the last available logical channel has become occupied. The next
+  time the congestion check runs, at most one handover will occur, so that one
+  channel is available again. In the intermediate time, all channels will be
+  occupied, and some MS might be denied immediate voice service because of
+  that, even though, possibly, other neighbor cells would have provided
+  excellent reception levels and were completely unloaded. For those MS that
+  are already in an ongoing voice call and are not physically moving, though,
+  this almost guarantees service by the closest/best cell.
+
+- Set `min-free-slots` = 2: up to two MS can successfully request voice service
+  simultaneously (e.g. one MS is establishing a new voice call while another MS
+  is travelling into this cell). Ideally, two slots have been kept open and are
+  immediately available. But if a third MS is also traveling into this cell at
+  the same time, it will not be able to handover into this cell until load
+  distribution has again taken action to make logical channels available. The
+  same scenario applies to any arbitrary number of MS asking for voice channels
+  simultaneously. The operator needs to choose where to draw the line.
+
+- Set `min-free-slots` >= the number of available channels: as soon as any
+  neighbor is less loaded than a given cell, handover will be attempted. But
+  imagine there are only two active voice calls on this cell with plenty of
+  logical channels still unused, and the closest neighbor rates only just above
+  `min rxlev`; then moving one of the MS _for no good reason_ causes all of:
+  increased power consumption, reduced reception stability and channel
+  management overhead.
+
+NOTE: In the presence of dynamic timeslots to provide GPRS service, the number
+of voice timeslots left unused also determines the amount of bandwidth
+available for GPRS.
+
+==== External / Inter-BSC Handover Considerations
+
+There currently is a profound difference for inter-BSC handover between
+algorithm 1 and 2:
+
+For algorithm 1, inter-BSC handover is triggered as soon as the Measurement
+Reports and hysteresis indicate a better neighbor than the current cell,
+period.
+
+For algorithm 2, a subscriber is "sticky" to the current BSS, and inter-BSC
+handover is only even considered when RXLEV/TA drop below minimum requirements.
+
+- If your network topology is such that each OsmoBSC instance manages a single
+  BTS, and you would like to encourage handover between these, choose handover
+  algorithm 1. Load balancing will not be available, but RXLEV hysteresis will.
+
+- If your network topology has many cells per BSS, and/or if your BSS
+  boundaries in tendency correspond to physical/semantic boundaries that favor
+  handover to remain within a BSS, then choose handover algorithm 2.
+
+The reason for the difference between algorithm 1 and 2 for remote-BSS
+handovers is, in summary, the young age of the inter-BSC handover feature in
+OsmoBSC:
+
+- So far the mechanisms to communicate cell load to remote-BSS available in the
+  BSSMAP Handover messages are not implemented, so, a handover due to cell load
+  across BSS boundaries would be likely to cause handover oscillation between
+  the two BSS (continuous handover of the same MS back and forth between the
+  same two cells).
+- Algorithm 1 has no `min rxlev` setting.
+- Algorithm 1 does not actually use any information besides the Measurement
+  Reports, and hence can trivially treat all neighbor cells identically.

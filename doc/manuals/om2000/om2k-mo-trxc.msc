@@ -1,0 +1,16 @@
+msc {
+	bts [label="TRX (TRXC)"], bsc [label="BSC"];
+	# this is for the TRX Controller Object
+	---		[label="Initial state after initializing IS"];
+
+	bts <= bsc	[label="Reset Command"];
+	bts => bsc	[label="Reset Complete"];
+
+	bts <= bsc	[label="Start Request"];
+	bts => bsc	[label="Reset Request Accept"];
+	bts => bsc	[label="Start Result (Started)"];
+	bts <= bsc	[label="Start Result ACK"];
+
+	bts <= bsc	[label="Operational Info (Operational)"];
+	bts => bsc	[label="Operational Info Accept"];
+}

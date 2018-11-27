@@ -1,0 +1,24 @@
+msc {
+	trxc [label="TRXC"], tf [label="TF"], is [label="IS"], cf [label="CF"], bsc [label="BSC"];
+	cf => bsc	[label="Fault Report"];
+	cf <=> bsc	[label="Start incl. Negotiation"];
+	cf <=> bsc	[label="Operational Info"];
+
+	is <=> bsc	[label="Connect"];
+	is <=> bsc	[label="Reset"];
+	is <=> bsc	[label="Start"];
+	is <=> bsc	[label="Config"];
+	is <=> bsc	[label="Enable"];
+	is <=> bsc	[label="Operational Info"];
+
+	trxc <=> bsc	[label="TRXC + dependent objects"];
+
+	cf <=> bsc	[label="Calendar Time"];
+
+	tf <=> bsc	[label="Connect"];
+	tf <=> bsc	[label="Reset"];
+	tf <=> bsc	[label="Start"];
+	tf <=> bsc	[label="Config"];
+	tf <=> bsc	[label="Enable"];
+	tf <=> bsc	[label="Operational Info"];
+}

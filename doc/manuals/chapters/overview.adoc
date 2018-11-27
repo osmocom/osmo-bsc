@@ -1,0 +1,174 @@
+[[overview]]
+== Overview
+
+This manual should help you getting started with OsmoBSC. It will cover
+aspects of configuring and running the OsmoBSC.
+
+[[intro_overview]]
+=== About OsmoBSC
+
+OsmoBSC is the Osmocom implementation of a Base Station Controller. It
+implements:
+
+- an 'A-bis' interface towards BTSs and
+- an 'A' interface towards an MSC. It is important to be aware that there are
+  two variants of the 'A' interface, see <<a-interface>>.
+
+=== Software Components
+
+OsmoBSC contains a variety of different software components, which
+we'll briefly describe in this section.
+
+==== A-bis Implementation
+
+OsmoBSC implements the ETSI/3GPP specified A-bis interface, including TS 08.56
+(LAPD), TS 08.58 (RSL) and TS 12.21 (OML). In addition, it supports a variety
+of vendor-specific extensions and dialects in order to communicate with BTSs
+from Siemens, Nokia, Ericsson, ip.access, Octasic and sysmocom, as well as
+various USRP based BTS implementations, using OsmoBTS and OsmoTRX (like the
+Ettus B200 series, the Fairwaves XTRX or the LimeSDR, to name a few).
+
+For more information, see <<bts>> and <<bts-examples>>.
+
+[[a-interface]]
+==== A Implementation
+
+OsmoBSC implements a sub-set of the GSM A interface as specified in TS 08.08
+(BSSAP) and TS 04.08 (DTAP).
+
+Osmocom offers two variants of the 'A' interface's protocol stacking:
+
+- 'A/SCCPlite'
+- 'A/SCCP/M3UA'
+
+Traditionally, OsmoBSC only implemented the A/SCCPlite protocol, but since a
+proper M3UA implementation is available from 'libosmo-sigtran'
+('libosmo-sccp.git'), the stock OsmoBSC now supports only A/SCCP/M3UA. (The
+idea is that SCCPlite support may be added to libosmo-sigtran at some point
+in the future, after which the new `osmo-bsc` would support both variants of
+the A interface.)
+
+The difference between an A/SCCPlite and A/SCCP/M3UA is illustrated in
+<<fig-sccplite>> and <<fig-sccp-m3ua>>.
+
+===== A/SCCPlite
+
+Unlike classic A interface implementations for E1 interfacs,
+`osmo-bsc-sccplite` implements a variant of encapsulating the A interface over
+IP.  To do so, the SCCP messages are wrapped in an IPA multiplex and then
+communicated over TCP.  The audio channels are mapped to RTP streams.
+
+This protocol stacking is sometimes called "SCCPlite".
+
+At the time of writing, if you would like to use the old A/SCCPlite protocol,
+look for binary packages named `osmo-bsc-sccplite`, or compile `osmo-bsc` from
+the 'openbsc.git' repository.
+
+[[fig-sccplite]]
+.`osmo-bsc-sccplite` operation using 'A/SCCPlite'
+[graphviz]
+----
+digraph G {
+        rankdir=LR;
+        MS0 [label="MS"];
+        MS1 [label="MS"];
+        MS2 [label="MS"];
+        MS3 [label="MS"];
+        BTS0 [label="BTS"];
+        BTS1 [label="BTS"];
+        BSC [label="OsmoBSC-SCCPlite"];
+        MSC [label="3rd party MSC"];
+        {MS0,MS1}->BTS0 [label="Um"];
+        {MS2,MS3}->BTS1 [label="Um"];
+        {BTS0,BTS1}->BSC [label="Abis\nTCP\nIP"];
+        BSC->MSC [label="A\nSCCP\nTCP\nIP"];
+}
+----
+
+===== A/SCCP/M3UA
+
+The default OsmoBSC's A interface uses the M3UA variant of SIGTRAN protocol
+stacking:
+
+|=====
+|A
+|SCCP
+|M3UA
+|SCTP
+|IP
+|=====
+
+To use the now-default A/SCCP/M3UA protocol, look for binary packages named
+`osmo-bsc`, or compile `osmo-bsc` from the 'osmo-bsc.git' repository. It is
+recommended to use the M3UA variant, which is required to operate with OsmoMSC.
+
+To route SCCP/M3UA messages between OsmoBSC and and MSC, an STP instance like
+OsmoSTP is required.
+
+[[fig-sccp-m3ua]]
+.`osmo-bsc` operation using 'A/SCCP/M3UA'
+[graphviz]
+----
+digraph G {
+        rankdir=LR;
+        MS0 [label="MS"];
+        MS1 [label="MS"];
+        MS2 [label="MS"];
+        MS3 [label="MS"];
+        BTS0 [label="BTS"];
+        BTS1 [label="BTS"];
+        BSC [label="OsmoBSC"];
+        STP [label="OsmoSTP"];
+        MSC [label="OsmoMSC\n(or 3rd-party MSC)"];
+        {MS0,MS1}->BTS0 [label="Um"];
+        {MS2,MS3}->BTS1 [label="Um"];
+        {BTS0,BTS1}->BSC [label="Abis\nTCP\nIP"];
+        BSC->STP->MSC [label="A\nSCCP\nM3UA\nSCTP\nIP"];
+}
+----
+
+==== BSC Implementation
+
+The BSC implementation covers the classic functionality of a GSM Base
+Station Controller, i.e.
+
+* configuring and bringing up BTSs with their TRXs and TSs
+* implementing the A-bis interface / protocols for signalling and actual
+  voice data (TRAU frames).
+* processing measurement results from the mobile stations in dedicated
+  mode, performing hand-over decision and execution.
+* Terminating the TS 04.08 RR (Radio Resource) sub-layer from the MS.
+
+For more information, see <<net>>, <<bts>> and <<bts-examples>>.
+
+
+==== TRAU mapper / E1 sub-channel muxer
+
+Unlike classic GSM networks, OsmoBSC does not perform any transcoding.
+Rather, a compatible codec is selected for both legs of a call, and
+codec frames are passed through transparently.  In order to achieve this
+with E1 based BTS, OsmoBSC contains a E1 sub-channel de- and
+re-multiplexer as well as a TRAU mapper that can map uplink to downlink
+frames and vice versa.
+
+=== Control interface
+
+The actual protocol is described in <<common-control-if>> section. Here we
+describe variables specific to OsmoBSC.
+
+.Variables available over control interface
+[options="header",width="100%",cols="20%,5%,5%,50%,20%"]
+|===
+|Name|Access|Trap|Value|Comment
+|msc_connection_status|RO|Yes|"connected", "disconnected"|Indicate the status of connection to MSC.
+|bts_connection_status|RO|Yes|"connected", "disconnected"|Indicate the status of connection to BTS.
+|location|RW|Yes|"<unixtime>,(invalid\|fix2d\|fix3d),<lat>,<lon>,<height>"|Set/Get location data.
+|timezone|RW|No|"<hours>,<mins>,<dst>", "off"|-19 <= hours <= 19, mins in {0, 15, 30, 45}, and 0 <= dst <= 2
+|notification|WO|Yes||
+|inform-msc-v1|WO|Yes||
+|ussd-notify-v1|WO|Yes||
+|===
+
+Some comments.
+FIXME: commands defined in src/ctrl/control_if.c? Nodes? Traps?
+

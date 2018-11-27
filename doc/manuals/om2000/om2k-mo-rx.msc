@@ -1,0 +1,31 @@
+msc {
+	bts [label="TRX (RX)"], bsc [label="BSC"];
+	# this is for the TRX Receiver Object
+	---		[label="Initial state after initializing TRXC"];
+
+	bts <= bsc	[label="Connect Command"];
+	bts => bsc	[label="Connect Complete"];
+
+	bts <= bsc	[label="Reset Command"];
+	bts => bsc	[label="Reset Complete"];
+
+	bts <= bsc	[label="Start Request"];
+	bts => bsc	[label="Start Request Accept"];
+	bts => bsc	[label="Start Result (Disabled)"];
+	bts <= bsc	[label="Start Result ACK"];
+
+	bts <= bsc	[label="Start Request"];
+	bts => bsc	[label="Reset Request Accept"];
+	bts => bsc	[label="Start Result (Disabled)"];
+	bts <= bsc	[label="Start Result ACK"];
+
+	bts <= bsc	[label="RX Configuration Request"];
+	bts => bsc	[label="RX Configuration Request Accept"];
+	bts => bsc	[label="RX Configuration Result"];
+	bts <= bsc	[label="RX Configuration Result ACK"];
+
+	bts <= bsc	[label="Enable Request"];
+	bts => bsc	[label="Enable Request Accept"];
+	bts => bsc	[label="Enable Result (Enabled)"];
+	bts <= bsc	[label="Enable Result ACK"];
+}

@@ -1,0 +1,33 @@
+msc {
+	hscale=2;
+	ts [label="TS"], rx [label="RX"], tx [label="TX"], trxc [label="TRXC"], bsc [label="BSC"];
+
+	trxc =>	bsc	[label="Fault Report"];
+
+	trxc <=> bsc	[label="Reset"];
+	trxc <=> bsc	[label="Start"];
+	trxc <=> bsc	[label="Operational Info"];
+
+	---		[label="Do we wait for TF here?"];
+
+	tx <=> bsc	[label="Connect"];
+	tx <=> bsc	[label="Reset"];
+	tx <=> bsc	[label="Start"];
+	tx <=> bsc	[label="Config"];
+	tx <=> bsc	[label="Enable"];
+
+	rx <=> bsc	[label="Connect"];
+	rx <=> bsc	[label="Reset"];
+	rx <=> bsc	[label="Start"];
+	rx <=> bsc	[label="Config"];
+	rx <=> bsc	[label="Enable"];
+
+	ts <=> bsc	[label="Connect"];
+	ts <=> bsc	[label="Reset"];
+	ts <=> bsc	[label="Start"];
+	ts <=> bsc	[label="Config"];
+	ts <=> bsc	[label="Enable"];
+
+	trxc <=> bsc	[label="BCCH INFO"];
+	trxc <=> bsc	[label="Other RSL procedures"];
+}
