@@ -911,6 +911,8 @@ bool ts_is_pchan_switching(struct gsm_bts_trx_ts *ts, enum gsm_phys_chan_config 
  * and will be served after the switch. (Do not check whether any lchans are actually available.) */
 bool ts_usable_as_pchan(struct gsm_bts_trx_ts *ts, enum gsm_phys_chan_config as_pchan)
 {
+	enum gsm_phys_chan_config target_pchan;
+
 	if (!ts_is_usable(ts))
 		return false;
 
@@ -922,11 +924,8 @@ bool ts_usable_as_pchan(struct gsm_bts_trx_ts *ts, enum gsm_phys_chan_config as_
 		break;
 	}
 
-	{
-		enum gsm_phys_chan_config target_pchan;
-		if (ts_is_lchan_waiting_for_pchan(ts, &target_pchan))
-			return target_pchan == as_pchan;
-	}
+	if (ts_is_lchan_waiting_for_pchan(ts, &target_pchan))
+		return target_pchan == as_pchan;
 
 	return ts_is_capable_of_pchan(ts, as_pchan);
 }
