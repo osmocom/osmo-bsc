@@ -534,6 +534,10 @@ static void ts_fsm_wait_pdch_deact(struct osmo_fsm_inst *fi, uint32_t event, voi
 			}
 		}
 
+	case TS_EV_LCHAN_UNUSED:
+		/* ignored */
+		return;
+
 	default:
 		OSMO_ASSERT(false);
 	}
