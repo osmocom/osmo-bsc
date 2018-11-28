@@ -956,6 +956,9 @@ static void lchan_fsm_wait_rll_rtp_released_onenter(struct osmo_fsm_inst *fi, ui
 		if (lchan->sapis[sapi])
 			LOG_LCHAN(lchan, LOGL_DEBUG, "SAPI[%d] = %d\n", sapi, lchan->sapis[sapi]);
 
+	/* It could be that we receive LCHAN_EV_RTP_RELEASED synchronously and
+	   as a result we may end up in state WAIT_BEFORE_RF_RELEASE after
+	   lchan_do_release has returned */
 	lchan_do_release(lchan);
 
 	sapis = 0;
@@ -980,7 +983,7 @@ static void lchan_fsm_wait_rll_rtp_released_onenter(struct osmo_fsm_inst *fi, ui
 		sapis = 0;
 	}
 
-	if (!sapis && !lchan->fi_rtp)
+	if (!sapis && !lchan->fi_rtp && fi->state == LCHAN_ST_WAIT_RLL_RTP_RELEASED)
 		lchan_fsm_state_chg(LCHAN_ST_WAIT_BEFORE_RF_RELEASE);
 }
 
