@@ -467,13 +467,15 @@ struct gsm_encr {
 	     && lchan->nr < pchan_subslots(as_pchan); \
 	     lchan++)
 
-/* usage:
+/* Iterate lchans that have an FSM allocated based on current PCHAN
+ * mode set in \ref ts.
+ * usage:
  * struct gsm_lchan *lchan;
  * struct gsm_bts_trx_ts *ts = get_some_timeslot();
  * ts_for_each_lchan(lchan, ts) {
  * 	LOGPLCHAN(DMAIN, LOGL_DEBUG, "hello world\n");
  * }
- * Iterate only those lchans that have an FSM allocated. */
+ */
 #define ts_for_each_lchan(lchan, ts) ts_as_pchan_for_each_lchan(lchan, ts, (ts)->pchan_is)
 
 enum lchan_activate_mode {
