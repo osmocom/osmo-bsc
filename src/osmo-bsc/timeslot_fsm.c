@@ -123,7 +123,7 @@ static void ts_lchans_dispatch(struct gsm_bts_trx_ts *ts, int lchan_state, uint3
 {
 	struct gsm_lchan *lchan;
 
-	ts_for_each_lchan(lchan, ts) {
+	ts_for_each_potential_lchan(lchan, ts) {
 		if (lchan_state >= 0
 		    && !lchan_state_is(lchan, lchan_state))
 			continue;
