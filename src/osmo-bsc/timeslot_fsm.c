@@ -864,9 +864,6 @@ bool ts_is_lchan_waiting_for_pchan(struct gsm_bts_trx_ts *ts, enum gsm_phys_chan
 			return true;
 		}
 	}
-
-	if (target_pchan)
-		*target_pchan = ts->pchan_is;
 	return false;
 }
 
