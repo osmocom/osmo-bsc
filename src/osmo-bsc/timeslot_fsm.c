@@ -857,7 +857,7 @@ static struct osmo_fsm ts_fsm = {
 bool ts_is_lchan_waiting_for_pchan(struct gsm_bts_trx_ts *ts, enum gsm_phys_chan_config *target_pchan)
 {
 	struct gsm_lchan *lchan;
-	ts_for_each_lchan(lchan, ts) {
+	ts_for_each_potential_lchan(lchan, ts) {
 		if (lchan->fi->state == LCHAN_ST_WAIT_TS_READY) {
 			if (target_pchan)
 				*target_pchan = gsm_pchan_by_lchan_type(lchan->type);
@@ -887,13 +887,15 @@ bool ts_is_pchan_switching(struct gsm_bts_trx_ts *ts, enum gsm_phys_chan_config 
 
 	switch (ts->fi->state) {
 	case TS_ST_WAIT_PDCH_ACT:
+		/* When switching to PDCH, there are no lchans and we are
+		 * telling the PCU to take over the timeslot. */
 		if (target_pchan)
 			*target_pchan = GSM_PCHAN_PDCH;
 		return true;
 
 	case TS_ST_WAIT_PDCH_DEACT:
-		/* If we were switching to a specific pchan kind, an lchan would be waiting. So this must
-		 * be NONE then. */
+		/* If lchan started a PDCH deact but got somehow released while
+		 * waiting for PDCH DEACT (N)ACK */
 		if (target_pchan)
 			*target_pchan = GSM_PCHAN_NONE;
 		return true;
