@@ -550,7 +550,7 @@ static void ts_fsm_in_use_onenter(struct osmo_fsm_inst *fi, uint32_t prev_state)
 	ts->pdch_act_allowed = true;
 
 	/* For static TS, check validity. For dyn TS, figure out which PCHAN this should become. */
-	ts_as_pchan_for_each_lchan(lchan, ts, ts->pchan_on_init) {
+	ts_for_each_potential_lchan(lchan, ts) {
 		if (lchan_state_is(lchan, LCHAN_ST_UNUSED))
 			continue;
 
