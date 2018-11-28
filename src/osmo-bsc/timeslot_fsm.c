@@ -135,7 +135,7 @@ static void ts_terminate_lchan_fsms(struct gsm_bts_trx_ts *ts)
 {
 	struct gsm_lchan *lchan;
 
-	ts_for_each_lchan(lchan, ts) {
+	ts_for_each_potential_lchan(lchan, ts) {
 		osmo_fsm_inst_term(lchan->fi, OSMO_FSM_TERM_REQUEST, NULL);
 	}
 }
