@@ -455,6 +455,18 @@ struct gsm_encr {
 	     bsc_subscr_name(lchan && lchan->conn ? lchan->conn->bsub : NULL), \
 	     ## args)
 
+/* Iterate lchans that have an FSM allocated based based on explicit pchan kind
+ * (GSM_PCHAN_* constant).
+ * Remark: PDCH related lchans are not handled in BSC but in PCU, so trying to
+ * 	  iterate through GSM_PCHAN_PDCH is considered a void loop.
+ */
+#define ts_as_pchan_for_each_lchan(lchan, ts, as_pchan) \
+	for (lchan = (ts)->lchan; \
+	     ((lchan - (ts)->lchan) < ARRAY_SIZE((ts)->lchan)) \
+	     && lchan->fi \
+	     && lchan->nr < pchan_subslots(as_pchan); \
+	     lchan++)
+
 /* usage:
  * struct gsm_lchan *lchan;
  * struct gsm_bts_trx_ts *ts = get_some_timeslot();
@@ -463,15 +475,6 @@ struct gsm_encr {
  * }
  * Iterate only those lchans that have an FSM allocated. */
 #define ts_for_each_lchan(lchan, ts) ts_as_pchan_for_each_lchan(lchan, ts, (ts)->pchan_is)
-
-/* Same as ts_for_each_lchan() but with an explicit pchan kind (GSM_PCHAN_* constant).
- * Iterate only those lchans that have an FSM allocated. */
-#define ts_as_pchan_for_each_lchan(lchan, ts, as_pchan) \
-	for (lchan = (ts)->lchan; \
-	     ((lchan - (ts)->lchan) < ARRAY_SIZE((ts)->lchan)) \
-	     && lchan->fi \
-	     && lchan->nr < pchan_subslots(as_pchan); \
-	     lchan++)
 
 enum lchan_activate_mode {
 	FOR_NONE,
