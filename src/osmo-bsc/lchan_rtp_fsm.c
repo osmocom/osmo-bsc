@@ -738,7 +738,11 @@ void lchan_rtp_fsm_cleanup(struct osmo_fsm_inst *fi, enum osmo_fsm_term_cause ca
 		lchan->mgw_endpoint_ci_bts = NULL;
 	}
 	lchan->fi_rtp = NULL;
-	if (lchan->fi)
+
+	/* In all other cause, FSM already takes care of sending the event we
+	 * configured at osmo_fsm_inst_alloc_child() time immediately after
+	 * returning here. */
+	if (lchan->fi && cause == OSMO_FSM_TERM_PARENT)
 		osmo_fsm_inst_dispatch(lchan->fi, LCHAN_EV_RTP_RELEASED, 0);
 }
 
