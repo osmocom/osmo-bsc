@@ -182,13 +182,7 @@ struct gsm_lchan *lchan_select_by_type(struct gsm_bts *bts, enum gsm_chan_t type
 		break;
 	case GSM_LCHAN_TCH_F:
 		lchan = _lc_find_bts(bts, GSM_PCHAN_TCH_F);
-		/* If we don't have TCH/F available, fall-back to TCH/H */
-		if (!lchan) {
-			lchan = _lc_find_bts(bts, GSM_PCHAN_TCH_H);
-			if (lchan)
-				type = GSM_LCHAN_TCH_H;
-		}
-		/* If we don't have TCH/H either, try dynamic TCH/F_PDCH */
+		/* If we don't have TCH/F available, try dynamic TCH/F_PDCH */
 		if (!lchan) {
 			lchan = _lc_dyn_find_bts(bts, GSM_PCHAN_TCH_F_PDCH,
 						 GSM_PCHAN_TCH_F);
@@ -205,14 +199,6 @@ struct gsm_lchan *lchan_select_by_type(struct gsm_bts *bts, enum gsm_chan_t type
 						 GSM_PCHAN_TCH_F);
 			if (lchan)
 				type = GSM_LCHAN_TCH_F;
-		}
-		/* ...and as TCH/H. */
-		if (!lchan) {
-			lchan = _lc_dyn_find_bts(bts,
-						 GSM_PCHAN_TCH_F_TCH_H_PDCH,
-						 GSM_PCHAN_TCH_H);
-			if (lchan)
-				type = GSM_LCHAN_TCH_H;
 		}
 		break;
 	case GSM_LCHAN_TCH_H:
@@ -257,4 +243,3 @@ struct gsm_lchan *lchan_select_by_type(struct gsm_bts *bts, enum gsm_chan_t type
 
 	return lchan;
 }
-
