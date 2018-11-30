@@ -896,8 +896,21 @@ bool ts_is_pchan_switching(struct gsm_bts_trx_ts *ts, enum gsm_phys_chan_config 
 	case TS_ST_WAIT_PDCH_DEACT:
 		/* If lchan started a PDCH deact but got somehow released while
 		 * waiting for PDCH DEACT (N)ACK */
-		if (target_pchan)
-			*target_pchan = GSM_PCHAN_NONE;
+		if (target_pchan) {
+			switch (ts->pchan_on_init) {
+			case GSM_PCHAN_TCH_F_TCH_H_PDCH:
+				if (target_pchan)
+					*target_pchan = GSM_PCHAN_NONE;
+				break;
+			case GSM_PCHAN_TCH_F_PDCH:
+				if (target_pchan)
+					*target_pchan = GSM_PCHAN_TCH_F;
+				break;
+			default:
+				/* Can't be in this state and be a non dyn TS */
+				OSMO_ASSERT(false);
+			}
+		}
 		return true;
 
 	default:
