@@ -940,7 +940,7 @@ static int dtap_rcvmsg(struct gsm_subscriber_connection *conn,
 	/* pass it to the filter for extra actions */
 	rc = bsc_scan_msc_msg(conn, gsm48);
 	/* Store link_id in msgb->cb */
-	OBSC_LINKID_CB(msg) = header->link_id;
+	OBSC_LINKID_CB(gsm48) = header->link_id;
 	dtap_rc = osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_MT_DTAP, gsm48);
 	if (rc == BSS_SEND_USSD)
 		bsc_send_welcome_ussd(conn);
