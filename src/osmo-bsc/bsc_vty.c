@@ -874,6 +874,8 @@ static void config_write_bts_single(struct vty *vty, struct gsm_bts *bts)
 	}
 	vty_out(vty, "  access-control-class-ramping-step-size %u%s", acc_ramp_get_step_size(&bts->acc_ramp),
 		VTY_NEWLINE);
+	if (!bts->si_unused_send_empty)
+		vty_out(vty, "  no system-information unused-send-empty%s", VTY_NEWLINE);
 	for (i = SYSINFO_TYPE_1; i < _MAX_SYSINFO_TYPE; i++) {
 		if (bts->si_mode_static & (1 << i)) {
 			vty_out(vty, "  system-information %s mode static%s",
@@ -3087,6 +3089,38 @@ DEFUN(cfg_bts_si_static, cfg_bts_si_static_cmd,
 	return CMD_SUCCESS;
 }
 
+DEFUN(cfg_bts_si_unused_send_empty, cfg_bts_si_unused_send_empty_cmd,
+	"system-information unused-send-empty",
+	SI_TEXT
+	"Send BCCH Info with empty 'Full BCCH Info' TLV to notify disabled SI. "
+	"Some nanoBTS fw versions are known to fail upon receival of these messages.\n")
+{
+	struct gsm_bts *bts = vty->index;
+
+	bts->si_unused_send_empty = true;
+
+	return CMD_SUCCESS;
+}
+
+DEFUN(cfg_bts_no_si_unused_send_empty, cfg_bts_no_si_unused_send_empty_cmd,
+	"no system-information unused-send-empty",
+	NO_STR SI_TEXT
+	"Avoid sending BCCH Info with empty 'Full BCCH Info' TLV to notify disabled SI. "
+	"Some nanoBTS fw versions are known to fail upon receival of these messages.\n")
+{
+	struct gsm_bts *bts = vty->index;
+
+	if (!is_ipaccess_bts(bts) || is_sysmobts_v2(bts)) {
+		vty_out(vty, "This command is only intended for ipaccess nanoBTS. See OS#3707.%s",
+			VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	bts->si_unused_send_empty = false;
+
+	return CMD_SUCCESS;
+}
+
 DEFUN(cfg_bts_early_cm, cfg_bts_early_cm_cmd,
 	"early-classmark-sending (allowed|forbidden)",
 	"Early Classmark Sending\n"
@@ -5132,6 +5166,8 @@ int bsc_vty_init(struct gsm_network *network)
 	install_element(BTS_NODE, &cfg_bts_pag_free_cmd);
 	install_element(BTS_NODE, &cfg_bts_si_mode_cmd);
 	install_element(BTS_NODE, &cfg_bts_si_static_cmd);
+	install_element(BTS_NODE, &cfg_bts_si_unused_send_empty_cmd);
+	install_element(BTS_NODE, &cfg_bts_no_si_unused_send_empty_cmd);
 	install_element(BTS_NODE, &cfg_bts_early_cm_cmd);
 	install_element(BTS_NODE, &cfg_bts_early_cm_3g_cmd);
 	install_element(BTS_NODE, &cfg_bts_neigh_mode_cmd);

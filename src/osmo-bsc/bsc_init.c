@@ -173,12 +173,16 @@ int gsm_bts_trx_set_system_infos(struct gsm_bts_trx *trx)
 
 	for (n = 0; n < n_si; n++) {
 		i = gen_si[n];
-		/* if we don't currently have this SI, we send a zero-length
-		 * RSL BCCH FILLING / SACCH FILLING * in order to deactivate
-		 * the SI, in case it might have previously been active */
-		if (!GSM_BTS_HAS_SI(bts, i))
-			rc = rsl_si(trx, i, 0);
-		else
+		/* 3GPP TS 08.58 §8.5.1 BCCH INFORMATION. If we don't currently
+		 * have this SI, we send a zero-length RSL BCCH FILLING /
+		 * SACCH FILLING in order to deactivate the SI, in case it
+		 * might have previously been active */
+		if (!GSM_BTS_HAS_SI(bts, i)) {
+			if (bts->si_unused_send_empty)
+				rc = rsl_si(trx, i, 0);
+			else
+				rc = 0; /* some nanoBTS fw don't like receiving empty unsupported SI */
+		} else
 			rc = rsl_si(trx, i, si_len[i]);
 		if (rc < 0)
 			return rc;

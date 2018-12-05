@@ -856,6 +856,7 @@ struct gsm_bts *gsm_bts_alloc(struct gsm_network *net, uint8_t bts_num)
 	bts->gprs.ctrl_ack_type_use_block = true; /* use RLC/MAC control block */
 	bts->neigh_list_manual_mode = NL_MODE_AUTOMATIC;
 	bts->early_classmark_allowed_3g = true; /* 3g Early Classmark Sending controlled by bts->early_classmark_allowed param */
+	bts->si_unused_send_empty = true;
 	bts->si_common.cell_sel_par.cell_resel_hyst = 2; /* 4 dB */
 	bts->si_common.cell_sel_par.rxlev_acc_min = 0;
 	bts->si_common.si2quater_neigh_list.arfcn = bts->si_common.data.earfcn_list;

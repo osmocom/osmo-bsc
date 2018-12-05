@@ -981,6 +981,9 @@ struct gsm_bts {
 	/* offsets used while generating SI2quater */
 	size_t e_offset;
 	size_t u_offset;
+	/* 3GPP TS 08.58 §8.5.1 BCCH INFORMATION. Some nanoBTS fail upon
+	 * receival of empty SI disabling unsupported SI. see OS#3707. */
+	bool si_unused_send_empty;
 
 	/* ip.accesss Unit ID's have Site/BTS/TRX layout */
 	union {
