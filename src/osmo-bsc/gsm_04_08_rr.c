@@ -951,7 +951,7 @@ int gsm0408_rcvmsg(struct msgb *msg, uint8_t link_id)
 		/* fwd via bsc_api to send COMPLETE L3 INFO to MSC */
 		rc = bsc_compl_l3(lchan->conn, msg, 0);
 		if (rc < 0) {
-			gscon_release_lchans(lchan->conn, true);
+			osmo_fsm_inst_dispatch(lchan->conn->fi, GSCON_EV_A_DISC_IND, NULL);
 			return rc;
 		}
 		/* conn shall release lchan on teardown, also if this Layer 3 Complete is rejected. */
