@@ -877,7 +877,7 @@ struct gsm_subscriber_connection *bsc_subscr_con_allocate(struct gsm_network *ne
 
 	/* don't allocate from 'conn' context, as gscon_cleanup() will call talloc_free(conn) before
 	 * libosmocore will call talloc_free(conn->fi), i.e. avoid use-after-free during cleanup */
-	conn->fi = osmo_fsm_inst_alloc(&gscon_fsm, net, conn, LOGL_NOTICE, NULL);
+	conn->fi = osmo_fsm_inst_alloc(&gscon_fsm, net, conn, LOGL_DEBUG, NULL);
 	if (!conn->fi) {
 		talloc_free(conn);
 		return NULL;
