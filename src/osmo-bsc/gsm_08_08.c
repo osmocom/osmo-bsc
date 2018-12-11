@@ -433,12 +433,14 @@ static bool complete_layer3(struct gsm_subscriber_connection *conn,
 	enum bsc_con ret;
 	struct gsm0808_speech_codec_list scl;
 
+	log_set_context(LOG_CTX_BSC_SUBSCR, conn->bsub);
+
 	/* Check the filter */
 	rc = bsc_filter_initial(msc->network->bsc_data, msc, conn, msg,
 				&imsi, &con_type, &lu_cause);
 	if (rc < 0) {
 		bsc_maybe_lu_reject(conn, con_type, lu_cause);
-		return false;
+		goto early_fail;
 	}
 
 	/* allocate resource for a new connection */
@@ -450,8 +452,7 @@ static bool complete_layer3(struct gsm_subscriber_connection *conn,
 			bsc_send_ussd_no_srv(conn, msg, msc->ussd_msc_lost_txt);
 		else if (ret == BSC_CON_REJECT_RF_GRACE)
 			bsc_send_ussd_no_srv(conn, msg, msc->ussd_grace_txt);
-
-		return false;
+		goto early_fail;
 	}
 
 	/* TODO: also extract TMSI. We get an IMSI only when an initial L3 Complete comes in that
@@ -460,15 +461,18 @@ static bool complete_layer3(struct gsm_subscriber_connection *conn,
 	if (imsi) {
 		conn->filter_state.imsi = talloc_steal(conn, imsi);
 		if (conn->bsub) {
+			log_set_context(LOG_CTX_BSC_SUBSCR, conn->bsub);
 			/* Already a subscriber on L3 Complete? Should never happen... */
 			if (conn->bsub->imsi[0]
 			    && strcmp(conn->bsub->imsi, imsi))
 				LOGP(DMSC, LOGL_ERROR, "Subscriber's IMSI changes from %s to %s\n",
 				     conn->bsub->imsi, imsi);
 			bsc_subscr_set_imsi(conn->bsub, imsi);
-		} else
+		} else {
 			conn->bsub = bsc_subscr_find_or_create_by_imsi(msc->network->bsc_subscribers,
 								       imsi);
+			log_set_context(LOG_CTX_BSC_SUBSCR, conn->bsub);
+		}
 		gscon_update_id(conn);
 	}
 	conn->filter_state.con_type = con_type;
@@ -493,14 +497,16 @@ static bool complete_layer3(struct gsm_subscriber_connection *conn,
 	} else
 		resp = gsm0808_create_layer3_2(msg, cgi_for_msc(conn->sccp.msc, conn_get_bts(conn)), NULL);
 
-	if (!resp) {
+	if (resp)
+		osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_A_CONN_REQ, resp);
+	else
 		LOGP(DMSC, LOGL_DEBUG, "Failed to create layer3 message.\n");
-		return false;
-	}
 
-	osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_A_CONN_REQ, resp);
-
-	return true;
+	log_set_context(LOG_CTX_BSC_SUBSCR, NULL);
+	return !!resp;
+early_fail:
+	log_set_context(LOG_CTX_BSC_SUBSCR, NULL);
+	return false;
 }
 
 /*
