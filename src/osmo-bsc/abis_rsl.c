@@ -917,11 +917,14 @@ static void print_meas_rep(struct gsm_lchan *lchan, struct gsm_meas_rep *mr)
 {
 	int i;
 	const char *name = "";
+	struct bsc_subscr *bsub = NULL;
 
 	if (lchan && lchan->conn) {
-		if (lchan->conn->bsub)
-			name = bsc_subscr_name(lchan->conn->bsub);
-		else
+		bsub = lchan->conn->bsub;
+		if (bsub) {
+			log_set_context(LOG_CTX_BSC_SUBSCR, bsub);
+			name = bsc_subscr_name(bsub);
+		} else
 			name = lchan->name;
 	}
 
@@ -960,6 +963,9 @@ static void print_meas_rep(struct gsm_lchan *lchan, struct gsm_meas_rep *mr)
 		DEBUGP(DMEAS, "IDX=%u ARFCN=%u BSIC=%u => %d dBm\n",
 			mrc->neigh_idx, mrc->arfcn, mrc->bsic, rxlev2dbm(mrc->rxlev));
 	}
+
+	if (bsub)
+		log_set_context(LOG_CTX_BSC_SUBSCR, NULL);
 }
 
 static struct gsm_meas_rep *lchan_next_meas_rep(struct gsm_lchan *lchan)
