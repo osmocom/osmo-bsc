@@ -35,6 +35,7 @@
 #include <osmocom/bsc/lchan_fsm.h>
 #include <osmocom/bsc/mgw_endpoint_fsm.h>
 #include <osmocom/bsc/bsc_subscr_conn_fsm.h>
+#include <osmocom/bsc/bsc_subscriber.h>
 #include <osmocom/bsc/assignment_fsm.h>
 #include <osmocom/bsc/handover_fsm.h>
 
@@ -767,10 +768,12 @@ static const struct log_info_cat osmo_bsc_categories[] = {
 
 static int filter_fn(const struct log_context *ctx, struct log_target *tar)
 {
-	const struct bsc_subscr *bsub = ctx->ctx[LOG_CTX_BSC_SUBSCR];
+	const struct bsc_subscr *bsub_ctx = ctx->ctx[LOG_CTX_BSC_SUBSCR];
+	const struct bsc_subscr *bsub_filter = tar->filter_data[LOG_FLT_BSC_SUBSCR];
 
 	if ((tar->filter_map & (1 << LOG_FLT_BSC_SUBSCR)) != 0
-	    && bsub && bsub == tar->filter_data[LOG_FLT_BSC_SUBSCR])
+	    && bsub_ctx && bsub_filter
+	    && strncmp(bsub_ctx->imsi, bsub_filter->imsi, sizeof(bsub_ctx->imsi)) == 0)
 		return 1;
 
 	return 0;
