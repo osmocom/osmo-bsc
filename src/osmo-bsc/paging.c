@@ -267,7 +267,7 @@ static int paging_pending_request(struct gsm_bts_paging_state *bts,
 			return 1;
 	}
 
-	return 0;	
+	return 0;
 }
 
 /*! Call-back once T3113 (paging timeout) expires for given paging_request */
