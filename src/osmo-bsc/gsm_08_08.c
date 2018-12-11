@@ -602,8 +602,10 @@ void bsc_dtap(struct gsm_subscriber_connection *conn, uint8_t link_id, struct ms
 {
 	int lu_cause;
 
+	log_set_context(LOG_CTX_BSC_SUBSCR, conn->bsub);
+
 	if (!msc_connected(conn))
-		return;
+		goto done;
 
 	LOGP(DMSC, LOGL_INFO, "Tx MSC DTAP LINK_ID=0x%02x\n", link_id);
 
@@ -612,7 +614,7 @@ void bsc_dtap(struct gsm_subscriber_connection *conn, uint8_t link_id, struct ms
 	 * to handle it. If it was handled we will return.
 	 */
 	if (handle_cc_setup(conn, msg) >= 1)
-		return;
+		goto done;
 
 	/* Check the filter */
 	if (bsc_filter_data(conn, msg, &lu_cause) < 0) {
@@ -620,7 +622,7 @@ void bsc_dtap(struct gsm_subscriber_connection *conn, uint8_t link_id, struct ms
 					conn->filter_state.con_type,
 					lu_cause);
 		bsc_clear_request(conn, 0);
-		return;
+		goto done;
 	}
 
 	bsc_scan_bts_msg(conn, msg);
@@ -628,6 +630,9 @@ void bsc_dtap(struct gsm_subscriber_connection *conn, uint8_t link_id, struct ms
 	/* Store link_id in msg->cb */
 	OBSC_LINKID_CB(msg) = link_id;
 	osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_MO_DTAP, msg);
+done:
+	log_set_context(LOG_CTX_BSC_SUBSCR, NULL);
+	return;
 }
 
 /*! BSC->MSC: RR conn has been cleared. */

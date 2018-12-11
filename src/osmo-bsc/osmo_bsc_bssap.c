@@ -980,6 +980,8 @@ int bsc_handle_udt(struct bsc_msc_data *msc,
 int bsc_handle_dt(struct gsm_subscriber_connection *conn,
 		  struct msgb *msg, unsigned int len)
 {
+	log_set_context(LOG_CTX_BSC_SUBSCR, conn->bsub);
+
 	if (len < sizeof(struct bssmap_header)) {
 		LOGP(DMSC, LOGL_ERROR, "The header is too short.\n");
 	}
@@ -997,6 +999,7 @@ int bsc_handle_dt(struct gsm_subscriber_connection *conn,
 			gsm0808_bssap_name(msg->l3h[0]));
 	}
 
+	log_set_context(LOG_CTX_BSC_SUBSCR, NULL);
 	return -1;
 }
 
