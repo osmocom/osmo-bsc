@@ -285,6 +285,8 @@ static void paging_T3113_expired(void *data)
 
 	/* destroy it now. Do not access req afterwards */
 	paging_remove_request(&req->bts->paging, req);
+
+	log_set_context(LOG_CTX_BSC_SUBSCR, NULL);
 }
 
 #define GSM_FRAME_DURATION_us	4615
@@ -440,6 +442,7 @@ void paging_request_stop(struct llist_head *bts_list,
 			continue;
 		_paging_request_stop(bts, bsub, NULL, NULL);
 	}
+	log_set_context(LOG_CTX_BSC_SUBSCR, NULL);
 }
 
 
