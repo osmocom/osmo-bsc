@@ -96,11 +96,15 @@ page_subscriber(struct bsc_msc_data *msc, struct gsm_bts *bts,
 	struct bsc_subscr *subscr;
 	int ret;
 
+	subscr = bsc_subscr_find_or_create_by_imsi(msc->network->bsc_subscribers,
+						   mi_string);
+
+	if (subscr)
+		log_set_context(LOG_CTX_BSC_SUBSCR, subscr);
+
 	LOGP(DMSC, LOGL_INFO, "Paging request from MSC BTS: %d IMSI: '%s' TMSI: '0x%x/%u' LAC: 0x%x\n",
 	    bts->nr, mi_string, tmsi, tmsi, lac);
 
-	subscr = bsc_subscr_find_or_create_by_imsi(msc->network->bsc_subscribers,
-						   mi_string);
 	if (!subscr) {
 		LOGP(DMSC, LOGL_ERROR, "Paging request failed: Could not allocate subscriber for %s\n", mi_string);
 		return;
@@ -116,6 +120,8 @@ page_subscriber(struct bsc_msc_data *msc, struct gsm_bts *bts,
 
 	/* the paging code has grabbed its own references */
 	bsc_subscr_put(subscr);
+
+	log_set_context(LOG_CTX_BSC_SUBSCR, NULL);
 }
 
 static void
