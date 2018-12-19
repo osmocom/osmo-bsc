@@ -436,8 +436,18 @@ static int lchan_mr_config(struct gsm_lchan *lchan, const struct gsm48_multi_rat
 	 * are not used in the multirate configuration IE. */
 	rc_rate = calc_amr_rate_intersection(&mr_conf_filtered, &msc->amr_conf, mr_conf);
 	if (rc_rate < 0) {
+		/* The msc->amr_conf comes from osmo-bsc.cfg's 'msc' / 'amr-config *k (forbidden|allowed)'.
+		 * The mr_conf ultimately comes from the Assignment Request received from the MSC,
+		 * see bssmap_handle_assignm_req(): first we gsm0808_dec_speech_codec_list() and then we
+		 * match_codec_pref() to overlay the permitted speech with the BTS-specific AMR modes for this tch type,
+		 * to obtain the s15_s0 bits, which end up in mr_conf. */
 		LOG_LCHAN(lchan, LOGL_ERROR,
-			  "can not encode multirate configuration (invalid amr rate setting, MSC)\n");
+			  "Intersection of AMR rate configurations is empty:"
+			  " osmo-bsc.cfg=0x%02x & (requested-codec-list & permitted-modes)=0x%02x."
+			  " In the config: make sure that the 'msc'/'amr-config' allows AMR rates"
+			  " that are also allowed in 'network'/'bts N'/'amr %s modes ...'\n",
+			  ((uint8_t*)&msc->amr_conf)[1], ((uint8_t*)mr_conf)[1],
+			  full_rate ? "tch-f" : "tch-h");
 		return -EINVAL;
 	}
 
