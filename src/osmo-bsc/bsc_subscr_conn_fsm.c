@@ -468,7 +468,8 @@ struct mgw_endpoint *gscon_ensure_mgw_endpoint(struct gsm_subscriber_connection 
 		conn->user_plane.mgw_endpoint =
 			mgw_endpoint_alloc(conn->fi, GSCON_EV_FORGET_MGW_ENDPOINT,
 					   conn->network->mgw.client, conn->fi->id,
-					   "%x@mgw", msc_assigned_cic);
+					   "%x@%s", msc_assigned_cic,
+					   mgcp_client_endpoint_domain(conn->network->mgw.client));
 		LOGPFSML(conn->fi, LOGL_DEBUG, "MGW endpoint name derived from CIC 0x%x: %s\n",
 			 msc_assigned_cic, mgw_endpoint_name(conn->user_plane.mgw_endpoint));
 
@@ -477,7 +478,7 @@ struct mgw_endpoint *gscon_ensure_mgw_endpoint(struct gsm_subscriber_connection 
 		conn->user_plane.mgw_endpoint =
 			mgw_endpoint_alloc(conn->fi, GSCON_EV_FORGET_MGW_ENDPOINT,
 					   conn->network->mgw.client, conn->fi->id,
-					   "rtpbridge/*@mgw");
+					   "%s", mgcp_client_rtpbridge_wildcard(conn->network->mgw.client));
 	} else {
 		LOGPFSML(conn->fi, LOGL_ERROR, "Conn is neither SCCPlite nor AoIP!?\n");
 		return NULL;
