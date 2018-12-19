@@ -111,9 +111,9 @@ void lchan_rtp_fsm_start(struct gsm_lchan *lchan)
 
 	/* Use old lchan only if there is an MGW endpoint present. Otherwise, on ROLLBACK, we might put
 	 * an endpoint "back" to an lchan that never had one to begin with. */
-	if (lchan->activate.re_use_mgw_endpoint_from_lchan
-	    && !lchan->activate.re_use_mgw_endpoint_from_lchan->mgw_endpoint_ci_bts)
-		lchan->activate.re_use_mgw_endpoint_from_lchan = NULL;
+	if (lchan->activate.info.re_use_mgw_endpoint_from_lchan
+	    && !lchan->activate.info.re_use_mgw_endpoint_from_lchan->mgw_endpoint_ci_bts)
+		lchan->activate.info.re_use_mgw_endpoint_from_lchan = NULL;
 
 	lchan_rtp_fsm_state_chg(LCHAN_RTP_ST_WAIT_MGW_ENDPOINT_AVAILABLE);
 }
@@ -127,8 +127,8 @@ struct mgwep_ci *lchan_use_mgw_endpoint_ci_bts(struct gsm_lchan *lchan)
 		return lchan->mgw_endpoint_ci_bts;
 	if (lchan_state_is(lchan, LCHAN_ST_ESTABLISHED))
 		return NULL;
-	if (lchan->activate.re_use_mgw_endpoint_from_lchan)
-		return lchan->activate.re_use_mgw_endpoint_from_lchan->mgw_endpoint_ci_bts;
+	if (lchan->activate.info.re_use_mgw_endpoint_from_lchan)
+		return lchan->activate.info.re_use_mgw_endpoint_from_lchan->mgw_endpoint_ci_bts;
 	return NULL;
 }
 
@@ -147,7 +147,7 @@ static void lchan_rtp_fsm_wait_mgw_endpoint_available_onenter(struct osmo_fsm_in
 		return;
 	}
 
-	mgwep = gscon_ensure_mgw_endpoint(lchan->conn, lchan->activate.msc_assigned_cic);
+	mgwep = gscon_ensure_mgw_endpoint(lchan->conn, lchan->activate.info.msc_assigned_cic);
 	if (!mgwep) {
 		lchan_rtp_fail("Internal error: cannot obtain MGW endpoint handle for conn");
 		return;
@@ -232,7 +232,7 @@ static void lchan_rtp_fsm_switch_rtp(struct osmo_fsm_inst *fi)
 {
 	struct gsm_lchan *lchan = lchan_rtp_fi_lchan(fi);
 
-	if (lchan->activate.wait_before_switching_rtp) {
+	if (lchan->activate.info.wait_before_switching_rtp) {
 		LOG_LCHAN_RTP(lchan, LOGL_DEBUG,
 			      "Waiting for an event by caller before switching RTP\n");
 		lchan_rtp_fsm_state_chg(LCHAN_RTP_ST_WAIT_READY_TO_SWITCH_RTP);
@@ -305,7 +305,7 @@ static void lchan_rtp_fsm_wait_ipacc_crcx_ack(struct osmo_fsm_inst *fi, uint32_t
 		return;
 
 	case LCHAN_RTP_EV_READY_TO_SWITCH_RTP:
-		lchan->activate.wait_before_switching_rtp = false;
+		lchan->activate.info.wait_before_switching_rtp = false;
 		return;
 
 	case LCHAN_RTP_EV_RELEASE:
@@ -365,7 +365,7 @@ static void lchan_rtp_fsm_wait_ipacc_mdcx_ack(struct osmo_fsm_inst *fi, uint32_t
 		return;
 
 	case LCHAN_RTP_EV_READY_TO_SWITCH_RTP:
-		lchan->activate.wait_before_switching_rtp = false;
+		lchan->activate.info.wait_before_switching_rtp = false;
 		return;
 
 	case LCHAN_RTP_EV_RELEASE:
@@ -437,7 +437,7 @@ static void lchan_rtp_fsm_wait_mgw_endpoint_configured_onenter(struct osmo_fsm_i
 							       uint32_t prev_state)
 {
 	struct gsm_lchan *lchan = lchan_rtp_fi_lchan(fi);
-	struct gsm_lchan *old_lchan = lchan->activate.re_use_mgw_endpoint_from_lchan;
+	struct gsm_lchan *old_lchan = lchan->activate.info.re_use_mgw_endpoint_from_lchan;
 
 	if (lchan->release.requested) {
 		lchan_rtp_fail("Release requested while activating");
@@ -514,7 +514,7 @@ static void lchan_rtp_fsm_ready(struct osmo_fsm_inst *fi, uint32_t event, void *
 static void lchan_rtp_fsm_rollback_onenter(struct osmo_fsm_inst *fi, uint32_t prev_state)
 {
 	struct gsm_lchan *lchan = lchan_rtp_fi_lchan(fi);
-	struct gsm_lchan *old_lchan = lchan->activate.re_use_mgw_endpoint_from_lchan;
+	struct gsm_lchan *old_lchan = lchan->activate.info.re_use_mgw_endpoint_from_lchan;
 
 	if (!lchan->mgw_endpoint_ci_bts || !old_lchan) {
 		osmo_fsm_inst_term(fi, OSMO_FSM_TERM_REQUEST, 0);
@@ -526,7 +526,7 @@ static void lchan_rtp_fsm_rollback_onenter(struct osmo_fsm_inst *fi, uint32_t pr
 static void lchan_rtp_fsm_rollback(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
 	struct gsm_lchan *lchan = lchan_rtp_fi_lchan(fi);
-	struct gsm_lchan *old_lchan = lchan->activate.re_use_mgw_endpoint_from_lchan;
+	struct gsm_lchan *old_lchan = lchan->activate.info.re_use_mgw_endpoint_from_lchan;
 
 	switch (event) {
 
@@ -560,7 +560,7 @@ static void lchan_rtp_fsm_established_onenter(struct osmo_fsm_inst *fi, uint32_t
 	struct gsm_lchan *lchan = lchan_rtp_fi_lchan(fi);
 
 	/* Make sure that we will not hand back the MGW endpoint to any old lchan from here on. */
-	lchan->activate.re_use_mgw_endpoint_from_lchan = NULL;
+	lchan->activate.info.re_use_mgw_endpoint_from_lchan = NULL;
 }
 
 static void lchan_rtp_fsm_established(struct osmo_fsm_inst *fi, uint32_t event, void *data)

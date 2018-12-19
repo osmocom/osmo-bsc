@@ -360,7 +360,7 @@ static void handover_start_intra_bsc(struct gsm_subscriber_connection *conn)
 		.chan_mode = conn->lchan->tch_mode,
 		.requires_voice_stream = conn->lchan->mgw_endpoint_ci_bts ? true : false,
 		.msc_assigned_cic = conn->ho.inter_bsc_in.msc_assigned_cic,
-		.old_lchan = conn->lchan,
+		.re_use_mgw_endpoint_from_lchan = conn->lchan,
 		.wait_before_switching_rtp = true,
 	};
 
@@ -706,7 +706,7 @@ static void send_handover_performed(struct gsm_subscriber_connection *conn)
 	ho_perf_params.chosen_encr_alg = lchan->encr.alg_id;
 	ho_perf_params.chosen_encr_alg_present = true;
 
-	if (ho->new_lchan->activate.requires_voice_stream) {
+	if (ho->new_lchan->activate.info.requires_voice_stream) {
 		/* Speech Version (chosen) 3.2.2.51 */
 		ho_perf_params.speech_version_chosen = gsm0808_permitted_speech(lchan->type, lchan->tch_mode);
 		ho_perf_params.speech_version_chosen_present = true;
@@ -1010,7 +1010,7 @@ static void ho_fsm_post_lchan_established(struct osmo_fsm_inst *fi)
 	struct gsm_subscriber_connection *conn = ho_fi_conn(fi);
 	struct handover *ho = &conn->ho;
 
-	if (ho->new_lchan->activate.requires_voice_stream
+	if (ho->new_lchan->activate.info.requires_voice_stream
 	    && (ho->scope & HO_INTER_BSC_IN))
 		ho_fsm_state_chg(HO_ST_WAIT_MGW_ENDPOINT_TO_MSC);
 	else

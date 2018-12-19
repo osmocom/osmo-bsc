@@ -503,6 +503,19 @@ extern const struct value_string lchan_activate_mode_names[];
 static inline const char *lchan_activate_mode_name(enum lchan_activate_mode activ_for)
 { return get_value_string(lchan_activate_mode_names, activ_for); }
 
+struct lchan_activate_info {
+	enum lchan_activate_mode activ_for;
+	struct gsm_subscriber_connection *for_conn;
+	/* This always is for a specific lchan, so its lchan->type indicates full or half rate.
+	 * When a dyn TS was selected, the lchan->type has been set to the desired rate. */
+	enum gsm48_chan_mode chan_mode;
+	uint16_t s15_s0;
+	bool requires_voice_stream;
+	bool wait_before_switching_rtp; /*< true = requires LCHAN_EV_READY_TO_SWITCH_RTP */
+	uint16_t msc_assigned_cic;
+	struct gsm_lchan *re_use_mgw_endpoint_from_lchan;
+};
+
 struct gsm_lchan {
 	/* The TS that we're part of */
 	struct gsm_bts_trx_ts *ts;
@@ -517,18 +530,14 @@ struct gsm_lchan {
 	struct mgwep_ci *mgw_endpoint_ci_bts;
 
 	struct {
-		enum lchan_activate_mode activ_for;
+		struct lchan_activate_info info;
 		bool activ_ack; /*< true as soon as RSL Chan Activ Ack is received */
 		bool immediate_assignment_sent;
 		/*! This flag ensures that when an lchan activation has succeeded, and we have already
 		 * sent ACKs like Immediate Assignment or BSSMAP Assignment Complete, and if other errors
 		 * occur later, e.g. during release, that we don't send a NACK out of context. */
 		bool concluded;
-		bool requires_voice_stream;
-		bool wait_before_switching_rtp; /*< true = requires LCHAN_EV_READY_TO_SWITCH_RTP */
-		uint16_t msc_assigned_cic;
 		enum gsm0808_cause gsm0808_error_cause;
-		struct gsm_lchan *re_use_mgw_endpoint_from_lchan;
 	} activate;
 
 	struct {
