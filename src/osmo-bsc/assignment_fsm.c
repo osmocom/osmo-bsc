@@ -251,6 +251,9 @@ static void assignment_fsm_update_id(struct gsm_subscriber_connection *conn)
 				  new_lchan->nr);
 }
 
+#if 0
+Code using this is currently disabled, search for lchan_type_compat_with_mode below.
+
 static bool lchan_type_compat_with_mode(enum gsm_chan_t type,
 					enum gsm48_chan_mode chan_mode, int full_rate)
 {
@@ -290,6 +293,7 @@ static bool lchan_type_compat_with_mode(enum gsm_chan_t type,
 		return false;
 	}
 }
+#endif
 
 void assignment_fsm_init()
 {
@@ -337,6 +341,38 @@ void assignment_fsm_start(struct gsm_subscriber_connection *conn, struct gsm_bts
 		return;
 	}
 
+#if 0
+	-------
+	This bit of code would re-use an existing lchan if it already satisfies the
+	mode and rate requested by the MSC.
+
+	That is a nice idea per se, but the only practical benefit is when we were out
+	of SDCCH channels and assigned a TCH channel for signalling, and now that TCH
+	should take on the voice stream. This scenario has not been tested.
+
+	A much more common scenario, though, is that a call is coming in while another
+	call is ongoing. Then, the user may choose to hang up the current call, and
+	continue on the new call instead. In that scenario, the MSC will send us
+	another Assignment Command with a different remote RTP address to route RTP to.
+	The proper way now would be to bump the lchan_fsm so that it re-uses everything
+	that is in place, only MDCXes the result to a different remote RTP port. This
+	is currently not implemented and would require more states in the FSM. With
+	this code enabled, we try to re-use the existing lchan but do not re-route the
+	RTP: the old call is hung up and the new call gets no audio.
+
+	However, if we simply drop the old lchan and create a new one, we can trivially
+	set up a new lchan the same way we always do, and switching over to the new
+	caller works, without a single line of code added here.
+
+	Hence, disable this lchan re-use until we can re-use an lchan properly.
+
+	Test scenario:
+
+	 - from A, call B.
+	 - from C, call B; B rings during ongoing call.
+	 - in B, pick up the call, choose to drop the old call.
+	-------
+
 	if (conn->lchan
 	    && lchan_type_compat_with_mode(conn->lchan->type, req->chan_mode, req->full_rate)) {
 
@@ -359,6 +395,7 @@ void assignment_fsm_start(struct gsm_subscriber_connection *conn, struct gsm_bts
 			       "NOT IMPLEMENTED:"
 			       " Current lchan would be compatible, we should send Channel Mode Modify\n");
 	}
+#endif
 
 	conn->assignment.new_lchan = lchan_select_by_chan_mode(bts, req->chan_mode, req->full_rate);
 
