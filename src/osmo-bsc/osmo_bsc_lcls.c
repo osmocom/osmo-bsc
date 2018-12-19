@@ -50,11 +50,11 @@ struct value_string lcls_event_names[] = {
 enum gsm0808_lcls_status lcls_get_status(struct gsm_subscriber_connection *conn)
 {
 	if (!conn->lcls.fi)
-		return 0xff;
+		return GSM0808_LCLS_STS_NA;
 
 	switch (conn->lcls.fi->state) {
 	case ST_NO_LCLS:
-		return 0xff;
+		return GSM0808_LCLS_STS_NA;
 	case ST_NOT_YET_LS:
 		return GSM0808_LCLS_STS_NOT_YET_LS;
 	case ST_NOT_POSSIBLE_LS:
@@ -76,7 +76,7 @@ static void lcls_send_notify(struct gsm_subscriber_connection *conn)
 	enum gsm0808_lcls_status status = lcls_get_status(conn);
 	struct msgb *msg;
 
-	if (status == 0xff)
+	if (status == GSM0808_LCLS_STS_NA)
 		return;
 
 	LOGPFSM(conn->lcls.fi, "Sending BSSMAP LCLS NOTIFICATION (%s)\n",
@@ -384,7 +384,7 @@ static void lcls_no_lcls_fn(struct osmo_fsm_inst *fi, uint32_t event, void *data
 			return;
 		return;
 	case LCLS_EV_APPLY_CFG_CSC:
-		if (conn->lcls.config == 0xff)
+		if (conn->lcls.config == GSM0808_LCLS_CFG_NA)
 			return;
 		if (lcls_perform_correlation(conn) != 0) {
 			/* Correlation leads to no result: Not Possible to LS */
@@ -887,7 +887,7 @@ static void bssmap_add_lcls_status(struct msgb *msg, enum gsm0808_lcls_status st
 void bssmap_add_lcls_status_if_needed(struct gsm_subscriber_connection *conn, struct msgb *msg)
 {
 	enum gsm0808_lcls_status status = lcls_get_status(conn);
-	if (status != 0xff) {
+	if (status != GSM0808_LCLS_STS_NA) {
 		LOGPFSM(conn->fi, "Adding LCLS BSS-Status (%s) to %s\n",
 			gsm0808_lcls_status_name(status),
 			gsm0808_bssmap_name(msg->l3h[2]));
