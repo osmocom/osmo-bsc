@@ -169,13 +169,17 @@ static struct osmo_lcls *update_lcls_cfg_csc(struct gsm_subscriber_connection *c
 		if (!lcls_is_supported_config(new_cfg_csc->config))
 			return NULL;
 		if (conn->lcls.config != new_cfg_csc->config) {
-			/* TODO: logging */
+			LOGPFSM(conn->lcls.fi, "LCLS update Config %s -> %s\n",
+				gsm0808_lcls_config_name(conn->lcls.config),
+				gsm0808_lcls_config_name(new_cfg_csc->config));
 			conn->lcls.config = new_cfg_csc->config;
 		}
 	}
 	if (new_cfg_csc->control != GSM0808_LCLS_CSC_NA) {
 		if (conn->lcls.control != new_cfg_csc->control) {
-			/* TODO: logging */
+			LOGPFSM(conn->lcls.fi, "LCLS update Control %s -> %s\n",
+				gsm0808_lcls_control_name(conn->lcls.control),
+				gsm0808_lcls_control_name(new_cfg_csc->control));
 			conn->lcls.control = new_cfg_csc->control;
 		}
 	}
