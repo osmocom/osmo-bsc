@@ -1108,7 +1108,7 @@ enum handover_result bsc_tx_bssmap_ho_complete(struct gsm_subscriber_connection 
 	};
 
 	/* speech_codec_chosen */
-	if (ho->new_lchan->activate.requires_voice_stream && gscon_is_aoip(conn)) {
+	if (ho->new_lchan->activate.info.requires_voice_stream && gscon_is_aoip(conn)) {
 		int perm_spch = gsm0808_permitted_speech(lchan->type, lchan->tch_mode);
 		params.speech_codec_chosen_present = true;
 		rc = gsm0808_speech_codec_from_chan_type(&params.speech_codec_chosen, perm_spch);

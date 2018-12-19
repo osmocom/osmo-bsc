@@ -550,7 +550,7 @@ bool gscon_connect_mgw_to_msc(struct gsm_subscriber_connection *conn,
 	} else
 		verb = MGCP_VERB_CRCX;
 
-	gscon_ensure_mgw_endpoint(conn, for_lchan->activate.msc_assigned_cic);
+	gscon_ensure_mgw_endpoint(conn, for_lchan->activate.info.msc_assigned_cic);
 
 	if (!conn->user_plane.mgw_endpoint) {
 		LOGPFSML(conn->fi, LOGL_ERROR, "Unable to allocate endpoint info\n");

@@ -151,7 +151,7 @@ static void lchan_on_fully_established(struct gsm_lchan *lchan)
 		return;
 	lchan->activate.concluded = true;
 
-	switch (lchan->activate.activ_for) {
+	switch (lchan->activate.info.activ_for) {
 	case FOR_MS_CHANNEL_REQUEST:
 		/* No signalling to do here, MS is free to use the channel, and should go on to connect
 		 * to the MSC and establish a subscriber connection. */
@@ -201,7 +201,7 @@ static void lchan_on_fully_established(struct gsm_lchan *lchan)
 
 	default:
 		LOG_LCHAN(lchan, LOGL_NOTICE, "lchan %s fully established\n",
-			  lchan_activate_mode_name(lchan->activate.activ_for));
+			  lchan_activate_mode_name(lchan->activate.info.activ_for));
 		break;
 	}
 }
@@ -238,7 +238,7 @@ struct state_timeout lchan_fsm_timeouts[32] = {
 		lchan_set_last_error(_lchan, "lchan %s in state %s: " fmt, \
 				     _lchan->activate.concluded ? "failure" : "allocation failed", \
 				     osmo_fsm_state_name(fsm, state_was), ## args); \
-		lchan_on_activation_failure(_lchan, _lchan->activate.activ_for, _lchan->conn); \
+		lchan_on_activation_failure(_lchan, _lchan->activate.info.activ_for, _lchan->conn); \
 		if (fi->state != state_chg) \
 			lchan_fsm_state_chg(state_chg); \
 		else \
@@ -495,8 +495,6 @@ static void lchan_fsm_unused(struct osmo_fsm_inst *fi, uint32_t event, void *dat
 {
 	struct lchan_activate_info *info = data;
 	struct gsm_lchan *lchan = lchan_fi_lchan(fi);
-	struct gsm_bts *bts = lchan->ts->trx->bts;
-	struct gsm48_multi_rate_conf mr_conf;
 
 	switch (event) {
 
@@ -507,63 +505,8 @@ static void lchan_fsm_unused(struct osmo_fsm_inst *fi, uint32_t event, void *dat
 		lchan_set_last_error(lchan, NULL);
 		lchan->release.requested = false;
 
-		lchan->conn = info->for_conn;
-		lchan->activate.activ_for = info->activ_for;
-		lchan->activate.requires_voice_stream = info->requires_voice_stream;
-		lchan->activate.wait_before_switching_rtp = info->wait_before_switching_rtp;
-		lchan->activate.msc_assigned_cic = info->msc_assigned_cic;
+		lchan->activate.info = *info;
 		lchan->activate.concluded = false;
-		lchan->activate.re_use_mgw_endpoint_from_lchan = info->old_lchan;
-
-		if (info->old_lchan)
-			lchan->encr = info->old_lchan->encr;
-		else {
-			lchan->encr = (struct gsm_encr){
-				.alg_id = RSL_ENC_ALG_A5(0),	/* no encryption */
-			};
-		}
-
-		/* If there is a previous lchan, and the new lchan is on the same cell as previous one,
-		 * take over power and TA values. Otherwise, use max power and zero TA. */
-		if (info->old_lchan && info->old_lchan->ts->trx->bts == bts) {
-			lchan->ms_power = info->old_lchan->ms_power;
-			lchan->bs_power = info->old_lchan->bs_power;
-			lchan->rqd_ta = info->old_lchan->rqd_ta;
-		} else {
-			lchan->ms_power = ms_pwr_ctl_lvl(bts->band, bts->ms_max_power);
-			/* From lchan_reset():
-			 * - bs_power is still zero, 0dB reduction, output power = Pn.
-			 * - TA is still zero, to be determined by RACH. */
-		}
-
-		if (info->chan_mode == GSM48_CMODE_SPEECH_AMR) {
-			gsm48_mr_cfg_from_gsm0808_sc_cfg(&mr_conf, info->s15_s0);
-			if (lchan_mr_config(lchan, &mr_conf) < 0) {
-				lchan_fail("Can not generate multirate configuration IE\n");
-				return;
-			}
-		}
-
-		switch (info->chan_mode) {
-
-		case GSM48_CMODE_SIGN:
-			lchan->rsl_cmode = RSL_CMOD_SPD_SIGN;
-			lchan->tch_mode = GSM48_CMODE_SIGN;
-			break;
-
-		case GSM48_CMODE_SPEECH_V1:
-		case GSM48_CMODE_SPEECH_EFR:
-		case GSM48_CMODE_SPEECH_AMR:
-			lchan->rsl_cmode = RSL_CMOD_SPD_SPEECH;
-			lchan->tch_mode = info->chan_mode;
-			break;
-
-		default:
-			lchan_fail("Not implemented: cannot activate for chan mode %s",
-				   gsm48_chan_mode_name(info->chan_mode));
-			return;
-		}
-
 		lchan_fsm_state_chg(LCHAN_ST_WAIT_TS_READY);
 		break;
 
@@ -575,18 +518,75 @@ static void lchan_fsm_unused(struct osmo_fsm_inst *fi, uint32_t event, void *dat
 static void lchan_fsm_wait_ts_ready_onenter(struct osmo_fsm_inst *fi, uint32_t prev_state)
 {
 	struct gsm_lchan *lchan = lchan_fi_lchan(fi);
-	struct mgwep_ci *use_mgwep_ci = lchan_use_mgw_endpoint_ci_bts(lchan);
+	struct gsm48_multi_rate_conf mr_conf;
+	struct gsm_bts *bts = lchan->ts->trx->bts;
+	struct mgwep_ci *use_mgwep_ci;
+	struct gsm_lchan *old_lchan = lchan->activate.info.re_use_mgw_endpoint_from_lchan;
+	struct lchan_activate_info *info = &lchan->activate.info;
 
 	if (lchan->release.requested) {
 		lchan_fail("Release requested while activating");
 		return;
 	}
 
+	lchan->conn = info->for_conn;
+
+	if (old_lchan)
+		lchan->encr = old_lchan->encr;
+	else {
+		lchan->encr = (struct gsm_encr){
+			.alg_id = RSL_ENC_ALG_A5(0),	/* no encryption */
+		};
+	}
+
+	/* If there is a previous lchan, and the new lchan is on the same cell as previous one,
+	 * take over power and TA values. Otherwise, use max power and zero TA. */
+	if (old_lchan && old_lchan->ts->trx->bts == bts) {
+		lchan->ms_power = old_lchan->ms_power;
+		lchan->bs_power = old_lchan->bs_power;
+		lchan->rqd_ta = old_lchan->rqd_ta;
+	} else {
+		lchan->ms_power = ms_pwr_ctl_lvl(bts->band, bts->ms_max_power);
+		/* From lchan_reset():
+		 * - bs_power is still zero, 0dB reduction, output power = Pn.
+		 * - TA is still zero, to be determined by RACH. */
+	}
+
+	if (info->chan_mode == GSM48_CMODE_SPEECH_AMR) {
+		gsm48_mr_cfg_from_gsm0808_sc_cfg(&mr_conf, info->s15_s0);
+		if (lchan_mr_config(lchan, &mr_conf) < 0) {
+			lchan_fail("Can not generate multirate configuration IE\n");
+			return;
+		}
+	}
+
+	switch (info->chan_mode) {
+
+	case GSM48_CMODE_SIGN:
+		lchan->rsl_cmode = RSL_CMOD_SPD_SIGN;
+		lchan->tch_mode = GSM48_CMODE_SIGN;
+		break;
+
+	case GSM48_CMODE_SPEECH_V1:
+	case GSM48_CMODE_SPEECH_EFR:
+	case GSM48_CMODE_SPEECH_AMR:
+		lchan->rsl_cmode = RSL_CMOD_SPD_SPEECH;
+		lchan->tch_mode = info->chan_mode;
+		break;
+
+	default:
+		lchan_fail("Not implemented: cannot activate for chan mode %s",
+			   gsm48_chan_mode_name(info->chan_mode));
+		return;
+	}
+
+	use_mgwep_ci = lchan_use_mgw_endpoint_ci_bts(lchan);
+
 	LOG_LCHAN(lchan, LOGL_INFO,
 		  "Activation requested: %s voice=%s MGW-ci=%s type=%s tch-mode=%s\n",
-		  lchan_activate_mode_name(lchan->activate.activ_for),
-		  lchan->activate.requires_voice_stream ? "yes" : "no",
-		  lchan->activate.requires_voice_stream ?
+		  lchan_activate_mode_name(lchan->activate.info.activ_for),
+		  lchan->activate.info.requires_voice_stream ? "yes" : "no",
+		  lchan->activate.info.requires_voice_stream ?
 			(use_mgwep_ci ? mgwep_ci_name(use_mgwep_ci) : "new")
 			: "none",
 		  gsm_lchant_name(lchan->type),
@@ -597,7 +597,7 @@ static void lchan_fsm_wait_ts_ready_onenter(struct osmo_fsm_inst *fi, uint32_t p
 	osmo_fsm_inst_dispatch(lchan->ts->fi, TS_EV_LCHAN_REQUESTED, lchan);
 
 	/* Prepare an MGW endpoint CI if appropriate. */
-	if (lchan->activate.requires_voice_stream)
+	if (lchan->activate.info.requires_voice_stream)
 		lchan_rtp_fsm_start(lchan);
 }
 
@@ -641,7 +641,7 @@ static void lchan_fsm_wait_activ_ack_onenter(struct osmo_fsm_inst *fi, uint32_t 
 		return;
 	}
 
-	switch (lchan->activate.activ_for) {
+	switch (lchan->activate.info.activ_for) {
 	case FOR_MS_CHANNEL_REQUEST:
 		act_type = RSL_ACT_INTRA_IMM_ASS;
 		break;
@@ -723,7 +723,7 @@ static void lchan_fsm_post_activ_ack(struct osmo_fsm_inst *fi)
 		return;
 	}
 
-	switch (lchan->activate.activ_for) {
+	switch (lchan->activate.info.activ_for) {
 
 	case FOR_MS_CHANNEL_REQUEST:
 		rc = rsl_tx_imm_assignment(lchan);
@@ -778,7 +778,7 @@ static void lchan_fsm_post_activ_ack(struct osmo_fsm_inst *fi)
 
 	default:
 		LOG_LCHAN(lchan, LOGL_NOTICE, "lchan %s is now active\n",
-			  lchan_activate_mode_name(lchan->activate.activ_for));
+			  lchan_activate_mode_name(lchan->activate.info.activ_for));
 		break;
 	}
 
@@ -798,7 +798,7 @@ static void lchan_fsm_wait_rll_rtp_establish(struct osmo_fsm_inst *fi, uint32_t 
 	switch (event) {
 
 	case LCHAN_EV_RLL_ESTABLISH_IND:
-		if (!lchan->activate.requires_voice_stream
+		if (!lchan->activate.info.requires_voice_stream
 		    || lchan_rtp_established(lchan))
 			lchan_fsm_state_chg(LCHAN_ST_ESTABLISHED);
 		return;
@@ -1394,6 +1394,8 @@ void lchan_forget_conn(struct gsm_lchan *lchan)
 	struct gsm_subscriber_connection *conn;
 	if (!lchan)
 		return;
+
+	lchan->activate.info.for_conn = NULL;
 
 	conn = lchan->conn;
 	if (conn) {

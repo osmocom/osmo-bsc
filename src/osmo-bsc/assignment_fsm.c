@@ -422,7 +422,7 @@ void assignment_fsm_start(struct gsm_subscriber_connection *conn, struct gsm_bts
 		.s15_s0 = req->s15_s0,
 		.requires_voice_stream = conn->assignment.requires_voice_stream,
 		.msc_assigned_cic = req->msc_assigned_cic,
-		.old_lchan = conn->lchan,
+		.re_use_mgw_endpoint_from_lchan = conn->lchan,
 	};
 	lchan_activate(conn->assignment.new_lchan, &info);
 }
