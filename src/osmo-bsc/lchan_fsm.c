@@ -450,6 +450,10 @@ static int lchan_mr_config(struct gsm_lchan *lchan, const struct gsm48_multi_rat
 			  full_rate ? "tch-f" : "tch-h");
 		return -EINVAL;
 	}
+	LOG_LCHAN(lchan, LOGL_DEBUG,
+		  "AMR rate configurations: MSC=0x%x & BTS=0x%x = 0x%x\n",
+		  ((uint8_t*)&msc->amr_conf)[1], ((uint8_t*)mr_conf)[1],
+		  ((uint8_t*)&mr_conf_filtered)[1]);
 
 	/* The two last codec rates which are defined for AMR do only work with
 	 * full rate channels. We will pinch off those rates für half-rate

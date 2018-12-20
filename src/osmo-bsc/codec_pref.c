@@ -142,6 +142,8 @@ static bool test_codec_pref(const struct gsm0808_speech_codec **sc_match,
 	 * codec list of the channel type element */
 	for (i = 0; i < ct->perm_spch_len; i++) {
 		if (ct->perm_spch[i] == perm_spch) {
+			LOGP(DCHAN, LOGL_DEBUG, "%s: %s matches gsm0808_channel_type->perm_spch[%d]\n",
+			     __func__, gsm0808_permitted_speech_name(perm_spch), i);
 			match = true;
 			break;
 		}
@@ -149,24 +151,35 @@ static bool test_codec_pref(const struct gsm0808_speech_codec **sc_match,
 
 	/* If we do not have a speech codec list to test against,
 	 * we just exit early (will be always the case in non-AoIP networks) */
-	if (!scl || !scl->len)
+	if (!scl || !scl->len) {
+		LOGP(DCHAN, LOGL_DEBUG, "%s: there is no gsm0808_speech_codec_list\n",
+		     __func__);
 		return match;
+	}
 
 	/* If we failed to match until here, there is no
 	 * point in testing further */
-	if (match == false)
+	if (match == false) {
+		LOGP(DCHAN, LOGL_DEBUG, "%s: no match for %s\n",
+		     __func__, gsm0808_permitted_speech_name(perm_spch));
 		return false;
+	}
 
 	/* Extrapolate speech codec data */
 	rc = gsm0808_speech_codec_from_chan_type(&sc, perm_spch);
 	if (rc < 0)
 		return false;
 
+	LOGP(DCHAN, LOGL_DEBUG, "%s: permitted speech = %s corresponds to speech codec type = %s\n",
+	     __func__, gsm0808_permitted_speech_name(perm_spch), gsm0808_speech_codec_type_name(sc.type));
+
 	/* Try to find extrapolated speech codec data in
 	 * the speech codec list */
 	for (i = 0; i < scl->len; i++) {
 		if (sc.type == scl->codec[i].type) {
 			*sc_match = &scl->codec[i];
+			LOGP(DCHAN, LOGL_DEBUG, "%s: speech_codec_list[%d] matches speech codec type %s\n",
+			     __func__, i, gsm0808_speech_codec_type_name(sc.type));
 			return true;
 		}
 	}
@@ -250,6 +263,8 @@ static uint16_t gen_bss_supported_amr_s15_s0(const struct bsc_msc_data *msc, con
 	if (hr) {
 		amr_cfg_bts = (struct gsm48_multi_rate_conf *)&bts->mr_half.gsm48_ie;
 		amr_s15_s0_bts = gsm0808_sc_cfg_from_gsm48_mr_cfg(amr_cfg_bts, false);
+		LOGP(DCHAN, LOGL_DEBUG, "%s: HR: bts->mr_half.gsm48_ie[1] = 0x%02x ==> amr_cfg_bts=0x%04x\n",
+		     __func__, bts->mr_half.gsm48_ie[1], amr_s15_s0_bts);
 	} else {
 		amr_cfg_bts = (struct gsm48_multi_rate_conf *)&bts->mr_full.gsm48_ie;
 		amr_s15_s0_bts = gsm0808_sc_cfg_from_gsm48_mr_cfg(amr_cfg_bts, true);
@@ -299,15 +314,25 @@ int match_codec_pref(enum gsm48_chan_mode *chan_mode,
 
 		/* Check this permitted speech value against the BTS specific parameters.
 		 * if the BTS does not support the codec, try the next one */
-		if (!test_codec_support_bts(bts, perm_spch))
+		if (!test_codec_support_bts(bts, perm_spch)) {
+			LOGP(DCHAN, LOGL_DEBUG, "%s: msc->audio_support[%d] = %s: not supported by bts%u\n",
+			     __func__, i, gsm0808_permitted_speech_name(perm_spch),
+			     bts->nr);
 			continue;
+		}
 
 		/* Match the permitted speech value against the codec lists that were
 		 * advertised by the MS and the MSC */
 		if (test_codec_pref(&sc_match, scl, ct, perm_spch)) {
+			LOGP(DCHAN, LOGL_DEBUG, "%s: msc->audio_support[%d] = %s:"
+			     " matches channel type and speech codec list\n",
+			     __func__, i, gsm0808_permitted_speech_name(perm_spch));
 			match = true;
 			break;
 		}
+		LOGP(DCHAN, LOGL_DEBUG, "%s: msc->audio_support[%d] = %s:"
+		     " does not matches channel type and/or speech codec list\n",
+		     __func__, i, gsm0808_permitted_speech_name(perm_spch));
 	}
 
 	/* Exit without result, in case no match can be deteched */
@@ -326,8 +351,16 @@ int match_codec_pref(enum gsm48_chan_mode *chan_mode,
 	/* Lookup a channel mode for the selected codec */
 	*chan_mode = gsm88_to_chan_mode(perm_spch);
 
+	LOGP(DCHAN, LOGL_DEBUG, "%s: perm_spch=%s corresponds to chan_mode=%s\n",
+	     __func__,
+	     gsm0808_permitted_speech_name(perm_spch),
+	     gsm48_chan_mode_name(*chan_mode));
+
 	/* Special handling for AMR */
 	if (perm_spch == GSM0808_PERM_HR3 || perm_spch == GSM0808_PERM_FR3) {
+		LOGP(DCHAN, LOGL_DEBUG, "%s: perm_spch=%s is AMR\n",
+		     __func__,
+		     gsm0808_permitted_speech_name(perm_spch));
 		/* Normally the MSC should never try to advertise an AMR codec
 		 * configuration that we did not previously advertise as
 		 * supported. However, to ensure that no unsupported AMR codec
@@ -336,10 +369,15 @@ int match_codec_pref(enum gsm48_chan_mode *chan_mode,
 		 * further processing is then done with this intersection
 		 * result */
 		amr_s15_s0_supported = gen_bss_supported_amr_s15_s0(msc, bts, (perm_spch == GSM0808_PERM_HR3));
-		if (sc_match)
+		if (sc_match) {
 			*s15_s0 = sc_match->cfg & amr_s15_s0_supported;
-		else
+			LOGP(DCHAN, LOGL_DEBUG, "%s: sc_match=%s & amr_s15_s0_supported=0x%04x = 0x%04x\n",
+			     __func__,
+			     gsm0808_speech_codec_type_name(sc_match->type), amr_s15_s0_supported, *s15_s0);
+		} else {
 			*s15_s0 = amr_s15_s0_supported;
+			LOGP(DCHAN, LOGL_DEBUG, "%s: amr_s15_s0_supported=0x%04x\n", __func__, *s15_s0);
+		}
 
 		/* NOTE: The function test_codec_pref() will populate the
 		 * sc_match pointer from the searched speech codec list. For

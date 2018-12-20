@@ -720,7 +720,7 @@ static int bssmap_handle_assignm_req(struct gsm_subscriber_connection *conn,
 		rc = match_codec_pref(&chan_mode, &full_rate, &s15_s0, &ct, &conn->codec_list,
 				      msc, conn_get_bts(conn));
 		if (rc < 0) {
-			LOGP(DMSC, LOGL_ERROR, "No supported audio type found for channel_type ="
+			LOGP(DCHAN, LOGL_ERROR, "No supported audio type found for channel_type ="
 			     " { ch_indctr=0x%x, ch_rate_type=0x%x, perm_spch=[ %s] }\n",
 			     ct.ch_indctr, ct.ch_rate_type, osmo_hexdump(ct.perm_spch, ct.perm_spch_len));
 			/* TODO: actually output codec names, e.g. implement
@@ -729,11 +729,18 @@ static int bssmap_handle_assignm_req(struct gsm_subscriber_connection *conn,
 			goto reject;
 		}
 
-		DEBUGP(DMSC, "Found matching audio type: %s %s for channel_type ="
-		       " { ch_indctr=0x%x, ch_rate_type=0x%x, perm_spch=[ %s] }\n",
+		DEBUGP(DCHAN, "Found matching audio type: %s %s for channel_type ="
+		       " { ch_indctr=0x%x, ch_rate_type=0x%x, perm_spch=[ %s] }, s15_s0=0x%04x\n",
 		       full_rate? "full rate" : "half rate",
 		       get_value_string(gsm48_chan_mode_names, chan_mode),
-		       ct.ch_indctr, ct.ch_rate_type, osmo_hexdump(ct.perm_spch, ct.perm_spch_len));
+		       ct.ch_indctr, ct.ch_rate_type, osmo_hexdump(ct.perm_spch, ct.perm_spch_len),
+		       s15_s0);
+		if (log_check_level(DMSC, LOGL_DEBUG)) {
+			int i;
+			for (i = 0; i < ct.perm_spch_len; i++)
+				LOGP(DCHAN, LOGL_DEBUG, "perm_spch[%d] = 0x%02x = %s\n",
+				     i, ct.perm_spch[i], gsm0808_permitted_speech_name(ct.perm_spch[i]));
+		}
 
 		req = (struct assignment_request){
 			.aoip = aoip,
