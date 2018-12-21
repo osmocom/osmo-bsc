@@ -509,10 +509,13 @@ struct lchan_activate_info {
 	/* This always is for a specific lchan, so its lchan->type indicates full or half rate.
 	 * When a dyn TS was selected, the lchan->type has been set to the desired rate. */
 	enum gsm48_chan_mode chan_mode;
+	/* AMR config */
 	uint16_t s15_s0;
 	bool requires_voice_stream;
 	bool wait_before_switching_rtp; /*< true = requires LCHAN_EV_READY_TO_SWITCH_RTP */
 	uint16_t msc_assigned_cic;
+	/* During intra-BSC handover, we keep the MGW endpoint intact and just re-route to the new lchan. This
+	 * activate_info is for the new lchan, the re_use_mgw_endpoint_from_lchan points at the old lchan. */
 	struct gsm_lchan *re_use_mgw_endpoint_from_lchan;
 };
 

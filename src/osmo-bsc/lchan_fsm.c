@@ -533,7 +533,7 @@ static void lchan_fsm_wait_ts_ready_onenter(struct osmo_fsm_inst *fi, uint32_t p
 		lchan->rqd_ta = old_lchan->rqd_ta;
 	} else {
 		lchan->ms_power = ms_pwr_ctl_lvl(bts->band, bts->ms_max_power);
-		/* From lchan_reset():
+		/* Upon last entering the UNUSED state, from lchan_reset():
 		 * - bs_power is still zero, 0dB reduction, output power = Pn.
 		 * - TA is still zero, to be determined by RACH. */
 	}
