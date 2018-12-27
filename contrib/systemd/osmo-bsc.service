@@ -7,6 +7,7 @@ Type=simple
 Restart=always
 ExecStart=/usr/bin/osmo-bsc -c /etc/osmocom/osmo-bsc.cfg -s
 RestartSec=2
+ExecStopPost=/usr/local/bin/save_log_tail osmo-bsc
 
 [Install]
 WantedBy=multi-user.target
