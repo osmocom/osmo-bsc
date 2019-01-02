@@ -4433,11 +4433,11 @@ DEFUN(drop_bts,
 
 	/* close all connections */
 	if (strcmp(argv[1], "oml") == 0) {
-		ipaccess_drop_oml(bts);
+		ipaccess_drop_oml(bts, "vty");
 	} else if (strcmp(argv[1], "rsl") == 0) {
 		/* close all rsl connections */
 		llist_for_each_entry(trx, &bts->trx_list, list) {
-			ipaccess_drop_rsl(trx);
+			ipaccess_drop_rsl(trx, "vty");
 		}
 	} else {
 		vty_out(vty, "Argument must be 'oml# or 'rsl'.%s", VTY_NEWLINE);

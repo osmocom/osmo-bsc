@@ -106,7 +106,7 @@ static int set_net_apply_config(struct ctrl_cmd *cmd, void *data)
 			llist_for_each_entry_reverse(trx, &bts->trx_list, list)
 				abis_nm_ipaccess_restart(trx);
 		} else
-			ipaccess_drop_oml(bts);
+			ipaccess_drop_oml(bts, "ctrl net.apply-configuration");
 	}
 
 	cmd->reply = "Tried to drop the BTS";
@@ -189,7 +189,7 @@ static int set_bts_apply_config(struct ctrl_cmd *cmd, void *data)
 		return CTRL_CMD_ERROR;
 	}
 
-	ipaccess_drop_oml(bts);
+	ipaccess_drop_oml(bts, "ctrl bts.apply-configuration");
 	cmd->reply = "Tried to drop the BTS";
 	return CTRL_CMD_REPLY;
 }

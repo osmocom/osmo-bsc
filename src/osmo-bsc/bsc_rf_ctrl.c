@@ -227,7 +227,7 @@ static void rf_check_cb(void *_data)
 			    trx->mo.nm_state.operational != NM_OPSTATE_ENABLED ||
 			    trx->mo.nm_state.administrative != NM_STATE_UNLOCKED) {
 				LOGP(DNM, LOGL_ERROR, "RF activation failed. Starting again.\n");
-				ipaccess_drop_oml(bts);
+				ipaccess_drop_oml(bts, "rf check");
 				break;
 			}
 		}

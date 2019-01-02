@@ -389,12 +389,12 @@ find_bts_by_unitid(struct gsm_network *net, uint16_t site_id, uint16_t bts_id)
 }
 
 /* These are exported because they are used by the VTY interface. */
-void ipaccess_drop_rsl(struct gsm_bts_trx *trx)
+void ipaccess_drop_rsl(struct gsm_bts_trx *trx, const char *reason)
 {
 	if (!trx->rsl_link)
 		return;
 
-	LOGP(DLINP, LOGL_NOTICE, "(bts=%d,trx=%d) Dropping RSL link.\n", trx->bts->nr, trx->nr);
+	LOGP(DLINP, LOGL_NOTICE, "(bts=%d,trx=%d) Dropping RSL link: %s\n", trx->bts->nr, trx->nr, reason);
 	e1inp_sign_link_destroy(trx->rsl_link);
 	trx->rsl_link = NULL;
 
@@ -402,7 +402,7 @@ void ipaccess_drop_rsl(struct gsm_bts_trx *trx)
 		paging_flush_bts(trx->bts, NULL);
 }
 
-void ipaccess_drop_oml(struct gsm_bts *bts)
+void ipaccess_drop_oml(struct gsm_bts *bts, const char *reason)
 {
 	struct gsm_bts *rdep_bts;
 	struct gsm_bts_trx *trx;
@@ -413,14 +413,14 @@ void ipaccess_drop_oml(struct gsm_bts *bts)
 	if (!bts->oml_link)
 		return;
 
-	LOGP(DLINP, LOGL_NOTICE, "(bts=%d) Dropping OML link.\n", bts->nr);
+	LOGP(DLINP, LOGL_NOTICE, "(bts=%d) Dropping OML link: %s\n", bts->nr, reason);
 	e1inp_sign_link_destroy(bts->oml_link);
 	bts->oml_link = NULL;
 	bts->uptime = 0;
 
 	/* we have issues reconnecting RSL, drop everything. */
 	llist_for_each_entry(trx, &bts->trx_list, list)
-		ipaccess_drop_rsl(trx);
+		ipaccess_drop_rsl(trx, "OML link drop");
 
 	gsm_bts_all_ts_dispatch(bts, TS_EV_OML_DOWN, NULL);
 
@@ -438,7 +438,7 @@ void ipaccess_drop_oml(struct gsm_bts *bts)
 			continue;
 		LOGP(DLINP, LOGL_NOTICE, "Dropping BTS(%u) due BTS(%u).\n",
 			rdep_bts->nr, bts->nr);
-		ipaccess_drop_oml(rdep_bts);
+		ipaccess_drop_oml(rdep_bts, "Dependency link drop");
 	}
 }
 
@@ -447,7 +447,7 @@ void ipaccess_drop_oml(struct gsm_bts *bts)
 static void ipaccess_drop_oml_deferred_cb(void *data)
 {
 	struct gsm_bts *bts = (struct gsm_bts *) data;
-	ipaccess_drop_oml(bts);
+	ipaccess_drop_oml(bts, "Deferred link drop");
 }
 /*! Deferr \ref ipacces_drop_oml through a timer to avoid dropping structures in
  *  current code context. This may be needed if we want to destroy the OML link
@@ -537,7 +537,7 @@ ipaccess_sign_link_up(void *unit_data, struct e1inp_line *line,
 	switch(type) {
 	case E1INP_SIGN_OML:
 		/* remove old OML signal link for this BTS. */
-		ipaccess_drop_oml(bts);
+		ipaccess_drop_oml(bts, "new OML link");
 
 		if (!bts_depend_check(bts)) {
 			LOGP(DLINP, LOGL_NOTICE,
@@ -568,7 +568,7 @@ ipaccess_sign_link_up(void *unit_data, struct e1inp_line *line,
 			return NULL;
 
 		/* remove old RSL link for this TRX. */
-		ipaccess_drop_rsl(trx);
+		ipaccess_drop_rsl(trx, "new RSL link");
 
 		/* set new RSL link for this TRX. */
 		line = bts->oml_link->ts->line;
@@ -609,7 +609,7 @@ static void ipaccess_sign_link_down(struct e1inp_line *line)
 			osmo_timer_del(&link->trx->rsl_connect_timeout);
 	}
 	if (bts != NULL)
-		ipaccess_drop_oml(bts);
+		ipaccess_drop_oml(bts, "link down");
 }
 
 /* This function is called if we receive one OML/RSL message. */
