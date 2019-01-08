@@ -29,7 +29,7 @@ enum lcls_event {
 	LCLS_EV_OTHER_DEAD,
 };
 
-enum gsm0808_lcls_status lcls_get_status(struct gsm_subscriber_connection *conn);
+enum gsm0808_lcls_status lcls_get_status(const struct gsm_subscriber_connection *conn);
 
 void lcls_update_config(struct gsm_subscriber_connection *conn,
 			const uint8_t *config, const uint8_t *control);

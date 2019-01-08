@@ -47,7 +47,7 @@ struct value_string lcls_event_names[] = {
  * Utility functions
  ***********************************************************************/
 
-enum gsm0808_lcls_status lcls_get_status(struct gsm_subscriber_connection *conn)
+enum gsm0808_lcls_status lcls_get_status(const struct gsm_subscriber_connection *conn)
 {
 	if (!conn->lcls.fi)
 		return GSM0808_LCLS_STS_NA;
@@ -86,7 +86,7 @@ static void lcls_send_notify(struct gsm_subscriber_connection *conn)
 }
 
 static struct gsm_subscriber_connection *
-find_conn_with_same_gcr(struct gsm_subscriber_connection *conn_local)
+find_conn_with_same_gcr(const struct gsm_subscriber_connection *conn_local)
 {
 	struct gsm_network *net = conn_local->network;
 	struct gsm_subscriber_connection *conn_other;
@@ -159,7 +159,7 @@ static int lcls_perform_correlation(struct gsm_subscriber_connection *conn_local
 /* Update the connections LCLS configuration and return old/previous configuration.
  * \returns (staticallly allocated) old configuration; NULL if new config not supported */
 static struct osmo_lcls *update_lcls_cfg_csc(struct gsm_subscriber_connection *conn,
-					     struct osmo_lcls *new_cfg_csc)
+					     const struct osmo_lcls *new_cfg_csc)
 {
 	static struct osmo_lcls old_cfg_csc = { 0 };
 	old_cfg_csc.config = conn->lcls.config;
@@ -303,7 +303,7 @@ static void lcls_break_local_switching(struct gsm_subscriber_connection *conn)
 	}
 }
 
-static bool lcls_enable_possible(struct gsm_subscriber_connection *conn)
+static bool lcls_enable_possible(const struct gsm_subscriber_connection *conn)
 {
 	struct gsm_subscriber_connection *other_conn = conn->lcls.other;
 	OSMO_ASSERT(other_conn);
