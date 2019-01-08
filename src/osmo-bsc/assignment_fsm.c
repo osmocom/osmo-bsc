@@ -175,19 +175,16 @@ static void send_assignment_complete(struct gsm_subscriber_connection *conn)
 		}
 	}
 
-	resp = gsm0808_create_ass_compl(lchan->abis_ip.ass_compl.rr_cause,
-					chosen_channel,
-					lchan->encr.alg_id, perm_spch,
-					addr_local_p, sc_ptr, NULL);
+	resp = gsm0808_create_ass_compl2(lchan->abis_ip.ass_compl.rr_cause,
+					 chosen_channel,
+					 lchan->encr.alg_id, perm_spch,
+					 addr_local_p, sc_ptr, NULL, lcls_get_status(conn));
 
 	if (!resp) {
 		assignment_fail(GSM0808_CAUSE_EQUIPMENT_FAILURE,
 				"Unable to compose Assignment Complete message");
 		return;
 	}
-
-	/* Add LCLS BSS-Status IE in case there is any LCLS status for this connection */
-	bssmap_add_lcls_status_if_needed(conn, resp);
 
 	rc = gscon_sigtran_send(conn, resp);
 	if (rc) {

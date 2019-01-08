@@ -864,35 +864,3 @@ struct osmo_fsm lcls_fsm = {
 	.log_subsys = DLCLS,
 	.event_names = lcls_event_names,
 };
-
-/* Add the LCLS BSS Status IE to a BSSMAP message. We assume this is
- * called on a msgb that was returned by gsm0808_create_ass_compl() */
-static void bssmap_add_lcls_status(struct msgb *msg, enum gsm0808_lcls_status status)
-{
-	OSMO_ASSERT(msg->l3h[0] == BSSAP_MSG_BSS_MANAGEMENT);
-	OSMO_ASSERT(msg->l3h[2] == BSS_MAP_MSG_ASSIGMENT_COMPLETE ||
-		    msg->l3h[2] == BSS_MAP_MSG_HANDOVER_RQST_ACKNOWLEDGE ||
-		    msg->l3h[2] == BSS_MAP_MSG_HANDOVER_COMPLETE ||
-		    msg->l3h[2] == BSS_MAP_MSG_HANDOVER_PERFORMED);
-	OSMO_ASSERT(msgb_tailroom(msg) >= 2);
-
-	/* append IE to end of message */
-	msgb_tv_put(msg, GSM0808_IE_LCLS_BSS_STATUS, status);
-	/* increment the "length" byte in the BSSAP header */
-	msg->l3h[1] += 2;
-}
-
-/* Add (append) the LCLS BSS Status IE to a BSSMAP message, if there is any LCLS
- * active on the given \a conn */
-void bssmap_add_lcls_status_if_needed(struct gsm_subscriber_connection *conn, struct msgb *msg)
-{
-	enum gsm0808_lcls_status status = lcls_get_status(conn);
-	if (status != GSM0808_LCLS_STS_NA) {
-		LOGPFSM(conn->fi, "Adding LCLS BSS-Status (%s) to %s\n",
-			gsm0808_lcls_status_name(status),
-			gsm0808_bssmap_name(msg->l3h[2]));
-		bssmap_add_lcls_status(msg, status);
-	}
-}
-
-
