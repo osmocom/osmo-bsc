@@ -296,6 +296,11 @@ static unsigned int calculate_timer_3113(struct gsm_bts *bts)
 	unsigned int to_us, to;
 	struct T_def *d = T_def_get_entry(bts->network->T_defs, 3113);
 
+	/* Note: d should always contain a valid pointer since all timers,
+	 * including 3113 are statically pre-defined in
+	 * struct T_def gsm_network_T_defs. */
+	OSMO_ASSERT(d);
+
 	if (!bts->T3113_dynamic)
 		return d->val;
 
