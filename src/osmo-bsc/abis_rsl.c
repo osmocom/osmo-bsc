@@ -1378,8 +1378,6 @@ static int rsl_rx_chan_rqd(struct msgb *msg)
 	 * - If SDCCH is not available, try whatever MS requested, if not SDCCH.
 	 * - If there is still no channel available, reject channel request.
 	 *
-	 * lchan_alloc() possibly tries to allocate larger lchans.
-	 *
 	 * Note: If the MS requests not TCH/H, we don't know if the phone
 	 *       supports TCH/H, so we must assign TCH/F or SDCCH.
 	 */
