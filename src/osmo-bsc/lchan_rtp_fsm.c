@@ -565,13 +565,19 @@ static void lchan_rtp_fsm_established_onenter(struct osmo_fsm_inst *fi, uint32_t
 
 static void lchan_rtp_fsm_established(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
+	struct gsm_lchan *lchan = lchan_rtp_fi_lchan(fi);
+
 	switch (event) {
 
 	case LCHAN_RTP_EV_RELEASE:
 	case LCHAN_RTP_EV_ROLLBACK:
 		osmo_fsm_inst_term(fi, OSMO_FSM_TERM_REGULAR, 0);
 		return;
-
+	case LCHAN_RTP_EV_IPACC_MDCX_ACK:
+		LOG_LCHAN_RTP(lchan, LOGL_NOTICE,
+			      "Received MDCX ACK on established lchan's RTP port: %s\n",
+			      mgwep_ci_name(lchan->mgw_endpoint_ci_bts));
+		return;
 	default:
 		OSMO_ASSERT(false);
 	}
@@ -689,6 +695,7 @@ static const struct osmo_fsm_state lchan_rtp_fsm_states[] = {
 		.in_event_mask = 0
 			| S(LCHAN_RTP_EV_RELEASE)
 			| S(LCHAN_RTP_EV_ROLLBACK)
+			| S(LCHAN_RTP_EV_IPACC_MDCX_ACK)
 			,
 	},
 	[LCHAN_RTP_ST_ROLLBACK] = {
