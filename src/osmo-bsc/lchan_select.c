@@ -207,12 +207,6 @@ struct gsm_lchan *lchan_select_by_type(struct gsm_bts *bts, enum gsm_chan_t type
 		break;
 	case GSM_LCHAN_TCH_H:
 		lchan = _lc_find_bts(bts, GSM_PCHAN_TCH_H);
-		/* If we don't have TCH/H available, fall-back to TCH/F */
-		if (!lchan) {
-			lchan = _lc_find_bts(bts, GSM_PCHAN_TCH_F);
-			if (lchan)
-				type = GSM_LCHAN_TCH_F;
-		}
 		/* No dedicated TCH/x available -- try fully dynamic
 		 * TCH/F_TCH/H_PDCH */
 		if (!lchan) {
@@ -221,17 +215,6 @@ struct gsm_lchan *lchan_select_by_type(struct gsm_bts *bts, enum gsm_chan_t type
 						 GSM_PCHAN_TCH_H);
 			if (lchan)
 				type = GSM_LCHAN_TCH_H;
-		}
-		/*
-		 * No need to check TCH/F_TCH/H_PDCH channels for TCH/F:
-		 * if no TCH/H was available, neither will be TCH/F.
-		 */
-		/* If we don't have TCH/F either, try dynamic TCH/F_PDCH */
-		if (!lchan) {
-			lchan = _lc_dyn_find_bts(bts, GSM_PCHAN_TCH_F_PDCH,
-						 GSM_PCHAN_TCH_F);
-			if (lchan)
-				type = GSM_LCHAN_TCH_F;
 		}
 		break;
 	default:
