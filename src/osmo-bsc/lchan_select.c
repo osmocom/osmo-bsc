@@ -136,8 +136,12 @@ struct gsm_lchan *lchan_select_by_chan_mode(struct gsm_bts *bts,
 	case GSM48_CMODE_SIGN:
 		type = GSM_LCHAN_SDCCH;
 		break;
-	case GSM48_CMODE_SPEECH_V1:
 	case GSM48_CMODE_SPEECH_EFR:
+		/* EFR works over FR channels only */
+		if (!full_rate)
+			return NULL;
+		/* fall through */
+	case GSM48_CMODE_SPEECH_V1:
 	case GSM48_CMODE_SPEECH_AMR:
 		type = full_rate ? GSM_LCHAN_TCH_F : GSM_LCHAN_TCH_H;
 		break;
