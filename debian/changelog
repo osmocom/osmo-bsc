@@ -1,3 +1,325 @@
+osmo-bsc (1.4.0) unstable; urgency=medium
+
+  [ Neels Hofmeyr ]
+  * inter-BSC HO: add neighbor_ident API to manage neighbor-BSS-cells
+  * inter-BSC HO: neighbor_ident API: drop 9bit BSIC
+  * doc: update/fix FSM charts
+  * fix / clarify rsl dtap cache
+  * rename gsm_04_08_utils.[hc] to gsm_04_08_rr
+  * cosmetic: move RR functions from bsc_api.c to gsm_04_08_rr.c
+  * add gsm_timers, for Tnnn definitions usable by FSMs
+  * large refactoring: use FSMs for lchans; add inter-BSC HO
+  * fix nanobts: timeslot FSM: use flags to remember OML,RSL status
+  * fix: dispatch TS_EV_RSL_DOWN when losing RSL
+  * timeslot FSM: fix infinite recursion on failure to send PDCH ACT
+  * timeslot FSM: permit entering broken state from anywhere
+  * cosmetic: FSMs: allow ignorable events
+  * fix BSC_CTR_ASSIGNMENT doc strings
+  * lchan_fsm: split off lchan_rtp_fsm, establish RTP a bit earlier
+  * lchan_fsm: add in_release_handler flag
+  * allocate larger lchans if no SDCCH are available
+  * create separate logging categories for lchan,ts,as FSMs
+  * cosmetic: constify gsm_bts_num() net arg
+  * vty: 'handover any': pick more random chans, use lchan_select_by_type()
+  * cosmetic: dissolve bsc_api.c
+  * cosmetic: reduce bsc_api.h
+  * cosmetic: rename bsc_api.h to gsm_08_08.h
+  * cosmetic: rename osmo_bsc_api.c to gsm_08_08.c
+  * cosmetic: gscon: don't re-enter ST_CLEARING
+  * use __FILE__, not __BASE_FILE__
+  * fix lchan_rtp_fsm: missing event handling
+  * MGCP: add 'X-Osmo-IGN: C' for SCCPlite by default
+  * cosmetic: neighbor_ident_vty.c: add and use common string defs
+  * neighbor_ident_vty.c: fix CI format, should be 16bit
+  * inter-BSC HO incoming: continue despite missing Classmark
+  * inter-BSC HO incoming: drop old/wrong RTP port code
+  * lchan_fsm: lchan_fail_to(): store target state early
+  * cosmetic: lchan_fsm failure: log about state transitions
+  * lchan_fsm: safer 'concluded' flag
+  * log: lchan_rtp_fsm: add missing '\n'
+  * log: 'sending BSSMAP HO Request ACK'
+  * inter-BSC HO: send failure msg directly
+  * log: tweaks and more context in osmo_bsc_sigtran_send()
+  * fix dependency bug: include mgcp_client/, not mgcp/
+  * cosmetic: lchan activ: no need to clear mr again
+  * cosmetic: lchan activ: drop todo comments
+  * lchan: pick proper power and ta values
+  * SCCPlite Assignment Complete: include Speech Codec (Chosen)
+  * inter-BSC HO incoming: send BSSMAP HO Complete directly
+  * inter-BSC HO outgoing: fix L3 forwarding
+  * ho fsm: handle RR HO Failure for inter-BSC outgoing
+  * lchan_fsm: allow late RTP release events without erroring
+  * ts,lchan_fsm: do not attempt to allocate CBCH subslots
+  * Implement RR Classmark Enquiry
+  * fix LCLS during Assignment: actually use new TCH lchan
+  * cosmetic: drop param from send_assignment_complete()
+  * vty: add SCCP related vty commands
+  * make: allow vty-tests without configure
+  * test neighbor ident vty docs
+  * neighbor vty: drop keyword 'add'
+  * neighbor vty: rather 'no neighbor', not 'neighbor del'
+  * neighbor vty: allow setting local neighbors by CGI
+  * vty: write local neighbors by bts nr, not lac-ci
+  * fix counters for inter-BSC outgoing
+  * gscon_forget_lchan(): no Clear Request after Clear Command
+  * gscon_forget_lchan(): Clear Request iff no lchans remain
+  * subscr conn: properly forget lchan before release
+  * lchan_fsm: fix failure handling: notify conn when released
+  * handover_decision_2.c: tweak comments
+  * handover_decision_2.c: tweak ho candidate logging
+  * handover_decision_2.c: find_alternative_lchan: drop goto
+  * handover_decision_2.c: drop redundant debug_candidate() args
+  * lchan_fsm: notify conn of released lchan upon RF Release
+  * handover_fsm: adjust inter-BSC HO failure handling to spec
+  * remote-BSS neighbors: allow only one cell ID
+  * handover_decision_2.c: refactor trigger_*()
+  * handover_decision_2.c: implement HO to remote BSS
+  * abis_rsl.c: fix uninitialized RSL cause issues
+  * handover_fsm: fix missing newline for log statement
+  * handover_fsm: fix failure logging of uninitialized chan mode
+  * fix build: revert bad neighbor_ident.vty change
+  * vty doc: drop "(HO algo 2 only)" strings
+  * lchan_fsm_cleanup: drop redundant 'forget_lchan' call
+  * lchan: rf release: make sure conn is NULL
+  * dbug log: verbosely detach conn<->lchan
+  * fix: send RR Release (e.g. after BSSMAP Clear Cmd)
+  * abis_rsl.c: drop unused enum sacch_deact
+  * lchan: release in error: fix missing messages / events
+  * lchan release: always Deact SACCH
+  * cosmetic: lchan: introduce sub-struct lchan->release.*
+  * cosmetic: abis_rsl.c: drop uneccesary braces
+  * lchan: set cause for 4 instances of release_in_error = true
+  * coverity: gscon_forget_lchan: squelch forward-null
+  * always directly send BSSMAP Clear Request
+  * send Immediate Assignment Reject only before Immediate Assignment
+  * Importing history from osmo-gsm-manuals
+  * minor tweak
+  * make clean: also remove generated image files
+  * add 'make check' target
+  * OsmoBSC+NITB/running: fix title levels, one too deep
+  * OsmoBSC: include bts-examples.adoc from OsmoNITB
+  * fix 'make clean': shell glob, ignore failure
+  * refactor Makefile build rules, don't use the FORCE
+  * OsmoBSC: update overview to explain both SCCPlite and SCCP/M3UA
+  * common / OsmoBSC: drop unused alink.adoc
+  * OsmoBSC: update VTY reference
+  * bsc: document handover
+  * bsc: handover: clarify default of all-cells-are-neighbors
+  * bsc: handover: mention the need to resend SI for telnet neighbor cfg
+  * author info: add "former" to Holger's job title
+  * OsmoBSC: update VTY reference
+  * follow-up: logging tweak for Immediate Assignment
+  * set gscon FSM instances' log level to DEBUG
+  * make sure early lchan act failure resets the lchan
+  * comments: describe some lchan details
+  * use mgcp-client configured endpoint domain name
+
+  [ Philipp Maier ]
+  * endpoint_fsm: add missing return in mgcp_pick_codec
+  * gscon: use BSS-common payload types on BSS side
+  * sigtran: fix memleak in osmo_bsc_sigtran_send()
+  * GSCON: avoid sending connection oriented data when not connected
+  * GSCON: call api of a_reset.c with msc object directly
+  * lcls: do not LCLS call legs with different codecs
+  * doc: update mgw settings in example config file
+  * assignment: remove unnecessary call to gsm0808_speech_codec_from_chan_type()
+  * codec_pref: fix typo in comment
+  * codec_pref: add AMR configuration bits to make_scl_config() in unit-test
+  * codec_pref: fix missing breaks in switch-case statement
+  * LCLS: fix codec mismatch detection
+  * gsm_data: remove unused struct member full_rate.
+  * gsm_data: remove unused struct member chan_mode
+  * assignment_fsm: only include speech codec (choosen) on AoIP networks
+  * gsm_data.c: Set reasonable AMR codec defaults in gsm_bts_alloc()
+  * codec_pref: Add Codec List to COMPLETE LAYER 3 INFORMATION
+  * lcls: log channel type and lchan names on LCLS codec mismatch
+  * codec_pref: handle S0-S15 in ASSIGNMENT REQUEST
+  * gsm_08_08: abort complete L3 3 msg gen when no codecs are set
+  * osmo_bsc_msc: Set reasonable codec list defaults
+  * codec_pref: check codec configuration before start
+  * codec_pref: cosmetic: seperate half/full rate determination
+  * codec_pref: also check physical channels
+  * gsm_08_08: allow zero length speech codec lists in compl l3 info.
+  * gsm_08_08: do not include zero length speech codec list.
+  * gsm_data: set meaningful default values for amr modes
+  * codec_pref: also check amr codec rates in check_codec_pref()
+  * gsm_04_08: improve gsm48_multirate_config()
+  * bsc_vty: check amr mode parameters
+  * lchan_fsm: generate proper multirate configuration IE on RSL
+  * gsm_data: make cgi_for_msc available for other modules
+  * handover_fsm: send HANDOVER PERFORMED msg on internal ho
+  * paging: fix nullpointer deref
+  * chan_alloc: remove references to lchan_alloc()
+
+  [ Harald Welte ]
+  * Migrate from osmo_ipa_idtag_parse() to ipa_ccm_id_resp_parse()
+  * handover_fsm.c: Fix -Werror=format-security errors
+  * cbch: Don't send cell-broadcast command on BTS without CBCH channel
+  * gsm48_lchan2chan_desc() belongs to gsm_data.h
+  * Introduce gsm48_lchan2chan_desc_as_configured()
+  * CBCH: Fix SI4 CBCH IE generation
+  * CBCH: Fix gsm_bts_get_cbch()
+  * nanoBTS: Allow BCCH with CBCH on TS0
+  * range_enc_determine_range(): Don't dereference array on size=0
+  * handover_start_inter_bsc_in(): Uninitialized variable
+  * ipaccess-config: Fix open() return value checking
+  * bssmap_handle_cipher_mode(): Don't sent reject if !conn
+  * subscr_conn_fsm: Fix null-pointer deref / N-CONNECT.ind from unknown MSC
+  * acc_ramp: An unsigned int is always >= 0
+  * ipaccess-proxy: Add error handling to IAP CCM ID RESP parsing
+  * initial checkin of manuals to public repo
+  * Add link to Asciidoc source code of manual
+  * add Ericsson OM2000 message sequence charts (one for each MO)
+  * OM2000 message sequence charts: specify MO in node name
+  * OM2000 MSC: Fix spelling
+  * Add chapter on Cell Broadcast Support in Osmocom (to BSC+NITB manual)
+  * BSC: Add series of message sequence charts about MGCP handling
+  * mgw: Fix endpoint names for new MGW
+  * MGW: Include MGCP endpoint naming scheme of old IPA/SCCPlite approach
+  * add message sequence chart MS/BTS/BSC/MSC for 3GPP aoIP MO call
+  * vty-ref: Update URI of docbook 5.0 schema
+
+  [ Pau Espin Pedrol ]
+  * bsc: Use libosmocore API to track osmo_signal structs
+  * abis_nm: Fix heap-use-after-free in abis_nm_set_channel_attr
+  * abis_nm: Fix trailing whitespacing
+  * Fix heap-use-after-free due to OML link destruction
+  * abis_nm_ipaccess_rsl_connect: Log bts and trx nr
+  * codec_pref: Log unsupported codec name used
+  * codec_pref: Log HR2 specifically as never specified
+  * codec_pref.c: Add comment in expected switch case without break
+  * Install systemd services with autotools
+  * Install sample cfg file to /etc/osmocom
+  * osmo-bsc: Add default case for switch(enum)
+  * abis_nm_get_ts: Return TS of correct TRX, not always TRX0
+  * ipaccess-config: Use enum value for OML IP
+  * abis_nm: Rename m_id_len to ease review of forthcoming patches
+  * abis_nm: Split handling of Attribute Response Info into its own func
+  * abis_nm: Split reported attr list parsing from Attribute Response Info into its own func
+  * abis_nm: Allow sending and receiving Get Attributes (Response) against nanoBTS
+  * abis_nm: Add support to parse some nanoBTS Attribute Response attributes
+  * abis_nm: Add support to parse OML IP and Unit Id in Get Attributes
+  * abis_nm: Support parsing nanoBTS format for Get Attributes Info
+  * abis_nm: parse_attr_resp_info_unreported: Fix offset calculation
+  * examples: Remove neighbor-list invalid for default setup
+  * bsc: bts_alloc: Use enum value during neigh_list_manual_mode initialization
+  * bsc: vty: Use enum value in neighbor-list check
+  * bsc: gsm0808: Fix return code in bsc_compl_l3
+  * osmo-bsc: gsm_timers_vty: Set global T_defs during vty_init
+  * bsc: Prefix log string with related SI type during call to list_arfcn
+  * bsc: si: Fix SI2bis L2 pseudo length
+  * bsc: si: Fix SI2ter L2 pseudo length
+  * bsc: Enable force-combined-si on nanoBTS by default
+  * bsc: band_compatible: Return band non-compatible for invalid arfcn
+  * bsc: vty: Verify and warn on invalid arfcn passed
+  * abis_nm: Introduce new signal S_NM_GET_ATTR_REP
+  * ipaccess-config: Fix whitespace
+  * ipaccess-config: Add -G cmdl opt to query OML IP and Unit ID
+  * ipaccess-config: cosmetic: Remove unneeded comment with hex values
+  * gsm0408_rcvmsg: Release lchan if L3 fails to complete
+  * ipaccess-config: Introduce -q quiet param
+  * Add osmux-reference document
+  * osmux-reference: Use packetdiag to draw packet header structures
+  * osmux-reference: Add sequence charts
+  * osmux-reference: Add traffic saving plot
+  * osmux-reference-docinfo: Add latest changes to revhistory
+  * osmux: Fix description for Dummy frames FT field
+  * Allow easily disabling GFDL references
+  * cosmetic: bsc: timeslot_fsm: Clean uneeded scope brackets
+  * bsc: lchan_select: Avoid returning a TCH/H lchan when TCH/F is requested
+  * bsc: ts_as_pchan_for_each_lchan: reorder and improve documentation
+  * bsc: ts_for_each_lchan: Improve documentation
+  * bsc: Add define for ts_as_pchan_for_each_lchan with ts->pchan_on_init
+  * bsc: Fix lchan iteration for dyn TS during PDCH Deact
+  * bsc: timelost_fsm: Remove unneeded set of out variable on failure
+  * bsc: timeslot_fsm: Fix ts_is_lchan_waiting_for_pchan
+  * bsc: ts_is_pchan_switching: Return correct IPA dyn TS target_pchan
+  * bsc: timeslot_fsm: Fix possible skip of some lchans in ts_terminate_lchan_fsms
+  * bsc: timeslot_fsm: Fix count in ts_lchans_waiting
+  * bsc: lchan_rtp_fsm: Avoid duplicate LCHAN_EV_RTP_RELEASED event
+  * bsc: lchan_fsm: Add missing transition WAIT_TS_READY->WAIT_RLL_RTP_RELEASED
+  * bsc: timeslot_fsm: Handle and ignore tear down of lchan during PDCH DEACT
+  * bsc: lchan_fsm: Fix invalid duplicated transition
+  * paging: Add VTY options to calculate T3113 timeout dynamically
+  * paging: fix whitespace
+  * paging: Properly enclose logging imsi filter scope
+  * bsc_main: filter_fn: Compare imsi values instead of subscr pointers
+  * bsc: Set subscr log context during complete_layer3
+  * bsc: rsl: Set subscr log context during meas report
+  * bsc: dtap: Set subscr log context
+  * bsc: bssap: Set subscr log context during paging
+  * Add VTY option to avoid sending empty Full BCCH Info for disabled SI
+
+  [ Stefan Sperling ]
+  * check for overlong unix socket paths
+  * fix unaligned access in abis_nm_rx_ipacc()
+  * re-order condition checks for clarity
+  * show dynamic timeslot details in 'show timeslot' vty command
+  * check return value of gsm48_multirate_config()
+  * add missing 'break' in switch statement
+  * unlink socket path correctly in rf_create_socket()
+
+  [ Martin Hauke ]
+  * cosmetics: Fix typo in bsc_vty.c
+  * ipaccess-config: Generate valid JSON output when using the -G parameter
+  * ipaccess-config: Fix indentation of the usage output
+
+  [ Oliver Smith ]
+  * osmo_bsc_main.c: initialize rate counters
+  * vty 'show bts'/'show trx': display IPs and ports
+  * cosmetic: fix spec ref for gsm0808_cipher_mode()
+  * cipher mode reject: send proper cause codes
+  * vty: add 'show rejected-bts'
+  * ipaccess_sign_link_reject: fix: use osmo_strlcpy() to safely copy IP
+  * copy NITB's osmobsc-usermanual.adoc to OsmoBSC
+  * build manuals included from osmo-gsm-manuals.git
+  * Fix DISTCHECK_CONFIGURE_FLAGS override
+  * contrib/jenkins.sh: build and publish manuals
+  * contrib: fix makedistcheck with disabled systemd
+
+  [ Daniel Willmann ]
+  * debian: Require libcdk and install meas_vis osmo-bsc-meas-utils
+  * OsmoBSC/HLR/MSC: Fix default config file name
+  * gsm_04_08: Free GSM subscr conn if paging response can't be matched
+  * VTY: Allow logging filter imsi statements for IMSIs we haven't seen yet
+
+  [ Max ]
+  * vty: don't show GPRS details if not configured
+  * LCLS: move MGCP MDCX into separate function
+  * Make IP address helper accessible via header file
+  * constify rsl_tx_ipacc_*cx() parameters
+  * LCLS: expand logging to print the name of the mode in use
+  * LCLS: tighten GCR check
+  * LCLS: explicitly check for mode before closing the loop
+  * LCLS: move mode check into separate function
+  * LCLS: make config and control redable in 'sh conns'
+  * RSL: restructure MDCX functions
+  * LCLS: add bts-loop variant
+  * vty: add command to show TRX selectively
+  * Add OsmoBSC control interface description
+  * Add OsmoBSC control interface description
+  * OsmoBSC: update CTRL docs
+  * LCLS: update parameter representation
+  * LCLS: log config/control update
+  * IPA: log OML/RSL link drop reason
+  * LCLS: use enum values instead of magic numbers
+  * Print BTS number on GPRS options error
+  * Log MDCX ACK for established lchan
+
+  [ Jonathan Brielmaier ]
+  * fix various typos across all manuals
+
+  [ Ivaylo Kostov ]
+  * BSC,BTS: add diagrams of PCU-BTS-NITB-SGSN relationships
+
+  [ Alexander Couzens ]
+  * OsmoBSC: add rate counter documentation
+
+  [ Vadim Yanitskiy ]
+  * osmo_bsc_bssap.c: fix incorrect link_id assignment
+
+ -- Harald Welte <laforge@gnumonks.org>  Sun, 20 Jan 2019 21:21:24 +0100
+
 osmo-bsc (1.3.0) unstable; urgency=medium
 
   [ Philipp Maier ]
