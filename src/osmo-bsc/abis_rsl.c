@@ -1375,22 +1375,12 @@ static int rsl_rx_chan_rqd(struct msgb *msg)
 	/* check availability / allocate channel
 	 *
 	 * - First try to allocate SDCCH.
-	 * - If SDCCH is not available, try whatever MS requested, if not SDCCH.
-	 * - If there is still no channel available, reject channel request.
+	 * - If SDCCH is not available, try a TCH/H (less bandwith).
+	 * - If there is still no channel available, try a TCH/F.
 	 *
-	 * Note: If the MS requests not TCH/H, we don't know if the phone
-	 *       supports TCH/H, so we must assign TCH/F or SDCCH.
 	 */
 	lchan = lchan_select_by_type(bts, GSM_LCHAN_SDCCH);
-	if (!lchan && lctype != GSM_LCHAN_SDCCH) {
-		LOGP(DRSL, LOGL_NOTICE, "(bts=%d) CHAN RQD: no resources for %s "
-			"0x%x, retrying with %s\n",
-			msg->lchan->ts->trx->bts->nr,
-			gsm_lchant_name(GSM_LCHAN_SDCCH), rqd_ref->ra,
-			gsm_lchant_name(lctype));
-		lchan = lchan_select_by_type(bts, lctype);
-	}
-	if (!lchan && lctype == GSM_LCHAN_SDCCH) {
+	if (!lchan) {
 		LOGP(DRSL, LOGL_NOTICE, "(bts=%d) CHAN RQD: no resources for %s "
 			"0x%x, retrying with %s\n",
 			msg->lchan->ts->trx->bts->nr,
@@ -1398,7 +1388,7 @@ static int rsl_rx_chan_rqd(struct msgb *msg)
 			gsm_lchant_name(GSM_LCHAN_TCH_H));
 		lchan = lchan_select_by_type(bts, GSM_LCHAN_TCH_H);
 	}
-	if (!lchan && lctype == GSM_LCHAN_SDCCH) {
+	if (!lchan) {
 		LOGP(DRSL, LOGL_NOTICE, "(bts=%d) CHAN RQD: no resources for %s "
 			"0x%x, retrying with %s\n",
 			msg->lchan->ts->trx->bts->nr,
