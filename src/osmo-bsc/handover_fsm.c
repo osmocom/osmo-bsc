@@ -521,10 +521,8 @@ void handover_start_inter_bsc_in(struct gsm_subscriber_connection *conn,
 	struct bsc_msc_data *msc = conn->sccp.msc;
 	struct handover_in_req *req = &ho->inter_bsc_in;
 	int match_idx;
-	enum gsm48_chan_mode mode;
-	bool full_rate = false;
-	uint16_t s15_s0;
 	struct osmo_fsm_inst *fi;
+	struct channel_mode_and_rate ch_mode_rate = {};
 
 	handover_fsm_alloc(conn);
 
@@ -562,7 +560,7 @@ void handover_start_inter_bsc_in(struct gsm_subscriber_connection *conn,
 		       bts->nr, req->cell_id_target_name);
 
 		/* Figure out channel type */
-		if (match_codec_pref(&mode, &full_rate, &s15_s0, &req->ct, &req->scl, msc, bts)) {
+		if (match_codec_pref(&ch_mode_rate, &req->ct, &req->scl, msc, bts, RATE_PREF_NONE)) {
 			LOG_HO(conn, LOGL_DEBUG,
 			       "BTS %u has no matching channel codec (%s, speech codec list len = %u)\n",
 			       bts->nr, gsm0808_channel_type_name(&req->ct), req->scl.len);
@@ -570,10 +568,10 @@ void handover_start_inter_bsc_in(struct gsm_subscriber_connection *conn,
 		}
 
 		LOG_HO(conn, LOGL_DEBUG, "BTS %u: Found matching audio type: %s %s (for %s)\n",
-		       bts->nr, gsm48_chan_mode_name(mode), full_rate? "full-rate" : "half-rate",
+		       bts->nr, gsm48_chan_mode_name(ch_mode_rate.chan_mode), ch_mode_rate.full_rate? "full-rate" : "half-rate",
 		       gsm0808_channel_type_name(&req->ct));
 
-		lchan = lchan_select_by_chan_mode(bts, mode, full_rate);
+		lchan = lchan_select_by_chan_mode(bts, ch_mode_rate.chan_mode, ch_mode_rate.full_rate);
 		if (!lchan) {
 			LOG_HO(conn, LOGL_DEBUG, "BTS %u has no matching free channels\n", bts->nr);
 			continue;
@@ -605,9 +603,9 @@ void handover_start_inter_bsc_in(struct gsm_subscriber_connection *conn,
 	info = (struct lchan_activate_info){
 		.activ_for = FOR_HANDOVER,
 		.for_conn = conn,
-		.chan_mode = mode,
-		.s15_s0 = s15_s0,
-		.requires_voice_stream = chan_mode_is_tch(mode),
+		.chan_mode = ch_mode_rate.chan_mode,
+		.s15_s0 = ch_mode_rate.s15_s0,
+		.requires_voice_stream = chan_mode_is_tch(ch_mode_rate.chan_mode),
 		.msc_assigned_cic = req->msc_assigned_cic,
 	};
 
@@ -715,7 +713,7 @@ static void send_handover_performed(struct gsm_subscriber_connection *conn)
 		if (gscon_is_aoip(conn)) {
 			/* Extrapolate speech codec from speech mode */
 			gsm0808_speech_codec_from_chan_type(&sc, ho_perf_params.speech_version_chosen);
-			sc.cfg = conn->lchan->s15_s0;
+			sc.cfg = conn->lchan->ch_mode_rate.s15_s0;
 			memcpy(&ho_perf_params.speech_codec_chosen, &sc, sizeof(sc));
 			ho_perf_params.speech_codec_chosen_present = true;
 		}

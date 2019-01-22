@@ -616,6 +616,101 @@ static int bssmap_handle_lcls_connect_ctrl(struct gsm_subscriber_connection *con
 	return 0;
 }
 
+/* Select a prefered and an alternative codec rate depending on the available
+ * capabilities. This decision does not include the actual channel load yet,
+ * this is also the reason why the result is a prefered and an alternate
+ * setting. The final decision is made in assignment_fsm.c when the actual
+ * lchan is requested. The preferred lchan will be requested first. If we
+ * find an alternate setting here, this one will be tried secondly if our
+ * primary coice fails. */
+static int select_codecs(struct assignment_request *req, struct gsm0808_channel_type *ct,
+			 struct gsm_subscriber_connection *conn)
+{
+	int rc;
+	struct bsc_msc_data *msc;
+
+	msc = conn->sccp.msc;
+	req->ch_mode_rate_alt_present = false;
+
+	switch (ct->ch_rate_type) {
+	case GSM0808_SPEECH_FULL_BM:
+		rc = match_codec_pref(&req->ch_mode_rate_pref, ct, &conn->codec_list, msc, conn_get_bts(conn),
+				      RATE_PREF_FR);
+		break;
+	case GSM0808_SPEECH_HALF_LM:
+		rc = match_codec_pref(&req->ch_mode_rate_pref, ct, &conn->codec_list, msc, conn_get_bts(conn),
+				      RATE_PREF_HR);
+		break;
+	case GSM0808_SPEECH_PERM:
+	case GSM0808_SPEECH_PERM_NO_CHANGE:
+	case GSM0808_SPEECH_FULL_PREF_NO_CHANGE:
+	case GSM0808_SPEECH_FULL_PREF:
+		rc = match_codec_pref(&req->ch_mode_rate_pref, ct, &conn->codec_list, msc, conn_get_bts(conn),
+				      RATE_PREF_FR);
+		if (rc < 0) {
+			rc = match_codec_pref(&req->ch_mode_rate_pref, ct, &conn->codec_list, msc, conn_get_bts(conn),
+					      RATE_PREF_HR);
+			break;
+		}
+		rc = match_codec_pref(&req->ch_mode_rate_alt, ct, &conn->codec_list, msc, conn_get_bts(conn),
+				      RATE_PREF_HR);
+		if (rc == 0)
+			req->ch_mode_rate_alt_present = true;
+		rc = 0;
+		break;
+	case GSM0808_SPEECH_HALF_PREF_NO_CHANGE:
+	case GSM0808_SPEECH_HALF_PREF:
+		rc = match_codec_pref(&req->ch_mode_rate_pref, ct, &conn->codec_list, msc, conn_get_bts(conn),
+				      RATE_PREF_HR);
+
+		if (rc < 0) {
+			rc = match_codec_pref(&req->ch_mode_rate_pref, ct, &conn->codec_list, msc, conn_get_bts(conn),
+					      RATE_PREF_FR);
+			break;
+		}
+		rc = match_codec_pref(&req->ch_mode_rate_alt, ct, &conn->codec_list, msc, conn_get_bts(conn),
+				      RATE_PREF_FR);
+		if (rc == 0)
+			req->ch_mode_rate_alt_present = true;
+		rc = 0;
+		break;
+	default:
+		rc = -EINVAL;
+		break;
+	}
+
+	if (rc < 0) {
+		LOGP(DMSC, LOGL_ERROR, "No supported audio type found for channel_type ="
+		     " { ch_indctr=0x%x, ch_rate_type=0x%x, perm_spch=[%s] }\n",
+		     ct->ch_indctr, ct->ch_rate_type, osmo_hexdump(ct->perm_spch, ct->perm_spch_len));
+		/* TODO: actually output codec names, e.g. implement
+		 * gsm0808_permitted_speech_names[] and iterate perm_spch. */
+		return -EINVAL;
+	}
+
+	if (req->ch_mode_rate_alt_present) {
+		DEBUGP(DMSC, "Found matching audio type (preferred): %s %s for channel_type ="
+		       " { ch_indctr=0x%x, ch_rate_type=0x%x, perm_spch=[ %s] }\n",
+		       req->ch_mode_rate_pref.full_rate ? "full rate" : "half rate",
+		       get_value_string(gsm48_chan_mode_names, req->ch_mode_rate_pref.chan_mode),
+		       ct->ch_indctr, ct->ch_rate_type, osmo_hexdump(ct->perm_spch, ct->perm_spch_len));
+		DEBUGP(DMSC, "Found matching audio type (alternative): %s %s for channel_type ="
+		       " { ch_indctr=0x%x, ch_rate_type=0x%x, perm_spch=[ %s] }\n",
+		       req->ch_mode_rate_alt.full_rate ? "full rate" : "half rate",
+		       get_value_string(gsm48_chan_mode_names, req->ch_mode_rate_alt.chan_mode),
+		       ct->ch_indctr, ct->ch_rate_type, osmo_hexdump(ct->perm_spch, ct->perm_spch_len));
+	} else {
+		DEBUGP(DMSC, "Found matching audio type: %s %s for channel_type ="
+		       " { ch_indctr=0x%x, ch_rate_type=0x%x, perm_spch=[ %s] }\n",
+		       req->ch_mode_rate_pref.full_rate ? "full rate" : "half rate",
+		       get_value_string(gsm48_chan_mode_names, req->ch_mode_rate_pref.chan_mode),
+		       ct->ch_indctr, ct->ch_rate_type, osmo_hexdump(ct->perm_spch, ct->perm_spch_len));
+
+	}
+
+	return 0;
+}
+
 /*
  * Handle the assignment request message.
  *
@@ -625,18 +720,15 @@ static int bssmap_handle_assignm_req(struct gsm_subscriber_connection *conn,
 				     struct msgb *msg, unsigned int length)
 {
 	struct msgb *resp;
-	struct bsc_msc_data *msc;
 	struct tlv_parsed tp;
 	uint16_t cic = 0;
-	enum gsm48_chan_mode chan_mode = GSM48_CMODE_SIGN;
-	bool full_rate = false;
-	uint16_t s15_s0 = 0;
 	bool aoip = false;
 	struct sockaddr_storage rtp_addr;
 	struct gsm0808_channel_type ct;
 	uint8_t cause;
 	int rc;
 	struct assignment_request req = {};
+	struct channel_mode_and_rate ch_mode_rate_pref = {};
 
 	if (!conn) {
 		LOGP(DMSC, LOGL_ERROR,
@@ -644,7 +736,6 @@ static int bssmap_handle_assignm_req(struct gsm_subscriber_connection *conn,
 		return -1;
 	}
 
-	msc = conn->sccp.msc;
 	aoip = gscon_is_aoip(conn);
 
 	tlv_parse(&tp, gsm0808_att_tlvdef(), msg->l4h + 1, length - 1, 0, 0);
@@ -732,33 +823,19 @@ static int bssmap_handle_assignm_req(struct gsm_subscriber_connection *conn,
 			goto reject;
 		}
 
+		req = (struct assignment_request){
+			.aoip = aoip,
+			.msc_assigned_cic = cic,
+		};
+
 		/* Match codec information from the assignment command against the
 		 * local preferences of the BSC and BTS */
-		rc = match_codec_pref(&chan_mode, &full_rate, &s15_s0, &ct, &conn->codec_list,
-				      msc, conn_get_bts(conn));
+		rc = select_codecs(&req, &ct, conn);
 		if (rc < 0) {
-			LOGP(DMSC, LOGL_ERROR, "No supported audio type found for channel_type ="
-			     " { ch_indctr=0x%x, ch_rate_type=0x%x, perm_spch=[ %s] }\n",
-			     ct.ch_indctr, ct.ch_rate_type, osmo_hexdump(ct.perm_spch, ct.perm_spch_len));
-			/* TODO: actually output codec names, e.g. implement
-			 * gsm0808_permitted_speech_names[] and iterate perm_spch. */
 			cause = GSM0808_CAUSE_REQ_CODEC_TYPE_OR_CONFIG_UNAVAIL;
 			goto reject;
 		}
 
-		DEBUGP(DMSC, "Found matching audio type: %s %s for channel_type ="
-		       " { ch_indctr=0x%x, ch_rate_type=0x%x, perm_spch=[ %s] }\n",
-		       full_rate? "full rate" : "half rate",
-		       get_value_string(gsm48_chan_mode_names, chan_mode),
-		       ct.ch_indctr, ct.ch_rate_type, osmo_hexdump(ct.perm_spch, ct.perm_spch_len));
-
-		req = (struct assignment_request){
-			.aoip = aoip,
-			.msc_assigned_cic = cic,
-			.chan_mode = chan_mode,
-			.full_rate = full_rate,
-			.s15_s0 = s15_s0
-		};
 		if (aoip) {
 			unsigned int rc = osmo_sockaddr_to_str_and_uint(req.msc_rtp_addr,
 									sizeof(req.msc_rtp_addr),
@@ -772,9 +849,13 @@ static int bssmap_handle_assignm_req(struct gsm_subscriber_connection *conn,
 		}
 		break;
 	case GSM0808_CHAN_SIGN:
+		ch_mode_rate_pref = (struct channel_mode_and_rate) {
+			.chan_mode = GSM48_CMODE_SIGN,
+		};
+
 		req = (struct assignment_request){
 			.aoip = aoip,
-			.chan_mode = chan_mode,
+			.ch_mode_rate_pref = ch_mode_rate_pref,
 		};
 		break;
 	default:

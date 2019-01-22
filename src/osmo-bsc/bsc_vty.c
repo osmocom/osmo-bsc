@@ -4802,6 +4802,7 @@ DEFUN_HIDDEN(lchan_set_borken, lchan_set_borken_cmd,
 	ts = vty_get_ts(vty, argv[0], argv[1], argv[2]);
 	if (!ts)
 		return CMD_WARNING;
+
 	lchan = &ts->lchan[ss_nr];
 	if (!lchan->fi)
 		return CMD_WARNING;

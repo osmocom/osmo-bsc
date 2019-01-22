@@ -266,21 +266,18 @@ static uint16_t gen_bss_supported_amr_s15_s0(const struct bsc_msc_data *msc, con
 
 /*! Match the codec preferences from local config with a received codec preferences IEs received from the
  * MSC and the BTS' codec configuration.
- *  \param[out] chan_mode GSM 04.08 channel mode.
- *  \param[out] full_rate true if full-rate.
- *  \param[out] s15_s0 codec configuration bits S15-S0 (AMR)
+ *  \param[out] ch_mode_rate resulting codec and rate information
  *  \param[in] ct GSM 08.08 channel type received from MSC.
  *  \param[in] scl GSM 08.08 speech codec list received from MSC (optional).
  *  \param[in] msc associated msc (current codec settings).
  *  \param[in] bts associated bts (current codec settings).
+ *  \param[in] pref selected rate preference (full, half or none).
  *  \returns 0 on success, -1 in case no match was found */
-int match_codec_pref(enum gsm48_chan_mode *chan_mode,
-		     bool *full_rate,
-		     uint16_t *s15_s0,
+int match_codec_pref(struct channel_mode_and_rate *ch_mode_rate,
 		     const struct gsm0808_channel_type *ct,
 		     const struct gsm0808_speech_codec_list *scl,
 		     const struct bsc_msc_data *msc,
-		     const struct gsm_bts *bts)
+		     const struct gsm_bts *bts, enum rate_pref rate_pref)
 {
 	unsigned int i;
 	uint8_t perm_spch;
@@ -297,6 +294,18 @@ int match_codec_pref(enum gsm48_chan_mode *chan_mode,
 		/* Pick a permitted speech value from the global codec configuration list */
 		perm_spch = audio_support_to_gsm88(msc->audio_support[i]);
 
+		/* Determine if the result is a half or full rate codec */
+		rc = full_rate_from_perm_spch(&ch_mode_rate->full_rate, perm_spch);
+		if (rc < 0)
+			return -EINVAL;
+
+		/* If we have a preference for FR or HR in our request, we
+		 * discard the potential match */
+		if (rate_pref == RATE_PREF_HR && ch_mode_rate->full_rate)
+			continue;
+		if (rate_pref == RATE_PREF_FR && !ch_mode_rate->full_rate)
+			continue;
+
 		/* Check this permitted speech value against the BTS specific parameters.
 		 * if the BTS does not support the codec, try the next one */
 		if (!test_codec_support_bts(bts, perm_spch))
@@ -312,19 +321,14 @@ int match_codec_pref(enum gsm48_chan_mode *chan_mode,
 
 	/* Exit without result, in case no match can be deteched */
 	if (!match) {
-		*full_rate = false;
-		*chan_mode = GSM48_CMODE_SIGN;
-		*s15_s0 = 0;
+		ch_mode_rate->full_rate = false;
+		ch_mode_rate->chan_mode = GSM48_CMODE_SIGN;
+		ch_mode_rate->s15_s0 = 0;
 		return -1;
 	}
 
-	/* Determine if the result is a half or full rate codec */
-	rc = full_rate_from_perm_spch(full_rate, perm_spch);
-	if (rc < 0)
-		return -EINVAL;
-
 	/* Lookup a channel mode for the selected codec */
-	*chan_mode = gsm88_to_chan_mode(perm_spch);
+	ch_mode_rate->chan_mode = gsm88_to_chan_mode(perm_spch);
 
 	/* Special handling for AMR */
 	if (perm_spch == GSM0808_PERM_HR3 || perm_spch == GSM0808_PERM_FR3) {
@@ -337,9 +341,9 @@ int match_codec_pref(enum gsm48_chan_mode *chan_mode,
 		 * result */
 		amr_s15_s0_supported = gen_bss_supported_amr_s15_s0(msc, bts, (perm_spch == GSM0808_PERM_HR3));
 		if (sc_match)
-			*s15_s0 = sc_match->cfg & amr_s15_s0_supported;
+			ch_mode_rate->s15_s0 = sc_match->cfg & amr_s15_s0_supported;
 		else
-			*s15_s0 = amr_s15_s0_supported;
+			ch_mode_rate->s15_s0 = amr_s15_s0_supported;
 
 		/* NOTE: The function test_codec_pref() will populate the
 		 * sc_match pointer from the searched speech codec list. For
@@ -349,7 +353,7 @@ int match_codec_pref(enum gsm48_chan_mode *chan_mode,
 		 * However s15_s0 is always populated with a meaningful value,
 		 * regardless if AoIP is in use or not. */
 	} else
-		*s15_s0 = 0;
+		ch_mode_rate->s15_s0 = 0;
 
 	return 0;
 }

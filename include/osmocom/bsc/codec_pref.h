@@ -9,14 +9,19 @@ struct gsm_audio_support;
 struct bts_codec_conf;
 struct bsc_msc_data;
 struct gsm_bts;
+struct channel_mode_and_rate;
 
-int match_codec_pref(enum gsm48_chan_mode *chan_mode,
-		     bool *full_rate,
-		     uint16_t *s15_s0,
+enum rate_pref {
+	RATE_PREF_NONE,
+	RATE_PREF_HR,
+	RATE_PREF_FR,
+};
+
+int match_codec_pref(struct channel_mode_and_rate *ch_mode_rate,
 		     const struct gsm0808_channel_type *ct,
 		     const struct gsm0808_speech_codec_list *scl,
 		     const struct bsc_msc_data *msc,
-		     const struct gsm_bts *bts);
+		     const struct gsm_bts *bts, enum rate_pref rate_pref);
 
 void gen_bss_supported_codec_list(struct gsm0808_speech_codec_list *scl,
 				  const struct bsc_msc_data *msc,

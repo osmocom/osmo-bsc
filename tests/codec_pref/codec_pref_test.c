@@ -380,9 +380,7 @@ static int test_match_codec_pref(const struct gsm0808_channel_type *ct, const st
 {
 	int rc;
 	unsigned int i;
-	bool full_rate;
-	enum gsm48_chan_mode chan_mode;
-	uint16_t s15_s0;
+	struct channel_mode_and_rate ch_mode_rate = { };
 
 	printf("Determining channel mode and rate:\n");
 
@@ -407,9 +405,9 @@ static int test_match_codec_pref(const struct gsm0808_channel_type *ct, const st
 	printf("   codec->efr=%u\n", bts->codec.efr);
 	printf("   codec->amr=%u\n", bts->codec.amr);
 
-	rc = match_codec_pref(&chan_mode, &full_rate, &s15_s0, ct, scl, msc, bts);
+	rc = match_codec_pref(&ch_mode_rate, ct, scl, msc, bts, RATE_PREF_NONE);
 	printf(" * result: rc=%i, full_rate=%i, s15_s0=%04x, chan_mode=%s\n",
-	       rc, full_rate, s15_s0, gsm48_chan_mode_name(chan_mode));
+	       rc, ch_mode_rate.full_rate, ch_mode_rate.s15_s0, gsm48_chan_mode_name(ch_mode_rate.chan_mode));
 
 	printf("\n");
 
