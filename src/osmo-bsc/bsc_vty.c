@@ -1441,11 +1441,12 @@ static void lchan_dump_short_vty(struct vty *vty, struct gsm_lchan *lchan)
 
 
 static int dump_lchan_trx_ts(struct gsm_bts_trx_ts *ts, struct vty *vty,
-			     void (*dump_cb)(struct vty *, struct gsm_lchan *))
+			     void (*dump_cb)(struct vty *, struct gsm_lchan *),
+			     bool all)
 {
 	struct gsm_lchan *lchan;
 	ts_for_each_lchan(lchan, ts) {
-		if (lchan_state_is(lchan, LCHAN_ST_UNUSED))
+		if (lchan_state_is(lchan, LCHAN_ST_UNUSED) && all == false)
 			continue;
 		dump_cb(vty, lchan);
 	}
@@ -1454,33 +1455,36 @@ static int dump_lchan_trx_ts(struct gsm_bts_trx_ts *ts, struct vty *vty,
 }
 
 static int dump_lchan_trx(struct gsm_bts_trx *trx, struct vty *vty,
-			  void (*dump_cb)(struct vty *, struct gsm_lchan *))
+			  void (*dump_cb)(struct vty *, struct gsm_lchan *),
+			  bool all)
 {
 	int ts_nr;
 
 	for (ts_nr = 0; ts_nr < TRX_NR_TS; ts_nr++) {
 		struct gsm_bts_trx_ts *ts = &trx->ts[ts_nr];
-		dump_lchan_trx_ts(ts, vty, dump_cb);
+		dump_lchan_trx_ts(ts, vty, dump_cb, all);
 	}
 
 	return CMD_SUCCESS;
 }
 
 static int dump_lchan_bts(struct gsm_bts *bts, struct vty *vty,
-			  void (*dump_cb)(struct vty *, struct gsm_lchan *))
+			  void (*dump_cb)(struct vty *, struct gsm_lchan *),
+			  bool all)
 {
 	int trx_nr;
 
 	for (trx_nr = 0; trx_nr < bts->num_trx; trx_nr++) {
 		struct gsm_bts_trx *trx = gsm_bts_trx_num(bts, trx_nr);
-		dump_lchan_trx(trx, vty, dump_cb);
+		dump_lchan_trx(trx, vty, dump_cb, all);
 	}
 
 	return CMD_SUCCESS;
 }
 
 static int lchan_summary(struct vty *vty, int argc, const char **argv,
-			 void (*dump_cb)(struct vty *, struct gsm_lchan *))
+			 void (*dump_cb)(struct vty *, struct gsm_lchan *),
+			 bool all)
 {
 	struct gsm_network *net = gsmnet_from_vty(vty);
 	struct gsm_bts *bts = NULL;
@@ -1500,7 +1504,7 @@ static int lchan_summary(struct vty *vty, int argc, const char **argv,
 		bts = gsm_bts_num(net, bts_nr);
 
 		if (argc == 1)
-			return dump_lchan_bts(bts, vty, dump_cb);
+			return dump_lchan_bts(bts, vty, dump_cb, all);
 	}
 	if (argc >= 2) {
 		trx_nr = atoi(argv[1]);
@@ -1512,7 +1516,7 @@ static int lchan_summary(struct vty *vty, int argc, const char **argv,
 		trx = gsm_bts_trx_num(bts, trx_nr);
 
 		if (argc == 2)
-			return dump_lchan_trx(trx, vty, dump_cb);
+			return dump_lchan_trx(trx, vty, dump_cb, all);
 	}
 	if (argc >= 3) {
 		ts_nr = atoi(argv[2]);
@@ -1524,7 +1528,7 @@ static int lchan_summary(struct vty *vty, int argc, const char **argv,
 		ts = &trx->ts[ts_nr];
 
 		if (argc == 3)
-			return dump_lchan_trx_ts(ts, vty, dump_cb);
+			return dump_lchan_trx_ts(ts, vty, dump_cb, all);
 	}
 	if (argc >= 4) {
 		lchan_nr = atoi(argv[3]);
@@ -1541,7 +1545,7 @@ static int lchan_summary(struct vty *vty, int argc, const char **argv,
 
 	for (bts_nr = 0; bts_nr < net->num_bts; bts_nr++) {
 		bts = gsm_bts_num(net, bts_nr);
-		dump_lchan_bts(bts, vty, dump_cb);
+		dump_lchan_bts(bts, vty, dump_cb, all);
 	}
 
 	return CMD_SUCCESS;
@@ -1554,17 +1558,27 @@ DEFUN(show_lchan,
 	SHOW_STR "Display information about a logical channel\n"
 	BTS_TRX_TS_LCHAN_STR)
 {
-	return lchan_summary(vty, argc, argv, lchan_dump_full_vty);
+	return lchan_summary(vty, argc, argv, lchan_dump_full_vty, true);
 }
 
 DEFUN(show_lchan_summary,
       show_lchan_summary_cmd,
       "show lchan summary [<0-255>] [<0-255>] [<0-7>] [<0-7>]",
 	SHOW_STR "Display information about a logical channel\n"
-        "Short summary\n"
+        "Short summary (used lchans)\n"
 	BTS_TRX_TS_LCHAN_STR)
 {
-	return lchan_summary(vty, argc, argv, lchan_dump_short_vty);
+	return lchan_summary(vty, argc, argv, lchan_dump_short_vty, false);
+}
+
+DEFUN(show_lchan_summary_all,
+      show_lchan_summary_all_cmd,
+      "show lchan summary-all [<0-255>] [<0-255>] [<0-7>] [<0-7>]",
+	SHOW_STR "Display information about a logical channel\n"
+        "Short summary (all lchans)\n"
+	BTS_TRX_TS_LCHAN_STR)
+{
+	return lchan_summary(vty, argc, argv, lchan_dump_short_vty, true);
 }
 
 static void dump_one_subscr_conn(struct vty *vty, const struct gsm_subscriber_connection *conn)
@@ -5085,6 +5099,7 @@ int bsc_vty_init(struct gsm_network *network)
 	install_element_ve(&show_ts_cmd);
 	install_element_ve(&show_lchan_cmd);
 	install_element_ve(&show_lchan_summary_cmd);
+	install_element_ve(&show_lchan_summary_all_cmd);
 
 	install_element_ve(&show_subscr_conn_cmd);
 
