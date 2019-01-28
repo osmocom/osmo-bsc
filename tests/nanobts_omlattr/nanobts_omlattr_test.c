@@ -21,7 +21,6 @@
 
 #include <osmocom/bsc/debug.h>
 #include <osmocom/bsc/gsm_data.h>
-#include <osmocom/bsc/gsm_timers.h>
 #include <osmocom/bsc/bts_ipaccess_nanobts_omlattr.h>
 
 #include <osmocom/core/talloc.h>
@@ -192,9 +191,9 @@ static const struct log_info log_info = {
 	.num_cat = ARRAY_SIZE(log_categories),
 };
 
-static struct T_def gsm_network_T_defs[] = {
-	{ .T=3105, .default_val=100, .val=13, .unit=T_MS, .desc="Physical Information" },
-	{ .T=3212, .default_val=5, .unit=T_CUSTOM,
+static struct osmo_tdef gsm_network_T_defs[] = {
+	{ .T=3105, .default_val=100, .val=13, .unit=OSMO_TDEF_MS, .desc="Physical Information" },
+	{ .T=3212, .default_val=5, .unit=OSMO_TDEF_CUSTOM,
 		.desc="Periodic Location Update timer, sent to MS (1 = 6 minutes)" },
 	{}
 };

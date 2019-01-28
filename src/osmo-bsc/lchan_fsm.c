@@ -207,7 +207,7 @@ static void lchan_on_fully_established(struct gsm_lchan *lchan)
 	}
 }
 
-struct state_timeout lchan_fsm_timeouts[32] = {
+struct osmo_tdef_state_timeout lchan_fsm_timeouts[32] = {
 	[LCHAN_ST_WAIT_TS_READY]	= { .T=23001 },
 	[LCHAN_ST_WAIT_ACTIV_ACK]	= { .T=23002 },
 	[LCHAN_ST_WAIT_RLL_RTP_ESTABLISH]	= { .T=3101 },
@@ -221,10 +221,10 @@ struct state_timeout lchan_fsm_timeouts[32] = {
  * The actual timeout value is in turn obtained from network->T_defs.
  * Assumes local variable fi exists. */
 #define lchan_fsm_state_chg(state) \
-	fsm_inst_state_chg_T(fi, state, \
-			     lchan_fsm_timeouts, \
-			     ((struct gsm_lchan*)(fi->priv))->ts->trx->bts->network->T_defs, \
-			     5)
+	osmo_tdef_fsm_inst_state_chg(fi, state, \
+				     lchan_fsm_timeouts, \
+				     ((struct gsm_lchan*)(fi->priv))->ts->trx->bts->network->T_defs, \
+				     5)
 
 /* Set a failure message, trigger the common actions to take on failure, transition to a state to
  * continue with (using state timeouts from lchan_fsm_timeouts[]). Assumes local variable fi exists. */

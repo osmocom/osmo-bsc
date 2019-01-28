@@ -17,6 +17,7 @@
 #include <osmocom/gsm/gsm0808.h>
 #include <osmocom/gsm/gsm48.h>
 #include <osmocom/core/fsm.h>
+#include <osmocom/core/tdef.h>
 
 #include <osmocom/crypt/auth.h>
 
@@ -31,7 +32,6 @@
 #include <osmocom/bsc/meas_rep.h>
 #include <osmocom/bsc/bsc_msg_filter.h>
 #include <osmocom/bsc/acc_ramp.h>
-#include <osmocom/bsc/gsm_timers.h>
 #include <osmocom/bsc/neighbor_ident.h>
 
 #define GSM_T3122_DEFAULT 10
@@ -1495,7 +1495,7 @@ struct gsm_network {
 	struct llist_head bts_rejected;
 
 	/* shall reference gsm_network_T[] */
-	struct T_def *T_defs;
+	struct osmo_tdef *T_defs;
 
 	enum gsm_chan_t ctype_by_chreq[_NUM_CHREQ_T];
 

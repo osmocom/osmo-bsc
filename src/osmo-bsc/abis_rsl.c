@@ -45,7 +45,7 @@
 #include <osmocom/bsc/pcu_if.h>
 #include <osmocom/bsc/gsm_08_08.h>
 #include <osmocom/netif/rtp.h>
-#include <osmocom/bsc/gsm_timers.h>
+#include <osmocom/core/tdef.h>
 #include <osmocom/bsc/bsc_subscr_conn_fsm.h>
 #include <osmocom/bsc/timeslot_fsm.h>
 #include <osmocom/bsc/lchan_select.h>
@@ -1291,7 +1291,7 @@ int rsl_tx_imm_ass_rej(struct gsm_bts *bts, struct gsm48_req_ref *rqd_ref)
 	uint8_t wait_ind;
 	wait_ind = bts->T3122;
 	if (!wait_ind)
-		wait_ind = T_def_get(bts->network->T_defs, 3122, T_S, -1);
+		wait_ind = osmo_tdef_get(bts->network->T_defs, 3122, OSMO_TDEF_S, -1);
 	if (!wait_ind)
 		wait_ind = GSM_T3122_DEFAULT;
 	/* The BTS will gather multiple CHAN RQD and reject up to 4 MS at the same time. */

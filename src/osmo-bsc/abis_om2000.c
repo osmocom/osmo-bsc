@@ -42,7 +42,6 @@
 #include <osmocom/bsc/abis_rsl.h>
 #include <osmocom/bsc/abis_om2000.h>
 #include <osmocom/bsc/signal.h>
-#include <osmocom/bsc/gsm_timers.h>
 #include <osmocom/bsc/timeslot_fsm.h>
 #include <osmocom/abis/e1_input.h>
 
@@ -1381,7 +1380,7 @@ int abis_om2k_tx_ts_conf_req(struct gsm_bts_trx_ts *ts)
 		break;
 	case GSM_PCHAN_CCCH_SDCCH4:
 		msgb_tv_put(msg, OM2K_DEI_T3105,
-			    T_def_get(ts->trx->bts->network->T_defs, 3105, T_MS, -1) / 10);
+			    osmo_tdef_get(ts->trx->bts->network->T_defs, 3105, OSMO_TDEF_MS, -1) / 10);
 		msgb_tv_put(msg, OM2K_DEI_NY1, 35);
 		msgb_tv_put(msg, OM2K_DEI_BA_PA_MFRMS, 0x06);
 		msgb_tv_put(msg, OM2K_DEI_CBCH_INDICATOR, 0);
@@ -1396,7 +1395,7 @@ int abis_om2k_tx_ts_conf_req(struct gsm_bts_trx_ts *ts)
 		break;
 	case GSM_PCHAN_SDCCH8_SACCH8C:
 		msgb_tv_put(msg, OM2K_DEI_T3105,
-			    T_def_get(ts->trx->bts->network->T_defs, 3105, T_MS, -1) / 10);
+			    osmo_tdef_get(ts->trx->bts->network->T_defs, 3105, OSMO_TDEF_MS, -1) / 10);
 		msgb_tv_put(msg, OM2K_DEI_NY1, 35);
 		msgb_tv_put(msg, OM2K_DEI_CBCH_INDICATOR, 0);
 		msgb_tv_put(msg, OM2K_DEI_TSC, gsm_ts_tsc(ts));
@@ -1407,7 +1406,7 @@ int abis_om2k_tx_ts_conf_req(struct gsm_bts_trx_ts *ts)
 		break;
 	default:
 		msgb_tv_put(msg, OM2K_DEI_T3105,
-			    T_def_get(ts->trx->bts->network->T_defs, 3105, T_MS, -1) / 10);
+			    osmo_tdef_get(ts->trx->bts->network->T_defs, 3105, OSMO_TDEF_MS, -1) / 10);
 		msgb_tv_put(msg, OM2K_DEI_NY1, 35);
 		msgb_tv_put(msg, OM2K_DEI_TSC, gsm_ts_tsc(ts));
 		/* Disable RF RESOURCE INDICATION on idle channels */

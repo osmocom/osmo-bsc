@@ -20,7 +20,6 @@ noinst_HEADERS = \
 	gsm_04_08_rr.h \
 	gsm_04_80.h \
 	gsm_data.h \
-	gsm_timers.h \
 	handover.h \
 	handover_cfg.h \
 	handover_decision.h \

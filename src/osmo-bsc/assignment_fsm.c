@@ -20,13 +20,13 @@
  *
  */
 
+#include <osmocom/core/tdef.h>
 #include <osmocom/gsm/gsm0808.h>
 
 #include <osmocom/mgcp_client/mgcp_client_fsm.h>
 
 #include <osmocom/bsc/debug.h>
 #include <osmocom/bsc/gsm_data.h>
-#include <osmocom/bsc/gsm_timers.h>
 #include <osmocom/bsc/lchan_fsm.h>
 #include <osmocom/bsc/mgw_endpoint_fsm.h>
 #include <osmocom/bsc/bsc_subscr_conn_fsm.h>
@@ -48,7 +48,7 @@ struct gsm_subscriber_connection *assignment_fi_conn(struct osmo_fsm_inst *fi)
 	return fi->priv;
 }
 
-static const struct state_timeout assignment_fsm_timeouts[32] = {
+static const struct osmo_tdef_state_timeout assignment_fsm_timeouts[32] = {
 	[ASSIGNMENT_ST_WAIT_LCHAN_ACTIVE] = { .T=10 },
 	[ASSIGNMENT_ST_WAIT_RR_ASS_COMPLETE] = { .keep_timer=true },
 	[ASSIGNMENT_ST_WAIT_LCHAN_ESTABLISHED] = { .keep_timer=true },
@@ -59,10 +59,10 @@ static const struct state_timeout assignment_fsm_timeouts[32] = {
  * The actual timeout value is in turn obtained from network->T_defs.
  * Assumes local variable fi exists. */
 #define assignment_fsm_state_chg(state) \
-	fsm_inst_state_chg_T(fi, state, \
-			     assignment_fsm_timeouts, \
-			     ((struct gsm_subscriber_connection*)(fi->priv))->network->T_defs, \
-			     5)
+	osmo_tdef_fsm_inst_state_chg(fi, state, \
+				     assignment_fsm_timeouts, \
+				     ((struct gsm_subscriber_connection*)(fi->priv))->network->T_defs, \
+				     5)
 
 /* Log failure and transition to ASSIGNMENT_ST_FAILURE, which triggers the appropriate actions. */
 #define assignment_fail(cause, fmt, args...) do { \

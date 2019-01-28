@@ -17,21 +17,22 @@
  *
  */
 
+#include <osmocom/core/tdef.h>
+
 #include <osmocom/bsc/osmo_bsc.h>
 #include <osmocom/bsc/gsm_04_08_rr.h>
 #include <osmocom/bsc/handover_cfg.h>
 #include <osmocom/bsc/chan_alloc.h>
 #include <osmocom/bsc/neighbor_ident.h>
-#include <osmocom/bsc/gsm_timers.h>
 
-static struct T_def gsm_network_T_defs[] = {
+static struct osmo_tdef gsm_network_T_defs[] = {
 	{ .T=7, .default_val=10, .desc="inter-BSC Handover MO, HO Required to HO Command" },
 	{ .T=8, .default_val=10, .desc="inter-BSC Handover MO, HO Command to final Clear" },
 	{ .T=10, .default_val=6, .desc="RR Assignment" },
 	{ .T=101, .default_val=10, .desc="inter-BSC Handover MT, HO Request to HO Accept" },
 	{ .T=3101, .default_val=3, .desc="RR Immediate Assignment" },
 	{ .T=3103, .default_val=5, .desc="Handover" },
-	{ .T=3105, .default_val=100, .unit=T_MS, .desc="Physical Information" },
+	{ .T=3105, .default_val=100, .unit=OSMO_TDEF_MS, .desc="Physical Information" },
 	{ .T=3107, .default_val=5, .desc="(unused)" },
 	{ .T=3109, .default_val=5, .desc="RSL SACCH deactivation" },
 	{ .T=3111, .default_val=2, .desc="Wait time before RSL RF Channel Release" },
@@ -42,7 +43,7 @@ static struct T_def gsm_network_T_defs[] = {
 	{ .T=3119, .default_val=10, .desc="(unused)" },
 	{ .T=3122, .default_val=GSM_T3122_DEFAULT, .desc="Wait time after RR Immediate Assignment Reject" },
 	{ .T=3141, .default_val=10, .desc="(unused)" },
-	{ .T=3212, .default_val=5, .unit=T_CUSTOM,
+	{ .T=3212, .default_val=5, .unit=OSMO_TDEF_CUSTOM,
 		.desc="Periodic Location Update timer, sent to MS (1 = 6 minutes)" },
 	{ .T=993210, .default_val=20, .desc="After L3 Complete, wait for MSC to confirm" },
 	{ .T=999, .default_val=60, .desc="After Clear Request, wait for MSC to Clear Command (sanity)" },
@@ -78,7 +79,7 @@ struct gsm_network *gsm_network_init(void *ctx)
 	net->num_bts = 0;
 
 	net->T_defs = gsm_network_T_defs;
-	T_defs_reset(net->T_defs);
+	osmo_tdefs_reset(net->T_defs);
 
 	return net;
 }

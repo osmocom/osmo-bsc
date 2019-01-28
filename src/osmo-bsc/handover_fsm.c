@@ -159,7 +159,7 @@ struct gsm_subscriber_connection *ho_fi_conn(struct osmo_fsm_inst *fi)
 	return fi->priv;
 }
 
-static const struct state_timeout ho_fsm_timeouts[32] = {
+static const struct osmo_tdef_state_timeout ho_fsm_timeouts[32] = {
 	[HO_ST_WAIT_LCHAN_ACTIVE] = { .T = 23042 },
 	[HO_ST_WAIT_RR_HO_DETECT] = { .T = 23042 },
 	[HO_ST_WAIT_RR_HO_COMPLETE] = { .T = 23042 },
@@ -173,10 +173,10 @@ static const struct state_timeout ho_fsm_timeouts[32] = {
  * The actual timeout value is in turn obtained from network->T_defs.
  * Assumes local variable fi exists. */
 #define ho_fsm_state_chg(state) \
-	fsm_inst_state_chg_T(fi, state, \
-			     ho_fsm_timeouts, \
-			     ((struct gsm_subscriber_connection*)(fi->priv))->network->T_defs, \
-			     5)
+	osmo_tdef_fsm_inst_state_chg(fi, state, \
+				     ho_fsm_timeouts, \
+				     ((struct gsm_subscriber_connection*)(fi->priv))->network->T_defs, \
+				     5)
 
 /* Log failure and transition to HO_ST_FAILURE, which triggers the appropriate actions. */
 #define ho_fail(result, fmt, args...) do { \

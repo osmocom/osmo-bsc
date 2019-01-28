@@ -29,7 +29,6 @@
 #include <osmocom/netif/rtp.h>
 
 #include <osmocom/bsc/debug.h>
-#include <osmocom/bsc/gsm_timers.h>
 
 #include <osmocom/bsc/mgw_endpoint_fsm.h>
 #include <osmocom/bsc/lchan_fsm.h>
@@ -196,9 +195,9 @@ static void fill_event_names()
 	}
 }
 
-static struct T_def *g_T_defs = NULL;
+static struct osmo_tdef *g_T_defs = NULL;
 
-void mgw_endpoint_fsm_init(struct T_def *T_defs)
+void mgw_endpoint_fsm_init(struct osmo_tdef *T_defs)
 {
 	g_T_defs = T_defs;
 	OSMO_ASSERT(osmo_fsm_register(&mgwep_fsm) == 0);
@@ -380,7 +379,7 @@ bool mgwep_ci_get_crcx_info_to_sockaddr(const struct mgwep_ci *ci, struct sockad
 }
 
 
-static const struct state_timeout mgwep_fsm_timeouts[32] = {
+static const struct osmo_tdef_state_timeout mgwep_fsm_timeouts[32] = {
 	[MGWEP_ST_WAIT_MGW_RESPONSE] = { .T=23042 },
 };
 
@@ -388,7 +387,7 @@ static const struct state_timeout mgwep_fsm_timeouts[32] = {
  * The actual timeout value is in turn obtained from g_T_defs.
  * Assumes local variable fi exists. */
 #define mgwep_fsm_state_chg(state) \
-	fsm_inst_state_chg_T(fi, state, mgwep_fsm_timeouts, g_T_defs, 5)
+	osmo_tdef_fsm_inst_state_chg(fi, state, mgwep_fsm_timeouts, g_T_defs, 5)
 
 void mgw_endpoint_ci_request(struct mgwep_ci *ci,
 			     enum mgcp_verb verb, const struct mgcp_conn_peer *verb_info,

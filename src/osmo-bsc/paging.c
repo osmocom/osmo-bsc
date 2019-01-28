@@ -39,6 +39,7 @@
 #include <assert.h>
 
 #include <osmocom/core/talloc.h>
+#include <osmocom/core/tdef.h>
 #include <osmocom/gsm/gsm48.h>
 #include <osmocom/gsm/gsm0502.h>
 
@@ -51,7 +52,6 @@
 #include <osmocom/bsc/chan_alloc.h>
 #include <osmocom/bsc/gsm_08_08.h>
 #include <osmocom/bsc/gsm_04_08_rr.h>
-#include <osmocom/bsc/gsm_timers.h>
 #include <osmocom/bsc/bsc_subscr_conn_fsm.h>
 
 void *tall_paging_ctx = NULL;
@@ -294,11 +294,11 @@ static void paging_T3113_expired(void *data)
 static unsigned int calculate_timer_3113(struct gsm_bts *bts)
 {
 	unsigned int to_us, to;
-	struct T_def *d = T_def_get_entry(bts->network->T_defs, 3113);
+	struct osmo_tdef *d = osmo_tdef_get_entry(bts->network->T_defs, 3113);
 
 	/* Note: d should always contain a valid pointer since all timers,
 	 * including 3113 are statically pre-defined in
-	 * struct T_def gsm_network_T_defs. */
+	 * struct osmo_tdef gsm_network_T_defs. */
 	OSMO_ASSERT(d);
 
 	if (!bts->T3113_dynamic)

@@ -23,7 +23,6 @@
 #include <osmocom/core/fsm.h>
 
 #include <osmocom/bsc/gsm_data.h>
-#include <osmocom/bsc/gsm_timers.h>
 #include <osmocom/bsc/lchan_fsm.h>
 #include <osmocom/bsc/lchan_rtp_fsm.h>
 #include <osmocom/bsc/mgw_endpoint_fsm.h>
@@ -41,7 +40,7 @@ struct gsm_lchan *lchan_rtp_fi_lchan(struct osmo_fsm_inst *fi)
 	return fi->priv;
 }
 
-struct state_timeout lchan_rtp_fsm_timeouts[32] = {
+struct osmo_tdef_state_timeout lchan_rtp_fsm_timeouts[32] = {
 	[LCHAN_RTP_ST_WAIT_MGW_ENDPOINT_AVAILABLE] = { .T=23004 },
 	[LCHAN_RTP_ST_WAIT_IPACC_CRCX_ACK]	= { .T=23005 },
 	[LCHAN_RTP_ST_WAIT_IPACC_MDCX_ACK]	= { .T=23006 },
@@ -52,10 +51,10 @@ struct state_timeout lchan_rtp_fsm_timeouts[32] = {
  * The actual timeout value is in turn obtained from network->T_defs.
  * Assumes local variable fi exists. */
 #define lchan_rtp_fsm_state_chg(state) \
-	fsm_inst_state_chg_T(fi, state, \
-			     lchan_rtp_fsm_timeouts, \
-			     ((struct gsm_lchan*)(fi->priv))->ts->trx->bts->network->T_defs, \
-			     5)
+	osmo_tdef_fsm_inst_state_chg(fi, state, \
+				     lchan_rtp_fsm_timeouts, \
+				     ((struct gsm_lchan*)(fi->priv))->ts->trx->bts->network->T_defs, \
+				     5)
 
 /* Set a failure message, trigger the common actions to take on failure, transition to a state to
  * continue with (using state timeouts from lchan_rtp_fsm_timeouts[]). Assumes local variable fi exists. */

@@ -29,6 +29,7 @@
 #include <osmocom/vty/stats.h>
 #include <osmocom/vty/telnet_interface.h>
 #include <osmocom/vty/misc.h>
+#include <osmocom/vty/tdef_vty.h>
 #include <osmocom/gsm/protocol/gsm_04_08.h>
 #include <osmocom/gsm/gsm0502.h>
 #include <osmocom/ctrl/control_if.h>
@@ -66,11 +67,9 @@
 #include <osmocom/bsc/meas_feed.h>
 #include <osmocom/bsc/neighbor_ident.h>
 #include <osmocom/bsc/handover.h>
-#include <osmocom/bsc/gsm_timers.h>
 #include <osmocom/bsc/timeslot_fsm.h>
 #include <osmocom/bsc/lchan_fsm.h>
 #include <osmocom/bsc/lchan_select.h>
-#include <osmocom/bsc/gsm_timers.h>
 #include <osmocom/bsc/mgw_endpoint_fsm.h>
 
 #include <inttypes.h>
@@ -1046,7 +1045,7 @@ static int config_write_net(struct vty *vty)
 
 	ho_vty_write_net(vty, gsmnet);
 
-	T_defs_vty_write(vty, " ");
+	osmo_tdef_vty_write(vty, gsmnet->T_defs, " ");
 
 	if (!gsmnet->dyn_ts_allow_tch_f)
 		vty_out(vty, " dyn_ts_allow_tch_f 0%s", VTY_NEWLINE);
@@ -1060,7 +1059,7 @@ static int config_write_net(struct vty *vty)
 				gsmnet->tz.hr, gsmnet->tz.mn, VTY_NEWLINE);
 	}
 
-	/* writing T3212 from the common T_defs_vty_write() instead. */
+	osmo_tdef_vty_write(vty, gsmnet->T_defs, " timer ");
 
 	{
 		uint16_t meas_port;
@@ -4005,10 +4004,11 @@ DEFUN(cfg_bts_t3113_dynamic, cfg_bts_t3113_dynamic_cmd,
 	"Calculate T3113 dynamically based on channel config and load\n"
 	TNUM_STR)
 {
-	struct T_def *d;
+	struct osmo_tdef *d;
 	struct gsm_bts *bts = vty->index;
+	struct gsm_network *gsmnet = gsmnet_from_vty(vty);
 
-	d = parse_T_arg(vty, argv[0]);
+	d = osmo_tdef_vty_parse_T_arg(vty, gsmnet->T_defs, argv[0]);
 	if (!d)
 		return CMD_WARNING;
 
@@ -4030,10 +4030,11 @@ DEFUN(cfg_bts_no_t3113_dynamic, cfg_bts_no_t3113_dynamic_cmd,
 	"Set given timer to non-dynamic and use the default or user provided fixed value\n"
 	TNUM_STR)
 {
-	struct T_def *d;
+	struct osmo_tdef *d;
 	struct gsm_bts *bts = vty->index;
+	struct gsm_network *gsmnet = gsmnet_from_vty(vty);
 
-	d = parse_T_arg(vty, argv[0]);
+	d = osmo_tdef_vty_parse_T_arg(vty, gsmnet->T_defs, argv[0]);
 	if (!d)
 		return CMD_WARNING;
 
@@ -5042,11 +5043,11 @@ DEFUN(cfg_net_per_loc_upd, cfg_net_per_loc_upd_cmd,
       "Periodic Location Updating Interval in Minutes\n")
 {
 	struct gsm_network *net = vty->index;
-	struct T_def *d = T_def_get_entry(net->T_defs, 3212);
+	struct osmo_tdef *d = osmo_tdef_get_entry(net->T_defs, 3212);
 
 	OSMO_ASSERT(d);
 	d->val = atoi(argv[0]) / 6;
-	vty_out(vty, "T%d = %u %s (%s)%s", d->T, d->val, "* 6min", d->desc, VTY_NEWLINE);
+	vty_out(vty, "T%d = %lu %s (%s)%s", d->T, d->val, "* 6min", d->desc, VTY_NEWLINE);
 	return CMD_SUCCESS;
 }
 
@@ -5058,11 +5059,11 @@ DEFUN(cfg_net_no_per_loc_upd, cfg_net_no_per_loc_upd_cmd,
       "Periodic Location Updating Interval\n")
 {
 	struct gsm_network *net = vty->index;
-	struct T_def *d = T_def_get_entry(net->T_defs, 3212);
+	struct osmo_tdef *d = osmo_tdef_get_entry(net->T_defs, 3212);
 
 	OSMO_ASSERT(d);
 	d->val = 0;
-	vty_out(vty, "T%d = %u %s (%s)%s", d->T, d->val, "* 6min", d->desc, VTY_NEWLINE);
+	vty_out(vty, "T%d = %lu %s (%s)%s", d->T, d->val, "* 6min", d->desc, VTY_NEWLINE);
 	return CMD_SUCCESS;
 }
 
@@ -5090,6 +5091,28 @@ DEFUN(cfg_net_meas_feed_scenario, cfg_net_meas_feed_scenario_cmd,
 	meas_feed_scenario_set(argv[0]);
 
 	return CMD_SUCCESS;
+}
+
+DEFUN(show_timer, show_timer_cmd,
+      "show timer " OSMO_TDEF_VTY_ARG_T_OPTIONAL,
+      SHOW_STR "Show timers\n"
+      OSMO_TDEF_VTY_DOC_T)
+{
+	struct gsm_network *net = gsmnet_from_vty(vty);
+	const char *T_arg = argc > 0 ? argv[0] : NULL;
+	return osmo_tdef_vty_show_cmd(vty, net->T_defs, T_arg, NULL);
+}
+
+DEFUN(cfg_net_timer, cfg_net_timer_cmd,
+      "timer " OSMO_TDEF_VTY_ARG_SET_OPTIONAL,
+      "Configure or show timers\n"
+      OSMO_TDEF_VTY_DOC_SET)
+{
+	struct gsm_network *net = gsmnet_from_vty(vty);
+	/* If any arguments are missing, redirect to 'show' */
+	if (argc < 2)
+		return show_timer(self, vty, argc, argv);
+	return osmo_tdef_vty_set_cmd(vty, net->T_defs, argv);
 }
 
 extern int bsc_vty_init_extra(void);
@@ -5136,6 +5159,7 @@ int bsc_vty_init(struct gsm_network *network)
 	install_element(GSMNET_NODE, &cfg_net_dyn_ts_allow_tch_f_cmd);
 	install_element(GSMNET_NODE, &cfg_net_meas_feed_dest_cmd);
 	install_element(GSMNET_NODE, &cfg_net_meas_feed_scenario_cmd);
+	install_element(GSMNET_NODE, &cfg_net_timer_cmd);
 
 	install_element_ve(&bsc_show_net_cmd);
 	install_element_ve(&show_bts_cmd);
@@ -5146,6 +5170,7 @@ int bsc_vty_init(struct gsm_network *network)
 	install_element_ve(&show_lchan_cmd);
 	install_element_ve(&show_lchan_summary_cmd);
 	install_element_ve(&show_lchan_summary_all_cmd);
+	install_element_ve(&show_timer_cmd);
 
 	install_element_ve(&show_subscr_conn_cmd);
 
@@ -5158,8 +5183,6 @@ int bsc_vty_init(struct gsm_network *network)
 
 	logging_vty_add_cmds(NULL);
 	osmo_talloc_vty_add_cmds();
-
-	T_defs_vty_init(network->T_defs, GSMNET_NODE);
 
 	install_element(GSMNET_NODE, &cfg_net_neci_cmd);
 	install_element(GSMNET_NODE, &cfg_net_dtx_cmd);

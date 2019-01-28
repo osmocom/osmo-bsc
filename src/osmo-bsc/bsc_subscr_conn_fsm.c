@@ -37,7 +37,7 @@
 #include <osmocom/bsc/penalty_timers.h>
 #include <osmocom/bsc/bsc_rll.h>
 #include <osmocom/bsc/abis_rsl.h>
-#include <osmocom/bsc/gsm_timers.h>
+#include <osmocom/core/tdef.h>
 #include <osmocom/bsc/gsm_04_08_rr.h>
 #include <osmocom/bsc/mgw_endpoint_fsm.h>
 #include <osmocom/bsc/assignment_fsm.h>
@@ -85,7 +85,7 @@ static const struct value_string gscon_fsm_event_names[] = {
 	{}
 };
 
-struct state_timeout conn_fsm_timeouts[32] = {
+struct osmo_tdef_state_timeout conn_fsm_timeouts[32] = {
 	[ST_WAIT_CC] = { .T = 993210 },
 	[ST_CLEARING] = { .T = 999 },
 };
@@ -94,10 +94,10 @@ struct state_timeout conn_fsm_timeouts[32] = {
  * The actual timeout value is in turn obtained from network->T_defs.
  * Assumes local variable 'conn' exists. */
 #define conn_fsm_state_chg(state) \
-	fsm_inst_state_chg_T(conn->fi, state, \
-			     conn_fsm_timeouts, \
-			     conn->network->T_defs, \
-			     -1)
+	osmo_tdef_fsm_inst_state_chg(conn->fi, state, \
+				     conn_fsm_timeouts, \
+				     conn->network->T_defs, \
+				     -1)
 
 /* forward MT DTAP from BSSAP side to RSL side */
 static inline void submit_dtap(struct gsm_subscriber_connection *conn, struct msgb *msg)

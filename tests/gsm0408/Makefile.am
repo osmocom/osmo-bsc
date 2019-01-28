@@ -26,7 +26,6 @@ gsm0408_test_LDADD = \
 	$(top_builddir)/src/osmo-bsc/gsm_04_08_rr.o \
 	$(top_builddir)/src/osmo-bsc/arfcn_range_encode.o \
 	$(top_builddir)/src/osmo-bsc/gsm_data.o \
-	$(top_builddir)/src/osmo-bsc/gsm_timers.o \
 	$(top_builddir)/src/osmo-bsc/net_init.o \
 	$(top_builddir)/src/osmo-bsc/rest_octets.o \
 	$(top_builddir)/src/osmo-bsc/system_information.o \

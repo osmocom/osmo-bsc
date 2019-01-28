@@ -24,9 +24,9 @@ enum mgwep_fsm_event {
 
 struct mgw_endpoint;
 struct mgwep_ci;
-struct T_def;
+struct osmo_tdef;
 
-void mgw_endpoint_fsm_init(struct T_def *T_defs);
+void mgw_endpoint_fsm_init(struct osmo_tdef *T_defs);
 
 struct mgw_endpoint *mgw_endpoint_alloc(struct osmo_fsm_inst *parent, uint32_t parent_term_event,
 					struct mgcp_client *mgcp_client,
