@@ -1115,6 +1115,7 @@ static const struct osmo_fsm_state lchan_fsm_states[] = {
 		.out_state_mask = 0
 			| S(LCHAN_ST_WAIT_TS_READY)
 			| S(LCHAN_ST_CBCH)
+			| S(LCHAN_ST_BORKEN)
 			,
 	},
 	[LCHAN_ST_CBCH] = {

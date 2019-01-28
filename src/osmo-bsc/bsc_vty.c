@@ -4788,6 +4788,51 @@ DEFUN(lchan_act, lchan_act_cmd,
 	return CMD_SUCCESS;
 }
 
+/* Debug command to send lchans from state LCHAN_ST_UNUSED to state
+ * LCHAN_ST_BORKEN and vice versa. */
+DEFUN_HIDDEN(lchan_set_borken, lchan_set_borken_cmd,
+	     "bts <0-255> trx <0-255> timeslot <0-7> sub-slot <0-7> (borken|unused)",
+	     BTS_NR_TRX_TS_SS_STR2
+	     "send lchan to state LCHAN_ST_BORKEN (for debugging)\n"
+	     "send lchan to state LCHAN_ST_UNUSED (for debugging)\n")
+{
+	struct gsm_bts_trx_ts *ts;
+	struct gsm_lchan *lchan;
+	int ss_nr = atoi(argv[3]);
+	ts = vty_get_ts(vty, argv[0], argv[1], argv[2]);
+	if (!ts)
+		return CMD_WARNING;
+	lchan = &ts->lchan[ss_nr];
+	if (!lchan->fi)
+		return CMD_WARNING;
+
+	if (!strcmp(argv[4], "borken")) {
+		if (lchan->fi->state == LCHAN_ST_UNUSED)
+			osmo_fsm_inst_state_chg(lchan->fi, LCHAN_ST_BORKEN, 0, 0);
+		else {
+			vty_out(vty,
+				"%% lchan is in state %s, only lchans that are in state %s may be moved to state %s manually%s",
+				osmo_fsm_state_name(lchan->fi->fsm, lchan->fi->state),
+				osmo_fsm_state_name(lchan->fi->fsm, LCHAN_ST_UNUSED),
+				osmo_fsm_state_name(lchan->fi->fsm, LCHAN_ST_BORKEN), VTY_NEWLINE);
+			return CMD_WARNING;
+		}
+	} else {
+		if (lchan->fi->state == LCHAN_ST_BORKEN)
+			osmo_fsm_inst_state_chg(lchan->fi, LCHAN_ST_UNUSED, 0, 0);
+		else {
+			vty_out(vty,
+				"%% lchan is in state %s, only lchans that are in state %s may be moved to state %s manually%s",
+				osmo_fsm_state_name(lchan->fi->fsm, lchan->fi->state),
+				osmo_fsm_state_name(lchan->fi->fsm, LCHAN_ST_BORKEN),
+				osmo_fsm_state_name(lchan->fi->fsm, LCHAN_ST_UNUSED), VTY_NEWLINE);
+			return CMD_WARNING;
+		}
+	}
+
+	return CMD_SUCCESS;
+}
+
 DEFUN(lchan_mdcx, lchan_mdcx_cmd,
 	"bts <0-255> trx <0-255> timeslot <0-7> sub-slot <0-7> mdcx A.B.C.D <0-65535>",
 	BTS_NR_TRX_TS_SS_STR2
@@ -5264,6 +5309,8 @@ int bsc_vty_init(struct gsm_network *network)
 	install_element(ENABLE_NODE, &pdch_act_cmd);
 	install_element(ENABLE_NODE, &lchan_act_cmd);
 	install_element(ENABLE_NODE, &lchan_mdcx_cmd);
+	install_element(ENABLE_NODE, &lchan_set_borken_cmd);
+
 	install_element(ENABLE_NODE, &handover_subscr_conn_cmd);
 	install_element(ENABLE_NODE, &assignment_subscr_conn_cmd);
 	install_element(ENABLE_NODE, &smscb_cmd_cmd);
