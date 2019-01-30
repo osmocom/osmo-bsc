@@ -578,6 +578,8 @@ struct gsm_lchan {
 	/* AMR bits */
 	uint8_t mr_ms_lv[7];
 	uint8_t mr_bts_lv[7];
+	/* AMR bits were based on these rate bits: */
+	uint16_t s15_s0;
 
 	/* Established data link layer services */
 	uint8_t sapis[8];

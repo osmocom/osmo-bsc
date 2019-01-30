@@ -715,7 +715,7 @@ static void send_handover_performed(struct gsm_subscriber_connection *conn)
 		if (gscon_is_aoip(conn)) {
 			/* Extrapolate speech codec from speech mode */
 			gsm0808_speech_codec_from_chan_type(&sc, ho_perf_params.speech_version_chosen);
-			sc.cfg = conn->assignment.req.s15_s0;
+			sc.cfg = conn->lchan->s15_s0;
 			memcpy(&ho_perf_params.speech_codec_chosen, &sc, sizeof(sc));
 			ho_perf_params.speech_codec_chosen_present = true;
 		}

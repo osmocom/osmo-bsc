@@ -544,6 +544,7 @@ static void lchan_fsm_wait_ts_ready_onenter(struct osmo_fsm_inst *fi, uint32_t p
 			lchan_fail("Can not generate multirate configuration IE\n");
 			return;
 		}
+		lchan->s15_s0 = info->s15_s0;
 	}
 
 	switch (info->chan_mode) {
