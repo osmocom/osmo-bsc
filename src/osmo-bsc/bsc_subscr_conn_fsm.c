@@ -718,6 +718,8 @@ static void gscon_fsm_allstate(struct osmo_fsm_inst *fi, uint32_t event, void *d
 	/* Regular allstate event processing */
 	switch (event) {
 	case GSCON_EV_A_CLEAR_CMD:
+		if (conn->lchan)
+			conn->lchan->release.is_csfb = *(bool *)data;
 		/* MSC tells us to cleanly shut down */
 		if (conn->fi->state != ST_CLEARING)
 			osmo_fsm_inst_state_chg(fi, ST_CLEARING, 60, 999);

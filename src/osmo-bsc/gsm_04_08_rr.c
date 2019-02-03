@@ -28,7 +28,9 @@
 #include <netinet/in.h>
 
 #include <osmocom/core/msgb.h>
+#include <osmocom/core/bitvec.h>
 #include <osmocom/gsm/gsm48.h>
+#include <osmocom/gsm/sysinfo.h>
 
 #include <osmocom/bsc/abis_rsl.h>
 #include <osmocom/bsc/debug.h>
@@ -40,6 +42,8 @@
 #include <osmocom/bsc/assignment_fsm.h>
 #include <osmocom/bsc/handover_fsm.h>
 #include <osmocom/bsc/gsm_08_08.h>
+#include <osmocom/bsc/gsm_data.h>
+
 
 /* should ip.access BTS use direct RTP streams between each other (1),
  * or should OpenBSC always act as RTP relay/proxy in between (0) ? */
@@ -236,6 +240,56 @@ static void mr_config_for_ms(struct gsm_lchan *lchan, struct msgb *msg)
 			lchan->mr_ms_lv + 1);
 }
 
+
+#define CELL_SEL_IND_AFTER_REL_MAX_BITS	(4+MAX_EARFCN_LIST*19)
+#define CELL_SEL_IND_AFTER_REL_MAX_BYTES ((CELL_SEL_IND_AFTER_REL_MAX_BITS/8)+1)
+
+/* Generate a CSN.1 encoded "Cell Selection Indicator after release of all TCH and SDCCH"
+ * as per TF 44.018 version 15.3.0 Table 10.5.2.1e.1.  This only generates the "value"
+ * part of the IE, not the tag+length wrapper */
+static int generate_cell_sel_ind_after_rel(uint8_t *out, unsigned int out_len, const struct gsm_bts *bts)
+{
+	struct bitvec bv;
+	unsigned int i, rc;
+
+	bv.data = out;
+	bv.data_len = out_len;
+	bitvec_zero(&bv);
+
+	/* E-UTRAN Description */
+	bitvec_set_uint(&bv, 3, 3);
+	bitvec_set_bit(&bv, 1);
+
+	for (i = 0; i < MAX_EARFCN_LIST; i++) {
+		const struct osmo_earfcn_si2q *e = &bts->si_common.si2quater_neigh_list;
+		if (e->arfcn[i] == OSMO_EARFCN_INVALID)
+			continue;
+
+		if (bitvec_tailroom_bits(&bv) < 19) {
+			LOGP(DRR, LOGL_NOTICE, "%s: Not enough room to store EARFCN %u in the "
+				"Cell Selection Indicator IE\n", gsm_bts_name(bts), e->arfcn[i]);
+		} else {
+			bitvec_set_uint(&bv, e->arfcn[i], 16);
+			/* No "Measurement Bandwidth" */
+			bitvec_set_bit(&bv, 0);
+			/* No "Not Allowed Cells" */
+			bitvec_set_bit(&bv, 0);
+			/* No "TARGET_PCID" */
+			bitvec_set_bit(&bv, 0);
+		}
+	}
+
+	rc = bitvec_used_bytes(&bv);
+
+	if (rc == 1) {
+		/* only the header was written to the bitvec, no actual EARFCNs were present */
+		return 0;
+	} else {
+		/* return the number of bytes used */
+		return rc;
+	}
+}
+
 /* 7.1.7 and 9.1.7: RR CHANnel RELease */
 int gsm48_send_rr_release(struct gsm_lchan *lchan)
 {
@@ -249,6 +303,18 @@ int gsm48_send_rr_release(struct gsm_lchan *lchan)
 
 	cause = msgb_put(msg, 1);
 	cause[0] = GSM48_RR_CAUSE_NORMAL;
+
+	if (lchan->release.is_csfb) {
+		uint8_t buf[CELL_SEL_IND_AFTER_REL_MAX_BYTES];
+		int len;
+
+		len = generate_cell_sel_ind_after_rel(buf, sizeof(buf), lchan->ts->trx->bts);
+		if (len == 0) {
+			LOGPLCHAN(lchan, DRR, LOGL_NOTICE, "MSC indicated CSFB Fast Return, but "
+				"BTS has no EARFCN configured!\n");
+		} else
+			msgb_tlv_put(msg, GSM48_IE_CELL_SEL_IND_AFTER_REL, len, buf);
+	}
 
 	DEBUGP(DRR, "Sending Channel Release: Chan: Number: %d Type: %d\n",
 		lchan->nr, lchan->type);

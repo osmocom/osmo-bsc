@@ -557,6 +557,9 @@ struct gsm_lchan {
 		/* If a release event is being handled, ignore other ricocheting release events until that
 		 * release handling has concluded. */
 		bool in_release_handler;
+
+		/* is this release at the end of a CSFB call? */
+		bool is_csfb;
 	} release;
 
 	/* The logical channel type */

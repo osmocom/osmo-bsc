@@ -420,6 +420,23 @@ static int gsm0808_cipher_mode(struct gsm_subscriber_connection *conn, int ciphe
 	return gsm48_send_rr_ciph_mode(conn->lchan, include_imeisv);
 }
 
+static int bssmap_handle_clear_cmd(struct gsm_subscriber_connection *conn,
+				   struct msgb *msg, unsigned int length)
+{
+	struct tlv_parsed tp;
+	bool is_csfb = false;
+
+	tlv_parse(&tp, gsm0808_att_tlvdef(), msg->l4h + 1, length - 1, 0, 0);
+
+	/* FIXME: Check for mandatory cause IE, and use that in RR RELEASE cause! */
+	if (TLVP_PRESENT(&tp, GSM0808_IE_CSFB_INDICATION))
+		is_csfb = true;
+
+	osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_A_CLEAR_CMD, &is_csfb);
+
+	return 0;
+}
+
 /*
  * GSM 08.08 § 3.1.14 cipher mode handling. We will have to pick
  * the cipher to be used for this. In case we are already using
@@ -867,7 +884,7 @@ static int bssmap_rcvmsg_dt1(struct gsm_subscriber_connection *conn,
 
 	switch (msg->l4h[0]) {
 	case BSS_MAP_MSG_CLEAR_CMD:
-		osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_A_CLEAR_CMD, msg);
+		ret = bssmap_handle_clear_cmd(conn, msg, length);
 		break;
 	case BSS_MAP_MSG_CIPHER_MODE_CMD:
 		ret = bssmap_handle_cipher_mode(conn, msg, length);
