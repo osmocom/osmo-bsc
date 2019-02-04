@@ -150,25 +150,3 @@ codec frames are passed through transparently.  In order to achieve this
 with E1 based BTS, OsmoBSC contains a E1 sub-channel de- and
 re-multiplexer as well as a TRAU mapper that can map uplink to downlink
 frames and vice versa.
-
-=== Control interface
-
-The actual protocol is described in <<common-control-if>> section. Here we
-describe variables specific to OsmoBSC.
-
-.Variables available over control interface
-[options="header",width="100%",cols="20%,5%,5%,50%,20%"]
-|===
-|Name|Access|Trap|Value|Comment
-|msc_connection_status|RO|Yes|"connected", "disconnected"|Indicate the status of connection to MSC.
-|bts_connection_status|RO|Yes|"connected", "disconnected"|Indicate the status of connection to BTS.
-|location|RW|Yes|"<unixtime>,(invalid\|fix2d\|fix3d),<lat>,<lon>,<height>"|Set/Get location data.
-|timezone|RW|No|"<hours>,<mins>,<dst>", "off"|-19 <= hours <= 19, mins in {0, 15, 30, 45}, and 0 <= dst <= 2
-|notification|WO|Yes||
-|inform-msc-v1|WO|Yes||
-|ussd-notify-v1|WO|Yes||
-|===
-
-Some comments.
-FIXME: commands defined in src/ctrl/control_if.c? Nodes? Traps?
-
