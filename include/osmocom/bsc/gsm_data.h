@@ -1215,6 +1215,7 @@ static inline const char *gsm_pchan_id(enum gsm_phys_chan_config c)
 enum gsm_phys_chan_config gsm_pchan_parse(const char *name);
 const char *gsm_lchant_name(enum gsm_chan_t c);
 const char *gsm_chreq_name(enum gsm_chreq_reason_t c);
+char *gsm_bts_name(const struct gsm_bts *bts);
 char *gsm_trx_name(const struct gsm_bts_trx *trx);
 char *gsm_ts_name(const struct gsm_bts_trx_ts *ts);
 char *gsm_ts_and_pchan_name(const struct gsm_bts_trx_ts *ts);

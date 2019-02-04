@@ -996,6 +996,16 @@ struct gsm_bts_trx *gsm_bts_trx_num(const struct gsm_bts *bts, int num)
 
 static char ts2str[255];
 
+char *gsm_bts_name(const struct gsm_bts *bts)
+{
+	if (!bts)
+		snprintf(ts2str, sizeof(ts2str), "(bts=NULL)");
+	else
+		snprintf(ts2str, sizeof(ts2str), "(bts=%d)", bts->nr);
+
+	return ts2str;
+}
+
 char *gsm_trx_name(const struct gsm_bts_trx *trx)
 {
 	if (!trx)
