@@ -19,7 +19,8 @@ orchestrating completely separate RAN stacks.
 OsmoBSC currently supports handover within one BSS and between separate BSS.
 Whether inter-MSC is supported depends on the MSC implementation (to the BSC,
 inter-MSC handover looks identical to inter-BSC handover). Inter-RAT handover
-is currently not implemented.
+is currently not implemented.  However, you may still advertise 3G and 4G neighbor cells
+in order to facilitate cell/RAT re-selection to those neighbors.
 
 At the time of writing, OsmoMSC's inter-BSC handover support is not complete
 yet, so OsmoBSC can perform handover between separate BSS only in conjunction
@@ -575,3 +576,103 @@ OsmoBSC:
 - Algorithm 1 has no `min rxlev` setting.
 - Algorithm 1 does not actually use any information besides the Measurement
   Reports, and hence can trivially treat all neighbor cells identically.
+
+=== Advertising 3G/4G neighbors
+
+Despite osmo-bsc not supporting inter-RAT hand-over at this point, it
+still makes sense to advertise neighbor cells of other network
+technologies like UMTS/UTRAN (3G) and LTE/EUTRAN (4G).  This will help
+phones with idle-mode re-selection of the best available radio access
+technology (RAT).
+
+For more information on the inter-RAT cell re-selection algorithm and its
+parameters, see 3GPP TS 45.008 - particularly Section 6.6.4 describing
+measurements on cells of other (non-GSM) RATs.
+
+Such neighbors are advertised as part of the SI2quater (System
+Information Type 2quater).
+
+==== UMTS/UTRAN/3G neighbors
+
+In order to advertise a 3G neighbor cell you have to specify the
+following properties:
+
+* the UARFCN (UTRAN Absolute Radio Channel Number) on which the cell
+  broadcasts
+* the Scrambling Code of the cell
+* whether or not the cell uses diversity
+
+
+In the following example, we're configuring a 3G neighbor cell on UARFCN
+1234 using the scrambling code 511 with no diversity:
+
+----
+network
+ bts 0
+  si2quater neighbor-list add uarfcn 1234 511 0
+----
+
+3G neighbor cells can be removed using the same command, just replacing
+`add` with `del`.
+
+==== LTE/EUTRAN/4G neighbors
+
+In order to advertise a 4G neighbor cell you have to specify the
+following properties:
+
+* EARFCN (EUTRAN Absolute Radio Channel Number) on which the cell
+  broadcasts
+* Reselection thresholds towards E-UTRAN cells:
+[width="30%"]
+|====
+| 0 | 0 dB
+| 1 | 2 dB
+| 2 | 4 dB
+| 3 | 6 dB
+| ... | ...
+| 31 | 62 dB
+|=====
+* Priority of E-UTRAN frequency: 0 = lowest priority, ..., 7 = highest priority
+* QRXLEVMIN parameter: Minimum required RX level in the UTRAN FDD cell
+  (dBm), see 3GPP TS 25.304.
+[width="30%"]
+|====
+| 0 | -140 dBm
+| 1 | -138 dBm
+| 2 | -136 dBm
+| ... | ...
+| 31 | -78 dBm
+|====
+* Measurement bandwidth in MHz, see 3GPP TS 44.018 and 3GPP TS 44.060.
+  This field specifies the minimum value of the channel bandwidth of all
+  valid E-UTRAN cells on the specified EARFCN. It is defined by the
+  parameter Transmission Bandwidth Configuration, N RB (see 3GPP TS
+  36.104). The values indicate the number of resource blocks over which
+  the mobile station could measure if the mobile station does not
+  support wideband RSRQ measurements (see 3GPP TS 24.008). A mobile
+  station supporting wideband RSRQ measurements shall measure over the
+  indicated number of resource blocks. The field is coded according to
+  the following table:
+[width="30%"]
+|====
+| 0 | N_RB = 6
+| 1 | N_RB = 15
+| 2 | N_RB = 25
+| 3 | N_RB = 50
+| 4 | N_RB = 75
+| 5 | N_RB = 100
+|====
+
+In the following example we're configuring a 4G neighbor on EARFCN 2342
+with a higher reselection threshold of 40dB, a lower reselection
+threshold of 20dB, priority 5, QRXLEVMIN of -140 dBm and a measurement
+bandwidth of 100 resource blocks:
+
+----
+network
+ bts 0
+  si2quater neighbor-list add earfcn 2342 thresh-hi 20 thresh-lo 10 prio 5 qrxlv 0 meas 5
+----
+
+4G neighbor cells can be removed using the same command, just replacing
+`add` with `del`.
