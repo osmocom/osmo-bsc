@@ -99,6 +99,9 @@ enum subscr_sccp_state {
 	SUBSCR_SCCP_ST_CONNECTED
 };
 
+/* Information retrieved during an Assignment Request from the MSC. This is storage of the Assignment instructions
+ * parsed from the Assignment Request message, to pass on until the gscon and assignment FSMs have decided whether an
+ * Assignment is actually going to be carried out. Should remain unchanged after initial decoding. */
 struct assignment_request {
 	bool aoip;
 
@@ -112,6 +115,9 @@ struct assignment_request {
 	uint16_t s15_s0;
 };
 
+/* State of an ongoing Assignment, while the assignment_fsm is still busy. This serves as state separation to keep the
+ * currently used lchan and gscon unmodified until the outcome of an Assignment is known. If the Assignment fails, this
+ * state is simply discarded, and the gscon carries on with the original lchan remaining unchanged. */
 struct assignment_fsm_data {
 	struct assignment_request req;
 	bool requires_voice_stream;
@@ -204,12 +210,17 @@ struct gsm_subscriber_connection {
 	/* back pointers */
 	struct gsm_network *network;
 
-	/* the primary / currently active lchan to the BTS/subscriber */
+	/* the primary / currently active lchan to the BTS/subscriber. During Assignment and Handover, separate lchans
+	 * are kept in the .assignment or .handover sub-structs, respectively, so that this lchan remains unaffected
+	 * until Assignment or Handover have actually succeeded. */
 	struct gsm_lchan *lchan;
 
+	/* Only valid during an ongoing Assignment; might be overwritten at any time by a failed Assignment attempt.
+	 * Once an Assignment was successful, all relevant state must be copied out of this sub-struct. */
 	struct assignment_fsm_data assignment;
 
-	/* handover information, if a handover is pending for this conn. */
+	/* handover information, if a handover is pending for this conn. Valid only during an ongoing Handover
+	 * operation. If a Handover was successful, all relevant state must be copied out of this sub-struct. */
 	struct handover ho;
 
 	/* buffer/cache for classmark of the ME of the subscriber */
