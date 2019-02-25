@@ -170,7 +170,7 @@ static void send_assignment_complete(struct gsm_subscriber_connection *conn)
 		if (gscon_is_aoip(conn)) {
 			/* Extrapolate speech codec from speech mode */
 			gsm0808_speech_codec_from_chan_type(&sc, perm_spch);
-			sc.cfg = conn->lchan->ch_mode_rate.s15_s0;
+			sc.cfg = conn->lchan->activate.info.s15_s0;
 			sc_ptr = &sc;
 		}
 	}
