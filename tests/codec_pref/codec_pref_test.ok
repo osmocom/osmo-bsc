@@ -54,7 +54,7 @@ Determining channel mode and rate:
    codec->hr=0
    codec->efr=0
    codec->amr=1
- * result: rc=0, full_rate=1, s15_s0=57ff, chan_mode=SPEECH_AMR
+ * result: rc=0, full_rate=1, s15_s0=5702, chan_mode=SPEECH_AMR
 
 Determining channel mode and rate:
  * MS: speech codec list (1 items):
@@ -68,7 +68,7 @@ Determining channel mode and rate:
    codec->hr=0
    codec->efr=0
    codec->amr=1
- * result: rc=0, full_rate=0, s15_s0=073f, chan_mode=SPEECH_AMR
+ * result: rc=0, full_rate=0, s15_s0=0702, chan_mode=SPEECH_AMR
 
 Determining channel mode and rate:
  * MS: speech codec list (2 items):
@@ -241,7 +241,7 @@ Determining channel mode and rate:
    codec->hr=1
    codec->efr=1
    codec->amr=1
- * result: rc=0, full_rate=1, s15_s0=57ff, chan_mode=SPEECH_AMR
+ * result: rc=0, full_rate=1, s15_s0=5702, chan_mode=SPEECH_AMR
 
 Determining channel mode and rate:
  * MS: speech codec list (1 items):
@@ -263,7 +263,7 @@ Determining channel mode and rate:
    codec->hr=1
    codec->efr=1
    codec->amr=1
- * result: rc=0, full_rate=0, s15_s0=073f, chan_mode=SPEECH_AMR
+ * result: rc=0, full_rate=0, s15_s0=0702, chan_mode=SPEECH_AMR
 
 Determining channel mode and rate:
  * MS: speech codec list (2 items):
@@ -450,7 +450,7 @@ Determining channel mode and rate:
    codec->hr=1
    codec->efr=1
    codec->amr=1
- * result: rc=0, full_rate=1, s15_s0=57ff, chan_mode=SPEECH_AMR
+ * result: rc=0, full_rate=1, s15_s0=5702, chan_mode=SPEECH_AMR
 
 Determining channel mode and rate:
  * MS: speech codec list (5 items):
@@ -472,7 +472,7 @@ Determining channel mode and rate:
    codec->hr=1
    codec->efr=1
    codec->amr=1
- * result: rc=0, full_rate=0, s15_s0=073f, chan_mode=SPEECH_AMR
+ * result: rc=0, full_rate=0, s15_s0=0702, chan_mode=SPEECH_AMR
 
 Determining channel mode and rate:
  * MS: speech codec list (5 items):

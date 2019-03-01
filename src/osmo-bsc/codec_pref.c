@@ -264,6 +264,47 @@ static uint16_t gen_bss_supported_amr_s15_s0(const struct bsc_msc_data *msc, con
 	return amr_s15_s0_bts & amr_s15_s0_msc;
 }
 
+/* Special handling for AMR rate configuration bits (S15-S0) */
+static int match_amr_s15_s0(struct channel_mode_and_rate *ch_mode_rate, const struct bsc_msc_data *msc, const struct gsm_bts *bts, const struct gsm0808_speech_codec *sc_match, uint8_t perm_spch)
+{
+	uint16_t amr_s15_s0_supported;
+	
+	/* Normally the MSC should never try to advertise an AMR codec
+	 * configuration that we did not previously advertised as supported.
+	 * However, to ensure that no unsupported AMR codec configuration
+	 * enters the further processing steps we again lookup what we support
+	 * and generate an intersection. All further processing is then done
+	 * with this intersection result. At the same time we will make sure
+	 * that the intersection contains at least one rate setting. */
+	
+	amr_s15_s0_supported = gen_bss_supported_amr_s15_s0(msc, bts, (perm_spch == GSM0808_PERM_HR3));
+
+	/* NOTE: The sc_match pointer points to a speech codec from the speech
+	 * codec list that has been communicated with the ASSIGNMENT COMMAND.
+	 * However, only AoIP based networks will include a speech codec list
+	 * into the ASSIGNMENT COMMAND. For non AoIP based networks, no speech
+	 * codec (sc_match) will be available, so we will fully rely on the
+	 * local configuration for thoses cases. */
+	if (sc_match)
+		ch_mode_rate->s15_s0 = sc_match->cfg & amr_s15_s0_supported;
+	else
+		ch_mode_rate->s15_s0 = amr_s15_s0_supported;
+
+	/* Prefer "Config-NB-Code = 1" (S1) over all other AMR rates setttings.
+	 * When S1 is set, the active set will automatically include 12.2k, 7.4k,
+	 * 5.9k, 4.75k, in case of HR 12,2k is left out. */
+	if (ch_mode_rate->s15_s0 & GSM0808_SC_CFG_AMR_4_75_5_90_7_40_12_20) {
+		ch_mode_rate->s15_s0 &= 0xff00;
+		ch_mode_rate->s15_s0 |= GSM0808_SC_CFG_AMR_4_75_5_90_7_40_12_20;
+	}
+
+	/* Make sure at least one rate is set. */
+	if ((ch_mode_rate->s15_s0 & 0x00ff) == 0x0000)
+		return -EINVAL;
+
+	return 0;
+}
+
 /*! Match the codec preferences from local config with a received codec preferences IEs received from the
  * MSC and the BTS' codec configuration.
  *  \param[out] ch_mode_rate resulting codec and rate information
@@ -283,7 +324,6 @@ int match_codec_pref(struct channel_mode_and_rate *ch_mode_rate,
 	uint8_t perm_spch;
 	bool match = false;
 	const struct gsm0808_speech_codec *sc_match = NULL;
-	uint16_t amr_s15_s0_supported;
 	int rc;
 
 	/* Note: Normally the MSC should never try to advertise a codec that
@@ -313,10 +353,22 @@ int match_codec_pref(struct channel_mode_and_rate *ch_mode_rate,
 
 		/* Match the permitted speech value against the codec lists that were
 		 * advertised by the MS and the MSC */
-		if (test_codec_pref(&sc_match, scl, ct, perm_spch)) {
-			match = true;
-			break;
+		if (!test_codec_pref(&sc_match, scl, ct, perm_spch)) {
+			continue;
 		}
+
+		/* Special handling for AMR */
+		if (perm_spch == GSM0808_PERM_HR3 || perm_spch == GSM0808_PERM_FR3) {
+			rc = match_amr_s15_s0(ch_mode_rate, msc, bts, sc_match, perm_spch);
+			if (rc < 0) {
+				ch_mode_rate->s15_s0 = 0;
+				continue;
+			}
+		} else
+			ch_mode_rate->s15_s0 = 0;
+
+		match = true;
+		break;
 	}
 
 	/* Exit without result, in case no match can be deteched */
@@ -329,31 +381,6 @@ int match_codec_pref(struct channel_mode_and_rate *ch_mode_rate,
 
 	/* Lookup a channel mode for the selected codec */
 	ch_mode_rate->chan_mode = gsm88_to_chan_mode(perm_spch);
-
-	/* Special handling for AMR */
-	if (perm_spch == GSM0808_PERM_HR3 || perm_spch == GSM0808_PERM_FR3) {
-		/* Normally the MSC should never try to advertise an AMR codec
-		 * configuration that we did not previously advertise as
-		 * supported. However, to ensure that no unsupported AMR codec
-		 * configuration enters the further processing steps we again
-		 * lookup what we support and generate an intersection. All
-		 * further processing is then done with this intersection
-		 * result */
-		amr_s15_s0_supported = gen_bss_supported_amr_s15_s0(msc, bts, (perm_spch == GSM0808_PERM_HR3));
-		if (sc_match)
-			ch_mode_rate->s15_s0 = sc_match->cfg & amr_s15_s0_supported;
-		else
-			ch_mode_rate->s15_s0 = amr_s15_s0_supported;
-
-		/* NOTE: The function test_codec_pref() will populate the
-		 * sc_match pointer from the searched speech codec list. For
-		 * AoIP based networks, no speech codec list will be present
-		 * and therefore no sc_match will be populated. For those
-		 * cases only the local configuration will influence s15_s0.
-		 * However s15_s0 is always populated with a meaningful value,
-		 * regardless if AoIP is in use or not. */
-	} else
-		ch_mode_rate->s15_s0 = 0;
 
 	return 0;
 }
