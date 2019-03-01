@@ -539,7 +539,12 @@ static void lchan_fsm_wait_ts_ready_onenter(struct osmo_fsm_inst *fi, uint32_t p
 	}
 
 	if (info->chan_mode == GSM48_CMODE_SPEECH_AMR) {
-		gsm48_mr_cfg_from_gsm0808_sc_cfg(&mr_conf, info->s15_s0);
+		if (gsm48_mr_cfg_from_gsm0808_sc_cfg(&mr_conf, info->s15_s0) < 0) {
+			lchan_fail("Can not determine multirate configuration, S15-S0 (%04x) are ambiguous!\n",
+				   info->s15_s0);
+			return;
+		}
+
 		if (lchan_mr_config(lchan, &mr_conf) < 0) {
 			lchan_fail("Can not generate multirate configuration IE\n");
 			return;
