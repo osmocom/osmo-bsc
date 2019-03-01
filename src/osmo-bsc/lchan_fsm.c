@@ -545,6 +545,15 @@ static void lchan_fsm_wait_ts_ready_onenter(struct osmo_fsm_inst *fi, uint32_t p
 			return;
 		}
 
+		/* Do not include 12.2 kbps rate when S1 is set. */
+		if (lchan->type == GSM_LCHAN_TCH_H && (info->s15_s0 & GSM0808_SC_CFG_AMR_4_75_5_90_7_40_12_20)) {
+			/* See also 3GPP TS 28.062, chapter 7.11.3.1.3: "In case this Configuration
+			 * "Config-NB-Code = 1" is signalled in the TFO Negotiation for the HR_AMR
+			 * Codec Type,then it shall be assumed that AMR mode 12.2 kbps is (of course)
+			 * not included. */
+			mr_conf.m12_2 = 0;
+		}
+
 		if (lchan_mr_config(lchan, &mr_conf) < 0) {
 			lchan_fail("Can not generate multirate configuration IE\n");
 			return;
