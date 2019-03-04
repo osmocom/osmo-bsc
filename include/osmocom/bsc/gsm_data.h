@@ -38,7 +38,6 @@
 
 struct mgcp_client_conf;
 struct mgcp_client;
-struct mgcp_ctx;
 struct gsm0808_cell_id;
 struct mgw_endpoint;
 
