@@ -128,22 +128,31 @@ _lc_find_bts(struct gsm_bts *bts, enum gsm_phys_chan_config pchan)
 }
 
 struct gsm_lchan *lchan_select_by_chan_mode(struct gsm_bts *bts,
-					    enum gsm48_chan_mode chan_mode, bool full_rate)
+					    enum gsm48_chan_mode chan_mode, enum channel_rate chan_rate)
 {
 	enum gsm_chan_t type;
 
 	switch (chan_mode) {
 	case GSM48_CMODE_SIGN:
-		type = GSM_LCHAN_SDCCH;
+		switch (chan_rate) {
+		case CH_RATE_SDCCH: type = GSM_LCHAN_SDCCH; break;
+		case CH_RATE_HALF:  type = GSM_LCHAN_TCH_H; break;
+		case CH_RATE_FULL:  type = GSM_LCHAN_TCH_F; break;
+		default: return NULL;
+		}
 		break;
 	case GSM48_CMODE_SPEECH_EFR:
 		/* EFR works over FR channels only */
-		if (!full_rate)
+		if (chan_rate != CH_RATE_FULL)
 			return NULL;
 		/* fall through */
 	case GSM48_CMODE_SPEECH_V1:
 	case GSM48_CMODE_SPEECH_AMR:
-		type = full_rate ? GSM_LCHAN_TCH_F : GSM_LCHAN_TCH_H;
+		switch (chan_rate) {
+		case CH_RATE_HALF:  type = GSM_LCHAN_TCH_H; break;
+		case CH_RATE_FULL:  type = GSM_LCHAN_TCH_F; break;
+		default: return NULL;
+		}
 		break;
 	default:
 		return NULL;

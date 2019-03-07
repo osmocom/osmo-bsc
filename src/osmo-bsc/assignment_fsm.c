@@ -250,17 +250,15 @@ static void assignment_fsm_update_id(struct gsm_subscriber_connection *conn)
 static bool lchan_type_compat_with_mode(enum gsm_chan_t type, const struct channel_mode_and_rate *ch_mode_rate)
 {
 	enum gsm48_chan_mode chan_mode = ch_mode_rate->chan_mode;
-	bool full_rate = ch_mode_rate->full_rate;
+	enum channel_rate chan_rate = ch_mode_rate->chan_rate;
 
 	switch (chan_mode) {
 	case GSM48_CMODE_SIGN:
 		switch (type) {
-		case GSM_LCHAN_TCH_F:
-		case GSM_LCHAN_TCH_H:
-		case GSM_LCHAN_SDCCH:
-			return true;
-		default:
-			return false;
+		case GSM_LCHAN_TCH_F: return chan_rate == CH_RATE_FULL;
+		case GSM_LCHAN_TCH_H: return chan_rate == CH_RATE_HALF;
+		case GSM_LCHAN_SDCCH: return chan_rate == CH_RATE_SDCCH;
+		default: return false;
 		}
 
 	case GSM48_CMODE_SPEECH_V1:
@@ -268,12 +266,12 @@ static bool lchan_type_compat_with_mode(enum gsm_chan_t type, const struct chann
 	case GSM48_CMODE_DATA_3k6:
 	case GSM48_CMODE_DATA_6k0:
 		/* these services can all run on TCH/H, but we may have
-		 * an explicit override by the 'full_rate' argument */
+		 * an explicit override by the 'chan_rate' argument */
 		switch (type) {
 		case GSM_LCHAN_TCH_F:
-			return full_rate;
+			return chan_rate == CH_RATE_FULL;
 		case GSM_LCHAN_TCH_H:
-			return !full_rate;
+			return chan_rate == CH_RATE_HALF;
 		default:
 			return false;
 		}
@@ -319,47 +317,37 @@ static int check_requires_voice(bool *requires_voice, enum gsm48_chan_mode chan_
  * sure that both are consistent. */
 static int check_requires_voice_stream(struct gsm_subscriber_connection *conn)
 {
-	bool result_requires_voice_alt;
-	bool result_requires_voice_pref;
+	bool requires_voice_pref = false, requires_voice_alt;
 	struct assignment_request *req = &conn->assignment.req;
 	struct osmo_fsm_inst *fi = conn->fi;
-	int rc;
+	int i, rc;
 
 	/* When the assignment request indicates that there is an alternate
 	 * rate available (e.g. "Full or Half rate channel, Half rate
 	 * preferred..."), then both must be either voice or either signalling,
 	 * a mismatch is not permitted */
 
-	/* Check the prefered setting */
-	rc = check_requires_voice(&result_requires_voice_pref, req->ch_mode_rate_pref.chan_mode);
-	if (rc < 0) {
-		assignment_fail(GSM0808_CAUSE_REQ_CODEC_TYPE_OR_CONFIG_NOT_SUPP,
-				"Prefered channel mode not supported: %s",
-				gsm48_chan_mode_name(req->ch_mode_rate_pref.chan_mode));
-		return -EINVAL;
-	}
-	conn->assignment.requires_voice_stream = result_requires_voice_pref;
+	for (i = 0; i < req->n_ch_mode_rate; i++) {
+		rc = check_requires_voice(&requires_voice_alt, req->ch_mode_rate[i].chan_mode);
+		if (rc < 0) {
+			assignment_fail(GSM0808_CAUSE_REQ_CODEC_TYPE_OR_CONFIG_NOT_SUPP,
+					"Channel mode not supported (prev level %d): %s", i,
+					gsm48_chan_mode_name(req->ch_mode_rate[i].chan_mode));
+			return -EINVAL;
+		}
 
-	/* If there is an alternate setting, check that one as well */
-	if (!req->ch_mode_rate_alt_present)
-		return 0;
-	rc = check_requires_voice(&result_requires_voice_alt, req->ch_mode_rate_alt.chan_mode);
-	if (rc < 0) {
-		assignment_fail(GSM0808_CAUSE_REQ_CODEC_TYPE_OR_CONFIG_NOT_SUPP,
-				"Alternate channel mode not supported: %s",
-				gsm48_chan_mode_name(req->ch_mode_rate_alt.chan_mode));
-		return -EINVAL;
-	}
-
-	/* Make sure both settings match */
-	if (result_requires_voice_pref != result_requires_voice_alt) {
-		assignment_fail(GSM0808_CAUSE_REQ_CODEC_TYPE_OR_CONFIG_NOT_SUPP,
-				"Inconsistent channel modes: %s != %s",
-				gsm48_chan_mode_name(req->ch_mode_rate_pref.chan_mode),
-				gsm48_chan_mode_name(req->ch_mode_rate_alt.chan_mode));
-		return -EINVAL;
+		if (i==0)
+			requires_voice_pref = requires_voice_alt;
+		else if (requires_voice_alt != requires_voice_pref) {
+			assignment_fail(GSM0808_CAUSE_REQ_CODEC_TYPE_OR_CONFIG_NOT_SUPP,
+					"Inconsistent channel modes: %s != %s",
+					gsm48_chan_mode_name(req->ch_mode_rate[0].chan_mode),
+					gsm48_chan_mode_name(req->ch_mode_rate[i].chan_mode));
+			return -EINVAL;
+		}
 	}
 
+	conn->assignment.requires_voice_stream = requires_voice_pref;
 	return 0;
 }
 
@@ -369,18 +357,20 @@ static int check_requires_voice_stream(struct gsm_subscriber_connection *conn)
 static bool reuse_existing_lchan(struct gsm_subscriber_connection *conn)
 {
 	struct assignment_request *req = &conn->assignment.req;
+	int i;
 
 	if (!conn->lchan)
 		return false;
 
 	/* Check if the currently existing lchan is compatible with the
 	 * preferred rate/codec. */
-	if (lchan_type_compat_with_mode(conn->lchan->type, &req->ch_mode_rate_pref))
-		conn->lchan->ch_mode_rate = req->ch_mode_rate_pref;
-	else if (req->ch_mode_rate_alt_present
-		 && lchan_type_compat_with_mode(conn->lchan->type, &req->ch_mode_rate_alt))
-		conn->lchan->ch_mode_rate = req->ch_mode_rate_alt;
-	else
+	for (i = 0; i < req->n_ch_mode_rate; i++)
+		if (lchan_type_compat_with_mode(conn->lchan->type, &req->ch_mode_rate[i])) {
+			conn->lchan->ch_mode_rate = req->ch_mode_rate[i];
+			break;
+		}
+
+	if (i == req->n_ch_mode_rate)
 		return false;
 
 	if (conn->lchan->tch_mode != conn->lchan->ch_mode_rate.chan_mode) {
@@ -398,8 +388,14 @@ static bool reuse_existing_lchan(struct gsm_subscriber_connection *conn)
 void assignment_fsm_start(struct gsm_subscriber_connection *conn, struct gsm_bts *bts,
 			  struct assignment_request *req)
 {
+	static const char *rate_names[] = {
+		[CH_RATE_SDCCH] = "SDCCH",
+		[CH_RATE_HALF] = "HR",
+		[CH_RATE_FULL] = "FR",
+	};
 	struct osmo_fsm_inst *fi;
 	struct lchan_activate_info info;
+	int i;
 
 	OSMO_ASSERT(conn);
 	OSMO_ASSERT(conn->fi);
@@ -442,17 +438,13 @@ void assignment_fsm_start(struct gsm_subscriber_connection *conn, struct gsm_bts
 		return;
 	}
 
-	/* Try to allocate a new lchan with the preferred codec/rate choice */
-	conn->assignment.new_lchan =
-	    lchan_select_by_chan_mode(bts, req->ch_mode_rate_pref.chan_mode, req->ch_mode_rate_pref.full_rate);
-	conn->lchan->ch_mode_rate = req->ch_mode_rate_pref;
-
-	/* In case the lchan allocation fails, we try with the alternat codec/
-	 * rate choice (if possible) */
-	if (!conn->assignment.new_lchan && req->ch_mode_rate_alt_present) {
-		conn->assignment.new_lchan =
-		    lchan_select_by_chan_mode(bts, req->ch_mode_rate_alt.chan_mode, req->ch_mode_rate_alt.full_rate);
-		conn->lchan->ch_mode_rate = req->ch_mode_rate_alt;
+	/* Try to allocate a new lchan in order of preference */
+	for (i = 0; i < req->n_ch_mode_rate; i++) {
+		conn->assignment.new_lchan = lchan_select_by_chan_mode(bts,
+		    req->ch_mode_rate[i].chan_mode, req->ch_mode_rate[i].chan_rate);
+		conn->lchan->ch_mode_rate = req->ch_mode_rate[i];
+		if (conn->assignment.new_lchan)
+			break;
 	}
 
 	/* Check whether the lchan allocation was successful or not and tear
@@ -461,21 +453,22 @@ void assignment_fsm_start(struct gsm_subscriber_connection *conn, struct gsm_bts
 		assignment_count_result(BSC_CTR_ASSIGNMENT_NO_CHANNEL);
 		assignment_fail(GSM0808_CAUSE_NO_RADIO_RESOURCE_AVAILABLE,
 				"BSSMAP Assignment Command:"
-				" No lchan available for: preferred=%s%s / alternate=%s%s\n",
-				gsm48_chan_mode_name(req->ch_mode_rate_pref.chan_mode),
-				req->ch_mode_rate_pref.full_rate ? ",FR" : ",HR",
-				req->ch_mode_rate_alt_present ?
-					gsm48_chan_mode_name(req->ch_mode_rate_alt.chan_mode) : "none",
-				req->ch_mode_rate_alt_present ?
-					(req->ch_mode_rate_alt.full_rate ? ",FR" : ",HR") : "");
+				" No lchan available for: pref=%s:%s / alt1=%s:%s / alt2=%s:%s\n",
+				gsm48_chan_mode_name(req->ch_mode_rate[0].chan_mode),
+				rate_names[req->ch_mode_rate[0].chan_rate],
+				req->n_ch_mode_rate >= 1 ? gsm48_chan_mode_name(req->ch_mode_rate[0].chan_mode) : "",
+				req->n_ch_mode_rate >= 1 ? rate_names[req->ch_mode_rate[0].chan_rate] : "",
+				req->n_ch_mode_rate >= 2 ? gsm48_chan_mode_name(req->ch_mode_rate[0].chan_mode) : "",
+				req->n_ch_mode_rate >= 2 ? rate_names[req->ch_mode_rate[0].chan_rate] : ""
+		);
 		return;
 	}
 
 	assignment_fsm_update_id(conn);
-	LOG_ASSIGNMENT(conn, LOGL_INFO, "Starting Assignment: chan_mode=%s, full_rate=%d,"
+	LOG_ASSIGNMENT(conn, LOGL_INFO, "Starting Assignment: chan_mode=%s, chan_type=%s,"
 		       " aoip=%s MSC-rtp=%s:%u\n",
 		       gsm48_chan_mode_name(conn->lchan->ch_mode_rate.chan_mode),
-		       conn->lchan->ch_mode_rate.full_rate,
+		       rate_names[conn->lchan->ch_mode_rate.chan_rate],
 		       req->aoip ? "yes" : "no", req->msc_rtp_addr, req->msc_rtp_port);
 
 	assignment_fsm_state_chg(ASSIGNMENT_ST_WAIT_LCHAN_ACTIVE);
