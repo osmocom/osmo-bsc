@@ -98,9 +98,15 @@ enum subscr_sccp_state {
 	SUBSCR_SCCP_ST_CONNECTED
 };
 
+enum channel_rate {
+	CH_RATE_SDCCH,
+	CH_RATE_HALF,
+	CH_RATE_FULL,
+};
+
 struct channel_mode_and_rate {
 	enum gsm48_chan_mode chan_mode;
-	bool full_rate;
+	enum channel_rate chan_rate;
 	uint16_t s15_s0;
 };
 
@@ -115,12 +121,9 @@ struct assignment_request {
 	char msc_rtp_addr[INET_ADDRSTRLEN];
 	uint16_t msc_rtp_port;
 
-	/* Prefered rate/codec setting (mandatory) */
-	struct channel_mode_and_rate ch_mode_rate_pref;
-
-	/* Alternate rate/codec setting (optional) */
-	bool ch_mode_rate_alt_present;
-	struct channel_mode_and_rate ch_mode_rate_alt;
+	/* Rate/codec setting in preference order (need at least 1 !) */
+	int n_ch_mode_rate;
+	struct channel_mode_and_rate ch_mode_rate[3];
 };
 
 /* State of an ongoing Assignment, while the assignment_fsm is still busy. This serves as state separation to keep the
