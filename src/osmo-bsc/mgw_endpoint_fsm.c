@@ -34,6 +34,7 @@
 #include <osmocom/bsc/mgw_endpoint_fsm.h>
 #include <osmocom/bsc/lchan_fsm.h>
 #include <osmocom/bsc/gsm_data.h>
+#include <osmocom/bsc/bsc_msc_data.h>
 
 #define LOG_CI(ci, level, fmt, args...) do { \
 	if (!ci || !ci->mgwep) \
@@ -773,5 +774,23 @@ void mgcp_pick_codec(struct mgcp_conn_peer *verb_info, const struct gsm_lchan *l
 		verb_info->ptmap[0].codec = codec;
 	        verb_info->ptmap[0].pt = custom_pt;
 	        verb_info->ptmap_len = 1;
+	}
+
+	/* AMR requires additional parameters to be set up (framing mode) */
+	if (verb_info->codecs[0] == CODEC_AMR_8000_1) {
+		verb_info->param_present = true;
+		verb_info->param.amr_octet_aligned_present = true;
+	}
+
+	if (bss_side && verb_info->codecs[0] == CODEC_AMR_8000_1) {
+		/* FIXME: At the moment all BTSs we support are using the
+		 * octet-aligned payload format. However, in the future
+		 * we may support BTSs that are using bandwith-efficient
+		 * format. In this case we will have to add functionality
+		 * that distinguishes by the BTS model which mode to use. */
+		verb_info->param.amr_octet_aligned = true;
+	}
+	else if (!bss_side && verb_info->codecs[0] == CODEC_AMR_8000_1) {
+		verb_info->param.amr_octet_aligned = lchan->conn->sccp.msc->amr_octet_aligned;
 	}
 }

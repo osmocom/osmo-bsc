@@ -100,6 +100,11 @@ static void write_msc_amr_options(struct vty *vty, struct bsc_msc_data *msc)
 	WRITE_AMR(vty, msc, "5_15k", m5_15);
 	WRITE_AMR(vty, msc, "4_75k", m4_75);
 #undef WRITE_AMR
+
+	if (msc->amr_octet_aligned)
+		vty_out(vty, " amr-payload octet-aligned%s", VTY_NEWLINE);
+	else
+		vty_out(vty, " amr-payload bandwith-efficient%s", VTY_NEWLINE);
 }
 
 static void write_msc(struct vty *vty, struct bsc_msc_data *msc)
@@ -952,6 +957,23 @@ DEFUN_DEPRECATED(cfg_net_msc_dest, cfg_net_msc_dest_cmd,
 ALIAS_DEPRECATED(cfg_net_msc_dest, cfg_net_msc_no_dest_cmd,
       "no dest A.B.C.D <1-65000> <0-255>", NO_STR LEGACY_STR "-\n" "-\n" "-\n");
 
+DEFUN(cfg_net_msc_amr_octet_align,
+      cfg_net_msc_amr_octet_align_cmd,
+      "amr-payload (octet-aligned|bandwith-efficient",
+      "Set AMR payload framing mode\n"
+      "payload fields aligned on octet boundaries\n"
+      "payload fields packed (AoIP)\n")
+{
+	struct bsc_msc_data *data = bsc_msc_data(vty);
+
+	if (strcmp(argv[0], "octet-aligned") == 0)
+		data->amr_octet_aligned = true;
+	else if (strcmp(argv[0], "bandwith-efficient") == 0)
+		data->amr_octet_aligned = false;
+
+	return CMD_SUCCESS;
+}
+
 int bsc_vty_init_extra(void)
 {
 	struct gsm_network *net = bsc_gsmnet;
@@ -996,6 +1018,7 @@ int bsc_vty_init_extra(void)
 	install_element(MSC_NODE, &cfg_net_msc_amr_5_90_cmd);
 	install_element(MSC_NODE, &cfg_net_msc_amr_5_15_cmd);
 	install_element(MSC_NODE, &cfg_net_msc_amr_4_75_cmd);
+	install_element(MSC_NODE, &cfg_net_msc_amr_octet_align_cmd);
 	install_element(MSC_NODE, &cfg_net_msc_lcls_mode_cmd);
 	install_element(MSC_NODE, &cfg_net_msc_lcls_mismtch_cmd);
 	install_element(MSC_NODE, &cfg_msc_acc_lst_name_cmd);

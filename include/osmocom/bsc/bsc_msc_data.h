@@ -79,6 +79,7 @@ struct bsc_msc_data {
 
 	/* audio codecs */
 	struct gsm48_multi_rate_conf amr_conf;
+	bool amr_octet_aligned;
 	struct gsm_audio_support **audio_support;
 	int audio_length;
 	enum bsc_lcls_mode lcls_mode;
