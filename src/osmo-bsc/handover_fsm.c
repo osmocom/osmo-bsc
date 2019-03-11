@@ -362,6 +362,7 @@ static void handover_start_intra_bsc(struct gsm_subscriber_connection *conn)
 		.msc_assigned_cic = conn->ho.inter_bsc_in.msc_assigned_cic,
 		.re_use_mgw_endpoint_from_lchan = conn->lchan,
 		.wait_before_switching_rtp = true,
+		.s15_s0 = conn->lchan->activate.info.s15_s0,
 	};
 
 	lchan_activate(ho->new_lchan, &info);

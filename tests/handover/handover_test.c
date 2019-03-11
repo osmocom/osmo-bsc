@@ -276,9 +276,10 @@ struct gsm_lchan *create_lchan(struct gsm_bts *bts, int full_rate, char *codec)
 		lchan->tch_mode = GSM48_CMODE_SPEECH_V1;
 	else if (!strcasecmp(codec, "EFR") && full_rate)
 		lchan->tch_mode = GSM48_CMODE_SPEECH_EFR;
-	else if (!strcasecmp(codec, "AMR"))
+	else if (!strcasecmp(codec, "AMR")) {
 		lchan->tch_mode = GSM48_CMODE_SPEECH_AMR;
-	else {
+		lchan->activate.info.s15_s0 = 0x0002;
+	} else {
 		printf("Given codec unknown\n");
 		exit(EXIT_FAILURE);
 	}
