@@ -43,7 +43,6 @@
 #include <osmocom/bsc/gsm_timers.h>
 #include <osmocom/bsc/timeslot_fsm.h>
 #include <osmocom/bsc/lchan_fsm.h>
-#include <osmocom/bsc/mgw_endpoint_fsm.h>
 
 void *tall_bsc_ctx = NULL;
 
