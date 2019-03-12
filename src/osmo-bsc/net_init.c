@@ -18,7 +18,6 @@
  */
 
 #include <osmocom/bsc/osmo_bsc.h>
-#include <osmocom/bsc/bsc_msc_data.h>
 #include <osmocom/bsc/gsm_04_08_rr.h>
 #include <osmocom/bsc/handover_cfg.h>
 #include <osmocom/bsc/chan_alloc.h>
