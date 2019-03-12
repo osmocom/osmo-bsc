@@ -161,6 +161,9 @@ int osmo_bsc_audio_init(struct gsm_network *network);
 struct bsc_msc_data *osmo_msc_data_find(struct gsm_network *, int);
 struct bsc_msc_data *osmo_msc_data_alloc(struct gsm_network *, int);
 
+
+struct osmo_cell_global_id *cgi_for_msc(struct bsc_msc_data *msc, struct gsm_bts *bts);
+
 /* Helper function to calculate the port number for a given
  * timeslot/multiplex. This functionality is needed to support
  * the sccp-lite scenario where the MGW is handled externally */

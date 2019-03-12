@@ -38,7 +38,6 @@
 
 #include <osmocom/bsc/gsm_data.h>
 #include <osmocom/bsc/osmo_bsc_lcls.h>
-#include <osmocom/bsc/bsc_msc_data.h>
 #include <osmocom/bsc/abis_nm.h>
 #include <osmocom/bsc/handover_cfg.h>
 #include <osmocom/bsc/gsm_timers.h>
@@ -1694,19 +1693,3 @@ const struct value_string lchan_activate_mode_names[] = {
 	OSMO_VALUE_STRING(FOR_VTY),
 	{}
 };
-
-struct osmo_cell_global_id *cgi_for_msc(struct bsc_msc_data *msc, struct gsm_bts *bts)
-{
-	static struct osmo_cell_global_id cgi;
-	cgi.lai.plmn = msc->network->plmn;
-	if (msc->core_plmn.mcc != GSM_MCC_MNC_INVALID)
-		cgi.lai.plmn.mcc = msc->core_plmn.mcc;
-	if (msc->core_plmn.mnc != GSM_MCC_MNC_INVALID) {
-		cgi.lai.plmn.mnc = msc->core_plmn.mnc;
-		cgi.lai.plmn.mnc_3_digits = msc->core_plmn.mnc_3_digits;
-	}
-	cgi.lai.lac = (msc->core_lac != -1) ? msc->core_lac : bts->location_area_code;
-	cgi.cell_identity = (msc->core_ci != -1) ? msc->core_ci : bts->cell_identity;
-
-	return &cgi;
-}

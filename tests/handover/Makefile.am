@@ -69,6 +69,7 @@ handover_test_LDADD = \
 	$(top_builddir)/src/osmo-bsc/neighbor_ident.o \
 	$(top_builddir)/src/osmo-bsc/net_init.o \
 	$(top_builddir)/src/osmo-bsc/osmo_bsc_lcls.o \
+	$(top_builddir)/src/osmo-bsc/osmo_bsc_msc.o \
 	$(top_builddir)/src/osmo-bsc/paging.o \
 	$(top_builddir)/src/osmo-bsc/pcu_sock.o \
 	$(top_builddir)/src/osmo-bsc/penalty_timers.o \
