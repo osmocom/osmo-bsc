@@ -29,6 +29,7 @@
 #define _OSMO_MSC_DATA_H
 
 #include "debug.h"
+#include "osmo_bsc_lcls.h"
 
 #include <osmocom/core/timer.h>
 #include <osmocom/gsm/protocol/gsm_04_08.h>
@@ -52,19 +53,6 @@ enum {
 	MSC_CON_TYPE_NORMAL,
 	MSC_CON_TYPE_LOCAL,
 };
-
-enum bsc_lcls_mode {
-	BSC_LCLS_MODE_DISABLED,
-	BSC_LCLS_MODE_MGW_LOOP,
-	BSC_LCLS_MODE_BTS_LOOP,
-};
-
-extern const struct value_string bsc_lcls_mode_names[];
-
-static inline const char *bsc_lcls_mode_name(enum bsc_lcls_mode m)
-{
-	return get_value_string(bsc_lcls_mode_names, m);
-}
 
 /*! /brief Information on a remote MSC for libbsc.
  */

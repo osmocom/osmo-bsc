@@ -37,6 +37,7 @@
 #include <osmocom/gsm/gsm0808_utils.h>
 
 #include <osmocom/bsc/gsm_data.h>
+#include <osmocom/bsc/osmo_bsc_lcls.h>
 #include <osmocom/bsc/bsc_msc_data.h>
 #include <osmocom/bsc/abis_nm.h>
 #include <osmocom/bsc/handover_cfg.h>
@@ -45,13 +46,6 @@
 #include <osmocom/bsc/lchan_fsm.h>
 
 void *tall_bsc_ctx = NULL;
-
-const struct value_string bsc_lcls_mode_names[] = {
-	{ BSC_LCLS_MODE_DISABLED,	"disabled" },
-	{ BSC_LCLS_MODE_MGW_LOOP,	"mgw-loop" },
-	{ BSC_LCLS_MODE_BTS_LOOP,	"bts-loop" },
-	{ 0, NULL }
-};
 
 static LLIST_HEAD(bts_models);
 

@@ -42,6 +42,12 @@ struct value_string lcls_event_names[] = {
 	{ 0, NULL }
 };
 
+const struct value_string bsc_lcls_mode_names[] = {
+	{ BSC_LCLS_MODE_DISABLED,	"disabled" },
+	{ BSC_LCLS_MODE_MGW_LOOP,	"mgw-loop" },
+	{ BSC_LCLS_MODE_BTS_LOOP,	"bts-loop" },
+	{ 0, NULL }
+};
 
 /***********************************************************************
  * Utility functions

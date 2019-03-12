@@ -1,4 +1,7 @@
 #pragma once
+
+#include "gsm_data.h"
+
 #include <osmocom/core/fsm.h>
 
 enum lcls_fsm_state {
@@ -28,6 +31,19 @@ enum lcls_event {
 	/* "other" LCLS connection is dying */
 	LCLS_EV_OTHER_DEAD,
 };
+
+enum bsc_lcls_mode {
+	BSC_LCLS_MODE_DISABLED,
+	BSC_LCLS_MODE_MGW_LOOP,
+	BSC_LCLS_MODE_BTS_LOOP,
+};
+
+extern const struct value_string bsc_lcls_mode_names[];
+
+static inline const char *bsc_lcls_mode_name(enum bsc_lcls_mode m)
+{
+	return get_value_string(bsc_lcls_mode_names, m);
+}
 
 enum gsm0808_lcls_status lcls_get_status(const struct gsm_subscriber_connection *conn);
 
