@@ -23,5 +23,8 @@ SUBDIRS = \
 	libfilter \
 	osmo-bsc \
 	utils \
-	ipaccess \
 	$(NULL)
+
+if BUILD_IPA_UTILS
+SUBDIRS += ipaccess
+endif
