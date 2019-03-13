@@ -122,7 +122,6 @@ static struct bsc_msc_data *get_msc_by_addr(const struct osmo_sccp_addr *msc_add
 	}
 
 	ss7 = osmo_ss7_instance_find(msc->a.cs7_instance);
-	OSMO_ASSERT(ss7);
 	LOGP(DMSC, LOGL_ERROR, "Unable to find MSC data under address: %s\n", osmo_sccp_addr_name(ss7, msc_addr));
 	return NULL;
 }
