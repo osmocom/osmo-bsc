@@ -179,6 +179,10 @@ static int handle_n_connect_from_msc(struct osmo_sccp_user *scu, struct osmo_scu
 		goto refuse;
 	}
 
+	LOGP(DMSC, LOGL_DEBUG, "(calling_addr=%s conn_id=%u) N-CONNECT.ind from MSC %d\n",
+	     osmo_sccp_addr_dump(&scu_prim->u.connect.calling_addr),
+	     scu_prim->u.connect.conn_id, msc->nr);
+
 	conn = bsc_subscr_con_allocate(bsc_gsmnet);
 	if (!conn)
 		return -ENOMEM;
