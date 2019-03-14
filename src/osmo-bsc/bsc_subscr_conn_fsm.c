@@ -699,6 +699,7 @@ static void gscon_forget_mgw_endpoint(struct gsm_subscriber_connection *conn)
 {
 	conn->user_plane.mgw_endpoint = NULL;
 	conn->user_plane.mgw_endpoint_ci_msc = NULL;
+	conn->ho.created_ci_for_msc = NULL;
 	lchan_forget_mgw_endpoint(conn->lchan);
 	lchan_forget_mgw_endpoint(conn->assignment.new_lchan);
 	lchan_forget_mgw_endpoint(conn->ho.new_lchan);
@@ -706,9 +707,11 @@ static void gscon_forget_mgw_endpoint(struct gsm_subscriber_connection *conn)
 
 void gscon_forget_mgw_endpoint_ci(struct gsm_subscriber_connection *conn, struct mgwep_ci *ci)
 {
-	if (ci != conn->user_plane.mgw_endpoint_ci_msc)
-		return;
-	conn->user_plane.mgw_endpoint_ci_msc = NULL;
+	if (conn->ho.created_ci_for_msc == ci)
+		conn->ho.created_ci_for_msc = NULL;
+
+	if (conn->user_plane.mgw_endpoint_ci_msc == ci)
+		conn->user_plane.mgw_endpoint_ci_msc = NULL;
 }
 
 static void gscon_fsm_allstate(struct osmo_fsm_inst *fi, uint32_t event, void *data)
