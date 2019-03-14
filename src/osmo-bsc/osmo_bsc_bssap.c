@@ -43,6 +43,7 @@
 #include <osmocom/bsc/handover.h>
 #include <osmocom/core/fsm.h>
 #include <osmocom/core/socket.h>
+#include <osmocom/core/sockaddr_str.h>
 
 #define IP_V4_ADDR_LEN 4
 
@@ -1214,14 +1215,38 @@ int bsc_tx_bssmap_ho_request_ack(struct gsm_subscriber_connection *conn, struct 
 {
 	struct msgb *msg;
 	struct gsm_lchan *new_lchan = conn->ho.new_lchan;
+	struct sockaddr_storage ss;
+	struct gsm0808_handover_request_ack params = {
+		.l3_info = rr_ho_command->data,
+		.l3_info_len = rr_ho_command->len,
+		.chosen_channel_present = true,
+		.chosen_channel = gsm0808_chosen_channel(new_lchan->type, new_lchan->tch_mode),
+		.chosen_encr_alg = new_lchan->encr.alg_id,
+		.chosen_speech_version = gsm0808_permitted_speech(new_lchan->type, new_lchan->tch_mode),
+	};
+
+	if (gscon_is_aoip(conn)) {
+		struct osmo_sockaddr_str to_msc_rtp;
+		const struct mgcp_conn_peer *rtp_info = osmo_mgcpc_ep_ci_get_rtp_info(conn->user_plane.mgw_endpoint_ci_msc);
+		if (!rtp_info) {
+			LOG_HO(conn, LOGL_ERROR,
+			       "Handover Request Acknowledge: no RTP address known to send as"
+			       " AoIP Transport Layer Address\n");
+			return -EINVAL;
+		}
+		if (osmo_sockaddr_str_from_str(&to_msc_rtp, rtp_info->addr, rtp_info->port)) {
+			LOG_HO(conn, LOGL_ERROR, "Handover Request Acknowledge: cannot encode AoIP Transport Layer\n");
+			return -EINVAL;
+		}
+		if (osmo_sockaddr_str_to_sockaddr(&to_msc_rtp, &ss)) {
+			LOG_HO(conn, LOGL_ERROR, "Handover Request Acknowledge: cannot encode AoIP Transport Layer\n");
+			return -EINVAL;
+		}
+		params.aoip_transport_layer = &ss;
+	}
 
 	LOG_HO(conn, LOGL_DEBUG, "Sending BSSMAP Handover Request Acknowledge\n");
-	msg = gsm0808_create_handover_request_ack(rr_ho_command->data, rr_ho_command->len,
-						  gsm0808_chosen_channel(new_lchan->type,
-									 new_lchan->tch_mode),
-						  new_lchan->encr.alg_id,
-						  gsm0808_permitted_speech(new_lchan->type,
-									   new_lchan->tch_mode));
+	msg = gsm0808_create_handover_request_ack2(&params);
 	msgb_free(rr_ho_command);
 	if (!msg)
 		return -ENOMEM;
