@@ -563,7 +563,7 @@ static void assignment_fsm_wait_lchan_established_onenter(struct osmo_fsm_inst *
 	struct gsm_subscriber_connection *conn = assignment_fi_conn(fi);
 	/* Do we still need to wait for the RTP stream at all? */
 	if (lchan_state_is(conn->assignment.new_lchan, LCHAN_ST_ESTABLISHED)) {
-		LOG_ASSIGNMENT(conn, LOGL_DEBUG, "lchan fully established, no need to wait");
+		LOG_ASSIGNMENT(conn, LOGL_DEBUG, "lchan fully established, no need to wait\n");
 		assignment_fsm_post_lchan_established(fi);
 	}
 }
