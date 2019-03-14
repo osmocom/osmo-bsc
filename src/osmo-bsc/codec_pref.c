@@ -281,7 +281,6 @@ int match_codec_pref(struct channel_mode_and_rate *ch_mode_rate,
 {
 	unsigned int i;
 	uint8_t perm_spch;
-	bool full_rate;
 	bool match = false;
 	const struct gsm0808_speech_codec *sc_match = NULL;
 	uint16_t amr_s15_s0_supported;
@@ -296,16 +295,15 @@ int match_codec_pref(struct channel_mode_and_rate *ch_mode_rate,
 		perm_spch = audio_support_to_gsm88(msc->audio_support[i]);
 
 		/* Determine if the result is a half or full rate codec */
-		rc = full_rate_from_perm_spch(&full_rate, perm_spch);
+		rc = full_rate_from_perm_spch(&ch_mode_rate->full_rate, perm_spch);
 		if (rc < 0)
 			return -EINVAL;
-		ch_mode_rate->chan_rate = full_rate ? CH_RATE_FULL : CH_RATE_HALF;
 
 		/* If we have a preference for FR or HR in our request, we
 		 * discard the potential match */
-		if (rate_pref == RATE_PREF_HR && ch_mode_rate->chan_rate == CH_RATE_FULL)
+		if (rate_pref == RATE_PREF_HR && ch_mode_rate->full_rate)
 			continue;
-		if (rate_pref == RATE_PREF_FR && ch_mode_rate->chan_rate == CH_RATE_HALF)
+		if (rate_pref == RATE_PREF_FR && !ch_mode_rate->full_rate)
 			continue;
 
 		/* Check this permitted speech value against the BTS specific parameters.
@@ -323,8 +321,8 @@ int match_codec_pref(struct channel_mode_and_rate *ch_mode_rate,
 
 	/* Exit without result, in case no match can be deteched */
 	if (!match) {
+		ch_mode_rate->full_rate = false;
 		ch_mode_rate->chan_mode = GSM48_CMODE_SIGN;
-		ch_mode_rate->chan_rate = CH_RATE_SDCCH;
 		ch_mode_rate->s15_s0 = 0;
 		return -1;
 	}

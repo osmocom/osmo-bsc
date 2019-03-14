@@ -569,11 +569,10 @@ void handover_start_inter_bsc_in(struct gsm_subscriber_connection *conn,
 		}
 
 		LOG_HO(conn, LOGL_DEBUG, "BTS %u: Found matching audio type: %s %s (for %s)\n",
-		       bts->nr, gsm48_chan_mode_name(ch_mode_rate.chan_mode),
-		       ch_mode_rate.chan_rate == CH_RATE_FULL ?  "full-rate" : "half-rate",
+		       bts->nr, gsm48_chan_mode_name(ch_mode_rate.chan_mode), ch_mode_rate.full_rate? "full-rate" : "half-rate",
 		       gsm0808_channel_type_name(&req->ct));
 
-		lchan = lchan_select_by_chan_mode(bts, ch_mode_rate.chan_mode, ch_mode_rate.chan_rate);
+		lchan = lchan_select_by_chan_mode(bts, ch_mode_rate.chan_mode, ch_mode_rate.full_rate);
 		if (!lchan) {
 			LOG_HO(conn, LOGL_DEBUG, "BTS %u has no matching free channels\n", bts->nr);
 			continue;

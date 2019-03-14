@@ -407,7 +407,7 @@ static int test_match_codec_pref(const struct gsm0808_channel_type *ct, const st
 
 	rc = match_codec_pref(&ch_mode_rate, ct, scl, msc, bts, RATE_PREF_NONE);
 	printf(" * result: rc=%i, full_rate=%i, s15_s0=%04x, chan_mode=%s\n",
-	       rc, ch_mode_rate.chan_rate == CH_RATE_FULL, ch_mode_rate.s15_s0, gsm48_chan_mode_name(ch_mode_rate.chan_mode));
+	       rc, ch_mode_rate.full_rate, ch_mode_rate.s15_s0, gsm48_chan_mode_name(ch_mode_rate.chan_mode));
 
 	printf("\n");
 
