@@ -484,6 +484,7 @@ void assignment_fsm_start(struct gsm_subscriber_connection *conn, struct gsm_bts
 		.activ_for = FOR_ASSIGNMENT,
 		.for_conn = conn,
 		.chan_mode = conn->lchan->ch_mode_rate.chan_mode,
+		.encr = conn->lchan->encr,
 		.s15_s0 = conn->lchan->ch_mode_rate.s15_s0,
 		.requires_voice_stream = conn->assignment.requires_voice_stream,
 		.msc_assigned_cic = req->msc_assigned_cic,

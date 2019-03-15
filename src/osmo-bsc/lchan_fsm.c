@@ -518,14 +518,6 @@ static void lchan_fsm_wait_ts_ready_onenter(struct osmo_fsm_inst *fi, uint32_t p
 
 	lchan->conn = info->for_conn;
 
-	if (old_lchan)
-		lchan->encr = old_lchan->encr;
-	else {
-		lchan->encr = (struct gsm_encr){
-			.alg_id = RSL_ENC_ALG_A5(0),	/* no encryption */
-		};
-	}
-
 	/* If there is a previous lchan, and the new lchan is on the same cell as previous one,
 	 * take over power and TA values. Otherwise, use max power and zero TA. */
 	if (old_lchan && old_lchan->ts->trx->bts == bts) {
@@ -585,14 +577,17 @@ static void lchan_fsm_wait_ts_ready_onenter(struct osmo_fsm_inst *fi, uint32_t p
 	use_mgwep_ci = lchan_use_mgw_endpoint_ci_bts(lchan);
 
 	LOG_LCHAN(lchan, LOGL_INFO,
-		  "Activation requested: %s voice=%s MGW-ci=%s type=%s tch-mode=%s\n",
+		  "Activation requested: %s voice=%s MGW-ci=%s type=%s tch-mode=%s encr-alg=A5/%u ck=%s\n",
 		  lchan_activate_mode_name(lchan->activate.info.activ_for),
 		  lchan->activate.info.requires_voice_stream ? "yes" : "no",
 		  lchan->activate.info.requires_voice_stream ?
 			(use_mgwep_ci ? mgwep_ci_name(use_mgwep_ci) : "new")
 			: "none",
 		  gsm_lchant_name(lchan->type),
-		  gsm48_chan_mode_name(lchan->tch_mode));
+		  gsm48_chan_mode_name(lchan->tch_mode),
+		  (lchan->activate.info.encr.alg_id ? : 1)-1,
+		  lchan->activate.info.encr.key_len ? osmo_hexdump_nospc(lchan->activate.info.encr.key,
+									 lchan->activate.info.encr.key_len) : "none");
 
 	/* Ask for the timeslot to make ready for this lchan->type.
 	 * We'll receive LCHAN_EV_TS_READY or LCHAN_EV_TS_ERROR in response. */
@@ -656,6 +651,8 @@ static void lchan_fsm_wait_activ_ack_onenter(struct osmo_fsm_inst *fi, uint32_t 
 		act_type = RSL_ACT_INTRA_NORM_ASS;
 		break;
 	}
+
+	lchan->encr = lchan->activate.info.encr;
 
 	rc = rsl_tx_chan_activ(lchan, act_type, ho_ref);
 	if (rc)

@@ -358,6 +358,7 @@ static void handover_start_intra_bsc(struct gsm_subscriber_connection *conn)
 		.activ_for = FOR_HANDOVER,
 		.for_conn = conn,
 		.chan_mode = conn->lchan->tch_mode,
+		.encr = conn->lchan->encr,
 		.requires_voice_stream = conn->lchan->mgw_endpoint_ci_bts ? true : false,
 		.msc_assigned_cic = conn->ho.inter_bsc_in.msc_assigned_cic,
 		.re_use_mgw_endpoint_from_lchan = conn->lchan,
