@@ -179,6 +179,10 @@ struct handover_in_req {
 	struct gsm0808_speech_codec_list scl;
 	struct gsm0808_encrypt_info ei;
 	struct gsm_classmark classmark;
+	/* chosen_encr_alg reflects the encoded value as in RSL_ENC_ALG_A5(a5_numer):
+	 * chosen_encr_alg == 1 means A5/0 i.e. no encryption, chosen_encr_alg == 4 means A5/3.
+	 * chosen_encr_alg == 0 means no such IE was present. */
+	uint8_t chosen_encr_alg;
 	struct gsm0808_cell_id cell_id_serving;
 	char cell_id_serving_name[64];
 	struct gsm0808_cell_id cell_id_target;

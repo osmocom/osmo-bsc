@@ -432,6 +432,17 @@ static bool parse_ho_request(struct gsm_subscriber_connection *conn, const struc
 		       "Missing mandatory IE: 3GPP mandates either Classmark Information 1 or 2"
 		       " in BSSMAP Handover Request, but neither are present. Will continue without.\n");
 
+	if ((e = TLVP_GET(tp, GSM0808_IE_CHOSEN_ENCR_ALG))) {
+		req->chosen_encr_alg = e->val[0];
+		if (req->chosen_encr_alg < 1 || req->chosen_encr_alg > 8)
+			LOG_HO(conn, LOGL_ERROR, "Chosen Encryption Algorithm (Serving) is invalid: %u\n",
+			       req->chosen_encr_alg);
+	}
+
+	LOG_HO(conn, LOGL_DEBUG, "Handover Request encryption info: chosen=A5/%u key=%s\n",
+	       (req->chosen_encr_alg ? : 1) - 1, req->ei.key_len?
+	       osmo_hexdump_nospc(req->ei.key, req->ei.key_len) : "none");
+
 	if (TLVP_PRESENT(tp, GSM0808_IE_AOIP_TRASP_ADDR)) {
 		int rc;
 		unsigned int u;
@@ -610,6 +621,24 @@ void handover_start_inter_bsc_in(struct gsm_subscriber_connection *conn,
 		.requires_voice_stream = chan_mode_is_tch(ch_mode_rate.chan_mode),
 		.msc_assigned_cic = req->msc_assigned_cic,
 	};
+
+	if (req->chosen_encr_alg) {
+		info.encr.alg_id = req->chosen_encr_alg;
+		if (info.encr.alg_id > 1 && !req->ei.key_len) {
+			ho_fail(HO_RESULT_ERROR, "Chosen Encryption Algorithm (Serving) reflects A5/%u"
+				" but there is no key (Encryption Information)", info.encr.alg_id - 1);
+			return;
+		}
+	}
+
+	if (req->ei.key_len) {
+		if (req->ei.key_len > sizeof(info.encr.key)) {
+			ho_fail(HO_RESULT_ERROR, "Encryption Information IE key length is too large: %u\n",
+				req->ei.key_len);
+		}
+		memcpy(info.encr.key, req->ei.key, req->ei.key_len);
+		info.encr.key_len = req->ei.key_len;
+	}
 
 	lchan_activate(ho->new_lchan, &info);
 }
