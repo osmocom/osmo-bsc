@@ -88,7 +88,7 @@ static const struct state_timeout assignment_fsm_timeouts[32] = {
 			conn->assignment.result_rate_ctr_done = true; \
 		} else \
 			LOG_ASSIGNMENT(conn, LOGL_DEBUG, \
-				       "result rate counter already recorded, NOT counting as: %s %s", \
+				       "result rate counter already recorded, NOT counting as: %s %s\n", \
 				       bsc_ctr_description[counter].name, \
 				       bsc_ctr_description[counter].description); \
 	} while(0)
