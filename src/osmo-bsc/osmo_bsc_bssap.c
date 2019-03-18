@@ -1081,6 +1081,36 @@ int bsc_handle_udt(struct bsc_msc_data *msc,
 	return 0;
 }
 
+/* Extract and verify the length information from the BSSMAP header. */
+static unsigned int bssmap_msg_len(struct msgb *msg, unsigned int length,
+				   const struct gsm_subscriber_connection *conn)
+{
+	unsigned int expected_len;
+	unsigned int calculated_len;
+	struct bssmap_header *bssmap_header;
+
+	bssmap_header = (struct bssmap_header *)msg->l3h;
+
+	calculated_len = length - sizeof(struct bssmap_header);
+	expected_len = bssmap_header->length;
+
+	/* In case of contradictory length information, decide for the
+	 * shorter length */
+	if (calculated_len > expected_len) {
+		LOGPFSML(conn->fi, LOGL_NOTICE,
+			 "BSSMAP message contains extra data, expected %u bytes, got %u bytes, truncated\n",
+			 expected_len, calculated_len);
+		return expected_len;
+	} else if (calculated_len < expected_len) {
+		LOGPFSML(conn->fi, LOGL_NOTICE,
+			 "Short BSSMAP message, expected %u bytes, got %u bytes\n",
+			 expected_len, calculated_len);
+		return calculated_len;
+	}
+
+	return expected_len;
+}
+
 int bsc_handle_dt(struct gsm_subscriber_connection *conn,
 		  struct msgb *msg, unsigned int len)
 {
@@ -1093,7 +1123,7 @@ int bsc_handle_dt(struct gsm_subscriber_connection *conn,
 	switch (msg->l3h[0]) {
 	case BSSAP_MSG_BSS_MANAGEMENT:
 		msg->l4h = &msg->l3h[sizeof(struct bssmap_header)];
-		bssmap_rcvmsg_dt1(conn, msg, len - sizeof(struct bssmap_header));
+		bssmap_rcvmsg_dt1(conn, msg, bssmap_msg_len(msg, len, conn));
 		break;
 	case BSSAP_MSG_DTAP:
 		dtap_rcvmsg(conn, msg, len);
