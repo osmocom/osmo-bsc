@@ -22,6 +22,7 @@
 
 #include <osmocom/gsm/rsl.h>
 #include <osmocom/core/byteswap.h>
+#include <osmocom/gsm/protocol/gsm_08_08.h>
 
 #include <osmocom/bsc/debug.h>
 #include <osmocom/bsc/lchan_fsm.h>
