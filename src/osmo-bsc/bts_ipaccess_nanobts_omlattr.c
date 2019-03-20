@@ -25,15 +25,6 @@
 #include <osmocom/bsc/abis_nm.h>
 #include <osmocom/bsc/gsm_timers.h>
 
-static void patch_16(uint8_t *data, const uint16_t val)
-{
-	memcpy(data, &val, sizeof(val));
-}
-
-static void patch_32(uint8_t *data, const uint32_t val)
-{
-	memcpy(data, &val, sizeof(val));
-}
 
 struct msgb *nanobts_attr_bts_get(struct gsm_bts *bts)
 {
@@ -213,11 +204,11 @@ struct msgb *nanobts_attr_nscv_get(struct gsm_bts *bts)
 	msgb_tl16v_put(msgb, NM_ATT_IPACC_NSVCI, 2, buf);
 
 	/* remote udp port */
-	patch_16(&buf[0], htons(bts->gprs.nsvc[0].remote_port));
+	osmo_store16be(bts->gprs.nsvc[0].remote_port, &buf[0]);
 	/* remote ip address */
-	patch_32(&buf[2], htonl(bts->gprs.nsvc[0].remote_ip));
+	osmo_store32be(bts->gprs.nsvc[0].remote_ip, &buf[2]);
 	/* local udp port */
-	patch_16(&buf[6], htons(bts->gprs.nsvc[0].local_port));
+	osmo_store16be(bts->gprs.nsvc[0].local_port, &buf[6]);
 	msgb_tl16v_put(msgb, NM_ATT_IPACC_NS_LINK_CFG, 8, buf);
 
 	return msgb;
