@@ -1,3 +1,9 @@
+osmo-bsc (1.2.2) unstable; urgency=medium
+
+  * osmo-bsc/Makefile.am: use LIBOSMOLEGACYMGCP_CFLAGS
+
+ -- Oliver Smith <osmith@sysmocom.de>  Thu, 28 Mar 2019 16:36:58 +0100
+
 osmo-bsc (1.2.1) unstable; urgency=medium
 
   [ Philipp Maier ]
