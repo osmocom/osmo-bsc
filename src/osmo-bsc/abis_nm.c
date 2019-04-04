@@ -1713,7 +1713,7 @@ int abis_nm_get_attr(struct gsm_bts *bts, uint8_t obj_class, uint8_t bts_nr, uin
 		return -EINVAL;
 	}
 
-	DEBUGP(DNM, "Get Attr (bts=%u)\n", bts->nr);
+	DEBUGP(DNM, "Get Attr (bts=%u,trx=%u)\n", bts->nr, trx_nr);
 
 	msg = nm_msgb_alloc();
 	oh = (struct abis_om_hdr *) msgb_put(msg, ABIS_OM_FOM_HDR_SIZE);
