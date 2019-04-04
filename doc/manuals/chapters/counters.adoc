@@ -1,4 +1,4 @@
 [[counters]]
-== Counters
+== Implemented Counters
 
 include::./counters_generated.adoc[]

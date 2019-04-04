@@ -23,6 +23,8 @@ include::./common/chapters/bsc.adoc[]
 
 include::{srcdir}/chapters/handover.adoc[]
 
+include::./common/chapters/counters-overview.adoc[]
+
 include::{srcdir}/chapters/counters.adoc[]
 
 include::./common/chapters/abis.adoc[]
