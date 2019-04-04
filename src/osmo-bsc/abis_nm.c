@@ -2815,9 +2815,8 @@ int abis_nm_ipaccess_msg(struct gsm_bts *bts, uint8_t msg_type,
 	oh->mdisc = ABIS_OM_MDISC_MANUF;
 
 	/* add the ip.access magic */
-	data = msgb_put(msg, sizeof(abis_nm_ipa_magic)+1);
-	*data++ = sizeof(abis_nm_ipa_magic);
-	memcpy(data, abis_nm_ipa_magic, sizeof(abis_nm_ipa_magic));
+	msgb_lv_put(msg, sizeof(abis_nm_ipa_magic),
+		    (const uint8_t *) abis_nm_ipa_magic);
 
 	/* fill the 12.21 FOM header */
 	foh = (struct abis_om_fom_hdr *) msgb_put(msg, sizeof(*foh));
