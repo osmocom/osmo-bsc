@@ -2709,11 +2709,12 @@ static int abis_nm_rx_ipacc(struct msgb *msg)
 
 	abis_nm_tlv_parse(&tp, sign_link->trx->bts, foh->data, oh->length-sizeof(*foh));
 
-	DEBUGPFOH(DNM, foh, "IPACCESS(0x%02x): ", foh->msg_type);
+	DEBUGPFOH(DNM, foh, "Rx IPACCESS(0x%02x): %s\n", foh->msg_type,
+		  osmo_hexdump(foh->data, oh->length - sizeof(*foh)));
 
 	switch (foh->msg_type) {
 	case NM_MT_IPACC_RSL_CONNECT_ACK:
-		DEBUGPC(DNM, "RSL CONNECT ACK ");
+		DEBUGPFOH(DNM, foh, "RSL CONNECT ACK ");
 		if (TLVP_PRESENT(&tp, NM_ATT_IPACC_DST_IP)) {
 			memcpy(&addr,
 				TLVP_VAL(&tp, NM_ATT_IPACC_DST_IP), sizeof(addr));
@@ -2773,7 +2774,7 @@ static int abis_nm_rx_ipacc(struct msgb *msg)
 			LOGPC(DNM, LOGL_ERROR, "\n");
 		break;
 	default:
-		DEBUGPC(DNM, "unknown\n");
+		LOGPFOH(DNM, LOGL_ERROR, foh, "Unknown message\n");
 		break;
 	}
 
