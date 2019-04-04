@@ -2690,10 +2690,6 @@ int abis_nm_bs11_set_bport_line_cfg(struct gsm_bts *bts, uint8_t bport, enum abi
 	return abis_nm_sendmsg(bts, msg);
 }
 
-/* ip.access nanoBTS specific commands */
-static const char ipaccess_magic[] = "com.ipaccess";
-
-
 static int abis_nm_rx_ipacc(struct msgb *msg)
 {
 	struct in_addr addr;
@@ -2706,7 +2702,7 @@ static int abis_nm_rx_ipacc(struct msgb *msg)
 
 	foh = (struct abis_om_fom_hdr *) (oh->data + 1 + idstrlen);
 
-	if (strncmp((char *)&oh->data[1], ipaccess_magic, idstrlen)) {
+	if (strncmp((char *)&oh->data[1], abis_nm_ipa_magic, idstrlen)) {
 		LOGPFOH(DNM, LOGL_ERROR, foh, "id string is not com.ipaccess !?!\n");
 		return -EINVAL;
 	}
@@ -2819,9 +2815,9 @@ int abis_nm_ipaccess_msg(struct gsm_bts *bts, uint8_t msg_type,
 	oh->mdisc = ABIS_OM_MDISC_MANUF;
 
 	/* add the ip.access magic */
-	data = msgb_put(msg, sizeof(ipaccess_magic)+1);
-	*data++ = sizeof(ipaccess_magic);
-	memcpy(data, ipaccess_magic, sizeof(ipaccess_magic));
+	data = msgb_put(msg, sizeof(abis_nm_ipa_magic)+1);
+	*data++ = sizeof(abis_nm_ipa_magic);
+	memcpy(data, abis_nm_ipa_magic, sizeof(abis_nm_ipa_magic));
 
 	/* fill the 12.21 FOM header */
 	foh = (struct abis_om_fom_hdr *) msgb_put(msg, sizeof(*foh));
