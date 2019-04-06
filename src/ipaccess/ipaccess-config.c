@@ -27,6 +27,7 @@
 #include <getopt.h>
 #include <errno.h>
 #include <ctype.h>
+#include <regex.h>
 #include <inttypes.h>
 #include <sys/fcntl.h>
 #include <sys/stat.h>
@@ -842,33 +843,20 @@ static void analyze_firmware(const char *filename)
 
 static bool check_unitid_fmt(const char* unit_id)
 {
-	const char *p = unit_id;
-	bool must_digit = true;
-	uint8_t remain_slash = 2;
+	regex_t regexp;
+	int rc;
 
 	if (strlen(unit_id) < 5)
 		goto wrong_fmt;
 
-	while (*p != '\0') {
-		if (*p != '/' && !isdigit(*p))
-			goto wrong_fmt;
-		if (*p == '/' && must_digit)
-			goto wrong_fmt;
-		if (*p == '/') {
-			must_digit = true;
-			remain_slash--;
-			if (remain_slash < 0)
-				goto wrong_fmt;
-		} else {
-			must_digit = false;
-		}
-		p++;
-	}
+	rc = regcomp(&regexp, "^[0-9]+/[0-9]+/[0-9]+$", REG_EXTENDED | REG_NOSUB);
+	OSMO_ASSERT(!rc);
 
-	if (*(p-1) == '/')
-		goto wrong_fmt;
+	rc = regexec(&regexp, unit_id, 0, NULL, 0);
+	regfree(&regexp);
 
-	return true;
+	if (rc == 0)
+		return true;
 
 wrong_fmt:
 	fprintf(stderr, "ERROR: unit-id wrong format. Must be '\\d+/\\d+/\\d+'\n");
