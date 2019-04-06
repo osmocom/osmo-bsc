@@ -260,7 +260,7 @@ int gsm_parse_reg(void *ctx, regex_t *reg, char **str, int argc, const char **ar
 
 	if (argc > 0) {
 		*str = talloc_strdup(ctx, argv[0]);
-		ret = regcomp(reg, argv[0], 0);
+		ret = regcomp(reg, argv[0], REG_NOSUB);
 
 		/* handle compilation failures */
 		if (ret != 0) {
