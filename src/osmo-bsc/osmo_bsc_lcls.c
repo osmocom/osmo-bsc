@@ -388,7 +388,7 @@ static void lcls_no_lcls_fn(struct osmo_fsm_inst *fi, uint32_t event, void *data
 	case LCLS_EV_UPDATE_CFG_CSC:
 		if (lcls_handle_cfg_update(conn, data) != 0)
 			return;
-		return;
+		break;
 	case LCLS_EV_APPLY_CFG_CSC:
 		if (conn->lcls.config == GSM0808_LCLS_CFG_NA)
 			return;
@@ -426,7 +426,7 @@ static void lcls_not_yet_ls_fn(struct osmo_fsm_inst *fi, uint32_t event, void *d
 	case LCLS_EV_UPDATE_CFG_CSC:
 		if (lcls_handle_cfg_update(conn, data) != 0)
 			return;
-		return;
+		break;
 	case LCLS_EV_APPLY_CFG_CSC:
 		if (lcls_enable_possible(conn)) {
 			osmo_fsm_inst_state_chg(fi, ST_LOCALLY_SWITCHED, 0, 0);
@@ -471,7 +471,7 @@ static void lcls_not_possible_ls_fn(struct osmo_fsm_inst *fi, uint32_t event, vo
 	case LCLS_EV_UPDATE_CFG_CSC:
 		if (lcls_handle_cfg_update(conn, data) != 0)
 			return;
-		return;
+		break;
 	case LCLS_EV_APPLY_CFG_CSC:
 		if (lcls_perform_correlation(conn) != 0) {
 			/* no correlation result: Remain in NOT_POSSIBLE_LS */
