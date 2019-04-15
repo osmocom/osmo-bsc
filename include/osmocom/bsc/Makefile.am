@@ -43,7 +43,6 @@ noinst_HEADERS = \
 	osmo_bsc_rf.h \
 	osmo_bsc_sigtran.h \
 	bsc_msc_data.h \
-	osmux.h \
 	paging.h \
 	pcu_if.h \
 	pcuif_proto.h \
