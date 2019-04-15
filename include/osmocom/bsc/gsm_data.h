@@ -1566,7 +1566,6 @@ struct gsm_bts *gsm_bts_by_lac(struct gsm_network *net, unsigned int lac,
 				struct gsm_bts *start_bts);
 
 extern void *tall_bsc_ctx;
-extern int ipacc_rtp_direct;
 
 /* this actaully refers to the IPA transport, not the BTS model */
 static inline int is_ipaccess_bts(struct gsm_bts *bts)

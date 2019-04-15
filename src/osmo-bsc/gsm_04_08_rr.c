@@ -45,10 +45,6 @@
 #include <osmocom/bsc/gsm_data.h>
 
 
-/* should ip.access BTS use direct RTP streams between each other (1),
- * or should OpenBSC always act as RTP relay/proxy in between (0) ? */
-int ipacc_rtp_direct = 1;
-
 int gsm48_sendmsg(struct msgb *msg)
 {
 	if (msg->lchan)
