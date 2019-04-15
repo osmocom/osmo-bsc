@@ -19,14 +19,8 @@ e1_input
 network
  network country code 1
  mobile network code 1
- short name OpenBSC
- long name OpenBSC
- auth policy closed
- location updating reject cause 13
  encryption a5 0
  neci 1
- rrlp mode none
- mm info 1
  handover 0
  bts 0
   type nanobts <2>
@@ -103,14 +97,8 @@ e1_input
 network
  network country code 1
  mobile network code 1
- short name OpenBSC
- long name OpenBSC
- auth policy closed
- location updating reject cause 13
  encryption a5 0
  neci 1
- rrlp mode none
- mm info 0
  handover 0
  bts 0
   type nanobts
@@ -179,7 +167,7 @@ network
     first nanoBTS unit (`trx 0`) needs to be configured to 1800/0/0 and
     the second nanoBTS unit (`trx 1`) needs to be configured to 1800/0/1.
     You can configure the BTS unit IDs using the `ipaccess-config`
-    utility included in OpenBSC.
+    utility included in OsmoBSC.
 
 [NOTE]
 ====
