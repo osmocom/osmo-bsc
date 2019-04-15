@@ -274,7 +274,7 @@ int main(int argc, char **argv)
 	g_st.cdkscreen = initCDKScreen(g_st.curses_win);
 	initCDKColor();
 
-	g_st.title = "OpenBSC link quality monitor";
+	g_st.title = "OsmoBSC link quality monitor";
 	title[0] = g_st.title;
 	g_st.cdk_title = newCDKLabel(g_st.cdkscreen, CENTER, 0, title, 1, FALSE, FALSE);
 

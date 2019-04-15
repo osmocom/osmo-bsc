@@ -1,4 +1,4 @@
-/* OpenBSC interface to quagga VTY */
+/* OsmoBSC interface to quagga VTY */
 /* (C) 2009-2017 by Harald Welte <laforge@gnumonks.org>
  * All Rights Reserved
  *
@@ -3170,7 +3170,7 @@ DEFUN(cfg_bts_early_cm_3g, cfg_bts_early_cm_3g_cmd,
 DEFUN(cfg_bts_neigh_mode, cfg_bts_neigh_mode_cmd,
 	"neighbor-list mode (automatic|manual|manual-si5)",
 	"Neighbor List\n" "Mode of Neighbor List generation\n"
-	"Automatically from all BTS in this OpenBSC\n" "Manual\n"
+	"Automatically from all BTS in this BSC\n" "Manual\n"
 	"Manual with different lists for SI2 and SI5\n")
 {
 	struct gsm_bts *bts = vty->index;
