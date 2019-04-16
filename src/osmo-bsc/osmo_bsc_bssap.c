@@ -776,6 +776,8 @@ static int bssmap_handle_assignm_req(struct gsm_subscriber_connection *conn,
 	struct tlv_parsed tp;
 	uint16_t cic = 0;
 	bool aoip = false;
+	bool use_osmux = false;
+	uint8_t osmux_cid = 0;
 	struct sockaddr_storage rtp_addr;
 	struct gsm0808_channel_type ct;
 	uint8_t cause;
@@ -853,6 +855,30 @@ static int bssmap_handle_assignm_req(struct gsm_subscriber_connection *conn,
 			goto reject;
 		}
 
+		if (TLVP_PRESENT(&tp, GSM0808_IE_OSMO_OSMUX_CID)) {
+			if (conn->sccp.msc->use_osmux == OSMUX_USAGE_OFF) {
+				LOGP(DMSC, LOGL_ERROR, "MSC using Osmux but we have it disabled.\n");
+				cause = GSM0808_CAUSE_INCORRECT_VALUE;
+				goto reject;
+			}
+			use_osmux = true;
+			rc = gsm0808_dec_osmux_cid(&osmux_cid,
+						   TLVP_VAL(&tp, GSM0808_IE_OSMO_OSMUX_CID),
+						   TLVP_LEN(&tp, GSM0808_IE_OSMO_OSMUX_CID));
+			if (rc < 0) {
+				LOGP(DMSC, LOGL_ERROR, "Unable to decode Osmux CID.\n");
+				cause = GSM0808_CAUSE_INCORRECT_VALUE;
+				goto reject;
+			}
+		} else {
+			if (conn->sccp.msc->use_osmux == OSMUX_USAGE_ONLY) {
+				LOGP(DMSC, LOGL_ERROR, "MSC not using Osmux but we are forced to use it.\n");
+				cause = GSM0808_CAUSE_INCORRECT_VALUE;
+				goto reject;
+			} else if (conn->sccp.msc->use_osmux == OSMUX_USAGE_ON)
+				LOGP(DMSC, LOGL_NOTICE, "MSC not using Osmux but we have Osmux enabled.\n");
+		}
+
 		/* Decode speech codec list. First set len = 0. */
 		conn->codec_list = (struct gsm0808_speech_codec_list){};
 		/* Check for speech codec list element */
@@ -878,6 +904,8 @@ static int bssmap_handle_assignm_req(struct gsm_subscriber_connection *conn,
 		req = (struct assignment_request){
 			.aoip = aoip,
 			.msc_assigned_cic = cic,
+			.use_osmux = use_osmux,
+			.osmux_cid = osmux_cid,
 		};
 
 		/* Match codec information from the assignment command against the

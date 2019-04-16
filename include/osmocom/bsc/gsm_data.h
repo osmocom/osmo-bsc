@@ -33,6 +33,7 @@
 #include <osmocom/bsc/bsc_msg_filter.h>
 #include <osmocom/bsc/acc_ramp.h>
 #include <osmocom/bsc/neighbor_ident.h>
+#include <osmocom/bsc/osmux.h>
 
 #define GSM_T3122_DEFAULT 10
 
@@ -120,6 +121,8 @@ struct assignment_request {
 
 	char msc_rtp_addr[INET_ADDRSTRLEN];
 	uint16_t msc_rtp_port;
+	bool use_osmux;
+	uint8_t osmux_cid;
 
 	/* Rate/codec setting in preference order (need at least 1 !) */
 	int n_ch_mode_rate;

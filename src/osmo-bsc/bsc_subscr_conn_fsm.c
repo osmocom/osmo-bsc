@@ -519,6 +519,8 @@ bool gscon_connect_mgw_to_msc(struct gsm_subscriber_connection *conn,
 		.port = port,
 		.call_id = conn->sccp.conn_id,
 		.ptime = 20,
+		.x_osmo_osmux_use = conn->assignment.req.use_osmux,
+		.x_osmo_osmux_cid = conn->assignment.req.osmux_cid,
 	};
 	mgcp_pick_codec(&mgw_info, for_lchan, false);
 
