@@ -51,6 +51,25 @@
  * helpers for the assignment command
  */
 
+/* We expect MSC to provide use with an Osmocom extension TLV in BSSMAP_RESET to
+ * announce Osmux support */
+static void update_msc_osmux_support(struct bsc_msc_data *msc,
+				      struct msgb *msg, unsigned int length)
+{
+	struct tlv_parsed tp;
+	int rc;
+	bool old_value = msc->remote_supports_osmux;
+
+	rc = tlv_parse(&tp, gsm0808_att_tlvdef(), msg->l4h + 1, length - 1, 0, 0);
+	if (rc < 0)
+		LOGP(DMSC, LOGL_NOTICE, "Failed parsing TLV looking for Osmux support\n");
+
+	msc->remote_supports_osmux = !!TLVP_PRESENT(&tp, GSM0808_IE_OSMO_OSMUX_SUPPORT);
+
+	if (old_value != msc->remote_supports_osmux)
+		LOGP(DMSC, LOGL_INFO, "MSC detected AoIP Osmux support changed: %d->%d\n",
+		     old_value,  msc->remote_supports_osmux);
+}
 
 static int bssmap_handle_reset_ack(struct bsc_msc_data *msc,
 				   struct msgb *msg, unsigned int length)
@@ -62,6 +81,8 @@ static int bssmap_handle_reset_ack(struct bsc_msc_data *msc,
 	/* Inform the FSM that controls the RESET/RESET-ACK procedure
 	 * that we have successfully received the reset-ack message */
 	a_reset_ack_confirm(msc);
+
+	update_msc_osmux_support(msc, msg, length);
 
 	return 0;
 }
@@ -80,6 +101,8 @@ static int bssmap_handle_reset(struct bsc_msc_data *msc,
 
 	/* Drop all ongoing paging requests that this MSC has created on any BTS */
 	paging_flush_network(msc->network, msc);
+
+	update_msc_osmux_support(msc, msg, length);
 
 	/* Inform the MSC that we have received the reset request and
 	 * that we acted accordingly */

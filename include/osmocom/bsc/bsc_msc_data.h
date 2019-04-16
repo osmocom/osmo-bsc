@@ -133,6 +133,8 @@ struct bsc_msc_data {
 
 	/* Whether we want to use Osmux against this MSC. Controlled via VTY */
 	enum osmux_usage use_osmux;
+	/* Whether we detected the MSC supports Osmux (during BSSMAP_RESET) */
+	bool remote_supports_osmux;
 };
 
 /*
