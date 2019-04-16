@@ -26,6 +26,7 @@
 #include <osmocom/bsc/bsc_subscriber.h>
 #include <osmocom/bsc/debug.h>
 #include <osmocom/bsc/bsc_msg_filter.h>
+#include <osmocom/bsc/osmux.h>
 
 #include <osmocom/core/talloc.h>
 #include <osmocom/gsm/gsm48.h>
@@ -196,6 +197,11 @@ static void write_msc(struct vty *vty, struct bsc_msc_data *msc)
 			vty_out(vty, " no mgw x-osmo-ign%s", VTY_NEWLINE);
 		else
 			vty_out(vty, " mgw x-osmo-ign call-id%s", VTY_NEWLINE);
+	}
+
+	if (msc->use_osmux != OSMUX_USAGE_OFF) {
+		vty_out(vty, " osmux %s%s", msc->use_osmux == OSMUX_USAGE_ON ? "on" : "only",
+			VTY_NEWLINE);
 	}
 }
 
@@ -708,6 +714,23 @@ DEFUN(cfg_msc_no_mgw_x_osmo_ign,
 	return CMD_SUCCESS;
 }
 
+#define OSMUX_STR "RTP multiplexing\n"
+DEFUN(cfg_msc_osmux,
+      cfg_msc_osmux_cmd,
+      "osmux (on|off|only)",
+       OSMUX_STR "Enable OSMUX\n" "Disable OSMUX\n" "Only use OSMUX\n")
+{
+	struct bsc_msc_data *msc = bsc_msc_data(vty);
+	if (strcmp(argv[0], "off") == 0)
+		msc->use_osmux = OSMUX_USAGE_OFF;
+	else if (strcmp(argv[0], "on") == 0)
+		msc->use_osmux = OSMUX_USAGE_ON;
+	else if (strcmp(argv[0], "only") == 0)
+		msc->use_osmux = OSMUX_USAGE_ONLY;
+
+	return CMD_SUCCESS;
+}
+
 DEFUN(cfg_net_bsc_mid_call_text,
       cfg_net_bsc_mid_call_text_cmd,
       "mid-call-text .TEXT",
@@ -1045,6 +1068,7 @@ int bsc_vty_init_extra(void)
 	mgcp_client_vty_init(net, MSC_NODE, net->mgw.conf);
 	install_element(MSC_NODE, &cfg_msc_mgw_x_osmo_ign_cmd);
 	install_element(MSC_NODE, &cfg_msc_no_mgw_x_osmo_ign_cmd);
+	install_element(MSC_NODE, &cfg_msc_osmux_cmd);
 
 	return 0;
 }

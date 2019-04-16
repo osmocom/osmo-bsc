@@ -30,6 +30,7 @@
 
 #include "debug.h"
 #include "osmo_bsc_lcls.h"
+#include "osmux.h"
 
 #include <osmocom/core/timer.h>
 #include <osmocom/gsm/protocol/gsm_04_08.h>
@@ -129,6 +130,9 @@ struct bsc_msc_data {
 
 	uint32_t x_osmo_ign;
 	bool x_osmo_ign_configured;
+
+	/* Whether we want to use Osmux against this MSC. Controlled via VTY */
+	enum osmux_usage use_osmux;
 };
 
 /*
