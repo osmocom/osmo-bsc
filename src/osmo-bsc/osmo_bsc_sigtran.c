@@ -82,6 +82,14 @@ static int pick_free_conn_id(const struct bsc_msc_data *msc)
 	return -1;
 }
 
+/* Patch regular BSSMAP RESET to add extra T to announce Osmux support (osmocom extension) */
+static void _gsm0808_extend_announce_osmux(struct msgb *msg)
+{
+	OSMO_ASSERT(msg->l3h[1] == msgb_l3len(msg) - 2); /*TL not in len */
+	msgb_put_u8(msg, GSM0808_IE_OSMO_OSMUX_SUPPORT);
+	msg->l3h[1] = msgb_l3len(msg) - 2;
+}
+
 /* Send reset to MSC */
 static void osmo_bsc_sigtran_tx_reset(const struct bsc_msc_data *msc)
 {
@@ -92,6 +100,10 @@ static void osmo_bsc_sigtran_tx_reset(const struct bsc_msc_data *msc)
 	OSMO_ASSERT(ss7);
 	LOGP(DMSC, LOGL_NOTICE, "Sending RESET to MSC: %s\n", osmo_sccp_addr_name(ss7, &msc->a.msc_addr));
 	msg = gsm0808_create_reset();
+
+	if (msc->use_osmux != OSMUX_USAGE_OFF)
+		_gsm0808_extend_announce_osmux(msg);
+
 	osmo_sccp_tx_unitdata_msg(msc->a.sccp_user, &msc->a.bsc_addr,
 				  &msc->a.msc_addr, msg);
 }
@@ -107,6 +119,10 @@ void osmo_bsc_sigtran_tx_reset_ack(const struct bsc_msc_data *msc)
 	OSMO_ASSERT(ss7);
 	LOGP(DMSC, LOGL_NOTICE, "Sending RESET ACK to MSC: %s\n", osmo_sccp_addr_name(ss7, &msc->a.msc_addr));
 	msg = gsm0808_create_reset_ack();
+
+	if (msc->use_osmux != OSMUX_USAGE_OFF)
+		_gsm0808_extend_announce_osmux(msg);
+
 	osmo_sccp_tx_unitdata_msg(msc->a.sccp_user, &msc->a.bsc_addr,
 				  &msc->a.msc_addr, msg);
 }
