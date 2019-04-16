@@ -128,6 +128,13 @@ static void on_assignment_failure(struct gsm_subscriber_connection *conn)
 	}
 }
 
+static void _gsm0808_ass_compl_extend_osmux(struct msgb *msg, uint8_t cid)
+{
+	OSMO_ASSERT(msg->l3h[1] == msgb_l3len(msg) - 2); /*TL not in len */
+	msgb_tv_put(msg, GSM0808_IE_OSMO_OSMUX_CID, cid);
+	msg->l3h[1] = msgb_l3len(msg) - 2;
+}
+
 static void send_assignment_complete(struct gsm_subscriber_connection *conn)
 {
 	int rc;
@@ -135,6 +142,7 @@ static void send_assignment_complete(struct gsm_subscriber_connection *conn)
 	struct gsm0808_speech_codec *sc_ptr = NULL;
 	struct sockaddr_storage addr_local;
 	struct sockaddr_storage *addr_local_p = NULL;
+	uint8_t osmux_cid = 0;
 	int perm_spch = 0;
 	uint8_t chosen_channel;
 	struct msgb *resp;
@@ -164,6 +172,15 @@ static void send_assignment_complete(struct gsm_subscriber_connection *conn)
 			addr_local_p = &addr_local;
 		}
 
+		if (gscon_is_aoip(conn) && conn->assignment.req.use_osmux) {
+			if (!osmo_mgcpc_ep_ci_get_crcx_info_to_osmux_cid(conn->user_plane.mgw_endpoint_ci_msc,
+									 &osmux_cid)) {
+				assignment_fail(GSM0808_CAUSE_EQUIPMENT_FAILURE,
+						"Unable to compose Osmux CID of MGW -> MSC");
+				return;
+			}
+		}
+
 		/* Only AoIP networks include a speech codec (choosen) in the
 		 * assignment complete message. */
 		if (gscon_is_aoip(conn)) {
@@ -184,6 +201,10 @@ static void send_assignment_complete(struct gsm_subscriber_connection *conn)
 				"Unable to compose Assignment Complete message");
 		return;
 	}
+
+	if (gscon_is_aoip(conn) && conn->assignment.requires_voice_stream &&
+	    conn->assignment.req.use_osmux)
+		_gsm0808_ass_compl_extend_osmux(resp, osmux_cid);
 
 	rc = gscon_sigtran_send(conn, resp);
 	if (rc) {
@@ -466,10 +487,11 @@ void assignment_fsm_start(struct gsm_subscriber_connection *conn, struct gsm_bts
 
 	assignment_fsm_update_id(conn);
 	LOG_ASSIGNMENT(conn, LOGL_INFO, "Starting Assignment: chan_mode=%s, chan_type=%s,"
-		       " aoip=%s MSC-rtp=%s:%u\n",
+		       " aoip=%s MSC-rtp=%s:%u (osmux=%s)\n",
 		       gsm48_chan_mode_name(conn->lchan->ch_mode_rate.chan_mode),
 		       rate_names[conn->lchan->ch_mode_rate.chan_rate],
-		       req->aoip ? "yes" : "no", req->msc_rtp_addr, req->msc_rtp_port);
+		       req->aoip ? "yes" : "no", req->msc_rtp_addr, req->msc_rtp_port,
+		       req->use_osmux ? "yes" : "no");
 
 	assignment_fsm_state_chg(ASSIGNMENT_ST_WAIT_LCHAN_ACTIVE);
 	info = (struct lchan_activate_info){
