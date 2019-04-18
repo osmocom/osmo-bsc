@@ -161,10 +161,10 @@ struct gsm_subscriber_connection *ho_fi_conn(struct osmo_fsm_inst *fi)
 
 static const struct state_timeout ho_fsm_timeouts[32] = {
 	[HO_ST_WAIT_LCHAN_ACTIVE] = { .T = 23042 },
-	[HO_ST_WAIT_MGW_ENDPOINT_TO_MSC] = { .T = 23042 },
 	[HO_ST_WAIT_RR_HO_DETECT] = { .T = 23042 },
 	[HO_ST_WAIT_RR_HO_COMPLETE] = { .T = 23042 },
 	[HO_ST_WAIT_LCHAN_ESTABLISHED] = { .T = 23042 },
+	[HO_ST_WAIT_MGW_ENDPOINT_TO_MSC] = { .T = 23042 },
 	[HO_OUT_ST_WAIT_HO_COMMAND] = { .T = 7 },
 	[HO_OUT_ST_WAIT_CLEAR] = { .T = 8 },
 };
@@ -876,24 +876,10 @@ void handover_end(struct gsm_subscriber_connection *conn, enum handover_result r
 static void ho_fsm_wait_lchan_active(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
 	struct gsm_subscriber_connection *conn = ho_fi_conn(fi);
-	struct handover *ho = &conn->ho;
 	switch (event) {
 
 	case HO_EV_LCHAN_ACTIVE:
-		/* - If the lchan is voiceless, no need to even think about the MGW.
-		 * - If this is an intra-BSC Handover, we already have an RTP stream towards the MSC and aren't
-		 *   touching it.
-		 * - If we're on SCCPlite, the MSC manages the MGW endpoint, all we do is the BTS side CI, so we can
-		 *   skip the part that would CRCX towards the MSC.
-		 * So create an MSC side endpoint CI only if a voice lchan is established for an incoming inter-BSC
-		 * handover on AoIP. Otherwise go on to send a Handover Command and wait for the Detect.
-		 */
-		if (ho->new_lchan->activate.info.requires_voice_stream
-		    && (ho->scope & HO_INTER_BSC_IN)
-		    && gscon_is_aoip(conn))
-			ho_fsm_state_chg(HO_ST_WAIT_MGW_ENDPOINT_TO_MSC);
-		else
-			ho_fsm_state_chg(HO_ST_WAIT_RR_HO_DETECT);
+		ho_fsm_state_chg(HO_ST_WAIT_RR_HO_DETECT);
 		return;
 
 	case HO_EV_LCHAN_ERROR:
@@ -905,76 +891,6 @@ static void ho_fsm_wait_lchan_active(struct osmo_fsm_inst *fi, uint32_t event, v
 		OSMO_ASSERT(false);
 	}
 }
-
-/* Only for voice, only for inter-BSC Handover into this BSC, and only for AoIP:
- *
- * Establish the MGW endpoint CI that points towards the MSC. This needs to happen after the lchan (lchan_rtp_fsm) has
- * created an MGW endpoint with the first CRCX, so that an endpoint is available, and before sending the Handover
- * Request Acknowledge, so that the RTP address and port established towards the MSC can be included in the Handover
- * Request Acknowledge message.
- * (For SCCPlite, the MSC manages the CN side endpoint CI itself, and we don't need to send any RTP address in the
- * Handover Request Acknowledge.)
- *
- * Actually, it should be possible to kick this off even above in handover_start_inter_bsc_in(), to do the CRCX towards
- * the MSC at the same time as establishing the lchan. The gscon_ensure_mgw_endpoint() doesn't care which one of
- * lchan_rtp_fsm or handover_start_inter_bsc_in() calls it first. The benefit would be that we'd send out the Handover
- * Command ever so slightly sooner -- which isn't critical really, because a) how long does a CRCX take, milliseconds?
- * and b) the time critical part is *after* the Handover Command was kicked off to keep the transition between cells as
- * short as possible. The drawback of doing this earlier is code complexity: receiving the HO_EV_MSC_MGW_OK /
- * HO_EV_MSC_MGW_FAIL events would need to be juggled in between the HO_EV_LCHAN_ACTIVE / HO_EV_LCHAN_ERROR. So the
- * decision for now is to leave it here.
- */
-static void ho_fsm_wait_mgw_endpoint_to_msc_onenter(struct osmo_fsm_inst *fi, uint32_t prev_state)
-{
-	struct gsm_subscriber_connection *conn = ho_fi_conn(fi);
-	struct handover *ho = &conn->ho;
-
-	if (!gscon_connect_mgw_to_msc(conn,
-				      ho->new_lchan,
-				      ho->inter_bsc_in.msc_assigned_rtp_addr,
-				      ho->inter_bsc_in.msc_assigned_rtp_port,
-				      fi,
-				      HO_EV_MSC_MGW_OK,
-				      HO_EV_MSC_MGW_FAIL,
-				      NULL,
-				      &ho->created_ci_for_msc)) {
-		ho_fail(HO_RESULT_ERROR,
-			"Unable to connect MGW endpoint to the MSC side");
-	}
-}
-
-static void ho_fsm_wait_mgw_endpoint_to_msc(struct osmo_fsm_inst *fi, uint32_t event, void *data)
-{
-	struct gsm_subscriber_connection *conn = ho_fi_conn(fi);
-	const struct mgcp_conn_peer *mgw_info;
-
-	switch (event) {
-
-	case HO_EV_MSC_MGW_OK:
-		/* Ensure the endpoint is really there, and log it. This state is only entered for AoIP connections, see
-		 * ho_fsm_wait_lchan_active() above. */
-		mgw_info = mgwep_ci_get_rtp_info(conn->user_plane.mgw_endpoint_ci_msc);
-		if (!mgw_info) {
-			ho_fail(HO_RESULT_ERROR,
-				"Unable to retrieve RTP port info allocated by MGW for"
-				" the MSC side.");
-			return;
-		}
-		LOG_HO(conn, LOGL_DEBUG, "MGW's MSC side CI: %s:%u\n",
-		       mgw_info->addr, mgw_info->port);
-		ho_fsm_state_chg(HO_ST_WAIT_RR_HO_DETECT);
-		return;
-
-	case HO_EV_MSC_MGW_FAIL:
-		ho_fail(HO_RESULT_ERROR,
-			"Unable to connect MGW endpoint to the MSC side");
-		return;
-
-	default:
-		OSMO_ASSERT(false);
-	}
-}
-
 
 static void ho_fsm_wait_rr_ho_detect_onenter(struct osmo_fsm_inst *fi, uint32_t prev_state)
 {
@@ -1093,25 +1009,88 @@ static void ho_fsm_wait_rr_ho_complete(struct osmo_fsm_inst *fi, uint32_t event,
 	}
 }
 
+static void ho_fsm_post_lchan_established(struct osmo_fsm_inst *fi);
+
 static void ho_fsm_wait_lchan_established_onenter(struct osmo_fsm_inst *fi, uint32_t prev_state)
 {
 	struct gsm_subscriber_connection *conn = ho_fi_conn(fi);
 
 	if (conn->ho.fi && lchan_state_is(conn->ho.new_lchan, LCHAN_ST_ESTABLISHED)) {
 		LOG_HO(conn, LOGL_DEBUG, "lchan already established earlier\n");
-		ho_success();
+		ho_fsm_post_lchan_established(fi);
 	}
 }
 
 static void ho_fsm_wait_lchan_established(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
-	struct gsm_subscriber_connection *conn = ho_fi_conn(fi);
-
 	switch (event) {
 
 	case HO_EV_LCHAN_ESTABLISHED:
-		ho_success();
+		ho_fsm_post_lchan_established(fi);
 		break;
+
+	default:
+		OSMO_ASSERT(false);
+	}
+}
+
+static void ho_fsm_post_lchan_established(struct osmo_fsm_inst *fi)
+{
+	struct gsm_subscriber_connection *conn = ho_fi_conn(fi);
+	struct handover *ho = &conn->ho;
+
+	if (ho->new_lchan->activate.info.requires_voice_stream
+	    && (ho->scope & HO_INTER_BSC_IN))
+		ho_fsm_state_chg(HO_ST_WAIT_MGW_ENDPOINT_TO_MSC);
+	else
+		ho_success();
+}
+
+static void ho_fsm_wait_mgw_endpoint_to_msc_onenter(struct osmo_fsm_inst *fi, uint32_t prev_state)
+{
+	struct gsm_subscriber_connection *conn = ho_fi_conn(fi);
+	struct handover *ho = &conn->ho;
+
+	if (!gscon_connect_mgw_to_msc(conn,
+				      ho->new_lchan,
+				      ho->inter_bsc_in.msc_assigned_rtp_addr,
+				      ho->inter_bsc_in.msc_assigned_rtp_port,
+				      fi,
+				      HO_EV_MSC_MGW_OK,
+				      HO_EV_MSC_MGW_FAIL,
+				      NULL,
+				      &ho->created_ci_for_msc)) {
+		ho_fail(HO_RESULT_ERROR,
+			"Unable to connect MGW endpoint to the MSC side");
+	}
+}
+
+static void ho_fsm_wait_mgw_endpoint_to_msc(struct osmo_fsm_inst *fi, uint32_t event, void *data)
+{
+	struct gsm_subscriber_connection *conn = ho_fi_conn(fi);
+	switch (event) {
+
+	case HO_EV_MSC_MGW_OK:
+		/* For AoIP, we created the MGW endpoint. Ensure it is really there, and log it. */
+		if (gscon_is_aoip(conn)) {
+			const struct mgcp_conn_peer *mgw_info;
+			mgw_info = mgwep_ci_get_rtp_info(conn->user_plane.mgw_endpoint_ci_msc);
+			if (!mgw_info) {
+				ho_fail(HO_RESULT_ERROR,
+					"Unable to retrieve RTP port info allocated by MGW for"
+					" the MSC side.");
+				return;
+			}
+			LOG_HO(conn, LOGL_DEBUG, "MGW's MSC side CI: %s:%u\n",
+			       mgw_info->addr, mgw_info->port);
+		}
+		ho_success();
+		return;
+
+	case HO_EV_MSC_MGW_FAIL:
+		ho_fail(HO_RESULT_ERROR,
+			"Unable to connect MGW endpoint to the MSC side");
+		return;
 
 	default:
 		OSMO_ASSERT(false);
@@ -1206,19 +1185,6 @@ static const struct osmo_fsm_state ho_fsm_states[] = {
 			,
 		.out_state_mask = 0
 			| S(HO_ST_WAIT_LCHAN_ACTIVE)
-			| S(HO_ST_WAIT_MGW_ENDPOINT_TO_MSC)
-			| S(HO_ST_WAIT_RR_HO_DETECT)
-			,
-	},
-	[HO_ST_WAIT_MGW_ENDPOINT_TO_MSC] = {
-		.name = "WAIT_MGW_ENDPOINT_TO_MSC",
-		.onenter = ho_fsm_wait_mgw_endpoint_to_msc_onenter,
-		.action = ho_fsm_wait_mgw_endpoint_to_msc,
-		.in_event_mask = 0
-			| S(HO_EV_MSC_MGW_OK)
-			| S(HO_EV_MSC_MGW_FAIL)
-			,
-		.out_state_mask = 0
 			| S(HO_ST_WAIT_RR_HO_DETECT)
 			,
 	},
@@ -1256,7 +1222,20 @@ static const struct osmo_fsm_state ho_fsm_states[] = {
 		.in_event_mask = 0
 			| S(HO_EV_LCHAN_ESTABLISHED)
 			,
+		.out_state_mask = 0
+			| S(HO_ST_WAIT_MGW_ENDPOINT_TO_MSC)
+			,
 	},
+	[HO_ST_WAIT_MGW_ENDPOINT_TO_MSC] = {
+		.name = "WAIT_MGW_ENDPOINT_TO_MSC",
+		.onenter = ho_fsm_wait_mgw_endpoint_to_msc_onenter,
+		.action = ho_fsm_wait_mgw_endpoint_to_msc,
+		.in_event_mask = 0
+			| S(HO_EV_MSC_MGW_OK)
+			| S(HO_EV_MSC_MGW_FAIL)
+			,
+	},
+
 	[HO_OUT_ST_WAIT_HO_COMMAND] = {
 		.name = "inter-BSC-OUT:WAIT_HO_COMMAND",
 		.action = ho_out_fsm_wait_ho_command,
