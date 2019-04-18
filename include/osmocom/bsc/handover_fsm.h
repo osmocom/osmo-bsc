@@ -28,10 +28,10 @@ enum handover_fsm_state {
 	HO_ST_NOT_STARTED,
 
 	HO_ST_WAIT_LCHAN_ACTIVE,
-	HO_ST_WAIT_MGW_ENDPOINT_TO_MSC,
 	HO_ST_WAIT_RR_HO_DETECT,
 	HO_ST_WAIT_RR_HO_COMPLETE,
 	HO_ST_WAIT_LCHAN_ESTABLISHED,
+	HO_ST_WAIT_MGW_ENDPOINT_TO_MSC,
 
 	/* The inter-BSC Outgoing Handover FSM has completely separate states, but since it makes sense for it
 	 * to also live in conn->ho.fi, it should share the same event enum. From there it is merely
@@ -46,11 +46,11 @@ enum handover_fsm_event {
 	HO_EV_LCHAN_ACTIVE,
 	HO_EV_LCHAN_ESTABLISHED,
 	HO_EV_LCHAN_ERROR,
-	HO_EV_MSC_MGW_OK,
-	HO_EV_MSC_MGW_FAIL,
 	HO_EV_RR_HO_DETECT,
 	HO_EV_RR_HO_COMPLETE,
 	HO_EV_RR_HO_FAIL,
+	HO_EV_MSC_MGW_OK,
+	HO_EV_MSC_MGW_FAIL,
 	HO_EV_CONN_RELEASING,
 
 	HO_OUT_EV_BSSMAP_HO_COMMAND,
