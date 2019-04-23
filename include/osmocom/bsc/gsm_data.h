@@ -39,7 +39,7 @@
 struct mgcp_client_conf;
 struct mgcp_client;
 struct gsm0808_cell_id;
-struct mgw_endpoint;
+struct osmo_mgcpc_ep;
 
 /** annotations for msgb ownership */
 #define __uses
@@ -136,7 +136,7 @@ struct assignment_fsm_data {
 	/* Whether this assignment triggered creation of the MGW endpoint: if the assignment
 	 * fails, we will release that again as soon as possible. (If false, the endpoint already
 	 * existed before or isn't needed at all.)*/
-	struct mgwep_ci *created_ci_for_msc;
+	struct osmo_mgcpc_ep_ci *created_ci_for_msc;
 
 	enum gsm0808_cause failure_cause;
 	enum gsm48_rr_cause rr_cause;
@@ -205,7 +205,7 @@ struct handover {
 	struct gsm_lchan *new_lchan;
 	bool async;
 	struct handover_in_req inter_bsc_in;
-	struct mgwep_ci *created_ci_for_msc;
+	struct osmo_mgcpc_ep_ci *created_ci_for_msc;
 };
 
 /* active radio connection of a mobile subscriber */
@@ -287,11 +287,11 @@ struct gsm_subscriber_connection {
 
 		/* The endpoint at the MGW used to join both BTS and MSC side connections, e.g.
 		 * "rtpbridge/23@mgw". */
-		struct mgw_endpoint *mgw_endpoint;
+		struct osmo_mgcpc_ep *mgw_endpoint;
 
-		/* The connection identifier of the mgw_endpoint used to transceive RTP towards the MSC.
+		/* The connection identifier of the osmo_mgcpc_ep used to transceive RTP towards the MSC.
 		 * (The BTS side CI is handled by struct gsm_lchan and the lchan_fsm.) */
-		struct mgwep_ci *mgw_endpoint_ci_msc;
+		struct osmo_mgcpc_ep_ci *mgw_endpoint_ci_msc;
 	} user_plane;
 
 	/* LCLS (local call, local switch) related state */
@@ -554,7 +554,7 @@ struct gsm_lchan {
 
 	struct osmo_fsm_inst *fi;
 	struct osmo_fsm_inst *fi_rtp;
-	struct mgwep_ci *mgw_endpoint_ci_bts;
+	struct osmo_mgcpc_ep_ci *mgw_endpoint_ci_bts;
 
 	struct {
 		struct lchan_activate_info info;
@@ -1535,6 +1535,7 @@ struct gsm_network {
 	struct {
 		struct mgcp_client_conf *conf;
 		struct mgcp_client *client;
+		struct osmo_tdef *tdefs;
 	} mgw;
 
 	/* Remote BSS Cell Identifier Lists */

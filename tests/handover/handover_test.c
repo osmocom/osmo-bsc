@@ -27,7 +27,7 @@
 #include <osmocom/core/select.h>
 #include <osmocom/core/talloc.h>
 
-#include <osmocom/mgcp_client/mgcp_client_fsm.h>
+#include <osmocom/mgcp_client/mgcp_client_endpoint_fsm.h>
 
 #include <osmocom/bsc/abis_rsl.h>
 #include <osmocom/bsc/debug.h>
@@ -45,7 +45,6 @@
 #include <osmocom/bsc/bsc_subscr_conn_fsm.h>
 #include <osmocom/bsc/timeslot_fsm.h>
 #include <osmocom/bsc/lchan_fsm.h>
-#include <osmocom/bsc/mgw_endpoint_fsm.h>
 #include <osmocom/bsc/handover_fsm.h>
 #include <osmocom/bsc/bsc_msc_data.h>
 
@@ -53,14 +52,14 @@ void *ctx;
 
 struct gsm_network *bsc_gsmnet;
 
-/* override, requires '-Wl,--wrap=mgw_endpoint_ci_request'.
+/* override, requires '-Wl,--wrap=osmo_mgcpc_ep_ci_request'.
  * Catch modification of an MGCP connection. */
-void __real_mgw_endpoint_ci_request(struct mgwep_ci *ci,
+void __real_osmo_mgcpc_ep_ci_request(struct osmo_mgcpc_ep_ci *ci,
 				    enum mgcp_verb verb, const struct mgcp_conn_peer *verb_info,
 				    struct osmo_fsm_inst *notify,
 				    uint32_t event_success, uint32_t event_failure,
 				    void *notify_data);
-void __wrap_mgw_endpoint_ci_request(struct mgwep_ci *ci,
+void __wrap_osmo_mgcpc_ep_ci_request(struct osmo_mgcpc_ep_ci *ci,
 				    enum mgcp_verb verb, const struct mgcp_conn_peer *verb_info,
 				    struct osmo_fsm_inst *notify,
 				    uint32_t event_success, uint32_t event_failure,
@@ -234,9 +233,11 @@ void create_conn(struct gsm_lchan *lchan)
 
 	conn = bsc_subscr_con_allocate(net);
 
-	conn->user_plane.mgw_endpoint = mgw_endpoint_alloc(conn->fi,
+	conn->user_plane.mgw_endpoint = osmo_mgcpc_ep_alloc(conn->fi,
 							   GSCON_EV_FORGET_MGW_ENDPOINT,
-							   fake_mgcp_client, "test",
+							   fake_mgcp_client,
+							   net->mgw.tdefs,
+							   "test",
 							   "fake endpoint");
 	conn->sccp.msc = &fake_msc_data;
 
@@ -1432,7 +1433,6 @@ int main(int argc, char **argv)
 
 	ts_fsm_init();
 	lchan_fsm_init();
-	mgw_endpoint_fsm_init(bsc_gsmnet->T_defs);
 	bsc_subscr_conn_fsm_init();
 	handover_fsm_init();
 

@@ -51,6 +51,12 @@ static struct osmo_tdef gsm_network_T_defs[] = {
 	{}
 };
 
+struct osmo_tdef g_mgw_tdefs[] = {
+	{ .T=-1, .default_val=4, .desc="MGCP response timeout" },
+	{ .T=-2, .default_val=30, .desc="RTP stream establishing timeout" },
+	{}
+};
+
 /* Initialize the bare minimum of struct gsm_network, minimizing required dependencies.
  * This part is shared among the thin programs in osmo-bsc/src/utils/.
  * osmo-bsc requires further initialization that pulls in more dependencies (see bsc_network_init()). */
@@ -80,6 +86,9 @@ struct gsm_network *gsm_network_init(void *ctx)
 
 	net->T_defs = gsm_network_T_defs;
 	osmo_tdefs_reset(net->T_defs);
+
+	net->mgw.tdefs = g_mgw_tdefs;
+	osmo_tdefs_reset(net->mgw.tdefs);
 
 	return net;
 }

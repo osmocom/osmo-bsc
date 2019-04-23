@@ -39,9 +39,9 @@
 #include <osmocom/bsc/abis_rsl.h>
 #include <osmocom/core/tdef.h>
 #include <osmocom/bsc/gsm_04_08_rr.h>
-#include <osmocom/bsc/mgw_endpoint_fsm.h>
 #include <osmocom/bsc/assignment_fsm.h>
-#include <osmocom/mgcp_client/mgcp_client_fsm.h>
+#include <osmocom/bsc/codec_pref.h>
+#include <osmocom/mgcp_client/mgcp_client_endpoint_fsm.h>
 #include <osmocom/core/byteswap.h>
 
 #define S(x)	(1 << (x))
@@ -457,8 +457,8 @@ static bool same_mgw_info(const struct mgcp_conn_peer *a, const struct mgcp_conn
 /* Make sure a conn->user_plane.mgw_endpoint is allocated with the proper mgw endpoint name.  For
  * SCCPlite, pass in msc_assigned_cic the CIC received upon BSSMAP Assignment Command or BSSMAP Handover
  * Request form the MSC (which is only stored in conn->user_plane after success). Ignored for AoIP. */
-struct mgw_endpoint *gscon_ensure_mgw_endpoint(struct gsm_subscriber_connection *conn,
-					       uint16_t msc_assigned_cic)
+struct osmo_mgcpc_ep *gscon_ensure_mgw_endpoint(struct gsm_subscriber_connection *conn,
+						uint16_t msc_assigned_cic)
 {
 	if (conn->user_plane.mgw_endpoint)
 		return conn->user_plane.mgw_endpoint;
@@ -466,19 +466,23 @@ struct mgw_endpoint *gscon_ensure_mgw_endpoint(struct gsm_subscriber_connection 
 	if (gscon_is_sccplite(conn)) {
 		/* derive endpoint name from CIC on A interface side */
 		conn->user_plane.mgw_endpoint =
-			mgw_endpoint_alloc(conn->fi, GSCON_EV_FORGET_MGW_ENDPOINT,
-					   conn->network->mgw.client, conn->fi->id,
-					   "%x@%s", msc_assigned_cic,
-					   mgcp_client_endpoint_domain(conn->network->mgw.client));
+			osmo_mgcpc_ep_alloc(conn->fi, GSCON_EV_FORGET_MGW_ENDPOINT,
+					    conn->network->mgw.client,
+					    conn->network->mgw.tdefs,
+					    conn->fi->id,
+					    "%x@%s", msc_assigned_cic,
+					    mgcp_client_endpoint_domain(conn->network->mgw.client));
 		LOGPFSML(conn->fi, LOGL_DEBUG, "MGW endpoint name derived from CIC 0x%x: %s\n",
-			 msc_assigned_cic, mgw_endpoint_name(conn->user_plane.mgw_endpoint));
+			 msc_assigned_cic, osmo_mgcpc_ep_name(conn->user_plane.mgw_endpoint));
 
 	} else if (gscon_is_aoip(conn)) {
 		/* use dynamic RTPBRIDGE endpoint allocation in MGW */
 		conn->user_plane.mgw_endpoint =
-			mgw_endpoint_alloc(conn->fi, GSCON_EV_FORGET_MGW_ENDPOINT,
-					   conn->network->mgw.client, conn->fi->id,
-					   "%s", mgcp_client_rtpbridge_wildcard(conn->network->mgw.client));
+			osmo_mgcpc_ep_alloc(conn->fi, GSCON_EV_FORGET_MGW_ENDPOINT,
+					    conn->network->mgw.client,
+					    conn->network->mgw.tdefs,
+					    conn->fi->id,
+					    "%s", mgcp_client_rtpbridge_wildcard(conn->network->mgw.client));
 	} else {
 		LOGPFSML(conn->fi, LOGL_ERROR, "Conn is neither SCCPlite nor AoIP!?\n");
 		return NULL;
@@ -493,10 +497,10 @@ bool gscon_connect_mgw_to_msc(struct gsm_subscriber_connection *conn,
 			      struct osmo_fsm_inst *notify,
 			      uint32_t event_success, uint32_t event_failure,
 			      void *notify_data,
-			      struct mgwep_ci **created_ci)
+			      struct osmo_mgcpc_ep_ci **created_ci)
 {
 	int rc;
-	struct mgwep_ci *ci;
+	struct osmo_mgcpc_ep_ci *ci;
 	struct mgcp_conn_peer mgw_info;
 	enum mgcp_verb verb;
 
@@ -526,7 +530,7 @@ bool gscon_connect_mgw_to_msc(struct gsm_subscriber_connection *conn,
 
 	ci = conn->user_plane.mgw_endpoint_ci_msc;
 	if (ci) {
-		const struct mgcp_conn_peer *prev_crcx_info = mgwep_ci_get_rtp_info(ci);
+		const struct mgcp_conn_peer *prev_crcx_info = osmo_mgcpc_ep_ci_get_rtp_info(ci);
 
 		if (!conn->user_plane.mgw_endpoint) {
 			LOGPFSML(conn->fi, LOGL_ERROR, "Internal error: conn has a CI but no endoint\n");
@@ -536,14 +540,14 @@ bool gscon_connect_mgw_to_msc(struct gsm_subscriber_connection *conn,
 		if (!prev_crcx_info) {
 			LOGPFSML(conn->fi, LOGL_ERROR, "There already is an MGW connection for the MSC side,"
 				 " but it seems to be broken. Will not CRCX another one (%s)\n",
-				 mgwep_ci_name(ci));
+				 osmo_mgcpc_ep_ci_name(ci));
 			return false;
 		}
 
 		if (same_mgw_info(&mgw_info, prev_crcx_info)) {
 			LOGPFSML(conn->fi, LOGL_DEBUG,
 				 "MSC side MGW endpoint ci is already configured to %s\n",
-				 mgwep_ci_name(ci));
+				 osmo_mgcpc_ep_ci_name(ci));
 			return true;
 		}
 
@@ -559,7 +563,7 @@ bool gscon_connect_mgw_to_msc(struct gsm_subscriber_connection *conn,
 	}
 
 	if (!ci) {
-		ci = mgw_endpoint_ci_add(conn->user_plane.mgw_endpoint, "to-MSC");
+		ci = osmo_mgcpc_ep_ci_add(conn->user_plane.mgw_endpoint, "to-MSC");
 		if (created_ci)
 			*created_ci = ci;
 		conn->user_plane.mgw_endpoint_ci_msc = ci;
@@ -569,7 +573,7 @@ bool gscon_connect_mgw_to_msc(struct gsm_subscriber_connection *conn,
 		return false;
 	}
 
-	mgw_endpoint_ci_request(ci, verb, &mgw_info, notify, event_success, event_failure, notify_data);
+	osmo_mgcpc_ep_ci_request(ci, verb, &mgw_info, notify, event_success, event_failure, notify_data);
 	return true;
 }
 
@@ -705,7 +709,7 @@ static void gscon_forget_mgw_endpoint(struct gsm_subscriber_connection *conn)
 	lchan_forget_mgw_endpoint(conn->ho.new_lchan);
 }
 
-void gscon_forget_mgw_endpoint_ci(struct gsm_subscriber_connection *conn, struct mgwep_ci *ci)
+void gscon_forget_mgw_endpoint_ci(struct gsm_subscriber_connection *conn, struct osmo_mgcpc_ep_ci *ci)
 {
 	if (conn->ho.created_ci_for_msc == ci)
 		conn->ho.created_ci_for_msc = NULL;
@@ -734,7 +738,7 @@ static void gscon_fsm_allstate(struct osmo_fsm_inst *fi, uint32_t event, void *d
 		 * CLEAR COMPLETE message" */
 
 		/* Close MGCP connections */
-		mgw_endpoint_clear(conn->user_plane.mgw_endpoint);
+		osmo_mgcpc_ep_clear(conn->user_plane.mgw_endpoint);
 
 		gscon_sigtran_send(conn, gsm0808_create_clear_complete());
 		break;
@@ -794,7 +798,7 @@ static void gscon_pre_term(struct osmo_fsm_inst *fi, enum osmo_fsm_term_cause ca
 {
 	struct gsm_subscriber_connection *conn = fi->priv;
 
-	mgw_endpoint_clear(conn->user_plane.mgw_endpoint);
+	osmo_mgcpc_ep_clear(conn->user_plane.mgw_endpoint);
 
 	if (conn->lcls.fi) {
 		/* request termination of LCLS FSM */

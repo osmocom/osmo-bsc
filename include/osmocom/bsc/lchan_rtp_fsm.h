@@ -10,6 +10,7 @@
 	} while(0)
 
 struct gsm_lchan;
+struct mgcp_conn_peer;
 
 enum lchan_rtp_fsm_state {
 	LCHAN_RTP_ST_WAIT_MGW_ENDPOINT_AVAILABLE,
@@ -40,6 +41,8 @@ enum lchan_rtp_fsm_event {
 };
 
 void lchan_rtp_fsm_start(struct gsm_lchan *lchan);
-struct mgwep_ci *lchan_use_mgw_endpoint_ci_bts(struct gsm_lchan *lchan);
+struct osmo_mgcpc_ep_ci *lchan_use_mgw_endpoint_ci_bts(struct gsm_lchan *lchan);
 bool lchan_rtp_established(struct gsm_lchan *lchan);
 void lchan_forget_mgw_endpoint(struct gsm_lchan *lchan);
+
+void mgcp_pick_codec(struct mgcp_conn_peer *verb_info, const struct gsm_lchan *lchan, bool bss_side);

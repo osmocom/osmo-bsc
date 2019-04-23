@@ -68,7 +68,6 @@ osmo_bsc_SOURCES = \
 	lchan_select.c \
 	meas_feed.c \
 	meas_rep.c \
-	mgw_endpoint_fsm.c \
 	neighbor_ident.c \
 	neighbor_ident_vty.c \
 	net_init.c \

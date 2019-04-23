@@ -25,6 +25,8 @@
 #include <osmocom/gsm/rsl.h>
 #include <osmocom/gsm/gsm0808.h>
 
+#include <osmocom/mgcp_client/mgcp_client_endpoint_fsm.h>
+
 #include <osmocom/bsc/debug.h>
 #include <osmocom/bsc/bsc_subscriber.h>
 
@@ -38,7 +40,6 @@
 #include <osmocom/bsc/bsc_msc_data.h>
 #include <osmocom/bsc/osmo_bsc.h>
 #include <osmocom/bsc/osmo_bsc_lcls.h>
-#include <osmocom/bsc/mgw_endpoint_fsm.h>
 #include <osmocom/bsc/codec_pref.h>
 #include <osmocom/bsc/gsm_08_08.h>
 
@@ -240,7 +241,7 @@ static void ho_fsm_update_id(struct osmo_fsm_inst *fi, const char *label)
 
 static void handover_reset(struct gsm_subscriber_connection *conn)
 {
-	struct mgwep_ci *ci;
+	struct osmo_mgcpc_ep_ci *ci;
 	if (conn->ho.new_lchan)
 		/* New lchan was activated but never passed to a conn */
 		lchan_release(conn->ho.new_lchan, false, true, RSL_ERR_EQUIPMENT_FAIL);
@@ -250,7 +251,7 @@ static void handover_reset(struct gsm_subscriber_connection *conn)
 		gscon_forget_mgw_endpoint_ci(conn, ci);
 		/* If this is the last endpoint released, the mgw_endpoint_fsm will terminate and tell
 		 * the gscon about it. */
-		mgw_endpoint_ci_dlcx(ci);
+		osmo_mgcpc_ep_ci_dlcx(ci);
 	}
 
 	conn->ho = (struct handover){
@@ -1074,7 +1075,7 @@ static void ho_fsm_wait_mgw_endpoint_to_msc(struct osmo_fsm_inst *fi, uint32_t e
 		/* For AoIP, we created the MGW endpoint. Ensure it is really there, and log it. */
 		if (gscon_is_aoip(conn)) {
 			const struct mgcp_conn_peer *mgw_info;
-			mgw_info = mgwep_ci_get_rtp_info(conn->user_plane.mgw_endpoint_ci_msc);
+			mgw_info = osmo_mgcpc_ep_ci_get_rtp_info(conn->user_plane.mgw_endpoint_ci_msc);
 			if (!mgw_info) {
 				ho_fail(HO_RESULT_ERROR,
 					"Unable to retrieve RTP port info allocated by MGW for"

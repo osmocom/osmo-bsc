@@ -21,11 +21,12 @@
  */
 
 #include <osmocom/core/fsm.h>
+#include <osmocom/netif/rtp.h>
+#include <osmocom/mgcp_client/mgcp_client_endpoint_fsm.h>
 
 #include <osmocom/bsc/gsm_data.h>
 #include <osmocom/bsc/lchan_fsm.h>
 #include <osmocom/bsc/lchan_rtp_fsm.h>
-#include <osmocom/bsc/mgw_endpoint_fsm.h>
 #include <osmocom/bsc/bsc_subscr_conn_fsm.h>
 #include <osmocom/bsc/abis_rsl.h>
 #include <osmocom/bsc/bsc_msc_data.h>
@@ -120,7 +121,7 @@ void lchan_rtp_fsm_start(struct gsm_lchan *lchan)
 /* While activating an lchan, for example for Handover, we may want to re-use another lchan's MGW
  * endpoint CI. If Handover fails half way, the old lchan must keep its MGW endpoint CI, and we must not
  * clean it up. Hence keep another lchan's mgw_endpoint_ci_bts out of lchan until all is done. */
-struct mgwep_ci *lchan_use_mgw_endpoint_ci_bts(struct gsm_lchan *lchan)
+struct osmo_mgcpc_ep_ci *lchan_use_mgw_endpoint_ci_bts(struct gsm_lchan *lchan)
 {
 	if (lchan->mgw_endpoint_ci_bts)
 		return lchan->mgw_endpoint_ci_bts;
@@ -135,13 +136,13 @@ static void lchan_rtp_fsm_wait_mgw_endpoint_available_onenter(struct osmo_fsm_in
 							      uint32_t prev_state)
 {
 	struct gsm_lchan *lchan = lchan_rtp_fi_lchan(fi);
-	struct mgw_endpoint *mgwep;
-	struct mgwep_ci *use_mgwep_ci = lchan_use_mgw_endpoint_ci_bts(lchan);
+	struct osmo_mgcpc_ep *mgwep;
+	struct osmo_mgcpc_ep_ci *use_mgwep_ci = lchan_use_mgw_endpoint_ci_bts(lchan);
 	struct mgcp_conn_peer crcx_info = {};
 
 	if (use_mgwep_ci) {
 		LOG_LCHAN_RTP(lchan, LOGL_DEBUG, "MGW endpoint already available: %s\n",
-			      mgwep_ci_name(use_mgwep_ci));
+			      osmo_mgcpc_ep_ci_name(use_mgwep_ci));
 		lchan_rtp_fsm_state_chg(LCHAN_RTP_ST_WAIT_LCHAN_READY);
 		return;
 	}
@@ -152,7 +153,7 @@ static void lchan_rtp_fsm_wait_mgw_endpoint_available_onenter(struct osmo_fsm_in
 		return;
 	}
 
-	lchan->mgw_endpoint_ci_bts = mgw_endpoint_ci_add(mgwep, "to-BTS");
+	lchan->mgw_endpoint_ci_bts = osmo_mgcpc_ep_ci_add(mgwep, "to-BTS");
 
 	if (lchan->conn) {
 		crcx_info.call_id = lchan->conn->sccp.conn_id;
@@ -162,7 +163,7 @@ static void lchan_rtp_fsm_wait_mgw_endpoint_available_onenter(struct osmo_fsm_in
 	crcx_info.ptime = 20;
 	mgcp_pick_codec(&crcx_info, lchan, true);
 
-	mgw_endpoint_ci_request(lchan->mgw_endpoint_ci_bts, MGCP_VERB_CRCX, &crcx_info,
+	osmo_mgcpc_ep_ci_request(lchan->mgw_endpoint_ci_bts, MGCP_VERB_CRCX, &crcx_info,
 				fi, LCHAN_RTP_EV_MGW_ENDPOINT_AVAILABLE, LCHAN_RTP_EV_MGW_ENDPOINT_ERROR,
 				0);
 }
@@ -174,7 +175,7 @@ static void lchan_rtp_fsm_wait_mgw_endpoint_available(struct osmo_fsm_inst *fi, 
 
 	case LCHAN_RTP_EV_MGW_ENDPOINT_AVAILABLE:
 		LOG_LCHAN_RTP(lchan, LOGL_DEBUG, "MGW endpoint: %s\n",
-			      mgwep_ci_name(lchan_use_mgw_endpoint_ci_bts(lchan)));
+			      osmo_mgcpc_ep_ci_name(lchan_use_mgw_endpoint_ci_bts(lchan)));
 		lchan_rtp_fsm_state_chg(LCHAN_RTP_ST_WAIT_LCHAN_READY);
 		return;
 
@@ -328,7 +329,7 @@ static void lchan_rtp_fsm_wait_ipacc_mdcx_ack_onenter(struct osmo_fsm_inst *fi, 
 		return;
 	}
 
-	mgw_rtp = mgwep_ci_get_rtp_info(lchan_use_mgw_endpoint_ci_bts(lchan));
+	mgw_rtp = osmo_mgcpc_ep_ci_get_rtp_info(lchan_use_mgw_endpoint_ci_bts(lchan));
 
 	if (!mgw_rtp) {
 		lchan_rtp_fail("Cannot send IPACC MDCX to BTS:"
@@ -396,7 +397,7 @@ static void lchan_rtp_fsm_wait_ready_to_switch_rtp(struct osmo_fsm_inst *fi, uin
 }
 
 static void connect_mgw_endpoint_to_lchan(struct osmo_fsm_inst *fi,
-					  struct mgwep_ci *ci,
+					  struct osmo_mgcpc_ep_ci *ci,
 					  struct gsm_lchan *to_lchan)
 {
 	int rc;
@@ -426,8 +427,8 @@ static void connect_mgw_endpoint_to_lchan(struct osmo_fsm_inst *fi,
 	}
 
 	LOG_LCHAN_RTP(lchan, LOGL_DEBUG, "Sending BTS side RTP port info %s:%u to MGW %s\n",
-		      mdcx_info.addr, mdcx_info.port, mgwep_ci_name(ci));
-	mgw_endpoint_ci_request(ci, MGCP_VERB_MDCX, &mdcx_info,
+		      mdcx_info.addr, mdcx_info.port, osmo_mgcpc_ep_ci_name(ci));
+	osmo_mgcpc_ep_ci_request(ci, MGCP_VERB_MDCX, &mdcx_info,
 				fi, LCHAN_RTP_EV_MGW_ENDPOINT_CONFIGURED,
 				LCHAN_RTP_EV_MGW_ENDPOINT_ERROR, 0);
 }
@@ -539,7 +540,7 @@ static void lchan_rtp_fsm_rollback(struct osmo_fsm_inst *fi, uint32_t event, voi
 		LOG_LCHAN_RTP(lchan, LOGL_ERROR,
 			      "Error while connecting the MGW back to the old lchan's RTP port:"
 			      " %s %s\n",
-			      mgwep_ci_name(lchan->mgw_endpoint_ci_bts),
+			      osmo_mgcpc_ep_ci_name(lchan->mgw_endpoint_ci_bts),
 			      gsm_lchan_name(old_lchan));
 		osmo_fsm_inst_term(fi, OSMO_FSM_TERM_ERROR, 0);
 		return;
@@ -575,7 +576,7 @@ static void lchan_rtp_fsm_established(struct osmo_fsm_inst *fi, uint32_t event, 
 	case LCHAN_RTP_EV_IPACC_MDCX_ACK:
 		LOG_LCHAN_RTP(lchan, LOGL_NOTICE,
 			      "Received MDCX ACK on established lchan's RTP port: %s\n",
-			      mgwep_ci_name(lchan->mgw_endpoint_ci_bts));
+			      osmo_mgcpc_ep_ci_name(lchan->mgw_endpoint_ci_bts));
 		return;
 	default:
 		OSMO_ASSERT(false);
@@ -740,7 +741,7 @@ void lchan_rtp_fsm_cleanup(struct osmo_fsm_inst *fi, enum osmo_fsm_term_cause ca
 {
 	struct gsm_lchan *lchan = lchan_rtp_fi_lchan(fi);
 	if (lchan->mgw_endpoint_ci_bts) {
-		mgw_endpoint_ci_dlcx(lchan->mgw_endpoint_ci_bts);
+		osmo_mgcpc_ep_ci_dlcx(lchan->mgw_endpoint_ci_bts);
 		lchan->mgw_endpoint_ci_bts = NULL;
 	}
 	lchan->fi_rtp = NULL;
@@ -769,3 +770,86 @@ static struct osmo_fsm lchan_rtp_fsm = {
 	.timer_cb = lchan_rtp_fsm_timer_cb,
 	.cleanup = lchan_rtp_fsm_cleanup,
 };
+
+/* Depending on the channel mode and rate, return the codec type that is signalled towards the MGW. */
+static enum mgcp_codecs chan_mode_to_mgcp_codec(enum gsm48_chan_mode chan_mode, bool full_rate)
+{
+	switch (chan_mode) {
+	case GSM48_CMODE_SPEECH_V1:
+		if (full_rate)
+			return CODEC_GSM_8000_1;
+		return CODEC_GSMHR_8000_1;
+
+	case GSM48_CMODE_SPEECH_EFR:
+		return CODEC_GSMEFR_8000_1;
+
+	case GSM48_CMODE_SPEECH_AMR:
+		return CODEC_AMR_8000_1;
+
+	default:
+		return -1;
+	}
+}
+
+static int chan_mode_to_mgcp_bss_pt(enum mgcp_codecs codec)
+{
+	switch (codec) {
+	case CODEC_GSMHR_8000_1:
+		return RTP_PT_GSM_HALF;
+
+	case CODEC_GSMEFR_8000_1:
+		return RTP_PT_GSM_EFR;
+
+	case CODEC_AMR_8000_1:
+		return RTP_PT_AMR;
+
+	default:
+		/* Not an error, we just leave it to libosmo-mgcp-client to
+		 * decide over the PT. */
+		return -1;
+	}
+}
+
+void mgcp_pick_codec(struct mgcp_conn_peer *verb_info, const struct gsm_lchan *lchan, bool bss_side)
+{
+	enum mgcp_codecs codec = chan_mode_to_mgcp_codec(lchan->tch_mode,
+							 lchan->type == GSM_LCHAN_TCH_H? false : true);
+	int custom_pt;
+
+	if (codec < 0) {
+		LOG_LCHAN(lchan, LOGL_ERROR,
+			  "Unable to determine MGCP codec type for %s in chan-mode %s\n",
+			  gsm_lchant_name(lchan->type), gsm48_chan_mode_name(lchan->tch_mode));
+		verb_info->codecs_len = 0;
+		return;
+	}
+
+	verb_info->codecs[0] = codec;
+	verb_info->codecs_len = 1;
+
+	/* Setup custom payload types (only for BSS side and when required) */
+	custom_pt = chan_mode_to_mgcp_bss_pt(codec);
+	if (bss_side && custom_pt > 0) {
+		verb_info->ptmap[0].codec = codec;
+	        verb_info->ptmap[0].pt = custom_pt;
+	        verb_info->ptmap_len = 1;
+	}
+
+	/* AMR requires additional parameters to be set up (framing mode) */
+	if (verb_info->codecs[0] == CODEC_AMR_8000_1) {
+		verb_info->param_present = true;
+		verb_info->param.amr_octet_aligned_present = true;
+	}
+
+	if (bss_side && verb_info->codecs[0] == CODEC_AMR_8000_1) {
+		/* FIXME: At the moment all BTSs we support are using the
+		 * octet-aligned payload format. However, in the future
+		 * we may support BTSs that are using bandwith-efficient
+		 * format. In this case we will have to add functionality
+		 * that distinguishes by the BTS model which mode to use. */
+		verb_info->param.amr_octet_aligned = true;
+	}
+	else if (!bss_side && verb_info->codecs[0] == CODEC_AMR_8000_1) {
+		verb_info->param.amr_octet_aligned = lchan->conn->sccp.msc->amr_octet_aligned;
+	}
+}

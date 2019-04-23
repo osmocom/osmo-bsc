@@ -19,7 +19,8 @@
  *
  */
 
-#include <osmocom/mgcp_client/mgcp_client_fsm.h>
+#include <osmocom/core/sockaddr_str.h>
+#include <osmocom/mgcp_client/mgcp_client_endpoint_fsm.h>
 
 #include <osmocom/bsc/osmo_bsc.h>
 #include <osmocom/bsc/osmo_bsc_grace.h>

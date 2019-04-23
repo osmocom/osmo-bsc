@@ -23,12 +23,11 @@
 #include <osmocom/core/tdef.h>
 #include <osmocom/gsm/gsm0808.h>
 
-#include <osmocom/mgcp_client/mgcp_client_fsm.h>
+#include <osmocom/mgcp_client/mgcp_client_endpoint_fsm.h>
 
 #include <osmocom/bsc/debug.h>
 #include <osmocom/bsc/gsm_data.h>
 #include <osmocom/bsc/lchan_fsm.h>
-#include <osmocom/bsc/mgw_endpoint_fsm.h>
 #include <osmocom/bsc/bsc_subscr_conn_fsm.h>
 #include <osmocom/bsc/osmo_bsc_lcls.h>
 #include <osmocom/bsc/bsc_msc_data.h>
@@ -105,7 +104,7 @@ void assignment_reset(struct gsm_subscriber_connection *conn)
 		gscon_forget_mgw_endpoint_ci(conn, conn->assignment.created_ci_for_msc);
 		/* If this is the last endpoint released, the mgw_endpoint_fsm will terminate and tell
 		 * the gscon about it. */
-		mgw_endpoint_ci_dlcx(conn->assignment.created_ci_for_msc);
+		osmo_mgcpc_ep_ci_dlcx(conn->assignment.created_ci_for_msc);
 	}
 
 	conn->assignment = (struct assignment_fsm_data){
@@ -156,8 +155,8 @@ static void send_assignment_complete(struct gsm_subscriber_connection *conn)
 		perm_spch = gsm0808_permitted_speech(lchan->type, lchan->tch_mode);
 
 		if (gscon_is_aoip(conn)) {
-			if (!mgwep_ci_get_crcx_info_to_sockaddr(conn->user_plane.mgw_endpoint_ci_msc,
-								&addr_local)) {
+			if (!osmo_mgcpc_ep_ci_get_crcx_info_to_sockaddr(conn->user_plane.mgw_endpoint_ci_msc,
+									&addr_local)) {
 				assignment_fail(GSM0808_CAUSE_EQUIPMENT_FAILURE,
 						"Unable to compose RTP address of MGW -> MSC");
 				return;
@@ -626,7 +625,7 @@ static void assignment_fsm_wait_mgw_endpoint_to_msc(struct osmo_fsm_inst *fi, ui
 		/* For AoIP, we created the MGW endpoint. Ensure it is really there, and log it. */
 		if (gscon_is_aoip(conn)) {
 			const struct mgcp_conn_peer *mgw_info;
-			mgw_info = mgwep_ci_get_rtp_info(conn->user_plane.mgw_endpoint_ci_msc);
+			mgw_info = osmo_mgcpc_ep_ci_get_rtp_info(conn->user_plane.mgw_endpoint_ci_msc);
 			if (!mgw_info) {
 				assignment_fail(GSM0808_CAUSE_EQUIPMENT_FAILURE,
 						"Unable to retrieve RTP port info allocated by MGW for"

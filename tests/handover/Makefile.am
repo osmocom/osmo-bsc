@@ -34,7 +34,7 @@ handover_test_SOURCES = \
 
 handover_test_LDFLAGS = \
 	-Wl,--wrap=abis_rsl_sendmsg \
-	-Wl,--wrap=mgw_endpoint_ci_request \
+	-Wl,--wrap=osmo_mgcpc_ep_ci_request \
 	$(NULL)
 
 handover_test_LDADD = \
@@ -64,7 +64,6 @@ handover_test_LDADD = \
 	$(top_builddir)/src/osmo-bsc/lchan_rtp_fsm.o \
 	$(top_builddir)/src/osmo-bsc/lchan_select.o \
 	$(top_builddir)/src/osmo-bsc/meas_rep.o \
-	$(top_builddir)/src/osmo-bsc/mgw_endpoint_fsm.o \
 	$(top_builddir)/src/osmo-bsc/neighbor_ident.o \
 	$(top_builddir)/src/osmo-bsc/net_init.o \
 	$(top_builddir)/src/osmo-bsc/osmo_bsc_lcls.o \

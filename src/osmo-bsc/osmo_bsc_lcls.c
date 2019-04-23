@@ -29,8 +29,8 @@
 #include <osmocom/bsc/bsc_subscr_conn_fsm.h>
 #include <osmocom/bsc/gsm_data.h>
 #include <osmocom/bsc/osmo_bsc_lcls.h>
-#include <osmocom/bsc/mgw_endpoint_fsm.h>
-#include <osmocom/mgcp_client/mgcp_client_fsm.h>
+#include <osmocom/bsc/lchan_rtp_fsm.h>
+#include <osmocom/mgcp_client/mgcp_client_endpoint_fsm.h>
 
 struct value_string lcls_event_names[] = {
 	{ LCLS_EV_UPDATE_CFG_CSC,	"UPDATE_CFG_CSC" },
@@ -277,7 +277,7 @@ static inline void lcls_mdcx(const struct gsm_subscriber_connection *conn, struc
 {
 	mgcp_pick_codec(mdcx_info, conn->lchan, false);
 
-	mgw_endpoint_ci_request(conn->user_plane.mgw_endpoint_ci_msc, MGCP_VERB_MDCX, mdcx_info,
+	osmo_mgcpc_ep_ci_request(conn->user_plane.mgw_endpoint_ci_msc, MGCP_VERB_MDCX, mdcx_info,
 				NULL, 0, 0, NULL);
 }
 
@@ -647,7 +647,7 @@ static void lcls_locally_switched_onenter(struct osmo_fsm_inst *fi, uint32_t pre
 		return;
 	}
 
-	other_mgw_info = mgwep_ci_get_rtp_info(conn_other->user_plane.mgw_endpoint_ci_msc);
+	other_mgw_info = osmo_mgcpc_ep_ci_get_rtp_info(conn_other->user_plane.mgw_endpoint_ci_msc);
 	if (!other_mgw_info) {
 		LOGPFSML(fi, LOGL_ERROR, "Cannot enable LCLS without RTP port info of MSC-side"
 			 " -- missing CRCX?\n");

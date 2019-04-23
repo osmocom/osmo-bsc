@@ -70,7 +70,7 @@
 #include <osmocom/bsc/timeslot_fsm.h>
 #include <osmocom/bsc/lchan_fsm.h>
 #include <osmocom/bsc/lchan_select.h>
-#include <osmocom/bsc/mgw_endpoint_fsm.h>
+#include <osmocom/mgcp_client/mgcp_client_endpoint_fsm.h>
 
 #include <inttypes.h>
 
@@ -1584,7 +1584,7 @@ static void dump_one_subscr_conn(struct vty *vty, const struct gsm_subscriber_co
 {
 	vty_out(vty, "conn ID=%u, MSC=%u, hodec2_fail=%d, mgw_ep=%s%s",
 		conn->sccp.conn_id, conn->sccp.msc->nr, conn->hodec2.failures,
-		mgw_endpoint_name(conn->user_plane.mgw_endpoint), VTY_NEWLINE);
+		osmo_mgcpc_ep_name(conn->user_plane.mgw_endpoint), VTY_NEWLINE);
 	if (conn->lcls.global_call_ref_len) {
 		vty_out(vty, " LCLS GCR: %s%s",
 			osmo_hexdump_nospc(conn->lcls.global_call_ref, conn->lcls.global_call_ref_len),

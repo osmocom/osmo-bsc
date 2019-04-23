@@ -43,7 +43,7 @@ enum gscon_fsm_event {
 struct gsm_subscriber_connection;
 struct gsm_network;
 struct msgb;
-struct mgwep_ci;
+struct osmo_mgcpc_ep_ci;
 struct assignment_request;
 struct gsm_lchan;
 
@@ -57,15 +57,15 @@ void gscon_submit_rsl_dtap(struct gsm_subscriber_connection *conn,
 			   struct msgb *msg, int link_id, int allow_sacch);
 int gscon_sigtran_send(struct gsm_subscriber_connection *conn, struct msgb *msg);
 
-struct mgw_endpoint *gscon_ensure_mgw_endpoint(struct gsm_subscriber_connection *conn,
-					       uint16_t msc_assigned_cic);
+struct osmo_mgcpc_ep *gscon_ensure_mgw_endpoint(struct gsm_subscriber_connection *conn,
+						uint16_t msc_assigned_cic);
 bool gscon_connect_mgw_to_msc(struct gsm_subscriber_connection *conn,
 			      struct gsm_lchan *for_lchan,
 			      const char *addr, uint16_t port,
 			      struct osmo_fsm_inst *notify,
 			      uint32_t event_success, uint32_t event_failure,
 			      void *notify_data,
-			      struct mgwep_ci **created_ci);
+			      struct osmo_mgcpc_ep_ci **created_ci);
 
 void gscon_start_assignment(struct gsm_subscriber_connection *conn,
 			    struct assignment_request *req);
@@ -76,7 +76,7 @@ void gscon_release_lchans(struct gsm_subscriber_connection *conn, bool do_rr_rel
 void gscon_lchan_releasing(struct gsm_subscriber_connection *conn, struct gsm_lchan *lchan);
 void gscon_forget_lchan(struct gsm_subscriber_connection *conn, struct gsm_lchan *lchan);
 
-void gscon_forget_mgw_endpoint_ci(struct gsm_subscriber_connection *conn, struct mgwep_ci *ci);
+void gscon_forget_mgw_endpoint_ci(struct gsm_subscriber_connection *conn, struct osmo_mgcpc_ep_ci *ci);
 
 bool gscon_is_aoip(struct gsm_subscriber_connection *conn);
 bool gscon_is_sccplite(struct gsm_subscriber_connection *conn);
