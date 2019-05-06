@@ -1899,7 +1899,7 @@ static int abis_rsl_rx_ipacc_crcx_ack(struct msgb *msg)
 	struct gsm_lchan *lchan = msg->lchan;
 
 	if (!lchan->fi_rtp) {
-		LOG_LCHAN(msg->lchan, LOGL_ERROR, "Rx RSL IPACC: CRCX ACK message for unconfigured lchan");
+		LOG_LCHAN(msg->lchan, LOGL_ERROR, "Rx RSL IPACC: CRCX ACK message for unconfigured lchan\n");
 		return -EINVAL;
 	}
 
@@ -1930,7 +1930,7 @@ static int abis_rsl_rx_ipacc_crcx_nack(struct msgb *msg)
 	rate_ctr_inc(&sign_link->trx->bts->bts_ctrs->ctr[BTS_CTR_RSL_IPA_NACK]);
 
 	if (!lchan->fi_rtp) {
-		LOG_LCHAN(msg->lchan, LOGL_ERROR, "Rx RSL IPACC: CRCX NACK message for unconfigured lchan");
+		LOG_LCHAN(msg->lchan, LOGL_ERROR, "Rx RSL IPACC: CRCX NACK message for unconfigured lchan\n");
 		return -EINVAL;
 	}
 	osmo_fsm_inst_dispatch(msg->lchan->fi_rtp, LCHAN_RTP_EV_IPACC_CRCX_NACK, 0);
@@ -1944,7 +1944,7 @@ static int abis_rsl_rx_ipacc_mdcx_ack(struct msgb *msg)
 	struct gsm_lchan *lchan = msg->lchan;
 
 	if (!lchan->fi_rtp) {
-		LOG_LCHAN(msg->lchan, LOGL_ERROR, "Rx RSL IPACC: MDCX ACK message for unconfigured lchan");
+		LOG_LCHAN(msg->lchan, LOGL_ERROR, "Rx RSL IPACC: MDCX ACK message for unconfigured lchan\n");
 		return -EINVAL;
 	}
 
@@ -1968,7 +1968,7 @@ static int abis_rsl_rx_ipacc_mdcx_nack(struct msgb *msg)
 	rate_ctr_inc(&sign_link->trx->bts->bts_ctrs->ctr[BTS_CTR_RSL_IPA_NACK]);
 
 	if (!lchan->fi_rtp) {
-		LOG_LCHAN(msg->lchan, LOGL_ERROR, "Rx RSL IPACC: MDCX NACK message for unconfigured lchan");
+		LOG_LCHAN(msg->lchan, LOGL_ERROR, "Rx RSL IPACC: MDCX NACK message for unconfigured lchan\n");
 		return -EINVAL;
 	}
 	osmo_fsm_inst_dispatch(msg->lchan->fi_rtp, LCHAN_RTP_EV_IPACC_MDCX_NACK, 0);
