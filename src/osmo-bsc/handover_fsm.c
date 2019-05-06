@@ -637,6 +637,7 @@ void handover_start_inter_bsc_in(struct gsm_subscriber_connection *conn,
 		if (req->ei.key_len > sizeof(info.encr.key)) {
 			ho_fail(HO_RESULT_ERROR, "Encryption Information IE key length is too large: %u\n",
 				req->ei.key_len);
+			return;
 		}
 		memcpy(info.encr.key, req->ei.key, req->ei.key_len);
 		info.encr.key_len = req->ei.key_len;
