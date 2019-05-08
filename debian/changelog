@@ -1,3 +1,10 @@
+osmo-bsc (1.4.1) unstable; urgency=medium
+
+  [ Philipp Maier ]
+  * handover_fsm: copy old S15_S0 to new lchan
+
+ -- Pau Espin Pedrol <pespin@sysmocom.de>  Wed, 08 May 2019 13:36:53 +0200
+
 osmo-bsc (1.4.0) unstable; urgency=medium
 
   [ Neels Hofmeyr ]
