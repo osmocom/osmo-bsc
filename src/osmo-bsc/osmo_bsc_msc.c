@@ -94,6 +94,7 @@ struct bsc_msc_data *osmo_msc_data_alloc(struct gsm_network *net, int nr)
 
 	/* Defaults for the audio setup */
 	msc_data->amr_conf.m5_90 = 1;
+	msc_data->amr_octet_aligned = true;
 
 	/* Allow the full set of possible codecs by default */
 	msc_data->audio_length = 5;
