@@ -1532,10 +1532,12 @@ static int abis_rsl_rx_cchan(struct msgb *msg)
 		break;
 	case RSL_MT_DELETE_IND:
 		/* CCCH overloaded, IMM_ASSIGN was dropped */
-	case RSL_MT_CBCH_LOAD_IND:
-		/* current load on the CBCH */
 		LOGP(DRSL, LOGL_NOTICE, "Unimplemented Abis RSL TRX message "
 			"type %s\n", rsl_msg_name(rslh->c.msg_type));
+		break;
+	case RSL_MT_CBCH_LOAD_IND:
+		/* current load on the CBCH */
+		/* FIXME: handle this. Ignore for now */
 		break;
 	case RSL_MT_ERICSSON_IMM_ASS_SENT:
 		rc = rsl_rx_ericsson_imm_assign_sent(msg);
