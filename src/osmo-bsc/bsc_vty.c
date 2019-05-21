@@ -4582,7 +4582,7 @@ DEFUN(smscb_cmd, smscb_cmd_cmd,
 		return CMD_WARNING;
 	}
 
-	rsl_sms_cb_command(bts, RSL_CHAN_SDCCH4_ACCH, cb_cmd, buf, rc);
+	rsl_sms_cb_command(bts, RSL_CHAN_SDCCH4_ACCH, cb_cmd, false, buf, rc);
 
 	return CMD_SUCCESS;
 }

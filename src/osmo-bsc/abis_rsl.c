@@ -2172,7 +2172,7 @@ int abis_rsl_rcvmsg(struct msgb *msg)
 
 int rsl_sms_cb_command(struct gsm_bts *bts, uint8_t chan_number,
 		       struct rsl_ie_cb_cmd_type cb_command,
-		       const uint8_t *data, int len)
+		       bool use_extended_cbch, const uint8_t *data, int len)
 {
 	struct abis_rsl_dchan_hdr *dh;
 	struct msgb *cb_cmd;
@@ -2188,6 +2188,8 @@ int rsl_sms_cb_command(struct gsm_bts *bts, uint8_t chan_number,
 
 	msgb_tv_put(cb_cmd, RSL_IE_CB_CMD_TYPE, *(uint8_t*)&cb_command);
 	msgb_tlv_put(cb_cmd, RSL_IE_SMSCB_MSG, len, data);
+	if (use_extended_cbch)
+		msgb_tv_put(cb_cmd, RSL_IE_SMSCB_CHAN_INDICATOR, 0x01);
 
 	cb_cmd->dst = bts->c0->rsl_link;
 
