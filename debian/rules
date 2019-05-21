@@ -45,7 +45,7 @@
 	dh $@ --with autoreconf
 
 # debmake generated override targets
-CONFIGURE_FLAGS += --with-systemdsystemunitdir=/lib/systemd/system
+CONFIGURE_FLAGS += --with-systemdsystemunitdir=/lib/systemd/system --enable-manuals
 override_dh_auto_configure:
 	dh_auto_configure -- $(CONFIGURE_FLAGS)
 #
@@ -60,3 +60,7 @@ override_dh_strip:
 # Print test results in case of a failure
 override_dh_auto_test:
 	dh_auto_test || (find . -name testsuite.log -exec cat {} \; ; false)
+
+# Don't create .pdf.gz files (barely saves space and they can't be opened directly by most pdf readers)
+override_dh_compress:
+	dh_compress -X.pdf

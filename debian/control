@@ -17,7 +17,8 @@ Build-Depends: debhelper (>=9),
                libosmo-sigtran-dev (>= 0.10.0),
                libosmo-abis-dev (>= 0.5.1),
                libosmo-netif-dev (>= 0.3.0),
-               libosmo-mgcp-client-dev (>= 1.4.0)
+               libosmo-mgcp-client-dev (>= 1.4.0),
+               osmo-gsm-manuals-dev
 Standards-Version: 3.9.8
 Vcs-Git: git://git.osmocom.org/osmo-bsc.git
 Vcs-Browser: https://git.osmocom.org/osmo-bsc/
@@ -64,3 +65,12 @@ Architecture: any
 Multi-Arch: foreign
 Depends: ${misc:Depends}, ${shlibs:Depends}
 Description: Command line utilities to manage measurement reports.
+
+Package: osmo-bsc-doc
+Architecture: all
+Section: doc
+Priority: optional
+Depends: ${misc:Depends}
+Description: ${misc:Package} PDF documentation
+ Various manuals: user manual, VTY reference manual and/or
+ protocol/interface manuals.
