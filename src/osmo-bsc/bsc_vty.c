@@ -4533,14 +4533,19 @@ DEFUN(bts_resend, bts_resend_cmd,
 
 
 DEFUN(smscb_cmd, smscb_cmd_cmd,
-	"bts <0-255> smscb-command <1-4> HEXSTRING",
+	"bts <0-255> smscb-command (normal|schedule|default) <1-4> HEXSTRING",
 	"BTS related commands\n" BTS_NR_STR
-	"SMS Cell Broadcast\n" "Last Valid Block\n"
+	"SMS Cell Broadcast\n"
+	"Normal (one-shot) SMSCB Message; sent once over Abis+Um\n"
+	"Schedule (one-shot) SMSCB Messag; sent once over Abis+Um\n"
+	"Default (repeating) SMSCB Message; sent once over Abis, unlimited ovrer Um\n"
+	"Last Valid Block\n"
 	"Hex Encoded SMSCB message (up to 88 octets)\n")
 {
 	struct gsm_bts *bts;
 	int bts_nr = atoi(argv[0]);
-	int last_block = atoi(argv[1]);
+	const char *type_str = argv[1];
+	int last_block = atoi(argv[2]);
 	struct rsl_ie_cb_cmd_type cb_cmd;
 	uint8_t buf[88];
 	int rc;
@@ -4554,7 +4559,7 @@ DEFUN(smscb_cmd, smscb_cmd_cmd,
 		vty_out(vty, "%% BTS %d doesn't have a CBCH%s", bts_nr, VTY_NEWLINE);
 		return CMD_WARNING;
 	}
-	rc = osmo_hexparse(argv[2], buf, sizeof(buf));
+	rc = osmo_hexparse(argv[3], buf, sizeof(buf));
 	if (rc < 0 || rc > sizeof(buf)) {
 		vty_out(vty, "Error parsing HEXSTRING%s", VTY_NEWLINE);
 		return CMD_WARNING;
@@ -4562,7 +4567,16 @@ DEFUN(smscb_cmd, smscb_cmd_cmd,
 
 	cb_cmd.spare = 0;
 	cb_cmd.def_bcast = 0;
-	cb_cmd.command = RSL_CB_CMD_TYPE_NORMAL;
+	if (!strcmp(type_str, "normal"))
+		cb_cmd.command = RSL_CB_CMD_TYPE_NORMAL;
+	else if (!strcmp(type_str, "schedule"))
+		cb_cmd.command = RSL_CB_CMD_TYPE_SCHEDULE;
+	else if (!strcmp(type_str, "default"))
+		cb_cmd.command = RSL_CB_CMD_TYPE_DEFAULT;
+	else {
+		vty_out(vty, "Error parsing type%s", VTY_NEWLINE);
+		return CMD_WARNING;
+	}
 
 	switch (last_block) {
 	case 1:
