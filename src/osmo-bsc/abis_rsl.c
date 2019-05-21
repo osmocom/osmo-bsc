@@ -1532,7 +1532,7 @@ static int abis_rsl_rx_cchan(struct msgb *msg)
 		break;
 	case RSL_MT_DELETE_IND:
 		/* CCCH overloaded, IMM_ASSIGN was dropped */
-		LOGP(DRSL, LOGL_NOTICE, "Unimplemented Abis RSL TRX message "
+		LOGP(DRSL, LOGL_NOTICE, "Unimplemented Abis RSL CChan message "
 			"type %s\n", rsl_msg_name(rslh->c.msg_type));
 		break;
 	case RSL_MT_CBCH_LOAD_IND:
