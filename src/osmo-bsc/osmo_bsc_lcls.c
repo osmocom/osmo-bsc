@@ -283,7 +283,7 @@ static inline void lcls_mdcx(const struct gsm_subscriber_connection *conn, struc
 
 static void lcls_break_local_switching(struct gsm_subscriber_connection *conn)
 {
-	struct mgcp_conn_peer mdcx_info;
+	struct mgcp_conn_peer mdcx_info = {};
 
 	LOGPFSM(conn->lcls.fi, "=== HERE IS WHERE WE DISABLE LCLS(%s)\n",
 		bsc_lcls_mode_name(conn->sccp.msc->lcls_mode));
