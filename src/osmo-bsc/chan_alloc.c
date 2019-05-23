@@ -59,6 +59,10 @@ void bts_chan_load(struct pchan_load *cl, const struct gsm_bts *bts)
 				continue;
 
 			ts_for_each_lchan(lchan, ts) {
+				/* don't even count CBCH slots in total */
+				if (lchan->type == GSM_LCHAN_CBCH)
+					continue;
+
 				pl->total++;
 
 				switch (lchan->fi->state) {
