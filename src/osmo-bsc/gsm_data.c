@@ -827,6 +827,7 @@ struct gsm_bts *gsm_bts_alloc(struct gsm_network *net, uint8_t bts_num)
 	}
 	bts->c0->ts[0].pchan_from_config = GSM_PCHAN_CCCH_SDCCH4; /* TODO: really?? */
 
+	bts->ccch_load_ind_thresh = 10; /* 10% of Load: Start sending CCCH LOAD IND */
 	bts->rach_b_thresh = -1;
 	bts->rach_ldavg_slots = -1;
 

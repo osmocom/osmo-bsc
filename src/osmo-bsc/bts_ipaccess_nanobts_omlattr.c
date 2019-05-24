@@ -60,7 +60,7 @@ struct msgb *nanobts_attr_bts_get(struct gsm_bts *bts)
 	msgb_tv_fixed_put(msgb, NM_ATT_OVERL_PERIOD, 3, buf);
 
 	/* percent */
-	msgb_tv_put(msgb, NM_ATT_CCCH_L_T, 10);
+	msgb_tv_put(msgb, NM_ATT_CCCH_L_T, bts->ccch_load_ind_thresh);
 
 	/* seconds */
 	msgb_tv_put(msgb, NM_ATT_CCCH_L_I_P, 1);

@@ -1115,6 +1115,9 @@ struct gsm_bts {
 		bool ctrl_ack_type_use_block;
 	} gprs;
 
+	/* threshold (in percent) when BTS shall send CCCH LOAD IND */
+	int ccch_load_ind_thresh;
+
 	/* RACH NM values */
 	int rach_b_thresh;
 	int rach_ldavg_slots;

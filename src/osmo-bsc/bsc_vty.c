@@ -848,6 +848,9 @@ static void config_write_bts_single(struct vty *vty, struct gsm_bts *bts)
 	vty_out(vty, "  channel-descrption bs-ag-blks-res %u%s",
 		bts->si_common.chan_desc.bs_ag_blks_res, VTY_NEWLINE);
 
+	if (bts->ccch_load_ind_thresh != 10)
+		vty_out(vty, "  ccch load-indication-threshold %u%s",
+			bts->ccch_load_ind_thresh, VTY_NEWLINE);
 	if (bts->rach_b_thresh != -1)
 		vty_out(vty, "  rach nm busy threshold %u%s",
 			bts->rach_b_thresh, VTY_NEWLINE);
@@ -2431,6 +2434,20 @@ DEFUN(cfg_bts_chan_desc_bs_ag_blks_res,
 	int bs_ag_blks_res = atoi(argv[0]);
 
 	bts->si_common.chan_desc.bs_ag_blks_res = bs_ag_blks_res;
+	return CMD_SUCCESS;
+}
+
+#define CCCH_STR "Common Control Channel\n"
+
+DEFUN(cfg_bts_ccch_load_ind_thresh,
+      cfg_bts_ccch_load_ind_thresh_cmd,
+      "ccch load-indication-threshold <0-100>",
+	CCCH_STR
+      "Percentage of CCCH load at which BTS sends RSL CCCH LOAD IND\n"
+      "CCCH Load Threshold in percent (Default: 10)")
+{
+	struct gsm_bts *bts = vty->index;
+	bts->ccch_load_ind_thresh = atoi(argv[0]);
 	return CMD_SUCCESS;
 }
 
@@ -5233,6 +5250,7 @@ int bsc_vty_init(struct gsm_network *network)
 	install_element(BTS_NODE, &cfg_bts_chan_desc_att_cmd);
 	install_element(BTS_NODE, &cfg_bts_chan_desc_bs_pa_mfrms_cmd);
 	install_element(BTS_NODE, &cfg_bts_chan_desc_bs_ag_blks_res_cmd);
+	install_element(BTS_NODE, &cfg_bts_ccch_load_ind_thresh_cmd);
 	install_element(BTS_NODE, &cfg_bts_rach_nm_b_thresh_cmd);
 	install_element(BTS_NODE, &cfg_bts_rach_nm_ldavg_cmd);
 	install_element(BTS_NODE, &cfg_bts_cell_barred_cmd);
