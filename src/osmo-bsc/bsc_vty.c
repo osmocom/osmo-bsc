@@ -517,6 +517,8 @@ static void bts_dump_vty(struct vty *vty, struct gsm_bts *bts)
 		bts->bts_ctrs->ctr[BTS_CTR_BTS_RSL_FAIL].current,
 		VTY_NEWLINE);
 
+	vty_out_stat_item_group(vty, "  ", bts->bts_statg);
+
 	bts_dump_vty_features(vty, bts);
 }
 
