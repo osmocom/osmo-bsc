@@ -1378,6 +1378,8 @@ static const struct rate_ctr_group_desc bts_ctrg_desc = {
 enum {
 	BTS_STAT_CHAN_LOAD_AVERAGE,
 	BTS_STAT_T3122,
+	BTS_STAT_RACH_BUSY,
+	BTS_STAT_RACH_ACCESS,
 };
 
 enum {

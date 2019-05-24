@@ -1476,9 +1476,17 @@ static int rsl_rx_ccch_load(struct msgb *msg)
 		break;
 	case RSL_IE_RACH_LOAD:
 		if (msg->data_len >= 7) {
+			int32_t busy_percent, access_percent;
+			/* build data for signal */
 			sd.rach_slot_count = rslh->data[2] << 8 | rslh->data[3];
 			sd.rach_busy_count = rslh->data[4] << 8 | rslh->data[5];
 			sd.rach_access_count = rslh->data[6] << 8 | rslh->data[7];
+			/* update stats group */
+			busy_percent = (int32_t) sd.rach_busy_count * 100 / (int32_t) sd.rach_slot_count;
+			access_percent = (int32_t) sd.rach_access_count * 100 / (int32_t) sd.rach_slot_count;
+			osmo_stat_item_set(sd.bts->bts_statg->items[BTS_STAT_RACH_BUSY], busy_percent);
+			osmo_stat_item_set(sd.bts->bts_statg->items[BTS_STAT_RACH_ACCESS], access_percent);
+			/* dispatch signal */
 			osmo_signal_dispatch(SS_CCCH, S_CCCH_RACH_LOAD, &sd);
 		}
 		break;
