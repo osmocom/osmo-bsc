@@ -358,6 +358,7 @@ static int rx_fail_evt_rep(struct msgb *mb, struct gsm_bts *bts)
 	struct abis_om_hdr *oh = msgb_l2(mb);
 	struct abis_om_fom_hdr *foh = msgb_l3(mb);
 	struct e1inp_sign_link *sign_link = mb->dst;
+	struct nm_fail_rep_signal_data sd;
 	struct tlv_parsed tp;
 	int rc = 0;
 	const uint8_t *p_val = NULL;
@@ -398,6 +399,24 @@ static int rx_fail_evt_rep(struct msgb *mb, struct gsm_bts *bts)
 		rc = -EINVAL;
 	}
 
+	sd.bts = mb->trx->bts;
+	sd.msg = mb;
+	sd.tp = &tp;
+	if (e_type)
+		sd.parsed.event_type = e_type;
+	else
+		sd.parsed.event_type = "<none>";
+	if (severity)
+		sd.parsed.severity = severity;
+	else
+		sd.parsed.severity = "<none>";
+	if (p_text)
+		sd.parsed.additional_text = p_text;
+	else
+		sd.parsed.additional_text = "<none>";
+	sd.parsed.probable_cause = p_val;
+	osmo_signal_dispatch(SS_NM, S_NM_FAIL_REP, &sd);
+
 	if (p_text)
 		talloc_free(p_text);
 
@@ -419,7 +438,6 @@ static int abis_nm_rcvmsg_report(struct msgb *mb, struct gsm_bts *bts)
 		break;
 	case NM_MT_FAILURE_EVENT_REP:
 		rx_fail_evt_rep(mb, bts);
-		osmo_signal_dispatch(SS_NM, S_NM_FAIL_REP, mb);
 		break;
 	case NM_MT_TEST_REP:
 		DEBUGPFOH(DNM, foh, "Test Report\n");
