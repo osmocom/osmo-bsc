@@ -368,8 +368,8 @@ static int rx_fail_evt_rep(struct msgb *mb, struct gsm_bts *bts)
 			  oh->length-sizeof(*foh));
 
 	if (TLVP_PRESENT(&tp, NM_ATT_ADD_TEXT)) {
-		p_val = TLVP_VAL(&tp, NM_ATT_ADD_TEXT);
-		p_text = talloc_strndup(tall_bsc_ctx, (const char *) p_val,
+		const uint8_t *val = TLVP_VAL(&tp, NM_ATT_ADD_TEXT);
+		p_text = talloc_strndup(tall_bsc_ctx, (const char *) val,
 					TLVP_LEN(&tp, NM_ATT_ADD_TEXT));
 	}
 
