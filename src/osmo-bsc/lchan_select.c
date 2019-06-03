@@ -234,7 +234,7 @@ struct gsm_lchan *lchan_select_by_type(struct gsm_bts *bts, enum gsm_chan_t type
 		lchan->type = type;
 		LOG_LCHAN(lchan, LOGL_INFO, "Selected\n");
 	} else
-		LOG_BTS(bts, DRLL, LOGL_ERROR, "Failed to select %s channel\n",
+		LOG_BTS(bts, DRLL, LOGL_NOTICE, "Failed to select %s channel\n",
 			gsm_lchant_name(type));
 
 	return lchan;
