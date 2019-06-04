@@ -11,7 +11,7 @@
       <child_of nodeid='14' />
       <name>BTS Configuration</name>
       <description>This is the configuration of a single BTS.</description>
-      <command id='oml ip.access stream_id &lt;0-255&gt; line E1_LINE'>
+      <command id='oml ipa stream-id &lt;0-255&gt; line E1_LINE'>
         <description>
 	  Set the IPA stream identifier for the OML link within the IPA
 	  multiplex.  Must be the same as on the BTS side.  The default
@@ -40,7 +40,7 @@
 	  shall be used by MS in this cell.  The default should be enabled.
 	</description>
       </command>
-      <command id='ip.access rsl-ip A.B.C.D'>
+      <command id='ipa rsl-ip A.B.C.D'>
         <description>
 	  Configure the IP address of the BSC used for RSL.  Abis/IP
 	  BTSs, including OsmoBTS and the nanoBTS will be instructed to
@@ -96,7 +96,7 @@
 	  re-selection.
 	</description>
       </command>
-      <command id='ip.access unit_id &lt;0-65534&gt; &lt;0-255&gt;'>
+      <command id='ipa unit-id &lt;0-65534&gt; &lt;0-255&gt;'>
         <description>
 	  The ip.access unit ID is a parameter of the IPA
 	  Signalling-over-IP multiplex.  It is administratively

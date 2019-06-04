@@ -2884,7 +2884,7 @@
         <param name='&lt;0-63&gt;' doc='BSIC of this BTS' />
       </params>
     </command>
-    <command id='ip.access unit_id &lt;0-65534&gt; &lt;0-255&gt;'>
+    <command id='ipa unit-id &lt;0-65534&gt; &lt;0-255&gt;'>
       <params>
         <param name='ip.access' doc='Abis/IP specific options' />
         <param name='unit_id' doc='Set the IPA BTS Unit ID' />
@@ -2892,7 +2892,7 @@
         <param name='&lt;0-255&gt;' doc='Unit ID (BTS)' />
       </params>
     </command>
-    <command id='ip.access rsl-ip A.B.C.D'>
+    <command id='ipa rsl-ip A.B.C.D'>
       <params>
         <param name='ip.access' doc='Abis/IP specific options' />
         <param name='rsl-ip' doc='Set the IPA RSL IP Address of the BSC' />
@@ -2922,7 +2922,7 @@
         <param name='&lt;15-100&gt;' doc='and the BTS is being bootstrapped.' />
       </params>
     </command>
-    <command id='oml ip.access stream_id &lt;0-255&gt; line E1_LINE'>
+    <command id='oml ipa stream-id &lt;0-255&gt; line E1_LINE'>
       <params>
         <param name='oml' doc='Organization &amp; Maintenance Link' />
         <param name='ip.access' doc='A-bis/IP Specific Options' />

@@ -35,8 +35,8 @@ network
   channel allocator ascending
   rach tx integer 9
   rach max transmission 7
-  ip.access unit_id 1801 0 <4>
-  oml ip.access stream_id 255 line 0
+  ipa unit-id 1801 0 <4>
+  oml ipa stream-id 255 line 0
   gprs mode none
   trx 0
    rf_locked 0
@@ -113,8 +113,8 @@ network
   channel allocator ascending
   rach tx integer 9
   rach max transmission 7
-  ip.access unit_id 1800 0 <1>
-  oml ip.access stream_id 255 line 0
+  ipa unit-id 1800 0 <1>
+  oml ipa stream-id 255 line 0
   gprs mode none
   trx 0
    rf_locked 0

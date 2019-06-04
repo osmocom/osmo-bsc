@@ -897,15 +897,15 @@ static void config_write_bts_single(struct vty *vty, struct gsm_bts *bts)
 	switch (bts->type) {
 	case GSM_BTS_TYPE_NANOBTS:
 	case GSM_BTS_TYPE_OSMOBTS:
-		vty_out(vty, "  ip.access unit_id %u %u%s",
+		vty_out(vty, "  ipa unit-id %u %u%s",
 			bts->ip_access.site_id, bts->ip_access.bts_id, VTY_NEWLINE);
 		if (bts->ip_access.rsl_ip) {
 			struct in_addr ia;
 			ia.s_addr = htonl(bts->ip_access.rsl_ip);
-			vty_out(vty, "  ip.access rsl-ip %s%s", inet_ntoa(ia),
+			vty_out(vty, "  ipa rsl-ip %s%s", inet_ntoa(ia),
 				VTY_NEWLINE);
 		}
-		vty_out(vty, "  oml ip.access stream_id %u line %u%s",
+		vty_out(vty, "  oml ipa stream-id %u line %u%s",
 			bts->oml_tei, bts->oml_e1_link.e1_nr, VTY_NEWLINE);
 		break;
 	case GSM_BTS_TYPE_NOKIA_SITE:
@@ -2180,7 +2180,7 @@ DEFUN(cfg_bts_bsic,
 
 DEFUN(cfg_bts_unit_id,
       cfg_bts_unit_id_cmd,
-      "ip.access unit_id <0-65534> <0-255>",
+      "ipa unit-id <0-65534> <0-255>",
       "Abis/IP specific options\n"
       "Set the IPA BTS Unit ID\n"
       "Unit ID (Site)\n"
@@ -2201,9 +2201,17 @@ DEFUN(cfg_bts_unit_id,
 	return CMD_SUCCESS;
 }
 
+DEFUN_DEPRECATED(cfg_bts_unit_id,
+      cfg_bts_deprecated_unit_id_cmd,
+      "ip.access unit_id <0-65534> <0-255>",
+      "Abis/IP specific options\n"
+      "Set the IPA BTS Unit ID\n"
+      "Unit ID (Site)\n"
+      "Unit ID (BTS)\n");
+
 DEFUN(cfg_bts_rsl_ip,
       cfg_bts_rsl_ip_cmd,
-      "ip.access rsl-ip A.B.C.D",
+      "ipa rsl-ip A.B.C.D",
       "Abis/IP specific options\n"
       "Set the IPA RSL IP Address of the BSC\n"
       "Destination IP address for RSL connection\n")
@@ -2221,6 +2229,13 @@ DEFUN(cfg_bts_rsl_ip,
 
 	return CMD_SUCCESS;
 }
+
+DEFUN_DEPRECATED(cfg_bts_rsl_ip,
+      cfg_bts_deprecated_rsl_ip_cmd,
+      "ip.access rsl-ip A.B.C.D",
+      "Abis/IP specific options\n"
+      "Set the IPA RSL IP Address of the BSC\n"
+      "Destination IP address for RSL connection\n");
 
 #define NOKIA_STR "Nokia *Site related commands\n"
 
@@ -2287,9 +2302,9 @@ DEFUN(cfg_bts_nokia_site_bts_reset_timer_cnf,
 
 DEFUN(cfg_bts_stream_id,
       cfg_bts_stream_id_cmd,
-      "oml ip.access stream_id <0-255> line E1_LINE",
+      "oml ipa stream-id <0-255> line E1_LINE",
 	OML_STR IPA_STR
-      "Set the ip.access Stream ID of the OML link of this BTS\n"
+      "Set the ipa Stream ID of the OML link of this BTS\n"
       "Stream Identifier\n" "Virtual E1 Line Number\n" "Virtual E1 Line Number\n")
 {
 	struct gsm_bts *bts = vty->index;
@@ -2306,6 +2321,13 @@ DEFUN(cfg_bts_stream_id,
 
 	return CMD_SUCCESS;
 }
+
+DEFUN_DEPRECATED(cfg_bts_stream_id,
+      cfg_bts_deprecated_stream_id_cmd,
+      "oml ip.access stream_id <0-255> line E1_LINE",
+	OML_STR IPA_STR
+      "Set the ip.access Stream ID of the OML link of this BTS\n"
+      "Stream Identifier\n" "Virtual E1 Line Number\n" "Virtual E1 Line Number\n");
 
 #define OML_E1_STR OML_STR "OML E1/T1 Configuration\n"
 
@@ -5237,11 +5259,14 @@ int bsc_vty_init(struct gsm_network *network)
 	install_element(BTS_NODE, &cfg_bts_tsc_cmd);
 	install_element(BTS_NODE, &cfg_bts_bsic_cmd);
 	install_element(BTS_NODE, &cfg_bts_unit_id_cmd);
+	install_element(BTS_NODE, &cfg_bts_deprecated_unit_id_cmd);
 	install_element(BTS_NODE, &cfg_bts_rsl_ip_cmd);
+	install_element(BTS_NODE, &cfg_bts_deprecated_rsl_ip_cmd);
 	install_element(BTS_NODE, &cfg_bts_nokia_site_skip_reset_cmd);
 	install_element(BTS_NODE, &cfg_bts_nokia_site_no_loc_rel_cnf_cmd);
 	install_element(BTS_NODE, &cfg_bts_nokia_site_bts_reset_timer_cnf_cmd);
 	install_element(BTS_NODE, &cfg_bts_stream_id_cmd);
+	install_element(BTS_NODE, &cfg_bts_deprecated_stream_id_cmd);
 	install_element(BTS_NODE, &cfg_bts_oml_e1_cmd);
 	install_element(BTS_NODE, &cfg_bts_oml_e1_tei_cmd);
 	install_element(BTS_NODE, &cfg_bts_challoc_cmd);
