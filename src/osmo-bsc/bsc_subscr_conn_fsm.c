@@ -1058,14 +1058,7 @@ bool gscon_is_aoip(struct gsm_subscriber_connection *conn)
 	if (!conn || !conn->sccp.msc)
 		return false;
 
-	switch (conn->sccp.msc->a.asp_proto) {
-	case OSMO_SS7_ASP_PROT_SUA:
-	case OSMO_SS7_ASP_PROT_M3UA:
-		return true;
-
-	default:
-		return false;
-	}
+	return msc_is_aoip(conn->sccp.msc);
 }
 
 bool gscon_is_sccplite(struct gsm_subscriber_connection *conn)
@@ -1073,11 +1066,5 @@ bool gscon_is_sccplite(struct gsm_subscriber_connection *conn)
 	if (!conn || !conn->sccp.msc)
 		return false;
 
-	switch (conn->sccp.msc->a.asp_proto) {
-	case OSMO_SS7_ASP_PROT_IPA:
-		return true;
-
-	default:
-		return false;
-	}
+	return msc_is_sccplite(conn->sccp.msc);
 }

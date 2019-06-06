@@ -191,5 +191,25 @@ static inline int mgcp_port_to_cic(uint16_t port, uint16_t base)
 	return (port - base) / 2;
 }
 
+static inline bool msc_is_aoip(const struct bsc_msc_data *msc)
+{
+	switch (msc->a.asp_proto) {
+	case OSMO_SS7_ASP_PROT_SUA:
+	case OSMO_SS7_ASP_PROT_M3UA:
+		return true;
+	default:
+		return false;
+	}
+}
+
+static inline bool msc_is_sccplite(const struct bsc_msc_data *msc)
+{
+	switch (msc->a.asp_proto) {
+	case OSMO_SS7_ASP_PROT_IPA:
+		return true;
+	default:
+		return false;
+	}
+}
 
 #endif

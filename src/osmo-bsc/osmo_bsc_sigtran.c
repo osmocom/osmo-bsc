@@ -523,8 +523,7 @@ int osmo_bsc_sigtran_init(struct llist_head *mscs)
 		 * an X-Osmo-IGN flag telling osmo-mgw to ignore CallID mismatches for this endpoint.
 		 * If an explicit VTY command has already indicated whether or not to send X-Osmo-IGN, do
 		 * not overwrite that setting. */
-		if (msc->a.asp_proto == OSMO_SS7_ASP_PROT_IPA
-		    && !msc->x_osmo_ign_configured)
+		if (msc_is_sccplite(msc) && !msc->x_osmo_ign_configured)
 			msc->x_osmo_ign |= MGCP_X_OSMO_IGN_CALLID;
 
 		/* If unset, use default local SCCP address */
