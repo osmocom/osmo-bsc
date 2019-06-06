@@ -152,6 +152,14 @@
         <param name='[&lt;0-255&gt;]' doc='TRX Number' />
       </params>
     </command>
+    <command id='show trx (connected|disconnected)'>
+      <params>
+        <param name='show' doc='Show running system information' />
+        <param name='trx' doc='Display information about a TRX' />
+        <param name='connected' doc='Show TRX with RSL connected' />
+        <param name='disconnected' doc='Show TRX with RSL disconnected' />
+      </params>
+    </command>
     <command id='show timeslot [&lt;0-255&gt;] [&lt;0-255&gt;] [&lt;0-7&gt;]'>
       <params>
         <param name='show' doc='Show running system information' />
@@ -175,11 +183,29 @@
       <params>
         <param name='show' doc='Show running system information' />
         <param name='lchan' doc='Display information about a logical channel' />
-        <param name='summary' doc='Short summary' />
+        <param name='summary' doc='Short summary (used lchans)' />
         <param name='[&lt;0-255&gt;]' doc='BTS Number' />
         <param name='[&lt;0-255&gt;]' doc='TRX Number' />
         <param name='[&lt;0-7&gt;]' doc='Timeslot Number' />
         <param name='[&lt;0-7&gt;]' doc='Logical Channel Number' />
+      </params>
+    </command>
+    <command id='show lchan summary-all [&lt;0-255&gt;] [&lt;0-255&gt;] [&lt;0-7&gt;] [&lt;0-7&gt;]'>
+      <params>
+        <param name='show' doc='Show running system information' />
+        <param name='lchan' doc='Display information about a logical channel' />
+        <param name='summary-all' doc='Short summary (all lchans)' />
+        <param name='[&lt;0-255&gt;]' doc='BTS Number' />
+        <param name='[&lt;0-255&gt;]' doc='TRX Number' />
+        <param name='[&lt;0-7&gt;]' doc='Timeslot Number' />
+        <param name='[&lt;0-7&gt;]' doc='Logical Channel Number' />
+      </params>
+    </command>
+    <command id='show timer [TNNNN]'>
+      <params>
+        <param name='show' doc='Show running system information' />
+        <param name='timer' doc='Show timers' />
+        <param name='[TNNNN]' doc='T- or X-timer-number -- 3GPP compliant timer number of the format &apos;1234&apos; or &apos;T1234&apos; or &apos;t1234&apos;; Osmocom-specific timer number of the format: &apos;X1234&apos; or &apos;x1234&apos;.' />
       </params>
     </command>
     <command id='show conns'>
@@ -294,7 +320,7 @@
         <param name='MASK' doc='List of logging categories to log, e.g. &apos;abc:mno:xyz&apos;. Available log categories depend on the specific application, refer to the &apos;logging level&apos; command. Optionally add individual log levels like &apos;abc,1:mno,3:xyz,5&apos;, where the level numbers are LOGL_DEBUG=1 LOGL_INFO=3 LOGL_NOTICE=5 LOGL_ERROR=7 LOGL_FATAL=8' />
       </params>
     </command>
-    <command id='logging level (rll|mm|rr|rsl|nm|pag|meas|msc|ho|hodec|ref|nat|ctrl|filter|pcu|lcls|chan|ts|as|lglobal|llapd|linp|lmux|lmi|lmib|lsms|lctrl|lgtp|lstats|lgsup|loap|lss7|lsccp|lsua|lm3ua|lmgcp|ljibuf) (debug|info|notice|error|fatal)'>
+    <command id='logging level (rll|mm|rr|rsl|nm|pag|meas|msc|ho|hodec|ref|nat|ctrl|filter|pcu|lcls|chan|ts|as|lglobal|llapd|linp|lmux|lmi|lmib|lsms|lctrl|lgtp|lstats|lgsup|loap|lss7|lsccp|lsua|lm3ua|lmgcp|ljibuf|lrspro) (debug|info|notice|error|fatal)'>
       <params>
         <param name='logging' doc='Configure logging' />
         <param name='level' doc='Set the log level for a specified category' />
@@ -335,6 +361,7 @@
         <param name='lm3ua' doc='libosmo-sigtran MTP3 User Adaptation' />
         <param name='lmgcp' doc='libosmo-mgcp Media Gateway Control Protocol' />
         <param name='ljibuf' doc='libosmo-netif Jitter Buffer' />
+        <param name='lrspro' doc='Remote SIM protocol' />
         <param name='debug' doc='Log debug messages and higher levels' />
         <param name='info' doc='Log informational messages and higher levels' />
         <param name='notice' doc='Log noticeable messages and higher levels' />
@@ -422,13 +449,6 @@
         <param name='DEPTH' doc='Specify required maximal depth value' />
         <param name='filter' doc='Filter chunks using regular expression' />
         <param name='REGEXP' doc='Regular expression' />
-      </params>
-    </command>
-    <command id='show timer [TNNNN]'>
-      <params>
-        <param name='show' doc='Show running system information' />
-        <param name='timer' doc='GSM Timers' />
-        <param name='[TNNNN]' doc='Specific timer to show, or all timers if omitted.' />
       </params>
     </command>
     <command id='show bts &lt;0-255&gt; neighbor arfcn &lt;0-1023&gt; bsic (&lt;0-63&gt;|any)'>
@@ -759,6 +779,14 @@
         <param name='[&lt;0-255&gt;]' doc='TRX Number' />
       </params>
     </command>
+    <command id='show trx (connected|disconnected)'>
+      <params>
+        <param name='show' doc='Show running system information' />
+        <param name='trx' doc='Display information about a TRX' />
+        <param name='connected' doc='Show TRX with RSL connected' />
+        <param name='disconnected' doc='Show TRX with RSL disconnected' />
+      </params>
+    </command>
     <command id='show timeslot [&lt;0-255&gt;] [&lt;0-255&gt;] [&lt;0-7&gt;]'>
       <params>
         <param name='show' doc='Show running system information' />
@@ -782,11 +810,29 @@
       <params>
         <param name='show' doc='Show running system information' />
         <param name='lchan' doc='Display information about a logical channel' />
-        <param name='summary' doc='Short summary' />
+        <param name='summary' doc='Short summary (used lchans)' />
         <param name='[&lt;0-255&gt;]' doc='BTS Number' />
         <param name='[&lt;0-255&gt;]' doc='TRX Number' />
         <param name='[&lt;0-7&gt;]' doc='Timeslot Number' />
         <param name='[&lt;0-7&gt;]' doc='Logical Channel Number' />
+      </params>
+    </command>
+    <command id='show lchan summary-all [&lt;0-255&gt;] [&lt;0-255&gt;] [&lt;0-7&gt;] [&lt;0-7&gt;]'>
+      <params>
+        <param name='show' doc='Show running system information' />
+        <param name='lchan' doc='Display information about a logical channel' />
+        <param name='summary-all' doc='Short summary (all lchans)' />
+        <param name='[&lt;0-255&gt;]' doc='BTS Number' />
+        <param name='[&lt;0-255&gt;]' doc='TRX Number' />
+        <param name='[&lt;0-7&gt;]' doc='Timeslot Number' />
+        <param name='[&lt;0-7&gt;]' doc='Logical Channel Number' />
+      </params>
+    </command>
+    <command id='show timer [TNNNN]'>
+      <params>
+        <param name='show' doc='Show running system information' />
+        <param name='timer' doc='Show timers' />
+        <param name='[TNNNN]' doc='T- or X-timer-number -- 3GPP compliant timer number of the format &apos;1234&apos; or &apos;T1234&apos; or &apos;t1234&apos;; Osmocom-specific timer number of the format: &apos;X1234&apos; or &apos;x1234&apos;.' />
       </params>
     </command>
     <command id='show conns'>
@@ -925,7 +971,7 @@
         <param name='MASK' doc='List of logging categories to log, e.g. &apos;abc:mno:xyz&apos;. Available log categories depend on the specific application, refer to the &apos;logging level&apos; command. Optionally add individual log levels like &apos;abc,1:mno,3:xyz,5&apos;, where the level numbers are LOGL_DEBUG=1 LOGL_INFO=3 LOGL_NOTICE=5 LOGL_ERROR=7 LOGL_FATAL=8' />
       </params>
     </command>
-    <command id='logging level (rll|mm|rr|rsl|nm|pag|meas|msc|ho|hodec|ref|nat|ctrl|filter|pcu|lcls|chan|ts|as|lglobal|llapd|linp|lmux|lmi|lmib|lsms|lctrl|lgtp|lstats|lgsup|loap|lss7|lsccp|lsua|lm3ua|lmgcp|ljibuf) (debug|info|notice|error|fatal)'>
+    <command id='logging level (rll|mm|rr|rsl|nm|pag|meas|msc|ho|hodec|ref|nat|ctrl|filter|pcu|lcls|chan|ts|as|lglobal|llapd|linp|lmux|lmi|lmib|lsms|lctrl|lgtp|lstats|lgsup|loap|lss7|lsccp|lsua|lm3ua|lmgcp|ljibuf|lrspro) (debug|info|notice|error|fatal)'>
       <params>
         <param name='logging' doc='Configure logging' />
         <param name='level' doc='Set the log level for a specified category' />
@@ -966,6 +1012,7 @@
         <param name='lm3ua' doc='libosmo-sigtran MTP3 User Adaptation' />
         <param name='lmgcp' doc='libosmo-mgcp Media Gateway Control Protocol' />
         <param name='ljibuf' doc='libosmo-netif Jitter Buffer' />
+        <param name='lrspro' doc='Remote SIM protocol' />
         <param name='debug' doc='Log debug messages and higher levels' />
         <param name='info' doc='Log informational messages and higher levels' />
         <param name='notice' doc='Log noticeable messages and higher levels' />
@@ -1053,13 +1100,6 @@
         <param name='DEPTH' doc='Specify required maximal depth value' />
         <param name='filter' doc='Filter chunks using regular expression' />
         <param name='REGEXP' doc='Regular expression' />
-      </params>
-    </command>
-    <command id='show timer [TNNNN]'>
-      <params>
-        <param name='show' doc='Show running system information' />
-        <param name='timer' doc='GSM Timers' />
-        <param name='[TNNNN]' doc='Specific timer to show, or all timers if omitted.' />
       </params>
     </command>
     <command id='show bts &lt;0-255&gt; neighbor arfcn &lt;0-1023&gt; bsic (&lt;0-63&gt;|any)'>
@@ -1172,11 +1212,14 @@
         <param name='assignment' doc='Manually trigger assignment (for debugging)' />
       </params>
     </command>
-    <command id='bts &lt;0-255&gt; smscb-command &lt;1-4&gt; HEXSTRING'>
+    <command id='bts &lt;0-255&gt; smscb-command (normal|schedule|default) &lt;1-4&gt; HEXSTRING'>
       <params>
         <param name='bts' doc='BTS related commands' />
         <param name='&lt;0-255&gt;' doc='BTS Number' />
         <param name='smscb-command' doc='SMS Cell Broadcast' />
+        <param name='normal' doc='Normal (one-shot) SMSCB Message; sent once over Abis+Um' />
+        <param name='schedule' doc='Schedule (one-shot) SMSCB Messag; sent once over Abis+Um' />
+        <param name='default' doc='Default (repeating) SMSCB Message; sent once over Abis, unlimited ovrer Um' />
         <param name='&lt;1-4&gt;' doc='Last Valid Block' />
         <param name='HEXSTRING' doc='Hex Encoded SMSCB message (up to 88 octets)' />
       </params>
@@ -1790,7 +1833,7 @@
         <param name='[last]' doc='Log source file info at the end of a log line. If omitted, log source file info just before the log text.' />
       </params>
     </command>
-    <command id='logging level (rll|mm|rr|rsl|nm|pag|meas|msc|ho|hodec|ref|nat|ctrl|filter|pcu|lcls|chan|ts|as|lglobal|llapd|linp|lmux|lmi|lmib|lsms|lctrl|lgtp|lstats|lgsup|loap|lss7|lsccp|lsua|lm3ua|lmgcp|ljibuf) (debug|info|notice|error|fatal)'>
+    <command id='logging level (rll|mm|rr|rsl|nm|pag|meas|msc|ho|hodec|ref|nat|ctrl|filter|pcu|lcls|chan|ts|as|lglobal|llapd|linp|lmux|lmi|lmib|lsms|lctrl|lgtp|lstats|lgsup|loap|lss7|lsccp|lsua|lm3ua|lmgcp|ljibuf|lrspro) (debug|info|notice|error|fatal)'>
       <params>
         <param name='logging' doc='Configure logging' />
         <param name='level' doc='Set the log level for a specified category' />
@@ -1831,6 +1874,7 @@
         <param name='lm3ua' doc='libosmo-sigtran MTP3 User Adaptation' />
         <param name='lmgcp' doc='libosmo-mgcp Media Gateway Control Protocol' />
         <param name='ljibuf' doc='libosmo-netif Jitter Buffer' />
+        <param name='lrspro' doc='Remote SIM protocol' />
         <param name='debug' doc='Log debug messages and higher levels' />
         <param name='info' doc='Log informational messages and higher levels' />
         <param name='notice' doc='Log noticeable messages and higher levels' />
@@ -1961,10 +2005,11 @@
         <param name='login' doc='Enable password checking' />
       </params>
     </command>
-    <command id='bind A.B.C.D'>
+    <command id='bind A.B.C.D [&lt;0-65535&gt;]'>
       <params>
         <param name='bind' doc='Accept VTY telnet connections on local interface' />
         <param name='A.B.C.D' doc='Local interface IP address (default: 127.0.0.1)' />
+        <param name='[&lt;0-65535&gt;]' doc='Local TCP port number' />
       </params>
     </command>
   </node>
@@ -2470,12 +2515,12 @@
         <param name='NAME' doc='Name string, up to 31 characters' />
       </params>
     </command>
-    <command id='timer TNNNN (default|&lt;1-65535&gt;)'>
+    <command id='timer [TNNNN] [(&lt;0-2147483647&gt;|default)]'>
       <params>
-        <param name='timer' doc='Configure GSM Timers' />
-        <param name='TNNNN' doc='T-number, optionally preceded by &apos;t&apos; or &apos;T&apos;.See also &apos;show timer&apos; for a list of available timers.' />
-        <param name='default' doc='Set to default timer value' />
-        <param name='&lt;1-65535&gt;' doc='Timer value' />
+        <param name='timer' doc='Configure or show timers' />
+        <param name='[TNNNN]' doc='T- or X-timer-number -- 3GPP compliant timer number of the format &apos;1234&apos; or &apos;T1234&apos; or &apos;t1234&apos;; Osmocom-specific timer number of the format: &apos;X1234&apos; or &apos;x1234&apos;.' />
+        <param name='[&lt;0-2147483647&gt;]' doc='New timer value' />
+        <param name='[default]' doc='Set to default timer value' />
       </params>
     </command>
     <command id='neci (0|1)'>
@@ -2960,6 +3005,13 @@
         <param name='&lt;0-7&gt;' doc='Number of blocks reserved for access grant' />
       </params>
     </command>
+    <command id='ccch load-indication-threshold &lt;0-100&gt;'>
+      <params>
+        <param name='ccch' doc='Common Control Channel' />
+        <param name='load-indication-threshold' doc='Percentage of CCCH load at which BTS sends RSL CCCH LOAD IND' />
+        <param name='&lt;0-100&gt;' doc='CCCH Load Threshold in percent (Default: 10)' />
+      </params>
+    </command>
     <command id='rach nm busy threshold &lt;0-255&gt;'>
       <params>
         <param name='rach' doc='Random Access Control Channel' />
@@ -3117,7 +3169,7 @@
         <param name='1' doc='Enable 11 bit RACH for EGPRS' />
       </params>
     </command>
-    <command id='gprs ns timer (tns-block|tns-block-retries|tns-reset|tns-reset-retries|tns-test|tns-alive|tns-alive-retries) &lt;0-255&gt;'>
+    <command id='gprs ns timer (tns-block|tns-block-retries|tns-reset|tns-reset-retries|tns-test|tns-alive|tns-alive-retries|tsns-prov) &lt;0-255&gt;'>
       <params>
         <param name='gprs' doc='GPRS Packet Network' />
         <param name='ns' doc='Network Service' />
@@ -3129,6 +3181,7 @@
         <param name='tns-test' doc='Test Timer (Tns-test) timeout' />
         <param name='tns-alive' doc='Alive Timer (Tns-alive) timeout' />
         <param name='tns-alive-retries' doc='Alive Timer (Tns-alive) number of retries' />
+        <param name='tsns-prov' doc='SNS Provision Timer (Tsns-prov) timeout' />
         <param name='&lt;0-255&gt;' doc='Timer Value' />
       </params>
     </command>
@@ -3301,6 +3354,19 @@
         <param name='HEXSTRING' doc='Static user-specified SI content in HEX notation' />
       </params>
     </command>
+    <command id='system-information unused-send-empty'>
+      <params>
+        <param name='system-information' doc='System Information Messages' />
+        <param name='unused-send-empty' doc='Send BCCH Info with empty &apos;Full BCCH Info&apos; TLV to notify disabled SI. Some nanoBTS fw versions are known to fail upon receival of these messages.' />
+      </params>
+    </command>
+    <command id='no system-information unused-send-empty'>
+      <params>
+        <param name='no' doc='Negate a command or set its defaults' />
+        <param name='system-information' doc='System Information Messages' />
+        <param name='unused-send-empty' doc='Avoid sending BCCH Info with empty &apos;Full BCCH Info&apos; TLV to notify disabled SI. Some nanoBTS fw versions are known to fail upon receival of these messages.' />
+      </params>
+    </command>
     <command id='early-classmark-sending (allowed|forbidden)'>
       <params>
         <param name='early-classmark-sending' doc='Early Classmark Sending' />
@@ -3319,7 +3385,7 @@
       <params>
         <param name='neighbor-list' doc='Neighbor List' />
         <param name='mode' doc='Mode of Neighbor List generation' />
-        <param name='automatic' doc='Automatically from all BTS in this OpenBSC' />
+        <param name='automatic' doc='Automatically from all BTS in this BSC' />
         <param name='manual' doc='Manual' />
         <param name='manual-si5' doc='Manual with different lists for SI2 and SI5' />
       </params>
@@ -3866,6 +3932,19 @@
       <params>
         <param name='access-control-class-ramping-step-size' doc='Configure Access Control Class ramping step size' />
         <param name='&lt;1-10&gt;' doc='Set the number of Access Control Classes to enable per ramping step' />
+      </params>
+    </command>
+    <command id='timer-dynamic TNNNN'>
+      <params>
+        <param name='timer-dynamic' doc='Calculate T3113 dynamically based on channel config and load' />
+        <param name='TNNNN' doc='T-number, optionally preceded by &apos;t&apos; or &apos;T&apos;' />
+      </params>
+    </command>
+    <command id='no timer-dynamic TNNNN'>
+      <params>
+        <param name='no' doc='Negate a command or set its defaults' />
+        <param name='timer-dynamic' doc='Set given timer to non-dynamic and use the default or user provided fixed value' />
+        <param name='TNNNN' doc='T-number, optionally preceded by &apos;t&apos; or &apos;T&apos;' />
       </params>
     </command>
     <command id='neighbor bts &lt;0-255&gt;'>
@@ -4573,11 +4652,19 @@
         <param name='forbidden' doc='Forbidden' />
       </params>
     </command>
-    <command id='lcls-mode (disabled|mgw-loop)'>
+    <command id='amr-payload (octet-aligned|bandwith-efficient'>
+      <params>
+        <param name='amr-payload' doc='Set AMR payload framing mode' />
+        <param name='octet-aligned' doc='payload fields aligned on octet boundaries' />
+        <param name='bandwith-efficient' doc='payload fields packed (AoIP)' />
+      </params>
+    </command>
+    <command id='lcls-mode (disabled|mgw-loop|bts-loop)'>
       <params>
         <param name='lcls-mode' doc='Configure 3GPP LCLS (Local Call, Local Switch)' />
         <param name='disabled' doc='Disable LCLS for all calls of this MSC' />
-        <param name='mgw-loop' doc='Enable LCLS with loopping traffic in MGW' />
+        <param name='mgw-loop' doc='Enable LCLS with looping traffic in MGW' />
+        <param name='bts-loop' doc='Enable LCLS with looping traffic between BTS' />
       </params>
     </command>
     <command id='lcls-codec-mismatch (allowed|forbidden)'>
@@ -4647,19 +4734,11 @@
         <param name='&lt;0-65535&gt;' doc='remote port' />
       </params>
     </command>
-    <command id='mgw endpoint-range &lt;1-65534&gt; &lt;1-65534&gt;'>
+    <command id='mgw endpoint-domain NAME'>
       <params>
         <param name='mgw' doc='Configure MGCP connection to Media Gateway' />
-        <param name='endpoint-range' doc='usable range of endpoint identifiers' />
-        <param name='&lt;1-65534&gt;' doc='set first usable endpoint identifier' />
-        <param name='&lt;1-65534&gt;' doc='set last usable endpoint identifier' />
-      </params>
-    </command>
-    <command id='mgw bts-base &lt;0-65534&gt;'>
-      <params>
-        <param name='mgw' doc='Configure MGCP connection to Media Gateway' />
-        <param name='bts-base' doc='First UDP port allocated for the BTS side' />
-        <param name='&lt;0-65534&gt;' doc='UDP Port number' />
+        <param name='endpoint-domain' doc='Set the domain name to send in MGCP messages, e.g. the part &apos;foo&apos; in &apos;rtpbridge/*@foo&apos;.' />
+        <param name='NAME' doc='Domain name, should be alphanumeric.' />
       </params>
     </command>
     <command id='mgw x-osmo-ign call-id'>
@@ -4674,6 +4753,14 @@
         <param name='no' doc='Negate a command or set its defaults' />
         <param name='mgw' doc='Configure MGCP connection to Media Gateway' />
         <param name='x-osmo-ign' doc='Do not send X-Osmo-IGN MGCP header to this MSC' />
+      </params>
+    </command>
+    <command id='osmux (on|off|only)'>
+      <params>
+        <param name='osmux' doc='RTP multiplexing' />
+        <param name='on' doc='Enable OSMUX' />
+        <param name='off' doc='Disable OSMUX' />
+        <param name='only' doc='Only use OSMUX' />
       </params>
     </command>
   </node>

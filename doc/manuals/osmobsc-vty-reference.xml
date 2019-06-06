@@ -24,12 +24,18 @@
             <authorinitials>hf</authorinitials>
             <revremark>Update to match osmo-bsc version 0.13.0-305</revremark>
         </revision>
+        <revision>
+            <revnumber>v3</revnumber>
+            <date>6th June 2019</date>
+            <authorinitials>dw</authorinitials>
+            <revremark>Update to match osmo-bsc version 1.4.0.84-3f1f</revremark>
+        </revision>
     </revhistory>
 
     <title>OsmoBSC VTY Reference</title>
 
     <copyright>
-      <year>2012-2014</year>
+      <year>2012-2019</year>
     </copyright>
 
     <legalnotice>
