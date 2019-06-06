@@ -101,7 +101,7 @@ static void osmo_bsc_sigtran_tx_reset(const struct bsc_msc_data *msc)
 	LOGP(DMSC, LOGL_NOTICE, "Sending RESET to MSC: %s\n", osmo_sccp_addr_name(ss7, &msc->a.msc_addr));
 	msg = gsm0808_create_reset();
 
-	if (msc->use_osmux != OSMUX_USAGE_OFF)
+	if (msc_is_aoip(msc) && msc->use_osmux != OSMUX_USAGE_OFF)
 		_gsm0808_extend_announce_osmux(msg);
 
 	osmo_sccp_tx_unitdata_msg(msc->a.sccp_user, &msc->a.bsc_addr,
@@ -120,7 +120,7 @@ void osmo_bsc_sigtran_tx_reset_ack(const struct bsc_msc_data *msc)
 	LOGP(DMSC, LOGL_NOTICE, "Sending RESET ACK to MSC: %s\n", osmo_sccp_addr_name(ss7, &msc->a.msc_addr));
 	msg = gsm0808_create_reset_ack();
 
-	if (msc->use_osmux != OSMUX_USAGE_OFF)
+	if (msc_is_aoip(msc) && msc->use_osmux != OSMUX_USAGE_OFF)
 		_gsm0808_extend_announce_osmux(msg);
 
 	osmo_sccp_tx_unitdata_msg(msc->a.sccp_user, &msc->a.bsc_addr,
