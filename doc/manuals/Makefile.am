@@ -9,6 +9,7 @@ EXTRA_DIST = aoip-mgw-options.adoc \
     message-sequences \
     mgw \
     om2000 \
+    regen_doc.sh \
     vty
 
 if BUILD_MANUALS
