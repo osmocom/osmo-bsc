@@ -18,8 +18,8 @@ subgraph cluster_bss_b {
 }
 
 MS -> BTS_a1 [label="(3) Measurement:\nARFCN=1 BSIC=3 RXLEV"]
-BTS_a1 -> MS [label="(1) my neighbors:\nARFCN=1 BSIC=1\nARFCN=1 BSIC=3"]
-BTS_b0 -> MS [label="(2) good RXLEV",style=dotted]
+BTS_a1 -> MS [label="(1) my neighbors:\nARFCN=1"]
+BTS_b0 -> MS [label="(2) good RXLEV\nBSIC=3",style=dotted]
 MS -> {BTS_a0,BTS_b0,BTS_b1} [style=invisible,arrowhead=none]
 
 BTS_a1 -> BSC_a [label="(4) Measurement\nReport",style=dashed]

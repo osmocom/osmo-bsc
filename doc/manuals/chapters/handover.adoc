@@ -22,9 +22,7 @@ inter-MSC handover looks identical to inter-BSC handover). Inter-RAT handover
 is currently not implemented.  However, you may still advertise 3G and 4G neighbor cells
 in order to facilitate cell/RAT re-selection to those neighbors.
 
-At the time of writing, OsmoMSC's inter-BSC handover support is not complete
-yet, so OsmoBSC can perform handover between separate BSS only in conjunction
-with a 3rd party MSC implementation.
+Since 2019, OsmoMSC fully supports both inter-BSC and inter-MSC handover.
 
 .Handover support in Osmocom at the time of writing
 [cols="^,^,^,^,^"]
@@ -34,6 +32,7 @@ with a 3rd party MSC implementation.
 | OsmoMSC | (not involved, except for codec changes) | (planned)  | (planned)  | -
 |====
 
+Most handover related procedures are explained in 3GPP TS 48.008.
 
 === How Handover Works
 
@@ -45,9 +44,20 @@ The BSS is configured to know which cell is physically adjacent to which other
 cells, its "neighbors". On the MS/BTS/BSS level, individual cells are
 identified by ARFCN+BSIC (frequency + 6-bit identification code).
 
-Each BTS is told by the BSC which cells identified by ARFCN+BSIC are its
-adjacent cells. Via System Information, each MS receives a list of these
-ARFCN+BSIC, and the MS then return measurements of reception levels.
+The BSC instructs each BTS with a list of ARFCNs (i.e. GSM frequency bands)
+that qualify as neighbor cells, as part of the System Information Type 2. Each
+MS served by a BTS receives the System Information Type 2 and thus knows which
+ARFCNs to measure for potential handover. Each MS with an active channel then
+returns up to 6 measurements of reception levels (RXLEV) to the BTS, to be
+forwarded to the BSC in RSL Measurement Report messages.
+
+Note that the BTS and MS are told only the ARFCNs, not the BSICs, of neighbor
+cells; the BSICs are however included in the measurements that an MS returns to
+BTS and BSC. Commonly, each ARFCN is owned by one specific operator, so, an MS
+considers all visible cells on a given ARFCN as possible neighbors. However, as
+soon as an MS reports RXLEV of a specific neighbor cell, the BSC needs to know
+which exact cell to possibly handover to, which is why the MS pinpoints the
+specific BSIC that it reported measurements for.
 
 The BSC is the point of decision whether to do handover or not. This can be a
 hugely complex combination of heuristics, knowledge of cell load and codec
@@ -74,18 +84,18 @@ If the BSC sees the need for handover, it will:
 Should handover fail at any point, e.g. the new lchan never receives a RACH, or
 the MS reports a Handover Failure, then the new lchan is simply released again,
 and the old lchan remains in use. If the RTP stream has already been switched
-over to the new lchan, it may actually be switched back to the old lchan.
+over to the new lchan, it is switched back to the old lchan.
 
 This is simple enough if the new cell is managed by the same BSC: the OsmoMGW
 is simply instructed to relay the BTS-side of the RTP stream to another IP
 address and port, and the BSC continues to forward DTAP to the MSC
-transparently. The operation happens completely within the BSS. If the voice
-codec has remained unchanged, the MSC/MNCC may not even be notified that
-anything has happened at all.
+transparently. The operation happens completely within the BSS, except for the
+BSSMAP Handover Performed message sent to the MSC once the handover is
+completed (see 3GPP TS 48.008).
 
 ==== External / Inter-BSC Handover
 
-If the adjacent target cell belongs to a different BSS, the RR procedure for
+If the handover target cell belongs to a different BSS, the RR procedure for
 handover remains the same, but we need to tell the _remote_ BSC to allocate the
 new lchan.
 
@@ -108,7 +118,7 @@ include::handover_inter_bsc.dot[]
 The first part, identifying the remote BSC, is not as trivial as it sounds: as
 mentioned above, on the level of cell information seen by BTS and MS, the
 neighbor cells are identified by ARFCN+BSIC. However, on the A-interface and in
-the MSC, there is no knowledge of ARFCN+BSIC configurations, and instead each
+the MSC, there is no knowledge of ARFCN+BSIC configurations. Instead, each
 cell is identified by a LAC and CI (Location Area Code and Cell Identifier).
 
 NOTE: There are several different cell identification types on the A-interface:
@@ -116,15 +126,7 @@ from Cell Global Identifier (MCC+MNC+LAC+CI) down to only LAC. OsmoBSC supports
 most of these (see <<neighbor_conf_list>>). For simplicity, this description
 focuses on LAC+CI identification.
 
-The most obvious reason for using LAC+CI is that identical ARFCN+BSIC are
-typically re-used across many cells of the same network operator: an operator
-will have only very few ARFCNs available, and the 6bit BSIC opens only a very
-limited range of distinction between cells. As long as each cell has no more
-than one neighbor per given ARFCN+BSIC, these values can be re-used any number
-of times across a network, and even between cells managed by one and the same
-BSC.
-
-The consequence of this is that
+Hence:
 
 - the BSC needs to know which remote-BSS cells' ARFCN+BSIC correspond to
   exactly which global LAC+CI, and
@@ -134,6 +136,14 @@ In other words, each BSC requires prior knowledge about the cell configuration
 of its remote-BSS neighbor cells, and the MSC requires prior knowledge about
 each BSC's cell identifiers; i.e. these config items are spread reduntantly.
 
+The most obvious reason for using LAC+CI in BSSMAP is that identical ARFCN+BSIC
+are typically re-used across many cells of the same network operator: an
+operator will have only very few ARFCNs available, and the 6bit BSIC opens only
+a very limited range of distinction between cells. As long as each cell has no
+more than one neighbor per given ARFCN+BSIC, these values can be re-used any
+number of times across a network, and even between cells managed by one and the
+same BSC.
+
 === Configuring Neighbors
 
 The most important step to enable handover in OsmoBSC is to configure each cell
@@ -142,12 +152,12 @@ remote-BSS.
 
 For a long time, OsmoBSC has offered configuration to manually enter the
 ARFCN+BSIC sent out as neighbors on various System Information messages (all
-`neighbor-list` related commands). This is still possible, however,
+`neighbor-list` related commands). This is still possible; however,
 particularly for re-using ARFCN+BSIC within one BSS, this method will not work
 well.
 
 With the addition of inter-BSC handover support, the new `neighbor` config item
-has been added to the `bts` config, to maintain explicit cell-to-cell neighbor
+has been added to the `bts` config node, to maintain explicit cell-to-cell neighbor
 relations, with the possibility to re-use ARFCN+BSIC in each cell.
 
 It is recommended to completely replace `neighbor-list` configurations with the
@@ -157,31 +167,30 @@ new `neighbor` configuration described below.
 .Overview of neighbor configuration on the `bts` config node
 [frame="none",grid="none",cols="^10%,^10%,80%"]
 |====
-| Local | Remote BSS |
-| ✓ |   | neighbor bts 5
-| ✓ |   | neighbor lac 200
-| ✓ |   | neighbor lac-ci 200 3
-| ✓ |   | neighbor cgi 001 01 200 3
-| ✓ | ✓ | neighbor lac 200 arfcn 123 bsic 1
-| ✓ | ✓ | neighbor lac-ci 200 3 arfcn 123 bsic 1
-| ✓ | ✓ | neighbor cgi 001 01 200 3 arfcn 123 bsic 1
+| Local | Remote BSS | type of `neighbor` config line, by example
+| ✓ |   | `neighbor bts 5`
+| ✓ |   | `neighbor lac 200`
+| ✓ |   | `neighbor lac-ci 200 3`
+| ✓ |   | `neighbor cgi 001 01 200 3`
+| ✓ | ✓ | `neighbor lac 200 arfcn 123 bsic 1`
+| ✓ | ✓ | `neighbor lac-ci 200 3 arfcn 123 bsic 1`
+| ✓ | ✓ | `neighbor cgi 001 01 200 3 arfcn 123 bsic 1`
 |====
 
 ==== Default: All Local Cells are Neighbors
 
-For historical reasons, the default behavior of OsmoBSC is to add all local-BSS cells as neighbors. To
-maintain a backwards compatible configuration file format, this is still the case: as soon as no explicit
+For historical reasons, the default behavior of OsmoBSC is to add all local-BSS cells as neighbors for every other cell. To
+maintain a backwards compatible configuration file format, this is still the case: as long as no explicit
 neighbor cell is configured with a `neighbor` command (either none was configured, or all configured
-neighbors have been removed again), a cell automatically lists all of the local-BSS cells as neighbors.
+`neighbor` lines have been removed again), a cell automatically lists all of the local-BSS cells as neighbors.
 These are implicit mappings in terms of the legacy neighbor configuration scheme, and re-using ARFCN+BSIC
 combinations within a BSS will not work well this way.
 
-As soon as the first explicit neighbor relation is added to a cell, the legacy behavior is switched off,
+As soon as the first explicit `neighbor` relation is added to a cell, the legacy behavior is switched off,
 and only explicit neighbors are in effect.
 
-NOTE: If a cell is required to not have any neighbors, it is recommended to rather switch off handover
-for that cell with `handover 0`. An alternative solution is to set `neighbor-list mode manual` and not
-configure any `neighbor-list` entries.
+NOTE: If a cell is required to not have any neighbors, it is recommended to switch off handover
+for that cell with `handover 0`.
 
 ==== Local-BSS Neighbors
 
@@ -228,10 +237,13 @@ network
 
 It is allowed to include the ARFCN and BSIC of local neighbor cells, even
 though that is redundant with the already known local configuration of the
-other cell. The idea is to ease generating the neighbor configuration
-automatically, since local-BSS and remote-BSS neighbors then share identical
-configuration formatting. For human readability and maintainability, it may
-instead be desirable to use the `neighbor bts <0-255>` format.
+target cell. The idea is to ease generating the neighbor configuration
+automatically, in that local-BSS and remote-BSS neighbors can have identical
+configuration formatting. If the cell identification (LAC+CI) matches a local
+cell but a mismatching ARFCN+BSIC follows on the same config line, OsmoBSC will
+report errors. For human readability and maintainability, it may instead be
+desirable to use the `neighbor bts <0-255>` format, or omit the redundant
+`arfcn` and `bsic`.
 
 .Example: configuring neighbors within the local BSS in osmo-bsc.cfg, redundantly identified by LAC+CI as well as ARFCN+BSIC
 ----
@@ -260,14 +272,11 @@ network
   neighbor lac-ci 23 5 arfcn 1 bsic 1
 ----
 
-If the cell identification matches a local cell, OsmoBSC will report errors if
-the provided ARFCN+BSIC do not match.
-
 ==== Remote-BSS Neighbors
 
-Remote-BSS neighbors _always_ need to be configured with full A-interface
+Remote-BSS neighbors always need to be configured with full A-interface
 identification _and_ ARFCN+BSIC, to allow mapping a cell's neighbor ARFCN+BSIC
-to a _BSSMAP Cell Identifier_ (see 3GPP TS 48.008 3.1.5.1 Handover Required
+to a BSSMAP Cell Identifier (see 3GPP TS 48.008 3.1.5.1 Handover Required
 Indication and 3.2.1.9 HANDOVER REQUIRED).
 
 .Example: configuring remote-BSS neighbors in osmo-bsc.cfg, identified by LAC+CI (showing both BSCs' configurations)
@@ -320,7 +329,7 @@ necessary to
 === Configuring Handover Decisions
 
 For a long time, OsmoBSC has supported handover based on reception level
-hysteresis (RXLEV) and distance (TA, Timing Advance), known has `algorithm 1`.
+hysteresis (RXLEV) and distance (TA, Timing Advance), known as `algorithm 1`.
 
 Since 2018, OsmoBSC also supports a load-based handover decision algorithm,
 known as `algorithm 2`, which also takes cell load, available codecs and
@@ -387,7 +396,7 @@ network
 ----
 
 The order in which these settings are issued makes no difference for the
-overlay; i.e., this configuration is perfectly identical to the above, and the
+overlay; i.e., the following configuration is perfectly identical to the above, and the
 individual cell's value remains in force:
 
 ----
