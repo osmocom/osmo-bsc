@@ -29,3 +29,9 @@ enum {
 	DAS,
 	Debug_LastEntry,
 };
+
+#define LOG_BTS(bts, subsys, level, fmt, args...) \
+	LOGP(subsys, level, "(bts=%d) " fmt, (bts)->nr, ## args)
+
+#define LOG_TRX(trx, subsys, level, fmt, args...) \
+	LOGP(subsys, level, "(bts=%d,trx=%d) " fmt, (trx)->bts->nr, (trx)->nr, ## args)

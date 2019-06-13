@@ -46,7 +46,8 @@ static void allow_one_acc(struct acc_ramp *acc_ramp, unsigned int acc)
 {
 	OSMO_ASSERT(acc <= 9);
 	if (acc_ramp->barred_accs & (1 << acc))
-		LOGP(DRSL, LOGL_NOTICE, "(bts=%d) ACC RAMP: allowing Access Control Class %u\n", acc_ramp->bts->nr, acc);
+		LOG_BTS(acc_ramp->bts, DRSL, LOGL_NOTICE,
+			"ACC RAMP: allowing Access Control Class %u\n", acc);
 	acc_ramp->barred_accs &= ~(1 << acc);
 }
 
@@ -54,7 +55,8 @@ static void barr_one_acc(struct acc_ramp *acc_ramp, unsigned int acc)
 {
 	OSMO_ASSERT(acc <= 9);
 	if ((acc_ramp->barred_accs & (1 << acc)) == 0)
-		LOGP(DRSL, LOGL_NOTICE, "(bts=%d) ACC RAMP: barring Access Control Class %u\n", acc_ramp->bts->nr, acc);
+		LOG_BTS(acc_ramp->bts, DRSL, LOGL_NOTICE,
+			"ACC RAMP: barring Access Control Class %u\n", acc);
 	acc_ramp->barred_accs |= (1 << acc);
 }
 
@@ -92,8 +94,9 @@ static unsigned int get_next_step_interval(struct acc_ramp *acc_ramp)
 	else if (acc_ramp->step_interval_sec > ACC_RAMP_STEP_INTERVAL_MAX)
 		acc_ramp->step_interval_sec = ACC_RAMP_STEP_INTERVAL_MAX;
 
-	LOGP(DRSL, LOGL_DEBUG, "(bts=%d) ACC RAMP: step interval set to %u seconds based on %u%% channel load average\n",
-	     bts->nr, acc_ramp->step_interval_sec, bts->chan_load_avg);
+	LOG_BTS(bts, DRSL, LOGL_DEBUG,
+		"ACC RAMP: step interval set to %u seconds based on %u%% channel load average\n",
+	        acc_ramp->step_interval_sec, bts->chan_load_avg);
 	return acc_ramp->step_interval_sec;
 }
 
@@ -156,12 +159,10 @@ static int acc_ramp_nm_sig_cb(unsigned int subsys, unsigned int signal, void *ha
 
 	trx = nsd->obj;
 
-	LOGP(DRSL, LOGL_DEBUG, "(bts=%d,trx=%d) ACC RAMP: administrative state %s -> %s\n",
-	    acc_ramp->bts->nr, trx->nr,
+	LOG_TRX(trx, DRSL, LOGL_DEBUG, "ACC RAMP: administrative state %s -> %s\n",
 	    get_value_string(abis_nm_adm_state_names, nsd->old_state->administrative),
 	    get_value_string(abis_nm_adm_state_names, nsd->new_state->administrative));
-	LOGP(DRSL, LOGL_DEBUG, "(bts=%d,trx=%d) ACC RAMP: operational state %s -> %s\n",
-	    acc_ramp->bts->nr, trx->nr,
+	LOG_TRX(trx, DRSL, LOGL_DEBUG, "ACC RAMP: operational state %s -> %s\n",
 	    abis_nm_opstate_name(nsd->old_state->operational),
 	    abis_nm_opstate_name(nsd->new_state->operational));
 
@@ -171,8 +172,8 @@ static int acc_ramp_nm_sig_cb(unsigned int subsys, unsigned int signal, void *ha
 
 	/* RSL must already be up. We cannot send RACH system information to the BTS otherwise. */
 	if (trx->rsl_link == NULL) {
-		LOGP(DRSL, LOGL_DEBUG, "(bts=%d,trx=%d) ACC RAMP: ignoring state change because RSL link is down\n",
-		     acc_ramp->bts->nr, trx->nr);
+		LOG_TRX(trx, DRSL, LOGL_DEBUG,
+			"ACC RAMP: ignoring state change because RSL link is down\n");
 		return 0;
 	}
 
@@ -188,10 +189,10 @@ static int acc_ramp_nm_sig_cb(unsigned int subsys, unsigned int signal, void *ha
 				if (nsd->new_state->operational == NM_OPSTATE_ENABLED)
 					trigger_ramping = true;
 				else
-					LOGP(DRSL, LOGL_DEBUG, "(bts=%d,trx=%d) ACC RAMP: ignoring state change "
-					     "because TRX is transitioning into operational state '%s'\n",
-					     acc_ramp->bts->nr, trx->nr,
-					     abis_nm_opstate_name(nsd->new_state->operational));
+					LOG_TRX(trx, DRSL, LOGL_DEBUG,
+						"ACC RAMP: ignoring state change because TRX is "
+						"transitioning into operational state '%s'\n",
+						abis_nm_opstate_name(nsd->new_state->operational));
 			} else {
 				/*
 				 * Operational state has not changed.
@@ -200,8 +201,8 @@ static int acc_ramp_nm_sig_cb(unsigned int subsys, unsigned int signal, void *ha
 				if (trx_is_usable(trx))
 					trigger_ramping = true;
 				else
-					LOGP(DRSL, LOGL_DEBUG, "(bts=%d,trx=%d) ACC RAMP: ignoring state change "
-					     "because TRX is not usable\n", acc_ramp->bts->nr, trx->nr);
+					LOG_TRX(trx, DRSL, LOGL_DEBUG, "ACC RAMP: ignoring state change "
+						"because TRX is not usable\n");
 			}
 			break;
 		case NM_STATE_LOCKED:
@@ -210,8 +211,8 @@ static int acc_ramp_nm_sig_cb(unsigned int subsys, unsigned int signal, void *ha
 			break;
 		case NM_STATE_NULL:
 		default:
-			LOGP(DRSL, LOGL_ERROR, "(bts=%d) ACC RAMP: unrecognized administrative state '0x%x' "
-			    "reported for TRX 0\n", acc_ramp->bts->nr, nsd->new_state->administrative);
+			LOG_TRX(trx, DRSL, LOGL_ERROR, "ACC RAMP: unrecognized administrative state '0x%x' "
+				"reported for TRX 0\n", nsd->new_state->administrative);
 			break;
 		}
 	}
@@ -226,10 +227,9 @@ static int acc_ramp_nm_sig_cb(unsigned int subsys, unsigned int signal, void *ha
 				if (nsd->new_state->administrative == NM_STATE_UNLOCKED)
 					trigger_ramping = true;
 				else
-					LOGP(DRSL, LOGL_DEBUG, "(bts=%d,trx=%d) ACC RAMP: ignoring state change "
-					     "because TRX is transitioning into administrative state '%s'\n",
-					     acc_ramp->bts->nr, trx->nr,
-					     get_value_string(abis_nm_adm_state_names, nsd->new_state->administrative));
+					LOG_TRX(trx, DRSL, LOGL_DEBUG, "ACC RAMP: ignoring state change "
+						"because TRX is transitioning into administrative state '%s'\n",
+						get_value_string(abis_nm_adm_state_names, nsd->new_state->administrative));
 			} else {
 				/*
 				 * Administrative state has not changed.
@@ -238,10 +238,9 @@ static int acc_ramp_nm_sig_cb(unsigned int subsys, unsigned int signal, void *ha
 				if (trx->mo.nm_state.administrative == NM_STATE_UNLOCKED)
 					trigger_ramping = true;
 				else
-					LOGP(DRSL, LOGL_DEBUG, "(bts=%d,trx=%d) ACC RAMP: ignoring state change "
-					     "because TRX is in administrative state '%s'\n",
-					     acc_ramp->bts->nr, trx->nr,
-					     get_value_string(abis_nm_adm_state_names, trx->mo.nm_state.administrative));
+					LOG_TRX(trx, DRSL, LOGL_DEBUG, "ACC RAMP: ignoring state change "
+						"because TRX is in administrative state '%s'\n",
+						get_value_string(abis_nm_adm_state_names, trx->mo.nm_state.administrative));
 			}
 			break;
 		case NM_OPSTATE_DISABLED:
@@ -249,8 +248,8 @@ static int acc_ramp_nm_sig_cb(unsigned int subsys, unsigned int signal, void *ha
 			break;
 		case NM_OPSTATE_NULL:
 		default:
-			LOGP(DRSL, LOGL_ERROR, "(bts=%d) ACC RAMP: unrecognized operational state '0x%x' "
-			     "reported for TRX 0\n", acc_ramp->bts->nr, nsd->new_state->administrative);
+			LOG_TRX(trx, DRSL, LOGL_ERROR, "ACC RAMP: unrecognized operational state '0x%x' "
+			     "reported for TRX 0\n", nsd->new_state->administrative);
 			break;
 		}
 	}
@@ -296,7 +295,7 @@ int acc_ramp_set_step_size(struct acc_ramp *acc_ramp, unsigned int step_size)
 		return -ERANGE;
 
 	acc_ramp->step_size = step_size;
-	LOGP(DRSL, LOGL_DEBUG, "(bts=%d) ACC RAMP: ramping step size set to %u\n", acc_ramp->bts->nr, step_size);
+	LOG_BTS(acc_ramp->bts, DRSL, LOGL_DEBUG, "ACC RAMP: ramping step size set to %u\n", step_size);
 	return 0;
 }
 
@@ -313,8 +312,8 @@ int acc_ramp_set_step_interval(struct acc_ramp *acc_ramp, unsigned int step_inte
 
 	acc_ramp->step_interval_sec = step_interval;
 	acc_ramp->step_interval_is_fixed = true;
-	LOGP(DRSL, LOGL_DEBUG, "(bts=%d) ACC RAMP: ramping step interval set to %u seconds\n",
-	     acc_ramp->bts->nr, step_interval);
+	LOG_BTS(acc_ramp->bts, DRSL, LOGL_DEBUG, "ACC RAMP: ramping step interval set to %u seconds\n",
+		step_interval);
 	return 0;
 }
 
@@ -326,8 +325,7 @@ int acc_ramp_set_step_interval(struct acc_ramp *acc_ramp, unsigned int step_inte
 void acc_ramp_set_step_interval_dynamic(struct acc_ramp *acc_ramp)
 {
 	acc_ramp->step_interval_is_fixed = false;
-	LOGP(DRSL, LOGL_DEBUG, "(bts=%d) ACC RAMP: ramping step interval set to 'dynamic'\n",
-	     acc_ramp->bts->nr);
+	LOG_BTS(acc_ramp->bts, DRSL, LOGL_DEBUG, "ACC RAMP: ramping step interval set to 'dynamic'\n");
 }
 
 /*!

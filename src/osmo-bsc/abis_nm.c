@@ -1713,7 +1713,7 @@ int abis_nm_get_attr(struct gsm_bts *bts, uint8_t obj_class, uint8_t bts_nr, uin
 		return -EINVAL;
 	}
 
-	DEBUGP(DNM, "Get Attr (bts=%u,trx=%u)\n", bts->nr, trx_nr);
+	LOG_BTS(bts, DNM, LOGL_DEBUG, "Get Attr (trx=%u)\n", trx_nr);
 
 	msg = nm_msgb_alloc();
 	oh = (struct abis_om_hdr *) msgb_put(msg, ABIS_OM_FOM_HDR_SIZE);
@@ -1731,7 +1731,7 @@ int abis_nm_set_bts_attr(struct gsm_bts *bts, uint8_t *attr, int attr_len)
 	struct msgb *msg = nm_msgb_alloc();
 	uint8_t *cur;
 
-	DEBUGP(DNM, "Set BTS Attr (bts=%u)\n", bts->nr);
+	LOG_BTS(bts, DNM, LOGL_DEBUG, "Set BTS Attr\n");
 
 	oh = (struct abis_om_hdr *) msgb_put(msg, ABIS_OM_FOM_HDR_SIZE);
 	fill_om_fom_hdr(oh, attr_len, NM_MT_SET_BTS_ATTR, NM_OC_BTS, bts->bts_nr, 0xff, 0xff);
@@ -1748,7 +1748,7 @@ int abis_nm_set_radio_attr(struct gsm_bts_trx *trx, uint8_t *attr, int attr_len)
 	struct msgb *msg = nm_msgb_alloc();
 	uint8_t *cur;
 
-	DEBUGP(DNM, "Set TRX Attr (bts=%u,trx=%u)\n", trx->bts->nr, trx->nr);
+	LOG_TRX(trx, DNM, LOGL_DEBUG, "Set TRX Attr\n");
 
 	oh = (struct abis_om_hdr *) msgb_put(msg, ABIS_OM_FOM_HDR_SIZE);
 	fill_om_fom_hdr(oh, attr_len, NM_MT_SET_RADIO_ATTR, NM_OC_RADIO_CARRIER,
@@ -2849,7 +2849,7 @@ static void rsl_connect_timeout(void *data)
 	struct gsm_bts_trx *trx = data;
 	struct ipacc_ack_signal_data signal;
 
-	LOGP(DRSL, LOGL_NOTICE, "(bts=%u,trx=%u) RSL connection request timed out\n", trx->bts->nr, trx->nr);
+	LOG_TRX(trx, DRSL, LOGL_NOTICE, "RSL connection request timed out\n");
 
 	/* Fake an RSL CONECT NACK message from the BTS. */
 	signal.trx = trx;
@@ -2880,8 +2880,8 @@ int abis_nm_ipaccess_rsl_connect(struct gsm_bts_trx *trx,
 	if (ip == 0)
 		attr_len -= 5;
 
-	LOGP(DNM, LOGL_INFO, "(bts=%u,trx=%u) IPA RSL CONNECT IP=%s PORT=%u STREAM=0x%02x\n",
-		trx->bts->nr, trx->nr, inet_ntoa(ia), port, stream);
+	LOG_TRX(trx, DNM, LOGL_INFO, "IPA RSL CONNECT IP=%s PORT=%u STREAM=0x%02x\n",
+		inet_ntoa(ia), port, stream);
 
 	error = abis_nm_ipaccess_msg(trx->bts, NM_MT_IPACC_RSL_CONNECT,
 				     NM_OC_BASEB_TRANSC, trx->bts->bts_nr,
@@ -2935,8 +2935,7 @@ void gsm_trx_lock_rf(struct gsm_bts_trx *trx, bool locked, const char *reason)
 		return;
 	}
 
-	LOGP(DNM, LOGL_NOTICE, "(bts=%u,trx=%u) Requesting administrative state change %s -> %s [%s]\n",
-	     trx->bts->nr, trx->nr,
+	LOG_TRX(trx, DNM, LOGL_NOTICE, "Requesting administrative state change %s -> %s [%s]\n",
 	     get_value_string(abis_nm_adm_state_names, trx->mo.nm_state.administrative),
 	     get_value_string(abis_nm_adm_state_names, new_state), reason);
 

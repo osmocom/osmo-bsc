@@ -1357,10 +1357,8 @@ static int rsl_rx_chan_rqd(struct msgb *msg)
 
 	/* Determine channel request cause code */
 	chreq_reason = get_reason_by_chreq(rqd_ref->ra, bts->network->neci);
-	LOGP(DRSL, LOGL_NOTICE, "(bts=%d) CHAN RQD: reason: %s (ra=0x%02x, neci=0x%02x, chreq_reason=0x%02x)\n",
-	     msg->lchan->ts->trx->bts->nr,
-	     get_value_string(gsm_chreq_descs, chreq_reason),
-	     rqd_ref->ra, bts->network->neci, chreq_reason);
+	LOG_BTS(bts, DRSL, LOGL_NOTICE, "CHAN RQD: reason: %s (ra=0x%02x, neci=0x%02x, chreq_reason=0x%02x)\n",
+		get_value_string(gsm_chreq_descs, chreq_reason), rqd_ref->ra, bts->network->neci, chreq_reason);
 
 	/* Handle PDCH related rach requests (in case of BSC-co-located-PCU */
 	if (chreq_reason == GSM_CHREQ_REASON_PDCH)
@@ -1381,24 +1379,18 @@ static int rsl_rx_chan_rqd(struct msgb *msg)
 	 */
 	lchan = lchan_select_by_type(bts, GSM_LCHAN_SDCCH);
 	if (!lchan) {
-		LOGP(DRSL, LOGL_NOTICE, "(bts=%d) CHAN RQD: no resources for %s "
-			"0x%x, retrying with %s\n",
-			msg->lchan->ts->trx->bts->nr,
-			gsm_lchant_name(GSM_LCHAN_SDCCH), rqd_ref->ra,
-			gsm_lchant_name(GSM_LCHAN_TCH_H));
+		LOG_BTS(bts, DRSL, LOGL_NOTICE, "CHAN RQD: no resources for %s 0x%x, retrying with %s\n",
+			gsm_lchant_name(GSM_LCHAN_SDCCH), rqd_ref->ra, gsm_lchant_name(GSM_LCHAN_TCH_H));
 		lchan = lchan_select_by_type(bts, GSM_LCHAN_TCH_H);
 	}
 	if (!lchan) {
-		LOGP(DRSL, LOGL_NOTICE, "(bts=%d) CHAN RQD: no resources for %s "
-			"0x%x, retrying with %s\n",
-			msg->lchan->ts->trx->bts->nr,
-			gsm_lchant_name(GSM_LCHAN_SDCCH), rqd_ref->ra,
-			gsm_lchant_name(GSM_LCHAN_TCH_F));
+		LOG_BTS(bts, DRSL, LOGL_NOTICE, "CHAN RQD: no resources for %s 0x%x, retrying with %s\n",
+			gsm_lchant_name(GSM_LCHAN_SDCCH), rqd_ref->ra, gsm_lchant_name(GSM_LCHAN_TCH_F));
 		lchan = lchan_select_by_type(bts, GSM_LCHAN_TCH_F);
 	}
 	if (!lchan) {
-		LOGP(DRSL, LOGL_NOTICE, "(bts=%d) CHAN RQD: no resources for %s 0x%x\n",
-		     msg->lchan->ts->trx->bts->nr, gsm_lchant_name(lctype), rqd_ref->ra);
+		LOG_BTS(bts, DRSL, LOGL_NOTICE, "CHAN RQD: no resources for %s 0x%x\n",
+			gsm_lchant_name(lctype), rqd_ref->ra);
 		rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_CTR_CHREQ_NO_CHANNEL]);
 		rsl_tx_imm_ass_rej(bts, rqd_ref);
 		return 0;

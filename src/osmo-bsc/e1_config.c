@@ -72,17 +72,15 @@ int e1_reconfig_trx(struct gsm_bts_trx *trx)
 	int i;
 
 	if (!e1_link->e1_ts) {
-		LOGP(DLINP, LOGL_ERROR, "TRX (%u/%u) RSL link without "
-		     "timeslot?\n", trx->bts->nr, trx->nr);
+		LOG_TRX(trx, DLINP, LOGL_ERROR, "RSL link without timeslot?\n");
 		return -EINVAL;
 	}
 
 	/* RSL Link */
 	line = e1inp_line_find(e1_link->e1_nr);
 	if (!line) {
-		LOGP(DLINP, LOGL_ERROR, "TRX (%u/%u) RSL link referring "
-		     "to non-existing E1 line %u\n", trx->bts->nr,
-		     trx->nr, e1_link->e1_nr);
+		LOG_TRX(trx, DLINP, LOGL_ERROR, "TRX RSL link referring to non-existing E1 line %u\n",
+			e1_link->e1_nr);
 		return -ENOMEM;
 	}
 	sign_ts = &line->ts[e1_link->e1_ts-1];
@@ -93,8 +91,7 @@ int e1_reconfig_trx(struct gsm_bts_trx *trx)
 		oml_link = e1inp_sign_link_create(sign_ts, E1INP_SIGN_OML, trx,
 						  trx->rsl_tei, SAPI_OML);
 		if (!oml_link) {
-			LOGP(DLINP, LOGL_ERROR, "TRX (%u/%u) OML link creation "
-				"failed\n", trx->bts->nr, trx->nr);
+			LOG_TRX(trx, DLINP, LOGL_ERROR, "TRX OML link creation failed\n");
 			return -ENOMEM;
 		}
 		if (trx->oml_link)
@@ -104,8 +101,7 @@ int e1_reconfig_trx(struct gsm_bts_trx *trx)
 	rsl_link = e1inp_sign_link_create(sign_ts, E1INP_SIGN_RSL,
 					  trx, trx->rsl_tei, SAPI_RSL);
 	if (!rsl_link) {
-		LOGP(DLINP, LOGL_ERROR, "TRX (%u/%u) RSL link creation "
-		     "failed\n", trx->bts->nr, trx->nr);
+		LOG_TRX(trx, DLINP, LOGL_ERROR, "TRX RSL link creation failed\n");
 		return -ENOMEM;
 	}
 	if (trx->rsl_link)
@@ -132,8 +128,8 @@ static int bts_isdn_sign_link(struct msgb *msg)
 		break;
 	case E1INP_SIGN_RSL:
 		if (link->trx->mo.nm_state.administrative == NM_STATE_LOCKED) {
-			LOGP(DLMI, LOGL_ERROR, "(bts=%d/trx=%d) discarding RSL message received "
-			     "in locked administrative state\n", link->trx->bts->nr, link->trx->nr);
+			LOG_TRX(link->trx, DLMI, LOGL_ERROR, "discarding RSL message received "
+			     "in locked administrative state\n");
 			msgb_free(msg);
 			break;
 		}
@@ -161,17 +157,17 @@ int e1_reconfig_bts(struct gsm_bts *bts)
 	struct timespec tp;
 	int rc;
 
-	DEBUGP(DLMI, "e1_reconfig_bts(%u)\n", bts->nr);
+	LOG_BTS(bts, DLMI, LOGL_DEBUG, "e1_reconfig_bts\n");
 
 	line = e1inp_line_find(e1_link->e1_nr);
 	if (!line) {
-		LOGP(DLINP, LOGL_ERROR, "BTS %u OML link referring to "
-		     "non-existing E1 line %u\n", bts->nr, e1_link->e1_nr);
+		LOG_BTS(bts, DLINP, LOGL_ERROR, "BTS OML link referring to "
+		     "non-existing E1 line %u\n", e1_link->e1_nr);
 		return -ENOMEM;
 	}
 
 	if (!bts->model->e1line_bind_ops) {
-		LOGP(DLINP, LOGL_ERROR, "no callback to bind E1 line operations\n");
+		LOG_BTS(bts, DLINP, LOGL_ERROR, "no callback to bind E1 line operations\n");
 		return -EINVAL;
 	}
 	if (!line->ops)
@@ -184,8 +180,7 @@ int e1_reconfig_bts(struct gsm_bts *bts)
 
 	/* OML link */
 	if (!e1_link->e1_ts) {
-		LOGP(DLINP, LOGL_ERROR, "BTS %u OML link without timeslot?\n",
-		     bts->nr);
+		LOG_BTS(bts, DLINP, LOGL_ERROR, "BTS OML link without timeslot?\n");
 		return -EINVAL;
 	}
 
@@ -194,8 +189,7 @@ int e1_reconfig_bts(struct gsm_bts *bts)
 	oml_link = e1inp_sign_link_create(sign_ts, E1INP_SIGN_OML,
 					  bts->c0, bts->oml_tei, SAPI_OML);
 	if (!oml_link) {
-		LOGP(DLINP, LOGL_ERROR, "BTS %u OML link creation failed\n",
-		     bts->nr);
+		LOG_BTS(bts, DLINP, LOGL_ERROR, "BTS OML link creation failed\n");
 		return -ENOMEM;
 	}
 	if (bts->oml_link)

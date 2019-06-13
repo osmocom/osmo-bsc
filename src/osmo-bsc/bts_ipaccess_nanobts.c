@@ -394,7 +394,7 @@ void ipaccess_drop_rsl(struct gsm_bts_trx *trx, const char *reason)
 	if (!trx->rsl_link)
 		return;
 
-	LOGP(DLINP, LOGL_NOTICE, "(bts=%d,trx=%d) Dropping RSL link: %s\n", trx->bts->nr, trx->nr, reason);
+	LOG_TRX(trx, DLINP, LOGL_NOTICE, "Dropping RSL link: %s\n", reason);
 	e1inp_sign_link_destroy(trx->rsl_link);
 	trx->rsl_link = NULL;
 
@@ -413,7 +413,7 @@ void ipaccess_drop_oml(struct gsm_bts *bts, const char *reason)
 	if (!bts->oml_link)
 		return;
 
-	LOGP(DLINP, LOGL_NOTICE, "(bts=%d) Dropping OML link: %s\n", bts->nr, reason);
+	LOG_BTS(bts, DLINP, LOGL_NOTICE, "Dropping OML link: %s\n", reason);
 	e1inp_sign_link_destroy(bts->oml_link);
 	bts->oml_link = NULL;
 	bts->uptime = 0;
@@ -459,7 +459,7 @@ static void ipaccess_drop_oml_deferred_cb(void *data)
 void ipaccess_drop_oml_deferred(struct gsm_bts *bts)
 {
 	if (!osmo_timer_pending(&bts->oml_drop_link_timer) && bts->oml_link) {
-		LOGP(DLINP, LOGL_NOTICE, "(bts=%d) Deferring Drop of OML link.\n", bts->nr);
+		LOG_BTS(bts, DLINP, LOGL_NOTICE, "Deferring Drop of OML link.\n");
 		osmo_timer_setup(&bts->oml_drop_link_timer, ipaccess_drop_oml_deferred_cb, bts);
 		osmo_timer_schedule(&bts->oml_drop_link_timer, 0, 0);
 	}

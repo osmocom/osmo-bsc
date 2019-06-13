@@ -113,8 +113,8 @@ bts_update_t3122_chan_load(struct gsm_bts *bts)
 
 		/* Ignore samples too large for fixed-point calculations (shouldn't happen). */
 		if (lc->used > UINT16_MAX || lc->total > UINT16_MAX) {
-			LOGP(DRLL, LOGL_NOTICE, "(bts=%d) numbers in channel load sample "
-			     "too large (used=%u / total=%u)\n", bts->nr, lc->used, lc->total);
+			LOG_BTS(bts, DRLL, LOGL_NOTICE, "numbers in channel load sample "
+				"too large (used=%u / total=%u)\n", lc->used, lc->total);
 			continue;
 		}
 
@@ -124,8 +124,8 @@ bts_update_t3122_chan_load(struct gsm_bts *bts)
 
 	/* Check for invalid samples (shouldn't happen). */
 	if (total == 0 || used > total) {
-		LOGP(DRLL, LOGL_NOTICE, "(bts=%d) bogus channel load sample (used=%"PRIu64" / total=%"PRIu32")\n",
-		     bts->nr, used, total);
+		LOG_BTS(bts, DRLL, LOGL_NOTICE, "bogus channel load sample (used=%"PRIu64" / total=%"PRIu32")\n",
+			used, total);
 		bts->T3122 = 0; /* disable override of network-wide default value */
 		bts->chan_load_samples_idx = 0; /* invalidate other samples collected so far */
 		return;
@@ -153,8 +153,8 @@ bts_update_t3122_chan_load(struct gsm_bts *bts)
 
 	/* Log channel load average. */
 	load = ((used / total) * 100);
-	LOGP(DRLL, LOGL_DEBUG, "(bts=%d) channel load average is %"PRIu64".%.2"PRIu64"%%\n",
-	     bts->nr, (load & 0xffffff00) >> 8, (load & 0xff) / 10);
+	LOG_BTS(bts, DRLL, LOGL_DEBUG, "channel load average is %"PRIu64".%.2"PRIu64"%%\n",
+		(load & 0xffffff00) >> 8, (load & 0xff) / 10);
 	bts->chan_load_avg = ((load & 0xffffff00) >> 8);
 	OSMO_ASSERT(bts->chan_load_avg <= 100);
 	osmo_stat_item_set(bts->bts_statg->items[BTS_STAT_CHAN_LOAD_AVERAGE], bts->chan_load_avg);
@@ -167,7 +167,7 @@ bts_update_t3122_chan_load(struct gsm_bts *bts)
 	else if (wait_ind > max_wait_ind)
 		wait_ind = max_wait_ind;
 
-	LOGP(DRLL, LOGL_DEBUG, "(bts=%d) T3122 wait indicator set to %"PRIu64" seconds\n", bts->nr, wait_ind);
+	LOG_BTS(bts, DRLL, LOGL_DEBUG, "T3122 wait indicator set to %"PRIu64" seconds\n", wait_ind);
 	bts->T3122 = (uint8_t)wait_ind;
 	osmo_stat_item_set(bts->bts_statg->items[BTS_STAT_T3122], wait_ind);
 }

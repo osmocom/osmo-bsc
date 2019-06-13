@@ -85,9 +85,9 @@ static void page_ms(struct gsm_paging_request *request)
 
 	log_set_context(LOG_CTX_BSC_SUBSCR, request->bsub);
 
-	LOGP(DPAG, LOGL_INFO, "(bts=%d) Going to send paging commands: imsi: %s tmsi: "
-	     "0x%08x for ch. type %d (attempt %d)\n", bts->nr, request->bsub->imsi,
-	     request->bsub->tmsi, request->chan_type, request->attempts);
+	LOG_BTS(bts, DPAG, LOGL_INFO, "Going to send paging commands: imsi: %s tmsi: "
+		"0x%08x for ch. type %d (attempt %d)\n", request->bsub->imsi,
+		request->bsub->tmsi, request->chan_type, request->attempts);
 
 	if (request->bsub->tmsi == GSM_RESERVED_TMSI)
 		mi_len = gsm48_generate_mid_from_imsi(mi, request->bsub->imsi);
@@ -115,8 +115,7 @@ static void paging_give_credit(void *data)
 {
 	struct gsm_bts_paging_state *paging_bts = data;
 
-	LOGP(DPAG, LOGL_NOTICE, "(bts=%d) No PCH LOAD IND, adding 20 slots)\n",
-	     paging_bts->bts->nr);
+	LOG_BTS(paging_bts->bts, DPAG, LOGL_NOTICE, "No PCH LOAD IND, adding 20 slots)\n");
 	paging_bts->available_slots = 20;
 	paging_handle_pending_requests(paging_bts);
 }
@@ -315,8 +314,7 @@ static unsigned int calculate_timer_3113(struct gsm_bts *bts)
 
 	/* ceiling in seconds + extra time */
 	to = (to_us + 999999) / 1000000 + d->val;
-	LOGP(DPAG, LOGL_DEBUG, "(bts=%d) Paging request: T3113 expires in %u seconds\n",
-	     bts->nr, to);
+	LOG_BTS(bts, DPAG, LOGL_DEBUG, "Paging request: T3113 expires in %u seconds\n", to);
 	return to;
 }
 
@@ -336,14 +334,13 @@ static int _paging_request(struct gsm_bts *bts, struct bsc_subscr *bsub, int typ
 	rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_CTR_PAGING_ATTEMPTED]);
 
 	if (paging_pending_request(bts_entry, bsub)) {
-		LOGP(DPAG, LOGL_INFO, "(bts=%d) Paging request already pending for %s\n",
-		     bts->nr, bsc_subscr_name(bsub));
+		LOG_BTS(bts, DPAG, LOGL_INFO, "Paging request already pending for %s\n",
+			bsc_subscr_name(bsub));
 		rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_CTR_PAGING_ALREADY]);
 		return -EEXIST;
 	}
 
-	LOGP(DPAG, LOGL_DEBUG, "(bts=%d) Start paging of subscriber %s\n", bts->nr,
-	     bsc_subscr_name(bsub));
+	LOG_BTS(bts, DPAG, LOGL_DEBUG, "Start paging of subscriber %s\n", bsc_subscr_name(bsub));
 	req = talloc_zero(tall_paging_ctx, struct gsm_paging_request);
 	OSMO_ASSERT(req);
 	req->bsub = bsc_subscr_get(bsub);
@@ -407,8 +404,7 @@ static int _paging_request_stop(struct gsm_bts *bts, struct bsc_subscr *bsub,
 		if (req->bsub == bsub) {
 			/* now give up the data structure */
 			paging_remove_request(&bts->paging, req);
-			LOGP(DPAG, LOGL_DEBUG, "(bts=%d) Stop paging %s\n", bts->nr,
-			     bsc_subscr_name(bsub));
+			LOG_BTS(bts, DPAG, LOGL_DEBUG, "Stop paging %s\n", bsc_subscr_name(bsub));
 			return 0;
 		}
 	}
@@ -498,8 +494,7 @@ void paging_flush_bts(struct gsm_bts *bts, struct bsc_msc_data *msc)
 		if (msc && req->msc != msc)
 			continue;
 		/* now give up the data structure */
-		LOGP(DPAG, LOGL_DEBUG, "(bts=%d) Stop paging %s (flush)\n", bts->nr,
-		     bsc_subscr_name(req->bsub));
+		LOG_BTS(bts, DPAG, LOGL_DEBUG, "Stop paging %s (flush)\n", bsc_subscr_name(req->bsub));
 		paging_remove_request(&bts->paging, req);
 	}
 }

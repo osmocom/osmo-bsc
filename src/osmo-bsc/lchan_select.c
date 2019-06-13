@@ -169,7 +169,7 @@ struct gsm_lchan *lchan_select_by_type(struct gsm_bts *bts, enum gsm_chan_t type
 	struct gsm_lchan *lchan = NULL;
 	enum gsm_phys_chan_config first, first_cbch, second, second_cbch;
 
-	LOGP(DRLL, LOGL_DEBUG, "(bts=%d) lchan_select_by_type(%s)\n", bts->nr, gsm_lchant_name(type));
+	LOG_BTS(bts, DRLL, LOGL_DEBUG, "lchan_select_by_type(%s)\n", gsm_lchant_name(type));
 
 	switch (type) {
 	case GSM_LCHAN_SDCCH:
@@ -227,15 +227,15 @@ struct gsm_lchan *lchan_select_by_type(struct gsm_bts *bts, enum gsm_chan_t type
 		}
 		break;
 	default:
-		LOGP(DRLL, LOGL_ERROR, "Unknown gsm_chan_t %u\n", type);
+		LOG_BTS(bts, DRLL, LOGL_ERROR, "Unknown gsm_chan_t %u\n", type);
 	}
 
 	if (lchan) {
 		lchan->type = type;
 		LOG_LCHAN(lchan, LOGL_INFO, "Selected\n");
 	} else
-		LOGP(DRLL, LOGL_ERROR, "(bts=%d) Failed to select %s channel\n",
-		     bts->nr, gsm_lchant_name(type));
+		LOG_BTS(bts, DRLL, LOGL_ERROR, "Failed to select %s channel\n",
+			gsm_lchant_name(type));
 
 	return lchan;
 }
