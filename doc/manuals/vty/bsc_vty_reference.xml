@@ -320,7 +320,7 @@
         <param name='MASK' doc='List of logging categories to log, e.g. &apos;abc:mno:xyz&apos;. Available log categories depend on the specific application, refer to the &apos;logging level&apos; command. Optionally add individual log levels like &apos;abc,1:mno,3:xyz,5&apos;, where the level numbers are LOGL_DEBUG=1 LOGL_INFO=3 LOGL_NOTICE=5 LOGL_ERROR=7 LOGL_FATAL=8' />
       </params>
     </command>
-    <command id='logging level (rll|mm|rr|rsl|nm|pag|meas|msc|ho|hodec|ref|nat|ctrl|filter|pcu|lcls|chan|ts|as|lglobal|llapd|linp|lmux|lmi|lmib|lsms|lctrl|lgtp|lstats|lgsup|loap|lss7|lsccp|lsua|lm3ua|lmgcp|ljibuf|lrspro) (debug|info|notice|error|fatal)'>
+    <command id='logging level (rll|mm|rr|rsl|nm|pag|meas|msc|ho|hodec|ref|nat|ctrl|filter|pcu|lcls|chan|ts|as|cbs|lglobal|llapd|linp|lmux|lmi|lmib|lsms|lctrl|lgtp|lstats|lgsup|loap|lss7|lsccp|lsua|lm3ua|lmgcp|ljibuf|lrspro) (debug|info|notice|error|fatal)'>
       <params>
         <param name='logging' doc='Configure logging' />
         <param name='level' doc='Set the log level for a specified category' />
@@ -343,6 +343,7 @@
         <param name='chan' doc='lchan FSM' />
         <param name='ts' doc='timeslot FSM' />
         <param name='as' doc='assignment FSM' />
+        <param name='cbs' doc='Cell Broadcast System' />
         <param name='lglobal' doc='Library-internal global log family' />
         <param name='llapd' doc='LAPD in libosmogsm' />
         <param name='linp' doc='A-bis Intput Subsystem' />
@@ -512,6 +513,22 @@
         <param name='show' doc='Show running system information' />
         <param name='fsm-instances' doc='Show information about finite state machine instances' />
         <param name='all' doc='Display a list of all FSM instances of all finite state machine' />
+      </params>
+    </command>
+    <command id='show cbc'>
+      <params>
+        <param name='show' doc='Show running system information' />
+        <param name='cbc' doc='Display state of CBC / CBSP' />
+      </params>
+    </command>
+    <command id='show bts &lt;0-255&gt; smscb [(basic|extended)]'>
+      <params>
+        <param name='show' doc='Show running system information' />
+        <param name='bts' doc='Display information about a BTS' />
+        <param name='&lt;0-255&gt;' doc='BTS number' />
+        <param name='smscb' doc='SMS Cell Broadcast State' />
+        <param name='[basic]' doc='Show only information related to CBCH BASIC' />
+        <param name='[extended]' doc='Show only information related to CBCH EXTENDED' />
       </params>
     </command>
     <command id='show statistics'>
@@ -971,7 +988,7 @@
         <param name='MASK' doc='List of logging categories to log, e.g. &apos;abc:mno:xyz&apos;. Available log categories depend on the specific application, refer to the &apos;logging level&apos; command. Optionally add individual log levels like &apos;abc,1:mno,3:xyz,5&apos;, where the level numbers are LOGL_DEBUG=1 LOGL_INFO=3 LOGL_NOTICE=5 LOGL_ERROR=7 LOGL_FATAL=8' />
       </params>
     </command>
-    <command id='logging level (rll|mm|rr|rsl|nm|pag|meas|msc|ho|hodec|ref|nat|ctrl|filter|pcu|lcls|chan|ts|as|lglobal|llapd|linp|lmux|lmi|lmib|lsms|lctrl|lgtp|lstats|lgsup|loap|lss7|lsccp|lsua|lm3ua|lmgcp|ljibuf|lrspro) (debug|info|notice|error|fatal)'>
+    <command id='logging level (rll|mm|rr|rsl|nm|pag|meas|msc|ho|hodec|ref|nat|ctrl|filter|pcu|lcls|chan|ts|as|cbs|lglobal|llapd|linp|lmux|lmi|lmib|lsms|lctrl|lgtp|lstats|lgsup|loap|lss7|lsccp|lsua|lm3ua|lmgcp|ljibuf|lrspro) (debug|info|notice|error|fatal)'>
       <params>
         <param name='logging' doc='Configure logging' />
         <param name='level' doc='Set the log level for a specified category' />
@@ -994,6 +1011,7 @@
         <param name='chan' doc='lchan FSM' />
         <param name='ts' doc='timeslot FSM' />
         <param name='as' doc='assignment FSM' />
+        <param name='cbs' doc='Cell Broadcast System' />
         <param name='lglobal' doc='Library-internal global log family' />
         <param name='llapd' doc='LAPD in libosmogsm' />
         <param name='linp' doc='A-bis Intput Subsystem' />
@@ -1354,6 +1372,16 @@
         <param name='show' doc='Show running system information' />
         <param name='fsm-instances' doc='Show information about finite state machine instances' />
         <param name='all' doc='Display a list of all FSM instances of all finite state machine' />
+      </params>
+    </command>
+    <command id='show bts &lt;0-255&gt; smscb [(basic|extended)]'>
+      <params>
+        <param name='show' doc='Show running system information' />
+        <param name='bts' doc='Display information about a BTS' />
+        <param name='&lt;0-255&gt;' doc='BTS number' />
+        <param name='smscb' doc='SMS Cell Broadcast State' />
+        <param name='[basic]' doc='Show only information related to CBCH BASIC' />
+        <param name='[extended]' doc='Show only information related to CBCH EXTENDED' />
       </params>
     </command>
     <command id='show statistics'>
@@ -1735,6 +1763,11 @@
         <param name='e1_input' doc='Configure E1/T1/J1 TDM input' />
       </params>
     </command>
+    <command id='cbc'>
+      <params>
+        <param name='cbc' doc='Configure CBSP Link to Cell Broadcast Centre' />
+      </params>
+    </command>
     <command id='msc [&lt;0-1000&gt;]'>
       <params>
         <param name='msc' doc='Configure MSC details' />
@@ -1833,7 +1866,7 @@
         <param name='[last]' doc='Log source file info at the end of a log line. If omitted, log source file info just before the log text.' />
       </params>
     </command>
-    <command id='logging level (rll|mm|rr|rsl|nm|pag|meas|msc|ho|hodec|ref|nat|ctrl|filter|pcu|lcls|chan|ts|as|lglobal|llapd|linp|lmux|lmi|lmib|lsms|lctrl|lgtp|lstats|lgsup|loap|lss7|lsccp|lsua|lm3ua|lmgcp|ljibuf|lrspro) (debug|info|notice|error|fatal)'>
+    <command id='logging level (rll|mm|rr|rsl|nm|pag|meas|msc|ho|hodec|ref|nat|ctrl|filter|pcu|lcls|chan|ts|as|cbs|lglobal|llapd|linp|lmux|lmi|lmib|lsms|lctrl|lgtp|lstats|lgsup|loap|lss7|lsccp|lsua|lm3ua|lmgcp|ljibuf|lrspro) (debug|info|notice|error|fatal)'>
       <params>
         <param name='logging' doc='Configure logging' />
         <param name='level' doc='Set the log level for a specified category' />
@@ -1856,6 +1889,7 @@
         <param name='chan' doc='lchan FSM' />
         <param name='ts' doc='timeslot FSM' />
         <param name='as' doc='assignment FSM' />
+        <param name='cbs' doc='Cell Broadcast System' />
         <param name='lglobal' doc='Library-internal global log family' />
         <param name='llapd' doc='LAPD in libosmogsm' />
         <param name='linp' doc='A-bis Intput Subsystem' />
@@ -4927,6 +4961,45 @@
         <param name='no' doc='Negate a command or set its defaults' />
         <param name='access-list' doc='Remove an access-list by name' />
         <param name='NAME' doc='The access-list to remove' />
+      </params>
+    </command>
+  </node>
+  <node id='config-cbc'>
+    <name>config-cbc</name>
+    <command id='remote-ip A.B.C.D'>
+      <params>
+        <param name='remote-ip' doc='IP Address of the Cell Broadcast Centre' />
+        <param name='A.B.C.D' doc='IP Address of the Cell Broadcast Centre' />
+      </params>
+    </command>
+    <command id='no remote-ip'>
+      <params>
+        <param name='no' doc='Negate a command or set its defaults' />
+        <param name='remote-ip' doc='Remove IP address of CBC; disables outbound CBSP connections' />
+      </params>
+    </command>
+    <command id='remote-port &lt;1-65535&gt;'>
+      <params>
+        <param name='remote-port' doc='TCP Port number of the Cell Broadcast Centre (Default: 48049)' />
+        <param name='&lt;1-65535&gt;' doc='TCP Port number of the Cell Broadcast Centre (Default: 48049)' />
+      </params>
+    </command>
+    <command id='listen-port &lt;1-65535&gt;'>
+      <params>
+        <param name='listen-port' doc='Local TCP port at which BSC listens for incoming CBSP connections from CBC' />
+        <param name='&lt;1-65535&gt;' doc='Local TCP port at which BSC listens for incoming CBSP connections from CBC' />
+      </params>
+    </command>
+    <command id='no listen-port'>
+      <params>
+        <param name='no' doc='Negate a command or set its defaults' />
+        <param name='listen-port' doc='Remove CBSP Listen Port; disables inbound CBSP connections' />
+      </params>
+    </command>
+    <command id='listen-ip A.B.C.D'>
+      <params>
+        <param name='listen-ip' doc='Local IP Address where BSC listens for incoming CBC connections (Default: 0.0.0.0)' />
+        <param name='A.B.C.D' doc='Local IP Address where BSC listens for incoming CBC connections' />
       </params>
     </command>
   </node>

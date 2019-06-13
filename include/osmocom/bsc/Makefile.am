@@ -55,4 +55,5 @@ noinst_HEADERS = \
 	gsm_08_08.h \
 	penalty_timers.h \
 	osmo_bsc_lcls.h \
+	smscb.h \
 	$(NULL)

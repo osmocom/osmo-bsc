@@ -37,6 +37,9 @@
 #include <osmocom/bsc/gsm_04_08_rr.h>
 #include <osmocom/bsc/neighbor_ident.h>
 
+#include <osmocom/bsc/smscb.h>
+#include <osmocom/gsm/protocol/gsm_48_049.h>
+
 #include <time.h>
 #include <limits.h>
 #include <stdbool.h>
@@ -244,6 +247,11 @@ static struct gsm_network *bsc_network_init(void *ctx)
 		talloc_free(net);
 		return NULL;
 	}
+	net->bsc_data->cbc = talloc_zero(net->bsc_data, struct bsc_cbc_link);
+	if (!net->bsc_data->cbc) {
+		talloc_free(net);
+		return NULL;
+	}
 
 	/* Init back pointer */
 	net->bsc_data->auto_off_timeout = -1;
@@ -271,6 +279,13 @@ static struct gsm_network *bsc_network_init(void *ctx)
 	 */
 	osmo_timer_setup(&net->t3122_chan_load_timer, update_t3122_chan_load_timer, net);
 	osmo_timer_schedule(&net->t3122_chan_load_timer, T3122_CHAN_LOAD_SAMPLE_INTERVAL, 0);
+
+	net->bsc_data->cbc->net = net;
+	/* no cbc_hostname: client not started by default */
+	net->bsc_data->cbc->config.cbc_port = CBSP_TCP_PORT;
+	/* listen_port == -1: server not started by default */
+	net->bsc_data->cbc->config.listen_port = -1;
+	net->bsc_data->cbc->config.listen_hostname = talloc_strdup(net->bsc_data->cbc, "127.0.0.1");
 
 	return net;
 }

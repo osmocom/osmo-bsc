@@ -1,0 +1,82 @@
+[[smscb]]
+== SMSCB (Cell Broadcast)
+
+OsmoBSC supports SMS Cell Broadcast (SMSCB) services (CBS).  This
+includes the CBSP protocol to interact with a CBC (Cell Broadcast
+Centre) such as OsmoCBC, as well as the scheduling of SMSCB messages on
+both the BASIC and EXTENDED CBCH and transmission of related RSL
+messages to the attached BTS.
+
+More high-level information can be found at
+https://en.wikipedia.org/wiki/Cell_Broadcast and the related
+specification is <<3gpp-ts-23-041>>.
+
+In order to use SMSCB with OsmoBSC, you will need to
+
+* Configure the CBSP server and/or client
+* Use a channel combination including a CBCH on the BTSs
+
+=== Enabling a CBCH channel combination
+
+On the Um interface, SMSCB are transmitted via the CBCH (Cell Broadcast
+Channel).  The CBCH is a separate downlink-only logical channel which
+must be activated on any of the BTSs requiring CBSP support.
+
+The channel combination is configured in the `timeslot` node of each TRX.
+
+The two `phys_chan_config` supporting CBCH are `CCCH+SDCCH4+CBCH` and
+`SDCCH/8+CBCH`.  Please note that the CBCH steals one of the SDCCH, so
+a SDCCH/4 will only have three remaining SDCCH, and a SDCCH/8 will
+have only seven remaining SDCCH.
+
+=== Configuring the CBSP connection
+
+CBSP is the protocol between BSC and CBC.  It operates over TCP.
+
+According to 3GPP TS 48.049, a BSC typically operates as a TCP server,
+and the CBC connects as TCP client.  This would require the CBC to have
+out-of-band knowledge of all the BSCs in the network (and their IP
+addresses).
+
+In order to comply with the specifications, OsmoBSC supports this mode
+of operation as CBSP TCP server.  However, to make network operation and
+configuration more simple, it also can operate in TCP client mode,
+connecting to the CBC.  This way the all the BSCs need to know is the CBC IP
+address, but not vice-versa.
+
+The BSC can operate both CBSP TCP server and CBSP TCP client mode in
+parallel.
+
+The CBC related configuration of OsmoBSC can be found in the `cbc` configuration
+node of the VTY interface.
+
+.Example: Configure CBSP TCP client to connect to CBC at 1.2.3.4:48049
+----
+OsmoBSC> enable
+OsmoBSC# configure terminal
+OsmoBSC(config)# cbc
+OsmoBSC(config-cbc)# remote-ip 1.2.3.4
+OsmoBSC(config-cbc)# remote-port 48049
+OsmoBSC(config-cbc)# end
+----
+
+.Example: Disable CBSP TCP client
+----
+OsmoBSC> enable
+OsmoBSC# configure terminal
+OsmoBSC(config)# cbc
+OsmoBSC(config-cbc)# no remote-ip
+OsmoBSC(config-cbc)# end
+----
+
+.Example: Configure CBSP TCP server to listen for CBC at 127.0.0.2:9999
+----
+OsmoBSC> enable
+OsmoBSC# configure terminal
+OsmoBSC(config)# cbc
+OsmoBSC(config-cbc)# listen-ip 127.0.0.2
+OsmoBSC(config-cbc)# listen-port 9999
+OsmoBSC(config-cbc)# end
+----
+
+For more details on the available configuration commands, please check the OsmoBSC VTY Reference.

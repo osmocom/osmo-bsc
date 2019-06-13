@@ -37,6 +37,7 @@
 #include <osmocom/bsc/bsc_subscriber.h>
 #include <osmocom/bsc/assignment_fsm.h>
 #include <osmocom/bsc/handover_fsm.h>
+#include <osmocom/bsc/smscb.h>
 
 #include <osmocom/ctrl/control_cmd.h>
 #include <osmocom/ctrl/control_if.h>
@@ -310,6 +311,10 @@ static void bootstrap_rsl(struct gsm_bts_trx *trx)
 		OSMO_ASSERT(ts->fi);
 		osmo_fsm_inst_dispatch(ts->fi, TS_EV_RSL_READY, NULL);
 	}
+
+	/* Start CBCH transmit timer if CBCH is present */
+	if (trx->nr == 0 && gsm_bts_get_cbch(trx->bts))
+		bts_cbch_timer_schedule(trx->bts);
 }
 
 static void all_ts_dispatch_event(struct gsm_bts_trx *trx, uint32_t event)
@@ -379,6 +384,8 @@ static int inp_sig_cb(unsigned int subsys, unsigned int signal,
 			rate_ctr_inc(&trx->bts->bts_ctrs->ctr[BTS_CTR_BTS_RSL_FAIL]);
 			acc_ramp_abort(&trx->bts->acc_ramp);
 			all_ts_dispatch_event(trx, TS_EV_RSL_DOWN);
+			if (trx->nr == 0)
+				osmo_timer_del(&trx->bts->cbch_timer);
 		}
 
 		gsm_bts_mo_reset(trx->bts);
@@ -764,6 +771,11 @@ static const struct log_info_cat osmo_bsc_categories[] = {
 		.description = "Local Call, Local Switch",
 		.enabled = 1, .loglevel = LOGL_NOTICE,
 	},
+	[DCBS] = {
+		.name = "DCBS",
+		.description = "Cell Broadcast System",
+		.enabled = 1, .loglevel = LOGL_NOTICE,
+	}
 
 };
 
@@ -912,6 +924,7 @@ int main(int argc, char **argv)
 
 	handover_decision_1_init();
 	hodec2_init(bsc_gsmnet);
+	bsc_cbc_link_restart();
 
 	signal(SIGINT, &signal_handler);
 	signal(SIGTERM, &signal_handler);

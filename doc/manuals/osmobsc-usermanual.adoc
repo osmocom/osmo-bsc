@@ -24,6 +24,8 @@ include::./common/chapters/bsc.adoc[]
 
 include::{srcdir}/chapters/handover.adoc[]
 
+include::{srcdir}/chapters/smscb.adoc[]
+
 include::./common/chapters/counters-overview.adoc[]
 
 include::{srcdir}/chapters/counters.adoc[]
@@ -33,8 +35,6 @@ include::./common/chapters/abis.adoc[]
 include::./common/chapters/control_if.adoc[]
 
 include::{srcdir}/chapters/control.adoc[]
-
-include::./common/chapters/cell-broadcast.adoc[]
 
 include::{srcdir}/chapters/osmux_bsc.adoc[]
 

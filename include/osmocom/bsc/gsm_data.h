@@ -14,6 +14,7 @@
 #include <osmocom/core/stat_item.h>
 #include <osmocom/gsm/bts_features.h>
 #include <osmocom/gsm/protocol/gsm_08_08.h>
+#include <osmocom/gsm/protocol/gsm_48_049.h>
 #include <osmocom/gsm/gsm0808.h>
 #include <osmocom/gsm/gsm48.h>
 #include <osmocom/core/fsm.h>
@@ -957,6 +958,53 @@ struct gsm_bts_ref {
 	struct gsm_bts *bts;
 };
 
+/* A single Page of a SMSCB message */
+struct bts_smscb_page {
+	/* SMSCB message we're part of */
+	struct bts_smscb_message *msg;
+	/* Page Number within message (1 to 15) */
+	uint8_t nr;
+	/* number of valid blocks in data (up to 4) */
+	uint8_t num_blocks;
+	/* up to four blocks of 22 bytes each */
+	uint8_t data[88];
+};
+
+/* A SMSCB message (received from CBSP) */
+struct bts_smscb_message {
+	/* entry in bts_smscb_chan_state.messages */
+	struct llist_head list;
+	struct {
+		/* input data from CBSP (CBC) side */
+		uint16_t msg_id;
+		uint16_t serial_nr;
+		enum cbsp_category category;
+		uint16_t rep_period;
+		uint16_t num_bcast_req;
+		uint8_t dcs;
+	} input;
+	/* how often have all pages of this message been broadcast? */
+	uint32_t bcast_count;
+	/* actual page data of this message */
+	uint8_t num_pages; /* up to 15 */
+	struct bts_smscb_page page[15];
+};
+
+/* per-channel (basic/extended) CBCH state for a single BTS */
+struct bts_smscb_chan_state {
+	/* back-pointer to BTS */
+	struct gsm_bts *bts;
+	/* list of bts_smscb_message */
+	struct llist_head messages;
+	/* scheduling array; pointer of SMSCB pages */
+	struct bts_smscb_page **sched_arr;
+	size_t sched_arr_size;
+	/* index of the next to be transmitted page into the scheduler array */
+	size_t next_idx;
+	/* number of messages we have to pause due to overflow */
+	uint8_t overflow;
+};
+
 /* One BTS */
 struct gsm_bts {
 	/* list header in net->bts_list */
@@ -1213,6 +1261,11 @@ struct gsm_bts {
 	struct load_counter chan_load_samples[7];
 	int chan_load_samples_idx;
 	uint8_t chan_load_avg; /* current channel load average in percent (0 - 100). */
+
+	/* cell broadcast system */
+	struct osmo_timer_list cbch_timer;
+	struct bts_smscb_chan_state cbch_basic;
+	struct bts_smscb_chan_state cbch_extended;
 };
 
 /* One rejected BTS */

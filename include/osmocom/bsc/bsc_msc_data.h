@@ -150,6 +150,7 @@ struct bsc_msc_data {
 /*
  * Per BSC data.
  */
+struct bsc_cbc_link;
 struct osmo_bsc_data {
 	struct gsm_network *network;
 
@@ -167,6 +168,8 @@ struct osmo_bsc_data {
 	char *ussd_no_msc_txt;
 
 	char *acc_lst_name;
+
+	struct bsc_cbc_link *cbc;
 };
 
 

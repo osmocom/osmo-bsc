@@ -70,6 +70,7 @@
 #include <osmocom/bsc/timeslot_fsm.h>
 #include <osmocom/bsc/lchan_fsm.h>
 #include <osmocom/bsc/lchan_select.h>
+#include <osmocom/bsc/smscb.h>
 #include <osmocom/mgcp_client/mgcp_client_endpoint_fsm.h>
 
 #include <inttypes.h>
@@ -318,6 +319,14 @@ static void vty_out_neigh_list(struct vty *vty, struct bitvec *bv)
 		vty_out(vty, " (%d)", count);
 }
 
+static void bts_dump_vty_cbch(struct vty *vty, const struct bts_smscb_chan_state *cstate)
+{
+	vty_out(vty, "  CBCH %s: %u messages, %u pages, %lu-entry sched_arr, %u%% load%s",
+		bts_smscb_chan_state_name(cstate), llist_count(&cstate->messages),
+		bts_smscb_chan_page_count(cstate), cstate->sched_arr_size,
+		bts_smscb_chan_load_percent(cstate), VTY_NEWLINE);
+}
+
 static void bts_dump_vty_features(struct vty *vty, struct gsm_bts *bts)
 {
 	unsigned int i;
@@ -503,6 +512,9 @@ static void bts_dump_vty(struct vty *vty, struct gsm_bts *bts)
 	bts_chan_load(&pl, bts);
 	vty_out(vty, "  Current Channel Load:%s", VTY_NEWLINE);
 	dump_pchan_load_vty(vty, "    ", &pl);
+
+	bts_dump_vty_cbch(vty, &bts->cbch_basic);
+	bts_dump_vty_cbch(vty, &bts->cbch_extended);
 
 	vty_out(vty, "  Channel Requests        : %"PRIu64" total, %"PRIu64" no channel%s",
 		bts->bts_ctrs->ctr[BTS_CTR_CHREQ_TOTAL].current,
@@ -5427,6 +5439,8 @@ int bsc_vty_init(struct gsm_network *network)
 	osmo_fsm_vty_add_cmds();
 
 	ho_vty_init();
+	cbc_vty_init();
+	smscb_vty_init();
 
 	bsc_vty_init_extra();
 

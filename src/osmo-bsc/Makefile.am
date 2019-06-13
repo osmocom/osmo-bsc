@@ -88,6 +88,9 @@ osmo_bsc_SOURCES = \
 	rest_octets.c \
 	system_information.c \
 	timeslot_fsm.c \
+	smscb.c \
+	cbch_scheduler.c \
+	cbsp_link.c \
 	$(NULL)
 
 osmo_bsc_LDADD = \
@@ -96,6 +99,7 @@ osmo_bsc_LDADD = \
 	$(LIBOSMOGSM_LIBS) \
 	$(LIBOSMOVTY_LIBS) \
 	$(LIBOSMOCTRL_LIBS) \
+	$(LIBOSMONETIF_LIBS) \
 	$(COVERAGE_LDFLAGS) \
 	$(LIBOSMOABIS_LIBS) \
 	$(LIBOSMOSIGTRAN_LIBS) \

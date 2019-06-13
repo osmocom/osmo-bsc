@@ -1,7 +1,7 @@
 /* GSM Radio Signalling Link messages on the A-bis interface
  * 3GPP TS 08.58 version 8.6.0 Release 1999 / ETSI TS 100 596 V8.6.0 */
 
-/* (C) 2008-2010 by Harald Welte <laforge@gnumonks.org>
+/* (C) 2008-2019 by Harald Welte <laforge@gnumonks.org>
  * (C) 2012 by Holger Hans Peter Freyther
  *
  * All Rights Reserved
@@ -52,6 +52,7 @@
 #include <osmocom/bsc/lchan_fsm.h>
 #include <osmocom/bsc/lchan_rtp_fsm.h>
 #include <osmocom/bsc/handover_fsm.h>
+#include <osmocom/bsc/smscb.h>
 
 #define RSL_ALLOC_SIZE		1024
 #define RSL_ALLOC_HEADROOM	128
@@ -1489,6 +1490,36 @@ static int rsl_rx_ccch_load(struct msgb *msg)
 	return 0;
 }
 
+/* 8.5.9 current load on the CBCH (Cell Broadcast) */
+static int rsl_rx_cbch_load(struct msgb *msg)
+{
+	struct e1inp_sign_link *sign_link = msg->dst;
+	struct abis_rsl_dchan_hdr *rslh = msgb_l2(msg);
+	struct gsm_bts *bts = sign_link->trx->bts;
+	bool cbch_extended = false;
+	bool is_overflow = false;
+	int8_t load_info;
+	struct tlv_parsed tp;
+	uint8_t slot_count;
+
+	rsl_tlv_parse(&tp, rslh->data, msgb_l2len(msg) - sizeof(*rslh));
+	if (!TLVP_PRESENT(&tp, RSL_IE_CBCH_LOAD_INFO)) {
+		LOG_BTS(bts, DRSL, LOGL_ERROR, "CBCH LOAD IND without mandatory CBCH Load Info IE\n");
+		return -1;
+	}
+	/* 9.4.43 */
+	load_info = *TLVP_VAL(&tp, RSL_IE_CBCH_LOAD_INFO);
+	if (load_info & 0x80)
+		is_overflow = true;
+	slot_count = load_info & 0x0F;
+
+	if (TLVP_PRES_LEN(&tp, RSL_IE_SMSCB_CHAN_INDICATOR, 1) &&
+	    (*TLVP_VAL(&tp, RSL_IE_SMSCB_CHAN_INDICATOR) & 0x0F) == 0x01)
+		cbch_extended = true;
+
+	return bts_smscb_rx_cbch_load_ind(bts, cbch_extended, is_overflow, slot_count);
+}
+
 /* Ericsson specific: Immediate Assign Sent */
 static int rsl_rx_ericsson_imm_assign_sent(struct msgb *msg)
 {
@@ -1537,7 +1568,7 @@ static int abis_rsl_rx_cchan(struct msgb *msg)
 		break;
 	case RSL_MT_CBCH_LOAD_IND:
 		/* current load on the CBCH */
-		/* FIXME: handle this. Ignore for now */
+		rc = rsl_rx_cbch_load(msg);
 		break;
 	case RSL_MT_ERICSSON_IMM_ASS_SENT:
 		rc = rsl_rx_ericsson_imm_assign_sent(msg);

@@ -767,6 +767,12 @@ static const struct gprs_rlc_cfg rlc_cfg_default = {
 	.initial_mcs = 6,
 };
 
+static void bts_init_cbch_state(struct bts_smscb_chan_state *cstate, struct gsm_bts *bts)
+{
+	cstate->bts = bts;
+	INIT_LLIST_HEAD(&cstate->messages);
+}
+
 /* Initialize those parts that don't require osmo-bsc specific dependencies.
  * This part is shared among the thin programs in osmo-bsc/src/utils/.
  * osmo-bsc requires further initialization that pulls in more dependencies (see
@@ -944,6 +950,9 @@ struct gsm_bts *gsm_bts_alloc(struct gsm_network *net, uint8_t bts_num)
 		bts->mr_half.bts_mode[i].threshold = 32;
 	}
 	bts->mr_half.num_modes = 3;
+
+	bts_init_cbch_state(&bts->cbch_basic, bts);
+	bts_init_cbch_state(&bts->cbch_extended, bts);
 
 	return bts;
 }

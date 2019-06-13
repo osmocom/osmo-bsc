@@ -11,6 +11,7 @@ AM_CFLAGS = \
 	$(LIBOSMOCTRL_CFLAGS) \
 	$(LIBOSMOVTY_CFLAGS) \
 	$(LIBOSMOABIS_CFLAGS) \
+	$(LIBOSMONETIF_CFLAGS) \
 	$(LIBOSMOSIGTRAN_CFLAGS) \
 	$(LIBOSMOMGCPCLIENT_CFLAGS) \
 	$(NULL)
@@ -91,11 +92,15 @@ handover_test_LDADD = \
 	$(top_builddir)/src/osmo-bsc/rest_octets.o \
 	$(top_builddir)/src/osmo-bsc/system_information.o \
 	$(top_builddir)/src/osmo-bsc/timeslot_fsm.o \
+	$(top_builddir)/src/osmo-bsc/smscb.o \
+	$(top_builddir)/src/osmo-bsc/cbch_scheduler.o \
+	$(top_builddir)/src/osmo-bsc/cbsp_link.o \
 	$(LIBOSMOCORE_LIBS) \
 	$(LIBOSMOGSM_LIBS) \
 	$(LIBOSMOCTRL_LIBS) \
 	$(LIBOSMOVTY_LIBS) \
 	$(LIBOSMOABIS_LIBS) \
+	$(LIBOSMONETIF_LIBS) \
 	$(LIBOSMOSIGTRAN_LIBS) \
 	$(LIBOSMOMGCPCLIENT_LIBS) \
 	$(NULL)
