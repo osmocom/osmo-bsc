@@ -12,9 +12,6 @@ void openbsc_vty_print_statistics(struct vty *vty, struct gsm_network *);
 
 struct buffer *vty_argv_to_buffer(int argc, const char *argv[], int base);
 
-extern struct cmd_element cfg_description_cmd;
-extern struct cmd_element cfg_no_description_cmd;
-
 enum bsc_vty_node {
 	GSMNET_NODE = _LAST_OSMOVTY_NODE + 1,
 	BTS_NODE,
