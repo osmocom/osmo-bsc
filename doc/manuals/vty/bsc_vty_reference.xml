@@ -2983,24 +2983,24 @@
         <param name='7' doc='Maximum number of 7 RACH burst transmissions' />
       </params>
     </command>
-    <command id='channel-descrption attach (0|1)'>
+    <command id='channel-description attach (0|1)'>
       <params>
-        <param name='channel-descrption' doc='Channel Description' />
+        <param name='channel-description' doc='Channel Description' />
         <param name='attach' doc='Set if attachment is required' />
         <param name='0' doc='Attachment is NOT required' />
         <param name='1' doc='Attachment is required (standard)' />
       </params>
     </command>
-    <command id='channel-descrption bs-pa-mfrms &lt;2-9&gt;'>
+    <command id='channel-description bs-pa-mfrms &lt;2-9&gt;'>
       <params>
-        <param name='channel-descrption' doc='Channel Description' />
+        <param name='channel-description' doc='Channel Description' />
         <param name='bs-pa-mfrms' doc='Set number of multiframe periods for paging groups' />
         <param name='&lt;2-9&gt;' doc='Number of multiframe periods for paging groups' />
       </params>
     </command>
-    <command id='channel-descrption bs-ag-blks-res &lt;0-7&gt;'>
+    <command id='channel-description bs-ag-blks-res &lt;0-7&gt;'>
       <params>
-        <param name='channel-descrption' doc='Channel Description' />
+        <param name='channel-description' doc='Channel Description' />
         <param name='bs-ag-blks-res' doc='Set number of blocks reserved for access grant' />
         <param name='&lt;0-7&gt;' doc='Number of blocks reserved for access grant' />
       </params>

@@ -841,11 +841,11 @@ static void config_write_bts_single(struct vty *vty, struct gsm_bts *bts)
 		rach_max_trans_raw2val(bts->si_common.rach_control.max_trans),
 		VTY_NEWLINE);
 
-	vty_out(vty, "  channel-descrption attach %u%s",
+	vty_out(vty, "  channel-description attach %u%s",
 		bts->si_common.chan_desc.att, VTY_NEWLINE);
-	vty_out(vty, "  channel-descrption bs-pa-mfrms %u%s",
+	vty_out(vty, "  channel-description bs-pa-mfrms %u%s",
 		bts->si_common.chan_desc.bs_pa_mfrms + 2, VTY_NEWLINE);
-	vty_out(vty, "  channel-descrption bs-ag-blks-res %u%s",
+	vty_out(vty, "  channel-description bs-ag-blks-res %u%s",
 		bts->si_common.chan_desc.bs_ag_blks_res, VTY_NEWLINE);
 
 	if (bts->ccch_load_ind_thresh != 10)
@@ -2420,7 +2420,7 @@ DEFUN(cfg_bts_rach_max_trans,
 
 DEFUN(cfg_bts_chan_desc_att,
       cfg_bts_chan_desc_att_cmd,
-      "channel-descrption attach (0|1)",
+      "channel-description attach (0|1)",
 	CD_STR
       "Set if attachment is required\n"
       "Attachment is NOT required\n"
@@ -2430,10 +2430,17 @@ DEFUN(cfg_bts_chan_desc_att,
 	bts->si_common.chan_desc.att = atoi(argv[0]);
 	return CMD_SUCCESS;
 }
+ALIAS_DEPRECATED(cfg_bts_chan_desc_att,
+		 cfg_bts_chan_dscr_att_cmd,
+		 "channel-descrption attach (0|1)",
+		 CD_STR
+		 "Set if attachment is required\n"
+		 "Attachment is NOT required\n"
+		 "Attachment is required (standard)\n");
 
 DEFUN(cfg_bts_chan_desc_bs_pa_mfrms,
       cfg_bts_chan_desc_bs_pa_mfrms_cmd,
-      "channel-descrption bs-pa-mfrms <2-9>",
+      "channel-description bs-pa-mfrms <2-9>",
 	CD_STR
       "Set number of multiframe periods for paging groups\n"
       "Number of multiframe periods for paging groups\n")
@@ -2444,10 +2451,16 @@ DEFUN(cfg_bts_chan_desc_bs_pa_mfrms,
 	bts->si_common.chan_desc.bs_pa_mfrms = bs_pa_mfrms - 2;
 	return CMD_SUCCESS;
 }
+ALIAS_DEPRECATED(cfg_bts_chan_desc_bs_pa_mfrms,
+		 cfg_bts_chan_dscr_bs_pa_mfrms_cmd,
+		 "channel-descrption bs-pa-mfrms <2-9>",
+		 CD_STR
+		 "Set number of multiframe periods for paging groups\n"
+		 "Number of multiframe periods for paging groups\n");
 
 DEFUN(cfg_bts_chan_desc_bs_ag_blks_res,
       cfg_bts_chan_desc_bs_ag_blks_res_cmd,
-      "channel-descrption bs-ag-blks-res <0-7>",
+      "channel-description bs-ag-blks-res <0-7>",
 	CD_STR
       "Set number of blocks reserved for access grant\n"
       "Number of blocks reserved for access grant\n")
@@ -2458,6 +2471,12 @@ DEFUN(cfg_bts_chan_desc_bs_ag_blks_res,
 	bts->si_common.chan_desc.bs_ag_blks_res = bs_ag_blks_res;
 	return CMD_SUCCESS;
 }
+ALIAS_DEPRECATED(cfg_bts_chan_desc_bs_ag_blks_res,
+		 cfg_bts_chan_dscr_bs_ag_blks_res_cmd,
+		 "channel-descrption bs-ag-blks-res <0-7>",
+		 CD_STR
+		 "Set number of blocks reserved for access grant\n"
+		 "Number of blocks reserved for access grant\n");
 
 #define CCCH_STR "Common Control Channel\n"
 
@@ -5273,8 +5292,11 @@ int bsc_vty_init(struct gsm_network *network)
 	install_element(BTS_NODE, &cfg_bts_rach_tx_integer_cmd);
 	install_element(BTS_NODE, &cfg_bts_rach_max_trans_cmd);
 	install_element(BTS_NODE, &cfg_bts_chan_desc_att_cmd);
+	install_element(BTS_NODE, &cfg_bts_chan_dscr_att_cmd);
 	install_element(BTS_NODE, &cfg_bts_chan_desc_bs_pa_mfrms_cmd);
+	install_element(BTS_NODE, &cfg_bts_chan_dscr_bs_pa_mfrms_cmd);
 	install_element(BTS_NODE, &cfg_bts_chan_desc_bs_ag_blks_res_cmd);
+	install_element(BTS_NODE, &cfg_bts_chan_dscr_bs_ag_blks_res_cmd);
 	install_element(BTS_NODE, &cfg_bts_ccch_load_ind_thresh_cmd);
 	install_element(BTS_NODE, &cfg_bts_rach_nm_b_thresh_cmd);
 	install_element(BTS_NODE, &cfg_bts_rach_nm_ldavg_cmd);

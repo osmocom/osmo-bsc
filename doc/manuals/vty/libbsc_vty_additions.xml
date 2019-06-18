@@ -34,7 +34,7 @@
 	  Only applies to Ericsson OML2000 based BTSs.
 	</description>
       </command>
-      <command id='channel-descrption attach (0|1)'>
+      <command id='channel-description attach (0|1)'>
         <description>
 	  Configure whether the IMSI ATTACH (and DETACH) procedures
 	  shall be used by MS in this cell.  The default should be enabled.
@@ -160,7 +160,7 @@
 	  0) - which is also the default configuration.</warning>
 	</description>
       </command>
-      <command id='channel-descrption bs-ag-blks-res &lt;0-7&gt;'>
+      <command id='channel-description bs-ag-blks-res &lt;0-7&gt;'>
 	<description>
 	  Using this command, you can specify how many blocks of the
 	  downlink CCCH should be reserved for exclusive usage as AGCH.
