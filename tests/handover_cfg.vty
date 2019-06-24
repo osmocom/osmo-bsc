@@ -145,7 +145,7 @@ network
 
 OsmoBSC(config-net-bts)# ### Verify that 'min rxlev' value range stops at -50
 OsmoBSC(config-net-bts)# handover2 min rxlev ?
-  <-110--50>  minimum RxLev (dBm)
+  <-110--50>  minimum RxLev (dBm; note: negative values)
   default     Use default (-100), remove explicit setting on this node
 OsmoBSC(config-net-bts)# handover2 min rxlev -111
 % Unknown command.
@@ -218,14 +218,14 @@ OsmoBSC(config-net)# handover2 ?
   window            Measurement averaging settings
   power             Neighbor cell power triggering
   maximum           Maximum Timing-Advance value (i.e. MS distance) before triggering HO
-  assignment        Enable or disable in-call channel re-assignment
+  assignment        Enable or disable in-call channel re-assignment within the same cell
   tdma-measurement  Define measurement set of TDMA frames
   min               Minimum Level/Quality thresholds before triggering HO
   afs-bias          Configure bias to prefer AFS (AMR on TCH/F) over other codecs
   min-free-slots    Minimum free TCH timeslots before cell is considered congested
   max-handovers     Maximum number of concurrent handovers allowed per cell
   penalty-time      Set penalty times to wait between repeated handovers
-  retries           Immediately retry on handover/assignment failure
+  retries           Number of times to immediately retry a failed handover/assignment, before a penalty time is applied
   congestion-check  Configure congestion check interval
 
 OsmoBSC(config-net)# handover algorithm ?
@@ -238,22 +238,22 @@ OsmoBSC(config-net)# handover1 window ?
   rxqual  Received-Quality averaging
 
 OsmoBSC(config-net)# handover1 window rxlev ?
-  averaging  How many RxLev measurements are used for averaging
-  neighbor   How many Neighbor RxLev measurements are used for averaging
+  averaging  How many RxLev measurements to use for averaging
+  neighbor   How many Neighbor RxLev measurements to use for averaging
 
 OsmoBSC(config-net)# handover1 window rxlev averaging ?
   <1-10>   RxLev averaging: Number of values to average over
   default  Use default (10), remove explicit setting on this node
 
 OsmoBSC(config-net)# handover1 window rxlev neighbor ?
-  averaging  How many Neighbor RxLev measurements are used for averaging
+  averaging  How many Neighbor RxLev measurements to use for averaging
 
 OsmoBSC(config-net)# handover1 window rxlev neighbor averaging ?
   <1-10>   Neighbor RxLev averaging: Number of values to average over
   default  Use default (10), remove explicit setting on this node
 
 OsmoBSC(config-net)# handover1 window rxqual ?
-  averaging  How many RxQual measurements are used for averaging
+  averaging  How many RxQual measurements to use for averaging
 
 OsmoBSC(config-net)# handover1 window rxqual averaging ?
   <1-10>   RxQual averaging: Number of values to average over
@@ -286,22 +286,22 @@ OsmoBSC(config-net)# handover2 window ?
   rxqual  Received-Quality averaging
 
 OsmoBSC(config-net)# handover2 window rxlev ?
-  averaging  How many RxLev measurements are used for averaging
-  neighbor   How many Neighbor RxLev measurements are used for averaging
+  averaging  How many RxLev measurements to use for averaging
+  neighbor   How many Neighbor RxLev measurements to use for averaging
 
 OsmoBSC(config-net)# handover2 window rxlev averaging ?
   <1-10>   RxLev averaging: Number of values to average over
   default  Use default (10), remove explicit setting on this node
 
 OsmoBSC(config-net)# handover2 window rxlev neighbor ?
-  averaging  How many Neighbor RxLev measurements are used for averaging
+  averaging  How many Neighbor RxLev measurements to use for averaging
 
 OsmoBSC(config-net)# handover2 window rxlev neighbor averaging ?
   <1-10>   Neighbor RxLev averaging: Number of values to average over
   default  Use default (10), remove explicit setting on this node
 
 OsmoBSC(config-net)# handover2 window rxqual ?
-  averaging  How many RxQual measurements are used for averaging
+  averaging  How many RxQual measurements to use for averaging
 
 OsmoBSC(config-net)# handover2 window rxqual averaging ?
   <1-10>   RxQual averaging: Number of values to average over
@@ -344,7 +344,7 @@ OsmoBSC(config-net)# handover2 min ?
   rxqual  How bad may RxQual of an MS become before triggering HO
 
 OsmoBSC(config-net)# handover2 min rxlev ?
-  <-110--50>  minimum RxLev (dBm)
+  <-110--50>  minimum RxLev (dBm; note: negative values)
   default     Use default (-100), remove explicit setting on this node
 
 OsmoBSC(config-net)# handover2 min rxqual ?
@@ -383,9 +383,9 @@ OsmoBSC(config-net)# handover2 max-handovers ?
   default   Use default (9999), remove explicit setting on this node
 
 OsmoBSC(config-net)# handover2 penalty-time ?
-  max-distance       Time to suspend handovers after leaving this cell due to exceeding max distance
-  failed-ho          Time to suspend handovers after handover failure to this cell
-  failed-assignment  Time to suspend handovers after assignment failure in this cell
+  max-distance       Time to suspend handover for a subscriber after leaving this cell due to exceeding max distance; see also 'handover2 retries'
+  failed-ho          Time to suspend handover for a subscriber after a failed handover into this cell; see also 'handover2 retries'
+  failed-assignment  Time to suspend handover for a subscriber after a failed re-assignment within this cell; see also 'handover2 retries'
 
 OsmoBSC(config-net)# handover2 penalty-time max-distance ?
   <0-99999>  Seconds
@@ -404,7 +404,7 @@ OsmoBSC(config-net)# handover2 retries ?
   default  Use default (0), remove explicit setting on this node
 
 OsmoBSC(config-net)# handover2 congestion-check ?
-  disabled  Disable congestion checking, do not handover based on cell overload
+  disabled  Disable congestion checking, do not handover based on cell load. Note: there is one global congestion check interval, i.e. contrary to other handover2 settings, this is not configurable per individual cell.
   <1-999>   Congestion check interval in seconds (default 10)
   now       Manually trigger a congestion check to run right now
 
@@ -437,14 +437,14 @@ OsmoBSC(config-net-bts)# handover2 ?
   window            Measurement averaging settings
   power             Neighbor cell power triggering
   maximum           Maximum Timing-Advance value (i.e. MS distance) before triggering HO
-  assignment        Enable or disable in-call channel re-assignment
+  assignment        Enable or disable in-call channel re-assignment within the same cell
   tdma-measurement  Define measurement set of TDMA frames
   min               Minimum Level/Quality thresholds before triggering HO
   afs-bias          Configure bias to prefer AFS (AMR on TCH/F) over other codecs
   min-free-slots    Minimum free TCH timeslots before cell is considered congested
   max-handovers     Maximum number of concurrent handovers allowed per cell
   penalty-time      Set penalty times to wait between repeated handovers
-  retries           Immediately retry on handover/assignment failure
+  retries           Number of times to immediately retry a failed handover/assignment, before a penalty time is applied
 
 OsmoBSC(config-net-bts)# handover algorithm ?
   1        Algorithm 1: trigger handover based on comparing current cell and neighbor RxLev and RxQual, only.
@@ -456,22 +456,22 @@ OsmoBSC(config-net-bts)# handover1 window ?
   rxqual  Received-Quality averaging
 
 OsmoBSC(config-net-bts)# handover1 window rxlev ?
-  averaging  How many RxLev measurements are used for averaging
-  neighbor   How many Neighbor RxLev measurements are used for averaging
+  averaging  How many RxLev measurements to use for averaging
+  neighbor   How many Neighbor RxLev measurements to use for averaging
 
 OsmoBSC(config-net-bts)# handover1 window rxlev averaging ?
   <1-10>   RxLev averaging: Number of values to average over
   default  Use default (10), remove explicit setting on this node
 
 OsmoBSC(config-net-bts)# handover1 window rxlev neighbor ?
-  averaging  How many Neighbor RxLev measurements are used for averaging
+  averaging  How many Neighbor RxLev measurements to use for averaging
 
 OsmoBSC(config-net-bts)# handover1 window rxlev neighbor averaging ?
   <1-10>   Neighbor RxLev averaging: Number of values to average over
   default  Use default (10), remove explicit setting on this node
 
 OsmoBSC(config-net-bts)# handover1 window rxqual ?
-  averaging  How many RxQual measurements are used for averaging
+  averaging  How many RxQual measurements to use for averaging
 
 OsmoBSC(config-net-bts)# handover1 window rxqual averaging ?
   <1-10>   RxQual averaging: Number of values to average over
@@ -504,22 +504,22 @@ OsmoBSC(config-net-bts)# handover2 window ?
   rxqual  Received-Quality averaging
 
 OsmoBSC(config-net-bts)# handover2 window rxlev ?
-  averaging  How many RxLev measurements are used for averaging
-  neighbor   How many Neighbor RxLev measurements are used for averaging
+  averaging  How many RxLev measurements to use for averaging
+  neighbor   How many Neighbor RxLev measurements to use for averaging
 
 OsmoBSC(config-net-bts)# handover2 window rxlev averaging ?
   <1-10>   RxLev averaging: Number of values to average over
   default  Use default (10), remove explicit setting on this node
 
 OsmoBSC(config-net-bts)# handover2 window rxlev neighbor ?
-  averaging  How many Neighbor RxLev measurements are used for averaging
+  averaging  How many Neighbor RxLev measurements to use for averaging
 
 OsmoBSC(config-net-bts)# handover2 window rxlev neighbor averaging ?
   <1-10>   Neighbor RxLev averaging: Number of values to average over
   default  Use default (10), remove explicit setting on this node
 
 OsmoBSC(config-net-bts)# handover2 window rxqual ?
-  averaging  How many RxQual measurements are used for averaging
+  averaging  How many RxQual measurements to use for averaging
 
 OsmoBSC(config-net-bts)# handover2 window rxqual averaging ?
   <1-10>   RxQual averaging: Number of values to average over
@@ -562,7 +562,7 @@ OsmoBSC(config-net-bts)# handover2 min ?
   rxqual  How bad may RxQual of an MS become before triggering HO
 
 OsmoBSC(config-net-bts)# handover2 min rxlev ?
-  <-110--50>  minimum RxLev (dBm)
+  <-110--50>  minimum RxLev (dBm; note: negative values)
   default     Use default (-100), remove explicit setting on this node
 
 OsmoBSC(config-net-bts)# handover2 min rxqual ?
@@ -601,9 +601,9 @@ OsmoBSC(config-net-bts)# handover2 max-handovers ?
   default   Use default (9999), remove explicit setting on this node
 
 OsmoBSC(config-net-bts)# handover2 penalty-time ?
-  max-distance       Time to suspend handovers after leaving this cell due to exceeding max distance
-  failed-ho          Time to suspend handovers after handover failure to this cell
-  failed-assignment  Time to suspend handovers after assignment failure in this cell
+  max-distance       Time to suspend handover for a subscriber after leaving this cell due to exceeding max distance; see also 'handover2 retries'
+  failed-ho          Time to suspend handover for a subscriber after a failed handover into this cell; see also 'handover2 retries'
+  failed-assignment  Time to suspend handover for a subscriber after a failed re-assignment within this cell; see also 'handover2 retries'
 
 OsmoBSC(config-net-bts)# handover2 penalty-time max-distance ?
   <0-99999>  Seconds

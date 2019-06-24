@@ -434,7 +434,8 @@ with the next Measurement Report received.
 
 Configuration settings relevant for algorithm 1 start with `handover1`. For
 further details, please refer to the OsmoBSC VTY Reference
-(<<vty-ref-osmobsc>>) or the telnet VTY online documentation.
+(<<vty-ref-osmobsc>>) or the telnet VTY online documentation. See the
+`handover1` settings on the `config-net` and `config-net-bts` nodes.
 
 ==== Handover Algorithm 2
 
@@ -451,7 +452,8 @@ configurable (see `handover2 penalty-time` configuration items).
 
 Configuration settings relevant for algorithm 2 start with `handover2`. For
 further details, please refer to the OsmoBSC VTY Reference
-<<vty-ref-osmobsc>> or the telnet VTY online documentation.
+<<vty-ref-osmobsc>> or the telnet VTY online documentation. See the `handover2`
+settings on the `config-net` and `config-net-bts` nodes.
 
 ===== Load Distribution
 
@@ -472,8 +474,8 @@ In either case, load distribution will only occur towards neighbor cells that
 adhere to minimum reception levels and distance, see `min rxlev` and `max
 distance`.
 
-Load distribution will take effect only for already established voice channels.
-An MS will always first establish a voice call with its current cell choice; in
+Load distribution will take effect only for already established channels.
+For example, an MS will always first establish a voice call with its current cell choice; in
 load situations, it might be moved to another cell shortly after that.
 Considering the best neighbor _before_ starting a new voice call might be
 desirable, but is currently not implemented. Consider that RXLEV/RXQUAL ratings

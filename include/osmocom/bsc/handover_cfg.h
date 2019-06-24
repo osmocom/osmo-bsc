@@ -96,22 +96,22 @@ static inline const char *tdma2a(bool val)
 		"handover1 ", "window rxlev averaging", "<1-10>", atoi, "%u", as_is, \
 		HO_CFG_STR_HANDOVER1 \
 		HO_CFG_STR_WIN_RXLEV \
-		"How many RxLev measurements are used for averaging\n" \
+		"How many RxLev measurements to use for averaging\n" \
 		"RxLev averaging: " HO_CFG_STR_AVG_COUNT) \
 	\
 	HO_CFG_ONE_MEMBER(unsigned int, hodec1_rxqual_avg_win, 1, \
 		"handover1 ", "window rxqual averaging", "<1-10>", atoi, "%u", as_is, \
 		HO_CFG_STR_HANDOVER1 \
 		HO_CFG_STR_WIN_RXQUAL \
-		"How many RxQual measurements are used for averaging\n" \
+		"How many RxQual measurements to use for averaging\n" \
 		"RxQual averaging: " HO_CFG_STR_AVG_COUNT) \
 	\
 	HO_CFG_ONE_MEMBER(unsigned int, hodec1_rxlev_neigh_avg_win, 10, \
 		"handover1 ", "window rxlev neighbor averaging", "<1-10>", atoi, "%u", as_is, \
 		HO_CFG_STR_HANDOVER1 \
 		HO_CFG_STR_WIN_RXLEV \
-		"How many Neighbor RxLev measurements are used for averaging\n" \
-		"How many Neighbor RxLev measurements are used for averaging\n" \
+		"How many Neighbor RxLev measurements to use for averaging\n" \
+		"How many Neighbor RxLev measurements to use for averaging\n" \
 		"Neighbor RxLev averaging: " HO_CFG_STR_AVG_COUNT) \
 	\
 	HO_CFG_ONE_MEMBER(unsigned int, hodec1_pwr_interval, 6, \
@@ -142,22 +142,22 @@ static inline const char *tdma2a(bool val)
 		"handover2 ", "window rxlev averaging", "<1-10>", atoi, "%u", as_is, \
 		HO_CFG_STR_HANDOVER2 \
 		HO_CFG_STR_WIN_RXLEV \
-		"How many RxLev measurements are used for averaging\n" \
+		"How many RxLev measurements to use for averaging\n" \
 		"RxLev averaging: " HO_CFG_STR_AVG_COUNT) \
 	\
 	HO_CFG_ONE_MEMBER(unsigned int, hodec2_rxqual_avg_win, 1, \
 		"handover2 ", "window rxqual averaging", "<1-10>", atoi, "%u", as_is, \
 		HO_CFG_STR_HANDOVER2 \
 		HO_CFG_STR_WIN_RXQUAL \
-		"How many RxQual measurements are used for averaging\n" \
+		"How many RxQual measurements to use for averaging\n" \
 		"RxQual averaging: " HO_CFG_STR_AVG_COUNT) \
 	\
 	HO_CFG_ONE_MEMBER(unsigned int, hodec2_rxlev_neigh_avg_win, 10, \
 		"handover2 ", "window rxlev neighbor averaging", "<1-10>", atoi, "%u", as_is, \
 		HO_CFG_STR_HANDOVER2 \
 		HO_CFG_STR_WIN_RXLEV \
-		"How many Neighbor RxLev measurements are used for averaging\n" \
-		"How many Neighbor RxLev measurements are used for averaging\n" \
+		"How many Neighbor RxLev measurements to use for averaging\n" \
+		"How many Neighbor RxLev measurements to use for averaging\n" \
 		"Neighbor RxLev averaging: " HO_CFG_STR_AVG_COUNT) \
 	\
 	HO_CFG_ONE_MEMBER(unsigned int, hodec2_pwr_interval, 6, \
@@ -184,7 +184,7 @@ static inline const char *tdma2a(bool val)
 	HO_CFG_ONE_MEMBER(bool, hodec2_as_active, 0, \
 		"handover2 ", "assignment", "0|1", a2bool, "%d", bool2i, \
 		HO_CFG_STR_HANDOVER2 \
-		"Enable or disable in-call channel re-assignment\n" \
+		"Enable or disable in-call channel re-assignment within the same cell\n" \
 		"Disable in-call assignment\n" \
 		"Enable in-call assignment\n") \
 	\
@@ -200,7 +200,7 @@ static inline const char *tdma2a(bool val)
 		HO_CFG_STR_HANDOVER2 \
 		HO_CFG_STR_MIN \
 		"How weak may RxLev of an MS become before triggering HO\n" \
-		"minimum RxLev (dBm)\n") \
+		"minimum RxLev (dBm; note: negative values)\n") \
 	\
 	HO_CFG_ONE_MEMBER(int, hodec2_min_rxqual, 5, \
 		"handover2 ", "min rxqual", "<0-7>", atoi, "%d", as_is, \
@@ -247,27 +247,30 @@ static inline const char *tdma2a(bool val)
 		"handover2 ", "penalty-time max-distance", "<0-99999>", atoi, "%d", as_is, \
 		HO_CFG_STR_HANDOVER2 \
 		HO_CFG_STR_PENALTY_TIME \
-		"Time to suspend handovers after leaving this cell due to exceeding max distance\n" \
+		"Time to suspend handover for a subscriber after leaving this cell due to exceeding max distance;" \
+		" see also 'handover2 retries'\n" \
 		"Seconds\n") \
 	\
 	HO_CFG_ONE_MEMBER(int, hodec2_penalty_failed_ho, 60, \
 		"handover2 ", "penalty-time failed-ho", "<0-99999>", atoi, "%d", as_is, \
 		HO_CFG_STR_HANDOVER2 \
 		HO_CFG_STR_PENALTY_TIME \
-		"Time to suspend handovers after handover failure to this cell\n" \
+		"Time to suspend handover for a subscriber after a failed handover into this cell;" \
+		" see also 'handover2 retries'\n" \
 		"Seconds\n") \
 	\
 	HO_CFG_ONE_MEMBER(int, hodec2_penalty_failed_as, 60, \
 		"handover2 ", "penalty-time failed-assignment", "<0-99999>", atoi, "%d", as_is, \
 		HO_CFG_STR_HANDOVER2 \
 		HO_CFG_STR_PENALTY_TIME \
-		"Time to suspend handovers after assignment failure in this cell\n" \
+		"Time to suspend handover for a subscriber after a failed re-assignment within this cell;" \
+		" see also 'handover2 retries'\n" \
 		"Seconds\n") \
 	\
 	HO_CFG_ONE_MEMBER(int, hodec2_retries, 0, \
 		"handover2 ", "retries", "<0-9>", atoi, "%d", as_is, \
 		HO_CFG_STR_HANDOVER2 \
-		"Immediately retry on handover/assignment failure\n" \
+		"Number of times to immediately retry a failed handover/assignment, before a penalty time is applied\n" \
 		"Number of retries\n") \
 
 #define HO_CFG_ALL_MEMBERS \
