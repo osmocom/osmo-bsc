@@ -133,8 +133,12 @@ int gscon_sigtran_send(struct gsm_subscriber_connection *conn, struct msgb *msg)
 static void gscon_bssmap_clear(struct gsm_subscriber_connection *conn,
 			       enum gsm0808_cause cause)
 {
-	struct msgb *resp = gsm0808_create_clear_rqst(cause);
+
+	struct msgb *resp;
 	int rc;
+
+	LOGPFSML(conn->fi, LOGL_DEBUG, "Tx BSSMAP CLEAR REQUEST(%s) to MSC\n", gsm0808_cause_name(cause));
+	resp = gsm0808_create_clear_rqst(cause);
 	if (!resp) {
 		LOGPFSML(conn->fi, LOGL_ERROR, "Unable to compose BSSMAP Clear Request message\n");
 		return;
