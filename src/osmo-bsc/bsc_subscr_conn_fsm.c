@@ -984,7 +984,6 @@ static void gsm0808_send_rsl_dtap(struct gsm_subscriber_connection *conn,
 {
 	uint8_t sapi;
 	int rc;
-	struct msgb *resp = NULL;
 
 	if (!conn->lchan) {
 		LOGP(DMSC, LOGL_ERROR,
@@ -1027,8 +1026,7 @@ static void gsm0808_send_rsl_dtap(struct gsm_subscriber_connection *conn,
 
 failed_to_send:
 	LOGPFSML(conn->fi, LOGL_ERROR, "Tx BSSMAP CLEAR REQUEST to MSC\n");
-	resp = gsm0808_create_clear_rqst(GSM0808_CAUSE_EQUIPMENT_FAILURE);
-	gscon_sigtran_send(conn, resp);
+	gscon_bssmap_clear(conn, GSM0808_CAUSE_EQUIPMENT_FAILURE);
 	osmo_fsm_inst_state_chg(conn->fi, ST_ACTIVE, 0, 0);
 }
 
