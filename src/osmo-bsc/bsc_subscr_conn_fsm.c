@@ -343,13 +343,6 @@ static void gscon_fsm_wait_cc(struct osmo_fsm_inst *fi, uint32_t event, void *da
 	}
 }
 
-static void gscon_fsm_active_onenter(struct osmo_fsm_inst *fi, uint32_t prev_state)
-{
-	struct gsm_subscriber_connection *conn = fi->priv;
-	if (!conn->lchan)
-		gscon_bssmap_clear(conn, GSM0808_CAUSE_EQUIPMENT_FAILURE);
-}
-
 /* We're on an active subscriber connection, passing DTAP back and forth */
 static void gscon_fsm_active(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
@@ -605,7 +598,6 @@ static const struct osmo_fsm_state gscon_fsm_states[] = {
 				 S(GSCON_EV_HANDOVER_START),
 		.out_state_mask = S(ST_CLEARING) | S(ST_ASSIGNMENT) |
 				  S(ST_HANDOVER),
-		.onenter = gscon_fsm_active_onenter,
 		.action = gscon_fsm_active,
 	},
 	[ST_ASSIGNMENT] = {
