@@ -10,7 +10,6 @@ void bsc_sapi_n_reject(struct gsm_subscriber_connection *conn, int dlci);
 void bsc_cipher_mode_compl(struct gsm_subscriber_connection *conn, struct msgb *msg, uint8_t chosen_encr);
 int bsc_compl_l3(struct gsm_subscriber_connection *conn, struct msgb *msg, uint16_t chosen_channel);
 void bsc_dtap(struct gsm_subscriber_connection *conn, uint8_t link_id, struct msgb *msg);
-int bsc_clear_request(struct gsm_subscriber_connection *conn, uint32_t cause);
 void bsc_cm_update(struct gsm_subscriber_connection *conn,
 		   const uint8_t *cm2, uint8_t cm2_len,
 		   const uint8_t *cm3, uint8_t cm3_len);

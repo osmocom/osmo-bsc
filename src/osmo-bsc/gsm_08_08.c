@@ -509,6 +509,8 @@ early_fail:
 	return false;
 }
 
+static int bsc_clear_request(struct gsm_subscriber_connection *conn, uint32_t cause);
+
 /*
  * Plastic surgery... we want to give up the current connection
  */
@@ -635,8 +637,8 @@ done:
 	return;
 }
 
-/*! BSC->MSC: RR conn has been cleared. */
-int bsc_clear_request(struct gsm_subscriber_connection *conn, uint32_t cause)
+/*! BSSMAP Clear Request for legacy code paths, instead see gscon_bssmap_clear(). */
+static int bsc_clear_request(struct gsm_subscriber_connection *conn, uint32_t cause)
 {
 	int rc;
 	struct msgb *resp;

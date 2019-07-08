@@ -243,8 +243,6 @@ int bsc_compl_l3(struct gsm_subscriber_connection *conn, struct msgb *msg, uint1
 void bsc_dtap(struct gsm_subscriber_connection *conn, uint8_t link_id, struct msgb *msg) {}
 void bsc_assign_compl(struct gsm_subscriber_connection *conn, uint8_t rr_cause) {}
 void bsc_assign_fail(struct gsm_subscriber_connection *conn, uint8_t cause, uint8_t *rr_cause) {}
-int bsc_clear_request(struct gsm_subscriber_connection *conn, uint32_t cause)
-{ return 0; }
 void bsc_cm_update(struct gsm_subscriber_connection *conn,
 		   const uint8_t *cm2, uint8_t cm2_len,
 		   const uint8_t *cm3, uint8_t cm3_len) {}
