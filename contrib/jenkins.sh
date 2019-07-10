@@ -61,6 +61,7 @@ LD_LIBRARY_PATH="$inst/lib" \
   DISTCHECK_CONFIGURE_FLAGS="--enable-vty-tests --enable-external-tests --enable-werror $CONFIG" \
   $MAKE distcheck \
   || cat-testlogs.sh
+$MAKE maintainer-clean
 
 if [ "$WITH_MANUALS" = "1" ] && [ "$PUBLISH" = "1" ]; then
 	make -C "$base/doc/manuals" publish
