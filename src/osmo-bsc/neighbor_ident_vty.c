@@ -372,6 +372,82 @@ static int del_by_key(struct vty *vty, const struct neighbor_ident_key *key)
 	return CMD_SUCCESS;
 }
 
+struct nil_match_bts_data {
+	int bts_nr;
+	const struct neighbor_ident_key *found;
+};
+
+static bool nil_match_bts(const struct neighbor_ident_key *key,
+			  const struct gsm0808_cell_id_list2 *val,
+			  void *cb_data)
+{
+	struct nil_match_bts_data *d = cb_data;
+	if (key->from_bts == d->bts_nr) {
+		d->found = key;
+		return false;
+	}
+	return true;
+}
+
+static int neighbor_del_all(struct vty *vty)
+{
+	int rc;
+	int removed = 0;
+	struct gsm_bts *bts = vty->index;
+
+	OSMO_ASSERT((vty->node == BTS_NODE) && bts);
+
+	/* Remove all local neighbors and print to VTY for the user to know what changed */
+	while (1) {
+		struct gsm_bts_ref *neigh = llist_first_entry_or_null(&bts->local_neighbors, struct gsm_bts_ref, entry);
+		struct gsm_bts *neigh_bts;
+		if (!neigh)
+			break;
+
+		neigh_bts = neigh->bts;
+		OSMO_ASSERT(neigh_bts);
+
+		/* It would be more efficient to just llist_del() the gsm_bts_ref directly, but for the sake of
+		 * safe/sane API use and against code dup, rather invoke the central gsm_bts_local_neighbor_del()
+		 * function intended for this task. */
+		rc = gsm_bts_local_neighbor_del(bts, neigh_bts);
+		if (rc > 0) {
+			vty_out(vty, "%% Removed local neighbor bts %u to bts %u%s",
+				bts->nr, neigh_bts->nr, VTY_NEWLINE);
+			removed += rc;
+		} else {
+			vty_out(vty, "%% Error while removing local neigbor bts %u to bts %u, aborted%s",
+				bts->nr, neigh_bts->nr, VTY_NEWLINE);
+			return CMD_WARNING;
+		}
+	}
+
+	/* Remove all remote-BSS neighbors */
+	while (1) {
+		struct neighbor_ident_key k;
+		struct nil_match_bts_data d = {
+			.bts_nr = bts->nr,
+		};
+		neighbor_ident_iter(g_neighbor_cells, nil_match_bts, &d);
+		if (!d.found)
+			break;
+		k = *d.found;
+		if (neighbor_ident_del(g_neighbor_cells, &k)) {
+			vty_out(vty, "%% Removed remote BSS neighbor %s%s",
+				neighbor_ident_key_name(&k), VTY_NEWLINE);
+			removed++;
+		} else {
+			vty_out(vty, "%% Error while removing remote BSS neighbor %s, aborted%s",
+				neighbor_ident_key_name(&k), VTY_NEWLINE);
+			return CMD_WARNING;
+		}
+	}
+
+	if (!removed)
+		vty_out(vty, "%% No neighbors configured%s", VTY_NEWLINE);
+	return CMD_SUCCESS;
+}
+
 DEFUN(cfg_neighbor_add_lac_arfcn_bsic, cfg_neighbor_add_lac_arfcn_bsic_cmd,
 	NEIGHBOR_ADD_CMD LAC_PARAMS " " NEIGHBOR_IDENT_VTY_KEY_PARAMS,
 	NEIGHBOR_ADD_DOC LAC_DOC NEIGHBOR_IDENT_VTY_KEY_DOC)
@@ -428,6 +504,15 @@ DEFUN(cfg_neighbor_del_arfcn_bsic, cfg_neighbor_del_arfcn_bsic_cmd,
 		return CMD_WARNING;
 
 	return del_by_key(vty, &key);
+}
+
+DEFUN(cfg_neighbor_del_all, cfg_neighbor_del_all_cmd,
+	"no neighbors",
+	NO_STR
+	"Remove all local and remote-BSS neighbor config for this cell."
+	" Note that this falls back to the legacy behavior of regarding all local cells as neighbors.\n")
+{
+	return neighbor_del_all(vty);
 }
 
 struct write_neighbor_ident_entry_data {
@@ -576,5 +661,6 @@ void neighbor_ident_vty_init(struct gsm_network *net, struct neighbor_ident_list
 	install_element(BTS_NODE, &cfg_neighbor_add_cgi_arfcn_bsic_cmd);
 	install_element(BTS_NODE, &cfg_neighbor_del_bts_nr_cmd);
 	install_element(BTS_NODE, &cfg_neighbor_del_arfcn_bsic_cmd);
+	install_element(BTS_NODE, &cfg_neighbor_del_all_cmd);
 	install_element_ve(&show_bts_neighbor_cmd);
 }

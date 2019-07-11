@@ -89,6 +89,7 @@ OsmoBSC(config-net-bts)# list
   neighbor cgi <0-999> <0-999> <0-65535> <0-65535> arfcn <0-1023> bsic (<0-63>|any)
   no neighbor bts <0-255>
   no neighbor arfcn <0-1023> bsic (<0-63>|any)
+  no neighbors
 ...
 
 OsmoBSC(config-net-bts)# neighbor?
@@ -157,6 +158,9 @@ OsmoBSC(config-net-bts)# neighbor cgi 0 0 0 0 arfcn 0 bsic ?
   any     for all BSICs / use any BSIC in this ARFCN
 OsmoBSC(config-net-bts)# neighbor cgi 0 0 0 0 arfcn 0 bsic 0 ?
   <cr>  
+
+OsmoBSC(config-net-bts)# no neighbors?
+  neighbors  Remove all local and remote-BSS neighbor config for this cell. Note that this falls back to the legacy behavior of regarding all local cells as neighbors.
 
 OsmoBSC(config-net-bts)# no neighbor?
   neighbor  Remove local or remote-BSS neighbor cell
@@ -329,6 +333,27 @@ OsmoBSC(config-net-bts)# show running-config
 
 OsmoBSC(config-net-bts)# no neighbor arfcn 42 bsic 12
 % Removed local neighbor bts 0 to bts 2
+
+OsmoBSC(config-net-bts)# show running-config
+... !neighbor 
+
+OsmoBSC(config-net-bts)# neighbor bts 1
+% BTS 0 now has local neighbor BTS 1 with LAC 21 CI 31 and ARFCN 41 BSIC 11
+OsmoBSC(config-net-bts)# neighbor bts 2
+% BTS 0 now has local neighbor BTS 2 with LAC 22 CI 65535 and ARFCN 42 BSIC 12
+OsmoBSC(config-net-bts)# neighbor cgi 023 42 423 5 arfcn 23 bsic 42
+% BTS 0 to ARFCN 23 BSIC 42 now has 1 remote BSS Cell Identifier List entry
+OsmoBSC(config-net-bts)# neighbor lac 456 arfcn 123 bsic 45
+% BTS 0 to ARFCN 123 BSIC 45 now has 1 remote BSS Cell Identifier List entry
+OsmoBSC(config-net-bts)# neighbor lac-ci 789 10 arfcn 423 bsic any
+% BTS 0 to ARFCN 423 (any BSIC) now has 1 remote BSS Cell Identifier List entry
+
+OsmoBSC(config-net-bts)# no neighbors
+% Removed local neighbor bts 0 to bts 1
+% Removed local neighbor bts 0 to bts 2
+% Removed remote BSS neighbor BTS 0 to ARFCN 23 BSIC 42
+% Removed remote BSS neighbor BTS 0 to ARFCN 123 BSIC 45
+% Removed remote BSS neighbor BTS 0 to ARFCN 423 (any BSIC)
 
 OsmoBSC(config-net-bts)# show running-config
 ... !neighbor 
