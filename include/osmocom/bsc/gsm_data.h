@@ -1505,7 +1505,7 @@ struct gsm_network {
 	struct llist_head bts_list;
 	struct llist_head bts_rejected;
 
-	/* shall reference gsm_network_T[] */
+	/* see gsm_network_T_defs */
 	struct osmo_tdef *T_defs;
 
 	enum gsm_chan_t ctype_by_chreq[_NUM_CHREQ_T];

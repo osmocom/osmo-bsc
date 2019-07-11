@@ -200,7 +200,8 @@ void handover_request(struct handover_out_req *req)
 	conn = req->old_lchan->conn;
 	OSMO_ASSERT(conn && conn->fi);
 
-	/* To make sure we're allowed to start a handover, go through a gscon event dispatch. */
+	/* To make sure we're allowed to start a handover, go through a gscon event dispatch. If that is accepted, the
+	 * same req is passed to handover_start(). */
 	osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_HANDOVER_START, req);
 }
 
