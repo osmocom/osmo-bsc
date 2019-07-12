@@ -250,3 +250,5 @@ void gscon_submit_rsl_dtap(struct gsm_subscriber_connection *conn,
 			   struct msgb *msg, int link_id, int allow_sacch) {}
 void ts_fsm_alloc(struct gsm_bts_trx_ts *ts) {}
 void lchan_activate(struct gsm_lchan *lchan, void *info) {}
+bool neighbor_ident_bts_entry_exists(uint8_t from_bts) { return false; }
+const char *handover_status(struct gsm_subscriber_connection *conn) { return "x"; }

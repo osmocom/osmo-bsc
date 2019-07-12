@@ -4,18 +4,6 @@
 #include <osmocom/bsc/debug.h>
 #include <osmocom/bsc/handover.h>
 
-const char *handover_status(struct gsm_subscriber_connection *conn);
-
-/* This macro automatically includes a final \n, if omitted. */
-#define LOG_HO(conn, level, fmt, args...) do { \
-	if (conn->ho.fi) \
-		LOGPFSML(conn->ho.fi, level, "%s: " fmt, \
-			 handover_status(conn), ## args); \
-	else \
-		LOGP(DHODEC, level, "%s: " fmt, \
-		     handover_status(conn), ## args); \
-	} while(0)
-
 /* Terminology:
  * Intra-Cell: stays within one BTS, this should actually be an Assignment.
  * Intra-BSC: stays within one BSC, but moves between BTSes.

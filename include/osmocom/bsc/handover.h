@@ -10,6 +10,15 @@
 #include <osmocom/bsc/neighbor_ident.h>
 #include <osmocom/bsc/gsm_data.h>
 
+#define LOG_HO(conn, level, fmt, args...) do { \
+	if (conn->ho.fi) \
+		LOGPFSML(conn->ho.fi, level, "%s: " fmt, \
+			 handover_status(conn), ## args); \
+	else \
+		LOGP(DHODEC, level, "%s: " fmt, \
+		     handover_status(conn), ## args); \
+	} while(0)
+
 struct gsm_network;
 struct gsm_lchan;
 struct gsm_bts;
@@ -24,6 +33,8 @@ enum handover_result {
 	HO_RESULT_CONN_RELEASE,
 	HO_RESULT_ERROR,
 };
+
+const char *handover_status(struct gsm_subscriber_connection *conn);
 
 extern const struct value_string handover_result_names[];
 inline static const char *handover_result_name(enum handover_result val)
@@ -70,8 +81,11 @@ enum handover_result bsc_tx_bssmap_ho_complete(struct gsm_subscriber_connection 
 					       struct gsm_lchan *lchan);
 void bsc_tx_bssmap_ho_failure(struct gsm_subscriber_connection *conn);
 
-struct gsm_bts *bts_by_neighbor_ident(const struct gsm_network *net,
-				      const struct neighbor_ident_key *search_for);
+int find_handover_target_cell(struct gsm_bts **local_target_cell_p,
+			      const struct gsm0808_cell_id_list2 **remote_target_cell_p,
+			      struct gsm_subscriber_connection *conn, const struct neighbor_ident_key *search_for,
+			      bool log_errors);
+
 struct neighbor_ident_key *bts_ident_key(const struct gsm_bts *bts);
 
 void handover_parse_inter_bsc_mt(struct gsm_subscriber_connection *conn,

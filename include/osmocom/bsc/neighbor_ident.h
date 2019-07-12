@@ -47,6 +47,8 @@ void neighbor_ident_iter(const struct neighbor_ident_list *nil,
 void neighbor_ident_vty_init(struct gsm_network *net, struct neighbor_ident_list *nil);
 void neighbor_ident_vty_write(struct vty *vty, const char *indent, struct gsm_bts *bts);
 
+bool neighbor_ident_bts_entry_exists(uint8_t from_bts);
+
 #define NEIGHBOR_IDENT_VTY_KEY_PARAMS "arfcn <0-1023> bsic (<0-63>|any)"
 #define NEIGHBOR_IDENT_VTY_KEY_DOC \
 	"ARFCN of neighbor cell\n" "ARFCN value\n" \

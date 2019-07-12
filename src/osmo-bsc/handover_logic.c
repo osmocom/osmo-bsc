@@ -125,42 +125,205 @@ int bts_handover_count(struct gsm_bts *bts, int ho_scopes)
 	return count;
 }
 
-struct gsm_bts *bts_by_neighbor_ident(const struct gsm_network *net,
-				      const struct neighbor_ident_key *search_for)
+/* Find out a handover target cell for the given neighbor_ident_key,
+ * and make sure there are no ambiguous matches.
+ * Given a source BTS and a target ARFCN+BSIC, find which cell is the right handover target.
+ * ARFCN+BSIC may be re-used within and/or across BSS, so make sure that only those cells that are explicitly
+ * listed as neighbor of the source cell are viable handover targets.
+ * The (legacy) default configuration is that, when no explicit neighbors are listed, that all local cells are
+ * neighbors, in which case each ARFCN+BSIC must exist at most once.
+ * If there is more than one viable handover target cell found for the given ARFCN+BSIC, that constitutes a
+ * configuration error and should not result in handover, so that the system's misconfiguration is more likely
+ * to be found.
+ */
+int find_handover_target_cell(struct gsm_bts **local_target_cell_p,
+			      const struct gsm0808_cell_id_list2 **remote_target_cell_p,
+			      struct gsm_subscriber_connection *conn, const struct neighbor_ident_key *search_for,
+			      bool log_errors)
 {
-	struct gsm_bts *found = NULL;
-	struct gsm_bts *bts;
-	struct gsm_bts *wildcard_match = NULL;
+	struct gsm_network *net = conn->network;
+	struct gsm_bts *from_bts;
+	struct gsm_bts *local_target_cell = NULL;
+	const struct gsm0808_cell_id_list2 *remote_target_cell = NULL;
+	struct gsm_bts_ref *neigh;
+	bool ho_active;
+	bool as_active;
 
-	llist_for_each_entry(bts, &net->bts_list, list) {
-		struct neighbor_ident_key entry = {
-			.from_bts = NEIGHBOR_IDENT_KEY_ANY_BTS,
-			.arfcn = bts->c0->arfcn,
-			.bsic = bts->bsic,
-		};
-		if (neighbor_ident_key_match(&entry, search_for, true)) {
-			if (found) {
-				LOGP(DHO, LOGL_ERROR, "CONFIG ERROR: Multiple BTS match %s: %d and %d\n",
-				     neighbor_ident_key_name(search_for),
-				     found->nr, bts->nr);
-				return found;
-			}
-			found = bts;
-		}
-		if (neighbor_ident_key_match(&entry, search_for, false))
-			wildcard_match = bts;
+	if (local_target_cell_p)
+		*local_target_cell_p = NULL;
+	if (remote_target_cell_p)
+		*remote_target_cell_p = NULL;
+
+	if (!search_for) {
+		if (log_errors)
+			LOG_HO(conn, LOGL_ERROR, "Handover without target cell\n");
+		return -EINVAL;
 	}
 
-	if (found)
-		return found;
+	from_bts = gsm_bts_num(net, search_for->from_bts);
+	if (!from_bts) {
+		if (log_errors)
+			LOG_HO(conn, LOGL_ERROR, "Handover without source cell\n");
+		return -EINVAL;
+	}
 
-	return wildcard_match;
+	ho_active = ho_get_ho_active(from_bts->ho);
+	as_active = (ho_get_algorithm(from_bts->ho) == 2)
+		&& ho_get_hodec2_as_active(from_bts->ho);
+	if (!ho_active && !as_active) {
+		if (log_errors)
+			LOG_HO(conn, LOGL_ERROR, "Cannot start Handover: Handover and Assignment disabled for this source cell (%s)\n",
+			       neighbor_ident_key_name(search_for));
+		return -EINVAL;
+	}
+
+	if (llist_empty(&from_bts->local_neighbors)
+	    && !neighbor_ident_bts_entry_exists(from_bts->nr)) {
+		/* No explicit neighbor entries exist for this BTS. Hence apply the legacy default behavior that all
+		 * local cells are neighbors. */
+		struct gsm_bts *bts;
+		struct gsm_bts *wildcard_match = NULL;
+
+		LOG_HO(conn, LOGL_DEBUG, "No explicit neighbors, regarding all local cells as neighbors\n");
+
+		llist_for_each_entry(bts, &net->bts_list, list) {
+			struct neighbor_ident_key bts_key = *bts_ident_key(bts);
+			if (neighbor_ident_key_match(&bts_key, search_for, true)) {
+				if (local_target_cell) {
+					if (log_errors)
+						LOG_HO(conn, LOGL_ERROR,
+						       "NEIGHBOR CONFIGURATION ERROR: Multiple local cells match %s"
+						       " (BTS %d and BTS %d)."
+						       " Aborting Handover because of ambiguous network topology.\n",
+						       neighbor_ident_key_name(search_for),
+						       local_target_cell->nr, bts->nr);
+					return -EINVAL;
+				}
+				local_target_cell = bts;
+			}
+			if (neighbor_ident_key_match(&bts_key, search_for, false))
+				wildcard_match = bts;
+		}
+
+		if (!local_target_cell)
+			local_target_cell = wildcard_match;
+
+		if (!local_target_cell) {
+			if (log_errors)
+				LOG_HO(conn, LOGL_ERROR, "Cannot Handover, no cell matches %s\n",
+				       neighbor_ident_key_name(search_for));
+			return -EINVAL;
+		}
+
+		if (local_target_cell == from_bts && !as_active) {
+			if (log_errors)
+				LOG_HO(conn, LOGL_ERROR,
+				       "Cannot start re-assignment, Assignment disabled for this cell (%s)\n",
+				       neighbor_ident_key_name(search_for));
+			return -EINVAL;
+		}
+		if (local_target_cell != from_bts && !ho_active) {
+			if (log_errors)
+				LOG_HO(conn, LOGL_ERROR,
+				       "Cannot start Handover, Handover disabled for this cell (%s)\n",
+				       neighbor_ident_key_name(search_for));
+			return -EINVAL;
+		}
+
+		if (local_target_cell_p)
+			*local_target_cell_p = local_target_cell;
+		return 0;
+	}
+
+	/* One or more local- or remote-BSS cell neighbors are configured. Find a match among those, but also detect
+	 * ambiguous matches (if multiple cells match, it is a configuration error). */
+
+	LOG_HO(conn, LOGL_DEBUG, "There are explicit neighbors configured for this cell\n");
+
+	/* Iterate explicit local neighbor cells */
+	llist_for_each_entry(neigh, &from_bts->local_neighbors, entry) {
+		struct gsm_bts *neigh_bts = neigh->bts;
+		struct neighbor_ident_key neigh_bts_key = *bts_ident_key(neigh_bts);
+		neigh_bts_key.from_bts = from_bts->nr;
+
+		LOG_HO(conn, LOGL_DEBUG, "Local neighbor %s\n", neighbor_ident_key_name(&neigh_bts_key));
+
+		if (!neighbor_ident_key_match(&neigh_bts_key, search_for, true)) {
+			LOG_HO(conn, LOGL_DEBUG, "Doesn't match %s\n", neighbor_ident_key_name(search_for));
+			continue;
+		}
+
+		if (local_target_cell) {
+			if (log_errors)
+				LOG_HO(conn, LOGL_ERROR,
+				       "NEIGHBOR CONFIGURATION ERROR: Multiple BTS match %s (BTS %d and BTS %d)."
+				       " Aborting Handover because of ambiguous network topology.\n",
+				       neighbor_ident_key_name(search_for), local_target_cell->nr, neigh_bts->nr);
+			return -EINVAL;
+		}
+
+		local_target_cell = neigh_bts;
+	}
+
+	/* Any matching remote-BSS neighbor cell? */
+	remote_target_cell = neighbor_ident_get(net->neighbor_bss_cells, search_for);
+
+	if (remote_target_cell)
+		LOG_HO(conn, LOGL_DEBUG, "Found remote target cell %s\n",
+		       gsm0808_cell_id_list_name(remote_target_cell));
+
+	if (local_target_cell && remote_target_cell) {
+		if (log_errors)
+			LOG_HO(conn, LOGL_ERROR, "NEIGHBOR CONFIGURATION ERROR: Both a local and a remote-BSS cell match %s"
+			       " (BTS %d and remote %s)."
+			       " Aborting Handover because of ambiguous network topology.\n",
+			       neighbor_ident_key_name(search_for), local_target_cell->nr,
+			       gsm0808_cell_id_list_name(remote_target_cell));
+		return -EINVAL;
+	}
+
+	if (local_target_cell == from_bts && !as_active) {
+		if (log_errors)
+			LOG_HO(conn, LOGL_ERROR,
+			       "Cannot start re-assignment, Assignment disabled for this cell (%s)\n",
+			       neighbor_ident_key_name(search_for));
+		return -EINVAL;
+	}
+
+	if (((local_target_cell && local_target_cell != from_bts)
+	     || remote_target_cell)
+	    && !ho_active) {
+		if (log_errors)
+			LOG_HO(conn, LOGL_ERROR,
+			       "Cannot start Handover, Handover disabled for this cell (%s)\n",
+			       neighbor_ident_key_name(search_for));
+		return -EINVAL;
+	}
+
+	if (local_target_cell) {
+		if (local_target_cell_p)
+			*local_target_cell_p = local_target_cell;
+		return 0;
+	}
+
+	if (remote_target_cell) {
+		if (remote_target_cell_p)
+			*remote_target_cell_p = remote_target_cell;
+		return 0;
+	}
+
+	if (log_errors)
+		LOG_HO(conn, LOGL_ERROR, "Cannot handover %s: neighbor unknown\n",
+		       neighbor_ident_key_name(search_for));
+
+	return -ENODEV;
 }
 
 struct neighbor_ident_key *bts_ident_key(const struct gsm_bts *bts)
 {
 	static struct neighbor_ident_key key;
 	key = (struct neighbor_ident_key){
+		.from_bts = NEIGHBOR_IDENT_KEY_ANY_BTS,
 		.arfcn = bts->c0->arfcn,
 		.bsic = bts->bsic,
 	};

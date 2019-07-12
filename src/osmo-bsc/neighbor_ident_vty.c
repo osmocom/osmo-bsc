@@ -389,6 +389,15 @@ static bool nil_match_bts(const struct neighbor_ident_key *key,
 	return true;
 }
 
+bool neighbor_ident_bts_entry_exists(uint8_t from_bts)
+{
+	struct nil_match_bts_data d = {
+		.bts_nr = from_bts,
+	};
+	neighbor_ident_iter(g_neighbor_cells, nil_match_bts, &d);
+	return (bool)d.found;
+}
+
 static int neighbor_del_all(struct vty *vty)
 {
 	int rc;

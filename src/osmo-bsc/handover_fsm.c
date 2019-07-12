@@ -31,6 +31,7 @@
 #include <osmocom/bsc/bsc_subscriber.h>
 
 #include <osmocom/bsc/handover_fsm.h>
+#include <osmocom/bsc/handover_cfg.h>
 #include <osmocom/bsc/bsc_subscr_conn_fsm.h>
 #include <osmocom/bsc/lchan_select.h>
 #include <osmocom/bsc/lchan_fsm.h>
@@ -200,6 +201,9 @@ void handover_request(struct handover_out_req *req)
 	conn = req->old_lchan->conn;
 	OSMO_ASSERT(conn && conn->fi);
 
+	/* Make sure the handover target neighbor_ident_key contains the correct source bts nr */
+	req->target_nik.from_bts = req->old_lchan->ts->trx->bts->nr;
+
 	/* To make sure we're allowed to start a handover, go through a gscon event dispatch. If that is accepted, the
 	 * same req is passed to handover_start(). */
 	osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_HANDOVER_START, req);
@@ -285,9 +289,10 @@ void handover_start(struct handover_out_req *req)
 
 	OSMO_ASSERT(req && req->old_lchan && req->old_lchan->conn);
 	struct gsm_subscriber_connection *conn = req->old_lchan->conn;
+	const struct neighbor_ident_key *search_for = &req->target_nik;
 	struct handover *ho = &conn->ho;
-	struct gsm_bts *bts;
-	const struct gsm0808_cell_id_list2 *cil;
+	struct gsm_bts *local_target_cell = NULL;
+	const struct gsm0808_cell_id_list2 *remote_target_cell = NULL;
 
 	if (conn->ho.fi) {
 		LOG_HO(conn, LOGL_ERROR, "Handover requested while another handover is ongoing; Ignore\n");
@@ -295,6 +300,9 @@ void handover_start(struct handover_out_req *req)
 	}
 	handover_reset(conn);
 
+	/* When handover_start() is invoked by the gscon, it expects a HANDOVER_END event. The best way to ensure this
+	 * is to always create a handover_fsm instance, even if the target cell is not resolved yet. Any failure should
+	 * then call handover_end(), which ensures that the conn snaps back to a valid state. */
 	handover_fsm_alloc(conn);
 
 	ho->from_hodec_id = req->from_hodec_id;
@@ -302,21 +310,25 @@ void handover_start(struct handover_out_req *req)
 		req->old_lchan->type : req->new_lchan_type;
 	ho->target_cell = req->target_nik;
 
-	bts = bts_by_neighbor_ident(conn->network, &req->target_nik);
-	if (bts) {
-		ho->new_bts = bts;
+	if (find_handover_target_cell(&local_target_cell, &remote_target_cell,
+				      conn, search_for, true))
+		goto no_handover;
+
+	if (local_target_cell) {
+		ho->new_bts = local_target_cell;
 		handover_start_intra_bsc(conn);
 		return;
 	}
 
-	cil = neighbor_ident_get(conn->network->neighbor_bss_cells, &req->target_nik);
-	if (cil) {
-		handover_start_inter_bsc_out(conn, cil);
+	if (remote_target_cell) {
+		handover_start_inter_bsc_out(conn, remote_target_cell);
 		return;
 	}
 
-	LOG_HO(conn, LOGL_ERROR, "Cannot handover %s: neighbor unknown\n",
-	       neighbor_ident_key_name(&req->target_nik));
+	/* should never reach this, because find_handover_target_cell() would have returned error. */
+	OSMO_ASSERT(false);
+
+no_handover:
 	handover_end(conn, HO_RESULT_FAIL_NO_CHANNEL);
 }
 

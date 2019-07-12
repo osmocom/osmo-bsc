@@ -900,18 +900,8 @@ static void collect_handover_candidate(struct gsm_lchan *lchan, struct neigh_mea
 		return;
 	}
 
-	neighbor_bts = bts_by_neighbor_ident(bts->network, &ni);
-
-	neighbor_cil = neighbor_ident_get(bts->network->neighbor_bss_cells, &ni);
-
-	if (neighbor_bts && neighbor_cil) {
-		LOGPHOBTS(bts, LOGL_ERROR, "Configuration error: %s exists as both local"
-			  " neighbor (bts %u) and remote-BSS neighbor (%s). Will consider only"
-			  " the local-BSS neighbor.\n",
-			  neighbor_ident_key_name(&ni),
-			  neighbor_bts->nr, gsm0808_cell_id_list_name(neighbor_cil));
-		neighbor_cil = NULL;
-	}
+	find_handover_target_cell(&neighbor_bts, &neighbor_cil,
+				  lchan->conn, &ni, false);
 
 	if (!neighbor_bts && !neighbor_cil) {
 		LOGPHOBTS(bts, LOGL_DEBUG, "no neighbor ARFCN %u BSIC %u configured for this cell\n",
