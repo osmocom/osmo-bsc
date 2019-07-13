@@ -694,6 +694,7 @@ static int result_counter(enum handover_scope scope, enum handover_result result
 		LOGP(DHO, LOGL_ERROR, "invalid enum handover_scope value: %s\n",
 		     handover_scope_name(scope));
 		/* use "normal" HO_INTRA_BSC counter... */
+	case HO_NO_HANDOVER:
 	case HO_INTRA_BSC:
 		return result_counter_HANDOVER(result);
 	case HO_INTER_BSC_OUT:
