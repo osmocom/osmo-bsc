@@ -906,7 +906,7 @@ int main(int argc, char **argv)
 	}
 
 	if (osmo_bsc_sigtran_init(&bsc_gsmnet->bsc_data->mscs) != 0) {
-		LOGP(DNM, LOGL_ERROR, "Failed to initalize sigtran backhaul.\n");
+		LOGP(DNM, LOGL_ERROR, "Failed to initialize sigtran backhaul.\n");
 		exit(1);
 	}
 

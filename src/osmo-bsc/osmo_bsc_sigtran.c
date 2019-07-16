@@ -564,7 +564,7 @@ int osmo_bsc_sigtran_init(struct llist_head *mscs)
 		/* Start MSC-Reset procedure */
 		a_reset_alloc(msc, msc_name, osmo_bsc_sigtran_reset_cb);
 
-		/* If we have detected that the SS7 configuration of the MSC we have just initalized
+		/* If we have detected that the SS7 configuration of the MSC we have just initialized
 		 * was incomplete or completely missing, we can not tolerate another incomplete
 		 * configuration. The reson for this is that we do only specify exactly one default
 		 * pointcode pair. We also specify localhost as default IP-Address. If we have wanted

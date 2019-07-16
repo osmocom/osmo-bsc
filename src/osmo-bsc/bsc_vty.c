@@ -2371,7 +2371,7 @@ DEFUN(cfg_bts_oml_e1_tei,
 
 DEFUN(cfg_bts_challoc, cfg_bts_challoc_cmd,
       "channel allocator (ascending|descending)",
-	"Channnel Allocator\n" "Channel Allocator\n"
+	"Channel Allocator\n" "Channel Allocator\n"
 	"Allocate Timeslots and Transceivers in ascending order\n"
 	"Allocate Timeslots and Transceivers in descending order\n")
 {

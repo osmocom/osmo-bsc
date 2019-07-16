@@ -2958,7 +2958,7 @@
     </command>
     <command id='channel allocator (ascending|descending)'>
       <params>
-        <param name='channel' doc='Channnel Allocator' />
+        <param name='channel' doc='Channel Allocator' />
         <param name='allocator' doc='Channel Allocator' />
         <param name='ascending' doc='Allocate Timeslots and Transceivers in ascending order' />
         <param name='descending' doc='Allocate Timeslots and Transceivers in descending order' />
@@ -4830,7 +4830,7 @@
         <param name='con-path' doc='CON Path (In/Out)' />
         <param name='add' doc='Add CON Path to Concentration Group' />
         <param name='del' doc='Delete CON Path from Concentration Group' />
-        <param name='&lt;0-2047&gt;' doc='CON Conection Point' />
+        <param name='&lt;0-2047&gt;' doc='CON Connection Point' />
         <param name='&lt;0-255&gt;' doc='Contiguity Index' />
         <param name='deconcentrated' doc='De-concentrated in/outlet' />
         <param name='&lt;0-63&gt;' doc='TEI Value' />
@@ -4841,7 +4841,7 @@
         <param name='con-path' doc='CON Path (In/Out)' />
         <param name='add' doc='Add CON Path to Concentration Group' />
         <param name='del' doc='Delete CON Path from Concentration Group' />
-        <param name='&lt;0-2047&gt;' doc='CON Conection Point' />
+        <param name='&lt;0-2047&gt;' doc='CON Connection Point' />
         <param name='&lt;0-255&gt;' doc='Contiguity Index' />
         <param name='concentrated' doc='Concentrated in/outlet' />
         <param name='&lt;1-16&gt;' doc='Tag Number' />

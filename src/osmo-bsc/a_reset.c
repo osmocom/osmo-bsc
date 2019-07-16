@@ -71,7 +71,7 @@ static void fsm_disc_cb(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
 	struct reset_ctx *reset_ctx = (struct reset_ctx *)fi->priv;
 	OSMO_ASSERT(reset_ctx);
-	LOGPFSML(fi, LOGL_NOTICE, "SIGTRAN connection succeded.\n");
+	LOGPFSML(fi, LOGL_NOTICE, "SIGTRAN connection succeeded.\n");
 
 	reset_ctx->conn_loss_counter = 0;
 	osmo_fsm_inst_state_chg(fi, ST_CONN, 0, 0);

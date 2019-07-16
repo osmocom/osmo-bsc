@@ -368,7 +368,7 @@ DEFUN(del_om2k_con_group, del_om2k_con_group_cmd,
 #define CON_PATH_HELP	"CON Path (In/Out)\n"				\
 			"Add CON Path to Concentration Group\n"		\
 			"Delete CON Path from Concentration Group\n"	\
-			"CON Conection Point\n"				\
+			"CON Connection Point\n"				\
 			"Contiguity Index\n"				\
 
 DEFUN(cfg_om2k_con_path_dec, cfg_om2k_con_path_dec_cmd,

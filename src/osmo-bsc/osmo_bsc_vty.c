@@ -569,7 +569,7 @@ static void enforce_standard_ssn(struct vty *vty, struct osmo_sccp_addr *addr)
 	if (addr->presence & OSMO_SCCP_ADDR_T_SSN) {
 		if (addr->ssn != OSMO_SCCP_SSN_BSSAP)
 			vty_out(vty,
-				"setting an SSN (%u) different from the standard (%u) is not allowd, will use standard SSN for address: %s%s",
+				"setting an SSN (%u) different from the standard (%u) is not allowed, will use standard SSN for address: %s%s",
 				addr->ssn, OSMO_SCCP_SSN_BSSAP, osmo_sccp_addr_dump(addr), VTY_NEWLINE);
 	}
 

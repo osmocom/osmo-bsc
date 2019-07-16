@@ -421,7 +421,7 @@ static int pcu_rx(struct gsm_network *net, uint8_t msg_type,
 		rc = pcu_rx_data_req(bts, msg_type, &pcu_prim->u.data_req);
 		break;
 	default:
-		LOGP(DPCU, LOGL_ERROR, "Received unknwon PCU msg type %d\n",
+		LOGP(DPCU, LOGL_ERROR, "Received unknown PCU msg type %d\n",
 			msg_type);
 		rc = -EINVAL;
 	}
