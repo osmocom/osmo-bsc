@@ -198,7 +198,7 @@ class TestCtrlBSC(TestCtrlBase):
         r = self.do_get('bts.0.cell-identity')
         self.assertEquals(r['mtype'], 'GET_REPLY')
         self.assertEquals(r['var'], 'bts.0.cell-identity')
-        self.assertEquals(r['value'], '0')
+        self.assertEquals(r['value'], '6969')
 
         r = self.do_set('bts.0.cell-identity', '23')
         self.assertEquals(r['mtype'], 'SET_REPLY')
