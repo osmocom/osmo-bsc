@@ -1,0 +1,43 @@
+include::{commondir}/chapters/osmux/osmux.adoc[]
+
+=== Osmux Support in {program-name}
+
+==== {program-name} in a A/IP with IPA/SCCPlite network setup
+
+In this kind of setup, Osmux is transparent to {program-name} and no specific
+configuration is required here, since the CN-side of the BSC-attached MGW is
+managed directly by the MSC.
+
+So, in this case, only MSC and MGW (both for MSC-attached one and BSC-attached
+one) need to be configured explicitly.
+
+==== {program-name} in a 3GPP AoIP network setup
+
+Osmux usage in {program-name} in managed through the VTY command `osmux
+(on|off|only)`. Once enabled (`on` or `only`), {program-name} will start
+appending the vendor specific _Osmux Support_ IE in _BSSMAP RESET_ and _BSSMAP
+RESET-ACK_ message towards the MSC in order to announce it supports Osmux. This
+way, the MSC can decide whether to use Osmux or not based on this information
+when setting up a call (this time using _Osmux CID_ IE). It should be noted that
+this option should not be enabled unless MSC managing {program-name} supports
+handling this extension IE (like OsmoMSC), a 3rd-party MSC might otherwise
+refuse the related _RESET_/_RESET-ACK_ messages.
+
+{program-name} will behave differently during call set up based on the VTY
+command presented above:
+
+* `off`: If _BSSMAP Assign Request_ from MSC contains _Osmux CID_ IE, meaning
+  MSC wants to use Osmux for this call, then {program-name} will reject the
+  assignment and the call set up will fail.
+* `on`: BSC will support and accept both Osmux and non-Osmux (RTP) upon call set
+  up. If _BSSMAP Assign Request_ from MSC contains _Osmux CID_ IE,
+  {program-name} will instruct its MGW to set up an Osmux connection on the
+  CN-side of the MGCP endpoint, and will provide the MSC with its _recvCID_
+  through the extension IE _Osmux CID_ appened to the _BSSMAP Assign Complete_
+  message. On the other hand, if _BSSMAP Assign Request_ doesn't contain an
+  _Osmux CID_ IE, {program-name} will instruct its MGW to set up a regular RTP
+  connection on the CN-side of the MGCP endpoint.
+* `only`: Same as per `on`, except that {program-name} will accept only Osmux
+  calls on the CN-side, this is, if  _BSSMAP Assign Request_ from MSC doesn't
+  contain an _Osmux CID_ IE, it will reject the assignment and the call set up
+  will fail.
