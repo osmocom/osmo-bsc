@@ -49,13 +49,6 @@ int osmo_bsc_msc_init(struct bsc_msc_data *msc)
 	uint16_t mgw_port;
 	int rc;
 
-	/* FIXME: This is a leftover from the old architecture that used
-	 * sccp-lite with osmocom specific authentication. Since we now
-	 * changed to AoIP the connected status and the authentication
-	 * status is managed differently. However osmo_bsc_filter.c still
-	 * needs the flags to be set to one. See also: OS#3112 */
-	msc->is_authenticated = 1;
-
 	if (net->mgw.conf->remote_port >= 0)
 		mgw_port = net->mgw.conf->remote_port;
 	else

@@ -77,7 +77,6 @@ struct bsc_msc_data {
 	int core_lac;
 	int core_ci;
 	int rtp_base;
-	bool is_authenticated;
 
 	/* audio codecs */
 	struct gsm48_multi_rate_conf amr_conf;
