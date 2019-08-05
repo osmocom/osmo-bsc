@@ -5255,7 +5255,7 @@ int bsc_vty_init(struct gsm_network *network)
 	install_element(ENABLE_NODE, &assignment_any_cmd);
 	install_element(ENABLE_NODE, &handover_any_to_arfcn_bsic_cmd);
 
-	logging_vty_add_cmds(NULL);
+	logging_vty_add_cmds();
 	osmo_talloc_vty_add_cmds();
 
 	install_element(GSMNET_NODE, &cfg_net_neci_cmd);
