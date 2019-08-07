@@ -1,3 +1,138 @@
+osmo-bsc (1.5.0) unstable; urgency=medium
+
+  [ Max ]
+  * LCLS: constify helper parameters
+  * LCLS: use libosmocore function to add status
+  * nanobts: use libosmocore's osmo_store*() for OML attr. patching
+
+  [ Philipp Maier ]
+  * lchan_select: dont allow half rate EFR to be selected
+  * lchan_select: Do not unsolicitedly select a TCH/F
+  * bsc_vty: add vty command to display all lchans
+  * bsc_vty: add features to disable specific lchans via vty
+  * assignment_fsm: fix channel allocator preferences
+  * assignment_fsm: use activate.info.s15_s0 for ASS. COMPL.
+  * handover_fsm: copy old S15_S0 to new lchan
+  * osmo_bsc_msc: Use meaningful amr rate configuration on BTS level
+  * codec_pref: fix special handling for AMR rate configuration  (S15-S0)
+  * lchan_fsm: make sure multi rate configuration is valid
+  * lchan_fsm: do not include 12.2k in active set on HR channels
+  * AMR: Signal usage of octet-aligned or bandwith-efficient mode to MSC
+  * lchan_fsm: add missing header file.
+  * osmo_bsc_bssap: check bssmap length field
+  * rest_octets: add Serving Cell Priority Parameters
+
+  [ Neels Hofmeyr ]
+  * abis_rsl: Fix TCH-as-SDCCH allocation on Channel Request
+  * handover_fsm: do not access conn->assignment.req, it may be outdated
+  * comments: clarify usage of conn.assignment and .handover scopes
+  * cosmetic: drop unused struct mgcp_ctx shadow
+  * incoming connect: don't crash if calling addr is missing
+  * log N-CONNECT from MSC
+  * Revert "assignment_fsm: Properly support assigning signalling mode TCH/x"
+  * fix log line end in assignment_fsm.c
+  * avoid use-after-free: on MGW endpoint dealloc, also forget it in conn->ho.*
+  * lchan activation: add explicit encryption info to activation
+  * Handover Request: also parse Chosen Algorithm IE, pass to lchan activation
+  * fix inter-BSC-HO-incoming for AoIP (1/2)
+  * use libosmocore osmo_tdef
+  * move mgw endpoint FSM to osmo-mgw.git
+  * fix inter-BSC-HO-incoming for AoIP (1/2)
+  * fix inter-BSC-HO-incoming for AoIP (2/2)
+  * abis_rsl.c: missing newlines on log lines
+  * doc/manuals: review and tweak handover docs
+  * make bsc_clear_request() static
+  * doc/manuals, vty doc: more handover doc clarifications
+  * remove double BSSMAP Clear on HO failure
+  * comment and VTY doc tweaks
+  * silence error for "invalid enum handover_scope value: none"
+
+  [ Harald Welte ]
+  * gsm_data: Add gsm_bts_name() just like we have gsm_{trx,ts,lchan}_name()
+  * manual: It's not "A over SCCP" but "BSSAP over SCCP"
+  * manual: Add sections on 3G/4G neighbor cells
+  * manual: Re-order chapters in more logical order
+  * manual: s/OsmoNITB/OsmoBSC/ in examples; remove E1 based BTSs
+  * manual: Remove bogus "Control interface" sub-section in overview
+  * Implement CSFB "Fast Return" Handling at RR RELEASE
+  * OML: Fix encoded length value of OML GET ATTRIBUTES
+  * Make sure to default to AMR octet-aligned mode
+  * abis_rsl: Add support for extended CBCH to rsl_sms_cb_command()
+  * abis_rsl: Avoid "Unimplemented" log message for every CBCH LOAD IND
+  * abis_rsl: Fix log message about unimplemented common channel msg
+  * smscb: Allow transmit of SCHEDULE and DEFAULT SMSCB
+  * chan_alloc: Don't include CBCH channels in load computation
+  * keep per-BTS stat_items about RACH busy / RACH access percentage
+  * vty: Dump per-bts stat_item group in 'show bts' output
+  * Allow VTY to set the CCCH Load Indication Threshold
+  * rx_fail_evt_rep(): Don't recycle variable
+  * Re-introduce support for IPA-encapsulated MGCP
+  * logging: introduce LOG_BTS and LOG_TRX and use it everywhere
+  * vty: Fix typo in VTY command descrption -> description
+
+  [ Pau Espin Pedrol ]
+  * ipaccess/Makefile.am: Remove unneeded libmgcp-client dep
+  * Move LCLS references from gsm_data to osmo_bsc_lcls
+  * Move msc related code from gsm_data to bsc_msc
+  * ipaccess/Makefile.am: Remove unneeded libosmo-sigtran dep
+  * net_init.c: remove unneeded header
+  * configure.ac: Add flag to enable/disable build of ipaccess related utils
+  * src/utils/Makefile.am: Drop unneeded sigtran and mgcp-client deps
+  * fix another log line end in assignment_fsm.c
+  * Drop unused old osmux leftover code
+  * vty: Add option to enable osmux towards MSC
+  * bssap: Detect MSC Osmux support on RESET (ACK) recv
+  * bssap: Announce Osmux support on RESET (ACK) send
+  * bssap: Parse Osmux CID on BSSAP Assign Req recv and use it in MGCP
+  * bssap: Feed Assign Complete with Osmux CID retrieved from MGW
+  * lcls: Fix MDCX with garbage on LCLS loop break
+  * Introduce msc_is_{sccplite,aoip}() helpers
+  * bsc: Append Osmux Support IE only on AoIP
+  * Remove extern declarations of libosmovty symbols
+  * bsc_subscr_conn_fsm: Use gscon_bssmap_clear() helper on send failure
+  * bsc_subscr_conn_fsm: Log Tx of BSSMAP Clear Request with cause
+  * doc: Add Osmux documentation to User Manual
+  * Remove undefined param passed to logging_vty_add_cmds
+
+  [ Sylvain Munaut ]
+  * assignment_fsm: Properly support assigning signalling mode TCH/x
+  * assignment_fsm: Properly support assigning signalling mode TCH/x
+
+  [ Vadim Yanitskiy ]
+  * abis_nm.c: use proper format specifiers for BTS / TRX number
+  * abis_nm.c: also print TRX number in abis_nm_get_attr()
+  * abis_nm.c: use abis_nm_ipa_magic from libosmocore
+  * abis_nm.c: use msgb_lv_put() to put abis_nm_ipa_magic
+  * abis_nm.c: fix broken logging in abis_nm_rx_ipacc()
+  * gsm_data.c: use REG_NOSUB flag of regcomp()
+  * osmo_bsc_lcls.c: cosmetic: make Coverity happy
+  * ipaccess-config: use POSIX regex for Unit ID format check
+  * handover_fsm.c: fix: prevent possible buffer overflow
+
+  [ Daniel Willmann ]
+  * doc: Add generic counter chapter in manual
+  * manuals: Fix example config to reflect OsmoBSC commands
+  * Change comments/strings from OpenBSC to OsmoBSC
+  * gsm_data.h: Remove unused variable from OpenBSC times
+  * Revert "fix inter-BSC-HO-incoming for AoIP (1/2)"
+  * manuals: Update generated VTY reference and counters
+  * manuals: Add script to update vtr/counter documentation from docker
+
+  [ Oliver Smith ]
+  * debian: create -doc subpackage with pdf manuals
+  * contrib/jenkins.sh: run "make maintainer-clean"
+  * contrib/jenkins.sh: "maintainer-clean" after "publish"
+  * osmo-bsc.cfg: work with osmo-bts example cfg
+
+  [ Eric Wild ]
+  * vty: adjust config name for unit-id
+  * turn -Werror=null-dereference into a warning
+
+  [ Ruben Undheim ]
+  * Fix some spelling errors found by lintian
+
+ -- Pau Espin Pedrol <pespin@sysmocom.de>  Wed, 07 Aug 2019 20:42:06 +0200
+
 osmo-bsc (1.4.0) unstable; urgency=medium
 
   [ Neels Hofmeyr ]
