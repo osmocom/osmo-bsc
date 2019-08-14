@@ -323,8 +323,8 @@ paging:
 	subscr = extract_sub(conn, msg);
 
 	if (!subscr) {
-		LOGP(DMSC, LOGL_ERROR, "Got paged but no subscriber found.\n");
-		return NULL;
+		LOGP(DMSC, LOGL_INFO, "Got paging response but no subscriber found, will now (blindly) deliver the paging response to the first configured MSC!\n");
+		goto blind;
 	}
 
 	pag_msc = paging_get_msc(conn_get_bts(conn), subscr);
@@ -344,7 +344,20 @@ paging:
 		return msc;
 	}
 
-	LOGP(DMSC, LOGL_ERROR, "Got paged but no request found.\n");
+	LOGP(DMSC, LOGL_INFO, "Got paging response but no request found, will now (blindly) deliver the paging response to the first configured MSC!\n");
+
+blind:
+	/* In the case of an MT CSFB call we will get a paging response from
+	 * the BTS without a preceding paging request via A-Interface. In those
+	 * cases the MSC will page the subscriber via SGs interface, so the BSC
+	 * can not know about the paging in advance. In those cases we can not
+	 * know the MSC which is in charge. The only meaningful option we have
+	 * is to deliver the paging response to the first configured MSC
+	 * blindly. */
+	msc = llist_first_entry_or_null(&bsc->mscs, struct bsc_msc_data, entry);
+	if (msc)
+		return msc;
+	LOGP(DMSC, LOGL_ERROR, "Unable to find any suitable MSC to deliver paging response!\n");
 	return NULL;
 }
 
