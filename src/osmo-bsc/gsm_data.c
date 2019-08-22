@@ -1605,15 +1605,17 @@ bool ts_is_capable_of_lchant(struct gsm_bts_trx_ts *ts, enum gsm_chan_t type)
 	}
 }
 
-static int trx_count_free_ts(struct gsm_bts_trx *trx, enum gsm_phys_chan_config pchan)
+static void trx_count_free_ts(int *operative_p, int *free_p,
+			      struct gsm_bts_trx *trx, enum gsm_phys_chan_config pchan)
 {
 	struct gsm_bts_trx_ts *ts;
 	struct gsm_lchan *lchan;
 	int j;
-	int count = 0;
+	int operative_lchans = 0;
+	int free_lchans = 0;
 
 	if (!trx_is_usable(trx))
-		return 0;
+		goto return_values;
 
 	for (j = 0; j < ARRAY_SIZE(trx->ts); j++) {
 		ts = &trx->ts[j];
@@ -1624,15 +1626,20 @@ static int trx_count_free_ts(struct gsm_bts_trx *trx, enum gsm_phys_chan_config 
 			/* Dynamic timeslots in PDCH mode will become TCH if needed. */
 			switch (ts->pchan_on_init) {
 			case GSM_PCHAN_TCH_F_PDCH:
-				if (pchan == GSM_PCHAN_TCH_F)
-					count++;
+				if (pchan == GSM_PCHAN_TCH_F) {
+					free_lchans++;
+					operative_lchans++;
+				}
 				continue;
 
 			case GSM_PCHAN_TCH_F_TCH_H_PDCH:
-				if (pchan == GSM_PCHAN_TCH_F)
-					count++;
-				else if (pchan == GSM_PCHAN_TCH_H)
-					count += 2;
+				if (pchan == GSM_PCHAN_TCH_F) {
+					free_lchans++;
+					operative_lchans++;
+				} else if (pchan == GSM_PCHAN_TCH_H) {
+					free_lchans += 2;
+					operative_lchans += 2;
+				}
 				continue;
 
 			default:
@@ -1645,24 +1652,39 @@ static int trx_count_free_ts(struct gsm_bts_trx *trx, enum gsm_phys_chan_config 
 			continue;
 
 		ts_for_each_lchan(lchan, ts) {
+			operative_lchans++;
 			if (lchan_state_is(lchan, LCHAN_ST_UNUSED))
-				count++;
+				free_lchans++;
 		}
 	}
 
-	return count;
+return_values:
+	if (operative_p)
+		*operative_p = operative_lchans;
+	if (free_p)
+		*free_p = free_lchans;
 }
 
 /* Count number of free TS of given pchan type */
-int bts_count_free_ts(struct gsm_bts *bts, enum gsm_phys_chan_config pchan)
+void bts_count_free_ts(int *operative_p, int *free_p,
+		       struct gsm_bts *bts, enum gsm_phys_chan_config pchan)
 {
 	struct gsm_bts_trx *trx;
-	int count = 0;
+	int operative_lchans = 0;
+	int free_lchans = 0;
 
-	llist_for_each_entry(trx, &bts->trx_list, list)
-		count += trx_count_free_ts(trx, pchan);
+	llist_for_each_entry(trx, &bts->trx_list, list) {
+		int o;
+		int f;
+		trx_count_free_ts(&o, &f, trx, pchan);
+		operative_lchans += o;
+		free_lchans += f;
+	}
 
-	return count;
+	if (operative_p)
+		*operative_p = operative_lchans;
+	if (free_p)
+		*free_p = free_lchans;
 }
 
 bool ts_is_usable(const struct gsm_bts_trx_ts *ts)

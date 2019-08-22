@@ -1701,6 +1701,7 @@ enum gsm_phys_chan_config gsm_pchan_by_lchan_type(enum gsm_chan_t type);
 void gsm_bts_all_ts_dispatch(struct gsm_bts *bts, uint32_t ts_ev, void *data);
 void gsm_trx_all_ts_dispatch(struct gsm_bts_trx *trx, uint32_t ts_ev, void *data);
 
-int bts_count_free_ts(struct gsm_bts *bts, enum gsm_phys_chan_config pchan);
+void bts_count_free_ts(int *operative_p, int *free_p,
+		       struct gsm_bts *bts, enum gsm_phys_chan_config pchan);
 
 #endif /* _GSM_DATA_H */

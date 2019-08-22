@@ -604,9 +604,9 @@ static uint8_t check_requirements(struct gsm_lchan *lchan, struct gsm_bts *bts, 
 
 	/* the nr of free timeslots of the target cell must be >= the
 	 * free slots of the current cell _after_ handover/assignment */
-	count = bts_count_free_ts(current_bts,
-				  (lchan->type == GSM_LCHAN_TCH_H) ?
-				   GSM_PCHAN_TCH_H : GSM_PCHAN_TCH_F);
+	bts_count_free_ts(NULL, &count, current_bts,
+			  (lchan->type == GSM_LCHAN_TCH_H) ?
+			  GSM_PCHAN_TCH_H : GSM_PCHAN_TCH_F);
 	if (requirement & REQUIREMENT_A_TCHF) {
 		if (tchf_count - 1 >= count + 1)
 			requirement |= REQUIREMENT_C_TCHF;
@@ -849,8 +849,8 @@ static void collect_assignment_candidate(struct gsm_lchan *lchan, struct ho_cand
 	int tchf_count, tchh_count;
 	struct ho_candidate c;
 
-	tchf_count = bts_count_free_ts(bts, GSM_PCHAN_TCH_F);
-	tchh_count = bts_count_free_ts(bts, GSM_PCHAN_TCH_H);
+	bts_count_free_ts(NULL, &tchf_count, bts, GSM_PCHAN_TCH_F);
+	bts_count_free_ts(NULL, &tchh_count, bts, GSM_PCHAN_TCH_H);
 
 	c = (struct ho_candidate){
 		.lchan = lchan,
@@ -956,8 +956,8 @@ static void collect_handover_candidate(struct gsm_lchan *lchan, struct neigh_mea
 	}
 
 	if (neighbor_bts) {
-		tchf_count = bts_count_free_ts(neighbor_bts, GSM_PCHAN_TCH_F);
-		tchh_count = bts_count_free_ts(neighbor_bts, GSM_PCHAN_TCH_H);
+		bts_count_free_ts(NULL, &tchf_count, neighbor_bts, GSM_PCHAN_TCH_F);
+		bts_count_free_ts(NULL, &tchh_count, neighbor_bts, GSM_PCHAN_TCH_H);
 		c.requirements = check_requirements(lchan, neighbor_bts, tchf_count,
 						    tchh_count);
 	} else
@@ -1821,7 +1821,9 @@ exit:
 static void bts_congestion_check(struct gsm_bts *bts)
 {
 	int min_free_tchf, min_free_tchh;
-	int tchf_count, tchh_count;
+	int tchf_free, tchh_free;
+	int tchf_operative, tchh_operative;
+	int tchf_congestion, tchh_congestion;
 	int algo;
 
 	global_ho_reason = HO_REASON_CONGESTION;
@@ -1853,19 +1855,23 @@ static void bts_congestion_check(struct gsm_bts *bts)
 		return;
 	}
 
-	tchf_count = bts_count_free_ts(bts, GSM_PCHAN_TCH_F);
-	tchh_count = bts_count_free_ts(bts, GSM_PCHAN_TCH_H);
-	LOGPHOBTS(bts, LOGL_INFO, "Congestion check: (free/want-free) TCH/F=%d/%d TCH/H=%d/%d\n",
-		  tchf_count, min_free_tchf, tchh_count, min_free_tchh);
+	bts_count_free_ts(&tchf_operative, &tchf_free, bts, GSM_PCHAN_TCH_F);
+	bts_count_free_ts(&tchh_operative, &tchh_free, bts, GSM_PCHAN_TCH_H);
+	LOGPHOBTS(bts, LOGL_INFO, "Congestion check: (in-operation/free/want-free) TCH/F=%d/%d/%d TCH/H=%d/%d/%d\n",
+		  tchf_operative, tchf_free, min_free_tchf, tchh_operative, tchh_free, min_free_tchh);
 
 	/* only check BTS if congested */
-	if (tchf_count >= min_free_tchf && tchh_count >= min_free_tchh) {
+	tchf_congestion = OSMO_MAX(0, OSMO_MIN(tchf_operative, min_free_tchf - tchf_free));
+	tchh_congestion = OSMO_MAX(0, OSMO_MIN(tchh_operative, min_free_tchh - tchh_free));
+
+	if (!(tchf_congestion || tchh_congestion)) {
 		LOGPHOBTS(bts, LOGL_DEBUG, "Not congested\n");
 		return;
 	}
 
-	LOGPHOBTS(bts, LOGL_DEBUG, "Attempting to resolve congestion...\n");
-	bts_resolve_congestion(bts, min_free_tchf - tchf_count, min_free_tchh - tchh_count);
+	LOGPHOBTS(bts, LOGL_DEBUG, "Attempting to resolve congestion, trying to free %d TCH/F, %d TCH/H...\n",
+		  tchf_congestion, tchh_congestion);
+	bts_resolve_congestion(bts, tchf_congestion, tchh_congestion);
 }
 
 void hodec2_congestion_check(struct gsm_network *net)
