@@ -1268,6 +1268,7 @@ static const struct osmo_fsm_state lchan_fsm_states[] = {
 		.out_state_mask = 0
 			| S(LCHAN_ST_UNUSED)
 			| S(LCHAN_ST_WAIT_AFTER_ERROR)
+			| S(LCHAN_ST_WAIT_RF_RELEASE_ACK)
 			,
 	},
 };
