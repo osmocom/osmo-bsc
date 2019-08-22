@@ -29,6 +29,8 @@ static struct osmo_tdef gsm_network_T_defs[] = {
 	{ .T=7, .default_val=10, .desc="inter-BSC/MSC Handover outgoing, BSSMAP HO Required to HO Command timeout" },
 	{ .T=8, .default_val=10, .desc="inter-BSC/MSC Handover outgoing, BSSMAP HO Command to final Clear timeout" },
 	{ .T=10, .default_val=6, .desc="RR Assignment" },
+	{ .T=-1, .default_val=5, .desc="Timeslot Ready" },
+	{ .T=-2, .default_val=5, .desc="Channel Activation" },
 	{ .T=101, .default_val=10, .desc="inter-BSC/MSC Handover incoming, BSSMAP HO Request to HO Accept" },
 	{ .T=3101, .default_val=3, .desc="RR Immediate Assignment" },
 	{ .T=3103, .default_val=5, .desc="Handover" },
