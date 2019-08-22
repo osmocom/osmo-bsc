@@ -1822,6 +1822,7 @@ static void bts_congestion_check(struct gsm_bts *bts)
 {
 	int min_free_tchf, min_free_tchh;
 	int tchf_count, tchh_count;
+	int algo;
 
 	global_ho_reason = HO_REASON_CONGESTION;
 
@@ -1832,9 +1833,14 @@ static void bts_congestion_check(struct gsm_bts *bts)
 	}
 
 	/* only check BTS if handover or assignment is enabled */
-	if (!ho_get_hodec2_as_active(bts->ho)
-	    && !ho_get_ho_active(bts->ho)) {
-		LOGPHOBTS(bts, LOGL_DEBUG, "No congestion check: Assignment and Handover both disabled\n");
+	if (!ho_get_ho_active(bts->ho)) {
+		LOGPHOBTS(bts, LOGL_DEBUG, "No congestion check: Handover disabled\n");
+		return;
+	}
+
+	algo = ho_get_algorithm(bts->ho);
+	if (algo != 2) {
+		LOGPHOBTS(bts, LOGL_DEBUG, "No congestion check: Handover Algorithm is not 2 (is %d)\n", algo);
 		return;
 	}
 
