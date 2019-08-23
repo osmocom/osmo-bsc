@@ -311,7 +311,7 @@ static inline void log_oml_fail_rep(const struct gsm_bts *bts, const char *type,
 	enum abis_nm_pcause_type pcause = p_val[0];
 	enum abis_mm_event_causes cause = osmo_load16be(p_val + 1);
 
-	LOGPC(DNM, LOGL_ERROR, "BTS %u: Failure Event Report: ", bts->nr);
+	LOGP(DNM, LOGL_ERROR, "BTS %u: Failure Event Report: ", bts->nr);
 	if (type)
 		LOGPC(DNM, LOGL_ERROR, "Type=%s, ", type);
 	if (severity)
@@ -341,10 +341,10 @@ static inline void handle_manufact_report(struct gsm_bts *bts, const uint8_t *p_
 	switch (cause) {
 	case OSMO_EVT_PCU_VERS:
 		if (text) {
-			LOGPC(DNM, LOGL_NOTICE, "BTS %u reported connected PCU version %s\n", bts->nr, text);
+			LOGP(DNM, LOGL_NOTICE, "BTS %u reported connected PCU version %s\n", bts->nr, text);
 			osmo_strlcpy(bts->pcu_version, text, sizeof(bts->pcu_version));
 		} else {
-			LOGPC(DNM, LOGL_ERROR, "BTS %u reported PCU disconnection.\n", bts->nr);
+			LOGP(DNM, LOGL_ERROR, "BTS %u reported PCU disconnection.\n", bts->nr);
 			bts->pcu_version[0] = '\0';
 		}
 		break;
