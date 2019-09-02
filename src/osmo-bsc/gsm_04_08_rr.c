@@ -592,6 +592,28 @@ int gsm48_send_rr_ass_cmd(struct gsm_lchan *dest_lchan, struct gsm_lchan *lchan,
 	return gsm48_sendmsg(msg);
 }
 
+/* TS 44.018 section 9.1.53 */
+int gsm48_send_rr_app_info(struct gsm_lchan *lchan, uint8_t apdu_id, uint8_t apdu_flags,
+			   const uint8_t *apdu_data, ssize_t apdu_data_len)
+{
+	struct msgb *msg = gsm48_msgb_alloc_name("GSM 04.08 APP INFO");
+	struct gsm48_hdr *gh = (struct gsm48_hdr *) msgb_put(msg, sizeof(*gh));
+
+	if ((apdu_id & 0xF0) || (apdu_flags & 0xF0)) {
+		msgb_free(msg);
+		return -EINVAL;
+	}
+
+	msg->lchan = lchan;
+	gh->proto_discr = GSM48_PDISC_RR;
+	gh->msg_type = GSM48_MT_RR_APP_INFO;
+
+	msgb_put_u8(msg, (apdu_flags << 4) | apdu_id);
+	msgb_lv_put(msg, apdu_data_len, apdu_data);
+
+	return gsm48_sendmsg(msg);
+}
+
 /* 9.1.5 Channel mode modify: Modify the mode on the MS side */
 int gsm48_lchan_modify(struct gsm_lchan *lchan, uint8_t mode)
 {

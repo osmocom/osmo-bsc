@@ -25,10 +25,12 @@
 #include <osmocom/core/select.h>
 #include <osmocom/core/msgb.h>
 #include <osmocom/core/talloc.h>
+#include <osmocom/core/byteswap.h>
 
 #include <osmocom/gsm/cbsp.h>
 #include <osmocom/gsm/protocol/gsm_23_041.h>
 #include <osmocom/gsm/protocol/gsm_48_049.h>
+#include <osmocom/gsm/protocol/gsm_03_41.h>
 
 #include <osmocom/netif/stream.h>
 
@@ -36,6 +38,8 @@
 #include <osmocom/bsc/gsm_data.h>
 #include <osmocom/bsc/smscb.h>
 #include <osmocom/bsc/vty.h>
+#include <osmocom/bsc/gsm_04_08_rr.h>
+#include <osmocom/bsc/lchan_fsm.h>
 
 /*********************************************************************************
  * Helper Functions
@@ -50,6 +54,26 @@ static void llist_replace_head(struct llist_head *new, struct llist_head *old)
 	else
 		__llist_add(new, old->prev, old->next);
 	INIT_LLIST_HEAD(old);
+}
+
+#define ETWS_PRIM_NOTIF_SIZE	56
+
+/* Build a ETWS Primary Notification message as per TS 23.041 9.4.1.3 */
+static int gen_etws_primary_notification(uint8_t *out, uint16_t serial_nr, uint16_t msg_id,
+					 uint16_t warn_type, const uint8_t *sec_info)
+{
+	struct gsm341_etws_message *etws = (struct gsm341_etws_message *)out;
+
+	memset(out, 0, ETWS_PRIM_NOTIF_SIZE);
+
+	osmo_store16be(serial_nr, out);
+	etws->msg_id = osmo_htons(msg_id);
+	etws->warning_type = osmo_htons(warn_type);
+
+	if (sec_info)
+		memcpy(etws->data, sec_info, ETWS_PRIM_NOTIF_SIZE - sizeof(*etws));
+
+	return ETWS_PRIM_NOTIF_SIZE;
 }
 
 /*! Obtain SMSCB Channel State for given BTS (basic or extended CBCH) */
@@ -437,6 +461,39 @@ static int tx_cbsp_keepalive_compl(struct bsc_cbc_link *cbc)
  * Per-BTS Processing of CBSP from CBC, called via cbsp_per_bts()
  *********************************************************************************/
 
+static void etws_primary_to_dedicated(struct gsm_bts *bts,
+				      const struct osmo_cbsp_write_replace *wrepl)
+{
+	uint8_t etws_primary[ETWS_PRIM_NOTIF_SIZE];
+	struct gsm_bts_trx *trx;
+	unsigned int count = 0;
+	int i, j;
+
+	gen_etws_primary_notification(etws_primary, wrepl->new_serial_nr, wrepl->msg_id,
+				      wrepl->u.emergency.warning_type,
+				      wrepl->u.emergency.warning_sec_info);
+
+	/* iterate over all lchan in each TS in each TRX of this BTS */
+	llist_for_each_entry(trx, &bts->trx_list, list) {
+		for (i = 0; i < ARRAY_SIZE(trx->ts); i++) {
+			struct gsm_bts_trx_ts *ts = &trx->ts[i];
+			for (j = 0; j < ARRAY_SIZE(ts->lchan); j++) {
+				struct gsm_lchan *lchan = &ts->lchan[j];
+				if (!lchan_may_receive_data(lchan))
+					continue;
+				gsm48_send_rr_app_info(lchan, 0x1, 0x0, etws_primary,
+							sizeof(etws_primary));
+				count++;
+			}
+		}
+	}
+
+	LOG_BTS(bts, DCBS, LOGL_NOTICE, "Sent ETWS Primary Notification via %u dedicated channels\n",
+		count);
+
+	/* FIXME: Notify BTS of primary ETWS notification via vendor-specific Abis message */
+}
+
 /*! Try to execute a write-replace operation; roll-back if it fails.
  *  \param[in] chan_state BTS CBCH channel state
  *  \param[in] extended_cbch Basic (false) or Extended (true) CBCH
@@ -506,8 +563,10 @@ static int bts_rx_write_replace(struct gsm_bts *bts, const struct osmo_cbsp_deco
 	int rc;
 
 	if (!wrepl->is_cbs) {
-		LOG_BTS(bts, DCBS, LOGL_ERROR, "(Primary) Emergency Message not supported\n");
-		return -CBSP_CAUSE_CB_NOT_SUPPORTED;
+		/* send through any active dedicated channels of this BTS */
+		etws_primary_to_dedicated(bts, wrepl);
+		/* TODO: send via RSL to BTS for transmission on PCH */
+		return 0;
 	}
 
 	/* check if cell has a CBCH at all */

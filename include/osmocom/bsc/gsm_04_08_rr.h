@@ -29,6 +29,8 @@ struct msgb *gsm48_make_ho_cmd(struct gsm_lchan *new_lchan, uint8_t power_comman
 int gsm48_send_ho_cmd(struct gsm_lchan *old_lchan, struct gsm_lchan *new_lchan,
 		      uint8_t power_command, uint8_t ho_ref);
 int gsm48_send_rr_ass_cmd(struct gsm_lchan *dest_lchan, struct gsm_lchan *lchan, uint8_t power_command);
+int gsm48_send_rr_app_info(struct gsm_lchan *lchan, uint8_t apdu_id, uint8_t apdu_flags,
+			   const uint8_t *apdu_data, ssize_t apdu_data_len);
 int gsm48_lchan_modify(struct gsm_lchan *lchan, uint8_t mode);
 int gsm48_rx_rr_modif_ack(struct msgb *msg);
 int gsm48_parse_meas_rep(struct gsm_meas_rep *rep, struct msgb *msg);
