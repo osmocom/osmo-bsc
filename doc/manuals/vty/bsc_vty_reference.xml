@@ -402,6 +402,56 @@
         <param name='force-all' doc='Release any globally forced log level set with &apos;logging level force-all &lt;level&gt;&apos;' />
       </params>
     </command>
+    <command id='logp (rll|mm|rr|rsl|nm|pag|meas|msc|ho|hodec|ref|nat|ctrl|filter|pcu|lcls|chan|ts|as|cbs|lglobal|llapd|linp|lmux|lmi|lmib|lsms|lctrl|lgtp|lstats|lgsup|loap|lss7|lsccp|lsua|lm3ua|lmgcp|ljibuf|lrspro) (debug|info|notice|error|fatal) .LOGMESSAGE'>
+      <params>
+        <param name='logp' doc='Print a message on all log outputs; useful for placing markers in test logs' />
+        <param name='rll' doc='A-bis Radio Link Layer (RLL)' />
+        <param name='mm' doc='Layer3 Mobility Management (MM)' />
+        <param name='rr' doc='Layer3 Radio Resource (RR)' />
+        <param name='rsl' doc='A-bis Radio Signalling Link (RSL)' />
+        <param name='nm' doc='A-bis Network Management / O&amp;M (NM/OML)' />
+        <param name='pag' doc='Paging Subsystem' />
+        <param name='meas' doc='Radio Measurement Processing' />
+        <param name='msc' doc='Mobile Switching Center' />
+        <param name='ho' doc='Hand-Over Process' />
+        <param name='hodec' doc='Hand-Over Decision' />
+        <param name='ref' doc='Reference Counting' />
+        <param name='nat' doc='GSM 08.08 NAT/Multiplexer' />
+        <param name='ctrl' doc='Control interface' />
+        <param name='filter' doc='BSC/NAT IMSI based filtering' />
+        <param name='pcu' doc='PCU Interface' />
+        <param name='lcls' doc='Local Call, Local Switch' />
+        <param name='chan' doc='lchan FSM' />
+        <param name='ts' doc='timeslot FSM' />
+        <param name='as' doc='assignment FSM' />
+        <param name='cbs' doc='Cell Broadcast System' />
+        <param name='lglobal' doc='Library-internal global log family' />
+        <param name='llapd' doc='LAPD in libosmogsm' />
+        <param name='linp' doc='A-bis Intput Subsystem' />
+        <param name='lmux' doc='A-bis B-Subchannel TRAU Frame Multiplex' />
+        <param name='lmi' doc='A-bis Input Driver for Signalling' />
+        <param name='lmib' doc='A-bis Input Driver for B-Channels (voice)' />
+        <param name='lsms' doc='Layer3 Short Message Service (SMS)' />
+        <param name='lctrl' doc='Control Interface' />
+        <param name='lgtp' doc='GPRS GTP library' />
+        <param name='lstats' doc='Statistics messages and logging' />
+        <param name='lgsup' doc='Generic Subscriber Update Protocol' />
+        <param name='loap' doc='Osmocom Authentication Protocol' />
+        <param name='lss7' doc='libosmo-sigtran Signalling System 7' />
+        <param name='lsccp' doc='libosmo-sigtran SCCP Implementation' />
+        <param name='lsua' doc='libosmo-sigtran SCCP User Adaptation' />
+        <param name='lm3ua' doc='libosmo-sigtran MTP3 User Adaptation' />
+        <param name='lmgcp' doc='libosmo-mgcp Media Gateway Control Protocol' />
+        <param name='ljibuf' doc='libosmo-netif Jitter Buffer' />
+        <param name='lrspro' doc='Remote SIM protocol' />
+        <param name='debug' doc='Log debug messages and higher levels' />
+        <param name='info' doc='Log informational messages and higher levels' />
+        <param name='notice' doc='Log noticeable messages and higher levels' />
+        <param name='error' doc='Log error messages and higher levels' />
+        <param name='fatal' doc='Log only fatal messages' />
+        <param name='.LOGMESSAGE' doc='Arbitrary message to log on given category and log level' />
+      </params>
+    </command>
     <command id='show logging vty'>
       <params>
         <param name='show' doc='Show running system information' />
@@ -1068,6 +1118,56 @@
         <param name='logging' doc='Configure logging' />
         <param name='level' doc='Set the log level for a specified category' />
         <param name='force-all' doc='Release any globally forced log level set with &apos;logging level force-all &lt;level&gt;&apos;' />
+      </params>
+    </command>
+    <command id='logp (rll|mm|rr|rsl|nm|pag|meas|msc|ho|hodec|ref|nat|ctrl|filter|pcu|lcls|chan|ts|as|cbs|lglobal|llapd|linp|lmux|lmi|lmib|lsms|lctrl|lgtp|lstats|lgsup|loap|lss7|lsccp|lsua|lm3ua|lmgcp|ljibuf|lrspro) (debug|info|notice|error|fatal) .LOGMESSAGE'>
+      <params>
+        <param name='logp' doc='Print a message on all log outputs; useful for placing markers in test logs' />
+        <param name='rll' doc='A-bis Radio Link Layer (RLL)' />
+        <param name='mm' doc='Layer3 Mobility Management (MM)' />
+        <param name='rr' doc='Layer3 Radio Resource (RR)' />
+        <param name='rsl' doc='A-bis Radio Signalling Link (RSL)' />
+        <param name='nm' doc='A-bis Network Management / O&amp;M (NM/OML)' />
+        <param name='pag' doc='Paging Subsystem' />
+        <param name='meas' doc='Radio Measurement Processing' />
+        <param name='msc' doc='Mobile Switching Center' />
+        <param name='ho' doc='Hand-Over Process' />
+        <param name='hodec' doc='Hand-Over Decision' />
+        <param name='ref' doc='Reference Counting' />
+        <param name='nat' doc='GSM 08.08 NAT/Multiplexer' />
+        <param name='ctrl' doc='Control interface' />
+        <param name='filter' doc='BSC/NAT IMSI based filtering' />
+        <param name='pcu' doc='PCU Interface' />
+        <param name='lcls' doc='Local Call, Local Switch' />
+        <param name='chan' doc='lchan FSM' />
+        <param name='ts' doc='timeslot FSM' />
+        <param name='as' doc='assignment FSM' />
+        <param name='cbs' doc='Cell Broadcast System' />
+        <param name='lglobal' doc='Library-internal global log family' />
+        <param name='llapd' doc='LAPD in libosmogsm' />
+        <param name='linp' doc='A-bis Intput Subsystem' />
+        <param name='lmux' doc='A-bis B-Subchannel TRAU Frame Multiplex' />
+        <param name='lmi' doc='A-bis Input Driver for Signalling' />
+        <param name='lmib' doc='A-bis Input Driver for B-Channels (voice)' />
+        <param name='lsms' doc='Layer3 Short Message Service (SMS)' />
+        <param name='lctrl' doc='Control Interface' />
+        <param name='lgtp' doc='GPRS GTP library' />
+        <param name='lstats' doc='Statistics messages and logging' />
+        <param name='lgsup' doc='Generic Subscriber Update Protocol' />
+        <param name='loap' doc='Osmocom Authentication Protocol' />
+        <param name='lss7' doc='libosmo-sigtran Signalling System 7' />
+        <param name='lsccp' doc='libosmo-sigtran SCCP Implementation' />
+        <param name='lsua' doc='libosmo-sigtran SCCP User Adaptation' />
+        <param name='lm3ua' doc='libosmo-sigtran MTP3 User Adaptation' />
+        <param name='lmgcp' doc='libosmo-mgcp Media Gateway Control Protocol' />
+        <param name='ljibuf' doc='libosmo-netif Jitter Buffer' />
+        <param name='lrspro' doc='Remote SIM protocol' />
+        <param name='debug' doc='Log debug messages and higher levels' />
+        <param name='info' doc='Log informational messages and higher levels' />
+        <param name='notice' doc='Log noticeable messages and higher levels' />
+        <param name='error' doc='Log error messages and higher levels' />
+        <param name='fatal' doc='Log only fatal messages' />
+        <param name='.LOGMESSAGE' doc='Arbitrary message to log on given category and log level' />
       </params>
     </command>
     <command id='show logging vty'>
@@ -2602,7 +2702,7 @@
         <param name='handover1' doc='Handover options for handover decision algorithm 1' />
         <param name='window' doc='Measurement averaging settings' />
         <param name='rxlev' doc='Received-Level averaging' />
-        <param name='averaging' doc='How many RxLev measurements are used for averaging' />
+        <param name='averaging' doc='How many RxLev measurements to use for averaging' />
         <param name='&lt;1-10&gt;' doc='RxLev averaging: Number of values to average over' />
         <param name='default' doc='Use default (10), remove explicit setting on this node' />
       </params>
@@ -2612,7 +2712,7 @@
         <param name='handover1' doc='Handover options for handover decision algorithm 1' />
         <param name='window' doc='Measurement averaging settings' />
         <param name='rxqual' doc='Received-Quality averaging' />
-        <param name='averaging' doc='How many RxQual measurements are used for averaging' />
+        <param name='averaging' doc='How many RxQual measurements to use for averaging' />
         <param name='&lt;1-10&gt;' doc='RxQual averaging: Number of values to average over' />
         <param name='default' doc='Use default (1), remove explicit setting on this node' />
       </params>
@@ -2622,8 +2722,8 @@
         <param name='handover1' doc='Handover options for handover decision algorithm 1' />
         <param name='window' doc='Measurement averaging settings' />
         <param name='rxlev' doc='Received-Level averaging' />
-        <param name='neighbor' doc='How many Neighbor RxLev measurements are used for averaging' />
-        <param name='averaging' doc='How many Neighbor RxLev measurements are used for averaging' />
+        <param name='neighbor' doc='How many Neighbor RxLev measurements to use for averaging' />
+        <param name='averaging' doc='How many Neighbor RxLev measurements to use for averaging' />
         <param name='&lt;1-10&gt;' doc='Neighbor RxLev averaging: Number of values to average over' />
         <param name='default' doc='Use default (10), remove explicit setting on this node' />
       </params>
@@ -2662,7 +2762,7 @@
         <param name='handover2' doc='Handover options for handover decision algorithm 2' />
         <param name='window' doc='Measurement averaging settings' />
         <param name='rxlev' doc='Received-Level averaging' />
-        <param name='averaging' doc='How many RxLev measurements are used for averaging' />
+        <param name='averaging' doc='How many RxLev measurements to use for averaging' />
         <param name='&lt;1-10&gt;' doc='RxLev averaging: Number of values to average over' />
         <param name='default' doc='Use default (10), remove explicit setting on this node' />
       </params>
@@ -2672,7 +2772,7 @@
         <param name='handover2' doc='Handover options for handover decision algorithm 2' />
         <param name='window' doc='Measurement averaging settings' />
         <param name='rxqual' doc='Received-Quality averaging' />
-        <param name='averaging' doc='How many RxQual measurements are used for averaging' />
+        <param name='averaging' doc='How many RxQual measurements to use for averaging' />
         <param name='&lt;1-10&gt;' doc='RxQual averaging: Number of values to average over' />
         <param name='default' doc='Use default (1), remove explicit setting on this node' />
       </params>
@@ -2682,8 +2782,8 @@
         <param name='handover2' doc='Handover options for handover decision algorithm 2' />
         <param name='window' doc='Measurement averaging settings' />
         <param name='rxlev' doc='Received-Level averaging' />
-        <param name='neighbor' doc='How many Neighbor RxLev measurements are used for averaging' />
-        <param name='averaging' doc='How many Neighbor RxLev measurements are used for averaging' />
+        <param name='neighbor' doc='How many Neighbor RxLev measurements to use for averaging' />
+        <param name='averaging' doc='How many Neighbor RxLev measurements to use for averaging' />
         <param name='&lt;1-10&gt;' doc='Neighbor RxLev averaging: Number of values to average over' />
         <param name='default' doc='Use default (10), remove explicit setting on this node' />
       </params>
@@ -2720,7 +2820,7 @@
     <command id='handover2 assignment (0|1|default)'>
       <params>
         <param name='handover2' doc='Handover options for handover decision algorithm 2' />
-        <param name='assignment' doc='Enable or disable in-call channel re-assignment' />
+        <param name='assignment' doc='Enable or disable in-call channel re-assignment within the same cell' />
         <param name='0' doc='Disable in-call assignment' />
         <param name='1' doc='Enable in-call assignment' />
         <param name='default' doc='Use default (0), remove explicit setting on this node' />
@@ -2740,7 +2840,7 @@
         <param name='handover2' doc='Handover options for handover decision algorithm 2' />
         <param name='min' doc='Minimum Level/Quality thresholds before triggering HO' />
         <param name='rxlev' doc='How weak may RxLev of an MS become before triggering HO' />
-        <param name='&lt;-110--50&gt;' doc='minimum RxLev (dBm)' />
+        <param name='&lt;-110--50&gt;' doc='minimum RxLev (dBm; note: negative values)' />
         <param name='default' doc='Use default (-100), remove explicit setting on this node' />
       </params>
     </command>
@@ -2801,7 +2901,7 @@
       <params>
         <param name='handover2' doc='Handover options for handover decision algorithm 2' />
         <param name='penalty-time' doc='Set penalty times to wait between repeated handovers' />
-        <param name='max-distance' doc='Time to suspend handovers after leaving this cell due to exceeding max distance' />
+        <param name='max-distance' doc='Time to suspend handover for a subscriber after leaving this cell due to exceeding max distance; see also &apos;handover2 retries&apos;' />
         <param name='&lt;0-99999&gt;' doc='Seconds' />
         <param name='default' doc='Use default (300), remove explicit setting on this node' />
       </params>
@@ -2810,7 +2910,7 @@
       <params>
         <param name='handover2' doc='Handover options for handover decision algorithm 2' />
         <param name='penalty-time' doc='Set penalty times to wait between repeated handovers' />
-        <param name='failed-ho' doc='Time to suspend handovers after handover failure to this cell' />
+        <param name='failed-ho' doc='Time to suspend handover for a subscriber after a failed handover into this cell; see also &apos;handover2 retries&apos;' />
         <param name='&lt;0-99999&gt;' doc='Seconds' />
         <param name='default' doc='Use default (60), remove explicit setting on this node' />
       </params>
@@ -2819,7 +2919,7 @@
       <params>
         <param name='handover2' doc='Handover options for handover decision algorithm 2' />
         <param name='penalty-time' doc='Set penalty times to wait between repeated handovers' />
-        <param name='failed-assignment' doc='Time to suspend handovers after assignment failure in this cell' />
+        <param name='failed-assignment' doc='Time to suspend handover for a subscriber after a failed re-assignment within this cell; see also &apos;handover2 retries&apos;' />
         <param name='&lt;0-99999&gt;' doc='Seconds' />
         <param name='default' doc='Use default (60), remove explicit setting on this node' />
       </params>
@@ -2827,7 +2927,7 @@
     <command id='handover2 retries (&lt;0-9&gt;|default)'>
       <params>
         <param name='handover2' doc='Handover options for handover decision algorithm 2' />
-        <param name='retries' doc='Immediately retry on handover/assignment failure' />
+        <param name='retries' doc='Number of times to immediately retry a failed handover/assignment, before a penalty time is applied' />
         <param name='&lt;0-9&gt;' doc='Number of retries' />
         <param name='default' doc='Use default (0), remove explicit setting on this node' />
       </params>
@@ -2836,7 +2936,7 @@
       <params>
         <param name='handover2' doc='Handover options for handover decision algorithm 2' />
         <param name='congestion-check' doc='Configure congestion check interval' />
-        <param name='disabled' doc='Disable congestion checking, do not handover based on cell overload' />
+        <param name='disabled' doc='Disable congestion checking, do not handover based on cell load. Note: there is one global congestion check interval, i.e. contrary to other handover2 settings, this is not configurable per individual cell.' />
         <param name='&lt;1-999&gt;' doc='Congestion check interval in seconds (default 10)' />
         <param name='now' doc='Manually trigger a congestion check to run right now' />
       </params>
@@ -2920,15 +3020,15 @@
     </command>
     <command id='ipa unit-id &lt;0-65534&gt; &lt;0-255&gt;'>
       <params>
-        <param name='ip.access' doc='Abis/IP specific options' />
-        <param name='unit_id' doc='Set the IPA BTS Unit ID' />
+        <param name='ipa' doc='Abis/IP specific options' />
+        <param name='unit-id' doc='Set the IPA BTS Unit ID' />
         <param name='&lt;0-65534&gt;' doc='Unit ID (Site)' />
         <param name='&lt;0-255&gt;' doc='Unit ID (BTS)' />
       </params>
     </command>
     <command id='ipa rsl-ip A.B.C.D'>
       <params>
-        <param name='ip.access' doc='Abis/IP specific options' />
+        <param name='ipa' doc='Abis/IP specific options' />
         <param name='rsl-ip' doc='Set the IPA RSL IP Address of the BSC' />
         <param name='A.B.C.D' doc='Destination IP address for RSL connection' />
       </params>
@@ -2959,8 +3059,8 @@
     <command id='oml ipa stream-id &lt;0-255&gt; line E1_LINE'>
       <params>
         <param name='oml' doc='Organization &amp; Maintenance Link' />
-        <param name='ip.access' doc='A-bis/IP Specific Options' />
-        <param name='stream_id' doc='Set the ip.access Stream ID of the OML link of this BTS' />
+        <param name='ipa' doc='A-bis/IP Specific Options' />
+        <param name='stream-id' doc='Set the ipa Stream ID of the OML link of this BTS' />
         <param name='&lt;0-255&gt;' doc='Stream Identifier' />
         <param name='line' doc='Virtual E1 Line Number' />
         <param name='E1_LINE' doc='Virtual E1 Line Number' />
@@ -4072,6 +4172,12 @@
         <param name='any' doc='for all BSICs / use any BSIC in this ARFCN' />
       </params>
     </command>
+    <command id='no neighbors'>
+      <params>
+        <param name='no' doc='Negate a command or set its defaults' />
+        <param name='neighbors' doc='Remove all local and remote-BSS neighbor config for this cell. Note that this falls back to the legacy behavior of regarding all local cells as neighbors.' />
+      </params>
+    </command>
     <command id='trx &lt;0-255&gt;'>
       <params>
         <param name='trx' doc='Radio Transceiver' />
@@ -4129,7 +4235,7 @@
         <param name='handover1' doc='Handover options for handover decision algorithm 1' />
         <param name='window' doc='Measurement averaging settings' />
         <param name='rxlev' doc='Received-Level averaging' />
-        <param name='averaging' doc='How many RxLev measurements are used for averaging' />
+        <param name='averaging' doc='How many RxLev measurements to use for averaging' />
         <param name='&lt;1-10&gt;' doc='RxLev averaging: Number of values to average over' />
         <param name='default' doc='Use default (10), remove explicit setting on this node' />
       </params>
@@ -4139,7 +4245,7 @@
         <param name='handover1' doc='Handover options for handover decision algorithm 1' />
         <param name='window' doc='Measurement averaging settings' />
         <param name='rxqual' doc='Received-Quality averaging' />
-        <param name='averaging' doc='How many RxQual measurements are used for averaging' />
+        <param name='averaging' doc='How many RxQual measurements to use for averaging' />
         <param name='&lt;1-10&gt;' doc='RxQual averaging: Number of values to average over' />
         <param name='default' doc='Use default (1), remove explicit setting on this node' />
       </params>
@@ -4149,8 +4255,8 @@
         <param name='handover1' doc='Handover options for handover decision algorithm 1' />
         <param name='window' doc='Measurement averaging settings' />
         <param name='rxlev' doc='Received-Level averaging' />
-        <param name='neighbor' doc='How many Neighbor RxLev measurements are used for averaging' />
-        <param name='averaging' doc='How many Neighbor RxLev measurements are used for averaging' />
+        <param name='neighbor' doc='How many Neighbor RxLev measurements to use for averaging' />
+        <param name='averaging' doc='How many Neighbor RxLev measurements to use for averaging' />
         <param name='&lt;1-10&gt;' doc='Neighbor RxLev averaging: Number of values to average over' />
         <param name='default' doc='Use default (10), remove explicit setting on this node' />
       </params>
@@ -4189,7 +4295,7 @@
         <param name='handover2' doc='Handover options for handover decision algorithm 2' />
         <param name='window' doc='Measurement averaging settings' />
         <param name='rxlev' doc='Received-Level averaging' />
-        <param name='averaging' doc='How many RxLev measurements are used for averaging' />
+        <param name='averaging' doc='How many RxLev measurements to use for averaging' />
         <param name='&lt;1-10&gt;' doc='RxLev averaging: Number of values to average over' />
         <param name='default' doc='Use default (10), remove explicit setting on this node' />
       </params>
@@ -4199,7 +4305,7 @@
         <param name='handover2' doc='Handover options for handover decision algorithm 2' />
         <param name='window' doc='Measurement averaging settings' />
         <param name='rxqual' doc='Received-Quality averaging' />
-        <param name='averaging' doc='How many RxQual measurements are used for averaging' />
+        <param name='averaging' doc='How many RxQual measurements to use for averaging' />
         <param name='&lt;1-10&gt;' doc='RxQual averaging: Number of values to average over' />
         <param name='default' doc='Use default (1), remove explicit setting on this node' />
       </params>
@@ -4209,8 +4315,8 @@
         <param name='handover2' doc='Handover options for handover decision algorithm 2' />
         <param name='window' doc='Measurement averaging settings' />
         <param name='rxlev' doc='Received-Level averaging' />
-        <param name='neighbor' doc='How many Neighbor RxLev measurements are used for averaging' />
-        <param name='averaging' doc='How many Neighbor RxLev measurements are used for averaging' />
+        <param name='neighbor' doc='How many Neighbor RxLev measurements to use for averaging' />
+        <param name='averaging' doc='How many Neighbor RxLev measurements to use for averaging' />
         <param name='&lt;1-10&gt;' doc='Neighbor RxLev averaging: Number of values to average over' />
         <param name='default' doc='Use default (10), remove explicit setting on this node' />
       </params>
@@ -4247,7 +4353,7 @@
     <command id='handover2 assignment (0|1|default)'>
       <params>
         <param name='handover2' doc='Handover options for handover decision algorithm 2' />
-        <param name='assignment' doc='Enable or disable in-call channel re-assignment' />
+        <param name='assignment' doc='Enable or disable in-call channel re-assignment within the same cell' />
         <param name='0' doc='Disable in-call assignment' />
         <param name='1' doc='Enable in-call assignment' />
         <param name='default' doc='Use default (0), remove explicit setting on this node' />
@@ -4267,7 +4373,7 @@
         <param name='handover2' doc='Handover options for handover decision algorithm 2' />
         <param name='min' doc='Minimum Level/Quality thresholds before triggering HO' />
         <param name='rxlev' doc='How weak may RxLev of an MS become before triggering HO' />
-        <param name='&lt;-110--50&gt;' doc='minimum RxLev (dBm)' />
+        <param name='&lt;-110--50&gt;' doc='minimum RxLev (dBm; note: negative values)' />
         <param name='default' doc='Use default (-100), remove explicit setting on this node' />
       </params>
     </command>
@@ -4328,7 +4434,7 @@
       <params>
         <param name='handover2' doc='Handover options for handover decision algorithm 2' />
         <param name='penalty-time' doc='Set penalty times to wait between repeated handovers' />
-        <param name='max-distance' doc='Time to suspend handovers after leaving this cell due to exceeding max distance' />
+        <param name='max-distance' doc='Time to suspend handover for a subscriber after leaving this cell due to exceeding max distance; see also &apos;handover2 retries&apos;' />
         <param name='&lt;0-99999&gt;' doc='Seconds' />
         <param name='default' doc='Use default (300), remove explicit setting on this node' />
       </params>
@@ -4337,7 +4443,7 @@
       <params>
         <param name='handover2' doc='Handover options for handover decision algorithm 2' />
         <param name='penalty-time' doc='Set penalty times to wait between repeated handovers' />
-        <param name='failed-ho' doc='Time to suspend handovers after handover failure to this cell' />
+        <param name='failed-ho' doc='Time to suspend handover for a subscriber after a failed handover into this cell; see also &apos;handover2 retries&apos;' />
         <param name='&lt;0-99999&gt;' doc='Seconds' />
         <param name='default' doc='Use default (60), remove explicit setting on this node' />
       </params>
@@ -4346,7 +4452,7 @@
       <params>
         <param name='handover2' doc='Handover options for handover decision algorithm 2' />
         <param name='penalty-time' doc='Set penalty times to wait between repeated handovers' />
-        <param name='failed-assignment' doc='Time to suspend handovers after assignment failure in this cell' />
+        <param name='failed-assignment' doc='Time to suspend handover for a subscriber after a failed re-assignment within this cell; see also &apos;handover2 retries&apos;' />
         <param name='&lt;0-99999&gt;' doc='Seconds' />
         <param name='default' doc='Use default (60), remove explicit setting on this node' />
       </params>
@@ -4354,7 +4460,7 @@
     <command id='handover2 retries (&lt;0-9&gt;|default)'>
       <params>
         <param name='handover2' doc='Handover options for handover decision algorithm 2' />
-        <param name='retries' doc='Immediately retry on handover/assignment failure' />
+        <param name='retries' doc='Number of times to immediately retry a failed handover/assignment, before a penalty time is applied' />
         <param name='&lt;0-9&gt;' doc='Number of retries' />
         <param name='default' doc='Use default (0), remove explicit setting on this node' />
       </params>
