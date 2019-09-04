@@ -128,7 +128,7 @@ void bsc_sapi_n_reject(struct gsm_subscriber_connection *conn, int dlci)
 	int rc;
 	struct msgb *resp;
 
-	if (!conn || !msc_connected(conn))
+	if (!msc_connected(conn))
 		return;
 
 	LOGP(DMSC, LOGL_NOTICE, "Tx MSC SAPI N REJECT DLCI=0x%02x\n", dlci);
