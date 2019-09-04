@@ -161,11 +161,10 @@ void a_reset_alloc(struct bsc_msc_data *msc, const char *name, void *cb)
 	reset_ctx->conn_loss_counter = 0;
 	reset_fsm = osmo_fsm_inst_alloc(&fsm, msc, reset_ctx, LOGL_DEBUG, name);
 	OSMO_ASSERT(reset_fsm);
-
-	/* kick off reset-ack sending mechanism */
-	osmo_fsm_inst_state_chg(reset_fsm, ST_DISC, RESET_RESEND_INTERVAL, RESET_RESEND_TIMER_NO);
-
 	msc->a.reset_fsm = reset_fsm;
+
+	/* Immediatelly (1ms) kick off reset sending mechanism */
+	osmo_fsm_inst_state_chg_ms(reset_fsm, ST_DISC, 1, RESET_RESEND_TIMER_NO);
 }
 
 /* Confirm that we sucessfully received a reset acknowlege message */
