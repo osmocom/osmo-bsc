@@ -39,14 +39,13 @@ OsmoBSC implements a sub-set of the GSM A interface as specified in TS 08.08
 Osmocom offers two variants of the 'A' interface's protocol stacking:
 
 - 'BSSAP/SCCPlite'
-- 'BSSAP/SCCP/M3UA'
+- 'BSSAP/SCCP/M3UA' (called AoIP)
 
 Traditionally, OsmoBSC only implemented the BSSAP/SCCPlite protocol, but since a
-proper M3UA implementation is available from 'libosmo-sigtran'
-('libosmo-sccp.git'), the stock OsmoBSC now supports only BSSAP/SCCP/M3UA. (The
-idea is that SCCPlite support may be added to libosmo-sigtran at some point
-in the future, after which the new `osmo-bsc` would support both variants of
-the A interface.)
+proper M3UA implementation became available in 2017 as part of 'libosmo-sigtran'
+('libosmo-sccp.git'), the stock OsmoBSC now supports BSSAP/SCCP/M3UA.  SCCPlite
+support has been subsequently added to libosmo-sigtran in 2018, and now both
+variants of the 'A' interface are supported by `osmo-bsc`.
 
 The difference between an BSSAP/SCCPlite and BSSAP/SCCP/M3UA is illustrated in
 <<fig-sccplite>> and <<fig-sccp-m3ua>>.
@@ -54,15 +53,11 @@ The difference between an BSSAP/SCCPlite and BSSAP/SCCP/M3UA is illustrated in
 ===== BSSAP/SCCPlite
 
 Unlike classic A interface implementations for E1 interfacs,
-`osmo-bsc-sccplite` implements a variant of encapsulating the A interface over
+`osmo-bsc` implements a variant of encapsulating the A interface over
 IP.  To do so, the SCCP messages are wrapped in an IPA multiplex and then
 communicated over TCP.  The audio channels are mapped to RTP streams.
 
 This protocol stacking is sometimes called "SCCPlite".
-
-At the time of writing, if you would like to use the old BSSAP/SCCPlite protocol,
-look for binary packages named `osmo-bsc-sccplite`, or compile `osmo-bsc` from
-the 'openbsc.git' repository.
 
 [[fig-sccplite]]
 .`osmo-bsc-sccplite` operation using 'BSSAP/SCCPlite'
@@ -98,9 +93,7 @@ stacking:
 |IP
 |=====
 
-To use the now-default BSSAP/SCCP/M3UA protocol, look for binary packages named
-`osmo-bsc`, or compile `osmo-bsc` from the 'osmo-bsc.git' repository. It is
-recommended to use the M3UA variant, which is required to operate with OsmoMSC.
+It is recommended to use the M3UA variant, which is required to operate with OsmoMSC.
 
 To route SCCP/M3UA messages between OsmoBSC and and MSC, an STP instance like
 OsmoSTP is required.
