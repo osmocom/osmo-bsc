@@ -332,8 +332,19 @@ static void gscon_fsm_wait_cc(struct osmo_fsm_inst *fi, uint32_t event, void *da
 	struct gsm_subscriber_connection *conn = fi->priv;
 	switch (event) {
 	case GSCON_EV_A_CONN_CFM:
-		/* MSC has confirmed the connection, we now change into the
-		 * active state and wait there for further operations */
+		/* MSC has confirmed the connection */
+
+		if (!conn->lchan) {
+			/* If associated lchan was released while we were waiting for the
+			   confirmed connection, then instead simply drop the connection */
+			LOGPFSML(fi, LOGL_INFO,
+				 "Connection confirmed but lchan was dropped previously, clearing conn\n");
+			osmo_fsm_inst_state_chg(conn->fi, ST_CLEARING, 60, 999);
+			gscon_bssmap_clear(conn, GSM0808_CAUSE_EQUIPMENT_FAILURE);
+			break;
+		}
+
+		/* We now change into the active state and wait there for further operations. */
 		conn_fsm_state_chg(ST_ACTIVE);
 		/* if there's user payload, forward it just like EV_MT_DTAP */
 		/* FIXME: Question: if there's user payload attached to the CC, forward it like EV_MT_DTAP? */
@@ -589,7 +600,7 @@ static const struct osmo_fsm_state gscon_fsm_states[] = {
 	[ST_WAIT_CC] = {
 		.name = "WAIT_CC",
 		.in_event_mask = S(GSCON_EV_A_CONN_CFM),
-		.out_state_mask = S(ST_ACTIVE),
+		.out_state_mask = S(ST_ACTIVE) | S(ST_CLEARING),
 		.action = gscon_fsm_wait_cc,
 	},
 	[ST_ACTIVE] = {
@@ -651,10 +662,22 @@ void gscon_lchan_releasing(struct gsm_subscriber_connection *conn, struct gsm_lc
 		lchan_forget_conn(conn->lchan);
 		conn->lchan = NULL;
 	}
+	/* If the conn has no lchan anymore, it was released by the BTS and needs to Clear towards MSC. */
 	if (!conn->lchan) {
-		if (conn->fi->state != ST_CLEARING)
+		switch (conn->fi->state) {
+		case ST_WAIT_CC:
+			/* The SCCP connection was not yet confirmed by a CC, the BSSAP is not fully established
+			   yet so we cannot release it. First wait for the CC, and release in gscon_fsm_wait_cc(). */
+			break;
+		default:
+			/* Ensure that the FSM is in ST_CLEARING. */
 			osmo_fsm_inst_state_chg(conn->fi, ST_CLEARING, 60, 999);
-		gscon_bssmap_clear(conn, GSM0808_CAUSE_EQUIPMENT_FAILURE);
+			/* fall thru, omit an error log if already in ST_CLEARING */
+		case ST_CLEARING:
+			/* Request a Clear Command from the MSC. */
+			gscon_bssmap_clear(conn, GSM0808_CAUSE_EQUIPMENT_FAILURE);
+			break;
+		}
 	}
 }
 
