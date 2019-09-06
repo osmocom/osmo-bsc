@@ -40,6 +40,7 @@
 #include <osmocom/bsc/vty.h>
 #include <osmocom/bsc/gsm_04_08_rr.h>
 #include <osmocom/bsc/lchan_fsm.h>
+#include <osmocom/bsc/abis_rsl.h>
 
 /*********************************************************************************
  * Helper Functions
@@ -461,8 +462,15 @@ static int tx_cbsp_keepalive_compl(struct bsc_cbc_link *cbc)
  * Per-BTS Processing of CBSP from CBC, called via cbsp_per_bts()
  *********************************************************************************/
 
-static void etws_primary_to_dedicated(struct gsm_bts *bts,
-				      const struct osmo_cbsp_write_replace *wrepl)
+/* timer call-back once ETWS warning period has expired */
+static void etws_pn_cb(void *data)
+{
+	struct gsm_bts *bts = (struct gsm_bts *)data;
+	LOG_BTS(bts, DCBS, LOGL_NOTICE, "ETWS PN Timeout; disabling broadcast via PCH\n");
+	rsl_etws_pn_command(bts, RSL_CHAN_PCH_AGCH, NULL, 0);
+}
+
+static void etws_primary_to_bts(struct gsm_bts *bts, const struct osmo_cbsp_write_replace *wrepl)
 {
 	uint8_t etws_primary[ETWS_PRIM_NOTIF_SIZE];
 	struct gsm_bts_trx *trx;
@@ -491,7 +499,18 @@ static void etws_primary_to_dedicated(struct gsm_bts *bts,
 	LOG_BTS(bts, DCBS, LOGL_NOTICE, "Sent ETWS Primary Notification via %u dedicated channels\n",
 		count);
 
-	/* FIXME: Notify BTS of primary ETWS notification via vendor-specific Abis message */
+	/* Notify BTS of primary ETWS notification via vendor-specific Abis message */
+	if (osmo_bts_has_feature(&bts->features, BTS_FEAT_ETWS_PN)) {
+		rsl_etws_pn_command(bts, RSL_CHAN_PCH_AGCH, etws_primary, sizeof(etws_primary));
+		LOG_BTS(bts, DCBS, LOGL_NOTICE, "Sent ETWS Primary Notification via common channel\n");
+		if (wrepl->u.emergency.warning_period != 0xffffffff) {
+			osmo_timer_setup(&bts->etws_timer, etws_pn_cb, bts);
+			osmo_timer_schedule(&bts->etws_timer, wrepl->u.emergency.warning_period, 0);
+		} else
+			LOG_BTS(bts, DCBS, LOGL_NOTICE, "Unlimited ETWS PN broadcast, this breaks "
+				"normal network operation due to PCH blockage\n");
+	} else
+		LOG_BTS(bts, DCBS, LOGL_ERROR, "BTS doesn't support RSL command for ETWS PN\n");
 }
 
 /*! Try to execute a write-replace operation; roll-back if it fails.
@@ -563,9 +582,7 @@ static int bts_rx_write_replace(struct gsm_bts *bts, const struct osmo_cbsp_deco
 	int rc;
 
 	if (!wrepl->is_cbs) {
-		/* send through any active dedicated channels of this BTS */
-		etws_primary_to_dedicated(bts, wrepl);
-		/* TODO: send via RSL to BTS for transmission on PCH */
+		etws_primary_to_bts(bts, wrepl);
 		return 0;
 	}
 

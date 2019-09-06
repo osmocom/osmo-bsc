@@ -2203,6 +2203,25 @@ int abis_rsl_rcvmsg(struct msgb *msg)
 	return rc;
 }
 
+/* Send an Osmocom-specific Abis RSL message for ETWS Primary Notification */
+int rsl_etws_pn_command(struct gsm_bts *bts, uint8_t chan_nr, const uint8_t *data, int len)
+{
+	struct abis_rsl_dchan_hdr *dh;
+	struct msgb *msg = rsl_msgb_alloc();
+	if (!msg)
+		return -1;
+	dh = (struct abis_rsl_dchan_hdr *) msgb_put(msg, sizeof(*dh));
+	init_dchan_hdr(dh, RSL_MT_OSMO_ETWS_CMD);
+	dh->c.msg_discr = ABIS_RSL_MDISC_COM_CHAN;
+	dh->chan_nr = chan_nr;
+
+	msgb_tlv_put(msg, RSL_IE_SMSCB_MSG, len, data);
+
+	msg->dst = bts->c0->rsl_link;
+
+	return abis_rsl_sendmsg(msg);
+}
+
 int rsl_sms_cb_command(struct gsm_bts *bts, uint8_t chan_number,
 		       struct rsl_ie_cb_cmd_type cb_command,
 		       bool use_extended_cbch, const uint8_t *data, int len)
