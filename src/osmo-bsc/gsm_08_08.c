@@ -269,7 +269,7 @@ static struct bsc_subscr *extract_sub(struct gsm_subscriber_connection *conn,
 	return subscr;
 }
 
-struct bsc_msc_data *bsc_find_msc(struct gsm_subscriber_connection *conn,
+static struct bsc_msc_data *bsc_find_msc(struct gsm_subscriber_connection *conn,
 				   struct msgb *msg)
 {
 	struct gsm48_hdr *gh;
