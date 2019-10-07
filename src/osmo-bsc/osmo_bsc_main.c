@@ -821,6 +821,8 @@ int main(int argc, char **argv)
 	osmo_stats_init(tall_bsc_ctx);
 	rate_ctr_init(tall_bsc_ctx);
 
+	osmo_fsm_set_dealloc_ctx(OTC_SELECT);
+
 	/* Allocate global gsm_network struct */
 	rc = bsc_network_alloc();
 	if (rc) {
@@ -939,7 +941,7 @@ int main(int argc, char **argv)
 	}
 
 	while (1) {
-		osmo_select_main(0);
+		osmo_select_main_ctx(0);
 	}
 
 	return 0;
