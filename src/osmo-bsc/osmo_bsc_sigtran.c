@@ -44,6 +44,7 @@ static struct llist_head *msc_list;
 #define RESET_INTERVAL 1	/* sek */
 #define SCCP_MSG_MAXSIZE 1024
 #define CS7_POINTCODE_DEFAULT_OFFSET 2
+#define DEFAULT_ASP_REMOTE_IP "127.0.0.1"
 
 /* The SCCP stack will not assign connection IDs to us automatically, we
  * will do this ourselves using a counter variable, that counts one up
@@ -514,7 +515,7 @@ int osmo_bsc_sigtran_init(struct llist_head *mscs)
 		default_pc = osmo_ss7_pointcode_parse(NULL, BSC_DEFAULT_PC);
 		msc->a.sccp =
 		    osmo_sccp_simple_client_on_ss7_id(msc, msc->a.cs7_instance, msc_name, default_pc,
-						      msc->a.asp_proto, 0, NULL, 0, NULL);
+						      msc->a.asp_proto, 0, NULL, 0, DEFAULT_ASP_REMOTE_IP);
 		if (!msc->a.sccp)
 			return -EINVAL;
 
