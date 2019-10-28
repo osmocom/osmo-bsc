@@ -316,6 +316,8 @@ int rsl_chan_ms_power_ctrl(struct gsm_lchan *lchan, unsigned int fpc, int dbm)
 	dh->chan_nr = chan_nr;
 
 	msgb_tv_put(msg, RSL_IE_MS_POWER, lchan->ms_power);
+	/* indicate MS power control to be performed by BTS: */
+	msgb_tl_put(msg, RSL_IE_MS_POWER_PARAM);
 
 	msg->dst = lchan->ts->trx->rsl_link;
 
@@ -541,6 +543,9 @@ int rsl_tx_chan_activ(struct gsm_lchan *lchan, uint8_t act_type, uint8_t ho_ref)
 	msgb_tv_put(msg, RSL_IE_BS_POWER, lchan->bs_power);
 	msgb_tv_put(msg, RSL_IE_MS_POWER, lchan->ms_power);
 	msgb_tv_put(msg, RSL_IE_TIMING_ADVANCE, ta);
+	/* indicate MS power control to be performed by BTS: */
+	msgb_tl_put(msg, RSL_IE_MS_POWER_PARAM);
+
 	mr_config_for_bts(lchan, msg);
 
 	msg->dst = lchan->ts->trx->rsl_link;
