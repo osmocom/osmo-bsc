@@ -3700,7 +3700,7 @@ DEFUN(cfg_bts_depends_on, cfg_bts_depends_on_cmd,
 }
 
 DEFUN(cfg_bts_no_depends_on, cfg_bts_no_depends_on_cmd,
-	"depeneds-on-bts <0-255>",
+	"no depends-on-bts <0-255>",
 	NO_STR "This BTS can only be started if another one is up\n"
 	BTS_NR_STR)
 {
