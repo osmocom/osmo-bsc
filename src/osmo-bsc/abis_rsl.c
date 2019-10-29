@@ -295,12 +295,14 @@ int rsl_chan_bs_power_ctrl(struct gsm_lchan *lchan, unsigned int fpc, int db)
 
 int rsl_chan_ms_power_ctrl(struct gsm_lchan *lchan, unsigned int fpc, int dbm)
 {
+	struct gsm_bts_trx *trx = lchan->ts->trx;
+	struct gsm_bts *bts = trx->bts;
 	struct abis_rsl_dchan_hdr *dh;
 	struct msgb *msg;
 	uint8_t chan_nr = gsm_lchan2chan_nr(lchan);
 	int ctl_lvl;
 
-	ctl_lvl = ms_pwr_ctl_lvl(lchan->ts->trx->bts->band, dbm);
+	ctl_lvl = ms_pwr_ctl_lvl(bts->band, dbm);
 	if (ctl_lvl < 0)
 		return ctl_lvl;
 
@@ -319,7 +321,7 @@ int rsl_chan_ms_power_ctrl(struct gsm_lchan *lchan, unsigned int fpc, int dbm)
 	/* indicate MS power control to be performed by BTS: */
 	msgb_tl_put(msg, RSL_IE_MS_POWER_PARAM);
 
-	msg->dst = lchan->ts->trx->rsl_link;
+	msg->dst = trx->rsl_link;
 
 	return abis_rsl_sendmsg(msg);
 }
@@ -460,6 +462,8 @@ static void mr_config_for_bts(struct gsm_lchan *lchan, struct msgb *msg)
 /* Chapter 8.4.1 */
 int rsl_tx_chan_activ(struct gsm_lchan *lchan, uint8_t act_type, uint8_t ho_ref)
 {
+	struct gsm_bts_trx *trx = lchan->ts->trx;
+	struct gsm_bts *bts = trx->bts;
 	struct abis_rsl_dchan_hdr *dh;
 	struct msgb *msg;
 	int rc;
@@ -487,7 +491,7 @@ int rsl_tx_chan_activ(struct gsm_lchan *lchan, uint8_t act_type, uint8_t ho_ref)
 	ta = lchan->rqd_ta;
 
 	/* BS11 requires TA shifted by 2 bits */
-	if (lchan->ts->trx->bts->type == GSM_BTS_TYPE_BS11)
+	if (bts->type == GSM_BTS_TYPE_BS11)
 		ta <<= 2;
 
 	memset(&cd, 0, sizeof(cd));
@@ -548,9 +552,9 @@ int rsl_tx_chan_activ(struct gsm_lchan *lchan, uint8_t act_type, uint8_t ho_ref)
 
 	mr_config_for_bts(lchan, msg);
 
-	msg->dst = lchan->ts->trx->rsl_link;
+	msg->dst = trx->rsl_link;
 
-	rate_ctr_inc(&lchan->ts->trx->bts->bts_ctrs->ctr[BTS_CTR_CHAN_ACT_TOTAL]);
+	rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_CTR_CHAN_ACT_TOTAL]);
 
 	return abis_rsl_sendmsg(msg);
 }
