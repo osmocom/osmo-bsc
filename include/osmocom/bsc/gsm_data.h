@@ -242,9 +242,6 @@ struct gsm_subscriber_connection {
 	 * operation. If a Handover was successful, all relevant state must be copied out of this sub-struct. */
 	struct handover ho;
 
-	/* buffer/cache for classmark of the ME of the subscriber */
-	struct gsm_classmark classmark;
-
 	/* Queue DTAP messages during handover/assignment (msgb_enqueue()/msgb_dequeue())*/
 	struct llist_head dtap_queue;
 	unsigned int dtap_queue_len;
