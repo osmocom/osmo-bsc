@@ -85,7 +85,7 @@ int rsl_sacch_info_modify(struct gsm_lchan *lchan, uint8_t type,
 			  const uint8_t *data, int len);
 
 int rsl_chan_bs_power_ctrl(struct gsm_lchan *lchan, unsigned int fpc, int db);
-int rsl_chan_ms_power_ctrl(struct gsm_lchan *lchan, unsigned int fpc, int dbm);
+int rsl_chan_ms_power_ctrl(struct gsm_lchan *lchan);
 
 /* SMSCB functionality */
 int rsl_sms_cb_command(struct gsm_bts *bts, uint8_t chan_number,

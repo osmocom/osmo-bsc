@@ -395,12 +395,16 @@ static int handle_page_resp(struct gsm_subscriber_connection *conn, struct msgb 
 	return 0;
 }
 
+/* TS 04.08 sec 9.2.15 "Location updating request" */
 static void handle_lu_request(struct gsm_subscriber_connection *conn,
 			      struct msgb *msg)
 {
 	struct gsm48_hdr *gh;
 	struct gsm48_loc_upd_req *lu;
 	struct gsm48_loc_area_id lai;
+	int8_t rc8;
+	struct gsm_bts *bts = conn_get_bts(conn);
+
 
 	if (msgb_l3len(msg) < sizeof(*gh) + sizeof(*lu)) {
 		LOGP(DMSC, LOGL_ERROR, "LU too small to look at: %u\n", msgb_l3len(msg));
@@ -416,6 +420,47 @@ static void handle_lu_request(struct gsm_subscriber_connection *conn,
 		LOGP(DMSC, LOGL_DEBUG, "Marking con for welcome USSD.\n");
 		conn->new_subscriber = 1;
 	}
+
+	rc8 = osmo_gsm48_rfpowercap2powerclass(bts->band, lu->classmark1.pwr_lev);
+	if (rc8 < 0) {
+		LOGP(DMSC, LOGL_NOTICE,
+		     "Unable to decode RF power capability %x from classmark1 during LU.\n",
+		     lu->classmark1.pwr_lev);
+		rc8 = 0;
+	}
+	conn_update_ms_power_class(conn, rc8);
+}
+
+
+/* TS 04.08 sec 9.2.15 "Location updating request" */
+static void handle_cm_serv_req(struct gsm_subscriber_connection *conn,
+			      struct msgb *msg)
+{
+	struct gsm48_hdr *gh;
+	struct gsm48_service_request *serv_req;
+	struct gsm48_classmark2* cm2;
+	int8_t rc8;
+	struct gsm_bts *bts = conn_get_bts(conn);
+
+	if (msgb_l3len(msg) < sizeof(*gh) + sizeof(*serv_req)) {
+		LOGP(DMSC, LOGL_ERROR, "CM Serv Req too small to look at: %u\n", msgb_l3len(msg));
+		return;
+	}
+
+	gh = msgb_l3(msg);
+	serv_req = (struct gsm48_service_request *) gh->data;
+
+	cm2 = (struct gsm48_classmark2*)(((uint8_t*)&serv_req->classmark)+1);
+	/* FIXME: one classmark2 is available in libosmocore:
+	cm2 = &serv_req->classmark2; */
+	rc8 = osmo_gsm48_rfpowercap2powerclass(bts->band, cm2->pwr_lev);
+	if (rc8 < 0) {
+		LOGP(DMSC, LOGL_NOTICE,
+		     "Unable to decode RF power capability %x from classmark2 during CM Service Req.\n",
+		     cm2->pwr_lev);
+		rc8 = 0;
+	}
+	conn_update_ms_power_class(conn, rc8);
 }
 
 int bsc_scan_bts_msg(struct gsm_subscriber_connection *conn, struct msgb *msg)
@@ -427,6 +472,8 @@ int bsc_scan_bts_msg(struct gsm_subscriber_connection *conn, struct msgb *msg)
 	if (pdisc == GSM48_PDISC_MM) {
 		if (mtype == GSM48_MT_MM_LOC_UPD_REQUEST)
 			handle_lu_request(conn, msg);
+		else if(mtype == GSM48_MT_MM_CM_SERV_REQ)
+			handle_cm_serv_req(conn, msg);
 	} else if (pdisc == GSM48_PDISC_RR) {
 		if (mtype == GSM48_MT_RR_PAG_RESP)
 			handle_page_resp(conn, msg);
@@ -677,8 +724,20 @@ void bsc_cm_update(struct gsm_subscriber_connection *conn,
 		   const uint8_t *cm2, uint8_t cm2_len,
 		   const uint8_t *cm3, uint8_t cm3_len)
 {
+	struct gsm48_classmark2 *cm2_parsed = (struct gsm48_classmark2 *)cm2;
+	int8_t rc8;
 	int rc;
 	struct msgb *resp;
+	struct gsm_bts *bts = conn_get_bts(conn);
+
+	rc8 = osmo_gsm48_rfpowercap2powerclass(bts->band, cm2_parsed->pwr_lev);
+	if (rc8 < 0) {
+		LOGP(DMSC, LOGL_NOTICE,
+		     "Unable to decode RF power capability %x from classmark1 during CM Update.\n",
+		     cm2_parsed->pwr_lev);
+		rc8 = 0;
+	}
+	conn_update_ms_power_class(conn, rc8);
 
 	if (!msc_connected(conn))
 		return;

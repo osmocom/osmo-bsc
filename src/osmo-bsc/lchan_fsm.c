@@ -511,6 +511,7 @@ static void lchan_fsm_wait_ts_ready_onenter(struct osmo_fsm_inst *fi, uint32_t p
 	struct osmo_mgcpc_ep_ci *use_mgwep_ci;
 	struct gsm_lchan *old_lchan = lchan->activate.info.re_use_mgw_endpoint_from_lchan;
 	struct lchan_activate_info *info = &lchan->activate.info;
+	int ms_power_dbm;
 
 	if (lchan->release.requested) {
 		lchan_fail("Release requested while activating");
@@ -522,11 +523,12 @@ static void lchan_fsm_wait_ts_ready_onenter(struct osmo_fsm_inst *fi, uint32_t p
 	/* If there is a previous lchan, and the new lchan is on the same cell as previous one,
 	 * take over power and TA values. Otherwise, use max power and zero TA. */
 	if (old_lchan && old_lchan->ts->trx->bts == bts) {
-		lchan->ms_power = old_lchan->ms_power;
+		ms_power_dbm = ms_pwr_dbm(bts->band, old_lchan->ms_power);
+		lchan_update_ms_power_ctrl_level(lchan, ms_power_dbm >= 0 ? ms_power_dbm : bts->ms_max_power);
 		lchan->bs_power = old_lchan->bs_power;
 		lchan->rqd_ta = old_lchan->rqd_ta;
 	} else {
-		lchan->ms_power = ms_pwr_ctl_lvl(bts->band, bts->ms_max_power);
+		lchan_update_ms_power_ctrl_level(lchan, bts->ms_max_power);
 		/* Upon last entering the UNUSED state, from lchan_reset():
 		 * - bs_power is still zero, 0dB reduction, output power = Pn.
 		 * - TA is still zero, to be determined by RACH. */

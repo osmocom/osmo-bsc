@@ -309,6 +309,9 @@ struct gsm_subscriber_connection {
 		/* pointer to "other" connection, if Call Leg Relocation was successful */
 		struct gsm_subscriber_connection *other;
 	} lcls;
+
+	/* MS Power Class, TS 05.05 sec 4.1.1 "Mobile station". 0 means unset. */
+	uint8_t ms_power_class:3;
 };
 
 
@@ -1373,6 +1376,9 @@ static inline struct gsm_bts *conn_get_bts(struct gsm_subscriber_connection *con
 	OSMO_ASSERT(conn->lchan);
 	return conn->lchan->ts->trx->bts;
 }
+
+void conn_update_ms_power_class(struct gsm_subscriber_connection *conn, uint8_t power_class);
+void lchan_update_ms_power_ctrl_level(struct gsm_lchan *lchan, int ms_power_dbm);
 
 enum {
 	BTS_CTR_CHREQ_TOTAL,

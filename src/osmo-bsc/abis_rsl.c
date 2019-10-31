@@ -293,25 +293,15 @@ int rsl_chan_bs_power_ctrl(struct gsm_lchan *lchan, unsigned int fpc, int db)
 	return abis_rsl_sendmsg(msg);
 }
 
-int rsl_chan_ms_power_ctrl(struct gsm_lchan *lchan, unsigned int fpc, int dbm)
+int rsl_chan_ms_power_ctrl(struct gsm_lchan *lchan)
 {
 	struct gsm_bts_trx *trx = lchan->ts->trx;
 	struct gsm_bts *bts = trx->bts;
 	struct abis_rsl_dchan_hdr *dh;
 	struct msgb *msg;
 	uint8_t chan_nr = gsm_lchan2chan_nr(lchan);
-	int ctl_lvl;
-
-	ctl_lvl = ms_pwr_ctl_lvl(bts->band, dbm);
-	if (ctl_lvl < 0)
-		return ctl_lvl;
 
 	msg = rsl_msgb_alloc();
-
-	lchan->ms_power = ctl_lvl;
-
-	if (fpc)
-		lchan->ms_power |= 0x20;
 
 	dh = (struct abis_rsl_dchan_hdr *) msgb_put(msg, sizeof(*dh));
 	init_dchan_hdr(dh, RSL_MT_MS_POWER_CONTROL);

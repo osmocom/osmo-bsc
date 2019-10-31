@@ -24,6 +24,7 @@
 #include <errno.h>
 #include <ctype.h>
 #include <stdbool.h>
+#include <inttypes.h>
 #include <netinet/in.h>
 #include <talloc.h>
 
@@ -1683,6 +1684,67 @@ bool ts_is_usable(const struct gsm_bts_trx_ts *ts)
 	}
 
 	return true;
+}
+
+void conn_update_ms_power_class(struct gsm_subscriber_connection *conn, uint8_t power_class)
+{
+	struct gsm_bts *bts = conn_get_bts(conn);
+	LOGP(DRLL, LOGL_DEBUG, "MS Power class update: %" PRIu8 " -> %" PRIu8 "\n",
+	     conn->ms_power_class, power_class);
+
+	conn->ms_power_class = power_class;
+
+	/* If there's an associated lchan, attempt to update its max power to be
+	   on track with band maximum values */
+	if (conn->lchan)
+		lchan_update_ms_power_ctrl_level(conn->lchan, bts->ms_max_power);
+}
+
+void lchan_update_ms_power_ctrl_level(struct gsm_lchan *lchan, int ms_power_dbm)
+{
+	struct gsm_bts *bts = lchan->ts->trx->bts;
+	struct gsm_subscriber_connection *conn = lchan->conn;
+	int max_pwr_dbm_pwclass, new_pwr;
+
+	LOG_LCHAN(lchan, LOGL_DEBUG,
+		  "MS Power level update requested: %d dBm\n", ms_power_dbm);
+
+	if (!conn)
+		goto ms_power_default;
+
+	if (conn->ms_power_class == 0)
+		goto ms_power_default;
+
+	if ((max_pwr_dbm_pwclass = (int)ms_class_gmsk_dbm(bts->band, conn->ms_power_class)) < 0) {
+		LOG_LCHAN(lchan, LOGL_INFO,
+			 "Failed getting max ms power for power class %" PRIu8
+			 " on band %s, providing default max ms power\n",
+			 conn->ms_power_class, gsm_band_name(bts->band));
+		goto ms_power_default;
+	}
+
+	/* Current configured max pwr is above maximum one allowed on
+	   current band + ms power class, so use that one. */
+	if (ms_power_dbm > max_pwr_dbm_pwclass)
+		ms_power_dbm = max_pwr_dbm_pwclass;
+
+ms_power_default:
+	if ((new_pwr = ms_pwr_ctl_lvl(bts->band, ms_power_dbm)) < 0) {
+		LOG_LCHAN(lchan, LOGL_INFO,
+			 "Failed getting max ms power level %d on band %s,"
+			 " providing default max ms power\n",
+			 ms_power_dbm, gsm_band_name(bts->band));
+		return;
+	}
+
+	LOG_LCHAN(lchan, LOGL_DEBUG,
+		  "MS Power level update (power class %" PRIu8 "): %" PRIu8 " -> %d\n",
+		  conn ? conn->ms_power_class : 0, lchan->ms_power, new_pwr);
+
+	lchan->ms_power = new_pwr;
+	/* FIXME: if chan is active and lchan->ms_power != new_pwr, consider
+	   sending an MS Power Control message (RSL) towards BTS to announce the
+	   new max ms power lvl, see rsl_chan_ms_power_ctrl() */
 }
 
 const struct value_string lchan_activate_mode_names[] = {
