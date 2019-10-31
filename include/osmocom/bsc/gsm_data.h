@@ -1705,9 +1705,6 @@ int gsm_bts_model_register(struct gsm_bts_model *model);
 
 struct gsm_subscriber_connection *bsc_subscr_con_allocate(struct gsm_network *network);
 
-struct gsm_subscriber_connection *msc_subscr_con_allocate(struct gsm_network *network);
-void msc_subscr_con_free(struct gsm_subscriber_connection *conn);
-
 struct gsm_bts *gsm_bts_alloc_register(struct gsm_network *net, enum gsm_bts_type type, uint8_t bsic);
 struct gsm_bts *bsc_bts_alloc_register(struct gsm_network *net, enum gsm_bts_type type, uint8_t bsic);
 
