@@ -1744,8 +1744,6 @@ int bts_depend_is_depedency(struct gsm_bts *base, struct gsm_bts *other);
 int gsm_bts_get_radio_link_timeout(const struct gsm_bts *bts);
 void gsm_bts_set_radio_link_timeout(struct gsm_bts *bts, int value);
 
-bool classmark_is_r99(struct gsm_classmark *cm);
-
 bool trx_is_usable(const struct gsm_bts_trx *trx);
 bool ts_is_usable(const struct gsm_bts_trx_ts *ts);
 

@@ -367,16 +367,6 @@ void gsm_bts_set_radio_link_timeout(struct gsm_bts *bts, int value)
 	}
 }
 
-bool classmark_is_r99(struct gsm_classmark *cm)
-{
-	int rev_lev = 0;
-	if (cm->classmark1_set)
-		rev_lev = cm->classmark1.rev_lev;
-	else if (cm->classmark2_len > 0)
-		rev_lev = (cm->classmark2[0] >> 5) & 0x3;
-	return rev_lev >= 2;
-}
-
 static const struct osmo_stat_item_desc bts_stat_desc[] = {
 	{ "chanloadavg", "Channel load average.", "%", 16, 0 },
 	{ "T3122", "T3122 IMMEDIATE ASSIGNMENT REJECT wait indicator.", "s", 16, GSM_T3122_DEFAULT },
