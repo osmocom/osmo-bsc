@@ -463,7 +463,7 @@ static int bootstrap_bts(struct gsm_bts *bts)
 	bts->si_common.chan_desc.mscr = 1;
 
 	/* Determine the value of CCCH_CONF. Is TS0/C0 combined? */
-	if (bts->c0->ts[0].pchan_is != GSM_PCHAN_CCCH) {
+	if (bts->c0->ts[0].pchan_from_config != GSM_PCHAN_CCCH) {
 		bts->si_common.chan_desc.ccch_conf = RSL_BCCH_CCCH_CONF_1_C;
 
 		/* Limit reserved block to 2 on combined channel according to
@@ -476,9 +476,9 @@ static int bootstrap_bts(struct gsm_bts *bts)
 		}
 	} else { /* Non-combined TS0/C0 configuration */
 		/* There can be additional CCCHs on even timeslot numbers */
-		n += (bts->c0->ts[2].pchan_is == GSM_PCHAN_CCCH);
-		n += (bts->c0->ts[4].pchan_is == GSM_PCHAN_CCCH);
-		n += (bts->c0->ts[6].pchan_is == GSM_PCHAN_CCCH);
+		n += (bts->c0->ts[2].pchan_from_config == GSM_PCHAN_CCCH);
+		n += (bts->c0->ts[4].pchan_from_config == GSM_PCHAN_CCCH);
+		n += (bts->c0->ts[6].pchan_from_config == GSM_PCHAN_CCCH);
 		bts->si_common.chan_desc.ccch_conf = (n << 1);
 	}
 
