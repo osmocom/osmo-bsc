@@ -1749,4 +1749,6 @@ void gsm_trx_all_ts_dispatch(struct gsm_bts_trx *trx, uint32_t ts_ev, void *data
 
 int bts_count_free_ts(struct gsm_bts *bts, enum gsm_phys_chan_config pchan);
 
+bool trx_has_valid_pchan_config(const struct gsm_bts_trx *trx);
+
 #endif /* _GSM_DATA_H */

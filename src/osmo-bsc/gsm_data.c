@@ -1693,3 +1693,54 @@ const struct value_string lchan_activate_mode_names[] = {
 	OSMO_VALUE_STRING(FOR_VTY),
 	{}
 };
+
+bool trx_has_valid_pchan_config(const struct gsm_bts_trx *trx)
+{
+	bool combined = false;
+	bool result = true;
+	unsigned int i;
+
+	/* Iterate over all timeslots */
+	for (i = 0; i < 8; i++) {
+		const struct gsm_bts_trx_ts *ts = &trx->ts[i];
+
+		switch (ts->pchan_from_config) {
+		case GSM_PCHAN_CCCH_SDCCH4_CBCH:
+		case GSM_PCHAN_CCCH_SDCCH4:
+			/* CCCH+SDCCH4 can only be configured on TS0 */
+			if (i > 0) {
+				LOGP(DNM, LOGL_ERROR, "Combined CCCH is not allowed "
+						      "on TS%u > 0\n", i);
+				result = false;
+			}
+			if (i == 0)
+				combined = true;
+			/* fall-through */
+		case GSM_PCHAN_CCCH:
+			/* 3GPP TS 45.002, Table 3, CCCH: TS (0, 2, 4, 6) */
+			if (i % 2 != 0) {
+				LOGP(DNM, LOGL_ERROR, "%s is not allowed on odd TS%u\n",
+				     gsm_pchan_name(ts->pchan_from_config), i);
+				result = false;
+			}
+
+			/* There can be no more CCCHs if TS0/C0 is combined */
+			if (i > 0 && combined) {
+				LOGP(DNM, LOGL_ERROR, "%s is not allowed on TS%u, "
+				     "because TS0 is using combined channel configuration\n",
+				     gsm_pchan_name(ts->pchan_from_config), i);
+				result = false;
+			}
+			break;
+
+		default:
+			/* CCCH on TS0 is mandatory for C0 */
+			if (trx->bts->c0 == trx && i == 0) {
+				LOGP(DNM, LOGL_ERROR, "TS0 on C0 must be CCCH/BCCH\n");
+				result = false;
+			}
+		}
+	}
+
+	return result;
+}

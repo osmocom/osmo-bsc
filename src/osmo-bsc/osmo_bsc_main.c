@@ -401,6 +401,7 @@ static int inp_sig_cb(unsigned int subsys, unsigned int signal,
 
 static int bootstrap_bts(struct gsm_bts *bts)
 {
+	struct gsm_bts_trx *trx;
 	int i, n;
 
 	if (!bts->model)
@@ -445,6 +446,15 @@ static int bootstrap_bts(struct gsm_bts *bts)
 	default:
 		LOGP(DNM, LOGL_ERROR, "Unsupported frequency band.\n");
 		return -EINVAL;
+	}
+
+	/* Verify the physical channel mapping */
+	llist_for_each_entry(trx, &bts->trx_list, list) {
+		if (!trx_has_valid_pchan_config(trx)) {
+			LOGP(DNM, LOGL_ERROR, "TRX %u has invalid timeslot "
+					      "configuration\n", trx->nr);
+			return -EINVAL;
+		}
 	}
 
 	/* Control Channel Description is set from vty/config */
