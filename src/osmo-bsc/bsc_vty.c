@@ -1219,9 +1219,10 @@ static void vty_out_dyn_ts_details(struct vty *vty, struct gsm_bts_trx_ts *ts)
 
 static void ts_dump_vty(struct vty *vty, struct gsm_bts_trx_ts *ts)
 {
-	vty_out(vty, "BTS %u, TRX %u, Timeslot %u, phys cfg %s",
+	vty_out(vty, "BTS %u, TRX %u, Timeslot %u, phys cfg %s (active %s)",
 		ts->trx->bts->nr, ts->trx->nr, ts->nr,
-		gsm_pchan_name(ts->pchan_on_init));
+		gsm_pchan_name(ts->pchan_on_init),
+		gsm_pchan_name(ts->pchan_is));
 	if (ts->pchan_is != ts->pchan_on_init)
 		vty_out(vty, " (%s mode)", gsm_pchan_name(ts->pchan_is));
 	vty_out(vty, ", TSC %u%s  NM State: ", gsm_ts_tsc(ts), VTY_NEWLINE);
