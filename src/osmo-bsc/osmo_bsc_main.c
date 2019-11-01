@@ -402,7 +402,7 @@ static int inp_sig_cb(unsigned int subsys, unsigned int signal,
 static int bootstrap_bts(struct gsm_bts *bts)
 {
 	struct gsm_bts_trx *trx;
-	int i, n;
+	unsigned int n = 0;
 
 	if (!bts->model)
 		return -EFAULT;
@@ -459,16 +459,13 @@ static int bootstrap_bts(struct gsm_bts *bts)
 
 	/* Control Channel Description is set from vty/config */
 
-	/* Set ccch config by looking at ts config */
-	for (n=0, i=0; i<8; i++)
-		n += bts->c0->ts[i].pchan_is == GSM_PCHAN_CCCH ? 1 : 0;
-
 	/* Indicate R99 MSC in SI3 */
 	bts->si_common.chan_desc.mscr = 1;
 
-	switch (n) {
-	case 0:
+	/* Determine the value of CCCH_CONF. Is TS0/C0 combined? */
+	if (bts->c0->ts[0].pchan_is != GSM_PCHAN_CCCH) {
 		bts->si_common.chan_desc.ccch_conf = RSL_BCCH_CCCH_CONF_1_C;
+
 		/* Limit reserved block to 2 on combined channel according to
 		   3GPP TS 44.018 Table 10.5.2.11.1 */
 		if (bts->si_common.chan_desc.bs_ag_blks_res > 2) {
@@ -477,22 +474,12 @@ static int bootstrap_bts(struct gsm_bts *bts)
 			     bts->si_common.chan_desc.bs_ag_blks_res);
 			bts->si_common.chan_desc.bs_ag_blks_res = 2;
 		}
-		break;
-	case 1:
-		bts->si_common.chan_desc.ccch_conf = RSL_BCCH_CCCH_CONF_1_NC;
-		break;
-	case 2:
-		bts->si_common.chan_desc.ccch_conf = RSL_BCCH_CCCH_CONF_2_NC;
-		break;
-	case 3:
-		bts->si_common.chan_desc.ccch_conf = RSL_BCCH_CCCH_CONF_3_NC;
-		break;
-	case 4:
-		bts->si_common.chan_desc.ccch_conf = RSL_BCCH_CCCH_CONF_4_NC;
-		break;
-	default:
-		LOGP(DNM, LOGL_ERROR, "Unsupported CCCH timeslot configuration\n");
-		return -EINVAL;
+	} else { /* Non-combined TS0/C0 configuration */
+		/* There can be additional CCCHs on even timeslot numbers */
+		n += (bts->c0->ts[2].pchan_is == GSM_PCHAN_CCCH);
+		n += (bts->c0->ts[4].pchan_is == GSM_PCHAN_CCCH);
+		n += (bts->c0->ts[6].pchan_is == GSM_PCHAN_CCCH);
+		bts->si_common.chan_desc.ccch_conf = (n << 1);
 	}
 
 	bts->si_common.cell_options.pwrc = 0; /* PWRC not set */
