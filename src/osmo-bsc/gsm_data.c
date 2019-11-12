@@ -39,6 +39,7 @@
 
 #include <osmocom/bsc/gsm_data.h>
 #include <osmocom/bsc/osmo_bsc_lcls.h>
+#include <osmocom/bsc/abis_rsl.h>
 #include <osmocom/bsc/abis_nm.h>
 #include <osmocom/bsc/handover_cfg.h>
 #include <osmocom/bsc/timeslot_fsm.h>
@@ -1705,6 +1706,7 @@ void lchan_update_ms_power_ctrl_level(struct gsm_lchan *lchan, int ms_power_dbm)
 	struct gsm_bts *bts = lchan->ts->trx->bts;
 	struct gsm_subscriber_connection *conn = lchan->conn;
 	int max_pwr_dbm_pwclass, new_pwr;
+	bool send_pwr_ctrl_msg = false;
 
 	LOG_LCHAN(lchan, LOGL_DEBUG,
 		  "MS Power level update requested: %d dBm\n", ms_power_dbm);
@@ -1741,10 +1743,15 @@ ms_power_default:
 		  "MS Power level update (power class %" PRIu8 "): %" PRIu8 " -> %d\n",
 		  conn ? conn->ms_power_class : 0, lchan->ms_power, new_pwr);
 
+	/* If chan was already activated and max ms_power changes (due to power
+	   classmark received), send an MS Power Control message */
+	if (lchan->activate.activ_ack && new_pwr != lchan->ms_power)
+		send_pwr_ctrl_msg = true;
+
 	lchan->ms_power = new_pwr;
-	/* FIXME: if chan is active and lchan->ms_power != new_pwr, consider
-	   sending an MS Power Control message (RSL) towards BTS to announce the
-	   new max ms power lvl, see rsl_chan_ms_power_ctrl() */
+
+	if (send_pwr_ctrl_msg)
+		rsl_chan_ms_power_ctrl(lchan);
 }
 
 const struct value_string lchan_activate_mode_names[] = {

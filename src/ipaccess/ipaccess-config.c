@@ -1141,3 +1141,9 @@ int osmo_bsc_sigtran_open_conn(struct gsm_subscriber_connection *conn, struct ms
 {
 	return 0;
 }
+
+/* Stub */
+int rsl_chan_ms_power_ctrl(struct gsm_lchan *lchan)
+{
+	return 0;
+}

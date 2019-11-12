@@ -1248,3 +1248,9 @@ int main(int argc, char **argv)
 		osmo_select_main(0);
 	}
 }
+
+/* Stub */
+int rsl_chan_ms_power_ctrl(struct gsm_lchan *lchan)
+{
+	return 0;
+}

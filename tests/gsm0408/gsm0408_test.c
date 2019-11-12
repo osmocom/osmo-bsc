@@ -996,3 +996,5 @@ void lchan_release(struct gsm_lchan *lchan, bool do_rr_release,
 int rsl_data_request(struct msgb *msg, uint8_t link_id) { return 0; }
 
 int rsl_encryption_cmd(struct msgb *msg) { return 0; }
+
+int rsl_chan_ms_power_ctrl(struct gsm_lchan *lchan) { return 0; }

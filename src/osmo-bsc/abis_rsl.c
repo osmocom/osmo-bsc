@@ -24,6 +24,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
+#include <inttypes.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
@@ -300,6 +301,9 @@ int rsl_chan_ms_power_ctrl(struct gsm_lchan *lchan)
 	struct abis_rsl_dchan_hdr *dh;
 	struct msgb *msg;
 	uint8_t chan_nr = gsm_lchan2chan_nr(lchan);
+
+	LOG_LCHAN(lchan, LOGL_DEBUG, "Tx MS POWER CONTROL (ms_power_lvl=%" PRIu8 ")\n",
+		  lchan->ms_power);
 
 	msg = rsl_msgb_alloc();
 

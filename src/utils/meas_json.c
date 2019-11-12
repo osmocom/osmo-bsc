@@ -190,3 +190,4 @@ int main(int argc, char **argv)
 
 void ts_fsm_alloc(struct gsm_bts_trx_ts *ts) {}
 int abis_rsl_rcvmsg(struct msgb *msg) { return 0; }
+int rsl_chan_ms_power_ctrl(struct gsm_lchan *lchan) { return 0; }
