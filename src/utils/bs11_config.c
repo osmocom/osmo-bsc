@@ -103,7 +103,7 @@ static int create_objects(struct gsm_bts *bts)
 	abis_nm_bs11_conn_oml_tei(bts, 0, 1, 0xff, TEI_OML);
 
 	abis_nm_bs11_set_trx_power(bts->c0, BS11_TRX_POWER_GSM_30mW);
-	
+
 	sleep(1);
 
 	abis_nm_bs11_set_trx1_pw(bts, trx1_password);
@@ -136,7 +136,7 @@ static int create_trx1(struct gsm_bts *bts)
 	abis_nm_bs11_create_object(bts, BS11_OBJ_PA, 1,
 				   sizeof(obj_pa0_attr), obj_pa0_attr);
 	abis_nm_bs11_set_trx_power(trx, BS11_TRX_POWER_GSM_30mW);
-	
+
 	return 0;
 }
 
@@ -201,7 +201,7 @@ static int swload_cbfn(unsigned int hook, unsigned int event, struct msgb *msg,
 		break;
 	case NM_MT_ACTIVATE_SW_ACK:
 		bs11cfg_state = STATE_NONE;
-		
+
 		break;
 	case NM_MT_LOAD_SEG_ACK:
 		percent = abis_nm_software_load_status(g_bts);
@@ -281,7 +281,7 @@ static const char *bts_phase_name(uint8_t phase)
 static const char *trx_power_name(uint8_t pwr)
 {
 	switch (pwr) {
-	case BS11_TRX_POWER_GSM_2W:	
+	case BS11_TRX_POWER_GSM_2W:
 		return "2W (GSM)";
 	case BS11_TRX_POWER_GSM_250mW:
 		return "250mW (GSM)";
