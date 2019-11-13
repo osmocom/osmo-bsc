@@ -405,12 +405,12 @@ int gsm48_multirate_config(uint8_t *lv,
 	for (i = 0; i < num_modes; i++) {
 		if (i > 0 && modes[i - 1].mode > modes[i].mode) {
 			LOGP(DRR, LOGL_ERROR,
-			     "BUG: Multirate codec with inconsistant config (mode order).\n");
+			     "BUG: Multirate codec with inconsistent config (mode order).\n");
 			return -EINVAL;
 		}
 		if (i > 0 && modes[i - 1].mode == modes[i].mode) {
 			LOGP(DRR, LOGL_ERROR,
-			     "BUG: Multirate codec with inconsistant config (duplicate modes).\n");
+			     "BUG: Multirate codec with inconsistent config (duplicate modes).\n");
 			return -EINVAL;
 		}
 	}
@@ -460,7 +460,7 @@ int gsm48_multirate_config(uint8_t *lv,
 			}
 			if (!mode_valid) {
 				LOGP(DRR, LOGL_ERROR,
-				     "BUG: Multirate codec with inconsistant config (no mode defined).\n");
+				     "BUG: Multirate codec with inconsistent config (no mode defined).\n");
 				return -EINVAL;
 			}
 		}

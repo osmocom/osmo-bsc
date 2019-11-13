@@ -982,7 +982,7 @@ static void collect_candidates_for_lchan(struct gsm_lchan *lchan,
 
 	OSMO_ASSERT(candidates);
 
-	/* caculate average rxlev for this cell over the window */
+	/* calculate average rxlev for this cell over the window */
 	av_rxlev = get_meas_rep_avg(lchan,
 				    ho_get_hodec2_full_tdma(bts->ho) ?
 				    MEAS_REP_DL_RXLEV_FULL : MEAS_REP_DL_RXLEV_SUB,
@@ -990,7 +990,7 @@ static void collect_candidates_for_lchan(struct gsm_lchan *lchan,
 	if (_av_rxlev)
 		*_av_rxlev = av_rxlev;
 
-	/* in case there is no measurment report (yet) */
+	/* in case there is no measurement report (yet) */
 	if (av_rxlev < 0) {
 		LOGPHOLCHAN(lchan, LOGL_DEBUG, "Not collecting candidates, not enough measurements"
 			    " (got %d, want %u)\n",
@@ -1023,7 +1023,7 @@ static void collect_candidates_for_lchan(struct gsm_lchan *lchan,
  * Do not perform this process, if handover and assignment are disabled for
  * the current cell.
  * Do not perform handover, if the minimum acceptable RX level
- * is not reched for this cell.
+ * is not reached for this cell.
  *
  * If one or more 'better cells' are available, check the current and neighbor
  * cell measurements in descending order of their RX levels (down-link):
@@ -1263,7 +1263,7 @@ static void on_measurement_report(struct gsm_meas_rep *mr)
 		return;
 	}
 
-	/* get average levels. if not enought measurements yet, value is < 0 */
+	/* get average levels. if not enough measurements yet, value is < 0 */
 	av_rxlev = get_meas_rep_avg(lchan,
 				    ho_get_hodec2_full_tdma(bts->ho) ?
 				    MEAS_REP_DL_RXLEV_FULL : MEAS_REP_DL_RXLEV_SUB,
@@ -1366,7 +1366,7 @@ static void on_measurement_report(struct gsm_meas_rep *mr)
  * Do not perform this process, if handover and assignment are disabled for
  * the current cell.
  * Do not perform handover, if the minimum acceptable RX level
- * is not reched for this cell.
+ * is not reached for this cell.
  * Only check candidates that will solve/reduce congestion.
  *
  * If a cell is congested, all slots are checked for all their RX levels

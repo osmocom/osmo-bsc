@@ -273,7 +273,7 @@ struct gsm_subscriber_connection {
 		/* for advanced ping/pong */
 		int send_ping;
 
-		/* SCCP connection realted */
+		/* SCCP connection related */
 		struct bsc_msc_data *msc;
 
 		/* Sigtran connection ID */
@@ -1010,7 +1010,7 @@ struct gsm_bts {
 	/* Geographical location of the BTS */
 	struct llist_head loc_list;
 
-	/* number of ths BTS in network */
+	/* number of this BTS in network */
 	uint8_t nr;
 	/* human readable name / description */
 	char *description;
@@ -1084,7 +1084,7 @@ struct gsm_bts {
 	 * receival of empty SI disabling unsupported SI. see OS#3707. */
 	bool si_unused_send_empty;
 
-	/* ip.accesss Unit ID's have Site/BTS/TRX layout */
+	/* ip.access Unit ID's have Site/BTS/TRX layout */
 	union {
 		struct {
 			uint16_t site_id;
@@ -1251,7 +1251,7 @@ struct gsm_bts {
 	struct llist_head local_neighbors;
 
 	/* BTS-specific overrides for timer values from struct gsm_network. */
-	uint8_t T3122;	/* ASSIGMENT REJECT wait indication */
+	uint8_t T3122;	/* ASSIGNMENT REJECT wait indication */
 	bool T3113_dynamic; /* Calculate T3113 timeout dynamically based on BTS channel config and load */
 
 	/* Periodic channel load measurements are used to maintain T3122. */
@@ -1411,7 +1411,7 @@ static const struct rate_ctr_desc bts_ctr_description[] = {
 	[BTS_CTR_CODEC_V1_HR] =			{"codec:hr", "Count the usage of HR codec by channel mode requested."},
 
 	[BTS_CTR_PAGING_ATTEMPTED] = 		{"paging:attempted", "Paging attempts for a subscriber."},
-	[BTS_CTR_PAGING_ALREADY] = 		{"paging:already", "Paging attempts ignored as subsciber was already being paged."},
+	[BTS_CTR_PAGING_ALREADY] = 		{"paging:already", "Paging attempts ignored as subscriber was already being paged."},
 	[BTS_CTR_PAGING_RESPONDED] = 		{"paging:responded", "Paging attempts with successful paging response."},
 	[BTS_CTR_PAGING_EXPIRED] = 		{"paging:expired", "Paging Request expired because of timeout T3113."},
 	[BTS_CTR_CHAN_ACT_TOTAL] =		{"chan_act:total", "Total number of Channel Activations."},
@@ -1476,7 +1476,7 @@ static const struct rate_ctr_desc bsc_ctr_description[] = {
 	[BSC_CTR_ASSIGNMENT_NO_CHANNEL] = 	{"assignment:no_channel", "Failure to allocate lchan for Assignment."},
 	[BSC_CTR_ASSIGNMENT_TIMEOUT] = 		{"assignment:timeout", "Assignment timed out."},
 	[BSC_CTR_ASSIGNMENT_FAILED] = 		{"assignment:failed", "Received Assignment Failure message."},
-	[BSC_CTR_ASSIGNMENT_ERROR] = 		{"assignment:error", "Assigment failed for other reason."},
+	[BSC_CTR_ASSIGNMENT_ERROR] = 		{"assignment:error", "Assignment failed for other reason."},
 
 	[BSC_CTR_HANDOVER_ATTEMPTED] = 		{"handover:attempted", "Intra-BSC handover attempts."},
 	[BSC_CTR_HANDOVER_COMPLETED] = 		{"handover:completed", "Intra-BSC handover completed."},
@@ -1484,7 +1484,7 @@ static const struct rate_ctr_desc bsc_ctr_description[] = {
 	[BSC_CTR_HANDOVER_NO_CHANNEL] = 	{"handover:no_channel", "Failure to allocate lchan for HO."},
 	[BSC_CTR_HANDOVER_TIMEOUT] = 		{"handover:timeout", "Handover timed out."},
 	[BSC_CTR_HANDOVER_FAILED] = 		{"handover:failed", "Received Handover Fail messages."},
-	[BSC_CTR_HANDOVER_ERROR] = 		{"handover:error", "Re-assigment failed for other reason."},
+	[BSC_CTR_HANDOVER_ERROR] = 		{"handover:error", "Re-assignment failed for other reason."},
 
 	[BSC_CTR_INTER_BSC_HO_OUT_ATTEMPTED] =	{"interbsc_ho_out:attempted",
 						 "Attempts to handover to remote BSS."},
@@ -1630,7 +1630,7 @@ struct gsm_bts *gsm_bts_by_lac(struct gsm_network *net, unsigned int lac,
 
 extern void *tall_bsc_ctx;
 
-/* this actaully refers to the IPA transport, not the BTS model */
+/* this actually refers to the IPA transport, not the BTS model */
 static inline int is_ipaccess_bts(struct gsm_bts *bts)
 {
 	switch (bts->type) {

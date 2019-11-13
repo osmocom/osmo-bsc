@@ -10,7 +10,7 @@ struct penalty_timers;
  * returns an empty struct penalty_timers.  */
 struct penalty_timers *penalty_timers_init(void *ctx);
 
-/* Add a penalty timer for an arbitary object.
+/* Add a penalty timer for an arbitrary object.
  * Note: the ownership of for_object remains with the caller; it is handled as a mere void* value, so
  * invalid pointers can be handled without problems, while common sense dictates that invalidated
  * pointers (freed objects) should probably be removed from this list. More importantly, the pointer must

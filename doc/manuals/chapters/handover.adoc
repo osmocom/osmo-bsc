@@ -61,7 +61,7 @@ specific BSIC that it reported measurements for.
 
 The BSC is the point of decision whether to do handover or not. This can be a
 hugely complex combination of heuristics, knowledge of cell load and codec
-capabilites. The most important indicator for handover though is: does an MS
+capabilities. The most important indicator for handover though is: does an MS
 report a neighbor with a better signal than the current cell? See
 <<intra_bsc_ho_dot>>.
 

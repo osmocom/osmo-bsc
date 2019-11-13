@@ -2105,7 +2105,7 @@ int abis_nm_perform_test(struct gsm_bts *bts, uint8_t obj_class,
 {
 	struct abis_om_hdr *oh;
 
-	DEBUGP(DNM, "PEFORM TEST %s\n", abis_nm_test_name(test_nr));
+	DEBUGP(DNM, "PERFORM TEST %s\n", abis_nm_test_name(test_nr));
 
 	if (!msg)
 		msg = nm_msgb_alloc();
@@ -2851,7 +2851,7 @@ static void rsl_connect_timeout(void *data)
 
 	LOG_TRX(trx, DRSL, LOGL_NOTICE, "RSL connection request timed out\n");
 
-	/* Fake an RSL CONECT NACK message from the BTS. */
+	/* Fake an RSL CONNECT NACK message from the BTS. */
 	signal.trx = trx;
 	signal.msg_type = NM_MT_IPACC_RSL_CONNECT_NACK;
 	osmo_signal_dispatch(SS_NM, S_NM_IPACC_NACK, &signal);

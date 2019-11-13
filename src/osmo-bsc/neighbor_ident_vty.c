@@ -425,7 +425,7 @@ static int neighbor_del_all(struct vty *vty)
 				bts->nr, neigh_bts->nr, VTY_NEWLINE);
 			removed += rc;
 		} else {
-			vty_out(vty, "%% Error while removing local neigbor bts %u to bts %u, aborted%s",
+			vty_out(vty, "%% Error while removing local neighbor bts %u to bts %u, aborted%s",
 				bts->nr, neigh_bts->nr, VTY_NEWLINE);
 			return CMD_WARNING;
 		}

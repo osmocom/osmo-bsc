@@ -189,7 +189,7 @@ static bool test_codec_support_bts(const struct gsm_bts *bts, uint8_t perm_spch)
 	bool rate_match = false;
 
 	/* Check if the BTS provides a physical channel that matches the
-	 * bandwith of the desired codec. */
+	 * bandwidth of the desired codec. */
 	rc = full_rate_from_perm_spch(&full_rate, perm_spch);
 	if (rc < 0)
 		return false;
@@ -286,13 +286,13 @@ static int match_amr_s15_s0(struct channel_mode_and_rate *ch_mode_rate, const st
 	 * However, only AoIP based networks will include a speech codec list
 	 * into the ASSIGNMENT COMMAND. For non AoIP based networks, no speech
 	 * codec (sc_match) will be available, so we will fully rely on the
-	 * local configuration for thoses cases. */
+	 * local configuration for those cases. */
 	if (sc_match)
 		ch_mode_rate->s15_s0 = sc_match->cfg & amr_s15_s0_supported;
 	else
 		ch_mode_rate->s15_s0 = amr_s15_s0_supported;
 
-	/* Prefer "Config-NB-Code = 1" (S1) over all other AMR rates setttings.
+	/* Prefer "Config-NB-Code = 1" (S1) over all other AMR rates settings.
 	 * When S1 is set, the active set will automatically include 12.2k, 7.4k,
 	 * 5.9k, 4.75k, in case of HR 12,2k is left out. */
 	if (ch_mode_rate->s15_s0 & GSM0808_SC_CFG_AMR_4_75_5_90_7_40_12_20) {

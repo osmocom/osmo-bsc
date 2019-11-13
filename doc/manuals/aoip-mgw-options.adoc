@@ -54,7 +54,7 @@ interoperable A-over-IP (AoIP) interface shall look like.
 
 As more modern MSCs at operators tend to favor implementing 3GPP AoIP
 rather than the proprietary SCCPlite based A interface, it becomes
-neccessary for OsmoBSC to support this.
+necessary for OsmoBSC to support this.
 
 At the same time, for compatibility reasons, the classic SCCPlite
 support shall be kept, if possible with reasonable effort.

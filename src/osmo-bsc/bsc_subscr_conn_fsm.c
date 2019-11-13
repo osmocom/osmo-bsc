@@ -543,7 +543,7 @@ bool gscon_connect_mgw_to_msc(struct gsm_subscriber_connection *conn,
 		const struct mgcp_conn_peer *prev_crcx_info = osmo_mgcpc_ep_ci_get_rtp_info(ci);
 
 		if (!conn->user_plane.mgw_endpoint) {
-			LOGPFSML(conn->fi, LOGL_ERROR, "Internal error: conn has a CI but no endoint\n");
+			LOGPFSML(conn->fi, LOGL_ERROR, "Internal error: conn has a CI but no endpoint\n");
 			return false;
 		}
 

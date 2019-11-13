@@ -8,7 +8,7 @@ A BTS is connected to the BSC by some physical link.  It could be an actual
 E1 link, but it could also be abis-over-IP with a mixture of TCP and RTP/UDP.
 
 To further complicate the fact, multiple BTS can share one such pysical
-link.  On a single E1 line, we can easily accomodate up to three BTS with
+link.  On a single E1 line, we can easily accommodate up to three BTS with
 two TRX each.
 
 Thus, it is best for OpenBSC to have some kind of abstraction layer.  The BSC's

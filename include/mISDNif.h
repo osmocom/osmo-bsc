@@ -46,7 +46,7 @@
 #define MISDN_RELEASE		20
 
 /* primitives for information exchange
- * generell format
+ * general format
  * <16  bit  0 >
  * <8  bit command>
  *    BIT 8 = 1 LAYER private
@@ -65,7 +65,7 @@
 #define MISDN_CMDMASK		0xff00
 #define MISDN_LAYERMASK		0x00ff
 
-/* generell commands */
+/* general commands */
 #define OPEN_CHANNEL		0x0100
 #define CLOSE_CHANNEL		0x0200
 #define CONTROL_CHANNEL		0x0300
@@ -110,7 +110,7 @@
 #define DL_UNITDATA_IND		0x3108
 #define DL_INFORMATION_IND	0x0008
 
-/* intern layer 2 managment */
+/* intern layer 2 management */
 #define MDL_ASSIGN_REQ		0x1804
 #define MDL_ASSIGN_IND		0x1904
 #define MDL_REMOVE_REQ		0x1A04

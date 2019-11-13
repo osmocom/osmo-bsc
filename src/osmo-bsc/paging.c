@@ -306,7 +306,7 @@ static unsigned int calculate_timer_3113(struct gsm_bts *bts)
 	/* TODO: take into account load of paging group for req->bsub */
 
 	/* MFRMS defines repeat interval of paging messages for MSs that belong
-	 * to same paging group accross multiple 51 frame multiframes.
+	 * to same paging group across multiple 51 frame multiframes.
 	 * MAXTRANS defines maximum number of RACH retransmissions.
 	 */
 	to_us = GSM51_MFRAME_DURATION_us * (bts->si_common.chan_desc.bs_pa_mfrms + 2) *

@@ -21,7 +21,7 @@
 /* Create and start state machine which handles the reset/reset-ack procedure */
 void start_reset_fsm(struct bsc_msc_data *msc);
 
-/* Confirm that we sucessfully received a reset acknowlege message */
+/* Confirm that we successfully received a reset acknowledge message */
 void reset_ack_confirm(struct bsc_msc_data *msc);
 
 /* Report a failed connection */

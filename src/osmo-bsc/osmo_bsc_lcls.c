@@ -743,7 +743,7 @@ static void lcls_fsm_cleanup(struct osmo_fsm_inst *fi, enum osmo_fsm_term_cause 
 	struct gsm_subscriber_connection *conn = fi->priv;
 
 	if (conn->lcls.other) {
-		/* inform the "other" side that we're dead, so it can disabe LS and send NOTIFY */
+		/* inform the "other" side that we're dead, so it can disable LS and send NOTIFY */
 		if (conn->lcls.other->fi)
 			osmo_fsm_inst_dispatch(conn->lcls.other->lcls.fi, LCLS_EV_OTHER_DEAD, conn);
 		conn->lcls.other = NULL;

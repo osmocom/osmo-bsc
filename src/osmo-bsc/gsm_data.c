@@ -838,7 +838,7 @@ struct gsm_bts *gsm_bts_alloc(struct gsm_network *net, uint8_t bts_num)
 	bts->chan_load_avg = 0;
 
 	/* timer overrides */
-	bts->T3122 = 0; /* not overriden by default */
+	bts->T3122 = 0; /* not overridden by default */
 	bts->T3113_dynamic = true; /* dynamic by default */
 
 	bts->dtxu = GSM48_DTX_SHALL_NOT_BE_USED;

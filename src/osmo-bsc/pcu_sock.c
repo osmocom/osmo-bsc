@@ -282,7 +282,7 @@ int pcu_tx_imm_ass_sent(struct gsm_bts *bts, uint32_t tlli)
 	return pcu_sock_send(bts, msg);
 }
 
-/* we need to decode the raw RR paging messsage (see PCU code
+/* we need to decode the raw RR paging message (see PCU code
  * Encoding::write_paging_request) and extract the mobile identity
  * (P-TMSI) from it */
 static int pcu_rx_rr_paging(struct gsm_bts *bts, uint8_t paging_group,
@@ -607,7 +607,7 @@ static int pcu_sock_cb(struct osmo_fd *bfd, unsigned int flags)
 	return rc;
 }
 
-/* accept connection comming from PCU */
+/* accept connection coming from PCU */
 static int pcu_sock_accept(struct osmo_fd *bfd, unsigned int flags)
 {
 	struct pcu_sock_state *state = (struct pcu_sock_state *)bfd->data;

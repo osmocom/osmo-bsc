@@ -107,7 +107,7 @@ linecolor="green"];
 	...;
 	bsc <- m_sc	[label="SCCP DT1 (BSSMAP CLEAR CMD)"];
 	bsc -> bsc 	[label="GSCON_EV_A_CLEAR_CMD", textcolor="red", linecolor="red"];
-	---		[label="BSC must release terrestrial resoures before reporting CLEAR COMPLETE"];
+	---		[label="BSC must release terrestrial resources before reporting CLEAR COMPLETE"];
 	mgw <- bsc	[label="MGCP DLCX rtpbridge/2@mgw", textcolor="blue", linecolor="blue"];
 	mgw box mgw	[label="Release MSC-facing local RTP port (3000)", textcolor="blue", linecolor="blue"];
 	mgw -> bsc	[label="MGCP DLCX rtpbridge/2@mgw OK", textcolor="blue", linecolor="blue"];

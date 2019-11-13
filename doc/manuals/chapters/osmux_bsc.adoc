@@ -33,7 +33,7 @@ command presented above:
   up. If _BSSMAP Assign Request_ from MSC contains _Osmux CID_ IE,
   {program-name} will instruct its MGW to set up an Osmux connection on the
   CN-side of the MGCP endpoint, and will provide the MSC with its _recvCID_
-  through the extension IE _Osmux CID_ appened to the _BSSMAP Assign Complete_
+  through the extension IE _Osmux CID_ appended to the _BSSMAP Assign Complete_
   message. On the other hand, if _BSSMAP Assign Request_ doesn't contain an
   _Osmux CID_ IE, {program-name} will instruct its MGW to set up a regular RTP
   connection on the CN-side of the MGCP endpoint.

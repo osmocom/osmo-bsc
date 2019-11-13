@@ -38,7 +38,7 @@ Chapter 8, Section 2.2, Table 24:
 
 Window RXLEV averaging:		10 SACCH frames (no weighting)
 Window RXQUAL averaging:	1 SACCH frame (no averaging)
-Level Threashold:		1 of the last 1 AV-RXLEV values < -110dBm
+Level Threshold:		1 of the last 1 AV-RXLEV values < -110dBm
 Quality Threshold:		3 of the last 4 AV-RXQUAL values >= 5
 Interference Threshold:		1 of the last AV-RXLEV > -85 dBm &
 				3 of the last 4 AV-RXQUAL values >= 5

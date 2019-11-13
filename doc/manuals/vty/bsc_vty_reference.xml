@@ -1336,7 +1336,7 @@
         <param name='&lt;0-255&gt;' doc='BTS Number' />
         <param name='smscb-command' doc='SMS Cell Broadcast' />
         <param name='normal' doc='Normal (one-shot) SMSCB Message; sent once over Abis+Um' />
-        <param name='schedule' doc='Schedule (one-shot) SMSCB Messag; sent once over Abis+Um' />
+        <param name='schedule' doc='Schedule (one-shot) SMSCB Message; sent once over Abis+Um' />
         <param name='default' doc='Default (repeating) SMSCB Message; sent once over Abis, unlimited ovrer Um' />
         <param name='&lt;1-4&gt;' doc='Last Valid Block' />
         <param name='HEXSTRING' doc='Hex Encoded SMSCB message (up to 88 octets)' />

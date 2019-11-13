@@ -1578,7 +1578,7 @@ static void om2k_mo_st_wait_start_res(struct osmo_fsm_inst *fi, uint32_t event, 
 		abis_om2k_tx_op_info(omfp->trx->bts, &omfp->mo->addr, 1);
 		return;
 	case OM2K_MO_CLS_DP:
-		/* Transition directoy to WAIT_ENABLE_ACCEPT */
+		/* Transition directory to WAIT_ENABLE_ACCEPT */
 		osmo_fsm_inst_state_chg(fi, OM2K_ST_WAIT_ENABLE_ACCEPT,
 					OM2K_TIMEOUT, 0);
 		abis_om2k_tx_enable_req(omfp->trx->bts, &omfp->mo->addr);

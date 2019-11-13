@@ -5,7 +5,7 @@
 
 In case of satellite based GSM systems, the transmission cost on the back-haul
 is relatively expensive. The billing for such SAT uplink is usually done in a
-pay-per-byte basis. Thus, reducing the amount of bytes transfered would
+pay-per-byte basis. Thus, reducing the amount of bytes transferred would
 significantly reduce the cost of such uplinks. In such environment, even
 seemingly small protocol optimizations, eg. message batching and trunking, can
 result in significant cost reduction.
@@ -93,7 +93,7 @@ layer 4 protocols are suitable for this application. We detail the reasons
 why:
 
 * TCP is a streaming protocol aimed at maximizing the throughput of a stream
-  withing the constraints of the underlying transport layer.  This feature is
+  within the constraints of the underlying transport layer.  This feature is
   not really required for the low-bandwidth and low-pps GSM signalling.
   Moreover, TCP is stream oriented and does not conserve message boundaries.
   As such, the IPA header has to serve as a boundary between messages in the
@@ -114,7 +114,7 @@ good as TCP does) packet loss and copes with packet re-ordering.
 
 LAPD has a very small header (3-5 octets) compared to TCPs 20 bytes.  Even if
 LAPD is put inside UDP, the combination of 11 to 13 octets still saves a
-noticable number of bytes per packet. Moreover, LAPD has been modified for less
+noticeable number of bytes per packet. Moreover, LAPD has been modified for less
 reliable interfaces such as the GSM Um interface (LAPDm), as well as for the
 use in satellite systems (LAPsat in ETSI GMR).
 
@@ -136,7 +136,7 @@ The following FT values are assigned:
 * FT == 2: Dummy
 * FT == 3: Reserved for Fture Use
 
-There can be any number of OSmux messages batched up in one underlaying packet.
+There can be any number of OSmux messages batched up in one underlying packet.
 In this case, the multiple OSmux messages are simply concatenated, i.e. the
 OSmux header control octet directly follows the last octet of the payload of the
 previous OSmux message.
@@ -224,7 +224,7 @@ need to have independent timestamp and sequence numbers (related to a 8kHz
 clock) as specified in AMR-RTP.
 
 AMR Codec Mode Request (AMR-FT): 4 bits::
-This is a mapping from te AMR FT field (Frame type index) in RFC3267 Section
+This is a mapping from the AMR FT field (Frame type index) in RFC3267 Section
 4.3.2. The length of each codec frame needs to be determined from this field. It
 is thus guaranteed that all frames for a specific stream in an OSmux batch are
 of the same AMR type.
@@ -356,7 +356,7 @@ msc {
 
 === Batching
 
-Following chart shows how batching with a factor of 3 works. To easilly
+Following chart shows how batching with a factor of 3 works. To easily
 illustrate batching, only uplink and one concurrent call is considered.
 
 It can be seen how 3 RTP packets from MSa arrive to the BSC from the BTS. The
@@ -559,7 +559,7 @@ more concurrent calls.
 
 A batching factor of 8 provides very little improvement with regards to batching
 4 messages. Still, we risk to degrade user experience. Thus, we consider a
-batching factor of 3 and 4 is adecuate.
+batching factor of 3 and 4 is adequate.
 
 == Other proposed follow-up works
 

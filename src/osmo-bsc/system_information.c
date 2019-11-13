@@ -248,7 +248,7 @@ int bts_earfcn_add(struct gsm_bts *bts, uint16_t earfcn, uint8_t thresh_hi, uint
 	return r;
 }
 
-/* Scrambling Code as defined in 3GPP TS 25.213 is 9 bit long so number below is unreacheable upper bound */
+/* Scrambling Code as defined in 3GPP TS 25.213 is 9 bit long so number below is unreachable upper bound */
 #define SC_BOUND 600
 
 /* Find position for a given UARFCN (take SC into consideration if it's available) in a sorted list
@@ -518,7 +518,7 @@ static int bitvec2freq_list(uint8_t *chan_list, struct bitvec *bv,
 
 	for (i = 0; i < bv->data_len*8; i++) {
 		/* in case of SI2 or SI5 allow all neighbours in same band
-		 * in case of SI*bis, allow neighbours in same band ouside pgsm
+		 * in case of SI*bis, allow neighbours in same band outside pgsm
 		 * in case of SI*ter, allow neighbours in different bands
 		 */
 		if (!bitvec_get_bit_pos(bv, i))

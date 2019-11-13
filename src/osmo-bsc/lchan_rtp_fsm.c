@@ -446,7 +446,7 @@ static void lchan_rtp_fsm_wait_mgw_endpoint_configured_onenter(struct osmo_fsm_i
 
 	/* At this point, we are taking over an old lchan's MGW endpoint (if any). */
 	if (!lchan->mgw_endpoint_ci_bts && old_lchan) {
-		/* The old lchan shall forget the enpoint now. We might put it back upon ROLLBACK */
+		/* The old lchan shall forget the endpoint now. We might put it back upon ROLLBACK */
 		lchan->mgw_endpoint_ci_bts = old_lchan->mgw_endpoint_ci_bts;
 		old_lchan->mgw_endpoint_ci_bts = NULL;
 	}

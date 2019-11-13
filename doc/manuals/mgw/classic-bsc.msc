@@ -1,5 +1,5 @@
 # MO Call on a classic E1 Abis BTS with classic E1 A BSC
-# not actually supported by OsmoBSC (nor planned), for refrence only
+# not actually supported by OsmoBSC (nor planned), for reference only
 msc {
 	hscale=2;
 	ms [label="MS"], bts [label="E1 BTS"], bsc[label="OsmoBSC"], trau[label="TRAU"], m_sc[label="MSC"]; 

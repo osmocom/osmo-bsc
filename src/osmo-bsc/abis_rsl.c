@@ -1391,7 +1391,7 @@ static int rsl_rx_chan_rqd(struct msgb *msg)
 	/* check availability / allocate channel
 	 *
 	 * - First try to allocate SDCCH.
-	 * - If SDCCH is not available, try a TCH/H (less bandwith).
+	 * - If SDCCH is not available, try a TCH/H (less bandwidth).
 	 * - If there is still no channel available, try a TCH/F.
 	 *
 	 */
@@ -1438,7 +1438,7 @@ int rsl_tx_imm_assignment(struct gsm_lchan *lchan)
 	uint8_t buf[GSM_MACBLOCK_LEN];
 	struct gsm48_imm_ass *ia = (struct gsm48_imm_ass *) buf;
 
-	/* create IMMEDIATE ASSIGN 04.08 messge */
+	/* create IMMEDIATE ASSIGN 04.08 message */
 	memset(ia, 0, sizeof(*ia));
 	/* we set ia->l2_plen once we know the length of the MA below */
 	ia->proto_discr = GSM48_PDISC_RR;

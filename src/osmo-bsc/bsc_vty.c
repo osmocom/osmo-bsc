@@ -2013,7 +2013,7 @@ DEFUN(cfg_bts,
 		bts = bsc_bts_alloc_register(gsmnet, GSM_BTS_TYPE_UNKNOWN,
 					     HARDCODED_BSIC);
 		/*
-		 * Initalize bts->acc_ramp here. Else we could segfault while
+		 * Initialize bts->acc_ramp here. Else we could segfault while
 		 * processing a configuration file with ACC ramping settings.
 		 */
 		acc_ramp_init(&bts->acc_ramp, bts);
@@ -3816,7 +3816,7 @@ static void get_amr_start_from_arg(struct vty *vty, const char *argv[], int full
 	}
 }
 
-/* Give the current amr configuration a final consistency chack by feeding the
+/* Give the current amr configuration a final consistency check by feeding the
  * the configuration into the gsm48 multirate IE generator function */
 static int check_amr_config(struct vty *vty)
 {
@@ -4610,7 +4610,7 @@ DEFUN(smscb_cmd, smscb_cmd_cmd,
 	"BTS related commands\n" BTS_NR_STR
 	"SMS Cell Broadcast\n"
 	"Normal (one-shot) SMSCB Message; sent once over Abis+Um\n"
-	"Schedule (one-shot) SMSCB Messag; sent once over Abis+Um\n"
+	"Schedule (one-shot) SMSCB Message; sent once over Abis+Um\n"
 	"Default (repeating) SMSCB Message; sent once over Abis, unlimited ovrer Um\n"
 	"Last Valid Block\n"
 	"Hex Encoded SMSCB message (up to 88 octets)\n")

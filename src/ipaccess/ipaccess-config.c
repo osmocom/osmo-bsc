@@ -192,7 +192,7 @@ static void check_restart_or_exit(struct gsm_bts_trx *trx)
 static int ipacc_msg_ack(uint8_t mt, struct gsm_bts_trx *trx)
 {
 	if (sw_load_state == 1) {
-		fprintf(stderr, "The new software is activaed.\n");
+		fprintf(stderr, "The new software is activated.\n");
 		check_restart_or_exit(trx);
 	} else if (oml_state == 1) {
 		fprintf(stderr, "Set the NV Attributes.\n");
@@ -238,7 +238,7 @@ static int nwl_sig_cb(unsigned int subsys, unsigned int signal,
 			/* Create whitelist from results */
 			physconf_len = build_physconf(physconf_buf,
 						      &trx->ipaccess.rxlev_stat);
-			/* Start next test abbout BCCH channel usage */
+			/* Start next test about BCCH channel usage */
 			ipac_nwl_test_start(trx, NM_IPACC_TESTNO_BCCH_CHAN_USAGE,
 					    physconf_buf, physconf_len);
 			break;

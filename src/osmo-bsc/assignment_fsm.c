@@ -434,7 +434,7 @@ void assignment_fsm_start(struct gsm_subscriber_connection *conn, struct gsm_bts
 	conn->assignment.req = *req;
 	req = &conn->assignment.req;
 
-	/* Check if we need a voice stream. If yes, set the approriate struct
+	/* Check if we need a voice stream. If yes, set the appropriate struct
 	 * members in conn */
 	if (check_requires_voice_stream(conn) < 0)
 		return;

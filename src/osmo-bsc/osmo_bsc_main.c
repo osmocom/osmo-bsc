@@ -844,7 +844,7 @@ int main(int argc, char **argv)
 	logging_vty_add_deprecated_subsys(tall_bsc_ctx, "cc");
 	logging_vty_add_deprecated_subsys(tall_bsc_ctx, "mgcp");
 
-	/* Initalize SS7 */
+	/* Initialize SS7 */
 	osmo_ss7_init();
 	osmo_ss7_vty_init_asp(tall_bsc_ctx);
 	osmo_sccp_vty_init();

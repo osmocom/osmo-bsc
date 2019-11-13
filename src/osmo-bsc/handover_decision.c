@@ -180,7 +180,7 @@ static void attempt_handover(struct gsm_meas_rep *mr)
 		if (nmp->arfcn == 0)
 			continue;
 
-		/* caculate average rxlev for this cell over the window */
+		/* calculate average rxlev for this cell over the window */
 		avg = neigh_meas_avg(nmp, ho_get_hodec1_rxlev_neigh_avg_win(bts->ho));
 
 		/* check if hysteresis is fulfilled */

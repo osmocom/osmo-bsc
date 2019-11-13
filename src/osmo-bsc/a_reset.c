@@ -163,11 +163,11 @@ void a_reset_alloc(struct bsc_msc_data *msc, const char *name, void *cb)
 	OSMO_ASSERT(reset_fsm);
 	msc->a.reset_fsm = reset_fsm;
 
-	/* Immediatelly (1ms) kick off reset sending mechanism */
+	/* Immediately (1ms) kick off reset sending mechanism */
 	osmo_fsm_inst_state_chg_ms(reset_fsm, ST_DISC, 1, RESET_RESEND_TIMER_NO);
 }
 
-/* Confirm that we sucessfully received a reset acknowlege message */
+/* Confirm that we successfully received a reset acknowledge message */
 void a_reset_ack_confirm(struct bsc_msc_data *msc)
 {
 	if (!msc)

@@ -22,7 +22,7 @@ These counters and their description based on OsmoBSC 1.4.0.84-3f1f8 (OsmoBSC).
 | codec:fr | <<bts_codec:fr>> | Count the usage of FR codec by channel mode requested.
 | codec:hr | <<bts_codec:hr>> | Count the usage of HR codec by channel mode requested.
 | paging:attempted | <<bts_paging:attempted>> | Paging attempts for a subscriber.
-| paging:already | <<bts_paging:already>> | Paging attempts ignored as subsciber was already being paged.
+| paging:already | <<bts_paging:already>> | Paging attempts ignored as subscriber was already being paged.
 | paging:responded | <<bts_paging:responded>> | Paging attempts with successful paging response.
 | paging:expired | <<bts_paging:expired>> | Paging Request expired because of timeout T3113.
 | chan_act:total | <<bts_chan_act:total>> | Total number of Channel Activations.
@@ -48,7 +48,7 @@ These counters and their description based on OsmoBSC 1.4.0.84-3f1f8 (OsmoBSC).
 | codec:fr | <<bts_codec:fr>> | Count the usage of FR codec by channel mode requested.
 | codec:hr | <<bts_codec:hr>> | Count the usage of HR codec by channel mode requested.
 | paging:attempted | <<bts_paging:attempted>> | Paging attempts for a subscriber.
-| paging:already | <<bts_paging:already>> | Paging attempts ignored as subsciber was already being paged.
+| paging:already | <<bts_paging:already>> | Paging attempts ignored as subscriber was already being paged.
 | paging:responded | <<bts_paging:responded>> | Paging attempts with successful paging response.
 | paging:expired | <<bts_paging:expired>> | Paging Request expired because of timeout T3113.
 | chan_act:total | <<bts_chan_act:total>> | Total number of Channel Activations.
@@ -74,7 +74,7 @@ These counters and their description based on OsmoBSC 1.4.0.84-3f1f8 (OsmoBSC).
 | codec:fr | <<bts_codec:fr>> | Count the usage of FR codec by channel mode requested.
 | codec:hr | <<bts_codec:hr>> | Count the usage of HR codec by channel mode requested.
 | paging:attempted | <<bts_paging:attempted>> | Paging attempts for a subscriber.
-| paging:already | <<bts_paging:already>> | Paging attempts ignored as subsciber was already being paged.
+| paging:already | <<bts_paging:already>> | Paging attempts ignored as subscriber was already being paged.
 | paging:responded | <<bts_paging:responded>> | Paging attempts with successful paging response.
 | paging:expired | <<bts_paging:expired>> | Paging Request expired because of timeout T3113.
 | chan_act:total | <<bts_chan_act:total>> | Total number of Channel Activations.
@@ -105,14 +105,14 @@ These counters and their description based on OsmoBSC 1.4.0.84-3f1f8 (OsmoBSC).
 | assignment:no_channel | <<bsc_assignment:no_channel>> | Failure to allocate lchan for Assignment.
 | assignment:timeout | <<bsc_assignment:timeout>> | Assignment timed out.
 | assignment:failed | <<bsc_assignment:failed>> | Received Assignment Failure message.
-| assignment:error | <<bsc_assignment:error>> | Assigment failed for other reason.
+| assignment:error | <<bsc_assignment:error>> | Assignment failed for other reason.
 | handover:attempted | <<bsc_handover:attempted>> | Intra-BSC handover attempts.
 | handover:completed | <<bsc_handover:completed>> | Intra-BSC handover completed.
 | handover:stopped | <<bsc_handover:stopped>> | Connection ended during HO.
 | handover:no_channel | <<bsc_handover:no_channel>> | Failure to allocate lchan for HO.
 | handover:timeout | <<bsc_handover:timeout>> | Handover timed out.
 | handover:failed | <<bsc_handover:failed>> | Received Handover Fail messages.
-| handover:error | <<bsc_handover:error>> | Re-assigment failed for other reason.
+| handover:error | <<bsc_handover:error>> | Re-assignment failed for other reason.
 | interbsc_ho_out:attempted | <<bsc_interbsc_ho_out:attempted>> | Attempts to handover to remote BSS.
 | interbsc_ho_out:completed | <<bsc_interbsc_ho_out:completed>> | Handover to remote BSS completed.
 | interbsc_ho_out:stopped | <<bsc_interbsc_ho_out:stopped>> | Connection ended during HO.

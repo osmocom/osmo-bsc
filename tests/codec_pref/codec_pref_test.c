@@ -325,7 +325,7 @@ static void make_bts_config(struct gsm_bts *bts, uint8_t config_no)
 	cfg->m10_2 = 0;
 	cfg->m12_2 = 0;
 
-	/* Initalize TRX with a TCH/F and a TCH/H channel */
+	/* Initialize TRX with a TCH/F and a TCH/H channel */
 	memset(&trx, 0, sizeof(trx));
 	INIT_LLIST_HEAD(&bts->trx_list);
 	llist_add(&trx.list, &bts->trx_list);

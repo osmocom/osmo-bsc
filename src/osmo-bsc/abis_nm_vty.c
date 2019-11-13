@@ -1,4 +1,4 @@
-/* VTY interface for A-bis OML (Netowrk Management) */
+/* VTY interface for A-bis OML (Network Management) */
 
 /* (C) 2009-2018 by Harald Welte <laforge@gnumonks.org>
  *

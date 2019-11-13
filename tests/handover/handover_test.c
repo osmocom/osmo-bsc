@@ -696,7 +696,7 @@ static char *test_case_10[] = {
 
 	"Hysteresis\n\n"
 	"If neighbor cell is better, handover is only performed if the\n"
-	"ammount of improvement is greater or equal hyteresis\n",
+	"amount of improvement is greater or equal hyteresis\n",
 
 	"create-bts", "2",
 	"create-ms", "0", "TCH/F", "AMR",
@@ -817,7 +817,7 @@ static char *test_case_15[] = {
 	"reports are received, before RXQUAL is checked.\n",
 	/* (See also test 28, which tests for RXQUAL triggering HO to congested cell.) */
 	/* TODO: bad RXQUAL may want to prefer assignment within the same cell to avoid interference.
-	 * See Performence Enhancements in a Frequency Hopping GSM Network (Nielsen Wigard 2002), Chapter
+	 * See Performance Enhancements in a Frequency Hopping GSM Network (Nielsen Wigard 2002), Chapter
 	 * 2.1.1, "Interference" in the list of triggers on p.157. */
 
 	"create-bts", "2",
@@ -1142,7 +1142,7 @@ static char *test_case_24[] = {
 	"2",
 	"No (or not enough) measurements for handover\n\n"
 	"Do not solve congestion in cell, because there is no measurement.\n"
-	"As soon as enough measurments available (1 in our case), perform\n"
+	"As soon as enough measurements available (1 in our case), perform\n"
 	"handover. Afterwards the old cell becomes congested and the new\n"
 	"cell is not. Do not perform handover until new measurements are\n"
 	"received.\n",

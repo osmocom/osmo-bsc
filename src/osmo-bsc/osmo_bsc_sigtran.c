@@ -475,7 +475,7 @@ static void osmo_bsc_sigtran_reset_cb(const void *priv)
 
 static int asp_rx_unknown(struct osmo_ss7_asp *asp, int ppid_mux, struct msgb *msg);
 
-/* Initalize osmo sigtran backhaul */
+/* Initialize osmo sigtran backhaul */
 int osmo_bsc_sigtran_init(struct llist_head *mscs)
 {
 	bool free_attempt_used = false;
@@ -567,7 +567,7 @@ int osmo_bsc_sigtran_init(struct llist_head *mscs)
 
 		/* If we have detected that the SS7 configuration of the MSC we have just initialized
 		 * was incomplete or completely missing, we can not tolerate another incomplete
-		 * configuration. The reson for this is that we do only specify exactly one default
+		 * configuration. The reason for this is that we do only specify exactly one default
 		 * pointcode pair. We also specify localhost as default IP-Address. If we have wanted
 		 * to support multiple MSCs with automatic configuration we would be forced to invent
 		 * a complex ruleset how to allocate the pointcodes and respective IP-Addresses.

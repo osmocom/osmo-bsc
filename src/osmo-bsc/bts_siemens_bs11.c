@@ -330,7 +330,7 @@ unsigned char msg_4[] =
 /*
   Object Class: Transceiver
   BTS relat. Number: 0
-  Tranceiver number: 0
+  Transceiver number: 0
   Instance 3: FF
 SET TRX ATTRIBUTES
   aRFCNList (HEX):  0001

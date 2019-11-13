@@ -118,7 +118,7 @@
         <description>
 	  The periodic location updating interval determines how often
 	  the MS will periodically perform a LOCATION UPDATE procedure,
-	  despite not having actuall changed location.  The value is
+	  despite not having actually changed location.  The value is
 	  specified in minutes.
 	</description>
       </command>

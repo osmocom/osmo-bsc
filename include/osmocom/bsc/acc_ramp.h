@@ -71,7 +71,7 @@ struct acc_ramp {
 	/*!
 	 * Ramping step interval in seconds.
 	 * This value depends on the current BTS channel load average, unless
-	 * it has been overriden by VTY configuration.
+	 * it has been overridden by VTY configuration.
 	 */
 	unsigned int step_interval_sec;
 	bool step_interval_is_fixed;

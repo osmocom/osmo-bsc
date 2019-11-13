@@ -848,7 +848,7 @@ void handover_end(struct gsm_subscriber_connection *conn, enum handover_result r
 	if (result == HO_RESULT_OK)
 		conn->ho.created_ci_for_msc = NULL;
 
-	/* If the performed handover was an INTRA BSC HANDOVER, inform the MSC that a handover has happend */
+	/* If the performed handover was an INTRA BSC HANDOVER, inform the MSC that a handover has happened */
 	if (result == HO_RESULT_OK && ((ho->scope & HO_INTRA_CELL) || (ho->scope & HO_INTRA_BSC)))
 		send_handover_performed(conn);
 
