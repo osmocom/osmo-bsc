@@ -1804,8 +1804,8 @@ static int verify_chan_comb(struct gsm_bts_trx_ts *ts, uint8_t chan_comb,
 			/* not on the same TRX that has a BCCH+SDCCH4
 			 * combination */
 			if (ts->trx != ts->trx->bts->c0 &&
-			    (ts->trx->ts[0].nm_chan_comb == 5 ||
-			     ts->trx->ts[0].nm_chan_comb == 8)) {
+			    (ts->trx->ts[0].nm_chan_comb == NM_CHANC_BCCHComb ||
+			     ts->trx->ts[0].nm_chan_comb == NM_CHANC_SDCCH_CBCH)) {
 				*reason = "SDCCH/8 and BCCH must be on the same TRX.";
 				return -EINVAL;
 			}
@@ -1829,7 +1829,7 @@ static int verify_chan_comb(struct gsm_bts_trx_ts *ts, uint8_t chan_comb,
 				return -EINVAL;
 			}
 			break;
-		case 8: /* this is not like 08.58, but in fact
+		case NM_CHANC_SDCCH_CBCH: /* this is not like 08.58, but in fact
 			 * FCCH+SCH+BCCH+CCCH+SDCCH/4+SACCH/C4+CBCH */
 			/* FIXME: only one CBCH allowed per cell */
 			break;
