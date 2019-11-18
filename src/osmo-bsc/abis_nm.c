@@ -1797,7 +1797,7 @@ static int verify_chan_comb(struct gsm_bts_trx_ts *ts, uint8_t chan_comb,
 			/* not allowed for TS0 of BCCH-TRX */
 			if (ts->trx == ts->trx->bts->c0 &&
 			    ts->nr == 0) {
-				*reason = "SDCCH/8 must be on TS0.";
+				*reason = "SDCCH/8 must not be on C0/TS0.";
 				return -EINVAL;
 			}
 
