@@ -1233,7 +1233,7 @@ static int dtap_rcvmsg(struct gsm_subscriber_connection *conn,
 	}
 
 	rate_ctr_inc(&ctrs[MSC_CTR_BSSMAP_RX_DT1_DTAP]);
-	LOGP(DMSC, LOGL_INFO, "Rx MSC DTAP, SAPI: %u CHAN: %u\n", header->link_id & 0x07, header->link_id & 0xC0);
+	LOGP(DMSC, LOGL_INFO, "Rx MSC DTAP, SAPI: %s CHAN: %u\n", gsm0406_dlci_sapi_name(header->dlci_sapi), header->dlci_cc);
 
 	/* forward the data */
 	gsm48 = gsm48_msgb_alloc_name("GSM 04.08 DTAP RCV");
