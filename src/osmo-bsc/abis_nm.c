@@ -2699,6 +2699,7 @@ static int abis_nm_rx_ipacc(struct msgb *msg)
 	struct tlv_parsed tp;
 	struct ipacc_ack_signal_data signal;
 	struct e1inp_sign_link *sign_link = msg->dst;
+	struct gsm_bts_trx *trx;
 
 	foh = (struct abis_om_fom_hdr *) (oh->data + 1 + idstrlen);
 
@@ -2708,6 +2709,10 @@ static int abis_nm_rx_ipacc(struct msgb *msg)
 	}
 
 	abis_nm_tlv_parse(&tp, sign_link->trx->bts, foh->data, oh->length-sizeof(*foh));
+
+	/* The message might be received over the main OML link, so we cannot
+	 * just use sign_link->trx. Resolve it by number from the FOM header. */
+	trx = gsm_bts_trx_by_nr(sign_link->trx->bts, foh->obj_inst.trx_nr);
 
 	DEBUGPFOH(DNM, foh, "Rx IPACCESS(0x%02x): %s\n", foh->msg_type,
 		  osmo_hexdump(foh->data, oh->length - sizeof(*foh)));
@@ -2727,7 +2732,9 @@ static int abis_nm_rx_ipacc(struct msgb *msg)
 			DEBUGPC(DNM, "STREAM=0x%02x ",
 					*TLVP_VAL(&tp, NM_ATT_IPACC_STREAM_ID));
 		DEBUGPC(DNM, "\n");
-		osmo_timer_del(&sign_link->trx->rsl_connect_timeout);
+		if (!trx)
+			goto obj_inst_error;
+		osmo_timer_del(&trx->rsl_connect_timeout);
 		break;
 	case NM_MT_IPACC_RSL_CONNECT_NACK:
 		LOGPFOH(DNM, LOGL_ERROR, foh, "RSL CONNECT NACK ");
@@ -2736,7 +2743,9 @@ static int abis_nm_rx_ipacc(struct msgb *msg)
 				abis_nm_nack_cause_name(*TLVP_VAL(&tp, NM_ATT_NACK_CAUSES)));
 		else
 			LOGPC(DNM, LOGL_ERROR, "\n");
-		osmo_timer_del(&sign_link->trx->rsl_connect_timeout);
+		if (!trx)
+			goto obj_inst_error;
+		osmo_timer_del(&trx->rsl_connect_timeout);
 		break;
 	case NM_MT_IPACC_SET_NVATTR_ACK:
 		DEBUGPFOH(DNM, foh, "SET NVATTR ACK\n");
@@ -2783,12 +2792,16 @@ static int abis_nm_rx_ipacc(struct msgb *msg)
 	case NM_MT_IPACC_RSL_CONNECT_NACK:
 	case NM_MT_IPACC_SET_NVATTR_NACK:
 	case NM_MT_IPACC_GET_NVATTR_NACK:
-		signal.trx = gsm_bts_trx_by_nr(sign_link->trx->bts, foh->obj_inst.trx_nr);
+		if (!trx)
+			goto obj_inst_error;
+		signal.trx = trx;
 		signal.msg_type = foh->msg_type;
 		osmo_signal_dispatch(SS_NM, S_NM_IPACC_NACK, &signal);
 		break;
 	case NM_MT_IPACC_SET_NVATTR_ACK:
-		signal.trx = gsm_bts_trx_by_nr(sign_link->trx->bts, foh->obj_inst.trx_nr);
+		if (!trx)
+			goto obj_inst_error;
+		signal.trx = trx;
 		signal.msg_type = foh->msg_type;
 		osmo_signal_dispatch(SS_NM, S_NM_IPACC_ACK, &signal);
 		break;
@@ -2797,6 +2810,10 @@ static int abis_nm_rx_ipacc(struct msgb *msg)
 	}
 
 	return 0;
+
+obj_inst_error:
+	LOGPFOH(DNM, LOGL_ERROR, foh, "Unknown object instance\n");
+	return -EINVAL;
 }
 
 /* send an ip-access manufacturer specific message */
