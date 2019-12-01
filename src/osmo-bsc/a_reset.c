@@ -151,7 +151,7 @@ void a_reset_alloc(struct bsc_msc_data *msc, const char *name, void *cb)
 
 	/* Register the fsm description (if not already done) */
 	if (osmo_fsm_find_by_name(fsm.name) != &fsm)
-		osmo_fsm_register(&fsm);
+		OSMO_ASSERT(osmo_fsm_register(&fsm) == 0);
 
 	/* Allocate and configure a new fsm instance */
 	reset_ctx = talloc_zero(msc, struct reset_ctx);

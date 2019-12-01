@@ -2764,7 +2764,7 @@ void abis_om2k_bts_init(struct gsm_bts *bts)
 
 static __attribute__((constructor)) void abis_om2k_init(void)
 {
-	osmo_fsm_register(&om2k_mo_fsm);
-	osmo_fsm_register(&om2k_bts_fsm);
-	osmo_fsm_register(&om2k_trx_fsm);
+	OSMO_ASSERT(osmo_fsm_register(&om2k_mo_fsm) == 0);
+	OSMO_ASSERT(osmo_fsm_register(&om2k_bts_fsm) == 0);
+	OSMO_ASSERT(osmo_fsm_register(&om2k_trx_fsm) == 0);
 }
