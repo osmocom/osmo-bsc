@@ -149,10 +149,6 @@ void a_reset_alloc(struct bsc_msc_data *msc, const char *name, void *cb)
 	/* There must not be any double allocation! */
 	OSMO_ASSERT(msc->a.reset_fsm == NULL);
 
-	/* Register the fsm description (if not already done) */
-	if (osmo_fsm_find_by_name(fsm.name) != &fsm)
-		OSMO_ASSERT(osmo_fsm_register(&fsm) == 0);
-
 	/* Allocate and configure a new fsm instance */
 	reset_ctx = talloc_zero(msc, struct reset_ctx);
 	OSMO_ASSERT(reset_ctx);
@@ -216,4 +212,9 @@ bool a_reset_conn_ready(struct bsc_msc_data *msc)
 		return true;
 
 	return false;
+}
+
+static __attribute__((constructor)) void a_reset_fsm_init()
+{
+	OSMO_ASSERT(osmo_fsm_register(&fsm) == 0);
 }
