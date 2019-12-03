@@ -1200,6 +1200,10 @@ static void handle_options(int argc, char** argv)
 			break;
 		}
 	}
+	if (argc > optind) {
+		fprintf(stderr, "Unsupported positional arguments on command line\n");
+		exit(2);
+	}
 	if ((options_mask & (IPA_PROXY_OPT_LISTEN_IP | IPA_PROXY_OPT_BSC_IP))
 		 != (IPA_PROXY_OPT_LISTEN_IP | IPA_PROXY_OPT_BSC_IP)) {
 		printf("ERROR: You have to specify `--listen' and `--bsc' "

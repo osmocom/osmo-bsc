@@ -854,6 +854,10 @@ static void handle_options(int argc, char **argv)
 	        if (optind+1 < argc)
 			value = argv[optind+1];
 	}
+	if (optind+2 < argc) {
+		fprintf(stderr, "Unsupported positional arguments on command line\n");
+		exit(2);
+	}
 
 }
 
