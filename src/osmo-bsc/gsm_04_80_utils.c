@@ -34,7 +34,8 @@ int bsc_send_ussd_notify(struct gsm_subscriber_connection *conn, int level,
 
 int bsc_send_ussd_release_complete(struct gsm_subscriber_connection *conn)
 {
-	struct msgb *msg = gsm0480_create_ussd_release_complete();
+	/* ugly: we obviously don't know if TID 0 is currently in user for the given subscriber... */
+	struct msgb *msg = gsm0480_create_release_complete(0);
 	if (!msg)
 		return -1;
 	gscon_submit_rsl_dtap(conn, msg, 0, 0);
