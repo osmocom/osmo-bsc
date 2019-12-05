@@ -503,51 +503,8 @@ The following figure shows the growth in traffic saving (in %) depending on the
 number of concurrent numbers of callings for a given set of batching factor
 values:
 
-["python2"]
-----
-from pychart import *
-theme.get_options()
-theme.scale_factor = 5
-theme.use_color = 1
-theme.reinitialize()
-
-IP_HEADER=20
-UDP_HEADER=8
-RTP_HEADER=12
-OSMUX_HEADER=4
-AMR59_PAYLOAD=17
-
-def osmux_get_size(calls, payloads):
-    return IP_HEADER + UDP_HEADER + (OSMUX_HEADER + AMR59_PAYLOAD * payloads) * calls
-
-def rtp_get_size(calls, payloads):
-    return calls * payloads * (IP_HEADER + UDP_HEADER + RTP_HEADER + AMR59_PAYLOAD)
-
-def calc_traffic_saving(calls, payloads):
-    return 100 - 100.0 * osmux_get_size(calls, payloads) / rtp_get_size(calls, payloads)
-
-#  The first value in each tuple is the X value, and subsequent values are Y values for different lines.
-def gen_table():
-    data = []
-    for calls in range(1, 9):
-        col = (calls,)
-        for factor in range(1, 9):
-            col += (calc_traffic_saving(calls, factor),)
-        data.append(col)
-    return data
-
-def do_plot(data):
-    xaxis = axis.X(format="/hL%d", tic_interval = 1, label="Concurrent calls")
-    yaxis = axis.Y(format="%d%%", tic_interval = 10, label="Traffic Saving")
-    ar = area.T(x_axis=xaxis, y_axis=yaxis, y_range=(None,None), x_grid_interval=1, x_grid_style=line_style.gray70_dash3)
-    for y in range(1, len(data[0])):
-        plot = line_plot.T(label="bfactor "+str(y), data=data, ycol=y, tick_mark=tick_mark.circle1)
-        ar.add_plot(plot)
-    ar.draw()
-
-data = gen_table()
-do_plot(data)
-----
+// Original python2 pychart code replaced with generated svg in I36b721f895caee9766528e14d854b6aa2a2fac85
+image::images/osmux-expected-traffic-savings.svg[]
 
 The results show a saving of 15.79% with only one concurrent call and with
 batching disabled (bfactor 1), that quickly improves with more concurrent calls
