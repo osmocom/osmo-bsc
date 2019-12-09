@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 
 # (C) 2013 by Jacob Erlbeck <jerlbeck@sysmocom.de>
 # (C) 2014 by Holger Hans Peter Freyther
@@ -53,8 +53,8 @@ class TestCtrlBase(unittest.TestCase):
         try:
             self.proc = osmoutil.popen_devnull(osmo_ctrl_cmd)
         except OSError:
-            print >> sys.stderr, "Current directory: %s" % os.getcwd()
-            print >> sys.stderr, "Consider setting -b"
+            print("Current directory: %s" % os.getcwd(), file=sys.stderr)
+            print("Consider setting -b", file=sys.stderr)
         time.sleep(2)
 
         appstring = self.ctrl_app()[2]
@@ -72,7 +72,7 @@ class TestCtrlBase(unittest.TestCase):
 
     def connect(self, host, port):
         if verbose:
-            print "Connecting to host %s:%i" % (host, port)
+            print("Connecting to host %s:%i" % (host, port))
 
         retries = 30
         while True:
@@ -92,7 +92,7 @@ class TestCtrlBase(unittest.TestCase):
 
     def send(self, data):
         if verbose:
-            print "Sending \"%s\"" %(data)
+            print("Sending \"%s\"" %(data))
         data = Ctrl().add_header(data)
         return self.sock.send(data) == len(data)
 
@@ -121,9 +121,9 @@ class TestCtrlBase(unittest.TestCase):
         data = self.sock.recv(4096)
         while (len(data)>0):
             (head, data) = IPA().split_combined(data)
-            answer = Ctrl().rem_header(head)
+            answer = Ctrl().rem_header(head).decode()
             if verbose:
-                print "Got message:", answer
+                print("Got message:", answer)
             (mtype, id, msg) = answer.split(None, 2)
             id = int(id)
             rsp = {'mtype': mtype, 'id': id}
@@ -139,7 +139,7 @@ class TestCtrlBase(unittest.TestCase):
             responses[id] = rsp
 
         if verbose:
-            print "Decoded replies: ", responses
+            print("Decoded replies: ", responses)
 
         return responses
 
@@ -159,80 +159,80 @@ class TestCtrlBSC(TestCtrlBase):
 
     def testCtrlErrs(self):
         r = self.do_get('invalid')
-        self.assertEquals(r['mtype'], 'ERROR')
-        self.assertEquals(r['error'], 'Command not found')
+        self.assertEqual(r['mtype'], 'ERROR')
+        self.assertEqual(r['error'], 'Command not found')
 
         r = self.do_set('rf_locked', '999')
-        self.assertEquals(r['mtype'], 'ERROR')
-        self.assertEquals(r['error'], 'Value failed verification.')
+        self.assertEqual(r['mtype'], 'ERROR')
+        self.assertEqual(r['error'], 'Value failed verification.')
 
         r = self.do_get('bts')
-        self.assertEquals(r['mtype'], 'ERROR')
-        self.assertEquals(r['error'], 'Error while parsing the index.')
+        self.assertEqual(r['mtype'], 'ERROR')
+        self.assertEqual(r['error'], 'Error while parsing the index.')
 
         r = self.do_get('bts.999')
-        self.assertEquals(r['mtype'], 'ERROR')
-        self.assertEquals(r['error'], 'Error while resolving object')
+        self.assertEqual(r['mtype'], 'ERROR')
+        self.assertEqual(r['error'], 'Error while resolving object')
 
     def testBtsLac(self):
         r = self.do_get('bts.0.location-area-code')
-        self.assertEquals(r['mtype'], 'GET_REPLY')
-        self.assertEquals(r['var'], 'bts.0.location-area-code')
-        self.assertEquals(r['value'], '1')
+        self.assertEqual(r['mtype'], 'GET_REPLY')
+        self.assertEqual(r['var'], 'bts.0.location-area-code')
+        self.assertEqual(r['value'], '1')
 
         r = self.do_set('bts.0.location-area-code', '23')
-        self.assertEquals(r['mtype'], 'SET_REPLY')
-        self.assertEquals(r['var'], 'bts.0.location-area-code')
-        self.assertEquals(r['value'], '23')
+        self.assertEqual(r['mtype'], 'SET_REPLY')
+        self.assertEqual(r['var'], 'bts.0.location-area-code')
+        self.assertEqual(r['value'], '23')
 
         r = self.do_get('bts.0.location-area-code')
-        self.assertEquals(r['mtype'], 'GET_REPLY')
-        self.assertEquals(r['var'], 'bts.0.location-area-code')
-        self.assertEquals(r['value'], '23')
+        self.assertEqual(r['mtype'], 'GET_REPLY')
+        self.assertEqual(r['var'], 'bts.0.location-area-code')
+        self.assertEqual(r['value'], '23')
 
         r = self.do_set('bts.0.location-area-code', '-1')
-        self.assertEquals(r['mtype'], 'ERROR')
-        self.assertEquals(r['error'], 'Input not within the range')
+        self.assertEqual(r['mtype'], 'ERROR')
+        self.assertEqual(r['error'], 'Input not within the range')
 
     def testBtsCi(self):
         r = self.do_get('bts.0.cell-identity')
-        self.assertEquals(r['mtype'], 'GET_REPLY')
-        self.assertEquals(r['var'], 'bts.0.cell-identity')
-        self.assertEquals(r['value'], '6969')
+        self.assertEqual(r['mtype'], 'GET_REPLY')
+        self.assertEqual(r['var'], 'bts.0.cell-identity')
+        self.assertEqual(r['value'], '6969')
 
         r = self.do_set('bts.0.cell-identity', '23')
-        self.assertEquals(r['mtype'], 'SET_REPLY')
-        self.assertEquals(r['var'], 'bts.0.cell-identity')
-        self.assertEquals(r['value'], '23')
+        self.assertEqual(r['mtype'], 'SET_REPLY')
+        self.assertEqual(r['var'], 'bts.0.cell-identity')
+        self.assertEqual(r['value'], '23')
 
         r = self.do_get('bts.0.cell-identity')
-        self.assertEquals(r['mtype'], 'GET_REPLY')
-        self.assertEquals(r['var'], 'bts.0.cell-identity')
-        self.assertEquals(r['value'], '23')
+        self.assertEqual(r['mtype'], 'GET_REPLY')
+        self.assertEqual(r['var'], 'bts.0.cell-identity')
+        self.assertEqual(r['value'], '23')
 
         r = self.do_set('bts.0.cell-identity', '-1')
-        self.assertEquals(r['mtype'], 'ERROR')
-        self.assertEquals(r['error'], 'Input not within the range')
+        self.assertEqual(r['mtype'], 'ERROR')
+        self.assertEqual(r['error'], 'Input not within the range')
 
     def testBtsGenerateSystemInformation(self):
         r = self.do_get('bts.0.send-new-system-informations')
-        self.assertEquals(r['mtype'], 'ERROR')
-        self.assertEquals(r['error'], 'Write Only attribute')
+        self.assertEqual(r['mtype'], 'ERROR')
+        self.assertEqual(r['error'], 'Write Only attribute')
 
         # No RSL links so it will fail
         r = self.do_set('bts.0.send-new-system-informations', '1')
-        self.assertEquals(r['mtype'], 'ERROR')
-        self.assertEquals(r['error'], 'Failed to generate SI')
+        self.assertEqual(r['mtype'], 'ERROR')
+        self.assertEqual(r['error'], 'Failed to generate SI')
 
     def testBtsChannelLoad(self):
         r = self.do_set('bts.0.channel-load', '1')
-        self.assertEquals(r['mtype'], 'ERROR')
-        self.assertEquals(r['error'], 'Read Only attribute')
+        self.assertEqual(r['mtype'], 'ERROR')
+        self.assertEqual(r['error'], 'Read Only attribute')
 
         # No RSL link so everything is 0
         r = self.do_get('bts.0.channel-load')
-        self.assertEquals(r['mtype'], 'GET_REPLY')
-        self.assertEquals(r['value'],
+        self.assertEqual(r['mtype'], 'GET_REPLY')
+        self.assertEqual(r['value'],
 		'CCCH+SDCCH4,0,0 TCH/F,0,0 TCH/H,0,0 SDCCH8,0,0'
 		+ ' TCH/F_PDCH,0,0 CCCH+SDCCH4+CBCH,0,0'
 		+ ' SDCCH8+CBCH,0,0 TCH/F_TCH/H_PDCH,0,0')
@@ -240,254 +240,254 @@ class TestCtrlBSC(TestCtrlBase):
     def testBtsOmlConnectionState(self):
         """Check OML state. It will not be connected"""
         r = self.do_set('bts.0.oml-connection-state', '1')
-        self.assertEquals(r['mtype'], 'ERROR')
-        self.assertEquals(r['error'], 'Read Only attribute')
+        self.assertEqual(r['mtype'], 'ERROR')
+        self.assertEqual(r['error'], 'Read Only attribute')
 
         # No RSL link so everything is 0
         r = self.do_get('bts.0.oml-connection-state')
-        self.assertEquals(r['mtype'], 'GET_REPLY')
-        self.assertEquals(r['value'], 'disconnected')
+        self.assertEqual(r['mtype'], 'GET_REPLY')
+        self.assertEqual(r['value'], 'disconnected')
 
     def testTrxPowerRed(self):
         r = self.do_get('bts.0.trx.0.max-power-reduction')
-        self.assertEquals(r['mtype'], 'GET_REPLY')
-        self.assertEquals(r['var'], 'bts.0.trx.0.max-power-reduction')
-        self.assertEquals(r['value'], '20')
+        self.assertEqual(r['mtype'], 'GET_REPLY')
+        self.assertEqual(r['var'], 'bts.0.trx.0.max-power-reduction')
+        self.assertEqual(r['value'], '20')
 
         r = self.do_set('bts.0.trx.0.max-power-reduction', '22')
-        self.assertEquals(r['mtype'], 'SET_REPLY')
-        self.assertEquals(r['var'], 'bts.0.trx.0.max-power-reduction')
-        self.assertEquals(r['value'], '22')
+        self.assertEqual(r['mtype'], 'SET_REPLY')
+        self.assertEqual(r['var'], 'bts.0.trx.0.max-power-reduction')
+        self.assertEqual(r['value'], '22')
         
         r = self.do_get('bts.0.trx.0.max-power-reduction')
-        self.assertEquals(r['mtype'], 'GET_REPLY')
-        self.assertEquals(r['var'], 'bts.0.trx.0.max-power-reduction')
-        self.assertEquals(r['value'], '22')
+        self.assertEqual(r['mtype'], 'GET_REPLY')
+        self.assertEqual(r['var'], 'bts.0.trx.0.max-power-reduction')
+        self.assertEqual(r['value'], '22')
         
         r = self.do_set('bts.0.trx.0.max-power-reduction', '1')
-        self.assertEquals(r['mtype'], 'ERROR')
-        self.assertEquals(r['error'], 'Value must be even')
+        self.assertEqual(r['mtype'], 'ERROR')
+        self.assertEqual(r['error'], 'Value must be even')
 
     def testTrxArfcn(self):
         r = self.do_get('bts.0.trx.0.arfcn')
-        self.assertEquals(r['mtype'], 'GET_REPLY')
-        self.assertEquals(r['var'], 'bts.0.trx.0.arfcn')
-        self.assertEquals(r['value'], '871')
+        self.assertEqual(r['mtype'], 'GET_REPLY')
+        self.assertEqual(r['var'], 'bts.0.trx.0.arfcn')
+        self.assertEqual(r['value'], '871')
 
         r = self.do_set('bts.0.trx.0.arfcn', '873')
-        self.assertEquals(r['mtype'], 'SET_REPLY')
-        self.assertEquals(r['var'], 'bts.0.trx.0.arfcn')
-        self.assertEquals(r['value'], '873')
+        self.assertEqual(r['mtype'], 'SET_REPLY')
+        self.assertEqual(r['var'], 'bts.0.trx.0.arfcn')
+        self.assertEqual(r['value'], '873')
 
         r = self.do_get('bts.0.trx.0.arfcn')
-        self.assertEquals(r['mtype'], 'GET_REPLY')
-        self.assertEquals(r['var'], 'bts.0.trx.0.arfcn')
-        self.assertEquals(r['value'], '873')
+        self.assertEqual(r['mtype'], 'GET_REPLY')
+        self.assertEqual(r['var'], 'bts.0.trx.0.arfcn')
+        self.assertEqual(r['value'], '873')
 
         r = self.do_set('bts.0.trx.0.arfcn', '2000')
-        self.assertEquals(r['mtype'], 'ERROR')
-        self.assertEquals(r['error'], 'Input not within the range')
+        self.assertEqual(r['mtype'], 'ERROR')
+        self.assertEqual(r['error'], 'Input not within the range')
 
     def testRfLock(self):
         r = self.do_get('bts.0.rf_state')
-        self.assertEquals(r['mtype'], 'GET_REPLY')
-        self.assertEquals(r['var'], 'bts.0.rf_state')
-        self.assertEquals(r['value'], 'inoperational,unlocked,on')
+        self.assertEqual(r['mtype'], 'GET_REPLY')
+        self.assertEqual(r['var'], 'bts.0.rf_state')
+        self.assertEqual(r['value'], 'inoperational,unlocked,on')
 
         r = self.do_set('rf_locked', '1')
-        self.assertEquals(r['mtype'], 'SET_REPLY')
-        self.assertEquals(r['var'], 'rf_locked')
-        self.assertEquals(r['value'], '1')
+        self.assertEqual(r['mtype'], 'SET_REPLY')
+        self.assertEqual(r['var'], 'rf_locked')
+        self.assertEqual(r['value'], '1')
 
         time.sleep(1.5)
 
         r = self.do_get('bts.0.rf_state')
-        self.assertEquals(r['mtype'], 'GET_REPLY')
-        self.assertEquals(r['var'], 'bts.0.rf_state')
-        self.assertEquals(r['value'], 'inoperational,locked,off')
+        self.assertEqual(r['mtype'], 'GET_REPLY')
+        self.assertEqual(r['var'], 'bts.0.rf_state')
+        self.assertEqual(r['value'], 'inoperational,locked,off')
 
         r = self.do_get('rf_locked')
-        self.assertEquals(r['mtype'], 'GET_REPLY')
-        self.assertEquals(r['var'], 'rf_locked')
-        self.assertEquals(r['value'], 'state=off,policy=off')
+        self.assertEqual(r['mtype'], 'GET_REPLY')
+        self.assertEqual(r['var'], 'rf_locked')
+        self.assertEqual(r['value'], 'state=off,policy=off')
 
         r = self.do_set('rf_locked', '0')
-        self.assertEquals(r['mtype'], 'SET_REPLY')
-        self.assertEquals(r['var'], 'rf_locked')
-        self.assertEquals(r['value'], '0')
+        self.assertEqual(r['mtype'], 'SET_REPLY')
+        self.assertEqual(r['var'], 'rf_locked')
+        self.assertEqual(r['value'], '0')
 
         time.sleep(1.5)
 
         r = self.do_get('bts.0.rf_state')
-        self.assertEquals(r['mtype'], 'GET_REPLY')
-        self.assertEquals(r['var'], 'bts.0.rf_state')
-        self.assertEquals(r['value'], 'inoperational,unlocked,on')
+        self.assertEqual(r['mtype'], 'GET_REPLY')
+        self.assertEqual(r['var'], 'bts.0.rf_state')
+        self.assertEqual(r['value'], 'inoperational,unlocked,on')
 
         r = self.do_get('rf_locked')
-        self.assertEquals(r['mtype'], 'GET_REPLY')
-        self.assertEquals(r['var'], 'rf_locked')
-        self.assertEquals(r['value'], 'state=off,policy=on')
+        self.assertEqual(r['mtype'], 'GET_REPLY')
+        self.assertEqual(r['var'], 'rf_locked')
+        self.assertEqual(r['value'], 'state=off,policy=on')
 
     def testTimezone(self):
         r = self.do_get('timezone')
-        self.assertEquals(r['mtype'], 'GET_REPLY')
-        self.assertEquals(r['var'], 'timezone')
-        self.assertEquals(r['value'], 'off')
+        self.assertEqual(r['mtype'], 'GET_REPLY')
+        self.assertEqual(r['var'], 'timezone')
+        self.assertEqual(r['value'], 'off')
 
         r = self.do_set('timezone', '-2,15,2')
-        self.assertEquals(r['mtype'], 'SET_REPLY')
-        self.assertEquals(r['var'], 'timezone')
-        self.assertEquals(r['value'], '-2,15,2')
+        self.assertEqual(r['mtype'], 'SET_REPLY')
+        self.assertEqual(r['var'], 'timezone')
+        self.assertEqual(r['value'], '-2,15,2')
 
         r = self.do_get('timezone')
-        self.assertEquals(r['mtype'], 'GET_REPLY')
-        self.assertEquals(r['var'], 'timezone')
-        self.assertEquals(r['value'], '-2,15,2')
+        self.assertEqual(r['mtype'], 'GET_REPLY')
+        self.assertEqual(r['var'], 'timezone')
+        self.assertEqual(r['value'], '-2,15,2')
 
         # Test invalid input
         r = self.do_set('timezone', '-2,15,2,5,6,7')
-        self.assertEquals(r['mtype'], 'SET_REPLY')
-        self.assertEquals(r['var'], 'timezone')
-        self.assertEquals(r['value'], '-2,15,2')
+        self.assertEqual(r['mtype'], 'SET_REPLY')
+        self.assertEqual(r['var'], 'timezone')
+        self.assertEqual(r['value'], '-2,15,2')
 
         r = self.do_set('timezone', '-2,15')
-        self.assertEquals(r['mtype'], 'ERROR')
+        self.assertEqual(r['mtype'], 'ERROR')
         r = self.do_set('timezone', '-2')
-        self.assertEquals(r['mtype'], 'ERROR')
+        self.assertEqual(r['mtype'], 'ERROR')
         r = self.do_set('timezone', '1')
 
         r = self.do_set('timezone', 'off')
-        self.assertEquals(r['mtype'], 'SET_REPLY')
-        self.assertEquals(r['var'], 'timezone')
-        self.assertEquals(r['value'], 'off')
+        self.assertEqual(r['mtype'], 'SET_REPLY')
+        self.assertEqual(r['var'], 'timezone')
+        self.assertEqual(r['value'], 'off')
 
         r = self.do_get('timezone')
-        self.assertEquals(r['mtype'], 'GET_REPLY')
-        self.assertEquals(r['var'], 'timezone')
-        self.assertEquals(r['value'], 'off')
+        self.assertEqual(r['mtype'], 'GET_REPLY')
+        self.assertEqual(r['var'], 'timezone')
+        self.assertEqual(r['value'], 'off')
 
     def testMcc(self):
         r = self.do_set('mcc', '23')
         r = self.do_get('mcc')
-        self.assertEquals(r['mtype'], 'GET_REPLY')
-        self.assertEquals(r['var'], 'mcc')
-        self.assertEquals(r['value'], '023')
+        self.assertEqual(r['mtype'], 'GET_REPLY')
+        self.assertEqual(r['var'], 'mcc')
+        self.assertEqual(r['value'], '023')
 
         r = self.do_set('mcc', '023')
         r = self.do_get('mcc')
-        self.assertEquals(r['mtype'], 'GET_REPLY')
-        self.assertEquals(r['var'], 'mcc')
-        self.assertEquals(r['value'], '023')
+        self.assertEqual(r['mtype'], 'GET_REPLY')
+        self.assertEqual(r['var'], 'mcc')
+        self.assertEqual(r['value'], '023')
 
     def testMnc(self):
         r = self.do_set('mnc', '9')
         r = self.do_get('mnc')
-        self.assertEquals(r['mtype'], 'GET_REPLY')
-        self.assertEquals(r['var'], 'mnc')
-        self.assertEquals(r['value'], '09')
+        self.assertEqual(r['mtype'], 'GET_REPLY')
+        self.assertEqual(r['var'], 'mnc')
+        self.assertEqual(r['value'], '09')
 
         r = self.do_set('mnc', '09')
         r = self.do_get('mnc')
-        self.assertEquals(r['mtype'], 'GET_REPLY')
-        self.assertEquals(r['var'], 'mnc')
-        self.assertEquals(r['value'], '09')
+        self.assertEqual(r['mtype'], 'GET_REPLY')
+        self.assertEqual(r['var'], 'mnc')
+        self.assertEqual(r['value'], '09')
 
         r = self.do_set('mnc', '009')
         r = self.do_get('mnc')
-        self.assertEquals(r['mtype'], 'GET_REPLY')
-        self.assertEquals(r['var'], 'mnc')
-        self.assertEquals(r['value'], '009')
+        self.assertEqual(r['mtype'], 'GET_REPLY')
+        self.assertEqual(r['var'], 'mnc')
+        self.assertEqual(r['value'], '009')
 
 
     def testMccMncApply(self):
         # Test some invalid input
         r = self.do_set('mcc-mnc-apply', 'WRONG')
-        self.assertEquals(r['mtype'], 'ERROR')
+        self.assertEqual(r['mtype'], 'ERROR')
 
         r = self.do_set('mcc-mnc-apply', '1,')
-        self.assertEquals(r['mtype'], 'ERROR')
+        self.assertEqual(r['mtype'], 'ERROR')
 
         r = self.do_set('mcc-mnc-apply', '200,3')
-        self.assertEquals(r['mtype'], 'SET_REPLY')
-        self.assertEquals(r['var'], 'mcc-mnc-apply')
-        self.assertEquals(r['value'], 'Tried to drop the BTS')
+        self.assertEqual(r['mtype'], 'SET_REPLY')
+        self.assertEqual(r['var'], 'mcc-mnc-apply')
+        self.assertEqual(r['value'], 'Tried to drop the BTS')
 
         # Set it again
         r = self.do_set('mcc-mnc-apply', '200,3')
-        self.assertEquals(r['mtype'], 'SET_REPLY')
-        self.assertEquals(r['var'], 'mcc-mnc-apply')
-        self.assertEquals(r['value'], 'Nothing changed')
+        self.assertEqual(r['mtype'], 'SET_REPLY')
+        self.assertEqual(r['var'], 'mcc-mnc-apply')
+        self.assertEqual(r['value'], 'Nothing changed')
 
         # Change it
         r = self.do_set('mcc-mnc-apply', '200,4')
-        self.assertEquals(r['mtype'], 'SET_REPLY')
-        self.assertEquals(r['var'], 'mcc-mnc-apply')
-        self.assertEquals(r['value'], 'Tried to drop the BTS')
+        self.assertEqual(r['mtype'], 'SET_REPLY')
+        self.assertEqual(r['var'], 'mcc-mnc-apply')
+        self.assertEqual(r['value'], 'Tried to drop the BTS')
 
         # Change it
         r = self.do_set('mcc-mnc-apply', '201,4')
-        self.assertEquals(r['mtype'], 'SET_REPLY')
-        self.assertEquals(r['var'], 'mcc-mnc-apply')
-        self.assertEquals(r['value'], 'Tried to drop the BTS')
+        self.assertEqual(r['mtype'], 'SET_REPLY')
+        self.assertEqual(r['var'], 'mcc-mnc-apply')
+        self.assertEqual(r['value'], 'Tried to drop the BTS')
 
         # Verify
         r = self.do_get('mnc')
-        self.assertEquals(r['mtype'], 'GET_REPLY')
-        self.assertEquals(r['var'], 'mnc')
-        self.assertEquals(r['value'], '04')
+        self.assertEqual(r['mtype'], 'GET_REPLY')
+        self.assertEqual(r['var'], 'mnc')
+        self.assertEqual(r['value'], '04')
 
         r = self.do_get('mcc')
-        self.assertEquals(r['mtype'], 'GET_REPLY')
-        self.assertEquals(r['var'], 'mcc')
-        self.assertEquals(r['value'], '201')
+        self.assertEqual(r['mtype'], 'GET_REPLY')
+        self.assertEqual(r['var'], 'mcc')
+        self.assertEqual(r['value'], '201')
 
         # Change it
         r = self.do_set('mcc-mnc-apply', '202,03')
-        self.assertEquals(r['mtype'], 'SET_REPLY')
-        self.assertEquals(r['var'], 'mcc-mnc-apply')
-        self.assertEquals(r['value'], 'Tried to drop the BTS')
+        self.assertEqual(r['mtype'], 'SET_REPLY')
+        self.assertEqual(r['var'], 'mcc-mnc-apply')
+        self.assertEqual(r['value'], 'Tried to drop the BTS')
 
         r = self.do_get('mnc')
-        self.assertEquals(r['mtype'], 'GET_REPLY')
-        self.assertEquals(r['var'], 'mnc')
-        self.assertEquals(r['value'], '03')
+        self.assertEqual(r['mtype'], 'GET_REPLY')
+        self.assertEqual(r['var'], 'mnc')
+        self.assertEqual(r['value'], '03')
 
         r = self.do_get('mcc')
-        self.assertEquals(r['mtype'], 'GET_REPLY')
-        self.assertEquals(r['var'], 'mcc')
-        self.assertEquals(r['value'], '202')
+        self.assertEqual(r['mtype'], 'GET_REPLY')
+        self.assertEqual(r['var'], 'mcc')
+        self.assertEqual(r['value'], '202')
 
         # Test MNC with 3 digits
         r = self.do_set('mcc-mnc-apply', '2,003')
-        self.assertEquals(r['mtype'], 'SET_REPLY')
-        self.assertEquals(r['var'], 'mcc-mnc-apply')
-        self.assertEquals(r['value'], 'Tried to drop the BTS')
+        self.assertEqual(r['mtype'], 'SET_REPLY')
+        self.assertEqual(r['var'], 'mcc-mnc-apply')
+        self.assertEqual(r['value'], 'Tried to drop the BTS')
 
         r = self.do_get('mnc')
-        self.assertEquals(r['mtype'], 'GET_REPLY')
-        self.assertEquals(r['var'], 'mnc')
-        self.assertEquals(r['value'], '003')
+        self.assertEqual(r['mtype'], 'GET_REPLY')
+        self.assertEqual(r['var'], 'mnc')
+        self.assertEqual(r['value'], '003')
 
         r = self.do_get('mcc')
-        self.assertEquals(r['mtype'], 'GET_REPLY')
-        self.assertEquals(r['var'], 'mcc')
-        self.assertEquals(r['value'], '002')
+        self.assertEqual(r['mtype'], 'GET_REPLY')
+        self.assertEqual(r['var'], 'mcc')
+        self.assertEqual(r['value'], '002')
 
         # Set same MNC with 3 digits
         r = self.do_set('mcc-mnc-apply', '2,003')
-        self.assertEquals(r['mtype'], 'SET_REPLY')
-        self.assertEquals(r['var'], 'mcc-mnc-apply')
-        self.assertEquals(r['value'], 'Nothing changed')
+        self.assertEqual(r['mtype'], 'SET_REPLY')
+        self.assertEqual(r['var'], 'mcc-mnc-apply')
+        self.assertEqual(r['value'], 'Nothing changed')
 
         r = self.do_get('mnc')
-        self.assertEquals(r['mtype'], 'GET_REPLY')
-        self.assertEquals(r['var'], 'mnc')
-        self.assertEquals(r['value'], '003')
+        self.assertEqual(r['mtype'], 'GET_REPLY')
+        self.assertEqual(r['var'], 'mnc')
+        self.assertEqual(r['value'], '003')
 
         r = self.do_get('mcc')
-        self.assertEquals(r['mtype'], 'GET_REPLY')
-        self.assertEquals(r['var'], 'mcc')
-        self.assertEquals(r['value'], '002')
+        self.assertEqual(r['mtype'], 'GET_REPLY')
+        self.assertEqual(r['var'], 'mcc')
+        self.assertEqual(r['value'], '002')
 
 def add_bsc_test(suite, workdir):
     if not os.path.isfile(os.path.join(workdir, "src/osmo-bsc/osmo-bsc")):
@@ -522,9 +522,9 @@ if __name__ == '__main__':
     if args.p:
         confpath = args.p
 
-    print "confpath %s, workdir %s" % (confpath, workdir)
+    print("confpath %s, workdir %s" % (confpath, workdir))
     os.chdir(workdir)
-    print "Running tests for specific control commands"
+    print("Running tests for specific control commands")
     suite = unittest.TestSuite()
     add_bsc_test(suite, workdir)
     res = unittest.TextTestRunner(verbosity=verbose_level).run(suite)

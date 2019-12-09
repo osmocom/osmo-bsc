@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 
 # (C) 2013 by Katerina Barone-Adesi <kat.obsc@gmail.com>
 # (C) 2013 by Holger Hans Peter Freyther
@@ -33,9 +33,9 @@ class TestVTYBase(unittest.TestCase):
     def checkForEndAndExit(self):
         res = self.vty.command("list")
         #print ('looking for "exit"\n')
-        self.assert_(res.find('  exit\r') > 0)
+        self.assertTrue(res.find('  exit\r') > 0)
         #print 'found "exit"\nlooking for "end"\n'
-        self.assert_(res.find('  end\r') > 0)
+        self.assertTrue(res.find('  end\r') > 0)
         #print 'found "end"\n'
 
     def vty_command(self):
@@ -54,8 +54,8 @@ class TestVTYBase(unittest.TestCase):
         try:
             self.proc = osmoutil.popen_devnull(osmo_vty_cmd)
         except OSError:
-            print >> sys.stderr, "Current directory: %s" % os.getcwd()
-            print >> sys.stderr, "Consider setting -b"
+            print("Current directory: %s" % os.getcwd(), file=sys.stderr)
+            print("Consider setting -b", file=sys.stderr)
 
         appstring = self.vty_app()[2]
         appport = self.vty_app()[0]
@@ -73,34 +73,34 @@ class TestVTYGenericBSC(TestVTYBase):
     def _testConfigNetworkTree(self, include_bsc_items=True):
         self.vty.enable()
         self.assertTrue(self.vty.verify("configure terminal",['']))
-        self.assertEquals(self.vty.node(), 'config')
+        self.assertEqual(self.vty.node(), 'config')
         self.checkForEndAndExit()
         self.assertTrue(self.vty.verify("network",['']))
-        self.assertEquals(self.vty.node(), 'config-net')
+        self.assertEqual(self.vty.node(), 'config-net')
         self.checkForEndAndExit()
         self.assertTrue(self.vty.verify("bts 0",['']))
-        self.assertEquals(self.vty.node(), 'config-net-bts')
+        self.assertEqual(self.vty.node(), 'config-net-bts')
         self.checkForEndAndExit()
         self.assertTrue(self.vty.verify("trx 0",['']))
-        self.assertEquals(self.vty.node(), 'config-net-bts-trx')
+        self.assertEqual(self.vty.node(), 'config-net-bts-trx')
         self.checkForEndAndExit()
         self.vty.command("write terminal")
         self.assertTrue(self.vty.verify("exit",['']))
-        self.assertEquals(self.vty.node(), 'config-net-bts')
+        self.assertEqual(self.vty.node(), 'config-net-bts')
         self.assertTrue(self.vty.verify("exit",['']))
         self.assertTrue(self.vty.verify("bts 1",['']))
-        self.assertEquals(self.vty.node(), 'config-net-bts')
+        self.assertEqual(self.vty.node(), 'config-net-bts')
         self.checkForEndAndExit()
         self.assertTrue(self.vty.verify("trx 1",['']))
-        self.assertEquals(self.vty.node(), 'config-net-bts-trx')
+        self.assertEqual(self.vty.node(), 'config-net-bts-trx')
         self.checkForEndAndExit()
         self.vty.command("write terminal")
         self.assertTrue(self.vty.verify("exit",['']))
-        self.assertEquals(self.vty.node(), 'config-net-bts')
+        self.assertEqual(self.vty.node(), 'config-net-bts')
         self.assertTrue(self.vty.verify("exit",['']))
-        self.assertEquals(self.vty.node(), 'config-net')
+        self.assertEqual(self.vty.node(), 'config-net')
         self.assertTrue(self.vty.verify("exit",['']))
-        self.assertEquals(self.vty.node(), 'config')
+        self.assertEqual(self.vty.node(), 'config')
         self.assertTrue(self.vty.verify("exit",['']))
         self.assertTrue(self.vty.node() is None)
 
@@ -120,18 +120,18 @@ class TestVTYBSC(TestVTYGenericBSC):
     def testVtyTree(self):
         self.vty.enable()
         self.assertTrue(self.vty.verify("configure terminal", ['']))
-        self.assertEquals(self.vty.node(), 'config')
+        self.assertEqual(self.vty.node(), 'config')
         self.checkForEndAndExit()
         self.assertTrue(self.vty.verify("msc 0", ['']))
-        self.assertEquals(self.vty.node(), 'config-msc')
+        self.assertEqual(self.vty.node(), 'config-msc')
         self.checkForEndAndExit()
         self.assertTrue(self.vty.verify("exit", ['']))
-        self.assertEquals(self.vty.node(), 'config')
+        self.assertEqual(self.vty.node(), 'config')
         self.assertTrue(self.vty.verify("bsc", ['']))
-        self.assertEquals(self.vty.node(), 'config-bsc')
+        self.assertEqual(self.vty.node(), 'config-bsc')
         self.checkForEndAndExit()
         self.assertTrue(self.vty.verify("exit", ['']))
-        self.assertEquals(self.vty.node(), 'config')
+        self.assertEqual(self.vty.node(), 'config')
         self.assertTrue(self.vty.verify("exit", ['']))
         self.assertTrue(self.vty.node() is None)
 
@@ -152,12 +152,12 @@ class TestVTYBSC(TestVTYGenericBSC):
 
         # Verify settings
         res = self.vty.command("write terminal")
-        self.assert_(res.find('bsc-msc-lost-text MSC disconnected') > 0)
-        self.assertEquals(res.find('no bsc-msc-lost-text'), -1)
-        self.assert_(res.find('bsc-welcome-text Hello MS') > 0)
-        self.assertEquals(res.find('no bsc-welcome-text'), -1)
-        self.assert_(res.find('bsc-grace-text In grace period') > 0)
-        self.assertEquals(res.find('no bsc-grace-text'), -1)
+        self.assertTrue(res.find('bsc-msc-lost-text MSC disconnected') > 0)
+        self.assertEqual(res.find('no bsc-msc-lost-text'), -1)
+        self.assertTrue(res.find('bsc-welcome-text Hello MS') > 0)
+        self.assertEqual(res.find('no bsc-welcome-text'), -1)
+        self.assertTrue(res.find('bsc-grace-text In grace period') > 0)
+        self.assertEqual(res.find('no bsc-grace-text'), -1)
 
         # Now disable it..
         self.vty.verify("no bsc-msc-lost-text", [''])
@@ -166,12 +166,12 @@ class TestVTYBSC(TestVTYGenericBSC):
 
         # Verify settings
         res = self.vty.command("write terminal")
-        self.assertEquals(res.find('bsc-msc-lost-text MSC disconnected'), -1)
-        self.assert_(res.find('no bsc-msc-lost-text') > 0)
-        self.assertEquals(res.find('bsc-welcome-text Hello MS'), -1)
-        self.assert_(res.find('no bsc-welcome-text') > 0)
-        self.assertEquals(res.find('bsc-grace-text In grace period'), -1)
-        self.assert_(res.find('no bsc-grace-text') > 0)
+        self.assertEqual(res.find('bsc-msc-lost-text MSC disconnected'), -1)
+        self.assertTrue(res.find('no bsc-msc-lost-text') > 0)
+        self.assertEqual(res.find('bsc-welcome-text Hello MS'), -1)
+        self.assertTrue(res.find('no bsc-welcome-text') > 0)
+        self.assertEqual(res.find('bsc-grace-text In grace period'), -1)
+        self.assertTrue(res.find('no bsc-grace-text') > 0)
 
     def testUssdNotificationsBsc(self):
         self.vty.enable()
@@ -186,16 +186,16 @@ class TestVTYBSC(TestVTYGenericBSC):
 
         # Verify settings
         res = self.vty.command("write terminal")
-        self.assert_(res.find('missing-msc-text No MSC found') > 0)
-        self.assertEquals(res.find('no missing-msc-text'), -1)
+        self.assertTrue(res.find('missing-msc-text No MSC found') > 0)
+        self.assertEqual(res.find('no missing-msc-text'), -1)
 
         # Now disable it..
         self.vty.verify("no missing-msc-text", [''])
 
         # Verify settings
         res = self.vty.command("write terminal")
-        self.assertEquals(res.find('missing-msc-text No MSC found'), -1)
-        self.assert_(res.find('no missing-msc-text') > 0)
+        self.assertEqual(res.find('missing-msc-text No MSC found'), -1)
+        self.assertTrue(res.find('no missing-msc-text') > 0)
 
     def testNetworkTimezone(self):
         self.vty.enable()
@@ -213,32 +213,32 @@ class TestVTYBSC(TestVTYGenericBSC):
 
         # Verify settings
         res = self.vty.command("write terminal")
-        self.assert_(res.find('timezone 2 30') > 0)
-        self.assertEquals(res.find('timezone 2 30 '), -1)
+        self.assertTrue(res.find('timezone 2 30') > 0)
+        self.assertEqual(res.find('timezone 2 30 '), -1)
 
         # Set time zone with DST
         self.vty.verify("timezone 2 30 1", [''])
 
         # Verify settings
         res = self.vty.command("write terminal")
-        self.assert_(res.find('timezone 2 30 1') > 0)
+        self.assertTrue(res.find('timezone 2 30 1') > 0)
 
         # Now disable it..
         self.vty.verify("no timezone", [''])
 
         # Verify settings
         res = self.vty.command("write terminal")
-        self.assertEquals(res.find(' timezone'), -1)
+        self.assertEqual(res.find(' timezone'), -1)
 
     def testShowNetwork(self):
         res = self.vty.command("show network")
-        self.assert_(res.startswith('BSC is on Country Code') >= 0)
+        self.assertTrue(res.startswith('BSC is on Country Code') >= 0)
 
     def testMscDataCoreLACCI(self):
         self.vty.enable()
         res = self.vty.command("show running-config")
-        self.assertEquals(res.find("core-location-area-code"), -1)
-        self.assertEquals(res.find("core-cell-identity"), -1)
+        self.assertEqual(res.find("core-location-area-code"), -1)
+        self.assertEqual(res.find("core-cell-identity"), -1)
 
         self.vty.command("configure terminal")
         self.vty.command("msc 0")
@@ -246,8 +246,8 @@ class TestVTYBSC(TestVTYGenericBSC):
         self.vty.command("core-cell-identity 333")
 
         res = self.vty.command("show running-config")
-        self.assert_(res.find("core-location-area-code 666") > 0)
-        self.assert_(res.find("core-cell-identity 333") > 0)
+        self.assertTrue(res.find("core-location-area-code 666") > 0)
+        self.assertTrue(res.find("core-cell-identity 333") > 0)
 
 
 def add_bsc_test(suite, workdir):
@@ -283,9 +283,9 @@ if __name__ == '__main__':
     if args.p:
         confpath = args.p
 
-    print "confpath %s, workdir %s" % (confpath, workdir)
+    print("confpath %s, workdir %s" % (confpath, workdir))
     os.chdir(workdir)
-    print "Running tests for specific VTY commands"
+    print("Running tests for specific VTY commands")
     suite = unittest.TestSuite()
     add_bsc_test(suite, workdir)
 
