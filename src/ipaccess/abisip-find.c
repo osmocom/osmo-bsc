@@ -288,7 +288,11 @@ static char *parse_response(void *ctx, unsigned char *buf, int len)
 		t_len = *cur++;
 		t_tag = *cur++;
 
-		if (t_tag != IPAC_IDTAG_IPADDR) {
+		if (t_tag != IPAC_IDTAG_IPADDR
+		    // hide sensitive info on 36c3
+		    && (t_tag == IPAC_IDTAG_IPADDR
+			|| t_tag == IPAC_IDTAG_UNIT
+			|| t_tag == IPAC_IDTAG_LOCATION2)) {
 			if (cmdline_opts.format_json)
 				out = talloc_asprintf_append(out, "\"%s\": \"%s\", ", idtag_name(t_tag), cur);
 			else
