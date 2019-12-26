@@ -44,6 +44,7 @@ static struct {
 	bool list_view;
 	time_t list_view_timeout;
 	bool format_json;
+	bool long_names;
 } cmdline_opts = {
 	.ifname = NULL,
 	.bind_ip = NULL,
@@ -51,6 +52,7 @@ static struct {
 	.list_view = false,
 	.list_view_timeout = 10,
 	.format_json = false,
+	.long_names = false,
 };
 
 static void print_help()
@@ -69,6 +71,7 @@ static void print_help()
 	       "                    receiving no more replies from it.\n"
 	       "                    Implies --list-view.\n");
 	printf("  -j --format-json  Print BTS information using json syntax.\n");
+	printf("  -L --long-labels  More verbose CCM value labels\n");
 }
 
 static void handle_options(int argc, char **argv)
@@ -82,10 +85,11 @@ static void handle_options(int argc, char **argv)
 			{"list-view", 0, 0, 'l'},
 			{"timeout", 1, 0, 't'},
 			{"format-json", 0, 0, 'j'},
+			{"long-labels", 0, 0, 'L'},
 			{0, 0, 0, 0}
 		};
 
-		c = getopt_long(argc, argv, "hb:i:lt:j",
+		c = getopt_long(argc, argv, "hb:i:lt:jL",
 				long_options, &option_index);
 		if (c == -1)
 			break;
@@ -118,6 +122,9 @@ static void handle_options(int argc, char **argv)
 			break;
 		case 'j':
 			cmdline_opts.format_json = true;
+			break;
+		case 'L':
+			cmdline_opts.long_names = true;
 			break;
 		default:
 			/* catch unknown options *as well as* missing arguments. */
@@ -222,6 +229,33 @@ static int bcast_find(int fd)
 	return sendto(fd, find_pkt, sizeof(find_pkt), 0, (struct sockaddr *) &sa, sizeof(sa));
 }
 
+static const char *ipa_ccm_idtag_short_names[] = {
+	[IPAC_IDTAG_SERNR]	= "serno",
+	[IPAC_IDTAG_UNITNAME]	= "Name",
+	[IPAC_IDTAG_LOCATION1]	= "Loc1",
+	[IPAC_IDTAG_LOCATION2]	= "Loc2",
+	[IPAC_IDTAG_EQUIPVERS]	= "Equip",
+	[IPAC_IDTAG_SWVERSION]	= "Softw",
+	[IPAC_IDTAG_IPADDR]	= "IP",
+	[IPAC_IDTAG_MACADDR]	= "MAC",
+	[IPAC_IDTAG_UNIT]	= "Unit",
+};
+
+static const char *ipa_ccm_idtag_short_name(uint8_t tag)
+{
+	if (tag >= ARRAY_SIZE(ipa_ccm_idtag_short_names))
+		return "unknown";
+
+	return ipa_ccm_idtag_short_names[tag];
+}
+
+static const char *idtag_name(uint8_t tag)
+{
+	if (cmdline_opts.long_names)
+		return ipa_ccm_idtag_name(tag);
+	return ipa_ccm_idtag_short_name(tag);
+}
+
 static char *parse_response(void *ctx, unsigned char *buf, int len)
 {
 	unsigned int out_len;
@@ -238,9 +272,9 @@ static char *parse_response(void *ctx, unsigned char *buf, int len)
 		t_tag = *cur++;
 
 		if (cmdline_opts.format_json)
-			out = talloc_asprintf_append(out, "\"%s\": \"%s\", ", ipa_ccm_idtag_name(t_tag), cur);
+			out = talloc_asprintf_append(out, "\"%s\": \"%s\", ", idtag_name(t_tag), cur);
 		else
-			out = talloc_asprintf_append(out, "%s='%s'  ", ipa_ccm_idtag_name(t_tag), cur);
+			out = talloc_asprintf_append(out, "%s='%s'  ", idtag_name(t_tag), cur);
 
 		cur += t_len;
 	}
