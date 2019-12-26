@@ -267,14 +267,33 @@ static char *parse_response(void *ctx, unsigned char *buf, int len)
 	if (cmdline_opts.format_json)
 		out = talloc_asprintf_append(out,"{ ");
 
+	// write IP first, to sort by IP
+	cur = buf;
 	while (cur < buf + len) {
 		t_len = *cur++;
 		t_tag = *cur++;
 
-		if (cmdline_opts.format_json)
-			out = talloc_asprintf_append(out, "\"%s\": \"%s\", ", idtag_name(t_tag), cur);
-		else
-			out = talloc_asprintf_append(out, "%s='%s'  ", idtag_name(t_tag), cur);
+		if (t_tag == IPAC_IDTAG_IPADDR) {
+			if (cmdline_opts.format_json)
+				out = talloc_asprintf_append(out, "\"%s\": \"%s\", ", idtag_name(t_tag), cur);
+			else
+				out = talloc_asprintf_append(out, "%s='%s'  ", idtag_name(t_tag), cur);
+		}
+
+		cur += t_len;
+	}
+
+	cur = buf;
+	while (cur < buf + len) {
+		t_len = *cur++;
+		t_tag = *cur++;
+
+		if (t_tag != IPAC_IDTAG_IPADDR) {
+			if (cmdline_opts.format_json)
+				out = talloc_asprintf_append(out, "\"%s\": \"%s\", ", idtag_name(t_tag), cur);
+			else
+				out = talloc_asprintf_append(out, "%s='%s'  ", idtag_name(t_tag), cur);
+		}
 
 		cur += t_len;
 	}
