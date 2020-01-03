@@ -1,3 +1,64 @@
+osmo-bsc (1.6.0) unstable; urgency=medium
+
+  [ Philipp Maier ]
+  * bsc_msc_data: remove unused member is_authenticated
+  * gsm_08_08.c: always pick first msc for unsolicit paging responses
+
+  [ Neels Hofmeyr ]
+  * add vty 'no neighbors' to remove all HO targets
+  * neighbor config: allow re-using ARFCN+BSIC pairs
+  * fsm: use deferred deallocation
+
+  [ Vadim Yanitskiy ]
+  * abis_nm.c: use LOGP() macro instead of LOGPC()
+  * lchan_select.c: tune log level in lchan_select_by_type()
+  * VTY: also print the active phan config in ts_dump_vty()
+  * osmo_bsc_main.c: verify the physical channel mapping at startup
+  * osmo_bsc_main.c: simplify computation of CCCH_CONFIG
+  * osmo_bsc_main.c: fix CCCH_CONF computation: use pchan_from_config
+  * abis_nm.c: fix error message in verify_chan_comb()
+  * abis_nm.c: replace magic numbers with NM_CHANC_* constants
+  * abis_nm.c: fix RSL connection timeout for trx->nr > 0
+
+  [ Harald Welte ]
+  * Cell Broadcast: CBSP and CBCH scheduling support
+  * doc: update bsc_vty_reference.xml
+  * manual: Update statements regarding SCCPlite
+  * SMSCB: Send ETWS primary warning message via all dedicated channels
+  * SMSCB: Send ETWS Primary Notifiation via RSL to BTS
+  * check for osmo_fsm_register() error return value
+  * check for osmo_ss7_init() error return value
+  * manual: Fix copy+paste error
+  * Move a_reset_fsm regstration to __attribute__((contructor))
+  * exit(2) on unsupported positional arguments on command line
+  * gsm_04_80: Avoid using deprecated API
+
+  [ Pau Espin Pedrol ]
+  * a_reset.c: Don't wait 2 seconds to send first BSSMAP RESET
+  * bsc: gsm_08_08.c: Remove repeated conn not null check
+  * bsc_subscr_conn_fsm: Cleanly clear BSSAP conn if associated channel closed during WAIT_CC
+  * gsm_08_08.c: Mark func bsc_find_msc() static
+  * sigtran: Set default remote ip to localhost instead of null
+  * bsc_vty: Fix typo in 'no depends-on-bts' cmd
+  * rsl: Send IE MS Power Param during CHAN ACT and MS PWR CTRL messages
+  * rsl.c: Clean up some repeated use of long chains of pointers
+  * rsl: Send IE MS Power Param to osmocom BTS models only
+  * Remove unused API classmark_is_r99()
+  * gsm_data.h: Remove unused field classmark from gsm_subscriber_connection
+  * gsm_data.h: Remove unused func declarations
+  * bsc: Adapt maximum MS Power Ctrl level based on band and MS Power class
+  * cosmetic: bs11_config: clean trailing whitespace
+  * bsc: Send MS Power Control msg upon max MS power change
+
+  [ Martin Hauke ]
+  * Fix some typos
+
+  [ Oliver Smith ]
+  * doc: osmux: use generated svg instead of pychart
+  * debian, osmoappdesc.py, tests: switch to python 3
+
+ -- Pau Espin Pedrol <pespin@sysmocom.de>  Fri, 03 Jan 2020 18:24:51 +0100
+
 osmo-bsc (1.5.0) unstable; urgency=medium
 
   [ Max ]
