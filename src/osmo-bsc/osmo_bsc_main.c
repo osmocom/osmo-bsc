@@ -713,7 +713,7 @@ static const struct log_info_cat osmo_bsc_categories[] = {
 		.name = "DNM",
 		.description = "A-bis Network Management / O&M (NM/OML)",
 		.color = "\033[1;36m",
-		.enabled = 1, .loglevel = LOGL_INFO,
+		.enabled = 1, .loglevel = LOGL_NOTICE,
 	},
 	[DPAG]	= {
 		.name = "DPAG",
@@ -761,12 +761,12 @@ static const struct log_info_cat osmo_bsc_categories[] = {
 	[DFILTER] = {
 		.name = "DFILTER",
 		.description = "BSC/NAT IMSI based filtering",
-		.enabled = 1, .loglevel = LOGL_DEBUG,
+		.enabled = 1, .loglevel = LOGL_NOTICE,
 	},
 	[DPCU] = {
 		.name = "DPCU",
 		.description = "PCU Interface",
-		.enabled = 1, .loglevel = LOGL_DEBUG,
+		.enabled = 1, .loglevel = LOGL_NOTICE,
 	},
 	[DLCLS] = {
 		.name = "DLCLS",
