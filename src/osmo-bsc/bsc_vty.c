@@ -1062,8 +1062,6 @@ static int config_write_net(struct vty *vty)
 
 	ho_vty_write_net(vty, gsmnet);
 
-	osmo_tdef_vty_write(vty, gsmnet->T_defs, " ");
-
 	if (!gsmnet->dyn_ts_allow_tch_f)
 		vty_out(vty, " dyn_ts_allow_tch_f 0%s", VTY_NEWLINE);
 	if (gsmnet->tz.override != 0) {
