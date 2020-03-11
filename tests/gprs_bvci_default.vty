@@ -1,0 +1,13 @@
+OsmoBSC> enable
+OsmoBSC# configure terminal
+OsmoBSC(config)# network
+OsmoBSC(config-net)# bts 0
+OsmoBSC(config-net-bts)# gprs mode gprs
+OsmoBSC(config-net-bts)# exit
+
+OsmoBSC(config-net)# show running-config
+...
+ bts 0
+...
+  gprs cell bvci 2
+...

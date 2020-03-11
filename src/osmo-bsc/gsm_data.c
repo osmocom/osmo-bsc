@@ -807,6 +807,9 @@ struct gsm_bts *gsm_bts_alloc(struct gsm_network *net, uint8_t bts_num)
 	memcpy(&bts->gprs.cell.rlc_cfg, &rlc_cfg_default,
 		sizeof(bts->gprs.cell.rlc_cfg));
 
+	/* 3GPP TS 08.18, chapter 5.4.1: 0 is reserved for signalling */
+	bts->gprs.cell.bvci = 2;
+
 	/* init statistics */
 	bts->bts_ctrs = rate_ctr_group_alloc(bts, &bts_ctrg_desc, bts->nr);
 	if (!bts->bts_ctrs) {
