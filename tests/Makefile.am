@@ -54,6 +54,9 @@ python-tests: $(BUILT_SOURCES)
 	echo "Not running python-based tests (determined at configure-time)"
 endif
 
+# Run a specific test with: 'make vty-test VTY_TEST=osmo-bsc.vty'
+VTY_TEST ?= *.vty
+
 # To update the VTY script from current application behavior,
 # pass -u to vty_script_runner.py by doing:
 #   make vty-test U=-u
@@ -61,7 +64,7 @@ vty-test:
 	osmo_verify_transcript_vty.py -v \
 		-n OsmoBSC -p 4242 \
 		-r "$(top_builddir)/src/osmo-bsc/osmo-bsc -c $(top_srcdir)/doc/examples/osmo-bsc/osmo-bsc-minimal.cfg" \
-		$(U) $(srcdir)/*.vty
+		$(U) $(srcdir)/$(VTY_TEST)
 
 check-local: atconfig $(TESTSUITE)
 	$(SHELL) '$(TESTSUITE)' $(TESTSUITEFLAGS)
