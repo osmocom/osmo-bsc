@@ -3717,7 +3717,7 @@ DEFUN(cfg_bts_no_depends_on, cfg_bts_no_depends_on_cmd,
 #define AMR_TH_TEXT "AMR threshold between codecs\nMS side\nBTS side\n"
 #define AMR_HY_TEXT "AMR hysteresis between codecs\nMS side\nBTS side\n"
 
-static void get_amr_from_arg(struct vty *vty, int argc, const char *argv[], int full)
+static int get_amr_from_arg(struct vty *vty, int argc, const char *argv[], int full)
 {
 	struct gsm_bts *bts = vty->index;
 	struct amr_multirate_conf *mr = (full) ? &bts->mr_full: &bts->mr_half;
@@ -3733,12 +3733,12 @@ static void get_amr_from_arg(struct vty *vty, int argc, const char *argv[], int 
 		if (mode_prev > mode) {
 			vty_out(vty, "Modes must be listed in order%s",
 				VTY_NEWLINE);
-			return;
+			return -1;
 		}
 
 		if (mode_prev == mode) {
 			vty_out(vty, "Modes must be unique %s", VTY_NEWLINE);
-			return;
+			return -2;
 		}
 		mode_prev = mode;
 	}
@@ -3763,6 +3763,7 @@ static void get_amr_from_arg(struct vty *vty, int argc, const char *argv[], int 
 		mr->ms_mode[i].hysteresis = 0;
 		mr->bts_mode[i].hysteresis = 0;
 	}
+	return 0;
 }
 
 static void get_amr_th_from_arg(struct vty *vty, int argc, const char *argv[], int full)
@@ -3878,7 +3879,8 @@ DEFUN(cfg_bts_amr_fr_modes1, cfg_bts_amr_fr_modes1_cmd,
 	AMR_TEXT "Full Rate\n" AMR_MODE_TEXT
 	AMR_TCHF_HELP_STR)
 {
-	get_amr_from_arg(vty, 1, argv, 1);
+	if (get_amr_from_arg(vty, 1, argv, 1))
+		return CMD_WARNING;
 	return check_amr_config(vty);
 }
 
@@ -3887,7 +3889,8 @@ DEFUN(cfg_bts_amr_fr_modes2, cfg_bts_amr_fr_modes2_cmd,
 	AMR_TEXT "Full Rate\n" AMR_MODE_TEXT
 	AMR_TCHF_HELP_STR AMR_TCHF_HELP_STR)
 {
-	get_amr_from_arg(vty, 2, argv, 1);
+	if (get_amr_from_arg(vty, 2, argv, 1))
+		return CMD_WARNING;
 	return check_amr_config(vty);
 }
 
@@ -3896,7 +3899,8 @@ DEFUN(cfg_bts_amr_fr_modes3, cfg_bts_amr_fr_modes3_cmd,
 	AMR_TEXT "Full Rate\n" AMR_MODE_TEXT
 	AMR_TCHF_HELP_STR AMR_TCHF_HELP_STR AMR_TCHF_HELP_STR)
 {
-	get_amr_from_arg(vty, 3, argv, 1);
+	if (get_amr_from_arg(vty, 3, argv, 1))
+		return CMD_WARNING;
 	return check_amr_config(vty);
 }
 
@@ -3905,7 +3909,8 @@ DEFUN(cfg_bts_amr_fr_modes4, cfg_bts_amr_fr_modes4_cmd,
 	AMR_TEXT "Full Rate\n" AMR_MODE_TEXT
 	AMR_TCHF_HELP_STR AMR_TCHF_HELP_STR AMR_TCHF_HELP_STR AMR_TCHF_HELP_STR)
 {
-	get_amr_from_arg(vty, 4, argv, 1);
+	if (get_amr_from_arg(vty, 4, argv, 1))
+		return CMD_WARNING;
 	return check_amr_config(vty);
 }
 
@@ -3976,7 +3981,8 @@ DEFUN(cfg_bts_amr_hr_modes1, cfg_bts_amr_hr_modes1_cmd,
 	AMR_TEXT "Half Rate\n" AMR_MODE_TEXT
 	AMR_TCHH_HELP_STR)
 {
-	get_amr_from_arg(vty, 1, argv, 0);
+	if (get_amr_from_arg(vty, 1, argv, 0))
+		return CMD_WARNING;
 	return check_amr_config(vty);
 }
 
@@ -3985,7 +3991,8 @@ DEFUN(cfg_bts_amr_hr_modes2, cfg_bts_amr_hr_modes2_cmd,
 	AMR_TEXT "Half Rate\n" AMR_MODE_TEXT
 	AMR_TCHH_HELP_STR AMR_TCHH_HELP_STR)
 {
-	get_amr_from_arg(vty, 2, argv, 0);
+	if (get_amr_from_arg(vty, 2, argv, 0))
+		return CMD_WARNING;
 	return check_amr_config(vty);
 }
 
@@ -3994,7 +4001,8 @@ DEFUN(cfg_bts_amr_hr_modes3, cfg_bts_amr_hr_modes3_cmd,
 	AMR_TEXT "Half Rate\n" AMR_MODE_TEXT
 	AMR_TCHH_HELP_STR AMR_TCHH_HELP_STR AMR_TCHH_HELP_STR)
 {
-	get_amr_from_arg(vty, 3, argv, 0);
+	if (get_amr_from_arg(vty, 3, argv, 0))
+		return CMD_WARNING;
 	return check_amr_config(vty);
 }
 
@@ -4003,7 +4011,8 @@ DEFUN(cfg_bts_amr_hr_modes4, cfg_bts_amr_hr_modes4_cmd,
 	AMR_TEXT "Half Rate\n" AMR_MODE_TEXT
 	AMR_TCHH_HELP_STR AMR_TCHH_HELP_STR AMR_TCHH_HELP_STR AMR_TCHH_HELP_STR)
 {
-	get_amr_from_arg(vty, 4, argv, 0);
+	if (get_amr_from_arg(vty, 4, argv, 0))
+		return CMD_WARNING;
 	return check_amr_config(vty);
 }
 
