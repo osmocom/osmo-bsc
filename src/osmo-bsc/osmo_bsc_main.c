@@ -902,8 +902,16 @@ int main(int argc, char **argv)
 	}
 
 	rc = check_codec_pref(&bsc_gsmnet->bsc_data->mscs);
-	if (rc < 0)
-		LOGP(DMSC, LOGL_ERROR, "Configuration contains mutually exclusive codec settings -- check configuration!\n");
+	if (rc < 0) {
+		LOGP(DMSC, LOGL_ERROR, "Configuration contains mutually exclusive codec settings -- check"
+				       " configuration!\n");
+		if (!bsc_gsmnet->allow_unusable_timeslots) {
+			LOGP(DMSC, LOGL_ERROR, "You should really fix that! However, you can prevent OsmoBSC from"
+					       " stopping here by setting 'allow-unusable-timeslots' in the 'network'"
+					       " section of the config.\n");
+			exit(1);
+		}
+	}
 
 	llist_for_each_entry(msc, &bsc_gsmnet->bsc_data->mscs, entry) {
 		if (osmo_bsc_msc_init(msc) != 0) {

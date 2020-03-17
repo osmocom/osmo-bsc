@@ -1092,6 +1092,9 @@ static int config_write_net(struct vty *vty)
 				meas_scenario, VTY_NEWLINE);
 	}
 
+	if (gsmnet->allow_unusable_timeslots)
+		vty_out(vty, " allow-unusable-timeslots%s", VTY_NEWLINE);
+
 	return CMD_SUCCESS;
 }
 
@@ -5209,6 +5212,17 @@ DEFUN(cfg_net_timer, cfg_net_timer_cmd,
 	return osmo_tdef_vty_set_cmd(vty, net->T_defs, argv);
 }
 
+DEFUN(cfg_net_allow_unusable_timeslots, cfg_net_allow_unusable_timeslots_cmd,
+      "allow-unusable-timeslots",
+      "Don't refuse to start with mutually exclusive codec settings\n")
+{
+	struct gsm_network *net = gsmnet_from_vty(vty);
+	net->allow_unusable_timeslots = true;
+	LOGP(DMSC, LOGL_ERROR, "Configuration contains 'allow-unusable-timeslots'. OsmoBSC will start up even if the"
+			       " configuration has unusable codec settings!\n");
+	return CMD_SUCCESS;
+}
+
 extern int bsc_vty_init_extra(void);
 
 int bsc_vty_init(struct gsm_network *network)
@@ -5254,6 +5268,7 @@ int bsc_vty_init(struct gsm_network *network)
 	install_element(GSMNET_NODE, &cfg_net_meas_feed_dest_cmd);
 	install_element(GSMNET_NODE, &cfg_net_meas_feed_scenario_cmd);
 	install_element(GSMNET_NODE, &cfg_net_timer_cmd);
+	install_element(GSMNET_NODE, &cfg_net_allow_unusable_timeslots_cmd);
 
 	install_element_ve(&bsc_show_net_cmd);
 	install_element_ve(&show_bts_cmd);

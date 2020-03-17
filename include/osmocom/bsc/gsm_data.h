@@ -1608,6 +1608,9 @@ struct gsm_network {
 
 	/* Remote BSS Cell Identifier Lists */
 	struct neighbor_ident_list *neighbor_bss_cells;
+
+	/* Don't refuse to start with mutually exclusive codec settings */
+	bool allow_unusable_timeslots;
 };
 
 struct gsm_audio_support {
