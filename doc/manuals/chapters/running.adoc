@@ -40,3 +40,70 @@ arguments:
 *-r, --rf-ctl 'RFCTL'*::
 	Offer a Unix domain socket for RF control at the path/filename
 	'RFCTL' in the file system.
+
+
+=== Multiple instances
+
+Running multiple instances of `osmo-bsc` on the same host is possible if all
+interfaces (VTY, CTRL) are separated using the appropriate configuration
+options. The IP based interfaces are binding to local host by default. In order
+to separate the processes, the user has to bind those services to specific but
+different IP addresses and/or ports.
+
+The VTY and the Control interface can be bound to IP addresses from the loopback
+address range, for example:
+
+----
+line vty
+ bind 127.0.0.2
+ctrl
+ bind 127.0.0.2
+----
+
+For the following links, OsmoBSC acts as a client and does not listen/bind to a
+specific interface, and will hence not encounter conflicts for multiple instances
+running on the same interface:
+
+- The SCCP/M3UA links are established by OsmoBSC contacting an STP.
+- The MGCP link is established by OsmoMSC contacting an MGW.
+
+To run multiple OsmoBSC instances on the same A-interface (SCCP/M3UA), each BSC
+has to configure a distinct point-code.
+
+
+=== Configure primary links
+
+==== Configure SCCP/M3UA to connect to an MSC's _A_ interface
+
+OsmoBSC acts as client to contact an STP instance and establish an SCCP/M3UA
+link.
+
+An example configuration of OsmoBSC's AoIP SCCP link, assuming the BSC at
+point-code 1.23.3 and the MSC reachable at point-code 0.23.1 via an SG
+listening for M3UA at 127.0.0.1:2905:
+
+----
+cs7 instance 0
+ point-code 1.23.3
+ asp asp-clnt-msc-0 2905 0 m3ua
+  remote-ip 127.0.0.1
+  sctp-role client
+ sccp-address msc
+  point-code 0.23.1
+msc 0
+ msc-address msc
+----
+
+==== Configure MGCP to connect to an MGW
+
+OsmoBSC uses a media gateway (typically OsmoMGW) to direct RTP streams. By
+default, an MGW is expected to receive MGCP requests on the IANA-registered
+default port for MGCP (2427) on local host (127.0.0.1).
+
+Here is an example configuration for a remote MGW:
+
+----
+msc 0
+ mgw remote-ip 10.9.8.7
+ mgw remote-port 2427
+----
