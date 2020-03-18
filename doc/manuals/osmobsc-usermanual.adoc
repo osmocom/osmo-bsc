@@ -16,6 +16,8 @@ include::./common/chapters/vty.adoc[]
 
 include::./common/chapters/logging.adoc[]
 
+include::./common/chapters/cs7-config.adoc[]
+
 include::./common/chapters/bts.adoc[]
 
 include::{srcdir}/chapters/bts-examples.adoc[]

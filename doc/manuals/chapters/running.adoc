@@ -68,7 +68,7 @@ running on the same interface:
 - The MGCP link is established by OsmoMSC contacting an MGW.
 
 To run multiple OsmoBSC instances on the same A-interface (SCCP/M3UA), each BSC
-has to configure a distinct point-code.
+has to configure a distinct point-code. See <<cs7_config>>.
 
 
 === Configure primary links
@@ -93,6 +93,8 @@ cs7 instance 0
 msc 0
  msc-address msc
 ----
+
+This configuration is explained in detail in <<cs7_config>>.
 
 ==== Configure MGCP to connect to an MGW
 
