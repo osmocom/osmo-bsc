@@ -412,6 +412,21 @@ static int rx_fail_evt_rep(struct msgb *mb, struct gsm_bts *bts)
 	int rc = 0;
 	const uint8_t *p_val;
 	const char *e_type, *severity, *p_text;
+	struct bts_oml_fail_rep *entry;
+
+	/* Store copy in bts->oml_fail_rep */
+	entry = talloc_zero(bts, struct bts_oml_fail_rep);
+	OSMO_ASSERT(entry);
+	entry->time = time(NULL);
+	entry->mb = msgb_copy_c(entry, mb, "OML failure report");
+	llist_add(&entry->list, &bts->oml_fail_rep);
+
+	/* Limit list size */
+	if (llist_count(&bts->oml_fail_rep) > 50) {
+		struct bts_oml_fail_rep *old = llist_last_entry(&bts->oml_fail_rep, struct bts_oml_fail_rep, list);
+		llist_del(&old->list);
+		talloc_free(old);
+	}
 
 	sd = abis_nm_fail_evt_rep_parse(mb, bts);
 	if (!sd) {

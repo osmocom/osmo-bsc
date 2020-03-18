@@ -881,6 +881,7 @@ struct gsm_bts *gsm_bts_alloc(struct gsm_network *net, uint8_t bts_num)
 	INIT_LLIST_HEAD(&bts->abis_queue);
 	INIT_LLIST_HEAD(&bts->loc_list);
 	INIT_LLIST_HEAD(&bts->local_neighbors);
+	INIT_LLIST_HEAD(&bts->oml_fail_rep);
 
 	/* Enable all codecs by default. These get reset to a more fine grained selection IF a
 	 * 'codec-support' config appears in the config file (see bsc_vty.c). */

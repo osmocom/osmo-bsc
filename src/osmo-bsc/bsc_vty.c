@@ -559,6 +559,67 @@ DEFUN(show_bts, show_bts_cmd, "show bts [<0-255>]",
 	return CMD_SUCCESS;
 }
 
+DEFUN(show_bts_fail_rep, show_bts_fail_rep_cmd, "show bts <0-255> fail-rep [reset]",
+	SHOW_STR "Display information about a BTS\n"
+		"BTS number\n" "OML failure reports\n"
+		"Clear the list of failure reports after showing them\n")
+{
+	struct gsm_network *net = gsmnet_from_vty(vty);
+	struct bts_oml_fail_rep *entry;
+	struct gsm_bts *bts;
+	int bts_nr;
+
+	bts_nr = atoi(argv[0]);
+	if (bts_nr >= net->num_bts) {
+		vty_out(vty, "%% can't find BTS '%s'%s", argv[0], VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	bts = gsm_bts_num(net, bts_nr);
+	if (llist_empty(&bts->oml_fail_rep)) {
+		vty_out(vty, "No failure reports received.%s", VTY_NEWLINE);
+		return CMD_SUCCESS;
+	}
+
+	llist_for_each_entry(entry, &bts->oml_fail_rep, list) {
+		struct nm_fail_rep_signal_data *sd;
+		char timestamp[20]; /* format like 2020-03-23 14:24:00 */
+		enum abis_nm_pcause_type pcause;
+		enum abis_mm_event_causes cause;
+
+		strftime(timestamp, sizeof(timestamp), "%F %T", localtime(&entry->time));
+		sd = abis_nm_fail_evt_rep_parse(entry->mb, bts);
+		if (!sd) {
+			vty_out(vty, "[%s] (failed to parse report)%s", timestamp, VTY_NEWLINE);
+			continue;
+		}
+		pcause = sd->parsed.probable_cause[0];
+		cause = osmo_load16be(sd->parsed.probable_cause + 1);
+
+		vty_out(vty, "[%s] Type=%s, Severity=%s, ", timestamp, sd->parsed.event_type, sd->parsed.severity);
+		vty_out(vty, "Probable cause=%s: ", get_value_string(abis_nm_pcause_type_names, pcause));
+		if (pcause == NM_PCAUSE_T_MANUF)
+			vty_out(vty, "%s, ", get_value_string(abis_mm_event_cause_names, cause));
+		else
+			vty_out(vty, "%04X, ", cause);
+		vty_out(vty, "Additional text=%s%s", sd->parsed.additional_text, VTY_NEWLINE);
+
+		talloc_free(sd);
+	}
+
+	/* Optionally clear the list */
+	if (argc > 1) {
+		while (!llist_empty(&bts->oml_fail_rep)) {
+			struct bts_oml_fail_rep *old = llist_last_entry(&bts->oml_fail_rep, struct bts_oml_fail_rep,
+									list);
+			llist_del(&old->list);
+			talloc_free(old);
+		}
+	}
+
+	return CMD_SUCCESS;
+}
+
 DEFUN(show_rejected_bts, show_rejected_bts_cmd, "show rejected-bts",
 	SHOW_STR "Display recently rejected BTS devices\n")
 {
@@ -5272,6 +5333,7 @@ int bsc_vty_init(struct gsm_network *network)
 
 	install_element_ve(&bsc_show_net_cmd);
 	install_element_ve(&show_bts_cmd);
+	install_element_ve(&show_bts_fail_rep_cmd);
 	install_element_ve(&show_rejected_bts_cmd);
 	install_element_ve(&show_trx_cmd);
 	install_element_ve(&show_trx_con_cmd);

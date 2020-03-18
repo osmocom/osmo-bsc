@@ -1005,6 +1005,12 @@ struct bts_smscb_chan_state {
 	uint8_t overflow;
 };
 
+struct bts_oml_fail_rep {
+	struct llist_head list;
+	time_t time;
+	struct msgb *mb;
+};
+
 /* One BTS */
 struct gsm_bts {
 	/* list header in net->bts_list */
@@ -1267,6 +1273,8 @@ struct gsm_bts {
 	struct bts_smscb_chan_state cbch_basic;
 	struct bts_smscb_chan_state cbch_extended;
 	struct osmo_timer_list etws_timer;	/* when to stop ETWS PN */
+
+	struct llist_head oml_fail_rep;
 };
 
 /* One rejected BTS */
