@@ -73,7 +73,9 @@ has to configure a distinct point-code. See <<cs7_config>>.
 
 === Configure primary links
 
-==== Configure SCCP/M3UA to connect to an MSC's _A_ interface
+==== Connect to an MSC's _A_ interface
+
+===== Configure SCCP/M3UA (AoIP)
 
 OsmoBSC acts as client to contact an STP instance and establish an SCCP/M3UA
 link.
@@ -95,6 +97,35 @@ msc 0
 ----
 
 This configuration is explained in detail in <<cs7_config>>.
+
+===== Configure SCCPlite
+
+Traditionally, OsmoBSC implemented only an SCCPlite based A-interface, an
+ad-hoc standard encapsulating BSSAP in an IPA Multiplex. Since 2017, OsmoBSC
+supports primarily a proper 3GPP compliant SCCP/M3UA A-interface known as AoIP,
+by a new libosmo-sigtran implementation. In 2018, SCCPlite compatibility was
+added to libosmo-sigtran, re-enabling the option of using an SCCPlite based
+A-interface. For details, see the OsmoSTP manual, chapter "IPA / SCCPlite
+backwards compatibility".
+
+Here is an example configuration of OsmoBSC for SCCPlite, assuming the BSC at
+point-code 1.23.3 and an SCCPlite MSC listening on 127.0.0.1:5000 with own
+point-code 0.23.1:
+
+----
+cs7 instance 0
+ point-code 1.23.3
+ asp asp-clnt-msc-0 5000 0 ipa
+  remote-ip 127.0.0.1
+ as as-clnt-msc-0 ipa
+  asp asp-clnt-msc-0
+  routing-key 0 1.23.3
+  point-code override dpc 0.23.1
+ sccp-address remote_msc
+  point-code 0.23.1
+msc 0
+ msc-addr remote_msc
+----
 
 ==== Configure MGCP to connect to an MGW
 
