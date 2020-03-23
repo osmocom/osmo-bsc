@@ -399,7 +399,7 @@ static int rx_fail_evt_rep(struct msgb *mb, struct gsm_bts *bts)
 		rc = -EINVAL;
 	}
 
-	sd.bts = mb->trx->bts;
+	sd.bts = bts;
 	sd.msg = mb;
 	sd.tp = &tp;
 	if (e_type)
