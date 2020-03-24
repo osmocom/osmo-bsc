@@ -153,7 +153,7 @@ struct nm_fail_rep_signal_data {
 	struct gsm_bts *bts;
 	/* raw data */
 	struct msgb *msg;
-	struct tlv_parsed *tp;
+	struct tlv_parsed tp;
 	/* parsed data */
 	struct {
 		const char *event_type;

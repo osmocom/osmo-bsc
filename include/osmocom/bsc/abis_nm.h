@@ -27,6 +27,7 @@
 #include <osmocom/gsm/protocol/gsm_12_21.h>
 
 #include <osmocom/bsc/gsm_data.h>
+#include <osmocom/bsc/signal.h>
 
 /* max number of attributes represented as 3GPP TS 52.021 §9.4.62 SW Description array */
 #define MAX_BTS_ATTR 5
@@ -169,6 +170,8 @@ int _abis_nm_sendmsg(struct msgb *msg);
 void abis_nm_queue_send_next(struct gsm_bts *bts);	/* for bs11_config. */
 
 int abis_nm_select_newest_sw(const struct abis_nm_sw_desc *sw, const size_t len);
+
+struct nm_fail_rep_signal_data *abis_nm_fail_evt_rep_parse(struct msgb *mb, struct gsm_bts *bts);
 
 /* Helper functions for updating attributes */
 int abis_nm_update_max_power_red(struct gsm_bts_trx *trx);
