@@ -536,7 +536,7 @@ static void bts_dump_vty(struct vty *vty, struct gsm_bts *bts)
 
 DEFUN(show_bts, show_bts_cmd, "show bts [<0-255>]",
 	SHOW_STR "Display information about a BTS\n"
-		"BTS number")
+		"BTS number\n")
 {
 	struct gsm_network *net = gsmnet_from_vty(vty);
 	int bts_nr;
@@ -2560,7 +2560,7 @@ DEFUN(cfg_bts_ccch_load_ind_thresh,
       "ccch load-indication-threshold <0-100>",
 	CCCH_STR
       "Percentage of CCCH load at which BTS sends RSL CCCH LOAD IND\n"
-      "CCCH Load Threshold in percent (Default: 10)")
+      "CCCH Load Threshold in percent (Default: 10)\n")
 {
 	struct gsm_bts *bts = vty->index;
 	bts->ccch_load_ind_thresh = atoi(argv[0]);
@@ -2575,7 +2575,7 @@ DEFUN(cfg_bts_rach_nm_b_thresh,
 	RACH_STR NM_STR
       "Set the NM Busy Threshold\n"
       "Set the NM Busy Threshold\n"
-      "NM Busy Threshold in dB")
+      "NM Busy Threshold in dB\n")
 {
 	struct gsm_bts *bts = vty->index;
 	bts->rach_b_thresh = atoi(argv[0]);
@@ -2679,7 +2679,7 @@ DEFUN(cfg_bts_ms_max_power, cfg_bts_ms_max_power_cmd,
       "MS Options\n"
       "Maximum transmit power of the MS\n"
       "Maximum transmit power of the MS\n"
-      "Maximum transmit power of the MS in dBm")
+      "Maximum transmit power of the MS in dBm\n")
 {
 	struct gsm_bts *bts = vty->index;
 
@@ -2694,7 +2694,7 @@ DEFUN(cfg_bts_cell_resel_hyst, cfg_bts_cell_resel_hyst_cmd,
       "cell reselection hysteresis <0-14>",
       CELL_STR "Cell re-selection parameters\n"
       "Cell Re-Selection Hysteresis in dB\n"
-      "Cell Re-Selection Hysteresis in dB")
+      "Cell Re-Selection Hysteresis in dB\n")
 {
 	struct gsm_bts *bts = vty->index;
 
@@ -2708,7 +2708,7 @@ DEFUN(cfg_bts_rxlev_acc_min, cfg_bts_rxlev_acc_min_cmd,
       "Minimum RxLev needed for cell access\n"
       "Minimum RxLev needed for cell access\n"
       "Minimum RxLev needed for cell access\n"
-      "Minimum RxLev needed for cell access (better than -110dBm)")
+      "Minimum RxLev needed for cell access (better than -110dBm)\n")
 {
 	struct gsm_bts *bts = vty->index;
 
@@ -2749,7 +2749,7 @@ DEFUN(cfg_bts_temp_ofs, cfg_bts_temp_ofs_cmd,
 	"temporary offset <0-60>",
 	"Cell selection temporary negative offset\n"
 	"Cell selection temporary negative offset\n"
-	"Cell selection temporary negative offset in dB")
+	"Cell selection temporary negative offset in dB\n")
 {
 	struct gsm_bts *bts = vty->index;
 
@@ -2763,7 +2763,7 @@ DEFUN(cfg_bts_temp_ofs_inf, cfg_bts_temp_ofs_inf_cmd,
 	"temporary offset infinite",
 	"Cell selection temporary negative offset\n"
 	"Cell selection temporary negative offset\n"
-	"Sets cell selection temporary negative offset to infinity")
+	"Sets cell selection temporary negative offset to infinity\n")
 {
 	struct gsm_bts *bts = vty->index;
 
@@ -2793,7 +2793,7 @@ DEFUN(cfg_bts_penalty_time_rsvd, cfg_bts_penalty_time_rsvd_cmd,
 	"Cell selection penalty time\n"
 	"Set cell selection penalty time to reserved value 31, "
 		"(indicate that CELL_RESELECT_OFFSET is subtracted from C2 "
-		"and TEMPORARY_OFFSET is ignored)")
+		"and TEMPORARY_OFFSET is ignored)\n")
 {
 	struct gsm_bts *bts = vty->index;
 
@@ -2840,7 +2840,7 @@ DEFUN(cfg_bts_prs_bvci, cfg_bts_gprs_bvci_cmd,
 	GPRS_TEXT
 	"GPRS Cell Settings\n"
 	"GPRS BSSGP VC Identifier\n"
-	"GPRS BSSGP VC Identifier")
+	"GPRS BSSGP VC Identifier\n")
 {
 	/* ETSI TS 101 343: values 0 and 1 are reserved for signalling and PTM */
 	struct gsm_bts *bts = vty->index;
@@ -2859,7 +2859,7 @@ DEFUN(cfg_bts_gprs_nsei, cfg_bts_gprs_nsei_cmd,
 	"gprs nsei <0-65535>",
 	GPRS_TEXT
 	"GPRS NS Entity Identifier\n"
-	"GPRS NS Entity Identifier")
+	"GPRS NS Entity Identifier\n")
 {
 	struct gsm_bts *bts = vty->index;
 
@@ -2880,7 +2880,7 @@ DEFUN(cfg_bts_gprs_nsvci, cfg_bts_gprs_nsvci_cmd,
 	"gprs nsvc <0-1> nsvci <0-65535>",
 	GPRS_TEXT NSVC_TEXT
 	"NS Virtual Connection Identifier\n"
-	"GPRS NS VC Identifier")
+	"GPRS NS VC Identifier\n")
 {
 	struct gsm_bts *bts = vty->index;
 	int idx = atoi(argv[0]);
@@ -3131,7 +3131,7 @@ DEFUN(cfg_bts_gprs_11bit_rach_support_for_egprs,
 	"gprs 11bit_rach_support_for_egprs (0|1)",
 	GPRS_TEXT "11 bit RACH options\n"
 	"Disable 11 bit RACH for EGPRS\n"
-	"Enable 11 bit RACH for EGPRS")
+	"Enable 11 bit RACH for EGPRS\n")
 {
 	struct gsm_bts *bts = vty->index;
 
@@ -4200,8 +4200,8 @@ DEFUN(cfg_bts_no_t3113_dynamic, cfg_bts_no_t3113_dynamic_cmd,
 DEFUN(cfg_trx,
       cfg_trx_cmd,
       "trx <0-255>",
-	TRX_TEXT
-      "Select a TRX to configure")
+      TRX_TEXT
+      "Select a TRX to configure\n")
 {
 	int trx_nr = atoi(argv[0]);
 	struct gsm_bts *bts = vty->index;

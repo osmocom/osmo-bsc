@@ -539,7 +539,7 @@ DEFUN(cfg_msc_acc_lst_name,
       cfg_msc_acc_lst_name_cmd,
       "access-list-name NAME",
       "Set the name of the access list to use.\n"
-      "The name of the to be used access list.")
+      "The name of the to be used access list.\n")
 {
 	struct bsc_msc_data *msc = bsc_msc_data(vty);
 
@@ -792,7 +792,7 @@ DEFUN(cfg_bsc_acc_lst_name,
       cfg_bsc_acc_lst_name_cmd,
       "access-list-name NAME",
       "Set the name of the access list to use.\n"
-      "The name of the to be used access list.")
+      "The name of the to be used access list.\n")
 {
 	struct osmo_bsc_data *bsc = osmo_bsc_data(vty);
 
