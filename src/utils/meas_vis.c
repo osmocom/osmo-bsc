@@ -13,6 +13,8 @@
 #include <osmocom/core/msgb.h>
 #include <osmocom/core/select.h>
 #include <osmocom/core/talloc.h>
+#include <osmocom/core/logging.h>
+#include <osmocom/core/application.h>
 
 #include <osmocom/gsm/gsm_utils.h>
 
@@ -258,11 +260,24 @@ const struct value_string col_strs[] = {
 	{ 0, NULL }
 };
 
+/* default categories */
+static struct log_info_cat default_categories[] = {
+};
+
+static const struct log_info meas_vis_log_info = {
+	.cat = default_categories,
+	.num_cat = ARRAY_SIZE(default_categories),
+};
+
 int main(int argc, char **argv)
 {
 	int rc;
 	char *header[1];
 	char *title[1];
+	struct log_target *stderr_target;
+
+	void *tall_ctx = talloc_named_const(NULL, 0, "meas_vis");
+	osmo_init_logging2(tall_ctx, &meas_vis_log_info);
 
 	msgb_talloc_ctx_init(NULL, 0);
 
