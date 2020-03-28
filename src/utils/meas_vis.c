@@ -283,6 +283,10 @@ int main(int argc, char **argv)
 
 	printf("sizeof(gsm_meas_rep)=%u\n", sizeof(struct gsm_meas_rep));
 	printf("sizeof(meas_feed_meas)=%u\n", sizeof(struct meas_feed_meas));
+	g_st.udp_ofd.cb = udp_fd_cb;
+	rc =  osmo_sock_init_ofd(&g_st.udp_ofd, AF_INET, SOCK_DGRAM, IPPROTO_UDP, NULL, 8888, OSMO_SOCK_F_BIND);
+	if (rc < 0)
+		exit(1);
 
 	INIT_LLIST_HEAD(&g_st.ms_list);
 	g_st.curses_win = initscr();
@@ -310,11 +314,6 @@ int main(int argc, char **argv)
 	getch();
 	exit(0);
 #endif
-
-	g_st.udp_ofd.cb = udp_fd_cb;
-	rc =  osmo_sock_init_ofd(&g_st.udp_ofd, AF_INET, SOCK_DGRAM, IPPROTO_UDP, NULL, 8888, OSMO_SOCK_F_BIND);
-	if (rc < 0)
-		exit(1);
 
 	while (1) {
 		osmo_select_main(0);
