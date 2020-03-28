@@ -205,7 +205,7 @@ void write_uni(struct ms_state *ms, struct ms_state_uni *msu,
 	snprintf(msu->label, sizeof(msu->label), "</%d>%1d<!%d> %3d %2u %2d %4u",
 		 qual_col, lq->rx_qual, qual_col, pwr,
 		 ms->mr.ms_l1.ta, ms->mr.ms_timing_offset,
-		 now - msu->last_update);
+		 (unsigned int)(now - msu->last_update));
 	msu->cdk_label = newCDKLabel(g_st.cdkscreen, RIGHT, row,
 					msu->_lbl, 1, FALSE, FALSE);
 }
@@ -281,8 +281,8 @@ int main(int argc, char **argv)
 
 	msgb_talloc_ctx_init(NULL, 0);
 
-	printf("sizeof(gsm_meas_rep)=%u\n", sizeof(struct gsm_meas_rep));
-	printf("sizeof(meas_feed_meas)=%u\n", sizeof(struct meas_feed_meas));
+	printf("sizeof(gsm_meas_rep)=%zu\n", sizeof(struct gsm_meas_rep));
+	printf("sizeof(meas_feed_meas)=%zu\n", sizeof(struct meas_feed_meas));
 	g_st.udp_ofd.cb = udp_fd_cb;
 	rc =  osmo_sock_init_ofd(&g_st.udp_ofd, AF_INET, SOCK_DGRAM, IPPROTO_UDP, NULL, 8888, OSMO_SOCK_F_BIND);
 	if (rc < 0)
