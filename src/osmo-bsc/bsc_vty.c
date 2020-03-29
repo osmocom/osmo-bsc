@@ -3138,8 +3138,7 @@ DEFUN(cfg_bts_gprs_11bit_rach_support_for_egprs,
 	bts->gprs.supports_egprs_11bit_rach = atoi(argv[0]);
 
 	if (bts->gprs.mode == BTS_GPRS_NONE && bts->gprs.supports_egprs_11bit_rach) {
-		vty_out(vty, "Error:gprs mode is none and 11bit rach is"
-			" enabled%s", VTY_NEWLINE);
+		vty_out(vty, "%% (E)GPRS is not enabled (see 'gprs mode')%s", VTY_NEWLINE);
 		return CMD_WARNING;
 	}
 
