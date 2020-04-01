@@ -192,11 +192,6 @@ static const struct log_info_cat log_categories[] = {
 		.color = "\033[1;36m",
 		.enabled = 1, .loglevel = LOGL_INFO,
 	},
-	[DNAT] = {
-		.name = "DNAT",
-		.description = "GSM 08.08 NAT/Multiplexer",
-		.enabled = 1, .loglevel = LOGL_NOTICE,
-	},
 	[DMSC] = {
 		.name = "DMSC",
 		.description = "Mobile Switching Center",

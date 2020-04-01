@@ -19,7 +19,6 @@ enum {
 	DHO,
 	DHODEC,
 	DREF,
-	DNAT,
 	DCTRL,
 	DFILTER,
 	DPCU,

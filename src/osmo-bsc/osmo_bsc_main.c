@@ -748,11 +748,6 @@ static const struct log_info_cat osmo_bsc_categories[] = {
 		.description = "Reference Counting",
 		.enabled = 0, .loglevel = LOGL_NOTICE,
 	},
-	[DNAT] = {
-		.name = "DNAT",
-		.description = "GSM 08.08 NAT/Multiplexer",
-		.enabled = 1, .loglevel = LOGL_NOTICE,
-	},
 	[DCTRL] = {
 		.name = "DCTRL",
 		.description = "Control interface",
@@ -915,7 +910,7 @@ int main(int argc, char **argv)
 
 	llist_for_each_entry(msc, &bsc_gsmnet->bsc_data->mscs, entry) {
 		if (osmo_bsc_msc_init(msc) != 0) {
-			LOGP(DNAT, LOGL_ERROR, "Failed to start up. Exiting.\n");
+			LOGP(DMSC, LOGL_ERROR, "Failed to start up. Exiting.\n");
 			exit(1);
 		}
 	}
