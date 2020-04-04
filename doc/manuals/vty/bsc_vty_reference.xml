@@ -330,7 +330,7 @@
         <param name='MASK' doc='List of logging categories to log, e.g. &apos;abc:mno:xyz&apos;. Available log categories depend on the specific application, refer to the &apos;logging level&apos; command. Optionally add individual log levels like &apos;abc,1:mno,3:xyz,5&apos;, where the level numbers are LOGL_DEBUG=1 LOGL_INFO=3 LOGL_NOTICE=5 LOGL_ERROR=7 LOGL_FATAL=8' />
       </params>
     </command>
-    <command id='logging level (rll|mm|rr|rsl|nm|pag|meas|msc|ho|hodec|ref|nat|ctrl|filter|pcu|lcls|chan|ts|as|cbs|lglobal|llapd|linp|lmux|lmi|lmib|lsms|lctrl|lgtp|lstats|lgsup|loap|lss7|lsccp|lsua|lm3ua|lmgcp|ljibuf|lrspro) (debug|info|notice|error|fatal)'>
+    <command id='logging level (rll|mm|rr|rsl|nm|pag|meas|msc|ho|hodec|ref|ctrl|filter|pcu|lcls|chan|ts|as|cbs|lglobal|llapd|linp|lmux|lmi|lmib|lsms|lctrl|lgtp|lstats|lgsup|loap|lss7|lsccp|lsua|lm3ua|lmgcp|ljibuf|lrspro) (debug|info|notice|error|fatal)'>
       <params>
         <param name='logging' doc='Configure logging' />
         <param name='level' doc='Set the log level for a specified category' />
@@ -345,7 +345,6 @@
         <param name='ho' doc='Hand-Over Process' />
         <param name='hodec' doc='Hand-Over Decision' />
         <param name='ref' doc='Reference Counting' />
-        <param name='nat' doc='GSM 08.08 NAT/Multiplexer' />
         <param name='ctrl' doc='Control interface' />
         <param name='filter' doc='BSC/NAT IMSI based filtering' />
         <param name='pcu' doc='PCU Interface' />
@@ -412,7 +411,7 @@
         <param name='force-all' doc='Release any globally forced log level set with &apos;logging level force-all &lt;level&gt;&apos;' />
       </params>
     </command>
-    <command id='logp (rll|mm|rr|rsl|nm|pag|meas|msc|ho|hodec|ref|nat|ctrl|filter|pcu|lcls|chan|ts|as|cbs|lglobal|llapd|linp|lmux|lmi|lmib|lsms|lctrl|lgtp|lstats|lgsup|loap|lss7|lsccp|lsua|lm3ua|lmgcp|ljibuf|lrspro) (debug|info|notice|error|fatal) .LOGMESSAGE'>
+    <command id='logp (rll|mm|rr|rsl|nm|pag|meas|msc|ho|hodec|ref|ctrl|filter|pcu|lcls|chan|ts|as|cbs|lglobal|llapd|linp|lmux|lmi|lmib|lsms|lctrl|lgtp|lstats|lgsup|loap|lss7|lsccp|lsua|lm3ua|lmgcp|ljibuf|lrspro) (debug|info|notice|error|fatal) .LOGMESSAGE'>
       <params>
         <param name='logp' doc='Print a message on all log outputs; useful for placing markers in test logs' />
         <param name='rll' doc='A-bis Radio Link Layer (RLL)' />
@@ -426,7 +425,6 @@
         <param name='ho' doc='Hand-Over Process' />
         <param name='hodec' doc='Hand-Over Decision' />
         <param name='ref' doc='Reference Counting' />
-        <param name='nat' doc='GSM 08.08 NAT/Multiplexer' />
         <param name='ctrl' doc='Control interface' />
         <param name='filter' doc='BSC/NAT IMSI based filtering' />
         <param name='pcu' doc='PCU Interface' />
@@ -1064,7 +1062,7 @@
         <param name='MASK' doc='List of logging categories to log, e.g. &apos;abc:mno:xyz&apos;. Available log categories depend on the specific application, refer to the &apos;logging level&apos; command. Optionally add individual log levels like &apos;abc,1:mno,3:xyz,5&apos;, where the level numbers are LOGL_DEBUG=1 LOGL_INFO=3 LOGL_NOTICE=5 LOGL_ERROR=7 LOGL_FATAL=8' />
       </params>
     </command>
-    <command id='logging level (rll|mm|rr|rsl|nm|pag|meas|msc|ho|hodec|ref|nat|ctrl|filter|pcu|lcls|chan|ts|as|cbs|lglobal|llapd|linp|lmux|lmi|lmib|lsms|lctrl|lgtp|lstats|lgsup|loap|lss7|lsccp|lsua|lm3ua|lmgcp|ljibuf|lrspro) (debug|info|notice|error|fatal)'>
+    <command id='logging level (rll|mm|rr|rsl|nm|pag|meas|msc|ho|hodec|ref|ctrl|filter|pcu|lcls|chan|ts|as|cbs|lglobal|llapd|linp|lmux|lmi|lmib|lsms|lctrl|lgtp|lstats|lgsup|loap|lss7|lsccp|lsua|lm3ua|lmgcp|ljibuf|lrspro) (debug|info|notice|error|fatal)'>
       <params>
         <param name='logging' doc='Configure logging' />
         <param name='level' doc='Set the log level for a specified category' />
@@ -1079,7 +1077,6 @@
         <param name='ho' doc='Hand-Over Process' />
         <param name='hodec' doc='Hand-Over Decision' />
         <param name='ref' doc='Reference Counting' />
-        <param name='nat' doc='GSM 08.08 NAT/Multiplexer' />
         <param name='ctrl' doc='Control interface' />
         <param name='filter' doc='BSC/NAT IMSI based filtering' />
         <param name='pcu' doc='PCU Interface' />
@@ -1146,7 +1143,7 @@
         <param name='force-all' doc='Release any globally forced log level set with &apos;logging level force-all &lt;level&gt;&apos;' />
       </params>
     </command>
-    <command id='logp (rll|mm|rr|rsl|nm|pag|meas|msc|ho|hodec|ref|nat|ctrl|filter|pcu|lcls|chan|ts|as|cbs|lglobal|llapd|linp|lmux|lmi|lmib|lsms|lctrl|lgtp|lstats|lgsup|loap|lss7|lsccp|lsua|lm3ua|lmgcp|ljibuf|lrspro) (debug|info|notice|error|fatal) .LOGMESSAGE'>
+    <command id='logp (rll|mm|rr|rsl|nm|pag|meas|msc|ho|hodec|ref|ctrl|filter|pcu|lcls|chan|ts|as|cbs|lglobal|llapd|linp|lmux|lmi|lmib|lsms|lctrl|lgtp|lstats|lgsup|loap|lss7|lsccp|lsua|lm3ua|lmgcp|ljibuf|lrspro) (debug|info|notice|error|fatal) .LOGMESSAGE'>
       <params>
         <param name='logp' doc='Print a message on all log outputs; useful for placing markers in test logs' />
         <param name='rll' doc='A-bis Radio Link Layer (RLL)' />
@@ -1160,7 +1157,6 @@
         <param name='ho' doc='Hand-Over Process' />
         <param name='hodec' doc='Hand-Over Decision' />
         <param name='ref' doc='Reference Counting' />
-        <param name='nat' doc='GSM 08.08 NAT/Multiplexer' />
         <param name='ctrl' doc='Control interface' />
         <param name='filter' doc='BSC/NAT IMSI based filtering' />
         <param name='pcu' doc='PCU Interface' />
@@ -1999,7 +1995,7 @@
         <param name='[last]' doc='Log source file info at the end of a log line. If omitted, log source file info just before the log text.' />
       </params>
     </command>
-    <command id='logging level (rll|mm|rr|rsl|nm|pag|meas|msc|ho|hodec|ref|nat|ctrl|filter|pcu|lcls|chan|ts|as|cbs|lglobal|llapd|linp|lmux|lmi|lmib|lsms|lctrl|lgtp|lstats|lgsup|loap|lss7|lsccp|lsua|lm3ua|lmgcp|ljibuf|lrspro) (debug|info|notice|error|fatal)'>
+    <command id='logging level (rll|mm|rr|rsl|nm|pag|meas|msc|ho|hodec|ref|ctrl|filter|pcu|lcls|chan|ts|as|cbs|lglobal|llapd|linp|lmux|lmi|lmib|lsms|lctrl|lgtp|lstats|lgsup|loap|lss7|lsccp|lsua|lm3ua|lmgcp|ljibuf|lrspro) (debug|info|notice|error|fatal)'>
       <params>
         <param name='logging' doc='Configure logging' />
         <param name='level' doc='Set the log level for a specified category' />
@@ -2014,7 +2010,6 @@
         <param name='ho' doc='Hand-Over Process' />
         <param name='hodec' doc='Hand-Over Decision' />
         <param name='ref' doc='Reference Counting' />
-        <param name='nat' doc='GSM 08.08 NAT/Multiplexer' />
         <param name='ctrl' doc='Control interface' />
         <param name='filter' doc='BSC/NAT IMSI based filtering' />
         <param name='pcu' doc='PCU Interface' />
