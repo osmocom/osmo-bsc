@@ -736,9 +736,6 @@ static void config_write_bts_gprs(struct vty *vty, struct gsm_bts *bts)
 	if (bts->gprs.mode == BTS_GPRS_NONE)
 		return;
 
-	vty_out(vty, "  gprs 11bit_rach_support_for_egprs %u%s",
-		bts->gprs.supports_egprs_11bit_rach, VTY_NEWLINE);
-
 	vty_out(vty, "  gprs routing area %u%s", bts->gprs.rac,
 		VTY_NEWLINE);
 	vty_out(vty, "  gprs network-control-order nc%u%s",
@@ -771,6 +768,12 @@ static void config_write_bts_gprs(struct vty *vty, struct gsm_bts *bts)
 			nsvc->remote_port, VTY_NEWLINE);
 		vty_out(vty, "  gprs nsvc %u remote ip %s%s", i,
 			inet_ntoa(ia), VTY_NEWLINE);
+	}
+
+	/* EGPRS specific parameters */
+	if (bts->gprs.mode == BTS_GPRS_EGPRS) {
+		if (bts->gprs.egprs_pkt_chan_request)
+			vty_out(vty, "  gprs egprs-packet-channel-request%s", VTY_NEWLINE);
 	}
 }
 
@@ -3126,22 +3129,65 @@ DEFUN(cfg_bts_gprs_mode, cfg_bts_gprs_mode_cmd,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_bts_gprs_11bit_rach_support_for_egprs,
+DEFUN_DEPRECATED(cfg_bts_gprs_11bit_rach_support_for_egprs,
 	cfg_bts_gprs_11bit_rach_support_for_egprs_cmd,
 	"gprs 11bit_rach_support_for_egprs (0|1)",
-	GPRS_TEXT "11 bit RACH options\n"
-	"Disable 11 bit RACH for EGPRS\n"
-	"Enable 11 bit RACH for EGPRS\n")
+	GPRS_TEXT "EGPRS Packet Channel Request support\n"
+	"Disable EGPRS Packet Channel Request support\n"
+	"Enable EGPRS Packet Channel Request support\n")
 {
 	struct gsm_bts *bts = vty->index;
 
-	bts->gprs.supports_egprs_11bit_rach = atoi(argv[0]);
+	vty_out(vty, "%% 'gprs 11bit_rach_support_for_egprs' is now deprecated: "
+		"use '[no] gprs egprs-packet-channel-request' instead%s", VTY_NEWLINE);
 
-	if (bts->gprs.mode == BTS_GPRS_NONE && bts->gprs.supports_egprs_11bit_rach) {
+	bts->gprs.egprs_pkt_chan_request = (argv[0][0] == '1');
+
+	if (bts->gprs.mode == BTS_GPRS_NONE && bts->gprs.egprs_pkt_chan_request) {
 		vty_out(vty, "%% (E)GPRS is not enabled (see 'gprs mode')%s", VTY_NEWLINE);
 		return CMD_WARNING;
 	}
 
+	if (bts->gprs.mode != BTS_GPRS_EGPRS) {
+		vty_out(vty, "%% EGPRS Packet Channel Request support requires "
+			"EGPRS mode to be enabled (see 'gprs mode')%s", VTY_NEWLINE);
+		/* Do not return here, keep the old behaviour. */
+	}
+
+	return CMD_SUCCESS;
+}
+
+DEFUN(cfg_bts_gprs_egprs_pkt_chan_req,
+      cfg_bts_gprs_egprs_pkt_chan_req_cmd,
+      "gprs egprs-packet-channel-request",
+      GPRS_TEXT "EGPRS Packet Channel Request support")
+{
+	struct gsm_bts *bts = vty->index;
+
+	if (bts->gprs.mode != BTS_GPRS_EGPRS) {
+		vty_out(vty, "%% EGPRS Packet Channel Request support requires "
+			"EGPRS mode to be enabled (see 'gprs mode')%s", VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	bts->gprs.egprs_pkt_chan_request = true;
+	return CMD_SUCCESS;
+}
+
+DEFUN(cfg_bts_no_gprs_egprs_pkt_chan_req,
+      cfg_bts_no_gprs_egprs_pkt_chan_req_cmd,
+      "no gprs egprs-packet-channel-request",
+      NO_STR GPRS_TEXT "EGPRS Packet Channel Request support")
+{
+	struct gsm_bts *bts = vty->index;
+
+	if (bts->gprs.mode != BTS_GPRS_EGPRS) {
+		vty_out(vty, "%% EGPRS Packet Channel Request support requires "
+			"EGPRS mode to be enabled (see 'gprs mode')%s", VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	bts->gprs.egprs_pkt_chan_request = false;
 	return CMD_SUCCESS;
 }
 
@@ -5406,6 +5452,8 @@ int bsc_vty_init(struct gsm_network *network)
 	install_element(BTS_NODE, &cfg_bts_radio_link_timeout_inf_cmd);
 	install_element(BTS_NODE, &cfg_bts_gprs_mode_cmd);
 	install_element(BTS_NODE, &cfg_bts_gprs_11bit_rach_support_for_egprs_cmd);
+	install_element(BTS_NODE, &cfg_bts_no_gprs_egprs_pkt_chan_req_cmd);
+	install_element(BTS_NODE, &cfg_bts_gprs_egprs_pkt_chan_req_cmd);
 	install_element(BTS_NODE, &cfg_bts_gprs_ns_timer_cmd);
 	install_element(BTS_NODE, &cfg_bts_gprs_rac_cmd);
 	install_element(BTS_NODE, &cfg_bts_gprs_net_ctrl_ord_cmd);

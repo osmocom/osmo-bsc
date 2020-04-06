@@ -1150,7 +1150,6 @@ struct gsm_bts {
 
 	/* Not entirely sure how ip.access specific this is */
 	struct {
-		uint8_t supports_egprs_11bit_rach;
 		enum bts_gprs_mode mode;
 		struct {
 			struct gsm_abis_mo mo;
@@ -1167,6 +1166,7 @@ struct gsm_bts {
 		uint8_t rac;
 		uint8_t net_ctrl_ord;
 		bool ctrl_ack_type_use_block;
+		bool egprs_pkt_chan_request;
 	} gprs;
 
 	/* threshold (in percent) when BTS shall send CCCH LOAD IND */

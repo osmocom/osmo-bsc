@@ -3370,12 +3370,17 @@
         <param name='egprs' doc='EGPRS (EDGE) Enabled on this BTS' />
       </params>
     </command>
-    <command id='gprs 11bit_rach_support_for_egprs (0|1)'>
+    <command id='no gprs egprs-packet-channel-request'>
+      <params>
+        <param name='no' doc='Negate a command or set its defaults' />
+        <param name='gprs' doc='GPRS Packet Network' />
+        <param name='egprs-packet-channel-request' doc='EGPRS Packet Channel Request support' />
+      </params>
+    </command>
+    <command id='gprs egprs-packet-channel-request'>
       <params>
         <param name='gprs' doc='GPRS Packet Network' />
-        <param name='11bit_rach_support_for_egprs' doc='11 bit RACH options' />
-        <param name='0' doc='Disable 11 bit RACH for EGPRS' />
-        <param name='1' doc='Enable 11 bit RACH for EGPRS' />
+        <param name='egprs-packet-channel-request' doc='EGPRS Packet Channel Request support' />
       </params>
     </command>
     <command id='gprs ns timer (tns-block|tns-block-retries|tns-reset|tns-reset-retries|tns-test|tns-alive|tns-alive-retries|tsns-prov) &lt;0-255&gt;'>
