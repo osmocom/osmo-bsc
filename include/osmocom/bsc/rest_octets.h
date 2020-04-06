@@ -88,8 +88,8 @@ struct gprs_cell_options {
 	uint8_t ext_info_present;
 	struct {
 		uint8_t egprs_supported;
-			uint8_t use_egprs_p_ch_req;
-			uint8_t bep_period;
+		uint8_t use_egprs_p_ch_req;
+		uint8_t bep_period;
 		uint8_t pfc_supported;
 		uint8_t dtm_supported;
 		uint8_t bss_paging_coordination;
