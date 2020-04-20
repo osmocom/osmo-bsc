@@ -23,7 +23,7 @@ struct gsm_network;
 struct gsm_lchan;
 struct gsm_bts;
 struct gsm_subscriber_connection;
-struct gsm_meas_rep mr;
+struct gsm_meas_rep;
 
 enum handover_result {
 	HO_RESULT_OK,
