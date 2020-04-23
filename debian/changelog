@@ -1,3 +1,9 @@
+osmo-bsc (1.6.0-fw.1) unstable; urgency=medium
+
+  * bts stats: create bts stat groups with their bts->nr as index
+
+ -- Kirill Zakharenko <kirill.zakharenko@fairwaves.co>  Thu, 23 Apr 2020 18:50:29 +0300
+
 osmo-bsc (1.6.0) unstable; urgency=medium
 
   [ Philipp Maier ]
