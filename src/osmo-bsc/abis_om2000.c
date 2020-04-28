@@ -1129,6 +1129,21 @@ int abis_om2k_tx_cap_req(struct gsm_bts *bts, const struct abis_om2k_mo *mo)
 	return abis_om2k_tx_simple(bts, mo, OM2K_MSGT_CAPA_REQ);
 }
 
+int abis_om2k_tx_arb(struct gsm_bts *bts, struct abis_om2k_mo *mo,
+		     uint16_t req, uint8_t *buf, int buf_len)
+{
+	struct msgb *msg = om2k_msgb_alloc();
+	struct abis_om2k_hdr *o2k;
+
+	o2k = (struct abis_om2k_hdr *) msgb_put(msg, sizeof(*o2k));
+	fill_om2k_hdr(o2k, mo, req);
+
+	if (buf_len)
+		memcpy(msgb_put(msg, buf_len), buf, buf_len);
+
+	return abis_om2k_sendmsg(bts, msg);
+}
+
 static void om2k_fill_is_conn_grp(struct om2k_is_conn_grp *grp, uint16_t icp1,
 				  uint16_t icp2, uint8_t cont_idx)
 {

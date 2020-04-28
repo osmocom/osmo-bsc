@@ -113,6 +113,7 @@ int abis_om2k_tx_test_req(struct gsm_bts *bts, const struct abis_om2k_mo *mo);
 int abis_om2k_tx_op_info(struct gsm_bts *bts, const struct abis_om2k_mo *mo,
 			 uint8_t operational);
 int abis_om2k_tx_cap_req(struct gsm_bts *bts, const struct abis_om2k_mo *mo);
+int abis_om2k_tx_arb(struct gsm_bts *bts, struct abis_om2k_mo *mo, uint16_t req, uint8_t *buf, int buf_len);
 int abis_om2k_tx_is_conf_req(struct gsm_bts *bts);
 int abis_om2k_tx_con_conf_req(struct gsm_bts *bts);
 int abis_om2k_tx_tf_conf_req(struct gsm_bts *bts);
