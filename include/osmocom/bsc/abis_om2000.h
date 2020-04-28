@@ -24,6 +24,7 @@
 
 enum abis_om2k_mo_cls {
 	OM2K_MO_CLS_TRXC			= 0x01,
+	OM2K_MO_CLS_TG				= 0x02,
 	OM2K_MO_CLS_TS				= 0x03,
 	OM2K_MO_CLS_TF				= 0x04,
 	OM2K_MO_CLS_IS				= 0x05,

@@ -698,6 +698,7 @@ static const struct value_string om2k_attr_vals[] = {
 
 const struct value_string om2k_mo_class_short_vals[] = {
 	{ 0x01, "TRXC" },
+	{ 0x02, "TG" },
 	{ 0x03, "TS" },
 	{ 0x04, "TF" },
 	{ 0x05, "IS" },
