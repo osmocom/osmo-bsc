@@ -66,13 +66,15 @@ static int dummy_config_write(struct vty *v)
 }
 
 /* FIXME: auto-generate those strings from the value_string lists */
-#define OM2K_OBJCLASS_VTY "(trxc|ts|tf|is|con|dp|cf|tx|rx)"
+#define OM2K_OBJCLASS_VTY "(trxc|tg|ts|tf|is|con|dp|mctr|cf|tx|rx)"
 #define OM2K_OBJCLASS_VTY_HELP 	"TRX Controller\n"	\
+				"Trunk Group\n"		\
 				"Timeslot\n"		\
 				"Timing Function\n"	\
 				"Interface Switch\n"	\
 				"Abis Concentrator\n"	\
 				"Digital Path\n"	\
+				"Multi Carrier Transceiver\n" \
 				"Central Function\n"	\
 				"Transmitter\n"		\
 				"Receiver\n"
