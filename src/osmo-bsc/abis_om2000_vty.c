@@ -494,6 +494,9 @@ DEFUN(om2k_conf_req, om2k_conf_req_cmd,
 	case OM2K_MO_CLS_IS:
 		abis_om2k_tx_is_conf_req(bts);
 		break;
+	case OM2K_MO_CLS_CON:
+		abis_om2k_tx_con_conf_req(bts);
+		break;
 	case OM2K_MO_CLS_TS:
 		trx = gsm_bts_trx_by_nr(bts, oms->mo.assoc_so);
 		if (!trx) {
