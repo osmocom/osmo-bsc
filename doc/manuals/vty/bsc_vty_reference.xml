@@ -18,10 +18,11 @@
         <param name='terminal' doc='Write to terminal' />
       </params>
     </command>
-    <command id='write file'>
+    <command id='write file [PATH]'>
       <params>
         <param name='write' doc='Write running configuration to memory, network, or terminal' />
         <param name='file' doc='Write to configuration file' />
+        <param name='[PATH]' doc='Set file path to store the config, or replace if already exists' />
       </params>
     </command>
     <command id='write memory'>
@@ -136,6 +137,15 @@
         <param name='show' doc='Show running system information' />
         <param name='bts' doc='Display information about a BTS' />
         <param name='[&lt;0-255&gt;]' doc='BTS number' />
+      </params>
+    </command>
+    <command id='show bts &lt;0-255&gt; fail-rep [reset]'>
+      <params>
+        <param name='show' doc='Show running system information' />
+        <param name='bts' doc='Display information about a BTS' />
+        <param name='&lt;0-255&gt;' doc='BTS number' />
+        <param name='fail-rep' doc='OML failure reports' />
+        <param name='[reset]' doc='Clear the list of failure reports after showing them' />
       </params>
     </command>
     <command id='show rejected-bts'>
@@ -320,7 +330,7 @@
         <param name='MASK' doc='List of logging categories to log, e.g. &apos;abc:mno:xyz&apos;. Available log categories depend on the specific application, refer to the &apos;logging level&apos; command. Optionally add individual log levels like &apos;abc,1:mno,3:xyz,5&apos;, where the level numbers are LOGL_DEBUG=1 LOGL_INFO=3 LOGL_NOTICE=5 LOGL_ERROR=7 LOGL_FATAL=8' />
       </params>
     </command>
-    <command id='logging level (rll|mm|rr|rsl|nm|pag|meas|msc|ho|hodec|ref|nat|ctrl|filter|pcu|lcls|chan|ts|as|cbs|lglobal|llapd|linp|lmux|lmi|lmib|lsms|lctrl|lgtp|lstats|lgsup|loap|lss7|lsccp|lsua|lm3ua|lmgcp|ljibuf|lrspro) (debug|info|notice|error|fatal)'>
+    <command id='logging level (rll|mm|rr|rsl|nm|pag|meas|msc|ho|hodec|ref|ctrl|filter|pcu|lcls|chan|ts|as|cbs|lglobal|llapd|linp|lmux|lmi|lmib|lsms|lctrl|lgtp|lstats|lgsup|loap|lss7|lsccp|lsua|lm3ua|lmgcp|ljibuf|lrspro) (debug|info|notice|error|fatal)'>
       <params>
         <param name='logging' doc='Configure logging' />
         <param name='level' doc='Set the log level for a specified category' />
@@ -335,7 +345,6 @@
         <param name='ho' doc='Hand-Over Process' />
         <param name='hodec' doc='Hand-Over Decision' />
         <param name='ref' doc='Reference Counting' />
-        <param name='nat' doc='GSM 08.08 NAT/Multiplexer' />
         <param name='ctrl' doc='Control interface' />
         <param name='filter' doc='BSC/NAT IMSI based filtering' />
         <param name='pcu' doc='PCU Interface' />
@@ -402,7 +411,7 @@
         <param name='force-all' doc='Release any globally forced log level set with &apos;logging level force-all &lt;level&gt;&apos;' />
       </params>
     </command>
-    <command id='logp (rll|mm|rr|rsl|nm|pag|meas|msc|ho|hodec|ref|nat|ctrl|filter|pcu|lcls|chan|ts|as|cbs|lglobal|llapd|linp|lmux|lmi|lmib|lsms|lctrl|lgtp|lstats|lgsup|loap|lss7|lsccp|lsua|lm3ua|lmgcp|ljibuf|lrspro) (debug|info|notice|error|fatal) .LOGMESSAGE'>
+    <command id='logp (rll|mm|rr|rsl|nm|pag|meas|msc|ho|hodec|ref|ctrl|filter|pcu|lcls|chan|ts|as|cbs|lglobal|llapd|linp|lmux|lmi|lmib|lsms|lctrl|lgtp|lstats|lgsup|loap|lss7|lsccp|lsua|lm3ua|lmgcp|ljibuf|lrspro) (debug|info|notice|error|fatal) .LOGMESSAGE'>
       <params>
         <param name='logp' doc='Print a message on all log outputs; useful for placing markers in test logs' />
         <param name='rll' doc='A-bis Radio Link Layer (RLL)' />
@@ -416,7 +425,6 @@
         <param name='ho' doc='Hand-Over Process' />
         <param name='hodec' doc='Hand-Over Decision' />
         <param name='ref' doc='Reference Counting' />
-        <param name='nat' doc='GSM 08.08 NAT/Multiplexer' />
         <param name='ctrl' doc='Control interface' />
         <param name='filter' doc='BSC/NAT IMSI based filtering' />
         <param name='pcu' doc='PCU Interface' />
@@ -640,6 +648,13 @@
         <param name='[&lt;0-65534&gt;]' doc='Port Number' />
       </params>
     </command>
+    <command id='show cs7 config'>
+      <params>
+        <param name='show' doc='Show running system information' />
+        <param name='cs7' doc='ITU-T Signaling System 7' />
+        <param name='config' doc='Currently running cs7 configuration' />
+      </params>
+    </command>
     <command id='show cs7 instance &lt;0-15&gt; asp'>
       <params>
         <param name='show' doc='Show running system information' />
@@ -830,6 +845,15 @@
         <param name='show' doc='Show running system information' />
         <param name='bts' doc='Display information about a BTS' />
         <param name='[&lt;0-255&gt;]' doc='BTS number' />
+      </params>
+    </command>
+    <command id='show bts &lt;0-255&gt; fail-rep [reset]'>
+      <params>
+        <param name='show' doc='Show running system information' />
+        <param name='bts' doc='Display information about a BTS' />
+        <param name='&lt;0-255&gt;' doc='BTS number' />
+        <param name='fail-rep' doc='OML failure reports' />
+        <param name='[reset]' doc='Clear the list of failure reports after showing them' />
       </params>
     </command>
     <command id='show rejected-bts'>
@@ -1038,7 +1062,7 @@
         <param name='MASK' doc='List of logging categories to log, e.g. &apos;abc:mno:xyz&apos;. Available log categories depend on the specific application, refer to the &apos;logging level&apos; command. Optionally add individual log levels like &apos;abc,1:mno,3:xyz,5&apos;, where the level numbers are LOGL_DEBUG=1 LOGL_INFO=3 LOGL_NOTICE=5 LOGL_ERROR=7 LOGL_FATAL=8' />
       </params>
     </command>
-    <command id='logging level (rll|mm|rr|rsl|nm|pag|meas|msc|ho|hodec|ref|nat|ctrl|filter|pcu|lcls|chan|ts|as|cbs|lglobal|llapd|linp|lmux|lmi|lmib|lsms|lctrl|lgtp|lstats|lgsup|loap|lss7|lsccp|lsua|lm3ua|lmgcp|ljibuf|lrspro) (debug|info|notice|error|fatal)'>
+    <command id='logging level (rll|mm|rr|rsl|nm|pag|meas|msc|ho|hodec|ref|ctrl|filter|pcu|lcls|chan|ts|as|cbs|lglobal|llapd|linp|lmux|lmi|lmib|lsms|lctrl|lgtp|lstats|lgsup|loap|lss7|lsccp|lsua|lm3ua|lmgcp|ljibuf|lrspro) (debug|info|notice|error|fatal)'>
       <params>
         <param name='logging' doc='Configure logging' />
         <param name='level' doc='Set the log level for a specified category' />
@@ -1053,7 +1077,6 @@
         <param name='ho' doc='Hand-Over Process' />
         <param name='hodec' doc='Hand-Over Decision' />
         <param name='ref' doc='Reference Counting' />
-        <param name='nat' doc='GSM 08.08 NAT/Multiplexer' />
         <param name='ctrl' doc='Control interface' />
         <param name='filter' doc='BSC/NAT IMSI based filtering' />
         <param name='pcu' doc='PCU Interface' />
@@ -1120,7 +1143,7 @@
         <param name='force-all' doc='Release any globally forced log level set with &apos;logging level force-all &lt;level&gt;&apos;' />
       </params>
     </command>
-    <command id='logp (rll|mm|rr|rsl|nm|pag|meas|msc|ho|hodec|ref|nat|ctrl|filter|pcu|lcls|chan|ts|as|cbs|lglobal|llapd|linp|lmux|lmi|lmib|lsms|lctrl|lgtp|lstats|lgsup|loap|lss7|lsccp|lsua|lm3ua|lmgcp|ljibuf|lrspro) (debug|info|notice|error|fatal) .LOGMESSAGE'>
+    <command id='logp (rll|mm|rr|rsl|nm|pag|meas|msc|ho|hodec|ref|ctrl|filter|pcu|lcls|chan|ts|as|cbs|lglobal|llapd|linp|lmux|lmi|lmib|lsms|lctrl|lgtp|lstats|lgsup|loap|lss7|lsccp|lsua|lm3ua|lmgcp|ljibuf|lrspro) (debug|info|notice|error|fatal) .LOGMESSAGE'>
       <params>
         <param name='logp' doc='Print a message on all log outputs; useful for placing markers in test logs' />
         <param name='rll' doc='A-bis Radio Link Layer (RLL)' />
@@ -1134,7 +1157,6 @@
         <param name='ho' doc='Hand-Over Process' />
         <param name='hodec' doc='Hand-Over Decision' />
         <param name='ref' doc='Reference Counting' />
-        <param name='nat' doc='GSM 08.08 NAT/Multiplexer' />
         <param name='ctrl' doc='Control interface' />
         <param name='filter' doc='BSC/NAT IMSI based filtering' />
         <param name='pcu' doc='PCU Interface' />
@@ -1547,6 +1569,13 @@
         <param name='m3ua' doc='MTP3 User Adaptation' />
         <param name='ipa' doc='IPA Multiplex (SCCP Lite)' />
         <param name='[&lt;0-65534&gt;]' doc='Port Number' />
+      </params>
+    </command>
+    <command id='show cs7 config'>
+      <params>
+        <param name='show' doc='Show running system information' />
+        <param name='cs7' doc='ITU-T Signaling System 7' />
+        <param name='config' doc='Currently running cs7 configuration' />
       </params>
     </command>
     <command id='show cs7 instance &lt;0-15&gt; asp'>
@@ -1966,7 +1995,7 @@
         <param name='[last]' doc='Log source file info at the end of a log line. If omitted, log source file info just before the log text.' />
       </params>
     </command>
-    <command id='logging level (rll|mm|rr|rsl|nm|pag|meas|msc|ho|hodec|ref|nat|ctrl|filter|pcu|lcls|chan|ts|as|cbs|lglobal|llapd|linp|lmux|lmi|lmib|lsms|lctrl|lgtp|lstats|lgsup|loap|lss7|lsccp|lsua|lm3ua|lmgcp|ljibuf|lrspro) (debug|info|notice|error|fatal)'>
+    <command id='logging level (rll|mm|rr|rsl|nm|pag|meas|msc|ho|hodec|ref|ctrl|filter|pcu|lcls|chan|ts|as|cbs|lglobal|llapd|linp|lmux|lmi|lmib|lsms|lctrl|lgtp|lstats|lgsup|loap|lss7|lsccp|lsua|lm3ua|lmgcp|ljibuf|lrspro) (debug|info|notice|error|fatal)'>
       <params>
         <param name='logging' doc='Configure logging' />
         <param name='level' doc='Set the log level for a specified category' />
@@ -1981,7 +2010,6 @@
         <param name='ho' doc='Hand-Over Process' />
         <param name='hodec' doc='Hand-Over Decision' />
         <param name='ref' doc='Reference Counting' />
-        <param name='nat' doc='GSM 08.08 NAT/Multiplexer' />
         <param name='ctrl' doc='Control interface' />
         <param name='filter' doc='BSC/NAT IMSI based filtering' />
         <param name='pcu' doc='PCU Interface' />
@@ -2149,7 +2177,7 @@
   </node>
   <node id='config-e1_input'>
     <name>config-e1_input</name>
-    <command id='e1_line &lt;0-255&gt; driver (misdn|misdn_lapd|dahdi|ipa|unixsocket)'>
+    <command id='e1_line &lt;0-255&gt; driver (misdn|misdn_lapd|dahdi|e1d|ipa|unixsocket)'>
       <params>
         <param name='e1_line' doc='Configure E1/T1/J1 Line' />
         <param name='&lt;0-255&gt;' doc='Line Number' />
@@ -2157,8 +2185,9 @@
         <param name='misdn' doc='mISDN supported E1 Card (kernel LAPD)' />
         <param name='misdn_lapd' doc='mISDN supported E1 Card (userspace LAPD)' />
         <param name='dahdi' doc='DAHDI supported E1/T1/J1 Card' />
-        <param name='ipa' doc='IPA TCP/IP input' />
-        <param name='unixsocket' doc='HSL TCP/IP input' />
+        <param name='e1d' doc='IPA TCP/IP input' />
+        <param name='ipa' doc='HSL TCP/IP input' />
+        <param name='unixsocket' doc='Unix socket input' />
       </params>
     </command>
     <command id='e1_line &lt;0-255&gt; port &lt;0-255&gt;'>
@@ -2208,6 +2237,23 @@
         <param name='e1_line' doc='Configure E1/T1/J1 Line' />
         <param name='&lt;0-255&gt;' doc='Line Number' />
         <param name='keepalive' doc='Enable keep-alive probing' />
+      </params>
+    </command>
+    <command id='e1_line &lt;0-255&gt; ipa-keepalive &lt;1-300&gt; &lt;1-300&gt;'>
+      <params>
+        <param name='e1_line' doc='Configure E1/T1/J1 Line' />
+        <param name='&lt;0-255&gt;' doc='Line Number' />
+        <param name='ipa-keepalive' doc='Enable IPA PING/PONG keep-alive' />
+        <param name='&lt;1-300&gt;' doc='Idle interval in seconds before probes are sent' />
+        <param name='&lt;1-300&gt;' doc='Time to wait for PONG response' />
+      </params>
+    </command>
+    <command id='no e1_line &lt;0-255&gt; ipa-keepalive'>
+      <params>
+        <param name='no' doc='Negate a command or set its defaults' />
+        <param name='e1_line' doc='Configure E1/T1/J1 Line' />
+        <param name='&lt;0-255&gt;' doc='Line Number' />
+        <param name='ipa-keepalive' doc='Enable IPA PING/PONG keep-alive' />
       </params>
     </command>
     <command id='ipa bind A.B.C.D'>
@@ -2446,6 +2492,15 @@
         <param name='PC' doc='Override Destination Point Code' />
       </params>
     </command>
+    <command id='point-code override patch-sccp (disabled|both)'>
+      <params>
+        <param name='point-code' doc='Point Code Specific Features' />
+        <param name='override' doc='Override (force) a point-code to hard-coded value' />
+        <param name='patch-sccp' doc='Patch point code values into SCCP called/calling address' />
+        <param name='disabled' doc='Don&apos;t patch any point codes into SCCP called/calling address' />
+        <param name='both' doc='Patch both origin and destination point codes into SCCP called/calling address' />
+      </params>
+    </command>
   </node>
   <node id='config-cs7-asp'>
     <name>config-cs7-asp</name>
@@ -2471,6 +2526,21 @@
       <params>
         <param name='qos-class' doc='Specify QoS Class of ASP' />
         <param name='&lt;0-255&gt;' doc='QoS Class of ASP' />
+      </params>
+    </command>
+    <command id='role (sg|asp|ipsp)'>
+      <params>
+        <param name='role' doc='Specify the xUA role for this ASP' />
+        <param name='sg' doc='SG (Signaling Gateway)' />
+        <param name='asp' doc='ASP (Application Server Process)' />
+        <param name='ipsp' doc='IPSP (IP Signalling Point)' />
+      </params>
+    </command>
+    <command id='sctp-role (client|server)'>
+      <params>
+        <param name='sctp-role' doc='Specify the SCTP role for this ASP' />
+        <param name='client' doc='Operate as SCTP client; connect to a server' />
+        <param name='server' doc='Operate as SCTP server; wait for client connections' />
       </params>
     </command>
     <command id='block'>
@@ -2655,6 +2725,11 @@
         <param name='[TNNNN]' doc='T- or X-timer-number -- 3GPP compliant timer number of the format &apos;1234&apos; or &apos;T1234&apos; or &apos;t1234&apos;; Osmocom-specific timer number of the format: &apos;X1234&apos; or &apos;x1234&apos;.' />
         <param name='[&lt;0-2147483647&gt;]' doc='New timer value' />
         <param name='[default]' doc='Set to default timer value' />
+      </params>
+    </command>
+    <command id='allow-unusable-timeslots'>
+      <params>
+        <param name='allow-unusable-timeslots' doc='Don&apos;t refuse to start with mutually exclusive codec settings' />
       </params>
     </command>
     <command id='neci (0|1)'>
@@ -3295,12 +3370,17 @@
         <param name='egprs' doc='EGPRS (EDGE) Enabled on this BTS' />
       </params>
     </command>
-    <command id='gprs 11bit_rach_support_for_egprs (0|1)'>
+    <command id='no gprs egprs-packet-channel-request'>
+      <params>
+        <param name='no' doc='Negate a command or set its defaults' />
+        <param name='gprs' doc='GPRS Packet Network' />
+        <param name='egprs-packet-channel-request' doc='EGPRS Packet Channel Request support' />
+      </params>
+    </command>
+    <command id='gprs egprs-packet-channel-request'>
       <params>
         <param name='gprs' doc='GPRS Packet Network' />
-        <param name='11bit_rach_support_for_egprs' doc='11 bit RACH options' />
-        <param name='0' doc='Disable 11 bit RACH for EGPRS' />
-        <param name='1' doc='Enable 11 bit RACH for EGPRS' />
+        <param name='egprs-packet-channel-request' doc='EGPRS Packet Channel Request support' />
       </params>
     </command>
     <command id='gprs ns timer (tns-block|tns-block-retries|tns-reset|tns-reset-retries|tns-test|tns-alive|tns-alive-retries|tsns-prov) &lt;0-255&gt;'>
@@ -3680,10 +3760,11 @@
         <param name='&lt;0-255&gt;' doc='BTS Number' />
       </params>
     </command>
-    <command id='depeneds-on-bts &lt;0-255&gt;'>
+    <command id='no depends-on-bts &lt;0-255&gt;'>
       <params>
-        <param name='depeneds-on-bts' doc='Negate a command or set its defaults' />
-        <param name='&lt;0-255&gt;' doc='This BTS can only be started if another one is up' />
+        <param name='no' doc='Negate a command or set its defaults' />
+        <param name='depends-on-bts' doc='This BTS can only be started if another one is up' />
+        <param name='&lt;0-255&gt;' doc='BTS Number' />
       </params>
     </command>
     <command id='amr tch-f modes (0|1|2|3|4|5|6|7)'>

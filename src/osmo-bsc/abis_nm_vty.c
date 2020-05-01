@@ -165,7 +165,7 @@ DEFUN(oml_chg_adm_state, oml_chg_adm_state_cmd,
 }
 
 DEFUN(oml_opstart, oml_opstart_cmd,
-	"opstart", "Send an OPSTART message to the object")
+	"opstart", "Send an OPSTART message to the object\n")
 {
 	struct oml_node_state *oms = vty->index;
 

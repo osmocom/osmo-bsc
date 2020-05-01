@@ -353,37 +353,92 @@ static inline void handle_manufact_report(struct gsm_bts *bts, const uint8_t *p_
 	};
 }
 
-static int rx_fail_evt_rep(struct msgb *mb, struct gsm_bts *bts)
+/* Parse into newly allocated struct abis_nm_fail_evt_rep, caller must free it. */
+struct nm_fail_rep_signal_data *abis_nm_fail_evt_rep_parse(struct msgb *mb, struct gsm_bts *bts)
 {
 	struct abis_om_hdr *oh = msgb_l2(mb);
 	struct abis_om_fom_hdr *foh = msgb_l3(mb);
-	struct e1inp_sign_link *sign_link = mb->dst;
-	struct tlv_parsed tp;
-	int rc = 0;
+	struct nm_fail_rep_signal_data *sd;
 	const uint8_t *p_val = NULL;
 	char *p_text = NULL;
 	const char *e_type = NULL, *severity = NULL;
 
-	abis_nm_tlv_parse(&tp, sign_link->trx->bts, foh->data,
-			  oh->length-sizeof(*foh));
+	sd = talloc_zero(tall_bsc_ctx, struct nm_fail_rep_signal_data);
+	OSMO_ASSERT(sd);
 
-	if (TLVP_PRESENT(&tp, NM_ATT_ADD_TEXT)) {
-		const uint8_t *val = TLVP_VAL(&tp, NM_ATT_ADD_TEXT);
-		p_text = talloc_strndup(tall_bsc_ctx, (const char *) val,
-					TLVP_LEN(&tp, NM_ATT_ADD_TEXT));
+	if (abis_nm_tlv_parse(&sd->tp, bts, foh->data, oh->length-sizeof(*foh)) < 0)
+		goto fail;
+
+	if (TLVP_PRESENT(&sd->tp, NM_ATT_ADD_TEXT)) {
+		const uint8_t *val = TLVP_VAL(&sd->tp, NM_ATT_ADD_TEXT);
+		p_text = talloc_strndup(sd, (const char *) val, TLVP_LEN(&sd->tp, NM_ATT_ADD_TEXT));
 	}
 
-	if (TLVP_PRESENT(&tp, NM_ATT_EVENT_TYPE))
-		e_type = abis_nm_event_type_name(*TLVP_VAL(&tp,
-							   NM_ATT_EVENT_TYPE));
+	if (TLVP_PRESENT(&sd->tp, NM_ATT_EVENT_TYPE))
+		e_type = abis_nm_event_type_name(*TLVP_VAL(&sd->tp, NM_ATT_EVENT_TYPE));
 
-	if (TLVP_PRESENT(&tp, NM_ATT_SEVERITY))
-		severity = abis_nm_severity_name(*TLVP_VAL(&tp,
-							   NM_ATT_SEVERITY));
+	if (TLVP_PRESENT(&sd->tp, NM_ATT_SEVERITY))
+		severity = abis_nm_severity_name(*TLVP_VAL(&sd->tp, NM_ATT_SEVERITY));
 
-	if (TLVP_PRESENT(&tp, NM_ATT_PROB_CAUSE)) {
-		p_val = TLVP_VAL(&tp, NM_ATT_PROB_CAUSE);
+	if (TLVP_PRESENT(&sd->tp, NM_ATT_PROB_CAUSE))
+		p_val = TLVP_VAL(&sd->tp, NM_ATT_PROB_CAUSE);
 
+	sd->bts = bts;
+	sd->msg = mb;
+	if (e_type)
+		sd->parsed.event_type = e_type;
+	else
+		sd->parsed.event_type = talloc_strdup(sd, "<none>");
+	if (severity)
+		sd->parsed.severity = severity;
+	else
+		sd->parsed.severity = talloc_strdup(sd, "<none>");
+	if (p_text)
+		sd->parsed.additional_text = p_text;
+	else
+		sd->parsed.additional_text = talloc_strdup(sd, "<none>");
+	sd->parsed.probable_cause = p_val;
+
+	return sd;
+fail:
+	talloc_free(sd);
+	return NULL;
+}
+
+static int rx_fail_evt_rep(struct msgb *mb, struct gsm_bts *bts)
+{
+	struct abis_om_fom_hdr *foh = msgb_l3(mb);
+	struct nm_fail_rep_signal_data *sd;
+	int rc = 0;
+	const uint8_t *p_val;
+	const char *e_type, *severity, *p_text;
+	struct bts_oml_fail_rep *entry;
+
+	/* Store copy in bts->oml_fail_rep */
+	entry = talloc_zero(bts, struct bts_oml_fail_rep);
+	OSMO_ASSERT(entry);
+	entry->time = time(NULL);
+	entry->mb = msgb_copy_c(entry, mb, "OML failure report");
+	llist_add(&entry->list, &bts->oml_fail_rep);
+
+	/* Limit list size */
+	if (llist_count(&bts->oml_fail_rep) > 50) {
+		struct bts_oml_fail_rep *old = llist_last_entry(&bts->oml_fail_rep, struct bts_oml_fail_rep, list);
+		llist_del(&old->list);
+		talloc_free(old);
+	}
+
+	sd = abis_nm_fail_evt_rep_parse(mb, bts);
+	if (!sd) {
+		LOGPFOH(DNM, LOGL_ERROR, foh, "BTS%u: failed to parse Failure Event Report\n", bts->nr);
+		return -EINVAL;
+	}
+	e_type = sd->parsed.event_type;
+	severity = sd->parsed.severity;
+	p_text = sd->parsed.additional_text;
+	p_val = sd->parsed.probable_cause;
+
+	if (p_val) {
 		switch (p_val[0]) {
 		case NM_PCAUSE_T_MANUF:
 			handle_manufact_report(bts, p_val, e_type, severity,
@@ -398,9 +453,8 @@ static int rx_fail_evt_rep(struct msgb *mb, struct gsm_bts *bts)
 		rc = -EINVAL;
 	}
 
-	if (p_text)
-		talloc_free(p_text);
-
+	osmo_signal_dispatch(SS_NM, S_NM_FAIL_REP, sd);
+	talloc_free(sd);
 	return rc;
 }
 
@@ -419,7 +473,6 @@ static int abis_nm_rcvmsg_report(struct msgb *mb, struct gsm_bts *bts)
 		break;
 	case NM_MT_FAILURE_EVENT_REP:
 		rx_fail_evt_rep(mb, bts);
-		osmo_signal_dispatch(SS_NM, S_NM_FAIL_REP, mb);
 		break;
 	case NM_MT_TEST_REP:
 		DEBUGPFOH(DNM, foh, "Test Report\n");

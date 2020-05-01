@@ -713,7 +713,7 @@ static const struct log_info_cat osmo_bsc_categories[] = {
 		.name = "DNM",
 		.description = "A-bis Network Management / O&M (NM/OML)",
 		.color = "\033[1;36m",
-		.enabled = 1, .loglevel = LOGL_INFO,
+		.enabled = 1, .loglevel = LOGL_NOTICE,
 	},
 	[DPAG]	= {
 		.name = "DPAG",
@@ -748,11 +748,6 @@ static const struct log_info_cat osmo_bsc_categories[] = {
 		.description = "Reference Counting",
 		.enabled = 0, .loglevel = LOGL_NOTICE,
 	},
-	[DNAT] = {
-		.name = "DNAT",
-		.description = "GSM 08.08 NAT/Multiplexer",
-		.enabled = 1, .loglevel = LOGL_NOTICE,
-	},
 	[DCTRL] = {
 		.name = "DCTRL",
 		.description = "Control interface",
@@ -761,12 +756,12 @@ static const struct log_info_cat osmo_bsc_categories[] = {
 	[DFILTER] = {
 		.name = "DFILTER",
 		.description = "BSC/NAT IMSI based filtering",
-		.enabled = 1, .loglevel = LOGL_DEBUG,
+		.enabled = 1, .loglevel = LOGL_NOTICE,
 	},
 	[DPCU] = {
 		.name = "DPCU",
 		.description = "PCU Interface",
-		.enabled = 1, .loglevel = LOGL_DEBUG,
+		.enabled = 1, .loglevel = LOGL_NOTICE,
 	},
 	[DLCLS] = {
 		.name = "DLCLS",
@@ -850,6 +845,7 @@ int main(int argc, char **argv)
 	ctrl_vty_init(tall_bsc_ctx);
 	logging_vty_add_deprecated_subsys(tall_bsc_ctx, "cc");
 	logging_vty_add_deprecated_subsys(tall_bsc_ctx, "mgcp");
+	logging_vty_add_deprecated_subsys(tall_bsc_ctx, "nat");
 
 	/* Initialize SS7 */
 	OSMO_ASSERT(osmo_ss7_init() == 0);
@@ -902,12 +898,20 @@ int main(int argc, char **argv)
 	}
 
 	rc = check_codec_pref(&bsc_gsmnet->bsc_data->mscs);
-	if (rc < 0)
-		LOGP(DMSC, LOGL_ERROR, "Configuration contains mutually exclusive codec settings -- check configuration!\n");
+	if (rc < 0) {
+		LOGP(DMSC, LOGL_ERROR, "Configuration contains mutually exclusive codec settings -- check"
+				       " configuration!\n");
+		if (!bsc_gsmnet->allow_unusable_timeslots) {
+			LOGP(DMSC, LOGL_ERROR, "You should really fix that! However, you can prevent OsmoBSC from"
+					       " stopping here by setting 'allow-unusable-timeslots' in the 'network'"
+					       " section of the config.\n");
+			exit(1);
+		}
+	}
 
 	llist_for_each_entry(msc, &bsc_gsmnet->bsc_data->mscs, entry) {
 		if (osmo_bsc_msc_init(msc) != 0) {
-			LOGP(DNAT, LOGL_ERROR, "Failed to start up. Exiting.\n");
+			LOGP(DMSC, LOGL_ERROR, "Failed to start up. Exiting.\n");
 			exit(1);
 		}
 	}

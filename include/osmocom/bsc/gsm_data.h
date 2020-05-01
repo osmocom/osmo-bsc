@@ -1005,6 +1005,12 @@ struct bts_smscb_chan_state {
 	uint8_t overflow;
 };
 
+struct bts_oml_fail_rep {
+	struct llist_head list;
+	time_t time;
+	struct msgb *mb;
+};
+
 /* One BTS */
 struct gsm_bts {
 	/* list header in net->bts_list */
@@ -1144,7 +1150,6 @@ struct gsm_bts {
 
 	/* Not entirely sure how ip.access specific this is */
 	struct {
-		uint8_t supports_egprs_11bit_rach;
 		enum bts_gprs_mode mode;
 		struct {
 			struct gsm_abis_mo mo;
@@ -1161,6 +1166,7 @@ struct gsm_bts {
 		uint8_t rac;
 		uint8_t net_ctrl_ord;
 		bool ctrl_ack_type_use_block;
+		bool egprs_pkt_chan_request;
 	} gprs;
 
 	/* threshold (in percent) when BTS shall send CCCH LOAD IND */
@@ -1267,6 +1273,8 @@ struct gsm_bts {
 	struct bts_smscb_chan_state cbch_basic;
 	struct bts_smscb_chan_state cbch_extended;
 	struct osmo_timer_list etws_timer;	/* when to stop ETWS PN */
+
+	struct llist_head oml_fail_rep;
 };
 
 /* One rejected BTS */
@@ -1608,6 +1616,9 @@ struct gsm_network {
 
 	/* Remote BSS Cell Identifier Lists */
 	struct neighbor_ident_list *neighbor_bss_cells;
+
+	/* Don't refuse to start with mutually exclusive codec settings */
+	bool allow_unusable_timeslots;
 };
 
 struct gsm_audio_support {

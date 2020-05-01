@@ -1151,11 +1151,10 @@ static struct gsm48_si13_info si13_default = {
 		.bs_cv_max	= 15,
 		.ctrl_ack_type_use_block = true,
 		.ext_info_present = 0,
-		.supports_egprs_11bit_rach = 0,
 		.ext_info = {
 			/* The values below are just guesses ! */
 			.egprs_supported = 0,
-			.use_egprs_p_ch_req = 1,
+			.use_egprs_p_ch_req = 0,
 			.bep_period = 5,
 			.pfc_supported = 0,
 			.dtm_supported = 0,
@@ -1197,8 +1196,12 @@ static int generate_si13(enum osmo_sysinfo_type t, struct gsm_bts *bts)
 
 	/* Information about the other SIs */
 	si13_default.bcch_change_mark = bts->bcch_change_mark;
-	si13_default.cell_opts.supports_egprs_11bit_rach =
-					bts->gprs.supports_egprs_11bit_rach;
+
+	/* Whether EGPRS capable MSs shall use EGPRS PACKET CHANNEL REQUEST */
+	if (bts->gprs.egprs_pkt_chan_request)
+		si13_default.cell_opts.ext_info.use_egprs_p_ch_req = 1;
+	else
+		si13_default.cell_opts.ext_info.use_egprs_p_ch_req = 0;
 
 	ret = rest_octets_si13(si13->rest_octets, &si13_default);
 	if (ret < 0)

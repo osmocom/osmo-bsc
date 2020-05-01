@@ -29,6 +29,7 @@ enum abis_om2k_mo_cls {
 	OM2K_MO_CLS_IS				= 0x05,
 	OM2K_MO_CLS_CON				= 0x06,
 	OM2K_MO_CLS_DP				= 0x07,
+	OM2K_MO_CLS_MCTR			= 0x08,
 	OM2K_MO_CLS_CF				= 0x0a,
 	OM2K_MO_CLS_TX				= 0x0b,
 	OM2K_MO_CLS_RX				= 0x0c,

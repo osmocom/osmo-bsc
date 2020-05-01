@@ -536,7 +536,7 @@ static void bts_dump_vty(struct vty *vty, struct gsm_bts *bts)
 
 DEFUN(show_bts, show_bts_cmd, "show bts [<0-255>]",
 	SHOW_STR "Display information about a BTS\n"
-		"BTS number")
+		"BTS number\n")
 {
 	struct gsm_network *net = gsmnet_from_vty(vty);
 	int bts_nr;
@@ -555,6 +555,67 @@ DEFUN(show_bts, show_bts_cmd, "show bts [<0-255>]",
 	/* print all BTS's */
 	for (bts_nr = 0; bts_nr < net->num_bts; bts_nr++)
 		bts_dump_vty(vty, gsm_bts_num(net, bts_nr));
+
+	return CMD_SUCCESS;
+}
+
+DEFUN(show_bts_fail_rep, show_bts_fail_rep_cmd, "show bts <0-255> fail-rep [reset]",
+	SHOW_STR "Display information about a BTS\n"
+		"BTS number\n" "OML failure reports\n"
+		"Clear the list of failure reports after showing them\n")
+{
+	struct gsm_network *net = gsmnet_from_vty(vty);
+	struct bts_oml_fail_rep *entry;
+	struct gsm_bts *bts;
+	int bts_nr;
+
+	bts_nr = atoi(argv[0]);
+	if (bts_nr >= net->num_bts) {
+		vty_out(vty, "%% can't find BTS '%s'%s", argv[0], VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	bts = gsm_bts_num(net, bts_nr);
+	if (llist_empty(&bts->oml_fail_rep)) {
+		vty_out(vty, "No failure reports received.%s", VTY_NEWLINE);
+		return CMD_SUCCESS;
+	}
+
+	llist_for_each_entry(entry, &bts->oml_fail_rep, list) {
+		struct nm_fail_rep_signal_data *sd;
+		char timestamp[20]; /* format like 2020-03-23 14:24:00 */
+		enum abis_nm_pcause_type pcause;
+		enum abis_mm_event_causes cause;
+
+		strftime(timestamp, sizeof(timestamp), "%F %T", localtime(&entry->time));
+		sd = abis_nm_fail_evt_rep_parse(entry->mb, bts);
+		if (!sd) {
+			vty_out(vty, "[%s] (failed to parse report)%s", timestamp, VTY_NEWLINE);
+			continue;
+		}
+		pcause = sd->parsed.probable_cause[0];
+		cause = osmo_load16be(sd->parsed.probable_cause + 1);
+
+		vty_out(vty, "[%s] Type=%s, Severity=%s, ", timestamp, sd->parsed.event_type, sd->parsed.severity);
+		vty_out(vty, "Probable cause=%s: ", get_value_string(abis_nm_pcause_type_names, pcause));
+		if (pcause == NM_PCAUSE_T_MANUF)
+			vty_out(vty, "%s, ", get_value_string(abis_mm_event_cause_names, cause));
+		else
+			vty_out(vty, "%04X, ", cause);
+		vty_out(vty, "Additional text=%s%s", sd->parsed.additional_text, VTY_NEWLINE);
+
+		talloc_free(sd);
+	}
+
+	/* Optionally clear the list */
+	if (argc > 1) {
+		while (!llist_empty(&bts->oml_fail_rep)) {
+			struct bts_oml_fail_rep *old = llist_last_entry(&bts->oml_fail_rep, struct bts_oml_fail_rep,
+									list);
+			llist_del(&old->list);
+			talloc_free(old);
+		}
+	}
 
 	return CMD_SUCCESS;
 }
@@ -675,9 +736,6 @@ static void config_write_bts_gprs(struct vty *vty, struct gsm_bts *bts)
 	if (bts->gprs.mode == BTS_GPRS_NONE)
 		return;
 
-	vty_out(vty, "  gprs 11bit_rach_support_for_egprs %u%s",
-		bts->gprs.supports_egprs_11bit_rach, VTY_NEWLINE);
-
 	vty_out(vty, "  gprs routing area %u%s", bts->gprs.rac,
 		VTY_NEWLINE);
 	vty_out(vty, "  gprs network-control-order nc%u%s",
@@ -710,6 +768,12 @@ static void config_write_bts_gprs(struct vty *vty, struct gsm_bts *bts)
 			nsvc->remote_port, VTY_NEWLINE);
 		vty_out(vty, "  gprs nsvc %u remote ip %s%s", i,
 			inet_ntoa(ia), VTY_NEWLINE);
+	}
+
+	/* EGPRS specific parameters */
+	if (bts->gprs.mode == BTS_GPRS_EGPRS) {
+		if (bts->gprs.egprs_pkt_chan_request)
+			vty_out(vty, "  gprs egprs-packet-channel-request%s", VTY_NEWLINE);
 	}
 }
 
@@ -1062,8 +1126,6 @@ static int config_write_net(struct vty *vty)
 
 	ho_vty_write_net(vty, gsmnet);
 
-	osmo_tdef_vty_write(vty, gsmnet->T_defs, " ");
-
 	if (!gsmnet->dyn_ts_allow_tch_f)
 		vty_out(vty, " dyn_ts_allow_tch_f 0%s", VTY_NEWLINE);
 	if (gsmnet->tz.override != 0) {
@@ -1093,6 +1155,9 @@ static int config_write_net(struct vty *vty)
 			vty_out(vty, " meas-feed scenario %s%s",
 				meas_scenario, VTY_NEWLINE);
 	}
+
+	if (gsmnet->allow_unusable_timeslots)
+		vty_out(vty, " allow-unusable-timeslots%s", VTY_NEWLINE);
 
 	return CMD_SUCCESS;
 }
@@ -2498,7 +2563,7 @@ DEFUN(cfg_bts_ccch_load_ind_thresh,
       "ccch load-indication-threshold <0-100>",
 	CCCH_STR
       "Percentage of CCCH load at which BTS sends RSL CCCH LOAD IND\n"
-      "CCCH Load Threshold in percent (Default: 10)")
+      "CCCH Load Threshold in percent (Default: 10)\n")
 {
 	struct gsm_bts *bts = vty->index;
 	bts->ccch_load_ind_thresh = atoi(argv[0]);
@@ -2513,7 +2578,7 @@ DEFUN(cfg_bts_rach_nm_b_thresh,
 	RACH_STR NM_STR
       "Set the NM Busy Threshold\n"
       "Set the NM Busy Threshold\n"
-      "NM Busy Threshold in dB")
+      "NM Busy Threshold in dB\n")
 {
 	struct gsm_bts *bts = vty->index;
 	bts->rach_b_thresh = atoi(argv[0]);
@@ -2617,7 +2682,7 @@ DEFUN(cfg_bts_ms_max_power, cfg_bts_ms_max_power_cmd,
       "MS Options\n"
       "Maximum transmit power of the MS\n"
       "Maximum transmit power of the MS\n"
-      "Maximum transmit power of the MS in dBm")
+      "Maximum transmit power of the MS in dBm\n")
 {
 	struct gsm_bts *bts = vty->index;
 
@@ -2632,7 +2697,7 @@ DEFUN(cfg_bts_cell_resel_hyst, cfg_bts_cell_resel_hyst_cmd,
       "cell reselection hysteresis <0-14>",
       CELL_STR "Cell re-selection parameters\n"
       "Cell Re-Selection Hysteresis in dB\n"
-      "Cell Re-Selection Hysteresis in dB")
+      "Cell Re-Selection Hysteresis in dB\n")
 {
 	struct gsm_bts *bts = vty->index;
 
@@ -2646,7 +2711,7 @@ DEFUN(cfg_bts_rxlev_acc_min, cfg_bts_rxlev_acc_min_cmd,
       "Minimum RxLev needed for cell access\n"
       "Minimum RxLev needed for cell access\n"
       "Minimum RxLev needed for cell access\n"
-      "Minimum RxLev needed for cell access (better than -110dBm)")
+      "Minimum RxLev needed for cell access (better than -110dBm)\n")
 {
 	struct gsm_bts *bts = vty->index;
 
@@ -2687,7 +2752,7 @@ DEFUN(cfg_bts_temp_ofs, cfg_bts_temp_ofs_cmd,
 	"temporary offset <0-60>",
 	"Cell selection temporary negative offset\n"
 	"Cell selection temporary negative offset\n"
-	"Cell selection temporary negative offset in dB")
+	"Cell selection temporary negative offset in dB\n")
 {
 	struct gsm_bts *bts = vty->index;
 
@@ -2701,7 +2766,7 @@ DEFUN(cfg_bts_temp_ofs_inf, cfg_bts_temp_ofs_inf_cmd,
 	"temporary offset infinite",
 	"Cell selection temporary negative offset\n"
 	"Cell selection temporary negative offset\n"
-	"Sets cell selection temporary negative offset to infinity")
+	"Sets cell selection temporary negative offset to infinity\n")
 {
 	struct gsm_bts *bts = vty->index;
 
@@ -2731,7 +2796,7 @@ DEFUN(cfg_bts_penalty_time_rsvd, cfg_bts_penalty_time_rsvd_cmd,
 	"Cell selection penalty time\n"
 	"Set cell selection penalty time to reserved value 31, "
 		"(indicate that CELL_RESELECT_OFFSET is subtracted from C2 "
-		"and TEMPORARY_OFFSET is ignored)")
+		"and TEMPORARY_OFFSET is ignored)\n")
 {
 	struct gsm_bts *bts = vty->index;
 
@@ -2778,7 +2843,7 @@ DEFUN(cfg_bts_prs_bvci, cfg_bts_gprs_bvci_cmd,
 	GPRS_TEXT
 	"GPRS Cell Settings\n"
 	"GPRS BSSGP VC Identifier\n"
-	"GPRS BSSGP VC Identifier")
+	"GPRS BSSGP VC Identifier\n")
 {
 	/* ETSI TS 101 343: values 0 and 1 are reserved for signalling and PTM */
 	struct gsm_bts *bts = vty->index;
@@ -2797,7 +2862,7 @@ DEFUN(cfg_bts_gprs_nsei, cfg_bts_gprs_nsei_cmd,
 	"gprs nsei <0-65535>",
 	GPRS_TEXT
 	"GPRS NS Entity Identifier\n"
-	"GPRS NS Entity Identifier")
+	"GPRS NS Entity Identifier\n")
 {
 	struct gsm_bts *bts = vty->index;
 
@@ -2818,7 +2883,7 @@ DEFUN(cfg_bts_gprs_nsvci, cfg_bts_gprs_nsvci_cmd,
 	"gprs nsvc <0-1> nsvci <0-65535>",
 	GPRS_TEXT NSVC_TEXT
 	"NS Virtual Connection Identifier\n"
-	"GPRS NS VC Identifier")
+	"GPRS NS VC Identifier\n")
 {
 	struct gsm_bts *bts = vty->index;
 	int idx = atoi(argv[0]);
@@ -3064,29 +3129,65 @@ DEFUN(cfg_bts_gprs_mode, cfg_bts_gprs_mode_cmd,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_bts_gprs_11bit_rach_support_for_egprs,
+DEFUN_DEPRECATED(cfg_bts_gprs_11bit_rach_support_for_egprs,
 	cfg_bts_gprs_11bit_rach_support_for_egprs_cmd,
 	"gprs 11bit_rach_support_for_egprs (0|1)",
-	GPRS_TEXT "11 bit RACH options\n"
-	"Disable 11 bit RACH for EGPRS\n"
-	"Enable 11 bit RACH for EGPRS")
+	GPRS_TEXT "EGPRS Packet Channel Request support\n"
+	"Disable EGPRS Packet Channel Request support\n"
+	"Enable EGPRS Packet Channel Request support\n")
 {
 	struct gsm_bts *bts = vty->index;
 
-	bts->gprs.supports_egprs_11bit_rach = atoi(argv[0]);
+	vty_out(vty, "%% 'gprs 11bit_rach_support_for_egprs' is now deprecated: "
+		"use '[no] gprs egprs-packet-channel-request' instead%s", VTY_NEWLINE);
 
-	if (bts->gprs.supports_egprs_11bit_rach > 1) {
-		vty_out(vty, "Error in RACH type%s", VTY_NEWLINE);
+	bts->gprs.egprs_pkt_chan_request = (argv[0][0] == '1');
+
+	if (bts->gprs.mode == BTS_GPRS_NONE && bts->gprs.egprs_pkt_chan_request) {
+		vty_out(vty, "%% (E)GPRS is not enabled (see 'gprs mode')%s", VTY_NEWLINE);
 		return CMD_WARNING;
 	}
 
-	if ((bts->gprs.mode == BTS_GPRS_NONE) &&
-		(bts->gprs.supports_egprs_11bit_rach == 1)) {
-		vty_out(vty, "Error:gprs mode is none and 11bit rach is"
-			" enabled%s", VTY_NEWLINE);
+	if (bts->gprs.mode != BTS_GPRS_EGPRS) {
+		vty_out(vty, "%% EGPRS Packet Channel Request support requires "
+			"EGPRS mode to be enabled (see 'gprs mode')%s", VTY_NEWLINE);
+		/* Do not return here, keep the old behaviour. */
+	}
+
+	return CMD_SUCCESS;
+}
+
+DEFUN(cfg_bts_gprs_egprs_pkt_chan_req,
+      cfg_bts_gprs_egprs_pkt_chan_req_cmd,
+      "gprs egprs-packet-channel-request",
+      GPRS_TEXT "EGPRS Packet Channel Request support")
+{
+	struct gsm_bts *bts = vty->index;
+
+	if (bts->gprs.mode != BTS_GPRS_EGPRS) {
+		vty_out(vty, "%% EGPRS Packet Channel Request support requires "
+			"EGPRS mode to be enabled (see 'gprs mode')%s", VTY_NEWLINE);
 		return CMD_WARNING;
 	}
 
+	bts->gprs.egprs_pkt_chan_request = true;
+	return CMD_SUCCESS;
+}
+
+DEFUN(cfg_bts_no_gprs_egprs_pkt_chan_req,
+      cfg_bts_no_gprs_egprs_pkt_chan_req_cmd,
+      "no gprs egprs-packet-channel-request",
+      NO_STR GPRS_TEXT "EGPRS Packet Channel Request support")
+{
+	struct gsm_bts *bts = vty->index;
+
+	if (bts->gprs.mode != BTS_GPRS_EGPRS) {
+		vty_out(vty, "%% EGPRS Packet Channel Request support requires "
+			"EGPRS mode to be enabled (see 'gprs mode')%s", VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	bts->gprs.egprs_pkt_chan_request = false;
 	return CMD_SUCCESS;
 }
 
@@ -3719,7 +3820,7 @@ DEFUN(cfg_bts_no_depends_on, cfg_bts_no_depends_on_cmd,
 #define AMR_TH_TEXT "AMR threshold between codecs\nMS side\nBTS side\n"
 #define AMR_HY_TEXT "AMR hysteresis between codecs\nMS side\nBTS side\n"
 
-static void get_amr_from_arg(struct vty *vty, int argc, const char *argv[], int full)
+static int get_amr_from_arg(struct vty *vty, int argc, const char *argv[], int full)
 {
 	struct gsm_bts *bts = vty->index;
 	struct amr_multirate_conf *mr = (full) ? &bts->mr_full: &bts->mr_half;
@@ -3735,12 +3836,12 @@ static void get_amr_from_arg(struct vty *vty, int argc, const char *argv[], int 
 		if (mode_prev > mode) {
 			vty_out(vty, "Modes must be listed in order%s",
 				VTY_NEWLINE);
-			return;
+			return -1;
 		}
 
 		if (mode_prev == mode) {
 			vty_out(vty, "Modes must be unique %s", VTY_NEWLINE);
-			return;
+			return -2;
 		}
 		mode_prev = mode;
 	}
@@ -3765,6 +3866,7 @@ static void get_amr_from_arg(struct vty *vty, int argc, const char *argv[], int 
 		mr->ms_mode[i].hysteresis = 0;
 		mr->bts_mode[i].hysteresis = 0;
 	}
+	return 0;
 }
 
 static void get_amr_th_from_arg(struct vty *vty, int argc, const char *argv[], int full)
@@ -3880,7 +3982,8 @@ DEFUN(cfg_bts_amr_fr_modes1, cfg_bts_amr_fr_modes1_cmd,
 	AMR_TEXT "Full Rate\n" AMR_MODE_TEXT
 	AMR_TCHF_HELP_STR)
 {
-	get_amr_from_arg(vty, 1, argv, 1);
+	if (get_amr_from_arg(vty, 1, argv, 1))
+		return CMD_WARNING;
 	return check_amr_config(vty);
 }
 
@@ -3889,7 +3992,8 @@ DEFUN(cfg_bts_amr_fr_modes2, cfg_bts_amr_fr_modes2_cmd,
 	AMR_TEXT "Full Rate\n" AMR_MODE_TEXT
 	AMR_TCHF_HELP_STR AMR_TCHF_HELP_STR)
 {
-	get_amr_from_arg(vty, 2, argv, 1);
+	if (get_amr_from_arg(vty, 2, argv, 1))
+		return CMD_WARNING;
 	return check_amr_config(vty);
 }
 
@@ -3898,7 +4002,8 @@ DEFUN(cfg_bts_amr_fr_modes3, cfg_bts_amr_fr_modes3_cmd,
 	AMR_TEXT "Full Rate\n" AMR_MODE_TEXT
 	AMR_TCHF_HELP_STR AMR_TCHF_HELP_STR AMR_TCHF_HELP_STR)
 {
-	get_amr_from_arg(vty, 3, argv, 1);
+	if (get_amr_from_arg(vty, 3, argv, 1))
+		return CMD_WARNING;
 	return check_amr_config(vty);
 }
 
@@ -3907,7 +4012,8 @@ DEFUN(cfg_bts_amr_fr_modes4, cfg_bts_amr_fr_modes4_cmd,
 	AMR_TEXT "Full Rate\n" AMR_MODE_TEXT
 	AMR_TCHF_HELP_STR AMR_TCHF_HELP_STR AMR_TCHF_HELP_STR AMR_TCHF_HELP_STR)
 {
-	get_amr_from_arg(vty, 4, argv, 1);
+	if (get_amr_from_arg(vty, 4, argv, 1))
+		return CMD_WARNING;
 	return check_amr_config(vty);
 }
 
@@ -3978,7 +4084,8 @@ DEFUN(cfg_bts_amr_hr_modes1, cfg_bts_amr_hr_modes1_cmd,
 	AMR_TEXT "Half Rate\n" AMR_MODE_TEXT
 	AMR_TCHH_HELP_STR)
 {
-	get_amr_from_arg(vty, 1, argv, 0);
+	if (get_amr_from_arg(vty, 1, argv, 0))
+		return CMD_WARNING;
 	return check_amr_config(vty);
 }
 
@@ -3987,7 +4094,8 @@ DEFUN(cfg_bts_amr_hr_modes2, cfg_bts_amr_hr_modes2_cmd,
 	AMR_TEXT "Half Rate\n" AMR_MODE_TEXT
 	AMR_TCHH_HELP_STR AMR_TCHH_HELP_STR)
 {
-	get_amr_from_arg(vty, 2, argv, 0);
+	if (get_amr_from_arg(vty, 2, argv, 0))
+		return CMD_WARNING;
 	return check_amr_config(vty);
 }
 
@@ -3996,7 +4104,8 @@ DEFUN(cfg_bts_amr_hr_modes3, cfg_bts_amr_hr_modes3_cmd,
 	AMR_TEXT "Half Rate\n" AMR_MODE_TEXT
 	AMR_TCHH_HELP_STR AMR_TCHH_HELP_STR AMR_TCHH_HELP_STR)
 {
-	get_amr_from_arg(vty, 3, argv, 0);
+	if (get_amr_from_arg(vty, 3, argv, 0))
+		return CMD_WARNING;
 	return check_amr_config(vty);
 }
 
@@ -4005,7 +4114,8 @@ DEFUN(cfg_bts_amr_hr_modes4, cfg_bts_amr_hr_modes4_cmd,
 	AMR_TEXT "Half Rate\n" AMR_MODE_TEXT
 	AMR_TCHH_HELP_STR AMR_TCHH_HELP_STR AMR_TCHH_HELP_STR AMR_TCHH_HELP_STR)
 {
-	get_amr_from_arg(vty, 4, argv, 0);
+	if (get_amr_from_arg(vty, 4, argv, 0))
+		return CMD_WARNING;
 	return check_amr_config(vty);
 }
 
@@ -4129,8 +4239,8 @@ DEFUN(cfg_bts_no_t3113_dynamic, cfg_bts_no_t3113_dynamic_cmd,
 DEFUN(cfg_trx,
       cfg_trx_cmd,
       "trx <0-255>",
-	TRX_TEXT
-      "Select a TRX to configure")
+      TRX_TEXT
+      "Select a TRX to configure\n")
 {
 	int trx_nr = atoi(argv[0]);
 	struct gsm_bts *bts = vty->index;
@@ -5202,6 +5312,17 @@ DEFUN(cfg_net_timer, cfg_net_timer_cmd,
 	return osmo_tdef_vty_set_cmd(vty, net->T_defs, argv);
 }
 
+DEFUN(cfg_net_allow_unusable_timeslots, cfg_net_allow_unusable_timeslots_cmd,
+      "allow-unusable-timeslots",
+      "Don't refuse to start with mutually exclusive codec settings\n")
+{
+	struct gsm_network *net = gsmnet_from_vty(vty);
+	net->allow_unusable_timeslots = true;
+	LOGP(DMSC, LOGL_ERROR, "Configuration contains 'allow-unusable-timeslots'. OsmoBSC will start up even if the"
+			       " configuration has unusable codec settings!\n");
+	return CMD_SUCCESS;
+}
+
 extern int bsc_vty_init_extra(void);
 
 int bsc_vty_init(struct gsm_network *network)
@@ -5247,9 +5368,11 @@ int bsc_vty_init(struct gsm_network *network)
 	install_element(GSMNET_NODE, &cfg_net_meas_feed_dest_cmd);
 	install_element(GSMNET_NODE, &cfg_net_meas_feed_scenario_cmd);
 	install_element(GSMNET_NODE, &cfg_net_timer_cmd);
+	install_element(GSMNET_NODE, &cfg_net_allow_unusable_timeslots_cmd);
 
 	install_element_ve(&bsc_show_net_cmd);
 	install_element_ve(&show_bts_cmd);
+	install_element_ve(&show_bts_fail_rep_cmd);
 	install_element_ve(&show_rejected_bts_cmd);
 	install_element_ve(&show_trx_cmd);
 	install_element_ve(&show_trx_con_cmd);
@@ -5329,6 +5452,8 @@ int bsc_vty_init(struct gsm_network *network)
 	install_element(BTS_NODE, &cfg_bts_radio_link_timeout_inf_cmd);
 	install_element(BTS_NODE, &cfg_bts_gprs_mode_cmd);
 	install_element(BTS_NODE, &cfg_bts_gprs_11bit_rach_support_for_egprs_cmd);
+	install_element(BTS_NODE, &cfg_bts_no_gprs_egprs_pkt_chan_req_cmd);
+	install_element(BTS_NODE, &cfg_bts_gprs_egprs_pkt_chan_req_cmd);
 	install_element(BTS_NODE, &cfg_bts_gprs_ns_timer_cmd);
 	install_element(BTS_NODE, &cfg_bts_gprs_rac_cmd);
 	install_element(BTS_NODE, &cfg_bts_gprs_net_ctrl_ord_cmd);

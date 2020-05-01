@@ -149,6 +149,20 @@ struct nm_nack_signal_data {
 	uint8_t mt;
 };
 
+struct nm_fail_rep_signal_data {
+	struct gsm_bts *bts;
+	/* raw data */
+	struct msgb *msg;
+	struct tlv_parsed tp;
+	/* parsed data */
+	struct {
+		const char *event_type;
+		const char *severity;
+		const char *additional_text;
+		const uint8_t *probable_cause;
+	} parsed;
+};
+
 struct challoc_signal_data {
 	struct gsm_bts *bts;
 	struct gsm_lchan *lchan;

@@ -13,6 +13,8 @@
 #include <osmocom/core/msgb.h>
 #include <osmocom/core/select.h>
 #include <osmocom/core/talloc.h>
+#include <osmocom/core/logging.h>
+#include <osmocom/core/application.h>
 
 #include <osmocom/gsm/gsm_utils.h>
 
@@ -203,7 +205,7 @@ void write_uni(struct ms_state *ms, struct ms_state_uni *msu,
 	snprintf(msu->label, sizeof(msu->label), "</%d>%1d<!%d> %3d %2u %2d %4u",
 		 qual_col, lq->rx_qual, qual_col, pwr,
 		 ms->mr.ms_l1.ta, ms->mr.ms_timing_offset,
-		 now - msu->last_update);
+		 (unsigned int)(now - msu->last_update));
 	msu->cdk_label = newCDKLabel(g_st.cdkscreen, RIGHT, row,
 					msu->_lbl, 1, FALSE, FALSE);
 }
@@ -258,16 +260,33 @@ const struct value_string col_strs[] = {
 	{ 0, NULL }
 };
 
+/* default categories */
+static struct log_info_cat default_categories[] = {
+};
+
+static const struct log_info meas_vis_log_info = {
+	.cat = default_categories,
+	.num_cat = ARRAY_SIZE(default_categories),
+};
+
 int main(int argc, char **argv)
 {
 	int rc;
 	char *header[1];
 	char *title[1];
+	struct log_target *stderr_target;
+
+	void *tall_ctx = talloc_named_const(NULL, 0, "meas_vis");
+	osmo_init_logging2(tall_ctx, &meas_vis_log_info);
 
 	msgb_talloc_ctx_init(NULL, 0);
 
-	printf("sizeof(gsm_meas_rep)=%u\n", sizeof(struct gsm_meas_rep));
-	printf("sizeof(meas_feed_meas)=%u\n", sizeof(struct meas_feed_meas));
+	printf("sizeof(gsm_meas_rep)=%zu\n", sizeof(struct gsm_meas_rep));
+	printf("sizeof(meas_feed_meas)=%zu\n", sizeof(struct meas_feed_meas));
+	g_st.udp_ofd.cb = udp_fd_cb;
+	rc =  osmo_sock_init_ofd(&g_st.udp_ofd, AF_INET, SOCK_DGRAM, IPPROTO_UDP, NULL, 8888, OSMO_SOCK_F_BIND);
+	if (rc < 0)
+		exit(1);
 
 	INIT_LLIST_HEAD(&g_st.ms_list);
 	g_st.curses_win = initscr();
@@ -295,11 +314,6 @@ int main(int argc, char **argv)
 	getch();
 	exit(0);
 #endif
-
-	g_st.udp_ofd.cb = udp_fd_cb;
-	rc =  osmo_sock_init_ofd(&g_st.udp_ofd, AF_INET, SOCK_DGRAM, IPPROTO_UDP, NULL, 8888, OSMO_SOCK_F_BIND);
-	if (rc < 0)
-		exit(1);
 
 	while (1) {
 		osmo_select_main(0);

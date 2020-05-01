@@ -202,6 +202,26 @@ enum abis_om2k_msgtype {
 	OM2K_MSGT_NEGOT_REQ_ACK			= 0x0104,
 	OM2K_MSGT_NEGOT_REQ_NACK		= 0x0105,
 	OM2K_MSGT_NEGOT_REQ			= 0x0106,
+
+	OM2K_MSGT_BTS_INITIATED_REQ_ACK		= 0x0108,
+	OM2K_MSGT_BTS_INITIATED_REQ_NACK	= 0x0109,
+	OM2K_MSGT_BTS_INITIATED_REQ		= 0x010a,
+
+	OM2K_MSGT_RADIO_CHAN_REL_CMD		= 0x010c,
+	OM2K_MSGT_RADIO_CHAN_REL_COMPL		= 0x010e,
+	OM2K_MSGT_RADIO_CHAN_REL_REJ		= 0x010f,
+
+	OM2K_MSGT_FEATURE_CTRL_CMD		= 0x0118,
+	OM2K_MSGT_FEATURE_CTRL_COMPL		= 0x011a,
+	OM2K_MSGT_FEATURE_CTRL_REJ		= 0x011b,
+
+	OM2K_MSGT_MCTR_CONFIG_REQ		= 0x012c,
+	OM2K_MSGT_MCTR_CONFIG_REQ_ACK		= 0x012e,
+	OM2K_MSGT_MCTR_CONFIG_REQ_REJ		= 0x012f,
+
+	OM2K_MSGT_MCTR_CONFIG_RES_ACK		= 0x0130,
+	OM2K_MSGT_MCTR_CONFIG_RES_NACK		= 0x0131,
+	OM2K_MSGT_MCTR_CONFIG_RES		= 0x0132,
 };
 
 enum abis_om2k_dei {
@@ -272,6 +292,13 @@ enum abis_om2k_dei {
 	OM2K_DEI_FS_OFFSET			= 0x98,
 	OM2K_DEI_EXT_COND_MAP_2_EXT		= 0x9c,
 	OM2K_DEI_TSS_MO_STATE			= 0x9d,
+	OM2K_DEI_CONFIG_TYPE			= 0x9e,
+	OM2K_DEI_JITTER_SIZE			= 0x9f,
+	OM2K_DEI_PACKING_ALGO			= 0xa0,
+	OM2K_DEI_TRXC_LIST			= 0xa8,
+	OM2K_DEI_MAX_ALLOWED_POWER		= 0xa9,
+	OM2K_DEI_MAX_ALLOWED_NUM_TRXCS		= 0xaa,
+	OM2K_DEI_MCTR_FEAT_STATUS_BMAP		= 0xab,
 };
 
 const struct tlv_definition om2k_att_tlvdef = {
@@ -521,6 +548,12 @@ static const struct value_string om2k_msgcode_vals[] = {
 	{ 0x0118, "Feature Control Command" },
 	{ 0x011a, "Feature Control Complete" },
 	{ 0x011b, "Feature Control Reject" },
+	{ 0x012c, "MCTR Configuration Request" },
+	{ 0x012e, "MCTR Configuration Request Accept" },
+	{ 0x012f, "MCTR Configuration Request Reject" },
+	{ 0x0130, "MCTR Configuration Result ACK" },
+	{ 0x0131, "MCTR Configuration Result NACK" },
+	{ 0x0132, "MCTR Configuration Result" },
 
 	{ 0, NULL }
 };
@@ -653,6 +686,13 @@ static const struct value_string om2k_attr_vals[] = {
 	{ 0x9b, "Master TX Chain Delay" },
 	{ 0x9c, "External Condition Class 2 Extension" },
 	{ 0x9d, "TSs MO State" },
+	{ 0x9e, "Configuration Type" },
+	{ 0x9f, "Jitter Size" },
+	{ 0xa0, "Packing Algorithm" },
+	{ 0xa8, "TRXC List" },
+	{ 0xa9, "Maximum Allowed Power" },
+	{ 0xaa, "Maximum Allowed Number of TRXCs" },
+	{ 0xab, "MCTR Feature Status Bitmap" },
 	{ 0, NULL }
 };
 
@@ -663,6 +703,7 @@ const struct value_string om2k_mo_class_short_vals[] = {
 	{ 0x05, "IS" },
 	{ 0x06, "CON" },
 	{ 0x07, "DP" },
+	{ 0x08, "MCTR" },
 	{ 0x0a, "CF" },
 	{ 0x0b, "TX" },
 	{ 0x0c, "RX" },

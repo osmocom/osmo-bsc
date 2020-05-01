@@ -34,6 +34,7 @@
 #include <osmocom/core/socket.h>
 #include <osmocom/core/msgb.h>
 #include <osmocom/core/select.h>
+#include <osmocom/core/application.h>
 
 #include <osmocom/gsm/gsm_utils.h>
 
@@ -171,8 +172,21 @@ static int udp_fd_cb(struct osmo_fd *ofd, unsigned int what)
 	return 0;
 }
 
+/* default categories */
+static struct log_info_cat default_categories[] = {
+};
+
+static const struct log_info meas_json_log_info = {
+	.cat = default_categories,
+	.num_cat = ARRAY_SIZE(default_categories),
+};
+
 int main(int argc, char **argv)
 {
+
+	void *tall_ctx = talloc_named_const(NULL, 0, "meas_json");
+	osmo_init_logging2(tall_ctx, &meas_json_log_info);
+
 	int rc;
 	struct osmo_fd udp_ofd;
 

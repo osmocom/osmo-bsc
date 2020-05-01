@@ -807,6 +807,9 @@ struct gsm_bts *gsm_bts_alloc(struct gsm_network *net, uint8_t bts_num)
 	memcpy(&bts->gprs.cell.rlc_cfg, &rlc_cfg_default,
 		sizeof(bts->gprs.cell.rlc_cfg));
 
+	/* 3GPP TS 08.18, chapter 5.4.1: 0 is reserved for signalling */
+	bts->gprs.cell.bvci = 2;
+
 	/* init statistics */
 	bts->bts_ctrs = rate_ctr_group_alloc(bts, &bts_ctrg_desc, bts->nr);
 	if (!bts->bts_ctrs) {
@@ -878,6 +881,7 @@ struct gsm_bts *gsm_bts_alloc(struct gsm_network *net, uint8_t bts_num)
 	INIT_LLIST_HEAD(&bts->abis_queue);
 	INIT_LLIST_HEAD(&bts->loc_list);
 	INIT_LLIST_HEAD(&bts->local_neighbors);
+	INIT_LLIST_HEAD(&bts->oml_fail_rep);
 
 	/* Enable all codecs by default. These get reset to a more fine grained selection IF a
 	 * 'codec-support' config appears in the config file (see bsc_vty.c). */

@@ -82,14 +82,13 @@ struct gprs_cell_options {
 	uint32_t t3192;	/* in milliseconds */
 	uint32_t drx_timer_max;/* in seconds */
 	uint32_t bs_cv_max;
-	uint8_t  supports_egprs_11bit_rach;
 	bool ctrl_ack_type_use_block; /* use PACKET CONTROL ACKNOWLEDGMENT */
 
 	uint8_t ext_info_present;
 	struct {
 		uint8_t egprs_supported;
-			uint8_t use_egprs_p_ch_req;
-			uint8_t bep_period;
+		uint8_t use_egprs_p_ch_req;
+		uint8_t bep_period;
 		uint8_t pfc_supported;
 		uint8_t dtm_supported;
 		uint8_t bss_paging_coordination;
