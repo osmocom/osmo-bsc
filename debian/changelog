@@ -1,3 +1,9 @@
+osmo-bsc (1.6.0-fw.2) unstable; urgency=medium
+
+  * merged master:74632859941d
+
+ -- Kirill Zakharenko <kirill.zakharenko@fairwaves.co>  Fri, 1 May 2020 18:23:29 +0300
+
 osmo-bsc (1.6.0-fw.1) unstable; urgency=medium
 
   * bts stats: create bts stat groups with their bts->nr as index
