@@ -1143,7 +1143,7 @@ struct gsm_bts {
 				no_loc_rel_cnf:1,	/* don't wait for RSL REL CONF */
 				bts_reset_timer_cnf,	/* timer for BTS RESET */
 				did_reset:1,		/* we received a RESET ACK */
-				wait_reset:1;		/* we are waiting for reset to complete */
+				wait_reset:2;		/* we are waiting for reset to complete */
 			struct osmo_timer_list reset_timer;
 		} nokia;
 	};
