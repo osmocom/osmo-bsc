@@ -42,10 +42,10 @@ struct gsm_lchan *lchan_rtp_fi_lchan(struct osmo_fsm_inst *fi)
 }
 
 struct osmo_tdef_state_timeout lchan_rtp_fsm_timeouts[32] = {
-	[LCHAN_RTP_ST_WAIT_MGW_ENDPOINT_AVAILABLE] = { .T=23004 },
-	[LCHAN_RTP_ST_WAIT_IPACC_CRCX_ACK]	= { .T=23005 },
-	[LCHAN_RTP_ST_WAIT_IPACC_MDCX_ACK]	= { .T=23006 },
-	[LCHAN_RTP_ST_WAIT_MGW_ENDPOINT_CONFIGURED] = { .T=23004 },
+	[LCHAN_RTP_ST_WAIT_MGW_ENDPOINT_AVAILABLE] = { .T=-23004 },
+	[LCHAN_RTP_ST_WAIT_IPACC_CRCX_ACK]	= { .T=-23005 },
+	[LCHAN_RTP_ST_WAIT_IPACC_MDCX_ACK]	= { .T=-23006 },
+	[LCHAN_RTP_ST_WAIT_MGW_ENDPOINT_CONFIGURED] = { .T=-23004 },
 };
 
 /* Transition to a state, using the T timer defined in lchan_rtp_fsm_timeouts.
