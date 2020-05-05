@@ -2447,8 +2447,8 @@ static int abis_om2k_tx_negot_req_ack(struct gsm_bts *bts, const struct abis_om2
 }
 
 struct iwd_version {
-	uint8_t gen_char[3+1];
-	uint8_t rev_char[3+1];
+	char gen_char[3+1];
+	char rev_char[3+1];
 };
 
 struct iwd_type {
@@ -2459,11 +2459,13 @@ struct iwd_type {
 static int om2k_rx_negot_req(struct msgb *msg)
 {
 	struct e1inp_sign_link *sign_link = (struct e1inp_sign_link *)msg->dst;
+	struct gsm_bts *bts = sign_link->trx->bts;
 	struct abis_om2k_hdr *o2h = msgb_l2(msg);
 	struct iwd_type iwd_types[16];
 	uint8_t num_iwd_types = o2h->data[2];
 	uint8_t *cur = o2h->data+3;
-	unsigned int i, v;
+	unsigned int i;
+	int v;
 
 	uint8_t out_buf[1024];
 	uint8_t *out_cur = out_buf+1;
@@ -2494,25 +2496,59 @@ static int om2k_rx_negot_req(struct msgb *msg)
 	/* Select the last version for each IWD type */
 	for (i = 0; i < ARRAY_SIZE(iwd_types); i++) {
 		struct iwd_type *type = &iwd_types[i];
-		struct iwd_version *last_v;
+		struct iwd_version *sel_v = NULL, *alt_v = NULL;
+		uint16_t sel_ver, alt_ver = 0;
+		int gen, rev;
 
 		if (type->num_vers == 0)
 			continue;
 
 		out_num_types++;
 
-		last_v = &type->v[type->num_vers-1];
+		for (v = type->num_vers-1; v >= 0; v--) {
+			if ((sscanf(type->v[v].gen_char, "G%2d", &gen) != 1) ||
+			    (sscanf(type->v[v].rev_char, "R%2d", &rev) != 1))
+				continue;
+			sel_ver = (gen << 8) | rev;
+
+			if (!alt_v) {
+				alt_ver = sel_ver;
+				alt_v = &type->v[v];
+			}
+
+			if ((bts->rbs2000.om2k_version[i].limit != 0) &&
+			    (bts->rbs2000.om2k_version[i].limit < sel_ver))
+				continue;
+
+			sel_v = &type->v[v];
+			break;
+		}
+		if (!sel_v) {
+			if (!alt_v) {
+				LOGP(DNM, LOGL_ERROR, "Couldn't find valid version for IWD Type %u."
+					"Skipping IWD ... this will most likely fail\n", i);
+				continue;
+			} else {
+				sel_v   = alt_v;
+				sel_ver = alt_ver;
+				LOGP(DNM, LOGL_ERROR, "Couldn't find suitable version for IWD Type %u."
+					"Fallback to Gen %s Rev %s\n", i,
+					sel_v->gen_char, sel_v->rev_char);
+			}
+		}
+
+		bts->rbs2000.om2k_version[i].active = sel_ver;
 
 		*out_cur++ = i;
-		memcpy(out_cur, last_v->gen_char, 3);
+		memcpy(out_cur, sel_v->gen_char, 3);
 		out_cur += 3;
-		memcpy(out_cur, last_v->rev_char, 3);
+		memcpy(out_cur, sel_v->rev_char, 3);
 		out_cur += 3;
 	}
 
 	out_buf[0] = out_num_types;
 
-	return abis_om2k_tx_negot_req_ack(sign_link->trx->bts, &o2h->mo, out_buf, out_cur - out_buf);
+	return abis_om2k_tx_negot_req_ack(bts, &o2h->mo, out_buf, out_cur - out_buf);
 }
 
 

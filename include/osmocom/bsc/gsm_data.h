@@ -1135,6 +1135,10 @@ struct gsm_bts {
 				struct gsm_abis_mo mo;
 			} tf;
 			uint32_t use_superchannel:1;
+			struct {
+				uint16_t limit;
+				uint16_t active;
+			} om2k_version[16];
 		} rbs2000;
 		struct {
 			uint8_t bts_type;
