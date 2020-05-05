@@ -66,13 +66,15 @@ static int dummy_config_write(struct vty *v)
 }
 
 /* FIXME: auto-generate those strings from the value_string lists */
-#define OM2K_OBJCLASS_VTY "(trxc|ts|tf|is|con|dp|cf|tx|rx)"
+#define OM2K_OBJCLASS_VTY "(trxc|tg|ts|tf|is|con|dp|mctr|cf|tx|rx)"
 #define OM2K_OBJCLASS_VTY_HELP 	"TRX Controller\n"	\
+				"Trunk Group\n"		\
 				"Timeslot\n"		\
 				"Timing Function\n"	\
 				"Interface Switch\n"	\
 				"Abis Concentrator\n"	\
 				"Digital Path\n"	\
+				"Multi Carrier Transceiver\n" \
 				"Central Function\n"	\
 				"Transmitter\n"		\
 				"Receiver\n"
@@ -252,6 +254,34 @@ DEFUN(om2k_cap_req, om2k_cap_req_cmd,
 	abis_om2k_tx_cap_req(oms->bts, &oms->mo);
 	return CMD_SUCCESS;
 }
+
+DEFUN(om2k_arb, om2k_arb_cmd,
+	"arbitrary <0-65535> [HEXSTRING]",
+	"Send arbitrary OM2k message\n"
+	"Command identifier\n"
+	"Hex Encoded payload\n")
+{
+	struct oml_node_state *oms = vty->index;
+	uint8_t buf[128];
+	int rc;
+	int cmd = atoi(argv[0]);
+
+	if (argc >= 2) {
+		rc = osmo_hexparse(argv[1], buf, sizeof(buf));
+		if (rc < 0 || rc > sizeof(buf)) {
+			vty_out(vty, "Error parsing HEXSTRING%s", VTY_NEWLINE);
+			return CMD_WARNING;
+		}
+	} else {
+		rc = 0;
+	}
+
+	abis_om2k_tx_arb(oms->bts, &oms->mo, cmd, buf, rc);
+
+	return CMD_SUCCESS;
+}
+
+
 
 static struct con_group *con_group_find_or_create(struct gsm_bts *bts, uint8_t cg)
 {
@@ -492,6 +522,9 @@ DEFUN(om2k_conf_req, om2k_conf_req_cmd,
 	case OM2K_MO_CLS_IS:
 		abis_om2k_tx_is_conf_req(bts);
 		break;
+	case OM2K_MO_CLS_CON:
+		abis_om2k_tx_con_conf_req(bts);
+		break;
 	case OM2K_MO_CLS_TS:
 		trx = gsm_bts_trx_by_nr(bts, oms->mo.assoc_so);
 		if (!trx) {
@@ -590,6 +623,7 @@ int abis_om2k_vty_init(void)
 	install_element(OM2K_NODE, &om2k_test_cmd);
 	install_element(OM2K_NODE, &om2k_cap_req_cmd);
 	install_element(OM2K_NODE, &om2k_conf_req_cmd);
+	install_element(OM2K_NODE, &om2k_arb_cmd);
 
 	install_node(&om2k_con_group_node, dummy_config_write);
 	install_element(OM2K_CON_GROUP_NODE, &cfg_om2k_con_path_dec_cmd);

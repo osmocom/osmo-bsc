@@ -1138,12 +1138,12 @@ struct gsm_bts {
 		} rbs2000;
 		struct {
 			uint8_t bts_type;
-			unsigned int configured:1,
-				skip_reset:1,
-				no_loc_rel_cnf:1,
-				bts_reset_timer_cnf,
-				did_reset:1,
-				wait_reset:1;
+			unsigned int configured:1,	/* we sent the config data request */
+				skip_reset:1,		/* skip reset at bootstrap */
+				no_loc_rel_cnf:1,	/* don't wait for RSL REL CONF */
+				bts_reset_timer_cnf,	/* timer for BTS RESET */
+				did_reset:1,		/* we received a RESET ACK */
+				wait_reset:1;		/* we are waiting for reset to complete */
 			struct osmo_timer_list reset_timer;
 		} nokia;
 	};

@@ -192,6 +192,10 @@ enum abis_om2k_msgtype {
 	OM2K_MSGT_TX_CONF_RES_NACK		= 0x00b5,
 	OM2K_MSGT_TX_CONF_RES			= 0x00b6,
 
+	OM2K_MSGT_CAPA_HW_INFOS_REP_ACK		= 0x00e4,
+	OM2K_MSGT_CAPA_HW_INFOS_REP_NACK	= 0x00e5,
+	OM2K_MSGT_CAPA_HW_INFOS_REP		= 0x00e6,
+
 	OM2K_MSGT_CAPA_REQ			= 0x00e8,
 	OM2K_MSGT_CAPA_REQ_ACK			= 0x00ea,
 	OM2K_MSGT_CAPA_REQ_REJ			= 0x00eb,
@@ -698,6 +702,7 @@ static const struct value_string om2k_attr_vals[] = {
 
 const struct value_string om2k_mo_class_short_vals[] = {
 	{ 0x01, "TRXC" },
+	{ 0x02, "TG" },
 	{ 0x03, "TS" },
 	{ 0x04, "TF" },
 	{ 0x05, "IS" },
@@ -1049,7 +1054,7 @@ static int abis_om2k_cal_time_resp(struct gsm_bts *bts)
 }
 
 static int abis_om2k_tx_simple(struct gsm_bts *bts, const struct abis_om2k_mo *mo,
-				uint8_t msg_type)
+				uint16_t msg_type)
 {
 	struct msgb *msg = om2k_msgb_alloc();
 	struct abis_om2k_hdr *o2k;
@@ -1126,6 +1131,21 @@ int abis_om2k_tx_op_info(struct gsm_bts *bts, const struct abis_om2k_mo *mo,
 int abis_om2k_tx_cap_req(struct gsm_bts *bts, const struct abis_om2k_mo *mo)
 {
 	return abis_om2k_tx_simple(bts, mo, OM2K_MSGT_CAPA_REQ);
+}
+
+int abis_om2k_tx_arb(struct gsm_bts *bts, struct abis_om2k_mo *mo,
+		     uint16_t req, uint8_t *buf, int buf_len)
+{
+	struct msgb *msg = om2k_msgb_alloc();
+	struct abis_om2k_hdr *o2k;
+
+	o2k = (struct abis_om2k_hdr *) msgb_put(msg, sizeof(*o2k));
+	fill_om2k_hdr(o2k, mo, req);
+
+	if (buf_len)
+		memcpy(msgb_put(msg, buf_len), buf, buf_len);
+
+	return abis_om2k_sendmsg(bts, msg);
 }
 
 static void om2k_fill_is_conn_grp(struct om2k_is_conn_grp *grp, uint16_t icp1,
@@ -1463,10 +1483,14 @@ int abis_om2k_tx_ts_conf_req(struct gsm_bts_trx_ts *ts)
 		msgb_tv_put(msg, OM2K_DEI_LSC_FILT_TIME, 10);	/* units of 100ms */
 		msgb_tv_put(msg, OM2K_DEI_CALL_SUPV_TIME, 8);
 		msgb_tv_put(msg, OM2K_DEI_ENCR_ALG, 0x00);
-		/* Not sure what those below mean */
-		msgb_tv_put(msg, 0x9e, 0x00);
-		msgb_tv_put(msg, 0x9f, 0x37);
-		msgb_tv_put(msg, 0xa0, 0x01);
+
+		/* Those are only use for superchannel */
+		if (ts->trx->bts->rbs2000.use_superchannel) {
+			msgb_tv_put(msg, OM2K_DEI_CONFIG_TYPE,  0x00);	/* 1-bit, lsb */
+			msgb_tv_put(msg, OM2K_DEI_JITTER_SIZE,  0x37);
+			msgb_tv_put(msg, OM2K_DEI_PACKING_ALGO, 0x01);
+		}
+
 		break;
 	}
 
@@ -1864,8 +1888,9 @@ struct osmo_fsm_inst *om2k_mo_fsm_start(struct osmo_fsm_inst *parent,
 	struct om2k_mo_fsm_priv *omfp;
 	char idbuf[64];
 
-	snprintf(idbuf, sizeof(idbuf), "%s-%s", parent->id,
-		 om2k_mo_name(&mo->addr));
+	snprintf(idbuf, sizeof(idbuf), "%s-%s-%02x-%02x-%02x", parent->id,
+		 get_value_string(om2k_mo_class_short_vals, mo->addr.class),
+		 mo->addr.bts, mo->addr.assoc_so, mo->addr.inst);
 
 	fi = osmo_fsm_inst_alloc_child_id(&om2k_mo_fsm, parent,
 					  term_event, idbuf);
@@ -2127,7 +2152,7 @@ struct osmo_fsm_inst *om2k_trx_fsm_start(struct osmo_fsm_inst *parent,
 	struct om2k_trx_fsm_priv *otfp;
 	char idbuf[32];
 
-	snprintf(idbuf, sizeof(idbuf), "%u/%u", trx->bts->nr, trx->nr);
+	snprintf(idbuf, sizeof(idbuf), "%u-%u", trx->bts->nr, trx->nr);
 
 	fi = osmo_fsm_inst_alloc_child_id(&om2k_trx_fsm, parent, term_event,
 					  idbuf);
@@ -2709,8 +2734,14 @@ int abis_om2k_rcvmsg(struct msgb *msg)
 	case OM2K_MSGT_TEST_RES:
 		rc = abis_om2k_tx_simple(bts, &o2h->mo, OM2K_MSGT_TEST_RES_ACK);
 		break;
+	case OM2K_MSGT_CAPA_HW_INFOS_REP:
+		rc = abis_om2k_tx_simple(bts, &o2h->mo, OM2K_MSGT_CAPA_HW_INFOS_REP_ACK);
+		break;
 	case OM2K_MSGT_CAPA_RES:
 		rc = abis_om2k_tx_simple(bts, &o2h->mo, OM2K_MSGT_CAPA_RES_ACK);
+		break;
+	case 0x0136:	/* Unknown ... something for MCTR */
+		rc = abis_om2k_tx_simple(bts, &o2h->mo, 0x0134);
 		break;
 	/* ERrors */
 	case OM2K_MSGT_START_REQ_REJ:

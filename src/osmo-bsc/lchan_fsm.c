@@ -210,7 +210,7 @@ static void lchan_on_fully_established(struct gsm_lchan *lchan)
 
 struct osmo_tdef_state_timeout lchan_fsm_timeouts[32] = {
 	[LCHAN_ST_WAIT_TS_READY]	= { .T=23001 },
-	[LCHAN_ST_WAIT_ACTIV_ACK]	= { .T=23002 },
+	[LCHAN_ST_WAIT_ACTIV_ACK]	= { .T=-23002 },
 	[LCHAN_ST_WAIT_RLL_RTP_ESTABLISH]	= { .T=3101 },
 	[LCHAN_ST_WAIT_RLL_RTP_RELEASED]	= { .T=3109 },
 	[LCHAN_ST_WAIT_BEFORE_RF_RELEASE]	= { .T=3111 },

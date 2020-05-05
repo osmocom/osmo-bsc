@@ -24,6 +24,7 @@
 
 enum abis_om2k_mo_cls {
 	OM2K_MO_CLS_TRXC			= 0x01,
+	OM2K_MO_CLS_TG				= 0x02,
 	OM2K_MO_CLS_TS				= 0x03,
 	OM2K_MO_CLS_TF				= 0x04,
 	OM2K_MO_CLS_IS				= 0x05,
@@ -112,7 +113,9 @@ int abis_om2k_tx_test_req(struct gsm_bts *bts, const struct abis_om2k_mo *mo);
 int abis_om2k_tx_op_info(struct gsm_bts *bts, const struct abis_om2k_mo *mo,
 			 uint8_t operational);
 int abis_om2k_tx_cap_req(struct gsm_bts *bts, const struct abis_om2k_mo *mo);
+int abis_om2k_tx_arb(struct gsm_bts *bts, struct abis_om2k_mo *mo, uint16_t req, uint8_t *buf, int buf_len);
 int abis_om2k_tx_is_conf_req(struct gsm_bts *bts);
+int abis_om2k_tx_con_conf_req(struct gsm_bts *bts);
 int abis_om2k_tx_tf_conf_req(struct gsm_bts *bts);
 int abis_om2k_tx_rx_conf_req(struct gsm_bts_trx *trx);
 int abis_om2k_tx_tx_conf_req(struct gsm_bts_trx *trx);
