@@ -1880,8 +1880,9 @@ struct osmo_fsm_inst *om2k_mo_fsm_start(struct osmo_fsm_inst *parent,
 	struct om2k_mo_fsm_priv *omfp;
 	char idbuf[64];
 
-	snprintf(idbuf, sizeof(idbuf), "%s-%s", parent->id,
-		 om2k_mo_name(&mo->addr));
+	snprintf(idbuf, sizeof(idbuf), "%s-%s-%02x-%02x-%02x", parent->id,
+		 get_value_string(om2k_mo_class_short_vals, mo->addr.class),
+		 mo->addr.bts, mo->addr.assoc_so, mo->addr.inst);
 
 	fi = osmo_fsm_inst_alloc_child_id(&om2k_mo_fsm, parent,
 					  term_event, idbuf);
@@ -2143,7 +2144,7 @@ struct osmo_fsm_inst *om2k_trx_fsm_start(struct osmo_fsm_inst *parent,
 	struct om2k_trx_fsm_priv *otfp;
 	char idbuf[32];
 
-	snprintf(idbuf, sizeof(idbuf), "%u/%u", trx->bts->nr, trx->nr);
+	snprintf(idbuf, sizeof(idbuf), "%u-%u", trx->bts->nr, trx->nr);
 
 	fi = osmo_fsm_inst_alloc_child_id(&om2k_trx_fsm, parent, term_event,
 					  idbuf);
