@@ -1285,7 +1285,8 @@ int abis_om2k_tx_rx_conf_req(struct gsm_bts_trx *trx)
 	o2k = (struct abis_om2k_hdr *) msgb_put(msg, sizeof(*o2k));
 	fill_om2k_hdr(o2k, &mo, OM2K_MSGT_RX_CONF_REQ);
 
-	msgb_tv16_put(msg, OM2K_DEI_FREQ_SPEC_RX, trx->arfcn);
+	/* OM2K_DEI_FREQ_SPEC_RX: Using trx_nr as "RX address" only works for single MCTR case */
+	msgb_tv16_put(msg, OM2K_DEI_FREQ_SPEC_RX, 0x8000 | ((uint16_t)trx->nr << 10));
 	msgb_tv_put(msg, OM2K_DEI_RX_DIVERSITY, 0x02); /* A */
 
 	return abis_om2k_sendmsg(trx->bts, msg);
@@ -1303,9 +1304,10 @@ int abis_om2k_tx_tx_conf_req(struct gsm_bts_trx *trx)
 	o2k = (struct abis_om2k_hdr *) msgb_put(msg, sizeof(*o2k));
 	fill_om2k_hdr(o2k, &mo, OM2K_MSGT_TX_CONF_REQ);
 
-	msgb_tv16_put(msg, OM2K_DEI_FREQ_SPEC_TX, trx->arfcn);
+	/* OM2K_DEI_FREQ_SPEC_TX: Using trx_nr as "TX address" only works for single MCTR case */
+	msgb_tv16_put(msg, OM2K_DEI_FREQ_SPEC_TX, trx->arfcn | ((uint16_t)trx->nr << 10));
 	msgb_tv_put(msg, OM2K_DEI_POWER, trx->nominal_power-trx->max_power_red);
-	msgb_tv_put(msg, OM2K_DEI_FILLING_MARKER, 0);	/* Filling enabled */
+	msgb_tv_put(msg, OM2K_DEI_FILLING_MARKER, trx != trx->bts->c0); /* Filling enabled for C0 only */
 	msgb_tv_put(msg, OM2K_DEI_BCC, trx->bts->bsic & 0x7);
 	/* Dedication Information is optional */
 
@@ -1378,11 +1380,40 @@ static uint8_t ts2comb(struct gsm_bts_trx_ts *ts)
 	return pchan2comb(ts->pchan_from_config);
 }
 
-static int put_freq_list(uint8_t *buf, uint16_t arfcn)
+static int put_freq_list(uint8_t *buf, struct gsm_bts_trx_ts *ts, uint16_t arfcn)
 {
-	buf[0] = 0x00; /* TX/RX address */
+	struct gsm_bts_trx *trx;
+
+	/* Find the TRX that's configured for that ARFCN */
+	llist_for_each_entry(trx, &ts->trx->bts->trx_list, list)
+		if (trx->arfcn == arfcn)
+			break;
+
+	if (!trx || (trx->arfcn != arfcn)) {
+		LOGP(DNM, LOGL_ERROR, "Trying to use ARFCN %d for hopping with no TRX configured for it", arfcn);
+		return 0;
+	}
+
+	/*
+	 * [7:4] - TX address
+	 *         This must be the same number that was used when configuring the TX
+	 *         MO object with that target arfcn
+	 *
+	 * [3:0] - RX address
+	 *         The logical TRX number we're configuring the hopping sequence for
+	 *         This must basically match the MO object instance number
+	 *
+	 * ATM since we only support 1 MCTR, we use trx->nr
+	 */
+	buf[0] = (trx->nr << 4) | ts->trx->nr;
+
+	/* ARFCN Number */
 	buf[1] = (arfcn >> 8);
 	buf[2] = (arfcn & 0xff);
+
+	/* C0 marker */
+	if (trx == trx->bts->c0)
+		buf[1] |= 0x04;
 
 	return 3;
 }
@@ -1397,10 +1428,10 @@ static int om2k_gen_freq_list(uint8_t *list, struct gsm_bts_trx_ts *ts)
 		unsigned int i;
 		for (i = 0; i < ts->hopping.arfcns.data_len*8; i++) {
 			if (bitvec_get_bit_pos(&ts->hopping.arfcns, i))
-				cur += put_freq_list(cur, i);
+				cur += put_freq_list(cur, ts, i);
 		}
 	} else
-		cur += put_freq_list(cur, ts->trx->arfcn);
+		cur += put_freq_list(cur, ts, ts->trx->arfcn);
 
 	len = cur - list;
 
