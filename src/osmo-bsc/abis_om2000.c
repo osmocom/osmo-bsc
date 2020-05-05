@@ -192,6 +192,10 @@ enum abis_om2k_msgtype {
 	OM2K_MSGT_TX_CONF_RES_NACK		= 0x00b5,
 	OM2K_MSGT_TX_CONF_RES			= 0x00b6,
 
+	OM2K_MSGT_CAPA_HW_INFOS_REP_ACK		= 0x00e4,
+	OM2K_MSGT_CAPA_HW_INFOS_REP_NACK	= 0x00e5,
+	OM2K_MSGT_CAPA_HW_INFOS_REP		= 0x00e6,
+
 	OM2K_MSGT_CAPA_REQ			= 0x00e8,
 	OM2K_MSGT_CAPA_REQ_ACK			= 0x00ea,
 	OM2K_MSGT_CAPA_REQ_REJ			= 0x00eb,
@@ -2729,6 +2733,9 @@ int abis_om2k_rcvmsg(struct msgb *msg)
 		break;
 	case OM2K_MSGT_TEST_RES:
 		rc = abis_om2k_tx_simple(bts, &o2h->mo, OM2K_MSGT_TEST_RES_ACK);
+		break;
+	case OM2K_MSGT_CAPA_HW_INFOS_REP:
+		rc = abis_om2k_tx_simple(bts, &o2h->mo, OM2K_MSGT_CAPA_HW_INFOS_REP_ACK);
 		break;
 	case OM2K_MSGT_CAPA_RES:
 		rc = abis_om2k_tx_simple(bts, &o2h->mo, OM2K_MSGT_CAPA_RES_ACK);
