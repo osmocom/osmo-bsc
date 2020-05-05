@@ -58,6 +58,20 @@ void bts_chan_load(struct pchan_load *cl, const struct gsm_bts *bts)
 			if (!nm_is_running(&ts->mo.nm_state))
 				continue;
 
+			/* dynamic timeslots have to be counted separately
+			 * when not in TCH/F or TCH/H mode because they don't
+			 * have an lchan's allocated to them */
+			if ( (  ts->pchan_on_init == GSM_PCHAN_TCH_F_TCH_H_PDCH
+			     || ts->pchan_on_init == GSM_PCHAN_TCH_F_PDCH)
+			   && (  ts->pchan_is == GSM_PCHAN_NONE
+			      || ts->pchan_is == GSM_PCHAN_PDCH)) {
+				pl->total++;
+			}
+
+			/* count allocated logical channels.
+			 * Note: When GSM_PCHAN_TCH_F_TCH_H_PDCH is allocation
+			 * in TCH/H mode, this leads to changing the total
+			 * count vs the TCH/F allocation */
 			ts_for_each_lchan(lchan, ts) {
 				/* don't even count CBCH slots in total */
 				if (lchan->type == GSM_LCHAN_CBCH)
