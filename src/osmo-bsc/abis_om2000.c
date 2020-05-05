@@ -1375,7 +1375,7 @@ static uint8_t ts2comb(struct gsm_bts_trx_ts *ts)
 		 * message for it. Rather fail completely right now: */
 		return 0;
 	}
-	return pchan2comb(ts->pchan_is);
+	return pchan2comb(ts->pchan_from_config);
 }
 
 static int put_freq_list(uint8_t *buf, uint16_t arfcn)
@@ -1438,7 +1438,7 @@ int abis_om2k_tx_ts_conf_req(struct gsm_bts_trx_ts *ts)
 	msgb_tv_put(msg, OM2K_DEI_EXT_RANGE, 0); /* Off */
 	/* Optional: Interference Rejection Combining */
 	msgb_tv_put(msg, OM2K_DEI_INTERF_REJ_COMB, 0x00);
-	switch (ts->pchan_is) {
+	switch (ts->pchan_from_config) {
 	case GSM_PCHAN_CCCH:
 		msgb_tv_put(msg, OM2K_DEI_BA_PA_MFRMS, 0x06);
 		msgb_tv_put(msg, OM2K_DEI_BS_AG_BKS_RES, 0x01);
@@ -1482,7 +1482,7 @@ int abis_om2k_tx_ts_conf_req(struct gsm_bts_trx_ts *ts)
 		msgb_tv_fixed_put(msg, OM2K_DEI_ICM_BOUND_PARAMS,
 				  sizeof(icm_bound_params), icm_bound_params);
 		msgb_tv_put(msg, OM2K_DEI_TTA, 10); /* Timer for Time Alignment */
-		if (ts->pchan_is == GSM_PCHAN_TCH_H)
+		if (ts->pchan_from_config == GSM_PCHAN_TCH_H)
 			msgb_tv_put(msg, OM2K_DEI_ICM_CHAN_RATE, 1); /* TCH/H */
 		else
 			msgb_tv_put(msg, OM2K_DEI_ICM_CHAN_RATE, 0); /* TCH/F */
