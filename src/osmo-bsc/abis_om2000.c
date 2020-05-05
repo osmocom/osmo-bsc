@@ -2740,6 +2740,9 @@ int abis_om2k_rcvmsg(struct msgb *msg)
 	case OM2K_MSGT_CAPA_RES:
 		rc = abis_om2k_tx_simple(bts, &o2h->mo, OM2K_MSGT_CAPA_RES_ACK);
 		break;
+	case 0x0136:	/* Unknown ... something for MCTR */
+		rc = abis_om2k_tx_simple(bts, &o2h->mo, 0x0134);
+		break;
 	/* ERrors */
 	case OM2K_MSGT_START_REQ_REJ:
 	case OM2K_MSGT_CONNECT_REJ:
