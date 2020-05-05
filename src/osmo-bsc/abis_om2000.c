@@ -1050,7 +1050,7 @@ static int abis_om2k_cal_time_resp(struct gsm_bts *bts)
 }
 
 static int abis_om2k_tx_simple(struct gsm_bts *bts, const struct abis_om2k_mo *mo,
-				uint8_t msg_type)
+				uint16_t msg_type)
 {
 	struct msgb *msg = om2k_msgb_alloc();
 	struct abis_om2k_hdr *o2k;
