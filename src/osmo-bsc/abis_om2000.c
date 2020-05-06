@@ -226,6 +226,10 @@ enum abis_om2k_msgtype {
 	OM2K_MSGT_MCTR_CONFIG_RES_ACK		= 0x0130,
 	OM2K_MSGT_MCTR_CONFIG_RES_NACK		= 0x0131,
 	OM2K_MSGT_MCTR_CONFIG_RES		= 0x0132,
+
+	OM2K_MSGT_MCTR_STATS_REP_ACK		= 0x0134,
+	OM2K_MSGT_MCTR_STATS_REP_NACK		= 0x0135,
+	OM2K_MSGT_MCTR_STATS_REP		= 0x0136,
 };
 
 enum abis_om2k_dei {
@@ -558,6 +562,9 @@ static const struct value_string om2k_msgcode_vals[] = {
 	{ 0x0130, "MCTR Configuration Result ACK" },
 	{ 0x0131, "MCTR Configuration Result NACK" },
 	{ 0x0132, "MCTR Configuration Result" },
+	{ 0x0134, "MCTR Statistics report ACK" },
+	{ 0x0135, "MCTR Statistics report NACK" },
+	{ 0x0136, "MCTR Statistics report" },
 
 	{ 0, NULL }
 };
@@ -2740,8 +2747,8 @@ int abis_om2k_rcvmsg(struct msgb *msg)
 	case OM2K_MSGT_CAPA_RES:
 		rc = abis_om2k_tx_simple(bts, &o2h->mo, OM2K_MSGT_CAPA_RES_ACK);
 		break;
-	case 0x0136:	/* Unknown ... something for MCTR */
-		rc = abis_om2k_tx_simple(bts, &o2h->mo, 0x0134);
+	case OM2K_MSGT_MCTR_STATS_REP:
+		rc = abis_om2k_tx_simple(bts, &o2h->mo, OM2K_MSGT_MCTR_STATS_REP_ACK);
 		break;
 	/* ERrors */
 	case OM2K_MSGT_START_REQ_REJ:
