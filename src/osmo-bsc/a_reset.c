@@ -71,7 +71,9 @@ static void fsm_disc_cb(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
 	struct reset_ctx *reset_ctx = (struct reset_ctx *)fi->priv;
 	OSMO_ASSERT(reset_ctx);
+	struct bsc_msc_data *msc = reset_ctx->priv;
 	LOGPFSML(fi, LOGL_NOTICE, "SIGTRAN connection succeeded.\n");
+	osmo_stat_item_set(msc->network->bsc_statg->items[BSC_STAT_MSC_LINK], 1);
 
 	reset_ctx->conn_loss_counter = 0;
 	osmo_fsm_inst_state_chg(fi, ST_CONN, 0, 0);
@@ -86,7 +88,9 @@ static void fsm_conn_cb(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 	switch (event) {
 	case EV_N_DISCONNECT:
 		if (reset_ctx->conn_loss_counter >= BAD_CONNECTION_THRESOLD) {
+			struct bsc_msc_data *msc = reset_ctx->priv;
 			LOGPFSML(fi, LOGL_NOTICE, "SIGTRAN connection down, reconnecting...\n");
+			osmo_stat_item_set(msc->network->bsc_statg->items[BSC_STAT_MSC_LINK], 0);
 			osmo_fsm_inst_state_chg(fi, ST_DISC, RESET_RESEND_INTERVAL, RESET_RESEND_TIMER_NO);
 		} else
 			reset_ctx->conn_loss_counter++;
