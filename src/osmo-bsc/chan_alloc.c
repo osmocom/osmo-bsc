@@ -101,6 +101,53 @@ void network_chan_load(struct pchan_load *pl, struct gsm_network *net)
 		bts_chan_load(pl, bts);
 }
 
+static void chan_load_stat_set(enum gsm_phys_chan_config pchan,
+                               struct gsm_bts *bts,
+                               struct load_counter *lc)
+{
+	switch (pchan) {
+	case GSM_PCHAN_NONE:
+	case GSM_PCHAN_CCCH:
+	case GSM_PCHAN_PDCH:
+	case GSM_PCHAN_UNKNOWN:
+		break;
+	case GSM_PCHAN_CCCH_SDCCH4:
+		osmo_stat_item_set(bts->bts_statg->items[BTS_STAT_CHAN_CCCH_SDCCH4_USED], lc->used);
+		osmo_stat_item_set(bts->bts_statg->items[BTS_STAT_CHAN_CCCH_SDCCH4_TOTAL], lc->total);
+		break;
+	case GSM_PCHAN_TCH_F:
+		osmo_stat_item_set(bts->bts_statg->items[BTS_STAT_CHAN_TCH_F_USED], lc->used);
+		osmo_stat_item_set(bts->bts_statg->items[BTS_STAT_CHAN_TCH_F_TOTAL], lc->total);
+		break;
+	case GSM_PCHAN_TCH_H:
+		osmo_stat_item_set(bts->bts_statg->items[BTS_STAT_CHAN_TCH_H_USED], lc->used);
+		osmo_stat_item_set(bts->bts_statg->items[BTS_STAT_CHAN_TCH_H_TOTAL], lc->total);
+		break;
+	case GSM_PCHAN_SDCCH8_SACCH8C:
+		osmo_stat_item_set(bts->bts_statg->items[BTS_STAT_CHAN_SDCCH8_USED], lc->used);
+		osmo_stat_item_set(bts->bts_statg->items[BTS_STAT_CHAN_SDCCH8_TOTAL], lc->total);
+		break;
+	case GSM_PCHAN_TCH_F_PDCH:
+		osmo_stat_item_set(bts->bts_statg->items[BTS_STAT_CHAN_TCH_F_PDCH_USED], lc->used);
+		osmo_stat_item_set(bts->bts_statg->items[BTS_STAT_CHAN_TCH_F_PDCH_TOTAL], lc->total);
+		break;
+	case GSM_PCHAN_CCCH_SDCCH4_CBCH:
+		osmo_stat_item_set(bts->bts_statg->items[BTS_STAT_CHAN_CCCH_SDCCH4_CBCH_USED], lc->used);
+		osmo_stat_item_set(bts->bts_statg->items[BTS_STAT_CHAN_CCCH_SDCCH4_CBCH_TOTAL], lc->total);
+		break;
+	case GSM_PCHAN_SDCCH8_SACCH8C_CBCH:
+		osmo_stat_item_set(bts->bts_statg->items[BTS_STAT_CHAN_SDCCH8_CBCH_USED], lc->used);
+		osmo_stat_item_set(bts->bts_statg->items[BTS_STAT_CHAN_SDCCH8_CBCH_TOTAL], lc->total);
+		break;
+	case GSM_PCHAN_TCH_F_TCH_H_PDCH:
+		osmo_stat_item_set(bts->bts_statg->items[BTS_STAT_CHAN_TCH_F_TCH_H_PDCH_USED], lc->used);
+		osmo_stat_item_set(bts->bts_statg->items[BTS_STAT_CHAN_TCH_F_TCH_H_PDCH_TOTAL], lc->total);
+		break;
+	default:
+		LOG_BTS(bts, DRLL, LOGL_NOTICE, "Unknown channel type %d\n", pchan);
+	}
+}
+
 /* Update T3122 wait indicator based on samples of BTS channel load. */
 void
 bts_update_t3122_chan_load(struct gsm_bts *bts)
@@ -124,6 +171,9 @@ bts_update_t3122_chan_load(struct gsm_bts *bts)
 	bts_chan_load(&pl, bts);
 	for (i = 0; i < ARRAY_SIZE(pl.pchan); i++) {
 		struct load_counter *lc = &pl.pchan[i];
+
+		/* Export channel load to stats gauges */
+		chan_load_stat_set(i, bts, lc);
 
 		/* Ignore samples too large for fixed-point calculations (shouldn't happen). */
 		if (lc->used > UINT16_MAX || lc->total > UINT16_MAX) {
