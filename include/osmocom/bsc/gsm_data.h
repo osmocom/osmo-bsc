@@ -1464,6 +1464,8 @@ enum {
 	BTS_STAT_T3122,
 	BTS_STAT_RACH_BUSY,
 	BTS_STAT_RACH_ACCESS,
+	BTS_STAT_NUM_OML_CONNECTED,
+	BTS_STAT_NUM_RSL_CONNECTED,
 };
 
 enum {
@@ -1556,6 +1558,8 @@ static const struct rate_ctr_group_desc bsc_ctrg_desc = {
 
 enum {
 	BSC_STAT_MSC_LINK,
+	BSC_STAT_NUM_BTS_CONNECTED,
+	BSC_STAT_NUM_TRX_CONNECTED,
 };
 
 struct gsm_tz {

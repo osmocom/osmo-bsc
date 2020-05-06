@@ -46,6 +46,8 @@
 
 static const struct osmo_stat_item_desc bsc_stat_desc[] = {
 	{ "msc_link", "MSC link status.", "", 16, 0 },
+	{ "num_bts_connected", "Number of currently connected BTS (OML links).", "", 16, 0 },
+	{ "num_trx_connected", "Number of currently connected TRX (RSL links).", "", 16, 0 },
 };
 
 static const struct osmo_stat_item_group_desc bsc_statg_desc = {
