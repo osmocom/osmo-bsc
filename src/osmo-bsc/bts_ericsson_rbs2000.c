@@ -34,11 +34,15 @@
 
 static void bootstrap_om_bts(struct gsm_bts *bts)
 {
+	struct gsm_bts_trx *trx;
+
 	LOGP(DNM, LOGL_NOTICE, "bootstrapping OML for BTS %u\n", bts->nr);
 
-	/* FIXME: this is global init, not bootstrapping */
+	/* Global init (not bootstrapping) */
 	abis_om2k_bts_init(bts);
-	abis_om2k_trx_init(bts->c0);
+
+	llist_for_each_entry(trx, &bts->trx_list, list)
+		abis_om2k_trx_init(trx);
 
 	/* TODO: Should we wait for a Failure report? */
 	om2k_bts_fsm_start(bts);
