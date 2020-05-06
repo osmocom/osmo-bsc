@@ -51,12 +51,21 @@ void bts_chan_load(struct pchan_load *cl, const struct gsm_bts *bts)
 
 		for (i = 0; i < ARRAY_SIZE(trx->ts); i++) {
 			struct gsm_bts_trx_ts *ts = &trx->ts[i];
-			struct load_counter *pl = &cl->pchan[ts->pchan_on_init];
+//			enum gsm_phys_chan_config pchan = ts->pchan_on_init;
+			enum gsm_phys_chan_config pchan = ts->pchan_is;
+			struct load_counter *pl = &cl->pchan[pchan];
 			struct gsm_lchan *lchan;
 
 			/* skip administratively deactivated timeslots */
 			if (!nm_is_running(&ts->mo.nm_state))
 				continue;
+
+			if ( (  ts->pchan_on_init == GSM_PCHAN_TCH_F_TCH_H_PDCH
+			     || ts->pchan_on_init == GSM_PCHAN_TCH_F_PDCH)
+			   && (  ts->pchan_is == GSM_PCHAN_NONE
+			      || ts->pchan_is == GSM_PCHAN_PDCH)) {
+				cl->pchan[GSM_PCHAN_TCH_F].total++;
+			}
 
 			ts_for_each_lchan(lchan, ts) {
 				/* don't even count CBCH slots in total */
