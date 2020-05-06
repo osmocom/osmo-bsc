@@ -2019,7 +2019,7 @@ enum om2k_trx_state {
 
 struct om2k_trx_fsm_priv {
 	struct gsm_bts_trx *trx;
-	uint8_t next_ts_nr;
+	uint8_t cur_ts_nr;
 };
 
 static void om2k_trx_s_init(struct osmo_fsm_inst *fi, uint32_t event, void *data)
@@ -2063,8 +2063,8 @@ static void om2k_trx_s_wait_rx(struct osmo_fsm_inst *fi, uint32_t event, void *d
 	/* Initialize Timeslots after TX */
 	osmo_fsm_inst_state_chg(fi, OM2K_TRX_S_WAIT_TS,
 				TRX_FSM_TIMEOUT, 0);
-	otfp->next_ts_nr = 0;
-	ts = &otfp->trx->ts[otfp->next_ts_nr++];
+	otfp->cur_ts_nr = 0;
+	ts = &otfp->trx->ts[otfp->cur_ts_nr];
 	om2k_mo_fsm_start(fi, OM2K_TRX_EVT_TS_DONE, otfp->trx,
 			  &ts->rbs2000.om2k_mo);
 }
@@ -2074,9 +2074,14 @@ static void om2k_trx_s_wait_ts(struct osmo_fsm_inst *fi, uint32_t event, void *d
 	struct om2k_trx_fsm_priv *otfp = fi->priv;
 	struct gsm_bts_trx_ts *ts;
 
-	if (otfp->next_ts_nr < 8) {
+	/* notify TS is ready */
+	ts = &otfp->trx->ts[otfp->cur_ts_nr];
+	osmo_fsm_inst_dispatch(ts->fi, TS_EV_OML_READY, NULL);
+
+	/* next ? */
+	if (++otfp->cur_ts_nr < 8) {
 		/* iterate to the next timeslot */
-		ts = &otfp->trx->ts[otfp->next_ts_nr++];
+		ts = &otfp->trx->ts[otfp->cur_ts_nr];
 		om2k_mo_fsm_start(fi, OM2K_TRX_EVT_TS_DONE, otfp->trx,
 				  &ts->rbs2000.om2k_mo);
 	} else {
@@ -2820,7 +2825,6 @@ void abis_om2k_trx_init(struct gsm_bts_trx *trx)
 		om2k_mo_init(&ts->rbs2000.om2k_mo, OM2K_MO_CLS_TS,
 				bts->nr, trx->nr, i);
 		OSMO_ASSERT(ts->fi);
-		osmo_fsm_inst_dispatch(ts->fi, TS_EV_OML_READY, NULL);
 	}
 }
 
