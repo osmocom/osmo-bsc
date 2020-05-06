@@ -1,3 +1,9 @@
+osmo-bsc (1.6.0-fw.4) unstable; urgency=medium
+
+  * merged fairwaves/WIP-dyn-chan-load:8e198b0ebee
+
+ -- Kirill Zakharenko <kirill.zakharenko@fairwaves.co>  Thu, 7 May 2020 02:28:29 +0300
+
 osmo-bsc (1.6.0-fw.3) unstable; urgency=medium
 
   * merged master:b4b48947533
