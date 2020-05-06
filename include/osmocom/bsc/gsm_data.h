@@ -1445,9 +1445,27 @@ static const struct rate_ctr_group_desc bts_ctrg_desc = {
 
 enum {
 	BTS_STAT_CHAN_LOAD_AVERAGE,
+	BTS_STAT_CHAN_CCCH_SDCCH4_USED,
+	BTS_STAT_CHAN_CCCH_SDCCH4_TOTAL,
+	BTS_STAT_CHAN_TCH_F_USED,
+	BTS_STAT_CHAN_TCH_F_TOTAL,
+	BTS_STAT_CHAN_TCH_H_USED,
+	BTS_STAT_CHAN_TCH_H_TOTAL,
+	BTS_STAT_CHAN_SDCCH8_USED,
+	BTS_STAT_CHAN_SDCCH8_TOTAL,
+	BTS_STAT_CHAN_TCH_F_PDCH_USED,
+	BTS_STAT_CHAN_TCH_F_PDCH_TOTAL,
+	BTS_STAT_CHAN_CCCH_SDCCH4_CBCH_USED,
+	BTS_STAT_CHAN_CCCH_SDCCH4_CBCH_TOTAL,
+	BTS_STAT_CHAN_SDCCH8_CBCH_USED,
+	BTS_STAT_CHAN_SDCCH8_CBCH_TOTAL,
+	BTS_STAT_CHAN_TCH_F_TCH_H_PDCH_USED,
+	BTS_STAT_CHAN_TCH_F_TCH_H_PDCH_TOTAL,
 	BTS_STAT_T3122,
 	BTS_STAT_RACH_BUSY,
 	BTS_STAT_RACH_ACCESS,
+	BTS_STAT_NUM_OML_CONNECTED,
+	BTS_STAT_NUM_RSL_CONNECTED,
 };
 
 enum {
@@ -1538,6 +1556,12 @@ static const struct rate_ctr_group_desc bsc_ctrg_desc = {
 	bsc_ctr_description,
 };
 
+enum {
+	BSC_STAT_MSC_LINK,
+	BSC_STAT_NUM_BTS_CONNECTED,
+	BSC_STAT_NUM_TRX_CONNECTED,
+};
+
 struct gsm_tz {
 	int override; /* if 0, use system's time zone instead. */
 	int hr; /* hour */
@@ -1565,6 +1589,7 @@ struct gsm_network {
 	} hodec2;
 
 	struct rate_ctr_group *bsc_ctrs;
+	struct osmo_stat_item_group *bsc_statg;
 
 	unsigned int num_bts;
 	struct llist_head bts_list;
