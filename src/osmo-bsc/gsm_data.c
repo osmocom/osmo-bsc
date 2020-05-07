@@ -390,6 +390,8 @@ static const struct osmo_stat_item_desc bts_stat_desc[] = {
 	{ "T3122", "T3122 IMMEDIATE ASSIGNMENT REJECT wait indicator", "s", 16, GSM_T3122_DEFAULT },
 	{ "rach_busy", "RACH slots with signal above threshold", "%", 16, 0 },
 	{ "rach_access", "RACH slots with access bursts in them", "%", 16, 0 },
+	{ "oml_connected", "Number of OML links connected", "", 16, 0 },
+	{ "rsl_connected", "Number of RSL links connected", "", 16, 0 },
 };
 
 static const struct osmo_stat_item_group_desc bts_statg_desc = {
