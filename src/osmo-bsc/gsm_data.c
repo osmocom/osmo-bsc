@@ -832,7 +832,7 @@ struct gsm_bts *gsm_bts_alloc(struct gsm_network *net, uint8_t bts_num)
 		talloc_free(bts);
 		return NULL;
 	}
-	bts->bts_statg = osmo_stat_item_group_alloc(bts, &bts_statg_desc, 0);
+	bts->bts_statg = osmo_stat_item_group_alloc(bts, &bts_statg_desc, bts->nr);
 
 	/* create our primary TRX */
 	bts->c0 = gsm_bts_trx_alloc(bts);
