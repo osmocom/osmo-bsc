@@ -1562,6 +1562,11 @@ static const struct rate_ctr_group_desc bsc_ctrg_desc = {
 	bsc_ctr_description,
 };
 
+/* Constants for the BSC stats */
+enum {
+	BSC_STAT_NUM_BTS_TOTAL,
+};
+
 struct gsm_tz {
 	int override; /* if 0, use system's time zone instead. */
 	int hr; /* hour */
@@ -1588,7 +1593,9 @@ struct gsm_network {
 		struct osmo_timer_list congestion_check_timer;
 	} hodec2;
 
+	/* structures for keeping rate counters and gauge stats */
 	struct rate_ctr_group *bsc_ctrs;
+	struct osmo_stat_item_group *bsc_statg;
 
 	unsigned int num_bts;
 	struct llist_head bts_list;

@@ -2077,6 +2077,7 @@ DEFUN(cfg_bts,
 		/* allocate a new one */
 		bts = bsc_bts_alloc_register(gsmnet, GSM_BTS_TYPE_UNKNOWN,
 					     HARDCODED_BSIC);
+		osmo_stat_item_inc(gsmnet->bsc_statg->items[BSC_STAT_NUM_BTS_TOTAL], 1);
 		/*
 		 * Initialize bts->acc_ramp here. Else we could segfault while
 		 * processing a configuration file with ACC ramping settings.
