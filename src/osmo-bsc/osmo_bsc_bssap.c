@@ -1102,14 +1102,14 @@ static int dtap_rcvmsg(struct gsm_subscriber_connection *conn,
 
 	header = (struct dtap_header *) msg->l3h;
 	if (sizeof(*header) >= length) {
-		LOGP(DMSC, LOGL_ERROR, "The DTAP header does not fit. Wanted: %zu got: %u\n", sizeof(*header), length);
-                LOGP(DMSC, LOGL_ERROR, "hex: %s\n", osmo_hexdump(msg->l3h, length));
-                return -1;
+		LOGP(DMSC, LOGL_ERROR, "The DTAP header does not fit. Wanted: %zu got: %u, hex: %s\n",
+		     sizeof(*header), length, osmo_hexdump(msg->l3h, length));
+		return -1;
 	}
 
 	if (header->length > length - sizeof(*header)) {
-		LOGP(DMSC, LOGL_ERROR, "The DTAP l4 information does not fit: header: %u length: %u\n", header->length, length);
-                LOGP(DMSC, LOGL_ERROR, "hex: %s\n", osmo_hexdump(msg->l3h, length));
+		LOGP(DMSC, LOGL_ERROR, "The DTAP l4 information does not fit. Wanted: %u got: %zu, hex: %s\n",
+		     header->length, length - sizeof(*header), osmo_hexdump(msg->l3h, length));
 		return -1;
 	}
 
