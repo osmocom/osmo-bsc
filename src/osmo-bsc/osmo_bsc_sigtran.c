@@ -143,14 +143,14 @@ static struct bsc_msc_data *get_msc_by_addr(const struct osmo_sccp_addr *msc_add
 	return NULL;
 }
 
-/* Send data to MSC, use the connection id which MSC it is */
+/* Received data from MSC, use the connection id which MSC it is */
 static int handle_data_from_msc(struct gsm_subscriber_connection *conn, struct msgb *msg)
 {
 	msg->l3h = msgb_l2(msg);
 	return bsc_handle_dt(conn, msg, msgb_l2len(msg));
 }
 
-/* Sent unitdata to MSC, use the point code to determine which MSC it is */
+/* Received unitdata from MSC, use the point code to determine which MSC it is */
 static int handle_unitdata_from_msc(const struct osmo_sccp_addr *msc_addr, struct msgb *msg,
 				    const struct osmo_sccp_user *scu)
 {
