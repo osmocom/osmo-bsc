@@ -44,6 +44,19 @@
 #include <unistd.h>
 
 static const struct rate_ctr_desc msc_ctr_description[] = {
+	[MSC_CTR_BSSMAP_RX_UDT_RESET_ACKNOWLEDGE] = {"bssmap:rx_udt_reset_acknowledge", "Number of received BSSMAP UDT RESET ACKNOWLEDGE messages"},
+	[MSC_CTR_BSSMAP_RX_UDT_RESET] = {"bssmap:rx_udt_reset", "Number of received BSSMAP UDT RESET messages"},
+	[MSC_CTR_BSSMAP_RX_UDT_PAGING] = {"bssmap:rx_udt_paging", "Number of received BSSMAP UDT PAGING messages"},
+	[MSC_CTR_BSSMAP_RX_UDT_UNKNOWN] = {"bssmap:rx_udt_unknown", "Number of received BSSMAP unknown UDT messages"},
+	[MSC_CTR_BSSMAP_RX_DT1_CLEAR_CMD] = {"bssmap:rx_dt1_clear_cmd", "Number of received BSSMAP DT1 CLEAR CMD messages"},
+	[MSC_CTR_BSSMAP_RX_DT1_CIPHER_MODE_CMD] = {"bssmap:rx_dt1_cipher_mode_cmd", "Number of received BSSMAP DT1 CIPHER MODE CMD messages"},
+	[MSC_CTR_BSSMAP_RX_DT1_ASSIGMENT_RQST] = {"bssmap:rx_dt1_assignment_rqst", "Number of received BSSMAP DT1 ASSIGMENT RQST messages"},
+	[MSC_CTR_BSSMAP_RX_DT1_LCLS_CONNECT_CTRL] = {"bssmap:rx_dt1_lcls_connect_ctrl", "Number of received BSSMAP DT1 LCLS CONNECT CTRL messages"},
+	[MSC_CTR_BSSMAP_RX_DT1_HANDOVER_CMD] = {"bssmap:rx_dt1_handover_cmd", "Number of received BSSMAP DT1 HANDOVER CMD messages"},
+	[MSC_CTR_BSSMAP_RX_DT1_CLASSMARK_RQST] = {"bssmap:rx_dt1_classmark_rqst", "Number of received BSSMAP DT1 CLASSMARK RQST messages"},
+	[MSC_CTR_BSSMAP_RX_DT1_UNKNOWN] = {"bssmap:rx_dt1_unknown", "Number of received BSSMAP unknown DT1 messages"},
+	[MSC_CTR_BSSMAP_RX_DTAP_MSG] = {"bssmap:rx_dtap_msg", "Number of received BSSMAP DTAP messages"},
+	[MSC_CTR_BSSMAP_RX_DTAP_ERROR] = {"bssmap:rx_dtap_error", "Number of received BSSMAP DATP messages with errors"},
 };
 
 static const struct rate_ctr_group_desc msc_ctrg_desc = {
