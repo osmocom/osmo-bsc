@@ -37,6 +37,7 @@
 
 #include <osmocom/core/talloc.h>
 
+/* Update channel load calculation for the given BTS */
 void bts_chan_load(struct pchan_load *cl, const struct gsm_bts *bts)
 {
 	struct gsm_bts_trx *trx;
@@ -99,6 +100,7 @@ void bts_chan_load(struct pchan_load *cl, const struct gsm_bts *bts)
 	}
 }
 
+/* Update channel load calculation for all BTS in the BSC */
 void network_chan_load(struct pchan_load *pl, struct gsm_network *net)
 {
 	struct gsm_bts *bts;
