@@ -66,18 +66,28 @@ static const struct value_string fsm_event_names[] = {
 	{0, NULL}
 };
 
-/* Disconnected state */
+/* Disconnected state event handler */
 static void fsm_disc_cb(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
 	struct reset_ctx *reset_ctx = (struct reset_ctx *)fi->priv;
 	OSMO_ASSERT(reset_ctx);
-	LOGPFSML(fi, LOGL_NOTICE, "SIGTRAN connection succeeded.\n");
 
 	reset_ctx->conn_loss_counter = 0;
 	osmo_fsm_inst_state_chg(fi, ST_CONN, 0, 0);
 }
 
-/* Connected state */
+/* Called when entering Disconnected state */
+static void fsm_disc_onenter_cb(struct osmo_fsm_inst *fi, uint32_t prev_state)
+{
+	struct reset_ctx *reset_ctx = (struct reset_ctx *)fi->priv;
+	struct bsc_msc_data *msc = reset_ctx->priv;
+
+	LOGPFSML(fi, LOGL_NOTICE, "SIGTRAN connection down, reconnecting...\n");
+	if (prev_state != ST_DISC)
+		osmo_stat_item_dec(msc->msc_statg->items[MSC_STAT_MSC_LINKS_ACTIVE], 1);
+}
+
+/* Connected state event handler */
 static void fsm_conn_cb(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
 	struct reset_ctx *reset_ctx = (struct reset_ctx *)fi->priv;
@@ -85,16 +95,26 @@ static void fsm_conn_cb(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 
 	switch (event) {
 	case EV_N_DISCONNECT:
-		if (reset_ctx->conn_loss_counter >= BAD_CONNECTION_THRESOLD) {
-			LOGPFSML(fi, LOGL_NOTICE, "SIGTRAN connection down, reconnecting...\n");
+		if (reset_ctx->conn_loss_counter >= BAD_CONNECTION_THRESOLD)
 			osmo_fsm_inst_state_chg(fi, ST_DISC, RESET_RESEND_INTERVAL, RESET_RESEND_TIMER_NO);
-		} else
+		else
 			reset_ctx->conn_loss_counter++;
 		break;
 	case EV_N_CONNECT:
 		reset_ctx->conn_loss_counter = 0;
 		break;
 	}
+}
+
+/* Called when entering Connected state */
+static void fsm_conn_onenter_cb(struct osmo_fsm_inst *fi, uint32_t prev_state)
+{
+	struct reset_ctx *reset_ctx = (struct reset_ctx *)fi->priv;
+	struct bsc_msc_data *msc = reset_ctx->priv;
+
+	LOGPFSML(fi, LOGL_NOTICE, "SIGTRAN connection succeeded.\n");
+	if (prev_state != ST_CONN)
+		osmo_stat_item_inc(msc->msc_statg->items[MSC_STAT_MSC_LINKS_ACTIVE], 1);
 }
 
 /* Timer callback to retransmit the reset signal */
@@ -117,12 +137,14 @@ static struct osmo_fsm_state reset_fsm_states[] = {
 		     .out_state_mask = (1 << ST_DISC) | (1 << ST_CONN),
 		     .name = "DISC",
 		     .action = fsm_disc_cb,
+		     .onenter = fsm_disc_onenter_cb,
 		     },
 	[ST_CONN] = {
 		     .in_event_mask = (1 << EV_N_DISCONNECT) | (1 << EV_N_CONNECT),
 		     .out_state_mask = (1 << ST_DISC) | (1 << ST_CONN),
 		     .name = "CONN",
 		     .action = fsm_conn_cb,
+		     .onenter = fsm_conn_onenter_cb,
 		     },
 };
 
@@ -161,6 +183,9 @@ void a_reset_alloc(struct bsc_msc_data *msc, const char *name, void *cb)
 
 	/* Immediately (1ms) kick off reset sending mechanism */
 	osmo_fsm_inst_state_chg_ms(reset_fsm, ST_DISC, 1, RESET_RESEND_TIMER_NO);
+
+	/* Count the new MSC link */
+	osmo_stat_item_inc(msc->msc_statg->items[MSC_STAT_MSC_LINKS_TOTAL], 1);
 }
 
 /* Confirm that we successfully received a reset acknowledge message */

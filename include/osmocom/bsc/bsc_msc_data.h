@@ -56,6 +56,12 @@ enum {
 	MSC_CON_TYPE_LOCAL,
 };
 
+/* Constants for the MSC stats */
+enum {
+	MSC_STAT_MSC_LINKS_ACTIVE,
+	MSC_STAT_MSC_LINKS_TOTAL,
+};
+
 /*! /brief Information on a remote MSC for libbsc.
  */
 struct bsc_msc_data {
@@ -98,6 +104,10 @@ struct bsc_msc_data {
 	char *ussd_grace_txt;
 
 	char *acc_lst_name;
+
+	/* structures for keeping rate counters and gauge stats */
+	struct rate_ctr_group *msc_ctrs;
+	struct osmo_stat_item_group *msc_statg;
 
 	/* Sigtran connection data */
 	struct {
