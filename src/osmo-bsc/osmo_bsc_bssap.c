@@ -1007,6 +1007,7 @@ static int bssmap_rcvmsg_udt(struct bsc_msc_data *msc,
 			     struct msgb *msg, unsigned int length)
 {
 	int ret = 0;
+	struct rate_ctr *ctrs = msc->msc_ctrs->ctr;
 
 	if (length < 1) {
 		LOGP(DMSC, LOGL_ERROR, "Not enough room: %d\n", length);
@@ -1018,15 +1019,19 @@ static int bssmap_rcvmsg_udt(struct bsc_msc_data *msc,
 
 	switch (msg->l4h[0]) {
 	case BSS_MAP_MSG_RESET_ACKNOWLEDGE:
+		rate_ctr_inc(&ctrs[MSC_CTR_BSSMAP_RX_UDT_RESET_ACKNOWLEDGE]);
 		ret = bssmap_handle_reset_ack(msc, msg, length);
 		break;
 	case BSS_MAP_MSG_RESET:
+		rate_ctr_inc(&ctrs[MSC_CTR_BSSMAP_RX_UDT_RESET]);
 		ret = bssmap_handle_reset(msc, msg, length);
 		break;
 	case BSS_MAP_MSG_PAGING:
+		rate_ctr_inc(&ctrs[MSC_CTR_BSSMAP_RX_UDT_PAGING]);
 		ret = bssmap_handle_paging(msc, msg, length);
 		break;
 	default:
+		rate_ctr_inc(&ctrs[MSC_CTR_BSSMAP_RX_UDT_UNKNOWN]);
 		LOGP(DMSC, LOGL_NOTICE, "Received unimplemented BSSMAP UDT %s\n",
 			gsm0808_bssmap_name(msg->l4h[0]));
 		break;
@@ -1039,6 +1044,7 @@ static int bssmap_rcvmsg_dt1(struct gsm_subscriber_connection *conn,
 			     struct msgb *msg, unsigned int length)
 {
 	int ret = 0;
+	struct rate_ctr *ctrs = conn->sccp.msc->msc_ctrs->ctr;
 
 	if (length < 1) {
 		LOGP(DMSC, LOGL_ERROR, "Not enough room: %d\n", length);
@@ -1050,24 +1056,31 @@ static int bssmap_rcvmsg_dt1(struct gsm_subscriber_connection *conn,
 
 	switch (msg->l4h[0]) {
 	case BSS_MAP_MSG_CLEAR_CMD:
+		rate_ctr_inc(&ctrs[MSC_CTR_BSSMAP_RX_DT1_CLEAR_CMD]);
 		ret = bssmap_handle_clear_cmd(conn, msg, length);
 		break;
 	case BSS_MAP_MSG_CIPHER_MODE_CMD:
+		rate_ctr_inc(&ctrs[MSC_CTR_BSSMAP_RX_DT1_CIPHER_MODE_CMD]);
 		ret = bssmap_handle_cipher_mode(conn, msg, length);
 		break;
 	case BSS_MAP_MSG_ASSIGMENT_RQST:
+		rate_ctr_inc(&ctrs[MSC_CTR_BSSMAP_RX_DT1_ASSIGMENT_RQST]);
 		ret = bssmap_handle_assignm_req(conn, msg, length);
 		break;
 	case BSS_MAP_MSG_LCLS_CONNECT_CTRL:
+		rate_ctr_inc(&ctrs[MSC_CTR_BSSMAP_RX_DT1_LCLS_CONNECT_CTRL]);
 		ret = bssmap_handle_lcls_connect_ctrl(conn, msg, length);
 		break;
 	case BSS_MAP_MSG_HANDOVER_CMD:
+		rate_ctr_inc(&ctrs[MSC_CTR_BSSMAP_RX_DT1_HANDOVER_CMD]);
 		ret = bssmap_handle_handover_cmd(conn, msg, length);
 		break;
 	case BSS_MAP_MSG_CLASSMARK_RQST:
+		rate_ctr_inc(&ctrs[MSC_CTR_BSSMAP_RX_DT1_CLASSMARK_RQST]);
 		ret = gsm48_send_rr_classmark_enquiry(conn->lchan);
 		break;
 	default:
+		rate_ctr_inc(&ctrs[MSC_CTR_BSSMAP_RX_DT1_UNKNOWN]);
 		LOGP(DMSC, LOGL_NOTICE, "Unimplemented msg type: %s\n",
 			gsm0808_bssmap_name(msg->l4h[0]));
 		break;
@@ -1091,6 +1104,7 @@ static int dtap_rcvmsg(struct gsm_subscriber_connection *conn,
 	struct msgb *gsm48;
 	uint8_t *data;
 	int rc, dtap_rc;
+	struct rate_ctr *ctrs = conn->sccp.msc->msc_ctrs->ctr;
 
 	LOGP(DMSC, LOGL_DEBUG, "Rx MSC DTAP: %s\n",
 		osmo_hexdump(msg->l3h, length));
@@ -1102,17 +1116,20 @@ static int dtap_rcvmsg(struct gsm_subscriber_connection *conn,
 
 	header = (struct dtap_header *) msg->l3h;
 	if (sizeof(*header) >= length) {
+		rate_ctr_inc(&ctrs[MSC_CTR_BSSMAP_RX_DTAP_ERROR]);
 		LOGP(DMSC, LOGL_ERROR, "The DTAP header does not fit. Wanted: %zu got: %u, hex: %s\n",
 		     sizeof(*header), length, osmo_hexdump(msg->l3h, length));
 		return -1;
 	}
 
 	if (header->length > length - sizeof(*header)) {
+		rate_ctr_inc(&ctrs[MSC_CTR_BSSMAP_RX_DTAP_ERROR]);
 		LOGP(DMSC, LOGL_ERROR, "The DTAP l4 information does not fit. Wanted: %u got: %zu, hex: %s\n",
 		     header->length, length - sizeof(*header), osmo_hexdump(msg->l3h, length));
 		return -1;
 	}
 
+	rate_ctr_inc(&ctrs[MSC_CTR_BSSMAP_RX_DTAP_MSG]);
 	LOGP(DMSC, LOGL_INFO, "Rx MSC DTAP, SAPI: %u CHAN: %u\n", header->link_id & 0x07, header->link_id & 0xC0);
 
 	/* forward the data */
