@@ -370,7 +370,7 @@ void gsm_bts_set_radio_link_timeout(struct gsm_bts *bts, int value)
 }
 
 static const struct osmo_stat_item_desc bts_stat_desc[] = {
-	{ "chanloadavg", "Channel load average.", "%", 16, 0 },
+	{ "chanloadavg", "Channel load average", "%", 16, 0 },
 	{ "chan_ccch_sdcch4:used", "Number of CCCH+SDCCH4 channels used", "", 16, 0 },
 	{ "chan_ccch_sdcch4:total", "Number of CCCH+SDCCH4 channels total", "", 16, 0 },
 	{ "chan_tch_f:used", "Number of TCH/F channels used", "", 16, 0 },
@@ -387,7 +387,7 @@ static const struct osmo_stat_item_desc bts_stat_desc[] = {
 	{ "chan_sdcch8_cbch:total", "Number of SDCCH8+CBCH channels total", "", 16, 0 },
 	{ "chan_tch_f_tch_h_pdch:used", "Number of TCH/F_TCH/H_PDCH channels used", "", 16, 0 },
 	{ "chan_tch_f_tch_h_pdch:total", "Number of TCH/F_TCH/H_PDCH channels total", "", 16, 0 },
-	{ "T3122", "T3122 IMMEDIATE ASSIGNMENT REJECT wait indicator.", "s", 16, GSM_T3122_DEFAULT },
+	{ "T3122", "T3122 IMMEDIATE ASSIGNMENT REJECT wait indicator", "s", 16, GSM_T3122_DEFAULT },
 	{ "rach_busy", "RACH slots with signal above threshold", "%", 16, 0 },
 	{ "rach_access", "RACH slots with access bursts in them", "%", 16, 0 },
 };
