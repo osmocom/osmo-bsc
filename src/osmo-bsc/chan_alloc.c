@@ -45,8 +45,7 @@ void bts_chan_load(struct pchan_load *cl, const struct gsm_bts *bts)
 		int i;
 
 		/* skip administratively deactivated tranxsceivers */
-		if (!nm_is_running(&trx->mo.nm_state) ||
-		    !nm_is_running(&trx->bb_transc.mo.nm_state))
+		if (!trx_is_usable(trx))
 			continue;
 
 		for (i = 0; i < ARRAY_SIZE(trx->ts); i++) {
