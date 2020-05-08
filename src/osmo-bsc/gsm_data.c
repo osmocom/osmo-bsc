@@ -1399,6 +1399,10 @@ bool trx_is_usable(const struct gsm_bts_trx *trx)
 		if (!nm_is_running(&trx->mo.nm_state) ||
 		    !nm_is_running(&trx->bb_transc.mo.nm_state))
 			return false;
+	} else if (is_ericsson_bts(trx->bts)) {
+		/* The OM2000 -> 12.21 mapping we do doesn't have separate bb_transc MO */
+		if (!nm_is_running(&trx->mo.nm_state))
+			return false;
 	}
 
 	return true;

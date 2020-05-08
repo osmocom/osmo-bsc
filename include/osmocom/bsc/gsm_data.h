@@ -1719,6 +1719,18 @@ static inline int is_nokia_bts(struct gsm_bts *bts)
 	return 0;
 }
 
+static inline int is_ericsson_bts(struct gsm_bts *bts)
+{
+	switch (bts->type) {
+	case GSM_BTS_TYPE_RBS2000:
+		return 1;
+	default:
+		break;
+	}
+
+	return 0;
+}
+
 static inline int is_e1_bts(struct gsm_bts *bts)
 {
 	switch (bts->type) {
