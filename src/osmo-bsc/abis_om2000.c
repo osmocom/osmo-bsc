@@ -310,6 +310,13 @@ enum abis_om2k_dei {
 	OM2K_DEI_MCTR_FEAT_STATUS_BMAP		= 0xab,
 };
 
+enum abis_om2k_mostate {
+	OM2K_MOSTATE_RESET			= 0x00,
+	OM2K_MOSTATE_STARTED			= 0x01,
+	OM2K_MOSTATE_ENABLED			= 0x02,
+	OM2K_MOSTATE_DISABLED			= 0x03,
+};
+
 const struct tlv_definition om2k_att_tlvdef = {
 	.def = {
 		[OM2K_DEI_ACCORDANCE_IND] =	{ TLV_TYPE_TV },
@@ -782,7 +789,6 @@ get_om2k_mo(struct gsm_bts *bts, const struct abis_om2k_mo *abis_mo)
 	case OM2K_MO_CLS_MCTR:
 		mo = &bts->rbs2000.mctr.om2k_mo;
 		break;
-
 	case OM2K_MO_CLS_TRXC:
 		trx = gsm_bts_trx_num(bts, abis_mo->inst);
 		if (!trx)
@@ -874,6 +880,9 @@ mo2nm_state(struct gsm_bts *bts, const struct abis_om2k_mo *mo)
 			return NULL;
 		nm_state = &trx->ts[mo->inst].mo.nm_state;
 		break;
+	case OM2K_MO_CLS_MCTR:
+		nm_state = &bts->rbs2000.mctr.mo.nm_state;
+		break;
 	case OM2K_MO_CLS_TF:
 		nm_state = &bts->rbs2000.tf.mo.nm_state;
 		break;
@@ -922,6 +931,7 @@ static void *mo2obj(struct gsm_bts *bts, struct abis_om2k_mo *mo)
 		if (mo->inst >= ARRAY_SIZE(trx->ts))
 			return NULL;
 		return &trx->ts[mo->inst];
+	case OM2K_MO_CLS_MCTR:
 	case OM2K_MO_CLS_TF:
 	case OM2K_MO_CLS_IS:
 	case OM2K_MO_CLS_CON:
@@ -939,13 +949,39 @@ static void update_mo_state(struct gsm_bts *bts, struct abis_om2k_mo *mo,
 	struct gsm_nm_state *nm_state = mo2nm_state(bts, mo);
 	struct gsm_nm_state new_state;
 	struct nm_statechg_signal_data nsd;
+	bool has_enabled_state;
 
 	if (!nm_state)
 		return;
 
+	switch (mo->class) {
+	case OM2K_MO_CLS_CF:
+	case OM2K_MO_CLS_TRXC:
+		has_enabled_state = false;
+		break;
+	default:
+		has_enabled_state = true;
+		break;
+	}
+
 	new_state = *nm_state;
-	/* NOTICE: 12.21 Availability state values != OM2000 */
-	new_state.availability = mo_state;
+	switch (mo_state) {
+	case OM2K_MOSTATE_RESET:
+		new_state.availability = NM_AVSTATE_POWER_OFF;
+		break;
+	case OM2K_MOSTATE_STARTED:
+		new_state.availability = has_enabled_state ? NM_AVSTATE_OFF_LINE : NM_AVSTATE_OK;
+		break;
+	case OM2K_MOSTATE_ENABLED:
+		new_state.availability = NM_AVSTATE_OK;
+		break;
+	case OM2K_MOSTATE_DISABLED:
+		new_state.availability = NM_AVSTATE_POWER_OFF;
+		break;
+	default:
+		new_state.availability = NM_AVSTATE_DEGRADED;
+		break;
+	}
 
 	memset(&nsd, 0, sizeof(nsd));
 
