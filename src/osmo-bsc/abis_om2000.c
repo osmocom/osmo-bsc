@@ -76,6 +76,7 @@ struct osmo_fsm_inst *osmo_fsm_inst_alloc_child_id(struct osmo_fsm *fsm,
 #define OM_HEADROOM_SIZE	128
 
 #define OM2K_TIMEOUT	10
+#define TRX_LAPD_TIMEOUT 5
 #define TRX_FSM_TIMEOUT	60
 #define BTS_FSM_TIMEOUT	60
 
@@ -2297,6 +2298,7 @@ enum om2k_bts_event {
 	OM2K_BTS_EVT_CON_DONE,
 	OM2K_BTS_EVT_TF_DONE,
 	OM2K_BTS_EVT_MCTR_DONE,
+	OM2K_BTS_EVT_TRX_LAPD_UP,
 	OM2K_BTS_EVT_TRX_DONE,
 	OM2K_BTS_EVT_STOP,
 };
@@ -2308,6 +2310,7 @@ static const struct value_string om2k_bts_events[] = {
 	{ OM2K_BTS_EVT_CON_DONE,	"CON-DONE" },
 	{ OM2K_BTS_EVT_TF_DONE,		"TF-DONE" },
 	{ OM2K_BTS_EVT_MCTR_DONE,	"MCTR-DONE" },
+	{ OM2K_BTS_EVT_TRX_LAPD_UP,	"TRX-LAPD-UP" },
 	{ OM2K_BTS_EVT_TRX_DONE,	"TRX-DONE" },
 	{ OM2K_BTS_EVT_STOP,		"STOP" },
 	{ 0, NULL }
@@ -2320,6 +2323,7 @@ enum om2k_bts_state {
 	OM2K_BTS_S_WAIT_CON,
 	OM2K_BTS_S_WAIT_TF,
 	OM2K_BTS_S_WAIT_MCTR,
+	OM2K_BTS_S_WAIT_TRX_LAPD,
 	OM2K_BTS_S_WAIT_TRX,
 	OM2K_BTS_S_DONE,
 	OM2K_BTS_S_ERROR,
@@ -2394,21 +2398,25 @@ static void om2k_bts_s_wait_is(struct osmo_fsm_inst *fi, uint32_t event, void *d
 		om2k_mo_fsm_start(fi, OM2K_BTS_EVT_MCTR_DONE, bts->c0,
 				  &bts->rbs2000.mctr.om2k_mo);
 	} else {
-		struct gsm_bts_trx *trx;
-		osmo_fsm_inst_state_chg(fi, OM2K_BTS_S_WAIT_TRX,
-					BTS_FSM_TIMEOUT, 0);
-		obfp->next_trx_nr = 0;
-		trx = gsm_bts_trx_num(obfp->bts, obfp->next_trx_nr++);
-		om2k_trx_fsm_start(fi, trx, OM2K_BTS_EVT_TRX_DONE);
+		osmo_fsm_inst_state_chg(fi, OM2K_BTS_S_WAIT_TRX_LAPD,
+					TRX_LAPD_TIMEOUT, 0);
 	}
 }
 
 static void om2k_bts_s_wait_mctr(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
+	OSMO_ASSERT(event == OM2K_BTS_EVT_MCTR_DONE);
+
+	osmo_fsm_inst_state_chg(fi, OM2K_BTS_S_WAIT_TRX_LAPD,
+				TRX_LAPD_TIMEOUT, 0);
+}
+
+static void om2k_bts_s_wait_trx_lapd(struct osmo_fsm_inst *fi, uint32_t event, void *data)
+{
 	struct om2k_bts_fsm_priv *obfp = fi->priv;
 	struct gsm_bts_trx *trx;
 
-	OSMO_ASSERT(event == OM2K_BTS_EVT_MCTR_DONE);
+	OSMO_ASSERT(event == OM2K_BTS_EVT_TRX_LAPD_UP);
 
 	osmo_fsm_inst_state_chg(fi, OM2K_BTS_S_WAIT_TRX,
 				BTS_FSM_TIMEOUT, 0);
@@ -2469,16 +2477,22 @@ static const struct osmo_fsm_state om2k_bts_states[] = {
 		.in_event_mask = S(OM2K_BTS_EVT_IS_DONE),
 		.out_state_mask = S(OM2K_BTS_S_ERROR) |
 				  S(OM2K_BTS_S_WAIT_MCTR) |
-				  S(OM2K_BTS_S_WAIT_TRX),
+				  S(OM2K_BTS_S_WAIT_TRX_LAPD),
 		.name = "WAIT-IS",
 		.action = om2k_bts_s_wait_is,
 	},
 	[OM2K_BTS_S_WAIT_MCTR] = {
 		.in_event_mask = S(OM2K_BTS_EVT_MCTR_DONE),
 		.out_state_mask = S(OM2K_BTS_S_ERROR) |
-				  S(OM2K_BTS_S_WAIT_TRX),
+				  S(OM2K_BTS_S_WAIT_TRX_LAPD),
 		.name = "WAIT-MCTR",
 		.action = om2k_bts_s_wait_mctr,
+	},
+	[OM2K_BTS_S_WAIT_TRX_LAPD] = {
+		.in_event_mask = S(OM2K_BTS_EVT_TRX_LAPD_UP),
+		.out_state_mask = S(OM2K_BTS_S_WAIT_TRX),
+		.name = "WAIT-TRX-LAPD",
+		.action = om2k_bts_s_wait_trx_lapd,
 	},
 	[OM2K_BTS_S_WAIT_TRX] = {
 		.in_event_mask = S(OM2K_BTS_EVT_TRX_DONE),
@@ -2498,7 +2512,14 @@ static const struct osmo_fsm_state om2k_bts_states[] = {
 
 static int om2k_bts_timer_cb(struct osmo_fsm_inst *fi)
 {
-	osmo_fsm_inst_state_chg(fi, OM2K_BTS_S_ERROR, 0, 0);
+	switch (fi->state) {
+	case OM2K_BTS_S_WAIT_TRX_LAPD:
+		osmo_fsm_inst_dispatch(fi, OM2K_BTS_EVT_TRX_LAPD_UP, NULL);
+		break;
+	default:
+		osmo_fsm_inst_state_chg(fi, OM2K_BTS_S_ERROR, 0, 0);
+		break;
+	}
 	return 0;
 }
 
