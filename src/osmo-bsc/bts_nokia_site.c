@@ -1436,6 +1436,39 @@ static int dump_elements(uint8_t * data, int len)
 	return 0;
 }
 
+static void mo_ok(struct gsm_abis_mo *mo)
+{
+	mo->nm_state.operational    = NM_OPSTATE_ENABLED;
+	mo->nm_state.administrative = NM_STATE_UNLOCKED;
+	mo->nm_state.availability   = NM_AVSTATE_OK;
+}
+
+static void nokia_abis_nm_fake_1221_ok(struct gsm_bts *bts)
+{
+	/*
+	 * The Nokia BTS don't follow the 12.21 model and we don't have OM objects
+	 * for the various elements. However some of the BSC code depends on seeing
+	 * those object "up & running", so when the Nokia init is done, we fake
+	 * a "good" state
+	 */
+	struct gsm_bts_trx *trx;
+
+	mo_ok(&bts->mo);
+	mo_ok(&bts->site_mgr.mo);
+
+	llist_for_each_entry(trx, &bts->trx_list, list) {
+		int i;
+
+		mo_ok(&trx->mo);
+		mo_ok(&trx->bb_transc.mo);
+
+		for (i = 0; i < ARRAY_SIZE(trx->ts); i++) {
+			struct gsm_bts_trx_ts *ts = &trx->ts[i];
+			mo_ok(&ts->mo);
+		}
+	}
+}
+
 /* TODO: put in a separate file ? */
 
 /* taken from abis_nm.c */
@@ -1633,6 +1666,8 @@ static int abis_nm_rcvmsg_fom(struct msgb *mb)
 	case NOKIA_MSG_CONF_COMPLETE:
 		/* send ACK */
 		abis_nm_ack(bts, ref);
+		/* fake 12.21 OM */
+		nokia_abis_nm_fake_1221_ok(bts);
 		break;
 	case NOKIA_MSG_BLOCK_CTRL_REQ:	/* seems to be send when something goes wrong !? */
 		/* send ACK (do we have to send an ACK ?) */
