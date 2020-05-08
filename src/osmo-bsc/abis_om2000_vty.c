@@ -467,6 +467,40 @@ DEFUN(cfg_bts_alt_mode, cfg_bts_alt_mode_cmd,
 	return CMD_SUCCESS;
 }
 
+DEFUN(cfg_bts_om2k_version_limit, cfg_bts_om2k_version_limit_cmd,
+	"om2000 version-limit (oml|rsl) gen <0-99> rev <0-99>",
+	"Configure OM2K specific parameters\n"
+	"Configure optional maximum protocol version to negotiate\n"
+	"Limit OML IWD version\n" "Limit RSL IWD version\n"
+	"Generation limit\n"
+	"Generation number to limit to (inclusive)\n"
+	"Revision limit\n"
+	"Revision number to limit to (inclusive)\n")
+{
+	struct gsm_bts *bts = vty->index;
+	int iwd;
+
+	if (bts->type != GSM_BTS_TYPE_RBS2000) {
+		vty_out(vty, "%% Command only works for RBS2000%s",
+			VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	if (!strcmp(argv[0], "oml"))
+		iwd = 0;
+	else if (!strcmp(argv[0], "rsl"))
+		iwd = 1;
+	else {
+		vty_out(vty, "%% Invalid IWD%s",
+			VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	bts->rbs2000.om2k_version[iwd].limit = (atoi(argv[1]) << 8) | atoi(argv[2]);
+
+	return CMD_SUCCESS;
+}
+
 DEFUN(cfg_bts_is_conn_list, cfg_bts_is_conn_list_cmd,
 	"is-connection-list (add|del) <0-2047> <0-2047> <0-255>",
 	"Interface Switch Connection List\n"
@@ -591,6 +625,7 @@ void abis_om2k_config_write_bts(struct vty *vty, struct gsm_bts *bts)
 {
 	struct is_conn_group *igrp;
 	struct con_group *cgrp;
+	unsigned int i;
 
 	llist_for_each_entry(igrp, &bts->rbs2000.is.conn_groups, list)
 		vty_out(vty, "  is-connection-list add %u %u %u%s",
@@ -604,6 +639,13 @@ void abis_om2k_config_write_bts(struct vty *vty, struct gsm_bts *bts)
 	if (bts->rbs2000.use_superchannel)
 		vty_out(vty, "  abis-lower-transport super-channel%s",
 			VTY_NEWLINE);
+	for (i = 0; i < 2; i++)
+		if (bts->rbs2000.om2k_version[i].limit)
+			vty_out(vty, "  om2000 version-limit %s gen %02d rev %02d%s",
+				i ? "rsl" : "oml",
+				(bts->rbs2000.om2k_version[i].limit >> 8),
+				(bts->rbs2000.om2k_version[i].limit & 0xff),
+				VTY_NEWLINE);
 }
 
 int abis_om2k_vty_init(void)
@@ -631,6 +673,7 @@ int abis_om2k_vty_init(void)
 
 	install_element(BTS_NODE, &cfg_bts_is_conn_list_cmd);
 	install_element(BTS_NODE, &cfg_bts_alt_mode_cmd);
+	install_element(BTS_NODE, &cfg_bts_om2k_version_limit_cmd);
 	install_element(BTS_NODE, &cfg_om2k_con_group_cmd);
 	install_element(BTS_NODE, &del_om2k_con_group_cmd);
 

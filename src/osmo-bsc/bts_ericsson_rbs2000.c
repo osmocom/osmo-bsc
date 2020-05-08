@@ -34,11 +34,15 @@
 
 static void bootstrap_om_bts(struct gsm_bts *bts)
 {
+	struct gsm_bts_trx *trx;
+
 	LOGP(DNM, LOGL_NOTICE, "bootstrapping OML for BTS %u\n", bts->nr);
 
-	/* FIXME: this is global init, not bootstrapping */
+	/* Global init (not bootstrapping) */
 	abis_om2k_bts_init(bts);
-	abis_om2k_trx_init(bts->c0);
+
+	llist_for_each_entry(trx, &bts->trx_list, list)
+		abis_om2k_trx_init(trx);
 
 	/* TODO: Should we wait for a Failure report? */
 	om2k_bts_fsm_start(bts);
@@ -149,14 +153,16 @@ static int inp_sig_cb(unsigned int subsys, unsigned int signal,
 	case S_L_INP_LINE_NOALARM:
 		if (strcasecmp(isd->line->driver->name, "DAHDI")
 		 && strcasecmp(isd->line->driver->name, "MISDN_LAPD")
-		 && strcasecmp(isd->line->driver->name, "UNIXSOCKET"))
+		 && strcasecmp(isd->line->driver->name, "UNIXSOCKET")
+		 && strcasecmp(isd->line->driver->name, "E1D"))
 			break;
 		start_sabm_in_line(isd->line, 1);
 		break;
 	case S_L_INP_LINE_ALARM:
 		if (strcasecmp(isd->line->driver->name, "DAHDI")
 		 && strcasecmp(isd->line->driver->name, "MISDN_LAPD")
-		 && strcasecmp(isd->line->driver->name, "UNIXSOCKET"))
+		 && strcasecmp(isd->line->driver->name, "UNIXSOCKET")
+		 && strcasecmp(isd->line->driver->name, "E1D"))
 			break;
 		start_sabm_in_line(isd->line, 0);
 		break;

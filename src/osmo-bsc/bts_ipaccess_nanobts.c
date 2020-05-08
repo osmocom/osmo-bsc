@@ -397,8 +397,7 @@ void ipaccess_drop_rsl(struct gsm_bts_trx *trx, const char *reason)
 	LOG_TRX(trx, DLINP, LOGL_NOTICE, "Dropping RSL link: %s\n", reason);
 	e1inp_sign_link_destroy(trx->rsl_link);
 	trx->rsl_link = NULL;
-	osmo_stat_item_set(trx->bts->bts_statg->items[BTS_STAT_NUM_RSL_CONNECTED], 0);
-	osmo_stat_item_dec(trx->bts->network->bsc_statg->items[BSC_STAT_NUM_TRX_CONNECTED], 1);
+	osmo_stat_item_dec(trx->bts->bts_statg->items[BTS_STAT_RSL_CONNECTED], 1);
 
 	if (trx->bts->c0 == trx)
 		paging_flush_bts(trx->bts, NULL);
@@ -419,8 +418,7 @@ void ipaccess_drop_oml(struct gsm_bts *bts, const char *reason)
 	e1inp_sign_link_destroy(bts->oml_link);
 	bts->oml_link = NULL;
 	bts->uptime = 0;
-	osmo_stat_item_set(bts->bts_statg->items[BTS_STAT_NUM_OML_CONNECTED], 0);
-	osmo_stat_item_dec(bts->network->bsc_statg->items[BSC_STAT_NUM_BTS_CONNECTED], 1);
+	osmo_stat_item_dec(bts->bts_statg->items[BTS_STAT_OML_CONNECTED], 1);
 
 	/* we have issues reconnecting RSL, drop everything. */
 	llist_for_each_entry(trx, &bts->trx_list, list)
@@ -562,8 +560,7 @@ ipaccess_sign_link_up(void *unit_data, struct e1inp_line *line,
 					sign_link->tei, sign_link->sapi);
 			sign_link->trx->bts->ip_access.flags |= OML_UP;
 		}
-		osmo_stat_item_set(bts->bts_statg->items[BTS_STAT_NUM_OML_CONNECTED], 1);
-		osmo_stat_item_inc(bts->network->bsc_statg->items[BSC_STAT_NUM_BTS_CONNECTED], 1);
+		osmo_stat_item_inc(bts->bts_statg->items[BTS_STAT_OML_CONNECTED], 1);
 		break;
 	case E1INP_SIGN_RSL: {
 		struct e1inp_ts *ts;
@@ -591,9 +588,8 @@ ipaccess_sign_link_up(void *unit_data, struct e1inp_line *line,
 			sign_link->trx->bts->ip_access.flags |=
 					(RSL_UP << sign_link->trx->nr);
 		}
+		osmo_stat_item_inc(bts->bts_statg->items[BTS_STAT_RSL_CONNECTED], 1);
 		break;
-		osmo_stat_item_set(bts->bts_statg->items[BTS_STAT_NUM_RSL_CONNECTED], 1);
-		osmo_stat_item_inc(bts->network->bsc_statg->items[BSC_STAT_NUM_TRX_CONNECTED], 1);		
 	}
 	default:
 		break;

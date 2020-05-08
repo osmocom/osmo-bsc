@@ -37,6 +37,7 @@
 
 #include <osmocom/core/talloc.h>
 
+/* Update channel load calculation for the given BTS */
 void bts_chan_load(struct pchan_load *cl, const struct gsm_bts *bts)
 {
 	struct gsm_bts_trx *trx;
@@ -58,20 +59,28 @@ void bts_chan_load(struct pchan_load *cl, const struct gsm_bts *bts)
 			if (!nm_is_running(&ts->mo.nm_state))
 				continue;
 
-			/* dynamic timeslots have to be counted separately
+			/* Dynamic timeslots have to be counted separately
 			 * when not in TCH/F or TCH/H mode because they don't
-			 * have an lchan's allocated to them */
-			if ( (  ts->pchan_on_init == GSM_PCHAN_TCH_F_TCH_H_PDCH
-			     || ts->pchan_on_init == GSM_PCHAN_TCH_F_PDCH)
-			   && (  ts->pchan_is == GSM_PCHAN_NONE
-			      || ts->pchan_is == GSM_PCHAN_PDCH)) {
+			 * have an lchan's allocated to them. At the same time,
+			 * dynamic timeslots in NONE and PDCH modes are same
+			 * as in UNUSED mode from the CS channel load perspective
+			 * beause they can be switched to TCH mode at any moment.
+			 * I.e. they are "available" for TCH. */
+			if ((ts->pchan_on_init == GSM_PCHAN_TCH_F_TCH_H_PDCH ||
+			     ts->pchan_on_init == GSM_PCHAN_TCH_F_PDCH) &&
+			    (ts->pchan_is == GSM_PCHAN_NONE ||
+			     ts->pchan_is == GSM_PCHAN_PDCH)) {
 				pl->total++;
 			}
 
-			/* count allocated logical channels.
-			 * Note: When GSM_PCHAN_TCH_F_TCH_H_PDCH is allocation
-			 * in TCH/H mode, this leads to changing the total
-			 * count vs the TCH/F allocation */
+			/* Count allocated logical channels.
+			 * Note: A GSM_PCHAN_TCH_F_TCH_H_PDCH can be switched
+			 * to a single TCH/F or to two TCH/H. So when it's in
+			 * the TCH/H mode, total number of available channels
+			 * is 1 more than when it's in the TCH/F mode.
+			 * I.e. "total" count will fluctuate depending on
+			 * whether GSM_PCHAN_TCH_F_TCH_H_PDCH timeslot is
+			 * in TCH/F or TCH/H (or in NONE/PDCH) mode. */
 			ts_for_each_lchan(lchan, ts) {
 				/* don't even count CBCH slots in total */
 				if (lchan->type == GSM_LCHAN_CBCH)
@@ -91,6 +100,7 @@ void bts_chan_load(struct pchan_load *cl, const struct gsm_bts *bts)
 	}
 }
 
+/* Update channel load calculation for all BTS in the BSC */
 void network_chan_load(struct pchan_load *pl, struct gsm_network *net)
 {
 	struct gsm_bts *bts;

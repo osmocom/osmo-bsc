@@ -43,6 +43,43 @@
 #include <netinet/tcp.h>
 #include <unistd.h>
 
+static const struct rate_ctr_desc msc_ctr_description[] = {
+	[MSC_CTR_BSSMAP_RX_UDT_RESET_ACKNOWLEDGE] = {"bssmap:rx_udt_reset_acknowledge", "Number of received BSSMAP UDT RESET ACKNOWLEDGE messages"},
+	[MSC_CTR_BSSMAP_RX_UDT_RESET] = {"bssmap:rx_udt_reset", "Number of received BSSMAP UDT RESET messages"},
+	[MSC_CTR_BSSMAP_RX_UDT_PAGING] = {"bssmap:rx_udt_paging", "Number of received BSSMAP UDT PAGING messages"},
+	[MSC_CTR_BSSMAP_RX_UDT_UNKNOWN] = {"bssmap:rx_udt_unknown", "Number of received BSSMAP unknown UDT messages"},
+	[MSC_CTR_BSSMAP_RX_DT1_CLEAR_CMD] = {"bssmap:rx_dt1_clear_cmd", "Number of received BSSMAP DT1 CLEAR CMD messages"},
+	[MSC_CTR_BSSMAP_RX_DT1_CIPHER_MODE_CMD] = {"bssmap:rx_dt1_cipher_mode_cmd", "Number of received BSSMAP DT1 CIPHER MODE CMD messages"},
+	[MSC_CTR_BSSMAP_RX_DT1_ASSIGMENT_RQST] = {"bssmap:rx_dt1_assignment_rqst", "Number of received BSSMAP DT1 ASSIGMENT RQST messages"},
+	[MSC_CTR_BSSMAP_RX_DT1_LCLS_CONNECT_CTRL] = {"bssmap:rx_dt1_lcls_connect_ctrl", "Number of received BSSMAP DT1 LCLS CONNECT CTRL messages"},
+	[MSC_CTR_BSSMAP_RX_DT1_HANDOVER_CMD] = {"bssmap:rx_dt1_handover_cmd", "Number of received BSSMAP DT1 HANDOVER CMD messages"},
+	[MSC_CTR_BSSMAP_RX_DT1_CLASSMARK_RQST] = {"bssmap:rx_dt1_classmark_rqst", "Number of received BSSMAP DT1 CLASSMARK RQST messages"},
+	[MSC_CTR_BSSMAP_RX_DT1_UNKNOWN] = {"bssmap:rx_dt1_unknown", "Number of received BSSMAP unknown DT1 messages"},
+	[MSC_CTR_BSSMAP_RX_DTAP_MSG] = {"bssmap:rx_dtap_msg", "Number of received BSSMAP DTAP messages"},
+	[MSC_CTR_BSSMAP_RX_DTAP_ERROR] = {"bssmap:rx_dtap_error", "Number of received BSSMAP DATP messages with errors"},
+};
+
+static const struct rate_ctr_group_desc msc_ctrg_desc = {
+	"msc",
+	"mobile switching center",
+	OSMO_STATS_CLASS_GLOBAL,
+	ARRAY_SIZE(msc_ctr_description),
+	msc_ctr_description,
+};
+
+static const struct osmo_stat_item_desc msc_stat_desc[] = {
+	{ "msc_links:active", "Number of active MSC links", "", 16, 0 },
+	{ "msc_links:total", "Number of configured MSC links", "", 16, 0 },
+};
+
+static const struct osmo_stat_item_group_desc msc_statg_desc = {
+	.group_name_prefix = "msc",
+	.group_description = "mobile switching center",
+	.class_id = OSMO_STATS_CLASS_GLOBAL,
+	.num_items = ARRAY_SIZE(msc_stat_desc),
+	.item_desc = msc_stat_desc,
+};
+
 int osmo_bsc_msc_init(struct bsc_msc_data *msc)
 {
 	struct gsm_network *net = msc->network;
@@ -90,6 +127,19 @@ struct bsc_msc_data *osmo_msc_data_alloc(struct gsm_network *net, int nr)
 	msc_data = talloc_zero(net, struct bsc_msc_data);
 	if (!msc_data)
 		return NULL;
+
+	/* init statistics */
+	msc_data->msc_ctrs = rate_ctr_group_alloc(net, &msc_ctrg_desc, nr);
+	if (!msc_data->msc_ctrs) {
+		talloc_free(msc_data);
+		return NULL;
+	}
+	msc_data->msc_statg = osmo_stat_item_group_alloc(net, &msc_statg_desc, nr);
+	if (!msc_data->msc_statg) {
+		rate_ctr_group_free(msc_data->msc_ctrs);
+		talloc_free(msc_data);
+		return NULL;
+	}
 
 	llist_add_tail(&msc_data->entry, &net->bsc_data->mscs);
 

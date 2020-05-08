@@ -41,6 +41,12 @@
 
 #include <osmocom/abis/lapd.h>
 
+enum reset_timer_state {
+	RESET_T_NONE = 0,
+	RESET_T_STOP_LAPD = 1,		/* first timer expiration: stop LAPD SAP */
+	RESET_T_RESTART_LAPD = 2,	/* second timer expiration: restart LAPD SAP */
+};
+
 /* TODO: put in a separate file ? */
 
 extern int abis_nm_sendmsg(struct gsm_bts *bts, struct msgb *msg);
@@ -1461,18 +1467,28 @@ static void reset_timer_cb(void *_bts)
 	struct gsm_e1_subslot *e1_link = &bts->oml_e1_link;
 	struct e1inp_line *line;
 
-	bts->nokia.wait_reset = 0;
-
 	/* OML link */
 	line = e1inp_line_find(e1_link->e1_nr);
 	if (!line) {
-		LOGP(DLINP, LOGL_ERROR, "BTS %u OML link referring to "
-		     "non-existing E1 line %u\n", bts->nr, e1_link->e1_nr);
+		LOGP(DLINP, LOGL_ERROR, "BTS %u OML link referring to non-existing E1 line %u\n",
+		     bts->nr, e1_link->e1_nr);
 		return;
 	}
 
-	start_sabm_in_line(line, 0, -1);	/* stop all first */
-	start_sabm_in_line(line, 1, SAPI_OML);	/* start only OML */
+	switch (bts->nokia.wait_reset) {
+	case RESET_T_NONE:				/* shouldn't happen */
+		break;
+	case RESET_T_STOP_LAPD:
+		start_sabm_in_line(line, 0, -1);	/* stop all first */
+		bts->nokia.wait_reset = RESET_T_RESTART_LAPD;
+		osmo_timer_schedule(&bts->nokia.reset_timer, bts->nokia.bts_reset_timer_cnf, 0);
+		break;
+	case RESET_T_RESTART_LAPD:
+		bts->nokia.wait_reset = 0;
+		start_sabm_in_line(line, 0, -1);	/* stop all first */
+		start_sabm_in_line(line, 1, SAPI_OML);	/* start only OML */
+		break;
+	}
 }
 
 /* TODO: put in a separate file ? */
@@ -1574,25 +1590,16 @@ static int abis_nm_rcvmsg_fom(struct msgb *mb)
 			   (function handle_ts1_read()) and ignoring the received data.
 			   It seems to be necessary for the MetroSite too.
 			 */
-			bts->nokia.wait_reset = 1;
 
-			osmo_timer_setup(&bts->nokia.reset_timer,
-					 reset_timer_cb, bts);
-			osmo_timer_schedule(&bts->nokia.reset_timer, bts->nokia.bts_reset_timer_cnf, 0);
-
-			struct gsm_e1_subslot *e1_link = &bts->oml_e1_link;
-			struct e1inp_line *line;
-			/* OML link */
-			line = e1inp_line_find(e1_link->e1_nr);
-			if (!line) {
-				LOGP(DLINP, LOGL_ERROR,
-				     "BTS %u OML link referring to "
-				     "non-existing E1 line %u\n", bts->nr,
-				     e1_link->e1_nr);
-				return -ENOMEM;
-			}
-
-			start_sabm_in_line(line, 0, -1);	/* stop all first */
+			/* we cannot delete / stop the OML LAPD SAP right here, as we are in
+			 * the middle of processing an LAPD I frame and are subsequently returning
+			 * back to the LAPD I frame processing code that assumes the SAP is still
+			 * active. So we first schedule the timer at 0ms in the future, where we
+			 * kill all LAPD SAP and re-arm the timer for the reset duration, after which
+			 * we re-create them */
+			bts->nokia.wait_reset = RESET_T_STOP_LAPD;
+			osmo_timer_setup(&bts->nokia.reset_timer, reset_timer_cb, bts);
+			osmo_timer_schedule(&bts->nokia.reset_timer, 0, 0);
 		}
 
 		/* ACK for CONF DATA message ? */

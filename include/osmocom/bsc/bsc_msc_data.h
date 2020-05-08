@@ -56,6 +56,29 @@ enum {
 	MSC_CON_TYPE_LOCAL,
 };
 
+/* Constants for the MSC rate counters */
+enum {
+	MSC_CTR_BSSMAP_RX_UDT_RESET_ACKNOWLEDGE,
+	MSC_CTR_BSSMAP_RX_UDT_RESET,
+	MSC_CTR_BSSMAP_RX_UDT_PAGING,
+	MSC_CTR_BSSMAP_RX_UDT_UNKNOWN,
+	MSC_CTR_BSSMAP_RX_DT1_CLEAR_CMD,
+	MSC_CTR_BSSMAP_RX_DT1_CIPHER_MODE_CMD,
+	MSC_CTR_BSSMAP_RX_DT1_ASSIGMENT_RQST,
+	MSC_CTR_BSSMAP_RX_DT1_LCLS_CONNECT_CTRL,
+	MSC_CTR_BSSMAP_RX_DT1_HANDOVER_CMD,
+	MSC_CTR_BSSMAP_RX_DT1_CLASSMARK_RQST,
+	MSC_CTR_BSSMAP_RX_DT1_UNKNOWN,
+	MSC_CTR_BSSMAP_RX_DTAP_MSG,
+	MSC_CTR_BSSMAP_RX_DTAP_ERROR,
+};
+
+/* Constants for the MSC stats */
+enum {
+	MSC_STAT_MSC_LINKS_ACTIVE,
+	MSC_STAT_MSC_LINKS_TOTAL,
+};
+
 /*! /brief Information on a remote MSC for libbsc.
  */
 struct bsc_msc_data {
@@ -98,6 +121,10 @@ struct bsc_msc_data {
 	char *ussd_grace_txt;
 
 	char *acc_lst_name;
+
+	/* structures for keeping rate counters and gauge stats */
+	struct rate_ctr_group *msc_ctrs;
+	struct osmo_stat_item_group *msc_statg;
 
 	/* Sigtran connection data */
 	struct {

@@ -1134,7 +1134,15 @@ struct gsm_bts {
 				struct om2k_mo om2k_mo;
 				struct gsm_abis_mo mo;
 			} tf;
+			struct {
+				struct om2k_mo om2k_mo;
+				struct gsm_abis_mo mo;
+			} mctr;
 			uint32_t use_superchannel:1;
+			struct {
+				uint16_t limit;
+				uint16_t active;
+			} om2k_version[16];
 		} rbs2000;
 		struct {
 			uint8_t bts_type;
@@ -1143,7 +1151,7 @@ struct gsm_bts {
 				no_loc_rel_cnf:1,	/* don't wait for RSL REL CONF */
 				bts_reset_timer_cnf,	/* timer for BTS RESET */
 				did_reset:1,		/* we received a RESET ACK */
-				wait_reset:1;		/* we are waiting for reset to complete */
+				wait_reset:2;		/* we are waiting for reset to complete */
 			struct osmo_timer_list reset_timer;
 		} nokia;
 	};
@@ -1464,8 +1472,8 @@ enum {
 	BTS_STAT_T3122,
 	BTS_STAT_RACH_BUSY,
 	BTS_STAT_RACH_ACCESS,
-	BTS_STAT_NUM_OML_CONNECTED,
-	BTS_STAT_NUM_RSL_CONNECTED,
+	BTS_STAT_OML_CONNECTED,
+	BTS_STAT_RSL_CONNECTED,
 };
 
 enum {
@@ -1556,10 +1564,9 @@ static const struct rate_ctr_group_desc bsc_ctrg_desc = {
 	bsc_ctr_description,
 };
 
+/* Constants for the BSC stats */
 enum {
-	BSC_STAT_MSC_LINK,
-	BSC_STAT_NUM_BTS_CONNECTED,
-	BSC_STAT_NUM_TRX_CONNECTED,
+	BSC_STAT_NUM_BTS_TOTAL,
 };
 
 struct gsm_tz {
@@ -1588,6 +1595,7 @@ struct gsm_network {
 		struct osmo_timer_list congestion_check_timer;
 	} hodec2;
 
+	/* structures for keeping rate counters and gauge stats */
 	struct rate_ctr_group *bsc_ctrs;
 	struct osmo_stat_item_group *bsc_statg;
 

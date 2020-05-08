@@ -45,9 +45,7 @@
 #include <stdbool.h>
 
 static const struct osmo_stat_item_desc bsc_stat_desc[] = {
-	{ "msc_link", "MSC link status.", "", 16, 0 },
-	{ "num_bts_connected", "Number of currently connected BTS (OML links).", "", 16, 0 },
-	{ "num_trx_connected", "Number of currently connected TRX (RSL links).", "", 16, 0 },
+	{ "num_bts:total", "Number of configured BTS for this BSC", "", 16, 0 },
 };
 
 static const struct osmo_stat_item_group_desc bsc_statg_desc = {
@@ -283,6 +281,11 @@ static struct gsm_network *bsc_network_init(void *ctx)
 		return NULL;
 	}
 	net->bsc_statg = osmo_stat_item_group_alloc(net, &bsc_statg_desc, 0);
+	if (!net->bsc_statg) {
+		rate_ctr_group_free(net->bsc_ctrs);
+		talloc_free(net);
+		return NULL;
+	}
 
 	INIT_LLIST_HEAD(&net->bts_rejected);
 	gsm_net_update_ctype(net);
