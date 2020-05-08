@@ -215,7 +215,7 @@ refuse:
 	return rc;
 }
 
-/* Callback function, called by the SSCP stack when data arrives */
+/* Callback function, called by the SCCP stack when data arrives */
 static int sccp_sap_up(struct osmo_prim_hdr *oph, void *_scu)
 {
 	struct osmo_scu_prim *scu_prim = (struct osmo_scu_prim *)oph;
