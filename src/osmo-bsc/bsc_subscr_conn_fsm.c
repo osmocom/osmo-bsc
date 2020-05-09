@@ -117,7 +117,7 @@ int gscon_sigtran_send(struct gsm_subscriber_connection *conn, struct msgb *msg)
 		return -ENOMEM;
 
 	/* Make sure that we only attempt to send SCCP messages if we have
-	 * a life SCCP connection. Otherwise drop the message. */
+	 * a live SCCP connection. Otherwise drop the message. */
 	if (conn->fi->state == ST_INIT || conn->fi->state == ST_WAIT_CC) {
 		LOGPFSML(conn->fi, LOGL_ERROR, "No active SCCP connection, dropping message\n");
 		msgb_free(msg);
