@@ -1,3 +1,10 @@
+osmo-bsc (1.6.0-fw.6) unstable; urgency=medium
+
+  * master:0ae129e9f0d8
+  * fairwaves/WIP-dyn-chan-load:f01a44e48f36
+
+ -- Kirill Zakharenko <kirill.zakharenko@fairwaves.co>  Sat, 09 May 2020 23:01:16 +0000
+
 osmo-bsc (1.6.0) unstable; urgency=medium
 
   [ Philipp Maier ]
