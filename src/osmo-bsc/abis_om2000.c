@@ -1452,14 +1452,16 @@ static uint8_t ts2comb(struct gsm_bts_trx_ts *ts)
 
 static int put_freq_list(uint8_t *buf, struct gsm_bts_trx_ts *ts, uint16_t arfcn)
 {
-	struct gsm_bts_trx *trx;
+	struct gsm_bts_trx *t, *trx = NULL;
 
 	/* Find the TRX that's configured for that ARFCN */
-	llist_for_each_entry(trx, &ts->trx->bts->trx_list, list)
-		if (trx->arfcn == arfcn)
+	llist_for_each_entry(t, &ts->trx->bts->trx_list, list)
+		if (t->arfcn == arfcn) {
+			trx = t;
 			break;
+		}
 
-	if (!trx || (trx->arfcn != arfcn)) {
+	if (!trx) {
 		LOGP(DNM, LOGL_ERROR, "Trying to use ARFCN %d for hopping with no TRX configured for it", arfcn);
 		return 0;
 	}
