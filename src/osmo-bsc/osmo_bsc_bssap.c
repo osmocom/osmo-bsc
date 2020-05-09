@@ -1120,20 +1120,20 @@ static int dtap_rcvmsg(struct gsm_subscriber_connection *conn,
 	ctrs = conn->sccp.msc->msc_ctrs->ctr;
 	header = (struct dtap_header *) msg->l3h;
 	if (sizeof(*header) >= length) {
-		rate_ctr_inc(&ctrs[MSC_CTR_BSSMAP_RX_DTAP_ERROR]);
+		rate_ctr_inc(&ctrs[MSC_CTR_BSSMAP_RX_DT1_DTAP_ERROR]);
 		LOGP(DMSC, LOGL_ERROR, "The DTAP header does not fit. Wanted: %zu got: %u, hex: %s\n",
 		     sizeof(*header), length, osmo_hexdump(msg->l3h, length));
 		return -1;
 	}
 
 	if (header->length > length - sizeof(*header)) {
-		rate_ctr_inc(&ctrs[MSC_CTR_BSSMAP_RX_DTAP_ERROR]);
+		rate_ctr_inc(&ctrs[MSC_CTR_BSSMAP_RX_DT1_DTAP_ERROR]);
 		LOGP(DMSC, LOGL_ERROR, "The DTAP l4 information does not fit. Wanted: %u got: %zu, hex: %s\n",
 		     header->length, length - sizeof(*header), osmo_hexdump(msg->l3h, length));
 		return -1;
 	}
 
-	rate_ctr_inc(&ctrs[MSC_CTR_BSSMAP_RX_DTAP_MSG]);
+	rate_ctr_inc(&ctrs[MSC_CTR_BSSMAP_RX_DT1_DTAP]);
 	LOGP(DMSC, LOGL_INFO, "Rx MSC DTAP, SAPI: %u CHAN: %u\n", header->link_id & 0x07, header->link_id & 0xC0);
 
 	/* forward the data */
