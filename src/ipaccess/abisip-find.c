@@ -403,10 +403,10 @@ static int read_response(int fd)
 
 static int bfd_cb(struct osmo_fd *bfd, unsigned int flags)
 {
-	if (flags & BSC_FD_READ)
+	if (flags & OSMO_FD_READ)
 		return read_response(bfd->fd);
-	if (flags & BSC_FD_WRITE) {
-		bfd->when &= ~BSC_FD_WRITE;
+	if (flags & OSMO_FD_WRITE) {
+		bfd->when &= ~OSMO_FD_WRITE;
 		return bcast_find(bfd->fd);
 	}
 	return 0;
@@ -418,7 +418,7 @@ static void timer_cb(void *_data)
 {
 	struct osmo_fd *bfd = _data;
 
-	bfd->when |= BSC_FD_WRITE;
+	bfd->when |= OSMO_FD_WRITE;
 
 	base_stations_bump(false);
 
@@ -447,7 +447,7 @@ int main(int argc, char **argv)
 		fprintf(stdout, "\nWARNING: the --timeout should be larger than --interval.\n\n");
 
 	bfd.cb = bfd_cb;
-	bfd.when = BSC_FD_READ | BSC_FD_WRITE;
+	bfd.when = OSMO_FD_READ | OSMO_FD_WRITE;
 	bfd.fd = udp_sock(cmdline_opts.ifname, cmdline_opts.bind_ip);
 	if (bfd.fd < 0) {
 		perror("Cannot create local socket for broadcast udp");

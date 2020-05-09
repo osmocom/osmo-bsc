@@ -92,7 +92,7 @@ static int ipaccess_connect(struct e1inp_line *line, struct sockaddr_in *sa)
 
 	bfd->fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 	bfd->cb = ipaccess_fd_cb;
-	bfd->when = BSC_FD_READ | BSC_FD_WRITE;
+	bfd->when = OSMO_FD_READ | OSMO_FD_WRITE;
 	bfd->data = line;
 	bfd->priv_nr = E1INP_SIGN_OML;
 

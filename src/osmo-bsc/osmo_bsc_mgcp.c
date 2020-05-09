@@ -71,7 +71,7 @@ int bsc_sccplite_mgcp_proxy_cb(struct osmo_fd *ofd, unsigned int what)
 	struct msgb *msg;
 	int rc;
 
-	if (!(what & BSC_FD_READ))
+	if (!(what & OSMO_FD_READ))
 		return 0;
 
 	msg = msgb_alloc_headroom(1024, 16, "MGCP->IPA");

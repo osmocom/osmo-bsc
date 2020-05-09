@@ -158,7 +158,7 @@ static int udp_fd_cb(struct osmo_fd *ofd, unsigned int what)
 {
 	int rc;
 
-	if (what & BSC_FD_READ) {
+	if (what & OSMO_FD_READ) {
 		struct msgb *msg = msgb_alloc(1024, "UDP Rx");
 
 		rc = read(ofd->fd, msgb_data(msg), msgb_tailroom(msg));

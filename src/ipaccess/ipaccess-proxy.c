@@ -283,7 +283,7 @@ static int handle_udp_read(struct osmo_fd *bfd)
 	if (other_conn) {
 		/* enqueue the message for TX on the respective FD */
 		msgb_enqueue(&other_conn->tx_queue, msg);
-		other_conn->fd.when |= BSC_FD_WRITE;
+		other_conn->fd.when |= OSMO_FD_WRITE;
 	} else
 		msgb_free(msg);
 
@@ -293,7 +293,7 @@ static int handle_udp_read(struct osmo_fd *bfd)
 static int handle_udp_write(struct osmo_fd *bfd)
 {
 	/* not implemented yet */
-	bfd->when &= ~BSC_FD_WRITE;
+	bfd->when &= ~OSMO_FD_WRITE;
 
 	return -EIO;
 }
@@ -303,9 +303,9 @@ static int udp_fd_cb(struct osmo_fd *bfd, unsigned int what)
 {
 	int rc = 0;
 
-	if (what & BSC_FD_READ)
+	if (what & OSMO_FD_READ)
 		rc = handle_udp_read(bfd);
-	if (what & BSC_FD_WRITE)
+	if (what & OSMO_FD_WRITE)
 		rc = handle_udp_write(bfd);
 
 	return rc;
@@ -840,7 +840,7 @@ static int handle_tcp_read(struct osmo_fd *bfd)
 		/* enqueue packet towards BSC */
 		msgb_enqueue(&bsc_conn->tx_queue, msg);
 		/* mark respective filedescriptor as 'we want to write' */
-		bsc_conn->fd.when |= BSC_FD_WRITE;
+		bsc_conn->fd.when |= OSMO_FD_WRITE;
 	} else {
 		logp_ipbc_uid(DLINP, LOGL_INFO, ipbc, bfd->priv_nr >> 8);
 		LOGPC(DLINP, LOGL_INFO, "Dropping packet from %s, "
@@ -869,7 +869,7 @@ static int handle_tcp_write(struct osmo_fd *bfd)
 
 	/* get the next msg for this timeslot */
 	if (llist_empty(&ipc->tx_queue)) {
-		bfd->when &= ~BSC_FD_WRITE;
+		bfd->when &= ~OSMO_FD_WRITE;
 		return 0;
 	}
 	lh = ipc->tx_queue.next;
@@ -897,12 +897,12 @@ static int proxy_ipaccess_fd_cb(struct osmo_fd *bfd, unsigned int what)
 {
 	int rc = 0;
 
-	if (what & BSC_FD_READ) {
+	if (what & OSMO_FD_READ) {
 		rc = handle_tcp_read(bfd);
 		if (rc < 0)
 			return rc;
 	}
-	if (what & BSC_FD_WRITE)
+	if (what & OSMO_FD_WRITE)
 		rc = handle_tcp_write(bfd);
 
 	return rc;
@@ -917,7 +917,7 @@ static int listen_fd_cb(struct osmo_fd *listen_bfd, unsigned int what)
 	struct sockaddr_in sa;
 	socklen_t sa_len = sizeof(sa);
 
-	if (!(what & BSC_FD_READ))
+	if (!(what & OSMO_FD_READ))
 		return 0;
 
 	ret = accept(listen_bfd->fd, (struct sockaddr *) &sa, &sa_len);
@@ -940,7 +940,7 @@ static int listen_fd_cb(struct osmo_fd *listen_bfd, unsigned int what)
 	bfd->data = ipc;
 	bfd->priv_nr = listen_bfd->priv_nr;
 	bfd->cb = proxy_ipaccess_fd_cb;
-	bfd->when = BSC_FD_READ;
+	bfd->when = OSMO_FD_READ;
 	ret = osmo_fd_register(bfd);
 	if (ret < 0) {
 		LOGP(DLINP, LOGL_ERROR, "could not register FD\n");
@@ -1019,7 +1019,7 @@ static struct ipa_proxy_conn *connect_bsc(struct sockaddr_in *sa, int priv_nr, v
 	bfd = &ipc->fd;
 	bfd->fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 	bfd->cb = ipaccess_fd_cb;
-	bfd->when = BSC_FD_READ | BSC_FD_WRITE;
+	bfd->when = OSMO_FD_READ | OSMO_FD_WRITE;
 	bfd->data = ipc;
 	bfd->priv_nr = priv_nr;
 
