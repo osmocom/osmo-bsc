@@ -82,7 +82,7 @@ static void fsm_disc_onenter_cb(struct osmo_fsm_inst *fi, uint32_t prev_state)
 	struct reset_ctx *reset_ctx = (struct reset_ctx *)fi->priv;
 	struct bsc_msc_data *msc = reset_ctx->priv;
 
-	LOGPFSML(fi, LOGL_NOTICE, "SIGTRAN connection down, reconnecting...\n");
+	LOGPFSML(fi, LOGL_NOTICE, "BSSMAP MSC assocation is down, reconnecting...\n");
 	if (prev_state != ST_DISC)
 		osmo_stat_item_dec(msc->msc_statg->items[MSC_STAT_MSC_LINKS_ACTIVE], 1);
 }
@@ -112,7 +112,7 @@ static void fsm_conn_onenter_cb(struct osmo_fsm_inst *fi, uint32_t prev_state)
 	struct reset_ctx *reset_ctx = (struct reset_ctx *)fi->priv;
 	struct bsc_msc_data *msc = reset_ctx->priv;
 
-	LOGPFSML(fi, LOGL_NOTICE, "SIGTRAN connection succeeded.\n");
+	LOGPFSML(fi, LOGL_NOTICE, "BSSMAP MSC assocation is up.\n");
 	if (prev_state != ST_CONN)
 		osmo_stat_item_inc(msc->msc_statg->items[MSC_STAT_MSC_LINKS_ACTIVE], 1);
 }
