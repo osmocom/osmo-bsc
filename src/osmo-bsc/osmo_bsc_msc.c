@@ -56,7 +56,7 @@ static const struct rate_ctr_desc msc_ctr_description[] = {
 	[MSC_CTR_BSSMAP_RX_DT1_CLASSMARK_RQST] = {"bssmap:rx_dt1_classmark_rqst", "Number of received BSSMAP DT1 CLASSMARK RQST messages"},
 	[MSC_CTR_BSSMAP_RX_DT1_UNKNOWN] = {"bssmap:rx_dt1_unknown", "Number of received BSSMAP unknown DT1 messages"},
 	[MSC_CTR_BSSMAP_RX_DTAP_MSG] = {"bssmap:rx_dtap_msg", "Number of received BSSMAP DTAP messages"},
-	[MSC_CTR_BSSMAP_RX_DTAP_ERROR] = {"bssmap:rx_dtap_error", "Number of received BSSMAP DATP messages with errors"},
+	[MSC_CTR_BSSMAP_RX_DTAP_ERROR] = {"bssmap:rx_dtap_error", "Number of received BSSMAP DTAP messages with errors"},
 };
 
 static const struct rate_ctr_group_desc msc_ctrg_desc = {
