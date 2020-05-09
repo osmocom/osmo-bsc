@@ -44,6 +44,7 @@
 #include <unistd.h>
 
 static const struct rate_ctr_desc msc_ctr_description[] = {
+	/* Rx message counters */
 	[MSC_CTR_BSSMAP_RX_UDT_RESET_ACKNOWLEDGE] = {"bssmap:rx_udt_reset_acknowledge", "Number of received BSSMAP UDT RESET ACKNOWLEDGE messages"},
 	[MSC_CTR_BSSMAP_RX_UDT_RESET] = {"bssmap:rx_udt_reset", "Number of received BSSMAP UDT RESET messages"},
 	[MSC_CTR_BSSMAP_RX_UDT_PAGING] = {"bssmap:rx_udt_paging", "Number of received BSSMAP UDT PAGING messages"},
@@ -57,6 +58,46 @@ static const struct rate_ctr_desc msc_ctr_description[] = {
 	[MSC_CTR_BSSMAP_RX_DT1_UNKNOWN] = {"bssmap:rx_dt1_unknown", "Number of received BSSMAP unknown DT1 messages"},
 	[MSC_CTR_BSSMAP_RX_DTAP_MSG] = {"bssmap:rx_dtap_msg", "Number of received BSSMAP DTAP messages"},
 	[MSC_CTR_BSSMAP_RX_DTAP_ERROR] = {"bssmap:rx_dtap_error", "Number of received BSSMAP DTAP messages with errors"},
+
+	/* Tx message counters (per message type)
+	 *
+	 * The counters here follow the logic of the osmo_bsc_sigtran_send() function
+	 * which receives DT1 messages from the upper layers and actually sends them to the MSC.
+	 * These counters cover all messages passed to the function by the upper layers: */
+	[MSC_CTR_BSSMAP_TX_BSS_MANAGEMENT] =     {"bssmap:tx:type:bss_management", "Number of transmitted BSS MANAGEMENT messages"},
+	[MSC_CTR_BSSMAP_TX_DTAP] =               {"bssmap:tx:type:dtap", "Number of transmitted DTAP messages"},
+	[MSC_CTR_BSSMAP_TX_UNKNOWN] =            {"bssmap:tx:type:err_unknown", "Number of transmitted messages with unknown type (an error in our code?)"},
+	[MSC_CTR_BSSMAP_TX_SHORT] =              {"bssmap:tx:type:err_short", "Number of transmitted messages which are too short (an error in our code?)"},
+	/* The next counters are also counted in the osmo_bsc_sigtran_send() function and
+	 * sum up to the exactly same number as the counters above but instead of message
+	 * classes they split by the result of the sending attempt: */
+	[MSC_CTR_BSSMAP_TX_ERR_CONN_NOT_READY] = {"bssmap:tx:result:err_conn_not_ready", "Number of BSSMAP messages we tried to send when the connection was not ready yet"},
+	[MSC_CTR_BSSMAP_TX_ERR_SEND] =           {"bssmap:tx:result:err_send", "Number of socket errors while sending BSSMAP messages"},
+	[MSC_CTR_BSSMAP_TX_SUCCESS] =            {"bssmap:tx:result:success", "Number of successfully sent BSSMAP messages"},
+
+	/* Tx message counters (per specific message)
+	 *
+	 * Theoretically, the DT1 counters should sum up to the same number as the Tx counters
+	 * above but since these counters are coming from the upper layers, there might be
+	 * some difference if we forget some code path. */
+	[MSC_CTR_BSSMAP_TX_UDT_RESET] =                     {"bssmap:tx:udt:reset:request", "Number of transmitted BSSMAP UDT RESET messages"},
+	[MSC_CTR_BSSMAP_TX_UDT_RESET_ACK] =                 {"bssmap:tx:udt:reset:ack", "Number of transmitted BSSMAP UDT RESET ACK messages"},
+	[MSC_CTR_BSSMAP_TX_DT1_CLEAR_RQST] =                {"bssmap:tx:dt1:clear:rqst", "Number of transmitted BSSMAP DT1 CLEAR RQSTtx  messages"},
+	[MSC_CTR_BSSMAP_TX_DT1_CLEAR_COMPLETE] =            {"bssmap:tx:dt1:clear:complete", "Number of transmitted BSSMAP DT1 CLEAR COMPLETE messages"},
+	[MSC_CTR_BSSMAP_TX_DT1_ASSIGMENT_FAILURE] =         {"bssmap:tx:dt1:assigment:failure", "Number of transmitted BSSMAP DT1 ASSIGMENT FAILURE messages"},
+	[MSC_CTR_BSSMAP_TX_DT1_ASSIGMENT_COMPLETE] =        {"bssmap:tx:dt1:assigment:complete", "Number of transmitted BSSMAP DT1 ASSIGMENT COMPLETE messages"},
+	[MSC_CTR_BSSMAP_TX_DT1_SAPI_N_REJECT] =             {"bssmap:tx:dt1:sapi_n:reject", "Number of transmitted BSSMAP DT1 SAPI N REJECT messages"},
+	[MSC_CTR_BSSMAP_TX_DT1_CIPHER_COMPLETE] =           {"bssmap:tx:dt1:cipher_mode:complete", "Number of transmitted BSSMAP DT1 CIPHER COMPLETE messages"},
+	[MSC_CTR_BSSMAP_TX_DT1_CIPHER_REJECT] =             {"bssmap:tx:dt1:cipher_mode:reject", "Number of transmitted BSSMAP DT1 CIPHER REJECT messages"},
+	[MSC_CTR_BSSMAP_TX_DT1_CLASSMARK_UPDATE] =          {"bssmap:tx:dt1:classmark:update", "Number of transmitted BSSMAP DT1 CLASSMARK UPDATE messages"},
+	[MSC_CTR_BSSMAP_TX_DT1_LCLS_CONNECT_CTRL_ACK] =     {"bssmap:tx:dt1:lcls_connect_ctrl:ack", "Number of transmitted BSSMAP DT1 LCLS CONNECT CTRL ACK messages"},
+	[MSC_CTR_BSSMAP_TX_DT1_HANDOVER_REQUIRED] =         {"bssmap:tx:dt1:handover:required", "Number of transmitted BSSMAP DT1 HANDOVER REQUIRED messages"},
+	[MSC_CTR_BSSMAP_TX_DT1_HANDOVER_PERFORMED] =        {"bssmap:tx:dt1:handover:performed", "Number of transmitted BSSMAP DT1 HANDOVER PERFORMED messages"},
+	[MSC_CTR_BSSMAP_TX_DT1_HANDOVER_RQST_ACKNOWLEDGE] = {"bssmap:tx:dt1:handover:rqst_acknowledge", "Number of transmitted BSSMAP DT1 HANDOVER RQST ACKNOWLEDGE messages"},
+	[MSC_CTR_BSSMAP_TX_DT1_HANDOVER_DETECT] =           {"bssmap:tx:dt1:handover:detect", "Number of transmitted BSSMAP DT1 HANDOVER DETECT messages"},
+	[MSC_CTR_BSSMAP_TX_DT1_HANDOVER_COMPLETE] =         {"bssmap:tx:dt1:handover:complete", "Number of transmitted BSSMAP DT1 HANDOVER COMPLETE messages"},
+	[MSC_CTR_BSSMAP_TX_DT1_HANDOVER_FAILURE] =          {"bssmap:tx:dt1:handover:failure", "Number of transmitted BSSMAP DT1 HANDOVER FAILURE messages"},
+	[MSC_CTR_BSSMAP_TX_DT1_DTAP] =                      {"bssmap:tx:dt1:dtap", "Number of transmitted BSSMAP DT1 DTAP messages"},
 };
 
 static const struct rate_ctr_group_desc msc_ctrg_desc = {

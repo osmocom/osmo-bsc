@@ -773,6 +773,7 @@ static void send_handover_performed(struct gsm_subscriber_connection *conn)
 		return;
 	}
 
+	rate_ctr_inc(&conn->sccp.msc->msc_ctrs->ctr[MSC_CTR_BSSMAP_TX_DT1_HANDOVER_PERFORMED]);
 	rc = gscon_sigtran_send(conn, msg);
 	if (rc < 0) {
 		LOG_HO(conn, LOGL_ERROR, "message sending failed, can't send HANDOVER PERFORMED!\n");

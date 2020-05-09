@@ -116,10 +116,12 @@ static void on_assignment_failure(struct gsm_subscriber_connection *conn)
 {
 	struct msgb *resp = gsm0808_create_assignment_failure(conn->assignment.failure_cause, NULL);
 
-	if (!resp)
+	if (!resp) {
 		LOG_ASSIGNMENT(conn, LOGL_ERROR, "Unable to compose BSSMAP Assignment Failure message\n");
-	else
+	} else {
+		rate_ctr_inc(&conn->sccp.msc->msc_ctrs->ctr[MSC_CTR_BSSMAP_TX_DT1_ASSIGMENT_FAILURE]);
 		gscon_sigtran_send(conn, resp);
+	}
 
 	/* If assignment failed as early as in assignment_fsm_start(), there may not be an fi yet. */
 	if (conn->assignment.fi) {
@@ -206,6 +208,7 @@ static void send_assignment_complete(struct gsm_subscriber_connection *conn)
 	    conn->assignment.req.use_osmux)
 		_gsm0808_ass_compl_extend_osmux(resp, osmux_cid);
 
+	rate_ctr_inc(&conn->sccp.msc->msc_ctrs->ctr[MSC_CTR_BSSMAP_TX_DT1_ASSIGMENT_COMPLETE]);
 	rc = gscon_sigtran_send(conn, resp);
 	if (rc) {
 		assignment_fail(GSM0808_CAUSE_EQUIPMENT_FAILURE,

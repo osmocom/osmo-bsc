@@ -133,6 +133,7 @@ void bsc_sapi_n_reject(struct gsm_subscriber_connection *conn, int dlci)
 
 	LOGP(DMSC, LOGL_NOTICE, "Tx MSC SAPI N REJECT DLCI=0x%02x\n", dlci);
 	resp = gsm0808_create_sapi_reject(dlci);
+	rate_ctr_inc(&conn->sccp.msc->msc_ctrs->ctr[MSC_CTR_BSSMAP_TX_DT1_SAPI_N_REJECT]);
 	rc = osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_TX_SCCP, resp);
 	if (rc != 0)
 		msgb_free(resp);
@@ -149,6 +150,7 @@ void bsc_cipher_mode_compl(struct gsm_subscriber_connection *conn, struct msgb *
 
 	LOGP(DMSC, LOGL_DEBUG, "CIPHER MODE COMPLETE from MS, forwarding to MSC\n");
 	resp = gsm0808_create_cipher_complete(msg, chosen_encr);
+	rate_ctr_inc(&conn->sccp.msc->msc_ctrs->ctr[MSC_CTR_BSSMAP_TX_DT1_CIPHER_COMPLETE]);
 	rc = osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_TX_SCCP, resp);
 	if (rc != 0)
 		msgb_free(resp);
@@ -712,6 +714,7 @@ static int bsc_clear_request(struct gsm_subscriber_connection *conn, uint32_t ca
 		return 1;
 	}
 
+	rate_ctr_inc(&conn->sccp.msc->msc_ctrs->ctr[MSC_CTR_BSSMAP_TX_DT1_CLEAR_RQST]);
 	rc = osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_TX_SCCP, resp);
 	if (rc != 0)
 		msgb_free(resp);
@@ -742,6 +745,7 @@ void bsc_cm_update(struct gsm_subscriber_connection *conn,
 	if (!msc_connected(conn))
 		return;
 
+	rate_ctr_inc(&conn->sccp.msc->msc_ctrs->ctr[MSC_CTR_BSSMAP_TX_DT1_CLASSMARK_UPDATE]);
 	resp = gsm0808_create_classmark_update(cm2, cm2_len, cm3, cm3_len);
 	rc = osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_TX_SCCP, resp);
 	if (rc != 0)
