@@ -1396,7 +1396,7 @@ static inline struct gsm_bts *conn_get_bts(struct gsm_subscriber_connection *con
 void conn_update_ms_power_class(struct gsm_subscriber_connection *conn, uint8_t power_class);
 void lchan_update_ms_power_ctrl_level(struct gsm_lchan *lchan, int ms_power_dbm);
 
-enum {
+enum bts_counter_id {
 	BTS_CTR_CHREQ_TOTAL,
 	BTS_CTR_CHREQ_NO_CHANNEL,
 	BTS_CTR_CHAN_RF_FAIL,
@@ -1417,6 +1417,27 @@ enum {
 	BTS_CTR_RSL_UNKNOWN,
 	BTS_CTR_RSL_IPA_NACK,
 	BTS_CTR_MODE_MODIFY_NACK,
+	BTS_CTR_LCHAN_BORKEN_FROM_UNUSED,
+	BTS_CTR_LCHAN_BORKEN_FROM_WAIT_ACTIV_ACK,
+	BTS_CTR_LCHAN_BORKEN_FROM_WAIT_RF_RELEASE_ACK,
+	BTS_CTR_LCHAN_BORKEN_FROM_BORKEN,
+	BTS_CTR_LCHAN_BORKEN_FROM_UNKNOWN,
+	BTS_CTR_LCHAN_BORKEN_EV_CHAN_ACTIV_ACK,
+	BTS_CTR_LCHAN_BORKEN_EV_CHAN_ACTIV_NACK,
+	BTS_CTR_LCHAN_BORKEN_EV_RF_CHAN_REL_ACK,
+	BTS_CTR_LCHAN_BORKEN_EV_VTY,
+	BTS_CTR_LCHAN_BORKEN_EV_TEARDOWN,
+	BTS_CTR_TS_BORKEN_FROM_NOT_INITIALIZED,
+	BTS_CTR_TS_BORKEN_FROM_UNUSED,
+	BTS_CTR_TS_BORKEN_FROM_WAIT_PDCH_ACT,
+	BTS_CTR_TS_BORKEN_FROM_PDCH,
+	BTS_CTR_TS_BORKEN_FROM_WAIT_PDCH_DEACT,
+	BTS_CTR_TS_BORKEN_FROM_IN_USE,
+	BTS_CTR_TS_BORKEN_FROM_BORKEN,
+	BTS_CTR_TS_BORKEN_FROM_UNKNOWN,
+	BTS_CTR_TS_BORKEN_EV_PDCH_ACT_ACK_NACK,
+	BTS_CTR_TS_BORKEN_EV_PDCH_DEACT_ACK_NACK,
+	BTS_CTR_TS_BORKEN_EV_TEARDOWN,
 };
 
 static const struct rate_ctr_desc bts_ctr_description[] = {
@@ -1441,6 +1462,29 @@ static const struct rate_ctr_desc bts_ctr_description[] = {
 	[BTS_CTR_RSL_UNKNOWN] =			{"rsl:unknown", "Number of unknown/unsupported RSL messages received from BTS"},
 	[BTS_CTR_RSL_IPA_NACK] =		{"rsl:ipa_nack", "Number of IPA (RTP/dyn-PDCH) related NACKs received from BTS"},
 	[BTS_CTR_MODE_MODIFY_NACK] =		{"chan:mode_modify_nack", "Number of Channel Mode Modify NACKs received from BTS"},
+
+	/* lchan/TS BORKEN state counters */
+	[BTS_CTR_LCHAN_BORKEN_FROM_UNUSED] =              {"lchan_borken:from_state:unused", "Transitions from lchan UNUSED state to BORKEN state"},
+	[BTS_CTR_LCHAN_BORKEN_FROM_WAIT_ACTIV_ACK] =      {"lchan_borken:from_state:wait_activ_ack", "Transitions from lchan WAIT_ACTIV_ACK state to BORKEN state"},
+	[BTS_CTR_LCHAN_BORKEN_FROM_WAIT_RF_RELEASE_ACK] = {"lchan_borken:from_state:wait_rf_release_ack", "Transitions from lchan WAIT_RF_RELEASE_ACK state to BORKEN state"},
+	[BTS_CTR_LCHAN_BORKEN_FROM_BORKEN] =              {"lchan_borken:from_state:borken", "Transitions from lchan BORKEN state to BORKEN state"},
+	[BTS_CTR_LCHAN_BORKEN_FROM_UNKNOWN] =             {"lchan_borken:from_state:unknown", "Transitions from an unknown lchan state to BORKEN state"},
+	[BTS_CTR_LCHAN_BORKEN_EV_CHAN_ACTIV_ACK] =        {"lchan_borken:event:chan_activ_ack", "CHAN_ACTIV_ACK received in the lchan BORKEN state"},
+	[BTS_CTR_LCHAN_BORKEN_EV_CHAN_ACTIV_NACK] =       {"lchan_borken:event:chan_activ_nack", "CHAN_ACTIV_NACK received in the lchan BORKEN state"},
+	[BTS_CTR_LCHAN_BORKEN_EV_RF_CHAN_REL_ACK] =       {"lchan_borken:event:rf_chan_rel_ack", "RF_CHAN_REL_ACK received in the lchan BORKEN state"},
+	[BTS_CTR_LCHAN_BORKEN_EV_VTY] =                   {"lchan_borken:event:vty", "VTY commands received in the lchan BORKEN state"},
+	[BTS_CTR_LCHAN_BORKEN_EV_TEARDOWN] =              {"lchan_borken:event:teardown", "lchan in a BORKEN state is shutting down (BTS disconnected?)"},
+	[BTS_CTR_TS_BORKEN_FROM_NOT_INITIALIZED] =   {"ts_borken:from_state:not_initialized", "Transitions from TS NOT_INITIALIZED state to BORKEN state"},
+	[BTS_CTR_TS_BORKEN_FROM_UNUSED] =            {"ts_borken:from_state:unused", "Transitions from TS UNUSED state to BORKEN state"},
+	[BTS_CTR_TS_BORKEN_FROM_WAIT_PDCH_ACT] =     {"ts_borken:from_state:wait_pdch_act", "Transitions from TS WAIT_PDCH_ACT state to BORKEN state"},
+	[BTS_CTR_TS_BORKEN_FROM_PDCH] =              {"ts_borken:from_state:pdch", "Transitions from TS PDCH state to BORKEN state"},
+	[BTS_CTR_TS_BORKEN_FROM_WAIT_PDCH_DEACT] =   {"ts_borken:from_state:wait_pdch_deact", "Transitions from TS WAIT_PDCH_DEACT state to BORKEN state"},
+	[BTS_CTR_TS_BORKEN_FROM_IN_USE] =            {"ts_borken:from_state:in_use", "Transitions from TS IN_USE state to BORKEN state"},
+	[BTS_CTR_TS_BORKEN_FROM_BORKEN] =            {"ts_borken:from_state:borken", "Transitions from TS BORKEN state to BORKEN state"},
+	[BTS_CTR_TS_BORKEN_FROM_UNKNOWN] =           {"ts_borken:from_state:unknown", "Transitions from an unknown TS state to BORKEN state"},
+	[BTS_CTR_TS_BORKEN_EV_PDCH_ACT_ACK_NACK] =   {"ts_borken:event:pdch_act_ack_nack", "PDCH_ACT_ACK/NACK received in the TS BORKEN state"},
+	[BTS_CTR_TS_BORKEN_EV_PDCH_DEACT_ACK_NACK] = {"ts_borken:event:pdch_deact_ack_nack", "PDCH_DEACT_ACK/NACK received in the TS BORKEN state"},
+	[BTS_CTR_TS_BORKEN_EV_TEARDOWN] =            {"ts_borken:event:teardown", "TS in a BORKEN state is shutting down (BTS disconnected?)"},
 };
 
 static const struct rate_ctr_group_desc bts_ctrg_desc = {
@@ -1474,6 +1518,8 @@ enum {
 	BTS_STAT_RACH_ACCESS,
 	BTS_STAT_OML_CONNECTED,
 	BTS_STAT_RSL_CONNECTED,
+	BTS_STAT_LCHAN_BORKEN,
+	BTS_STAT_TS_BORKEN,
 };
 
 enum {

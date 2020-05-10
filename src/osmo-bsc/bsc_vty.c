@@ -5018,9 +5018,10 @@ DEFUN_HIDDEN(lchan_set_borken, lchan_set_borken_cmd,
 			return CMD_WARNING;
 		}
 	} else {
-		if (lchan->fi->state == LCHAN_ST_BORKEN)
+		if (lchan->fi->state == LCHAN_ST_BORKEN) {
+			rate_ctr_inc(&lchan->ts->trx->bts->bts_ctrs->ctr[BTS_CTR_LCHAN_BORKEN_EV_VTY]);
 			osmo_fsm_inst_state_chg(lchan->fi, LCHAN_ST_UNUSED, 0, 0);
-		else {
+		} else {
 			vty_out(vty,
 				"%% lchan is in state %s, only lchans that are in state %s may be moved to state %s manually%s",
 				osmo_fsm_state_name(lchan->fi->fsm, lchan->fi->state),
