@@ -392,6 +392,8 @@ static const struct osmo_stat_item_desc bts_stat_desc[] = {
 	{ "rach_access", "RACH slots with access bursts in them", "%", 16, 0 },
 	{ "oml_connected", "Number of OML links connected", "", 16, 0 },
 	{ "rsl_connected", "Number of RSL links connected", "", 16, 0 },
+	{ "lchan_borken", "Number of lchans in the BORKEN state", "", 16, 0 },
+	{ "ts_borken", "Number of timeslots in the BORKEN state", "", 16, 0 },
 };
 
 static const struct osmo_stat_item_group_desc bts_statg_desc = {

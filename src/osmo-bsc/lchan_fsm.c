@@ -1071,6 +1071,28 @@ static void lchan_fsm_wait_rf_release_ack(struct osmo_fsm_inst *fi, uint32_t eve
 static void lchan_fsm_borken_onenter(struct osmo_fsm_inst *fi, uint32_t prev_state)
 {
 	struct gsm_lchan *lchan = lchan_fi_lchan(fi);
+	enum bts_counter_id ctr;
+	switch (prev_state) {
+	case LCHAN_ST_UNUSED:
+		ctr = BTS_CTR_LCHAN_BORKEN_FROM_UNUSED;
+		break;
+	case LCHAN_ST_WAIT_ACTIV_ACK:
+		ctr = BTS_CTR_LCHAN_BORKEN_FROM_WAIT_ACTIV_ACK;
+		break;
+	case LCHAN_ST_WAIT_RF_RELEASE_ACK:
+		ctr = BTS_CTR_LCHAN_BORKEN_FROM_WAIT_RF_RELEASE_ACK;
+		break;
+	case LCHAN_ST_BORKEN:
+		ctr = BTS_CTR_LCHAN_BORKEN_FROM_BORKEN;
+		break;
+	default:
+		ctr = BTS_CTR_LCHAN_BORKEN_FROM_UNKNOWN;
+	}
+	rate_ctr_inc(&lchan->ts->trx->bts->bts_ctrs->ctr[ctr]);
+	if (prev_state != LCHAN_ST_BORKEN)
+		osmo_stat_item_inc(lchan->ts->trx->bts->bts_statg->items[BTS_STAT_LCHAN_BORKEN], 1);
+
+	/* The actual action besides all the beancounting above */
 	lchan_reset(lchan);
 }
 
@@ -1081,6 +1103,8 @@ static void lchan_fsm_borken(struct osmo_fsm_inst *fi, uint32_t event, void *dat
 
 	case LCHAN_EV_RSL_CHAN_ACTIV_ACK:
 		/* A late Chan Activ ACK? Release. */
+		rate_ctr_inc(&lchan->ts->trx->bts->bts_ctrs->ctr[BTS_CTR_LCHAN_BORKEN_EV_CHAN_ACTIV_ACK]);
+		osmo_stat_item_dec(lchan->ts->trx->bts->bts_statg->items[BTS_STAT_LCHAN_BORKEN], 1);
 		lchan->release.in_error = true;
 		lchan->release.rsl_error_cause = RSL_ERR_INTERWORKING;
 		lchan_fsm_state_chg(LCHAN_ST_WAIT_RF_RELEASE_ACK);
@@ -1088,11 +1112,15 @@ static void lchan_fsm_borken(struct osmo_fsm_inst *fi, uint32_t event, void *dat
 
 	case LCHAN_EV_RSL_CHAN_ACTIV_NACK:
 		/* A late Chan Activ NACK? Ok then, unused. */
+		rate_ctr_inc(&lchan->ts->trx->bts->bts_ctrs->ctr[BTS_CTR_LCHAN_BORKEN_EV_CHAN_ACTIV_NACK]);
+		osmo_stat_item_dec(lchan->ts->trx->bts->bts_statg->items[BTS_STAT_LCHAN_BORKEN], 1);
 		lchan_fsm_state_chg(LCHAN_ST_UNUSED);
 		return;
 
 	case LCHAN_EV_RSL_RF_CHAN_REL_ACK:
 		/* A late Release ACK? */
+		rate_ctr_inc(&lchan->ts->trx->bts->bts_ctrs->ctr[BTS_CTR_LCHAN_BORKEN_EV_RF_CHAN_REL_ACK]);
+		osmo_stat_item_dec(lchan->ts->trx->bts->bts_statg->items[BTS_STAT_LCHAN_BORKEN], 1);
 		lchan->release.in_error = true;
 		lchan->release.rsl_error_cause = RSL_ERR_INTERWORKING;
 		lchan_fsm_state_chg(LCHAN_ST_WAIT_AFTER_ERROR);
@@ -1384,6 +1412,10 @@ exit_release_handler:
 void lchan_fsm_cleanup(struct osmo_fsm_inst *fi, enum osmo_fsm_term_cause cause)
 {
 	struct gsm_lchan *lchan = lchan_fi_lchan(fi);
+	if (lchan->fi->state == LCHAN_ST_BORKEN) {
+		rate_ctr_inc(&lchan->ts->trx->bts->bts_ctrs->ctr[BTS_CTR_LCHAN_BORKEN_EV_CLEANUP]);
+		osmo_stat_item_dec(lchan->ts->trx->bts->bts_statg->items[BTS_STAT_LCHAN_BORKEN], 1);
+	}
 	lchan_reset(lchan);
 	if (lchan->last_error) {
 		talloc_free(lchan->last_error);
