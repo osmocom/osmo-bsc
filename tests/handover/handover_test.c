@@ -217,19 +217,11 @@ static struct gsm_bts *create_bts(int arfcn)
 
 void create_conn(struct gsm_lchan *lchan)
 {
-	static struct bsc_msc_data fake_msc_data = {};
-	fake_msc_data.network = bsc_gsmnet;
 	static unsigned int next_imsi = 0;
 	char imsi[sizeof(lchan->conn->bsub->imsi)];
 	struct gsm_network *net = lchan->ts->trx->bts->network;
 	struct gsm_subscriber_connection *conn;
 	struct mgcp_client *fake_mgcp_client = (void*)talloc_zero(net, int);
-	uint8_t *amr_conf;
-
-	/* HACK: lchan_fsm.c requires some AMR codec rates to be enabled,
-	 * lets pretend that all AMR codec rates are allowed */
-	amr_conf = (uint8_t*) &fake_msc_data.amr_conf;
-        amr_conf[1] = 0xff;
 
 	conn = bsc_subscr_con_allocate(net);
 
@@ -239,7 +231,7 @@ void create_conn(struct gsm_lchan *lchan)
 							   net->mgw.tdefs,
 							   "test",
 							   "fake endpoint");
-	conn->sccp.msc = &fake_msc_data;
+	conn->sccp.msc = osmo_msc_data_alloc(net, 0);
 
 	lchan->conn = conn;
 	conn->lchan = lchan;
