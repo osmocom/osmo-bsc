@@ -1104,7 +1104,7 @@ static int dtap_rcvmsg(struct gsm_subscriber_connection *conn,
 	struct msgb *gsm48;
 	uint8_t *data;
 	int rc, dtap_rc;
-	struct rate_ctr *ctrs = conn->sccp.msc->msc_ctrs->ctr;
+	struct rate_ctr *ctrs;
 
 	LOGP(DMSC, LOGL_DEBUG, "Rx MSC DTAP: %s\n",
 		osmo_hexdump(msg->l3h, length));
@@ -1114,6 +1114,7 @@ static int dtap_rcvmsg(struct gsm_subscriber_connection *conn,
 		return -1;
 	}
 
+	ctrs = conn->sccp.msc->msc_ctrs->ctr;
 	header = (struct dtap_header *) msg->l3h;
 	if (sizeof(*header) >= length) {
 		rate_ctr_inc(&ctrs[MSC_CTR_BSSMAP_RX_DTAP_ERROR]);
