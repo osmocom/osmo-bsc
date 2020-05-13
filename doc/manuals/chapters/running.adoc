@@ -93,7 +93,7 @@ cs7 instance 0
  sccp-address msc
   point-code 0.23.1
 msc 0
- msc-address msc
+ msc-addr msc
 ----
 
 This configuration is explained in detail in <<cs7_config>>.
