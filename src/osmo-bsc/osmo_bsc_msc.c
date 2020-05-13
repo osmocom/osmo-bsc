@@ -194,7 +194,6 @@ struct bsc_msc_data *osmo_msc_data_alloc(struct gsm_network *net, int nr)
 	};
 	msc_data->core_ci = -1;
 	msc_data->core_lac = -1;
-	msc_data->rtp_base = 4000;
 
 	msc_data->nr = nr;
 	msc_data->allow_emerg = 1;

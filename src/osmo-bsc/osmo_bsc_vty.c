@@ -36,9 +36,6 @@
 
 #include <time.h>
 
-
-#define IPA_STR "IP.ACCESS specific\n"
-
 static struct osmo_bsc_data *osmo_bsc_data(struct vty *vty)
 {
 	return bsc_gsmnet->bsc_data;
@@ -123,7 +120,6 @@ static void write_msc(struct vty *vty, struct bsc_msc_data *msc)
 	if (msc->core_ci != -1)
 		vty_out(vty, " core-cell-identity %d%s",
 			msc->core_ci, VTY_NEWLINE);
-	vty_out(vty, " ip.access rtp-base %d%s", msc->rtp_base, VTY_NEWLINE);
 
 	if (msc->ussd_welcome_txt)
 		vty_out(vty, " bsc-welcome-text %s%s", msc->ussd_welcome_txt, VTY_NEWLINE);
@@ -297,15 +293,12 @@ DEFUN(cfg_net_bsc_ci,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_net_bsc_rtp_base,
+DEFUN_DEPRECATED(cfg_net_bsc_rtp_base,
       cfg_net_bsc_rtp_base_cmd,
       "ip.access rtp-base <1-65000>",
-      IPA_STR
-      "Set the rtp-base port for the RTP stream\n"
-      "Port number\n")
+      "deprecated\n" "deprecated, RTP is handled by the MGW\n" "deprecated\n")
 {
-	struct bsc_msc_data *data = bsc_msc_data(vty);
-	data->rtp_base = atoi(argv[0]);
+	vty_out(vty, "%% deprecated: 'ip.access rtp-base' has no effect, RTP is handled by the MGW%s", VTY_NEWLINE);
 	return CMD_SUCCESS;
 }
 

@@ -4772,13 +4772,6 @@
         <param name='&lt;0-65535&gt;' doc='CI value' />
       </params>
     </command>
-    <command id='ip.access rtp-base &lt;1-65000&gt;'>
-      <params>
-        <param name='ip.access' doc='IP.ACCESS specific' />
-        <param name='rtp-base' doc='Set the rtp-base port for the RTP stream' />
-        <param name='&lt;1-65000&gt;' doc='Port number' />
-      </params>
-    </command>
     <command id='codec-list .LIST'>
       <params>
         <param name='codec-list' doc='Set the allowed audio codecs' />
