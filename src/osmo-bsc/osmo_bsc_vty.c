@@ -25,7 +25,6 @@
 #include <osmocom/bsc/vty.h>
 #include <osmocom/bsc/bsc_subscriber.h>
 #include <osmocom/bsc/debug.h>
-#include <osmocom/bsc/bsc_msg_filter.h>
 #include <osmocom/bsc/osmux.h>
 
 #include <osmocom/core/talloc.h>
@@ -161,9 +160,6 @@ static void write_msc(struct vty *vty, struct bsc_msc_data *msc)
 	if (msc->local_pref)
 		vty_out(vty, " local-prefix %s%s", msc->local_pref, VTY_NEWLINE);
 
-	if (msc->acc_lst_name)
-		vty_out(vty, " access-list-name %s%s", msc->acc_lst_name, VTY_NEWLINE);
-
 	/* write amr options */
 	write_msc_amr_options(vty, msc);
 
@@ -232,10 +228,6 @@ static int config_write_bsc(struct vty *vty)
 		vty_out(vty, " missing-msc-text %s%s", bsc->ussd_no_msc_txt, VTY_NEWLINE);
 	else
 		vty_out(vty, " no missing-msc-text%s", VTY_NEWLINE);
-	if (bsc->acc_lst_name)
-		vty_out(vty, " access-list-name %s%s", bsc->acc_lst_name, VTY_NEWLINE);
-
-	bsc_msg_acc_lst_write(vty);
 
 	return CMD_SUCCESS;
 }
@@ -528,33 +520,6 @@ AMR_COMMAND(5_90)
 AMR_COMMAND(5_15)
 AMR_COMMAND(4_75)
 
-DEFUN(cfg_msc_acc_lst_name,
-      cfg_msc_acc_lst_name_cmd,
-      "access-list-name NAME",
-      "Set the name of the access list to use.\n"
-      "The name of the to be used access list.\n")
-{
-	struct bsc_msc_data *msc = bsc_msc_data(vty);
-
-	osmo_talloc_replace_string(msc, &msc->acc_lst_name, argv[0]);
-	return CMD_SUCCESS;
-}
-
-DEFUN(cfg_msc_no_acc_lst_name,
-      cfg_msc_no_acc_lst_name_cmd,
-      "no access-list-name",
-      NO_STR "Remove the access list from the NAT.\n")
-{
-	struct bsc_msc_data *msc = bsc_msc_data(vty);
-
-	if (msc->acc_lst_name) {
-		talloc_free(msc->acc_lst_name);
-		msc->acc_lst_name = NULL;
-	}
-
-	return CMD_SUCCESS;
-}
-
 /* Make sure only standard SSN numbers are used. If no ssn number is
  * configured, silently apply the default SSN */
 static void enforce_standard_ssn(struct vty *vty, struct osmo_sccp_addr *addr)
@@ -781,33 +746,6 @@ DEFUN(cfg_net_no_rf_off_time,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_bsc_acc_lst_name,
-      cfg_bsc_acc_lst_name_cmd,
-      "access-list-name NAME",
-      "Set the name of the access list to use.\n"
-      "The name of the to be used access list.\n")
-{
-	struct osmo_bsc_data *bsc = osmo_bsc_data(vty);
-
-	osmo_talloc_replace_string(bsc, &bsc->acc_lst_name, argv[0]);
-	return CMD_SUCCESS;
-}
-
-DEFUN(cfg_bsc_no_acc_lst_name,
-      cfg_bsc_no_acc_lst_name_cmd,
-      "no access-list-name",
-      NO_STR "Remove the access list from the BSC\n")
-{
-	struct osmo_bsc_data *bsc = osmo_bsc_data(vty);
-
-	if (bsc->acc_lst_name) {
-		talloc_free(bsc->acc_lst_name);
-		bsc->acc_lst_name = NULL;
-	}
-
-	return CMD_SUCCESS;
-}
-
 DEFUN(show_statistics,
       show_statistics_cmd,
       "show statistics",
@@ -1005,8 +943,6 @@ int bsc_vty_init_extra(void)
 	install_element(BSC_NODE, &cfg_net_no_rf_off_time_cmd);
 	install_element(BSC_NODE, &cfg_net_bsc_missing_msc_ussd_cmd);
 	install_element(BSC_NODE, &cfg_net_bsc_no_missing_msc_text_cmd);
-	install_element(BSC_NODE, &cfg_bsc_acc_lst_name_cmd);
-	install_element(BSC_NODE, &cfg_bsc_no_acc_lst_name_cmd);
 
 	install_node(&msc_node, config_write_msc);
 	install_element(MSC_NODE, &cfg_net_bsc_ncc_cmd);
@@ -1037,8 +973,6 @@ int bsc_vty_init_extra(void)
 	install_element(MSC_NODE, &cfg_net_msc_amr_octet_align_cmd);
 	install_element(MSC_NODE, &cfg_net_msc_lcls_mode_cmd);
 	install_element(MSC_NODE, &cfg_net_msc_lcls_mismtch_cmd);
-	install_element(MSC_NODE, &cfg_msc_acc_lst_name_cmd);
-	install_element(MSC_NODE, &cfg_msc_no_acc_lst_name_cmd);
 	install_element(MSC_NODE, &cfg_msc_cs7_bsc_addr_cmd);
 	install_element(MSC_NODE, &cfg_msc_cs7_msc_addr_cmd);
 	install_element(MSC_NODE, &cfg_msc_cs7_asp_proto_cmd);

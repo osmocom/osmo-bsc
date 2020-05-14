@@ -41,8 +41,6 @@ handover_test_LDFLAGS = \
 	$(NULL)
 
 handover_test_LDADD = \
-	$(top_builddir)/src/libfilter/bsc_msg_acc.o \
-	$(top_builddir)/src/libfilter/bsc_msg_vty.o \
 	$(top_builddir)/src/osmo-bsc/a_reset.o \
 	$(top_builddir)/src/osmo-bsc/abis_nm.o \
 	$(top_builddir)/src/osmo-bsc/abis_nm_vty.o \

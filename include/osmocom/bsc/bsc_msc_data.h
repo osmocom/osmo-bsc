@@ -150,8 +150,6 @@ struct bsc_msc_data {
 	/* ussd text when MSC has entered the grace period */
 	char *ussd_grace_txt;
 
-	char *acc_lst_name;
-
 	/* structures for keeping rate counters and gauge stats */
 	struct rate_ctr_group *msc_ctrs;
 	struct osmo_stat_item_group *msc_statg;
@@ -223,8 +221,6 @@ struct osmo_bsc_data {
 
 	/* ussd text when there is no MSC available */
 	char *ussd_no_msc_txt;
-
-	char *acc_lst_name;
 
 	struct bsc_cbc_link *cbc;
 };

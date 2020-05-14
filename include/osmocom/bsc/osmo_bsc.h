@@ -2,8 +2,6 @@
 
 #include <osmocom/gsm/protocol/gsm_04_08.h>
 
-#include <osmocom/bsc/bsc_msg_filter.h>
-
 #define BSS_SEND_USSD 1
 
 enum bsc_con {
@@ -13,6 +11,7 @@ enum bsc_con {
 	BSC_CON_NO_MEM,
 };
 
+struct msgb;
 struct bsc_msc_data;
 struct gsm0808_channel_type;
 struct gsm0808_speech_codec_list;

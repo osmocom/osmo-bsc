@@ -236,7 +236,6 @@ AC_OUTPUT(
     include/osmocom/Makefile
     include/osmocom/bsc/Makefile
     src/Makefile
-    src/libfilter/Makefile
     src/osmo-bsc/Makefile
     src/ipaccess/Makefile
     src/utils/Makefile

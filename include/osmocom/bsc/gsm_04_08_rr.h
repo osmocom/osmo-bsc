@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <osmocom/core/msgb.h>
 
 struct amr_mode;
 struct amr_multirate_conf;
@@ -11,7 +12,6 @@ struct gsm_lchan;
 struct gsm_meas_rep;
 struct gsm_network;
 struct gsm_subscriber_connection;
-struct msgb;
 
 void gsm_net_update_ctype(struct gsm_network *network);
 enum gsm_chan_t get_ctype_by_chreq(struct gsm_network *network, uint8_t ra);

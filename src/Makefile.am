@@ -20,7 +20,6 @@ AM_LDFLAGS = \
 	$(NULL)
 
 SUBDIRS = \
-	libfilter \
 	osmo-bsc \
 	utils \
 	$(NULL)

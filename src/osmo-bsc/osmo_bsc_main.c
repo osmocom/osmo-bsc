@@ -84,12 +84,6 @@ struct gsm_network *bsc_gsmnet = 0;
 static const char *config_file = "osmo-bsc.cfg";
 static const char *rf_ctrl = NULL;
 static int daemonize = 0;
-static LLIST_HEAD(access_lists);
-
-struct llist_head *bsc_access_lists(void)
-{
-	return &access_lists;
-}
 
 static void print_usage()
 {
@@ -841,7 +835,6 @@ int main(int argc, char **argv)
 	/* This needs to precede handle_options() */
 	vty_init(&vty_info);
 	bsc_vty_init(bsc_gsmnet);
-	bsc_msg_acc_lst_vty_init(tall_bsc_ctx, &access_lists, BSC_NODE);
 	ctrl_vty_init(tall_bsc_ctx);
 	logging_vty_add_deprecated_subsys(tall_bsc_ctx, "cc");
 	logging_vty_add_deprecated_subsys(tall_bsc_ctx, "mgcp");

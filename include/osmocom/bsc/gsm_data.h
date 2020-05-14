@@ -31,7 +31,6 @@
 #include <osmocom/gsm/protocol/gsm_12_21.h>
 #include <osmocom/abis/e1_input.h>
 #include <osmocom/bsc/meas_rep.h>
-#include <osmocom/bsc/bsc_msg_filter.h>
 #include <osmocom/bsc/acc_ramp.h>
 #include <osmocom/bsc/neighbor_ident.h>
 #include <osmocom/bsc/osmux.h>
@@ -264,9 +263,6 @@ struct gsm_subscriber_connection {
 
 	/* state related to welcome USSD */
 	uint8_t new_subscriber;
-
-	/* state related to osmo_bsc_filter.c */
-	struct bsc_filter_state filter_state;
 
 	/* SCCP connection associatd with this subscriber_connection */
 	struct {

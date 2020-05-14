@@ -6,7 +6,6 @@ noinst_HEADERS = \
 	acc_ramp.h \
 	arfcn_range_encode.h \
 	assignment_fsm.h \
-	bsc_msg_filter.h \
 	bsc_rll.h \
 	bsc_subscriber.h \
 	bsc_subscr_conn_fsm.h \
