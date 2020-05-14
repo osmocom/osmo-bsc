@@ -547,8 +547,12 @@ int osmo_bsc_sigtran_init(struct llist_head *mscs)
 		LOGP(DMSC, LOGL_NOTICE, "(%s) A-interface: remote (MSC) SCCP address: %s\n",
 		     msc_name, osmo_sccp_inst_addr_name(msc->a.sccp, &msc->a.msc_addr));
 
-		/* Bind SCCP user */
-		msc->a.sccp_user = osmo_sccp_user_bind(msc->a.sccp, msc_name, sccp_sap_up, msc->a.bsc_addr.ssn);
+		/* Bind SCCP user. Bind only one user per sccp_instance. */
+		msc->a.sccp_user = osmo_sccp_user_find(msc->a.sccp, msc->a.bsc_addr.ssn, msc->a.bsc_addr.pc);
+		LOGP(DMSC, LOGL_NOTICE, "(%s) A-interface: %s\n", msc_name,
+		     msc->a.sccp_user ? "user already bound for this SCCP instance" : "binding SCCP user");
+		if (!msc->a.sccp_user)
+			msc->a.sccp_user = osmo_sccp_user_bind(msc->a.sccp, msc_name, sccp_sap_up, msc->a.bsc_addr.ssn);
 		if (!msc->a.sccp_user)
 			return -EINVAL;
 
