@@ -5007,9 +5007,9 @@ DEFUN_HIDDEN(lchan_set_borken, lchan_set_borken_cmd,
 		return CMD_WARNING;
 
 	if (!strcmp(argv[4], "borken")) {
-		if (lchan->fi->state == LCHAN_ST_UNUSED)
+		if (lchan->fi->state == LCHAN_ST_UNUSED) {
 			osmo_fsm_inst_state_chg(lchan->fi, LCHAN_ST_BORKEN, 0, 0);
-		else {
+		} else {
 			vty_out(vty,
 				"%% lchan is in state %s, only lchans that are in state %s may be moved to state %s manually%s",
 				osmo_fsm_state_name(lchan->fi->fsm, lchan->fi->state),
