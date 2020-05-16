@@ -654,6 +654,40 @@ static void ts_fsm_in_use(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 	}
 }
 
+static void ts_fsm_borken_onenter(struct osmo_fsm_inst *fi, uint32_t prev_state)
+{
+	struct gsm_bts_trx_ts *ts = ts_fi_ts(fi);
+	enum bts_counter_id ctr;
+	switch (prev_state) {
+	case TS_ST_NOT_INITIALIZED:
+		ctr = BTS_CTR_TS_BORKEN_FROM_NOT_INITIALIZED;
+		break;
+	case TS_ST_UNUSED:
+		ctr = BTS_CTR_TS_BORKEN_FROM_UNUSED;
+		break;
+	case TS_ST_WAIT_PDCH_ACT:
+		ctr = BTS_CTR_TS_BORKEN_FROM_WAIT_PDCH_ACT;
+		break;
+	case TS_ST_PDCH:
+		ctr = BTS_CTR_TS_BORKEN_FROM_PDCH;
+		break;
+	case TS_ST_WAIT_PDCH_DEACT:
+		ctr = BTS_CTR_TS_BORKEN_FROM_WAIT_PDCH_DEACT;
+		break;
+	case TS_ST_IN_USE:
+		ctr = BTS_CTR_TS_BORKEN_FROM_IN_USE;
+		break;
+	case TS_ST_BORKEN:
+		ctr = BTS_CTR_TS_BORKEN_FROM_BORKEN;
+		break;
+	default:
+		ctr = BTS_CTR_TS_BORKEN_FROM_UNKNOWN;
+	}
+	rate_ctr_inc(&ts->trx->bts->bts_ctrs->ctr[ctr]);
+	if (prev_state != LCHAN_ST_BORKEN)
+		osmo_stat_item_inc(ts->trx->bts->bts_statg->items[BTS_STAT_TS_BORKEN], 1);
+}
+
 static void ts_fsm_borken(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
 	switch (event) {
@@ -669,10 +703,14 @@ static void ts_fsm_borken(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 		}
 
 	case TS_EV_PDCH_ACT_ACK:
-		/* Late PDCH activation ACK is not a crime.
-		 * Just go into the PDCH mode as normal. */
-		osmo_fsm_inst_state_chg(fi, TS_ST_PDCH, 0, 0);
-		return;
+		{
+			struct gsm_bts_trx_ts *ts = ts_fi_ts(fi);		
+			/* Late PDCH activation ACK is not a crime.
+			 * Just go into the PDCH mode as normal. */
+			osmo_stat_item_dec(ts->trx->bts->bts_statg->items[BTS_STAT_TS_BORKEN], 1);
+			osmo_fsm_inst_state_chg(fi, TS_ST_PDCH, 0, 0);
+			return;
+		}
 
 	default:
 		OSMO_ASSERT(false);
@@ -722,6 +760,15 @@ static void ts_fsm_allstate(struct osmo_fsm_inst *fi, uint32_t event, void *data
 
 	default:
 		OSMO_ASSERT(false);
+	}
+}
+
+static void ts_fsm_cleanup(struct osmo_fsm_inst *fi, enum osmo_fsm_term_cause cause)
+{
+	struct gsm_bts_trx_ts *ts = ts_fi_ts(fi);
+	if (ts->fi->state == TS_ST_BORKEN) {
+		rate_ctr_inc(&ts->trx->bts->bts_ctrs->ctr[BTS_CTR_TS_BORKEN_EV_CLEANUP]);
+		osmo_stat_item_dec(ts->trx->bts->bts_statg->items[BTS_STAT_TS_BORKEN], 1);
 	}
 }
 
@@ -822,6 +869,7 @@ static const struct osmo_fsm_state ts_fsm_states[] = {
 	},
 	[TS_ST_BORKEN] = {
 		.name = "BORKEN",
+		.onenter = ts_fsm_borken_onenter,
 		.action = ts_fsm_borken,
 		.in_event_mask = 0
 			| S(TS_EV_LCHAN_REQUESTED)
@@ -862,6 +910,7 @@ static struct osmo_fsm ts_fsm = {
 		| S(TS_EV_RSL_DOWN)
 		,
 	.allstate_action = ts_fsm_allstate,
+	.cleanup = ts_fsm_cleanup,
 };
 
 /* Return true if any lchans are waiting for this timeslot to become a specific PCHAN. If target_pchan is

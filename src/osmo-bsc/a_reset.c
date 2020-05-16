@@ -103,6 +103,9 @@ static void fsm_conn_cb(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 	case EV_N_CONNECT:
 		reset_ctx->conn_loss_counter = 0;
 		break;
+	case EV_RESET_ACK:
+		LOGPFSML(fi, LOGL_INFO, "Received a duplicated BSSMAP RESET ACK, ignoring\n");
+		break;
 	}
 }
 
@@ -140,7 +143,7 @@ static struct osmo_fsm_state reset_fsm_states[] = {
 		     .onenter = fsm_disc_onenter_cb,
 		     },
 	[ST_CONN] = {
-		     .in_event_mask = (1 << EV_N_DISCONNECT) | (1 << EV_N_CONNECT),
+		     .in_event_mask = (1 << EV_N_DISCONNECT) | (1 << EV_N_CONNECT) | (1 << EV_RESET_ACK),
 		     .out_state_mask = (1 << ST_DISC) | (1 << ST_CONN),
 		     .name = "CONN",
 		     .action = fsm_conn_cb,

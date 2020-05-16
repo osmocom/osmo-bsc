@@ -1396,7 +1396,7 @@ static inline struct gsm_bts *conn_get_bts(struct gsm_subscriber_connection *con
 void conn_update_ms_power_class(struct gsm_subscriber_connection *conn, uint8_t power_class);
 void lchan_update_ms_power_ctrl_level(struct gsm_lchan *lchan, int ms_power_dbm);
 
-enum {
+enum bts_counter_id {
 	BTS_CTR_CHREQ_TOTAL,
 	BTS_CTR_CHREQ_NO_CHANNEL,
 	BTS_CTR_CHAN_RF_FAIL,
@@ -1412,11 +1412,34 @@ enum {
 	BTS_CTR_PAGING_ALREADY,
 	BTS_CTR_PAGING_RESPONDED,
 	BTS_CTR_PAGING_EXPIRED,
+	BTS_CTR_PAGING_NON_ACTIVE,
 	BTS_CTR_CHAN_ACT_TOTAL,
 	BTS_CTR_CHAN_ACT_NACK,
 	BTS_CTR_RSL_UNKNOWN,
 	BTS_CTR_RSL_IPA_NACK,
 	BTS_CTR_MODE_MODIFY_NACK,
+	BTS_CTR_LCHAN_BORKEN_FROM_UNUSED,
+	BTS_CTR_LCHAN_BORKEN_FROM_WAIT_ACTIV_ACK,
+	BTS_CTR_LCHAN_BORKEN_FROM_WAIT_RF_RELEASE_ACK,
+	BTS_CTR_LCHAN_BORKEN_FROM_BORKEN,
+	BTS_CTR_LCHAN_BORKEN_FROM_UNKNOWN,
+	BTS_CTR_LCHAN_BORKEN_EV_CHAN_ACTIV_ACK,
+	BTS_CTR_LCHAN_BORKEN_EV_CHAN_ACTIV_NACK,
+	BTS_CTR_LCHAN_BORKEN_EV_RF_CHAN_REL_ACK,
+	BTS_CTR_LCHAN_BORKEN_EV_VTY,
+	BTS_CTR_LCHAN_BORKEN_EV_CLEANUP,
+	BTS_CTR_TS_BORKEN_FROM_NOT_INITIALIZED,
+	BTS_CTR_TS_BORKEN_FROM_UNUSED,
+	BTS_CTR_TS_BORKEN_FROM_WAIT_PDCH_ACT,
+	BTS_CTR_TS_BORKEN_FROM_PDCH,
+	BTS_CTR_TS_BORKEN_FROM_WAIT_PDCH_DEACT,
+	BTS_CTR_TS_BORKEN_FROM_IN_USE,
+	BTS_CTR_TS_BORKEN_FROM_BORKEN,
+	BTS_CTR_TS_BORKEN_FROM_UNKNOWN,
+	BTS_CTR_TS_BORKEN_EV_LCHAN_REQUESTED,
+	BTS_CTR_TS_BORKEN_EV_LCHAN_UNUSED,
+	BTS_CTR_TS_BORKEN_EV_PDCH_ACT_ACK,
+	BTS_CTR_TS_BORKEN_EV_CLEANUP,
 };
 
 static const struct rate_ctr_desc bts_ctr_description[] = {
@@ -1436,11 +1459,36 @@ static const struct rate_ctr_desc bts_ctr_description[] = {
 	[BTS_CTR_PAGING_ALREADY] = 		{"paging:already", "Paging attempts ignored as subscriber was already being paged."},
 	[BTS_CTR_PAGING_RESPONDED] = 		{"paging:responded", "Paging attempts with successful paging response."},
 	[BTS_CTR_PAGING_EXPIRED] = 		{"paging:expired", "Paging Request expired because of timeout T3113."},
+	[BTS_CTR_PAGING_NON_ACTIVE] =		{"paging:non_active", "Non active subscriber responded to paging."},
 	[BTS_CTR_CHAN_ACT_TOTAL] =		{"chan_act:total", "Total number of Channel Activations."},
 	[BTS_CTR_CHAN_ACT_NACK] =		{"chan_act:nack", "Number of Channel Activations that the BTS NACKed"},
 	[BTS_CTR_RSL_UNKNOWN] =			{"rsl:unknown", "Number of unknown/unsupported RSL messages received from BTS"},
 	[BTS_CTR_RSL_IPA_NACK] =		{"rsl:ipa_nack", "Number of IPA (RTP/dyn-PDCH) related NACKs received from BTS"},
 	[BTS_CTR_MODE_MODIFY_NACK] =		{"chan:mode_modify_nack", "Number of Channel Mode Modify NACKs received from BTS"},
+
+	/* lchan/TS BORKEN state counters */
+	[BTS_CTR_LCHAN_BORKEN_FROM_UNUSED] =              {"lchan_borken:from_state:unused", "Transitions from lchan UNUSED state to BORKEN state"},
+	[BTS_CTR_LCHAN_BORKEN_FROM_WAIT_ACTIV_ACK] =      {"lchan_borken:from_state:wait_activ_ack", "Transitions from lchan WAIT_ACTIV_ACK state to BORKEN state"},
+	[BTS_CTR_LCHAN_BORKEN_FROM_WAIT_RF_RELEASE_ACK] = {"lchan_borken:from_state:wait_rf_release_ack", "Transitions from lchan WAIT_RF_RELEASE_ACK state to BORKEN state"},
+	[BTS_CTR_LCHAN_BORKEN_FROM_BORKEN] =              {"lchan_borken:from_state:borken", "Transitions from lchan BORKEN state to BORKEN state"},
+	[BTS_CTR_LCHAN_BORKEN_FROM_UNKNOWN] =             {"lchan_borken:from_state:unknown", "Transitions from an unknown lchan state to BORKEN state"},
+	[BTS_CTR_LCHAN_BORKEN_EV_CHAN_ACTIV_ACK] =        {"lchan_borken:event:chan_activ_ack", "CHAN_ACTIV_ACK received in the lchan BORKEN state"},
+	[BTS_CTR_LCHAN_BORKEN_EV_CHAN_ACTIV_NACK] =       {"lchan_borken:event:chan_activ_nack", "CHAN_ACTIV_NACK received in the lchan BORKEN state"},
+	[BTS_CTR_LCHAN_BORKEN_EV_RF_CHAN_REL_ACK] =       {"lchan_borken:event:rf_chan_rel_ack", "RF_CHAN_REL_ACK received in the lchan BORKEN state"},
+	[BTS_CTR_LCHAN_BORKEN_EV_VTY] =                   {"lchan_borken:event:vty", "VTY commands received in the lchan BORKEN state"},
+	[BTS_CTR_LCHAN_BORKEN_EV_CLEANUP] =               {"lchan_borken:event:cleanup", "lchan in a BORKEN state is cleaned up (BTS shuts down?)"},
+	[BTS_CTR_TS_BORKEN_FROM_NOT_INITIALIZED] = {"ts_borken:from_state:not_initialized", "Transitions from TS NOT_INITIALIZED state to BORKEN state"},
+	[BTS_CTR_TS_BORKEN_FROM_UNUSED] =          {"ts_borken:from_state:unused", "Transitions from TS UNUSED state to BORKEN state"},
+	[BTS_CTR_TS_BORKEN_FROM_WAIT_PDCH_ACT] =   {"ts_borken:from_state:wait_pdch_act", "Transitions from TS WAIT_PDCH_ACT state to BORKEN state"},
+	[BTS_CTR_TS_BORKEN_FROM_PDCH] =            {"ts_borken:from_state:pdch", "Transitions from TS PDCH state to BORKEN state"},
+	[BTS_CTR_TS_BORKEN_FROM_WAIT_PDCH_DEACT] = {"ts_borken:from_state:wait_pdch_deact", "Transitions from TS WAIT_PDCH_DEACT state to BORKEN state"},
+	[BTS_CTR_TS_BORKEN_FROM_IN_USE] =          {"ts_borken:from_state:in_use", "Transitions from TS IN_USE state to BORKEN state"},
+	[BTS_CTR_TS_BORKEN_FROM_BORKEN] =          {"ts_borken:from_state:borken", "Transitions from TS BORKEN state to BORKEN state"},
+	[BTS_CTR_TS_BORKEN_FROM_UNKNOWN] =         {"ts_borken:from_state:unknown", "Transitions from an unknown TS state to BORKEN state"},
+	[BTS_CTR_TS_BORKEN_EV_LCHAN_REQUESTED] =   {"ts_borken:event:lchan_requested", "LCHAN_REQUESTED received in the TS BORKEN state"},
+	[BTS_CTR_TS_BORKEN_EV_LCHAN_UNUSED] =      {"ts_borken:event:lchan_unused", "LCHAN_UNUSED received in the TS BORKEN state"},
+	[BTS_CTR_TS_BORKEN_EV_PDCH_ACT_ACK] =      {"ts_borken:event:pdch_act_ack", "PDCH_ACT_ACK received in the TS BORKEN state"},
+	[BTS_CTR_TS_BORKEN_EV_CLEANUP] =           {"ts_borken:event:cleanup", "TS in a BORKEN state is cleaned up (BTS shuts down?)"},
 };
 
 static const struct rate_ctr_group_desc bts_ctrg_desc = {
@@ -1474,6 +1522,8 @@ enum {
 	BTS_STAT_RACH_ACCESS,
 	BTS_STAT_OML_CONNECTED,
 	BTS_STAT_RSL_CONNECTED,
+	BTS_STAT_LCHAN_BORKEN,
+	BTS_STAT_TS_BORKEN,
 };
 
 enum {
@@ -1506,6 +1556,7 @@ enum {
 	BSC_CTR_PAGING_ATTEMPTED,
 	BSC_CTR_PAGING_DETACHED,
 	BSC_CTR_PAGING_RESPONDED,
+	BSC_CTR_PAGING_NON_ACTIVE,
 	BSC_CTR_UNKNOWN_UNIT_ID,
 };
 
@@ -1550,6 +1601,7 @@ static const struct rate_ctr_desc bsc_ctr_description[] = {
 	[BSC_CTR_PAGING_ATTEMPTED] = 		{"paging:attempted", "Paging attempts for a subscriber."},
 	[BSC_CTR_PAGING_DETACHED] = 		{"paging:detached", "Paging request send failures because no responsible BTS was found."},
 	[BSC_CTR_PAGING_RESPONDED] = 		{"paging:responded", "Paging attempts with successful response."},
+	[BSC_CTR_PAGING_NON_ACTIVE] =		{"paging:non_active", "Paging response for non active subscriber."},
 
 	[BSC_CTR_UNKNOWN_UNIT_ID] = 		{"abis:unknown_unit_id", "Connection attempts from unknown IPA CCM Unit ID."},
 };

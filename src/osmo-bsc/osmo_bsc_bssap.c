@@ -140,7 +140,7 @@ page_subscriber(struct bsc_msc_data *msc, struct gsm_bts *bts,
 
 	ret = bsc_grace_paging_request(msc->network->bsc_data->rf_ctrl->policy, subscr, chan_needed, msc, bts);
 	if (ret == 0)
-		LOGP(DMSC, LOGL_ERROR, "Paging request failed: BTS: %d IMSI: '%s' TMSI: '0x%x/%u' LAC: 0x%x\n",
+		LOGP(DMSC, LOGL_INFO, "Paging request failed or repeated paging: BTS: %d IMSI: '%s' TMSI: '0x%x/%u' LAC: 0x%x\n",
 		     bts->nr, mi_string, tmsi, tmsi, lac);
 
 	/* the paging code has grabbed its own references */
@@ -1006,6 +1006,66 @@ reject:
 	return -EINVAL;
 }
 
+/* Handle Confusion message, MSC indicating an error to us:
+ *
+ * See 3GPP TS 48.008 §3.2.1.45
+ */
+static int bssmap_handle_confusion(struct gsm_subscriber_connection *conn,
+				      struct msgb *msg, unsigned int length)
+{
+	struct tlv_parsed tp;
+	int diag_len;
+	enum gsm0808_cause cause;
+	enum gsm0808_cause_class cause_class;
+	struct gsm0808_diagnostics *diag;
+
+	osmo_bssap_tlv_parse(&tp, msg->l4h + 1, length - 1);
+
+	/* Check for the Cause and Diagnostic mandatory elements */
+	if (!TLVP_PRESENT(&tp, GSM0808_IE_CAUSE) || !TLVP_PRESENT(&tp, GSM0808_IE_DIAGNOSTIC)) {
+		LOGPFSML(conn->fi, LOGL_ERROR,
+		         "Received Confusion message,"
+		         " but either Cause or Diagnostic mandatory IE is not present: %s\n",
+		         osmo_hexdump(msg->l4h, length));
+		return -EINVAL;
+	}
+
+	diag_len = TLVP_LEN(&tp, GSM0808_IE_DIAGNOSTIC);
+	if (diag_len < 5) {
+		LOGPFSML(conn->fi, LOGL_ERROR,
+		         "Received Confusion message with short Diagnostic length: %d (expected > 5)\n",
+		         diag_len);
+		return -EINVAL;
+	}
+
+	cause = gsm0808_get_cause(&tp);
+	cause_class = gsm0808_cause_class(cause);
+	LOGPFSML(conn->fi, LOGL_ERROR,
+	         "Received Confusion message: Cause %d/0x%x (%s)",
+	         cause, cause, gsm0808_cause_name(cause));
+	LOGPFSML(conn->fi, LOGL_ERROR,
+	         "Received Confusion message: Cause class %d/0x%x (%s)",
+	         cause_class, cause_class, gsm0808_cause_class_name(cause_class));
+
+	diag = (struct gsm0808_diagnostics *)TLVP_VAL(&tp, GSM0808_IE_DIAGNOSTIC);
+	/* octet location */
+	LOGPFSML(conn->fi, LOGL_ERROR,
+	         "     Confusion Diagnostics error octet location %d (%s)\n",
+	         diag->error_pointer_octet,
+	         gsm0808_diagnostics_octet_location_str(diag->error_pointer_octet));
+	/* bit location */
+	LOGPFSML(conn->fi, LOGL_ERROR,
+	         "     Confusion Diagnostics error bit location: %d (%s)\n",
+	         diag->error_pointer_bit,
+	         gsm0808_diagnostics_bit_location_str(diag->error_pointer_bit));
+	/* received message dump */
+	LOGPFSML(conn->fi, LOGL_ERROR,
+	         "     Confusion Diagnostics message that provoked the error: %s\n",
+	         osmo_hexdump(diag->msg, diag_len-2));
+
+	return 0;
+}
+
 static int bssmap_rcvmsg_udt(struct bsc_msc_data *msc,
 			     struct msgb *msg, unsigned int length)
 {
@@ -1081,6 +1141,10 @@ static int bssmap_rcvmsg_dt1(struct gsm_subscriber_connection *conn,
 	case BSS_MAP_MSG_CLASSMARK_RQST:
 		rate_ctr_inc(&ctrs[MSC_CTR_BSSMAP_RX_DT1_CLASSMARK_RQST]);
 		ret = gsm48_send_rr_classmark_enquiry(conn->lchan);
+		break;
+	case BSS_MAP_MSG_CONFUSION:
+		rate_ctr_inc(&ctrs[MSC_CTR_BSSMAP_RX_DT1_CONFUSION]);
+		ret = bssmap_handle_confusion(conn, msg, length);
 		break;
 	default:
 		rate_ctr_inc(&ctrs[MSC_CTR_BSSMAP_RX_DT1_UNKNOWN]);
