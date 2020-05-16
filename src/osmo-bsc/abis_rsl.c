@@ -1687,7 +1687,7 @@ static int abis_rsl_rx_rll(struct msgb *msg)
 		}
 		break;
 	case RSL_MT_EST_CONF:
-		LOG_LCHAN(msg->lchan, LOGL_ERROR, "SAPI=%u ESTABLISH CONFIRM\n", sapi);
+		LOG_LCHAN(msg->lchan, LOGL_DEBUG, "SAPI=%u ESTABLISH CONFIRM\n", sapi);
 		msg->lchan->sapis[sapi] = LCHAN_SAPI_NET;
 		rll_indication(msg->lchan, rllh->link_id,
 				  BSC_RLLR_IND_EST_CONF);
