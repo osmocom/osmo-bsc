@@ -1412,6 +1412,7 @@ enum bts_counter_id {
 	BTS_CTR_PAGING_ALREADY,
 	BTS_CTR_PAGING_RESPONDED,
 	BTS_CTR_PAGING_EXPIRED,
+	BTS_CTR_PAGING_NON_ACTIVE,
 	BTS_CTR_CHAN_ACT_TOTAL,
 	BTS_CTR_CHAN_ACT_NACK,
 	BTS_CTR_RSL_UNKNOWN,
@@ -1457,6 +1458,7 @@ static const struct rate_ctr_desc bts_ctr_description[] = {
 	[BTS_CTR_PAGING_ALREADY] = 		{"paging:already", "Paging attempts ignored as subscriber was already being paged."},
 	[BTS_CTR_PAGING_RESPONDED] = 		{"paging:responded", "Paging attempts with successful paging response."},
 	[BTS_CTR_PAGING_EXPIRED] = 		{"paging:expired", "Paging Request expired because of timeout T3113."},
+	[BTS_CTR_PAGING_NON_ACTIVE] =		{"paging:non_active", "Non active subscriber responded to paging."},
 	[BTS_CTR_CHAN_ACT_TOTAL] =		{"chan_act:total", "Total number of Channel Activations."},
 	[BTS_CTR_CHAN_ACT_NACK] =		{"chan_act:nack", "Number of Channel Activations that the BTS NACKed"},
 	[BTS_CTR_RSL_UNKNOWN] =			{"rsl:unknown", "Number of unknown/unsupported RSL messages received from BTS"},
@@ -1552,6 +1554,7 @@ enum {
 	BSC_CTR_PAGING_ATTEMPTED,
 	BSC_CTR_PAGING_DETACHED,
 	BSC_CTR_PAGING_RESPONDED,
+	BSC_CTR_PAGING_NON_ACTIVE,
 	BSC_CTR_UNKNOWN_UNIT_ID,
 };
 
@@ -1596,6 +1599,7 @@ static const struct rate_ctr_desc bsc_ctr_description[] = {
 	[BSC_CTR_PAGING_ATTEMPTED] = 		{"paging:attempted", "Paging attempts for a subscriber."},
 	[BSC_CTR_PAGING_DETACHED] = 		{"paging:detached", "Paging request send failures because no responsible BTS was found."},
 	[BSC_CTR_PAGING_RESPONDED] = 		{"paging:responded", "Paging attempts with successful response."},
+	[BSC_CTR_PAGING_NON_ACTIVE] =		{"paging:non_active", "Paging response for non active subscriber."},
 
 	[BSC_CTR_UNKNOWN_UNIT_ID] = 		{"abis:unknown_unit_id", "Connection attempts from unknown IPA CCM Unit ID."},
 };
