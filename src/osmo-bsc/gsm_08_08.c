@@ -388,6 +388,8 @@ static int handle_page_resp(struct gsm_subscriber_connection *conn, struct msgb 
 
 	if (!subscr) {
 		LOGP(DMSC, LOGL_ERROR, "Non active subscriber got paged.\n");
+		rate_ctr_inc(&conn->lchan->ts->trx->bts->bts_ctrs->ctr[BTS_CTR_PAGING_NO_ACTIVE_PAGING]);
+		rate_ctr_inc(&conn->network->bsc_ctrs->ctr[BSC_CTR_PAGING_NO_ACTIVE_PAGING]);
 		return -1;
 	}
 
