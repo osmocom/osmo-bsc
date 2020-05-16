@@ -901,10 +901,10 @@ static int abis_nm_rcvmsg_fom(struct msgb *mb)
 
 		abis_nm_tlv_parse(&tp, bts, foh->data, oh->length-sizeof(*foh));
 		if (TLVP_PRESENT(&tp, NM_ATT_NACK_CAUSES))
-			DEBUGPC(DNM, "CAUSE=%s\n",
+			LOGPC(DNM, LOGL_NOTICE, "CAUSE=%s\n",
 				abis_nm_nack_cause_name(*TLVP_VAL(&tp, NM_ATT_NACK_CAUSES)));
 		else
-			DEBUGPC(DNM, "\n");
+			LOGPC(DNM, LOGL_NOTICE, "\n");
 
 		nack_data.msg = mb;
 		nack_data.mt = mt;
