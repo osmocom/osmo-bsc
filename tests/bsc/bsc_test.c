@@ -123,16 +123,9 @@ static void test_scan(void)
 	int i;
 
 	struct gsm_network *net = gsm_network_init(ctx);
-	struct gsm_bts *bts = gsm_bts_alloc(net, 0);
-	struct bsc_msc_data *msc;
-	struct gsm_subscriber_connection *conn;
+	struct gsm_subscriber_connection *conn = talloc_zero(net, struct gsm_subscriber_connection);
 
-	msc = talloc_zero(net, struct bsc_msc_data);
-	conn = talloc_zero(net, struct gsm_subscriber_connection);
-
-	bts->network = net;
-	conn->sccp.msc = msc;
-	conn->lchan = &bts->c0->ts[1].lchan[0];
+	conn->network = net;
 
 	/* start testing with proper messages */
 	printf("Testing BTS<->MSC message scan.\n");
