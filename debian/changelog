@@ -1,3 +1,9 @@
+osmo-bsc (1.6.0-fw.9) unstable; urgency=medium
+
+  * Merge fairwaves/WIP-dyn-chan-load, fairwaves/log-work, fairwaves/mt_mm_info_crash
+
+ -- Kirill Zakharenko <kirill.zakharenko@fairwaves.co>  Sun, 17 May 2020 21:26:25 +0000
+
 osmo-bsc (1.6.0) unstable; urgency=medium
 
   [ Philipp Maier ]
