@@ -45,7 +45,6 @@ static int bsc_patch_mm_info(struct gsm_subscriber_connection *conn,
 {
 	struct tlv_parsed tp;
 	int parse_res;
-	struct gsm_bts *bts = conn_get_bts(conn);
 	int tzunits;
 	uint8_t tzbsd = 0;
 	uint8_t dst = 0;
@@ -58,7 +57,7 @@ static int bsc_patch_mm_info(struct gsm_subscriber_connection *conn,
 		return 0;
 
 	/* Is TZ patching enabled? */
-	struct gsm_tz *tz = &bts->network->tz;
+	struct gsm_tz *tz = &conn->network->tz;
 	if (!tz->override)
 		return 0;
 
