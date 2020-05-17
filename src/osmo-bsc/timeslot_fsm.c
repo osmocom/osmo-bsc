@@ -669,9 +669,17 @@ static void ts_fsm_borken(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 		}
 
 	case TS_EV_PDCH_ACT_ACK:
-		/* Late PDCH activation ACK is not a crime.
-		 * Just go into the PDCH mode as normal. */
-		osmo_fsm_inst_state_chg(fi, TS_ST_PDCH, 0, 0);
+	case TS_EV_PDCH_ACT_NACK:
+		/* Late PDCH activation ACK/NACK is not a crime.
+		 * Just process them as normal. */
+		ts_fsm_wait_pdch_act(fi, event, data);
+		return;
+
+	case TS_EV_PDCH_DEACT_ACK:
+	case TS_EV_PDCH_DEACT_NACK:
+		/* Late PDCH deactivation ACK/NACK is also not a crime.
+		 * Just process them as normal. */
+		ts_fsm_wait_pdch_deact(fi, event, data);
 		return;
 
 	default:
@@ -827,8 +835,13 @@ static const struct osmo_fsm_state ts_fsm_states[] = {
 			| S(TS_EV_LCHAN_REQUESTED)
 			| S(TS_EV_LCHAN_UNUSED)
 			| S(TS_EV_PDCH_ACT_ACK)
+			| S(TS_EV_PDCH_ACT_NACK)
+			| S(TS_EV_PDCH_DEACT_ACK)
+			| S(TS_EV_PDCH_DEACT_NACK)
 			,
 		.out_state_mask = 0
+			| S(TS_ST_IN_USE)
+			| S(TS_ST_UNUSED)
 			| S(TS_ST_NOT_INITIALIZED)
 			| S(TS_ST_PDCH)
 			,
