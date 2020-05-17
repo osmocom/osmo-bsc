@@ -1369,7 +1369,7 @@ static int rsl_rx_chan_rqd(struct msgb *msg)
 
 	/* Determine channel request cause code */
 	chreq_reason = get_reason_by_chreq(rqd_ref->ra, bts->network->neci);
-	LOG_BTS(bts, DRSL, LOGL_NOTICE, "CHAN RQD: reason: %s (ra=0x%02x, neci=0x%02x, chreq_reason=0x%02x)\n",
+	LOG_BTS(bts, DRSL, LOGL_INFO, "CHAN RQD: reason: %s (ra=0x%02x, neci=0x%02x, chreq_reason=0x%02x)\n",
 		get_value_string(gsm_chreq_descs, chreq_reason), rqd_ref->ra, bts->network->neci, chreq_reason);
 
 	/* Handle PDCH related rach requests (in case of BSC-co-located-PCU */
@@ -1687,7 +1687,7 @@ static int abis_rsl_rx_rll(struct msgb *msg)
 		}
 		break;
 	case RSL_MT_EST_CONF:
-		LOG_LCHAN(msg->lchan, LOGL_ERROR, "SAPI=%u ESTABLISH CONFIRM\n", sapi);
+		LOG_LCHAN(msg->lchan, LOGL_DEBUG, "SAPI=%u ESTABLISH CONFIRM\n", sapi);
 		msg->lchan->sapis[sapi] = LCHAN_SAPI_NET;
 		rll_indication(msg->lchan, rllh->link_id,
 				  BSC_RLLR_IND_EST_CONF);

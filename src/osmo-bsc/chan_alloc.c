@@ -87,6 +87,14 @@ void bts_chan_load(struct pchan_load *cl, const struct gsm_bts *bts)
 
 				pl->total++;
 
+				/* lchans under a BORKEN/NOT_INITIALIZED TS should
+				 * be counted as used just as BORKEN lchans under
+				 * a normal TS */
+				if (!ts_is_usable(ts)) {
+					pl->used++;
+					continue;
+				}
+
 				switch (lchan->fi->state) {
 				case LCHAN_ST_UNUSED:
 					break;
