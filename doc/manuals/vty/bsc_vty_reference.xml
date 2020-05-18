@@ -1414,18 +1414,20 @@
         <param name='&lt;0-255&gt;' doc='TS Number' />
       </params>
     </command>
-    <command id='bts &lt;0-255&gt; om2000 class (trxc|ts|tf|is|con|dp|cf|tx|rx) &lt;0-255&gt; &lt;0-255&gt; &lt;0-255&gt;'>
+    <command id='bts &lt;0-255&gt; om2000 class (trxc|tg|ts|tf|is|con|dp|mctr|cf|tx|rx) &lt;0-255&gt; &lt;0-255&gt; &lt;0-255&gt;'>
       <params>
         <param name='bts' doc='BTS related commands' />
         <param name='&lt;0-255&gt;' doc='BTS Number' />
         <param name='om2000' doc='Manipulate the OM2000 managed objects' />
         <param name='class' doc='Object Class' />
         <param name='trxc' doc='TRX Controller' />
+        <param name='tg' doc='Trunk Group' />
         <param name='ts' doc='Timeslot' />
         <param name='tf' doc='Timing Function' />
         <param name='is' doc='Interface Switch' />
         <param name='con' doc='Abis Concentrator' />
         <param name='dp' doc='Digital Path' />
+        <param name='mctr' doc='Multi Carrier Transceiver' />
         <param name='cf' doc='Central Function' />
         <param name='tx' doc='Transmitter' />
         <param name='rx' doc='Receiver' />
@@ -2153,6 +2155,12 @@
         <param name='disable' doc='Disable the reporter' />
       </params>
     </command>
+    <command id='flush-period &lt;0-65535&gt;'>
+      <params>
+        <param name='flush-period' doc='Configure stats sub-system' />
+        <param name='&lt;0-65535&gt;' doc='Send all stats even if they have not changed (i.e. force the flush)every N-th reporting interval. Set to 0 to disable regular flush (default).' />
+      </params>
+    </command>
   </node>
   <node id='config-line'>
     <name>config-line</name>
@@ -2177,6 +2185,18 @@
   </node>
   <node id='config-e1_input'>
     <name>config-e1_input</name>
+    <command id='pcap .FILE'>
+      <params>
+        <param name='pcap' doc='Setup a pcap recording of all E1 traffic' />
+        <param name='.FILE' doc='Filename to save the packets to' />
+      </params>
+    </command>
+    <command id='no pcap'>
+      <params>
+        <param name='no' doc='Negate a command or set its defaults' />
+        <param name='pcap' doc='Disable pcap recording of all E1 traffic' />
+      </params>
+    </command>
     <command id='e1_line &lt;0-255&gt; driver (misdn|misdn_lapd|dahdi|e1d|ipa|unixsocket)'>
       <params>
         <param name='e1_line' doc='Configure E1/T1/J1 Line' />
@@ -4282,6 +4302,18 @@
         <param name='super-channel' doc='SuperChannel (Packet Abis)' />
       </params>
     </command>
+    <command id='om2000 version-limit (oml|rsl) gen &lt;0-99&gt; rev &lt;0-99&gt;'>
+      <params>
+        <param name='om2000' doc='Configure OM2K specific parameters' />
+        <param name='version-limit' doc='Configure optional maximum protocol version to negotiate' />
+        <param name='oml' doc='Limit OML IWD version' />
+        <param name='rsl' doc='Limit RSL IWD version' />
+        <param name='gen' doc='Generation limit' />
+        <param name='&lt;0-99&gt;' doc='Generation number to limit to (inclusive)' />
+        <param name='rev' doc='Revision limit' />
+        <param name='&lt;0-99&gt;' doc='Revision number to limit to (inclusive)' />
+      </params>
+    </command>
     <command id='con-connection-group &lt;1-31&gt;'>
       <params>
         <param name='con-connection-group' doc='Configure a CON (Concentrator) Connection Group' />
@@ -5041,6 +5073,13 @@
     <command id='configuration-request'>
       <params>
         <param name='configuration-request' doc='Send the configuration request for current MO' />
+      </params>
+    </command>
+    <command id='arbitrary &lt;0-65535&gt; [HEXSTRING]'>
+      <params>
+        <param name='arbitrary' doc='Send arbitrary OM2k message' />
+        <param name='&lt;0-65535&gt;' doc='Command identifier' />
+        <param name='[HEXSTRING]' doc='Hex Encoded payload' />
       </params>
     </command>
   </node>
