@@ -19,6 +19,12 @@ if BUILD_MANUALS
   aoip-mgw-options.pdf: $(srcdir)/aoip-mgw-options.adoc $(srcdir)/mgw/*.msc
 
   VTY_REFERENCE = osmobsc-vty-reference.xml
+
+  BUILT_REFERENCE_XML = $(builddir)/vty/bsc_vty_reference.xml
+  $(builddir)/vty/bsc_vty_reference.xml: $(top_builddir)/src/osmo-bsc/osmo-bsc
+	mkdir -p $(builddir)/vty
+	$(top_builddir)/src/osmo-bsc/osmo-bsc --vty-ref-xml > $@
+
   include $(OSMO_GSM_MANUALS_DIR)/build/Makefile.vty-reference.inc
 
   OSMO_REPOSITORY = osmo-bsc
