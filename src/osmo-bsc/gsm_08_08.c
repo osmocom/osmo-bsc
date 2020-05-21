@@ -55,9 +55,6 @@ static bool msc_connected(struct gsm_subscriber_connection *conn)
 	return true;
 }
 
-static bool complete_layer3(struct gsm_subscriber_connection *conn,
-			    struct msgb *msg, struct bsc_msc_data *msc);
-
 /*! BTS->MSC: tell MSC a SAPI was not established. */
 void bsc_sapi_n_reject(struct gsm_subscriber_connection *conn, int dlci)
 {
@@ -299,25 +296,6 @@ blind:
 	return NULL;
 }
 
-/*! MS->MSC: New MM context with L3 payload. */
-int bsc_compl_l3(struct gsm_subscriber_connection *conn, struct msgb *msg, uint16_t chosen_channel)
-{
-	struct bsc_msc_data *msc;
-
-	LOGP(DMSC, LOGL_INFO, "Tx MSC COMPL L3\n");
-
-	/* find the MSC link we want to use */
-	msc = bsc_find_msc(conn, msg);
-	if (!msc) {
-		LOGP(DMSC, LOGL_ERROR, "Failed to find a MSC for a connection.\n");
-		bsc_send_ussd_no_srv(conn, msg,
-				     conn_get_bts(conn)->network->bsc_data->ussd_no_msc_txt);
-		return -1;
-	}
-
-	return complete_layer3(conn, msg, msc) ? 0 : -2;
-}
-
 static int handle_page_resp(struct gsm_subscriber_connection *conn, struct msgb *msg)
 {
 	struct bsc_subscr *subscr = extract_sub(conn, msg);
@@ -422,14 +400,28 @@ int bsc_scan_bts_msg(struct gsm_subscriber_connection *conn, struct msgb *msg)
 	return 0;
 }
 
-static bool complete_layer3(struct gsm_subscriber_connection *conn,
-			    struct msgb *msg, struct bsc_msc_data *msc)
+/*! MS->MSC: New MM context with L3 payload. */
+int bsc_compl_l3(struct gsm_subscriber_connection *conn, struct msgb *msg, uint16_t chosen_channel)
 {
+	struct bsc_msc_data *msc;
 	struct msgb *resp;
 	enum bsc_con ret;
 	struct gsm0808_speech_codec_list scl;
+	int rc = -2;
 
 	log_set_context(LOG_CTX_BSC_SUBSCR, conn->bsub);
+
+	LOGP(DMSC, LOGL_INFO, "Tx MSC COMPL L3\n");
+
+	/* find the MSC link we want to use */
+	msc = bsc_find_msc(conn, msg);
+	if (!msc) {
+		LOGP(DMSC, LOGL_ERROR, "Failed to find a MSC for a connection.\n");
+		bsc_send_ussd_no_srv(conn, msg,
+				     conn_get_bts(conn)->network->bsc_data->ussd_no_msc_txt);
+		rc = -1;
+		goto early_fail;
+	}
 
 	/* allocate resource for a new connection */
 	ret = osmo_bsc_sigtran_new_conn(conn, msc);
@@ -464,15 +456,12 @@ static bool complete_layer3(struct gsm_subscriber_connection *conn,
 		resp = gsm0808_create_layer3_2(msg, cgi_for_msc(conn->sccp.msc, conn_get_bts(conn)), NULL);
 
 	if (resp)
-		osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_A_CONN_REQ, resp);
+		rc = osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_A_CONN_REQ, resp);
 	else
 		LOGP(DMSC, LOGL_DEBUG, "Failed to create layer3 message.\n");
-
-	log_set_context(LOG_CTX_BSC_SUBSCR, NULL);
-	return !!resp;
 early_fail:
 	log_set_context(LOG_CTX_BSC_SUBSCR, NULL);
-	return false;
+	return rc;
 }
 
 /*! MS->BSC/MSC: Um L3 message. */
