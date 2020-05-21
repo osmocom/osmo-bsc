@@ -475,96 +475,6 @@ early_fail:
 	return false;
 }
 
-static int bsc_clear_request(struct gsm_subscriber_connection *conn, uint32_t cause);
-
-/*
- * Plastic surgery... we want to give up the current connection
- */
-static int move_to_msc(struct gsm_subscriber_connection *_conn,
-		       struct msgb *msg, struct bsc_msc_data *msc)
-{
-	/*
-	 * 1. Give up the old connection.
-	 * This happens by sending a clear request to the MSC,
-	 * it should end with the MSC releasing the connection.
-	 */
-	bsc_clear_request(_conn, 0);
-
-	/*
-	 * 2. Attempt to create a new connection to the local
-	 * MSC. If it fails the caller will need to handle this
-	 * properly.
-	 */
-	if (!complete_layer3(_conn, msg, msc)) {
-		/* FIXME: I have not the slightest idea what move_to_msc() intends to do; during lchan
-		 * FSM introduction, I changed this and hope it is the appropriate action. I actually
-		 * assume this is unused legacy code for osmo-bsc_nat?? */
-		gscon_release_lchans(_conn, false);
-		return 1;
-	}
-
-	return 2;
-}
-
-static int handle_cc_setup(struct gsm_subscriber_connection *conn,
-			   struct msgb *msg)
-{
-	struct gsm48_hdr *gh = msgb_l3(msg);
-	uint8_t pdisc = gsm48_hdr_pdisc(gh);
-	uint8_t mtype = gsm48_hdr_msg_type(gh);
-
-	struct bsc_msc_data *msc;
-	struct gsm_mncc_number called;
-	struct tlv_parsed tp;
-	unsigned payload_len;
-
-	char _dest_nr[35];
-
-	/*
-	 * Do we have a setup message here? if not return fast.
-	 */
-	if (pdisc != GSM48_PDISC_CC || mtype != GSM48_MT_CC_SETUP)
-		return 0;
-
-	payload_len = msgb_l3len(msg) - sizeof(*gh);
-
-	tlv_parse(&tp, &gsm48_att_tlvdef, gh->data, payload_len, 0, 0);
-	if (!TLVP_PRESENT(&tp, GSM48_IE_CALLED_BCD)) {
-		LOGP(DMSC, LOGL_ERROR, "Called BCD not present in setup.\n");
-		return -1;
-	}
-
-	memset(&called, 0, sizeof(called));
-	gsm48_decode_called(&called,
-			    TLVP_VAL(&tp, GSM48_IE_CALLED_BCD) - 1);
-
-	if (called.plan != 1 && called.plan != 0)
-		return 0;
-
-	if (called.plan == 1 && called.type == 1) {
-		_dest_nr[0] = _dest_nr[1] = '0';
-		memcpy(_dest_nr + 2, called.number, sizeof(called.number));
-	} else
-		memcpy(_dest_nr, called.number, sizeof(called.number));
-
-	/*
-	 * Check if the connection should be moved...
-	 */
-	llist_for_each_entry(msc, &conn_get_bts(conn)->network->bsc_data->mscs, entry) {
-		if (msc->type != MSC_CON_TYPE_LOCAL)
-			continue;
-		if (!msc->local_pref)
-			continue;
-		if (regexec(&msc->local_pref_reg, _dest_nr, 0, NULL, 0) != 0)
-			continue;
-
-		return move_to_msc(conn, msg, msc);
-	}
-
-	return 0;
-}
-
-
 /*! MS->BSC/MSC: Um L3 message. */
 void bsc_dtap(struct gsm_subscriber_connection *conn, uint8_t link_id, struct msgb *msg)
 {
@@ -575,13 +485,6 @@ void bsc_dtap(struct gsm_subscriber_connection *conn, uint8_t link_id, struct ms
 
 	LOGP(DMSC, LOGL_INFO, "Tx MSC DTAP LINK_ID=0x%02x\n", link_id);
 
-	/*
-	 * We might want to move this connection to a new MSC. Ask someone
-	 * to handle it. If it was handled we will return.
-	 */
-	if (handle_cc_setup(conn, msg) >= 1)
-		goto done;
-
 	bsc_scan_bts_msg(conn, msg);
 
 	/* Store link_id in msg->cb */
@@ -590,31 +493,6 @@ void bsc_dtap(struct gsm_subscriber_connection *conn, uint8_t link_id, struct ms
 done:
 	log_set_context(LOG_CTX_BSC_SUBSCR, NULL);
 	return;
-}
-
-/*! BSSMAP Clear Request for legacy code paths, instead see gscon_bssmap_clear(). */
-static int bsc_clear_request(struct gsm_subscriber_connection *conn, uint32_t cause)
-{
-	int rc;
-	struct msgb *resp;
-
-	if (!msc_connected(conn))
-		return 1;
-
-	LOGP(DMSC, LOGL_INFO, "Tx MSC CLEAR REQUEST\n");
-
-	resp = gsm0808_create_clear_rqst(GSM0808_CAUSE_RADIO_INTERFACE_FAILURE);
-	if (!resp) {
-		LOGP(DMSC, LOGL_ERROR, "Failed to allocate response.\n");
-		return 1;
-	}
-
-	rate_ctr_inc(&conn->sccp.msc->msc_ctrs->ctr[MSC_CTR_BSSMAP_TX_DT1_CLEAR_RQST]);
-	rc = osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_TX_SCCP, resp);
-	if (rc != 0)
-		msgb_free(resp);
-
-	return 1;
 }
 
 /*! BSC->MSC: Classmark Update. */

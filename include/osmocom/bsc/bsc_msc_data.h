@@ -45,7 +45,6 @@
 #include <osmocom/core/fsm.h>
 #include <osmocom/gsm/gsm23003.h>
 
-#include <regex.h>
 #include <errno.h>
 
 struct osmo_bsc_rf;
@@ -120,11 +119,6 @@ struct bsc_msc_data {
 
 	int allow_emerg;
 	int type;
-
-	/* local call routing */
-	char *local_pref;
-	regex_t local_pref_reg;
-
 
 	/* Connection data */
 	struct osmo_plmn_id core_plmn;

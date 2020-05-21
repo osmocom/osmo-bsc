@@ -2,7 +2,6 @@
 #define _GSM_DATA_H
 
 #include <stdint.h>
-#include <regex.h>
 #include <sys/types.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -1361,12 +1360,6 @@ void gsm48_lchan2chan_desc_as_configured(struct gsm48_chan_desc *cd, const struc
 
 /* return the gsm_lchan for the CBCH (if it exists at all) */
 struct gsm_lchan *gsm_bts_get_cbch(struct gsm_bts *bts);
-
-/*
- * help with parsing regexps
- */
-int gsm_parse_reg(void *ctx, regex_t *reg, char **str,
-		int argc, const char **argv) __attribute__ ((warn_unused_result));
 
 static inline uint8_t gsm_ts_tsc(const struct gsm_bts_trx_ts *ts)
 {

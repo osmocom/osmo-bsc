@@ -157,9 +157,6 @@ static void write_msc(struct vty *vty, struct bsc_msc_data *msc)
 	vty_out(vty, " allow-emergency %s%s", msc->allow_emerg ?
 					"allow" : "deny", VTY_NEWLINE);
 
-	if (msc->local_pref)
-		vty_out(vty, " local-prefix %s%s", msc->local_pref, VTY_NEWLINE);
-
 	/* write amr options */
 	write_msc_amr_options(vty, msc);
 
@@ -479,22 +476,6 @@ DEFUN(cfg_net_msc_emerg,
 {
 	struct bsc_msc_data *data = bsc_msc_data(vty);
 	data->allow_emerg = strcmp("allow", argv[0]) == 0;
-	return CMD_SUCCESS;
-}
-
-DEFUN(cfg_net_msc_local_prefix,
-      cfg_net_msc_local_prefix_cmd,
-      "local-prefix REGEXP",
-      "Prefix for local numbers\n" "REGEXP used\n")
-{
-	struct bsc_msc_data *msc = bsc_msc_data(vty);
-
-	if (gsm_parse_reg(msc, &msc->local_pref_reg, &msc->local_pref, argc, argv) != 0) {
-		vty_out(vty, "%%Failed to parse the regexp: '%s'%s",
-			argv[0], VTY_NEWLINE);
-		return CMD_WARNING;
-	}
-
 	return CMD_SUCCESS;
 }
 
@@ -961,7 +942,6 @@ int bsc_vty_init_extra(void)
 	install_element(MSC_NODE, &cfg_net_msc_no_grace_ussd_cmd);
 	install_element(MSC_NODE, &cfg_net_msc_type_cmd);
 	install_element(MSC_NODE, &cfg_net_msc_emerg_cmd);
-	install_element(MSC_NODE, &cfg_net_msc_local_prefix_cmd);
 	install_element(MSC_NODE, &cfg_net_msc_amr_12_2_cmd);
 	install_element(MSC_NODE, &cfg_net_msc_amr_10_2_cmd);
 	install_element(MSC_NODE, &cfg_net_msc_amr_7_95_cmd);

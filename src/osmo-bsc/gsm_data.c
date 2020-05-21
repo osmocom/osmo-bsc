@@ -248,31 +248,6 @@ void gsm48_ra_id_by_bts(struct gsm48_ra_id *buf, struct gsm_bts *bts)
 	gsm48_encode_ra(buf, &raid);
 }
 
-int gsm_parse_reg(void *ctx, regex_t *reg, char **str, int argc, const char **argv)
-{
-	int ret;
-
-	ret = 0;
-	if (*str) {
-		talloc_free(*str);
-		*str = NULL;
-	}
-	regfree(reg);
-
-	if (argc > 0) {
-		*str = talloc_strdup(ctx, argv[0]);
-		ret = regcomp(reg, argv[0], REG_NOSUB);
-
-		/* handle compilation failures */
-		if (ret != 0) {
-			talloc_free(*str);
-			*str = NULL;
-		}
-	}
-
-	return ret;
-}
-
 /* Assume there are only 256 possible bts */
 osmo_static_assert(sizeof(((struct gsm_bts *) 0)->nr) == 1, _bts_nr_is_256);
 static void depends_calc_index_bit(int bts_nr, int *idx, int *bit)
