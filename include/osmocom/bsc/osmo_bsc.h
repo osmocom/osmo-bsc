@@ -2,8 +2,6 @@
 
 #include <osmocom/gsm/protocol/gsm_04_08.h>
 
-#define BSS_SEND_USSD 1
-
 enum bsc_con {
 	BSC_CON_SUCCESS,
 	BSC_CON_REJECT_NO_LINK,
@@ -29,7 +27,6 @@ int bsc_delete_connection(struct gsm_subscriber_connection *sccp);
 
 int bsc_scan_bts_msg(struct gsm_subscriber_connection *conn, struct msgb *msg);
 int bsc_scan_msc_msg(struct gsm_subscriber_connection *conn, struct msgb *msg);
-int bsc_send_welcome_ussd(struct gsm_subscriber_connection *conn);
 
 int bsc_handle_udt(struct bsc_msc_data *msc, struct msgb *msg, unsigned int length);
 int bsc_handle_dt(struct gsm_subscriber_connection *conn, struct msgb *msg, unsigned int len);

@@ -25,7 +25,6 @@ TRX-specific commands are additionally prefixed with TRX number e. g.
 |mcc-mnc-apply|WO|No|"<mcc>,<mnc>"|Apply new MCC/MNC values if different from currently used one.
 |notification|WO|Yes|Arbitrary value| See <<notif>> for details.
 |inform-msc-v1|WO|Yes|Arbitrary value| See <<infomsc>> for details.
-|ussd-notify-v1|WO|No|"<cic>,<alert>,<text>"| See <<ussdnot>> for details.
 |rf_locked|RW|No|"0","1"|See <<rfl>> for details.
 |number-of-bts|RO|No|"<num>"|Get number of configured BTS.
 |bts.N.location-area-code|RW|No|"<lac>"|Set/Get LAC (value between (0, 65535)).
@@ -53,12 +52,6 @@ intended to be used outside of local systems.
 
 Setting this variable initiate TRAP "inform-msc-v1" to all connected MSCs 
 control interfaces with the value supplied in SET operation.
-
-[[ussdnot]]
-=== ussd-notify-v1
-
-Setting this variable will send USSD Notify message to subscriber specified in
-command parameters with the text specified in command parameters.
 
 [[chanlo]]
 === channel-load

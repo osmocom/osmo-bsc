@@ -17,7 +17,6 @@ noinst_HEADERS = \
 	debug.h \
 	e1_config.h \
 	gsm_04_08_rr.h \
-	gsm_04_80.h \
 	gsm_data.h \
 	handover.h \
 	handover_cfg.h \
@@ -49,7 +48,6 @@ noinst_HEADERS = \
 	signal.h \
 	system_information.h \
 	timeslot_fsm.h \
-	ussd.h \
 	vty.h \
 	gsm_08_08.h \
 	penalty_timers.h \

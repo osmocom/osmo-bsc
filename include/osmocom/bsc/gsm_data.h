@@ -260,9 +260,6 @@ struct gsm_subscriber_connection {
 	/* flag to prevent multiple simultaneous ciphering commands */
 	int ciphering_handled;
 
-	/* state related to welcome USSD */
-	uint8_t new_subscriber;
-
 	/* SCCP connection associatd with this subscriber_connection */
 	struct {
 		/* for advanced ping/pong */

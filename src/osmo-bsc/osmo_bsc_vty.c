@@ -120,21 +120,6 @@ static void write_msc(struct vty *vty, struct bsc_msc_data *msc)
 		vty_out(vty, " core-cell-identity %d%s",
 			msc->core_ci, VTY_NEWLINE);
 
-	if (msc->ussd_welcome_txt)
-		vty_out(vty, " bsc-welcome-text %s%s", msc->ussd_welcome_txt, VTY_NEWLINE);
-	else
-		vty_out(vty, " no bsc-welcome-text%s", VTY_NEWLINE);
-
-	if (msc->ussd_msc_lost_txt && msc->ussd_msc_lost_txt[0])
-		vty_out(vty, " bsc-msc-lost-text %s%s", msc->ussd_msc_lost_txt, VTY_NEWLINE);
-	else
-		vty_out(vty, " no bsc-msc-lost-text%s", VTY_NEWLINE);
-
-	if (msc->ussd_grace_txt && msc->ussd_grace_txt[0])
-		vty_out(vty, " bsc-grace-text %s%s", msc->ussd_grace_txt, VTY_NEWLINE);
-	else
-		vty_out(vty, " no bsc-grace-text%s", VTY_NEWLINE);
-
 	if (msc->audio_length != 0) {
 		int i;
 
@@ -210,8 +195,6 @@ static int config_write_bsc(struct vty *vty)
 	struct osmo_bsc_data *bsc = osmo_bsc_data(vty);
 
 	vty_out(vty, "bsc%s", VTY_NEWLINE);
-	if (bsc->mid_call_txt)
-		vty_out(vty, " mid-call-text %s%s", bsc->mid_call_txt, VTY_NEWLINE);
 	vty_out(vty, " mid-call-timeout %d%s", bsc->mid_call_timeout, VTY_NEWLINE);
 	if (bsc->rf_ctrl_name)
 		vty_out(vty, " bsc-rf-socket %s%s",
@@ -220,11 +203,6 @@ static int config_write_bsc(struct vty *vty)
 	if (bsc->auto_off_timeout != -1)
 		vty_out(vty, " bsc-auto-rf-off %d%s",
 			bsc->auto_off_timeout, VTY_NEWLINE);
-
-	if (bsc->ussd_no_msc_txt && bsc->ussd_no_msc_txt[0])
-		vty_out(vty, " missing-msc-text %s%s", bsc->ussd_no_msc_txt, VTY_NEWLINE);
-	else
-		vty_out(vty, " no missing-msc-text%s", VTY_NEWLINE);
 
 	return CMD_SUCCESS;
 }
@@ -339,118 +317,49 @@ error:
 	return CMD_ERR_INCOMPLETE;
 }
 
-DEFUN(cfg_net_msc_welcome_ussd,
-      cfg_net_msc_welcome_ussd_cmd,
-      "bsc-welcome-text .TEXT",
-      "Set the USSD notification to be sent\n" "Text to be sent\n")
-{
-	struct bsc_msc_data *data = bsc_msc_data(vty);
-	char *str = argv_concat(argv, argc, 0);
-	if (!str)
-		return CMD_WARNING;
+#define LEGACY_STR "This command has no effect, it is kept to support legacy config files\n"
 
-	osmo_talloc_replace_string(osmo_bsc_data(vty), &data->ussd_welcome_txt, str);
-	talloc_free(str);
-	return CMD_SUCCESS;
+DEFUN_DEPRECATED(deprecated_ussd_text,
+      cfg_net_msc_welcome_ussd_cmd,
+      "bsc-welcome-text .TEXT", LEGACY_STR LEGACY_STR)
+{
+	vty_out(vty, "%% osmo-bsc no longer supports USSD notification. These commands have no effect:%s"
+		"%%   bsc-welcome-text, bsc-msc-lost-text, mid-call-text, bsc-grace-text, missing-msc-text%s",
+		VTY_NEWLINE, VTY_NEWLINE);
+	return CMD_WARNING;
 }
 
-DEFUN(cfg_net_msc_no_welcome_ussd,
+DEFUN_DEPRECATED(deprecated_no_ussd_text,
       cfg_net_msc_no_welcome_ussd_cmd,
       "no bsc-welcome-text",
-      NO_STR "Clear the USSD notification to be sent\n")
+      NO_STR LEGACY_STR)
 {
-	struct bsc_msc_data *data = bsc_msc_data(vty);
-
-	talloc_free(data->ussd_welcome_txt);
-	data->ussd_welcome_txt = NULL;
-
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_net_msc_lost_ussd,
+ALIAS_DEPRECATED(deprecated_ussd_text,
       cfg_net_msc_lost_ussd_cmd,
-      "bsc-msc-lost-text .TEXT",
-      "Set the USSD notification to be sent on MSC connection loss\n" "Text to be sent\n")
-{
-	struct bsc_msc_data *data = bsc_msc_data(vty);
-	char *str = argv_concat(argv, argc, 0);
-	if (!str)
-		return CMD_WARNING;
+      "bsc-msc-lost-text .TEXT", LEGACY_STR LEGACY_STR);
 
-	osmo_talloc_replace_string(osmo_bsc_data(vty), &data->ussd_msc_lost_txt, str);
-	talloc_free(str);
-	return CMD_SUCCESS;
-}
-
-DEFUN(cfg_net_msc_no_lost_ussd,
+ALIAS_DEPRECATED(deprecated_no_ussd_text,
       cfg_net_msc_no_lost_ussd_cmd,
-      "no bsc-msc-lost-text",
-      NO_STR "Clear the USSD notification to be sent on MSC connection loss\n")
-{
-	struct bsc_msc_data *data = bsc_msc_data(vty);
+      "no bsc-msc-lost-text", NO_STR LEGACY_STR);
 
-	talloc_free(data->ussd_msc_lost_txt);
-	data->ussd_msc_lost_txt = 0;
-
-	return CMD_SUCCESS;
-}
-
-DEFUN(cfg_net_msc_grace_ussd,
+ALIAS_DEPRECATED(deprecated_ussd_text,
       cfg_net_msc_grace_ussd_cmd,
-      "bsc-grace-text .TEXT",
-      "Set the USSD notification to be sent when the MSC has entered the grace period\n" "Text to be sent\n")
-{
-	struct bsc_msc_data *data = bsc_msc_data(vty);
-	char *str = argv_concat(argv, argc, 0);
-	if (!str)
-		return CMD_WARNING;
+      "bsc-grace-text .TEXT", LEGACY_STR LEGACY_STR);
 
-	osmo_talloc_replace_string(osmo_bsc_data(vty), &data->ussd_grace_txt, str);
-	talloc_free(str);
-	return CMD_SUCCESS;
-}
-
-DEFUN(cfg_net_msc_no_grace_ussd,
+ALIAS_DEPRECATED(deprecated_no_ussd_text,
       cfg_net_msc_no_grace_ussd_cmd,
-      "no bsc-grace-text",
-      NO_STR "Clear the USSD notification to be sent when the MSC has entered the grace period\n")
-{
-	struct bsc_msc_data *data = bsc_msc_data(vty);
+      "no bsc-grace-text", NO_STR LEGACY_STR);
 
-	talloc_free(data->ussd_grace_txt);
-	data->ussd_grace_txt = NULL;
-
-	return CMD_SUCCESS;
-}
-
-DEFUN(cfg_net_bsc_missing_msc_ussd,
+ALIAS_DEPRECATED(deprecated_ussd_text,
       cfg_net_bsc_missing_msc_ussd_cmd,
-      "missing-msc-text .TEXT",
-      "Set the USSD notification to be send when a MSC has not been found.\n" "Text to be sent\n")
-{
-	struct osmo_bsc_data *data = osmo_bsc_data(vty);
-	char *txt = argv_concat(argv, argc, 0);
-	if (!txt)
-		return CMD_WARNING;
+      "missing-msc-text .TEXT", LEGACY_STR LEGACY_STR);
 
-	osmo_talloc_replace_string(data, &data->ussd_no_msc_txt, txt);
-	talloc_free(txt);
-	return CMD_SUCCESS;
-}
-
-DEFUN(cfg_net_bsc_no_missing_msc_text,
+ALIAS_DEPRECATED(deprecated_no_ussd_text,
       cfg_net_bsc_no_missing_msc_text_cmd,
-      "no missing-msc-text",
-      NO_STR "Clear the USSD notification to be send when a MSC has not been found.\n")
-{
-	struct osmo_bsc_data *data = osmo_bsc_data(vty);
-
-	talloc_free(data->ussd_no_msc_txt);
-	data->ussd_no_msc_txt = 0;
-
-	return CMD_SUCCESS;
-}
-
+      "no missing-msc-text", NO_STR LEGACY_STR);
 
 DEFUN(cfg_net_msc_type,
       cfg_net_msc_type_cmd,
@@ -670,21 +579,10 @@ DEFUN(cfg_msc_osmux,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_net_bsc_mid_call_text,
+ALIAS_DEPRECATED(deprecated_ussd_text,
       cfg_net_bsc_mid_call_text_cmd,
       "mid-call-text .TEXT",
-      "Set the USSD notification sent to running calls when switching from Grace to Off.\n"
-      "Text to be sent\n")
-{
-	struct osmo_bsc_data *data = osmo_bsc_data(vty);
-	char *txt = argv_concat(argv, argc, 0);
-	if (!txt)
-		return CMD_WARNING;
-
-	osmo_talloc_replace_string(data, &data->mid_call_txt, txt);
-	talloc_free(txt);
-	return CMD_SUCCESS;
-}
+      LEGACY_STR LEGACY_STR);
 
 DEFUN(cfg_net_bsc_mid_call_timeout,
       cfg_net_bsc_mid_call_timeout_cmd,
@@ -865,8 +763,6 @@ DEFUN(show_subscr_all,
 
 	return CMD_SUCCESS;
 }
-
-#define LEGACY_STR "This command has no effect, it is kept to support legacy config files\n"
 
 DEFUN_DEPRECATED(cfg_net_msc_ping_time, cfg_net_msc_ping_time_cmd,
       "timeout-ping ARG", LEGACY_STR "-\n")

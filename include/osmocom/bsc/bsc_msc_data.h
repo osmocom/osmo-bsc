@@ -133,16 +133,7 @@ struct bsc_msc_data {
 	enum bsc_lcls_mode lcls_mode;
 	bool lcls_codec_mismatch_allow;
 
-	/* ussd welcome text */
-	char *ussd_welcome_txt;
-
 	int nr;
-
-	/* ussd msc connection lost text */
-	char *ussd_msc_lost_txt;
-
-	/* ussd text when MSC has entered the grace period */
-	char *ussd_grace_txt;
 
 	/* structures for keeping rate counters and gauge stats */
 	struct rate_ctr_group *msc_ctrs;
@@ -207,14 +198,10 @@ struct osmo_bsc_data {
 	struct llist_head mscs;
 
 	/* rf ctl related bits */
-	char *mid_call_txt;
 	int mid_call_timeout;
 	char *rf_ctrl_name;
 	struct osmo_bsc_rf *rf_ctrl;
 	int auto_off_timeout;
-
-	/* ussd text when there is no MSC available */
-	char *ussd_no_msc_txt;
 
 	struct bsc_cbc_link *cbc;
 };

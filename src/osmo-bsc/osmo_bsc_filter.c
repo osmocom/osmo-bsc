@@ -21,7 +21,6 @@
 
 #include <osmocom/bsc/osmo_bsc.h>
 #include <osmocom/bsc/bsc_msc_data.h>
-#include <osmocom/bsc/gsm_04_80.h>
 #include <osmocom/bsc/gsm_04_08_rr.h>
 #include <osmocom/bsc/bsc_subscriber.h>
 #include <osmocom/bsc/debug.h>
@@ -29,16 +28,6 @@
 #include <osmocom/bsc/gsm_04_08_rr.h>
 
 #include <stdlib.h>
-
-static int send_welcome_ussd(struct gsm_subscriber_connection *conn)
-{
-	if (!conn->sccp.msc->ussd_welcome_txt) {
-		LOGP(DMSC, LOGL_DEBUG, "No USSD Welcome text defined.\n");
-		return 0;
-	}
-
-	return BSS_SEND_USSD;
-}
 
 static int bsc_patch_mm_info(struct gsm_subscriber_connection *conn,
 		uint8_t *data, unsigned int length)
@@ -150,9 +139,6 @@ int bsc_scan_msc_msg(struct gsm_subscriber_connection *conn, struct msgb *msg)
 				gsm48_generate_lai2(lai, bts_lai(conn_get_bts(conn)));
 			}
 		}
-
-		if (conn->new_subscriber)
-			return send_welcome_ussd(conn);
 		return 0;
 	} else if (mtype == GSM48_MT_MM_INFO) {
 		bsc_patch_mm_info(conn, &gh->data[0], length);

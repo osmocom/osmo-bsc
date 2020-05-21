@@ -29,7 +29,6 @@
 #include <osmocom/bsc/bsc_subscriber.h>
 #include <osmocom/bsc/paging.h>
 #include <osmocom/bsc/gsm_04_08_rr.h>
-#include <osmocom/bsc/gsm_04_80.h>
 #include <osmocom/bsc/bsc_subscr_conn_fsm.h>
 #include <osmocom/bsc/codec_pref.h>
 #include <osmocom/bsc/abis_rsl.h>
@@ -1146,21 +1145,13 @@ static int bssmap_rcvmsg_dt1(struct gsm_subscriber_connection *conn,
 	return ret;
 }
 
-int bsc_send_welcome_ussd(struct gsm_subscriber_connection *conn)
-{
-	bsc_send_ussd_notify(conn, 1, conn->sccp.msc->ussd_welcome_txt);
-	bsc_send_ussd_release_complete(conn);
-
-	return 0;
-}
-
 static int dtap_rcvmsg(struct gsm_subscriber_connection *conn,
 		       struct msgb *msg, unsigned int length)
 {
 	struct dtap_header *header;
 	struct msgb *gsm48;
 	uint8_t *data;
-	int rc, dtap_rc;
+	int dtap_rc;
 	struct rate_ctr *ctrs;
 
 	LOGP(DMSC, LOGL_DEBUG, "Rx MSC DTAP: %s\n",
@@ -1202,12 +1193,10 @@ static int dtap_rcvmsg(struct gsm_subscriber_connection *conn,
 	memcpy(data, msg->l3h + sizeof(*header), length - sizeof(*header));
 
 	/* pass it to the filter for extra actions */
-	rc = bsc_scan_msc_msg(conn, gsm48);
+	bsc_scan_msc_msg(conn, gsm48);
 	/* Store link_id in msgb->cb */
 	OBSC_LINKID_CB(gsm48) = header->link_id;
 	dtap_rc = osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_MT_DTAP, gsm48);
-	if (rc == BSS_SEND_USSD)
-		bsc_send_welcome_ussd(conn);
 	return dtap_rc;
 }
 

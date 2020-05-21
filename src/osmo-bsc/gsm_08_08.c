@@ -26,7 +26,6 @@
 #include <osmocom/bsc/gsm_08_08.h>
 #include <osmocom/bsc/codec_pref.h>
 
-#include <osmocom/bsc/gsm_04_80.h>
 #include <osmocom/bsc/gsm_04_08_rr.h>
 #include <osmocom/bsc/a_reset.h>
 
@@ -104,50 +103,6 @@ int gsm48_tx_mm_serv_ack(struct gsm_subscriber_connection *conn)
 
 	gscon_submit_rsl_dtap(conn, msg, 0, 0);
 	return 0;
-}
-
-static void bsc_send_ussd_no_srv(struct gsm_subscriber_connection *conn,
-				 struct msgb *msg, const char *text)
-{
-	struct gsm48_hdr *gh;
-	int8_t pdisc;
-	uint8_t mtype;
-	int drop_message = 1;
-
-	if (!text)
-		return;
-
-	if (!msg || msgb_l3len(msg) < sizeof(*gh))
-		return;
-
-	gh = msgb_l3(msg);
-	pdisc = gsm48_hdr_pdisc(gh);
-	mtype = gsm48_hdr_msg_type(gh);
-
-	/* Is CM service request? */
-	if (pdisc == GSM48_PDISC_MM && mtype == GSM48_MT_MM_CM_SERV_REQ) {
-		struct gsm48_service_request *cm;
-
-		cm = (struct gsm48_service_request *) &gh->data[0];
-
-		/* Is type SMS or call? */
-		if (cm->cm_service_type == GSM48_CMSERV_SMS)
-			drop_message = 0;
-		else if (cm->cm_service_type == GSM48_CMSERV_MO_CALL_PACKET)
-			drop_message = 0;
-	}
-
-	if (drop_message) {
-		LOGP(DMSC, LOGL_DEBUG, "Skipping (not sending) USSD message: '%s'\n", text);
-		return;
-	}
-
-	LOGP(DMSC, LOGL_INFO, "Sending CM Service Accept\n");
-	gsm48_tx_mm_serv_ack(conn);
-
-	LOGP(DMSC, LOGL_INFO, "Sending USSD message: '%s'\n", text);
-	bsc_send_ussd_notify(conn, 1, text);
-	bsc_send_ussd_release_complete(conn);
 }
 
 static int is_cm_service_for_emerg(struct msgb *msg)
@@ -319,7 +274,6 @@ static void handle_lu_request(struct gsm_subscriber_connection *conn,
 {
 	struct gsm48_hdr *gh;
 	struct gsm48_loc_upd_req *lu;
-	struct gsm48_loc_area_id lai;
 	int8_t rc8;
 	struct gsm_bts *bts = conn_get_bts(conn);
 
@@ -331,13 +285,6 @@ static void handle_lu_request(struct gsm_subscriber_connection *conn,
 
 	gh = msgb_l3(msg);
 	lu = (struct gsm48_loc_upd_req *) gh->data;
-
-	gsm48_generate_lai2(&lai, bts_lai(conn_get_bts(conn)));
-
-	if (memcmp(&lai, &lu->lai, sizeof(lai)) != 0) {
-		LOGP(DMSC, LOGL_DEBUG, "Marking con for welcome USSD.\n");
-		conn->new_subscriber = 1;
-	}
 
 	rc8 = osmo_gsm48_rfpowercap2powerclass(bts->band, lu->classmark1.pwr_lev);
 	if (rc8 < 0) {
@@ -405,7 +352,6 @@ int bsc_compl_l3(struct gsm_subscriber_connection *conn, struct msgb *msg, uint1
 {
 	struct bsc_msc_data *msc;
 	struct msgb *resp;
-	enum bsc_con ret;
 	struct gsm0808_speech_codec_list scl;
 	int rc = -2;
 
@@ -417,25 +363,13 @@ int bsc_compl_l3(struct gsm_subscriber_connection *conn, struct msgb *msg, uint1
 	msc = bsc_find_msc(conn, msg);
 	if (!msc) {
 		LOGP(DMSC, LOGL_ERROR, "Failed to find a MSC for a connection.\n");
-		bsc_send_ussd_no_srv(conn, msg,
-				     conn_get_bts(conn)->network->bsc_data->ussd_no_msc_txt);
 		rc = -1;
 		goto early_fail;
 	}
 
 	/* allocate resource for a new connection */
-	ret = osmo_bsc_sigtran_new_conn(conn, msc);
-
-	if (ret != BSC_CON_SUCCESS) {
-		/* allocation has failed */
-		if (ret == BSC_CON_REJECT_NO_LINK)
-			bsc_send_ussd_no_srv(conn, msg, msc->ussd_msc_lost_txt);
-		else if (ret == BSC_CON_REJECT_RF_GRACE)
-			bsc_send_ussd_no_srv(conn, msg, msc->ussd_grace_txt);
+	if (osmo_bsc_sigtran_new_conn(conn, msc) != BSC_CON_SUCCESS)
 		goto early_fail;
-	}
-
-	/* check return value, if failed check msg for and send USSD */
 
 	bsc_scan_bts_msg(conn, msg);
 

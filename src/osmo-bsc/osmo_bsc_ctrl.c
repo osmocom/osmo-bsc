@@ -26,7 +26,6 @@
 #include <osmocom/bsc/osmo_bsc_rf.h>
 #include <osmocom/bsc/bsc_msc_data.h>
 #include <osmocom/bsc/signal.h>
-#include <osmocom/bsc/gsm_04_80.h>
 
 #include <osmocom/core/linuxlist.h>
 #include <osmocom/core/signal.h>
@@ -672,70 +671,6 @@ static int set_net_inform_msc(struct ctrl_cmd *cmd, void *data)
 	return CTRL_CMD_HANDLED;
 }
 
-CTRL_CMD_DEFINE_WO(net_ussd_notify, "ussd-notify-v1");
-static int set_net_ussd_notify(struct ctrl_cmd *cmd, void *data)
-{
-	struct gsm_subscriber_connection *conn;
-	struct gsm_network *net;
-	char *saveptr = NULL;
-	char *cic_str, *alert_str, *text_str;
-	int cic, alert;
-
-	/* Verify has done the test for us */
-	cic_str = strtok_r(cmd->value, ",", &saveptr);
-	alert_str = strtok_r(NULL, ",", &saveptr);
-	text_str = strtok_r(NULL, ",", &saveptr);
-
-	if (!cic_str || !alert_str || !text_str) {
-		cmd->reply = "Programming issue. How did this pass verify?";
-		return CTRL_CMD_ERROR;
-	}
-
-	cmd->reply = "No connection found";
-
-	cic = atoi(cic_str);
-	alert = atoi(alert_str);
-
-	net = cmd->node;
-	llist_for_each_entry(conn, &net->subscr_conns, entry) {
-		if (conn->user_plane.msc_assigned_cic != cic)
-			continue;
-
-		/*
-		 * This is a hack. My E71 does not like to immediately
-		 * receive a release complete on a TCH. So schedule a
-		 * release complete to clear any previous attempt. The
-		 * right thing would be to track invokeId and only send
-		 * the release complete when we get a returnResultLast
-		 * for this invoke id.
-		 */
-		bsc_send_ussd_release_complete(conn);
-		bsc_send_ussd_notify(conn, alert, text_str);
-		cmd->reply = "Found a connection";
-		break;
-	}
-
-	return CTRL_CMD_REPLY;
-}
-
-static int verify_net_ussd_notify(struct ctrl_cmd *cmd, const char *value, void *data)
-{
-	char *saveptr = NULL;
-	char *inp, *cic, *alert, *text;
-
-	OSMO_ASSERT(cmd);
-	inp = talloc_strdup(cmd, value);
-
-	cic = strtok_r(inp, ",", &saveptr);
-	alert = strtok_r(NULL, ",", &saveptr);
-	text = strtok_r(NULL, ",", &saveptr);
-
-	talloc_free(inp);
-	if (!cic || !alert || !text)
-		return 1;
-	return 0;
-}
-
 static int msc_signal_handler(unsigned int subsys, unsigned int signal,
 			void *handler_data, void *signal_data)
 {
@@ -789,9 +724,6 @@ int bsc_ctrl_cmds_install(struct gsm_network *net)
 	if (rc)
 		goto end;
 	rc = ctrl_cmd_install(CTRL_NODE_ROOT, &cmd_net_inform_msc);
-	if (rc)
-		goto end;
-	rc = ctrl_cmd_install(CTRL_NODE_ROOT, &cmd_net_ussd_notify);
 	if (rc)
 		goto end;
 	rc = osmo_signal_register_handler(SS_L_INPUT, &bts_connection_status_trap_cb, net);

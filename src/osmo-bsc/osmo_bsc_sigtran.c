@@ -32,7 +32,6 @@
 #include <osmocom/bsc/osmo_bsc_grace.h>
 #include <osmocom/bsc/osmo_bsc_sigtran.h>
 #include <osmocom/bsc/a_reset.h>
-#include <osmocom/bsc/gsm_04_80.h>
 #include <osmocom/bsc/bsc_subscr_conn_fsm.h>
 #include <osmocom/bsc/gsm_data.h>
 #include <osmocom/mgcp_client/mgcp_common.h>
@@ -426,24 +425,6 @@ int osmo_bsc_sigtran_send(struct gsm_subscriber_connection *conn, struct msgb *m
 	return rc;
 }
 
-/* Send an USSD notification in case we loose the connection to the MSC */
-static void bsc_notify_msc_lost(struct gsm_subscriber_connection *conn)
-{
-	/* Check if sccp conn is still present */
-	if (!conn)
-		return;
-
-	/* check for config string */
-	if (!conn->sccp.msc->ussd_msc_lost_txt)
-		return;
-	if (conn->sccp.msc->ussd_msc_lost_txt[0] == '\0')
-		return;
-
-	/* send USSD notification */
-	bsc_send_ussd_notify(conn, 1, conn->sccp.msc->ussd_msc_lost_txt);
-	bsc_send_ussd_release_complete(conn);
-}
-
 /* Close all open sigtran connections and channels */
 void osmo_bsc_sigtran_reset(const struct bsc_msc_data *msc)
 {
@@ -456,9 +437,6 @@ void osmo_bsc_sigtran_reset(const struct bsc_msc_data *msc)
 		/* We only may close connections which actually belong to this
 		 * MSC. All other open connections are left untouched */
 		if (conn->sccp.msc == msc) {
-			/* Notify active connection users via USSD that the MSC is down */
-			bsc_notify_msc_lost(conn);
-
 			/* Take down all occopied RF channels */
 			/* Disconnect all Sigtran connections */
 			/* Delete subscriber connection */
