@@ -441,7 +441,9 @@ void paging_request_stop(struct llist_head *bts_list,
 		/* Sort of an optimization. */
 		if (bts == _bts)
 			continue;
-		_paging_request_stop(bts, bsub, NULL, NULL);
+		if (_paging_request_stop(bts, bsub, NULL, NULL) == 0) {
+			rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_CTR_PAGING_RESPONDED_ELSEWHERE]);
+		}
 	}
 	log_set_context(LOG_CTX_BSC_SUBSCR, NULL);
 }
