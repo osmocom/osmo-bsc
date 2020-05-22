@@ -487,6 +487,7 @@ struct bsc_msc_data *paging_get_msc(struct gsm_bts *bts, struct bsc_subscr *bsub
 void paging_flush_bts(struct gsm_bts *bts, struct bsc_msc_data *msc)
 {
 	struct gsm_paging_request *req, *req2;
+	int num_cancelled = 0;
 
 	paging_init_if_needed(bts);
 
@@ -496,7 +497,10 @@ void paging_flush_bts(struct gsm_bts *bts, struct bsc_msc_data *msc)
 		/* now give up the data structure */
 		LOG_BTS(bts, DPAG, LOGL_DEBUG, "Stop paging %s (flush)\n", bsc_subscr_name(req->bsub));
 		paging_remove_request(&bts->paging, req);
+		num_cancelled++;
 	}
+
+	rate_ctr_add(&bts->bts_ctrs->ctr[BTS_CTR_PAGING_MSC_FLUSH], num_cancelled);
 }
 
 /*! Flush all paging requests issued by \a msc on any BTS in \a net */
