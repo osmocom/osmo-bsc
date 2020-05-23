@@ -59,12 +59,6 @@ void *tall_paging_ctx = NULL;
 #define PAGING_TIMER 0, 500000
 
 /*
- * TODO MSCSPLIT: the paging in libbsc is closely tied to MSC land in that the
- * MSC realm callback functions used to be invoked from the BSC/BTS level. So
- * this entire file needs to be rewired for use with an A interface.
- */
-
-/*
  * Kill one paging request update the internal list...
  */
 static void paging_remove_request(struct gsm_bts_paging_state *paging_bts,
@@ -441,7 +435,9 @@ void paging_request_stop(struct llist_head *bts_list,
 		/* Sort of an optimization. */
 		if (bts == _bts)
 			continue;
-		_paging_request_stop(bts, bsub, NULL, NULL);
+		if (_paging_request_stop(bts, bsub, NULL, NULL)) {
+			rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_CTR_PAGING_RESPONDED_ELSEWHERE]);
+		}
 	}
 	log_set_context(LOG_CTX_BSC_SUBSCR, NULL);
 }
@@ -487,6 +483,7 @@ struct bsc_msc_data *paging_get_msc(struct gsm_bts *bts, struct bsc_subscr *bsub
 void paging_flush_bts(struct gsm_bts *bts, struct bsc_msc_data *msc)
 {
 	struct gsm_paging_request *req, *req2;
+	int num_cancelled = 0;
 
 	paging_init_if_needed(bts);
 
@@ -496,7 +493,10 @@ void paging_flush_bts(struct gsm_bts *bts, struct bsc_msc_data *msc)
 		/* now give up the data structure */
 		LOG_BTS(bts, DPAG, LOGL_DEBUG, "Stop paging %s (flush)\n", bsc_subscr_name(req->bsub));
 		paging_remove_request(&bts->paging, req);
+		num_cancelled++;
 	}
+
+	rate_ctr_add(&bts->bts_ctrs->ctr[BTS_CTR_PAGING_MSC_FLUSH], num_cancelled);
 }
 
 /*! Flush all paging requests issued by \a msc on any BTS in \a net */
