@@ -715,7 +715,7 @@ void gscon_forget_lchan(struct gsm_subscriber_connection *conn, struct gsm_lchan
 				 osmo_fsm_inst_name(conn->fi), detach_label);
 	}
 
-	if (conn->fi->state != ST_CLEARING
+	if ((conn->fi && conn->fi->state != ST_CLEARING)
 	    && !conn->lchan
 	    && !conn->ho.new_lchan
 	    && !conn->assignment.new_lchan)
