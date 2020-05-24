@@ -400,7 +400,6 @@ static int msc_signal_handler(unsigned int subsys, unsigned int signal,
 			void *handler_data, void *signal_data)
 {
 	struct gsm_network *net;
-	struct msc_signal_data *msc;
 	struct osmo_bsc_rf *rf;
 
 	/* check if we want to handle this signal */
@@ -408,12 +407,9 @@ static int msc_signal_handler(unsigned int subsys, unsigned int signal,
 		return 0;
 
 	net = handler_data;
-	msc = signal_data;
 
 	/* check if we have the needed information */
 	if (!net->bsc_data)
-		return 0;
-	if (msc->data->type != MSC_CON_TYPE_NORMAL)
 		return 0;
 
 	rf = net->bsc_data->rf_ctrl;

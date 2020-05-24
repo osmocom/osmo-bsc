@@ -137,8 +137,6 @@ static void write_msc(struct vty *vty, struct bsc_msc_data *msc)
 
 	}
 
-	vty_out(vty, " type %s%s", msc->type == MSC_CON_TYPE_NORMAL ?
-					"normal" : "local", VTY_NEWLINE);
 	vty_out(vty, " allow-emergency %s%s", msc->allow_emerg ?
 					"allow" : "deny", VTY_NEWLINE);
 
@@ -361,19 +359,13 @@ ALIAS_DEPRECATED(deprecated_no_ussd_text,
       cfg_net_bsc_no_missing_msc_text_cmd,
       "no missing-msc-text", NO_STR LEGACY_STR);
 
-DEFUN(cfg_net_msc_type,
+DEFUN_DEPRECATED(cfg_net_msc_type,
       cfg_net_msc_type_cmd,
       "type (normal|local)",
-      "Select the MSC type\n"
-      "Plain GSM MSC\n" "Special MSC for local call routing\n")
+      LEGACY_STR LEGACY_STR)
 {
-	struct bsc_msc_data *data = bsc_msc_data(vty);
-
-	if (strcmp(argv[0], "normal") == 0)
-		data->type = MSC_CON_TYPE_NORMAL;
-	else if (strcmp(argv[0], "local") == 0)
-		data->type = MSC_CON_TYPE_LOCAL;
-
+	vty_out(vty, "%% 'msc' / 'type' config is deprecated and no longer has any effect%s",
+		VTY_NEWLINE);
 	return CMD_SUCCESS;
 }
 

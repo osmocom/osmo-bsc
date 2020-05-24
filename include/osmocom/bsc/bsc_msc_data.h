@@ -50,11 +50,6 @@
 struct osmo_bsc_rf;
 struct gsm_network;
 
-enum {
-	MSC_CON_TYPE_NORMAL,
-	MSC_CON_TYPE_LOCAL,
-};
-
 /* Constants for the MSC rate counters */
 enum {
 	/* Rx message counters */
@@ -118,7 +113,6 @@ struct bsc_msc_data {
 	struct gsm_network *network;
 
 	int allow_emerg;
-	int type;
 
 	/* Connection data */
 	struct osmo_plmn_id core_plmn;

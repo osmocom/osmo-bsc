@@ -197,8 +197,6 @@ static struct bsc_msc_data *bsc_find_msc(struct gsm_subscriber_connection *conn,
 
 round_robin:
 	llist_for_each_entry(msc, &bsc->mscs, entry) {
-		if (!is_emerg && msc->type != MSC_CON_TYPE_NORMAL)
-			continue;
 		if (is_emerg && !msc->allow_emerg)
 			continue;
 
