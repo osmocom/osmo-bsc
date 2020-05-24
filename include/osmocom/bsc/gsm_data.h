@@ -1651,6 +1651,10 @@ struct gsm_network {
 
 	/* msc configuration */
 	struct llist_head mscs;
+	uint8_t mscs_round_robin_next_nr;
+	/* Emergency calls potentially select a different set of MSCs, so to not mess up the normal round-robin
+	 * behavior, emergency calls need a separate round-robin counter. */
+	uint8_t mscs_round_robin_next_emerg_nr;
 
 	/* rf ctl related bits */
 	int mid_call_timeout;

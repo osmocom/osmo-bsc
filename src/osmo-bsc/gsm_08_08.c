@@ -36,6 +36,9 @@
 
 #include <osmocom/bsc/osmo_bsc_sigtran.h>
 
+#define LOG_COMPL_L3(pdisc, mtype, loglevel, format, args...) \
+	LOGP(DRSL, loglevel, "%s %s: " format, gsm48_pdisc_name(pdisc), gsm48_pdisc_msgtype_name(pdisc, mtype), ##args)
+
 /* Check if we have a proper connection to the MSC */
 static bool msc_connected(struct gsm_subscriber_connection *conn)
 {
@@ -159,6 +162,21 @@ static struct bsc_subscr *extract_sub(struct gsm_subscriber_connection *conn,
 	return subscr;
 }
 
+static bool is_msc_usable(struct bsc_msc_data *msc, bool is_emerg)
+{
+	if (is_emerg && !msc->allow_emerg)
+		return false;
+	if (!a_reset_conn_ready(msc))
+		return false;
+	return true;
+}
+
+/* Decide which MSC to forward this Complete Layer 3 request to.
+ * a) If the subscriber was previously paged from a particular MSC, that MSC shall receive the Paging Response.
+ * b) If the message contains an NRI indicating a particular MSC and the MSC is connected, that MSC shall handle this
+ *    conn.
+ * c) All other cases distribute the messages across connected MSCs in a round-robin fashion.
+ */
 static struct bsc_msc_data *bsc_find_msc(struct gsm_subscriber_connection *conn,
 				   struct msgb *msg)
 {
@@ -166,9 +184,13 @@ static struct bsc_msc_data *bsc_find_msc(struct gsm_subscriber_connection *conn,
 	struct gsm48_hdr *gh;
 	int8_t pdisc;
 	uint8_t mtype;
-	struct bsc_msc_data *msc, *pag_msc;
+	struct bsc_msc_data *msc;
+	struct bsc_msc_data *msc_target = NULL;
+	struct bsc_msc_data *msc_round_robin_next = NULL;
+	struct bsc_msc_data *msc_round_robin_first = NULL;
+	uint8_t round_robin_next_nr;
 	struct bsc_subscr *subscr;
-	int is_emerg = 0;
+	bool is_emerg = false;
 
 	if (msgb_l3len(msg) < sizeof(*gh)) {
 		LOGP(DMSC, LOGL_ERROR, "There is no GSM48 header here.\n");
@@ -179,72 +201,57 @@ static struct bsc_msc_data *bsc_find_msc(struct gsm_subscriber_connection *conn,
 	pdisc = gsm48_hdr_pdisc(gh);
 	mtype = gsm48_hdr_msg_type(gh);
 
-	/*
-	 * We are asked to select a MSC here but they are not equal. We
-	 * want to respond to a paging request on the MSC where we got the
-	 * request from. This is where we need to decide where this connection
-	 * will go.
-	 */
-	if (pdisc == GSM48_PDISC_RR && mtype == GSM48_MT_RR_PAG_RESP)
-		goto paging;
-	else if (pdisc == GSM48_PDISC_MM && mtype == GSM48_MT_MM_CM_SERV_REQ) {
-		is_emerg = is_cm_service_for_emerg(msg);
-		goto round_robin;
-	} else
-		goto round_robin;
+	is_emerg = (pdisc == GSM48_PDISC_MM && mtype == GSM48_MT_MM_CM_SERV_REQ) && is_cm_service_for_emerg(msg);
 
-round_robin:
+	/* Has the subscriber been paged from a connected MSC? */
+	if (pdisc == GSM48_PDISC_RR && mtype == GSM48_MT_RR_PAG_RESP) {
+		subscr = extract_sub(conn, msg);
+		if (subscr) {
+			msc_target = paging_get_msc(conn_get_bts(conn), subscr);
+			bsc_subscr_put(subscr);
+			if (is_msc_usable(msc_target, is_emerg))
+				return msc_target;
+			msc_target = NULL;
+		}
+	}
+
+	/* TODO: extract NRI from MI */
+
+	/* Iterate MSCs to find one that matches the extracted NRI, and the next round-robin target for the case no NRI
+	 * match is found. */
+	round_robin_next_nr = (is_emerg ? net->mscs_round_robin_next_emerg_nr : net->mscs_round_robin_next_nr);
 	llist_for_each_entry(msc, &net->mscs, entry) {
-		if (is_emerg && !msc->allow_emerg)
+		if (!is_msc_usable(msc, is_emerg))
 			continue;
 
-		/* force round robin by moving it to the end */
-		llist_move_tail(&msc->entry, &net->mscs);
-		return msc;
+		/* TODO: return msc when extracted NRI matches this MSC */
+
+		/* Figure out the next round-robin MSC. The MSCs may appear unsorted in net->mscs. Make sure to linearly
+		 * round robin the MSCs by number: pick the lowest msc->nr >= round_robin_next_nr, and also remember the
+		 * lowest available msc->nr to wrap back to that in case no next MSC is left. */
+		if (!msc_round_robin_first || msc->nr < msc_round_robin_first->nr)
+			msc_round_robin_first = msc;
+		if (msc->nr >= round_robin_next_nr
+		    && (!msc_round_robin_next || msc->nr < msc_round_robin_next->nr))
+			msc_round_robin_next = msc;
 	}
 
-	return NULL;
-
-paging:
-	subscr = extract_sub(conn, msg);
-
-	if (!subscr) {
-		LOGP(DMSC, LOGL_INFO, "Got paging response but no subscriber found, will now (blindly) deliver the paging response to the first configured MSC!\n");
-		goto blind;
+	/* No dedicated MSC found. Choose by round-robin.
+	 * If msc_round_robin_next is NULL, there are either no more MSCs at/after mscs_round_robin_next_nr, or none of
+	 * them are usable -- wrap to the start. */
+	msc_target = msc_round_robin_next ? : msc_round_robin_first;
+	if (!msc_target) {
+		LOG_COMPL_L3(pdisc, mtype, LOGL_ERROR, "%sNo suitable MSC for this Complete Layer 3 request found\n",
+			     is_emerg ? "FOR EMERGENCY CALL: " : "");
+		return NULL;
 	}
 
-	pag_msc = paging_get_msc(conn_get_bts(conn), subscr);
-	bsc_subscr_put(subscr);
-
-	llist_for_each_entry(msc, &net->mscs, entry) {
-		if (msc != pag_msc)
-			continue;
-
-		/*
-		 * We don't check if the MSC is connected. In case it
-		 * is not the connection will be dropped.
-		 */
-
-		/* force round robin by moving it to the end */
-		llist_move_tail(&msc->entry, &net->mscs);
-		return msc;
-	}
-
-	LOGP(DMSC, LOGL_INFO, "Got paging response but no request found, will now (blindly) deliver the paging response to the first configured MSC!\n");
-
-blind:
-	/* In the case of an MT CSFB call we will get a paging response from
-	 * the BTS without a preceding paging request via A-Interface. In those
-	 * cases the MSC will page the subscriber via SGs interface, so the BSC
-	 * can not know about the paging in advance. In those cases we can not
-	 * know the MSC which is in charge. The only meaningful option we have
-	 * is to deliver the paging response to the first configured MSC
-	 * blindly. */
-	msc = llist_first_entry_or_null(&net->mscs, struct bsc_msc_data, entry);
-	if (msc)
-		return msc;
-	LOGP(DMSC, LOGL_ERROR, "Unable to find any suitable MSC to deliver paging response!\n");
-	return NULL;
+	/* An MSC was picked by round-robin, so update the next round-robin nr to pick */
+	if (is_emerg)
+		net->mscs_round_robin_next_emerg_nr = msc_target->nr + 1;
+	else
+		net->mscs_round_robin_next_nr = msc_target->nr + 1;
+	return msc_target;
 }
 
 static int handle_page_resp(struct gsm_subscriber_connection *conn, struct msgb *msg)
