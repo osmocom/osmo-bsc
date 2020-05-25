@@ -26,6 +26,7 @@
 #include <osmocom/bsc/osmo_bsc_rf.h>
 #include <osmocom/bsc/bsc_msc_data.h>
 #include <osmocom/bsc/signal.h>
+#include <osmocom/bsc/a_reset.h>
 
 #include <osmocom/core/linuxlist.h>
 #include <osmocom/core/signal.h>
@@ -179,21 +180,12 @@ CTRL_CMD_DEFINE_RO(msc_connection_status, "connection_status");
 static int get_msc_connection_status(struct ctrl_cmd *cmd, void *data)
 {
 	struct bsc_msc_data *msc = (struct bsc_msc_data *)cmd->node;
-	struct osmo_ss7_as *as;
-	const char *as_state_name;
 
 	if (msc == NULL) {
 		cmd->reply = "msc not found";
 		return CTRL_CMD_ERROR;
 	}
-	as = msc_get_ss7_as(msc);
-	if (!as) {
-		cmd->reply = "AS not found for MSC";
-		return CTRL_CMD_ERROR;
-	}
-
-	as_state_name = osmo_fsm_inst_state_name(as->fi);
-	if (!strcmp(as_state_name, "AS_ACTIVE"))
+	if (a_reset_conn_ready(msc))
 		cmd->reply = "connected";
 	else
 		cmd->reply = "disconnected";
