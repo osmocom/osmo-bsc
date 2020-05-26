@@ -33,6 +33,7 @@
 #include <osmocom/gsm/gsm0808.h>
 #include <osmocom/gsm/mncc.h>
 #include <osmocom/gsm/gsm48.h>
+#include <osmocom/gsm/gsm23236.h>
 
 #include <osmocom/bsc/osmo_bsc_sigtran.h>
 
@@ -152,6 +153,8 @@ static struct bsc_msc_data *bsc_find_msc(struct gsm_subscriber_connection *conn,
 	uint8_t round_robin_next_nr;
 	struct bsc_subscr *subscr;
 	bool is_emerg = false;
+	int16_t nri_v = -1;
+	bool is_null_nri = false;
 
 	if (msgb_l3len(msg) < sizeof(*gh)) {
 		LOGP(DRSL, LOGL_ERROR, "There is no GSM48 header here.\n");
@@ -186,16 +189,45 @@ static struct bsc_msc_data *bsc_find_msc(struct gsm_subscriber_connection *conn,
 		}
 	}
 
-	/* TODO: extract NRI from MI */
+#define LOG_NRI(LOGLEVEL, FORMAT, ARGS...) \
+	LOGP(DMSC, LOGLEVEL, "%s NRI(%d)=0x%x=%d: " FORMAT, osmo_mobile_identity_to_str_c(OTC_SELECT, &mi), \
+	     net->nri_bitlen, nri_v, nri_v, ##ARGS)
+
+	/* Extract NRI bits from TMSI, possibly indicating which MSC is responsible */
+	if (mi.type == GSM_MI_TYPE_TMSI) {
+		if (osmo_tmsi_nri_v_get(&nri_v, mi.tmsi, net->nri_bitlen)) {
+			LOGP(DMSC, LOGL_ERROR, "Unable to retrieve NRI from TMSI, nri_bitlen == %u\n", net->nri_bitlen);
+			nri_v = -1;
+		} else {
+			is_null_nri = osmo_nri_v_matches_ranges(nri_v, net->null_nri_ranges);
+			if (is_null_nri)
+				LOG_NRI(LOGL_DEBUG, "this is a NULL-NRI\n");
+		}
+	}
 
 	/* Iterate MSCs to find one that matches the extracted NRI, and the next round-robin target for the case no NRI
 	 * match is found. */
 	round_robin_next_nr = (is_emerg ? net->mscs_round_robin_next_emerg_nr : net->mscs_round_robin_next_nr);
 	llist_for_each_entry(msc, &net->mscs, entry) {
-		if (!is_msc_usable(msc, is_emerg))
-			continue;
+		bool nri_matches_msc = (nri_v >= 0 && osmo_nri_v_matches_ranges(nri_v, msc->nri_ranges));
 
-		/* TODO: return msc when extracted NRI matches this MSC */
+		if (!is_msc_usable(msc, is_emerg)) {
+			if (nri_matches_msc)
+				LOG_NRI(LOGL_DEBUG, "matches msc %d, but this MSC is currently not connected\n",
+					msc->nr);
+			continue;
+		}
+
+		/* Return MSC if it matches this NRI, with some debug logging. */
+		if (nri_matches_msc) {
+			if (is_null_nri) {
+				LOG_NRI(LOGL_DEBUG, "matches msc %d, but this NRI is also configured as NULL-NRI\n",
+					msc->nr);
+			} else {
+				LOG_NRI(LOGL_DEBUG, "matches msc %d\n", msc->nr);
+				return msc;
+			}
+		}
 
 		/* Figure out the next round-robin MSC. The MSCs may appear unsorted in net->mscs. Make sure to linearly
 		 * round robin the MSCs by number: pick the lowest msc->nr >= round_robin_next_nr, and also remember the
@@ -207,6 +239,9 @@ static struct bsc_msc_data *bsc_find_msc(struct gsm_subscriber_connection *conn,
 			msc_round_robin_next = msc;
 	}
 
+	if (nri_v >= 0 && !is_null_nri)
+		LOG_NRI(LOGL_DEBUG, "No MSC found for this NRI, doing round-robin\n");
+
 	/* No dedicated MSC found. Choose by round-robin.
 	 * If msc_round_robin_next is NULL, there are either no more MSCs at/after mscs_round_robin_next_nr, or none of
 	 * them are usable -- wrap to the start. */
@@ -217,12 +252,16 @@ static struct bsc_msc_data *bsc_find_msc(struct gsm_subscriber_connection *conn,
 		return NULL;
 	}
 
+	LOGP(DMSC, LOGL_DEBUG, "New subscriber %s: MSC round-robin selects msc %d\n",
+	     osmo_mobile_identity_to_str_c(OTC_SELECT, &mi), msc_target->nr);
+
 	/* An MSC was picked by round-robin, so update the next round-robin nr to pick */
 	if (is_emerg)
 		net->mscs_round_robin_next_emerg_nr = msc_target->nr + 1;
 	else
 		net->mscs_round_robin_next_nr = msc_target->nr + 1;
 	return msc_target;
+#undef LOG_NRI
 }
 
 static int handle_page_resp(struct gsm_subscriber_connection *conn, struct msgb *msg)
