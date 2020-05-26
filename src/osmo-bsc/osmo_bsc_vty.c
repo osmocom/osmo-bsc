@@ -29,6 +29,7 @@
 
 #include <osmocom/core/talloc.h>
 #include <osmocom/gsm/gsm48.h>
+#include <osmocom/gsm/gsm23236.h>
 #include <osmocom/vty/logging.h>
 #include <osmocom/mgcp_client/mgcp_client.h>
 
@@ -52,8 +53,10 @@ static struct cmd_node msc_node = {
 	1,
 };
 
+#define MSC_NR_RANGE "<0-1000>"
+
 DEFUN(cfg_net_msc, cfg_net_msc_cmd,
-      "msc [<0-1000>]", "Configure MSC details\n" "MSC connection to configure\n")
+      "msc [" MSC_NR_RANGE "]", "Configure MSC details\n" "MSC connection to configure\n")
 {
 	int index = argc == 1 ? atoi(argv[0]) : 0;
 	struct bsc_msc_data *msc;
@@ -98,6 +101,8 @@ static void write_msc_amr_options(struct vty *vty, struct bsc_msc_data *msc)
 	else
 		vty_out(vty, " amr-payload bandwith-efficient%s", VTY_NEWLINE);
 }
+
+static void msc_write_nri(struct vty *vty, struct bsc_msc_data *msc, bool verbose);
 
 static void write_msc(struct vty *vty, struct bsc_msc_data *msc)
 {
@@ -170,6 +175,8 @@ static void write_msc(struct vty *vty, struct bsc_msc_data *msc)
 		vty_out(vty, " osmux %s%s", msc->use_osmux == OSMUX_USAGE_ON ? "on" : "only",
 			VTY_NEWLINE);
 	}
+
+	msc_write_nri(vty, msc, false);
 }
 
 static int config_write_msc(struct vty *vty)
@@ -784,6 +791,128 @@ DEFUN(cfg_net_msc_amr_octet_align,
 	return CMD_SUCCESS;
 }
 
+#define NRI_STR "Mapping of Network Resource Indicators to this MSC, for MSC pooling\n"
+#define NRI_FIRST_LAST_STR "First value of the NRI value range, should not surpass the configured 'nri bitlen'.\n" \
+	"Last value of the NRI value range, should not surpass the configured 'nri bitlen' and be larger than the" \
+	" first value; if omitted, apply only the first value.\n"
+
+#define NRI_WARN(MSC, FORMAT, args...) do { \
+		vty_out(vty, "%% Warning: msc %d: " FORMAT "%s", MSC->nr, ##args, VTY_NEWLINE); \
+		LOGP(DMSC, LOGL_ERROR, "msc %d: " FORMAT "\n", MSC->nr, ##args); \
+	} while (0)
+
+#define NRI_ARGS_TO_STR_FMT "%s%s%s"
+#define NRI_ARGS_TO_STR_ARGS(ARGC, ARGV) ARGV[0], (ARGC>1)? ".." : "", (ARGC>1)? ARGV[1] : ""
+
+DEFUN(cfg_msc_nri_add, cfg_msc_nri_add_cmd,
+      "nri add <0-32767> [<0-32767>]",
+      NRI_STR "Add NRI value or range to the NRI mapping for this MSC\n"
+      NRI_FIRST_LAST_STR)
+{
+	struct bsc_msc_data *msc = bsc_msc_data(vty);
+	struct bsc_msc_data *other_msc;
+	bool before;
+	int rc;
+	const char *message;
+	struct osmo_nri_range add_range;
+
+	rc = osmo_nri_ranges_vty_add(&message, &add_range, msc->nri_ranges, argc, argv, bsc_gsmnet->nri_bitlen);
+	if (message) {
+		NRI_WARN(msc, "%s: " NRI_ARGS_TO_STR_FMT, message, NRI_ARGS_TO_STR_ARGS(argc, argv));
+	}
+	if (rc < 0)
+		return CMD_WARNING;
+
+	/* Issue a warning about NRI range overlaps (but still allow them).
+	 * Overlapping ranges will map to whichever MSC comes fist in the bsc_gsmnet->mscs llist,
+	 * which is not necessarily in the order of increasing msc->nr. */
+	before = true;
+	llist_for_each_entry(other_msc, &bsc_gsmnet->mscs, entry) {
+		if (other_msc == msc) {
+			before = false;
+			continue;
+		}
+		if (osmo_nri_range_overlaps_ranges(&add_range, other_msc->nri_ranges)) {
+			NRI_WARN(msc, "NRI range [%d..%d] overlaps between msc %d and msc %d."
+				 " For overlaps, msc %d has higher priority than msc %d",
+				 add_range.first, add_range.last, msc->nr, other_msc->nr,
+				 before ? other_msc->nr : msc->nr, before ? msc->nr : other_msc->nr);
+		}
+	}
+	return CMD_SUCCESS;
+}
+
+DEFUN(cfg_msc_nri_del, cfg_msc_nri_del_cmd,
+      "nri del <0-32767> [<0-32767>]",
+      NRI_STR "Remove NRI value or range from the NRI mapping for this MSC\n"
+      NRI_FIRST_LAST_STR)
+{
+	struct bsc_msc_data *msc = bsc_msc_data(vty);
+	int rc;
+	const char *message;
+
+	rc = osmo_nri_ranges_vty_del(&message, NULL, msc->nri_ranges, argc, argv);
+	if (message) {
+		NRI_WARN(msc, "%s: " NRI_ARGS_TO_STR_FMT, message, NRI_ARGS_TO_STR_ARGS(argc, argv));
+	}
+	if (rc < 0)
+		return CMD_WARNING;
+	return CMD_SUCCESS;
+}
+
+static void msc_write_nri(struct vty *vty, struct bsc_msc_data *msc, bool verbose)
+{
+	struct osmo_nri_range *r;
+
+	if (verbose) {
+		vty_out(vty, "msc %d%s", msc->nr, VTY_NEWLINE);
+		if (llist_empty(&msc->nri_ranges->entries)) {
+			vty_out(vty, " %% no NRI mappings%s", VTY_NEWLINE);
+			return;
+		}
+	}
+
+	llist_for_each_entry(r, &msc->nri_ranges->entries, entry) {
+		if (osmo_nri_range_validate(r, 255))
+			vty_out(vty, " %% INVALID RANGE:");
+		vty_out(vty, " nri add %d", r->first);
+		if (r->first != r->last)
+			vty_out(vty, " %d", r->last);
+		vty_out(vty, "%s", VTY_NEWLINE);
+	}
+}
+
+DEFUN(cfg_msc_show_nri, cfg_msc_show_nri_cmd,
+      "show nri",
+      SHOW_STR NRI_STR)
+{
+	struct bsc_msc_data *msc = bsc_msc_data(vty);
+	msc_write_nri(vty, msc, true);
+	return CMD_SUCCESS;
+}
+
+DEFUN(show_nri, show_nri_cmd,
+      "show nri [" MSC_NR_RANGE "]",
+      SHOW_STR NRI_STR "Optional MSC number to limit to\n")
+{
+	struct bsc_msc_data *msc;
+	if (argc > 0) {
+		int msc_nr = atoi(argv[0]);
+		msc = osmo_msc_data_find(bsc_gsmnet, msc_nr);
+		if (!msc) {
+			vty_out(vty, "%% No such MSC%s", VTY_NEWLINE);
+			return CMD_SUCCESS;
+		}
+		msc_write_nri(vty, msc, true);
+		return CMD_SUCCESS;
+	}
+
+	llist_for_each_entry(msc, &bsc_gsmnet->mscs, entry) {
+		msc_write_nri(vty, msc, true);
+	}
+	return CMD_SUCCESS;
+}
+
 int bsc_vty_init_extra(void)
 {
 	struct gsm_network *net = bsc_gsmnet;
@@ -831,6 +960,9 @@ int bsc_vty_init_extra(void)
 	install_element(MSC_NODE, &cfg_msc_cs7_bsc_addr_cmd);
 	install_element(MSC_NODE, &cfg_msc_cs7_msc_addr_cmd);
 	install_element(MSC_NODE, &cfg_msc_cs7_asp_proto_cmd);
+	install_element(MSC_NODE, &cfg_msc_nri_add_cmd);
+	install_element(MSC_NODE, &cfg_msc_nri_del_cmd);
+	install_element(MSC_NODE, &cfg_msc_show_nri_cmd);
 
 	/* Deprecated: ping time config, kept to support legacy config files. */
 	install_element(MSC_NODE, &cfg_net_msc_no_ping_time_cmd);
@@ -842,6 +974,7 @@ int bsc_vty_init_extra(void)
 	install_element_ve(&show_pos_cmd);
 	install_element_ve(&logging_fltr_imsi_cmd);
 	install_element_ve(&show_subscr_all_cmd);
+	install_element_ve(&show_nri_cmd);
 
 	install_element(ENABLE_NODE, &gen_position_trap_cmd);
 

@@ -1,0 +1,152 @@
+OsmoBSC> show nri
+msc 0
+ % no NRI mappings
+
+OsmoBSC> enable
+OsmoBSC# configure terminal
+
+OsmoBSC(config)# msc 0
+
+OsmoBSC(config-msc)# list
+...
+  nri add <0-32767> [<0-32767>]
+  nri del <0-32767> [<0-32767>]
+  show nri
+...
+OsmoBSC(config-msc)# nri ?
+  add  Add NRI value or range to the NRI mapping for this MSC
+  del  Remove NRI value or range from the NRI mapping for this MSC
+OsmoBSC(config-msc)# nri add ?
+  <0-32767>  First value of the NRI value range, should not surpass the configured 'nri bitlen'.
+OsmoBSC(config-msc)# nri add 23 ?
+  [<0-32767>]  Last value of the NRI value range, should not surpass the configured 'nri bitlen' and be larger than the first value; if omitted, apply only the first value.
+
+OsmoBSC(config-msc)# nri add 23
+OsmoBSC(config-msc)# nri add 256 511
+OsmoBSC(config-msc)# nri add 100 200
+OsmoBSC(config-msc)# nri add 1024 1024
+% Warning: msc 0: Warning: NRI range surpasses current NRI bitlen: 1024..1024
+OsmoBSC(config-msc)# show nri
+msc 0
+ nri add 23
+ nri add 100 200
+ nri add 256 511
+ nri add 1024
+OsmoBSC(config-msc)# exit
+
+OsmoBSC(config)# ### Do msc 2 first, to see that the order of mscs in the internal list is not determined by the msc->nr,
+OsmoBSC(config)# ### and whichever was configured first gets higher priority for overlaps.
+
+OsmoBSC(config)# msc 2
+OsmoBSC(config-msc)# nri add 200 300
+% Warning: msc 2: NRI range [200..300] overlaps between msc 2 and msc 0. For overlaps, msc 0 has higher priority than msc 2
+OsmoBSC(config-msc)# nri add 1024 1025
+% Warning: msc 2: Warning: NRI range surpasses current NRI bitlen: 1024..1025
+% Warning: msc 2: NRI range [1024..1025] overlaps between msc 2 and msc 0. For overlaps, msc 0 has higher priority than msc 2
+OsmoBSC(config-msc)# exit
+
+OsmoBSC(config)# msc 1
+OsmoBSC(config-msc)# nri add 42
+OsmoBSC(config-msc)# nri add 512 767
+OsmoBSC(config-msc)# nri add 200 300
+% Warning: msc 1: NRI range [200..300] overlaps between msc 1 and msc 0. For overlaps, msc 0 has higher priority than msc 1
+% Warning: msc 1: NRI range [200..300] overlaps between msc 1 and msc 2. For overlaps, msc 2 has higher priority than msc 1
+OsmoBSC(config-msc)# nri add 1024 1025
+% Warning: msc 1: Warning: NRI range surpasses current NRI bitlen: 1024..1025
+% Warning: msc 1: NRI range [1024..1025] overlaps between msc 1 and msc 0. For overlaps, msc 0 has higher priority than msc 1
+% Warning: msc 1: NRI range [1024..1025] overlaps between msc 1 and msc 2. For overlaps, msc 2 has higher priority than msc 1
+OsmoBSC(config-msc)# show nri
+msc 1
+ nri add 42
+ nri add 200 300
+ nri add 512 767
+ nri add 1024 1025
+OsmoBSC(config-msc)# exit
+
+OsmoBSC(config)# do show nri
+msc 0
+ nri add 23
+ nri add 100 200
+ nri add 256 511
+ nri add 1024
+msc 2
+ nri add 200 300
+ nri add 1024 1025
+msc 1
+ nri add 42
+ nri add 200 300
+ nri add 512 767
+ nri add 1024 1025
+
+OsmoBSC(config)# network
+OsmoBSC(config-net)# nri bitlen 11
+OsmoBSC(config-net)# show running-config
+...
+network
+...
+ nri bitlen 11
+...
+msc 0
+...
+ nri add 23
+ nri add 100 200
+ nri add 256 511
+ nri add 1024
+...
+msc 2
+...
+ nri add 200 300
+ nri add 1024 1025
+...
+msc 1
+...
+ nri add 42
+ nri add 200 300
+ nri add 512 767
+ nri add 1024 1025
+...
+OsmoBSC(config-net)# exit
+
+OsmoBSC(config)# msc 0
+OsmoBSC(config-msc)# nri del 0 10000
+OsmoBSC(config-msc)# exit
+OsmoBSC(config)# msc 1
+OsmoBSC(config-msc)# nri del 0 10000
+OsmoBSC(config-msc)# exit
+OsmoBSC(config)# msc 2
+OsmoBSC(config-msc)# nri del 0 10000
+OsmoBSC(config-msc)# exit
+OsmoBSC(config)# do show nri
+msc 0
+ % no NRI mappings
+msc 2
+ % no NRI mappings
+msc 1
+ % no NRI mappings
+
+OsmoBSC(config)# msc 0
+OsmoBSC(config-msc)# nri add 0 1000
+OsmoBSC(config-msc)# show nri
+msc 0
+ nri add 0 1000
+OsmoBSC(config-msc)# nri del 23
+OsmoBSC(config-msc)# nri del 200 300
+OsmoBSC(config-msc)# nri del 1000 2000
+OsmoBSC(config-msc)# show nri
+msc 0
+ nri add 0 22
+ nri add 24 199
+ nri add 301 999
+OsmoBSC(config-msc)# nri add 23
+OsmoBSC(config-msc)# show nri
+msc 0
+ nri add 0 199
+ nri add 301 999
+OsmoBSC(config-msc)# nri add 200 300
+OsmoBSC(config-msc)# show nri
+msc 0
+ nri add 0 999
+OsmoBSC(config-msc)# nri add 1000
+OsmoBSC(config-msc)# show nri
+msc 0
+ nri add 0 1000

@@ -18,6 +18,7 @@
  */
 
 #include <osmocom/core/tdef.h>
+#include <osmocom/gsm/gsm23236.h>
 
 #include <osmocom/bsc/osmo_bsc.h>
 #include <osmocom/bsc/gsm_04_08_rr.h>
@@ -89,6 +90,9 @@ struct gsm_network *gsm_network_init(void *ctx)
 
 	net->mgw.tdefs = g_mgw_tdefs;
 	osmo_tdefs_reset(net->mgw.tdefs);
+
+	net->null_nri_ranges = osmo_nri_ranges_alloc(net);
+	net->nri_bitlen = OSMO_NRI_BITLEN_DEFAULT;
 
 	return net;
 }

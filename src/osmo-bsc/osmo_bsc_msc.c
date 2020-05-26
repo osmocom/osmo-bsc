@@ -34,6 +34,7 @@
 #include <osmocom/core/socket.h>
 
 #include <osmocom/gsm/gsm0808.h>
+#include <osmocom/gsm/gsm23236.h>
 
 #include <osmocom/abis/ipa.h>
 
@@ -227,6 +228,8 @@ struct bsc_msc_data *osmo_msc_data_alloc(struct gsm_network *net, int nr)
 	osmo_fd_setup(&msc_data->mgcp_ipa.ofd, -1, BSC_FD_READ, &bsc_sccplite_mgcp_proxy_cb, msc_data, 0);
 	msc_data->mgcp_ipa.local_addr = talloc_strdup(msc_data, "0.0.0.0");
 	msc_data->mgcp_ipa.local_port = 0; /* dynamic */
+
+	msc_data->nri_ranges = osmo_nri_ranges_alloc(msc_data);
 
 	return msc_data;
 }

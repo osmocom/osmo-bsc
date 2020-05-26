@@ -179,6 +179,8 @@ struct bsc_msc_data {
 		/* UDP socket for proxying MGCP via SCCPlite/IPA */
 		struct osmo_fd ofd;
 	} mgcp_ipa;
+
+	struct osmo_nri_ranges *nri_ranges;
 };
 
 int osmo_bsc_msc_init(struct bsc_msc_data *msc);
