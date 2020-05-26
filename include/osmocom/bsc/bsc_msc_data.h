@@ -181,26 +181,6 @@ struct bsc_msc_data {
 	} mgcp_ipa;
 };
 
-/*
- * Per BSC data.
- */
-struct bsc_cbc_link;
-struct osmo_bsc_data {
-	struct gsm_network *network;
-
-	/* msc configuration */
-	struct llist_head mscs;
-
-	/* rf ctl related bits */
-	int mid_call_timeout;
-	char *rf_ctrl_name;
-	struct osmo_bsc_rf *rf_ctrl;
-	int auto_off_timeout;
-
-	struct bsc_cbc_link *cbc;
-};
-
-
 int osmo_bsc_msc_init(struct bsc_msc_data *msc);
 int osmo_bsc_sccp_init(struct gsm_network *gsmnet);
 

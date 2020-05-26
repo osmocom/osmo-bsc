@@ -137,7 +137,7 @@ page_subscriber(struct bsc_msc_data *msc, struct gsm_bts *bts,
 	subscr->lac = lac;
 	subscr->tmsi = tmsi;
 
-	ret = bsc_grace_paging_request(msc->network->bsc_data->rf_ctrl->policy, subscr, chan_needed, msc, bts);
+	ret = bsc_grace_paging_request(msc->network->rf_ctrl->policy, subscr, chan_needed, msc, bts);
 	if (ret == 0)
 		LOGP(DMSC, LOGL_INFO, "Paging request failed or repeated paging: BTS: %d IMSI: '%s' TMSI: '0x%x/%u' LAC: 0x%x\n",
 		     bts->nr, mi_string, tmsi, tmsi, lac);

@@ -35,11 +35,6 @@
 
 #include <time.h>
 
-static struct osmo_bsc_data *osmo_bsc_data(struct vty *vty)
-{
-	return bsc_gsmnet->bsc_data;
-}
-
 static struct bsc_msc_data *bsc_msc_data(struct vty *vty)
 {
 	return vty->index;
@@ -180,9 +175,8 @@ static void write_msc(struct vty *vty, struct bsc_msc_data *msc)
 static int config_write_msc(struct vty *vty)
 {
 	struct bsc_msc_data *msc;
-	struct osmo_bsc_data *bsc = osmo_bsc_data(vty);
 
-	llist_for_each_entry(msc, &bsc->mscs, entry)
+	llist_for_each_entry(msc, &bsc_gsmnet->mscs, entry)
 		write_msc(vty, msc);
 
 	return CMD_SUCCESS;
@@ -190,17 +184,15 @@ static int config_write_msc(struct vty *vty)
 
 static int config_write_bsc(struct vty *vty)
 {
-	struct osmo_bsc_data *bsc = osmo_bsc_data(vty);
-
 	vty_out(vty, "bsc%s", VTY_NEWLINE);
-	vty_out(vty, " mid-call-timeout %d%s", bsc->mid_call_timeout, VTY_NEWLINE);
-	if (bsc->rf_ctrl_name)
+	vty_out(vty, " mid-call-timeout %d%s", bsc_gsmnet->mid_call_timeout, VTY_NEWLINE);
+	if (bsc_gsmnet->rf_ctrl_name)
 		vty_out(vty, " bsc-rf-socket %s%s",
-			bsc->rf_ctrl_name, VTY_NEWLINE);
+			bsc_gsmnet->rf_ctrl_name, VTY_NEWLINE);
 
-	if (bsc->auto_off_timeout != -1)
+	if (bsc_gsmnet->auto_off_timeout != -1)
 		vty_out(vty, " bsc-auto-rf-off %d%s",
-			bsc->auto_off_timeout, VTY_NEWLINE);
+			bsc_gsmnet->auto_off_timeout, VTY_NEWLINE);
 
 	return CMD_SUCCESS;
 }
@@ -285,7 +277,7 @@ DEFUN(cfg_net_bsc_codec_list,
 
 	/* create a new array */
 	data->audio_support =
-		talloc_zero_array(osmo_bsc_data(vty), struct gsm_audio_support *, argc);
+		talloc_zero_array(bsc_gsmnet, struct gsm_audio_support *, argc);
 	data->audio_length = argc;
 
 	for (i = 0; i < argc; ++i) {
@@ -581,8 +573,7 @@ DEFUN(cfg_net_bsc_mid_call_timeout,
       "mid-call-timeout NR",
       "Switch from Grace to Off in NR seconds.\n" "Timeout in seconds\n")
 {
-	struct osmo_bsc_data *data = osmo_bsc_data(vty);
-	data->mid_call_timeout = atoi(argv[0]);
+	bsc_gsmnet->mid_call_timeout = atoi(argv[0]);
 	return CMD_SUCCESS;
 }
 
@@ -591,9 +582,7 @@ DEFUN(cfg_net_rf_socket,
       "bsc-rf-socket PATH",
       "Set the filename for the RF control interface.\n" "RF Control path\n")
 {
-	struct osmo_bsc_data *data = osmo_bsc_data(vty);
-
-	osmo_talloc_replace_string(data, &data->rf_ctrl_name, argv[0]);
+	osmo_talloc_replace_string(bsc_gsmnet, &bsc_gsmnet->rf_ctrl_name, argv[0]);
 	return CMD_SUCCESS;
 }
 
@@ -602,8 +591,7 @@ DEFUN(cfg_net_rf_off_time,
       "bsc-auto-rf-off <1-65000>",
       "Disable RF on MSC Connection\n" "Timeout\n")
 {
-	struct osmo_bsc_data *data = osmo_bsc_data(vty);
-	data->auto_off_timeout = atoi(argv[0]);
+	bsc_gsmnet->auto_off_timeout = atoi(argv[0]);
 	return CMD_SUCCESS;
 }
 
@@ -612,8 +600,7 @@ DEFUN(cfg_net_no_rf_off_time,
       "no bsc-auto-rf-off",
       NO_STR "Disable RF on MSC Connection\n")
 {
-	struct osmo_bsc_data *data = osmo_bsc_data(vty);
-	data->auto_off_timeout = -1;
+	bsc_gsmnet->auto_off_timeout = -1;
 	return CMD_SUCCESS;
 }
 
@@ -632,7 +619,7 @@ DEFUN(show_mscs,
       SHOW_STR "MSC Connections and State\n")
 {
 	struct bsc_msc_data *msc;
-	llist_for_each_entry(msc, &bsc_gsmnet->bsc_data->mscs, entry) {
+	llist_for_each_entry(msc, &bsc_gsmnet->mscs, entry) {
 		vty_out(vty, "%d %s %s ",
 			msc->a.cs7_instance,
 			osmo_ss7_asp_protocol_name(msc->a.asp_proto),

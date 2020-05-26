@@ -253,13 +253,13 @@ static void net_dump_vty(struct vty *vty, struct gsm_network *net)
 	dump_pchan_load_vty(vty, "    ", &pl);
 
 	/* show rf */
-	if (net->bsc_data)
+	if (net->rf_ctrl)
 		vty_out(vty, "  Last RF Command: %s%s",
-			net->bsc_data->rf_ctrl->last_state_command,
+			net->rf_ctrl->last_state_command,
 			VTY_NEWLINE);
-	if (net->bsc_data)
+	if (net->rf_ctrl)
 		vty_out(vty, "  Last RF Lock Command: %s%s",
-			net->bsc_data->rf_ctrl->last_rf_lock_ctrl_command,
+			net->rf_ctrl->last_rf_lock_ctrl_command,
 			VTY_NEWLINE);
 }
 

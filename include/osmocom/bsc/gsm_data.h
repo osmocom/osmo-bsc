@@ -1649,8 +1649,16 @@ struct gsm_network {
 	/* Use a TCH for handling requests of type paging any */
 	int pag_any_tch;
 
-	/* MSC data in case we are a true BSC */
-	struct osmo_bsc_data *bsc_data;
+	/* msc configuration */
+	struct llist_head mscs;
+
+	/* rf ctl related bits */
+	int mid_call_timeout;
+	char *rf_ctrl_name;
+	struct osmo_bsc_rf *rf_ctrl;
+	int auto_off_timeout;
+
+	struct bsc_cbc_link *cbc;
 
 	/* control interface */
 	struct ctrl_handle *ctrl;

@@ -349,7 +349,7 @@ static int get_net_rf_lock(struct ctrl_cmd *cmd, void *data)
 	struct gsm_bts *bts;
 	const char *policy_name;
 
-	policy_name = osmo_bsc_rf_get_policy_name(net->bsc_data->rf_ctrl->policy);
+	policy_name = osmo_bsc_rf_get_policy_name(net->rf_ctrl->policy);
 
 	llist_for_each_entry(bts, &net->bts_list, list) {
 		struct gsm_bts_trx *trx;
@@ -389,7 +389,7 @@ static int set_net_rf_lock(struct ctrl_cmd *cmd, void *data)
 		return CTRL_CMD_ERROR;
 	}
 
-	rf = net->bsc_data->rf_ctrl;
+	rf = net->rf_ctrl;
 
 	if (!rf) {
 		cmd->reply = "RF Ctrl is not enabled in the BSC Configuration";

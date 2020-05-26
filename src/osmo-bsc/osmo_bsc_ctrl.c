@@ -348,7 +348,7 @@ void bsc_gen_location_state_trap(struct gsm_bts *bts)
 {
 	struct bsc_msc_data *msc;
 
-	llist_for_each_entry(msc, &bts->network->bsc_data->mscs, entry)
+	llist_for_each_entry(msc, &bts->network->mscs, entry)
 		generate_location_state_trap(bts, msc);
 }
 
@@ -651,7 +651,7 @@ static int set_net_inform_msc(struct ctrl_cmd *cmd, void *data)
 	struct bsc_msc_data *msc;
 
 	net = cmd->node;
-	llist_for_each_entry(msc, &net->bsc_data->mscs, entry) {
+	llist_for_each_entry(msc, &net->mscs, entry) {
 		struct ctrl_cmd *trap;
 
 		trap = ctrl_cmd_create(tall_bsc_ctx, CTRL_TYPE_TRAP);

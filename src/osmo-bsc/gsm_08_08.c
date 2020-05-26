@@ -162,15 +162,13 @@ static struct bsc_subscr *extract_sub(struct gsm_subscriber_connection *conn,
 static struct bsc_msc_data *bsc_find_msc(struct gsm_subscriber_connection *conn,
 				   struct msgb *msg)
 {
+	struct gsm_network *net = conn->network;
 	struct gsm48_hdr *gh;
 	int8_t pdisc;
 	uint8_t mtype;
-	struct osmo_bsc_data *bsc;
 	struct bsc_msc_data *msc, *pag_msc;
 	struct bsc_subscr *subscr;
 	int is_emerg = 0;
-
-	bsc = conn->network->bsc_data;
 
 	if (msgb_l3len(msg) < sizeof(*gh)) {
 		LOGP(DMSC, LOGL_ERROR, "There is no GSM48 header here.\n");
@@ -196,12 +194,12 @@ static struct bsc_msc_data *bsc_find_msc(struct gsm_subscriber_connection *conn,
 		goto round_robin;
 
 round_robin:
-	llist_for_each_entry(msc, &bsc->mscs, entry) {
+	llist_for_each_entry(msc, &net->mscs, entry) {
 		if (is_emerg && !msc->allow_emerg)
 			continue;
 
 		/* force round robin by moving it to the end */
-		llist_move_tail(&msc->entry, &bsc->mscs);
+		llist_move_tail(&msc->entry, &net->mscs);
 		return msc;
 	}
 
@@ -218,7 +216,7 @@ paging:
 	pag_msc = paging_get_msc(conn_get_bts(conn), subscr);
 	bsc_subscr_put(subscr);
 
-	llist_for_each_entry(msc, &bsc->mscs, entry) {
+	llist_for_each_entry(msc, &net->mscs, entry) {
 		if (msc != pag_msc)
 			continue;
 
@@ -228,7 +226,7 @@ paging:
 		 */
 
 		/* force round robin by moving it to the end */
-		llist_move_tail(&msc->entry, &bsc->mscs);
+		llist_move_tail(&msc->entry, &net->mscs);
 		return msc;
 	}
 
@@ -242,7 +240,7 @@ blind:
 	 * know the MSC which is in charge. The only meaningful option we have
 	 * is to deliver the paging response to the first configured MSC
 	 * blindly. */
-	msc = llist_first_entry_or_null(&bsc->mscs, struct bsc_msc_data, entry);
+	msc = llist_first_entry_or_null(&net->mscs, struct bsc_msc_data, entry);
 	if (msc)
 		return msc;
 	LOGP(DMSC, LOGL_ERROR, "Unable to find any suitable MSC to deliver paging response!\n");

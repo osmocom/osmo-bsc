@@ -150,7 +150,7 @@ struct bsc_msc_data *osmo_msc_data_find(struct gsm_network *net, int nr)
 {
 	struct bsc_msc_data *msc_data;
 
-	llist_for_each_entry(msc_data, &net->bsc_data->mscs, entry)
+	llist_for_each_entry(msc_data, &net->mscs, entry)
 		if (msc_data->nr == nr)
 			return msc_data;
 	return NULL;
@@ -183,7 +183,7 @@ struct bsc_msc_data *osmo_msc_data_alloc(struct gsm_network *net, int nr)
 		return NULL;
 	}
 
-	llist_add_tail(&msc_data->entry, &net->bsc_data->mscs);
+	llist_add_tail(&msc_data->entry, &net->mscs);
 
 	/* Init back pointer */
 	msc_data->network = net;

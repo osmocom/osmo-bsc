@@ -651,10 +651,6 @@ static void signal_handler(int signal)
 		talloc_report(tall_vty_ctx, stderr);
 		talloc_report_full(tall_bsc_ctx, stderr);
 		break;
-	case SIGUSR2:
-		if (!bsc_gsmnet->bsc_data)
-			return;
-		break;
 	default:
 		break;
 	}
@@ -797,7 +793,6 @@ extern void *tall_ctr_ctx;
 int main(int argc, char **argv)
 {
 	struct bsc_msc_data *msc;
-	struct osmo_bsc_data *data;
 	int rc;
 
 	tall_bsc_ctx = talloc_named_const(NULL, 1, "osmo-bsc");
@@ -880,17 +875,16 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 
-	data = bsc_gsmnet->bsc_data;
 	if (rf_ctrl)
-		osmo_talloc_replace_string(data, &data->rf_ctrl_name, rf_ctrl);
+		osmo_talloc_replace_string(bsc_gsmnet, &bsc_gsmnet->rf_ctrl_name, rf_ctrl);
 
-	data->rf_ctrl = osmo_bsc_rf_create(data->rf_ctrl_name, bsc_gsmnet);
-	if (!data->rf_ctrl) {
+	bsc_gsmnet->rf_ctrl = osmo_bsc_rf_create(bsc_gsmnet->rf_ctrl_name, bsc_gsmnet);
+	if (!bsc_gsmnet->rf_ctrl) {
 		fprintf(stderr, "Failed to create the RF service.\n");
 		exit(1);
 	}
 
-	rc = check_codec_pref(&bsc_gsmnet->bsc_data->mscs);
+	rc = check_codec_pref(&bsc_gsmnet->mscs);
 	if (rc < 0) {
 		LOGP(DMSC, LOGL_ERROR, "Configuration contains mutually exclusive codec settings -- check"
 				       " configuration!\n");
@@ -902,7 +896,7 @@ int main(int argc, char **argv)
 		}
 	}
 
-	llist_for_each_entry(msc, &bsc_gsmnet->bsc_data->mscs, entry) {
+	llist_for_each_entry(msc, &bsc_gsmnet->mscs, entry) {
 		if (osmo_bsc_msc_init(msc) != 0) {
 			LOGP(DMSC, LOGL_ERROR, "Failed to start up. Exiting.\n");
 			exit(1);
@@ -918,7 +912,7 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 
-	if (osmo_bsc_sigtran_init(&bsc_gsmnet->bsc_data->mscs) != 0) {
+	if (osmo_bsc_sigtran_init(&bsc_gsmnet->mscs) != 0) {
 		LOGP(DNM, LOGL_ERROR, "Failed to initialize sigtran backhaul.\n");
 		exit(1);
 	}

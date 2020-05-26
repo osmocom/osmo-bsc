@@ -30,7 +30,7 @@ int bsc_grace_allow_new_connection(struct gsm_network *network, struct gsm_bts *
 {
 	if (bts->excl_from_rf_lock)
 		return 1;
-	return network->bsc_data->rf_ctrl->policy == S_RF_ON;
+	return network->rf_ctrl->policy == S_RF_ON;
 }
 
 

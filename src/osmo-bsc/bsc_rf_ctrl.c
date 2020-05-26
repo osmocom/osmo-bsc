@@ -106,12 +106,12 @@ enum osmo_bsc_rf_adminstate osmo_bsc_rf_get_adminstate_by_bts(struct gsm_bts *bt
 
 enum osmo_bsc_rf_policy osmo_bsc_rf_get_policy_by_bts(struct gsm_bts *bts)
 {
-	struct osmo_bsc_data *bsc_data = bts->network->bsc_data;
+	struct gsm_network *net = bts->network;
 
-	if (!bsc_data)
+	if (!net || !net->rf_ctrl)
 		return OSMO_BSC_RF_POLICY_UNKNOWN;
 
-	switch (bsc_data->rf_ctrl->policy) {
+	switch (net->rf_ctrl->policy) {
 	case S_RF_ON:
 		return OSMO_BSC_RF_POLICY_ON;
 	case S_RF_OFF:
@@ -267,9 +267,9 @@ static int enter_grace(struct osmo_bsc_rf *rf)
 	}
 
 	osmo_timer_setup(&rf->grace_timeout, grace_timeout, rf);
-	osmo_timer_schedule(&rf->grace_timeout, rf->gsm_network->bsc_data->mid_call_timeout, 0);
+	osmo_timer_schedule(&rf->grace_timeout, rf->gsm_network->mid_call_timeout, 0);
 	LOGP(DLINP, LOGL_NOTICE, "Going to switch RF off in %d seconds.\n",
-	     rf->gsm_network->bsc_data->mid_call_timeout);
+	     rf->gsm_network->mid_call_timeout);
 
 	send_signal(rf, S_RF_GRACE);
 	return 0;
@@ -409,18 +409,18 @@ static int msc_signal_handler(unsigned int subsys, unsigned int signal,
 	net = handler_data;
 
 	/* check if we have the needed information */
-	if (!net->bsc_data)
+	if (!net)
 		return 0;
 
-	rf = net->bsc_data->rf_ctrl;
+	rf = net->rf_ctrl;
 	switch (signal) {
 	case S_MSC_LOST:
-		if (net->bsc_data->auto_off_timeout < 0)
+		if (net->auto_off_timeout < 0)
 			return 0;
 		if (osmo_timer_pending(&rf->auto_off_timer))
 			return 0;
 		osmo_timer_schedule(&rf->auto_off_timer,
-				net->bsc_data->auto_off_timeout, 0);
+				net->auto_off_timeout, 0);
 		break;
 	case S_MSC_CONNECTED:
 		osmo_timer_del(&rf->auto_off_timer);

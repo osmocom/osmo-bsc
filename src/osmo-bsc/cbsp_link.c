@@ -192,7 +192,7 @@ static int cbsp_client_read_cb(struct osmo_stream_cli *cli)
 
 int bsc_cbc_link_restart(void)
 {
-	struct bsc_cbc_link *cbc = bsc_gsmnet->bsc_data->cbc;
+	struct bsc_cbc_link *cbc = bsc_gsmnet->cbc;
 
 	/* shut down client, if no longer configured */
 	if (cbc->client.cli && !cbc->config.cbc_hostname) {
@@ -280,7 +280,7 @@ int cbsp_tx_decoded(struct bsc_cbc_link *cbc, struct osmo_cbsp_decoded *cbsp)
 
 static struct bsc_cbc_link *vty_cbc_data(struct vty *vty)
 {
-	return bsc_gsmnet->bsc_data->cbc;
+	return bsc_gsmnet->cbc;
 }
 
 /*********************************************************************************
