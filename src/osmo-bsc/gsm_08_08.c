@@ -154,7 +154,7 @@ static struct bsc_msc_data *bsc_find_msc(struct gsm_subscriber_connection *conn,
 	bool is_emerg = false;
 
 	if (msgb_l3len(msg) < sizeof(*gh)) {
-		LOGP(DMSC, LOGL_ERROR, "There is no GSM48 header here.\n");
+		LOGP(DRSL, LOGL_ERROR, "There is no GSM48 header here.\n");
 		return NULL;
 	}
 
