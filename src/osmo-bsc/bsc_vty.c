@@ -5392,6 +5392,7 @@ int bsc_vty_init(struct gsm_network *network)
 	install_element(ENABLE_NODE, &handover_any_cmd);
 	install_element(ENABLE_NODE, &assignment_any_cmd);
 	install_element(ENABLE_NODE, &handover_any_to_arfcn_bsic_cmd);
+	/* See also handover commands added on net level from handover_vty.c */
 
 	logging_vty_add_cmds();
 	osmo_talloc_vty_add_cmds();
@@ -5399,7 +5400,6 @@ int bsc_vty_init(struct gsm_network *network)
 	install_element(GSMNET_NODE, &cfg_net_neci_cmd);
 	install_element(GSMNET_NODE, &cfg_net_dtx_cmd);
 	install_element(GSMNET_NODE, &cfg_net_pag_any_tch_cmd);
-	/* See also handover commands added on net level from handover_vty.c */
 
 	install_element(GSMNET_NODE, &cfg_bts_cmd);
 	install_node(&bts_node, config_write_bts);
