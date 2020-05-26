@@ -52,8 +52,6 @@ struct handover;
 
 #define OBSC_LINKID_CB(__msgb)	(__msgb)->cb[3]
 
-#define tmsi_from_string(str) strtoul(str, NULL, 10)
-
 /* 3-bit long values */
 #define EARFCN_PRIO_INVALID 8
 #define EARFCN_MEAS_BW_INVALID 8

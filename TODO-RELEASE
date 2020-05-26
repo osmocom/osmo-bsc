@@ -11,3 +11,5 @@ manual				needs common chapter cs7-config.adoc from osmo-gsm-manuals > 0.3.0
 libosmocore	struct gsm0808_diagnostics	Depends on libosmocore > 1.3.0
 libosmocore	gsm0808_diagnostics_octet_location_str()	Depends on libosmocore > 1.3.0
 libosmocore	gsm0808_diagnostics_bit_location_str()	Depends on libosmocore > 1.3.0
+libosmocore	osmo_mobile_identity	Depends on libosmocore > 1.3.0
+osmo-bsc	Mobile Identity Coding	OsmoBSC is stricter in rejecting invalid coding of Mobile Identity IEs

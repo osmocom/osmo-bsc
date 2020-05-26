@@ -122,46 +122,6 @@ static bool is_cm_service_for_emerg(struct msgb *msg)
 	return cm->cm_service_type == GSM48_CMSERV_EMERGENCY;
 }
 
-/* extract a subscriber from the paging response */
-static struct bsc_subscr *extract_sub(struct gsm_subscriber_connection *conn,
-				   struct msgb *msg)
-{
-	uint8_t mi_type;
-	char mi_string[GSM48_MI_SIZE];
-	struct gsm48_hdr *gh;
-	struct gsm48_pag_resp *resp;
-	struct bsc_subscr *subscr;
-
-	if (msgb_l3len(msg) < sizeof(*gh) + sizeof(*resp)) {
-		LOGP(DMSC, LOGL_ERROR, "PagingResponse too small: %u\n", msgb_l3len(msg));
-		return NULL;
-	}
-
-	gh = msgb_l3(msg);
-	resp = (struct gsm48_pag_resp *) &gh->data[0];
-
-	gsm48_paging_extract_mi(resp, msgb_l3len(msg) - sizeof(*gh),
-				mi_string, &mi_type);
-	DEBUGP(DRR, "PAGING RESPONSE: MI(%s)=%s\n",
-		gsm48_mi_type_name(mi_type), mi_string);
-
-	switch (mi_type) {
-	case GSM_MI_TYPE_TMSI:
-		subscr = bsc_subscr_find_by_tmsi(conn->network->bsc_subscribers,
-					      tmsi_from_string(mi_string));
-		break;
-	case GSM_MI_TYPE_IMSI:
-		subscr = bsc_subscr_find_by_imsi(conn->network->bsc_subscribers,
-					      mi_string);
-		break;
-	default:
-		subscr = NULL;
-		break;
-	}
-
-	return subscr;
-}
-
 static bool is_msc_usable(struct bsc_msc_data *msc, bool is_emerg)
 {
 	if (is_emerg && !msc->allow_emerg)
@@ -184,6 +144,7 @@ static struct bsc_msc_data *bsc_find_msc(struct gsm_subscriber_connection *conn,
 	struct gsm48_hdr *gh;
 	int8_t pdisc;
 	uint8_t mtype;
+	struct osmo_mobile_identity mi;
 	struct bsc_msc_data *msc;
 	struct bsc_msc_data *msc_target = NULL;
 	struct bsc_msc_data *msc_round_robin_next = NULL;
@@ -203,9 +164,19 @@ static struct bsc_msc_data *bsc_find_msc(struct gsm_subscriber_connection *conn,
 
 	is_emerg = (pdisc == GSM48_PDISC_MM && mtype == GSM48_MT_MM_CM_SERV_REQ) && is_cm_service_for_emerg(msg);
 
+	if (osmo_mobile_identity_decode_from_l3(&mi, msg, false)) {
+		LOG_COMPL_L3(pdisc, mtype, LOGL_ERROR, "Cannot extract Mobile Identity: %s\n",
+			     msgb_hexdump_c(OTC_SELECT, msg));
+		/* There is no Mobile Identity to pick a matching MSC from. Likely this is an invalid Complete Layer 3
+		 * message that deserves to be rejected. However, the current state of our ttcn3 tests does send invalid
+		 * Layer 3 Info in some tests and expects osmo-bsc to not care about that. So, changing the behavior to
+		 * rejecting on missing MI causes test failure and, if at all, should happen in a separate patch.
+		 * See e.g. BSC_Tests.TC_chan_rel_rll_rel_ind: "dt := f_est_dchan('23'O, 23, '00010203040506'O);" */
+	}
+
 	/* Has the subscriber been paged from a connected MSC? */
 	if (pdisc == GSM48_PDISC_RR && mtype == GSM48_MT_RR_PAG_RESP) {
-		subscr = extract_sub(conn, msg);
+		subscr = bsc_subscr_find_by_mi(conn->network->bsc_subscribers, &mi);
 		if (subscr) {
 			msc_target = paging_get_msc(conn_get_bts(conn), subscr);
 			bsc_subscr_put(subscr);
@@ -241,8 +212,8 @@ static struct bsc_msc_data *bsc_find_msc(struct gsm_subscriber_connection *conn,
 	 * them are usable -- wrap to the start. */
 	msc_target = msc_round_robin_next ? : msc_round_robin_first;
 	if (!msc_target) {
-		LOG_COMPL_L3(pdisc, mtype, LOGL_ERROR, "%sNo suitable MSC for this Complete Layer 3 request found\n",
-			     is_emerg ? "FOR EMERGENCY CALL: " : "");
+		LOG_COMPL_L3(pdisc, mtype, LOGL_ERROR, "%s%s: No suitable MSC for this Complete Layer 3 request found\n",
+			     osmo_mobile_identity_to_str_c(OTC_SELECT, &mi), is_emerg ? " FOR EMERGENCY CALL" : "");
 		return NULL;
 	}
 
@@ -256,8 +227,15 @@ static struct bsc_msc_data *bsc_find_msc(struct gsm_subscriber_connection *conn,
 
 static int handle_page_resp(struct gsm_subscriber_connection *conn, struct msgb *msg)
 {
-	struct bsc_subscr *subscr = extract_sub(conn, msg);
+	struct osmo_mobile_identity mi;
+	struct bsc_subscr *subscr = NULL;
 
+	if (osmo_mobile_identity_decode_from_l3(&mi, msg, false)) {
+		LOGP(DRSL, LOGL_ERROR, "Unable to extract Mobile Identity from Paging Response\n");
+		return -1;
+	}
+
+	subscr = bsc_subscr_find_by_mi(conn->network->bsc_subscribers, &mi);
 	if (!subscr) {
 		LOGP(DMSC, LOGL_ERROR, "Non active subscriber got paged.\n");
 		rate_ctr_inc(&conn->lchan->ts->trx->bts->bts_ctrs->ctr[BTS_CTR_PAGING_NO_ACTIVE_PAGING]);

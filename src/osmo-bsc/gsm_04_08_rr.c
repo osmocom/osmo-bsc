@@ -842,16 +842,6 @@ int gsm48_extract_mi(uint8_t *classmark2_lv, int length, char *mi_string, uint8_
 	return gsm48_mi_to_string(mi_string, GSM48_MI_SIZE, mi_lv+1, *mi_lv);
 }
 
-int gsm48_paging_extract_mi(struct gsm48_pag_resp *resp, int length,
-			    char *mi_string, uint8_t *mi_type)
-{
-	static const uint32_t classmark_offset =
-		offsetof(struct gsm48_pag_resp, classmark2);
-	uint8_t *classmark2_lv = (uint8_t *) &resp->classmark2;
-	return gsm48_extract_mi(classmark2_lv, length - classmark_offset,
-				mi_string, mi_type);
-}
-
 /* As per TS 03.03 Section 2.2, the IMSI has 'not more than 15 digits' */
 uint64_t str_to_imsi(const char *imsi_str)
 {

@@ -75,6 +75,20 @@ struct bsc_subscr *bsc_subscr_find_by_tmsi(struct llist_head *list,
 	return NULL;
 }
 
+struct bsc_subscr *bsc_subscr_find_by_mi(struct llist_head *list, const struct osmo_mobile_identity *mi)
+{
+	if (!mi)
+		return NULL;
+	switch (mi->type) {
+	case GSM_MI_TYPE_IMSI:
+		return bsc_subscr_find_by_imsi(list, mi->imsi);
+	case GSM_MI_TYPE_TMSI:
+		return bsc_subscr_find_by_tmsi(list, mi->tmsi);
+	default:
+		return NULL;
+	}
+}
+
 void bsc_subscr_set_imsi(struct bsc_subscr *bsub, const char *imsi)
 {
 	if (!bsub)
@@ -108,6 +122,20 @@ struct bsc_subscr *bsc_subscr_find_or_create_by_tmsi(struct llist_head *list,
 		return NULL;
 	bsub->tmsi = tmsi;
 	return bsc_subscr_get(bsub);
+}
+
+struct bsc_subscr *bsc_subscr_find_or_create_by_mi(struct llist_head *list, const struct osmo_mobile_identity *mi)
+{
+	if (!mi)
+		return NULL;
+	switch (mi->type) {
+	case GSM_MI_TYPE_IMSI:
+		return bsc_subscr_find_or_create_by_imsi(list, mi->imsi);
+	case GSM_MI_TYPE_TMSI:
+		return bsc_subscr_find_or_create_by_tmsi(list, mi->tmsi);
+	default:
+		return NULL;
+	}
 }
 
 const char *bsc_subscr_name(struct bsc_subscr *bsub)
