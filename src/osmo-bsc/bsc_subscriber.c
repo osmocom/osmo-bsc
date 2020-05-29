@@ -90,6 +90,8 @@ struct bsc_subscr *bsc_subscr_find_or_create_by_imsi(struct llist_head *list,
 	if (bsub)
 		return bsub;
 	bsub = bsc_subscr_alloc(list);
+	if (!bsub)
+		return NULL;
 	bsc_subscr_set_imsi(bsub, imsi);
 	return bsc_subscr_get(bsub);
 }
@@ -102,6 +104,8 @@ struct bsc_subscr *bsc_subscr_find_or_create_by_tmsi(struct llist_head *list,
 	if (bsub)
 		return bsub;
 	bsub = bsc_subscr_alloc(list);
+	if (!bsub)
+		return NULL;
 	bsub->tmsi = tmsi;
 	return bsc_subscr_get(bsub);
 }
