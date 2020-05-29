@@ -570,25 +570,29 @@ static int parse_attr_resp_info_attr(struct gsm_bts *bts, const struct gsm_bts_t
 		len = TLVP_LEN(tp, NM_ATT_MANUF_ID);
 
 		/* log potential BTS feature vector overflow */
-		if (len > sizeof(bts->_features_data))
+		if (len > sizeof(bts->_features_data)) {
 			LOGP(DNM, LOGL_NOTICE, "BTS%u Get Attributes Response: feature vector is truncated to %u bytes\n",
 			     bts->nr, MAX_BTS_FEATURES/8);
+		}
 
 		/* check that max. expected BTS attribute is above given feature vector length */
-		if (len > OSMO_BYTES_FOR_BITS(_NUM_BTS_FEAT))
+		if (len > OSMO_BYTES_FOR_BITS(_NUM_BTS_FEAT)) {
 			LOGP(DNM, LOGL_NOTICE, "BTS%u Get Attributes Response: reported unexpectedly long (%u bytes) "
 			     "feature vector - most likely it was compiled against newer BSC headers. "
 			     "Consider upgrading your BSC to later version.\n",
 			     bts->nr, len);
+		}
 
 		memcpy(bts->_features_data, TLVP_VAL(tp, NM_ATT_MANUF_ID), sizeof(bts->_features_data));
 
-		for (i = 0; i < _NUM_BTS_FEAT; i++)
-			if (osmo_bts_has_feature(&bts->features, i) != osmo_bts_has_feature(&bts->model->features, i))
+		for (i = 0; i < _NUM_BTS_FEAT; i++) {
+			if (osmo_bts_has_feature(&bts->features, i) != osmo_bts_has_feature(&bts->model->features, i)) {
 				LOGP(DNM, LOGL_NOTICE, "BTS%u feature '%s' reported via OML does not match statically "
 				     "set feature: %u != %u. Please fix.\n", bts->nr,
 				     get_value_string(osmo_bts_features_descs, i),
 				     osmo_bts_has_feature(&bts->features, i), osmo_bts_has_feature(&bts->model->features, i));
+			}
+		}
 	}
 
 	/* Parse Attribute Response Info content for 3GPP TS 52.021 §9.4.28 Manufacturer Dependent State */
@@ -607,10 +611,11 @@ static int parse_attr_resp_info_attr(struct gsm_bts *bts, const struct gsm_bts_t
 		if (rc > 0) {
 			for (i = 0; i < rc; i++) {
 				if (!handle_attr(bts, str2btsattr((const char *)sw_descr[i].file_id),
-						 sw_descr[i].file_version, sw_descr[i].file_version_len))
+						 sw_descr[i].file_version, sw_descr[i].file_version_len)) {
 					LOGPFOH(DNM, LOGL_NOTICE, foh, "BTS%u: ARI reported sw[%d/%d]: %s "
 						"is %s\n", bts->nr, i, rc, sw_descr[i].file_id,
 						sw_descr[i].file_version);
+				}
 			}
 		} else {
 			LOGPFOH(DNM, LOGL_ERROR, foh, "BTS%u: failed to parse SW-Config part of "
