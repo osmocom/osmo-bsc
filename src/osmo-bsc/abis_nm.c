@@ -2019,26 +2019,43 @@ int abis_nm_set_channel_attr(struct gsm_bts_trx_ts *ts, uint8_t chan_comb)
 
 	msgb_tv_put(msg, NM_ATT_CHAN_COMB, chan_comb);
 	if (ts->hopping.enabled) {
-		unsigned int i;
-		uint8_t *len;
+		unsigned int i, n;
+		uint16_t *u16 = NULL;
+		uint8_t *u8 = NULL;
 
 		msgb_tv_put(msg, NM_ATT_HSN, ts->hopping.hsn);
 		msgb_tv_put(msg, NM_ATT_MAIO, ts->hopping.maio);
 
-		/* build the ARFCN list */
 		msgb_put_u8(msg, NM_ATT_ARFCN_LIST);
-		len = msgb_put(msg, 1);
-		*len = 0;
-		for (i = 0; i < ts->hopping.arfcns.data_len*8; i++) {
+
+		/* 3GPP TS 12.21 defines this IE as TL16V */
+		if (bts->type != GSM_BTS_TYPE_BS11)
+			u16 = (uint16_t *) msgb_put(msg, 2);
+		else /* ... but BS-11 wants TLV instead */
+			u8 = (uint8_t *) msgb_put(msg, 1);
+
+		/* build the ARFCN list from pre-computed bitmap */
+		for (i = 0, n = 0; i < ts->hopping.arfcns.data_len*8; i++) {
 			if (bitvec_get_bit_pos(&ts->hopping.arfcns, i)) {
 				msgb_put_u16(msg, i);
-				/* At least BS-11 wants a TLV16 here */
-				if (bts->type == GSM_BTS_TYPE_BS11)
-					*len += 1;
-				else
-					*len += sizeof(uint16_t);
+				n += 1;
 			}
 		}
+
+		/* BS-11 cannot handle more than 255 ARFCNs, because L is 8 bit.
+		 * This is unlikely to happen, but better check than sorry... */
+		if (bts->type == GSM_BTS_TYPE_BS11 && n > 0xff) {
+			LOGPFOH(DNM, LOGL_ERROR, foh, "%s cannot handle %u (more than 255) "
+				"hopping channels\n", gsm_bts_name(bts), n);
+			msgb_free(msg);
+			return -EINVAL;
+		}
+
+		/* 3GPP TS 12.21 defines L as length of the V part (in octets) */
+		if (bts->type != GSM_BTS_TYPE_BS11)
+			*u16 = htons(n * sizeof(*u16));
+		else /* ... BS-11 wants the number of channels instead */
+			*u8 = n;
 	}
 	msgb_tv_put(msg, NM_ATT_TSC, gsm_ts_tsc(ts));	/* training sequence */
 	if (bts->type == GSM_BTS_TYPE_BS11)
