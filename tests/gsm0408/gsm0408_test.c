@@ -269,34 +269,6 @@ static inline void test_si2q_long(struct gsm_network *net)
 	bts_del(bts);
 }
 
-static void test_mi_functionality(void)
-{
-	const char *imsi_odd  = "987654321098763";
-	const char *imsi_even = "9876543210987654";
-	const uint32_t tmsi = 0xfabeacd0;
-	uint8_t mi[128];
-	unsigned int mi_len;
-	char mi_parsed[GSM48_MI_SIZE];
-
-	printf("Testing parsing and generating TMSI/IMSI\n");
-
-	/* tmsi code */
-	mi_len = gsm48_generate_mid_from_tmsi(mi, tmsi);
-	gsm48_mi_to_string(mi_parsed, sizeof(mi_parsed), mi + 2, mi_len - 2);
-	COMPARE((uint32_t)strtoul(mi_parsed, NULL, 10), ==, tmsi);
-
-	/* imsi code */
-	mi_len = gsm48_generate_mid_from_imsi(mi, imsi_odd);
-	gsm48_mi_to_string(mi_parsed, sizeof(mi_parsed), mi + 2, mi_len -2);
-	printf("hex: %s\n", osmo_hexdump(mi, mi_len));
-	COMPARE_STR(mi_parsed, imsi_odd);
-
-	mi_len = gsm48_generate_mid_from_imsi(mi, imsi_even);
-	gsm48_mi_to_string(mi_parsed, sizeof(mi_parsed), mi + 2, mi_len -2);
-	printf("hex: %s\n", osmo_hexdump(mi, mi_len));
-	COMPARE_STR(mi_parsed, imsi_even);
-}
-
 struct {
 	int range;
 	int arfcns_num;
@@ -923,8 +895,6 @@ int main(int argc, char **argv)
 		printf("Network init failure.\n");
 		return EXIT_FAILURE;
 	}
-
-	test_mi_functionality();
 
 	test_si_range_helpers();
 	test_arfcn_filter();
