@@ -828,20 +828,6 @@ struct msgb *gsm48_create_loc_upd_rej(uint8_t cause)
 	return msg;
 }
 
-int gsm48_extract_mi(uint8_t *classmark2_lv, int length, char *mi_string, uint8_t *mi_type)
-{
-	/* Check the size for the classmark */
-	if (length < 1 + *classmark2_lv)
-		return -1;
-
-	uint8_t *mi_lv = classmark2_lv + *classmark2_lv + 1;
-	if (length < 2 + *classmark2_lv + mi_lv[0])
-		return -2;
-
-	*mi_type = mi_lv[1] & GSM_MI_TYPE_MASK;
-	return gsm48_mi_to_string(mi_string, GSM48_MI_SIZE, mi_lv+1, *mi_lv);
-}
-
 /* As per TS 03.03 Section 2.2, the IMSI has 'not more than 15 digits' */
 uint64_t str_to_imsi(const char *imsi_str)
 {

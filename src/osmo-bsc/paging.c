@@ -78,10 +78,9 @@ static void paging_remove_request(struct gsm_bts_paging_state *paging_bts,
 
 static void page_ms(struct gsm_paging_request *request)
 {
-	uint8_t mi[128];
-	unsigned int mi_len;
 	unsigned int page_group;
 	struct gsm_bts *bts = request->bts;
+	struct osmo_mobile_identity mi;
 
 	log_set_context(LOG_CTX_BSC_SUBSCR, request->bsub);
 
@@ -89,14 +88,21 @@ static void page_ms(struct gsm_paging_request *request)
 		"0x%08x for ch. type %d (attempt %d)\n", request->bsub->imsi,
 		request->bsub->tmsi, request->chan_type, request->attempts);
 
-	if (request->bsub->tmsi == GSM_RESERVED_TMSI)
-		mi_len = gsm48_generate_mid_from_imsi(mi, request->bsub->imsi);
-	else
-		mi_len = gsm48_generate_mid_from_tmsi(mi, request->bsub->tmsi);
+	if (request->bsub->tmsi == GSM_RESERVED_TMSI) {
+		mi = (struct osmo_mobile_identity){
+			.type = GSM_MI_TYPE_IMSI,
+		};
+		OSMO_STRLCPY_ARRAY(mi.imsi, request->bsub->imsi);
+	} else {
+		mi = (struct osmo_mobile_identity){
+			.type = GSM_MI_TYPE_TMSI,
+			.tmsi = request->bsub->tmsi,
+		};
+	}
 
 	page_group = gsm0502_calc_paging_group(&bts->si_common.chan_desc,
 					       str_to_imsi(request->bsub->imsi));
-	rsl_paging_cmd(bts, page_group, mi_len, mi, request->chan_type, false);
+	rsl_paging_cmd(bts, page_group, &mi, request->chan_type, false);
 	log_set_context(LOG_CTX_BSC_SUBSCR, NULL);
 }
 

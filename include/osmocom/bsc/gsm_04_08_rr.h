@@ -39,7 +39,6 @@ int gsm48_tx_mm_serv_rej(struct gsm_subscriber_connection *conn,
 			 enum gsm48_reject_value value);
 
 struct msgb *gsm48_create_mm_serv_rej(enum gsm48_reject_value value);
-int gsm48_extract_mi(uint8_t *classmark2_lv, int length, char *mi_string, uint8_t *mi_type);
 struct msgb *gsm48_create_loc_upd_rej(uint8_t cause);
 
 struct msgb *gsm48_create_rr_status(uint8_t cause);

@@ -664,18 +664,29 @@ int rsl_tx_rf_chan_release(struct gsm_lchan *lchan)
 	return abis_rsl_sendmsg(msg);
 }
 
-int rsl_paging_cmd(struct gsm_bts *bts, uint8_t paging_group, uint8_t len,
-		   uint8_t *ms_ident, uint8_t chan_needed, bool is_gprs)
+int rsl_paging_cmd(struct gsm_bts *bts, uint8_t paging_group,
+		   const struct osmo_mobile_identity *mi,
+		   uint8_t chan_needed, bool is_gprs)
 {
 	struct abis_rsl_dchan_hdr *dh;
 	struct msgb *msg = rsl_msgb_alloc();
+	uint8_t *l;
+	int rc;
 
 	dh = (struct abis_rsl_dchan_hdr *) msgb_put(msg, sizeof(*dh));
 	init_dchan_hdr(dh, RSL_MT_PAGING_CMD);
 	dh->chan_nr = RSL_CHAN_PCH_AGCH;
 
 	msgb_tv_put(msg, RSL_IE_PAGING_GROUP, paging_group);
-	msgb_tlv_put(msg, RSL_IE_MS_IDENTITY, len-2, ms_ident+2);
+
+	l = msgb_tl_put(msg, RSL_IE_MS_IDENTITY);
+	rc = osmo_mobile_identity_encode_msgb(msg, mi, false);
+	if (rc < 0) {
+		msgb_free(msg);
+		return -EINVAL;
+	}
+	*l = rc;
+
 	msgb_tv_put(msg, RSL_IE_CHAN_NEEDED, chan_needed);
 
 	/* Ericsson wants to have this IE in case a paging message

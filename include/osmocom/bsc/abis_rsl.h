@@ -43,8 +43,9 @@ int rsl_sacch_filling(struct gsm_bts_trx *trx, uint8_t type,
 int rsl_tx_chan_activ(struct gsm_lchan *lchan, uint8_t act_type, uint8_t ho_ref);
 int rsl_chan_mode_modify_req(struct gsm_lchan *ts);
 int rsl_encryption_cmd(struct msgb *msg);
-int rsl_paging_cmd(struct gsm_bts *bts, uint8_t paging_group, uint8_t len,
-		   uint8_t *ms_ident, uint8_t chan_needed, bool is_gprs);
+int rsl_paging_cmd(struct gsm_bts *bts, uint8_t paging_group,
+		   const struct osmo_mobile_identity *mi,
+		   uint8_t chan_needed, bool is_gprs);
 int rsl_imm_assign_cmd(struct gsm_bts *bts, uint8_t len, uint8_t *val);
 int rsl_tx_imm_assignment(struct gsm_lchan *lchan);
 int rsl_tx_imm_ass_rej(struct gsm_bts *bts, struct gsm48_req_ref *rqd_ref);
