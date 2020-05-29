@@ -594,11 +594,20 @@ static int parse_attr_resp_info_attr(struct gsm_bts *bts, const struct gsm_bts_t
 
 		memcpy(bts->_features_data, TLVP_VAL(tp, NM_ATT_MANUF_ID), len);
 
-		for (i = 0; i < _NUM_BTS_FEAT; i++) {
-			if (osmo_bts_has_feature(&bts->features, i) != osmo_bts_has_feature(&bts->model->features, i)) {
-				LOGPMO(&bts->mo, DNM, LOGL_NOTICE, "Feature '%s' reported via OML does not match statically "
-				       "set feature: %u != %u. Please fix.\n", get_value_string(osmo_bts_features_descs, i),
-				       osmo_bts_has_feature(&bts->features, i), osmo_bts_has_feature(&bts->model->features, i));
+		/* Check each BTS feature in the reported vector */
+		for (i = 0; i < len * 8; i++) {
+			bool Frep = osmo_bts_has_feature(&bts->features, i);
+			if (i >= _NUM_BTS_FEAT && Frep) {
+				LOGPMO(&bts->mo, DNM, LOGL_NOTICE, "Get Attributes Response: "
+				       "unknown feature 0x%02x. Consider upgrading osmo-bsc.\n", i);
+				continue;
+			}
+
+			bool Fexp = osmo_bts_has_feature(&bts->model->features, i);
+			if (!Frep && Fexp) {
+				LOGPMO(&bts->mo, DNM, LOGL_NOTICE, "Get Attributes Response: "
+				       "reported feature '%s' is not supported, while we thought it is.\n",
+				       get_value_string(osmo_bts_features_descs, i));
 			}
 		}
 	}
