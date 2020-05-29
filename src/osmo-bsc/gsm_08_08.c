@@ -105,7 +105,7 @@ int gsm48_tx_mm_serv_ack(struct gsm_subscriber_connection *conn)
 	return 0;
 }
 
-static int is_cm_service_for_emerg(struct msgb *msg)
+static bool is_cm_service_for_emerg(struct msgb *msg)
 {
 	struct gsm48_service_request *cm;
 	struct gsm48_hdr *gh = msgb_l3(msg);
