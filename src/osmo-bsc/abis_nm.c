@@ -571,8 +571,9 @@ static int parse_attr_resp_info_attr(struct gsm_bts *bts, const struct gsm_bts_t
 
 		/* log potential BTS feature vector overflow */
 		if (len > sizeof(bts->_features_data)) {
-			LOGP(DNM, LOGL_NOTICE, "BTS%u Get Attributes Response: feature vector is truncated to %zu bytes\n",
-			     bts->nr, sizeof(bts->_features_data));
+			LOGP(DNM, LOGL_NOTICE, "BTS%u Get Attributes Response: feature vector is truncated "
+			     "(from %u to %zu bytes)\n", bts->nr, len, sizeof(bts->_features_data));
+			len = sizeof(bts->_features_data);
 		}
 
 		/* check that max. expected BTS attribute is above given feature vector length */
@@ -583,7 +584,7 @@ static int parse_attr_resp_info_attr(struct gsm_bts *bts, const struct gsm_bts_t
 			     bts->nr, len);
 		}
 
-		memcpy(bts->_features_data, TLVP_VAL(tp, NM_ATT_MANUF_ID), sizeof(bts->_features_data));
+		memcpy(bts->_features_data, TLVP_VAL(tp, NM_ATT_MANUF_ID), len);
 
 		for (i = 0; i < _NUM_BTS_FEAT; i++) {
 			if (osmo_bts_has_feature(&bts->features, i) != osmo_bts_has_feature(&bts->model->features, i)) {
