@@ -571,8 +571,8 @@ static int parse_attr_resp_info_attr(struct gsm_bts *bts, const struct gsm_bts_t
 
 		/* log potential BTS feature vector overflow */
 		if (len > sizeof(bts->_features_data)) {
-			LOGP(DNM, LOGL_NOTICE, "BTS%u Get Attributes Response: feature vector is truncated to %u bytes\n",
-			     bts->nr, MAX_BTS_FEATURES/8);
+			LOGP(DNM, LOGL_NOTICE, "BTS%u Get Attributes Response: feature vector is truncated to %zu bytes\n",
+			     bts->nr, sizeof(bts->_features_data));
 		}
 
 		/* check that max. expected BTS attribute is above given feature vector length */
