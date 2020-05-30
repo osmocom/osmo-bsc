@@ -1727,7 +1727,7 @@ struct gsm_bts *gsm_bts_by_lac(struct gsm_network *net, unsigned int lac,
 extern void *tall_bsc_ctx;
 
 /* this actually refers to the IPA transport, not the BTS model */
-static inline int is_ipaccess_bts(struct gsm_bts *bts)
+static inline int is_ipaccess_bts(const struct gsm_bts *bts)
 {
 	switch (bts->type) {
 	case GSM_BTS_TYPE_NANOBTS:
@@ -1739,7 +1739,7 @@ static inline int is_ipaccess_bts(struct gsm_bts *bts)
 	return 0;
 }
 
-static inline int is_sysmobts_v2(struct gsm_bts *bts)
+static inline int is_sysmobts_v2(const struct gsm_bts *bts)
 {
 	switch (bts->type) {
 	case GSM_BTS_TYPE_OSMOBTS:
@@ -1750,7 +1750,7 @@ static inline int is_sysmobts_v2(struct gsm_bts *bts)
 	return 0;
 }
 
-static inline int is_siemens_bts(struct gsm_bts *bts)
+static inline int is_siemens_bts(const struct gsm_bts *bts)
 {
 	switch (bts->type) {
 	case GSM_BTS_TYPE_BS11:
@@ -1762,7 +1762,7 @@ static inline int is_siemens_bts(struct gsm_bts *bts)
 	return 0;
 }
 
-static inline int is_nokia_bts(struct gsm_bts *bts)
+static inline int is_nokia_bts(const struct gsm_bts *bts)
 {
 	switch (bts->type) {
 	case GSM_BTS_TYPE_NOKIA_SITE:
@@ -1774,7 +1774,7 @@ static inline int is_nokia_bts(struct gsm_bts *bts)
 	return 0;
 }
 
-static inline int is_ericsson_bts(struct gsm_bts *bts)
+static inline int is_ericsson_bts(const struct gsm_bts *bts)
 {
 	switch (bts->type) {
 	case GSM_BTS_TYPE_RBS2000:
@@ -1786,7 +1786,7 @@ static inline int is_ericsson_bts(struct gsm_bts *bts)
 	return 0;
 }
 
-static inline int is_e1_bts(struct gsm_bts *bts)
+static inline int is_e1_bts(const struct gsm_bts *bts)
 {
 	switch (bts->type) {
 	case GSM_BTS_TYPE_BS11:
