@@ -36,5 +36,11 @@ static struct gsm_bts_model model_unknown = {
 
 int bts_model_unknown_init(void)
 {
+	/* NOTE: the buffer is zero-initialized by compiler */
+	model_unknown.features = (struct bitvec) {
+		.data_len = sizeof(model_unknown._features_data),
+		.data = &model_unknown._features_data[0],
+	};
+
 	return gsm_bts_model_register(&model_unknown);
 }
