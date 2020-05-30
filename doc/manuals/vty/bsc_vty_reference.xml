@@ -622,13 +622,6 @@
         <param name='all' doc='All Subscribers' />
       </params>
     </command>
-    <command id='show access-list NAME'>
-      <params>
-        <param name='show' doc='Show running system information' />
-        <param name='access-list' doc='IMSI access list' />
-        <param name='NAME' doc='Name of the access list' />
-      </params>
-    </command>
     <command id='show cs7 instance &lt;0-15&gt; users'>
       <params>
         <param name='show' doc='Show running system information' />
@@ -1545,13 +1538,6 @@
       <params>
         <param name='generate-location-state-trap' doc='Generate location state report' />
         <param name='&lt;0-255&gt;' doc='BTS to report' />
-      </params>
-    </command>
-    <command id='show access-list NAME'>
-      <params>
-        <param name='show' doc='Show running system information' />
-        <param name='access-list' doc='IMSI access list' />
-        <param name='NAME' doc='Name of the access list' />
       </params>
     </command>
     <command id='show cs7 instance &lt;0-15&gt; users'>
@@ -4778,60 +4764,11 @@
         <param name='.LIST' doc='List of audio codecs, e.g. fr3 fr1 hr3' />
       </params>
     </command>
-    <command id='bsc-welcome-text .TEXT'>
-      <params>
-        <param name='bsc-welcome-text' doc='Set the USSD notification to be sent' />
-        <param name='.TEXT' doc='Text to be sent' />
-      </params>
-    </command>
-    <command id='no bsc-welcome-text'>
-      <params>
-        <param name='no' doc='Negate a command or set its defaults' />
-        <param name='bsc-welcome-text' doc='Clear the USSD notification to be sent' />
-      </params>
-    </command>
-    <command id='bsc-msc-lost-text .TEXT'>
-      <params>
-        <param name='bsc-msc-lost-text' doc='Set the USSD notification to be sent on MSC connection loss' />
-        <param name='.TEXT' doc='Text to be sent' />
-      </params>
-    </command>
-    <command id='no bsc-msc-lost-text'>
-      <params>
-        <param name='no' doc='Negate a command or set its defaults' />
-        <param name='bsc-msc-lost-text' doc='Clear the USSD notification to be sent on MSC connection loss' />
-      </params>
-    </command>
-    <command id='bsc-grace-text .TEXT'>
-      <params>
-        <param name='bsc-grace-text' doc='Set the USSD notification to be sent when the MSC has entered the grace period' />
-        <param name='.TEXT' doc='Text to be sent' />
-      </params>
-    </command>
-    <command id='no bsc-grace-text'>
-      <params>
-        <param name='no' doc='Negate a command or set its defaults' />
-        <param name='bsc-grace-text' doc='Clear the USSD notification to be sent when the MSC has entered the grace period' />
-      </params>
-    </command>
-    <command id='type (normal|local)'>
-      <params>
-        <param name='type' doc='Select the MSC type' />
-        <param name='normal' doc='Plain GSM MSC' />
-        <param name='local' doc='Special MSC for local call routing' />
-      </params>
-    </command>
     <command id='allow-emergency (allow|deny)'>
       <params>
         <param name='allow-emergency' doc='Allow CM ServiceRequests with type emergency' />
         <param name='allow' doc='Allow' />
         <param name='deny' doc='Deny' />
-      </params>
-    </command>
-    <command id='local-prefix REGEXP'>
-      <params>
-        <param name='local-prefix' doc='Prefix for local numbers' />
-        <param name='REGEXP' doc='REGEXP used' />
       </params>
     </command>
     <command id='amr-config 12_2k (allowed|forbidden)'>
@@ -4918,18 +4855,6 @@
         <param name='lcls-codec-mismatch' doc='Allow 3GPP LCLS (Local Call, Local Switch) when call legs use different codec/rate' />
         <param name='allowed' doc='Allow LCLS only only for calls that use the same codec/rate on both legs' />
         <param name='forbidden' doc='Do not Allow LCLS for calls that use a different codec/rate on both legs' />
-      </params>
-    </command>
-    <command id='access-list-name NAME'>
-      <params>
-        <param name='access-list-name' doc='Set the name of the access list to use.' />
-        <param name='NAME' doc='The name of the to be used access list.' />
-      </params>
-    </command>
-    <command id='no access-list-name'>
-      <params>
-        <param name='no' doc='Negate a command or set its defaults' />
-        <param name='access-list-name' doc='Remove the access list from the NAT.' />
       </params>
     </command>
     <command id='bsc-addr NAME'>
@@ -5103,12 +5028,6 @@
   </node>
   <node id='config-bsc'>
     <name>config-bsc</name>
-    <command id='mid-call-text .TEXT'>
-      <params>
-        <param name='mid-call-text' doc='Set the USSD notification sent to running calls when switching from Grace to Off.' />
-        <param name='.TEXT' doc='Text to be sent' />
-      </params>
-    </command>
     <command id='mid-call-timeout NR'>
       <params>
         <param name='mid-call-timeout' doc='Switch from Grace to Off in NR seconds.' />
@@ -5131,55 +5050,6 @@
       <params>
         <param name='no' doc='Negate a command or set its defaults' />
         <param name='bsc-auto-rf-off' doc='Disable RF on MSC Connection' />
-      </params>
-    </command>
-    <command id='missing-msc-text .TEXT'>
-      <params>
-        <param name='missing-msc-text' doc='Set the USSD notification to be send when a MSC has not been found.' />
-        <param name='.TEXT' doc='Text to be sent' />
-      </params>
-    </command>
-    <command id='no missing-msc-text'>
-      <params>
-        <param name='no' doc='Negate a command or set its defaults' />
-        <param name='missing-msc-text' doc='Clear the USSD notification to be send when a MSC has not been found.' />
-      </params>
-    </command>
-    <command id='access-list-name NAME'>
-      <params>
-        <param name='access-list-name' doc='Set the name of the access list to use.' />
-        <param name='NAME' doc='The name of the to be used access list.' />
-      </params>
-    </command>
-    <command id='no access-list-name'>
-      <params>
-        <param name='no' doc='Negate a command or set its defaults' />
-        <param name='access-list-name' doc='Remove the access list from the BSC' />
-      </params>
-    </command>
-    <command id='access-list NAME imsi-allow [REGEXP]'>
-      <params>
-        <param name='access-list' doc='Access list commands' />
-        <param name='NAME' doc='Name of the access list' />
-        <param name='imsi-allow' doc='Add allowed IMSI to the list' />
-        <param name='[REGEXP]' doc='Regexp for IMSIs' />
-      </params>
-    </command>
-    <command id='access-list NAME imsi-deny [REGEXP] (&lt;0-256&gt;) (&lt;0-256&gt;)'>
-      <params>
-        <param name='access-list' doc='Access list commands' />
-        <param name='NAME' doc='Name of the access list' />
-        <param name='imsi-deny' doc='Add denied IMSI to the list' />
-        <param name='[REGEXP]' doc='Regexp for IMSIs' />
-        <param name='&lt;0-256&gt;' doc='CM Service Reject reason' />
-        <param name='&lt;0-256&gt;' doc='LU Reject reason' />
-      </params>
-    </command>
-    <command id='no access-list NAME'>
-      <params>
-        <param name='no' doc='Negate a command or set its defaults' />
-        <param name='access-list' doc='Remove an access-list by name' />
-        <param name='NAME' doc='The access-list to remove' />
       </params>
     </command>
   </node>
