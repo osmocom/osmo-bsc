@@ -54,7 +54,7 @@ int bts_model_sysmobts_init(void)
 	model_sysmobts.features.data = &model_sysmobts._features_data[0];
 	model_sysmobts.features.data_len =
 				sizeof(model_sysmobts._features_data);
-	memset(model_sysmobts.features.data, 0, sizeof(model_sysmobts.features.data_len));
+	memset(model_sysmobts.features.data, 0, model_sysmobts.features.data_len);
 
         osmo_bts_set_feature(&model_sysmobts.features, BTS_FEAT_GPRS);
 	osmo_bts_set_feature(&model_sysmobts.features, BTS_FEAT_EGPRS);
