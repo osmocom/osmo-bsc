@@ -178,7 +178,7 @@ static struct gsm_bts *create_bts(int arfcn)
 	struct e1inp_sign_link *rsl_link;
 	int i;
 
-	bts = bsc_bts_alloc_register(bsc_gsmnet, GSM_BTS_TYPE_OSMOBTS, 0x3f);
+	bts = bsc_bts_alloc_register(bsc_gsmnet, GSM_BTS_TYPE_UNKNOWN, 0x3f);
 	if (!bts) {
 		printf("No resource for bts1\n");
 		return NULL;
@@ -1446,7 +1446,8 @@ int main(int argc, char **argv)
 	ho_set_hodec2_penalty_failed_ho(bsc_gsmnet->ho, 60);
 	ho_set_hodec2_penalty_failed_as(bsc_gsmnet->ho, 60);
 
-	bts_model_sysmobts_init();
+	/* We don't really need any specific model here */
+	bts_model_unknown_init();
 
 	test_case = test_cases[test_case_i];
 

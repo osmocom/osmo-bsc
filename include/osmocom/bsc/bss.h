@@ -11,6 +11,7 @@ extern int bsc_shutdown_net(struct gsm_network *net);
 
 /* register all supported BTS */
 extern int bts_init(void);
+extern int bts_model_unknown_init(void);
 extern int bts_model_bs11_init(void);
 extern int bts_model_rbs2k_init(void);
 extern int bts_model_nanobts_init(void);
