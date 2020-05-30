@@ -315,6 +315,7 @@ int bsc_network_alloc(void)
 struct gsm_bts *bsc_bts_alloc_register(struct gsm_network *net, enum gsm_bts_type type, uint8_t bsic)
 {
 	struct gsm_bts *bts = gsm_bts_alloc_register(net, type, bsic);
+	OSMO_ASSERT(bts != NULL);
 
 	bts->ho = ho_cfg_init(bts, net->ho);
 
