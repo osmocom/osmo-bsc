@@ -1384,6 +1384,7 @@ void lchan_update_ms_power_ctrl_level(struct gsm_lchan *lchan, int ms_power_dbm)
 
 enum bts_counter_id {
 	BTS_CTR_CHREQ_TOTAL,
+	BTS_CTR_CHREQ_SUCCESSFUL,
 	BTS_CTR_CHREQ_NO_CHANNEL,
 	BTS_CTR_CHAN_RF_FAIL,
 	BTS_CTR_CHAN_RLL_ERR,
@@ -1430,6 +1431,7 @@ enum bts_counter_id {
 
 static const struct rate_ctr_desc bts_ctr_description[] = {
 	[BTS_CTR_CHREQ_TOTAL] = 		{"chreq:total", "Received channel requests"},
+	[BTS_CTR_CHREQ_SUCCESSFUL] =  		{"chreq:successful", "Successful channel requests (immediate assign sent)"},
 	[BTS_CTR_CHREQ_NO_CHANNEL] = 		{"chreq:no_channel", "Sent to MS no channel available"},
 	[BTS_CTR_CHAN_RF_FAIL] = 		{"chan:rf_fail", "Received a RF failure indication from BTS"},
 	[BTS_CTR_CHAN_RLL_ERR] = 		{"chan:rll_err", "Received a RLL failure with T200 cause from BTS"},

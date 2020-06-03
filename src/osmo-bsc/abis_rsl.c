@@ -1428,6 +1428,7 @@ static int rsl_rx_chan_rqd(struct msgb *msg)
 
 int rsl_tx_imm_assignment(struct gsm_lchan *lchan)
 {
+	int rc;
 	struct gsm_bts *bts = lchan->ts->trx->bts;
 	uint8_t buf[GSM_MACBLOCK_LEN];
 	struct gsm48_imm_ass *ia = (struct gsm48_imm_ass *) buf;
@@ -1453,7 +1454,12 @@ int rsl_tx_imm_assignment(struct gsm_lchan *lchan)
 	ia->l2_plen = GSM48_LEN2PLEN((sizeof(*ia)-1) + ia->mob_alloc_len);
 
 	/* send IMMEDIATE ASSIGN CMD on RSL to BTS (to send on CCCH to MS) */
-	return rsl_imm_assign_cmd(bts, sizeof(*ia)+ia->mob_alloc_len, (uint8_t *) ia);
+	rc = rsl_imm_assign_cmd(bts, sizeof(*ia)+ia->mob_alloc_len, (uint8_t *) ia);
+
+	if (!rc)
+		rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_CTR_CHREQ_SUCCESSFUL]);
+
+	return rc;
 }
 
 /* current load on the CCCH */
