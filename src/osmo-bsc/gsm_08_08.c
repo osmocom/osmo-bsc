@@ -112,7 +112,7 @@ static bool is_cm_service_for_emerg(struct msgb *msg)
 
 	if (msgb_l3len(msg) < sizeof(*gh) + sizeof(*cm)) {
 		LOGP(DMSC, LOGL_ERROR, "CM ServiceRequest does not fit.\n");
-		return 0;
+		return false;
 	}
 
 	cm = (struct gsm48_service_request *) &gh->data[0];
