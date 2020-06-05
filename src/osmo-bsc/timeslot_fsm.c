@@ -751,14 +751,25 @@ static int ts_fsm_timer_cb(struct osmo_fsm_inst *fi)
 	}
 }
 
+static void _count_borken_on_teardown(struct osmo_fsm_inst *fi)
+{
+	struct gsm_bts_trx_ts *ts = ts_fi_ts(fi);
+	if (ts->fi->state == TS_ST_BORKEN) {
+		rate_ctr_inc(&ts->trx->bts->bts_ctrs->ctr[BTS_CTR_TS_BORKEN_EV_TEARDOWN]);
+		osmo_stat_item_dec(ts->trx->bts->bts_statg->items[BTS_STAT_TS_BORKEN], 1);
+	}
+}
+
 static void ts_fsm_allstate(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
 	struct gsm_bts_trx_ts *ts = ts_fi_ts(fi);
 	switch (event) {
 	case TS_EV_OML_DOWN:
 		ts->is_oml_ready = false;
-		if (fi->state != TS_ST_NOT_INITIALIZED)
+		if (fi->state != TS_ST_NOT_INITIALIZED) {
+			_count_borken_on_teardown(fi);
 			osmo_fsm_inst_state_chg(fi, TS_ST_NOT_INITIALIZED, 0, 0);
+		}
 		OSMO_ASSERT(fi->state == TS_ST_NOT_INITIALIZED);
 		ts_terminate_lchan_fsms(ts);
 		ts->pchan_is = ts->pchan_on_init = GSM_PCHAN_NONE;
@@ -767,8 +778,10 @@ static void ts_fsm_allstate(struct osmo_fsm_inst *fi, uint32_t event, void *data
 
 	case TS_EV_RSL_DOWN:
 		ts->is_rsl_ready = false;
-		if (fi->state != TS_ST_NOT_INITIALIZED)
+		if (fi->state != TS_ST_NOT_INITIALIZED) {
+			_count_borken_on_teardown(fi);
 			osmo_fsm_inst_state_chg(fi, TS_ST_NOT_INITIALIZED, 0, 0);
+		}
 		OSMO_ASSERT(fi->state == TS_ST_NOT_INITIALIZED);
 		ts->pchan_is = GSM_PCHAN_NONE;
 		ts_lchans_dispatch(ts, -1, LCHAN_EV_TS_ERROR);
@@ -781,11 +794,7 @@ static void ts_fsm_allstate(struct osmo_fsm_inst *fi, uint32_t event, void *data
 
 static void ts_fsm_cleanup(struct osmo_fsm_inst *fi, enum osmo_fsm_term_cause cause)
 {
-	struct gsm_bts_trx_ts *ts = ts_fi_ts(fi);
-	if (ts->fi->state == TS_ST_BORKEN) {
-		rate_ctr_inc(&ts->trx->bts->bts_ctrs->ctr[BTS_CTR_TS_BORKEN_EV_TEARDOWN]);
-		osmo_stat_item_dec(ts->trx->bts->bts_statg->items[BTS_STAT_TS_BORKEN], 1);
-	}
+	_count_borken_on_teardown(fi);
 }
 
 #define S(x)	(1 << (x))
