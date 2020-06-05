@@ -1,3 +1,9 @@
+osmo-bsc (1.6.0-fw.11) unstable; urgency=medium
+
+  * Merge fairwaves/stats-work
+
+ -- Kirill Zakharenko <kirill.zakharenko@fairwaves.co>  Sat, 06 Jun 2020 01:52:30 +0300
+
 osmo-bsc (1.6.0) unstable; urgency=medium
 
   [ Philipp Maier ]
