@@ -58,6 +58,11 @@ void bts_chan_load(struct pchan_load *cl, const struct gsm_bts *bts)
 			if (!nm_is_running(&ts->mo.nm_state))
 				continue;
 
+			/* skip timeslots which are not yet initialized or which
+			 * have been de-initialized due to RSL link going down */
+			if (ts->fi->state == TS_ST_NOT_INITIALIZED)
+				continue;
+
 			/* Dynamic timeslots have to be counted separately
 			 * when not in TCH/F or TCH/H mode because they don't
 			 * have an lchan's allocated to them. At the same time,
