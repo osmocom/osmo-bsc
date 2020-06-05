@@ -1373,6 +1373,10 @@ bool ts_is_tch(struct gsm_bts_trx_ts *ts)
 
 bool trx_is_usable(const struct gsm_bts_trx *trx)
 {
+	/* not usable when RSL link is down */
+	if (trx->rsl_link == NULL)
+		return false;
+
 	/* FIXME: How does this behave for BS-11 ? */
 	if (is_ipaccess_bts(trx->bts)) {
 		if (!nm_is_running(&trx->mo.nm_state) ||
