@@ -45,7 +45,7 @@ void bts_chan_load(struct pchan_load *cl, const struct gsm_bts *bts)
 	llist_for_each_entry(trx, &bts->trx_list, list) {
 		int i;
 
-		/* skip administratively deactivated tranxsceivers */
+		/* skip administratively deactivated transceivers */
 		if (!trx_is_usable(trx))
 			continue;
 
