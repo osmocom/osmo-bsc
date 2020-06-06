@@ -794,7 +794,11 @@ static void ts_fsm_allstate(struct osmo_fsm_inst *fi, uint32_t event, void *data
 
 static void ts_fsm_cleanup(struct osmo_fsm_inst *fi, enum osmo_fsm_term_cause cause)
 {
+	LOG_TS(ts, LOGL_DEBUG, "cleaning up with cause %d\n", cause);
+	struct gsm_bts_trx_ts *ts = ts_fi_ts(fi);
 	_count_borken_on_teardown(fi);
+	ts_terminate_lchan_fsms(ts);
+	ts->fi = NULL;
 }
 
 #define S(x)	(1 << (x))
