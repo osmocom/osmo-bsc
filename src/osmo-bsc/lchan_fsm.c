@@ -1537,8 +1537,15 @@ static void lchan_fsm_allstate_action(struct osmo_fsm_inst *fi, uint32_t event, 
 	switch (event) {
 
 	case LCHAN_EV_TS_ERROR:
+	{
+		struct gsm_lchan *lchan = lchan_fi_lchan(fi);
+		if (fi->state == LCHAN_ST_BORKEN) {
+			rate_ctr_inc(&lchan->ts->trx->bts->bts_ctrs->ctr[BTS_CTR_LCHAN_BORKEN_EV_TS_ERROR]);
+			osmo_stat_item_dec(lchan->ts->trx->bts->bts_statg->items[BTS_STAT_LCHAN_BORKEN], 1);
+		}
 		lchan_fail_to(LCHAN_ST_UNUSED, "LCHAN_EV_TS_ERROR");
 		return;
+	}
 
 	case LCHAN_EV_RLL_ERR_IND:
 		/* let's just ignore this.  We are already logging the

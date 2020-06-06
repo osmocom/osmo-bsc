@@ -885,6 +885,9 @@ const struct rate_ctr_desc bts_ctr_description[] = {
 	[BTS_CTR_LCHAN_BORKEN_EV_TEARDOWN] = \
 		{ "lchan_borken:event:teardown",
 		  "lchan in a BORKEN state is shutting down (BTS disconnected?)" },
+	[BTS_CTR_LCHAN_BORKEN_EV_TS_ERROR] = \
+		{ "lchan_borken:event:ts_error",
+		  "LCHAN_EV_TS_ERROR received in a BORKEN state" },
 	[BTS_CTR_TS_BORKEN_FROM_NOT_INITIALIZED] = \
 		{ "ts_borken:from_state:not_initialized",
 		  "Transitions from TS NOT_INITIALIZED state to BORKEN state" },
