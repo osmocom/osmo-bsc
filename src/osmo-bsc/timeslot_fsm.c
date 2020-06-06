@@ -62,6 +62,7 @@ void ts_fsm_alloc(struct gsm_bts_trx_ts *ts)
 	OSMO_ASSERT(ts->trx);
 	ts->fi = osmo_fsm_inst_alloc(&ts_fsm, ts->trx, ts, LOGL_DEBUG, NULL);
 	OSMO_ASSERT(ts->fi);
+	ts_fsm_update_id(ts);
 }
 
 enum lchan_sanity {
