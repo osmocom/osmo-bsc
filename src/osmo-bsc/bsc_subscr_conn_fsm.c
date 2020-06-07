@@ -16,6 +16,8 @@
  *
  */
 
+#include <limits.h>
+
 #include <osmocom/core/fsm.h>
 #include <osmocom/core/logging.h>
 #include <osmocom/gsm/gsm0808.h>
@@ -1067,7 +1069,8 @@ void gscon_submit_rsl_dtap(struct gsm_subscriber_connection *conn,
 /* Compose an FSM ID, if possible from the current subscriber information */
 void gscon_update_id(struct gsm_subscriber_connection *conn)
 {
-	osmo_fsm_inst_update_id_f(conn->fi, "conn%u%s%s",
+	osmo_fsm_inst_update_id_f(conn->fi, "msc%u-conn%u%s%s",
+				  conn->sccp.msc ? conn->sccp.msc->nr : UINT_MAX,
 				  conn->sccp.conn_id,
 				  conn->bsub? "_" : "",
 				  conn->bsub? bsc_subscr_id(conn->bsub) : "");
