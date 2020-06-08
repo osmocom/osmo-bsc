@@ -225,8 +225,15 @@ static struct bsc_msc_data *bsc_find_msc(struct gsm_subscriber_connection *conn,
 		if (subscr) {
 			msc_target = paging_get_msc(conn_get_bts(conn), subscr);
 			bsc_subscr_put(subscr);
-			if (is_msc_usable(msc_target, is_emerg))
+			if (is_msc_usable(msc_target, is_emerg)) {
+				LOG_COMPL_L3(pdisc, mtype, LOGL_DEBUG, "%s matches earlier Paging from msc %d\n",
+					     osmo_mobile_identity_to_str_c(OTC_SELECT, &mi), msc_target->nr);
 				return msc_target;
+			} else {
+				LOG_COMPL_L3(pdisc, mtype, LOGL_DEBUG,
+					     "%s matches earlier Paging from msc %d, but this MSC is not connected\n",
+					     osmo_mobile_identity_to_str_c(OTC_SELECT, &mi), msc_target->nr);
+			}
 			msc_target = NULL;
 		}
 	}
