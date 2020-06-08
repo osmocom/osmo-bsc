@@ -1427,6 +1427,13 @@ enum bts_counter_id {
 	BTS_CTR_TS_BORKEN_EV_PDCH_ACT_ACK_NACK,
 	BTS_CTR_TS_BORKEN_EV_PDCH_DEACT_ACK_NACK,
 	BTS_CTR_TS_BORKEN_EV_TEARDOWN,
+	BTS_CTR_ASSIGNMENT_ATTEMPTED,
+	BTS_CTR_ASSIGNMENT_COMPLETED,
+	BTS_CTR_ASSIGNMENT_STOPPED,
+	BTS_CTR_ASSIGNMENT_NO_CHANNEL,
+	BTS_CTR_ASSIGNMENT_TIMEOUT,
+	BTS_CTR_ASSIGNMENT_FAILED,
+	BTS_CTR_ASSIGNMENT_ERROR,
 };
 
 static const struct rate_ctr_desc bts_ctr_description[] = {
@@ -1477,6 +1484,13 @@ static const struct rate_ctr_desc bts_ctr_description[] = {
 	[BTS_CTR_TS_BORKEN_EV_PDCH_ACT_ACK_NACK] =   {"ts_borken:event:pdch_act_ack_nack", "PDCH_ACT_ACK/NACK received in the TS BORKEN state"},
 	[BTS_CTR_TS_BORKEN_EV_PDCH_DEACT_ACK_NACK] = {"ts_borken:event:pdch_deact_ack_nack", "PDCH_DEACT_ACK/NACK received in the TS BORKEN state"},
 	[BTS_CTR_TS_BORKEN_EV_TEARDOWN] =            {"ts_borken:event:teardown", "TS in a BORKEN state is shutting down (BTS disconnected?)"},
+	[BTS_CTR_ASSIGNMENT_ATTEMPTED] =             {"assignment:attempted", "Assignment attempts"},
+	[BTS_CTR_ASSIGNMENT_COMPLETED] =             {"assignment:completed", "Assignment completed"},
+	[BTS_CTR_ASSIGNMENT_STOPPED] =               {"assignment:stopped", "Connection ended during Assignment"},
+	[BTS_CTR_ASSIGNMENT_NO_CHANNEL] =            {"assignment:no_channel", "Failure to allocate lchan for Assignment"},
+	[BTS_CTR_ASSIGNMENT_TIMEOUT] =               {"assignment:timeout", "Assignment timed out"},
+	[BTS_CTR_ASSIGNMENT_FAILED] =                {"assignment:failed", "Received Assignment Failure message"},
+	[BTS_CTR_ASSIGNMENT_ERROR] =                 {"assignment:error", "Assignment failed for other reason"},
 };
 
 static const struct rate_ctr_group_desc bts_ctrg_desc = {

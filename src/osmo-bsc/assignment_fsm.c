@@ -69,16 +69,18 @@ static const struct osmo_tdef_state_timeout assignment_fsm_timeouts[32] = {
 		_conn->assignment.failure_cause = cause; \
 		LOG_ASSIGNMENT(_conn, LOGL_ERROR, "Assignment failed in state %s, cause %s: " fmt "\n", \
 			       osmo_fsm_inst_state_name(fi), gsm0808_cause_name(cause), ## args); \
-		assignment_count_result(BSC_CTR_ASSIGNMENT_ERROR); \
+		assignment_count_result(CTR_ASSIGNMENT_ERROR); \
 		on_assignment_failure(_conn); \
 	} while(0)
 
 /* Assume presence of local var 'conn' as struct gsm_subscriber_connection */
 #define assignment_count(counter) do { \
+		struct gsm_bts *bts = conn_get_bts(conn); \
 		LOG_ASSIGNMENT(conn, LOGL_DEBUG, "incrementing rate counter: %s %s\n", \
-			       bsc_ctr_description[counter].name, \
-			       bsc_ctr_description[counter].description); \
-		rate_ctr_inc(&conn->network->bsc_ctrs->ctr[counter]); \
+			       bsc_ctr_description[BSC_##counter].name, \
+			       bsc_ctr_description[BSC_##counter].description); \
+		rate_ctr_inc(&conn->network->bsc_ctrs->ctr[BSC_##counter]); \
+		rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_##counter]); \
 	} while(0)
 
 #define assignment_count_result(counter) do { \
@@ -88,8 +90,8 @@ static const struct osmo_tdef_state_timeout assignment_fsm_timeouts[32] = {
 		} else \
 			LOG_ASSIGNMENT(conn, LOGL_DEBUG, \
 				       "result rate counter already recorded, NOT counting as: %s %s\n", \
-				       bsc_ctr_description[counter].name, \
-				       bsc_ctr_description[counter].description); \
+				       bsc_ctr_description[BSC_##counter].name, \
+				       bsc_ctr_description[BSC_##counter].description); \
 	} while(0)
 
 void assignment_reset(struct gsm_subscriber_connection *conn)
@@ -250,7 +252,7 @@ static void assignment_success(struct gsm_subscriber_connection *conn)
 	LOG_ASSIGNMENT(conn, LOGL_DEBUG, "Assignment successful\n");
 	osmo_fsm_inst_term(conn->assignment.fi, OSMO_FSM_TERM_REGULAR, 0);
 
-	assignment_count_result(BSC_CTR_ASSIGNMENT_COMPLETED);
+	assignment_count_result(CTR_ASSIGNMENT_COMPLETED);
 }
 
 static void assignment_fsm_update_id(struct gsm_subscriber_connection *conn)
@@ -426,7 +428,7 @@ void assignment_fsm_start(struct gsm_subscriber_connection *conn, struct gsm_bts
 	OSMO_ASSERT(!conn->assignment.fi);
 	OSMO_ASSERT(!conn->assignment.new_lchan);
 
-	assignment_count(BSC_CTR_ASSIGNMENT_ATTEMPTED);
+	assignment_count(CTR_ASSIGNMENT_ATTEMPTED);
 
 	fi = osmo_fsm_inst_alloc_child(&assignment_fsm, conn->fi, GSCON_EV_ASSIGNMENT_END);
 	OSMO_ASSERT(fi);
@@ -456,7 +458,7 @@ void assignment_fsm_start(struct gsm_subscriber_connection *conn, struct gsm_bts
 		/* If something went wrong during send_assignment_complete(), the fi will be gone from
 		 * error handling in there. */
 		if (conn->assignment.fi) {
-			assignment_count_result(BSC_CTR_ASSIGNMENT_COMPLETED);
+			assignment_count_result(CTR_ASSIGNMENT_COMPLETED);
 			osmo_fsm_inst_term(conn->assignment.fi, OSMO_FSM_TERM_REGULAR, 0);
 		}
 		return;
@@ -474,7 +476,7 @@ void assignment_fsm_start(struct gsm_subscriber_connection *conn, struct gsm_bts
 	/* Check whether the lchan allocation was successful or not and tear
 	 * down the assignment in case of failure. */
 	if (!conn->assignment.new_lchan) {
-		assignment_count_result(BSC_CTR_ASSIGNMENT_NO_CHANNEL);
+		assignment_count_result(CTR_ASSIGNMENT_NO_CHANNEL);
 		assignment_fail(GSM0808_CAUSE_NO_RADIO_RESOURCE_AVAILABLE,
 				"BSSMAP Assignment Command:"
 				" No lchan available for: pref=%s:%s / alt1=%s:%s / alt2=%s:%s\n",
@@ -565,7 +567,7 @@ static void assignment_fsm_wait_rr_ass_complete(struct osmo_fsm_inst *fi, uint32
 		return;
 
 	case ASSIGNMENT_EV_RR_ASSIGNMENT_FAIL:
-		assignment_count_result(BSC_CTR_ASSIGNMENT_FAILED);
+		assignment_count_result(CTR_ASSIGNMENT_FAILED);
 		assignment_fail(get_cause(data), "Rx RR Assignment Failure");
 		return;
 
@@ -733,7 +735,7 @@ void assignment_fsm_allstate_action(struct osmo_fsm_inst *fi, uint32_t event, vo
 	switch (event) {
 
 	case ASSIGNMENT_EV_CONN_RELEASING:
-		assignment_count_result(BSC_CTR_ASSIGNMENT_STOPPED);
+		assignment_count_result(CTR_ASSIGNMENT_STOPPED);
 		osmo_fsm_inst_term(fi, OSMO_FSM_TERM_REQUEST, 0);
 		return;
 
@@ -753,7 +755,7 @@ void assignment_fsm_allstate_action(struct osmo_fsm_inst *fi, uint32_t event, vo
 int assignment_fsm_timer_cb(struct osmo_fsm_inst *fi)
 {
 	struct gsm_subscriber_connection *conn = assignment_fi_conn(fi);
-	assignment_count_result(BSC_CTR_ASSIGNMENT_TIMEOUT);
+	assignment_count_result(CTR_ASSIGNMENT_TIMEOUT);
 	assignment_fail(GSM0808_CAUSE_EQUIPMENT_FAILURE, "Timeout");
 	return 0;
 }
