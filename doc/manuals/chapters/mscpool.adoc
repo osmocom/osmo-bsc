@@ -1,0 +1,213 @@
+== MSC Pooling
+
+MSC pooling is described in 3GPP TS 23.236 <<3gpp-ts-23-236>>, and is supported
+by OsmoBSC since mid 2020.
+
+The aim of MSC pooling is to distribute load from a BSC across multiple MSCs,
+which are equivalent and redundant infrastructure for the same core network.
+
+The main mechanism for MSC pooling is the TMSI identity, which an MSC hands out
+to its attached subscribers. Typically 10 bits of the TMSI are designated as a
+Network Resource Identifier (NRI) that identifies the originating MSC, and
+allows OsmoBSC to direct a subscriber back to the same MSC instance that
+previously negotiated the IMSI Attach procedure. Typically, the full NRI value
+range available is divided into N even ranges, where each MSC is assigned one
+NRI range.
+
+Subscribers attaching without a TMSI identity, or those with unknown NRI value,
+are evenly distributed across MSC instances. OsmoBSC uses a round-robin
+approach to distribute load across all connected MSCs.
+
+A Paging Response from a subscriber is always returned back to whichever MSC
+initiated the Paging, regardless of the Mobile Identity used.
+
+Finally, a NULL-NRI is a special NRI value that indicates that the MSC wishes
+to offload this subscriber to a different MSC. A NULL-NRI is an arbitrary NRI
+value that is chosen distinctly for each PLMN served by a BSC, so that a
+subscriber can be reassigned within that PLMN. Upon (periodic) Location
+Updating, an offloading MSC hands out a NULL-NRI value in the assigned TMSI,
+along with a non-broadcast LAI. The subscriber will notice the LAI mismatch,
+and immediately re-attempt the attach using the TMSI containing the NULL-NRI.
+The BSC recognises the NULL-NRI and redirects the subscriber to one of the
+other MSCs. A prerequisite for this to work well is that the particular MSC is
+previously marked as not accepting new subscribers, in the BSC's configuration.
+
+The mechanisms described above make up the NAS node selection function
+implemented in the BSC.
+
+3GPP TS 23.236 also defines that an offloading MSC hands subscriber information
+to the newly assigned MSC, which takes place outside the scope of the BSC.
+
+=== Configuring MSC Pooling
+
+The NRI ranges assigned to each MSC must match in the BSC and the MSC
+configuration. If MSC and BSC had inconsistent NRI value ranges configured,
+attached subscribers would be redirected MSC instances that did not perform the
+attach, possibly rendering the core network unusable.
+
+==== Connecting Multiple MSCs
+
+The `cs7 instance` configuration defines the SCCP addresses to reach the MSCs
+at. In addition, each MSC is configured by its own `msc` section in the
+configuration. An example osmo-bsc.cfg serving three MSCs:
+
+----
+cs7 instance 0
+ # SCCP address book entries for the three MSCs
+ sccp-address my-msc-0
+  point-code 0.23.0
+ sccp-address my-msc-1
+  point-code 0.23.1
+ sccp-address my-msc-2
+  point-code 0.23.2
+
+# assign each MSC configuration its remote SCCP address
+msc 0
+ msc-addr my-msc-0
+msc 1
+ msc-addr my-msc-1
+msc 2
+ msc-addr my-msc-2
+
+# configure NRI value ranges
+network
+ nri bitlen 10
+ nri null add 0
+msc 0
+ nri add 1 341
+msc 1
+ nri add 342 682
+msc 2
+ nri add 683 1023
+----
+
+==== NRI Value Bit Length
+
+In OsmoBSC, the NRI value's bit length is freely configurable from 1 to 15
+bits. 3GPP TS 23.236 suggests a typical bit length of 10, which is OsmoBSC's
+default. The NRI bit length must be identical across the entire MSC pool.
+
+Change the NRI value bit length in OsmoBSC's VTY configuration like this:
+
+----
+network
+ nri bitlen 10
+----
+
+In the TMSI bits, regardless of the NRI bit length, the NRI value always starts
+just after the most significant octet of a TMSI (most significant bit at TMSI's
+bit 23).
+
+==== NULL-NRI
+
+Since OsmoBSC supports serving only one PLMN, NULL-NRI are configured globally.
+Even though 3GPP TS 23.236 indicates that there is a single NULL-NRI per PLMN,
+OsmoBSC allows configuring multiple NULL-NRI values.
+
+----
+network
+ nri null add 0
+ nri null add 423
+----
+
+==== Assigning NRI Ranges to MSCs
+
+Each MSC configured in OsmoBSC must be assigned a distinct NRI value range.
+Overlapping NRI value ranges will cause failure to serve subscribers.
+
+NRI values are typically configured in ranges, here dividing a 10bit range
+(0..1023) into three equal ranges, while leaving 0 available to be configured
+as NULL-NRI:
+
+----
+msc 0
+ nri add 1 341
+msc 1
+ nri add 342 684
+msc 2
+ nri add 685 1023
+----
+
+NRI can also be assigned in single values:
+
+----
+msc 0
+ nri add 23
+----
+
+Ranges can be constructed arbitrarily by a sequence of `add` and `del`
+configurations, here a contrived example:
+
+----
+msc 0
+ nri add 0 342
+ nri del 23
+ nri del 42 235
+ nri add 1000 1023
+----
+
+To view the current NRI config in a running OsmoBSC instance, use the
+`show nri` command, here showing the result of the contrived example:
+
+----
+OsmoBSC(config-msc)# show nri
+msc 0
+ nri add 0 22
+ nri add 24 41
+ nri add 236 342
+ nri add 1000 1023
+----
+
+On the VIEW and ENABLE VTY nodes, `show nri` shows all MSCs:
+
+----
+OsmoBSC> show nri
+msc 0
+ nri add 1 341
+msc 1
+ nri add 342 684
+msc 2
+ nri add 685 1023
+----
+
+When configuring overlapping NRI value ranges across MSCs, the telnet VTY warns
+about it, and starting OsmoBSC with such a configuration will fail:
+
+----
+msc 0
+ nri add 1 511
+msc 1
+ nri add 512 1023
+msc 2
+ nri add 500 555
+----
+
+This results in:
+
+----
+$ osmo-bsc
+DMSC ERROR msc 2: NRI range [500..555] overlaps between msc 2 and msc 0. For overlaps, msc 0 has higher priority than msc 2
+DMSC ERROR msc 2: NRI range [500..555] overlaps between msc 2 and msc 1. For overlaps, msc 1 has higher priority than msc 2
+----
+
+==== MSC Offloading
+
+To effectively offload a particular MSC, it must be marked as no longer taking
+new subscribers in OsmoBSC. This can be achieved in the telnet VTY by:
+
+----
+msc 0
+ no allow-attach
+----
+
+This MSC will, as long as it is connected, continue to serve subscribers
+already attached to it: those that yield an NRI matching this MSC, and those
+that are being paged by this MSC. But OsmoBSC will no longer direct new
+subscribers to this MSC.
+
+To re-enable an MSC for attaching new subscribers:
+
+----
+msc 0
+ allow-attach
+----
