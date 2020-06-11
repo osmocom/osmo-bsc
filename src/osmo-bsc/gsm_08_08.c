@@ -123,6 +123,48 @@ static bool is_cm_service_for_emerg(struct msgb *msg)
 	return cm->cm_service_type == GSM48_CMSERV_EMERGENCY;
 }
 
+static bool is_lu_from_other_plmn(struct msgb *msg)
+{
+	const struct gsm48_hdr *gh;
+	int8_t pdisc;
+	uint8_t mtype;
+	const struct gsm48_loc_upd_req *lu;
+	struct osmo_location_area_id old_lai;
+
+	if (msgb_l3len(msg) < sizeof(*gh))
+		return false;
+
+	gh = msgb_l3(msg);
+	pdisc = gsm48_hdr_pdisc(gh);
+	mtype = gsm48_hdr_msg_type(gh);
+
+	switch (pdisc) {
+	case GSM48_PDISC_MM:
+
+		switch (mtype) {
+		case GSM48_MT_MM_LOC_UPD_REQUEST:
+			/* First make sure that lu-> can be dereferenced */
+			if (msgb_l3len(msg) < sizeof(*gh) + sizeof(*lu))
+				return false;
+
+			lu = (struct gsm48_loc_upd_req*)gh->data;
+			gsm48_decode_lai2(&lu->lai, &old_lai);
+
+			if (osmo_plmn_cmp(&old_lai.plmn, &bsc_gsmnet->plmn) != 0)
+				return true;
+			break;
+
+		default:
+			break;
+		}
+		break;
+	default:
+		break;
+	}
+
+	return false;
+}
+
 static bool is_msc_usable(struct bsc_msc_data *msc, bool is_emerg)
 {
 	if (is_emerg && !msc->allow_emerg)
@@ -197,6 +239,13 @@ static struct bsc_msc_data *bsc_find_msc(struct gsm_subscriber_connection *conn,
 	if (mi.type == GSM_MI_TYPE_TMSI) {
 		if (osmo_tmsi_nri_v_get(&nri_v, mi.tmsi, net->nri_bitlen)) {
 			LOGP(DMSC, LOGL_ERROR, "Unable to retrieve NRI from TMSI, nri_bitlen == %u\n", net->nri_bitlen);
+			nri_v = -1;
+		} else if (is_lu_from_other_plmn(msg)) {
+			/* If a subscriber was previously attached to a different PLMN, it might still send the other
+			 * PLMN's TMSI identity in an IMSI Attach. The LU sends a LAI indicating the previous PLMN. If
+			 * it mismatches our PLMN, ignore the NRI. */
+			LOG_NRI(LOGL_DEBUG,
+				"This LU Request indicates a switch from another PLMN. Ignoring the TMSI's NRI.\n");
 			nri_v = -1;
 		} else {
 			is_null_nri = osmo_nri_v_matches_ranges(nri_v, net->null_nri_ranges);
