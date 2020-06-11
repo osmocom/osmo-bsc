@@ -230,6 +230,7 @@ struct bsc_msc_data *osmo_msc_data_alloc(struct gsm_network *net, int nr)
 	msc_data->mgcp_ipa.local_port = 0; /* dynamic */
 
 	msc_data->nri_ranges = osmo_nri_ranges_alloc(msc_data);
+	msc_data->allow_attach = true;
 
 	return msc_data;
 }

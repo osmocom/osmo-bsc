@@ -150,3 +150,17 @@ OsmoBSC(config-msc)# nri add 1000
 OsmoBSC(config-msc)# show nri
 msc 0
  nri add 0 1000
+
+OsmoBSC(config-msc)# show running-config
+... ! no allow-attach
+OsmoBSC(config-msc)# no allow-attach
+OsmoBSC(config-msc)# show running-config
+...
+msc 0
+...
+ nri add 0 1000
+ no allow-attach
+... ! no allow-attach
+OsmoBSC(config-msc)# allow-attach
+OsmoBSC(config-msc)# show running-config
+... ! no allow-attach

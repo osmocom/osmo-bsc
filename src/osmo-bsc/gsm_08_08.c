@@ -280,7 +280,18 @@ static struct bsc_msc_data *bsc_find_msc(struct gsm_subscriber_connection *conn,
 
 		/* Figure out the next round-robin MSC. The MSCs may appear unsorted in net->mscs. Make sure to linearly
 		 * round robin the MSCs by number: pick the lowest msc->nr >= round_robin_next_nr, and also remember the
-		 * lowest available msc->nr to wrap back to that in case no next MSC is left. */
+		 * lowest available msc->nr to wrap back to that in case no next MSC is left.
+		 *
+		 * MSCs configured with `no allow-attach` do not accept new subscribers and hence must not be picked by
+		 * round-robin. Such an MSC still provides service for already attached subscribers: those that
+		 * successfully performed IMSI-Attach and have a TMSI with an NRI pointing at that MSC. We only avoid
+		 * adding IMSI-Attach of new subscribers. The idea is that the MSC is in a mode of off-loading
+		 * subscribers, and the MSC decides when each subscriber is off-loaded, by assigning the NULL-NRI in a
+		 * new TMSI (at the next periodical LU). So until the MSC decides to offload, an attached subscriber
+		 * remains attached to that MSC and is free to use its services.
+		 */
+		if (!msc->allow_attach)
+			continue;
 		if (!msc_round_robin_first || msc->nr < msc_round_robin_first->nr)
 			msc_round_robin_first = msc;
 		if (msc->nr >= round_robin_next_nr

@@ -181,6 +181,7 @@ struct bsc_msc_data {
 	} mgcp_ipa;
 
 	struct osmo_nri_ranges *nri_ranges;
+	bool allow_attach;
 };
 
 int osmo_bsc_msc_init(struct bsc_msc_data *msc);

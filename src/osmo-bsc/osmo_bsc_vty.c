@@ -177,6 +177,9 @@ static void write_msc(struct vty *vty, struct bsc_msc_data *msc)
 	}
 
 	msc_write_nri(vty, msc, false);
+
+	if (!msc->allow_attach)
+		vty_out(vty, " no allow-attach%s", VTY_NEWLINE);
 }
 
 static int config_write_msc(struct vty *vty)
@@ -860,6 +863,28 @@ DEFUN(cfg_msc_nri_del, cfg_msc_nri_del_cmd,
 	return CMD_SUCCESS;
 }
 
+DEFUN(cfg_msc_allow_attach, cfg_msc_allow_attach_cmd,
+      "allow-attach",
+      "Allow this MSC to attach new subscribers (default).\n")
+{
+	struct bsc_msc_data *msc = bsc_msc_data(vty);
+	msc->allow_attach = true;
+	return CMD_SUCCESS;
+}
+
+DEFUN(cfg_msc_no_allow_attach, cfg_msc_no_allow_attach_cmd,
+      "no allow-attach",
+      NO_STR
+      "Do not assign new subscribers to this MSC."
+      " Useful if an MSC in an MSC pool is configured to off-load subscribers."
+      " The MSC will still be operational for already IMSI-Attached subscribers,"
+      " but the NAS node selection function will skip this MSC for new subscribers\n")
+{
+	struct bsc_msc_data *msc = bsc_msc_data(vty);
+	msc->allow_attach = false;
+	return CMD_SUCCESS;
+}
+
 static void msc_write_nri(struct vty *vty, struct bsc_msc_data *msc, bool verbose)
 {
 	struct osmo_nri_range *r;
@@ -963,6 +988,8 @@ int bsc_vty_init_extra(void)
 	install_element(MSC_NODE, &cfg_msc_nri_add_cmd);
 	install_element(MSC_NODE, &cfg_msc_nri_del_cmd);
 	install_element(MSC_NODE, &cfg_msc_show_nri_cmd);
+	install_element(MSC_NODE, &cfg_msc_allow_attach_cmd);
+	install_element(MSC_NODE, &cfg_msc_no_allow_attach_cmd);
 
 	/* Deprecated: ping time config, kept to support legacy config files. */
 	install_element(MSC_NODE, &cfg_net_msc_no_ping_time_cmd);
