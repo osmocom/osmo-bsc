@@ -1998,14 +1998,11 @@ int abis_nm_set_channel_attr(struct gsm_bts_trx_ts *ts, uint8_t chan_comb)
 	struct abis_om_fom_hdr *foh;
 	uint8_t zero = 0x00;
 	struct msgb *msg = nm_msgb_alloc();
-	uint8_t len = 2 + 2;
 	const char *reason = NULL;
 
-	if (bts->type == GSM_BTS_TYPE_BS11)
-		len += 4 + 2 + 2 + 3;
-
+	/* NOTE: message length will be set later, see down below */
 	oh = (struct abis_om_hdr *) msgb_put(msg, ABIS_OM_FOM_HDR_SIZE);
-	foh = fill_om_fom_hdr(oh, len, NM_MT_SET_CHAN_ATTR, NM_OC_CHANNEL, bts->bts_nr,
+	foh = fill_om_fom_hdr(oh, 0, NM_MT_SET_CHAN_ATTR, NM_OC_CHANNEL, bts->bts_nr,
 			      ts->trx->nr, ts->nr);
 
 	DEBUGPFOH(DNM, foh, "Set Chan Attr %s\n", gsm_ts_name(ts));
@@ -2060,6 +2057,10 @@ int abis_nm_set_channel_attr(struct gsm_bts_trx_ts *ts, uint8_t chan_comb)
 	msgb_tv_put(msg, NM_ATT_TSC, gsm_ts_tsc(ts));	/* training sequence */
 	if (bts->type == GSM_BTS_TYPE_BS11)
 		msgb_tlv_put(msg, 0x59, 1, &zero);
+
+	msg->l2h = (uint8_t *) oh;
+	msg->l3h = (uint8_t *) foh;
+	oh->length = msgb_l3len(msg);
 
 	DEBUGPFOH(DNM, foh, "%s(): sending %s\n", __func__, msgb_hexdump(msg));
 	return abis_nm_sendmsg(bts, msg);
