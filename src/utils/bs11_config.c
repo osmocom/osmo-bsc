@@ -232,6 +232,7 @@ static const struct value_string mbccu_load_names[] = {
 	{ 3,	"Load BTSBBX" },
 	{ 4,	"Load BTSARC" },
 	{ 5,	"Load" },
+	{ 8,	"Not Equipped" },
 	{ 0,	NULL }
 };
 
