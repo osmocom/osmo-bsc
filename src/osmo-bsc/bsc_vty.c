@@ -6286,13 +6286,13 @@ DEFUN(show_nri, show_nri_cmd,
 }
 
 /* Hidden since it exists only for use by ttcn3 tests */
-DEFUN(mscpool_roundrobin_next, mscpool_roundrobin_next_cmd,
-      "mscpool roundrobin next " MSC_NR_RANGE,
-      "MSC pooling: load balancing across multiple MSCs.\n"
-      "Adjust current state of the MSC round-robin algorithm (for testing).\n"
-      "Set the MSC nr to direct the next new subscriber to (for testing).\n"
-      "MSC number, as in the config file; if the number does not exist,"
-      " the round-robin continues to the next valid number.\n")
+DEFUN_HIDDEN(mscpool_roundrobin_next, mscpool_roundrobin_next_cmd,
+	     "mscpool roundrobin next " MSC_NR_RANGE,
+	     "MSC pooling: load balancing across multiple MSCs.\n"
+	     "Adjust current state of the MSC round-robin algorithm (for testing).\n"
+	     "Set the MSC nr to direct the next new subscriber to (for testing).\n"
+	     "MSC number, as in the config file; if the number does not exist,"
+	     " the round-robin continues to the next valid number.\n")
 {
 	bsc_gsmnet->mscs_round_robin_next_nr = atoi(argv[0]);
 	return CMD_SUCCESS;
