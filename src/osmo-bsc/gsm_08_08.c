@@ -228,6 +228,7 @@ static struct bsc_msc_data *bsc_find_msc(struct gsm_subscriber_connection *conn,
 			if (is_msc_usable(msc_target, is_emerg)) {
 				LOG_COMPL_L3(pdisc, mtype, LOGL_DEBUG, "%s matches earlier Paging from msc %d\n",
 					     osmo_mobile_identity_to_str_c(OTC_SELECT, &mi), msc_target->nr);
+				rate_ctr_inc(&msc_target->msc_ctrs->ctr[MSC_CTR_MSCPOOL_SUBSCR_PAGED]);
 				return msc_target;
 			} else {
 				LOG_COMPL_L3(pdisc, mtype, LOGL_DEBUG,
@@ -268,9 +269,11 @@ static struct bsc_msc_data *bsc_find_msc(struct gsm_subscriber_connection *conn,
 		bool nri_matches_msc = (nri_v >= 0 && osmo_nri_v_matches_ranges(nri_v, msc->nri_ranges));
 
 		if (!is_msc_usable(msc, is_emerg)) {
-			if (nri_matches_msc)
+			if (nri_matches_msc) {
 				LOG_NRI(LOGL_DEBUG, "matches msc %d, but this MSC is currently not connected\n",
 					msc->nr);
+				rate_ctr_inc(&msc->msc_ctrs->ctr[MSC_CTR_MSCPOOL_SUBSCR_ATTACH_LOST]);
+			}
 			continue;
 		}
 
@@ -281,6 +284,11 @@ static struct bsc_msc_data *bsc_find_msc(struct gsm_subscriber_connection *conn,
 					msc->nr);
 			} else {
 				LOG_NRI(LOGL_DEBUG, "matches msc %d\n", msc->nr);
+				rate_ctr_inc(&msc->msc_ctrs->ctr[MSC_CTR_MSCPOOL_SUBSCR_KNOWN]);
+				if (is_emerg) {
+					rate_ctr_inc(&msc->msc_ctrs->ctr[MSC_CTR_MSCPOOL_EMERG_FORWARDED]);
+					rate_ctr_inc(&bsc_gsmnet->bsc_ctrs->ctr[BSC_CTR_MSCPOOL_EMERG_FORWARDED]);
+				}
 				return msc;
 			}
 		}
@@ -316,11 +324,24 @@ static struct bsc_msc_data *bsc_find_msc(struct gsm_subscriber_connection *conn,
 	if (!msc_target) {
 		LOG_COMPL_L3(pdisc, mtype, LOGL_ERROR, "%s%s: No suitable MSC for this Complete Layer 3 request found\n",
 			     osmo_mobile_identity_to_str_c(OTC_SELECT, &mi), is_emerg ? " FOR EMERGENCY CALL" : "");
+		rate_ctr_inc(&bsc_gsmnet->bsc_ctrs->ctr[BSC_CTR_MSCPOOL_SUBSCR_NO_MSC]);
+		if (is_emerg)
+			rate_ctr_inc(&bsc_gsmnet->bsc_ctrs->ctr[BSC_CTR_MSCPOOL_EMERG_LOST]);
 		return NULL;
 	}
 
 	LOGP(DMSC, LOGL_DEBUG, "New subscriber %s: MSC round-robin selects msc %d\n",
 	     osmo_mobile_identity_to_str_c(OTC_SELECT, &mi), msc_target->nr);
+
+	if (is_null_nri)
+		rate_ctr_inc(&msc_target->msc_ctrs->ctr[MSC_CTR_MSCPOOL_SUBSCR_REATTACH]);
+	else
+		rate_ctr_inc(&msc_target->msc_ctrs->ctr[MSC_CTR_MSCPOOL_SUBSCR_NEW]);
+
+	if (is_emerg) {
+		rate_ctr_inc(&msc_target->msc_ctrs->ctr[MSC_CTR_MSCPOOL_EMERG_FORWARDED]);
+		rate_ctr_inc(&bsc_gsmnet->bsc_ctrs->ctr[BSC_CTR_MSCPOOL_EMERG_FORWARDED]);
+	}
 
 	/* An MSC was picked by round-robin, so update the next round-robin nr to pick */
 	if (is_emerg)

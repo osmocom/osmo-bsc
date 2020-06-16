@@ -100,6 +100,34 @@ static const struct rate_ctr_desc msc_ctr_description[] = {
 	[MSC_CTR_BSSMAP_TX_DT1_HANDOVER_COMPLETE] =         {"bssmap:tx:dt1:handover:complete", "Number of transmitted BSSMAP DT1 HANDOVER COMPLETE messages"},
 	[MSC_CTR_BSSMAP_TX_DT1_HANDOVER_FAILURE] =          {"bssmap:tx:dt1:handover:failure", "Number of transmitted BSSMAP DT1 HANDOVER FAILURE messages"},
 	[MSC_CTR_BSSMAP_TX_DT1_DTAP] =                      {"bssmap:tx:dt1:dtap", "Number of transmitted BSSMAP DT1 DTAP messages"},
+
+	/* Indicators for MSC pool usage */
+	[MSC_CTR_MSCPOOL_SUBSCR_NEW] = {
+		"mscpool:subscr:new",
+		"Complete Layer 3 requests assigned to this MSC by round-robin (no NRI was assigned yet).",
+	},
+	[MSC_CTR_MSCPOOL_SUBSCR_REATTACH] = {
+		"mscpool:subscr:reattach",
+		"Complete Layer 3 requests assigned to this MSC by round-robin because the subscriber indicates a"
+		" NULL-NRI (previously assigned by another MSC).",
+	},
+	[MSC_CTR_MSCPOOL_SUBSCR_KNOWN] = {
+		"mscpool:subscr:known",
+		"Complete Layer 3 requests directed to this MSC because the subscriber indicates an NRI of this MSC.",
+	},
+	[MSC_CTR_MSCPOOL_SUBSCR_PAGED] = {
+		"mscpool:subscr:paged",
+		"Paging Response directed to this MSC because the subscriber was recently paged by this MSC.",
+	},
+	[MSC_CTR_MSCPOOL_SUBSCR_ATTACH_LOST] = {
+		"mscpool:subscr:attach_lost",
+		"A subscriber indicates an NRI value matching this MSC, but the MSC is not connected:"
+		" a re-attach to another MSC (if available) was forced, with possible service failure.",
+	},
+	[MSC_CTR_MSCPOOL_EMERG_FORWARDED] = {
+		"mscpool:emerg:forwarded",
+		"Emergency call requests forwarded to this MSC.",
+	},
 };
 
 static const struct rate_ctr_group_desc msc_ctrg_desc = {

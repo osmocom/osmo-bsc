@@ -1558,6 +1558,9 @@ enum {
 	BSC_CTR_PAGING_RESPONDED,
 	BSC_CTR_PAGING_NO_ACTIVE_PAGING,
 	BSC_CTR_UNKNOWN_UNIT_ID,
+	BSC_CTR_MSCPOOL_SUBSCR_NO_MSC,
+	BSC_CTR_MSCPOOL_EMERG_FORWARDED,
+	BSC_CTR_MSCPOOL_EMERG_LOST,
 };
 
 static const struct rate_ctr_desc bsc_ctr_description[] = {
@@ -1604,6 +1607,13 @@ static const struct rate_ctr_desc bsc_ctr_description[] = {
 	[BSC_CTR_PAGING_NO_ACTIVE_PAGING] =	{"paging:no_active_paging", "Paging response without an active paging request (arrived after paging expiration?)."},
 
 	[BSC_CTR_UNKNOWN_UNIT_ID] = 		{"abis:unknown_unit_id", "Connection attempts from unknown IPA CCM Unit ID."},
+
+	[BSC_CTR_MSCPOOL_SUBSCR_NO_MSC] =	{"mscpool:subscr:no_msc",
+						 "Complete Layer 3 requests lost because no connected MSC is found available."},
+	[BSC_CTR_MSCPOOL_EMERG_FORWARDED] =	{"mscpool:emerg:forwarded",
+						 "Emergency call requests forwarded to an MSC (see also per-MSC counters)"},
+	[BSC_CTR_MSCPOOL_EMERG_LOST] =		{"mscpool:emerg:lost",
+						 "Emergency call requests lost because no MSC was found available."},
 };
 
 
