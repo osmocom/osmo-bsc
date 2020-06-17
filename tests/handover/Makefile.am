@@ -82,7 +82,6 @@ handover_test_LDADD = \
 	$(top_builddir)/src/osmo-bsc/osmo_bsc_lcls.o \
 	$(top_builddir)/src/osmo-bsc/osmo_bsc_mgcp.o \
 	$(top_builddir)/src/osmo-bsc/osmo_bsc_msc.o \
-	$(top_builddir)/src/osmo-bsc/osmo_bsc_vty.o \
 	$(top_builddir)/src/osmo-bsc/paging.o \
 	$(top_builddir)/src/osmo-bsc/pcu_sock.o \
 	$(top_builddir)/src/osmo-bsc/penalty_timers.o \

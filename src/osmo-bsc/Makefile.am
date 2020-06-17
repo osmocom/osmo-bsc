@@ -80,7 +80,6 @@ osmo_bsc_SOURCES = \
 	osmo_bsc_mgcp.c \
 	osmo_bsc_msc.c \
 	osmo_bsc_sigtran.c \
-	osmo_bsc_vty.c \
 	paging.c \
 	pcu_sock.c \
 	penalty_timers.c \
