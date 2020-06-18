@@ -1373,7 +1373,8 @@ bool ts_is_tch(struct gsm_bts_trx_ts *ts);
 
 
 static inline struct gsm_bts *conn_get_bts(struct gsm_subscriber_connection *conn) {
-	OSMO_ASSERT(conn->lchan);
+	if (!conn || !conn->lchan)
+		return NULL;
 	return conn->lchan->ts->trx->bts;
 }
 

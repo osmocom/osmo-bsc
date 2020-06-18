@@ -222,8 +222,9 @@ static struct bsc_msc_data *bsc_find_msc(struct gsm_subscriber_connection *conn,
 	/* Has the subscriber been paged from a connected MSC? */
 	if (pdisc == GSM48_PDISC_RR && mtype == GSM48_MT_RR_PAG_RESP) {
 		subscr = bsc_subscr_find_by_mi(conn->network->bsc_subscribers, &mi);
-		if (subscr) {
-			msc_target = paging_get_msc(conn_get_bts(conn), subscr);
+		struct gsm_bts *bts = conn_get_bts(conn);
+		if (bts && subscr) {
+			msc_target = paging_get_msc(bts, subscr);
 			bsc_subscr_put(subscr);
 			if (is_msc_usable(msc_target, is_emerg)) {
 				LOG_COMPL_L3(pdisc, mtype, LOGL_DEBUG, "%s matches earlier Paging from msc %d\n",
@@ -356,6 +357,13 @@ static int handle_page_resp(struct gsm_subscriber_connection *conn, struct msgb 
 {
 	struct osmo_mobile_identity mi;
 	struct bsc_subscr *subscr = NULL;
+	struct gsm_bts *bts = conn_get_bts(conn);
+
+	if (!bts) {
+		/* should never happen */
+		LOGP(DRSL, LOGL_ERROR, "Paging Response without lchan\n");
+		return -1;
+	}
 
 	if (osmo_mobile_identity_decode_from_l3(&mi, msg, false)) {
 		LOGP(DRSL, LOGL_ERROR, "Unable to extract Mobile Identity from Paging Response\n");
@@ -370,8 +378,7 @@ static int handle_page_resp(struct gsm_subscriber_connection *conn, struct msgb 
 		return -1;
 	}
 
-	paging_request_stop(&conn->network->bts_list, conn_get_bts(conn), subscr, conn,
-			    msg);
+	paging_request_stop(&conn->network->bts_list, bts, subscr, conn, msg);
 	bsc_subscr_put(subscr);
 	return 0;
 }
@@ -385,6 +392,11 @@ static void handle_lu_request(struct gsm_subscriber_connection *conn,
 	int8_t rc8;
 	struct gsm_bts *bts = conn_get_bts(conn);
 
+	if (!bts) {
+		/* should never happen */
+		LOGP(DRSL, LOGL_ERROR, "LU Request without lchan\n");
+		return;
+	}
 
 	if (msgb_l3len(msg) < sizeof(*gh) + sizeof(*lu)) {
 		LOGP(DMSC, LOGL_ERROR, "LU too small to look at: %u\n", msgb_l3len(msg));
@@ -414,6 +426,12 @@ static void handle_cm_serv_req(struct gsm_subscriber_connection *conn,
 	struct gsm48_classmark2* cm2;
 	int8_t rc8;
 	struct gsm_bts *bts = conn_get_bts(conn);
+
+	if (!bts) {
+		/* should never happen */
+		LOGP(DRSL, LOGL_ERROR, "CM Service Request without lchan\n");
+		return;
+	}
 
 	if (msgb_l3len(msg) < sizeof(*gh) + sizeof(*serv_req)) {
 		LOGP(DMSC, LOGL_ERROR, "CM Serv Req too small to look at: %u\n", msgb_l3len(msg));
@@ -462,6 +480,15 @@ int bsc_compl_l3(struct gsm_subscriber_connection *conn, struct msgb *msg, uint1
 	struct msgb *resp;
 	struct gsm0808_speech_codec_list scl;
 	int rc = -2;
+	struct gsm_bts *bts = conn_get_bts(conn);
+	struct osmo_cell_global_id *cgi = cgi_for_msc(conn->sccp.msc, bts);
+
+	if (!bts || !cgi) {
+		/* should never happen */
+		LOGP(DMSC, LOGL_ERROR, "Compl L3 without lchan\n");
+		rc = -1;
+		goto early_fail;
+	}
 
 	log_set_context(LOG_CTX_BSC_SUBSCR, conn->bsub);
 
@@ -482,9 +509,9 @@ int bsc_compl_l3(struct gsm_subscriber_connection *conn, struct msgb *msg, uint1
 	bsc_scan_bts_msg(conn, msg);
 
 	if (gscon_is_aoip(conn)) {
-		gen_bss_supported_codec_list(&scl, msc, conn_get_bts(conn));
+		gen_bss_supported_codec_list(&scl, msc, bts);
 		if (scl.len > 0)
-			resp = gsm0808_create_layer3_2(msg, cgi_for_msc(conn->sccp.msc, conn_get_bts(conn)), &scl);
+			resp = gsm0808_create_layer3_2(msg, cgi, &scl);
 		else {
 			/* Note: 3GPP TS 48.008 3.2.1.32, COMPLETE LAYER 3 INFORMATION clearly states that
 			 * Codec List (BSS Supported) shall be included, if the radio access network
@@ -492,10 +519,10 @@ int bsc_compl_l3(struct gsm_subscriber_connection *conn, struct msgb *msg, uint1
 			 * current configuration does not support any voice codecs, in those cases the
 			 * network does not support an IP based user plane interface, and therefore the
 			 * Codec List (BSS Supported) IE can be left out in those situations. */
-			resp = gsm0808_create_layer3_2(msg, cgi_for_msc(conn->sccp.msc, conn_get_bts(conn)), NULL);
+			resp = gsm0808_create_layer3_2(msg, cgi, NULL);
 		}
 	} else
-		resp = gsm0808_create_layer3_2(msg, cgi_for_msc(conn->sccp.msc, conn_get_bts(conn)), NULL);
+		resp = gsm0808_create_layer3_2(msg, cgi, NULL);
 
 	if (resp)
 		rc = osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_A_CONN_REQ, resp);
@@ -536,6 +563,12 @@ void bsc_cm_update(struct gsm_subscriber_connection *conn,
 	int rc;
 	struct msgb *resp;
 	struct gsm_bts *bts = conn_get_bts(conn);
+
+	if (!bts) {
+		/* should never happen */
+		LOGP(DMSC, LOGL_ERROR, "Classmark Update without lchan\n");
+		return;
+	}
 
 	rc8 = osmo_gsm48_rfpowercap2powerclass(bts->band, cm2_parsed->pwr_lev);
 	if (rc8 < 0) {

@@ -266,6 +266,10 @@ struct bsc_msc_data *osmo_msc_data_alloc(struct gsm_network *net, int nr)
 struct osmo_cell_global_id *cgi_for_msc(struct bsc_msc_data *msc, struct gsm_bts *bts)
 {
 	static struct osmo_cell_global_id cgi;
+
+	if (!bts)
+		return NULL;
+
 	cgi.lai.plmn = msc->network->plmn;
 	if (msc->core_plmn.mcc != GSM_MCC_MNC_INVALID)
 		cgi.lai.plmn.mcc = msc->core_plmn.mcc;

@@ -311,7 +311,7 @@ enum bsc_con osmo_bsc_sigtran_new_conn(struct gsm_subscriber_connection *conn, s
 		return BSC_CON_REJECT_NO_LINK;
 	}
 
-	if (!bsc_grace_allow_new_connection(bts->network, bts)) {
+	if (bts && !bsc_grace_allow_new_connection(bts->network, bts)) {
 		LOGP(DMSC, LOGL_NOTICE, "BSC in grace period. No new connections.\n");
 		return BSC_CON_REJECT_RF_GRACE;
 	}

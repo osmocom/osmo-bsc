@@ -478,7 +478,6 @@ static int bssmap_handle_cipher_mode(struct gsm_subscriber_connection *conn,
 				     struct msgb *msg, unsigned int payload_length)
 {
 	uint16_t len;
-	struct gsm_network *network = NULL;
 	const uint8_t *data;
 	struct tlv_parsed tp;
 	struct msgb *resp;
@@ -522,7 +521,6 @@ static int bssmap_handle_cipher_mode(struct gsm_subscriber_connection *conn,
 		goto reject;
 	}
 
-	network = conn_get_bts(conn)->network;
 	data = TLVP_VAL(&tp, GSM0808_IE_ENCRYPTION_INFORMATION);
 	enc_bits_msc = data[0];
 	enc_key = &data[1];
@@ -540,10 +538,10 @@ static int bssmap_handle_cipher_mode(struct gsm_subscriber_connection *conn,
 	/* The bit-mask of permitted ciphers from the MSC (sent in ASSIGNMENT COMMAND) is intersected
 	 * with the vty-configured mask a the BSC.  Finally, the best (highest) possible cipher is
 	 * chosen. */
-	chosen_cipher = select_best_cipher(enc_bits_msc, network->a5_encryption_mask);
+	chosen_cipher = select_best_cipher(enc_bits_msc, bsc_gsmnet->a5_encryption_mask);
 	if (chosen_cipher < 0) {
 		LOGP(DMSC, LOGL_ERROR, "Reject: no overlapping A5 ciphers between BSC (0x%02x) "
-			"and MSC (0x%02x)\n", network->a5_encryption_mask, enc_bits_msc);
+			"and MSC (0x%02x)\n", bsc_gsmnet->a5_encryption_mask, enc_bits_msc);
 		reject_cause = GSM0808_CAUSE_CIPHERING_ALGORITHM_NOT_SUPPORTED;
 		goto reject;
 	}
@@ -663,17 +661,23 @@ static int select_codecs(struct assignment_request *req, struct gsm0808_channel_
 {
 	int rc, i, nc = 0;
 	struct bsc_msc_data *msc;
+	struct gsm_bts *bts = conn_get_bts(conn);
+
+	if (!bts) {
+		LOGP(DMSC, LOGL_ERROR, "No lchan, cannot select codecs\n");
+		return -EINVAL;
+	}
 
 	msc = conn->sccp.msc;
 
 	switch (ct->ch_rate_type) {
 	case GSM0808_SPEECH_FULL_BM:
-		rc = match_codec_pref(&req->ch_mode_rate[nc], ct, &conn->codec_list, msc, conn_get_bts(conn),
+		rc = match_codec_pref(&req->ch_mode_rate[nc], ct, &conn->codec_list, msc, bts,
 				      RATE_PREF_FR);
 		nc += (rc == 0);
 		break;
 	case GSM0808_SPEECH_HALF_LM:
-		rc = match_codec_pref(&req->ch_mode_rate[nc], ct, &conn->codec_list, msc, conn_get_bts(conn),
+		rc = match_codec_pref(&req->ch_mode_rate[nc], ct, &conn->codec_list, msc, bts,
 				      RATE_PREF_HR);
 		nc += (rc == 0);
 		break;
@@ -681,19 +685,19 @@ static int select_codecs(struct assignment_request *req, struct gsm0808_channel_
 	case GSM0808_SPEECH_PERM_NO_CHANGE:
 	case GSM0808_SPEECH_FULL_PREF_NO_CHANGE:
 	case GSM0808_SPEECH_FULL_PREF:
-		rc = match_codec_pref(&req->ch_mode_rate[nc], ct, &conn->codec_list, msc, conn_get_bts(conn),
+		rc = match_codec_pref(&req->ch_mode_rate[nc], ct, &conn->codec_list, msc, bts,
 				      RATE_PREF_FR);
 		nc += (rc == 0);
-		rc = match_codec_pref(&req->ch_mode_rate[nc], ct, &conn->codec_list, msc, conn_get_bts(conn),
+		rc = match_codec_pref(&req->ch_mode_rate[nc], ct, &conn->codec_list, msc, bts,
 				      RATE_PREF_HR);
 		nc += (rc == 0);
 		break;
 	case GSM0808_SPEECH_HALF_PREF_NO_CHANGE:
 	case GSM0808_SPEECH_HALF_PREF:
-		rc = match_codec_pref(&req->ch_mode_rate[nc], ct, &conn->codec_list, msc, conn_get_bts(conn),
+		rc = match_codec_pref(&req->ch_mode_rate[nc], ct, &conn->codec_list, msc, bts,
 				      RATE_PREF_HR);
 		nc += (rc == 0);
-		rc = match_codec_pref(&req->ch_mode_rate[nc], ct, &conn->codec_list, msc, conn_get_bts(conn),
+		rc = match_codec_pref(&req->ch_mode_rate[nc], ct, &conn->codec_list, msc, bts,
 				      RATE_PREF_FR);
 		nc += (rc == 0);
 		break;

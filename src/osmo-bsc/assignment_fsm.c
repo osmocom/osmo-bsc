@@ -80,7 +80,8 @@ static const struct osmo_tdef_state_timeout assignment_fsm_timeouts[32] = {
 			       bsc_ctr_description[BSC_##counter].name, \
 			       bsc_ctr_description[BSC_##counter].description); \
 		rate_ctr_inc(&conn->network->bsc_ctrs->ctr[BSC_##counter]); \
-		rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_##counter]); \
+		if (bts) \
+			rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_##counter]); \
 	} while(0)
 
 #define assignment_count_result(counter) do { \

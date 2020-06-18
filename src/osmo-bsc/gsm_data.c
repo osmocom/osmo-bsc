@@ -1721,7 +1721,7 @@ void conn_update_ms_power_class(struct gsm_subscriber_connection *conn, uint8_t 
 
 	/* If there's an associated lchan, attempt to update its max power to be
 	   on track with band maximum values */
-	if (conn->lchan)
+	if (bts && conn->lchan)
 		lchan_update_ms_power_ctrl_level(conn->lchan, bts->ms_max_power);
 }
 

@@ -132,11 +132,12 @@ int bsc_scan_msc_msg(struct gsm_subscriber_connection *conn, struct msgb *msg)
 	msc = conn->sccp.msc;
 
 	if (mtype == GSM48_MT_MM_LOC_UPD_ACCEPT) {
-		if (has_core_identity(msc)) {
+		struct gsm_bts *bts = conn_get_bts(conn);
+		if (bts && has_core_identity(msc)) {
 			if (msgb_l3len(msg) >= sizeof(*gh) + sizeof(*lai)) {
 				/* overwrite LAI in the message */
 				lai = (struct gsm48_loc_area_id *) &gh->data[0];
-				gsm48_generate_lai2(lai, bts_lai(conn_get_bts(conn)));
+				gsm48_generate_lai2(lai, bts_lai(bts));
 			}
 		}
 		return 0;
