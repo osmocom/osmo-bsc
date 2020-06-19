@@ -4361,7 +4361,7 @@ DEFUN(cfg_trx_arfcn,
 
 DEFUN(cfg_trx_nominal_power,
       cfg_trx_nominal_power_cmd,
-      "nominal power <0-100>",
+      "nominal power <-20-100>",
       "Nominal TRX RF Power in dBm\n"
       "Nominal TRX RF Power in dBm\n"
       "Nominal TRX RF Power in dBm\n")
