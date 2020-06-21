@@ -1403,6 +1403,7 @@ enum bts_counter_id {
 	BTS_CTR_CHAN_ACT_NACK,
 	BTS_CTR_RSL_UNKNOWN,
 	BTS_CTR_RSL_IPA_NACK,
+	BTS_CTR_RSL_DELETE_IND,
 	BTS_CTR_MODE_MODIFY_NACK,
 	BTS_CTR_LCHAN_BORKEN_FROM_UNUSED,
 	BTS_CTR_LCHAN_BORKEN_FROM_WAIT_ACTIV_ACK,
@@ -1458,6 +1459,7 @@ static const struct rate_ctr_desc bts_ctr_description[] = {
 	[BTS_CTR_CHAN_ACT_NACK] =		{"chan_act:nack", "Number of Channel Activations that the BTS NACKed"},
 	[BTS_CTR_RSL_UNKNOWN] =			{"rsl:unknown", "Number of unknown/unsupported RSL messages received from BTS"},
 	[BTS_CTR_RSL_IPA_NACK] =		{"rsl:ipa_nack", "Number of IPA (RTP/dyn-PDCH) related NACKs received from BTS"},
+	[BTS_CTR_RSL_DELETE_IND] =		{"rsl:delete_ind", "Number of RSL DELETE INDICATION (DL CCCH overload)"},
 	[BTS_CTR_MODE_MODIFY_NACK] =		{"chan:mode_modify_nack", "Number of Channel Mode Modify NACKs received from BTS"},
 
 	/* lchan/TS BORKEN state counters */
@@ -1489,6 +1491,7 @@ static const struct rate_ctr_desc bts_ctr_description[] = {
 	[BTS_CTR_ASSIGNMENT_TIMEOUT] =               {"assignment:timeout", "Assignment timed out"},
 	[BTS_CTR_ASSIGNMENT_FAILED] =                {"assignment:failed", "Received Assignment Failure message"},
 	[BTS_CTR_ASSIGNMENT_ERROR] =                 {"assignment:error", "Assignment failed for other reason"},
+
 };
 
 static const struct rate_ctr_group_desc bts_ctrg_desc = {
