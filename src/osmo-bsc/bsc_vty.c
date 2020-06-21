@@ -4764,7 +4764,6 @@ DEFUN(bts_resend, bts_resend_cmd,
       "Re-generate + re-send BCCH SYSTEM INFORMATION\n")
 {
 	struct gsm_network *gsmnet;
-	struct gsm_bts_trx *trx;
 	struct gsm_bts *bts;
 	unsigned int bts_nr;
 
@@ -4783,8 +4782,7 @@ DEFUN(bts_resend, bts_resend_cmd,
 		return CMD_WARNING;
 	}
 
-	llist_for_each_entry_reverse(trx, &bts->trx_list, list)
-		gsm_bts_trx_set_system_infos(trx);
+	gsm_bts_set_system_infos(bts);
 
 	return CMD_SUCCESS;
 }
