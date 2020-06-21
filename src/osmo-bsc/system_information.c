@@ -1152,9 +1152,8 @@ static struct gsm48_si13_info si13_default = {
 		.ctrl_ack_type_use_block = true,
 		.ext_info_present = 0,
 		.ext_info = {
-			/* The values below are just guesses ! */
-			.egprs_supported = 0,
-			.use_egprs_p_ch_req = 0,
+			.egprs_supported = 0,		/* overridden in gsm_generate_si() */
+			.use_egprs_p_ch_req = 0,	/* overridden in generate_si13() */
 			.bep_period = 5,
 			.pfc_supported = 0,
 			.dtm_supported = 0,
