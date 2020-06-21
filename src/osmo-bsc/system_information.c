@@ -1202,6 +1202,11 @@ static int generate_si13(enum osmo_sysinfo_type t, struct gsm_bts *bts)
 	else
 		si13_default.cell_opts.ext_info.use_egprs_p_ch_req = 0;
 
+	if (osmo_bts_has_feature(&bts->features, BTS_FEAT_PAGING_COORDINATION))
+		si13_default.cell_opts.ext_info.bss_paging_coordination = 1;
+	else
+		si13_default.cell_opts.ext_info.bss_paging_coordination = 0;
+
 	ret = rest_octets_si13(si13->rest_octets, &si13_default);
 	if (ret < 0)
 		return ret;

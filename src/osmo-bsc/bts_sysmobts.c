@@ -58,6 +58,7 @@ int bts_model_sysmobts_init(void)
 
         osmo_bts_set_feature(&model_sysmobts.features, BTS_FEAT_GPRS);
 	osmo_bts_set_feature(&model_sysmobts.features, BTS_FEAT_EGPRS);
+	osmo_bts_set_feature(&model_sysmobts.features, BTS_FEAT_PAGING_COORDINATION);
 
 	return gsm_bts_model_register(&model_sysmobts);
 }
