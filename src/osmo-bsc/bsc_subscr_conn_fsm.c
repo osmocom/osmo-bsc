@@ -73,6 +73,7 @@ static const struct value_string gscon_fsm_event_names[] = {
 	{GSCON_EV_A_CONN_CFM, "MO-CONNECT.cfm"},
 	{GSCON_EV_A_CLEAR_CMD, "CLEAR_CMD"},
 	{GSCON_EV_A_DISC_IND, "DISCONNET.ind"},
+	{GSCON_EV_A_COMMON_ID_IND, "COMMON_ID.ind"},
 	{GSCON_EV_ASSIGNMENT_START, "ASSIGNMENT_START"},
 	{GSCON_EV_ASSIGNMENT_END, "ASSIGNMENT_END"},
 	{GSCON_EV_HANDOVER_START, "HANDOVER_START"},
@@ -759,6 +760,7 @@ static void gscon_fsm_allstate(struct osmo_fsm_inst *fi, uint32_t event, void *d
 {
 	struct gsm_subscriber_connection *conn = fi->priv;
 	const struct gscon_clear_cmd_data *ccd;
+	struct osmo_mobile_identity *mi_imsi;
 
 	/* Regular allstate event processing */
 	switch (event) {
@@ -804,6 +806,18 @@ static void gscon_fsm_allstate(struct osmo_fsm_inst *fi, uint32_t event, void *d
 		LOGPFSML(fi, LOGL_DEBUG, "Rx MDCX of MSC side (LCLS?)\n");
 		break;
 	case GSCON_EV_LCLS_FAIL:
+		break;
+	case GSCON_EV_A_COMMON_ID_IND:
+		OSMO_ASSERT(data);
+		mi_imsi = data;
+		if (!conn->bsub)
+			conn->bsub = bsc_subscr_find_or_create_by_imsi(conn->network->bsc_subscribers, mi_imsi->imsi);
+		else {
+			/* we already have a bsc_subscr associated; maybe that subscriber has no IMSI yet? */
+			if (!conn->bsub->imsi[0])
+				bsc_subscr_set_imsi(conn->bsub, mi_imsi->imsi);
+		}
+		gscon_update_id(conn);
 		break;
 	default:
 		OSMO_ASSERT(false);
@@ -898,7 +912,8 @@ static struct osmo_fsm gscon_fsm = {
 	.name = "SUBSCR_CONN",
 	.states = gscon_fsm_states,
 	.num_states = ARRAY_SIZE(gscon_fsm_states),
-	.allstate_event_mask = S(GSCON_EV_A_DISC_IND) | S(GSCON_EV_A_CLEAR_CMD) | S(GSCON_EV_RSL_CONN_FAIL) |
+	.allstate_event_mask = S(GSCON_EV_A_DISC_IND) | S(GSCON_EV_A_CLEAR_CMD) | S(GSCON_EV_A_COMMON_ID_IND) |
+	    S(GSCON_EV_RSL_CONN_FAIL) |
 	    S(GSCON_EV_LCLS_FAIL) |
 	    S(GSCON_EV_FORGET_LCHAN) |
 	    S(GSCON_EV_FORGET_MGW_ENDPOINT),

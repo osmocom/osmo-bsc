@@ -1073,6 +1073,34 @@ static int bssmap_handle_confusion(struct gsm_subscriber_connection *conn,
 	return 0;
 }
 
+/* Common ID; 3GPP TS 48.008 3.2.1.68 */
+static int bssmap_handle_common_id(struct gsm_subscriber_connection *conn,
+				   struct msgb *msg, unsigned int length)
+{
+	struct tlv_parsed tp;
+	struct osmo_mobile_identity mi_imsi;
+
+	osmo_bssap_tlv_parse(&tp, msg->l4h + 1, length - 1);
+
+	/* Check for the mandatory elements */
+	if (!TLVP_PRESENT(&tp, GSM0808_IE_IMSI)) {
+		LOGPFSML(conn->fi, LOGL_ERROR,
+		         "CommonID: missing mandatory IMSI IE: %s\n",
+		         osmo_hexdump(msg->l4h, length));
+		return -EINVAL;
+	}
+
+	if (osmo_mobile_identity_decode(&mi_imsi, TLVP_VAL(&tp, GSM0808_IE_IMSI), TLVP_LEN(&tp, GSM0808_IE_IMSI), false)
+	    || mi_imsi.type != GSM_MI_TYPE_IMSI) {
+		LOGPFSML(conn->fi, LOGL_ERROR, "CommonID: could not parse IMSI\n");
+		return -EINVAL;
+	}
+
+	osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_A_COMMON_ID_IND, &mi_imsi);
+
+	return 0;
+}
+
 static int bssmap_rcvmsg_udt(struct bsc_msc_data *msc,
 			     struct msgb *msg, unsigned int length)
 {
@@ -1152,6 +1180,10 @@ static int bssmap_rcvmsg_dt1(struct gsm_subscriber_connection *conn,
 	case BSS_MAP_MSG_CONFUSION:
 		rate_ctr_inc(&ctrs[MSC_CTR_BSSMAP_RX_DT1_CONFUSION]);
 		ret = bssmap_handle_confusion(conn, msg, length);
+		break;
+	case BSS_MAP_MSG_COMMON_ID:
+		rate_ctr_inc(&ctrs[MSC_CTR_BSSMAP_RX_DT1_COMMON_ID]);
+		ret = bssmap_handle_common_id(conn, msg, length);
 		break;
 	default:
 		rate_ctr_inc(&ctrs[MSC_CTR_BSSMAP_RX_DT1_UNKNOWN]);

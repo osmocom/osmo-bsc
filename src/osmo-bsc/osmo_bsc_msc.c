@@ -58,6 +58,7 @@ static const struct rate_ctr_desc msc_ctr_description[] = {
 	[MSC_CTR_BSSMAP_RX_DT1_HANDOVER_CMD] =      {"bssmap:rx:dt1:handover:cmd", "Number of received BSSMAP DT1 HANDOVER CMD messages"},
 	[MSC_CTR_BSSMAP_RX_DT1_CLASSMARK_RQST] =    {"bssmap:rx:dt1:classmark:rqst", "Number of received BSSMAP DT1 CLASSMARK RQST messages"},
 	[MSC_CTR_BSSMAP_RX_DT1_CONFUSION] =         {"bssmap:rx:dt1:confusion", "Number of received BSSMAP DT1 CONFUSION messages"},
+	[MSC_CTR_BSSMAP_RX_DT1_COMMON_ID] =         {"bssmap:rx:dt1:common_id", "Number of received BSSMAP DT1 COMMON ID messages"},
 	[MSC_CTR_BSSMAP_RX_DT1_UNKNOWN] =           {"bssmap:rx:dt1:err_unknown", "Number of received BSSMAP unknown DT1 messages"},
 	[MSC_CTR_BSSMAP_RX_DT1_DTAP] =              {"bssmap:rx:dt1:dtap:good", "Number of received BSSMAP DTAP messages"},
 	[MSC_CTR_BSSMAP_RX_DT1_DTAP_ERROR] =        {"bssmap:rx:dt1:dtap:error", "Number of received BSSMAP DTAP messages with errors"},

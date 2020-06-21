@@ -14,6 +14,8 @@ enum gscon_fsm_event {
 	GSCON_EV_A_CLEAR_CMD,
 	/* MSC SCCP disconnect indication */
 	GSCON_EV_A_DISC_IND,
+	/* MSC has sent a BSSMAP COMMON ID */
+	GSCON_EV_A_COMMON_ID_IND,
 
 	GSCON_EV_ASSIGNMENT_START,
 	GSCON_EV_ASSIGNMENT_END,
