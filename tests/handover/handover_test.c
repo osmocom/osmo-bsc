@@ -197,14 +197,17 @@ static struct gsm_bts *create_bts(int arfcn)
 
 	bts->c0->mo.nm_state.operational = NM_OPSTATE_ENABLED;
 	bts->c0->mo.nm_state.availability = NM_AVSTATE_OK;
+	bts->c0->mo.nm_state.administrative = NM_STATE_UNLOCKED;
 	bts->c0->bb_transc.mo.nm_state.operational = NM_OPSTATE_ENABLED;
 	bts->c0->bb_transc.mo.nm_state.availability = NM_AVSTATE_OK;
+	bts->c0->bb_transc.mo.nm_state.administrative = NM_STATE_UNLOCKED;
 
 	/* 4 full rate and 4 half rate channels */
 	for (i = 1; i <= 6; i++) {
 		bts->c0->ts[i].pchan_from_config = (i < 5) ? GSM_PCHAN_TCH_F : GSM_PCHAN_TCH_H;
 		bts->c0->ts[i].mo.nm_state.operational = NM_OPSTATE_ENABLED;
 		bts->c0->ts[i].mo.nm_state.availability = NM_AVSTATE_OK;
+		bts->c0->ts[i].mo.nm_state.administrative = NM_STATE_UNLOCKED;
 	}
 
 	for (i = 0; i < ARRAY_SIZE(bts->c0->ts); i++) {

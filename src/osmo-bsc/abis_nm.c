@@ -848,9 +848,6 @@ bool all_trx_rsl_connected_unlocked(const struct gsm_bts *bts)
 
 		if (!trx_is_usable(trx))
 			return false;
-
-		if (trx->mo.nm_state.administrative == NM_STATE_LOCKED)
-			return false;
 	}
 
 	return true;

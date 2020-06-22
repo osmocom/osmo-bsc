@@ -1459,10 +1459,13 @@ void gsm48_lchan2chan_desc_as_configured(struct gsm48_chan_desc *cd,
 }
 
 bool nm_is_running(const struct gsm_nm_state *s) {
-	return (s->operational == NM_OPSTATE_ENABLED) && (
-		(s->availability == NM_AVSTATE_OK) ||
-		(s->availability == 0xff)
-	);
+	if (s->operational != NM_OPSTATE_ENABLED)
+		return false;
+	if ((s->availability != NM_AVSTATE_OK) && (s->availability != 0xff))
+		return false;
+	if (s->administrative != NM_STATE_UNLOCKED)
+		return false;
+	return true;
 }
 
 /* determine the logical channel type based on the physical channel type */
