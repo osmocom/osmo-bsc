@@ -125,7 +125,7 @@ make %{?_smp_mflags} check || (find . -name testsuite.log -exec cat {} +)
 %{_docdir}/%{name}/examples/osmo-bsc/osmo-bsc_custom-sccp.cfg
 %{_docdir}/%{name}/examples/osmo-bsc/osmo-bsc-minimal.cfg
 %dir %{_sysconfdir}/osmocom
-%config %{_sysconfdir}/osmocom/osmo-bsc.cfg
+%config(noreplace) %{_sysconfdir}/osmocom/osmo-bsc.cfg
 %{_unitdir}/%{name}.service
 
 %files abisip-find
