@@ -480,15 +480,8 @@ int bsc_compl_l3(struct gsm_subscriber_connection *conn, struct msgb *msg, uint1
 	struct msgb *resp;
 	struct gsm0808_speech_codec_list scl;
 	int rc = -2;
-	struct gsm_bts *bts = conn_get_bts(conn);
-	struct osmo_cell_global_id *cgi = cgi_for_msc(conn->sccp.msc, bts);
-
-	if (!bts || !cgi) {
-		/* should never happen */
-		LOGP(DMSC, LOGL_ERROR, "Compl L3 without lchan\n");
-		rc = -1;
-		goto early_fail;
-	}
+	struct gsm_bts *bts;
+	struct osmo_cell_global_id *cgi;
 
 	log_set_context(LOG_CTX_BSC_SUBSCR, conn->bsub);
 
@@ -505,6 +498,16 @@ int bsc_compl_l3(struct gsm_subscriber_connection *conn, struct msgb *msg, uint1
 	/* allocate resource for a new connection */
 	if (osmo_bsc_sigtran_new_conn(conn, msc) != BSC_CON_SUCCESS)
 		goto early_fail;
+
+	bts = conn_get_bts(conn);
+	cgi = cgi_for_msc(conn->sccp.msc, bts);
+
+	if (!bts || !cgi) {
+		/* should never happen */
+		LOGP(DMSC, LOGL_ERROR, "Compl L3 without lchan\n");
+		rc = -1;
+		goto early_fail;
+	}
 
 	bsc_scan_bts_msg(conn, msg);
 
