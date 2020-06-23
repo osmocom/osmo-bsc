@@ -5045,7 +5045,8 @@ DEFUN(lchan_act, lchan_act_cmd,
 		}
 		vty_out(vty, "%% activating lchan %s%s", gsm_lchan_name(lchan), VTY_NEWLINE);
 		rsl_tx_chan_activ(lchan, RSL_ACT_TYPE_INITIAL, 0);
-		rsl_tx_ipacc_crcx(lchan);
+		if (is_ipaccess_bts(lchan->ts->trx->bts))
+			rsl_tx_ipacc_crcx(lchan);
 	} else {
 		if (!lchan->fi) {
 			vty_out(vty, "%% Cannot release: Channel not initialized%s", VTY_NEWLINE);
@@ -5123,6 +5124,11 @@ DEFUN(lchan_mdcx, lchan_mdcx_cmd,
 		return CMD_WARNING;
 
 	lchan = &ts->lchan[ss_nr];
+
+	if (!is_ipaccess_bts(lchan->ts->trx->bts)) {
+		vty_out(vty, "%% BTS is not of ip.access type%s", VTY_NEWLINE);
+		return CMD_WARNING;
+	}
 
 	if (ss_nr >= pchan_subslots(ts->pchan_is)) {
 		vty_out(vty, "%% subslot index %d too large for physical channel %s (%u slots)%s",
