@@ -672,6 +672,7 @@ static const struct osmo_fsm_state lchan_rtp_fsm_states[] = {
 			,
 		.out_state_mask = 0
 			| S(LCHAN_RTP_ST_READY)
+			| S(LCHAN_RTP_ST_ROLLBACK)
 			,
 	},
 	[LCHAN_RTP_ST_READY] = {
