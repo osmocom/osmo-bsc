@@ -468,66 +468,25 @@ static int asp_rx_unknown(struct osmo_ss7_asp *asp, int ppid_mux, struct msgb *m
 /* Initialize osmo sigtran backhaul */
 int osmo_bsc_sigtran_init(struct llist_head *mscs)
 {
-	bool free_attempt_used = false;
-	bool fail_on_next_invalid_cfg = false;
-
 	struct bsc_msc_data *msc;
-	char msc_name[32];
 	uint32_t default_pc;
+	struct osmo_ss7_instance *inst;
+	int create_instance_0_for_msc_nr = -1;
 
 	osmo_ss7_register_rx_unknown_cb(&asp_rx_unknown);
 
 	OSMO_ASSERT(mscs);
 	msc_list = mscs;
 
+	/* Guard against multiple MSCs with identical config */
 	llist_for_each_entry(msc, msc_list, entry) {
-		snprintf(msc_name, sizeof(msc_name), "msc-%u", msc->nr);
-		LOGP(DMSC, LOGL_NOTICE, "Initializing SCCP connection to MSC %s\n", msc_name);
+		struct bsc_msc_data *msc2;
 
-		/* Check if the VTY could determine a valid CS7 instance,
-		 * use safe default in case none is set */
-		if (msc->a.cs7_instance_valid == false) {
-			msc->a.cs7_instance = 0;
-			if (fail_on_next_invalid_cfg)
-				goto fail_auto_cofiguration;
-			free_attempt_used = true;
-		}
-		LOGP(DMSC, LOGL_NOTICE, "CS7 Instance identifier, A-Interface: %u\n", msc->a.cs7_instance);
+		/* An MSC with invalid cs7 instance defaults to cs7 instance 0 */
+		uint32_t msc_inst = (msc->a.cs7_instance_valid ? msc->a.cs7_instance : 0);
 
-		/* Pre-Check if there is an ss7 instance present */
-		if (osmo_ss7_instance_find(msc->a.cs7_instance) == NULL) {
-			if (fail_on_next_invalid_cfg)
-				goto fail_auto_cofiguration;
-			free_attempt_used = true;
-		}
-
-		/* SS7 Protocol stack */
-		default_pc = osmo_ss7_pointcode_parse(NULL, BSC_DEFAULT_PC);
-		msc->a.sccp =
-		    osmo_sccp_simple_client_on_ss7_id(msc, msc->a.cs7_instance, msc_name, default_pc,
-						      msc->a.asp_proto, 0, NULL, 0, DEFAULT_ASP_REMOTE_IP);
-		if (!msc->a.sccp)
-			return -EINVAL;
-
-		/* In SCCPlite, the MSC side of the MGW endpoint is configured by the MSC. Since we have
-		 * no way to figure out which CallID ('C:') the MSC will issue in its CRCX command, set
-		 * an X-Osmo-IGN flag telling osmo-mgw to ignore CallID mismatches for this endpoint.
-		 * If an explicit VTY command has already indicated whether or not to send X-Osmo-IGN, do
-		 * not overwrite that setting. */
-		if (msc_is_sccplite(msc) && !msc->x_osmo_ign_configured)
-			msc->x_osmo_ign |= MGCP_X_OSMO_IGN_CALLID;
-
-		/* If unset, use default local SCCP address */
-		if (!msc->a.bsc_addr.presence)
-			osmo_sccp_local_addr_by_instance(&msc->a.bsc_addr, msc->a.sccp,
-							 OSMO_SCCP_SSN_BSSAP);
-
-		if (!osmo_sccp_check_addr(&msc->a.bsc_addr, OSMO_SCCP_ADDR_T_SSN | OSMO_SCCP_ADDR_T_PC)) {
-			LOGP(DMSC, LOGL_ERROR,
-			     "(%s) A-interface: invalid local (BSC) SCCP address: %s\n",
-			     msc_name, osmo_sccp_inst_addr_name(msc->a.sccp, &msc->a.bsc_addr));
-			return -EINVAL;
-		}
+		if (!msc->a.cs7_instance_valid)
+			create_instance_0_for_msc_nr = msc->nr;
 
 		/* If unset, use default SCCP address for the MSC */
 		if (!msc->a.msc_addr.presence)
@@ -535,50 +494,145 @@ int osmo_bsc_sigtran_init(struct llist_head *mscs)
 						   osmo_ss7_pointcode_parse(NULL, MSC_DEFAULT_PC),
 						   OSMO_SCCP_SSN_BSSAP);
 
-		if (!osmo_sccp_check_addr(&msc->a.msc_addr, OSMO_SCCP_ADDR_T_SSN | OSMO_SCCP_ADDR_T_PC)) {
-			LOGP(DMSC, LOGL_ERROR,
-			     "(%s) A-interface: invalid remote (MSC) SCCP address: %s\n",
-			     msc_name, osmo_sccp_inst_addr_name(msc->a.sccp, &msc->a.msc_addr));
-			return -EINVAL;
+		/* (more optimally, we'd only iterate the remaining other mscs after this msc, but this happens only
+		 * during startup, so nevermind that complexity and rather check each pair twice. That also ensures to
+		 * compare all MSCs that have no explicit msc_addr set, see osmo_sccp_make_addr_pc_ssn() above.) */
+		llist_for_each_entry(msc2, msc_list, entry) {
+			uint32_t msc2_inst;
+
+			if (msc2 == msc)
+				continue;
+
+			msc2_inst = (msc2->a.cs7_instance_valid ? msc2->a.cs7_instance : 0);
+			if (msc_inst != msc2_inst)
+				continue;
+
+			if (osmo_sccp_addr_cmp(&msc->a.msc_addr, &msc2->a.msc_addr, OSMO_SCCP_ADDR_T_PC) == 0) {
+				LOGP(DMSC, LOGL_ERROR, "'msc %d' and 'msc %d' cannot use the same remote PC"
+				     " %s on the same cs7 instance %u\n",
+				     msc->nr, msc2->nr, osmo_sccp_addr_dump(&msc->a.msc_addr), msc_inst);
+				return -EINVAL;
+			}
+		}
+	}
+
+	if (create_instance_0_for_msc_nr >= 0 && !osmo_ss7_instance_find(0)) {
+		LOGP(DMSC, LOGL_NOTICE, "To auto-configure msc %d, creating cs7 instance 0 implicitly\n",
+		     create_instance_0_for_msc_nr);
+		OSMO_ASSERT(osmo_ss7_instance_find_or_create(tall_bsc_ctx, 0));
+	}
+
+	/* Set up exactly one SCCP user and one ASP+AS per cs7 instance.
+	 * Iterate cs7 instance indexes and see for each one whether an MSC is configured for it.
+	 * The 'msc' / 'msc-addr' command selects the cs7 instance used for an MSC.
+	 */
+	llist_for_each_entry(inst, &osmo_ss7_instances, list) {
+		char inst_name[32];
+		enum osmo_ss7_asp_protocol used_proto = OSMO_SS7_ASP_PROT_NONE;
+		int prev_msc_nr;
+
+		struct osmo_sccp_instance *sccp;
+
+		llist_for_each_entry(msc, msc_list, entry) {
+			/* An MSC with invalid cs7 instance id defaults to cs7 instance 0 */
+			if ((inst->cfg.id != msc->a.cs7_instance)
+			    && !(inst->cfg.id == 0 && !msc->a.cs7_instance_valid))
+				continue;
+
+			/* This msc runs on this cs7 inst. Check the asp_proto. */
+			if (used_proto != OSMO_SS7_ASP_PROT_NONE
+			    && used_proto != msc->a.asp_proto) {
+				LOGP(DMSC, LOGL_ERROR, "'msc %d' and 'msc %d' with differing ASP protocols"
+				     " %s and %s cannot use the same cs7 instance %u\n",
+				     prev_msc_nr, msc->nr,
+				     osmo_ss7_asp_protocol_name(used_proto),
+				     osmo_ss7_asp_protocol_name(msc->a.asp_proto),
+				     inst->cfg.id);
+				return -EINVAL;
+			}
+
+			used_proto = msc->a.asp_proto;
+			prev_msc_nr = msc->nr;
+			/* still run through the other MSCs to catch asp_proto mismatches */
 		}
 
-		LOGP(DMSC, LOGL_NOTICE, "(%s) A-interface: local (BSC) SCCP address: %s\n",
-		     msc_name, osmo_sccp_inst_addr_name(msc->a.sccp, &msc->a.bsc_addr));
-		LOGP(DMSC, LOGL_NOTICE, "(%s) A-interface: remote (MSC) SCCP address: %s\n",
-		     msc_name, osmo_sccp_inst_addr_name(msc->a.sccp, &msc->a.msc_addr));
+		if (used_proto == OSMO_SS7_ASP_PROT_NONE) {
+			/* This instance has no MSC associated with it */
+			LOGP(DMSC, LOGL_ERROR, "cs7 instance %u has no MSCs configured to run on it\n", inst->cfg.id);
+			continue;
+		}
 
-		/* Bind SCCP user. Bind only one user per sccp_instance. */
-		msc->a.sccp_user = osmo_sccp_user_find(msc->a.sccp, msc->a.bsc_addr.ssn, msc->a.bsc_addr.pc);
-		LOGP(DMSC, LOGL_NOTICE, "(%s) A-interface: %s\n", msc_name,
-		     msc->a.sccp_user ? "user already bound for this SCCP instance" : "binding SCCP user");
-		if (!msc->a.sccp_user)
-			msc->a.sccp_user = osmo_sccp_user_bind(msc->a.sccp, msc_name, sccp_sap_up, msc->a.bsc_addr.ssn);
-		if (!msc->a.sccp_user)
+		snprintf(inst_name, sizeof(inst_name), "A-%u-%s", inst->cfg.id, osmo_ss7_asp_protocol_name(used_proto));
+		LOGP(DMSC, LOGL_NOTICE, "Initializing SCCP connection for A/%s on cs7 instance %u\n",
+		     osmo_ss7_asp_protocol_name(used_proto), inst->cfg.id);
+
+		/* SS7 Protocol stack */
+		default_pc = osmo_ss7_pointcode_parse(NULL, BSC_DEFAULT_PC);
+		sccp = osmo_sccp_simple_client_on_ss7_id(tall_bsc_ctx, inst->cfg.id, inst_name, default_pc, used_proto, 0, NULL,
+							 0, DEFAULT_ASP_REMOTE_IP);
+		if (!sccp)
 			return -EINVAL;
 
-		/* Start MSC-Reset procedure */
-		a_reset_alloc(msc, msc_name, osmo_bsc_sigtran_reset_cb);
+		/* Now that the SCCP client is set up, configure all MSCs on this cs7 instance to use it */
+		llist_for_each_entry(msc, msc_list, entry) {
+			char msc_name[32];
 
-		/* If we have detected that the SS7 configuration of the MSC we have just initialized
-		 * was incomplete or completely missing, we can not tolerate another incomplete
-		 * configuration. The reason for this is that we do only specify exactly one default
-		 * pointcode pair. We also specify localhost as default IP-Address. If we have wanted
-		 * to support multiple MSCs with automatic configuration we would be forced to invent
-		 * a complex ruleset how to allocate the pointcodes and respective IP-Addresses.
-		 * Furthermore, the situation where a single BSC is connected to multiple MSCs
-		 * is a very rare situation anyway. In this case we expect the user to experienced
-		 * enough to create a valid SS7/CS7 VTY configuration that does not lack any
-		 * components */
-		if (free_attempt_used)
-			fail_on_next_invalid_cfg = true;
+			/* Skip MSCs that don't run on this cs7 instance */
+			if ((inst->cfg.id != msc->a.cs7_instance)
+			    && !(inst->cfg.id == 0 && !msc->a.cs7_instance_valid))
+				continue;
+
+			snprintf(msc_name, sizeof(msc_name), "msc-%d", msc->nr);
+
+			msc->a.sccp = sccp;
+
+			/* In SCCPlite, the MSC side of the MGW endpoint is configured by the MSC. Since we have
+			 * no way to figure out which CallID ('C:') the MSC will issue in its CRCX command, set
+			 * an X-Osmo-IGN flag telling osmo-mgw to ignore CallID mismatches for this endpoint.
+			 * If an explicit VTY command has already indicated whether or not to send X-Osmo-IGN, do
+			 * not overwrite that setting. */
+			if (msc_is_sccplite(msc) && !msc->x_osmo_ign_configured)
+				msc->x_osmo_ign |= MGCP_X_OSMO_IGN_CALLID;
+
+			/* If unset, use default local SCCP address */
+			if (!msc->a.bsc_addr.presence)
+				osmo_sccp_local_addr_by_instance(&msc->a.bsc_addr, sccp,
+								 OSMO_SCCP_SSN_BSSAP);
+
+			if (!osmo_sccp_check_addr(&msc->a.bsc_addr, OSMO_SCCP_ADDR_T_SSN | OSMO_SCCP_ADDR_T_PC)) {
+				LOGP(DMSC, LOGL_ERROR,
+				     "%s %s: invalid local (BSC) SCCP address: %s\n",
+				     inst_name, msc_name, osmo_sccp_inst_addr_name(sccp, &msc->a.bsc_addr));
+				return -EINVAL;
+			}
+
+			if (!osmo_sccp_check_addr(&msc->a.msc_addr, OSMO_SCCP_ADDR_T_SSN | OSMO_SCCP_ADDR_T_PC)) {
+				LOGP(DMSC, LOGL_ERROR,
+				     "%s %s: invalid remote (MSC) SCCP address: %s\n",
+				     inst_name, msc_name, osmo_sccp_inst_addr_name(sccp, &msc->a.msc_addr));
+				return -EINVAL;
+			}
+
+			LOGP(DMSC, LOGL_NOTICE, "%s %s: local (BSC) SCCP address: %s\n",
+			     inst_name, msc_name, osmo_sccp_inst_addr_name(sccp, &msc->a.bsc_addr));
+			LOGP(DMSC, LOGL_NOTICE, "%s %s: remote (MSC) SCCP address: %s\n",
+			     inst_name, msc_name, osmo_sccp_inst_addr_name(sccp, &msc->a.msc_addr));
+
+			/* Bind SCCP user. Bind only one user per sccp_instance and bsc_addr. */
+			msc->a.sccp_user = osmo_sccp_user_find(sccp, msc->a.bsc_addr.ssn, msc->a.bsc_addr.pc);
+			LOGP(DMSC, LOGL_NOTICE, "%s %s: %s\n", inst_name, msc_name,
+			     msc->a.sccp_user ? "user already bound for this SCCP instance" : "binding SCCP user");
+			if (!msc->a.sccp_user)
+				msc->a.sccp_user = osmo_sccp_user_bind(sccp, msc_name, sccp_sap_up, msc->a.bsc_addr.ssn);
+			if (!msc->a.sccp_user)
+				return -EINVAL;
+
+			/* Start MSC-Reset procedure */
+			a_reset_alloc(msc, msc_name, osmo_bsc_sigtran_reset_cb);
+		}
 	}
 
 	return 0;
-
-fail_auto_cofiguration:
-	LOGP(DMSC, LOGL_ERROR,
-	     "A-interface: More than one invalid/inclomplete configuration detected, unable to revover - check config file!\n");
-	return -EINVAL;
 }
 
 /* this function receives all messages received on an ASP for a PPID / StreamID that
