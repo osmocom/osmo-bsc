@@ -471,8 +471,10 @@ static bool same_mgw_info(const struct mgcp_conn_peer *a, const struct mgcp_conn
  * SCCPlite, pass in msc_assigned_cic the CIC received upon BSSMAP Assignment Command or BSSMAP Handover
  * Request form the MSC (which is only stored in conn->user_plane after success). Ignored for AoIP. */
 struct osmo_mgcpc_ep *gscon_ensure_mgw_endpoint(struct gsm_subscriber_connection *conn,
-						uint16_t msc_assigned_cic)
+						uint16_t msc_assigned_cic, struct gsm_lchan *for_lchan)
 {
+	const char *epname;
+
 	if (conn->user_plane.mgw_endpoint)
 		return conn->user_plane.mgw_endpoint;
 
@@ -489,13 +491,19 @@ struct osmo_mgcpc_ep *gscon_ensure_mgw_endpoint(struct gsm_subscriber_connection
 			 msc_assigned_cic, osmo_mgcpc_ep_name(conn->user_plane.mgw_endpoint));
 
 	} else if (gscon_is_aoip(conn)) {
-		/* use dynamic RTPBRIDGE endpoint allocation in MGW */
+
+		if (is_ipaccess_bts(for_lchan->ts->trx->bts))
+			/* use dynamic RTPBRIDGE endpoint allocation in MGW */
+			epname = mgcp_client_rtpbridge_wildcard(conn->network->mgw.client);
+		else
+			epname = mgcp_client_e1_epname(conn, conn->network->mgw.client, 1, for_lchan->ts->e1_link.e1_ts, 16, for_lchan->ts->e1_link.e1_ts_ss*2);
+
 		conn->user_plane.mgw_endpoint =
 			osmo_mgcpc_ep_alloc(conn->fi, GSCON_EV_FORGET_MGW_ENDPOINT,
 					    conn->network->mgw.client,
 					    conn->network->mgw.tdefs,
 					    conn->fi->id,
-					    "%s", mgcp_client_rtpbridge_wildcard(conn->network->mgw.client));
+					    "%s", epname);
 	} else {
 		LOGPFSML(conn->fi, LOGL_ERROR, "Conn is neither SCCPlite nor AoIP!?\n");
 		return NULL;
@@ -570,7 +578,7 @@ bool gscon_connect_mgw_to_msc(struct gsm_subscriber_connection *conn,
 	} else
 		verb = MGCP_VERB_CRCX;
 
-	gscon_ensure_mgw_endpoint(conn, for_lchan->activate.info.msc_assigned_cic);
+	gscon_ensure_mgw_endpoint(conn, for_lchan->activate.info.msc_assigned_cic, for_lchan);
 
 	if (!conn->user_plane.mgw_endpoint) {
 		LOGPFSML(conn->fi, LOGL_ERROR, "Unable to allocate endpoint info\n");

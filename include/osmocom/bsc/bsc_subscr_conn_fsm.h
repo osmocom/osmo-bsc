@@ -65,7 +65,7 @@ void gscon_submit_rsl_dtap(struct gsm_subscriber_connection *conn,
 int gscon_sigtran_send(struct gsm_subscriber_connection *conn, struct msgb *msg);
 
 struct osmo_mgcpc_ep *gscon_ensure_mgw_endpoint(struct gsm_subscriber_connection *conn,
-						uint16_t msc_assigned_cic);
+						uint16_t msc_assigned_cic, struct gsm_lchan *for_lchan);
 bool gscon_connect_mgw_to_msc(struct gsm_subscriber_connection *conn,
 			      struct gsm_lchan *for_lchan,
 			      const char *addr, uint16_t port,

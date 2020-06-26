@@ -141,6 +141,12 @@ static void lchan_rtp_fsm_wait_mgw_endpoint_available_onenter(struct osmo_fsm_in
 	struct osmo_mgcpc_ep_ci *use_mgwep_ci = lchan_use_mgw_endpoint_ci_bts(lchan);
 	struct mgcp_conn_peer crcx_info = {};
 
+	if (!is_ipaccess_bts(lchan->ts->trx->bts)) {
+		LOG_LCHAN_RTP(lchan, LOGL_DEBUG, "Audio link to-BTS via E1, skipping IPACC\n");
+		lchan_rtp_fsm_state_chg(LCHAN_RTP_ST_WAIT_LCHAN_READY);
+		return;
+	}
+
 	if (use_mgwep_ci) {
 		LOG_LCHAN_RTP(lchan, LOGL_DEBUG, "MGW endpoint already available: %s\n",
 			      osmo_mgcpc_ep_ci_name(use_mgwep_ci));
@@ -148,7 +154,7 @@ static void lchan_rtp_fsm_wait_mgw_endpoint_available_onenter(struct osmo_fsm_in
 		return;
 	}
 
-	mgwep = gscon_ensure_mgw_endpoint(lchan->conn, lchan->activate.info.msc_assigned_cic);
+	mgwep = gscon_ensure_mgw_endpoint(lchan->conn, lchan->activate.info.msc_assigned_cic, lchan);
 	if (!mgwep) {
 		lchan_rtp_fail("Internal error: cannot obtain MGW endpoint handle for conn");
 		return;
@@ -248,7 +254,7 @@ static void lchan_rtp_fsm_post_lchan_ready(struct osmo_fsm_inst *fi)
 	if (is_ipaccess_bts(lchan->ts->trx->bts))
 		lchan_rtp_fsm_state_chg(LCHAN_RTP_ST_WAIT_IPACC_CRCX_ACK);
 	else
-		lchan_rtp_fsm_switch_rtp(fi);
+		lchan_rtp_fsm_state_chg(LCHAN_RTP_ST_WAIT_MGW_ENDPOINT_CONFIGURED);
 }
 
 static void lchan_rtp_fsm_wait_ipacc_crcx_ack_onenter(struct osmo_fsm_inst *fi, uint32_t prev_state)
@@ -445,6 +451,12 @@ static void lchan_rtp_fsm_wait_mgw_endpoint_configured_onenter(struct osmo_fsm_i
 		return;
 	}
 
+	if (!is_ipaccess_bts(lchan->ts->trx->bts)) {
+		LOG_LCHAN_RTP(lchan, LOGL_DEBUG, "Audio link to-BTS via E1, skipping IPACC\n");
+		lchan_rtp_fsm_state_chg(LCHAN_RTP_ST_READY);
+		return;
+	}
+
 	/* At this point, we are taking over an old lchan's MGW endpoint (if any). */
 	if (!lchan->mgw_endpoint_ci_bts && old_lchan) {
 		/* The old lchan shall forget the endpoint now. We might put it back upon ROLLBACK */
@@ -521,7 +533,11 @@ static void lchan_rtp_fsm_rollback_onenter(struct osmo_fsm_inst *fi, uint32_t pr
 		osmo_fsm_inst_term(fi, OSMO_FSM_TERM_REQUEST, 0);
 		return;
 	}
-	connect_mgw_endpoint_to_lchan(fi, lchan->mgw_endpoint_ci_bts, old_lchan);
+
+	if (is_ipaccess_bts(lchan->ts->trx->bts))
+		connect_mgw_endpoint_to_lchan(fi, lchan->mgw_endpoint_ci_bts, old_lchan);
+	else
+		osmo_fsm_inst_dispatch(fi, LCHAN_RTP_EV_MGW_ENDPOINT_CONFIGURED, 0);
 }
 
 static void lchan_rtp_fsm_rollback(struct osmo_fsm_inst *fi, uint32_t event, void *data)
