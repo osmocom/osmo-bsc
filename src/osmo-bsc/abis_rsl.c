@@ -516,11 +516,10 @@ int rsl_tx_chan_activ(struct gsm_lchan *lchan, uint8_t act_type, uint8_t ho_ref)
 	len = msgb_put(msg, 1);
 	msgb_tv_fixed_put(msg, GSM48_IE_CHANDESC_2, sizeof(cd), (const uint8_t *) &cd);
 
-	if (lchan->ts->hopping.enabled)
-		msgb_tlv_put(msg, GSM48_IE_MA_AFTER, lchan->ts->hopping.ma_len,
-			     lchan->ts->hopping.ma_data);
-	else
-		msgb_tlv_put(msg, GSM48_IE_MA_AFTER, 0, NULL);
+	/* See 3GPP TS 48.058 (version 15.0.0), section 9.3.5 "Channel Identification".
+	 * The 3GPP TS 24.008 "Mobile Allocation" shall for compatibility reasons
+	 * be included but empty, i.e. the length shall be zero. */
+	msgb_tlv_put(msg, GSM48_IE_MA_AFTER, 0, NULL);
 
 	/* update the calculated size */
 	msg->l3h = len + 1;
