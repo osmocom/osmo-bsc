@@ -43,6 +43,7 @@
 #include <osmocom/bsc/handover_fsm.h>
 #include <osmocom/bsc/gsm_08_08.h>
 #include <osmocom/bsc/gsm_data.h>
+#include <osmocom/bsc/system_information.h>
 
 
 int gsm48_sendmsg(struct msgb *msg)
@@ -576,13 +577,18 @@ int gsm48_send_rr_ass_cmd(struct gsm_lchan *dest_lchan, struct gsm_lchan *lchan,
 	gsm48_lchan2chan_desc(&ass->chan_desc, lchan);
 	ass->power_command = power_command;
 
-	/* optional: cell channel description */
+	/* Cell Channel Description (freq. hopping), TV (see 3GPP TS 44.018, 10.5.2.1b) */
+	if (lchan->ts->hopping.enabled) {
+		uint8_t *chan_desc = msgb_put(msg, 1 + 16); /* tag + fixed length */
+		generate_cell_chan_list(chan_desc + 1, dest_lchan->ts->trx->bts);
+		chan_desc[0] = GSM48_IE_CELL_CH_DESC;
+	}
 
 	msgb_tv_put(msg, GSM48_IE_CHANMODE_1, lchan->tch_mode);
 
-	/* mobile allocation in case of hopping */
+	/* Mobile Allocation (freq. hopping), TLV (see 3GPP TS 44.018, 10.5.2.21) */
 	if (lchan->ts->hopping.enabled) {
-		msgb_tlv_put(msg, GSM48_IE_MA_BEFORE, lchan->ts->hopping.ma_len,
+		msgb_tlv_put(msg, GSM48_IE_MA_AFTER, lchan->ts->hopping.ma_len,
 			     lchan->ts->hopping.ma_data);
 	}
 
