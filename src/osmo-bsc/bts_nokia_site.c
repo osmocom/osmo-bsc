@@ -36,6 +36,7 @@
 #include <osmocom/abis/e1_input.h>
 #include <osmocom/bsc/signal.h>
 #include <osmocom/bsc/timeslot_fsm.h>
+#include <osmocom/bsc/system_information.h>
 
 #include <osmocom/core/timer.h>
 
@@ -50,8 +51,6 @@ enum reset_timer_state {
 /* TODO: put in a separate file ? */
 
 extern int abis_nm_sendmsg(struct gsm_bts *bts, struct msgb *msg);
-/* was static in system_information.c */
-extern int generate_cell_chan_list(uint8_t * chan_list, struct gsm_bts *bts);
 
 static void nokia_abis_nm_queue_send_next(struct gsm_bts *bts);
 static void reset_timer_cb(void *_bts);

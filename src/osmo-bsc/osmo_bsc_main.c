@@ -63,6 +63,7 @@
 #include <osmocom/bsc/chan_alloc.h>
 #include <osmocom/bsc/e1_config.h>
 #include <osmocom/bsc/codec_pref.h>
+#include <osmocom/bsc/system_information.h>
 
 #include <osmocom/mgcp_client/mgcp_client.h>
 
@@ -364,8 +365,6 @@ static int inp_sig_cb(unsigned int subsys, unsigned int signal,
 			/* TODO: this is required for the Nokia BTS, hopping is configured
 			   during OML, other MA is not set.  */
 			struct gsm_bts_trx *cur_trx;
-			/* was static in system_information.c */
-			extern int generate_cell_chan_list(uint8_t *chan_list, struct gsm_bts *bts);
 			uint8_t ca[20];
 			/* has to be called before generate_ma_for_ts to
 			  set bts->si_common.cell_alloc */
