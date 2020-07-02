@@ -398,7 +398,7 @@ static int freq_list_bmrel_set_arfcn(uint8_t *chan_list, unsigned int arfcn)
 
 /* generate a variable bitmap */
 static inline int enc_freq_lst_var_bitmap(uint8_t *chan_list,
-				struct bitvec *bv, const struct gsm_bts *bts,
+				const struct bitvec *bv, const struct gsm_bts *bts,
 				bool bis, bool ter, int min, bool pgsm)
 {
 	int i;
@@ -459,7 +459,7 @@ int range_encode(enum gsm48_range r, int *arfcns, int arfcns_used, int *w,
 
 /* generate a frequency list with the range 512 format */
 static inline int enc_freq_lst_range(uint8_t *chan_list,
-				struct bitvec *bv, const struct gsm_bts *bts,
+				const struct bitvec *bv, const struct gsm_bts *bts,
 				bool bis, bool ter, bool pgsm)
 {
 	int arfcns[RANGE_ENC_MAX_ARFCNS];
@@ -491,7 +491,7 @@ static inline int enc_freq_lst_range(uint8_t *chan_list,
 }
 
 /* generate a cell channel list as per Section 10.5.2.1b of 04.08 */
-static int bitvec2freq_list(uint8_t *chan_list, struct bitvec *bv,
+static int bitvec2freq_list(uint8_t *chan_list, const struct bitvec *bv,
 			    const struct gsm_bts *bts, bool bis, bool ter)
 {
 	int i, rc, min = -1, max = -1, arfcns = 0;
