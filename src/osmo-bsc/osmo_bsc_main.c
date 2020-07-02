@@ -234,8 +234,8 @@ static int generate_ma_for_ts(struct gsm_bts_trx_ts *ts)
 {
 	/* we have three bitvecs: the per-timeslot ARFCNs, the cell chan ARFCNs
 	 * and the MA */
-	struct bitvec *cell_chan = &ts->trx->bts->si_common.cell_alloc;
-	struct bitvec *ts_arfcn = &ts->hopping.arfcns;
+	const struct bitvec *cell_chan = &ts->trx->bts->si_common.cell_alloc;
+	const struct bitvec *ts_arfcn = &ts->hopping.arfcns;
 	struct bitvec *ma = &ts->hopping.ma;
 	unsigned int num_cell_arfcns, bitnum, n_chan;
 	int i;
