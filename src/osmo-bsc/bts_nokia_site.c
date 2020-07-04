@@ -59,7 +59,7 @@ static int dump_elements(uint8_t * data, int len) __attribute__((unused));
 
 static void bootstrap_om_bts(struct gsm_bts *bts)
 {
-	LOGP(DNM, LOGL_NOTICE, "bootstrapping OML for BTS %u\n", bts->nr);
+	LOG_BTS(bts, DNM, LOGL_NOTICE, "bootstrapping OML\n");
 
 	if (!bts->nokia.skip_reset) {
 		if (!bts->nokia.did_reset)
@@ -72,8 +72,7 @@ static void bootstrap_om_bts(struct gsm_bts *bts)
 
 static void bootstrap_om_trx(struct gsm_bts_trx *trx)
 {
-	LOGP(DNM, LOGL_NOTICE, "bootstrapping OML for TRX %u/%u\n",
-	     trx->bts->nr, trx->nr);
+	LOG_TRX(trx, DNM, LOGL_NOTICE, "bootstrapping OML\n");
 
 	gsm_trx_all_ts_dispatch(trx, TS_EV_OML_READY, NULL);
 }
@@ -762,7 +761,7 @@ static int make_fu_config(struct gsm_bts_trx *trx, uint8_t id,
 	/* set CA */
 
 	if (generate_cell_chan_list(&fu_config[38], trx->bts) != 0) {
-		fprintf(stderr, "generate_cell_chan_list failed\n");
+		LOG_TRX(trx, DNM, LOGL_ERROR, "generate_cell_chan_list failed\n");
 		return 0;
 	}
 
@@ -810,8 +809,7 @@ static int make_fu_config(struct gsm_bts_trx *trx, uint8_t id,
 			chan_config = 11;
 			break;
 		default:
-			fprintf(stderr,
-				"unsupported channel config %s for timeslot %d\n",
+			LOG_TRX(trx, DNM, LOGL_ERROR, "unsupported channel config %s for timeslot %d\n",
 				gsm_pchan_name(ts->pchan_from_config), i);
 			return 0;
 		}
@@ -1000,17 +998,17 @@ void set_real_time(uint8_t * real_time)
   build the configuration data
 */
 
-static int make_bts_config(uint8_t bts_type, int n_trx, uint8_t * fu_config,
+static int make_bts_config(struct gsm_bts *bts, uint8_t bts_type, int n_trx, uint8_t * fu_config,
 			   int need_hopping)
 {
 	/* is it an InSite BTS ? */
 	if (bts_type == 0x0E || bts_type == 0x0F || bts_type == 0x10) {	/* TODO */
 		if (n_trx != 1) {
-			fprintf(stderr, "InSite has only one TRX\n");
+			LOG_BTS(bts, DNM, LOGL_ERROR, "InSite has only one TRX\n");
 			return 0;
 		}
 		if (need_hopping != 0) {
-			fprintf(stderr, "InSite does not support hopping\n");
+			LOG_BTS(bts, DNM, LOGL_ERROR, "InSite does not support hopping\n");
 			return 0;
 		}
 		memcpy(fu_config, bts_config_insite, sizeof(bts_config_insite));
@@ -1090,7 +1088,7 @@ static int abis_nm_send(struct gsm_bts *bts, uint8_t msg_type, uint16_t ref,
 	noh->reference = htons(ref);
 	memcpy(noh->data, data, len_data);
 
-	DEBUGPC(DNM, "Sending %s\n", get_msg_type_name_string(msg_type));
+	LOG_BTS(bts, DNM, LOGL_DEBUG, "Sending %s\n", get_msg_type_name_string(msg_type));
 
 	return abis_nm_sendmsg(bts, msg);
 }
@@ -1165,7 +1163,7 @@ static int abis_nm_reset(struct gsm_bts *bts, uint16_t ref)
 {
 	uint8_t *data = reset;
 	int len_data = sizeof(reset);
-	LOGP(DLINP, LOGL_INFO, "Nokia BTS reset timer: %d\n", bts->nokia.bts_reset_timer_cnf);
+	LOG_BTS(bts, DLINP, LOGL_INFO, "Nokia BTS reset timer: %d\n", bts->nokia.bts_reset_timer_cnf);
 	return abis_nm_send(bts, NOKIA_MSG_RESET_REQ, ref, data, len_data);
 }
 
@@ -1252,7 +1250,7 @@ static int abis_nm_send_multi_segments(struct gsm_bts *bts, uint8_t msg_type,
 			memcpy(oh->data, data, len_to_send);
 		}
 
-		DEBUGPC(DNM, "Sending multi-segment %d\n", seq);
+		LOG_BTS(bts, DNM, LOGL_DEBUG, "Sending multi-segment %d\n", seq);
 
 		ret = abis_nm_sendmsg(bts, msg);
 		if (ret < 0)
@@ -1306,7 +1304,7 @@ static int abis_nm_send_config(struct gsm_bts *bts, uint8_t bts_type)
 		idx++;
 	}
 
-	ret = make_bts_config(bts_type, idx, config + len, need_hopping);
+	ret = make_bts_config(bts, bts_type, idx, config + len, need_hopping);
 	len += ret;
 
 #if 0				/* debugging */
@@ -1502,8 +1500,8 @@ static void reset_timer_cb(void *_bts)
 	/* OML link */
 	line = e1inp_line_find(e1_link->e1_nr);
 	if (!line) {
-		LOGP(DLINP, LOGL_ERROR, "BTS %u OML link referring to non-existing E1 line %u\n",
-		     bts->nr, e1_link->e1_nr);
+		LOG_BTS(bts, DLINP, LOGL_ERROR, "BTS OML link referring to non-existing E1 line %u\n",
+			e1_link->e1_nr);
 		return;
 	}
 
@@ -1555,18 +1553,17 @@ static int abis_nm_rcvmsg_fom(struct msgb *mb)
 	int len_data;
 
 	if (bts->nokia.wait_reset) {
-		LOGP(DNM, LOGL_INFO,
-		     "Ignore message while waiting for reset\n");
+		LOG_BTS(bts, DNM, LOGL_INFO, "Ignoring message while waiting for reset: %s\n", msgb_hexdump(mb));
 		return ret;
 	}
 
 	if (oh->length < sizeof(struct abis_om_nokia_hdr)) {
-		LOGP(DNM, LOGL_ERROR, "Message too short\n");
+		LOG_BTS(bts, DNM, LOGL_ERROR, "Message too short: %s\n", msgb_hexdump(mb));
 		return -EINVAL;
 	}
 
 	len_data = oh->length - sizeof(struct abis_om_nokia_hdr);
-	LOGP(DNM, LOGL_INFO, "(0x%02X) %s\n", mt, get_msg_type_name_string(mt));
+	LOG_BTS(bts, DNM, LOGL_INFO, "Rx (0x%02X) %s\n", mt, get_msg_type_name_string(mt));
 #if 0				/* debugging */
 	dump_elements(noh->data, len_data);
 #endif
@@ -1576,11 +1573,10 @@ static int abis_nm_rcvmsg_fom(struct msgb *mb)
 		if (find_element(noh->data, len_data,
 				 NOKIA_EI_BTS_TYPE, &bts->nokia.bts_type,
 				 sizeof(uint8_t)) == sizeof(uint8_t))
-			LOGP(DNM, LOGL_INFO, "BTS type = %d (%s)\n",
-			     bts->nokia.bts_type,
-			     get_bts_type_string(bts->nokia.bts_type));
+			LOG_BTS(bts, DNM, LOGL_INFO, "Rx BTS type = %d (%s)\n", bts->nokia.bts_type,
+				get_bts_type_string(bts->nokia.bts_type));
 		else
-			LOGP(DNM, LOGL_ERROR, "BTS type not found\n");
+			LOG_BTS(bts, DNM, LOGL_ERROR, "BTS type not found in NOKIA_MSG_OMU_STARTED\n");
 		/* send START_DOWNLOAD_REQ */
 		abis_nm_download_req(bts, ref);
 		break;
@@ -1598,14 +1594,13 @@ static int abis_nm_rcvmsg_fom(struct msgb *mb)
 		if (find_element
 		    (noh->data, len_data, NOKIA_EI_ACK, &ack,
 		     sizeof(uint8_t)) == sizeof(uint8_t)) {
-			LOGP(DNM, LOGL_INFO, "ACK = %d\n", ack);
+			LOG_BTS(bts, DNM, LOGL_INFO, "Rx ACK = %u\n", ack);
 			if (ack != 1) {
-				LOGP(DNM, LOGL_ERROR, "No ACK received (%d)\n",
-				     ack);
+				LOG_BTS(bts, DNM, LOGL_ERROR, "Rx No ACK (%u): don't know how to proceed\n", ack);
 				/* TODO: properly handle failures (NACK) */
 			}
 		} else
-			LOGP(DNM, LOGL_ERROR, "ACK not found\n");
+			LOG_BTS(bts, DNM, LOGL_ERROR, "Rx MSG_ACK but no EI_ACK found: %s\n", msgb_hexdump(mb));
 
 		/* TODO: the assumption for the following is that no NACK was received */
 
@@ -1647,11 +1642,8 @@ static int abis_nm_rcvmsg_fom(struct msgb *mb)
 			/* RSL Link */
 			line = e1inp_line_find(e1_link->e1_nr);
 			if (!line) {
-				LOGP(DLINP, LOGL_ERROR,
-				     "TRX (%u/%u) RSL link referring "
-				     "to non-existing E1 line %u\n",
-				     sign_link->trx->bts->nr, sign_link->trx->nr,
-				     e1_link->e1_nr);
+				LOG_BTS(bts, DLINP, LOGL_ERROR, "RSL link referring to "
+					"non-existing E1 line %u\n", e1_link->e1_nr);
 				return -ENOMEM;
 			}
 			/* start TRX */
@@ -1681,21 +1673,17 @@ static int abis_nm_rcvmsg_fom(struct msgb *mb)
 				 sizeof(info));
 		if (str_len > 0) {
 			info[str_len] = 0;
-			LOGP(DNM, LOGL_INFO, "ALARM Severity %s (%d) : %s\n",
-			     get_severity_string(severity), severity, info);
+			LOG_BTS(bts, DNM, LOGL_NOTICE, "Rx ALARM Severity %s (%d) : %s\n",
+				get_severity_string(severity), severity, info);
 		} else {	/* nothing found, try details */
 			str_len =
-			    find_element(noh->data, len_data,
-					 NOKIA_EI_ALARM_DETAIL, info,
-					 sizeof(info));
+			    find_element(noh->data, len_data, NOKIA_EI_ALARM_DETAIL, info, sizeof(info));
 			if (str_len > 0) {
 				uint16_t code;
 				info[str_len] = 0;
 				code = (info[0] << 8) + info[1];
-				LOGP(DNM, LOGL_INFO,
-				     "ALARM Severity %s (%d), code 0x%X : %s\n",
-				     get_severity_string(severity), severity,
-				     code, info + 2);
+				LOG_BTS(bts, DNM, LOGL_NOTICE, "Rx ALARM Severity %s (%d), code 0x%X : %s\n",
+					get_severity_string(severity), severity, code, info + 2);
 			}
 		}
 		/* send ACK */
@@ -1712,41 +1700,37 @@ static int abis_nm_rcvmsg_fom(struct msgb *mb)
 
 int abis_nokia_rcvmsg(struct msgb *msg)
 {
+	struct e1inp_sign_link *sign_link = (struct e1inp_sign_link *)msg->dst;
+	struct gsm_bts *bts = sign_link->trx->bts;
 	struct abis_om_hdr *oh = msgb_l2(msg);
 	int rc = 0;
 
 	/* Various consistency checks */
 	if (oh->placement != ABIS_OM_PLACEMENT_ONLY) {
-		LOGP(DNM, LOGL_ERROR, "ABIS OML placement 0x%x not supported\n",
-		     oh->placement);
+		LOG_BTS(bts, DNM, LOGL_ERROR, "Rx ABIS OML placement 0x%x not supported\n", oh->placement);
 		if (oh->placement != ABIS_OM_PLACEMENT_FIRST)
 			return -EINVAL;
 	}
 	if (oh->sequence != 0) {
-		LOGP(DNM, LOGL_ERROR, "ABIS OML sequence 0x%x != 0x00\n",
-		     oh->sequence);
+		LOG_BTS(bts, DNM, LOGL_ERROR, "Rx ABIS OML sequence 0x%x != 0x00\n", oh->sequence);
 		return -EINVAL;
 	}
 	msg->l3h = (unsigned char *)oh + sizeof(*oh);
 
 	switch (oh->mdisc) {
 	case ABIS_OM_MDISC_FOM:
-		LOGP(DNM, LOGL_INFO, "ABIS_OM_MDISC_FOM\n");
+		LOG_BTS(bts, DNM, LOGL_INFO, "Rx ABIS_OM_MDISC_FOM\n");
 		rc = abis_nm_rcvmsg_fom(msg);
 		break;
 	case ABIS_OM_MDISC_MANUF:
-		LOGP(DNM, LOGL_INFO, "ABIS_OM_MDISC_MANUF\n");
+		LOG_BTS(bts, DNM, LOGL_INFO, "Rx ABIS_OM_MDISC_MANUF: ignoring\n");
 		break;
 	case ABIS_OM_MDISC_MMI:
 	case ABIS_OM_MDISC_TRAU:
-		LOGP(DNM, LOGL_ERROR,
-		     "unimplemented ABIS OML message discriminator 0x%x\n",
-		     oh->mdisc);
+		LOG_BTS(bts, DNM, LOGL_ERROR, "Rx unimplemented ABIS OML message discriminator 0x%x\n", oh->mdisc);
 		break;
 	default:
-		LOGP(DNM, LOGL_ERROR,
-		     "unknown ABIS OML message discriminator 0x%x\n",
-		     oh->mdisc);
+		LOG_BTS(bts, DNM, LOGL_ERROR, "Rx unknown ABIS OML message discriminator 0x%x\n", oh->mdisc);
 		return -EINVAL;
 	}
 
