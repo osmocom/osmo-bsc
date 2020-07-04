@@ -203,9 +203,11 @@ bts_update_t3122_chan_load(struct gsm_bts *bts)
 	}
 
 	/* Check for invalid samples (shouldn't happen). */
-	if (total == 0 || used > total) {
+	if (used > total) {
 		LOG_BTS(bts, DRLL, LOGL_NOTICE, "bogus channel load sample (used=%"PRIu64" / total=%"PRIu32")\n",
 			used, total);
+	}
+	if (total == 0 || used > total) {
 		bts->T3122 = 0; /* disable override of network-wide default value */
 		bts->chan_load_samples_idx = 0; /* invalidate other samples collected so far */
 		return;
