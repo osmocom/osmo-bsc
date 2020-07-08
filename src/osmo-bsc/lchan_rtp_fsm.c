@@ -730,7 +730,7 @@ static const struct value_string lchan_rtp_fsm_event_names[] = {
 	{}
 };
 
-int lchan_rtp_fsm_timer_cb(struct osmo_fsm_inst *fi)
+static int lchan_rtp_fsm_timer_cb(struct osmo_fsm_inst *fi)
 {
 	struct gsm_lchan *lchan = lchan_rtp_fi_lchan(fi);
 	lchan->release.in_error = true;
@@ -739,7 +739,7 @@ int lchan_rtp_fsm_timer_cb(struct osmo_fsm_inst *fi)
 	return 0;
 }
 
-void lchan_rtp_fsm_cleanup(struct osmo_fsm_inst *fi, enum osmo_fsm_term_cause cause)
+static void lchan_rtp_fsm_cleanup(struct osmo_fsm_inst *fi, enum osmo_fsm_term_cause cause)
 {
 	struct gsm_lchan *lchan = lchan_rtp_fi_lchan(fi);
 	if (lchan->mgw_endpoint_ci_bts) {
