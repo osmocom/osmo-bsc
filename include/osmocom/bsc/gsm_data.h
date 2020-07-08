@@ -393,7 +393,10 @@ struct om2k_mo {
 #define A38_XOR_MAX_KEY_LEN	16
 #define A38_COMP128_KEY_LEN	16
 #define RSL_ENC_ALG_A5(x)	(x+1)
-#define MAX_EARFCN_LIST 32
+/* Up to 16 SI2quater are multiplexed; each fits 3 EARFCNS, so the practical maximum is 3*16.
+ * The real maximum that fits in a total of 16 SI2quater rest octets also depends on the bits left by other SI2quater
+ * rest octets elements, so to really fit 48 EARFCNs most other SI2quater elements need to be omitted. */
+#define MAX_EARFCN_LIST (3*16)
 
 /* is the data link established? who established it? */
 #define LCHAN_SAPI_UNUSED	0
