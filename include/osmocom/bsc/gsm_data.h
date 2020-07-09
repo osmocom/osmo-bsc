@@ -571,6 +571,7 @@ struct gsm_lchan {
 		 * flag, so that the lchan will gracefully release at the next sensible junction. */
 		bool requested;
 		bool do_rr_release;
+		enum gsm48_rr_cause rr_cause;
 
 		/* There is an RSL error cause of value 0, so we need a separate flag. */
 		bool in_error;
@@ -1895,5 +1896,7 @@ void gsm_trx_all_ts_dispatch(struct gsm_bts_trx *trx, uint32_t ts_ev, void *data
 int bts_count_free_ts(struct gsm_bts *bts, enum gsm_phys_chan_config pchan);
 
 bool trx_has_valid_pchan_config(const struct gsm_bts_trx *trx);
+
+enum gsm48_rr_cause bsc_gsm48_rr_cause_from_gsm0808_cause(enum gsm0808_cause c);
 
 #endif /* _GSM_DATA_H */

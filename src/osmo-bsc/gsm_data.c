@@ -1840,3 +1840,30 @@ bool trx_has_valid_pchan_config(const struct gsm_bts_trx *trx)
 
 	return result;
 }
+
+/* This may be specific to RR Channel Release, and the mappings were chosen by pure naive guessing without a proper
+ * specification available. */
+enum gsm48_rr_cause bsc_gsm48_rr_cause_from_gsm0808_cause(enum gsm0808_cause c)
+{
+	switch (c) {
+	case GSM0808_CAUSE_PREEMPTION:
+		return GSM48_RR_CAUSE_PREMPTIVE_REL;
+	case GSM0808_CAUSE_RADIO_INTERFACE_MESSAGE_FAILURE:
+	case GSM0808_CAUSE_INVALID_MESSAGE_CONTENTS:
+	case GSM0808_CAUSE_INFORMATION_ELEMENT_OR_FIELD_MISSING:
+	case GSM0808_CAUSE_INCORRECT_VALUE:
+	case GSM0808_CAUSE_UNKNOWN_MESSAGE_TYPE:
+	case GSM0808_CAUSE_UNKNOWN_INFORMATION_ELEMENT:
+		return GSM48_RR_CAUSE_PROT_ERROR_UNSPC;
+	case GSM0808_CAUSE_CALL_CONTROL:
+	case GSM0808_CAUSE_HANDOVER_SUCCESSFUL:
+	case GSM0808_CAUSE_BETTER_CELL:
+	case GSM0808_CAUSE_DIRECTED_RETRY:
+	case GSM0808_CAUSE_REDUCE_LOAD_IN_SERVING_CELL:
+	case GSM0808_CAUSE_RELOCATION_TRIGGERED:
+	case GSM0808_CAUSE_ALT_CHAN_CONFIG_REQUESTED:
+		return GSM48_RR_CAUSE_NORMAL;
+	default:
+		return GSM48_RR_CAUSE_ABNORMAL_UNSPEC;
+	}
+}

@@ -303,7 +303,7 @@ int gsm48_send_rr_release(struct gsm_lchan *lchan)
 	gh->msg_type = GSM48_MT_RR_CHAN_REL;
 
 	cause = msgb_put(msg, 1);
-	cause[0] = GSM48_RR_CAUSE_NORMAL;
+	cause[0] = lchan->release.rr_cause;
 
 	if (lchan->release.is_csfb) {
 		uint8_t buf[CELL_SEL_IND_AFTER_REL_MAX_BYTES];

@@ -182,14 +182,14 @@ static void gscon_release_lchan(struct gsm_subscriber_connection *conn, struct g
 	lchan_release(lchan, do_rr_release, err, cause_rr);
 }
 
-void gscon_release_lchans(struct gsm_subscriber_connection *conn, bool do_rr_release)
+void gscon_release_lchans(struct gsm_subscriber_connection *conn, bool do_rr_release, enum gsm48_rr_cause cause_rr)
 {
 	if (conn->ho.fi)
 		handover_end(conn, HO_RESULT_CONN_RELEASE);
 
 	assignment_reset(conn);
 
-	gscon_release_lchan(conn, conn->lchan, do_rr_release, false, 0);
+	gscon_release_lchan(conn, conn->lchan, do_rr_release, false, cause_rr);
 }
 
 static void handle_bssap_n_connect(struct osmo_fsm_inst *fi, struct osmo_scu_prim *scu_prim)
@@ -746,17 +746,20 @@ void gscon_forget_mgw_endpoint_ci(struct gsm_subscriber_connection *conn, struct
 static void gscon_fsm_allstate(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
 	struct gsm_subscriber_connection *conn = fi->priv;
+	const struct gscon_clear_cmd_data *ccd;
 
 	/* Regular allstate event processing */
 	switch (event) {
 	case GSCON_EV_A_CLEAR_CMD:
+		OSMO_ASSERT(data);
+		ccd = data;
 		if (conn->lchan)
-			conn->lchan->release.is_csfb = *(bool *)data;
+			conn->lchan->release.is_csfb = ccd->is_csfb;
 		/* MSC tells us to cleanly shut down */
 		if (conn->fi->state != ST_CLEARING)
 			osmo_fsm_inst_state_chg(fi, ST_CLEARING, 60, 999);
 		LOGPFSML(fi, LOGL_DEBUG, "Releasing all lchans (if any) after BSSMAP Clear Command\n");
-		gscon_release_lchans(conn, true);
+		gscon_release_lchans(conn, true, bsc_gsm48_rr_cause_from_gsm0808_cause(ccd->cause_0808));
 		/* FIXME: Release all terestrial resources in ST_CLEARING */
 		/* According to 3GPP 48.008 3.1.9.1. "The BSS need not wait for the radio channel
 		 * release to be completed or for the guard timer to expire before returning the
@@ -833,7 +836,9 @@ static void gscon_pre_term(struct osmo_fsm_inst *fi, enum osmo_fsm_term_cause ca
 	}
 
 	LOGPFSML(fi, LOGL_DEBUG, "Releasing all lchans (if any) because this conn is terminating\n");
-	gscon_release_lchans(conn, true);
+	/* when things go smoothly, the lchan should have been released before FSM instance termination. So if this is
+	 * necessary it's probably "abnormal". */
+	gscon_release_lchans(conn, true, GSM48_RR_CAUSE_ABNORMAL_UNSPEC);
 
 	/* drop pending messages */
 	gscon_dtap_queue_flush(conn, 0);

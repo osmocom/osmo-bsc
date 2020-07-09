@@ -402,6 +402,8 @@ static void lchan_reset(struct gsm_lchan *lchan)
 		.meas_rep_last_seen_nr = 255,
 
 		.last_error = lchan->last_error,
+
+		.release.rr_cause = GSM48_RR_CAUSE_NORMAL,
 	};
 }
 
@@ -1369,8 +1371,8 @@ void lchan_release(struct gsm_lchan *lchan, bool do_rr_release,
 	struct osmo_fsm_inst *fi = lchan->fi;
 
 	lchan->release.in_error = err;
-	lchan->release.rsl_error_cause = cause_rr;
 	lchan->release.do_rr_release = do_rr_release;
+	lchan->release.rr_cause = cause_rr;
 
 	/* States waiting for events will notice the desire to release when done waiting, so it is enough
 	 * to mark for release. */

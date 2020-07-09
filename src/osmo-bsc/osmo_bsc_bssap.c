@@ -453,15 +453,23 @@ static int bssmap_handle_clear_cmd(struct gsm_subscriber_connection *conn,
 				   struct msgb *msg, unsigned int length)
 {
 	struct tlv_parsed tp;
-	bool is_csfb = false;
+	struct gscon_clear_cmd_data ccd = {
+		.is_csfb = false,
+	};
 
 	tlv_parse(&tp, gsm0808_att_tlvdef(), msg->l4h + 1, length - 1, 0, 0);
 
-	/* FIXME: Check for mandatory cause IE, and use that in RR RELEASE cause! */
-	if (TLVP_PRESENT(&tp, GSM0808_IE_CSFB_INDICATION))
-		is_csfb = true;
+	ccd.cause_0808 = gsm0808_get_cause(&tp);
+	if (ccd.cause_0808 < 0) {
+		LOGPFSML(conn->fi, LOGL_ERROR, "Clear Command: Mandatory Cause IE not present.\n");
+		/* Clear anyway, but without a proper cause. */
+		ccd.cause_0808 = GSM0808_CAUSE_RADIO_INTERFACE_MESSAGE_FAILURE;
+	}
 
-	osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_A_CLEAR_CMD, &is_csfb);
+	if (TLVP_PRESENT(&tp, GSM0808_IE_CSFB_INDICATION))
+		ccd.is_csfb = true;
+
+	osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_A_CLEAR_CMD, &ccd);
 
 	return 0;
 }

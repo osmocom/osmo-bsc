@@ -1,4 +1,6 @@
 #pragma once
+#include <osmocom/gsm/protocol/gsm_08_08.h>
+#include <osmocom/gsm/protocol/gsm_04_08.h>
 #include <osmocom/core/fsm.h>
 
 enum gscon_fsm_event {
@@ -40,6 +42,11 @@ enum gscon_fsm_event {
 	GSCON_EV_FORGET_MGW_ENDPOINT,
 };
 
+struct gscon_clear_cmd_data {
+	enum gsm0808_cause cause_0808;
+	bool is_csfb;
+};
+
 struct gsm_subscriber_connection;
 struct gsm_network;
 struct msgb;
@@ -71,7 +78,7 @@ void gscon_start_assignment(struct gsm_subscriber_connection *conn,
 			    struct assignment_request *req);
 
 void gscon_change_primary_lchan(struct gsm_subscriber_connection *conn, struct gsm_lchan *new_lchan);
-void gscon_release_lchans(struct gsm_subscriber_connection *conn, bool do_rr_release);
+void gscon_release_lchans(struct gsm_subscriber_connection *conn, bool do_rr_release, enum gsm48_rr_cause cause_rr);
 
 void gscon_lchan_releasing(struct gsm_subscriber_connection *conn, struct gsm_lchan *lchan);
 void gscon_forget_lchan(struct gsm_subscriber_connection *conn, struct gsm_lchan *lchan);
