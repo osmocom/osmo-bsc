@@ -238,8 +238,8 @@ static void mr_config_for_ms(struct gsm_lchan *lchan, struct msgb *msg)
 }
 
 
-#define CELL_SEL_IND_AFTER_REL_MAX_BITS	(4+MAX_EARFCN_LIST*19)
-#define CELL_SEL_IND_AFTER_REL_MAX_BYTES ((CELL_SEL_IND_AFTER_REL_MAX_BITS/8)+1)
+#define CELL_SEL_IND_AFTER_REL_MAX_BITS (3+MAX_EARFCN_LIST*20+1)
+#define CELL_SEL_IND_AFTER_REL_MAX_BYTES OSMO_BYTES_FOR_BITS(CELL_SEL_IND_AFTER_REL_MAX_BITS)
 
 /* Generate a CSN.1 encoded "Cell Selection Indicator after release of all TCH and SDCCH"
  * as per TF 44.018 version 15.3.0 Table 10.5.2.1e.1.  This only generates the "value"
@@ -255,17 +255,18 @@ static int generate_cell_sel_ind_after_rel(uint8_t *out, unsigned int out_len, c
 
 	/* E-UTRAN Description */
 	bitvec_set_uint(&bv, 3, 3);
-	bitvec_set_bit(&bv, 1);
 
 	for (i = 0; i < MAX_EARFCN_LIST; i++) {
 		const struct osmo_earfcn_si2q *e = &bts->si_common.si2quater_neigh_list;
 		if (e->arfcn[i] == OSMO_EARFCN_INVALID)
 			continue;
 
-		if (bitvec_tailroom_bits(&bv) < 19) {
+		/* tailroom must fit one more EARFCN (20 bits), plus the final list term bit. */
+		if (bitvec_tailroom_bits(&bv) < 21) {
 			LOGP(DRR, LOGL_NOTICE, "%s: Not enough room to store EARFCN %u in the "
 				"Cell Selection Indicator IE\n", gsm_bts_name(bts), e->arfcn[i]);
 		} else {
+			bitvec_set_bit(&bv, 1);
 			bitvec_set_uint(&bv, e->arfcn[i], 16);
 			/* No "Measurement Bandwidth" */
 			bitvec_set_bit(&bv, 0);
@@ -275,6 +276,9 @@ static int generate_cell_sel_ind_after_rel(uint8_t *out, unsigned int out_len, c
 			bitvec_set_bit(&bv, 0);
 		}
 	}
+
+	/* list term */
+	bitvec_set_bit(&bv, 0);
 
 	rc = bitvec_used_bytes(&bv);
 
