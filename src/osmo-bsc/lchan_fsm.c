@@ -681,6 +681,7 @@ static void lchan_fsm_wait_activ_ack(struct osmo_fsm_inst *fi, uint32_t event, v
 		if (data) {
 			uint32_t next_state;
 			lchan->release.rsl_error_cause = *(uint8_t*)data;
+			lchan->release.rr_cause = bsc_gsm48_rr_cause_from_rsl_cause(lchan->release.rsl_error_cause);
 			lchan->release.in_error = true;
 			if (lchan->release.rsl_error_cause != RSL_ERR_RCH_ALR_ACTV_ALLOC)
 				next_state = LCHAN_ST_BORKEN;
@@ -693,6 +694,7 @@ static void lchan_fsm_wait_activ_ack(struct osmo_fsm_inst *fi, uint32_t event, v
 				      rsl_err_name(lchan->release.rsl_error_cause), lchan->release.rsl_error_cause);
 		} else {
 			lchan->release.rsl_error_cause = RSL_ERR_IE_NONEXIST;
+			lchan->release.rr_cause = bsc_gsm48_rr_cause_from_rsl_cause(lchan->release.rsl_error_cause);
 			lchan->release.in_error = true;
 			lchan_fail_to(LCHAN_ST_BORKEN, "Chan Activ NACK without cause IE");
 		}
@@ -1109,6 +1111,7 @@ static void lchan_fsm_borken(struct osmo_fsm_inst *fi, uint32_t event, void *dat
 		osmo_stat_item_dec(lchan->ts->trx->bts->bts_statg->items[BTS_STAT_LCHAN_BORKEN], 1);
 		lchan->release.in_error = true;
 		lchan->release.rsl_error_cause = RSL_ERR_INTERWORKING;
+		lchan->release.rr_cause = bsc_gsm48_rr_cause_from_rsl_cause(lchan->release.rsl_error_cause);
 		lchan_fsm_state_chg(LCHAN_ST_WAIT_RF_RELEASE_ACK);
 		return;
 
@@ -1125,6 +1128,7 @@ static void lchan_fsm_borken(struct osmo_fsm_inst *fi, uint32_t event, void *dat
 		osmo_stat_item_dec(lchan->ts->trx->bts->bts_statg->items[BTS_STAT_LCHAN_BORKEN], 1);
 		lchan->release.in_error = true;
 		lchan->release.rsl_error_cause = RSL_ERR_INTERWORKING;
+		lchan->release.rr_cause = bsc_gsm48_rr_cause_from_rsl_cause(lchan->release.rsl_error_cause);
 		lchan_fsm_state_chg(LCHAN_ST_WAIT_AFTER_ERROR);
 		/* TODO: we used to do this only for sysmobts:
 			int do_free = is_sysmobts_v2(ts->trx->bts);
@@ -1353,6 +1357,7 @@ int lchan_fsm_timer_cb(struct osmo_fsm_inst *fi)
 	default:
 		lchan->release.in_error = true;
 		lchan->release.rsl_error_cause = RSL_ERR_INTERWORKING;
+		lchan->release.rr_cause = bsc_gsm48_rr_cause_from_rsl_cause(lchan->release.rsl_error_cause);
 		lchan_fail("Timeout");
 		return 0;
 	}

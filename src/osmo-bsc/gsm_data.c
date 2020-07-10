@@ -1867,3 +1867,29 @@ enum gsm48_rr_cause bsc_gsm48_rr_cause_from_gsm0808_cause(enum gsm0808_cause c)
 		return GSM48_RR_CAUSE_ABNORMAL_UNSPEC;
 	}
 }
+
+/* Map RSL_ERR_* cause codes to gsm48_rr_cause codes.
+ * The mappings were chosen by naive guessing without a proper specification available. */
+enum gsm48_rr_cause bsc_gsm48_rr_cause_from_rsl_cause(uint8_t c)
+{
+	switch (c) {
+	case RSL_ERR_NORMAL_UNSPEC:
+		return GSM48_RR_CAUSE_NORMAL;
+	case RSL_ERR_MAND_IE_ERROR:
+		return GSM48_RR_CAUSE_INVALID_MAND_INF;
+	case RSL_ERR_OPT_IE_ERROR:
+		return GSM48_RR_CAUSE_COND_IE_ERROR;
+	case RSL_ERR_INVALID_MESSAGE:
+	case RSL_ERR_MSG_DISCR:
+	case RSL_ERR_MSG_TYPE:
+	case RSL_ERR_MSG_SEQ:
+	case RSL_ERR_IE_ERROR:
+	case RSL_ERR_IE_NONEXIST:
+	case RSL_ERR_IE_LENGTH:
+	case RSL_ERR_IE_CONTENT:
+	case RSL_ERR_PROTO:
+		return GSM48_RR_CAUSE_PROT_ERROR_UNSPC;
+	default:
+		return GSM48_RR_CAUSE_ABNORMAL_UNSPEC;
+	}
+}

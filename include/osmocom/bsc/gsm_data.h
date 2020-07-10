@@ -1898,5 +1898,6 @@ int bts_count_free_ts(struct gsm_bts *bts, enum gsm_phys_chan_config pchan);
 bool trx_has_valid_pchan_config(const struct gsm_bts_trx *trx);
 
 enum gsm48_rr_cause bsc_gsm48_rr_cause_from_gsm0808_cause(enum gsm0808_cause c);
+enum gsm48_rr_cause bsc_gsm48_rr_cause_from_rsl_cause(uint8_t c);
 
 #endif /* _GSM_DATA_H */
