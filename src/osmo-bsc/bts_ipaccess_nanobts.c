@@ -604,6 +604,8 @@ static void ipaccess_sign_link_down(struct e1inp_line *line)
 	struct gsm_bts *bts = NULL;
 	struct e1inp_sign_link *link;
 
+	LOGPIL(line, DLINP, LOGL_NOTICE, "Signalling link down\n");
+
 	llist_for_each_entry(link, &ts->sign.sign_links, list) {
 		/* Get bts pointer from the first element of the list. */
 		if (bts == NULL)
@@ -614,6 +616,8 @@ static void ipaccess_sign_link_down(struct e1inp_line *line)
 	}
 	if (bts != NULL)
 		ipaccess_drop_oml(bts, "link down");
+	else
+		LOGPIL(line, DLINP, LOGL_NOTICE, "Signalling link down for unknown BTS\n");
 }
 
 /* This function is called if we receive one OML/RSL message. */
