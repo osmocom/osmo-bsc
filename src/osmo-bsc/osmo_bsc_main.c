@@ -386,7 +386,7 @@ static int inp_sig_cb(unsigned int subsys, unsigned int signal,
 			bootstrap_rsl(trx);
 		break;
 	case S_L_INP_TEI_DN:
-		LOGP(DLMI, LOGL_ERROR, "Lost some E1 TEI link: %d %p\n", isd->link_type, trx);
+		LOG_TRX(trx, DLMI, LOGL_ERROR, "Lost E1 %s link\n", e1inp_signtype_name(isd->link_type));
 
 		if (isd->link_type == E1INP_SIGN_OML) {
 			rate_ctr_inc(&trx->bts->bts_ctrs->ctr[BTS_CTR_BTS_OML_FAIL]);
