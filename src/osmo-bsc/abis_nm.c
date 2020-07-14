@@ -969,6 +969,18 @@ static int abis_nm_rcvmsg_fom(struct msgb *mb)
 	case NM_MT_GET_ATTR_RESP:
 		ret = abis_nm_rx_get_attr_resp(mb, gsm_bts_trx_num(bts, (foh)->obj_inst.trx_nr));
 		break;
+	case NM_MT_ESTABLISH_TEI_ACK:
+	case NM_MT_CONN_TERR_SIGN_ACK:
+	case NM_MT_DISC_TERR_SIGN_ACK:
+	case NM_MT_CONN_TERR_TRAF_ACK:
+	case NM_MT_DISC_MDROP_LINK_ACK:
+	case NM_MT_STOP_EVENT_REP_ACK:
+	case NM_MT_REST_EVENT_REP_ACK:
+	case NM_MT_BS11_BEGIN_DB_TX_ACK:
+	case NM_MT_BS11_END_DB_TX_ACK:
+	case NM_MT_BS11_SET_ATTR_ACK:
+		DEBUGPFOH(DNM, foh, "%s\n", get_value_string(abis_nm_msgtype_names, mt));
+		break;
 	default:
 		LOGPFOH(DNM, LOGL_ERROR, foh, "Unhandled message %s\n",
 			get_value_string(abis_nm_msgtype_names, mt));
