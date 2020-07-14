@@ -523,6 +523,11 @@ static void bootstrap_om_bs11(struct gsm_bts *bts)
 
 	/* restart sending event reports */
 	abis_nm_event_reports(bts, 1);
+
+	/* make the timeslot FSM happy. Siemens doesn't send us
+	 * OML state changes for individual timeslots, so we
+	 * bring all of them up here */
+	gsm_bts_all_ts_dispatch(bts, TS_EV_OML_READY, NULL);
 }
 
 static int shutdown_om(struct gsm_bts *bts)
