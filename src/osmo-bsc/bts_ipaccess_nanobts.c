@@ -533,7 +533,7 @@ ipaccess_sign_link_up(void *unit_data, struct e1inp_line *line,
 		ipaccess_sign_link_reject(dev, &line->ts[E1INP_SIGN_OML - 1]);
 		return NULL;
 	}
-	DEBUGP(DLINP, "Identified BTS %u/%u/%u\n",
+	DEBUGP(DLINP, "%s: Identified BTS %u/%u/%u\n", e1inp_signtype_name(type),
 			dev->site_id, dev->bts_id, dev->trx_id);
 
 	switch(type) {
