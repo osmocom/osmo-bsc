@@ -1015,7 +1015,7 @@ static void lchan_fsm_wait_rll_rtp_released(struct osmo_fsm_inst *fi, uint32_t e
 		 * TODO: that's how the code was before lchan FSM, is this correct/useful? */
 		handle_rll_rel_ind_or_conf(fi, event, data);
 		break;
-	
+
 	case LCHAN_EV_RTP_RELEASED:
 	case LCHAN_EV_RTP_ERROR:
 		break;

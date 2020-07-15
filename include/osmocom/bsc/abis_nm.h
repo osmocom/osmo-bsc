@@ -1,4 +1,4 @@
-/* GSM Network Management messages on the A-bis interface 
+/* GSM Network Management messages on the A-bis interface
  * 3GPP TS 12.21 version 8.0.0 Release 1999 / ETSI TS 100 623 V8.0.0 */
 
 /* (C) 2008-2009 by Harald Welte <laforge@gnumonks.org>
@@ -151,7 +151,7 @@ int abis_nm_ipaccess_restart(struct gsm_bts_trx *trx);
 int abis_nm_ipaccess_set_attr(struct gsm_bts *bts, uint8_t obj_class,
 				uint8_t bts_nr, uint8_t trx_nr, uint8_t ts_nr,
 				uint8_t *attr, uint8_t attr_len);
-int abis_nm_ipaccess_rsl_connect(struct gsm_bts_trx *trx, 
+int abis_nm_ipaccess_rsl_connect(struct gsm_bts_trx *trx,
 				 uint32_t ip, uint16_t port, uint8_t stream);
 void abis_nm_ipaccess_cgi(uint8_t *buf, struct gsm_bts *bts);
 int ipac_parse_bcch_info(struct ipac_bcch_info *binf, uint8_t *buf);

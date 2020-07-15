@@ -716,4 +716,3 @@ void pcu_sock_exit(struct gsm_bts *bts)
 	talloc_free(state);
 	bts->pcu_state = NULL;
 }
-

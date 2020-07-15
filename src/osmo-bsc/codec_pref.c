@@ -270,7 +270,7 @@ static uint16_t gen_bss_supported_amr_s15_s0(const struct bsc_msc_data *msc, con
 static int match_amr_s15_s0(struct channel_mode_and_rate *ch_mode_rate, const struct bsc_msc_data *msc, const struct gsm_bts *bts, const struct gsm0808_speech_codec *sc_match, uint8_t perm_spch)
 {
 	uint16_t amr_s15_s0_supported;
-	
+
 	/* Normally the MSC should never try to advertise an AMR codec
 	 * configuration that we did not previously advertised as supported.
 	 * However, to ensure that no unsupported AMR codec configuration
@@ -278,7 +278,7 @@ static int match_amr_s15_s0(struct channel_mode_and_rate *ch_mode_rate, const st
 	 * and generate an intersection. All further processing is then done
 	 * with this intersection result. At the same time we will make sure
 	 * that the intersection contains at least one rate setting. */
-	
+
 	amr_s15_s0_supported = gen_bss_supported_amr_s15_s0(msc, bts, (perm_spch == GSM0808_PERM_HR3));
 
 	/* NOTE: The sc_match pointer points to a speech codec from the speech

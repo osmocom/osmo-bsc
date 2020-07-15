@@ -175,4 +175,3 @@ void ho_vty_init()
 
 	ho_vty_init_cmds(BTS_NODE);
 }
-

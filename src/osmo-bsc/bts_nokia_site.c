@@ -1533,7 +1533,7 @@ static void reset_timer_cb(void *_bts)
   - receive ACK, start RSL link(s)
   ACK some other messages received from the BTS.
 
-  Probably its also possible to configure the BTS without a reset, this 
+  Probably its also possible to configure the BTS without a reset, this
   has not been tested yet.
 */
 
@@ -1608,8 +1608,8 @@ static int abis_nm_rcvmsg_fom(struct msgb *mb)
 		if (!bts->nokia.did_reset) {
 			bts->nokia.did_reset = 1;
 
-			/* 
-			   TODO: For the InSite processing the received data is 
+			/*
+			   TODO: For the InSite processing the received data is
 			   blocked in the driver during reset.
 			   Otherwise the LAPD module might assert because the InSite
 			   sends garbage on the E1 line during reset.
