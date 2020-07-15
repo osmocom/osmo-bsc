@@ -26,6 +26,7 @@
 #include <osmocom/bsc/signal.h>
 #include <osmocom/bsc/bsc_msc_data.h>
 #include <osmocom/bsc/ipaccess.h>
+#include <osmocom/bsc/bts.h>
 
 #include <osmocom/core/talloc.h>
 #include <osmocom/core/utils.h>

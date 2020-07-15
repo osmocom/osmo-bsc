@@ -37,6 +37,7 @@
 #include <osmocom/bsc/penalty_timers.h>
 #include <osmocom/bsc/neighbor_ident.h>
 #include <osmocom/bsc/timeslot_fsm.h>
+#include <osmocom/bsc/bts.h>
 
 #define LOGPHOBTS(bts, level, fmt, args...) \
 	LOGP(DHODEC, level, "(BTS %u) " fmt, bts->nr, ## args)

@@ -47,6 +47,7 @@
 #include <osmocom/bsc/lchan_fsm.h>
 #include <osmocom/bsc/handover_fsm.h>
 #include <osmocom/bsc/bsc_msc_data.h>
+#include <osmocom/bsc/bts.h>
 
 void *ctx;
 

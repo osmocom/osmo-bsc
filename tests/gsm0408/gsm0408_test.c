@@ -29,6 +29,7 @@
 #include <osmocom/bsc/arfcn_range_encode.h>
 #include <osmocom/bsc/system_information.h>
 #include <osmocom/bsc/abis_rsl.h>
+#include <osmocom/bsc/bts.h>
 
 #include <osmocom/core/application.h>
 #include <osmocom/core/byteswap.h>

@@ -36,6 +36,7 @@
 #include <osmocom/gsm/gsm23236.h>
 
 #include <osmocom/bsc/osmo_bsc_sigtran.h>
+#include <osmocom/bsc/bts.h>
 
 #define LOG_COMPL_L3(pdisc, mtype, loglevel, format, args...) \
 	LOGP(DRSL, loglevel, "%s %s: " format, gsm48_pdisc_name(pdisc), gsm48_pdisc_msgtype_name(pdisc, mtype), ##args)

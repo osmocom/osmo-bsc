@@ -73,6 +73,7 @@
 #include <osmocom/bsc/lchan_select.h>
 #include <osmocom/bsc/smscb.h>
 #include <osmocom/bsc/osmo_bsc.h>
+#include <osmocom/bsc/bts.h>
 #include <osmocom/mgcp_client/mgcp_client_endpoint_fsm.h>
 
 #include <inttypes.h>

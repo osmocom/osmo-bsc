@@ -30,6 +30,7 @@
 #include <osmocom/core/talloc.h>
 #include <osmocom/bsc/debug.h>
 #include <osmocom/bsc/abis_rsl.h>
+#include <osmocom/bsc/bts.h>
 
 #define SAPI_L2ML	0
 #define SAPI_OML	62

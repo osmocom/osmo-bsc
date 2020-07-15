@@ -27,6 +27,7 @@
 #include <osmocom/bsc/bsc_msc_data.h>
 #include <osmocom/bsc/codec_pref.h>
 #include <osmocom/bsc/gsm_data.h>
+#include <osmocom/bsc/bts.h>
 
 /* Determine whether a permitted speech value is specifies a half rate or full
  * rate codec */

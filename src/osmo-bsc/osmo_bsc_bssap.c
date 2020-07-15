@@ -33,6 +33,7 @@
 #include <osmocom/bsc/codec_pref.h>
 #include <osmocom/bsc/abis_rsl.h>
 #include <osmocom/bsc/handover_fsm.h>
+#include <osmocom/bsc/bts.h>
 
 #include <osmocom/gsm/protocol/gsm_08_08.h>
 #include <osmocom/gsm/gsm0808.h>

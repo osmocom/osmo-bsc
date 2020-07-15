@@ -21,6 +21,7 @@
 
 
 #include <osmocom/bsc/gsm_data.h>
+#include <osmocom/bsc/bts.h>
 #include <osmocom/gsm/tlv.h>
 #include <osmocom/bsc/abis_nm.h>
 

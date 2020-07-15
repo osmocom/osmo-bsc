@@ -54,7 +54,7 @@
 #include <osmocom/bsc/lchan_rtp_fsm.h>
 #include <osmocom/bsc/handover_fsm.h>
 #include <osmocom/bsc/smscb.h>
-
+#include <osmocom/bsc/bts.h>
 #define RSL_ALLOC_SIZE		1024
 #define RSL_ALLOC_HEADROOM	128
 

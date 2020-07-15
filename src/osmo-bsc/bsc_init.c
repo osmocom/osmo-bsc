@@ -36,6 +36,7 @@
 #include <osmocom/bsc/handover_cfg.h>
 #include <osmocom/bsc/gsm_04_08_rr.h>
 #include <osmocom/bsc/neighbor_ident.h>
+#include <osmocom/bsc/bts.h>
 
 #include <osmocom/bsc/smscb.h>
 #include <osmocom/gsm/protocol/gsm_48_049.h>
@@ -66,24 +67,6 @@ int bsc_shutdown_net(struct gsm_network *net)
 	}
 
 	return 0;
-}
-
-unsigned long long bts_uptime(const struct gsm_bts *bts)
-{
-	struct timespec tp;
-
-	if (!bts->uptime || !bts->oml_link) {
-		LOGP(DNM, LOGL_ERROR, "BTS %u OML link uptime unavailable\n", bts->nr);
-		return 0;
-	}
-
-	if (clock_gettime(CLOCK_MONOTONIC, &tp) != 0) {
-		LOGP(DNM, LOGL_ERROR, "BTS %u uptime computation failure: %s\n", bts->nr, strerror(errno));
-		return 0;
-	}
-
-	/* monotonic clock helps to ensure that the conversion is valid */
-	return difftime(tp.tv_sec, bts->uptime);
 }
 
 static int rsl_si(struct gsm_bts_trx *trx, enum osmo_sysinfo_type i, int si_len)

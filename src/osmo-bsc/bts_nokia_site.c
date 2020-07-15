@@ -37,6 +37,7 @@
 #include <osmocom/bsc/signal.h>
 #include <osmocom/bsc/timeslot_fsm.h>
 #include <osmocom/bsc/system_information.h>
+#include <osmocom/bsc/bts.h>
 
 #include <osmocom/core/timer.h>
 

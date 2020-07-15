@@ -28,6 +28,7 @@
 #include <osmocom/bsc/lchan_fsm.h>
 
 #include <osmocom/bsc/lchan_select.h>
+#include <osmocom/bsc/bts.h>
 
 static struct gsm_lchan *
 _lc_find_trx(struct gsm_bts_trx *trx, enum gsm_phys_chan_config pchan,

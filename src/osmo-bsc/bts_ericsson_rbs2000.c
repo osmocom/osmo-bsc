@@ -29,6 +29,7 @@
 #include <osmocom/abis/e1_input.h>
 #include <osmocom/bsc/signal.h>
 #include <osmocom/bsc/timeslot_fsm.h>
+#include <osmocom/bsc/bts.h>
 
 #include <osmocom/abis/lapd.h>
 

@@ -39,6 +39,7 @@
 #include <osmocom/bsc/debug.h>
 #include <osmocom/core/select.h>
 #include <osmocom/bsc/rs232.h>
+#include <osmocom/bsc/bts.h>
 #include <osmocom/core/application.h>
 #include <osmocom/core/talloc.h>
 #include <osmocom/abis/abis.h>

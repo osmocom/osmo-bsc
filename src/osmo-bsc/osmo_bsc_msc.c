@@ -29,6 +29,7 @@
 #include <osmocom/bsc/bsc_msc_data.h>
 #include <osmocom/bsc/osmo_bsc_sigtran.h>
 #include <osmocom/bsc/signal.h>
+#include <osmocom/bsc/bts.h>
 
 #include <osmocom/core/talloc.h>
 #include <osmocom/core/socket.h>

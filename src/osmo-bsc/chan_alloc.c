@@ -34,6 +34,7 @@
 #include <osmocom/bsc/timeslot_fsm.h>
 #include <osmocom/bsc/lchan_fsm.h>
 #include <osmocom/bsc/gsm_04_08_rr.h>
+#include <osmocom/bsc/bts.h>
 
 #include <osmocom/core/talloc.h>
 

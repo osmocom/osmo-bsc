@@ -30,6 +30,7 @@
 #include <osmocom/bsc/bsc_subscr_conn_fsm.h>
 #include <osmocom/bsc/abis_rsl.h>
 #include <osmocom/bsc/bsc_msc_data.h>
+#include <osmocom/bsc/bts.h>
 
 static struct osmo_fsm lchan_rtp_fsm;
 

@@ -34,6 +34,7 @@
 
 #include <osmocom/bsc/handover_fsm.h>
 #include <osmocom/bsc/handover_cfg.h>
+#include <osmocom/bsc/bts.h>
 
 /* did we get a RXLEV for a given cell in the given report? */
 static int rxlev_for_cell_in_rep(struct gsm_meas_rep *mr,

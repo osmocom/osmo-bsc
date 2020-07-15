@@ -10,6 +10,7 @@ noinst_HEADERS = \
 	bsc_subscriber.h \
 	bsc_subscr_conn_fsm.h \
 	bss.h \
+	bts.h \
 	bts_ipaccess_nanobts_omlattr.h \
 	chan_alloc.h \
 	codec_pref.h \

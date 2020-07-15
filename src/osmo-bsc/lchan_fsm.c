@@ -39,7 +39,7 @@
 #include <osmocom/bsc/handover_fsm.h>
 #include <osmocom/bsc/bsc_msc_data.h>
 #include <osmocom/bsc/codec_pref.h>
-
+#include <osmocom/bsc/bts.h>
 
 static struct osmo_fsm lchan_fsm;
 

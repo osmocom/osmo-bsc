@@ -23,7 +23,7 @@
 #include <osmocom/core/msgb.h>
 #include <osmocom/bsc/gsm_data.h>
 #include <osmocom/bsc/abis_nm.h>
-
+#include <osmocom/bsc/bts.h>
 
 struct msgb *nanobts_attr_bts_get(struct gsm_bts *bts)
 {

@@ -43,6 +43,7 @@
 #include <osmocom/bsc/osmo_bsc_lcls.h>
 #include <osmocom/bsc/codec_pref.h>
 #include <osmocom/bsc/gsm_08_08.h>
+#include <osmocom/bsc/bts.h>
 
 #define LOG_FMT_BTS "bts %u lac-ci %u-%u arfcn-bsic %d-%d"
 #define LOG_ARGS_BTS(bts) \

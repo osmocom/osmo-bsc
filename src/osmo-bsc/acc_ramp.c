@@ -29,6 +29,7 @@
 #include <osmocom/bsc/chan_alloc.h>
 #include <osmocom/bsc/signal.h>
 #include <osmocom/bsc/abis_nm.h>
+#include <osmocom/bsc/bts.h>
 
 /*
  * Check if an ACC has been permanently barred for a BTS,

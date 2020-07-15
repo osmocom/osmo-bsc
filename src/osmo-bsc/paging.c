@@ -53,6 +53,7 @@
 #include <osmocom/bsc/gsm_08_08.h>
 #include <osmocom/bsc/gsm_04_08_rr.h>
 #include <osmocom/bsc/bsc_subscr_conn_fsm.h>
+#include <osmocom/bsc/bts.h>
 
 void *tall_paging_ctx = NULL;
 

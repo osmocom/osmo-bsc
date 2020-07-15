@@ -30,6 +30,7 @@
 #include <osmocom/abis/e1_input.h>
 #include <osmocom/bsc/signal.h>
 #include <osmocom/bsc/timeslot_fsm.h>
+#include <osmocom/bsc/bts.h>
 
 static int bts_model_bs11_start(struct gsm_network *net);
 

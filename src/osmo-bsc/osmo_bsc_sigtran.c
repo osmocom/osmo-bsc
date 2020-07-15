@@ -34,6 +34,7 @@
 #include <osmocom/bsc/a_reset.h>
 #include <osmocom/bsc/bsc_subscr_conn_fsm.h>
 #include <osmocom/bsc/gsm_data.h>
+#include <osmocom/bsc/bts.h>
 #include <osmocom/mgcp_client/mgcp_common.h>
 
 /* A pointer to a list with all involved MSCs

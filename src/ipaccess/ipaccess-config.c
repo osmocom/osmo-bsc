@@ -56,6 +56,7 @@
 #include <osmocom/abis/abis.h>
 #include <osmocom/gsm/protocol/gsm_12_21.h>
 #include <osmocom/bsc/bss.h>
+#include <osmocom/bsc/bts.h>
 
 struct gsm_network *bsc_gsmnet;
 

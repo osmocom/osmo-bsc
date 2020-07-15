@@ -30,6 +30,7 @@
 #include <osmocom/bsc/chan_alloc.h>
 #include <osmocom/bsc/osmo_bsc_rf.h>
 #include <osmocom/bsc/bsc_msc_data.h>
+#include <osmocom/bsc/bts.h>
 
 CTRL_CMD_DEFINE(net_mcc, "mcc");
 static int get_net_mcc(struct ctrl_cmd *cmd, void *_data)

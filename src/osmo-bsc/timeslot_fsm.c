@@ -28,6 +28,7 @@
 #include <osmocom/bsc/lchan_fsm.h>
 #include <osmocom/bsc/abis_rsl.h>
 #include <osmocom/bsc/pcu_if.h>
+#include <osmocom/bsc/bts.h>
 
 static struct osmo_fsm ts_fsm;
 

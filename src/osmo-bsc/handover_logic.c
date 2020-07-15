@@ -43,6 +43,7 @@
 #include <osmocom/bsc/bsc_subscr_conn_fsm.h>
 #include <osmocom/bsc/neighbor_ident.h>
 #include <osmocom/bsc/abis_nm.h>
+#include <osmocom/bsc/bts.h>
 #include <osmocom/gsm/gsm0808.h>
 #include <osmocom/gsm/gsm0808_utils.h>
 

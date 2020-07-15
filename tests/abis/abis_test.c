@@ -26,6 +26,7 @@
 #include <osmocom/gsm/gsm23003.h>
 
 #include <osmocom/bsc/gsm_data.h>
+#include <osmocom/bsc/bts.h>
 #include <osmocom/bsc/abis_nm.h>
 #include <osmocom/bsc/debug.h>
 

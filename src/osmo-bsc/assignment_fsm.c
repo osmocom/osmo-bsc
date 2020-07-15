@@ -34,6 +34,7 @@
 #include <osmocom/bsc/gsm_08_08.h>
 #include <osmocom/bsc/lchan_select.h>
 #include <osmocom/bsc/abis_rsl.h>
+#include <osmocom/bsc/bts.h>
 
 #include <osmocom/bsc/assignment_fsm.h>
 

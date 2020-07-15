@@ -45,6 +45,7 @@
 #include <osmocom/bsc/bts_ipaccess_nanobts_omlattr.h>
 #include <osmocom/bsc/paging.h>
 #include <osmocom/bsc/timeslot_fsm.h>
+#include <osmocom/bsc/bts.h>
 
 static int bts_model_nanobts_start(struct gsm_network *net);
 static void bts_model_nanobts_e1line_bind_ops(struct e1inp_line *line);

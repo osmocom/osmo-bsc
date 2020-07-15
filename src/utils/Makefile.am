@@ -48,6 +48,7 @@ bs11_config_SOURCES = \
 
 bs11_config_LDADD = \
 	$(top_builddir)/src/osmo-bsc/abis_nm.o \
+	$(top_builddir)/src/osmo-bsc/bts.o \
 	$(top_builddir)/src/osmo-bsc/bts_siemens_bs11.o \
 	$(top_builddir)/src/osmo-bsc/e1_config.o \
 	$(top_builddir)/src/osmo-bsc/gsm_data.o \
@@ -117,6 +118,7 @@ meas_json_SOURCES = \
 	$(NULL)
 
 meas_json_LDADD = \
+	$(top_builddir)/src/osmo-bsc/bts.o \
 	$(top_builddir)/src/osmo-bsc/gsm_data.o \
 	$(LIBOSMOCORE_LIBS) \
 	$(LIBOSMOGSM_LIBS) \

@@ -22,6 +22,7 @@
 #include <osmocom/bsc/debug.h>
 #include <osmocom/bsc/gsm_data.h>
 #include <osmocom/bsc/bts_ipaccess_nanobts_omlattr.h>
+#include <osmocom/bsc/bts.h>
 
 #include <osmocom/core/talloc.h>
 #include <osmocom/core/utils.h>

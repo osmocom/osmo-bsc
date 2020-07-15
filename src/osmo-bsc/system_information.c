@@ -41,6 +41,7 @@
 #include <osmocom/bsc/gsm_04_08_rr.h>
 #include <osmocom/bsc/acc_ramp.h>
 #include <osmocom/bsc/neighbor_ident.h>
+#include <osmocom/bsc/bts.h>
 
 struct gsm0808_cell_id_list2;
 

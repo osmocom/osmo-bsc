@@ -48,6 +48,7 @@
 #include <osmocom/bsc/signal.h>
 #include <osmocom/abis/e1_input.h>
 #include <osmocom/bsc/chan_alloc.h>
+#include <osmocom/bsc/bts.h>
 #include <osmocom/gsm/bts_features.h>
 
 #define OM_ALLOC_SIZE		1024
@@ -851,14 +852,6 @@ bool all_trx_rsl_connected_unlocked(const struct gsm_bts *bts)
 	}
 
 	return true;
-}
-
-char *get_model_oml_status(const struct gsm_bts *bts)
-{
-	if (bts->model->oml_status)
-		return bts->model->oml_status(bts);
-
-	return "unknown";
 }
 
 void abis_nm_queue_send_next(struct gsm_bts *bts)

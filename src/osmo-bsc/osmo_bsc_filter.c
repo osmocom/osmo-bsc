@@ -26,6 +26,7 @@
 #include <osmocom/bsc/debug.h>
 #include <osmocom/bsc/paging.h>
 #include <osmocom/bsc/gsm_04_08_rr.h>
+#include <osmocom/bsc/bts.h>
 
 #include <stdlib.h>
 

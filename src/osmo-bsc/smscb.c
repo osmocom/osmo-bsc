@@ -41,6 +41,7 @@
 #include <osmocom/bsc/gsm_04_08_rr.h>
 #include <osmocom/bsc/lchan_fsm.h>
 #include <osmocom/bsc/abis_rsl.h>
+#include <osmocom/bsc/bts.h>
 
 /*********************************************************************************
  * Helper Functions

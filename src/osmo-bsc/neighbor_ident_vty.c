@@ -30,6 +30,7 @@
 #include <osmocom/bsc/vty.h>
 #include <osmocom/bsc/neighbor_ident.h>
 #include <osmocom/bsc/gsm_data.h>
+#include <osmocom/bsc/bts.h>
 
 static struct gsm_network *g_net = NULL;
 static struct neighbor_ident_list *g_neighbor_cells = NULL;

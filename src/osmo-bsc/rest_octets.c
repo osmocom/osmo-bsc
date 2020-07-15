@@ -33,6 +33,7 @@
 #include <osmocom/bsc/rest_octets.h>
 #include <osmocom/bsc/arfcn_range_encode.h>
 #include <osmocom/bsc/system_information.h>
+#include <osmocom/bsc/bts.h>
 
 /* generate SI1 rest octets */
 int rest_octets_si1(uint8_t *data, uint8_t *nch_pos, int is1800_net)

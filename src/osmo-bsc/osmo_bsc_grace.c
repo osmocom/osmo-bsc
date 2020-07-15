@@ -25,6 +25,7 @@
 #include <osmocom/bsc/paging.h>
 #include <osmocom/bsc/signal.h>
 #include <osmocom/bsc/lchan_fsm.h>
+#include <osmocom/bsc/bts.h>
 
 int bsc_grace_allow_new_connection(struct gsm_network *network, struct gsm_bts *bts)
 {

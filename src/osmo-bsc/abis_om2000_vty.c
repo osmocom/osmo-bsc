@@ -33,6 +33,7 @@
 #include <osmocom/bsc/debug.h>
 #include <osmocom/bsc/signal.h>
 #include <osmocom/bsc/abis_om2000.h>
+#include <osmocom/bsc/bts.h>
 #include <osmocom/bsc/vty.h>
 
 #include <osmocom/vty/vty.h>

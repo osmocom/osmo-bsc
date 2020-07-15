@@ -27,6 +27,7 @@
 #include <osmocom/bsc/bsc_msc_data.h>
 #include <osmocom/bsc/signal.h>
 #include <osmocom/bsc/a_reset.h>
+#include <osmocom/bsc/bts.h>
 
 #include <osmocom/core/linuxlist.h>
 #include <osmocom/core/signal.h>

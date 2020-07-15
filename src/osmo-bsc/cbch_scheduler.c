@@ -28,6 +28,7 @@
 #include <osmocom/bsc/gsm_data.h>
 #include <osmocom/bsc/smscb.h>
 #include <osmocom/bsc/abis_rsl.h>
+#include <osmocom/bsc/bts.h>
 
 /* add all pages of given SMSCB so they appear as soon as possible *after* (included) base_idx. */
 static int bts_smscb_sched_add_after(struct bts_smscb_page **sched_arr, int sched_arr_size,

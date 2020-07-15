@@ -64,6 +64,7 @@
 #include <osmocom/bsc/e1_config.h>
 #include <osmocom/bsc/codec_pref.h>
 #include <osmocom/bsc/system_information.h>
+#include <osmocom/bsc/bts.h>
 
 #include <osmocom/mgcp_client/mgcp_client.h>
 

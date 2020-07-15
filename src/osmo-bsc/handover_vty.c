@@ -27,6 +27,7 @@
 #include <osmocom/bsc/vty.h>
 #include <osmocom/bsc/handover_cfg.h>
 #include <osmocom/bsc/handover_decision_2.h>
+#include <osmocom/bsc/bts.h>
 
 static struct handover_cfg *ho_cfg_from_vty(struct vty *vty)
 {
