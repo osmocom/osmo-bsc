@@ -4,7 +4,6 @@
 #include <stdint.h>
 #include <sys/types.h>
 #include <stdbool.h>
-#include <stdint.h>
 
 #include <osmocom/core/timer.h>
 #include <osmocom/core/rate_ctr.h>
