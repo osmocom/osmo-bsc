@@ -48,6 +48,7 @@ bs11_config_SOURCES = \
 
 bs11_config_LDADD = \
 	$(top_builddir)/src/osmo-bsc/abis_nm.o \
+	$(top_builddir)/src/osmo-bsc/acc_ramp.o \
 	$(top_builddir)/src/osmo-bsc/bts.o \
 	$(top_builddir)/src/osmo-bsc/bts_trx.o \
 	$(top_builddir)/src/osmo-bsc/bts_siemens_bs11.o \
@@ -120,6 +121,7 @@ meas_json_SOURCES = \
 
 meas_json_LDADD = \
 	$(top_builddir)/src/osmo-bsc/abis_nm.o \
+	$(top_builddir)/src/osmo-bsc/acc_ramp.o \
 	$(top_builddir)/src/osmo-bsc/bts.o \
 	$(top_builddir)/src/osmo-bsc/bts_trx.o \
 	$(top_builddir)/src/osmo-bsc/gsm_data.o \
