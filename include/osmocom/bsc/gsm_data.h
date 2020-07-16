@@ -963,7 +963,6 @@ struct gsm_bts *gsm_bts_by_cell_id(const struct gsm_network *net,
 				   int match_idx);
 
 struct gsm_bts_trx *gsm_bts_trx_alloc(struct gsm_bts *bts);
-struct gsm_bts_trx *gsm_bts_trx_num(const struct gsm_bts *bts, int num);
 
 extern const struct value_string gsm_chreq_descs[];
 extern const struct value_string gsm_pchant_names[];

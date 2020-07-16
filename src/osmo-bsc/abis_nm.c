@@ -800,7 +800,7 @@ struct gsm_bts_trx_ts *abis_nm_get_ts(const struct msgb *oml_msg)
 {
 	struct abis_om_fom_hdr *foh = msgb_l3(oml_msg);
 	struct e1inp_sign_link *sign_link = oml_msg->dst;
-	struct gsm_bts_trx *trx = gsm_bts_trx_by_nr(sign_link->trx->bts, foh->obj_inst.trx_nr);
+	struct gsm_bts_trx *trx = gsm_bts_trx_num(sign_link->trx->bts, foh->obj_inst.trx_nr);
 	uint8_t ts_nr = foh->obj_inst.ts_nr;
 	if (!trx) {
 		LOGP(DNM, LOGL_ERROR, "%s Channel OPSTART ACK for sign_link without trx\n",
@@ -2791,7 +2791,7 @@ static int abis_nm_rx_ipacc(struct msgb *msg)
 
 	/* The message might be received over the main OML link, so we cannot
 	 * just use sign_link->trx. Resolve it by number from the FOM header. */
-	trx = gsm_bts_trx_by_nr(sign_link->trx->bts, foh->obj_inst.trx_nr);
+	trx = gsm_bts_trx_num(sign_link->trx->bts, foh->obj_inst.trx_nr);
 
 	DEBUGPFOH(DNM, foh, "Rx IPACCESS(0x%02x): %s\n", foh->msg_type,
 		  osmo_hexdump(foh->data, oh->length - sizeof(*foh)));

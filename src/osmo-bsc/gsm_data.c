@@ -349,21 +349,6 @@ struct gsm_bts_trx *gsm_bts_trx_alloc(struct gsm_bts *bts)
 	return trx;
 }
 
-struct gsm_bts_trx *gsm_bts_trx_num(const struct gsm_bts *bts, int num)
-{
-	struct gsm_bts_trx *trx;
-
-	if (num >= bts->num_trx)
-		return NULL;
-
-	llist_for_each_entry(trx, &bts->trx_list, list) {
-		if (trx->nr == num)
-			return trx;
-	}
-
-	return NULL;
-}
-
 static char ts2str[255];
 
 char *gsm_trx_name(const struct gsm_bts_trx *trx)

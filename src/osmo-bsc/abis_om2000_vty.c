@@ -561,7 +561,7 @@ DEFUN(om2k_conf_req, om2k_conf_req_cmd,
 		abis_om2k_tx_con_conf_req(bts);
 		break;
 	case OM2K_MO_CLS_TS:
-		trx = gsm_bts_trx_by_nr(bts, oms->mo.assoc_so);
+		trx = gsm_bts_trx_num(bts, oms->mo.assoc_so);
 		if (!trx) {
 			vty_out(vty, "%% BTS %u has no TRX %u%s", bts->nr,
 				oms->mo.assoc_so, VTY_NEWLINE);
@@ -578,7 +578,7 @@ DEFUN(om2k_conf_req, om2k_conf_req_cmd,
 	case OM2K_MO_CLS_RX:
 	case OM2K_MO_CLS_TX:
 	case OM2K_MO_CLS_TRXC:
-		trx = gsm_bts_trx_by_nr(bts, oms->mo.inst);
+		trx = gsm_bts_trx_num(bts, oms->mo.inst);
 		if (!trx) {
 			vty_out(vty, "%% BTS %u has no TRX %u%s", bts->nr,
 				oms->mo.inst, VTY_NEWLINE);

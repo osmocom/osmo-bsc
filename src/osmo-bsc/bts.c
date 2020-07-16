@@ -570,14 +570,18 @@ int bts_gprs_mode_is_compat(struct gsm_bts *bts, enum bts_gprs_mode mode)
 	return 1;
 }
 
-struct gsm_bts_trx *gsm_bts_trx_by_nr(struct gsm_bts *bts, int nr)
+struct gsm_bts_trx *gsm_bts_trx_num(const struct gsm_bts *bts, int num)
 {
 	struct gsm_bts_trx *trx;
 
+	if (num >= bts->num_trx)
+		return NULL;
+
 	llist_for_each_entry(trx, &bts->trx_list, list) {
-		if (trx->nr == nr)
+		if (trx->nr == num)
 			return trx;
 	}
+
 	return NULL;
 }
 

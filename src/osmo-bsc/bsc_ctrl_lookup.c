@@ -29,6 +29,7 @@
 #include <osmocom/bsc/debug.h>
 #include <osmocom/bsc/gsm_data.h>
 #include <osmocom/bsc/bsc_msc_data.h>
+#include <osmocom/bsc/bts.h>
 
 extern vector ctrl_node_vec;
 
