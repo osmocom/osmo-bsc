@@ -240,3 +240,8 @@ void lchan_activate(struct gsm_lchan *lchan, void *info) {}
 bool neighbor_ident_bts_entry_exists(uint8_t from_bts) { return false; }
 const char *handover_status(struct gsm_subscriber_connection *conn) { return "x"; }
 int rsl_chan_ms_power_ctrl(struct gsm_lchan *lchan) { return 0; }
+void pcu_info_update(struct gsm_bts *bts) {};
+int rsl_sacch_filling(struct gsm_bts_trx *trx, uint8_t type, const uint8_t *data, int len) { return 0; }
+int rsl_bcch_info(const struct gsm_bts_trx *trx, enum osmo_sysinfo_type si_type, const uint8_t *data, int len)
+{ return 0; }
+int gsm_generate_si(struct gsm_bts *bts, enum osmo_sysinfo_type si_type) { return 0; }

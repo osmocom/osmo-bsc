@@ -622,6 +622,8 @@ void gsm_bts_all_ts_dispatch(struct gsm_bts *bts, uint32_t ts_ev, void *data);
 
 int bts_count_free_ts(struct gsm_bts *bts, enum gsm_phys_chan_config pchan);
 
+int gsm_bts_set_system_infos(struct gsm_bts *bts);
+
 int gsm_bts_model_register(struct gsm_bts_model *model);
 struct gsm_bts_model *bts_model_find(enum gsm_bts_type type);
 

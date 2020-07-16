@@ -1189,9 +1189,6 @@ struct gsm_bts *bsc_bts_alloc_register(struct gsm_network *net, enum gsm_bts_typ
 void set_ts_e1link(struct gsm_bts_trx_ts *ts, uint8_t e1_nr,
 		   uint8_t e1_ts, uint8_t e1_ts_ss);
 
-int gsm_bts_trx_set_system_infos(struct gsm_bts_trx *trx);
-int gsm_bts_set_system_infos(struct gsm_bts *bts);
-
 /* generic E1 line operations for all ISDN-based BTS. */
 extern struct e1inp_line_ops bts_isdn_e1inp_line_ops;
 

@@ -25,7 +25,10 @@
 #include <osmocom/bsc/bts_trx.h>
 #include <osmocom/bsc/timeslot_fsm.h>
 #include <osmocom/bsc/abis_nm.h>
+#include <osmocom/bsc/abis_rsl.h>
 #include <osmocom/bsc/lchan_fsm.h>
+#include <osmocom/bsc/system_information.h>
+#include <osmocom/bsc/pcu_if.h>
 #include <osmocom/bsc/debug.h>
 
 struct gsm_bts_trx *gsm_bts_trx_alloc(struct gsm_bts *bts)
@@ -285,4 +288,133 @@ bool trx_has_valid_pchan_config(const struct gsm_bts_trx *trx)
 	}
 
 	return result;
+}
+
+static int rsl_si(struct gsm_bts_trx *trx, enum osmo_sysinfo_type i, int si_len)
+{
+	struct gsm_bts *bts = trx->bts;
+	int rc, j;
+
+	if (si_len) {
+		DEBUGP(DRR, "SI%s: %s\n", get_value_string(osmo_sitype_strs, i),
+			osmo_hexdump(GSM_BTS_SI(bts, i), GSM_MACBLOCK_LEN));
+	} else
+		DEBUGP(DRR, "SI%s: OFF\n", get_value_string(osmo_sitype_strs, i));
+
+	switch (i) {
+	case SYSINFO_TYPE_5:
+	case SYSINFO_TYPE_5bis:
+	case SYSINFO_TYPE_5ter:
+	case SYSINFO_TYPE_6:
+		rc = rsl_sacch_filling(trx, osmo_sitype2rsl(i),
+				       si_len ? GSM_BTS_SI(bts, i) : NULL, si_len);
+		break;
+	case SYSINFO_TYPE_2quater:
+		if (si_len == 0) {
+			rc = rsl_bcch_info(trx, i, NULL, 0);
+			break;
+		}
+		rc = 0;
+		for (j = 0; j <= bts->si2q_count; j++)
+			rc = rsl_bcch_info(trx, i, (const uint8_t *)GSM_BTS_SI2Q(bts, j), GSM_MACBLOCK_LEN);
+		break;
+	default:
+		rc = rsl_bcch_info(trx, i, si_len ? GSM_BTS_SI(bts, i) : NULL, si_len);
+		break;
+	}
+
+	return rc;
+}
+
+/* set all system information types for a TRX */
+int gsm_bts_trx_set_system_infos(struct gsm_bts_trx *trx)
+{
+	int i, rc;
+	struct gsm_bts *bts = trx->bts;
+	uint8_t gen_si[_MAX_SYSINFO_TYPE], n_si = 0, n;
+	int si_len[_MAX_SYSINFO_TYPE];
+
+	bts->si_common.cell_sel_par.ms_txpwr_max_ccch =
+			ms_pwr_ctl_lvl(bts->band, bts->ms_max_power);
+	bts->si_common.cell_sel_par.neci = bts->network->neci;
+
+	/* Zero/forget the state of the dynamically computed SIs, leeping the static ones */
+	bts->si_valid = bts->si_mode_static;
+
+	/* First, we determine which of the SI messages we actually need */
+
+	if (trx == bts->c0) {
+		/* 1...4 are always present on a C0 TRX */
+		gen_si[n_si++] = SYSINFO_TYPE_1;
+		gen_si[n_si++] = SYSINFO_TYPE_2;
+		gen_si[n_si++] = SYSINFO_TYPE_2bis;
+		gen_si[n_si++] = SYSINFO_TYPE_2ter;
+		gen_si[n_si++] = SYSINFO_TYPE_2quater;
+		gen_si[n_si++] = SYSINFO_TYPE_3;
+		gen_si[n_si++] = SYSINFO_TYPE_4;
+
+		/* 13 is always present on a C0 TRX of a GPRS BTS */
+		if (bts->gprs.mode != BTS_GPRS_NONE)
+			gen_si[n_si++] = SYSINFO_TYPE_13;
+	}
+
+	/* 5 and 6 are always present on every TRX */
+	gen_si[n_si++] = SYSINFO_TYPE_5;
+	gen_si[n_si++] = SYSINFO_TYPE_5bis;
+	gen_si[n_si++] = SYSINFO_TYPE_5ter;
+	gen_si[n_si++] = SYSINFO_TYPE_6;
+
+	/* Second, we generate the selected SI via RSL */
+
+	for (n = 0; n < n_si; n++) {
+		i = gen_si[n];
+		/* Only generate SI if this SI is not in "static" (user-defined) mode */
+		if (!(bts->si_mode_static & (1 << i))) {
+			/* Set SI as being valid. gsm_generate_si() might unset
+			 * it, if SI is not required. */
+			bts->si_valid |= (1 << i);
+			rc = gsm_generate_si(bts, i);
+			if (rc < 0)
+				goto err_out;
+			si_len[i] = rc;
+		} else {
+			if (i == SYSINFO_TYPE_5 || i == SYSINFO_TYPE_5bis
+			 || i == SYSINFO_TYPE_5ter)
+				si_len[i] = 18;
+			else if (i == SYSINFO_TYPE_6)
+				si_len[i] = 11;
+			else
+				si_len[i] = 23;
+		}
+	}
+
+	/* Third, we send the selected SI via RSL */
+
+	for (n = 0; n < n_si; n++) {
+		i = gen_si[n];
+		/* 3GPP TS 08.58 §8.5.1 BCCH INFORMATION. If we don't currently
+		 * have this SI, we send a zero-length RSL BCCH FILLING /
+		 * SACCH FILLING in order to deactivate the SI, in case it
+		 * might have previously been active */
+		if (!GSM_BTS_HAS_SI(bts, i)) {
+			if (bts->si_unused_send_empty)
+				rc = rsl_si(trx, i, 0);
+			else
+				rc = 0; /* some nanoBTS fw don't like receiving empty unsupported SI */
+		} else
+			rc = rsl_si(trx, i, si_len[i]);
+		if (rc < 0)
+			return rc;
+	}
+
+	/* Make sure the PCU is aware (in case anything GPRS related has
+	 * changed in SI */
+	pcu_info_update(bts);
+
+	return 0;
+err_out:
+	LOGP(DRR, LOGL_ERROR, "Cannot generate SI%s for BTS %u: error <%s>, "
+	     "most likely a problem with neighbor cell list generation\n",
+	     get_value_string(osmo_sitype_strs, i), bts->nr, strerror(-rc));
+	return rc;
 }

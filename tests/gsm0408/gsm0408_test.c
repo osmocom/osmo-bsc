@@ -969,3 +969,8 @@ int rsl_data_request(struct msgb *msg, uint8_t link_id) { return 0; }
 int rsl_encryption_cmd(struct msgb *msg) { return 0; }
 
 int rsl_chan_ms_power_ctrl(struct gsm_lchan *lchan) { return 0; }
+
+void pcu_info_update(struct gsm_bts *bts) {};
+int rsl_sacch_filling(struct gsm_bts_trx *trx, uint8_t type, const uint8_t *data, int len) { return 0; }
+int rsl_bcch_info(const struct gsm_bts_trx *trx, enum osmo_sysinfo_type si_type, const uint8_t *data, int len)
+{ return 0; }
