@@ -1,4 +1,5 @@
 SUBDIRS = \
+	acc \
 	bsc \
 	codec_pref \
 	gsm0408 \

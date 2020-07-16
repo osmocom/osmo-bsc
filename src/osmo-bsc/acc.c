@@ -1,4 +1,4 @@
-/* (C) 2018 by sysmocom s.f.m.c. GmbH <info@sysmocom.de>
+/* (C) 2018-2020 by sysmocom s.f.m.c. GmbH <info@sysmocom.de>
  *
  * Author: Stefan Sperling <ssperling@sysmocom.de>
  *
@@ -20,6 +20,8 @@
  */
 
 #include <strings.h>
+#include <stdint.h>
+#include <inttypes.h>
 #include <errno.h>
 #include <stdbool.h>
 
@@ -43,42 +45,319 @@ static bool acc_is_permanently_barred(struct gsm_bts *bts, unsigned int acc)
 	return (bts->si_common.rach_control.t3 & (1 << (acc)));
 }
 
-static void allow_one_acc(struct acc_ramp *acc_ramp, unsigned int acc)
+/*!
+ * Return bitmasks which correspond to access control classes that are currently
+ * denied access. Ramping is only concerned with those bits which control access
+ * for ACCs 0-9, and any of the other bits will always be set to zero in these masks, i.e.
+ * it is safe to OR these bitmasks with the corresponding fields in struct gsm48_rach_control.
+ * \param[in] acc_mgr Pointer to acc_mgr structure.
+ */
+static inline uint8_t acc_mgr_get_barred_t2(struct acc_mgr *acc_mgr)
 {
-	OSMO_ASSERT(acc <= 9);
-	if (acc_ramp->barred_accs & (1 << acc))
-		LOG_BTS(acc_ramp->bts, DRSL, LOGL_NOTICE,
-			"ACC RAMP: allowing Access Control Class %u\n", acc);
-	acc_ramp->barred_accs &= ~(1 << acc);
+	return ((~acc_mgr->allowed_subset_mask) >> 8) & 0x03;
+};
+static inline uint8_t acc_mgr_get_barred_t3(struct acc_mgr *acc_mgr)
+{
+	return (~acc_mgr->allowed_subset_mask) & 0xff;
 }
 
-static void barr_one_acc(struct acc_ramp *acc_ramp, unsigned int acc)
+static uint8_t acc_mgr_subset_len(struct acc_mgr *acc_mgr)
 {
-	OSMO_ASSERT(acc <= 9);
-	if ((acc_ramp->barred_accs & (1 << acc)) == 0)
-		LOG_BTS(acc_ramp->bts, DRSL, LOGL_NOTICE,
-			"ACC RAMP: barring Access Control Class %u\n", acc);
-	acc_ramp->barred_accs |= (1 << acc);
+	return OSMO_MIN(acc_mgr->len_allowed_ramp, acc_mgr->len_allowed_adm);
 }
 
-static void barr_all_accs(struct acc_ramp *acc_ramp)
+static void acc_mgr_enable_rotation_cond(struct acc_mgr *acc_mgr)
 {
-	unsigned int acc;
-	for (acc = 0; acc < 10; acc++) {
-		if (!acc_is_permanently_barred(acc_ramp->bts, acc))
-			barr_one_acc(acc_ramp, acc);
+	if (acc_mgr->allowed_permanent_count && acc_mgr->allowed_subset_mask_count &&
+	    acc_mgr->allowed_permanent_count != acc_mgr->allowed_subset_mask_count) {
+		if (!osmo_timer_pending(&acc_mgr->rotate_timer))
+			osmo_timer_schedule(&acc_mgr->rotate_timer, acc_mgr->rotation_time_sec, 0);
+	} else {
+		/* No rotation needed, disable rotation timer */
+		if (osmo_timer_pending(&acc_mgr->rotate_timer))
+			osmo_timer_del(&acc_mgr->rotate_timer);
 	}
 }
 
-static void allow_all_accs(struct acc_ramp *acc_ramp)
+static void acc_mgr_gen_subset(struct acc_mgr *acc_mgr, bool update_si)
 {
-	unsigned int acc;
+	uint8_t acc;
+
+	acc_mgr->allowed_subset_mask = 0; /* clean mask */
+	acc_mgr->allowed_subset_mask_count = 0;
+	acc_mgr->allowed_permanent_count = 0;
+
 	for (acc = 0; acc < 10; acc++) {
-		if (!acc_is_permanently_barred(acc_ramp->bts, acc))
-			allow_one_acc(acc_ramp, acc);
+		if (acc_is_permanently_barred(acc_mgr->bts, acc))
+			continue;
+		acc_mgr->allowed_permanent_count++;
+		if (acc_mgr->allowed_subset_mask_count < acc_mgr_subset_len(acc_mgr)) {
+			acc_mgr->allowed_subset_mask |= (1 << acc);
+			acc_mgr->allowed_subset_mask_count++;
+		}
+	}
+
+	acc_mgr_enable_rotation_cond(acc_mgr);
+
+	LOG_BTS(acc_mgr->bts, DRSL, LOGL_INFO,
+		"ACC: New ACC allowed subset 0x%03" PRIx16 " (active_len=%" PRIu8
+		", ramp_len=%" PRIu8 ", adm_len=%" PRIu8 ", perm_len=%" PRIu8 ", rotation=%s)\n",
+		acc_mgr->allowed_subset_mask, acc_mgr->allowed_subset_mask_count,
+		acc_mgr->len_allowed_ramp, acc_mgr->len_allowed_adm,
+		acc_mgr->allowed_permanent_count,
+		osmo_timer_pending(&(acc_mgr)->rotate_timer) ? "on" : "off");
+
+	/* Trigger SI data update, acc_mgr_apply_acc will bew called */
+	if (update_si)
+		gsm_bts_set_system_infos(acc_mgr->bts);
+}
+
+static uint8_t get_highest_allowed_acc(uint16_t mask)
+{
+	for (int i = 9; i >= 0; i--) {
+		if (mask & (1 << i))
+			return i;
+	}
+	OSMO_ASSERT(0);
+	return 0;
+}
+
+static uint8_t get_lowest_allowed_acc(uint16_t mask)
+{
+	for (int i = 0; i < 10; i++) {
+		if (mask & (1 << i))
+			return i;
+	}
+	OSMO_ASSERT(0);
+	return 0;
+}
+
+#define LOG_ACC_CHG(acc_mgr, level, old_mask, verb_str) \
+	LOG_BTS((acc_mgr)->bts, DRSL, level, \
+		"ACC: %s ACC allowed active subset 0x%03" PRIx16 " -> 0x%03" PRIx16 \
+		" (active_len=%" PRIu8 ", ramp_len=%" PRIu8 ", adm_len=%" PRIu8 \
+		", perm_len=%" PRIu8 ", rotation=%s)\n", \
+		verb_str, old_mask, (acc_mgr)->allowed_subset_mask, \
+		(acc_mgr)->allowed_subset_mask_count, \
+		(acc_mgr)->len_allowed_ramp, (acc_mgr)->len_allowed_adm, \
+		(acc_mgr)->allowed_permanent_count, \
+		osmo_timer_pending(&(acc_mgr)->rotate_timer) ? "on" : "off")
+
+/* Call when either adm_len or ramp_len changed (and values have been updated) */
+static void acc_mgr_subset_length_changed(struct acc_mgr *acc_mgr)
+{
+	uint16_t old_mask = acc_mgr->allowed_subset_mask;
+	uint8_t curr_len = acc_mgr->allowed_subset_mask_count;
+	uint8_t new_len = acc_mgr_subset_len(acc_mgr);
+	int8_t diff = new_len - curr_len;
+	uint8_t i;
+
+	if (curr_len == new_len)
+		return;
+
+	if (new_len == 0) {
+		acc_mgr->allowed_subset_mask = 0;
+		acc_mgr->allowed_subset_mask_count = 0;
+		acc_mgr_enable_rotation_cond(acc_mgr);
+		LOG_ACC_CHG(acc_mgr, LOGL_INFO, old_mask, "update");
+		gsm_bts_set_system_infos(acc_mgr->bts);
+		return;
+	}
+
+	if (curr_len == 0) {
+		acc_mgr_gen_subset(acc_mgr, true);
+		return;
+	}
+
+	/* Try to add new ACCs to the set starting from highest one (since we rotate rolling up) */
+	if (diff > 0) { /* curr_len < new_len */
+		uint8_t highest = get_highest_allowed_acc(acc_mgr->allowed_subset_mask);
+		/* It's fine skipping highest in the loop since it's known to be already set: */
+		for (i = (highest + 1) % 10; i != highest; i = (i + 1) % 10) {
+			if (acc_is_permanently_barred(acc_mgr->bts, i))
+				continue;
+			if (acc_mgr->allowed_subset_mask & (1 << i))
+				continue; /* already in set */
+			acc_mgr->allowed_subset_mask |= (1 << i);
+			acc_mgr->allowed_subset_mask_count++;
+			diff--;
+			if (diff == 0)
+				break;
+		}
+	} else { /* curr_len > new_len, try removing from lowest one. */
+		uint8_t lowest = get_lowest_allowed_acc(acc_mgr->allowed_subset_mask);
+		i = lowest;
+		do {
+			if ((acc_mgr->allowed_subset_mask & (1 << i))) {
+				acc_mgr->allowed_subset_mask &= ~(1 << i);
+				acc_mgr->allowed_subset_mask_count--;
+				diff++;
+				if (diff == 0)
+					break;
+			}
+			i = (i + 1) % 10;
+		} while(i != lowest);
+	}
+
+	acc_mgr_enable_rotation_cond(acc_mgr);
+	LOG_ACC_CHG(acc_mgr, LOGL_INFO, old_mask, "update");
+
+	/* if we updated the set, notify about it */
+	if (curr_len != acc_mgr->allowed_subset_mask_count)
+		gsm_bts_set_system_infos(acc_mgr->bts);
+
+}
+
+/* Eg: (2,3,4) -> first=2; last=4. (3,7,8) -> first=3, last=8; (8,9,2) -> first=8, last=2 */
+void get_subset_limits(struct acc_mgr *acc_mgr, uint8_t *first, uint8_t *last)
+{
+	uint8_t lowest = get_lowest_allowed_acc(acc_mgr->allowed_subset_mask);
+	uint8_t highest = get_highest_allowed_acc(acc_mgr->allowed_subset_mask);
+	/* check if there's unselected ACCs between lowest and highest, that
+	 * means subset is wrapping around, eg: (8,9,1)
+	 * Assumption: The permanent set is bigger than the current selected subset */
+	bool is_wrapped = false;
+	uint8_t i = (lowest + 1) % 10;
+	do {
+		if (!acc_is_permanently_barred(acc_mgr->bts, i) &&
+		    !(acc_mgr->allowed_subset_mask & (1 << i))) {
+			is_wrapped = true;
+			break;
+		}
+		i = (i + 1 ) % 10;
+	} while (i != (highest + 1) % 10);
+
+	if (is_wrapped) {
+		*first = highest;
+		*last = lowest;
+	} else {
+		*first = lowest;
+		*last = highest;
+	}
+}
+static void do_acc_rotate_step(void *data)
+{
+	struct acc_mgr *acc_mgr = data;
+	uint8_t i;
+	uint8_t first, last;
+	uint16_t old_mask = acc_mgr->allowed_subset_mask;
+
+	/* Assumption: The size of the subset didn't change, that's handled by
+	 * acc_mgr_subset_length_changed()
+	 */
+
+	/* Assumption: Rotation timer has been disabled if no ACC is allowed */
+	OSMO_ASSERT(acc_mgr->allowed_subset_mask_count != 0);
+
+	/* One ACC is rotated at a time: Drop first ACC and add next from last ACC */
+	get_subset_limits(acc_mgr, &first, &last);
+
+	acc_mgr->allowed_subset_mask &= ~(1 << first);
+	i = (last + 1) % 10;
+	do {
+		if (!acc_is_permanently_barred(acc_mgr->bts, i) &&
+		    !(acc_mgr->allowed_subset_mask & (1 << i))) {
+			/* found first one which can be allowed, do it and be done */
+			acc_mgr->allowed_subset_mask |= (1 << i);
+			break;
+		}
+		i = (i + 1 ) % 10;
+	} while (i != (last + 1) % 10);
+
+	osmo_timer_schedule(&acc_mgr->rotate_timer, acc_mgr->rotation_time_sec, 0);
+
+	if (old_mask != acc_mgr->allowed_subset_mask) {
+		LOG_ACC_CHG(acc_mgr, LOGL_INFO, old_mask, "rotate");
+		gsm_bts_set_system_infos(acc_mgr->bts);
 	}
 }
 
+void acc_mgr_init(struct acc_mgr *acc_mgr, struct gsm_bts *bts)
+{
+	acc_mgr->bts = bts;
+	acc_mgr->len_allowed_adm = 10; /* Allow all by default */
+	acc_mgr->len_allowed_ramp = 10;
+	acc_mgr->rotation_time_sec = ACC_MGR_QUANTUM_DEFAULT;
+	osmo_timer_setup(&acc_mgr->rotate_timer, do_acc_rotate_step, acc_mgr);
+	/* FIXME: Don't update SI yet, avoid crash due to bts->model being NULL */
+	acc_mgr_gen_subset(acc_mgr, false);
+}
+
+uint8_t acc_mgr_get_len_allowed_adm(struct acc_mgr *acc_mgr)
+{
+	return acc_mgr->len_allowed_adm;
+}
+
+uint8_t acc_mgr_get_len_allowed_ramp(struct acc_mgr *acc_mgr)
+{
+	return acc_mgr->len_allowed_ramp;
+}
+
+void acc_mgr_set_len_allowed_adm(struct acc_mgr *acc_mgr, uint8_t len_allowed_adm)
+{
+	uint8_t old_len;
+
+	OSMO_ASSERT(len_allowed_adm <= 10);
+
+	if (acc_mgr->len_allowed_adm == len_allowed_adm)
+		return;
+
+	LOG_BTS(acc_mgr->bts, DRSL, LOGL_DEBUG,
+		"ACC: administrative rotate subset size set to %" PRIu8 "\n", len_allowed_adm);
+
+	old_len = acc_mgr_subset_len(acc_mgr);
+	acc_mgr->len_allowed_adm = len_allowed_adm;
+	if (old_len != acc_mgr_subset_len(acc_mgr))
+		acc_mgr_subset_length_changed(acc_mgr);
+}
+void acc_mgr_set_len_allowed_ramp(struct acc_mgr *acc_mgr, uint8_t len_allowed_ramp)
+{
+	uint8_t old_len;
+
+	OSMO_ASSERT(len_allowed_ramp <= 10);
+
+	if (acc_mgr->len_allowed_ramp == len_allowed_ramp)
+		return;
+
+	LOG_BTS(acc_mgr->bts, DRSL, LOGL_DEBUG,
+		"ACC: ramping rotate subset size set to %" PRIu8 "\n", len_allowed_ramp);
+
+	old_len = acc_mgr_subset_len(acc_mgr);
+	acc_mgr->len_allowed_ramp = len_allowed_ramp;
+	if (old_len != acc_mgr_subset_len(acc_mgr))
+		acc_mgr_subset_length_changed(acc_mgr);
+}
+
+void acc_mgr_set_rotation_time(struct acc_mgr *acc_mgr, uint32_t rotation_time_sec)
+{
+	LOG_BTS(acc_mgr->bts, DRSL, LOGL_DEBUG,
+		"ACC: rotate subset time set to %" PRIu32 " seconds\n", rotation_time_sec);
+	acc_mgr->rotation_time_sec = rotation_time_sec;
+}
+
+void acc_mgr_perm_subset_changed(struct acc_mgr *acc_mgr, struct gsm48_rach_control *rach_control)
+{
+	/* Even if amount is the same, the allowed/barred ones may have changed,
+	 * so let's retrigger generation of an entire subset rather than
+	 * rotating it */
+	acc_mgr_gen_subset(acc_mgr, true);
+}
+
+/*!
+ * Potentially mark certain Access Control Classes (ACCs) as barred in accordance to ACC policy.
+ * \param[in] acc_mgr Pointer to acc_mgr structure.
+ * \param[in] rach_control RACH control parameters in which barred ACCs will be configured.
+ */
+void acc_mgr_apply_acc(struct acc_mgr *acc_mgr, struct gsm48_rach_control *rach_control)
+{
+	rach_control->t2 |= acc_mgr_get_barred_t2(acc_mgr);
+	rach_control->t3 |= acc_mgr_get_barred_t3(acc_mgr);
+}
+
+
+//////////////////////////
+// acc_ramp
+//////////////////////////
 static unsigned int get_next_step_interval(struct acc_ramp *acc_ramp)
 {
 	struct gsm_bts *bts = acc_ramp->bts;
@@ -104,42 +383,14 @@ static unsigned int get_next_step_interval(struct acc_ramp *acc_ramp)
 static void do_acc_ramping_step(void *data)
 {
 	struct acc_ramp *acc_ramp = data;
-	int i;
+	struct acc_mgr *acc_mgr = &acc_ramp->bts->acc_mgr;
+	uint8_t old_len = acc_mgr_get_len_allowed_ramp(acc_mgr);
+	uint8_t new_len = OSMO_MIN(10, old_len + acc_ramp->step_size);
 
-	/* Shortcut in case we only do one ramping step. */
-	if (acc_ramp->step_size == ACC_RAMP_STEP_SIZE_MAX) {
-		allow_all_accs(acc_ramp);
-		gsm_bts_set_system_infos(acc_ramp->bts);
-		return;
-	}
-
-	/* Allow 'step_size' ACCs, starting from ACC0. ACC9 will be allowed last. */
-	for (i = 0; i < acc_ramp->step_size; i++) {
-		int idx = ffs(acc_ramp_get_barred_t3(acc_ramp));
-		if (idx > 0) {
-			/* One of ACC0-ACC7 is still bared. */
-			unsigned int acc = idx - 1;
-			if (!acc_is_permanently_barred(acc_ramp->bts, acc))
-				allow_one_acc(acc_ramp, acc);
-		} else {
-			idx = ffs(acc_ramp_get_barred_t2(acc_ramp));
-			if (idx == 1 || idx == 2) {
-				/* ACC8 or ACC9 is still barred. */
-				unsigned int acc = idx - 1 + 8;
-				if (!acc_is_permanently_barred(acc_ramp->bts, acc))
-					allow_one_acc(acc_ramp, acc);
-			} else {
-				/* All ACCs are now allowed. */
-				break;
-			}
-		}
-	}
-
-	gsm_bts_set_system_infos(acc_ramp->bts);
+	acc_mgr_set_len_allowed_ramp(acc_mgr, new_len);
 
 	/* If we have not allowed all ACCs yet, schedule another ramping step. */
-	if (acc_ramp_get_barred_t2(acc_ramp) != 0x00 ||
-	    acc_ramp_get_barred_t3(acc_ramp) != 0x00)
+	if (new_len != 10)
 		osmo_timer_schedule(&acc_ramp->step_timer, get_next_step_interval(acc_ramp), 0);
 }
 
@@ -279,7 +530,6 @@ void acc_ramp_init(struct acc_ramp *acc_ramp, struct gsm_bts *bts)
 	acc_ramp->step_size = ACC_RAMP_STEP_SIZE_DEFAULT;
 	acc_ramp->step_interval_sec = ACC_RAMP_STEP_INTERVAL_MIN;
 	acc_ramp->step_interval_is_fixed = false;
-	allow_all_accs(acc_ramp);
 	osmo_timer_setup(&acc_ramp->step_timer, do_acc_ramping_step, acc_ramp);
 	osmo_signal_register_handler(SS_NM, acc_ramp_nm_sig_cb, acc_ramp);
 }
@@ -344,7 +594,7 @@ void acc_ramp_trigger(struct acc_ramp *acc_ramp)
 
 	if (acc_ramp_is_enabled(acc_ramp)) {
 		/* Set all available ACCs to barred and start ramping up. */
-		barr_all_accs(acc_ramp);
+		acc_mgr_set_len_allowed_ramp(&acc_ramp->bts->acc_mgr, 0);
 		do_acc_ramping_step(acc_ramp);
 	}
 }
@@ -358,5 +608,5 @@ void acc_ramp_abort(struct acc_ramp *acc_ramp)
 	if (osmo_timer_pending(&acc_ramp->step_timer))
 		osmo_timer_del(&acc_ramp->step_timer);
 
-	allow_all_accs(acc_ramp);
+	acc_mgr_set_len_allowed_ramp(&acc_ramp->bts->acc_mgr, 10);
 }

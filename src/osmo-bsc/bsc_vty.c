@@ -404,6 +404,8 @@ static void bts_dump_vty(struct vty *vty, struct gsm_bts *bts)
 		VTY_NEWLINE);
 	vty_out(vty, "  Cell Reselection Hysteresis: %u dBm%s",
 		bts->si_common.cell_sel_par.cell_resel_hyst*2, VTY_NEWLINE);
+	vty_out(vty, "  Access Control Class rotation allow mask: 0x%" PRIx16 "%s",
+		bts->acc_mgr.allowed_subset_mask, VTY_NEWLINE);
 	vty_out(vty, "  Access Control Class ramping: %senabled%s",
 		acc_ramp_is_enabled(&bts->acc_ramp) ? "" : "not ", VTY_NEWLINE);
 	if (acc_ramp_is_enabled(&bts->acc_ramp)) {
@@ -948,6 +950,10 @@ static void config_write_bts_single(struct vty *vty, struct gsm_bts *bts)
 		for (i = 0; i < 8; i++)
 			if ((i != 2) && (bts->si_common.rach_control.t2 & (0x1 << i)))
 				vty_out(vty, "  rach access-control-class %d barred%s", i+8, VTY_NEWLINE);
+	if (bts->acc_mgr.len_allowed_adm < 10)
+		vty_out(vty, "  access-control-class-rotate %" PRIu8 "%s", bts->acc_mgr.len_allowed_adm, VTY_NEWLINE);
+	if (bts->acc_mgr.rotation_time_sec != ACC_MGR_QUANTUM_DEFAULT)
+		vty_out(vty, "  access-control-class-rotate-quantum %" PRIu32 "%s", bts->acc_mgr.rotation_time_sec, VTY_NEWLINE);
 	vty_out(vty, "  %saccess-control-class-ramping%s", acc_ramp_is_enabled(&bts->acc_ramp) ? "" : "no ", VTY_NEWLINE);
 	if (!acc_ramp_step_interval_is_dynamic(&bts->acc_ramp)) {
 		vty_out(vty, "  access-control-class-ramping-step-interval %u%s",
@@ -2745,6 +2751,9 @@ DEFUN(cfg_bts_rach_ac_class, cfg_bts_rach_ac_class_cmd,
 		else
 			bts->si_common.rach_control.t2 |= (0x1 << (control_class - 8));
 
+	if (control_class < 10)
+		acc_mgr_perm_subset_changed(&bts->acc_mgr, &bts->si_common.rach_control);
+
 	return CMD_SUCCESS;
 }
 
@@ -3637,6 +3646,30 @@ DEFUN(cfg_bts_pcu_sock, cfg_bts_pcu_sock_cmd,
 		return CMD_WARNING;
 	}
 
+	return CMD_SUCCESS;
+}
+
+DEFUN(cfg_bts_acc_rotate,
+      cfg_bts_acc_rotate_cmd,
+      "access-control-class-rotate <0-10>",
+      "Enable Access Control Class allowed subset rotation\n"
+      "Size of the rotating allowed ACC 0-9 subset (default=10, no subset)\n")
+{
+	struct gsm_bts *bts = vty->index;
+	int len_allowed_adm = atoi(argv[0]);
+	acc_mgr_set_len_allowed_adm(&bts->acc_mgr, len_allowed_adm);
+	return CMD_SUCCESS;
+}
+
+DEFUN(cfg_bts_acc_rotate_quantum,
+      cfg_bts_acc_rotate_quantum_cmd,
+      "access-control-class-rotate-quantum <1-65535>",
+      "Time between rotation of ACC 0-9 generated subsets\n"
+      "Time in seconds (default=" OSMO_STRINGIFY_VAL(ACC_MGR_QUANTUM_DEFAULT) ")\n")
+{
+	struct gsm_bts *bts = vty->index;
+	uint32_t rotation_time_sec = (uint32_t)atoi(argv[0]);
+	acc_mgr_set_rotation_time(&bts->acc_mgr, rotation_time_sec);
 	return CMD_SUCCESS;
 }
 
@@ -6493,6 +6526,8 @@ int bsc_vty_init(struct gsm_network *network)
 	install_element(BTS_NODE, &cfg_bts_amr_hr_hyst3_cmd);
 	install_element(BTS_NODE, &cfg_bts_amr_hr_start_mode_cmd);
 	install_element(BTS_NODE, &cfg_bts_pcu_sock_cmd);
+	install_element(BTS_NODE, &cfg_bts_acc_rotate_cmd);
+	install_element(BTS_NODE, &cfg_bts_acc_rotate_quantum_cmd);
 	install_element(BTS_NODE, &cfg_bts_acc_ramping_cmd);
 	install_element(BTS_NODE, &cfg_bts_no_acc_ramping_cmd);
 	install_element(BTS_NODE, &cfg_bts_acc_ramping_step_interval_cmd);

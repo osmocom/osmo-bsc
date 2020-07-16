@@ -449,6 +449,7 @@ struct gsm_bts {
 	uint32_t si_mode_static;
 
 	/* access control class ramping */
+	struct acc_mgr acc_mgr;
 	struct acc_ramp acc_ramp;
 
 	/* exclude the BTS from the global RF Lock handling */

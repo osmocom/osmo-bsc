@@ -1,0 +1,620 @@
+===test_acc_mgr_no_ramp===
+(bts=0) ACC: New ACC allowed subset 0x3ff (active_len=10, ramp_len=10, adm_len=10, perm_len=10, rotation=off)
+BTS allocation OK in test_acc_mgr_no_ramp()
+do_allowed_len_adm_loop(1)
+(bts=0) ACC: update ACC allowed active subset 0x3ff -> 0x3fe (active_len=9, ramp_len=10, adm_len=9, perm_len=10, rotation=on)
+pcu_info_update(): t2=0x00 t3=0x01
+(bts=0) ACC: update ACC allowed active subset 0x3fe -> 0x3fc (active_len=8, ramp_len=10, adm_len=8, perm_len=10, rotation=on)
+pcu_info_update(): t2=0x00 t3=0x03
+(bts=0) ACC: update ACC allowed active subset 0x3fc -> 0x3f8 (active_len=7, ramp_len=10, adm_len=7, perm_len=10, rotation=on)
+pcu_info_update(): t2=0x00 t3=0x07
+(bts=0) ACC: update ACC allowed active subset 0x3f8 -> 0x3f0 (active_len=6, ramp_len=10, adm_len=6, perm_len=10, rotation=on)
+pcu_info_update(): t2=0x00 t3=0x0f
+(bts=0) ACC: update ACC allowed active subset 0x3f0 -> 0x3e0 (active_len=5, ramp_len=10, adm_len=5, perm_len=10, rotation=on)
+pcu_info_update(): t2=0x00 t3=0x1f
+(bts=0) ACC: update ACC allowed active subset 0x3e0 -> 0x3c0 (active_len=4, ramp_len=10, adm_len=4, perm_len=10, rotation=on)
+pcu_info_update(): t2=0x00 t3=0x3f
+(bts=0) ACC: update ACC allowed active subset 0x3c0 -> 0x380 (active_len=3, ramp_len=10, adm_len=3, perm_len=10, rotation=on)
+pcu_info_update(): t2=0x00 t3=0x7f
+(bts=0) ACC: update ACC allowed active subset 0x380 -> 0x300 (active_len=2, ramp_len=10, adm_len=2, perm_len=10, rotation=on)
+pcu_info_update(): t2=0x00 t3=0xff
+(bts=0) ACC: update ACC allowed active subset 0x300 -> 0x200 (active_len=1, ramp_len=10, adm_len=1, perm_len=10, rotation=on)
+pcu_info_update(): t2=0x01 t3=0xff
+(bts=0) ACC: update ACC allowed active subset 0x200 -> 0x000 (active_len=0, ramp_len=10, adm_len=0, perm_len=10, rotation=off)
+pcu_info_update(): t2=0x03 t3=0xff
+(bts=0) ACC: New ACC allowed subset 0x001 (active_len=1, ramp_len=10, adm_len=1, perm_len=10, rotation=on)
+pcu_info_update(): t2=0x03 t3=0xfe
+(bts=0) ACC: update ACC allowed active subset 0x001 -> 0x003 (active_len=2, ramp_len=10, adm_len=2, perm_len=10, rotation=on)
+pcu_info_update(): t2=0x03 t3=0xfc
+(bts=0) ACC: update ACC allowed active subset 0x003 -> 0x007 (active_len=3, ramp_len=10, adm_len=3, perm_len=10, rotation=on)
+pcu_info_update(): t2=0x03 t3=0xf8
+(bts=0) ACC: update ACC allowed active subset 0x007 -> 0x00f (active_len=4, ramp_len=10, adm_len=4, perm_len=10, rotation=on)
+pcu_info_update(): t2=0x03 t3=0xf0
+(bts=0) ACC: update ACC allowed active subset 0x00f -> 0x01f (active_len=5, ramp_len=10, adm_len=5, perm_len=10, rotation=on)
+pcu_info_update(): t2=0x03 t3=0xe0
+(bts=0) ACC: update ACC allowed active subset 0x01f -> 0x03f (active_len=6, ramp_len=10, adm_len=6, perm_len=10, rotation=on)
+pcu_info_update(): t2=0x03 t3=0xc0
+(bts=0) ACC: update ACC allowed active subset 0x03f -> 0x07f (active_len=7, ramp_len=10, adm_len=7, perm_len=10, rotation=on)
+pcu_info_update(): t2=0x03 t3=0x80
+(bts=0) ACC: update ACC allowed active subset 0x07f -> 0x0ff (active_len=8, ramp_len=10, adm_len=8, perm_len=10, rotation=on)
+pcu_info_update(): t2=0x03 t3=0x00
+(bts=0) ACC: update ACC allowed active subset 0x0ff -> 0x1ff (active_len=9, ramp_len=10, adm_len=9, perm_len=10, rotation=on)
+pcu_info_update(): t2=0x02 t3=0x00
+(bts=0) ACC: update ACC allowed active subset 0x1ff -> 0x3ff (active_len=10, ramp_len=10, adm_len=10, perm_len=10, rotation=off)
+pcu_info_update(): t2=0x00 t3=0x00
+do_allowed_len_adm_loop(4)
+(bts=0) ACC: update ACC allowed active subset 0x3ff -> 0x3f0 (active_len=6, ramp_len=10, adm_len=6, perm_len=10, rotation=on)
+pcu_info_update(): t2=0x00 t3=0x0f
+(bts=0) ACC: update ACC allowed active subset 0x3f0 -> 0x300 (active_len=2, ramp_len=10, adm_len=2, perm_len=10, rotation=on)
+pcu_info_update(): t2=0x00 t3=0xff
+(bts=0) ACC: update ACC allowed active subset 0x300 -> 0x000 (active_len=0, ramp_len=10, adm_len=0, perm_len=10, rotation=off)
+pcu_info_update(): t2=0x03 t3=0xff
+(bts=0) ACC: New ACC allowed subset 0x00f (active_len=4, ramp_len=10, adm_len=4, perm_len=10, rotation=on)
+pcu_info_update(): t2=0x03 t3=0xf0
+(bts=0) ACC: update ACC allowed active subset 0x00f -> 0x0ff (active_len=8, ramp_len=10, adm_len=8, perm_len=10, rotation=on)
+pcu_info_update(): t2=0x03 t3=0x00
+(bts=0) ACC: update ACC allowed active subset 0x0ff -> 0x3ff (active_len=10, ramp_len=10, adm_len=10, perm_len=10, rotation=off)
+pcu_info_update(): t2=0x00 t3=0x00
+*** Barring some ACCs ***
+(bts=0) ACC: New ACC allowed subset 0x15a (active_len=5, ramp_len=10, adm_len=10, perm_len=5, rotation=off)
+pcu_info_update(): t2=0x02 t3=0xa5
+do_allowed_len_adm_loop(1)
+(bts=0) ACC: update ACC allowed active subset 0x15a -> 0x15a (active_len=5, ramp_len=10, adm_len=9, perm_len=5, rotation=off)
+(bts=0) ACC: update ACC allowed active subset 0x15a -> 0x15a (active_len=5, ramp_len=10, adm_len=8, perm_len=5, rotation=off)
+(bts=0) ACC: update ACC allowed active subset 0x15a -> 0x15a (active_len=5, ramp_len=10, adm_len=7, perm_len=5, rotation=off)
+(bts=0) ACC: update ACC allowed active subset 0x15a -> 0x15a (active_len=5, ramp_len=10, adm_len=6, perm_len=5, rotation=off)
+(bts=0) ACC: update ACC allowed active subset 0x15a -> 0x158 (active_len=4, ramp_len=10, adm_len=4, perm_len=5, rotation=on)
+pcu_info_update(): t2=0x02 t3=0xa7
+(bts=0) ACC: update ACC allowed active subset 0x158 -> 0x150 (active_len=3, ramp_len=10, adm_len=3, perm_len=5, rotation=on)
+pcu_info_update(): t2=0x02 t3=0xaf
+(bts=0) ACC: update ACC allowed active subset 0x150 -> 0x140 (active_len=2, ramp_len=10, adm_len=2, perm_len=5, rotation=on)
+pcu_info_update(): t2=0x02 t3=0xbf
+(bts=0) ACC: update ACC allowed active subset 0x140 -> 0x100 (active_len=1, ramp_len=10, adm_len=1, perm_len=5, rotation=on)
+pcu_info_update(): t2=0x02 t3=0xff
+(bts=0) ACC: update ACC allowed active subset 0x100 -> 0x000 (active_len=0, ramp_len=10, adm_len=0, perm_len=5, rotation=off)
+pcu_info_update(): t2=0x03 t3=0xff
+(bts=0) ACC: New ACC allowed subset 0x002 (active_len=1, ramp_len=10, adm_len=1, perm_len=5, rotation=on)
+pcu_info_update(): t2=0x03 t3=0xfd
+(bts=0) ACC: update ACC allowed active subset 0x002 -> 0x00a (active_len=2, ramp_len=10, adm_len=2, perm_len=5, rotation=on)
+pcu_info_update(): t2=0x03 t3=0xf5
+(bts=0) ACC: update ACC allowed active subset 0x00a -> 0x01a (active_len=3, ramp_len=10, adm_len=3, perm_len=5, rotation=on)
+pcu_info_update(): t2=0x03 t3=0xe5
+(bts=0) ACC: update ACC allowed active subset 0x01a -> 0x05a (active_len=4, ramp_len=10, adm_len=4, perm_len=5, rotation=on)
+pcu_info_update(): t2=0x03 t3=0xa5
+(bts=0) ACC: update ACC allowed active subset 0x05a -> 0x15a (active_len=5, ramp_len=10, adm_len=5, perm_len=5, rotation=off)
+pcu_info_update(): t2=0x02 t3=0xa5
+(bts=0) ACC: update ACC allowed active subset 0x15a -> 0x15a (active_len=5, ramp_len=10, adm_len=6, perm_len=5, rotation=off)
+(bts=0) ACC: update ACC allowed active subset 0x15a -> 0x15a (active_len=5, ramp_len=10, adm_len=7, perm_len=5, rotation=off)
+(bts=0) ACC: update ACC allowed active subset 0x15a -> 0x15a (active_len=5, ramp_len=10, adm_len=8, perm_len=5, rotation=off)
+(bts=0) ACC: update ACC allowed active subset 0x15a -> 0x15a (active_len=5, ramp_len=10, adm_len=9, perm_len=5, rotation=off)
+(bts=0) ACC: update ACC allowed active subset 0x15a -> 0x15a (active_len=5, ramp_len=10, adm_len=10, perm_len=5, rotation=off)
+do_allowed_len_adm_loop(4)
+(bts=0) ACC: update ACC allowed active subset 0x15a -> 0x15a (active_len=5, ramp_len=10, adm_len=6, perm_len=5, rotation=off)
+(bts=0) ACC: update ACC allowed active subset 0x15a -> 0x140 (active_len=2, ramp_len=10, adm_len=2, perm_len=5, rotation=on)
+pcu_info_update(): t2=0x02 t3=0xbf
+(bts=0) ACC: update ACC allowed active subset 0x140 -> 0x000 (active_len=0, ramp_len=10, adm_len=0, perm_len=5, rotation=off)
+pcu_info_update(): t2=0x03 t3=0xff
+(bts=0) ACC: New ACC allowed subset 0x05a (active_len=4, ramp_len=10, adm_len=4, perm_len=5, rotation=on)
+pcu_info_update(): t2=0x03 t3=0xa5
+(bts=0) ACC: update ACC allowed active subset 0x05a -> 0x15a (active_len=5, ramp_len=10, adm_len=8, perm_len=5, rotation=off)
+pcu_info_update(): t2=0x02 t3=0xa5
+(bts=0) ACC: update ACC allowed active subset 0x15a -> 0x15a (active_len=5, ramp_len=10, adm_len=10, perm_len=5, rotation=off)
+*** Barring ALL ACCs ***
+(bts=0) ACC: New ACC allowed subset 0x000 (active_len=0, ramp_len=10, adm_len=10, perm_len=0, rotation=off)
+pcu_info_update(): t2=0x03 t3=0xff
+*** Barring zero ACCs ***
+(bts=0) ACC: New ACC allowed subset 0x3ff (active_len=10, ramp_len=10, adm_len=10, perm_len=10, rotation=off)
+pcu_info_update(): t2=0x00 t3=0x00
+BTS deallocated OK in test_acc_mgr_no_ramp()
+===test_acc_mgr_manual_ramp===
+(bts=0) ACC: New ACC allowed subset 0x3ff (active_len=10, ramp_len=10, adm_len=10, perm_len=10, rotation=off)
+BTS allocation OK in test_acc_mgr_manual_ramp()
+do_allowed_len_ramp_loop(1)
+(bts=0) ACC: update ACC allowed active subset 0x3ff -> 0x3fe (active_len=9, ramp_len=9, adm_len=10, perm_len=10, rotation=on)
+pcu_info_update(): t2=0x00 t3=0x01
+(bts=0) ACC: update ACC allowed active subset 0x3fe -> 0x3fc (active_len=8, ramp_len=8, adm_len=10, perm_len=10, rotation=on)
+pcu_info_update(): t2=0x00 t3=0x03
+(bts=0) ACC: update ACC allowed active subset 0x3fc -> 0x3f8 (active_len=7, ramp_len=7, adm_len=10, perm_len=10, rotation=on)
+pcu_info_update(): t2=0x00 t3=0x07
+(bts=0) ACC: update ACC allowed active subset 0x3f8 -> 0x3f0 (active_len=6, ramp_len=6, adm_len=10, perm_len=10, rotation=on)
+pcu_info_update(): t2=0x00 t3=0x0f
+(bts=0) ACC: update ACC allowed active subset 0x3f0 -> 0x3e0 (active_len=5, ramp_len=5, adm_len=10, perm_len=10, rotation=on)
+pcu_info_update(): t2=0x00 t3=0x1f
+(bts=0) ACC: update ACC allowed active subset 0x3e0 -> 0x3c0 (active_len=4, ramp_len=4, adm_len=10, perm_len=10, rotation=on)
+pcu_info_update(): t2=0x00 t3=0x3f
+(bts=0) ACC: update ACC allowed active subset 0x3c0 -> 0x380 (active_len=3, ramp_len=3, adm_len=10, perm_len=10, rotation=on)
+pcu_info_update(): t2=0x00 t3=0x7f
+(bts=0) ACC: update ACC allowed active subset 0x380 -> 0x300 (active_len=2, ramp_len=2, adm_len=10, perm_len=10, rotation=on)
+pcu_info_update(): t2=0x00 t3=0xff
+(bts=0) ACC: update ACC allowed active subset 0x300 -> 0x200 (active_len=1, ramp_len=1, adm_len=10, perm_len=10, rotation=on)
+pcu_info_update(): t2=0x01 t3=0xff
+(bts=0) ACC: update ACC allowed active subset 0x200 -> 0x000 (active_len=0, ramp_len=0, adm_len=10, perm_len=10, rotation=off)
+pcu_info_update(): t2=0x03 t3=0xff
+(bts=0) ACC: New ACC allowed subset 0x001 (active_len=1, ramp_len=1, adm_len=10, perm_len=10, rotation=on)
+pcu_info_update(): t2=0x03 t3=0xfe
+(bts=0) ACC: update ACC allowed active subset 0x001 -> 0x003 (active_len=2, ramp_len=2, adm_len=10, perm_len=10, rotation=on)
+pcu_info_update(): t2=0x03 t3=0xfc
+(bts=0) ACC: update ACC allowed active subset 0x003 -> 0x007 (active_len=3, ramp_len=3, adm_len=10, perm_len=10, rotation=on)
+pcu_info_update(): t2=0x03 t3=0xf8
+(bts=0) ACC: update ACC allowed active subset 0x007 -> 0x00f (active_len=4, ramp_len=4, adm_len=10, perm_len=10, rotation=on)
+pcu_info_update(): t2=0x03 t3=0xf0
+(bts=0) ACC: update ACC allowed active subset 0x00f -> 0x01f (active_len=5, ramp_len=5, adm_len=10, perm_len=10, rotation=on)
+pcu_info_update(): t2=0x03 t3=0xe0
+(bts=0) ACC: update ACC allowed active subset 0x01f -> 0x03f (active_len=6, ramp_len=6, adm_len=10, perm_len=10, rotation=on)
+pcu_info_update(): t2=0x03 t3=0xc0
+(bts=0) ACC: update ACC allowed active subset 0x03f -> 0x07f (active_len=7, ramp_len=7, adm_len=10, perm_len=10, rotation=on)
+pcu_info_update(): t2=0x03 t3=0x80
+(bts=0) ACC: update ACC allowed active subset 0x07f -> 0x0ff (active_len=8, ramp_len=8, adm_len=10, perm_len=10, rotation=on)
+pcu_info_update(): t2=0x03 t3=0x00
+(bts=0) ACC: update ACC allowed active subset 0x0ff -> 0x1ff (active_len=9, ramp_len=9, adm_len=10, perm_len=10, rotation=on)
+pcu_info_update(): t2=0x02 t3=0x00
+(bts=0) ACC: update ACC allowed active subset 0x1ff -> 0x3ff (active_len=10, ramp_len=10, adm_len=10, perm_len=10, rotation=off)
+pcu_info_update(): t2=0x00 t3=0x00
+do_allowed_len_ramp_loop(4)
+(bts=0) ACC: update ACC allowed active subset 0x3ff -> 0x3f0 (active_len=6, ramp_len=6, adm_len=10, perm_len=10, rotation=on)
+pcu_info_update(): t2=0x00 t3=0x0f
+(bts=0) ACC: update ACC allowed active subset 0x3f0 -> 0x300 (active_len=2, ramp_len=2, adm_len=10, perm_len=10, rotation=on)
+pcu_info_update(): t2=0x00 t3=0xff
+(bts=0) ACC: update ACC allowed active subset 0x300 -> 0x000 (active_len=0, ramp_len=0, adm_len=10, perm_len=10, rotation=off)
+pcu_info_update(): t2=0x03 t3=0xff
+(bts=0) ACC: New ACC allowed subset 0x00f (active_len=4, ramp_len=4, adm_len=10, perm_len=10, rotation=on)
+pcu_info_update(): t2=0x03 t3=0xf0
+(bts=0) ACC: update ACC allowed active subset 0x00f -> 0x0ff (active_len=8, ramp_len=8, adm_len=10, perm_len=10, rotation=on)
+pcu_info_update(): t2=0x03 t3=0x00
+(bts=0) ACC: update ACC allowed active subset 0x0ff -> 0x3ff (active_len=10, ramp_len=10, adm_len=10, perm_len=10, rotation=off)
+pcu_info_update(): t2=0x00 t3=0x00
+*** Barring some ACCs ***
+(bts=0) ACC: New ACC allowed subset 0x24c (active_len=4, ramp_len=10, adm_len=10, perm_len=4, rotation=off)
+pcu_info_update(): t2=0x01 t3=0xb3
+do_allowed_len_ramp_loop(1)
+(bts=0) ACC: update ACC allowed active subset 0x24c -> 0x24c (active_len=4, ramp_len=9, adm_len=10, perm_len=4, rotation=off)
+(bts=0) ACC: update ACC allowed active subset 0x24c -> 0x24c (active_len=4, ramp_len=8, adm_len=10, perm_len=4, rotation=off)
+(bts=0) ACC: update ACC allowed active subset 0x24c -> 0x24c (active_len=4, ramp_len=7, adm_len=10, perm_len=4, rotation=off)
+(bts=0) ACC: update ACC allowed active subset 0x24c -> 0x24c (active_len=4, ramp_len=6, adm_len=10, perm_len=4, rotation=off)
+(bts=0) ACC: update ACC allowed active subset 0x24c -> 0x24c (active_len=4, ramp_len=5, adm_len=10, perm_len=4, rotation=off)
+(bts=0) ACC: update ACC allowed active subset 0x24c -> 0x248 (active_len=3, ramp_len=3, adm_len=10, perm_len=4, rotation=on)
+pcu_info_update(): t2=0x01 t3=0xb7
+(bts=0) ACC: update ACC allowed active subset 0x248 -> 0x240 (active_len=2, ramp_len=2, adm_len=10, perm_len=4, rotation=on)
+pcu_info_update(): t2=0x01 t3=0xbf
+(bts=0) ACC: update ACC allowed active subset 0x240 -> 0x200 (active_len=1, ramp_len=1, adm_len=10, perm_len=4, rotation=on)
+pcu_info_update(): t2=0x01 t3=0xff
+(bts=0) ACC: update ACC allowed active subset 0x200 -> 0x000 (active_len=0, ramp_len=0, adm_len=10, perm_len=4, rotation=off)
+pcu_info_update(): t2=0x03 t3=0xff
+(bts=0) ACC: New ACC allowed subset 0x004 (active_len=1, ramp_len=1, adm_len=10, perm_len=4, rotation=on)
+pcu_info_update(): t2=0x03 t3=0xfb
+(bts=0) ACC: update ACC allowed active subset 0x004 -> 0x00c (active_len=2, ramp_len=2, adm_len=10, perm_len=4, rotation=on)
+pcu_info_update(): t2=0x03 t3=0xf3
+(bts=0) ACC: update ACC allowed active subset 0x00c -> 0x04c (active_len=3, ramp_len=3, adm_len=10, perm_len=4, rotation=on)
+pcu_info_update(): t2=0x03 t3=0xb3
+(bts=0) ACC: update ACC allowed active subset 0x04c -> 0x24c (active_len=4, ramp_len=4, adm_len=10, perm_len=4, rotation=off)
+pcu_info_update(): t2=0x01 t3=0xb3
+(bts=0) ACC: update ACC allowed active subset 0x24c -> 0x24c (active_len=4, ramp_len=5, adm_len=10, perm_len=4, rotation=off)
+(bts=0) ACC: update ACC allowed active subset 0x24c -> 0x24c (active_len=4, ramp_len=6, adm_len=10, perm_len=4, rotation=off)
+(bts=0) ACC: update ACC allowed active subset 0x24c -> 0x24c (active_len=4, ramp_len=7, adm_len=10, perm_len=4, rotation=off)
+(bts=0) ACC: update ACC allowed active subset 0x24c -> 0x24c (active_len=4, ramp_len=8, adm_len=10, perm_len=4, rotation=off)
+(bts=0) ACC: update ACC allowed active subset 0x24c -> 0x24c (active_len=4, ramp_len=9, adm_len=10, perm_len=4, rotation=off)
+(bts=0) ACC: update ACC allowed active subset 0x24c -> 0x24c (active_len=4, ramp_len=10, adm_len=10, perm_len=4, rotation=off)
+do_allowed_len_ramp_loop(4)
+(bts=0) ACC: update ACC allowed active subset 0x24c -> 0x24c (active_len=4, ramp_len=6, adm_len=10, perm_len=4, rotation=off)
+(bts=0) ACC: update ACC allowed active subset 0x24c -> 0x240 (active_len=2, ramp_len=2, adm_len=10, perm_len=4, rotation=on)
+pcu_info_update(): t2=0x01 t3=0xbf
+(bts=0) ACC: update ACC allowed active subset 0x240 -> 0x000 (active_len=0, ramp_len=0, adm_len=10, perm_len=4, rotation=off)
+pcu_info_update(): t2=0x03 t3=0xff
+(bts=0) ACC: New ACC allowed subset 0x24c (active_len=4, ramp_len=4, adm_len=10, perm_len=4, rotation=off)
+pcu_info_update(): t2=0x01 t3=0xb3
+(bts=0) ACC: update ACC allowed active subset 0x24c -> 0x24c (active_len=4, ramp_len=8, adm_len=10, perm_len=4, rotation=off)
+(bts=0) ACC: update ACC allowed active subset 0x24c -> 0x24c (active_len=4, ramp_len=10, adm_len=10, perm_len=4, rotation=off)
+*** Barring ALL ACCs ***
+(bts=0) ACC: New ACC allowed subset 0x000 (active_len=0, ramp_len=10, adm_len=10, perm_len=0, rotation=off)
+pcu_info_update(): t2=0x03 t3=0xff
+do_allowed_len_ramp_loop(1)
+(bts=0) ACC: New ACC allowed subset 0x000 (active_len=0, ramp_len=9, adm_len=10, perm_len=0, rotation=off)
+pcu_info_update(): t2=0x03 t3=0xff
+(bts=0) ACC: New ACC allowed subset 0x000 (active_len=0, ramp_len=8, adm_len=10, perm_len=0, rotation=off)
+pcu_info_update(): t2=0x03 t3=0xff
+(bts=0) ACC: New ACC allowed subset 0x000 (active_len=0, ramp_len=7, adm_len=10, perm_len=0, rotation=off)
+pcu_info_update(): t2=0x03 t3=0xff
+(bts=0) ACC: New ACC allowed subset 0x000 (active_len=0, ramp_len=6, adm_len=10, perm_len=0, rotation=off)
+pcu_info_update(): t2=0x03 t3=0xff
+(bts=0) ACC: New ACC allowed subset 0x000 (active_len=0, ramp_len=5, adm_len=10, perm_len=0, rotation=off)
+pcu_info_update(): t2=0x03 t3=0xff
+(bts=0) ACC: New ACC allowed subset 0x000 (active_len=0, ramp_len=4, adm_len=10, perm_len=0, rotation=off)
+pcu_info_update(): t2=0x03 t3=0xff
+(bts=0) ACC: New ACC allowed subset 0x000 (active_len=0, ramp_len=3, adm_len=10, perm_len=0, rotation=off)
+pcu_info_update(): t2=0x03 t3=0xff
+(bts=0) ACC: New ACC allowed subset 0x000 (active_len=0, ramp_len=2, adm_len=10, perm_len=0, rotation=off)
+pcu_info_update(): t2=0x03 t3=0xff
+(bts=0) ACC: New ACC allowed subset 0x000 (active_len=0, ramp_len=1, adm_len=10, perm_len=0, rotation=off)
+pcu_info_update(): t2=0x03 t3=0xff
+(bts=0) ACC: New ACC allowed subset 0x000 (active_len=0, ramp_len=1, adm_len=10, perm_len=0, rotation=off)
+pcu_info_update(): t2=0x03 t3=0xff
+(bts=0) ACC: New ACC allowed subset 0x000 (active_len=0, ramp_len=2, adm_len=10, perm_len=0, rotation=off)
+pcu_info_update(): t2=0x03 t3=0xff
+(bts=0) ACC: New ACC allowed subset 0x000 (active_len=0, ramp_len=3, adm_len=10, perm_len=0, rotation=off)
+pcu_info_update(): t2=0x03 t3=0xff
+(bts=0) ACC: New ACC allowed subset 0x000 (active_len=0, ramp_len=4, adm_len=10, perm_len=0, rotation=off)
+pcu_info_update(): t2=0x03 t3=0xff
+(bts=0) ACC: New ACC allowed subset 0x000 (active_len=0, ramp_len=5, adm_len=10, perm_len=0, rotation=off)
+pcu_info_update(): t2=0x03 t3=0xff
+(bts=0) ACC: New ACC allowed subset 0x000 (active_len=0, ramp_len=6, adm_len=10, perm_len=0, rotation=off)
+pcu_info_update(): t2=0x03 t3=0xff
+(bts=0) ACC: New ACC allowed subset 0x000 (active_len=0, ramp_len=7, adm_len=10, perm_len=0, rotation=off)
+pcu_info_update(): t2=0x03 t3=0xff
+(bts=0) ACC: New ACC allowed subset 0x000 (active_len=0, ramp_len=8, adm_len=10, perm_len=0, rotation=off)
+pcu_info_update(): t2=0x03 t3=0xff
+(bts=0) ACC: New ACC allowed subset 0x000 (active_len=0, ramp_len=9, adm_len=10, perm_len=0, rotation=off)
+pcu_info_update(): t2=0x03 t3=0xff
+(bts=0) ACC: New ACC allowed subset 0x000 (active_len=0, ramp_len=10, adm_len=10, perm_len=0, rotation=off)
+pcu_info_update(): t2=0x03 t3=0xff
+do_allowed_len_ramp_loop(4)
+(bts=0) ACC: New ACC allowed subset 0x000 (active_len=0, ramp_len=6, adm_len=10, perm_len=0, rotation=off)
+pcu_info_update(): t2=0x03 t3=0xff
+(bts=0) ACC: New ACC allowed subset 0x000 (active_len=0, ramp_len=2, adm_len=10, perm_len=0, rotation=off)
+pcu_info_update(): t2=0x03 t3=0xff
+(bts=0) ACC: New ACC allowed subset 0x000 (active_len=0, ramp_len=4, adm_len=10, perm_len=0, rotation=off)
+pcu_info_update(): t2=0x03 t3=0xff
+(bts=0) ACC: New ACC allowed subset 0x000 (active_len=0, ramp_len=8, adm_len=10, perm_len=0, rotation=off)
+pcu_info_update(): t2=0x03 t3=0xff
+(bts=0) ACC: New ACC allowed subset 0x000 (active_len=0, ramp_len=10, adm_len=10, perm_len=0, rotation=off)
+pcu_info_update(): t2=0x03 t3=0xff
+*** Barring zero ACCs ***
+(bts=0) ACC: New ACC allowed subset 0x3ff (active_len=10, ramp_len=10, adm_len=10, perm_len=10, rotation=off)
+pcu_info_update(): t2=0x00 t3=0x00
+do_allowed_len_ramp_loop(1)
+(bts=0) ACC: update ACC allowed active subset 0x3ff -> 0x3fe (active_len=9, ramp_len=9, adm_len=10, perm_len=10, rotation=on)
+pcu_info_update(): t2=0x00 t3=0x01
+(bts=0) ACC: update ACC allowed active subset 0x3fe -> 0x3fc (active_len=8, ramp_len=8, adm_len=10, perm_len=10, rotation=on)
+pcu_info_update(): t2=0x00 t3=0x03
+(bts=0) ACC: update ACC allowed active subset 0x3fc -> 0x3f8 (active_len=7, ramp_len=7, adm_len=10, perm_len=10, rotation=on)
+pcu_info_update(): t2=0x00 t3=0x07
+(bts=0) ACC: update ACC allowed active subset 0x3f8 -> 0x3f0 (active_len=6, ramp_len=6, adm_len=10, perm_len=10, rotation=on)
+pcu_info_update(): t2=0x00 t3=0x0f
+(bts=0) ACC: update ACC allowed active subset 0x3f0 -> 0x3e0 (active_len=5, ramp_len=5, adm_len=10, perm_len=10, rotation=on)
+pcu_info_update(): t2=0x00 t3=0x1f
+(bts=0) ACC: update ACC allowed active subset 0x3e0 -> 0x3c0 (active_len=4, ramp_len=4, adm_len=10, perm_len=10, rotation=on)
+pcu_info_update(): t2=0x00 t3=0x3f
+(bts=0) ACC: update ACC allowed active subset 0x3c0 -> 0x380 (active_len=3, ramp_len=3, adm_len=10, perm_len=10, rotation=on)
+pcu_info_update(): t2=0x00 t3=0x7f
+(bts=0) ACC: update ACC allowed active subset 0x380 -> 0x300 (active_len=2, ramp_len=2, adm_len=10, perm_len=10, rotation=on)
+pcu_info_update(): t2=0x00 t3=0xff
+(bts=0) ACC: update ACC allowed active subset 0x300 -> 0x200 (active_len=1, ramp_len=1, adm_len=10, perm_len=10, rotation=on)
+pcu_info_update(): t2=0x01 t3=0xff
+(bts=0) ACC: update ACC allowed active subset 0x200 -> 0x000 (active_len=0, ramp_len=0, adm_len=10, perm_len=10, rotation=off)
+pcu_info_update(): t2=0x03 t3=0xff
+(bts=0) ACC: New ACC allowed subset 0x001 (active_len=1, ramp_len=1, adm_len=10, perm_len=10, rotation=on)
+pcu_info_update(): t2=0x03 t3=0xfe
+(bts=0) ACC: update ACC allowed active subset 0x001 -> 0x003 (active_len=2, ramp_len=2, adm_len=10, perm_len=10, rotation=on)
+pcu_info_update(): t2=0x03 t3=0xfc
+(bts=0) ACC: update ACC allowed active subset 0x003 -> 0x007 (active_len=3, ramp_len=3, adm_len=10, perm_len=10, rotation=on)
+pcu_info_update(): t2=0x03 t3=0xf8
+(bts=0) ACC: update ACC allowed active subset 0x007 -> 0x00f (active_len=4, ramp_len=4, adm_len=10, perm_len=10, rotation=on)
+pcu_info_update(): t2=0x03 t3=0xf0
+(bts=0) ACC: update ACC allowed active subset 0x00f -> 0x01f (active_len=5, ramp_len=5, adm_len=10, perm_len=10, rotation=on)
+pcu_info_update(): t2=0x03 t3=0xe0
+(bts=0) ACC: update ACC allowed active subset 0x01f -> 0x03f (active_len=6, ramp_len=6, adm_len=10, perm_len=10, rotation=on)
+pcu_info_update(): t2=0x03 t3=0xc0
+(bts=0) ACC: update ACC allowed active subset 0x03f -> 0x07f (active_len=7, ramp_len=7, adm_len=10, perm_len=10, rotation=on)
+pcu_info_update(): t2=0x03 t3=0x80
+(bts=0) ACC: update ACC allowed active subset 0x07f -> 0x0ff (active_len=8, ramp_len=8, adm_len=10, perm_len=10, rotation=on)
+pcu_info_update(): t2=0x03 t3=0x00
+(bts=0) ACC: update ACC allowed active subset 0x0ff -> 0x1ff (active_len=9, ramp_len=9, adm_len=10, perm_len=10, rotation=on)
+pcu_info_update(): t2=0x02 t3=0x00
+(bts=0) ACC: update ACC allowed active subset 0x1ff -> 0x3ff (active_len=10, ramp_len=10, adm_len=10, perm_len=10, rotation=off)
+pcu_info_update(): t2=0x00 t3=0x00
+do_allowed_len_ramp_loop(4)
+(bts=0) ACC: update ACC allowed active subset 0x3ff -> 0x3f0 (active_len=6, ramp_len=6, adm_len=10, perm_len=10, rotation=on)
+pcu_info_update(): t2=0x00 t3=0x0f
+(bts=0) ACC: update ACC allowed active subset 0x3f0 -> 0x300 (active_len=2, ramp_len=2, adm_len=10, perm_len=10, rotation=on)
+pcu_info_update(): t2=0x00 t3=0xff
+(bts=0) ACC: update ACC allowed active subset 0x300 -> 0x000 (active_len=0, ramp_len=0, adm_len=10, perm_len=10, rotation=off)
+pcu_info_update(): t2=0x03 t3=0xff
+(bts=0) ACC: New ACC allowed subset 0x00f (active_len=4, ramp_len=4, adm_len=10, perm_len=10, rotation=on)
+pcu_info_update(): t2=0x03 t3=0xf0
+(bts=0) ACC: update ACC allowed active subset 0x00f -> 0x0ff (active_len=8, ramp_len=8, adm_len=10, perm_len=10, rotation=on)
+pcu_info_update(): t2=0x03 t3=0x00
+(bts=0) ACC: update ACC allowed active subset 0x0ff -> 0x3ff (active_len=10, ramp_len=10, adm_len=10, perm_len=10, rotation=off)
+pcu_info_update(): t2=0x00 t3=0x00
+*** Barring some ACCs + adm len 4 ***
+(bts=0) ACC: update ACC allowed active subset 0x3ff -> 0x3c0 (active_len=4, ramp_len=10, adm_len=4, perm_len=10, rotation=on)
+pcu_info_update(): t2=0x00 t3=0x3f
+(bts=0) ACC: New ACC allowed subset 0x24c (active_len=4, ramp_len=10, adm_len=4, perm_len=4, rotation=off)
+pcu_info_update(): t2=0x01 t3=0xb3
+do_allowed_len_ramp_loop(1)
+(bts=0) ACC: update ACC allowed active subset 0x24c -> 0x248 (active_len=3, ramp_len=3, adm_len=4, perm_len=4, rotation=on)
+pcu_info_update(): t2=0x01 t3=0xb7
+(bts=0) ACC: update ACC allowed active subset 0x248 -> 0x240 (active_len=2, ramp_len=2, adm_len=4, perm_len=4, rotation=on)
+pcu_info_update(): t2=0x01 t3=0xbf
+(bts=0) ACC: update ACC allowed active subset 0x240 -> 0x200 (active_len=1, ramp_len=1, adm_len=4, perm_len=4, rotation=on)
+pcu_info_update(): t2=0x01 t3=0xff
+(bts=0) ACC: update ACC allowed active subset 0x200 -> 0x000 (active_len=0, ramp_len=0, adm_len=4, perm_len=4, rotation=off)
+pcu_info_update(): t2=0x03 t3=0xff
+(bts=0) ACC: New ACC allowed subset 0x004 (active_len=1, ramp_len=1, adm_len=4, perm_len=4, rotation=on)
+pcu_info_update(): t2=0x03 t3=0xfb
+(bts=0) ACC: update ACC allowed active subset 0x004 -> 0x00c (active_len=2, ramp_len=2, adm_len=4, perm_len=4, rotation=on)
+pcu_info_update(): t2=0x03 t3=0xf3
+(bts=0) ACC: update ACC allowed active subset 0x00c -> 0x04c (active_len=3, ramp_len=3, adm_len=4, perm_len=4, rotation=on)
+pcu_info_update(): t2=0x03 t3=0xb3
+(bts=0) ACC: update ACC allowed active subset 0x04c -> 0x24c (active_len=4, ramp_len=4, adm_len=4, perm_len=4, rotation=off)
+pcu_info_update(): t2=0x01 t3=0xb3
+do_allowed_len_ramp_loop(4)
+(bts=0) ACC: update ACC allowed active subset 0x24c -> 0x240 (active_len=2, ramp_len=2, adm_len=4, perm_len=4, rotation=on)
+pcu_info_update(): t2=0x01 t3=0xbf
+(bts=0) ACC: update ACC allowed active subset 0x240 -> 0x000 (active_len=0, ramp_len=0, adm_len=4, perm_len=4, rotation=off)
+pcu_info_update(): t2=0x03 t3=0xff
+(bts=0) ACC: New ACC allowed subset 0x24c (active_len=4, ramp_len=4, adm_len=4, perm_len=4, rotation=off)
+pcu_info_update(): t2=0x01 t3=0xb3
+BTS deallocated OK in test_acc_mgr_manual_ramp()
+===test_acc_mgr_rotate===
+(bts=0) ACC: New ACC allowed subset 0x3ff (active_len=10, ramp_len=10, adm_len=10, perm_len=10, rotation=off)
+BTS allocation OK in test_acc_mgr_rotate()
+*** Barring one ACC ***
+(bts=0) ACC: New ACC allowed subset 0x1ff (active_len=9, ramp_len=10, adm_len=10, perm_len=9, rotation=off)
+pcu_info_update(): t2=0x02 t3=0x00
+(bts=0) ACC: update ACC allowed active subset 0x1ff -> 0x1e0 (active_len=4, ramp_len=10, adm_len=4, perm_len=9, rotation=on)
+pcu_info_update(): t2=0x02 t3=0x1f
+sys={2.000000}: select()
+(bts=0) ACC: rotate ACC allowed active subset 0x1e0 -> 0x1c1 (active_len=4, ramp_len=10, adm_len=4, perm_len=9, rotation=on)
+pcu_info_update(): t2=0x02 t3=0x3e
+sys={4.000000}: select()
+(bts=0) ACC: rotate ACC allowed active subset 0x1c1 -> 0x0c3 (active_len=4, ramp_len=10, adm_len=4, perm_len=9, rotation=on)
+pcu_info_update(): t2=0x03 t3=0x3c
+sys={6.000000}: select()
+(bts=0) ACC: rotate ACC allowed active subset 0x0c3 -> 0x047 (active_len=4, ramp_len=10, adm_len=4, perm_len=9, rotation=on)
+pcu_info_update(): t2=0x03 t3=0xb8
+sys={8.000000}: select()
+(bts=0) ACC: rotate ACC allowed active subset 0x047 -> 0x00f (active_len=4, ramp_len=10, adm_len=4, perm_len=9, rotation=on)
+pcu_info_update(): t2=0x03 t3=0xf0
+sys={10.000000}: select()
+(bts=0) ACC: rotate ACC allowed active subset 0x00f -> 0x01e (active_len=4, ramp_len=10, adm_len=4, perm_len=9, rotation=on)
+pcu_info_update(): t2=0x03 t3=0xe1
+sys={12.000000}: select()
+(bts=0) ACC: rotate ACC allowed active subset 0x01e -> 0x03c (active_len=4, ramp_len=10, adm_len=4, perm_len=9, rotation=on)
+pcu_info_update(): t2=0x03 t3=0xc3
+sys={14.000000}: select()
+(bts=0) ACC: rotate ACC allowed active subset 0x03c -> 0x078 (active_len=4, ramp_len=10, adm_len=4, perm_len=9, rotation=on)
+pcu_info_update(): t2=0x03 t3=0x87
+sys={16.000000}: select()
+(bts=0) ACC: rotate ACC allowed active subset 0x078 -> 0x0f0 (active_len=4, ramp_len=10, adm_len=4, perm_len=9, rotation=on)
+pcu_info_update(): t2=0x03 t3=0x0f
+sys={18.000000}: select()
+(bts=0) ACC: rotate ACC allowed active subset 0x0f0 -> 0x1e0 (active_len=4, ramp_len=10, adm_len=4, perm_len=9, rotation=on)
+pcu_info_update(): t2=0x02 t3=0x1f
+sys={20.000000}: select()
+(bts=0) ACC: rotate ACC allowed active subset 0x1e0 -> 0x1c1 (active_len=4, ramp_len=10, adm_len=4, perm_len=9, rotation=on)
+pcu_info_update(): t2=0x02 t3=0x3e
+sys={22.000000}: select()
+(bts=0) ACC: rotate ACC allowed active subset 0x1c1 -> 0x0c3 (active_len=4, ramp_len=10, adm_len=4, perm_len=9, rotation=on)
+pcu_info_update(): t2=0x03 t3=0x3c
+sys={24.000000}: select()
+(bts=0) ACC: rotate ACC allowed active subset 0x0c3 -> 0x047 (active_len=4, ramp_len=10, adm_len=4, perm_len=9, rotation=on)
+pcu_info_update(): t2=0x03 t3=0xb8
+sys={26.000000}: select()
+(bts=0) ACC: rotate ACC allowed active subset 0x047 -> 0x00f (active_len=4, ramp_len=10, adm_len=4, perm_len=9, rotation=on)
+pcu_info_update(): t2=0x03 t3=0xf0
+sys={28.000000}: select()
+(bts=0) ACC: rotate ACC allowed active subset 0x00f -> 0x01e (active_len=4, ramp_len=10, adm_len=4, perm_len=9, rotation=on)
+pcu_info_update(): t2=0x03 t3=0xe1
+sys={30.000000}: select()
+(bts=0) ACC: rotate ACC allowed active subset 0x01e -> 0x03c (active_len=4, ramp_len=10, adm_len=4, perm_len=9, rotation=on)
+pcu_info_update(): t2=0x03 t3=0xc3
+sys={32.000000}: select()
+(bts=0) ACC: rotate ACC allowed active subset 0x03c -> 0x078 (active_len=4, ramp_len=10, adm_len=4, perm_len=9, rotation=on)
+pcu_info_update(): t2=0x03 t3=0x87
+sys={34.000000}: select()
+(bts=0) ACC: rotate ACC allowed active subset 0x078 -> 0x0f0 (active_len=4, ramp_len=10, adm_len=4, perm_len=9, rotation=on)
+pcu_info_update(): t2=0x03 t3=0x0f
+sys={36.000000}: select()
+(bts=0) ACC: rotate ACC allowed active subset 0x0f0 -> 0x1e0 (active_len=4, ramp_len=10, adm_len=4, perm_len=9, rotation=on)
+pcu_info_update(): t2=0x02 t3=0x1f
+sys={38.000000}: select()
+(bts=0) ACC: rotate ACC allowed active subset 0x1e0 -> 0x1c1 (active_len=4, ramp_len=10, adm_len=4, perm_len=9, rotation=on)
+pcu_info_update(): t2=0x02 t3=0x3e
+sys={40.000000}: select()
+(bts=0) ACC: rotate ACC allowed active subset 0x1c1 -> 0x0c3 (active_len=4, ramp_len=10, adm_len=4, perm_len=9, rotation=on)
+pcu_info_update(): t2=0x03 t3=0x3c
+BTS deallocated OK in test_acc_mgr_rotate()
+===test_acc_ramp_fixed===
+(bts=0) ACC: New ACC allowed subset 0x3ff (active_len=10, ramp_len=10, adm_len=10, perm_len=10, rotation=off)
+BTS allocation OK in test_acc_ramp_fixed()
+(bts=0) ACC: update ACC allowed active subset 0x3ff -> 0x000 (active_len=0, ramp_len=0, adm_len=10, perm_len=10, rotation=off)
+pcu_info_update(): t2=0x03 t3=0xff
+(bts=0) ACC: New ACC allowed subset 0x001 (active_len=1, ramp_len=1, adm_len=10, perm_len=10, rotation=on)
+pcu_info_update(): t2=0x03 t3=0xfe
+sys={50.000000}: select()
+(bts=0) ACC: update ACC allowed active subset 0x001 -> 0x003 (active_len=2, ramp_len=2, adm_len=10, perm_len=10, rotation=on)
+pcu_info_update(): t2=0x03 t3=0xfc
+sys={100.000000}: select()
+(bts=0) ACC: update ACC allowed active subset 0x003 -> 0x007 (active_len=3, ramp_len=3, adm_len=10, perm_len=10, rotation=on)
+pcu_info_update(): t2=0x03 t3=0xf8
+sys={150.000000}: select()
+(bts=0) ACC: update ACC allowed active subset 0x007 -> 0x00f (active_len=4, ramp_len=4, adm_len=10, perm_len=10, rotation=on)
+pcu_info_update(): t2=0x03 t3=0xf0
+sys={200.000000}: select()
+(bts=0) ACC: update ACC allowed active subset 0x00f -> 0x01f (active_len=5, ramp_len=5, adm_len=10, perm_len=10, rotation=on)
+pcu_info_update(): t2=0x03 t3=0xe0
+sys={250.000000}: select()
+(bts=0) ACC: update ACC allowed active subset 0x01f -> 0x03f (active_len=6, ramp_len=6, adm_len=10, perm_len=10, rotation=on)
+pcu_info_update(): t2=0x03 t3=0xc0
+sys={300.000000}: select()
+(bts=0) ACC: update ACC allowed active subset 0x03f -> 0x07f (active_len=7, ramp_len=7, adm_len=10, perm_len=10, rotation=on)
+pcu_info_update(): t2=0x03 t3=0x80
+sys={350.000000}: select()
+(bts=0) ACC: update ACC allowed active subset 0x07f -> 0x0ff (active_len=8, ramp_len=8, adm_len=10, perm_len=10, rotation=on)
+pcu_info_update(): t2=0x03 t3=0x00
+sys={400.000000}: select()
+(bts=0) ACC: update ACC allowed active subset 0x0ff -> 0x1ff (active_len=9, ramp_len=9, adm_len=10, perm_len=10, rotation=on)
+pcu_info_update(): t2=0x02 t3=0x00
+sys={450.000000}: select()
+(bts=0) ACC: update ACC allowed active subset 0x1ff -> 0x3ff (active_len=10, ramp_len=10, adm_len=10, perm_len=10, rotation=off)
+pcu_info_update(): t2=0x00 t3=0x00
+BTS deallocated OK in test_acc_ramp_fixed()
+===test_acc_ramp_fixed2===
+(bts=0) ACC: New ACC allowed subset 0x3ff (active_len=10, ramp_len=10, adm_len=10, perm_len=10, rotation=off)
+BTS allocation OK in test_acc_ramp_fixed2()
+(bts=0) ACC: update ACC allowed active subset 0x3ff -> 0x3f8 (active_len=7, ramp_len=10, adm_len=7, perm_len=10, rotation=on)
+pcu_info_update(): t2=0x00 t3=0x07
+(bts=0) ACC: update ACC allowed active subset 0x3f8 -> 0x000 (active_len=0, ramp_len=0, adm_len=7, perm_len=10, rotation=off)
+pcu_info_update(): t2=0x03 t3=0xff
+(bts=0) ACC: New ACC allowed subset 0x007 (active_len=3, ramp_len=3, adm_len=7, perm_len=10, rotation=on)
+pcu_info_update(): t2=0x03 t3=0xf8
+sys={30.000000}: select()
+(bts=0) ACC: update ACC allowed active subset 0x007 -> 0x03f (active_len=6, ramp_len=6, adm_len=7, perm_len=10, rotation=on)
+pcu_info_update(): t2=0x03 t3=0xc0
+sys={60.000000}: select()
+(bts=0) ACC: update ACC allowed active subset 0x03f -> 0x07f (active_len=7, ramp_len=9, adm_len=7, perm_len=10, rotation=on)
+pcu_info_update(): t2=0x03 t3=0x80
+sys={90.000000}: select()
+BTS deallocated OK in test_acc_ramp_fixed2()
+===test_acc_ramp_fixed3===
+(bts=0) ACC: New ACC allowed subset 0x3ff (active_len=10, ramp_len=10, adm_len=10, perm_len=10, rotation=off)
+BTS allocation OK in test_acc_ramp_fixed3()
+*** Barring some ACCs ***
+(bts=0) ACC: New ACC allowed subset 0x15a (active_len=5, ramp_len=10, adm_len=10, perm_len=5, rotation=off)
+pcu_info_update(): t2=0x02 t3=0xa5
+(bts=0) ACC: update ACC allowed active subset 0x15a -> 0x000 (active_len=0, ramp_len=0, adm_len=10, perm_len=5, rotation=off)
+pcu_info_update(): t2=0x03 t3=0xff
+(bts=0) ACC: New ACC allowed subset 0x002 (active_len=1, ramp_len=1, adm_len=10, perm_len=5, rotation=on)
+pcu_info_update(): t2=0x03 t3=0xfd
+sys={30.000000}: select()
+(bts=0) ACC: update ACC allowed active subset 0x002 -> 0x00a (active_len=2, ramp_len=2, adm_len=10, perm_len=5, rotation=on)
+pcu_info_update(): t2=0x03 t3=0xf5
+sys={60.000000}: select()
+(bts=0) ACC: update ACC allowed active subset 0x00a -> 0x01a (active_len=3, ramp_len=3, adm_len=10, perm_len=5, rotation=on)
+pcu_info_update(): t2=0x03 t3=0xe5
+sys={90.000000}: select()
+(bts=0) ACC: update ACC allowed active subset 0x01a -> 0x05a (active_len=4, ramp_len=4, adm_len=10, perm_len=5, rotation=on)
+pcu_info_update(): t2=0x03 t3=0xa5
+sys={120.000000}: select()
+(bts=0) ACC: update ACC allowed active subset 0x05a -> 0x15a (active_len=5, ramp_len=5, adm_len=10, perm_len=5, rotation=off)
+pcu_info_update(): t2=0x02 t3=0xa5
+sys={150.000000}: select()
+(bts=0) ACC: update ACC allowed active subset 0x15a -> 0x15a (active_len=5, ramp_len=6, adm_len=10, perm_len=5, rotation=off)
+sys={180.000000}: select()
+(bts=0) ACC: update ACC allowed active subset 0x15a -> 0x15a (active_len=5, ramp_len=7, adm_len=10, perm_len=5, rotation=off)
+sys={210.000000}: select()
+(bts=0) ACC: update ACC allowed active subset 0x15a -> 0x15a (active_len=5, ramp_len=8, adm_len=10, perm_len=5, rotation=off)
+sys={240.000000}: select()
+(bts=0) ACC: update ACC allowed active subset 0x15a -> 0x15a (active_len=5, ramp_len=9, adm_len=10, perm_len=5, rotation=off)
+sys={270.000000}: select()
+(bts=0) ACC: update ACC allowed active subset 0x15a -> 0x15a (active_len=5, ramp_len=10, adm_len=10, perm_len=5, rotation=off)
+BTS deallocated OK in test_acc_ramp_fixed3()
+===test_acc_ramp_dynamic===
+(bts=0) ACC: New ACC allowed subset 0x3ff (active_len=10, ramp_len=10, adm_len=10, perm_len=10, rotation=off)
+BTS allocation OK in test_acc_ramp_dynamic()
+(bts=0) ACC: update ACC allowed active subset 0x3ff -> 0x000 (active_len=0, ramp_len=0, adm_len=10, perm_len=10, rotation=off)
+pcu_info_update(): t2=0x03 t3=0xff
+(bts=0) ACC: New ACC allowed subset 0x001 (active_len=1, ramp_len=1, adm_len=10, perm_len=10, rotation=on)
+pcu_info_update(): t2=0x03 t3=0xfe
+sys={60.000000}: select(): load=10 -> step_sec=60
+(bts=0) ACC: update ACC allowed active subset 0x001 -> 0x003 (active_len=2, ramp_len=2, adm_len=10, perm_len=10, rotation=on)
+pcu_info_update(): t2=0x03 t3=0xfc
+sys={180.000000}: select(): load=20 -> step_sec=120
+(bts=0) ACC: update ACC allowed active subset 0x003 -> 0x007 (active_len=3, ramp_len=3, adm_len=10, perm_len=10, rotation=on)
+pcu_info_update(): t2=0x03 t3=0xf8
+sys={360.000000}: select(): load=30 -> step_sec=180
+(bts=0) ACC: update ACC allowed active subset 0x007 -> 0x00f (active_len=4, ramp_len=4, adm_len=10, perm_len=10, rotation=on)
+pcu_info_update(): t2=0x03 t3=0xf0
+sys={600.000000}: select(): load=40 -> step_sec=240
+(bts=0) ACC: update ACC allowed active subset 0x00f -> 0x01f (active_len=5, ramp_len=5, adm_len=10, perm_len=10, rotation=on)
+pcu_info_update(): t2=0x03 t3=0xe0
+sys={900.000000}: select(): load=50 -> step_sec=300
+(bts=0) ACC: update ACC allowed active subset 0x01f -> 0x03f (active_len=6, ramp_len=6, adm_len=10, perm_len=10, rotation=on)
+pcu_info_update(): t2=0x03 t3=0xc0
+sys={1260.000000}: select(): load=60 -> step_sec=360
+(bts=0) ACC: update ACC allowed active subset 0x03f -> 0x07f (active_len=7, ramp_len=7, adm_len=10, perm_len=10, rotation=on)
+pcu_info_update(): t2=0x03 t3=0x80
+sys={1680.000000}: select(): load=70 -> step_sec=420
+(bts=0) ACC: update ACC allowed active subset 0x07f -> 0x0ff (active_len=8, ramp_len=8, adm_len=10, perm_len=10, rotation=on)
+pcu_info_update(): t2=0x03 t3=0x00
+sys={2160.000000}: select(): load=80 -> step_sec=480
+(bts=0) ACC: update ACC allowed active subset 0x0ff -> 0x1ff (active_len=9, ramp_len=9, adm_len=10, perm_len=10, rotation=on)
+pcu_info_update(): t2=0x02 t3=0x00
+sys={2700.000000}: select(): load=90 -> step_sec=540
+(bts=0) ACC: update ACC allowed active subset 0x1ff -> 0x3ff (active_len=10, ramp_len=10, adm_len=10, perm_len=10, rotation=off)
+pcu_info_update(): t2=0x00 t3=0x00
+BTS deallocated OK in test_acc_ramp_dynamic()
+===test_acc_ramp_fixed_rotate===
+(bts=0) ACC: New ACC allowed subset 0x3ff (active_len=10, ramp_len=10, adm_len=10, perm_len=10, rotation=off)
+BTS allocation OK in test_acc_ramp_fixed_rotate()
+*** Barring one ACC ***
+(bts=0) ACC: New ACC allowed subset 0x1ff (active_len=9, ramp_len=10, adm_len=10, perm_len=9, rotation=off)
+pcu_info_update(): t2=0x02 t3=0x00
+(bts=0) ACC: update ACC allowed active subset 0x1ff -> 0x000 (active_len=0, ramp_len=0, adm_len=10, perm_len=9, rotation=off)
+pcu_info_update(): t2=0x03 t3=0xff
+(bts=0) ACC: New ACC allowed subset 0x001 (active_len=1, ramp_len=1, adm_len=10, perm_len=9, rotation=on)
+pcu_info_update(): t2=0x03 t3=0xfe
+sys={100.000000}: select()
+(bts=0) ACC: rotate ACC allowed active subset 0x001 -> 0x002 (active_len=1, ramp_len=1, adm_len=10, perm_len=9, rotation=on)
+pcu_info_update(): t2=0x03 t3=0xfd
+sys={200.000000}: select()
+(bts=0) ACC: rotate ACC allowed active subset 0x002 -> 0x004 (active_len=1, ramp_len=1, adm_len=10, perm_len=9, rotation=on)
+pcu_info_update(): t2=0x03 t3=0xfb
+sys={250.000000}: select()
+(bts=0) ACC: update ACC allowed active subset 0x004 -> 0x00c (active_len=2, ramp_len=2, adm_len=10, perm_len=9, rotation=on)
+pcu_info_update(): t2=0x03 t3=0xf3
+sys={350.000000}: select()
+(bts=0) ACC: rotate ACC allowed active subset 0x00c -> 0x018 (active_len=2, ramp_len=2, adm_len=10, perm_len=9, rotation=on)
+pcu_info_update(): t2=0x03 t3=0xe7
+sys={450.000000}: select()
+(bts=0) ACC: rotate ACC allowed active subset 0x018 -> 0x030 (active_len=2, ramp_len=2, adm_len=10, perm_len=9, rotation=on)
+pcu_info_update(): t2=0x03 t3=0xcf
+sys={500.000000}: select()
+(bts=0) ACC: update ACC allowed active subset 0x030 -> 0x070 (active_len=3, ramp_len=3, adm_len=10, perm_len=9, rotation=on)
+pcu_info_update(): t2=0x03 t3=0x8f
+sys={600.000000}: select()
+(bts=0) ACC: rotate ACC allowed active subset 0x070 -> 0x0e0 (active_len=3, ramp_len=3, adm_len=10, perm_len=9, rotation=on)
+pcu_info_update(): t2=0x03 t3=0x1f
+sys={700.000000}: select()
+(bts=0) ACC: rotate ACC allowed active subset 0x0e0 -> 0x1c0 (active_len=3, ramp_len=3, adm_len=10, perm_len=9, rotation=on)
+pcu_info_update(): t2=0x02 t3=0x3f
+sys={750.000000}: select()
+(bts=0) ACC: update ACC allowed active subset 0x1c0 -> 0x1c1 (active_len=4, ramp_len=4, adm_len=10, perm_len=9, rotation=on)
+pcu_info_update(): t2=0x02 t3=0x3e
+sys={850.000000}: select()
+(bts=0) ACC: rotate ACC allowed active subset 0x1c1 -> 0x0c3 (active_len=4, ramp_len=4, adm_len=10, perm_len=9, rotation=on)
+pcu_info_update(): t2=0x03 t3=0x3c
+sys={950.000000}: select()
+(bts=0) ACC: rotate ACC allowed active subset 0x0c3 -> 0x047 (active_len=4, ramp_len=4, adm_len=10, perm_len=9, rotation=on)
+pcu_info_update(): t2=0x03 t3=0xb8
+sys={1000.000000}: select()
+(bts=0) ACC: update ACC allowed active subset 0x047 -> 0x0c7 (active_len=5, ramp_len=5, adm_len=10, perm_len=9, rotation=on)
+pcu_info_update(): t2=0x03 t3=0x38
+sys={1100.000000}: select()
+(bts=0) ACC: rotate ACC allowed active subset 0x0c7 -> 0x04f (active_len=5, ramp_len=5, adm_len=10, perm_len=9, rotation=on)
+pcu_info_update(): t2=0x03 t3=0xb0
+sys={1200.000000}: select()
+(bts=0) ACC: rotate ACC allowed active subset 0x04f -> 0x01f (active_len=5, ramp_len=5, adm_len=10, perm_len=9, rotation=on)
+pcu_info_update(): t2=0x03 t3=0xe0
+sys={1250.000000}: select()
+(bts=0) ACC: update ACC allowed active subset 0x01f -> 0x03f (active_len=6, ramp_len=6, adm_len=10, perm_len=9, rotation=on)
+pcu_info_update(): t2=0x03 t3=0xc0
+sys={1350.000000}: select()
+(bts=0) ACC: rotate ACC allowed active subset 0x03f -> 0x07e (active_len=6, ramp_len=6, adm_len=10, perm_len=9, rotation=on)
+pcu_info_update(): t2=0x03 t3=0x81
+sys={1450.000000}: select()
+(bts=0) ACC: rotate ACC allowed active subset 0x07e -> 0x0fc (active_len=6, ramp_len=6, adm_len=10, perm_len=9, rotation=on)
+pcu_info_update(): t2=0x03 t3=0x03
+sys={1500.000000}: select()
+(bts=0) ACC: update ACC allowed active subset 0x0fc -> 0x1fc (active_len=7, ramp_len=7, adm_len=10, perm_len=9, rotation=on)
+pcu_info_update(): t2=0x02 t3=0x03
+sys={1600.000000}: select()
+(bts=0) ACC: rotate ACC allowed active subset 0x1fc -> 0x1f9 (active_len=7, ramp_len=7, adm_len=10, perm_len=9, rotation=on)
+pcu_info_update(): t2=0x02 t3=0x06
+sys={1700.000000}: select()
+(bts=0) ACC: rotate ACC allowed active subset 0x1f9 -> 0x0fb (active_len=7, ramp_len=7, adm_len=10, perm_len=9, rotation=on)
+pcu_info_update(): t2=0x03 t3=0x04
+sys={1750.000000}: select()
+(bts=0) ACC: update ACC allowed active subset 0x0fb -> 0x1fb (active_len=8, ramp_len=8, adm_len=10, perm_len=9, rotation=on)
+pcu_info_update(): t2=0x02 t3=0x04
+sys={1850.000000}: select()
+(bts=0) ACC: rotate ACC allowed active subset 0x1fb -> 0x0ff (active_len=8, ramp_len=8, adm_len=10, perm_len=9, rotation=on)
+pcu_info_update(): t2=0x03 t3=0x00
+sys={1950.000000}: select()
+(bts=0) ACC: rotate ACC allowed active subset 0x0ff -> 0x1fe (active_len=8, ramp_len=8, adm_len=10, perm_len=9, rotation=on)
+pcu_info_update(): t2=0x02 t3=0x01
+sys={2000.000000}: select()
+(bts=0) ACC: update ACC allowed active subset 0x1fe -> 0x1ff (active_len=9, ramp_len=9, adm_len=10, perm_len=9, rotation=off)
+pcu_info_update(): t2=0x02 t3=0x00
+sys={2250.000000}: select()
+(bts=0) ACC: update ACC allowed active subset 0x1ff -> 0x1ff (active_len=9, ramp_len=10, adm_len=10, perm_len=9, rotation=off)
+BTS deallocated OK in test_acc_ramp_fixed_rotate()

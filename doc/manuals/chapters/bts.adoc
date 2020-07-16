@@ -416,17 +416,28 @@ have to deal with an increased load due to duplicate RACH requests. However,
 in order to minimize the delay when a RACH request or response gets lost the
 MS should not wait too long before retransmitting.
 
-==== Load Management
+==== Access Control Class Load Management
 
-Every SIM card is member of one of the ten regular ACCs (0-9). Access to the
-BTS can be restricted to SIMs that are members of certain ACCs.
+Every SIM card is member of one of the ten regular ACCs (0-9). Access to the BTS
+can be restricted to SIMs that are members of certain ACCs.
 
-Since the ACCs are distributed uniformly across all SIMs allowing only ACCs
-0-4 to connect to the BTS should reduce its load by 50%.
+Furthermore, high priority users (such as PLMN staff, public or emergency
+services, etc.) may be members of one or more ACCs from 11-15.
+
+Since the ACCs 0-9 are distributed uniformly across all SIMs, for instance
+allowing only ACCs 0-4 to connect to the BTS should reduce its load by 50% at
+the expense of not serving 50% of the subscribers.
 
 The default is to allow all ACCs to connect.
 
-.Example: Restrict access to the BTS by ACC
+OsmoBSC supports several levels of ACC management to allow or restrict access
+either permanently or temporarily on each BTS.
+
+The first level of management consists of an access list to flag specific ACCs
+as permanently barred (the list can be updated at any time through VTY as seen
+below). As indicated above, the default is to allow all ACCs (0-15).
+
+.Example: Restrict permanent access to the BTS by ACC
 ----
 network
  bts 0
@@ -436,12 +447,33 @@ network
 <1> Disallow SIMs with access-class 1 from connecting to the BTS
 <2> Permit SIMs with access-class 9 to connect to the BTS.
 
+On really crowded areas, a BTS may struggle to service all mobile stations
+willing to use it, and which may end up in collapse. In this kind of scenarios
+it is a good idea to temporarily further restrict the amount of allowed ACCs
+(hence restrict the amount of subscribers allowed to reach the BTS).
+However, doing so on a permanent basis would be unfair to subscribers from
+barred ACCs. Hence, OsmoBSC can be configured to temporarily generate ACC
+subsets of the permanent set presented above, and rotate them over time to allow
+fair access to all subscribers. This feature is only aimed at ACCs 0-9,
+since ACCs 11-15 are considered high priority and hence are always configured
+based on permanent list policy.
 
-Smaller cells with lots of subscribers can be overwhelmed with traffic after
-the network is turned on. This is especially true in areas with little to no
-reception from other networks. To manage the load OsmoBSC has an option to
-enable one Access Class at a time so initial access to the network is
-distributed across a longer time.
+.Example: Configure rotative access to the BTS
+----
+network
+ bts 0
+  access-control-rotate 3 <1>
+  access-control-rotate-quantum 20 <2>
+----
+<1> Only allow up to 3 concurrent allowed ACCs from the permanent list
+<2> Rotate the generated permanent list subsets every 20 seconds in a fair fashion
+
+Furthermore, cells with large number of subscribers and limited overlapping
+coverage may become overwhelmed with traffic after the cell starts brodacasting.
+This is especially true in areas with little to no reception from other
+networks. To manage the load, OsmoBSC has an option to further restrict the
+rotating ACC subset during startup and slowly increment it over time and taking
+current load into account.
 
 .Example: Ramp up access to the BTS after startup
 ----
@@ -455,6 +487,29 @@ network
 <2> Enable more ACCs every 30 seconds
 <3> At each step enable one more ACC
 
+
+Here a full example of all the mechanisms combined can be found:
+
+.Example: Full ACC Load Management config setup
+----
+bts 0
+  rach access-control-class 5 barred <1>
+  rach access-control-class 6 barred
+  rach access-control-class 7 barred
+  rach access-control-class 8 barred
+  rach access-control-class 9 barred
+  access-control-class-rotate 3 <2>
+  access-control-class-rotate-quantum 20 <3>
+  access-control-class-ramping <4>
+  access-control-class-ramping-step-size 1 <5>
+  access-control-class-ramping-step-interval dynamic <6>
+----
+<1> ACCs 5-9 are administratively barred, ie they will never be used until somebody manually enables them in VTY config
+<2> Allow access through temporary subsets of len=3 from ACC set 0-4: (0,1,2) -> (1,2,3) -> (2,3,4) -> (3,4,0), etc.
+<3> Each subset iteration will happen every 20 seconds
+<4> During startup since ramping is enabled, it will further restrict the rotate subset size parameter (len=3)
+<5> The rotate subset size parameter will be increased one ACC slot at a time: len=0 -> len=1 -> len=2 -> len=3
+<6> The time until the subset size is further increased will be calculated based on current channel load
 
 ==== RACH Parameter Configuration
 

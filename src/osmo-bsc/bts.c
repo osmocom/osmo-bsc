@@ -387,6 +387,7 @@ struct gsm_bts *gsm_bts_alloc(struct gsm_network *net, uint8_t bts_num)
 	bts_init_cbch_state(&bts->cbch_basic, bts);
 	bts_init_cbch_state(&bts->cbch_extended, bts);
 
+	acc_mgr_init(&bts->acc_mgr, bts);
 	acc_ramp_init(&bts->acc_ramp, bts);
 
 	return bts;

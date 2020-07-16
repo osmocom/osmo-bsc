@@ -140,6 +140,8 @@ static inline void _bts_del(struct gsm_bts *bts, const char *msg)
 {
 	osmo_stat_item_group_free(bts->bts_statg);
 	rate_ctr_group_free(bts->bts_ctrs);
+	if (osmo_timer_pending(&bts->acc_mgr.rotate_timer))
+		osmo_timer_del(&bts->acc_mgr.rotate_timer);
 	/* no need to llist_del(&bts->list), we never registered the bts there. */
 	talloc_free(bts);
 	printf("BTS deallocated OK in %s()\n", msg);

@@ -241,6 +241,7 @@ AC_OUTPUT(
     src/utils/Makefile
     tests/Makefile
     tests/atlocal
+    tests/acc/Makefile
     tests/gsm0408/Makefile
     tests/bsc/Makefile
     tests/codec_pref/Makefile

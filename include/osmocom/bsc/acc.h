@@ -27,6 +27,40 @@
 #include <osmocom/core/timer.h>
 #include <osmocom/gsm/protocol/gsm_04_08.h>
 
+#define ACC_MGR_QUANTUM_DEFAULT 20	/* 20 seconds */
+
+/* Manage rotating subset of allowed Access Class as per configuration */
+struct acc_mgr {
+	struct gsm_bts *bts; /*!< backpointer to BTS using this ACC manager */
+	/* Administrative Maximum Number of ACC 0-9 to be allowed at the same time.
+	   Configurable through VTY cmd "access-control-class-roundrobin",
+	   defaults to all allowed (10) */
+	uint8_t len_allowed_adm;
+	/* Further limiting the number of ACC to use. It may be lower due
+	   to ramping, based for instance on channel or system load. */
+	uint8_t len_allowed_ramp;
+
+	/* Time until next subset is generated */
+	uint32_t rotation_time_sec;
+	struct osmo_timer_list rotate_timer;
+
+	/* Bitmask containing subset of allowed ACC 0-9 on current rotation iteration */
+	uint16_t allowed_subset_mask;
+	/* Number of bits (ACC) set in allowed_subset_mask: 0->min(len_allowed_ramp, len_allowed_adm) */
+	uint8_t allowed_subset_mask_count;
+	/* Number of ACC 0-9 allowed as per adminsitrative (permanent) config. */
+	uint8_t allowed_permanent_count;
+};
+
+void acc_mgr_init(struct acc_mgr *acc_mgr, struct gsm_bts *bts);
+uint8_t acc_mgr_get_len_allowed_adm(struct acc_mgr *acc_mgr);
+uint8_t acc_mgr_get_len_allowed_ramp(struct acc_mgr *acc_mgr);
+void acc_mgr_set_len_allowed_adm(struct acc_mgr *acc_mgr, uint8_t len_allowed_adm);
+void acc_mgr_set_len_allowed_ramp(struct acc_mgr *acc_mgr, uint8_t len_allowed_ramp);
+void acc_mgr_set_rotation_time(struct acc_mgr *acc_mgr, uint32_t rotation_time_sec);
+void acc_mgr_perm_subset_changed(struct acc_mgr *acc_mgr, struct gsm48_rach_control *rach_control);
+void acc_mgr_apply_acc(struct acc_mgr *acc_mgr, struct gsm48_rach_control *rach_control);
+
 /*!
  * Access control class (ACC) ramping is used to slowly make the cell available to
  * an increasing number of MS. This avoids overload at startup time in cases where
@@ -48,17 +82,6 @@ struct acc_ramp {
 	struct gsm_bts *bts; /*!< backpointer to BTS using this ACC ramp */
 
 	bool acc_ramping_enabled; /*!< whether ACC ramping is enabled */
-
-	/*!
-	 * Bitmask which keeps track of access control classes that are currently denied
-	 * access. The function acc_ramp_apply() uses this mask to modulate bits from
-	 * octets 2 and 3 in RACH Control Parameters (see 3GPP 44.018 10.5.2.29).
-	 * Ramping is only concerned with ACCs 0-9. While any of the bits 0-9 is set,
-	 * the corresponding ACC is barred.
-	 * ACCs 11-15 should always be allowed, and ACC 10 denies emergency calls for
-	 * all ACCs from 0-9 inclusive; these ACCs are ignored in this implementation.
-	 */
-	uint16_t barred_accs;
 
 	/*!
 	 * This controls the maximum number of ACCs to allow per ramping step (1 - 10).
@@ -124,33 +147,6 @@ static inline unsigned int acc_ramp_get_step_interval(struct acc_ramp *acc_ramp)
 static inline bool acc_ramp_step_interval_is_dynamic(struct acc_ramp *acc_ramp)
 {
 	return !(acc_ramp->step_interval_is_fixed);
-}
-
-/*!
- * Return bitmasks which correspond to access control classes that are currently
- * denied access. Ramping is only concerned with those bits which control access
- * for ACCs 0-9, and any of the other bits will always be set to zero in these masks, i.e.
- * it is safe to OR these bitmasks with the corresponding fields in struct gsm48_rach_control.
- * \param[in] acc_ramp Pointer to acc_ramp structure.
- */
-static inline uint8_t acc_ramp_get_barred_t2(struct acc_ramp *acc_ramp)
-{
-	return ((acc_ramp->barred_accs >> 8) & 0x03);
-};
-static inline uint8_t acc_ramp_get_barred_t3(struct acc_ramp *acc_ramp)
-{
-	return (acc_ramp->barred_accs & 0xff);
-}
-
-/*!
- * Potentially mark certain Access Control Classes (ACCs) as barred in accordance to ACC ramping.
- * \param[in] rach_control RACH control parameters in which barred ACCs will be configured.
- * \param[in] acc_ramp Pointer to acc_ramp structure.
- */
-static inline void acc_ramp_apply(struct gsm48_rach_control *rach_control, struct acc_ramp *acc_ramp)
-{
-	rach_control->t2 |= acc_ramp_get_barred_t2(acc_ramp);
-	rach_control->t3 |= acc_ramp_get_barred_t3(acc_ramp);
 }
 
 void acc_ramp_init(struct acc_ramp *acc_ramp, struct gsm_bts *bts);
