@@ -43,6 +43,7 @@
 #include <osmocom/bsc/handover_fsm.h>
 #include <osmocom/bsc/gsm_08_08.h>
 #include <osmocom/bsc/gsm_data.h>
+#include <osmocom/bsc/bsc_msc_data.h>
 #include <osmocom/bsc/system_information.h>
 #include <osmocom/bsc/bts.h>
 
@@ -988,6 +989,24 @@ static void dispatch_dtap(struct gsm_subscriber_connection *conn,
 			break;
 		}
 		break;
+	case GSM48_PDISC_CC:
+		/* Make sure that EMERGENCY CALLS can not be made if the
+		 * VTY configuration does not permit. */
+		if (msg_type == GSM48_MT_CC_EMERG_SETUP) {
+			if (msg->lchan->ts->trx->bts->si_common.rach_control.t2 & 0x4) {
+				LOG_LCHAN(msg->lchan, LOGL_NOTICE, "MS attempts EMERGENCY SETUP although EMERGENCY CALLS"
+                                          " are not allowed in sysinfo (spec violation by MS!)\n");
+				lchan_release(msg->lchan, true, true, GSM48_RR_CAUSE_PREMPTIVE_REL);
+				break;
+			}
+			if (!conn->sccp.msc->allow_emerg) {
+				LOG_LCHAN(msg->lchan, LOGL_NOTICE, "MS attempts EMERGENCY SETUP, but EMERGENCY CALLS are"
+                                          " denied on this BSC (check BTS config!)\n");
+				lchan_release(msg->lchan, true, true, GSM48_RR_CAUSE_PREMPTIVE_REL);
+				break;
+			}
+		}
+		/* fall through */
 	default:
 		bsc_dtap(conn, link_id, msg);
 		break;
