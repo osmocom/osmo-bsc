@@ -28,6 +28,7 @@
 #include <osmocom/bsc/a_reset.h>
 #include <osmocom/bsc/gsm_08_08.h>
 #include <osmocom/bsc/gsm_data.h>
+#include <osmocom/bsc/bts.h>
 #include <osmocom/bsc/handover_fsm.h>
 #include <osmocom/bsc/lchan_fsm.h>
 #include <osmocom/bsc/lchan_rtp_fsm.h>

@@ -13,6 +13,7 @@
 #include <osmocom/abis/e1_input.h>
 
 #include "osmocom/bsc/gsm_data.h"
+#include "osmocom/bsc/bts_trx.h"
 
 enum bts_counter_id {
 	BTS_CTR_CHREQ_TOTAL,

@@ -38,6 +38,7 @@ bsc_test_LDADD = \
 	$(top_builddir)/src/osmo-bsc/osmo_bsc_filter.o \
 	$(top_builddir)/src/osmo-bsc/bsc_subscriber.o \
 	$(top_builddir)/src/osmo-bsc/bts.o \
+	$(top_builddir)/src/osmo-bsc/bts_trx.o \
 	$(top_builddir)/src/osmo-bsc/gsm_data.o \
 	$(top_builddir)/src/osmo-bsc/handover_cfg.o \
 	$(top_builddir)/src/osmo-bsc/handover_logic.o \

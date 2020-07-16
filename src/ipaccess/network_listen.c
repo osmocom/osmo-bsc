@@ -34,6 +34,7 @@
 #include <osmocom/gsm/gsm48_ie.h>
 
 #include <osmocom/bsc/gsm_data.h>
+#include <osmocom/bsc/bts_trx.h>
 #include <osmocom/bsc/abis_nm.h>
 #include <osmocom/bsc/signal.h>
 #include <osmocom/bsc/debug.h>

@@ -44,6 +44,7 @@ osmo_bsc_SOURCES = \
 	bsc_subscriber.c \
 	bsc_vty.c \
 	bts.c \
+	bts_trx.c \
 	bts_ericsson_rbs2000.c \
 	bts_init.c \
 	bts_ipaccess_nanobts.c \

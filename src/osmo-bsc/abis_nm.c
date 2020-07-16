@@ -3020,26 +3020,6 @@ void abis_nm_ipaccess_cgi(uint8_t *buf, struct gsm_bts *bts)
 	memcpy(&_buf->rac, &ci, sizeof(ci));
 }
 
-void gsm_trx_lock_rf(struct gsm_bts_trx *trx, bool locked, const char *reason)
-{
-	uint8_t new_state = locked ? NM_STATE_LOCKED : NM_STATE_UNLOCKED;
-
-
-	if (!trx->bts || !trx->bts->oml_link) {
-		/* Set initial state which will be sent when BTS connects. */
-		trx->mo.nm_state.administrative = new_state;
-		return;
-	}
-
-	LOG_TRX(trx, DNM, LOGL_NOTICE, "Requesting administrative state change %s -> %s [%s]\n",
-	     get_value_string(abis_nm_adm_state_names, trx->mo.nm_state.administrative),
-	     get_value_string(abis_nm_adm_state_names, new_state), reason);
-
-	abis_nm_chg_adm_state(trx->bts, NM_OC_RADIO_CARRIER,
-			      trx->bts->bts_nr, trx->nr, 0xff,
-			      new_state);
-}
-
 static const struct value_string ipacc_testres_names[] = {
 	{ NM_IPACC_TESTRES_SUCCESS,	"SUCCESS" },
 	{ NM_IPACC_TESTRES_TIMEOUT,	"TIMEOUT" },
