@@ -24,7 +24,7 @@
 #include <stdbool.h>
 
 #include <osmocom/bsc/debug.h>
-#include <osmocom/bsc/acc_ramp.h>
+#include <osmocom/bsc/acc.h>
 #include <osmocom/bsc/gsm_data.h>
 #include <osmocom/bsc/chan_alloc.h>
 #include <osmocom/bsc/signal.h>

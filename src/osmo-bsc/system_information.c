@@ -39,7 +39,7 @@
 #include <osmocom/bsc/rest_octets.h>
 #include <osmocom/bsc/arfcn_range_encode.h>
 #include <osmocom/bsc/gsm_04_08_rr.h>
-#include <osmocom/bsc/acc_ramp.h>
+#include <osmocom/bsc/acc.h>
 #include <osmocom/bsc/neighbor_ident.h>
 #include <osmocom/bsc/bts.h>
 

@@ -29,7 +29,7 @@
 #include <osmocom/gsm/protocol/gsm_12_21.h>
 #include <osmocom/abis/e1_input.h>
 #include <osmocom/bsc/meas_rep.h>
-#include <osmocom/bsc/acc_ramp.h>
+#include <osmocom/bsc/acc.h>
 #include <osmocom/bsc/neighbor_ident.h>
 #include <osmocom/bsc/osmux.h>
 

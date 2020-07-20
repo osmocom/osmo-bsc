@@ -3,7 +3,7 @@ noinst_HEADERS = \
 	abis_nm.h \
 	abis_om2000.h \
 	abis_rsl.h \
-	acc_ramp.h \
+	acc.h \
 	arfcn_range_encode.h \
 	assignment_fsm.h \
 	bsc_rll.h \
