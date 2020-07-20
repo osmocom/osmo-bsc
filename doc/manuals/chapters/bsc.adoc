@@ -1,9 +1,5 @@
 == BSC level configuration
 
-The BSC component is shared between OsmoBSC and OsmoNITB.  This chapter
-describes some of the configuration options related to this shared BSC
-component.
-
 === Hand-over
 
 ==== Hand-over in GSM
@@ -25,11 +21,10 @@ communicates those by means of RSL to the BSC.
 The hand-over decision is made by an algorithm that processes those
 measurement results and determines when to perform the hand-over.
 
-==== Configuration of hand-over in OsmoBSC/OsmoNITB
+==== Configuration of hand-over in OsmoBSC
 
-OsmoBSC (like the internal BSC component of OsmoNITB) only support
-so-called intra-BSC hand-over, where the hand-over is performed between
-two BTSs within the same BSC.
+OsmoBSC only support so-called intra-BSC hand-over, where the hand-over is
+performed between two BTSs within the same BSC.
 
 Hand-over is enabled and configured by the use of a set of `handover`
 commands.  Using those, you can tune the key parameters of the hand-over

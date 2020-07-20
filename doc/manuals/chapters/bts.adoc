@@ -287,9 +287,9 @@ and then assign a logical TCH channel on it. Hence, though compatibility with
 the BTS needs to be ensured, any MSC is compatible with dynamic timeslots by
 definition.
 
-OsmoBSC and OsmoNITB support two kinds of dynamic timeslot handling, configured
-via the `network` / `bts` / `trx` / `timeslot` / `phys_chan_config`
-configuration. Not all BTS models support dynamic channels.
+OsmoBSC supports two kinds of dynamic timeslot handling, configured via the
+`network` / `bts` / `trx` / `timeslot` / `phys_chan_config` configuration. Not
+all BTS models support dynamic channels.
 
 [[dyn_ts_compat]]
 .Dynamic timeslot support by various BTS models
@@ -349,9 +349,8 @@ timeslots to TCH, and no PDCH timeslots would be left for GPRS service.
 
 ==== Dynamic Timeslot Configuration Examples
 
-This is an extract of an `osmo-bsc` or `osmo-nitb` config file. A timeslot
-configuration with five Osmocom style dynamic timeslots and one dedicated PDCH
-may look like this:
+This is an extract of an `osmo-bsc`` config file. A timeslot configuration with
+five Osmocom style dynamic timeslots and one dedicated PDCH may look like this:
 
 ----
 network
