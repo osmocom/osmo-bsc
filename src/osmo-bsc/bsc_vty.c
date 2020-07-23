@@ -409,11 +409,11 @@ static void bts_dump_vty(struct vty *vty, struct gsm_bts *bts)
 	vty_out(vty, "  Access Control Class ramping: %senabled%s",
 		acc_ramp_is_enabled(&bts->acc_ramp) ? "" : "not ", VTY_NEWLINE);
 	if (acc_ramp_is_enabled(&bts->acc_ramp)) {
-		if (!acc_ramp_step_interval_is_dynamic(&bts->acc_ramp))
-			vty_out(vty, "  Access Control Class ramping step interval: %u seconds%s",
-				acc_ramp_get_step_interval(&bts->acc_ramp), VTY_NEWLINE);
-		else
-			vty_out(vty, "  Access Control Class ramping step interval: dynamic%s", VTY_NEWLINE);
+		vty_out(vty, "  Access Control Class ramping step interval: %u seconds%s",
+			acc_ramp_get_step_interval(&bts->acc_ramp), VTY_NEWLINE);
+		vty_out(vty, "  Access Control Class channel load thresholds: (%" PRIu8 ", %" PRIu8 ")%s",
+			bts->acc_ramp.chan_load_lower_threshold,
+			bts->acc_ramp.chan_load_upper_threshold, VTY_NEWLINE);
 	        vty_out(vty, "  enabling %u Access Control Class%s per ramping step%s",
 			acc_ramp_get_step_size(&bts->acc_ramp),
 			acc_ramp_get_step_size(&bts->acc_ramp) > 1 ? "es" : "", VTY_NEWLINE);
@@ -955,14 +955,12 @@ static void config_write_bts_single(struct vty *vty, struct gsm_bts *bts)
 	if (bts->acc_mgr.rotation_time_sec != ACC_MGR_QUANTUM_DEFAULT)
 		vty_out(vty, "  access-control-class-rotate-quantum %" PRIu32 "%s", bts->acc_mgr.rotation_time_sec, VTY_NEWLINE);
 	vty_out(vty, "  %saccess-control-class-ramping%s", acc_ramp_is_enabled(&bts->acc_ramp) ? "" : "no ", VTY_NEWLINE);
-	if (!acc_ramp_step_interval_is_dynamic(&bts->acc_ramp)) {
-		vty_out(vty, "  access-control-class-ramping-step-interval %u%s",
-			acc_ramp_get_step_interval(&bts->acc_ramp), VTY_NEWLINE);
-	} else {
-		vty_out(vty, "  access-control-class-ramping-step-interval dynamic%s", VTY_NEWLINE);
-	}
+	vty_out(vty, "  access-control-class-ramping-step-interval %u%s",
+		acc_ramp_get_step_interval(&bts->acc_ramp), VTY_NEWLINE);
 	vty_out(vty, "  access-control-class-ramping-step-size %u%s", acc_ramp_get_step_size(&bts->acc_ramp),
 		VTY_NEWLINE);
+	vty_out(vty, "  access-control-class-ramping-chan-load %u %u%s",
+		bts->acc_ramp.chan_load_lower_threshold, bts->acc_ramp.chan_load_upper_threshold, VTY_NEWLINE);
 	if (!bts->si_unused_send_empty)
 		vty_out(vty, "  no system-information unused-send-empty%s", VTY_NEWLINE);
 	for (i = SYSINFO_TYPE_1; i < _MAX_SYSINFO_TYPE; i++) {
@@ -3679,9 +3677,18 @@ DEFUN(cfg_bts_acc_ramping,
       "Enable Access Control Class ramping\n")
 {
 	struct gsm_bts *bts = vty->index;
+	struct gsm_bts_trx *trx;
 
-	if (!acc_ramp_is_enabled(&bts->acc_ramp))
+	if (!acc_ramp_is_enabled(&bts->acc_ramp)) {
 		acc_ramp_set_enabled(&bts->acc_ramp, true);
+		/* Start ramping if at least one TRX is usable */
+		llist_for_each_entry(trx, &bts->trx_list, list) {
+			if (trx_is_usable(trx)) {
+				acc_ramp_trigger(&bts->acc_ramp);
+				break;
+			}
+		}
+	}
 
 	/*
 	 * ACC ramping takes effect either when the BTS reconnects RSL,
@@ -3713,14 +3720,14 @@ DEFUN(cfg_bts_acc_ramping_step_interval,
       OSMO_STRINGIFY_VAL(ACC_RAMP_STEP_INTERVAL_MAX) ">|dynamic)",
       "Configure Access Control Class ramping step interval\n"
       "Set a fixed step interval (in seconds)\n"
-      "Use dynamic step interval based on BTS channel load\n")
+      "Use dynamic step interval based on BTS channel load (deprecated, don't use, ignored)\n")
 {
 	struct gsm_bts *bts = vty->index;
 	bool dynamic = (strcmp(argv[0], "dynamic") == 0);
 	int error;
 
 	if (dynamic) {
-		acc_ramp_set_step_interval_dynamic(&bts->acc_ramp);
+		vty_out(vty, "%% access-control-class-ramping-step-interval 'dynamic' value is deprecated, ignoring it%s", VTY_NEWLINE);
 		return CMD_SUCCESS;
 	}
 
@@ -3753,6 +3760,25 @@ DEFUN(cfg_bts_acc_ramping_step_size,
 			vty_out(vty, "Unable to set ACC ramp step size: value out of range%s", VTY_NEWLINE);
 		else
 			vty_out(vty, "Unable to set ACC ramp step size: unknown error%s", VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	return CMD_SUCCESS;
+}
+
+DEFUN(cfg_bts_acc_ramping_chan_load,
+      cfg_bts_acc_ramping_chan_load_cmd,
+      "access-control-class-ramping-chan-load <0-100> <0-100>",
+      "Configure Access Control Class ramping channel load thresholds\n"
+      "Lower Channel load threshold (%) below which subset size of allowed broadcast ACCs can be increased\n"
+      "Upper channel load threshold (%) above which subset size of allowed broadcast ACCs can be decreased\n")
+{
+	struct gsm_bts *bts = vty->index;
+	int rc;
+
+	rc = acc_ramp_set_chan_load_thresholds(&bts->acc_ramp, atoi(argv[0]), atoi(argv[1]));
+	if (rc < 0) {
+		vty_out(vty, "Unable to set ACC channel load thresholds%s", VTY_NEWLINE);
 		return CMD_WARNING;
 	}
 
@@ -6532,6 +6558,7 @@ int bsc_vty_init(struct gsm_network *network)
 	install_element(BTS_NODE, &cfg_bts_no_acc_ramping_cmd);
 	install_element(BTS_NODE, &cfg_bts_acc_ramping_step_interval_cmd);
 	install_element(BTS_NODE, &cfg_bts_acc_ramping_step_size_cmd);
+	install_element(BTS_NODE, &cfg_bts_acc_ramping_chan_load_cmd);
 	install_element(BTS_NODE, &cfg_bts_t3113_dynamic_cmd);
 	install_element(BTS_NODE, &cfg_bts_no_t3113_dynamic_cmd);
 	neighbor_ident_vty_init(network, network->neighbor_bss_cells);

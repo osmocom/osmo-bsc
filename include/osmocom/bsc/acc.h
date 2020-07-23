@@ -71,8 +71,11 @@ void acc_mgr_apply_acc(struct acc_mgr *acc_mgr, struct gsm48_rach_control *rach_
 #define ACC_RAMP_STEP_SIZE_DEFAULT ACC_RAMP_STEP_SIZE_MIN
 #define ACC_RAMP_STEP_SIZE_MAX 10 /* allow all ACC in one step (effectively disables ramping) */
 
-#define ACC_RAMP_STEP_INTERVAL_MIN 30	/* 30 seconds */
+#define ACC_RAMP_STEP_INTERVAL_MIN 5	/* 5 seconds */
 #define ACC_RAMP_STEP_INTERVAL_MAX 600	/* 10 minutes */
+
+#define ACC_RAMP_CHAN_LOAD_THRESHOLD_LOW 71
+#define ACC_RAMP_CHAN_LOAD_THRESHOLD_UP 89
 
 /*!
  * Data structure used to manage ACC ramping. Please avoid setting or reading fields
@@ -97,8 +100,17 @@ struct acc_ramp {
 	 * it has been overridden by VTY configuration.
 	 */
 	unsigned int step_interval_sec;
-	bool step_interval_is_fixed;
 	struct osmo_timer_list step_timer;
+
+	/*!
+	* Channel Load Upper/Lower Thresholds:
+	* They control how ramping subset size of allowed ACCs changes in
+	* relation to current channel load (%, 0-100): Under the lower
+	* threshold, subset size may be increased; above the upper threshold,
+	* subset size may be decreased.
+	*/
+	unsigned int chan_load_lower_threshold;
+	unsigned int chan_load_upper_threshold;
 };
 
 /*!
@@ -141,17 +153,17 @@ static inline unsigned int acc_ramp_get_step_interval(struct acc_ramp *acc_ramp)
 }
 
 /*!
- * If the step interval is dynamic, return true, else return false.
+ * Return the current ACC ramp step interval (in seconds)
  * \param[in] acc_ramp Pointer to acc_ramp structure.
  */
-static inline bool acc_ramp_step_interval_is_dynamic(struct acc_ramp *acc_ramp)
+static inline unsigned int acc_ramp_is_running(struct acc_ramp *acc_ramp)
 {
-	return !(acc_ramp->step_interval_is_fixed);
+	return acc_ramp->step_interval_sec;
 }
 
 void acc_ramp_init(struct acc_ramp *acc_ramp, struct gsm_bts *bts);
 int acc_ramp_set_step_size(struct acc_ramp *acc_ramp, unsigned int step_size);
 int acc_ramp_set_step_interval(struct acc_ramp *acc_ramp, unsigned int step_interval);
-void acc_ramp_set_step_interval_dynamic(struct acc_ramp *acc_ramp);
+int acc_ramp_set_chan_load_thresholds(struct acc_ramp *acc_ramp, unsigned int low_threshold, unsigned int up_threshold);
 void acc_ramp_trigger(struct acc_ramp *acc_ramp);
 void acc_ramp_abort(struct acc_ramp *acc_ramp);

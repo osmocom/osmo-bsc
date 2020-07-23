@@ -362,40 +362,42 @@ void acc_mgr_apply_acc(struct acc_mgr *acc_mgr, struct gsm48_rach_control *rach_
 //////////////////////////
 // acc_ramp
 //////////////////////////
-static unsigned int get_next_step_interval(struct acc_ramp *acc_ramp)
-{
-	struct gsm_bts *bts = acc_ramp->bts;
-	uint64_t load;
-
-	if (acc_ramp->step_interval_is_fixed)
-		return acc_ramp->step_interval_sec;
-
-	/* Scale the step interval to current channel load average. */
-	load = (bts->chan_load_avg << 8); /* convert to fixed-point */
-	acc_ramp->step_interval_sec = ((load * ACC_RAMP_STEP_INTERVAL_MAX) / 100) >> 8;
-	if (acc_ramp->step_interval_sec < ACC_RAMP_STEP_SIZE_MIN)
-		acc_ramp->step_interval_sec = ACC_RAMP_STEP_INTERVAL_MIN;
-	else if (acc_ramp->step_interval_sec > ACC_RAMP_STEP_INTERVAL_MAX)
-		acc_ramp->step_interval_sec = ACC_RAMP_STEP_INTERVAL_MAX;
-
-	LOG_BTS(bts, DRSL, LOGL_DEBUG,
-		"ACC RAMP: step interval set to %u seconds based on %u%% channel load average\n",
-	        acc_ramp->step_interval_sec, bts->chan_load_avg);
-	return acc_ramp->step_interval_sec;
-}
-
 static void do_acc_ramping_step(void *data)
 {
 	struct acc_ramp *acc_ramp = data;
-	struct acc_mgr *acc_mgr = &acc_ramp->bts->acc_mgr;
+	struct gsm_bts *bts = acc_ramp->bts;
+	struct acc_mgr *acc_mgr = &bts->acc_mgr;
+
 	uint8_t old_len = acc_mgr_get_len_allowed_ramp(acc_mgr);
-	uint8_t new_len = OSMO_MIN(10, old_len + acc_ramp->step_size);
+	uint8_t new_len = old_len;
 
-	acc_mgr_set_len_allowed_ramp(acc_mgr, new_len);
+	/* Remark dec: Never decrease back to 0, it is desirable to always allow at
+	 * least 1 ACC at ramping lvl to allow subscribers to eventually use the
+	 * network. If total barring is desired, it can be controlled by the
+	 * adminsitrative subset length through VTY.
+	 * Remark inc: Never try going over the admin subset size, since it
+	 * wouldn't change final subset size anyway and it would create a fake
+	 * sense of safe load handling capacity. If then load became high, being
+	 * on upper size would mean the BTS requires more time to effectively
+	 * drop down the final subset size, hence delaying recovery.
+	 */
+	if (bts->chan_load_avg > acc_ramp->chan_load_upper_threshold)
+		new_len = (uint8_t)OSMO_MAX(1, (int)(old_len - acc_ramp->step_size));
+	else if (bts->chan_load_avg < acc_ramp->chan_load_lower_threshold)
+		new_len = OSMO_MIN(acc_mgr_get_len_allowed_adm(acc_mgr),
+				   old_len + acc_ramp->step_size);
+	else
+		new_len = old_len;
 
-	/* If we have not allowed all ACCs yet, schedule another ramping step. */
-	if (new_len != 10)
-		osmo_timer_schedule(&acc_ramp->step_timer, get_next_step_interval(acc_ramp), 0);
+	if (new_len != old_len) {
+		LOG_BTS(bts, DRSL, LOGL_DEBUG,
+			"ACC RAMP: changing ramping subset size %" PRIu8
+			" -> %" PRIu8 ", chan_load_avg=%" PRIu8 "%%\n",
+			old_len, new_len, bts->chan_load_avg);
+		acc_mgr_set_len_allowed_ramp(acc_mgr, new_len);
+	}
+
+	osmo_timer_schedule(&acc_ramp->step_timer, acc_ramp->step_interval_sec, 0);
 }
 
 /* Implements osmo_signal_cbfn() -- trigger or abort ACC ramping upon changes RF lock state. */
@@ -533,7 +535,8 @@ void acc_ramp_init(struct acc_ramp *acc_ramp, struct gsm_bts *bts)
 	acc_ramp_set_enabled(acc_ramp, false);
 	acc_ramp->step_size = ACC_RAMP_STEP_SIZE_DEFAULT;
 	acc_ramp->step_interval_sec = ACC_RAMP_STEP_INTERVAL_MIN;
-	acc_ramp->step_interval_is_fixed = false;
+	acc_ramp->chan_load_lower_threshold = ACC_RAMP_CHAN_LOAD_THRESHOLD_LOW;
+	acc_ramp->chan_load_upper_threshold = ACC_RAMP_CHAN_LOAD_THRESHOLD_UP;
 	osmo_timer_setup(&acc_ramp->step_timer, do_acc_ramping_step, acc_ramp);
 	osmo_signal_register_handler(SS_NM, acc_ramp_nm_sig_cb, acc_ramp);
 }
@@ -566,21 +569,30 @@ int acc_ramp_set_step_interval(struct acc_ramp *acc_ramp, unsigned int step_inte
 		return -ERANGE;
 
 	acc_ramp->step_interval_sec = step_interval;
-	acc_ramp->step_interval_is_fixed = true;
 	LOG_BTS(acc_ramp->bts, DRSL, LOGL_DEBUG, "ACC RAMP: ramping step interval set to %u seconds\n",
 		step_interval);
 	return 0;
 }
 
 /*!
- * Clear a previously set fixed ramping step interval, so that the interval
- * is again automatically scaled to the BTS channel load average.
+ * Change the ramping channel load thresholds. They control how ramping subset
+ * size of allowed ACCs changes in relation to current channel load (%, 0-100):
+ * Under the lower threshold, subset size may be increased; above the upper
+ * threshold, subset size may be decreased.
  * \param[in] acc_ramp Pointer to acc_ramp structure.
+ * \param[in] low_threshold The new minimum threshold: values under it allow for increasing the ramping subset size.
+ * \param[in] up_threshold The new maximum threshold: values under it allow for increasing the ramping subset size.
  */
-void acc_ramp_set_step_interval_dynamic(struct acc_ramp *acc_ramp)
+int acc_ramp_set_chan_load_thresholds(struct acc_ramp *acc_ramp, unsigned int low_threshold, unsigned int up_threshold)
 {
-	acc_ramp->step_interval_is_fixed = false;
-	LOG_BTS(acc_ramp->bts, DRSL, LOGL_DEBUG, "ACC RAMP: ramping step interval set to 'dynamic'\n");
+	/* for instance, high=49 and lower=50 makes sense:
+	   [50-100] -> decrease, [0-49] -> increase */
+	if ((int)up_threshold - (int)low_threshold < -1)
+		return -ERANGE;
+
+	acc_ramp->chan_load_lower_threshold = low_threshold;
+	acc_ramp->chan_load_upper_threshold = up_threshold;
+	return 0;
 }
 
 /*!
@@ -593,13 +605,23 @@ void acc_ramp_set_step_interval_dynamic(struct acc_ramp *acc_ramp)
  */
 void acc_ramp_trigger(struct acc_ramp *acc_ramp)
 {
-	/* Abort any previously running ramping process and allow all available ACCs. */
-	acc_ramp_abort(acc_ramp);
-
 	if (acc_ramp_is_enabled(acc_ramp)) {
+		if (osmo_timer_pending(&acc_ramp->step_timer))
+			return; /* Already started, nothing to do */
+
 		/* Set all available ACCs to barred and start ramping up. */
 		acc_mgr_set_len_allowed_ramp(&acc_ramp->bts->acc_mgr, 0);
+		if (acc_ramp->chan_load_lower_threshold == 0 &&
+		    acc_ramp->chan_load_upper_threshold == 100) {
+			LOG_BTS(acc_ramp->bts, DRSL, LOGL_ERROR,
+				"ACC RAMP: starting ramp up with 0 ACCs and "
+				"no possibility to grow the allowed subset size! "
+				"Check VTY cmd access-control-class-ramping-chan-load\n");
+		}
 		do_acc_ramping_step(acc_ramp);
+	} else {
+		/* Abort any previously running ramping process and allow all available ACCs. */
+		acc_ramp_abort(acc_ramp);
 	}
 }
 

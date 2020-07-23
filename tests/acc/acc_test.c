@@ -63,6 +63,8 @@ static inline void _bts_del(struct gsm_bts *bts, const char *msg)
 	rate_ctr_group_free(bts->bts_ctrs);
 	if (osmo_timer_pending(&bts->acc_mgr.rotate_timer))
 		osmo_timer_del(&bts->acc_mgr.rotate_timer);
+	if (osmo_timer_pending(&bts->acc_ramp.step_timer))
+		osmo_timer_del(&bts->acc_ramp.step_timer);
 	/* no need to llist_del(&bts->list), we never registered the bts there. */
 	talloc_free(bts);
 	fprintf(stderr, "BTS deallocated OK in %s()\n", msg);
@@ -230,7 +232,7 @@ static void test_acc_mgr_rotate(struct gsm_network *net)
 	bts_del(bts);
 }
 
-static void test_acc_ramp_fixed(struct gsm_network *net)
+static void test_acc_ramp(struct gsm_network *net)
 {
 	fprintf(stderr, "===%s===\n", __func__);
 	int i;
@@ -242,14 +244,13 @@ static void test_acc_ramp_fixed(struct gsm_network *net)
 	OSMO_ASSERT(acc_ramp_is_enabled(acc_ramp) == false);
 	OSMO_ASSERT(acc_ramp_get_step_size(acc_ramp) == ACC_RAMP_STEP_SIZE_DEFAULT);
 	OSMO_ASSERT(acc_ramp_get_step_interval(acc_ramp) == ACC_RAMP_STEP_INTERVAL_MIN);
-	OSMO_ASSERT(acc_ramp_step_interval_is_dynamic(acc_ramp) == true);
 
 	/* Set super high rotation time so it doesn't interfer here: */
 	acc_mgr_set_rotation_time(acc_mgr, 5000);
 
-	//acc_ramp_set_step_interval_dynamic(acc_ramp);
 	OSMO_ASSERT(acc_ramp_set_step_interval(acc_ramp, 1) == -ERANGE);
 	OSMO_ASSERT(acc_ramp_set_step_interval(acc_ramp, 50) == 0);
+	OSMO_ASSERT(acc_ramp_set_chan_load_thresholds(acc_ramp, 100, 100) == 0);
 	acc_ramp_set_step_size(acc_ramp, 1);
 	acc_ramp_set_enabled(acc_ramp, true);
 
@@ -265,7 +266,7 @@ static void test_acc_ramp_fixed(struct gsm_network *net)
 	bts_del(bts);
 }
 
-static void test_acc_ramp_fixed2(struct gsm_network *net)
+static void test_acc_ramp2(struct gsm_network *net)
 {
 	fprintf(stderr, "===%s===\n", __func__);
 	int i;
@@ -277,7 +278,6 @@ static void test_acc_ramp_fixed2(struct gsm_network *net)
 	OSMO_ASSERT(acc_ramp_is_enabled(acc_ramp) == false);
 	OSMO_ASSERT(acc_ramp_get_step_size(acc_ramp) == ACC_RAMP_STEP_SIZE_DEFAULT);
 	OSMO_ASSERT(acc_ramp_get_step_interval(acc_ramp) == ACC_RAMP_STEP_INTERVAL_MIN);
-	OSMO_ASSERT(acc_ramp_step_interval_is_dynamic(acc_ramp) == true);
 
 	/* Set super high rotation time so it doesn't interfer here: */
 	acc_mgr_set_rotation_time(acc_mgr, 5000);
@@ -299,7 +299,7 @@ static void test_acc_ramp_fixed2(struct gsm_network *net)
 	bts_del(bts);
 }
 
-static void test_acc_ramp_fixed3(struct gsm_network *net)
+static void test_acc_ramp3(struct gsm_network *net)
 {
 	fprintf(stderr, "===%s===\n", __func__);
 	int i;
@@ -311,7 +311,6 @@ static void test_acc_ramp_fixed3(struct gsm_network *net)
 	OSMO_ASSERT(acc_ramp_is_enabled(acc_ramp) == false);
 	OSMO_ASSERT(acc_ramp_get_step_size(acc_ramp) == ACC_RAMP_STEP_SIZE_DEFAULT);
 	OSMO_ASSERT(acc_ramp_get_step_interval(acc_ramp) == ACC_RAMP_STEP_INTERVAL_MIN);
-	OSMO_ASSERT(acc_ramp_step_interval_is_dynamic(acc_ramp) == true);
 
 	/* Set super high rotation time so it doesn't interfer here: */
 	acc_mgr_set_rotation_time(acc_mgr, 5000);
@@ -336,58 +335,19 @@ static void test_acc_ramp_fixed3(struct gsm_network *net)
 	bts_del(bts);
 }
 
-static void test_acc_ramp_dynamic(struct gsm_network *net)
+static void test_acc_ramp_up_rotate(struct gsm_network *net, unsigned int chan_load, unsigned int low_threshold, unsigned int up_threshold)
 {
-	fprintf(stderr, "===%s===\n", __func__);
-	char buf[128];
-	unsigned int step_sec;
+	fprintf(stderr, "===%s(%u, %u, %u)===\n",
+		__func__, chan_load, low_threshold, up_threshold);
 	struct gsm_bts *bts = bts_init(net);
 	struct acc_mgr *acc_mgr = &bts->acc_mgr;
 	struct acc_ramp *acc_ramp = &bts->acc_ramp;
+	int n;
 
 	/* Validate are all allowed by default after allocation: */
 	OSMO_ASSERT(acc_ramp_is_enabled(acc_ramp) == false);
 	OSMO_ASSERT(acc_ramp_get_step_size(acc_ramp) == ACC_RAMP_STEP_SIZE_DEFAULT);
 	OSMO_ASSERT(acc_ramp_get_step_interval(acc_ramp) == ACC_RAMP_STEP_INTERVAL_MIN);
-	OSMO_ASSERT(acc_ramp_step_interval_is_dynamic(acc_ramp) == true);
-
-	/* Set super high rotation time so it doesn't interfer here: */
-	acc_mgr_set_rotation_time(acc_mgr, 5000);
-
-	acc_ramp_set_step_interval_dynamic(acc_ramp);
-	acc_ramp_set_step_size(acc_ramp, 1);
-	acc_ramp_set_enabled(acc_ramp, true);
-
-	bts->chan_load_avg = 0; /*set 70% channel load */
-
-	osmo_gettimeofday_override_time = (struct timeval) {0, 0};
-	acc_ramp_trigger(acc_ramp);
-
-	while (osmo_timer_pending(&acc_ramp->step_timer)) {
-		bts->chan_load_avg += 10;
-		step_sec = ((bts->chan_load_avg * ACC_RAMP_STEP_INTERVAL_MAX) / 100);
-		osmo_gettimeofday_override_time.tv_sec += step_sec;
-		snprintf(buf, sizeof(buf), "select(): load=%" PRIu8 " -> step_sec=%u",
-			 bts->chan_load_avg, step_sec);
-		clock_debug(buf);
-		osmo_select_main(0);
-	}
-
-	bts_del(bts);
-}
-
-static void test_acc_ramp_fixed_rotate(struct gsm_network *net)
-{
-	fprintf(stderr, "===%s===\n", __func__);
-	struct gsm_bts *bts = bts_init(net);
-	struct acc_mgr *acc_mgr = &bts->acc_mgr;
-	struct acc_ramp *acc_ramp = &bts->acc_ramp;
-
-	/* Validate are all allowed by default after allocation: */
-	OSMO_ASSERT(acc_ramp_is_enabled(acc_ramp) == false);
-	OSMO_ASSERT(acc_ramp_get_step_size(acc_ramp) == ACC_RAMP_STEP_SIZE_DEFAULT);
-	OSMO_ASSERT(acc_ramp_get_step_interval(acc_ramp) == ACC_RAMP_STEP_INTERVAL_MIN);
-	OSMO_ASSERT(acc_ramp_step_interval_is_dynamic(acc_ramp) == true);
 
 	OSMO_ASSERT(acc_ramp_set_step_interval(acc_ramp, 250) == 0);
 	acc_mgr_set_rotation_time(acc_mgr, 100);
@@ -396,29 +356,104 @@ static void test_acc_ramp_fixed_rotate(struct gsm_network *net)
 	bts->si_common.rach_control.t2 |= 0x02;
 	acc_mgr_perm_subset_changed(acc_mgr, &bts->si_common.rach_control);
 
-	acc_ramp_set_step_size(acc_ramp, 1);
+	OSMO_ASSERT(acc_ramp_set_step_size(acc_ramp, 1) == 0);
+	OSMO_ASSERT(acc_ramp_set_chan_load_thresholds(acc_ramp, low_threshold, up_threshold) == 0);
 	acc_ramp_set_enabled(acc_ramp, true);
+
+	bts->chan_load_avg = chan_load; /*set % channel load */
 
 	osmo_gettimeofday_override_time = (struct timeval) {0, 0};
 	acc_ramp_trigger(acc_ramp);
 
+	n = 5;
 	while (true) {
+		OSMO_ASSERT(osmo_timer_pending(&acc_ramp->step_timer));
 		if (osmo_timer_pending(&acc_mgr->rotate_timer)) {
 			if ((osmo_gettimeofday_override_time.tv_sec + 50) % 250 == 0)
 				osmo_gettimeofday_override_time.tv_sec += 50;
 			else
 				osmo_gettimeofday_override_time.tv_sec += 100;
-		} else if (osmo_timer_pending(&acc_ramp->step_timer)) {
-			osmo_gettimeofday_override_time.tv_sec -= osmo_gettimeofday_override_time.tv_sec % 250;
-			osmo_gettimeofday_override_time.tv_sec += 250;
 		} else {
 			/* Once ramping is done, adm level is big enough and hence
-			 * rotation is not needed and will be disabled. We are then done
-			 */
-			break;
+			 * rotation is not needed and will be disabled. Run
+			 * ramping a bit more and we are then done */
+			osmo_gettimeofday_override_time.tv_sec -= osmo_gettimeofday_override_time.tv_sec % 250;
+			osmo_gettimeofday_override_time.tv_sec += 250;
+			if (n-- == 0)
+				break;
 		}
 		clock_debug("select()");
 		osmo_select_main(0);
+	}
+
+	bts_del(bts);
+}
+
+static void test_acc_ramp_updown_rotate(struct gsm_network *net, unsigned int low_threshold, unsigned int up_threshold,
+					unsigned int min_load, unsigned int max_load, unsigned load_step)
+{
+	fprintf(stderr, "===%s(%u, %u, %u, %u, %u)===\n",
+		__func__, low_threshold, up_threshold,
+		min_load, max_load, load_step);
+	struct gsm_bts *bts = bts_init(net);
+	struct acc_mgr *acc_mgr = &bts->acc_mgr;
+	struct acc_ramp *acc_ramp = &bts->acc_ramp;
+	int i;
+	char buf[256];
+	bool up = true;
+
+	/* Validate are all allowed by default after allocation: */
+	OSMO_ASSERT(acc_ramp_is_enabled(acc_ramp) == false);
+	OSMO_ASSERT(acc_ramp_get_step_size(acc_ramp) == ACC_RAMP_STEP_SIZE_DEFAULT);
+	OSMO_ASSERT(acc_ramp_get_step_interval(acc_ramp) == ACC_RAMP_STEP_INTERVAL_MIN);
+
+	OSMO_ASSERT(acc_ramp_set_step_interval(acc_ramp, 250) == 0);
+	acc_mgr_set_rotation_time(acc_mgr, 100);
+	/* Test that ramping + rotation won't go over permanently barred ACC*/
+	fprintf(stderr, "*** Barring one ACC ***\n");
+	bts->si_common.rach_control.t2 |= 0x02;
+	acc_mgr_perm_subset_changed(acc_mgr, &bts->si_common.rach_control);
+
+	OSMO_ASSERT(acc_ramp_set_step_size(acc_ramp, 1) == 0);
+	OSMO_ASSERT(acc_ramp_set_chan_load_thresholds(acc_ramp, low_threshold, up_threshold) == 0);
+	acc_ramp_set_enabled(acc_ramp, true);
+
+	bts->chan_load_avg = min_load; /* set % channel load */
+
+	osmo_gettimeofday_override_time = (struct timeval) {0, 0};
+	acc_ramp_trigger(acc_ramp);
+
+	/* 50 ev loop iterations */
+	for (i = 0; i < 50; i++) {
+		OSMO_ASSERT(osmo_timer_pending(&acc_ramp->step_timer));
+		if (osmo_timer_pending(&acc_mgr->rotate_timer)) {
+			if ((osmo_gettimeofday_override_time.tv_sec + 50) % 250 == 0)
+				osmo_gettimeofday_override_time.tv_sec += 50;
+			else
+				osmo_gettimeofday_override_time.tv_sec += 100;
+		} else {
+			/* Once ramping is done, adm level is big enough and hence
+			 * rotation is not needed and will be disabled. */
+			osmo_gettimeofday_override_time.tv_sec -= osmo_gettimeofday_override_time.tv_sec % 250;
+			osmo_gettimeofday_override_time.tv_sec += 250;
+		}
+		snprintf(buf, sizeof(buf), "select(%d): chan_load_avg=%" PRIu8, i, bts->chan_load_avg);
+		clock_debug(buf);
+		osmo_select_main(0);
+
+		if (up) {
+			bts->chan_load_avg += load_step;
+			if (bts->chan_load_avg >= max_load)
+				up = false;
+			if (bts->chan_load_avg > max_load)
+				bts->chan_load_avg = max_load;
+		} else {
+			bts->chan_load_avg = (uint8_t)OSMO_MAX((int)(bts->chan_load_avg - load_step), 0);
+			if (bts->chan_load_avg <= min_load)
+				up = true;
+			if (bts->chan_load_avg < min_load)
+				bts->chan_load_avg = max_load;
+		}
 	}
 
 	bts_del(bts);
@@ -460,11 +495,16 @@ int main(int argc, char **argv)
 	test_acc_mgr_no_ramp(net);
 	test_acc_mgr_manual_ramp(net);
 	test_acc_mgr_rotate(net);
-	test_acc_ramp_fixed(net);
-	test_acc_ramp_fixed2(net);
-	test_acc_ramp_fixed3(net);
-	test_acc_ramp_dynamic(net);
-	test_acc_ramp_fixed_rotate(net);
+	test_acc_ramp(net);
+	test_acc_ramp2(net);
+	test_acc_ramp3(net);
+	test_acc_ramp_up_rotate(net, 0, 100, 100);
+	test_acc_ramp_up_rotate(net, 0, 20, 50);
+	test_acc_ramp_up_rotate(net, 70, 80, 90);
+	test_acc_ramp_updown_rotate(net, 80, 90, 0, 100, 15);
+	test_acc_ramp_updown_rotate(net, 30, 50, 10, 100, 15);
+	test_acc_ramp_updown_rotate(net, 50, 49, 0, 100, 10);
+	test_acc_ramp_updown_rotate(net, 30, 80, 30, 80, 5);
 
 	return EXIT_SUCCESS;
 }
