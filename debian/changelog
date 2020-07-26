@@ -1,3 +1,9 @@
+osmo-bsc (1.6.1) unstable; urgency=medium
+
+  * handorer.h: Fix compilation with gcc-10
+
+ -- Harald Welte <laforge@osmocom.org>  Sun, 26 Jul 2020 17:35:45 +0200
+
 osmo-bsc (1.6.0) unstable; urgency=medium
 
   [ Philipp Maier ]
