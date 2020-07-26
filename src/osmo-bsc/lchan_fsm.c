@@ -1336,6 +1336,13 @@ void lchan_fsm_allstate_action(struct osmo_fsm_inst *fi, uint32_t event, void *d
 		lchan_fail_to(LCHAN_ST_UNUSED, "LCHAN_EV_TS_ERROR");
 		return;
 
+	case LCHAN_EV_RLL_ERR_IND:
+		/* let's just ignore this.  We are already logging the
+		 * fact that this message was received inside
+		 * abis_rsl.c.  There can be any number of reasons why the
+		 * radio link layer failed */
+		return;
+
 	default:
 		return;
 	}
@@ -1464,6 +1471,7 @@ static struct osmo_fsm lchan_fsm = {
 	.allstate_action = lchan_fsm_allstate_action,
 	.allstate_event_mask = 0
 		| S(LCHAN_EV_TS_ERROR)
+		| S(LCHAN_EV_RLL_ERR_IND)
 		,
 	.timer_cb = lchan_fsm_timer_cb,
 	.cleanup = lchan_fsm_cleanup,
