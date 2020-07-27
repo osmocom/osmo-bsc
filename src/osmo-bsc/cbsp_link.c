@@ -239,13 +239,20 @@ int bsc_cbc_link_restart(void)
 	if (cbc->config.listen_port != -1) {
 		LOGP(DCBS, LOGL_NOTICE, "Starting CBSP Server (bound to %s:%u)\n",
 			cbc->config.listen_hostname, cbc->config.listen_port);
-		if (!cbc->server.srv) {
+		if (!cbc->server.link) {
+			LOGP(DCBS, LOGL_NOTICE, "Creating CBSP Server\n");
 			cbc->server.link = osmo_stream_srv_link_create(cbc);
 			osmo_stream_srv_link_set_data(cbc->server.link, cbc);
 			osmo_stream_srv_link_set_accept_cb(cbc->server.link, cbsp_srv_link_accept_cb);
+
+			osmo_stream_srv_link_set_addr(cbc->server.link, cbc->config.listen_hostname);
+			osmo_stream_srv_link_set_port(cbc->server.link, cbc->config.listen_port);
+
+			if (osmo_stream_srv_link_open(cbc->server.link) < 0) {
+				LOGP(DCBS, LOGL_ERROR, "Cannot open CBSP Server link on %s:%u\n",
+				     cbc->config.listen_hostname, cbc->config.listen_port);
+			}
 		}
-		osmo_stream_srv_link_set_addr(cbc->server.link, cbc->config.listen_hostname);
-		osmo_stream_srv_link_set_port(cbc->server.link, cbc->config.listen_port);
 	}
 	return 0;
 }
