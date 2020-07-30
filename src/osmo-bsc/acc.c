@@ -114,7 +114,9 @@ static void acc_mgr_gen_subset(struct acc_mgr *acc_mgr, bool update_si)
 
 static uint8_t get_highest_allowed_acc(uint16_t mask)
 {
-	for (int i = 9; i >= 0; i--) {
+	int i;
+
+	for (i = 9; i >= 0; i--) {
 		if (mask & (1 << i))
 			return i;
 	}
@@ -124,7 +126,9 @@ static uint8_t get_highest_allowed_acc(uint16_t mask)
 
 static uint8_t get_lowest_allowed_acc(uint16_t mask)
 {
-	for (int i = 0; i < 10; i++) {
+	int i;
+
+	for (i = 0; i < 10; i++) {
 		if (mask & (1 << i))
 			return i;
 	}
