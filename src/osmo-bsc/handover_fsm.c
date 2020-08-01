@@ -863,8 +863,17 @@ void handover_end(struct gsm_subscriber_connection *conn, enum handover_result r
 	LOG_HO(conn, LOGL_INFO, "Result: %s\n", handover_result_name(result));
 
 	if (ho->new_lchan && result == HO_RESULT_OK) {
+		struct gsm_bts *bts;
+
 		gscon_change_primary_lchan(conn, conn->ho.new_lchan);
 		ho->new_lchan = NULL;
+
+		bts = conn_get_bts(conn);
+		if (is_siemens_bts(bts) && ts_is_tch(conn->lchan->ts)) {
+			/* HACK: store the actual Classmark 2 LV from the subscriber and use it here! */
+			uint8_t cm2_lv[] = { 0x02, 0x00, 0x00 };
+			send_siemens_mrpci(conn->lchan, cm2_lv);
+		}
 	}
 
 	osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_HANDOVER_END, &result);
