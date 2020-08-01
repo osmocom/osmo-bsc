@@ -32,6 +32,7 @@
 #include <osmocom/bsc/osmo_bsc_lcls.h>
 #include <osmocom/bsc/bsc_msc_data.h>
 #include <osmocom/bsc/gsm_08_08.h>
+#include <osmocom/bsc/gsm_04_08_rr.h>
 #include <osmocom/bsc/lchan_select.h>
 #include <osmocom/bsc/abis_rsl.h>
 #include <osmocom/bsc/bts.h>
@@ -224,9 +225,18 @@ static void send_assignment_complete(struct gsm_subscriber_connection *conn)
 
 static void assignment_success(struct gsm_subscriber_connection *conn)
 {
+	struct gsm_bts *bts;
+
 	/* Take on the new lchan */
 	gscon_change_primary_lchan(conn, conn->assignment.new_lchan);
 	conn->assignment.new_lchan = NULL;
+
+	bts = conn_get_bts(conn);
+	if (is_siemens_bts(bts) && ts_is_tch(conn->lchan->ts)) {
+		/* HACK: store the actual Classmark 2 LV from the subscriber and use it here! */
+		uint8_t cm2_lv[] = { 0x02, 0x00, 0x00 };
+		send_siemens_mrpci(conn->lchan, cm2_lv);
+	}
 
 	/* apply LCLS configuration (if any) */
 	lcls_apply_config(conn);
