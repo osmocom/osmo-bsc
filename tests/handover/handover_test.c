@@ -176,6 +176,7 @@ static void gen_meas_rep(struct gsm_lchan *lchan)
 static struct gsm_bts *create_bts(int arfcn)
 {
 	struct gsm_bts *bts;
+	struct gsm_bts_trx *trx;
 	struct e1inp_sign_link *rsl_link;
 	int i;
 
@@ -192,30 +193,73 @@ static struct gsm_bts *create_bts(int arfcn)
 	bts->codec.hr = 1;
 	bts->codec.amr = 1;
 
+	trx = bts->c0;
 	rsl_link = talloc_zero(ctx, struct e1inp_sign_link);
-	rsl_link->trx = bts->c0;
-	bts->c0->rsl_link = rsl_link;
+	rsl_link->trx = trx;
+	trx->rsl_link = rsl_link;
 
-	bts->c0->mo.nm_state.operational = NM_OPSTATE_ENABLED;
-	bts->c0->mo.nm_state.availability = NM_AVSTATE_OK;
-	bts->c0->mo.nm_state.administrative = NM_STATE_UNLOCKED;
-	bts->c0->bb_transc.mo.nm_state.operational = NM_OPSTATE_ENABLED;
-	bts->c0->bb_transc.mo.nm_state.availability = NM_AVSTATE_OK;
-	bts->c0->bb_transc.mo.nm_state.administrative = NM_STATE_UNLOCKED;
+	trx->mo.nm_state.operational = NM_OPSTATE_ENABLED;
+	trx->mo.nm_state.availability = NM_AVSTATE_OK;
+	trx->mo.nm_state.administrative = NM_STATE_UNLOCKED;
+	trx->bb_transc.mo.nm_state.operational = NM_OPSTATE_ENABLED;
+	trx->bb_transc.mo.nm_state.availability = NM_AVSTATE_OK;
+	trx->bb_transc.mo.nm_state.administrative = NM_STATE_UNLOCKED;
 
 	/* 4 full rate and 4 half rate channels */
-	for (i = 1; i <= 6; i++) {
-		bts->c0->ts[i].pchan_from_config = (i < 5) ? GSM_PCHAN_TCH_F : GSM_PCHAN_TCH_H;
-		bts->c0->ts[i].mo.nm_state.operational = NM_OPSTATE_ENABLED;
-		bts->c0->ts[i].mo.nm_state.availability = NM_AVSTATE_OK;
-		bts->c0->ts[i].mo.nm_state.administrative = NM_STATE_UNLOCKED;
+	trx->ts[0].pchan_from_config = GSM_PCHAN_CCCH_SDCCH4;
+	trx->ts[1].pchan_from_config = GSM_PCHAN_PDCH;
+	trx->ts[2].pchan_from_config = GSM_PCHAN_TCH_F;
+	trx->ts[3].pchan_from_config = GSM_PCHAN_TCH_F;
+	trx->ts[4].pchan_from_config = GSM_PCHAN_TCH_F;
+	trx->ts[5].pchan_from_config = GSM_PCHAN_TCH_F;
+	trx->ts[6].pchan_from_config = GSM_PCHAN_PDCH;
+	trx->ts[7].pchan_from_config = GSM_PCHAN_PDCH;
+	for (i = 2; i <= 7; i++) {
+		trx->ts[i].mo.nm_state.operational = NM_OPSTATE_ENABLED;
+		trx->ts[i].mo.nm_state.availability = NM_AVSTATE_OK;
+		trx->ts[i].mo.nm_state.administrative = NM_STATE_UNLOCKED;
+	}
+	for (i = 0; i < ARRAY_SIZE(trx->ts); i++) {
+		/* make sure ts->lchans[] get initialized */
+		osmo_fsm_inst_dispatch(trx->ts[i].fi, TS_EV_RSL_READY, 0);
+		osmo_fsm_inst_dispatch(trx->ts[i].fi, TS_EV_OML_READY, 0);
 	}
 
-	for (i = 0; i < ARRAY_SIZE(bts->c0->ts); i++) {
-		/* make sure ts->lchans[] get initialized */
-		osmo_fsm_inst_dispatch(bts->c0->ts[i].fi, TS_EV_RSL_READY, 0);
-		osmo_fsm_inst_dispatch(bts->c0->ts[i].fi, TS_EV_OML_READY, 0);
+#if 1
+
+	trx = gsm_bts_trx_alloc(bts);
+	rsl_link = talloc_zero(ctx, struct e1inp_sign_link);
+	rsl_link->trx = trx;
+	trx->rsl_link = rsl_link;
+
+	trx->mo.nm_state.operational = NM_OPSTATE_ENABLED;
+	trx->mo.nm_state.availability = NM_AVSTATE_OK;
+	trx->mo.nm_state.administrative = NM_STATE_UNLOCKED;
+	trx->bb_transc.mo.nm_state.operational = NM_OPSTATE_ENABLED;
+	trx->bb_transc.mo.nm_state.availability = NM_AVSTATE_OK;
+	trx->bb_transc.mo.nm_state.administrative = NM_STATE_UNLOCKED;
+
+	trx->ts[0].pchan_from_config = GSM_PCHAN_SDCCH8_SACCH8C;
+	trx->ts[1].pchan_from_config = GSM_PCHAN_PDCH;
+	trx->ts[2].pchan_from_config = GSM_PCHAN_TCH_F_TCH_H_PDCH;
+	trx->ts[3].pchan_from_config = GSM_PCHAN_TCH_F_TCH_H_PDCH;
+	trx->ts[4].pchan_from_config = GSM_PCHAN_TCH_F_TCH_H_PDCH;
+	trx->ts[5].pchan_from_config = GSM_PCHAN_TCH_F_TCH_H_PDCH;
+	trx->ts[6].pchan_from_config = GSM_PCHAN_TCH_F_TCH_H_PDCH;
+	trx->ts[7].pchan_from_config = GSM_PCHAN_TCH_F_TCH_H_PDCH;
+	for (i = 2; i <= 7; i++) {
+		trx->ts[i].mo.nm_state.operational = NM_OPSTATE_ENABLED;
+		trx->ts[i].mo.nm_state.availability = NM_AVSTATE_OK;
+		trx->ts[i].mo.nm_state.administrative = NM_STATE_UNLOCKED;
 	}
+	for (i = 0; i < ARRAY_SIZE(trx->ts); i++) {
+		/* make sure ts->lchans[] get initialized */
+		osmo_fsm_inst_dispatch(trx->ts[i].fi, TS_EV_RSL_READY, 0);
+		osmo_fsm_inst_dispatch(trx->ts[i].fi, TS_EV_OML_READY, 0);
+	}
+#endif
+
+
 	return bts;
 }
 
@@ -1293,17 +1337,18 @@ static char *test_case_29[] = {
 	"One BTS, and TCH/F are considered congested, TCH/H are not.\n"
 	,
 	"create-bts", "1",
-	"set-min-free", "0", "TCH/F", "3",
-	"set-min-free", "0", "TCH/H", "0",
+	"set-min-free", "0", "TCH/F", "2",
+	//"set-min-free", "0", "TCH/H", "0",
+	"create-ms", "0", "TCH/F", "AMR",
 	"create-ms", "0", "TCH/F", "AMR",
 	"create-ms", "0", "TCH/F", "AMR",
 	"create-ms", "0", "TCH/H", "AMR",
 	"meas-rep", "0", "30","0", "1","0","30",
 	"expect-no-chan",
 	"congestion-check",
-	"expect-chan", "0", "5",
+	"expect-chan", "0", "6",
 	"ack-chan",
-	"expect-ho", "0", "1",
+	"expect-ho", "0", "2",
 	"ho-complete",
 	NULL
 };
