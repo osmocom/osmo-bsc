@@ -1286,6 +1286,29 @@ static char *test_case_28[] = {
 	NULL
 };
 
+static char *test_case_29[] = {
+	"2",
+
+	"Congestion check: Balancing congestion by handover TCH/F -> TCH/H\n\n"
+	"One BTS, and TCH/F are considered congested, TCH/H are not.\n"
+	,
+	"create-bts", "1",
+	"set-min-free", "0", "TCH/F", "3",
+	"set-min-free", "0", "TCH/H", "0",
+	"create-ms", "0", "TCH/F", "AMR",
+	"create-ms", "0", "TCH/F", "AMR",
+	"create-ms", "0", "TCH/H", "AMR",
+	"meas-rep", "0", "30","0", "1","0","30",
+	"expect-no-chan",
+	"congestion-check",
+	"expect-chan", "0", "5",
+	"ack-chan",
+	"expect-ho", "0", "1",
+	"ho-complete",
+	NULL
+};
+
+
 static char **test_cases[] =  {
 	test_case_0,
 	test_case_1,
@@ -1316,6 +1339,7 @@ static char **test_cases[] =  {
 	test_case_26,
 	test_case_27,
 	test_case_28,
+	test_case_29,
 };
 
 static const struct log_info_cat log_categories[] = {

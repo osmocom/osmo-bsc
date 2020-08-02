@@ -224,3 +224,9 @@ AT_KEYWORDS([handover])
 cat $abs_srcdir/handover/handover_test.ok > expout
 AT_CHECK([$abs_top_builddir/tests/handover/handover_test 28], [], [expout], [ignore])
 AT_CLEANUP
+
+AT_SETUP([handover test 29])
+AT_KEYWORDS([handover])
+cat $abs_srcdir/handover/handover_test.ok > expout
+AT_CHECK([$abs_top_builddir/tests/handover/handover_test 29], [], [expout], [ignore])
+AT_CLEANUP
