@@ -1771,7 +1771,7 @@ static int ho_or_as(struct vty *vty, const char *argv[], int argc)
 		}
 
 		if (!new_bts) {
-			vty_out(vty, "Unable to trigger handover, specified bts #%u does not exist %s",
+			vty_out(vty, "%% Unable to trigger handover, specified bts #%u does not exist %s",
 				bts_nr_new, VTY_NEWLINE);
 			return CMD_WARNING;
 		}
@@ -1793,7 +1793,7 @@ static int ho_or_as(struct vty *vty, const char *argv[], int argc)
 		}
 	}
 
-	vty_out(vty, "Unable to trigger %s, specified connection (bts=%u,trx=%u,ts=%u,ss=%u) does not exist%s",
+	vty_out(vty, "%% Unable to trigger %s, specified connection (bts=%u,trx=%u,ts=%u,ss=%u) does not exist%s",
 		action, bts_nr, trx_nr, ts_nr, ss_nr, VTY_NEWLINE);
 
 	return CMD_WARNING;
@@ -1865,7 +1865,7 @@ static struct gsm_lchan *find_used_voice_lchan(struct vty *vty, int random_idx)
 		random_idx %= count;
 	}
 
-	vty_out(vty, "Cannot find any ongoing voice calls%s", VTY_NEWLINE);
+	vty_out(vty, "%% Cannot find any ongoing voice calls%s", VTY_NEWLINE);
 	return NULL;
 }
 
@@ -1892,7 +1892,7 @@ static struct gsm_bts *find_other_bts_with_free_slots(struct vty *vty, struct gs
 			return bts;
 		}
 	}
-	vty_out(vty, "Cannot find any BTS (other than BTS %u) with free %s lchan%s",
+	vty_out(vty, "%% Cannot find any BTS (other than BTS %u) with free %s lchan%s",
 		not_this_bts? not_this_bts->nr : 255, gsm_lchant_name(free_type), VTY_NEWLINE);
 	return NULL;
 }
@@ -2036,7 +2036,7 @@ DEFUN(show_paging_group,
 
 	page_group = gsm0502_calc_paging_group(&bts->si_common.chan_desc,
 						str_to_imsi(argv[1]));
-	vty_out(vty, "%%Paging group for IMSI %" PRIu64 " on BTS #%d is %u%s",
+	vty_out(vty, "%% Paging group for IMSI %" PRIu64 " on BTS #%d is %u%s",
 		str_to_imsi(argv[1]), bts->nr,
 		page_group, VTY_NEWLINE);
 	return CMD_SUCCESS;
@@ -3197,7 +3197,7 @@ DEFUN(cfg_bts_gprs_mode, cfg_bts_gprs_mode_cmd,
 	enum bts_gprs_mode mode = bts_gprs_mode_parse(argv[0], NULL);
 
 	if (!bts_gprs_mode_is_compat(bts, mode)) {
-		vty_out(vty, "This BTS type does not support %s%s", argv[0],
+		vty_out(vty, "%% This BTS type does not support %s%s", argv[0],
 			VTY_NEWLINE);
 		return CMD_WARNING;
 	}
@@ -3305,7 +3305,7 @@ DEFUN(cfg_bts_si_mode, cfg_bts_si_mode_cmd,
 
 	type = get_string_value(osmo_sitype_strs, argv[0]);
 	if (type < 0) {
-		vty_out(vty, "Error SI Type%s", VTY_NEWLINE);
+		vty_out(vty, "%% Error SI Type%s", VTY_NEWLINE);
 		return CMD_WARNING;
 	}
 
@@ -3328,12 +3328,12 @@ DEFUN(cfg_bts_si_static, cfg_bts_si_static_cmd,
 
 	type = get_string_value(osmo_sitype_strs, argv[0]);
 	if (type < 0) {
-		vty_out(vty, "Error SI Type%s", VTY_NEWLINE);
+		vty_out(vty, "%% Error SI Type%s", VTY_NEWLINE);
 		return CMD_WARNING;
 	}
 
 	if (!(bts->si_mode_static & (1 << type))) {
-		vty_out(vty, "SI Type %s is not configured in static mode%s",
+		vty_out(vty, "%% SI Type %s is not configured in static mode%s",
 			get_value_string(osmo_sitype_strs, type), VTY_NEWLINE);
 		return CMD_WARNING;
 	}
@@ -3344,7 +3344,7 @@ DEFUN(cfg_bts_si_static, cfg_bts_si_static_cmd,
 	/* Parse the user-specified SI in hex format, [partially] overwriting padding */
 	rc = osmo_hexparse(argv[1], GSM_BTS_SI(bts, type), GSM_MACBLOCK_LEN);
 	if (rc < 0 || rc > GSM_MACBLOCK_LEN) {
-		vty_out(vty, "Error parsing HEXSTRING%s", VTY_NEWLINE);
+		vty_out(vty, "%% Error parsing HEXSTRING%s", VTY_NEWLINE);
 		return CMD_WARNING;
 	}
 
@@ -3376,7 +3376,7 @@ DEFUN(cfg_bts_no_si_unused_send_empty, cfg_bts_no_si_unused_send_empty_cmd,
 	struct gsm_bts *bts = vty->index;
 
 	if (!is_ipaccess_bts(bts) || is_sysmobts_v2(bts)) {
-		vty_out(vty, "This command is only intended for ipaccess nanoBTS. See OS#3707.%s",
+		vty_out(vty, "%% This command is only intended for ipaccess nanoBTS. See OS#3707.%s",
 			VTY_NEWLINE);
 		return CMD_WARNING;
 	}
@@ -3497,24 +3497,24 @@ DEFUN(cfg_bts_si2quater_neigh_add, cfg_bts_si2quater_neigh_add_cmd,
 
 	switch (r) {
 	case 1:
-		vty_out(vty, "Warning: multiple threshold-high are not supported, overriding with %u%s",
+		vty_out(vty, "%% Warning: multiple threshold-high are not supported, overriding with %u%s",
 			thresh_hi, VTY_NEWLINE);
 		break;
 	case EARFCN_THRESH_LOW_INVALID:
-		vty_out(vty, "Warning: multiple threshold-low are not supported, overriding with %u%s",
+		vty_out(vty, "%% Warning: multiple threshold-low are not supported, overriding with %u%s",
 			thresh_lo, VTY_NEWLINE);
 		break;
 	case EARFCN_QRXLV_INVALID + 1:
-		vty_out(vty, "Warning: multiple QRXLEVMIN are not supported, overriding with %u%s",
+		vty_out(vty, "%% Warning: multiple QRXLEVMIN are not supported, overriding with %u%s",
 			qrx, VTY_NEWLINE);
 		break;
 	case EARFCN_PRIO_INVALID:
-		vty_out(vty, "Warning: multiple priorities are not supported, overriding with %u%s",
+		vty_out(vty, "%% Warning: multiple priorities are not supported, overriding with %u%s",
 			prio, VTY_NEWLINE);
 		break;
 	default:
 		if (r < 0) {
-			vty_out(vty, "Unable to add ARFCN %u: %s%s", arfcn, strerror(-r), VTY_NEWLINE);
+			vty_out(vty, "%% Unable to add ARFCN %u: %s%s", arfcn, strerror(-r), VTY_NEWLINE);
 			return CMD_WARNING;
 		}
 	}
@@ -3522,7 +3522,7 @@ DEFUN(cfg_bts_si2quater_neigh_add, cfg_bts_si2quater_neigh_add_cmd,
 	if (si2q_num(bts) <= SI2Q_MAX_NUM)
 		return CMD_SUCCESS;
 
-	vty_out(vty, "Warning: not enough space in SI2quater (%u/%u used) for a given EARFCN %u%s",
+	vty_out(vty, "%% Warning: not enough space in SI2quater (%u/%u used) for a given EARFCN %u%s",
 		bts->si2q_count, SI2Q_MAX_NUM, arfcn, VTY_NEWLINE);
 	osmo_earfcn_del(e, arfcn);
 
@@ -3542,7 +3542,7 @@ DEFUN(cfg_bts_si2quater_neigh_del, cfg_bts_si2quater_neigh_del_cmd,
 	uint16_t arfcn = atoi(argv[0]);
 	int r = osmo_earfcn_del(e, arfcn);
 	if (r < 0) {
-		vty_out(vty, "Unable to delete arfcn %u: %s%s", arfcn,
+		vty_out(vty, "%% Unable to delete arfcn %u: %s%s", arfcn,
 			strerror(-r), VTY_NEWLINE);
 		return CMD_WARNING;
 	}
@@ -3562,14 +3562,16 @@ DEFUN(cfg_bts_si2quater_uarfcn_add, cfg_bts_si2quater_uarfcn_add_cmd,
 
 	switch(bts_uarfcn_add(bts, arfcn, scramble, atoi(argv[2]))) {
 	case -ENOMEM:
-		vty_out(vty, "Unable to add UARFCN: max number of UARFCNs (%u) reached%s", MAX_EARFCN_LIST, VTY_NEWLINE);
+		vty_out(vty, "%% Unable to add UARFCN: max number of UARFCNs (%u) reached%s",
+			MAX_EARFCN_LIST, VTY_NEWLINE);
 		return CMD_WARNING;
 	case -ENOSPC:
-		vty_out(vty, "Warning: not enough space in SI2quater for a given UARFCN (%u, %u)%s",
+		vty_out(vty, "%% Warning: not enough space in SI2quater for a given UARFCN (%u, %u)%s",
 			arfcn, scramble, VTY_NEWLINE);
 		return CMD_WARNING;
 	case -EADDRINUSE:
-		vty_out(vty, "Unable to add UARFCN: (%u, %u) is already added%s", arfcn, scramble, VTY_NEWLINE);
+		vty_out(vty, "%% Unable to add UARFCN: (%u, %u) is already added%s",
+			arfcn, scramble, VTY_NEWLINE);
 		return CMD_WARNING;
 	}
 
@@ -3588,7 +3590,7 @@ DEFUN(cfg_bts_si2quater_uarfcn_del, cfg_bts_si2quater_uarfcn_del_cmd,
 	struct gsm_bts *bts = vty->index;
 
 	if (bts_uarfcn_del(bts, atoi(argv[0]), atoi(argv[1])) < 0) {
-		vty_out(vty, "Unable to delete uarfcn: pair not found%s",
+		vty_out(vty, "%% Unable to delete uarfcn: pair not found%s",
 			VTY_NEWLINE);
 		return CMD_WARNING;
 	}
@@ -3734,9 +3736,9 @@ DEFUN(cfg_bts_acc_ramping_step_interval,
 	error = acc_ramp_set_step_interval(&bts->acc_ramp, atoi(argv[0]));
 	if (error != 0) {
 		if (error == -ERANGE)
-			vty_out(vty, "Unable to set ACC ramp step interval: value out of range%s", VTY_NEWLINE);
+			vty_out(vty, "%% Unable to set ACC ramp step interval: value out of range%s", VTY_NEWLINE);
 		else
-			vty_out(vty, "Unable to set ACC ramp step interval: unknown error%s", VTY_NEWLINE);
+			vty_out(vty, "%% Unable to set ACC ramp step interval: unknown error%s", VTY_NEWLINE);
 		return CMD_WARNING;
 	}
 
@@ -3757,9 +3759,9 @@ DEFUN(cfg_bts_acc_ramping_step_size,
 	error = acc_ramp_set_step_size(&bts->acc_ramp, atoi(argv[0]));
 	if (error != 0) {
 		if (error == -ERANGE)
-			vty_out(vty, "Unable to set ACC ramp step size: value out of range%s", VTY_NEWLINE);
+			vty_out(vty, "%% Unable to set ACC ramp step size: value out of range%s", VTY_NEWLINE);
 		else
-			vty_out(vty, "Unable to set ACC ramp step size: unknown error%s", VTY_NEWLINE);
+			vty_out(vty, "%% Unable to set ACC ramp step size: unknown error%s", VTY_NEWLINE);
 		return CMD_WARNING;
 	}
 
@@ -3778,7 +3780,7 @@ DEFUN(cfg_bts_acc_ramping_chan_load,
 
 	rc = acc_ramp_set_chan_load_thresholds(&bts->acc_ramp, atoi(argv[0]), atoi(argv[1]));
 	if (rc < 0) {
-		vty_out(vty, "Unable to set ACC channel load thresholds%s", VTY_NEWLINE);
+		vty_out(vty, "%% Unable to set ACC channel load thresholds%s", VTY_NEWLINE);
 		return CMD_WARNING;
 	}
 
@@ -3909,20 +3911,20 @@ DEFUN(cfg_bts_depends_on, cfg_bts_depends_on_cmd,
 
 
 	if (!is_ipaccess_bts(bts)) {
-		vty_out(vty, "This feature is only available for IP systems.%s",
+		vty_out(vty, "%% This feature is only available for IP systems.%s",
 			VTY_NEWLINE);
 		return CMD_WARNING;
 	}
 
 	other_bts = gsm_bts_num(bts->network, dep);
 	if (!other_bts || !is_ipaccess_bts(other_bts)) {
-		vty_out(vty, "This feature is only available for IP systems.%s",
+		vty_out(vty, "%% This feature is only available for IP systems.%s",
 			VTY_NEWLINE);
 		return CMD_WARNING;
 	}
 
 	if (dep >= bts->nr) {
-		vty_out(vty, "%%Need to depend on an already declared unit.%s",
+		vty_out(vty, "%% Need to depend on an already declared unit.%s",
 			VTY_NEWLINE);
 		return CMD_WARNING;
 	}
@@ -3964,13 +3966,13 @@ static int get_amr_from_arg(struct vty *vty, int argc, const char *argv[], int f
 	for (i = 0; i < argc; i++) {
 		mode = atoi(argv[i]);
 		if (mode_prev > mode) {
-			vty_out(vty, "Modes must be listed in order%s",
+			vty_out(vty, "%% Modes must be listed in order%s",
 				VTY_NEWLINE);
 			return -1;
 		}
 
 		if (mode_prev == mode) {
-			vty_out(vty, "Modes must be unique %s", VTY_NEWLINE);
+			vty_out(vty, "%% Modes must be unique %s", VTY_NEWLINE);
 			return -2;
 		}
 		mode_prev = mode;
@@ -4063,7 +4065,7 @@ static int check_amr_config(struct vty *vty)
 	rc = gsm48_multirate_config(NULL, mr_conf, mr->ms_mode, mr->num_modes);
 	if (rc != 0) {
 		vty_out(vty,
-			"Invalid AMR multirate configuration (tch-f, ms) - check parameters%s",
+			"%% Invalid AMR multirate configuration (tch-f, ms) - check parameters%s",
 			VTY_NEWLINE);
 		vty_rc = CMD_WARNING;
 	}
@@ -4071,7 +4073,7 @@ static int check_amr_config(struct vty *vty)
 	rc = gsm48_multirate_config(NULL, mr_conf, mr->bts_mode, mr->num_modes);
 	if (rc != 0) {
 		vty_out(vty,
-			"Invalid AMR multirate configuration (tch-f, bts) - check parameters%s",
+			"%% Invalid AMR multirate configuration (tch-f, bts) - check parameters%s",
 			VTY_NEWLINE);
 		vty_rc = CMD_WARNING;
 	}
@@ -4081,7 +4083,7 @@ static int check_amr_config(struct vty *vty)
 	rc = gsm48_multirate_config(NULL, mr_conf, mr->ms_mode, mr->num_modes);
 	if (rc != 0) {
 		vty_out(vty,
-			"Invalid AMR multirate configuration (tch-h, ms) - check parameters%s",
+			"%% Invalid AMR multirate configuration (tch-h, ms) - check parameters%s",
 			VTY_NEWLINE);
 		vty_rc = CMD_WARNING;
 	}
@@ -4089,7 +4091,7 @@ static int check_amr_config(struct vty *vty)
 	rc = gsm48_multirate_config(NULL, mr_conf, mr->bts_mode, mr->num_modes);
 	if (rc != 0) {
 		vty_out(vty,
-			"Invalid AMR multirate configuration (tch-h, bts) - check parameters%s",
+			"%% Invalid AMR multirate configuration (tch-h, bts) - check parameters%s",
 			VTY_NEWLINE);
 		vty_rc = CMD_WARNING;
 	}
@@ -4330,7 +4332,7 @@ DEFUN(cfg_bts_t3113_dynamic, cfg_bts_t3113_dynamic_cmd,
 		bts->T3113_dynamic = true;
 		break;
 	default:
-		vty_out(vty, "T%d cannot be set to dynamic%s", d->T, VTY_NEWLINE);
+		vty_out(vty, "%% T%d cannot be set to dynamic%s", d->T, VTY_NEWLINE);
 		return CMD_WARNING;
 	}
 
@@ -4356,7 +4358,7 @@ DEFUN(cfg_bts_no_t3113_dynamic, cfg_bts_no_t3113_dynamic_cmd,
 		bts->T3113_dynamic = false;
 		break;
 	default:
-		vty_out(vty, "T%d already is non-dynamic%s", d->T, VTY_NEWLINE);
+		vty_out(vty, "%% T%d already is non-dynamic%s", d->T, VTY_NEWLINE);
 		return CMD_WARNING;
 	}
 
@@ -4613,7 +4615,7 @@ DEFUN(cfg_ts_hopping,
 	int enabled = atoi(argv[0]);
 
 	if (enabled && !osmo_bts_has_feature(&ts->trx->bts->model->features, BTS_FEAT_HOPPING)) {
-		vty_out(vty, "BTS model does not support hopping%s",
+		vty_out(vty, "%% BTS model does not support hopping%s",
 			VTY_NEWLINE);
 		return CMD_WARNING;
 	}
@@ -4742,19 +4744,19 @@ DEFUN(drop_bts,
 
 	bts_nr = atoi(argv[0]);
 	if (bts_nr >= gsmnet->num_bts) {
-		vty_out(vty, "BTS number must be between 0 and %d. It was %d.%s",
+		vty_out(vty, "%% BTS number must be between 0 and %d. It was %d.%s",
 			gsmnet->num_bts, bts_nr, VTY_NEWLINE);
 		return CMD_WARNING;
 	}
 
 	bts = gsm_bts_num(gsmnet, bts_nr);
 	if (!bts) {
-		vty_out(vty, "BTS Nr. %d could not be found.%s", bts_nr, VTY_NEWLINE);
+		vty_out(vty, "%% BTS Nr. %d could not be found.%s", bts_nr, VTY_NEWLINE);
 		return CMD_WARNING;
 	}
 
 	if (!is_ipaccess_bts(bts)) {
-		vty_out(vty, "This command only works for ipaccess.%s", VTY_NEWLINE);
+		vty_out(vty, "%% This command only works for ipaccess.%s", VTY_NEWLINE);
 		return CMD_WARNING;
 	}
 
@@ -4768,7 +4770,7 @@ DEFUN(drop_bts,
 			ipaccess_drop_rsl(trx, "vty");
 		}
 	} else {
-		vty_out(vty, "Argument must be 'oml# or 'rsl'.%s", VTY_NEWLINE);
+		vty_out(vty, "%% Argument must be 'oml# or 'rsl'.%s", VTY_NEWLINE);
 		return CMD_WARNING;
 	}
 
@@ -4789,19 +4791,19 @@ DEFUN(restart_bts, restart_bts_cmd,
 
 	bts_nr = atoi(argv[0]);
 	if (bts_nr >= gsmnet->num_bts) {
-		vty_out(vty, "BTS number must be between 0 and %d. It was %d.%s",
+		vty_out(vty, "%% BTS number must be between 0 and %d. It was %d.%s",
 			gsmnet->num_bts, bts_nr, VTY_NEWLINE);
 		return CMD_WARNING;
 	}
 
 	bts = gsm_bts_num(gsmnet, bts_nr);
 	if (!bts) {
-		vty_out(vty, "BTS Nr. %d could not be found.%s", bts_nr, VTY_NEWLINE);
+		vty_out(vty, "%% BTS Nr. %d could not be found.%s", bts_nr, VTY_NEWLINE);
 		return CMD_WARNING;
 	}
 
 	if (!is_ipaccess_bts(bts) || is_sysmobts_v2(bts)) {
-		vty_out(vty, "This command only works for ipaccess nanoBTS.%s",
+		vty_out(vty, "%% This command only works for ipaccess nanoBTS.%s",
 			VTY_NEWLINE);
 		return CMD_WARNING;
 	}
@@ -4826,14 +4828,14 @@ DEFUN(bts_resend, bts_resend_cmd,
 
 	bts_nr = atoi(argv[0]);
 	if (bts_nr >= gsmnet->num_bts) {
-		vty_out(vty, "BTS number must be between 0 and %d. It was %d.%s",
+		vty_out(vty, "%% BTS number must be between 0 and %d. It was %d.%s",
 			gsmnet->num_bts, bts_nr, VTY_NEWLINE);
 		return CMD_WARNING;
 	}
 
 	bts = gsm_bts_num(gsmnet, bts_nr);
 	if (!bts) {
-		vty_out(vty, "BTS Nr. %d could not be found.%s", bts_nr, VTY_NEWLINE);
+		vty_out(vty, "%% BTS Nr. %d could not be found.%s", bts_nr, VTY_NEWLINE);
 		return CMD_WARNING;
 	}
 
@@ -4872,7 +4874,7 @@ DEFUN(smscb_cmd, smscb_cmd_cmd,
 	}
 	rc = osmo_hexparse(argv[3], buf, sizeof(buf));
 	if (rc < 0 || rc > sizeof(buf)) {
-		vty_out(vty, "Error parsing HEXSTRING%s", VTY_NEWLINE);
+		vty_out(vty, "%% Error parsing HEXSTRING%s", VTY_NEWLINE);
 		return CMD_WARNING;
 	}
 
@@ -4885,7 +4887,7 @@ DEFUN(smscb_cmd, smscb_cmd_cmd,
 	else if (!strcmp(type_str, "default"))
 		cb_cmd.command = RSL_CB_CMD_TYPE_DEFAULT;
 	else {
-		vty_out(vty, "Error parsing type%s", VTY_NEWLINE);
+		vty_out(vty, "%% Error parsing type%s", VTY_NEWLINE);
 		return CMD_WARNING;
 	}
 
@@ -4903,7 +4905,7 @@ DEFUN(smscb_cmd, smscb_cmd_cmd,
 		cb_cmd.last_block = RSL_CB_CMD_LASTBLOCK_4;
 		break;
 	default:
-		vty_out(vty, "Error parsing LASTBLOCK%s", VTY_NEWLINE);
+		vty_out(vty, "%% Error parsing LASTBLOCK%s", VTY_NEWLINE);
 		return CMD_WARNING;
 	}
 
@@ -5019,14 +5021,14 @@ static int lchan_set_single_amr_mode(struct vty *vty, struct gsm_lchan *lchan, u
 	rc = gsm48_multirate_config(lchan->mr_ms_lv, mr_conf, mr.ms_mode, mr.num_modes);
 	if (rc != 0) {
 		vty_out(vty,
-			"Invalid AMR multirate configuration (%s, amr mode %d, ms) - check parameters%s",
+			"%% Invalid AMR multirate configuration (%s, amr mode %d, ms) - check parameters%s",
 			gsm_lchant_name(lchan->type), amr_mode, VTY_NEWLINE);
 		vty_rc = CMD_WARNING;
 	}
 	rc = gsm48_multirate_config(lchan->mr_bts_lv, mr_conf, mr.bts_mode, mr.num_modes);
 	if (rc != 0) {
 		vty_out(vty,
-			"Invalid AMR multirate configuration (%s, amr mode %d, bts) - check parameters%s",
+			"%% Invalid AMR multirate configuration (%s, amr mode %d, bts) - check parameters%s",
 			gsm_lchant_name(lchan->type), amr_mode, VTY_NEWLINE);
 		vty_rc = CMD_WARNING;
 	}
@@ -5485,7 +5487,7 @@ DEFUN(cfg_net_msc, cfg_net_msc_cmd,
 
 	msc = osmo_msc_data_alloc(bsc_gsmnet, index);
 	if (!msc) {
-		vty_out(vty, "%%Failed to allocate MSC data.%s", VTY_NEWLINE);
+		vty_out(vty, "%% Failed to allocate MSC data.%s", VTY_NEWLINE);
 		return CMD_WARNING;
 	}
 
@@ -6141,7 +6143,7 @@ DEFUN(logging_fltr_imsi,
 	bsc_subscr = bsc_subscr_find_or_create_by_imsi(bsc_gsmnet->bsc_subscribers, imsi);
 
 	if (!bsc_subscr) {
-		vty_out(vty, "%%failed to enable logging for subscriber with IMSI(%s)%s",
+		vty_out(vty, "%% failed to enable logging for subscriber with IMSI(%s)%s",
 			imsi, VTY_NEWLINE);
 		return CMD_WARNING;
 	}
