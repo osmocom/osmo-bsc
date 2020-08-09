@@ -4770,7 +4770,7 @@ DEFUN(drop_bts,
 			ipaccess_drop_rsl(trx, "vty");
 		}
 	} else {
-		vty_out(vty, "%% Argument must be 'oml# or 'rsl'.%s", VTY_NEWLINE);
+		vty_out(vty, "%% Argument must be 'oml' or 'rsl'.%s", VTY_NEWLINE);
 		return CMD_WARNING;
 	}
 
