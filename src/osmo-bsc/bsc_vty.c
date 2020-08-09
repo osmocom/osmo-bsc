@@ -4588,9 +4588,10 @@ DEFUN(cfg_ts_hopping,
 	int enabled = atoi(argv[0]);
 
 	if (enabled && !osmo_bts_has_feature(&ts->trx->bts->model->features, BTS_FEAT_HOPPING)) {
-		vty_out(vty, "%% BTS model does not support hopping%s",
-			VTY_NEWLINE);
-		return CMD_WARNING;
+		vty_out(vty, "%% BTS model does not seem to support freq. hopping%s", VTY_NEWLINE);
+		/* Allow enabling frequency hopping anyway, because the BTS might not have
+		 * connected yet (thus not sent the feature vector), so we cannot know for
+		 * sure.  Jet print a warning and let it go. */
 	}
 
 	ts->hopping.enabled = enabled;
