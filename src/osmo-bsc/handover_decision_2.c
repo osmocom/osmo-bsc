@@ -797,26 +797,30 @@ static int trigger_ho(struct ho_candidate *c, uint8_t requirements)
 		return trigger_remote_bss_ho(c, requirements);
 }
 
+#define REQUIREMENTS_FMT "[%s%s%s]%s"
+#define REQUIREMENTS_ARGS(REQUIREMENTS, TCHX) \
+	     (REQUIREMENTS) & REQUIREMENT_A_TCH##TCHX ? "A" : \
+		((REQUIREMENTS) & REQUIREMENT_TCH##TCHX##_MASK) == 0? "-" : "", \
+	     (REQUIREMENTS) & REQUIREMENT_B_TCH##TCHX ? "B" : "", \
+	     (REQUIREMENTS) & REQUIREMENT_C_TCH##TCHX ? "C" : "", \
+	     ((REQUIREMENTS) & REQUIREMENT_TCH##TCHX##_MASK) == 0 ? " not a candidate" : \
+	       (((REQUIREMENTS) & REQUIREMENT_TCH##TCHX##_MASK) == REQUIREMENT_A_TCH##TCHX ? \
+	        " more congestion" : \
+		((REQUIREMENTS) & REQUIREMENT_B_TCH##TCHX ? \
+		 " good" : \
+		  /* now has to be (REQUIREMENTS) & REQUIREMENT_C_TCHX != 0: */ \
+		  " less-or-equal congestion"))
+
 /* verbosely log about a handover candidate */
 static inline void debug_candidate(struct ho_candidate *candidate,
 				   int8_t rxlev, int tchf_count, int tchh_count)
 {
 	struct gsm_lchan *lchan = candidate->lchan;
 
-#define HO_CANDIDATE_FMT(tchx, TCHX) "TCH/" #TCHX "={free %d (want %d), [%s%s%s]%s}"
+#define HO_CANDIDATE_FMT(tchx, TCHX) "TCH/" #TCHX "={free %d (want %d), " REQUIREMENTS_FMT "}"
 #define HO_CANDIDATE_ARGS(tchx, TCHX) \
 	     tch##tchx##_count, ho_get_hodec2_tch##tchx##_min_slots(candidate->bts->ho), \
-	     candidate->requirements & REQUIREMENT_A_TCH##TCHX ? "A" : \
-		(candidate->requirements & REQUIREMENT_TCH##TCHX##_MASK) == 0? "-" : "", \
-	     candidate->requirements & REQUIREMENT_B_TCH##TCHX ? "B" : "", \
-	     candidate->requirements & REQUIREMENT_C_TCH##TCHX ? "C" : "", \
-	     (candidate->requirements & REQUIREMENT_TCH##TCHX##_MASK) == 0 ? " not a candidate" : \
-	       ((candidate->requirements & REQUIREMENT_TCH##TCHX##_MASK) == REQUIREMENT_A_TCH##TCHX ? \
-	        " more congestion" : \
-		(candidate->requirements & REQUIREMENT_B_TCH##TCHX ? \
-		 " good" : \
-		  /* now has to be candidate->requirements & REQUIREMENT_C_TCHX != 0: */ \
-		  " less-or-equal congestion"))
+	     REQUIREMENTS_ARGS(candidate->requirements, TCHX)
 
 	if (!candidate->bts && !candidate->cil)
 		LOGPHOLCHAN(lchan, LOGL_DEBUG, "Empty candidate\n");
@@ -1503,8 +1507,11 @@ static int bts_resolve_congestion(struct gsm_bts *bts, int tchf_congestion, int 
 	if (log_check_level(DHODEC, LOGL_DEBUG)) {
 		LOGPHOBTS(bts, LOGL_DEBUG, "Considering %u candidates to solve congestion:\n", candidates);
 		for (i = 0; i < candidates; i++) {
-			LOGPHOCAND(&clist[i], LOGL_DEBUG, "#%d: req=0x%x avg-rxlev=%d\n",
-				   i, clist[i].requirements, clist[i].avg);
+
+			LOGPHOCAND(&clist[i], LOGL_DEBUG, "#%d: req={TCH/F:" REQUIREMENTS_FMT ", TCH/H:" REQUIREMENTS_FMT "} avg-rxlev=%d dBm\n",
+				   i, REQUIREMENTS_ARGS(clist[i].requirements, F),
+				   REQUIREMENTS_ARGS(clist[i].requirements, H),
+				   rxlev2dbm(clist[i].avg));
 		}
 	}
 
