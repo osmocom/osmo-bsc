@@ -861,6 +861,10 @@ static void collect_assignment_candidate(struct gsm_lchan *lchan, struct ho_cand
 	};
 
 	debug_candidate(&c, 0, tchf_count, tchh_count);
+
+	if (!c.requirements)
+		return;
+
 	clist[*candidates] = c;
 	(*candidates)++;
 }
@@ -965,6 +969,9 @@ static void collect_handover_candidate(struct gsm_lchan *lchan, struct neigh_mea
 		c.requirements = check_requirements_remote_bss(lchan, neighbor_cil);
 
 	debug_candidate(&c, av_rxlev, tchf_count, tchh_count);
+
+	if (!c.requirements)
+		return;
 
 	clist[*candidates] = c;
 	(*candidates)++;
