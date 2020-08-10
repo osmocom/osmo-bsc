@@ -495,8 +495,11 @@ struct osmo_mgcpc_ep *gscon_ensure_mgw_endpoint(struct gsm_subscriber_connection
 		if (is_ipaccess_bts(for_lchan->ts->trx->bts))
 			/* use dynamic RTPBRIDGE endpoint allocation in MGW */
 			epname = mgcp_client_rtpbridge_wildcard(conn->network->mgw.client);
-		else
-			epname = mgcp_client_e1_epname(conn, conn->network->mgw.client, 1, for_lchan->ts->e1_link.e1_ts, 16, for_lchan->ts->e1_link.e1_ts_ss*2);
+		else {
+			epname = mgcp_client_e1_epname(conn, conn->network->mgw.client, for_lchan->ts->e1_link.e1_nr,
+						       for_lchan->ts->e1_link.e1_ts, 16,
+						       for_lchan->ts->e1_link.e1_ts_ss*2);
+		}
 
 		conn->user_plane.mgw_endpoint =
 			osmo_mgcpc_ep_alloc(conn->fi, GSCON_EV_FORGET_MGW_ENDPOINT,
