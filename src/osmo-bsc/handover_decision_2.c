@@ -1107,7 +1107,8 @@ static int find_alternative_lchan(struct gsm_lchan *lchan, bool include_weaker_r
 
 	/* perform handover, if there is a candidate */
 	if (best_cand) {
-		LOGPHOCAND(best_cand, LOGL_INFO, "Best candidate, RX level %d%s\n",
+		LOGPHOCAND(best_cand, LOGL_INFO, "Best candidate is #%ld, RX level %d%s\n",
+			   best_cand - clist,
 			   rxlev2dbm(best_cand->avg),
 			   best_applied_afs_bias ? " (applied AHS -> AFS rxlev bias)" : "");
 		return trigger_ho(best_cand, best_cand->requirements & REQUIREMENT_B_MASK);
@@ -1140,7 +1141,8 @@ static int find_alternative_lchan(struct gsm_lchan *lchan, bool include_weaker_r
 
 	/* perform handover, if there is a candidate */
 	if (best_cand) {
-		LOGPHOCAND(best_cand, LOGL_INFO, "Best candidate, RX level %d%s\n",
+		LOGPHOCAND(best_cand, LOGL_INFO, "Best candidate is #%ld, RX level %d%s\n",
+			   best_cand - clist,
 			   rxlev2dbm(best_cand->avg),
 			   best_applied_afs_bias? " (applied AHS -> AFS rxlev bias)" : "");
 		return trigger_ho(best_cand, best_cand->requirements & REQUIREMENT_C_MASK);
@@ -1179,7 +1181,8 @@ static int find_alternative_lchan(struct gsm_lchan *lchan, bool include_weaker_r
 
 	/* perform handover, if there is a candidate */
 	if (best_cand) {
-		LOGPHOCAND(best_cand, LOGL_INFO, "Best candidate: RX level %d%s\n",
+		LOGPHOCAND(best_cand, LOGL_INFO, "Best candidate is #%ld: RX level %d%s\n",
+			   best_cand - clist,
 			   rxlev2dbm(best_cand->avg),
 			   best_applied_afs_bias ? " (applied AHS -> AFS rxlev bias)" : "");
 		return trigger_ho(best_cand, best_cand->requirements & REQUIREMENT_A_MASK);
@@ -1544,7 +1547,8 @@ next_b1:
 	/* perform handover, if there is a candidate */
 	if (best_cand) {
 		any_ho = 1;
-		LOGPHOCAND(best_cand, LOGL_DEBUG, "Best candidate: RX level %d%s\n",
+		LOGPHOCAND(best_cand, LOGL_DEBUG, "Best candidate is #%ld: RX level %d%s\n",
+			   best_cand - clist,
 			   rxlev2dbm(best_cand->avg),
 			   is_improved ? " (applied AHS->AFS bias)" : "");
 		trigger_ho(best_cand, best_cand->requirements & REQUIREMENT_B_MASK);
@@ -1693,7 +1697,8 @@ next_c1:
 	/* perform handover, if there is a candidate */
 	if (best_cand) {
 		any_ho = 1;
-		LOGPHOCAND(best_cand, LOGL_INFO, "Best candidate: RX level %d%s\n",
+		LOGPHOCAND(best_cand, LOGL_INFO, "Best candidate is #%ld: RX level %d%s\n",
+			   best_cand - clist,
 			   rxlev2dbm(best_cand->avg),
 			   is_improved ? " (applied AHS -> AFS rxlev bias)" : "");
 		trigger_ho(best_cand, best_cand->requirements & REQUIREMENT_C_MASK);
