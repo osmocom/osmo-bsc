@@ -1445,6 +1445,10 @@ static int bts_resolve_congestion(struct gsm_bts *bts, int tchf_congestion, int 
 			/* (Do not consider dynamic TS that are in PDCH mode) */
 			switch (ts->pchan_is) {
 			case GSM_PCHAN_TCH_F:
+				/* No need to collect TCH/F candidates if no TCH/F needs to be moved. */
+				if (tchf_congestion == 0)
+					continue;
+
 				lc = &ts->lchan[0];
 				/* omit if channel not active */
 				if (lc->type != GSM_LCHAN_TCH_F
@@ -1459,6 +1463,10 @@ static int bts_resolve_congestion(struct gsm_bts *bts, int tchf_congestion, int 
 				collect_candidates_for_lchan(lc, clist, &candidates, NULL, true);
 				break;
 			case GSM_PCHAN_TCH_H:
+				/* No need to collect TCH/H candidates if no TCH/H needs to be moved. */
+				if (tchh_congestion == 0)
+					continue;
+
 				for (j = 0; j < 2; j++) {
 					lc = &ts->lchan[j];
 					/* omit if channel not active */
