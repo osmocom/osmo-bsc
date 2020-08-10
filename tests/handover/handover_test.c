@@ -956,7 +956,7 @@ static char *test_case_19[] = {
 	"2",
 
 	"Congestion check: Balancing over congested cells\n\n"
-	"Two cells are congested, but the second cell is more congested.\n"
+	"Two cells are congested, but the second cell is less congested.\n"
 	"Handover is performed to solve the congestion.\n",
 
 	"create-bts", "2",
