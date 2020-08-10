@@ -447,76 +447,47 @@ static uint8_t check_requirements(struct gsm_lchan *lchan, struct gsm_bts *bts, 
 		return 0;
 	}
 
-	/* compatibility check for codecs.
-	 * if so, the candidates for full rate and half rate are selected */
-	switch (lchan->tch_mode) {
-	case GSM48_CMODE_SPEECH_V1:
-		switch (lchan->type) {
-		case GSM_LCHAN_TCH_F: /* mandatory */
-			requirement |= REQUIREMENT_A_TCHF;
-			break;
-		case GSM_LCHAN_TCH_H:
-			if (!bts->codec.hr) {
-				LOGPHOLCHANTOBTS(lchan, bts, LOGL_DEBUG,
-						 "tch_mode='%s' type='%s' not supported\n",
-						 get_value_string(gsm48_chan_mode_names,
-								  lchan->tch_mode),
-						 gsm_lchant_name(lchan->type));
-				break;
-			}
-			if (codec_type_is_supported(lchan->conn, GSM0808_SCT_HR1))
-				requirement |= REQUIREMENT_A_TCHH;
-			break;
-		default:
-			LOGPHOLCHAN(lchan, LOGL_ERROR, "Unexpected channel type: neither TCH/F nor TCH/H for %s\n",
-				    get_value_string(gsm48_chan_mode_names, lchan->tch_mode));
-			return 0;
-		}
-		break;
-	case GSM48_CMODE_SPEECH_EFR:
-		if (!bts->codec.efr) {
-			LOGPHOBTS(bts, LOGL_DEBUG, "EFR not supported\n");
-			break;
-		}
-		if (codec_type_is_supported(lchan->conn, GSM0808_SCT_FR2))
-			requirement |= REQUIREMENT_A_TCHF;
-		break;
-	case GSM48_CMODE_SPEECH_AMR:
-		if (!bts->codec.amr) {
-			LOGPHOBTS(bts, LOGL_DEBUG, "AMR not supported\n");
-			break;
-		}
-		if (codec_type_is_supported(lchan->conn, GSM0808_SCT_FR3))
-			requirement |= REQUIREMENT_A_TCHF;
-		if (codec_type_is_supported(lchan->conn, GSM0808_SCT_HR3))
+	/* To which TCH type and codec can we handover? Consider targets independently from the current lchan's TCH kind
+	 * and codec, to support TCH/F <-> TCH/H handovers and those that switch the codec type. */
+
+	/* TCH/F target? */
+	if (tchf_count) {
+		/* TCH/F timeslots are available, and FR1 is always supported. Could also end up using EFR or AMR codecs. */
+		LOGPHOLCHANTOBTS(lchan, bts, LOGL_DEBUG, "considering HO to TCH/F (%d available)\n", tchf_count);
+		requirement |= REQUIREMENT_A_TCHF;
+	} else {
+		LOGPHOLCHANTOBTS(lchan, bts, LOGL_DEBUG, "not considering HO to TCH/F (0 available)\n");
+	}
+	/* If the EFR (FR2) codec is supported, we'd add requirement |= TCH/F. Since TCH/F is already always supported,
+	 * there is no need to check for EFR here. */
+
+	/* TCH/H target? */
+	if (tchh_count) {
+		/* TCH/H timeslots are available, check whether any half rate codec is supported. */
+		bool hr1_ms = codec_type_is_supported(lchan->conn, GSM0808_SCT_HR1);
+		bool hr1_bts = (bts->codec.hr != 0);
+		bool hr3_ms = codec_type_is_supported(lchan->conn, GSM0808_SCT_HR3);
+		bool hr3_bts = (bts->codec.amr != 0);
+		bool add_tchh = (hr1_ms && hr1_bts) || (hr3_ms && hr3_bts);
+
+		if (add_tchh)
 			requirement |= REQUIREMENT_A_TCHH;
-		break;
-	default:
-		LOGPHOLCHANTOBTS(lchan, bts, LOGL_DEBUG, "Not even considering: src is not a SPEECH mode lchan\n");
-		/* FIXME: should allow handover of non-speech lchans */
-		return 0;
+
+		LOGPHOLCHANTOBTS(lchan, bts, LOGL_DEBUG, "%s HO to TCH/H"
+				 " (support by MS/BTS for HR1: %s/%s, HR3(AMR): %s/%s)\n",
+				 add_tchh ? "considering" : "not considering",
+				 hr1_ms ? "yes" : "no",
+				 hr1_bts ? "yes" : "no",
+				 hr3_ms ? "yes" : "no",
+				 hr3_bts ? "yes" : "no");
+	} else {
+		LOGPHOLCHANTOBTS(lchan, bts, LOGL_DEBUG, "not considering HO to TCH/H, none available\n");
 	}
 
 	/* no candidate, because new cell is incompatible */
 	if (!requirement) {
-		LOGPHOLCHANTOBTS(lchan, bts, LOGL_DEBUG, "not a candidate, because codec of MS and BTS are incompatible\n");
-		return 0;
-	}
-
-	/* remove slot types that are not available */
-	if (!tchf_count && requirement & REQUIREMENT_A_TCHF) {
 		LOGPHOLCHANTOBTS(lchan, bts, LOGL_DEBUG,
-				 "removing TCH/F, since all TCH/F lchans are in use\n");
-		requirement &= ~(REQUIREMENT_A_TCHF);
-	}
-	if (!tchh_count && requirement & REQUIREMENT_A_TCHH) {
-		LOGPHOLCHANTOBTS(lchan, bts, LOGL_DEBUG,
-				 "removing TCH/H, since all TCH/H lchans are in use\n");
-		requirement &= ~(REQUIREMENT_A_TCHH);
-	}
-
-	if (!requirement) {
-		LOGPHOLCHANTOBTS(lchan, bts, LOGL_DEBUG, "not a candidate, because no suitable slots available\n");
+				 "Not a candidate, no lchans matching codecs supported by both MS and BTS are available\n");
 		return 0;
 	}
 
@@ -607,7 +578,8 @@ static uint8_t check_requirements(struct gsm_lchan *lchan, struct gsm_bts *bts, 
 	 * free slots of the current cell _after_ handover/assignment */
 	count = bts_count_free_ts(current_bts,
 				  (lchan->type == GSM_LCHAN_TCH_H) ?
-				   GSM_PCHAN_TCH_H : GSM_PCHAN_TCH_F);
+				  GSM_PCHAN_TCH_H : GSM_PCHAN_TCH_F);
+
 	if (requirement & REQUIREMENT_A_TCHF) {
 		if (tchf_count - 1 >= count + 1)
 			requirement |= REQUIREMENT_C_TCHF;

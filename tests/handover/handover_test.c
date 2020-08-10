@@ -571,6 +571,7 @@ static char *test_case_4[] = {
 
 	"create-bts", "2",
 	"set-min-free", "1", "TCH/H", "4",
+	"set-min-free", "1", "TCH/F", "4",
 	"create-ms", "0", "TCH/H", "HR",
 	"meas-rep", "0", "20","0", "1","0","30",
 	"expect-no-chan",
@@ -592,6 +593,7 @@ static char *test_case_5[] = {
 	"place.\n",
 
 	"create-bts", "2",
+	"set-min-free", "1", "TCH/H", "4",
 	"set-min-free", "1", "TCH/F", "4",
 	"create-ms", "0", "TCH/F", "FR",
 	"meas-rep", "0", "20","0", "1","0","30",
@@ -615,6 +617,7 @@ static char *test_case_6[] = {
 
 	"create-bts", "2",
 	"set-min-free", "1", "TCH/F", "4",
+	"set-min-free", "1", "TCH/H", "4",
 	"create-ms", "0", "TCH/F", "EFR",
 	"meas-rep", "0", "20","0", "1","0","30",
 	"expect-no-chan",
@@ -961,10 +964,16 @@ static char *test_case_19[] = {
 
 	"create-bts", "2",
 	"set-min-free", "0", "TCH/F", "4",
+	"set-min-free", "0", "TCH/H", "0",
 	"set-min-free", "1", "TCH/F", "4",
+	"set-min-free", "1", "TCH/H", "4",
 	"create-ms", "0", "TCH/F", "FR",
 	"create-ms", "0", "TCH/F", "FR",
 	"create-ms", "0", "TCH/F", "FR",
+	"create-ms", "0", "TCH/H", "AMR",
+	"create-ms", "0", "TCH/H", "AMR",
+	"create-ms", "0", "TCH/H", "AMR",
+	"create-ms", "0", "TCH/H", "AMR",
 	"create-ms", "1", "TCH/F", "FR",
 	"meas-rep", "0", "30","0", "1","0","20",
 	"expect-no-chan",
