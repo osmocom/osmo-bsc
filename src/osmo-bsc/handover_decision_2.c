@@ -809,7 +809,7 @@ static inline void debug_candidate(struct ho_candidate *candidate,
 	     candidate->requirements & REQUIREMENT_A_TCH##TCHX ? "A" : \
 		(candidate->requirements & REQUIREMENT_TCH##TCHX##_MASK) == 0? "-" : "", \
 	     candidate->requirements & REQUIREMENT_B_TCH##TCHX ? "B" : "", \
-	     candidate->requirements & REQUIREMENT_B_TCH##TCHX ? "C" : "", \
+	     candidate->requirements & REQUIREMENT_C_TCH##TCHX ? "C" : "", \
 	     (candidate->requirements & REQUIREMENT_TCH##TCHX##_MASK) == 0 ? " not a candidate" : \
 	       ((candidate->requirements & REQUIREMENT_TCH##TCHX##_MASK) == REQUIREMENT_A_TCH##TCHX ? \
 	        " more congestion" : \
