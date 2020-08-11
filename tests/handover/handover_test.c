@@ -212,8 +212,8 @@ static struct gsm_bts *create_bts(int arfcn)
 	trx->ts[3].pchan_from_config = GSM_PCHAN_TCH_F;
 	trx->ts[4].pchan_from_config = GSM_PCHAN_TCH_F;
 	trx->ts[5].pchan_from_config = GSM_PCHAN_TCH_F;
-	trx->ts[6].pchan_from_config = GSM_PCHAN_PDCH;
-	trx->ts[7].pchan_from_config = GSM_PCHAN_PDCH;
+	trx->ts[6].pchan_from_config = GSM_PCHAN_TCH_H;
+	trx->ts[7].pchan_from_config = GSM_PCHAN_TCH_H;
 	for (i = 2; i <= 7; i++) {
 		trx->ts[i].mo.nm_state.operational = NM_OPSTATE_ENABLED;
 		trx->ts[i].mo.nm_state.availability = NM_AVSTATE_OK;
@@ -241,12 +241,12 @@ static struct gsm_bts *create_bts(int arfcn)
 
 	trx->ts[0].pchan_from_config = GSM_PCHAN_SDCCH8_SACCH8C;
 	trx->ts[1].pchan_from_config = GSM_PCHAN_PDCH;
-	trx->ts[2].pchan_from_config = GSM_PCHAN_TCH_F_TCH_H_PDCH;
-	trx->ts[3].pchan_from_config = GSM_PCHAN_TCH_F_TCH_H_PDCH;
-	trx->ts[4].pchan_from_config = GSM_PCHAN_TCH_F_TCH_H_PDCH;
-	trx->ts[5].pchan_from_config = GSM_PCHAN_TCH_F_TCH_H_PDCH;
-	trx->ts[6].pchan_from_config = GSM_PCHAN_TCH_F_TCH_H_PDCH;
-	trx->ts[7].pchan_from_config = GSM_PCHAN_TCH_F_TCH_H_PDCH;
+	trx->ts[2].pchan_from_config = GSM_PCHAN_TCH_H;
+	trx->ts[3].pchan_from_config = GSM_PCHAN_TCH_H;
+	trx->ts[4].pchan_from_config = GSM_PCHAN_TCH_H;
+	trx->ts[5].pchan_from_config = GSM_PCHAN_TCH_H;
+	trx->ts[6].pchan_from_config = GSM_PCHAN_TCH_H;
+	trx->ts[7].pchan_from_config = GSM_PCHAN_TCH_H;
 	for (i = 2; i <= 7; i++) {
 		trx->ts[i].mo.nm_state.operational = NM_OPSTATE_ENABLED;
 		trx->ts[i].mo.nm_state.availability = NM_AVSTATE_OK;
@@ -1338,11 +1338,11 @@ static char *test_case_29[] = {
 	,
 	"create-bts", "1",
 	"set-min-free", "0", "TCH/F", "2",
-	//"set-min-free", "0", "TCH/H", "0",
-	"create-ms", "0", "TCH/F", "AMR",
-	"create-ms", "0", "TCH/F", "AMR",
-	"create-ms", "0", "TCH/F", "AMR",
-	"create-ms", "0", "TCH/H", "AMR",
+	"set-min-free", "0", "TCH/H", "0",
+	"create-ms", "0", "TCH/F", "FR",
+	"create-ms", "0", "TCH/F", "FR",
+	"create-ms", "0", "TCH/F", "FR",
+	"create-ms", "0", "TCH/F", "FR",
 	"meas-rep", "0", "30","0", "1","0","30",
 	"expect-no-chan",
 	"congestion-check",
