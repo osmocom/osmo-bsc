@@ -1394,11 +1394,20 @@ static int rsl_rx_chan_rqd(struct msgb *msg)
 
 	/* check availability / allocate channel
 	 *
-	 * - First try to allocate SDCCH.
+	 * - First check for EMERGENCY call attempts,
+	 * - then try to allocate SDCCH.
 	 * - If SDCCH is not available, try a TCH/H (less bandwidth).
 	 * - If there is still no channel available, try a TCH/F.
 	 *
 	 */
+	if (chreq_reason == GSM_CHREQ_REASON_EMERG) {
+		if (bts->si_common.rach_control.t2 & 0x4) {
+			LOG_BTS(bts, DRSL, LOGL_NOTICE, "CHAN RQD: MS attempts EMERGENCY CALL although EMERGENCY CALLS "
+				"are not allowed in sysinfo (spec violation by MS!)\n");
+			rsl_tx_imm_ass_rej(bts, rqd_ref);
+			return -EINVAL;
+		}
+	}
 	lchan = lchan_select_by_type(bts, GSM_LCHAN_SDCCH);
 	if (!lchan) {
 		LOG_BTS(bts, DRSL, LOGL_NOTICE, "CHAN RQD: no resources for %s 0x%x, retrying with %s\n",
