@@ -304,11 +304,11 @@ enum bsc_con osmo_bsc_sigtran_new_conn(struct gsm_subscriber_connection *conn, s
 
 	ss7 = osmo_ss7_instance_find(msc->a.cs7_instance);
 	OSMO_ASSERT(ss7);
-	LOGP(DMSC, LOGL_INFO, "Initializing resources for new SCCP connection to MSC: %s...\n",
-	     osmo_sccp_addr_name(ss7, &msc->a.msc_addr));
+	LOGP(DMSC, LOGL_INFO, "Initializing resources for new SCCP connection to MSC %d: %s...\n",
+	     msc->nr, osmo_sccp_addr_name(ss7, &msc->a.msc_addr));
 
 	if (a_reset_conn_ready(msc) == false) {
-		LOGP(DMSC, LOGL_ERROR, "MSC is not connected. Dropping.\n");
+		LOGP(DMSC, LOGL_ERROR, "MSC %d is not connected. Dropping.\n", msc->nr);
 		return BSC_CON_REJECT_NO_LINK;
 	}
 
