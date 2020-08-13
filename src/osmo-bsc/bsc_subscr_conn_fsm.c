@@ -657,7 +657,7 @@ void gscon_change_primary_lchan(struct gsm_subscriber_connection *conn, struct g
 		osmo_fsm_inst_dispatch(conn->lchan->fi_rtp, LCHAN_RTP_EV_ESTABLISHED, 0);
 
 	if (old_lchan && (old_lchan != new_lchan))
-		gscon_release_lchan(conn, old_lchan, false, false, 0);
+		gscon_release_lchan(conn, old_lchan, false, false, GSM48_RR_CAUSE_NORMAL);
 }
 
 void gscon_lchan_releasing(struct gsm_subscriber_connection *conn, struct gsm_lchan *lchan)
