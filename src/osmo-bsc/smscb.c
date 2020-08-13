@@ -654,6 +654,8 @@ static int bts_rx_reset(struct gsm_bts *bts, const struct osmo_cbsp_decoded *dec
 	struct bts_smscb_chan_state *chan_state;
 	struct bts_smscb_message *smscb, *smscb2;
 
+	LOG_BTS(bts, DCBS, LOGL_NOTICE, "Rx CBSP RESET: clearing all state; disabling broadcast\n");
+
 	/* remove all SMSCB from CBCH BASIC this BTS */
 	chan_state = bts_get_smscb_chan(bts, false);
 	llist_for_each_entry_safe(smscb, smscb2, &chan_state->messages, list)
