@@ -319,8 +319,8 @@ int gsm48_send_rr_release(struct gsm_lchan *lchan)
 			msgb_tlv_put(msg, GSM48_IE_CELL_SEL_IND_AFTER_REL, len, buf);
 	}
 
-	DEBUGP(DRR, "Sending Channel Release: Chan: Number: %d Type: %d\n",
-		lchan->nr, lchan->type);
+	DEBUGP(DRR, "Sending Channel Release: Chan: Number: %d Type: %d RR-Cause: 0x%x '%s'\n",
+		lchan->nr, lchan->type, lchan->release.rr_cause, rr_cause_name(lchan->release.rr_cause));
 
 	/* Send actual release request to MS */
 	return gsm48_sendmsg(msg);
