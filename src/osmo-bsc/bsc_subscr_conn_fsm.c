@@ -866,7 +866,7 @@ static int gscon_timer_cb(struct osmo_fsm_inst *fi)
 
 	switch (fi->T) {
 	case 993210:
-		gscon_release_lchan(conn, conn->lchan, true, true, RSL_ERR_INTERWORKING);
+		gscon_release_lchan(conn, conn->lchan, true, true, GSM48_RR_CAUSE_ABNORMAL_TIMER);
 
 		/* MSC has not responded/confirmed connection with CC, this
 		 * could indicate a bad SCCP connection. We now inform the the
