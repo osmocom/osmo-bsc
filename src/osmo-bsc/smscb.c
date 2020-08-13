@@ -664,6 +664,10 @@ static int bts_rx_reset(struct gsm_bts *bts, const struct osmo_cbsp_decoded *dec
 	llist_for_each_entry_safe(smscb, smscb2, &chan_state->messages, list)
 		bts_smscb_del(smscb, chan_state, "RESET");
 
+	osmo_timer_del(&bts->etws_timer);
+
+	/* Make sure that broadcast is disabled */
+	rsl_etws_pn_command(bts, RSL_CHAN_PCH_AGCH, NULL, 0);
 	return 0;
 }
 
