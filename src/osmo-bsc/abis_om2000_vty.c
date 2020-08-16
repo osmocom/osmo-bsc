@@ -41,6 +41,8 @@
 #include <osmocom/vty/logging.h>
 #include <osmocom/vty/telnet_interface.h>
 
+#define X(x) (1 << x)
+
 static struct cmd_node om2k_node = {
 	OM2K_NODE,
 	"%s(om2k)# ",
@@ -343,10 +345,11 @@ static int con_group_del_path(struct con_group *cg, uint16_t ccp,
 	return -ENOENT;
 }
 
-DEFUN(cfg_om2k_con_group, cfg_om2k_con_group_cmd,
-	"con-connection-group <1-31>",
-	"Configure a CON (Concentrator) Connection Group\n"
-	"CON Connection Group Number\n")
+DEFUN_ATTR(cfg_om2k_con_group, cfg_om2k_con_group_cmd,
+	   "con-connection-group <1-31>",
+	   "Configure a CON (Concentrator) Connection Group\n"
+	   "CON Connection Group Number\n",
+	   CMD_ATTR_IMMEDIATE)
 {
 	struct gsm_bts *bts = vty->index;
 	struct con_group *cg;
@@ -371,10 +374,11 @@ DEFUN(cfg_om2k_con_group, cfg_om2k_con_group_cmd,
 	return CMD_SUCCESS;
 }
 
-DEFUN(del_om2k_con_group, del_om2k_con_group_cmd,
-	"del-connection-group <1-31>",
-	"Delete a CON (Concentrator) Connection Group\n"
-	"CON Connection Group Number\n")
+DEFUN_ATTR(del_om2k_con_group, del_om2k_con_group_cmd,
+	   "del-connection-group <1-31>",
+	   "Delete a CON (Concentrator) Connection Group\n"
+	   "CON Connection Group Number\n",
+	   CMD_ATTR_IMMEDIATE)
 {
 	struct gsm_bts *bts = vty->index;
 	int rc;
@@ -402,9 +406,10 @@ DEFUN(del_om2k_con_group, del_om2k_con_group_cmd,
 			"CON Connection Point\n"				\
 			"Contiguity Index\n"				\
 
-DEFUN(cfg_om2k_con_path_dec, cfg_om2k_con_path_dec_cmd,
-	"con-path (add|del) <0-2047> <0-255> deconcentrated <0-63>",
-	CON_PATH_HELP "De-concentrated in/outlet\n" "TEI Value\n")
+DEFUN_USRATTR(cfg_om2k_con_path_dec, cfg_om2k_con_path_dec_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_OML_LINK),
+	      "con-path (add|del) <0-2047> <0-255> deconcentrated <0-63>",
+	      CON_PATH_HELP "De-concentrated in/outlet\n" "TEI Value\n")
 {
 	struct con_group *cg = vty->index;
 	uint16_t ccp = atoi(argv[1]);
@@ -424,9 +429,10 @@ DEFUN(cfg_om2k_con_path_dec, cfg_om2k_con_path_dec_cmd,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_om2k_con_path_conc, cfg_om2k_con_path_conc_cmd,
-	"con-path (add|del) <0-2047> <0-255> concentrated <1-16>",
-	CON_PATH_HELP "Concentrated in/outlet\n" "Tag Number\n")
+DEFUN_USRATTR(cfg_om2k_con_path_conc, cfg_om2k_con_path_conc_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_OML_LINK),
+	      "con-path (add|del) <0-2047> <0-255> concentrated <1-16>",
+	      CON_PATH_HELP "Concentrated in/outlet\n" "Tag Number\n")
 {
 	struct con_group *cg = vty->index;
 	uint16_t ccp = atoi(argv[1]);
@@ -446,11 +452,12 @@ DEFUN(cfg_om2k_con_path_conc, cfg_om2k_con_path_conc_cmd,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_bts_alt_mode, cfg_bts_alt_mode_cmd,
-	"abis-lower-transport (single-timeslot|super-channel)",
-	"Configure thee Abis Lower Transport\n"
-	"Single Timeslot (classic Abis)\n"
-	"SuperChannel (Packet Abis)\n")
+DEFUN_USRATTR(cfg_bts_alt_mode, cfg_bts_alt_mode_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_OML_LINK),
+	      "abis-lower-transport (single-timeslot|super-channel)",
+	      "Configure thee Abis Lower Transport\n"
+	      "Single Timeslot (classic Abis)\n"
+	      "SuperChannel (Packet Abis)\n")
 {
 	struct gsm_bts *bts = vty->index;
 
@@ -468,15 +475,16 @@ DEFUN(cfg_bts_alt_mode, cfg_bts_alt_mode_cmd,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_bts_om2k_version_limit, cfg_bts_om2k_version_limit_cmd,
-	"om2000 version-limit (oml|rsl) gen <0-99> rev <0-99>",
-	"Configure OM2K specific parameters\n"
-	"Configure optional maximum protocol version to negotiate\n"
-	"Limit OML IWD version\n" "Limit RSL IWD version\n"
-	"Generation limit\n"
-	"Generation number to limit to (inclusive)\n"
-	"Revision limit\n"
-	"Revision number to limit to (inclusive)\n")
+DEFUN_USRATTR(cfg_bts_om2k_version_limit, cfg_bts_om2k_version_limit_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_OML_LINK),
+	      "om2000 version-limit (oml|rsl) gen <0-99> rev <0-99>",
+	      "Configure OM2K specific parameters\n"
+	      "Configure optional maximum protocol version to negotiate\n"
+	      "Limit OML IWD version\n" "Limit RSL IWD version\n"
+	      "Generation limit\n"
+	      "Generation number to limit to (inclusive)\n"
+	      "Revision limit\n"
+	      "Revision number to limit to (inclusive)\n")
 {
 	struct gsm_bts *bts = vty->index;
 	int iwd;
@@ -502,11 +510,12 @@ DEFUN(cfg_bts_om2k_version_limit, cfg_bts_om2k_version_limit_cmd,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_bts_is_conn_list, cfg_bts_is_conn_list_cmd,
-	"is-connection-list (add|del) <0-2047> <0-2047> <0-255>",
-	"Interface Switch Connection List\n"
-	"Add to IS list\n" "Delete from IS list\n"
-	"ICP1\n" "ICP2\n" "Contiguity Index\n")
+DEFUN_USRATTR(cfg_bts_is_conn_list, cfg_bts_is_conn_list_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_OML_LINK),
+	      "is-connection-list (add|del) <0-2047> <0-2047> <0-255>",
+	      "Interface Switch Connection List\n"
+	      "Add to IS list\n" "Delete from IS list\n"
+	      "ICP1\n" "ICP2\n" "Contiguity Index\n")
 {
 	struct gsm_bts *bts = vty->index;
 	uint16_t icp1 = atoi(argv[1]);

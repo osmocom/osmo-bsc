@@ -642,6 +642,19 @@ static struct vty_app_info vty_info = {
 	.version	= PACKAGE_VERSION,
 	.go_parent_cb	= bsc_vty_go_parent,
 	.is_config_node	= bsc_vty_is_config_node,
+	.usr_attr_desc	= {
+		[BSC_VTY_ATTR_RESTART_ABIS_OML_LINK] = \
+			"This command applies on A-bis OML link (re)establishment",
+		[BSC_VTY_ATTR_RESTART_ABIS_RSL_LINK] = \
+			"This command applies on A-bis RSL link (re)establishment",
+		[BSC_VTY_ATTR_NEW_LCHAN] = \
+			"This command applies for newly created lchans",
+	},
+	.usr_attr_letters = {
+		[BSC_VTY_ATTR_RESTART_ABIS_OML_LINK]	= 'o',
+		[BSC_VTY_ATTR_RESTART_ABIS_RSL_LINK]	= 'r',
+		[BSC_VTY_ATTR_NEW_LCHAN]		= 'l',
+	},
 };
 
 extern int bsc_shutdown_net(struct gsm_network *net);

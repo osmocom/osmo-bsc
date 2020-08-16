@@ -47,10 +47,10 @@ static struct handover_cfg *ho_cfg_from_vty(struct vty *vty)
 			  VTY_CMD_PREFIX, VTY_CMD, VTY_CMD_ARG, VTY_ARG_EVAL, \
 			  VTY_WRITE_FMT, VTY_WRITE_CONV, \
 			  VTY_DOC) \
-DEFUN(cfg_ho_##NAME, cfg_ho_##NAME##_cmd, \
-      VTY_CMD_PREFIX VTY_CMD " (" VTY_CMD_ARG "|default)", \
-      VTY_DOC \
-      "Use default (" #DEFAULT_VAL "), remove explicit setting on this node\n") \
+DEFUN_ATTR(cfg_ho_##NAME, cfg_ho_##NAME##_cmd, \
+	   VTY_CMD_PREFIX VTY_CMD " (" VTY_CMD_ARG "|default)", \
+	   VTY_DOC							\
+	   "Use default (" #DEFAULT_VAL "), remove explicit setting on this node\n", CMD_ATTR_IMMEDIATE) \
 { \
 	struct handover_cfg *ho = ho_cfg_from_vty(vty); \
 	const char *val = argv[0]; \
@@ -104,15 +104,16 @@ static inline const char *congestion_check_interval2a(int val)
 	return str;
 }
 
-DEFUN(cfg_net_ho_congestion_check_interval, cfg_net_ho_congestion_check_interval_cmd,
-      "handover2 congestion-check (disabled|<1-999>|now)",
-      HO_CFG_STR_HANDOVER2
-      "Configure congestion check interval\n"
-      "Disable congestion checking, do not handover based on cell load. Note: there is one global congestion check"
-      " interval, i.e. contrary to other handover2 settings, this is not configurable per individual cell.\n"
-      "Congestion check interval in seconds (default "
-      OSMO_STRINGIFY_VAL(HO_CFG_CONGESTION_CHECK_DEFAULT) ")\n"
-      "Manually trigger a congestion check to run right now\n")
+DEFUN_ATTR(cfg_net_ho_congestion_check_interval, cfg_net_ho_congestion_check_interval_cmd,
+	   "handover2 congestion-check (disabled|<1-999>|now)",
+	   HO_CFG_STR_HANDOVER2
+	   "Configure congestion check interval\n"
+	   "Disable congestion checking, do not handover based on cell load. Note: there is one global congestion check"
+	   " interval, i.e. contrary to other handover2 settings, this is not configurable per individual cell.\n"
+	   "Congestion check interval in seconds (default "
+	   OSMO_STRINGIFY_VAL(HO_CFG_CONGESTION_CHECK_DEFAULT) ")\n"
+	   "Manually trigger a congestion check to run right now\n",
+	   CMD_ATTR_IMMEDIATE)
 {
 	if (!strcmp(argv[0], "now")) {
 		hodec2_congestion_check(gsmnet_from_vty(vty));

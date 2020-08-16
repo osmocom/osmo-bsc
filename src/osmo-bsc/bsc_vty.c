@@ -82,6 +82,8 @@
 
 #include "../../bscconfig.h"
 
+#define X(x) (1 << x)
+
 #define BTS_NR_STR "BTS Number\n"
 #define TRX_NR_STR "TRX Number\n"
 #define TS_NR_STR "Timeslot Number\n"
@@ -2057,11 +2059,12 @@ DEFUN(show_paging_group,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_net_neci,
-      cfg_net_neci_cmd,
-      "neci (0|1)",
-	"New Establish Cause Indication\n"
-	"Don't set the NECI bit\n" "Set the NECI bit\n")
+DEFUN_USRATTR(cfg_net_neci,
+	      cfg_net_neci_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_RSL_LINK),
+	      "neci (0|1)",
+	      "New Establish Cause Indication\n"
+	      "Don't set the NECI bit\n" "Set the NECI bit\n")
 {
 	struct gsm_network *gsmnet = gsmnet_from_vty(vty);
 
@@ -2070,13 +2073,14 @@ DEFUN(cfg_net_neci,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_net_pag_any_tch,
-      cfg_net_pag_any_tch_cmd,
-      "paging any use tch (0|1)",
-      "Assign a TCH when receiving a Paging Any request\n"
-      "Any Channel\n" "Use\n" "TCH\n"
-      "Do not use TCH for Paging Request Any\n"
-      "Do use TCH for Paging Request Any\n")
+DEFUN_USRATTR(cfg_net_pag_any_tch,
+	      cfg_net_pag_any_tch_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_RSL_LINK),
+	      "paging any use tch (0|1)",
+	      "Assign a TCH when receiving a Paging Any request\n"
+	      "Any Channel\n" "Use\n" "TCH\n"
+	      "Do not use TCH for Paging Request Any\n"
+	      "Do use TCH for Paging Request Any\n")
 {
 	struct gsm_network *gsmnet = gsmnet_from_vty(vty);
 	gsmnet->pag_any_tch = atoi(argv[0]);
@@ -2106,22 +2110,25 @@ DEFUN_DEPRECATED(cfg_net_dtx,
 		LOGP(DMSC, LOGL_ERROR, "msc %d: " FORMAT "\n", MSC->nr, ##args); \
 	} while (0)
 
-DEFUN(cfg_net_nri_bitlen,
-      cfg_net_nri_bitlen_cmd,
-      "nri bitlen <1-15>",
-      NRI_STR
-      "Set number of bits that an NRI has, to extract from TMSI identities (always starting just after the TMSI's most significant octet).\n"
-      "bit count (default: " OSMO_STRINGIFY_VAL(NRI_BITLEN_DEFAULT) ")\n")
+DEFUN_ATTR(cfg_net_nri_bitlen,
+	   cfg_net_nri_bitlen_cmd,
+	   "nri bitlen <1-15>",
+	   NRI_STR
+	   "Set number of bits that an NRI has, to extract from TMSI identities (always starting just after the TMSI's most significant octet).\n"
+	   "bit count (default: " OSMO_STRINGIFY_VAL(NRI_BITLEN_DEFAULT) ")\n",
+	   CMD_ATTR_IMMEDIATE)
 {
 	struct gsm_network *gsmnet = gsmnet_from_vty(vty);
 	gsmnet->nri_bitlen = atoi(argv[0]);
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_net_nri_null_add, cfg_net_nri_null_add_cmd,
-      "nri null add <0-32767> [<0-32767>]",
-      NRI_STR NULL_NRI_STR "Add NULL-NRI value (or range)\n"
-      NRI_FIRST_LAST_STR)
+DEFUN_ATTR(cfg_net_nri_null_add,
+	   cfg_net_nri_null_add_cmd,
+	   "nri null add <0-32767> [<0-32767>]",
+	   NRI_STR NULL_NRI_STR "Add NULL-NRI value (or range)\n"
+	   NRI_FIRST_LAST_STR,
+	   CMD_ATTR_IMMEDIATE)
 {
 	int rc;
 	const char *message;
@@ -2135,10 +2142,12 @@ DEFUN(cfg_net_nri_null_add, cfg_net_nri_null_add_cmd,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_net_nri_null_del, cfg_net_nri_null_del_cmd,
-      "nri null del <0-32767> [<0-32767>]",
-      NRI_STR NULL_NRI_STR "Remove NRI value or range from the NRI mapping for this MSC\n"
-      NRI_FIRST_LAST_STR)
+DEFUN_ATTR(cfg_net_nri_null_del,
+	   cfg_net_nri_null_del_cmd,
+	   "nri null del <0-32767> [<0-32767>]",
+	   NRI_STR NULL_NRI_STR "Remove NRI value or range from the NRI mapping for this MSC\n"
+	   NRI_FIRST_LAST_STR,
+	   CMD_ATTR_IMMEDIATE)
 {
 	int rc;
 	const char *message;
@@ -2153,11 +2162,12 @@ DEFUN(cfg_net_nri_null_del, cfg_net_nri_null_del_cmd,
 }
 
 /* per-BTS configuration */
-DEFUN(cfg_bts,
-      cfg_bts_cmd,
-      "bts <0-255>",
-      "Select a BTS to configure\n"
-      BTS_NR_STR)
+DEFUN_ATTR(cfg_bts,
+	   cfg_bts_cmd,
+	   "bts <0-255>",
+	   "Select a BTS to configure\n"
+	   BTS_NR_STR,
+	   CMD_ATTR_IMMEDIATE)
 {
 	struct gsm_network *gsmnet = gsmnet_from_vty(vty);
 	int bts_nr = atoi(argv[0]);
@@ -2188,10 +2198,11 @@ DEFUN(cfg_bts,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_bts_type,
-      cfg_bts_type_cmd,
-      "type TYPE", /* dynamically created */
-      "Set the BTS type\n" "Type\n")
+DEFUN_USRATTR(cfg_bts_type,
+	      cfg_bts_type_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_OML_LINK),
+	      "type TYPE", /* dynamically created */
+	      "Set the BTS type\n" "Type\n")
 {
 	struct gsm_bts *bts = vty->index;
 	int rc;
@@ -2203,10 +2214,11 @@ DEFUN(cfg_bts_type,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_bts_band,
-      cfg_bts_band_cmd,
-      "band BAND",
-      "Set the frequency band of this BTS\n" "Frequency band\n")
+DEFUN_USRATTR(cfg_bts_band,
+	      cfg_bts_band_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_OML_LINK),
+	      "band BAND",
+	      "Set the frequency band of this BTS\n" "Frequency band\n")
 {
 	struct gsm_bts *bts = vty->index;
 	int band = gsm_band_parse(argv[0]);
@@ -2222,11 +2234,14 @@ DEFUN(cfg_bts_band,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_bts_dtxu, cfg_bts_dtxu_cmd, "dtx uplink [force]",
-      "Configure discontinuous transmission\n"
-      "Enable Uplink DTX for this BTS\n"
-      "MS 'shall' use DTXu instead of 'may' use (might not be supported by "
-      "older phones).\n")
+DEFUN_USRATTR(cfg_bts_dtxu,
+	      cfg_bts_dtxu_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_RSL_LINK),
+	      "dtx uplink [force]",
+	      "Configure discontinuous transmission\n"
+	      "Enable Uplink DTX for this BTS\n"
+	      "MS 'shall' use DTXu instead of 'may' use (might not be supported by "
+	      "older phones).\n")
 {
 	struct gsm_bts *bts = vty->index;
 
@@ -2237,10 +2252,12 @@ DEFUN(cfg_bts_dtxu, cfg_bts_dtxu_cmd, "dtx uplink [force]",
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_bts_no_dtxu, cfg_bts_no_dtxu_cmd, "no dtx uplink",
-      NO_STR
-      "Configure discontinuous transmission\n"
-      "Disable Uplink DTX for this BTS\n")
+DEFUN_USRATTR(cfg_bts_no_dtxu,
+	      cfg_bts_no_dtxu_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_RSL_LINK),
+	      "no dtx uplink",
+	      NO_STR "Configure discontinuous transmission\n"
+	      "Disable Uplink DTX for this BTS\n")
 {
 	struct gsm_bts *bts = vty->index;
 
@@ -2249,9 +2266,12 @@ DEFUN(cfg_bts_no_dtxu, cfg_bts_no_dtxu_cmd, "no dtx uplink",
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_bts_dtxd, cfg_bts_dtxd_cmd, "dtx downlink",
-      "Configure discontinuous transmission\n"
-      "Enable Downlink DTX for this BTS\n")
+DEFUN_USRATTR(cfg_bts_dtxd,
+	      cfg_bts_dtxd_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_RSL_LINK),
+	      "dtx downlink",
+	      "Configure discontinuous transmission\n"
+	      "Enable Downlink DTX for this BTS\n")
 {
 	struct gsm_bts *bts = vty->index;
 
@@ -2262,10 +2282,12 @@ DEFUN(cfg_bts_dtxd, cfg_bts_dtxd_cmd, "dtx downlink",
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_bts_no_dtxd, cfg_bts_no_dtxd_cmd, "no dtx downlink",
-      NO_STR
-      "Configure discontinuous transmission\n"
-      "Disable Downlink DTX for this BTS\n")
+DEFUN_USRATTR(cfg_bts_no_dtxd,
+	      cfg_bts_no_dtxd_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_RSL_LINK),
+	      "no dtx downlink",
+	      NO_STR "Configure discontinuous transmission\n"
+	      "Disable Downlink DTX for this BTS\n")
 {
 	struct gsm_bts *bts = vty->index;
 
@@ -2274,10 +2296,11 @@ DEFUN(cfg_bts_no_dtxd, cfg_bts_no_dtxd_cmd, "no dtx downlink",
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_bts_ci,
-      cfg_bts_ci_cmd,
-      "cell_identity <0-65535>",
-      "Set the Cell identity of this BTS\n" "Cell Identity\n")
+DEFUN_USRATTR(cfg_bts_ci,
+	      cfg_bts_ci_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_RSL_LINK),
+	      "cell_identity <0-65535>",
+	      "Set the Cell identity of this BTS\n" "Cell Identity\n")
 {
 	struct gsm_bts *bts = vty->index;
 	int ci = atoi(argv[0]);
@@ -2292,10 +2315,11 @@ DEFUN(cfg_bts_ci,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_bts_lac,
-      cfg_bts_lac_cmd,
-      "location_area_code <0-65535>",
-      "Set the Location Area Code (LAC) of this BTS\n" "LAC\n")
+DEFUN_USRATTR(cfg_bts_lac,
+	      cfg_bts_lac_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_RSL_LINK),
+	      "location_area_code <0-65535>",
+	      "Set the Location Area Code (LAC) of this BTS\n" "LAC\n")
 {
 	struct gsm_bts *bts = vty->index;
 	int lac = atoi(argv[0]);
@@ -2327,11 +2351,12 @@ DEFUN_HIDDEN(cfg_bts_tsc,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_bts_bsic,
-      cfg_bts_bsic_cmd,
-      "base_station_id_code <0-63>",
-      "Set the Base Station Identity Code (BSIC) of this BTS\n"
-      "BSIC of this BTS\n")
+DEFUN_USRATTR(cfg_bts_bsic,
+	      cfg_bts_bsic_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_OML_LINK),
+	      "base_station_id_code <0-63>",
+	      "Set the Base Station Identity Code (BSIC) of this BTS\n"
+	      "BSIC of this BTS\n")
 {
 	struct gsm_bts *bts = vty->index;
 	int bsic = atoi(argv[0]);
@@ -2346,13 +2371,14 @@ DEFUN(cfg_bts_bsic,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_bts_unit_id,
-      cfg_bts_unit_id_cmd,
-      "ipa unit-id <0-65534> <0-255>",
-      "Abis/IP specific options\n"
-      "Set the IPA BTS Unit ID\n"
-      "Unit ID (Site)\n"
-      "Unit ID (BTS)\n")
+DEFUN_USRATTR(cfg_bts_unit_id,
+	      cfg_bts_unit_id_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_OML_LINK),
+	      "ipa unit-id <0-65534> <0-255>",
+	      "Abis/IP specific options\n"
+	      "Set the IPA BTS Unit ID\n"
+	      "Unit ID (Site)\n"
+	      "Unit ID (BTS)\n")
 {
 	struct gsm_bts *bts = vty->index;
 	int site_id = atoi(argv[0]);
@@ -2377,12 +2403,13 @@ DEFUN_DEPRECATED(cfg_bts_unit_id,
       "Unit ID (Site)\n"
       "Unit ID (BTS)\n");
 
-DEFUN(cfg_bts_rsl_ip,
-      cfg_bts_rsl_ip_cmd,
-      "ipa rsl-ip A.B.C.D",
-      "Abis/IP specific options\n"
-      "Set the IPA RSL IP Address of the BSC\n"
-      "Destination IP address for RSL connection\n")
+DEFUN_USRATTR(cfg_bts_rsl_ip,
+	      cfg_bts_rsl_ip_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_OML_LINK),
+	      "ipa rsl-ip A.B.C.D",
+	      "Abis/IP specific options\n"
+	      "Set the IPA RSL IP Address of the BSC\n"
+	      "Destination IP address for RSL connection\n")
 {
 	struct gsm_bts *bts = vty->index;
 	struct in_addr ia;
@@ -2407,12 +2434,13 @@ DEFUN_DEPRECATED(cfg_bts_rsl_ip,
 
 #define NOKIA_STR "Nokia *Site related commands\n"
 
-DEFUN(cfg_bts_nokia_site_skip_reset,
-      cfg_bts_nokia_site_skip_reset_cmd,
-      "nokia_site skip-reset (0|1)",
-      NOKIA_STR
-      "Skip the reset step during bootstrap process of this BTS\n"
-      "Do NOT skip the reset\n" "Skip the reset\n")
+DEFUN_USRATTR(cfg_bts_nokia_site_skip_reset,
+	      cfg_bts_nokia_site_skip_reset_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_OML_LINK),
+	      "nokia_site skip-reset (0|1)",
+	      NOKIA_STR
+	      "Skip the reset step during bootstrap process of this BTS\n"
+	      "Do NOT skip the reset\n" "Skip the reset\n")
 {
 	struct gsm_bts *bts = vty->index;
 
@@ -2426,12 +2454,13 @@ DEFUN(cfg_bts_nokia_site_skip_reset,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_bts_nokia_site_no_loc_rel_cnf,
-      cfg_bts_nokia_site_no_loc_rel_cnf_cmd,
-      "nokia_site no-local-rel-conf (0|1)",
-      NOKIA_STR
-      "Do not wait for RELease CONFirm message when releasing channel locally\n"
-      "Wait for RELease CONFirm\n" "Do not wait for RELease CONFirm\n")
+DEFUN_ATTR(cfg_bts_nokia_site_no_loc_rel_cnf,
+	   cfg_bts_nokia_site_no_loc_rel_cnf_cmd,
+	   "nokia_site no-local-rel-conf (0|1)",
+	   NOKIA_STR
+	   "Do not wait for RELease CONFirm message when releasing channel locally\n"
+	   "Wait for RELease CONFirm\n" "Do not wait for RELease CONFirm\n",
+	   CMD_ATTR_IMMEDIATE)
 {
 	struct gsm_bts *bts = vty->index;
 
@@ -2446,12 +2475,13 @@ DEFUN(cfg_bts_nokia_site_no_loc_rel_cnf,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_bts_nokia_site_bts_reset_timer_cnf,
-      cfg_bts_nokia_site_bts_reset_timer_cnf_cmd,
-      "nokia_site bts-reset-timer  <15-100>",
-      NOKIA_STR
-      "The amount of time (in sec.) between BTS_RESET is sent,\n"
-      "and the BTS is being bootstrapped.\n")
+DEFUN_ATTR(cfg_bts_nokia_site_bts_reset_timer_cnf,
+	   cfg_bts_nokia_site_bts_reset_timer_cnf_cmd,
+	   "nokia_site bts-reset-timer  <15-100>",
+	   NOKIA_STR
+	   "The amount of time (in sec.) between BTS_RESET is sent,\n"
+	   "and the BTS is being bootstrapped.\n",
+	   CMD_ATTR_IMMEDIATE)
 {
 	struct gsm_bts *bts = vty->index;
 
@@ -2468,12 +2498,13 @@ DEFUN(cfg_bts_nokia_site_bts_reset_timer_cnf,
 #define OML_STR	"Organization & Maintenance Link\n"
 #define IPA_STR "A-bis/IP Specific Options\n"
 
-DEFUN(cfg_bts_stream_id,
-      cfg_bts_stream_id_cmd,
-      "oml ipa stream-id <0-255> line E1_LINE",
-	OML_STR IPA_STR
-      "Set the ipa Stream ID of the OML link of this BTS\n"
-      "Stream Identifier\n" "Virtual E1 Line Number\n" "Virtual E1 Line Number\n")
+DEFUN_USRATTR(cfg_bts_stream_id,
+	      cfg_bts_stream_id_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_OML_LINK),
+	      "oml ipa stream-id <0-255> line E1_LINE",
+	      OML_STR IPA_STR
+	      "Set the ipa Stream ID of the OML link of this BTS\n" "Stream Identifier\n"
+	      "Virtual E1 Line Number\n" "Virtual E1 Line Number\n")
 {
 	struct gsm_bts *bts = vty->index;
 	int stream_id = atoi(argv[0]), linenr = atoi(argv[1]);
@@ -2499,6 +2530,8 @@ DEFUN_DEPRECATED(cfg_bts_stream_id,
 
 #define OML_E1_STR OML_STR "OML E1/T1 Configuration\n"
 
+/* NOTE: This requires a full restart as bsc_network_configure() is executed
+ * only once on startup from osmo_bsc_main.c */
 DEFUN(cfg_bts_oml_e1,
       cfg_bts_oml_e1_cmd,
       "oml e1 line E1_LINE timeslot <1-31> sub-slot (0|1|2|3|full)",
@@ -2522,13 +2555,13 @@ DEFUN(cfg_bts_oml_e1,
 	return CMD_SUCCESS;
 }
 
-
-DEFUN(cfg_bts_oml_e1_tei,
-      cfg_bts_oml_e1_tei_cmd,
-      "oml e1 tei <0-63>",
-	OML_E1_STR
-      "Set the TEI to be used for OML\n"
-      "TEI Number\n")
+DEFUN_USRATTR(cfg_bts_oml_e1_tei,
+	      cfg_bts_oml_e1_tei_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_OML_LINK),
+	      "oml e1 tei <0-63>",
+	      OML_E1_STR
+	      "Set the TEI to be used for OML\n"
+	      "TEI Number\n")
 {
 	struct gsm_bts *bts = vty->index;
 
@@ -2537,11 +2570,13 @@ DEFUN(cfg_bts_oml_e1_tei,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_bts_challoc, cfg_bts_challoc_cmd,
-      "channel allocator (ascending|descending)",
-	"Channel Allocator\n" "Channel Allocator\n"
-	"Allocate Timeslots and Transceivers in ascending order\n"
-	"Allocate Timeslots and Transceivers in descending order\n")
+DEFUN_ATTR(cfg_bts_challoc,
+	   cfg_bts_challoc_cmd,
+	   "channel allocator (ascending|descending)",
+	   "Channel Allocator\n" "Channel Allocator\n"
+	   "Allocate Timeslots and Transceivers in ascending order\n"
+	   "Allocate Timeslots and Transceivers in descending order\n",
+	   CMD_ATTR_IMMEDIATE)
 {
 	struct gsm_bts *bts = vty->index;
 
@@ -2555,29 +2590,31 @@ DEFUN(cfg_bts_challoc, cfg_bts_challoc_cmd,
 
 #define RACH_STR "Random Access Control Channel\n"
 
-DEFUN(cfg_bts_rach_tx_integer,
-      cfg_bts_rach_tx_integer_cmd,
-      "rach tx integer <0-15>",
-	RACH_STR
-      "Set the raw tx integer value in RACH Control parameters IE\n"
-      "Set the raw tx integer value in RACH Control parameters IE\n"
-      "Raw tx integer value in RACH Control parameters IE\n")
+DEFUN_USRATTR(cfg_bts_rach_tx_integer,
+	      cfg_bts_rach_tx_integer_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_RSL_LINK),
+	      "rach tx integer <0-15>",
+	      RACH_STR
+	      "Set the raw tx integer value in RACH Control parameters IE\n"
+	      "Set the raw tx integer value in RACH Control parameters IE\n"
+	      "Raw tx integer value in RACH Control parameters IE\n")
 {
 	struct gsm_bts *bts = vty->index;
 	bts->si_common.rach_control.tx_integer = atoi(argv[0]) & 0xf;
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_bts_rach_max_trans,
-      cfg_bts_rach_max_trans_cmd,
-      "rach max transmission (1|2|4|7)",
-	RACH_STR
-      "Set the maximum number of RACH burst transmissions\n"
-      "Set the maximum number of RACH burst transmissions\n"
-      "Maximum number of 1 RACH burst transmissions\n"
-      "Maximum number of 2 RACH burst transmissions\n"
-      "Maximum number of 4 RACH burst transmissions\n"
-      "Maximum number of 7 RACH burst transmissions\n")
+DEFUN_USRATTR(cfg_bts_rach_max_trans,
+	      cfg_bts_rach_max_trans_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_RSL_LINK),
+	      "rach max transmission (1|2|4|7)",
+	      RACH_STR
+	      "Set the maximum number of RACH burst transmissions\n"
+	      "Set the maximum number of RACH burst transmissions\n"
+	      "Maximum number of 1 RACH burst transmissions\n"
+	      "Maximum number of 2 RACH burst transmissions\n"
+	      "Maximum number of 4 RACH burst transmissions\n"
+	      "Maximum number of 7 RACH burst transmissions\n")
 {
 	struct gsm_bts *bts = vty->index;
 	bts->si_common.rach_control.max_trans = rach_max_trans_val2raw(atoi(argv[0]));
@@ -2586,13 +2623,14 @@ DEFUN(cfg_bts_rach_max_trans,
 
 #define CD_STR "Channel Description\n"
 
-DEFUN(cfg_bts_chan_desc_att,
-      cfg_bts_chan_desc_att_cmd,
-      "channel-description attach (0|1)",
-	CD_STR
-      "Set if attachment is required\n"
-      "Attachment is NOT required\n"
-      "Attachment is required (standard)\n")
+DEFUN_USRATTR(cfg_bts_chan_desc_att,
+	      cfg_bts_chan_desc_att_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_RSL_LINK),
+	      "channel-description attach (0|1)",
+	      CD_STR
+	      "Set if attachment is required\n"
+	      "Attachment is NOT required\n"
+	      "Attachment is required (standard)\n")
 {
 	struct gsm_bts *bts = vty->index;
 	bts->si_common.chan_desc.att = atoi(argv[0]);
@@ -2606,12 +2644,13 @@ ALIAS_DEPRECATED(cfg_bts_chan_desc_att,
 		 "Attachment is NOT required\n"
 		 "Attachment is required (standard)\n");
 
-DEFUN(cfg_bts_chan_desc_bs_pa_mfrms,
-      cfg_bts_chan_desc_bs_pa_mfrms_cmd,
-      "channel-description bs-pa-mfrms <2-9>",
-	CD_STR
-      "Set number of multiframe periods for paging groups\n"
-      "Number of multiframe periods for paging groups\n")
+DEFUN_USRATTR(cfg_bts_chan_desc_bs_pa_mfrms,
+	      cfg_bts_chan_desc_bs_pa_mfrms_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_RSL_LINK),
+	      "channel-description bs-pa-mfrms <2-9>",
+	      CD_STR
+	      "Set number of multiframe periods for paging groups\n"
+	      "Number of multiframe periods for paging groups\n")
 {
 	struct gsm_bts *bts = vty->index;
 	int bs_pa_mfrms = atoi(argv[0]);
@@ -2626,12 +2665,13 @@ ALIAS_DEPRECATED(cfg_bts_chan_desc_bs_pa_mfrms,
 		 "Set number of multiframe periods for paging groups\n"
 		 "Number of multiframe periods for paging groups\n");
 
-DEFUN(cfg_bts_chan_desc_bs_ag_blks_res,
-      cfg_bts_chan_desc_bs_ag_blks_res_cmd,
-      "channel-description bs-ag-blks-res <0-7>",
-	CD_STR
-      "Set number of blocks reserved for access grant\n"
-      "Number of blocks reserved for access grant\n")
+DEFUN_USRATTR(cfg_bts_chan_desc_bs_ag_blks_res,
+	      cfg_bts_chan_desc_bs_ag_blks_res_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_RSL_LINK),
+	      "channel-description bs-ag-blks-res <0-7>",
+	      CD_STR
+	      "Set number of blocks reserved for access grant\n"
+	      "Number of blocks reserved for access grant\n")
 {
 	struct gsm_bts *bts = vty->index;
 	int bs_ag_blks_res = atoi(argv[0]);
@@ -2648,12 +2688,13 @@ ALIAS_DEPRECATED(cfg_bts_chan_desc_bs_ag_blks_res,
 
 #define CCCH_STR "Common Control Channel\n"
 
-DEFUN(cfg_bts_ccch_load_ind_thresh,
-      cfg_bts_ccch_load_ind_thresh_cmd,
-      "ccch load-indication-threshold <0-100>",
-	CCCH_STR
-      "Percentage of CCCH load at which BTS sends RSL CCCH LOAD IND\n"
-      "CCCH Load Threshold in percent (Default: 10)\n")
+DEFUN_USRATTR(cfg_bts_ccch_load_ind_thresh,
+	      cfg_bts_ccch_load_ind_thresh_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_OML_LINK),
+	      "ccch load-indication-threshold <0-100>",
+	      CCCH_STR
+	      "Percentage of CCCH load at which BTS sends RSL CCCH LOAD IND\n"
+	      "CCCH Load Threshold in percent (Default: 10)\n")
 {
 	struct gsm_bts *bts = vty->index;
 	bts->ccch_load_ind_thresh = atoi(argv[0]);
@@ -2662,38 +2703,42 @@ DEFUN(cfg_bts_ccch_load_ind_thresh,
 
 #define NM_STR "Network Management\n"
 
-DEFUN(cfg_bts_rach_nm_b_thresh,
-      cfg_bts_rach_nm_b_thresh_cmd,
-      "rach nm busy threshold <0-255>",
-	RACH_STR NM_STR
-      "Set the NM Busy Threshold\n"
-      "Set the NM Busy Threshold\n"
-      "NM Busy Threshold in dB\n")
+DEFUN_USRATTR(cfg_bts_rach_nm_b_thresh,
+	      cfg_bts_rach_nm_b_thresh_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_OML_LINK),
+	      "rach nm busy threshold <0-255>",
+	      RACH_STR NM_STR
+	      "Set the NM Busy Threshold\n"
+	      "Set the NM Busy Threshold\n"
+	      "NM Busy Threshold in dB\n")
 {
 	struct gsm_bts *bts = vty->index;
 	bts->rach_b_thresh = atoi(argv[0]);
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_bts_rach_nm_ldavg,
-      cfg_bts_rach_nm_ldavg_cmd,
-      "rach nm load average <0-65535>",
-	RACH_STR NM_STR
-      "Set the NM Loadaverage Slots value\n"
-      "Set the NM Loadaverage Slots value\n"
-      "NM Loadaverage Slots value\n")
+DEFUN_USRATTR(cfg_bts_rach_nm_ldavg,
+	      cfg_bts_rach_nm_ldavg_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_OML_LINK),
+	      "rach nm load average <0-65535>",
+	      RACH_STR NM_STR
+	      "Set the NM Loadaverage Slots value\n"
+	      "Set the NM Loadaverage Slots value\n"
+	      "NM Loadaverage Slots value\n")
 {
 	struct gsm_bts *bts = vty->index;
 	bts->rach_ldavg_slots = atoi(argv[0]);
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_bts_cell_barred, cfg_bts_cell_barred_cmd,
-      "cell barred (0|1)",
-      "Should this cell be barred from access?\n"
-      "Should this cell be barred from access?\n"
-      "Cell should NOT be barred\n"
-      "Cell should be barred\n")
+DEFUN_USRATTR(cfg_bts_cell_barred,
+	      cfg_bts_cell_barred_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_RSL_LINK),
+	      "cell barred (0|1)",
+	      "Should this cell be barred from access?\n"
+	      "Should this cell be barred from access?\n"
+	      "Cell should NOT be barred\n"
+	      "Cell should be barred\n")
 
 {
 	struct gsm_bts *bts = vty->index;
@@ -2703,14 +2748,16 @@ DEFUN(cfg_bts_cell_barred, cfg_bts_cell_barred_cmd,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_bts_rach_ec_allowed, cfg_bts_rach_ec_allowed_cmd,
-      "rach emergency call allowed (0|1)",
-      RACH_STR
-      "Should this cell allow emergency calls?\n"
-      "Should this cell allow emergency calls?\n"
-      "Should this cell allow emergency calls?\n"
-      "Do NOT allow emergency calls\n"
-      "Allow emergency calls\n")
+DEFUN_USRATTR(cfg_bts_rach_ec_allowed,
+	      cfg_bts_rach_ec_allowed_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_RSL_LINK),
+	      "rach emergency call allowed (0|1)",
+	      RACH_STR
+	      "Should this cell allow emergency calls?\n"
+	      "Should this cell allow emergency calls?\n"
+	      "Should this cell allow emergency calls?\n"
+	      "Do NOT allow emergency calls\n"
+	      "Allow emergency calls\n")
 {
 	struct gsm_bts *bts = vty->index;
 
@@ -2722,27 +2769,29 @@ DEFUN(cfg_bts_rach_ec_allowed, cfg_bts_rach_ec_allowed_cmd,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_bts_rach_ac_class, cfg_bts_rach_ac_class_cmd,
-      "rach access-control-class (0|1|2|3|4|5|6|7|8|9|11|12|13|14|15) (barred|allowed)",
-      RACH_STR
-      "Set access control class\n"
-      "Access control class 0\n"
-      "Access control class 1\n"
-      "Access control class 2\n"
-      "Access control class 3\n"
-      "Access control class 4\n"
-      "Access control class 5\n"
-      "Access control class 6\n"
-      "Access control class 7\n"
-      "Access control class 8\n"
-      "Access control class 9\n"
-      "Access control class 11 for PLMN use\n"
-      "Access control class 12 for security services\n"
-      "Access control class 13 for public utilities (e.g. water/gas suppliers)\n"
-      "Access control class 14 for emergency services\n"
-      "Access control class 15 for PLMN staff\n"
-      "barred to use access control class\n"
-      "allowed to use access control class\n")
+DEFUN_USRATTR(cfg_bts_rach_ac_class,
+	      cfg_bts_rach_ac_class_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_RSL_LINK),
+	      "rach access-control-class (0|1|2|3|4|5|6|7|8|9|11|12|13|14|15) (barred|allowed)",
+	      RACH_STR
+	      "Set access control class\n"
+	      "Access control class 0\n"
+	      "Access control class 1\n"
+	      "Access control class 2\n"
+	      "Access control class 3\n"
+	      "Access control class 4\n"
+	      "Access control class 5\n"
+	      "Access control class 6\n"
+	      "Access control class 7\n"
+	      "Access control class 8\n"
+	      "Access control class 9\n"
+	      "Access control class 11 for PLMN use\n"
+	      "Access control class 12 for security services\n"
+	      "Access control class 13 for public utilities (e.g. water/gas suppliers)\n"
+	      "Access control class 14 for emergency services\n"
+	      "Access control class 15 for PLMN staff\n"
+	      "barred to use access control class\n"
+	      "allowed to use access control class\n")
 {
 	struct gsm_bts *bts = vty->index;
 
@@ -2770,12 +2819,14 @@ DEFUN(cfg_bts_rach_ac_class, cfg_bts_rach_ac_class_cmd,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_bts_ms_max_power, cfg_bts_ms_max_power_cmd,
-      "ms max power <0-40>",
-      "MS Options\n"
-      "Maximum transmit power of the MS\n"
-      "Maximum transmit power of the MS\n"
-      "Maximum transmit power of the MS in dBm\n")
+DEFUN_USRATTR(cfg_bts_ms_max_power,
+	      cfg_bts_ms_max_power_cmd,
+	      X(BSC_VTY_ATTR_NEW_LCHAN),
+	      "ms max power <0-40>",
+	      "MS Options\n"
+	      "Maximum transmit power of the MS\n"
+	      "Maximum transmit power of the MS\n"
+	      "Maximum transmit power of the MS in dBm\n")
 {
 	struct gsm_bts *bts = vty->index;
 
@@ -2786,11 +2837,13 @@ DEFUN(cfg_bts_ms_max_power, cfg_bts_ms_max_power_cmd,
 
 #define CELL_STR "Cell Parameters\n"
 
-DEFUN(cfg_bts_cell_resel_hyst, cfg_bts_cell_resel_hyst_cmd,
-      "cell reselection hysteresis <0-14>",
-      CELL_STR "Cell re-selection parameters\n"
-      "Cell Re-Selection Hysteresis in dB\n"
-      "Cell Re-Selection Hysteresis in dB\n")
+DEFUN_USRATTR(cfg_bts_cell_resel_hyst,
+	      cfg_bts_cell_resel_hyst_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_RSL_LINK),
+	      "cell reselection hysteresis <0-14>",
+	      CELL_STR "Cell re-selection parameters\n"
+	      "Cell Re-Selection Hysteresis in dB\n"
+	      "Cell Re-Selection Hysteresis in dB\n")
 {
 	struct gsm_bts *bts = vty->index;
 
@@ -2799,12 +2852,14 @@ DEFUN(cfg_bts_cell_resel_hyst, cfg_bts_cell_resel_hyst_cmd,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_bts_rxlev_acc_min, cfg_bts_rxlev_acc_min_cmd,
-      "rxlev access min <0-63>",
-      "Minimum RxLev needed for cell access\n"
-      "Minimum RxLev needed for cell access\n"
-      "Minimum RxLev needed for cell access\n"
-      "Minimum RxLev needed for cell access (better than -110dBm)\n")
+DEFUN_USRATTR(cfg_bts_rxlev_acc_min,
+	      cfg_bts_rxlev_acc_min_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_RSL_LINK),
+	      "rxlev access min <0-63>",
+	      "Minimum RxLev needed for cell access\n"
+	      "Minimum RxLev needed for cell access\n"
+	      "Minimum RxLev needed for cell access\n"
+	      "Minimum RxLev needed for cell access (better than -110dBm)\n")
 {
 	struct gsm_bts *bts = vty->index;
 
@@ -2813,10 +2868,12 @@ DEFUN(cfg_bts_rxlev_acc_min, cfg_bts_rxlev_acc_min_cmd,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_bts_cell_bar_qualify, cfg_bts_cell_bar_qualify_cmd,
-	"cell bar qualify (0|1)",
-	CELL_STR "Cell Bar Qualify\n" "Cell Bar Qualify\n"
-	"Set CBQ to 0\n" "Set CBQ to 1\n")
+DEFUN_USRATTR(cfg_bts_cell_bar_qualify,
+	      cfg_bts_cell_bar_qualify_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_RSL_LINK),
+	      "cell bar qualify (0|1)",
+	      CELL_STR "Cell Bar Qualify\n" "Cell Bar Qualify\n"
+	      "Set CBQ to 0\n" "Set CBQ to 1\n")
 {
 	struct gsm_bts *bts = vty->index;
 
@@ -2826,12 +2883,13 @@ DEFUN(cfg_bts_cell_bar_qualify, cfg_bts_cell_bar_qualify_cmd,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_bts_cell_resel_ofs, cfg_bts_cell_resel_ofs_cmd,
-	"cell reselection offset <0-126>",
-	CELL_STR "Cell Re-Selection Parameters\n"
-	"Cell Re-Selection Offset (CRO) in dB\n"
-	"Cell Re-Selection Offset (CRO) in dB\n"
-	)
+DEFUN_USRATTR(cfg_bts_cell_resel_ofs,
+	      cfg_bts_cell_resel_ofs_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_RSL_LINK),
+	      "cell reselection offset <0-126>",
+	      CELL_STR "Cell Re-Selection Parameters\n"
+	      "Cell Re-Selection Offset (CRO) in dB\n"
+	      "Cell Re-Selection Offset (CRO) in dB\n")
 {
 	struct gsm_bts *bts = vty->index;
 
@@ -2841,11 +2899,13 @@ DEFUN(cfg_bts_cell_resel_ofs, cfg_bts_cell_resel_ofs_cmd,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_bts_temp_ofs, cfg_bts_temp_ofs_cmd,
-	"temporary offset <0-60>",
-	"Cell selection temporary negative offset\n"
-	"Cell selection temporary negative offset\n"
-	"Cell selection temporary negative offset in dB\n")
+DEFUN_USRATTR(cfg_bts_temp_ofs,
+	      cfg_bts_temp_ofs_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_RSL_LINK),
+	      "temporary offset <0-60>",
+	      "Cell selection temporary negative offset\n"
+	      "Cell selection temporary negative offset\n"
+	      "Cell selection temporary negative offset in dB\n")
 {
 	struct gsm_bts *bts = vty->index;
 
@@ -2855,11 +2915,13 @@ DEFUN(cfg_bts_temp_ofs, cfg_bts_temp_ofs_cmd,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_bts_temp_ofs_inf, cfg_bts_temp_ofs_inf_cmd,
-	"temporary offset infinite",
-	"Cell selection temporary negative offset\n"
-	"Cell selection temporary negative offset\n"
-	"Sets cell selection temporary negative offset to infinity\n")
+DEFUN_USRATTR(cfg_bts_temp_ofs_inf,
+	      cfg_bts_temp_ofs_inf_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_RSL_LINK),
+	      "temporary offset infinite",
+	      "Cell selection temporary negative offset\n"
+	      "Cell selection temporary negative offset\n"
+	      "Sets cell selection temporary negative offset to infinity\n")
 {
 	struct gsm_bts *bts = vty->index;
 
@@ -2869,11 +2931,13 @@ DEFUN(cfg_bts_temp_ofs_inf, cfg_bts_temp_ofs_inf_cmd,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_bts_penalty_time, cfg_bts_penalty_time_cmd,
-	"penalty time <20-620>",
-	"Cell selection penalty time\n"
-	"Cell selection penalty time\n"
-	"Cell selection penalty time in seconds (by 20s increments)\n")
+DEFUN_USRATTR(cfg_bts_penalty_time,
+	      cfg_bts_penalty_time_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_RSL_LINK),
+	      "penalty time <20-620>",
+	      "Cell selection penalty time\n"
+	      "Cell selection penalty time\n"
+	      "Cell selection penalty time in seconds (by 20s increments)\n")
 {
 	struct gsm_bts *bts = vty->index;
 
@@ -2883,13 +2947,15 @@ DEFUN(cfg_bts_penalty_time, cfg_bts_penalty_time_cmd,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_bts_penalty_time_rsvd, cfg_bts_penalty_time_rsvd_cmd,
-	"penalty time reserved",
-	"Cell selection penalty time\n"
-	"Cell selection penalty time\n"
-	"Set cell selection penalty time to reserved value 31, "
-		"(indicate that CELL_RESELECT_OFFSET is subtracted from C2 "
-		"and TEMPORARY_OFFSET is ignored)\n")
+DEFUN_USRATTR(cfg_bts_penalty_time_rsvd,
+	      cfg_bts_penalty_time_rsvd_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_RSL_LINK),
+	      "penalty time reserved",
+	      "Cell selection penalty time\n"
+	      "Cell selection penalty time\n"
+	      "Set cell selection penalty time to reserved value 31, "
+		    "(indicate that CELL_RESELECT_OFFSET is subtracted from C2 "
+		    "and TEMPORARY_OFFSET is ignored)\n")
 {
 	struct gsm_bts *bts = vty->index;
 
@@ -2899,10 +2965,12 @@ DEFUN(cfg_bts_penalty_time_rsvd, cfg_bts_penalty_time_rsvd_cmd,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_bts_radio_link_timeout, cfg_bts_radio_link_timeout_cmd,
-	"radio-link-timeout <4-64>",
-	"Radio link timeout criterion (BTS side)\n"
-	"Radio link timeout value (lost SACCH block)\n")
+DEFUN_USRATTR(cfg_bts_radio_link_timeout,
+	      cfg_bts_radio_link_timeout_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_OML_LINK),
+	      "radio-link-timeout <4-64>",
+	      "Radio link timeout criterion (BTS side)\n"
+	      "Radio link timeout value (lost SACCH block)\n")
 {
 	struct gsm_bts *bts = vty->index;
 
@@ -2911,10 +2979,12 @@ DEFUN(cfg_bts_radio_link_timeout, cfg_bts_radio_link_timeout_cmd,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_bts_radio_link_timeout_inf, cfg_bts_radio_link_timeout_inf_cmd,
-	"radio-link-timeout infinite",
-	"Radio link timeout criterion (BTS side)\n"
-	"Infinite Radio link timeout value (use only for BTS RF testing)\n")
+DEFUN_USRATTR(cfg_bts_radio_link_timeout_inf,
+	      cfg_bts_radio_link_timeout_inf_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_OML_LINK),
+	      "radio-link-timeout infinite",
+	      "Radio link timeout criterion (BTS side)\n"
+	      "Infinite Radio link timeout value (use only for BTS RF testing)\n")
 {
 	struct gsm_bts *bts = vty->index;
 
@@ -2940,12 +3010,14 @@ DEFUN(cfg_bts_radio_link_timeout_inf, cfg_bts_radio_link_timeout_inf_cmd,
 		} \
 	} while (0)
 
-DEFUN(cfg_bts_prs_bvci, cfg_bts_gprs_bvci_cmd,
-	"gprs cell bvci <2-65535>",
-	GPRS_TEXT
-	"GPRS Cell Settings\n"
-	"GPRS BSSGP VC Identifier\n"
-	"GPRS BSSGP VC Identifier\n")
+DEFUN_USRATTR(cfg_bts_prs_bvci,
+	      cfg_bts_gprs_bvci_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_OML_LINK),
+	      "gprs cell bvci <2-65535>",
+	      GPRS_TEXT
+	      "GPRS Cell Settings\n"
+	      "GPRS BSSGP VC Identifier\n"
+	      "GPRS BSSGP VC Identifier\n")
 {
 	/* ETSI TS 101 343: values 0 and 1 are reserved for signalling and PTM */
 	struct gsm_bts *bts = vty->index;
@@ -2957,11 +3029,13 @@ DEFUN(cfg_bts_prs_bvci, cfg_bts_gprs_bvci_cmd,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_bts_gprs_nsei, cfg_bts_gprs_nsei_cmd,
-	"gprs nsei <0-65535>",
-	GPRS_TEXT
-	"GPRS NS Entity Identifier\n"
-	"GPRS NS Entity Identifier\n")
+DEFUN_USRATTR(cfg_bts_gprs_nsei,
+	      cfg_bts_gprs_nsei_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_OML_LINK),
+	      "gprs nsei <0-65535>",
+	      GPRS_TEXT
+	      "GPRS NS Entity Identifier\n"
+	      "GPRS NS Entity Identifier\n")
 {
 	struct gsm_bts *bts = vty->index;
 
@@ -2975,11 +3049,13 @@ DEFUN(cfg_bts_gprs_nsei, cfg_bts_gprs_nsei_cmd,
 #define NSVC_TEXT "Network Service Virtual Connection (NS-VC)\n" \
 		"NSVC Logical Number\n"
 
-DEFUN(cfg_bts_gprs_nsvci, cfg_bts_gprs_nsvci_cmd,
-	"gprs nsvc <0-1> nsvci <0-65535>",
-	GPRS_TEXT NSVC_TEXT
-	"NS Virtual Connection Identifier\n"
-	"GPRS NS VC Identifier\n")
+DEFUN_USRATTR(cfg_bts_gprs_nsvci,
+	      cfg_bts_gprs_nsvci_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_OML_LINK),
+	      "gprs nsvc <0-1> nsvci <0-65535>",
+	      GPRS_TEXT NSVC_TEXT
+	      "NS Virtual Connection Identifier\n"
+	      "GPRS NS VC Identifier\n")
 {
 	struct gsm_bts *bts = vty->index;
 	int idx = atoi(argv[0]);
@@ -2991,13 +3067,15 @@ DEFUN(cfg_bts_gprs_nsvci, cfg_bts_gprs_nsvci_cmd,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_bts_gprs_nsvc_lport, cfg_bts_gprs_nsvc_lport_cmd,
-	"gprs nsvc <0-1> local udp port <0-65535>",
-	GPRS_TEXT NSVC_TEXT
-	"GPRS NS Local UDP Port\n"
-	"GPRS NS Local UDP Port\n"
-	"GPRS NS Local UDP Port\n"
-	"GPRS NS Local UDP Port Number\n")
+DEFUN_USRATTR(cfg_bts_gprs_nsvc_lport,
+	      cfg_bts_gprs_nsvc_lport_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_OML_LINK),
+	      "gprs nsvc <0-1> local udp port <0-65535>",
+	      GPRS_TEXT NSVC_TEXT
+	      "GPRS NS Local UDP Port\n"
+	      "GPRS NS Local UDP Port\n"
+	      "GPRS NS Local UDP Port\n"
+	      "GPRS NS Local UDP Port Number\n")
 {
 	struct gsm_bts *bts = vty->index;
 	int idx = atoi(argv[0]);
@@ -3009,13 +3087,15 @@ DEFUN(cfg_bts_gprs_nsvc_lport, cfg_bts_gprs_nsvc_lport_cmd,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_bts_gprs_nsvc_rport, cfg_bts_gprs_nsvc_rport_cmd,
-	"gprs nsvc <0-1> remote udp port <0-65535>",
-	GPRS_TEXT NSVC_TEXT
-	"GPRS NS Remote UDP Port\n"
-	"GPRS NS Remote UDP Port\n"
-	"GPRS NS Remote UDP Port\n"
-	"GPRS NS Remote UDP Port Number\n")
+DEFUN_USRATTR(cfg_bts_gprs_nsvc_rport,
+	      cfg_bts_gprs_nsvc_rport_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_OML_LINK),
+	      "gprs nsvc <0-1> remote udp port <0-65535>",
+	      GPRS_TEXT NSVC_TEXT
+	      "GPRS NS Remote UDP Port\n"
+	      "GPRS NS Remote UDP Port\n"
+	      "GPRS NS Remote UDP Port\n"
+	      "GPRS NS Remote UDP Port Number\n")
 {
 	struct gsm_bts *bts = vty->index;
 	int idx = atoi(argv[0]);
@@ -3028,13 +3108,15 @@ DEFUN(cfg_bts_gprs_nsvc_rport, cfg_bts_gprs_nsvc_rport_cmd,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_bts_gprs_nsvc_rip, cfg_bts_gprs_nsvc_rip_cmd,
-	"gprs nsvc <0-1> remote ip " VTY_IPV46_CMD,
-	GPRS_TEXT NSVC_TEXT
-	"GPRS NS Remote IP Address\n"
-	"GPRS NS Remote IP Address\n"
-	"GPRS NS Remote IPv4 Address\n"
-	"GPRS NS Remote IPv6 Address\n")
+DEFUN_USRATTR(cfg_bts_gprs_nsvc_rip,
+	      cfg_bts_gprs_nsvc_rip_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_OML_LINK),
+	      "gprs nsvc <0-1> remote ip " VTY_IPV46_CMD,
+	      GPRS_TEXT NSVC_TEXT
+	      "GPRS NS Remote IP Address\n"
+	      "GPRS NS Remote IP Address\n"
+	      "GPRS NS Remote IPv4 Address\n"
+	      "GPRS NS Remote IPv6 Address\n")
 {
 	struct gsm_bts *bts = vty->index;
 	struct osmo_sockaddr_str remote;
@@ -3063,11 +3145,12 @@ DEFUN(cfg_bts_gprs_nsvc_rip, cfg_bts_gprs_nsvc_rip_cmd,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_bts_pag_free, cfg_bts_pag_free_cmd,
-      "paging free <-1-1024>",
-      "Paging options\n"
-      "Only page when having a certain amount of free slots\n"
-      "amount of required free paging slots. -1 to disable\n")
+DEFUN_ATTR(cfg_bts_pag_free, cfg_bts_pag_free_cmd,
+	   "paging free <-1-1024>",
+	   "Paging options\n"
+	   "Only page when having a certain amount of free slots\n"
+	   "amount of required free paging slots. -1 to disable\n",
+	   CMD_ATTR_IMMEDIATE)
 {
 	struct gsm_bts *bts = vty->index;
 
@@ -3075,11 +3158,13 @@ DEFUN(cfg_bts_pag_free, cfg_bts_pag_free_cmd,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_bts_gprs_ns_timer, cfg_bts_gprs_ns_timer_cmd,
-	"gprs ns timer " NS_TIMERS " <0-255>",
-	GPRS_TEXT "Network Service\n"
-	"Network Service Timer\n"
-	NS_TIMERS_HELP "Timer Value\n")
+DEFUN_USRATTR(cfg_bts_gprs_ns_timer,
+	      cfg_bts_gprs_ns_timer_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_OML_LINK),
+	      "gprs ns timer " NS_TIMERS " <0-255>",
+	      GPRS_TEXT "Network Service\n"
+	      "Network Service Timer\n"
+	      NS_TIMERS_HELP "Timer Value\n")
 {
 	struct gsm_bts *bts = vty->index;
 	int idx = get_string_value(gprs_ns_timer_strs, argv[0]);
@@ -3109,11 +3194,13 @@ DEFUN(cfg_bts_gprs_ns_timer, cfg_bts_gprs_ns_timer_cmd,
 	"Tbvc-capa-update timeout\n"		\
 	"Tbvc-capa-update retries\n"
 
-DEFUN(cfg_bts_gprs_cell_timer, cfg_bts_gprs_cell_timer_cmd,
-	"gprs cell timer " BSSGP_TIMERS " <0-255>",
-	GPRS_TEXT "Cell / BSSGP\n"
-	"Cell/BSSGP Timer\n"
-	BSSGP_TIMERS_HELP "Timer Value\n")
+DEFUN_USRATTR(cfg_bts_gprs_cell_timer,
+	      cfg_bts_gprs_cell_timer_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_OML_LINK),
+	      "gprs cell timer " BSSGP_TIMERS " <0-255>",
+	      GPRS_TEXT "Cell / BSSGP\n"
+	      "Cell/BSSGP Timer\n"
+	      BSSGP_TIMERS_HELP "Timer Value\n")
 {
 	struct gsm_bts *bts = vty->index;
 	int idx = get_string_value(gprs_bssgp_cfg_strs, argv[0]);
@@ -3129,12 +3216,14 @@ DEFUN(cfg_bts_gprs_cell_timer, cfg_bts_gprs_cell_timer_cmd,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_bts_gprs_rac, cfg_bts_gprs_rac_cmd,
-	"gprs routing area <0-255>",
-	GPRS_TEXT
-	"GPRS Routing Area Code\n"
-	"GPRS Routing Area Code\n"
-	"GPRS Routing Area Code\n")
+DEFUN_USRATTR(cfg_bts_gprs_rac,
+	      cfg_bts_gprs_rac_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_OML_LINK),
+	      "gprs routing area <0-255>",
+	      GPRS_TEXT
+	      "GPRS Routing Area Code\n"
+	      "GPRS Routing Area Code\n"
+	      "GPRS Routing Area Code\n")
 {
 	struct gsm_bts *bts = vty->index;
 
@@ -3145,10 +3234,13 @@ DEFUN(cfg_bts_gprs_rac, cfg_bts_gprs_rac_cmd,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_bts_gprs_ctrl_ack, cfg_bts_gprs_ctrl_ack_cmd,
-	"gprs control-ack-type-rach", GPRS_TEXT
-	"Set GPRS Control Ack Type for PACKET CONTROL ACKNOWLEDGMENT message to "
-	"four access bursts format instead of default RLC/MAC control block\n")
+DEFUN_USRATTR(cfg_bts_gprs_ctrl_ack,
+	      cfg_bts_gprs_ctrl_ack_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_RSL_LINK),
+	      "gprs control-ack-type-rach",
+	      GPRS_TEXT
+	      "Set GPRS Control Ack Type for PACKET CONTROL ACKNOWLEDGMENT message to "
+	      "four access bursts format instead of default RLC/MAC control block\n")
 {
 	struct gsm_bts *bts = vty->index;
 
@@ -3159,10 +3251,13 @@ DEFUN(cfg_bts_gprs_ctrl_ack, cfg_bts_gprs_ctrl_ack_cmd,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_no_bts_gprs_ctrl_ack, cfg_no_bts_gprs_ctrl_ack_cmd,
-	"no gprs control-ack-type-rach", NO_STR GPRS_TEXT
-	"Set GPRS Control Ack Type for PACKET CONTROL ACKNOWLEDGMENT message to "
-	"default RLC/MAC control block\n")
+DEFUN_USRATTR(cfg_no_bts_gprs_ctrl_ack,
+	      cfg_no_bts_gprs_ctrl_ack_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_RSL_LINK),
+	      "no gprs control-ack-type-rach",
+	      NO_STR GPRS_TEXT
+	      "Set GPRS Control Ack Type for PACKET CONTROL ACKNOWLEDGMENT message to "
+	      "default RLC/MAC control block\n")
 {
 	struct gsm_bts *bts = vty->index;
 
@@ -3173,13 +3268,15 @@ DEFUN(cfg_no_bts_gprs_ctrl_ack, cfg_no_bts_gprs_ctrl_ack_cmd,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_bts_gprs_net_ctrl_ord, cfg_bts_gprs_net_ctrl_ord_cmd,
-	"gprs network-control-order (nc0|nc1|nc2)",
-	GPRS_TEXT
-	"GPRS Network Control Order\n"
-	"MS controlled cell re-selection, no measurement reporting\n"
-	"MS controlled cell re-selection, MS sends measurement reports\n"
-	"Network controlled cell re-selection, MS sends measurement reports\n")
+DEFUN_USRATTR(cfg_bts_gprs_net_ctrl_ord,
+	      cfg_bts_gprs_net_ctrl_ord_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_RSL_LINK),
+	      "gprs network-control-order (nc0|nc1|nc2)",
+	      GPRS_TEXT
+	      "GPRS Network Control Order\n"
+	      "MS controlled cell re-selection, no measurement reporting\n"
+	      "MS controlled cell re-selection, MS sends measurement reports\n"
+	      "Network controlled cell re-selection, MS sends measurement reports\n")
 {
 	struct gsm_bts *bts = vty->index;
 
@@ -3190,13 +3287,15 @@ DEFUN(cfg_bts_gprs_net_ctrl_ord, cfg_bts_gprs_net_ctrl_ord_cmd,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_bts_gprs_mode, cfg_bts_gprs_mode_cmd,
-	"gprs mode (none|gprs|egprs)",
-	GPRS_TEXT
-	"GPRS Mode for this BTS\n"
-	"GPRS Disabled on this BTS\n"
-	"GPRS Enabled on this BTS\n"
-	"EGPRS (EDGE) Enabled on this BTS\n")
+DEFUN_USRATTR(cfg_bts_gprs_mode,
+	      cfg_bts_gprs_mode_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_OML_LINK),
+	      "gprs mode (none|gprs|egprs)",
+	      GPRS_TEXT
+	      "GPRS Mode for this BTS\n"
+	      "GPRS Disabled on this BTS\n"
+	      "GPRS Enabled on this BTS\n"
+	      "EGPRS (EDGE) Enabled on this BTS\n")
 {
 	struct gsm_bts *bts = vty->index;
 	enum bts_gprs_mode mode = bts_gprs_mode_parse(argv[0], NULL);
@@ -3240,10 +3339,11 @@ DEFUN_DEPRECATED(cfg_bts_gprs_11bit_rach_support_for_egprs,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_bts_gprs_egprs_pkt_chan_req,
-      cfg_bts_gprs_egprs_pkt_chan_req_cmd,
-      "gprs egprs-packet-channel-request",
-      GPRS_TEXT "EGPRS Packet Channel Request support")
+DEFUN_USRATTR(cfg_bts_gprs_egprs_pkt_chan_req,
+	      cfg_bts_gprs_egprs_pkt_chan_req_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_RSL_LINK),
+	      "gprs egprs-packet-channel-request",
+	      GPRS_TEXT "EGPRS Packet Channel Request support")
 {
 	struct gsm_bts *bts = vty->index;
 
@@ -3257,10 +3357,11 @@ DEFUN(cfg_bts_gprs_egprs_pkt_chan_req,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_bts_no_gprs_egprs_pkt_chan_req,
-      cfg_bts_no_gprs_egprs_pkt_chan_req_cmd,
-      "no gprs egprs-packet-channel-request",
-      NO_STR GPRS_TEXT "EGPRS Packet Channel Request support")
+DEFUN_USRATTR(cfg_bts_no_gprs_egprs_pkt_chan_req,
+	      cfg_bts_no_gprs_egprs_pkt_chan_req_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_RSL_LINK),
+	      "no gprs egprs-packet-channel-request",
+	      NO_STR GPRS_TEXT "EGPRS Packet Channel Request support")
 {
 	struct gsm_bts *bts = vty->index;
 
@@ -3298,12 +3399,14 @@ DEFUN(cfg_bts_no_gprs_egprs_pkt_chan_req,
 			"System Information Type 5bis\n"	\
 			"System Information Type 5ter\n"
 
-DEFUN(cfg_bts_si_mode, cfg_bts_si_mode_cmd,
-	"system-information " SI_TYPE_TEXT " mode (static|computed)",
-	SI_TEXT SI_TYPE_HELP
-	"System Information Mode\n"
-	"Static user-specified\n"
-	"Dynamic, BSC-computed\n")
+DEFUN_USRATTR(cfg_bts_si_mode,
+	      cfg_bts_si_mode_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_RSL_LINK),
+	      "system-information " SI_TYPE_TEXT " mode (static|computed)",
+	      SI_TEXT SI_TYPE_HELP
+	      "System Information Mode\n"
+	      "Static user-specified\n"
+	      "Dynamic, BSC-computed\n")
 {
 	struct gsm_bts *bts = vty->index;
 	int type;
@@ -3322,11 +3425,13 @@ DEFUN(cfg_bts_si_mode, cfg_bts_si_mode_cmd,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_bts_si_static, cfg_bts_si_static_cmd,
-	"system-information " SI_TYPE_TEXT " static HEXSTRING",
-	SI_TEXT SI_TYPE_HELP
-	"Static System Information filling\n"
-	"Static user-specified SI content in HEX notation\n")
+DEFUN_USRATTR(cfg_bts_si_static,
+	      cfg_bts_si_static_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_RSL_LINK),
+	      "system-information " SI_TYPE_TEXT " static HEXSTRING",
+	      SI_TEXT SI_TYPE_HELP
+	      "Static System Information filling\n"
+	      "Static user-specified SI content in HEX notation\n")
 {
 	struct gsm_bts *bts = vty->index;
 	int rc, type;
@@ -3359,11 +3464,13 @@ DEFUN(cfg_bts_si_static, cfg_bts_si_static_cmd,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_bts_si_unused_send_empty, cfg_bts_si_unused_send_empty_cmd,
-	"system-information unused-send-empty",
-	SI_TEXT
-	"Send BCCH Info with empty 'Full BCCH Info' TLV to notify disabled SI. "
-	"Some nanoBTS fw versions are known to fail upon receival of these messages.\n")
+DEFUN_USRATTR(cfg_bts_si_unused_send_empty,
+	      cfg_bts_si_unused_send_empty_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_RSL_LINK),
+	      "system-information unused-send-empty",
+	      SI_TEXT
+	      "Send BCCH Info with empty 'Full BCCH Info' TLV to notify disabled SI. "
+	      "Some nanoBTS fw versions are known to fail upon receival of these messages.\n")
 {
 	struct gsm_bts *bts = vty->index;
 
@@ -3372,11 +3479,13 @@ DEFUN(cfg_bts_si_unused_send_empty, cfg_bts_si_unused_send_empty_cmd,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_bts_no_si_unused_send_empty, cfg_bts_no_si_unused_send_empty_cmd,
-	"no system-information unused-send-empty",
-	NO_STR SI_TEXT
-	"Avoid sending BCCH Info with empty 'Full BCCH Info' TLV to notify disabled SI. "
-	"Some nanoBTS fw versions are known to fail upon receival of these messages.\n")
+DEFUN_USRATTR(cfg_bts_no_si_unused_send_empty,
+	      cfg_bts_no_si_unused_send_empty_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_RSL_LINK),
+	      "no system-information unused-send-empty",
+	      NO_STR SI_TEXT
+	      "Avoid sending BCCH Info with empty 'Full BCCH Info' TLV to notify disabled SI. "
+	      "Some nanoBTS fw versions are known to fail upon receival of these messages.\n")
 {
 	struct gsm_bts *bts = vty->index;
 
@@ -3391,11 +3500,13 @@ DEFUN(cfg_bts_no_si_unused_send_empty, cfg_bts_no_si_unused_send_empty_cmd,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_bts_early_cm, cfg_bts_early_cm_cmd,
-	"early-classmark-sending (allowed|forbidden)",
-	"Early Classmark Sending\n"
-	"Early Classmark Sending is allowed\n"
-	"Early Classmark Sending is forbidden\n")
+DEFUN_USRATTR(cfg_bts_early_cm,
+	      cfg_bts_early_cm_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_RSL_LINK),
+	      "early-classmark-sending (allowed|forbidden)",
+	      "Early Classmark Sending\n"
+	      "Early Classmark Sending is allowed\n"
+	      "Early Classmark Sending is forbidden\n")
 {
 	struct gsm_bts *bts = vty->index;
 
@@ -3407,11 +3518,13 @@ DEFUN(cfg_bts_early_cm, cfg_bts_early_cm_cmd,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_bts_early_cm_3g, cfg_bts_early_cm_3g_cmd,
-	"early-classmark-sending-3g (allowed|forbidden)",
-	"3G Early Classmark Sending\n"
-	"3G Early Classmark Sending is allowed\n"
-	"3G Early Classmark Sending is forbidden\n")
+DEFUN_USRATTR(cfg_bts_early_cm_3g,
+	      cfg_bts_early_cm_3g_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_RSL_LINK),
+	      "early-classmark-sending-3g (allowed|forbidden)",
+	      "3G Early Classmark Sending\n"
+	      "3G Early Classmark Sending is allowed\n"
+	      "3G Early Classmark Sending is forbidden\n")
 {
 	struct gsm_bts *bts = vty->index;
 
@@ -3423,11 +3536,13 @@ DEFUN(cfg_bts_early_cm_3g, cfg_bts_early_cm_3g_cmd,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_bts_neigh_mode, cfg_bts_neigh_mode_cmd,
-	"neighbor-list mode (automatic|manual|manual-si5)",
-	"Neighbor List\n" "Mode of Neighbor List generation\n"
-	"Automatically from all BTS in this BSC\n" "Manual\n"
-	"Manual with different lists for SI2 and SI5\n")
+DEFUN_USRATTR(cfg_bts_neigh_mode,
+	      cfg_bts_neigh_mode_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_RSL_LINK),
+	      "neighbor-list mode (automatic|manual|manual-si5)",
+	      "Neighbor List\n" "Mode of Neighbor List generation\n"
+	      "Automatically from all BTS in this BSC\n" "Manual\n"
+	      "Manual with different lists for SI2 and SI5\n")
 {
 	struct gsm_bts *bts = vty->index;
 	int mode = get_string_value(bts_neigh_mode_strs, argv[0]);
@@ -3450,11 +3565,13 @@ DEFUN(cfg_bts_neigh_mode, cfg_bts_neigh_mode_cmd,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_bts_neigh, cfg_bts_neigh_cmd,
-	"neighbor-list (add|del) arfcn <0-1023>",
-	"Neighbor List\n" "Add to manual neighbor list\n"
-	"Delete from manual neighbor list\n" "ARFCN of neighbor\n"
-	"ARFCN of neighbor\n")
+DEFUN_USRATTR(cfg_bts_neigh,
+	      cfg_bts_neigh_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_RSL_LINK),
+	      "neighbor-list (add|del) arfcn <0-1023>",
+	      "Neighbor List\n" "Add to manual neighbor list\n"
+	      "Delete from manual neighbor list\n" "ARFCN of neighbor\n"
+	      "ARFCN of neighbor\n")
 {
 	struct gsm_bts *bts = vty->index;
 	struct bitvec *bv = &bts->si_common.neigh_list;
@@ -3481,17 +3598,19 @@ DEFUN(cfg_bts_neigh, cfg_bts_neigh_cmd,
 }
 
 /* help text should be kept in sync with EARFCN_*_INVALID defines */
-DEFUN(cfg_bts_si2quater_neigh_add, cfg_bts_si2quater_neigh_add_cmd,
-      "si2quater neighbor-list add earfcn <0-65535> thresh-hi <0-31> "
-      "thresh-lo <0-32> prio <0-8> qrxlv <0-32> meas <0-8>",
-      "SI2quater Neighbor List\n" "SI2quater Neighbor List\n"
-      "Add to manual SI2quater neighbor list\n"
-      "EARFCN of neighbor\n" "EARFCN of neighbor\n"
-      "threshold high bits\n" "threshold high bits\n"
-      "threshold low bits\n" "threshold low bits (32 means NA)\n"
-      "priority\n" "priority (8 means NA)\n"
-      "QRXLEVMIN\n" "QRXLEVMIN (32 means NA)\n"
-      "measurement bandwidth\n" "measurement bandwidth (8 means NA)\n")
+DEFUN_USRATTR(cfg_bts_si2quater_neigh_add,
+	      cfg_bts_si2quater_neigh_add_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_RSL_LINK),
+	      "si2quater neighbor-list add earfcn <0-65535> thresh-hi <0-31> "
+	      "thresh-lo <0-32> prio <0-8> qrxlv <0-32> meas <0-8>",
+	      "SI2quater Neighbor List\n" "SI2quater Neighbor List\n"
+	      "Add to manual SI2quater neighbor list\n"
+	      "EARFCN of neighbor\n" "EARFCN of neighbor\n"
+	      "threshold high bits\n" "threshold high bits\n"
+	      "threshold low bits\n" "threshold low bits (32 means NA)\n"
+	      "priority\n" "priority (8 means NA)\n"
+	      "QRXLEVMIN\n" "QRXLEVMIN (32 means NA)\n"
+	      "measurement bandwidth\n" "measurement bandwidth (8 means NA)\n")
 {
 	struct gsm_bts *bts = vty->index;
 	struct osmo_earfcn_si2q *e = &bts->si_common.si2quater_neigh_list;
@@ -3534,13 +3653,15 @@ DEFUN(cfg_bts_si2quater_neigh_add, cfg_bts_si2quater_neigh_add_cmd,
 	return CMD_WARNING;
 }
 
-DEFUN(cfg_bts_si2quater_neigh_del, cfg_bts_si2quater_neigh_del_cmd,
-	"si2quater neighbor-list del earfcn <0-65535>",
-	"SI2quater Neighbor List\n"
-	"SI2quater Neighbor List\n"
-	"Delete from SI2quater manual neighbor list\n"
-	"EARFCN of neighbor\n"
-	"EARFCN\n")
+DEFUN_USRATTR(cfg_bts_si2quater_neigh_del,
+	      cfg_bts_si2quater_neigh_del_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_RSL_LINK),
+	      "si2quater neighbor-list del earfcn <0-65535>",
+	      "SI2quater Neighbor List\n"
+	      "SI2quater Neighbor List\n"
+	      "Delete from SI2quater manual neighbor list\n"
+	      "EARFCN of neighbor\n"
+	      "EARFCN\n")
 {
 	struct gsm_bts *bts = vty->index;
 	struct osmo_earfcn_si2q *e = &bts->si_common.si2quater_neigh_list;
@@ -3555,12 +3676,14 @@ DEFUN(cfg_bts_si2quater_neigh_del, cfg_bts_si2quater_neigh_del_cmd,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_bts_si2quater_uarfcn_add, cfg_bts_si2quater_uarfcn_add_cmd,
-      "si2quater neighbor-list add uarfcn <0-16383> <0-511> <0-1>",
-      "SI2quater Neighbor List\n"
-      "SI2quater Neighbor List\n" "Add to manual SI2quater neighbor list\n"
-      "UARFCN of neighbor\n" "UARFCN of neighbor\n" "scrambling code\n"
-      "diversity bit\n")
+DEFUN_USRATTR(cfg_bts_si2quater_uarfcn_add,
+	      cfg_bts_si2quater_uarfcn_add_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_RSL_LINK),
+	      "si2quater neighbor-list add uarfcn <0-16383> <0-511> <0-1>",
+	      "SI2quater Neighbor List\n"
+	      "SI2quater Neighbor List\n" "Add to manual SI2quater neighbor list\n"
+	      "UARFCN of neighbor\n" "UARFCN of neighbor\n" "scrambling code\n"
+	      "diversity bit\n")
 {
 	struct gsm_bts *bts = vty->index;
 	uint16_t arfcn = atoi(argv[0]), scramble = atoi(argv[1]);
@@ -3583,14 +3706,16 @@ DEFUN(cfg_bts_si2quater_uarfcn_add, cfg_bts_si2quater_uarfcn_add_cmd,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_bts_si2quater_uarfcn_del, cfg_bts_si2quater_uarfcn_del_cmd,
-      "si2quater neighbor-list del uarfcn <0-16383> <0-511>",
-      "SI2quater Neighbor List\n"
-      "SI2quater Neighbor List\n"
-      "Delete from SI2quater manual neighbor list\n"
-      "UARFCN of neighbor\n"
-      "UARFCN\n"
-      "scrambling code\n")
+DEFUN_USRATTR(cfg_bts_si2quater_uarfcn_del,
+	      cfg_bts_si2quater_uarfcn_del_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_RSL_LINK),
+	      "si2quater neighbor-list del uarfcn <0-16383> <0-511>",
+	      "SI2quater Neighbor List\n"
+	      "SI2quater Neighbor List\n"
+	      "Delete from SI2quater manual neighbor list\n"
+	      "UARFCN of neighbor\n"
+	      "UARFCN\n"
+	      "scrambling code\n")
 {
 	struct gsm_bts *bts = vty->index;
 
@@ -3603,12 +3728,14 @@ DEFUN(cfg_bts_si2quater_uarfcn_del, cfg_bts_si2quater_uarfcn_del_cmd,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_bts_si5_neigh, cfg_bts_si5_neigh_cmd,
-	"si5 neighbor-list (add|del) arfcn <0-1023>",
-	"SI5 Neighbor List\n"
-	"SI5 Neighbor List\n" "Add to manual SI5 neighbor list\n"
-	"Delete from SI5 manual neighbor list\n" "ARFCN of neighbor\n"
-	"ARFCN of neighbor\n")
+DEFUN_USRATTR(cfg_bts_si5_neigh,
+	      cfg_bts_si5_neigh_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_RSL_LINK),
+	      "si5 neighbor-list (add|del) arfcn <0-1023>",
+	      "SI5 Neighbor List\n"
+	      "SI5 Neighbor List\n" "Add to manual SI5 neighbor list\n"
+	      "Delete from SI5 manual neighbor list\n" "ARFCN of neighbor\n"
+	      "ARFCN of neighbor\n")
 {
 	enum gsm_band unused;
 	struct gsm_bts *bts = vty->index;
@@ -3634,10 +3761,12 @@ DEFUN(cfg_bts_si5_neigh, cfg_bts_si5_neigh_cmd,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_bts_pcu_sock, cfg_bts_pcu_sock_cmd,
-	"pcu-socket PATH",
-	"PCU Socket Path for using OsmoPCU co-located with BSC (legacy BTS)\n"
-	"Path in the file system for the unix-domain PCU socket\n")
+DEFUN_ATTR(cfg_bts_pcu_sock,
+	   cfg_bts_pcu_sock_cmd,
+	   "pcu-socket PATH",
+	   "PCU Socket Path for using OsmoPCU co-located with BSC (legacy BTS)\n"
+	   "Path in the file system for the unix-domain PCU socket\n",
+	   CMD_ATTR_IMMEDIATE)
 {
 	struct gsm_bts *bts = vty->index;
 	int rc;
@@ -3654,11 +3783,12 @@ DEFUN(cfg_bts_pcu_sock, cfg_bts_pcu_sock_cmd,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_bts_acc_rotate,
-      cfg_bts_acc_rotate_cmd,
-      "access-control-class-rotate <0-10>",
-      "Enable Access Control Class allowed subset rotation\n"
-      "Size of the rotating allowed ACC 0-9 subset (default=10, no subset)\n")
+DEFUN_ATTR(cfg_bts_acc_rotate,
+	   cfg_bts_acc_rotate_cmd,
+	   "access-control-class-rotate <0-10>",
+	   "Enable Access Control Class allowed subset rotation\n"
+	   "Size of the rotating allowed ACC 0-9 subset (default=10, no subset)\n",
+	   CMD_ATTR_IMMEDIATE)
 {
 	struct gsm_bts *bts = vty->index;
 	int len_allowed_adm = atoi(argv[0]);
@@ -3666,11 +3796,12 @@ DEFUN(cfg_bts_acc_rotate,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_bts_acc_rotate_quantum,
-      cfg_bts_acc_rotate_quantum_cmd,
-      "access-control-class-rotate-quantum <1-65535>",
-      "Time between rotation of ACC 0-9 generated subsets\n"
-      "Time in seconds (default=" OSMO_STRINGIFY_VAL(ACC_MGR_QUANTUM_DEFAULT) ")\n")
+DEFUN_ATTR(cfg_bts_acc_rotate_quantum,
+	   cfg_bts_acc_rotate_quantum_cmd,
+	   "access-control-class-rotate-quantum <1-65535>",
+	   "Time between rotation of ACC 0-9 generated subsets\n"
+	   "Time in seconds (default=" OSMO_STRINGIFY_VAL(ACC_MGR_QUANTUM_DEFAULT) ")\n",
+	   CMD_ATTR_IMMEDIATE)
 {
 	struct gsm_bts *bts = vty->index;
 	uint32_t rotation_time_sec = (uint32_t)atoi(argv[0]);
@@ -3678,10 +3809,11 @@ DEFUN(cfg_bts_acc_rotate_quantum,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_bts_acc_ramping,
-      cfg_bts_acc_ramping_cmd,
-      "access-control-class-ramping",
-      "Enable Access Control Class ramping\n")
+DEFUN_ATTR(cfg_bts_acc_ramping,
+	   cfg_bts_acc_ramping_cmd,
+	   "access-control-class-ramping",
+	   "Enable Access Control Class ramping\n",
+	   CMD_ATTR_IMMEDIATE)
 {
 	struct gsm_bts *bts = vty->index;
 	struct gsm_bts_trx *trx;
@@ -3704,10 +3836,12 @@ DEFUN(cfg_bts_acc_ramping,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_bts_no_acc_ramping, cfg_bts_no_acc_ramping_cmd,
-      "no access-control-class-ramping",
-      NO_STR
-      "Disable Access Control Class ramping\n")
+DEFUN_ATTR(cfg_bts_no_acc_ramping,
+	   cfg_bts_no_acc_ramping_cmd,
+	   "no access-control-class-ramping",
+	   NO_STR
+	   "Disable Access Control Class ramping\n",
+	   CMD_ATTR_IMMEDIATE)
 {
 	struct gsm_bts *bts = vty->index;
 
@@ -3724,14 +3858,15 @@ DEFUN(cfg_bts_no_acc_ramping, cfg_bts_no_acc_ramping_cmd,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_bts_acc_ramping_step_interval,
-      cfg_bts_acc_ramping_step_interval_cmd,
-      "access-control-class-ramping-step-interval (<"
-      OSMO_STRINGIFY_VAL(ACC_RAMP_STEP_INTERVAL_MIN) "-"
-      OSMO_STRINGIFY_VAL(ACC_RAMP_STEP_INTERVAL_MAX) ">|dynamic)",
-      "Configure Access Control Class ramping step interval\n"
-      "Set a fixed step interval (in seconds)\n"
-      "Use dynamic step interval based on BTS channel load (deprecated, don't use, ignored)\n")
+DEFUN_ATTR(cfg_bts_acc_ramping_step_interval,
+	   cfg_bts_acc_ramping_step_interval_cmd,
+	   "access-control-class-ramping-step-interval (<"
+	   OSMO_STRINGIFY_VAL(ACC_RAMP_STEP_INTERVAL_MIN) "-"
+	   OSMO_STRINGIFY_VAL(ACC_RAMP_STEP_INTERVAL_MAX) ">|dynamic)",
+	   "Configure Access Control Class ramping step interval\n"
+	   "Set a fixed step interval (in seconds)\n"
+	   "Use dynamic step interval based on BTS channel load (deprecated, don't use, ignored)\n",
+	   CMD_ATTR_IMMEDIATE)
 {
 	struct gsm_bts *bts = vty->index;
 	bool dynamic = (strcmp(argv[0], "dynamic") == 0);
@@ -3754,13 +3889,14 @@ DEFUN(cfg_bts_acc_ramping_step_interval,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_bts_acc_ramping_step_size,
-      cfg_bts_acc_ramping_step_size_cmd,
-      "access-control-class-ramping-step-size (<"
-      OSMO_STRINGIFY_VAL(ACC_RAMP_STEP_SIZE_MIN) "-"
-      OSMO_STRINGIFY_VAL(ACC_RAMP_STEP_SIZE_MAX) ">)",
-      "Configure Access Control Class ramping step size\n"
-      "Set the number of Access Control Classes to enable per ramping step\n")
+DEFUN_ATTR(cfg_bts_acc_ramping_step_size,
+	   cfg_bts_acc_ramping_step_size_cmd,
+	   "access-control-class-ramping-step-size (<"
+	   OSMO_STRINGIFY_VAL(ACC_RAMP_STEP_SIZE_MIN) "-"
+	   OSMO_STRINGIFY_VAL(ACC_RAMP_STEP_SIZE_MAX) ">)",
+	   "Configure Access Control Class ramping step size\n"
+	   "Set the number of Access Control Classes to enable per ramping step\n",
+	   CMD_ATTR_IMMEDIATE)
 {
 	struct gsm_bts *bts = vty->index;
 	int error;
@@ -3777,12 +3913,13 @@ DEFUN(cfg_bts_acc_ramping_step_size,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_bts_acc_ramping_chan_load,
-      cfg_bts_acc_ramping_chan_load_cmd,
-      "access-control-class-ramping-chan-load <0-100> <0-100>",
-      "Configure Access Control Class ramping channel load thresholds\n"
-      "Lower Channel load threshold (%) below which subset size of allowed broadcast ACCs can be increased\n"
-      "Upper channel load threshold (%) above which subset size of allowed broadcast ACCs can be decreased\n")
+DEFUN_ATTR(cfg_bts_acc_ramping_chan_load,
+	   cfg_bts_acc_ramping_chan_load_cmd,
+	   "access-control-class-ramping-chan-load <0-100> <0-100>",
+	   "Configure Access Control Class ramping channel load thresholds\n"
+	   "Lower Channel load threshold (%) below which subset size of allowed broadcast ACCs can be increased\n"
+	   "Upper channel load threshold (%) above which subset size of allowed broadcast ACCs can be decreased\n",
+	   CMD_ATTR_IMMEDIATE)
 {
 	struct gsm_bts *bts = vty->index;
 	int rc;
@@ -3798,20 +3935,22 @@ DEFUN(cfg_bts_acc_ramping_chan_load,
 
 #define EXCL_RFLOCK_STR "Exclude this BTS from the global RF Lock\n"
 
-DEFUN(cfg_bts_excl_rf_lock,
-      cfg_bts_excl_rf_lock_cmd,
-      "rf-lock-exclude",
-      EXCL_RFLOCK_STR)
+DEFUN_ATTR(cfg_bts_excl_rf_lock,
+	   cfg_bts_excl_rf_lock_cmd,
+	   "rf-lock-exclude",
+	   EXCL_RFLOCK_STR,
+	   CMD_ATTR_IMMEDIATE)
 {
 	struct gsm_bts *bts = vty->index;
 	bts->excl_from_rf_lock = 1;
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_bts_no_excl_rf_lock,
-      cfg_bts_no_excl_rf_lock_cmd,
-      "no rf-lock-exclude",
-      NO_STR EXCL_RFLOCK_STR)
+DEFUN_ATTR(cfg_bts_no_excl_rf_lock,
+	   cfg_bts_no_excl_rf_lock_cmd,
+	   "no rf-lock-exclude",
+	   NO_STR EXCL_RFLOCK_STR,
+	   CMD_ATTR_IMMEDIATE)
 {
 	struct gsm_bts *bts = vty->index;
 	bts->excl_from_rf_lock = 0;
@@ -3820,10 +3959,11 @@ DEFUN(cfg_bts_no_excl_rf_lock,
 
 #define FORCE_COMB_SI_STR "Force the generation of a single SI (no ter/bis)\n"
 
-DEFUN(cfg_bts_force_comb_si,
-      cfg_bts_force_comb_si_cmd,
-      "force-combined-si",
-      FORCE_COMB_SI_STR)
+DEFUN_USRATTR(cfg_bts_force_comb_si,
+	      cfg_bts_force_comb_si_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_OML_LINK),
+	      "force-combined-si",
+	      FORCE_COMB_SI_STR)
 {
 	struct gsm_bts *bts = vty->index;
 	bts->force_combined_si = 1;
@@ -3831,10 +3971,11 @@ DEFUN(cfg_bts_force_comb_si,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_bts_no_force_comb_si,
-      cfg_bts_no_force_comb_si_cmd,
-      "no force-combined-si",
-      NO_STR FORCE_COMB_SI_STR)
+DEFUN_USRATTR(cfg_bts_no_force_comb_si,
+	      cfg_bts_no_force_comb_si_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_OML_LINK),
+	      "no force-combined-si",
+	      NO_STR FORCE_COMB_SI_STR)
 {
 	struct gsm_bts *bts = vty->index;
 	bts->force_combined_si = 0;
@@ -3865,54 +4006,64 @@ static void _get_codec_from_arg(struct vty *vty, int argc, const char *argv[])
 #define CODEC_HELP_STR	"Half Rate\n" \
 			"Enhanced Full Rate\nAdaptive Multirate\n"
 
-DEFUN(cfg_bts_codec0, cfg_bts_codec0_cmd,
-	"codec-support fr",
-	"Codec Support settings\nFullrate\n")
+DEFUN_USRATTR(cfg_bts_codec0,
+	      cfg_bts_codec0_cmd,
+	      X(BSC_VTY_ATTR_NEW_LCHAN),
+	      "codec-support fr",
+	      "Codec Support settings\nFullrate\n")
 {
 	_get_codec_from_arg(vty, 0, argv);
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_bts_codec1, cfg_bts_codec1_cmd,
-	"codec-support fr" CODEC_PAR_STR,
-	"Codec Support settings\nFullrate\n"
-	CODEC_HELP_STR)
+DEFUN_USRATTR(cfg_bts_codec1,
+	      cfg_bts_codec1_cmd,
+	      X(BSC_VTY_ATTR_NEW_LCHAN),
+	      "codec-support fr" CODEC_PAR_STR,
+	      "Codec Support settings\nFullrate\n"
+	      CODEC_HELP_STR)
 {
 	_get_codec_from_arg(vty, 1, argv);
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_bts_codec2, cfg_bts_codec2_cmd,
-	"codec-support fr" CODEC_PAR_STR CODEC_PAR_STR,
-	"Codec Support settings\nFullrate\n"
-	CODEC_HELP_STR CODEC_HELP_STR)
+DEFUN_USRATTR(cfg_bts_codec2,
+	      cfg_bts_codec2_cmd,
+	      X(BSC_VTY_ATTR_NEW_LCHAN),
+	      "codec-support fr" CODEC_PAR_STR CODEC_PAR_STR,
+	      "Codec Support settings\nFullrate\n"
+	      CODEC_HELP_STR CODEC_HELP_STR)
 {
 	_get_codec_from_arg(vty, 2, argv);
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_bts_codec3, cfg_bts_codec3_cmd,
-	"codec-support fr" CODEC_PAR_STR CODEC_PAR_STR CODEC_PAR_STR,
-	"Codec Support settings\nFullrate\n"
-	CODEC_HELP_STR CODEC_HELP_STR CODEC_HELP_STR)
+DEFUN_USRATTR(cfg_bts_codec3,
+	      cfg_bts_codec3_cmd,
+	      X(BSC_VTY_ATTR_NEW_LCHAN),
+	      "codec-support fr" CODEC_PAR_STR CODEC_PAR_STR CODEC_PAR_STR,
+	      "Codec Support settings\nFullrate\n"
+	      CODEC_HELP_STR CODEC_HELP_STR CODEC_HELP_STR)
 {
 	_get_codec_from_arg(vty, 3, argv);
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_bts_codec4, cfg_bts_codec4_cmd,
-	"codec-support fr" CODEC_PAR_STR CODEC_PAR_STR CODEC_PAR_STR CODEC_PAR_STR,
-	"Codec Support settings\nFullrate\n"
-	CODEC_HELP_STR CODEC_HELP_STR CODEC_HELP_STR CODEC_HELP_STR)
+DEFUN_USRATTR(cfg_bts_codec4,
+	      cfg_bts_codec4_cmd,
+	      X(BSC_VTY_ATTR_NEW_LCHAN),
+	      "codec-support fr" CODEC_PAR_STR CODEC_PAR_STR CODEC_PAR_STR CODEC_PAR_STR,
+	      "Codec Support settings\nFullrate\n"
+	      CODEC_HELP_STR CODEC_HELP_STR CODEC_HELP_STR CODEC_HELP_STR)
 {
 	_get_codec_from_arg(vty, 4, argv);
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_bts_depends_on, cfg_bts_depends_on_cmd,
-	"depends-on-bts <0-255>",
-	"This BTS can only be started if another one is up\n"
-	BTS_NR_STR)
+DEFUN_ATTR(cfg_bts_depends_on, cfg_bts_depends_on_cmd,
+	   "depends-on-bts <0-255>",
+	   "This BTS can only be started if another one is up\n"
+	   BTS_NR_STR, CMD_ATTR_IMMEDIATE)
 {
 	struct gsm_bts *bts = vty->index;
 	struct gsm_bts *other_bts;
@@ -3942,10 +4093,10 @@ DEFUN(cfg_bts_depends_on, cfg_bts_depends_on_cmd,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_bts_no_depends_on, cfg_bts_no_depends_on_cmd,
-	"no depends-on-bts <0-255>",
-	NO_STR "This BTS can only be started if another one is up\n"
-	BTS_NR_STR)
+DEFUN_ATTR(cfg_bts_no_depends_on, cfg_bts_no_depends_on_cmd,
+	   "no depends-on-bts <0-255>",
+	   NO_STR "This BTS can only be started if another one is up\n"
+	   BTS_NR_STR, CMD_ATTR_IMMEDIATE)
 {
 	struct gsm_bts *bts = vty->index;
 	int dep = atoi(argv[0]);
@@ -4118,215 +4269,260 @@ static int check_amr_config(struct vty *vty)
 #define	AMR_TH_HELP_STR "Threshold between codec 1 and 2\n"
 #define	AMR_HY_HELP_STR "Hysteresis between codec 1 and 2\n"
 
-DEFUN(cfg_bts_amr_fr_modes1, cfg_bts_amr_fr_modes1_cmd,
-	"amr tch-f modes" AMR_TCHF_PAR_STR,
-	AMR_TEXT "Full Rate\n" AMR_MODE_TEXT
-	AMR_TCHF_HELP_STR)
+DEFUN_USRATTR(cfg_bts_amr_fr_modes1,
+	      cfg_bts_amr_fr_modes1_cmd,
+	      X(BSC_VTY_ATTR_NEW_LCHAN),
+	      "amr tch-f modes" AMR_TCHF_PAR_STR,
+	      AMR_TEXT "Full Rate\n" AMR_MODE_TEXT
+	      AMR_TCHF_HELP_STR)
 {
 	if (get_amr_from_arg(vty, 1, argv, 1))
 		return CMD_WARNING;
 	return check_amr_config(vty);
 }
 
-DEFUN(cfg_bts_amr_fr_modes2, cfg_bts_amr_fr_modes2_cmd,
-	"amr tch-f modes" AMR_TCHF_PAR_STR AMR_TCHF_PAR_STR,
-	AMR_TEXT "Full Rate\n" AMR_MODE_TEXT
-	AMR_TCHF_HELP_STR AMR_TCHF_HELP_STR)
+DEFUN_USRATTR(cfg_bts_amr_fr_modes2,
+	      cfg_bts_amr_fr_modes2_cmd,
+	      X(BSC_VTY_ATTR_NEW_LCHAN),
+	      "amr tch-f modes" AMR_TCHF_PAR_STR AMR_TCHF_PAR_STR,
+	      AMR_TEXT "Full Rate\n" AMR_MODE_TEXT
+	      AMR_TCHF_HELP_STR AMR_TCHF_HELP_STR)
 {
 	if (get_amr_from_arg(vty, 2, argv, 1))
 		return CMD_WARNING;
 	return check_amr_config(vty);
 }
 
-DEFUN(cfg_bts_amr_fr_modes3, cfg_bts_amr_fr_modes3_cmd,
-	"amr tch-f modes" AMR_TCHF_PAR_STR AMR_TCHF_PAR_STR AMR_TCHF_PAR_STR,
-	AMR_TEXT "Full Rate\n" AMR_MODE_TEXT
-	AMR_TCHF_HELP_STR AMR_TCHF_HELP_STR AMR_TCHF_HELP_STR)
+DEFUN_USRATTR(cfg_bts_amr_fr_modes3,
+	      cfg_bts_amr_fr_modes3_cmd,
+	      X(BSC_VTY_ATTR_NEW_LCHAN),
+	      "amr tch-f modes" AMR_TCHF_PAR_STR AMR_TCHF_PAR_STR AMR_TCHF_PAR_STR,
+	      AMR_TEXT "Full Rate\n" AMR_MODE_TEXT
+	      AMR_TCHF_HELP_STR AMR_TCHF_HELP_STR AMR_TCHF_HELP_STR)
 {
 	if (get_amr_from_arg(vty, 3, argv, 1))
 		return CMD_WARNING;
 	return check_amr_config(vty);
 }
 
-DEFUN(cfg_bts_amr_fr_modes4, cfg_bts_amr_fr_modes4_cmd,
-	"amr tch-f modes" AMR_TCHF_PAR_STR AMR_TCHF_PAR_STR AMR_TCHF_PAR_STR AMR_TCHF_PAR_STR,
-	AMR_TEXT "Full Rate\n" AMR_MODE_TEXT
-	AMR_TCHF_HELP_STR AMR_TCHF_HELP_STR AMR_TCHF_HELP_STR AMR_TCHF_HELP_STR)
+DEFUN_USRATTR(cfg_bts_amr_fr_modes4,
+	      cfg_bts_amr_fr_modes4_cmd,
+	      X(BSC_VTY_ATTR_NEW_LCHAN),
+	      "amr tch-f modes" AMR_TCHF_PAR_STR AMR_TCHF_PAR_STR AMR_TCHF_PAR_STR AMR_TCHF_PAR_STR,
+	      AMR_TEXT "Full Rate\n" AMR_MODE_TEXT
+	      AMR_TCHF_HELP_STR AMR_TCHF_HELP_STR AMR_TCHF_HELP_STR AMR_TCHF_HELP_STR)
 {
 	if (get_amr_from_arg(vty, 4, argv, 1))
 		return CMD_WARNING;
 	return check_amr_config(vty);
 }
 
-DEFUN(cfg_bts_amr_fr_start_mode, cfg_bts_amr_fr_start_mode_cmd,
-	"amr tch-f start-mode (auto|1|2|3|4)",
-	AMR_TEXT "Full Rate\n" AMR_START_TEXT)
+DEFUN_USRATTR(cfg_bts_amr_fr_start_mode,
+	      cfg_bts_amr_fr_start_mode_cmd,
+	      X(BSC_VTY_ATTR_NEW_LCHAN),
+	      "amr tch-f start-mode (auto|1|2|3|4)",
+	      AMR_TEXT "Full Rate\n" AMR_START_TEXT)
 {
 	get_amr_start_from_arg(vty, argv, 1);
 	return check_amr_config(vty);
 }
 
-DEFUN(cfg_bts_amr_fr_thres1, cfg_bts_amr_fr_thres1_cmd,
-	"amr tch-f threshold (ms|bts) <0-63>",
-	AMR_TEXT "Full Rate\n" AMR_TH_TEXT
-	AMR_TH_HELP_STR)
+DEFUN_USRATTR(cfg_bts_amr_fr_thres1,
+	      cfg_bts_amr_fr_thres1_cmd,
+	      X(BSC_VTY_ATTR_NEW_LCHAN),
+	      "amr tch-f threshold (ms|bts) <0-63>",
+	      AMR_TEXT "Full Rate\n" AMR_TH_TEXT
+	      AMR_TH_HELP_STR)
 {
 	get_amr_th_from_arg(vty, 2, argv, 1);
 	return check_amr_config(vty);
 }
 
-DEFUN(cfg_bts_amr_fr_thres2, cfg_bts_amr_fr_thres2_cmd,
-	"amr tch-f threshold (ms|bts) <0-63> <0-63>",
-	AMR_TEXT "Full Rate\n" AMR_TH_TEXT
-	AMR_TH_HELP_STR AMR_TH_HELP_STR)
+DEFUN_USRATTR(cfg_bts_amr_fr_thres2,
+	      cfg_bts_amr_fr_thres2_cmd,
+	      X(BSC_VTY_ATTR_NEW_LCHAN),
+	      "amr tch-f threshold (ms|bts) <0-63> <0-63>",
+	      AMR_TEXT "Full Rate\n" AMR_TH_TEXT
+	      AMR_TH_HELP_STR AMR_TH_HELP_STR)
 {
 	get_amr_th_from_arg(vty, 3, argv, 1);
 	return check_amr_config(vty);
 }
 
-DEFUN(cfg_bts_amr_fr_thres3, cfg_bts_amr_fr_thres3_cmd,
-	"amr tch-f threshold (ms|bts) <0-63> <0-63> <0-63>",
-	AMR_TEXT "Full Rate\n" AMR_TH_TEXT
-	AMR_TH_HELP_STR AMR_TH_HELP_STR AMR_TH_HELP_STR)
+DEFUN_USRATTR(cfg_bts_amr_fr_thres3,
+	      cfg_bts_amr_fr_thres3_cmd,
+	      X(BSC_VTY_ATTR_NEW_LCHAN),
+	      "amr tch-f threshold (ms|bts) <0-63> <0-63> <0-63>",
+	      AMR_TEXT "Full Rate\n" AMR_TH_TEXT
+	      AMR_TH_HELP_STR AMR_TH_HELP_STR AMR_TH_HELP_STR)
 {
 	get_amr_th_from_arg(vty, 4, argv, 1);
 	return check_amr_config(vty);
 }
 
-DEFUN(cfg_bts_amr_fr_hyst1, cfg_bts_amr_fr_hyst1_cmd,
-	"amr tch-f hysteresis (ms|bts) <0-15>",
-	AMR_TEXT "Full Rate\n" AMR_HY_TEXT
-	AMR_HY_HELP_STR)
+DEFUN_USRATTR(cfg_bts_amr_fr_hyst1,
+	      cfg_bts_amr_fr_hyst1_cmd,
+	      X(BSC_VTY_ATTR_NEW_LCHAN),
+	      "amr tch-f hysteresis (ms|bts) <0-15>",
+	      AMR_TEXT "Full Rate\n" AMR_HY_TEXT
+	      AMR_HY_HELP_STR)
 {
 	get_amr_hy_from_arg(vty, 2, argv, 1);
 	return check_amr_config(vty);
 }
 
-DEFUN(cfg_bts_amr_fr_hyst2, cfg_bts_amr_fr_hyst2_cmd,
-	"amr tch-f hysteresis (ms|bts) <0-15> <0-15>",
-	AMR_TEXT "Full Rate\n" AMR_HY_TEXT
-	AMR_HY_HELP_STR AMR_HY_HELP_STR)
+DEFUN_USRATTR(cfg_bts_amr_fr_hyst2,
+	      cfg_bts_amr_fr_hyst2_cmd,
+	      X(BSC_VTY_ATTR_NEW_LCHAN),
+	      "amr tch-f hysteresis (ms|bts) <0-15> <0-15>",
+	      AMR_TEXT "Full Rate\n" AMR_HY_TEXT
+	      AMR_HY_HELP_STR AMR_HY_HELP_STR)
 {
 	get_amr_hy_from_arg(vty, 3, argv, 1);
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_bts_amr_fr_hyst3, cfg_bts_amr_fr_hyst3_cmd,
-	"amr tch-f hysteresis (ms|bts) <0-15> <0-15> <0-15>",
-	AMR_TEXT "Full Rate\n" AMR_HY_TEXT
-	AMR_HY_HELP_STR AMR_HY_HELP_STR AMR_HY_HELP_STR)
+DEFUN_USRATTR(cfg_bts_amr_fr_hyst3,
+	      cfg_bts_amr_fr_hyst3_cmd,
+	      X(BSC_VTY_ATTR_NEW_LCHAN),
+	      "amr tch-f hysteresis (ms|bts) <0-15> <0-15> <0-15>",
+	      AMR_TEXT "Full Rate\n" AMR_HY_TEXT
+	      AMR_HY_HELP_STR AMR_HY_HELP_STR AMR_HY_HELP_STR)
 {
 	get_amr_hy_from_arg(vty, 4, argv, 1);
 	return check_amr_config(vty);
 }
 
-DEFUN(cfg_bts_amr_hr_modes1, cfg_bts_amr_hr_modes1_cmd,
-	"amr tch-h modes" AMR_TCHH_PAR_STR,
-	AMR_TEXT "Half Rate\n" AMR_MODE_TEXT
-	AMR_TCHH_HELP_STR)
+DEFUN_USRATTR(cfg_bts_amr_hr_modes1,
+	      cfg_bts_amr_hr_modes1_cmd,
+	      X(BSC_VTY_ATTR_NEW_LCHAN),
+	      "amr tch-h modes" AMR_TCHH_PAR_STR,
+	      AMR_TEXT "Half Rate\n" AMR_MODE_TEXT
+	      AMR_TCHH_HELP_STR)
 {
 	if (get_amr_from_arg(vty, 1, argv, 0))
 		return CMD_WARNING;
 	return check_amr_config(vty);
 }
 
-DEFUN(cfg_bts_amr_hr_modes2, cfg_bts_amr_hr_modes2_cmd,
-	"amr tch-h modes" AMR_TCHH_PAR_STR AMR_TCHH_PAR_STR,
-	AMR_TEXT "Half Rate\n" AMR_MODE_TEXT
-	AMR_TCHH_HELP_STR AMR_TCHH_HELP_STR)
+DEFUN_USRATTR(cfg_bts_amr_hr_modes2,
+	      cfg_bts_amr_hr_modes2_cmd,
+	      X(BSC_VTY_ATTR_NEW_LCHAN),
+	      "amr tch-h modes" AMR_TCHH_PAR_STR AMR_TCHH_PAR_STR,
+	      AMR_TEXT "Half Rate\n" AMR_MODE_TEXT
+	      AMR_TCHH_HELP_STR AMR_TCHH_HELP_STR)
 {
 	if (get_amr_from_arg(vty, 2, argv, 0))
 		return CMD_WARNING;
 	return check_amr_config(vty);
 }
 
-DEFUN(cfg_bts_amr_hr_modes3, cfg_bts_amr_hr_modes3_cmd,
-	"amr tch-h modes" AMR_TCHH_PAR_STR AMR_TCHH_PAR_STR AMR_TCHH_PAR_STR,
-	AMR_TEXT "Half Rate\n" AMR_MODE_TEXT
-	AMR_TCHH_HELP_STR AMR_TCHH_HELP_STR AMR_TCHH_HELP_STR)
+DEFUN_USRATTR(cfg_bts_amr_hr_modes3,
+	      cfg_bts_amr_hr_modes3_cmd,
+	      X(BSC_VTY_ATTR_NEW_LCHAN),
+	      "amr tch-h modes" AMR_TCHH_PAR_STR AMR_TCHH_PAR_STR AMR_TCHH_PAR_STR,
+	      AMR_TEXT "Half Rate\n" AMR_MODE_TEXT
+	      AMR_TCHH_HELP_STR AMR_TCHH_HELP_STR AMR_TCHH_HELP_STR)
 {
 	if (get_amr_from_arg(vty, 3, argv, 0))
 		return CMD_WARNING;
 	return check_amr_config(vty);
 }
 
-DEFUN(cfg_bts_amr_hr_modes4, cfg_bts_amr_hr_modes4_cmd,
-	"amr tch-h modes" AMR_TCHH_PAR_STR AMR_TCHH_PAR_STR AMR_TCHH_PAR_STR AMR_TCHH_PAR_STR,
-	AMR_TEXT "Half Rate\n" AMR_MODE_TEXT
-	AMR_TCHH_HELP_STR AMR_TCHH_HELP_STR AMR_TCHH_HELP_STR AMR_TCHH_HELP_STR)
+DEFUN_USRATTR(cfg_bts_amr_hr_modes4,
+	      cfg_bts_amr_hr_modes4_cmd,
+	      X(BSC_VTY_ATTR_NEW_LCHAN),
+	      "amr tch-h modes" AMR_TCHH_PAR_STR AMR_TCHH_PAR_STR AMR_TCHH_PAR_STR AMR_TCHH_PAR_STR,
+	      AMR_TEXT "Half Rate\n" AMR_MODE_TEXT
+	      AMR_TCHH_HELP_STR AMR_TCHH_HELP_STR AMR_TCHH_HELP_STR AMR_TCHH_HELP_STR)
 {
 	if (get_amr_from_arg(vty, 4, argv, 0))
 		return CMD_WARNING;
 	return check_amr_config(vty);
 }
 
-DEFUN(cfg_bts_amr_hr_start_mode, cfg_bts_amr_hr_start_mode_cmd,
-	"amr tch-h start-mode (auto|1|2|3|4)",
-	AMR_TEXT "Half Rate\n" AMR_START_TEXT)
+DEFUN_USRATTR(cfg_bts_amr_hr_start_mode,
+	      cfg_bts_amr_hr_start_mode_cmd,
+	      X(BSC_VTY_ATTR_NEW_LCHAN),
+	      "amr tch-h start-mode (auto|1|2|3|4)",
+	      AMR_TEXT "Half Rate\n" AMR_START_TEXT)
 {
 	get_amr_start_from_arg(vty, argv, 0);
 	return check_amr_config(vty);
 }
 
-DEFUN(cfg_bts_amr_hr_thres1, cfg_bts_amr_hr_thres1_cmd,
-	"amr tch-h threshold (ms|bts) <0-63>",
-	AMR_TEXT "Half Rate\n" AMR_TH_TEXT
-	AMR_TH_HELP_STR)
+DEFUN_USRATTR(cfg_bts_amr_hr_thres1,
+	      cfg_bts_amr_hr_thres1_cmd,
+	      X(BSC_VTY_ATTR_NEW_LCHAN),
+	      "amr tch-h threshold (ms|bts) <0-63>",
+	      AMR_TEXT "Half Rate\n" AMR_TH_TEXT
+	      AMR_TH_HELP_STR)
 {
 	get_amr_th_from_arg(vty, 2, argv, 0);
 	return check_amr_config(vty);
 }
 
-DEFUN(cfg_bts_amr_hr_thres2, cfg_bts_amr_hr_thres2_cmd,
-	"amr tch-h threshold (ms|bts) <0-63> <0-63>",
-	AMR_TEXT "Half Rate\n" AMR_TH_TEXT
-	AMR_TH_HELP_STR AMR_TH_HELP_STR)
+DEFUN_USRATTR(cfg_bts_amr_hr_thres2,
+	      cfg_bts_amr_hr_thres2_cmd,
+	      X(BSC_VTY_ATTR_NEW_LCHAN),
+	      "amr tch-h threshold (ms|bts) <0-63> <0-63>",
+	      AMR_TEXT "Half Rate\n" AMR_TH_TEXT
+	      AMR_TH_HELP_STR AMR_TH_HELP_STR)
 {
 	get_amr_th_from_arg(vty, 3, argv, 0);
 	return check_amr_config(vty);
 }
 
-DEFUN(cfg_bts_amr_hr_thres3, cfg_bts_amr_hr_thres3_cmd,
-	"amr tch-h threshold (ms|bts) <0-63> <0-63> <0-63>",
-	AMR_TEXT "Half Rate\n" AMR_TH_TEXT
-	AMR_TH_HELP_STR AMR_TH_HELP_STR AMR_TH_HELP_STR)
+DEFUN_USRATTR(cfg_bts_amr_hr_thres3,
+	      cfg_bts_amr_hr_thres3_cmd,
+	      X(BSC_VTY_ATTR_NEW_LCHAN),
+	      "amr tch-h threshold (ms|bts) <0-63> <0-63> <0-63>",
+	      AMR_TEXT "Half Rate\n" AMR_TH_TEXT
+	      AMR_TH_HELP_STR AMR_TH_HELP_STR AMR_TH_HELP_STR)
 {
 	get_amr_th_from_arg(vty, 4, argv, 0);
 	return check_amr_config(vty);
 }
 
-DEFUN(cfg_bts_amr_hr_hyst1, cfg_bts_amr_hr_hyst1_cmd,
-	"amr tch-h hysteresis (ms|bts) <0-15>",
-	AMR_TEXT "Half Rate\n" AMR_HY_TEXT
-	AMR_HY_HELP_STR)
+DEFUN_USRATTR(cfg_bts_amr_hr_hyst1,
+	      cfg_bts_amr_hr_hyst1_cmd,
+	      X(BSC_VTY_ATTR_NEW_LCHAN),
+	      "amr tch-h hysteresis (ms|bts) <0-15>",
+	      AMR_TEXT "Half Rate\n" AMR_HY_TEXT
+	      AMR_HY_HELP_STR)
 {
 	get_amr_hy_from_arg(vty, 2, argv, 0);
 	return check_amr_config(vty);
 }
 
-DEFUN(cfg_bts_amr_hr_hyst2, cfg_bts_amr_hr_hyst2_cmd,
-	"amr tch-h hysteresis (ms|bts) <0-15> <0-15>",
-	AMR_TEXT "Half Rate\n" AMR_HY_TEXT
-	AMR_HY_HELP_STR AMR_HY_HELP_STR)
+DEFUN_USRATTR(cfg_bts_amr_hr_hyst2,
+	      cfg_bts_amr_hr_hyst2_cmd,
+	      X(BSC_VTY_ATTR_NEW_LCHAN),
+	      "amr tch-h hysteresis (ms|bts) <0-15> <0-15>",
+	      AMR_TEXT "Half Rate\n" AMR_HY_TEXT
+	      AMR_HY_HELP_STR AMR_HY_HELP_STR)
 {
 	get_amr_hy_from_arg(vty, 3, argv, 0);
 	return check_amr_config(vty);
 }
 
-DEFUN(cfg_bts_amr_hr_hyst3, cfg_bts_amr_hr_hyst3_cmd,
-	"amr tch-h hysteresis (ms|bts) <0-15> <0-15> <0-15>",
-	AMR_TEXT "Half Rate\n" AMR_HY_TEXT
-	AMR_HY_HELP_STR AMR_HY_HELP_STR AMR_HY_HELP_STR)
+DEFUN_USRATTR(cfg_bts_amr_hr_hyst3,
+	      cfg_bts_amr_hr_hyst3_cmd,
+	      X(BSC_VTY_ATTR_NEW_LCHAN),
+	      "amr tch-h hysteresis (ms|bts) <0-15> <0-15> <0-15>",
+	      AMR_TEXT "Half Rate\n" AMR_HY_TEXT
+	      AMR_HY_HELP_STR AMR_HY_HELP_STR AMR_HY_HELP_STR)
 {
 	get_amr_hy_from_arg(vty, 4, argv, 0);
 	return check_amr_config(vty);
 }
 
 #define TNUM_STR "T-number, optionally preceded by 't' or 'T'\n"
-DEFUN(cfg_bts_t3113_dynamic, cfg_bts_t3113_dynamic_cmd,
-	"timer-dynamic TNNNN",
-	"Calculate T3113 dynamically based on channel config and load\n"
-	TNUM_STR)
+DEFUN_ATTR(cfg_bts_t3113_dynamic, cfg_bts_t3113_dynamic_cmd,
+	   "timer-dynamic TNNNN",
+	   "Calculate T3113 dynamically based on channel config and load\n"
+	   TNUM_STR,
+	   CMD_ATTR_IMMEDIATE)
 {
 	struct osmo_tdef *d;
 	struct gsm_bts *bts = vty->index;
@@ -4348,11 +4544,12 @@ DEFUN(cfg_bts_t3113_dynamic, cfg_bts_t3113_dynamic_cmd,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_bts_no_t3113_dynamic, cfg_bts_no_t3113_dynamic_cmd,
-	"no timer-dynamic TNNNN",
-	NO_STR
-	"Set given timer to non-dynamic and use the default or user provided fixed value\n"
-	TNUM_STR)
+DEFUN_ATTR(cfg_bts_no_t3113_dynamic, cfg_bts_no_t3113_dynamic_cmd,
+	   "no timer-dynamic TNNNN",
+	   NO_STR
+	   "Set given timer to non-dynamic and use the default or user provided fixed value\n"
+	   TNUM_STR,
+	   CMD_ATTR_IMMEDIATE)
 {
 	struct osmo_tdef *d;
 	struct gsm_bts *bts = vty->index;
@@ -4377,11 +4574,12 @@ DEFUN(cfg_bts_no_t3113_dynamic, cfg_bts_no_t3113_dynamic_cmd,
 #define TRX_TEXT "Radio Transceiver\n"
 
 /* per TRX configuration */
-DEFUN(cfg_trx,
-      cfg_trx_cmd,
-      "trx <0-255>",
-      TRX_TEXT
-      "Select a TRX to configure\n")
+DEFUN_ATTR(cfg_trx,
+	   cfg_trx_cmd,
+	   "trx <0-255>",
+	   TRX_TEXT
+	   "Select a TRX to configure\n",
+	   CMD_ATTR_IMMEDIATE)
 {
 	int trx_nr = atoi(argv[0]);
 	struct gsm_bts *bts = vty->index;
@@ -4407,11 +4605,12 @@ DEFUN(cfg_trx,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_trx_arfcn,
-      cfg_trx_arfcn_cmd,
-      "arfcn <0-1023>",
-      "Set the ARFCN for this TRX\n"
-      "Absolute Radio Frequency Channel Number\n")
+DEFUN_USRATTR(cfg_trx_arfcn,
+	      cfg_trx_arfcn_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_OML_LINK),
+	      "arfcn <0-1023>",
+	      "Set the ARFCN for this TRX\n"
+	      "Absolute Radio Frequency Channel Number\n")
 {
 	enum gsm_band unused;
 	struct gsm_bts_trx *trx = vty->index;
@@ -4433,12 +4632,13 @@ DEFUN(cfg_trx_arfcn,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_trx_nominal_power,
-      cfg_trx_nominal_power_cmd,
-      "nominal power <-20-100>",
-      "Nominal TRX RF Power in dBm\n"
-      "Nominal TRX RF Power in dBm\n"
-      "Nominal TRX RF Power in dBm\n")
+DEFUN_USRATTR(cfg_trx_nominal_power,
+	      cfg_trx_nominal_power_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_OML_LINK),
+	      "nominal power <-20-100>",
+	      "Nominal TRX RF Power in dBm\n"
+	      "Nominal TRX RF Power in dBm\n"
+	      "Nominal TRX RF Power in dBm\n")
 {
 	struct gsm_bts_trx *trx = vty->index;
 
@@ -4447,11 +4647,12 @@ DEFUN(cfg_trx_nominal_power,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_trx_max_power_red,
-      cfg_trx_max_power_red_cmd,
-      "max_power_red <0-100>",
-      "Reduction of maximum BS RF Power (relative to nominal power)\n"
-      "Reduction of maximum BS RF Power in dB\n")
+DEFUN_USRATTR(cfg_trx_max_power_red,
+	      cfg_trx_max_power_red_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_OML_LINK),
+	      "max_power_red <0-100>",
+	      "Reduction of maximum BS RF Power (relative to nominal power)\n"
+	      "Reduction of maximum BS RF Power in dB\n")
 {
 	int maxpwr_r = atoi(argv[0]);
 	struct gsm_bts_trx *trx = vty->index;
@@ -4476,6 +4677,8 @@ DEFUN(cfg_trx_max_power_red,
 	return CMD_SUCCESS;
 }
 
+/* NOTE: This requires a full restart as bsc_network_configure() is executed
+ * only once on startup from osmo_bsc_main.c */
 DEFUN(cfg_trx_rsl_e1,
       cfg_trx_rsl_e1_cmd,
       "rsl e1 line E1_LINE timeslot <1-31> sub-slot (0|1|2|3|full)",
@@ -4499,13 +4702,14 @@ DEFUN(cfg_trx_rsl_e1,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_trx_rsl_e1_tei,
-      cfg_trx_rsl_e1_tei_cmd,
-      "rsl e1 tei <0-63>",
-      "RSL Parameters\n"
-      "Set the TEI to be used for RSL\n"
-      "Set the TEI to be used for RSL\n"
-      "TEI to be used for RSL\n")
+DEFUN_USRATTR(cfg_trx_rsl_e1_tei,
+	      cfg_trx_rsl_e1_tei_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_RSL_LINK),
+	      "rsl e1 tei <0-63>",
+	      "RSL Parameters\n"
+	      "Set the TEI to be used for RSL\n"
+	      "Set the TEI to be used for RSL\n"
+	      "TEI to be used for RSL\n")
 {
 	struct gsm_bts_trx *trx = vty->index;
 
@@ -4514,12 +4718,13 @@ DEFUN(cfg_trx_rsl_e1_tei,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_trx_rf_locked,
-      cfg_trx_rf_locked_cmd,
-      "rf_locked (0|1)",
-      "Set or unset the RF Locking (Turn off RF of the TRX)\n"
-      "TRX is NOT RF locked (active)\n"
-      "TRX is RF locked (turned off)\n")
+DEFUN_ATTR(cfg_trx_rf_locked,
+	   cfg_trx_rf_locked_cmd,
+	   "rf_locked (0|1)",
+	   "Set or unset the RF Locking (Turn off RF of the TRX)\n"
+	   "TRX is NOT RF locked (active)\n"
+	   "TRX is RF locked (turned off)\n",
+	   CMD_ATTR_IMMEDIATE)
 {
 	int locked = atoi(argv[0]);
 	struct gsm_bts_trx *trx = vty->index;
@@ -4529,11 +4734,12 @@ DEFUN(cfg_trx_rf_locked,
 }
 
 /* per TS configuration */
-DEFUN(cfg_ts,
-      cfg_ts_cmd,
-      "timeslot <0-7>",
-      "Select a Timeslot to configure\n"
-      "Timeslot number\n")
+DEFUN_ATTR(cfg_ts,
+	   cfg_ts_cmd,
+	   "timeslot <0-7>",
+	   "Select a Timeslot to configure\n"
+	   "Timeslot number\n",
+	   CMD_ATTR_IMMEDIATE)
 {
 	int ts_nr = atoi(argv[0]);
 	struct gsm_bts_trx *trx = vty->index;
@@ -4553,10 +4759,11 @@ DEFUN(cfg_ts,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_ts_pchan,
-      cfg_ts_pchan_cmd,
-      "phys_chan_config PCHAN", /* dynamically generated! */
-      "Physical Channel configuration (TCH/SDCCH/...)\n" "Physical Channel\n")
+DEFUN_USRATTR(cfg_ts_pchan,
+	      cfg_ts_pchan_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_OML_LINK),
+	      "phys_chan_config PCHAN", /* dynamically generated! */
+	      "Physical Channel configuration (TCH/SDCCH/...)\n" "Physical Channel\n")
 {
 	struct gsm_bts_trx_ts *ts = vty->index;
 	int pchanc;
@@ -4591,12 +4798,11 @@ DEFUN_HIDDEN(cfg_ts_pchan_compat,
 	return CMD_SUCCESS;
 }
 
-
-
-DEFUN(cfg_ts_tsc,
-      cfg_ts_tsc_cmd,
-      "training_sequence_code <0-7>",
-      "Training Sequence Code of the Timeslot\n" "TSC\n")
+DEFUN_USRATTR(cfg_ts_tsc,
+	      cfg_ts_tsc_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_OML_LINK),
+	      "training_sequence_code <0-7>",
+	      "Training Sequence Code of the Timeslot\n" "TSC\n")
 {
 	struct gsm_bts_trx_ts *ts = vty->index;
 
@@ -4614,11 +4820,12 @@ DEFUN(cfg_ts_tsc,
 
 #define HOPPING_STR "Configure frequency hopping\n"
 
-DEFUN(cfg_ts_hopping,
-      cfg_ts_hopping_cmd,
-      "hopping enabled (0|1)",
-	HOPPING_STR "Enable or disable frequency hopping\n"
-      "Disable frequency hopping\n" "Enable frequency hopping\n")
+DEFUN_USRATTR(cfg_ts_hopping,
+	      cfg_ts_hopping_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_OML_LINK),
+	      "hopping enabled (0|1)",
+	      HOPPING_STR "Enable or disable frequency hopping\n"
+	      "Disable frequency hopping\n" "Enable frequency hopping\n")
 {
 	struct gsm_bts_trx_ts *ts = vty->index;
 	int enabled = atoi(argv[0]);
@@ -4635,12 +4842,13 @@ DEFUN(cfg_ts_hopping,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_ts_hsn,
-      cfg_ts_hsn_cmd,
-      "hopping sequence-number <0-63>",
-	HOPPING_STR
-      "Which hopping sequence to use for this channel\n"
-      "Hopping Sequence Number (HSN)\n")
+DEFUN_USRATTR(cfg_ts_hsn,
+	      cfg_ts_hsn_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_OML_LINK),
+	      "hopping sequence-number <0-63>",
+	      HOPPING_STR
+	      "Which hopping sequence to use for this channel\n"
+	      "Hopping Sequence Number (HSN)\n")
 {
 	struct gsm_bts_trx_ts *ts = vty->index;
 
@@ -4649,12 +4857,13 @@ DEFUN(cfg_ts_hsn,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_ts_maio,
-      cfg_ts_maio_cmd,
-      "hopping maio <0-63>",
-	HOPPING_STR
-      "Which hopping MAIO to use for this channel\n"
-      "Mobile Allocation Index Offset (MAIO)\n")
+DEFUN_USRATTR(cfg_ts_maio,
+	      cfg_ts_maio_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_OML_LINK),
+	      "hopping maio <0-63>",
+	      HOPPING_STR
+	      "Which hopping MAIO to use for this channel\n"
+	      "Mobile Allocation Index Offset (MAIO)\n")
 {
 	struct gsm_bts_trx_ts *ts = vty->index;
 
@@ -4663,11 +4872,12 @@ DEFUN(cfg_ts_maio,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_ts_arfcn_add,
-      cfg_ts_arfcn_add_cmd,
-      "hopping arfcn add <0-1023>",
-	HOPPING_STR "Configure hopping ARFCN list\n"
-      "Add an entry to the hopping ARFCN list\n" "ARFCN\n")
+DEFUN_USRATTR(cfg_ts_arfcn_add,
+	      cfg_ts_arfcn_add_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_OML_LINK),
+	      "hopping arfcn add <0-1023>",
+	      HOPPING_STR "Configure hopping ARFCN list\n"
+	      "Add an entry to the hopping ARFCN list\n" "ARFCN\n")
 {
 	enum gsm_band unused;
 	struct gsm_bts_trx_ts *ts = vty->index;
@@ -4683,11 +4893,12 @@ DEFUN(cfg_ts_arfcn_add,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_ts_arfcn_del,
-      cfg_ts_arfcn_del_cmd,
-      "hopping arfcn del <0-1023>",
-	HOPPING_STR "Configure hopping ARFCN list\n"
-      "Delete an entry to the hopping ARFCN list\n" "ARFCN\n")
+DEFUN_USRATTR(cfg_ts_arfcn_del,
+	      cfg_ts_arfcn_del_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_OML_LINK),
+	      "hopping arfcn del <0-1023>",
+	      HOPPING_STR "Configure hopping ARFCN list\n"
+	      "Delete an entry to the hopping ARFCN list\n" "ARFCN\n")
 {
 	enum gsm_band unused;
 	struct gsm_bts_trx_ts *ts = vty->index;
@@ -4703,11 +4914,12 @@ DEFUN(cfg_ts_arfcn_del,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_ts_arfcn_del_all,
-      cfg_ts_arfcn_del_all_cmd,
-      "hopping arfcn del-all",
-      HOPPING_STR "Configure hopping ARFCN list\n"
-      "Delete all previously configured entries\n")
+DEFUN_USRATTR(cfg_ts_arfcn_del_all,
+	      cfg_ts_arfcn_del_all_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_OML_LINK),
+	      "hopping arfcn del-all",
+	      HOPPING_STR "Configure hopping ARFCN list\n"
+	      "Delete all previously configured entries\n")
 {
 	struct gsm_bts_trx_ts *ts = vty->index;
 
@@ -4716,20 +4928,24 @@ DEFUN(cfg_ts_arfcn_del_all,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_ts_e1_subslot,
-      cfg_ts_e1_subslot_cmd,
-      "e1 line E1_LINE timeslot <1-31> sub-slot (0|1|2|3|full)",
-      "E1/T1 channel connected to this on-air timeslot\n"
-      "E1/T1 channel connected to this on-air timeslot\n"
-      "E1/T1 line connected to this on-air timeslot\n"
-      "E1/T1 timeslot connected to this on-air timeslot\n"
-      "E1/T1 timeslot connected to this on-air timeslot\n"
-      "E1/T1 sub-slot connected to this on-air timeslot\n"
-      "E1/T1 sub-slot 0 connected to this on-air timeslot\n"
-      "E1/T1 sub-slot 1 connected to this on-air timeslot\n"
-      "E1/T1 sub-slot 2 connected to this on-air timeslot\n"
-      "E1/T1 sub-slot 3 connected to this on-air timeslot\n"
-      "Full E1/T1 timeslot connected to this on-air timeslot\n")
+/* NOTE: This will have an effect on newly created voice lchans since the E1
+ * voice channels are handled by osmo-mgw and the information put in e1_link
+ * here is only used to generate the MGCP messages for the mgw. */
+DEFUN_ATTR(cfg_ts_e1_subslot,
+	   cfg_ts_e1_subslot_cmd,
+	   "e1 line E1_LINE timeslot <1-31> sub-slot (0|1|2|3|full)",
+	   "E1/T1 channel connected to this on-air timeslot\n"
+	   "E1/T1 channel connected to this on-air timeslot\n"
+	   "E1/T1 line connected to this on-air timeslot\n"
+	   "E1/T1 timeslot connected to this on-air timeslot\n"
+	   "E1/T1 timeslot connected to this on-air timeslot\n"
+	   "E1/T1 sub-slot connected to this on-air timeslot\n"
+	   "E1/T1 sub-slot 0 connected to this on-air timeslot\n"
+	   "E1/T1 sub-slot 1 connected to this on-air timeslot\n"
+	   "E1/T1 sub-slot 2 connected to this on-air timeslot\n"
+	   "E1/T1 sub-slot 3 connected to this on-air timeslot\n"
+	   "Full E1/T1 timeslot connected to this on-air timeslot\n",
+	   CMD_ATTR_IMMEDIATE)
 {
 	struct gsm_bts_trx_ts *ts = vty->index;
 
@@ -5407,9 +5623,10 @@ DEFUN(ctrl_trap, ctrl_trap_cmd,
 #define NAME_CMD_STR "Name Commands\n"
 #define NAME_STR "Name to use\n"
 
-DEFUN(cfg_net,
-      cfg_net_cmd,
-      "network", NETWORK_STR)
+DEFUN_ATTR(cfg_net,
+	   cfg_net_cmd,
+	   "network", NETWORK_STR,
+	   CMD_ATTR_IMMEDIATE)
 {
 	vty->index = gsmnet_from_vty(vty);
 	vty->node = GSMNET_NODE;
@@ -5417,13 +5634,14 @@ DEFUN(cfg_net,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_net_ncc,
-      cfg_net_ncc_cmd,
-      "network country code <1-999>",
-      "Set the GSM network country code\n"
-      "Country commands\n"
-      CODE_CMD_STR
-      "Network Country Code to use\n")
+DEFUN_USRATTR(cfg_net_ncc,
+	      cfg_net_ncc_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_RSL_LINK),
+	      "network country code <1-999>",
+	      "Set the GSM network country code\n"
+	      "Country commands\n"
+	      CODE_CMD_STR
+	      "Network Country Code to use\n")
 {
 	struct gsm_network *gsmnet = gsmnet_from_vty(vty);
 	uint16_t mcc;
@@ -5438,13 +5656,14 @@ DEFUN(cfg_net_ncc,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_net_mnc,
-      cfg_net_mnc_cmd,
-      "mobile network code <0-999>",
-      "Set the GSM mobile network code\n"
-      "Network Commands\n"
-      CODE_CMD_STR
-      "Mobile Network Code to use\n")
+DEFUN_USRATTR(cfg_net_mnc,
+	      cfg_net_mnc_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_RSL_LINK),
+	      "mobile network code <0-999>",
+	      "Set the GSM mobile network code\n"
+	      "Network Commands\n"
+	      CODE_CMD_STR
+	      "Mobile Network Code to use\n")
 {
 	struct gsm_network *gsmnet = gsmnet_from_vty(vty);
 	uint16_t mnc;
@@ -5461,15 +5680,16 @@ DEFUN(cfg_net_mnc,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_net_encryption,
-      cfg_net_encryption_cmd,
-      "encryption a5 <0-3> [<0-3>] [<0-3>] [<0-3>]",
-      "Encryption options\n"
-      "GSM A5 Air Interface Encryption\n"
-      "A5/n Algorithm Number\n"
-      "A5/n Algorithm Number\n"
-      "A5/n Algorithm Number\n"
-      "A5/n Algorithm Number\n")
+DEFUN_USRATTR(cfg_net_encryption,
+	      cfg_net_encryption_cmd,
+	      X(BSC_VTY_ATTR_NEW_LCHAN),
+	      "encryption a5 <0-3> [<0-3>] [<0-3>] [<0-3>]",
+	      "Encryption options\n"
+	      "GSM A5 Air Interface Encryption\n"
+	      "A5/n Algorithm Number\n"
+	      "A5/n Algorithm Number\n"
+	      "A5/n Algorithm Number\n"
+	      "A5/n Algorithm Number\n")
 {
 	struct gsm_network *gsmnet = gsmnet_from_vty(vty);
 	unsigned int i;
@@ -5495,16 +5715,16 @@ DEFUN_DEPRECATED(cfg_net_dyn_ts_allow_tch_f,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_net_timezone,
-      cfg_net_timezone_cmd,
-      "timezone <-19-19> (0|15|30|45)",
-      "Set the Timezone Offset of the network\n"
-      "Timezone offset (hours)\n"
-      "Timezone offset (00 minutes)\n"
-      "Timezone offset (15 minutes)\n"
-      "Timezone offset (30 minutes)\n"
-      "Timezone offset (45 minutes)\n"
-      )
+DEFUN_ATTR(cfg_net_timezone,
+	   cfg_net_timezone_cmd,
+	   "timezone <-19-19> (0|15|30|45)",
+	   "Set the Timezone Offset of the network\n"
+	   "Timezone offset (hours)\n"
+	   "Timezone offset (00 minutes)\n"
+	   "Timezone offset (15 minutes)\n"
+	   "Timezone offset (30 minutes)\n"
+	   "Timezone offset (45 minutes)\n",
+	   CMD_ATTR_IMMEDIATE)
 {
 	struct gsm_network *net = vty->index;
 	int tzhr = atoi(argv[0]);
@@ -5518,17 +5738,17 @@ DEFUN(cfg_net_timezone,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_net_timezone_dst,
-      cfg_net_timezone_dst_cmd,
-      "timezone <-19-19> (0|15|30|45) <0-2>",
-      "Set the Timezone Offset of the network\n"
-      "Timezone offset (hours)\n"
-      "Timezone offset (00 minutes)\n"
-      "Timezone offset (15 minutes)\n"
-      "Timezone offset (30 minutes)\n"
-      "Timezone offset (45 minutes)\n"
-      "DST offset (hours)\n"
-      )
+DEFUN_ATTR(cfg_net_timezone_dst,
+	   cfg_net_timezone_dst_cmd,
+	   "timezone <-19-19> (0|15|30|45) <0-2>",
+	   "Set the Timezone Offset of the network\n"
+	   "Timezone offset (hours)\n"
+	   "Timezone offset (00 minutes)\n"
+	   "Timezone offset (15 minutes)\n"
+	   "Timezone offset (30 minutes)\n"
+	   "Timezone offset (45 minutes)\n"
+	   "DST offset (hours)\n",
+	   CMD_ATTR_IMMEDIATE)
 {
 	struct gsm_network *net = vty->index;
 	int tzhr = atoi(argv[0]);
@@ -5543,11 +5763,12 @@ DEFUN(cfg_net_timezone_dst,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_net_no_timezone,
-      cfg_net_no_timezone_cmd,
-      "no timezone",
-      NO_STR
-      "Disable network timezone override, use system tz\n")
+DEFUN_ATTR(cfg_net_no_timezone,
+	   cfg_net_no_timezone_cmd,
+	   "no timezone",
+	   NO_STR
+	   "Disable network timezone override, use system tz\n",
+	   CMD_ATTR_IMMEDIATE)
 {
 	struct gsm_network *net = vty->index;
 
@@ -5556,6 +5777,7 @@ DEFUN(cfg_net_no_timezone,
 	return CMD_SUCCESS;
 }
 
+/* FIXME: changing this value would not affect generated System Information */
 DEFUN(cfg_net_per_loc_upd, cfg_net_per_loc_upd_cmd,
       "periodic location update <6-1530>",
       "Periodic Location Updating Interval\n"
@@ -5572,6 +5794,7 @@ DEFUN(cfg_net_per_loc_upd, cfg_net_per_loc_upd_cmd,
 	return CMD_SUCCESS;
 }
 
+/* FIXME: changing this value would not affect generated System Information */
 DEFUN(cfg_net_no_per_loc_upd, cfg_net_no_per_loc_upd_cmd,
       "no periodic location update",
       NO_STR
@@ -5590,9 +5813,10 @@ DEFUN(cfg_net_no_per_loc_upd, cfg_net_no_per_loc_upd_cmd,
 
 #define MEAS_FEED_STR "Measurement Report export\n"
 
-DEFUN(cfg_net_meas_feed_dest, cfg_net_meas_feed_dest_cmd,
-	"meas-feed destination ADDR <0-65535>",
-	MEAS_FEED_STR "Where to forward Measurement Report feeds\n" "address or hostname\n" "port number\n")
+DEFUN_ATTR(cfg_net_meas_feed_dest, cfg_net_meas_feed_dest_cmd,
+	   "meas-feed destination ADDR <0-65535>",
+	   MEAS_FEED_STR "Where to forward Measurement Report feeds\n" "address or hostname\n" "port number\n",
+	   CMD_ATTR_IMMEDIATE)
 {
 	int rc;
 	const char *host = argv[0];
@@ -5605,9 +5829,10 @@ DEFUN(cfg_net_meas_feed_dest, cfg_net_meas_feed_dest_cmd,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_net_meas_feed_scenario, cfg_net_meas_feed_scenario_cmd,
-	"meas-feed scenario NAME",
-	MEAS_FEED_STR "Set a name to include in the Measurement Report feeds\n" "Name string, up to 31 characters\n")
+DEFUN_ATTR(cfg_net_meas_feed_scenario, cfg_net_meas_feed_scenario_cmd,
+	   "meas-feed scenario NAME",
+	   MEAS_FEED_STR "Set a name to include in the Measurement Report feeds\n" "Name string, up to 31 characters\n",
+	   CMD_ATTR_IMMEDIATE)
 {
 	meas_feed_scenario_set(argv[0]);
 
@@ -5689,8 +5914,10 @@ static struct cmd_node msc_node = {
 
 #define MSC_NR_RANGE "<0-1000>"
 
-DEFUN(cfg_net_msc, cfg_net_msc_cmd,
-      "msc [" MSC_NR_RANGE "]", "Configure MSC details\n" "MSC connection to configure\n")
+DEFUN_ATTR(cfg_net_msc,
+	   cfg_net_msc_cmd,
+	   "msc [" MSC_NR_RANGE "]", "Configure MSC details\n" "MSC connection to configure\n",
+	   CMD_ATTR_IMMEDIATE)
 {
 	int index = argc == 1 ? atoi(argv[0]) : 0;
 	struct bsc_msc_data *msc;
@@ -5706,8 +5933,10 @@ DEFUN(cfg_net_msc, cfg_net_msc_cmd,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_net_bsc, cfg_net_bsc_cmd,
-      "bsc", "Configure BSC\n")
+DEFUN_ATTR(cfg_net_bsc,
+	   cfg_net_bsc_cmd,
+	   "bsc", "Configure BSC\n",
+	   CMD_ATTR_IMMEDIATE)
 {
 	vty->node = BSC_NODE;
 	return CMD_SUCCESS;
@@ -5841,10 +6070,11 @@ static int config_write_bsc(struct vty *vty)
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_net_bsc_ncc,
-      cfg_net_bsc_ncc_cmd,
-      "core-mobile-network-code <1-999>",
-      "Use this network code for the core network\n" "MNC value\n")
+DEFUN_ATTR(cfg_net_bsc_ncc,
+	   cfg_net_bsc_ncc_cmd,
+	   "core-mobile-network-code <1-999>",
+	   "Use this network code for the core network\n" "MNC value\n",
+	   CMD_ATTR_IMMEDIATE)
 {
 	struct bsc_msc_data *data = bsc_msc_data(vty);
 	uint16_t mnc;
@@ -5859,10 +6089,11 @@ DEFUN(cfg_net_bsc_ncc,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_net_bsc_mcc,
-      cfg_net_bsc_mcc_cmd,
-      "core-mobile-country-code <1-999>",
-      "Use this country code for the core network\n" "MCC value\n")
+DEFUN_ATTR(cfg_net_bsc_mcc,
+	   cfg_net_bsc_mcc_cmd,
+	   "core-mobile-country-code <1-999>",
+	   "Use this country code for the core network\n" "MCC value\n",
+	   CMD_ATTR_IMMEDIATE)
 {
 	uint16_t mcc;
 	struct bsc_msc_data *data = bsc_msc_data(vty);
@@ -5874,20 +6105,22 @@ DEFUN(cfg_net_bsc_mcc,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_net_bsc_lac,
-      cfg_net_bsc_lac_cmd,
-      "core-location-area-code <0-65535>",
-      "Use this location area code for the core network\n" "LAC value\n")
+DEFUN_ATTR(cfg_net_bsc_lac,
+	   cfg_net_bsc_lac_cmd,
+	   "core-location-area-code <0-65535>",
+	   "Use this location area code for the core network\n" "LAC value\n",
+	   CMD_ATTR_IMMEDIATE)
 {
 	struct bsc_msc_data *data = bsc_msc_data(vty);
 	data->core_lac = atoi(argv[0]);
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_net_bsc_ci,
-      cfg_net_bsc_ci_cmd,
-      "core-cell-identity <0-65535>",
-      "Use this cell identity for the core network\n" "CI value\n")
+DEFUN_ATTR(cfg_net_bsc_ci,
+	   cfg_net_bsc_ci_cmd,
+	   "core-cell-identity <0-65535>",
+	   "Use this cell identity for the core network\n" "CI value\n",
+	   CMD_ATTR_IMMEDIATE)
 {
 	struct bsc_msc_data *data = bsc_msc_data(vty);
 	data->core_ci = atoi(argv[0]);
@@ -5903,11 +6136,12 @@ DEFUN_DEPRECATED(cfg_net_bsc_rtp_base,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_net_bsc_codec_list,
-      cfg_net_bsc_codec_list_cmd,
-      "codec-list .LIST",
-      "Set the allowed audio codecs\n"
-      "List of audio codecs, e.g. fr3 fr1 hr3\n")
+DEFUN_USRATTR(cfg_net_bsc_codec_list,
+	      cfg_net_bsc_codec_list_cmd,
+	      BSC_VTY_ATTR_NEW_LCHAN,
+	      "codec-list .LIST",
+	      "Set the allowed audio codecs\n"
+	      "List of audio codecs, e.g. fr3 fr1 hr3\n")
 {
 	struct bsc_msc_data *data = bsc_msc_data(vty);
 	int i;
@@ -6005,11 +6239,12 @@ DEFUN_DEPRECATED(cfg_net_msc_type,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_net_msc_emerg,
-      cfg_net_msc_emerg_cmd,
-      "allow-emergency (allow|deny)",
-      "Allow CM ServiceRequests with type emergency\n"
-      "Allow\n" "Deny\n")
+DEFUN_ATTR(cfg_net_msc_emerg,
+	   cfg_net_msc_emerg_cmd,
+	   "allow-emergency (allow|deny)",
+	   "Allow CM ServiceRequests with type emergency\n"
+	   "Allow\n" "Deny\n",
+	   CMD_ATTR_IMMEDIATE)
 {
 	struct bsc_msc_data *data = bsc_msc_data(vty);
 	data->allow_emerg = strcmp("allow", argv[0]) == 0;
@@ -6018,8 +6253,8 @@ DEFUN(cfg_net_msc_emerg,
 
 #define AMR_CONF_STR "AMR Multirate Configuration\n"
 #define AMR_COMMAND(name) \
-	DEFUN(cfg_net_msc_amr_##name,					\
-	  cfg_net_msc_amr_##name##_cmd,					\
+	DEFUN_USRATTR(cfg_net_msc_amr_##name,				\
+	  cfg_net_msc_amr_##name##_cmd,BSC_VTY_ATTR_NEW_LCHAN, 		\
 	  "amr-config " #name "k (allowed|forbidden)",			\
 	  AMR_CONF_STR "Bitrate\n" "Allowed\n" "Forbidden\n")		\
 {									\
@@ -6131,25 +6366,27 @@ DEFUN(cfg_msc_cs7_asp_proto,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_net_msc_lcls_mode,
-      cfg_net_msc_lcls_mode_cmd,
-      "lcls-mode (disabled|mgw-loop|bts-loop)",
-      "Configure 3GPP LCLS (Local Call, Local Switch)\n"
-      "Disable LCLS for all calls of this MSC\n"
-      "Enable LCLS with looping traffic in MGW\n"
-      "Enable LCLS with looping traffic between BTS\n")
+DEFUN_USRATTR(cfg_net_msc_lcls_mode,
+	      cfg_net_msc_lcls_mode_cmd,
+	      X(BSC_VTY_ATTR_NEW_LCHAN),
+	      "lcls-mode (disabled|mgw-loop|bts-loop)",
+	      "Configure 3GPP LCLS (Local Call, Local Switch)\n"
+	      "Disable LCLS for all calls of this MSC\n"
+	      "Enable LCLS with looping traffic in MGW\n"
+	      "Enable LCLS with looping traffic between BTS\n")
 {
 	struct bsc_msc_data *data = bsc_msc_data(vty);
 	data->lcls_mode = get_string_value(bsc_lcls_mode_names, argv[0]);
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_net_msc_lcls_mismtch,
-      cfg_net_msc_lcls_mismtch_cmd,
-      "lcls-codec-mismatch (allowed|forbidden)",
-      "Allow 3GPP LCLS (Local Call, Local Switch) when call legs use different codec/rate\n"
-      "Allow LCLS only only for calls that use the same codec/rate on both legs\n"
-      "Do not Allow LCLS for calls that use a different codec/rate on both legs\n")
+DEFUN_USRATTR(cfg_net_msc_lcls_mismtch,
+	      cfg_net_msc_lcls_mismtch_cmd,
+	      X(BSC_VTY_ATTR_NEW_LCHAN),
+	      "lcls-codec-mismatch (allowed|forbidden)",
+	      "Allow 3GPP LCLS (Local Call, Local Switch) when call legs use different codec/rate\n"
+	      "Allow LCLS only only for calls that use the same codec/rate on both legs\n"
+	      "Do not Allow LCLS for calls that use a different codec/rate on both legs\n")
 {
 	struct bsc_msc_data *data = bsc_msc_data(vty);
 
@@ -6161,15 +6398,16 @@ DEFUN(cfg_net_msc_lcls_mismtch,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_msc_mgw_x_osmo_ign,
-      cfg_msc_mgw_x_osmo_ign_cmd,
-      "mgw x-osmo-ign call-id",
-      MGCP_CLIENT_MGW_STR
-      "Set a (non-standard) X-Osmo-IGN header in all CRCX messages for RTP streams"
-      " associated with this MSC, useful for A/SCCPlite MSCs, since osmo-bsc cannot know"
-      " the MSC's chosen CallID. This is enabled by default for A/SCCPlite connections,"
-      " disabled by default for all others.\n"
-      "Send 'X-Osmo-IGN: C' to ignore CallID mismatches. See OsmoMGW.\n")
+DEFUN_USRATTR(cfg_msc_mgw_x_osmo_ign,
+	      cfg_msc_mgw_x_osmo_ign_cmd,
+	      X(BSC_VTY_ATTR_NEW_LCHAN),
+	      "mgw x-osmo-ign call-id",
+	      MGCP_CLIENT_MGW_STR
+	      "Set a (non-standard) X-Osmo-IGN header in all CRCX messages for RTP streams"
+	      " associated with this MSC, useful for A/SCCPlite MSCs, since osmo-bsc cannot know"
+	      " the MSC's chosen CallID. This is enabled by default for A/SCCPlite connections,"
+	      " disabled by default for all others.\n"
+	      "Send 'X-Osmo-IGN: C' to ignore CallID mismatches. See OsmoMGW.\n")
 {
 	struct bsc_msc_data *msc = bsc_msc_data(vty);
 	msc->x_osmo_ign |= MGCP_X_OSMO_IGN_CALLID;
@@ -6177,12 +6415,13 @@ DEFUN(cfg_msc_mgw_x_osmo_ign,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_msc_no_mgw_x_osmo_ign,
-      cfg_msc_no_mgw_x_osmo_ign_cmd,
-      "no mgw x-osmo-ign",
-      NO_STR
-      MGCP_CLIENT_MGW_STR
-      "Do not send X-Osmo-IGN MGCP header to this MSC\n")
+DEFUN_USRATTR(cfg_msc_no_mgw_x_osmo_ign,
+	      cfg_msc_no_mgw_x_osmo_ign_cmd,
+	      X(BSC_VTY_ATTR_NEW_LCHAN),
+	      "no mgw x-osmo-ign",
+	      NO_STR
+	      MGCP_CLIENT_MGW_STR
+	      "Do not send X-Osmo-IGN MGCP header to this MSC\n")
 {
 	struct bsc_msc_data *msc = bsc_msc_data(vty);
 	msc->x_osmo_ign = 0;
@@ -6191,10 +6430,11 @@ DEFUN(cfg_msc_no_mgw_x_osmo_ign,
 }
 
 #define OSMUX_STR "RTP multiplexing\n"
-DEFUN(cfg_msc_osmux,
-      cfg_msc_osmux_cmd,
-      "osmux (on|off|only)",
-       OSMUX_STR "Enable OSMUX\n" "Disable OSMUX\n" "Only use OSMUX\n")
+DEFUN_USRATTR(cfg_msc_osmux,
+	      cfg_msc_osmux_cmd,
+	      X(BSC_VTY_ATTR_NEW_LCHAN),
+	      "osmux (on|off|only)",
+	      OSMUX_STR "Enable OSMUX\n" "Disable OSMUX\n" "Only use OSMUX\n")
 {
 	struct bsc_msc_data *msc = bsc_msc_data(vty);
 	if (strcmp(argv[0], "off") == 0)
@@ -6212,10 +6452,11 @@ ALIAS_DEPRECATED(deprecated_ussd_text,
       "mid-call-text .TEXT",
       LEGACY_STR LEGACY_STR);
 
-DEFUN(cfg_net_bsc_mid_call_timeout,
-      cfg_net_bsc_mid_call_timeout_cmd,
-      "mid-call-timeout NR",
-      "Switch from Grace to Off in NR seconds.\n" "Timeout in seconds\n")
+DEFUN_ATTR(cfg_net_bsc_mid_call_timeout,
+	   cfg_net_bsc_mid_call_timeout_cmd,
+	   "mid-call-timeout NR",
+	   "Switch from Grace to Off in NR seconds.\n" "Timeout in seconds\n",
+	   CMD_ATTR_IMMEDIATE)
 {
 	bsc_gsmnet->mid_call_timeout = atoi(argv[0]);
 	return CMD_SUCCESS;
@@ -6230,19 +6471,21 @@ DEFUN(cfg_net_rf_socket,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_net_rf_off_time,
-      cfg_net_rf_off_time_cmd,
-      "bsc-auto-rf-off <1-65000>",
-      "Disable RF on MSC Connection\n" "Timeout\n")
+DEFUN_ATTR(cfg_net_rf_off_time,
+	   cfg_net_rf_off_time_cmd,
+	   "bsc-auto-rf-off <1-65000>",
+	   "Disable RF on MSC Connection\n" "Timeout\n",
+	   CMD_ATTR_IMMEDIATE)
 {
 	bsc_gsmnet->auto_off_timeout = atoi(argv[0]);
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_net_no_rf_off_time,
-      cfg_net_no_rf_off_time_cmd,
-      "no bsc-auto-rf-off",
-      NO_STR "Disable RF on MSC Connection\n")
+DEFUN_ATTR(cfg_net_no_rf_off_time,
+	   cfg_net_no_rf_off_time_cmd,
+	   "no bsc-auto-rf-off",
+	   NO_STR "Disable RF on MSC Connection\n",
+	   CMD_ATTR_IMMEDIATE)
 {
 	bsc_gsmnet->auto_off_timeout = -1;
 	return CMD_SUCCESS;
@@ -6411,12 +6654,13 @@ DEFUN_DEPRECATED(cfg_net_msc_dest, cfg_net_msc_dest_cmd,
 ALIAS_DEPRECATED(cfg_net_msc_dest, cfg_net_msc_no_dest_cmd,
       "no dest A.B.C.D <1-65000> <0-255>", NO_STR LEGACY_STR "-\n" "-\n" "-\n");
 
-DEFUN(cfg_net_msc_amr_octet_align,
-      cfg_net_msc_amr_octet_align_cmd,
-      "amr-payload (octet-aligned|bandwith-efficient",
-      "Set AMR payload framing mode\n"
-      "payload fields aligned on octet boundaries\n"
-      "payload fields packed (AoIP)\n")
+DEFUN_USRATTR(cfg_net_msc_amr_octet_align,
+	      cfg_net_msc_amr_octet_align_cmd,
+	      X(BSC_VTY_ATTR_NEW_LCHAN),
+	      "amr-payload (octet-aligned|bandwith-efficient",
+	      "Set AMR payload framing mode\n"
+	      "payload fields aligned on octet boundaries\n"
+	      "payload fields packed (AoIP)\n")
 {
 	struct bsc_msc_data *data = bsc_msc_data(vty);
 
@@ -6428,10 +6672,11 @@ DEFUN(cfg_net_msc_amr_octet_align,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_msc_nri_add, cfg_msc_nri_add_cmd,
-      "nri add <0-32767> [<0-32767>]",
-      NRI_STR "Add NRI value or range to the NRI mapping for this MSC\n"
-      NRI_FIRST_LAST_STR)
+DEFUN_ATTR(cfg_msc_nri_add, cfg_msc_nri_add_cmd,
+	   "nri add <0-32767> [<0-32767>]",
+	   NRI_STR "Add NRI value or range to the NRI mapping for this MSC\n"
+	   NRI_FIRST_LAST_STR,
+	   CMD_ATTR_IMMEDIATE)
 {
 	struct bsc_msc_data *msc = bsc_msc_data(vty);
 	struct bsc_msc_data *other_msc;
@@ -6466,10 +6711,11 @@ DEFUN(cfg_msc_nri_add, cfg_msc_nri_add_cmd,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_msc_nri_del, cfg_msc_nri_del_cmd,
-      "nri del <0-32767> [<0-32767>]",
-      NRI_STR "Remove NRI value or range from the NRI mapping for this MSC\n"
-      NRI_FIRST_LAST_STR)
+DEFUN_ATTR(cfg_msc_nri_del, cfg_msc_nri_del_cmd,
+	   "nri del <0-32767> [<0-32767>]",
+	   NRI_STR "Remove NRI value or range from the NRI mapping for this MSC\n"
+	   NRI_FIRST_LAST_STR,
+	   CMD_ATTR_IMMEDIATE)
 {
 	struct bsc_msc_data *msc = bsc_msc_data(vty);
 	int rc;
@@ -6484,22 +6730,24 @@ DEFUN(cfg_msc_nri_del, cfg_msc_nri_del_cmd,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_msc_allow_attach, cfg_msc_allow_attach_cmd,
-      "allow-attach",
-      "Allow this MSC to attach new subscribers (default).\n")
+DEFUN_ATTR(cfg_msc_allow_attach, cfg_msc_allow_attach_cmd,
+	   "allow-attach",
+	   "Allow this MSC to attach new subscribers (default).\n",
+	   CMD_ATTR_IMMEDIATE)
 {
 	struct bsc_msc_data *msc = bsc_msc_data(vty);
 	msc->allow_attach = true;
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_msc_no_allow_attach, cfg_msc_no_allow_attach_cmd,
-      "no allow-attach",
-      NO_STR
-      "Do not assign new subscribers to this MSC."
-      " Useful if an MSC in an MSC pool is configured to off-load subscribers."
-      " The MSC will still be operational for already IMSI-Attached subscribers,"
-      " but the NAS node selection function will skip this MSC for new subscribers\n")
+DEFUN_ATTR(cfg_msc_no_allow_attach, cfg_msc_no_allow_attach_cmd,
+	   "no allow-attach",
+	   NO_STR
+	   "Do not assign new subscribers to this MSC."
+	   " Useful if an MSC in an MSC pool is configured to off-load subscribers."
+	   " The MSC will still be operational for already IMSI-Attached subscribers,"
+	   " but the NAS node selection function will skip this MSC for new subscribers\n",
+	   CMD_ATTR_IMMEDIATE)
 {
 	struct bsc_msc_data *msc = bsc_msc_data(vty);
 	msc->allow_attach = false;

@@ -35,4 +35,11 @@ int bsc_vty_init_extra(void);
 
 struct gsm_network *gsmnet_from_vty(struct vty *vty);
 
+enum bsc_vty_cmd_attr {
+	BSC_VTY_ATTR_RESTART_ABIS_OML_LINK = 0,
+	BSC_VTY_ATTR_RESTART_ABIS_RSL_LINK,
+	BSC_VTY_ATTR_NEW_LCHAN,
+	/* NOTE: up to 32 entries */
+};
+
 #endif
