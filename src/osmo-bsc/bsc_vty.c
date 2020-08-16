@@ -3130,7 +3130,7 @@ DEFUN(cfg_bts_gprs_ctrl_ack, cfg_bts_gprs_ctrl_ack_cmd,
 DEFUN(cfg_no_bts_gprs_ctrl_ack, cfg_no_bts_gprs_ctrl_ack_cmd,
 	"no gprs control-ack-type-rach", NO_STR GPRS_TEXT
 	"Set GPRS Control Ack Type for PACKET CONTROL ACKNOWLEDGMENT message to "
-	"four access bursts format instead of default RLC/MAC control block\n")
+	"default RLC/MAC control block\n")
 {
 	struct gsm_bts *bts = vty->index;
 
