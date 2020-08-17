@@ -80,12 +80,28 @@
 
 /* Assume presence of local var 'conn' as struct gsm_subscriber_connection.
  * This is a macro to preserve the source file and line number in logging. */
-#define ho_count(counter) do { \
-		LOG_HO(conn, LOGL_DEBUG, "incrementing rate counter: %s %s\n", \
+#define ho_count_bsc(counter) do { \
+		LOG_HO(conn, LOGL_DEBUG, "(BSC) incrementing rate counter: %s %s\n", \
 		       bsc_ctr_description[counter].name, \
 		       bsc_ctr_description[counter].description); \
 		rate_ctr_inc(&conn->network->bsc_ctrs->ctr[counter]); \
 	} while(0)
+
+/* Assume presence of local var 'conn' as struct gsm_subscriber_connection.
+ * Handles bts == NULL gracefully
+ * This is a macro to preserve the source file and line number in logging. */
+#define ho_count_bts(bts, counter) do { \
+		LOG_HO(conn, LOGL_DEBUG, "(BTS) incrementing rate counter: %s %s\n", \
+		       bts_ctr_description[counter].name, \
+		       bts_ctr_description[counter].description); \
+		if (bts) \
+			rate_ctr_inc(&bts->bts_ctrs->ctr[counter]); \
+	} while(0)
+
+#define ho_count(bts, counter) do { \
+        ho_count_bsc(BSC_##counter); \
+        ho_count_bts(bts, BTS_##counter); \
+} while(0)
 
 static uint8_t g_next_ho_ref = 1;
 
@@ -341,6 +357,7 @@ static void handover_start_intra_bsc(struct gsm_subscriber_connection *conn)
 	struct handover *ho = &conn->ho;
 	struct osmo_fsm_inst *fi = conn->ho.fi;
 	struct lchan_activate_info info;
+        struct gsm_bts *bts = conn_get_bts(conn);
 
 	OSMO_ASSERT(ho->new_bts);
 	OSMO_ASSERT(ho->new_lchan_type != GSM_LCHAN_NONE);
@@ -357,7 +374,7 @@ static void handover_start_intra_bsc(struct gsm_subscriber_connection *conn)
 	else
 		ho_fsm_update_id(fi, "intraBSC");
 
-	ho_count(BSC_CTR_HANDOVER_ATTEMPTED);
+	ho_count(bts, CTR_HANDOVER_ATTEMPTED);
 
 	if (!ho->new_lchan) {
 		ho_fail(HO_RESULT_FAIL_NO_CHANNEL,
@@ -570,8 +587,6 @@ void handover_start_inter_bsc_in(struct gsm_subscriber_connection *conn,
 		return;
 	}
 
-	ho_count(BSC_CTR_INTER_BSC_HO_IN_ATTEMPTED);
-
 	/* Figure out which cell to handover to. */
 	for (match_idx = 0; ; match_idx++) {
 		struct gsm_bts *bts;
@@ -611,6 +626,8 @@ void handover_start_inter_bsc_in(struct gsm_subscriber_connection *conn,
 		ho->new_lchan = lchan;
 		break;
 	}
+
+	ho_count(ho->new_bts, CTR_INTER_BSC_HO_IN_ATTEMPTED);
 
 	if (!ho->new_bts) {
 		ho_fail(HO_RESULT_ERROR, "No local cell matches the target %s",
@@ -660,31 +677,31 @@ void handover_start_inter_bsc_in(struct gsm_subscriber_connection *conn,
 	lchan_activate(ho->new_lchan, &info);
 }
 
-#define FUNC_RESULT_COUNTER(name) \
-static int result_counter_##name(enum handover_result result) \
+#define FUNC_RESULT_COUNTER(obj, name) \
+static int result_counter_##obj##_##name(enum handover_result result) \
 { \
 	switch (result) { \
 	case HO_RESULT_OK: \
-		return BSC_CTR_##name##_COMPLETED; \
+		return obj##_CTR_##name##_COMPLETED; \
 	case HO_RESULT_FAIL_NO_CHANNEL: \
-		return BSC_CTR_##name##_NO_CHANNEL; \
+		return obj##_CTR_##name##_NO_CHANNEL; \
 	case HO_RESULT_FAIL_RR_HO_FAIL: \
-		return BSC_CTR_##name##_FAILED; \
+		return obj##_CTR_##name##_FAILED; \
 	case HO_RESULT_FAIL_TIMEOUT: \
-		return BSC_CTR_##name##_TIMEOUT; \
+		return obj##_CTR_##name##_TIMEOUT; \
 	case HO_RESULT_CONN_RELEASE: \
-		return BSC_CTR_##name##_STOPPED; \
+		return obj##_CTR_##name##_STOPPED; \
 	default: \
 	case HO_RESULT_ERROR: \
-		return BSC_CTR_##name##_ERROR; \
+		return obj##_CTR_##name##_ERROR; \
 	} \
 }
 
-FUNC_RESULT_COUNTER(ASSIGNMENT)
-FUNC_RESULT_COUNTER(HANDOVER)
-FUNC_RESULT_COUNTER(INTER_BSC_HO_IN)
+FUNC_RESULT_COUNTER(BSC, ASSIGNMENT)
+FUNC_RESULT_COUNTER(BSC, HANDOVER)
+FUNC_RESULT_COUNTER(BSC, INTER_BSC_HO_IN)
 
-static int result_counter_INTER_BSC_HO_OUT(enum handover_result result) {
+static int result_counter_BSC_INTER_BSC_HO_OUT(enum handover_result result) {
 	switch (result) {
 	case HO_RESULT_OK:
 		return BSC_CTR_INTER_BSC_HO_OUT_COMPLETED;
@@ -698,22 +715,59 @@ static int result_counter_INTER_BSC_HO_OUT(enum handover_result result) {
 	}
 }
 
-static int result_counter(enum handover_scope scope, enum handover_result result)
+static int result_counter_bsc(enum handover_scope scope, enum handover_result result)
 {
 	switch (scope) {
 	case HO_INTRA_CELL:
-		return result_counter_ASSIGNMENT(result);
+		return result_counter_BSC_ASSIGNMENT(result);
 	default:
 		LOGP(DHO, LOGL_ERROR, "invalid enum handover_scope value: %s\n",
 		     handover_scope_name(scope));
 		/* use "normal" HO_INTRA_BSC counter... */
 	case HO_NO_HANDOVER:
 	case HO_INTRA_BSC:
-		return result_counter_HANDOVER(result);
+		return result_counter_BSC_HANDOVER(result);
 	case HO_INTER_BSC_OUT:
-		return result_counter_INTER_BSC_HO_OUT(result);
+		return result_counter_BSC_INTER_BSC_HO_OUT(result);
 	case HO_INTER_BSC_IN:
-		return result_counter_INTER_BSC_HO_IN(result);
+		return result_counter_BSC_INTER_BSC_HO_IN(result);
+	}
+}
+
+FUNC_RESULT_COUNTER(BTS, ASSIGNMENT)
+FUNC_RESULT_COUNTER(BTS, HANDOVER)
+FUNC_RESULT_COUNTER(BTS, INTER_BSC_HO_IN)
+
+static int result_counter_BTS_INTER_BSC_HO_OUT(enum handover_result result) {
+	switch (result) {
+	case HO_RESULT_OK:
+		return BTS_CTR_INTER_BSC_HO_OUT_COMPLETED;
+	case HO_RESULT_FAIL_TIMEOUT:
+		return BTS_CTR_INTER_BSC_HO_OUT_TIMEOUT;
+	case HO_RESULT_CONN_RELEASE:
+		return BTS_CTR_INTER_BSC_HO_OUT_STOPPED;
+	default:
+	case HO_RESULT_ERROR:
+		return BTS_CTR_INTER_BSC_HO_OUT_ERROR;
+	}
+}
+
+static int result_counter_bts(enum handover_scope scope, enum handover_result result)
+{
+	switch (scope) {
+	case HO_INTRA_CELL:
+		return result_counter_BTS_ASSIGNMENT(result);
+	default:
+		LOGP(DHO, LOGL_ERROR, "invalid enum handover_scope value: %s\n",
+		     handover_scope_name(scope));
+		/* use "normal" HO_INTRA_BSC counter... */
+	case HO_NO_HANDOVER:
+	case HO_INTRA_BSC:
+		return result_counter_BTS_HANDOVER(result);
+	case HO_INTER_BSC_OUT:
+		return result_counter_BTS_INTER_BSC_HO_OUT(result);
+	case HO_INTER_BSC_IN:
+		return result_counter_BTS_INTER_BSC_HO_IN(result);
 	}
 }
 
@@ -787,6 +841,7 @@ void handover_end(struct gsm_subscriber_connection *conn, enum handover_result r
 {
 	struct handover_decision_callbacks *hdc;
 	struct handover *ho = &conn->ho;
+	struct gsm_bts *bts = conn_get_bts(conn);
 
 	/* Sanity -- an error result ensures beyond doubt that we don't use the new lchan below
 	 * when the handover isn't actually allowed to change this conn. */
@@ -858,7 +913,8 @@ void handover_end(struct gsm_subscriber_connection *conn, enum handover_result r
 	if (hdc && hdc->on_handover_end)
 		hdc->on_handover_end(conn, result);
 
-	ho_count(result_counter(ho->scope, result));
+	ho_count_bsc(result_counter_bsc(ho->scope, result));
+	ho_count_bts(bts, result_counter_bts(ho->scope, result));
 
 	LOG_HO(conn, LOGL_INFO, "Result: %s\n", handover_result_name(result));
 
@@ -1143,10 +1199,11 @@ static void handover_start_inter_bsc_out(struct gsm_subscriber_connection *conn,
 	int rc;
 	struct handover *ho = &conn->ho;
 	struct osmo_fsm_inst *fi = conn->ho.fi;
+	struct gsm_bts *bts = conn_get_bts(conn);
 
 	ho->scope = HO_INTER_BSC_OUT;
 	ho_fsm_update_id(fi, "interBSCout");
-	ho_count(BSC_CTR_INTER_BSC_HO_OUT_ATTEMPTED);
+	ho_count(bts, CTR_INTER_BSC_HO_OUT_ATTEMPTED);
 
 	rc = bsc_tx_bssmap_ho_required(conn->lchan, target_cells);
 	if (rc) {
