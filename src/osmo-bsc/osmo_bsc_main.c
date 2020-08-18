@@ -53,6 +53,7 @@
 #include <osmocom/vty/ports.h>
 #include <osmocom/vty/logging.h>
 #include <osmocom/vty/command.h>
+#include <osmocom/vty/cpu_sched_vty.h>
 
 #include <osmocom/mgcp_client/mgcp_client_endpoint_fsm.h>
 
@@ -843,6 +844,7 @@ int main(int argc, char **argv)
 	vty_init(&vty_info);
 	bsc_vty_init(bsc_gsmnet);
 	ctrl_vty_init(tall_bsc_ctx);
+	osmo_cpu_sched_vty_init(tall_bsc_ctx);
 	logging_vty_add_deprecated_subsys(tall_bsc_ctx, "cc");
 	logging_vty_add_deprecated_subsys(tall_bsc_ctx, "mgcp");
 	logging_vty_add_deprecated_subsys(tall_bsc_ctx, "nat");
