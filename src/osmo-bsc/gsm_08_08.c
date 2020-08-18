@@ -198,6 +198,7 @@ static struct bsc_msc_data *bsc_find_msc(struct gsm_subscriber_connection *conn,
 	bool is_emerg = false;
 	int16_t nri_v = -1;
 	bool is_null_nri = false;
+	struct gsm_bts *bts;
 
 	if (msgb_l3len(msg) < sizeof(*gh)) {
 		LOGP(DRSL, LOGL_ERROR, "There is no GSM48 header here.\n");
@@ -221,10 +222,10 @@ static struct bsc_msc_data *bsc_find_msc(struct gsm_subscriber_connection *conn,
 	}
 
 	/* Has the subscriber been paged from a connected MSC? */
-	if (pdisc == GSM48_PDISC_RR && mtype == GSM48_MT_RR_PAG_RESP) {
+	bts = conn_get_bts(conn);
+	if (bts && pdisc == GSM48_PDISC_RR && mtype == GSM48_MT_RR_PAG_RESP) {
 		subscr = bsc_subscr_find_by_mi(conn->network->bsc_subscribers, &mi);
-		struct gsm_bts *bts = conn_get_bts(conn);
-		if (bts && subscr) {
+		if (subscr) {
 			msc_target = paging_get_msc(bts, subscr);
 			bsc_subscr_put(subscr);
 			if (is_msc_usable(msc_target, is_emerg)) {
