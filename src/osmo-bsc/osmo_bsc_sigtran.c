@@ -41,7 +41,8 @@
  * (a copy of the pointer location submitted with osmo_bsc_sigtran_init() */
 static struct llist_head *msc_list;
 
-#define DEFAULT_ASP_REMOTE_IP "127.0.0.1"
+#define DEFAULT_ASP_LOCAL_IP "localhost"
+#define DEFAULT_ASP_REMOTE_IP "localhost"
 
 /* The SCCP stack will not assign connection IDs to us automatically, we
  * will do this ourselves using a counter variable, that counts one up
@@ -566,7 +567,9 @@ int osmo_bsc_sigtran_init(struct llist_head *mscs)
 
 		/* SS7 Protocol stack */
 		default_pc = osmo_ss7_pointcode_parse(NULL, BSC_DEFAULT_PC);
-		sccp = osmo_sccp_simple_client_on_ss7_id(tall_bsc_ctx, inst->cfg.id, inst_name, default_pc, used_proto, 0, NULL,
+		sccp = osmo_sccp_simple_client_on_ss7_id(tall_bsc_ctx, inst->cfg.id, inst_name,
+							 default_pc, used_proto,
+							 0, DEFAULT_ASP_LOCAL_IP,
 							 0, DEFAULT_ASP_REMOTE_IP);
 		if (!sccp)
 			return -EINVAL;
