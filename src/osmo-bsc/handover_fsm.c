@@ -369,12 +369,13 @@ static void handover_start_intra_bsc(struct gsm_subscriber_connection *conn)
 
 	ho->new_lchan = lchan_select_by_type(ho->new_bts, ho->new_lchan_type);
 
-	if (ho->scope & HO_INTRA_CELL)
+	if (ho->scope & HO_INTRA_CELL) {
+		ho_count(bts, CTR_INTRA_CELL_HO_ATTEMPTED);
 		ho_fsm_update_id(fi, "intraCell");
-	else
+	} else {
+		ho_count(bts, CTR_INTRA_BSC_HO_ATTEMPTED);
 		ho_fsm_update_id(fi, "intraBSC");
-
-	ho_count(bts, CTR_HANDOVER_ATTEMPTED);
+	}
 
 	if (!ho->new_lchan) {
 		ho_fail(HO_RESULT_FAIL_NO_CHANNEL,
@@ -697,8 +698,9 @@ static int result_counter_##obj##_##name(enum handover_result result) \
 	} \
 }
 
-FUNC_RESULT_COUNTER(BSC, ASSIGNMENT)
 FUNC_RESULT_COUNTER(BSC, HANDOVER)
+FUNC_RESULT_COUNTER(BSC, INTRA_CELL_HO)
+FUNC_RESULT_COUNTER(BSC, INTRA_BSC_HO)
 FUNC_RESULT_COUNTER(BSC, INTER_BSC_HO_IN)
 
 static int result_counter_BSC_INTER_BSC_HO_OUT(enum handover_result result) {
@@ -718,15 +720,16 @@ static int result_counter_BSC_INTER_BSC_HO_OUT(enum handover_result result) {
 static int result_counter_bsc(enum handover_scope scope, enum handover_result result)
 {
 	switch (scope) {
-	case HO_INTRA_CELL:
-		return result_counter_BSC_ASSIGNMENT(result);
 	default:
 		LOGP(DHO, LOGL_ERROR, "invalid enum handover_scope value: %s\n",
 		     handover_scope_name(scope));
-		/* use "normal" HO_INTRA_BSC counter... */
+		/* use "normal" HO counter... */
 	case HO_NO_HANDOVER:
-	case HO_INTRA_BSC:
 		return result_counter_BSC_HANDOVER(result);
+	case HO_INTRA_CELL:
+		return result_counter_BSC_INTRA_CELL_HO(result);
+	case HO_INTRA_BSC:
+		return result_counter_BSC_INTRA_BSC_HO(result);
 	case HO_INTER_BSC_OUT:
 		return result_counter_BSC_INTER_BSC_HO_OUT(result);
 	case HO_INTER_BSC_IN:
@@ -734,8 +737,9 @@ static int result_counter_bsc(enum handover_scope scope, enum handover_result re
 	}
 }
 
-FUNC_RESULT_COUNTER(BTS, ASSIGNMENT)
 FUNC_RESULT_COUNTER(BTS, HANDOVER)
+FUNC_RESULT_COUNTER(BTS, INTRA_CELL_HO)
+FUNC_RESULT_COUNTER(BTS, INTRA_BSC_HO)
 FUNC_RESULT_COUNTER(BTS, INTER_BSC_HO_IN)
 
 static int result_counter_BTS_INTER_BSC_HO_OUT(enum handover_result result) {
@@ -755,15 +759,16 @@ static int result_counter_BTS_INTER_BSC_HO_OUT(enum handover_result result) {
 static int result_counter_bts(enum handover_scope scope, enum handover_result result)
 {
 	switch (scope) {
-	case HO_INTRA_CELL:
-		return result_counter_BTS_ASSIGNMENT(result);
 	default:
 		LOGP(DHO, LOGL_ERROR, "invalid enum handover_scope value: %s\n",
 		     handover_scope_name(scope));
-		/* use "normal" HO_INTRA_BSC counter... */
+		/* use "normal" HO counter... */
 	case HO_NO_HANDOVER:
-	case HO_INTRA_BSC:
 		return result_counter_BTS_HANDOVER(result);
+	case HO_INTRA_CELL:
+		return result_counter_BTS_INTRA_CELL_HO(result);
+	case HO_INTRA_BSC:
+		return result_counter_BTS_INTRA_BSC_HO(result);
 	case HO_INTER_BSC_OUT:
 		return result_counter_BTS_INTER_BSC_HO_OUT(result);
 	case HO_INTER_BSC_IN:
