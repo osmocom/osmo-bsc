@@ -90,8 +90,7 @@ static struct gsm_network *bsc_network_init(void *ctx)
 
 	net->cbc = talloc_zero(net, struct bsc_cbc_link);
 	if (!net->cbc) {
-		talloc_free(net);
-		return NULL;
+		goto err_out;
 	}
 
 	/* Init back pointer */
@@ -104,16 +103,19 @@ static struct gsm_network *bsc_network_init(void *ctx)
 
 	/* init statistics */
 	net->bsc_ctrs = rate_ctr_group_alloc(net, &bsc_ctrg_desc, 0);
-	if (!net->bsc_ctrs) {
-		talloc_free(net);
-		return NULL;
-	}
+	if (!net->bsc_ctrs)
+		goto err_out;
 	net->bsc_statg = osmo_stat_item_group_alloc(net, &bsc_statg_desc, 0);
-	if (!net->bsc_statg) {
-		rate_ctr_group_free(net->bsc_ctrs);
-		talloc_free(net);
-		return NULL;
-	}
+	if (!net->bsc_statg)
+		goto err_free_bsc_ctr;
+
+	/* init statistics */
+	net->bts_unknown_ctrs = rate_ctr_group_alloc(net, &bts_ctrg_desc, BTS_STAT_IDX_UNKNOWN);
+	if (!net->bts_unknown_ctrs)
+		goto err_free_bsc_ctr_stat;
+	net->bts_unknown_statg = osmo_stat_item_group_alloc(net, &bts_statg_desc, BTS_STAT_IDX_UNKNOWN);
+	if (!net->bts_unknown_statg)
+		goto err_free_all;
 
 	INIT_LLIST_HEAD(&net->bts_rejected);
 	gsm_net_update_ctype(net);
@@ -134,6 +136,16 @@ static struct gsm_network *bsc_network_init(void *ctx)
 	net->cbc->config.listen_hostname = talloc_strdup(net->cbc, "127.0.0.1");
 
 	return net;
+
+err_free_all:
+	rate_ctr_group_free(net->bts_unknown_ctrs);
+err_free_bsc_ctr_stat:
+	osmo_stat_item_group_free(net->bsc_statg);
+err_free_bsc_ctr:
+	rate_ctr_group_free(net->bsc_ctrs);
+err_out:
+	talloc_free(net);
+	return NULL;
 }
 
 int bsc_network_alloc(void)

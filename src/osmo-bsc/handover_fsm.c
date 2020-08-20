@@ -96,6 +96,8 @@
 		       bts_ctr_description[counter].description); \
 		if (bts) \
 			rate_ctr_inc(&bts->bts_ctrs->ctr[counter]); \
+		else \
+			rate_ctr_inc(&conn->network->bts_unknown_ctrs->ctr[counter]); \
 	} while(0)
 
 #define ho_count(bts, counter) do { \

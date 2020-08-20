@@ -1089,6 +1089,11 @@ enum {
 	BSC_STAT_NUM_BTS_TOTAL,
 };
 
+/* BTS counter index if a BTS could not be found
+ * Currently we are limited to bts 0 - 255 in the VTY, but that might change in
+ * the future so use 2**16 */
+#define BTS_STAT_IDX_UNKNOWN (UINT16_MAX + 1)
+
 struct gsm_tz {
 	int override; /* if 0, use system's time zone instead. */
 	int hr; /* hour */
@@ -1122,6 +1127,11 @@ struct gsm_network {
 	unsigned int num_bts;
 	struct llist_head bts_list;
 	struct llist_head bts_rejected;
+
+        /* BTS-based counters when we can't find the actual BTS
+         * e.g. when conn->lchan is NULL */
+        struct rate_ctr_group *bts_unknown_ctrs;
+        struct osmo_stat_item_group *bts_unknown_statg;
 
 	/* see gsm_network_T_defs */
 	struct osmo_tdef *T_defs;
