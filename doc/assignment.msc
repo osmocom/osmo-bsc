@@ -9,6 +9,14 @@ msc {
 	gscon note gscon [label="GSCON_EV_ASSIGNMENT_START\n data=struct assignment_request"];
 	gscon abox gscon [label="ST_ASSIGNMENT"];
 	ass <- gscon [label="assignment_fsm_start()"];
+	|||;
+	--- [label="IF current lchan supports requested channel mode (re-use)"];
+	lchan <- ass [label="LCHAN_EV_REQUEST_MODE_MODIFY"];
+	ass abox ass [label="ASSIGNMENT_ST_\nWAIT_LCHAN_ESTABLISHED"];
+	ass rbox ass [label="see below"];
+
+	|||;
+	--- [label="ELSE: if current lchan does not support requested channel mode (establish new lchan)"];
 	ass abox ass [label="ASSIGNMENT_ST_\nWAIT_LCHAN_ACTIVE"];
 
 	|||;

@@ -22,6 +22,7 @@ labelloc=t; label="Assignment FSM"
 	bssap -> gscon [label="GSCON_EV_ASSIGNMENT_START\ndata=struct assignment_request",style=dotted]
 
 	gscon -> WAIT_LCHAN_ACTIVE [label="assignment_fsm_start()",style=dotted]
+	gscon -> WAIT_LCHAN_ESTABLISHED [label="assignment_fsm_start()\n(mode modify)",style=dotted]
         WAIT_LCHAN_ACTIVE -> lchan [label="lchan_activate()\nFOR_ASSIGNMENT",style=dotted]
 	lchan -> WAIT_LCHAN_ACTIVE [label="ASSIGNMENT_EV_\nLCHAN_\nACTIVE,ERROR",style=dotted]
 	lchan -> WAIT_LCHAN_ESTABLISHED [label="ASSIGNMENT_EV_\nLCHAN_\nESTABLISHED,ERROR",style=dotted]

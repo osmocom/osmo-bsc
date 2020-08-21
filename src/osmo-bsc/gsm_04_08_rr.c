@@ -655,7 +655,6 @@ int gsm48_lchan_modify(struct gsm_lchan *lchan, uint8_t mode)
 
 int gsm48_rx_rr_modif_ack(struct msgb *msg)
 {
-	int rc;
 	struct gsm48_hdr *gh = msgb_l3(msg);
 	struct gsm48_chan_mode_modify *mod =
 				(struct gsm48_chan_mode_modify *) gh->data;
@@ -689,15 +688,7 @@ int gsm48_rx_rr_modif_ack(struct msgb *msg)
 		break;
 	}
 
-	/* We've successfully modified the MS side of the channel,
-	 * now go on to modify the BTS side of the channel */
-	rc = rsl_chan_mode_modify_req(msg->lchan);
-
-	/* FIXME: we not only need to do this after mode modify, but
-	 * also after channel activation */
-	if (is_ipaccess_bts(msg->lchan->ts->trx->bts) && mod->mode != GSM48_CMODE_SIGN)
-		rsl_tx_ipacc_crcx(msg->lchan);
-	return rc;
+	return 0;
 }
 
 int gsm48_parse_meas_rep(struct gsm_meas_rep *rep, struct msgb *msg)
@@ -970,9 +961,9 @@ static void dispatch_dtap(struct gsm_subscriber_connection *conn,
 		case GSM48_MT_RR_CHAN_MODE_MODIF_ACK:
 			rc = gsm48_rx_rr_modif_ack(msg);
 			if (rc < 0)
-				osmo_fsm_inst_dispatch(msg->lchan->fi, LCHAN_EV_CHAN_MODE_MODIF_ERROR, &rc);
+				osmo_fsm_inst_dispatch(msg->lchan->fi, LCHAN_EV_RR_CHAN_MODE_MODIFY_ERROR, &rc);
 			else
-				osmo_fsm_inst_dispatch(msg->lchan->fi, LCHAN_EV_CHAN_MODE_MODIF_ACK, msg);
+				osmo_fsm_inst_dispatch(msg->lchan->fi, LCHAN_EV_RR_CHAN_MODE_MODIFY_ACK, msg);
 			break;
 		case GSM48_MT_RR_CLSM_CHG:
 			handle_classmark_chg(conn, msg);

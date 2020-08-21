@@ -129,6 +129,26 @@ msc {
 	...;
 	...;
 
+	ms rbox mgwep [label="On Mode Modify (e.g. change a TCH lchan from signalling to voice)"];
+	lchan abox lchan [label="LCHAN_ST_\nWAIT_RR_CHAN_\nMODE_MODIFY_ACK"];
+	ms <= lchan [label="RR Chan Mode Modif"];
+	...;
+	ms => lchan [label="RR Chan Mode Modif Ack"];
+	lchan abox lchan [label="LCHAN_ST_\nWAIT_RSL_CHAN_\nMODE_MODIFY_ACK"];
+	ms <= lchan [label="RSL MT Mode Modify Req"];
+	...;
+	ms => lchan [label="RSL MT Mode Modify Ack"];
+	--- [label="IF adding RTP stream"];
+	lchan abox lchan [label="LCHAN_ST_WAIT_\nRLL_RTP_ESTABLISH\nT3101"];
+	lchan rbox rtp [label="See above at 'LCHAN_RTP_EV_LCHAN_READY'"];
+	--- [label="IF not adding RTP stream"];
+	lchan abox lchan [label="LCHAN_ST_\nESTABLISHED"];
+	--- [label="END: whether adding voice stream"];
+
+	...;
+	...;
+	...;
+
 	ms rbox mgwep [label="When the MS or BTS release the lchan"];
 	lchan abox lchan [label="LCHAN_ST_\nESTABLISHED"];
 	ms -> lchan [label="RLL Release Ind for SAPI=0"];

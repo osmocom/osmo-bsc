@@ -1186,10 +1186,12 @@ static int abis_rsl_rx_dchan(struct msgb *msg)
 	case RSL_MT_MODE_MODIFY_ACK:
 		LOG_LCHAN(msg->lchan, LOGL_DEBUG, "CHANNEL MODE MODIFY ACK\n");
 		count_codecs(sign_link->trx->bts, msg->lchan);
+		osmo_fsm_inst_dispatch(msg->lchan->fi, LCHAN_EV_RSL_CHAN_MODE_MODIFY_ACK, NULL);
 		break;
 	case RSL_MT_MODE_MODIFY_NACK:
 		LOG_LCHAN(msg->lchan, LOGL_DEBUG, "CHANNEL MODE MODIFY NACK\n");
 		rate_ctr_inc(&sign_link->trx->bts->bts_ctrs->ctr[BTS_CTR_MODE_MODIFY_NACK]);
+		osmo_fsm_inst_dispatch(msg->lchan->fi, LCHAN_EV_RSL_CHAN_MODE_MODIFY_NACK, NULL);
 		break;
 	case RSL_MT_IPAC_PDCH_ACT_ACK:
 		rc = rsl_rx_ipacc_pdch(msg, "ACT ACK", TS_EV_PDCH_ACT_ACK);
