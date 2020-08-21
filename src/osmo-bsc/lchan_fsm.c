@@ -413,8 +413,24 @@ static void lchan_reset(struct gsm_lchan *lchan)
 static void lchan_fsm_unused_onenter(struct osmo_fsm_inst *fi, uint32_t prev_state)
 {
 	struct gsm_lchan *lchan = lchan_fi_lchan(fi);
+	struct gsm_bts *bts = lchan->ts->trx->bts;
 	lchan_reset(lchan);
 	osmo_fsm_inst_dispatch(lchan->ts->fi, TS_EV_LCHAN_UNUSED, lchan);
+
+	/* Poll the channel request queue, so that waiting calls can make use of the lchan that just
+	 * has become unused now. */
+	abis_rsl_chan_rqd_queue_poll(bts);
+}
+
+static void lchan_fsm_wait_after_error_onenter(struct osmo_fsm_inst *fi, uint32_t prev_state)
+{
+	struct gsm_lchan *lchan = lchan_fi_lchan(fi);
+	struct gsm_bts *bts = lchan->ts->trx->bts;
+
+	/* We also need to poll the channel request queue when the FSM enters the WAIT_AFTER_ERROR
+	 * state. In case of an emergency call the channel request queue will skip the waiting
+	 * period. */
+	abis_rsl_chan_rqd_queue_poll(bts);
 }
 
 /* Configure the multirate setting on this channel. */
@@ -1429,6 +1445,7 @@ static const struct osmo_fsm_state lchan_fsm_states[] = {
 	},
 	[LCHAN_ST_WAIT_AFTER_ERROR] = {
 		.name = "WAIT_AFTER_ERROR",
+		.onenter = lchan_fsm_wait_after_error_onenter,
 		.in_event_mask = 0
 			| S(LCHAN_EV_RTP_RELEASED) /* ignore late lchan_rtp_fsm release events */
 			,
@@ -1494,6 +1511,13 @@ static void lchan_fsm_allstate_action(struct osmo_fsm_inst *fi, uint32_t event, 
 	default:
 		return;
 	}
+}
+
+void lchan_fsm_skip_error(struct gsm_lchan *lchan)
+{
+	struct osmo_fsm_inst *fi = lchan->fi;
+	if (fi->state == LCHAN_ST_WAIT_AFTER_ERROR)
+		lchan_fsm_state_chg(LCHAN_ST_UNUSED);
 }
 
 static int lchan_fsm_timer_cb(struct osmo_fsm_inst *fi)

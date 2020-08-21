@@ -1330,77 +1330,258 @@ int rsl_tx_imm_ass_rej(struct gsm_bts *bts, struct gsm48_req_ref *rqd_ref)
 	return rsl_send_imm_ass_rej(bts, rqd_ref, wait_ind);
 }
 
+struct chan_rqd {
+	struct llist_head entry;
+	struct gsm_bts *bts;
+	struct gsm48_req_ref ref;
+	enum gsm_chreq_reason_t reason;
+	uint8_t ta;
+	/* set to true to mark that the release of the release_lchan is in progress */
+	struct gsm_lchan *release_lchan;
+	time_t timestamp;
+};
+
 /* Handle packet channel rach requests */
-static int rsl_rx_pchan_rqd(struct msgb *msg, struct gsm_bts *bts)
+static int rsl_rx_pchan_rqd(struct chan_rqd *rqd)
 {
-	struct gsm48_req_ref *rqd_ref;
-	struct abis_rsl_dchan_hdr *rqd_hdr = msgb_l2(msg);
-	rqd_ref = (struct gsm48_req_ref *) &rqd_hdr->data[1];
-	uint8_t ra = rqd_ref->ra;
 	uint8_t t1, t2, t3;
 	uint32_t fn;
 	uint8_t rqd_ta;
 	uint8_t is_11bit;
 
 	/* Process rach request and forward contained information to PCU */
-	if (ra == 0x7F) {
+	if (rqd->ref.ra == 0x7F) {
 		is_11bit = 1;
 
 		/* FIXME: Also handle 11 bit rach requests */
-		LOGP(DRSL, LOGL_ERROR, "BTS %d eleven bit access burst not supported yet!\n",bts->nr);
+		LOGP(DRSL, LOGL_ERROR, "BTS %d eleven bit access burst not supported yet!\n",rqd->bts->nr);
 		return -EINVAL;
 	} else {
 		is_11bit = 0;
-		t1 = rqd_ref->t1;
-		t2 = rqd_ref->t2;
-		t3 = rqd_ref->t3_low | (rqd_ref->t3_high << 3);
+		t1 = rqd->ref.t1;
+		t2 = rqd->ref.t2;
+		t3 = rqd->ref.t3_low | (rqd->ref.t3_high << 3);
 		fn = (51 * ((t3-t2) % 26) + t3 + 51 * 26 * t1);
-
-		rqd_ta = rqd_hdr->data[sizeof(struct gsm48_req_ref)+2];
+		rqd_ta = rqd->ta;
 	}
 
-	return pcu_tx_rach_ind(bts, rqd_ta, ra, fn, is_11bit,
+	return pcu_tx_rach_ind(rqd->bts, rqd_ta, rqd->ref.ra, fn, is_11bit,
 			       GSM_L1_BURST_TYPE_ACCESS_0);
+}
+
+/* Protect against RACH DoS attack: If an excessive amount of RACH requests queues up it is likely that the current BTS
+ * is under RACH DoS attack. To prevent excessive memory usage, remove all expired or at least one of the oldest channel
+ * requests from the queue to prevent the queue from growing indefinetly. */
+static void reduce_rach_dos(struct gsm_bts *bts)
+{
+	int rlt = gsm_bts_get_radio_link_timeout(bts);
+	time_t timestamp_current = time(NULL);
+	struct chan_rqd *rqd;
+	struct chan_rqd *rqd_tmp;
+	unsigned int rqd_count = 0;
+
+	/* Drop all expired channel requests in the list */
+	llist_for_each_entry_safe(rqd, rqd_tmp, &bts->chan_rqd_queue, entry) {
+		/* If the channel request is older than the radio link timeout we drop it. This also means that the
+		 * queue is under its overflow limit again. */
+		if (timestamp_current - rqd->timestamp > rlt)
+			llist_del(&rqd->entry);
+		else
+			rqd_count++;
+	}
+
+	/* If we find more than 255 (256) unexpired channel requests in the queue it is very likely that there is a
+	 * problem with RACH dos on this BTS. We drop the first entry in the list to clip the growth of the list. */
+	if (rqd_count > 255) {
+		LOG_BTS(bts, DRSL, LOGL_INFO, "CHAN RQD: more than 255 queued RACH requests -- RACH DoS attack?\n");
+		llist_del(&llist_first_entry(&bts->chan_rqd_queue, struct chan_rqd, entry)->entry);
+	}
 }
 
 /* MS has requested a channel on the RACH */
 static int rsl_rx_chan_rqd(struct msgb *msg)
 {
-	struct lchan_activate_info info;
 	struct e1inp_sign_link *sign_link = msg->dst;
 	struct gsm_bts *bts = sign_link->trx->bts;
 	struct abis_rsl_dchan_hdr *rqd_hdr = msgb_l2(msg);
-	struct gsm48_req_ref *rqd_ref;
-	enum gsm_chan_t lctype;
-	enum gsm_chreq_reason_t chreq_reason;
-	struct gsm_lchan *lchan;
-	uint8_t rqd_ta;
+	struct chan_rqd *rqd;
+
+	reduce_rach_dos(bts);
+
+	rqd = talloc_zero(bts, struct chan_rqd);
+	OSMO_ASSERT(rqd);
+
+	rqd->bts = bts;
+	rqd->timestamp = time(NULL);
 
 	/* parse request reference to be used in immediate assign */
-	if (rqd_hdr->data[0] != RSL_IE_REQ_REFERENCE)
+	if (rqd_hdr->data[0] != RSL_IE_REQ_REFERENCE) {
+		talloc_free(rqd);
 		return -EINVAL;
-
-	rqd_ref = (struct gsm48_req_ref *) &rqd_hdr->data[1];
+	}
+	memcpy(&rqd->ref, &rqd_hdr->data[1], sizeof(rqd->ref));
 
 	/* parse access delay and use as TA */
-	if (rqd_hdr->data[sizeof(struct gsm48_req_ref)+1] != RSL_IE_ACCESS_DELAY)
+	if (rqd_hdr->data[sizeof(struct gsm48_req_ref)+1] != RSL_IE_ACCESS_DELAY) {
+		talloc_free(rqd);
 		return -EINVAL;
-	rqd_ta = rqd_hdr->data[sizeof(struct gsm48_req_ref)+2];
+	}
+	rqd->ta = rqd_hdr->data[sizeof(struct gsm48_req_ref)+2];
 
 	/* Determine channel request cause code */
-	chreq_reason = get_reason_by_chreq(rqd_ref->ra, bts->network->neci);
+	rqd->reason = get_reason_by_chreq(rqd->ref.ra, bts->network->neci);
 	LOG_BTS(bts, DRSL, LOGL_INFO, "CHAN RQD: reason: %s (ra=0x%02x, neci=0x%02x, chreq_reason=0x%02x)\n",
-		get_value_string(gsm_chreq_descs, chreq_reason), rqd_ref->ra, bts->network->neci, chreq_reason);
+		get_value_string(gsm_chreq_descs, rqd->reason), rqd->ref.ra, bts->network->neci, rqd->reason);
 
-	/* Handle PDCH related rach requests (in case of BSC-co-located-PCU */
-	if (chreq_reason == GSM_CHREQ_REASON_PDCH)
-		return rsl_rx_pchan_rqd(msg, bts);
+	rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_CTR_CHREQ_TOTAL]);
+
+	/* Enqueue request */
+	llist_add_tail(&rqd->entry, &bts->chan_rqd_queue);
+
+	/* Forward the request directly. Most request will be finished with one attempt so no queuing will be
+	 * necessary. */
+	abis_rsl_chan_rqd_queue_poll(bts);
+
+	return 0;
+}
+
+/* Find any busy TCH/H or TCH/F lchan */
+static struct gsm_lchan *get_any_lchan(struct gsm_bts *bts)
+{
+	int trx_nr;
+	int ts_nr;
+	struct gsm_bts_trx *trx;
+	struct gsm_bts_trx_ts *ts;
+	struct gsm_lchan *lchan_est = NULL;
+	struct gsm_lchan *lchan_any = NULL;
+	struct gsm_lchan *lchan;
+
+	for (trx_nr = 0; trx_nr < bts->num_trx; trx_nr++) {
+		trx = gsm_bts_trx_num(bts, trx_nr);
+		for (ts_nr = 0; ts_nr < TRX_NR_TS; ts_nr++) {
+			ts = &trx->ts[ts_nr];
+			ts_for_each_lchan(lchan, ts) {
+				if (lchan->type == GSM_LCHAN_TCH_F || lchan->type == GSM_LCHAN_TCH_H) {
+					if (bts->chan_alloc_reverse) {
+						if (lchan->fi->state == LCHAN_ST_ESTABLISHED)
+							lchan_est = lchan;
+						else
+							lchan_any = lchan;
+					} else {
+						if (lchan->fi->state == LCHAN_ST_ESTABLISHED) {
+							if (!lchan_est)
+								lchan_est = lchan;
+						} else {
+							if (!lchan_any)
+								lchan_any = lchan;
+						}
+					}
+				}
+			}
+		}
+	}
+
+	if (lchan_est)
+		return lchan_est;
+	else if (lchan_any)
+		return lchan_any;
+	return NULL;
+}
+
+/* Ensure that an incoming emergency call gets priority, if all voice channels are busy, terminate one regular call.
+ * Return true if freeing of a busy lchan is in progress, but not done yet, return false when done (either successfully
+ * or unsuccessfully). */
+static bool force_free_lchan_for_emergency(struct chan_rqd *rqd)
+{
+	/* If the request is not about an emergency call, we may exit early, without doing anything. */
+	if (rqd->reason != GSM_CHREQ_REASON_EMERG)
+              return false;
+
+	/* First check the situation on the BTS, if we have TCH/H or TCH/F resources available for another (EMERGENCY)
+	 * call. If yes, then no (further) action has to be carried out. */
+	if (lchan_avail_by_type(rqd->bts, GSM_LCHAN_TCH_F)) {
+		LOG_BTS(rqd->bts, DRSL, LOGL_NOTICE,
+			"CHAN RQD/EMERGENCY-PRIORITY: at least one TCH/F is (now) available!\n");
+		return false;
+	}
+	if (lchan_avail_by_type(rqd->bts, GSM_LCHAN_TCH_H)) {
+		LOG_BTS(rqd->bts, DRSL, LOGL_NOTICE,
+			"CHAN RQD/EMERGENCY-PRIORITY: at least one TCH/H is (now) available!\n");
+		return false;
+	}
+
+	/* No free TCH/F or TCH/H was found, we now select one of the busy lchans and initate a release on that lchan.
+	 * This will take a short amount of time. We need to come back and check regulary to see if we managed to
+	 * free up another lchan. */
+	if (!rqd->release_lchan) {
+		/* Pick any busy TCH/F or TCH/H lchan and inititate a channel
+		 * release to make room for the incoming emergency call */
+		rqd->release_lchan = get_any_lchan(rqd->bts);
+		if (!rqd->release_lchan) {
+			/* It can not happen that we first find out that there
+			 * is no TCH/H or TCH/F available and at the same time
+			 * we ware unable to find any busy TCH/H or TCH/F. In
+			 * this case, the BTS probably does not have any
+			 * voice channels configured? */
+			LOG_BTS(rqd->bts, DRSL, LOGL_NOTICE,
+				"CHAN RQD/EMERGENCY-PRIORITY: no TCH/H or TCH/F available - check VTY config!\n");
+			return false;
+		}
+
+		LOG_BTS(rqd->bts, DRSL, LOGL_NOTICE,
+			"CHAN RQD/EMERGENCY-PRIORITY: inducing termination of lchan %s (state:%s) in favor of incoming EMERGENCY CALL!\n",
+			gsm_lchan_name(rqd->release_lchan), osmo_fsm_inst_state_name(rqd->release_lchan->fi));
+
+		lchan_release(rqd->release_lchan, !!(rqd->release_lchan->conn), true, 0);
+	} else {
+		/* BTS is shutting down, give up... */
+		if (rqd->release_lchan->ts->fi->state == TS_ST_NOT_INITIALIZED)
+			return false;
+
+		OSMO_ASSERT(rqd->release_lchan->fi);
+
+		LOG_BTS(rqd->bts, DRSL, LOGL_NOTICE,
+			"CHAN RQD/EMERGENCY-PRIORITY: still terminating lchan %s (state:%s) in favor of incoming EMERGENCY CALL!\n",
+			gsm_lchan_name(rqd->release_lchan), osmo_fsm_inst_state_name(rqd->release_lchan->fi));
+
+		/* If the channel was released in error (not established), the
+		 * lchan FSM automatically blocks the LCHAN for a short time.
+		 * This is not acceptable in an emergency situation, so we skip
+		 * this waiting period. */
+		if (rqd->release_lchan->fi->state == LCHAN_ST_WAIT_AFTER_ERROR)
+			lchan_fsm_skip_error(rqd->release_lchan);
+	}
+
+	/* We are still in the process of releasing a busy lchan in favvor of the incoming emergency call. */
+	return true;
+}
+
+void abis_rsl_chan_rqd_queue_poll(struct gsm_bts *bts)
+{
+	struct lchan_activate_info info;
+	enum gsm_chan_t lctype;
+	struct gsm_lchan *lchan = NULL;
+	struct chan_rqd *rqd;
+
+	rqd = llist_first_entry_or_null(&bts->chan_rqd_queue, struct chan_rqd, entry);
+	if (!rqd)
+		return;
+
+	/* Handle PDCH related rach requests (in case of BSC-co-located-PCU) */
+	if (rqd->reason == GSM_CHREQ_REASON_PDCH) {
+		rsl_rx_pchan_rqd(rqd);
+		return;
+	}
+
+	/* Ensure that emergency calls will get priority over regular calls, however releasing
+	 * lchan in favor of an emergency call may take some time, so we exit here. The lchan_fsm
+	 * will poll again when an lchan becomes available. */
+	if (force_free_lchan_for_emergency(rqd))
+		return;
 
 	/* determine channel type (SDCCH/TCH_F/TCH_H) based on
 	 * request reference RA */
-	lctype = get_ctype_by_chreq(bts->network, rqd_ref->ra);
-
-	rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_CTR_CHREQ_TOTAL]);
+	lctype = get_ctype_by_chreq(bts->network, rqd->ref.ra);
 
 	/* check availability / allocate channel
 	 *
@@ -1410,49 +1591,60 @@ static int rsl_rx_chan_rqd(struct msgb *msg)
 	 * - If there is still no channel available, try a TCH/F.
 	 *
 	 */
-	if (chreq_reason == GSM_CHREQ_REASON_EMERG) {
+	if (rqd->reason == GSM_CHREQ_REASON_EMERG) {
 		if (bts->si_common.rach_control.t2 & 0x4) {
 			LOG_BTS(bts, DRSL, LOGL_NOTICE, "CHAN RQD: MS attempts EMERGENCY CALL although EMERGENCY CALLS "
 				"are not allowed in sysinfo (spec violation by MS!)\n");
-			rsl_tx_imm_ass_rej(bts, rqd_ref);
-			return -EINVAL;
+			rsl_tx_imm_ass_rej(bts, &rqd->ref);
+			llist_del(&rqd->entry);
+			talloc_free(rqd);
+			return;
 		}
 	}
-	lchan = lchan_select_by_type(bts, GSM_LCHAN_SDCCH);
+
+	/* Emergency calls will be put on a free TCH/H or TCH/F directly in the code below, all other channel requests
+	 * will get an SDCCH first (if possible). */
+	if (rqd->reason != GSM_CHREQ_REASON_EMERG)
+		lchan = lchan_select_by_type(bts, GSM_LCHAN_SDCCH);
+
 	if (!lchan) {
 		LOG_BTS(bts, DRSL, LOGL_NOTICE, "CHAN RQD: no resources for %s 0x%x, retrying with %s\n",
-			gsm_lchant_name(GSM_LCHAN_SDCCH), rqd_ref->ra, gsm_lchant_name(GSM_LCHAN_TCH_H));
+			gsm_lchant_name(GSM_LCHAN_SDCCH), rqd->ref.ra, gsm_lchant_name(GSM_LCHAN_TCH_H));
 		lchan = lchan_select_by_type(bts, GSM_LCHAN_TCH_H);
 	}
 	if (!lchan) {
 		LOG_BTS(bts, DRSL, LOGL_NOTICE, "CHAN RQD: no resources for %s 0x%x, retrying with %s\n",
-			gsm_lchant_name(GSM_LCHAN_SDCCH), rqd_ref->ra, gsm_lchant_name(GSM_LCHAN_TCH_F));
+			gsm_lchant_name(GSM_LCHAN_SDCCH), rqd->ref.ra, gsm_lchant_name(GSM_LCHAN_TCH_F));
 		lchan = lchan_select_by_type(bts, GSM_LCHAN_TCH_F);
 	}
 	if (!lchan) {
 		LOG_BTS(bts, DRSL, LOGL_NOTICE, "CHAN RQD: no resources for %s 0x%x\n",
-			gsm_lchant_name(lctype), rqd_ref->ra);
+			gsm_lchant_name(lctype), rqd->ref.ra);
 		rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_CTR_CHREQ_NO_CHANNEL]);
-		rsl_tx_imm_ass_rej(bts, rqd_ref);
-		return 0;
+		rsl_tx_imm_ass_rej(bts, &rqd->ref);
+		llist_del(&rqd->entry);
+		talloc_free(rqd);
+		return;
 	}
 
 	/* save the RACH data as we need it after the CHAN ACT ACK */
 	lchan->rqd_ref = talloc_zero(bts, struct gsm48_req_ref);
 	OSMO_ASSERT(lchan->rqd_ref);
 
-	*(lchan->rqd_ref) = *rqd_ref;
-	lchan->rqd_ta = rqd_ta;
+	*(lchan->rqd_ref) = rqd->ref;
+	lchan->rqd_ta = rqd->ta;
 
 	LOG_LCHAN(lchan, LOGL_DEBUG, "MS: Channel Request: reason=%s ra=0x%02x ta=%d\n",
-		  gsm_chreq_name(chreq_reason), rqd_ref->ra, rqd_ta);
+		  gsm_chreq_name(rqd->reason), rqd->ref.ra, rqd->ta);
 	info = (struct lchan_activate_info){
 		.activ_for = FOR_MS_CHANNEL_REQUEST,
 		.chan_mode = GSM48_CMODE_SIGN,
 	};
 
 	lchan_activate(lchan, &info);
-	return 0;
+	llist_del(&rqd->entry);
+	talloc_free(rqd);
+	return;
 }
 
 int rsl_tx_imm_assignment(struct gsm_lchan *lchan)

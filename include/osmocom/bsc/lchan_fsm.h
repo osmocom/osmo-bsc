@@ -74,3 +74,5 @@ bool lchan_may_receive_data(struct gsm_lchan *lchan);
 void lchan_forget_conn(struct gsm_lchan *lchan);
 
 void lchan_set_last_error(struct gsm_lchan *lchan, const char *fmt, ...);
+
+void lchan_fsm_skip_error(struct gsm_lchan *lchan);

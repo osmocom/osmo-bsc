@@ -634,6 +634,7 @@ struct gsm_bts {
 	struct osmo_timer_list etws_timer;	/* when to stop ETWS PN */
 
 	struct llist_head oml_fail_rep;
+	struct llist_head chan_rqd_queue;
 };
 
 #define GSM_BTS_SI2Q(bts, i)   (struct gsm48_system_information_type_2quater *)((bts)->si_buf[SYSINFO_TYPE_2quater][i])
