@@ -41,9 +41,6 @@
  * (a copy of the pointer location submitted with osmo_bsc_sigtran_init() */
 static struct llist_head *msc_list;
 
-#define RESET_INTERVAL 1	/* sek */
-#define SCCP_MSG_MAXSIZE 1024
-#define CS7_POINTCODE_DEFAULT_OFFSET 2
 #define DEFAULT_ASP_REMOTE_IP "127.0.0.1"
 
 /* The SCCP stack will not assign connection IDs to us automatically, we
