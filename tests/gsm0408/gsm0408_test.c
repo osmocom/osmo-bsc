@@ -142,6 +142,8 @@ static inline void _bts_del(struct gsm_bts *bts, const char *msg)
 	rate_ctr_group_free(bts->bts_ctrs);
 	if (osmo_timer_pending(&bts->acc_mgr.rotate_timer))
 		osmo_timer_del(&bts->acc_mgr.rotate_timer);
+	if (osmo_timer_pending(&bts->chan_rqd_queue_timer))
+		osmo_timer_del(&bts->chan_rqd_queue_timer);
 	/* no need to llist_del(&bts->list), we never registered the bts there. */
 	talloc_free(bts);
 	printf("BTS deallocated OK in %s()\n", msg);
@@ -976,3 +978,4 @@ void pcu_info_update(struct gsm_bts *bts) {};
 int rsl_sacch_filling(struct gsm_bts_trx *trx, uint8_t type, const uint8_t *data, int len) { return 0; }
 int rsl_bcch_info(const struct gsm_bts_trx *trx, enum osmo_sysinfo_type si_type, const uint8_t *data, int len)
 { return 0; }
+int abis_rsl_chan_rqd_queue_poll(struct gsm_bts *bts) { return 0; }

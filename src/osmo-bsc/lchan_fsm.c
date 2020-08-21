@@ -1477,6 +1477,13 @@ static void lchan_fsm_allstate_action(struct osmo_fsm_inst *fi, uint32_t event, 
 	}
 }
 
+void lchan_fsm_skip_error(struct gsm_lchan *lchan)
+{
+	struct osmo_fsm_inst *fi = lchan->fi;
+	if (fi->state == LCHAN_ST_WAIT_AFTER_ERROR)
+		lchan_fsm_state_chg(LCHAN_ST_UNUSED);
+}
+
 static int lchan_fsm_timer_cb(struct osmo_fsm_inst *fi)
 {
 	struct gsm_lchan *lchan = lchan_fi_lchan(fi);

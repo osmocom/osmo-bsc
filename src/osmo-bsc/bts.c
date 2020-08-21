@@ -23,6 +23,7 @@
 #include <osmocom/bsc/gsm_data.h>
 #include <osmocom/bsc/bts.h>
 #include <osmocom/bsc/debug.h>
+#include <osmocom/bsc/abis_rsl.h>
 
 const struct value_string bts_attribute_names[] = {
 	OSMO_VALUE_STRING(BTS_TYPE_VARIANT),
@@ -30,6 +31,14 @@ const struct value_string bts_attribute_names[] = {
 	OSMO_VALUE_STRING(TRX_PHY_VERSION),
 	{ 0, NULL }
 };
+
+/* timer call-back to poll CHAN RQD queue */
+static void chan_rqd_poll_cb(void *data)
+{
+	struct gsm_bts *bts = (struct gsm_bts *)data;
+	abis_rsl_chan_rqd_queue_poll(bts);
+	osmo_timer_schedule(&bts->chan_rqd_queue_timer, 0, 100000);
+}
 
 enum bts_attribute str2btsattr(const char *s)
 {
@@ -319,6 +328,11 @@ struct gsm_bts *gsm_bts_alloc(struct gsm_network *net, uint8_t bts_num)
 	INIT_LLIST_HEAD(&bts->loc_list);
 	INIT_LLIST_HEAD(&bts->local_neighbors);
 	INIT_LLIST_HEAD(&bts->oml_fail_rep);
+	INIT_LLIST_HEAD(&bts->chan_rqd_queue);
+
+	/* Start CHAN RQD queue */
+	osmo_timer_setup(&bts->chan_rqd_queue_timer, chan_rqd_poll_cb, bts);
+	osmo_timer_schedule(&bts->chan_rqd_queue_timer, 0, 0);
 
 	/* Enable all codecs by default. These get reset to a more fine grained selection IF a
 	 * 'codec-support' config appears in the config file (see bsc_vty.c). */

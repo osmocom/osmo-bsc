@@ -162,15 +162,10 @@ struct gsm_lchan *lchan_select_by_chan_mode(struct gsm_bts *bts,
 	return lchan_select_by_type(bts, type);
 }
 
-/* Return a matching lchan from a specific BTS that is currently available. The next logical step is
- * lchan_activate() on it, which would possibly cause dynamic timeslot pchan switching, taken care of by
- * the lchan and timeslot FSMs. */
-struct gsm_lchan *lchan_select_by_type(struct gsm_bts *bts, enum gsm_chan_t type)
+static struct gsm_lchan *_get_lchan_by_type(struct gsm_bts *bts, enum gsm_chan_t type)
 {
 	struct gsm_lchan *lchan = NULL;
 	enum gsm_phys_chan_config first, first_cbch, second, second_cbch;
-
-	LOG_BTS(bts, DRLL, LOGL_DEBUG, "lchan_select_by_type(%s)\n", gsm_lchant_name(type));
 
 	switch (type) {
 	case GSM_LCHAN_SDCCH:
@@ -231,6 +226,20 @@ struct gsm_lchan *lchan_select_by_type(struct gsm_bts *bts, enum gsm_chan_t type
 		LOG_BTS(bts, DRLL, LOGL_ERROR, "Unknown gsm_chan_t %u\n", type);
 	}
 
+	return lchan;
+}
+
+/* Return a matching lchan from a specific BTS that is currently available. The next logical step is
+ * lchan_activate() on it, which would possibly cause dynamic timeslot pchan switching, taken care of by
+ * the lchan and timeslot FSMs. */
+struct gsm_lchan *lchan_select_by_type(struct gsm_bts *bts, enum gsm_chan_t type)
+{
+	struct gsm_lchan *lchan = NULL;
+
+	LOG_BTS(bts, DRLL, LOGL_DEBUG, "lchan_select_by_type(%s)\n", gsm_lchant_name(type));
+
+	lchan = _get_lchan_by_type(bts, type);
+
 	if (lchan) {
 		lchan->type = type;
 		LOG_LCHAN(lchan, LOGL_INFO, "Selected\n");
@@ -239,4 +248,19 @@ struct gsm_lchan *lchan_select_by_type(struct gsm_bts *bts, enum gsm_chan_t type
 			gsm_lchant_name(type));
 
 	return lchan;
+}
+
+/* Look through the available BTS resources and tell if a desired channel type would be available */
+bool lchan_select_avail(struct gsm_bts *bts, enum gsm_chan_t type)
+{
+	struct gsm_lchan *lchan = NULL;
+
+	LOG_BTS(bts, DRLL, LOGL_DEBUG, "lchan_select_avail(%s)\n", gsm_lchant_name(type));
+
+	lchan = _get_lchan_by_type(bts, type);
+
+	if (lchan)
+		return true;
+
+	return false;
 }
