@@ -515,6 +515,11 @@ int bsc_compl_l3(struct gsm_subscriber_connection *conn, struct msgb *msg, uint1
 
 	if (gscon_is_aoip(conn)) {
 		gen_bss_supported_codec_list(&scl, msc, bts);
+		int i;
+		for (i = 0; i < scl->len; i++) {
+			LOGP(DHODEC, LOGL_DEBUG, "xxx Compl L3 codec list %d/%d %s\n", i, scl->len,
+			     gsm0808_speech_codec_type_name(scl->codec[i].type));
+		}
 		if (scl.len > 0)
 			resp = gsm0808_create_layer3_2(msg, cgi, &scl);
 		else {

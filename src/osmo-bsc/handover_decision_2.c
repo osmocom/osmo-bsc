@@ -356,6 +356,11 @@ static bool codec_type_is_supported(struct gsm_subscriber_connection *conn,
 	}
 
 	for (i = 0; i < clist->len; i++) {
+		LOGPHOLCHAN(conn->lchan, LOGL_DEBUG, "speech codec list %d/%d %s\n", i, clist->len,
+			    gsm0808_speech_codec_type_name(clist->codec[i].type));
+	}
+
+	for (i = 0; i < clist->len; i++) {
 		if (clist->codec[i].type == type)
 			return true;
 	}
@@ -1435,15 +1440,23 @@ static int bts_resolve_congestion(struct gsm_bts *bts, int tchf_congestion, int 
 				if (tchf_congestion == 0)
 					continue;
 
+
 				lc = &ts->lchan[0];
+
+				LOGPHOLCHAN(lc, LOGL_DEBUG, "candidate?\n");
+
 				/* omit if channel not active */
 				if (lc->type != GSM_LCHAN_TCH_F
-				    || !lchan_state_is(lc, LCHAN_ST_ESTABLISHED))
+				    || !lchan_state_is(lc, LCHAN_ST_ESTABLISHED)) {
+					LOGPHOLCHAN(lc, LOGL_DEBUG, "wrong state %s\n", lchan_state_name(lc));
 					break;
+				}
 				/* omit if there is an ongoing ho/as */
 				if (!lc->conn || lc->conn->assignment.new_lchan
-				    || lc->conn->ho.fi)
+				    || lc->conn->ho.fi) {
+					LOGPHOLCHAN(lc, LOGL_DEBUG, "still in ho\n");
 					break;
+				}
 				/* We desperately want to resolve congestion, ignore rxlev when
 				 * collecting candidates by passing include_weaker_rxlev=true. */
 				collect_candidates_for_lchan(lc, clist, &candidates, NULL, true);
