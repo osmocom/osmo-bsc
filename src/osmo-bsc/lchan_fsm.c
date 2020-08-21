@@ -1329,7 +1329,7 @@ static const struct value_string lchan_fsm_event_names[] = {
 	{}
 };
 
-void lchan_fsm_allstate_action(struct osmo_fsm_inst *fi, uint32_t event, void *data)
+static void lchan_fsm_allstate_action(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
 	switch (event) {
 
@@ -1349,7 +1349,7 @@ void lchan_fsm_allstate_action(struct osmo_fsm_inst *fi, uint32_t event, void *d
 	}
 }
 
-int lchan_fsm_timer_cb(struct osmo_fsm_inst *fi)
+static int lchan_fsm_timer_cb(struct osmo_fsm_inst *fi)
 {
 	struct gsm_lchan *lchan = lchan_fi_lchan(fi);
 	switch (fi->state) {
@@ -1424,7 +1424,7 @@ exit_release_handler:
 	lchan->release.in_release_handler = false;
 }
 
-void lchan_fsm_cleanup(struct osmo_fsm_inst *fi, enum osmo_fsm_term_cause cause)
+static void lchan_fsm_cleanup(struct osmo_fsm_inst *fi, enum osmo_fsm_term_cause cause)
 {
 	struct gsm_lchan *lchan = lchan_fi_lchan(fi);
 	if (lchan->fi->state == LCHAN_ST_BORKEN) {
