@@ -379,9 +379,8 @@ static int check_requires_voice_stream(struct gsm_subscriber_connection *conn)
 	return 0;
 }
 
-/* Check if the conn is already associated with an lchan. If yes, we will check
- * if that lchan is compatible with the preferred rate/codec. If the lchan
- * turns out to be incompatible we try with the alternate rate/codec. */
+/* Decide if we should re-use an existing lchan. For this we check if the
+ * current lchan is compatible with one of the requested modes. */
 static bool reuse_existing_lchan(struct gsm_subscriber_connection *conn)
 {
 	struct assignment_request *req = &conn->assignment.req;
@@ -395,22 +394,10 @@ static bool reuse_existing_lchan(struct gsm_subscriber_connection *conn)
 	for (i = 0; i < req->n_ch_mode_rate; i++)
 		if (lchan_type_compat_with_mode(conn->lchan->type, &req->ch_mode_rate[i])) {
 			conn->lchan->ch_mode_rate = req->ch_mode_rate[i];
-			break;
+			return true;
 		}
 
-	if (i == req->n_ch_mode_rate)
-		return false;
-
-	if (conn->lchan->tch_mode != conn->lchan->ch_mode_rate.chan_mode) {
-		/* FIXME: send Channel Mode Modify to put the current lchan in the right mode, and kick
-		 * off its RTP stream setup code path. See gsm48_lchan_modify() and
-		 * gsm48_rx_rr_modif_ack(), and see lchan_fsm.h LCHAN_EV_CHAN_MODE_MODIF_* */
-		LOG_ASSIGNMENT(conn, LOGL_DEBUG,
-			       "Current lchan would be compatible, but Channel Mode Modify is not implemented\n");
-		return false;
-	}
-
-	return true;
+	return false;
 }
 
 void assignment_fsm_start(struct gsm_subscriber_connection *conn, struct gsm_bts *bts,
@@ -447,22 +434,57 @@ void assignment_fsm_start(struct gsm_subscriber_connection *conn, struct gsm_bts
 		return;
 
 	/* There may be an already existing lchan, if yes, try to work with
-	 * the existing lchan */
+	 * the existing lchan. */
 	if (reuse_existing_lchan(conn)) {
+
+		/* If the requested mode and the current TCH mode matches up, just send the
+		 * assignment complete directly and be done with the assignment procedure. */
+		if (conn->lchan->tch_mode == conn->lchan->ch_mode_rate.chan_mode) {
+			LOG_ASSIGNMENT(conn, LOGL_DEBUG,
+				       "Current lchan mode is compatible with requested chan_mode,"
+				       " sending BSSMAP Assignment Complete directly."
+				       " requested chan_mode=%s; current lchan is %s\n",
+				       gsm48_chan_mode_name(conn->lchan->ch_mode_rate.chan_mode),
+				       gsm_lchan_name(conn->lchan));
+
+			send_assignment_complete(conn);
+			/* If something went wrong during send_assignment_complete(),
+			 * the fi will be gone from error handling in there. */
+			if (conn->assignment.fi) {
+				assignment_count_result(CTR_ASSIGNMENT_COMPLETED);
+				osmo_fsm_inst_term(conn->assignment.fi, OSMO_FSM_TERM_REGULAR, 0);
+			}
+			return;
+		}
+
+		/* The requested mode does not match the current TCH mode but the lchan is
+		 * compatible. We will initiate a mode modify procedure. */
 		LOG_ASSIGNMENT(conn, LOGL_DEBUG,
-			       "Current lchan is compatible with requested chan_mode,"
-			       " sending BSSMAP Assignment Complete directly."
-			       " requested chan_mode=%s; current lchan is %s\n",
+			       "Current lchan mode is not compatible with requested chan_mode,"
+			       " so we will modify it. requested chan_mode=%s; current lchan is %s\n",
 			       gsm48_chan_mode_name(conn->lchan->ch_mode_rate.chan_mode),
 			       gsm_lchan_name(conn->lchan));
 
-		send_assignment_complete(conn);
-		/* If something went wrong during send_assignment_complete(), the fi will be gone from
-		 * error handling in there. */
-		if (conn->assignment.fi) {
-			assignment_count_result(CTR_ASSIGNMENT_COMPLETED);
-			osmo_fsm_inst_term(conn->assignment.fi, OSMO_FSM_TERM_REGULAR, 0);
-		}
+		info = (struct lchan_activate_info){
+			.activ_for = FOR_ASSIGNMENT,
+			.for_conn = conn,
+			.chan_mode = conn->lchan->ch_mode_rate.chan_mode,
+			.encr = conn->lchan->encr,
+			.s15_s0 = conn->lchan->ch_mode_rate.s15_s0,
+			.requires_voice_stream = conn->assignment.requires_voice_stream,
+			.msc_assigned_cic = req->msc_assigned_cic,
+			.re_use_mgw_endpoint_from_lchan = conn->lchan,
+		};
+
+		osmo_fsm_inst_dispatch(conn->lchan->fi, LCHAN_EV_REQUEST_MODE_MODIFY, &info);
+
+		/* Since we opted not to allocate a new lchan, the new lchan is still the old lchan. */
+		conn->assignment.new_lchan = conn->lchan;
+
+		/* Also we need to skip the RR assignment, so we jump forward and wait for the lchan_fsm until it
+                 * reaches the established state again. */
+		assignment_fsm_state_chg(ASSIGNMENT_ST_WAIT_LCHAN_ESTABLISHED);
+
 		return;
 	}
 
@@ -682,6 +704,7 @@ static const struct osmo_fsm_state assignment_fsm_states[] = {
 		.out_state_mask = 0
 			| S(ASSIGNMENT_ST_WAIT_LCHAN_ACTIVE)
 			| S(ASSIGNMENT_ST_WAIT_RR_ASS_COMPLETE)
+			| S(ASSIGNMENT_ST_WAIT_LCHAN_ESTABLISHED) /* MODE MODIFY */
 			,
 	},
 	[ASSIGNMENT_ST_WAIT_RR_ASS_COMPLETE] = {
