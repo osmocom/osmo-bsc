@@ -415,8 +415,9 @@ static void lchan_fsm_unused_onenter(struct osmo_fsm_inst *fi, uint32_t prev_sta
 }
 
 /* Configure the multirate setting on this channel. */
-static int lchan_mr_config(struct gsm_lchan *lchan, const struct gsm48_multi_rate_conf *mr_conf)
+static int lchan_mr_config(struct gsm_lchan *lchan, uint16_t s15_s0)
 {
+	struct gsm48_multi_rate_conf mr_conf;
 	bool full_rate = (lchan->type == GSM_LCHAN_TCH_F);
 	struct gsm_bts *bts = lchan->ts->trx->bts;
 	struct bsc_msc_data *msc = lchan->conn->sccp.msc;
@@ -425,6 +426,22 @@ static int lchan_mr_config(struct gsm_lchan *lchan, const struct gsm48_multi_rat
 	int rc_rate;
 	struct gsm48_multi_rate_conf mr_conf_filtered;
 	const struct gsm48_multi_rate_conf *mr_conf_bts;
+
+	/* Generate mr conf struct from S15-S0 bits */
+	if (gsm48_mr_cfg_from_gsm0808_sc_cfg(&mr_conf, s15_s0) < 0) {
+		LOG_LCHAN(lchan, LOGL_ERROR,
+			  "can not determine multirate configuration, S15-S0 (%04x) are ambiguous!\n", s15_s0);
+		return -EINVAL;
+	}
+
+	/* Do not include 12.2 kbps rate when S1 is set. */
+	if (lchan->type == GSM_LCHAN_TCH_H && (s15_s0 & GSM0808_SC_CFG_AMR_4_75_5_90_7_40_12_20)) {
+		/* See also 3GPP TS 28.062, chapter 7.11.3.1.3: "In case this Configuration
+		 * "Config-NB-Code = 1" is signalled in the TFO Negotiation for the HR_AMR
+		 * Codec Type,then it shall be assumed that AMR mode 12.2 kbps is (of course)
+		 * not included. */
+		mr_conf.m12_2 = 0;
+	}
 
 	/* There are two different active sets, depending on the channel rate,
 	 * make sure the appropate one is selected. */
@@ -438,7 +455,7 @@ static int lchan_mr_config(struct gsm_lchan *lchan, const struct gsm48_multi_rat
 	 * interface. To ensure that the VTY settings are observed we create
 	 * a manipulated copy of the mr_conf that ensures forbidden codec rates
 	 * are not used in the multirate configuration IE. */
-	rc_rate = calc_amr_rate_intersection(&mr_conf_filtered, &msc->amr_conf, mr_conf);
+	rc_rate = calc_amr_rate_intersection(&mr_conf_filtered, &msc->amr_conf, &mr_conf);
 	if (rc_rate < 0) {
 		LOG_LCHAN(lchan, LOGL_ERROR,
 			  "can not encode multirate configuration (invalid amr rate setting, MSC)\n");
@@ -478,6 +495,7 @@ static int lchan_mr_config(struct gsm_lchan *lchan, const struct gsm48_multi_rat
 		return -EINVAL;
 	}
 
+	lchan->s15_s0 = s15_s0;
 	return 0;
 }
 
@@ -508,7 +526,6 @@ static void lchan_fsm_unused(struct osmo_fsm_inst *fi, uint32_t event, void *dat
 static void lchan_fsm_wait_ts_ready_onenter(struct osmo_fsm_inst *fi, uint32_t prev_state)
 {
 	struct gsm_lchan *lchan = lchan_fi_lchan(fi);
-	struct gsm48_multi_rate_conf mr_conf;
 	struct gsm_bts *bts = lchan->ts->trx->bts;
 	struct osmo_mgcpc_ep_ci *use_mgwep_ci;
 	struct gsm_lchan *old_lchan = lchan->activate.info.re_use_mgw_endpoint_from_lchan;
@@ -537,26 +554,10 @@ static void lchan_fsm_wait_ts_ready_onenter(struct osmo_fsm_inst *fi, uint32_t p
 	}
 
 	if (info->chan_mode == GSM48_CMODE_SPEECH_AMR) {
-		if (gsm48_mr_cfg_from_gsm0808_sc_cfg(&mr_conf, info->s15_s0) < 0) {
-			lchan_fail("Can not determine multirate configuration, S15-S0 (%04x) are ambiguous!\n",
-				   info->s15_s0);
-			return;
-		}
-
-		/* Do not include 12.2 kbps rate when S1 is set. */
-		if (lchan->type == GSM_LCHAN_TCH_H && (info->s15_s0 & GSM0808_SC_CFG_AMR_4_75_5_90_7_40_12_20)) {
-			/* See also 3GPP TS 28.062, chapter 7.11.3.1.3: "In case this Configuration
-			 * "Config-NB-Code = 1" is signalled in the TFO Negotiation for the HR_AMR
-			 * Codec Type,then it shall be assumed that AMR mode 12.2 kbps is (of course)
-			 * not included. */
-			mr_conf.m12_2 = 0;
-		}
-
-		if (lchan_mr_config(lchan, &mr_conf) < 0) {
+		if (lchan_mr_config(lchan, info->s15_s0) < 0) {
 			lchan_fail("Can not generate multirate configuration IE\n");
 			return;
 		}
-		lchan->s15_s0 = info->s15_s0;
 	}
 
 	switch (info->chan_mode) {
