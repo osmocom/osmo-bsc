@@ -195,7 +195,6 @@ static int get_msc_connection_status(struct ctrl_cmd *cmd, void *data)
 
 /* Backwards compat. */
 CTRL_CMD_DEFINE_RO(msc0_connection_status, "msc_connection_status");
-static int msc_connection_status = 0; /* XXX unused */
 
 static int get_msc0_connection_status(struct ctrl_cmd *cmd, void *data)
 {
@@ -214,13 +213,12 @@ static int msc_connection_status_trap_cb(unsigned int subsys, unsigned int signa
 {
 	struct ctrl_cmd *cmd;
 	struct gsm_network *gsmnet = (struct gsm_network *)handler_data;
+	struct bsc_msc_data *msc = (struct bsc_msc_data *)signal_data;
 
-	if (signal == S_MSC_LOST && msc_connection_status == 1) {
+	if (signal == S_MSC_LOST) {
 		LOGP(DCTRL, LOGL_DEBUG, "MSC connection lost, sending TRAP.\n");
-		msc_connection_status = 0;
-	} else if (signal == S_MSC_CONNECTED && msc_connection_status == 0) {
+	} else if (signal == S_MSC_CONNECTED) {
 		LOGP(DCTRL, LOGL_DEBUG, "MSC connection (re)established, sending TRAP.\n");
-		msc_connection_status = 1;
 	} else {
 		return 0;
 	}
@@ -232,11 +230,18 @@ static int msc_connection_status_trap_cb(unsigned int subsys, unsigned int signa
 	}
 
 	cmd->id = "0";
-	cmd->variable = "msc_connection_status";
+	cmd->variable = talloc_asprintf(cmd, "msc.%d.connection_status", msc->nr);
+	cmd->node = msc;
 
-	get_msc0_connection_status(cmd, NULL);
+	get_msc_connection_status(cmd, NULL);
 
 	ctrl_cmd_send_to_all(gsmnet->ctrl, cmd);
+
+	if (msc->nr == 0) {
+		/* Backwards compat. */
+		cmd->variable = "msc_connection_status";
+		ctrl_cmd_send_to_all(gsmnet->ctrl, cmd);
+	}
 
 	talloc_free(cmd);
 
