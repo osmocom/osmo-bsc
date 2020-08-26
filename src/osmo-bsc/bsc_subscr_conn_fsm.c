@@ -1036,9 +1036,14 @@ static void rll_ind_cb(struct gsm_lchan *lchan, uint8_t link_id, void *_data, en
 		rsl_data_request(msg, OBSC_LINKID_CB(msg));
 		break;
 	case BSC_RLLR_IND_REL_IND:
+		bsc_sapi_n_reject(lchan->conn, OBSC_LINKID_CB(msg),
+				  GSM0808_CAUSE_MS_NOT_EQUIPPED);
+		msgb_free(msg);
+		break;
 	case BSC_RLLR_IND_ERR_IND:
 	case BSC_RLLR_IND_TIMEOUT:
-		bsc_sapi_n_reject(lchan->conn, OBSC_LINKID_CB(msg));
+		bsc_sapi_n_reject(lchan->conn, OBSC_LINKID_CB(msg),
+				  GSM0808_CAUSE_BSS_NOT_EQUIPPED);
 		msgb_free(msg);
 		break;
 	}
@@ -1078,7 +1083,7 @@ static void gsm0808_send_rsl_dtap(struct gsm_subscriber_connection *conn,
 		rc = rll_establish(msg->lchan, sapi, rll_ind_cb, msg);
 		if (rc) {
 			msgb_free(msg);
-			bsc_sapi_n_reject(conn, link_id);
+			bsc_sapi_n_reject(conn, link_id, GSM0808_CAUSE_BSS_NOT_EQUIPPED);
 			goto failed_to_send;
 		}
 		return;

@@ -60,7 +60,8 @@ static bool msc_connected(struct gsm_subscriber_connection *conn)
 }
 
 /*! BTS->MSC: tell MSC a SAPI was not established. */
-void bsc_sapi_n_reject(struct gsm_subscriber_connection *conn, uint8_t dlci)
+void bsc_sapi_n_reject(struct gsm_subscriber_connection *conn,
+		       uint8_t dlci, enum gsm0808_cause cause)
 {
 	int rc;
 	struct msgb *resp;
@@ -68,8 +69,9 @@ void bsc_sapi_n_reject(struct gsm_subscriber_connection *conn, uint8_t dlci)
 	if (!msc_connected(conn))
 		return;
 
-	LOGP(DMSC, LOGL_NOTICE, "Tx MSC SAPI N REJECT DLCI=0x%02x\n", dlci);
-	resp = gsm0808_create_sapi_reject(dlci);
+	LOGP(DMSC, LOGL_NOTICE, "Tx MSC SAPI N REJECT (dlci=0x%02x, cause='%s')\n",
+	     dlci, gsm0808_cause_name(cause));
+	resp = gsm0808_create_sapi_reject_cause(dlci, cause);
 	rate_ctr_inc(&conn->sccp.msc->msc_ctrs->ctr[MSC_CTR_BSSMAP_TX_DT1_SAPI_N_REJECT]);
 	rc = osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_TX_SCCP, resp);
 	if (rc != 0)
