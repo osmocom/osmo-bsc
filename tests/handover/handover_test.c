@@ -1794,7 +1794,7 @@ void trau_recv_lchan() {}
 void trau_send_frame() {}
 int osmo_bsc_sigtran_send(struct gsm_subscriber_connection *conn, struct msgb *msg) { return 0; }
 int osmo_bsc_sigtran_open_conn(struct gsm_subscriber_connection *conn, struct msgb *msg) { return 0; }
-void bsc_sapi_n_reject(struct gsm_subscriber_connection *conn, int dlci) {}
+void bsc_sapi_n_reject(struct gsm_subscriber_connection *conn, uint8_t dlci) {}
 void bsc_cipher_mode_compl(struct gsm_subscriber_connection *conn, struct msgb *msg, uint8_t chosen_encr) {}
 int bsc_compl_l3(struct gsm_subscriber_connection *conn, struct msgb *msg, uint16_t chosen_channel)
 { return 0; }

@@ -60,7 +60,7 @@ static bool msc_connected(struct gsm_subscriber_connection *conn)
 }
 
 /*! BTS->MSC: tell MSC a SAPI was not established. */
-void bsc_sapi_n_reject(struct gsm_subscriber_connection *conn, int dlci)
+void bsc_sapi_n_reject(struct gsm_subscriber_connection *conn, uint8_t dlci)
 {
 	int rc;
 	struct msgb *resp;
