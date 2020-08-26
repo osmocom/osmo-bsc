@@ -1026,8 +1026,10 @@ static void rll_ind_cb(struct gsm_lchan *lchan, uint8_t link_id, void *_data, en
 	 * fire after a lchan_release call and before the S_CHALLOC_FREED
 	 * is called. Check if a conn is set before proceeding.
 	 */
-	if (!lchan->conn)
+	if (!lchan->conn) {
+		msgb_free(msg);
 		return;
+	}
 
 	switch (rllr_ind) {
 	case BSC_RLLR_IND_EST_CONF:
