@@ -129,11 +129,11 @@ static struct gsm_network *bsc_network_init(void *ctx)
 	osmo_timer_schedule(&net->t3122_chan_load_timer, T3122_CHAN_LOAD_SAMPLE_INTERVAL, 0);
 
 	net->cbc->net = net;
-	/* no cbc_hostname: client not started by default */
-	net->cbc->config.cbc_port = CBSP_TCP_PORT;
-	/* listen_port == -1: server not started by default */
-	net->cbc->config.listen_port = -1;
-	net->cbc->config.listen_hostname = talloc_strdup(net->cbc, "127.0.0.1");
+	net->cbc->mode = BSC_CBC_LINK_MODE_DISABLED;
+	net->cbc->server.local_addr = bsc_cbc_default_server_local_addr;
+	/* For CBSP client mode: default remote CBSP server port is CBSP_TCP_PORT == 48049. Leave the IP address unset.
+	 * Also leave the local bind for the CBSP client disabled (unconfigured). */
+	net->cbc->client.remote_addr = (struct osmo_sockaddr_str){ .port = CBSP_TCP_PORT, };
 
 	return net;
 

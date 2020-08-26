@@ -2,6 +2,7 @@
 #include <osmocom/bsc/gsm_data.h>
 
 #include <osmocom/core/msgb.h>
+#include <osmocom/core/sockaddr_str.h>
 #include <osmocom/netif/stream.h>
 #include <osmocom/gsm/cbsp.h>
 
@@ -27,21 +28,25 @@ int bts_smscb_rx_cbch_load_ind(struct gsm_bts *bts, bool cbch_extended, bool is_
 			       uint8_t slot_count);
 void bts_cbch_timer_schedule(struct gsm_bts *bts);
 
+enum bsc_cbc_link_mode {
+	BSC_CBC_LINK_MODE_DISABLED = 0,
+	BSC_CBC_LINK_MODE_SERVER,
+	BSC_CBC_LINK_MODE_CLIENT,
+};
+
+extern const struct value_string bsc_cbc_link_mode_names[];
+static inline const char *bsc_cbc_link_mode_name(enum bsc_cbc_link_mode val)
+{ return get_value_string(bsc_cbc_link_mode_names, val); }
+
+extern const struct osmo_sockaddr_str bsc_cbc_default_server_local_addr;
+
 /* cbsp_link.c */
 struct bsc_cbc_link {
 	struct gsm_network *net;
-	struct {
-		/* hostname/IP of CBC */
-		char *cbc_hostname;
-		/* TCP port (Default: 48049) of CBC */
-		int cbc_port;
-		/* local listening port (0 for disabling local server) */
-		int listen_port;
-		/* local listening hostname/IP */
-		char *listen_hostname;
-	} config;
+	enum bsc_cbc_link_mode mode;
 	/* for handling inbound TCP connections */
 	struct {
+		struct osmo_sockaddr_str local_addr;
 		struct osmo_stream_srv *srv;
 		struct osmo_stream_srv_link *link;
 		char *sock_name;
@@ -49,6 +54,7 @@ struct bsc_cbc_link {
 	} server;
 	/* for handling outbound TCP connections */
 	struct {
+		struct osmo_sockaddr_str remote_addr;
 		struct osmo_stream_cli *cli;
 		char *sock_name;
 		struct msgb *msg;

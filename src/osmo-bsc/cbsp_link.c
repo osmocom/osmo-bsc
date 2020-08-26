@@ -35,6 +35,19 @@
  * TCP port, we expect the CBC to connect to us.  If neither of the two is configured,
  * CBSP is effectively disabled */
 
+const struct value_string bsc_cbc_link_mode_names[] = {
+	{ BSC_CBC_LINK_MODE_DISABLED, "disabled" },
+	{ BSC_CBC_LINK_MODE_SERVER, "server" },
+	{ BSC_CBC_LINK_MODE_CLIENT, "client" },
+	{}
+};
+
+const struct osmo_sockaddr_str bsc_cbc_default_server_local_addr = {
+	.af = AF_INET,
+	.ip = "127.0.0.1",
+	.port = CBSP_TCP_PORT,
+};
+
 /*********************************************************************************
  * CBSP Server (inbound TCP connection from CBC)
  *********************************************************************************/
@@ -195,7 +208,7 @@ int bsc_cbc_link_restart(void)
 	struct bsc_cbc_link *cbc = bsc_gsmnet->cbc;
 
 	/* shut down client, if no longer configured */
-	if (cbc->client.cli && !cbc->config.cbc_hostname) {
+	if (cbc->client.cli && cbc->mode != BSC_CBC_LINK_MODE_CLIENT) {
 		LOGP(DCBS, LOGL_NOTICE, "Stopping CBSP client\n");
 		osmo_stream_cli_close(cbc->client.cli);
 		osmo_stream_cli_destroy(cbc->client.cli);
@@ -203,7 +216,7 @@ int bsc_cbc_link_restart(void)
 	}
 
 	/* shut down server, if no longer configured */
-	if (cbc->config.listen_port == -1) {
+	if (cbc->mode != BSC_CBC_LINK_MODE_SERVER) {
 		if (cbc->server.srv || cbc->server.link)
 			LOGP(DCBS, LOGL_NOTICE, "Stopping CBSP server\n");
 		if (cbc->server.srv) {
@@ -217,10 +230,16 @@ int bsc_cbc_link_restart(void)
 		}
 	}
 
-	/* start client, if configured */
-	if (cbc->config.cbc_hostname) {
-		LOGP(DCBS, LOGL_NOTICE, "Starting CBSP Client (to CBC at %s:%u)\n",
-			cbc->config.cbc_hostname, cbc->config.cbc_port);
+	switch (cbc->mode) {
+	case BSC_CBC_LINK_MODE_CLIENT:
+		if (!osmo_sockaddr_str_is_nonzero(&cbc->client.remote_addr)) {
+			LOGP(DCBS, LOGL_ERROR,
+			     "Cannot start CBSP in client mode: invalid remote-ip or -port in 'cbc' / 'client')\n");
+			return -1;
+		}
+
+		LOGP(DCBS, LOGL_NOTICE, "Starting CBSP Client (to CBC at " OSMO_SOCKADDR_STR_FMT ")\n",
+		     OSMO_SOCKADDR_STR_FMT_ARGS(&cbc->client.remote_addr));
 		if (!cbc->client.cli) {
 			cbc->client.cli = osmo_stream_cli_create(cbc);
 			osmo_stream_cli_set_data(cbc->client.cli, cbc);
@@ -229,32 +248,44 @@ int bsc_cbc_link_restart(void)
 			osmo_stream_cli_set_read_cb(cbc->client.cli, cbsp_client_read_cb);
 		}
 		/* CBC side */
-		osmo_stream_cli_set_addr(cbc->client.cli, cbc->config.cbc_hostname);
-		osmo_stream_cli_set_port(cbc->client.cli, cbc->config.cbc_port);
+		osmo_stream_cli_set_addr(cbc->client.cli, cbc->client.remote_addr.ip);
+		osmo_stream_cli_set_port(cbc->client.cli, cbc->client.remote_addr.port);
 		/* Close/Reconnect? */
-		osmo_stream_cli_open(cbc->client.cli);
-	}
+		if (osmo_stream_cli_open(cbc->client.cli) < 0) {
+			LOGP(DCBS, LOGL_ERROR, "Cannot open CBSP client link to " OSMO_SOCKADDR_STR_FMT "\n",
+			     OSMO_SOCKADDR_STR_FMT_ARGS(&cbc->client.remote_addr));
+			return -1;
+		}
+		return 0;
 
-	/* start server, if configured */
-	if (cbc->config.listen_port != -1) {
-		LOGP(DCBS, LOGL_NOTICE, "Starting CBSP Server (bound to %s:%u)\n",
-			cbc->config.listen_hostname, cbc->config.listen_port);
+	case BSC_CBC_LINK_MODE_SERVER:
+		if (!osmo_sockaddr_str_is_set(&cbc->server.local_addr)) {
+			LOGP(DCBS, LOGL_ERROR,
+			     "Cannot start CBSP in server mode: invalid local-ip or -port in 'cbc' / 'server')\n");
+			return -1;
+		}
+		LOGP(DCBS, LOGL_NOTICE, "Starting CBSP Server (listening at " OSMO_SOCKADDR_STR_FMT ")\n",
+		     OSMO_SOCKADDR_STR_FMT_ARGS(&cbc->server.local_addr));
 		if (!cbc->server.link) {
 			LOGP(DCBS, LOGL_NOTICE, "Creating CBSP Server\n");
 			cbc->server.link = osmo_stream_srv_link_create(cbc);
 			osmo_stream_srv_link_set_data(cbc->server.link, cbc);
 			osmo_stream_srv_link_set_accept_cb(cbc->server.link, cbsp_srv_link_accept_cb);
 
-			osmo_stream_srv_link_set_addr(cbc->server.link, cbc->config.listen_hostname);
-			osmo_stream_srv_link_set_port(cbc->server.link, cbc->config.listen_port);
+			osmo_stream_srv_link_set_addr(cbc->server.link, cbc->server.local_addr.ip);
+			osmo_stream_srv_link_set_port(cbc->server.link, cbc->server.local_addr.port);
 
 			if (osmo_stream_srv_link_open(cbc->server.link) < 0) {
-				LOGP(DCBS, LOGL_ERROR, "Cannot open CBSP Server link on %s:%u\n",
-				     cbc->config.listen_hostname, cbc->config.listen_port);
+				LOGP(DCBS, LOGL_ERROR, "Cannot open CBSP Server link at " OSMO_SOCKADDR_STR_FMT ")\n",
+				     OSMO_SOCKADDR_STR_FMT_ARGS(&cbc->server.local_addr));
+				return -1;
 			}
 		}
+		return 0;
+
+	default:
+		return 0;
 	}
-	return 0;
 }
 
 /*! Encode + Transmit a 'decoded' CBSP message over given CBC link
@@ -301,60 +332,71 @@ DEFUN(cfg_cbc, cfg_cbc_cmd,
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_cbc_remote_ip, cfg_cbc_remote_ip_cmd,
-	"remote-ip A.B.C.D",
-	"IP Address of the Cell Broadcast Centre\n"
-	"IP Address of the Cell Broadcast Centre\n")
+DEFUN(cfg_cbc_mode, cfg_cbc_mode_cmd,
+	"mode (server|client|disabled)",
+	"Set OsmoBSC as CBSP server or client\n"
+	"CBSP Server: listen for inbound TCP connections from a remote Cell Broadcast Centre\n"
+	"CBSP Client: establish outbound TCP connection to a remote Cell Broadcast Centre\n"
+	"Disable CBSP link\n")
 {
 	struct bsc_cbc_link *cbc = vty_cbc_data(vty);
-	osmo_talloc_replace_string(cbc, &cbc->config.cbc_hostname, argv[0]);
-	return CMD_SUCCESS;
-}
-DEFUN(cfg_cbc_no_remote_ip, cfg_cbc_no_remote_ip_cmd,
-	"no remote-ip",
-	NO_STR "Remove IP address of CBC; disables outbound CBSP connections\n")
-{
-	struct bsc_cbc_link *cbc = vty_cbc_data(vty);
-	talloc_free(cbc->config.cbc_hostname);
-	cbc->config.cbc_hostname = NULL;
+	cbc->mode = get_string_value(bsc_cbc_link_mode_names, argv[0]);
+	OSMO_ASSERT(cbc->mode >= 0);
+	bsc_cbc_link_restart();
 	return CMD_SUCCESS;
 }
 
-DEFUN(cfg_cbc_remote_port, cfg_cbc_remote_port_cmd,
+DEFUN(cfg_cbc_server, cfg_cbc_server_cmd,
+	"server", "Configure OsmoBSC's CBSP server role\n")
+{
+	vty->node = CBC_SERVER_NODE;
+	return CMD_SUCCESS;
+}
+
+DEFUN(cfg_cbc_server_local_ip, cfg_cbc_server_local_ip_cmd,
+	"local-ip " VTY_IPV46_CMD,
+	"Set IP Address to listen on for inbound CBSP from a Cell Broadcast Centre\n"
+	"IPv4 address\n" "IPv6 address\n")
+{
+	struct bsc_cbc_link *cbc = vty_cbc_data(vty);
+	osmo_sockaddr_str_from_str(&cbc->server.local_addr, argv[0], cbc->server.local_addr.port);
+	return CMD_SUCCESS;
+}
+
+DEFUN(cfg_cbc_server_local_port, cfg_cbc_server_local_port_cmd,
+	"local-port <1-65535>",
+	"Set TCP port to listen on for inbound CBSP from a Cell Broadcast Centre\n"
+	"CBSP port number (Default: " OSMO_STRINGIFY_VAL(CBSP_TCP_PORT) ")\n")
+{
+	struct bsc_cbc_link *cbc = vty_cbc_data(vty);
+	cbc->server.local_addr.port = atoi(argv[0]);
+	return CMD_SUCCESS;
+}
+
+DEFUN(cfg_cbc_client, cfg_cbc_client_cmd,
+	"client", "Configure OsmoBSC's CBSP client role\n")
+{
+	vty->node = CBC_CLIENT_NODE;
+	return CMD_SUCCESS;
+}
+
+DEFUN(cfg_cbc_client_remote_ip, cfg_cbc_client_remote_ip_cmd,
+	"remote-ip " VTY_IPV46_CMD,
+	"Set IP Address of the Cell Broadcast Centre, to establish CBSP link to\n"
+	"IPv4 address\n" "IPv6 address\n")
+{
+	struct bsc_cbc_link *cbc = vty_cbc_data(vty);
+	osmo_sockaddr_str_from_str(&cbc->client.remote_addr, argv[0], cbc->client.remote_addr.port);
+	return CMD_SUCCESS;
+}
+
+DEFUN(cfg_cbc_client_remote_port, cfg_cbc_client_remote_port_cmd,
 	"remote-port <1-65535>",
-	"TCP Port number of the Cell Broadcast Centre (Default: 48049)\n"
-	"TCP Port number of the Cell Broadcast Centre (Default: 48049)\n")
+	"Set TCP port of the Cell Broadcast Centre, to establish CBSP link to\n"
+	"CBSP port number (Default: " OSMO_STRINGIFY_VAL(CBSP_TCP_PORT) ")\n")
 {
 	struct bsc_cbc_link *cbc = vty_cbc_data(vty);
-	cbc->config.cbc_port = atoi(argv[0]);
-	return CMD_SUCCESS;
-}
-
-DEFUN(cfg_cbc_listen_port, cfg_cbc_listen_port_cmd,
-	"listen-port <1-65535>",
-	"Local TCP port at which BSC listens for incoming CBSP connections from CBC\n"
-	"Local TCP port at which BSC listens for incoming CBSP connections from CBC\n")
-{
-	struct bsc_cbc_link *cbc = vty_cbc_data(vty);
-	cbc->config.listen_port = atoi(argv[0]);
-	return CMD_SUCCESS;
-}
-DEFUN(cfg_cbc_no_listen_port, cfg_cbc_no_listen_port_cmd,
-	"no listen-port",
-	NO_STR "Remove CBSP Listen Port; disables inbound CBSP connections\n")
-{
-	struct bsc_cbc_link *cbc = vty_cbc_data(vty);
-	cbc->config.listen_port = -1;
-	return CMD_SUCCESS;
-}
-
-DEFUN(cfg_cbc_listen_ip, cfg_cbc_listen_ip_cmd,
-	"listen-ip A.B.C.D",
-	"Local IP Address where BSC listens for incoming CBC connections (Default: 0.0.0.0)\n"
-	"Local IP Address where BSC listens for incoming CBC connections\n")
-{
-	struct bsc_cbc_link *cbc = vty_cbc_data(vty);
-	osmo_talloc_replace_string(cbc, &cbc->config.listen_hostname, argv[0]);
+	cbc->client.remote_addr.port = atoi(argv[0]);
 	return CMD_SUCCESS;
 }
 
@@ -364,23 +406,56 @@ static struct cmd_node cbc_node = {
 	1,
 };
 
+static struct cmd_node cbc_server_node = {
+	CBC_SERVER_NODE,
+	"%s(config-cbc-server)# ",
+	1,
+};
+
+static struct cmd_node cbc_client_node = {
+	CBC_CLIENT_NODE,
+	"%s(config-cbc-client)# ",
+	1,
+};
+
 static int config_write_cbc(struct vty *vty)
 {
 	struct bsc_cbc_link *cbc = vty_cbc_data(vty);
 
+	bool default_server_local;
+	bool default_client_remote;
+
+	default_server_local = !osmo_sockaddr_str_cmp(&cbc->server.local_addr,
+						      &bsc_cbc_default_server_local_addr);
+	default_client_remote = !osmo_sockaddr_str_is_set(&cbc->client.remote_addr);
+
+	/* If all reflects default values, skip the 'cbc' section */
+	if (cbc->mode == BSC_CBC_LINK_MODE_DISABLED
+	    && default_server_local
+	    && default_client_remote)
+		return 0;
+
 	vty_out(vty, "cbc%s", VTY_NEWLINE);
+	vty_out(vty, " mode %s%s", bsc_cbc_link_mode_name(cbc->mode), VTY_NEWLINE);
 
-	if (cbc->config.cbc_hostname) {
-		vty_out(vty, " remote-ip %s%s", cbc->config.cbc_hostname, VTY_NEWLINE);
-		vty_out(vty, " remote-port %u%s", cbc->config.cbc_port, VTY_NEWLINE);
-	} else
-		vty_out(vty, " no remote-ip%s", VTY_NEWLINE);
+	if (!default_server_local) {
+		vty_out(vty, " server%s", VTY_NEWLINE);
 
-	if (cbc->config.listen_port >= 0) {
-		vty_out(vty, " listen-port %u%s", cbc->config.listen_port, VTY_NEWLINE);
-		vty_out(vty, " listen-ip %s%s", cbc->config.listen_hostname, VTY_NEWLINE);
-	} else
-		vty_out(vty, " no listen-port%s", VTY_NEWLINE);
+		if (strcmp(cbc->server.local_addr.ip, bsc_cbc_default_server_local_addr.ip))
+			vty_out(vty, "  local-ip %s%s", cbc->server.local_addr.ip, VTY_NEWLINE);
+		if (cbc->server.local_addr.port != bsc_cbc_default_server_local_addr.port)
+			vty_out(vty, "  local-port %u%s", cbc->server.local_addr.port, VTY_NEWLINE);
+	}
+
+	if (!default_client_remote) {
+		vty_out(vty, " client%s", VTY_NEWLINE);
+
+		if (osmo_sockaddr_str_is_set(&cbc->client.remote_addr)) {
+			vty_out(vty, "  remote-ip %s%s", cbc->client.remote_addr.ip, VTY_NEWLINE);
+			if (cbc->client.remote_addr.port != CBSP_TCP_PORT)
+				vty_out(vty, "  remote-port %u%s", cbc->client.remote_addr.port, VTY_NEWLINE);
+		}
+	}
 
 	return 0;
 }
@@ -391,34 +466,43 @@ DEFUN(show_cbc, show_cbc_cmd,
 {
 	struct bsc_cbc_link *cbc = vty_cbc_data(vty);
 
-	if (!cbc->config.cbc_hostname)
-		vty_out(vty, "CBSP Client Config: Disabled%s", VTY_NEWLINE);
-	else {
-		vty_out(vty, "CBSP Client Config: CBC IP=%s, CBC Port=%u%s",
-			cbc->config.cbc_hostname, cbc->config.cbc_port, VTY_NEWLINE);
-		vty_out(vty, "CBSP Client Connection: %s%s",
-			cbc->client.sock_name ? cbc->client.sock_name : "Disconnected", VTY_NEWLINE);
-	}
-	if (cbc->config.listen_port < 0)
-		vty_out(vty, "CBSP Server Config: Disabled%s\n", VTY_NEWLINE);
-	else {
-		vty_out(vty, "CBSP Server Config: Listen IP=%s, Port=%u%s\n",
-			cbc->config.listen_hostname, cbc->config.listen_port, VTY_NEWLINE);
+	switch (cbc->mode) {
+	case BSC_CBC_LINK_MODE_DISABLED:
+		vty_out(vty, "CBSP link is disabled%s", VTY_NEWLINE);
+		break;
+
+	case BSC_CBC_LINK_MODE_SERVER:
+		vty_out(vty, "OsmoBSC is configured as CBSP Server on " OSMO_SOCKADDR_STR_FMT "%s",
+			OSMO_SOCKADDR_STR_FMT_ARGS(&cbc->server.local_addr), VTY_NEWLINE);
 		vty_out(vty, "CBSP Server Connection: %s%s",
 			cbc->server.sock_name ? cbc->server.sock_name : "Disconnected", VTY_NEWLINE);
+		break;
+
+	case BSC_CBC_LINK_MODE_CLIENT:
+		vty_out(vty, "OsmoBSC is configured as CBSP Client to remote CBC at " OSMO_SOCKADDR_STR_FMT "%s",
+			OSMO_SOCKADDR_STR_FMT_ARGS(&cbc->client.remote_addr), VTY_NEWLINE);
+		vty_out(vty, "CBSP Client Connection: %s%s",
+			cbc->client.sock_name ? cbc->client.sock_name : "Disconnected", VTY_NEWLINE);
+		break;
 	}
 	return CMD_SUCCESS;
 }
 
 void cbc_vty_init(void)
 {
-	install_element(VIEW_NODE, &show_cbc_cmd);
+	install_element_ve(&show_cbc_cmd);
+
 	install_element(CONFIG_NODE, &cfg_cbc_cmd);
 	install_node(&cbc_node, config_write_cbc);
-	install_element(CBC_NODE, &cfg_cbc_remote_ip_cmd);
-	install_element(CBC_NODE, &cfg_cbc_no_remote_ip_cmd);
-	install_element(CBC_NODE, &cfg_cbc_remote_port_cmd);
-	install_element(CBC_NODE, &cfg_cbc_listen_port_cmd);
-	install_element(CBC_NODE, &cfg_cbc_no_listen_port_cmd);
-	install_element(CBC_NODE, &cfg_cbc_listen_ip_cmd);
+	install_element(CBC_NODE, &cfg_cbc_mode_cmd);
+
+	install_element(CBC_NODE, &cfg_cbc_server_cmd);
+	install_node(&cbc_server_node, NULL);
+	install_element(CBC_SERVER_NODE, &cfg_cbc_server_local_ip_cmd);
+	install_element(CBC_SERVER_NODE, &cfg_cbc_server_local_port_cmd);
+
+	install_element(CBC_NODE, &cfg_cbc_client_cmd);
+	install_node(&cbc_client_node, NULL);
+	install_element(CBC_CLIENT_NODE, &cfg_cbc_client_remote_ip_cmd);
+	install_element(CBC_CLIENT_NODE, &cfg_cbc_client_remote_port_cmd);
 }

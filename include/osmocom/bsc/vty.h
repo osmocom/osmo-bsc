@@ -25,6 +25,8 @@ enum bsc_vty_node {
 	OM2K_CON_GROUP_NODE,
 	BSC_NODE,
 	CBC_NODE,
+	CBC_SERVER_NODE,
+	CBC_CLIENT_NODE,
 };
 
 struct log_info;
