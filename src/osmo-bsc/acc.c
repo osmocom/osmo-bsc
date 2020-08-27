@@ -222,18 +222,28 @@ void get_subset_limits(struct acc_mgr *acc_mgr, uint8_t *first, uint8_t *last)
 	 * Assumption: The permanent set is bigger than the current selected subset */
 	bool is_wrapped = false;
 	uint8_t i = (lowest + 1) % 10;
-	do {
-		if (!acc_is_permanently_barred(acc_mgr->bts, i) &&
-		    !(acc_mgr->allowed_subset_mask & (1 << i))) {
-			is_wrapped = true;
-			break;
-		}
-		i = (i + 1 ) % 10;
-	} while (i != (highest + 1) % 10);
+	if (lowest != highest) { /* len(allowed_subset_mask) > 1 */
+		i = (lowest + 1) % 10;
+		do {
+			if (!acc_is_permanently_barred(acc_mgr->bts, i) &&
+			    !(acc_mgr->allowed_subset_mask & (1 << i))) {
+				is_wrapped = true;
+				break;
+			}
+			i = (i + 1) % 10;
+		} while (i != (highest + 1) % 10);
+	}
 
 	if (is_wrapped) {
-		*first = highest;
-		*last = lowest;
+		/* Assumption: "i" is pointing to the lowest dynamically barred ACC.
+		   Example: 11 1000 00>0<1.  */
+		*last = i - 1;
+		while (acc_is_permanently_barred(acc_mgr->bts, *last))
+			*last -= 1;
+		*first = i + 1;
+		while (acc_is_permanently_barred(acc_mgr->bts, *first) ||
+		       !(acc_mgr->allowed_subset_mask & (1 << (*first))))
+			*first += 1;
 	} else {
 		*first = lowest;
 		*last = highest;
