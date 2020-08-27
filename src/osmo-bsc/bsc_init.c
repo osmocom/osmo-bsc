@@ -134,6 +134,7 @@ static struct gsm_network *bsc_network_init(void *ctx)
 	/* For CBSP client mode: default remote CBSP server port is CBSP_TCP_PORT == 48049. Leave the IP address unset.
 	 * Also leave the local bind for the CBSP client disabled (unconfigured). */
 	net->cbc->client.remote_addr = (struct osmo_sockaddr_str){ .port = CBSP_TCP_PORT, };
+	net->cbc->client.local_addr = (struct osmo_sockaddr_str){};
 
 	return net;
 

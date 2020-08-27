@@ -94,17 +94,28 @@ OsmoBSC(config-cbc-client)# list
 ...
   remote-ip (A.B.C.D|X:X::X:X)
   remote-port <1-65535>
+  local-ip (A.B.C.D|X:X::X:X)
+  local-port <1-65535>
+  no local-ip
+  no local-port
 
 OsmoBSC(config-cbc-client)# ?
 ...
   remote-ip    Set IP Address of the Cell Broadcast Centre, to establish CBSP link to
   remote-port  Set TCP port of the Cell Broadcast Centre, to establish CBSP link to
+  local-ip     Set local bind address for the outbound CBSP link to the Cell Broadcast Centre
+  local-port   Set local bind port for the outbound CBSP link to the Cell Broadcast Centre
+  no           Negate a command or set its defaults
 
 OsmoBSC(config-cbc-client)# remote-ip ?
   A.B.C.D   IPv4 address
   X:X::X:X  IPv6 address
 OsmoBSC(config-cbc-client)# remote-port ?
   <1-65535>  CBSP port number (Default: 48049)
+
+OsmoBSC(config-cbc-client)# no ?
+  local-ip    Remove local IP address bind config for the CBSP client mode
+  local-port  Remove local TCP port bind config for the CBSP client mode
 
 OsmoBSC(config-cbc-client)# remote-ip 1.2.3.4
 OsmoBSC(config-cbc-client)# remote-port 12345
@@ -135,6 +146,50 @@ cbc
  client
   remote-ip 1:2:3:4::5
 ...
+
+OsmoBSC(config-cbc-client)# local-ip 1.2.3.4
+
+OsmoBSC(config-cbc-client)# show running-config
+...
+cbc
+...
+ client
+  remote-ip 1:2:3:4::5
+  local-ip 1.2.3.4
+... !local-port
+
+OsmoBSC(config-cbc-client)# local-port 12345
+
+OsmoBSC(config-cbc-client)# show running-config
+...
+cbc
+...
+ client
+  remote-ip 1:2:3:4::5
+  local-ip 1.2.3.4
+  local-port 12345
+...
+
+OsmoBSC(config-cbc-client)# no local-ip
+
+OsmoBSC(config-cbc-client)# show running-config
+...
+cbc
+...
+ client
+  remote-ip 1:2:3:4::5
+  local-port 12345
+... !local
+
+OsmoBSC(config-cbc-client)# no local-port
+
+OsmoBSC(config-cbc-client)# show running-config
+...
+cbc
+...
+ client
+  remote-ip 1:2:3:4::5
+... !local
 
 OsmoBSC(config-cbc-client)# do show cbc
 CBSP link is disabled

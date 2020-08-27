@@ -250,6 +250,11 @@ int bsc_cbc_link_restart(void)
 		/* CBC side */
 		osmo_stream_cli_set_addr(cbc->client.cli, cbc->client.remote_addr.ip);
 		osmo_stream_cli_set_port(cbc->client.cli, cbc->client.remote_addr.port);
+		/* local side */
+		if (osmo_sockaddr_str_is_set(&cbc->client.local_addr)) {
+			osmo_stream_cli_set_local_addr(cbc->client.cli, cbc->client.local_addr.ip);
+			osmo_stream_cli_set_local_port(cbc->client.cli, cbc->client.local_addr.port);
+		}
 		/* Close/Reconnect? */
 		if (osmo_stream_cli_open(cbc->client.cli) < 0) {
 			LOGP(DCBS, LOGL_ERROR, "Cannot open CBSP client link to " OSMO_SOCKADDR_STR_FMT "\n",
@@ -400,6 +405,44 @@ DEFUN(cfg_cbc_client_remote_port, cfg_cbc_client_remote_port_cmd,
 	return CMD_SUCCESS;
 }
 
+DEFUN(cfg_cbc_client_local_ip, cfg_cbc_client_local_ip_cmd,
+	"local-ip " VTY_IPV46_CMD,
+	"Set local bind address for the outbound CBSP link to the Cell Broadcast Centre\n"
+	"IPv4 address\n" "IPv6 address\n")
+{
+	struct bsc_cbc_link *cbc = vty_cbc_data(vty);
+	osmo_sockaddr_str_from_str(&cbc->client.local_addr, argv[0], cbc->client.local_addr.port);
+	return CMD_SUCCESS;
+}
+
+DEFUN(cfg_cbc_client_local_port, cfg_cbc_client_local_port_cmd,
+	"local-port <1-65535>",
+	"Set local bind port for the outbound CBSP link to the Cell Broadcast Centre\n"
+	"port number\n")
+{
+	struct bsc_cbc_link *cbc = vty_cbc_data(vty);
+	cbc->client.local_addr.port = atoi(argv[0]);
+	return CMD_SUCCESS;
+}
+
+DEFUN(cfg_cbc_client_no_local_ip, cfg_cbc_client_no_local_ip_cmd,
+	"no local-ip",
+	NO_STR "Remove local IP address bind config for the CBSP client mode\n")
+{
+	struct bsc_cbc_link *cbc = vty_cbc_data(vty);
+	cbc->client.local_addr = (struct osmo_sockaddr_str){ .port = cbc->client.local_addr.port };
+	return CMD_SUCCESS;
+}
+
+DEFUN(cfg_cbc_client_no_local_port, cfg_cbc_client_no_local_port_cmd,
+	"no local-port",
+	NO_STR "Remove local TCP port bind config for the CBSP client mode\n")
+{
+	struct bsc_cbc_link *cbc = vty_cbc_data(vty);
+	cbc->client.local_addr.port = 0;
+	return CMD_SUCCESS;
+}
+
 static struct cmd_node cbc_node = {
 	CBC_NODE,
 	"%s(config-cbc)# ",
@@ -424,15 +467,17 @@ static int config_write_cbc(struct vty *vty)
 
 	bool default_server_local;
 	bool default_client_remote;
+	bool default_client_local;
 
 	default_server_local = !osmo_sockaddr_str_cmp(&cbc->server.local_addr,
 						      &bsc_cbc_default_server_local_addr);
 	default_client_remote = !osmo_sockaddr_str_is_set(&cbc->client.remote_addr);
+	default_client_local = !osmo_sockaddr_str_is_set(&cbc->client.local_addr);
 
 	/* If all reflects default values, skip the 'cbc' section */
 	if (cbc->mode == BSC_CBC_LINK_MODE_DISABLED
 	    && default_server_local
-	    && default_client_remote)
+	    && default_client_remote && default_client_local)
 		return 0;
 
 	vty_out(vty, "cbc%s", VTY_NEWLINE);
@@ -447,7 +492,7 @@ static int config_write_cbc(struct vty *vty)
 			vty_out(vty, "  local-port %u%s", cbc->server.local_addr.port, VTY_NEWLINE);
 	}
 
-	if (!default_client_remote) {
+	if (!(default_client_remote && default_client_local)) {
 		vty_out(vty, " client%s", VTY_NEWLINE);
 
 		if (osmo_sockaddr_str_is_set(&cbc->client.remote_addr)) {
@@ -455,6 +500,11 @@ static int config_write_cbc(struct vty *vty)
 			if (cbc->client.remote_addr.port != CBSP_TCP_PORT)
 				vty_out(vty, "  remote-port %u%s", cbc->client.remote_addr.port, VTY_NEWLINE);
 		}
+
+		if (cbc->client.local_addr.ip[0])
+			vty_out(vty, "  local-ip %s%s", cbc->client.local_addr.ip, VTY_NEWLINE);
+		if (cbc->client.local_addr.port)
+			vty_out(vty, "  local-port %u%s", cbc->client.local_addr.port, VTY_NEWLINE);
 	}
 
 	return 0;
@@ -505,4 +555,8 @@ void cbc_vty_init(void)
 	install_node(&cbc_client_node, NULL);
 	install_element(CBC_CLIENT_NODE, &cfg_cbc_client_remote_ip_cmd);
 	install_element(CBC_CLIENT_NODE, &cfg_cbc_client_remote_port_cmd);
+	install_element(CBC_CLIENT_NODE, &cfg_cbc_client_local_ip_cmd);
+	install_element(CBC_CLIENT_NODE, &cfg_cbc_client_local_port_cmd);
+	install_element(CBC_CLIENT_NODE, &cfg_cbc_client_no_local_ip_cmd);
+	install_element(CBC_CLIENT_NODE, &cfg_cbc_client_no_local_port_cmd);
 }

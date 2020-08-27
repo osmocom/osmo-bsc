@@ -55,6 +55,7 @@ struct bsc_cbc_link {
 	/* for handling outbound TCP connections */
 	struct {
 		struct osmo_sockaddr_str remote_addr;
+		struct osmo_sockaddr_str local_addr;
 		struct osmo_stream_cli *cli;
 		char *sock_name;
 		struct msgb *msg;
