@@ -515,8 +515,19 @@ void pcu_info_update(struct gsm_bts *bts) {
 	struct gsm48_rach_control rach_control = {0};
 
 	acc_mgr_apply_acc(&bts->acc_mgr, &rach_control);
-	fprintf(stderr, "%s(): t2=0x%02" PRIx8 " t3=0x%02" PRIx8 "\n",
-		__func__, rach_control.t2, rach_control.t3);
+	fprintf(stderr, "%s(): t2=0x%02" PRIx8 " t3=0x%02" PRIx8 ", allowed:%s%s%s%s%s%s%s%s%s%s\n",
+		__func__, rach_control.t2, rach_control.t3,
+		rach_control.t3 & (1 << 0) ? "" : " 0",
+		rach_control.t3 & (1 << 1) ? "" : " 1",
+		rach_control.t3 & (1 << 2) ? "" : " 2",
+		rach_control.t3 & (1 << 3) ? "" : " 3",
+		rach_control.t3 & (1 << 4) ? "" : " 4",
+		rach_control.t3 & (1 << 5) ? "" : " 5",
+		rach_control.t3 & (1 << 6) ? "" : " 6",
+		rach_control.t3 & (1 << 7) ? "" : " 7",
+		rach_control.t2 & (1 << 0) ? "" : " 8",
+		rach_control.t2 & (1 << 1) ? "" : " 9"
+	);
 }
 
 
