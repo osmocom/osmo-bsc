@@ -197,9 +197,9 @@ static void test_acc_mgr_manual_ramp(struct gsm_network *net)
 	bts_del(bts);
 }
 
-static void test_acc_mgr_rotate(struct gsm_network *net)
+static void test_acc_mgr_rotate(struct gsm_network *net, bool barr_some, unsigned int set_len)
 {
-	fprintf(stderr, "===%s===\n", __func__);
+	fprintf(stderr, "===%s(%s, %u)===\n", __func__, barr_some ? "true" : "false", set_len);
 	int i;
 	struct gsm_bts *bts = bts_init(net);
 	struct acc_mgr *acc_mgr = &bts->acc_mgr;
@@ -215,13 +215,15 @@ static void test_acc_mgr_rotate(struct gsm_network *net)
 	OSMO_ASSERT(acc_mgr->allowed_permanent_count == 10);
 
 	/* Test that rotation won't go over permanently barred ACC*/
-	fprintf(stderr, "*** Barring one ACC ***\n");
-	bts->si_common.rach_control.t2 |= 0x02;
-	acc_mgr_perm_subset_changed(acc_mgr, &bts->si_common.rach_control);
+	if (barr_some) {
+		fprintf(stderr, "*** Barring one ACC ***\n");
+		bts->si_common.rach_control.t2 |= 0x02;
+		acc_mgr_perm_subset_changed(acc_mgr, &bts->si_common.rach_control);
+	}
 
 
 	acc_mgr_set_rotation_time(acc_mgr, 2);
-	acc_mgr_set_len_allowed_adm(acc_mgr, 4);
+	acc_mgr_set_len_allowed_adm(acc_mgr, set_len);
 
 	for (i = 0; i < 20; i++) {
 		osmo_gettimeofday_override_time.tv_sec += 2;
@@ -230,6 +232,16 @@ static void test_acc_mgr_rotate(struct gsm_network *net)
 	}
 
 	bts_del(bts);
+}
+
+static void test_acc_mgr_rotate_all(struct gsm_network *net)
+{
+	int i;
+	for (i = 1; i <= 8; i++) {
+		test_acc_mgr_rotate(net, true, i);
+		test_acc_mgr_rotate(net, false, i);
+	}
+	test_acc_mgr_rotate(net, false, 9);
 }
 
 static void test_acc_ramp(struct gsm_network *net)
@@ -494,7 +506,7 @@ int main(int argc, char **argv)
 
 	test_acc_mgr_no_ramp(net);
 	test_acc_mgr_manual_ramp(net);
-	test_acc_mgr_rotate(net);
+	test_acc_mgr_rotate_all(net);
 	test_acc_ramp(net);
 	test_acc_ramp2(net);
 	test_acc_ramp3(net);
