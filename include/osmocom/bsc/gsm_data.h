@@ -117,7 +117,7 @@ struct assignment_request {
 
 	uint16_t msc_assigned_cic;
 
-	char msc_rtp_addr[INET_ADDRSTRLEN];
+	char msc_rtp_addr[INET6_ADDRSTRLEN];
 	uint16_t msc_rtp_port;
 	bool use_osmux;
 	uint8_t osmux_cid;
@@ -192,7 +192,7 @@ struct handover_in_req {
 	struct gsm0808_cell_id cell_id_target;
 	char cell_id_target_name[64];
 	uint16_t msc_assigned_cic;
-	char msc_assigned_rtp_addr[INET_ADDRSTRLEN];
+	char msc_assigned_rtp_addr[INET6_ADDRSTRLEN];
 	uint16_t msc_assigned_rtp_port;
 };
 
@@ -277,7 +277,7 @@ struct gsm_subscriber_connection {
 		uint16_t msc_assigned_cic;
 
 		/* RTP address where the MSC expects us to send the RTP stream coming from the BTS. */
-		char msc_assigned_rtp_addr[INET_ADDRSTRLEN];
+		char msc_assigned_rtp_addr[INET6_ADDRSTRLEN];
 		uint16_t msc_assigned_rtp_port;
 
 		/* The endpoint at the MGW used to join both BTS and MSC side connections, e.g.
