@@ -382,13 +382,6 @@ static void gscon_fsm_active(struct osmo_fsm_inst *fi, uint32_t event, void *dat
 		return;
 
 	case GSCON_EV_HANDOVER_START:
-		bts = conn_get_bts(conn);
-		rate_ctr_inc(&conn->network->bsc_ctrs->ctr[BSC_CTR_HANDOVER_ATTEMPTED]);
-		if (bts)
-			rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_CTR_HANDOVER_ATTEMPTED]);
-		else
-			rate_ctr_inc(&conn->network->bts_unknown_ctrs->ctr[BTS_CTR_HANDOVER_ATTEMPTED]);
-
 		/* Rely on handover_fsm timeout */
 		if (osmo_fsm_inst_state_chg(fi, ST_HANDOVER, 0, 0))
 			LOGPFSML(fi, LOGL_ERROR, "Cannot transition to HANDOVER state, discarding\n");

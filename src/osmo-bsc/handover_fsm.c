@@ -323,6 +323,7 @@ void handover_start(struct handover_out_req *req)
 	 * is to always create a handover_fsm instance, even if the target cell is not resolved yet. Any failure should
 	 * then call handover_end(), which ensures that the conn snaps back to a valid state. */
 	handover_fsm_alloc(conn);
+	ho_count(conn_get_bts(conn), CTR_HANDOVER_ATTEMPTED);
 
 	ho->from_hodec_id = req->from_hodec_id;
 	ho->new_lchan_type = req->new_lchan_type == GSM_LCHAN_NONE ?
@@ -629,6 +630,7 @@ void handover_start_inter_bsc_in(struct gsm_subscriber_connection *conn,
 		break;
 	}
 
+	ho_count(ho->new_bts, CTR_HANDOVER_ATTEMPTED);
 	ho_count(ho->new_bts, CTR_INTER_BSC_HO_IN_ATTEMPTED);
 
 	if (!ho->new_bts) {
@@ -919,7 +921,9 @@ void handover_end(struct gsm_subscriber_connection *conn, enum handover_result r
 	if (hdc && hdc->on_handover_end)
 		hdc->on_handover_end(conn, result);
 
+	ho_count_bsc(result_counter_BSC_HANDOVER(result));
 	ho_count_bsc(result_counter_bsc(ho->scope, result));
+	ho_count_bts(bts, result_counter_BTS_HANDOVER(result));
 	ho_count_bts(bts, result_counter_bts(ho->scope, result));
 
 	LOG_HO(conn, LOGL_INFO, "Result: %s\n", handover_result_name(result));
