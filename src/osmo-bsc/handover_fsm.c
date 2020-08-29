@@ -716,6 +716,8 @@ static int result_counter_BSC_INTER_BSC_HO_OUT(enum handover_result result) {
 	switch (result) {
 	case HO_RESULT_OK:
 		return BSC_CTR_INTER_BSC_HO_OUT_COMPLETED;
+	case HO_RESULT_FAIL_RR_HO_FAIL:
+		return BSC_CTR_INTER_BSC_HO_OUT_FAILED;
 	case HO_RESULT_FAIL_TIMEOUT:
 		return BSC_CTR_INTER_BSC_HO_OUT_TIMEOUT;
 	case HO_RESULT_CONN_RELEASE:
@@ -751,6 +753,8 @@ static int result_counter_BTS_INTER_BSC_HO_OUT(enum handover_result result) {
 	switch (result) {
 	case HO_RESULT_OK:
 		return BTS_CTR_INTER_BSC_HO_OUT_COMPLETED;
+	case HO_RESULT_FAIL_RR_HO_FAIL:
+		return BTS_CTR_INTER_BSC_HO_OUT_FAILED;
 	case HO_RESULT_FAIL_TIMEOUT:
 		return BTS_CTR_INTER_BSC_HO_OUT_TIMEOUT;
 	case HO_RESULT_CONN_RELEASE:

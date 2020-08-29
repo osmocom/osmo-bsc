@@ -93,6 +93,7 @@ enum bts_counter_id {
 	BTS_CTR_INTER_BSC_HO_OUT_COMPLETED,
 	BTS_CTR_INTER_BSC_HO_OUT_STOPPED,
 	BTS_CTR_INTER_BSC_HO_OUT_TIMEOUT,
+	BTS_CTR_INTER_BSC_HO_OUT_FAILED,
 	BTS_CTR_INTER_BSC_HO_OUT_ERROR,
 	BTS_CTR_INTER_BSC_HO_IN_ATTEMPTED,
 	BTS_CTR_INTER_BSC_HO_IN_COMPLETED,
@@ -190,6 +191,7 @@ static const struct rate_ctr_desc bts_ctr_description[] = {
 						 "Handover to remote BSS completed"},
 	[BTS_CTR_INTER_BSC_HO_OUT_STOPPED] =	{"interbsc_ho_out:stopped", "Connection ended during HO"},
 	[BTS_CTR_INTER_BSC_HO_OUT_TIMEOUT] =	{"interbsc_ho_out:timeout", "Handover timed out"},
+	[BTS_CTR_INTER_BSC_HO_OUT_FAILED] =	{"interbsc_ho_out:failed", "Received Handover Fail message"},
 	[BTS_CTR_INTER_BSC_HO_OUT_ERROR] =	{"interbsc_ho_out:error",
 						 "Handover to remote BSS failed for other reason"},
 

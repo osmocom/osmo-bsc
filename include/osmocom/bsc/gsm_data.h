@@ -987,6 +987,7 @@ enum {
 	BSC_CTR_INTER_BSC_HO_OUT_COMPLETED,
 	BSC_CTR_INTER_BSC_HO_OUT_STOPPED,
 	BSC_CTR_INTER_BSC_HO_OUT_TIMEOUT,
+	BSC_CTR_INTER_BSC_HO_OUT_FAILED,
 	BSC_CTR_INTER_BSC_HO_OUT_ERROR,
 	BSC_CTR_INTER_BSC_HO_IN_ATTEMPTED,
 	BSC_CTR_INTER_BSC_HO_IN_COMPLETED,
@@ -1044,6 +1045,7 @@ static const struct rate_ctr_desc bsc_ctr_description[] = {
 						 "Handover to remote BSS completed"},
 	[BSC_CTR_INTER_BSC_HO_OUT_STOPPED] =	{"interbsc_ho_out:stopped", "Connection ended during HO"},
 	[BSC_CTR_INTER_BSC_HO_OUT_TIMEOUT] =	{"interbsc_ho_out:timeout", "Handover timed out"},
+	[BSC_CTR_INTER_BSC_HO_OUT_FAILED] =	{"interbsc_ho_out:failed", "Received Handover Fail message"},
 	[BSC_CTR_INTER_BSC_HO_OUT_ERROR] =	{"interbsc_ho_out:error",
 						 "Handover to remote BSS failed for other reason"},
 
