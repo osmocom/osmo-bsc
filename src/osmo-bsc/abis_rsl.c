@@ -1305,7 +1305,15 @@ static int rsl_send_imm_ass_rej(struct gsm_bts *bts,
 	/* we need to subtract 1 byte from sizeof(*iar) since ia includes the l2_plen field */
 	iar->l2_plen = GSM48_LEN2PLEN((sizeof(*iar)-1));
 
-	return rsl_imm_assign_cmd(bts, sizeof(*iar), (uint8_t *) iar);
+	/* IAR Rest Octets:
+	 *   0... .... = Extended RA: Not Present
+	 *   .0.. .... = Extended RA: Not Present
+	 *   ..0. .... = Extended RA: Not Present
+	 *   ...0 .... = Extended RA: Not Present
+	 *   .... L... = Additions in Rel-13: Not Present */
+	iar->rest[0] = GSM_MACBLOCK_PADDING & 0x0f;
+
+	return rsl_imm_assign_cmd(bts, sizeof(*iar) + 1, buf);
 }
 
 int rsl_tx_imm_ass_rej(struct gsm_bts *bts, struct gsm48_req_ref *rqd_ref)
