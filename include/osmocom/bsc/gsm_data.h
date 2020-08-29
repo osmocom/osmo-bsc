@@ -303,6 +303,8 @@ struct gsm_subscriber_connection {
 
 	/* MS Power Class, TS 05.05 sec 4.1.1 "Mobile station". 0 means unset. */
 	uint8_t ms_power_class:3;
+
+	bool rx_clear_command;
 };
 
 

@@ -141,6 +141,11 @@ static void gscon_bssmap_clear(struct gsm_subscriber_connection *conn,
 	struct msgb *resp;
 	int rc;
 
+	if (conn->rx_clear_command) {
+		LOGPFSML(conn->fi, LOGL_DEBUG, "Not sending BSSMAP CLEAR REQUEST, already got CLEAR COMMAND from MSC\n");
+		return;
+	}
+
 	LOGPFSML(conn->fi, LOGL_DEBUG, "Tx BSSMAP CLEAR REQUEST(%s) to MSC\n", gsm0808_cause_name(cause));
 	resp = gsm0808_create_clear_rqst(cause);
 	if (!resp) {
@@ -764,6 +769,8 @@ static void gscon_fsm_allstate(struct osmo_fsm_inst *fi, uint32_t event, void *d
 	/* Regular allstate event processing */
 	switch (event) {
 	case GSCON_EV_A_CLEAR_CMD:
+		conn->rx_clear_command = true;
+
 		OSMO_ASSERT(data);
 		ccd = data;
 		if (conn->lchan)
