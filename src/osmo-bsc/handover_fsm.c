@@ -330,8 +330,10 @@ void handover_start(struct handover_out_req *req)
 	ho->target_cell = req->target_nik;
 
 	if (find_handover_target_cell(&local_target_cell, &remote_target_cell,
-				      conn, search_for, true))
-		goto no_handover;
+				      conn, search_for, true)) {
+		handover_end(conn, HO_RESULT_FAIL_NO_CHANNEL);
+		return;
+	}
 
 	if (local_target_cell) {
 		ho->new_bts = local_target_cell;
@@ -346,9 +348,6 @@ void handover_start(struct handover_out_req *req)
 
 	/* should never reach this, because find_handover_target_cell() would have returned error. */
 	OSMO_ASSERT(false);
-
-no_handover:
-	handover_end(conn, HO_RESULT_FAIL_NO_CHANNEL);
 }
 
 /*! Hand over the specified logical channel to the specified new BTS and possibly change the lchan type.
