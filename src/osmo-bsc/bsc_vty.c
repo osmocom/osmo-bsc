@@ -4669,6 +4669,19 @@ DEFUN(cfg_ts_arfcn_del,
 	return CMD_SUCCESS;
 }
 
+DEFUN(cfg_ts_arfcn_del_all,
+      cfg_ts_arfcn_del_all_cmd,
+      "hopping arfcn del-all",
+      HOPPING_STR "Configure hopping ARFCN list\n"
+      "Delete all previously configured entries\n")
+{
+	struct gsm_bts_trx_ts *ts = vty->index;
+
+	bitvec_zero(&ts->hopping.arfcns);
+
+	return CMD_SUCCESS;
+}
+
 DEFUN(cfg_ts_e1_subslot,
       cfg_ts_e1_subslot_cmd,
       "e1 line E1_LINE timeslot <1-31> sub-slot (0|1|2|3|full)",
@@ -6563,6 +6576,7 @@ int bsc_vty_init(struct gsm_network *network)
 	install_element(TS_NODE, &cfg_ts_maio_cmd);
 	install_element(TS_NODE, &cfg_ts_arfcn_add_cmd);
 	install_element(TS_NODE, &cfg_ts_arfcn_del_cmd);
+	install_element(TS_NODE, &cfg_ts_arfcn_del_all_cmd);
 	install_element(TS_NODE, &cfg_ts_e1_subslot_cmd);
 
 	install_element(ENABLE_NODE, &drop_bts_cmd);
