@@ -771,6 +771,11 @@ static void gscon_fsm_allstate(struct osmo_fsm_inst *fi, uint32_t event, void *d
 	case GSCON_EV_A_CLEAR_CMD:
 		conn->rx_clear_command = true;
 
+		/* Give the handover_fsm a chance to book this as handover success before tearing down everything,
+		 * making it look like a sudden death failure. */
+		if (conn->ho.fi)
+			osmo_fsm_inst_dispatch(conn->ho.fi, HO_EV_CONN_RELEASING, NULL);
+
 		OSMO_ASSERT(data);
 		ccd = data;
 		if (conn->lchan)

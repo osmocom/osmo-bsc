@@ -1269,6 +1269,8 @@ static void ho_out_fsm_wait_clear(struct osmo_fsm_inst *fi, uint32_t event, void
 {
 	struct gsm_subscriber_connection *conn = ho_fi_conn(fi);
 	switch (event) {
+		/* See also ho_fsm_allstate_action() for ho_success() on HO_EV_CONN_RELEASING */
+
 	case HO_EV_RR_HO_FAIL:
 		ho_fail(HO_RESULT_FAIL_RR_HO_FAIL, "Received RR Handover Failure message");
 		return;
