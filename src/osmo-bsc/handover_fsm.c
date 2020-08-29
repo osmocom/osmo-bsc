@@ -81,6 +81,9 @@
 /* Assume presence of local var 'conn' as struct gsm_subscriber_connection.
  * This is a macro to preserve the source file and line number in logging. */
 #define ho_count_bsc(counter) do { \
+		/* If a handover target could not be found, the counter index may be -1. */ \
+		if (counter < 0) \
+			break; \
 		LOG_HO(conn, LOGL_DEBUG, "(BSC) incrementing rate counter: %s %s\n", \
 		       bsc_ctr_description[counter].name, \
 		       bsc_ctr_description[counter].description); \
@@ -91,6 +94,9 @@
  * Handles bts == NULL gracefully
  * This is a macro to preserve the source file and line number in logging. */
 #define ho_count_bts(bts, counter) do { \
+		/* If a handover target could not be found, the counter index may be -1. */ \
+		if (counter < 0) \
+			break; \
 		LOG_HO(conn, LOGL_DEBUG, "(BTS) incrementing rate counter: %s %s\n", \
 		       bts_ctr_description[counter].name, \
 		       bts_ctr_description[counter].description); \
@@ -724,11 +730,7 @@ static int result_counter_bsc(enum handover_scope scope, enum handover_result re
 {
 	switch (scope) {
 	default:
-		LOGP(DHO, LOGL_ERROR, "invalid enum handover_scope value: %s\n",
-		     handover_scope_name(scope));
-		/* use "normal" HO counter... */
-	case HO_NO_HANDOVER:
-		return result_counter_BSC_HANDOVER(result);
+		return -1;
 	case HO_INTRA_CELL:
 		return result_counter_BSC_INTRA_CELL_HO(result);
 	case HO_INTRA_BSC:
@@ -763,11 +765,7 @@ static int result_counter_bts(enum handover_scope scope, enum handover_result re
 {
 	switch (scope) {
 	default:
-		LOGP(DHO, LOGL_ERROR, "invalid enum handover_scope value: %s\n",
-		     handover_scope_name(scope));
-		/* use "normal" HO counter... */
-	case HO_NO_HANDOVER:
-		return result_counter_BTS_HANDOVER(result);
+		return -1;
 	case HO_INTRA_CELL:
 		return result_counter_BTS_INTRA_CELL_HO(result);
 	case HO_INTRA_BSC:
