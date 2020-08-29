@@ -365,7 +365,7 @@ static void handover_start_intra_bsc(struct gsm_subscriber_connection *conn)
 	OSMO_ASSERT(ho->new_lchan_type != GSM_LCHAN_NONE);
 	OSMO_ASSERT(!ho->new_lchan);
 
-	ho->scope = (ho->new_bts == conn->lchan->ts->trx->bts) ? HO_INTRA_CELL : HO_INTRA_BSC;
+	ho->scope = (ho->new_bts == bts) ? HO_INTRA_CELL : HO_INTRA_BSC;
 	ho->ho_ref = g_next_ho_ref++;
 	ho->async = true;
 
