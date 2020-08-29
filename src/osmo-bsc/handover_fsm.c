@@ -331,7 +331,7 @@ void handover_start(struct handover_out_req *req)
 
 	if (find_handover_target_cell(&local_target_cell, &remote_target_cell,
 				      conn, search_for, true)) {
-		handover_end(conn, HO_RESULT_FAIL_NO_CHANNEL);
+		handover_end(conn, HO_RESULT_ERROR);
 		return;
 	}
 
