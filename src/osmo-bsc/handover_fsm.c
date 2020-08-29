@@ -919,6 +919,11 @@ void handover_end(struct gsm_subscriber_connection *conn, enum handover_result r
 	if (hdc && hdc->on_handover_end)
 		hdc->on_handover_end(conn, result);
 
+	/* HO_INTER_BSC_IN has the source BTS on a remote BSS, so count all of those on the target BTS; also count
+	 * errors onto the HO target BTS if no lchan was obtained. */
+	if (ho->scope & HO_INTER_BSC_IN)
+		bts = ho->new_bts;
+
 	ho_count_bsc(result_counter_BSC_HANDOVER(result));
 	ho_count_bsc(result_counter_bsc(ho->scope, result));
 	ho_count_bts(bts, result_counter_BTS_HANDOVER(result));
