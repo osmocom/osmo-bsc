@@ -183,31 +183,33 @@ int find_handover_target_cell(struct gsm_bts **local_target_cell_p,
 		/* No explicit neighbor entries exist for this BTS. Hence apply the legacy default behavior that all
 		 * local cells are neighbors. */
 		struct gsm_bts *bts;
-		struct gsm_bts *wildcard_match = NULL;
+		int i;
 
 		LOG_HO(conn, LOGL_DEBUG, "No explicit neighbors, regarding all local cells as neighbors\n");
 
-		llist_for_each_entry(bts, &net->bts_list, list) {
-			struct neighbor_ident_key bts_key = *bts_ident_key(bts);
-			if (neighbor_ident_key_match(&bts_key, search_for, true)) {
-				if (local_target_cell) {
-					if (log_errors)
-						LOG_HO(conn, LOGL_ERROR,
-						       "NEIGHBOR CONFIGURATION ERROR: Multiple local cells match %s"
-						       " (BTS %d and BTS %d)."
-						       " Aborting Handover because of ambiguous network topology.\n",
-						       neighbor_ident_key_name(search_for),
-						       local_target_cell->nr, bts->nr);
-					return -EINVAL;
+		/* For i == 0, look for an exact 1:1 match of all ident_key fields.
+		 * For i == 1, interpret wildcard values, when no exact match exists. */
+		for (i = 0; i < 2; i++) {
+			bool exact_match = !i;
+			llist_for_each_entry(bts, &net->bts_list, list) {
+				struct neighbor_ident_key bts_key = *bts_ident_key(bts);
+				if (neighbor_ident_key_match(&bts_key, search_for, exact_match)) {
+					if (local_target_cell) {
+						if (log_errors)
+							LOG_HO(conn, LOGL_ERROR,
+							       "NEIGHBOR CONFIGURATION ERROR: Multiple local cells match %s"
+							       " (BTS %d and BTS %d)."
+							       " Aborting Handover because of ambiguous network topology.\n",
+							       neighbor_ident_key_name(search_for),
+							       local_target_cell->nr, bts->nr);
+						return -EINVAL;
+					}
+					local_target_cell = bts;
 				}
-				local_target_cell = bts;
 			}
-			if (neighbor_ident_key_match(&bts_key, search_for, false))
-				wildcard_match = bts;
+			if (local_target_cell)
+				break;
 		}
-
-		if (!local_target_cell)
-			local_target_cell = wildcard_match;
 
 		if (!local_target_cell) {
 			if (log_errors)
