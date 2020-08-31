@@ -347,7 +347,12 @@ DEFUN(cfg_cbc_mode, cfg_cbc_mode_cmd,
 	struct bsc_cbc_link *cbc = vty_cbc_data(vty);
 	cbc->mode = get_string_value(bsc_cbc_link_mode_names, argv[0]);
 	OSMO_ASSERT(cbc->mode >= 0);
-	bsc_cbc_link_restart();
+
+	/* Immediately restart/stop CBSP only when coming from a telnet session. The settings from the config file take
+	 * effect in osmo_bsc_main.c's invocation of bsc_cbc_link_restart(). */
+	if (vty->type != VTY_FILE)
+		bsc_cbc_link_restart();
+
 	return CMD_SUCCESS;
 }
 
