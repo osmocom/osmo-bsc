@@ -164,7 +164,7 @@ int osmo_bsc_msc_init(struct bsc_msc_data *msc)
 	else
 		mgw_port = MGCP_CLIENT_REMOTE_PORT_DEFAULT;
 
-	rc = osmo_sock_init2_ofd(&msc->mgcp_ipa.ofd, AF_INET, SOCK_DGRAM, IPPROTO_UDP,
+	rc = osmo_sock_init2_ofd(&msc->mgcp_ipa.ofd, AF_UNSPEC, SOCK_DGRAM, IPPROTO_UDP,
 				 msc->mgcp_ipa.local_addr, msc->mgcp_ipa.local_port,
 				 net->mgw.conf->remote_addr, mgw_port,
 				 OSMO_SOCK_F_BIND | OSMO_SOCK_F_CONNECT);
@@ -256,7 +256,7 @@ struct bsc_msc_data *osmo_msc_data_alloc(struct gsm_network *net, int nr)
 	msc_data->audio_support[4]->hr = 1;
 
 	osmo_fd_setup(&msc_data->mgcp_ipa.ofd, -1, OSMO_FD_READ, &bsc_sccplite_mgcp_proxy_cb, msc_data, 0);
-	msc_data->mgcp_ipa.local_addr = talloc_strdup(msc_data, "0.0.0.0");
+	msc_data->mgcp_ipa.local_addr = NULL; /* = INADDR(6)_ANY */
 	msc_data->mgcp_ipa.local_port = 0; /* dynamic */
 
 	msc_data->nri_ranges = osmo_nri_ranges_alloc(msc_data);
