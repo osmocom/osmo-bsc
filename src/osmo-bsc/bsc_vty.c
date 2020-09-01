@@ -955,12 +955,14 @@ static void config_write_bts_single(struct vty *vty, struct gsm_bts *bts)
 	if (bts->acc_mgr.rotation_time_sec != ACC_MGR_QUANTUM_DEFAULT)
 		vty_out(vty, "  access-control-class-rotate-quantum %" PRIu32 "%s", bts->acc_mgr.rotation_time_sec, VTY_NEWLINE);
 	vty_out(vty, "  %saccess-control-class-ramping%s", acc_ramp_is_enabled(&bts->acc_ramp) ? "" : "no ", VTY_NEWLINE);
-	vty_out(vty, "  access-control-class-ramping-step-interval %u%s",
-		acc_ramp_get_step_interval(&bts->acc_ramp), VTY_NEWLINE);
-	vty_out(vty, "  access-control-class-ramping-step-size %u%s", acc_ramp_get_step_size(&bts->acc_ramp),
-		VTY_NEWLINE);
-	vty_out(vty, "  access-control-class-ramping-chan-load %u %u%s",
-		bts->acc_ramp.chan_load_lower_threshold, bts->acc_ramp.chan_load_upper_threshold, VTY_NEWLINE);
+	if (acc_ramp_is_enabled(&bts->acc_ramp)) {
+		vty_out(vty, "  access-control-class-ramping-step-interval %u%s",
+			acc_ramp_get_step_interval(&bts->acc_ramp), VTY_NEWLINE);
+		vty_out(vty, "  access-control-class-ramping-step-size %u%s", acc_ramp_get_step_size(&bts->acc_ramp),
+			VTY_NEWLINE);
+		vty_out(vty, "  access-control-class-ramping-chan-load %u %u%s",
+			bts->acc_ramp.chan_load_lower_threshold, bts->acc_ramp.chan_load_upper_threshold, VTY_NEWLINE);
+	}
 	if (!bts->si_unused_send_empty)
 		vty_out(vty, "  no system-information unused-send-empty%s", VTY_NEWLINE);
 	for (i = SYSINFO_TYPE_1; i < _MAX_SYSINFO_TYPE; i++) {
