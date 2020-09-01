@@ -1,0 +1,72 @@
+{hscale=2}
+
+ms = MS/BTS
+bsc = BSC
+smlc = SMLC
+msc = MSC
+
+|||		Location Services (LCS): Perform Location Request using TA
+
+|||
+---		MS in DEDICATED MODE (currently active)
+
+ms > bsc	earlier Measurement Report provides Timing Advance
+
+bsc < msc	PERFORM LOCATION REQUEST
+		3GPP TS 48.008 3.2.1.71
+
+bsc > smlc	BSSMAP-LE PERFORM LOCATION REQUEST
+		3GPP TS 49.031 9.1
+		with BSSLAP APDU = TA Layer3
+		3GPP TS 48.071 4.2.8
+
+smlc () .	SMLC uses TA included in TA Layer3
+
+bsc < smlc	BSSMAP-LE PERFORM LOCATION RESPONSE
+		3GPP TS 49.031 9.2
+
+bsc > msc	PERFORM LOCATION RESPONSE
+		3GPP TS 48.008 3.2.1.72
+
+...
+...
+---		MS in IDLE MODE (not connected)
+
+bsc < msc	PERFORM LOCATION REQUEST
+		3GPP TS 48.008 3.2.1.71
+
+bsc > smlc	BSSMAP-LE PERFORM LOCATION REQUEST
+		3GPP TS 49.031 9.1
+
+smlc () .	SMLC needs TA information,
+		asks BSC via BSSLAP
+
+bsc < smlc	BSSMAP-LE CONNECTION ORIENTED INFORMATION
+		3GPP TS 49.031 9.12
+		with BSSLAP APDU = TA Request
+		3GPP TS 48.071 4.2.1
+
+
+ms < bsc	RR Paging Request
+		3GPP TS 48.018 9.1.22-24
+
+ms > bsc	RSL CHANNEL REQUIRED
+		3GPP TS 48.058 8.5.3
+		includes Access Delay (9.3.17) == Timing Advance
+
+ms > bsc	RR Paging Response
+		3GPP TS 48.018 9.1.25
+
+ms < bsc	RF CHANNEL RELEASE
+		3GPP TS 48.058 8.4.14
+
+bsc > smlc	BSSMAP-LE CONNECTION ORIENTED INFORMATION
+		3GPP TS 49.031 9.12
+		with BSSLAP APDU = TA Response
+		3GPP TS 48.071 4.2.2
+
+bsc < smlc	BSSMAP-LE PERFORM LOCATION RESPONSE
+		3GPP TS 49.031 9.2
+
+bsc > msc	PERFORM LOCATION RESPONSE
+		3GPP TS 48.008 3.2.1.72
