@@ -330,6 +330,7 @@ static void lchan_rtp_fsm_wait_ipacc_mdcx_ack_onenter(struct osmo_fsm_inst *fi, 
 	int rc;
 	struct gsm_lchan *lchan = lchan_rtp_fi_lchan(fi);
 	const struct mgcp_conn_peer *mgw_rtp;
+	struct in_addr sin;
 
 	if (lchan->release.requested) {
 		lchan_rtp_fail("Release requested while activating");
@@ -344,8 +345,13 @@ static void lchan_rtp_fsm_wait_ipacc_mdcx_ack_onenter(struct osmo_fsm_inst *fi, 
 		return;
 	}
 
-	/* Other RTP settings were already setup in lchan_rtp_fsm_wait_ipacc_crcx_ack_onenter() */
-	lchan->abis_ip.connect_ip = ntohl(inet_addr(mgw_rtp->addr));
+	/* Other RTP settings were already set up in lchan_rtp_fsm_wait_ipacc_crcx_ack_onenter() */
+	if (inet_pton(AF_INET, mgw_rtp->addr, &sin) != 1) {
+		/* Only IPv4 addresses are supported in IPACC */
+		lchan_rtp_fail("Invalid remote IPv4 address %s", mgw_rtp->addr);
+		return;
+	}
+	lchan->abis_ip.connect_ip = ntohl(sin.s_addr);
 	lchan->abis_ip.connect_port = mgw_rtp->port;
 
 	/* send-recv */
