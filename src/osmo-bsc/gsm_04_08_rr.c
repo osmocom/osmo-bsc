@@ -523,22 +523,23 @@ struct msgb *gsm48_make_ho_cmd(struct gsm_lchan *new_lchan, uint8_t power_comman
 	if (new_lchan->ts->hopping.enabled) {
 		struct gsm_bts *bts = new_lchan->ts->trx->bts;
 		struct gsm48_system_information_type_1 *si1;
-		uint8_t *cur;
 
 		si1 = GSM_BTS_SI(bts, SYSINFO_TYPE_1);
 		/* Copy the Cell Chan Desc (ARFCNS in this cell) */
-		msgb_put_u8(msg, GSM48_IE_CELL_CH_DESC);
-		cur = msgb_put(msg, GSM48_HOCMD_CCHDESC_LEN);
-		memcpy(cur, si1->cell_channel_description,
-			GSM48_HOCMD_CCHDESC_LEN);
-		/* Copy the Mobile Allocation */
-		msgb_tlv_put(msg, GSM48_IE_MA_BEFORE,
-			     new_lchan->ts->hopping.ma_len,
-			     new_lchan->ts->hopping.ma_data);
+		msgb_tv_fixed_put(msg, GSM48_IE_CELL_CH_DESC,
+				  GSM48_HOCMD_CCHDESC_LEN,
+				  si1->cell_channel_description);
 	}
 	/* FIXME: optional bits for type of synchronization? */
 
 	msgb_tv_put(msg, GSM48_IE_CHANMODE_1, new_lchan->tch_mode);
+
+	/* Mobile Allocation (after time), TLV (see 3GPP TS 44.018, 10.5.2.21) */
+	if (new_lchan->ts->hopping.enabled) {
+		msgb_tlv_put(msg, GSM48_IE_MA_AFTER,
+			     new_lchan->ts->hopping.ma_len,
+			     new_lchan->ts->hopping.ma_data);
+	}
 
 	/* in case of multi rate we need to attach a config */
 	if (new_lchan->tch_mode == GSM48_CMODE_SPEECH_AMR)
