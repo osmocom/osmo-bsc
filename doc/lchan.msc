@@ -68,10 +68,6 @@ msc {
 	ms <= rtp [label="IPACC CRCX"];
 	...;
 	ms => rtp [label="IPACC CRCX ACK (BTS RTP port info)"];
-	rtp abox rtp [label="LCHAN_RTP_ST_WAIT_IPACC_MDCX_ACK"];
-	ms <= rtp [label="IPACC MDCX (MGW RTP port info)"];
-	...;
-	ms => rtp [label="IPACC MDCX ACK"];
 	--- [label="END ip.access style BTS"];
 	|||;
 	rtp box rtp [label="lchan_rtp_fsm_switch_rtp()"];
@@ -91,6 +87,12 @@ msc {
 	...;
 	mgwep rbox mgwep [label="MGCP: MDCX OK"];
 	rtp <- mgwep [label="LCHAN_RTP_EV_MGW_ENDPOINT_CONFIGURED"];
+	--- [label="IF ip.access style BTS"];
+	rtp abox rtp [label="LCHAN_RTP_ST_WAIT_IPACC_MDCX_ACK"];
+	ms <= rtp [label="IPACC MDCX (MGW RTP port info)"];
+	...;
+	ms => rtp [label="IPACC MDCX ACK"];
+	--- [label="END ip.access style BTS"];
 	rtp abox rtp [label="LCHAN_RTP_ST_READY"];
 	lchan <- rtp [label="LCHAN_EV_RTP_READY"];
 	rtp note rtp [label="RTP FSM stays ready for Rollback until final establish event"];

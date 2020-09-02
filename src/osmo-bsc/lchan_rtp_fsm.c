@@ -301,10 +301,7 @@ static void lchan_rtp_fsm_wait_ipacc_crcx_ack(struct osmo_fsm_inst *fi, uint32_t
 	switch (event) {
 
 	case LCHAN_RTP_EV_IPACC_CRCX_ACK:
-		/* the CRCX ACK parsing has already noted the RTP port information at
-		 * lchan->abis_ip.bound_*, see ipac_parse_rtp(). We'll use that in
-		 * lchan_rtp_fsm_wait_mgw_endpoint_configured_onenter(). */
-		lchan_rtp_fsm_state_chg(LCHAN_RTP_ST_WAIT_IPACC_MDCX_ACK);
+		lchan_rtp_fsm_switch_rtp(fi);
 		return;
 
 	case LCHAN_RTP_EV_IPACC_CRCX_NACK:
@@ -366,19 +363,14 @@ static void lchan_rtp_fsm_wait_ipacc_mdcx_ack_onenter(struct osmo_fsm_inst *fi, 
 
 static void lchan_rtp_fsm_wait_ipacc_mdcx_ack(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
-	struct gsm_lchan *lchan = lchan_rtp_fi_lchan(fi);
 	switch (event) {
 
 	case LCHAN_RTP_EV_IPACC_MDCX_ACK:
-		lchan_rtp_fsm_switch_rtp(fi);
+		lchan_rtp_fsm_state_chg(LCHAN_RTP_ST_READY);
 		return;
 
 	case LCHAN_RTP_EV_IPACC_MDCX_NACK:
 		lchan_rtp_fail("Received NACK on IPACC MDCX");
-		return;
-
-	case LCHAN_RTP_EV_READY_TO_SWITCH_RTP:
-		lchan->activate.info.wait_before_switching_rtp = false;
 		return;
 
 	case LCHAN_RTP_EV_RELEASE:
@@ -480,10 +472,15 @@ static void lchan_rtp_fsm_wait_mgw_endpoint_configured_onenter(struct osmo_fsm_i
 
 static void lchan_rtp_fsm_wait_mgw_endpoint_configured(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
-	switch (event) {
+	struct gsm_lchan *lchan = lchan_rtp_fi_lchan(fi);
 
+	switch (event) {
 	case LCHAN_RTP_EV_MGW_ENDPOINT_CONFIGURED:
-		lchan_rtp_fsm_state_chg(LCHAN_RTP_ST_READY);
+		if (is_ipaccess_bts(lchan->ts->trx->bts))
+			lchan_rtp_fsm_state_chg(LCHAN_RTP_ST_WAIT_IPACC_MDCX_ACK);
+		else {
+			lchan_rtp_fsm_state_chg(LCHAN_RTP_ST_READY);
+		}
 		return;
 
 	case LCHAN_RTP_EV_MGW_ENDPOINT_ERROR:
@@ -652,23 +649,8 @@ static const struct osmo_fsm_state lchan_rtp_fsm_states[] = {
 			| S(LCHAN_RTP_EV_ROLLBACK)
 			,
 		.out_state_mask = 0
-			| S(LCHAN_RTP_ST_WAIT_IPACC_MDCX_ACK)
-			,
-	},
-	[LCHAN_RTP_ST_WAIT_IPACC_MDCX_ACK] = {
-		.name = "WAIT_IPACC_MDCX_ACK",
-		.onenter = lchan_rtp_fsm_wait_ipacc_mdcx_ack_onenter,
-		.action = lchan_rtp_fsm_wait_ipacc_mdcx_ack,
-		.in_event_mask = 0
-			| S(LCHAN_RTP_EV_READY_TO_SWITCH_RTP)
-			| S(LCHAN_RTP_EV_IPACC_MDCX_ACK)
-			| S(LCHAN_RTP_EV_IPACC_MDCX_NACK)
-			| S(LCHAN_RTP_EV_RELEASE)
-			| S(LCHAN_RTP_EV_ROLLBACK)
-			,
-		.out_state_mask = 0
 			| S(LCHAN_RTP_ST_WAIT_READY_TO_SWITCH_RTP)
-			| S(LCHAN_RTP_ST_WAIT_MGW_ENDPOINT_CONFIGURED)
+			| S(LCHAN_RTP_ST_WAIT_MGW_ENDPOINT_CONFIGURED) /*old: LCHAN_RTP_ST_WAIT_IPACC_MDCX_ACK*/
 			,
 	},
 	[LCHAN_RTP_ST_WAIT_READY_TO_SWITCH_RTP] = {
@@ -690,6 +672,22 @@ static const struct osmo_fsm_state lchan_rtp_fsm_states[] = {
 		.in_event_mask = 0
 			| S(LCHAN_RTP_EV_MGW_ENDPOINT_CONFIGURED)
 			| S(LCHAN_RTP_EV_MGW_ENDPOINT_ERROR)
+			| S(LCHAN_RTP_EV_RELEASE)
+			| S(LCHAN_RTP_EV_ROLLBACK)
+			,
+		.out_state_mask = 0
+			| S(LCHAN_RTP_ST_WAIT_IPACC_MDCX_ACK)
+			| S(LCHAN_RTP_ST_READY)
+			| S(LCHAN_RTP_ST_ROLLBACK)
+			,
+	},
+	[LCHAN_RTP_ST_WAIT_IPACC_MDCX_ACK] = {
+		.name = "WAIT_IPACC_MDCX_ACK",
+		.onenter = lchan_rtp_fsm_wait_ipacc_mdcx_ack_onenter,
+		.action = lchan_rtp_fsm_wait_ipacc_mdcx_ack,
+		.in_event_mask = 0
+			| S(LCHAN_RTP_EV_IPACC_MDCX_ACK)
+			| S(LCHAN_RTP_EV_IPACC_MDCX_NACK)
 			| S(LCHAN_RTP_EV_RELEASE)
 			| S(LCHAN_RTP_EV_ROLLBACK)
 			,
