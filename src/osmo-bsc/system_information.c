@@ -944,7 +944,7 @@ static int generate_si4(enum osmo_sysinfo_type t, struct gsm_bts *bts)
 	int rc;
 	struct gsm48_system_information_type_4 *si4 = (struct gsm48_system_information_type_4 *) GSM_BTS_SI(bts, t);
 	struct gsm_lchan *cbch_lchan;
-	uint8_t *restoct = si4->data;
+	uint8_t *tail = si4->data;
 
 	/* length of all IEs present except SI4 rest octets and l2_plen */
 	int l2_plen = sizeof(*si4) - 1;
@@ -963,13 +963,22 @@ static int generate_si4(enum osmo_sysinfo_type t, struct gsm_bts *bts)
 	/* Optional: CBCH Channel Description + CBCH Mobile Allocation */
 	cbch_lchan = gsm_bts_get_cbch(bts);
 	if (cbch_lchan) {
+		const struct gsm_bts_trx_ts *ts = cbch_lchan->ts;
 		struct gsm48_chan_desc cd;
+
+		/* 10.5.2.5 (TV) CBCH Channel Description IE */
 		gsm48_lchan2chan_desc_as_configured(&cd, cbch_lchan);
-		tv_fixed_put(si4->data, GSM48_IE_CBCH_CHAN_DESC, 3,
-			     (uint8_t *) &cd);
-		l2_plen += 3 + 1;
-		restoct += 3 + 1;
-		/* we don't use hopping and thus don't need a CBCH MA */
+		tail = tv_fixed_put(tail, GSM48_IE_CBCH_CHAN_DESC,
+				    sizeof(cd), (uint8_t *) &cd);
+		l2_plen += 1 + sizeof(cd);
+
+		/* 10.5.2.21 (TLV) CBCH Mobile Allocation IE */
+		if (ts->hopping.enabled) {
+			tail = tlv_put(tail, GSM48_IE_CBCH_MOB_AL,
+				       ts->hopping.ma_len,
+				       ts->hopping.ma_data);
+			l2_plen += 2 + ts->hopping.ma_len;
+		}
 	}
 
 	si4->header.l2_plen = GSM48_LEN2PLEN(l2_plen);
@@ -977,7 +986,7 @@ static int generate_si4(enum osmo_sysinfo_type t, struct gsm_bts *bts)
 	/* SI4 Rest Octets (10.5.2.35), containing
 		Optional Power offset, GPRS Indicator,
 		Cell Identity, LSA ID, Selection Parameter */
-	rc = rest_octets_si4(restoct, &si_info, (uint8_t *)GSM_BTS_SI(bts, t) + GSM_MACBLOCK_LEN - restoct);
+	rc = rest_octets_si4(tail, &si_info, (uint8_t *)GSM_BTS_SI(bts, t) + GSM_MACBLOCK_LEN - tail);
 
 	return l2_plen + 1 + rc;
 }
