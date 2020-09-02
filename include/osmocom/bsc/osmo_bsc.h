@@ -19,12 +19,6 @@ struct gsm_bts;
 
 struct bsc_api *osmo_bsc_api();
 
-int bsc_queue_for_msc(struct gsm_subscriber_connection *conn, struct msgb *msg);
-int bsc_open_connection(struct gsm_subscriber_connection *sccp, struct msgb *msg);
-enum bsc_con bsc_create_new_connection(struct gsm_subscriber_connection *conn,
-				       struct bsc_msc_data *msc, int send_ping);
-int bsc_delete_connection(struct gsm_subscriber_connection *sccp);
-
 int bsc_scan_bts_msg(struct gsm_subscriber_connection *conn, struct msgb *msg);
 int bsc_scan_msc_msg(struct gsm_subscriber_connection *conn, struct msgb *msg);
 

@@ -261,9 +261,6 @@ struct gsm_subscriber_connection {
 
 	/* SCCP connection associatd with this subscriber_connection */
 	struct {
-		/* for advanced ping/pong */
-		int send_ping;
-
 		/* SCCP connection related */
 		struct bsc_msc_data *msc;
 
