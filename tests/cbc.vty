@@ -209,3 +209,67 @@ CBSP Client Connection: Disconnected
 OsmoBSC(config-cbc)# mode disabled
 OsmoBSC(config-cbc)# do show cbc
 CBSP link is disabled
+
+
+OsmoBSC(config-cbc)# # TEST DEPRECATED COMMANDS
+
+OsmoBSC(config-cbc)# remote-ip 1.2.3.4
+% cbc/remote-ip config is deprecated, instead use cbc/client/remote-ip and cbc/ mode
+OsmoBSC(config-cbc)# remote-port 1234
+% cbc/remote-port config is deprecated, instead use cbc/client/remote-port
+OsmoBSC(config-cbc)# do show cbc
+OsmoBSC is configured as CBSP Client to remote CBC at 1.2.3.4:1234
+CBSP Client Connection: Disconnected
+OsmoBSC(config-cbc)# show running-config
+...
+cbc
+ mode client
+...
+ client
+  remote-ip 1.2.3.4
+  remote-port 1234
+...
+
+OsmoBSC(config-cbc)# no remote-ip
+% cbc/remote-ip config is deprecated, instead use cbc/client/remote-ip and cbc/mode
+OsmoBSC(config-cbc)# do show cbc
+CBSP link is disabled
+OsmoBSC(config-cbc)# show running-config
+...
+cbc
+ mode disabled
+...
+ client
+  remote-ip 1.2.3.4
+  remote-port 1234
+...
+
+OsmoBSC(config-cbc)# listen-ip 127.0.0.2
+% cbc/listen-ip config is deprecated, instead use cbc/server/local-ip
+OsmoBSC(config-cbc)# do show cbc
+CBSP link is disabled
+OsmoBSC(config-cbc)# listen-port 48049
+% cbc/listen-port config is deprecated, instead use cbc/server/local-port and cbc/mode
+OsmoBSC(config-cbc)# do show cbc
+OsmoBSC is configured as CBSP Server on 127.0.0.2:48049
+CBSP Server Connection: Disconnected
+OsmoBSC(config-cbc)# show running-config
+...
+cbc
+ mode server
+ server
+  local-ip 127.0.0.2
+ client
+  remote-ip 1.2.3.4
+  remote-port 1234
+...
+
+OsmoBSC(config-cbc)# no listen-port
+% cbc/listen-port config is deprecated, instead use cbc/server/local-port and cbc/mode
+OsmoBSC(config-cbc)# do show cbc
+CBSP link is disabled
+OsmoBSC(config-cbc)# show running-config
+...
+cbc
+ mode disabled
+...

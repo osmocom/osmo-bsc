@@ -543,6 +543,91 @@ DEFUN(show_cbc, show_cbc_cmd,
 	return CMD_SUCCESS;
 }
 
+/* --- Deprecated 'cbc' commands for backwards compat --- */
+
+DEFUN_DEPRECATED(cfg_cbc_remote_ip, cfg_cbc_remote_ip_cmd,
+	"remote-ip A.B.C.D",
+	"IP Address of the Cell Broadcast Centre\n"
+	"IP Address of the Cell Broadcast Centre\n")
+{
+	struct bsc_cbc_link *cbc = vty_cbc_data(vty);
+	vty_out(vty, "%% cbc/remote-ip config is deprecated, instead use cbc/client/remote-ip and cbc/ mode%s",
+		VTY_NEWLINE);
+	osmo_sockaddr_str_from_str(&cbc->client.remote_addr, argv[0], cbc->client.remote_addr.port);
+	cbc->mode = BSC_CBC_LINK_MODE_CLIENT;
+	if (vty->type != VTY_FILE)
+		bsc_cbc_link_restart();
+	return CMD_SUCCESS;
+}
+DEFUN_DEPRECATED(cfg_cbc_no_remote_ip, cfg_cbc_no_remote_ip_cmd,
+	"no remote-ip",
+	NO_STR "Remove IP address of CBC; disables outbound CBSP connections\n")
+{
+	struct bsc_cbc_link *cbc = vty_cbc_data(vty);
+	vty_out(vty, "%% cbc/remote-ip config is deprecated, instead use cbc/client/remote-ip and cbc/mode%s",
+		VTY_NEWLINE);
+	if (cbc->mode == BSC_CBC_LINK_MODE_CLIENT) {
+		cbc->mode = BSC_CBC_LINK_MODE_DISABLED;
+		if (vty->type != VTY_FILE)
+			bsc_cbc_link_restart();
+	}
+	return CMD_SUCCESS;
+}
+
+DEFUN_DEPRECATED(cfg_cbc_remote_port, cfg_cbc_remote_port_cmd,
+	"remote-port <1-65535>",
+	"TCP Port number of the Cell Broadcast Centre (Default: 48049)\n"
+	"TCP Port number of the Cell Broadcast Centre (Default: 48049)\n")
+{
+	struct bsc_cbc_link *cbc = vty_cbc_data(vty);
+	vty_out(vty, "%% cbc/remote-port config is deprecated, instead use cbc/client/remote-port%s",
+		VTY_NEWLINE);
+	cbc->client.remote_addr.port = atoi(argv[0]);
+	return CMD_SUCCESS;
+}
+
+DEFUN_DEPRECATED(cfg_cbc_listen_port, cfg_cbc_listen_port_cmd,
+	"listen-port <1-65535>",
+	"Local TCP port at which BSC listens for incoming CBSP connections from CBC\n"
+	"Local TCP port at which BSC listens for incoming CBSP connections from CBC\n")
+{
+	struct bsc_cbc_link *cbc = vty_cbc_data(vty);
+	vty_out(vty, "%% cbc/listen-port config is deprecated, instead use cbc/server/local-port and cbc/mode%s",
+		VTY_NEWLINE);
+	cbc->mode = BSC_CBC_LINK_MODE_SERVER;
+	cbc->server.local_addr.port = atoi(argv[0]);
+	if (vty->type != VTY_FILE)
+		bsc_cbc_link_restart();
+	return CMD_SUCCESS;
+}
+
+DEFUN_DEPRECATED(cfg_cbc_no_listen_port, cfg_cbc_no_listen_port_cmd,
+	"no listen-port",
+	NO_STR "Remove CBSP Listen Port; disables inbound CBSP connections\n")
+{
+	struct bsc_cbc_link *cbc = vty_cbc_data(vty);
+	vty_out(vty, "%% cbc/listen-port config is deprecated, instead use cbc/server/local-port and cbc/mode%s",
+		VTY_NEWLINE);
+	if (cbc->mode == BSC_CBC_LINK_MODE_SERVER) {
+		cbc->mode = BSC_CBC_LINK_MODE_DISABLED;
+		if (vty->type != VTY_FILE)
+			bsc_cbc_link_restart();
+	}
+	return CMD_SUCCESS;
+}
+
+DEFUN_DEPRECATED(cfg_cbc_listen_ip, cfg_cbc_listen_ip_cmd,
+	"listen-ip A.B.C.D",
+	"Local IP Address where BSC listens for incoming CBC connections (Default: 127.0.0.1)\n"
+	"Local IP Address where BSC listens for incoming CBC connections\n")
+{
+	struct bsc_cbc_link *cbc = vty_cbc_data(vty);
+	vty_out(vty, "%% cbc/listen-ip config is deprecated, instead use cbc/server/local-ip%s",
+		VTY_NEWLINE);
+	osmo_sockaddr_str_from_str(&cbc->server.local_addr, argv[0], cbc->server.local_addr.port);
+	return CMD_SUCCESS;
+}
+
 void cbc_vty_init(void)
 {
 	install_element_ve(&show_cbc_cmd);
@@ -564,4 +649,12 @@ void cbc_vty_init(void)
 	install_element(CBC_CLIENT_NODE, &cfg_cbc_client_local_port_cmd);
 	install_element(CBC_CLIENT_NODE, &cfg_cbc_client_no_local_ip_cmd);
 	install_element(CBC_CLIENT_NODE, &cfg_cbc_client_no_local_port_cmd);
+
+	/* Deprecated, for backwards compat */
+	install_element(CBC_NODE, &cfg_cbc_remote_ip_cmd);
+	install_element(CBC_NODE, &cfg_cbc_no_remote_ip_cmd);
+	install_element(CBC_NODE, &cfg_cbc_remote_port_cmd);
+	install_element(CBC_NODE, &cfg_cbc_listen_port_cmd);
+	install_element(CBC_NODE, &cfg_cbc_no_listen_port_cmd);
+	install_element(CBC_NODE, &cfg_cbc_listen_ip_cmd);
 }
