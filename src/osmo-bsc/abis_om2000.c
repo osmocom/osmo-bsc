@@ -2122,6 +2122,7 @@ enum om2k_trx_state {
 	 OM2K_TRX_S_WAIT_TX,
 	 OM2K_TRX_S_WAIT_RX,
 	 OM2K_TRX_S_WAIT_TS,
+	 OM2K_TRX_S_SEND_SI,
 	 OM2K_TRX_S_DONE,
 	 OM2K_TRX_S_ERROR
 };
@@ -2195,14 +2196,22 @@ static void om2k_trx_s_wait_ts(struct osmo_fsm_inst *fi, uint32_t event, void *d
 				  &ts->rbs2000.om2k_mo);
 	} else {
 		/* only after all 8 TS */
-		osmo_fsm_inst_state_chg(fi, OM2K_TRX_S_DONE, 0, 0);
+		osmo_fsm_inst_state_chg(fi, OM2K_TRX_S_SEND_SI, 0, 0);
 	}
+}
+
+static void om2k_trx_s_send_si(struct osmo_fsm_inst *fi, uint32_t prev_state)
+{
+	struct om2k_trx_fsm_priv *otfp = fi->priv;
+
+	if (gsm_bts_trx_set_system_infos(otfp->trx) == 0)
+		osmo_fsm_inst_state_chg(fi, OM2K_TRX_S_DONE, 0, 0);
+	else
+		osmo_fsm_inst_state_chg(fi, OM2K_TRX_S_ERROR, 0, 0);
 }
 
 static void om2k_trx_s_done_onenter(struct osmo_fsm_inst *fi, uint32_t prev_state)
 {
-	struct om2k_trx_fsm_priv *otfp = fi->priv;
-	gsm_bts_trx_set_system_infos(otfp->trx);
 	osmo_fsm_inst_term(fi, OSMO_FSM_TERM_REGULAR, NULL);
 }
 
@@ -2237,9 +2246,15 @@ static const struct osmo_fsm_state om2k_trx_states[] = {
 	[OM2K_TRX_S_WAIT_TS] = {
 		.in_event_mask = S(OM2K_TRX_EVT_TS_DONE),
 		.out_state_mask = S(OM2K_TRX_S_ERROR) |
-				  S(OM2K_TRX_S_DONE),
+				  S(OM2K_TRX_S_SEND_SI),
 		.name = "WAIT-TS",
 		.action = om2k_trx_s_wait_ts,
+	},
+	[OM2K_TRX_S_SEND_SI] = {
+		.out_state_mask = S(OM2K_TRX_S_ERROR) |
+				  S(OM2K_TRX_S_DONE),
+		.name = "SEND-SI",
+		.onenter = om2k_trx_s_send_si,
 	},
 	[OM2K_TRX_S_DONE] = {
 		.name = "DONE",
