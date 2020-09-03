@@ -974,6 +974,9 @@ static int generate_si4(enum osmo_sysinfo_type t, struct gsm_bts *bts)
 
 		/* 10.5.2.21 (TLV) CBCH Mobile Allocation IE */
 		if (ts->hopping.enabled) {
+			/* Prevent potential buffer overflow */
+			if (ts->hopping.ma_len > 2)
+				return -ENOMEM;
 			tail = tlv_put(tail, GSM48_IE_CBCH_MOB_AL,
 				       ts->hopping.ma_len,
 				       ts->hopping.ma_data);
