@@ -13,7 +13,7 @@ specification is <<3gpp-ts-23-041>>.
 
 In order to use SMSCB with OsmoBSC, you will need to
 
-* Configure the CBSP server and/or client
+* Configure OsmoBSC as either CBSP server or client
 * Use a channel combination including a CBCH on the BTSs
 
 === Enabling a CBCH channel combination
@@ -41,41 +41,63 @@ addresses).
 In order to comply with the specifications, OsmoBSC supports this mode
 of operation as CBSP TCP server.  However, to make network operation and
 configuration more simple, it also can operate in TCP client mode,
-connecting to the CBC.  This way the all the BSCs need to know is the CBC IP
+connecting to the CBC.  This way the BSCs need to know the CBC IP
 address, but not vice-versa.
 
-The BSC can operate both CBSP TCP server and CBSP TCP client mode in
-parallel.
+The BSC can operate in either CBSP TCP server mode or CBSP TCP client mode.
 
 The CBC related configuration of OsmoBSC can be found in the `cbc` configuration
 node of the VTY interface.
 
-.Example: Configure CBSP TCP client to connect to CBC at 1.2.3.4:48049
+The default port number for the CBSP server is 48049, according to the CBSP
+specification. Hence it normally suffices to configure only the IP addresses for
+the remote CBC server or the local CBSP server:
+
+.Example: Configure CBSP TCP client to connect to CBC at 1.2.3.4:48049 in osmo-bsc.cfg
 ----
-OsmoBSC> enable
-OsmoBSC# configure terminal
-OsmoBSC(config)# cbc
-OsmoBSC(config-cbc)# remote-ip 1.2.3.4
-OsmoBSC(config-cbc)# remote-port 48049
-OsmoBSC(config-cbc)# end
+cbc
+ mode client
+ client
+  remote-ip 1.2.3.4
 ----
 
-.Example: Disable CBSP TCP client
+In server mode, the default configuration is 127.0.0.1:48049, so it suffices to
+set `mode server` to accept CBSP connections from localhost:
+
 ----
-OsmoBSC> enable
-OsmoBSC# configure terminal
-OsmoBSC(config)# cbc
-OsmoBSC(config-cbc)# no remote-ip
-OsmoBSC(config-cbc)# end
+cbc
+ mode server
 ----
 
-.Example: Configure CBSP TCP server to listen for CBC at 127.0.0.2:9999
+To also listen for inbound CBSP connections on all interfaces, both IPv4 and
+IPv6:
+
+.Example: Configure CBSP TCP server to listen on all interfaces in osmo-bsc.cfg
+----
+cbc
+ mode server
+ server
+  local-ip ::
+----
+
+Should non-standard port numbers be required, these can be configured with the
+`client` / `local-port` or the `server` / `remote-port` settings.
+
+The `client` config also supports an explicit local bind for connecting to the
+remote CBC, using `client` / `local-ip` and `local-port`.
+
+IP addresses for client and server can remain configured at the same time, and
+the `mode` command can be used to switch between client and server operation.
+The `mode` command takes immediate effect, no restart of OsmoBSC is required.
+After changing `cbc` IP addresses in the telnet VTY, it is required to switch
+`mode` to `disabled` and back to `client` or `server` to take effect.
+
+.Example: Disable the CBSP link in the telnet VTY
 ----
 OsmoBSC> enable
 OsmoBSC# configure terminal
 OsmoBSC(config)# cbc
-OsmoBSC(config-cbc)# listen-ip 127.0.0.2
-OsmoBSC(config-cbc)# listen-port 9999
+OsmoBSC(config-cbc)# mode disabled
 OsmoBSC(config-cbc)# end
 ----
 
