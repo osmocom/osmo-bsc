@@ -308,7 +308,10 @@ static void bootstrap_rsl(struct gsm_bts_trx *trx)
 	if (trx_is_usable(trx))
 		acc_ramp_trigger(&trx->bts->acc_ramp);
 
-	gsm_bts_trx_set_system_infos(trx);
+	if (gsm_bts_trx_set_system_infos(trx) != 0) {
+		LOG_TRX(trx, DRSL, LOGL_ERROR, "Failed to generate System Information\n");
+		return;
+	}
 
 	if (trx->bts->type == GSM_BTS_TYPE_NOKIA_SITE) {
 		/* channel unspecific, power reduction in 2 dB steps */
