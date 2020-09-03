@@ -3684,7 +3684,11 @@ DEFUN(cfg_bts_no_acc_ramping, cfg_bts_no_acc_ramping_cmd,
 	if (acc_ramp_is_enabled(&bts->acc_ramp)) {
 		acc_ramp_abort(&bts->acc_ramp);
 		acc_ramp_set_enabled(&bts->acc_ramp, false);
-		gsm_bts_set_system_infos(bts);
+		if (gsm_bts_set_system_infos(bts) != 0) {
+			vty_out(vty, "%% Filed to (re)generate System Information "
+				"messages, check the logs%s", VTY_NEWLINE);
+			return CMD_WARNING;
+		}
 	}
 
 	return CMD_SUCCESS;
@@ -4828,7 +4832,11 @@ DEFUN(bts_resend, bts_resend_cmd,
 		return CMD_WARNING;
 	}
 
-	gsm_bts_set_system_infos(bts);
+	if (gsm_bts_set_system_infos(bts) != 0) {
+		vty_out(vty, "%% Filed to (re)generate System Information "
+			"messages, check the logs%s", VTY_NEWLINE);
+		return CMD_WARNING;
+	}
 
 	return CMD_SUCCESS;
 }
