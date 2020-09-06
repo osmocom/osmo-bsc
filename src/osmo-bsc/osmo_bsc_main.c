@@ -258,9 +258,7 @@ static int generate_ma_for_ts(struct gsm_bts_trx_ts *ts)
 	}
 
 	/* pad it to octet-aligned number of bits */
-	ts->hopping.ma_len = num_cell_arfcns / 8;
-	if (num_cell_arfcns % 8)
-		ts->hopping.ma_len++;
+	ts->hopping.ma_len = OSMO_BYTES_FOR_BITS(num_cell_arfcns);
 
 	n_chan = 0;
 	for (i = 0; i < 1024; i++) {
