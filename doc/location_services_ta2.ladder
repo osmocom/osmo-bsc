@@ -1,0 +1,43 @@
+{hscale=2}
+
+ms = MS/BTS
+bsc = BSC
+smlc = SMLC
+msc = MSC
+
+bsc < msc	PERFORM LOCATION REQUEST
+		3GPP TS 48.008 3.2.1.71
+
+---		MS in IDLE MODE (not connected)
+
+ms < bsc	RR Paging Request
+		3GPP TS 48.018 9.1.22-24
+
+ms > bsc	RSL CHANNEL REQUIRED
+		3GPP TS 48.058 8.5.3
+		includes Access Delay (9.3.17) == Timing Advance
+
+ms > bsc	RR Paging Response
+		3GPP TS 48.018 9.1.25
+
+ms < bsc	RF CHANNEL RELEASE
+		3GPP TS 48.058 8.4.14
+
+---		MS in DEDICATED MODE (currently active)
+
+ms > bsc	earlier Measurement Report provides Timing Advance
+
+---
+
+bsc > smlc	BSSMAP-LE PERFORM LOCATION REQUEST
+		3GPP TS 49.031 9.1
+		Contains BSSLAP APDU with current TA value
+
+smlc () .	No TA Request needed, already know the TA
+
+bsc < smlc	BSSMAP-LE PERFORM LOCATION RESPONSE
+		3GPP TS 49.031 9.2
+		Returns same TA value
+
+bsc > msc	PERFORM LOCATION RESPONSE
+		3GPP TS 48.008 3.2.1.72
