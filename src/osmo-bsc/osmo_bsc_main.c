@@ -261,7 +261,7 @@ static int generate_ma_for_ts(struct gsm_bts_trx_ts *ts)
 	ts->hopping.ma_len = OSMO_BYTES_FOR_BITS(num_cell_arfcns);
 
 	n_chan = 0;
-	for (i = 0; i < 1024; i++) {
+	for (i = 1; i < 1024; i++) {
 		if (!bitvec_get_bit_pos(cell_chan, i))
 			continue;
 		/* set the corresponding bit in the MA */
@@ -275,7 +275,6 @@ static int generate_ma_for_ts(struct gsm_bts_trx_ts *ts)
 
 	/* ARFCN 0 is special: It is coded last in the bitmask */
 	if (bitvec_get_bit_pos(cell_chan, 0)) {
-		n_chan++;
 		/* set the corresponding bit in the MA */
 		bitnum = (ts->hopping.ma_len * 8) - 1 - n_chan;
 		if (bitvec_get_bit_pos(ts_arfcn, 0))
