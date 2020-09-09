@@ -270,8 +270,14 @@ static int generate_cell_sel_ind_after_rel(uint8_t *out, unsigned int out_len, c
 		} else {
 			bitvec_set_bit(&bv, 1);
 			bitvec_set_uint(&bv, e->arfcn[i], 16);
-			/* No "Measurement Bandwidth" */
-			bitvec_set_bit(&bv, 0);
+
+			/* Measurement Bandwidth: 9.1.54 */
+			if (OSMO_EARFCN_MEAS_INVALID == e->meas_bw[i])
+				bitvec_set_bit(&bv, 0);
+			else {
+				bitvec_set_bit(&bv, 1);
+				bitvec_set_uint(&bv, e->meas_bw[i], 3);
+			}
 			/* No "Not Allowed Cells" */
 			bitvec_set_bit(&bv, 0);
 			/* No "TARGET_PCID" */
