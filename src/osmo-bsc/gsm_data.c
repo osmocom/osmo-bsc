@@ -601,6 +601,7 @@ static void _chan_desc_fill_tail(struct gsm48_chan_desc *cd, const struct gsm_lc
 		uint16_t arfcn = lchan->ts->trx->arfcn & 0x3ff;
 		cd->h0.tsc = gsm_ts_tsc(lchan->ts);
 		cd->h0.h = 0;
+		cd->h0.spare = 0;
 		cd->h0.arfcn_high = arfcn >> 8;
 		cd->h0.arfcn_low = arfcn & 0xff;
 	} else {
