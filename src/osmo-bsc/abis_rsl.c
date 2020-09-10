@@ -1384,10 +1384,14 @@ static void reduce_rach_dos(struct gsm_bts *bts)
 	llist_for_each_entry_safe(rqd, rqd_tmp, &bts->chan_rqd_queue, entry) {
 		/* If the channel request is older than the radio link timeout we drop it. This also means that the
 		 * queue is under its overflow limit again. */
-		if (timestamp_current - rqd->timestamp > rlt)
+		if (timestamp_current - rqd->timestamp > rlt) {
+			LOG_BTS(bts, DRSL, LOGL_INFO, "CHAN RQD: tossing expired channel request"
+				"(ra=0x%02x, neci=0x%02x, chreq_reason=0x%02x)\n",
+				rqd->ref.ra, bts->network->neci, rqd->reason);
 			llist_del(&rqd->entry);
-		else
+		} else {
 			rqd_count++;
+		}
 	}
 
 	/* If we find more than 255 (256) unexpired channel requests in the queue it is very likely that there is a
