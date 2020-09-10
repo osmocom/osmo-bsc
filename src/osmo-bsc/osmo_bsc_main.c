@@ -329,6 +329,9 @@ static void bootstrap_rsl(struct gsm_bts_trx *trx)
 	/* Start CBCH transmit timer if CBCH is present */
 	if (trx->nr == 0 && gsm_bts_get_cbch(trx->bts))
 		bts_cbch_timer_schedule(trx->bts);
+
+	/* Drop all expired channel requests in the list */
+	abis_rsl_chan_rqd_queue_flush(trx->bts);
 }
 
 static void all_ts_dispatch_event(struct gsm_bts_trx *trx, uint32_t event)

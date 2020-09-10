@@ -119,6 +119,7 @@ int ipacc_payload_type(enum gsm48_chan_mode tch_mode, enum gsm_chan_t type);
 int rsl_tx_rf_chan_release(struct gsm_lchan *lchan);
 
 void abis_rsl_chan_rqd_queue_poll(struct gsm_bts *bts);
+void abis_rsl_chan_rqd_queue_flush(struct gsm_bts *bts);
 
 #endif /* RSL_MT_H */
 

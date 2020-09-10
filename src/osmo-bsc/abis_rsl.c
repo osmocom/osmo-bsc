@@ -1398,6 +1398,18 @@ static void reduce_rach_dos(struct gsm_bts *bts)
 	}
 }
 
+/* Flush all channel requests pending on this BTS */
+void abis_rsl_chan_rqd_queue_flush(struct gsm_bts *bts)
+{
+	struct chan_rqd *rqd;
+	struct chan_rqd *rqd_tmp;
+
+	llist_for_each_entry_safe(rqd, rqd_tmp, &bts->chan_rqd_queue, entry) {
+		llist_del(&rqd->entry);
+		talloc_free(rqd);
+	}
+}
+
 /* MS has requested a channel on the RACH */
 static int rsl_rx_chan_rqd(struct msgb *msg)
 {
