@@ -5033,15 +5033,118 @@ static int lchan_set_single_amr_mode(struct vty *vty, struct gsm_lchan *lchan, u
 	return vty_rc;
 }
 
+/* Activate / Deactivate a single lchan with a specific codec mode */
+static int lchan_act_single(struct vty *vty, struct gsm_lchan *lchan, const char *codec_str, int amr_mode, int activate)
+{
+	if (activate) {
+		int lchan_t;
+		if (lchan->fi->state != LCHAN_ST_UNUSED) {
+			vty_out(vty, "%% Cannot activate: Channel busy!%s", VTY_NEWLINE);
+			return CMD_WARNING;
+		}
+		lchan_t = gsm_lchan_type_by_pchan(lchan->ts->pchan_is);
+		if (lchan_t < 0) {
+			vty_out(vty, "%% Cannot activate: Invalid lchan type!%s", VTY_NEWLINE);
+			return CMD_WARNING;
+		}
+		/* configure the lchan */
+		lchan->type = lchan_t;
+		if (!strcmp(codec_str, "hr") || !strcmp(codec_str, "fr")) {
+			lchan->rsl_cmode = RSL_CMOD_SPD_SPEECH;
+			lchan->tch_mode = GSM48_CMODE_SPEECH_V1;
+		} else if (!strcmp(codec_str, "efr")) {
+			lchan->rsl_cmode = RSL_CMOD_SPD_SPEECH;
+			lchan->tch_mode = GSM48_CMODE_SPEECH_EFR;
+		} else if (!strcmp(codec_str, "amr")) {
+			int vty_rc;
+			lchan->rsl_cmode = RSL_CMOD_SPD_SPEECH;
+			if (amr_mode == -1) {
+				vty_out(vty, "%% AMR requires specification of AMR mode%s", VTY_NEWLINE);
+				return CMD_WARNING;
+			}
+			lchan->tch_mode = GSM48_CMODE_SPEECH_AMR;
+			vty_rc = lchan_set_single_amr_mode(vty, lchan, amr_mode);
+			if (vty_rc != CMD_SUCCESS) {
+				vty_out(vty, "%% Failed to set AMR mode (%d)%s", amr_mode, VTY_NEWLINE);
+				return vty_rc;
+			}
+		} else if (!strcmp(codec_str, "sig")) {
+			lchan->rsl_cmode = RSL_CMOD_SPD_SIGN;
+			lchan->tch_mode = GSM48_CMODE_SIGN;
+		} else {
+			vty_out(vty, "%% Invalid channel mode specified!%s", VTY_NEWLINE);
+			return CMD_WARNING;
+		}
+
+		vty_out(vty, "%% activating lchan %s as %s%s", gsm_lchan_name(lchan), gsm_chan_t_name(lchan->type),
+			VTY_NEWLINE);
+		rsl_tx_chan_activ(lchan, RSL_ACT_TYPE_INITIAL, 0);
+
+		if ((lchan->type == GSM_LCHAN_TCH_F || lchan->type == GSM_LCHAN_TCH_H)
+		    && is_ipaccess_bts(lchan->ts->trx->bts))
+			rsl_tx_ipacc_crcx(lchan);
+	} else {
+		if (!lchan->fi) {
+			vty_out(vty, "%% Cannot release: Channel not initialized%s", VTY_NEWLINE);
+			return CMD_WARNING;
+		}
+		vty_out(vty, "%% Asking for release of %s in state %s%s", gsm_lchan_name(lchan),
+			osmo_fsm_inst_state_name(lchan->fi), VTY_NEWLINE);
+		lchan_release(lchan, !!(lchan->conn), false, 0);
+	}
+
+	return CMD_SUCCESS;
+}
+
+/* Activate / Deactivate a single lchan with a specific codec mode */
+static int lchan_act_trx(struct vty *vty, struct gsm_bts_trx *trx, int activate)
+{
+	int ts_nr;
+	struct gsm_bts_trx_ts *ts;
+	struct gsm_lchan *lchan;
+	char *codec_str;
+
+	for (ts_nr = 0; ts_nr < TRX_NR_TS; ts_nr++) {
+		ts = &trx->ts[ts_nr];
+		ts_for_each_lchan(lchan, ts) {
+			switch (ts->pchan_is) {
+			case GSM_PCHAN_SDCCH8_SACCH8C:
+			case GSM_PCHAN_CCCH_SDCCH4_CBCH:
+			case GSM_PCHAN_SDCCH8_SACCH8C_CBCH:
+			case GSM_PCHAN_CCCH:
+			case GSM_PCHAN_CCCH_SDCCH4:
+				codec_str = "sig";
+				break;
+			case GSM_PCHAN_TCH_F:
+			case GSM_PCHAN_TCH_F_PDCH:
+			case GSM_PCHAN_TCH_F_TCH_H_PDCH:
+				codec_str = "fr";
+				break;
+			case GSM_PCHAN_TCH_H:
+				codec_str = "hr";
+				break;
+			default:
+				codec_str = NULL;
+				vty_out(vty, "%% omitting lchan %s%s", gsm_lchan_name(lchan), VTY_NEWLINE);
+			}
+
+			if (codec_str)
+				lchan_act_single(vty, lchan, codec_str, -1, activate);
+		}
+	}
+
+	return CMD_SUCCESS;
+}
+
 /* Debug/Measurement command to activate a given logical channel
  * manually in a given mode/codec.  This is useful for receiver
  * performance testing (FER/RBER/...) */
 DEFUN(lchan_act, lchan_act_cmd,
-	"bts <0-255> trx <0-255> timeslot <0-7> sub-slot <0-7> (activate|deactivate) (hr|fr|efr|amr) [<0-7>]",
+	"bts <0-255> trx <0-255> timeslot <0-7> sub-slot <0-7> (activate|deactivate) (hr|fr|efr|amr|sig) [<0-7>]",
 	BTS_NR_TRX_TS_SS_STR2
 	"Manual Channel Activation (e.g. for BER test)\n"
 	"Manual Channel Deactivation (e.g. for BER test)\n"
-	"Half-Rate v1\n" "Full-Rate\n" "Enhanced Full Rate\n" "Adaptive Multi-Rate\n" "AMR Mode\n")
+	"Half-Rate v1\n" "Full-Rate\n" "Enhanced Full Rate\n" "Adaptive Multi-Rate\n" "Signalling\n" "AMR Mode\n")
 {
 	struct gsm_bts_trx_ts *ts;
 	struct gsm_lchan *lchan;
@@ -5049,6 +5152,10 @@ DEFUN(lchan_act, lchan_act_cmd,
 	const char *act_str = argv[4];
 	const char *codec_str = argv[5];
 	int activate;
+	int amr_mode = -1;
+
+	if (argc > 6)
+		amr_mode = atoi(argv[6]);
 
 	ts = vty_get_ts(vty, argv[0], argv[1], argv[2]);
 	if (!ts)
@@ -5069,47 +5176,111 @@ DEFUN(lchan_act, lchan_act_cmd,
 		return CMD_WARNING;
 	}
 
-	if (activate) {
-		int lchan_t;
-		if (lchan->fi->state != LCHAN_ST_UNUSED) {
-			vty_out(vty, "%% Cannot activate: Channel busy!%s", VTY_NEWLINE);
-			return CMD_WARNING;
+	return lchan_act_single(vty, lchan, codec_str, amr_mode, activate);
+}
+
+#define ACTIVATE_ALL_LCHANS_STR "Manual Channel Activation of all logical channels (e.g. for BER test)\n"
+#define DEACTIVATE_ALL_LCHANS_STR "Manual Channel Deactivation of all logical channels (e.g. for BER test)\n"
+
+/* Similar to lchan_act, but activates all lchans on the network at once,
+ * this is intended to perform lab tests / measurements. */
+DEFUN_HIDDEN(lchan_act_bts, lchan_act_all_cmd,
+	     "(activate-all-lchan|deactivate-all-lchan)",
+	     ACTIVATE_ALL_LCHANS_STR
+	     DEACTIVATE_ALL_LCHANS_STR)
+{
+	struct gsm_network *net = gsmnet_from_vty(vty);
+	const char *act_str = argv[0];
+	int activate;
+	int bts_nr;
+	struct gsm_bts *bts;
+	int trx_nr;
+	struct gsm_bts_trx *trx;
+
+	if (!strcmp(act_str, "activate-all-lchan"))
+		activate = 1;
+	else
+		activate = 0;
+
+	for (bts_nr = 0; bts_nr < net->num_bts; bts_nr++) {
+		bts = gsm_bts_num(gsmnet_from_vty(vty), bts_nr);
+		for (trx_nr = 0; trx_nr < bts->num_trx; trx_nr++) {
+			trx = gsm_bts_trx_num(bts, trx_nr);
+			lchan_act_trx(vty, trx, activate);
 		}
-		lchan_t = gsm_lchan_type_by_pchan(ts->pchan_is);
-		if (lchan_t < 0)
-			return CMD_WARNING;
-		/* configure the lchan */
-		lchan->type = lchan_t;
-		lchan->rsl_cmode = RSL_CMOD_SPD_SPEECH;
-		if (!strcmp(codec_str, "hr") || !strcmp(codec_str, "fr"))
-			lchan->tch_mode = GSM48_CMODE_SPEECH_V1;
-		else if (!strcmp(codec_str, "efr"))
-			lchan->tch_mode = GSM48_CMODE_SPEECH_EFR;
-		else if (!strcmp(codec_str, "amr")) {
-			int amr_mode, vty_rc;
-			if (argc < 7) {
-				vty_out(vty, "%% AMR requires specification of AMR mode%s", VTY_NEWLINE);
-				return CMD_WARNING;
-			}
-			amr_mode = atoi(argv[6]);
-			lchan->tch_mode = GSM48_CMODE_SPEECH_AMR;
-			vty_rc = lchan_set_single_amr_mode(vty, lchan, amr_mode);
-			if (vty_rc != CMD_SUCCESS)
-				return vty_rc;
-		}
-		vty_out(vty, "%% activating lchan %s%s", gsm_lchan_name(lchan), VTY_NEWLINE);
-		rsl_tx_chan_activ(lchan, RSL_ACT_TYPE_INITIAL, 0);
-		if (is_ipaccess_bts(lchan->ts->trx->bts))
-			rsl_tx_ipacc_crcx(lchan);
-	} else {
-		if (!lchan->fi) {
-			vty_out(vty, "%% Cannot release: Channel not initialized%s", VTY_NEWLINE);
-			return CMD_WARNING;
-		}
-		vty_out(vty, "%% Asking for release of %s in state %s%s", gsm_lchan_name(lchan),
-			osmo_fsm_inst_state_name(lchan->fi), VTY_NEWLINE);
-		lchan_release(lchan, !!(lchan->conn), false, 0);
 	}
+
+	return CMD_SUCCESS;
+}
+
+/* Similar to lchan_act, but activates all lchans on the specified BTS at once,
+ * this is intended to perform lab tests / measurements. */
+DEFUN_HIDDEN(lchan_act_all_bts, lchan_act_all_bts_cmd,
+	     "bts <0-255> (activate-all-lchan|deactivate-all-lchan)",
+	     "BTS Specific Commands\n" BTS_NR_STR
+	     ACTIVATE_ALL_LCHANS_STR
+	     DEACTIVATE_ALL_LCHANS_STR)
+{
+	int bts_nr = atoi(argv[0]);
+	const char *act_str = argv[1];
+	int activate;
+	struct gsm_bts *bts;
+	int trx_nr;
+	struct gsm_bts_trx *trx;
+
+	if (!strcmp(act_str, "activate-all-lchan"))
+		activate = 1;
+	else
+		activate = 0;
+
+	bts = gsm_bts_num(gsmnet_from_vty(vty), bts_nr);
+	if (!bts) {
+		vty_out(vty, "%% No such BTS (%d)%s", bts_nr, VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	for (trx_nr = 0; trx_nr < bts->num_trx; trx_nr++) {
+		trx = gsm_bts_trx_num(bts, trx_nr);
+		lchan_act_trx(vty, trx, activate);
+	}
+
+	return CMD_SUCCESS;
+}
+
+/* Similar to lchan_act, but activates all lchans on the specified BTS at once,
+ * this is intended to perform lab tests / measurements. */
+DEFUN_HIDDEN(lchan_act_all_trx, lchan_act_all_trx_cmd,
+	     "bts <0-255> trx <0-255> (activate-all-lchan|deactivate-all-lchan)",
+	     "BTS for manual command\n" BTS_NR_STR
+	     "TRX for manual command\n" TRX_NR_STR
+	     ACTIVATE_ALL_LCHANS_STR
+	     DEACTIVATE_ALL_LCHANS_STR)
+{
+	int bts_nr = atoi(argv[0]);
+	int trx_nr = atoi(argv[1]);
+	const char *act_str = argv[2];
+	int activate;
+	struct gsm_bts *bts;
+	struct gsm_bts_trx *trx;
+
+	if (!strcmp(act_str, "activate-all-lchan"))
+		activate = 1;
+	else
+		activate = 0;
+
+	bts = gsm_bts_num(gsmnet_from_vty(vty), bts_nr);
+	if (!bts) {
+		vty_out(vty, "%% No such BTS (%d)%s", bts_nr, VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	trx = gsm_bts_trx_num(bts, trx_nr);
+	if (!bts) {
+		vty_out(vty, "%% No such TRX (%d)%s", trx_nr, VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	lchan_act_trx(vty, trx, activate);
 
 	return CMD_SUCCESS;
 }
@@ -6592,6 +6763,9 @@ int bsc_vty_init(struct gsm_network *network)
 	install_element(ENABLE_NODE, &bts_resend_cmd);
 	install_element(ENABLE_NODE, &pdch_act_cmd);
 	install_element(ENABLE_NODE, &lchan_act_cmd);
+	install_element(ENABLE_NODE, &lchan_act_all_cmd);
+	install_element(ENABLE_NODE, &lchan_act_all_bts_cmd);
+	install_element(ENABLE_NODE, &lchan_act_all_trx_cmd);
 	install_element(ENABLE_NODE, &lchan_mdcx_cmd);
 	install_element(ENABLE_NODE, &lchan_set_borken_cmd);
 
