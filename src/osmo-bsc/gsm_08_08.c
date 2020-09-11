@@ -387,94 +387,57 @@ static int handle_page_resp(struct gsm_subscriber_connection *conn, struct msgb 
 	return 0;
 }
 
-/* TS 04.08 sec 9.2.15 "Location updating request" */
-static void handle_lu_request(struct gsm_subscriber_connection *conn,
-			      struct msgb *msg)
-{
-	struct gsm48_hdr *gh;
-	struct gsm48_loc_upd_req *lu;
-	int8_t rc8;
-	struct gsm_bts *bts = conn_get_bts(conn);
-
-	if (!bts) {
-		/* should never happen */
-		LOGP(DRSL, LOGL_ERROR, "LU Request without lchan\n");
-		return;
-	}
-
-	if (msgb_l3len(msg) < sizeof(*gh) + sizeof(*lu)) {
-		LOGP(DMSC, LOGL_ERROR, "LU too small to look at: %u\n", msgb_l3len(msg));
-		return;
-	}
-
-	gh = msgb_l3(msg);
-	lu = (struct gsm48_loc_upd_req *) gh->data;
-
-	rc8 = osmo_gsm48_rfpowercap2powerclass(bts->band, lu->classmark1.pwr_lev);
-	if (rc8 < 0) {
-		LOGP(DMSC, LOGL_NOTICE,
-		     "Unable to decode RF power capability %x from classmark1 during LU.\n",
-		     lu->classmark1.pwr_lev);
-		rc8 = 0;
-	}
-	conn_update_ms_power_class(conn, rc8);
-}
-
-
-/* TS 04.08 sec 9.2.15 "Location updating request" */
-static void handle_cm_serv_req(struct gsm_subscriber_connection *conn,
-			      struct msgb *msg)
-{
-	struct gsm48_hdr *gh;
-	struct gsm48_service_request *serv_req;
-	struct gsm48_classmark2* cm2;
-	int8_t rc8;
-	struct gsm_bts *bts = conn_get_bts(conn);
-
-	if (!bts) {
-		/* should never happen */
-		LOGP(DRSL, LOGL_ERROR, "CM Service Request without lchan\n");
-		return;
-	}
-
-	if (msgb_l3len(msg) < sizeof(*gh) + sizeof(*serv_req)) {
-		LOGP(DMSC, LOGL_ERROR, "CM Serv Req too small to look at: %u\n", msgb_l3len(msg));
-		return;
-	}
-
-	gh = msgb_l3(msg);
-	serv_req = (struct gsm48_service_request *) gh->data;
-
-	cm2 = (struct gsm48_classmark2*)(((uint8_t*)&serv_req->classmark)+1);
-	/* FIXME: one classmark2 is available in libosmocore:
-	cm2 = &serv_req->classmark2; */
-	rc8 = osmo_gsm48_rfpowercap2powerclass(bts->band, cm2->pwr_lev);
-	if (rc8 < 0) {
-		LOGP(DMSC, LOGL_NOTICE,
-		     "Unable to decode RF power capability %x from classmark2 during CM Service Req.\n",
-		     cm2->pwr_lev);
-		rc8 = 0;
-	}
-	conn_update_ms_power_class(conn, rc8);
-}
-
-int bsc_scan_bts_msg(struct gsm_subscriber_connection *conn, struct msgb *msg)
+static void parse_powercap(struct gsm_subscriber_connection *conn, struct msgb *msg)
 {
 	struct gsm48_hdr *gh = msgb_l3(msg);
 	uint8_t pdisc = gsm48_hdr_pdisc(gh);
 	uint8_t mtype = gsm48_hdr_msg_type(gh);
+	struct gsm48_loc_upd_req *lu;
+	struct gsm48_service_request *serv_req;
+	uint8_t pwr_lev;
+	struct gsm_bts *bts;
+	int8_t rc8;
 
-	if (pdisc == GSM48_PDISC_MM) {
-		if (mtype == GSM48_MT_MM_LOC_UPD_REQUEST)
-			handle_lu_request(conn, msg);
-		else if(mtype == GSM48_MT_MM_CM_SERV_REQ)
-			handle_cm_serv_req(conn, msg);
-	} else if (pdisc == GSM48_PDISC_RR) {
-		if (mtype == GSM48_MT_RR_PAG_RESP)
-			handle_page_resp(conn, msg);
+	switch (pdisc) {
+	case GSM48_PDISC_MM:
+		switch (mtype) {
+		case GSM48_MT_MM_LOC_UPD_REQUEST:
+			if (msgb_l3len(msg) < sizeof(*gh) + sizeof(*lu)) {
+				LOGPFSML(conn->fi, LOGL_ERROR, "rx Location Updating message too short: %u\n", msgb_l3len(msg));
+				return;
+			}
+			lu = (struct gsm48_loc_upd_req *) gh->data;
+			pwr_lev = lu->classmark1.pwr_lev;
+			break;
+
+		case GSM48_MT_MM_CM_SERV_REQ:
+			if (msgb_l3len(msg) < sizeof(*gh) + sizeof(*serv_req)) {
+				LOGPFSML(conn->fi, LOGL_ERROR, "rx CM Service Request message too short: %u\n", msgb_l3len(msg));
+				return;
+			}
+			serv_req = (struct gsm48_service_request *) gh->data;
+			pwr_lev = serv_req->classmark2.pwr_lev;
+			break;
+
+		default:
+			/* No power cap in other messages */
+			return;
+		}
+	/* FIXME: pwr_lev in Paging Response? */
+	default:
+		/* No power cap in other messages */
+		return;
 	}
 
-	return 0;
+	bts = conn_get_bts(conn);
+	OSMO_ASSERT(bts);
+	rc8 = osmo_gsm48_rfpowercap2powerclass(bts->band, pwr_lev);
+	if (rc8 < 0) {
+		LOGPFSML(conn->fi, LOGL_NOTICE, "%s %s: Unable to decode RF power capability 0x%x\n",
+			 gsm48_pdisc_name(pdisc), gsm48_pdisc_msgtype_name(pdisc, mtype), pwr_lev);
+		rc8 = 0;
+	}
+	conn_update_ms_power_class(conn, rc8);
 }
 
 /*! MS->MSC: New MM context with L3 payload. */
@@ -486,6 +449,17 @@ int bsc_compl_l3(struct gsm_subscriber_connection *conn, struct msgb *msg, uint1
 	int rc = -2;
 	struct gsm_bts *bts;
 	struct osmo_cell_global_id *cgi;
+	struct gsm48_hdr *gh;
+	uint8_t pdisc, mtype;
+
+	if (msgb_l3len(msg) < sizeof(*gh)) {
+		LOGP(DRSL, LOGL_ERROR, "There is no GSM48 header here.\n");
+		goto early_fail;
+	}
+
+	gh = msgb_l3(msg);
+	pdisc = gsm48_hdr_pdisc(gh);
+	mtype = gsm48_hdr_msg_type(gh);
 
 	log_set_context(LOG_CTX_BSC_SUBSCR, conn->bsub);
 
@@ -513,7 +487,9 @@ int bsc_compl_l3(struct gsm_subscriber_connection *conn, struct msgb *msg, uint1
 		goto early_fail;
 	}
 
-	bsc_scan_bts_msg(conn, msg);
+	parse_powercap(conn, msg);
+	if (pdisc == GSM48_PDISC_RR && mtype == GSM48_MT_RR_PAG_RESP)
+		handle_page_resp(conn, msg);
 
 	if (gscon_is_aoip(conn)) {
 		gen_bss_supported_codec_list(&scl, msc, bts);
@@ -550,7 +526,7 @@ void bsc_dtap(struct gsm_subscriber_connection *conn, uint8_t link_id, struct ms
 
 	LOGP(DMSC, LOGL_INFO, "Tx MSC DTAP LINK_ID=0x%02x\n", link_id);
 
-	bsc_scan_bts_msg(conn, msg);
+	parse_powercap(conn, msg);
 
 	/* Store link_id in msg->cb */
 	OBSC_LINKID_CB(msg) = link_id;
