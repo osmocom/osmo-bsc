@@ -1015,7 +1015,6 @@ static void dispatch_dtap(struct gsm_subscriber_connection *conn,
 int gsm0408_rcvmsg(struct msgb *msg, uint8_t link_id)
 {
 	struct gsm_lchan *lchan;
-	int rc;
 
 	lchan = msg->lchan;
 	if (!lchan_may_receive_data(lchan)) {
@@ -1028,21 +1027,8 @@ int gsm0408_rcvmsg(struct msgb *msg, uint8_t link_id)
 		 * MSC */
 		dispatch_dtap(lchan->conn, link_id, msg);
 	} else {
-		/* allocate a new connection */
-		lchan->conn = bsc_subscr_con_allocate(msg->lchan->ts->trx->bts->network);
-		if (!lchan->conn) {
-			lchan_release(lchan, false, true, RSL_ERR_EQUIPMENT_FAIL);
-			return -1;
-		}
-		lchan->conn->lchan = lchan;
-
 		/* fwd via bsc_api to send COMPLETE L3 INFO to MSC */
-		rc = bsc_compl_l3(lchan->conn, msg, 0);
-		if (rc < 0) {
-			osmo_fsm_inst_dispatch(lchan->conn->fi, GSCON_EV_A_DISC_IND, NULL);
-			return rc;
-		}
-		/* conn shall release lchan on teardown, also if this Layer 3 Complete is rejected. */
+		return bsc_compl_l3(lchan, msg, 0);
 	}
 
 	return 0;

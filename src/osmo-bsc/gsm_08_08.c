@@ -25,6 +25,7 @@
 #include <osmocom/bsc/paging.h>
 #include <osmocom/bsc/gsm_08_08.h>
 #include <osmocom/bsc/codec_pref.h>
+#include <osmocom/bsc/lchan_fsm.h>
 
 #include <osmocom/bsc/gsm_04_08_rr.h>
 #include <osmocom/bsc/a_reset.h>
@@ -428,8 +429,9 @@ static void parse_powercap(struct gsm_subscriber_connection *conn, struct msgb *
 }
 
 /*! MS->MSC: New MM context with L3 payload. */
-int bsc_compl_l3(struct gsm_subscriber_connection *conn, struct msgb *msg, uint16_t chosen_channel)
+int bsc_compl_l3(struct gsm_lchan *lchan, struct msgb *msg, uint16_t chosen_channel)
 {
+	struct gsm_subscriber_connection *conn;
 	struct bsc_msc_data *msc;
 	struct msgb *create_l3;
 	struct gsm0808_speech_codec_list scl;
@@ -440,6 +442,7 @@ int bsc_compl_l3(struct gsm_subscriber_connection *conn, struct msgb *msg, uint1
 	struct osmo_mobile_identity mi;
 	struct gsm48_hdr *gh;
 	uint8_t pdisc, mtype;
+	bool release_lchan = true;
 
 	if (msgb_l3len(msg) < sizeof(*gh)) {
 		LOGP(DRSL, LOGL_ERROR, "There is no GSM48 header here.\n");
@@ -460,6 +463,15 @@ int bsc_compl_l3(struct gsm_subscriber_connection *conn, struct msgb *msg, uint1
 		 * See e.g.  BSC_Tests.TC_chan_rel_rll_rel_ind: "dt := * f_est_dchan('23'O, 23, '00010203040506'O);"
 		 */
 	}
+
+	/* allocate a new connection */
+	conn = bsc_subscr_con_allocate(bsc_gsmnet);
+	if (!conn) {
+		LOG_COMPL_L3(pdisc, mtype, LOGL_ERROR, "Failed to allocate conn\n");
+		goto early_fail;
+	}
+	gscon_change_primary_lchan(conn, lchan);
+	gscon_update_id(conn);
 
 	log_set_context(LOG_CTX_BSC_SUBSCR, conn->bsub);
 
@@ -511,8 +523,12 @@ int bsc_compl_l3(struct gsm_subscriber_connection *conn, struct msgb *msg, uint1
 		goto early_fail;
 	}
 	rc = osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_A_CONN_REQ, create_l3);
+	if (!rc)
+		release_lchan = false;
 
 early_fail:
+	if (release_lchan)
+		lchan_release(lchan, false, true, RSL_ERR_EQUIPMENT_FAIL);
 	log_set_context(LOG_CTX_BSC_SUBSCR, NULL);
 	return rc;
 }

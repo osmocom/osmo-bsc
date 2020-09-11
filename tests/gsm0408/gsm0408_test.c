@@ -952,8 +952,8 @@ void gscon_submit_rsl_dtap(struct gsm_subscriber_connection *conn,
 
 bool lchan_may_receive_data(struct gsm_lchan *lchan) { return  true; }
 
-int bsc_compl_l3(struct gsm_subscriber_connection *conn, struct msgb *msg,
-		 uint16_t chosen_channel) { return 0; }
+int bsc_compl_l3(struct gsm_lchan *lchan, struct msgb *msg, uint16_t chosen_channel)
+{ return 0; }
 
 void bsc_dtap(struct gsm_subscriber_connection *conn, uint8_t link_id,
 	      struct msgb *msg) {}
