@@ -348,8 +348,8 @@ int osmo_bsc_sigtran_open_conn(struct gsm_subscriber_connection *conn, struct ms
 	LOGP(DMSC, LOGL_DEBUG, "Allocated new connection id: %d\n", conn->sccp.conn_id);
 	ss7 = osmo_ss7_instance_find(msc->a.cs7_instance);
 	OSMO_ASSERT(ss7);
-	LOGP(DMSC, LOGL_INFO, "Opening new SCCP connection (id=%i) to MSC: %s\n", conn_id,
-	     osmo_sccp_addr_name(ss7, &msc->a.msc_addr));
+	LOGP(DMSC, LOGL_INFO, "Opening new SCCP connection (id=%i) to MSC %d: %s\n", conn_id,
+	     msc->nr, osmo_sccp_addr_name(ss7, &msc->a.msc_addr));
 
 	rc = osmo_sccp_tx_conn_req_msg(msc->a.sccp_user, conn_id, &msc->a.bsc_addr,
 				       &msc->a.msc_addr, msg);
