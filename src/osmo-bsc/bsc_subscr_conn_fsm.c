@@ -152,6 +152,12 @@ static void gscon_bssmap_clear(struct gsm_subscriber_connection *conn,
 		LOGPFSML(conn->fi, LOGL_ERROR, "Unable to compose BSSMAP Clear Request message\n");
 		return;
 	}
+
+	if (!conn->sccp.msc) {
+		LOGPFSML(conn->fi, LOGL_ERROR, "Unable to deliver BSSMAP Clear Request message, no MSC for this conn\n");
+		return;
+	}
+
 	rate_ctr_inc(&conn->sccp.msc->msc_ctrs->ctr[MSC_CTR_BSSMAP_TX_DT1_CLEAR_RQST]);
 	rc = osmo_bsc_sigtran_send(conn, resp);
 	if (rc < 0)
