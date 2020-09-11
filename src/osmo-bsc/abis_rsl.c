@@ -1389,6 +1389,7 @@ static void reduce_rach_dos(struct gsm_bts *bts)
 				"(ra=0x%02x, neci=0x%02x, chreq_reason=0x%02x)\n",
 				rqd->ref.ra, bts->network->neci, rqd->reason);
 			llist_del(&rqd->entry);
+			talloc_free(rqd);
 		} else {
 			rqd_count++;
 		}
@@ -1398,7 +1399,9 @@ static void reduce_rach_dos(struct gsm_bts *bts)
 	 * problem with RACH dos on this BTS. We drop the first entry in the list to clip the growth of the list. */
 	if (rqd_count > 255) {
 		LOG_BTS(bts, DRSL, LOGL_INFO, "CHAN RQD: more than 255 queued RACH requests -- RACH DoS attack?\n");
-		llist_del(&llist_first_entry(&bts->chan_rqd_queue, struct chan_rqd, entry)->entry);
+		rqd = llist_first_entry(&bts->chan_rqd_queue, struct chan_rqd, entry);
+		llist_del(&rqd->entry);
+		talloc_free(rqd);
 	}
 }
 
