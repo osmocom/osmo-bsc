@@ -363,7 +363,7 @@ static void parse_powercap(struct gsm_subscriber_connection *conn, struct msgb *
 /*! MS->MSC: New MM context with L3 payload. */
 int bsc_compl_l3(struct gsm_lchan *lchan, struct msgb *msg, uint16_t chosen_channel)
 {
-	struct gsm_subscriber_connection *conn;
+	struct gsm_subscriber_connection *conn = NULL;
 	struct bsc_subscr *bsub = NULL;
 	struct bsc_msc_data *paged_from_msc;
 	enum bsc_paging_reason paging_reasons;
@@ -382,7 +382,7 @@ int bsc_compl_l3(struct gsm_lchan *lchan, struct msgb *msg, uint16_t chosen_chan
 
 	if (msgb_l3len(msg) < sizeof(*gh)) {
 		LOGP(DRSL, LOGL_ERROR, "There is no GSM48 header here.\n");
-		goto early_fail;
+		goto early_exit;
 	}
 
 	gh = msgb_l3(msg);
@@ -392,6 +392,9 @@ int bsc_compl_l3(struct gsm_lchan *lchan, struct msgb *msg, uint16_t chosen_chan
 	bts = lchan->ts->trx->bts;
 	OSMO_ASSERT(bts);
 
+	/* Normally, if an lchan has no conn yet, it is an all new Complete Layer 3, and we allocate a new conn on the
+	 * A-interface. But there are cases where a conn on A already exists for this subscriber (e.g. Perform Location
+	 * Request on IDLE MS). The Mobile Identity tells us whether that is the case. */
 	if (osmo_mobile_identity_decode_from_l3(&mi, msg, false)) {
 		LOG_COMPL_L3(pdisc, mtype, LOGL_ERROR, "Cannot extract Mobile Identity: %s\n",
 			     msgb_hexdump_c(OTC_SELECT, msg));
@@ -405,11 +408,19 @@ int bsc_compl_l3(struct gsm_lchan *lchan, struct msgb *msg, uint16_t chosen_chan
 		bsub = bsc_subscr_find_or_create_by_mi(bsc_gsmnet->bsc_subscribers, &mi, __func__);
 	}
 
-	/* allocate a new connection */
-	conn = bsc_subscr_con_allocate(bsc_gsmnet);
+	/* If this Mobile Identity already has an active bsc_subscr, look whether there also is an active A-interface
+	 * conn for this subscriber. This may be the case during a Perform Location Request (LCS) from the MSC that
+	 * started on an IDLE MS, and now the MS is becoming active. Associate with the existing conn. */
+	if (bsub)
+		conn = bsc_conn_by_bsub(bsub);
+
 	if (!conn) {
-		LOG_COMPL_L3(pdisc, mtype, LOGL_ERROR, "Failed to allocate conn\n");
-		goto early_fail;
+		/* Typical Complete Layer 3 with a new conn being established. */
+		conn = bsc_subscr_con_allocate(bsc_gsmnet);
+		if (!conn) {
+			LOG_COMPL_L3(pdisc, mtype, LOGL_ERROR, "Failed to allocate conn\n");
+			goto early_exit;
+		}
 	}
 	if (bsub) {
 		/* We got the conn either from new allocation, or by searching for it by bsub. So: */
@@ -420,6 +431,7 @@ int bsc_compl_l3(struct gsm_lchan *lchan, struct msgb *msg, uint16_t chosen_chan
 		}
 		bsc_subscr_put(bsub, __func__);
 	}
+	/* Associate lchan with the conn, and set the id string for logging */
 	gscon_change_primary_lchan(conn, lchan);
 	gscon_update_id(conn);
 
@@ -454,23 +466,43 @@ int bsc_compl_l3(struct gsm_lchan *lchan, struct msgb *msg, uint16_t chosen_chan
 		}
 	}
 
-	/* find the MSC link we want to use */
-	if (paged_from_msc)
-		msc = paged_from_msc;
-	else
-		msc = bsc_find_msc(conn, &mi, is_emerg, is_lu_from_other_plmn(msg));
-	if (!msc) {
-		LOG_COMPL_L3(pdisc, mtype, LOGL_ERROR, "%s%s: No suitable MSC for this Complete Layer 3 request found\n",
-			     osmo_mobile_identity_to_str_c(OTC_SELECT, &mi), is_emerg ? " FOR EMERGENCY CALL" : "");
-		rc = -1;
-		goto early_fail;
-	}
+	if (!conn->sccp.msc) {
+		/* The conn was just allocated, and no target MSC has been picked for it yet. */
+		if (paged_from_msc)
+			msc = paged_from_msc;
+		else
+			msc = bsc_find_msc(conn, &mi, is_emerg, is_lu_from_other_plmn(msg));
+		if (!msc) {
+			LOG_COMPL_L3(pdisc, mtype, LOGL_ERROR,
+				     "%s%s: No suitable MSC for this Complete Layer 3 request found\n",
+				     osmo_mobile_identity_to_str_c(OTC_SELECT, &mi),
+				     is_emerg ? " FOR EMERGENCY CALL" : "");
+			goto early_exit;
+		}
 
-	/* allocate resource for a new connection */
-	if (osmo_bsc_sigtran_new_conn(conn, msc) != BSC_CON_SUCCESS)
-		goto early_fail;
+		/* allocate resource for a new connection */
+		if (osmo_bsc_sigtran_new_conn(conn, msc) != BSC_CON_SUCCESS)
+			goto early_exit;
+	} else if (paged_from_msc && conn->sccp.msc != paged_from_msc) {
+		LOG_COMPL_L3(pdisc, mtype, LOGL_ERROR,
+			     "%s%s: there is a conn to MSC %u, but there is a pending Paging request from MSC %u\n",
+			     osmo_mobile_identity_to_str_c(OTC_SELECT, &mi),
+			     is_emerg ? " FOR EMERGENCY CALL" : "",
+			     conn->sccp.msc->nr, paged_from_msc->nr);
+	}
+	OSMO_ASSERT(conn->sccp.msc);
 
 	parse_powercap(conn, msg);
+
+	/* If the Paging was issued only by OsmoBSC for LCS, don't bother to establish Layer 3 to the MSC. */
+	if (paged_from_msc && !(paging_reasons & BSC_PAGING_FROM_CN)) {
+		LOG_COMPL_L3(pdisc, mtype, LOGL_DEBUG,
+			     "%s%s: Paging was for Perform Location Request only, not establishing Layer 3\n",
+			     osmo_mobile_identity_to_str_c(OTC_SELECT, &mi),
+			     is_emerg ? " FOR EMERGENCY CALL" : "");
+		rc = 0;
+		goto early_exit;
+	}
 
 	/* Send the Create Layer 3. */
 	use_scl = NULL;
@@ -486,19 +518,19 @@ int bsc_compl_l3(struct gsm_lchan *lchan, struct msgb *msg, uint16_t chosen_chan
 		/* should never happen */
 		LOG_COMPL_L3(pdisc, mtype, LOGL_ERROR, "%s: internal error: BTS without identity\n",
 			     osmo_mobile_identity_to_str_c(OTC_SELECT, &mi));
-		goto early_fail;
+		goto early_exit;
 	}
 	create_l3 = gsm0808_create_layer3_2(msg, cgi, use_scl);
 	if (!create_l3) {
 		LOG_COMPL_L3(pdisc, mtype, LOGL_ERROR, "%s: Failed to compose Create Layer 3 message\n",
 			     osmo_mobile_identity_to_str_c(OTC_SELECT, &mi));
-		goto early_fail;
+		goto early_exit;
 	}
 	rc = osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_MO_COMPL_L3, create_l3);
 	if (!rc)
 		release_lchan = false;
 
-early_fail:
+early_exit:
 	if (release_lchan)
 		lchan_release(lchan, false, true, RSL_ERR_EQUIPMENT_FAIL);
 	log_set_context(LOG_CTX_BSC_SUBSCR, NULL);
