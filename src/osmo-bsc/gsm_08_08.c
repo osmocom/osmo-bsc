@@ -196,11 +196,9 @@ static struct bsc_msc_data *bsc_find_msc(struct gsm_subscriber_connection *conn,
 	struct bsc_msc_data *msc_round_robin_next = NULL;
 	struct bsc_msc_data *msc_round_robin_first = NULL;
 	uint8_t round_robin_next_nr;
-	struct bsc_subscr *subscr;
 	bool is_emerg = false;
 	int16_t nri_v = -1;
 	bool is_null_nri = false;
-	struct gsm_bts *bts;
 
 	if (msgb_l3len(msg) < sizeof(*gh)) {
 		LOGP(DRSL, LOGL_ERROR, "There is no GSM48 header here.\n");
@@ -212,27 +210,6 @@ static struct bsc_msc_data *bsc_find_msc(struct gsm_subscriber_connection *conn,
 	mtype = gsm48_hdr_msg_type(gh);
 
 	is_emerg = (pdisc == GSM48_PDISC_MM && mtype == GSM48_MT_MM_CM_SERV_REQ) && is_cm_service_for_emerg(msg);
-
-	/* Has the subscriber been paged from a connected MSC? */
-	bts = conn_get_bts(conn);
-	if (bts && pdisc == GSM48_PDISC_RR && mtype == GSM48_MT_RR_PAG_RESP) {
-		subscr = bsc_subscr_find_by_mi(conn->network->bsc_subscribers, mi);
-		if (subscr) {
-			msc_target = paging_get_msc(bts, subscr);
-			bsc_subscr_put(subscr);
-			if (is_msc_usable(msc_target, is_emerg)) {
-				LOG_COMPL_L3(pdisc, mtype, LOGL_DEBUG, "%s matches earlier Paging from msc %d\n",
-					     osmo_mobile_identity_to_str_c(OTC_SELECT, mi), msc_target->nr);
-				rate_ctr_inc(&msc_target->msc_ctrs->ctr[MSC_CTR_MSCPOOL_SUBSCR_PAGED]);
-				return msc_target;
-			} else {
-				LOG_COMPL_L3(pdisc, mtype, LOGL_DEBUG,
-					     "%s matches earlier Paging from msc %d, but this MSC is not connected\n",
-					     osmo_mobile_identity_to_str_c(OTC_SELECT, mi), msc_target->nr);
-			}
-			msc_target = NULL;
-		}
-	}
 
 #define LOG_NRI(LOGLEVEL, FORMAT, ARGS...) \
 	LOGP(DMSC, LOGLEVEL, "%s NRI(%d)=0x%x=%d: " FORMAT, osmo_mobile_identity_to_str_c(OTC_SELECT, mi), \
@@ -347,34 +324,6 @@ static struct bsc_msc_data *bsc_find_msc(struct gsm_subscriber_connection *conn,
 #undef LOG_NRI
 }
 
-static int handle_page_resp(struct gsm_subscriber_connection *conn, struct msgb *msg,
-			    const struct osmo_mobile_identity *mi)
-{
-	struct bsc_subscr *subscr = NULL;
-	struct gsm_bts *bts = conn_get_bts(conn);
-
-	if (!bts) {
-		/* should never happen */
-		LOGP(DRSL, LOGL_ERROR, "Paging Response without lchan\n");
-		return -1;
-	}
-
-	if (mi->type == GSM_MI_TYPE_NONE)
-		return -1;
-
-	subscr = bsc_subscr_find_by_mi(conn->network->bsc_subscribers, mi);
-	if (!subscr) {
-		LOGP(DMSC, LOGL_ERROR, "Non active subscriber got paged.\n");
-		rate_ctr_inc(&conn->lchan->ts->trx->bts->bts_ctrs->ctr[BTS_CTR_PAGING_NO_ACTIVE_PAGING]);
-		rate_ctr_inc(&conn->network->bsc_ctrs->ctr[BSC_CTR_PAGING_NO_ACTIVE_PAGING]);
-		return -1;
-	}
-
-	paging_request_stop(&conn->network->bts_list, bts, subscr, conn, msg);
-	bsc_subscr_put(subscr);
-	return 0;
-}
-
 static void parse_powercap(struct gsm_subscriber_connection *conn, struct msgb *msg)
 {
 	struct gsm48_hdr *gh = msgb_l3(msg);
@@ -433,6 +382,7 @@ int bsc_compl_l3(struct gsm_lchan *lchan, struct msgb *msg, uint16_t chosen_chan
 {
 	struct gsm_subscriber_connection *conn;
 	struct bsc_subscr *bsub = NULL;
+	struct bsc_msc_data *paged_from_msc;
 	struct bsc_msc_data *msc;
 	struct msgb *create_l3;
 	struct gsm0808_speech_codec_list scl;
@@ -453,6 +403,9 @@ int bsc_compl_l3(struct gsm_lchan *lchan, struct msgb *msg, uint16_t chosen_chan
 	gh = msgb_l3(msg);
 	pdisc = gsm48_hdr_pdisc(gh);
 	mtype = gsm48_hdr_msg_type(gh);
+
+	bts = lchan->ts->trx->bts;
+	OSMO_ASSERT(bts);
 
 	if (osmo_mobile_identity_decode_from_l3(&mi, msg, false)) {
 		LOG_COMPL_L3(pdisc, mtype, LOGL_ERROR, "Cannot extract Mobile Identity: %s\n",
@@ -482,8 +435,37 @@ int bsc_compl_l3(struct gsm_lchan *lchan, struct msgb *msg, uint16_t chosen_chan
 
 	log_set_context(LOG_CTX_BSC_SUBSCR, conn->bsub);
 
+	/* When receiving a Paging Response, stop Paging for this subscriber on all cells, and figure out which MSC
+	 * sent the Paging Request, if any. */
+	paged_from_msc = NULL;
+	if (pdisc == GSM48_PDISC_RR && mtype == GSM48_MT_RR_PAG_RESP) {
+		paged_from_msc = paging_request_stop(bts, conn->bsub);
+		if (!paged_from_msc) {
+			/* This looks like an unsolicited Paging Response. It is required to pick any MSC, because any
+			 * MT-CSFB calls were Paged by the MSC via SGs, and hence are not listed in the BSC. */
+			LOG_COMPL_L3(pdisc, mtype, LOGL_DEBUG,
+				     "%s Unsolicited Paging Response, possibly an MT-CSFB call.\n",
+				     osmo_mobile_identity_to_str_c(OTC_SELECT, &mi));
+
+			rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_CTR_PAGING_NO_ACTIVE_PAGING]);
+			rate_ctr_inc(&bsc_gsmnet->bsc_ctrs->ctr[BSC_CTR_PAGING_NO_ACTIVE_PAGING]);
+		} else if (is_msc_usable(paged_from_msc, false)) {
+			LOG_COMPL_L3(pdisc, mtype, LOGL_DEBUG, "%s matches earlier Paging from msc %d\n",
+				     osmo_mobile_identity_to_str_c(OTC_SELECT, &mi), paged_from_msc->nr);
+			rate_ctr_inc(&paged_from_msc->msc_ctrs->ctr[MSC_CTR_MSCPOOL_SUBSCR_PAGED]);
+		} else {
+			LOG_COMPL_L3(pdisc, mtype, LOGL_DEBUG,
+				     "%s matches earlier Paging from msc %d, but this MSC is not connected\n",
+				     osmo_mobile_identity_to_str_c(OTC_SELECT, &mi), paged_from_msc->nr);
+			paged_from_msc = NULL;
+		}
+	}
+
 	/* find the MSC link we want to use */
-	msc = bsc_find_msc(conn, msg, &mi);
+	if (paged_from_msc)
+		msc = paged_from_msc;
+	else
+		msc = bsc_find_msc(conn, msg, &mi);
 	if (!msc) {
 		LOGP(DMSC, LOGL_ERROR, "Failed to find a MSC for a connection.\n");
 		rc = -1;
@@ -494,18 +476,7 @@ int bsc_compl_l3(struct gsm_lchan *lchan, struct msgb *msg, uint16_t chosen_chan
 	if (osmo_bsc_sigtran_new_conn(conn, msc) != BSC_CON_SUCCESS)
 		goto early_fail;
 
-	bts = conn_get_bts(conn);
-	if (!bts) {
-		/* should never happen */
-		LOG_COMPL_L3(pdisc, mtype, LOGL_ERROR, "%s: internal error: Compl L3 without BTS\n",
-			     osmo_mobile_identity_to_str_c(OTC_SELECT, &mi));
-		rc = -1;
-		goto early_fail;
-	}
-
 	parse_powercap(conn, msg);
-	if (pdisc == GSM48_PDISC_RR && mtype == GSM48_MT_RR_PAG_RESP)
-		handle_page_resp(conn, msg, &mi);
 
 	/* Send the Create Layer 3. */
 	use_scl = NULL;

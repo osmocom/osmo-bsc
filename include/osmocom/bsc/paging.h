@@ -59,11 +59,7 @@ struct gsm_paging_request {
 int paging_request_bts(struct gsm_bts *bts, struct bsc_subscr *bsub, int type,
 			struct bsc_msc_data *msc);
 
-/* stop paging requests */
-void paging_request_stop(struct llist_head *bts_list,
-			 struct gsm_bts *_bts, struct bsc_subscr *bsub,
-			 struct gsm_subscriber_connection *conn,
-			 struct msgb *msg);
+struct bsc_msc_data *paging_request_stop(struct gsm_bts *bts, struct bsc_subscr *bsub);
 
 /* update paging load */
 void paging_update_buffer_space(struct gsm_bts *bts, uint16_t);
