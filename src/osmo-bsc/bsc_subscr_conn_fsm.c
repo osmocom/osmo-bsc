@@ -283,11 +283,6 @@ static void gscon_fsm_init(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 	case GSCON_EV_A_CONN_REQ:
 		/* RLL ESTABLISH IND with initial L3 Message */
 		msg = data;
-		/* FIXME: Extract Mobile ID and update FSM using osmo_fsm_inst_set_id()
-		 * i.e. we will probably extract the mobile identity earlier, where the
-		 * imsi filter code is. Then we could just use it here.
-		 * related: OS#2969 */
-
 		rc = osmo_bsc_sigtran_open_conn(conn, msg);
 		if (rc < 0) {
 			osmo_fsm_inst_term(fi, OSMO_FSM_TERM_ERROR, NULL);
