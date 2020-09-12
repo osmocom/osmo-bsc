@@ -184,13 +184,12 @@ static bool is_msc_usable(struct bsc_msc_data *msc, bool is_emerg)
  * c) All other cases distribute the messages across connected MSCs in a round-robin fashion.
  */
 static struct bsc_msc_data *bsc_find_msc(struct gsm_subscriber_connection *conn,
-				   struct msgb *msg)
+					 struct msgb *msg, const struct osmo_mobile_identity *mi)
 {
 	struct gsm_network *net = conn->network;
 	struct gsm48_hdr *gh;
 	int8_t pdisc;
 	uint8_t mtype;
-	struct osmo_mobile_identity mi;
 	struct bsc_msc_data *msc;
 	struct bsc_msc_data *msc_target = NULL;
 	struct bsc_msc_data *msc_round_robin_next = NULL;
@@ -213,44 +212,34 @@ static struct bsc_msc_data *bsc_find_msc(struct gsm_subscriber_connection *conn,
 
 	is_emerg = (pdisc == GSM48_PDISC_MM && mtype == GSM48_MT_MM_CM_SERV_REQ) && is_cm_service_for_emerg(msg);
 
-	if (osmo_mobile_identity_decode_from_l3(&mi, msg, false)) {
-		LOG_COMPL_L3(pdisc, mtype, LOGL_ERROR, "Cannot extract Mobile Identity: %s\n",
-			     msgb_hexdump_c(OTC_SELECT, msg));
-		/* There is no Mobile Identity to pick a matching MSC from. Likely this is an invalid Complete Layer 3
-		 * message that deserves to be rejected. However, the current state of our ttcn3 tests does send invalid
-		 * Layer 3 Info in some tests and expects osmo-bsc to not care about that. So, changing the behavior to
-		 * rejecting on missing MI causes test failure and, if at all, should happen in a separate patch.
-		 * See e.g. BSC_Tests.TC_chan_rel_rll_rel_ind: "dt := f_est_dchan('23'O, 23, '00010203040506'O);" */
-	}
-
 	/* Has the subscriber been paged from a connected MSC? */
 	bts = conn_get_bts(conn);
 	if (bts && pdisc == GSM48_PDISC_RR && mtype == GSM48_MT_RR_PAG_RESP) {
-		subscr = bsc_subscr_find_by_mi(conn->network->bsc_subscribers, &mi);
+		subscr = bsc_subscr_find_by_mi(conn->network->bsc_subscribers, mi);
 		if (subscr) {
 			msc_target = paging_get_msc(bts, subscr);
 			bsc_subscr_put(subscr);
 			if (is_msc_usable(msc_target, is_emerg)) {
 				LOG_COMPL_L3(pdisc, mtype, LOGL_DEBUG, "%s matches earlier Paging from msc %d\n",
-					     osmo_mobile_identity_to_str_c(OTC_SELECT, &mi), msc_target->nr);
+					     osmo_mobile_identity_to_str_c(OTC_SELECT, mi), msc_target->nr);
 				rate_ctr_inc(&msc_target->msc_ctrs->ctr[MSC_CTR_MSCPOOL_SUBSCR_PAGED]);
 				return msc_target;
 			} else {
 				LOG_COMPL_L3(pdisc, mtype, LOGL_DEBUG,
 					     "%s matches earlier Paging from msc %d, but this MSC is not connected\n",
-					     osmo_mobile_identity_to_str_c(OTC_SELECT, &mi), msc_target->nr);
+					     osmo_mobile_identity_to_str_c(OTC_SELECT, mi), msc_target->nr);
 			}
 			msc_target = NULL;
 		}
 	}
 
 #define LOG_NRI(LOGLEVEL, FORMAT, ARGS...) \
-	LOGP(DMSC, LOGLEVEL, "%s NRI(%d)=0x%x=%d: " FORMAT, osmo_mobile_identity_to_str_c(OTC_SELECT, &mi), \
+	LOGP(DMSC, LOGLEVEL, "%s NRI(%d)=0x%x=%d: " FORMAT, osmo_mobile_identity_to_str_c(OTC_SELECT, mi), \
 	     net->nri_bitlen, nri_v, nri_v, ##ARGS)
 
 	/* Extract NRI bits from TMSI, possibly indicating which MSC is responsible */
-	if (mi.type == GSM_MI_TYPE_TMSI) {
-		if (osmo_tmsi_nri_v_get(&nri_v, mi.tmsi, net->nri_bitlen)) {
+	if (mi->type == GSM_MI_TYPE_TMSI) {
+		if (osmo_tmsi_nri_v_get(&nri_v, mi->tmsi, net->nri_bitlen)) {
 			LOGP(DMSC, LOGL_ERROR, "Unable to retrieve NRI from TMSI, nri_bitlen == %u\n", net->nri_bitlen);
 			nri_v = -1;
 		} else if (is_lu_from_other_plmn(msg)) {
@@ -328,7 +317,7 @@ static struct bsc_msc_data *bsc_find_msc(struct gsm_subscriber_connection *conn,
 	msc_target = msc_round_robin_next ? : msc_round_robin_first;
 	if (!msc_target) {
 		LOG_COMPL_L3(pdisc, mtype, LOGL_ERROR, "%s%s: No suitable MSC for this Complete Layer 3 request found\n",
-			     osmo_mobile_identity_to_str_c(OTC_SELECT, &mi), is_emerg ? " FOR EMERGENCY CALL" : "");
+			     osmo_mobile_identity_to_str_c(OTC_SELECT, mi), is_emerg ? " FOR EMERGENCY CALL" : "");
 		rate_ctr_inc(&bsc_gsmnet->bsc_ctrs->ctr[BSC_CTR_MSCPOOL_SUBSCR_NO_MSC]);
 		if (is_emerg)
 			rate_ctr_inc(&bsc_gsmnet->bsc_ctrs->ctr[BSC_CTR_MSCPOOL_EMERG_LOST]);
@@ -336,7 +325,7 @@ static struct bsc_msc_data *bsc_find_msc(struct gsm_subscriber_connection *conn,
 	}
 
 	LOGP(DMSC, LOGL_DEBUG, "New subscriber %s: MSC round-robin selects msc %d\n",
-	     osmo_mobile_identity_to_str_c(OTC_SELECT, &mi), msc_target->nr);
+	     osmo_mobile_identity_to_str_c(OTC_SELECT, mi), msc_target->nr);
 
 	if (is_null_nri)
 		rate_ctr_inc(&msc_target->msc_ctrs->ctr[MSC_CTR_MSCPOOL_SUBSCR_REATTACH]);
@@ -357,9 +346,9 @@ static struct bsc_msc_data *bsc_find_msc(struct gsm_subscriber_connection *conn,
 #undef LOG_NRI
 }
 
-static int handle_page_resp(struct gsm_subscriber_connection *conn, struct msgb *msg)
+static int handle_page_resp(struct gsm_subscriber_connection *conn, struct msgb *msg,
+			    const struct osmo_mobile_identity *mi)
 {
-	struct osmo_mobile_identity mi;
 	struct bsc_subscr *subscr = NULL;
 	struct gsm_bts *bts = conn_get_bts(conn);
 
@@ -369,12 +358,10 @@ static int handle_page_resp(struct gsm_subscriber_connection *conn, struct msgb 
 		return -1;
 	}
 
-	if (osmo_mobile_identity_decode_from_l3(&mi, msg, false)) {
-		LOGP(DRSL, LOGL_ERROR, "Unable to extract Mobile Identity from Paging Response\n");
+	if (mi->type == GSM_MI_TYPE_NONE)
 		return -1;
-	}
 
-	subscr = bsc_subscr_find_by_mi(conn->network->bsc_subscribers, &mi);
+	subscr = bsc_subscr_find_by_mi(conn->network->bsc_subscribers, mi);
 	if (!subscr) {
 		LOGP(DMSC, LOGL_ERROR, "Non active subscriber got paged.\n");
 		rate_ctr_inc(&conn->lchan->ts->trx->bts->bts_ctrs->ctr[BTS_CTR_PAGING_NO_ACTIVE_PAGING]);
@@ -449,6 +436,7 @@ int bsc_compl_l3(struct gsm_subscriber_connection *conn, struct msgb *msg, uint1
 	int rc = -2;
 	struct gsm_bts *bts;
 	struct osmo_cell_global_id *cgi;
+	struct osmo_mobile_identity mi;
 	struct gsm48_hdr *gh;
 	uint8_t pdisc, mtype;
 
@@ -461,12 +449,23 @@ int bsc_compl_l3(struct gsm_subscriber_connection *conn, struct msgb *msg, uint1
 	pdisc = gsm48_hdr_pdisc(gh);
 	mtype = gsm48_hdr_msg_type(gh);
 
+	if (osmo_mobile_identity_decode_from_l3(&mi, msg, false)) {
+		LOG_COMPL_L3(pdisc, mtype, LOGL_ERROR, "Cannot extract Mobile Identity: %s\n",
+			     msgb_hexdump_c(OTC_SELECT, msg));
+		/* Likely this is an invalid Complete Layer 3 message that deserves to be rejected. However, the current
+		 * state of our ttcn3 tests does send invalid Layer 3 Info in some tests and expects osmo-bsc to not
+		 * care about that. So, changing the behavior to rejecting on missing MI causes test failure and, if at
+		 * all, should happen in a separate patch.
+		 * See e.g.  BSC_Tests.TC_chan_rel_rll_rel_ind: "dt := * f_est_dchan('23'O, 23, '00010203040506'O);"
+		 */
+	}
+
 	log_set_context(LOG_CTX_BSC_SUBSCR, conn->bsub);
 
 	LOGP(DMSC, LOGL_INFO, "Tx MSC COMPL L3\n");
 
 	/* find the MSC link we want to use */
-	msc = bsc_find_msc(conn, msg);
+	msc = bsc_find_msc(conn, msg, &mi);
 	if (!msc) {
 		LOGP(DMSC, LOGL_ERROR, "Failed to find a MSC for a connection.\n");
 		rc = -1;
@@ -489,7 +488,7 @@ int bsc_compl_l3(struct gsm_subscriber_connection *conn, struct msgb *msg, uint1
 
 	parse_powercap(conn, msg);
 	if (pdisc == GSM48_PDISC_RR && mtype == GSM48_MT_RR_PAG_RESP)
-		handle_page_resp(conn, msg);
+		handle_page_resp(conn, msg, &mi);
 
 	if (gscon_is_aoip(conn)) {
 		gen_bss_supported_codec_list(&scl, msc, bts);
