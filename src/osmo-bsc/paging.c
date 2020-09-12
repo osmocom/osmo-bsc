@@ -387,13 +387,9 @@ int paging_request_bts(struct gsm_bts *bts, struct bsc_subscr *bsub, int type,
  *  to notify the paging originator that paging has completed.
  * \param[in] bts BTS on which we shall stop paging
  * \param[in] bsub subscriber which we shall stop paging
- * \param[in] conn connection to the subscriber (if any)
- * \param[in] msg message received from subscrbier (if any)
- * \returns 0 if an active paging request was stopped, an error code otherwise. */
-/* we consciously ignore the type of the request here */
-static int _paging_request_stop(struct gsm_bts *bts, struct bsc_subscr *bsub,
-				struct gsm_subscriber_connection *conn,
-				struct msgb *msg)
+ * \returns the MSC that paged the subscriber, if there was a pending request.
+ */
+static struct bsc_msc_data *paging_request_stop_bts(struct gsm_bts *bts, struct bsc_subscr *bsub)
 {
 	struct gsm_bts_paging_state *bts_entry = &bts->paging;
 	struct gsm_paging_request *req, *req2;
@@ -403,50 +399,46 @@ static int _paging_request_stop(struct gsm_bts *bts, struct bsc_subscr *bsub,
 	llist_for_each_entry_safe(req, req2, &bts_entry->pending_requests,
 				  entry) {
 		if (req->bsub == bsub) {
+			struct bsc_msc_data *from_msc = req->msc;
 			/* now give up the data structure */
 			paging_remove_request(&bts->paging, req);
 			LOG_BTS(bts, DPAG, LOGL_DEBUG, "Stop paging %s\n", bsc_subscr_name(bsub));
-			return 0;
+			return from_msc;
 		}
 	}
 
-	return -ENOENT;
+	return NULL;
 }
 
 /*! Stop paging on all other bts'
- * \param[in] bts_list list of BTSs to iterate
- * \param[in] _bts BTS which has received a paging response
+ * \param[in] bts BTS which has received a paging response
  * \param[in] bsub subscriber
- * \param[in] msgb L3 message that we have received from \a bsub on \a _bts */
-void paging_request_stop(struct llist_head *bts_list,
-			 struct gsm_bts *_bts, struct bsc_subscr *bsub,
-			 struct gsm_subscriber_connection *conn,
-			 struct msgb *msg)
+ * \returns the MSC that paged the subscriber, if there was a pending request.
+ */
+struct bsc_msc_data *paging_request_stop(struct gsm_bts *bts, struct bsc_subscr *bsub)
 {
-	struct gsm_bts *bts;
+	struct gsm_bts *bts_i;
+	struct bsc_msc_data *paged_from_msc;
+	OSMO_ASSERT(bts);
 
-	log_set_context(LOG_CTX_BSC_SUBSCR, bsub);
-	conn->bsub = bsc_subscr_get(bsub);
-	gscon_update_id(conn);
+	paged_from_msc = paging_request_stop_bts(bts, bsub);
+	if (paged_from_msc) {
+		rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_CTR_PAGING_RESPONDED]);
+		rate_ctr_inc(&bts->network->bsc_ctrs->ctr[BSC_CTR_PAGING_RESPONDED]);
+	}
 
-	/* Stop this first and dispatch the request */
-	if (_bts) {
-		if (_paging_request_stop(_bts, bsub, conn, msg) == 0) {
-			rate_ctr_inc(&_bts->bts_ctrs->ctr[BTS_CTR_PAGING_RESPONDED]);
-			rate_ctr_inc(&_bts->network->bsc_ctrs->ctr[BSC_CTR_PAGING_RESPONDED]);
+	llist_for_each_entry(bts_i, &bsc_gsmnet->bts_list, list) {
+		struct bsc_msc_data *paged_from_msc2 = paging_request_stop_bts(bts_i, bsub);
+		if (!paged_from_msc && paged_from_msc2) {
+			/* If this happened, it would be a bit weird: it means there was no Paging Request
+			 * pending on the BTS that sent the Paging Reponse, but there *is* a Paging Request
+			 * pending on a different BTS. But why not return an MSC when we found one. */
+			paged_from_msc = paged_from_msc2;
 		}
 	}
 
-	/* Make sure to cancel this everywhere else */
-	llist_for_each_entry(bts, bts_list, list) {
-		/* Sort of an optimization. */
-		if (bts == _bts)
-			continue;
-		_paging_request_stop(bts, bsub, NULL, NULL);
-	}
-	log_set_context(LOG_CTX_BSC_SUBSCR, NULL);
+	return paged_from_msc;
 }
-
 
 /*! Update the BTS paging buffer slots on given BTS */
 void paging_update_buffer_space(struct gsm_bts *bts, uint16_t free_slots)
@@ -470,18 +462,6 @@ unsigned int paging_pending_requests_nr(struct gsm_bts *bts)
 		++requests;
 
 	return requests;
-}
-
-/*! Find any paging data for the given subscriber at the given BTS. */
-struct bsc_msc_data *paging_get_msc(struct gsm_bts *bts, struct bsc_subscr *bsub)
-{
-	struct gsm_paging_request *req;
-
-	llist_for_each_entry(req, &bts->paging.pending_requests, entry)
-		if (req->bsub == bsub)
-			return req->msc;
-
-	return NULL;
 }
 
 /*! Flush all paging requests at a given BTS for a given MSC (or NULL if all MSC should be flushed). */
