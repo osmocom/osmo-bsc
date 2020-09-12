@@ -184,32 +184,17 @@ static bool is_msc_usable(struct bsc_msc_data *msc, bool is_emerg)
  *    conn.
  * c) All other cases distribute the messages across connected MSCs in a round-robin fashion.
  */
-static struct bsc_msc_data *bsc_find_msc(struct gsm_subscriber_connection *conn,
-					 struct msgb *msg, const struct osmo_mobile_identity *mi)
+static struct bsc_msc_data *bsc_find_msc(struct gsm_subscriber_connection *conn, const struct osmo_mobile_identity *mi,
+					 bool is_emerg, bool from_other_plmn)
 {
 	struct gsm_network *net = conn->network;
-	struct gsm48_hdr *gh;
-	int8_t pdisc;
-	uint8_t mtype;
 	struct bsc_msc_data *msc;
 	struct bsc_msc_data *msc_target = NULL;
 	struct bsc_msc_data *msc_round_robin_next = NULL;
 	struct bsc_msc_data *msc_round_robin_first = NULL;
 	uint8_t round_robin_next_nr;
-	bool is_emerg = false;
 	int16_t nri_v = -1;
 	bool is_null_nri = false;
-
-	if (msgb_l3len(msg) < sizeof(*gh)) {
-		LOGP(DRSL, LOGL_ERROR, "There is no GSM48 header here.\n");
-		return NULL;
-	}
-
-	gh = msgb_l3(msg);
-	pdisc = gsm48_hdr_pdisc(gh);
-	mtype = gsm48_hdr_msg_type(gh);
-
-	is_emerg = (pdisc == GSM48_PDISC_MM && mtype == GSM48_MT_MM_CM_SERV_REQ) && is_cm_service_for_emerg(msg);
 
 #define LOG_NRI(LOGLEVEL, FORMAT, ARGS...) \
 	LOGP(DMSC, LOGLEVEL, "%s NRI(%d)=0x%x=%d: " FORMAT, osmo_mobile_identity_to_str_c(OTC_SELECT, mi), \
@@ -220,7 +205,7 @@ static struct bsc_msc_data *bsc_find_msc(struct gsm_subscriber_connection *conn,
 		if (osmo_tmsi_nri_v_get(&nri_v, mi->tmsi, net->nri_bitlen)) {
 			LOGP(DMSC, LOGL_ERROR, "Unable to retrieve NRI from TMSI, nri_bitlen == %u\n", net->nri_bitlen);
 			nri_v = -1;
-		} else if (is_lu_from_other_plmn(msg)) {
+		} else if (from_other_plmn) {
 			/* If a subscriber was previously attached to a different PLMN, it might still send the other
 			 * PLMN's TMSI identity in an IMSI Attach. The LU sends a LAI indicating the previous PLMN. If
 			 * it mismatches our PLMN, ignore the NRI. */
@@ -294,8 +279,6 @@ static struct bsc_msc_data *bsc_find_msc(struct gsm_subscriber_connection *conn,
 	 * them are usable -- wrap to the start. */
 	msc_target = msc_round_robin_next ? : msc_round_robin_first;
 	if (!msc_target) {
-		LOG_COMPL_L3(pdisc, mtype, LOGL_ERROR, "%s%s: No suitable MSC for this Complete Layer 3 request found\n",
-			     osmo_mobile_identity_to_str_c(OTC_SELECT, mi), is_emerg ? " FOR EMERGENCY CALL" : "");
 		rate_ctr_inc(&bsc_gsmnet->bsc_ctrs->ctr[BSC_CTR_MSCPOOL_SUBSCR_NO_MSC]);
 		if (is_emerg)
 			rate_ctr_inc(&bsc_gsmnet->bsc_ctrs->ctr[BSC_CTR_MSCPOOL_EMERG_LOST]);
@@ -393,6 +376,7 @@ int bsc_compl_l3(struct gsm_lchan *lchan, struct msgb *msg, uint16_t chosen_chan
 	struct osmo_mobile_identity mi;
 	struct gsm48_hdr *gh;
 	uint8_t pdisc, mtype;
+	bool is_emerg;
 	bool release_lchan = true;
 
 	if (msgb_l3len(msg) < sizeof(*gh)) {
@@ -435,6 +419,8 @@ int bsc_compl_l3(struct gsm_lchan *lchan, struct msgb *msg, uint16_t chosen_chan
 
 	log_set_context(LOG_CTX_BSC_SUBSCR, conn->bsub);
 
+	is_emerg = (pdisc == GSM48_PDISC_MM && mtype == GSM48_MT_MM_CM_SERV_REQ) && is_cm_service_for_emerg(msg);
+
 	/* When receiving a Paging Response, stop Paging for this subscriber on all cells, and figure out which MSC
 	 * sent the Paging Request, if any. */
 	paged_from_msc = NULL;
@@ -449,7 +435,7 @@ int bsc_compl_l3(struct gsm_lchan *lchan, struct msgb *msg, uint16_t chosen_chan
 
 			rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_CTR_PAGING_NO_ACTIVE_PAGING]);
 			rate_ctr_inc(&bsc_gsmnet->bsc_ctrs->ctr[BSC_CTR_PAGING_NO_ACTIVE_PAGING]);
-		} else if (is_msc_usable(paged_from_msc, false)) {
+		} else if (is_msc_usable(paged_from_msc, is_emerg)) {
 			LOG_COMPL_L3(pdisc, mtype, LOGL_DEBUG, "%s matches earlier Paging from msc %d\n",
 				     osmo_mobile_identity_to_str_c(OTC_SELECT, &mi), paged_from_msc->nr);
 			rate_ctr_inc(&paged_from_msc->msc_ctrs->ctr[MSC_CTR_MSCPOOL_SUBSCR_PAGED]);
@@ -465,9 +451,10 @@ int bsc_compl_l3(struct gsm_lchan *lchan, struct msgb *msg, uint16_t chosen_chan
 	if (paged_from_msc)
 		msc = paged_from_msc;
 	else
-		msc = bsc_find_msc(conn, msg, &mi);
+		msc = bsc_find_msc(conn, &mi, is_emerg, is_lu_from_other_plmn(msg));
 	if (!msc) {
-		LOGP(DMSC, LOGL_ERROR, "Failed to find a MSC for a connection.\n");
+		LOG_COMPL_L3(pdisc, mtype, LOGL_ERROR, "%s%s: No suitable MSC for this Complete Layer 3 request found\n",
+			     osmo_mobile_identity_to_str_c(OTC_SELECT, &mi), is_emerg ? " FOR EMERGENCY CALL" : "");
 		rc = -1;
 		goto early_fail;
 	}
