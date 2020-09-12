@@ -432,6 +432,7 @@ static void parse_powercap(struct gsm_subscriber_connection *conn, struct msgb *
 int bsc_compl_l3(struct gsm_lchan *lchan, struct msgb *msg, uint16_t chosen_channel)
 {
 	struct gsm_subscriber_connection *conn;
+	struct bsc_subscr *bsub = NULL;
 	struct bsc_msc_data *msc;
 	struct msgb *create_l3;
 	struct gsm0808_speech_codec_list scl;
@@ -462,6 +463,8 @@ int bsc_compl_l3(struct gsm_lchan *lchan, struct msgb *msg, uint16_t chosen_chan
 		 * all, should happen in a separate patch.
 		 * See e.g.  BSC_Tests.TC_chan_rel_rll_rel_ind: "dt := * f_est_dchan('23'O, 23, '00010203040506'O);"
 		 */
+	} else {
+		bsub = bsc_subscr_find_or_create_by_mi(bsc_gsmnet->bsc_subscribers, &mi);
 	}
 
 	/* allocate a new connection */
@@ -469,6 +472,10 @@ int bsc_compl_l3(struct gsm_lchan *lchan, struct msgb *msg, uint16_t chosen_chan
 	if (!conn) {
 		LOG_COMPL_L3(pdisc, mtype, LOGL_ERROR, "Failed to allocate conn\n");
 		goto early_fail;
+	}
+	if (bsub) {
+		/* pass bsub use count to conn */
+		conn->bsub = bsub;
 	}
 	gscon_change_primary_lchan(conn, lchan);
 	gscon_update_id(conn);
