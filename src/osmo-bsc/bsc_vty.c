@@ -6325,7 +6325,7 @@ DEFUN(logging_fltr_imsi,
 
 static void dump_one_sub(struct vty *vty, struct bsc_subscr *bsub)
 {
-	vty_out(vty, " %15s  %08x  %5u  %d%s", bsub->imsi, bsub->tmsi, bsub->lac, bsub->use_count,
+	vty_out(vty, " %15s  %08x  %d%s", bsub->imsi, bsub->tmsi, bsub->use_count,
 		VTY_NEWLINE);
 }
 
@@ -6336,8 +6336,8 @@ DEFUN(show_subscr_all,
 {
 	struct bsc_subscr *bsc_subscr;
 
-	vty_out(vty, " IMSI             TMSI      LAC    Use%s", VTY_NEWLINE);
-	/*           " 001010123456789  ffffffff  65534  1" */
+	vty_out(vty, " IMSI             TMSI      Use%s", VTY_NEWLINE);
+	/*           " 001010123456789  ffffffff  1" */
 
 	llist_for_each_entry(bsc_subscr, bsc_gsmnet->bsc_subscribers, entry)
 		dump_one_sub(vty, bsc_subscr);

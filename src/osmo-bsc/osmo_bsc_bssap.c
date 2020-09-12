@@ -140,7 +140,6 @@ page_subscriber(struct bsc_msc_data *msc, struct gsm_bts *bts,
 		return;
 	}
 
-	subscr->lac = lac;
 	subscr->tmsi = tmsi;
 
 	ret = paging_request_bts(bts, subscr, chan_needed, msc);

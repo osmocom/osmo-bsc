@@ -16,7 +16,6 @@ struct bsc_subscr {
 
 	char imsi[GSM23003_IMSI_MAX_DIGITS+1];
 	uint32_t tmsi;
-	uint16_t lac;
 };
 
 const char *bsc_subscr_name(struct bsc_subscr *bsub);
