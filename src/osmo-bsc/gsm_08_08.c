@@ -363,7 +363,7 @@ static void parse_powercap(struct gsm_subscriber_connection *conn, struct msgb *
 /*! MS->MSC: New MM context with L3 payload. */
 int bsc_compl_l3(struct gsm_lchan *lchan, struct msgb *msg, uint16_t chosen_channel)
 {
-	struct gsm_subscriber_connection *conn;
+	struct gsm_subscriber_connection *conn = NULL;
 	struct bsc_subscr *bsub = NULL;
 	struct bsc_msc_data *paged_from_msc;
 	struct bsc_msc_data *msc;
@@ -391,6 +391,9 @@ int bsc_compl_l3(struct gsm_lchan *lchan, struct msgb *msg, uint16_t chosen_chan
 	bts = lchan->ts->trx->bts;
 	OSMO_ASSERT(bts);
 
+	/* Normally, if an lchan has no conn yet, it is an all new Complete Layer 3, and we allocate a new conn on the
+	 * A-interface. But there are cases where a conn on A already exists for this subscriber (e.g. Perform Location
+	 * Request on IDLE MS). The Mobile Identity tells us whether that is the case. */
 	if (osmo_mobile_identity_decode_from_l3(&mi, msg, false)) {
 		LOG_COMPL_L3(pdisc, mtype, LOGL_ERROR, "Cannot extract Mobile Identity: %s\n",
 			     msgb_hexdump_c(OTC_SELECT, msg));
@@ -404,64 +407,77 @@ int bsc_compl_l3(struct gsm_lchan *lchan, struct msgb *msg, uint16_t chosen_chan
 		bsub = bsc_subscr_find_or_create_by_mi(bsc_gsmnet->bsc_subscribers, &mi);
 	}
 
-	/* allocate a new connection */
-	conn = bsc_subscr_con_allocate(bsc_gsmnet);
+	if (bsub)
+		conn = bsc_conn_by_bsub(bsub);
+
 	if (!conn) {
-		LOG_COMPL_L3(pdisc, mtype, LOGL_ERROR, "Failed to allocate conn\n");
-		goto early_fail;
+		/* Typical Complete Layer 3 with a new conn being established. */
+		conn = bsc_subscr_con_allocate(bsc_gsmnet);
+		if (!conn) {
+			LOG_COMPL_L3(pdisc, mtype, LOGL_ERROR, "Failed to allocate conn\n");
+			goto early_fail;
+		}
 	}
 	if (bsub) {
-		/* pass bsub use count to conn */
-		conn->bsub = bsub;
+		/* pass bsub use count to conn, or release */
+		if (!conn->bsub)
+			conn->bsub = bsub;
+		else
+			bsc_subscr_put(bsub);
 	}
 	gscon_change_primary_lchan(conn, lchan);
 	gscon_update_id(conn);
 
 	log_set_context(LOG_CTX_BSC_SUBSCR, conn->bsub);
 
-	is_emerg = (pdisc == GSM48_PDISC_MM && mtype == GSM48_MT_MM_CM_SERV_REQ) && is_cm_service_for_emerg(msg);
+	if (!conn->sccp.msc) {
+		/* Typical Complete Layer 3 where we allocate a new conn */
+		is_emerg = (pdisc == GSM48_PDISC_MM && mtype == GSM48_MT_MM_CM_SERV_REQ) && is_cm_service_for_emerg(msg);
 
-	/* When receiving a Paging Response, stop Paging for this subscriber on all cells, and figure out which MSC
-	 * sent the Paging Request, if any. */
-	paged_from_msc = NULL;
-	if (pdisc == GSM48_PDISC_RR && mtype == GSM48_MT_RR_PAG_RESP) {
-		paged_from_msc = paging_request_stop(bts, conn->bsub);
-		if (!paged_from_msc) {
-			/* This looks like an unsolicited Paging Response. It is required to pick any MSC, because any
-			 * MT-CSFB calls were Paged by the MSC via SGs, and hence are not listed in the BSC. */
-			LOG_COMPL_L3(pdisc, mtype, LOGL_DEBUG,
-				     "%s Unsolicited Paging Response, possibly an MT-CSFB call.\n",
-				     osmo_mobile_identity_to_str_c(OTC_SELECT, &mi));
+		/* When receiving a Paging Response, stop Paging for this subscriber on all cells, and figure out which
+		 * MSC sent the Paging Request, if any. */
+		paged_from_msc = NULL;
+		if (pdisc == GSM48_PDISC_RR && mtype == GSM48_MT_RR_PAG_RESP) {
+			paged_from_msc = paging_request_stop(bts, conn->bsub);
+			if (!paged_from_msc) {
+				/* This looks like an unsolicited Paging Response. It is required to pick any MSC,
+				 * because any MT-CSFB calls were Paged by the MSC via SGs, and hence are not listed in
+				 * the BSC. */
+				LOG_COMPL_L3(pdisc, mtype, LOGL_DEBUG,
+					     "%s Unsolicited Paging Response, possibly an MT-CSFB call.\n",
+					     osmo_mobile_identity_to_str_c(OTC_SELECT, &mi));
 
-			rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_CTR_PAGING_NO_ACTIVE_PAGING]);
-			rate_ctr_inc(&bsc_gsmnet->bsc_ctrs->ctr[BSC_CTR_PAGING_NO_ACTIVE_PAGING]);
-		} else if (is_msc_usable(paged_from_msc, is_emerg)) {
-			LOG_COMPL_L3(pdisc, mtype, LOGL_DEBUG, "%s matches earlier Paging from msc %d\n",
-				     osmo_mobile_identity_to_str_c(OTC_SELECT, &mi), paged_from_msc->nr);
-			rate_ctr_inc(&paged_from_msc->msc_ctrs->ctr[MSC_CTR_MSCPOOL_SUBSCR_PAGED]);
-		} else {
-			LOG_COMPL_L3(pdisc, mtype, LOGL_DEBUG,
-				     "%s matches earlier Paging from msc %d, but this MSC is not connected\n",
-				     osmo_mobile_identity_to_str_c(OTC_SELECT, &mi), paged_from_msc->nr);
-			paged_from_msc = NULL;
+				rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_CTR_PAGING_NO_ACTIVE_PAGING]);
+				rate_ctr_inc(&bsc_gsmnet->bsc_ctrs->ctr[BSC_CTR_PAGING_NO_ACTIVE_PAGING]);
+			} else if (is_msc_usable(paged_from_msc, is_emerg)) {
+				LOG_COMPL_L3(pdisc, mtype, LOGL_DEBUG, "%s matches earlier Paging from msc %d\n",
+					     osmo_mobile_identity_to_str_c(OTC_SELECT, &mi), paged_from_msc->nr);
+				rate_ctr_inc(&paged_from_msc->msc_ctrs->ctr[MSC_CTR_MSCPOOL_SUBSCR_PAGED]);
+			} else {
+				LOG_COMPL_L3(pdisc, mtype, LOGL_DEBUG,
+					     "%s matches earlier Paging from msc %d, but this MSC is not connected\n",
+					     osmo_mobile_identity_to_str_c(OTC_SELECT, &mi), paged_from_msc->nr);
+				paged_from_msc = NULL;
+			}
 		}
-	}
 
-	/* find the MSC link we want to use */
-	if (paged_from_msc)
-		msc = paged_from_msc;
-	else
-		msc = bsc_find_msc(conn, &mi, is_emerg, is_lu_from_other_plmn(msg));
-	if (!msc) {
-		LOG_COMPL_L3(pdisc, mtype, LOGL_ERROR, "%s%s: No suitable MSC for this Complete Layer 3 request found\n",
-			     osmo_mobile_identity_to_str_c(OTC_SELECT, &mi), is_emerg ? " FOR EMERGENCY CALL" : "");
-		rc = -1;
-		goto early_fail;
-	}
+		if (paged_from_msc)
+			msc = paged_from_msc;
+		else
+			msc = bsc_find_msc(conn, &mi, is_emerg, is_lu_from_other_plmn(msg));
+		if (!msc) {
+			LOG_COMPL_L3(pdisc, mtype, LOGL_ERROR,
+				     "%s%s: No suitable MSC for this Complete Layer 3 request found\n",
+				     osmo_mobile_identity_to_str_c(OTC_SELECT, &mi),
+				     is_emerg ? " FOR EMERGENCY CALL" : "");
+			goto early_fail;
+		}
 
-	/* allocate resource for a new connection */
-	if (osmo_bsc_sigtran_new_conn(conn, msc) != BSC_CON_SUCCESS)
-		goto early_fail;
+		/* allocate resource for a new connection */
+		if (osmo_bsc_sigtran_new_conn(conn, msc) != BSC_CON_SUCCESS)
+			goto early_fail;
+	}
+	OSMO_ASSERT(conn->sccp.msc);
 
 	parse_powercap(conn, msg);
 

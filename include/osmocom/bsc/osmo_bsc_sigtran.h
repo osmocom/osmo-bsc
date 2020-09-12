@@ -26,6 +26,7 @@
 /* Allocate resources to make a new connection oriented sigtran connection
  * (not the connection ittself!) */
 enum bsc_con osmo_bsc_sigtran_new_conn(struct gsm_subscriber_connection *conn, struct bsc_msc_data *msc);
+struct gsm_subscriber_connection *bsc_conn_by_bsub(struct bsc_subscr *bsub);
 
 /* Open a new connection oriented sigtran connection */
 int osmo_bsc_sigtran_open_conn(struct gsm_subscriber_connection *conn, struct msgb *msg);

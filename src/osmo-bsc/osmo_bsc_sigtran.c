@@ -63,6 +63,19 @@ static struct gsm_subscriber_connection *get_bsc_conn_by_conn_id(int conn_id)
 	return NULL;
 }
 
+struct gsm_subscriber_connection *bsc_conn_by_bsub(struct bsc_subscr *bsub)
+{
+	struct gsm_subscriber_connection *conn;
+	if (!bsub)
+		return NULL;
+
+	llist_for_each_entry(conn, &bsc_gsmnet->subscr_conns, entry) {
+		if (conn->bsub == bsub)
+			return conn;
+	}
+	return NULL;
+}
+
 /* Pick a free connection id */
 static int pick_free_conn_id(const struct bsc_msc_data *msc)
 {
