@@ -431,8 +431,9 @@ static void parse_powercap(struct gsm_subscriber_connection *conn, struct msgb *
 int bsc_compl_l3(struct gsm_subscriber_connection *conn, struct msgb *msg, uint16_t chosen_channel)
 {
 	struct bsc_msc_data *msc;
-	struct msgb *resp;
+	struct msgb *create_l3;
 	struct gsm0808_speech_codec_list scl;
+	struct gsm0808_speech_codec_list *use_scl;
 	int rc = -2;
 	struct gsm_bts *bts;
 	struct osmo_cell_global_id *cgi;
@@ -462,8 +463,6 @@ int bsc_compl_l3(struct gsm_subscriber_connection *conn, struct msgb *msg, uint1
 
 	log_set_context(LOG_CTX_BSC_SUBSCR, conn->bsub);
 
-	LOGP(DMSC, LOGL_INFO, "Tx MSC COMPL L3\n");
-
 	/* find the MSC link we want to use */
 	msc = bsc_find_msc(conn, msg, &mi);
 	if (!msc) {
@@ -477,11 +476,10 @@ int bsc_compl_l3(struct gsm_subscriber_connection *conn, struct msgb *msg, uint1
 		goto early_fail;
 
 	bts = conn_get_bts(conn);
-	cgi = cgi_for_msc(conn->sccp.msc, bts);
-
-	if (!bts || !cgi) {
+	if (!bts) {
 		/* should never happen */
-		LOGP(DMSC, LOGL_ERROR, "Compl L3 without lchan\n");
+		LOG_COMPL_L3(pdisc, mtype, LOGL_ERROR, "%s: internal error: Compl L3 without BTS\n",
+			     osmo_mobile_identity_to_str_c(OTC_SELECT, &mi));
 		rc = -1;
 		goto early_fail;
 	}
@@ -490,26 +488,30 @@ int bsc_compl_l3(struct gsm_subscriber_connection *conn, struct msgb *msg, uint1
 	if (pdisc == GSM48_PDISC_RR && mtype == GSM48_MT_RR_PAG_RESP)
 		handle_page_resp(conn, msg, &mi);
 
+	/* Send the Create Layer 3. */
+	use_scl = NULL;
 	if (gscon_is_aoip(conn)) {
-		gen_bss_supported_codec_list(&scl, msc, bts);
+		gen_bss_supported_codec_list(&scl, conn->sccp.msc, bts);
 		if (scl.len > 0)
-			resp = gsm0808_create_layer3_2(msg, cgi, &scl);
-		else {
-			/* Note: 3GPP TS 48.008 3.2.1.32, COMPLETE LAYER 3 INFORMATION clearly states that
-			 * Codec List (BSS Supported) shall be included, if the radio access network
-			 * supports an IP based user plane interface. It may be intentional that the
-			 * current configuration does not support any voice codecs, in those cases the
-			 * network does not support an IP based user plane interface, and therefore the
-			 * Codec List (BSS Supported) IE can be left out in those situations. */
-			resp = gsm0808_create_layer3_2(msg, cgi, NULL);
-		}
-	} else
-		resp = gsm0808_create_layer3_2(msg, cgi, NULL);
+			use_scl = &scl;
+		/* For AoIP, we should always pass a Codec List (BSS Supported). But osmo-bsc may be configured to
+		 * support no voice codecs -- then omit the Codec List. */
+	}
+	cgi = cgi_for_msc(conn->sccp.msc, bts);
+	if (!cgi) {
+		/* should never happen */
+		LOG_COMPL_L3(pdisc, mtype, LOGL_ERROR, "%s: internal error: BTS without identity\n",
+			     osmo_mobile_identity_to_str_c(OTC_SELECT, &mi));
+		goto early_fail;
+	}
+	create_l3 = gsm0808_create_layer3_2(msg, cgi, use_scl);
+	if (!create_l3) {
+		LOG_COMPL_L3(pdisc, mtype, LOGL_ERROR, "%s: Failed to compose Create Layer 3 message\n",
+			     osmo_mobile_identity_to_str_c(OTC_SELECT, &mi));
+		goto early_fail;
+	}
+	rc = osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_A_CONN_REQ, create_l3);
 
-	if (resp)
-		rc = osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_A_CONN_REQ, resp);
-	else
-		LOGP(DMSC, LOGL_DEBUG, "Failed to create layer3 message.\n");
 early_fail:
 	log_set_context(LOG_CTX_BSC_SUBSCR, NULL);
 	return rc;
