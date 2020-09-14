@@ -121,6 +121,11 @@ page_subscriber(struct bsc_msc_data *msc, struct gsm_bts *bts,
 	struct bsc_subscr *subscr;
 	int ret;
 
+	if (!bsc_grace_allow_new_connection(bsc_gsmnet, bts)) {
+		LOGP(DMSC, LOGL_DEBUG, "RF-locked: not paging on BTS %u\n", bts->nr);
+		return;
+	}
+
 	subscr = bsc_subscr_find_or_create_by_imsi(msc->network->bsc_subscribers,
 						   mi_string);
 
@@ -138,7 +143,7 @@ page_subscriber(struct bsc_msc_data *msc, struct gsm_bts *bts,
 	subscr->lac = lac;
 	subscr->tmsi = tmsi;
 
-	ret = bsc_grace_paging_request(msc->network->rf_ctrl->policy, subscr, chan_needed, msc, bts);
+	ret = paging_request_bts(bts, subscr, chan_needed, msc);
 	if (ret == 0)
 		LOGP(DMSC, LOGL_INFO, "Paging request failed or repeated paging: BTS: %d IMSI: '%s' TMSI: '0x%x/%u' LAC: 0x%x\n",
 		     bts->nr, mi_string, tmsi, tmsi, lac);

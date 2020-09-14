@@ -27,10 +27,5 @@
 struct bsc_msc_data;
 
 int bsc_grace_allow_new_connection(struct gsm_network *net, struct gsm_bts *bts);
-int bsc_grace_paging_request(enum signal_rf rf_policy,
-			     struct bsc_subscr *subscr,
-			     int chan_needed,
-			     struct bsc_msc_data *msc,
-			     struct gsm_bts *bts);
 
 #endif
