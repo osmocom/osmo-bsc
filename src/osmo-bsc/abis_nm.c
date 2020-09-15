@@ -432,7 +432,7 @@ static int rx_fail_evt_rep(struct msgb *mb, struct gsm_bts *bts)
 
 	sd = abis_nm_fail_evt_rep_parse(mb, bts);
 	if (!sd) {
-		LOGPFOH(DNM, LOGL_ERROR, foh, "BTS%u: failed to parse Failure Event Report\n", bts->nr);
+		LOGPFOH(DNM, LOGL_ERROR, foh, "Failed to parse Failure Event Report\n");
 		return -EINVAL;
 	}
 	e_type = sd->parsed.event_type;
@@ -450,8 +450,7 @@ static int rx_fail_evt_rep(struct msgb *mb, struct gsm_bts *bts)
 			log_oml_fail_rep(bts, e_type, severity, p_val, p_text);
 		};
 	} else {
-		LOGPFOH(DNM, LOGL_ERROR, foh, "BTS%u: Failure Event Report without "
-			"Probable Cause?!\n", bts->nr);
+		LOGPFOH(DNM, LOGL_ERROR, foh, "Failure Event Report without Probable Cause?!\n");
 		rc = -EINVAL;
 	}
 
@@ -602,7 +601,7 @@ static int parse_attr_resp_info_attr(struct gsm_bts *bts, const struct gsm_bts_t
 	/* this attribute does not make sense on BTS level, only on TRX level */
 	if (trx && TLVP_PRES_LEN(tp, NM_ATT_MANUF_STATE, 1)) {
 		data = TLVP_VAL(tp, NM_ATT_MANUF_STATE);
-		LOGPFOH(DNM, LOGL_NOTICE, foh, "%s Get Attributes Response: nominal power is %u\n", gsm_trx_name(trx), *data);
+		LOGPFOH(DNM, LOGL_NOTICE, foh, "Get Attributes Response: nominal power is %u\n", *data);
 	}
 
 	/* Parse Attribute Response Info content for 3GPP TS 52.021 §9.4.61 SW Configuration */
@@ -615,26 +614,24 @@ static int parse_attr_resp_info_attr(struct gsm_bts *bts, const struct gsm_bts_t
 			for (i = 0; i < rc; i++) {
 				if (!handle_attr(bts, str2btsattr((const char *)sw_descr[i].file_id),
 						 sw_descr[i].file_version, sw_descr[i].file_version_len)) {
-					LOGPFOH(DNM, LOGL_NOTICE, foh, "BTS%u: ARI reported sw[%d/%d]: %s "
-						"is %s\n", bts->nr, i, rc, sw_descr[i].file_id,
-						sw_descr[i].file_version);
+					LOGPFOH(DNM, LOGL_NOTICE, foh, "ARI reported sw[%d/%d]: %s is %s\n",
+						i, rc, sw_descr[i].file_id, sw_descr[i].file_version);
 				}
 			}
 		} else {
-			LOGPFOH(DNM, LOGL_ERROR, foh, "BTS%u: failed to parse SW-Config part of "
-				"Get Attribute Response Info: %s\n", bts->nr, strerror(-rc));
+			LOGPFOH(DNM, LOGL_ERROR, foh, "Failed to parse SW-Config part of "
+				"Get Attribute Response Info: %s\n", strerror(-rc));
 		}
 	}
 
 	if (abis_nm_tlv_attr_primary_oml(tp, &ia, &port) == 0) {
 		LOGPFOH(DNM, LOGL_NOTICE, foh,
-			"BTS%u Get Attributes Response: Primary OML IP is %s:%u\n",
-			bts->nr, inet_ntoa(ia), port);
+			"Get Attributes Response: Primary OML IP is %s:%u\n",
+			inet_ntoa(ia), port);
 	}
 
 	if (abis_nm_tlv_attr_unit_id(tp, unit_id, sizeof(unit_id)) == 0) {
-		LOGPFOH(DNM, LOGL_NOTICE, foh, "BTS%u Get Attributes Response: Unit ID is %s\n",
-			bts->nr, unit_id);
+		LOGPFOH(DNM, LOGL_NOTICE, foh, "Get Attributes Response: Unit ID is %s\n", unit_id);
 	}
 
 	/* nanoBTS provides Get Attribute Response Info at random position and only the unreported part of it. */
@@ -654,8 +651,7 @@ static int parse_attr_resp_info(struct gsm_bts *bts, const struct gsm_bts_trx *t
 	uint16_t data_len;
 
 	if (!TLVP_PRES_LEN(tp, NM_ATT_GET_ARI, 1)) {
-		LOGPFOH(DNM, LOGL_ERROR, foh, "BTS%u: Get Attr Response without Response Info?!\n",
-			bts->nr);
+		LOGPFOH(DNM, LOGL_ERROR, foh, "Get Attr Response without Response Info?!\n");
 		return -EINVAL;
 	}
 
@@ -679,7 +675,7 @@ static int abis_nm_rx_get_attr_resp(struct msgb *mb, const struct gsm_bts_trx *t
 	struct tlv_parsed tp;
 	int rc;
 
-	DEBUGPFOH(DNM, foh, "Get Attributes Response for BTS%u\n", bts->nr);
+	DEBUGPFOH(DNM, foh, "Get Attributes Response\n");
 
 	abis_nm_tlv_parse(&tp, bts, foh->data, oh->length-sizeof(*foh));
 
@@ -819,8 +815,7 @@ struct gsm_bts_trx_ts *abis_nm_get_ts(const struct msgb *oml_msg)
 static int abis_nm_rx_opstart_ack(struct msgb *mb)
 {
 	struct abis_om_fom_hdr *foh = msgb_l3(mb);
-	struct e1inp_sign_link *sign_link = mb->dst;
-	DEBUGPFOH(DNM, foh, "bts=%u Opstart ACK\n", sign_link->trx->bts->nr);
+	DEBUGPFOH(DNM, foh, "Opstart ACK\n");
 	osmo_signal_dispatch(SS_NM, S_NM_OPSTART_ACK, mb);
 	return 0;
 }
@@ -1501,7 +1496,7 @@ static int abis_nm_rcvmsg_sw(struct msgb *mb)
 		switch (foh->msg_type) {
 		case NM_MT_LOAD_END_ACK:
 			sw_close_file(sw);
-			DEBUGPFOH(DNM, foh, "Software Load End (BTS %u)\n", sw->bts->nr);
+			DEBUGPFOH(DNM, foh, "Software Load End\n");
 			sw->state = SW_STATE_NONE;
 			if (sw->cbfn)
 				sw->cbfn(GSM_HOOK_NM_SWLOAD,
@@ -2008,7 +2003,7 @@ int abis_nm_set_channel_attr(struct gsm_bts_trx_ts *ts, uint8_t chan_comb)
 	foh = fill_om_fom_hdr(oh, 0, NM_MT_SET_CHAN_ATTR, NM_OC_CHANNEL, bts->bts_nr,
 			      ts->trx->nr, ts->nr);
 
-	DEBUGPFOH(DNM, foh, "Set Chan Attr %s\n", gsm_ts_name(ts));
+	DEBUGPFOH(DNM, foh, "Set Chan Attr\n");
 	if (verify_chan_comb(ts, chan_comb, &reason) < 0) {
 		LOGPFOH(DNM, LOGL_ERROR, foh, "Invalid Channel Combination %d on %s. Reason: %s\n",
 			chan_comb, gsm_ts_name(ts), reason);
@@ -2045,8 +2040,8 @@ int abis_nm_set_channel_attr(struct gsm_bts_trx_ts *ts, uint8_t chan_comb)
 		/* BS-11 cannot handle more than 255 ARFCNs, because L is 8 bit.
 		 * This is unlikely to happen, but better check than sorry... */
 		if (bts->type == GSM_BTS_TYPE_BS11 && n > 0xff) {
-			LOGPFOH(DNM, LOGL_ERROR, foh, "%s cannot handle %u (more than 255) "
-				"hopping channels\n", gsm_bts_name(bts), n);
+			LOGPFOH(DNM, LOGL_ERROR, foh, "Cannot handle %u (more than 255) "
+				"hopping channels\n", n);
 			msgb_free(msg);
 			return -EINVAL;
 		}
