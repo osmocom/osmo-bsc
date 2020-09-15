@@ -56,6 +56,12 @@
 #define OM_HEADROOM_SIZE	128
 #define IPACC_SEGMENT_SIZE	245
 
+#define LOGPMO(mo, ss, lvl, fmt, args ...) \
+	LOGP(ss, lvl, "OC=%s(%02x) INST=(%02x,%02x,%02x): " fmt, \
+	     get_value_string(abis_nm_obj_class_names, (mo)->obj_class), \
+	     (mo)->obj_class, (mo)->obj_inst.bts_nr, (mo)->obj_inst.trx_nr, \
+	     (mo)->obj_inst.ts_nr, ## args)
+
 int abis_nm_tlv_parse(struct tlv_parsed *tp, struct gsm_bts *bts, const uint8_t *buf, int len)
 {
 	if (!bts->model)
@@ -313,7 +319,7 @@ static inline void log_oml_fail_rep(const struct gsm_bts *bts, const char *type,
 	enum abis_nm_pcause_type pcause = p_val[0];
 	enum abis_mm_event_causes cause = osmo_load16be(p_val + 1);
 
-	LOGP(DNM, LOGL_ERROR, "BTS %u: Failure Event Report: ", bts->nr);
+	LOGPMO(&bts->mo, DNM, LOGL_ERROR, "Failure Event Report: ");
 	if (type)
 		LOGPC(DNM, LOGL_ERROR, "Type=%s, ", type);
 	if (severity)
@@ -343,10 +349,10 @@ static inline void handle_manufact_report(struct gsm_bts *bts, const uint8_t *p_
 	switch (cause) {
 	case OSMO_EVT_PCU_VERS:
 		if (text) {
-			LOGP(DNM, LOGL_NOTICE, "BTS %u reported connected PCU version %s\n", bts->nr, text);
+			LOGPMO(&bts->mo, DNM, LOGL_NOTICE, "Reported connected PCU version %s\n", text);
 			osmo_strlcpy(bts->pcu_version, text, sizeof(bts->pcu_version));
 		} else {
-			LOGP(DNM, LOGL_ERROR, "BTS %u reported PCU disconnection.\n", bts->nr);
+			LOGPMO(&bts->mo, DNM, LOGL_ERROR, "Reported PCU disconnection.\n");
 			bts->pcu_version[0] = '\0';
 		}
 		break;
@@ -523,10 +529,10 @@ static inline bool handle_attr(const struct gsm_bts *bts, enum bts_attribute id,
 {
 	switch (id) {
 	case BTS_TYPE_VARIANT:
-		LOGP(DNM, LOGL_NOTICE, "BTS%u reported variant: %s\n", bts->nr, val);
+		LOGPMO(&bts->mo, DNM, LOGL_NOTICE, "Reported variant: %s\n", val);
 		break;
 	case BTS_SUB_MODEL:
-		LOGP(DNM, LOGL_NOTICE, "BTS%u reported submodel: %s\n", bts->nr, val);
+		LOGPMO(&bts->mo, DNM, LOGL_NOTICE, "Reported submodel: %s\n", val);
 		break;
 	default:
 		return false;
@@ -574,27 +580,25 @@ static int parse_attr_resp_info_attr(struct gsm_bts *bts, const struct gsm_bts_t
 
 		/* log potential BTS feature vector overflow */
 		if (len > sizeof(bts->_features_data)) {
-			LOGP(DNM, LOGL_NOTICE, "BTS%u Get Attributes Response: feature vector is truncated "
-			     "(from %u to %zu bytes)\n", bts->nr, len, sizeof(bts->_features_data));
+			LOGPMO(&bts->mo, DNM, LOGL_NOTICE, "Get Attributes Response: feature vector is truncated "
+			       "(from %u to %zu bytes)\n", len, sizeof(bts->_features_data));
 			len = sizeof(bts->_features_data);
 		}
 
 		/* check that max. expected BTS attribute is above given feature vector length */
 		if (len > OSMO_BYTES_FOR_BITS(_NUM_BTS_FEAT)) {
-			LOGP(DNM, LOGL_NOTICE, "BTS%u Get Attributes Response: reported unexpectedly long (%u bytes) "
-			     "feature vector - most likely it was compiled against newer BSC headers. "
-			     "Consider upgrading your BSC to later version.\n",
-			     bts->nr, len);
+			LOGPMO(&bts->mo, DNM, LOGL_NOTICE, "Get Attributes Response: reported unexpectedly long (%u bytes) "
+			       "feature vector - most likely it was compiled against newer BSC headers. "
+			       "Consider upgrading your BSC to later version.\n", len);
 		}
 
 		memcpy(bts->_features_data, TLVP_VAL(tp, NM_ATT_MANUF_ID), len);
 
 		for (i = 0; i < _NUM_BTS_FEAT; i++) {
 			if (osmo_bts_has_feature(&bts->features, i) != osmo_bts_has_feature(&bts->model->features, i)) {
-				LOGP(DNM, LOGL_NOTICE, "BTS%u feature '%s' reported via OML does not match statically "
-				     "set feature: %u != %u. Please fix.\n", bts->nr,
-				     get_value_string(osmo_bts_features_descs, i),
-				     osmo_bts_has_feature(&bts->features, i), osmo_bts_has_feature(&bts->model->features, i));
+				LOGPMO(&bts->mo, DNM, LOGL_NOTICE, "Feature '%s' reported via OML does not match statically "
+				       "set feature: %u != %u. Please fix.\n", get_value_string(osmo_bts_features_descs, i),
+				       osmo_bts_has_feature(&bts->features, i), osmo_bts_has_feature(&bts->model->features, i));
 			}
 		}
 	}
@@ -1028,17 +1032,17 @@ static int abis_nm_rcvmsg_manuf(struct msgb *mb)
 {
 	int rc;
 	struct e1inp_sign_link *sign_link = mb->dst;
-	int bts_type = sign_link->trx->bts->type;
+	struct gsm_bts *bts = sign_link->trx->bts;
 
-	switch (bts_type) {
+	switch (bts->type) {
 	case GSM_BTS_TYPE_NANOBTS:
 	case GSM_BTS_TYPE_OSMOBTS:
 		rc = abis_nm_rx_ipacc(mb);
-		abis_nm_queue_send_next(sign_link->trx->bts);
+		abis_nm_queue_send_next(bts);
 		break;
 	default:
-		LOGP(DNM, LOGL_ERROR, "don't know how to parse OML for this "
-		     "BTS type (%s)\n", btstype2str(bts_type));
+		LOGPMO(&bts->mo, DNM, LOGL_ERROR, "don't know how to parse OML for this "
+		       "BTS type (%s)\n", btstype2str(bts->type));
 		rc = 0;
 		break;
 	}
@@ -1183,7 +1187,7 @@ static void sw_add_file_id_and_ver(struct abis_nm_sw *sw, struct msgb *msg)
 		msgb_tlv_put(msg, NM_ATT_FILE_VERSION, sw->file_version_len,
 			     sw->file_version);
 	} else {
-		LOGP(DNM, LOGL_ERROR, "Please implement this for the BTS.\n");
+		LOGPMO(&sw->bts->mo, DNM, LOGL_ERROR, "Please implement this for the BTS.\n");
 	}
 }
 
@@ -1281,7 +1285,7 @@ static int sw_load_segment(struct abis_nm_sw *sw)
 		break;
 	}
 	default:
-		LOGP(DNM, LOGL_ERROR, "sw_load_segment needs implementation for the BTS.\n");
+		LOGPMO(&sw->bts->mo, DNM, LOGL_ERROR, "sw_load_segment needs implementation for the BTS.\n");
 		/* FIXME: Other BTS types */
 		return -1;
 	}
@@ -1338,18 +1342,19 @@ struct sdp_firmware {
 
 static int parse_sdp_header(struct abis_nm_sw *sw)
 {
+	const struct gsm_abis_mo *mo = &sw->bts->mo;
 	struct sdp_firmware firmware_header;
 	int rc;
 	struct stat stat;
 
 	rc = read(sw->fd, &firmware_header, sizeof(firmware_header));
 	if (rc != sizeof(firmware_header)) {
-		LOGP(DNM, LOGL_ERROR, "Could not read SDP file header.\n");
+		LOGPMO(mo, DNM, LOGL_ERROR, "Could not read SDP file header.\n");
 		return -1;
 	}
 
 	if (strncmp(firmware_header.magic, " SDP", 4) != 0) {
-		LOGP(DNM, LOGL_ERROR, "The magic number1 is wrong.\n");
+		LOGPMO(mo, DNM, LOGL_ERROR, "The magic number1 is wrong.\n");
 		return -1;
 	}
 
@@ -1357,28 +1362,27 @@ static int parse_sdp_header(struct abis_nm_sw *sw)
 	    firmware_header.more_magic[1] != 0x02 ||
 	    firmware_header.more_magic[2] != 0x00 ||
 	    firmware_header.more_magic[3] != 0x00) {
-		LOGP(DNM, LOGL_ERROR, "The more magic number is wrong.\n");
+		LOGPMO(mo, DNM, LOGL_ERROR, "The more magic number is wrong.\n");
 		return -1;
 	}
 
 
 	if (fstat(sw->fd, &stat) == -1) {
-		LOGP(DNM, LOGL_ERROR, "Could not stat the file.\n");
+		LOGPMO(mo, DNM, LOGL_ERROR, "Could not stat the file.\n");
 		return -1;
 	}
 
 	if (ntohl(firmware_header.file_length) != stat.st_size) {
-		LOGP(DNM, LOGL_ERROR, "The filesizes do not match.\n");
+		LOGPMO(mo, DNM, LOGL_ERROR, "The filesizes do not match.\n");
 		return -1;
 	}
 
 	/* go back to the start as we checked the whole filesize.. */
 	lseek(sw->fd, 0l, SEEK_SET);
-	LOGP(DNM, LOGL_NOTICE, "The ipaccess SDP header is not fully understood."
-			       " There might be checksums in the file that are not"
-			       " verified and incomplete firmware might be flashed."
-			       " There is absolutely no WARRANTY that flashing will"
-			       " work.\n");
+	LOGPMO(mo, DNM, LOGL_NOTICE, "The ipaccess SDP header is not fully understood. "
+	       "There might be checksums in the file that are not verified and incomplete "
+	       "firmware might be flashed.  There is absolutely no WARRANTY that "
+	       "flashing will work.\n");
 	return 0;
 }
 
@@ -1620,7 +1624,7 @@ int abis_nm_software_load(struct gsm_bts *bts, int trx_nr, const char *fname,
 	struct abis_nm_sw *sw = &g_sw;
 	int rc;
 
-	DEBUGP(DNM, "Software Load (BTS %u, File \"%s\")\n", bts->nr, fname);
+	LOGPMO(&bts->mo, DNM, LOGL_DEBUG, "Software Load (file \"%s\")\n", fname);
 
 	if (sw->state != SW_STATE_NONE)
 		return -EBUSY;
@@ -1643,7 +1647,7 @@ int abis_nm_software_load(struct gsm_bts *bts, int trx_nr, const char *fname,
 		break;
 	case GSM_BTS_TYPE_UNKNOWN:
 	default:
-		LOGP(DNM, LOGL_ERROR, "Software Load not properly implemented.\n");
+		LOGPMO(&bts->mo, DNM, LOGL_ERROR, "Software Load not properly implemented.\n");
 		return -1;
 		break;
 	}
@@ -1688,7 +1692,7 @@ int abis_nm_software_activate(struct gsm_bts *bts, const char *fname,
 	struct abis_nm_sw *sw = &g_sw;
 	int rc;
 
-	DEBUGP(DNM, "Activating Software (BTS %u, File \"%s\")\n", bts->nr, fname);
+	LOGPMO(&bts->mo, DNM, LOGL_DEBUG, "Activating Software (file \"%s\")\n", fname);
 
 	if (sw->state != SW_STATE_NONE)
 		return -EBUSY;
@@ -1785,9 +1789,8 @@ int abis_nm_conn_terr_traf(struct gsm_bts_trx_ts *ts,
 	ch = (struct abis_nm_channel *) msgb_put(msg, sizeof(*ch));
 	fill_nm_channel(ch, e1_port, e1_timeslot, e1_subslot);
 
-	DEBUGP(DNM, "CONNECT TERR TRAF Um=%s E1=(%u,%u,%u)\n",
-		gsm_ts_name(ts),
-		e1_port, e1_timeslot, e1_subslot);
+	LOGPMO(&ts->mo, DNM, LOGL_DEBUG, "CONNECT TERR TRAF E1=(%u,%u,%u)\n",
+	       e1_port, e1_timeslot, e1_subslot);
 
 	return abis_nm_sendmsg(bts, msg);
 }
@@ -1809,8 +1812,8 @@ int abis_nm_get_attr(struct gsm_bts *bts, uint8_t obj_class, uint8_t bts_nr, uin
 	struct msgb *msg;
 
 	if (bts->type != GSM_BTS_TYPE_OSMOBTS && bts->type != GSM_BTS_TYPE_NANOBTS) {
-		LOGP(DNM, LOGL_NOTICE, "Getting attributes from BTS%d type %s is not supported.\n",
-		     bts->nr, btstype2str(bts->type));
+		LOGPMO(&bts->mo, DNM, LOGL_NOTICE, "Getting attributes from BTS "
+		       "type %s is not supported.\n", btstype2str(bts->type));
 		return -EINVAL;
 	}
 
@@ -1832,7 +1835,7 @@ int abis_nm_set_bts_attr(struct gsm_bts *bts, uint8_t *attr, int attr_len)
 	struct msgb *msg = nm_msgb_alloc();
 	uint8_t *cur;
 
-	LOG_BTS(bts, DNM, LOGL_DEBUG, "Set BTS Attr\n");
+	LOGPMO(&bts->mo, DNM, LOGL_DEBUG, "Set BTS Attr\n");
 
 	oh = (struct abis_om_hdr *) msgb_put(msg, ABIS_OM_FOM_HDR_SIZE);
 	fill_om_fom_hdr(oh, attr_len, NM_MT_SET_BTS_ATTR, NM_OC_BTS, bts->bts_nr, 0xff, 0xff);
