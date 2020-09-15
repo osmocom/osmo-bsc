@@ -1415,7 +1415,7 @@ static void bsc_subscr_dump_vty(struct vty *vty, struct bsc_subscr *bsub)
 	if (bsub->tmsi != GSM_RESERVED_TMSI)
 		vty_out(vty, "    TMSI: 0x%08x%s", bsub->tmsi,
 			VTY_NEWLINE);
-	vty_out(vty, "    Use count: %d%s", bsub->use_count, VTY_NEWLINE);
+	vty_out(vty, "    Use count: %s%s", osmo_use_count_to_str_c(OTC_SELECT, &bsub->use_count), VTY_NEWLINE);
 }
 
 static void meas_rep_dump_uni_vty(struct vty *vty,
@@ -6350,7 +6350,7 @@ DEFUN(logging_fltr_imsi,
 	if (!tgt)
 		return CMD_WARNING;
 
-	bsc_subscr = bsc_subscr_find_or_create_by_imsi(bsc_gsmnet->bsc_subscribers, imsi);
+	bsc_subscr = bsc_subscr_find_or_create_by_imsi(bsc_gsmnet->bsc_subscribers, imsi, __func__);
 
 	if (!bsc_subscr) {
 		vty_out(vty, "%% failed to enable logging for subscriber with IMSI(%s)%s",
@@ -6360,14 +6360,14 @@ DEFUN(logging_fltr_imsi,
 
 	log_set_filter_bsc_subscr(tgt, bsc_subscr);
 	/* log_set_filter has grabbed its own reference  */
-	bsc_subscr_put(bsc_subscr);
+	bsc_subscr_put(bsc_subscr, __func__);
 
 	return CMD_SUCCESS;
 }
 
 static void dump_one_sub(struct vty *vty, struct bsc_subscr *bsub)
 {
-	vty_out(vty, " %15s  %08x  %d%s", bsub->imsi, bsub->tmsi, bsub->use_count,
+	vty_out(vty, " %15s  %08x  %s%s", bsub->imsi, bsub->tmsi, osmo_use_count_to_str_c(OTC_SELECT, &bsub->use_count),
 		VTY_NEWLINE);
 }
 

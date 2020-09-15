@@ -244,7 +244,7 @@ void create_conn(struct gsm_lchan *lchan)
 	/* Make up a new IMSI for this test, for logging the subscriber */
 	next_imsi ++;
 	snprintf(imsi, sizeof(imsi), "%06u", next_imsi);
-	lchan->conn->bsub = bsc_subscr_find_or_create_by_imsi(net->bsc_subscribers, imsi);
+	lchan->conn->bsub = bsc_subscr_find_or_create_by_imsi(net->bsc_subscribers, imsi, BSUB_USE_CONN);
 
 	/* kick the FSM from INIT through to the ACTIVE state */
 	osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_A_CONN_REQ, NULL);

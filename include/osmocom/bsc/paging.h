@@ -42,6 +42,9 @@ struct bsc_msc_data;
 #define LOG_PAGING_BTS(PARAMS, BTS, SUBSYS, LEVEL, fmt, args...) \
 	LOG_PAGING(PARAMS, SUBSYS, LEVEL, "(bts%u) " fmt, (BTS) ? (BTS)->nr : 255, ##args)
 
+#define BSUB_USE_PAGING_START "paging-start"
+#define BSUB_USE_PAGING_REQUEST "paging-req"
+
 /* Bitmask of reasons for Paging. Each individual Paging via bsc_paging_start() typically has only one of these reasons
  * set, but when a subscriber responds, we need to aggregate all pending Paging reasons (by bitwise-OR). */
 enum bsc_paging_reason {

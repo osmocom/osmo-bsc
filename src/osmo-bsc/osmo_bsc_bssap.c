@@ -347,7 +347,8 @@ int bsc_paging_start(struct bsc_paging_params *params)
 	rate_ctr_inc(&bsc_gsmnet->bsc_ctrs->ctr[BSC_CTR_PAGING_ATTEMPTED]);
 
 	if (!params->bsub) {
-		params->bsub = bsc_subscr_find_or_create_by_imsi(bsc_gsmnet->bsc_subscribers, params->imsi.imsi);
+		params->bsub = bsc_subscr_find_or_create_by_imsi(bsc_gsmnet->bsc_subscribers, params->imsi.imsi,
+								 BSUB_USE_PAGING_START);
 		if (!params->bsub) {
 			LOG_PAGING(params, DMSC, LOGL_ERROR, "Paging request failed: Could not allocate subscriber\n");
 			return -EINVAL;
@@ -394,7 +395,7 @@ int bsc_paging_start(struct bsc_paging_params *params)
 		break;
 	}
 
-	bsc_subscr_put(params->bsub);
+	bsc_subscr_put(params->bsub, BSUB_USE_PAGING_START);
 	log_set_context(LOG_CTX_BSC_SUBSCR, NULL);
 	return 0;
 }

@@ -67,7 +67,7 @@ static void paging_remove_request(struct gsm_bts_paging_state *paging_bts,
 {
 	osmo_timer_del(&to_be_deleted->T3113);
 	llist_del(&to_be_deleted->entry);
-	bsc_subscr_put(to_be_deleted->bsub);
+	bsc_subscr_put(to_be_deleted->bsub, BSUB_USE_PAGING_REQUEST);
 	talloc_free(to_be_deleted);
 }
 
@@ -343,7 +343,8 @@ static int _paging_request(const struct bsc_paging_params *params, struct gsm_bt
 	req = talloc_zero(tall_paging_ctx, struct gsm_paging_request);
 	OSMO_ASSERT(req);
 	req->reason = params->reason;
-	req->bsub = bsc_subscr_get(params->bsub);
+	req->bsub = params->bsub;
+	bsc_subscr_get(req->bsub, BSUB_USE_PAGING_REQUEST);
 	req->bts = bts;
 	req->chan_type = params->chan_needed;
 	req->msc = params->msc;

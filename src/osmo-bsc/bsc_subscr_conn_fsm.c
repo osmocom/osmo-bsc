@@ -823,7 +823,8 @@ static void gscon_fsm_allstate(struct osmo_fsm_inst *fi, uint32_t event, void *d
 		OSMO_ASSERT(data);
 		mi_imsi = data;
 		if (!conn->bsub)
-			conn->bsub = bsc_subscr_find_or_create_by_imsi(conn->network->bsc_subscribers, mi_imsi->imsi);
+			conn->bsub = bsc_subscr_find_or_create_by_imsi(conn->network->bsc_subscribers, mi_imsi->imsi,
+								       BSUB_USE_CONN);
 		else {
 			/* we already have a bsc_subscr associated; maybe that subscriber has no IMSI yet? */
 			if (!conn->bsub->imsi[0])
@@ -855,7 +856,7 @@ static void gscon_cleanup(struct osmo_fsm_inst *fi, enum osmo_fsm_term_cause cau
 
 	if (conn->bsub) {
 		LOGPFSML(fi, LOGL_DEBUG, "Putting bsc_subscr\n");
-		bsc_subscr_put(conn->bsub);
+		bsc_subscr_put(conn->bsub, BSUB_USE_CONN);
 		conn->bsub = NULL;
 	}
 

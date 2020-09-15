@@ -402,7 +402,7 @@ int bsc_compl_l3(struct gsm_lchan *lchan, struct msgb *msg, uint16_t chosen_chan
 		 * See e.g.  BSC_Tests.TC_chan_rel_rll_rel_ind: "dt := * f_est_dchan('23'O, 23, '00010203040506'O);"
 		 */
 	} else {
-		bsub = bsc_subscr_find_or_create_by_mi(bsc_gsmnet->bsc_subscribers, &mi);
+		bsub = bsc_subscr_find_or_create_by_mi(bsc_gsmnet->bsc_subscribers, &mi, __func__);
 	}
 
 	/* allocate a new connection */
@@ -412,8 +412,13 @@ int bsc_compl_l3(struct gsm_lchan *lchan, struct msgb *msg, uint16_t chosen_chan
 		goto early_fail;
 	}
 	if (bsub) {
-		/* pass bsub use count to conn */
-		conn->bsub = bsub;
+		/* We got the conn either from new allocation, or by searching for it by bsub. So: */
+		OSMO_ASSERT((!conn->bsub) || (conn->bsub == bsub));
+		if (!conn->bsub) {
+			conn->bsub = bsub;
+			bsc_subscr_get(conn->bsub, BSUB_USE_CONN);
+		}
+		bsc_subscr_put(bsub, __func__);
 	}
 	gscon_change_primary_lchan(conn, lchan);
 	gscon_update_id(conn);

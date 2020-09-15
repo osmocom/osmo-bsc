@@ -32,6 +32,38 @@
 #include <osmocom/bsc/bsc_subscriber.h>
 #include <osmocom/bsc/debug.h>
 
+static void bsc_subscr_free(struct bsc_subscr *bsub);
+
+static int bsub_use_cb(struct osmo_use_count_entry *e, int32_t old_use_count, const char *file, int line)
+{
+	struct bsc_subscr *bsub = e->use_count->talloc_object;
+	int32_t total;
+	int level;
+
+	if (!e->use)
+		return -EINVAL;
+
+	total = osmo_use_count_total(&bsub->use_count);
+
+	if (total == 0
+	    || (total == 1 && old_use_count == 0 && e->count == 1))
+		level = LOGL_INFO;
+	else
+		level = LOGL_DEBUG;
+
+	LOGPSRC(DREF, level, file, line, "BSC subscr %s: %s %s: now used by %s\n",
+		bsc_subscr_name(bsub),
+		(e->count - old_use_count) > 0? "+" : "-", e->use,
+		osmo_use_count_to_str_c(OTC_SELECT, &bsub->use_count));
+
+	if (e->count < 0)
+		return -ERANGE;
+
+	if (total == 0)
+		bsc_subscr_free(bsub);
+	return 0;
+}
+
 static struct bsc_subscr *bsc_subscr_alloc(struct llist_head *list)
 {
 	struct bsc_subscr *bsub;
@@ -40,13 +72,20 @@ static struct bsc_subscr *bsc_subscr_alloc(struct llist_head *list)
 	if (!bsub)
 		return NULL;
 
+	bsub->tmsi = GSM_RESERVED_TMSI;
+	bsub->use_count = (struct osmo_use_count){
+		.talloc_object = bsub,
+		.use_cb = bsub_use_cb,
+	};
+
 	llist_add_tail(&bsub->entry, list);
 
 	return bsub;
 }
 
 struct bsc_subscr *bsc_subscr_find_by_imsi(struct llist_head *list,
-					   const char *imsi)
+					   const char *imsi,
+					   const char *use_token)
 {
 	struct bsc_subscr *bsub;
 
@@ -54,14 +93,17 @@ struct bsc_subscr *bsc_subscr_find_by_imsi(struct llist_head *list,
 		return NULL;
 
 	llist_for_each_entry(bsub, list, entry) {
-		if (!strcmp(bsub->imsi, imsi))
-			return bsc_subscr_get(bsub);
+		if (!strcmp(bsub->imsi, imsi)) {
+			bsc_subscr_get(bsub, use_token);
+			return bsub;
+		}
 	}
 	return NULL;
 }
 
 struct bsc_subscr *bsc_subscr_find_by_tmsi(struct llist_head *list,
-					   uint32_t tmsi)
+					   uint32_t tmsi,
+					   const char *use_token)
 {
 	struct bsc_subscr *bsub;
 
@@ -69,21 +111,24 @@ struct bsc_subscr *bsc_subscr_find_by_tmsi(struct llist_head *list,
 		return NULL;
 
 	llist_for_each_entry(bsub, list, entry) {
-		if (bsub->tmsi == tmsi)
-			return bsc_subscr_get(bsub);
+		if (bsub->tmsi == tmsi) {
+			bsc_subscr_get(bsub, use_token);
+			return bsub;
+		}
 	}
 	return NULL;
 }
 
-struct bsc_subscr *bsc_subscr_find_by_mi(struct llist_head *list, const struct osmo_mobile_identity *mi)
+struct bsc_subscr *bsc_subscr_find_by_mi(struct llist_head *list, const struct osmo_mobile_identity *mi,
+					 const char *use_token)
 {
 	if (!mi)
 		return NULL;
 	switch (mi->type) {
 	case GSM_MI_TYPE_IMSI:
-		return bsc_subscr_find_by_imsi(list, mi->imsi);
+		return bsc_subscr_find_by_imsi(list, mi->imsi, use_token);
 	case GSM_MI_TYPE_TMSI:
-		return bsc_subscr_find_by_tmsi(list, mi->tmsi);
+		return bsc_subscr_find_by_tmsi(list, mi->tmsi, use_token);
 	default:
 		return NULL;
 	}
@@ -97,42 +142,47 @@ void bsc_subscr_set_imsi(struct bsc_subscr *bsub, const char *imsi)
 }
 
 struct bsc_subscr *bsc_subscr_find_or_create_by_imsi(struct llist_head *list,
-						     const char *imsi)
+						     const char *imsi,
+						     const char *use_token)
 {
 	struct bsc_subscr *bsub;
-	bsub = bsc_subscr_find_by_imsi(list, imsi);
+	bsub = bsc_subscr_find_by_imsi(list, imsi, use_token);
 	if (bsub)
 		return bsub;
 	bsub = bsc_subscr_alloc(list);
 	if (!bsub)
 		return NULL;
 	bsc_subscr_set_imsi(bsub, imsi);
-	return bsc_subscr_get(bsub);
+	bsc_subscr_get(bsub, use_token);
+	return bsub;
 }
 
 struct bsc_subscr *bsc_subscr_find_or_create_by_tmsi(struct llist_head *list,
-						     uint32_t tmsi)
+						     uint32_t tmsi,
+						     const char *use_token)
 {
 	struct bsc_subscr *bsub;
-	bsub = bsc_subscr_find_by_tmsi(list, tmsi);
+	bsub = bsc_subscr_find_by_tmsi(list, tmsi, use_token);
 	if (bsub)
 		return bsub;
 	bsub = bsc_subscr_alloc(list);
 	if (!bsub)
 		return NULL;
 	bsub->tmsi = tmsi;
-	return bsc_subscr_get(bsub);
+	bsc_subscr_get(bsub, use_token);
+	return bsub;
 }
 
-struct bsc_subscr *bsc_subscr_find_or_create_by_mi(struct llist_head *list, const struct osmo_mobile_identity *mi)
+struct bsc_subscr *bsc_subscr_find_or_create_by_mi(struct llist_head *list, const struct osmo_mobile_identity *mi,
+						   const char *use_token)
 {
 	if (!mi)
 		return NULL;
 	switch (mi->type) {
 	case GSM_MI_TYPE_IMSI:
-		return bsc_subscr_find_or_create_by_imsi(list, mi->imsi);
+		return bsc_subscr_find_or_create_by_imsi(list, mi->imsi, use_token);
 	case GSM_MI_TYPE_TMSI:
-		return bsc_subscr_find_or_create_by_tmsi(list, mi->tmsi);
+		return bsc_subscr_find_or_create_by_tmsi(list, mi->tmsi, use_token);
 	default:
 		return NULL;
 	}
@@ -170,29 +220,7 @@ static void bsc_subscr_free(struct bsc_subscr *bsub)
 	talloc_free(bsub);
 }
 
-struct bsc_subscr *_bsc_subscr_get(struct bsc_subscr *bsub,
-				   const char *file, int line)
-{
-	OSMO_ASSERT(bsub->use_count < INT_MAX);
-	bsub->use_count++;
-	LOGPSRC(DREF, LOGL_DEBUG, file, line,
-		"BSC subscr %s usage increases to: %d\n",
-		bsc_subscr_name(bsub), bsub->use_count);
-	return bsub;
-}
-
-struct bsc_subscr *_bsc_subscr_put(struct bsc_subscr *bsub,
-				   const char *file, int line)
-{
-	bsub->use_count--;
-	LOGPSRC(DREF, bsub->use_count >= 0? LOGL_DEBUG : LOGL_ERROR,
-		file, line,
-		"BSC subscr %s usage decreases to: %d\n",
-		bsc_subscr_name(bsub), bsub->use_count);
-	if (bsub->use_count <= 0)
-		bsc_subscr_free(bsub);
-	return NULL;
-}
+#define BSUB_USE_LOG_FILTER "log_filter"
 
 void log_set_filter_bsc_subscr(struct log_target *target,
 			       struct bsc_subscr *bsc_subscr)
@@ -201,13 +229,14 @@ void log_set_filter_bsc_subscr(struct log_target *target,
 
 	/* free the old data */
 	if (*fsub) {
-		bsc_subscr_put(*fsub);
+		bsc_subscr_put(*fsub, BSUB_USE_LOG_FILTER);
 		*fsub = NULL;
 	}
 
 	if (bsc_subscr) {
 		target->filter_map |= (1 << LOG_FLT_BSC_SUBSCR);
-		*fsub = bsc_subscr_get(bsc_subscr);
+		*fsub = bsc_subscr;
+		bsc_subscr_get(*fsub, BSUB_USE_LOG_FILTER);
 	} else
 		target->filter_map &= ~(1 << LOG_FLT_BSC_SUBSCR);
 }

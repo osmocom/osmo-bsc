@@ -3,6 +3,8 @@
 #include <osmocom/gsm/protocol/gsm_04_08.h>
 #include <osmocom/core/fsm.h>
 
+#define BSUB_USE_CONN "conn"
+
 enum gscon_fsm_event {
 	/* local SCCP stack tells us incoming conn from MSC */
 	GSCON_EV_A_CONN_IND,
