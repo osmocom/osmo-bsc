@@ -1604,7 +1604,7 @@ int abis_nm_software_load(struct gsm_bts *bts, int trx_nr, const char *fname,
 		break;
 	case GSM_BTS_TYPE_UNKNOWN:
 	default:
-		LOGPC(DNM, LOGL_ERROR, "Software Load not properly implemented.\n");
+		LOGP(DNM, LOGL_ERROR, "Software Load not properly implemented.\n");
 		return -1;
 		break;
 	}
@@ -1769,8 +1769,8 @@ int abis_nm_get_attr(struct gsm_bts *bts, uint8_t obj_class, uint8_t bts_nr, uin
 	struct msgb *msg;
 
 	if (bts->type != GSM_BTS_TYPE_OSMOBTS && bts->type != GSM_BTS_TYPE_NANOBTS) {
-		LOGPC(DNM, LOGL_NOTICE, "Getting attributes from BTS%d type %s is not supported.\n",
-		      bts->nr, btstype2str(bts->type));
+		LOGP(DNM, LOGL_NOTICE, "Getting attributes from BTS%d type %s is not supported.\n",
+		     bts->nr, btstype2str(bts->type));
 		return -EINVAL;
 	}
 
