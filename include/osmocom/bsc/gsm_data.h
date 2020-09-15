@@ -894,6 +894,8 @@ struct gsm_bts_rejected {
 	time_t time;
 };
 
+extern struct osmo_tdef_group bsc_tdef_group[];
+
 struct gsm_network *gsm_network_init(void *ctx);
 
 struct gsm_bts *gsm_bts_num(const struct gsm_network *net, int num);

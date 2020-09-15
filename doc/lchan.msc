@@ -189,7 +189,7 @@ msc {
 	ms => lchan [label="RSL RF Channel Release Ack"];
 	|||;
 	--- [label="IF release_in_error"];
-	lchan abox lchan [label="LCHAN_ST_WAIT_\nAFTER_ERROR\n(timeout: T3111+2 s, T993111)"];
+	lchan abox lchan [label="LCHAN_ST_WAIT_\nAFTER_ERROR\n(timeout: T3111+2 s, X3111)"];
 	...;
 	lchan box lchan [label="timer expires"];
 	--- [label="END: release_in_error"];
