@@ -1,0 +1,95 @@
+OsmoBSC> enable
+
+OsmoBSC# show timer
+T7 = 10 s	inter-BSC/MSC Handover outgoing, BSSMAP HO Required to HO Command timeout (default: 10 s)
+T8 = 10 s	inter-BSC/MSC Handover outgoing, BSSMAP HO Command to final Clear timeout (default: 10 s)
+T10 = 6 s	RR Assignment (default: 6 s)
+T101 = 10 s	inter-BSC/MSC Handover incoming, BSSMAP HO Request to HO Accept (default: 10 s)
+T3101 = 3 s	RR Immediate Assignment (default: 3 s)
+T3103 = 5 s	Handover (default: 5 s)
+T3105 = 100 ms	Physical Information (default: 100 ms)
+T3107 = 5 s	(unused) (default: 5 s)
+T3109 = 5 s	RSL SACCH deactivation (default: 5 s)
+T3111 = 2 s	Wait time before RSL RF Channel Release (default: 2 s)
+T993111 = 4 s	Wait time after lchan was released in error (should be T3111 + 2s) (default: 4 s)
+T3113 = 7 s	Paging (default: 7 s)
+T3115 = 10 s	(unused) (default: 10 s)
+T3117 = 10 s	(unused) (default: 10 s)
+T3119 = 10 s	(unused) (default: 10 s)
+T3122 = 10 s	Wait time after RR Immediate Assignment Reject (default: 10 s)
+T3141 = 10 s	(unused) (default: 10 s)
+T3212 = 5	Periodic Location Update timer, sent to MS (1 = 6 minutes) (default: 5)
+T993210 = 20 s	After L3 Complete, wait for MSC to confirm (default: 20 s)
+T999 = 60 s	After Clear Request, wait for MSC to Clear Command (sanity) (default: 60 s)
+
+OsmoBSC# show timer T3111
+T3111 = 2 s	Wait time before RSL RF Channel Release (default: 2 s)
+
+OsmoBSC# # specifically test legacy timers that are moved to X timers
+OsmoBSC# show timer T993111
+T993111 = 4 s	Wait time after lchan was released in error (should be T3111 + 2s) (default: 4 s)
+OsmoBSC# show timer T993210
+T993210 = 20 s	After L3 Complete, wait for MSC to confirm (default: 20 s)
+OsmoBSC# show timer T999
+T999 = 60 s	After Clear Request, wait for MSC to Clear Command (sanity) (default: 60 s)
+
+OsmoBSC# configure terminal
+OsmoBSC(config)# network
+OsmoBSC(config-net)# timer
+T7 = 10 s	inter-BSC/MSC Handover outgoing, BSSMAP HO Required to HO Command timeout (default: 10 s)
+T8 = 10 s	inter-BSC/MSC Handover outgoing, BSSMAP HO Command to final Clear timeout (default: 10 s)
+T10 = 6 s	RR Assignment (default: 6 s)
+T101 = 10 s	inter-BSC/MSC Handover incoming, BSSMAP HO Request to HO Accept (default: 10 s)
+T3101 = 3 s	RR Immediate Assignment (default: 3 s)
+T3103 = 5 s	Handover (default: 5 s)
+T3105 = 100 ms	Physical Information (default: 100 ms)
+T3107 = 5 s	(unused) (default: 5 s)
+T3109 = 5 s	RSL SACCH deactivation (default: 5 s)
+T3111 = 2 s	Wait time before RSL RF Channel Release (default: 2 s)
+T993111 = 4 s	Wait time after lchan was released in error (should be T3111 + 2s) (default: 4 s)
+T3113 = 7 s	Paging (default: 7 s)
+T3115 = 10 s	(unused) (default: 10 s)
+T3117 = 10 s	(unused) (default: 10 s)
+T3119 = 10 s	(unused) (default: 10 s)
+T3122 = 10 s	Wait time after RR Immediate Assignment Reject (default: 10 s)
+T3141 = 10 s	(unused) (default: 10 s)
+T3212 = 5	Periodic Location Update timer, sent to MS (1 = 6 minutes) (default: 5)
+T993210 = 20 s	After L3 Complete, wait for MSC to confirm (default: 20 s)
+T999 = 60 s	After Clear Request, wait for MSC to Clear Command (sanity) (default: 60 s)
+
+OsmoBSC(config-net)# timer T3111
+T3111 = 2 s	Wait time before RSL RF Channel Release (default: 2 s)
+OsmoBSC(config-net)# timer T3111 23
+OsmoBSC(config-net)# timer T3111
+T3111 = 23 s	Wait time before RSL RF Channel Release (default: 2 s)
+OsmoBSC(config-net)# timer T3111 default
+OsmoBSC(config-net)# timer T3111
+T3111 = 2 s	Wait time before RSL RF Channel Release (default: 2 s)
+
+OsmoBSC(config-net)# # specifically test legacy timers that are moved to X timers
+OsmoBSC(config-net)# timer T993111
+T993111 = 4 s	Wait time after lchan was released in error (should be T3111 + 2s) (default: 4 s)
+OsmoBSC(config-net)# timer T993111 1
+OsmoBSC(config-net)# timer T993111
+T993111 = 1 s	Wait time after lchan was released in error (should be T3111 + 2s) (default: 4 s)
+OsmoBSC(config-net)# timer T993111 default
+OsmoBSC(config-net)# timer T993111
+T993111 = 4 s	Wait time after lchan was released in error (should be T3111 + 2s) (default: 4 s)
+
+OsmoBSC(config-net)# timer T993210
+T993210 = 20 s	After L3 Complete, wait for MSC to confirm (default: 20 s)
+OsmoBSC(config-net)# timer T993210 2
+OsmoBSC(config-net)# timer T993210
+T993210 = 2 s	After L3 Complete, wait for MSC to confirm (default: 20 s)
+OsmoBSC(config-net)# timer T993210 default
+OsmoBSC(config-net)# timer T993210
+T993210 = 20 s	After L3 Complete, wait for MSC to confirm (default: 20 s)
+
+OsmoBSC(config-net)# timer T999
+T999 = 60 s	After Clear Request, wait for MSC to Clear Command (sanity) (default: 60 s)
+OsmoBSC(config-net)# timer T999 3
+OsmoBSC(config-net)# timer T999
+T999 = 3 s	After Clear Request, wait for MSC to Clear Command (sanity) (default: 60 s)
+OsmoBSC(config-net)# timer T999 default
+OsmoBSC(config-net)# timer T999
+T999 = 60 s	After Clear Request, wait for MSC to Clear Command (sanity) (default: 60 s)
