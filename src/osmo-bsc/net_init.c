@@ -37,7 +37,6 @@ static struct osmo_tdef gsm_network_T_defs[] = {
 	{ .T=3107, .default_val=5, .desc="(unused)" },
 	{ .T=3109, .default_val=5, .desc="RSL SACCH deactivation" },
 	{ .T=3111, .default_val=2, .desc="Wait time before RSL RF Channel Release" },
-	{ .T=993111, .default_val=4, .desc="Wait time after lchan was released in error (should be T3111 + 2s)" },
 	{ .T=3113, .default_val=7, .desc="Paging"},
 	{ .T=3115, .default_val=10, .desc="(unused)" },
 	{ .T=3117, .default_val=10, .desc="(unused)" },
@@ -46,14 +45,20 @@ static struct osmo_tdef gsm_network_T_defs[] = {
 	{ .T=3141, .default_val=10, .desc="(unused)" },
 	{ .T=3212, .default_val=5, .unit=OSMO_TDEF_CUSTOM,
 		.desc="Periodic Location Update timer, sent to MS (1 = 6 minutes)" },
-	{ .T=993210, .default_val=20, .desc="After L3 Complete, wait for MSC to confirm" },
-	{ .T=999, .default_val=60, .desc="After Clear Request, wait for MSC to Clear Command (sanity)" },
+	{ .T=-4, .default_val=60, .desc="After Clear Request, wait for MSC to Clear Command (sanity)" },
+	{ .T=-3111, .default_val=4, .desc="Wait time after lchan was released in error (should be T3111 + 2s)" },
+	{ .T=-3210, .default_val=20, .desc="After L3 Complete, wait for MSC to confirm" },
 	{}
 };
 
 struct osmo_tdef g_mgw_tdefs[] = {
-	{ .T=-1, .default_val=4, .desc="MGCP response timeout" },
-	{ .T=-2, .default_val=30, .desc="RTP stream establishing timeout" },
+	{ .T=-2427, .default_val=5, .desc="timeout for MGCP response from MGW" },
+	{}
+};
+
+struct osmo_tdef_group bsc_tdef_group[] = {
+	{ .name = "net", .tdefs = gsm_network_T_defs, .desc = "GSM network" },
+	{ .name = "mgw", .tdefs = g_mgw_tdefs, .desc = "MGW (Media Gateway) interface" },
 	{}
 };
 

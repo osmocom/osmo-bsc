@@ -1148,7 +1148,8 @@ static int config_write_net(struct vty *vty)
 				gsmnet->tz.hr, gsmnet->tz.mn, VTY_NEWLINE);
 	}
 
-	osmo_tdef_vty_write(vty, gsmnet->T_defs, " timer ");
+	/* Timer introspection commands (generic osmo_tdef API) */
+	osmo_tdef_vty_groups_write(vty, " ");
 
 	{
 		uint16_t meas_port;
@@ -5583,26 +5584,49 @@ DEFUN(cfg_net_meas_feed_scenario, cfg_net_meas_feed_scenario_cmd,
 	return CMD_SUCCESS;
 }
 
-DEFUN(show_timer, show_timer_cmd,
-      "show timer " OSMO_TDEF_VTY_ARG_T_OPTIONAL,
+static void legacy_timers(struct vty *vty, const char **T_arg)
+{
+	if (!strcmp((*T_arg), "T993111") || !strcmp((*T_arg), "t993111")) {
+		vty_out(vty, "%% Legacy: timer T993111 is now X3111%s", VTY_NEWLINE);
+		(*T_arg) = "X3111";
+	} else if (!strcmp((*T_arg), "T993210") || !strcmp((*T_arg), "t993210")) {
+		vty_out(vty, "%% Legacy: timer T993210 is now X3210%s", VTY_NEWLINE);
+		(*T_arg) = "X3210";
+	} else if (!strcmp((*T_arg), "T999") || !strcmp((*T_arg), "t999")) {
+		vty_out(vty, "%% Legacy: timer T999 is now X4%s", VTY_NEWLINE);
+		(*T_arg) = "X4";
+	}
+}
+
+/* LEGACY TIMER COMMAND. The proper commands are added by osmo_tdef_vty_groups_init(), using explicit timer group
+ * naming. The old groupless timer command accesses the 'net' group only, but is still available. */
+DEFUN_HIDDEN(show_timer, show_timer_cmd,
+      "show timer " OSMO_TDEF_VTY_ARG_T,
       SHOW_STR "Show timers\n"
       OSMO_TDEF_VTY_DOC_T)
 {
 	struct gsm_network *net = gsmnet_from_vty(vty);
-	const char *T_arg = argc > 0 ? argv[0] : NULL;
+	const char *T_arg = argv[0];
+	if (T_arg)
+		legacy_timers(vty, &T_arg);
 	return osmo_tdef_vty_show_cmd(vty, net->T_defs, T_arg, NULL);
 }
 
-DEFUN(cfg_net_timer, cfg_net_timer_cmd,
-      "timer " OSMO_TDEF_VTY_ARG_SET_OPTIONAL,
+/* LEGACY TIMER COMMAND. The proper commands are added by osmo_tdef_vty_groups_init(), using explicit timer group
+ * naming. The old groupless timer command accesses the 'net' group only, but is still available. */
+DEFUN_HIDDEN(cfg_net_timer, cfg_net_timer_cmd,
+      "timer " OSMO_TDEF_VTY_ARG_T " " OSMO_TDEF_VTY_ARG_VAL_OPTIONAL,
       "Configure or show timers\n"
       OSMO_TDEF_VTY_DOC_SET)
 {
 	struct gsm_network *net = gsmnet_from_vty(vty);
+	const char *mod_argv[argc];
+	memcpy(mod_argv, argv, sizeof(mod_argv));
+	legacy_timers(vty, &mod_argv[0]);
 	/* If any arguments are missing, redirect to 'show' */
 	if (argc < 2)
-		return show_timer(self, vty, argc, argv);
-	return osmo_tdef_vty_set_cmd(vty, net->T_defs, argv);
+		return show_timer(self, vty, argc, mod_argv);
+	return osmo_tdef_vty_set_cmd(vty, net->T_defs, mod_argv);
 }
 
 DEFUN(cfg_net_allow_unusable_timeslots, cfg_net_allow_unusable_timeslots_cmd,
@@ -6562,6 +6586,9 @@ int bsc_vty_init(struct gsm_network *network)
 	install_element(GSMNET_NODE, &cfg_net_meas_feed_scenario_cmd);
 	install_element(GSMNET_NODE, &cfg_net_timer_cmd);
 	install_element(GSMNET_NODE, &cfg_net_allow_unusable_timeslots_cmd);
+
+	/* Timer configuration commands (generic osmo_tdef API) */
+	osmo_tdef_vty_groups_init(GSMNET_NODE, bsc_tdef_group);
 
 	install_element_ve(&bsc_show_net_cmd);
 	install_element_ve(&show_bts_cmd);

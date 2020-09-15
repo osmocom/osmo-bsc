@@ -90,8 +90,8 @@ static const struct value_string gscon_fsm_event_names[] = {
 };
 
 struct osmo_tdef_state_timeout conn_fsm_timeouts[32] = {
-	[ST_WAIT_CC] = { .T = 993210 },
-	[ST_CLEARING] = { .T = 999 },
+	[ST_WAIT_CC] = { .T = -3210 },
+	[ST_CLEARING] = { .T = -4 },
 };
 
 /* Transition to a state, using the T timer defined in conn_fsm_timeouts.
@@ -330,7 +330,7 @@ static void gscon_fsm_init(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 		}
 		gscon_bssmap_clear(conn, GSM0808_CAUSE_EQUIPMENT_FAILURE);
 		if (conn->fi->state != ST_CLEARING)
-			osmo_fsm_inst_state_chg(fi, ST_CLEARING, 60, 999);
+			osmo_fsm_inst_state_chg(fi, ST_CLEARING, 60, -4);
 		return;
 	default:
 		OSMO_ASSERT(false);
@@ -350,7 +350,7 @@ static void gscon_fsm_wait_cc(struct osmo_fsm_inst *fi, uint32_t event, void *da
 			   confirmed connection, then instead simply drop the connection */
 			LOGPFSML(fi, LOGL_INFO,
 				 "Connection confirmed but lchan was dropped previously, clearing conn\n");
-			osmo_fsm_inst_state_chg(conn->fi, ST_CLEARING, 60, 999);
+			osmo_fsm_inst_state_chg(conn->fi, ST_CLEARING, 60, -4);
 			gscon_bssmap_clear(conn, GSM0808_CAUSE_EQUIPMENT_FAILURE);
 			break;
 		}
@@ -692,7 +692,7 @@ void gscon_lchan_releasing(struct gsm_subscriber_connection *conn, struct gsm_lc
 			break;
 		default:
 			/* Ensure that the FSM is in ST_CLEARING. */
-			osmo_fsm_inst_state_chg(conn->fi, ST_CLEARING, 60, 999);
+			osmo_fsm_inst_state_chg(conn->fi, ST_CLEARING, 60, -4);
 			/* fall thru, omit an error log if already in ST_CLEARING */
 		case ST_CLEARING:
 			/* Request a Clear Command from the MSC. */
@@ -782,7 +782,7 @@ static void gscon_fsm_allstate(struct osmo_fsm_inst *fi, uint32_t event, void *d
 			conn->lchan->release.is_csfb = ccd->is_csfb;
 		/* MSC tells us to cleanly shut down */
 		if (conn->fi->state != ST_CLEARING)
-			osmo_fsm_inst_state_chg(fi, ST_CLEARING, 60, 999);
+			osmo_fsm_inst_state_chg(fi, ST_CLEARING, 60, -4);
 		LOGPFSML(fi, LOGL_DEBUG, "Releasing all lchans (if any) after BSSMAP Clear Command\n");
 		gscon_release_lchans(conn, true, bsc_gsm48_rr_cause_from_gsm0808_cause(ccd->cause_0808));
 		/* FIXME: Release all terestrial resources in ST_CLEARING */
@@ -890,7 +890,7 @@ static int gscon_timer_cb(struct osmo_fsm_inst *fi)
 	struct gsm_subscriber_connection *conn = fi->priv;
 
 	switch (fi->T) {
-	case 993210:
+	case -3210:
 		gscon_release_lchan(conn, conn->lchan, true, true, GSM48_RR_CAUSE_ABNORMAL_TIMER);
 
 		/* MSC has not responded/confirmed connection with CC, this
@@ -904,7 +904,7 @@ static int gscon_timer_cb(struct osmo_fsm_inst *fi)
 		 * gscon_cleanup() above) */
 		osmo_fsm_inst_term(fi, OSMO_FSM_TERM_REGULAR, NULL);
 		break;
-	case 999:
+	case -4:
 		/* The MSC has sent a BSSMAP Clear Command, we acknowledged that, but the conn was never
 		 * disconnected. */
 		LOGPFSML(fi, LOGL_ERROR, "Long after a BSSMAP Clear Command, the conn is still not"
