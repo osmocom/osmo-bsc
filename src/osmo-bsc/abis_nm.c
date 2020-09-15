@@ -1762,6 +1762,7 @@ int abis_nm_disc_terr_traf(struct abis_nm_h *h, struct abis_om_obj_inst *inst,
 int abis_nm_get_attr(struct gsm_bts *bts, uint8_t obj_class, uint8_t bts_nr, uint8_t trx_nr, uint8_t ts_nr,
 		     const uint8_t *attr, uint8_t attr_len)
 {
+	const struct abis_om_fom_hdr *foh;
 	struct abis_om_hdr *oh;
 	struct msgb *msg;
 
@@ -1771,13 +1772,13 @@ int abis_nm_get_attr(struct gsm_bts *bts, uint8_t obj_class, uint8_t bts_nr, uin
 		return -EINVAL;
 	}
 
-	LOG_BTS(bts, DNM, LOGL_DEBUG, "Get Attr (trx=%u)\n", trx_nr);
-
 	msg = nm_msgb_alloc();
 	oh = (struct abis_om_hdr *) msgb_put(msg, ABIS_OM_FOM_HDR_SIZE);
-	fill_om_fom_hdr(oh, TL16V_GROSS_LEN(attr_len), NM_MT_GET_ATTR, obj_class,
-			bts_nr, trx_nr, ts_nr);
+	foh = fill_om_fom_hdr(oh, TL16V_GROSS_LEN(attr_len), NM_MT_GET_ATTR,
+			      obj_class, bts_nr, trx_nr, ts_nr);
 	msgb_tl16v_put(msg, NM_ATT_LIST_REQ_ATTR, attr_len, attr);
+
+	DEBUGPFOH(DNM, foh, "Tx Get Attributes (Request)\n");
 
 	return abis_nm_sendmsg(bts, msg);
 }
