@@ -993,7 +993,7 @@ static int abis_nm_rcvmsg_manuf(struct msgb *mb)
 		break;
 	default:
 		LOGP(DNM, LOGL_ERROR, "don't know how to parse OML for this "
-		     "BTS type (%u)\n", bts_type);
+		     "BTS type (%s)\n", btstype2str(bts_type));
 		rc = 0;
 		break;
 	}
