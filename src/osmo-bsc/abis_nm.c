@@ -163,6 +163,7 @@ int _abis_nm_sendmsg(struct msgb *msg)
 
 	if (!msg->dst) {
 		LOGP(DNM, LOGL_ERROR, "%s: msg->dst == NULL\n", __func__);
+		msgb_free(msg);
 		return -EINVAL;
 	}
 
