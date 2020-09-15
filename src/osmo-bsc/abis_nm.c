@@ -800,13 +800,11 @@ struct gsm_bts_trx_ts *abis_nm_get_ts(const struct msgb *oml_msg)
 	struct gsm_bts_trx *trx = gsm_bts_trx_num(sign_link->trx->bts, foh->obj_inst.trx_nr);
 	uint8_t ts_nr = foh->obj_inst.ts_nr;
 	if (!trx) {
-		LOGP(DNM, LOGL_ERROR, "%s Channel OPSTART ACK for sign_link without trx\n",
-		     abis_nm_dump_foh(foh));
+		LOGPFOH(DNM, LOGL_ERROR, foh, "Channel OPSTART ACK for sign_link without trx\n");
 		return NULL;
 	}
 	if (ts_nr >= ARRAY_SIZE(trx->ts)) {
-		LOGP(DNM, LOGL_ERROR, "bts%u-trx%u %s Channel OPSTART ACK for non-existent TS\n",
-		     trx->bts->nr, trx->nr, abis_nm_dump_foh(foh));
+		LOGPFOH(DNM, LOGL_ERROR, foh, "Channel OPSTART ACK for non-existent TS\n");
 		return NULL;
 	}
 	return &trx->ts[ts_nr];
