@@ -239,8 +239,8 @@ static void mr_config_for_ms(struct gsm_lchan *lchan, struct msgb *msg)
 			lchan->mr_ms_lv + 1);
 }
 
-
-#define CELL_SEL_IND_AFTER_REL_MAX_BITS (3+MAX_EARFCN_LIST*20+1)
+#define CELL_SEL_IND_AFTER_REL_EARCFN_ENTRY (1+16+4+1+1)
+#define CELL_SEL_IND_AFTER_REL_MAX_BITS (3+MAX_EARFCN_LIST*CELL_SEL_IND_AFTER_REL_EARCFN_ENTRY+1)
 #define CELL_SEL_IND_AFTER_REL_MAX_BYTES OSMO_BYTES_FOR_BITS(CELL_SEL_IND_AFTER_REL_MAX_BITS)
 
 /* Generate a CSN.1 encoded "Cell Selection Indicator after release of all TCH and SDCCH"
@@ -263,8 +263,8 @@ static int generate_cell_sel_ind_after_rel(uint8_t *out, unsigned int out_len, c
 		if (e->arfcn[i] == OSMO_EARFCN_INVALID)
 			continue;
 
-		/* tailroom must fit one more EARFCN (20 bits), plus the final list term bit. */
-		if (bitvec_tailroom_bits(&bv) < 21) {
+		/* tailroom must fit one more EARFCN plus the final list term bit. */
+		if (bitvec_tailroom_bits(&bv) < CELL_SEL_IND_AFTER_REL_EARCFN_ENTRY + 1) {
 			LOGP(DRR, LOGL_NOTICE, "%s: Not enough room to store EARFCN %u in the "
 				"Cell Selection Indicator IE\n", gsm_bts_name(bts), e->arfcn[i]);
 		} else {
