@@ -535,17 +535,19 @@ static inline bool handle_attr(const struct gsm_bts *bts, enum bts_attribute id,
 }
 
 /* Parse Attribute Response Info - return pointer to the actual content */
-static inline const uint8_t *parse_attr_resp_info_unreported(uint8_t bts_nr, const uint8_t *ari, uint16_t ari_len, uint16_t *out_len)
+static inline const uint8_t *parse_attr_resp_info_unreported(const struct abis_om_fom_hdr *foh,
+							     const uint8_t *ari, uint16_t ari_len,
+							     uint16_t *out_len)
 {
 	uint8_t num_unreported = ari[0], i;
 
-	DEBUGP(DNM, "BTS%u Get Attributes Response Info: %u bytes total with %u unreported attributes\n",
-	       bts_nr, ari_len, num_unreported);
+	DEBUGPFOH(DNM, foh, "Get Attributes Response Info: %u bytes total "
+		  "with %u unreported attributes\n", ari_len, num_unreported);
 
 	/* +1 because we have to account for number of unreported attributes, prefixing the list: */
 	for (i = 0; i < num_unreported; i++)
-		LOGP(DNM, LOGL_ERROR, "BTS%u Attribute %s is unreported\n",
-		     bts_nr, get_value_string(abis_nm_att_names, ari[i + 1]));
+		LOGPFOH(DNM, LOGL_ERROR, foh, "Attribute %s is unreported\n",
+			get_value_string(abis_nm_att_names, ari[i + 1]));
 
 	/* the data starts right after the list of unreported attributes + space for length of that list */
 	if (out_len)
@@ -638,7 +640,7 @@ static int parse_attr_resp_info_attr(struct gsm_bts *bts, const struct gsm_bts_t
 	if (TLVP_PRES_LEN(tp, NM_ATT_GET_ARI, 1)) {
 		data = TLVP_VAL(tp, NM_ATT_GET_ARI);
 		len = TLVP_LEN(tp, NM_ATT_GET_ARI);
-		parse_attr_resp_info_unreported(bts->nr, data, len, NULL);
+		parse_attr_resp_info_unreported(foh, data, len, NULL);
 	}
 
 	return 0;
@@ -655,7 +657,8 @@ static int parse_attr_resp_info(struct gsm_bts *bts, const struct gsm_bts_trx *t
 		return -EINVAL;
 	}
 
-	data = parse_attr_resp_info_unreported(bts->nr, TLVP_VAL(tp, NM_ATT_GET_ARI), TLVP_LEN(tp, NM_ATT_GET_ARI),
+	data = parse_attr_resp_info_unreported(foh, TLVP_VAL(tp, NM_ATT_GET_ARI),
+					       TLVP_LEN(tp, NM_ATT_GET_ARI),
 					       &data_len);
 
 	/* After parsing unreported attribute id list inside Response info,
