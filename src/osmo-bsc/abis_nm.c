@@ -720,7 +720,7 @@ static int abis_nm_rx_sw_act_req(struct msgb *mb)
 		LOGPFOH(DNM, LOGL_ERROR, foh, "SW config not found! Can't continue.\n");
 		return -EINVAL;
 	} else {
-		DEBUGP(DNM, "Found SW config: %s\n", osmo_hexdump(sw_config, sw_config_len));
+		DEBUGPFOH(DNM, foh, "Found SW config: %s\n", osmo_hexdump(sw_config, sw_config_len));
 	}
 
 	/* Parse up to two sw descriptions from the data */
