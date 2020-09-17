@@ -185,11 +185,7 @@ static int nm_statechg_event(int evt, struct nm_statechg_signal_data *nsd)
 		}
 		break;
 	case NM_OC_RADIO_CARRIER:
-		trx = obj;
-		if (new_state->operational == NM_OPSTATE_DISABLED &&
-		    new_state->availability == NM_AVSTATE_OK)
-			abis_nm_opstart(trx->bts, obj_class, trx->bts->bts_nr,
-					trx->nr, 0xff);
+		/* OPSTART done after Set Radio Carrier Attributes ACK is received */
 		break;
 	case NM_OC_GPRS_NSE:
 		bts = container_of(obj, struct gsm_bts, gprs.nse);
@@ -285,16 +281,13 @@ static int sw_activ_rep(struct msgb *mb)
 		 * This code is here to make sure that on start
 		 * a TRX remains locked.
 		 */
-		int rc_state = trx->mo.nm_state.administrative;
 		/* Patch ARFCN into radio attribute */
 		struct msgb *msgb = nanobts_attr_radio_get(trx->bts, trx);
 		abis_nm_set_radio_attr(trx, msgb->data, msgb->len);
 		msgb_free(msgb);
 		abis_nm_chg_adm_state(trx->bts, foh->obj_class,
 				      trx->bts->bts_nr, trx->nr, 0xff,
-				      rc_state);
-		abis_nm_opstart(trx->bts, foh->obj_class, trx->bts->bts_nr,
-				trx->nr, 0xff);
+				      trx->mo.nm_state.administrative);
 		break;
 		}
 	}
@@ -328,6 +321,21 @@ static void nm_rx_opstart_ack(struct msgb *oml_msg)
 	}
 }
 
+static void nm_rx_set_radio_attr_ack(struct msgb *oml_msg)
+{
+	struct abis_om_fom_hdr *foh = msgb_l3(oml_msg);
+	struct e1inp_sign_link *sign_link = oml_msg->dst;
+	struct gsm_bts *bts = sign_link->trx->bts;
+	struct gsm_bts_trx *trx = gsm_bts_trx_num(bts, foh->obj_inst.trx_nr);
+
+	if (foh->obj_class != NM_OC_RADIO_CARRIER) {
+		LOG_TRX(trx, DNM, LOGL_ERROR, "Set Radio Carrier Attr Ack received on non Radio Carrier object!\n");
+		return;
+	}
+	abis_nm_opstart(trx->bts, foh->obj_class, trx->bts->bts_nr,
+			trx->nr, 0xff);
+}
+
 /* Callback function to be called every time we receive a signal from NM */
 static int bts_ipa_nm_sig_cb(unsigned int subsys, unsigned int signal,
 		     void *handler_data, void *signal_data)
@@ -343,6 +351,9 @@ static int bts_ipa_nm_sig_cb(unsigned int subsys, unsigned int signal,
 		return nm_statechg_event(signal, signal_data);
 	case S_NM_OPSTART_ACK:
 		nm_rx_opstart_ack(signal_data);
+		return 0;
+	case S_NM_SET_RADIO_ATTR_ACK:
+		nm_rx_set_radio_attr_ack(signal_data);
 		return 0;
 	default:
 		break;
