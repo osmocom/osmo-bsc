@@ -239,11 +239,10 @@ static int generate_ma_for_ts(struct gsm_bts_trx_ts *ts)
 	const struct bitvec *cell_chan = &ts->trx->bts->si_common.cell_alloc;
 	const struct bitvec *ts_arfcn = &ts->hopping.arfcns;
 	struct bitvec *ma = &ts->hopping.ma;
-	unsigned int num_cell_arfcns, bitnum, n_chan;
+	unsigned int num_cell_arfcns;
 	int i;
 
 	/* re-set the MA to all-zero */
-	ma->cur_bit = 0;
 	ts->hopping.ma_len = 0;
 	memset(ma->data, 0, ma->data_len);
 
@@ -259,28 +258,26 @@ static int generate_ma_for_ts(struct gsm_bts_trx_ts *ts)
 
 	/* pad it to octet-aligned number of bits */
 	ts->hopping.ma_len = OSMO_BYTES_FOR_BITS(num_cell_arfcns);
+	ma->cur_bit = (ts->hopping.ma_len * 8) - 1;
 
-	n_chan = 0;
 	for (i = 1; i < 1024; i++) {
 		if (!bitvec_get_bit_pos(cell_chan, i))
 			continue;
 		/* set the corresponding bit in the MA */
-		bitnum = (ts->hopping.ma_len * 8) - 1 - n_chan;
 		if (bitvec_get_bit_pos(ts_arfcn, i))
-			bitvec_set_bit_pos(ma, bitnum, 1);
+			bitvec_set_bit_pos(ma, ma->cur_bit, 1);
 		else
-			bitvec_set_bit_pos(ma, bitnum, 0);
-		n_chan++;
+			bitvec_set_bit_pos(ma, ma->cur_bit, 0);
+		ma->cur_bit--;
 	}
 
 	/* ARFCN 0 is special: It is coded last in the bitmask */
 	if (bitvec_get_bit_pos(cell_chan, 0)) {
 		/* set the corresponding bit in the MA */
-		bitnum = (ts->hopping.ma_len * 8) - 1 - n_chan;
 		if (bitvec_get_bit_pos(ts_arfcn, 0))
-			bitvec_set_bit_pos(ma, bitnum, 1);
+			bitvec_set_bit_pos(ma, ma->cur_bit, 1);
 		else
-			bitvec_set_bit_pos(ma, bitnum, 0);
+			bitvec_set_bit_pos(ma, ma->cur_bit, 0);
 	}
 
 	return 0;
