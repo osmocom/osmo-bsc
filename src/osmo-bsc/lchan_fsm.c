@@ -439,7 +439,6 @@ static int lchan_mr_config(struct gsm_lchan *lchan, uint16_t s15_s0)
 	struct gsm48_multi_rate_conf mr_conf;
 	bool full_rate = (lchan->type == GSM_LCHAN_TCH_F);
 	struct gsm_bts *bts = lchan->ts->trx->bts;
-	struct bsc_msc_data *msc = lchan->conn->sccp.msc;
 	struct amr_multirate_conf *mr;
 	int rc;
 	int rc_rate;
@@ -469,16 +468,24 @@ static int lchan_mr_config(struct gsm_lchan *lchan, uint16_t s15_s0)
 	else
 		mr = &bts->mr_half;
 
-	/* The VTY allows to forbid certain codec rates. Unfortunately we can
-	 * not articulate all of the prohibitions on through S0-S15 on the A
-	 * interface. To ensure that the VTY settings are observed we create
-	 * a manipulated copy of the mr_conf that ensures forbidden codec rates
-	 * are not used in the multirate configuration IE. */
-	rc_rate = calc_amr_rate_intersection(&mr_conf_filtered, &msc->amr_conf, &mr_conf);
-	if (rc_rate < 0) {
-		LOG_LCHAN(lchan, LOGL_ERROR,
-			  "can not encode multirate configuration (invalid amr rate setting, MSC)\n");
-		return -EINVAL;
+	if (lchan->activate.info.activ_for == FOR_VTY)
+		/* If the channel is activated manually from VTY, then there is no
+		 * conn attached to the lchan, also no MSC is involved. Since this
+		 * option is for debugging and the codec choice is an intentional
+		 * decision by the VTY user, we do not filter the mr_conf. */
+		memcpy(&mr_conf_filtered, &mr_conf, sizeof(mr_conf_filtered));
+	else {
+		/* The VTY allows to forbid certain codec rates. Unfortunately we can
+		 * not articulate all of the prohibitions on through S0-S15 on the A
+		 * interface. To ensure that the VTY settings are observed we create
+		 * a manipulated copy of the mr_conf that ensures forbidden codec rates
+		 * are not used in the multirate configuration IE. */
+		rc_rate = calc_amr_rate_intersection(&mr_conf_filtered, &lchan->conn->sccp.msc->amr_conf, &mr_conf);
+		if (rc_rate < 0) {
+			LOG_LCHAN(lchan, LOGL_ERROR,
+				  "can not encode multirate configuration (invalid amr rate setting, MSC)\n");
+			return -EINVAL;
+		}
 	}
 
 	/* The two last codec rates which are defined for AMR do only work with
@@ -492,13 +499,17 @@ static int lchan_mr_config(struct gsm_lchan *lchan, uint16_t s15_s0)
 	}
 
 	/* Ensure that the resulting filtered conf is coherent with the
-	 * configuration that is set for the BTS and the specified rate */
-	mr_conf_bts = (struct gsm48_multi_rate_conf *)mr->gsm48_ie;
-	rc_rate = calc_amr_rate_intersection(&mr_conf_filtered, mr_conf_bts, &mr_conf_filtered);
-	if (rc_rate < 0) {
-		LOG_LCHAN(lchan, LOGL_ERROR,
-			  "can not encode multirate configuration (invalid amr rate setting, BTS)\n");
-		return -EINVAL;
+	 * configuration that is set for the BTS and the specified rate.
+	 * if the channel activation was triggerd by the VTY, do not
+	 * filter anything (see also comment above) */
+	if (lchan->activate.info.activ_for != FOR_VTY) {
+		mr_conf_bts = (struct gsm48_multi_rate_conf *)mr->gsm48_ie;
+		rc_rate = calc_amr_rate_intersection(&mr_conf_filtered, mr_conf_bts, &mr_conf_filtered);
+		if (rc_rate < 0) {
+			LOG_LCHAN(lchan, LOGL_ERROR,
+				  "can not encode multirate configuration (invalid amr rate setting, BTS)\n");
+			return -EINVAL;
+		}
 	}
 
 	/* Proceed with the generation of the multirate configuration IE
@@ -820,6 +831,12 @@ static void lchan_fsm_wait_rll_rtp_establish_onenter(struct osmo_fsm_inst *fi, u
 	else if (lchan->activate.info.requires_voice_stream)
 		lchan_rtp_fsm_start(lchan);
 
+	/* When activating a channel for VTY, skip waiting for activity from
+	 * lchan_rtp_fsm, but only if no voice stream is required. */
+	if (lchan->activate.info.activ_for == FOR_VTY &&
+	    !lchan->activate.info.requires_voice_stream) {
+		lchan_fsm_state_chg(LCHAN_ST_ESTABLISHED);
+	}
 }
 
 static void lchan_fsm_wait_rll_rtp_establish(struct osmo_fsm_inst *fi, uint32_t event, void *data)

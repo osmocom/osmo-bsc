@@ -4991,86 +4991,75 @@ DEFUN(pdch_act, pdch_act_cmd,
 
 }
 
-/* configure the lchan for a single AMR mode (as specified) */
-static int lchan_set_single_amr_mode(struct vty *vty, struct gsm_lchan *lchan, uint8_t amr_mode)
-{
-	struct amr_multirate_conf mr;
-	struct gsm48_multi_rate_conf *mr_conf;
-	int rc, vty_rc = CMD_SUCCESS;
-	mr_conf = (struct gsm48_multi_rate_conf *) &mr.gsm48_ie;
-
-	if (amr_mode > 7)
-		return -1;
-
-	memset(&mr, 0, sizeof(mr));
-	mr_conf->ver = 1;
-	/* bit-mask of supported modes, only one bit is set. Reflects
-	 * Figure 10.5.2.47a where there are no thershold and only a
-	 * single mode */
-	mr.gsm48_ie[1] = 1 << amr_mode;
-
-	mr.ms_mode[0].mode = amr_mode;
-	mr.bts_mode[0].mode = amr_mode;
-	mr.num_modes = 1;
-
-	/* encode this configuration into the lchan for both uplink and
-	 * downlink direction */
-	rc = gsm48_multirate_config(lchan->mr_ms_lv, mr_conf, mr.ms_mode, mr.num_modes);
-	if (rc != 0) {
-		vty_out(vty,
-			"%% Invalid AMR multirate configuration (%s, amr mode %d, ms) - check parameters%s",
-			gsm_lchant_name(lchan->type), amr_mode, VTY_NEWLINE);
-		vty_rc = CMD_WARNING;
-	}
-	rc = gsm48_multirate_config(lchan->mr_bts_lv, mr_conf, mr.bts_mode, mr.num_modes);
-	if (rc != 0) {
-		vty_out(vty,
-			"%% Invalid AMR multirate configuration (%s, amr mode %d, bts) - check parameters%s",
-			gsm_lchant_name(lchan->type), amr_mode, VTY_NEWLINE);
-		vty_rc = CMD_WARNING;
-	}
-
-	return vty_rc;
-}
 
 /* Activate / Deactivate a single lchan with a specific codec mode */
 static int lchan_act_single(struct vty *vty, struct gsm_lchan *lchan, const char *codec_str, int amr_mode, int activate)
 {
+	struct lchan_activate_info info = { };
+	uint16_t amr_modes[8] =
+	    { GSM0808_SC_CFG_AMR_4_75, GSM0808_SC_CFG_AMR_4_75_5_90_7_40_12_20, GSM0808_SC_CFG_AMR_5_90,
+	      GSM0808_SC_CFG_AMR_6_70, GSM0808_SC_CFG_AMR_7_40, GSM0808_SC_CFG_AMR_7_95, GSM0808_SC_CFG_AMR_10_2,
+	      GSM0808_SC_CFG_AMR_12_2 };
+
 	if (activate) {
+		LOG_LCHAN(lchan, LOGL_NOTICE, "attempt from VTY to activate lchan %s with codec %s\n",
+			  gsm_lchan_name(lchan), codec_str);
+
 		int lchan_t;
 		if (lchan->fi->state != LCHAN_ST_UNUSED) {
 			vty_out(vty, "%% Cannot activate: Channel busy!%s", VTY_NEWLINE);
 			return CMD_WARNING;
 		}
+
+		/* pick a suitable lchan type */
 		lchan_t = gsm_lchan_type_by_pchan(lchan->ts->pchan_is);
 		if (lchan_t < 0) {
-			vty_out(vty, "%% Cannot activate: Invalid lchan type!%s", VTY_NEWLINE);
-			return CMD_WARNING;
+			if (lchan->ts->pchan_on_init == GSM_PCHAN_TCH_F_PDCH && !strcmp(codec_str, "fr"))
+				lchan_t = GSM_LCHAN_TCH_F;
+			else if (lchan->ts->pchan_on_init == GSM_PCHAN_TCH_F_TCH_H_PDCH && !strcmp(codec_str, "hr"))
+				lchan_t = GSM_LCHAN_TCH_H;
+			else if ((lchan->ts->pchan_on_init == GSM_PCHAN_TCH_F_PDCH || GSM_PCHAN_TCH_F_TCH_H_PDCH)
+				 && !strcmp(codec_str, "fr"))
+				lchan_t = GSM_LCHAN_TCH_F;
+			else {
+				vty_out(vty, "%% Cannot activate: Invalid lchan type (%s)!%s",
+					gsm_pchan_name(lchan->ts->pchan_on_init), VTY_NEWLINE);
+				return CMD_WARNING;
+			}
 		}
+
 		/* configure the lchan */
 		lchan->type = lchan_t;
 		if (!strcmp(codec_str, "hr") || !strcmp(codec_str, "fr")) {
-			lchan->rsl_cmode = RSL_CMOD_SPD_SPEECH;
-			lchan->tch_mode = GSM48_CMODE_SPEECH_V1;
+			info = (struct lchan_activate_info) {
+				.activ_for = FOR_VTY,
+				.chan_mode = GSM48_CMODE_SPEECH_V1,
+				.requires_voice_stream = false,
+			};
 		} else if (!strcmp(codec_str, "efr")) {
-			lchan->rsl_cmode = RSL_CMOD_SPD_SPEECH;
-			lchan->tch_mode = GSM48_CMODE_SPEECH_EFR;
+			info = (struct lchan_activate_info) {
+				.activ_for = FOR_VTY,
+				.chan_mode = GSM48_CMODE_SPEECH_EFR,
+				.s15_s0 = amr_modes[amr_mode],
+				.requires_voice_stream = false,
+			};
 		} else if (!strcmp(codec_str, "amr")) {
-			int vty_rc;
-			lchan->rsl_cmode = RSL_CMOD_SPD_SPEECH;
 			if (amr_mode == -1) {
 				vty_out(vty, "%% AMR requires specification of AMR mode%s", VTY_NEWLINE);
 				return CMD_WARNING;
 			}
-			lchan->tch_mode = GSM48_CMODE_SPEECH_AMR;
-			vty_rc = lchan_set_single_amr_mode(vty, lchan, amr_mode);
-			if (vty_rc != CMD_SUCCESS) {
-				vty_out(vty, "%% Failed to set AMR mode (%d)%s", amr_mode, VTY_NEWLINE);
-				return vty_rc;
-			}
+			info = (struct lchan_activate_info) {
+				.activ_for = FOR_VTY,
+				.chan_mode = GSM48_CMODE_SPEECH_AMR,
+				.s15_s0 = amr_modes[amr_mode],
+				.requires_voice_stream = false,
+			};
 		} else if (!strcmp(codec_str, "sig")) {
-			lchan->rsl_cmode = RSL_CMOD_SPD_SIGN;
-			lchan->tch_mode = GSM48_CMODE_SIGN;
+			info = (struct lchan_activate_info) {
+				.activ_for = FOR_VTY,
+				.chan_mode = GSM48_CMODE_SIGN,
+				.requires_voice_stream = false,
+			};
 		} else {
 			vty_out(vty, "%% Invalid channel mode specified!%s", VTY_NEWLINE);
 			return CMD_WARNING;
@@ -5078,12 +5067,9 @@ static int lchan_act_single(struct vty *vty, struct gsm_lchan *lchan, const char
 
 		vty_out(vty, "%% activating lchan %s as %s%s", gsm_lchan_name(lchan), gsm_chan_t_name(lchan->type),
 			VTY_NEWLINE);
-		rsl_tx_chan_activ(lchan, RSL_ACT_TYPE_INITIAL, 0);
-
-		if ((lchan->type == GSM_LCHAN_TCH_F || lchan->type == GSM_LCHAN_TCH_H)
-		    && is_ipaccess_bts(lchan->ts->trx->bts))
-			rsl_tx_ipacc_crcx(lchan);
+		lchan_activate(lchan, &info);
 	} else {
+		LOG_LCHAN(lchan, LOGL_NOTICE, "attempt from VTY to release lchan %s\n", gsm_lchan_name(lchan));
 		if (!lchan->fi) {
 			vty_out(vty, "%% Cannot release: Channel not initialized%s", VTY_NEWLINE);
 			return CMD_WARNING;
@@ -5103,11 +5089,12 @@ static int lchan_act_trx(struct vty *vty, struct gsm_bts_trx *trx, int activate)
 	struct gsm_bts_trx_ts *ts;
 	struct gsm_lchan *lchan;
 	char *codec_str;
+	bool skip_next = false;
 
 	for (ts_nr = 0; ts_nr < TRX_NR_TS; ts_nr++) {
 		ts = &trx->ts[ts_nr];
-		ts_for_each_lchan(lchan, ts) {
-			switch (ts->pchan_is) {
+		ts_for_each_potential_lchan(lchan, ts) {
+			switch (ts->pchan_on_init) {
 			case GSM_PCHAN_SDCCH8_SACCH8C:
 			case GSM_PCHAN_CCCH_SDCCH4_CBCH:
 			case GSM_PCHAN_SDCCH8_SACCH8C_CBCH:
@@ -5125,11 +5112,20 @@ static int lchan_act_trx(struct vty *vty, struct gsm_bts_trx *trx, int activate)
 				break;
 			default:
 				codec_str = NULL;
-				vty_out(vty, "%% omitting lchan %s%s", gsm_lchan_name(lchan), VTY_NEWLINE);
 			}
 
-			if (codec_str)
+			if (codec_str && skip_next == false) {
 				lchan_act_single(vty, lchan, codec_str, -1, activate);
+
+				/* We use GSM_PCHAN_TCH_F_TCH_H_PDCH slots as TCH_F for this test, so we
+				 * must not use the TCH_H reserved lchan in subslot 1. */
+				if (ts->pchan_on_init == GSM_PCHAN_TCH_F_TCH_H_PDCH)
+					skip_next = true;
+			}
+			else {
+				vty_out(vty, "%% omitting lchan %s%s", gsm_lchan_name(lchan), VTY_NEWLINE);
+				skip_next = false;
+			}
 		}
 	}
 
@@ -5167,14 +5163,6 @@ DEFUN(lchan_act, lchan_act_cmd,
 		activate = 1;
 	else
 		activate = 0;
-
-	/* FIXME: allow dynamic channels with switchover, lchan_activate(lchan, FOR_VTY) */
-	if (ss_nr >= pchan_subslots(ts->pchan_is)) {
-		vty_out(vty, "%% subslot index %d too large for physical channel %s (%u slots)%s",
-			ss_nr, gsm_pchan_name(ts->pchan_is), pchan_subslots(ts->pchan_is),
-			VTY_NEWLINE);
-		return CMD_WARNING;
-	}
 
 	return lchan_act_single(vty, lchan, codec_str, amr_mode, activate);
 }
