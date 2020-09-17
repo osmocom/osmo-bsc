@@ -46,6 +46,8 @@
 #include <osmocom/bsc/codec_pref.h>
 #include <osmocom/mgcp_client/mgcp_client_endpoint_fsm.h>
 #include <osmocom/core/byteswap.h>
+#include <osmocom/bsc/lb.h>
+#include <osmocom/bsc/lcs_loc_req.h>
 
 #define S(x)	(1 << (x))
 
@@ -86,6 +88,7 @@ static const struct value_string gscon_fsm_event_names[] = {
 	{GSCON_EV_LCLS_FAIL, "LCLS_FAIL"},
 	{GSCON_EV_FORGET_LCHAN, "FORGET_LCHAN"},
 	{GSCON_EV_FORGET_MGW_ENDPOINT, "FORGET_MGW_ENDPOINT"},
+	{GSCON_EV_LCS_LOC_REQ_END, "LCS_LOC_REQ_END"},
 	{}
 };
 
@@ -249,22 +252,41 @@ static void handle_bssap_n_connect(struct osmo_fsm_inst *fi, struct osmo_scu_pri
 
 	switch (bssmap_type) {
 	case BSS_MAP_MSG_HANDOVER_RQST:
-		/* First off, accept the new conn. */
-		osmo_sccp_tx_conn_resp(conn->sccp.msc->a.sccp_user, scu_prim->u.connect.conn_id,
-				       &scu_prim->u.connect.called_addr, NULL, 0);
+	case BSS_MAP_MSG_PERFORM_LOCATION_RQST:
+		break;
 
-		/* Make sure the conn FSM will osmo_sccp_tx_disconn() on term */
-		conn->sccp.state = SUBSCR_SCCP_ST_CONNECTED;
+	default:
+		LOGPFSML(fi, LOGL_NOTICE, "No support for N-CONNECT: %s: %s\n",
+			 gsm0808_bssap_name(bs->type), gsm0808_bssmap_name(bssmap_type));
+		goto refuse;
+	}
 
+	/* First off, accept the new conn. */
+	if (osmo_sccp_tx_conn_resp(conn->sccp.msc->a.sccp_user, scu_prim->u.connect.conn_id,
+				   &scu_prim->u.connect.called_addr, NULL, 0)) {
+		LOGPFSML(fi, LOGL_ERROR, "Cannot send SCCP CONN RESP\n");
+		goto refuse;
+	}
+
+	/* Make sure the conn FSM will osmo_sccp_tx_disconn() on term */
+	conn->sccp.state = SUBSCR_SCCP_ST_CONNECTED;
+
+	switch (bssmap_type) {
+	case BSS_MAP_MSG_HANDOVER_RQST:
 		/* Inter-BSC MT Handover Request, another BSS is handovering to us. */
 		handover_start_inter_bsc_in(conn, msg);
 		return;
+
+	case BSS_MAP_MSG_PERFORM_LOCATION_RQST:
+		/* Location Services: MSC asks for location of an IDLE subscriber */
+		conn_fsm_state_chg(ST_ACTIVE);
+		lcs_loc_req_start(conn, msg);
+		return;
+
 	default:
-		break;
+		OSMO_ASSERT(false);
 	}
 
-	LOGPFSML(fi, LOGL_NOTICE, "No support for N-CONNECT: %s: %s\n",
-		 gsm0808_bssap_name(bs->type), gsm0808_bssmap_name(bssmap_type));
 refuse:
 	osmo_sccp_tx_disconn(conn->sccp.msc->a.sccp_user, scu_prim->u.connect.conn_id,
 			     &scu_prim->u.connect.called_addr, 0);
@@ -404,6 +426,14 @@ static void gscon_fsm_active(struct osmo_fsm_inst *fi, uint32_t event, void *dat
 	case GSCON_EV_TX_SCCP:
 		gscon_sigtran_send(conn, (struct msgb *)data);
 		break;
+
+	case GSCON_EV_LCS_LOC_REQ_END:
+		/* On the A-interface, there is nothing to do. If there still is an lchan, the conn should stay open. If
+		 * not, it is up to the MSC to send a Clear Command.
+		 * On the Lb-interface, tear down the SCCP connection. */
+		lb_close_conn(conn);
+		break;
+
 	default:
 		OSMO_ASSERT(false);
 	}
@@ -628,7 +658,8 @@ static const struct osmo_fsm_state gscon_fsm_states[] = {
 	[ST_ACTIVE] = {
 		.name = "ACTIVE",
 		.in_event_mask = EV_TRANSPARENT_SCCP | S(GSCON_EV_ASSIGNMENT_START) |
-				 S(GSCON_EV_HANDOVER_START),
+				 S(GSCON_EV_HANDOVER_START)
+				 | S(GSCON_EV_LCS_LOC_REQ_END),
 		.out_state_mask = S(ST_CLEARING) | S(ST_ASSIGNMENT) |
 				  S(ST_HANDOVER),
 		.action = gscon_fsm_active,
@@ -655,6 +686,9 @@ void gscon_change_primary_lchan(struct gsm_subscriber_connection *conn, struct g
 {
 	/* On release, do not receive release events that look like the primary lchan is gone. */
 	struct gsm_lchan *old_lchan = conn->lchan;
+
+	if (old_lchan == new_lchan)
+		return;
 
 	conn->lchan = new_lchan;
 	conn->lchan->conn = conn;
@@ -738,7 +772,8 @@ void gscon_forget_lchan(struct gsm_subscriber_connection *conn, struct gsm_lchan
 	if ((conn->fi && conn->fi->state != ST_CLEARING)
 	    && !conn->lchan
 	    && !conn->ho.new_lchan
-	    && !conn->assignment.new_lchan)
+	    && !conn->assignment.new_lchan
+	    && !conn->lcs.loc_req)
 		gscon_bssmap_clear(conn, GSM0808_CAUSE_EQUIPMENT_FAILURE);
 }
 
@@ -776,6 +811,9 @@ static void gscon_fsm_allstate(struct osmo_fsm_inst *fi, uint32_t event, void *d
 		 * making it look like a sudden death failure. */
 		if (conn->ho.fi)
 			osmo_fsm_inst_dispatch(conn->ho.fi, HO_EV_CONN_RELEASING, NULL);
+
+		if (conn->lcs.loc_req)
+			osmo_fsm_inst_dispatch(conn->lcs.loc_req->fi, LCS_LOC_REQ_EV_CONN_CLEAR, NULL);
 
 		OSMO_ASSERT(data);
 		ccd = data;
@@ -845,6 +883,8 @@ static void gscon_cleanup(struct osmo_fsm_inst *fi, enum osmo_fsm_term_cause cau
 	lchan_forget_conn(conn->lchan);
 	lchan_forget_conn(conn->assignment.new_lchan);
 	lchan_forget_conn(conn->ho.new_lchan);
+
+	lb_close_conn(conn);
 
 	if (conn->sccp.state != SUBSCR_SCCP_ST_NONE) {
 		LOGPFSML(fi, LOGL_DEBUG, "Disconnecting SCCP\n");

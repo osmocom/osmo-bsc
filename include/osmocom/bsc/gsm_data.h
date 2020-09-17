@@ -34,6 +34,8 @@
 #include <osmocom/bsc/neighbor_ident.h>
 #include <osmocom/bsc/osmux.h>
 
+#include <osmocom/sigtran/sccp_sap.h>
+
 #define GSM_T3122_DEFAULT 10
 
 struct mgcp_client_conf;
@@ -304,6 +306,23 @@ struct gsm_subscriber_connection {
 	uint8_t ms_power_class:3;
 
 	bool rx_clear_command;
+
+	/* Location Services handling for this subscriber */
+	struct {
+		/* FSM to handle Perform Location Request coming in from the MSC via A interface,
+		 * and receive BSSMAP-LE responses from the SMLC. */
+		struct lcs_loc_req *loc_req;
+
+		/* FSM to handle BSSLAP requests coming in from the SMLC via Lb interface.
+		 * BSSLAP APDU are encapsulated in BSSMAP-LE Connection Oriented Information messages. */
+		struct lcs_bsslap *bsslap;
+
+		/* Lb interface to the SMLC: BSSMAP-LE/SCCP connection associated with this subscriber */
+		struct {
+			int conn_id;
+			enum subscr_sccp_state state;
+		} lb;
+	} lcs;
 };
 
 
@@ -1200,6 +1219,24 @@ struct gsm_network {
 
 	uint8_t nri_bitlen;
 	struct osmo_nri_ranges *null_nri_ranges;
+
+	struct {
+		uint32_t cs7_instance;
+		bool cs7_instance_valid;
+		struct osmo_sccp_instance *sccp;
+		struct osmo_sccp_user *sccp_user;
+
+		struct osmo_sccp_addr bsc_addr;
+		char *bsc_addr_name;
+
+		struct osmo_sccp_addr smlc_addr;
+		char *smlc_addr_name;
+
+		/*! True after either side has sent a BSSMAP-LE RESET-ACK */
+		bool ready;
+
+		struct rate_ctr_group *ctrs;
+	} smlc;
 };
 
 struct gsm_audio_support {

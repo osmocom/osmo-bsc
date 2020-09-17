@@ -45,6 +45,7 @@
 #include <osmocom/bsc/timeslot_fsm.h>
 #include <osmocom/bsc/lchan_fsm.h>
 #include <osmocom/bsc/bts.h>
+#include <osmocom/bsc/bsc_msc_data.h>
 
 void *tall_bsc_ctx = NULL;
 

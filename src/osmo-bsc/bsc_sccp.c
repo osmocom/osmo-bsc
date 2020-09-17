@@ -47,7 +47,13 @@ int bsc_sccp_inst_next_conn_id(struct osmo_sccp_instance *sccp)
 				}
 			}
 
-			/* Future for LCS: also check Lb-interface conn IDs here */
+			if (bsc_gsmnet->smlc.sccp == sccp
+			    && conn->lcs.lb.state != SUBSCR_SCCP_ST_NONE) {
+				if (conn_id == conn->lcs.lb.conn_id) {
+					conn_id_already_used = true;
+					break;
+				}
+			}
 		}
 
 		if (!conn_id_already_used)

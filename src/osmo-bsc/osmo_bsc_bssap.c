@@ -44,6 +44,7 @@
 #include <osmocom/core/fsm.h>
 #include <osmocom/core/socket.h>
 #include <osmocom/core/sockaddr_str.h>
+#include <osmocom/bsc/lcs_loc_req.h>
 
 #define IP_V4_ADDR_LEN 4
 
@@ -1175,6 +1176,21 @@ static int bssmap_rcvmsg_dt1(struct gsm_subscriber_connection *conn,
 	case BSS_MAP_MSG_COMMON_ID:
 		rate_ctr_inc(&ctrs[MSC_CTR_BSSMAP_RX_DT1_COMMON_ID]);
 		ret = bssmap_handle_common_id(conn, msg, length);
+		break;
+	case BSS_MAP_MSG_PERFORM_LOCATION_RQST:
+		rate_ctr_inc(&ctrs[MSC_CTR_BSSMAP_RX_DT1_PERFORM_LOCATION_REQUEST]);
+		lcs_loc_req_start(conn, msg);
+		ret = 0;
+		break;
+	case BSS_MAP_MSG_PERFORM_LOCATION_ABORT:
+		rate_ctr_inc(&ctrs[MSC_CTR_BSSMAP_RX_DT1_PERFORM_LOCATION_ABORT]);
+		if (conn->lcs.loc_req) {
+			ret = osmo_fsm_inst_dispatch(conn->lcs.loc_req->fi, LCS_LOC_REQ_EV_RX_A_PERFORM_LOCATION_ABORT,
+						     msg);
+		} else {
+			LOGP(DMSC, LOGL_ERROR, "Rx BSSMAP Perform Location Abort without ongoing Location Request\n");
+			ret = 0;
+		}
 		break;
 	default:
 		rate_ctr_inc(&ctrs[MSC_CTR_BSSMAP_RX_DT1_UNKNOWN]);

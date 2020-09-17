@@ -62,6 +62,8 @@ static const struct rate_ctr_desc msc_ctr_description[] = {
 	[MSC_CTR_BSSMAP_RX_DT1_UNKNOWN] =           {"bssmap:rx:dt1:err_unknown", "Number of received BSSMAP unknown DT1 messages"},
 	[MSC_CTR_BSSMAP_RX_DT1_DTAP] =              {"bssmap:rx:dt1:dtap:good", "Number of received BSSMAP DTAP messages"},
 	[MSC_CTR_BSSMAP_RX_DT1_DTAP_ERROR] =        {"bssmap:rx:dt1:dtap:error", "Number of received BSSMAP DTAP messages with errors"},
+	[MSC_CTR_BSSMAP_RX_DT1_PERFORM_LOCATION_REQUEST] = {"bssmap:rx:dt1:location:request", "Number of received BSSMAP Perform Location Request messages"},
+	[MSC_CTR_BSSMAP_RX_DT1_PERFORM_LOCATION_ABORT] = {"bssmap:tx:dt1:location:abort", "Number of received BSSMAP Perform Location Abort messages"},
 
 	/* Tx message counters (per message type)
 	 *
@@ -102,6 +104,10 @@ static const struct rate_ctr_desc msc_ctr_description[] = {
 	[MSC_CTR_BSSMAP_TX_DT1_HANDOVER_COMPLETE] =         {"bssmap:tx:dt1:handover:complete", "Number of transmitted BSSMAP DT1 HANDOVER COMPLETE messages"},
 	[MSC_CTR_BSSMAP_TX_DT1_HANDOVER_FAILURE] =          {"bssmap:tx:dt1:handover:failure", "Number of transmitted BSSMAP DT1 HANDOVER FAILURE messages"},
 	[MSC_CTR_BSSMAP_TX_DT1_DTAP] =                      {"bssmap:tx:dt1:dtap", "Number of transmitted BSSMAP DT1 DTAP messages"},
+	[MSC_CTR_BSSMAP_TX_DT1_PERFORM_LOCATION_RESPONSE_SUCCESS] = {"bssmap:tx:dt1:location:response_success",
+		"Number of transmitted BSSMAP Perform Location Response messages containing a location estimate"},
+	[MSC_CTR_BSSMAP_TX_DT1_PERFORM_LOCATION_RESPONSE_FAILURE] = {"bssmap:tx:dt1:location:response_failure",
+		"Number of transmitted BSSMAP Perform Location Response messages containing a failure cause"},
 
 	/* Indicators for MSC pool usage */
 	[MSC_CTR_MSCPOOL_SUBSCR_NEW] = {

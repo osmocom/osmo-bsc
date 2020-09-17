@@ -27,6 +27,7 @@ enum bsc_vty_node {
 	CBC_NODE,
 	CBC_SERVER_NODE,
 	CBC_CLIENT_NODE,
+	SMLC_NODE,
 };
 
 struct log_info;

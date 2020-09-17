@@ -79,9 +79,9 @@ static void page_ms(struct gsm_paging_request *request)
 
 	log_set_context(LOG_CTX_BSC_SUBSCR, request->bsub);
 
-	LOG_BTS(bts, DPAG, LOGL_INFO, "Going to send paging commands: imsi: %s tmsi: "
-		"0x%08x for ch. type %d (attempt %d)\n", request->bsub->imsi,
-		request->bsub->tmsi, request->chan_type, request->attempts);
+	LOG_BTS(bts, DPAG, LOGL_INFO, "Going to send paging commands: %s"
+		" for ch. type %d (attempt %d)\n", bsc_subscr_name(request->bsub),
+		request->chan_type, request->attempts);
 
 	if (request->bsub->tmsi == GSM_RESERVED_TMSI) {
 		mi = (struct osmo_mobile_identity){
@@ -454,6 +454,30 @@ int paging_request_stop(struct bsc_msc_data **msc_p, enum bsc_paging_reason *rea
 	*msc_p = paged_from_msc;
 	*reasons_p = reasons;
 
+	return count;
+}
+
+/* Remove all paging requests, for specific reasons only. */
+int paging_request_cancel(struct bsc_subscr *bsub, enum bsc_paging_reason reasons)
+{
+	struct gsm_bts *bts;
+	int count = 0;
+
+	llist_for_each_entry(bts, &bsc_gsmnet->bts_list, list) {
+		struct gsm_paging_request *req, *req2;
+
+		paging_init_if_needed(bts);
+
+		llist_for_each_entry_safe(req, req2, &bts->paging.pending_requests, entry) {
+			if (req->bsub != bsub)
+				continue;
+			if (!(req->reason & reasons))
+				continue;
+			LOG_BTS(bts, DPAG, LOGL_DEBUG, "Cancel paging %s\n", bsc_subscr_name(bsub));
+			paging_remove_request(&bts->paging, req);
+			count++;
+		}
+	}
 	return count;
 }
 

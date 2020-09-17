@@ -52,6 +52,7 @@ static struct osmo_tdef gsm_network_T_defs[] = {
 	{ .T=-8, .default_val=5, .desc="Timeout for RSL IPA MDCX ACK after sending RSL IPA MDCX" },
 	{ .T=-9, .default_val=5, .desc="Timeout for availability of MGW endpoint" },
 	{ .T=-10, .default_val=5, .desc="Timeout for fully configured MGW endpoint" },
+	{ .T=-11, .default_val=5, .desc="Timeout for Perform Location Response from SMLC" },
 	{ .T=-3111, .default_val=4, .desc="Wait time after lchan was released in error (should be T3111 + 2s)" },
 	{ .T=-3210, .default_val=20, .desc="After L3 Complete, wait for MSC to confirm" },
 	{}

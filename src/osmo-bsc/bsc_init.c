@@ -37,6 +37,7 @@
 #include <osmocom/bsc/gsm_04_08_rr.h>
 #include <osmocom/bsc/neighbor_ident.h>
 #include <osmocom/bsc/bts.h>
+#include <osmocom/bsc/lb.h>
 
 #include <osmocom/bsc/smscb.h>
 #include <osmocom/gsm/protocol/gsm_48_049.h>
@@ -135,6 +136,8 @@ static struct gsm_network *bsc_network_init(void *ctx)
 	 * Also leave the local bind for the CBSP client disabled (unconfigured). */
 	net->cbc->client.remote_addr = (struct osmo_sockaddr_str){ .port = CBSP_TCP_PORT, };
 	net->cbc->client.local_addr = (struct osmo_sockaddr_str){};
+
+	net->smlc.ctrs = rate_ctr_group_alloc(net, &smlc_ctrg_desc, 0);
 
 	return net;
 

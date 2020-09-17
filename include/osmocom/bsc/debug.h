@@ -27,6 +27,7 @@ enum {
 	DTS,
 	DAS,
 	DCBS,
+	DLCS,
 	Debug_LastEntry,
 };
 
