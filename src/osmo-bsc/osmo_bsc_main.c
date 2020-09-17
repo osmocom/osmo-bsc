@@ -38,6 +38,7 @@
 #include <osmocom/bsc/assignment_fsm.h>
 #include <osmocom/bsc/handover_fsm.h>
 #include <osmocom/bsc/smscb.h>
+#include <osmocom/bsc/lb.h>
 
 #include <osmocom/ctrl/control_cmd.h>
 #include <osmocom/ctrl/control_if.h>
@@ -788,8 +789,12 @@ static const struct log_info_cat osmo_bsc_categories[] = {
 		.name = "DCBS",
 		.description = "Cell Broadcast System",
 		.enabled = 1, .loglevel = LOGL_NOTICE,
-	}
-
+	},
+	[DLCS] = {
+		.name = "DLCS",
+		.description = "Location Services",
+		.enabled = 1, .loglevel = LOGL_NOTICE,
+	},
 };
 
 static int filter_fn(const struct log_context *ctx, struct log_target *tar)
@@ -947,6 +952,7 @@ int main(int argc, char **argv)
 	handover_decision_1_init();
 	hodec2_init(bsc_gsmnet);
 	bsc_cbc_link_restart();
+	lb_init();
 
 	signal(SIGINT, &signal_handler);
 	signal(SIGTERM, &signal_handler);

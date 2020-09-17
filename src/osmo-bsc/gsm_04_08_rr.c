@@ -1027,7 +1027,6 @@ int gsm0408_rcvmsg(struct msgb *msg, uint8_t link_id)
 		 * MSC */
 		dispatch_dtap(lchan->conn, link_id, msg);
 	} else {
-		/* fwd via bsc_api to send COMPLETE L3 INFO to MSC */
 		return bsc_compl_l3(lchan, msg, 0);
 	}
 

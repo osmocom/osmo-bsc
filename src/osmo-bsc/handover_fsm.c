@@ -44,6 +44,7 @@
 #include <osmocom/bsc/codec_pref.h>
 #include <osmocom/bsc/gsm_08_08.h>
 #include <osmocom/bsc/bts.h>
+#include <osmocom/bsc/lcs_loc_req.h>
 
 #define LOG_FMT_BTS "bts %u lac-ci %u-%u arfcn-bsic %d-%d"
 #define LOG_ARGS_BTS(bts) \
@@ -938,6 +939,10 @@ void handover_end(struct gsm_subscriber_connection *conn, enum handover_result r
 	if (ho->new_lchan && result == HO_RESULT_OK) {
 		gscon_change_primary_lchan(conn, conn->ho.new_lchan);
 		ho->new_lchan = NULL;
+
+		/* If a Perform Location Request (LCS) is busy, inform the SMLC that there is a new lchan */
+		if (conn->lcs.loc_req)
+			osmo_fsm_inst_dispatch(conn->lcs.loc_req->fi, LCS_LOC_REQ_EV_HANDOVER_PERFORMED, NULL);
 	}
 
 	osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_HANDOVER_END, &result);

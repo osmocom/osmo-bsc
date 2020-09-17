@@ -52,6 +52,7 @@ struct bsc_subscr;
 struct gprs_ra_id;
 struct handover;
 struct osmo_sccp_instance;
+struct smlc_config;
 
 #define OBSC_LINKID_CB(__msgb)	(__msgb)->cb[3]
 
@@ -304,6 +305,23 @@ struct gsm_subscriber_connection {
 	uint8_t ms_power_class:3;
 
 	bool rx_clear_command;
+
+	/* Location Services handling for this subscriber */
+	struct {
+		/* FSM to handle Perform Location Request coming in from the MSC via A interface,
+		 * and receive BSSMAP-LE responses from the SMLC. */
+		struct lcs_loc_req *loc_req;
+
+		/* FSM to handle BSSLAP requests coming in from the SMLC via Lb interface.
+		 * BSSLAP APDU are encapsulated in BSSMAP-LE Connection Oriented Information messages. */
+		struct lcs_bsslap *bsslap;
+
+		/* Lb interface to the SMLC: BSSMAP-LE/SCCP connection associated with this subscriber */
+		struct {
+			int conn_id;
+			enum subscr_sccp_state state;
+		} lb;
+	} lcs;
 };
 
 
@@ -1200,6 +1218,8 @@ struct gsm_network {
 
 	uint8_t nri_bitlen;
 	struct osmo_nri_ranges *null_nri_ranges;
+
+	struct smlc_config *smlc;
 };
 
 struct gsm_audio_support {

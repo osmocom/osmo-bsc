@@ -44,6 +44,8 @@ enum gscon_fsm_event {
 
 	GSCON_EV_FORGET_LCHAN,
 	GSCON_EV_FORGET_MGW_ENDPOINT,
+
+	GSCON_EV_LCS_LOC_REQ_END,
 };
 
 struct gscon_clear_cmd_data {

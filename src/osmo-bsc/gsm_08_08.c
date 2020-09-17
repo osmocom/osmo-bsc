@@ -30,6 +30,9 @@
 #include <osmocom/bsc/gsm_04_08_rr.h>
 #include <osmocom/bsc/a_reset.h>
 
+#include <osmocom/bsc/lcs_ta_req.h>
+#include <osmocom/bsc/lcs_loc_req.h>
+
 #include <osmocom/gsm/protocol/gsm_08_08.h>
 #include <osmocom/gsm/gsm0808.h>
 #include <osmocom/gsm/mncc.h>
@@ -494,6 +497,10 @@ int bsc_compl_l3(struct gsm_lchan *lchan, struct msgb *msg, uint16_t chosen_chan
 	OSMO_ASSERT(conn->sccp.msc);
 
 	parse_powercap(conn, msg);
+
+	/* If a BSSLAP TA Request from the SMLC is waiting for a TA value, we have one now. */
+	if (conn->lcs.loc_req && conn->lcs.loc_req->ta_req)
+		osmo_fsm_inst_dispatch(conn->lcs.loc_req->ta_req->fi, LCS_TA_REQ_EV_GOT_TA, NULL);
 
 	/* If the Paging was issued only by OsmoBSC for LCS, don't bother to establish Layer 3 to the MSC. */
 	if (paged_from_msc && !(paging_reasons & BSC_PAGING_FROM_CN)) {

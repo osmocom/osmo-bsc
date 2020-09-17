@@ -30,6 +30,7 @@
 #include <osmocom/bsc/osmo_bsc.h>
 #include <osmocom/bsc/bsc_msc_data.h>
 
+#include <osmocom/gsm/gad.h>
 #include <osmocom/core/application.h>
 #include <osmocom/core/backtrace.h>
 #include <osmocom/core/talloc.h>

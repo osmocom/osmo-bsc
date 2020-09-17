@@ -37,6 +37,7 @@
 #include <osmocom/bsc/gsm_04_08_rr.h>
 #include <osmocom/bsc/neighbor_ident.h>
 #include <osmocom/bsc/bts.h>
+#include <osmocom/bsc/lb.h>
 
 #include <osmocom/bsc/smscb.h>
 #include <osmocom/gsm/protocol/gsm_48_049.h>

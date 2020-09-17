@@ -93,6 +93,10 @@ handover_test_LDADD = \
 	$(top_builddir)/src/osmo-bsc/smscb.o \
 	$(top_builddir)/src/osmo-bsc/cbch_scheduler.o \
 	$(top_builddir)/src/osmo-bsc/cbsp_link.o \
+	$(top_builddir)/src/osmo-bsc/lcs_loc_req.o \
+	$(top_builddir)/src/osmo-bsc/lcs_ta_req.o \
+	$(top_builddir)/src/osmo-bsc/lb.o \
+	$(top_builddir)/src/osmo-bsc/bsc_sccp.o \
 	$(LIBOSMOCORE_LIBS) \
 	$(LIBOSMOGSM_LIBS) \
 	$(LIBOSMOCTRL_LIBS) \
