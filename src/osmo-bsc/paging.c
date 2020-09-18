@@ -325,7 +325,7 @@ static unsigned int calculate_timer_3113(struct gsm_bts *bts)
  * \param[in] type type of radio channel we're requirign
  * \param[in] msc MSC which has issue this paging
  * \returns 0 on success, negative on error */
-static int _paging_request(const struct bsc_paging_params *params, struct bsc_subscr *bsub, struct gsm_bts *bts)
+static int _paging_request(const struct bsc_paging_params *params, struct gsm_bts *bts)
 {
 	struct gsm_bts_paging_state *bts_entry = &bts->paging;
 	struct gsm_paging_request *req;
@@ -333,7 +333,7 @@ static int _paging_request(const struct bsc_paging_params *params, struct bsc_su
 
 	rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_CTR_PAGING_ATTEMPTED]);
 
-	if (paging_pending_request(bts_entry, bsub)) {
+	if (paging_pending_request(bts_entry, params->bsub)) {
 		LOG_PAGING_BTS(params, bts, DPAG, LOGL_INFO, "Paging request already pending for this subscriber\n");
 		rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_CTR_PAGING_ALREADY]);
 		return -EEXIST;
@@ -342,7 +342,7 @@ static int _paging_request(const struct bsc_paging_params *params, struct bsc_su
 	LOG_PAGING_BTS(params, bts, DPAG, LOGL_DEBUG, "Start paging\n");
 	req = talloc_zero(tall_paging_ctx, struct gsm_paging_request);
 	OSMO_ASSERT(req);
-	req->bsub = bsc_subscr_get(bsub);
+	req->bsub = bsc_subscr_get(params->bsub);
 	req->bts = bts;
 	req->chan_type = params->chan_needed;
 	req->msc = params->msc;
@@ -361,7 +361,7 @@ static int _paging_request(const struct bsc_paging_params *params, struct bsc_su
  * \param[in] type type of radio channel we're requirign
  * \param[in] msc MSC which has issue this paging
  * returns 1 on success; 0 in case of error (e.g. TRX down) */
-int paging_request_bts(const struct bsc_paging_params *params, struct bsc_subscr *bsub, struct gsm_bts *bts)
+int paging_request_bts(const struct bsc_paging_params *params, struct gsm_bts *bts)
 {
 	int rc;
 
@@ -373,7 +373,7 @@ int paging_request_bts(const struct bsc_paging_params *params, struct bsc_subscr
 	paging_init_if_needed(bts);
 
 	/* Trigger paging, pass any error to the caller */
-	rc = _paging_request(params, bsub, bts);
+	rc = _paging_request(params, bts);
 	if (rc < 0)
 		return 0;
 	return 1;

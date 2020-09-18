@@ -33,10 +33,9 @@
 struct bsc_msc_data;
 
 #define LOG_PAGING(PARAMS, SUBSYS, LEVEL, fmt, args...) \
-	LOGP(SUBSYS, LEVEL, "(msc%d) Paging: %s TMSI-0x%08x: " fmt, \
+	LOGP(SUBSYS, LEVEL, "(msc%d) Paging: %s: " fmt, \
 	     (PARAMS)->msc ? (PARAMS)->msc->nr : -1, \
-	     osmo_mobile_identity_to_str_c(OTC_SELECT, &(PARAMS)->imsi), \
-	     (PARAMS)->tmsi, \
+	     bsc_subscr_name((PARAMS)->bsub), \
 	     ##args)
 
 #define LOG_PAGING_BTS(PARAMS, BTS, SUBSYS, LEVEL, fmt, args...) \
@@ -44,6 +43,7 @@ struct bsc_msc_data;
 
 struct bsc_paging_params {
 	struct bsc_msc_data *msc;
+	struct bsc_subscr *bsub;
 	uint32_t tmsi;
 	struct osmo_mobile_identity imsi;
 	uint8_t chan_needed;
@@ -75,7 +75,7 @@ struct gsm_paging_request {
 };
 
 /* schedule paging request */
-int paging_request_bts(const struct bsc_paging_params *params, struct bsc_subscr *bsub, struct gsm_bts *bts);
+int paging_request_bts(const struct bsc_paging_params *params, struct gsm_bts *bts);
 
 struct bsc_msc_data *paging_request_stop(struct gsm_bts *bts, struct bsc_subscr *bsub);
 

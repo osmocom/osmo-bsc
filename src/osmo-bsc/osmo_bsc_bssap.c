@@ -117,7 +117,6 @@ static int bssmap_handle_reset(struct bsc_msc_data *msc,
 static void
 page_subscriber(const struct bsc_paging_params *params, struct gsm_bts *bts, uint32_t lac)
 {
-	struct bsc_subscr *subscr;
 	int ret;
 
 	if (!bsc_grace_allow_new_connection(bsc_gsmnet, bts)) {
@@ -125,29 +124,12 @@ page_subscriber(const struct bsc_paging_params *params, struct gsm_bts *bts, uin
 		return;
 	}
 
-	subscr = bsc_subscr_find_or_create_by_mi(bsc_gsmnet->bsc_subscribers, &params->imsi);
-
-	if (subscr)
-		log_set_context(LOG_CTX_BSC_SUBSCR, subscr);
-
 	LOG_PAGING_BTS(params, bts, DMSC, LOGL_INFO, "Paging on LAC %u\n", lac);
 
-	if (!subscr) {
-		LOGP(DMSC, LOGL_ERROR, "Paging request failed: Could not allocate subscriber for %s\n",
-		     osmo_mobile_identity_to_str_c(OTC_SELECT, &params->imsi));
-		return;
-	}
-
-	subscr->tmsi = params->tmsi;
-	ret = paging_request_bts(params, subscr, bts);
+	ret = paging_request_bts(params, bts);
 	if (ret == 0)
 		LOG_PAGING_BTS(params, bts, DMSC, LOGL_INFO,
 			       "Paging request failed, or repeated paging on LAC %u\n", lac);
-
-	/* the paging code has grabbed its own references */
-	bsc_subscr_put(subscr);
-
-	log_set_context(LOG_CTX_BSC_SUBSCR, NULL);
 }
 
 static void
@@ -363,6 +345,17 @@ int bsc_paging_start(struct bsc_paging_params *params)
 {
 	rate_ctr_inc(&bsc_gsmnet->bsc_ctrs->ctr[BSC_CTR_PAGING_ATTEMPTED]);
 
+	if (!params->bsub) {
+		params->bsub = bsc_subscr_find_or_create_by_imsi(bsc_gsmnet->bsc_subscribers, params->imsi.imsi);
+		if (!params->bsub) {
+			LOG_PAGING(params, DMSC, LOGL_ERROR, "Paging request failed: Could not allocate subscriber\n");
+			return -EINVAL;
+		}
+	}
+	if (params->tmsi != GSM_RESERVED_TMSI)
+		params->bsub->tmsi = params->tmsi;
+	log_set_context(LOG_CTX_BSC_SUBSCR, params->bsub);
+
 	switch (params->cil.id_discr) {
 	case CELL_IDENT_NO_CELL:
 		page_all_bts(params);
@@ -400,6 +393,8 @@ int bsc_paging_start(struct bsc_paging_params *params)
 		break;
 	}
 
+	bsc_subscr_put(params->bsub);
+	log_set_context(LOG_CTX_BSC_SUBSCR, NULL);
 	return 0;
 }
 
