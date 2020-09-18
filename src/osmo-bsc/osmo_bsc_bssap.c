@@ -293,7 +293,6 @@ static int bssmap_handle_paging(struct bsc_msc_data *msc,
 		.msc = msc,
 		.tmsi = GSM_RESERVED_TMSI,
 	};
-	struct bsc_paging_params *params; // (tmp cosmetic shim, dropped in subsequent patch)
 
 	tlv_parse(&tp, gsm0808_att_tlvdef(), msg->l4h + 1, payload_length - 1, 0, 0);
 	remain = payload_length - 1;
@@ -357,9 +356,13 @@ static int bssmap_handle_paging(struct bsc_msc_data *msc,
 		LOG_PAGING(&paging, DMSC, LOGL_ERROR, "eMLPP IE present, but eMLPP is not handled\n");
 	}
 
-	rate_ctr_inc(&msc->network->bsc_ctrs->ctr[BSC_CTR_PAGING_ATTEMPTED]);
+	return bsc_paging_start(&paging);
+}
 
-	params = &paging;
+int bsc_paging_start(struct bsc_paging_params *params)
+{
+	rate_ctr_inc(&bsc_gsmnet->bsc_ctrs->ctr[BSC_CTR_PAGING_ATTEMPTED]);
+
 	switch (params->cil.id_discr) {
 	case CELL_IDENT_NO_CELL:
 		page_all_bts(params);
