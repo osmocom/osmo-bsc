@@ -5019,7 +5019,8 @@ static int lchan_act_single(struct vty *vty, struct gsm_lchan *lchan, const char
 				lchan_t = GSM_LCHAN_TCH_F;
 			else if (lchan->ts->pchan_on_init == GSM_PCHAN_TCH_F_TCH_H_PDCH && !strcmp(codec_str, "hr"))
 				lchan_t = GSM_LCHAN_TCH_H;
-			else if ((lchan->ts->pchan_on_init == GSM_PCHAN_TCH_F_PDCH || GSM_PCHAN_TCH_F_TCH_H_PDCH)
+			else if ((lchan->ts->pchan_on_init == GSM_PCHAN_TCH_F_PDCH
+				  || lchan->ts->pchan_on_init == GSM_PCHAN_TCH_F_TCH_H_PDCH)
 				 && !strcmp(codec_str, "fr"))
 				lchan_t = GSM_LCHAN_TCH_F;
 			else {
