@@ -115,37 +115,34 @@ static int bssmap_handle_reset(struct bsc_msc_data *msc,
  * The msc parameter is the MSC which issued the corresponding paging request.
  * Log an error if paging failed. */
 static void
-page_subscriber(struct bsc_msc_data *msc, struct gsm_bts *bts,
-    uint32_t tmsi, uint32_t lac, const char *mi_string, uint8_t chan_needed)
+page_subscriber(const struct bsc_paging_params *params, struct gsm_bts *bts, uint32_t lac)
 {
 	struct bsc_subscr *subscr;
 	int ret;
 
 	if (!bsc_grace_allow_new_connection(bsc_gsmnet, bts)) {
-		LOGP(DMSC, LOGL_DEBUG, "RF-locked: not paging on BTS %u\n", bts->nr);
+		LOG_PAGING_BTS(params, bts, DMSC, LOGL_DEBUG, "RF-locked: not paging on this BTS\n");
 		return;
 	}
 
-	subscr = bsc_subscr_find_or_create_by_imsi(msc->network->bsc_subscribers,
-						   mi_string);
+	subscr = bsc_subscr_find_or_create_by_mi(bsc_gsmnet->bsc_subscribers, &params->imsi);
 
 	if (subscr)
 		log_set_context(LOG_CTX_BSC_SUBSCR, subscr);
 
-	LOGP(DMSC, LOGL_INFO, "Paging request from MSC BTS: %d IMSI: '%s' TMSI: '0x%x/%u' LAC: 0x%x\n",
-	    bts->nr, mi_string, tmsi, tmsi, lac);
+	LOG_PAGING_BTS(params, bts, DMSC, LOGL_INFO, "Paging on LAC %u\n", lac);
 
 	if (!subscr) {
-		LOGP(DMSC, LOGL_ERROR, "Paging request failed: Could not allocate subscriber for %s\n", mi_string);
+		LOGP(DMSC, LOGL_ERROR, "Paging request failed: Could not allocate subscriber for %s\n",
+		     osmo_mobile_identity_to_str_c(OTC_SELECT, &params->imsi));
 		return;
 	}
 
-	subscr->tmsi = tmsi;
-
-	ret = paging_request_bts(bts, subscr, chan_needed, msc);
+	subscr->tmsi = params->tmsi;
+	ret = paging_request_bts(params, subscr, bts);
 	if (ret == 0)
-		LOGP(DMSC, LOGL_INFO, "Paging request failed or repeated paging: BTS: %d IMSI: '%s' TMSI: '0x%x/%u' LAC: 0x%x\n",
-		     bts->nr, mi_string, tmsi, tmsi, lac);
+		LOG_PAGING_BTS(params, bts, DMSC, LOGL_INFO,
+			       "Paging request failed, or repeated paging on LAC %u\n", lac);
 
 	/* the paging code has grabbed its own references */
 	bsc_subscr_put(subscr);
@@ -154,141 +151,132 @@ page_subscriber(struct bsc_msc_data *msc, struct gsm_bts *bts,
 }
 
 static void
-page_all_bts(struct bsc_msc_data *msc, uint32_t tmsi, const char *mi_string, uint8_t chan_needed)
+page_all_bts(const struct bsc_paging_params *params)
 {
 	struct gsm_bts *bts;
-	llist_for_each_entry(bts, &msc->network->bts_list, list)
-		page_subscriber(msc, bts, tmsi, GSM_LAC_RESERVED_ALL_BTS, mi_string, chan_needed);
+	llist_for_each_entry(bts, &bsc_gsmnet->bts_list, list)
+		page_subscriber(params, bts, GSM_LAC_RESERVED_ALL_BTS);
 }
 
 static void
-page_cgi(struct bsc_msc_data *msc, struct gsm0808_cell_id_list2 *cil,
-	 uint32_t tmsi, const char *mi_string, uint8_t chan_needed)
+page_cgi(const struct bsc_paging_params *params)
 {
 	int i;
-	for (i = 0; i < cil->id_list_len; i++) {
-		struct osmo_cell_global_id *id = &cil->id_list[i].global;
-		if (!osmo_plmn_cmp(&id->lai.plmn, &msc->network->plmn)) {
+	for (i = 0; i < params->cil.id_list_len; i++) {
+		const struct osmo_cell_global_id *id = &params->cil.id_list[i].global;
+		if (!osmo_plmn_cmp(&id->lai.plmn, &bsc_gsmnet->plmn)) {
 			int paged = 0;
 			struct gsm_bts *bts;
-			llist_for_each_entry(bts, &msc->network->bts_list, list) {
+			llist_for_each_entry(bts, &bsc_gsmnet->bts_list, list) {
 				if (bts->location_area_code != id->lai.lac)
 					continue;
 				if (bts->cell_identity != id->cell_identity)
 					continue;
-				page_subscriber(msc, bts, tmsi, id->lai.lac, mi_string, chan_needed);
+				page_subscriber(params, bts, id->lai.lac);
 				paged = 1;
 			}
 			if (!paged) {
-				LOGP(DMSC, LOGL_NOTICE, "Paging IMSI %s: BTS with LAC %d and CI %d not found\n",
-				     mi_string, id->lai.lac, id->cell_identity);
+				LOG_PAGING(params, DMSC, LOGL_NOTICE, "BTS with LAC %u and CI %u not found\n",
+					   id->lai.lac, id->cell_identity);
 			}
 		} else {
-			LOGP(DMSC, LOGL_DEBUG, "Paging IMSI %s: MCC-MNC in Cell Identifier List "
-			     "(%s) do not match our network (%s)\n",
-			     mi_string, osmo_plmn_name(&id->lai.plmn),
-			     osmo_plmn_name2(&msc->network->plmn));
+			LOG_PAGING(params, DMSC, LOGL_DEBUG,
+				   "MCC-MNC in Cell Identifier List (%s) do not match our network (%s)\n",
+				   osmo_plmn_name_c(OTC_SELECT, &id->lai.plmn),
+				   osmo_plmn_name_c(OTC_SELECT, &bsc_gsmnet->plmn));
 		}
 	}
 }
 
 static void
-page_lac_and_ci(struct bsc_msc_data *msc, struct gsm0808_cell_id_list2 *cil,
-	 uint32_t tmsi, const char *mi_string, uint8_t chan_needed)
+page_lac_and_ci(const struct bsc_paging_params *params)
 {
 	int i;
 
-	for (i = 0; i < cil->id_list_len; i++) {
-		struct osmo_lac_and_ci_id *id = &cil->id_list[i].lac_and_ci;
+	for (i = 0; i < params->cil.id_list_len; i++) {
+		const struct osmo_lac_and_ci_id *id = &params->cil.id_list[i].lac_and_ci;
 		int paged = 0;
 		struct gsm_bts *bts;
-		llist_for_each_entry(bts, &msc->network->bts_list, list) {
+		llist_for_each_entry(bts, &bsc_gsmnet->bts_list, list) {
 			if (bts->location_area_code != id->lac)
 				continue;
 			if (bts->cell_identity != id->ci)
 				continue;
-			page_subscriber(msc, bts, tmsi, id->lac, mi_string, chan_needed);
+			page_subscriber(params, bts, id->lac);
 			paged = 1;
 		}
 		if (!paged) {
-			LOGP(DMSC, LOGL_NOTICE, "Paging IMSI %s: BTS with LAC %d and CI %d not found\n",
-			     mi_string, id->lac, id->ci);
+			LOG_PAGING(params, DMSC, LOGL_NOTICE, "BTS with LAC %u and CI %u not found\n", id->lac, id->ci);
 		}
 	}
 }
 
 static void
-page_ci(struct bsc_msc_data *msc, struct gsm0808_cell_id_list2 *cil,
-	 uint32_t tmsi, const char *mi_string, uint8_t chan_needed)
+page_ci(const struct bsc_paging_params *params)
 {
 	int i;
 
-	for (i = 0; i < cil->id_list_len; i++) {
-		uint16_t ci = cil->id_list[i].ci;
+	for (i = 0; i < params->cil.id_list_len; i++) {
+		uint16_t ci = params->cil.id_list[i].ci;
 		int paged = 0;
 		struct gsm_bts *bts;
-		llist_for_each_entry(bts, &msc->network->bts_list, list) {
+		llist_for_each_entry(bts, &bsc_gsmnet->bts_list, list) {
 			if (bts->cell_identity != ci)
 				continue;
-			page_subscriber(msc, bts, tmsi, GSM_LAC_RESERVED_ALL_BTS, mi_string, chan_needed);
+			page_subscriber(params, bts, GSM_LAC_RESERVED_ALL_BTS);
 			paged = 1;
 		}
 		if (!paged) {
-			LOGP(DMSC, LOGL_NOTICE, "Paging IMSI %s: BTS with CI %d not found\n",
-			     mi_string, ci);
+			LOG_PAGING(params, DMSC, LOGL_NOTICE, "BTS with CI %u not found\n", ci);
 		}
 	}
 }
 
 static void
-page_lai_and_lac(struct bsc_msc_data *msc, struct gsm0808_cell_id_list2 *cil,
-	 uint32_t tmsi, const char *mi_string, uint8_t chan_needed)
+page_lai_and_lac(const struct bsc_paging_params *params)
 {
 	int i;
 
-	for (i = 0; i < cil->id_list_len; i++) {
-		struct osmo_location_area_id *id = &cil->id_list[i].lai_and_lac;
-		if (!osmo_plmn_cmp(&id->plmn, &msc->network->plmn)) {
+	for (i = 0; i < params->cil.id_list_len; i++) {
+		const struct osmo_location_area_id *id = &params->cil.id_list[i].lai_and_lac;
+		if (!osmo_plmn_cmp(&id->plmn, &bsc_gsmnet->plmn)) {
 			int paged = 0;
 			struct gsm_bts *bts;
-			llist_for_each_entry(bts, &msc->network->bts_list, list) {
+			llist_for_each_entry(bts, &bsc_gsmnet->bts_list, list) {
 				if (bts->location_area_code != id->lac)
 					continue;
-				page_subscriber(msc, bts, tmsi, id->lac, mi_string, chan_needed);
+				page_subscriber(params, bts, id->lac);
 				paged = 1;
 			}
 			if (!paged) {
-				LOGP(DMSC, LOGL_NOTICE, "Paging IMSI %s: BTS with LAC %d not found\n",
-				     mi_string, id->lac);
+				LOG_PAGING(params, DMSC, LOGL_NOTICE, "BTS with LAC %u not found\n", id->lac);
 			}
 		} else {
-			LOGP(DMSC, LOGL_DEBUG, "Paging IMSI %s: MCC-MNC in Cell Identifier List "
-			     "(%s) do not match our network (%s)\n",
-			     mi_string, osmo_plmn_name(&id->plmn),
-			     osmo_plmn_name2(&msc->network->plmn));
+			LOG_PAGING(params, DMSC, LOGL_DEBUG,
+				   "MCC-MNC in Cell Identifier List (%s) do not match our network (%s)\n",
+				   osmo_plmn_name_c(OTC_SELECT, &id->plmn),
+				   osmo_plmn_name_c(OTC_SELECT, &bsc_gsmnet->plmn));
 		}
 	}
 }
 
 static void
-page_lac(struct bsc_msc_data *msc, struct gsm0808_cell_id_list2 *cil,
-	 uint32_t tmsi, const char *mi_string, uint8_t chan_needed)
+page_lac(const struct bsc_paging_params *params)
 {
 	int i;
 
-	for (i = 0; i < cil->id_list_len; i++) {
-		uint16_t lac = cil->id_list[i].lac;
+	for (i = 0; i < params->cil.id_list_len; i++) {
+		uint16_t lac = params->cil.id_list[i].lac;
 		int paged = 0;
 		struct gsm_bts *bts;
-		llist_for_each_entry(bts, &msc->network->bts_list, list) {
+		llist_for_each_entry(bts, &bsc_gsmnet->bts_list, list) {
 			if (bts->location_area_code != lac)
 				continue;
-			page_subscriber(msc, bts, tmsi, lac, mi_string, chan_needed);
+			page_subscriber(params, bts, lac);
 			paged = 1;
 		}
 		if (!paged) {
-			LOGP(DMSC, LOGL_NOTICE, "Paging IMSI %s: BTS with LAC %d not found\n",
-			     mi_string, lac);
+			LOG_PAGING(params, DMSC, LOGL_NOTICE, "BTS with LAC %u not found\n", lac);
 		}
 	}
 }
@@ -298,13 +286,14 @@ static int bssmap_handle_paging(struct bsc_msc_data *msc,
 				struct msgb *msg, unsigned int payload_length)
 {
 	struct tlv_parsed tp;
-	struct osmo_mobile_identity mi_imsi;
-	uint32_t tmsi = GSM_RESERVED_TMSI;
 	uint8_t data_length;
 	int remain;
 	const uint8_t *data;
-	uint8_t chan_needed = RSL_CHANNEED_ANY;
-	struct gsm0808_cell_id_list2 cil;
+	struct bsc_paging_params paging = {
+		.msc = msc,
+		.tmsi = GSM_RESERVED_TMSI,
+	};
+	struct bsc_paging_params *params; // (tmp cosmetic shim, dropped in subsequent patch)
 
 	tlv_parse(&tp, gsm0808_att_tlvdef(), msg->l4h + 1, payload_length - 1, 0, 0);
 	remain = payload_length - 1;
@@ -325,7 +314,7 @@ static int bssmap_handle_paging(struct bsc_msc_data *msc,
 
 	if (TLVP_PRESENT(&tp, GSM0808_IE_TMSI) &&
 	    TLVP_LEN(&tp, GSM0808_IE_TMSI) == 4) {
-		tmsi = ntohl(tlvp_val32_unal(&tp, GSM0808_IE_TMSI));
+		paging.tmsi = ntohl(tlvp_val32_unal(&tp, GSM0808_IE_TMSI));
 		remain -= TLVP_LEN(&tp, GSM0808_IE_TMSI);
 	}
 
@@ -337,8 +326,8 @@ static int bssmap_handle_paging(struct bsc_msc_data *msc,
 	/*
 	 * parse the IMSI
 	 */
-	if (osmo_mobile_identity_decode(&mi_imsi, TLVP_VAL(&tp, GSM0808_IE_IMSI), TLVP_LEN(&tp, GSM0808_IE_IMSI), false)
-	    || mi_imsi.type != GSM_MI_TYPE_IMSI) {
+	if (osmo_mobile_identity_decode(&paging.imsi, TLVP_VAL(&tp, GSM0808_IE_IMSI), TLVP_LEN(&tp, GSM0808_IE_IMSI), false)
+	    || paging.imsi.type != GSM_MI_TYPE_IMSI) {
 		LOGP(DMSC, LOGL_ERROR, "Paging: could not parse IMSI\n");
 		return -1;
 	}
@@ -350,63 +339,61 @@ static int bssmap_handle_paging(struct bsc_msc_data *msc,
 	 */
 	data_length = TLVP_LEN(&tp, GSM0808_IE_CELL_IDENTIFIER_LIST);
 	data = TLVP_VAL(&tp, GSM0808_IE_CELL_IDENTIFIER_LIST);
-	if (gsm0808_dec_cell_id_list2(&cil, data, data_length) < 0) {
-		LOGP(DMSC, LOGL_ERROR, "Paging %s: Could not parse Cell Identifier List\n",
-		     osmo_mobile_identity_to_str_c(OTC_SELECT, &mi_imsi));
+	if (gsm0808_dec_cell_id_list2(&paging.cil, data, data_length) < 0) {
+		LOG_PAGING(&paging, DMSC, LOGL_ERROR, "Could not parse Cell Identifier List\n");
 		return -1;
+	}
+	if (paging.cil.id_discr == CELL_IDENT_BSS && data_length != 1) {
+		LOG_PAGING(&paging, DMSC, LOGL_ERROR, "Cell Identifier List for BSS (0x%x)"
+		     " has invalid length: %u, paging entire BSS anyway (%s)\n",
+		     CELL_IDENT_BSS, data_length, osmo_hexdump(data, data_length));
 	}
 	remain = 0;
 
 	if (TLVP_PRESENT(&tp, GSM0808_IE_CHANNEL_NEEDED) && TLVP_LEN(&tp, GSM0808_IE_CHANNEL_NEEDED) == 1)
-		chan_needed = TLVP_VAL(&tp, GSM0808_IE_CHANNEL_NEEDED)[0] & 0x03;
+		paging.chan_needed = TLVP_VAL(&tp, GSM0808_IE_CHANNEL_NEEDED)[0] & 0x03;
 
 	if (TLVP_PRESENT(&tp, GSM0808_IE_EMLPP_PRIORITY)) {
-		LOGP(DMSC, LOGL_ERROR, "eMLPP is not handled\n");
+		LOG_PAGING(&paging, DMSC, LOGL_ERROR, "eMLPP IE present, but eMLPP is not handled\n");
 	}
 
 	rate_ctr_inc(&msc->network->bsc_ctrs->ctr[BSC_CTR_PAGING_ATTEMPTED]);
 
-	switch (cil.id_discr) {
+	params = &paging;
+	switch (params->cil.id_discr) {
 	case CELL_IDENT_NO_CELL:
-		page_all_bts(msc, tmsi, mi_imsi.imsi, chan_needed);
+		page_all_bts(params);
 		break;
 
 	case CELL_IDENT_WHOLE_GLOBAL:
-		page_cgi(msc, &cil, tmsi, mi_imsi.imsi, chan_needed);
+		page_cgi(params);
 		break;
 
 	case CELL_IDENT_LAC_AND_CI:
-		page_lac_and_ci(msc, &cil, tmsi, mi_imsi.imsi, chan_needed);
+		page_lac_and_ci(params);
 		break;
 
 	case CELL_IDENT_CI:
-		page_ci(msc, &cil, tmsi, mi_imsi.imsi, chan_needed);
+		page_ci(params);
 		break;
 
 	case CELL_IDENT_LAI_AND_LAC:
-		page_lai_and_lac(msc, &cil, tmsi, mi_imsi.imsi, chan_needed);
+		page_lai_and_lac(params);
 		break;
 
 	case CELL_IDENT_LAC:
-		page_lac(msc, &cil, tmsi, mi_imsi.imsi, chan_needed);
+		page_lac(params);
 		break;
 
 	case CELL_IDENT_BSS:
-		if (data_length != 1) {
-			LOGP(DMSC, LOGL_ERROR, "Paging %s: Cell Identifier List for BSS (0x%x)"
-			     " has invalid length: %u, paging entire BSS anyway (%s)\n",
-			     osmo_mobile_identity_to_str_c(OTC_SELECT, &mi_imsi),
-			     CELL_IDENT_BSS, data_length, osmo_hexdump(data, data_length));
-		}
-		page_all_bts(msc, tmsi, mi_imsi.imsi, chan_needed);
+		page_all_bts(params);
 		break;
 
 	default:
-		LOGP(DMSC, LOGL_NOTICE, "Paging %s: unimplemented Cell Identifier List (0x%x),"
-		     " paging entire BSS instead (%s)\n",
-		     osmo_mobile_identity_to_str_c(OTC_SELECT, &mi_imsi),
-		     cil.id_discr, osmo_hexdump(data, data_length));
-		page_all_bts(msc, tmsi, mi_imsi.imsi, chan_needed);
+		LOG_PAGING(params, DMSC, LOGL_NOTICE,
+			   "unimplemented Cell Identifier List type (0x%x), paging entire BSS instead\n",
+			   params->cil.id_discr);
+		page_all_bts(params);
 		break;
 	}
 
