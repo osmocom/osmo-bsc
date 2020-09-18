@@ -342,6 +342,7 @@ static int _paging_request(const struct bsc_paging_params *params, struct gsm_bt
 	LOG_PAGING_BTS(params, bts, DPAG, LOGL_DEBUG, "Start paging\n");
 	req = talloc_zero(tall_paging_ctx, struct gsm_paging_request);
 	OSMO_ASSERT(req);
+	req->reason = params->reason;
 	req->bsub = bsc_subscr_get(params->bsub);
 	req->bts = bts;
 	req->chan_type = params->chan_needed;
@@ -380,61 +381,79 @@ int paging_request_bts(const struct bsc_paging_params *params, struct gsm_bts *b
 }
 
 /*! Stop paging a given subscriber on a given BTS.
- *  If \a conn is non-NULL, we also call the paging call-back function
- *  to notify the paging originator that paging has completed.
- * \param[in] bts BTS on which we shall stop paging
- * \param[in] bsub subscriber which we shall stop paging
- * \returns the MSC that paged the subscriber, if there was a pending request.
+ * \param[out] returns the MSC that paged the subscriber, if any.
+ * \param[out] returns the reason for a pending paging, if any.
+ * \param[in] bts BTS which has received a paging response.
+ * \param[in] bsub subscriber.
+ * \returns number of pending pagings.
  */
-static struct bsc_msc_data *paging_request_stop_bts(struct gsm_bts *bts, struct bsc_subscr *bsub)
+static int paging_request_stop_bts(struct bsc_msc_data **msc_p, enum bsc_paging_reason *reason_p,
+				   struct gsm_bts *bts, struct bsc_subscr *bsub)
 {
 	struct gsm_bts_paging_state *bts_entry = &bts->paging;
 	struct gsm_paging_request *req, *req2;
+
+	*msc_p = NULL;
+	*reason_p = BSC_PAGING_NONE;
 
 	paging_init_if_needed(bts);
 
 	llist_for_each_entry_safe(req, req2, &bts_entry->pending_requests,
 				  entry) {
-		if (req->bsub == bsub) {
-			struct bsc_msc_data *from_msc = req->msc;
-			/* now give up the data structure */
-			paging_remove_request(&bts->paging, req);
-			LOG_BTS(bts, DPAG, LOGL_DEBUG, "Stop paging %s\n", bsc_subscr_name(bsub));
-			return from_msc;
-		}
+		if (req->bsub != bsub)
+			continue;
+		*msc_p = req->msc;
+		*reason_p = req->reason;
+		LOG_BTS(bts, DPAG, LOGL_DEBUG, "Stop paging %s\n", bsc_subscr_name(bsub));
+		paging_remove_request(&bts->paging, req);
+		return 1;
 	}
 
-	return NULL;
+	return 0;
 }
 
-/*! Stop paging on all other bts'
+/*! Stop paging on all cells and return the MSC that paged (if any) and all pending paging reasons.
+ * \param[out] returns the MSC that paged the subscriber, if there was a pending request.
+ * \param[out] returns the ORed bitmask of all reasons of pending pagings.
  * \param[in] bts BTS which has received a paging response
  * \param[in] bsub subscriber
- * \returns the MSC that paged the subscriber, if there was a pending request.
+ * \returns number of pending pagings.
  */
-struct bsc_msc_data *paging_request_stop(struct gsm_bts *bts, struct bsc_subscr *bsub)
+int paging_request_stop(struct bsc_msc_data **msc_p, enum bsc_paging_reason *reasons_p,
+			struct gsm_bts *bts, struct bsc_subscr *bsub)
 {
 	struct gsm_bts *bts_i;
 	struct bsc_msc_data *paged_from_msc;
+	int count;
+	enum bsc_paging_reason reasons;
 	OSMO_ASSERT(bts);
 
-	paged_from_msc = paging_request_stop_bts(bts, bsub);
+	count = paging_request_stop_bts(&paged_from_msc, &reasons, bts, bsub);
 	if (paged_from_msc) {
+		count++;
 		rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_CTR_PAGING_RESPONDED]);
 		rate_ctr_inc(&bts->network->bsc_ctrs->ctr[BSC_CTR_PAGING_RESPONDED]);
 	}
 
 	llist_for_each_entry(bts_i, &bsc_gsmnet->bts_list, list) {
-		struct bsc_msc_data *paged_from_msc2 = paging_request_stop_bts(bts_i, bsub);
-		if (!paged_from_msc && paged_from_msc2) {
-			/* If this happened, it would be a bit weird: it means there was no Paging Request
-			 * pending on the BTS that sent the Paging Reponse, but there *is* a Paging Request
-			 * pending on a different BTS. But why not return an MSC when we found one. */
-			paged_from_msc = paged_from_msc2;
+		struct bsc_msc_data *paged_from_msc2;
+		enum bsc_paging_reason reason2;
+		count += paging_request_stop_bts(&paged_from_msc2, &reason2, bts_i, bsub);
+		if (paged_from_msc2) {
+			reasons |= reason2;
+			if (!paged_from_msc) {
+				/* If this happened, it would be a bit weird: it means there was no Paging Request
+				 * pending on the BTS that sent the Paging Reponse, but there *is* a Paging Request
+				 * pending on a different BTS. But why not return an MSC when we found one. */
+				paged_from_msc = paged_from_msc2;
+			}
 		}
 	}
 
-	return paged_from_msc;
+	*msc_p = paged_from_msc;
+	*reasons_p = reasons;
+
+	return count;
 }
 
 /*! Update the BTS paging buffer slots on given BTS */

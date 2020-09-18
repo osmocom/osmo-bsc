@@ -366,6 +366,7 @@ int bsc_compl_l3(struct gsm_lchan *lchan, struct msgb *msg, uint16_t chosen_chan
 	struct gsm_subscriber_connection *conn;
 	struct bsc_subscr *bsub = NULL;
 	struct bsc_msc_data *paged_from_msc;
+	enum bsc_paging_reason paging_reasons;
 	struct bsc_msc_data *msc;
 	struct msgb *create_l3;
 	struct gsm0808_speech_codec_list scl;
@@ -424,8 +425,9 @@ int bsc_compl_l3(struct gsm_lchan *lchan, struct msgb *msg, uint16_t chosen_chan
 	/* When receiving a Paging Response, stop Paging for this subscriber on all cells, and figure out which MSC
 	 * sent the Paging Request, if any. */
 	paged_from_msc = NULL;
+	paging_reasons = BSC_PAGING_NONE;
 	if (pdisc == GSM48_PDISC_RR && mtype == GSM48_MT_RR_PAG_RESP) {
-		paged_from_msc = paging_request_stop(bts, conn->bsub);
+		paging_request_stop(&paged_from_msc, &paging_reasons, bts, conn->bsub);
 		if (!paged_from_msc) {
 			/* This looks like an unsolicited Paging Response. It is required to pick any MSC, because any
 			 * MT-CSFB calls were Paged by the MSC via SGs, and hence are not listed in the BSC. */

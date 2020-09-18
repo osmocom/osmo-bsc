@@ -272,6 +272,7 @@ static int bssmap_handle_paging(struct bsc_msc_data *msc,
 	int remain;
 	const uint8_t *data;
 	struct bsc_paging_params paging = {
+		.reason = BSC_PAGING_FROM_CN,
 		.msc = msc,
 		.tmsi = GSM_RESERVED_TMSI,
 	};

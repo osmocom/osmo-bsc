@@ -33,15 +33,25 @@
 struct bsc_msc_data;
 
 #define LOG_PAGING(PARAMS, SUBSYS, LEVEL, fmt, args...) \
-	LOGP(SUBSYS, LEVEL, "(msc%d) Paging: %s: " fmt, \
+	LOGP(SUBSYS, LEVEL, "(msc%d) Paging%s: %s: " fmt, \
 	     (PARAMS)->msc ? (PARAMS)->msc->nr : -1, \
+	     (PARAMS)->reason == BSC_PAGING_FOR_LCS ? " for LCS" : "", \
 	     bsc_subscr_name((PARAMS)->bsub), \
 	     ##args)
 
 #define LOG_PAGING_BTS(PARAMS, BTS, SUBSYS, LEVEL, fmt, args...) \
 	LOG_PAGING(PARAMS, SUBSYS, LEVEL, "(bts%u) " fmt, (BTS) ? (BTS)->nr : 255, ##args)
 
+/* Bitmask of reasons for Paging. Each individual Paging via bsc_paging_start() typically has only one of these reasons
+ * set, but when a subscriber responds, we need to aggregate all pending Paging reasons (by bitwise-OR). */
+enum bsc_paging_reason {
+	BSC_PAGING_NONE = 0,
+	BSC_PAGING_FROM_CN = 0x1,
+	BSC_PAGING_FOR_LCS = 0x2,
+};
+
 struct bsc_paging_params {
+	enum bsc_paging_reason reason;
 	struct bsc_msc_data *msc;
 	struct bsc_subscr *bsub;
 	uint32_t tmsi;
@@ -72,12 +82,15 @@ struct gsm_paging_request {
 
 	/* MSC that has issued this paging */
 	struct bsc_msc_data *msc;
+
+	enum bsc_paging_reason reason;
 };
 
 /* schedule paging request */
 int paging_request_bts(const struct bsc_paging_params *params, struct gsm_bts *bts);
 
-struct bsc_msc_data *paging_request_stop(struct gsm_bts *bts, struct bsc_subscr *bsub);
+int paging_request_stop(struct bsc_msc_data **msc_p, enum bsc_paging_reason *reasons_p,
+			struct gsm_bts *bts, struct bsc_subscr *bsub);
 
 /* update paging load */
 void paging_update_buffer_space(struct gsm_bts *bts, uint16_t);
