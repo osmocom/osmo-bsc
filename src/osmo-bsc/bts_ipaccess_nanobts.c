@@ -227,6 +227,12 @@ static int nm_statechg_event(int evt, struct nm_statechg_signal_data *nsd)
 		/* We skip NSVC1 since we only use NSVC0 */
 		if (nsvc->id == 1)
 			break;
+		if (!osmo_bts_has_feature(&bts->features, BTS_FEAT_IPV6_NSVC) &&
+		    nsvc->remote.u.sa.sa_family == AF_INET6) {
+			LOGP(DLINP, LOGL_ERROR, "BTS %d does not support IPv6 but an IPv6 address was configured!\n", bts->nr);
+			break;
+		}
+
 		if ((new_state->availability == NM_AVSTATE_OFF_LINE) ||
 		    (new_state->availability == NM_AVSTATE_DEPENDENCY)) {
 			msgb = nanobts_attr_nscv_get(bts);

@@ -30,6 +30,7 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 
+#include <osmocom/core/byteswap.h>
 #include <osmocom/core/talloc.h>
 #include <osmocom/core/select.h>
 #include <osmocom/core/socket.h>
@@ -190,10 +191,18 @@ static int pcu_tx_info_ind(struct gsm_bts *bts)
 	/* NSVC */
 	for (i = 0; i < ARRAY_SIZE(info_ind->nsvci); i++) {
 		nsvc = &bts->gprs.nsvc[i];
+
+		if (nsvc->remote.u.sa.sa_family == AF_INET6) {
+			LOGP(DPCU, LOGL_ERROR, "PCU does not support IPv6 NSVC but an IPv6 NSVC was configured!\n");
+			continue;
+		}
+		if (nsvc->remote.u.sa.sa_family != AF_INET)
+			continue;
+
 		info_ind->nsvci[i] = nsvc->nsvci;
 		info_ind->local_port[i] = nsvc->local_port;
-		info_ind->remote_port[i] = nsvc->remote_port;
-		info_ind->remote_ip[i] = nsvc->remote_ip;
+		info_ind->remote_port[i] = osmo_ntohs(nsvc->remote.u.sin.sin_port);
+		info_ind->remote_ip[i] = osmo_ntohl(nsvc->remote.u.sin.sin_addr.s_addr);
 	}
 
 	for (i = 0; i < ARRAY_SIZE(info_ind->trx); i++) {

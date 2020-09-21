@@ -8,6 +8,7 @@
 #include <osmocom/core/timer.h>
 #include <osmocom/core/rate_ctr.h>
 #include <osmocom/core/select.h>
+#include <osmocom/core/socket.h>
 #include <osmocom/core/stats.h>
 #include <osmocom/core/stat_item.h>
 #include <osmocom/gsm/bts_features.h>
@@ -745,9 +746,7 @@ struct gsm_bts_gprs_nsvc {
 	int id;
 	uint16_t nsvci;
 	uint16_t local_port;	/* on the BTS */
-	uint16_t remote_port;	/* on the SGSN */
-	uint32_t remote_ip;	/* on the SGSN */
-
+	struct osmo_sockaddr remote;
 	struct gsm_abis_mo mo;
 };
 

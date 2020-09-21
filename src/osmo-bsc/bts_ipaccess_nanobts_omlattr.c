@@ -24,6 +24,7 @@
 #include <osmocom/bsc/gsm_data.h>
 #include <osmocom/bsc/abis_nm.h>
 #include <osmocom/bsc/bts.h>
+#include <osmocom/gsm/bts_features.h>
 
 struct msgb *nanobts_attr_bts_get(struct gsm_bts *bts)
 {
@@ -202,13 +203,33 @@ struct msgb *nanobts_attr_nscv_get(struct gsm_bts *bts)
 	buf[1] = bts->gprs.nsvc[0].nsvci & 0xff;
 	msgb_tl16v_put(msgb, NM_ATT_IPACC_NSVCI, 2, buf);
 
-	/* remote udp port */
-	osmo_store16be(bts->gprs.nsvc[0].remote_port, &buf[0]);
-	/* remote ip address */
-	osmo_store32be(bts->gprs.nsvc[0].remote_ip, &buf[2]);
-	/* local udp port */
-	osmo_store16be(bts->gprs.nsvc[0].local_port, &buf[6]);
-	msgb_tl16v_put(msgb, NM_ATT_IPACC_NS_LINK_CFG, 8, buf);
+	switch (bts->gprs.nsvc->remote.u.sa.sa_family) {
+	case AF_INET6:
+		/* all fields are encoded in network byte order */
+		/* protocol family */
+		buf[0] = OSMO_NSVC_ADDR_IPV6;
+		/* padding */
+		buf[1] = 0x00;
+		/* local udp port */
+		osmo_store16be(bts->gprs.nsvc[0].local_port, &buf[2]);
+		/* remote udp port */
+		memcpy(&buf[4], &bts->gprs.nsvc[0].remote.u.sin6.sin6_port, sizeof(uint16_t));
+		/* remote ip address */
+		memcpy(&buf[6], &bts->gprs.nsvc[0].remote.u.sin6.sin6_addr, sizeof(struct in6_addr));
+		msgb_tl16v_put(msgb, NM_ATT_OSMO_NS_LINK_CFG, 6 + sizeof(struct in6_addr), buf);
+		break;
+	case AF_INET:
+		/* remote udp port */
+		memcpy(&buf[0], &bts->gprs.nsvc[0].remote.u.sin.sin_port, sizeof(uint16_t));
+		/* remote ip address */
+		memcpy(&buf[2], &bts->gprs.nsvc[0].remote.u.sin.sin_addr, sizeof(struct in_addr));
+		/* local udp port */
+		osmo_store16be(bts->gprs.nsvc[0].local_port, &buf[6]);
+		msgb_tl16v_put(msgb, NM_ATT_IPACC_NS_LINK_CFG, 8, buf);
+		break;
+	default:
+		break;
+	}
 
 	return msgb;
 }

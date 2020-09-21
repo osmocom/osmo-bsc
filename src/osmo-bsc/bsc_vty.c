@@ -36,9 +36,11 @@
 #include <osmocom/gsm/gsm48.h>
 #include <osmocom/gsm/gsm0808.h>
 #include <osmocom/gsm/gsm23236.h>
+#include <osmocom/core/sockaddr_str.h>
 
 #include <arpa/inet.h>
 
+#include <osmocom/core/byteswap.h>
 #include <osmocom/core/linuxlist.h>
 #include <osmocom/core/socket.h>
 #include <osmocom/bsc/gsm_data.h>
@@ -762,17 +764,27 @@ static void config_write_bts_gprs(struct vty *vty, struct gsm_bts *bts)
 	for (i = 0; i < ARRAY_SIZE(bts->gprs.nsvc); i++) {
 		struct gsm_bts_gprs_nsvc *nsvc =
 					&bts->gprs.nsvc[i];
-		struct in_addr ia;
+		struct osmo_sockaddr_str remote = {};
+		uint16_t port;
 
-		ia.s_addr = htonl(nsvc->remote_ip);
 		vty_out(vty, "  gprs nsvc %u nsvci %u%s", i,
 			nsvc->nsvci, VTY_NEWLINE);
+
 		vty_out(vty, "  gprs nsvc %u local udp port %u%s", i,
 			nsvc->local_port, VTY_NEWLINE);
-		vty_out(vty, "  gprs nsvc %u remote udp port %u%s", i,
-			nsvc->remote_port, VTY_NEWLINE);
-		vty_out(vty, "  gprs nsvc %u remote ip %s%s", i,
-			inet_ntoa(ia), VTY_NEWLINE);
+
+		osmo_sockaddr_str_from_sockaddr(&remote, &nsvc->remote.u.sas);
+		if (remote.af != AF_UNSPEC) {
+			vty_out(vty, "  gprs nsvc %u remote ip %s%s", i,
+				remote.ip, VTY_NEWLINE);
+		}
+
+		/* Can't use remote.port because it's only valid when family != AF_UNSPEC, but the
+		 * port can be even configured when the IP isn't */
+		port = osmo_htons(nsvc->remote.u.sin.sin_port);
+		if (port)
+			vty_out(vty, "  gprs nsvc %u remote udp port %u%s", i,
+				port, VTY_NEWLINE);
 	}
 
 	/* EGPRS specific parameters */
@@ -3010,26 +3022,41 @@ DEFUN(cfg_bts_gprs_nsvc_rport, cfg_bts_gprs_nsvc_rport_cmd,
 
 	GPRS_CHECK_ENABLED(bts);
 
-	bts->gprs.nsvc[idx].remote_port = atoi(argv[1]);
+	/* sockaddr_in and sockaddr_in6 have the port at the same position */
+	bts->gprs.nsvc[idx].remote.u.sin.sin_port = htons(atoi(argv[1]));
 
 	return CMD_SUCCESS;
 }
 
 DEFUN(cfg_bts_gprs_nsvc_rip, cfg_bts_gprs_nsvc_rip_cmd,
-	"gprs nsvc <0-1> remote ip A.B.C.D",
+	"gprs nsvc <0-1> remote ip " VTY_IPV46_CMD,
 	GPRS_TEXT NSVC_TEXT
 	"GPRS NS Remote IP Address\n"
 	"GPRS NS Remote IP Address\n"
-	"GPRS NS Remote IP Address\n")
+	"GPRS NS Remote IPv4 Address\n"
+	"GPRS NS Remote IPv6 Address\n")
 {
 	struct gsm_bts *bts = vty->index;
+	struct osmo_sockaddr_str remote;
 	int idx = atoi(argv[0]);
-	struct in_addr ia;
+	int ret;
 
 	GPRS_CHECK_ENABLED(bts);
 
-	inet_aton(argv[1], &ia);
-	bts->gprs.nsvc[idx].remote_ip = ntohl(ia.s_addr);
+	ret = osmo_sockaddr_str_from_str2(&remote, argv[1]);
+	if (ret) {
+		vty_out(vty, "%% Invalid IP address %s%s", argv[1], VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	/* Can't use osmo_sockaddr_str_to_sockaddr() because the port would be overriden */
+	bts->gprs.nsvc[idx].remote.u.sas.ss_family = remote.af;
+	switch (remote.af) {
+	case AF_INET:
+		osmo_sockaddr_str_to_in_addr(&remote, &bts->gprs.nsvc[idx].remote.u.sin.sin_addr);
+	case AF_INET6:
+		osmo_sockaddr_str_to_in6_addr(&remote, &bts->gprs.nsvc[idx].remote.u.sin6.sin6_addr);
+	}
 
 	return CMD_SUCCESS;
 }

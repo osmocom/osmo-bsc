@@ -27,6 +27,7 @@
 #include <osmocom/core/talloc.h>
 #include <osmocom/core/utils.h>
 #include <osmocom/core/application.h>
+#include <osmocom/core/sockaddr_str.h>
 
 #include <stdio.h>
 #include <string.h>
@@ -263,9 +264,10 @@ int main(int argc, char **argv)
 	};
 
 	/* Parameters needed to test nanobts_attr_nscv_get() */
+	struct osmo_sockaddr_str addr;
+	osmo_sockaddr_str_from_str(&addr, "10.9.1.101", 23000);
+	osmo_sockaddr_str_to_sockaddr(&addr, &bts->gprs.nsvc[0].remote.u.sas);
 	bts->gprs.nsvc[0].nsvci = 0x65;
-	bts->gprs.nsvc[0].remote_port = 0x59d8;
-	bts->gprs.nsvc[0].remote_ip = 0x0a090165;
 	bts->gprs.nsvc[0].local_port = 0x5a3c;
 	uint8_t attr_nscv_expected[] =
 	    { 0x9f, 0x00, 0x02, 0x00, 0x65, 0xa2, 0x00, 0x08, 0x59, 0xd8, 0x0a,
@@ -285,6 +287,24 @@ int main(int argc, char **argv)
 	test_nanobts_attr_cell_get(bts, attr_cell_expected);
 	test_nanobts_attr_nscv_get(bts, attr_nscv_expected);
 	test_nanobts_attr_radio_get(bts, trx, attr_radio_expected);
+
+	/* NSVC IPv6 test */
+	struct osmo_sockaddr_str addr6;
+	osmo_sockaddr_str_from_str(&addr6, "fd00:5678:9012:3456:7890:1234:5678:9012", 23010);
+	osmo_sockaddr_str_to_sockaddr(&addr6, &bts->gprs.nsvc[0].remote.u.sas);
+	bts->gprs.nsvc[0].nsvci = 0x65;
+	bts->gprs.nsvc[0].local_port = 0x5a3c;
+	uint8_t attr_nscv6_expected[] =
+	      /*                             |- oml attr  |-16bit length */
+	    { 0x9f, 0x00, 0x02, 0x00, 0x65, 0xfd, 0x00, 0x16,
+	      /* 1b type, 1b padding, 2b local port, 2b remote port */
+	      0x29, 0x00, 0x5a, 0x3c, 0x59, 0xe2,
+	      /* 128bit / 16b ipv6 address */
+	      0xfd, 0x00, 0x56, 0x78, 0x90, 0x12, 0x34, 0x56,
+	      0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90, 0x12,
+	    };
+	test_nanobts_attr_nscv_get(bts, attr_nscv6_expected);
+
 
 	printf("Done\n");
 	talloc_free(bts);
