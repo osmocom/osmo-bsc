@@ -51,7 +51,7 @@ static int bsub_use_cb(struct osmo_use_count_entry *e, int32_t old_use_count, co
 	else
 		level = LOGL_DEBUG;
 
-	LOGPSRC(DREF, level, file, line, "BSC subscr %s: %s %s: now used by %s\n",
+	LOGPSRC(DREF, level, file, line, "%s: %s %s: now used by %s\n",
 		bsc_subscr_name(bsub),
 		(e->count - old_use_count) > 0? "+" : "-", e->use,
 		osmo_use_count_to_str_c(OTC_SELECT, &bsub->use_count));
@@ -188,30 +188,36 @@ struct bsc_subscr *bsc_subscr_find_or_create_by_mi(struct llist_head *list, cons
 	}
 }
 
+static int bsc_subscr_name_buf(char *buf, size_t buflen, struct bsc_subscr *bsub)
+{
+	struct osmo_strbuf sb = { .buf = buf, .len = buflen };
+	OSMO_STRBUF_PRINTF(sb, "subscr");
+	if (!bsub) {
+		OSMO_STRBUF_PRINTF(sb, "-null");
+		return sb.chars_needed;
+	}
+	if (bsub->imsi[0])
+		OSMO_STRBUF_PRINTF(sb, "-IMSI-%s", bsub->imsi);
+	if (bsub->tmsi != GSM_RESERVED_TMSI)
+		OSMO_STRBUF_PRINTF(sb, "-TMSI-0x%08x", bsub->tmsi);
+	return sb.chars_needed;
+}
+
+static char *bsc_subscr_name_c(void *ctx, struct bsc_subscr *bsub)
+{
+	OSMO_NAME_C_IMPL(ctx, 64, "ERROR", bsc_subscr_name_buf, bsub)
+}
+
 const char *bsc_subscr_name(struct bsc_subscr *bsub)
 {
-	static char buf[32];
-	if (!bsub)
-		return "unknown";
-	if (bsub->imsi[0])
-		snprintf(buf, sizeof(buf), "IMSI:%s", bsub->imsi);
-	else
-		snprintf(buf, sizeof(buf), "TMSI:0x%08x", bsub->tmsi);
-	return buf;
+	return bsc_subscr_name_c(OTC_SELECT, bsub);
 }
 
 /* Like bsc_subscr_name() but returns only characters approved by osmo_identifier_valid(), useful for
  * osmo_fsm_inst IDs. */
 const char *bsc_subscr_id(struct bsc_subscr *bsub)
 {
-	static char buf[32];
-	if (!bsub)
-		return "unknown";
-	if (bsub->imsi[0])
-		snprintf(buf, sizeof(buf), "IMSI%s", bsub->imsi);
-	else
-		snprintf(buf, sizeof(buf), "TMSI%08x", bsub->tmsi);
-	return buf;
+	return bsc_subscr_name(bsub);
 }
 
 static void bsc_subscr_free(struct bsc_subscr *bsub)

@@ -75,6 +75,7 @@ static void test_bsc_subscr(void)
 
 	/* Allocate entry 2 */
 	s2 = bsc_subscr_find_or_create_by_imsi(bsc_subscribers, imsi2, BSUB_USE);
+	s2->tmsi = 0x73517351;
 	VERBOSE_ASSERT(llist_count(bsc_subscribers), == 2, "%d");
 
 	/* Allocate entry 3 */
