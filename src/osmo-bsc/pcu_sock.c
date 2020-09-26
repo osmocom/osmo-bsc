@@ -204,17 +204,25 @@ static int pcu_tx_info_ind(struct gsm_bts *bts)
 	for (i = 0; i < ARRAY_SIZE(info_ind->nsvci); i++) {
 		nsvc = &bts->gprs.nsvc[i];
 
-		if (nsvc->remote.u.sa.sa_family == AF_INET6) {
-			LOGP(DPCU, LOGL_ERROR, "PCU does not support IPv6 NSVC but an IPv6 NSVC was configured!\n");
-			continue;
-		}
-		if (nsvc->remote.u.sa.sa_family != AF_INET)
-			continue;
-
 		info_ind->nsvci[i] = nsvc->nsvci;
 		info_ind->local_port[i] = nsvc->local_port;
-		info_ind->remote_port[i] = osmo_ntohs(nsvc->remote.u.sin.sin_port);
-		info_ind->remote_ip[i] = osmo_ntohl(nsvc->remote.u.sin.sin_addr.s_addr);
+		switch (nsvc->remote.u.sas.ss_family) {
+		case AF_INET:
+			info_ind->address_type[i] = PCU_IF_ADDR_TYPE_IPV4;
+			info_ind->remote_ip[i].v4 = nsvc->remote.u.sin.sin_addr;
+			info_ind->remote_port[i] = nsvc->remote.u.sin.sin_port;
+			break;
+		case AF_INET6:
+			info_ind->address_type[i] = PCU_IF_ADDR_TYPE_IPV6;
+			memcpy(&info_ind->remote_ip[i].v6,
+			       &nsvc->remote.u.sin6.sin6_addr,
+			       sizeof(struct in6_addr));
+			info_ind->remote_port[i] = nsvc->remote.u.sin6.sin6_port;
+			break;
+		default:
+			info_ind->address_type[i] = PCU_IF_ADDR_TYPE_UNSPEC;
+			break;
+		}
 	}
 
 	for (i = 0; i < ARRAY_SIZE(info_ind->trx); i++) {
