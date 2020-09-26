@@ -96,6 +96,18 @@ struct msgb *pcu_msgb_alloc(uint8_t msg_type, uint8_t bts_nr)
 	return msg;
 }
 
+/* Fill the frequency hopping parameter */
+static void info_ind_fill_fhp(struct gsm_pcu_if_info_trx_ts *ts_info,
+			      const struct gsm_bts_trx_ts *ts)
+{
+	ts_info->maio = ts->hopping.maio;
+	ts_info->hsn = ts->hopping.hsn;
+	ts_info->hopping = 0x1;
+
+	memcpy(&ts_info->ma, ts->hopping.ma_data, ts->hopping.ma_len);
+	ts_info->ma_bit_len = ts->hopping.ma_len * 8 - ts->hopping.ma.cur_bit;
+}
+
 /* Send BTS properties to the PCU */
 static int pcu_tx_info_ind(struct gsm_bts *bts)
 {
@@ -214,17 +226,24 @@ static int pcu_tx_info_ind(struct gsm_bts *bts)
 		info_ind->trx[i].arfcn = trx->arfcn;
 		for (tn = 0; tn < ARRAY_SIZE(trx->ts); tn++) {
 			ts = &trx->ts[tn];
-			if (ts->mo.nm_state.operational == NM_OPSTATE_ENABLED
-			    && ts->pchan_is == GSM_PCHAN_PDCH) {
-				info_ind->trx[i].pdch_mask |= (1 << tn);
-				info_ind->trx[i].tsc[tn] =
+			if (ts->mo.nm_state.operational != NM_OPSTATE_ENABLED ||
+			    ts->pchan_is != GSM_PCHAN_PDCH)
+				continue;
+
+			info_ind->trx[i].pdch_mask |= (1 << tn);
+			info_ind->trx[i].ts[tn].tsc =
 					(ts->tsc >= 0) ? ts->tsc : bts->bsic & 7;
-				LOGP(DPCU, LOGL_INFO, "trx=%d ts=%d: "
-					"available (tsc=%d arfcn=%d)\n",
-					trx->nr, ts->nr,
-					info_ind->trx[i].tsc[tn],
-					info_ind->trx[i].arfcn);
-			}
+
+			if (ts->hopping.enabled)
+				info_ind_fill_fhp(&info_ind->trx[i].ts[tn], ts);
+
+			LOGP(DPCU, LOGL_INFO, "trx=%d ts=%d: PDCH is available "
+			     "(tsc=%u ", trx->nr, ts->nr, info_ind->trx[i].ts[tn].tsc);
+			if (ts->hopping.enabled)
+				LOGPC(DPCU, LOGL_INFO, "hopping=yes hsn=%u maio=%u ma_bit_len=%u)\n",
+				      ts->hopping.hsn, ts->hopping.maio, trx->ts[tn].hopping.ma.data_len - trx->ts[tn].hopping.ma.cur_bit);
+			else
+				LOGPC(DPCU, LOGL_INFO, "hopping=no arfcn=%u)\n", trx->arfcn);
 		}
 	}
 
