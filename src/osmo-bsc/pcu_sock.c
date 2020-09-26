@@ -105,7 +105,7 @@ static int pcu_tx_info_ind(struct gsm_bts *bts)
 	struct gsm_bts_gprs_nsvc *nsvc;
 	struct gsm_bts_trx *trx;
 	struct gsm_bts_trx_ts *ts;
-	int i, j;
+	int i, tn;
 
 	OSMO_ASSERT(bts);
 	OSMO_ASSERT(bts->network);
@@ -203,17 +203,17 @@ static int pcu_tx_info_ind(struct gsm_bts *bts)
 		info_ind->trx[i].hlayer1 = 0x2342;
 		info_ind->trx[i].pdch_mask = 0;
 		info_ind->trx[i].arfcn = trx->arfcn;
-		for (j = 0; j < ARRAY_SIZE(trx->ts); j++) {
-			ts = &trx->ts[j];
+		for (tn = 0; tn < ARRAY_SIZE(trx->ts); tn++) {
+			ts = &trx->ts[tn];
 			if (ts->mo.nm_state.operational == NM_OPSTATE_ENABLED
 			    && ts->pchan_is == GSM_PCHAN_PDCH) {
-				info_ind->trx[i].pdch_mask |= (1 << j);
-				info_ind->trx[i].tsc[j] =
+				info_ind->trx[i].pdch_mask |= (1 << tn);
+				info_ind->trx[i].tsc[tn] =
 					(ts->tsc >= 0) ? ts->tsc : bts->bsic & 7;
 				LOGP(DPCU, LOGL_INFO, "trx=%d ts=%d: "
 					"available (tsc=%d arfcn=%d)\n",
 					trx->nr, ts->nr,
-					info_ind->trx[i].tsc[j],
+					info_ind->trx[i].tsc[tn],
 					info_ind->trx[i].arfcn);
 			}
 		}
