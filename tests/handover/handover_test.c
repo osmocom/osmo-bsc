@@ -247,7 +247,7 @@ void create_conn(struct gsm_lchan *lchan)
 	lchan->conn->bsub = bsc_subscr_find_or_create_by_imsi(net->bsc_subscribers, imsi, BSUB_USE_CONN);
 
 	/* kick the FSM from INIT through to the ACTIVE state */
-	osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_A_CONN_REQ, NULL);
+	osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_MO_COMPL_L3, NULL);
 	osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_A_CONN_CFM, NULL);
 }
 

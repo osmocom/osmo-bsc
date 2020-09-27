@@ -494,7 +494,7 @@ int bsc_compl_l3(struct gsm_lchan *lchan, struct msgb *msg, uint16_t chosen_chan
 			     osmo_mobile_identity_to_str_c(OTC_SELECT, &mi));
 		goto early_fail;
 	}
-	rc = osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_A_CONN_REQ, create_l3);
+	rc = osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_MO_COMPL_L3, create_l3);
 	if (!rc)
 		release_lchan = false;
 

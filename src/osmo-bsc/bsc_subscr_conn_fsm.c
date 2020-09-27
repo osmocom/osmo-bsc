@@ -69,7 +69,7 @@ enum gscon_fsm_states {
 
 static const struct value_string gscon_fsm_event_names[] = {
 	{GSCON_EV_A_CONN_IND, "MT-CONNECT.ind"},
-	{GSCON_EV_A_CONN_REQ, "MO-CONNECT.req"},
+	{GSCON_EV_MO_COMPL_L3, "MO_COMPL_L3"},
 	{GSCON_EV_A_CONN_CFM, "MO-CONNECT.cfm"},
 	{GSCON_EV_A_CLEAR_CMD, "CLEAR_CMD"},
 	{GSCON_EV_A_DISC_IND, "DISCONNET.ind"},
@@ -280,7 +280,7 @@ static void gscon_fsm_init(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 	enum handover_result ho_result;
 
 	switch (event) {
-	case GSCON_EV_A_CONN_REQ:
+	case GSCON_EV_MO_COMPL_L3:
 		/* RLL ESTABLISH IND with initial L3 Message */
 		msg = data;
 		rc = osmo_bsc_sigtran_open_conn(conn, msg);
@@ -614,7 +614,7 @@ bool gscon_connect_mgw_to_msc(struct gsm_subscriber_connection *conn,
 static const struct osmo_fsm_state gscon_fsm_states[] = {
 	[ST_INIT] = {
 		.name = "INIT",
-		.in_event_mask = S(GSCON_EV_A_CONN_REQ) | S(GSCON_EV_A_CONN_IND)
+		.in_event_mask = S(GSCON_EV_MO_COMPL_L3) | S(GSCON_EV_A_CONN_IND)
 			| S(GSCON_EV_HANDOVER_END),
 		.out_state_mask = S(ST_WAIT_CC) | S(ST_ACTIVE) | S(ST_CLEARING),
 		.action = gscon_fsm_init,
