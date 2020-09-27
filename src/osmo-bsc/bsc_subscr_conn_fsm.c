@@ -434,6 +434,13 @@ static void gscon_fsm_active(struct osmo_fsm_inst *fi, uint32_t event, void *dat
 		lb_close_conn(conn);
 		break;
 
+	case GSCON_EV_MO_COMPL_L3:
+		/* It is possible to have an A-interface conn already established without an lchan being active, during
+		 * a Perform Location Request (LCS). */
+		/* RLL ESTABLISH IND with initial L3 Message */
+		gscon_sigtran_send(conn, (struct msgb*)data);
+		break;
+
 	default:
 		OSMO_ASSERT(false);
 	}
@@ -659,7 +666,9 @@ static const struct osmo_fsm_state gscon_fsm_states[] = {
 		.name = "ACTIVE",
 		.in_event_mask = EV_TRANSPARENT_SCCP | S(GSCON_EV_ASSIGNMENT_START) |
 				 S(GSCON_EV_HANDOVER_START)
-				 | S(GSCON_EV_LCS_LOC_REQ_END),
+				 | S(GSCON_EV_LCS_LOC_REQ_END)
+				 | S(GSCON_EV_MO_COMPL_L3)
+				 ,
 		.out_state_mask = S(ST_CLEARING) | S(ST_ASSIGNMENT) |
 				  S(ST_HANDOVER),
 		.action = gscon_fsm_active,
