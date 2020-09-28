@@ -211,12 +211,12 @@ static int nm_statechg_event(int evt, struct nm_statechg_signal_data *nsd)
 						  0, 0xff, msgb->data,
 						  msgb->len);
 			msgb_free(msgb);
-			abis_nm_opstart(bts, obj_class, bts->bts_nr,
-					0, 0xff);
 			abis_nm_chg_adm_state(bts, obj_class, bts->bts_nr,
 					      0, 0xff, NM_STATE_UNLOCKED);
 			abis_nm_chg_adm_state(bts, NM_OC_GPRS_NSE, bts->bts_nr,
 					      0xff, 0xff, NM_STATE_UNLOCKED);
+			abis_nm_opstart(bts, obj_class, bts->bts_nr,
+					0, 0xff);
 		}
 		break;
 	case NM_OC_GPRS_NSVC:
@@ -234,11 +234,11 @@ static int nm_statechg_event(int evt, struct nm_statechg_signal_data *nsd)
 						  nsvc->id, 0xff,
 						  msgb->data, msgb->len);
 			msgb_free(msgb);
-			abis_nm_opstart(bts, obj_class, bts->bts_nr,
-					nsvc->id, 0xff);
 			abis_nm_chg_adm_state(bts, obj_class, bts->bts_nr,
 					      nsvc->id, 0xff,
 					      NM_STATE_UNLOCKED);
+			abis_nm_opstart(bts, obj_class, bts->bts_nr,
+					nsvc->id, 0xff);
 		}
 	default:
 		break;
