@@ -5265,7 +5265,7 @@ DEFUN_HIDDEN(lchan_act_all_trx, lchan_act_all_trx_cmd,
 	}
 
 	trx = gsm_bts_trx_num(bts, trx_nr);
-	if (!bts) {
+	if (!trx) {
 		vty_out(vty, "%% No such TRX (%d)%s", trx_nr, VTY_NEWLINE);
 		return CMD_WARNING;
 	}
