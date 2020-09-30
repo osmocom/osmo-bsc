@@ -31,6 +31,7 @@ nanobts_omlattr_test_LDADD = \
 	$(top_builddir)/src/osmo-bsc/gsm_data.o \
 	$(top_builddir)/src/osmo-bsc/nm_common_fsm.o \
 	$(top_builddir)/src/osmo-bsc/nm_bts_sm_fsm.o \
+	$(top_builddir)/src/osmo-bsc/nm_bts_fsm.o \
 	$(LIBOSMOCORE_LIBS) \
 	$(LIBOSMOGSM_LIBS) \
 	$(LIBOSMOABIS_LIBS) \

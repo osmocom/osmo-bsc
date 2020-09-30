@@ -78,6 +78,7 @@ osmo_bsc_SOURCES = \
 	net_init.c \
 	nm_common_fsm.c \
 	nm_bts_sm_fsm.c \
+	nm_bts_fsm.c \
 	gsm_08_08.c \
 	osmo_bsc_bssap.c \
 	osmo_bsc_ctrl.c \

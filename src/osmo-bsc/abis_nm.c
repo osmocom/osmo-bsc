@@ -842,6 +842,14 @@ static int abis_nm_rx_set_radio_attr_ack(struct msgb *mb)
 	return 0;
 }
 
+static int abis_nm_rx_set_bts_attr_ack(struct msgb *mb)
+{
+	struct abis_om_fom_hdr *foh = msgb_l3(mb);
+	DEBUGPFOH(DNM, foh, "Set BTS Attributes ACK\n");
+	osmo_signal_dispatch(SS_NM, S_NM_SET_BTS_ATTR_ACK, mb);
+	return 0;
+}
+
 bool all_trx_rsl_connected_unlocked(const struct gsm_bts *bts)
 {
 	const struct gsm_bts_trx *trx;
@@ -978,7 +986,7 @@ static int abis_nm_rcvmsg_fom(struct msgb *mb)
 		osmo_signal_dispatch(SS_NM, S_NM_IPACC_RESTART_NACK, NULL);
 		break;
 	case NM_MT_SET_BTS_ATTR_ACK:
-		DEBUGPFOH(DNM, foh, "Set BTS Attribute ACK\n");
+		abis_nm_rx_set_bts_attr_ack(mb);
 		break;
 	case NM_MT_GET_ATTR_RESP:
 		ret = abis_nm_rx_get_attr_resp(mb, gsm_bts_trx_num(bts, (foh)->obj_inst.trx_nr));

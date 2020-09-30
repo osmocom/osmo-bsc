@@ -28,6 +28,7 @@ gsm0408_test_LDADD = \
 	$(top_builddir)/src/osmo-bsc/gsm_04_08_rr.o \
 	$(top_builddir)/src/osmo-bsc/arfcn_range_encode.o \
 	$(top_builddir)/src/osmo-bsc/bts.o \
+	$(top_builddir)/src/osmo-bsc/bts_ipaccess_nanobts_omlattr.o \
 	$(top_builddir)/src/osmo-bsc/bts_trx.o \
 	$(top_builddir)/src/osmo-bsc/gsm_data.o \
 	$(top_builddir)/src/osmo-bsc/net_init.o \
@@ -36,6 +37,7 @@ gsm0408_test_LDADD = \
 	$(top_builddir)/src/osmo-bsc/neighbor_ident.o \
 	$(top_builddir)/src/osmo-bsc/nm_common_fsm.o \
 	$(top_builddir)/src/osmo-bsc/nm_bts_sm_fsm.o \
+	$(top_builddir)/src/osmo-bsc/nm_bts_fsm.o \
 	$(LIBOSMOCORE_LIBS) \
 	$(LIBOSMOGSM_LIBS) \
 	$(LIBOSMOABIS_LIBS) \

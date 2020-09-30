@@ -30,6 +30,7 @@
 enum nm_fsm_events {
 	NM_EV_SW_ACT_REP,
 	NM_EV_STATE_CHG_REP,
+	NM_EV_SET_ATTR_ACK,
 	NM_EV_OPSTART_ACK,
 	NM_EV_OPSTART_NACK,
 	NM_EV_OML_DOWN,
@@ -44,3 +45,12 @@ enum nm_bts_sm_op_fsm_states {
 	NM_BTS_SM_ST_OP_ENABLED,
 };
 extern struct osmo_fsm nm_bts_sm_fsm;
+
+/* BTS */
+enum nm_bts_op_fsm_states {
+	NM_BTS_ST_OP_DISABLED_NOTINSTALLED,
+	NM_BTS_ST_OP_DISABLED_DEPENDENCY,
+	NM_BTS_ST_OP_DISABLED_OFFLINE,
+	NM_BTS_ST_OP_ENABLED,
+};
+extern struct osmo_fsm nm_bts_fsm;

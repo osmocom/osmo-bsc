@@ -143,7 +143,7 @@ static int nm_statechg_event(int evt, struct nm_statechg_signal_data *nsd)
 
 	/* S_NM_STATECHG_ADM is called after we call chg_adm_state() and would create
 	 * endless loop */
-	if (evt != S_NM_STATECHG_OPER)
+	if (obj_class != NM_OC_BTS && evt != S_NM_STATECHG_OPER)
 		return 0;
 
 	switch (obj_class) {
@@ -153,16 +153,7 @@ static int nm_statechg_event(int evt, struct nm_statechg_signal_data *nsd)
 		break;
 	case NM_OC_BTS:
 		bts = obj;
-		if (new_state->availability == NM_AVSTATE_DEPENDENCY) {
-			msgb = nanobts_attr_bts_get(bts);
-			abis_nm_set_bts_attr(bts, msgb->data, msgb->len);
-			msgb_free(msgb);
-			abis_nm_chg_adm_state(bts, obj_class,
-					      bts->bts_nr, 0xff, 0xff,
-					      NM_STATE_UNLOCKED);
-			abis_nm_opstart(bts, obj_class,
-					bts->bts_nr, 0xff, 0xff);
-		}
+		osmo_fsm_inst_dispatch(bts->mo.fi, NM_EV_STATE_CHG_REP, nsd);
 		break;
 	case NM_OC_CHANNEL:
 		ts = obj;
@@ -265,6 +256,9 @@ static int sw_activ_rep(struct msgb *mb)
 	case NM_OC_SITE_MANAGER:
 		osmo_fsm_inst_dispatch(bts->site_mgr.mo.fi, NM_EV_SW_ACT_REP, NULL);
 		break;
+	case NM_OC_BTS:
+		osmo_fsm_inst_dispatch(bts->mo.fi, NM_EV_SW_ACT_REP, NULL);
+		break;
 	case NM_OC_BASEB_TRANSC:
 		if (!(trx = gsm_bts_trx_num(bts, foh->obj_inst.trx_nr)))
 			return -EINVAL;
@@ -326,6 +320,9 @@ static void nm_rx_opstart_ack(struct msgb *oml_msg)
 	case NM_OC_SITE_MANAGER:
 		osmo_fsm_inst_dispatch(bts->site_mgr.mo.fi, NM_EV_OPSTART_ACK, NULL);
 		break;
+	case NM_OC_BTS:
+		osmo_fsm_inst_dispatch(bts->mo.fi, NM_EV_OPSTART_ACK, NULL);
+		break;
 	case NM_OC_CHANNEL:
 		nm_rx_opstart_ack_chan(oml_msg);
 		break;
@@ -343,10 +340,27 @@ static void nm_rx_opstart_nack(struct msgb *oml_msg)
 	case NM_OC_SITE_MANAGER:
 		osmo_fsm_inst_dispatch(bts->site_mgr.mo.fi, NM_EV_OPSTART_NACK, NULL);
 		break;
+	case NM_OC_BTS:
+		osmo_fsm_inst_dispatch(bts->mo.fi, NM_EV_OPSTART_ACK, NULL);
+		break;
 	default:
 		break;
 	}
 }
+
+static void nm_rx_set_bts_attr_ack(struct msgb *oml_msg)
+{
+	struct abis_om_fom_hdr *foh = msgb_l3(oml_msg);
+	struct e1inp_sign_link *sign_link = oml_msg->dst;
+	struct gsm_bts *bts = sign_link->trx->bts;
+
+	if (foh->obj_class != NM_OC_BTS) {
+		LOG_BTS(bts, DNM, LOGL_ERROR, "Set BTS Attr Ack received on non BTS object!\n");
+		return;
+	}
+	osmo_fsm_inst_dispatch(bts->mo.fi, NM_EV_SET_ATTR_ACK, NULL);
+}
+
 
 static void nm_rx_set_radio_attr_ack(struct msgb *oml_msg)
 {
@@ -381,6 +395,9 @@ static int bts_ipa_nm_sig_cb(unsigned int subsys, unsigned int signal,
 		return 0;
 	case S_NM_OPSTART_NACK:
 		nm_rx_opstart_nack(signal_data);
+		return 0;
+	case S_NM_SET_BTS_ATTR_ACK:
+		nm_rx_set_bts_attr_ack(signal_data);
 		return 0;
 	case S_NM_SET_RADIO_ATTR_ACK:
 		nm_rx_set_radio_attr_ack(signal_data);
@@ -467,6 +484,7 @@ void ipaccess_drop_oml(struct gsm_bts *bts, const char *reason)
 		ipaccess_drop_rsl(trx, "OML link drop");
 
 	osmo_fsm_inst_dispatch(bts->site_mgr.mo.fi, NM_EV_OML_DOWN, NULL);
+	osmo_fsm_inst_dispatch(bts->mo.fi, NM_EV_OML_DOWN, NULL);
 	gsm_bts_all_ts_dispatch(bts, TS_EV_OML_DOWN, NULL);
 
 	bts->ip_access.flags = 0;

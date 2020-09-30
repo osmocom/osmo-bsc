@@ -395,6 +395,9 @@ struct gsm_abis_mo {
 	struct gsm_bts *bts;
 	struct osmo_fsm_inst *fi;
 	bool opstart_sent;
+	bool adm_unlock_sent;
+	bool set_attr_sent;
+	bool set_attr_ack_received;
 };
 
 /* Ericsson OM2000 Managed Object */

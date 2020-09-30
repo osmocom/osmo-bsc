@@ -75,6 +75,7 @@ enum signal_nm {
 	S_NM_OPSTART_NACK,	/* Received OPSTART NACK, arg is struct msgb *oml_msg */
 	S_NM_GET_ATTR_REP,	/* Received Get Attributes Response, arg is struct msgb *oml_msg */
 	S_NM_SET_RADIO_ATTR_ACK, /* Received Set Radio Carrier Attributes Ack, arg is struct msgb *oml_msg */
+	S_NM_SET_BTS_ATTR_ACK,  /* Received Set BTS Attributes Ack, arg is struct msgb *oml_msg */
 };
 
 /* SS_LCHAN signals */

@@ -153,6 +153,10 @@ static int gsm_bts_talloc_destructor(struct gsm_bts *bts)
 		osmo_fsm_inst_free(bts->site_mgr.mo.fi);
 		bts->site_mgr.mo.fi = NULL;
 	}
+	if (bts->mo.fi) {
+		osmo_fsm_inst_free(bts->mo.fi);
+		bts->mo.fi = NULL;
+	}
 	return 0;
 }
 
@@ -183,6 +187,9 @@ struct gsm_bts *gsm_bts_alloc(struct gsm_network *net, uint8_t bts_num)
 	osmo_fsm_inst_update_id_f(bts->site_mgr.mo.fi, "bts_sm");
 	gsm_mo_init(&bts->site_mgr.mo, bts, NM_OC_SITE_MANAGER, 0xff, 0xff, 0xff);
 
+	bts->mo.fi = osmo_fsm_inst_alloc(&nm_bts_fsm, bts, bts,
+					      LOGL_INFO, NULL);
+	osmo_fsm_inst_update_id_f(bts->mo.fi, "bts%d", bts->nr);
 	gsm_mo_init(&bts->mo, bts, NM_OC_BTS, bts->nr, 0xff, 0xff);
 
 	for (i = 0; i < ARRAY_SIZE(bts->gprs.nsvc); i++) {

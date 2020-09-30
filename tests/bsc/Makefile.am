@@ -39,6 +39,7 @@ bsc_test_LDADD = \
 	$(top_builddir)/src/osmo-bsc/osmo_bsc_filter.o \
 	$(top_builddir)/src/osmo-bsc/bsc_subscriber.o \
 	$(top_builddir)/src/osmo-bsc/bts.o \
+	$(top_builddir)/src/osmo-bsc/bts_ipaccess_nanobts_omlattr.o \
 	$(top_builddir)/src/osmo-bsc/bts_trx.o \
 	$(top_builddir)/src/osmo-bsc/gsm_data.o \
 	$(top_builddir)/src/osmo-bsc/handover_cfg.o \
@@ -47,6 +48,7 @@ bsc_test_LDADD = \
 	$(top_builddir)/src/osmo-bsc/net_init.o \
 	$(top_builddir)/src/osmo-bsc/nm_common_fsm.o \
 	$(top_builddir)/src/osmo-bsc/nm_bts_sm_fsm.o \
+	$(top_builddir)/src/osmo-bsc/nm_bts_fsm.o \
 	$(LIBOSMOCORE_LIBS) \
 	$(LIBOSMOGSM_LIBS) \
 	$(LIBOSMOVTY_LIBS) \
