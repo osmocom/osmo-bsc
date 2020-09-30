@@ -953,7 +953,6 @@ static int abis_nm_rcvmsg_fom(struct msgb *mb)
 		DEBUGPFOH(DNM, foh, "Set Channel Attributes ACK\n");
 		break;
 	case NM_MT_SET_RADIO_ATTR_ACK:
-		DEBUGPFOH(DNM, foh, "Set Radio Carrier Attributes ACK\n");
 		abis_nm_rx_set_radio_attr_ack(mb);
 		break;
 	case NM_MT_CONN_MDROP_LINK_ACK:
