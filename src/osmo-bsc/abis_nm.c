@@ -274,11 +274,11 @@ static int abis_nm_rx_statechg_rep(struct msgb *mb)
 			get_value_string(abis_nm_adm_state_names,
 					 new_state.administrative));
 	}
-	DEBUGPC(DNM, "\n");
 
 	if ((new_state.administrative != 0 && nm_state->administrative == 0) ||
 	    new_state.operational != nm_state->operational ||
 	    new_state.availability != nm_state->availability) {
+		DEBUGPC(DNM, "\n");
 		/* Update the operational state of a given object in our in-memory data
  		* structures and send an event to the higher layer */
 		struct nm_statechg_signal_data nsd;
@@ -293,6 +293,8 @@ static int abis_nm_rx_statechg_rep(struct msgb *mb)
 		nm_state->availability = new_state.availability;
 		if (nm_state->administrative == 0)
 			nm_state->administrative = new_state.administrative;
+	} else {
+		DEBUGPC(DNM, "(No State change detected)\n");
 	}
 #if 0
 	if (op_state == 1) {
