@@ -49,6 +49,7 @@ bsc_test_LDADD = \
 	$(top_builddir)/src/osmo-bsc/nm_common_fsm.o \
 	$(top_builddir)/src/osmo-bsc/nm_bts_sm_fsm.o \
 	$(top_builddir)/src/osmo-bsc/nm_bts_fsm.o \
+	$(top_builddir)/src/osmo-bsc/nm_bb_transc_fsm.o \
 	$(LIBOSMOCORE_LIBS) \
 	$(LIBOSMOGSM_LIBS) \
 	$(LIBOSMOVTY_LIBS) \

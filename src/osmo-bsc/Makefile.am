@@ -77,6 +77,7 @@ osmo_bsc_SOURCES = \
 	neighbor_ident_vty.c \
 	net_init.c \
 	nm_common_fsm.c \
+	nm_bb_transc_fsm.c \
 	nm_bts_sm_fsm.c \
 	nm_bts_fsm.c \
 	gsm_08_08.c \

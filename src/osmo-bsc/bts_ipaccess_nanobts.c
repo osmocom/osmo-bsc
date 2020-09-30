@@ -131,6 +131,7 @@ static int nm_statechg_event(int evt, struct nm_statechg_signal_data *nsd)
 	struct gsm_bts_sm *bts_sm;
 	struct gsm_bts *bts;
 	struct gsm_bts_trx *trx;
+	struct gsm_bts_bb_trx *bb_transc;
 	struct gsm_bts_trx_ts *ts;
 	struct gsm_bts_gprs_nsvc *nsvc;
 
@@ -143,7 +144,9 @@ static int nm_statechg_event(int evt, struct nm_statechg_signal_data *nsd)
 
 	/* S_NM_STATECHG_ADM is called after we call chg_adm_state() and would create
 	 * endless loop */
-	if (obj_class != NM_OC_BTS && evt != S_NM_STATECHG_OPER)
+	if (obj_class != NM_OC_BTS &&
+	    obj_class != NM_OC_BASEB_TRANSC &&
+	    evt != S_NM_STATECHG_OPER)
 		return 0;
 
 	switch (obj_class) {
@@ -154,6 +157,10 @@ static int nm_statechg_event(int evt, struct nm_statechg_signal_data *nsd)
 	case NM_OC_BTS:
 		bts = obj;
 		osmo_fsm_inst_dispatch(bts->mo.fi, NM_EV_STATE_CHG_REP, nsd);
+		break;
+	case NM_OC_BASEB_TRANSC:
+		bb_transc = obj;
+		osmo_fsm_inst_dispatch(bb_transc->mo.fi, NM_EV_STATE_CHG_REP, nsd);
 		break;
 	case NM_OC_CHANNEL:
 		ts = obj;
@@ -262,14 +269,7 @@ static int sw_activ_rep(struct msgb *mb)
 	case NM_OC_BASEB_TRANSC:
 		if (!(trx = gsm_bts_trx_num(bts, foh->obj_inst.trx_nr)))
 			return -EINVAL;
-		abis_nm_chg_adm_state(trx->bts, foh->obj_class,
-				      trx->bts->bts_nr, trx->nr, 0xff,
-				      NM_STATE_UNLOCKED);
-		abis_nm_opstart(trx->bts, foh->obj_class,
-				trx->bts->bts_nr, trx->nr, 0xff);
-		/* TRX software is active, tell it to initiate RSL Link */
-		abis_nm_ipaccess_rsl_connect(trx, trx->bts->ip_access.rsl_ip,
-					     3003, trx->rsl_tei);
+		osmo_fsm_inst_dispatch(trx->bb_transc.mo.fi, NM_EV_SW_ACT_REP, NULL);
 		break;
 	case NM_OC_RADIO_CARRIER: {
 		if (!(trx = gsm_bts_trx_num(bts, foh->obj_inst.trx_nr)))
@@ -316,12 +316,19 @@ static void nm_rx_opstart_ack(struct msgb *oml_msg)
 	struct abis_om_fom_hdr *foh = msgb_l3(oml_msg);
 	struct e1inp_sign_link *sign_link = oml_msg->dst;
 	struct gsm_bts *bts = sign_link->trx->bts;
+	struct gsm_bts_trx *trx;
+
 	switch (foh->obj_class) {
 	case NM_OC_SITE_MANAGER:
 		osmo_fsm_inst_dispatch(bts->site_mgr.mo.fi, NM_EV_OPSTART_ACK, NULL);
 		break;
 	case NM_OC_BTS:
 		osmo_fsm_inst_dispatch(bts->mo.fi, NM_EV_OPSTART_ACK, NULL);
+		break;
+	case NM_OC_BASEB_TRANSC:
+		if (!(trx = gsm_bts_trx_num(bts, foh->obj_inst.trx_nr)))
+			return;
+		osmo_fsm_inst_dispatch(trx->bb_transc.mo.fi, NM_EV_OPSTART_ACK, NULL);
 		break;
 	case NM_OC_CHANNEL:
 		nm_rx_opstart_ack_chan(oml_msg);
@@ -336,12 +343,19 @@ static void nm_rx_opstart_nack(struct msgb *oml_msg)
 	struct abis_om_fom_hdr *foh = msgb_l3(oml_msg);
 	struct e1inp_sign_link *sign_link = oml_msg->dst;
 	struct gsm_bts *bts = sign_link->trx->bts;
+	struct gsm_bts_trx *trx;
+
 	switch (foh->obj_class) {
 	case NM_OC_SITE_MANAGER:
 		osmo_fsm_inst_dispatch(bts->site_mgr.mo.fi, NM_EV_OPSTART_NACK, NULL);
 		break;
 	case NM_OC_BTS:
 		osmo_fsm_inst_dispatch(bts->mo.fi, NM_EV_OPSTART_ACK, NULL);
+		break;
+	case NM_OC_BASEB_TRANSC:
+		if (!(trx = gsm_bts_trx_num(bts, foh->obj_inst.trx_nr)))
+			return;
+		osmo_fsm_inst_dispatch(trx->bb_transc.mo.fi, NM_EV_OPSTART_NACK, NULL);
 		break;
 	default:
 		break;
@@ -480,8 +494,10 @@ void ipaccess_drop_oml(struct gsm_bts *bts, const char *reason)
 	osmo_stat_item_dec(bts->bts_statg->items[BTS_STAT_OML_CONNECTED], 1);
 
 	/* we have issues reconnecting RSL, drop everything. */
-	llist_for_each_entry(trx, &bts->trx_list, list)
+	llist_for_each_entry(trx, &bts->trx_list, list) {
 		ipaccess_drop_rsl(trx, "OML link drop");
+		osmo_fsm_inst_dispatch(trx->bb_transc.mo.fi, NM_EV_OML_DOWN, NULL);
+	}
 
 	osmo_fsm_inst_dispatch(bts->site_mgr.mo.fi, NM_EV_OML_DOWN, NULL);
 	osmo_fsm_inst_dispatch(bts->mo.fi, NM_EV_OML_DOWN, NULL);

@@ -18,6 +18,10 @@ struct gsm_bts;
 
 #define TRX_NR_TS	8
 
+struct gsm_bts_bb_trx {
+	struct gsm_abis_mo mo;
+};
+
 /* One TRX in a BTS */
 struct gsm_bts_trx {
 	/* list header in bts->trx_list */
@@ -41,9 +45,7 @@ struct gsm_bts_trx {
 
 	struct gsm_abis_mo mo;
 	struct tlv_parsed nm_attr;
-	struct {
-		struct gsm_abis_mo mo;
-	} bb_transc;
+	struct gsm_bts_bb_trx bb_transc;
 
 	uint16_t arfcn;
 	int nominal_power;		/* in dBm */
@@ -77,6 +79,10 @@ struct gsm_bts_trx {
 	};
 	struct gsm_bts_trx_ts ts[TRX_NR_TS];
 };
+
+static inline struct gsm_bts_trx *gsm_bts_bb_trx_get_trx(struct gsm_bts_bb_trx *bb_transc) {
+	return (struct gsm_bts_trx *)container_of(bb_transc, struct gsm_bts_trx, bb_transc);
+}
 
 struct gsm_bts_trx *gsm_bts_trx_alloc(struct gsm_bts *bts);
 char *gsm_trx_name(const struct gsm_bts_trx *trx);

@@ -54,3 +54,12 @@ enum nm_bts_op_fsm_states {
 	NM_BTS_ST_OP_ENABLED,
 };
 extern struct osmo_fsm nm_bts_fsm;
+
+/* BaseBand Transceiver */
+enum nm_bb_transc_op_fsm_states {
+	NM_BB_TRANSC_ST_OP_DISABLED_NOTINSTALLED,
+	NM_BB_TRANSC_ST_OP_DISABLED_DEPENDENCY,
+	NM_BB_TRANSC_ST_OP_DISABLED_OFFLINE,
+	NM_BB_TRANSC_ST_OP_ENABLED,
+};
+extern struct osmo_fsm nm_bb_transc_fsm;

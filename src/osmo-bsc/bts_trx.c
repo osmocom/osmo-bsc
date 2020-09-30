@@ -30,6 +30,16 @@
 #include <osmocom/bsc/system_information.h>
 #include <osmocom/bsc/pcu_if.h>
 #include <osmocom/bsc/debug.h>
+#include <osmocom/bsc/nm_common_fsm.h>
+
+static int gsm_bts_trx_talloc_destructor(struct gsm_bts_trx *trx)
+{
+	if (trx->bb_transc.mo.fi) {
+		osmo_fsm_inst_free(trx->bb_transc.mo.fi);
+		trx->bb_transc.mo.fi = NULL;
+	}
+	return 0;
+}
 
 struct gsm_bts_trx *gsm_bts_trx_alloc(struct gsm_bts *bts)
 {
@@ -39,11 +49,17 @@ struct gsm_bts_trx *gsm_bts_trx_alloc(struct gsm_bts *bts)
 	if (!trx)
 		return NULL;
 
+	talloc_set_destructor(trx, gsm_bts_trx_talloc_destructor);
+
 	trx->bts = bts;
 	trx->nr = bts->num_trx++;
 
 	gsm_mo_init(&trx->mo, bts, NM_OC_RADIO_CARRIER,
 		    bts->nr, trx->nr, 0xff);
+
+	trx->bb_transc.mo.fi = osmo_fsm_inst_alloc(&nm_bb_transc_fsm, trx, &trx->bb_transc,
+						   LOGL_INFO, NULL);
+	osmo_fsm_inst_update_id_f(trx->bb_transc.mo.fi, "bts%d-trx%d", bts->nr, trx->nr);
 	gsm_mo_init(&trx->bb_transc.mo, bts, NM_OC_BASEB_TRANSC,
 		    bts->nr, trx->nr, 0xff);
 
