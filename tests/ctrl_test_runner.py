@@ -321,7 +321,7 @@ class TestCtrlBSC(TestCtrlBase):
         r = self.do_get('bts.0.rf_state')
         self.assertEqual(r['mtype'], 'GET_REPLY')
         self.assertEqual(r['var'], 'bts.0.rf_state')
-        self.assertEqual(r['value'], 'inoperational,unlocked,on')
+        self.assertEqual(r['value'], 'inoperational,locked,on')
 
         r = self.do_get('rf_locked')
         self.assertEqual(r['mtype'], 'GET_REPLY')

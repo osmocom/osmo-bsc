@@ -1,6 +1,7 @@
 ===test_acc_mgr_no_ramp===
 NM_BTS_SM_OP{DISABLED_NOTINSTALLED}: Allocated
 NM_BTS_OP{DISABLED_NOTINSTALLED}: Allocated
+NM_RCARRIER_OP{DISABLED_NOTINSTALLED}: Allocated
 NM_BB_TRANSC_OP{DISABLED_NOTINSTALLED}: Allocated
 (bts=0) ACC: New ACC allowed subset 0x3ff (active_len=10, ramp_len=10, adm_len=10, perm_len=10, rotation=off)
 BTS allocation OK in test_acc_mgr_no_ramp()
@@ -111,10 +112,12 @@ pcu_info_update(): t2=0x00 t3=0x00, allowed: 0 1 2 3 4 5 6 7 8 9
 NM_BTS_SM_OP(bts_sm){DISABLED_NOTINSTALLED}: Deallocated
 NM_BTS_OP(bts0){DISABLED_NOTINSTALLED}: Deallocated
 NM_BB_TRANSC_OP(bts0-trx0){DISABLED_NOTINSTALLED}: Deallocated
+NM_RCARRIER_OP(bts0-trx0){DISABLED_NOTINSTALLED}: Deallocated
 BTS deallocated OK in test_acc_mgr_no_ramp()
 ===test_acc_mgr_manual_ramp===
 NM_BTS_SM_OP{DISABLED_NOTINSTALLED}: Allocated
 NM_BTS_OP{DISABLED_NOTINSTALLED}: Allocated
+NM_RCARRIER_OP{DISABLED_NOTINSTALLED}: Allocated
 NM_BB_TRANSC_OP{DISABLED_NOTINSTALLED}: Allocated
 (bts=0) ACC: New ACC allowed subset 0x3ff (active_len=10, ramp_len=10, adm_len=10, perm_len=10, rotation=off)
 BTS allocation OK in test_acc_mgr_manual_ramp()
@@ -355,10 +358,12 @@ pcu_info_update(): t2=0x01 t3=0xb3, allowed: 2 3 6 9
 NM_BTS_SM_OP(bts_sm){DISABLED_NOTINSTALLED}: Deallocated
 NM_BTS_OP(bts0){DISABLED_NOTINSTALLED}: Deallocated
 NM_BB_TRANSC_OP(bts0-trx0){DISABLED_NOTINSTALLED}: Deallocated
+NM_RCARRIER_OP(bts0-trx0){DISABLED_NOTINSTALLED}: Deallocated
 BTS deallocated OK in test_acc_mgr_manual_ramp()
 ===test_acc_mgr_rotate(true, 1)===
 NM_BTS_SM_OP{DISABLED_NOTINSTALLED}: Allocated
 NM_BTS_OP{DISABLED_NOTINSTALLED}: Allocated
+NM_RCARRIER_OP{DISABLED_NOTINSTALLED}: Allocated
 NM_BB_TRANSC_OP{DISABLED_NOTINSTALLED}: Allocated
 (bts=0) ACC: New ACC allowed subset 0x3ff (active_len=10, ramp_len=10, adm_len=10, perm_len=10, rotation=off)
 BTS allocation OK in test_acc_mgr_rotate()
@@ -430,10 +435,12 @@ pcu_info_update(): t2=0x03 t3=0xfd, allowed: 1
 NM_BTS_SM_OP(bts_sm){DISABLED_NOTINSTALLED}: Deallocated
 NM_BTS_OP(bts0){DISABLED_NOTINSTALLED}: Deallocated
 NM_BB_TRANSC_OP(bts0-trx0){DISABLED_NOTINSTALLED}: Deallocated
+NM_RCARRIER_OP(bts0-trx0){DISABLED_NOTINSTALLED}: Deallocated
 BTS deallocated OK in test_acc_mgr_rotate()
 ===test_acc_mgr_rotate(false, 1)===
 NM_BTS_SM_OP{DISABLED_NOTINSTALLED}: Allocated
 NM_BTS_OP{DISABLED_NOTINSTALLED}: Allocated
+NM_RCARRIER_OP{DISABLED_NOTINSTALLED}: Allocated
 NM_BB_TRANSC_OP{DISABLED_NOTINSTALLED}: Allocated
 (bts=0) ACC: New ACC allowed subset 0x3ff (active_len=10, ramp_len=10, adm_len=10, perm_len=10, rotation=off)
 BTS allocation OK in test_acc_mgr_rotate()
@@ -502,10 +509,12 @@ pcu_info_update(): t2=0x01 t3=0xff, allowed: 9
 NM_BTS_SM_OP(bts_sm){DISABLED_NOTINSTALLED}: Deallocated
 NM_BTS_OP(bts0){DISABLED_NOTINSTALLED}: Deallocated
 NM_BB_TRANSC_OP(bts0-trx0){DISABLED_NOTINSTALLED}: Deallocated
+NM_RCARRIER_OP(bts0-trx0){DISABLED_NOTINSTALLED}: Deallocated
 BTS deallocated OK in test_acc_mgr_rotate()
 ===test_acc_mgr_rotate(true, 2)===
 NM_BTS_SM_OP{DISABLED_NOTINSTALLED}: Allocated
 NM_BTS_OP{DISABLED_NOTINSTALLED}: Allocated
+NM_RCARRIER_OP{DISABLED_NOTINSTALLED}: Allocated
 NM_BB_TRANSC_OP{DISABLED_NOTINSTALLED}: Allocated
 (bts=0) ACC: New ACC allowed subset 0x3ff (active_len=10, ramp_len=10, adm_len=10, perm_len=10, rotation=off)
 BTS allocation OK in test_acc_mgr_rotate()
@@ -577,10 +586,12 @@ pcu_info_update(): t2=0x03 t3=0xfc, allowed: 0 1
 NM_BTS_SM_OP(bts_sm){DISABLED_NOTINSTALLED}: Deallocated
 NM_BTS_OP(bts0){DISABLED_NOTINSTALLED}: Deallocated
 NM_BB_TRANSC_OP(bts0-trx0){DISABLED_NOTINSTALLED}: Deallocated
+NM_RCARRIER_OP(bts0-trx0){DISABLED_NOTINSTALLED}: Deallocated
 BTS deallocated OK in test_acc_mgr_rotate()
 ===test_acc_mgr_rotate(false, 2)===
 NM_BTS_SM_OP{DISABLED_NOTINSTALLED}: Allocated
 NM_BTS_OP{DISABLED_NOTINSTALLED}: Allocated
+NM_RCARRIER_OP{DISABLED_NOTINSTALLED}: Allocated
 NM_BB_TRANSC_OP{DISABLED_NOTINSTALLED}: Allocated
 (bts=0) ACC: New ACC allowed subset 0x3ff (active_len=10, ramp_len=10, adm_len=10, perm_len=10, rotation=off)
 BTS allocation OK in test_acc_mgr_rotate()
@@ -649,10 +660,12 @@ pcu_info_update(): t2=0x00 t3=0xff, allowed: 8 9
 NM_BTS_SM_OP(bts_sm){DISABLED_NOTINSTALLED}: Deallocated
 NM_BTS_OP(bts0){DISABLED_NOTINSTALLED}: Deallocated
 NM_BB_TRANSC_OP(bts0-trx0){DISABLED_NOTINSTALLED}: Deallocated
+NM_RCARRIER_OP(bts0-trx0){DISABLED_NOTINSTALLED}: Deallocated
 BTS deallocated OK in test_acc_mgr_rotate()
 ===test_acc_mgr_rotate(true, 3)===
 NM_BTS_SM_OP{DISABLED_NOTINSTALLED}: Allocated
 NM_BTS_OP{DISABLED_NOTINSTALLED}: Allocated
+NM_RCARRIER_OP{DISABLED_NOTINSTALLED}: Allocated
 NM_BB_TRANSC_OP{DISABLED_NOTINSTALLED}: Allocated
 (bts=0) ACC: New ACC allowed subset 0x3ff (active_len=10, ramp_len=10, adm_len=10, perm_len=10, rotation=off)
 BTS allocation OK in test_acc_mgr_rotate()
@@ -724,10 +737,12 @@ pcu_info_update(): t2=0x02 t3=0xfc, allowed: 0 1 8
 NM_BTS_SM_OP(bts_sm){DISABLED_NOTINSTALLED}: Deallocated
 NM_BTS_OP(bts0){DISABLED_NOTINSTALLED}: Deallocated
 NM_BB_TRANSC_OP(bts0-trx0){DISABLED_NOTINSTALLED}: Deallocated
+NM_RCARRIER_OP(bts0-trx0){DISABLED_NOTINSTALLED}: Deallocated
 BTS deallocated OK in test_acc_mgr_rotate()
 ===test_acc_mgr_rotate(false, 3)===
 NM_BTS_SM_OP{DISABLED_NOTINSTALLED}: Allocated
 NM_BTS_OP{DISABLED_NOTINSTALLED}: Allocated
+NM_RCARRIER_OP{DISABLED_NOTINSTALLED}: Allocated
 NM_BB_TRANSC_OP{DISABLED_NOTINSTALLED}: Allocated
 (bts=0) ACC: New ACC allowed subset 0x3ff (active_len=10, ramp_len=10, adm_len=10, perm_len=10, rotation=off)
 BTS allocation OK in test_acc_mgr_rotate()
@@ -796,10 +811,12 @@ pcu_info_update(): t2=0x00 t3=0x7f, allowed: 7 8 9
 NM_BTS_SM_OP(bts_sm){DISABLED_NOTINSTALLED}: Deallocated
 NM_BTS_OP(bts0){DISABLED_NOTINSTALLED}: Deallocated
 NM_BB_TRANSC_OP(bts0-trx0){DISABLED_NOTINSTALLED}: Deallocated
+NM_RCARRIER_OP(bts0-trx0){DISABLED_NOTINSTALLED}: Deallocated
 BTS deallocated OK in test_acc_mgr_rotate()
 ===test_acc_mgr_rotate(true, 4)===
 NM_BTS_SM_OP{DISABLED_NOTINSTALLED}: Allocated
 NM_BTS_OP{DISABLED_NOTINSTALLED}: Allocated
+NM_RCARRIER_OP{DISABLED_NOTINSTALLED}: Allocated
 NM_BB_TRANSC_OP{DISABLED_NOTINSTALLED}: Allocated
 (bts=0) ACC: New ACC allowed subset 0x3ff (active_len=10, ramp_len=10, adm_len=10, perm_len=10, rotation=off)
 BTS allocation OK in test_acc_mgr_rotate()
@@ -871,10 +888,12 @@ pcu_info_update(): t2=0x02 t3=0x7c, allowed: 0 1 7 8
 NM_BTS_SM_OP(bts_sm){DISABLED_NOTINSTALLED}: Deallocated
 NM_BTS_OP(bts0){DISABLED_NOTINSTALLED}: Deallocated
 NM_BB_TRANSC_OP(bts0-trx0){DISABLED_NOTINSTALLED}: Deallocated
+NM_RCARRIER_OP(bts0-trx0){DISABLED_NOTINSTALLED}: Deallocated
 BTS deallocated OK in test_acc_mgr_rotate()
 ===test_acc_mgr_rotate(false, 4)===
 NM_BTS_SM_OP{DISABLED_NOTINSTALLED}: Allocated
 NM_BTS_OP{DISABLED_NOTINSTALLED}: Allocated
+NM_RCARRIER_OP{DISABLED_NOTINSTALLED}: Allocated
 NM_BB_TRANSC_OP{DISABLED_NOTINSTALLED}: Allocated
 (bts=0) ACC: New ACC allowed subset 0x3ff (active_len=10, ramp_len=10, adm_len=10, perm_len=10, rotation=off)
 BTS allocation OK in test_acc_mgr_rotate()
@@ -943,10 +962,12 @@ pcu_info_update(): t2=0x00 t3=0x3f, allowed: 6 7 8 9
 NM_BTS_SM_OP(bts_sm){DISABLED_NOTINSTALLED}: Deallocated
 NM_BTS_OP(bts0){DISABLED_NOTINSTALLED}: Deallocated
 NM_BB_TRANSC_OP(bts0-trx0){DISABLED_NOTINSTALLED}: Deallocated
+NM_RCARRIER_OP(bts0-trx0){DISABLED_NOTINSTALLED}: Deallocated
 BTS deallocated OK in test_acc_mgr_rotate()
 ===test_acc_mgr_rotate(true, 5)===
 NM_BTS_SM_OP{DISABLED_NOTINSTALLED}: Allocated
 NM_BTS_OP{DISABLED_NOTINSTALLED}: Allocated
+NM_RCARRIER_OP{DISABLED_NOTINSTALLED}: Allocated
 NM_BB_TRANSC_OP{DISABLED_NOTINSTALLED}: Allocated
 (bts=0) ACC: New ACC allowed subset 0x3ff (active_len=10, ramp_len=10, adm_len=10, perm_len=10, rotation=off)
 BTS allocation OK in test_acc_mgr_rotate()
@@ -1018,10 +1039,12 @@ pcu_info_update(): t2=0x02 t3=0x3c, allowed: 0 1 6 7 8
 NM_BTS_SM_OP(bts_sm){DISABLED_NOTINSTALLED}: Deallocated
 NM_BTS_OP(bts0){DISABLED_NOTINSTALLED}: Deallocated
 NM_BB_TRANSC_OP(bts0-trx0){DISABLED_NOTINSTALLED}: Deallocated
+NM_RCARRIER_OP(bts0-trx0){DISABLED_NOTINSTALLED}: Deallocated
 BTS deallocated OK in test_acc_mgr_rotate()
 ===test_acc_mgr_rotate(false, 5)===
 NM_BTS_SM_OP{DISABLED_NOTINSTALLED}: Allocated
 NM_BTS_OP{DISABLED_NOTINSTALLED}: Allocated
+NM_RCARRIER_OP{DISABLED_NOTINSTALLED}: Allocated
 NM_BB_TRANSC_OP{DISABLED_NOTINSTALLED}: Allocated
 (bts=0) ACC: New ACC allowed subset 0x3ff (active_len=10, ramp_len=10, adm_len=10, perm_len=10, rotation=off)
 BTS allocation OK in test_acc_mgr_rotate()
@@ -1090,10 +1113,12 @@ pcu_info_update(): t2=0x00 t3=0x1f, allowed: 5 6 7 8 9
 NM_BTS_SM_OP(bts_sm){DISABLED_NOTINSTALLED}: Deallocated
 NM_BTS_OP(bts0){DISABLED_NOTINSTALLED}: Deallocated
 NM_BB_TRANSC_OP(bts0-trx0){DISABLED_NOTINSTALLED}: Deallocated
+NM_RCARRIER_OP(bts0-trx0){DISABLED_NOTINSTALLED}: Deallocated
 BTS deallocated OK in test_acc_mgr_rotate()
 ===test_acc_mgr_rotate(true, 6)===
 NM_BTS_SM_OP{DISABLED_NOTINSTALLED}: Allocated
 NM_BTS_OP{DISABLED_NOTINSTALLED}: Allocated
+NM_RCARRIER_OP{DISABLED_NOTINSTALLED}: Allocated
 NM_BB_TRANSC_OP{DISABLED_NOTINSTALLED}: Allocated
 (bts=0) ACC: New ACC allowed subset 0x3ff (active_len=10, ramp_len=10, adm_len=10, perm_len=10, rotation=off)
 BTS allocation OK in test_acc_mgr_rotate()
@@ -1165,10 +1190,12 @@ pcu_info_update(): t2=0x02 t3=0x1c, allowed: 0 1 5 6 7 8
 NM_BTS_SM_OP(bts_sm){DISABLED_NOTINSTALLED}: Deallocated
 NM_BTS_OP(bts0){DISABLED_NOTINSTALLED}: Deallocated
 NM_BB_TRANSC_OP(bts0-trx0){DISABLED_NOTINSTALLED}: Deallocated
+NM_RCARRIER_OP(bts0-trx0){DISABLED_NOTINSTALLED}: Deallocated
 BTS deallocated OK in test_acc_mgr_rotate()
 ===test_acc_mgr_rotate(false, 6)===
 NM_BTS_SM_OP{DISABLED_NOTINSTALLED}: Allocated
 NM_BTS_OP{DISABLED_NOTINSTALLED}: Allocated
+NM_RCARRIER_OP{DISABLED_NOTINSTALLED}: Allocated
 NM_BB_TRANSC_OP{DISABLED_NOTINSTALLED}: Allocated
 (bts=0) ACC: New ACC allowed subset 0x3ff (active_len=10, ramp_len=10, adm_len=10, perm_len=10, rotation=off)
 BTS allocation OK in test_acc_mgr_rotate()
@@ -1237,10 +1264,12 @@ pcu_info_update(): t2=0x00 t3=0x0f, allowed: 4 5 6 7 8 9
 NM_BTS_SM_OP(bts_sm){DISABLED_NOTINSTALLED}: Deallocated
 NM_BTS_OP(bts0){DISABLED_NOTINSTALLED}: Deallocated
 NM_BB_TRANSC_OP(bts0-trx0){DISABLED_NOTINSTALLED}: Deallocated
+NM_RCARRIER_OP(bts0-trx0){DISABLED_NOTINSTALLED}: Deallocated
 BTS deallocated OK in test_acc_mgr_rotate()
 ===test_acc_mgr_rotate(true, 7)===
 NM_BTS_SM_OP{DISABLED_NOTINSTALLED}: Allocated
 NM_BTS_OP{DISABLED_NOTINSTALLED}: Allocated
+NM_RCARRIER_OP{DISABLED_NOTINSTALLED}: Allocated
 NM_BB_TRANSC_OP{DISABLED_NOTINSTALLED}: Allocated
 (bts=0) ACC: New ACC allowed subset 0x3ff (active_len=10, ramp_len=10, adm_len=10, perm_len=10, rotation=off)
 BTS allocation OK in test_acc_mgr_rotate()
@@ -1312,10 +1341,12 @@ pcu_info_update(): t2=0x02 t3=0x0c, allowed: 0 1 4 5 6 7 8
 NM_BTS_SM_OP(bts_sm){DISABLED_NOTINSTALLED}: Deallocated
 NM_BTS_OP(bts0){DISABLED_NOTINSTALLED}: Deallocated
 NM_BB_TRANSC_OP(bts0-trx0){DISABLED_NOTINSTALLED}: Deallocated
+NM_RCARRIER_OP(bts0-trx0){DISABLED_NOTINSTALLED}: Deallocated
 BTS deallocated OK in test_acc_mgr_rotate()
 ===test_acc_mgr_rotate(false, 7)===
 NM_BTS_SM_OP{DISABLED_NOTINSTALLED}: Allocated
 NM_BTS_OP{DISABLED_NOTINSTALLED}: Allocated
+NM_RCARRIER_OP{DISABLED_NOTINSTALLED}: Allocated
 NM_BB_TRANSC_OP{DISABLED_NOTINSTALLED}: Allocated
 (bts=0) ACC: New ACC allowed subset 0x3ff (active_len=10, ramp_len=10, adm_len=10, perm_len=10, rotation=off)
 BTS allocation OK in test_acc_mgr_rotate()
@@ -1384,10 +1415,12 @@ pcu_info_update(): t2=0x00 t3=0x07, allowed: 3 4 5 6 7 8 9
 NM_BTS_SM_OP(bts_sm){DISABLED_NOTINSTALLED}: Deallocated
 NM_BTS_OP(bts0){DISABLED_NOTINSTALLED}: Deallocated
 NM_BB_TRANSC_OP(bts0-trx0){DISABLED_NOTINSTALLED}: Deallocated
+NM_RCARRIER_OP(bts0-trx0){DISABLED_NOTINSTALLED}: Deallocated
 BTS deallocated OK in test_acc_mgr_rotate()
 ===test_acc_mgr_rotate(true, 8)===
 NM_BTS_SM_OP{DISABLED_NOTINSTALLED}: Allocated
 NM_BTS_OP{DISABLED_NOTINSTALLED}: Allocated
+NM_RCARRIER_OP{DISABLED_NOTINSTALLED}: Allocated
 NM_BB_TRANSC_OP{DISABLED_NOTINSTALLED}: Allocated
 (bts=0) ACC: New ACC allowed subset 0x3ff (active_len=10, ramp_len=10, adm_len=10, perm_len=10, rotation=off)
 BTS allocation OK in test_acc_mgr_rotate()
@@ -1459,10 +1492,12 @@ pcu_info_update(): t2=0x02 t3=0x04, allowed: 0 1 3 4 5 6 7 8
 NM_BTS_SM_OP(bts_sm){DISABLED_NOTINSTALLED}: Deallocated
 NM_BTS_OP(bts0){DISABLED_NOTINSTALLED}: Deallocated
 NM_BB_TRANSC_OP(bts0-trx0){DISABLED_NOTINSTALLED}: Deallocated
+NM_RCARRIER_OP(bts0-trx0){DISABLED_NOTINSTALLED}: Deallocated
 BTS deallocated OK in test_acc_mgr_rotate()
 ===test_acc_mgr_rotate(false, 8)===
 NM_BTS_SM_OP{DISABLED_NOTINSTALLED}: Allocated
 NM_BTS_OP{DISABLED_NOTINSTALLED}: Allocated
+NM_RCARRIER_OP{DISABLED_NOTINSTALLED}: Allocated
 NM_BB_TRANSC_OP{DISABLED_NOTINSTALLED}: Allocated
 (bts=0) ACC: New ACC allowed subset 0x3ff (active_len=10, ramp_len=10, adm_len=10, perm_len=10, rotation=off)
 BTS allocation OK in test_acc_mgr_rotate()
@@ -1531,10 +1566,12 @@ pcu_info_update(): t2=0x00 t3=0x03, allowed: 2 3 4 5 6 7 8 9
 NM_BTS_SM_OP(bts_sm){DISABLED_NOTINSTALLED}: Deallocated
 NM_BTS_OP(bts0){DISABLED_NOTINSTALLED}: Deallocated
 NM_BB_TRANSC_OP(bts0-trx0){DISABLED_NOTINSTALLED}: Deallocated
+NM_RCARRIER_OP(bts0-trx0){DISABLED_NOTINSTALLED}: Deallocated
 BTS deallocated OK in test_acc_mgr_rotate()
 ===test_acc_mgr_rotate(false, 9)===
 NM_BTS_SM_OP{DISABLED_NOTINSTALLED}: Allocated
 NM_BTS_OP{DISABLED_NOTINSTALLED}: Allocated
+NM_RCARRIER_OP{DISABLED_NOTINSTALLED}: Allocated
 NM_BB_TRANSC_OP{DISABLED_NOTINSTALLED}: Allocated
 (bts=0) ACC: New ACC allowed subset 0x3ff (active_len=10, ramp_len=10, adm_len=10, perm_len=10, rotation=off)
 BTS allocation OK in test_acc_mgr_rotate()
@@ -1603,10 +1640,12 @@ pcu_info_update(): t2=0x00 t3=0x01, allowed: 1 2 3 4 5 6 7 8 9
 NM_BTS_SM_OP(bts_sm){DISABLED_NOTINSTALLED}: Deallocated
 NM_BTS_OP(bts0){DISABLED_NOTINSTALLED}: Deallocated
 NM_BB_TRANSC_OP(bts0-trx0){DISABLED_NOTINSTALLED}: Deallocated
+NM_RCARRIER_OP(bts0-trx0){DISABLED_NOTINSTALLED}: Deallocated
 BTS deallocated OK in test_acc_mgr_rotate()
 ===test_acc_ramp===
 NM_BTS_SM_OP{DISABLED_NOTINSTALLED}: Allocated
 NM_BTS_OP{DISABLED_NOTINSTALLED}: Allocated
+NM_RCARRIER_OP{DISABLED_NOTINSTALLED}: Allocated
 NM_BB_TRANSC_OP{DISABLED_NOTINSTALLED}: Allocated
 (bts=0) ACC: New ACC allowed subset 0x3ff (active_len=10, ramp_len=10, adm_len=10, perm_len=10, rotation=off)
 BTS allocation OK in test_acc_ramp()
@@ -1644,10 +1683,12 @@ pcu_info_update(): t2=0x00 t3=0x00, allowed: 0 1 2 3 4 5 6 7 8 9
 NM_BTS_SM_OP(bts_sm){DISABLED_NOTINSTALLED}: Deallocated
 NM_BTS_OP(bts0){DISABLED_NOTINSTALLED}: Deallocated
 NM_BB_TRANSC_OP(bts0-trx0){DISABLED_NOTINSTALLED}: Deallocated
+NM_RCARRIER_OP(bts0-trx0){DISABLED_NOTINSTALLED}: Deallocated
 BTS deallocated OK in test_acc_ramp()
 ===test_acc_ramp2===
 NM_BTS_SM_OP{DISABLED_NOTINSTALLED}: Allocated
 NM_BTS_OP{DISABLED_NOTINSTALLED}: Allocated
+NM_RCARRIER_OP{DISABLED_NOTINSTALLED}: Allocated
 NM_BB_TRANSC_OP{DISABLED_NOTINSTALLED}: Allocated
 (bts=0) ACC: New ACC allowed subset 0x3ff (active_len=10, ramp_len=10, adm_len=10, perm_len=10, rotation=off)
 BTS allocation OK in test_acc_ramp2()
@@ -1667,10 +1708,12 @@ sys={15.000000}: select()
 NM_BTS_SM_OP(bts_sm){DISABLED_NOTINSTALLED}: Deallocated
 NM_BTS_OP(bts0){DISABLED_NOTINSTALLED}: Deallocated
 NM_BB_TRANSC_OP(bts0-trx0){DISABLED_NOTINSTALLED}: Deallocated
+NM_RCARRIER_OP(bts0-trx0){DISABLED_NOTINSTALLED}: Deallocated
 BTS deallocated OK in test_acc_ramp2()
 ===test_acc_ramp3===
 NM_BTS_SM_OP{DISABLED_NOTINSTALLED}: Allocated
 NM_BTS_OP{DISABLED_NOTINSTALLED}: Allocated
+NM_RCARRIER_OP{DISABLED_NOTINSTALLED}: Allocated
 NM_BB_TRANSC_OP{DISABLED_NOTINSTALLED}: Allocated
 (bts=0) ACC: New ACC allowed subset 0x3ff (active_len=10, ramp_len=10, adm_len=10, perm_len=10, rotation=off)
 BTS allocation OK in test_acc_ramp3()
@@ -1706,10 +1749,12 @@ sys={45.000000}: select()
 NM_BTS_SM_OP(bts_sm){DISABLED_NOTINSTALLED}: Deallocated
 NM_BTS_OP(bts0){DISABLED_NOTINSTALLED}: Deallocated
 NM_BB_TRANSC_OP(bts0-trx0){DISABLED_NOTINSTALLED}: Deallocated
+NM_RCARRIER_OP(bts0-trx0){DISABLED_NOTINSTALLED}: Deallocated
 BTS deallocated OK in test_acc_ramp3()
 ===test_acc_ramp_up_rotate(0, 100, 100)===
 NM_BTS_SM_OP{DISABLED_NOTINSTALLED}: Allocated
 NM_BTS_OP{DISABLED_NOTINSTALLED}: Allocated
+NM_RCARRIER_OP{DISABLED_NOTINSTALLED}: Allocated
 NM_BB_TRANSC_OP{DISABLED_NOTINSTALLED}: Allocated
 (bts=0) ACC: New ACC allowed subset 0x3ff (active_len=10, ramp_len=10, adm_len=10, perm_len=10, rotation=off)
 BTS allocation OK in test_acc_ramp_up_rotate()
@@ -1801,10 +1846,12 @@ sys={3250.000000}: select()
 NM_BTS_SM_OP(bts_sm){DISABLED_NOTINSTALLED}: Deallocated
 NM_BTS_OP(bts0){DISABLED_NOTINSTALLED}: Deallocated
 NM_BB_TRANSC_OP(bts0-trx0){DISABLED_NOTINSTALLED}: Deallocated
+NM_RCARRIER_OP(bts0-trx0){DISABLED_NOTINSTALLED}: Deallocated
 BTS deallocated OK in test_acc_ramp_up_rotate()
 ===test_acc_ramp_up_rotate(0, 20, 50)===
 NM_BTS_SM_OP{DISABLED_NOTINSTALLED}: Allocated
 NM_BTS_OP{DISABLED_NOTINSTALLED}: Allocated
+NM_RCARRIER_OP{DISABLED_NOTINSTALLED}: Allocated
 NM_BB_TRANSC_OP{DISABLED_NOTINSTALLED}: Allocated
 (bts=0) ACC: New ACC allowed subset 0x3ff (active_len=10, ramp_len=10, adm_len=10, perm_len=10, rotation=off)
 BTS allocation OK in test_acc_ramp_up_rotate()
@@ -1896,10 +1943,12 @@ sys={3250.000000}: select()
 NM_BTS_SM_OP(bts_sm){DISABLED_NOTINSTALLED}: Deallocated
 NM_BTS_OP(bts0){DISABLED_NOTINSTALLED}: Deallocated
 NM_BB_TRANSC_OP(bts0-trx0){DISABLED_NOTINSTALLED}: Deallocated
+NM_RCARRIER_OP(bts0-trx0){DISABLED_NOTINSTALLED}: Deallocated
 BTS deallocated OK in test_acc_ramp_up_rotate()
 ===test_acc_ramp_up_rotate(70, 80, 90)===
 NM_BTS_SM_OP{DISABLED_NOTINSTALLED}: Allocated
 NM_BTS_OP{DISABLED_NOTINSTALLED}: Allocated
+NM_RCARRIER_OP{DISABLED_NOTINSTALLED}: Allocated
 NM_BB_TRANSC_OP{DISABLED_NOTINSTALLED}: Allocated
 (bts=0) ACC: New ACC allowed subset 0x3ff (active_len=10, ramp_len=10, adm_len=10, perm_len=10, rotation=off)
 BTS allocation OK in test_acc_ramp_up_rotate()
@@ -1991,10 +2040,12 @@ sys={3250.000000}: select()
 NM_BTS_SM_OP(bts_sm){DISABLED_NOTINSTALLED}: Deallocated
 NM_BTS_OP(bts0){DISABLED_NOTINSTALLED}: Deallocated
 NM_BB_TRANSC_OP(bts0-trx0){DISABLED_NOTINSTALLED}: Deallocated
+NM_RCARRIER_OP(bts0-trx0){DISABLED_NOTINSTALLED}: Deallocated
 BTS deallocated OK in test_acc_ramp_up_rotate()
 ===test_acc_ramp_updown_rotate(80, 90, 0, 100, 15)===
 NM_BTS_SM_OP{DISABLED_NOTINSTALLED}: Allocated
 NM_BTS_OP{DISABLED_NOTINSTALLED}: Allocated
+NM_RCARRIER_OP{DISABLED_NOTINSTALLED}: Allocated
 NM_BB_TRANSC_OP{DISABLED_NOTINSTALLED}: Allocated
 (bts=0) ACC: New ACC allowed subset 0x3ff (active_len=10, ramp_len=10, adm_len=10, perm_len=10, rotation=off)
 BTS allocation OK in test_acc_ramp_updown_rotate()
@@ -2116,10 +2167,12 @@ sys={7500.000000}: select(49): chan_load_avg=100
 NM_BTS_SM_OP(bts_sm){DISABLED_NOTINSTALLED}: Deallocated
 NM_BTS_OP(bts0){DISABLED_NOTINSTALLED}: Deallocated
 NM_BB_TRANSC_OP(bts0-trx0){DISABLED_NOTINSTALLED}: Deallocated
+NM_RCARRIER_OP(bts0-trx0){DISABLED_NOTINSTALLED}: Deallocated
 BTS deallocated OK in test_acc_ramp_updown_rotate()
 ===test_acc_ramp_updown_rotate(30, 50, 10, 100, 15)===
 NM_BTS_SM_OP{DISABLED_NOTINSTALLED}: Allocated
 NM_BTS_OP{DISABLED_NOTINSTALLED}: Allocated
+NM_RCARRIER_OP{DISABLED_NOTINSTALLED}: Allocated
 NM_BB_TRANSC_OP{DISABLED_NOTINSTALLED}: Allocated
 (bts=0) ACC: New ACC allowed subset 0x3ff (active_len=10, ramp_len=10, adm_len=10, perm_len=10, rotation=off)
 BTS allocation OK in test_acc_ramp_updown_rotate()
@@ -2265,10 +2318,12 @@ pcu_info_update(): t2=0x03 t3=0xf9, allowed: 1 2
 NM_BTS_SM_OP(bts_sm){DISABLED_NOTINSTALLED}: Deallocated
 NM_BTS_OP(bts0){DISABLED_NOTINSTALLED}: Deallocated
 NM_BB_TRANSC_OP(bts0-trx0){DISABLED_NOTINSTALLED}: Deallocated
+NM_RCARRIER_OP(bts0-trx0){DISABLED_NOTINSTALLED}: Deallocated
 BTS deallocated OK in test_acc_ramp_updown_rotate()
 ===test_acc_ramp_updown_rotate(50, 49, 0, 100, 10)===
 NM_BTS_SM_OP{DISABLED_NOTINSTALLED}: Allocated
 NM_BTS_OP{DISABLED_NOTINSTALLED}: Allocated
+NM_RCARRIER_OP{DISABLED_NOTINSTALLED}: Allocated
 NM_BB_TRANSC_OP{DISABLED_NOTINSTALLED}: Allocated
 (bts=0) ACC: New ACC allowed subset 0x3ff (active_len=10, ramp_len=10, adm_len=10, perm_len=10, rotation=off)
 BTS allocation OK in test_acc_ramp_updown_rotate()
@@ -2424,10 +2479,12 @@ pcu_info_update(): t2=0x03 t3=0xc7, allowed: 3 4 5
 NM_BTS_SM_OP(bts_sm){DISABLED_NOTINSTALLED}: Deallocated
 NM_BTS_OP(bts0){DISABLED_NOTINSTALLED}: Deallocated
 NM_BB_TRANSC_OP(bts0-trx0){DISABLED_NOTINSTALLED}: Deallocated
+NM_RCARRIER_OP(bts0-trx0){DISABLED_NOTINSTALLED}: Deallocated
 BTS deallocated OK in test_acc_ramp_updown_rotate()
 ===test_acc_ramp_updown_rotate(30, 80, 30, 80, 5)===
 NM_BTS_SM_OP{DISABLED_NOTINSTALLED}: Allocated
 NM_BTS_OP{DISABLED_NOTINSTALLED}: Allocated
+NM_RCARRIER_OP{DISABLED_NOTINSTALLED}: Allocated
 NM_BB_TRANSC_OP{DISABLED_NOTINSTALLED}: Allocated
 (bts=0) ACC: New ACC allowed subset 0x3ff (active_len=10, ramp_len=10, adm_len=10, perm_len=10, rotation=off)
 BTS allocation OK in test_acc_ramp_updown_rotate()
@@ -2489,4 +2546,5 @@ sys={12500.000000}: select(49): chan_load_avg=75
 NM_BTS_SM_OP(bts_sm){DISABLED_NOTINSTALLED}: Deallocated
 NM_BTS_OP(bts0){DISABLED_NOTINSTALLED}: Deallocated
 NM_BB_TRANSC_OP(bts0-trx0){DISABLED_NOTINSTALLED}: Deallocated
+NM_RCARRIER_OP(bts0-trx0){DISABLED_NOTINSTALLED}: Deallocated
 BTS deallocated OK in test_acc_ramp_updown_rotate()

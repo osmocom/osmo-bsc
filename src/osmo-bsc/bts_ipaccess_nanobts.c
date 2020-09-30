@@ -146,6 +146,7 @@ static int nm_statechg_event(int evt, struct nm_statechg_signal_data *nsd)
 	 * endless loop */
 	if (obj_class != NM_OC_BTS &&
 	    obj_class != NM_OC_BASEB_TRANSC &&
+	    obj_class != NM_OC_RADIO_CARRIER &&
 	    evt != S_NM_STATECHG_OPER)
 		return 0;
 
@@ -181,7 +182,8 @@ static int nm_statechg_event(int evt, struct nm_statechg_signal_data *nsd)
 		}
 		break;
 	case NM_OC_RADIO_CARRIER:
-		/* OPSTART done after Set Radio Carrier Attributes ACK is received */
+		trx = obj;
+		osmo_fsm_inst_dispatch(trx->mo.fi, NM_EV_STATE_CHG_REP, nsd);
 		break;
 	case NM_OC_GPRS_NSE:
 		bts = container_of(obj, struct gsm_bts, gprs.nse);
@@ -271,27 +273,11 @@ static int sw_activ_rep(struct msgb *mb)
 			return -EINVAL;
 		osmo_fsm_inst_dispatch(trx->bb_transc.mo.fi, NM_EV_SW_ACT_REP, NULL);
 		break;
-	case NM_OC_RADIO_CARRIER: {
+	case NM_OC_RADIO_CARRIER:
 		if (!(trx = gsm_bts_trx_num(bts, foh->obj_inst.trx_nr)))
 			return -EINVAL;
-		/*
-		 * Locking the radio carrier will make it go
-		 * offline again and we would come here. The
-		 * framework should determine that there was
-		 * no change and avoid recursion.
-		 *
-		 * This code is here to make sure that on start
-		 * a TRX remains locked.
-		 */
-		/* Patch ARFCN into radio attribute */
-		struct msgb *msgb = nanobts_attr_radio_get(trx->bts, trx);
-		abis_nm_set_radio_attr(trx, msgb->data, msgb->len);
-		msgb_free(msgb);
-		abis_nm_chg_adm_state(trx->bts, foh->obj_class,
-				      trx->bts->bts_nr, trx->nr, 0xff,
-				      trx->mo.nm_state.administrative);
+		osmo_fsm_inst_dispatch(trx->mo.fi, NM_EV_SW_ACT_REP, NULL);
 		break;
-		}
 	}
 	return 0;
 }
@@ -325,6 +311,11 @@ static void nm_rx_opstart_ack(struct msgb *oml_msg)
 	case NM_OC_BTS:
 		osmo_fsm_inst_dispatch(bts->mo.fi, NM_EV_OPSTART_ACK, NULL);
 		break;
+	case NM_OC_RADIO_CARRIER:
+		if (!(trx = gsm_bts_trx_num(bts, foh->obj_inst.trx_nr)))
+			return;
+		osmo_fsm_inst_dispatch(trx->mo.fi, NM_EV_OPSTART_ACK, NULL);
+		break;
 	case NM_OC_BASEB_TRANSC:
 		if (!(trx = gsm_bts_trx_num(bts, foh->obj_inst.trx_nr)))
 			return;
@@ -351,6 +342,11 @@ static void nm_rx_opstart_nack(struct msgb *oml_msg)
 		break;
 	case NM_OC_BTS:
 		osmo_fsm_inst_dispatch(bts->mo.fi, NM_EV_OPSTART_ACK, NULL);
+		break;
+	case NM_OC_RADIO_CARRIER:
+		if (!(trx = gsm_bts_trx_num(bts, foh->obj_inst.trx_nr)))
+			return;
+		osmo_fsm_inst_dispatch(trx->mo.fi, NM_EV_OPSTART_NACK, NULL);
 		break;
 	case NM_OC_BASEB_TRANSC:
 		if (!(trx = gsm_bts_trx_num(bts, foh->obj_inst.trx_nr)))
@@ -383,12 +379,11 @@ static void nm_rx_set_radio_attr_ack(struct msgb *oml_msg)
 	struct gsm_bts *bts = sign_link->trx->bts;
 	struct gsm_bts_trx *trx = gsm_bts_trx_num(bts, foh->obj_inst.trx_nr);
 
-	if (foh->obj_class != NM_OC_RADIO_CARRIER) {
+	if (!trx || foh->obj_class != NM_OC_RADIO_CARRIER) {
 		LOG_TRX(trx, DNM, LOGL_ERROR, "Set Radio Carrier Attr Ack received on non Radio Carrier object!\n");
 		return;
 	}
-	abis_nm_opstart(trx->bts, foh->obj_class, trx->bts->bts_nr,
-			trx->nr, 0xff);
+	osmo_fsm_inst_dispatch(trx->mo.fi, NM_EV_SET_ATTR_ACK, NULL);
 }
 
 /* Callback function to be called every time we receive a signal from NM */
@@ -497,6 +492,7 @@ void ipaccess_drop_oml(struct gsm_bts *bts, const char *reason)
 	llist_for_each_entry(trx, &bts->trx_list, list) {
 		ipaccess_drop_rsl(trx, "OML link drop");
 		osmo_fsm_inst_dispatch(trx->bb_transc.mo.fi, NM_EV_OML_DOWN, NULL);
+		osmo_fsm_inst_dispatch(trx->mo.fi, NM_EV_OML_DOWN, NULL);
 	}
 
 	osmo_fsm_inst_dispatch(bts->site_mgr.mo.fi, NM_EV_OML_DOWN, NULL);

@@ -29,5 +29,6 @@ const struct value_string nm_fsm_event_names[] = {
 	{ NM_EV_OPSTART_ACK, "OPSTART_ACK" },
 	{ NM_EV_OPSTART_NACK, "OPSTART_NACK" },
 	{ NM_EV_OML_DOWN, "OML_DOWN" },
+	{ NM_EV_FORCE_LOCK, "FORCE_LOCK_CHG" },
 	{ 0, NULL }
 };

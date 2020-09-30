@@ -722,7 +722,7 @@ static void config_write_trx_single(struct vty *vty, struct gsm_bts_trx *trx)
 		vty_out(vty, "   description %s%s", trx->description,
 			VTY_NEWLINE);
 	vty_out(vty, "   rf_locked %u%s",
-		trx->mo.nm_state.administrative == NM_STATE_LOCKED ? 1 : 0,
+		trx->mo.force_rf_lock ? 1 : 0,
 		VTY_NEWLINE);
 	vty_out(vty, "   arfcn %u%s", trx->arfcn, VTY_NEWLINE);
 	vty_out(vty, "   nominal power %u%s", trx->nominal_power, VTY_NEWLINE);

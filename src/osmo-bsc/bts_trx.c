@@ -38,6 +38,10 @@ static int gsm_bts_trx_talloc_destructor(struct gsm_bts_trx *trx)
 		osmo_fsm_inst_free(trx->bb_transc.mo.fi);
 		trx->bb_transc.mo.fi = NULL;
 	}
+	if (trx->mo.fi) {
+		osmo_fsm_inst_free(trx->mo.fi);
+		trx->mo.fi = NULL;
+	}
 	return 0;
 }
 
@@ -54,6 +58,9 @@ struct gsm_bts_trx *gsm_bts_trx_alloc(struct gsm_bts *bts)
 	trx->bts = bts;
 	trx->nr = bts->num_trx++;
 
+	trx->mo.fi = osmo_fsm_inst_alloc(&nm_rcarrier_fsm, trx, trx,
+					 LOGL_INFO, NULL);
+	osmo_fsm_inst_update_id_f(trx->mo.fi, "bts%d-trx%d", bts->nr, trx->nr);
 	gsm_mo_init(&trx->mo, bts, NM_OC_RADIO_CARRIER,
 		    bts->nr, trx->nr, 0xff);
 
@@ -164,10 +171,9 @@ void gsm_trx_lock_rf(struct gsm_bts_trx *trx, bool locked, const char *reason)
 {
 	uint8_t new_state = locked ? NM_STATE_LOCKED : NM_STATE_UNLOCKED;
 
-
+	/* State will be sent when BTS connects. */
 	if (!trx->bts || !trx->bts->oml_link) {
-		/* Set initial state which will be sent when BTS connects. */
-		trx->mo.nm_state.administrative = new_state;
+		trx->mo.force_rf_lock = locked;
 		return;
 	}
 
@@ -175,9 +181,7 @@ void gsm_trx_lock_rf(struct gsm_bts_trx *trx, bool locked, const char *reason)
 	     get_value_string(abis_nm_adm_state_names, trx->mo.nm_state.administrative),
 	     get_value_string(abis_nm_adm_state_names, new_state), reason);
 
-	abis_nm_chg_adm_state(trx->bts, NM_OC_RADIO_CARRIER,
-			      trx->bts->bts_nr, trx->nr, 0xff,
-			      new_state);
+	osmo_fsm_inst_dispatch(trx->mo.fi, NM_EV_FORCE_LOCK, (void*)(intptr_t)locked);
 }
 
 bool trx_is_usable(const struct gsm_bts_trx *trx)

@@ -34,6 +34,7 @@ enum nm_fsm_events {
 	NM_EV_OPSTART_ACK,
 	NM_EV_OPSTART_NACK,
 	NM_EV_OML_DOWN,
+	NM_EV_FORCE_LOCK, /* Only supported by RadioCarrier so far */
 };
 extern const struct value_string nm_fsm_event_names[];
 
@@ -63,3 +64,12 @@ enum nm_bb_transc_op_fsm_states {
 	NM_BB_TRANSC_ST_OP_ENABLED,
 };
 extern struct osmo_fsm nm_bb_transc_fsm;
+
+/* Radio Carrier */
+enum nm_rcarrier_op_fsm_states {
+	NM_RCARRIER_ST_OP_DISABLED_NOTINSTALLED,
+	NM_RCARRIER_ST_OP_DISABLED_DEPENDENCY,
+	NM_RCARRIER_ST_OP_DISABLED_OFFLINE,
+	NM_RCARRIER_ST_OP_ENABLED,
+};
+extern struct osmo_fsm nm_rcarrier_fsm;

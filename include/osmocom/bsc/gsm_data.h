@@ -398,6 +398,7 @@ struct gsm_abis_mo {
 	bool adm_unlock_sent;
 	bool set_attr_sent;
 	bool set_attr_ack_received;
+	bool force_rf_lock;
 };
 
 /* Ericsson OM2000 Managed Object */
