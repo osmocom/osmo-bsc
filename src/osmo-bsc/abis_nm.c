@@ -826,6 +826,14 @@ static int abis_nm_rx_opstart_ack(struct msgb *mb)
 	return 0;
 }
 
+static int abis_nm_rx_opstart_nack(struct msgb *mb)
+{
+	struct abis_om_fom_hdr *foh = msgb_l3(mb);
+	DEBUGPFOH(DNM, foh, "Opstart NACK\n");
+	osmo_signal_dispatch(SS_NM, S_NM_OPSTART_NACK, mb);
+	return 0;
+}
+
 static int abis_nm_rx_set_radio_attr_ack(struct msgb *mb)
 {
 	struct abis_om_fom_hdr *foh = msgb_l3(mb);
@@ -947,7 +955,10 @@ static int abis_nm_rcvmsg_fom(struct msgb *mb)
 		ret = abis_nm_rx_lmt_event(mb);
 		break;
 	case NM_MT_OPSTART_ACK:
-		abis_nm_rx_opstart_ack(mb);
+		ret = abis_nm_rx_opstart_ack(mb);
+		break;
+	case NM_MT_OPSTART_NACK:
+		ret = abis_nm_rx_opstart_nack(mb);
 		break;
 	case NM_MT_SET_CHAN_ATTR_ACK:
 		DEBUGPFOH(DNM, foh, "Set Channel Attributes ACK\n");

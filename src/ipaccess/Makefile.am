@@ -54,6 +54,8 @@ ipaccess_config_LDADD = \
 	$(top_builddir)/src/osmo-bsc/bts_ipaccess_nanobts_omlattr.o \
 	$(top_builddir)/src/osmo-bsc/gsm_data.o \
 	$(top_builddir)/src/osmo-bsc/net_init.o \
+	$(top_builddir)/src/osmo-bsc/nm_common_fsm.o \
+	$(top_builddir)/src/osmo-bsc/nm_bts_sm_fsm.o \
 	$(OSMO_LIBS) \
 	$(NULL)
 
@@ -68,5 +70,7 @@ ipaccess_proxy_LDADD = \
 	$(top_builddir)/src/osmo-bsc/bts.o \
 	$(top_builddir)/src/osmo-bsc/bts_trx.o \
 	$(top_builddir)/src/osmo-bsc/gsm_data.o \
+	$(top_builddir)/src/osmo-bsc/nm_common_fsm.o \
+	$(top_builddir)/src/osmo-bsc/nm_bts_sm_fsm.o \
 	$(OSMO_LIBS) \
 	$(NULL)

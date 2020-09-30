@@ -361,6 +361,11 @@ struct gsm_bts_model {
 	uint8_t _features_data[MAX_BTS_FEATURES/8];
 };
 
+/* BTS Site Manager */
+struct gsm_bts_sm {
+	struct gsm_abis_mo mo;
+};
+
 /* One BTS */
 struct gsm_bts {
 	/* list header in net->bts_list */
@@ -425,9 +430,7 @@ struct gsm_bts {
 	/* CCCH is on C0 */
 	struct gsm_bts_trx *c0;
 
-	struct {
-		struct gsm_abis_mo mo;
-	} site_mgr;
+	struct gsm_bts_sm site_mgr;
 
 	/* bitmask of all SI that are present/valid in si_buf */
 	uint32_t si_valid;
@@ -723,6 +726,10 @@ static inline const struct osmo_location_area_id *bts_lai(struct gsm_bts *bts)
 		.lac = bts->location_area_code,
 	};
 	return &lai;
+}
+
+static inline struct gsm_bts *gsm_bts_sm_get_bts(struct gsm_bts_sm *site_mgr) {
+	return (struct gsm_bts *)container_of(site_mgr, struct gsm_bts, site_mgr);
 }
 
 struct gsm_bts *gsm_bts_alloc(struct gsm_network *net, uint8_t bts_num);

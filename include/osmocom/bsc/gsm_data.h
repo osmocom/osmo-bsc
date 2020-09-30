@@ -393,6 +393,8 @@ struct gsm_abis_mo {
 	struct gsm_nm_state nm_state;
 	struct tlv_parsed *nm_attr;
 	struct gsm_bts *bts;
+	struct osmo_fsm_inst *fi;
+	bool opstart_sent;
 };
 
 /* Ericsson OM2000 Managed Object */

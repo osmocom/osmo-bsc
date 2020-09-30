@@ -23,6 +23,7 @@
 #include <osmocom/bsc/gsm_data.h>
 #include <osmocom/bsc/bts.h>
 #include <osmocom/bsc/debug.h>
+#include <osmocom/bsc/nm_common_fsm.h>
 
 const struct value_string bts_attribute_names[] = {
 	OSMO_VALUE_STRING(BTS_TYPE_VARIANT),
@@ -146,6 +147,15 @@ static const struct gprs_rlc_cfg rlc_cfg_default = {
 	.initial_mcs = 6,
 };
 
+static int gsm_bts_talloc_destructor(struct gsm_bts *bts)
+{
+	if (bts->site_mgr.mo.fi) {
+		osmo_fsm_inst_free(bts->site_mgr.mo.fi);
+		bts->site_mgr.mo.fi = NULL;
+	}
+	return 0;
+}
+
 /* Initialize those parts that don't require osmo-bsc specific dependencies.
  * This part is shared among the thin programs in osmo-bsc/src/utils/.
  * osmo-bsc requires further initialization that pulls in more dependencies (see
@@ -159,6 +169,8 @@ struct gsm_bts *gsm_bts_alloc(struct gsm_network *net, uint8_t bts_num)
 	if (!bts)
 		return NULL;
 
+	talloc_set_destructor(bts, gsm_bts_talloc_destructor);
+
 	bts->nr = bts_num;
 	bts->num_trx = 0;
 	INIT_LLIST_HEAD(&bts->trx_list);
@@ -166,10 +178,12 @@ struct gsm_bts *gsm_bts_alloc(struct gsm_network *net, uint8_t bts_num)
 
 	bts->ms_max_power = 15;	/* dBm */
 
-	gsm_mo_init(&bts->mo, bts, NM_OC_BTS,
-			bts->nr, 0xff, 0xff);
-	gsm_mo_init(&bts->site_mgr.mo, bts, NM_OC_SITE_MANAGER,
-			0xff, 0xff, 0xff);
+	bts->site_mgr.mo.fi = osmo_fsm_inst_alloc(&nm_bts_sm_fsm, bts, &bts->site_mgr,
+						  LOGL_INFO, NULL);
+	osmo_fsm_inst_update_id_f(bts->site_mgr.mo.fi, "bts_sm");
+	gsm_mo_init(&bts->site_mgr.mo, bts, NM_OC_SITE_MANAGER, 0xff, 0xff, 0xff);
+
+	gsm_mo_init(&bts->mo, bts, NM_OC_BTS, bts->nr, 0xff, 0xff);
 
 	for (i = 0; i < ARRAY_SIZE(bts->gprs.nsvc); i++) {
 		bts->gprs.nsvc[i].bts = bts;

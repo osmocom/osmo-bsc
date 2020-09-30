@@ -46,6 +46,7 @@
 #include <osmocom/bsc/paging.h>
 #include <osmocom/bsc/timeslot_fsm.h>
 #include <osmocom/bsc/bts.h>
+#include <osmocom/bsc/nm_common_fsm.h>
 
 static int bts_model_nanobts_start(struct gsm_network *net);
 static void bts_model_nanobts_e1line_bind_ops(struct e1inp_line *line);
@@ -127,6 +128,7 @@ static int nm_statechg_event(int evt, struct nm_statechg_signal_data *nsd)
 	void *obj = nsd->obj;
 	struct gsm_nm_state *new_state = nsd->new_state;
 
+	struct gsm_bts_sm *bts_sm;
 	struct gsm_bts *bts;
 	struct gsm_bts_trx *trx;
 	struct gsm_bts_trx_ts *ts;
@@ -146,12 +148,8 @@ static int nm_statechg_event(int evt, struct nm_statechg_signal_data *nsd)
 
 	switch (obj_class) {
 	case NM_OC_SITE_MANAGER:
-		bts = container_of(obj, struct gsm_bts, site_mgr);
-		if ((new_state->operational == NM_OPSTATE_ENABLED &&
-		     new_state->availability == NM_AVSTATE_OK) ||
-		    (new_state->operational == NM_OPSTATE_DISABLED &&
-		     new_state->availability == NM_AVSTATE_OFF_LINE))
-			abis_nm_opstart(bts, obj_class, 0xff, 0xff, 0xff);
+		bts_sm = obj;
+		osmo_fsm_inst_dispatch(bts_sm->mo.fi, NM_EV_STATE_CHG_REP, nsd);
 		break;
 	case NM_OC_BTS:
 		bts = obj;
@@ -258,16 +256,18 @@ static int sw_activ_rep(struct msgb *mb)
 	struct abis_om_fom_hdr *foh = msgb_l3(mb);
 	struct e1inp_sign_link *sign_link = mb->dst;
 	struct gsm_bts *bts = sign_link->trx->bts;
-	struct gsm_bts_trx *trx = gsm_bts_trx_num(bts, foh->obj_inst.trx_nr);
+	struct gsm_bts_trx *trx;
 
-	if (!trx)
-		return -EINVAL;
-
-	if (!is_ipaccess_bts(trx->bts))
+	if (!is_ipaccess_bts(bts))
 		return 0;
 
 	switch (foh->obj_class) {
+	case NM_OC_SITE_MANAGER:
+		osmo_fsm_inst_dispatch(bts->site_mgr.mo.fi, NM_EV_SW_ACT_REP, NULL);
+		break;
 	case NM_OC_BASEB_TRANSC:
+		if (!(trx = gsm_bts_trx_num(bts, foh->obj_inst.trx_nr)))
+			return -EINVAL;
 		abis_nm_chg_adm_state(trx->bts, foh->obj_class,
 				      trx->bts->bts_nr, trx->nr, 0xff,
 				      NM_STATE_UNLOCKED);
@@ -278,6 +278,8 @@ static int sw_activ_rep(struct msgb *mb)
 					     3003, trx->rsl_tei);
 		break;
 	case NM_OC_RADIO_CARRIER: {
+		if (!(trx = gsm_bts_trx_num(bts, foh->obj_inst.trx_nr)))
+			return -EINVAL;
 		/*
 		 * Locking the radio carrier will make it go
 		 * offline again and we would come here. The
@@ -318,9 +320,28 @@ static void nm_rx_opstart_ack_chan(struct msgb *oml_msg)
 static void nm_rx_opstart_ack(struct msgb *oml_msg)
 {
 	struct abis_om_fom_hdr *foh = msgb_l3(oml_msg);
+	struct e1inp_sign_link *sign_link = oml_msg->dst;
+	struct gsm_bts *bts = sign_link->trx->bts;
 	switch (foh->obj_class) {
+	case NM_OC_SITE_MANAGER:
+		osmo_fsm_inst_dispatch(bts->site_mgr.mo.fi, NM_EV_OPSTART_ACK, NULL);
+		break;
 	case NM_OC_CHANNEL:
 		nm_rx_opstart_ack_chan(oml_msg);
+		break;
+	default:
+		break;
+	}
+}
+
+static void nm_rx_opstart_nack(struct msgb *oml_msg)
+{
+	struct abis_om_fom_hdr *foh = msgb_l3(oml_msg);
+	struct e1inp_sign_link *sign_link = oml_msg->dst;
+	struct gsm_bts *bts = sign_link->trx->bts;
+	switch (foh->obj_class) {
+	case NM_OC_SITE_MANAGER:
+		osmo_fsm_inst_dispatch(bts->site_mgr.mo.fi, NM_EV_OPSTART_NACK, NULL);
 		break;
 	default:
 		break;
@@ -357,6 +378,9 @@ static int bts_ipa_nm_sig_cb(unsigned int subsys, unsigned int signal,
 		return nm_statechg_event(signal, signal_data);
 	case S_NM_OPSTART_ACK:
 		nm_rx_opstart_ack(signal_data);
+		return 0;
+	case S_NM_OPSTART_NACK:
+		nm_rx_opstart_nack(signal_data);
 		return 0;
 	case S_NM_SET_RADIO_ATTR_ACK:
 		nm_rx_set_radio_attr_ack(signal_data);
@@ -442,6 +466,7 @@ void ipaccess_drop_oml(struct gsm_bts *bts, const char *reason)
 	llist_for_each_entry(trx, &bts->trx_list, list)
 		ipaccess_drop_rsl(trx, "OML link drop");
 
+	osmo_fsm_inst_dispatch(bts->site_mgr.mo.fi, NM_EV_OML_DOWN, NULL);
 	gsm_bts_all_ts_dispatch(bts, TS_EV_OML_DOWN, NULL);
 
 	bts->ip_access.flags = 0;

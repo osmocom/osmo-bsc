@@ -45,6 +45,8 @@ bsc_test_LDADD = \
 	$(top_builddir)/src/osmo-bsc/handover_logic.o \
 	$(top_builddir)/src/osmo-bsc/neighbor_ident.o \
 	$(top_builddir)/src/osmo-bsc/net_init.o \
+	$(top_builddir)/src/osmo-bsc/nm_common_fsm.o \
+	$(top_builddir)/src/osmo-bsc/nm_bts_sm_fsm.o \
 	$(LIBOSMOCORE_LIBS) \
 	$(LIBOSMOGSM_LIBS) \
 	$(LIBOSMOVTY_LIBS) \
