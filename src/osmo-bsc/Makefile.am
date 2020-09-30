@@ -80,6 +80,7 @@ osmo_bsc_SOURCES = \
 	nm_bb_transc_fsm.c \
 	nm_bts_sm_fsm.c \
 	nm_bts_fsm.c \
+	nm_channel_fsm.c \
 	nm_rcarrier_fsm.c \
 	gsm_08_08.c \
 	osmo_bsc_bssap.c \

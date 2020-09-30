@@ -842,6 +842,14 @@ static int abis_nm_rx_set_radio_attr_ack(struct msgb *mb)
 	return 0;
 }
 
+static int abis_nm_rx_set_channel_attr_ack(struct msgb *mb)
+{
+	struct abis_om_fom_hdr *foh = msgb_l3(mb);
+	DEBUGPFOH(DNM, foh, "Set Channel Attributes ACK\n");
+	osmo_signal_dispatch(SS_NM, S_NM_SET_CHAN_ATTR_ACK, mb);
+	return 0;
+}
+
 static int abis_nm_rx_set_bts_attr_ack(struct msgb *mb)
 {
 	struct abis_om_fom_hdr *foh = msgb_l3(mb);
@@ -969,7 +977,7 @@ static int abis_nm_rcvmsg_fom(struct msgb *mb)
 		ret = abis_nm_rx_opstart_nack(mb);
 		break;
 	case NM_MT_SET_CHAN_ATTR_ACK:
-		DEBUGPFOH(DNM, foh, "Set Channel Attributes ACK\n");
+		abis_nm_rx_set_channel_attr_ack(mb);
 		break;
 	case NM_MT_SET_RADIO_ATTR_ACK:
 		abis_nm_rx_set_radio_attr_ack(mb);

@@ -73,3 +73,12 @@ enum nm_rcarrier_op_fsm_states {
 	NM_RCARRIER_ST_OP_ENABLED,
 };
 extern struct osmo_fsm nm_rcarrier_fsm;
+
+/* Radio Channel */
+enum nm_chan_op_fsm_states {
+	NM_CHAN_ST_OP_DISABLED_NOTINSTALLED,
+	NM_CHAN_ST_OP_DISABLED_DEPENDENCY,
+	NM_CHAN_ST_OP_DISABLED_OFFLINE,
+	NM_CHAN_ST_OP_ENABLED,
+};
+extern struct osmo_fsm nm_chan_fsm;

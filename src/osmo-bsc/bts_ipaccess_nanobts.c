@@ -147,6 +147,7 @@ static int nm_statechg_event(int evt, struct nm_statechg_signal_data *nsd)
 	if (obj_class != NM_OC_BTS &&
 	    obj_class != NM_OC_BASEB_TRANSC &&
 	    obj_class != NM_OC_RADIO_CARRIER &&
+	    obj_class != NM_OC_CHANNEL &&
 	    evt != S_NM_STATECHG_OPER)
 		return 0;
 
@@ -166,20 +167,7 @@ static int nm_statechg_event(int evt, struct nm_statechg_signal_data *nsd)
 	case NM_OC_CHANNEL:
 		ts = obj;
 		trx = ts->trx;
-		if (new_state->operational == NM_OPSTATE_DISABLED &&
-		    new_state->availability == NM_AVSTATE_DEPENDENCY) {
-			enum abis_nm_chan_comb ccomb =
-						abis_nm_chcomb4pchan(ts->pchan_from_config);
-			if (abis_nm_set_channel_attr(ts, ccomb) == -EINVAL) {
-				ipaccess_drop_oml_deferred(trx->bts);
-				return -1;
-			}
-			abis_nm_chg_adm_state(trx->bts, obj_class,
-					      trx->bts->bts_nr, trx->nr, ts->nr,
-					      NM_STATE_UNLOCKED);
-			abis_nm_opstart(trx->bts, obj_class,
-					trx->bts->bts_nr, trx->nr, ts->nr);
-		}
+		osmo_fsm_inst_dispatch(ts->mo.fi, NM_EV_STATE_CHG_REP, nsd);
 		break;
 	case NM_OC_RADIO_CARRIER:
 		trx = obj;
@@ -257,6 +245,7 @@ static int sw_activ_rep(struct msgb *mb)
 	struct e1inp_sign_link *sign_link = mb->dst;
 	struct gsm_bts *bts = sign_link->trx->bts;
 	struct gsm_bts_trx *trx;
+	struct gsm_bts_trx_ts *ts;
 
 	if (!is_ipaccess_bts(bts))
 		return 0;
@@ -278,6 +267,11 @@ static int sw_activ_rep(struct msgb *mb)
 			return -EINVAL;
 		osmo_fsm_inst_dispatch(trx->mo.fi, NM_EV_SW_ACT_REP, NULL);
 		break;
+	case NM_OC_CHANNEL:
+		if (!(ts = abis_nm_get_ts(mb)))
+			return -EINVAL;
+		osmo_fsm_inst_dispatch(ts->mo.fi, NM_EV_SW_ACT_REP, NULL);
+		break;
 	}
 	return 0;
 }
@@ -293,7 +287,7 @@ static void nm_rx_opstart_ack_chan(struct msgb *oml_msg)
 		LOG_TS(ts, LOGL_ERROR, "Channel OPSTART ACK for uninitialized TS\n");
 		return;
 	}
-
+	osmo_fsm_inst_dispatch(ts->mo.fi, NM_EV_OPSTART_ACK, NULL);
 	osmo_fsm_inst_dispatch(ts->fi, TS_EV_OML_READY, NULL);
 }
 
@@ -335,6 +329,7 @@ static void nm_rx_opstart_nack(struct msgb *oml_msg)
 	struct e1inp_sign_link *sign_link = oml_msg->dst;
 	struct gsm_bts *bts = sign_link->trx->bts;
 	struct gsm_bts_trx *trx;
+	struct gsm_bts_trx_ts *ts;
 
 	switch (foh->obj_class) {
 	case NM_OC_SITE_MANAGER:
@@ -352,6 +347,11 @@ static void nm_rx_opstart_nack(struct msgb *oml_msg)
 		if (!(trx = gsm_bts_trx_num(bts, foh->obj_inst.trx_nr)))
 			return;
 		osmo_fsm_inst_dispatch(trx->bb_transc.mo.fi, NM_EV_OPSTART_NACK, NULL);
+		break;
+	case NM_OC_CHANNEL:
+		if (!(ts = abis_nm_get_ts(oml_msg)))
+			return;
+		osmo_fsm_inst_dispatch(ts->mo.fi, NM_EV_OPSTART_NACK, NULL);
 		break;
 	default:
 		break;
@@ -386,6 +386,18 @@ static void nm_rx_set_radio_attr_ack(struct msgb *oml_msg)
 	osmo_fsm_inst_dispatch(trx->mo.fi, NM_EV_SET_ATTR_ACK, NULL);
 }
 
+static void nm_rx_set_chan_attr_ack(struct msgb *oml_msg)
+{
+	struct abis_om_fom_hdr *foh = msgb_l3(oml_msg);
+	struct gsm_bts_trx_ts *ts = abis_nm_get_ts(oml_msg);
+
+	if (!ts || foh->obj_class != NM_OC_CHANNEL) {
+		LOG_TS(ts, LOGL_ERROR, "Set Channel Attr Ack received on non Radio Channel object!\n");
+		return;
+	}
+	osmo_fsm_inst_dispatch(ts->mo.fi, NM_EV_SET_ATTR_ACK, NULL);
+}
+
 /* Callback function to be called every time we receive a signal from NM */
 static int bts_ipa_nm_sig_cb(unsigned int subsys, unsigned int signal,
 		     void *handler_data, void *signal_data)
@@ -410,6 +422,9 @@ static int bts_ipa_nm_sig_cb(unsigned int subsys, unsigned int signal,
 		return 0;
 	case S_NM_SET_RADIO_ATTR_ACK:
 		nm_rx_set_radio_attr_ack(signal_data);
+		return 0;
+	case S_NM_SET_CHAN_ATTR_ACK:
+		nm_rx_set_chan_attr_ack(signal_data);
 		return 0;
 	default:
 		break;
@@ -475,6 +490,8 @@ void ipaccess_drop_oml(struct gsm_bts *bts, const char *reason)
 {
 	struct gsm_bts *rdep_bts;
 	struct gsm_bts_trx *trx;
+	struct gsm_bts_trx_ts *ts ;
+	uint8_t tn;
 
 	/* First of all, remove deferred drop if enabled */
 	osmo_timer_del(&bts->oml_drop_link_timer);
@@ -493,6 +510,10 @@ void ipaccess_drop_oml(struct gsm_bts *bts, const char *reason)
 		ipaccess_drop_rsl(trx, "OML link drop");
 		osmo_fsm_inst_dispatch(trx->bb_transc.mo.fi, NM_EV_OML_DOWN, NULL);
 		osmo_fsm_inst_dispatch(trx->mo.fi, NM_EV_OML_DOWN, NULL);
+		for (tn = 0; tn < TRX_NR_TS; tn++) {
+			ts = &trx->ts[tn];
+			osmo_fsm_inst_dispatch(ts->mo.fi, NM_EV_OML_DOWN, NULL);
+		}
 	}
 
 	osmo_fsm_inst_dispatch(bts->site_mgr.mo.fi, NM_EV_OML_DOWN, NULL);
