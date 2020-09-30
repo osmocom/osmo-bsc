@@ -759,6 +759,9 @@ static int abis_nm_rx_chg_adm_state_ack(struct msgb *mb)
 
 	adm_state = *TLVP_VAL(&tp, NM_ATT_ADM_STATE);
 
+	DEBUGPFOH(DNM, foh, "Rx Change Administrative State ACK %s\n",
+		  get_value_string(abis_nm_adm_state_names, adm_state));
+
 	return update_admstate(sign_link->trx->bts, foh->obj_class, &foh->obj_inst, adm_state);
 }
 
