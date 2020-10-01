@@ -44,11 +44,6 @@ static struct llist_head *msc_list;
 #define DEFAULT_ASP_LOCAL_IP "localhost"
 #define DEFAULT_ASP_REMOTE_IP "localhost"
 
-/* The SCCP stack will not assign connection IDs to us automatically, we
- * will do this ourselves using a counter variable, that counts one up
- * for every new connection */
-static uint32_t conn_id_counter;
-
 /* Helper function to Check if the given connection id is already assigned */
 static struct gsm_subscriber_connection *get_bsc_conn_by_conn_id(int conn_id)
 {
@@ -74,24 +69,6 @@ struct gsm_subscriber_connection *bsc_conn_by_bsub(struct bsc_subscr *bsub)
 			return conn;
 	}
 	return NULL;
-}
-
-/* Pick a free connection id */
-static int pick_free_conn_id(const struct bsc_msc_data *msc)
-{
-	int conn_id = conn_id_counter;
-	int i;
-
-	for (i = 0; i < 0xFFFFFF; i++) {
-		conn_id++;
-		conn_id &= 0xFFFFFF;
-		if (get_bsc_conn_by_conn_id(conn_id) == false) {
-			conn_id_counter = conn_id;
-			return conn_id;
-		}
-	}
-
-	return -1;
 }
 
 /* Patch regular BSSMAP RESET to add extra T to announce Osmux support (osmocom extension) */
@@ -353,7 +330,7 @@ int osmo_bsc_sigtran_open_conn(struct gsm_subscriber_connection *conn, struct ms
 		return -EINVAL;
 	}
 
-	conn->sccp.conn_id = conn_id = pick_free_conn_id(msc);
+	conn->sccp.conn_id = conn_id = bsc_sccp_inst_next_conn_id(conn->sccp.msc->a.sccp);
 	if (conn->sccp.conn_id < 0) {
 		LOGP(DMSC, LOGL_ERROR, "Unable to allocate SCCP Connection ID\n");
 		return -1;

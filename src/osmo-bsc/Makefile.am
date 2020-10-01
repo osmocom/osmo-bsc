@@ -40,6 +40,7 @@ osmo_bsc_SOURCES = \
 	bsc_init.c \
 	bsc_rf_ctrl.c \
 	bsc_rll.c \
+	bsc_sccp.c \
 	bsc_subscr_conn_fsm.c \
 	bsc_subscriber.c \
 	bsc_vty.c \
