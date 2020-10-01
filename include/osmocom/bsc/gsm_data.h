@@ -51,6 +51,7 @@ struct gsm_bts_trx;
 struct bsc_subscr;
 struct gprs_ra_id;
 struct handover;
+struct osmo_sccp_instance;
 
 #define OBSC_LINKID_CB(__msgb)	(__msgb)->cb[3]
 
@@ -1244,5 +1245,7 @@ enum gsm_phys_chan_config gsm_pchan_by_lchan_type(enum gsm_chan_t type);
 
 enum gsm48_rr_cause bsc_gsm48_rr_cause_from_gsm0808_cause(enum gsm0808_cause c);
 enum gsm48_rr_cause bsc_gsm48_rr_cause_from_rsl_cause(uint8_t c);
+
+int bsc_sccp_inst_next_conn_id(struct osmo_sccp_instance *sccp);
 
 #endif /* _GSM_DATA_H */
