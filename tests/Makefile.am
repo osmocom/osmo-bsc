@@ -33,7 +33,13 @@ EXTRA_DIST = \
 	$(TESTSUITE) \
 	vty_test_runner.py \
 	ctrl_test_runner.py \
+	cbc.vty \
+	gprs_bvci_default.vty \
 	handover_cfg.vty \
+	neighbor_ident.vty \
+	nri_cfg.vty \
+	osmo-bsc.vty \
+	timer.vty \
 	$(NULL)
 
 TESTSUITE = $(srcdir)/testsuite
