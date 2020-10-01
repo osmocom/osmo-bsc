@@ -1,0 +1,40 @@
+digraph G {
+rankdir=TB
+labelloc=t; label="Location Services FSMs in OsmoBSC"
+
+	MSC [label="MSC\nvia\nA interface",shape=box3d]
+	SMLC [label="SMLC\nvia\nLb interface",shape=box3d]
+	SMLC2 [label="SMLC\nvia\nLb interface",shape=box3d]
+	Paging [shape=box3d]
+
+	subgraph cluster_LCS_LOC_REQ_FSM {
+		label="lcs_loc_req_fsm"
+		INIT -> WAIT_LOCATION_RESPONSE
+		WAIT_LOCATION_RESPONSE -> BSSLAP_TA_REQ_ONGOING -> GOT_LOCATION_RESPONSE -> terminate
+		WAIT_LOCATION_RESPONSE -> GOT_LOCATION_RESPONSE
+		terminate [shape=octagon]
+	}
+
+	MSC -> INIT [label="BSSAP Perform\nLocation Request",style=dashed]
+	WAIT_LOCATION_RESPONSE -> SMLC [label="BSSMAP-LE Perform\nLocation Req",style=dashed]
+	SMLC -> WAIT_LOCATION_RESPONSE [label="BSSMAP-LE Perform\nLocation Resp",style=dashed]
+	GOT_LOCATION_RESPONSE -> MSC [label="BSSAP Perform\nLocation Response",style=dashed]
+
+	subgraph cluster_LCS_TA_REQ_FSM {
+		label="lcs_ta_req_fsm"
+		INIT2 [label="INIT"]
+		INIT2 -> WAIT_TA [label="MS idle"]
+		WAIT_TA -> GOT_TA
+		INIT2 -> GOT_TA [label="MS active"]
+		GOT_TA -> terminate2
+		terminate2 [label="terminate",shape=octagon]
+	}
+
+	SMLC2 -> INIT2 [label="TA Request",style=dashed]
+	WAIT_TA -> Paging [label="launch Paging",style=dashed]
+	Paging -> WAIT_TA [label="EV_TA",style=dashed]
+	GOT_TA -> SMLC2 [label="TA Response",style=dashed]
+
+	WAIT_TA -> BSSLAP_TA_REQ_ONGOING [label="EV_TA_REQ_START",style=dashed]
+	terminate2 -> BSSLAP_TA_REQ_ONGOING [label="EV_TA_REQ_END",style=dashed,constraint=false]
+}
