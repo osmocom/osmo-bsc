@@ -41,7 +41,6 @@ struct gsm_bts_trx *gsm_bts_trx_alloc(struct gsm_bts *bts)
 
 	trx->bts = bts;
 	trx->nr = bts->num_trx++;
-	trx->mo.nm_state.administrative = NM_STATE_UNLOCKED;
 
 	gsm_mo_init(&trx->mo, bts, NM_OC_RADIO_CARRIER,
 		    bts->nr, trx->nr, 0xff);
