@@ -27,6 +27,7 @@ dot: \
 	$(builddir)/handover-inter-bsc-out-fsm.png \
 	$(builddir)/handover-inter-bsc-in-fsm.png \
 	$(builddir)/mscpool-attach.png \
+	$(builddir)/location_services_fsm_bsc.png \
 	$(NULL)
 
 $(builddir)/%.png: $(srcdir)/%.msc
