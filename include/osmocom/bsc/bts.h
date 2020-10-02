@@ -364,6 +364,12 @@ struct gsm_bts_model {
 /* BTS Site Manager */
 struct gsm_bts_sm {
 	struct gsm_abis_mo mo;
+	/* nanoBTS and old versions of osmo-bts behaves this way due to
+	   broken FSMs not following TS 12.21: they never do
+	   Dependency->Offline transition, but they should be OPSTARTed
+	   nevertheless during Dependnecy state to work. This field is
+	   used by all dependent NM objects. */
+	bool peer_has_no_avstate_offline;
 };
 
 /* One BTS */

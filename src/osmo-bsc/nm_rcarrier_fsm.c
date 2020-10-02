@@ -123,7 +123,7 @@ static void st_op_disabled_dependency_on_enter(struct osmo_fsm_inst *fi, uint32_
 	 * version is found with the aboev estated bug, this code needs to be
 	 * enabled, similar to what we do in nm_bb_transc_fsm:
 	 */
-	/*if (trx->bts->type == GSM_BTS_TYPE_NANOBTS) {
+	/*if (trx->bts->site_mgr.peer_has_no_avstate_offline) {
 		nm_rcarrier_fsm_state_chg(fi, NM_RCARRIER_ST_OP_DISABLED_OFFLINE);
 		return;
 	}*/

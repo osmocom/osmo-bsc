@@ -125,10 +125,7 @@ static void st_op_disabled_dependency_on_enter(struct osmo_fsm_inst *fi, uint32_
 {
 	struct gsm_bts_trx_ts *ts = (struct gsm_bts_trx_ts *)fi->priv;
 
-	/* nanoBTS is broken, doesn't follow TS 12.21. Opstart MUST be sent
-	   during Dependency, so we simply move to OFFLINE state here to avoid
-	   duplicating code */
-	if (ts->trx->bts->type == GSM_BTS_TYPE_NANOBTS) {
+	if (ts->trx->bts->site_mgr.peer_has_no_avstate_offline) {
 		nm_chan_fsm_state_chg(fi, NM_CHAN_ST_OP_DISABLED_OFFLINE);
 		return;
 	}
@@ -209,9 +206,9 @@ static void st_op_disabled_offline(struct osmo_fsm_inst *fi, uint32_t event, voi
 			nm_chan_fsm_state_chg(fi, NM_CHAN_ST_OP_DISABLED_NOTINSTALLED);
 			return;
 		case NM_AVSTATE_DEPENDENCY:
-			/* There's no point in moving back to Dependency in nanoBTS, since it's broken
+			/* There's no point in moving back to Dependency, since it's broken
 			   and it acts actually as if it was in Offline state */
-			if (ts->trx->bts->type != GSM_BTS_TYPE_NANOBTS) {
+			if (!ts->trx->bts->site_mgr.peer_has_no_avstate_offline) {
 				nm_chan_fsm_state_chg(fi, NM_CHAN_ST_OP_DISABLED_DEPENDENCY);
 			} else {
 				/* Moreover, in nanoBTS we need to check here for tx

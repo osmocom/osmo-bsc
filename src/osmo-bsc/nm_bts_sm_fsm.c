@@ -46,7 +46,9 @@
 static void st_op_disabled_notinstalled_on_enter(struct osmo_fsm_inst *fi, uint32_t prev_state)
 {
 	struct gsm_bts_sm *site_mgr = (struct gsm_bts_sm *)fi->priv;
+	struct gsm_bts *bts = gsm_bts_sm_get_bts(site_mgr);
 
+	site_mgr->peer_has_no_avstate_offline = (bts->type == GSM_BTS_TYPE_NANOBTS);
 	site_mgr->mo.opstart_sent = false;
 }
 
@@ -73,7 +75,10 @@ static void st_op_disabled_notinstalled(struct osmo_fsm_inst *fi, uint32_t event
 			} else {
 				LOGPFSML(fi, LOGL_NOTICE, "Received BTS Site Mgr State Report Enabled "
 					 "without Opstart. You are probably using a nanoBTS but don't "
-					 "have your .cfg with 'type nanobts'\n");
+					 "have your .cfg with 'type nanobts'. Otherwise, you probably "
+					 "are using an old osmo-bts; automatically adjusting OML "
+					 "behavior to be backward-compatible.\n");
+				bts->site_mgr.peer_has_no_avstate_offline = true;
 			}
 			nm_bts_sm_fsm_state_chg(fi, NM_BTS_SM_ST_OP_ENABLED);
 			return;
