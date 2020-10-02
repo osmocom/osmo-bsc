@@ -258,12 +258,12 @@ class TestCtrlBSC(TestCtrlBase):
         self.assertEqual(r['mtype'], 'SET_REPLY')
         self.assertEqual(r['var'], 'bts.0.trx.0.max-power-reduction')
         self.assertEqual(r['value'], '22')
-        
+
         r = self.do_get('bts.0.trx.0.max-power-reduction')
         self.assertEqual(r['mtype'], 'GET_REPLY')
         self.assertEqual(r['var'], 'bts.0.trx.0.max-power-reduction')
         self.assertEqual(r['value'], '22')
-        
+
         r = self.do_set('bts.0.trx.0.max-power-reduction', '1')
         self.assertEqual(r['mtype'], 'ERROR')
         self.assertEqual(r['error'], 'Value must be even')
