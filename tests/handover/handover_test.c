@@ -1815,3 +1815,7 @@ int bsc_tx_bssmap_ho_detect(struct gsm_subscriber_connection *conn) { return 0; 
 enum handover_result bsc_tx_bssmap_ho_complete(struct gsm_subscriber_connection *conn,
 					       struct gsm_lchan *lchan) { return HO_RESULT_OK; }
 void bsc_tx_bssmap_ho_failure(struct gsm_subscriber_connection *conn) {}
+void osmo_bsc_sigtran_tx_reset(void) {}
+void osmo_bsc_sigtran_reset(void) {}
+void bssmap_reset_alloc(void) {}
+void bssmap_reset_is_conn_ready(void) {}

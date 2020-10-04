@@ -795,6 +795,11 @@ static const struct log_info_cat osmo_bsc_categories[] = {
 		.description = "Location Services",
 		.enabled = 1, .loglevel = LOGL_NOTICE,
 	},
+	[DRESET] = {
+		.name = "DRESET",
+		.description = "RESET/ACK on A and Lb interfaces",
+		.enabled = 1, .loglevel = LOGL_NOTICE,
+	},
 };
 
 static int filter_fn(const struct log_context *ctx, struct log_target *tar)

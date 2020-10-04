@@ -23,7 +23,7 @@
 struct bsc_msc_data;
 
 /* Create and start state machine which handles the reset/reset-ack procedure */
-void a_reset_alloc(struct bsc_msc_data *msc, const char *name, void *cb);
+void a_reset_alloc(struct bsc_msc_data *msc, const char *name);
 
 /* Confirm that we successfully received a reset acknowledge message */
 void a_reset_ack_confirm(struct bsc_msc_data *msc);

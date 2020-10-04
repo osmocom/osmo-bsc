@@ -40,6 +40,8 @@ int osmo_bsc_sigtran_init(struct llist_head *mscs);
 /* Close all open sigtran connections and channels */
 void osmo_bsc_sigtran_reset(const struct bsc_msc_data *msc);
 
+void osmo_bsc_sigtran_tx_reset(const struct bsc_msc_data *msc);
+
 /* Send reset-ack to MSC */
 void osmo_bsc_sigtran_tx_reset_ack(const struct bsc_msc_data *msc);
 

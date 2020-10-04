@@ -28,6 +28,7 @@ enum {
 	DAS,
 	DCBS,
 	DLCS,
+	DRESET,
 	Debug_LastEntry,
 };
 

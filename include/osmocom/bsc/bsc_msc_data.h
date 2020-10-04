@@ -171,7 +171,7 @@ struct bsc_msc_data {
 
 		/* Pointer to the osmo-fsm that controls the
 		 * BSSMAP RESET procedure */
-		struct osmo_fsm_inst *reset_fsm;
+		struct bssmap_reset *bssmap_reset;
 	} a;
 
 	uint32_t x_osmo_ign;

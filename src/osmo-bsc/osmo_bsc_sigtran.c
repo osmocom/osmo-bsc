@@ -80,7 +80,7 @@ static void _gsm0808_extend_announce_osmux(struct msgb *msg)
 }
 
 /* Send reset to MSC */
-static void osmo_bsc_sigtran_tx_reset(const struct bsc_msc_data *msc)
+void osmo_bsc_sigtran_tx_reset(const struct bsc_msc_data *msc)
 {
 	struct osmo_ss7_instance *ss7;
 	struct msgb *msg;
@@ -434,18 +434,6 @@ void osmo_bsc_sigtran_reset(const struct bsc_msc_data *msc)
 	}
 }
 
-/* Callback function: Close all open connections */
-static void osmo_bsc_sigtran_reset_cb(const void *priv)
-{
-	struct bsc_msc_data *msc = (struct bsc_msc_data*) priv;
-
-	/* Shut down all ongoing traffic */
-	osmo_bsc_sigtran_reset(msc);
-
-	/* Send reset to MSC */
-	osmo_bsc_sigtran_tx_reset(msc);
-}
-
 /* Default point-code to be used as local address (BSC) */
 #define BSC_DEFAULT_PC "0.23.3"
 
@@ -619,7 +607,7 @@ int osmo_bsc_sigtran_init(struct llist_head *mscs)
 				return -EINVAL;
 
 			/* Start MSC-Reset procedure */
-			a_reset_alloc(msc, msc_name, osmo_bsc_sigtran_reset_cb);
+			a_reset_alloc(msc, msc_name);
 		}
 	}
 
