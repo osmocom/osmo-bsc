@@ -3054,8 +3054,10 @@ DEFUN(cfg_bts_gprs_nsvc_rip, cfg_bts_gprs_nsvc_rip_cmd,
 	switch (remote.af) {
 	case AF_INET:
 		osmo_sockaddr_str_to_in_addr(&remote, &bts->gprs.nsvc[idx].remote.u.sin.sin_addr);
+		break;
 	case AF_INET6:
 		osmo_sockaddr_str_to_in6_addr(&remote, &bts->gprs.nsvc[idx].remote.u.sin6.sin6_addr);
+		break;
 	}
 
 	return CMD_SUCCESS;
