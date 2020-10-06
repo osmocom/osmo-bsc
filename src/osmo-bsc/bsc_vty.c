@@ -773,8 +773,8 @@ static void config_write_bts_gprs(struct vty *vty, struct gsm_bts *bts)
 		vty_out(vty, "  gprs nsvc %u local udp port %u%s", i,
 			nsvc->local_port, VTY_NEWLINE);
 
-		osmo_sockaddr_str_from_sockaddr(&remote, &nsvc->remote.u.sas);
-		if (remote.af != AF_UNSPEC) {
+		if (osmo_sockaddr_str_from_sockaddr(&remote, &nsvc->remote.u.sas) ||
+				remote.af != AF_UNSPEC) {
 			vty_out(vty, "  gprs nsvc %u remote ip %s%s", i,
 				remote.ip, VTY_NEWLINE);
 		}
