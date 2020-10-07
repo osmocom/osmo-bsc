@@ -1397,16 +1397,15 @@ int bsc_handle_udt(struct bsc_msc_data *msc,
 }
 
 /* Extract and verify the length information from the BSSMAP header. */
-static unsigned int bssmap_msg_len(struct msgb *msg, unsigned int length,
+static unsigned int bssmap_msg_len(struct msgb *msg,
 				   const struct gsm_subscriber_connection *conn)
 {
 	unsigned int expected_len;
 	unsigned int calculated_len;
 	struct bssmap_header *bssmap_header;
 
-	bssmap_header = (struct bssmap_header *)msg->l3h;
-
-	calculated_len = length - sizeof(struct bssmap_header);
+	bssmap_header = msgb_l3(msg);
+	calculated_len = msgb_l3len(msg) - sizeof(struct bssmap_header);
 	expected_len = bssmap_header->length;
 
 	/* In case of contradictory length information, decide for the
@@ -1438,7 +1437,7 @@ int bsc_handle_dt(struct gsm_subscriber_connection *conn,
 	switch (msg->l3h[0]) {
 	case BSSAP_MSG_BSS_MANAGEMENT:
 		msg->l4h = &msg->l3h[sizeof(struct bssmap_header)];
-		bssmap_rcvmsg_dt1(conn, msg, bssmap_msg_len(msg, msgb_l3len(msg), conn));
+		bssmap_rcvmsg_dt1(conn, msg, bssmap_msg_len(msg, conn));
 		break;
 	case BSSAP_MSG_DTAP:
 		dtap_rcvmsg(conn, msg, msgb_l3len(msg));
