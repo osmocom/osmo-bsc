@@ -48,8 +48,8 @@ struct smlc_config {
 	struct osmo_sccp_addr smlc_addr;
 	char *smlc_addr_name;
 
-	/*! True after either side has sent a BSSMAP-LE RESET-ACK */
-	bool ready;
+	/*! Lb link is ready when bssmap_reset_is_conn_ready(bssmap_reset) returns true. */
+	struct bssmap_reset *bssmap_reset;
 
 	struct rate_ctr_group *ctrs;
 };

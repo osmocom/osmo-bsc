@@ -30,6 +30,7 @@
 #include <osmocom/bsc/debug.h>
 #include <osmocom/bsc/osmo_bsc_sigtran.h>
 #include <osmocom/bsc/lcs_loc_req.h>
+#include <osmocom/bsc/bssmap_reset.h>
 
 static struct gsm_subscriber_connection *get_bsc_conn_by_lb_conn_id(int conn_id)
 {
@@ -46,7 +47,6 @@ static struct gsm_subscriber_connection *get_bsc_conn_by_lb_conn_id(int conn_id)
 
 /* Send reset to SMLC */
 int bssmap_le_tx_reset()
-	// TODO use this -- patch coming up
 {
 	struct osmo_ss7_instance *ss7;
 	struct msgb *msg;
@@ -60,7 +60,7 @@ int bssmap_le_tx_reset()
 
 	ss7 = osmo_ss7_instance_find(bsc_gsmnet->smlc->cs7_instance);
 	OSMO_ASSERT(ss7);
-	LOGP(DLCS, LOGL_NOTICE, "Sending RESET to SMLC: %s\n", osmo_sccp_addr_name(ss7, &bsc_gsmnet->smlc->smlc_addr));
+	LOGP(DRESET, LOGL_INFO, "Sending RESET to SMLC: %s\n", osmo_sccp_addr_name(ss7, &bsc_gsmnet->smlc->smlc_addr));
 	msg = osmo_bssap_le_enc(&reset);
 
 	rate_ctr_inc(&bsc_gsmnet->smlc->ctrs->ctr[SMLC_CTR_BSSMAP_LE_TX_UDT_RESET]);
@@ -82,33 +82,12 @@ int bssmap_le_tx_reset_ack()
 
 	ss7 = osmo_ss7_instance_find(bsc_gsmnet->smlc->cs7_instance);
 	OSMO_ASSERT(ss7);
-	LOGP(DLCS, LOGL_NOTICE, "Tx RESET ACK to SMLC: %s\n", osmo_sccp_addr_name(ss7, &bsc_gsmnet->smlc->smlc_addr));
+	LOGP(DRESET, LOGL_NOTICE, "Sending RESET ACK to SMLC: %s\n", osmo_sccp_addr_name(ss7, &bsc_gsmnet->smlc->smlc_addr));
 	msg = osmo_bssap_le_enc(&reset_ack);
 
 	rate_ctr_inc(&bsc_gsmnet->smlc->ctrs->ctr[SMLC_CTR_BSSMAP_LE_TX_UDT_RESET_ACK]);
 	return osmo_sccp_tx_unitdata_msg(bsc_gsmnet->smlc->sccp_user, &bsc_gsmnet->smlc->bsc_addr,
 					 &bsc_gsmnet->smlc->smlc_addr, msg);
-}
-
-static int bssmap_le_handle_reset(const struct bssmap_le_pdu *pdu)
-{
-	struct gsm_subscriber_connection *conn;
-	int rc;
-
-	/* Abort all ongoing Location Requests */
-	llist_for_each_entry(conn, &bsc_gsmnet->subscr_conns, entry)
-		lcs_loc_req_reset(conn);
-
-	rc = bssmap_le_tx_reset_ack();
-	if (!rc)
-		bsc_gsmnet->smlc->ready = true;
-	return rc;
-}
-
-static int bssmap_le_handle_reset_ack()
-{
-	bsc_gsmnet->smlc->ready = true;
-	return 0;
 }
 
 static int handle_unitdata_from_smlc(const struct osmo_sccp_addr *smlc_addr, struct msgb *msg,
@@ -144,11 +123,13 @@ static int handle_unitdata_from_smlc(const struct osmo_sccp_addr *smlc_addr, str
 	case BSSMAP_LE_MSGT_RESET:
 		rate_ctr_inc(&ctr[SMLC_CTR_BSSMAP_LE_RX_UDT_RESET]);
 		LOGP(DLCS, LOGL_NOTICE, "RESET from SMLC: %s\n", osmo_sccp_addr_name(ss7, smlc_addr));
-		return bssmap_le_handle_reset(&bssap_le.bssmap_le);
+		return osmo_fsm_inst_dispatch(bsc_gsmnet->smlc->bssmap_reset->fi, BSSMAP_RESET_EV_RX_RESET, NULL);
+
 	case BSSMAP_LE_MSGT_RESET_ACK:
 		rate_ctr_inc(&ctr[SMLC_CTR_BSSMAP_LE_RX_UDT_RESET_ACK]);
 		LOGP(DLCS, LOGL_NOTICE, "RESET-ACK from SMLC: %s\n", osmo_sccp_addr_name(ss7, smlc_addr));
-		return bssmap_le_handle_reset_ack();
+		return osmo_fsm_inst_dispatch(bsc_gsmnet->smlc->bssmap_reset->fi, BSSMAP_RESET_EV_RX_RESET_ACK, NULL);
+
 	default:
 		rate_ctr_inc(&ctr[SMLC_CTR_BSSMAP_LE_RX_UDT_ERR_INVALID_MSG]);
 		LOGP(DLCS, LOGL_ERROR, "Rx unimplemented UDT message type %s\n",
@@ -294,6 +275,15 @@ int lb_send(struct gsm_subscriber_connection *conn, const struct bssap_le_pdu *b
 
 	OSMO_ASSERT(conn);
 
+	if (!bssmap_reset_is_conn_ready(bsc_gsmnet->smlc->bssmap_reset)) {
+		LOGPFSMSL(conn->fi, DLCS, LOGL_ERROR, "Lb link to SMLC is not ready (no RESET-ACK), cannot send %s\n",
+			  osmo_bssap_le_pdu_to_str_c(OTC_SELECT, bssap_le));
+		/* If the remote side was lost, make sure that the SCCP conn is discarded in the local state and towards
+		 * the STP. */
+		lb_close_conn(conn);
+		return -EINVAL;
+	}
+
 	msg = osmo_bssap_le_enc(bssap_le);
 	if (!msg) {
 		LOGPFSMSL(conn->fi, DLCS, LOGL_ERROR, "Failed to encode %s\n",
@@ -363,6 +353,51 @@ void lb_cancel_all()
 	llist_for_each_entry(conn, &bsc_gsmnet->subscr_conns, entry)
 		lcs_loc_req_reset(conn);
 };
+
+void lb_reset_link_up(void *data)
+{
+	LOGP(DLCS, LOGL_INFO, "Lb link ready\n");
+}
+
+void lb_reset_link_lost(void *data)
+{
+	struct gsm_subscriber_connection *conn;
+	LOGP(DLCS, LOGL_INFO, "Lb link down\n");
+
+	/* Abort all ongoing Location Requests */
+	llist_for_each_entry(conn, &bsc_gsmnet->subscr_conns, entry)
+		lcs_loc_req_reset(conn);
+};
+
+void lb_reset_tx_reset(void *data)
+{
+	bssmap_le_tx_reset();
+}
+
+void lb_reset_tx_reset_ack(void *data)
+{
+	bssmap_le_tx_reset_ack();
+}
+
+static void lb_start_reset_fsm()
+{
+	struct bssmap_reset_cfg cfg = {
+		.conn_cfm_failure_threshold = 3,
+		.ops = {
+			.tx_reset = lb_reset_tx_reset,
+			.tx_reset_ack = lb_reset_tx_reset_ack,
+			.link_up = lb_reset_link_up,
+			.link_lost = lb_reset_link_lost,
+		},
+	};
+
+	if (bsc_gsmnet->smlc->bssmap_reset) {
+		LOGP(DLCS, LOGL_ERROR, "will not allocate a second reset FSM for Lb\n");
+		return;
+	}
+
+	bsc_gsmnet->smlc->bssmap_reset = bssmap_reset_alloc(bsc_gsmnet, "Lb", &cfg);
+}
 
 static int lb_start()
 {
@@ -439,6 +474,7 @@ static int lb_start()
 	if (!bsc_gsmnet->smlc->sccp_user)
 		return -EINVAL;
 
+	lb_start_reset_fsm();
 	return 0;
 }
 
