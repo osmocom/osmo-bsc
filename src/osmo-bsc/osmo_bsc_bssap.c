@@ -1427,21 +1427,21 @@ static unsigned int bssmap_msg_len(struct msgb *msg, unsigned int length,
 }
 
 int bsc_handle_dt(struct gsm_subscriber_connection *conn,
-		  struct msgb *msg, unsigned int len)
+		  struct msgb *msg)
 {
 	log_set_context(LOG_CTX_BSC_SUBSCR, conn->bsub);
 
-	if (len < sizeof(struct bssmap_header)) {
+	if (msgb_l3len(msg) < sizeof(struct bssmap_header)) {
 		LOGP(DMSC, LOGL_ERROR, "The header is too short.\n");
 	}
 
 	switch (msg->l3h[0]) {
 	case BSSAP_MSG_BSS_MANAGEMENT:
 		msg->l4h = &msg->l3h[sizeof(struct bssmap_header)];
-		bssmap_rcvmsg_dt1(conn, msg, bssmap_msg_len(msg, len, conn));
+		bssmap_rcvmsg_dt1(conn, msg, bssmap_msg_len(msg, msgb_l3len(msg), conn));
 		break;
 	case BSSAP_MSG_DTAP:
-		dtap_rcvmsg(conn, msg, len);
+		dtap_rcvmsg(conn, msg, msgb_l3len(msg));
 		break;
 	default:
 		LOGP(DMSC, LOGL_NOTICE, "Unimplemented BSSAP msg type: %s\n",

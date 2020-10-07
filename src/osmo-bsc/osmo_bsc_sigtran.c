@@ -138,7 +138,7 @@ static struct bsc_msc_data *get_msc_by_addr(const struct osmo_sccp_addr *msc_add
 static int handle_data_from_msc(struct gsm_subscriber_connection *conn, struct msgb *msg)
 {
 	msg->l3h = msgb_l2(msg);
-	return bsc_handle_dt(conn, msg, msgb_l2len(msg));
+	return bsc_handle_dt(conn, msg);
 }
 
 /* Received unitdata from MSC, use the point code to determine which MSC it is */
