@@ -35,6 +35,7 @@
 #include <osmocom/bsc/bsc_subscr_conn_fsm.h>
 #include <osmocom/bsc/gsm_data.h>
 #include <osmocom/bsc/bts.h>
+#include <osmocom/bsc/paging.h>
 #include <osmocom/mgcp_client/mgcp_common.h>
 
 /* A pointer to a list with all involved MSCs
@@ -415,10 +416,13 @@ int osmo_bsc_sigtran_send(struct gsm_subscriber_connection *conn, struct msgb *m
 }
 
 /* Close all open sigtran connections and channels */
-void osmo_bsc_sigtran_reset(const struct bsc_msc_data *msc)
+void osmo_bsc_sigtran_reset(struct bsc_msc_data *msc)
 {
 	struct gsm_subscriber_connection *conn, *conn_temp;
 	OSMO_ASSERT(msc);
+
+	/* Drop all ongoing paging requests that this MSC has created on any BTS */
+	paging_flush_network(msc->network, msc);
 
 	/* Close all open connections */
 	llist_for_each_entry_safe(conn, conn_temp, &bsc_gsmnet->subscr_conns, entry) {
