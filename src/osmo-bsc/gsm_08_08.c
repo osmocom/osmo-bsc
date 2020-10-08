@@ -343,6 +343,7 @@ static void parse_powercap(struct gsm_subscriber_connection *conn, struct msgb *
 			/* No power cap in other messages */
 			return;
 		}
+		break;
 	/* FIXME: pwr_lev in Paging Response? */
 	default:
 		/* No power cap in other messages */
