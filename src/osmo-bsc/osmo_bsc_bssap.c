@@ -1234,20 +1234,48 @@ static int bssmap_rcvmsg_udt(struct bsc_msc_data *msc,
 }
 
 static int bssmap_rcvmsg_dt1(struct gsm_subscriber_connection *conn,
-			     struct msgb *msg, unsigned int length)
+			     struct msgb *msg)
 {
 	int ret = 0;
 	struct rate_ctr *ctrs = conn->sccp.msc->msc_ctrs->ctr;
+	struct bssmap_header *bssmap_header;
+	enum BSS_MAP_MSG_TYPE msg_type;
+	unsigned int length;
 
-	if (length < 1) {
-		LOGP(DMSC, LOGL_ERROR, "Not enough room: %d\n", length);
+	if (msgb_l3len(msg) < sizeof(struct bssmap_header)) {
+		LOGPFSML(conn->fi, LOGL_ERROR,
+			 "BSSMAP message too short for header (%u bytes)\n",
+			 msgb_l3len(msg));
 		return -1;
 	}
 
-	LOGP(DMSC, LOGL_INFO, "Rx MSC DT1 BSSMAP %s\n",
-		gsm0808_bssmap_name(msg->l4h[0]));
+	bssmap_header = msgb_l3(msg);
+	msg->l4h = &msg->l3h[sizeof(struct bssmap_header)];
+	if (bssmap_header->length > msgb_l4len(msg)) {
+		LOGPFSML(conn->fi, LOGL_ERROR,
+			 "Truncated BSSMAP message: header indicates %u bytes, but only %u bytes available\n",
+			 bssmap_header->length, msgb_l4len(msg));
+		return -1;
+	}
 
-	switch (msg->l4h[0]) {
+	if (bssmap_header->length < msgb_l4len(msg)) {
+		LOGPFSML(conn->fi, LOGL_INFO,
+			 "BSSMAP message with extraneous data: header indicates %u bytes, but %u bytes available;"
+			 " trimming\n",
+			 bssmap_header->length, msgb_l4len(msg));
+		msgb_trim(msg, (msg->l4h - msg->data) + bssmap_header->length);
+	}
+
+	if (msgb_l4len(msg) < 1) {
+		LOGPFSML(conn->fi, LOGL_ERROR, "BSSMAP message with zero length\n");
+		return -1;
+	}
+
+	msg_type = msg->l4h[0];
+	LOGP(DMSC, LOGL_INFO, "Rx MSC DT1 BSSMAP %s\n", gsm0808_bssmap_name(msg_type));
+
+	length = msgb_l4len(msg);
+	switch (msg_type) {
 	case BSS_MAP_MSG_CLEAR_CMD:
 		rate_ctr_inc(&ctrs[MSC_CTR_BSSMAP_RX_DT1_CLEAR_CMD]);
 		ret = bssmap_handle_clear_cmd(conn, msg, length);
@@ -1301,8 +1329,7 @@ static int bssmap_rcvmsg_dt1(struct gsm_subscriber_connection *conn,
 		break;
 	default:
 		rate_ctr_inc(&ctrs[MSC_CTR_BSSMAP_RX_DT1_UNKNOWN]);
-		LOGP(DMSC, LOGL_NOTICE, "Unimplemented msg type: %s\n",
-			gsm0808_bssmap_name(msg->l4h[0]));
+		LOGP(DMSC, LOGL_NOTICE, "Unimplemented msg type: %s\n", gsm0808_bssmap_name(msg_type));
 		break;
 	}
 
@@ -1396,35 +1423,6 @@ int bsc_handle_udt(struct bsc_msc_data *msc,
 	return 0;
 }
 
-/* Extract and verify the length information from the BSSMAP header. */
-static unsigned int bssmap_msg_len(struct msgb *msg,
-				   const struct gsm_subscriber_connection *conn)
-{
-	unsigned int expected_len;
-	unsigned int calculated_len;
-	struct bssmap_header *bssmap_header;
-
-	bssmap_header = msgb_l3(msg);
-	calculated_len = msgb_l3len(msg) - sizeof(struct bssmap_header);
-	expected_len = bssmap_header->length;
-
-	/* In case of contradictory length information, decide for the
-	 * shorter length */
-	if (calculated_len > expected_len) {
-		LOGPFSML(conn->fi, LOGL_NOTICE,
-			 "BSSMAP message contains extra data, expected %u bytes, got %u bytes, truncated\n",
-			 expected_len, calculated_len);
-		return expected_len;
-	} else if (calculated_len < expected_len) {
-		LOGPFSML(conn->fi, LOGL_NOTICE,
-			 "Short BSSMAP message, expected %u bytes, got %u bytes\n",
-			 expected_len, calculated_len);
-		return calculated_len;
-	}
-
-	return expected_len;
-}
-
 int bsc_handle_dt(struct gsm_subscriber_connection *conn,
 		  struct msgb *msg)
 {
@@ -1436,8 +1434,7 @@ int bsc_handle_dt(struct gsm_subscriber_connection *conn,
 
 	switch (msg->l3h[0]) {
 	case BSSAP_MSG_BSS_MANAGEMENT:
-		msg->l4h = &msg->l3h[sizeof(struct bssmap_header)];
-		bssmap_rcvmsg_dt1(conn, msg, bssmap_msg_len(msg, conn));
+		bssmap_rcvmsg_dt1(conn, msg);
 		break;
 	case BSSAP_MSG_DTAP:
 		dtap_rcvmsg(conn, msg, msgb_l3len(msg));
