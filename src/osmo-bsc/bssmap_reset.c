@@ -118,6 +118,17 @@ static void bssmap_reset_disc_action(struct osmo_fsm_inst *fi, uint32_t event, v
 		bssmap_reset_fsm_state_chg(fi, BSSMAP_RESET_ST_CONN);
 		break;
 
+	case BSSMAP_RESET_EV_CONN_CFM_FAILURE:
+		/* ignore */
+		break;
+
+	case BSSMAP_RESET_EV_CONN_CFM_SUCCESS:
+		/* A connection succeeded before we managed to do a RESET handshake?
+		 * Then the calling code is not taking care to check bssmap_reset_is_conn_ready().
+		 */
+		LOGPFSML(fi, LOGL_ERROR, "Connection success confirmed, but we have not seen a RESET-ACK; bug?\n");
+		break;
+
 	default:
 		OSMO_ASSERT(false);
 	}
@@ -183,6 +194,8 @@ static struct osmo_fsm_state bssmap_reset_fsm_states[] = {
 		     .in_event_mask = 0
 			     | S(BSSMAP_RESET_EV_RX_RESET)
 			     | S(BSSMAP_RESET_EV_RX_RESET_ACK)
+			     | S(BSSMAP_RESET_EV_CONN_CFM_FAILURE)
+			     | S(BSSMAP_RESET_EV_CONN_CFM_SUCCESS)
 			     ,
 		     .out_state_mask = 0
 			     | S(BSSMAP_RESET_ST_DISC)
