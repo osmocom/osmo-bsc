@@ -45,6 +45,7 @@
 #include <osmocom/core/socket.h>
 #include <osmocom/core/sockaddr_str.h>
 #include <osmocom/bsc/lcs_loc_req.h>
+#include <osmocom/bsc/bssmap_reset.h>
 
 #define IP_V4_ADDR_LEN 4
 
@@ -96,17 +97,17 @@ static int bssmap_handle_reset(struct bsc_msc_data *msc,
 	     osmo_sccp_addr_name(osmo_ss7_instance_find(msc->a.cs7_instance),
 				 &msc->a.msc_addr));
 
-	/* Instruct the bsc to close all open sigtran connections and to
-	 * close all active channels on the BTS side as well */
-	osmo_bsc_sigtran_reset(msc);
-
 	update_msc_osmux_support(msc, msg, length);
 
-	/* Inform the MSC that we have received the reset request and
-	 * that we acted accordingly */
-	osmo_bsc_sigtran_tx_reset_ack(msc);
+	if (!msc->a.bssmap_reset) {
+		LOGP(DMSC, LOGL_ERROR, "(msc%d) missing RESET FSM\n", msc->nr);
+		/* Make sure to shut down all open connections, if any */
+		osmo_bsc_sigtran_reset(msc);
+		return -1;
+	}
 
-	return 0;
+	/* Normal case: let the reset FSM orchestrate link down / link up callbacks. */
+	return osmo_fsm_inst_dispatch(msc->a.bssmap_reset->fi, BSSMAP_RESET_EV_RX_RESET, NULL);
 }
 
 /* Page a subscriber based on TMSI and LAC via the specified BTS.

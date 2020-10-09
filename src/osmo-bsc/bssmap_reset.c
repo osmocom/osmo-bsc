@@ -32,6 +32,7 @@ enum bssmap_reset_fsm_state {
 };
 
 static const struct value_string bssmap_reset_fsm_event_names[] = {
+	OSMO_VALUE_STRING(BSSMAP_RESET_EV_RX_RESET),
 	OSMO_VALUE_STRING(BSSMAP_RESET_EV_RX_RESET_ACK),
 	OSMO_VALUE_STRING(BSSMAP_RESET_EV_CONN_CFM_FAILURE),
 	OSMO_VALUE_STRING(BSSMAP_RESET_EV_CONN_CFM_SUCCESS),
@@ -90,6 +91,12 @@ static void tx_reset(struct bssmap_reset *bssmap_reset)
 		bssmap_reset->cfg.ops.tx_reset(bssmap_reset->cfg.data);
 }
 
+static void tx_reset_ack(struct bssmap_reset *bssmap_reset)
+{
+	if (bssmap_reset->cfg.ops.tx_reset_ack)
+		bssmap_reset->cfg.ops.tx_reset_ack(bssmap_reset->cfg.data);
+}
+
 static void bssmap_reset_disc_onenter(struct osmo_fsm_inst *fi, uint32_t prev_state)
 {
 	struct bssmap_reset *bssmap_reset = (struct bssmap_reset*)fi->priv;
@@ -99,7 +106,21 @@ static void bssmap_reset_disc_onenter(struct osmo_fsm_inst *fi, uint32_t prev_st
 
 static void bssmap_reset_disc_action(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
-	bssmap_reset_fsm_state_chg(fi, BSSMAP_RESET_ST_CONN);
+	struct bssmap_reset *bssmap_reset = (struct bssmap_reset*)fi->priv;
+	switch (event) {
+
+	case BSSMAP_RESET_EV_RX_RESET:
+		tx_reset_ack(bssmap_reset);
+		bssmap_reset_fsm_state_chg(fi, BSSMAP_RESET_ST_CONN);
+		break;
+
+	case BSSMAP_RESET_EV_RX_RESET_ACK:
+		bssmap_reset_fsm_state_chg(fi, BSSMAP_RESET_ST_CONN);
+		break;
+
+	default:
+		OSMO_ASSERT(false);
+	}
 }
 
 static void bssmap_reset_conn_onenter(struct osmo_fsm_inst *fi, uint32_t prev_state)
@@ -115,8 +136,15 @@ static void bssmap_reset_conn_action(struct osmo_fsm_inst *fi, uint32_t event, v
 
 	switch (event) {
 
+	case BSSMAP_RESET_EV_RX_RESET:
+		/* We were connected, but the remote side has restarted. */
+		link_lost(bssmap_reset);
+		tx_reset_ack(bssmap_reset);
+		link_up(bssmap_reset);
+		break;
+
 	case BSSMAP_RESET_EV_RX_RESET_ACK:
-		LOGPFSML(fi, LOGL_INFO, "Ignoring duplicate RESET ACK\n");
+		LOGPFSML(fi, LOGL_INFO, "Link is already up, ignoring RESET ACK\n");
 		break;
 
 	case BSSMAP_RESET_EV_CONN_CFM_FAILURE:
@@ -153,6 +181,7 @@ static struct osmo_fsm_state bssmap_reset_fsm_states[] = {
 	[BSSMAP_RESET_ST_DISC] = {
 		     .name = "DISC",
 		     .in_event_mask = 0
+			     | S(BSSMAP_RESET_EV_RX_RESET)
 			     | S(BSSMAP_RESET_EV_RX_RESET_ACK)
 			     ,
 		     .out_state_mask = 0
@@ -165,6 +194,7 @@ static struct osmo_fsm_state bssmap_reset_fsm_states[] = {
 	[BSSMAP_RESET_ST_CONN] = {
 		     .name = "CONN",
 		     .in_event_mask = 0
+			     | S(BSSMAP_RESET_EV_RX_RESET)
 			     | S(BSSMAP_RESET_EV_RX_RESET_ACK)
 			     | S(BSSMAP_RESET_EV_CONN_CFM_FAILURE)
 			     | S(BSSMAP_RESET_EV_CONN_CFM_SUCCESS)

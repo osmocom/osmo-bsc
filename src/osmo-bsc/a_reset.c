@@ -32,6 +32,12 @@ static void a_reset_tx_reset(void *data)
 	osmo_bsc_sigtran_tx_reset(msc);
 }
 
+static void a_reset_tx_reset_ack(void *data)
+{
+	struct bsc_msc_data *msc = data;
+	osmo_bsc_sigtran_tx_reset_ack(msc);
+}
+
 static void a_reset_link_up(void *data)
 {
 	struct bsc_msc_data *msc = data;
@@ -56,6 +62,7 @@ void a_reset_alloc(struct bsc_msc_data *msc, const char *name)
 		.conn_cfm_failure_threshold = 3,
 		.ops = {
 			.tx_reset = a_reset_tx_reset,
+			.tx_reset_ack = a_reset_tx_reset_ack,
 			.link_up = a_reset_link_up,
 			.link_lost = a_reset_link_lost,
 		},
