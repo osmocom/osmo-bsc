@@ -829,7 +829,7 @@ static int abis_nm_rx_opstart_ack(struct msgb *mb)
 static int abis_nm_rx_opstart_nack(struct msgb *mb)
 {
 	struct abis_om_fom_hdr *foh = msgb_l3(mb);
-	DEBUGPFOH(DNM, foh, "Opstart NACK\n");
+	LOGPFOH(DNM, LOGL_ERROR, foh, "Opstart NACK\n");
 	osmo_signal_dispatch(SS_NM, S_NM_OPSTART_NACK, mb);
 	return 0;
 }
