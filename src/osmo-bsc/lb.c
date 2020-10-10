@@ -465,12 +465,7 @@ static int lb_start()
 	LOGP(DLCS, LOGL_NOTICE, "Lb: %s %s: remote (SMLC) SCCP address: %s\n",
 	     inst_name, smlc_name, osmo_sccp_inst_addr_name(sccp, &bsc_gsmnet->smlc->smlc_addr));
 
-	/* Bind SCCP user. */
-	bsc_gsmnet->smlc->sccp_user = osmo_sccp_user_find(sccp, bsc_gsmnet->smlc->bsc_addr.ssn, bsc_gsmnet->smlc->bsc_addr.pc);
-	LOGP(DLCS, LOGL_NOTICE, "%s %s: %s\n", inst_name, smlc_name,
-	     bsc_gsmnet->smlc->sccp_user ? "user already bound for this SCCP instance" : "binding SCCP user");
-	if (!bsc_gsmnet->smlc->sccp_user)
-		bsc_gsmnet->smlc->sccp_user = osmo_sccp_user_bind(sccp, smlc_name, sccp_sap_up, bsc_gsmnet->smlc->bsc_addr.ssn);
+	bsc_gsmnet->smlc->sccp_user = osmo_sccp_user_bind(sccp, smlc_name, sccp_sap_up, bsc_gsmnet->smlc->bsc_addr.ssn);
 	if (!bsc_gsmnet->smlc->sccp_user)
 		return -EINVAL;
 
