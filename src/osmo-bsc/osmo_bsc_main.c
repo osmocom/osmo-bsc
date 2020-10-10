@@ -888,6 +888,7 @@ int main(int argc, char **argv)
 	bsc_subscr_conn_fsm_init();
 	assignment_fsm_init();
 	handover_fsm_init();
+	lb_init();
 
 	/* Read the config */
 	rc = bsc_network_configure(config_file);
@@ -957,7 +958,7 @@ int main(int argc, char **argv)
 	handover_decision_1_init();
 	hodec2_init(bsc_gsmnet);
 	bsc_cbc_link_restart();
-	lb_init();
+	lb_start_or_stop();
 
 	signal(SIGINT, &signal_handler);
 	signal(SIGTERM, &signal_handler);

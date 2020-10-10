@@ -357,8 +357,14 @@ count_tx:
 #define DEFAULT_ASP_LOCAL_IP "localhost"
 #define DEFAULT_ASP_REMOTE_IP "localhost"
 
-/* Initialize Lb interface to SMLC */
-int lb_init()
+void lb_cancel_all()
+{
+	struct gsm_subscriber_connection *conn;
+	llist_for_each_entry(conn, &bsc_gsmnet->subscr_conns, entry)
+		lcs_loc_req_reset(conn);
+};
+
+static int lb_start()
 {
 	uint32_t default_pc;
 	struct osmo_ss7_instance *cs7_inst = NULL;
@@ -367,11 +373,11 @@ int lb_init()
 	char inst_name[32];
 	const char *smlc_name = "smlc";
 
-	if (!bsc_gsmnet->smlc) {
-		bsc_gsmnet->smlc = talloc_zero(bsc_gsmnet, struct smlc_config);
-		bsc_gsmnet->smlc->ctrs = rate_ctr_group_alloc(bsc_gsmnet, &smlc_ctrg_desc, 0);
-	}
-	OSMO_ASSERT(bsc_gsmnet->smlc);
+	/* Already set up? */
+	if (bsc_gsmnet->smlc->sccp_user)
+		return -EALREADY;
+
+	LOGP(DLCS, LOGL_INFO, "Starting Lb link\n");
 
 	if (!bsc_gsmnet->smlc->cs7_instance_valid) {
 		bsc_gsmnet->smlc->cs7_instance = 0;
@@ -436,6 +442,66 @@ int lb_init()
 	return 0;
 }
 
+static int lb_stop()
+{
+	/* Not set up? */
+	if (!bsc_gsmnet->smlc->sccp_user)
+		return -EALREADY;
+
+	LOGP(DLCS, LOGL_INFO, "Shutting down Lb link\n");
+
+	lb_cancel_all();
+	osmo_sccp_user_unbind(bsc_gsmnet->smlc->sccp_user);
+	bsc_gsmnet->smlc->sccp_user = NULL;
+	return 0;
+}
+
+int lb_start_or_stop()
+{
+	int rc;
+	if (bsc_gsmnet->smlc->enable) {
+		rc = lb_start();
+		switch (rc) {
+		case 0:
+			/* all is fine */
+			break;
+		case -EALREADY:
+			/* no need to log about anything */
+			break;
+		default:
+			LOGP(DLCS, LOGL_ERROR, "Failed to start Lb interface (rc=%d)\n", rc);
+			break;
+		}
+	} else {
+		rc = lb_stop();
+		switch (rc) {
+		case 0:
+			/* all is fine */
+			break;
+		case -EALREADY:
+			/* no need to log about anything */
+			break;
+		default:
+			LOGP(DLCS, LOGL_ERROR, "Failed to stop Lb interface (rc=%d)\n", rc);
+			break;
+		}
+	}
+	return rc;
+}
+
+static void smlc_vty_init(void);
+
+int lb_init()
+{
+	OSMO_ASSERT(!bsc_gsmnet->smlc);
+	bsc_gsmnet->smlc = talloc_zero(bsc_gsmnet, struct smlc_config);
+	OSMO_ASSERT(bsc_gsmnet->smlc);
+	bsc_gsmnet->smlc->ctrs = rate_ctr_group_alloc(bsc_gsmnet, &smlc_ctrg_desc, 0);
+
+	smlc_vty_init();
+	return 0;
+}
+
 /*********************************************************************************
  * VTY Interface (Configuration + Introspection)
  *********************************************************************************/
@@ -452,6 +518,30 @@ static struct cmd_node smlc_node = {
 	"%s(config-smlc)# ",
 	1,
 };
+
+DEFUN(cfg_smlc_enable, cfg_smlc_enable_cmd,
+	"enable",
+	"Start up Lb interface connection to the remote SMLC\n")
+{
+	bsc_gsmnet->smlc->enable = true;
+	if (vty->type != VTY_FILE) {
+		if (lb_start_or_stop())
+			vty_out(vty, "%% Error: failed to enable Lb interface%s", VTY_NEWLINE);
+	}
+	return CMD_SUCCESS;
+}
+
+DEFUN(cfg_smlc_no_enable, cfg_smlc_no_enable_cmd,
+	"no enable",
+	NO_STR "Stop Lb interface connection to the remote SMLC\n")
+{
+	bsc_gsmnet->smlc->enable = false;
+	if (vty->type != VTY_FILE) {
+		if (lb_start_or_stop())
+			vty_out(vty, "%% Error: failed to disable Lb interface%s", VTY_NEWLINE);
+	}
+	return CMD_SUCCESS;
+}
 
 static void enforce_ssn(struct vty *vty, struct osmo_sccp_addr *addr, enum osmo_sccp_ssn want_ssn)
 {
@@ -529,7 +619,17 @@ DEFUN(cfg_smlc_cs7_smlc_addr,
 
 static int config_write_smlc(struct vty *vty)
 {
+	/* Nothing to write? */
+	if (!(bsc_gsmnet->smlc->enable
+	      || bsc_gsmnet->smlc->bsc_addr_name
+	      || bsc_gsmnet->smlc->smlc_addr_name))
+		return 0;
+
 	vty_out(vty, "smlc%s", VTY_NEWLINE);
+
+	if (bsc_gsmnet->smlc->enable)
+		vty_out(vty, " enable%s", VTY_NEWLINE);
+
 	if (bsc_gsmnet->smlc->bsc_addr_name) {
 		vty_out(vty, " bsc-addr %s%s",
 			bsc_gsmnet->smlc->bsc_addr_name, VTY_NEWLINE);
@@ -556,6 +656,8 @@ void smlc_vty_init(void)
 
 	install_element(CONFIG_NODE, &cfg_smlc_cmd);
 	install_node(&smlc_node, config_write_smlc);
+	install_element(SMLC_NODE, &cfg_smlc_enable_cmd);
+	install_element(SMLC_NODE, &cfg_smlc_no_enable_cmd);
 	install_element(SMLC_NODE, &cfg_smlc_cs7_bsc_addr_cmd);
 	install_element(SMLC_NODE, &cfg_smlc_cs7_smlc_addr_cmd);
 }

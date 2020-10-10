@@ -35,6 +35,8 @@ enum {
 };
 
 struct smlc_config {
+	bool enable;
+
 	uint32_t cs7_instance;
 	bool cs7_instance_valid;
 	struct osmo_sccp_instance *sccp;
@@ -56,5 +58,6 @@ extern const struct rate_ctr_desc smlc_ctr_description[];
 extern const struct rate_ctr_group_desc smlc_ctrg_desc;
 
 int lb_init();
+int lb_start_or_stop();
 int lb_send(struct gsm_subscriber_connection *conn, const struct bssap_le_pdu *bssap_le);
 void lb_close_conn(struct gsm_subscriber_connection *conn);
