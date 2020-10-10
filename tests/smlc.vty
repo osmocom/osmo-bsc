@@ -1,0 +1,73 @@
+OsmoBSC> enable
+OsmoBSC# configure terminal
+OsmoBSC(config)# smlc
+OsmoBSC(config-smlc)# list
+...
+  enable
+  no enable
+  bsc-addr NAME
+  smlc-addr NAME
+
+OsmoBSC(config-smlc)# enable?
+  enable  Start up Lb interface connection to the remote SMLC
+
+OsmoBSC(config-smlc)# no?
+  no  Negate a command or set its defaults
+OsmoBSC(config-smlc)# no ?
+  enable  Stop Lb interface connection to the remote SMLC
+
+OsmoBSC(config-smlc)# bsc-addr?
+  bsc-addr  Local SCCP address of this BSC towards the SMLC
+OsmoBSC(config-smlc)# bsc-addr ?
+  NAME  Name of cs7 addressbook entry
+
+OsmoBSC(config-smlc)# smlc-addr?
+  smlc-addr  Remote SCCP address of the SMLC
+OsmoBSC(config-smlc)# smlc-addr ?
+  NAME  Name of cs7 addressbook entry
+
+OsmoBSC(config-smlc)# show running-config
+... !smlc
+
+OsmoBSC(config-smlc)# enable
+OsmoBSC(config-smlc)# show running-config
+...
+smlc
+ enable
+...
+
+OsmoBSC(config-smlc)# no enable
+OsmoBSC(config-smlc)# show running-config
+... !smlc
+
+OsmoBSC(config-smlc)# exit
+OsmoBSC(config)# cs7 instance 0
+OsmoBSC(config-cs7)# sccp-addr test-addr
+OsmoBSC(config-cs7-sccpaddr)# point-code 1.23.4
+OsmoBSC(config-cs7-sccpaddr)# exit
+OsmoBSC(config-cs7)# sccp-addr test-addr2
+OsmoBSC(config-cs7-sccpaddr)# point-code 1.23.5
+OsmoBSC(config-cs7-sccpaddr)# exit
+OsmoBSC(config-cs7)# exit
+OsmoBSC(config)# smlc
+
+OsmoBSC(config-smlc)# bsc-addr nonsense
+Error: No such SCCP addressbook entry: 'nonsense'
+% Command incomplete.
+OsmoBSC(config-smlc)# show running-config
+... !smlc
+
+OsmoBSC(config-smlc)# bsc-addr test-addr
+OsmoBSC(config-smlc)# show running-config
+...
+smlc
+ bsc-addr test-addr
+...
+
+OsmoBSC(config-smlc)# smlc-addr test-addr2
+OsmoBSC(config-smlc)# show running-config
+...
+smlc
+ bsc-addr test-addr
+ smlc-addr test-addr2
+...
