@@ -5976,12 +5976,6 @@ static void write_msc(struct vty *vty, struct bsc_msc_data *msc)
 	if (msc->core_plmn.mcc != GSM_MCC_MNC_INVALID)
 		vty_out(vty, " core-mobile-country-code %s%s",
 			osmo_mcc_name(msc->core_plmn.mcc), VTY_NEWLINE);
-	if (msc->core_lac != -1)
-		vty_out(vty, " core-location-area-code %d%s",
-			msc->core_lac, VTY_NEWLINE);
-	if (msc->core_ci != -1)
-		vty_out(vty, " core-cell-identity %d%s",
-			msc->core_ci, VTY_NEWLINE);
 
 	if (msc->audio_length != 0) {
 		int i;
@@ -6105,25 +6099,21 @@ DEFUN_ATTR(cfg_net_bsc_mcc,
 	return CMD_SUCCESS;
 }
 
-DEFUN_ATTR(cfg_net_bsc_lac,
-	   cfg_net_bsc_lac_cmd,
-	   "core-location-area-code <0-65535>",
-	   "Use this location area code for the core network\n" "LAC value\n",
-	   CMD_ATTR_IMMEDIATE)
+DEFUN_DEPRECATED(cfg_net_bsc_lac,
+		 cfg_net_bsc_lac_cmd,
+		 "core-location-area-code <0-65535>",
+		 "Legacy configuration that no longer has any effect\n-\n")
 {
-	struct bsc_msc_data *data = bsc_msc_data(vty);
-	data->core_lac = atoi(argv[0]);
+	vty_out(vty, "%% Deprecated 'core-location-area-code' config no longer has any effect%s", VTY_NEWLINE);
 	return CMD_SUCCESS;
 }
 
-DEFUN_ATTR(cfg_net_bsc_ci,
-	   cfg_net_bsc_ci_cmd,
-	   "core-cell-identity <0-65535>",
-	   "Use this cell identity for the core network\n" "CI value\n",
-	   CMD_ATTR_IMMEDIATE)
+DEFUN_DEPRECATED(cfg_net_bsc_ci,
+		 cfg_net_bsc_ci_cmd,
+		 "core-cell-identity <0-65535>",
+		 "Legacy configuration that no longer has any effect\n-\n")
 {
-	struct bsc_msc_data *data = bsc_msc_data(vty);
-	data->core_ci = atoi(argv[0]);
+	vty_out(vty, "%% Deprecated 'core-cell-identity' config no longer has any effect%s", VTY_NEWLINE);
 	return CMD_SUCCESS;
 }
 

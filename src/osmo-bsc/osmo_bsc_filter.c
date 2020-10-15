@@ -92,26 +92,11 @@ static int bsc_patch_mm_info(struct gsm_subscriber_connection *conn,
 	return 0;
 }
 
-static int has_core_identity(struct bsc_msc_data *msc)
-{
-	if (msc->core_plmn.mnc != GSM_MCC_MNC_INVALID)
-		return 1;
-	if (msc->core_plmn.mcc != GSM_MCC_MNC_INVALID)
-		return 1;
-	if (msc->core_lac != -1)
-		return 1;
-	if (msc->core_ci != -1)
-		return 1;
-	return 0;
-}
-
 /**
  * Messages coming back from the MSC.
  */
 int bsc_scan_msc_msg(struct gsm_subscriber_connection *conn, struct msgb *msg)
 {
-	struct bsc_msc_data *msc;
-	struct gsm48_loc_area_id *lai;
 	struct gsm48_hdr *gh;
 	uint8_t pdisc;
 	uint8_t mtype;
@@ -130,19 +115,7 @@ int bsc_scan_msc_msg(struct gsm_subscriber_connection *conn, struct msgb *msg)
 		return 0;
 
 	mtype = gsm48_hdr_msg_type(gh);
-	msc = conn->sccp.msc;
-
-	if (mtype == GSM48_MT_MM_LOC_UPD_ACCEPT) {
-		struct gsm_bts *bts = conn_get_bts(conn);
-		if (bts && has_core_identity(msc)) {
-			if (msgb_l3len(msg) >= sizeof(*gh) + sizeof(*lai)) {
-				/* overwrite LAI in the message */
-				lai = (struct gsm48_loc_area_id *) &gh->data[0];
-				gsm48_generate_lai2(lai, bts_lai(bts));
-			}
-		}
-		return 0;
-	} else if (mtype == GSM48_MT_MM_INFO) {
+	if (mtype == GSM48_MT_MM_INFO) {
 		bsc_patch_mm_info(conn, &gh->data[0], length);
 	}
 

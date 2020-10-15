@@ -128,8 +128,6 @@ struct bsc_msc_data {
 
 	/* Connection data */
 	struct osmo_plmn_id core_plmn;
-	int core_lac;
-	int core_ci;
 
 	/* audio codecs */
 	struct gsm48_multi_rate_conf amr_conf;

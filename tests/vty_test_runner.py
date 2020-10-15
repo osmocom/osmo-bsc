@@ -172,21 +172,6 @@ class TestVTYBSC(TestVTYGenericBSC):
         res = self.vty.command("show network")
         self.assertTrue(res.startswith('BSC is on Country Code') >= 0)
 
-    def testMscDataCoreLACCI(self):
-        self.vty.enable()
-        res = self.vty.command("show running-config")
-        self.assertEqual(res.find("core-location-area-code"), -1)
-        self.assertEqual(res.find("core-cell-identity"), -1)
-
-        self.vty.command("configure terminal")
-        self.vty.command("msc 0")
-        self.vty.command("core-location-area-code 666")
-        self.vty.command("core-cell-identity 333")
-
-        res = self.vty.command("show running-config")
-        self.assertTrue(res.find("core-location-area-code 666") > 0)
-        self.assertTrue(res.find("core-cell-identity 333") > 0)
-
 
 def add_bsc_test(suite, workdir):
     if not os.path.isfile(os.path.join(workdir, "src/osmo-bsc/osmo-bsc")):

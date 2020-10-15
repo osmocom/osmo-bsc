@@ -229,8 +229,6 @@ struct bsc_msc_data *osmo_msc_data_alloc(struct gsm_network *net, int nr)
 		.mcc = GSM_MCC_MNC_INVALID,
 		.mnc = GSM_MCC_MNC_INVALID,
 	};
-	msc_data->core_ci = -1;
-	msc_data->core_lac = -1;
 
 	msc_data->nr = nr;
 	msc_data->allow_emerg = 1;
@@ -285,8 +283,8 @@ struct osmo_cell_global_id *cgi_for_msc(struct bsc_msc_data *msc, struct gsm_bts
 		cgi.lai.plmn.mnc = msc->core_plmn.mnc;
 		cgi.lai.plmn.mnc_3_digits = msc->core_plmn.mnc_3_digits;
 	}
-	cgi.lai.lac = (msc->core_lac != -1) ? msc->core_lac : bts->location_area_code;
-	cgi.cell_identity = (msc->core_ci != -1) ? msc->core_ci : bts->cell_identity;
+	cgi.lai.lac = bts->location_area_code;
+	cgi.cell_identity = bts->cell_identity;
 
 	return &cgi;
 }
