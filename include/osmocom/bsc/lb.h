@@ -9,6 +9,8 @@
 struct bssap_le_pdu;
 struct gsm_subscriber_connection;
 
+#define g_smlc (bsc_gsmnet->smlc)
+
 enum {
 	SMLC_CTR_BSSMAP_LE_RX_UNKNOWN_PEER,
 	SMLC_CTR_BSSMAP_LE_RX_UDT_RESET,

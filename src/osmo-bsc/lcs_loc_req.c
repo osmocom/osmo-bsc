@@ -190,7 +190,7 @@ static int handle_bssmap_le_conn_oriented_info(struct lcs_loc_req *lcs_loc_req, 
 {
 	switch (bssmap_le->conn_oriented_info.apdu.msg_type) {
 	case BSSLAP_MSGT_TA_REQUEST:
-		rate_ctr_inc(&bsc_gsmnet->smlc->ctrs->ctr[SMLC_CTR_BSSMAP_LE_RX_DT1_BSSLAP_TA_REQUEST]);
+		rate_ctr_inc(&g_smlc->ctrs->ctr[SMLC_CTR_BSSMAP_LE_RX_DT1_BSSLAP_TA_REQUEST]);
 		LOG_LCS_LOC_REQ(lcs_loc_req, LOGL_DEBUG, "rx BSSLAP TA Request\n");
 		/* The TA Request message contains only the message type. */
 		return lcs_ta_req_start(lcs_loc_req);
@@ -206,7 +206,7 @@ int lcs_loc_req_rx_bssmap_le(struct gsm_subscriber_connection *conn, struct msgb
 	struct lcs_loc_req *lcs_loc_req = conn->lcs.loc_req;
 	struct bssap_le_pdu bssap_le;
 	struct osmo_bssap_le_err *err;
-	struct rate_ctr *ctr = bsc_gsmnet->smlc->ctrs->ctr;
+	struct rate_ctr *ctr = g_smlc->ctrs->ctr;
 
 	if (!lcs_loc_req) {
 		LOGPFSMSL(conn->fi, DLCS, LOGL_ERROR,

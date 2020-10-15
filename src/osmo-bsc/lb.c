@@ -58,14 +58,14 @@ int bssmap_le_tx_reset()
 		},
 	};
 
-	ss7 = osmo_ss7_instance_find(bsc_gsmnet->smlc->cs7_instance);
+	ss7 = osmo_ss7_instance_find(g_smlc->cs7_instance);
 	OSMO_ASSERT(ss7);
-	LOGP(DRESET, LOGL_INFO, "Sending RESET to SMLC: %s\n", osmo_sccp_addr_name(ss7, &bsc_gsmnet->smlc->smlc_addr));
+	LOGP(DRESET, LOGL_INFO, "Sending RESET to SMLC: %s\n", osmo_sccp_addr_name(ss7, &g_smlc->smlc_addr));
 	msg = osmo_bssap_le_enc(&reset);
 
-	rate_ctr_inc(&bsc_gsmnet->smlc->ctrs->ctr[SMLC_CTR_BSSMAP_LE_TX_UDT_RESET]);
-	return osmo_sccp_tx_unitdata_msg(bsc_gsmnet->smlc->sccp_user, &bsc_gsmnet->smlc->bsc_addr,
-					 &bsc_gsmnet->smlc->smlc_addr, msg);
+	rate_ctr_inc(&g_smlc->ctrs->ctr[SMLC_CTR_BSSMAP_LE_TX_UDT_RESET]);
+	return osmo_sccp_tx_unitdata_msg(g_smlc->sccp_user, &g_smlc->bsc_addr,
+					 &g_smlc->smlc_addr, msg);
 }
 
 /* Send reset-ack to SMLC */
@@ -80,14 +80,14 @@ int bssmap_le_tx_reset_ack()
 		},
 	};
 
-	ss7 = osmo_ss7_instance_find(bsc_gsmnet->smlc->cs7_instance);
+	ss7 = osmo_ss7_instance_find(g_smlc->cs7_instance);
 	OSMO_ASSERT(ss7);
-	LOGP(DRESET, LOGL_NOTICE, "Sending RESET ACK to SMLC: %s\n", osmo_sccp_addr_name(ss7, &bsc_gsmnet->smlc->smlc_addr));
+	LOGP(DRESET, LOGL_NOTICE, "Sending RESET ACK to SMLC: %s\n", osmo_sccp_addr_name(ss7, &g_smlc->smlc_addr));
 	msg = osmo_bssap_le_enc(&reset_ack);
 
-	rate_ctr_inc(&bsc_gsmnet->smlc->ctrs->ctr[SMLC_CTR_BSSMAP_LE_TX_UDT_RESET_ACK]);
-	return osmo_sccp_tx_unitdata_msg(bsc_gsmnet->smlc->sccp_user, &bsc_gsmnet->smlc->bsc_addr,
-					 &bsc_gsmnet->smlc->smlc_addr, msg);
+	rate_ctr_inc(&g_smlc->ctrs->ctr[SMLC_CTR_BSSMAP_LE_TX_UDT_RESET_ACK]);
+	return osmo_sccp_tx_unitdata_msg(g_smlc->sccp_user, &g_smlc->bsc_addr,
+					 &g_smlc->smlc_addr, msg);
 }
 
 static int handle_unitdata_from_smlc(const struct osmo_sccp_addr *smlc_addr, struct msgb *msg,
@@ -96,12 +96,12 @@ static int handle_unitdata_from_smlc(const struct osmo_sccp_addr *smlc_addr, str
 	struct osmo_ss7_instance *ss7;
 	struct bssap_le_pdu bssap_le;
 	struct osmo_bssap_le_err *err;
-	struct rate_ctr *ctr = bsc_gsmnet->smlc->ctrs->ctr;
+	struct rate_ctr *ctr = g_smlc->ctrs->ctr;
 
 	ss7 = osmo_sccp_get_ss7(osmo_sccp_get_sccp(scu));
 	OSMO_ASSERT(ss7);
 
-	if (osmo_sccp_addr_cmp(smlc_addr, &bsc_gsmnet->smlc->smlc_addr, OSMO_SCCP_ADDR_T_MASK)) {
+	if (osmo_sccp_addr_cmp(smlc_addr, &g_smlc->smlc_addr, OSMO_SCCP_ADDR_T_MASK)) {
 		LOGP(DLCS, LOGL_ERROR, "Rx BSSMAP-LE UnitData from unknown remote address: %s\n",
 		     osmo_sccp_addr_name(ss7, smlc_addr));
 		rate_ctr_inc(&ctr[SMLC_CTR_BSSMAP_LE_RX_UNKNOWN_PEER]);
@@ -123,12 +123,12 @@ static int handle_unitdata_from_smlc(const struct osmo_sccp_addr *smlc_addr, str
 	case BSSMAP_LE_MSGT_RESET:
 		rate_ctr_inc(&ctr[SMLC_CTR_BSSMAP_LE_RX_UDT_RESET]);
 		LOGP(DLCS, LOGL_NOTICE, "RESET from SMLC: %s\n", osmo_sccp_addr_name(ss7, smlc_addr));
-		return osmo_fsm_inst_dispatch(bsc_gsmnet->smlc->bssmap_reset->fi, BSSMAP_RESET_EV_RX_RESET, NULL);
+		return osmo_fsm_inst_dispatch(g_smlc->bssmap_reset->fi, BSSMAP_RESET_EV_RX_RESET, NULL);
 
 	case BSSMAP_LE_MSGT_RESET_ACK:
 		rate_ctr_inc(&ctr[SMLC_CTR_BSSMAP_LE_RX_UDT_RESET_ACK]);
 		LOGP(DLCS, LOGL_NOTICE, "RESET-ACK from SMLC: %s\n", osmo_sccp_addr_name(ss7, smlc_addr));
-		return osmo_fsm_inst_dispatch(bsc_gsmnet->smlc->bssmap_reset->fi, BSSMAP_RESET_EV_RX_RESET_ACK, NULL);
+		return osmo_fsm_inst_dispatch(g_smlc->bssmap_reset->fi, BSSMAP_RESET_EV_RX_RESET_ACK, NULL);
 
 	default:
 		rate_ctr_inc(&ctr[SMLC_CTR_BSSMAP_LE_RX_UDT_ERR_INVALID_MSG]);
@@ -236,23 +236,23 @@ static int lb_open_conn(struct gsm_subscriber_connection *conn, struct msgb *msg
 		return -EINVAL;
 	}
 
-	conn_id = bsc_sccp_inst_next_conn_id(bsc_gsmnet->smlc->sccp);
+	conn_id = bsc_sccp_inst_next_conn_id(g_smlc->sccp);
 	if (conn_id < 0) {
 		LOGPFSMSL(conn->fi, DLCS, LOGL_ERROR, "Unable to allocate SCCP Connection ID for BSSMAP-LE to SMLC\n");
 		return -ENOSPC;
 	}
 	conn->lcs.lb.conn_id = conn_id;
-	ss7 = osmo_ss7_instance_find(bsc_gsmnet->smlc->cs7_instance);
+	ss7 = osmo_ss7_instance_find(g_smlc->cs7_instance);
 	OSMO_ASSERT(ss7);
 	LOGPFSMSL(conn->fi, DLCS, LOGL_INFO, "Opening new SCCP connection (id=%i) to SMLC: %s\n", conn_id,
-		  osmo_sccp_addr_name(ss7, &bsc_gsmnet->smlc->smlc_addr));
+		  osmo_sccp_addr_name(ss7, &g_smlc->smlc_addr));
 
-	rc = osmo_sccp_tx_conn_req_msg(bsc_gsmnet->smlc->sccp_user, conn_id, &bsc_gsmnet->smlc->bsc_addr,
-				       &bsc_gsmnet->smlc->smlc_addr, msg);
+	rc = osmo_sccp_tx_conn_req_msg(g_smlc->sccp_user, conn_id, &g_smlc->bsc_addr,
+				       &g_smlc->smlc_addr, msg);
 	if (rc >= 0)
-		rate_ctr_inc(&bsc_gsmnet->smlc->ctrs->ctr[SMLC_CTR_BSSMAP_LE_TX_SUCCESS]);
+		rate_ctr_inc(&g_smlc->ctrs->ctr[SMLC_CTR_BSSMAP_LE_TX_SUCCESS]);
 	else
-		rate_ctr_inc(&bsc_gsmnet->smlc->ctrs->ctr[SMLC_CTR_BSSMAP_LE_TX_ERR_SEND]);
+		rate_ctr_inc(&g_smlc->ctrs->ctr[SMLC_CTR_BSSMAP_LE_TX_ERR_SEND]);
 	if (rc >= 0)
 		conn->lcs.lb.state = SUBSCR_SCCP_ST_WAIT_CONN_CONF;
 
@@ -263,7 +263,7 @@ void lb_close_conn(struct gsm_subscriber_connection *conn)
 {
 	if (conn->lcs.lb.state == SUBSCR_SCCP_ST_NONE)
 		return;
-	osmo_sccp_tx_disconn(bsc_gsmnet->smlc->sccp_user, conn->lcs.lb.conn_id, &bsc_gsmnet->smlc->bsc_addr, 0);
+	osmo_sccp_tx_disconn(g_smlc->sccp_user, conn->lcs.lb.conn_id, &g_smlc->bsc_addr, 0);
 	conn->lcs.lb.state = SUBSCR_SCCP_ST_NONE;
 }
 
@@ -275,7 +275,7 @@ int lb_send(struct gsm_subscriber_connection *conn, const struct bssap_le_pdu *b
 
 	OSMO_ASSERT(conn);
 
-	if (!bssmap_reset_is_conn_ready(bsc_gsmnet->smlc->bssmap_reset)) {
+	if (!bssmap_reset_is_conn_ready(g_smlc->bssmap_reset)) {
 		LOGPFSMSL(conn->fi, DLCS, LOGL_ERROR, "Lb link to SMLC is not ready (no RESET-ACK), cannot send %s\n",
 			  osmo_bssap_le_pdu_to_str_c(OTC_SELECT, bssap_le));
 		/* If the remote side was lost, make sure that the SCCP conn is discarded in the local state and towards
@@ -297,11 +297,11 @@ int lb_send(struct gsm_subscriber_connection *conn, const struct bssap_le_pdu *b
 	}
 
 	LOGPFSMSL(conn->fi, DLCS, LOGL_DEBUG, "Tx %s\n", osmo_bssap_le_pdu_to_str_c(OTC_SELECT, bssap_le));
-	rc = osmo_sccp_tx_data_msg(bsc_gsmnet->smlc->sccp_user, conn->lcs.lb.conn_id, msg);
+	rc = osmo_sccp_tx_data_msg(g_smlc->sccp_user, conn->lcs.lb.conn_id, msg);
 	if (rc >= 0)
-		rate_ctr_inc(&bsc_gsmnet->smlc->ctrs->ctr[SMLC_CTR_BSSMAP_LE_TX_SUCCESS]);
+		rate_ctr_inc(&g_smlc->ctrs->ctr[SMLC_CTR_BSSMAP_LE_TX_SUCCESS]);
 	else
-		rate_ctr_inc(&bsc_gsmnet->smlc->ctrs->ctr[SMLC_CTR_BSSMAP_LE_TX_ERR_SEND]);
+		rate_ctr_inc(&g_smlc->ctrs->ctr[SMLC_CTR_BSSMAP_LE_TX_ERR_SEND]);
 
 count_tx:
 	if (rc < 0)
@@ -309,24 +309,24 @@ count_tx:
 
 	switch (bssap_le->bssmap_le.msg_type) {
 	case BSSMAP_LE_MSGT_PERFORM_LOC_REQ:
-		rate_ctr_inc(&bsc_gsmnet->smlc->ctrs->ctr[SMLC_CTR_BSSMAP_LE_TX_DT1_PERFORM_LOCATION_REQUEST]);
+		rate_ctr_inc(&g_smlc->ctrs->ctr[SMLC_CTR_BSSMAP_LE_TX_DT1_PERFORM_LOCATION_REQUEST]);
 		break;
 	case BSSMAP_LE_MSGT_PERFORM_LOC_ABORT:
-		rate_ctr_inc(&bsc_gsmnet->smlc->ctrs->ctr[SMLC_CTR_BSSMAP_LE_TX_DT1_PERFORM_LOCATION_ABORT]);
+		rate_ctr_inc(&g_smlc->ctrs->ctr[SMLC_CTR_BSSMAP_LE_TX_DT1_PERFORM_LOCATION_ABORT]);
 		break;
 	case BSSMAP_LE_MSGT_CONN_ORIENTED_INFO:
 		switch (bssap_le->bssmap_le.conn_oriented_info.apdu.msg_type) {
 		case BSSLAP_MSGT_TA_RESPONSE:
-			rate_ctr_inc(&bsc_gsmnet->smlc->ctrs->ctr[SMLC_CTR_BSSMAP_LE_TX_DT1_BSSLAP_TA_RESPONSE]);
+			rate_ctr_inc(&g_smlc->ctrs->ctr[SMLC_CTR_BSSMAP_LE_TX_DT1_BSSLAP_TA_RESPONSE]);
 			break;
 		case BSSLAP_MSGT_REJECT:
-			rate_ctr_inc(&bsc_gsmnet->smlc->ctrs->ctr[SMLC_CTR_BSSMAP_LE_TX_DT1_BSSLAP_REJECT]);
+			rate_ctr_inc(&g_smlc->ctrs->ctr[SMLC_CTR_BSSMAP_LE_TX_DT1_BSSLAP_REJECT]);
 			break;
 		case BSSLAP_MSGT_RESET:
-			rate_ctr_inc(&bsc_gsmnet->smlc->ctrs->ctr[SMLC_CTR_BSSMAP_LE_TX_DT1_BSSLAP_RESET]);
+			rate_ctr_inc(&g_smlc->ctrs->ctr[SMLC_CTR_BSSMAP_LE_TX_DT1_BSSLAP_RESET]);
 			break;
 		case BSSLAP_MSGT_ABORT:
-			rate_ctr_inc(&bsc_gsmnet->smlc->ctrs->ctr[SMLC_CTR_BSSMAP_LE_TX_DT1_BSSLAP_ABORT]);
+			rate_ctr_inc(&g_smlc->ctrs->ctr[SMLC_CTR_BSSMAP_LE_TX_DT1_BSSLAP_ABORT]);
 			break;
 		default:
 			break;
@@ -391,12 +391,12 @@ static void lb_start_reset_fsm()
 		},
 	};
 
-	if (bsc_gsmnet->smlc->bssmap_reset) {
+	if (g_smlc->bssmap_reset) {
 		LOGP(DLCS, LOGL_ERROR, "will not allocate a second reset FSM for Lb\n");
 		return;
 	}
 
-	bsc_gsmnet->smlc->bssmap_reset = bssmap_reset_alloc(bsc_gsmnet, "Lb", &cfg);
+	g_smlc->bssmap_reset = bssmap_reset_alloc(bsc_gsmnet, "Lb", &cfg);
 }
 
 static int lb_start()
@@ -409,20 +409,20 @@ static int lb_start()
 	const char *smlc_name = "smlc";
 
 	/* Already set up? */
-	if (bsc_gsmnet->smlc->sccp_user)
+	if (g_smlc->sccp_user)
 		return -EALREADY;
 
 	LOGP(DLCS, LOGL_INFO, "Starting Lb link\n");
 
-	if (!bsc_gsmnet->smlc->cs7_instance_valid) {
-		bsc_gsmnet->smlc->cs7_instance = 0;
+	if (!g_smlc->cs7_instance_valid) {
+		g_smlc->cs7_instance = 0;
 	}
-	cs7_inst = osmo_ss7_instance_find_or_create(tall_bsc_ctx, bsc_gsmnet->smlc->cs7_instance);
+	cs7_inst = osmo_ss7_instance_find_or_create(tall_bsc_ctx, g_smlc->cs7_instance);
 	OSMO_ASSERT(cs7_inst);
 
 	/* If unset, use default SCCP address for the SMLC */
-	if (!bsc_gsmnet->smlc->smlc_addr.presence)
-		osmo_sccp_make_addr_pc_ssn(&bsc_gsmnet->smlc->smlc_addr,
+	if (!g_smlc->smlc_addr.presence)
+		osmo_sccp_make_addr_pc_ssn(&g_smlc->smlc_addr,
 					   osmo_ss7_pointcode_parse(NULL, SMLC_DEFAULT_PC),
 					   OSMO_SCCP_SSN_SMLC_BSSAP_LE);
 
@@ -439,34 +439,34 @@ static int lb_start()
 						 0, DEFAULT_ASP_REMOTE_IP);
 	if (!sccp)
 		return -EINVAL;
-	bsc_gsmnet->smlc->sccp = sccp;
+	g_smlc->sccp = sccp;
 
 	/* If unset, use default local SCCP address */
-	if (!bsc_gsmnet->smlc->bsc_addr.presence)
-		osmo_sccp_local_addr_by_instance(&bsc_gsmnet->smlc->bsc_addr, sccp,
+	if (!g_smlc->bsc_addr.presence)
+		osmo_sccp_local_addr_by_instance(&g_smlc->bsc_addr, sccp,
 						 OSMO_SCCP_SSN_BSC_BSSAP_LE);
 
-	if (!osmo_sccp_check_addr(&bsc_gsmnet->smlc->bsc_addr, OSMO_SCCP_ADDR_T_SSN | OSMO_SCCP_ADDR_T_PC)) {
+	if (!osmo_sccp_check_addr(&g_smlc->bsc_addr, OSMO_SCCP_ADDR_T_SSN | OSMO_SCCP_ADDR_T_PC)) {
 		LOGP(DLCS, LOGL_ERROR,
 		     "%s %s: invalid local (BSC) SCCP address: %s\n",
-		     inst_name, smlc_name, osmo_sccp_inst_addr_name(sccp, &bsc_gsmnet->smlc->bsc_addr));
+		     inst_name, smlc_name, osmo_sccp_inst_addr_name(sccp, &g_smlc->bsc_addr));
 		return -EINVAL;
 	}
 
-	if (!osmo_sccp_check_addr(&bsc_gsmnet->smlc->smlc_addr, OSMO_SCCP_ADDR_T_SSN | OSMO_SCCP_ADDR_T_PC)) {
+	if (!osmo_sccp_check_addr(&g_smlc->smlc_addr, OSMO_SCCP_ADDR_T_SSN | OSMO_SCCP_ADDR_T_PC)) {
 		LOGP(DLCS, LOGL_ERROR,
 		     "%s %s: invalid remote (SMLC) SCCP address: %s\n",
-		     inst_name, smlc_name, osmo_sccp_inst_addr_name(sccp, &bsc_gsmnet->smlc->smlc_addr));
+		     inst_name, smlc_name, osmo_sccp_inst_addr_name(sccp, &g_smlc->smlc_addr));
 		return -EINVAL;
 	}
 
 	LOGP(DLCS, LOGL_NOTICE, "Lb: %s %s: local (BSC) SCCP address: %s\n",
-	     inst_name, smlc_name, osmo_sccp_inst_addr_name(sccp, &bsc_gsmnet->smlc->bsc_addr));
+	     inst_name, smlc_name, osmo_sccp_inst_addr_name(sccp, &g_smlc->bsc_addr));
 	LOGP(DLCS, LOGL_NOTICE, "Lb: %s %s: remote (SMLC) SCCP address: %s\n",
-	     inst_name, smlc_name, osmo_sccp_inst_addr_name(sccp, &bsc_gsmnet->smlc->smlc_addr));
+	     inst_name, smlc_name, osmo_sccp_inst_addr_name(sccp, &g_smlc->smlc_addr));
 
-	bsc_gsmnet->smlc->sccp_user = osmo_sccp_user_bind(sccp, smlc_name, sccp_sap_up, bsc_gsmnet->smlc->bsc_addr.ssn);
-	if (!bsc_gsmnet->smlc->sccp_user)
+	g_smlc->sccp_user = osmo_sccp_user_bind(sccp, smlc_name, sccp_sap_up, g_smlc->bsc_addr.ssn);
+	if (!g_smlc->sccp_user)
 		return -EINVAL;
 
 	lb_start_reset_fsm();
@@ -476,21 +476,21 @@ static int lb_start()
 static int lb_stop()
 {
 	/* Not set up? */
-	if (!bsc_gsmnet->smlc->sccp_user)
+	if (!g_smlc->sccp_user)
 		return -EALREADY;
 
 	LOGP(DLCS, LOGL_INFO, "Shutting down Lb link\n");
 
 	lb_cancel_all();
-	osmo_sccp_user_unbind(bsc_gsmnet->smlc->sccp_user);
-	bsc_gsmnet->smlc->sccp_user = NULL;
+	osmo_sccp_user_unbind(g_smlc->sccp_user);
+	g_smlc->sccp_user = NULL;
 	return 0;
 }
 
 int lb_start_or_stop()
 {
 	int rc;
-	if (bsc_gsmnet->smlc->enable) {
+	if (g_smlc->enable) {
 		rc = lb_start();
 		switch (rc) {
 		case 0:
@@ -524,10 +524,10 @@ static void smlc_vty_init(void);
 
 int lb_init()
 {
-	OSMO_ASSERT(!bsc_gsmnet->smlc);
-	bsc_gsmnet->smlc = talloc_zero(bsc_gsmnet, struct smlc_config);
-	OSMO_ASSERT(bsc_gsmnet->smlc);
-	bsc_gsmnet->smlc->ctrs = rate_ctr_group_alloc(bsc_gsmnet, &smlc_ctrg_desc, 0);
+	OSMO_ASSERT(!g_smlc);
+	g_smlc = talloc_zero(bsc_gsmnet, struct smlc_config);
+	OSMO_ASSERT(g_smlc);
+	g_smlc->ctrs = rate_ctr_group_alloc(bsc_gsmnet, &smlc_ctrg_desc, 0);
 
 	smlc_vty_init();
 	return 0;
@@ -554,7 +554,7 @@ DEFUN(cfg_smlc_enable, cfg_smlc_enable_cmd,
 	"enable",
 	"Start up Lb interface connection to the remote SMLC\n")
 {
-	bsc_gsmnet->smlc->enable = true;
+	g_smlc->enable = true;
 	if (vty->type != VTY_FILE) {
 		if (lb_start_or_stop())
 			vty_out(vty, "%% Error: failed to enable Lb interface%s", VTY_NEWLINE);
@@ -566,7 +566,7 @@ DEFUN(cfg_smlc_no_enable, cfg_smlc_no_enable_cmd,
 	"no enable",
 	NO_STR "Stop Lb interface connection to the remote SMLC\n")
 {
-	bsc_gsmnet->smlc->enable = false;
+	g_smlc->enable = false;
 	if (vty->type != VTY_FILE) {
 		if (lb_start_or_stop())
 			vty_out(vty, "%% Error: failed to disable Lb interface%s", VTY_NEWLINE);
@@ -595,25 +595,25 @@ DEFUN(cfg_smlc_cs7_bsc_addr,
 	const char *bsc_addr_name = argv[0];
 	struct osmo_ss7_instance *ss7;
 
-	ss7 = osmo_sccp_addr_by_name(&bsc_gsmnet->smlc->bsc_addr, bsc_addr_name);
+	ss7 = osmo_sccp_addr_by_name(&g_smlc->bsc_addr, bsc_addr_name);
 	if (!ss7) {
 		vty_out(vty, "Error: No such SCCP addressbook entry: '%s'%s", bsc_addr_name, VTY_NEWLINE);
 		return CMD_ERR_INCOMPLETE;
 	}
 
 	/* Prevent mixing addresses from different CS7 instances */
-	if (bsc_gsmnet->smlc->cs7_instance_valid
-	    && bsc_gsmnet->smlc->cs7_instance != ss7->cfg.id) {
+	if (g_smlc->cs7_instance_valid
+	    && g_smlc->cs7_instance != ss7->cfg.id) {
 		vty_out(vty,
 			"Error: SCCP addressbook entry from mismatching CS7 instance: '%s'%s",
 			bsc_addr_name, VTY_NEWLINE);
 		return CMD_WARNING;
 	}
 
-	bsc_gsmnet->smlc->cs7_instance = ss7->cfg.id;
-	bsc_gsmnet->smlc->cs7_instance_valid = true;
-	enforce_ssn(vty, &bsc_gsmnet->smlc->bsc_addr, OSMO_SCCP_SSN_BSC_BSSAP_LE);
-	bsc_gsmnet->smlc->bsc_addr_name = talloc_strdup(bsc_gsmnet, bsc_addr_name);
+	g_smlc->cs7_instance = ss7->cfg.id;
+	g_smlc->cs7_instance_valid = true;
+	enforce_ssn(vty, &g_smlc->bsc_addr, OSMO_SCCP_SSN_BSC_BSSAP_LE);
+	g_smlc->bsc_addr_name = talloc_strdup(bsc_gsmnet, bsc_addr_name);
 	return CMD_SUCCESS;
 }
 
@@ -625,15 +625,15 @@ DEFUN(cfg_smlc_cs7_smlc_addr,
 	const char *smlc_addr_name = argv[0];
 	struct osmo_ss7_instance *ss7;
 
-	ss7 = osmo_sccp_addr_by_name(&bsc_gsmnet->smlc->smlc_addr, smlc_addr_name);
+	ss7 = osmo_sccp_addr_by_name(&g_smlc->smlc_addr, smlc_addr_name);
 	if (!ss7) {
 		vty_out(vty, "Error: No such SCCP addressbook entry: '%s'%s", smlc_addr_name, VTY_NEWLINE);
 		return CMD_ERR_INCOMPLETE;
 	}
 
 	/* Prevent mixing addresses from different CS7/SS7 instances */
-	if (bsc_gsmnet->smlc->cs7_instance_valid) {
-		if (bsc_gsmnet->smlc->cs7_instance != ss7->cfg.id) {
+	if (g_smlc->cs7_instance_valid) {
+		if (g_smlc->cs7_instance != ss7->cfg.id) {
 			vty_out(vty,
 				"Error: SCCP addressbook entry from mismatching CS7 instance: '%s'%s",
 				smlc_addr_name, VTY_NEWLINE);
@@ -641,33 +641,33 @@ DEFUN(cfg_smlc_cs7_smlc_addr,
 		}
 	}
 
-	bsc_gsmnet->smlc->cs7_instance = ss7->cfg.id;
-	bsc_gsmnet->smlc->cs7_instance_valid = true;
-	enforce_ssn(vty, &bsc_gsmnet->smlc->smlc_addr, OSMO_SCCP_SSN_SMLC_BSSAP_LE);
-	bsc_gsmnet->smlc->smlc_addr_name = talloc_strdup(bsc_gsmnet, smlc_addr_name);
+	g_smlc->cs7_instance = ss7->cfg.id;
+	g_smlc->cs7_instance_valid = true;
+	enforce_ssn(vty, &g_smlc->smlc_addr, OSMO_SCCP_SSN_SMLC_BSSAP_LE);
+	g_smlc->smlc_addr_name = talloc_strdup(bsc_gsmnet, smlc_addr_name);
 	return CMD_SUCCESS;
 }
 
 static int config_write_smlc(struct vty *vty)
 {
 	/* Nothing to write? */
-	if (!(bsc_gsmnet->smlc->enable
-	      || bsc_gsmnet->smlc->bsc_addr_name
-	      || bsc_gsmnet->smlc->smlc_addr_name))
+	if (!(g_smlc->enable
+	      || g_smlc->bsc_addr_name
+	      || g_smlc->smlc_addr_name))
 		return 0;
 
 	vty_out(vty, "smlc%s", VTY_NEWLINE);
 
-	if (bsc_gsmnet->smlc->enable)
+	if (g_smlc->enable)
 		vty_out(vty, " enable%s", VTY_NEWLINE);
 
-	if (bsc_gsmnet->smlc->bsc_addr_name) {
+	if (g_smlc->bsc_addr_name) {
 		vty_out(vty, " bsc-addr %s%s",
-			bsc_gsmnet->smlc->bsc_addr_name, VTY_NEWLINE);
+			g_smlc->bsc_addr_name, VTY_NEWLINE);
 	}
-	if (bsc_gsmnet->smlc->smlc_addr_name) {
+	if (g_smlc->smlc_addr_name) {
 		vty_out(vty, " smlc-addr %s%s",
-			bsc_gsmnet->smlc->smlc_addr_name, VTY_NEWLINE);
+			g_smlc->smlc_addr_name, VTY_NEWLINE);
 	}
 
 	return 0;

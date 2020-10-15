@@ -48,7 +48,7 @@ int bsc_sccp_inst_next_conn_id(struct osmo_sccp_instance *sccp)
 				}
 			}
 
-			if (bsc_gsmnet->smlc->sccp == sccp
+			if (g_smlc->sccp == sccp
 			    && conn->lcs.lb.state != SUBSCR_SCCP_ST_NONE) {
 				if (conn_id == conn->lcs.lb.conn_id) {
 					conn_id_already_used = true;
