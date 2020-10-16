@@ -55,9 +55,6 @@
 #define OM_HEADROOM_SIZE	128
 #define IPACC_SEGMENT_SIZE	245
 
-#define LOGPFOH(ss, lvl, foh, fmt, args ...) LOGP(ss, lvl, "%s: " fmt, abis_nm_dump_foh(foh), ## args)
-#define DEBUGPFOH(ss, foh, fmt, args ...) LOGPFOH(ss, LOGL_DEBUG, foh, fmt, ## args)
-
 int abis_nm_tlv_parse(struct tlv_parsed *tp, struct gsm_bts *bts, const uint8_t *buf, int len)
 {
 	if (!bts->model)

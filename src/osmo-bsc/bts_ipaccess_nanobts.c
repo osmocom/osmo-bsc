@@ -380,7 +380,7 @@ static void nm_rx_set_radio_attr_ack(struct msgb *oml_msg)
 	struct gsm_bts_trx *trx = gsm_bts_trx_num(bts, foh->obj_inst.trx_nr);
 
 	if (!trx || foh->obj_class != NM_OC_RADIO_CARRIER) {
-		LOG_TRX(trx, DNM, LOGL_ERROR, "Set Radio Carrier Attr Ack received on non Radio Carrier object!\n");
+		LOGPFOH(DNM, LOGL_ERROR, foh, "Set Radio Carrier Attr Ack received on non Radio Carrier object!\n");
 		return;
 	}
 	osmo_fsm_inst_dispatch(trx->mo.fi, NM_EV_SET_ATTR_ACK, NULL);
@@ -392,7 +392,7 @@ static void nm_rx_set_chan_attr_ack(struct msgb *oml_msg)
 	struct gsm_bts_trx_ts *ts = abis_nm_get_ts(oml_msg);
 
 	if (!ts || foh->obj_class != NM_OC_CHANNEL) {
-		LOG_TS(ts, LOGL_ERROR, "Set Channel Attr Ack received on non Radio Channel object!\n");
+		LOGPFOH(DNM, LOGL_ERROR, foh, "Set Channel Attr Ack received on non Radio Channel object!\n");
 		return;
 	}
 	osmo_fsm_inst_dispatch(ts->mo.fi, NM_EV_SET_ATTR_ACK, NULL);

@@ -178,4 +178,7 @@ int abis_nm_update_max_power_red(struct gsm_bts_trx *trx);
 
 struct gsm_bts_trx_ts *abis_nm_get_ts(const struct msgb *oml_msg);
 
+#define LOGPFOH(ss, lvl, foh, fmt, args ...) LOGP(ss, lvl, "%s: " fmt, abis_nm_dump_foh(foh), ## args)
+#define DEBUGPFOH(ss, foh, fmt, args ...) LOGPFOH(ss, LOGL_DEBUG, foh, fmt, ## args)
+
 #endif /* _NM_H */
