@@ -372,9 +372,7 @@ static int rf_ctrl_accept(struct osmo_fd *bfd, unsigned int what)
 	}
 
 	osmo_wqueue_init(&conn->queue, 10);
-	conn->queue.bfd.data = conn;
-	conn->queue.bfd.fd = fd;
-	conn->queue.bfd.when = OSMO_FD_READ | OSMO_FD_WRITE;
+	osmo_fd_setup(&conn->queue.bfd, fd, OSMO_FD_READ | OSMO_FD_WRITE, osmo_wqueue_bfd_cb, conn, 0);
 	conn->queue.read_cb = rf_read_cmd;
 	conn->queue.write_cb = rf_write_cmd;
 	conn->rf = rf;
@@ -484,9 +482,7 @@ static int rf_create_socket(struct osmo_bsc_rf *rf, const char *path)
 		return -1;
 	}
 
-	bfd->when = OSMO_FD_READ;
-	bfd->cb = rf_ctrl_accept;
-	bfd->data = rf;
+	osmo_fd_setup(bfd, bfd->fd, OSMO_FD_READ, rf_ctrl_accept, rf, 0);
 
 	if (osmo_fd_register(bfd) != 0) {
 		LOGP(DLINP, LOGL_ERROR, "Failed to register bfd.\n");

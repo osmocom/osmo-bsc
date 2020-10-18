@@ -446,13 +446,12 @@ int main(int argc, char **argv)
 	else if (cmdline_opts.send_interval >= cmdline_opts.list_view_timeout)
 		fprintf(stdout, "\nWARNING: the --timeout should be larger than --interval.\n\n");
 
-	bfd.cb = bfd_cb;
-	bfd.when = OSMO_FD_READ | OSMO_FD_WRITE;
-	bfd.fd = udp_sock(cmdline_opts.ifname, cmdline_opts.bind_ip);
-	if (bfd.fd < 0) {
+	rc = udp_sock(cmdline_opts.ifname, cmdline_opts.bind_ip);
+	if (rc < 0) {
 		perror("Cannot create local socket for broadcast udp");
 		exit(1);
 	}
+	osmo_fd_setup(&bfd, rc, OSMO_FD_READ | OSMO_FD_WRITE, bfd_cb, NULL, 0);
 
 	rc = osmo_fd_register(&bfd);
 	if (rc < 0) {

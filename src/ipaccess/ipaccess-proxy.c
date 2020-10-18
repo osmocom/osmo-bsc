@@ -936,11 +936,7 @@ static int listen_fd_cb(struct osmo_fd *listen_bfd, unsigned int what)
 	}
 
 	bfd = &ipc->fd;
-	bfd->fd = ret;
-	bfd->data = ipc;
-	bfd->priv_nr = listen_bfd->priv_nr;
-	bfd->cb = proxy_ipaccess_fd_cb;
-	bfd->when = OSMO_FD_READ;
+	osmo_fd_setup(bfd, ret, OSMO_FD_READ, proxy_ipaccess_fd_cb, ipc, listen_bfd->priv_nr);
 	ret = osmo_fd_register(bfd);
 	if (ret < 0) {
 		LOGP(DLINP, LOGL_ERROR, "could not register FD\n");
@@ -1016,19 +1012,16 @@ static struct ipa_proxy_conn *connect_bsc(struct sockaddr_in *sa, int priv_nr, v
 
 	ipc->bts_conn = data;
 
-	bfd = &ipc->fd;
-	bfd->fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-	bfd->cb = ipaccess_fd_cb;
-	bfd->when = OSMO_FD_READ | OSMO_FD_WRITE;
-	bfd->data = ipc;
-	bfd->priv_nr = priv_nr;
-
-	if (bfd->fd < 0) {
+	ret = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+	if (ret < 0) {
 		LOGP(DLINP, LOGL_ERROR, "Could not create socket: %s\n",
 			strerror(errno));
 		talloc_free(ipc);
 		return NULL;
 	}
+
+	bfd = &ipc->fd;
+	osmo_fd_setup(bfd, ret, OSMO_FD_READ | OSMO_FD_WRITE, ipaccess_fd_cb, ipc, priv_nr);
 
 	ret = setsockopt(bfd->fd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
 	if (ret < 0) {
