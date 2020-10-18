@@ -406,7 +406,7 @@ static int bfd_cb(struct osmo_fd *bfd, unsigned int flags)
 	if (flags & OSMO_FD_READ)
 		return read_response(bfd->fd);
 	if (flags & OSMO_FD_WRITE) {
-		bfd->when &= ~OSMO_FD_WRITE;
+		osmo_fd_write_disable(bfd);
 		return bcast_find(bfd->fd);
 	}
 	return 0;
@@ -418,7 +418,7 @@ static void timer_cb(void *_data)
 {
 	struct osmo_fd *bfd = _data;
 
-	bfd->when |= OSMO_FD_WRITE;
+	osmo_fd_write_enable(bfd);
 
 	base_stations_bump(false);
 

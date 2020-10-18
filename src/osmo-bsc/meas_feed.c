@@ -119,7 +119,7 @@ static int feed_read_cb(struct osmo_fd *ofd)
 	char buf[256];
 
 	rc = read(ofd->fd, buf, sizeof(buf));
-	ofd->fd &= ~OSMO_FD_READ;
+	osmo_fd_read_disable(ofd);
 
 	return rc;
 }
@@ -159,7 +159,7 @@ int meas_feed_cfg_set(const char *dst_host, uint16_t dst_port)
 	if (rc < 0)
 		return rc;
 
-	g_mfs.wqueue.bfd.when &= ~OSMO_FD_READ;
+	osmo_fd_read_disable(&g_mfs.wqueue.bfd);
 
 	if (g_mfs.dst_host)
 		talloc_free(g_mfs.dst_host);

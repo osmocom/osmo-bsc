@@ -283,7 +283,7 @@ static int handle_udp_read(struct osmo_fd *bfd)
 	if (other_conn) {
 		/* enqueue the message for TX on the respective FD */
 		msgb_enqueue(&other_conn->tx_queue, msg);
-		other_conn->fd.when |= OSMO_FD_WRITE;
+		osmo_fd_write_enable(&other_conn->fd);
 	} else
 		msgb_free(msg);
 
@@ -293,7 +293,7 @@ static int handle_udp_read(struct osmo_fd *bfd)
 static int handle_udp_write(struct osmo_fd *bfd)
 {
 	/* not implemented yet */
-	bfd->when &= ~OSMO_FD_WRITE;
+	osmo_fd_write_disable(bfd);
 
 	return -EIO;
 }
@@ -840,7 +840,7 @@ static int handle_tcp_read(struct osmo_fd *bfd)
 		/* enqueue packet towards BSC */
 		msgb_enqueue(&bsc_conn->tx_queue, msg);
 		/* mark respective filedescriptor as 'we want to write' */
-		bsc_conn->fd.when |= OSMO_FD_WRITE;
+		osmo_fd_write_enable(&bsc_conn->fd);
 	} else {
 		logp_ipbc_uid(DLINP, LOGL_INFO, ipbc, bfd->priv_nr >> 8);
 		LOGPC(DLINP, LOGL_INFO, "Dropping packet from %s, "
@@ -869,7 +869,7 @@ static int handle_tcp_write(struct osmo_fd *bfd)
 
 	/* get the next msg for this timeslot */
 	if (llist_empty(&ipc->tx_queue)) {
-		bfd->when &= ~OSMO_FD_WRITE;
+		osmo_fd_write_disable(bfd);
 		return 0;
 	}
 	lh = ipc->tx_queue.next;
