@@ -739,3 +739,391 @@ int gsm_bts_set_system_infos(struct gsm_bts *bts)
 
 	return 0;
 }
+
+const struct rate_ctr_desc bts_ctr_description[] = {
+	[BTS_CTR_CHREQ_TOTAL] = \
+		{ "chreq:total",
+		  "Received channel requests" },
+	[BTS_CTR_CHREQ_SUCCESSFUL] = \
+		{ "chreq:successful",
+		  "Successful channel requests (immediate assign sent)" },
+	[BTS_CTR_CHREQ_NO_CHANNEL] = \
+		{ "chreq:no_channel",
+		  "Sent to MS no channel available" },
+	[BTS_CTR_CHAN_RF_FAIL] = \
+		{ "chan:rf_fail",
+		  "Received a RF failure indication from BTS" },
+	[BTS_CTR_CHAN_RLL_ERR] = \
+		{ "chan:rll_err",
+		  "Received a RLL failure with T200 cause from BTS" },
+	[BTS_CTR_BTS_OML_FAIL] = \
+		{ "oml_fail",
+		  "Received a TEI down on a OML link" },
+	[BTS_CTR_BTS_RSL_FAIL] = \
+		{ "rsl_fail",
+		  "Received a TEI down on a OML link" },
+	[BTS_CTR_CODEC_AMR_F] = \
+		{ "codec:amr_f",
+		  "Count the usage of AMR/F codec by channel mode requested" },
+	[BTS_CTR_CODEC_AMR_H] = \
+		{ "codec:amr_h",
+		  "Count the usage of AMR/H codec by channel mode requested" },
+	[BTS_CTR_CODEC_EFR] = \
+		{ "codec:efr",
+		  "Count the usage of EFR codec by channel mode requested" },
+	[BTS_CTR_CODEC_V1_FR] = \
+		{ "codec:fr",
+		  "Count the usage of FR codec by channel mode requested" },
+	[BTS_CTR_CODEC_V1_HR] = \
+		{ "codec:hr",
+		  "Count the usage of HR codec by channel mode requested" },
+	[BTS_CTR_PAGING_ATTEMPTED] = \
+		{ "paging:attempted",
+		  "Paging attempts for a subscriber" },
+	[BTS_CTR_PAGING_ALREADY] = \
+		{ "paging:already",
+		  "Paging attempts ignored as subscriber was already being paged" },
+	[BTS_CTR_PAGING_RESPONDED] = \
+		{ "paging:responded",
+		  "Paging attempts with successful paging response" },
+	[BTS_CTR_PAGING_EXPIRED] = \
+		{ "paging:expired",
+		  "Paging Request expired because of timeout T3113" },
+	[BTS_CTR_PAGING_NO_ACTIVE_PAGING] = \
+		{ "paging:no_active_paging",
+		  "Paging response without an active paging request (arrived after paging expiration?)" },
+	[BTS_CTR_PAGING_MSC_FLUSH] = \
+		{ "paging:msc_flush",
+		  "Paging flushed due to MSC Reset BSSMAP message" },
+	[BTS_CTR_CHAN_ACT_TOTAL] = \
+		{ "chan_act:total",
+		  "Total number of Channel Activations" },
+	[BTS_CTR_CHAN_ACT_NACK] = \
+		{ "chan_act:nack",
+		  "Number of Channel Activations that the BTS NACKed" },
+	[BTS_CTR_RSL_UNKNOWN] = \
+		{ "rsl:unknown",
+		  "Number of unknown/unsupported RSL messages received from BTS" },
+	[BTS_CTR_RSL_IPA_NACK] = \
+		{ "rsl:ipa_nack",
+		  "Number of IPA (RTP/dyn-PDCH) related NACKs received from BTS" },
+	[BTS_CTR_RSL_DELETE_IND] = \
+		{ "rsl:delete_ind",
+		  "Number of RSL DELETE INDICATION (DL CCCH overload)" },
+	[BTS_CTR_MODE_MODIFY_NACK] = \
+		{ "chan:mode_modify_nack",
+		  "Number of Channel Mode Modify NACKs received from BTS" },
+
+	/* lchan/TS BORKEN state counters */
+	[BTS_CTR_LCHAN_BORKEN_FROM_UNUSED] = \
+		{ "lchan_borken:from_state:unused",
+		  "Transitions from lchan UNUSED state to BORKEN state" },
+	[BTS_CTR_LCHAN_BORKEN_FROM_WAIT_ACTIV_ACK] = \
+		{ "lchan_borken:from_state:wait_activ_ack",
+		  "Transitions from lchan WAIT_ACTIV_ACK state to BORKEN state" },
+	[BTS_CTR_LCHAN_BORKEN_FROM_WAIT_RF_RELEASE_ACK] = \
+		{ "lchan_borken:from_state:wait_rf_release_ack",
+		  "Transitions from lchan WAIT_RF_RELEASE_ACK state to BORKEN state" },
+	[BTS_CTR_LCHAN_BORKEN_FROM_BORKEN] = \
+		{ "lchan_borken:from_state:borken",
+		  "Transitions from lchan BORKEN state to BORKEN state" },
+	[BTS_CTR_LCHAN_BORKEN_FROM_WAIT_RR_CHAN_MODE_MODIFY_ACK] = \
+		{ "lchan_borken:from_state:wait_rr_chan_mode_modify_ack",
+		  "Transitions from lchan WAIT_RR_CHAN_MODE_MODIFY_ACK state to BORKEN state" },
+	[BTS_CTR_LCHAN_BORKEN_FROM_WAIT_RSL_CHAN_MODE_MODIFY_ACK] = \
+		{ "lchan_borken:from_state:wait_rsl_chan_mode_modify_ack",
+		  "Transitions from lchan RSL_CHAN_MODE_MODIFY_ACK state to BORKEN state" },
+	[BTS_CTR_LCHAN_BORKEN_FROM_UNKNOWN] = \
+		{ "lchan_borken:from_state:unknown",
+		  "Transitions from an unknown lchan state to BORKEN state" },
+	[BTS_CTR_LCHAN_BORKEN_EV_CHAN_ACTIV_ACK] = \
+		{ "lchan_borken:event:chan_activ_ack",
+		  "CHAN_ACTIV_ACK received in the lchan BORKEN state" },
+	[BTS_CTR_LCHAN_BORKEN_EV_CHAN_ACTIV_NACK] = \
+		{ "lchan_borken:event:chan_activ_nack",
+		  "CHAN_ACTIV_NACK received in the lchan BORKEN state" },
+	[BTS_CTR_LCHAN_BORKEN_EV_RF_CHAN_REL_ACK] = \
+		{ "lchan_borken:event:rf_chan_rel_ack",
+		  "RF_CHAN_REL_ACK received in the lchan BORKEN state" },
+	[BTS_CTR_LCHAN_BORKEN_EV_VTY] = \
+		{ "lchan_borken:event:vty",
+		  "VTY commands received in the lchan BORKEN state" },
+	[BTS_CTR_LCHAN_BORKEN_EV_TEARDOWN] = \
+		{ "lchan_borken:event:teardown",
+		  "lchan in a BORKEN state is shutting down (BTS disconnected?)" },
+	[BTS_CTR_TS_BORKEN_FROM_NOT_INITIALIZED] = \
+		{ "ts_borken:from_state:not_initialized",
+		  "Transitions from TS NOT_INITIALIZED state to BORKEN state" },
+	[BTS_CTR_TS_BORKEN_FROM_UNUSED] = \
+		{ "ts_borken:from_state:unused",
+		  "Transitions from TS UNUSED state to BORKEN state" },
+	[BTS_CTR_TS_BORKEN_FROM_WAIT_PDCH_ACT] = \
+		{ "ts_borken:from_state:wait_pdch_act",
+		  "Transitions from TS WAIT_PDCH_ACT state to BORKEN state" },
+	[BTS_CTR_TS_BORKEN_FROM_PDCH] = \
+		{ "ts_borken:from_state:pdch",
+		  "Transitions from TS PDCH state to BORKEN state" },
+	[BTS_CTR_TS_BORKEN_FROM_WAIT_PDCH_DEACT] = \
+		{ "ts_borken:from_state:wait_pdch_deact",
+		  "Transitions from TS WAIT_PDCH_DEACT state to BORKEN state" },
+	[BTS_CTR_TS_BORKEN_FROM_IN_USE] = \
+		{ "ts_borken:from_state:in_use",
+		  "Transitions from TS IN_USE state to BORKEN state" },
+	[BTS_CTR_TS_BORKEN_FROM_BORKEN] = \
+		{ "ts_borken:from_state:borken",
+		  "Transitions from TS BORKEN state to BORKEN state" },
+	[BTS_CTR_TS_BORKEN_FROM_UNKNOWN] = \
+		{ "ts_borken:from_state:unknown",
+		  "Transitions from an unknown TS state to BORKEN state" },
+	[BTS_CTR_TS_BORKEN_EV_PDCH_ACT_ACK_NACK] = \
+		{ "ts_borken:event:pdch_act_ack_nack",
+		  "PDCH_ACT_ACK/NACK received in the TS BORKEN state" },
+	[BTS_CTR_TS_BORKEN_EV_PDCH_DEACT_ACK_NACK] = \
+		{ "ts_borken:event:pdch_deact_ack_nack",
+		  "PDCH_DEACT_ACK/NACK received in the TS BORKEN state" },
+	[BTS_CTR_TS_BORKEN_EV_TEARDOWN] = \
+		{ "ts_borken:event:teardown",
+		  "TS in a BORKEN state is shutting down (BTS disconnected?)" },
+	[BTS_CTR_ASSIGNMENT_ATTEMPTED] = \
+		{ "assignment:attempted",
+		  "Assignment attempts" },
+	[BTS_CTR_ASSIGNMENT_COMPLETED] = \
+		{ "assignment:completed",
+		  "Assignment completed" },
+	[BTS_CTR_ASSIGNMENT_STOPPED] = \
+		{ "assignment:stopped",
+		  "Connection ended during Assignment" },
+	[BTS_CTR_ASSIGNMENT_NO_CHANNEL] = \
+		{ "assignment:no_channel",
+		  "Failure to allocate lchan for Assignment" },
+	[BTS_CTR_ASSIGNMENT_TIMEOUT] = \
+		{ "assignment:timeout",
+		  "Assignment timed out" },
+	[BTS_CTR_ASSIGNMENT_FAILED] = \
+		{ "assignment:failed",
+		  "Received Assignment Failure message" },
+	[BTS_CTR_ASSIGNMENT_ERROR] = \
+		{ "assignment:error",
+		  "Assignment failed for other reason" },
+
+	[BTS_CTR_HANDOVER_ATTEMPTED] = \
+		{ "handover:attempted",
+		  "Intra-BSC handover attempts" },
+	[BTS_CTR_HANDOVER_COMPLETED] = \
+		{ "handover:completed",
+		  "Intra-BSC handover completed" },
+	[BTS_CTR_HANDOVER_STOPPED] = \
+		{ "handover:stopped",
+		  "Connection ended during HO" },
+	[BTS_CTR_HANDOVER_NO_CHANNEL] = \
+		{ "handover:no_channel",
+		  "Failure to allocate lchan for HO" },
+	[BTS_CTR_HANDOVER_TIMEOUT] = \
+		{ "handover:timeout",
+		  "Handover timed out" },
+	[BTS_CTR_HANDOVER_FAILED] = \
+		{ "handover:failed",
+		  "Received Handover Fail messages" },
+	[BTS_CTR_HANDOVER_ERROR] = \
+		{ "handover:error",
+		  "Re-assignment failed for other reason" },
+
+	[BTS_CTR_INTRA_CELL_HO_ATTEMPTED] = \
+		{ "intra_cell_ho:attempted",
+		  "Intra-Cell handover attempts" },
+	[BTS_CTR_INTRA_CELL_HO_COMPLETED] = \
+		{ "intra_cell_ho:completed",
+		  "Intra-Cell handover completed" },
+	[BTS_CTR_INTRA_CELL_HO_STOPPED] = \
+		{ "intra_cell_ho:stopped",
+		  "Connection ended during HO" },
+	[BTS_CTR_INTRA_CELL_HO_NO_CHANNEL] = \
+		{ "intra_cell_ho:no_channel",
+		  "Failure to allocate lchan for HO" },
+	[BTS_CTR_INTRA_CELL_HO_TIMEOUT] = \
+		{ "intra_cell_ho:timeout",
+		  "Handover timed out" },
+	[BTS_CTR_INTRA_CELL_HO_FAILED] = \
+		{ "intra_cell_ho:failed",
+		  "Received Handover Fail messages" },
+	[BTS_CTR_INTRA_CELL_HO_ERROR] = \
+		{ "intra_cell_ho:error",
+		  "Re-assignment failed for other reason" },
+
+	[BTS_CTR_INTRA_BSC_HO_ATTEMPTED] = \
+		{ "intra_bsc_ho:attempted",
+		  "Intra-BSC handover attempts" },
+	[BTS_CTR_INTRA_BSC_HO_COMPLETED] = \
+		{ "intra_bsc_ho:completed",
+		  "Intra-BSC handover completed" },
+	[BTS_CTR_INTRA_BSC_HO_STOPPED] = \
+		{ "intra_bsc_ho:stopped",
+		  "Connection ended during HO" },
+	[BTS_CTR_INTRA_BSC_HO_NO_CHANNEL] = \
+		{ "intra_bsc_ho:no_channel",
+		  "Failure to allocate lchan for HO" },
+	[BTS_CTR_INTRA_BSC_HO_TIMEOUT] = \
+		{ "intra_bsc_ho:timeout",
+		  "Handover timed out" },
+	[BTS_CTR_INTRA_BSC_HO_FAILED] = \
+		{ "intra_bsc_ho:failed",
+		  "Received Handover Fail messages" },
+	[BTS_CTR_INTRA_BSC_HO_ERROR] = \
+		{ "intra_bsc_ho:error",
+		  "Re-assignment failed for other reason" },
+
+	[BTS_CTR_INTER_BSC_HO_OUT_ATTEMPTED] = \
+		{ "interbsc_ho_out:attempted",
+		  "Attempts to handover to remote BSS" },
+	[BTS_CTR_INTER_BSC_HO_OUT_COMPLETED] = \
+		{ "interbsc_ho_out:completed",
+		  "Handover to remote BSS completed" },
+	[BTS_CTR_INTER_BSC_HO_OUT_STOPPED] = \
+		{ "interbsc_ho_out:stopped",
+		  "Connection ended during HO" },
+	[BTS_CTR_INTER_BSC_HO_OUT_TIMEOUT] = \
+		{ "interbsc_ho_out:timeout",
+		  "Handover timed out" },
+	[BTS_CTR_INTER_BSC_HO_OUT_FAILED] = \
+		{ "interbsc_ho_out:failed",
+		  "Received Handover Fail message" },
+	[BTS_CTR_INTER_BSC_HO_OUT_ERROR] = \
+		{ "interbsc_ho_out:error",
+		  "Handover to remote BSS failed for other reason" },
+	[BTS_CTR_INTER_BSC_HO_IN_ATTEMPTED] = \
+		{ "interbsc_ho_in:attempted",
+		  "Attempts to handover from remote BSS" },
+	[BTS_CTR_INTER_BSC_HO_IN_COMPLETED] = \
+		{ "interbsc_ho_in:completed",
+		  "Handover from remote BSS completed" },
+	[BTS_CTR_INTER_BSC_HO_IN_STOPPED] = \
+		{ "interbsc_ho_in:stopped",
+		  "Connection ended during HO" },
+	[BTS_CTR_INTER_BSC_HO_IN_NO_CHANNEL] = \
+		{ "interbsc_ho_in:no_channel",
+		  "Failure to allocate lchan for HO" },
+	[BTS_CTR_INTER_BSC_HO_IN_TIMEOUT] = \
+		{ "interbsc_ho_in:timeout",
+		  "Handover from remote BSS timed out" },
+	[BTS_CTR_INTER_BSC_HO_IN_FAILED] = \
+		{ "interbsc_ho_in:failed",
+		  "Received Handover Fail message" },
+	[BTS_CTR_INTER_BSC_HO_IN_ERROR] = \
+		{ "interbsc_ho_in:error",
+		  "Handover from remote BSS failed for other reason" },
+};
+
+const struct rate_ctr_group_desc bts_ctrg_desc = {
+	"bts",
+	"base transceiver station",
+	OSMO_STATS_CLASS_GLOBAL,
+	ARRAY_SIZE(bts_ctr_description),
+	bts_ctr_description,
+};
+
+const struct osmo_stat_item_desc bts_stat_desc[] = {
+	[BTS_STAT_CHAN_LOAD_AVERAGE] = \
+		{ "chanloadavg",
+		  "Channel load average",
+		  "%", 16, 0 },
+	[BTS_STAT_CHAN_CCCH_SDCCH4_USED] = \
+		{ "chan_ccch_sdcch4:used",
+		  "Number of CCCH+SDCCH4 channels used",
+		  "", 16, 0 },
+	[BTS_STAT_CHAN_CCCH_SDCCH4_TOTAL] = \
+		{ "chan_ccch_sdcch4:total",
+		  "Number of CCCH+SDCCH4 channels total",
+		  "", 16, 0 },
+	[BTS_STAT_CHAN_TCH_F_USED] = \
+		{ "chan_tch_f:used",
+		  "Number of TCH/F channels used",
+		  "", 16, 0 },
+	[BTS_STAT_CHAN_TCH_F_TOTAL] = \
+		{ "chan_tch_f:total",
+		  "Number of TCH/F channels total",
+		  "", 16, 0 },
+	[BTS_STAT_CHAN_TCH_H_USED] = \
+		{ "chan_tch_h:used",
+		  "Number of TCH/H channels used",
+		  "", 16, 0 },
+	[BTS_STAT_CHAN_TCH_H_TOTAL] = \
+		{ "chan_tch_h:total",
+		  "Number of TCH/H channels total",
+		  "", 16, 0 },
+	[BTS_STAT_CHAN_SDCCH8_USED] = \
+		{ "chan_sdcch8:used",
+		  "Number of SDCCH8 channels used",
+		  "", 16, 0 },
+	[BTS_STAT_CHAN_SDCCH8_TOTAL] = \
+		{ "chan_sdcch8:total",
+		  "Number of SDCCH8 channels total",
+		  "", 16, 0 },
+	[BTS_STAT_CHAN_TCH_F_PDCH_USED] = \
+		{ "chan_tch_f_pdch:used",
+		  "Number of TCH/F_PDCH channels used",
+		  "", 16, 0 },
+	[BTS_STAT_CHAN_TCH_F_PDCH_TOTAL] = \
+		{ "chan_tch_f_pdch:total",
+		  "Number of TCH/F_PDCH channels total",
+		  "", 16, 0 },
+	[BTS_STAT_CHAN_CCCH_SDCCH4_CBCH_USED] = \
+		{ "chan_ccch_sdcch4_cbch:used",
+		  "Number of CCCH+SDCCH4+CBCH channels used",
+		  "", 16, 0 },
+	[BTS_STAT_CHAN_CCCH_SDCCH4_CBCH_TOTAL] = \
+		{ "chan_ccch_sdcch4_cbch:total",
+		  "Number of CCCH+SDCCH4+CBCH channels total",
+		  "", 16, 0 },
+	[BTS_STAT_CHAN_SDCCH8_CBCH_USED] = \
+		{ "chan_sdcch8_cbch:used",
+		  "Number of SDCCH8+CBCH channels used",
+		  "", 16, 0 },
+	[BTS_STAT_CHAN_SDCCH8_CBCH_TOTAL] = \
+		{ "chan_sdcch8_cbch:total",
+		  "Number of SDCCH8+CBCH channels total",
+		  "", 16, 0 },
+	[BTS_STAT_CHAN_TCH_F_TCH_H_PDCH_USED] = \
+		{ "chan_tch_f_tch_h_pdch:used",
+		  "Number of TCH/F_TCH/H_PDCH channels used",
+		  "", 16, 0 },
+	[BTS_STAT_CHAN_TCH_F_TCH_H_PDCH_TOTAL] = \
+		{ "chan_tch_f_tch_h_pdch:total",
+		  "Number of TCH/F_TCH/H_PDCH channels total",
+		  "", 16, 0 },
+	[BTS_STAT_T3122] = \
+		{ "T3122",
+		  "T3122 IMMEDIATE ASSIGNMENT REJECT wait indicator",
+		  "s", 16, GSM_T3122_DEFAULT },
+	[BTS_STAT_RACH_BUSY] = \
+		{ "rach_busy",
+		  "RACH slots with signal above threshold",
+		  "%", 16, 0 },
+	[BTS_STAT_RACH_ACCESS] = \
+		{ "rach_access",
+		  "RACH slots with access bursts in them",
+		  "%", 16, 0 },
+	[BTS_STAT_OML_CONNECTED] = \
+		{ "oml_connected",
+		  "Number of OML links connected",
+		  "", 16, 0   },
+	[BTS_STAT_RSL_CONNECTED] = \
+		{ "rsl_connected",
+		  "Number of RSL links connected",
+		  "", 16, 0   },
+	[BTS_STAT_LCHAN_BORKEN] = \
+		{ "lchan_borken",
+		  "Number of lchans in the BORKEN state",
+		  "", 16, 0 },
+	[BTS_STAT_TS_BORKEN] = \
+		{ "ts_borken",
+		  "Number of timeslots in the BORKEN state",
+		  "", 16, 0 },
+};
+
+const struct osmo_stat_item_group_desc bts_statg_desc = {
+	.group_name_prefix = "bts",
+	.group_description = "base transceiver station",
+	.class_id = OSMO_STATS_CLASS_GLOBAL,
+	.num_items = ARRAY_SIZE(bts_stat_desc),
+	.item_desc = bts_stat_desc,
+};
