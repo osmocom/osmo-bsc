@@ -296,6 +296,7 @@ static struct osmo_fsm_state nm_chan_fsm_states[] = {
 			X(NM_EV_SW_ACT_REP) |
 			X(NM_EV_STATE_CHG_REP),
 		.out_state_mask =
+			X(NM_CHAN_ST_OP_DISABLED_NOTINSTALLED) |
 			X(NM_CHAN_ST_OP_DISABLED_DEPENDENCY) |
 			X(NM_CHAN_ST_OP_DISABLED_OFFLINE) |
 			X(NM_CHAN_ST_OP_ENABLED),
