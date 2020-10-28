@@ -540,7 +540,7 @@ int bsc_compl_l3(struct gsm_lchan *lchan, struct msgb *msg, uint16_t chosen_chan
 
 early_exit:
 	if (release_lchan)
-		lchan_release(lchan, false, true, RSL_ERR_EQUIPMENT_FAIL);
+		lchan_release(lchan, true, true, RSL_ERR_EQUIPMENT_FAIL);
 	log_set_context(LOG_CTX_BSC_SUBSCR, NULL);
 	return rc;
 }
