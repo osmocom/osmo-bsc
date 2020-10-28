@@ -1,0 +1,73 @@
+== Location Services: Lb interface to SMLC
+
+OsmoBSC and OsmoSMLC support positioning by Timing-Advance (TA), since October
+2020.
+
+A Perform Location Request is initiated by the MSC via BSSMAP on the
+A-interface, for a specific subscriber. The request is typically passed on via
+BSSMAP-LE on the Lb-interface to the SMLC. If required, the SMLC may request the
+subscriber's Timing Advance (a.k.a. Access Delay) from the BSC via BSSLAP
+(encapsulated BSSLAP APDU in a BSSMAP-LE Connection Oriented Information
+message). The SMLC may combine several location and velocity estimate methods to
+form a GAD PDU containing the resulting geographic location information. In
+TA-based positioning, the Timing-Advance information from the BSC is combined
+with the preconfigured latitude and longitude of the serving cell to form a
+location estimate. This is returned to the BSC via the Lb-interface, and in turn
+to the MSC via the A-interface.
+
+[mscgen]
+----
+include::{srcdir}/message-sequences/location_services_ta.msc[]
+----
+
+Location Services (LCS) are described in 3GPP TS 43.059 <<3gpp-ts-43-059>>.
+Messages for LCS on the A-interface (BSSMAP, between BSC and MSC) are described
+in 3GPP TS 48.008 <<3gpp-ts-48-008>>, on the Lb-interface (BSSMAP-LE between BSC
+and SMLC) in 3GPP TS 49.031 <<3gpp-ts-49-031>>. The resulting geographic
+location and possibly velocity information is encoded in GAD, described in 3GPP
+TS 23.032 <<3gpp-ts-23-032>>.
+
+[[smlc-config]]
+=== Configure Lb-interface
+
+All Lb-interface related configuration is found in the `smlc` section of
+OsmoBSC's configuration.
+
+By default, the Lb-interface is disabled in OsmoBSC. It is started by `enable`.
+
+----
+smlc
+ enable
+----
+
+On the Lb-interface, OsmoBSC always uses SSN "BSC (BSSMAP-LE)" (SSN code 250)
+and contacts the remote SMLC on SSN "SMLC (BSSMAP-LE)" (SSN code 252).
+
+The point-codes are configurable, and default to OsmoBSC's local point-code
+0.23.3 (187), and remote SMLC point-code 0.23.6 (190).
+
+To configure a different remote SMLC point-code, first configure an arbitrarily
+named SCCP address in the `cs7` address book, and then apply that to the
+`smlc-addr` configuration:
+
+----
+cs7 instance 0
+ sccp-address my-smlc
+  point-code 0.42.6
+smlc
+ smlc-addr my-smlc
+----
+
+Similarly, OsmoBSC's local point-code on the Lb-interface is configured by the
+`bsc-addr` configuration:
+
+----
+cs7 instance 0
+ sccp-address my-bsc-on-lb
+  point-code 0.42.3
+smlc
+ bsc-addr my-bsc-on-lb
+----
+
+The geographic locations of individual cells are configured at the SMLC. See
+for example OsmoSMLC's user manual <<userman-osmosmlc>>.

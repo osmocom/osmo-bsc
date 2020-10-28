@@ -1,0 +1,49 @@
+msc {
+  hscale="2";
+
+  ms[label="MS/BTS"],bsc[label="BSC"],smlc[label="SMLC"],__msc[label="MSC"];
+
+  ||| [label="Location Services (LCS): Perform Location Request using TA"];
+
+  |||;
+  --- [label="MS in DEDICATED MODE (currently active)"];
+
+  ms =>> bsc [label="earlier Measurement Report provides Timing Advance"];
+
+  bsc <<= __msc [label="PERFORM LOCATION REQUEST\n3GPP TS 48.008 3.2.1.71"];
+
+  bsc =>> smlc [label="BSSMAP-LE PERFORM LOCATION REQUEST\n3GPP TS 49.031 9.1\nwith BSSLAP APDU = TA Layer3\n3GPP TS 48.071 4.2.8"];
+
+  smlc rbox smlc [label="SMLC uses TA included in TA Layer3"];
+
+  bsc <<= smlc [label="BSSMAP-LE PERFORM LOCATION RESPONSE\n3GPP TS 49.031 9.2"];
+
+  bsc =>> __msc [label="PERFORM LOCATION RESPONSE\n3GPP TS 48.008 3.2.1.72"];
+
+  ...;
+  ...;
+  --- [label="MS in IDLE MODE (not connected)"];
+
+  bsc <<= __msc [label="PERFORM LOCATION REQUEST\n3GPP TS 48.008 3.2.1.71"];
+
+  bsc =>> smlc [label="BSSMAP-LE PERFORM LOCATION REQUEST\n3GPP TS 49.031 9.1"];
+
+  smlc rbox smlc [label="SMLC needs TA information,\nasks BSC via BSSLAP"];
+
+  bsc <<= smlc [label="BSSMAP-LE CONNECTION ORIENTED INFORMATION\n3GPP TS 49.031 9.12\nwith BSSLAP APDU = TA Request\n3GPP TS 48.071 4.2.1"];
+
+
+  ms <<= bsc [label="RR Paging Request\n3GPP TS 48.018 9.1.22-24"];
+
+  ms =>> bsc [label="RSL CHANNEL REQUIRED\n3GPP TS 48.058 8.5.3\nincludes Access Delay (9.3.17) == Timing Advance"];
+
+  ms =>> bsc [label="RR Paging Response\n3GPP TS 48.018 9.1.25"];
+
+  ms <<= bsc [label="RF CHANNEL RELEASE\n3GPP TS 48.058 8.4.14"];
+
+  bsc =>> smlc [label="BSSMAP-LE CONNECTION ORIENTED INFORMATION\n3GPP TS 49.031 9.12\nwith BSSLAP APDU = TA Response\n3GPP TS 48.071 4.2.2"];
+
+  bsc <<= smlc [label="BSSMAP-LE PERFORM LOCATION RESPONSE\n3GPP TS 49.031 9.2"];
+
+  bsc =>> __msc [label="PERFORM LOCATION RESPONSE\n3GPP TS 48.008 3.2.1.72"];
+}

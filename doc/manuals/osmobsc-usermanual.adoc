@@ -30,6 +30,8 @@ include::{srcdir}/chapters/smscb.adoc[]
 
 include::{srcdir}/chapters/mscpool.adoc[]
 
+include::{srcdir}/chapters/smlc.adoc[]
+
 include::./common/chapters/counters-overview.adoc[]
 
 include::{srcdir}/chapters/counters.adoc[]

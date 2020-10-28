@@ -140,3 +140,15 @@ msc 0
  mgw remote-ip 10.9.8.7
  mgw remote-port 2427
 ----
+
+==== Configure Lb to connect to an SMLC
+
+Enable the Lb interface. OsmoBSC will then use the default point-codes to
+establish a connection to the SMLC.
+
+----
+smlc
+ enable
+----
+
+More detailed configuration is described in <<smlc-config>>.
