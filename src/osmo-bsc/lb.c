@@ -587,6 +587,28 @@ static void enforce_ssn(struct vty *vty, struct osmo_sccp_addr *addr, enum osmo_
 	addr->ssn = want_ssn;
 }
 
+/* Prevent mixing addresses from different CS7 instances */
+bool smlc_set_cs7_instance(struct vty *vty, const char *from_vty_cmd, const char *from_addr,
+			   struct osmo_ss7_instance *ss7)
+{
+	if (bsc_gsmnet->smlc->cs7_instance_valid) {
+		if (bsc_gsmnet->smlc->cs7_instance != ss7->cfg.id) {
+			LOGP(DLCS, LOGL_ERROR,
+			     "%s: expecting address from cs7 instance %u, but '%s' is from %u\n",
+			     from_vty_cmd, bsc_gsmnet->smlc->cs7_instance, from_addr, ss7->cfg.id);
+			vty_out(vty, "Error:"
+				" %s: expecting address from cs7 instance %u, but '%s' is from %u%s",
+				from_vty_cmd, bsc_gsmnet->smlc->cs7_instance, from_addr, ss7->cfg.id, VTY_NEWLINE);
+			return false;
+		}
+	} else {
+		bsc_gsmnet->smlc->cs7_instance = ss7->cfg.id;
+		bsc_gsmnet->smlc->cs7_instance_valid = true;
+		LOGP(DLCS, LOGL_NOTICE, "Lb interface is using cs7 instance %u\n", bsc_gsmnet->smlc->cs7_instance);
+	}
+	return true;
+}
+
 DEFUN(cfg_smlc_cs7_bsc_addr,
       cfg_smlc_cs7_bsc_addr_cmd,
       "bsc-addr NAME",
@@ -601,17 +623,9 @@ DEFUN(cfg_smlc_cs7_bsc_addr,
 		return CMD_ERR_INCOMPLETE;
 	}
 
-	/* Prevent mixing addresses from different CS7 instances */
-	if (bsc_gsmnet->smlc->cs7_instance_valid
-	    && bsc_gsmnet->smlc->cs7_instance != ss7->cfg.id) {
-		vty_out(vty,
-			"Error: SCCP addressbook entry from mismatching CS7 instance: '%s'%s",
-			bsc_addr_name, VTY_NEWLINE);
+	if (!smlc_set_cs7_instance(vty, "smlc / bsc-addr", bsc_addr_name, ss7))
 		return CMD_WARNING;
-	}
 
-	bsc_gsmnet->smlc->cs7_instance = ss7->cfg.id;
-	bsc_gsmnet->smlc->cs7_instance_valid = true;
 	enforce_ssn(vty, &bsc_gsmnet->smlc->bsc_addr, OSMO_SCCP_SSN_BSC_BSSAP_LE);
 	bsc_gsmnet->smlc->bsc_addr_name = talloc_strdup(bsc_gsmnet, bsc_addr_name);
 	return CMD_SUCCESS;
@@ -631,18 +645,9 @@ DEFUN(cfg_smlc_cs7_smlc_addr,
 		return CMD_ERR_INCOMPLETE;
 	}
 
-	/* Prevent mixing addresses from different CS7/SS7 instances */
-	if (bsc_gsmnet->smlc->cs7_instance_valid) {
-		if (bsc_gsmnet->smlc->cs7_instance != ss7->cfg.id) {
-			vty_out(vty,
-				"Error: SCCP addressbook entry from mismatching CS7 instance: '%s'%s",
-				smlc_addr_name, VTY_NEWLINE);
-			return CMD_ERR_INCOMPLETE;
-		}
-	}
+	if (!smlc_set_cs7_instance(vty, "smlc / smlc-addr", smlc_addr_name, ss7))
+		return CMD_WARNING;
 
-	bsc_gsmnet->smlc->cs7_instance = ss7->cfg.id;
-	bsc_gsmnet->smlc->cs7_instance_valid = true;
 	enforce_ssn(vty, &bsc_gsmnet->smlc->smlc_addr, OSMO_SCCP_SSN_SMLC_BSSAP_LE);
 	bsc_gsmnet->smlc->smlc_addr_name = talloc_strdup(bsc_gsmnet, smlc_addr_name);
 	return CMD_SUCCESS;
