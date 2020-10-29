@@ -43,6 +43,7 @@
 
 #include <osmocom/bsc/osmo_bsc_sigtran.h>
 #include <osmocom/bsc/bts.h>
+#include <osmocom/gsm/rsl.h>
 
 #define LOG_COMPL_L3(pdisc, mtype, loglevel, format, args...) \
 	LOGP(DRSL, loglevel, "%s %s: " format, gsm48_pdisc_name(pdisc), gsm48_pdisc_msgtype_name(pdisc, mtype), ##args)
@@ -351,6 +352,25 @@ static void parse_powercap(struct gsm_subscriber_connection *conn, struct msgb *
 	conn_update_ms_power_class(conn, rc8);
 }
 
+static void spoof_reject(struct gsm_subscriber_connection *conn)
+{
+	struct msgb *msg;
+	struct e1inp_sign_link *rsl_link;
+
+	msg = gsm48_create_loc_upd_rej(GSM48_REJECT_SRV_OPT_TMP_OUT_OF_ORDER);
+	if (!msg) {
+		LOGP(DRSL, LOGL_ERROR, "Failed to create msg for LOCATION UPDATING REJECT.\n");
+		return;
+	}
+
+	rsl_link = conn->lchan->ts->trx->rsl_link;
+	msg->l3h = msg->data;
+	rsl_rll_push_l3(msg, RSL_MT_DATA_REQ, gsm_lchan2chan_nr(conn->lchan),
+			rsl_link->sapi, 1);
+	msg->dst = rsl_link;
+	abis_rsl_sendmsg(msg);
+}
+
 /*! MS->MSC: New MM context with L3 payload. */
 int bsc_compl_l3(struct gsm_lchan *lchan, struct msgb *msg, uint16_t chosen_channel)
 {
@@ -475,6 +495,7 @@ int bsc_compl_l3(struct gsm_lchan *lchan, struct msgb *msg, uint16_t chosen_chan
 				     "%s%s: No suitable MSC for this Complete Layer 3 request found\n",
 				     osmo_mobile_identity_to_str_c(OTC_SELECT, &mi),
 				     is_emerg ? " FOR EMERGENCY CALL" : "");
+			spoof_reject(conn);
 			goto early_exit;
 		}
 
