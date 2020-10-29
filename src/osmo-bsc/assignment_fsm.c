@@ -492,6 +492,11 @@ void assignment_fsm_start(struct gsm_subscriber_connection *conn, struct gsm_bts
 	for (i = 0; i < req->n_ch_mode_rate; i++) {
 		conn->assignment.new_lchan = lchan_select_by_chan_mode(bts,
 		    req->ch_mode_rate[i].chan_mode, req->ch_mode_rate[i].chan_rate);
+		/* FIXME: at this point there is merely an assignment request with a given ch_mode_rate. Writing this to
+		 * conn->lchan->ch_mode_rate is a violation of scopes: the lchan->* state should only be modified
+		 * *after* the assignment is confirmed to be completed. Before that, this data should live in
+		 * conn->assignment or the lchan_activate_info, the designated places for not-yet-confirmed data. See
+		 * OS#3833 */
 		conn->lchan->ch_mode_rate = req->ch_mode_rate[i];
 		if (conn->assignment.new_lchan)
 			break;
