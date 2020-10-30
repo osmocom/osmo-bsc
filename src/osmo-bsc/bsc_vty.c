@@ -5445,6 +5445,12 @@ DEFUN_HIDDEN(lchan_act_bts, lchan_act_all_cmd,
 		}
 	}
 
+	vty_out(vty, "%% All channels have been %s on all BTS/TRX, please "
+		     "make sure that the radio link timeout is set to %s%s",
+		activate ? "activated" : "deactivated",
+		activate ? "'infinite'" : "its old value (e.g. 'oml')",
+		VTY_NEWLINE);
+
 	return CMD_SUCCESS;
 }
 
@@ -5478,6 +5484,12 @@ DEFUN_HIDDEN(lchan_act_all_bts, lchan_act_all_bts_cmd,
 		trx = gsm_bts_trx_num(bts, trx_nr);
 		lchan_act_trx(vty, trx, activate);
 	}
+
+	vty_out(vty, "%% All channels have been %s on all TRX of BTS%d, please "
+		     "make sure that the radio link timeout is set to %s%s",
+		activate ? "activated" : "deactivated", bts_nr,
+		activate ? "'infinite'" : "its old value (e.g. 'oml')",
+		VTY_NEWLINE);
 
 	return CMD_SUCCESS;
 }
@@ -5516,6 +5528,12 @@ DEFUN_HIDDEN(lchan_act_all_trx, lchan_act_all_trx_cmd,
 	}
 
 	lchan_act_trx(vty, trx, activate);
+
+	vty_out(vty, "%% All channels have been %s on BTS%d/TRX%d, please "
+		     "make sure that the radio link timeout is set to %s%s",
+		activate ? "activated" : "deactivated", bts_nr, trx_nr,
+		activate ? "'infinite'" : "its old value (e.g. 'oml')",
+		VTY_NEWLINE);
 
 	return CMD_SUCCESS;
 }
