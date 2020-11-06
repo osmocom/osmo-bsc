@@ -322,6 +322,9 @@ struct gsm_subscriber_connection {
 			enum subscr_sccp_state state;
 		} lb;
 	} lcs;
+
+	struct gsm48_classmark3 cm3;
+	bool cm3_valid;
 };
 
 
