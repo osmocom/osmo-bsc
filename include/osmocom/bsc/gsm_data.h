@@ -322,6 +322,10 @@ struct gsm_subscriber_connection {
 			enum subscr_sccp_state state;
 		} lb;
 	} lcs;
+
+	/* Set to true when Repeated ACCH Capability bit in Classmark 3 is set.
+	 * see also: 3GPP TS 24.008, section 10.5.1.7 */
+	bool repeated_acch_capability;
 };
 
 

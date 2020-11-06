@@ -34,6 +34,7 @@
 #include <osmocom/bsc/lcs_loc_req.h>
 
 #include <osmocom/gsm/protocol/gsm_08_08.h>
+#include <osmocom/gsm/protocol/gsm_04_08.h>
 #include <osmocom/gsm/gsm0808.h>
 #include <osmocom/gsm/mncc.h>
 #include <osmocom/gsm/gsm48.h>
@@ -582,6 +583,7 @@ void bsc_cm_update(struct gsm_subscriber_connection *conn,
 		   const uint8_t *cm3, uint8_t cm3_len)
 {
 	struct gsm48_classmark2 *cm2_parsed = (struct gsm48_classmark2 *)cm2;
+        struct gsm48_classmark3 cm3_parsed;
 	int8_t rc8;
 	int rc;
 	struct msgb *resp;
@@ -601,6 +603,15 @@ void bsc_cm_update(struct gsm_subscriber_connection *conn,
 		rc8 = 0;
 	}
 	conn_update_ms_power_class(conn, rc8);
+
+        rc = gsm48_decode_classmark3(&cm3_parsed, cm3, cm3_len);
+	if (rc < 0) {
+		LOGP(DMSC, LOGL_NOTICE, "Unable to decode classmark3 during CM Update.\n");
+	} else {
+		conn->repeated_acch_capability = false;
+		if (cm3_parsed.repeated_acch_capability)
+			conn->repeated_acch_capability = true;
+	}
 
 	if (!msc_connected(conn))
 		return;

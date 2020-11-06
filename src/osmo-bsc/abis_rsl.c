@@ -457,6 +457,28 @@ static void mr_config_for_bts(struct gsm_lchan *lchan, struct msgb *msg)
 		     lchan->mr_bts_lv + 1);
 }
 
+/* indicate FACCH/SACCH Repetition to be performed by BTS,
+ * see also: 3GPP TS 44.006, section 10 and 11 */
+static void put_rsl_ie_osmo_rep_acch_cap(struct gsm_lchan *lchan, struct msgb *msg)
+{
+	uint8_t val[1];
+
+	if (!lchan->conn)
+		return;
+
+	/* The RSL_IE_OSMO_REP_ACCH_CAP IE is a proprietary IE, that can only
+	 * be used with osmo-bts type BTSs */
+	if (conn_get_bts(lchan->conn)->model->type != GSM_BTS_TYPE_OSMOBTS)
+		return;
+
+	if (lchan->conn && lchan->conn->repeated_acch_capability)
+		val[0] = 0x01;
+	else
+		val[0] = 0x00;
+
+	msgb_tlv_put(msg, RSL_IE_OSMO_REP_ACCH_CAP, sizeof(val), val);
+}
+
 /* Chapter 8.4.1 */
 int rsl_tx_chan_activ(struct gsm_lchan *lchan, uint8_t act_type, uint8_t ho_ref)
 {
@@ -552,6 +574,7 @@ int rsl_tx_chan_activ(struct gsm_lchan *lchan, uint8_t act_type, uint8_t ho_ref)
 	   better skip sending it unless we know for sure what each expects. */
 
 	mr_config_for_bts(lchan, msg);
+	put_rsl_ie_osmo_rep_acch_cap(lchan, msg);
 
 	msg->dst = trx->rsl_link;
 
@@ -590,6 +613,7 @@ int rsl_chan_mode_modify_req(struct gsm_lchan *lchan)
 	}
 
 	mr_config_for_bts(lchan, msg);
+	put_rsl_ie_osmo_rep_acch_cap(lchan, msg);
 
 	msg->dst = lchan->ts->trx->rsl_link;
 
