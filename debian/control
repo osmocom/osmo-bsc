@@ -28,6 +28,7 @@ Package: osmo-bsc
 Architecture: any
 Multi-Arch: foreign
 Depends: ${misc:Depends}, ${shlibs:Depends}
+Recommends: osmo-mgw
 Description: OsmoBSC: Osmocom's Base Station Controller for 2G circuit-switched mobile networks
 
 Package: osmo-bsc-dbg
