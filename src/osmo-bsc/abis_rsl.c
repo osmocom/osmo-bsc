@@ -496,6 +496,7 @@ int rsl_tx_chan_activ(struct gsm_lchan *lchan, uint8_t act_type, uint8_t ho_ref)
 	int rc;
 	uint8_t *len;
 	uint8_t ta;
+	bool ho_inter = false;
 
 	struct rsl_ie_chan_mode cm;
 	struct gsm48_chan_desc cd;
@@ -565,14 +566,25 @@ int rsl_tx_chan_activ(struct gsm_lchan *lchan, uint8_t act_type, uint8_t ho_ref)
 	case RSL_ACT_INTER_ASYNC:
 	case RSL_ACT_INTER_SYNC:
 		msgb_tv_put(msg, RSL_IE_HANDO_REF, ho_ref);
+		ho_inter = true;
 		break;
 	default:
 		break;
 	}
 
-	msgb_tv_put(msg, RSL_IE_BS_POWER, lchan->bs_power);
-	msgb_tv_put(msg, RSL_IE_MS_POWER, lchan->ms_power);
-	msgb_tv_put(msg, RSL_IE_TIMING_ADVANCE, ta);
+	/* For intra-cell handover (a.k.a. re-assignment which we still do by Handover at the time of writing), set
+	 * ho_inter back to false. */
+	if (ho_inter
+	    && lchan->activate.info.re_use_mgw_endpoint_from_lchan != NULL
+	    && lchan->ts->trx->bts == lchan->activate.info.re_use_mgw_endpoint_from_lchan->ts->trx->bts)
+		ho_inter = false;
+
+	if (!ho_inter) {
+		msgb_tv_put(msg, RSL_IE_BS_POWER, lchan->bs_power);
+		msgb_tv_put(msg, RSL_IE_MS_POWER, lchan->ms_power);
+		msgb_tv_put(msg, RSL_IE_TIMING_ADVANCE, ta);
+	}
+
 	/* indicate MS power control to be performed by BTS: */
 	if (bts->type == GSM_BTS_TYPE_OSMOBTS)
 		msgb_tl_put(msg, RSL_IE_MS_POWER_PARAM);
