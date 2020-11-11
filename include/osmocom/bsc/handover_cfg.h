@@ -206,8 +206,11 @@ static inline const char *tdma2a(bool val)
 		"handover2 ", "min rxqual", "<0-7>", atoi, "%d", as_is, \
 		HO_CFG_STR_HANDOVER2 \
 		HO_CFG_STR_MIN \
-		"How bad may RxQual of an MS become before triggering HO\n" \
-		"minimum RxQual\n") \
+		"How bad may RxQual of an MS become before triggering HO," \
+		" where 0 is the best quality (bit error rate < 0.2%) and" \
+		" 7 is the worst quality (bit error rate > 12.8%)," \
+		" see 3GPP TS 45.008 8.2.4.\n" \
+		"worst acceptable RxQual\n") \
 	\
 	HO_CFG_ONE_MEMBER(int, hodec2_afs_bias_rxlev, 0, \
 		"handover2 ", "afs-bias rxlev", "<0-20>", atoi, "%d", as_is, \

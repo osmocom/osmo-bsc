@@ -341,14 +341,14 @@ OsmoBSC(config-net)# handover2 tdma-measurement ?
 
 OsmoBSC(config-net)# handover2 min ?
   rxlev   How weak may RxLev of an MS become before triggering HO
-  rxqual  How bad may RxQual of an MS become before triggering HO
+  rxqual  How bad may RxQual of an MS become before triggering HO, where 0 is the best quality (bit error rate < 0.2%) and 7 is the worst quality (bit error rate > 12.8%), see 3GPP TS 45.008 8.2.4.
 
 OsmoBSC(config-net)# handover2 min rxlev ?
   <-110--50>  minimum RxLev (dBm; note: negative values)
   default     Use default (-100), remove explicit setting on this node
 
 OsmoBSC(config-net)# handover2 min rxqual ?
-  <0-7>    minimum RxQual
+  <0-7>    worst acceptable RxQual
   default  Use default (5), remove explicit setting on this node
 
 OsmoBSC(config-net)# handover2 afs-bias ?
@@ -559,14 +559,14 @@ OsmoBSC(config-net-bts)# handover2 tdma-measurement ?
 
 OsmoBSC(config-net-bts)# handover2 min ?
   rxlev   How weak may RxLev of an MS become before triggering HO
-  rxqual  How bad may RxQual of an MS become before triggering HO
+  rxqual  How bad may RxQual of an MS become before triggering HO, where 0 is the best quality (bit error rate < 0.2%) and 7 is the worst quality (bit error rate > 12.8%), see 3GPP TS 45.008 8.2.4.
 
 OsmoBSC(config-net-bts)# handover2 min rxlev ?
   <-110--50>  minimum RxLev (dBm; note: negative values)
   default     Use default (-100), remove explicit setting on this node
 
 OsmoBSC(config-net-bts)# handover2 min rxqual ?
-  <0-7>    minimum RxQual
+  <0-7>    worst acceptable RxQual
   default  Use default (5), remove explicit setting on this node
 
 OsmoBSC(config-net-bts)# handover2 afs-bias ?
