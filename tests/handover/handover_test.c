@@ -182,10 +182,7 @@ static struct gsm_bts *create_bts()
 	int i;
 
 	bts = bsc_bts_alloc_register(bsc_gsmnet, GSM_BTS_TYPE_UNKNOWN, 0x3f);
-	if (!bts) {
-		printf("No resource for bts1\n");
-		return NULL;
-	}
+	OSMO_ASSERT(bts);
 
 	bts->location_area_code = 23;
 	bts->c0->arfcn = arfcn++;
