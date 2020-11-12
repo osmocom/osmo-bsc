@@ -1443,11 +1443,16 @@ const struct log_info log_info = {
 	.num_cat = ARRAY_SIZE(log_categories),
 };
 
+struct gsm_bts *bts_by_num_str(const char *num_str)
+{
+	struct gsm_bts *bts = gsm_bts_num(bsc_gsmnet, atoi(num_str));
+	OSMO_ASSERT(bts);
+	return bts;
+}
+
 int main(int argc, char **argv)
 {
 	char **test_case;
-	struct gsm_bts *bts[256];
-	int bts_num = 0;
 	struct gsm_lchan *lchan[256];
 	int lchan_num = 0;
 	int i;
@@ -1528,32 +1533,31 @@ int main(int argc, char **argv)
 			fprintf(stderr, "- Creating %d BTS (one TRX each, "
 				"TS(1-4) are TCH/F, TS(5-6) are TCH/H)\n", n);
 			for (i = 0; i < n; i++)
-				bts[bts_num + i] = create_bts(1, bts_default_ts);
-			bts_num += n;
+				create_bts(1, bts_default_ts);
 			test_case += 2;
 		} else
 		if (!strcmp(*test_case, "as-enable")) {
 			fprintf(stderr, "- Set assignment enable state at "
 				"BTS %s to %s\n", test_case[1], test_case[2]);
-			ho_set_hodec2_as_active(bts[atoi(test_case[1])]->ho, atoi(test_case[2]));
+			ho_set_hodec2_as_active(bts_by_num_str(test_case[1])->ho, atoi(test_case[2]));
 			test_case += 3;
 		} else
 		if (!strcmp(*test_case, "ho-enable")) {
 			fprintf(stderr, "- Set handover enable state at "
 				"BTS %s to %s\n", test_case[1], test_case[2]);
-			ho_set_ho_active(bts[atoi(test_case[1])]->ho, atoi(test_case[2]));
+			ho_set_ho_active(bts_by_num_str(test_case[1])->ho, atoi(test_case[2]));
 			test_case += 3;
 		} else
 		if (!strcmp(*test_case, "afs-rxlev-improve")) {
 			fprintf(stderr, "- Set afs RX level improvement at "
 				"BTS %s to %s\n", test_case[1], test_case[2]);
-			ho_set_hodec2_afs_bias_rxlev(bts[atoi(test_case[1])]->ho, atoi(test_case[2]));
+			ho_set_hodec2_afs_bias_rxlev(bts_by_num_str(test_case[1])->ho, atoi(test_case[2]));
 			test_case += 3;
 		} else
 		if (!strcmp(*test_case, "afs-rxqual-improve")) {
 			fprintf(stderr, "- Set afs RX quality improvement at "
 				"BTS %s to %s\n", test_case[1], test_case[2]);
-			ho_set_hodec2_afs_bias_rxqual(bts[atoi(test_case[1])]->ho, atoi(test_case[2]));
+			ho_set_hodec2_afs_bias_rxqual(bts_by_num_str(test_case[1])->ho, atoi(test_case[2]));
 			test_case += 3;
 		} else
 		if (!strcmp(*test_case, "set-min-free")) {
@@ -1561,30 +1565,30 @@ int main(int argc, char **argv)
 				"slots at BTS %s to %s\n", test_case[2],
 				test_case[1], test_case[3]);
 			if (!strcmp(test_case[2], "TCH/F"))
-				ho_set_hodec2_tchf_min_slots(bts[atoi(test_case[1])]->ho, atoi(test_case[3]));
+				ho_set_hodec2_tchf_min_slots(bts_by_num_str(test_case[1])->ho, atoi(test_case[3]));
 			else
-				ho_set_hodec2_tchh_min_slots(bts[atoi(test_case[1])]->ho, atoi(test_case[3]));
+				ho_set_hodec2_tchh_min_slots(bts_by_num_str(test_case[1])->ho, atoi(test_case[3]));
 			test_case += 4;
 		} else
 		if (!strcmp(*test_case, "set-max-ho")) {
 			fprintf(stderr, "- Setting maximum parallel handovers "
 				"at BTS %s to %s\n", test_case[1],
 				test_case[2]);
-			ho_set_hodec2_ho_max( bts[atoi(test_case[1])]->ho, atoi(test_case[2]));
+			ho_set_hodec2_ho_max( bts_by_num_str(test_case[1])->ho, atoi(test_case[2]));
 			test_case += 3;
 		} else
 		if (!strcmp(*test_case, "set-max-ta")) {
 			fprintf(stderr, "- Setting maximum timing advance "
 				"at BTS %s to %s\n", test_case[1],
 				test_case[2]);
-			ho_set_hodec2_max_distance(bts[atoi(test_case[1])]->ho, atoi(test_case[2]));
+			ho_set_hodec2_max_distance(bts_by_num_str(test_case[1])->ho, atoi(test_case[2]));
 			test_case += 3;
 		} else
 		if (!strcmp(*test_case, "create-ms")) {
 			fprintf(stderr, "- Creating mobile #%d at BTS %s on "
 				"%s with %s codec\n", lchan_num, test_case[1],
 				test_case[2], test_case[3]);
-			lchan[lchan_num] = create_lchan(bts[atoi(test_case[1])],
+			lchan[lchan_num] = create_lchan(bts_by_num_str(test_case[1]),
 				!strcmp(test_case[2], "TCH/F"), test_case[3]);
 			if (!lchan[lchan_num]) {
 				printf("Failed to create lchan!\n");
