@@ -218,6 +218,11 @@ static struct gsm_bts *create_bts()
 		osmo_fsm_inst_dispatch(bts->c0->ts[i].fi, TS_EV_RSL_READY, 0);
 		osmo_fsm_inst_dispatch(bts->c0->ts[i].fi, TS_EV_OML_READY, 0);
 	}
+
+	for (i = 0; i < bsc_gsmnet->num_bts; i++) {
+		if (gsm_generate_si(gsm_bts_num(bsc_gsmnet, i), SYSINFO_TYPE_2) <= 0)
+			fprintf(stderr, "Error generating SI2\n");
+	}
 	return bts;
 }
 
@@ -1501,10 +1506,6 @@ int main(int argc, char **argv)
 				"TS(1-4) are TCH/F, TS(5-6) are TCH/H)\n", n);
 			for (i = 0; i < n; i++)
 				bts[bts_num + i] = create_bts();
-			for (i = 0; i < n; i++) {
-				if (gsm_generate_si(bts[bts_num + i], SYSINFO_TYPE_2) <= 0)
-					fprintf(stderr, "Error generating SI2\n");
-			}
 			bts_num += n;
 			test_case += 2;
 		} else
