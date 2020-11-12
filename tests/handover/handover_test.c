@@ -508,7 +508,7 @@ static char *test_case_0[] = {
 	"There are many neighbor cells, but only the current cell is the best\n"
 	"cell, so no handover is performed\n",
 
-	"create-bts", "7",
+	"create-n-bts", "7",
 	"create-ms", "0", "TCH/F", "AMR",
 	"meas-rep", "0", "30","0",
 		"6","0","20","1","21","2","18","3","20","4","23","5","19",
@@ -522,7 +522,7 @@ static char *test_case_1[] = {
 	"Handover to best better cell\n\n"
 	"The best neighbor cell is selected\n",
 
-	"create-bts", "7",
+	"create-n-bts", "7",
 	"create-ms", "0", "TCH/F", "AMR",
 	"meas-rep", "0", "10","0",
 		"6","0","20","1","21","2","18","3","20","4","23","5","19",
@@ -545,7 +545,7 @@ static char *test_case_2[] = {
 	"in the current cell, but disabling in the neighbor cell, handover\n"
 	"will not be performed, until it is enabled in the neighbor cell too.\n",
 
-	"create-bts", "2",
+	"create-n-bts", "2",
 	"afs-rxlev-improve", "0", "5",
 	"create-ms", "0", "TCH/H", "AMR",
 	"as-enable", "0", "0",
@@ -579,7 +579,7 @@ static char *test_case_3[] = {
 	"Even though the cell is still better, handover will not be performed\n"
 	"due to penalty timer after handover failure\n",
 
-	"create-bts", "2",
+	"create-n-bts", "2",
 	"create-ms", "0", "TCH/F", "AMR",
 	"meas-rep", "0", "20","0", "1","0","30",
 	"expect-chan", "1", "1",
@@ -599,7 +599,7 @@ static char *test_case_4[] = {
 	"at TCH/H slots. As the congestion is removed, the handover takes\n"
 	"place.\n",
 
-	"create-bts", "2",
+	"create-n-bts", "2",
 	"set-min-free", "1", "TCH/H", "4",
 	"create-ms", "0", "TCH/H", "HR",
 	"meas-rep", "0", "20","0", "1","0","30",
@@ -621,7 +621,7 @@ static char *test_case_5[] = {
 	"at TCH/F slots. As the congestion is removed, the handover takes\n"
 	"place.\n",
 
-	"create-bts", "2",
+	"create-n-bts", "2",
 	"set-min-free", "1", "TCH/F", "4",
 	"create-ms", "0", "TCH/F", "FR",
 	"meas-rep", "0", "20","0", "1","0","30",
@@ -643,7 +643,7 @@ static char *test_case_6[] = {
 	"at TCH/F slots. As the congestion is removed, the handover takes\n"
 	"place.\n",
 
-	"create-bts", "2",
+	"create-n-bts", "2",
 	"set-min-free", "1", "TCH/F", "4",
 	"create-ms", "0", "TCH/F", "EFR",
 	"meas-rep", "0", "20","0", "1","0","30",
@@ -664,7 +664,7 @@ static char *test_case_7[] = {
 	"The MS is using AMR V3 codec, the better cell is congested at TCH/F\n"
 	"slots. The handover is performed to non-congested TCH/H slots.\n",
 
-	"create-bts", "2",
+	"create-n-bts", "2",
 	"set-min-free", "1", "TCH/F", "4",
 	"create-ms", "0", "TCH/F", "AMR",
 	"meas-rep", "0", "20","0", "1","0","30",
@@ -681,7 +681,7 @@ static char *test_case_8[] = {
 	"No handover to a cell with no slots available\n\n"
 	"If no slot is available, no handover is performed\n",
 
-	"create-bts", "2",
+	"create-n-bts", "2",
 	"create-ms", "0", "TCH/F", "AMR",
 	"create-ms", "1", "TCH/F", "AMR",
 	"create-ms", "1", "TCH/F", "AMR",
@@ -703,7 +703,7 @@ static char *test_case_9[] = {
 	"There are tree mobiles that want to handover, but only two can do\n"
 	"it at a time, because the maximum number is limited to two.\n",
 
-	"create-bts", "2",
+	"create-n-bts", "2",
 	"set-max-ho", "1", "2",
 	"create-ms", "0", "TCH/F", "AMR",
 	"create-ms", "0", "TCH/F", "AMR",
@@ -724,7 +724,7 @@ static char *test_case_10[] = {
 	"If neighbor cell is better, handover is only performed if the\n"
 	"amount of improvement is greater or equal hyteresis\n",
 
-	"create-bts", "2",
+	"create-n-bts", "2",
 	"create-ms", "0", "TCH/F", "AMR",
 	"meas-rep", "0", "27","0", "1","0","30",
 	"expect-no-chan",
@@ -748,7 +748,7 @@ static char *test_case_11[] = {
 	"is below minimum RX level, even if the better neighbor cell (minimum\n"
 	"RX level reached) does not meet the hysteresis.\n",
 
-	"create-bts", "2",
+	"create-n-bts", "2",
 	"create-ms", "0", "TCH/F", "AMR",
 	"meas-rep", "0", "10","0", "1","0","11",
 	"expect-no-chan",
@@ -769,7 +769,7 @@ static char *test_case_12[] = {
 	"The better neighbor cell is congested, so no handover is performed.\n"
 	"After the congestion is over, handover will be performed.\n",
 
-	"create-bts", "2",
+	"create-n-bts", "2",
 	"create-ms", "0", "TCH/F", "AMR",
 	"set-min-free", "1", "TCH/F", "4",
 	"set-min-free", "1", "TCH/H", "4",
@@ -794,7 +794,7 @@ static char *test_case_13[] = {
 	"more. After congestion raises in the current cell, the handover is\n"
 	"performed to balance congestion\n",
 
-	"create-bts", "2",
+	"create-n-bts", "2",
 	"create-ms", "0", "TCH/F", "AMR",
 	"set-min-free", "0", "TCH/F", "4",
 	"set-min-free", "0", "TCH/H", "4",
@@ -819,7 +819,7 @@ static char *test_case_14[] = {
 	"If the RX level of the current cell drops below minimum acceptable\n"
 	"level, the handover is performed.\n",
 
-	"create-bts", "2",
+	"create-n-bts", "2",
 	"create-ms", "0", "TCH/F", "AMR",
 	"set-min-free", "1", "TCH/F", "4",
 	"set-min-free", "1", "TCH/H", "4",
@@ -846,7 +846,7 @@ static char *test_case_15[] = {
 	 * See Performance Enhancements in a Frequency Hopping GSM Network (Nielsen Wigard 2002), Chapter
 	 * 2.1.1, "Interference" in the list of triggers on p.157. */
 
-	"create-bts", "2",
+	"create-n-bts", "2",
 	"create-ms", "0", "TCH/F", "AMR",
 	"meas-rep", "0", "40","6", "1","0","30",
 	"expect-no-chan",
@@ -884,7 +884,7 @@ static char *test_case_16[] = {
 	"performed back to that cell, because the penalty timer (due to\n"
 	"maximum allowed timing advance) is running.\n",
 
-	"create-bts", "2",
+	"create-n-bts", "2",
 	"create-ms", "0", "TCH/F", "AMR",
 	"set-max-ta", "0", "5", /* of cell */
 	"set-ta", "0", "5", /* of ms */
@@ -908,7 +908,7 @@ static char *test_case_17[] = {
 	"Three cells have different number of used slots, but there is no\n"
 	"congestion in any of these cells. No handover is performed.\n",
 
-	"create-bts", "3",
+	"create-n-bts", "3",
 	"set-min-free", "0", "TCH/F", "2",
 	"set-min-free", "0", "TCH/H", "2",
 	"set-min-free", "1", "TCH/F", "2",
@@ -946,7 +946,7 @@ static char *test_case_18[] = {
 	"congestion at TCH/F in the first cell. Handover is performed with\n"
 	"the best candidate.\n",
 
-	"create-bts", "3",
+	"create-n-bts", "3",
 	"set-min-free", "0", "TCH/F", "2",
 	"set-min-free", "0", "TCH/H", "2",
 	"set-min-free", "1", "TCH/F", "2",
@@ -989,7 +989,7 @@ static char *test_case_19[] = {
 	"Two cells are congested, but the second cell is less congested.\n"
 	"Handover is performed to solve the congestion.\n",
 
-	"create-bts", "2",
+	"create-n-bts", "2",
 	"set-min-free", "0", "TCH/F", "4",
 	"set-min-free", "1", "TCH/F", "4",
 	"create-ms", "0", "TCH/F", "FR",
@@ -1018,7 +1018,7 @@ static char *test_case_20[] = {
 	"Congestion check: Solving congestion by handover TCH/F -> TCH/H\n\n"
 	"Two BTS, one MS in the first congested BTS must handover to\n"
 	"non-congested TCH/H of second BTS, in order to solve congestion\n",
-	"create-bts", "2",
+	"create-n-bts", "2",
 	"set-min-free", "0", "TCH/F", "4",
 	"set-min-free", "0", "TCH/H", "4",
 	"set-min-free", "1", "TCH/F", "4",
@@ -1039,7 +1039,7 @@ static char *test_case_21[] = {
 	"Congestion check: Balancing congestion by handover TCH/F -> TCH/H\n\n"
 	"Two BTS, one MS in the first congested BTS must handover to\n"
 	"less-congested TCH/H of second BTS, in order to balance congestion\n",
-	"create-bts", "2",
+	"create-n-bts", "2",
 	"set-min-free", "0", "TCH/F", "4",
 	"set-min-free", "0", "TCH/H", "4",
 	"set-min-free", "1", "TCH/F", "4",
@@ -1065,7 +1065,7 @@ static char *test_case_22[] = {
 	"assignment is performed to less-congested TCH/F, the candidate with\n"
 	"the worst RX level is chosen.\n",
 
-	"create-bts", "1",
+	"create-n-bts", "1",
 	"set-min-free", "0", "TCH/F", "4",
 	"set-min-free", "0", "TCH/H", "4",
 	"create-ms", "0", "TCH/H", "AMR",
@@ -1088,7 +1088,7 @@ static char *test_case_23[] = {
 
 	"Story: 'A neighbor is your friend'\n",
 
-	"create-bts", "3",
+	"create-n-bts", "3",
 
 	"print",
 	"Andreas is driving along the coast, on a sunny june afternoon.\n"
@@ -1174,7 +1174,7 @@ static char *test_case_24[] = {
 	"received.\n",
 
 	/* two cells, first in congested, but no handover */
-	"create-bts", "2",
+	"create-n-bts", "2",
 	"set-min-free", "0", "TCH/F", "4",
 	"set-min-free", "0", "TCH/H", "4",
 	"create-ms", "0", "TCH/F", "AMR",
@@ -1216,7 +1216,7 @@ static char *test_case_25[] = {
 	"There are many neighbor cells, but only the current cell is the best\n"
 	"cell, so no handover is performed\n",
 
-	"create-bts", "7",
+	"create-n-bts", "7",
 	"create-ms", "0", "TCH/F", "AMR",
 	"meas-rep", "0", "30","0",
 		"6","0","20","1","21","2","18","3","20","4","23","5","19",
@@ -1230,7 +1230,7 @@ static char *test_case_26[] = {
 	"Handover to best better cell\n\n"
 	"The best neighbor cell is selected\n",
 
-	"create-bts", "7",
+	"create-n-bts", "7",
 	"create-ms", "0", "TCH/F", "AMR",
 	"meas-rep", "0", "10","0",
 		"6","0","20","1","21","2","18","3","20","4","23","5","19",
@@ -1250,7 +1250,7 @@ static char *test_case_27[] = {
 	"the worst RX level is chosen. (So far like test 22.)\n"
 	"After that, trigger more congestion checks to ensure stability.\n",
 
-	"create-bts", "1",
+	"create-n-bts", "1",
 	"set-min-free", "0", "TCH/F", "2",
 	"set-min-free", "0", "TCH/H", "4",
 	"create-ms", "0", "TCH/H", "AMR",
@@ -1286,7 +1286,7 @@ static char *test_case_28[] = {
 	"level, the handover is performed. It is also required that 10\n"
 	"resports are received, before RX quality is checked.\n",
 
-	"create-bts", "2",
+	"create-n-bts", "2",
 	"create-ms", "0", "TCH/F", "AMR",
 	"set-min-free", "1", "TCH/F", "4",
 	"set-min-free", "1", "TCH/H", "4",
@@ -1322,7 +1322,7 @@ static char *test_case_29[] = {
 	"Congestion check: Balancing congestion by handover TCH/F -> TCH/H\n\n"
 	"One BTS, and TCH/F are considered congested, TCH/H are not.\n"
 	,
-	"create-bts", "1",
+	"create-n-bts", "1",
 	"set-min-free", "0", "TCH/F", "3",
 	"set-min-free", "0", "TCH/H", "0",
 	"create-ms", "0", "TCH/F", "AMR",
@@ -1523,7 +1523,7 @@ int main(int argc, char **argv)
 	hodec2_init(bsc_gsmnet);
 
 	while (*test_case) {
-		if (!strcmp(*test_case, "create-bts")) {
+		if (!strcmp(*test_case, "create-n-bts")) {
 			int n = atoi(test_case[1]);
 			fprintf(stderr, "- Creating %d BTS (one TRX each, "
 				"TS(1-4) are TCH/F, TS(5-6) are TCH/H)\n", n);
