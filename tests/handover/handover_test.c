@@ -176,7 +176,12 @@ static void gen_meas_rep(struct gsm_lchan *lchan)
 
 enum gsm_phys_chan_config pchan_from_str(const char *str)
 {
-	enum gsm_phys_chan_config pchan = gsm_pchan_parse(str);
+	enum gsm_phys_chan_config pchan;
+	if (!strcmp(str, "dyn"))
+		return GSM_PCHAN_TCH_F_TCH_H_PDCH;
+	if (!strcmp(str, "cs4"))
+		return GSM_PCHAN_CCCH_SDCCH4;
+	pchan = gsm_pchan_parse(str);
 	if (pchan < 0) {
 		fprintf(stderr, "Invalid timeslot pchan type: %s\n", str);
 		exit(1);
@@ -196,6 +201,13 @@ static struct gsm_bts *create_bts(int num_trx, const char * const *ts_args)
 	int i;
 	int trx_i;
 	struct gsm_bts_trx *trx;
+
+	fprintf(stderr, "- Creating BTS %d, %d TRX\n", bsc_gsmnet->num_bts, num_trx);
+	for (trx_i = 0; trx_i < num_trx; trx_i++) {
+		for (i = 0; i < 8; i++)
+			fprintf(stderr, "\t%s", ts_args[8*trx_i + i]);
+		fprintf(stderr, "\n");
+	}
 
 	bts = bsc_bts_alloc_register(bsc_gsmnet, GSM_BTS_TYPE_UNKNOWN, 0x3f);
 	OSMO_ASSERT(bts);
@@ -232,10 +244,20 @@ static struct gsm_bts *create_bts(int num_trx, const char * const *ts_args)
 			trx->ts[i].mo.nm_state.administrative = NM_STATE_UNLOCKED;
 		}
 
-		for (i = 0; i < ARRAY_SIZE(bts->c0->ts); i++) {
+		for (i = 0; i < ARRAY_SIZE(trx->ts); i++) {
 			/* make sure ts->lchans[] get initialized */
-			osmo_fsm_inst_dispatch(bts->c0->ts[i].fi, TS_EV_RSL_READY, 0);
-			osmo_fsm_inst_dispatch(bts->c0->ts[i].fi, TS_EV_OML_READY, 0);
+			osmo_fsm_inst_dispatch(trx->ts[i].fi, TS_EV_RSL_READY, 0);
+			osmo_fsm_inst_dispatch(trx->ts[i].fi, TS_EV_OML_READY, 0);
+
+			/* Unused dyn TS start out as used for PDCH */
+			switch (trx->ts[i].pchan_on_init) {
+			case GSM_PCHAN_TCH_F_TCH_H_PDCH:
+			case GSM_PCHAN_TCH_F_PDCH:
+				trx->ts[i].pchan_is = GSM_PCHAN_PDCH;
+				break;
+			default:
+				break;
+			}
 		}
 	}
 
@@ -1527,11 +1549,22 @@ int main(int argc, char **argv)
 	while (*test_case) {
 		if (!strcmp(*test_case, "create-bts-default")) {
 			int n = atoi(test_case[1]);
-			fprintf(stderr, "- Creating %d BTS (one TRX each, "
-				"TS(1-4) are TCH/F, TS(5-6) are TCH/H)\n", n);
 			for (i = 0; i < n; i++)
 				create_bts(1, bts_default_ts);
 			test_case += 2;
+		} else
+		if (!strcmp(*test_case, "create-bts")) {
+			/* new BTS with one TRX:
+			 * "create-bts", "1", "CCCH+SDCCH4", "TCH/F", "TCH/F", "TCH/F", "TCH/F", "TCH/H", "TCH/H", "PDCH",
+			 *
+			 * new BTS with two TRX:
+			 * "create-bts", "2", "CCCH+SDCCH4", "TCH/F", "TCH/F", "TCH/F", "TCH/F", "TCH/H", "TCH/H", "PDCH",
+			 *                    "SDCCH8", "TCH/F", "TCH/F", "TCH/F", "TCH/F", "TCH/H", "TCH/H", "PDCH",
+			 */
+			int num_trx = atoi(test_case[1]);
+			const char * const * ts_cfg = (void*)&test_case[2];
+			create_bts(num_trx, ts_cfg);
+			test_case += 2 + 8 * num_trx;
 		} else
 		if (!strcmp(*test_case, "as-enable")) {
 			fprintf(stderr, "- Set assignment enable state at "
