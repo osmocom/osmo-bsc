@@ -188,12 +188,13 @@ const char * const bts_default_ts[] = {
 	"CCCH+SDCCH4", "TCH/F", "TCH/F", "TCH/F", "TCH/F", "TCH/H", "TCH/H", "NONE",
 };
 
-static struct gsm_bts *create_bts(const char * const *ts_args)
+static struct gsm_bts *create_bts(int num_trx, const char * const *ts_args)
 {
 	static int arfcn = 870;
 	struct gsm_bts *bts;
 	struct e1inp_sign_link *rsl_link;
 	int i;
+	int trx_i;
 	struct gsm_bts_trx *trx;
 
 	bts = bsc_bts_alloc_register(bsc_gsmnet, GSM_BTS_TYPE_UNKNOWN, 0x3f);
@@ -213,29 +214,32 @@ static struct gsm_bts *create_bts(const char * const *ts_args)
 	rsl_link->trx = bts->c0;
 	bts->c0->rsl_link = rsl_link;
 
-	trx = gsm_bts_trx_num(bts, 0);
+	for (trx_i = 0; trx_i < num_trx; trx_i++) {
+		while (!(trx = gsm_bts_trx_num(bts, trx_i)))
+			gsm_bts_trx_alloc(bts);
 
-	trx->mo.nm_state.operational = NM_OPSTATE_ENABLED;
-	trx->mo.nm_state.availability = NM_AVSTATE_OK;
-	trx->mo.nm_state.administrative = NM_STATE_UNLOCKED;
-	trx->bb_transc.mo.nm_state.operational = NM_OPSTATE_ENABLED;
-	trx->bb_transc.mo.nm_state.availability = NM_AVSTATE_OK;
-	trx->bb_transc.mo.nm_state.administrative = NM_STATE_UNLOCKED;
+		trx->mo.nm_state.operational = NM_OPSTATE_ENABLED;
+		trx->mo.nm_state.availability = NM_AVSTATE_OK;
+		trx->mo.nm_state.administrative = NM_STATE_UNLOCKED;
+		trx->bb_transc.mo.nm_state.operational = NM_OPSTATE_ENABLED;
+		trx->bb_transc.mo.nm_state.availability = NM_AVSTATE_OK;
+		trx->bb_transc.mo.nm_state.administrative = NM_STATE_UNLOCKED;
 
-	/* 4 full rate and 4 half rate channels */
-	for (i = 0; i < 8; i++) {
-		trx->ts[i].pchan_from_config = pchan_from_str(ts_args[i]);
-		if (trx->ts[i].pchan_from_config == GSM_PCHAN_NONE)
-			continue;
-		trx->ts[i].mo.nm_state.operational = NM_OPSTATE_ENABLED;
-		trx->ts[i].mo.nm_state.availability = NM_AVSTATE_OK;
-		trx->ts[i].mo.nm_state.administrative = NM_STATE_UNLOCKED;
-	}
+		/* 4 full rate and 4 half rate channels */
+		for (i = 0; i < 8; i++) {
+			trx->ts[i].pchan_from_config = pchan_from_str(ts_args[trx_i * 8 + i]);
+			if (trx->ts[i].pchan_from_config == GSM_PCHAN_NONE)
+				continue;
+			trx->ts[i].mo.nm_state.operational = NM_OPSTATE_ENABLED;
+			trx->ts[i].mo.nm_state.availability = NM_AVSTATE_OK;
+			trx->ts[i].mo.nm_state.administrative = NM_STATE_UNLOCKED;
+		}
 
-	for (i = 0; i < ARRAY_SIZE(bts->c0->ts); i++) {
-		/* make sure ts->lchans[] get initialized */
-		osmo_fsm_inst_dispatch(bts->c0->ts[i].fi, TS_EV_RSL_READY, 0);
-		osmo_fsm_inst_dispatch(bts->c0->ts[i].fi, TS_EV_OML_READY, 0);
+		for (i = 0; i < ARRAY_SIZE(bts->c0->ts); i++) {
+			/* make sure ts->lchans[] get initialized */
+			osmo_fsm_inst_dispatch(bts->c0->ts[i].fi, TS_EV_RSL_READY, 0);
+			osmo_fsm_inst_dispatch(bts->c0->ts[i].fi, TS_EV_OML_READY, 0);
+		}
 	}
 
 	for (i = 0; i < bsc_gsmnet->num_bts; i++) {
@@ -1524,7 +1528,7 @@ int main(int argc, char **argv)
 			fprintf(stderr, "- Creating %d BTS (one TRX each, "
 				"TS(1-4) are TCH/F, TS(5-6) are TCH/H)\n", n);
 			for (i = 0; i < n; i++)
-				bts[bts_num + i] = create_bts(bts_default_ts);
+				bts[bts_num + i] = create_bts(1, bts_default_ts);
 			bts_num += n;
 			test_case += 2;
 		} else
