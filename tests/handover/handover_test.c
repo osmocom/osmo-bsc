@@ -174,8 +174,9 @@ static void gen_meas_rep(struct gsm_lchan *lchan)
 	abis_rsl_rcvmsg(msg);
 }
 
-static struct gsm_bts *create_bts(int arfcn)
+static struct gsm_bts *create_bts()
 {
+	static int arfcn = 870;
 	struct gsm_bts *bts;
 	struct e1inp_sign_link *rsl_link;
 	int i;
@@ -187,7 +188,7 @@ static struct gsm_bts *create_bts(int arfcn)
 	}
 
 	bts->location_area_code = 23;
-	bts->c0->arfcn = arfcn;
+	bts->c0->arfcn = arfcn++;
 
 	bts->codec.efr = 1;
 	bts->codec.hr = 1;
@@ -1495,12 +1496,11 @@ int main(int argc, char **argv)
 
 	while (*test_case) {
 		if (!strcmp(*test_case, "create-bts")) {
-			static int arfcn = 870;
 			int n = atoi(test_case[1]);
 			fprintf(stderr, "- Creating %d BTS (one TRX each, "
 				"TS(1-4) are TCH/F, TS(5-6) are TCH/H)\n", n);
 			for (i = 0; i < n; i++)
-				bts[bts_num + i] = create_bts(arfcn++);
+				bts[bts_num + i] = create_bts();
 			for (i = 0; i < n; i++) {
 				if (gsm_generate_si(bts[bts_num + i], SYSINFO_TYPE_2) <= 0)
 					fprintf(stderr, "Error generating SI2\n");
