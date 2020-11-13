@@ -1362,6 +1362,100 @@ static void on_measurement_report(struct gsm_meas_rep *mr)
 	}
 }
 
+static void collect_candidates_on_ts(struct gsm_bts_trx_ts *ts, struct ho_candidate *clist, unsigned int *candidates,
+				     int tchf_congestion, int tchh_congestion,
+				     bool only_dyn_ts)
+{
+	int j;
+	struct gsm_lchan *lc;
+
+	if (!ts_is_usable(ts))
+		return;
+
+	switch (ts->pchan_on_init) {
+	case GSM_PCHAN_TCH_F_TCH_H_PDCH:
+	case GSM_PCHAN_TCH_F_PDCH:
+		if (!only_dyn_ts)
+			return;
+		break;
+	default:
+		if (only_dyn_ts)
+			return;
+		break;
+	}
+
+	/* (Do not consider dynamic TS that are in PDCH mode) */
+	switch (ts->pchan_is) {
+	case GSM_PCHAN_TCH_F:
+		/* No need to collect TCH/F candidates if no TCH/F needs to be moved. */
+		if (tchf_congestion == 0)
+			return;
+
+		lc = &ts->lchan[0];
+		/* omit if channel not active */
+		if (lc->type != GSM_LCHAN_TCH_F
+		    || !lchan_state_is(lc, LCHAN_ST_ESTABLISHED))
+			break;
+		/* omit if there is an ongoing ho/as */
+		if (!lc->conn || lc->conn->assignment.new_lchan
+		    || lc->conn->ho.fi)
+			break;
+		/* We desperately want to resolve congestion, ignore rxlev when
+		 * collecting candidates by passing include_weaker_rxlev=true. */
+		collect_candidates_for_lchan(lc, clist, candidates, NULL, true);
+		break;
+
+	case GSM_PCHAN_TCH_H:
+		/* No need to collect TCH/H candidates if no TCH/H needs to be moved. */
+		if (tchh_congestion == 0)
+			return;
+
+		for (j = 0; j < 2; j++) {
+			lc = &ts->lchan[j];
+			/* omit if channel not active */
+			if (lc->type != GSM_LCHAN_TCH_H
+			    || !lchan_state_is(lc, LCHAN_ST_ESTABLISHED))
+				return;
+			/* omit of there is an ongoing ho/as */
+			if (!lc->conn
+			    || lc->conn->assignment.new_lchan
+			    || lc->conn->ho.fi)
+				return;
+			/* We desperately want to resolve congestion, ignore rxlev when
+			 * collecting candidates by passing include_weaker_rxlev=true. */
+			collect_candidates_for_lchan(lc, clist, candidates, NULL, true);
+		}
+		break;
+	default:
+		break;
+	}
+}
+
+/* loop through all active lchan and collect candidates */
+static void collect_candidates_on_bts(struct gsm_bts *bts, struct ho_candidate *clist, unsigned int *candidates,
+				      int tchf_congestion, int tchh_congestion,
+				      bool only_dyn_ts)
+{
+	struct gsm_bts_trx *trx;
+	int i;
+
+	llist_for_each_entry(trx, &bts->trx_list, list) {
+		if (!trx_is_usable(trx))
+			continue;
+
+		if (only_dyn_ts) {
+			/* iterate dyn TS in reverse, to favor moving "later" timeslots */
+			for (i = 7; i >= 0; i--)
+				collect_candidates_on_ts(&trx->ts[i], clist, candidates, tchf_congestion,
+							 tchh_congestion, only_dyn_ts);
+		} else {
+			for (i = 0; i < 8; i++)
+				collect_candidates_on_ts(&trx->ts[i], clist, candidates, tchf_congestion,
+							 tchh_congestion, only_dyn_ts);
+		}
+	}
+}
+
 /*
  * Handover/assignment check after timer timeout:
  *
@@ -1413,10 +1507,7 @@ static void on_measurement_report(struct gsm_meas_rep *mr)
  */
 static int bts_resolve_congestion(struct gsm_bts *bts, int tchf_congestion, int tchh_congestion)
 {
-	struct gsm_lchan *lc;
-	struct gsm_bts_trx *trx;
-	struct gsm_bts_trx_ts *ts;
-	int i, j;
+	int i;
 	struct ho_candidate *clist;
 	unsigned int candidates;
 	struct ho_candidate *best_cand = NULL, *worst_cand = NULL;
@@ -1437,68 +1528,18 @@ static int bts_resolve_congestion(struct gsm_bts *bts, int tchf_congestion, int 
 
 	/* allocate array of all bts */
 	clist = talloc_zero_array(tall_bsc_ctx, struct ho_candidate,
-		bts->num_trx * 8 * 2 * (1 + ARRAY_SIZE(lc->neigh_meas)));
+		bts->num_trx * 8 * 2 * (1 + ARRAY_SIZE(((struct gsm_lchan*)0)->neigh_meas)));
 	if (!clist)
 		return 0;
 
 	candidates = 0;
 
-	/* loop through all active lchan and collect candidates */
-	llist_for_each_entry(trx, &bts->trx_list, list) {
-		if (!trx_is_usable(trx))
-			continue;
+	/* First collect candidates for dyn TS, to favor freeing PDCH. This specifically makes a difference when
+	 * rxlev for a target cell are equal, particularly when considering re-assignment within the same cell. */
+	collect_candidates_on_bts(bts, clist, &candidates, tchf_congestion, tchh_congestion, true);
 
-		for (i = 0; i < 8; i++) {
-			ts = &trx->ts[i];
-			if (!ts_is_usable(ts))
-				continue;
-
-			/* (Do not consider dynamic TS that are in PDCH mode) */
-			switch (ts->pchan_is) {
-			case GSM_PCHAN_TCH_F:
-				/* No need to collect TCH/F candidates if no TCH/F needs to be moved. */
-				if (tchf_congestion == 0)
-					continue;
-
-				lc = &ts->lchan[0];
-				/* omit if channel not active */
-				if (lc->type != GSM_LCHAN_TCH_F
-				    || !lchan_state_is(lc, LCHAN_ST_ESTABLISHED))
-					break;
-				/* omit if there is an ongoing ho/as */
-				if (!lc->conn || lc->conn->assignment.new_lchan
-				    || lc->conn->ho.fi)
-					break;
-				/* We desperately want to resolve congestion, ignore rxlev when
-				 * collecting candidates by passing include_weaker_rxlev=true. */
-				collect_candidates_for_lchan(lc, clist, &candidates, NULL, true);
-				break;
-			case GSM_PCHAN_TCH_H:
-				/* No need to collect TCH/H candidates if no TCH/H needs to be moved. */
-				if (tchh_congestion == 0)
-					continue;
-
-				for (j = 0; j < 2; j++) {
-					lc = &ts->lchan[j];
-					/* omit if channel not active */
-					if (lc->type != GSM_LCHAN_TCH_H
-					    || !lchan_state_is(lc, LCHAN_ST_ESTABLISHED))
-						continue;
-					/* omit of there is an ongoing ho/as */
-					if (!lc->conn
-					    || lc->conn->assignment.new_lchan
-					    || lc->conn->ho.fi)
-						continue;
-					/* We desperately want to resolve congestion, ignore rxlev when
-					 * collecting candidates by passing include_weaker_rxlev=true. */
-					collect_candidates_for_lchan(lc, clist, &candidates, NULL, true);
-				}
-				break;
-			default:
-				break;
-			}
-		}
-	}
+	/* Then collect candidates for non-dyn TS */
+	collect_candidates_on_bts(bts, clist, &candidates, tchf_congestion, tchh_congestion, false);
 
 	if (!candidates) {
 		LOGPHOBTS(bts, LOGL_DEBUG, "No neighbor cells qualify to solve congestion\n");
