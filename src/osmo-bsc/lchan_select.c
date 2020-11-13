@@ -32,17 +32,19 @@
 
 static struct gsm_lchan *
 _lc_find_trx(struct gsm_bts_trx *trx, enum gsm_phys_chan_config pchan,
-	     enum gsm_phys_chan_config as_pchan)
+	     enum gsm_phys_chan_config as_pchan, bool allow_pchan_switch)
 {
 	struct gsm_lchan *lchan;
 	struct gsm_bts_trx_ts *ts;
 	int j, start, stop, dir;
 
 #define LOGPLCHANALLOC(fmt, args...) \
-		LOGP(DRLL, LOGL_DEBUG, "looking for lchan %s%s%s: " fmt, \
+		LOGP(DRLL, LOGL_DEBUG, "looking for lchan %s%s%s%s: " fmt, \
 		     gsm_pchan_name(pchan), \
 		     pchan == as_pchan ? "" : " as ", \
-		     pchan == as_pchan ? "" : gsm_pchan_name(as_pchan), ## args)
+		     pchan == as_pchan ? "" : gsm_pchan_name(as_pchan), \
+		     ((pchan != as_pchan) && !allow_pchan_switch) ? " without pchan switch" : "", \
+		     ## args)
 
 	if (!trx_is_usable(trx)) {
 		LOGPLCHANALLOC("%s trx not usable\n", gsm_trx_name(trx));
@@ -73,9 +75,10 @@ _lc_find_trx(struct gsm_bts_trx *trx, enum gsm_phys_chan_config pchan,
 			continue;
 		}
 		/* Next, is this timeslot in or can it be switched to the pchan we want to use it for? */
-		if (!ts_usable_as_pchan(ts, as_pchan)) {
-			LOGPLCHANALLOC("%s is not usable as %s\n", gsm_ts_and_pchan_name(ts),
-				       gsm_pchan_name(as_pchan));
+		if (!ts_usable_as_pchan(ts, as_pchan, allow_pchan_switch)) {
+			LOGPLCHANALLOC("%s is not usable as %s%s\n", gsm_ts_and_pchan_name(ts),
+				       gsm_pchan_name(as_pchan),
+				       allow_pchan_switch ? "" : " without pchan switch");
 			continue;
 		}
 
@@ -104,18 +107,28 @@ _lc_dyn_find_bts(struct gsm_bts *bts, enum gsm_phys_chan_config pchan,
 {
 	struct gsm_bts_trx *trx;
 	struct gsm_lchan *lc;
+	int allow_pchan_switch;
+	bool try_pchan_switch;
 
-	if (bts->chan_alloc_reverse) {
-		llist_for_each_entry_reverse(trx, &bts->trx_list, list) {
-			lc = _lc_find_trx(trx, pchan, dyn_as_pchan);
-			if (lc)
-				return lc;
-		}
-	} else {
-		llist_for_each_entry(trx, &bts->trx_list, list) {
-			lc = _lc_find_trx(trx, pchan, dyn_as_pchan);
-			if (lc)
-				return lc;
+	/* First find an lchan that needs no change in its timeslot pchan mode.
+	 * In particular, this ensures that handover to a dynamic timeslot in TCH/H favors timeslots that are currently
+	 * using only one of two TCH/H, so that we don't switch more dynamic timeslots to TCH/H than necessary.
+	 * For non-dynamic timeslots, it is not necessary to do a second pass with allow_pchan_switch ==
+	 * true, because they never switch anyway. */
+	try_pchan_switch = (pchan != dyn_as_pchan);
+	for (allow_pchan_switch = 0; allow_pchan_switch <= (try_pchan_switch ? 1 : 0); allow_pchan_switch++) {
+		if (bts->chan_alloc_reverse) {
+			llist_for_each_entry_reverse(trx, &bts->trx_list, list) {
+				lc = _lc_find_trx(trx, pchan, dyn_as_pchan, (bool)allow_pchan_switch);
+				if (lc)
+					return lc;
+			}
+		} else {
+			llist_for_each_entry(trx, &bts->trx_list, list) {
+				lc = _lc_find_trx(trx, pchan, dyn_as_pchan, (bool)allow_pchan_switch);
+				if (lc)
+					return lc;
+			}
 		}
 	}
 

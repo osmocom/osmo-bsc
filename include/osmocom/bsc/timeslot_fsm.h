@@ -50,4 +50,4 @@ bool ts_is_capable_of_pchan(struct gsm_bts_trx_ts *ts, enum gsm_phys_chan_config
 bool ts_is_capable_of_lchant(struct gsm_bts_trx_ts *ts, enum gsm_chan_t type);
 bool ts_is_lchan_waiting_for_pchan(struct gsm_bts_trx_ts *ts, enum gsm_phys_chan_config *target_pchan);
 bool ts_is_pchan_switching(struct gsm_bts_trx_ts *ts, enum gsm_phys_chan_config *target_pchan);
-bool ts_usable_as_pchan(struct gsm_bts_trx_ts *ts, enum gsm_phys_chan_config as_pchan);
+bool ts_usable_as_pchan(struct gsm_bts_trx_ts *ts, enum gsm_phys_chan_config as_pchan, bool allow_pchan_switch);
