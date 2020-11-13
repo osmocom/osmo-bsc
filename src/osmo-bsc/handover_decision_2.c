@@ -1362,6 +1362,12 @@ static void on_measurement_report(struct gsm_meas_rep *mr)
 	}
 }
 
+static bool lchan_is_on_dynamic_ts(struct gsm_lchan *lchan)
+{
+	return lchan->ts->pchan_on_init == GSM_PCHAN_TCH_F_TCH_H_PDCH
+		|| lchan->ts->pchan_on_init == GSM_PCHAN_TCH_F_PDCH;
+}
+
 /* Given two candidates, pick the one that should rather be moved during handover.
  * Return the better candidate in out-parameters best_cand and best_avg_db.
  */
@@ -1375,6 +1381,12 @@ static void pick_better_lchan_to_move(bool want_highest_db,
 	if (want_highest_db && (*best_avg_db_p < other_avg_db))
 		goto return_other;
 	if (!want_highest_db && (*best_avg_db_p > other_avg_db))
+		goto return_other;
+
+	/* The two lchans have identical ratings, prefer picking a dynamic timeslot: free PDCH and allow more timeslot
+	 * type flexibility for further congestion resolution. If both are dynamic, it does not matter which one is
+	 * picked. */
+	if (lchan_is_on_dynamic_ts(other_cand->lchan))
 		goto return_other;
 
 	/* keep the same candidate. */
