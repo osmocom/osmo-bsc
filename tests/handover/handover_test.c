@@ -1655,6 +1655,45 @@ static char *test_case_29[] = {
 	NULL
 };
 
+static char *test_case_30[] = {
+	"2",
+
+	"Congestion check: Balancing congestion by handover TCH/F -> TCH/H\n\n"
+	"With dynamic timeslots.\n"
+	"As soon as only one TCH/F is left, there should be HO to a dyn TS.\n"
+	,
+	"create-bts", "1", "c+s4", "TCH/F", "TCH/F", "TCH/F", "dyn", "dyn", "dyn", "PDCH",
+	"set-min-free", "0", "TCH/F", "2",
+	"set-min-free", "0", "TCH/H", "0",
+	"as-enable", "0", "1",
+	"set-ts-use", "0", "0", "*", "TCH/F", "TCH/F", "TCH/F", "TCH/F", "PDCH", "PDCH", "PDCH",
+	"meas-rep", "0","0","1","0", "40","0", "1", "0","30",
+	"meas-rep", "0","0","2","0", "40","0", "1", "0","30",
+	"meas-rep", "0","0","3","0", "40","0", "1", "0","30",
+	"meas-rep", "0","0","4","0", "40","0", "1", "0","30",
+	"congestion-check",
+	"expect-no-chan",
+	"create-ms", "0", "TCH/F", "AMR",
+	"meas-rep", "0","0","5","0", "40","0", "1", "0","30",
+	"expect-ts-use", "0", "0", "*", "TCH/F", "TCH/F", "TCH/F", "TCH/F", "TCH/F", "PDCH", "PDCH",
+	"congestion-check",
+	"expect-chan", "0", "6",
+	"ack-chan",
+	/* Not so good: rather than moving static TCH/F, we should favor freeing dyn TS, for more PDCH */
+	"expect-ho", "0", "1",
+	"ho-complete",
+	"expect-ts-use", "0", "0", "*", "-", "TCH/F", "TCH/F", "TCH/F", "TCH/F", "TCH/H-", "PDCH",
+	"congestion-check",
+	"expect-chan", "0", "6",
+	"ack-chan",
+	"expect-ho", "0", "2",
+	"ho-complete",
+	"expect-ts-use", "0", "0", "*", "-", "-", "TCH/F", "TCH/F", "TCH/F", "TCH/HH", "PDCH",
+	"congestion-check",
+	"expect-no-chan",
+	NULL
+};
+
 
 static char **test_cases[] =  {
 	test_case_0,
@@ -1687,6 +1726,7 @@ static char **test_cases[] =  {
 	test_case_27,
 	test_case_28,
 	test_case_29,
+	test_case_30,
 };
 
 static const struct log_info_cat log_categories[] = {
