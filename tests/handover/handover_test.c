@@ -311,27 +311,27 @@ bool expect_ts_use(int bts_nr, int trx_nr, const char * const *ts_use)
 	trx = gsm_bts_trx_num(bts, trx_nr);
 	OSMO_ASSERT(trx);
 
-	printf("Expect TS use:");
+	fprintf(stderr, "Expect TS use:");
 	for (i = 0; i < 8; i++)
-		printf("\t%s", ts_use[i]);
-	printf("\n");
-	printf("   Got TS use:");
+		fprintf(stderr, "\t%s", ts_use[i]);
+	fprintf(stderr, "\n");
+	fprintf(stderr, "   Got TS use:");
 
 	for (i = 0; i < 8; i++) {
 		struct gsm_bts_trx_ts *ts = &trx->ts[i];
 		const char *use = ts_use_str(ts);
 
-		printf("\t%s", use);
+		fprintf(stderr, "\t%s", use);
 
 		if (!strcmp(ts_use[i], "*"))
 			continue;
 		if (strcmp(ts_use[i], use) && mismatching_ts < 0)
 			mismatching_ts = i;
 	}
-	printf("\n");
+	fprintf(stderr, "\n");
 
 	if (mismatching_ts >= 0) {
-		printf("Test failed: mismatching TS use in bts %d trx %d ts %d\n",
+		fprintf(stderr, "Test failed: mismatching TS use in bts %d trx %d ts %d\n",
 		       bts_nr, trx_nr, mismatching_ts);
 		return false;
 	}
@@ -1460,6 +1460,58 @@ static char *test_case_29[] = {
 	NULL
 };
 
+static char *test_case_30[] = {
+	"2",
+
+	"Congestion check: Balancing congestion by handover TCH/F -> TCH/H\n\n"
+	"With dynamic timeslots.\n"
+	"As soon as only one TCH/F is left, there should be HO to a dyn TS.\n"
+	,
+	"create-bts", "1", "c+s4", "TCH/F", "TCH/F", "TCH/F", "dyn", "dyn", "dyn", "PDCH",
+	"set-min-free", "0", "TCH/F", "2",
+	"set-min-free", "0", "TCH/H", "0",
+	"as-enable", "0", "1",
+	"create-ms", "0", "TCH/F", "AMR",
+	"meas-rep", "0", "40","0", "1", "0","30",
+	"expect-ts-use", "0", "0", "*", "TCH/F", "-", "-", "PDCH", "PDCH", "PDCH", "PDCH",
+	"congestion-check",
+	"expect-no-chan",
+	"create-ms", "0", "TCH/F", "AMR",
+	"meas-rep", "1", "40","0", "1", "0","30",
+	"expect-ts-use", "0", "0", "*", "TCH/F", "TCH/F", "-", "PDCH", "PDCH", "PDCH", "PDCH",
+	"congestion-check",
+	"expect-no-chan",
+	"create-ms", "0", "TCH/F", "AMR",
+	"meas-rep", "2", "40","0", "1", "0","30",
+	"expect-ts-use", "0", "0", "*", "TCH/F", "TCH/F", "TCH/F", "PDCH", "PDCH", "PDCH", "PDCH",
+	"congestion-check",
+	"expect-no-chan",
+	"create-ms", "0", "TCH/F", "AMR",
+	"meas-rep", "3", "40","0", "1", "0","30",
+	"expect-ts-use", "0", "0", "*", "TCH/F", "TCH/F", "TCH/F", "TCH/F", "PDCH", "PDCH", "PDCH",
+	"congestion-check",
+	"expect-no-chan",
+	"create-ms", "0", "TCH/F", "AMR",
+	"meas-rep", "4", "40","0", "1", "0","30",
+	"expect-ts-use", "0", "0", "*", "TCH/F", "TCH/F", "TCH/F", "TCH/F", "TCH/F", "PDCH", "PDCH",
+	"congestion-check",
+	"expect-chan", "0", "6",
+	"ack-chan",
+	/* Not so good: rather than moving static TCH/F, we should favor freeing dyn TS, for more PDCH */
+	"expect-ho", "0", "1",
+	"ho-complete",
+	"expect-ts-use", "0", "0", "*", "-", "TCH/F", "TCH/F", "TCH/F", "TCH/F", "TCH/H-", "PDCH",
+	"congestion-check",
+	"expect-chan", "0", "6",
+	"ack-chan",
+	"expect-ho", "0", "2",
+	"ho-complete",
+	"expect-ts-use", "0", "0", "*", "-", "-", "TCH/F", "TCH/F", "TCH/F", "TCH/HH", "PDCH",
+	"congestion-check",
+	"expect-no-chan",
+	NULL
+};
+
 
 static char **test_cases[] =  {
 	test_case_0,
@@ -1492,6 +1544,7 @@ static char **test_cases[] =  {
 	test_case_27,
 	test_case_28,
 	test_case_29,
+	test_case_30,
 };
 
 static const struct log_info_cat log_categories[] = {
