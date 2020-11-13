@@ -372,20 +372,12 @@ void create_conn(struct gsm_lchan *lchan)
 	osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_A_CONN_CFM, NULL);
 }
 
-/* create lchan */
-struct gsm_lchan *create_lchan(struct gsm_bts *bts, int full_rate, char *codec)
+struct gsm_lchan *lchan_act(struct gsm_lchan *lchan, int full_rate, const char *codec)
 {
-	struct gsm_lchan *lchan;
-
-	lchan = lchan_select_by_type(bts, (full_rate) ? GSM_LCHAN_TCH_F : GSM_LCHAN_TCH_H);
-	if (!lchan) {
-		printf("No resource for lchan\n");
-		exit(EXIT_FAILURE);
-	}
-
 	/* serious hack into osmo_fsm */
 	lchan->fi->state = LCHAN_ST_ESTABLISHED;
 	lchan->ts->fi->state = TS_ST_IN_USE;
+	lchan->type = full_rate ? GSM_LCHAN_TCH_F : GSM_LCHAN_TCH_H;
 
 	if (lchan->ts->pchan_on_init == GSM_PCHAN_TCH_F_TCH_H_PDCH)
 		lchan->ts->pchan_is = full_rate ? GSM_PCHAN_TCH_F : GSM_PCHAN_TCH_H;
@@ -423,6 +415,102 @@ struct gsm_lchan *create_lchan(struct gsm_bts *bts, int full_rate, char *codec)
 	};
 
 	return lchan;
+}
+
+struct gsm_lchan *create_lchan(struct gsm_bts *bts, int full_rate, const char *codec)
+{
+	struct gsm_lchan *lchan;
+
+	lchan = lchan_select_by_type(bts, (full_rate) ? GSM_LCHAN_TCH_F : GSM_LCHAN_TCH_H);
+	if (!lchan) {
+		printf("No resource for lchan\n");
+		exit(EXIT_FAILURE);
+	}
+
+	return lchan_act(lchan, full_rate, codec);
+}
+
+static void lchan_clear(struct gsm_lchan *lchan)
+{
+	lchan_release(lchan, true, false, 0);
+}
+
+static void ts_clear(struct gsm_bts_trx_ts *ts)
+{
+	struct gsm_lchan *lchan;
+	ts_for_each_lchan(lchan, ts) {
+		if (lchan_state_is(lchan, LCHAN_ST_UNUSED))
+			continue;
+		lchan_clear(lchan);
+	}
+}
+
+bool set_ts_use(int bts_nr, int trx_nr, const char * const *ts_use)
+{
+	struct gsm_bts *bts;
+	struct gsm_bts_trx *trx;
+	int i;
+	bts = gsm_bts_num(bsc_gsmnet, bts_nr);
+	OSMO_ASSERT(bts);
+	trx = gsm_bts_trx_num(bts, trx_nr);
+	OSMO_ASSERT(trx);
+
+	fprintf(stderr, "Setting TS use:");
+	for (i = 0; i < 8; i++)
+		fprintf(stderr, "\t%s", ts_use[i]);
+	fprintf(stderr, "\n");
+
+	for (i = 0; i < 8; i++) {
+		struct gsm_bts_trx_ts *ts = &trx->ts[i];
+		const char *want_use = ts_use[i];
+		const char *is_use = ts_use_str(ts);
+
+		if (!strcmp(want_use, "*"))
+			continue;
+
+		/* If it is already as desired, don't change anything */
+		if (!strcmp(want_use, is_use))
+			continue;
+
+		if (!strcmp(want_use, "TCH/F")) {
+			if (!ts_is_capable_of_pchan(ts, GSM_PCHAN_TCH_F)) {
+				printf("Error: bts %d trx %d ts %d cannot be used as TCH/F\n",
+				       bts_nr, trx_nr, i);
+				return false;
+			}
+			ts_clear(ts);
+
+			lchan_act(&ts->lchan[0], true, "AMR");
+		} else if (!strcmp(want_use, "TCH/H-")
+			   || !strcmp(want_use, "TCH/HH")
+			   || !strcmp(want_use, "TCH/-H")) {
+			bool act[2];
+			int j;
+
+			if (!ts_is_capable_of_pchan(ts, GSM_PCHAN_TCH_H)) {
+				printf("Error: bts %d trx %d ts %d cannot be used as TCH/H\n",
+				       bts_nr, trx_nr, i);
+				return false;
+			}
+
+			if (ts->pchan_is != GSM_PCHAN_TCH_H)
+				ts_clear(ts);
+
+			act[0] = want_use[4] == 'H';
+			act[1] = want_use[5] == 'H';
+
+			for (j = 0; j < 2; j++) {
+				if (lchan_state_is(&ts->lchan[j], LCHAN_ST_UNUSED)) {
+					if (act[j])
+						lchan_act(&ts->lchan[j], false, "AMR");
+				} else if (!act[j])
+					lchan_clear(&ts->lchan[j]);
+			}
+		} else if (!strcmp(want_use, "-") || !strcmp(want_use, "PDCH")) {
+			ts_clear(ts);
+		}
+	}
+	return true;
 }
 
 /* parse channel request */
@@ -2014,6 +2102,26 @@ int main(int argc, char **argv)
 			int bts_nr = atoi(test_case[1]);
 			int trx_nr = atoi(test_case[2]);
 			const char * const * ts_use = (void*)&test_case[3];
+			if (!expect_ts_use(bts_nr, trx_nr, ts_use))
+				return EXIT_FAILURE;
+			test_case += 1 + 2 + 8;
+		} else
+		if (!strcmp(*test_case, "set-ts-use")) {
+			/* set-ts-use <bts-nr> <trx-nr> 8x<ts-use>
+			 * e.g.
+			 * set-ts-use 0 0  * TCH/F - - TCH/H- TCH/HH TCH/-H PDCH
+			 * '*': keep as is
+			 * TCH/F: one FR call.
+			 * TCH/H-: HR TS with first subslot used as TCH/H, other subslot unused.
+			 * TCH/HH: HR TS with both subslots used as TCH/H
+			 * TCH/-H: HR TS with only second subslot used as TCH/H
+			 * PDCH: TS used for PDCH (e.g. unused dynamic TS)
+			 */
+			int bts_nr = atoi(test_case[1]);
+			int trx_nr = atoi(test_case[2]);
+			const char * const * ts_use = (void*)&test_case[3];
+			if (!set_ts_use(bts_nr, trx_nr, ts_use))
+				return EXIT_FAILURE;
 			if (!expect_ts_use(bts_nr, trx_nr, ts_use))
 				return EXIT_FAILURE;
 			test_case += 1 + 2 + 8;
