@@ -318,6 +318,14 @@ struct gsm_lchan *create_lchan(struct gsm_bts *bts, int full_rate, char *codec)
 	/* serious hack into osmo_fsm */
 	lchan->fi->state = LCHAN_ST_ESTABLISHED;
 	lchan->ts->fi->state = TS_ST_IN_USE;
+
+	if (lchan->ts->pchan_on_init == GSM_PCHAN_TCH_F_TCH_H_PDCH)
+		lchan->ts->pchan_is = full_rate ? GSM_PCHAN_TCH_F : GSM_PCHAN_TCH_H;
+	if (lchan->ts->pchan_on_init == GSM_PCHAN_TCH_F_PDCH) {
+		OSMO_ASSERT(full_rate);
+		lchan->ts->pchan_is = GSM_PCHAN_TCH_F;
+	}
+
 	LOG_LCHAN(lchan, LOGL_DEBUG, "activated by handover_test.c\n");
 
 	create_conn(lchan);
@@ -491,6 +499,7 @@ int __wrap_abis_rsl_sendmsg(struct msgb *msg)
 	struct e1inp_sign_link *sign_link = msg->dst;
 	int rc;
 	struct gsm_lchan *lchan = rsl_lchan_lookup(sign_link->trx, dh->chan_nr, &rc);
+	struct gsm_lchan *other_lchan;
 
 	if (rc) {
 		printf("rsl_lchan_lookup() failed\n");
@@ -507,6 +516,30 @@ int __wrap_abis_rsl_sendmsg(struct msgb *msg)
 		rc = parse_chan_rel(lchan, dh->data);
 		if (rc == 0)
 			send_chan_act_ack(chan_req_lchan, 0);
+
+		/* send dyn TS back to PDCH if unused */
+		switch (chan_req_lchan->ts->pchan_on_init) {
+		case GSM_PCHAN_TCH_F_TCH_H_PDCH:
+		case GSM_PCHAN_TCH_F_PDCH:
+			switch (chan_req_lchan->ts->pchan_is) {
+			case GSM_PCHAN_TCH_H:
+				other_lchan = &chan_req_lchan->ts->lchan[
+					(chan_req_lchan == &chan_req_lchan->ts->lchan[0])?
+					1 : 0];
+				if (lchan_state_is(other_lchan, LCHAN_ST_ESTABLISHED))
+					break;
+				/* else fall thru */
+			case GSM_PCHAN_TCH_F:
+				chan_req_lchan->ts->pchan_is = GSM_PCHAN_PDCH;
+				break;
+			default:
+				break;
+			}
+			break;
+		default:
+			break;
+		}
+
 		break;
 	case RSL_MT_DATA_REQ:
 		rc = parse_ho_command(lchan, msg->l3h, msgb_l3len(msg));
