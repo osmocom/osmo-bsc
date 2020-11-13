@@ -1770,8 +1770,6 @@ struct gsm_bts *bts_by_num_str(const char *num_str)
 int main(int argc, char **argv)
 {
 	char **test_case;
-	struct gsm_lchan *lchan[256];
-	int lchan_num = 0;
 	int i;
 	int algorithm;
 	int test_case_i;
@@ -1913,19 +1911,21 @@ int main(int argc, char **argv)
 			test_case += 3;
 		} else
 		if (!strcmp(*test_case, "create-ms")) {
-			fprintf(stderr, "- Creating mobile #%d at BTS %s on "
-				"%s with %s codec\n", lchan_num, test_case[1],
-				test_case[2], test_case[3]);
-			lchan[lchan_num] = create_lchan(bts_by_num_str(test_case[1]),
-				!strcmp(test_case[2], "TCH/F"), test_case[3]);
-			if (!lchan[lchan_num]) {
+			const char *bts_nr_str = test_case[1];
+			const char *tch_type = test_case[2];
+			const char *codec = test_case[3];
+			struct gsm_lchan *lchan;
+			fprintf(stderr, "- Creating mobile at BTS %s on "
+				"%s with %s codec\n", bts_nr_str, tch_type, codec);
+			lchan = create_lchan(bts_by_num_str(bts_nr_str),
+				!strcmp(tch_type, "TCH/F"), codec);
+			if (!lchan) {
 				printf("Failed to create lchan!\n");
 				return EXIT_FAILURE;
 			}
 			fprintf(stderr, " * New MS is at BTS %d TS %d\n",
-				lchan[lchan_num]->ts->trx->bts->nr,
-				lchan[lchan_num]->ts->nr);
-			lchan_num++;
+				lchan->ts->trx->bts->nr,
+				lchan->ts->nr);
 			test_case += 4;
 		} else
 		if (!strcmp(*test_case, "set-ta")) {
@@ -2086,19 +2086,6 @@ int main(int argc, char **argv)
 			test_case += 1;
 			got_chan_req = 0;
 			got_ho_req = 0;
-			/* switch lchan */
-			for (i = 0; i < lchan_num; i++) {
-				if (lchan[i] == ho_req_lchan) {
-					fprintf(stderr, " * MS %d changes from "
-						"BTS=%d TS=%d to BTS=%d "
-						"TS=%d\n", i,
-						lchan[i]->ts->trx->bts->nr,
-						lchan[i]->ts->nr,
-					       chan_req_lchan->ts->trx->bts->nr,
-						chan_req_lchan->ts->nr);
-					lchan[i] = chan_req_lchan;
-				}
-			}
 			send_ho_complete(chan_req_lchan, true);
 		} else
 		if (!strcmp(*test_case, "ho-failed")) {
@@ -2179,13 +2166,6 @@ int main(int argc, char **argv)
 				}
 			}
 		}
-	}
-
-	for (i = 0; i < lchan_num; i++) {
-		struct gsm_subscriber_connection *conn = lchan[i]->conn;
-		lchan[i]->conn = NULL;
-		conn->lchan = NULL;
-		osmo_fsm_inst_term(conn->fi, OSMO_FSM_TERM_REGULAR, NULL);
 	}
 
 	fprintf(stderr, "--------------------\n");
