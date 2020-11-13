@@ -1694,6 +1694,18 @@ static char *test_case_30[] = {
 	NULL
 };
 
+static char *test_case_31[] = {
+	"2",
+
+	"Congestion check: re-use half used TCH/H to avoid switching more dyn TS to TCH/H\n"
+	,
+	"create-bts", "1", "c+s4", "TCH/F", "TCH/F", "TCH/F", "dyn", "dyn", "dyn", "PDCH",
+	"set-ts-use", "0", "0",  "*", "-", "-", "-", "PDCH", "TCH/H-", "PDCH", "PDCH",
+	"create-ms", "0", "TCH/H", "AMR",
+	/* bad: should re-use existing dyn TS instead of switching another one */
+	"expect-ts-use", "0", "0",  "*", "-", "-", "-", "TCH/H-", "TCH/H-", "PDCH", "PDCH",
+	NULL
+};
 
 static char **test_cases[] =  {
 	test_case_0,
@@ -1727,6 +1739,7 @@ static char **test_cases[] =  {
 	test_case_28,
 	test_case_29,
 	test_case_30,
+	test_case_31,
 };
 
 static const struct log_info_cat log_categories[] = {
