@@ -1702,8 +1702,7 @@ static char *test_case_31[] = {
 	"create-bts", "1", "c+s4", "TCH/F", "TCH/F", "TCH/F", "dyn", "dyn", "dyn", "PDCH",
 	"set-ts-use", "0", "0",  "*", "-", "-", "-", "PDCH", "TCH/H-", "PDCH", "PDCH",
 	"create-ms", "0", "TCH/H", "AMR",
-	/* bad: should re-use existing dyn TS instead of switching another one */
-	"expect-ts-use", "0", "0",  "*", "-", "-", "-", "TCH/H-", "TCH/H-", "PDCH", "PDCH",
+	"expect-ts-use", "0", "0",  "*", "-", "-", "-", "PDCH", "TCH/HH", "PDCH", "PDCH",
 	NULL
 };
 

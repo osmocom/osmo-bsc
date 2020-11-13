@@ -1004,7 +1004,7 @@ bool ts_is_pchan_switching(struct gsm_bts_trx_ts *ts, enum gsm_phys_chan_config 
 /* Does the timeslot's *current* state allow use as this PCHAN kind? If the ts is in switchover, return
  * true if the switchover's target PCHAN matches, i.e. an lchan for this pchan kind could be requested
  * and will be served after the switch. (Do not check whether any lchans are actually available.) */
-bool ts_usable_as_pchan(struct gsm_bts_trx_ts *ts, enum gsm_phys_chan_config as_pchan)
+bool ts_usable_as_pchan(struct gsm_bts_trx_ts *ts, enum gsm_phys_chan_config as_pchan, bool allow_pchan_switch)
 {
 	enum gsm_phys_chan_config target_pchan;
 
@@ -1022,5 +1022,11 @@ bool ts_usable_as_pchan(struct gsm_bts_trx_ts *ts, enum gsm_phys_chan_config as_
 	if (ts_is_lchan_waiting_for_pchan(ts, &target_pchan))
 		return target_pchan == as_pchan;
 
-	return ts_is_capable_of_pchan(ts, as_pchan);
+	if (!ts_is_capable_of_pchan(ts, as_pchan))
+		return false;
+
+	if (!allow_pchan_switch && ts->pchan_is != as_pchan)
+		return false;
+
+	return true;
 }
