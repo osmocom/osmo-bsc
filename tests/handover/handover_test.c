@@ -270,6 +270,74 @@ static struct gsm_bts *create_bts(int num_trx, const char * const *ts_args)
 	return bts;
 }
 
+const char *ts_use_str(struct gsm_bts_trx_ts *ts)
+{
+	switch (ts->pchan_is) {
+	case GSM_PCHAN_CCCH_SDCCH4:
+		return "c+s4";
+
+	case GSM_PCHAN_NONE:
+		return "-";
+
+	case GSM_PCHAN_TCH_F:
+		if (lchan_state_is(&ts->lchan[0], LCHAN_ST_ESTABLISHED))
+			return "TCH/F";
+		else
+			return "-";
+
+	case GSM_PCHAN_TCH_H:
+		if (lchan_state_is(&ts->lchan[0], LCHAN_ST_ESTABLISHED)
+		    && lchan_state_is(&ts->lchan[1], LCHAN_ST_ESTABLISHED))
+			return "TCH/HH";
+		if (lchan_state_is(&ts->lchan[0], LCHAN_ST_ESTABLISHED))
+			return "TCH/H-";
+		if (lchan_state_is(&ts->lchan[1], LCHAN_ST_ESTABLISHED))
+			return "TCH/-H";
+		return "-";
+
+	default:
+		return gsm_pchan_name(ts->pchan_is);
+	}
+}
+
+bool expect_ts_use(int bts_nr, int trx_nr, const char * const *ts_use)
+{
+	struct gsm_bts *bts;
+	struct gsm_bts_trx *trx;
+	int i;
+	int mismatching_ts = -1;
+	bts = gsm_bts_num(bsc_gsmnet, bts_nr);
+	OSMO_ASSERT(bts);
+	trx = gsm_bts_trx_num(bts, trx_nr);
+	OSMO_ASSERT(trx);
+
+	printf("Expect TS use:");
+	for (i = 0; i < 8; i++)
+		printf("\t%s", ts_use[i]);
+	printf("\n");
+	printf("   Got TS use:");
+
+	for (i = 0; i < 8; i++) {
+		struct gsm_bts_trx_ts *ts = &trx->ts[i];
+		const char *use = ts_use_str(ts);
+
+		printf("\t%s", use);
+
+		if (!strcmp(ts_use[i], "*"))
+			continue;
+		if (strcmp(ts_use[i], use) && mismatching_ts < 0)
+			mismatching_ts = i;
+	}
+	printf("\n");
+
+	if (mismatching_ts >= 0) {
+		printf("Test failed: mismatching TS use in bts %d trx %d ts %d\n",
+		       bts_nr, trx_nr, mismatching_ts);
+		return false;
+	}
+	return true;
+}
+
 void create_conn(struct gsm_lchan *lchan)
 {
 	static unsigned int next_imsi = 0;
@@ -1829,6 +1897,23 @@ int main(int argc, char **argv)
 			got_chan_req = 0;
 			got_ho_req = 0;
 			send_ho_complete(ho_req_lchan, false);
+		} else
+		if (!strcmp(*test_case, "expect-ts-use")) {
+			/* expect-ts-use <bts-nr> <trx-nr> 8x<ts-use>
+			 * e.g.
+			 * expect-ts-use 0 0  - TCH/F - - TCH/H- TCH/HH TCH/-H PDCH
+			 * TCH/F: one FR call.
+			 * TCH/H-: HR TS with first subslot used as TCH/H, other subslot unused.
+			 * TCH/HH: HR TS with both subslots used as TCH/H
+			 * TCH/-H: HR TS with only second subslot used as TCH/H
+			 * PDCH: TS used for PDCH (e.g. unused dynamic TS)
+			 */
+			int bts_nr = atoi(test_case[1]);
+			int trx_nr = atoi(test_case[2]);
+			const char * const * ts_use = (void*)&test_case[3];
+			if (!expect_ts_use(bts_nr, trx_nr, ts_use))
+				return EXIT_FAILURE;
+			test_case += 1 + 2 + 8;
 		} else
 		if (!strcmp(*test_case, "print")) {
 			fprintf(stderr, "\n%s\n\n", test_case[1]);
