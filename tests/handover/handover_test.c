@@ -179,8 +179,10 @@ enum gsm_phys_chan_config pchan_from_str(const char *str)
 	enum gsm_phys_chan_config pchan;
 	if (!strcmp(str, "dyn"))
 		return GSM_PCHAN_TCH_F_TCH_H_PDCH;
-	if (!strcmp(str, "cs4"))
+	if (!strcmp(str, "c+s4"))
 		return GSM_PCHAN_CCCH_SDCCH4;
+	if (!strcmp(str, "-"))
+		return GSM_PCHAN_NONE;
 	pchan = gsm_pchan_parse(str);
 	if (pchan < 0) {
 		fprintf(stderr, "Invalid timeslot pchan type: %s\n", str);
@@ -190,7 +192,7 @@ enum gsm_phys_chan_config pchan_from_str(const char *str)
 }
 
 const char * const bts_default_ts[] = {
-	"CCCH+SDCCH4", "TCH/F", "TCH/F", "TCH/F", "TCH/F", "TCH/H", "TCH/H", "NONE",
+	"c+s4", "TCH/F", "TCH/F", "TCH/F", "TCH/F", "TCH/H", "TCH/H", "-",
 };
 
 static struct gsm_bts *create_bts(int num_trx, const char * const *ts_args)
@@ -300,7 +302,7 @@ void create_conn(struct gsm_lchan *lchan)
 }
 
 /* create lchan */
-struct gsm_lchan *create_lchan(struct gsm_bts *bts, int full_rate, char *codec)
+struct gsm_lchan *create_lchan(struct gsm_bts *bts, int full_rate, const char *codec)
 {
 	struct gsm_lchan *lchan;
 
@@ -1615,11 +1617,13 @@ int main(int argc, char **argv)
 			test_case += 3;
 		} else
 		if (!strcmp(*test_case, "create-ms")) {
+			const char *bts_nr_str = test_case[1];
+			const char *tch_type = test_case[2];
+			const char *codec = test_case[3];
 			fprintf(stderr, "- Creating mobile #%d at BTS %s on "
-				"%s with %s codec\n", lchan_num, test_case[1],
-				test_case[2], test_case[3]);
-			lchan[lchan_num] = create_lchan(bts_by_num_str(test_case[1]),
-				!strcmp(test_case[2], "TCH/F"), test_case[3]);
+				"%s with %s codec\n", lchan_num, bts_nr_str, tch_type, codec);
+			lchan[lchan_num] = create_lchan(bts_by_num_str(bts_nr_str),
+				!strcmp(tch_type, "TCH/F"), codec);
 			if (!lchan[lchan_num]) {
 				printf("Failed to create lchan!\n");
 				return EXIT_FAILURE;
