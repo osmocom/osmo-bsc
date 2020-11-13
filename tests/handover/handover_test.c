@@ -719,8 +719,10 @@ static char *test_case_0[] = {
 
 	"create-bts-default", "7",
 	"create-ms", "0", "TCH/F", "AMR",
-	"meas-rep", "0", "30","0",
-		"6","0","20","1","21","2","18","3","20","4","23","5","19",
+	"expect-ts-use", "0", "0", "*", "TCH/F", "-", "-", "-", "-", "-", "-",
+	"meas-rep", "0","0","1","0",
+		"30","0",
+		"6", "0","20", "1","21", "2","18", "3","20", "4","23", "5","19",
 	"expect-no-chan",
 	NULL
 };
@@ -733,12 +735,16 @@ static char *test_case_1[] = {
 
 	"create-bts-default", "7",
 	"create-ms", "0", "TCH/F", "AMR",
-	"meas-rep", "0", "10","0",
-		"6","0","20","1","21","2","18","3","20","4","23","5","19",
+	"expect-ts-use", "0", "0", "*", "TCH/F", "-", "-", "-", "-", "-", "-",
+	"meas-rep", "0","0","1","0",
+		"10","0",
+		"6", "0","20", "1","21", "2","18", "3","20", "4","23", "5","19",
 	"expect-chan", "5", "1",
 	"ack-chan",
 	"expect-ho", "0", "1",
 	"ho-complete",
+	"expect-ts-use", "0", "0", "*", "-", "-", "-", "-", "-", "-", "-",
+	"expect-ts-use", "5", "0", "*", "TCH/F", "-", "-", "-", "-", "-", "-",
 	NULL
 };
 
@@ -757,26 +763,30 @@ static char *test_case_2[] = {
 	"create-bts-default", "2",
 	"afs-rxlev-improve", "0", "5",
 	"create-ms", "0", "TCH/H", "AMR",
+	"expect-ts-use", "0", "0", "*", "-", "-", "-", "-", "TCH/H-", "-", "-",
 	"as-enable", "0", "0",
 	"ho-enable", "0", "0",
-	"meas-rep", "0", "0","0", "1","0","30",
+	"meas-rep", "0","0","5","0", "0","0", "1","0","30",
 	"expect-no-chan",
 	"as-enable", "0", "1",
-	"meas-rep", "0", "0","0", "1","0","30",
+	"meas-rep", "0","0","5","0", "0","0", "1","0","30",
 	"expect-chan", "0", "1",
 	"ack-chan",
 	"expect-ho", "0", "5",
 	"ho-complete",
+	"expect-ts-use", "0", "0", "*", "TCH/F", "-", "-", "-", "-", "-", "-",
 	"ho-enable", "0", "1",
 	"ho-enable", "1", "0",
-	"meas-rep", "0", "0","0", "1","0","30",
+	"meas-rep", "0","0","1","0", "0","0", "1","0","30",
 	"expect-no-chan",
 	"ho-enable", "1", "1",
-	"meas-rep", "0", "0","0", "1","0","30",
+	"meas-rep", "0","0","1","0", "0","0", "1","0","30",
 	"expect-chan", "1", "1",
 	"ack-chan",
 	"expect-ho", "0", "1",
 	"ho-complete",
+	"expect-ts-use", "0", "0", "*", "-", "-", "-", "-", "-", "-", "-",
+	"expect-ts-use", "1", "0", "*", "TCH/F", "-", "-", "-", "-", "-", "-",
 	NULL
 };
 
@@ -790,12 +800,15 @@ static char *test_case_3[] = {
 
 	"create-bts-default", "2",
 	"create-ms", "0", "TCH/F", "AMR",
-	"meas-rep", "0", "20","0", "1","0","30",
+	"expect-ts-use", "0", "0", "*", "TCH/F", "-", "-", "-", "-", "-", "-",
+	"meas-rep", "0","0","1","0", "20","0", "1","0","30",
 	"expect-chan", "1", "1",
 	"ack-chan",
 	"expect-ho", "0", "1",
 	"ho-failed",
-	"meas-rep", "0", "20","0", "1","0","30",
+	"expect-ts-use", "0", "0", "*", "TCH/F", "-", "-", "-", "-", "-", "-",
+	"expect-ts-use", "1", "0", "*", "-", "-", "-", "-", "-", "-", "-",
+	"meas-rep", "0","0","1","0", "20","0", "1","0","30",
 	"expect-no-chan",
 	NULL
 };
@@ -811,14 +824,17 @@ static char *test_case_4[] = {
 	"create-bts-default", "2",
 	"set-min-free", "1", "TCH/H", "4",
 	"create-ms", "0", "TCH/H", "HR",
-	"meas-rep", "0", "20","0", "1","0","30",
+	"expect-ts-use", "0", "0", "*", "-", "-", "-", "-", "TCH/H-", "-", "-",
+	"meas-rep", "0","0","5","0", "20","0", "1","0","30",
 	"expect-no-chan",
 	"set-min-free", "1", "TCH/H", "3",
-	"meas-rep", "0", "20","0", "1","0","30",
+	"meas-rep", "0","0","5","0", "20","0", "1","0","30",
 	"expect-chan", "1", "5",
 	"ack-chan",
 	"expect-ho", "0", "5",
 	"ho-complete",
+	"expect-ts-use", "0", "0", "*", "-", "-", "-", "-", "-", "-", "-",
+	"expect-ts-use", "1", "0", "*", "-", "-", "-", "-", "TCH/H-", "-", "-",
 	NULL
 };
 
@@ -833,14 +849,17 @@ static char *test_case_5[] = {
 	"create-bts-default", "2",
 	"set-min-free", "1", "TCH/F", "4",
 	"create-ms", "0", "TCH/F", "FR",
-	"meas-rep", "0", "20","0", "1","0","30",
+	"expect-ts-use", "0", "0", "*", "TCH/F", "-", "-", "-", "-", "-", "-",
+	"meas-rep", "0","0","1","0", "20","0", "1","0","30",
 	"expect-no-chan",
 	"set-min-free", "1", "TCH/F", "3",
-	"meas-rep", "0", "20","0", "1","0","30",
+	"meas-rep", "0","0","1","0", "20","0", "1","0","30",
 	"expect-chan", "1", "1",
 	"ack-chan",
 	"expect-ho", "0", "1",
 	"ho-complete",
+	"expect-ts-use", "0", "0", "*", "-", "-", "-", "-", "-", "-", "-",
+	"expect-ts-use", "1", "0", "*", "TCH/F", "-", "-", "-", "-", "-", "-",
 	NULL
 };
 
@@ -855,14 +874,17 @@ static char *test_case_6[] = {
 	"create-bts-default", "2",
 	"set-min-free", "1", "TCH/F", "4",
 	"create-ms", "0", "TCH/F", "EFR",
-	"meas-rep", "0", "20","0", "1","0","30",
+	"expect-ts-use", "0", "0", "*", "TCH/F", "-", "-", "-", "-", "-", "-",
+	"meas-rep", "0","0","1","0", "20","0", "1","0","30",
 	"expect-no-chan",
 	"set-min-free", "1", "TCH/F", "3",
-	"meas-rep", "0", "20","0", "1","0","30",
+	"meas-rep", "0","0","1","0", "20","0", "1","0","30",
 	"expect-chan", "1", "1",
 	"ack-chan",
 	"expect-ho", "0", "1",
 	"ho-complete",
+	"expect-ts-use", "0", "0", "*", "-", "-", "-", "-", "-", "-", "-",
+	"expect-ts-use", "1", "0", "*", "TCH/F", "-", "-", "-", "-", "-", "-",
 	NULL
 };
 
@@ -876,11 +898,14 @@ static char *test_case_7[] = {
 	"create-bts-default", "2",
 	"set-min-free", "1", "TCH/F", "4",
 	"create-ms", "0", "TCH/F", "AMR",
-	"meas-rep", "0", "20","0", "1","0","30",
+	"expect-ts-use", "0", "0", "*", "TCH/F", "-", "-", "-", "-", "-", "-",
+	"meas-rep", "0","0","1","0", "20","0", "1","0","30",
 	"expect-chan", "1", "5",
 	"ack-chan",
 	"expect-ho", "0", "1",
 	"ho-complete",
+	"expect-ts-use", "0", "0", "*", "-", "-", "-", "-", "-", "-", "-",
+	"expect-ts-use", "1", "0", "*", "-", "-", "-", "-", "TCH/H-", "-", "-",
 	NULL
 };
 
@@ -892,6 +917,7 @@ static char *test_case_8[] = {
 
 	"create-bts-default", "2",
 	"create-ms", "0", "TCH/F", "AMR",
+	"expect-ts-use", "0", "0", "*", "TCH/F", "-", "-", "-", "-", "-", "-",
 	"create-ms", "1", "TCH/F", "AMR",
 	"create-ms", "1", "TCH/F", "AMR",
 	"create-ms", "1", "TCH/F", "AMR",
@@ -900,7 +926,8 @@ static char *test_case_8[] = {
 	"create-ms", "1", "TCH/H", "AMR",
 	"create-ms", "1", "TCH/H", "AMR",
 	"create-ms", "1", "TCH/H", "AMR",
-	"meas-rep", "0", "0","0", "1","0","30",
+	"expect-ts-use", "1", "0", "*", "TCH/F", "TCH/F", "TCH/F", "TCH/F", "TCH/HH", "TCH/HH", "-",
+	"meas-rep", "0","0","1","0", "0","0", "1","0","30",
 	"expect-no-chan",
 	NULL
 };
@@ -917,11 +944,12 @@ static char *test_case_9[] = {
 	"create-ms", "0", "TCH/F", "AMR",
 	"create-ms", "0", "TCH/F", "AMR",
 	"create-ms", "0", "TCH/F", "AMR",
-	"meas-rep", "0", "0","0", "1","0","30",
+	"expect-ts-use", "0", "0", "*", "TCH/F", "TCH/F", "TCH/F", "-", "-", "-", "-",
+	"meas-rep", "0","0","1","0", "0","0", "1","0","30",
 	"expect-chan", "1", "1",
-	"meas-rep", "1", "0","0", "1","0","30",
+	"meas-rep", "0","0","2","0", "0","0", "1","0","30",
 	"expect-chan", "1", "2",
-	"meas-rep", "2", "0","0", "1","0","30",
+	"meas-rep", "0","0","3","0", "0","0", "1","0","30",
 	"expect-no-chan",
 	NULL
 };
@@ -935,13 +963,16 @@ static char *test_case_10[] = {
 
 	"create-bts-default", "2",
 	"create-ms", "0", "TCH/F", "AMR",
-	"meas-rep", "0", "27","0", "1","0","30",
+	"expect-ts-use", "0", "0", "*", "TCH/F", "-", "-", "-", "-", "-", "-",
+	"meas-rep", "0","0","1","0", "27","0", "1","0","30",
 	"expect-no-chan",
-	"meas-rep", "0", "26","0", "1","0","30",
+	"meas-rep", "0","0","1","0", "26","0", "1","0","30",
 	"expect-chan", "1", "1",
 	"ack-chan",
 	"expect-ho", "0", "1",
 	"ho-complete",
+	"expect-ts-use", "0", "0", "*", "-", "-", "-", "-", "-", "-", "-",
+	"expect-ts-use", "1", "0", "*", "TCH/F", "-", "-", "-", "-", "-", "-",
 	NULL
 };
 
@@ -959,15 +990,18 @@ static char *test_case_11[] = {
 
 	"create-bts-default", "2",
 	"create-ms", "0", "TCH/F", "AMR",
-	"meas-rep", "0", "10","0", "1","0","11",
+	"expect-ts-use", "0", "0", "*", "TCH/F", "-", "-", "-", "-", "-", "-",
+	"meas-rep", "0","0","1","0", "10","0", "1","0","11",
 	"expect-no-chan",
-	"meas-rep", "0", "8","0", "1","0","9",
+	"meas-rep", "0","0","1","0", "8","0", "1","0","9",
 	"expect-no-chan",
-	"meas-rep", "0", "9","0", "1","0","10",
+	"meas-rep", "0","0","1","0", "9","0", "1","0","10",
 	"expect-chan", "1", "1",
 	"ack-chan",
 	"expect-ho", "0", "1",
 	"ho-complete",
+	"expect-ts-use", "0", "0", "*", "-", "-", "-", "-", "-", "-", "-",
+	"expect-ts-use", "1", "0", "*", "TCH/F", "-", "-", "-", "-", "-", "-",
 	NULL
 };
 
@@ -980,17 +1014,20 @@ static char *test_case_12[] = {
 
 	"create-bts-default", "2",
 	"create-ms", "0", "TCH/F", "AMR",
+	"expect-ts-use", "0", "0", "*", "TCH/F", "-", "-", "-", "-", "-", "-",
 	"set-min-free", "1", "TCH/F", "4",
 	"set-min-free", "1", "TCH/H", "4",
-	"meas-rep", "0", "20","0", "1","0","30",
+	"meas-rep", "0","0","1","0", "20","0", "1","0","30",
 	"expect-no-chan",
 	"set-min-free", "1", "TCH/F", "3",
 	"set-min-free", "1", "TCH/H", "3",
-	"meas-rep", "0", "20","0", "1","0","30",
+	"meas-rep", "0","0","1","0", "20","0", "1","0","30",
 	"expect-chan", "1", "1",
 	"ack-chan",
 	"expect-ho", "0", "1",
 	"ho-complete",
+	"expect-ts-use", "0", "0", "*", "-", "-", "-", "-", "-", "-", "-",
+	"expect-ts-use", "1", "0", "*", "TCH/F", "-", "-", "-", "-", "-", "-",
 	NULL
 };
 
@@ -1005,18 +1042,22 @@ static char *test_case_13[] = {
 
 	"create-bts-default", "2",
 	"create-ms", "0", "TCH/F", "AMR",
+	"expect-ts-use", "0", "0", "*", "TCH/F", "-", "-", "-", "-", "-", "-",
 	"set-min-free", "0", "TCH/F", "4",
 	"set-min-free", "0", "TCH/H", "4",
 	"set-min-free", "1", "TCH/F", "4",
 	"set-min-free", "1", "TCH/H", "4",
-	"meas-rep", "0", "20","0", "1","0","30",
+	"meas-rep", "0","0","1","0", "20","0", "1","0","30",
 	"expect-no-chan",
 	"create-ms", "0", "TCH/F", "AMR",
-	"meas-rep", "0", "20","0", "1","0","30",
+	"expect-ts-use", "0", "0", "*", "TCH/F", "TCH/F", "-", "-", "-", "-", "-",
+	"meas-rep", "0","0","1","0", "20","0", "1","0","30",
 	"expect-chan", "1", "1",
 	"ack-chan",
 	"expect-ho", "0", "1",
 	"ho-complete",
+	"expect-ts-use", "0", "0", "*", "-", "TCH/F", "-", "-", "-", "-", "-",
+	"expect-ts-use", "1", "0", "*", "TCH/F", "-", "-", "-", "-", "-", "-",
 	NULL
 };
 
@@ -1030,15 +1071,18 @@ static char *test_case_14[] = {
 
 	"create-bts-default", "2",
 	"create-ms", "0", "TCH/F", "AMR",
+	"expect-ts-use", "0", "0", "*", "TCH/F", "-", "-", "-", "-", "-", "-",
 	"set-min-free", "1", "TCH/F", "4",
 	"set-min-free", "1", "TCH/H", "4",
-	"meas-rep", "0", "10","0", "1","0","30",
+	"meas-rep", "0","0","1","0", "10","0", "1","0","30",
 	"expect-no-chan",
-	"meas-rep", "0", "9","0", "1","0","30",
+	"meas-rep", "0","0","1","0", "9","0", "1","0","30",
 	"expect-chan", "1", "1",
 	"ack-chan",
 	"expect-ho", "0", "1",
 	"ho-complete",
+	"expect-ts-use", "0", "0", "*", "-", "-", "-", "-", "-", "-", "-",
+	"expect-ts-use", "1", "0", "*", "TCH/F", "-", "-", "-", "-", "-", "-",
 	NULL
 };
 
@@ -1057,29 +1101,32 @@ static char *test_case_15[] = {
 
 	"create-bts-default", "2",
 	"create-ms", "0", "TCH/F", "AMR",
-	"meas-rep", "0", "40","6", "1","0","30",
+	"expect-ts-use", "0", "0", "*", "TCH/F", "-", "-", "-", "-", "-", "-",
+	"meas-rep", "0","0","1","0", "40","6", "1","0","30",
 	"expect-no-chan",
-	"meas-rep", "0", "40","6", "1","0","30",
+	"meas-rep", "0","0","1","0", "40","6", "1","0","30",
 	"expect-no-chan",
-	"meas-rep", "0", "40","6", "1","0","30",
+	"meas-rep", "0","0","1","0", "40","6", "1","0","30",
 	"expect-no-chan",
-	"meas-rep", "0", "40","6", "1","0","30",
+	"meas-rep", "0","0","1","0", "40","6", "1","0","30",
 	"expect-no-chan",
-	"meas-rep", "0", "40","6", "1","0","30",
+	"meas-rep", "0","0","1","0", "40","6", "1","0","30",
 	"expect-no-chan",
-	"meas-rep", "0", "40","6", "1","0","30",
+	"meas-rep", "0","0","1","0", "40","6", "1","0","30",
 	"expect-no-chan",
-	"meas-rep", "0", "40","6", "1","0","30",
+	"meas-rep", "0","0","1","0", "40","6", "1","0","30",
 	"expect-no-chan",
-	"meas-rep", "0", "40","6", "1","0","30",
+	"meas-rep", "0","0","1","0", "40","6", "1","0","30",
 	"expect-no-chan",
-	"meas-rep", "0", "40","6", "1","0","30",
+	"meas-rep", "0","0","1","0", "40","6", "1","0","30",
 	"expect-no-chan",
-	"meas-rep", "0", "40","6", "1","0","30",
+	"meas-rep", "0","0","1","0", "40","6", "1","0","30",
 	"expect-chan", "1", "1",
 	"ack-chan",
 	"expect-ho", "0", "1",
 	"ho-complete",
+	"expect-ts-use", "0", "0", "*", "-", "-", "-", "-", "-", "-", "-",
+	"expect-ts-use", "1", "0", "*", "TCH/F", "-", "-", "-", "-", "-", "-",
 	NULL
 };
 
@@ -1095,17 +1142,20 @@ static char *test_case_16[] = {
 
 	"create-bts-default", "2",
 	"create-ms", "0", "TCH/F", "AMR",
+	"expect-ts-use", "0", "0", "*", "TCH/F", "-", "-", "-", "-", "-", "-",
 	"set-max-ta", "0", "5", /* of cell */
 	"set-ta", "0", "5", /* of ms */
-	"meas-rep", "0", "30","0", "1","0","20",
+	"meas-rep", "0","0","1","0", "30","0", "1","0","20",
 	"expect-no-chan",
 	"set-ta", "0", "6", /* of ms */
-	"meas-rep", "0", "30","0", "1","0","20",
+	"meas-rep", "0","0","1","0", "30","0", "1","0","20",
 	"expect-chan", "1", "1",
 	"ack-chan",
 	"expect-ho", "0", "1",
 	"ho-complete",
-	"meas-rep", "0", "20","0", "1","0","30",
+	"expect-ts-use", "0", "0", "*", "-", "-", "-", "-", "-", "-", "-",
+	"expect-ts-use", "1", "0", "*", "TCH/F", "-", "-", "-", "-", "-", "-",
+	"meas-rep", "1","0","1","0", "20","0", "1","0","30",
 	"expect-no-chan",
 	NULL
 };
@@ -1130,20 +1180,24 @@ static char *test_case_17[] = {
 	"create-ms", "0", "TCH/H", "AMR",
 	"create-ms", "1", "TCH/F", "AMR",
 	"create-ms", "1", "TCH/H", "AMR",
-	"meas-rep", "0", "30","0", "2","0","20","1","20",
+	"expect-ts-use", "0", "0", "*", "TCH/F", "TCH/F", "-", "-", "TCH/HH", "-", "-",
+	"expect-ts-use", "1", "0", "*", "TCH/F", "-", "-", "-", "TCH/H-", "-", "-",
+	"meas-rep", "0","0","1","0", "30","0", "2","0","20","1","20",
 	"expect-no-chan",
-	"meas-rep", "1", "30","0", "2","0","20","1","20",
+	"meas-rep", "0","0","2","0", "30","0", "2","0","20","1","20",
 	"expect-no-chan",
-	"meas-rep", "2", "30","0", "2","0","20","1","20",
+	"meas-rep", "0","0","5","0", "30","0", "2","0","20","1","20",
 	"expect-no-chan",
-	"meas-rep", "3", "30","0", "2","0","20","1","20",
+	"meas-rep", "0","0","5","1", "30","0", "2","0","20","1","20",
 	"expect-no-chan",
-	"meas-rep", "4", "30","0", "2","0","20","1","20",
+	"meas-rep", "1","0","1","0", "30","0", "2","0","20","1","20",
 	"expect-no-chan",
-	"meas-rep", "5", "30","0", "2","0","20","1","20",
+	"meas-rep", "1","0","5","0", "30","0", "2","0","20","1","20",
 	"expect-no-chan",
 	"congestion-check",
 	"expect-no-chan",
+	"expect-ts-use", "0", "0", "*", "TCH/F", "TCH/F", "-", "-", "TCH/HH", "-", "-",
+	"expect-ts-use", "1", "0", "*", "TCH/F", "-", "-", "-", "TCH/H-", "-", "-",
 	NULL
 };
 
@@ -1169,25 +1223,31 @@ static char *test_case_18[] = {
 	"create-ms", "0", "TCH/H", "AMR",
 	"create-ms", "1", "TCH/F", "AMR",
 	"create-ms", "1", "TCH/H", "AMR",
-	"meas-rep", "0", "30","0", "2","0","20","1","20",
+	"expect-ts-use", "0", "0", "*", "TCH/F", "TCH/F", "TCH/F", "-", "TCH/HH", "-", "-",
+	"expect-ts-use", "1", "0", "*", "TCH/F", "-", "-", "-", "TCH/H-", "-", "-",
+	"meas-rep", "0","0","1","0", "30","0", "2","0","20","1","20",
 	"expect-no-chan",
-	"meas-rep", "1", "30","0", "2","0","20","1","20",
+	"meas-rep", "0","0","2","0", "30","0", "2","0","20","1","20",
 	"expect-no-chan",
-	"meas-rep", "2", "30","0", "2","0","21","1","20",
+	"meas-rep", "0","0","3","0", "30","0", "2","0","21","1","20",
 	"expect-no-chan",
-	"meas-rep", "3", "30","0", "2","0","20","1","20",
+	"meas-rep", "0","0","5","0", "30","0", "2","0","20","1","20",
 	"expect-no-chan",
-	"meas-rep", "4", "30","0", "2","0","20","1","20",
+	"meas-rep", "0","0","5","1", "30","0", "2","0","20","1","20",
 	"expect-no-chan",
-	"meas-rep", "5", "30","0", "2","0","20","1","20",
+	"meas-rep", "1","0","1","0", "30","0", "2","0","20","1","20",
 	"expect-no-chan",
-	"meas-rep", "6", "30","0", "2","0","20","1","20",
+	"meas-rep", "1","0","5","0", "30","0", "2","0","20","1","20",
 	"expect-no-chan",
+	"expect-ts-use", "0", "0", "*", "TCH/F", "TCH/F", "TCH/F", "-", "TCH/HH", "-", "-",
+	"expect-ts-use", "1", "0", "*", "TCH/F", "-", "-", "-", "TCH/H-", "-", "-",
 	"congestion-check",
 	"expect-chan", "1", "2",
 	"ack-chan",
-	"expect-ho", "0", "3", /* best candidate is MS 2 at BTS 1, TS 3 */
+	"expect-ho", "0", "3", /* best candidate is MS 2 at BTS 0, TS 3 */
 	"ho-complete",
+	"expect-ts-use", "0", "0", "*", "TCH/F", "TCH/F", "-", "-", "TCH/HH", "-", "-",
+	"expect-ts-use", "1", "0", "*", "TCH/F", "TCH/F", "-", "-", "TCH/H-", "-", "-",
 	NULL
 };
 
@@ -1205,19 +1265,23 @@ static char *test_case_19[] = {
 	"create-ms", "0", "TCH/F", "FR",
 	"create-ms", "0", "TCH/F", "FR",
 	"create-ms", "1", "TCH/F", "FR",
-	"meas-rep", "0", "30","0", "1","0","20",
+	"expect-ts-use", "0", "0", "*", "TCH/F", "TCH/F", "TCH/F", "-", "-", "-", "-",
+	"expect-ts-use", "1", "0", "*", "TCH/F", "-", "-", "-", "-", "-", "-",
+	"meas-rep", "0","0","1","0", "30","0", "1","0","20",
 	"expect-no-chan",
-	"meas-rep", "1", "30","0", "1","0","21",
+	"meas-rep", "0","0","2","0", "30","0", "1","0","21",
 	"expect-no-chan",
-	"meas-rep", "2", "30","0", "1","0","20",
+	"meas-rep", "0","0","3","0", "30","0", "1","0","20",
 	"expect-no-chan",
-	"meas-rep", "3", "30","0", "1","0","20",
+	"meas-rep", "1","0","1","0", "30","0", "1","0","20",
 	"expect-no-chan",
 	"congestion-check",
 	"expect-chan", "1", "2",
 	"ack-chan",
 	"expect-ho", "0", "2", /* best candidate is MS 1 at BTS 0, TS 2 */
 	"ho-complete",
+	"expect-ts-use", "0", "0", "*", "TCH/F", "-", "TCH/F", "-", "-", "-", "-",
+	"expect-ts-use", "1", "0", "*", "TCH/F", "TCH/F", "-", "-", "-", "-", "-",
 	NULL
 };
 
@@ -1232,13 +1296,16 @@ static char *test_case_20[] = {
 	"set-min-free", "0", "TCH/H", "4",
 	"set-min-free", "1", "TCH/F", "4",
 	"create-ms", "0", "TCH/F", "AMR",
-	"meas-rep", "0", "30","0", "1","0","30",
+	"expect-ts-use", "0", "0", "*", "TCH/F", "-", "-", "-", "-", "-", "-",
+	"meas-rep", "0","0","1","0", "30","0", "1","0","30",
 	"expect-no-chan",
 	"congestion-check",
 	"expect-chan", "1", "5",
 	"ack-chan",
 	"expect-ho", "0", "1",
 	"ho-complete",
+	"expect-ts-use", "0", "0", "*", "-", "-", "-", "-", "-", "-", "-",
+	"expect-ts-use", "1", "0", "*", "-", "-", "-", "-", "TCH/H-", "-", "-",
 	NULL
 };
 
@@ -1256,13 +1323,16 @@ static char *test_case_21[] = {
 	"create-ms", "0", "TCH/F", "AMR",
 	"create-ms", "0", "TCH/F", "AMR",
 	"create-ms", "0", "TCH/H", "AMR",
-	"meas-rep", "0", "30","0", "1","0","30",
+	"expect-ts-use", "0", "0", "*", "TCH/F", "TCH/F", "-", "-", "TCH/H-", "-", "-",
+	"meas-rep", "0","0","1","0", "30","0", "1","0","30",
 	"expect-no-chan",
 	"congestion-check",
 	"expect-chan", "1", "1",
 	"ack-chan",
 	"expect-ho", "0", "1",
 	"ho-complete",
+	"expect-ts-use", "0", "0", "*", "-", "TCH/F", "-", "-", "TCH/H-", "-", "-",
+	"expect-ts-use", "1", "0", "*", "TCH/F", "-", "-", "-", "-", "-", "-",
 	NULL
 };
 
@@ -1280,15 +1350,17 @@ static char *test_case_22[] = {
 	"create-ms", "0", "TCH/H", "AMR",
 	"create-ms", "0", "TCH/H", "AMR",
 	"create-ms", "0", "TCH/H", "AMR",
-	"meas-rep", "0", "30","0", "0",
-	"meas-rep", "1", "34","0", "0",
-	"meas-rep", "2", "20","0", "0",
+	"expect-ts-use", "0", "0", "*", "-", "-", "-", "-", "TCH/HH", "TCH/H-", "-",
+	"meas-rep", "0","0","5","0", "30","0", "0",
+	"meas-rep", "0","0","5","1", "34","0", "0",
+	"meas-rep", "0","0","6","0", "20","0", "0",
 	"expect-no-chan",
 	"congestion-check",
 	"expect-chan", "0", "1",
 	"ack-chan",
 	"expect-ho", "0", "6",
 	"ho-complete",
+	"expect-ts-use", "0", "0", "*", "TCH/F", "-", "-", "-", "TCH/HH", "-", "-",
 	NULL
 };
 
@@ -1308,7 +1380,10 @@ static char *test_case_23[] = {
 	"create-ms", "2", "TCH/F", "AMR",
 	/* andreas */
 	"create-ms", "0", "TCH/F", "AMR",
-	"meas-rep", "1", "40","0", "1","0","30",
+	"expect-ts-use", "0", "0", "*", "TCH/F", "-", "-", "-", "-", "-", "-",
+	"expect-ts-use", "1", "0", "*", "-", "-", "-", "-", "-", "-", "-",
+	"expect-ts-use", "2", "0", "*", "TCH/F", "-", "-", "-", "-", "-", "-",
+	"meas-rep", "0","0","1","0", "40","0", "1","0","30",
 	"expect-no-chan",
 
 	"print",
@@ -1320,11 +1395,14 @@ static char *test_case_23[] = {
 	"What happens: While driving, a different cell (mounted atop the\n"
 	"store) becomes better.",
 	/* drive to bts 1 */
-	"meas-rep", "1", "20","0", "1","0","35",
+	"meas-rep", "0","0","1","0", "20","0", "1","0","35",
 	"expect-chan", "1", "1",
 	"ack-chan",
 	"expect-ho", "0", "1",
 	"ho-complete",
+	"expect-ts-use", "0", "0", "*", "-", "-", "-", "-", "-", "-", "-",
+	"expect-ts-use", "1", "0", "*", "TCH/F", "-", "-", "-", "-", "-", "-",
+	"expect-ts-use", "2", "0", "*", "TCH/F", "-", "-", "-", "-", "-", "-",
 
 	"print",
 	"While Andreas is walking into the store, Axel asks, if he could also\n"
@@ -1335,11 +1413,14 @@ static char *test_case_23[] = {
 	"What happens: Inside the store the close cell is so bad, that\n"
 	"handover back to the previous cell is required.",
 	/* bts 1 becomes bad, so bts 0 helps out */
-	"meas-rep", "1", "5","0", "1","0","20",
+	"meas-rep", "1","0","1","0", "5","0", "1","0","20",
 	"expect-chan", "0", "1",
 	"ack-chan",
 	"expect-ho", "1", "1",
 	"ho-complete",
+	"expect-ts-use", "0", "0", "*", "TCH/F", "-", "-", "-", "-", "-", "-",
+	"expect-ts-use", "1", "0", "*", "-", "-", "-", "-", "-", "-", "-",
+	"expect-ts-use", "2", "0", "*", "TCH/F", "-", "-", "-", "-", "-", "-",
 
 	"print",
 	"After Andreas bought skewers and beer, he leaves the store.\n"
@@ -1347,11 +1428,14 @@ static char *test_case_23[] = {
 	"What happens: Outside the store the close cell is better again, so\n"
 	"handover back to the that cell is performed.",
 	/* bts 1 becomes better again */
-	"meas-rep", "1", "20","0", "1","0","35",
+	"meas-rep", "0","0","1","0", "20","0", "1","0","35",
 	"expect-chan", "1", "1",
 	"ack-chan",
 	"expect-ho", "0", "1",
 	"ho-complete",
+	"expect-ts-use", "0", "0", "*", "-", "-", "-", "-", "-", "-", "-",
+	"expect-ts-use", "1", "0", "*", "TCH/F", "-", "-", "-", "-", "-", "-",
+	"expect-ts-use", "2", "0", "*", "TCH/F", "-", "-", "-", "-", "-", "-",
 
 	"print",
 	/* bts 2 becomes better */
@@ -1359,11 +1443,14 @@ static char *test_case_23[] = {
 	"\n"
 	"What happens: There is a small cell at Axel's house, which becomes\n"
 	"better, because the current cell has no good comverage at the lake.",
-	"meas-rep", "1", "14","0", "2","0","2","1","63",
+	"meas-rep", "1","0","1","0", "14","0", "2","0","2","1","63",
 	"expect-chan", "2", "2",
 	"ack-chan",
 	"expect-ho", "1", "1",
 	"ho-complete",
+	"expect-ts-use", "0", "0", "*", "-", "-", "-", "-", "-", "-", "-",
+	"expect-ts-use", "1", "0", "*", "-", "-", "-", "-", "-", "-", "-",
+	"expect-ts-use", "2", "0", "*", "TCH/F", "TCH/F", "-", "-", "-", "-", "-",
 
 	"print",
 	"Andreas wonders why he still has good radio coverage: \"Last time it\n"
@@ -1389,15 +1476,18 @@ static char *test_case_24[] = {
 	"create-ms", "0", "TCH/F", "AMR",
 	"congestion-check",
 	"expect-no-chan",
+	"expect-ts-use", "0", "0", "*", "TCH/F", "-", "-", "-", "-", "-", "-",
 
 	/* send measurement and trigger congestion check */
-	"meas-rep", "0", "20","0", "1","0","20",
+	"meas-rep", "0","0","1","0", "20","0", "1","0","20",
 	"expect-no-chan",
 	"congestion-check",
 	"expect-chan", "1", "1",
 	"ack-chan",
 	"expect-ho", "0", "1",
 	"ho-complete",
+	"expect-ts-use", "0", "0", "*", "-", "-", "-", "-", "-", "-", "-",
+	"expect-ts-use", "1", "0", "*", "TCH/F", "-", "-", "-", "-", "-", "-",
 
 	/* congest the first cell and remove congestion from second cell */
 	"set-min-free", "0", "TCH/F", "0",
@@ -1408,13 +1498,15 @@ static char *test_case_24[] = {
 	/* no handover until measurements applied */
 	"congestion-check",
 	"expect-no-chan",
-	"meas-rep", "0", "20","0", "1","0","20",
+	"meas-rep", "1","0","1","0", "20","0", "1","0","20",
 	"expect-no-chan",
 	"congestion-check",
 	"expect-chan", "0", "1",
 	"ack-chan",
 	"expect-ho", "1", "1",
 	"ho-complete",
+	"expect-ts-use", "0", "0", "*", "TCH/F", "-", "-", "-", "-", "-", "-",
+	"expect-ts-use", "1", "0", "*", "-", "-", "-", "-", "-", "-", "-",
 	NULL
 };
 
@@ -1427,7 +1519,8 @@ static char *test_case_25[] = {
 
 	"create-bts-default", "7",
 	"create-ms", "0", "TCH/F", "AMR",
-	"meas-rep", "0", "30","0",
+	"expect-ts-use", "0", "0", "*", "TCH/F", "-", "-", "-", "-", "-", "-",
+	"meas-rep", "0","0","1","0", "30","0",
 		"6","0","20","1","21","2","18","3","20","4","23","5","19",
 	"expect-no-chan",
 	NULL
@@ -1441,12 +1534,15 @@ static char *test_case_26[] = {
 
 	"create-bts-default", "7",
 	"create-ms", "0", "TCH/F", "AMR",
-	"meas-rep", "0", "10","0",
+	"expect-ts-use", "0", "0", "*", "TCH/F", "-", "-", "-", "-", "-", "-",
+	"meas-rep", "0","0","1","0", "10","0",
 		"6","0","20","1","21","2","18","3","20","4","23","5","19",
 	"expect-chan", "5", "1",
 	"ack-chan",
 	"expect-ho", "0", "1",
 	"ho-complete",
+	"expect-ts-use", "0", "0", "*", "-", "-", "-", "-", "-", "-", "-",
+	"expect-ts-use", "5", "0", "*", "TCH/F", "-", "-", "-", "-", "-", "-",
 	NULL
 };
 
@@ -1465,20 +1561,23 @@ static char *test_case_27[] = {
 	"create-ms", "0", "TCH/H", "AMR",
 	"create-ms", "0", "TCH/H", "AMR",
 	"create-ms", "0", "TCH/H", "AMR",
-	"meas-rep", "0", "30","0", "0",
-	"meas-rep", "1", "34","0", "0",
-	"meas-rep", "2", "20","0", "0",
+	"expect-ts-use", "0", "0", "*", "-", "-", "-", "-", "TCH/HH", "TCH/H-", "-",
+	"meas-rep", "0","0","5","0", "30","0", "0",
+	"meas-rep", "0","0","5","1", "34","0", "0",
+	"meas-rep", "0","0","6","0", "20","0", "0",
 	"expect-no-chan",
 	"congestion-check",
 	"expect-chan", "0", "1",
 	"ack-chan",
 	"expect-ho", "0", "6",
 	"ho-complete",
+	"expect-ts-use", "0", "0", "*", "TCH/F", "-", "-", "-", "TCH/HH", "-", "-",
 	"congestion-check",
 	"expect-chan", "0", "2",
 	"ack-chan",
 	"expect-ho", "0", "5",
 	"ho-complete",
+	"expect-ts-use", "0", "0", "*", "TCH/F", "TCH/F", "-", "-", "TCH/-H", "-", "-",
 	"congestion-check",
 	"expect-no-chan",
 	"congestion-check",
@@ -1497,31 +1596,34 @@ static char *test_case_28[] = {
 
 	"create-bts-default", "2",
 	"create-ms", "0", "TCH/F", "AMR",
+	"expect-ts-use", "0", "0", "*", "TCH/F", "-", "-", "-", "-", "-", "-",
 	"set-min-free", "1", "TCH/F", "4",
 	"set-min-free", "1", "TCH/H", "4",
-	"meas-rep", "0", "30","6", "1","0","40",
+	"meas-rep", "0","0","1","0", "30","6", "1","0","40",
 	"expect-no-chan",
-	"meas-rep", "0", "30","6", "1","0","40",
+	"meas-rep", "0","0","1","0", "30","6", "1","0","40",
 	"expect-no-chan",
-	"meas-rep", "0", "30","6", "1","0","40",
+	"meas-rep", "0","0","1","0", "30","6", "1","0","40",
 	"expect-no-chan",
-	"meas-rep", "0", "30","6", "1","0","40",
+	"meas-rep", "0","0","1","0", "30","6", "1","0","40",
 	"expect-no-chan",
-	"meas-rep", "0", "30","6", "1","0","40",
+	"meas-rep", "0","0","1","0", "30","6", "1","0","40",
 	"expect-no-chan",
-	"meas-rep", "0", "30","6", "1","0","40",
+	"meas-rep", "0","0","1","0", "30","6", "1","0","40",
 	"expect-no-chan",
-	"meas-rep", "0", "30","6", "1","0","40",
+	"meas-rep", "0","0","1","0", "30","6", "1","0","40",
 	"expect-no-chan",
-	"meas-rep", "0", "30","6", "1","0","40",
+	"meas-rep", "0","0","1","0", "30","6", "1","0","40",
 	"expect-no-chan",
-	"meas-rep", "0", "30","6", "1","0","40",
+	"meas-rep", "0","0","1","0", "30","6", "1","0","40",
 	"expect-no-chan",
-	"meas-rep", "0", "30","6", "1","0","40",
+	"meas-rep", "0","0","1","0", "30","6", "1","0","40",
 	"expect-chan", "1", "1",
 	"ack-chan",
 	"expect-ho", "0", "1",
 	"ho-complete",
+	"expect-ts-use", "0", "0", "*", "-", "-", "-", "-", "-", "-", "-",
+	"expect-ts-use", "1", "0", "*", "TCH/F", "-", "-", "-", "-", "-", "-",
 	NULL
 };
 
@@ -1537,13 +1639,15 @@ static char *test_case_29[] = {
 	"create-ms", "0", "TCH/F", "AMR",
 	"create-ms", "0", "TCH/F", "AMR",
 	"create-ms", "0", "TCH/H", "AMR",
-	"meas-rep", "0", "30","0", "1","0","30",
+	"expect-ts-use", "0", "0", "*", "TCH/F", "TCH/F", "-", "-", "TCH/H-", "-", "-",
+	"meas-rep", "0","0","1","0", "30","0", "1","0","30",
 	"expect-no-chan",
 	"congestion-check",
 	"expect-chan", "0", "5",
 	"ack-chan",
 	"expect-ho", "0", "1",
 	"ho-complete",
+	"expect-ts-use", "0", "0", "*", "-", "TCH/F", "-", "-", "TCH/HH", "-", "-",
 	NULL
 };
 
@@ -1559,27 +1663,27 @@ static char *test_case_30[] = {
 	"set-min-free", "0", "TCH/H", "0",
 	"as-enable", "0", "1",
 	"create-ms", "0", "TCH/F", "AMR",
-	"meas-rep", "0", "40","0", "1", "0","30",
+	"meas-rep", "0","0","1","0", "40","0", "1", "0","30",
 	"expect-ts-use", "0", "0", "*", "TCH/F", "-", "-", "PDCH", "PDCH", "PDCH", "PDCH",
 	"congestion-check",
 	"expect-no-chan",
 	"create-ms", "0", "TCH/F", "AMR",
-	"meas-rep", "1", "40","0", "1", "0","30",
+	"meas-rep", "0","0","2","0", "40","0", "1", "0","30",
 	"expect-ts-use", "0", "0", "*", "TCH/F", "TCH/F", "-", "PDCH", "PDCH", "PDCH", "PDCH",
 	"congestion-check",
 	"expect-no-chan",
 	"create-ms", "0", "TCH/F", "AMR",
-	"meas-rep", "2", "40","0", "1", "0","30",
+	"meas-rep", "0","0","3","0", "40","0", "1", "0","30",
 	"expect-ts-use", "0", "0", "*", "TCH/F", "TCH/F", "TCH/F", "PDCH", "PDCH", "PDCH", "PDCH",
 	"congestion-check",
 	"expect-no-chan",
 	"create-ms", "0", "TCH/F", "AMR",
-	"meas-rep", "3", "40","0", "1", "0","30",
+	"meas-rep", "0","0","4","0", "40","0", "1", "0","30",
 	"expect-ts-use", "0", "0", "*", "TCH/F", "TCH/F", "TCH/F", "TCH/F", "PDCH", "PDCH", "PDCH",
 	"congestion-check",
 	"expect-no-chan",
 	"create-ms", "0", "TCH/F", "AMR",
-	"meas-rep", "4", "40","0", "1", "0","30",
+	"meas-rep", "0","0","5","0", "40","0", "1", "0","30",
 	"expect-ts-use", "0", "0", "*", "TCH/F", "TCH/F", "TCH/F", "TCH/F", "TCH/F", "PDCH", "PDCH",
 	"congestion-check",
 	"expect-chan", "0", "6",
@@ -1596,7 +1700,7 @@ static char *test_case_30[] = {
 	"congestion-check",
 	"expect-no-chan",
 	"create-ms", "0", "TCH/F", "AMR",
-	"meas-rep", "5", "40","0", "1", "0","30",
+	"meas-rep", "0","0","4","0", "40","0", "1", "0","30",
 	"expect-ts-use", "0", "0", "*", "TCH/F", "TCH/F", "TCH/F", "TCH/F", "PDCH", "TCH/HH", "PDCH",
 	"congestion-check",
 	"expect-chan", "0", "5",
@@ -1613,7 +1717,7 @@ static char *test_case_30[] = {
 	"congestion-check",
 	"expect-no-chan",
 	"create-ms", "0", "TCH/F", "AMR",
-	"meas-rep", "6", "40","0", "1", "0","30",
+	"meas-rep", "0","0","1","0", "40","0", "1", "0","30",
 	"expect-ts-use", "0", "0", "*", "TCH/F", "TCH/F", "TCH/F", "PDCH", "TCH/HH", "TCH/HH", "PDCH",
 	"congestion-check",
 	"expect-chan", "0", "4",
@@ -1630,12 +1734,12 @@ static char *test_case_30[] = {
 	"congestion-check",
 	"expect-no-chan",
 	"create-ms", "0", "TCH/F", "AMR",
-	"meas-rep", "7", "40","0", "1", "0","30",
+	"meas-rep", "0","0","1","0", "40","0", "1", "0","30",
 	"expect-ts-use", "0", "0", "*", "TCH/F", "-", "TCH/F", "TCH/HH", "TCH/HH", "TCH/HH", "PDCH",
 	"congestion-check",
 	"expect-no-chan",
 	"create-ms", "0", "TCH/F", "AMR",
-	"meas-rep", "8", "40","0", "1", "0","30",
+	"meas-rep", "0","0","2","0", "40","0", "1", "0","30",
 	"expect-ts-use", "0", "0", "*", "TCH/F", "TCH/F", "TCH/F", "TCH/HH", "TCH/HH", "TCH/HH", "PDCH",
 	"congestion-check",
 	"expect-no-chan",
@@ -1938,16 +2042,38 @@ int main(int argc, char **argv)
 			test_case += 3;
 		} else
 		if (!strcmp(*test_case, "meas-rep")) {
-			/* meas-rep <lchan-nr> <rxlev> <rxqual> <nr-of-neighbors> [<cell-idx> <rxlev> [...]] */
-			int n = atoi(test_case[4]);
-			struct gsm_lchan *lc = lchan[atoi(test_case[1])];
+			/* meas-rep <bts-nr> <trx-nr> <ts-nr> <lchan-nr> <rxlev> <rxqual> <nr-of-neighbors> [<cell-idx> <rxlev> [...]] */
+			int n;
+			struct gsm_bts *bts;
+			struct gsm_bts_trx *trx;
+			struct gsm_bts_trx_ts *ts;
+			struct gsm_lchan *lc;
+			int bts_nr = atoi(test_case[1]);
+			int trx_nr = atoi(test_case[2]);
+			int ts_nr = atoi(test_case[3]);
+			int ss_nr = atoi(test_case[4]);
+			meas_dl_rxlev = atoi(test_case[5]);
+			meas_dl_rxqual = atoi(test_case[6]);
+			n = atoi(test_case[7]);
+
+			bts = gsm_bts_num(bsc_gsmnet, bts_nr);
+			trx = gsm_bts_trx_num(bts, trx_nr);
+			ts = &trx->ts[ts_nr];
+			lc = &ts->lchan[ss_nr];
+
+			if (!lchan_state_is(lc, LCHAN_ST_ESTABLISHED)) {
+				printf("Error: sending measurement report for %d-%d-%d-%d which is in state %s\n",
+				       bts_nr, trx_nr, ts_nr, ss_nr,
+				       lchan_state_name(lc));
+				exit(1);
+			}
+
 			fprintf(stderr, "- Sending measurement report from "
-				"mobile #%s (rxlev=%s, rxqual=%s)\n",
-				test_case[1], test_case[2], test_case[3]);
-			meas_dl_rxlev = atoi(test_case[2]);
-			meas_dl_rxqual = atoi(test_case[3]);
+				"%d-%d-%d-%d (rxlev=%d, rxqual=%d)\n",
+				bts_nr, trx_nr, ts_nr, ss_nr,
+				meas_dl_rxlev, meas_dl_rxqual);
 			meas_num_nc = n;
-			test_case += 5;
+			test_case += 8;
 			for (i = 0; i < n; i++) {
 				int nr = atoi(test_case[0]);
 				/* since our bts is not in the list of neighbor
