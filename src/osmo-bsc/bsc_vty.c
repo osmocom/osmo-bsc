@@ -2750,7 +2750,7 @@ DEFUN_ATTR(cfg_bts_rep_rxqual,
 	   "1 0.26% to 0.30% BER\n"
 	   "2 0.51% to 0.64% BER\n"
 	   "3 1.0% to 1.3% BER\n"
-	   "4 1.9% to 2.7% BER\n"
+	   "4 1.9% to 2.7% BER (default)\n"
 	   "5 3.8% to 5.4% BER\n"
 	   "6 7.6% to 11.0% BER\n"
 	   "7 Greater than 15.0% BER\n",
