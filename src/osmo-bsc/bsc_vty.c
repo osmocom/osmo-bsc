@@ -328,7 +328,7 @@ static void vty_out_neigh_list(struct vty *vty, struct bitvec *bv)
 
 static void bts_dump_vty_cbch(struct vty *vty, const struct bts_smscb_chan_state *cstate)
 {
-	vty_out(vty, "  CBCH %s: %u messages, %u pages, %lu-entry sched_arr, %u%% load%s",
+	vty_out(vty, "  CBCH %s: %u messages, %u pages, %zu-entry sched_arr, %u%% load%s",
 		bts_smscb_chan_state_name(cstate), llist_count(&cstate->messages),
 		bts_smscb_chan_page_count(cstate), cstate->sched_arr_size,
 		bts_smscb_chan_load_percent(cstate), VTY_NEWLINE);

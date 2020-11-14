@@ -366,7 +366,7 @@ static struct bts_smscb_message *bts_smscb_msg_from_wrepl(struct gsm_bts *bts,
 	smscb->input.dcs = wrepl->u.cbs.dcs;
 	smscb->num_pages = llist_count(&wrepl->u.cbs.msg_content);
 	if (smscb->num_pages > ARRAY_SIZE(smscb->page)) {
-		LOG_BTS(bts, DCBS, LOGL_ERROR, "SMSCB with too many pages (%u > %lu)\n",
+		LOG_BTS(bts, DCBS, LOGL_ERROR, "SMSCB with too many pages (%u > %zu)\n",
 			smscb->num_pages, ARRAY_SIZE(smscb->page));
 		talloc_free(smscb);
 		return NULL;
