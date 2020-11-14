@@ -356,6 +356,8 @@ struct gsm_bts *gsm_bts_alloc(struct gsm_network *net, uint8_t bts_num)
 	acc_mgr_init(&bts->acc_mgr, bts);
 	acc_ramp_init(&bts->acc_ramp, bts);
 
+	bts->repeated_acch_policy.rxqual = 4;
+
 	return bts;
 }
 

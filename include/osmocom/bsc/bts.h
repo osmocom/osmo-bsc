@@ -480,6 +480,10 @@ struct gsm_bts {
 
 	struct llist_head oml_fail_rep;
 	struct llist_head chan_rqd_queue;
+
+	/* osmocom specific FACCH/SACCH repetition mode flags set by VTY to
+	 * enable/disable certain ACCH repeation features individually */
+	struct abis_rsl_osmo_rep_acch_cap repeated_acch_policy;
 };
 
 #define GSM_BTS_SI2Q(bts, i)   (struct gsm48_system_information_type_2quater *)((bts)->si_buf[SYSINFO_TYPE_2quater][i])

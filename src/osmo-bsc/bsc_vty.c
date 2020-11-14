@@ -1115,6 +1115,19 @@ static void config_write_bts_single(struct vty *vty, struct gsm_bts *bts)
 
 	ho_vty_write_bts(vty, bts);
 
+	if (bts->repeated_acch_policy.dl_facch_all)
+		vty_out(vty, "  repeat dl-facch all%s", VTY_NEWLINE);
+	else if (bts->repeated_acch_policy.dl_facch_cmd)
+		vty_out(vty, "  repeat dl-facch command%s", VTY_NEWLINE);
+	if (bts->repeated_acch_policy.dl_sacch)
+		vty_out(vty, "  repeat dl-sacch%s", VTY_NEWLINE);
+	if (bts->repeated_acch_policy.ul_sacch)
+		vty_out(vty, "  repeat ul-sacch%s", VTY_NEWLINE);
+	if (bts->repeated_acch_policy.ul_sacch
+	    || bts->repeated_acch_policy.dl_facch_cmd
+	    || bts->repeated_acch_policy.dl_facch_cmd)
+		vty_out(vty, "  repeat rxqual %u%s", bts->repeated_acch_policy.rxqual, VTY_NEWLINE);
+
 	config_write_bts_model(vty, bts);
 }
 
@@ -2621,6 +2634,142 @@ DEFUN_USRATTR(cfg_bts_rach_max_trans,
 	return CMD_SUCCESS;
 }
 
+#define REP_ACCH_STR "FACCH/SACCH repetition\n"
+
+DEFUN_ATTR(cfg_bts_rep_dl_facch,
+	   cfg_bts_rep_dl_facch_cmd,
+	   "repeat dl-facch (command|all)",
+	   REP_ACCH_STR
+	   "Enable DL-FACCH repetition for this BTS\n"
+	   "command LAPDm frames only\n"
+	   "all LAPDm frames\n", CMD_ATTR_IMMEDIATE)
+{
+	struct gsm_bts *bts = vty->index;
+
+	if (bts->model->type != GSM_BTS_TYPE_OSMOBTS) {
+		vty_out(vty, "%% repeated ACCH not supported by BTS %u%s",
+			bts->nr, VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	if (!strcmp(argv[1], "command")) {
+	        bts->repeated_acch_policy.dl_facch_cmd = true;
+	        bts->repeated_acch_policy.dl_facch_all = false;
+	} else {
+	        bts->repeated_acch_policy.dl_facch_cmd = true;
+	        bts->repeated_acch_policy.dl_facch_all = true;
+	}
+	return CMD_SUCCESS;
+}
+
+DEFUN_ATTR(cfg_bts_rep_no_dl_facch,
+	   cfg_bts_rep_no_dl_facch_cmd,
+	   "no repeat dl-facch",
+	   NO_STR REP_ACCH_STR
+	   "Disable DL-FACCH repetition for this BTS\n", CMD_ATTR_IMMEDIATE)
+{
+	struct gsm_bts *bts = vty->index;
+
+	bts->repeated_acch_policy.dl_facch_cmd = false;
+	bts->repeated_acch_policy.dl_facch_all = false;
+
+	return CMD_SUCCESS;
+}
+
+DEFUN_ATTR(cfg_bts_rep_dl_sacch,
+	   cfg_bts_rep_dl_sacch_cmd,
+	   "repeat dl-sacch",
+	   REP_ACCH_STR
+	   "Enable DL-SACCH repetition for this BTS\n", CMD_ATTR_IMMEDIATE)
+{
+	struct gsm_bts *bts = vty->index;
+
+	if (bts->model->type != GSM_BTS_TYPE_OSMOBTS) {
+		vty_out(vty, "%% repeated ACCH not supported by BTS %u%s",
+			bts->nr, VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	bts->repeated_acch_policy.dl_sacch = true;
+
+	return CMD_SUCCESS;
+}
+
+DEFUN_ATTR(cfg_bts_rep_no_dl_sacch,
+	   cfg_bts_rep_no_dl_sacch_cmd,
+	   "no repeat dl-sacch",
+	   NO_STR REP_ACCH_STR
+	   "Disable DL-SACCH repetition for this BTS\n", CMD_ATTR_IMMEDIATE)
+{
+	struct gsm_bts *bts = vty->index;
+
+	bts->repeated_acch_policy.dl_sacch = false;
+
+	return CMD_SUCCESS;
+}
+
+DEFUN_ATTR(cfg_bts_rep_ul_sacch,
+	   cfg_bts_rep_ul_sacch_cmd,
+	   "repeat ul-sacch",
+	   REP_ACCH_STR
+	   "Enable UL-SACCH repetition for this BTS\n", CMD_ATTR_IMMEDIATE)
+{
+	struct gsm_bts *bts = vty->index;
+
+	if (bts->model->type != GSM_BTS_TYPE_OSMOBTS) {
+		vty_out(vty, "%% repeated ACCH not supported by BTS %u%s",
+			bts->nr, VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	bts->repeated_acch_policy.ul_sacch = true;
+
+	return CMD_SUCCESS;
+}
+
+DEFUN_ATTR(cfg_bts_rep_no_ul_sacch,
+	   cfg_bts_rep_no_ul_sacch_cmd,
+	   "no repeat ul-sacch",
+	   NO_STR REP_ACCH_STR
+	   "Disable UL-SACCH repetition for this BTS\n", CMD_ATTR_IMMEDIATE)
+{
+	struct gsm_bts *bts = vty->index;
+
+	bts->repeated_acch_policy.ul_sacch = false;
+
+	return CMD_SUCCESS;
+}
+
+DEFUN_ATTR(cfg_bts_rep_rxqual,
+	   cfg_bts_rep_rxqual_cmd,
+	   "repeat rxqual (0|1|2|3|4|5|6|7)",
+	   REP_ACCH_STR
+	   "Set UL-SACCH/DL-FACCH rxqual threshold-ber\n"
+	   "0 disabled (always on)\n"
+	   "1 0.26% to 0.30% BER\n"
+	   "2 0.51% to 0.64% BER\n"
+	   "3 1.0% to 1.3% BER\n"
+	   "4 1.9% to 2.7% BER\n"
+	   "5 3.8% to 5.4% BER\n"
+	   "6 7.6% to 11.0% BER\n"
+	   "7 Greater than 15.0% BER\n",
+	   CMD_ATTR_IMMEDIATE)
+{
+	struct gsm_bts *bts = vty->index;
+
+	if (bts->model->type != GSM_BTS_TYPE_OSMOBTS) {
+		vty_out(vty, "%% repeated ACCH not supported by BTS %u%s",
+			bts->nr, VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	/* See also: GSM 05.08, section 8.2.4 */
+	bts->repeated_acch_policy.rxqual = atoi(argv[0]);
+
+	return CMD_SUCCESS;
+}
+
+
 #define CD_STR "Channel Description\n"
 
 DEFUN_USRATTR(cfg_bts_chan_desc_att,
@@ -2989,7 +3138,7 @@ DEFUN_USRATTR(cfg_bts_radio_link_timeout_inf,
 	struct gsm_bts *bts = vty->index;
 
 	if (bts->type != GSM_BTS_TYPE_OSMOBTS) {
-		vty_out(vty, "%% infinite radio link timeout not supported by this BTS%s", VTY_NEWLINE);
+		vty_out(vty, "%% infinite radio link timeout not supported by BTS %u%s", bts->nr, VTY_NEWLINE);
 		return CMD_WARNING;
 	}
 
@@ -7033,6 +7182,14 @@ int bsc_vty_init(struct gsm_network *network)
 	install_element(BTS_NODE, &cfg_bts_acc_ramping_chan_load_cmd);
 	install_element(BTS_NODE, &cfg_bts_t3113_dynamic_cmd);
 	install_element(BTS_NODE, &cfg_bts_no_t3113_dynamic_cmd);
+	install_element(BTS_NODE, &cfg_bts_rep_dl_facch_cmd);
+	install_element(BTS_NODE, &cfg_bts_rep_no_dl_facch_cmd);
+	install_element(BTS_NODE, &cfg_bts_rep_dl_sacch_cmd);
+	install_element(BTS_NODE, &cfg_bts_rep_no_dl_sacch_cmd);
+	install_element(BTS_NODE, &cfg_bts_rep_ul_sacch_cmd);
+	install_element(BTS_NODE, &cfg_bts_rep_no_ul_sacch_cmd);
+	install_element(BTS_NODE, &cfg_bts_rep_rxqual_cmd);
+
 	neighbor_ident_vty_init(network, network->neighbor_bss_cells);
 	/* See also handover commands added on bts level from handover_vty.c */
 
