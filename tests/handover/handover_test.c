@@ -948,7 +948,7 @@ static char *test_case_18[] = {
 	"congestion-check",
 	"expect-chan", "1", "2",
 	"ack-chan",
-	"expect-ho", "0", "3", /* best candidate is MS 2 at BTS 1, TS 3 */
+	"expect-ho", "0", "3", /* best candidate is MS 2 at BTS 0, TS 3 */
 	"ho-complete",
 	NULL
 };
