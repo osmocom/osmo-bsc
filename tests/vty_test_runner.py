@@ -108,7 +108,7 @@ class TestVTYGenericBSC(TestVTYBase):
 class TestVTYBSC(TestVTYGenericBSC):
 
     def vty_command(self):
-        return ["./src/osmo-bsc/osmo-bsc", "-c",
+        return ["./src/osmo-bsc/osmo-bsc", "--fast-shutdown", "-c",
                 "doc/examples/osmo-bsc/osmo-bsc.cfg"]
 
     def vty_app(self):

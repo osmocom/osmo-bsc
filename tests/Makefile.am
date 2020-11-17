@@ -70,7 +70,7 @@ VTY_TEST ?= *.vty
 vty-test:
 	osmo_verify_transcript_vty.py -v \
 		-n OsmoBSC -p 4242 \
-		-r "$(top_builddir)/src/osmo-bsc/osmo-bsc -c $(top_srcdir)/doc/examples/osmo-bsc/osmo-bsc-minimal.cfg" \
+		-r "$(top_builddir)/src/osmo-bsc/osmo-bsc --fast-shutdown -c $(top_srcdir)/doc/examples/osmo-bsc/osmo-bsc-minimal.cfg" \
 		$(U) $(srcdir)/$(VTY_TEST)
 
 check-local: atconfig $(TESTSUITE)

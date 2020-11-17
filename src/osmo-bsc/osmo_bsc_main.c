@@ -88,6 +88,7 @@ struct gsm_network *bsc_gsmnet = 0;
 static const char *config_file = "osmo-bsc.cfg";
 static const char *rf_ctrl = NULL;
 static int daemonize = 0;
+static bool fast_shutdown = false;
 
 static void print_usage()
 {
@@ -108,6 +109,7 @@ static void print_help()
 	printf("  -e --log-level number		Set a global loglevel.\n");
 	printf("  -r --rf-ctl NAME		A unix domain socket to listen for cmds.\n");
 	printf("  -t --testmode			A special mode to provoke failures at the MSC.\n");
+	printf("  --fast-shutdown		Omit shutdown delay, for rapid testing purposes.\n");
 
 	printf("\nVTY reference generation:\n");
 	printf("     --vty-ref-mode MODE	VTY reference generation mode:\n");
@@ -135,6 +137,9 @@ static void handle_long_options(const char *prog_name, const int long_option)
 			get_value_string(vty_ref_gen_mode_desc, vty_ref_mode));
 		vty_dump_xml_ref_mode(stdout, (enum vty_ref_gen_mode) vty_ref_mode);
 		exit(0);
+	case 3:
+		fast_shutdown = true;
+		break;
 	default:
 		fprintf(stderr, "%s: error parsing cmdline options\n", prog_name);
 		exit(2);
@@ -160,6 +165,7 @@ static void handle_options(int argc, char **argv)
 			{"testmode", 0, 0, 't'},
 			{"vty-ref-mode", 1, &long_option, 1},
 			{"vty-ref-xml", 0, &long_option, 2},
+			{"fast-shutdown", 0, &long_option, 3},
 			{0, 0, 0, 0}
 		};
 
@@ -693,7 +699,8 @@ static void signal_handler(int signal)
 	case SIGTERM:
 		bsc_shutdown_net(bsc_gsmnet);
 		osmo_signal_dispatch(SS_L_GLOBAL, S_L_GLOBAL_SHUTDOWN, NULL);
-		sleep(3);
+		if (!fast_shutdown)
+			sleep(3);
 		exit(0);
 		break;
 	case SIGABRT:

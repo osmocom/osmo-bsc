@@ -150,7 +150,7 @@ class TestCtrlBSC(TestCtrlBase):
         os.unlink("tmp_dummy_sock")
 
     def ctrl_command(self):
-        return ["./src/osmo-bsc/osmo-bsc", "-r", "tmp_dummy_sock", "-c",
+        return ["./src/osmo-bsc/osmo-bsc", "--fast-shutdown", "-r", "tmp_dummy_sock", "-c",
                 "doc/examples/osmo-bsc/osmo-bsc.cfg"]
 
     def ctrl_app(self):

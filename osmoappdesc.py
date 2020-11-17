@@ -22,7 +22,7 @@ app_configs = {
 apps = [(4242, "src/osmo-bsc/osmo-bsc", "OsmoBSC", "osmo-bsc")
         ]
 
-vty_command = ["./src/osmo-bsc/osmo-bsc", "-c",
+vty_command = ["./src/osmo-bsc/osmo-bsc", "--fast-shutdown", "-c",
                "doc/examples/osmo-bsc/osmo-bsc.cfg"]
 
 vty_app = apps[0]
