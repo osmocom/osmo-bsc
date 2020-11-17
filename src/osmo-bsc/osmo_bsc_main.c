@@ -110,7 +110,9 @@ static void print_help()
 	printf("  -t --testmode			A special mode to provoke failures at the MSC.\n");
 
 	printf("\nVTY reference generation:\n");
-	printf("     --vty-ref-mode MODE	VTY reference generation mode (e.g. 'expert').\n");
+	printf("     --vty-ref-mode MODE	VTY reference generation mode:\n");
+	printf("				'default': all commands intended for production use.\n");
+	printf("				'expert': include hidden commands.\n");
 	printf("     --vty-ref-xml		Generate the VTY reference XML output and exit.\n");
 }
 
