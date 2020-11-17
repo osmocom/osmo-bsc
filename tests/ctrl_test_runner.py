@@ -55,7 +55,6 @@ class TestCtrlBase(unittest.TestCase):
         except OSError:
             print("Current directory: %s" % os.getcwd(), file=sys.stderr)
             print("Consider setting -b", file=sys.stderr)
-        time.sleep(2)
 
         appstring = self.ctrl_app()[2]
         appport = self.ctrl_app()[0]
