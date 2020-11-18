@@ -1,0 +1,21 @@
+# No handover to congested cell
+# The better neighbor cell is congested, so no handover is performed.
+# After the congestion is over, handover will be performed.
+
+create-n-bts 2
+set-ts-use trx 0 0 states * TCH/F - - - - - -
+network
+ bts 1
+  handover2 min-free-slots tch/f 4
+  handover2 min-free-slots tch/h 4
+meas-rep lchan 0 0 1 0 rxlev 20 rxqual 0 ta 0 neighbors 30
+expect-no-chan
+network
+ bts 1
+  handover2 min-free-slots tch/f 3
+  handover2 min-free-slots tch/h 3
+meas-rep lchan 0 0 1 0 rxlev 20 rxqual 0 ta 0 neighbors 30
+expect-ho from lchan 0 0 1 0 to lchan 1 0 1 0
+expect-ts-use trx 0 0 states * - - - - - - -
+expect-ts-use trx 1 0 states * TCH/F - - - - - -
+

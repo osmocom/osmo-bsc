@@ -1,0 +1,19 @@
+# Congestion check: Upgrading worst candidate from TCH/H -> TCH/F
+# There is only one BTS. The TCH/H slots are congested. Since
+# assignment is performed to less-congested TCH/F, the candidate with
+# the worst RX level is chosen.
+
+create-n-bts 1
+network
+ bts 0
+  handover2 min-free-slots tch/f 4
+  handover2 min-free-slots tch/h 4
+set-ts-use trx 0 0 states * - - - - TCH/HH TCH/H- -
+meas-rep lchan 0 0 5 0 rxlev 30 rxqual 0 ta 0
+meas-rep lchan 0 0 5 1 rxlev 34 rxqual 0 ta 0
+meas-rep lchan 0 0 6 0 rxlev 20 rxqual 0 ta 0
+expect-no-chan
+congestion-check
+expect-ho from lchan 0 0 6 0 to lchan 0 0 1 0
+expect-ts-use trx 0 0 states * TCH/F - - - TCH/HH - -
+

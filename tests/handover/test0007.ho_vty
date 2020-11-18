@@ -1,0 +1,14 @@
+# TCH/F to TCH/H changing with AMR codec
+# The MS is using AMR V3 codec, the better cell is congested at TCH/F
+# slots. The handover is performed to non-congested TCH/H slots.
+
+create-n-bts 2
+network
+ bts 1
+  handover2 min-free-slots tch/f 4
+set-ts-use trx 0 0 states * TCH/F - - - - - -
+meas-rep lchan 0 0 1 0 rxlev 20 rxqual 0 ta 0 neighbors 30
+expect-ho from lchan 0 0 1 0 to lchan 1 0 5 0
+expect-ts-use trx 0 0 states * - - - - - - -
+expect-ts-use trx 1 0 states * - - - - TCH/H- - -
+

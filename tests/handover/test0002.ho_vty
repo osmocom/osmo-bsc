@@ -1,0 +1,36 @@
+# Handover and Assignment must be enabled
+# This test will start with disabled assignment and handover.  A
+# better neighbor cell (assignment enabled) will not be selected and
+# also no assignment from TCH/H to TCH/F to improve quality. There
+# will be no handover nor assignment. After enabling assignment on the
+# current cell, the MS will assign to TCH/F. After enabling handover
+# in the current cell, but disabling in the neighbor cell, handover
+# will not be performed, until it is enabled in the neighbor cell too.
+network
+ handover 0
+ handover2 afs-bias rxlev 5
+ handover2 assignment 0
+
+create-n-bts 2
+set-ts-use trx 0 0 states * - - - - TCH/H- - -
+meas-rep lchan 0 0 5 0 rxlev 0 rxqual 0 ta 0 neighbors 30
+expect-no-chan
+network
+ bts 0
+  handover2 assignment 1
+meas-rep lchan 0 0 5 0 rxlev 0 rxqual 0 ta 0 neighbors 30
+expect-ho from lchan 0 0 5 0 to lchan 0 0 1 0
+expect-ts-use trx 0 0 states * TCH/F - - - - - -
+network
+ bts 0
+  handover 1
+meas-rep lchan 0 0 1 0 rxlev 0 rxqual 0 ta 0 neighbors 30
+expect-no-chan
+network
+ bts 1
+  handover 1
+meas-rep lchan 0 0 1 0 rxlev 0 rxqual 0 ta 0 neighbors 30
+expect-ho from lchan 0 0 1 0 to lchan 1 0 1 0
+expect-ts-use trx 0 0 states * - - - - - - -
+expect-ts-use trx 1 0 states * TCH/F - - - - - -
+

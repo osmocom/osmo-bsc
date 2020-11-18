@@ -1,0 +1,20 @@
+# No Hysteresis and minimum RX level
+# If current cell's RX level is below mimium level, handover must be
+# performed, no matter of the hysteresis. First do not perform
+# handover to better neighbor cell, because the hysteresis is not
+# met. Second do not perform handover because better neighbor cell is
+# below minimum RX level. Third perform handover because current cell
+# is below minimum RX level, even if the better neighbor cell (minimum
+# RX level reached) does not meet the hysteresis.
+
+create-n-bts 2
+set-ts-use trx 0 0 states * TCH/F - - - - - -
+meas-rep lchan 0 0 1 0 rxlev 10 rxqual 0 ta 0 neighbors 11
+expect-no-chan
+meas-rep lchan 0 0 1 0 rxlev 8 rxqual 0 ta 0 neighbors 9
+expect-no-chan
+meas-rep lchan 0 0 1 0 rxlev 9 rxqual 0 ta 0 neighbors 10
+expect-ho from lchan 0 0 1 0 to lchan 1 0 1 0
+expect-ts-use trx 0 0 states * - - - - - - -
+expect-ts-use trx 1 0 states * TCH/F - - - - - -
+

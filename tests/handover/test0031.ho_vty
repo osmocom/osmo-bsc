@@ -1,0 +1,7 @@
+# assign new MS: re-use half used TCH/H to avoid switching more dyn TS to TCH/H
+
+create-bts trx-count 1 timeslots c+s4 TCH/F TCH/F TCH/F dyn  dyn    dyn  PDCH
+set-ts-use    trx 0 0     states *    -     -     -     pdch TCH/H- pdch pdch
+create-ms bts 0 TCH/H AMR
+expect-ts-use trx 0 0     states *    -     -     -     pdch TCH/HH pdch pdch
+

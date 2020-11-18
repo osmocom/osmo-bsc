@@ -1,0 +1,10 @@
+# Handover to best better cell
+# The best neighbor cell is selected
+
+create-n-bts 7
+set-ts-use trx 0 0 states * TCH/F - - - - - -
+meas-rep lchan 0 0 1 0 rxlev 10 rxqual 0 ta 0 neighbors 20 21 18 20 23 19
+expect-ho from lchan 0 0 1 0 to lchan 5 0 1 0
+expect-ts-use trx 0 0 states * - - - - - - -
+expect-ts-use trx 5 0 states * TCH/F - - - - - -
+

@@ -21,7 +21,9 @@ AM_LDFLAGS = \
 	$(NULL)
 
 EXTRA_DIST = \
-	handover_test.ok \
+	handover_tests.sh \
+	handover_tests.ok \
+	$(srcdir)/test*.ho_vty \
 	neighbor_ident_test.ok \
 	neighbor_ident_test.err \
 	$(NULL)
@@ -130,3 +132,4 @@ neighbor_ident_test_LDADD = \
 .PHONY: update_exp
 update_exp:
 	$(builddir)/neighbor_ident_test >$(srcdir)/neighbor_ident_test.ok 2>$(srcdir)/neighbor_ident_test.err
+	$(srcdir)/handover_tests.sh $(srcdir) $(builddir) -u

@@ -1,0 +1,10 @@
+# Stay in better cell
+# There are many neighbor cells, but only the current cell is the best
+# cell, so no handover is performed
+
+create-n-bts 7
+create-ms bts 0 TCH/F AMR
+expect-ts-use trx 0 0 states * TCH/F - - - - - -
+meas-rep lchan 0 0 1 0 rxlev 30 rxqual 0 ta 0 neighbors 20 21 18 20 23 19
+expect-no-chan
+

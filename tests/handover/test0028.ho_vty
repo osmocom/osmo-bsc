@@ -1,0 +1,35 @@
+# Handover to congested cell, if RX quality is below minimum
+# The better neighbor cell is congested, so no handover is performed.
+# If the RX quality of the current cell drops below minimum acceptable
+# level, the handover is performed. It is also required that 10
+# resports are received, before RX quality is checked.
+
+create-n-bts 2
+set-ts-use trx 0 0 states * TCH/F - - - - - -
+network
+ bts 1
+  handover2 min-free-slots tch/f 4
+  handover2 min-free-slots tch/h 4
+meas-rep lchan 0 0 1 0 rxlev 30 rxqual 6 ta 0 neighbors 40
+expect-no-chan
+meas-rep lchan 0 0 1 0 rxlev 30 rxqual 6 ta 0 neighbors 40
+expect-no-chan
+meas-rep lchan 0 0 1 0 rxlev 30 rxqual 6 ta 0 neighbors 40
+expect-no-chan
+meas-rep lchan 0 0 1 0 rxlev 30 rxqual 6 ta 0 neighbors 40
+expect-no-chan
+meas-rep lchan 0 0 1 0 rxlev 30 rxqual 6 ta 0 neighbors 40
+expect-no-chan
+meas-rep lchan 0 0 1 0 rxlev 30 rxqual 6 ta 0 neighbors 40
+expect-no-chan
+meas-rep lchan 0 0 1 0 rxlev 30 rxqual 6 ta 0 neighbors 40
+expect-no-chan
+meas-rep lchan 0 0 1 0 rxlev 30 rxqual 6 ta 0 neighbors 40
+expect-no-chan
+meas-rep lchan 0 0 1 0 rxlev 30 rxqual 6 ta 0 neighbors 40
+expect-no-chan
+meas-rep lchan 0 0 1 0 rxlev 30 rxqual 6 ta 0 neighbors 40
+expect-ho from lchan 0 0 1 0 to lchan 1 0 1 0
+expect-ts-use trx 0 0 states * - - - - - - -
+expect-ts-use trx 1 0 states * TCH/F - - - - - -
+

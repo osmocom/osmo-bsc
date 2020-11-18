@@ -1,0 +1,72 @@
+# Story: 'A neighbor is your friend'
+
+create-n-bts 3
+
+# Andreas is driving along the coast, on a sunny june afternoon.
+# Suddenly he is getting a call from his friend and neighbor Axel.
+#
+# What happens: Two MS are created, #0 for Axel, #1 for Andreas.
+# Axel:
+create-ms bts 2 TCH/F AMR
+# andreas:
+create-ms bts 0 TCH/F AMR
+expect-ts-use trx 0 0 states * TCH/F - - - - - -
+expect-ts-use trx 1 0 states * - - - - - - -
+expect-ts-use trx 2 0 states * TCH/F - - - - - -
+meas-rep lchan 0 0 1 0 rxlev 40 rxqual 0 ta 0 neighbors 30
+expect-no-chan
+
+# Axel asks Andreas if he would like to join them for a barbecue.
+# Axel's house is right in the neighborhood and the weather is fine.
+# Andreas agrees, so he drives to a close store to buy some barbecue
+# skewers.
+#
+# What happens: While driving, a different cell (mounted atop the
+# store) becomes better.
+# drive to bts 1:
+meas-rep lchan 0 0 1 0 rxlev 20 rxqual 0 ta 0 neighbors 35
+expect-ho from lchan 0 0 1 0 to lchan 1 0 1 0
+expect-ts-use trx 0 0 states * - - - - - - -
+expect-ts-use trx 1 0 states * TCH/F - - - - - -
+expect-ts-use trx 2 0 states * TCH/F - - - - - -
+
+# While Andreas is walking into the store, Axel asks, if he could also
+# bring some beer. Andreas has problems understanding him: "I have a
+# bad reception here. The cell tower is right atop the store, but poor
+# coverage inside. Can you repeat please?"
+#
+# What happens: Inside the store the close cell is so bad, that
+# handover back to the previous cell is required.
+# bts 1 becomes bad, so bts 0 helps out:
+meas-rep lchan 1 0 1 0 rxlev 5 rxqual 0 ta 0 neighbors 20
+expect-ho from lchan 1 0 1 0 to lchan 0 0 1 0
+expect-ts-use trx 0 0 states * TCH/F - - - - - -
+expect-ts-use trx 1 0 states * - - - - - - -
+expect-ts-use trx 2 0 states * TCH/F - - - - - -
+
+# After Andreas bought skewers and beer, he leaves the store.
+#
+# What happens: Outside the store the close cell is better again, so
+# handover back to the that cell is performed.
+# bts 1 becomes better again:
+meas-rep lchan 0 0 1 0 rxlev 20 rxqual 0 ta 0 neighbors 35
+expect-ho from lchan 0 0 1 0 to lchan 1 0 1 0
+expect-ts-use trx 0 0 states * - - - - - - -
+expect-ts-use trx 1 0 states * TCH/F - - - - - -
+expect-ts-use trx 2 0 states * TCH/F - - - - - -
+
+# bts 2 becomes better:
+# Andreas drives down to the lake where Axel's house is.
+#
+# What happens: There is a small cell at Axel's house, which becomes
+# better, because the current cell has no good comverage at the lake.
+meas-rep lchan 1 0 1 0 rxlev 14 rxqual 0 ta 0 neighbors 2 63
+expect-ho from lchan 1 0 1 0 to lchan 2 0 2 0
+expect-ts-use trx 0 0 states * - - - - - - -
+expect-ts-use trx 1 0 states * - - - - - - -
+expect-ts-use trx 2 0 states * TCH/F TCH/F - - - - -
+
+# Andreas wonders why he still has good radio coverage: "Last time it
+# was so bad". Axel says: "I installed a pico cell in my house,
+# now we can use our mobile phones down here at the lake."
+

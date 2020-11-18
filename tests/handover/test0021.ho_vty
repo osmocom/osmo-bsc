@@ -1,0 +1,20 @@
+# Congestion check: Balancing congestion by handover TCH/F -> TCH/H
+# Two BTS, one MS in the first congested BTS must handover to
+# less-congested TCH/H of second BTS, in order to balance congestion
+
+create-n-bts 2
+network
+ bts 0
+  handover2 min-free-slots tch/f 4
+  handover2 min-free-slots tch/h 4
+ bts 1
+  handover2 min-free-slots tch/f 4
+  handover2 min-free-slots tch/h 4
+set-ts-use trx 0 0 states * TCH/F TCH/F - - TCH/H- - -
+meas-rep lchan 0 0 1 0 rxlev 30 rxqual 0 ta 0 neighbors 30
+expect-no-chan
+congestion-check
+expect-ho from lchan 0 0 1 0 to lchan 1 0 1 0
+expect-ts-use trx 0 0 states * -     TCH/F - - TCH/H- - -
+expect-ts-use trx 1 0 states * TCH/F -     - - -      - -
+

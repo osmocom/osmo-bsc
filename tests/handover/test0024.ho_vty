@@ -1,0 +1,46 @@
+# No (or not enough) measurements for handover
+# Do not solve congestion in cell, because there is no measurement.
+# As soon as enough measurements available (1 in our case), perform
+# handover. Afterwards the old cell becomes congested and the new
+# cell is not. Do not perform handover until new measurements are
+# received.
+#
+# two cells, first in congested, but no handover:
+
+create-n-bts 2
+network
+ bts 0
+  handover2 min-free-slots tch/f 4
+  handover2 min-free-slots tch/h 4
+set-ts-use trx 0 0 states * TCH/F - - - - - -
+congestion-check
+expect-no-chan
+expect-ts-use trx 0 0 states * TCH/F - - - - - -
+
+# send measurement and trigger congestion check:
+meas-rep lchan 0 0 1 0 rxlev 20 rxqual 0 ta 0 neighbors 20
+expect-no-chan
+congestion-check
+expect-ho from lchan 0 0 1 0 to lchan 1 0 1 0
+expect-ts-use trx 0 0 states * - - - - - - -
+expect-ts-use trx 1 0 states * TCH/F - - - - - -
+
+# congest the first cell and remove congestion from second cell:
+network
+ bts 0
+  handover2 min-free-slots tch/f 0
+  handover2 min-free-slots tch/h 0
+ bts 1
+  handover2 min-free-slots tch/f 4
+  handover2 min-free-slots tch/h 4
+
+# no handover until measurements applied:
+congestion-check
+expect-no-chan
+meas-rep lchan 1 0 1 0 rxlev 20 rxqual 0 ta 0 neighbors 20
+expect-no-chan
+congestion-check
+expect-ho from lchan 1 0 1 0 to lchan 0 0 1 0
+expect-ts-use trx 0 0 states * TCH/F - - - - - -
+expect-ts-use trx 1 0 states * - - - - - - -
+

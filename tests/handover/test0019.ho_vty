@@ -1,0 +1,26 @@
+# Congestion check: Balancing over congested cells
+# Two cells are congested, but the second cell is less congested.
+# Handover is performed to solve the congestion.
+
+create-n-bts 2
+network
+ bts 0
+  handover2 min-free-slots tch/f 4
+ bts 1
+  handover2 min-free-slots tch/f 4
+codec tch/f FR
+set-ts-use trx 0 0 states * TCH/F TCH/F TCH/F - - - -
+set-ts-use trx 1 0 states * TCH/F - - - - - -
+meas-rep lchan 0 0 1 0 rxlev 30 rxqual 0 ta 0 neighbors 20
+expect-no-chan
+meas-rep lchan 0 0 2 0 rxlev 30 rxqual 0 ta 0 neighbors 21
+expect-no-chan
+meas-rep lchan 0 0 3 0 rxlev 30 rxqual 0 ta 0 neighbors 20
+expect-no-chan
+meas-rep lchan 1 0 1 0 rxlev 30 rxqual 0 ta 0 neighbors 20
+expect-no-chan
+congestion-check
+expect-ho from lchan 0 0 2 0 to lchan 1 0 2 0
+expect-ts-use trx 0 0 states * TCH/F -     TCH/F - - - -
+expect-ts-use trx 1 0 states * TCH/F TCH/F -     - - - -
+

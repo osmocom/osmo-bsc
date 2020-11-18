@@ -1,0 +1,16 @@
+# No more parallel handovers, if max_unsync_ho is defined
+# There are three mobiles that want to handover, but only two can do
+# it at a time, because the maximum number is limited to two.
+
+create-n-bts 2
+network
+ bts 1
+  handover2 max-handovers 2
+set-ts-use trx 0 0 states * TCH/F TCH/F TCH/F - - - -
+meas-rep lchan 0 0 1 0 rxlev 0 rxqual 0 ta 0 neighbors 30
+expect-chan lchan 1 0 1 0
+meas-rep lchan 0 0 2 0 rxlev 0 rxqual 0 ta 0 neighbors 30
+expect-chan lchan 1 0 2 0
+meas-rep lchan 0 0 3 0 rxlev 0 rxqual 0 ta 0 neighbors 30
+expect-no-chan
+
