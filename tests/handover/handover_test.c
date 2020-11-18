@@ -1749,6 +1749,29 @@ static char *test_case_31[] = {
 	NULL
 };
 
+static char *test_case_32[] = {
+	"2",
+
+	"Congestion check: favor moving a TCH/H that frees a half-used dyn TS completely\n"
+	,
+	"create-bts", "1", "c+s4", "dyn", "dyn", "dyn", "dyn", "dyn", "-", "-",
+	"set-ts-use", "0", "0",  "*", "PDCH", "TCH/HH", "TCH/H-", "TCH/HH", "PDCH", "-", "-",
+	"meas-rep", "0","0","2","1", "30","0", "0",
+	"meas-rep", "0","0","3","0", "30","0", "0",
+	"meas-rep", "0","0","4","0", "30","0", "0",
+	"meas-rep", "0","0","4","1", "30","0", "0",
+	/* pick one to move */
+	"set-min-free", "0", "TCH/H", "6",
+	"congestion-check",
+	"expect-chan", "0", "1",
+	"ack-chan",
+	/* Not so good: should move the half-used TCH/H instead of "halving" another dyn TS */
+	"expect-ho", "0", "4",
+	"ho-complete",
+	"expect-ts-use", "0", "0",  "*", "TCH/F", "TCH/HH", "TCH/H-", "TCH/H-", "PDCH", "-", "-",
+	NULL
+};
+
 static char **test_cases[] =  {
 	test_case_0,
 	test_case_1,
@@ -1782,6 +1805,7 @@ static char **test_cases[] =  {
 	test_case_29,
 	test_case_30,
 	test_case_31,
+	test_case_32,
 };
 
 static const struct log_info_cat log_categories[] = {
