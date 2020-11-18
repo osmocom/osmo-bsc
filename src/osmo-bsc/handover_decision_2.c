@@ -1368,6 +1368,17 @@ static bool lchan_is_on_dynamic_ts(struct gsm_lchan *lchan)
 		|| lchan->ts->pchan_on_init == GSM_PCHAN_TCH_F_PDCH;
 }
 
+static unsigned int ts_usage_count(struct gsm_bts_trx_ts *ts)
+{
+	struct gsm_lchan *lchan;
+	unsigned int count = 0;
+	ts_for_each_lchan(lchan, ts) {
+		if (lchan_state_is(lchan, LCHAN_ST_ESTABLISHED))
+			count++;
+	}
+	return count;
+}
+
 /* Given two candidates, pick the one that should rather be moved during handover.
  * Return the better candidate in out-parameters best_cand and best_avg_db.
  */
@@ -1384,10 +1395,17 @@ static void pick_better_lchan_to_move(bool want_highest_db,
 		goto return_other;
 
 	/* The two lchans have identical ratings, prefer picking a dynamic timeslot: free PDCH and allow more timeslot
-	 * type flexibility for further congestion resolution. If both are dynamic, it does not matter which one is
-	 * picked. */
-	if (lchan_is_on_dynamic_ts(other_cand->lchan))
+	 * type flexibility for further congestion resolution. */
+	if (lchan_is_on_dynamic_ts(other_cand->lchan)) {
+		/* If both are dynamic, prefer one that completely (or to a higher degree) frees its timeslot. */
+		if (lchan_is_on_dynamic_ts((*best_cand_p)->lchan)
+		    && ts_usage_count((*best_cand_p)->lchan->ts) < ts_usage_count(other_cand->lchan->ts))
+			return;
+		/* If both equally satisfy these preferences, it does not matter which one is picked.
+		 * Give slight preference to moving later dyn TS, so that a free dyn TS may group with following static
+		 * PDCH, though this depends on how the user configured the TS -- not harmful to do so anyway. */
 		goto return_other;
+	}
 
 	/* keep the same candidate. */
 	return;
