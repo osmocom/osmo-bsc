@@ -1362,6 +1362,29 @@ static void on_measurement_report(struct gsm_meas_rep *mr)
 	}
 }
 
+/* Given two candidates, pick the one that should rather be moved during handover.
+ * Return the better candidate in out-parameters best_cand and best_avg_db.
+ */
+static void pick_better_lchan_to_move(bool want_highest_db,
+				      struct ho_candidate **best_cand_p, unsigned int *best_avg_db_p,
+				      struct ho_candidate *other_cand, unsigned int other_avg_db)
+{
+	if (!*best_cand_p)
+		goto return_other;
+
+	if (want_highest_db && (*best_avg_db_p < other_avg_db))
+		goto return_other;
+	if (!want_highest_db && (*best_avg_db_p > other_avg_db))
+		goto return_other;
+
+	/* keep the same candidate. */
+	return;
+
+return_other:
+	*best_cand_p = other_cand;
+	*best_avg_db_p = other_avg_db;
+}
+
 /*
  * Handover/assignment check after timer timeout:
  *
@@ -1563,10 +1586,7 @@ next_b1:
 			is_improved = 0;
 		LOGPHOCAND(&clist[i], LOGL_DEBUG, "candidate %d: avg=%d best_avg_db=%d\n",
 			   i, avg, best_avg_db);
-		if (avg > best_avg_db) {
-			best_cand = &clist[i];
-			best_avg_db = avg;
-		}
+		pick_better_lchan_to_move(true, &best_cand, &best_avg_db, &clist[i], avg);
 	}
 
 	/* perform handover, if there is a candidate */
@@ -1636,10 +1656,7 @@ next_b2:
 				is_improved = 1;
 			} else
 				is_improved = 0;
-			if (avg < worst_avg_db) {
-				worst_cand = &clist[i];
-				worst_avg_db = avg;
-			}
+			pick_better_lchan_to_move(false, &worst_cand, &worst_avg_db, &clist[i], avg);
 		}
 	}
 
@@ -1712,10 +1729,7 @@ next_c1:
 			is_improved = 1;
 		} else
 			is_improved = 0;
-		if (avg > best_avg_db) {
-			best_cand = &clist[i];
-			best_avg_db = avg;
-		}
+		pick_better_lchan_to_move(true, &best_cand, &best_avg_db, &clist[i], avg);
 	}
 
 	/* perform handover, if there is a candidate */
@@ -1790,10 +1804,7 @@ next_c2:
 				is_improved = 0;
 			LOGP(DHODEC, LOGL_DEBUG, "candidate %d: avg=%d worst_avg_db=%d\n", i, avg,
 			     worst_avg_db);
-			if (avg < worst_avg_db) {
-				worst_cand = &clist[i];
-				worst_avg_db = avg;
-			}
+			pick_better_lchan_to_move(false, &worst_cand, &worst_avg_db, &clist[i], avg);
 		}
 	}
 
