@@ -1765,10 +1765,9 @@ static char *test_case_32[] = {
 	"congestion-check",
 	"expect-chan", "0", "1",
 	"ack-chan",
-	/* Not so good: should move the half-used TCH/H instead of "halving" another dyn TS */
-	"expect-ho", "0", "4",
+	"expect-ho", "0", "3",
 	"ho-complete",
-	"expect-ts-use", "0", "0",  "*", "TCH/F", "TCH/HH", "TCH/H-", "TCH/H-", "PDCH", "-", "-",
+	"expect-ts-use", "0", "0",  "*", "TCH/F", "TCH/HH", "PDCH", "TCH/HH", "PDCH", "-", "-",
 	NULL
 };
 
