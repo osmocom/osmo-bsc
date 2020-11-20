@@ -1,0 +1,31 @@
+msc {
+	hscale=2;
+	bsc[label="BSC"], stp[label="STP"], _msc[label="MSC"];
+
+	|||;
+	||| [label="We assume the MSC is already well connected to the STP and MGW(CN)"];
+
+	--- [label="SCTP/IP level establishment"];
+	bsc =>> stp [label="SCTP INIT"];
+	bsc <<= stp [label="SCTP INIT_ACK"];
+	bsc =>> stp [label="SCTP COOKIE_ECHO"];
+	bsc <<= stp [label="SCTP COOKIE_ACK"];
+	||| [label="SCTP payload can now be carried over the link"];
+	|||;
+	|||;
+	--- [label="M3UA level establishment (over SCTP)"];
+	bsc =>> stp [label="M3UA ASPUP"];
+	bsc <<= stp [label="M3UA ASPUP_ACK"];
+	bsc =>> stp [label="M3UA ASPAC (routing context)"];
+	bsc <<= stp [label="M3UA ASPAC_ACK (routing context)"];
+	bsc <<= stp [label="M3UA NTFY (AS-ACTIVE)"];
+	||| [label="M3UA payload can now be carried over the link"];
+	|||;
+	--- [label="BSSMAP level establishment (over SCCP/M3UA/SCTP)"];
+	bsc =>> _msc [label="BSSMAP RESET (OPC=BSC, DPC=MSC)"];
+	bsc <<= _msc [label="BSSMAP RESET ACK (OPC=MSC, DPC=BSC)"];
+	||| [label="BSSMAP connection-oriented data can now be exchanged"];
+	|||;
+	--- [label="Repeat BSSMAP level establishment (to other MSCs in the pool)"];
+	|||;
+}

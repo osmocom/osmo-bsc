@@ -1,0 +1,75 @@
+# MO-Call with OsmoBTS + OsmoBSC with true 3GPP AoIP
+msc {
+	hscale=2;
+	ms [label="MS"], bts [label="OsmoBTS\n1.1.1.1"], bsc[label="OsmoBSC"], mgcp[label="OsmoMGW@BSC\n3.3.3.3"], m_sc[label="MSC"], mgw_m[label="MGW@MSC\n5.5.5.5"];
+
+	ms box m_sc	[label="We assume a SDCCH is already established"];
+	...;
+
+	ms -> m_sc	[label="DTAP CC SETUP"];
+	ms <- m_sc	[label="DTAP CC CALL PROCEEDING"];
+
+	m_sc -> mgw_m	[label="Request allocation of local RTP port"];
+	m_sc <- mgw_m	[label="Respond with RTP port the MGW bound to (5.5.5.5:4000)"];
+	bsc <- m_sc 	[label="BSSAP ASSIGN REQ (3GPP AoIP, CN RTP IP/Port 5.5.5.5:4000)"];
+	bts <- bsc 	[label="RSL CHAN ACT (TCH)"];
+	bts -> bsc 	[label="RSL CHAN ACT ACK"];
+	ms <-> bsc	[label="RR Assignment of TCH"];
+	...;
+
+	# connect BTS RTP with BSC-MGW RTP
+	bts <- bsc	[label="IPA CRCX"];
+	bts box bts	[label="Bind to BTS-local RTP Port (1.1.1.1:1000)"];
+	bts -> bsc	[label="IPA CRCX ACK (1.1.1.1:1000)"];
+	bsc -> mgcp	[label="MGCP CRCX rtpbridge/2@mgw (1.1.1.1:1000)"];
+	mgcp box mgcp	[label="Bind to MGW-local RTP Port (3.3.3.3:2000)\nConnect to 1.1.1.1:1000"];
+	bsc <- mgcp	[label="MGCP CRCX rtpbridge/2@mgw OK (3.3.3.3:2000)"];
+	bts <- bsc	[label="IPA MDCX (3.3.3.3:2000)"];
+	bts box bts	[label="Connect RTP socket to remote (MGW) RTP Port"];
+	bts -> bsc	[label="IPA MDCX ACK"];
+	bsc -> mgcp	[label="MGCP MDCX rtpbridge/2@mgw (optional)"];
+	bsc <- mgcp	[label="MGCP MDCX rtpbridge/2@mgw OK (optional)"];
+	...;
+
+	mgcp <- bsc	[label="MGCP CRCX rtpbridge/2@mgw (5.5.5.5:4000)"];
+	mgcp box mgcp	[label="Bind to MGW-local RTP Port (3.3.3.3:3000)\nConnect to 5.5.5.5:4000"];
+	mgcp -> bsc	[label="MGCP CRCX rtpbridge/2@mgw OK (3.3.3.3:3000)"];
+	...;
+
+	bsc -> m_sc	[label="BSSAP ASSIGN CMPL (3GPP AoIP 3.3.3.3:3000)"];
+	m_sc -> mgw_m	[label="Request MGW to connect RTP to remote endpoint 3.3.3.3:3000"];
+	mgw_m box mgw_m [label="Connect RTP to 3.3.3.3:3000"];
+	...;
+
+	mgcp <=> mgw_m	[label="RTP Audio 3.3.3.3:3000 5.5.5.5:4000"];
+	bts <=> mgcp	[label="RTP Audio 1.1.1.1:1000 3.3.3.3:2000"];
+	ms <=> bts	[label="Um Audio (bidirectional)"];
+	ms <-> m_sc	[label="DTAP CC ALERTING"];
+	...;
+
+	ms <- m_sc	[label="DTAP CC CONNECT"];
+	ms -> m_sc	[label="DTAP CC CONNECT ACK"];
+	---		[label="Voice Call in Progress"];
+	ms <- m_sc	[label="DTAP CC DISCONNET"];
+	ms <- m_sc	[label="DTAP CC RELEASE"];
+	ms <- m_sc	[label="DTAP CC RELEASE COMPL"];
+	...;
+	bsc <- m_sc	[label="BSSMAP CLEAR CMD"];
+	m_sc -> mgw_m	[label="Request release RTP port/termination"];
+	mgw_m box mgw_m	[label="Release RTP port 5.5.5.5:4000"];
+	bsc -> m_sc	[label="BSSMAP CLEAR COMPL"];
+	bsc <- m_sc	[label="SCCP RLSD"];
+	bsc -> m_sc	[label="SCCP RLC"];
+	...;
+	mgcp <- bsc	[label="MGCP DLCX rtpbridge/2@mgw"];
+	mgcp box mgcp	[label="Release MSC-facing local RTP port (3.3.3.3:3000)"];
+	mgcp -> bsc	[label="MGCP DLCX rtpbridge/2@mgw OK"];
+
+	mgcp <- bsc	[label="MGCP DLCX rtpbridge/2@mgw"];
+	mgcp box mgcp	[label="Release BTS-facing local RTP port (3.3.3.3:2000)"];
+	mgcp -> bsc	[label="MGCP DLCX rtpbridge/2@mgw OK"];
+
+	bts <- bsc	[label="IPA DLCX"];
+	bts box bts	[label="Release BTS-local RTP port (1.1.1.1:1000)"];
+	bts -> bsc	[label="IPA DLCX OK"];
+}
