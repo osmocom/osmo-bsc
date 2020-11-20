@@ -1,7 +1,7 @@
-# MO-Call with OsmoBTS + OsmoBSC with true 3GPP AoIP (planned)
+# MO-Call with OsmoBTS + OsmoBSC with true 3GPP AoIP
 msc {
 	hscale=2;
-	ms [label="MS"], bts [label="OsmoBTS"], bsc[label="OsmoBSC"], mgcp[label="osmo-bsc_mgcp"], m_sc[label="MSC"];
+	ms [label="MS"], bts [label="OsmoBTS"], bsc[label="OsmoBSC"], mgcp[label="OsmoMGW"], m_sc[label="MSC"];
 
 	ms box m_sc	[label="We assume a SDCCH is already established"];
 	...;

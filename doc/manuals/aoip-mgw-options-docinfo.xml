@@ -7,6 +7,14 @@
        Initial version of the proposal for internal discussion.
     </revremark>
   </revision>
+  <revision>
+    <revnumber>1.0</revnumber>
+    <date>November 2020</date>
+    <authorinitials>Harald Welte</authorinitials>
+    <revremark>
+       Update with changes on what was actually implemented in recent years; change from future to past tense.
+    </revremark>
+  </revision>
 </revhistory>
 
 <authorgroup>
@@ -24,7 +32,7 @@
 </authorgroup>
 
 <copyright>
-  <year>2017</year>
+  <year>2017-2020</year>
   <holder>sysmocom - s.f.m.c. GmbH</holder>
 </copyright>
 

@@ -5,8 +5,8 @@
 This document serves as a paper to illustrate the different
 configurations of OsmoBSC in terms of integration with BTSs and MSCs.
 
-The document should accompany us in the 2017 development cycle which
-includes the _death of the NITB_, i.e. the move away from OsmoNITB to
+The document was created ahead of the 2017 development cycle which
+included the _death of the NITB_, i.e. the move away from OsmoNITB to
 having OsmoBSC in all configurations, whether with a
 proprietary/external MSC or with OsmoMSC.
 
@@ -24,8 +24,13 @@ such as
 
 === Classic GSM RAN with E1 based Abis and E1 A
 
-This configuration was actually never supported by OpenBSC, as E1 BTS
-support was so far for NITB only, but not for OsmoBSC.
+This is how GSM was originally specified when it was introduced: E1/T1
+circuits on all interfaces, no IP anywhere.
+
+This configuration was actually never supported by OpenBSC, as E1
+support was always only on the  Abis side (OpenBSC, OsmoNITB and today OsmoBSC).
+
+We never supported A interface over E1.  It could be done if there was a need.
 
 [mscgen]
 ----
@@ -53,11 +58,11 @@ Release 7 of 3GPP included an official specification on how an
 interoperable A-over-IP (AoIP) interface shall look like.
 
 As more modern MSCs at operators tend to favor implementing 3GPP AoIP
-rather than the proprietary SCCPlite based A interface, it becomes
+rather than the proprietary SCCPlite based A interface, it became
 necessary for OsmoBSC to support this.
 
 At the same time, for compatibility reasons, the classic SCCPlite
-support shall be kept, if possible with reasonable effort.
+support is kept in OsmoBSC as a configuration option.
 
 [mscgen]
 ----
@@ -65,11 +70,16 @@ include::{srcdir}/mgw/osmo-bsc-new-mgw.msc[]
 ----
 
 
-=== OsmoBSC 2017+: 3GPP AoIP + Abis/E1
+=== OsmoBSC 2020+: 3GPP AoIP + Abis/E1
 
-Since OsmoNITB will soon be deprecated, we will use OsmoBSC in all
-Osmocom GSM ntework setups, requiring the support for classic E1/T1
-based BTSs from OsmoBSC.
+Since OsmoNITB was deprecated in 2017, and OsmoBSC only supported Abis/IP,
+we temporarily lost the ability to use classic E1 based BTSs.  In 2020,
+we re-introduced and re-tested the support of Abis/E1.
+
+Fro the control plane of Abis (RSL, OML) the E1 support via libosmo-abis
+never really ceased to exist.  But for the user plane, E1 support had to be
+introduced to osmo-mgw, and osmo-bsc needed to be taught how to configure
+E1 endpoints at the MGW.  The related call flow for such setups looks like this:
 
 [mscgen]
 ----

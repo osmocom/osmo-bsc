@@ -1,8 +1,8 @@
 # MO-Call with E1 BTS + OsmoBSC with true 3GPP AoIP (planned
-# osmo-bsc_mgcp has to be extended to true MGW functionality!
+# osmo-mgw has to be extended to true MGW functionality!
 msc {
 	hscale=2;
-	ms [label="MS"], bts [label="E1 BTS"], bsc[label="OsmoBSC"], mgcp[label="osmo-bsc_mgcp"], m_sc[label="MSC"];
+	ms [label="MS"], bts [label="E1 BTS"], bsc[label="OsmoBSC"], mgcp[label="osmo-mgw"], m_sc[label="MSC"];
 
 	ms box m_sc	[label="We assume a SDCCH is already established"];
 	...;
