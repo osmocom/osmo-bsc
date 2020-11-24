@@ -55,6 +55,7 @@
 #include <osmocom/bsc/handover_fsm.h>
 #include <osmocom/bsc/smscb.h>
 #include <osmocom/bsc/bts.h>
+#include <osmocom/bsc/handover_cfg.h>
 #define RSL_ALLOC_SIZE		1024
 #define RSL_ALLOC_HEADROOM	128
 
@@ -1121,8 +1122,22 @@ static int rsl_rx_meas_res(struct msgb *msg)
 
 	mr->lchan->meas_rep_count++;
 	mr->lchan->meas_rep_last_seen_nr = mr->nr;
-	LOGP(DRSL, LOGL_DEBUG, "%s: meas_rep_count++=%d meas_rep_last_seen_nr=%u\n",
-	     gsm_lchan_name(mr->lchan), mr->lchan->meas_rep_count, mr->lchan->meas_rep_last_seen_nr);
+
+	if (log_check_level(DRSL, LOGL_DEBUG)) {
+		struct gsm_lchan *lchan = mr->lchan;
+		struct gsm_bts *bts = lchan->ts->trx->bts;
+		int av_rxlev = -EINVAL, av_rxqual = -EINVAL;
+		av_rxlev = get_meas_rep_avg(lchan,
+					    ho_get_hodec2_full_tdma(bts->ho) ?
+					    MEAS_REP_DL_RXLEV_FULL : MEAS_REP_DL_RXLEV_SUB,
+					    ho_get_hodec2_rxlev_avg_win(bts->ho));
+		av_rxqual = get_meas_rep_avg(lchan,
+					     ho_get_hodec2_full_tdma(bts->ho) ?
+					     MEAS_REP_DL_RXQUAL_FULL : MEAS_REP_DL_RXQUAL_SUB,
+					     ho_get_hodec2_rxqual_avg_win(bts->ho));
+		LOGP(DRSL, LOGL_DEBUG, "%s: rxlev=%d rxqual=%d meas_rep_count++=%d meas_rep_last_seen_nr=%u\n",
+		     gsm_lchan_name(mr->lchan), av_rxlev, av_rxqual, mr->lchan->meas_rep_count, mr->lchan->meas_rep_last_seen_nr);
+	}
 
 	print_meas_rep(msg->lchan, mr);
 
