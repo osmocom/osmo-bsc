@@ -26,7 +26,6 @@
 #include <osmocom/core/application.h>
 #include <osmocom/core/select.h>
 #include <osmocom/core/talloc.h>
-#include <osmocom/vty/vty.h>
 
 #include <osmocom/mgcp_client/mgcp_client_endpoint_fsm.h>
 
@@ -50,9 +49,6 @@
 #include <osmocom/bsc/bsc_msc_data.h>
 #include <osmocom/bsc/bts.h>
 #include <osmocom/bsc/paging.h>
-#include <osmocom/bsc/vty.h>
-
-#include "../../bscconfig.h"
 
 void *ctx;
 
@@ -1811,56 +1807,6 @@ static char **test_cases[] =  {
 	test_case_32,
 };
 
-struct gsm_bts *bts_by_num_str(const char *num_str)
-{
-	struct gsm_bts *bts = gsm_bts_num(bsc_gsmnet, atoi(num_str));
-	OSMO_ASSERT(bts);
-	return bts;
-}
-
-DEFUN(create_n_bts, create_n_bts_cmd,
-      "create-n-bts <0-999>",
-      "Create a number of BTS with four TCH/F and four TCH/H timeslots\n"
-      "Number of BTS to create\n")
-{
-	int i;
-	int n = atoi(argv[0]);
-	for (i = 0; i < n; i++)
-		create_bts(1, bts_default_ts);
-	return CMD_SUCCESS;
-}
-
-DEFUN(create_ms, create_ms_cmd,
-      "create-ms bts <0-999> (TCH/F|TCH/H) (AMR|HR|EFR)",
-      "Create an MS using the next free matching lchan on a given BTS\n"
-      "BTS index to subscribe on\n"
-      "lchan type to select\n"
-      "codec\n")
-{
-	const char *bts_nr_str = argv[0];
-	const char *tch_type = argv[1];
-	const char *codec = argv[2];
-	struct gsm_lchan *lchan;
-	fprintf(stderr, "- Creating mobile at BTS %s on "
-		"%s with %s codec\n", bts_nr_str, tch_type, codec);
-	lchan = create_lchan(bts_by_num_str(bts_nr_str),
-			     !strcmp(tch_type, "TCH/F"), codec);
-	if (!lchan) {
-		printf("Failed to create lchan!\n");
-		return CMD_WARNING;
-	}
-	fprintf(stderr, " * New MS is at BTS %d TS %d\n",
-		lchan->ts->trx->bts->nr,
-		lchan->ts->nr);
-	return CMD_SUCCESS;
-}
-
-static void ho_test_vty_init()
-{
-	install_element(CONFIG_NODE, &create_n_bts_cmd);
-	install_element(CONFIG_NODE, &create_ms_cmd);
-}
-
 static const struct log_info_cat log_categories[] = {
 	[DHO] = {
 		.name = "DHO",
@@ -1932,47 +1878,23 @@ const struct log_info log_info = {
 	.num_cat = ARRAY_SIZE(log_categories),
 };
 
-static struct vty_app_info vty_info = {
-	.name = "ho_test",
-	.copyright =
-	"Copyright (C) 2020 sysmocom - s.f.m.c. GmbH\r\n"
-	"License AGPLv3+: GNU AGPL version 3 or later <http://gnu.org/licenses/agpl-3.0.html>\r\n"
-	"This is free software: you are free to change and redistribute it.\r\n"
-	"There is NO WARRANTY, to the extent permitted by law.\r\n",
-	.version	= PACKAGE_VERSION,
-	.usr_attr_desc	= {
-		[BSC_VTY_ATTR_RESTART_ABIS_OML_LINK] = \
-			"This command applies on A-bis OML link (re)establishment",
-		[BSC_VTY_ATTR_RESTART_ABIS_RSL_LINK] = \
-			"This command applies on A-bis RSL link (re)establishment",
-		[BSC_VTY_ATTR_NEW_LCHAN] = \
-			"This command applies for newly created lchans",
-	},
-	.usr_attr_letters = {
-		[BSC_VTY_ATTR_RESTART_ABIS_OML_LINK]	= 'o',
-		[BSC_VTY_ATTR_RESTART_ABIS_RSL_LINK]	= 'r',
-		[BSC_VTY_ATTR_NEW_LCHAN]		= 'l',
-	},
-};
+struct gsm_bts *bts_by_num_str(const char *num_str)
+{
+	struct gsm_bts *bts = gsm_bts_num(bsc_gsmnet, atoi(num_str));
+	OSMO_ASSERT(bts);
+	return bts;
+}
 
 int main(int argc, char **argv)
 {
 	char **test_case;
 	int i;
+	int algorithm;
 	int test_case_i;
 	int last_test_i;
-	char *test_file = NULL;
-	int rc;
-
-	if (argc < 2) {
-		printf("Pass a handover test script as argument\n");
-		exit(1);
-	}
-	test_file = argv[1];
 
 	ctx = talloc_named_const(NULL, 0, "handover_test");
 	msgb_talloc_ctx_init(ctx, 0);
-	vty_info.tall_ctx = ctx;
 
 	test_case_i = argc > 1? atoi(argv[1]) : -1;
 	last_test_i = ARRAY_SIZE(test_cases) - 1;
@@ -1996,10 +1918,6 @@ int main(int argc, char **argv)
 	bsc_network_alloc();
 	if (!bsc_gsmnet)
 		exit(1);
-
-	vty_init(&vty_info);
-	bsc_vty_init(bsc_gsmnet);
-	ho_test_vty_init();
 
 	ts_fsm_init();
 	lchan_fsm_init();
@@ -2029,17 +1947,18 @@ int main(int argc, char **argv)
 
 	test_case = test_cases[test_case_i];
 
+	fprintf(stderr, "--------------------\n");
+	fprintf(stderr, "Performing the following test %d (algorithm %s):\n%s",
+		test_case_i, test_case[0], test_case[1]);
+	algorithm = atoi(test_case[0]);
+	test_case += 2;
+	fprintf(stderr, "--------------------\n");
+
 	/* Disable the congestion check timer, we will trigger manually. */
 	bsc_gsmnet->hodec2.congestion_check_interval_s = 0;
 
 	handover_decision_1_init();
 	hodec2_init(bsc_gsmnet);
-
-	rc = vty_read_config_file(test_file, NULL);
-	if (rc < 0) {
-		printf("Failed to parse the test file: '%s'\n", test_file);
-		return rc;
-	}
 
 	while (*test_case) {
 		if (!strcmp(*test_case, "create-n-bts")) {
@@ -2188,7 +2107,8 @@ int main(int argc, char **argv)
 		if (!strcmp(*test_case, "congestion-check")) {
 			fprintf(stderr, "- Triggering congestion check\n");
 			got_chan_req = 0;
-			hodec2_congestion_check(bsc_gsmnet);
+			if (algorithm == 2)
+				hodec2_congestion_check(bsc_gsmnet);
 			test_case += 1;
 		} else
 		if (!strcmp(*test_case, "expect-chan")) {
