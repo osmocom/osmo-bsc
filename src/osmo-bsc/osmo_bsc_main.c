@@ -682,11 +682,11 @@ static struct vty_app_info vty_info = {
 };
 
 extern int bsc_shutdown_net(struct gsm_network *net);
-static void signal_handler(int signal)
+static void signal_handler(int signum)
 {
-	fprintf(stdout, "signal %u received\n", signal);
+	fprintf(stdout, "signal %u received\n", signum);
 
-	switch (signal) {
+	switch (signum) {
 	case SIGINT:
 	case SIGTERM:
 		bsc_shutdown_net(bsc_gsmnet);
@@ -695,8 +695,17 @@ static void signal_handler(int signal)
 		exit(0);
 		break;
 	case SIGABRT:
-		/* in case of abort, we want to obtain a talloc report
-		 * and then return to the caller, who will abort the process */
+		/* in case of abort, we want to obtain a talloc report and
+		 * then run default SIGABRT handler, who will generate coredump
+		 * and abort the process. abort() should do this for us after we
+		 * return, but program wouldn't exit if an external SIGABRT is
+		 * received.
+		 */
+		talloc_report(tall_vty_ctx, stderr);
+		talloc_report_full(tall_bsc_ctx, stderr);
+		signal(SIGABRT, SIG_DFL);
+		raise(SIGABRT);
+		break;
 	case SIGUSR1:
 		talloc_report(tall_vty_ctx, stderr);
 		talloc_report_full(tall_bsc_ctx, stderr);
