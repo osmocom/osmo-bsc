@@ -467,6 +467,7 @@ static int lchan_mr_config(struct gsm_lchan *lchan, uint16_t s15_s0)
 		mr = &bts->mr_full;
 	else
 		mr = &bts->mr_half;
+	mr_conf_bts = (struct gsm48_multi_rate_conf *)mr->gsm48_ie;
 
 	if (lchan->activate.info.activ_for == FOR_VTY)
 		/* If the channel is activated manually from VTY, then there is no
@@ -503,7 +504,6 @@ static int lchan_mr_config(struct gsm_lchan *lchan, uint16_t s15_s0)
 	 * if the channel activation was triggerd by the VTY, do not
 	 * filter anything (see also comment above) */
 	if (lchan->activate.info.activ_for != FOR_VTY) {
-		mr_conf_bts = (struct gsm48_multi_rate_conf *)mr->gsm48_ie;
 		rc_rate = calc_amr_rate_intersection(&mr_conf_filtered, mr_conf_bts, &mr_conf_filtered);
 		if (rc_rate < 0) {
 			LOG_LCHAN(lchan, LOGL_ERROR,
@@ -511,6 +511,10 @@ static int lchan_mr_config(struct gsm_lchan *lchan, uint16_t s15_s0)
 			return -EINVAL;
 		}
 	}
+
+	/* Set the ICMI according to the BTS. Above gsm48_mr_cfg_from_gsm0808_sc_cfg() always sets ICMI = 1, which
+	 * carried through all of the above rate intersections. */
+	mr_conf_filtered.icmi = mr_conf_bts->icmi;
 
 	/* Proceed with the generation of the multirate configuration IE
 	 * (MS and BTS) */
