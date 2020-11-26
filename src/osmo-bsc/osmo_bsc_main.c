@@ -691,7 +691,7 @@ static void signal_handler(int signum)
 	case SIGTERM:
 		bsc_shutdown_net(bsc_gsmnet);
 		osmo_signal_dispatch(SS_L_GLOBAL, S_L_GLOBAL_SHUTDOWN, NULL);
-		sleep(3);
+		//sleep(3);
 		exit(0);
 		break;
 	case SIGABRT:

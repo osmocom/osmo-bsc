@@ -414,6 +414,8 @@ int gsm48_multirate_config(uint8_t *lv,
 	uint8_t *gsm48_ie = (uint8_t *) mr_conf;
 	const struct amr_mode *modes_selected[4];
 
+	LOGP(DRR, LOGL_ERROR, "XXXXX gsm48_multirate_config() mr IE = %s\n", osmo_hexdump(gsm48_ie, 2));
+
 	/* Check if modes for consistency (order and duplicates) */
 	for (i = 0; i < num_modes; i++) {
 		if (i > 0 && modes[i - 1].mode > modes[i].mode) {

@@ -4209,6 +4209,7 @@ static void get_amr_start_from_arg(struct vty *vty, const char *argv[], int full
 		else
 			mr_conf->smod = atoi(argv[0]) - 1;
 	}
+	LOGP(DRR, LOGL_ERROR, "XXXXX vty: bts %d mr IE = %s\n", bts->nr, osmo_hexdump(mr->gsm48_ie, 2));
 }
 
 /* Give the current amr configuration a final consistency check by feeding the

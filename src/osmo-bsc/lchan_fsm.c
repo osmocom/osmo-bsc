@@ -517,6 +517,10 @@ static int lchan_mr_config(struct gsm_lchan *lchan, uint16_t s15_s0)
 	mr_conf_filtered.icmi = mr_conf_bts->icmi;
 	mr_conf_filtered.smod = mr_conf_bts->smod;
 
+	LOG_LCHAN(lchan, LOGL_ERROR, "XXXXXXXXX lchan_mr_config() mr = %s  mr_conf_filtered.icmi = %d\n",
+		  osmo_hexdump(mr->gsm48_ie, 2), mr_conf_filtered.icmi);
+
+
 	/* Proceed with the generation of the multirate configuration IE
 	 * (MS and BTS) */
 	rc = gsm48_multirate_config(lchan->mr_ms_lv, &mr_conf_filtered, mr->ms_mode, mr->num_modes);
