@@ -515,6 +515,7 @@ static int lchan_mr_config(struct gsm_lchan *lchan, uint16_t s15_s0)
 	/* Set the ICMI according to the BTS. Above gsm48_mr_cfg_from_gsm0808_sc_cfg() always sets ICMI = 1, which
 	 * carried through all of the above rate intersections. */
 	mr_conf_filtered.icmi = mr_conf_bts->icmi;
+	mr_conf_filtered.smod = mr_conf_bts->smod;
 
 	/* Proceed with the generation of the multirate configuration IE
 	 * (MS and BTS) */
