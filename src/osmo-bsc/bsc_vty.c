@@ -4199,9 +4199,10 @@ static void get_amr_start_from_arg(struct vty *vty, const char *argv[], int full
 		}
 	}
 
-	if (argv[0][0] == 'a' || num == 0)
+	if (argv[0][0] == 'a' || num == 0) {
 		mr_conf->icmi = 0;
-	else {
+		mr_conf->smod = 0;
+	} else {
 		mr_conf->icmi = 1;
 		if (num < atoi(argv[0]))
 			mr_conf->smod = num - 1;
