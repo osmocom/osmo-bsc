@@ -179,6 +179,8 @@ static int nm_statechg_event(int evt, struct nm_statechg_signal_data *nsd)
 			break;
 		if (new_state->availability == NM_AVSTATE_DEPENDENCY) {
 			msgb = nanobts_attr_nse_get(bts);
+			if (!msgb)
+				break;
 			abis_nm_ipaccess_set_attr(bts, obj_class, bts->bts_nr,
 						  0xff, 0xff, msgb->data,
 						  msgb->len);
@@ -193,6 +195,8 @@ static int nm_statechg_event(int evt, struct nm_statechg_signal_data *nsd)
 			break;
 		if (new_state->availability == NM_AVSTATE_DEPENDENCY) {
 			msgb = nanobts_attr_cell_get(bts);
+			if (!msgb)
+				break;
 			abis_nm_ipaccess_set_attr(bts, obj_class, bts->bts_nr,
 						  0, 0xff, msgb->data,
 						  msgb->len);
@@ -222,6 +226,8 @@ static int nm_statechg_event(int evt, struct nm_statechg_signal_data *nsd)
 		if ((new_state->availability == NM_AVSTATE_OFF_LINE) ||
 		    (new_state->availability == NM_AVSTATE_DEPENDENCY)) {
 			msgb = nanobts_attr_nscv_get(bts);
+			if (!msgb)
+				break;
 			abis_nm_ipaccess_set_attr(bts, obj_class, bts->bts_nr,
 						  nsvc->id, 0xff,
 						  msgb->data, msgb->len);

@@ -32,6 +32,8 @@ struct msgb *nanobts_attr_bts_get(struct gsm_bts *bts)
 	uint8_t buf[256];
 	int rlt;
 	msgb = msgb_alloc(1024, "nanobts_attr_bts");
+	if (!msgb)
+		return NULL;
 
 	memcpy(buf, "\x55\x5b\x61\x67\x6d\x73", 6);
 	msgb_tv_fixed_put(msgb, NM_ATT_INTERF_BOUND, 6, buf);
@@ -104,6 +106,8 @@ struct msgb *nanobts_attr_nse_get(struct gsm_bts *bts)
 	struct msgb *msgb;
 	uint8_t buf[256];
 	msgb = msgb_alloc(1024, "nanobts_attr_bts");
+	if (!msgb)
+		return NULL;
 
 	/* NSEI 925 */
 	buf[0] = bts->gprs.nse.nsei >> 8;
@@ -140,6 +144,8 @@ struct msgb *nanobts_attr_cell_get(struct gsm_bts *bts)
 	struct msgb *msgb;
 	uint8_t buf[256];
 	msgb = msgb_alloc(1024, "nanobts_attr_bts");
+	if (!msgb)
+		return NULL;
 
 	/* routing area code */
 	buf[0] = bts->gprs.rac;
@@ -197,6 +203,8 @@ struct msgb *nanobts_attr_nscv_get(struct gsm_bts *bts)
 	struct msgb *msgb;
 	uint8_t buf[256];
 	msgb = msgb_alloc(1024, "nanobts_attr_bts");
+	if (!msgb)
+		return NULL;
 
 	/* 925 */
 	buf[0] = bts->gprs.nsvc[0].nsvci >> 8;
@@ -240,6 +248,8 @@ struct msgb *nanobts_attr_radio_get(struct gsm_bts *bts,
 	struct msgb *msgb;
 	uint8_t buf[256];
 	msgb = msgb_alloc(1024, "nanobts_attr_bts");
+	if (!msgb)
+		return NULL;
 
 	/* number of -2dB reduction steps / Pn */
 	msgb_tv_put(msgb, NM_ATT_RF_MAXPOWR_R, trx->max_power_red / 2);
