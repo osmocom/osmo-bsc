@@ -101,11 +101,11 @@ struct msgb *nanobts_attr_bts_get(struct gsm_bts *bts)
 	return msgb;
 }
 
-struct msgb *nanobts_attr_nse_get(struct gsm_bts *bts)
+struct msgb *nanobts_attr_nse_get(struct gsm_bts_sm *bts_sm)
 {
 	struct msgb *msgb;
 	uint8_t buf[256];
-	struct gsm_bts_sm *bts_sm = bts->site_mgr;
+	struct gsm_bts *bts = gsm_bts_sm_get_bts(bts_sm);
 	msgb = msgb_alloc(1024, "nanobts_attr_bts");
 	if (!msgb)
 		return NULL;

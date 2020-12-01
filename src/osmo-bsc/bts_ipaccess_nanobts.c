@@ -46,6 +46,7 @@
 #include <osmocom/bsc/paging.h>
 #include <osmocom/bsc/timeslot_fsm.h>
 #include <osmocom/bsc/bts.h>
+#include <osmocom/bsc/bts_sm.h>
 #include <osmocom/bsc/nm_common_fsm.h>
 
 static int bts_model_nanobts_start(struct gsm_network *net);
@@ -134,6 +135,7 @@ static int nm_statechg_event(int evt, struct nm_statechg_signal_data *nsd)
 	struct gsm_bts_bb_trx *bb_transc;
 	struct gsm_bts_trx_ts *ts;
 	struct gsm_gprs_nsvc *nsvc;
+	struct gsm_gprs_nse *nse;
 
 	struct msgb *msgb;
 
@@ -148,6 +150,7 @@ static int nm_statechg_event(int evt, struct nm_statechg_signal_data *nsd)
 	    obj_class != NM_OC_BASEB_TRANSC &&
 	    obj_class != NM_OC_RADIO_CARRIER &&
 	    obj_class != NM_OC_CHANNEL &&
+	    obj_class != NM_OC_GPRS_NSE &&
 	    evt != S_NM_STATECHG_OPER)
 		return 0;
 
@@ -174,21 +177,8 @@ static int nm_statechg_event(int evt, struct nm_statechg_signal_data *nsd)
 		osmo_fsm_inst_dispatch(trx->mo.fi, NM_EV_STATE_CHG_REP, nsd);
 		break;
 	case NM_OC_GPRS_NSE:
-		bts_sm = container_of(obj, struct gsm_bts_sm, gprs.nse);
-		bts = bts_sm->bts[0];
-		if (bts->gprs.mode == BTS_GPRS_NONE)
-			break;
-		if (new_state->availability == NM_AVSTATE_DEPENDENCY) {
-			msgb = nanobts_attr_nse_get(bts);
-			if (!msgb)
-				break;
-			abis_nm_ipaccess_set_attr(bts, obj_class, bts->bts_nr,
-						  0xff, 0xff, msgb->data,
-						  msgb->len);
-			msgb_free(msgb);
-			abis_nm_opstart(bts, obj_class, bts->bts_nr,
-					0xff, 0xff);
-		}
+		nse = obj;
+		osmo_fsm_inst_dispatch(nse->mo.fi, NM_EV_STATE_CHG_REP, nsd);
 		break;
 	case NM_OC_GPRS_CELL:
 		bts = container_of(obj, struct gsm_bts, gprs.cell);
@@ -204,8 +194,6 @@ static int nm_statechg_event(int evt, struct nm_statechg_signal_data *nsd)
 			msgb_free(msgb);
 			abis_nm_chg_adm_state(bts, obj_class, bts->bts_nr,
 					      0, 0xff, NM_STATE_UNLOCKED);
-			abis_nm_chg_adm_state(bts, NM_OC_GPRS_NSE, bts->bts_nr,
-					      0xff, 0xff, NM_STATE_UNLOCKED);
 			abis_nm_opstart(bts, obj_class, bts->bts_nr,
 					0, 0xff);
 		}
@@ -279,6 +267,9 @@ static int sw_activ_rep(struct msgb *mb)
 			return -EINVAL;
 		osmo_fsm_inst_dispatch(ts->mo.fi, NM_EV_SW_ACT_REP, NULL);
 		break;
+	case NM_OC_GPRS_NSE:
+		osmo_fsm_inst_dispatch(bts->site_mgr->gprs.nse.mo.fi, NM_EV_SW_ACT_REP, NULL);
+		break;
 	}
 	return 0;
 }
@@ -325,6 +316,9 @@ static void nm_rx_opstart_ack(struct msgb *oml_msg)
 	case NM_OC_CHANNEL:
 		nm_rx_opstart_ack_chan(oml_msg);
 		break;
+	case NM_OC_GPRS_NSE:
+		osmo_fsm_inst_dispatch(bts->site_mgr->gprs.nse.mo.fi, NM_EV_OPSTART_ACK, NULL);
+		break;
 	default:
 		break;
 	}
@@ -359,6 +353,9 @@ static void nm_rx_opstart_nack(struct msgb *oml_msg)
 		if (!(ts = abis_nm_get_ts(oml_msg)))
 			return;
 		osmo_fsm_inst_dispatch(ts->mo.fi, NM_EV_OPSTART_NACK, NULL);
+		break;
+	case NM_OC_GPRS_NSE:
+		osmo_fsm_inst_dispatch(bts->site_mgr->gprs.nse.mo.fi, NM_EV_OPSTART_NACK, NULL);
 		break;
 	default:
 		break;
@@ -405,6 +402,29 @@ static void nm_rx_set_chan_attr_ack(struct msgb *oml_msg)
 	osmo_fsm_inst_dispatch(ts->mo.fi, NM_EV_SET_ATTR_ACK, NULL);
 }
 
+static void nm_rx_ipacc_set_attr_ack(struct msgb *oml_msg)
+{
+	struct e1inp_sign_link *sign_link = oml_msg->dst;
+	struct gsm_bts *bts = sign_link->trx->bts;
+	struct abis_om_hdr *oh = msgb_l2(oml_msg);
+	uint8_t idstrlen = oh->data[0];
+	struct abis_om_fom_hdr *foh;
+	void *obj;
+	struct gsm_gprs_nse *nse;
+
+	foh = (struct abis_om_fom_hdr *) (oh->data + 1 + idstrlen);
+	obj = gsm_objclass2obj(bts, foh->obj_class, &foh->obj_inst);
+
+	switch (foh->obj_class) {
+	case NM_OC_GPRS_NSE:
+		nse = obj;
+		osmo_fsm_inst_dispatch(nse->mo.fi, NM_EV_SET_ATTR_ACK, NULL);
+		break;
+	default:
+		LOGPFOH(DNM, LOGL_ERROR, foh, "IPACC Set Attr Ack received on incorrect object class %d!\n", foh->obj_class);
+	}
+}
+
 /* Callback function to be called every time we receive a signal from NM */
 static int bts_ipa_nm_sig_cb(unsigned int subsys, unsigned int signal,
 		     void *handler_data, void *signal_data)
@@ -432,6 +452,9 @@ static int bts_ipa_nm_sig_cb(unsigned int subsys, unsigned int signal,
 		return 0;
 	case S_NM_SET_CHAN_ATTR_ACK:
 		nm_rx_set_chan_attr_ack(signal_data);
+		return 0;
+	case S_NM_IPACC_SET_ATTR_ACK:
+		nm_rx_ipacc_set_attr_ack(signal_data);
 		return 0;
 	default:
 		break;
@@ -524,6 +547,7 @@ void ipaccess_drop_oml(struct gsm_bts *bts, const char *reason)
 	}
 
 	osmo_fsm_inst_dispatch(bts->site_mgr->mo.fi, NM_EV_OML_DOWN, NULL);
+	osmo_fsm_inst_dispatch(bts->site_mgr->gprs.nse.mo.fi, NM_EV_OML_DOWN, NULL);
 	osmo_fsm_inst_dispatch(bts->mo.fi, NM_EV_OML_DOWN, NULL);
 	gsm_bts_all_ts_dispatch(bts, TS_EV_OML_DOWN, NULL);
 

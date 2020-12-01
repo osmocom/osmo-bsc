@@ -24,8 +24,12 @@
 #include <stdint.h>
 #include <osmocom/core/msgb.h>
 
+struct gsm_bts_sm;
+struct gsm_bts;
+struct gsm_bts_trx;
+
 struct msgb *nanobts_attr_bts_get(struct gsm_bts *bts);
-struct msgb *nanobts_attr_nse_get(struct gsm_bts *bts);
+struct msgb *nanobts_attr_nse_get(struct gsm_bts_sm *bts_sm);
 struct msgb *nanobts_attr_cell_get(struct gsm_bts *bts);
 struct msgb *nanobts_attr_nscv_get(struct gsm_bts *bts);
 struct msgb *nanobts_attr_radio_get(struct gsm_bts *bts,

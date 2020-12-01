@@ -2922,6 +2922,9 @@ static int abis_nm_rx_ipacc(struct msgb *msg)
 		signal.msg_type = foh->msg_type;
 		osmo_signal_dispatch(SS_NM, S_NM_IPACC_ACK, &signal);
 		break;
+	case NM_MT_IPACC_SET_ATTR_ACK:
+		osmo_signal_dispatch(SS_NM, S_NM_IPACC_SET_ATTR_ACK, msg);
+		break;
 	default:
 		break;
 	}

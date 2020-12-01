@@ -22,6 +22,7 @@
 
 #include <osmocom/bsc/gsm_data.h>
 #include <osmocom/bsc/bts.h>
+#include <osmocom/bsc/bts_sm.h>
 #include <osmocom/bsc/debug.h>
 #include <osmocom/bsc/nm_common_fsm.h>
 
@@ -29,6 +30,11 @@ static const uint8_t bts_nse_timer_default[] = { 3, 3, 3, 3, 30, 3, 10 };
 
 static int gsm_bts_sm_talloc_destructor(struct gsm_bts_sm *bts_sm)
 {
+	if (bts_sm->gprs.nse.mo.fi) {
+		osmo_fsm_inst_free(bts_sm->gprs.nse.mo.fi);
+		bts_sm->gprs.nse.mo.fi = NULL;
+	}
+
 	if (bts_sm->mo.fi) {
 		osmo_fsm_inst_free(bts_sm->mo.fi);
 		bts_sm->mo.fi = NULL;
@@ -57,6 +63,14 @@ struct gsm_bts_sm *gsm_bts_sm_alloc(struct gsm_network *net, uint8_t bts_num)
 	bts_sm->bts[0] = bts;
 
 	gsm_mo_init(&bts_sm->mo, bts, NM_OC_SITE_MANAGER, 0xff, 0xff, 0xff);
+
+
+	bts_sm->gprs.nse.mo.fi = osmo_fsm_inst_alloc(&nm_gprs_nse_fsm, bts_sm, &bts_sm->gprs.nse,
+					      LOGL_INFO, NULL);
+	osmo_fsm_inst_update_id_f(bts_sm->gprs.nse.mo.fi, "nse%d", bts_num);
+	gsm_mo_init(&bts_sm->gprs.nse.mo, bts, NM_OC_GPRS_NSE, bts->nr, 0xff, 0xff);
+	memcpy(&bts_sm->gprs.nse.timer, bts_nse_timer_default,
+	       sizeof(bts_sm->gprs.nse.timer));
 
 	for (i = 0; i < ARRAY_SIZE(bts_sm->gprs.nsvc); i++) {
 		bts_sm->gprs.nsvc[i].bts = bts;

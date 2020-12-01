@@ -125,7 +125,7 @@ static void test_nanobts_attr_nse_get(struct gsm_bts *bts, uint8_t *expected)
 
 	printf("Testing nanobts_attr_nse_get()...\n");
 
-	msgb = nanobts_attr_nse_get(bts);
+	msgb = nanobts_attr_nse_get(bts->site_mgr);
 	printf("result=  %s\n", osmo_hexdump_nospc(msgb->data, msgb->len));
 	printf("expected=%s\n", osmo_hexdump_nospc(expected, msgb->len));
 	OSMO_ASSERT(memcmp(msgb->data, expected, msgb->len) == 0);
