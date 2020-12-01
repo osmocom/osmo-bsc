@@ -424,7 +424,7 @@ static int inp_sig_cb(unsigned int subsys, unsigned int signal,
 				osmo_timer_del(&trx->bts->cbch_timer);
 		}
 
-		gsm_bts_mo_reset(trx->bts);
+		gsm_bts_sm_mo_reset(trx->bts->site_mgr);
 
 		abis_nm_clear_queue(trx->bts);
 		break;
@@ -529,7 +529,7 @@ static int bootstrap_bts(struct gsm_bts *bts)
 	/* ACC ramping is initialized from vty/config */
 
 	/* Initialize the BTS state */
-	gsm_bts_mo_reset(bts);
+	gsm_bts_sm_mo_reset(bts->site_mgr);
 
 	return 0;
 }

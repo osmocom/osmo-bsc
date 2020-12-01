@@ -121,7 +121,6 @@ int gsm_bts_model_register(struct gsm_bts_model *model)
 	return 0;
 }
 
-static const uint8_t bts_nse_timer_default[] = { 3, 3, 3, 3, 30, 3, 10 };
 static const uint8_t bts_cell_timer_default[] =
 				{ 3, 3, 3, 3, 3, 10, 3, 10, 3, 10, 3 };
 static const struct gprs_rlc_cfg rlc_cfg_default = {
@@ -149,10 +148,7 @@ static const struct gprs_rlc_cfg rlc_cfg_default = {
 
 static int gsm_bts_talloc_destructor(struct gsm_bts *bts)
 {
-	if (bts->site_mgr.mo.fi) {
-		osmo_fsm_inst_free(bts->site_mgr.mo.fi);
-		bts->site_mgr.mo.fi = NULL;
-	}
+	bts->site_mgr->bts[0] = NULL;
 	if (bts->mo.fi) {
 		osmo_fsm_inst_free(bts->mo.fi);
 		bts->mo.fi = NULL;
@@ -164,9 +160,9 @@ static int gsm_bts_talloc_destructor(struct gsm_bts *bts)
  * This part is shared among the thin programs in osmo-bsc/src/utils/.
  * osmo-bsc requires further initialization that pulls in more dependencies (see
  * bsc_bts_alloc_register()). */
-struct gsm_bts *gsm_bts_alloc(struct gsm_network *net, uint8_t bts_num)
+struct gsm_bts *gsm_bts_alloc(struct gsm_network *net, struct gsm_bts_sm *bts_sm, uint8_t bts_num)
 {
-	struct gsm_bts *bts = talloc_zero(net, struct gsm_bts);
+	struct gsm_bts *bts = talloc_zero(bts_sm, struct gsm_bts);
 	struct gsm48_multi_rate_conf mr_cfg;
 	int i;
 
@@ -182,26 +178,13 @@ struct gsm_bts *gsm_bts_alloc(struct gsm_network *net, uint8_t bts_num)
 
 	bts->ms_max_power = 15;	/* dBm */
 
-	bts->site_mgr.mo.fi = osmo_fsm_inst_alloc(&nm_bts_sm_fsm, bts, &bts->site_mgr,
-						  LOGL_INFO, NULL);
-	osmo_fsm_inst_update_id_f(bts->site_mgr.mo.fi, "bts_sm");
-	gsm_mo_init(&bts->site_mgr.mo, bts, NM_OC_SITE_MANAGER, 0xff, 0xff, 0xff);
+	bts->site_mgr = bts_sm;
 
 	bts->mo.fi = osmo_fsm_inst_alloc(&nm_bts_fsm, bts, bts,
 					      LOGL_INFO, NULL);
 	osmo_fsm_inst_update_id_f(bts->mo.fi, "bts%d", bts->nr);
 	gsm_mo_init(&bts->mo, bts, NM_OC_BTS, bts->nr, 0xff, 0xff);
 
-	for (i = 0; i < ARRAY_SIZE(bts->gprs.nsvc); i++) {
-		bts->gprs.nsvc[i].bts = bts;
-		bts->gprs.nsvc[i].id = i;
-		gsm_mo_init(&bts->gprs.nsvc[i].mo, bts, NM_OC_GPRS_NSVC,
-				bts->nr, i, 0xff);
-	}
-	memcpy(&bts->gprs.nse.timer, bts_nse_timer_default,
-		sizeof(bts->gprs.nse.timer));
-	gsm_mo_init(&bts->gprs.nse.mo, bts, NM_OC_GPRS_NSE,
-			bts->nr, 0xff, 0xff);
 	memcpy(&bts->gprs.cell.timer, bts_cell_timer_default,
 		sizeof(bts->gprs.cell.timer));
 	gsm_mo_init(&bts->gprs.cell.mo, bts, NM_OC_GPRS_CELL,
@@ -589,10 +572,6 @@ void gsm_bts_mo_reset(struct gsm_bts *bts)
 	unsigned int i;
 
 	gsm_abis_mo_reset(&bts->mo);
-	gsm_abis_mo_reset(&bts->site_mgr.mo);
-	for (i = 0; i < ARRAY_SIZE(bts->gprs.nsvc); i++)
-		gsm_abis_mo_reset(&bts->gprs.nsvc[i].mo);
-	gsm_abis_mo_reset(&bts->gprs.nse.mo);
 	gsm_abis_mo_reset(&bts->gprs.cell.mo);
 
 	llist_for_each_entry(trx, &bts->trx_list, list) {

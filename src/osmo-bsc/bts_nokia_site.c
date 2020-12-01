@@ -1452,7 +1452,7 @@ static void nokia_abis_nm_fake_1221_ok(struct gsm_bts *bts)
 	struct gsm_bts_trx *trx;
 
 	mo_ok(&bts->mo);
-	mo_ok(&bts->site_mgr.mo);
+	mo_ok(&bts->site_mgr->mo);
 
 	llist_for_each_entry(trx, &bts->trx_list, list) {
 		int i;

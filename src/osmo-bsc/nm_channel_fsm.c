@@ -125,7 +125,7 @@ static void st_op_disabled_dependency_on_enter(struct osmo_fsm_inst *fi, uint32_
 {
 	struct gsm_bts_trx_ts *ts = (struct gsm_bts_trx_ts *)fi->priv;
 
-	if (ts->trx->bts->site_mgr.peer_has_no_avstate_offline) {
+	if (ts->trx->bts->site_mgr->peer_has_no_avstate_offline) {
 		nm_chan_fsm_state_chg(fi, NM_CHAN_ST_OP_DISABLED_OFFLINE);
 		return;
 	}
@@ -208,7 +208,7 @@ static void st_op_disabled_offline(struct osmo_fsm_inst *fi, uint32_t event, voi
 		case NM_AVSTATE_DEPENDENCY:
 			/* There's no point in moving back to Dependency, since it's broken
 			   and it acts actually as if it was in Offline state */
-			if (!ts->trx->bts->site_mgr.peer_has_no_avstate_offline) {
+			if (!ts->trx->bts->site_mgr->peer_has_no_avstate_offline) {
 				nm_chan_fsm_state_chg(fi, NM_CHAN_ST_OP_DISABLED_DEPENDENCY);
 			} else {
 				/* Moreover, in nanoBTS we need to check here for tx

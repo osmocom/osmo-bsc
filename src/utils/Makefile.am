@@ -50,6 +50,7 @@ bs11_config_LDADD = \
 	$(top_builddir)/src/osmo-bsc/abis_nm.o \
 	$(top_builddir)/src/osmo-bsc/acc.o \
 	$(top_builddir)/src/osmo-bsc/bts.o \
+	$(top_builddir)/src/osmo-bsc/bts_sm.o \
 	$(top_builddir)/src/osmo-bsc/bts_trx.o \
 	$(top_builddir)/src/osmo-bsc/bts_siemens_bs11.o \
 	$(top_builddir)/src/osmo-bsc/bts_ipaccess_nanobts_omlattr.o \
@@ -130,6 +131,7 @@ meas_json_LDADD = \
 	$(top_builddir)/src/osmo-bsc/abis_nm.o \
 	$(top_builddir)/src/osmo-bsc/acc.o \
 	$(top_builddir)/src/osmo-bsc/bts.o \
+	$(top_builddir)/src/osmo-bsc/bts_sm.o \
 	$(top_builddir)/src/osmo-bsc/bts_ipaccess_nanobts_omlattr.o \
 	$(top_builddir)/src/osmo-bsc/bts_trx.o \
 	$(top_builddir)/src/osmo-bsc/gsm_data.o \

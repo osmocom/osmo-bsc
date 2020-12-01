@@ -14,6 +14,7 @@
 
 #include "osmocom/bsc/gsm_data.h"
 #include "osmocom/bsc/bts_trx.h"
+#include "osmocom/bsc/bts_sm.h"
 
 enum bts_counter_id {
 	BTS_CTR_CHREQ_TOTAL,
@@ -197,15 +198,11 @@ struct gsm_bts_model {
 	uint8_t _features_data[MAX_BTS_FEATURES/8];
 };
 
-/* BTS Site Manager */
-struct gsm_bts_sm {
+struct gsm_gprs_cell {
 	struct gsm_abis_mo mo;
-	/* nanoBTS and old versions of osmo-bts behaves this way due to
-	   broken FSMs not following TS 12.21: they never do
-	   Dependency->Offline transition, but they should be OPSTARTed
-	   nevertheless during Dependnecy state to work. This field is
-	   used by all dependent NM objects. */
-	bool peer_has_no_avstate_offline;
+	uint16_t bvci;
+	uint8_t timer[11];
+	struct gprs_rlc_cfg rlc_cfg;
 };
 
 /* One BTS */
@@ -272,7 +269,7 @@ struct gsm_bts {
 	/* CCCH is on C0 */
 	struct gsm_bts_trx *c0;
 
-	struct gsm_bts_sm site_mgr;
+	struct gsm_bts_sm *site_mgr; /* backpointer */
 
 	/* bitmask of all SI that are present/valid in si_buf */
 	uint32_t si_valid;
@@ -354,18 +351,7 @@ struct gsm_bts {
 	/* Not entirely sure how ip.access specific this is */
 	struct {
 		enum bts_gprs_mode mode;
-		struct {
-			struct gsm_abis_mo mo;
-			uint16_t nsei;
-			uint8_t timer[7];
-		} nse;
-		struct {
-			struct gsm_abis_mo mo;
-			uint16_t bvci;
-			uint8_t timer[11];
-			struct gprs_rlc_cfg rlc_cfg;
-		} cell;
-		struct gsm_bts_gprs_nsvc nsvc[2];
+		struct gsm_gprs_cell cell;
 		uint8_t rac;
 		uint8_t net_ctrl_ord;
 		bool ctrl_ack_type_use_block;
@@ -574,11 +560,7 @@ static inline const struct osmo_location_area_id *bts_lai(struct gsm_bts *bts)
 	return &lai;
 }
 
-static inline struct gsm_bts *gsm_bts_sm_get_bts(struct gsm_bts_sm *site_mgr) {
-	return (struct gsm_bts *)container_of(site_mgr, struct gsm_bts, site_mgr);
-}
-
-struct gsm_bts *gsm_bts_alloc(struct gsm_network *net, uint8_t bts_num);
+struct gsm_bts *gsm_bts_alloc(struct gsm_network *net, struct gsm_bts_sm *bts_sm, uint8_t bts_num);
 
 char *gsm_bts_name(const struct gsm_bts *bts);
 

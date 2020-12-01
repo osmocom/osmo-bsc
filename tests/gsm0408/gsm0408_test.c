@@ -123,7 +123,8 @@ static inline void _bts_uarfcn_add(struct gsm_bts *bts, uint16_t arfcn, uint16_t
 #define bts_init(net) _bts_init(net, __func__)
 static inline struct gsm_bts *_bts_init(struct gsm_network *net, const char *msg)
 {
-	struct gsm_bts *bts = gsm_bts_alloc(net, 0);
+	struct gsm_bts_sm *bts_sm = gsm_bts_sm_alloc(net, 0);
+	struct gsm_bts *bts = bts_sm->bts[0];
 	if (!bts) {
 		printf("BTS allocation failure in %s()\n", msg);
 		exit(1);
@@ -143,7 +144,7 @@ static inline void _bts_del(struct gsm_bts *bts, const char *msg)
 	if (osmo_timer_pending(&bts->acc_mgr.rotate_timer))
 		osmo_timer_del(&bts->acc_mgr.rotate_timer);
 	/* no need to llist_del(&bts->list), we never registered the bts there. */
-	talloc_free(bts);
+	talloc_free(bts->site_mgr);
 	printf("BTS deallocated OK in %s()\n", msg);
 }
 

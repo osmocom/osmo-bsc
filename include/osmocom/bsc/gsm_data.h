@@ -767,17 +767,6 @@ struct gsm_envabtse {
 	struct gsm_abis_mo mo;
 };
 
-struct gsm_bts_gprs_nsvc {
-	struct gsm_bts *bts;
-	/* data read via VTY config file, to configure the BTS
-	 * via OML from BSC */
-	int id;
-	uint16_t nsvci;
-	uint16_t local_port;	/* on the BTS */
-	struct osmo_sockaddr remote;
-	struct gsm_abis_mo mo;
-};
-
 enum gprs_rlc_par {
 	RLC_T3142,
 	RLC_T3169,

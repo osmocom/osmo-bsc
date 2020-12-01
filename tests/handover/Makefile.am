@@ -58,6 +58,7 @@ handover_test_LDADD = \
 	$(top_builddir)/src/osmo-bsc/bsc_subscriber.o \
 	$(top_builddir)/src/osmo-bsc/bsc_vty.o \
 	$(top_builddir)/src/osmo-bsc/bts.o \
+	$(top_builddir)/src/osmo-bsc/bts_sm.o \
 	$(top_builddir)/src/osmo-bsc/bts_trx.o \
 	$(top_builddir)/src/osmo-bsc/bts_ipaccess_nanobts.o \
 	$(top_builddir)/src/osmo-bsc/bts_ipaccess_nanobts_omlattr.o \

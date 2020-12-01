@@ -119,7 +119,7 @@ static void st_op_disabled_dependency_on_enter(struct osmo_fsm_inst *fi, uint32_
 	/* nanoBTS is broken, doesn't follow TS 12.21. Opstart MUST be sent
 	   during Dependency, so we simply move to OFFLINE state here to avoid
 	   duplicating code */
-	if (bts->site_mgr.peer_has_no_avstate_offline) {
+	if (bts->site_mgr->peer_has_no_avstate_offline) {
 		nm_bts_fsm_state_chg(fi, NM_BTS_ST_OP_DISABLED_OFFLINE);
 		return;
 	}
@@ -202,7 +202,7 @@ static void st_op_disabled_offline(struct osmo_fsm_inst *fi, uint32_t event, voi
 		case NM_AVSTATE_DEPENDENCY:
 			/* There's no point in moving back to Dependency, since it's broken
 			   and it acts actually as if it was in Offline state */
-			if (!bts->site_mgr.peer_has_no_avstate_offline) {
+			if (!bts->site_mgr->peer_has_no_avstate_offline) {
 				nm_bts_fsm_state_chg(fi, NM_BTS_ST_OP_DISABLED_DEPENDENCY);
 			} else {
 				/* Moreover, in nanoBTS we need to check here for tx

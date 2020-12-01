@@ -52,6 +52,7 @@ osmo_bsc_SOURCES = \
 	bts_ipaccess_nanobts_omlattr.c \
 	bts_nokia_site.c \
 	bts_siemens_bs11.c \
+	bts_sm.c \
 	bts_sysmobts.c \
 	bts_unknown.c \
 	chan_alloc.c \

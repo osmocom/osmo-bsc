@@ -110,14 +110,16 @@ struct gsm_bts *gsm_bts_alloc_register(struct gsm_network *net, enum gsm_bts_typ
 					uint8_t bsic)
 {
 	struct gsm_bts_model *model = bts_model_find(type);
+	struct gsm_bts_sm *bts_sm;
 	struct gsm_bts *bts;
 
 	if (!model && type != GSM_BTS_TYPE_UNKNOWN)
 		return NULL;
 
-	bts = gsm_bts_alloc(net, net->num_bts);
-	if (!bts)
+	bts_sm = gsm_bts_sm_alloc(net, net->num_bts);
+	if (!bts_sm)
 		return NULL;
+	bts = bts_sm->bts[0];
 
 	net->num_bts++;
 
@@ -378,7 +380,7 @@ gsm_objclass2mo(struct gsm_bts *bts, uint8_t obj_class,
 		mo = &trx->ts[obj_inst->ts_nr].mo;
 		break;
 	case NM_OC_SITE_MANAGER:
-		mo = &bts->site_mgr.mo;
+		mo = &bts->site_mgr->mo;
 		break;
 	case NM_OC_BS11:
 		switch (obj_inst->bts_nr) {
@@ -410,15 +412,15 @@ gsm_objclass2mo(struct gsm_bts *bts, uint8_t obj_class,
 		mo = &bts->bs11.envabtse[obj_inst->trx_nr].mo;
 		break;
 	case NM_OC_GPRS_NSE:
-		mo = &bts->gprs.nse.mo;
+		mo = &bts->site_mgr->gprs.nse.mo;
 		break;
 	case NM_OC_GPRS_CELL:
 		mo = &bts->gprs.cell.mo;
 		break;
 	case NM_OC_GPRS_NSVC:
-		if (obj_inst->trx_nr >= ARRAY_SIZE(bts->gprs.nsvc))
+		if (obj_inst->trx_nr >= ARRAY_SIZE(bts->site_mgr->gprs.nsvc))
 			return NULL;
-		mo = &bts->gprs.nsvc[obj_inst->trx_nr].mo;
+		mo = &bts->site_mgr->gprs.nsvc[obj_inst->trx_nr].mo;
 		break;
 	}
 	return mo;
@@ -474,18 +476,18 @@ gsm_objclass2obj(struct gsm_bts *bts, uint8_t obj_class,
 		obj = &trx->ts[obj_inst->ts_nr];
 		break;
 	case NM_OC_SITE_MANAGER:
-		obj = &bts->site_mgr;
+		obj = bts->site_mgr;
 		break;
 	case NM_OC_GPRS_NSE:
-		obj = &bts->gprs.nse;
+		obj = &bts->site_mgr->gprs.nse;
 		break;
 	case NM_OC_GPRS_CELL:
 		obj = &bts->gprs.cell;
 		break;
 	case NM_OC_GPRS_NSVC:
-		if (obj_inst->trx_nr >= ARRAY_SIZE(bts->gprs.nsvc))
+		if (obj_inst->trx_nr >= ARRAY_SIZE(bts->site_mgr->gprs.nsvc))
 			return NULL;
-		obj = &bts->gprs.nsvc[obj_inst->trx_nr];
+		obj = &bts->site_mgr->gprs.nsvc[obj_inst->trx_nr];
 		break;
 	}
 	return obj;

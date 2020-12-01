@@ -866,11 +866,11 @@ bool all_trx_rsl_connected_unlocked(const struct gsm_bts *bts)
 		if (bts->gprs.cell.mo.nm_state.administrative == NM_STATE_LOCKED)
 			return false;
 
-		if (bts->gprs.nse.mo.nm_state.administrative == NM_STATE_LOCKED)
+		if (bts->site_mgr->gprs.nse.mo.nm_state.administrative == NM_STATE_LOCKED)
 			return false;
 
-		if (bts->gprs.nsvc[0].mo.nm_state.administrative == NM_STATE_LOCKED &&
-		    bts->gprs.nsvc[1].mo.nm_state.administrative == NM_STATE_LOCKED)
+		if (bts->site_mgr->gprs.nsvc[0].mo.nm_state.administrative == NM_STATE_LOCKED &&
+		    bts->site_mgr->gprs.nsvc[1].mo.nm_state.administrative == NM_STATE_LOCKED)
 			return false;
 	}
 

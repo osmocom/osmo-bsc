@@ -11,6 +11,7 @@ noinst_HEADERS = \
 	bsc_subscr_conn_fsm.h \
 	bss.h \
 	bts.h \
+	bts_sm.h \
 	bts_trx.h \
 	bts_ipaccess_nanobts_omlattr.h \
 	chan_alloc.h \

@@ -463,17 +463,17 @@ static void bts_dump_vty(struct vty *vty, struct gsm_bts *bts)
 	vty_out(vty, "  NM State: ");
 	net_dump_nmstate(vty, &bts->mo.nm_state);
 	vty_out(vty, "  Site Mgr NM State: ");
-	net_dump_nmstate(vty, &bts->site_mgr.mo.nm_state);
+	net_dump_nmstate(vty, &bts->site_mgr->mo.nm_state);
 
 	if (bts->gprs.mode != BTS_GPRS_NONE) {
 		vty_out(vty, "  GPRS NSE: ");
-		net_dump_nmstate(vty, &bts->gprs.nse.mo.nm_state);
+		net_dump_nmstate(vty, &bts->site_mgr->gprs.nse.mo.nm_state);
 		vty_out(vty, "  GPRS CELL: ");
 		net_dump_nmstate(vty, &bts->gprs.cell.mo.nm_state);
 		vty_out(vty, "  GPRS NSVC0: ");
-		net_dump_nmstate(vty, &bts->gprs.nsvc[0].mo.nm_state);
+		net_dump_nmstate(vty, &bts->site_mgr->gprs.nsvc[0].mo.nm_state);
 		vty_out(vty, "  GPRS NSVC1: ");
-		net_dump_nmstate(vty, &bts->gprs.nsvc[1].mo.nm_state);
+		net_dump_nmstate(vty, &bts->site_mgr->gprs.nsvc[1].mo.nm_state);
 	} else
 		vty_out(vty, "  GPRS: not configured%s", VTY_NEWLINE);
 
@@ -740,6 +740,7 @@ static void config_write_trx_single(struct vty *vty, struct gsm_bts_trx *trx)
 static void config_write_bts_gprs(struct vty *vty, struct gsm_bts *bts)
 {
 	unsigned int i;
+	struct gsm_bts_sm *bts_sm = bts->site_mgr;
 	vty_out(vty, "  gprs mode %s%s", bts_gprs_mode_name(bts->gprs.mode),
 		VTY_NEWLINE);
 	if (bts->gprs.mode == BTS_GPRS_NONE)
@@ -757,15 +758,15 @@ static void config_write_bts_gprs(struct vty *vty, struct gsm_bts *bts)
 		vty_out(vty, "  gprs cell timer %s %u%s",
 			get_value_string(gprs_bssgp_cfg_strs, i),
 			bts->gprs.cell.timer[i], VTY_NEWLINE);
-	vty_out(vty, "  gprs nsei %u%s", bts->gprs.nse.nsei,
+	vty_out(vty, "  gprs nsei %u%s", bts_sm->gprs.nse.nsei,
 		VTY_NEWLINE);
-	for (i = 0; i < ARRAY_SIZE(bts->gprs.nse.timer); i++)
+	for (i = 0; i < ARRAY_SIZE(bts_sm->gprs.nse.timer); i++)
 		vty_out(vty, "  gprs ns timer %s %u%s",
 			get_value_string(gprs_ns_timer_strs, i),
-			bts->gprs.nse.timer[i], VTY_NEWLINE);
-	for (i = 0; i < ARRAY_SIZE(bts->gprs.nsvc); i++) {
-		struct gsm_bts_gprs_nsvc *nsvc =
-					&bts->gprs.nsvc[i];
+			bts_sm->gprs.nse.timer[i], VTY_NEWLINE);
+	for (i = 0; i < ARRAY_SIZE(bts_sm->gprs.nsvc); i++) {
+		struct gsm_gprs_nsvc *nsvc =
+					&bts_sm->gprs.nsvc[i];
 		struct osmo_sockaddr_str remote = {};
 		uint16_t port;
 
@@ -3190,7 +3191,7 @@ DEFUN_USRATTR(cfg_bts_gprs_nsei,
 
 	GPRS_CHECK_ENABLED(bts);
 
-	bts->gprs.nse.nsei = atoi(argv[0]);
+	bts->site_mgr->gprs.nse.nsei = atoi(argv[0]);
 
 	return CMD_SUCCESS;
 }
@@ -3211,7 +3212,7 @@ DEFUN_USRATTR(cfg_bts_gprs_nsvci,
 
 	GPRS_CHECK_ENABLED(bts);
 
-	bts->gprs.nsvc[idx].nsvci = atoi(argv[1]);
+	bts->site_mgr->gprs.nsvc[idx].nsvci = atoi(argv[1]);
 
 	return CMD_SUCCESS;
 }
@@ -3231,7 +3232,7 @@ DEFUN_USRATTR(cfg_bts_gprs_nsvc_lport,
 
 	GPRS_CHECK_ENABLED(bts);
 
-	bts->gprs.nsvc[idx].local_port = atoi(argv[1]);
+	bts->site_mgr->gprs.nsvc[idx].local_port = atoi(argv[1]);
 
 	return CMD_SUCCESS;
 }
@@ -3252,7 +3253,7 @@ DEFUN_USRATTR(cfg_bts_gprs_nsvc_rport,
 	GPRS_CHECK_ENABLED(bts);
 
 	/* sockaddr_in and sockaddr_in6 have the port at the same position */
-	bts->gprs.nsvc[idx].remote.u.sin.sin_port = htons(atoi(argv[1]));
+	bts->site_mgr->gprs.nsvc[idx].remote.u.sin.sin_port = htons(atoi(argv[1]));
 
 	return CMD_SUCCESS;
 }
@@ -3281,13 +3282,13 @@ DEFUN_USRATTR(cfg_bts_gprs_nsvc_rip,
 	}
 
 	/* Can't use osmo_sockaddr_str_to_sockaddr() because the port would be overriden */
-	bts->gprs.nsvc[idx].remote.u.sas.ss_family = remote.af;
+	bts->site_mgr->gprs.nsvc[idx].remote.u.sas.ss_family = remote.af;
 	switch (remote.af) {
 	case AF_INET:
-		osmo_sockaddr_str_to_in_addr(&remote, &bts->gprs.nsvc[idx].remote.u.sin.sin_addr);
+		osmo_sockaddr_str_to_in_addr(&remote, &bts->site_mgr->gprs.nsvc[idx].remote.u.sin.sin_addr);
 		break;
 	case AF_INET6:
-		osmo_sockaddr_str_to_in6_addr(&remote, &bts->gprs.nsvc[idx].remote.u.sin6.sin6_addr);
+		osmo_sockaddr_str_to_in6_addr(&remote, &bts->site_mgr->gprs.nsvc[idx].remote.u.sin6.sin6_addr);
 		break;
 	}
 
@@ -3321,10 +3322,10 @@ DEFUN_USRATTR(cfg_bts_gprs_ns_timer,
 
 	GPRS_CHECK_ENABLED(bts);
 
-	if (idx < 0 || idx >= ARRAY_SIZE(bts->gprs.nse.timer))
+	if (idx < 0 || idx >= ARRAY_SIZE(bts->site_mgr->gprs.nse.timer))
 		return CMD_WARNING;
 
-	bts->gprs.nse.timer[idx] = val;
+	bts->site_mgr->gprs.nse.timer[idx] = val;
 
 	return CMD_SUCCESS;
 }

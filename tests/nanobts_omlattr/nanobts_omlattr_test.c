@@ -243,7 +243,7 @@ int main(int argc, char **argv)
 	};
 
 	/* Parameters needed to test nanobts_attr_nse_get() */
-	bts->gprs.nse.nsei = 101;
+	bts->site_mgr->gprs.nse.nsei = 101;
 	uint8_t attr_nse_expected[] =
 	    { 0x9d, 0x00, 0x02, 0x00, 0x65, 0xa0, 0x00, 0x07, 0x03, 0x03, 0x03,
 		0x03, 0x1e, 0x03, 0x0a, 0xa1, 0x00, 0x0b, 0x03, 0x03, 0x03,
@@ -266,9 +266,9 @@ int main(int argc, char **argv)
 	/* Parameters needed to test nanobts_attr_nscv_get() */
 	struct osmo_sockaddr_str addr;
 	osmo_sockaddr_str_from_str(&addr, "10.9.1.101", 23000);
-	osmo_sockaddr_str_to_sockaddr(&addr, &bts->gprs.nsvc[0].remote.u.sas);
-	bts->gprs.nsvc[0].nsvci = 0x65;
-	bts->gprs.nsvc[0].local_port = 0x5a3c;
+	osmo_sockaddr_str_to_sockaddr(&addr, &bts->site_mgr->gprs.nsvc[0].remote.u.sas);
+	bts->site_mgr->gprs.nsvc[0].nsvci = 0x65;
+	bts->site_mgr->gprs.nsvc[0].local_port = 0x5a3c;
 	uint8_t attr_nscv_expected[] =
 	    { 0x9f, 0x00, 0x02, 0x00, 0x65, 0xa2, 0x00, 0x08, 0x59, 0xd8, 0x0a,
 		0x09, 0x01, 0x65, 0x5a, 0x3c
@@ -291,9 +291,9 @@ int main(int argc, char **argv)
 	/* NSVC IPv6 test */
 	struct osmo_sockaddr_str addr6;
 	osmo_sockaddr_str_from_str(&addr6, "fd00:5678:9012:3456:7890:1234:5678:9012", 23010);
-	osmo_sockaddr_str_to_sockaddr(&addr6, &bts->gprs.nsvc[0].remote.u.sas);
-	bts->gprs.nsvc[0].nsvci = 0x65;
-	bts->gprs.nsvc[0].local_port = 0x5a3c;
+	osmo_sockaddr_str_to_sockaddr(&addr6, &bts->site_mgr->gprs.nsvc[0].remote.u.sas);
+	bts->site_mgr->gprs.nsvc[0].nsvci = 0x65;
+	bts->site_mgr->gprs.nsvc[0].local_port = 0x5a3c;
 	uint8_t attr_nscv6_expected[] =
 	      /*                             |- oml attr  |-16bit length */
 	    { 0x9f, 0x00, 0x02, 0x00, 0x65, 0xfd, 0x00, 0x16,

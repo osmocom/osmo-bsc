@@ -133,7 +133,7 @@ static int nm_statechg_event(int evt, struct nm_statechg_signal_data *nsd)
 	struct gsm_bts_trx *trx;
 	struct gsm_bts_bb_trx *bb_transc;
 	struct gsm_bts_trx_ts *ts;
-	struct gsm_bts_gprs_nsvc *nsvc;
+	struct gsm_gprs_nsvc *nsvc;
 
 	struct msgb *msgb;
 
@@ -174,7 +174,8 @@ static int nm_statechg_event(int evt, struct nm_statechg_signal_data *nsd)
 		osmo_fsm_inst_dispatch(trx->mo.fi, NM_EV_STATE_CHG_REP, nsd);
 		break;
 	case NM_OC_GPRS_NSE:
-		bts = container_of(obj, struct gsm_bts, gprs.nse);
+		bts_sm = container_of(obj, struct gsm_bts_sm, gprs.nse);
+		bts = bts_sm->bts[0];
 		if (bts->gprs.mode == BTS_GPRS_NONE)
 			break;
 		if (new_state->availability == NM_AVSTATE_DEPENDENCY) {
@@ -258,7 +259,7 @@ static int sw_activ_rep(struct msgb *mb)
 
 	switch (foh->obj_class) {
 	case NM_OC_SITE_MANAGER:
-		osmo_fsm_inst_dispatch(bts->site_mgr.mo.fi, NM_EV_SW_ACT_REP, NULL);
+		osmo_fsm_inst_dispatch(bts->site_mgr->mo.fi, NM_EV_SW_ACT_REP, NULL);
 		break;
 	case NM_OC_BTS:
 		osmo_fsm_inst_dispatch(bts->mo.fi, NM_EV_SW_ACT_REP, NULL);
@@ -306,7 +307,7 @@ static void nm_rx_opstart_ack(struct msgb *oml_msg)
 
 	switch (foh->obj_class) {
 	case NM_OC_SITE_MANAGER:
-		osmo_fsm_inst_dispatch(bts->site_mgr.mo.fi, NM_EV_OPSTART_ACK, NULL);
+		osmo_fsm_inst_dispatch(bts->site_mgr->mo.fi, NM_EV_OPSTART_ACK, NULL);
 		break;
 	case NM_OC_BTS:
 		osmo_fsm_inst_dispatch(bts->mo.fi, NM_EV_OPSTART_ACK, NULL);
@@ -339,7 +340,7 @@ static void nm_rx_opstart_nack(struct msgb *oml_msg)
 
 	switch (foh->obj_class) {
 	case NM_OC_SITE_MANAGER:
-		osmo_fsm_inst_dispatch(bts->site_mgr.mo.fi, NM_EV_OPSTART_NACK, NULL);
+		osmo_fsm_inst_dispatch(bts->site_mgr->mo.fi, NM_EV_OPSTART_NACK, NULL);
 		break;
 	case NM_OC_BTS:
 		osmo_fsm_inst_dispatch(bts->mo.fi, NM_EV_OPSTART_ACK, NULL);
@@ -522,7 +523,7 @@ void ipaccess_drop_oml(struct gsm_bts *bts, const char *reason)
 		}
 	}
 
-	osmo_fsm_inst_dispatch(bts->site_mgr.mo.fi, NM_EV_OML_DOWN, NULL);
+	osmo_fsm_inst_dispatch(bts->site_mgr->mo.fi, NM_EV_OML_DOWN, NULL);
 	osmo_fsm_inst_dispatch(bts->mo.fi, NM_EV_OML_DOWN, NULL);
 	gsm_bts_all_ts_dispatch(bts, TS_EV_OML_DOWN, NULL);
 

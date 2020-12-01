@@ -46,6 +46,7 @@
 #include <osmocom/bsc/abis_rsl.h>
 #include <osmocom/bsc/gsm_04_08_rr.h>
 #include <osmocom/bsc/bts.h>
+#include <osmocom/bsc/bts_sm.h>
 
 static int pcu_sock_send(struct gsm_bts *bts, struct msgb *msg);
 uint32_t trx_get_hlayer1(struct gsm_bts_trx *trx);
@@ -115,13 +116,17 @@ static int pcu_tx_info_ind(struct gsm_bts *bts)
 	struct gsm_pcu_if *pcu_prim;
 	struct gsm_pcu_if_info_ind *info_ind;
 	struct gprs_rlc_cfg *rlcc;
-	struct gsm_bts_gprs_nsvc *nsvc;
+	struct gsm_bts_sm *bts_sm;
+	struct gsm_gprs_nsvc *nsvc;
 	struct gsm_bts_trx *trx;
 	struct gsm_bts_trx_ts *ts;
 	int i, tn;
 
 	OSMO_ASSERT(bts);
 	OSMO_ASSERT(bts->network);
+	OSMO_ASSERT(bts->site_mgr);
+
+	bts_sm = bts->site_mgr;
 
 	LOGP(DPCU, LOGL_INFO, "Sending info for BTS %d\n",bts->nr);
 
@@ -147,8 +152,8 @@ static int pcu_tx_info_ind(struct gsm_bts *bts)
 	info_ind->rac = bts->gprs.rac;
 
 	/* NSE */
-	info_ind->nsei = bts->gprs.nse.nsei;
-	memcpy(info_ind->nse_timer, bts->gprs.nse.timer, 7);
+	info_ind->nsei = bts_sm->gprs.nse.nsei;
+	memcpy(info_ind->nse_timer, bts_sm->gprs.nse.timer, 7);
 	memcpy(info_ind->cell_timer, bts->gprs.cell.timer, 11);
 
 	/* cell attributes */
@@ -202,7 +207,7 @@ static int pcu_tx_info_ind(struct gsm_bts *bts)
 
 	/* NSVC */
 	for (i = 0; i < ARRAY_SIZE(info_ind->nsvci); i++) {
-		nsvc = &bts->gprs.nsvc[i];
+		nsvc = &bts->site_mgr->gprs.nsvc[i];
 
 		info_ind->nsvci[i] = nsvc->nsvci;
 		info_ind->local_port[i] = nsvc->local_port;
