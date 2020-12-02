@@ -603,13 +603,15 @@ void bsc_cm_update(struct gsm_subscriber_connection *conn,
 	}
 	conn_update_ms_power_class(conn, rc8);
 
-        rc = gsm48_decode_classmark3(&conn->cm3, cm3, cm3_len);
-	if (rc < 0) {
-		LOGP(DMSC, LOGL_NOTICE, "Unable to decode classmark3 during CM Update.\n");
-		memset(&conn->cm3, 0, sizeof(conn->cm3));
-		conn->cm3_valid = false;
-	} else
-		conn->cm3_valid = true;
+	if (cm3 != NULL && cm3_len > 0) {
+		rc = gsm48_decode_classmark3(&conn->cm3, cm3, cm3_len);
+		if (rc < 0) {
+			LOGP(DMSC, LOGL_NOTICE, "Unable to decode classmark3 during CM Update.\n");
+			memset(&conn->cm3, 0, sizeof(conn->cm3));
+			conn->cm3_valid = false;
+		} else
+			conn->cm3_valid = true;
+	}
 
 	if (!msc_connected(conn))
 		return;
