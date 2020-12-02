@@ -149,6 +149,12 @@ static const struct gprs_rlc_cfg rlc_cfg_default = {
 static int gsm_bts_talloc_destructor(struct gsm_bts *bts)
 {
 	bts->site_mgr->bts[0] = NULL;
+
+	if (bts->gprs.cell.mo.fi) {
+		osmo_fsm_inst_free(bts->gprs.cell.mo.fi);
+		bts->gprs.cell.mo.fi = NULL;
+	}
+
 	if (bts->mo.fi) {
 		osmo_fsm_inst_free(bts->mo.fi);
 		bts->mo.fi = NULL;
@@ -185,15 +191,17 @@ struct gsm_bts *gsm_bts_alloc(struct gsm_network *net, struct gsm_bts_sm *bts_sm
 	osmo_fsm_inst_update_id_f(bts->mo.fi, "bts%d", bts->nr);
 	gsm_mo_init(&bts->mo, bts, NM_OC_BTS, bts->nr, 0xff, 0xff);
 
-	memcpy(&bts->gprs.cell.timer, bts_cell_timer_default,
-		sizeof(bts->gprs.cell.timer));
-	gsm_mo_init(&bts->gprs.cell.mo, bts, NM_OC_GPRS_CELL,
-			bts->nr, 0xff, 0xff);
-	memcpy(&bts->gprs.cell.rlc_cfg, &rlc_cfg_default,
-		sizeof(bts->gprs.cell.rlc_cfg));
-
 	/* 3GPP TS 08.18, chapter 5.4.1: 0 is reserved for signalling */
 	bts->gprs.cell.bvci = 2;
+	memcpy(&bts->gprs.cell.timer, bts_cell_timer_default,
+		sizeof(bts->gprs.cell.timer));
+	memcpy(&bts->gprs.cell.rlc_cfg, &rlc_cfg_default,
+		sizeof(bts->gprs.cell.rlc_cfg));
+	bts->gprs.cell.mo.fi = osmo_fsm_inst_alloc(&nm_gprs_cell_fsm, bts,
+						   &bts->gprs.cell, LOGL_INFO, NULL);
+	osmo_fsm_inst_update_id_f(bts->gprs.cell.mo.fi, "gprs-cell%d", bts->nr);
+	gsm_mo_init(&bts->gprs.cell.mo, bts, NM_OC_GPRS_CELL,
+			bts->nr, 0xff, 0xff);
 
 	/* init statistics */
 	bts->bts_ctrs = rate_ctr_group_alloc(bts, &bts_ctrg_desc, bts->nr);
