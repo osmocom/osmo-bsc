@@ -78,8 +78,8 @@ static void st_op_disabled_notinstalled(struct osmo_fsm_inst *fi, uint32_t event
 					 "have your .cfg with 'type nanobts'. Otherwise, you probably "
 					 "are using an old osmo-bts; automatically adjusting OML "
 					 "behavior to be backward-compatible.\n");
-				site_mgr->peer_has_no_avstate_offline = true;
 			}
+			site_mgr->peer_has_no_avstate_offline = true;
 			nm_bts_sm_fsm_state_chg(fi, NM_BTS_SM_ST_OP_ENABLED);
 			return;
 		}
