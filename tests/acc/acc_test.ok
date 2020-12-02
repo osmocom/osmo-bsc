@@ -14,6 +14,8 @@ NM_CHAN_OP{DISABLED_NOTINSTALLED}: Allocated
 NM_CHAN_OP{DISABLED_NOTINSTALLED}: Allocated
 (bts=0) ACC: New ACC allowed subset 0x3ff (active_len=10, ramp_len=10, adm_len=10, perm_len=10, rotation=off)
 NM_GPRS_NSE_OP{DISABLED_NOTINSTALLED}: Allocated
+NM_GPRS_NSVC_OP{DISABLED_NOTINSTALLED}: Allocated
+NM_GPRS_NSVC_OP{DISABLED_NOTINSTALLED}: Allocated
 BTS allocation OK in test_acc_mgr_no_ramp()
 do_allowed_len_adm_loop(1)
 (bts=0) ACC: update ACC allowed active subset 0x3ff -> 0x3fe (active_len=9, ramp_len=10, adm_len=9, perm_len=10, rotation=on)
@@ -119,6 +121,8 @@ pcu_info_update(): t2=0x03 t3=0xff, allowed:
 *** Barring zero ACCs ***
 (bts=0) ACC: New ACC allowed subset 0x3ff (active_len=10, ramp_len=10, adm_len=10, perm_len=10, rotation=off)
 pcu_info_update(): t2=0x00 t3=0x00, allowed: 0 1 2 3 4 5 6 7 8 9
+NM_GPRS_NSVC_OP(nsvc0){DISABLED_NOTINSTALLED}: Deallocated
+NM_GPRS_NSVC_OP(nsvc1){DISABLED_NOTINSTALLED}: Deallocated
 NM_GPRS_NSE_OP(nse0){DISABLED_NOTINSTALLED}: Deallocated
 NM_BTS_SM_OP(bts_sm){DISABLED_NOTINSTALLED}: Deallocated
 NM_GPRS_CELL_OP(gprs-cell0){DISABLED_NOTINSTALLED}: Deallocated
@@ -150,6 +154,8 @@ NM_CHAN_OP{DISABLED_NOTINSTALLED}: Allocated
 NM_CHAN_OP{DISABLED_NOTINSTALLED}: Allocated
 (bts=0) ACC: New ACC allowed subset 0x3ff (active_len=10, ramp_len=10, adm_len=10, perm_len=10, rotation=off)
 NM_GPRS_NSE_OP{DISABLED_NOTINSTALLED}: Allocated
+NM_GPRS_NSVC_OP{DISABLED_NOTINSTALLED}: Allocated
+NM_GPRS_NSVC_OP{DISABLED_NOTINSTALLED}: Allocated
 BTS allocation OK in test_acc_mgr_manual_ramp()
 do_allowed_len_ramp_loop(1)
 (bts=0) ACC: update ACC allowed active subset 0x3ff -> 0x3fe (active_len=9, ramp_len=9, adm_len=10, perm_len=10, rotation=on)
@@ -385,6 +391,8 @@ pcu_info_update(): t2=0x01 t3=0xbf, allowed: 6 9
 pcu_info_update(): t2=0x03 t3=0xff, allowed:
 (bts=0) ACC: New ACC allowed subset 0x24c (active_len=4, ramp_len=4, adm_len=4, perm_len=4, rotation=off)
 pcu_info_update(): t2=0x01 t3=0xb3, allowed: 2 3 6 9
+NM_GPRS_NSVC_OP(nsvc0){DISABLED_NOTINSTALLED}: Deallocated
+NM_GPRS_NSVC_OP(nsvc1){DISABLED_NOTINSTALLED}: Deallocated
 NM_GPRS_NSE_OP(nse0){DISABLED_NOTINSTALLED}: Deallocated
 NM_BTS_SM_OP(bts_sm){DISABLED_NOTINSTALLED}: Deallocated
 NM_GPRS_CELL_OP(gprs-cell0){DISABLED_NOTINSTALLED}: Deallocated
@@ -416,6 +424,8 @@ NM_CHAN_OP{DISABLED_NOTINSTALLED}: Allocated
 NM_CHAN_OP{DISABLED_NOTINSTALLED}: Allocated
 (bts=0) ACC: New ACC allowed subset 0x3ff (active_len=10, ramp_len=10, adm_len=10, perm_len=10, rotation=off)
 NM_GPRS_NSE_OP{DISABLED_NOTINSTALLED}: Allocated
+NM_GPRS_NSVC_OP{DISABLED_NOTINSTALLED}: Allocated
+NM_GPRS_NSVC_OP{DISABLED_NOTINSTALLED}: Allocated
 BTS allocation OK in test_acc_mgr_rotate()
 *** Barring one ACC ***
 (bts=0) ACC: New ACC allowed subset 0x1ff (active_len=9, ramp_len=10, adm_len=10, perm_len=9, rotation=off)
@@ -482,6 +492,8 @@ pcu_info_update(): t2=0x03 t3=0xfe, allowed: 0
 sys={40.000000}: select()
 (bts=0) ACC: rotate ACC allowed active subset 0x001 -> 0x002 (active_len=1, ramp_len=10, adm_len=1, perm_len=9, rotation=on)
 pcu_info_update(): t2=0x03 t3=0xfd, allowed: 1
+NM_GPRS_NSVC_OP(nsvc0){DISABLED_NOTINSTALLED}: Deallocated
+NM_GPRS_NSVC_OP(nsvc1){DISABLED_NOTINSTALLED}: Deallocated
 NM_GPRS_NSE_OP(nse0){DISABLED_NOTINSTALLED}: Deallocated
 NM_BTS_SM_OP(bts_sm){DISABLED_NOTINSTALLED}: Deallocated
 NM_GPRS_CELL_OP(gprs-cell0){DISABLED_NOTINSTALLED}: Deallocated
@@ -513,6 +525,8 @@ NM_CHAN_OP{DISABLED_NOTINSTALLED}: Allocated
 NM_CHAN_OP{DISABLED_NOTINSTALLED}: Allocated
 (bts=0) ACC: New ACC allowed subset 0x3ff (active_len=10, ramp_len=10, adm_len=10, perm_len=10, rotation=off)
 NM_GPRS_NSE_OP{DISABLED_NOTINSTALLED}: Allocated
+NM_GPRS_NSVC_OP{DISABLED_NOTINSTALLED}: Allocated
+NM_GPRS_NSVC_OP{DISABLED_NOTINSTALLED}: Allocated
 BTS allocation OK in test_acc_mgr_rotate()
 (bts=0) ACC: update ACC allowed active subset 0x3ff -> 0x200 (active_len=1, ramp_len=10, adm_len=1, perm_len=10, rotation=on)
 pcu_info_update(): t2=0x01 t3=0xff, allowed: 9
@@ -576,6 +590,8 @@ pcu_info_update(): t2=0x02 t3=0xff, allowed: 8
 sys={40.000000}: select()
 (bts=0) ACC: rotate ACC allowed active subset 0x100 -> 0x200 (active_len=1, ramp_len=10, adm_len=1, perm_len=10, rotation=on)
 pcu_info_update(): t2=0x01 t3=0xff, allowed: 9
+NM_GPRS_NSVC_OP(nsvc0){DISABLED_NOTINSTALLED}: Deallocated
+NM_GPRS_NSVC_OP(nsvc1){DISABLED_NOTINSTALLED}: Deallocated
 NM_GPRS_NSE_OP(nse0){DISABLED_NOTINSTALLED}: Deallocated
 NM_BTS_SM_OP(bts_sm){DISABLED_NOTINSTALLED}: Deallocated
 NM_GPRS_CELL_OP(gprs-cell0){DISABLED_NOTINSTALLED}: Deallocated
@@ -607,6 +623,8 @@ NM_CHAN_OP{DISABLED_NOTINSTALLED}: Allocated
 NM_CHAN_OP{DISABLED_NOTINSTALLED}: Allocated
 (bts=0) ACC: New ACC allowed subset 0x3ff (active_len=10, ramp_len=10, adm_len=10, perm_len=10, rotation=off)
 NM_GPRS_NSE_OP{DISABLED_NOTINSTALLED}: Allocated
+NM_GPRS_NSVC_OP{DISABLED_NOTINSTALLED}: Allocated
+NM_GPRS_NSVC_OP{DISABLED_NOTINSTALLED}: Allocated
 BTS allocation OK in test_acc_mgr_rotate()
 *** Barring one ACC ***
 (bts=0) ACC: New ACC allowed subset 0x1ff (active_len=9, ramp_len=10, adm_len=10, perm_len=9, rotation=off)
@@ -673,6 +691,8 @@ pcu_info_update(): t2=0x02 t3=0xfe, allowed: 0 8
 sys={40.000000}: select()
 (bts=0) ACC: rotate ACC allowed active subset 0x101 -> 0x003 (active_len=2, ramp_len=10, adm_len=2, perm_len=9, rotation=on)
 pcu_info_update(): t2=0x03 t3=0xfc, allowed: 0 1
+NM_GPRS_NSVC_OP(nsvc0){DISABLED_NOTINSTALLED}: Deallocated
+NM_GPRS_NSVC_OP(nsvc1){DISABLED_NOTINSTALLED}: Deallocated
 NM_GPRS_NSE_OP(nse0){DISABLED_NOTINSTALLED}: Deallocated
 NM_BTS_SM_OP(bts_sm){DISABLED_NOTINSTALLED}: Deallocated
 NM_GPRS_CELL_OP(gprs-cell0){DISABLED_NOTINSTALLED}: Deallocated
@@ -704,6 +724,8 @@ NM_CHAN_OP{DISABLED_NOTINSTALLED}: Allocated
 NM_CHAN_OP{DISABLED_NOTINSTALLED}: Allocated
 (bts=0) ACC: New ACC allowed subset 0x3ff (active_len=10, ramp_len=10, adm_len=10, perm_len=10, rotation=off)
 NM_GPRS_NSE_OP{DISABLED_NOTINSTALLED}: Allocated
+NM_GPRS_NSVC_OP{DISABLED_NOTINSTALLED}: Allocated
+NM_GPRS_NSVC_OP{DISABLED_NOTINSTALLED}: Allocated
 BTS allocation OK in test_acc_mgr_rotate()
 (bts=0) ACC: update ACC allowed active subset 0x3ff -> 0x300 (active_len=2, ramp_len=10, adm_len=2, perm_len=10, rotation=on)
 pcu_info_update(): t2=0x00 t3=0xff, allowed: 8 9
@@ -767,6 +789,8 @@ pcu_info_update(): t2=0x02 t3=0x7f, allowed: 7 8
 sys={40.000000}: select()
 (bts=0) ACC: rotate ACC allowed active subset 0x180 -> 0x300 (active_len=2, ramp_len=10, adm_len=2, perm_len=10, rotation=on)
 pcu_info_update(): t2=0x00 t3=0xff, allowed: 8 9
+NM_GPRS_NSVC_OP(nsvc0){DISABLED_NOTINSTALLED}: Deallocated
+NM_GPRS_NSVC_OP(nsvc1){DISABLED_NOTINSTALLED}: Deallocated
 NM_GPRS_NSE_OP(nse0){DISABLED_NOTINSTALLED}: Deallocated
 NM_BTS_SM_OP(bts_sm){DISABLED_NOTINSTALLED}: Deallocated
 NM_GPRS_CELL_OP(gprs-cell0){DISABLED_NOTINSTALLED}: Deallocated
@@ -798,6 +822,8 @@ NM_CHAN_OP{DISABLED_NOTINSTALLED}: Allocated
 NM_CHAN_OP{DISABLED_NOTINSTALLED}: Allocated
 (bts=0) ACC: New ACC allowed subset 0x3ff (active_len=10, ramp_len=10, adm_len=10, perm_len=10, rotation=off)
 NM_GPRS_NSE_OP{DISABLED_NOTINSTALLED}: Allocated
+NM_GPRS_NSVC_OP{DISABLED_NOTINSTALLED}: Allocated
+NM_GPRS_NSVC_OP{DISABLED_NOTINSTALLED}: Allocated
 BTS allocation OK in test_acc_mgr_rotate()
 *** Barring one ACC ***
 (bts=0) ACC: New ACC allowed subset 0x1ff (active_len=9, ramp_len=10, adm_len=10, perm_len=9, rotation=off)
@@ -864,6 +890,8 @@ pcu_info_update(): t2=0x02 t3=0x7e, allowed: 0 7 8
 sys={40.000000}: select()
 (bts=0) ACC: rotate ACC allowed active subset 0x181 -> 0x103 (active_len=3, ramp_len=10, adm_len=3, perm_len=9, rotation=on)
 pcu_info_update(): t2=0x02 t3=0xfc, allowed: 0 1 8
+NM_GPRS_NSVC_OP(nsvc0){DISABLED_NOTINSTALLED}: Deallocated
+NM_GPRS_NSVC_OP(nsvc1){DISABLED_NOTINSTALLED}: Deallocated
 NM_GPRS_NSE_OP(nse0){DISABLED_NOTINSTALLED}: Deallocated
 NM_BTS_SM_OP(bts_sm){DISABLED_NOTINSTALLED}: Deallocated
 NM_GPRS_CELL_OP(gprs-cell0){DISABLED_NOTINSTALLED}: Deallocated
@@ -895,6 +923,8 @@ NM_CHAN_OP{DISABLED_NOTINSTALLED}: Allocated
 NM_CHAN_OP{DISABLED_NOTINSTALLED}: Allocated
 (bts=0) ACC: New ACC allowed subset 0x3ff (active_len=10, ramp_len=10, adm_len=10, perm_len=10, rotation=off)
 NM_GPRS_NSE_OP{DISABLED_NOTINSTALLED}: Allocated
+NM_GPRS_NSVC_OP{DISABLED_NOTINSTALLED}: Allocated
+NM_GPRS_NSVC_OP{DISABLED_NOTINSTALLED}: Allocated
 BTS allocation OK in test_acc_mgr_rotate()
 (bts=0) ACC: update ACC allowed active subset 0x3ff -> 0x380 (active_len=3, ramp_len=10, adm_len=3, perm_len=10, rotation=on)
 pcu_info_update(): t2=0x00 t3=0x7f, allowed: 7 8 9
@@ -958,6 +988,8 @@ pcu_info_update(): t2=0x02 t3=0x3f, allowed: 6 7 8
 sys={40.000000}: select()
 (bts=0) ACC: rotate ACC allowed active subset 0x1c0 -> 0x380 (active_len=3, ramp_len=10, adm_len=3, perm_len=10, rotation=on)
 pcu_info_update(): t2=0x00 t3=0x7f, allowed: 7 8 9
+NM_GPRS_NSVC_OP(nsvc0){DISABLED_NOTINSTALLED}: Deallocated
+NM_GPRS_NSVC_OP(nsvc1){DISABLED_NOTINSTALLED}: Deallocated
 NM_GPRS_NSE_OP(nse0){DISABLED_NOTINSTALLED}: Deallocated
 NM_BTS_SM_OP(bts_sm){DISABLED_NOTINSTALLED}: Deallocated
 NM_GPRS_CELL_OP(gprs-cell0){DISABLED_NOTINSTALLED}: Deallocated
@@ -989,6 +1021,8 @@ NM_CHAN_OP{DISABLED_NOTINSTALLED}: Allocated
 NM_CHAN_OP{DISABLED_NOTINSTALLED}: Allocated
 (bts=0) ACC: New ACC allowed subset 0x3ff (active_len=10, ramp_len=10, adm_len=10, perm_len=10, rotation=off)
 NM_GPRS_NSE_OP{DISABLED_NOTINSTALLED}: Allocated
+NM_GPRS_NSVC_OP{DISABLED_NOTINSTALLED}: Allocated
+NM_GPRS_NSVC_OP{DISABLED_NOTINSTALLED}: Allocated
 BTS allocation OK in test_acc_mgr_rotate()
 *** Barring one ACC ***
 (bts=0) ACC: New ACC allowed subset 0x1ff (active_len=9, ramp_len=10, adm_len=10, perm_len=9, rotation=off)
@@ -1055,6 +1089,8 @@ pcu_info_update(): t2=0x02 t3=0x3e, allowed: 0 6 7 8
 sys={40.000000}: select()
 (bts=0) ACC: rotate ACC allowed active subset 0x1c1 -> 0x183 (active_len=4, ramp_len=10, adm_len=4, perm_len=9, rotation=on)
 pcu_info_update(): t2=0x02 t3=0x7c, allowed: 0 1 7 8
+NM_GPRS_NSVC_OP(nsvc0){DISABLED_NOTINSTALLED}: Deallocated
+NM_GPRS_NSVC_OP(nsvc1){DISABLED_NOTINSTALLED}: Deallocated
 NM_GPRS_NSE_OP(nse0){DISABLED_NOTINSTALLED}: Deallocated
 NM_BTS_SM_OP(bts_sm){DISABLED_NOTINSTALLED}: Deallocated
 NM_GPRS_CELL_OP(gprs-cell0){DISABLED_NOTINSTALLED}: Deallocated
@@ -1086,6 +1122,8 @@ NM_CHAN_OP{DISABLED_NOTINSTALLED}: Allocated
 NM_CHAN_OP{DISABLED_NOTINSTALLED}: Allocated
 (bts=0) ACC: New ACC allowed subset 0x3ff (active_len=10, ramp_len=10, adm_len=10, perm_len=10, rotation=off)
 NM_GPRS_NSE_OP{DISABLED_NOTINSTALLED}: Allocated
+NM_GPRS_NSVC_OP{DISABLED_NOTINSTALLED}: Allocated
+NM_GPRS_NSVC_OP{DISABLED_NOTINSTALLED}: Allocated
 BTS allocation OK in test_acc_mgr_rotate()
 (bts=0) ACC: update ACC allowed active subset 0x3ff -> 0x3c0 (active_len=4, ramp_len=10, adm_len=4, perm_len=10, rotation=on)
 pcu_info_update(): t2=0x00 t3=0x3f, allowed: 6 7 8 9
@@ -1149,6 +1187,8 @@ pcu_info_update(): t2=0x02 t3=0x1f, allowed: 5 6 7 8
 sys={40.000000}: select()
 (bts=0) ACC: rotate ACC allowed active subset 0x1e0 -> 0x3c0 (active_len=4, ramp_len=10, adm_len=4, perm_len=10, rotation=on)
 pcu_info_update(): t2=0x00 t3=0x3f, allowed: 6 7 8 9
+NM_GPRS_NSVC_OP(nsvc0){DISABLED_NOTINSTALLED}: Deallocated
+NM_GPRS_NSVC_OP(nsvc1){DISABLED_NOTINSTALLED}: Deallocated
 NM_GPRS_NSE_OP(nse0){DISABLED_NOTINSTALLED}: Deallocated
 NM_BTS_SM_OP(bts_sm){DISABLED_NOTINSTALLED}: Deallocated
 NM_GPRS_CELL_OP(gprs-cell0){DISABLED_NOTINSTALLED}: Deallocated
@@ -1180,6 +1220,8 @@ NM_CHAN_OP{DISABLED_NOTINSTALLED}: Allocated
 NM_CHAN_OP{DISABLED_NOTINSTALLED}: Allocated
 (bts=0) ACC: New ACC allowed subset 0x3ff (active_len=10, ramp_len=10, adm_len=10, perm_len=10, rotation=off)
 NM_GPRS_NSE_OP{DISABLED_NOTINSTALLED}: Allocated
+NM_GPRS_NSVC_OP{DISABLED_NOTINSTALLED}: Allocated
+NM_GPRS_NSVC_OP{DISABLED_NOTINSTALLED}: Allocated
 BTS allocation OK in test_acc_mgr_rotate()
 *** Barring one ACC ***
 (bts=0) ACC: New ACC allowed subset 0x1ff (active_len=9, ramp_len=10, adm_len=10, perm_len=9, rotation=off)
@@ -1246,6 +1288,8 @@ pcu_info_update(): t2=0x02 t3=0x1e, allowed: 0 5 6 7 8
 sys={40.000000}: select()
 (bts=0) ACC: rotate ACC allowed active subset 0x1e1 -> 0x1c3 (active_len=5, ramp_len=10, adm_len=5, perm_len=9, rotation=on)
 pcu_info_update(): t2=0x02 t3=0x3c, allowed: 0 1 6 7 8
+NM_GPRS_NSVC_OP(nsvc0){DISABLED_NOTINSTALLED}: Deallocated
+NM_GPRS_NSVC_OP(nsvc1){DISABLED_NOTINSTALLED}: Deallocated
 NM_GPRS_NSE_OP(nse0){DISABLED_NOTINSTALLED}: Deallocated
 NM_BTS_SM_OP(bts_sm){DISABLED_NOTINSTALLED}: Deallocated
 NM_GPRS_CELL_OP(gprs-cell0){DISABLED_NOTINSTALLED}: Deallocated
@@ -1277,6 +1321,8 @@ NM_CHAN_OP{DISABLED_NOTINSTALLED}: Allocated
 NM_CHAN_OP{DISABLED_NOTINSTALLED}: Allocated
 (bts=0) ACC: New ACC allowed subset 0x3ff (active_len=10, ramp_len=10, adm_len=10, perm_len=10, rotation=off)
 NM_GPRS_NSE_OP{DISABLED_NOTINSTALLED}: Allocated
+NM_GPRS_NSVC_OP{DISABLED_NOTINSTALLED}: Allocated
+NM_GPRS_NSVC_OP{DISABLED_NOTINSTALLED}: Allocated
 BTS allocation OK in test_acc_mgr_rotate()
 (bts=0) ACC: update ACC allowed active subset 0x3ff -> 0x3e0 (active_len=5, ramp_len=10, adm_len=5, perm_len=10, rotation=on)
 pcu_info_update(): t2=0x00 t3=0x1f, allowed: 5 6 7 8 9
@@ -1340,6 +1386,8 @@ pcu_info_update(): t2=0x02 t3=0x0f, allowed: 4 5 6 7 8
 sys={40.000000}: select()
 (bts=0) ACC: rotate ACC allowed active subset 0x1f0 -> 0x3e0 (active_len=5, ramp_len=10, adm_len=5, perm_len=10, rotation=on)
 pcu_info_update(): t2=0x00 t3=0x1f, allowed: 5 6 7 8 9
+NM_GPRS_NSVC_OP(nsvc0){DISABLED_NOTINSTALLED}: Deallocated
+NM_GPRS_NSVC_OP(nsvc1){DISABLED_NOTINSTALLED}: Deallocated
 NM_GPRS_NSE_OP(nse0){DISABLED_NOTINSTALLED}: Deallocated
 NM_BTS_SM_OP(bts_sm){DISABLED_NOTINSTALLED}: Deallocated
 NM_GPRS_CELL_OP(gprs-cell0){DISABLED_NOTINSTALLED}: Deallocated
@@ -1371,6 +1419,8 @@ NM_CHAN_OP{DISABLED_NOTINSTALLED}: Allocated
 NM_CHAN_OP{DISABLED_NOTINSTALLED}: Allocated
 (bts=0) ACC: New ACC allowed subset 0x3ff (active_len=10, ramp_len=10, adm_len=10, perm_len=10, rotation=off)
 NM_GPRS_NSE_OP{DISABLED_NOTINSTALLED}: Allocated
+NM_GPRS_NSVC_OP{DISABLED_NOTINSTALLED}: Allocated
+NM_GPRS_NSVC_OP{DISABLED_NOTINSTALLED}: Allocated
 BTS allocation OK in test_acc_mgr_rotate()
 *** Barring one ACC ***
 (bts=0) ACC: New ACC allowed subset 0x1ff (active_len=9, ramp_len=10, adm_len=10, perm_len=9, rotation=off)
@@ -1437,6 +1487,8 @@ pcu_info_update(): t2=0x02 t3=0x0e, allowed: 0 4 5 6 7 8
 sys={40.000000}: select()
 (bts=0) ACC: rotate ACC allowed active subset 0x1f1 -> 0x1e3 (active_len=6, ramp_len=10, adm_len=6, perm_len=9, rotation=on)
 pcu_info_update(): t2=0x02 t3=0x1c, allowed: 0 1 5 6 7 8
+NM_GPRS_NSVC_OP(nsvc0){DISABLED_NOTINSTALLED}: Deallocated
+NM_GPRS_NSVC_OP(nsvc1){DISABLED_NOTINSTALLED}: Deallocated
 NM_GPRS_NSE_OP(nse0){DISABLED_NOTINSTALLED}: Deallocated
 NM_BTS_SM_OP(bts_sm){DISABLED_NOTINSTALLED}: Deallocated
 NM_GPRS_CELL_OP(gprs-cell0){DISABLED_NOTINSTALLED}: Deallocated
@@ -1468,6 +1520,8 @@ NM_CHAN_OP{DISABLED_NOTINSTALLED}: Allocated
 NM_CHAN_OP{DISABLED_NOTINSTALLED}: Allocated
 (bts=0) ACC: New ACC allowed subset 0x3ff (active_len=10, ramp_len=10, adm_len=10, perm_len=10, rotation=off)
 NM_GPRS_NSE_OP{DISABLED_NOTINSTALLED}: Allocated
+NM_GPRS_NSVC_OP{DISABLED_NOTINSTALLED}: Allocated
+NM_GPRS_NSVC_OP{DISABLED_NOTINSTALLED}: Allocated
 BTS allocation OK in test_acc_mgr_rotate()
 (bts=0) ACC: update ACC allowed active subset 0x3ff -> 0x3f0 (active_len=6, ramp_len=10, adm_len=6, perm_len=10, rotation=on)
 pcu_info_update(): t2=0x00 t3=0x0f, allowed: 4 5 6 7 8 9
@@ -1531,6 +1585,8 @@ pcu_info_update(): t2=0x02 t3=0x07, allowed: 3 4 5 6 7 8
 sys={40.000000}: select()
 (bts=0) ACC: rotate ACC allowed active subset 0x1f8 -> 0x3f0 (active_len=6, ramp_len=10, adm_len=6, perm_len=10, rotation=on)
 pcu_info_update(): t2=0x00 t3=0x0f, allowed: 4 5 6 7 8 9
+NM_GPRS_NSVC_OP(nsvc0){DISABLED_NOTINSTALLED}: Deallocated
+NM_GPRS_NSVC_OP(nsvc1){DISABLED_NOTINSTALLED}: Deallocated
 NM_GPRS_NSE_OP(nse0){DISABLED_NOTINSTALLED}: Deallocated
 NM_BTS_SM_OP(bts_sm){DISABLED_NOTINSTALLED}: Deallocated
 NM_GPRS_CELL_OP(gprs-cell0){DISABLED_NOTINSTALLED}: Deallocated
@@ -1562,6 +1618,8 @@ NM_CHAN_OP{DISABLED_NOTINSTALLED}: Allocated
 NM_CHAN_OP{DISABLED_NOTINSTALLED}: Allocated
 (bts=0) ACC: New ACC allowed subset 0x3ff (active_len=10, ramp_len=10, adm_len=10, perm_len=10, rotation=off)
 NM_GPRS_NSE_OP{DISABLED_NOTINSTALLED}: Allocated
+NM_GPRS_NSVC_OP{DISABLED_NOTINSTALLED}: Allocated
+NM_GPRS_NSVC_OP{DISABLED_NOTINSTALLED}: Allocated
 BTS allocation OK in test_acc_mgr_rotate()
 *** Barring one ACC ***
 (bts=0) ACC: New ACC allowed subset 0x1ff (active_len=9, ramp_len=10, adm_len=10, perm_len=9, rotation=off)
@@ -1628,6 +1686,8 @@ pcu_info_update(): t2=0x02 t3=0x06, allowed: 0 3 4 5 6 7 8
 sys={40.000000}: select()
 (bts=0) ACC: rotate ACC allowed active subset 0x1f9 -> 0x1f3 (active_len=7, ramp_len=10, adm_len=7, perm_len=9, rotation=on)
 pcu_info_update(): t2=0x02 t3=0x0c, allowed: 0 1 4 5 6 7 8
+NM_GPRS_NSVC_OP(nsvc0){DISABLED_NOTINSTALLED}: Deallocated
+NM_GPRS_NSVC_OP(nsvc1){DISABLED_NOTINSTALLED}: Deallocated
 NM_GPRS_NSE_OP(nse0){DISABLED_NOTINSTALLED}: Deallocated
 NM_BTS_SM_OP(bts_sm){DISABLED_NOTINSTALLED}: Deallocated
 NM_GPRS_CELL_OP(gprs-cell0){DISABLED_NOTINSTALLED}: Deallocated
@@ -1659,6 +1719,8 @@ NM_CHAN_OP{DISABLED_NOTINSTALLED}: Allocated
 NM_CHAN_OP{DISABLED_NOTINSTALLED}: Allocated
 (bts=0) ACC: New ACC allowed subset 0x3ff (active_len=10, ramp_len=10, adm_len=10, perm_len=10, rotation=off)
 NM_GPRS_NSE_OP{DISABLED_NOTINSTALLED}: Allocated
+NM_GPRS_NSVC_OP{DISABLED_NOTINSTALLED}: Allocated
+NM_GPRS_NSVC_OP{DISABLED_NOTINSTALLED}: Allocated
 BTS allocation OK in test_acc_mgr_rotate()
 (bts=0) ACC: update ACC allowed active subset 0x3ff -> 0x3f8 (active_len=7, ramp_len=10, adm_len=7, perm_len=10, rotation=on)
 pcu_info_update(): t2=0x00 t3=0x07, allowed: 3 4 5 6 7 8 9
@@ -1722,6 +1784,8 @@ pcu_info_update(): t2=0x02 t3=0x03, allowed: 2 3 4 5 6 7 8
 sys={40.000000}: select()
 (bts=0) ACC: rotate ACC allowed active subset 0x1fc -> 0x3f8 (active_len=7, ramp_len=10, adm_len=7, perm_len=10, rotation=on)
 pcu_info_update(): t2=0x00 t3=0x07, allowed: 3 4 5 6 7 8 9
+NM_GPRS_NSVC_OP(nsvc0){DISABLED_NOTINSTALLED}: Deallocated
+NM_GPRS_NSVC_OP(nsvc1){DISABLED_NOTINSTALLED}: Deallocated
 NM_GPRS_NSE_OP(nse0){DISABLED_NOTINSTALLED}: Deallocated
 NM_BTS_SM_OP(bts_sm){DISABLED_NOTINSTALLED}: Deallocated
 NM_GPRS_CELL_OP(gprs-cell0){DISABLED_NOTINSTALLED}: Deallocated
@@ -1753,6 +1817,8 @@ NM_CHAN_OP{DISABLED_NOTINSTALLED}: Allocated
 NM_CHAN_OP{DISABLED_NOTINSTALLED}: Allocated
 (bts=0) ACC: New ACC allowed subset 0x3ff (active_len=10, ramp_len=10, adm_len=10, perm_len=10, rotation=off)
 NM_GPRS_NSE_OP{DISABLED_NOTINSTALLED}: Allocated
+NM_GPRS_NSVC_OP{DISABLED_NOTINSTALLED}: Allocated
+NM_GPRS_NSVC_OP{DISABLED_NOTINSTALLED}: Allocated
 BTS allocation OK in test_acc_mgr_rotate()
 *** Barring one ACC ***
 (bts=0) ACC: New ACC allowed subset 0x1ff (active_len=9, ramp_len=10, adm_len=10, perm_len=9, rotation=off)
@@ -1819,6 +1885,8 @@ pcu_info_update(): t2=0x02 t3=0x02, allowed: 0 2 3 4 5 6 7 8
 sys={40.000000}: select()
 (bts=0) ACC: rotate ACC allowed active subset 0x1fd -> 0x1fb (active_len=8, ramp_len=10, adm_len=8, perm_len=9, rotation=on)
 pcu_info_update(): t2=0x02 t3=0x04, allowed: 0 1 3 4 5 6 7 8
+NM_GPRS_NSVC_OP(nsvc0){DISABLED_NOTINSTALLED}: Deallocated
+NM_GPRS_NSVC_OP(nsvc1){DISABLED_NOTINSTALLED}: Deallocated
 NM_GPRS_NSE_OP(nse0){DISABLED_NOTINSTALLED}: Deallocated
 NM_BTS_SM_OP(bts_sm){DISABLED_NOTINSTALLED}: Deallocated
 NM_GPRS_CELL_OP(gprs-cell0){DISABLED_NOTINSTALLED}: Deallocated
@@ -1850,6 +1918,8 @@ NM_CHAN_OP{DISABLED_NOTINSTALLED}: Allocated
 NM_CHAN_OP{DISABLED_NOTINSTALLED}: Allocated
 (bts=0) ACC: New ACC allowed subset 0x3ff (active_len=10, ramp_len=10, adm_len=10, perm_len=10, rotation=off)
 NM_GPRS_NSE_OP{DISABLED_NOTINSTALLED}: Allocated
+NM_GPRS_NSVC_OP{DISABLED_NOTINSTALLED}: Allocated
+NM_GPRS_NSVC_OP{DISABLED_NOTINSTALLED}: Allocated
 BTS allocation OK in test_acc_mgr_rotate()
 (bts=0) ACC: update ACC allowed active subset 0x3ff -> 0x3fc (active_len=8, ramp_len=10, adm_len=8, perm_len=10, rotation=on)
 pcu_info_update(): t2=0x00 t3=0x03, allowed: 2 3 4 5 6 7 8 9
@@ -1913,6 +1983,8 @@ pcu_info_update(): t2=0x02 t3=0x01, allowed: 1 2 3 4 5 6 7 8
 sys={40.000000}: select()
 (bts=0) ACC: rotate ACC allowed active subset 0x1fe -> 0x3fc (active_len=8, ramp_len=10, adm_len=8, perm_len=10, rotation=on)
 pcu_info_update(): t2=0x00 t3=0x03, allowed: 2 3 4 5 6 7 8 9
+NM_GPRS_NSVC_OP(nsvc0){DISABLED_NOTINSTALLED}: Deallocated
+NM_GPRS_NSVC_OP(nsvc1){DISABLED_NOTINSTALLED}: Deallocated
 NM_GPRS_NSE_OP(nse0){DISABLED_NOTINSTALLED}: Deallocated
 NM_BTS_SM_OP(bts_sm){DISABLED_NOTINSTALLED}: Deallocated
 NM_GPRS_CELL_OP(gprs-cell0){DISABLED_NOTINSTALLED}: Deallocated
@@ -1944,6 +2016,8 @@ NM_CHAN_OP{DISABLED_NOTINSTALLED}: Allocated
 NM_CHAN_OP{DISABLED_NOTINSTALLED}: Allocated
 (bts=0) ACC: New ACC allowed subset 0x3ff (active_len=10, ramp_len=10, adm_len=10, perm_len=10, rotation=off)
 NM_GPRS_NSE_OP{DISABLED_NOTINSTALLED}: Allocated
+NM_GPRS_NSVC_OP{DISABLED_NOTINSTALLED}: Allocated
+NM_GPRS_NSVC_OP{DISABLED_NOTINSTALLED}: Allocated
 BTS allocation OK in test_acc_mgr_rotate()
 (bts=0) ACC: update ACC allowed active subset 0x3ff -> 0x3fe (active_len=9, ramp_len=10, adm_len=9, perm_len=10, rotation=on)
 pcu_info_update(): t2=0x00 t3=0x01, allowed: 1 2 3 4 5 6 7 8 9
@@ -2007,6 +2081,8 @@ pcu_info_update(): t2=0x02 t3=0x00, allowed: 0 1 2 3 4 5 6 7 8
 sys={40.000000}: select()
 (bts=0) ACC: rotate ACC allowed active subset 0x1ff -> 0x3fe (active_len=9, ramp_len=10, adm_len=9, perm_len=10, rotation=on)
 pcu_info_update(): t2=0x00 t3=0x01, allowed: 1 2 3 4 5 6 7 8 9
+NM_GPRS_NSVC_OP(nsvc0){DISABLED_NOTINSTALLED}: Deallocated
+NM_GPRS_NSVC_OP(nsvc1){DISABLED_NOTINSTALLED}: Deallocated
 NM_GPRS_NSE_OP(nse0){DISABLED_NOTINSTALLED}: Deallocated
 NM_BTS_SM_OP(bts_sm){DISABLED_NOTINSTALLED}: Deallocated
 NM_GPRS_CELL_OP(gprs-cell0){DISABLED_NOTINSTALLED}: Deallocated
@@ -2038,6 +2114,8 @@ NM_CHAN_OP{DISABLED_NOTINSTALLED}: Allocated
 NM_CHAN_OP{DISABLED_NOTINSTALLED}: Allocated
 (bts=0) ACC: New ACC allowed subset 0x3ff (active_len=10, ramp_len=10, adm_len=10, perm_len=10, rotation=off)
 NM_GPRS_NSE_OP{DISABLED_NOTINSTALLED}: Allocated
+NM_GPRS_NSVC_OP{DISABLED_NOTINSTALLED}: Allocated
+NM_GPRS_NSVC_OP{DISABLED_NOTINSTALLED}: Allocated
 BTS allocation OK in test_acc_ramp()
 (bts=0) ACC: update ACC allowed active subset 0x3ff -> 0x000 (active_len=0, ramp_len=0, adm_len=10, perm_len=10, rotation=off)
 pcu_info_update(): t2=0x03 t3=0xff, allowed:
@@ -2070,6 +2148,8 @@ pcu_info_update(): t2=0x02 t3=0x00, allowed: 0 1 2 3 4 5 6 7 8
 sys={450.000000}: select()
 (bts=0) ACC: update ACC allowed active subset 0x1ff -> 0x3ff (active_len=10, ramp_len=10, adm_len=10, perm_len=10, rotation=off)
 pcu_info_update(): t2=0x00 t3=0x00, allowed: 0 1 2 3 4 5 6 7 8 9
+NM_GPRS_NSVC_OP(nsvc0){DISABLED_NOTINSTALLED}: Deallocated
+NM_GPRS_NSVC_OP(nsvc1){DISABLED_NOTINSTALLED}: Deallocated
 NM_GPRS_NSE_OP(nse0){DISABLED_NOTINSTALLED}: Deallocated
 NM_BTS_SM_OP(bts_sm){DISABLED_NOTINSTALLED}: Deallocated
 NM_GPRS_CELL_OP(gprs-cell0){DISABLED_NOTINSTALLED}: Deallocated
@@ -2101,6 +2181,8 @@ NM_CHAN_OP{DISABLED_NOTINSTALLED}: Allocated
 NM_CHAN_OP{DISABLED_NOTINSTALLED}: Allocated
 (bts=0) ACC: New ACC allowed subset 0x3ff (active_len=10, ramp_len=10, adm_len=10, perm_len=10, rotation=off)
 NM_GPRS_NSE_OP{DISABLED_NOTINSTALLED}: Allocated
+NM_GPRS_NSVC_OP{DISABLED_NOTINSTALLED}: Allocated
+NM_GPRS_NSVC_OP{DISABLED_NOTINSTALLED}: Allocated
 BTS allocation OK in test_acc_ramp2()
 (bts=0) ACC: update ACC allowed active subset 0x3ff -> 0x3f8 (active_len=7, ramp_len=10, adm_len=7, perm_len=10, rotation=on)
 pcu_info_update(): t2=0x00 t3=0x07, allowed: 3 4 5 6 7 8 9
@@ -2115,6 +2197,8 @@ sys={10.000000}: select()
 (bts=0) ACC: update ACC allowed active subset 0x03f -> 0x07f (active_len=7, ramp_len=7, adm_len=7, perm_len=10, rotation=on)
 pcu_info_update(): t2=0x03 t3=0x80, allowed: 0 1 2 3 4 5 6
 sys={15.000000}: select()
+NM_GPRS_NSVC_OP(nsvc0){DISABLED_NOTINSTALLED}: Deallocated
+NM_GPRS_NSVC_OP(nsvc1){DISABLED_NOTINSTALLED}: Deallocated
 NM_GPRS_NSE_OP(nse0){DISABLED_NOTINSTALLED}: Deallocated
 NM_BTS_SM_OP(bts_sm){DISABLED_NOTINSTALLED}: Deallocated
 NM_GPRS_CELL_OP(gprs-cell0){DISABLED_NOTINSTALLED}: Deallocated
@@ -2146,6 +2230,8 @@ NM_CHAN_OP{DISABLED_NOTINSTALLED}: Allocated
 NM_CHAN_OP{DISABLED_NOTINSTALLED}: Allocated
 (bts=0) ACC: New ACC allowed subset 0x3ff (active_len=10, ramp_len=10, adm_len=10, perm_len=10, rotation=off)
 NM_GPRS_NSE_OP{DISABLED_NOTINSTALLED}: Allocated
+NM_GPRS_NSVC_OP{DISABLED_NOTINSTALLED}: Allocated
+NM_GPRS_NSVC_OP{DISABLED_NOTINSTALLED}: Allocated
 BTS allocation OK in test_acc_ramp3()
 *** Barring some ACCs ***
 (bts=0) ACC: New ACC allowed subset 0x15a (active_len=5, ramp_len=10, adm_len=10, perm_len=5, rotation=off)
@@ -2176,6 +2262,8 @@ sys={40.000000}: select()
 (bts=0) ACC: update ACC allowed active subset 0x15a -> 0x15a (active_len=5, ramp_len=9, adm_len=10, perm_len=5, rotation=off)
 sys={45.000000}: select()
 (bts=0) ACC: update ACC allowed active subset 0x15a -> 0x15a (active_len=5, ramp_len=10, adm_len=10, perm_len=5, rotation=off)
+NM_GPRS_NSVC_OP(nsvc0){DISABLED_NOTINSTALLED}: Deallocated
+NM_GPRS_NSVC_OP(nsvc1){DISABLED_NOTINSTALLED}: Deallocated
 NM_GPRS_NSE_OP(nse0){DISABLED_NOTINSTALLED}: Deallocated
 NM_BTS_SM_OP(bts_sm){DISABLED_NOTINSTALLED}: Deallocated
 NM_GPRS_CELL_OP(gprs-cell0){DISABLED_NOTINSTALLED}: Deallocated
@@ -2207,6 +2295,8 @@ NM_CHAN_OP{DISABLED_NOTINSTALLED}: Allocated
 NM_CHAN_OP{DISABLED_NOTINSTALLED}: Allocated
 (bts=0) ACC: New ACC allowed subset 0x3ff (active_len=10, ramp_len=10, adm_len=10, perm_len=10, rotation=off)
 NM_GPRS_NSE_OP{DISABLED_NOTINSTALLED}: Allocated
+NM_GPRS_NSVC_OP{DISABLED_NOTINSTALLED}: Allocated
+NM_GPRS_NSVC_OP{DISABLED_NOTINSTALLED}: Allocated
 BTS allocation OK in test_acc_ramp_up_rotate()
 *** Barring one ACC ***
 (bts=0) ACC: New ACC allowed subset 0x1ff (active_len=9, ramp_len=10, adm_len=10, perm_len=9, rotation=off)
@@ -2293,6 +2383,8 @@ sys={2500.000000}: select()
 sys={2750.000000}: select()
 sys={3000.000000}: select()
 sys={3250.000000}: select()
+NM_GPRS_NSVC_OP(nsvc0){DISABLED_NOTINSTALLED}: Deallocated
+NM_GPRS_NSVC_OP(nsvc1){DISABLED_NOTINSTALLED}: Deallocated
 NM_GPRS_NSE_OP(nse0){DISABLED_NOTINSTALLED}: Deallocated
 NM_BTS_SM_OP(bts_sm){DISABLED_NOTINSTALLED}: Deallocated
 NM_GPRS_CELL_OP(gprs-cell0){DISABLED_NOTINSTALLED}: Deallocated
@@ -2324,6 +2416,8 @@ NM_CHAN_OP{DISABLED_NOTINSTALLED}: Allocated
 NM_CHAN_OP{DISABLED_NOTINSTALLED}: Allocated
 (bts=0) ACC: New ACC allowed subset 0x3ff (active_len=10, ramp_len=10, adm_len=10, perm_len=10, rotation=off)
 NM_GPRS_NSE_OP{DISABLED_NOTINSTALLED}: Allocated
+NM_GPRS_NSVC_OP{DISABLED_NOTINSTALLED}: Allocated
+NM_GPRS_NSVC_OP{DISABLED_NOTINSTALLED}: Allocated
 BTS allocation OK in test_acc_ramp_up_rotate()
 *** Barring one ACC ***
 (bts=0) ACC: New ACC allowed subset 0x1ff (active_len=9, ramp_len=10, adm_len=10, perm_len=9, rotation=off)
@@ -2410,6 +2504,8 @@ sys={2500.000000}: select()
 sys={2750.000000}: select()
 sys={3000.000000}: select()
 sys={3250.000000}: select()
+NM_GPRS_NSVC_OP(nsvc0){DISABLED_NOTINSTALLED}: Deallocated
+NM_GPRS_NSVC_OP(nsvc1){DISABLED_NOTINSTALLED}: Deallocated
 NM_GPRS_NSE_OP(nse0){DISABLED_NOTINSTALLED}: Deallocated
 NM_BTS_SM_OP(bts_sm){DISABLED_NOTINSTALLED}: Deallocated
 NM_GPRS_CELL_OP(gprs-cell0){DISABLED_NOTINSTALLED}: Deallocated
@@ -2441,6 +2537,8 @@ NM_CHAN_OP{DISABLED_NOTINSTALLED}: Allocated
 NM_CHAN_OP{DISABLED_NOTINSTALLED}: Allocated
 (bts=0) ACC: New ACC allowed subset 0x3ff (active_len=10, ramp_len=10, adm_len=10, perm_len=10, rotation=off)
 NM_GPRS_NSE_OP{DISABLED_NOTINSTALLED}: Allocated
+NM_GPRS_NSVC_OP{DISABLED_NOTINSTALLED}: Allocated
+NM_GPRS_NSVC_OP{DISABLED_NOTINSTALLED}: Allocated
 BTS allocation OK in test_acc_ramp_up_rotate()
 *** Barring one ACC ***
 (bts=0) ACC: New ACC allowed subset 0x1ff (active_len=9, ramp_len=10, adm_len=10, perm_len=9, rotation=off)
@@ -2527,6 +2625,8 @@ sys={2500.000000}: select()
 sys={2750.000000}: select()
 sys={3000.000000}: select()
 sys={3250.000000}: select()
+NM_GPRS_NSVC_OP(nsvc0){DISABLED_NOTINSTALLED}: Deallocated
+NM_GPRS_NSVC_OP(nsvc1){DISABLED_NOTINSTALLED}: Deallocated
 NM_GPRS_NSE_OP(nse0){DISABLED_NOTINSTALLED}: Deallocated
 NM_BTS_SM_OP(bts_sm){DISABLED_NOTINSTALLED}: Deallocated
 NM_GPRS_CELL_OP(gprs-cell0){DISABLED_NOTINSTALLED}: Deallocated
@@ -2558,6 +2658,8 @@ NM_CHAN_OP{DISABLED_NOTINSTALLED}: Allocated
 NM_CHAN_OP{DISABLED_NOTINSTALLED}: Allocated
 (bts=0) ACC: New ACC allowed subset 0x3ff (active_len=10, ramp_len=10, adm_len=10, perm_len=10, rotation=off)
 NM_GPRS_NSE_OP{DISABLED_NOTINSTALLED}: Allocated
+NM_GPRS_NSVC_OP{DISABLED_NOTINSTALLED}: Allocated
+NM_GPRS_NSVC_OP{DISABLED_NOTINSTALLED}: Allocated
 BTS allocation OK in test_acc_ramp_updown_rotate()
 *** Barring one ACC ***
 (bts=0) ACC: New ACC allowed subset 0x1ff (active_len=9, ramp_len=10, adm_len=10, perm_len=9, rotation=off)
@@ -2674,6 +2776,8 @@ sys={6750.000000}: select(46): chan_load_avg=60
 sys={7000.000000}: select(47): chan_load_avg=75
 sys={7250.000000}: select(48): chan_load_avg=90
 sys={7500.000000}: select(49): chan_load_avg=100
+NM_GPRS_NSVC_OP(nsvc0){DISABLED_NOTINSTALLED}: Deallocated
+NM_GPRS_NSVC_OP(nsvc1){DISABLED_NOTINSTALLED}: Deallocated
 NM_GPRS_NSE_OP(nse0){DISABLED_NOTINSTALLED}: Deallocated
 NM_BTS_SM_OP(bts_sm){DISABLED_NOTINSTALLED}: Deallocated
 NM_GPRS_CELL_OP(gprs-cell0){DISABLED_NOTINSTALLED}: Deallocated
@@ -2705,6 +2809,8 @@ NM_CHAN_OP{DISABLED_NOTINSTALLED}: Allocated
 NM_CHAN_OP{DISABLED_NOTINSTALLED}: Allocated
 (bts=0) ACC: New ACC allowed subset 0x3ff (active_len=10, ramp_len=10, adm_len=10, perm_len=10, rotation=off)
 NM_GPRS_NSE_OP{DISABLED_NOTINSTALLED}: Allocated
+NM_GPRS_NSVC_OP{DISABLED_NOTINSTALLED}: Allocated
+NM_GPRS_NSVC_OP{DISABLED_NOTINSTALLED}: Allocated
 BTS allocation OK in test_acc_ramp_updown_rotate()
 *** Barring one ACC ***
 (bts=0) ACC: New ACC allowed subset 0x1ff (active_len=9, ramp_len=10, adm_len=10, perm_len=9, rotation=off)
@@ -2845,6 +2951,8 @@ pcu_info_update(): t2=0x03 t3=0xfc, allowed: 0 1
 sys={4200.000000}: select(49): chan_load_avg=25
 (bts=0) ACC: rotate ACC allowed active subset 0x003 -> 0x006 (active_len=2, ramp_len=2, adm_len=10, perm_len=9, rotation=on)
 pcu_info_update(): t2=0x03 t3=0xf9, allowed: 1 2
+NM_GPRS_NSVC_OP(nsvc0){DISABLED_NOTINSTALLED}: Deallocated
+NM_GPRS_NSVC_OP(nsvc1){DISABLED_NOTINSTALLED}: Deallocated
 NM_GPRS_NSE_OP(nse0){DISABLED_NOTINSTALLED}: Deallocated
 NM_BTS_SM_OP(bts_sm){DISABLED_NOTINSTALLED}: Deallocated
 NM_GPRS_CELL_OP(gprs-cell0){DISABLED_NOTINSTALLED}: Deallocated
@@ -2876,6 +2984,8 @@ NM_CHAN_OP{DISABLED_NOTINSTALLED}: Allocated
 NM_CHAN_OP{DISABLED_NOTINSTALLED}: Allocated
 (bts=0) ACC: New ACC allowed subset 0x3ff (active_len=10, ramp_len=10, adm_len=10, perm_len=10, rotation=off)
 NM_GPRS_NSE_OP{DISABLED_NOTINSTALLED}: Allocated
+NM_GPRS_NSVC_OP{DISABLED_NOTINSTALLED}: Allocated
+NM_GPRS_NSVC_OP{DISABLED_NOTINSTALLED}: Allocated
 BTS allocation OK in test_acc_ramp_updown_rotate()
 *** Barring one ACC ***
 (bts=0) ACC: New ACC allowed subset 0x1ff (active_len=9, ramp_len=10, adm_len=10, perm_len=9, rotation=off)
@@ -3026,6 +3136,8 @@ pcu_info_update(): t2=0x03 t3=0xe3, allowed: 2 3 4
 sys={4200.000000}: select(49): chan_load_avg=90
 (bts=0) ACC: rotate ACC allowed active subset 0x01c -> 0x038 (active_len=3, ramp_len=3, adm_len=10, perm_len=9, rotation=on)
 pcu_info_update(): t2=0x03 t3=0xc7, allowed: 3 4 5
+NM_GPRS_NSVC_OP(nsvc0){DISABLED_NOTINSTALLED}: Deallocated
+NM_GPRS_NSVC_OP(nsvc1){DISABLED_NOTINSTALLED}: Deallocated
 NM_GPRS_NSE_OP(nse0){DISABLED_NOTINSTALLED}: Deallocated
 NM_BTS_SM_OP(bts_sm){DISABLED_NOTINSTALLED}: Deallocated
 NM_GPRS_CELL_OP(gprs-cell0){DISABLED_NOTINSTALLED}: Deallocated
@@ -3057,6 +3169,8 @@ NM_CHAN_OP{DISABLED_NOTINSTALLED}: Allocated
 NM_CHAN_OP{DISABLED_NOTINSTALLED}: Allocated
 (bts=0) ACC: New ACC allowed subset 0x3ff (active_len=10, ramp_len=10, adm_len=10, perm_len=10, rotation=off)
 NM_GPRS_NSE_OP{DISABLED_NOTINSTALLED}: Allocated
+NM_GPRS_NSVC_OP{DISABLED_NOTINSTALLED}: Allocated
+NM_GPRS_NSVC_OP{DISABLED_NOTINSTALLED}: Allocated
 BTS allocation OK in test_acc_ramp_updown_rotate()
 *** Barring one ACC ***
 (bts=0) ACC: New ACC allowed subset 0x1ff (active_len=9, ramp_len=10, adm_len=10, perm_len=9, rotation=off)
@@ -3113,6 +3227,8 @@ sys={11750.000000}: select(46): chan_load_avg=60
 sys={12000.000000}: select(47): chan_load_avg=65
 sys={12250.000000}: select(48): chan_load_avg=70
 sys={12500.000000}: select(49): chan_load_avg=75
+NM_GPRS_NSVC_OP(nsvc0){DISABLED_NOTINSTALLED}: Deallocated
+NM_GPRS_NSVC_OP(nsvc1){DISABLED_NOTINSTALLED}: Deallocated
 NM_GPRS_NSE_OP(nse0){DISABLED_NOTINSTALLED}: Deallocated
 NM_BTS_SM_OP(bts_sm){DISABLED_NOTINSTALLED}: Deallocated
 NM_GPRS_CELL_OP(gprs-cell0){DISABLED_NOTINSTALLED}: Deallocated

@@ -70,3 +70,10 @@ static inline struct gsm_bts *gsm_bts_sm_get_bts(struct gsm_bts_sm *site_mgr) {
 struct gsm_bts_sm *gsm_bts_sm_alloc(struct gsm_network *net, uint8_t bts_num);
 
 void gsm_bts_sm_mo_reset(struct gsm_bts_sm *bts_sm);
+
+static inline struct gsm_gprs_nsvc *gsm_bts_sm_nsvc_num(struct gsm_bts_sm *bts_sm, uint8_t nsvc_num)
+{
+	if (nsvc_num >= ARRAY_SIZE(bts_sm->gprs.nsvc))
+		return NULL;
+	return &bts_sm->gprs.nsvc[nsvc_num];
+}

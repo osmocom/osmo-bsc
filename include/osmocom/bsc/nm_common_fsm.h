@@ -100,3 +100,12 @@ enum nm_gprs_op_cell_states {
 	NM_GPRS_CELL_ST_OP_ENABLED,
 };
 extern struct osmo_fsm nm_gprs_cell_fsm;
+
+/* GPRS NSVC */
+enum nm_gprs_op_nsvc_fsm_states {
+	NM_GPRS_NSVC_ST_OP_DISABLED_NOTINSTALLED,
+	NM_GPRS_NSVC_ST_OP_DISABLED_DEPENDENCY,
+	NM_GPRS_NSVC_ST_OP_DISABLED_OFFLINE,
+	NM_GPRS_NSVC_ST_OP_ENABLED,
+};
+extern struct osmo_fsm nm_gprs_nsvc_fsm;

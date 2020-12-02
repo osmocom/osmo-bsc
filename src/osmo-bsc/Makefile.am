@@ -83,6 +83,7 @@ osmo_bsc_SOURCES = \
 	nm_bts_fsm.c \
 	nm_gprs_cell_fsm.c \
 	nm_gprs_nse_fsm.c \
+	nm_gprs_nsvc_fsm.c \
 	nm_channel_fsm.c \
 	nm_rcarrier_fsm.c \
 	gsm_08_08.c \

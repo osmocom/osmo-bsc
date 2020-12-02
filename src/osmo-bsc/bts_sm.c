@@ -30,6 +30,13 @@ static const uint8_t bts_nse_timer_default[] = { 3, 3, 3, 3, 30, 3, 10 };
 
 static int gsm_bts_sm_talloc_destructor(struct gsm_bts_sm *bts_sm)
 {
+	int i;
+	for (i = 0; i < ARRAY_SIZE(bts_sm->gprs.nsvc); i++) {
+		if (bts_sm->gprs.nsvc[i].mo.fi) {
+			osmo_fsm_inst_free(bts_sm->gprs.nsvc[i].mo.fi);
+			bts_sm->gprs.nsvc[i].mo.fi = NULL;
+		}
+	}
 	if (bts_sm->gprs.nse.mo.fi) {
 		osmo_fsm_inst_free(bts_sm->gprs.nse.mo.fi);
 		bts_sm->gprs.nse.mo.fi = NULL;
@@ -75,8 +82,14 @@ struct gsm_bts_sm *gsm_bts_sm_alloc(struct gsm_network *net, uint8_t bts_num)
 	for (i = 0; i < ARRAY_SIZE(bts_sm->gprs.nsvc); i++) {
 		bts_sm->gprs.nsvc[i].bts = bts;
 		bts_sm->gprs.nsvc[i].id = i;
+		bts_sm->gprs.nsvc[i].mo.fi = osmo_fsm_inst_alloc(
+					&nm_gprs_nsvc_fsm, bts_sm,
+					&bts_sm->gprs.nsvc[i],
+					LOGL_INFO, NULL);
+		osmo_fsm_inst_update_id_f(bts_sm->gprs.nsvc[i].mo.fi,
+					  "nsvc%d", i);
 		gsm_mo_init(&bts_sm->gprs.nsvc[i].mo, bts, NM_OC_GPRS_NSVC,
-				bts->nr, i, 0xff);
+			    bts->nr, i, 0xff);
 	}
 	memcpy(&bts_sm->gprs.nse.timer, bts_nse_timer_default,
 		sizeof(bts_sm->gprs.nse.timer));

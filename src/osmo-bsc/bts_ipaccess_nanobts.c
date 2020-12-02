@@ -127,7 +127,6 @@ static int nm_statechg_event(int evt, struct nm_statechg_signal_data *nsd)
 {
 	uint8_t obj_class = nsd->obj_class;
 	void *obj = nsd->obj;
-	struct gsm_nm_state *new_state = nsd->new_state;
 
 	struct gsm_bts_sm *bts_sm;
 	struct gsm_bts *bts;
@@ -138,22 +137,7 @@ static int nm_statechg_event(int evt, struct nm_statechg_signal_data *nsd)
 	struct gsm_gprs_nse *nse;
 	struct gsm_gprs_cell *cell;
 
-	struct msgb *msgb;
-
 	if (!is_ipaccess_bts(nsd->bts))
-		return 0;
-
-	/* This event-driven BTS setup is currently only required on nanoBTS */
-
-	/* S_NM_STATECHG_ADM is called after we call chg_adm_state() and would create
-	 * endless loop */
-	if (obj_class != NM_OC_BTS &&
-	    obj_class != NM_OC_BASEB_TRANSC &&
-	    obj_class != NM_OC_RADIO_CARRIER &&
-	    obj_class != NM_OC_CHANNEL &&
-	    obj_class != NM_OC_GPRS_NSE &&
-	    obj_class != NM_OC_GPRS_CELL &&
-	    evt != S_NM_STATECHG_OPER)
 		return 0;
 
 	switch (obj_class) {
@@ -188,33 +172,11 @@ static int nm_statechg_event(int evt, struct nm_statechg_signal_data *nsd)
 		break;
 	case NM_OC_GPRS_NSVC:
 		nsvc = obj;
-		bts = nsvc->bts;
-		if (bts->gprs.mode == BTS_GPRS_NONE)
-			break;
 		/* We skip NSVC1 since we only use NSVC0 */
 		if (nsvc->id == 1)
 			break;
-		if (!osmo_bts_has_feature(&bts->features, BTS_FEAT_IPV6_NSVC) &&
-		    nsvc->remote.u.sa.sa_family == AF_INET6) {
-			LOGP(DLINP, LOGL_ERROR, "BTS %d does not support IPv6 but an IPv6 address was configured!\n", bts->nr);
-			break;
-		}
-
-		if ((new_state->availability == NM_AVSTATE_OFF_LINE) ||
-		    (new_state->availability == NM_AVSTATE_DEPENDENCY)) {
-			msgb = nanobts_attr_nscv_get(bts);
-			if (!msgb)
-				break;
-			abis_nm_ipaccess_set_attr(bts, obj_class, bts->bts_nr,
-						  nsvc->id, 0xff,
-						  msgb->data, msgb->len);
-			msgb_free(msgb);
-			abis_nm_chg_adm_state(bts, obj_class, bts->bts_nr,
-					      nsvc->id, 0xff,
-					      NM_STATE_UNLOCKED);
-			abis_nm_opstart(bts, obj_class, bts->bts_nr,
-					nsvc->id, 0xff);
-		}
+		osmo_fsm_inst_dispatch(nsvc->mo.fi, NM_EV_STATE_CHG_REP, nsd);
+		break;
 	default:
 		break;
 	}
@@ -228,6 +190,7 @@ static int sw_activ_rep(struct msgb *mb)
 	struct e1inp_sign_link *sign_link = mb->dst;
 	struct gsm_bts *bts = sign_link->trx->bts;
 	struct gsm_bts_trx *trx;
+	struct gsm_gprs_nsvc *nsvc;
 	struct gsm_bts_trx_ts *ts;
 
 	if (!is_ipaccess_bts(bts))
@@ -261,6 +224,11 @@ static int sw_activ_rep(struct msgb *mb)
 	case NM_OC_GPRS_CELL:
 		osmo_fsm_inst_dispatch(bts->gprs.cell.mo.fi, NM_EV_SW_ACT_REP, NULL);
 		break;
+	case NM_OC_GPRS_NSVC:
+		if (!(nsvc = gsm_bts_sm_nsvc_num(bts->site_mgr, foh->obj_inst.trx_nr)))
+			return -EINVAL;
+		osmo_fsm_inst_dispatch(nsvc->mo.fi, NM_EV_SW_ACT_REP, NULL);
+		break;
 	}
 	return 0;
 }
@@ -286,6 +254,7 @@ static void nm_rx_opstart_ack(struct msgb *oml_msg)
 	struct e1inp_sign_link *sign_link = oml_msg->dst;
 	struct gsm_bts *bts = sign_link->trx->bts;
 	struct gsm_bts_trx *trx;
+	struct gsm_gprs_nsvc *nsvc;
 
 	switch (foh->obj_class) {
 	case NM_OC_SITE_MANAGER:
@@ -313,6 +282,11 @@ static void nm_rx_opstart_ack(struct msgb *oml_msg)
 	case NM_OC_GPRS_CELL:
 		osmo_fsm_inst_dispatch(bts->gprs.cell.mo.fi, NM_EV_OPSTART_ACK, NULL);
 		break;
+	case NM_OC_GPRS_NSVC:
+		if (!(nsvc = gsm_bts_sm_nsvc_num(bts->site_mgr, foh->obj_inst.trx_nr)))
+			return;
+		osmo_fsm_inst_dispatch(nsvc->mo.fi, NM_EV_OPSTART_ACK, NULL);
+		break;
 	default:
 		break;
 	}
@@ -325,6 +299,7 @@ static void nm_rx_opstart_nack(struct msgb *oml_msg)
 	struct gsm_bts *bts = sign_link->trx->bts;
 	struct gsm_bts_trx *trx;
 	struct gsm_bts_trx_ts *ts;
+	struct gsm_gprs_nsvc *nsvc;
 
 	switch (foh->obj_class) {
 	case NM_OC_SITE_MANAGER:
@@ -353,6 +328,11 @@ static void nm_rx_opstart_nack(struct msgb *oml_msg)
 		break;
 	case NM_OC_GPRS_CELL:
 		osmo_fsm_inst_dispatch(bts->gprs.cell.mo.fi, NM_EV_OPSTART_NACK, NULL);
+		break;
+	case NM_OC_GPRS_NSVC:
+		if (!(nsvc = gsm_bts_sm_nsvc_num(bts->site_mgr, foh->obj_inst.trx_nr)))
+			return;
+		osmo_fsm_inst_dispatch(nsvc->mo.fi, NM_EV_OPSTART_NACK, NULL);
 		break;
 	default:
 		break;
@@ -409,6 +389,7 @@ static void nm_rx_ipacc_set_attr_ack(struct msgb *oml_msg)
 	void *obj;
 	struct gsm_gprs_nse *nse;
 	struct gsm_gprs_cell *cell;
+	struct gsm_gprs_nsvc *nsvc;
 
 	foh = (struct abis_om_fom_hdr *) (oh->data + 1 + idstrlen);
 	obj = gsm_objclass2obj(bts, foh->obj_class, &foh->obj_inst);
@@ -421,6 +402,11 @@ static void nm_rx_ipacc_set_attr_ack(struct msgb *oml_msg)
 	case NM_OC_GPRS_CELL:
 		cell = obj;
 		osmo_fsm_inst_dispatch(cell->mo.fi, NM_EV_SET_ATTR_ACK, NULL);
+		break;
+	case NM_OC_GPRS_NSVC:
+		if (!(nsvc = gsm_bts_sm_nsvc_num(bts->site_mgr, foh->obj_inst.trx_nr)))
+			return;
+		osmo_fsm_inst_dispatch(nsvc->mo.fi, NM_EV_SET_ATTR_ACK, NULL);
 		break;
 	default:
 		LOGPFOH(DNM, LOGL_ERROR, foh, "IPACC Set Attr Ack received on incorrect object class %d!\n", foh->obj_class);
@@ -524,6 +510,7 @@ void ipaccess_drop_oml(struct gsm_bts *bts, const char *reason)
 	struct gsm_bts_trx *trx;
 	struct gsm_bts_trx_ts *ts ;
 	uint8_t tn;
+	uint8_t i;
 
 	/* First of all, remove deferred drop if enabled */
 	osmo_timer_del(&bts->oml_drop_link_timer);
@@ -550,6 +537,9 @@ void ipaccess_drop_oml(struct gsm_bts *bts, const char *reason)
 
 	osmo_fsm_inst_dispatch(bts->site_mgr->mo.fi, NM_EV_OML_DOWN, NULL);
 	osmo_fsm_inst_dispatch(bts->site_mgr->gprs.nse.mo.fi, NM_EV_OML_DOWN, NULL);
+	for (i = 0; i < ARRAY_SIZE(bts->site_mgr->gprs.nsvc); i++)
+		osmo_fsm_inst_dispatch(bts->site_mgr->gprs.nsvc[i].mo.fi, NM_EV_OML_DOWN, NULL);
+
 	osmo_fsm_inst_dispatch(bts->mo.fi, NM_EV_OML_DOWN, NULL);
 	osmo_fsm_inst_dispatch(bts->gprs.cell.mo.fi, NM_EV_OML_DOWN, NULL);
 	gsm_bts_all_ts_dispatch(bts, TS_EV_OML_DOWN, NULL);

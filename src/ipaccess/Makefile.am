@@ -62,6 +62,7 @@ ipaccess_config_LDADD = \
 	$(top_builddir)/src/osmo-bsc/nm_channel_fsm.o \
 	$(top_builddir)/src/osmo-bsc/nm_gprs_cell_fsm.o \
 	$(top_builddir)/src/osmo-bsc/nm_gprs_nse_fsm.o \
+	$(top_builddir)/src/osmo-bsc/nm_gprs_nsvc_fsm.o \
 	$(top_builddir)/src/osmo-bsc/nm_rcarrier_fsm.o \
 	$(OSMO_LIBS) \
 	$(NULL)
@@ -86,6 +87,7 @@ ipaccess_proxy_LDADD = \
 	$(top_builddir)/src/osmo-bsc/nm_channel_fsm.o \
 	$(top_builddir)/src/osmo-bsc/nm_gprs_cell_fsm.o \
 	$(top_builddir)/src/osmo-bsc/nm_gprs_nse_fsm.o \
+	$(top_builddir)/src/osmo-bsc/nm_gprs_nsvc_fsm.o \
 	$(top_builddir)/src/osmo-bsc/nm_rcarrier_fsm.o \
 	$(OSMO_LIBS) \
 	$(NULL)

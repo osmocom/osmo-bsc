@@ -49,6 +49,7 @@
 #include <osmocom/abis/e1_input.h>
 #include <osmocom/bsc/chan_alloc.h>
 #include <osmocom/bsc/bts.h>
+#include <osmocom/bsc/nm_common_fsm.h>
 #include <osmocom/gsm/bts_features.h>
 
 #define OM_ALLOC_SIZE		1024
