@@ -669,14 +669,18 @@ static int parse_attr_resp_info(struct gsm_bts *bts, const struct gsm_bts_trx *t
 }
 
 /* Handle 3GPP TS 52.021 §8.11.3 Get Attribute Response */
-static int abis_nm_rx_get_attr_resp(struct msgb *mb, const struct gsm_bts_trx *trx)
+static int abis_nm_rx_get_attr_resp(struct msgb *mb)
 {
 	struct abis_om_hdr *oh = msgb_l2(mb);
 	struct abis_om_fom_hdr *foh = msgb_l3(mb);
 	struct e1inp_sign_link *sign_link = mb->dst;
-	struct gsm_bts *bts = trx ? trx->bts : sign_link->trx->bts;
+	struct gsm_bts *bts = sign_link->trx->bts;
+	const struct gsm_bts_trx *trx;
 	struct tlv_parsed tp;
 	int rc;
+
+	trx = foh->obj_class == NM_OC_BASEB_TRANSC ?
+		gsm_bts_trx_num(bts, foh->obj_inst.trx_nr) : NULL;
 
 	DEBUGPFOH(DNM, foh, "Get Attributes Response\n");
 
@@ -995,7 +999,7 @@ static int abis_nm_rcvmsg_fom(struct msgb *mb)
 		abis_nm_rx_set_bts_attr_ack(mb);
 		break;
 	case NM_MT_GET_ATTR_RESP:
-		ret = abis_nm_rx_get_attr_resp(mb, gsm_bts_trx_num(bts, (foh)->obj_inst.trx_nr));
+		ret = abis_nm_rx_get_attr_resp(mb);
 		break;
 	case NM_MT_ESTABLISH_TEI_ACK:
 	case NM_MT_CONN_TERR_SIGN_ACK:
