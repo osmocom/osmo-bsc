@@ -339,6 +339,27 @@ static void nm_rx_opstart_nack(struct msgb *oml_msg)
 	}
 }
 
+static void nm_rx_get_attr_rep(struct msgb *oml_msg)
+{
+	struct abis_om_fom_hdr *foh = msgb_l3(oml_msg);
+	struct e1inp_sign_link *sign_link = oml_msg->dst;
+	struct gsm_bts *bts = sign_link->trx->bts;
+	struct gsm_bts_trx *trx;
+
+	switch (foh->obj_class) {
+	case NM_OC_BTS:
+		osmo_fsm_inst_dispatch(bts->mo.fi, NM_EV_GET_ATTR_REP, NULL);
+		break;
+	case NM_OC_BASEB_TRANSC:
+		if (!(trx = gsm_bts_trx_num(bts, foh->obj_inst.trx_nr)))
+			return;
+		osmo_fsm_inst_dispatch(trx->bb_transc.mo.fi, NM_EV_GET_ATTR_REP, NULL);
+		break;
+	default:
+		LOGPFOH(DNM, LOGL_ERROR, foh, "Get Attributes Response received on incorrect object class %d!\n", foh->obj_class);
+	}
+}
+
 static void nm_rx_set_bts_attr_ack(struct msgb *oml_msg)
 {
 	struct abis_om_fom_hdr *foh = msgb_l3(oml_msg);
@@ -431,6 +452,9 @@ static int bts_ipa_nm_sig_cb(unsigned int subsys, unsigned int signal,
 		return 0;
 	case S_NM_OPSTART_NACK:
 		nm_rx_opstart_nack(signal_data);
+		return 0;
+	case S_NM_GET_ATTR_REP:
+		nm_rx_get_attr_rep(signal_data);
 		return 0;
 	case S_NM_SET_BTS_ATTR_ACK:
 		nm_rx_set_bts_attr_ack(signal_data);

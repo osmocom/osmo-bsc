@@ -399,6 +399,8 @@ struct gsm_abis_mo {
 	struct osmo_fsm_inst *fi;
 	bool opstart_sent;
 	bool adm_unlock_sent;
+	bool get_attr_sent;
+	bool get_attr_rep_received;
 	bool set_attr_sent;
 	bool set_attr_ack_received;
 	bool force_rf_lock;

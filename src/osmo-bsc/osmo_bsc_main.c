@@ -371,13 +371,6 @@ static int inp_sig_cb(unsigned int subsys, unsigned int signal,
 {
 	struct input_signal_data *isd = signal_data;
 	struct gsm_bts_trx *trx = isd->trx;
-	/* N. B: we rely on attribute order when parsing response in abis_nm_rx_get_attr_resp() */
-	const uint8_t bts_attr[] = { NM_ATT_MANUF_ID, NM_ATT_SW_CONFIG, };
-	const uint8_t trx_attr[] = { NM_ATT_MANUF_STATE, NM_ATT_SW_CONFIG, };
-
-	/* we should not request more attributes than we're ready to handle */
-	OSMO_ASSERT(sizeof(bts_attr) < MAX_BTS_ATTR);
-	OSMO_ASSERT(sizeof(trx_attr) < MAX_BTS_ATTR);
 
 	if (subsys != SS_L_INPUT)
 		return -EINVAL;
@@ -395,14 +388,8 @@ static int inp_sig_cb(unsigned int subsys, unsigned int signal,
 			  set bts->si_common.cell_alloc */
 			generate_cell_chan_list(ca, trx->bts);
 
-			/* Request generic BTS-level attributes */
-			abis_nm_get_attr(trx->bts, NM_OC_BTS, 0xFF, 0xFF, 0xFF, bts_attr, sizeof(bts_attr));
-
 			llist_for_each_entry(cur_trx, &trx->bts->trx_list, list) {
 				int i;
-				/* Request TRX-level attributes */
-				abis_nm_get_attr(cur_trx->bts, NM_OC_BASEB_TRANSC, 0, cur_trx->nr, 0xFF,
-						 trx_attr, sizeof(trx_attr));
 				for (i = 0; i < ARRAY_SIZE(cur_trx->ts); i++)
 					generate_ma_for_ts(&cur_trx->ts[i]);
 			}

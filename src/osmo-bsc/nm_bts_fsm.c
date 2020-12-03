@@ -48,6 +48,8 @@ static void st_op_disabled_notinstalled_on_enter(struct osmo_fsm_inst *fi, uint3
 {
 	struct gsm_bts *bts = (struct gsm_bts *)fi->priv;
 
+	bts->mo.get_attr_sent = false;
+	bts->mo.get_attr_rep_received = false;
 	bts->mo.set_attr_sent = false;
 	bts->mo.set_attr_ack_received = false;
 	bts->mo.adm_unlock_sent = false;
@@ -89,14 +91,27 @@ static void st_op_disabled_notinstalled(struct osmo_fsm_inst *fi, uint32_t event
 static void configure_loop(struct gsm_bts *bts, struct gsm_nm_state *state, bool allow_opstart) {
 	struct msgb *msgb;
 
-	if (!bts->mo.set_attr_sent && !bts->mo.set_attr_ack_received) {
+	/* Request generic BTS-level attributes */
+	if (!bts->mo.get_attr_sent && !bts->mo.get_attr_rep_received) {
+		bts->mo.get_attr_sent = true;
+		/* N. B: we rely on attribute order when parsing response in abis_nm_rx_get_attr_resp() */
+		const uint8_t bts_attr[] = { NM_ATT_MANUF_ID, NM_ATT_SW_CONFIG, };
+		/* we should not request more attributes than we're ready to handle */
+		OSMO_ASSERT(sizeof(bts_attr) < MAX_BTS_ATTR);
+		abis_nm_get_attr(bts, NM_OC_BTS, 0, 0xff, 0xff,
+				 bts_attr, sizeof(bts_attr));
+	}
+
+	if (bts->mo.get_attr_rep_received &&
+	    !bts->mo.set_attr_sent && !bts->mo.set_attr_ack_received) {
 		bts->mo.set_attr_sent = true;
 		msgb = nanobts_attr_bts_get(bts);
 		abis_nm_set_bts_attr(bts, msgb->data, msgb->len);
 		msgb_free(msgb);
 	}
 
-	if (state->administrative != NM_STATE_UNLOCKED && !bts->mo.adm_unlock_sent) {
+	if (bts->mo.set_attr_ack_received &&
+	    state->administrative != NM_STATE_UNLOCKED && !bts->mo.adm_unlock_sent) {
 		bts->mo.adm_unlock_sent = true;
 		abis_nm_chg_adm_state(bts, NM_OC_BTS,
 				      bts->bts_nr, 0xff, 0xff,
@@ -105,11 +120,11 @@ static void configure_loop(struct gsm_bts *bts, struct gsm_nm_state *state, bool
 
 	if (allow_opstart && state->administrative == NM_STATE_UNLOCKED &&
 	    bts->mo.set_attr_ack_received) {
-		    if (!bts->mo.opstart_sent) {
-			    bts->mo.opstart_sent = true;
-			    abis_nm_opstart(bts, NM_OC_BTS, bts->bts_nr, 0xff, 0xff);
-		    }
-	    }
+		if (!bts->mo.opstart_sent) {
+		    bts->mo.opstart_sent = true;
+		    abis_nm_opstart(bts, NM_OC_BTS, bts->bts_nr, 0xff, 0xff);
+		}
+	}
 }
 
 static void st_op_disabled_dependency_on_enter(struct osmo_fsm_inst *fi, uint32_t prev_state)
@@ -133,6 +148,11 @@ static void st_op_disabled_dependency(struct osmo_fsm_inst *fi, uint32_t event, 
 	struct gsm_nm_state *new_state;
 
 	switch (event) {
+	case NM_EV_GET_ATTR_REP:
+		bts->mo.get_attr_rep_received = true;
+		bts->mo.get_attr_sent = false;
+		configure_loop(bts, &bts->mo.nm_state, false);
+		return;
 	case NM_EV_SET_ATTR_ACK:
 		bts->mo.set_attr_ack_received = true;
 		bts->mo.set_attr_sent = false;
@@ -182,6 +202,11 @@ static void st_op_disabled_offline(struct osmo_fsm_inst *fi, uint32_t event, voi
 	struct gsm_nm_state *new_state;
 
 	switch (event) {
+	case NM_EV_GET_ATTR_REP:
+		bts->mo.get_attr_rep_received = true;
+		bts->mo.get_attr_sent = false;
+		configure_loop(bts, &bts->mo.nm_state, true);
+		return;
 	case NM_EV_SET_ATTR_ACK:
 		bts->mo.set_attr_ack_received = true;
 		bts->mo.set_attr_sent = false;
@@ -231,6 +256,8 @@ static void st_op_enabled_on_enter(struct osmo_fsm_inst *fi, uint32_t prev_state
 	  reused as soon as we move back to Disabled */
 	bts->mo.opstart_sent = false;
 	bts->mo.adm_unlock_sent = false;
+	bts->mo.get_attr_sent = false;
+	bts->mo.get_attr_rep_received = false;
 	bts->mo.set_attr_sent = false;
 	bts->mo.set_attr_ack_received = false;
 }
@@ -300,6 +327,7 @@ static struct osmo_fsm_state nm_bts_fsm_states[] = {
 	[NM_BTS_ST_OP_DISABLED_DEPENDENCY] = {
 		.in_event_mask =
 			X(NM_EV_STATE_CHG_REP) |
+			X(NM_EV_GET_ATTR_REP) |
 			X(NM_EV_SET_ATTR_ACK),
 		.out_state_mask =
 			X(NM_BTS_ST_OP_DISABLED_NOTINSTALLED) |
@@ -312,6 +340,7 @@ static struct osmo_fsm_state nm_bts_fsm_states[] = {
 	[NM_BTS_ST_OP_DISABLED_OFFLINE] = {
 		.in_event_mask =
 			X(NM_EV_STATE_CHG_REP) |
+			X(NM_EV_GET_ATTR_REP) |
 			X(NM_EV_SET_ATTR_ACK),
 		.out_state_mask =
 			X(NM_BTS_ST_OP_DISABLED_NOTINSTALLED) |

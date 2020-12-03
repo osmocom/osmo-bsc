@@ -48,6 +48,8 @@ static void st_op_disabled_notinstalled_on_enter(struct osmo_fsm_inst *fi, uint3
 {
 	struct gsm_bts_bb_trx *bb_transc = (struct gsm_bts_bb_trx *)fi->priv;
 
+	bb_transc->mo.get_attr_sent = false;
+	bb_transc->mo.get_attr_rep_received = false;
 	bb_transc->mo.adm_unlock_sent = false;
 	bb_transc->mo.opstart_sent = false;
 }
@@ -87,7 +89,20 @@ static void st_op_disabled_notinstalled(struct osmo_fsm_inst *fi, uint32_t event
 static void configure_loop(struct gsm_bts_bb_trx *bb_transc, struct gsm_nm_state *state, bool allow_opstart)
 {
 	struct gsm_bts_trx *trx = gsm_bts_bb_trx_get_trx(bb_transc);
-	if (state->administrative != NM_STATE_UNLOCKED && !bb_transc->mo.adm_unlock_sent) {
+
+	/* Request TRX-level attributes */
+	if (!bb_transc->mo.get_attr_sent && !bb_transc->mo.get_attr_rep_received) {
+		bb_transc->mo.get_attr_sent = true;
+		/* N. B: we rely on attribute order when parsing response in abis_nm_rx_get_attr_resp() */
+		const uint8_t trx_attr[] = { NM_ATT_MANUF_STATE, NM_ATT_SW_CONFIG, };
+		/* we should not request more attributes than we're ready to handle */
+		OSMO_ASSERT(sizeof(trx_attr) < MAX_BTS_ATTR);
+		abis_nm_get_attr(trx->bts, NM_OC_BASEB_TRANSC, 0, trx->nr, 0xff,
+				 trx_attr, sizeof(trx_attr));
+	}
+
+	if (bb_transc->mo.get_attr_rep_received &&
+	    state->administrative != NM_STATE_UNLOCKED && !bb_transc->mo.adm_unlock_sent) {
 		bb_transc->mo.adm_unlock_sent = true;
 		/* Note: nanoBTS sometimes fails NACKing the BaseBand
 		   Transceiver Unlock command while in Dependency, specially
@@ -105,7 +120,7 @@ static void configure_loop(struct gsm_bts_bb_trx *bb_transc, struct gsm_nm_state
 		/* TRX software is active, tell it to initiate RSL Link */
 		abis_nm_ipaccess_rsl_connect(trx, trx->bts->ip_access.rsl_ip,
 					     3003, trx->rsl_tei);
-	    }
+	}
 }
 
 static void st_op_disabled_dependency_on_enter(struct osmo_fsm_inst *fi, uint32_t prev_state)
@@ -127,6 +142,11 @@ static void st_op_disabled_dependency(struct osmo_fsm_inst *fi, uint32_t event, 
 	struct gsm_nm_state *new_state;
 
 	switch (event) {
+	case NM_EV_GET_ATTR_REP:
+		bb_transc->mo.get_attr_rep_received = true;
+		bb_transc->mo.get_attr_sent = false;
+		configure_loop(bb_transc, &bb_transc->mo.nm_state, false);
+		return;
 	case NM_EV_STATE_CHG_REP:
 		nsd = (struct nm_statechg_signal_data *)data;
 		new_state = nsd->new_state;
@@ -172,6 +192,11 @@ static void st_op_disabled_offline(struct osmo_fsm_inst *fi, uint32_t event, voi
 	struct gsm_nm_state *new_state;
 
 	switch (event) {
+	case NM_EV_GET_ATTR_REP:
+		bb_transc->mo.get_attr_rep_received = true;
+		bb_transc->mo.get_attr_sent = false;
+		configure_loop(bb_transc, &bb_transc->mo.nm_state, true);
+		return;
 	case NM_EV_STATE_CHG_REP:
 		nsd = (struct nm_statechg_signal_data *)data;
 		new_state = nsd->new_state;
@@ -214,6 +239,8 @@ static void st_op_enabled_on_enter(struct osmo_fsm_inst *fi, uint32_t prev_state
 
 	/* Reset state, we don't need it in this state and it will need to be
 	  reused as soon as we move back to Disabled */
+	bb_transc->mo.get_attr_sent = false;
+	bb_transc->mo.get_attr_rep_received = false;
 	bb_transc->mo.opstart_sent = false;
 	bb_transc->mo.adm_unlock_sent = false;
 }
@@ -282,7 +309,8 @@ static struct osmo_fsm_state nm_bb_transc_fsm_states[] = {
 	},
 	[NM_BB_TRANSC_ST_OP_DISABLED_DEPENDENCY] = {
 		.in_event_mask =
-			X(NM_EV_STATE_CHG_REP),
+			X(NM_EV_STATE_CHG_REP) |
+			X(NM_EV_GET_ATTR_REP),
 		.out_state_mask =
 			X(NM_BB_TRANSC_ST_OP_DISABLED_NOTINSTALLED) |
 			X(NM_BB_TRANSC_ST_OP_DISABLED_OFFLINE) |
@@ -293,7 +321,8 @@ static struct osmo_fsm_state nm_bb_transc_fsm_states[] = {
 	},
 	[NM_BB_TRANSC_ST_OP_DISABLED_OFFLINE] = {
 		.in_event_mask =
-			X(NM_EV_STATE_CHG_REP),
+			X(NM_EV_STATE_CHG_REP) |
+			X(NM_EV_GET_ATTR_REP),
 		.out_state_mask =
 			X(NM_BB_TRANSC_ST_OP_DISABLED_NOTINSTALLED) |
 			X(NM_BB_TRANSC_ST_OP_DISABLED_DEPENDENCY) |
