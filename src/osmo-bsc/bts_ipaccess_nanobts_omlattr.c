@@ -199,7 +199,7 @@ struct msgb *nanobts_attr_cell_get(struct gsm_bts *bts)
 	return msgb;
 }
 
-struct msgb *nanobts_attr_nscv_get(struct gsm_bts *bts)
+struct msgb *nanobts_attr_nsvc_get(struct gsm_bts *bts)
 {
 	struct msgb *msgb;
 	uint8_t buf[256];
