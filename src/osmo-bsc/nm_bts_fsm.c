@@ -127,6 +127,21 @@ static void configure_loop(struct gsm_bts *bts, struct gsm_nm_state *state, bool
 	}
 }
 
+static void rx_get_attr_rep(struct gsm_bts *bts, bool allow_opstart)
+{
+	struct gsm_gprs_nsvc *nsvc;
+
+	bts->mo.get_attr_rep_received = true;
+	bts->mo.get_attr_sent = false;
+
+	/* Announce bts_features are available to related NSVC MOs */
+	nsvc = gsm_bts_sm_nsvc_num(bts->site_mgr, 0); /* we only support NSVC0 so far */
+	osmo_fsm_inst_dispatch(nsvc->mo.fi, NM_EV_FEATURE_NEGOTIATED, NULL);
+
+	/* Move FSM forward */
+	configure_loop(bts, &bts->mo.nm_state, allow_opstart);
+}
+
 static void st_op_disabled_dependency_on_enter(struct osmo_fsm_inst *fi, uint32_t prev_state)
 {
 	struct gsm_bts *bts = (struct gsm_bts *)fi->priv;
@@ -149,9 +164,7 @@ static void st_op_disabled_dependency(struct osmo_fsm_inst *fi, uint32_t event, 
 
 	switch (event) {
 	case NM_EV_GET_ATTR_REP:
-		bts->mo.get_attr_rep_received = true;
-		bts->mo.get_attr_sent = false;
-		configure_loop(bts, &bts->mo.nm_state, false);
+		rx_get_attr_rep(bts, false);
 		return;
 	case NM_EV_SET_ATTR_ACK:
 		bts->mo.set_attr_ack_received = true;
@@ -203,9 +216,7 @@ static void st_op_disabled_offline(struct osmo_fsm_inst *fi, uint32_t event, voi
 
 	switch (event) {
 	case NM_EV_GET_ATTR_REP:
-		bts->mo.get_attr_rep_received = true;
-		bts->mo.get_attr_sent = false;
-		configure_loop(bts, &bts->mo.nm_state, true);
+		rx_get_attr_rep(bts, true);
 		return;
 	case NM_EV_SET_ATTR_ACK:
 		bts->mo.set_attr_ack_received = true;

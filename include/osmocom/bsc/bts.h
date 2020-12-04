@@ -585,6 +585,11 @@ char *get_model_oml_status(const struct gsm_bts *bts);
 /* reset the state of all MO in the BTS */
 void gsm_bts_mo_reset(struct gsm_bts *bts);
 
+static inline bool gsm_bts_features_negotiated(struct gsm_bts *bts)
+{
+	return bts->mo.get_attr_rep_received || bts->mo.nm_state.operational == NM_OPSTATE_ENABLED;
+}
+
 /* dependency handling */
 void bts_depend_mark(struct gsm_bts *bts, int dep);
 void bts_depend_clear(struct gsm_bts *bts, int dep);

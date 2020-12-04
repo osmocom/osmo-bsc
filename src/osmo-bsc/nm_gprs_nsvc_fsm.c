@@ -62,6 +62,8 @@ static void st_op_disabled_notinstalled(struct osmo_fsm_inst *fi, uint32_t event
 	struct gsm_nm_state *new_state;
 
 	switch (event) {
+	case NM_EV_FEATURE_NEGOTIATED:
+		break;
 	case NM_EV_SW_ACT_REP:
 		break;
 	case NM_EV_STATE_CHG_REP:
@@ -94,7 +96,9 @@ static void configure_loop(struct gsm_gprs_nsvc *nsvc, struct gsm_nm_state *stat
 	if (nsvc->bts->gprs.mode == BTS_GPRS_NONE)
 		return;
 
-	if (!nsvc->mo.set_attr_sent && !nsvc->mo.set_attr_ack_received) {
+	/* We need to know BTS features in order to know if we can set IPv6 addresses */
+	if (gsm_bts_features_negotiated(nsvc->bts) && !nsvc->mo.set_attr_sent &&
+	    !nsvc->mo.set_attr_ack_received) {
 		if (!osmo_bts_has_feature(&nsvc->bts->features, BTS_FEAT_IPV6_NSVC) &&
 		    nsvc->remote.u.sa.sa_family == AF_INET6) {
 			LOGPFSML(nsvc->mo.fi, LOGL_ERROR,
@@ -149,6 +153,9 @@ static void st_op_disabled_dependency(struct osmo_fsm_inst *fi, uint32_t event, 
 	struct gsm_nm_state *new_state;
 
 	switch (event) {
+	case NM_EV_FEATURE_NEGOTIATED:
+		configure_loop(nsvc, &nsvc->mo.nm_state, false);
+		return;
 	case NM_EV_SET_ATTR_ACK:
 		nsvc->mo.set_attr_ack_received = true;
 		nsvc->mo.set_attr_sent = false;
@@ -198,6 +205,9 @@ static void st_op_disabled_offline(struct osmo_fsm_inst *fi, uint32_t event, voi
 	struct gsm_nm_state *new_state;
 
 	switch (event) {
+	case NM_EV_FEATURE_NEGOTIATED:
+		configure_loop(nsvc, &nsvc->mo.nm_state, true);
+		return;
 	case NM_EV_SET_ATTR_ACK:
 		nsvc->mo.set_attr_ack_received = true;
 		nsvc->mo.set_attr_sent = false;
@@ -304,6 +314,7 @@ static struct osmo_fsm_state nm_gprs_nsvc_fsm_states[] = {
 	[NM_GPRS_NSVC_ST_OP_DISABLED_NOTINSTALLED] = {
 		.in_event_mask =
 			X(NM_EV_SW_ACT_REP) |
+			X(NM_EV_FEATURE_NEGOTIATED) |
 			X(NM_EV_STATE_CHG_REP),
 		.out_state_mask =
 			X(NM_GPRS_NSVC_ST_OP_DISABLED_DEPENDENCY) |
@@ -316,6 +327,7 @@ static struct osmo_fsm_state nm_gprs_nsvc_fsm_states[] = {
 	[NM_GPRS_NSVC_ST_OP_DISABLED_DEPENDENCY] = {
 		.in_event_mask =
 			X(NM_EV_STATE_CHG_REP) |
+			X(NM_EV_FEATURE_NEGOTIATED) |
 			X(NM_EV_SET_ATTR_ACK),
 		.out_state_mask =
 			X(NM_GPRS_NSVC_ST_OP_DISABLED_NOTINSTALLED) |
@@ -328,6 +340,7 @@ static struct osmo_fsm_state nm_gprs_nsvc_fsm_states[] = {
 	[NM_GPRS_NSVC_ST_OP_DISABLED_OFFLINE] = {
 		.in_event_mask =
 			X(NM_EV_STATE_CHG_REP) |
+			X(NM_EV_FEATURE_NEGOTIATED) |
 			X(NM_EV_SET_ATTR_ACK),
 		.out_state_mask =
 			X(NM_GPRS_NSVC_ST_OP_DISABLED_NOTINSTALLED) |
