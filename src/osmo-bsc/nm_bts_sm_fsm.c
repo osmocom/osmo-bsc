@@ -212,7 +212,8 @@ static void st_op_allstate(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 		site_mgr->mo.opstart_sent = false;
 		break;
 	case NM_EV_OML_DOWN:
-		nm_bts_sm_fsm_state_chg(fi, NM_BTS_SM_ST_OP_DISABLED_NOTINSTALLED);
+		if (fi->state != NM_BTS_SM_ST_OP_DISABLED_NOTINSTALLED)
+			nm_bts_sm_fsm_state_chg(fi, NM_BTS_SM_ST_OP_DISABLED_NOTINSTALLED);
 		break;
 	default:
 		OSMO_ASSERT(0);
