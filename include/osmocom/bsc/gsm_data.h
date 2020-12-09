@@ -937,6 +937,7 @@ char *gsm_lchan_name_compute(const struct gsm_lchan *lchan);
 
 static inline char *gsm_lchan_name(const struct gsm_lchan *lchan)
 {
+	OSMO_ASSERT(lchan);
 	return lchan->name;
 }
 
