@@ -660,11 +660,14 @@ static struct vty_app_info vty_info = {
 			"This command applies on A-bis RSL link (re)establishment",
 		[BSC_VTY_ATTR_NEW_LCHAN] = \
 			"This command applies for newly created lchans",
+		[BSC_VTY_ATTR_VENDOR_SPECIFIC] = \
+			"This command/parameter is BTS vendor specific",
 	},
 	.usr_attr_letters = {
 		[BSC_VTY_ATTR_RESTART_ABIS_OML_LINK]	= 'o',
 		[BSC_VTY_ATTR_RESTART_ABIS_RSL_LINK]	= 'r',
 		[BSC_VTY_ATTR_NEW_LCHAN]		= 'l',
+		[BSC_VTY_ATTR_VENDOR_SPECIFIC]		= 'v',
 	},
 };
 
