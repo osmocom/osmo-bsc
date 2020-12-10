@@ -861,8 +861,13 @@ static void lchan_fsm_wait_rll_rtp_establish(struct osmo_fsm_inst *fi, uint32_t 
 
 	case LCHAN_EV_RLL_ESTABLISH_IND:
 		if (!lchan->activate.info.requires_voice_stream
-		    || lchan_rtp_established(lchan))
+		    || lchan_rtp_established(lchan)) {
+			LOG_LCHAN(lchan, LOGL_DEBUG,
+				  "%s\n",
+				  (lchan->activate.info.requires_voice_stream ?
+				   "RTP already established earlier" : "no voice stream required"));
 			lchan_fsm_state_chg(LCHAN_ST_ESTABLISHED);
+		}
 		return;
 
 	case LCHAN_EV_RTP_READY:
