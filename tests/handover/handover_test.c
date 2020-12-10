@@ -605,7 +605,32 @@ static void send_est_ind(struct gsm_lchan *lchan)
 	abis_rsl_rcvmsg(msg);
 }
 
-/* send handover complete */
+static void send_ho_detect(struct gsm_lchan *lchan)
+{
+	struct msgb *msg = msgb_alloc_headroom(256, 64, "RSL");
+	struct abis_rsl_rll_hdr *rh;
+	uint8_t chan_nr = gsm_lchan2chan_nr(lchan);
+
+	fprintf(stderr, "- Send HO DETECT for %s\n", gsm_lchan_name(lchan));
+
+	rh = (struct abis_rsl_rll_hdr *) msgb_put(msg, sizeof(*rh));
+	rh->c.msg_discr = ABIS_RSL_MDISC_DED_CHAN;
+	rh->c.msg_type = RSL_MT_HANDO_DET;
+	rh->ie_chan = RSL_IE_CHAN_NR;
+	rh->chan_nr = chan_nr;
+	rh->ie_link_id = RSL_IE_LINK_IDENT;
+	rh->link_id = 0x00;
+
+	msg->dst = lchan->ts->trx->bts->c0->rsl_link;
+	msg->l2h = (unsigned char *)rh;
+
+	abis_rsl_rcvmsg(msg);
+
+	send_est_ind(lchan);
+	osmo_fsm_inst_dispatch(lchan->fi, LCHAN_EV_RTP_READY, 0);
+
+}
+
 static void send_ho_complete(struct gsm_lchan *lchan, bool success)
 {
 	struct msgb *msg = msgb_alloc_headroom(256, 64, "RSL");
@@ -614,9 +639,6 @@ static void send_ho_complete(struct gsm_lchan *lchan, bool success)
 	uint8_t *buf;
 	struct gsm48_hdr *gh;
 	struct gsm48_ho_cpl *hc;
-
-	send_est_ind(lchan);
-	osmo_fsm_inst_dispatch(lchan->fi, LCHAN_EV_RTP_READY, 0);
 
 	if (success)
 		fprintf(stderr, "- Send HO COMPLETE for %s\n", gsm_lchan_name(lchan));
@@ -975,6 +997,22 @@ DEFUN(expect_ho_req, expect_ho_req_cmd,
 	return CMD_SUCCESS;
 }
 
+DEFUN(ho_detection, ho_detection_cmd,
+      "ho-detect",
+      "Send Handover Detection to the most recent HO target lchan\n")
+{
+	if (!got_chan_req) {
+		fprintf(stderr, "Cannot ack handover/assignment, because no chan request\n");
+		exit(1);
+	}
+	if (!got_ho_req) {
+		fprintf(stderr, "Cannot ack handover/assignment, because no ho request\n");
+		exit(1);
+	}
+	send_ho_detect(chan_req_lchan);
+	return CMD_SUCCESS;
+}
+
 DEFUN(ho_complete, ho_complete_cmd,
       "ho-complete",
       "Send Handover Complete for the most recent HO target lchan\n")
@@ -1005,6 +1043,7 @@ DEFUN(expect_ho, expect_ho_cmd,
 	_expect_chan_activ(to);
 	_ack_chan_activ(to);
 	_expect_ho_req(from);
+	send_ho_detect(to);
 	send_ho_complete(to, true);
 	lchan_release_ack(from);
 	return CMD_SUCCESS;
@@ -1088,6 +1127,7 @@ static void ho_test_vty_init()
 	install_element(CONFIG_NODE, &expect_chan_cmd);
 	install_element(CONFIG_NODE, &ack_chan_cmd);
 	install_element(CONFIG_NODE, &expect_ho_req_cmd);
+	install_element(CONFIG_NODE, &ho_detection_cmd);
 	install_element(CONFIG_NODE, &ho_complete_cmd);
 	install_element(CONFIG_NODE, &expect_ho_cmd);
 	install_element(CONFIG_NODE, &ho_failed_cmd);
