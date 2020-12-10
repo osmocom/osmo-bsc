@@ -381,6 +381,8 @@ struct gsm_lchan *lchan_act(struct gsm_lchan *lchan, int full_rate, const char *
 	lchan->fi->state = LCHAN_ST_ESTABLISHED;
 	lchan->ts->fi->state = TS_ST_IN_USE;
 	lchan->type = full_rate ? GSM_LCHAN_TCH_F : GSM_LCHAN_TCH_H;
+	/* Fake osmo_mgcpc_ep_ci to indicate that the lchan is used for voice */
+	lchan->mgw_endpoint_ci_bts = (void*)1;
 
 	if (lchan->ts->pchan_on_init == GSM_PCHAN_TCH_F_TCH_H_PDCH)
 		lchan->ts->pchan_is = full_rate ? GSM_PCHAN_TCH_F : GSM_PCHAN_TCH_H;
@@ -1346,3 +1348,11 @@ void osmo_bsc_sigtran_tx_reset_ack(void) {}
 void osmo_bsc_sigtran_reset(void) {}
 void bssmap_reset_alloc(void) {}
 void bssmap_reset_is_conn_ready(void) {}
+const char *osmo_mgcpc_ep_name(const struct osmo_mgcpc_ep *ep)
+{
+	return "fake-ep";
+}
+const char *osmo_mgcpc_ep_ci_name(const struct osmo_mgcpc_ep_ci *ci)
+{
+	return "fake-ci";
+}
