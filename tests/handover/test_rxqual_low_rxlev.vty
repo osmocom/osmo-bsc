@@ -1,0 +1,34 @@
+# RXQUAL is below minimum, but so is RXLEV
+#
+# The neighbor cell has worse RXLEV, so no handover is performed.
+# If the RXQUAL of the current cell drops below minimum acceptable
+# level, the handover is performed. It is also required that 10
+# reports are received, before RXQUAL is checked.
+#
+# Add
+
+create-n-bts 2
+set-ts-use trx 0 0 states * TCH/F - - - - - -
+meas-rep lchan 0 0 1 0 rxlev 40 rxqual 6 ta 0 neighbors 30
+expect-no-chan
+meas-rep lchan 0 0 1 0 rxlev 40 rxqual 6 ta 0 neighbors 30
+expect-no-chan
+meas-rep lchan 0 0 1 0 rxlev 40 rxqual 6 ta 0 neighbors 30
+expect-no-chan
+meas-rep lchan 0 0 1 0 rxlev 40 rxqual 6 ta 0 neighbors 30
+expect-no-chan
+meas-rep lchan 0 0 1 0 rxlev 40 rxqual 6 ta 0 neighbors 30
+expect-no-chan
+meas-rep lchan 0 0 1 0 rxlev 40 rxqual 6 ta 0 neighbors 30
+expect-no-chan
+meas-rep lchan 0 0 1 0 rxlev 40 rxqual 6 ta 0 neighbors 30
+expect-no-chan
+meas-rep lchan 0 0 1 0 rxlev 40 rxqual 6 ta 0 neighbors 30
+expect-no-chan
+meas-rep lchan 0 0 1 0 rxlev 40 rxqual 6 ta 0 neighbors 30
+expect-no-chan
+meas-rep lchan 0 0 1 0 rxlev 40 rxqual 6 ta 0 neighbors 30
+expect-ho from lchan 0 0 1 0 to lchan 1 0 1 0
+expect-ts-use trx 0 0 states * - - - - - - -
+expect-ts-use trx 1 0 states * TCH/F - - - - - -
+
