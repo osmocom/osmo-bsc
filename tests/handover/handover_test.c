@@ -435,9 +435,20 @@ struct gsm_lchan *create_lchan(struct gsm_bts *bts, int full_rate, const char *c
 	return lchan_act(lchan, full_rate, codec);
 }
 
+static void lchan_release_ack(struct gsm_lchan *lchan)
+{
+	if (lchan->fi && lchan->fi->state == LCHAN_ST_WAIT_BEFORE_RF_RELEASE) {
+		/* don't wait before release */
+		osmo_fsm_inst_state_chg(lchan->fi, LCHAN_ST_WAIT_RF_RELEASE_ACK, 0, 0);
+		/* ack the release */
+		osmo_fsm_inst_dispatch(lchan->fi, LCHAN_EV_RSL_RF_CHAN_REL_ACK, 0);
+	}
+}
+
 static void lchan_clear(struct gsm_lchan *lchan)
 {
 	lchan_release(lchan, true, false, 0);
+	lchan_release_ack(lchan);
 }
 
 static void ts_clear(struct gsm_bts_trx_ts *ts)
@@ -672,16 +683,6 @@ static void send_ho_complete(struct gsm_lchan *lchan, bool success)
 	msg->l3h = (unsigned char *)gh;
 
 	abis_rsl_rcvmsg(msg);
-}
-
-static void lchan_release_ack(struct gsm_lchan *lchan)
-{
-	if (lchan->fi && lchan->fi->state == LCHAN_ST_WAIT_BEFORE_RF_RELEASE) {
-		/* don't wait before release */
-		osmo_fsm_inst_state_chg(lchan->fi, LCHAN_ST_WAIT_RF_RELEASE_ACK, 0, 0);
-		/* ack the release */
-		osmo_fsm_inst_dispatch(lchan->fi, LCHAN_EV_RSL_RF_CHAN_REL_ACK, 0);
-	}
 }
 
 /* override, requires '-Wl,--wrap=abis_rsl_sendmsg'.
