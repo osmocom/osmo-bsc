@@ -841,6 +841,16 @@ DEFUN(create_ms, create_ms_cmd,
 	return CMD_SUCCESS;
 }
 
+DEFUN(clear, clear_cmd,
+      "clear " LCHAN_ARGS,
+      "Clear an active lchan\n"
+      LCHAN_ARGS_DOC)
+{
+	struct gsm_lchan *lchan = parse_lchan_args(argv);
+	lchan_clear(lchan);
+	return CMD_SUCCESS;
+}
+
 DEFUN(meas_rep, meas_rep_cmd,
       "meas-rep " LCHAN_ARGS " rxlev <0-255> rxqual <0-7> ta <0-255>"
 	" [neighbors] [<0-255>] [<0-255>] [<0-255>] [<0-255>] [<0-255>] [<0-255>]",
@@ -1124,6 +1134,7 @@ static void ho_test_vty_init()
 	install_element(CONFIG_NODE, &create_n_bts_cmd);
 	install_element(CONFIG_NODE, &create_bts_cmd);
 	install_element(CONFIG_NODE, &create_ms_cmd);
+	install_element(CONFIG_NODE, &clear_cmd);
 	install_element(CONFIG_NODE, &meas_rep_cmd);
 	install_element(CONFIG_NODE, &congestion_check_cmd);
 	install_element(CONFIG_NODE, &expect_no_chan_cmd);
