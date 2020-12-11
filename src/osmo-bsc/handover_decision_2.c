@@ -868,11 +868,15 @@ static void collect_assignment_candidate(struct gsm_lchan *lchan, struct ho_cand
 		.avg = av_rxlev,
 	};
 
+	LOGPHOLCHANTOBTS(lchan, c.bts, LOGL_DEBUG, "Assignment candidate:\n");
 	debug_candidate(&c, 0, tchf_count, tchh_count);
 
-	if (!c.requirements)
+	if (!c.requirements) {
+		LOGPHOLCHANTOBTS(lchan, c.bts, LOGL_DEBUG, "Assignment candidate: no requirements met\n");
 		return;
+	}
 
+	LOGPHOLCHANTOBTS(lchan, c.bts, LOGL_DEBUG, "Assignment candidate made it\n");
 	clist[*candidates] = c;
 	(*candidates)++;
 }
@@ -1119,10 +1123,12 @@ static int find_alternative_lchan(struct gsm_lchan *lchan, bool include_weaker_r
 		int afs_bias;
 		if (!(clist[i].requirements & REQUIREMENT_B_MASK))
 			continue;
+		LOGPHOLCHAN(lchan, LOGL_INFO, "B met\n");
 
 		/* Only consider Local-BSS cells */
 		if (!clist[i].bts)
 			continue;
+		LOGPHOLCHAN(lchan, LOGL_INFO, "local bss met\n");
 
 		better = clist[i].avg - av_rxlev;
 		/* Apply AFS bias? */
@@ -1130,6 +1136,7 @@ static int find_alternative_lchan(struct gsm_lchan *lchan, bool include_weaker_r
 		if (ahs && (clist[i].requirements & REQUIREMENT_B_TCHF))
 			afs_bias = ho_get_hodec2_afs_bias_rxlev(clist[i].bts->ho);
 		better += afs_bias;
+		LOGPHOLCHAN(lchan, LOGL_INFO, "better %d > %u best_better_db\n", better, best_better_db);
 		if (better > best_better_db) {
 			best_cand = &clist[i];
 			best_better_db = better;
