@@ -120,7 +120,7 @@ static const struct value_string ho_reason_names[] = {
 	{ HO_REASON_BAD_QUALITY,	"bad quality" },
 	{ HO_REASON_LOW_RXLEVEL,	"low rxlevel" },
 	{ HO_REASON_MAX_DISTANCE,	"maximum allowed distance" },
-	{ HO_REASON_BETTER_CELL,	"better cell" },
+	{ HO_REASON_BETTER_CELL,	"better rxlev" },
 	{ HO_REASON_CONGESTION,		"congestion" },
 	{0, NULL}
 };
