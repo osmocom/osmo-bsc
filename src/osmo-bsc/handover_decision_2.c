@@ -699,6 +699,7 @@ static int trigger_local_ho_or_as(struct ho_candidate *c, uint8_t requirements)
 	struct gsm_bts *current_bts = lchan->ts->trx->bts;
 	int afs_bias = 0;
 	bool full_rate = false;
+	bool applied_afs_bias = false;
 
 	/* afs_bias becomes > 0, if AFS is used and is improved */
 	if (lchan->tch_mode == GSM48_CMODE_SPEECH_AMR)
@@ -727,6 +728,7 @@ static int trigger_local_ho_or_as(struct ho_candidate *c, uint8_t requirements)
 		/* change to full rate if AFS is improved and a candidate */
 		if (afs_bias > 0 && (requirements & REQUIREMENT_TCHF_MASK)) {
 			full_rate = true;
+			applied_afs_bias = true;
 			break;
 		}
 		/* change to full rate if the only candidate */
@@ -753,14 +755,16 @@ static int trigger_local_ho_or_as(struct ho_candidate *c, uint8_t requirements)
 
 	/* trigger handover or assignment */
 	if  (current_bts == new_bts)
-		LOGPHOLCHAN(lchan, LOGL_NOTICE, "Triggering assignment to %s, due to %s\n",
+		LOGPHOLCHAN(lchan, LOGL_NOTICE, "Triggering assignment to %s, due to %s%s\n",
 			    full_rate ? "TCH/F" : "TCH/H",
-			    ho_reason_name(global_ho_reason));
+			    ho_reason_name(global_ho_reason),
+			    applied_afs_bias ? " (applied AHS->AFS bias)" : "");
 	else
 		LOGPHOLCHANTOBTS(lchan, new_bts, LOGL_INFO,
-				 "Triggering handover to %s, due to %s\n",
+				 "Triggering handover to %s, due to %s%s\n",
 				 full_rate ? "TCH/F" : "TCH/H",
-				 ho_reason_name(global_ho_reason));
+				 ho_reason_name(global_ho_reason),
+				 applied_afs_bias ? " (applied AHS->AFS bias)" : "");
 
 	req = (struct handover_out_req){
 		.from_hodec_id = HODEC2,
