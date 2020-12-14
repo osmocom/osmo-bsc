@@ -100,7 +100,6 @@ osmo_bsc_SOURCES = \
 	pcu_sock.c \
 	penalty_timers.c \
 	bssmap_reset.c \
-	rest_octets.c \
 	system_information.c \
 	timeslot_fsm.c \
 	smscb.c \

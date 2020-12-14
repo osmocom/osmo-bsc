@@ -21,7 +21,7 @@
 
 #include <osmocom/crypt/auth.h>
 
-#include <osmocom/bsc/rest_octets.h>
+#include <osmocom/gsm/gsm48_rest_octets.h>
 
 #include <osmocom/core/bitvec.h>
 #include <osmocom/gsm/gsm_utils.h>

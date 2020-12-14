@@ -896,7 +896,7 @@ static void config_write_bts_single(struct vty *vty, struct gsm_bts *bts)
 		bts->si_common.cell_sel_par.rxlev_acc_min, VTY_NEWLINE);
 
 	if (bts->si_common.cell_ro_sel_par.present) {
-		struct gsm48_si_selection_params *sp;
+		struct osmo_gsm48_si_selection_params *sp;
 		sp = &bts->si_common.cell_ro_sel_par;
 
 		if (sp->cbq)

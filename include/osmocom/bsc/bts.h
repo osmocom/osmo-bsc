@@ -390,7 +390,7 @@ struct gsm_bts {
 		struct gsm48_rach_control rach_control;
 		uint8_t ncc_permitted;
 		struct gsm48_cell_sel_par cell_sel_par;
-		struct gsm48_si_selection_params cell_ro_sel_par; /* rest octet */
+		struct osmo_gsm48_si_selection_params cell_ro_sel_par; /* rest octet */
 		struct gsm48_cell_options cell_options;
 		struct gsm48_control_channel_descr chan_desc;
 		struct bitvec neigh_list;

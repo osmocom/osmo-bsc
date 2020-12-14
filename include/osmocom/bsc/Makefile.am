@@ -51,7 +51,6 @@ noinst_HEADERS = \
 	pcu_if.h \
 	pcuif_proto.h \
 	bssmap_reset.h \
-	rest_octets.h \
 	rs232.h \
 	signal.h \
 	system_information.h \

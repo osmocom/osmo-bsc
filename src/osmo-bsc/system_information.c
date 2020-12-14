@@ -31,12 +31,12 @@
 #include <osmocom/core/utils.h>
 #include <osmocom/gsm/sysinfo.h>
 #include <osmocom/gsm/gsm48_ie.h>
+#include <osmocom/gsm/gsm48_rest_octets.h>
 #include <osmocom/gsm/gsm48.h>
 
 #include <osmocom/bsc/debug.h>
 #include <osmocom/bsc/gsm_data.h>
 #include <osmocom/bsc/abis_rsl.h>
-#include <osmocom/bsc/rest_octets.h>
 #include <osmocom/bsc/arfcn_range_encode.h>
 #include <osmocom/bsc/gsm_04_08_rr.h>
 #include <osmocom/bsc/acc.h>
@@ -169,7 +169,12 @@ static int make_si2quaters(struct gsm_bts *bts, bool counting)
 			si2q->header.system_information = GSM48_MT_RR_SYSINFO_2quater;
 		}
 
-		rc = rest_octets_si2quater(si2q->rest_octets, bts);
+		rc = osmo_gsm48_rest_octets_si2quater_encode(si2q->rest_octets, bts->si2q_index,
+							     bts->si2q_count, bts->si_common.data.uarfcn_list,
+							     &bts->u_offset, bts->si_common.uarfcn_length,
+							     bts->si_common.data.scramble_list,
+							     &bts->si_common.si2quater_neigh_list,
+							     &bts->e_offset);
 		if (rc < 0)
 			return rc;
 
@@ -729,7 +734,7 @@ static int generate_si1(enum osmo_sysinfo_type t, struct gsm_bts *bts)
 	 * SI1 Rest Octets (10.5.2.32), contains NCH position and band
 	 * indicator but that is not in the 04.08.
 	 */
-	rc = rest_octets_si1(si1->rest_octets, NULL, is_dcs_net(bts));
+	rc = osmo_gsm48_rest_octets_si1_encode(si1->rest_octets, NULL, is_dcs_net(bts));
 
 	return sizeof(*si1) + rc;
 }
@@ -757,6 +762,20 @@ static int generate_si2(enum osmo_sysinfo_type t, struct gsm_bts *bts)
 	acc_mgr_apply_acc(&bts->acc_mgr, &si2->rach_control);
 
 	return sizeof(*si2);
+}
+
+/* Generate SI2bis Rest Octests 3GPP TS 44.018 Table 10.5.2.33.1 */
+static int rest_octets_si2bis(uint8_t *data)
+{
+	struct bitvec bv;
+
+	memset(&bv, 0, sizeof(bv));
+	bv.data = data;
+	bv.data_len = 1;
+
+	bitvec_spare_padding(&bv, (bv.data_len * 8) - 1);
+
+	return bv.data_len;
 }
 
 static int generate_si2bis(enum osmo_sysinfo_type t, struct gsm_bts *bts)
@@ -794,6 +813,24 @@ static int generate_si2bis(enum osmo_sysinfo_type t, struct gsm_bts *bts)
 	rc = rest_octets_si2bis(si2b->rest_octets);
 
 	return sizeof(*si2b) + rc;
+}
+
+
+/* Generate SI2ter Rest Octests 3GPP TS 44.018 Table 10.5.2.33a.1 */
+static int rest_octets_si2ter(uint8_t *data)
+{
+	struct bitvec bv;
+
+	memset(&bv, 0, sizeof(bv));
+	bv.data = data;
+	bv.data_len = 4;
+
+	/* No SI2ter_MP_CHANGE_MARK */
+	bitvec_set_bit(&bv, L);
+
+	bitvec_spare_padding(&bv, (bv.data_len * 8) - 1);
+
+	return bv.data_len;
 }
 
 static int generate_si2ter(enum osmo_sysinfo_type t, struct gsm_bts *bts)
@@ -865,7 +902,7 @@ static int generate_si2quater(enum osmo_sysinfo_type t, struct gsm_bts *bts)
 	return sizeof(*si2q) + rc;
 }
 
-static struct gsm48_si_ro_info si_info = {
+static struct osmo_gsm48_si_ro_info si_info = {
 	.selection_params = {
 		.present = 0,
 	},
@@ -934,7 +971,7 @@ static int generate_si3(enum osmo_sysinfo_type t, struct gsm_bts *bts)
 		CBQ, CELL_RESELECT_OFFSET, TEMPORARY_OFFSET, PENALTY_TIME
 		Power Offset, 2ter Indicator, Early Classmark Sending,
 		Scheduling if and WHERE, GPRS Indicator, SI13 position */
-	rc = rest_octets_si3(si3->rest_octets, &si_info);
+	rc = osmo_gsm48_rest_octets_si3_encode(si3->rest_octets, &si_info);
 
 	return sizeof(*si3) + rc;
 }
@@ -989,7 +1026,7 @@ static int generate_si4(enum osmo_sysinfo_type t, struct gsm_bts *bts)
 	/* SI4 Rest Octets (10.5.2.35), containing
 		Optional Power offset, GPRS Indicator,
 		Cell Identity, LSA ID, Selection Parameter */
-	rc = rest_octets_si4(tail, &si_info, (uint8_t *)GSM_BTS_SI(bts, t) + GSM_MACBLOCK_LEN - tail);
+	rc = osmo_gsm48_rest_octets_si4_encode(tail, &si_info, (uint8_t *)GSM_BTS_SI(bts, t) + GSM_MACBLOCK_LEN - tail);
 
 	return l2_plen + 1 + rc;
 }
@@ -1114,11 +1151,13 @@ static int generate_si5ter(enum osmo_sysinfo_type t, struct gsm_bts *bts)
 static int generate_si6(enum osmo_sysinfo_type t, struct gsm_bts *bts)
 {
 	struct gsm48_system_information_type_6 *si6;
+	struct osmo_gsm48_si6_ro_info si6_ro_info;
 	uint8_t *output = GSM_BTS_SI(bts, t);
 	int l2_plen = 11;
 	int rc;
 
 	memset(output, GSM_MACBLOCK_PADDING, GSM_MACBLOCK_LEN);
+	memset(&si6_ro_info, 0, sizeof(si6_ro_info));
 
 	/* ip.access nanoBTS needs l2_plen!! */
 	switch (bts->type) {
@@ -1145,12 +1184,13 @@ static int generate_si6(enum osmo_sysinfo_type t, struct gsm_bts *bts)
 	gsm48_set_dtx(&si6->cell_options, bts->dtxu, bts->dtxu, false);
 
 	/* SI6 Rest Octets: 10.5.2.35a: PCH / NCH info, VBS/VGCS options */
-	rc = rest_octets_si6(si6->rest_octets, is_dcs_net(bts));
+	si6_ro_info.band_indicator_1900 = is_dcs_net(bts);
+	rc = osmo_gsm48_rest_octets_si6_encode(si6->rest_octets, &si6_ro_info);
 
 	return l2_plen + rc;
 }
 
-static struct gsm48_si13_info si13_default = {
+static struct osmo_gsm48_si13_info si13_default = {
 	.cell_opts = {
 		.nmo 		= GPRS_NMO_II,
 		.t3168		= 2000,
@@ -1215,7 +1255,7 @@ static int generate_si13(enum osmo_sysinfo_type t, struct gsm_bts *bts)
 	else
 		si13_default.cell_opts.ext_info.bss_paging_coordination = 0;
 
-	ret = rest_octets_si13(si13->rest_octets, &si13_default);
+	ret = osmo_gsm48_rest_octets_si13_encode(si13->rest_octets, &si13_default);
 	if (ret < 0)
 		return ret;
 
@@ -1262,7 +1302,7 @@ int gsm_generate_si(struct gsm_bts *bts, enum osmo_sysinfo_type si_type)
 
 	memcpy(&si_info.selection_params,
 	       &bts->si_common.cell_ro_sel_par,
-	       sizeof(struct gsm48_si_selection_params));
+	       sizeof(struct osmo_gsm48_si_selection_params));
 
 	gen_si = gen_si_fn[si_type];
 	if (!gen_si) {
