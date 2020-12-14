@@ -61,6 +61,7 @@ int bts_model_sysmobts_init(void)
 	osmo_bts_set_feature(&model_sysmobts.features, BTS_FEAT_EGPRS);
 	osmo_bts_set_feature(&model_sysmobts.features, BTS_FEAT_PAGING_COORDINATION);
 	osmo_bts_set_feature(&model_sysmobts.features, BTS_FEAT_IPV6_NSVC);
+	osmo_bts_set_feature(&model_sysmobts.features, BTS_FEAT_CCN);
 
 	model_sysmobts.nm_att_tlvdef.def[NM_ATT_OSMO_NS_LINK_CFG].type = TLV_TYPE_TL16V;
 

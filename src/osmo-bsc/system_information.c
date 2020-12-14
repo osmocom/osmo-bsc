@@ -1206,6 +1206,7 @@ static struct osmo_gsm48_si13_info si13_default = {
 			.pfc_supported = 0,
 			.dtm_supported = 0,
 			.bss_paging_coordination = 0,
+			.ccn_active = false,
 		},
 	},
 	.pwr_ctrl_pars = {
@@ -1254,6 +1255,11 @@ static int generate_si13(enum osmo_sysinfo_type t, struct gsm_bts *bts)
 		si13_default.cell_opts.ext_info.bss_paging_coordination = 1;
 	else
 		si13_default.cell_opts.ext_info.bss_paging_coordination = 0;
+
+	si13_default.cell_opts.ext_info.ccn_active = bts->gprs.ccn.forced_vty ?
+						     bts->gprs.ccn.active :
+						     osmo_bts_has_feature(&bts->model->features,
+									  BTS_FEAT_CCN);
 
 	ret = osmo_gsm48_rest_octets_si13_encode(si13->rest_octets, &si13_default);
 	if (ret < 0)

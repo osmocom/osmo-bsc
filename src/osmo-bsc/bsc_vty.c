@@ -758,6 +758,9 @@ static void config_write_bts_gprs(struct vty *vty, struct gsm_bts *bts)
 		bts->gprs.net_ctrl_ord, VTY_NEWLINE);
 	if (!bts->gprs.ctrl_ack_type_use_block)
 		vty_out(vty, "  gprs control-ack-type-rach%s", VTY_NEWLINE);
+	if (bts->gprs.ccn.forced_vty)
+		vty_out(vty, "  gprs ccn-active %d%s",
+			bts->gprs.ccn.active ? 1 : 0, VTY_NEWLINE);
 	vty_out(vty, "  gprs cell bvci %u%s", bts->gprs.cell.bvci,
 		VTY_NEWLINE);
 	for (i = 0; i < ARRAY_SIZE(bts->gprs.cell.timer); i++)
@@ -3482,6 +3485,24 @@ DEFUN_USRATTR(cfg_bts_gprs_ctrl_ack,
 	GPRS_CHECK_ENABLED(bts);
 
 	bts->gprs.ctrl_ack_type_use_block = false;
+
+	return CMD_SUCCESS;
+}
+
+DEFUN_USRATTR(cfg_bts_gprs_ccn_active,
+	      cfg_bts_gprs_ccn_active_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_RSL_LINK),
+	      "gprs ccn-active (0|1|default)",
+	      GPRS_TEXT
+	      "Set CCN_ACTIVE in the GPRS Cell Options IE on the BCCH (SI13)\n"
+	      "Disable\n" "Enable\n" "Default based on BTS type support\n")
+{
+	struct gsm_bts *bts = vty->index;
+
+	bts->gprs.ccn.forced_vty = strcmp(argv[0], "default") != 0;
+
+	if (bts->gprs.ccn.forced_vty)
+		bts->gprs.ccn.active = argv[0][0] == '1';
 
 	return CMD_SUCCESS;
 }
@@ -7637,6 +7658,7 @@ int bsc_vty_init(struct gsm_network *network)
 	install_element(BTS_NODE, &cfg_bts_gprs_rac_cmd);
 	install_element(BTS_NODE, &cfg_bts_gprs_net_ctrl_ord_cmd);
 	install_element(BTS_NODE, &cfg_bts_gprs_ctrl_ack_cmd);
+	install_element(BTS_NODE, &cfg_bts_gprs_ccn_active_cmd);
 	install_element(BTS_NODE, &cfg_no_bts_gprs_ctrl_ack_cmd);
 	install_element(BTS_NODE, &cfg_bts_gprs_bvci_cmd);
 	install_element(BTS_NODE, &cfg_bts_gprs_cell_timer_cmd);

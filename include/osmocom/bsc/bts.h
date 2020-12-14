@@ -387,6 +387,10 @@ struct gsm_bts {
 		uint8_t net_ctrl_ord;
 		bool ctrl_ack_type_use_block;
 		bool egprs_pkt_chan_request;
+		struct {
+			bool active; /* CCN_ACTIVE */
+			bool forced_vty; /* set by VTY ? */
+		} ccn; /* TS 44.060 sec 8.8.2 */
 	} gprs;
 
 	/* threshold (in percent) when BTS shall send CCCH LOAD IND */
