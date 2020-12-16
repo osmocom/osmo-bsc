@@ -185,6 +185,42 @@ static const char *rsl_cause_name(struct tlv_parsed *tp)
 		return "";
 }
 
+static void add_power_control_params(struct msgb *msg, enum abis_rsl_ie iei,
+				     const struct gsm_lchan *lchan)
+{
+	const struct gsm_bts *bts = lchan->ts->trx->bts;
+	const struct gsm_power_ctrl_params *cp;
+
+	/* Since {MS,BS}_POWER_PARAM IE content is operator dependent, it's not
+	 * known how different BTS models will interpret an empty IE, so let's
+	 * better skip sending it unless we know for sure what each expects. */
+	if (bts->model->power_ctrl_enc_rsl_params == NULL)
+		return;
+
+	if (iei == RSL_IE_MS_POWER_PARAM)
+		cp = &bts->ms_power_ctrl;
+	else
+		cp = &bts->bs_power_ctrl;
+
+	/* These parameters are only valid for dynamic mode */
+	if (cp->mode != GSM_PWR_CTRL_MODE_DYN_BTS)
+		return;
+
+	/* Put tag first, length will be updated later */
+	uint8_t *ie_len = msgb_tl_put(msg, iei);
+	uint8_t msg_len = msgb_length(msg);
+
+	if (bts->model->power_ctrl_enc_rsl_params(msg, cp) != 0) {
+		LOGP(DRSL, LOGL_ERROR, "Failed to encode MS/BS Power Control "
+		     "parameters, omitting this IE (tag 0x%02x)\n", iei);
+		msgb_get(msg, msg_len - 2);
+		return;
+	}
+
+	/* Update length part of the containing IE */
+	*ie_len = msgb_length(msg) - msg_len;
+}
+
 /* Send a BCCH_INFO message as per Chapter 8.5.1 */
 int rsl_bcch_info(const struct gsm_bts_trx *trx, enum osmo_sysinfo_type si_type, const uint8_t *data, int len)
 {
@@ -281,6 +317,9 @@ int rsl_chan_bs_power_ctrl(struct gsm_lchan *lchan, unsigned int fpc, int db)
 
 	msgb_tv_put(msg, RSL_IE_BS_POWER, lchan->bs_power);
 
+	/* BS Power Control Parameters (if supported by BTS model) */
+	add_power_control_params(msg, RSL_IE_BS_POWER_PARAM, lchan);
+
 	msg->dst = lchan->ts->trx->rsl_link;
 
 	return abis_rsl_sendmsg(msg);
@@ -288,8 +327,6 @@ int rsl_chan_bs_power_ctrl(struct gsm_lchan *lchan, unsigned int fpc, int db)
 
 int rsl_chan_ms_power_ctrl(struct gsm_lchan *lchan)
 {
-	struct gsm_bts_trx *trx = lchan->ts->trx;
-	struct gsm_bts *bts = trx->bts;
 	struct abis_rsl_dchan_hdr *dh;
 	struct msgb *msg;
 	uint8_t chan_nr = gsm_lchan2chan_nr(lchan);
@@ -304,14 +341,11 @@ int rsl_chan_ms_power_ctrl(struct gsm_lchan *lchan)
 	dh->chan_nr = chan_nr;
 
 	msgb_tv_put(msg, RSL_IE_MS_POWER, lchan->ms_power);
-	/* indicate MS power control to be performed by BTS: */
-	if (bts->type == GSM_BTS_TYPE_OSMOBTS)
-		msgb_tl_put(msg, RSL_IE_MS_POWER_PARAM);
-	/* else: Since IE MS_POWER_PARAM content is operator dependent, it's not
-	   known if non-osmocom BTS models will support an empty IE, so let's
-	   better skip sending it unless we know for sure what each expects. */
 
-	msg->dst = trx->rsl_link;
+	/* MS Power Control Parameters (if supported by BTS model) */
+	add_power_control_params(msg, RSL_IE_MS_POWER_PARAM, lchan);
+
+	msg->dst = lchan->ts->trx->rsl_link;
 
 	return abis_rsl_sendmsg(msg);
 }
@@ -562,15 +596,16 @@ int rsl_tx_chan_activ(struct gsm_lchan *lchan, uint8_t act_type, uint8_t ho_ref)
 		break;
 	}
 
-	msgb_tv_put(msg, RSL_IE_BS_POWER, lchan->bs_power);
-	msgb_tv_put(msg, RSL_IE_MS_POWER, lchan->ms_power);
+	if (bts->bs_power_ctrl.mode != GSM_PWR_CTRL_MODE_NONE)
+		msgb_tv_put(msg, RSL_IE_BS_POWER, lchan->bs_power);
+	if (bts->ms_power_ctrl.mode != GSM_PWR_CTRL_MODE_NONE)
+		msgb_tv_put(msg, RSL_IE_MS_POWER, lchan->ms_power);
+
 	msgb_tv_put(msg, RSL_IE_TIMING_ADVANCE, ta);
-	/* indicate MS power control to be performed by BTS: */
-	if (bts->type == GSM_BTS_TYPE_OSMOBTS)
-		msgb_tl_put(msg, RSL_IE_MS_POWER_PARAM);
-	/* else: Since IE MS_POWER_PARAM content is operator dependent, it's not
-	   known if non-osmocom BTS models will support an empty IE, so let's
-	   better skip sending it unless we know for sure what each expects. */
+
+	/* BS/MS Power Control Parameters (if supported by BTS model) */
+	add_power_control_params(msg, RSL_IE_BS_POWER_PARAM, lchan);
+	add_power_control_params(msg, RSL_IE_MS_POWER_PARAM, lchan);
 
 	mr_config_for_bts(lchan, msg);
 	rep_acch_cap_for_bts(lchan, msg);
