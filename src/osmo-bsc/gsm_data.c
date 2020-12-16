@@ -966,3 +966,61 @@ enum gsm48_rr_cause bsc_gsm48_rr_cause_from_rsl_cause(uint8_t c)
 		return GSM48_RR_CAUSE_ABNORMAL_UNSPEC;
 	}
 }
+
+/* Default MS/BS Power Control parameters (see 3GPP TS 45.008, table A.1) */
+const struct gsm_power_ctrl_params power_ctrl_params_def = {
+	/* Static Power Control is the safe default */
+	.mode = GSM_PWR_CTRL_MODE_STATIC,
+
+	/* Power increasing/reducing step size */
+	.inc_step_size_db = 4, /* 2, 4, or 6 dB */
+	.red_step_size_db = 2, /* 2 or 4 dB */
+
+	/* RxLev measurement parameters */
+	.rxlev_meas = {
+		/* Thresholds for RxLev (see 3GPP TS 45.008, A.3.2.1) */
+		.lower_thresh = 32, /* L_RXLEV_XX_P (-78 dBm) */
+		.upper_thresh = 38, /* U_RXLEV_XX_P (-72 dBm) */
+
+		/* Increase {UL,DL}_TXPWR if at least LOWER_CMP_P averages
+		 * out of LOWER_CMP_N averages are lower than L_RXLEV_XX_P */
+		.lower_cmp_p = 10, /* P1 as in 3GPP TS 45.008, A.3.2.1 (case a) */
+		.lower_cmp_n = 12, /* N1 as in 3GPP TS 45.008, A.3.2.1 (case a) */
+		/* Decrease {UL,DL}_TXPWR if at least UPPER_CMP_P averages
+		 * out of UPPER_CMP_N averages are greater than L_RXLEV_XX_P */
+		.upper_cmp_p = 19, /* P2 as in 3GPP TS 45.008, A.3.2.1 (case b) */
+		.upper_cmp_n = 20, /* N2 as in 3GPP TS 45.008, A.3.2.1 (case b) */
+
+		/* No averaging (filtering) by default */
+		.algo = GSM_PWR_CTRL_MEAS_AVG_ALGO_NONE,
+
+		/* Hreqave: the period over which an average is produced */
+		.h_reqave = 4, /* TODO: investigate a reasonable default value */
+		/* Hreqt: the number of averaged results maintained */
+		.h_reqt = 6, /* TODO: investigate a reasonable default value */
+	},
+
+	/* RxQual measurement parameters */
+	.rxqual_meas = {
+		/* Thresholds for RxQual (see 3GPP TS 45.008, A.3.2.1) */
+		.lower_thresh = 0, /* L_RXQUAL_XX_P (BER < 0.2%) */
+		.upper_thresh = 3, /* U_RXQUAL_XX_P (0.8% <= BER < 1.6%) */
+
+		/* Increase {UL,DL}_TXPWR if at least LOWER_CMP_P averages
+		 * out of LOWER_CMP_N averages are lower than L_RXLEV_XX_P */
+		.lower_cmp_p = 5, /* P3 as in 3GPP TS 45.008, A.3.2.1 (case c) */
+		.lower_cmp_n = 7, /* N3 as in 3GPP TS 45.008, A.3.2.1 (case c) */
+		/* Decrease {UL,DL}_TXPWR if at least UPPER_CMP_P averages
+		 * out of UPPER_CMP_N averages are greater than L_RXLEV_XX_P */
+		.upper_cmp_p = 15, /* P4 as in 3GPP TS 45.008, A.3.2.1 (case d) */
+		.upper_cmp_n = 18, /* N4 as in 3GPP TS 45.008, A.3.2.1 (case d) */
+
+		/* No averaging (filtering) by default */
+		.algo = GSM_PWR_CTRL_MEAS_AVG_ALGO_NONE,
+
+		/* Hreqave: the period over which an average is produced */
+		.h_reqave = 4, /* TODO: investigate a reasonable default value */
+		/* Hreqt: the number of averaged results maintained */
+		.h_reqt = 6, /* TODO: investigate a reasonable default value */
+	},
+};

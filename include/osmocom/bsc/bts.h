@@ -470,6 +470,10 @@ struct gsm_bts {
 	/* osmocom specific FACCH/SACCH repetition mode flags set by VTY to
 	 * enable/disable certain ACCH repeation features individually */
 	struct abis_rsl_osmo_rep_acch_cap repeated_acch_policy;
+
+	/* MS/BS Power Control parameters */
+	struct gsm_power_ctrl_params ms_power_ctrl;
+	struct gsm_power_ctrl_params bs_power_ctrl;
 };
 
 #define GSM_BTS_SI2Q(bts, i)   (struct gsm48_system_information_type_2quater *)((bts)->si_buf[SYSINFO_TYPE_2quater][i])
