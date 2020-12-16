@@ -1,6 +1,7 @@
 /* ip.access nanoBTS specific code */
 
 /* (C) 2009-2018 by Harald Welte <laforge@gnumonks.org>
+ * (C) 2020 by sysmocom s.f.m.c. GmbH <info@sysmocom.de>
  *
  * All Rights Reserved
  *
@@ -52,6 +53,9 @@
 static int bts_model_nanobts_start(struct gsm_network *net);
 static void bts_model_nanobts_e1line_bind_ops(struct e1inp_line *line);
 
+static int power_ctrl_send_def_params(const struct gsm_bts_trx *trx);
+static int power_ctrl_enc_rsl_params(struct msgb *msg, const struct gsm_power_ctrl_params *cp);
+
 static char *get_oml_status(const struct gsm_bts *bts)
 {
 	if (bts->oml_link)
@@ -67,6 +71,11 @@ struct gsm_bts_model bts_model_nanobts = {
 	.oml_rcvmsg = &abis_nm_rcvmsg,
 	.oml_status = &get_oml_status,
 	.e1line_bind_ops = bts_model_nanobts_e1line_bind_ops,
+
+	/* MS/BS Power control specific API */
+	.power_ctrl_send_def_params = &power_ctrl_send_def_params,
+	.power_ctrl_enc_rsl_params = &power_ctrl_enc_rsl_params,
+
 	/* Some nanoBTS firmwares (if not all) don't support SI2ter and cause
 	 * problems on some MS if it is enabled, see OS#3063. Disable it by
 	 * default, can still be enabled through VTY cmd with same name.
@@ -800,4 +809,150 @@ struct e1inp_line_ops ipaccess_e1inp_line_ops = {
 static void bts_model_nanobts_e1line_bind_ops(struct e1inp_line *line)
 {
         e1inp_line_bind_ops(line, &ipaccess_e1inp_line_ops);
+}
+
+static void enc_meas_proc_params(struct msgb *msg, uint8_t ptype,
+				 const struct gsm_power_ctrl_meas_params *mp)
+{
+	struct ipac_preproc_ave_cfg *ave_cfg;
+	uint8_t *ie_len;
+
+	/* No averaging => no Measurement Averaging parameters */
+	if (mp->algo == GSM_PWR_CTRL_MEAS_AVG_ALGO_NONE)
+		return;
+
+	/* (TLV) Measurement Averaging parameters for RxLev/RxQual */
+	ie_len = msgb_tl_put(msg, RSL_IPAC_EIE_MEAS_AVG_CFG);
+
+	ave_cfg = (struct ipac_preproc_ave_cfg *) msgb_put(msg, sizeof(*ave_cfg));
+	ave_cfg->param_id = ptype & 0x03;
+
+	/* H_REQAVE and H_REQT */
+	ave_cfg->h_reqave = mp->h_reqave & 0x03;
+	ave_cfg->h_reqt = mp->h_reqt & 0x03;
+
+	/* Averaging method and parameters */
+	ave_cfg->ave_method = (mp->algo - 1) & 0x07;
+	switch (mp->algo) {
+	case GSM_PWR_CTRL_MEAS_AVG_ALGO_OSMO_EWMA:
+		msgb_v_put(msg, mp->ewma.alpha);
+		break;
+	case GSM_PWR_CTRL_MEAS_AVG_ALGO_WEIGHTED:
+	case GSM_PWR_CTRL_MEAS_AVG_ALGO_MOD_MEDIAN:
+		/* FIXME: unknown format */
+		break;
+	case GSM_PWR_CTRL_MEAS_AVG_ALGO_UNWEIGHTED:
+	case GSM_PWR_CTRL_MEAS_AVG_ALGO_NONE:
+		/* No parameters here */
+		break;
+	}
+
+	/* Update length part of the containing IE */
+	*ie_len = msg->tail - (ie_len + 1);
+}
+
+static void enc_power_params(struct msgb *msg, const struct gsm_power_ctrl_params *cp)
+{
+	struct ipac_preproc_pc_comp *thresh_comp;
+	struct ipac_preproc_pc_thresh *thresh;
+
+	/* These parameters are valid for dynamic mode only */
+	OSMO_ASSERT(cp->mode == GSM_PWR_CTRL_MODE_DYN_BTS);
+
+	/* (TLV) Measurement Averaging Configure */
+	enc_meas_proc_params(msg, IPAC_RXQUAL_AVE, &cp->rxqual_meas);
+	enc_meas_proc_params(msg, IPAC_RXLEV_AVE, &cp->rxlev_meas);
+
+	/* (TV) Thresholds: {L,U}_RXLEV_XX_P and {L,U}_RXQUAL_XX_P */
+	if (cp->dir == GSM_PWR_CTRL_DIR_UL)
+		msgb_v_put(msg, RSL_IPAC_EIE_MS_PWR_CTL);
+	else
+		msgb_v_put(msg, RSL_IPAC_EIE_BS_PWR_CTL);
+
+	thresh = (struct ipac_preproc_pc_thresh *) msgb_put(msg, sizeof(*thresh));
+
+	/* {L,U}_RXLEV_XX_P (see 3GPP TS 45.008, A.3.2.1, a & b) */
+	thresh->l_rxlev = cp->rxlev_meas.lower_thresh & 0x3f;
+	thresh->u_rxlev = cp->rxlev_meas.upper_thresh & 0x3f;
+
+	/* {L,U}_RXQUAL_XX_P (see 3GPP TS 45.008, A.3.2.1, c & d) */
+	thresh->l_rxqual = cp->rxqual_meas.lower_thresh & 0x07;
+	thresh->u_rxqual = cp->rxqual_meas.upper_thresh & 0x07;
+
+	/* (TV) PC Threshold Comparators */
+	msgb_v_put(msg, RSL_IPAC_EIE_PC_THRESH_COMP);
+
+	thresh_comp = (struct ipac_preproc_pc_comp *) msgb_put(msg, sizeof(*thresh_comp));
+
+	/* RxLev: P1, N1, P2, N2 (see 3GPP TS 45.008, A.3.2.1, a & b) */
+	thresh_comp->p1 = cp->rxlev_meas.lower_cmp_p & 0x1f;
+	thresh_comp->n1 = cp->rxlev_meas.lower_cmp_n & 0x1f;
+	thresh_comp->p2 = cp->rxlev_meas.upper_cmp_p & 0x1f;
+	thresh_comp->n2 = cp->rxlev_meas.upper_cmp_n & 0x1f;
+
+	/* RxQual: P3, N3, P4, N4 (see 3GPP TS 45.008, A.3.2.1, c & d) */
+	thresh_comp->p3 = cp->rxqual_meas.lower_cmp_p & 0x1f;
+	thresh_comp->n3 = cp->rxqual_meas.lower_cmp_n & 0x1f;
+	thresh_comp->p4 = cp->rxqual_meas.upper_cmp_p & 0x1f;
+	thresh_comp->n4 = cp->rxqual_meas.upper_cmp_n & 0x1f;
+
+	/* FIXME: TIMER_PWR_CON_INTERVAL (P_Con_INTERVAL) */
+	thresh_comp->pc_interval = 0; /* 0 .. 30 seconds */
+
+	/* Change step limitations: POWER_{INC,RED}_STEP_SIZE */
+	thresh_comp->inc_step_size = cp->inc_step_size_db & 0x0f;
+	thresh_comp->red_step_size = cp->red_step_size_db & 0x0f;
+}
+
+static void add_power_params_ie(struct msgb *msg, enum abis_rsl_ie iei,
+				const struct gsm_power_ctrl_params *cp)
+{
+	uint8_t *ie_len = msgb_tl_put(msg, iei);
+	uint8_t msg_len = msgb_length(msg);
+
+	enc_power_params(msg, cp);
+
+	*ie_len = msgb_length(msg) - msg_len;
+}
+
+static int power_ctrl_send_def_params(const struct gsm_bts_trx *trx)
+{
+	const struct gsm_power_ctrl_params *ms_power_ctrl = &trx->bts->ms_power_ctrl;
+	const struct gsm_power_ctrl_params *bs_power_ctrl = &trx->bts->bs_power_ctrl;
+	struct abis_rsl_common_hdr *ch;
+	struct msgb *msg;
+
+	/* Sending this message does not make sense if neither MS Power control
+	 * nor BS Power control is to be performed by the BTS itself ('dyn-bts'). */
+	if (ms_power_ctrl->mode != GSM_PWR_CTRL_MODE_DYN_BTS &&
+	    bs_power_ctrl->mode != GSM_PWR_CTRL_MODE_DYN_BTS)
+		return 0;
+
+	msg = rsl_msgb_alloc();
+	if (msg == NULL)
+		return -ENOMEM;
+
+	ch = (struct abis_rsl_common_hdr *) msgb_put(msg, sizeof(*ch));
+	ch->msg_discr = ABIS_RSL_MDISC_TRX;
+	ch->msg_type = RSL_MT_IPAC_MEAS_PREPROC_DFT;
+
+	/* BS/MS Power IEs (to be re-defined in channel specific messages) */
+	msgb_tv_put(msg, RSL_IE_MS_POWER, 0); /* dummy value */
+	msgb_tv_put(msg, RSL_IE_BS_POWER, 0); /* dummy value */
+
+	/* MS/BS Power Parameters IEs */
+	if (ms_power_ctrl->mode == GSM_PWR_CTRL_MODE_DYN_BTS)
+		add_power_params_ie(msg, RSL_IE_MS_POWER_PARAM, ms_power_ctrl);
+	if (bs_power_ctrl->mode == GSM_PWR_CTRL_MODE_DYN_BTS)
+		add_power_params_ie(msg, RSL_IE_BS_POWER_PARAM, bs_power_ctrl);
+
+	msg->dst = trx->rsl_link;
+
+	return abis_rsl_sendmsg(msg);
+}
+
+static int power_ctrl_enc_rsl_params(struct msgb *msg, const struct gsm_power_ctrl_params *cp)
+{
+	/* We send everything in "Measurement Pre-processing Defaults" */
+	return 0;
 }
