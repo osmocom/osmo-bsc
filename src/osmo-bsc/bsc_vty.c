@@ -153,6 +153,12 @@ struct cmd_node bts_node = {
 	1,
 };
 
+struct cmd_node power_ctrl_node = {
+	POWER_CTRL_NODE,
+	"%s(config-power-ctrl)# ",
+	1,
+};
+
 struct cmd_node trx_node = {
 	TRX_NODE,
 	"%s(config-net-bts-trx)# ",
@@ -869,6 +875,99 @@ static void config_write_bts_amr(struct vty *vty, struct gsm_bts *bts,
 		vty_out(vty, "auto%s", VTY_NEWLINE);
 }
 
+/* TODO: generalize and move indention handling to libosmocore */
+#define cfg_out(fmt, args...) \
+	vty_out(vty, "%*s" fmt, indent, "", ##args);
+
+static void config_write_power_ctrl_meas(struct vty *vty, unsigned int indent,
+					 const struct gsm_power_ctrl_params *cp,
+					 uint8_t ptype)
+{
+	const struct gsm_power_ctrl_meas_params *mp;
+	const char *param;
+
+	switch (ptype) {
+	case IPAC_RXLEV_AVE:
+		mp = &cp->rxlev_meas;
+		param = "rxlev";
+		break;
+	case IPAC_RXQUAL_AVE:
+		mp = &cp->rxqual_meas;
+		param = "rxqual";
+		break;
+	default:
+		/* Shall not happen */
+		OSMO_ASSERT(0);
+	}
+
+	cfg_out("%s-thresh lower %u upper %u%s",
+		param, mp->lower_thresh, mp->upper_thresh,
+		VTY_NEWLINE);
+	cfg_out("%s-thresh-comp lower %u %u upper %u %u%s",
+		param, mp->lower_cmp_p, mp->lower_cmp_n,
+		mp->upper_cmp_p, mp->upper_cmp_n,
+		VTY_NEWLINE);
+
+	switch (mp->algo) {
+	case GSM_PWR_CTRL_MEAS_AVG_ALGO_NONE:
+		cfg_out("no %s-avg%s", param, VTY_NEWLINE);
+		return; /* we're done */
+	case GSM_PWR_CTRL_MEAS_AVG_ALGO_UNWEIGHTED:
+		cfg_out("%s-avg algo unweighted%s", param, VTY_NEWLINE);
+		break;
+	case GSM_PWR_CTRL_MEAS_AVG_ALGO_WEIGHTED:
+		cfg_out("%s-avg algo weighted%s", param, VTY_NEWLINE);
+		break;
+	case GSM_PWR_CTRL_MEAS_AVG_ALGO_MOD_MEDIAN:
+		cfg_out("%s-avg algo mod-median%s", param, VTY_NEWLINE);
+		break;
+	case GSM_PWR_CTRL_MEAS_AVG_ALGO_OSMO_EWMA:
+		cfg_out("%s-avg algo osmo-ewma beta %u%s",
+			param, 100 - mp->ewma.alpha,
+			VTY_NEWLINE);
+		break;
+	}
+
+	cfg_out("%s-avg params hreqave %u hreqt %u%s",
+		param, mp->h_reqave, mp->h_reqt,
+		VTY_NEWLINE);
+}
+
+static void config_write_power_ctrl(struct vty *vty, unsigned int indent,
+				    const struct gsm_power_ctrl_params *cp)
+{
+	const char *node_name;
+
+	if (cp->dir == GSM_PWR_CTRL_DIR_UL)
+		node_name = "ms-power-control";
+	else
+		node_name = "bs-power-control";
+
+	switch (cp->mode) {
+	case GSM_PWR_CTRL_MODE_NONE:
+		cfg_out("no %s%s", node_name, VTY_NEWLINE);
+		break;
+	case GSM_PWR_CTRL_MODE_STATIC:
+		cfg_out("%s%s", node_name, VTY_NEWLINE);
+		cfg_out(" mode static%s", VTY_NEWLINE);
+		break;
+	case GSM_PWR_CTRL_MODE_DYN_BTS:
+		cfg_out("%s%s", node_name, VTY_NEWLINE);
+		cfg_out(" mode dyn-bts%s", VTY_NEWLINE);
+
+		cfg_out(" step-size inc %u red %u%s",
+			cp->inc_step_size_db, cp->red_step_size_db,
+			VTY_NEWLINE);
+
+		/* Measurement processing / averaging parameters */
+		config_write_power_ctrl_meas(vty, indent + 1, cp, IPAC_RXLEV_AVE);
+		config_write_power_ctrl_meas(vty, indent + 1, cp, IPAC_RXQUAL_AVE);
+		break;
+	}
+}
+
+#undef cfg_out
+
 static void config_write_bts_single(struct vty *vty, struct gsm_bts *bts)
 {
 	int i;
@@ -1128,6 +1227,10 @@ static void config_write_bts_single(struct vty *vty, struct gsm_bts *bts)
 	    || bts->repeated_acch_policy.dl_facch_cmd
 	    || bts->repeated_acch_policy.dl_facch_cmd)
 		vty_out(vty, "  repeat rxqual %u%s", bts->repeated_acch_policy.rxqual, VTY_NEWLINE);
+
+	/* BS/MS Power Control parameters */
+	config_write_power_ctrl(vty, 2, &bts->bs_power_ctrl);
+	config_write_power_ctrl(vty, 2, &bts->ms_power_ctrl);
 
 	config_write_bts_model(vty, bts);
 }
@@ -4722,6 +4825,344 @@ DEFUN_ATTR(cfg_bts_no_t3113_dynamic, cfg_bts_no_t3113_dynamic_cmd,
 	return CMD_SUCCESS;
 }
 
+#define BS_POWER_CONTROL_CMD \
+	"bs-power-control"
+#define MS_POWER_CONTROL_CMD \
+	"ms-power-control"
+#define POWER_CONTROL_CMD \
+	"(" BS_POWER_CONTROL_CMD "|" MS_POWER_CONTROL_CMD ")"
+#define POWER_CONTROL_DESC \
+	"BS (Downlink) power control parameters\n" \
+	"MS (Uplink) power control parameters\n"
+
+#define BTS_POWER_CTRL_PARAMS(bts) \
+	(strcmp(argv[0], BS_POWER_CONTROL_CMD) == 0) ? \
+		&bts->bs_power_ctrl : &bts->ms_power_ctrl
+
+DEFUN_USRATTR(cfg_bts_no_power_ctrl,
+	      cfg_bts_no_power_ctrl_cmd,
+	      X(BSC_VTY_ATTR_NEW_LCHAN),
+	      "no " POWER_CONTROL_CMD,
+	      NO_STR POWER_CONTROL_DESC)
+{
+	struct gsm_power_ctrl_params *params;
+	struct gsm_bts *bts = vty->index;
+
+	params = BTS_POWER_CTRL_PARAMS(bts);
+	params->mode = GSM_PWR_CTRL_MODE_NONE;
+
+	return CMD_SUCCESS;
+}
+
+DEFUN(cfg_bts_power_ctrl,
+      cfg_bts_power_ctrl_cmd,
+      POWER_CONTROL_CMD,
+      POWER_CONTROL_DESC)
+{
+	struct gsm_bts *bts = vty->index;
+
+	vty->index = BTS_POWER_CTRL_PARAMS(bts);
+	vty->node = POWER_CTRL_NODE;
+
+	return CMD_SUCCESS;
+}
+
+DEFUN_USRATTR(cfg_power_ctrl_mode,
+	      cfg_power_ctrl_mode_cmd,
+	      X(BSC_VTY_ATTR_VENDOR_SPECIFIC) |
+	      X(BSC_VTY_ATTR_NEW_LCHAN),
+	      "mode (static|dyn-bts) [reset]",
+	      "Power control mode\n"
+	      "Instruct the MS/BTS to use a static power level (default)\n"
+	      "Power control to be performed dynamically by the BTS itself\n"
+	      "Reset to default parameters for the given mode\n")
+{
+	struct gsm_power_ctrl_params *params = vty->index;
+
+	/* Do we need to reset? */
+	if (argc > 1) {
+		vty_out(vty, "%% Reset to default parameters%s", VTY_NEWLINE);
+		enum gsm_power_ctrl_dir dir = params->dir;
+		*params = power_ctrl_params_def;
+		params->dir = dir;
+	}
+
+	if (strcmp(argv[0], "static") == 0)
+		params->mode = GSM_PWR_CTRL_MODE_STATIC;
+	else if (strcmp(argv[0], "dyn-bts") == 0)
+		params->mode = GSM_PWR_CTRL_MODE_DYN_BTS;
+
+	return CMD_SUCCESS;
+}
+
+DEFUN_USRATTR(cfg_power_ctrl_step_size,
+	      cfg_power_ctrl_step_size_cmd,
+	      X(BSC_VTY_ATTR_VENDOR_SPECIFIC) |
+	      X(BSC_VTY_ATTR_NEW_LCHAN),
+	      "step-size inc <2-6> red <2-4>",
+	      "Set power change step size (for dynamic mode)\n"
+	      "Increase step size (default is 4 dB)\n"
+	      "Step size (2, 4, or 6 dB)\n"
+	      "Reduce step size (default is 2 dB)\n"
+	      "Step size (2 or 4 dB)\n")
+{
+	struct gsm_power_ctrl_params *params = vty->index;
+
+	if (atoi(argv[0]) % 2 || atoi(argv[1]) % 2) {
+		vty_out(vty, "%% Power change step size must be "
+			"an even number%s", VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	params->inc_step_size_db = atoi(argv[0]);
+	params->red_step_size_db = atoi(argv[1]);
+
+	return CMD_SUCCESS;
+}
+
+#define POWER_CONTROL_MEAS_RXLEV_DESC \
+	"RxLev value (signal strength, 0 is worst, 63 is best)\n"
+#define POWER_CONTROL_MEAS_RXQUAL_DESC \
+	"RxQual value (signal quality, 0 is best, 7 is worst)\n"
+
+DEFUN_USRATTR(cfg_power_ctrl_rxlev_thresh,
+	      cfg_power_ctrl_rxlev_thresh_cmd,
+	      X(BSC_VTY_ATTR_VENDOR_SPECIFIC) |
+	      X(BSC_VTY_ATTR_NEW_LCHAN),
+	      "rxlev-thresh lower <0-63> upper <0-63>",
+	      "Set target RxLev thresholds (for dynamic mode)\n"
+	      "Lower RxLev value (default is 32, i.e. -78 dBm)\n"
+	      "Lower " POWER_CONTROL_MEAS_RXLEV_DESC
+	      "Upper RxLev value (default is 38, i.e. -72 dBm)\n"
+	      "Upper " POWER_CONTROL_MEAS_RXLEV_DESC)
+{
+	struct gsm_power_ctrl_params *params = vty->index;
+	int lower = atoi(argv[0]);
+	int upper = atoi(argv[1]);
+
+	if (lower > upper) {
+		vty_out(vty, "%% Lower 'rxlev-thresh' (%d) must be less than upper (%d)%s",
+			lower, upper, VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	params->rxlev_meas.lower_thresh = lower;
+	params->rxlev_meas.upper_thresh = upper;
+
+	return CMD_SUCCESS;
+}
+
+DEFUN_USRATTR(cfg_power_ctrl_rxqual_thresh,
+	      cfg_power_ctrl_rxqual_thresh_cmd,
+	      X(BSC_VTY_ATTR_VENDOR_SPECIFIC) |
+	      X(BSC_VTY_ATTR_NEW_LCHAN),
+	      "rxqual-thresh lower <0-7> upper <0-7>",
+	      "Set target RxQual thresholds (for dynamic mode)\n"
+	      "Lower RxQual value (default is 0, i.e. BER < 0.2%)\n"
+	      "Lower " POWER_CONTROL_MEAS_RXQUAL_DESC
+	      "Upper RxQual value (default is 3, i.e. 0.8% <= BER < 1.6%)\n"
+	      "Upper " POWER_CONTROL_MEAS_RXQUAL_DESC)
+{
+	struct gsm_power_ctrl_params *params = vty->index;
+	int lower = atoi(argv[0]);
+	int upper = atoi(argv[1]);
+
+	if (lower > upper) {
+		vty_out(vty, "%% Lower 'rxqual-rxqual' (%d) must be less than upper (%d)%s",
+			lower, upper, VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	params->rxqual_meas.lower_thresh = lower;
+	params->rxqual_meas.upper_thresh = upper;
+
+	return CMD_SUCCESS;
+}
+
+#define POWER_CONTROL_MEAS_THRESH_COMP_CMD(meas) \
+	meas " lower <0-31> <0-31> upper <0-31> <0-31>"
+#define POWER_CONTROL_MEAS_THRESH_COMP_DESC(meas, lp, ln, up, un) \
+	"Set " meas " threshold comparators (for dynamic mode)\n" \
+	"Lower " meas " threshold comparators (see 3GPP TS 45.008, A.3.2.1)\n" lp ln \
+	"Upper " meas " threshold comparators (see 3GPP TS 45.008, A.3.2.1)\n" up un
+
+DEFUN_USRATTR(cfg_power_ctrl_rxlev_thresh_comp,
+	      cfg_power_ctrl_rxlev_thresh_comp_cmd,
+	      X(BSC_VTY_ATTR_VENDOR_SPECIFIC) |
+	      X(BSC_VTY_ATTR_NEW_LCHAN),
+	      POWER_CONTROL_MEAS_THRESH_COMP_CMD("rxlev-thresh-comp"),
+	      POWER_CONTROL_MEAS_THRESH_COMP_DESC("RxLev",
+		"P1 (default 10)\n", "N1 (default 12)\n",
+		"P2 (default 10)\n", "N2 (default 12)\n"))
+{
+	struct gsm_power_ctrl_params *params = vty->index;
+	int lower_cmp_p = atoi(argv[0]);
+	int lower_cmp_n = atoi(argv[1]);
+	int upper_cmp_p = atoi(argv[2]);
+	int upper_cmp_n = atoi(argv[3]);
+
+	if (lower_cmp_p > lower_cmp_n) {
+		vty_out(vty, "%% Lower RxLev P1 %d must be less than N1 %d%s",
+			lower_cmp_p, lower_cmp_n, VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	if (upper_cmp_p > upper_cmp_n) {
+		vty_out(vty, "%% Upper RxLev P2 %d must be less than N2 %d%s",
+			lower_cmp_p, lower_cmp_n, VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	params->rxlev_meas.lower_cmp_p = lower_cmp_p;
+	params->rxlev_meas.lower_cmp_n = lower_cmp_n;
+	params->rxlev_meas.upper_cmp_p = upper_cmp_p;
+	params->rxlev_meas.upper_cmp_n = upper_cmp_n;
+
+	return CMD_SUCCESS;
+}
+
+DEFUN_USRATTR(cfg_power_ctrl_rxqual_thresh_comp,
+	      cfg_power_ctrl_rxqual_thresh_comp_cmd,
+	      X(BSC_VTY_ATTR_VENDOR_SPECIFIC) |
+	      X(BSC_VTY_ATTR_NEW_LCHAN),
+	      POWER_CONTROL_MEAS_THRESH_COMP_CMD("rxqual-thresh-comp"),
+	      POWER_CONTROL_MEAS_THRESH_COMP_DESC("RxQual",
+		"P3 (default 5)\n", "N3 (default 7)\n",
+		"P4 (default 15)\n", "N4 (default 18)\n"))
+{
+	struct gsm_power_ctrl_params *params = vty->index;
+	int lower_cmp_p = atoi(argv[0]);
+	int lower_cmp_n = atoi(argv[1]);
+	int upper_cmp_p = atoi(argv[2]);
+	int upper_cmp_n = atoi(argv[3]);
+
+	if (lower_cmp_p > lower_cmp_n) {
+		vty_out(vty, "%% Lower RxQual P3 %d must be less than N3 %d%s",
+			lower_cmp_p, lower_cmp_n, VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	if (upper_cmp_p > upper_cmp_n) {
+		vty_out(vty, "%% Upper RxQual P4 %d must be less than N4 %d%s",
+			lower_cmp_p, lower_cmp_n, VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	params->rxqual_meas.lower_cmp_p = lower_cmp_p;
+	params->rxqual_meas.lower_cmp_n = lower_cmp_n;
+	params->rxqual_meas.upper_cmp_p = upper_cmp_p;
+	params->rxqual_meas.upper_cmp_n = upper_cmp_n;
+
+	return CMD_SUCCESS;
+}
+
+#define POWER_CONTROL_MEAS_AVG_CMD \
+	"(rxlev-avg|rxqual-avg)"
+#define POWER_CONTROL_MEAS_AVG_DESC \
+	"RxLev (signal strength) measurement averaging (for dynamic mode)\n" \
+	"RxQual (signal quality) measurement averaging (for dynamic mode)\n"
+
+#define POWER_CONTROL_MEAS_AVG_PARAMS(params) \
+	(strncmp(argv[0], "rxlev", 5) == 0) ? \
+		&params->rxlev_meas : &params->rxqual_meas
+
+DEFUN_USRATTR(cfg_power_ctrl_no_avg,
+	      cfg_power_ctrl_no_avg_cmd,
+	      X(BSC_VTY_ATTR_VENDOR_SPECIFIC) |
+	      X(BSC_VTY_ATTR_NEW_LCHAN),
+	      "no " POWER_CONTROL_MEAS_AVG_CMD,
+	      NO_STR POWER_CONTROL_MEAS_AVG_DESC)
+{
+	struct gsm_power_ctrl_params *params = vty->index;
+	struct gsm_power_ctrl_meas_params *avg_params;
+
+	avg_params = POWER_CONTROL_MEAS_AVG_PARAMS(params);
+	avg_params->algo = GSM_PWR_CTRL_MEAS_AVG_ALGO_NONE;
+
+	return CMD_SUCCESS;
+}
+
+DEFUN_USRATTR(cfg_power_ctrl_avg_params,
+	      cfg_power_ctrl_avg_params_cmd,
+	      X(BSC_VTY_ATTR_VENDOR_SPECIFIC) |
+	      X(BSC_VTY_ATTR_NEW_LCHAN),
+	      POWER_CONTROL_MEAS_AVG_CMD " params hreqave <1-31> hreqt <1-31>",
+	      POWER_CONTROL_MEAS_AVG_DESC "Configure general averaging parameters\n"
+	      "Hreqave: the period over which an average is produced\n"
+	      "Hreqave value (so that Hreqave * Hreqt < 32)\n"
+	      "Hreqt: the number of averaged results that are maintained\n"
+	      "Hreqt value (so that Hreqave * Hreqt < 32)\n")
+{
+	struct gsm_power_ctrl_params *params = vty->index;
+	struct gsm_power_ctrl_meas_params *avg_params;
+	int h_reqave = atoi(argv[1]);
+	int h_reqt = atoi(argv[2]);
+
+	if (h_reqave * h_reqt > 31) {
+		vty_out(vty, "%% Hreqave (%d) * Hreqt (%d) = %d must be < 32%s",
+			h_reqave, h_reqt, h_reqave * h_reqt, VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	avg_params = POWER_CONTROL_MEAS_AVG_PARAMS(params);
+	avg_params->h_reqave = h_reqave;
+	avg_params->h_reqt = h_reqt;
+
+	return CMD_SUCCESS;
+}
+
+DEFUN_USRATTR(cfg_power_ctrl_avg_algo,
+	      cfg_power_ctrl_avg_algo_cmd,
+	      X(BSC_VTY_ATTR_VENDOR_SPECIFIC) |
+	      X(BSC_VTY_ATTR_NEW_LCHAN),
+	      /* FIXME: add algorithm specific parameters */
+	      POWER_CONTROL_MEAS_AVG_CMD " algo (unweighted|weighted|mod-median)",
+	      POWER_CONTROL_MEAS_AVG_DESC "Select the averaging algorithm\n"
+	      "Un-weighted average\n" "Weighted average\n"
+	      "Modified median calculation\n")
+{
+	struct gsm_power_ctrl_params *params = vty->index;
+	struct gsm_power_ctrl_meas_params *avg_params;
+
+	avg_params = POWER_CONTROL_MEAS_AVG_PARAMS(params);
+	if (strcmp(argv[1], "unweighted") == 0)
+		avg_params->algo = GSM_PWR_CTRL_MEAS_AVG_ALGO_UNWEIGHTED;
+	else if (strcmp(argv[1], "weighted") == 0)
+		avg_params->algo = GSM_PWR_CTRL_MEAS_AVG_ALGO_WEIGHTED;
+	else if (strcmp(argv[1], "mod-median") == 0)
+		avg_params->algo = GSM_PWR_CTRL_MEAS_AVG_ALGO_MOD_MEDIAN;
+
+	return CMD_SUCCESS;
+}
+
+DEFUN_USRATTR(cfg_power_ctrl_avg_osmo_ewma,
+	      cfg_power_ctrl_avg_osmo_ewma_cmd,
+	      X(BSC_VTY_ATTR_VENDOR_SPECIFIC) |
+	      X(BSC_VTY_ATTR_NEW_LCHAN),
+	      POWER_CONTROL_MEAS_AVG_CMD " algo osmo-ewma beta <1-99>",
+	      POWER_CONTROL_MEAS_AVG_DESC "Select the averaging algorithm\n"
+	      "Exponentially Weighted Moving Average (EWMA)\n"
+	      "Smoothing factor (in %): beta = (100 - alpha)\n"
+	      "1% - lowest smoothing, 99% - highest smoothing\n")
+{
+	struct gsm_power_ctrl_params *params = vty->index;
+	struct gsm_power_ctrl_meas_params *avg_params;
+
+#if 0
+	if (trx->bts->type != GSM_BTS_TYPE_OSMOBTS) {
+		vty_out(vty, "%% EWMA is an OsmoBTS specific algorithm, "
+			"it's not usable for other BTS types%s", VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+#endif
+
+	avg_params = POWER_CONTROL_MEAS_AVG_PARAMS(params);
+	avg_params->algo = GSM_PWR_CTRL_MEAS_AVG_ALGO_OSMO_EWMA;
+	avg_params->ewma.alpha = 100 - atoi(argv[1]);
+
+	return CMD_SUCCESS;
+}
+
 #define TRX_TEXT "Radio Transceiver\n"
 
 /* per TRX configuration */
@@ -7193,6 +7634,20 @@ int bsc_vty_init(struct gsm_network *network)
 
 	neighbor_ident_vty_init(network, network->neighbor_bss_cells);
 	/* See also handover commands added on bts level from handover_vty.c */
+
+	install_element(BTS_NODE, &cfg_bts_power_ctrl_cmd);
+	install_element(BTS_NODE, &cfg_bts_no_power_ctrl_cmd);
+	install_node(&power_ctrl_node, dummy_config_write);
+	install_element(POWER_CTRL_NODE, &cfg_power_ctrl_mode_cmd);
+	install_element(POWER_CTRL_NODE, &cfg_power_ctrl_step_size_cmd);
+	install_element(POWER_CTRL_NODE, &cfg_power_ctrl_rxlev_thresh_cmd);
+	install_element(POWER_CTRL_NODE, &cfg_power_ctrl_rxqual_thresh_cmd);
+	install_element(POWER_CTRL_NODE, &cfg_power_ctrl_rxlev_thresh_comp_cmd);
+	install_element(POWER_CTRL_NODE, &cfg_power_ctrl_rxqual_thresh_comp_cmd);
+	install_element(POWER_CTRL_NODE, &cfg_power_ctrl_no_avg_cmd);
+	install_element(POWER_CTRL_NODE, &cfg_power_ctrl_avg_params_cmd);
+	install_element(POWER_CTRL_NODE, &cfg_power_ctrl_avg_algo_cmd);
+	install_element(POWER_CTRL_NODE, &cfg_power_ctrl_avg_osmo_ewma_cmd);
 
 	install_element(BTS_NODE, &cfg_trx_cmd);
 	install_node(&trx_node, dummy_config_write);

@@ -40,6 +40,7 @@ EXTRA_DIST = \
 	nri_cfg.vty \
 	osmo-bsc.vty \
 	timer.vty \
+	power_ctrl.vty \
 	$(NULL)
 
 TESTSUITE = $(srcdir)/testsuite

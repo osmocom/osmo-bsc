@@ -583,6 +583,21 @@ static int bsc_vty_go_parent(struct vty *vty)
 			vty->index_sub = NULL;
 		}
 		break;
+	case POWER_CTRL_NODE:
+		vty->node = BTS_NODE;
+		{
+			const struct gsm_power_ctrl_params *cp = vty->index;
+			struct gsm_bts *bts;
+
+			if (cp->dir == GSM_PWR_CTRL_DIR_UL)
+				bts = container_of(cp, struct gsm_bts, ms_power_ctrl);
+			else
+				bts = container_of(cp, struct gsm_bts, bs_power_ctrl);
+
+			vty->index_sub = &bts->description;
+			vty->index = bts;
+		}
+		break;
 	case TRX_NODE:
 		vty->node = BTS_NODE;
 		{
