@@ -184,6 +184,11 @@ struct gsm_bts_model {
 
 	void (*e1line_bind_ops)(struct e1inp_line *line);
 
+	/* (Optional) function for encoding MS/BS Power Control paramaters */
+	int (*power_ctrl_enc_rsl_params)(struct msgb *msg, const struct gsm_power_ctrl_params *cp);
+	/* (Optional) function for sending default MS/BS Power Control paramaters */
+	int (*power_ctrl_send_def_params)(const struct gsm_bts_trx *trx);
+
 	void (*config_write_bts)(struct vty *vty, struct gsm_bts *bts);
 	void (*config_write_trx)(struct vty *vty, struct gsm_bts_trx *trx);
 	void (*config_write_ts)(struct vty *vty, struct gsm_bts_trx_ts *ts);
