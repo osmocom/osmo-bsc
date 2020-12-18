@@ -310,6 +310,7 @@ static int generate_ma_for_ts(struct gsm_bts_trx_ts *ts)
 static void bootstrap_rsl(struct gsm_bts_trx *trx)
 {
 	unsigned int i;
+	int rc;
 
 	LOG_TRX(trx, DRSL, LOGL_NOTICE, "bootstrapping RSL "
 		"on ARFCN %u using MCC-MNC %s LAC=%u CID=%u BSIC=%u\n",
@@ -338,6 +339,15 @@ static void bootstrap_rsl(struct gsm_bts_trx *trx)
 		/* channel unspecific, power reduction in 2 dB steps */
 		rsl_bs_power_control(trx, 0xFF, trx->max_power_red / 2);
 		rsl_nokia_si_end(trx);
+	}
+
+	if (trx->bts->model->power_ctrl_send_def_params != NULL) {
+		rc = trx->bts->model->power_ctrl_send_def_params(trx);
+		if (rc) {
+			LOG_TRX(trx, DRSL, LOGL_ERROR, "Failed to send default "
+				"MS/BS Power control parameters (rc=%d)\n", rc);
+			/* TODO: should we drop RSL connection here? */
+		}
 	}
 
 	for (i = 0; i < ARRAY_SIZE(trx->ts); i++) {
