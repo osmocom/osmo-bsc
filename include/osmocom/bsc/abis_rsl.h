@@ -35,6 +35,13 @@ struct gsm_bts_trx_ts;
 
 #define GSM48_LEN2PLEN(a)	(((a) << 2) | 1)
 
+#define RSL_ALLOC_SIZE		1024
+#define RSL_ALLOC_HEADROOM	128
+
+#define rsl_msgb_alloc(args...) \
+	msgb_alloc_headroom(RSL_ALLOC_SIZE, RSL_ALLOC_HEADROOM, \
+			    __FILE__ ":" OSMO_STRINGIFY_VAL(__LINE__))
+
 const char *ip_to_a(uint32_t ip);
 
 int rsl_bcch_info(const struct gsm_bts_trx *trx, enum osmo_sysinfo_type si_type, const uint8_t *data, int len);

@@ -55,8 +55,6 @@
 #include <osmocom/bsc/handover_fsm.h>
 #include <osmocom/bsc/smscb.h>
 #include <osmocom/bsc/bts.h>
-#define RSL_ALLOC_SIZE		1024
-#define RSL_ALLOC_HEADROOM	128
 
 static void send_lchan_signal(int sig_no, struct gsm_lchan *lchan,
 			      struct gsm_meas_rep *resp)
@@ -144,12 +142,6 @@ static struct gsm_lchan *lchan_lookup(struct gsm_bts_trx *trx, uint8_t chan_nr,
 		     gsm_ts_and_pchan_name(lchan->ts), log_name, chan_nr);
 
 	return lchan;
-}
-
-static struct msgb *rsl_msgb_alloc(void)
-{
-	return msgb_alloc_headroom(RSL_ALLOC_SIZE, RSL_ALLOC_HEADROOM,
-				   "RSL");
 }
 
 static void pad_macblock(uint8_t *out, const uint8_t *in, int len)
