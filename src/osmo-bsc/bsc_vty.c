@@ -5646,7 +5646,8 @@ DEFUN(restart_bts, restart_bts_cmd,
 	return CMD_SUCCESS;
 }
 
-DEFUN(bts_resend, bts_resend_cmd,
+DEFUN(bts_resend_sysinfo,
+      bts_resend_sysinfo_cmd,
       "bts <0-255> resend-system-information",
       "BTS Specific Commands\n" BTS_NR_STR
       "Re-generate + re-send BCCH SYSTEM INFORMATION\n")
@@ -5674,6 +5675,39 @@ DEFUN(bts_resend, bts_resend_cmd,
 		vty_out(vty, "%% Filed to (re)generate System Information "
 			"messages, check the logs%s", VTY_NEWLINE);
 		return CMD_WARNING;
+	}
+
+	return CMD_SUCCESS;
+}
+
+DEFUN(bts_resend_power_ctrl_params,
+      bts_resend_power_ctrl_params_cmd,
+      "bts <0-255> resend-power-control-defaults",
+      "BTS Specific Commands\n" BTS_NR_STR
+      "Re-generate + re-send default MS/BS Power control parameters\n")
+{
+	const struct gsm_bts_trx *trx;
+	const struct gsm_bts *bts;
+	int bts_nr = atoi(argv[0]);
+
+	bts = gsm_bts_num(gsmnet_from_vty(vty), bts_nr);
+	if (!bts) {
+		vty_out(vty, "%% No such BTS (%d)%s", bts_nr, VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	if (bts->model->power_ctrl_send_def_params == NULL) {
+		vty_out(vty, "%% Sending default MS/BS Power control parameters "
+			"for BTS%d is not implemented%s", bts_nr, VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	llist_for_each_entry(trx, &bts->trx_list, list) {
+		if (bts->model->power_ctrl_send_def_params(trx) != 0) {
+			vty_out(vty, "%% Failed to send default MS/BS Power control parameters "
+				"to BTS%d/TRX%d%s", bts_nr, trx->nr, VTY_NEWLINE);
+			return CMD_WARNING;
+		}
 	}
 
 	return CMD_SUCCESS;
@@ -7675,7 +7709,8 @@ int bsc_vty_init(struct gsm_network *network)
 
 	install_element(ENABLE_NODE, &drop_bts_cmd);
 	install_element(ENABLE_NODE, &restart_bts_cmd);
-	install_element(ENABLE_NODE, &bts_resend_cmd);
+	install_element(ENABLE_NODE, &bts_resend_sysinfo_cmd);
+	install_element(ENABLE_NODE, &bts_resend_power_ctrl_params_cmd);
 	install_element(ENABLE_NODE, &pdch_act_cmd);
 	install_element(ENABLE_NODE, &lchan_act_cmd);
 	install_element(ENABLE_NODE, &lchan_act_all_cmd);
