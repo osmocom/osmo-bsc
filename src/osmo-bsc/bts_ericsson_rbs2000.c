@@ -35,15 +35,7 @@
 
 static void bootstrap_om_bts(struct gsm_bts *bts)
 {
-	struct gsm_bts_trx *trx;
-
 	LOGP(DNM, LOGL_NOTICE, "bootstrapping OML for BTS %u\n", bts->nr);
-
-	/* Global init (not bootstrapping) */
-	abis_om2k_bts_init(bts);
-
-	llist_for_each_entry(trx, &bts->trx_list, list)
-		abis_om2k_trx_init(trx);
 
 	/* TODO: Should we wait for a Failure report? */
 	om2k_bts_fsm_start(bts);
@@ -53,7 +45,8 @@ static void bootstrap_om_trx(struct gsm_bts_trx *trx)
 {
 	LOGP(DNM, LOGL_NOTICE, "bootstrapping OML for TRX %u/%u\n",
 	     trx->bts->nr, trx->nr);
-	/* FIXME */
+
+	om2k_trx_fsm_start(trx);
 }
 
 static int shutdown_om(struct gsm_bts *bts)
@@ -145,6 +138,11 @@ static int inp_sig_cb(unsigned int subsys, unsigned int signal,
 		LOGP(DNM, LOGL_NOTICE, "Line-%u TS-%u TEI-%u SAPI-%u: Link "
 		     "Lost for Ericsson RBS2000. Re-starting DL Establishment\n",
 		     isd->line->num, isd->ts_nr, isd->tei, isd->sapi);
+		if (isd->tei == isd->trx->bts->oml_tei)
+			om2k_bts_fsm_reset(isd->trx->bts);
+		else
+			om2k_trx_fsm_reset(isd->trx);
+		break;
 		/* Some datalink for a given TEI/SAPI went down, try to re-start it */
 		e1i_ts = &isd->line->ts[isd->ts_nr-1];
 		OSMO_ASSERT(e1i_ts->type == E1INP_TS_TYPE_SIGN);
@@ -184,10 +182,24 @@ static void bts_model_rbs2k_e1line_bind_ops(struct e1inp_line *line)
 	e1inp_line_bind_ops(line, &bts_isdn_e1inp_line_ops);
 }
 
+static int bts_model_rbs2k_bts_init(struct gsm_bts *bts)
+{
+	abis_om2k_bts_init(bts);
+	return 0;
+}
+
+static int bts_model_rbs2k_trx_init(struct gsm_bts_trx *trx)
+{
+	abis_om2k_trx_init(trx);
+	return 0;
+}
+
 static struct gsm_bts_model model_rbs2k = {
 	.type = GSM_BTS_TYPE_RBS2000,
 	.name = "rbs2000",
 	.start = bts_model_rbs2k_start,
+	.bts_init = bts_model_rbs2k_bts_init,
+	.trx_init = bts_model_rbs2k_trx_init,
 	.oml_rcvmsg = &abis_om2k_rcvmsg,
 	.config_write_bts = &config_write_bts,
 	.e1line_bind_ops = &bts_model_rbs2k_e1line_bind_ops,

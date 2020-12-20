@@ -66,6 +66,7 @@ struct gsm_bts_trx {
 			struct rxlev_stats rxlev_stat;
 		} ipaccess;
 		struct {
+			struct osmo_fsm_inst *trx_fi;
 			struct {
 				struct om2k_mo om2k_mo;
 			} trxc;

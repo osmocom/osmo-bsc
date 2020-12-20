@@ -121,9 +121,26 @@ int abis_om2k_tx_rx_conf_req(struct gsm_bts_trx *trx);
 int abis_om2k_tx_tx_conf_req(struct gsm_bts_trx *trx);
 int abis_om2k_tx_ts_conf_req(struct gsm_bts_trx_ts *ts);
 
-struct osmo_fsm_inst *om2k_bts_fsm_start(struct gsm_bts *bts);
+enum om2k_bts_state {
+	OM2K_BTS_S_INIT,
+	OM2K_BTS_S_WAIT_CF,
+	OM2K_BTS_S_WAIT_IS,
+	OM2K_BTS_S_WAIT_CON,
+	OM2K_BTS_S_WAIT_TF,
+	OM2K_BTS_S_WAIT_MCTR,
+	OM2K_BTS_S_WAIT_TRX_LAPD,
+	OM2K_BTS_S_WAIT_TRX,
+	OM2K_BTS_S_DONE,
+	OM2K_BTS_S_ERROR,
+};
+
 void abis_om2k_bts_init(struct gsm_bts *bts);
+void om2k_bts_fsm_start(struct gsm_bts *bts);
+void om2k_bts_fsm_reset(struct gsm_bts *bts);
+
 void abis_om2k_trx_init(struct gsm_bts_trx *trx);
+void om2k_trx_fsm_start(struct gsm_bts_trx *trx);
+void om2k_trx_fsm_reset(struct gsm_bts_trx *trx);
 
 int abis_om2k_vty_init(void);
 

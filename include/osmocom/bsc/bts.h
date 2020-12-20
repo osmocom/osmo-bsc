@@ -316,6 +316,7 @@ struct gsm_bts {
 			struct gsm_envabtse envabtse[4];
 		} bs11;
 		struct {
+			struct osmo_fsm_inst *bts_fi;
 			struct {
 				struct om2k_mo om2k_mo;
 				struct gsm_abis_mo mo;
