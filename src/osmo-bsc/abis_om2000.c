@@ -1922,7 +1922,8 @@ static const struct osmo_fsm_state om2k_is_states[] = {
 		.out_state_mask = S(OM2K_ST_DONE) |
 				  S(OM2K_ST_ERROR) |
 				  S(OM2K_ST_WAIT_CFG_ACCEPT) |
-				  S(OM2K_ST_WAIT_OPINFO_ACCEPT),
+				  S(OM2K_ST_WAIT_OPINFO_ACCEPT) |
+				  S(OM2K_ST_WAIT_ENABLE_ACCEPT),
 		.action = om2k_mo_st_wait_start_res,
 	},
 	[OM2K_ST_WAIT_CFG_ACCEPT] = {
