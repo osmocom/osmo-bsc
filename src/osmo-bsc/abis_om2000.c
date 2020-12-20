@@ -2389,10 +2389,14 @@ static void om2k_bts_s_wait_tf(struct osmo_fsm_inst *fi, uint32_t event, void *d
 
 	OSMO_ASSERT(event == OM2K_BTS_EVT_TF_DONE);
 
-	osmo_fsm_inst_state_chg(fi, OM2K_BTS_S_WAIT_CON,
-				BTS_FSM_TIMEOUT, 0);
-	om2k_mo_fsm_start(fi, OM2K_BTS_EVT_CON_DONE, bts->c0,
-			  &bts->rbs2000.con.om2k_mo);
+	if (!llist_count(&bts->rbs2000.con.conn_groups)) {
+		/* skip CON object if we have no configuration for it */
+		osmo_fsm_inst_state_chg(fi, OM2K_BTS_S_WAIT_IS, BTS_FSM_TIMEOUT, 0);
+		om2k_mo_fsm_start(fi, OM2K_BTS_EVT_IS_DONE, bts->c0, &bts->rbs2000.is.om2k_mo);
+	} else {
+		osmo_fsm_inst_state_chg(fi, OM2K_BTS_S_WAIT_CON, BTS_FSM_TIMEOUT, 0);
+		om2k_mo_fsm_start(fi, OM2K_BTS_EVT_CON_DONE, bts->c0, &bts->rbs2000.con.om2k_mo);
+	}
 }
 
 static void om2k_bts_s_wait_con(struct osmo_fsm_inst *fi, uint32_t event, void *data)
@@ -2486,7 +2490,8 @@ static const struct osmo_fsm_state om2k_bts_states[] = {
 	[OM2K_BTS_S_WAIT_TF] = {
 		.in_event_mask = S(OM2K_BTS_EVT_TF_DONE),
 		.out_state_mask = S(OM2K_BTS_S_ERROR) |
-				  S(OM2K_BTS_S_WAIT_CON),
+				  S(OM2K_BTS_S_WAIT_CON) |
+				  S(OM2K_BTS_S_WAIT_IS),
 		.name = "WAIT-TF",
 		.action = om2k_bts_s_wait_tf,
 	},
