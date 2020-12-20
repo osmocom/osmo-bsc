@@ -1328,6 +1328,10 @@ struct gsm_power_ctrl_params {
 	/* Power Control mode to be used by the BTS */
 	enum gsm_power_ctrl_mode mode;
 
+	/* BS Power reduction value / maximum (in dB) */
+	uint8_t bs_power_val_db; /* for static mode */
+	uint8_t bs_power_max_db; /* for dynamic mode */
+
 	/* Power change step size (dynamic mode only) */
 	uint8_t inc_step_size_db; /* increasing direction */
 	uint8_t red_step_size_db; /* reducing direction */

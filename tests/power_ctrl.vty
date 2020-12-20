@@ -23,6 +23,7 @@ OsmoBSC(config-net-bts)# bs-power-control
 OsmoBSC(config-power-ctrl)# list with-flags
 ...
   . lv  mode (static|dyn-bts) [reset]
+  . lv  bs-power (static|dyn-max) <0-30>
   . lv  step-size inc <2-6> red <2-4>
   . lv  rxlev-thresh lower <0-63> upper <0-63>
   . lv  rxqual-thresh lower <0-7> upper <0-7>
@@ -33,12 +34,30 @@ OsmoBSC(config-power-ctrl)# list with-flags
   . lv  (rxlev-avg|rxqual-avg) algo (unweighted|weighted|mod-median)
   . lv  (rxlev-avg|rxqual-avg) algo osmo-ewma beta <1-99>
 
+OsmoBSC(config-power-ctrl)# bs-power ?
+  static   Fixed BS Power reduction value (for static mode)
+  dyn-max  Maximum BS Power reduction value (for dynamic mode)
+OsmoBSC(config-power-ctrl)# bs-power static ?
+  <0-30>  BS Power reduction value (in dB, even numbers only)
+OsmoBSC(config-power-ctrl)# bs-power static 3
+% Incorrect BS Power reduction value, an even number is expected
+OsmoBSC(config-power-ctrl)# bs-power static 6
+OsmoBSC(config-power-ctrl)# show running-config
+...
+  bs-power-control
+   mode static
+   bs-power static 6
+  ms-power-control
+   mode static
+... !bs-power
+
 OsmoBSC(config-power-ctrl)# ### Check default BS Power Parameters
 OsmoBSC(config-power-ctrl)# mode dyn-bts
 OsmoBSC(config-power-ctrl)# show running-config
 ...
   bs-power-control
    mode dyn-bts
+   bs-power dyn-max 12
    step-size inc 4 red 2
    rxlev-thresh lower 32 upper 38
    rxlev-thresh-comp lower 10 12 upper 19 20
@@ -50,11 +69,23 @@ OsmoBSC(config-power-ctrl)# show running-config
    mode static
 ...
 
+OsmoBSC(config-power-ctrl)# bs-power dyn-max 30
+OsmoBSC(config-power-ctrl)# show running-config
+...
+  bs-power-control
+   mode dyn-bts
+   bs-power dyn-max 30
+... !bs-power
+  ms-power-control
+   mode static
+... !bs-power
+
 OsmoBSC(config-power-ctrl)# exit
 OsmoBSC(config-net-bts)# ms-power-control
 OsmoBSC(config-power-ctrl)# list with-flags
 ...
   . lv  mode (static|dyn-bts) [reset]
+  . lv  bs-power (static|dyn-max) <0-30>
   . lv  step-size inc <2-6> red <2-4>
   . lv  rxlev-thresh lower <0-63> upper <0-63>
   . lv  rxqual-thresh lower <0-7> upper <0-7>
@@ -71,6 +102,7 @@ OsmoBSC(config-power-ctrl)# show running-config
 ...
   bs-power-control
    mode dyn-bts
+   bs-power dyn-max 30
    step-size inc 4 red 2
    rxlev-thresh lower 32 upper 38
    rxlev-thresh-comp lower 10 12 upper 19 20
@@ -89,6 +121,11 @@ OsmoBSC(config-power-ctrl)# show running-config
    no rxqual-avg
 ...
 
+OsmoBSC(config-power-ctrl)# bs-power static 30
+% This command is only valid for 'bs-power-control' node
+OsmoBSC(config-power-ctrl)# bs-power dyn-max 30
+% This command is only valid for 'bs-power-control' node
+
 OsmoBSC(config-power-ctrl)# step-size inc 5 red 4
 % Power change step size must be an even number
 OsmoBSC(config-power-ctrl)# step-size inc 2 red 3
@@ -98,6 +135,7 @@ OsmoBSC(config-power-ctrl)# show running-config
 ...
   bs-power-control
    mode dyn-bts
+   bs-power dyn-max 30
    step-size inc 4 red 2
 ...
   ms-power-control

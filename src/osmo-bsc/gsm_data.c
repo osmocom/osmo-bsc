@@ -972,6 +972,10 @@ const struct gsm_power_ctrl_params power_ctrl_params_def = {
 	/* Static Power Control is the safe default */
 	.mode = GSM_PWR_CTRL_MODE_STATIC,
 
+	/* BS Power reduction value / maximum (in dB) */
+	.bs_power_val_db = 0,  /* no attenuation in static mode */
+	.bs_power_max_db = 12, /* up to 12 dB in dynamic mode */
+
 	/* Power increasing/reducing step size */
 	.inc_step_size_db = 4, /* 2, 4, or 6 dB */
 	.red_step_size_db = 2, /* 2 or 4 dB */
