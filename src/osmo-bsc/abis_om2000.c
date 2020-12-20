@@ -2212,6 +2212,11 @@ static void om2k_trx_s_send_si(struct osmo_fsm_inst *fi, uint32_t prev_state)
 
 static void om2k_trx_s_done_onenter(struct osmo_fsm_inst *fi, uint32_t prev_state)
 {
+	struct om2k_trx_fsm_priv *otfp = fi->priv;
+
+	/* See e1_config:bts_isdn_sign_link() / OS#4914 */
+	otfp->trx->mo.nm_state.administrative = NM_STATE_UNLOCKED;
+
 	osmo_fsm_inst_term(fi, OSMO_FSM_TERM_REGULAR, NULL);
 }
 
