@@ -849,7 +849,7 @@ static int om2k_decode_msg(struct om2k_decoded_msg *odm, struct msgb *msg)
 	return abis_om2k_msg_tlv_parse(&odm->tp, o2h);
 }
 
-static char *om2k_mo_name(const struct abis_om2k_mo *mo)
+const char *abis_om2k_mo_name(const struct abis_om2k_mo *mo)
 {
 	static char mo_buf[64];
 
@@ -1042,7 +1042,7 @@ static int abis_om2k_sendmsg(struct gsm_bts *bts, struct msgb *msg)
 		trx = gsm_bts_trx_num(bts, o2h->mo.inst);
 		if (!trx) {
 			LOGP(DNM, LOGL_ERROR, "MO=%s Tx Dropping msg to "
-				"non-existing TRX\n", om2k_mo_name(&o2h->mo));
+				"non-existing TRX\n", abis_om2k_mo_name(&o2h->mo));
 			return -ENODEV;
 		}
 		msg->dst = trx->oml_link;
@@ -1052,7 +1052,7 @@ static int abis_om2k_sendmsg(struct gsm_bts *bts, struct msgb *msg)
 		trx = gsm_bts_trx_num(bts, o2h->mo.assoc_so);
 		if (!trx) {
 			LOGP(DNM, LOGL_ERROR, "MO=%s Tx Dropping msg to "
-				"non-existing TRX\n", om2k_mo_name(&o2h->mo));
+				"non-existing TRX\n", abis_om2k_mo_name(&o2h->mo));
 			return -ENODEV;
 		}
 		msg->dst = trx->oml_link;
@@ -1111,7 +1111,7 @@ static int abis_om2k_tx_simple(struct gsm_bts *bts, const struct abis_om2k_mo *m
 	o2k = (struct abis_om2k_hdr *) msgb_put(msg, sizeof(*o2k));
 	fill_om2k_hdr(o2k, mo, msg_type);
 
-	DEBUGP(DNM, "Tx MO=%s %s\n", om2k_mo_name(mo),
+	DEBUGP(DNM, "Tx MO=%s %s\n", abis_om2k_mo_name(mo),
 		get_value_string(om2k_msgcode_vals, msg_type));
 
 	return abis_om2k_sendmsg(bts, msg);
@@ -1168,7 +1168,7 @@ int abis_om2k_tx_op_info(struct gsm_bts *bts, const struct abis_om2k_mo *mo,
 
 	msgb_tv_put(msg, OM2K_DEI_OP_INFO, operational);
 
-	DEBUGP(DNM, "Tx MO=%s %s\n", om2k_mo_name(mo),
+	DEBUGP(DNM, "Tx MO=%s %s\n", abis_om2k_mo_name(mo),
 		get_value_string(om2k_msgcode_vals, OM2K_MSGT_OP_INFO));
 
 	/* we update the state here... and send the signal at ACK */
@@ -1240,7 +1240,7 @@ int abis_om2k_tx_is_conf_req(struct gsm_bts *bts)
 	talloc_free(cg);
 
 	DEBUGP(DNM, "Tx MO=%s %s\n",
-		om2k_mo_name(&bts->rbs2000.is.om2k_mo.addr),
+		abis_om2k_mo_name(&bts->rbs2000.is.om2k_mo.addr),
 		get_value_string(om2k_msgcode_vals, OM2K_MSGT_IS_CONF_REQ));
 
 	return abis_om2k_sendmsg(bts, msg);
@@ -1290,7 +1290,7 @@ int abis_om2k_tx_con_conf_req(struct gsm_bts *bts)
 			OM2K_MSGT_CON_CONF_REQ);
 
 	DEBUGP(DNM, "Tx MO=%s %s\n",
-		om2k_mo_name(&bts->rbs2000.con.om2k_mo.addr),
+		abis_om2k_mo_name(&bts->rbs2000.con.om2k_mo.addr),
 		get_value_string(om2k_msgcode_vals, OM2K_MSGT_CON_CONF_REQ));
 
 	return abis_om2k_sendmsg(bts, msg);
@@ -1319,7 +1319,7 @@ int abis_om2k_tx_mctr_conf_req(struct gsm_bts *bts)
 	fill_om2k_hdr(o2k, &bts->rbs2000.mctr.om2k_mo.addr,
 			OM2K_MSGT_MCTR_CONF_REQ);
 	DEBUGP(DNM, "Tx MO=%s %s\n",
-		om2k_mo_name(&bts->rbs2000.mctr.om2k_mo.addr),
+		abis_om2k_mo_name(&bts->rbs2000.mctr.om2k_mo.addr),
 		get_value_string(om2k_msgcode_vals, OM2K_MSGT_MCTR_CONF_REQ));
 
 	return abis_om2k_sendmsg(bts, msg);
@@ -1409,7 +1409,7 @@ int abis_om2k_tx_tf_conf_req(struct gsm_bts *bts)
 			  sizeof(fs_offset_undef), fs_offset_undef);
 
 	DEBUGP(DNM, "Tx MO=%s %s\n",
-		om2k_mo_name(&bts->rbs2000.tf.om2k_mo.addr),
+		abis_om2k_mo_name(&bts->rbs2000.tf.om2k_mo.addr),
 		get_value_string(om2k_msgcode_vals, OM2K_MSGT_TF_CONF_REQ));
 
 	return abis_om2k_sendmsg(bts, msg);
@@ -1606,7 +1606,7 @@ int abis_om2k_tx_ts_conf_req(struct gsm_bts_trx_ts *ts)
 	}
 
 	DEBUGP(DNM, "Tx MO=%s %s\n",
-		om2k_mo_name(&mo),
+		abis_om2k_mo_name(&mo),
 		get_value_string(om2k_msgcode_vals, OM2K_MSGT_TS_CONF_REQ));
 
 	return abis_om2k_sendmsg(ts->trx->bts, msg);
@@ -2598,7 +2598,7 @@ static int abis_om2k_tx_negot_req_ack(struct gsm_bts *bts, const struct abis_om2
 
 	msgb_tlv_put(msg, OM2K_DEI_NEGOT_REC2, len, data);
 
-	DEBUGP(DNM, "Tx MO=%s %s\n", om2k_mo_name(mo),
+	DEBUGP(DNM, "Tx MO=%s %s\n", abis_om2k_mo_name(mo),
 		get_value_string(om2k_msgcode_vals, OM2K_MSGT_NEGOT_REQ_ACK));
 
 	return abis_om2k_sendmsg(bts, msg);
@@ -2720,7 +2720,7 @@ static int om2k_rx_nack(struct msgb *msg)
 	uint16_t msg_type = ntohs(o2h->msg_type);
 	struct tlv_parsed tp;
 
-	LOGP(DNM, LOGL_ERROR, "Rx MO=%s %s", om2k_mo_name(&o2h->mo),
+	LOGP(DNM, LOGL_ERROR, "Rx MO=%s %s", abis_om2k_mo_name(&o2h->mo),
 		get_value_string(om2k_msgcode_vals, msg_type));
 
 	abis_om2k_msg_tlv_parse(&tp, o2h);
@@ -2746,7 +2746,7 @@ static int process_mo_state(struct gsm_bts *bts, struct om2k_decoded_msg *odm)
 	mo_state = *TLVP_VAL(&odm->tp, OM2K_DEI_MO_STATE);
 
 	LOGP(DNM, LOGL_DEBUG, "Rx MO=%s %s, MO State: %s\n",
-		om2k_mo_name(&odm->o2h.mo),
+		abis_om2k_mo_name(&odm->o2h.mo),
 		get_value_string(om2k_msgcode_vals, odm->msg_type),
 		get_value_string(om2k_mostate_vals, mo_state));
 
@@ -2756,7 +2756,7 @@ static int process_mo_state(struct gsm_bts *bts, struct om2k_decoded_msg *odm)
 	    && mo_state != OM2K_MO_S_ENABLED) {
 		LOGP(DNM, LOGL_ERROR,
 		     "Rx MO=%s %s Failed to enable MO State!\n",
-		     om2k_mo_name(&odm->o2h.mo),
+		     abis_om2k_mo_name(&odm->o2h.mo),
 		     get_value_string(om2k_msgcode_vals, odm->msg_type));
 	}
 
@@ -2797,7 +2797,7 @@ static bool display_fault_bits(const uint8_t *vect, uint16_t len,
 	}
 
 	sprintf(string + strlen(string), ")\n");
-	DEBUGP(DNM, "Rx MO=%s %s", om2k_mo_name(mo), string);
+	DEBUGP(DNM, "Rx MO=%s %s", abis_om2k_mo_name(mo), string);
 
 	return true;
 }
@@ -2828,7 +2828,7 @@ static void display_fault_maps(const uint8_t *src, unsigned int src_len,
 	src_len--;
 	if (msg_code != OM2K_MSGT_FAULT_REP) {
 		LOGP(DNM, LOGL_ERROR, "Rx MO=%s Fault report: invalid message code!\n",
-		     om2k_mo_name(mo));
+		     abis_om2k_mo_name(mo));
 		return;
 	}
 
@@ -2844,7 +2844,7 @@ static void display_fault_maps(const uint8_t *src, unsigned int src_len,
 		if (tlv_count >= 11) {
 			LOGP(DNM, LOGL_ERROR,
 			     "Rx MO=%s Fault Report: too many tlv elements!\n",
-			     om2k_mo_name(mo));
+			     abis_om2k_mo_name(mo));
 			return;
 		}
 
@@ -2856,7 +2856,7 @@ static void display_fault_maps(const uint8_t *src, unsigned int src_len,
 		else {
 			LOGP(DNM, LOGL_ERROR,
 			     "Rx MO=%s Fault Report: invalid tlv element!\n",
-			     om2k_mo_name(mo));
+			     abis_om2k_mo_name(mo));
 			return;
 		}
 
@@ -2884,7 +2884,7 @@ static void display_fault_maps(const uint8_t *src, unsigned int src_len,
 
 	if (!faults_present) {
 		DEBUGP(DNM, "Rx MO=%s Fault Report: All faults ceased!\n",
-		       om2k_mo_name(mo));
+		       abis_om2k_mo_name(mo));
 	}
 }
 
@@ -2920,7 +2920,7 @@ int abis_om2k_rcvmsg(struct msgb *msg)
 		return -EINVAL;
 	}
 
-	DEBUGP(DNM, "Rx MO=%s %s (%s)\n", om2k_mo_name(&o2h->mo),
+	DEBUGP(DNM, "Rx MO=%s %s (%s)\n", abis_om2k_mo_name(&o2h->mo),
 		get_value_string(om2k_msgcode_vals, msg_type),
 		osmo_hexdump(msg->l2h, msgb_l2len(msg)));
 

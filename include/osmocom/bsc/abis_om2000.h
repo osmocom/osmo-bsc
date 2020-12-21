@@ -130,4 +130,6 @@ int abis_om2k_vty_init(void);
 struct vty;
 void abis_om2k_config_write_bts(struct vty *vty, struct gsm_bts *bts);
 
+const char *abis_om2k_mo_name(const struct abis_om2k_mo *mo);
+
 #endif /* OPENBCS_ABIS_OM2K_H */
