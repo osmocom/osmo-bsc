@@ -776,6 +776,9 @@ get_om2k_mo(struct gsm_bts *bts, const struct abis_om2k_mo *abis_mo)
 	struct gsm_bts_trx *trx;
 
 	switch (abis_mo->class) {
+	case OM2K_MO_CLS_DP:
+		mo = &bts->rbs2000.dp.om2k_mo;
+		break;
 	case OM2K_MO_CLS_CF:
 		mo = &bts->rbs2000.cf.om2k_mo;
 		break;
