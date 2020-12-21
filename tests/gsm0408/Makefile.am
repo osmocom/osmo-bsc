@@ -7,6 +7,7 @@ AM_CFLAGS = \
 	-Wall \
 	$(LIBOSMOCORE_CFLAGS) \
 	$(LIBOSMOGSM_CFLAGS) \
+	$(LIBOSMOCTRL_CFLAGS) \
 	$(LIBOSMOABIS_CFLAGS) \
 	$(NULL)
 
@@ -46,5 +47,6 @@ gsm0408_test_LDADD = \
 	$(top_builddir)/src/osmo-bsc/nm_rcarrier_fsm.o \
 	$(LIBOSMOCORE_LIBS) \
 	$(LIBOSMOGSM_LIBS) \
+	$(LIBOSMOCTRL_LIBS) \
 	$(LIBOSMOABIS_LIBS) \
 	$(NULL)

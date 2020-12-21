@@ -5,6 +5,7 @@
 #include <stdbool.h>
 
 #include <osmocom/core/linuxlist.h>
+#include <osmocom/ctrl/control_cmd.h>
 
 struct vty;
 struct gsm_network;
@@ -45,7 +46,8 @@ void neighbor_ident_iter(const struct neighbor_ident_list *nil,
 			 void *cb_data);
 
 void neighbor_ident_vty_init(struct gsm_network *net, struct neighbor_ident_list *nil);
-void neighbor_ident_vty_write(struct vty *vty, const char *indent, struct gsm_bts *bts);
+void neighbor_ident_vty_write_bts(struct vty *vty, const char *indent, struct gsm_bts *bts);
+void neighbor_ident_vty_write_network(struct vty *vty, const char *indent);
 
 bool neighbor_ident_bts_entry_exists(uint8_t from_bts);
 
@@ -58,3 +60,12 @@ bool neighbor_ident_vty_parse_key_params(struct vty *vty, const char **argv,
 					 struct neighbor_ident_key *key);
 bool neighbor_ident_bts_parse_key_params(struct vty *vty, struct gsm_bts *bts, const char **argv,
 					 struct neighbor_ident_key *key);
+
+
+struct ctrl_handle *neighbor_controlif_setup(struct gsm_network *net);
+int neighbor_ctrl_cmds_install(struct gsm_network *net);
+
+enum neighbor_ctrl_node {
+	CTRL_NODE_NEIGH = _LAST_CTRL_NODE,
+	_LAST_CTRL_NODE_NEIGHBOR
+};

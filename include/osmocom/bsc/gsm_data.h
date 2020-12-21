@@ -1213,6 +1213,12 @@ struct gsm_network {
 
 	/* Remote BSS Cell Identifier Lists */
 	struct neighbor_ident_list *neighbor_bss_cells;
+	/* Remote BSS resolution sevice (CTRL iface) */
+	struct {
+		char *addr;
+		uint16_t port;
+		struct ctrl_handle *handle;
+	} neigh_ctrl;
 
 	/* Don't refuse to start with mutually exclusive codec settings */
 	bool allow_unusable_timeslots;

@@ -488,11 +488,34 @@ class TestCtrlBSC(TestCtrlBase):
         self.assertEqual(r['var'], 'mcc')
         self.assertEqual(r['value'], '002')
 
-def add_bsc_test(suite, workdir):
+class TestCtrlBSCNeighbor(TestCtrlBase):
+
+    def tearDown(self):
+        TestCtrlBase.tearDown(self)
+        os.unlink("tmp_dummy_sock")
+
+    def ctrl_command(self):
+        return ["./src/osmo-bsc/osmo-bsc", "-r", "tmp_dummy_sock", "-c",
+                "tests/ctrl/osmo-bsc-neigh-test.cfg"]
+
+    def ctrl_app(self):
+        return (4248, "./src/osmo-bsc/osmo-bsc", "OsmoBSC", "bsc")
+
+    def testCtrlNeighborResolution(self):
+        r = self.do_get('neighbor_resolve_cgi_ps_from_lac_ci')
+        self.assertEqual(r['mtype'], 'ERROR')
+        self.assertEqual(r['error'], 'The format is <src_lac>,<src_cell_id>,<dst_arfcn>,<dst_bsic>')
+
+        r = self.do_get('neighbor_resolve_cgi_ps_from_lac_ci.1.6969.23.32')
+        self.assertEqual(r['mtype'], 'GET_REPLY')
+        self.assertEqual(r['var'], 'neighbor_resolve_cgi_ps_from_lac_ci.1.6969.23.32')
+        self.assertEqual(r['value'], '023-42-423-2-5')
+
+def add_bsc_test(suite, workdir, klass):
     if not os.path.isfile(os.path.join(workdir, "src/osmo-bsc/osmo-bsc")):
         print("Skipping the BSC test")
         return
-    test = unittest.TestLoader().loadTestsFromTestCase(TestCtrlBSC)
+    test = unittest.TestLoader().loadTestsFromTestCase(klass)
     suite.addTest(test)
 
 if __name__ == '__main__':
@@ -525,6 +548,7 @@ if __name__ == '__main__':
     os.chdir(workdir)
     print("Running tests for specific control commands")
     suite = unittest.TestSuite()
-    add_bsc_test(suite, workdir)
+    add_bsc_test(suite, workdir, TestCtrlBSC)
+    add_bsc_test(suite, workdir, TestCtrlBSCNeighbor)
     res = unittest.TextTestRunner(verbosity=verbose_level).run(suite)
     sys.exit(len(res.errors) + len(res.failures))

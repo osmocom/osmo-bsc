@@ -14,6 +14,10 @@ OsmoBSC# list
 OsmoBSC# configure terminal
 OsmoBSC(config)# network
 
+
+OsmoBSC(config-net)# neighbor-resolution bind 1.2.3.4 ?
+  [<0-65535>]  Port to bind the service to [defaults to 4248 if not provided]
+
 OsmoBSC(config-net)# bts 0
 OsmoBSC(config-net-bts)# type sysmobts
 OsmoBSC(config-net-bts)# base_station_id_code 10
@@ -84,9 +88,11 @@ OsmoBSC(config-net-bts)# list
   neighbor lac <0-65535>
   neighbor lac-ci <0-65535> <0-65535>
   neighbor cgi <0-999> <0-999> <0-65535> <0-65535>
+  neighbor cgi-ps <0-999> <0-999> <0-65535> <0-255> <0-65535>
   neighbor lac <0-65535> arfcn <0-1023> bsic (<0-63>|any)
   neighbor lac-ci <0-65535> <0-65535> arfcn <0-1023> bsic (<0-63>|any)
   neighbor cgi <0-999> <0-999> <0-65535> <0-65535> arfcn <0-1023> bsic (<0-63>|any)
+  neighbor cgi-ps <0-999> <0-999> <0-65535> <0-255> <0-65535> arfcn <0-1023> bsic (<0-63>|any)
   no neighbor bts <0-255>
   no neighbor arfcn <0-1023> bsic (<0-63>|any)
   no neighbors
@@ -100,6 +106,7 @@ OsmoBSC(config-net-bts)# neighbor ?
   lac     Add Neighbor cell by LAC
   lac-ci  Add Neighbor cell by LAC and CI
   cgi     Add Neighbor cell by cgi
+  cgi-ps  Add Neighbor cell by cgi (Packet Switched, with RAC)
 
 OsmoBSC(config-net-bts)# neighbor bts ?
   <0-255>  BTS number
@@ -348,12 +355,16 @@ OsmoBSC(config-net-bts)# neighbor lac 456 arfcn 123 bsic 45
 OsmoBSC(config-net-bts)# neighbor lac-ci 789 10 arfcn 423 bsic any
 % BTS 0 to ARFCN 423 (any BSIC) now has 1 remote BSS Cell Identifier List entry
 
+OsmoBSC(config-net-bts)# neighbor cgi-ps 23 42 423 2 5 arfcn 23 bsic 32
+% BTS 0 to ARFCN 23 BSIC 32 now has 1 remote BSS Cell Identifier List entry
+
 OsmoBSC(config-net-bts)# no neighbors
 % Removed local neighbor bts 0 to bts 1
 % Removed local neighbor bts 0 to bts 2
 % Removed remote BSS neighbor BTS 0 to ARFCN 23 BSIC 42
 % Removed remote BSS neighbor BTS 0 to ARFCN 123 BSIC 45
 % Removed remote BSS neighbor BTS 0 to ARFCN 423 (any BSIC)
+% Removed remote BSS neighbor BTS 0 to ARFCN 23 BSIC 32
 
 OsmoBSC(config-net-bts)# show running-config
 ... !neighbor 

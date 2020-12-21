@@ -960,6 +960,19 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 
+	if (bsc_gsmnet->neigh_ctrl.addr) {
+		bsc_gsmnet->neigh_ctrl.handle = neighbor_controlif_setup(bsc_gsmnet);
+		if (!bsc_gsmnet->neigh_ctrl.handle) {
+			fprintf(stderr, "Failed to bind Neighbor Resolution Service. Exiting.\n");
+			exit(1);
+		}
+		rc = neighbor_ctrl_cmds_install(bsc_gsmnet);
+		if (rc < 0) {
+			fprintf(stderr, "Failed to install Neighbor Resolution Service commands. Exiting.\n");
+			exit(1);
+		}
+	}
+
 	if (rf_ctrl)
 		osmo_talloc_replace_string(bsc_gsmnet, &bsc_gsmnet->rf_ctrl_name, rf_ctrl);
 

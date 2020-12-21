@@ -1,4 +1,5 @@
-== Handover
+[[cs_handover]]
+== CS Handover
 
 Handover is the process of moving a continuously used channel (lchan) from one
 cell to another. Usually, that is an ongoing call, so that phones are able to
@@ -144,6 +145,7 @@ more than one neighbor per given ARFCN+BSIC, these values can be re-used any
 number of times across a network, and even between cells managed by one and the
 same BSC.
 
+[[config_neigh]]
 === Configuring Neighbors
 
 The most important step to enable handover in OsmoBSC is to configure each cell
@@ -692,3 +694,100 @@ network
 
 4G neighbor cells can be removed using the same command, just replacing
 `add` with `del`.
+
+[[ps_handover]]
+== PS Handover
+
+Packet Switch Handover is mostly managed by the packet switching nodes such as
+PCU, SGSN and GGSN. However, the PCU encounters a similar difficulty to that
+explained in <<cs_handover>>: that is, it must find a way to translate
+ARFCN+BSIC identifiers provided by the MS into the sort of identifiers
+understood by the Core Network (SGSN). These identifiers are in this case
+composed of RAC+CI (instead LAC+CI), or more specifically, CGI+RAC (named as
+"Packet Switched CGI" or "CGI-PS" from now on for convenience).
+
+Hence, it feels natural extending the <<config_neigh>> storage in the BSC to
+also provide Packet Switched related identifiers in order to provide the PCU the
+required information to do the translations, instead of duplicating the whole
+neighbor information in two different network nodes.
+
+This can be done, similarly to already presented CS related commands in
+<<config_neigh>>, by using the `neighbor cgi-ps` VTY command, which allows for
+specifying the extra identifier (RAC) required by PS related translations:
+
+.Example: configuring PS neighbors within the local BSS in osmo-bsc.cfg, identified by CGI-PS (CGI+RAC)
+----
+network
+ bts 0
+neighbor cgi-ps <MCC> <MNC> <LAC> <RAC> <CI> arfcn <0-1023> bsic (<0-63>|any)
+----
+
+This information should already be present by default if one uses the `local BTS
+number` to identify the network, as long as that BTS is properly configured to
+have GPRS enabled and the RAC code is set by `gprs routing area <0-255>`
+command:
+
+.Example: configuring PS neighbors within the local BSS in osmo-bsc.cfg, identified by local BTS number
+----
+network
+ bts 0
+  gprs mode gprs
+  gprs routing area 45
+  neighbor bts 1
+  ...
+ bts 1
+  gprs mode egprs
+  gprs routing area 48
+  neighbor bts 0
+  ...
+----
+
+This PS information is solely used by the Neighbor Resolution Service, aimed at
+nodes other than BSC itself, and described below.
+
+=== Neighbor Resolution Service CTRL interface
+
+This service is provided in order to provide the PCU a way to translate
+ARCFCN+BSIC into CGI-PS in order to use RIM services and accomplish PS
+Handovers.
+
+This interface is Osmocom specific, since the standard doesn't provide any
+specifications on how to provide this kind of information to the PCU.
+
+Since the PCU can be either BSC-colocated or BTS-colocated (hence on a different
+host than BSC), this must be a network-based interface. Since the service is
+Osmocom-specific, it was decided to re-use the CTRL interface available in most
+Osmocom processes (see <<control>>).
+
+Due to security concerns, the set of CTRL commands available in this
+service is configured in a different IP address and port, since the service
+needs to be reachable by all PCU under the BSC. This way the user can still
+constrain the regular CTRL port (which may contains lots of configuration
+related commands) listening in a more constrained address (eg. localhost).
+
+By default, this interface is disabled, and it is enabled by configuring the
+desired IP address to bind to (and optionally a different port other than
+well-known `4248`):
+
+.Example: Enable and configure Neighbor Resolution Service CTRL interface
+----
+network
+ neighbor-resolution bind 127.0.0.1 5000
+----
+
+osmo-pcu will then be able to connect to the BSC and query for resolution during eg. NACC requests from MS.
+
+The relevant commands are::
+
+* neighbor_resolve_cgi_ps_from_lac_ci:
+----
+GET neighbor_resolve_cgi_ps_from_lac_ci.<src_lac>.<src_cell_id>.<dst_arfcn>.<dst_bsic>
+GET_REPLY <MCC>-<MNC>-<LAC>-<RAC>-<CI>
+----
+
+Where the `src_lac` and `src_ci` are provided by BTS/BSC over `PCUIF` interface
+during startup (`INFO IND`), and `dst_arfcn` and `dst_bsic` are those of the
+neighbor the PCU is willing to request the CGI-PS information. Hence, from the
+`src` params the BSC is able to look up the BTS and afterwards apply the
+translation of `dst` parameters based on the neighbor information available for
+that BTS.

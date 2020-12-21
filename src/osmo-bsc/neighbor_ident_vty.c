@@ -23,6 +23,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <inttypes.h>
+
+#include <osmocom/ctrl/ports.h>
 
 #include <osmocom/vty/command.h>
 #include <osmocom/gsm/gsm0808.h>
@@ -83,6 +86,9 @@ bool neighbor_ident_bts_parse_key_params(struct vty *vty, struct gsm_bts *bts, c
 
 #define CGI_PARAMS "cgi <0-999> <0-999> <0-65535> <0-65535>"
 #define CGI_DOC "Neighbor cell by cgi\n" "MCC\n" "MNC\n" "LAC\n" "CI\n"
+
+#define CGI_PS_PARAMS "cgi-ps <0-999> <0-999> <0-65535> <0-255> <0-65535>"
+#define CGI_PS_DOC "Neighbor cell by cgi (Packet Switched, with RAC)\n" "MCC\n" "MNC\n" "LAC\n" "RAC\n" "CI\n"
 
 #define LOCAL_BTS_PARAMS "bts <0-255>"
 #define LOCAL_BTS_DOC "Neighbor cell by local BTS number\n" "BTS number\n"
@@ -151,6 +157,34 @@ static struct gsm0808_cell_id *neighbor_ident_vty_parse_cgi(struct vty *vty, con
 
 	cgi->lai.lac = atoi(lac);
 	cgi->cell_identity = atoi(ci);
+	return &cell_id;
+}
+
+static struct gsm0808_cell_id *neighbor_ident_vty_parse_cgi_ps(struct vty *vty, const char **argv)
+{
+	static struct gsm0808_cell_id cell_id = {
+		.id_discr = CELL_IDENT_WHOLE_GLOBAL_PS,
+	};
+	struct osmo_cell_global_id_ps *cgi_ps = &cell_id.id.global_ps;
+	const char *mcc = argv[0];
+	const char *mnc = argv[1];
+	const char *lac = argv[2];
+	const char *rac = argv[3];
+	const char *ci = argv[4];
+
+	if (osmo_mcc_from_str(mcc, &cgi_ps->rai.lac.plmn.mcc)) {
+		vty_out(vty, "%% Error decoding MCC: %s%s", mcc, VTY_NEWLINE);
+		return NULL;
+	}
+
+	if (osmo_mnc_from_str(mnc, &cgi_ps->rai.lac.plmn.mnc, &cgi_ps->rai.lac.plmn.mnc_3_digits)) {
+		vty_out(vty, "%% Error decoding MNC: %s%s", mnc, VTY_NEWLINE);
+		return NULL;
+	}
+
+	cgi_ps->rai.lac.lac = atoi(lac);
+	cgi_ps->rai.rac = atoi(rac);
+	cgi_ps->cell_identity = atoi(ci);
 	return &cell_id;
 }
 
@@ -244,6 +278,13 @@ DEFUN(cfg_neighbor_add_cgi, cfg_neighbor_add_cgi_cmd,
 	NEIGHBOR_ADD_DOC CGI_DOC)
 {
 	return add_local_bts(vty, bts_by_cell_id(vty, neighbor_ident_vty_parse_cgi(vty, argv)));
+}
+
+DEFUN(cfg_neighbor_add_cgi_ps, cfg_neighbor_add_cgi_ps_cmd,
+	NEIGHBOR_ADD_CMD CGI_PS_PARAMS,
+	NEIGHBOR_ADD_DOC CGI_PS_DOC)
+{
+	return add_local_bts(vty, bts_by_cell_id(vty, neighbor_ident_vty_parse_cgi_ps(vty, argv)));
 }
 
 bool neighbor_ident_key_matches_bts(const struct neighbor_ident_key *key, struct gsm_bts *bts)
@@ -497,6 +538,19 @@ DEFUN(cfg_neighbor_add_cgi_arfcn_bsic, cfg_neighbor_add_cgi_arfcn_bsic_cmd,
 	return add_remote_or_local_bts(vty, cell_id, &nik);
 }
 
+DEFUN(cfg_neighbor_add_cgi_ps_arfcn_bsic, cfg_neighbor_add_cgi_ps_arfcn_bsic_cmd,
+	NEIGHBOR_ADD_CMD CGI_PS_PARAMS " " NEIGHBOR_IDENT_VTY_KEY_PARAMS,
+	NEIGHBOR_ADD_DOC CGI_PS_DOC NEIGHBOR_IDENT_VTY_KEY_DOC)
+{
+	struct neighbor_ident_key nik;
+	struct gsm0808_cell_id *cell_id = neighbor_ident_vty_parse_cgi_ps(vty, argv);
+	if (!cell_id)
+		return CMD_WARNING;
+	if (!neighbor_ident_vty_parse_key_params(vty, argv + 5, &nik))
+		return CMD_WARNING;
+	return add_remote_or_local_bts(vty, cell_id, &nik);
+}
+
 DEFUN(cfg_neighbor_del_bts_nr, cfg_neighbor_del_bts_nr_cmd,
 	NEIGHBOR_DEL_CMD LOCAL_BTS_PARAMS,
 	NEIGHBOR_DEL_DOC LOCAL_BTS_DOC)
@@ -524,6 +578,27 @@ DEFUN(cfg_neighbor_del_all, cfg_neighbor_del_all_cmd,
 {
 	return neighbor_del_all(vty);
 }
+
+DEFUN(cfg_neighbor_bind, cfg_neighbor_bind_cmd,
+	"neighbor-resolution bind " VTY_IPV46_CMD " [<0-65535>]",
+	NEIGHBOR_DOC "Bind Neighbor Resolution Service (CTRL interface) to given ip and port\n"
+	IP_STR IPV6_STR "Port to bind the service to [defaults to 4248 if not provided]\n")
+{
+	osmo_talloc_replace_string(g_net, &g_net->neigh_ctrl.addr, argv[0]);
+	if (argc > 1)
+		g_net->neigh_ctrl.port = atoi(argv[1]);
+	else
+		g_net->neigh_ctrl.port = OSMO_CTRL_PORT_BSC_NEIGH;
+	return CMD_SUCCESS;
+}
+
+void neighbor_ident_vty_write_network(struct vty *vty, const char *indent)
+{
+	if (g_net->neigh_ctrl.addr)
+		vty_out(vty, "%sneighbor-resolution bind %s %" PRIu16 "%s", indent, g_net->neigh_ctrl.addr,
+			g_net->neigh_ctrl.port, VTY_NEWLINE);
+}
+
 
 struct write_neighbor_ident_entry_data {
 	struct vty *vty;
@@ -576,6 +651,16 @@ static bool write_neighbor_ident_list(const struct neighbor_ident_key *key,
 					cgi->lai.lac, cgi->cell_identity);
 		}
 		break;
+	case CELL_IDENT_WHOLE_GLOBAL_PS:
+		for (i = 0; i < val->id_list_len; i++) {
+			const struct osmo_cell_global_id_ps *cgi_ps = &val->id_list[i].global_ps;
+			NEIGH_BSS_WRITE("cgi-ps %s %s %u %u %u",
+					osmo_mcc_name(cgi_ps->rai.lac.plmn.mcc),
+					osmo_mnc_name(cgi_ps->rai.lac.plmn.mnc, cgi_ps->rai.lac.plmn.mnc_3_digits),
+					cgi_ps->rai.lac.lac, cgi_ps->rai.rac,
+					cgi_ps->cell_identity);
+		}
+		break;
 	default:
 		vty_out(vty, "%% Unsupported Cell Identity%s", VTY_NEWLINE);
 	}
@@ -604,7 +689,7 @@ void neighbor_ident_vty_write_local_neighbors(struct vty *vty, const char *inden
 	}
 }
 
-void neighbor_ident_vty_write(struct vty *vty, const char *indent, struct gsm_bts *bts)
+void neighbor_ident_vty_write_bts(struct vty *vty, const char *indent, struct gsm_bts *bts)
 {
 	neighbor_ident_vty_write_local_neighbors(vty, indent, bts);
 	neighbor_ident_vty_write_remote_bss(vty, indent, bts);
@@ -662,13 +747,17 @@ void neighbor_ident_vty_init(struct gsm_network *net, struct neighbor_ident_list
 {
 	g_net = net;
 	g_neighbor_cells = nil;
+	install_element(GSMNET_NODE, &cfg_neighbor_bind_cmd);
+
 	install_element(BTS_NODE, &cfg_neighbor_add_bts_nr_cmd);
 	install_element(BTS_NODE, &cfg_neighbor_add_lac_cmd);
 	install_element(BTS_NODE, &cfg_neighbor_add_lac_ci_cmd);
 	install_element(BTS_NODE, &cfg_neighbor_add_cgi_cmd);
+	install_element(BTS_NODE, &cfg_neighbor_add_cgi_ps_cmd);
 	install_element(BTS_NODE, &cfg_neighbor_add_lac_arfcn_bsic_cmd);
 	install_element(BTS_NODE, &cfg_neighbor_add_lac_ci_arfcn_bsic_cmd);
 	install_element(BTS_NODE, &cfg_neighbor_add_cgi_arfcn_bsic_cmd);
+	install_element(BTS_NODE, &cfg_neighbor_add_cgi_ps_arfcn_bsic_cmd);
 	install_element(BTS_NODE, &cfg_neighbor_del_bts_nr_cmd);
 	install_element(BTS_NODE, &cfg_neighbor_del_arfcn_bsic_cmd);
 	install_element(BTS_NODE, &cfg_neighbor_del_all_cmd);

@@ -1175,7 +1175,7 @@ static void config_write_bts_single(struct vty *vty, struct gsm_bts *bts)
 			VTY_NEWLINE);
 	}
 
-	neighbor_ident_vty_write(vty, "  ", bts);
+	neighbor_ident_vty_write_bts(vty, "  ", bts);
 
 	vty_out(vty, "  codec-support fr");
 	if (bts->codec.hr)
@@ -1314,6 +1314,8 @@ static int config_write_net(struct vty *vty)
 			vty_out(vty, " %d", r->last);
 		vty_out(vty, "%s", VTY_NEWLINE);
 	}
+
+	neighbor_ident_vty_write_network(vty, " ");
 
 	return CMD_SUCCESS;
 }

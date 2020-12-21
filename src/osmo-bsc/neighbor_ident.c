@@ -33,6 +33,13 @@
 
 #include <osmocom/bsc/neighbor_ident.h>
 
+#include <osmocom/ctrl/control_cmd.h>
+#include <osmocom/ctrl/control_if.h>
+
+#include <osmocom/bsc/gsm_data.h>
+#include <osmocom/bsc/bts.h>
+#include <osmocom/bsc/debug.h>
+
 struct neighbor_ident_list {
 	struct llist_head list;
 };
@@ -252,4 +259,100 @@ void neighbor_ident_iter(const struct neighbor_ident_list *nil,
 		if (!iter_cb(&ni->key, &ni->val, cb_data))
 			return;
 	}
+}
+
+/* Neighbor Resolution CTRL iface */
+
+CTRL_CMD_DEFINE_RO(neighbor_resolve_cgi_ps_from_lac_ci, "neighbor_resolve_cgi_ps_from_lac_ci");
+
+static int get_neighbor_resolve_cgi_ps_from_lac_ci(struct ctrl_cmd *cmd, void *data)
+{
+	struct gsm_network *net = (struct gsm_network *)data;
+	struct gsm_bts *bts_tmp, *bts_found = NULL;
+	const struct gsm0808_cell_id_list2 *tgt_cell_li = NULL;
+	char *tmp = NULL, *tok, *saveptr;
+	struct neighbor_ident_key ni;
+	unsigned lac, cell_id;
+	const struct osmo_cell_global_id_ps *cgi_ps;
+
+	if (!cmd->variable)
+		goto fmt_err;
+
+	tmp = talloc_strdup(cmd, cmd->variable);
+	if (!tmp) {
+		cmd->reply = "OOM";
+		return CTRL_CMD_ERROR;
+	}
+
+	if (!(tok = strtok_r(tmp, ".", &saveptr)))
+		goto fmt_err;
+	OSMO_ASSERT(strcmp(tok, "neighbor_resolve_cgi_ps_from_lac_ci") == 0);
+
+	if (!(tok = strtok_r(NULL, ".", &saveptr)))
+		goto fmt_err;
+	lac = atoi(tok);
+
+	if (!(tok = strtok_r(NULL, ".", &saveptr)))
+		goto fmt_err;
+	cell_id = atoi(tok);
+
+	if (!(tok = strtok_r(NULL, ".", &saveptr)))
+		goto fmt_err;
+	ni.arfcn = atoi(tok);
+
+	if (!(tok = strtok_r(NULL, "\0", &saveptr)))
+		goto fmt_err;
+	ni.bsic = atoi(tok);
+
+	ni.from_bts = NEIGHBOR_IDENT_KEY_ANY_BTS;
+
+	llist_for_each_entry(bts_tmp, &net->bts_list, list) {
+		if (bts_tmp->location_area_code != lac)
+			continue;
+		if (bts_tmp->cell_identity != cell_id)
+			continue;
+		bts_found = bts_tmp;
+		ni.from_bts = bts_tmp->nr;
+		break;
+	}
+
+	if (!bts_found)
+		goto notfound_err;
+
+	LOG_BTS(bts_found, DLINP, LOGL_DEBUG, "Resolving neigbhor arfcn=%u bsic=%u\n", ni.arfcn, ni.bsic);
+
+	if (!neighbor_ident_key_valid(&ni))
+		goto fmt_err;
+
+	tgt_cell_li = neighbor_ident_get(net->neighbor_bss_cells, &ni);
+	if (!tgt_cell_li || tgt_cell_li->id_discr != CELL_IDENT_WHOLE_GLOBAL_PS || tgt_cell_li->id_list_len < 1)
+		goto notfound_err;
+	cgi_ps = &tgt_cell_li->id_list[0].global_ps;
+
+	ctrl_cmd_reply_printf(cmd, "%s", osmo_cgi_ps_name(cgi_ps));
+	talloc_free(tmp);
+	return CTRL_CMD_REPLY;
+
+notfound_err:
+	talloc_free(tmp);
+	cmd->reply = talloc_strdup(cmd, "No target CGI PS found");
+	return CTRL_CMD_ERROR;
+fmt_err:
+	talloc_free(tmp);
+	cmd->reply = talloc_strdup(cmd, "The format is <src_lac>,<src_cell_id>,<dst_arfcn>,<dst_bsic>");
+	return CTRL_CMD_ERROR;
+}
+
+int neighbor_ctrl_cmds_install(struct gsm_network *net)
+{
+	int rc;
+
+	rc = ctrl_cmd_install(CTRL_NODE_ROOT, &cmd_neighbor_resolve_cgi_ps_from_lac_ci);
+	return rc;
+}
+
+struct ctrl_handle *neighbor_controlif_setup(struct gsm_network *net)
+{
+	return ctrl_interface_setup_dynip2(net, net->neigh_ctrl.addr, net->neigh_ctrl.port,
+					   NULL, _LAST_CTRL_NODE_NEIGHBOR);
 }

@@ -388,6 +388,10 @@ bool gsm_bts_matches_cell_id(const struct gsm_bts *bts, const struct gsm0808_cel
 	case CELL_IDENT_WHOLE_GLOBAL:
 		return gsm_bts_matches_lai(bts, &id->global.lai)
 			&& id->global.cell_identity == bts->cell_identity;
+	case CELL_IDENT_WHOLE_GLOBAL_PS:
+		return gsm_bts_matches_lai(bts, &id->global_ps.rai.lac)
+			&& id->global_ps.rai.rac == bts->gprs.rac
+			&& id->global_ps.cell_identity == bts->cell_identity;
 	case CELL_IDENT_LAC_AND_CI:
 		return id->lac_and_ci.lac == bts->location_area_code
 			&& id->lac_and_ci.ci == bts->cell_identity;
