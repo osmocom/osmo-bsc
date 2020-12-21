@@ -1959,9 +1959,8 @@ static struct osmo_fsm om2k_mo_fsm = {
 	.timer_cb = om2k_mo_timer_cb,
 };
 
-struct osmo_fsm_inst *om2k_mo_fsm_start(struct osmo_fsm_inst *parent,
-					uint32_t term_event,
-					struct gsm_bts_trx *trx, struct om2k_mo *mo)
+static struct osmo_fsm_inst *om2k_mo_fsm_start(struct osmo_fsm_inst *parent, uint32_t term_event,
+					       struct gsm_bts_trx *trx, struct om2k_mo *mo)
 {
 	struct osmo_fsm_inst *fi;
 	struct om2k_mo_fsm_priv *omfp;
