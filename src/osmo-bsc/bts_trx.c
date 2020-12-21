@@ -120,6 +120,13 @@ struct gsm_bts_trx *gsm_bts_trx_alloc(struct gsm_bts *bts)
 	if (trx->nr != 0)
 		trx->nominal_power = bts->c0->nominal_power;
 
+	if (bts->model && bts->model->trx_init) {
+		if (bts->model->trx_init(trx) < 0) {
+			talloc_free(trx);
+			return NULL;
+		}
+	}
+
 	llist_add_tail(&trx->list, &bts->trx_list);
 
 	return trx;

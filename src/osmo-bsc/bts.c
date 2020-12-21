@@ -503,6 +503,19 @@ int gsm_set_bts_type(struct gsm_bts *bts, enum gsm_bts_type type)
 		model->started = true;
 	}
 
+	if (model->bts_init) {
+		int rc = model->bts_init(bts);
+		if (rc < 0)
+			return rc;
+	}
+
+	/* handle those TRX which are already allocated at the time we set the type */
+	if (model->trx_init) {
+		struct gsm_bts_trx *trx;
+		llist_for_each_entry(trx, &bts->trx_list, list)
+			model->trx_init(trx);
+	}
+
 	switch (bts->type) {
 	case GSM_BTS_TYPE_OSMOBTS:
 		/* Enable dynamic Uplink power control by default */

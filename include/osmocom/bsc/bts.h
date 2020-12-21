@@ -178,7 +178,15 @@ struct gsm_bts_model {
 	const char *name;
 
 	bool started;
+	/* start the model itself */
 	int (*start)(struct gsm_network *net);
+
+	/* initialize a single BTS for this model */
+	int (*bts_init)(struct gsm_bts *bts);
+
+	/* initialize a single TRX for this model */
+	int (*trx_init)(struct gsm_bts_trx *trx);
+
 	int (*oml_rcvmsg)(struct msgb *msg);
 	char * (*oml_status)(const struct gsm_bts *bts);
 
