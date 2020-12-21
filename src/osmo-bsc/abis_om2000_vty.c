@@ -658,8 +658,80 @@ void abis_om2k_config_write_bts(struct vty *vty, struct gsm_bts *bts)
 				VTY_NEWLINE);
 }
 
+static void vty_dump_om2k_mo(struct vty *vty, const struct om2k_mo *mo, const char *pfx)
+{
+	unsigned int pfx_len = strlen(pfx);
+	const char *mo_name = abis_om2k_mo_name(&mo->addr);
+	unsigned int pfx_mo_len = pfx_len + strlen(mo_name);
+	unsigned int pfx2_len;
+	char pfx2[23];
+	int i;
+
+	/* generate padding after MO class to align the state names in the same column */
+	if (pfx_mo_len > sizeof(pfx2)-1)
+		pfx2_len = 0;
+	else
+		pfx2_len = sizeof(pfx2)-1 - pfx_mo_len;
+	for (i = 0; i < pfx2_len; i++)
+		pfx2[i] = ' ';
+	pfx2[pfx2_len] = '\0';
+
+	vty_out(vty, "%s%s%s %s%s", pfx, mo_name, pfx2,
+		mo->fsm ? osmo_fsm_inst_state_name(mo->fsm) : "[NULL]",
+		VTY_NEWLINE);
+}
+
+DEFUN(show_om2k_mo, show_om2k_mo_cmd,
+	"show bts <0-255> om2k-mo",
+	SHOW_STR "Display information about a BTS\n"
+	"BTS number\n" "OM2000 Managed Object information\n")
+{
+	struct gsm_network *net = gsmnet_from_vty(vty);
+	int bts_nr = atoi(argv[0]);
+	struct gsm_bts *bts = gsm_bts_num(net, bts_nr);
+	struct gsm_bts_trx *trx;
+
+	if (!bts) {
+		vty_out(vty, "%% can't find BTS '%s'%s", argv[0], VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	if (bts->type != GSM_BTS_TYPE_RBS2000) {
+		vty_out(vty, "%% BTS is not using OM2000%s", VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	vty_out(vty, "BTS %3u OM2K-FSM state %s%s", bts->nr,
+		osmo_fsm_inst_state_name(bts->rbs2000.bts_fi), VTY_NEWLINE);
+	vty_dump_om2k_mo(vty, &bts->rbs2000.cf.om2k_mo, " ");
+	vty_dump_om2k_mo(vty, &bts->rbs2000.con.om2k_mo, " ");
+	vty_dump_om2k_mo(vty, &bts->rbs2000.is.om2k_mo, " ");
+	vty_dump_om2k_mo(vty, &bts->rbs2000.dp.om2k_mo, " ");
+	vty_dump_om2k_mo(vty, &bts->rbs2000.tf.om2k_mo, " ");
+	vty_dump_om2k_mo(vty, &bts->rbs2000.mctr.om2k_mo, " ");
+
+
+	llist_for_each_entry(trx, &bts->trx_list, list) {
+		int tn;
+
+		vty_out(vty, " TRX %u OM2K-FSM state  %s%s", trx->nr,
+			osmo_fsm_inst_state_name(trx->rbs2000.trx_fi), VTY_NEWLINE);
+		vty_dump_om2k_mo(vty, &trx->rbs2000.trxc.om2k_mo, "  ");
+		vty_dump_om2k_mo(vty, &trx->rbs2000.rx.om2k_mo, "  ");
+		vty_dump_om2k_mo(vty, &trx->rbs2000.tx.om2k_mo, "  ");
+
+		for (tn = 0; tn < ARRAY_SIZE(trx->ts); tn++) {
+			struct gsm_bts_trx_ts *ts = &trx->ts[tn];
+			vty_dump_om2k_mo(vty, &ts->rbs2000.om2k_mo, "   ");
+		}
+	}
+
+	return CMD_SUCCESS;
+}
+
 int abis_om2k_vty_init(void)
 {
+	install_element_ve(&show_om2k_mo_cmd);
 	install_element(ENABLE_NODE, &om2k_class_inst_cmd);
 	install_element(ENABLE_NODE, &om2k_classnum_inst_cmd);
 	install_node(&om2k_node, dummy_config_write);
