@@ -4863,10 +4863,18 @@ DEFUN(cfg_bts_power_ctrl,
       POWER_CONTROL_CMD,
       POWER_CONTROL_DESC)
 {
+	struct gsm_power_ctrl_params *params;
 	struct gsm_bts *bts = vty->index;
 
-	vty->index = BTS_POWER_CTRL_PARAMS(bts);
+	params = BTS_POWER_CTRL_PARAMS(bts);
 	vty->node = POWER_CTRL_NODE;
+	vty->index = params;
+
+	/* Change the prefix to reflect MS/BS difference */
+	if (params->dir == GSM_PWR_CTRL_DIR_UL)
+		power_ctrl_node.prompt = "%s(config-ms-power-ctrl)# ";
+	else
+		power_ctrl_node.prompt = "%s(config-bs-power-ctrl)# ";
 
 	return CMD_SUCCESS;
 }

@@ -20,7 +20,7 @@ OsmoBSC(config-net-bts)# list with-flags
 ...
 
 OsmoBSC(config-net-bts)# bs-power-control
-OsmoBSC(config-power-ctrl)# list with-flags
+OsmoBSC(config-bs-power-ctrl)# list with-flags
 ...
   . lv  mode (static|dyn-bts) [reset]
   . lv  bs-power (static|dyn-max) <0-30>
@@ -34,15 +34,15 @@ OsmoBSC(config-power-ctrl)# list with-flags
   . lv  (rxlev-avg|rxqual-avg) algo (unweighted|weighted|mod-median)
   . lv  (rxlev-avg|rxqual-avg) algo osmo-ewma beta <1-99>
 
-OsmoBSC(config-power-ctrl)# bs-power ?
+OsmoBSC(config-bs-power-ctrl)# bs-power ?
   static   Fixed BS Power reduction value (for static mode)
   dyn-max  Maximum BS Power reduction value (for dynamic mode)
-OsmoBSC(config-power-ctrl)# bs-power static ?
+OsmoBSC(config-bs-power-ctrl)# bs-power static ?
   <0-30>  BS Power reduction value (in dB, even numbers only)
-OsmoBSC(config-power-ctrl)# bs-power static 3
+OsmoBSC(config-bs-power-ctrl)# bs-power static 3
 % Incorrect BS Power reduction value, an even number is expected
-OsmoBSC(config-power-ctrl)# bs-power static 6
-OsmoBSC(config-power-ctrl)# show running-config
+OsmoBSC(config-bs-power-ctrl)# bs-power static 6
+OsmoBSC(config-bs-power-ctrl)# show running-config
 ...
   bs-power-control
    mode static
@@ -51,9 +51,9 @@ OsmoBSC(config-power-ctrl)# show running-config
    mode static
 ... !bs-power
 
-OsmoBSC(config-power-ctrl)# ### Check default BS Power Parameters
-OsmoBSC(config-power-ctrl)# mode dyn-bts
-OsmoBSC(config-power-ctrl)# show running-config
+OsmoBSC(config-bs-power-ctrl)# ### Check default BS Power Parameters
+OsmoBSC(config-bs-power-ctrl)# mode dyn-bts
+OsmoBSC(config-bs-power-ctrl)# show running-config
 ...
   bs-power-control
    mode dyn-bts
@@ -69,8 +69,8 @@ OsmoBSC(config-power-ctrl)# show running-config
    mode static
 ...
 
-OsmoBSC(config-power-ctrl)# bs-power dyn-max 30
-OsmoBSC(config-power-ctrl)# show running-config
+OsmoBSC(config-bs-power-ctrl)# bs-power dyn-max 30
+OsmoBSC(config-bs-power-ctrl)# show running-config
 ...
   bs-power-control
    mode dyn-bts
@@ -80,9 +80,9 @@ OsmoBSC(config-power-ctrl)# show running-config
    mode static
 ... !bs-power
 
-OsmoBSC(config-power-ctrl)# exit
+OsmoBSC(config-bs-power-ctrl)# exit
 OsmoBSC(config-net-bts)# ms-power-control
-OsmoBSC(config-power-ctrl)# list with-flags
+OsmoBSC(config-ms-power-ctrl)# list with-flags
 ...
   . lv  mode (static|dyn-bts) [reset]
   . lv  bs-power (static|dyn-max) <0-30>
@@ -96,9 +96,9 @@ OsmoBSC(config-power-ctrl)# list with-flags
   . lv  (rxlev-avg|rxqual-avg) algo (unweighted|weighted|mod-median)
   . lv  (rxlev-avg|rxqual-avg) algo osmo-ewma beta <1-99>
 
-OsmoBSC(config-power-ctrl)# ### Check default MS Power Parameters
-OsmoBSC(config-power-ctrl)# mode dyn-bts
-OsmoBSC(config-power-ctrl)# show running-config
+OsmoBSC(config-ms-power-ctrl)# ### Check default MS Power Parameters
+OsmoBSC(config-ms-power-ctrl)# mode dyn-bts
+OsmoBSC(config-ms-power-ctrl)# show running-config
 ...
   bs-power-control
    mode dyn-bts
@@ -121,17 +121,17 @@ OsmoBSC(config-power-ctrl)# show running-config
    no rxqual-avg
 ...
 
-OsmoBSC(config-power-ctrl)# bs-power static 30
+OsmoBSC(config-ms-power-ctrl)# bs-power static 30
 % This command is only valid for 'bs-power-control' node
-OsmoBSC(config-power-ctrl)# bs-power dyn-max 30
+OsmoBSC(config-ms-power-ctrl)# bs-power dyn-max 30
 % This command is only valid for 'bs-power-control' node
 
-OsmoBSC(config-power-ctrl)# step-size inc 5 red 4
+OsmoBSC(config-ms-power-ctrl)# step-size inc 5 red 4
 % Power change step size must be an even number
-OsmoBSC(config-power-ctrl)# step-size inc 2 red 3
+OsmoBSC(config-ms-power-ctrl)# step-size inc 2 red 3
 % Power change step size must be an even number
-OsmoBSC(config-power-ctrl)# step-size inc 2 red 4
-OsmoBSC(config-power-ctrl)# show running-config
+OsmoBSC(config-ms-power-ctrl)# step-size inc 2 red 4
+OsmoBSC(config-ms-power-ctrl)# show running-config
 ...
   bs-power-control
    mode dyn-bts
@@ -143,16 +143,16 @@ OsmoBSC(config-power-ctrl)# show running-config
    step-size inc 2 red 4
 ...
 
-OsmoBSC(config-power-ctrl)# rxlev-thresh lower?
+OsmoBSC(config-ms-power-ctrl)# rxlev-thresh lower?
   lower  Lower RxLev value (default is 32, i.e. -78 dBm)
-OsmoBSC(config-power-ctrl)# rxlev-thresh lower ?
+OsmoBSC(config-ms-power-ctrl)# rxlev-thresh lower ?
   <0-63>  Lower RxLev value (signal strength, 0 is worst, 63 is best)
-OsmoBSC(config-power-ctrl)# rxlev-thresh lower 30 upper?
+OsmoBSC(config-ms-power-ctrl)# rxlev-thresh lower 30 upper?
   upper  Upper RxLev value (default is 38, i.e. -72 dBm)
-OsmoBSC(config-power-ctrl)# rxlev-thresh lower 30 upper ?
+OsmoBSC(config-ms-power-ctrl)# rxlev-thresh lower 30 upper ?
   <0-63>  Upper RxLev value (signal strength, 0 is worst, 63 is best)
-OsmoBSC(config-power-ctrl)# rxlev-thresh lower 30 upper 63
-OsmoBSC(config-power-ctrl)# show running-config
+OsmoBSC(config-ms-power-ctrl)# rxlev-thresh lower 30 upper 63
+OsmoBSC(config-ms-power-ctrl)# show running-config
 ...
   bs-power-control
 ... !rxlev-thresh
@@ -163,16 +163,16 @@ OsmoBSC(config-power-ctrl)# show running-config
    rxlev-thresh lower 30 upper 63
 ...
 
-OsmoBSC(config-power-ctrl)# rxqual-thresh lower?
+OsmoBSC(config-ms-power-ctrl)# rxqual-thresh lower?
   lower  Lower RxQual value (default is 0, i.e. BER < 0.2%)
-OsmoBSC(config-power-ctrl)# rxqual-thresh lower ?
+OsmoBSC(config-ms-power-ctrl)# rxqual-thresh lower ?
   <0-7>  Lower RxQual value (signal quality, 0 is best, 7 is worst)
-OsmoBSC(config-power-ctrl)# rxqual-thresh lower 0 upper?
+OsmoBSC(config-ms-power-ctrl)# rxqual-thresh lower 0 upper?
   upper  Upper RxQual value (default is 3, i.e. 0.8% <= BER < 1.6%)
-OsmoBSC(config-power-ctrl)# rxqual-thresh lower 0 upper ?
+OsmoBSC(config-ms-power-ctrl)# rxqual-thresh lower 0 upper ?
   <0-7>  Upper RxQual value (signal quality, 0 is best, 7 is worst)
-OsmoBSC(config-power-ctrl)# rxqual-thresh lower 0 upper 7
-OsmoBSC(config-power-ctrl)# show running-config
+OsmoBSC(config-ms-power-ctrl)# rxqual-thresh lower 0 upper 7
+OsmoBSC(config-ms-power-ctrl)# show running-config
 ...
   bs-power-control
 ... !rxqual-thresh
@@ -183,9 +183,9 @@ OsmoBSC(config-power-ctrl)# show running-config
    rxqual-thresh lower 0 upper 7
 ...
 
-OsmoBSC(config-power-ctrl)# rxlev-avg algo osmo-ewma beta 50
-OsmoBSC(config-power-ctrl)# rxqual-avg algo unweighted
-OsmoBSC(config-power-ctrl)# show running-config
+OsmoBSC(config-ms-power-ctrl)# rxlev-avg algo osmo-ewma beta 50
+OsmoBSC(config-ms-power-ctrl)# rxqual-avg algo unweighted
+OsmoBSC(config-ms-power-ctrl)# show running-config
 ...
   bs-power-control
 ... !(rxlev-avg|rxqual-avg)
@@ -202,10 +202,10 @@ OsmoBSC(config-power-ctrl)# show running-config
    rxqual-avg params hreqave 4 hreqt 6
 ...
 
-OsmoBSC(config-power-ctrl)# rxlev-avg params hreqave 2 hreqt 20
+OsmoBSC(config-ms-power-ctrl)# rxlev-avg params hreqave 2 hreqt 20
 % Hreqave (2) * Hreqt (20) = 40 must be < 32
-OsmoBSC(config-power-ctrl)# rxlev-avg params hreqave 2 hreqt 15
-OsmoBSC(config-power-ctrl)# show running-config
+OsmoBSC(config-ms-power-ctrl)# rxlev-avg params hreqave 2 hreqt 15
+OsmoBSC(config-ms-power-ctrl)# show running-config
 ...
   bs-power-control
 ... !rxlev-avg params
@@ -214,7 +214,7 @@ OsmoBSC(config-power-ctrl)# show running-config
    rxlev-avg params hreqave 2 hreqt 15
 ...
 
-OsmoBSC(config-power-ctrl)# exit
+OsmoBSC(config-ms-power-ctrl)# exit
 OsmoBSC(config-net-bts)# ### Disable BS/MS Power Control
 OsmoBSC(config-net-bts)# no bs-power-control
 OsmoBSC(config-net-bts)# no ms-power-control
@@ -225,14 +225,14 @@ OsmoBSC(config-net-bts)# show running-config
 ...
 
 OsmoBSC(config-net-bts)# bs-power-control
-OsmoBSC(config-power-ctrl)# mode static reset
+OsmoBSC(config-bs-power-ctrl)# mode static reset
 % Reset to default parameters
-OsmoBSC(config-power-ctrl)# exit
+OsmoBSC(config-bs-power-ctrl)# exit
 
 OsmoBSC(config-net-bts)# ms-power-control
-OsmoBSC(config-power-ctrl)# mode static reset
+OsmoBSC(config-ms-power-ctrl)# mode static reset
 % Reset to default parameters
-OsmoBSC(config-power-ctrl)# exit
+OsmoBSC(config-ms-power-ctrl)# exit
 
 OsmoBSC(config-net-bts)# show running-config
 ...
