@@ -141,31 +141,31 @@ const struct value_string bts_loc_fix_names[] = {
 	{ 0, NULL }
 };
 
-struct cmd_node net_node = {
+static struct cmd_node net_node = {
 	GSMNET_NODE,
 	"%s(config-net)# ",
 	1,
 };
 
-struct cmd_node bts_node = {
+static struct cmd_node bts_node = {
 	BTS_NODE,
 	"%s(config-net-bts)# ",
 	1,
 };
 
-struct cmd_node power_ctrl_node = {
+static struct cmd_node power_ctrl_node = {
 	POWER_CTRL_NODE,
 	"%s(config-power-ctrl)# ",
 	1,
 };
 
-struct cmd_node trx_node = {
+static struct cmd_node trx_node = {
 	TRX_NODE,
 	"%s(config-net-bts-trx)# ",
 	1,
 };
 
-struct cmd_node ts_node = {
+static struct cmd_node ts_node = {
 	TS_NODE,
 	"%s(config-net-bts-trx-ts)# ",
 	1,
