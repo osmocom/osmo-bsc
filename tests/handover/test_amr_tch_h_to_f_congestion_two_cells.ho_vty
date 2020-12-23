@@ -12,7 +12,8 @@ set-ts-use trx 1 0 states        *    -     -     -     TCH/H- -     -     *
 meas-rep repeat 10 lchan 1 0 4 0 rxlev 30 rxqual 0 ta 0 neighbors 20
 expect-no-chan
 congestion-check
-# FAIL: bts 1 has better rxlev, so the call should stay in bts 1. Instead, a handover to bts 0 happens.
+# FAIL: bts 1 has better rxlev, so the call should move to a TCH/F staying within bts 1. Instead, a handover to bts 0
+# happens:
 expect-ho from lchan 1 0 4 0 to lchan 0 0 1 0
 expect-ts-use trx 0 0 states * TCH/F - - - - - *
 expect-ts-use trx 1 0 states * - - - - - - *
