@@ -5004,18 +5004,19 @@ DEFUN_USRATTR(cfg_power_ctrl_rxqual_thresh,
 	      X(BSC_VTY_ATTR_NEW_LCHAN),
 	      "rxqual-thresh lower <0-7> upper <0-7>",
 	      "Set target RxQual thresholds (for dynamic mode)\n"
-	      "Lower RxQual value (default is 0, i.e. BER < 0.2%)\n"
+	      "Lower RxQual value (default is 3, i.e. 0.8% <= BER < 1.6%)\n"
 	      "Lower " POWER_CONTROL_MEAS_RXQUAL_DESC
-	      "Upper RxQual value (default is 3, i.e. 0.8% <= BER < 1.6%)\n"
+	      "Upper RxQual value (default is 0, i.e. BER < 0.2%)\n"
 	      "Upper " POWER_CONTROL_MEAS_RXQUAL_DESC)
 {
 	struct gsm_power_ctrl_params *params = vty->index;
 	int lower = atoi(argv[0]);
 	int upper = atoi(argv[1]);
 
-	if (lower > upper) {
-		vty_out(vty, "%% Lower 'rxqual-rxqual' (%d) must be less than upper (%d)%s",
-			lower, upper, VTY_NEWLINE);
+	/* RxQual: 0 is best, 7 is worst, so upper must be less */
+	if (upper > lower) {
+		vty_out(vty, "%% Upper 'rxqual-rxqual' (%d) must be less than lower (%d)%s",
+			upper, lower, VTY_NEWLINE);
 		return CMD_WARNING;
 	}
 

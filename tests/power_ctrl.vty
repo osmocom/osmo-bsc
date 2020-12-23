@@ -62,7 +62,7 @@ OsmoBSC(config-bs-power-ctrl)# show running-config
    rxlev-thresh lower 32 upper 38
    rxlev-thresh-comp lower 10 12 upper 19 20
    no rxlev-avg
-   rxqual-thresh lower 0 upper 3
+   rxqual-thresh lower 3 upper 0
    rxqual-thresh-comp lower 5 7 upper 15 18
    no rxqual-avg
   ms-power-control
@@ -107,7 +107,7 @@ OsmoBSC(config-ms-power-ctrl)# show running-config
    rxlev-thresh lower 32 upper 38
    rxlev-thresh-comp lower 10 12 upper 19 20
    no rxlev-avg
-   rxqual-thresh lower 0 upper 3
+   rxqual-thresh lower 3 upper 0
    rxqual-thresh-comp lower 5 7 upper 15 18
    no rxqual-avg
   ms-power-control
@@ -116,7 +116,7 @@ OsmoBSC(config-ms-power-ctrl)# show running-config
    rxlev-thresh lower 32 upper 38
    rxlev-thresh-comp lower 10 12 upper 19 20
    no rxlev-avg
-   rxqual-thresh lower 0 upper 3
+   rxqual-thresh lower 3 upper 0
    rxqual-thresh-comp lower 5 7 upper 15 18
    no rxqual-avg
 ...
@@ -164,23 +164,23 @@ OsmoBSC(config-ms-power-ctrl)# show running-config
 ...
 
 OsmoBSC(config-ms-power-ctrl)# rxqual-thresh lower?
-  lower  Lower RxQual value (default is 0, i.e. BER < 0.2%)
+  lower  Lower RxQual value (default is 3, i.e. 0.8% <= BER < 1.6%)
 OsmoBSC(config-ms-power-ctrl)# rxqual-thresh lower ?
   <0-7>  Lower RxQual value (signal quality, 0 is best, 7 is worst)
-OsmoBSC(config-ms-power-ctrl)# rxqual-thresh lower 0 upper?
-  upper  Upper RxQual value (default is 3, i.e. 0.8% <= BER < 1.6%)
-OsmoBSC(config-ms-power-ctrl)# rxqual-thresh lower 0 upper ?
+OsmoBSC(config-ms-power-ctrl)# rxqual-thresh lower 7 upper?
+  upper  Upper RxQual value (default is 0, i.e. BER < 0.2%)
+OsmoBSC(config-ms-power-ctrl)# rxqual-thresh lower 7 upper ?
   <0-7>  Upper RxQual value (signal quality, 0 is best, 7 is worst)
-OsmoBSC(config-ms-power-ctrl)# rxqual-thresh lower 0 upper 7
+OsmoBSC(config-ms-power-ctrl)# rxqual-thresh lower 7 upper 4
 OsmoBSC(config-ms-power-ctrl)# show running-config
 ...
   bs-power-control
 ... !rxqual-thresh
-   rxqual-thresh lower 0 upper 3
+   rxqual-thresh lower 3 upper 0
 ...
   ms-power-control
 ... !rxqual-thresh
-   rxqual-thresh lower 0 upper 7
+   rxqual-thresh lower 7 upper 4
 ...
 
 OsmoBSC(config-ms-power-ctrl)# rxlev-avg algo osmo-ewma beta 50
