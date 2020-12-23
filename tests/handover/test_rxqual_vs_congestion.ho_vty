@@ -10,23 +10,7 @@ network
  bts 1
   handover2 min-free-slots tch/f 4
   handover2 min-free-slots tch/h 4
-meas-rep lchan 0 0 1 0 rxlev 30 rxqual 6 ta 0 neighbors 40
-expect-no-chan
-meas-rep lchan 0 0 1 0 rxlev 30 rxqual 6 ta 0 neighbors 40
-expect-no-chan
-meas-rep lchan 0 0 1 0 rxlev 30 rxqual 6 ta 0 neighbors 40
-expect-no-chan
-meas-rep lchan 0 0 1 0 rxlev 30 rxqual 6 ta 0 neighbors 40
-expect-no-chan
-meas-rep lchan 0 0 1 0 rxlev 30 rxqual 6 ta 0 neighbors 40
-expect-no-chan
-meas-rep lchan 0 0 1 0 rxlev 30 rxqual 6 ta 0 neighbors 40
-expect-no-chan
-meas-rep lchan 0 0 1 0 rxlev 30 rxqual 6 ta 0 neighbors 40
-expect-no-chan
-meas-rep lchan 0 0 1 0 rxlev 30 rxqual 6 ta 0 neighbors 40
-expect-no-chan
-meas-rep lchan 0 0 1 0 rxlev 30 rxqual 6 ta 0 neighbors 40
+meas-rep repeat 9 lchan 0 0 1 0 rxlev 30 rxqual 6 ta 0 neighbors 40
 expect-no-chan
 meas-rep lchan 0 0 1 0 rxlev 30 rxqual 6 ta 0 neighbors 40
 expect-ho from lchan 0 0 1 0 to lchan 1 0 1 0

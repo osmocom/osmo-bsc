@@ -12,23 +12,7 @@
 
 create-n-bts 2
 set-ts-use trx 0 0 states * TCH/F - - - - - -
-meas-rep lchan 0 0 1 0 rxlev 40 rxqual 6 ta 0 neighbors 30
-expect-no-chan
-meas-rep lchan 0 0 1 0 rxlev 40 rxqual 6 ta 0 neighbors 30
-expect-no-chan
-meas-rep lchan 0 0 1 0 rxlev 40 rxqual 6 ta 0 neighbors 30
-expect-no-chan
-meas-rep lchan 0 0 1 0 rxlev 40 rxqual 6 ta 0 neighbors 30
-expect-no-chan
-meas-rep lchan 0 0 1 0 rxlev 40 rxqual 6 ta 0 neighbors 30
-expect-no-chan
-meas-rep lchan 0 0 1 0 rxlev 40 rxqual 6 ta 0 neighbors 30
-expect-no-chan
-meas-rep lchan 0 0 1 0 rxlev 40 rxqual 6 ta 0 neighbors 30
-expect-no-chan
-meas-rep lchan 0 0 1 0 rxlev 40 rxqual 6 ta 0 neighbors 30
-expect-no-chan
-meas-rep lchan 0 0 1 0 rxlev 40 rxqual 6 ta 0 neighbors 30
+meas-rep repeat 9 lchan 0 0 1 0 rxlev 40 rxqual 6 ta 0 neighbors 30
 expect-no-chan
 meas-rep lchan 0 0 1 0 rxlev 40 rxqual 6 ta 0 neighbors 30
 expect-ho from lchan 0 0 1 0 to lchan 1 0 1 0

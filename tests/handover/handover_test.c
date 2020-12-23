@@ -841,22 +841,7 @@ DEFUN(create_ms, create_ms_cmd,
 	return CMD_SUCCESS;
 }
 
-DEFUN(meas_rep, meas_rep_cmd,
-      "meas-rep " LCHAN_ARGS " rxlev <0-255> rxqual <0-7> ta <0-255>"
-	" [neighbors] [<0-255>] [<0-255>] [<0-255>] [<0-255>] [<0-255>] [<0-255>]",
-      "Send measurement report\n"
-      LCHAN_ARGS_DOC
-      "rxlev\nrxlev\n"
-      "rxqual\nrxqual\n"
-      "timing advance\ntiming advance\n"
-      "neighbors list of rxlev reported by each neighbor cell\n"
-      "neighbor 0 rxlev\n"
-      "neighbor 1 rxlev\n"
-      "neighbor 2 rxlev\n"
-      "neighbor 3 rxlev\n"
-      "neighbor 4 rxlev\n"
-      "neighbor 5 rxlev\n"
-     )
+static int _meas_rep(struct vty *vty, int argc, const char **argv)
 {
 	struct gsm_lchan *lc;
 	uint8_t rxlev;
@@ -906,6 +891,44 @@ DEFUN(meas_rep, meas_rep_cmd,
 	}
 	got_chan_req = 0;
 	gen_meas_rep(lc, rxlev, rxqual, ta, argc, nm);
+	return CMD_SUCCESS;
+}
+
+#define MEAS_REP_ARGS  LCHAN_ARGS " rxlev <0-255> rxqual <0-7> ta <0-255>" \
+	" [neighbors] [<0-255>] [<0-255>] [<0-255>] [<0-255>] [<0-255>] [<0-255>]"
+#define MEAS_REP_DOC "Send measurement report\n"
+#define MEAS_REP_ARGS_DOC \
+      LCHAN_ARGS_DOC \
+      "rxlev\nrxlev\n" \
+      "rxqual\nrxqual\n" \
+      "timing advance\ntiming advance\n" \
+      "neighbors list of rxlev reported by each neighbor cell\n" \
+      "neighbor 0 rxlev\n" \
+      "neighbor 1 rxlev\n" \
+      "neighbor 2 rxlev\n" \
+      "neighbor 3 rxlev\n" \
+      "neighbor 4 rxlev\n" \
+      "neighbor 5 rxlev\n"
+
+DEFUN(meas_rep, meas_rep_cmd,
+      "meas-rep " MEAS_REP_ARGS,
+      MEAS_REP_DOC MEAS_REP_ARGS_DOC)
+{
+	return _meas_rep(vty, argc, argv);
+}
+
+DEFUN(meas_rep_repeat, meas_rep_repeat_cmd,
+      "meas-rep repeat <0-999> " MEAS_REP_ARGS,
+      MEAS_REP_DOC
+      "Resend the same measurement report N times\nN\n"
+      MEAS_REP_ARGS_DOC)
+{
+	int count = atoi(argv[0]);
+	argv += 1;
+	argc -= 1;
+
+	while (count--)
+		_meas_rep(vty, argc, argv);
 	return CMD_SUCCESS;
 }
 
@@ -1125,6 +1148,7 @@ static void ho_test_vty_init()
 	install_element(CONFIG_NODE, &create_bts_cmd);
 	install_element(CONFIG_NODE, &create_ms_cmd);
 	install_element(CONFIG_NODE, &meas_rep_cmd);
+	install_element(CONFIG_NODE, &meas_rep_repeat_cmd);
 	install_element(CONFIG_NODE, &congestion_check_cmd);
 	install_element(CONFIG_NODE, &expect_no_chan_cmd);
 	install_element(CONFIG_NODE, &expect_chan_cmd);
