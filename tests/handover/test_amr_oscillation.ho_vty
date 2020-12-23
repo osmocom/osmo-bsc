@@ -1,0 +1,25 @@
+
+create-bts trx-count 1 timeslots c+s4 TCH/F TCH/F TCH/F TCH/F  TCH/F  TCH/F PDCH
+network
+ bts 0
+  handover2 min-free-slots tch/f 5
+
+create-bts trx-count 1 timeslots c+s4 TCH/F TCH/F TCH/F TCH/H  TCH/H  TCH/H PDCH
+
+set-ts-use trx 0 0 states        *    TCH/F TCH/F -     -      -      -     *
+set-ts-use trx 1 0 states        *    TCH/F TCH/F TCH/F -      -      -     *
+
+meas-rep repeat 10 lchan 0 0 2 0 rxlev 30 rxqual 0 ta 0 neighbors 20
+expect-no-chan
+
+# bts 0 wants to lose one TCH/F. The neighbor's TCH/F are full, but TCH/H are available there.
+congestion-check
+expect-ho from lchan 0 0 2 0 to lchan 1 0 4 0
+set-ts-use trx 0 0 states        *    TCH/F -     -     -      -      -     *
+set-ts-use trx 1 0 states        *    TCH/F TCH/F TCH/F TCH/H- -      -     *
+
+# measurements continue to be the same
+meas-rep repeat 10 lchan 1 0 4 0 rxlev 20 rxqual 0 ta 0 neighbors 30
+
+# no oscillation back to bts 0
+expect-no-chan
