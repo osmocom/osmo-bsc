@@ -1578,18 +1578,23 @@ next_b1:
 		if (clist[i].lchan == delete_lchan)
 			clist[i].lchan = NULL;
 		/* omit all subscribers that are handovered */
-		if (!clist[i].lchan)
+		if (!clist[i].lchan) {
+			LOGPHOCAND(&clist[i], LOGL_DEBUG, "lchan no longer in use\n");
 			continue;
+		}
 
 		/* Do not resolve congestion towards remote BSS, which would cause oscillation if the
 		 * remote BSS is also congested. */
 		/* TODO: attempt inter-BSC HO if no local cells qualify, and rely on the remote BSS to
 		 * deny receiving the handover if it also considers itself congested. Maybe do that only
 		 * when the cell is absolutely full, i.e. not only min-free-slots. (x) */
-		if (!clist[i].bts)
+		if (!clist[i].bts) {
+			LOGPHOCAND(&clist[i], LOGL_DEBUG, "on remote BSS, skip\n");
 			continue;
+		}
 
-		if (!(clist[i].requirements & REQUIREMENT_B_MASK))
+		if (!(clist[i].requirements & REQUIREMENT_B_MASK)) {
+			LOGPHOCAND(&clist[i], LOGL_DEBUG, "does not fulfill congestion requirements, skip\n");
 			continue;
 		/* omit assignment from AHS to AFS */
 		if (clist[i].lchan->ts->trx->bts == clist[i].bts
