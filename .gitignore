@@ -71,6 +71,9 @@ tests/package.m4
 tests/testsuite
 tests/testsuite.log
 
+tests/handover/test*.ok
+tests/handover/test*.err
+
 writtenconfig/
 
 # manuals
