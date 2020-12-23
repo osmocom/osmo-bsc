@@ -1,0 +1,31 @@
+# Almost identical to test_amr_oscillation.ho_vty, this has just two more TCH/H slots in BTS 1, and does not trigger the
+# oscillation bug. The number of free TCH/H in BTS 1 should be unrelated to the congestion status of BTS 0, which
+# illustrates that the even distribution of congestion is fundamentally flawed.
+# This test script shows the desired behavior, though by common sense there should be no reason why we see the bug in
+# test_amr_oscillation.ho_vty and not here.
+
+create-bts trx-count 1 timeslots c+s4 TCH/F TCH/F TCH/F TCH/F  TCH/F  TCH/F PDCH
+network
+ bts 0
+  handover2 min-free-slots tch/f 5
+
+create-bts trx-count 1 timeslots c+s4 TCH/F TCH/F TCH/F TCH/F  TCH/H  TCH/H TCH/H
+
+set-ts-use trx 0 0 states        *    TCH/F TCH/F -     -      -      -     *
+set-ts-use trx 1 0 states        *    TCH/F TCH/F TCH/F TCH/F  -      -     -
+
+meas-rep repeat 10 lchan 0 0 2 0 rxlev 40 rxqual 0 ta 0 neighbors 20
+expect-no-chan
+
+# bts 0 wants to lose one TCH/F. The neighbor's TCH/F are full, but TCH/H are available there.
+congestion-check
+expect-ho from lchan 0 0 2 0 to lchan 1 0 5 0
+
+expect-ts-use trx 0 0 states        *    TCH/F -     -     -      -      -     *
+expect-ts-use trx 1 0 states        *    TCH/F TCH/F TCH/F TCH/F  TCH/H- -     -
+
+# measurements continue to be the same
+meas-rep lchan 1 0 5 0 rxlev 20 rxqual 0 ta 0 neighbors 40
+
+# despite the better RXLEV, congestion prevents oscillation back to bts 0
+expect-no-chan
