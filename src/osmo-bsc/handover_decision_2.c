@@ -24,6 +24,7 @@
 
 #include <stdbool.h>
 #include <errno.h>
+#include <limits.h>
 
 #include <osmocom/bsc/debug.h>
 #include <osmocom/bsc/gsm_data.h>
@@ -1379,10 +1380,22 @@ static unsigned int ts_usage_count(struct gsm_bts_trx_ts *ts)
 	return count;
 }
 
+static bool is_intra_cell(const struct ho_candidate *c)
+{
+	return c->bts && (c->lchan->ts->trx->bts == c->bts);
+}
+
+static bool is_upgrade_to_tchf(const struct ho_candidate *c, uint8_t for_requirement)
+{
+	return c->lchan
+		&& (c->lchan->type == GSM_LCHAN_TCH_H)
+		&& ((c->requirements & for_requirement) & (REQUIREMENT_B_TCHF | REQUIREMENT_C_TCHF));
+}
+
 /* Given two candidates, pick the one that should rather be moved during handover.
  * Return the better candidate in out-parameters best_cand and best_avg_db.
  */
-static void pick_better_lchan_to_move(bool want_highest_db,
+static bool pick_better_lchan_to_move(bool want_highest_db,
 				      struct ho_candidate **best_cand_p, unsigned int *best_avg_db_p,
 				      struct ho_candidate *other_cand, unsigned int other_avg_db)
 {
@@ -1400,7 +1413,7 @@ static void pick_better_lchan_to_move(bool want_highest_db,
 		/* If both are dynamic, prefer one that completely (or to a higher degree) frees its timeslot. */
 		if (lchan_is_on_dynamic_ts((*best_cand_p)->lchan)
 		    && ts_usage_count((*best_cand_p)->lchan->ts) < ts_usage_count(other_cand->lchan->ts))
-			return;
+			return false;
 		/* If both equally satisfy these preferences, it does not matter which one is picked.
 		 * Give slight preference to moving later dyn TS, so that a free dyn TS may group with following static
 		 * PDCH, though this depends on how the user configured the TS -- not harmful to do so anyway. */
@@ -1408,11 +1421,76 @@ static void pick_better_lchan_to_move(bool want_highest_db,
 	}
 
 	/* keep the same candidate. */
-	return;
+	return false;
 
 return_other:
 	*best_cand_p = other_cand;
 	*best_avg_db_p = other_avg_db;
+	return true;
+}
+
+static struct ho_candidate *pick_best_candidate(int *applied_afs_bias,
+						struct ho_candidate *clist, int clist_len,
+						bool want_highest_db,
+						bool omit_intra_cell_upgrade_to_tchf,
+						bool only_intra_cell_upgrade_to_tchf,
+						uint8_t for_requirement)
+{
+	struct ho_candidate *result = NULL;
+	unsigned int result_avg_rxlev;
+	int result_afs_bias = 0;
+	int i;
+
+	if (applied_afs_bias)
+		*applied_afs_bias = 0;
+
+	result_avg_rxlev = want_highest_db ? 0 : INT_MAX;
+
+	for (i = 0; i < clist_len; i++) {
+		struct ho_candidate *c = &clist[i];
+		bool intra_cell;
+		bool upgrade_to_tch_f;
+		int avg_rxlev;
+		int afs_bias;
+
+		/* For multiple passes of congestion resolution, already handovered candidates are marked by lchan =
+		 * NULL. (though at the time of writing, multiple passes of congestion resolution are DISABLED.) */
+		if (!c->lchan)
+			continue;
+
+		/* Omit remote BSS */
+		if (!c->bts)
+			continue;
+
+		if (!(c->requirements & for_requirement))
+			continue;
+
+		intra_cell = is_intra_cell(c);
+		upgrade_to_tch_f = is_upgrade_to_tchf(c, for_requirement);
+
+		if (only_intra_cell_upgrade_to_tchf
+		    && !(intra_cell && upgrade_to_tch_f))
+			continue;
+		if (omit_intra_cell_upgrade_to_tchf
+		    && (intra_cell && upgrade_to_tch_f))
+			continue;
+
+		avg_rxlev = c->avg;
+
+		/* improve AHS */
+		if (upgrade_to_tch_f)
+			afs_bias = ho_get_hodec2_afs_bias_rxlev(c->bts->ho);
+		else
+			afs_bias = 0;
+		avg_rxlev += afs_bias;
+
+		if (pick_better_lchan_to_move(want_highest_db, &result, &result_avg_rxlev, c, avg_rxlev))
+			result_afs_bias = afs_bias;
+	}
+
+	if (applied_afs_bias)
+		*applied_afs_bias = result_afs_bias;
+	return result;
 }
 
 /*
@@ -1472,10 +1550,7 @@ static int bts_resolve_congestion(struct gsm_bts *bts, int tchf_congestion, int 
 	int i, j;
 	struct ho_candidate *clist;
 	unsigned int candidates;
-	struct ho_candidate *best_cand = NULL, *worst_cand = NULL;
-	struct gsm_lchan *delete_lchan = NULL;
-	unsigned int best_avg_db, worst_avg_db;
-	int avg;
+	struct ho_candidate *best_cand = NULL;
 	int rc = 0;
 	int any_ho = 0;
 	int is_improved = 0;
@@ -1571,55 +1646,19 @@ static int bts_resolve_congestion(struct gsm_bts *bts, int tchf_congestion, int 
 #if 0
 next_b1:
 #endif
-	/* select best candidate that fulfills requirement B,
-	 * omit change from AHS to AFS */
-	best_avg_db = 0;
-	for (i = 0; i < candidates; i++) {
-		/* delete subscriber that just have handovered */
-		if (clist[i].lchan == delete_lchan)
-			clist[i].lchan = NULL;
-		/* omit all subscribers that are handovered */
-		if (!clist[i].lchan)
-			continue;
-
-		/* Do not resolve congestion towards remote BSS, which would cause oscillation if the
-		 * remote BSS is also congested. */
-		/* TODO: attempt inter-BSC HO if no local cells qualify, and rely on the remote BSS to
-		 * deny receiving the handover if it also considers itself congested. Maybe do that only
-		 * when the cell is absolutely full, i.e. not only min-free-slots. (x) */
-		if (!clist[i].bts)
-			continue;
-
-		if (!(clist[i].requirements & REQUIREMENT_B_MASK))
-			continue;
-		/* omit assignment from AHS to AFS */
-		if (clist[i].lchan->ts->trx->bts == clist[i].bts
-		 && clist[i].lchan->type == GSM_LCHAN_TCH_H
-		 && (clist[i].requirements & REQUIREMENT_B_TCHF))
-			continue;
-		/* omit candidates that will not solve/reduce congestion */
-		if (clist[i].lchan->type == GSM_LCHAN_TCH_F
-		 && tchf_congestion <= 0)
-			continue;
-		if (clist[i].lchan->type == GSM_LCHAN_TCH_H
-		 && tchh_congestion <= 0)
-			continue;
-
-		avg = clist[i].avg;
-		/* improve AHS */
-		if (clist[i].lchan->tch_mode == GSM48_CMODE_SPEECH_AMR
-		 && clist[i].lchan->type == GSM_LCHAN_TCH_H
-		 && (clist[i].requirements & REQUIREMENT_B_TCHF)) {
-			avg += ho_get_hodec2_afs_bias_rxlev(clist[i].bts->ho);
-			is_improved = 1;
-		} else
-			is_improved = 0;
-		LOGPHOCAND(&clist[i], LOGL_DEBUG, "candidate %d: avg=%d best_avg_db=%d\n",
-			   i, avg, best_avg_db);
-		pick_better_lchan_to_move(true, &best_cand, &best_avg_db, &clist[i], avg);
-	}
-
-	/* perform handover, if there is a candidate */
+	/* select best candidate that does not cause congestion in the target.
+	 * Do not resolve congestion towards remote BSS, which would cause oscillation if the remote BSS is also
+	 * congested.
+	 * Treating specially below: upgrading TCH/H to TCH/F within the same cell, so omit here.
+	 */
+	/* TODO: attempt inter-BSC HO if no local cells qualify, and rely on the remote BSS to
+	 * deny receiving the handover if it also considers itself congested. Maybe do that only
+	 * when the cell is absolutely full, i.e. not only min-free-slots. (x) */
+	best_cand = pick_best_candidate(&is_improved, clist, candidates,
+					/* want_highest_db */ true,
+					/* omit_intra_cell_upgrade_to_tchf */ true,
+					/* only_intra_cell_upgrade_to_tchf */ false,
+					REQUIREMENT_B_MASK);
 	if (best_cand) {
 		any_ho = 1;
 		LOGPHOCAND(best_cand, LOGL_DEBUG, "Best candidate: RX level %d%s\n",
@@ -1650,59 +1689,29 @@ next_b1:
 #if 0
 next_b2:
 #endif
-	/* select worst candidate that fulfills requirement B,
-	 * select candidates that change from AHS to AFS only */
-	if (tchh_congestion > 0) {
-		/* since this will only check half rate channels, it will
-		 * only need to be checked, if tchh is congested */
-		worst_avg_db = 999;
-		for (i = 0; i < candidates; i++) {
-			/* delete subscriber that just have handovered */
-			if (clist[i].lchan == delete_lchan)
-				clist[i].lchan = NULL;
-			/* omit all subscribers that are handovered */
-			if (!clist[i].lchan)
-				continue;
-
-			/* Do not resolve congestion towards remote BSS, which would cause oscillation if
-			 * the remote BSS is also congested. */
-			/* TODO: see (x) above */
-			if (!clist[i].bts)
-				continue;
-
-			if (!(clist[i].requirements & REQUIREMENT_B_MASK))
-				continue;
-			/* omit all but assignment from AHS to AFS */
-			if (clist[i].lchan->ts->trx->bts != clist[i].bts
-			 || clist[i].lchan->type != GSM_LCHAN_TCH_H
-			 || !(clist[i].requirements & REQUIREMENT_B_TCHF))
-				continue;
-
-			avg = clist[i].avg;
-			/* improve AHS */
-			if (clist[i].lchan->tch_mode == GSM48_CMODE_SPEECH_AMR
-			 && clist[i].lchan->type == GSM_LCHAN_TCH_H) {
-				avg += ho_get_hodec2_afs_bias_rxlev(clist[i].bts->ho);
-				is_improved = 1;
-			} else
-				is_improved = 0;
-			pick_better_lchan_to_move(false, &worst_cand, &worst_avg_db, &clist[i], avg);
-		}
-	}
-
-	/* perform handover, if there is a candidate */
-	if (worst_cand) {
+	/* For upgrading TCH/H to TCH/F within the same cell, we want to pick the *lowest* average rxlev: for staying
+	 * within the same cell, give the MS with the worst service more bandwidth. When staying within the same cell,
+	 * the target avg rxlev is identical to the source lchan rxlev, so it is fine to use the same avg rxlev value,
+	 * but simply pick the lowest one.
+	 * Upgrading TCH/H channels obviously only applies when TCH/H is actually congested. */
+	if (tchh_congestion > 0)
+		best_cand = pick_best_candidate(&is_improved, clist, candidates,
+						/* want_highest_db */ false,
+						/* omit_intra_cell_upgrade_to_tchf */ false,
+						/* only_intra_cell_upgrade_to_tchf */ true,
+						REQUIREMENT_B_MASK);
+	if (best_cand) {
 		any_ho = 1;
-		LOGPHOCAND(worst_cand, LOGL_INFO, "Worst candidate: RX level %d from TCH/H -> TCH/F%s\n",
-			   rxlev2dbm(worst_cand->avg),
+		LOGPHOCAND(best_cand, LOGL_INFO, "Worst candidate: RX level %d from TCH/H -> TCH/F%s\n",
+			   rxlev2dbm(best_cand->avg),
 			   is_improved ? " (applied AHS -> AFS rxlev bias)" : "");
-		trigger_ho(worst_cand, worst_cand->requirements & REQUIREMENT_B_MASK);
+		trigger_ho(best_cand, best_cand->requirements & REQUIREMENT_B_MASK);
 #if 0
 		/* if there is still congestion, mark lchan as deleted
 		 * and redo this process */
 		tchh_congestion--;
 		if (tchh_congestion > 0) {
-			delete_lchan = worst_cand->lchan;
+			delete_lchan = best_cand->lchan;
 			best_cand = NULL;
 			goto next_b2;
 		}
@@ -1718,51 +1727,14 @@ next_b2:
 #if 0
 next_c1:
 #endif
-	/* select best candidate that fulfills requirement C,
-	 * omit change from AHS to AFS */
-	best_avg_db = 0;
-	for (i = 0; i < candidates; i++) {
-		/* delete subscriber that just have handovered */
-		if (clist[i].lchan == delete_lchan)
-			clist[i].lchan = NULL;
-		/* omit all subscribers that are handovered */
-		if (!clist[i].lchan)
-			continue;
-
-		/* Do not resolve congestion towards remote BSS, which would cause oscillation if
-		 * the remote BSS is also congested. */
-		/* TODO: see (x) above */
-		if (!clist[i].bts)
-			continue;
-
-		if (!(clist[i].requirements & REQUIREMENT_C_MASK))
-			continue;
-		/* omit assignment from AHS to AFS */
-		if (clist[i].lchan->ts->trx->bts == clist[i].bts
-		 && clist[i].lchan->type == GSM_LCHAN_TCH_H
-		 && (clist[i].requirements & REQUIREMENT_C_TCHF))
-			continue;
-		/* omit candidates that will not solve/reduce congestion */
-		if (clist[i].lchan->type == GSM_LCHAN_TCH_F
-		 && tchf_congestion <= 0)
-			continue;
-		if (clist[i].lchan->type == GSM_LCHAN_TCH_H
-		 && tchh_congestion <= 0)
-			continue;
-
-		avg = clist[i].avg;
-		/* improve AHS */
-		if (clist[i].lchan->tch_mode == GSM48_CMODE_SPEECH_AMR
-		 && clist[i].lchan->type == GSM_LCHAN_TCH_H
-		 && (clist[i].requirements & REQUIREMENT_C_TCHF)) {
-			avg += ho_get_hodec2_afs_bias_rxlev(clist[i].bts->ho);
-			is_improved = 1;
-		} else
-			is_improved = 0;
-		pick_better_lchan_to_move(true, &best_cand, &best_avg_db, &clist[i], avg);
-	}
-
-	/* perform handover, if there is a candidate */
+	/* Select best candidate that balances congestion.
+	 * Again no remote BSS.
+	 * Again no TCH/H -> F upgrades within the same cell. */
+	best_cand = pick_best_candidate(&is_improved, clist, candidates,
+					/* want_highest_db */ true,
+					/* omit_intra_cell_upgrade_to_tchf */ true,
+					/* only_intra_cell_upgrade_to_tchf */ false,
+					REQUIREMENT_C_MASK);
 	if (best_cand) {
 		any_ho = 1;
 		LOGPHOCAND(best_cand, LOGL_INFO, "Best candidate: RX level %d%s\n",
@@ -1796,62 +1768,29 @@ next_c1:
 #if 0
 next_c2:
 #endif
-	/* select worst candidate that fulfills requirement C,
-	 * select candidates that change from AHS to AFS only */
-	if (tchh_congestion > 0) {
-		/* since this will only check half rate channels, it will
-		 * only need to be checked, if tchh is congested */
-		worst_avg_db = 999;
-		for (i = 0; i < candidates; i++) {
-			/* delete subscriber that just have handovered */
-			if (clist[i].lchan == delete_lchan)
-				clist[i].lchan = NULL;
-			/* omit all subscribers that are handovered */
-			if (!clist[i].lchan)
-				continue;
-
-			/* Do not resolve congestion towards remote BSS, which would cause oscillation if
-			 * the remote BSS is also congested. */
-			/* TODO: see (x) above */
-			if (!clist[i].bts)
-				continue;
-
-			if (!(clist[i].requirements & REQUIREMENT_C_MASK))
-				continue;
-			/* omit all but assignment from AHS to AFS */
-			if (clist[i].lchan->ts->trx->bts != clist[i].bts
-			 || clist[i].lchan->type != GSM_LCHAN_TCH_H
-			 || !(clist[i].requirements & REQUIREMENT_C_TCHF))
-				continue;
-
-			avg = clist[i].avg;
-			/* improve AHS */
-			if (clist[i].lchan->tch_mode == GSM48_CMODE_SPEECH_AMR
-			 && clist[i].lchan->type == GSM_LCHAN_TCH_H) {
-				avg += ho_get_hodec2_afs_bias_rxlev(clist[i].bts->ho);
-				is_improved = 1;
-			} else
-				is_improved = 0;
-			LOGP(DHODEC, LOGL_DEBUG, "candidate %d: avg=%d worst_avg_db=%d\n", i, avg,
-			     worst_avg_db);
-			pick_better_lchan_to_move(false, &worst_cand, &worst_avg_db, &clist[i], avg);
-		}
-	}
+	/* Look for upgrading TCH/H to TCH/F within the same cell, which balances congestion, again upgrade the TCH/H
+	 * lchan that has the worst reception: */
+	if (tchh_congestion > 0)
+		best_cand = pick_best_candidate(&is_improved, clist, candidates,
+						/* want_highest_db */ false,
+						/* omit_intra_cell_upgrade_to_tchf */ false,
+						/* only_intra_cell_upgrade_to_tchf */ true,
+						REQUIREMENT_C_MASK);
 
 	/* perform handover, if there is a candidate */
-	if (worst_cand) {
+	if (best_cand) {
 		any_ho = 1;
-		LOGPHOCAND(worst_cand, LOGL_INFO, "Worst candidate: RX level %d from TCH/H -> TCH/F%s\n",
-			   rxlev2dbm(worst_cand->avg),
+		LOGPHOCAND(best_cand, LOGL_INFO, "Worst candidate: RX level %d from TCH/H -> TCH/F%s\n",
+			   rxlev2dbm(best_cand->avg),
 			   is_improved ? " (applied AHS -> AFS rxlev bias)" : "");
-		trigger_ho(worst_cand, worst_cand->requirements & REQUIREMENT_C_MASK);
+		trigger_ho(best_cand, best_cand->requirements & REQUIREMENT_C_MASK);
 #if 0
 		/* if there is still congestion, mark lchan as deleted
 		 * and redo this process */
 		tchh_congestion--;
 		if (tchh_congestion > 0) {
-			delete_lchan = worst_cand->lchan;
-			worst_cand = NULL;
+			delete_lchan = best_cand->lchan;
+			best_cand = NULL;
 			goto next_c2;
 		}
 #else
