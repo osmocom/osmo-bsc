@@ -1634,7 +1634,8 @@ next_b1:
 	/* perform handover, if there is a candidate */
 	if (best_cand) {
 		any_ho = 1;
-		LOGPHOCAND(best_cand, LOGL_DEBUG, "Best candidate: RX level %d (AFS rxlev bias = %d)\n",
+		LOGPHOCAND(best_cand, LOGL_DEBUG, "Pass 1, resolve congestion, no TCH/x change:"
+			   " Best target rxlev = %d dBm (AFS rxlev bias = %d)\n",
 			   rxlev2dbm(best_cand->avg), applied_afs_bias);
 		trigger_ho(best_cand, best_cand->requirements & REQUIREMENT_B_MASK);
 #if 0
@@ -1704,8 +1705,9 @@ next_b2:
 	/* perform handover, if there is a candidate */
 	if (worst_cand) {
 		any_ho = 1;
-		LOGPHOCAND(worst_cand, LOGL_INFO, "Worst candidate: RX level %d from TCH/H -> TCH/F"
-			   " (AFS rxlev bias = %d)\n", rxlev2dbm(worst_cand->avg), applied_afs_bias);
+		LOGPHOCAND(worst_cand, LOGL_INFO, "Pass 2, resolve congestion, upgrade TCH/H to TCH/F:"
+			   " Worst current rxlev = %d dBm (AFS rxlev bias = %d)\n",
+			   rxlev2dbm(worst_cand->avg), applied_afs_bias);
 		trigger_ho(worst_cand, worst_cand->requirements & REQUIREMENT_B_MASK);
 #if 0
 		/* if there is still congestion, mark lchan as deleted
@@ -1775,7 +1777,8 @@ next_c1:
 	/* perform handover, if there is a candidate */
 	if (best_cand) {
 		any_ho = 1;
-		LOGPHOCAND(best_cand, LOGL_INFO, "Best candidate: RX level %d (AFS rxlev bias = %d)\n",
+		LOGPHOCAND(best_cand, LOGL_INFO, "Pass 3, balance congestion, no TCH/x change:"
+			   " Best target rxlev = %d dBm (AFS rxlev bias = %d)\n",
 			   rxlev2dbm(best_cand->avg), applied_afs_bias);
 		trigger_ho(best_cand, best_cand->requirements & REQUIREMENT_C_MASK);
 #if 0
@@ -1850,8 +1853,8 @@ next_c2:
 	/* perform handover, if there is a candidate */
 	if (worst_cand) {
 		any_ho = 1;
-		LOGPHOCAND(worst_cand, LOGL_INFO, "Worst candidate: RX level %d from TCH/H -> TCH/F"
-			   " (AFS rxlev bias = %d)\n",
+		LOGPHOCAND(worst_cand, LOGL_INFO, "Pass 4, balance congestion, upgrade TCH/H to TCH/F:"
+			   " Worst current rxlev = %d dBm (AFS rxlev bias = %d)\n",
 			   rxlev2dbm(worst_cand->avg), applied_afs_bias);
 		trigger_ho(worst_cand, worst_cand->requirements & REQUIREMENT_C_MASK);
 #if 0
