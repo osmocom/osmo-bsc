@@ -1596,18 +1596,26 @@ next_b1:
 		if (!(clist[i].requirements & REQUIREMENT_B_MASK)) {
 			LOGPHOCAND(&clist[i], LOGL_DEBUG, "does not fulfill congestion requirements, skip\n");
 			continue;
+		}
 		/* omit assignment from AHS to AFS */
 		if (clist[i].lchan->ts->trx->bts == clist[i].bts
 		 && clist[i].lchan->type == GSM_LCHAN_TCH_H
-		 && (clist[i].requirements & REQUIREMENT_B_TCHF))
+		    && (clist[i].requirements & REQUIREMENT_B_TCHF)) {
+			LOGPHOCAND(&clist[i], LOGL_DEBUG, "skip TCH/H -> TCH/F\n");
 			continue;
+		}
+		LOGPHOCAND(&clist[i], LOGL_DEBUG, "not skip TCH/H -> TCH/F\n");
 		/* omit candidates that will not solve/reduce congestion */
 		if (clist[i].lchan->type == GSM_LCHAN_TCH_F
-		 && tchf_congestion <= 0)
+		    && tchf_congestion <= 0) {
+			LOGPHOCAND(&clist[i], LOGL_DEBUG, "TCH/F is not congested, skip\n");
 			continue;
+		}
 		if (clist[i].lchan->type == GSM_LCHAN_TCH_H
-		 && tchh_congestion <= 0)
+		    && tchh_congestion <= 0) {
+			LOGPHOCAND(&clist[i], LOGL_DEBUG, "TCH/H is not congested, skip\n");
 			continue;
+		}
 
 		avg = clist[i].avg;
 		/* improve AHS */
