@@ -1,0 +1,23 @@
+# Congestion check: Balancing congestion by handover TCH/H -> TCH/F
+# TCH/H are congested and should move to TCH/F
+# There are two cells, and the neighbor has weaker rxlev, so stay in the same cell.
+
+network
+ handover2 min-free-slots tch/f 0
+ handover2 min-free-slots tch/h 6
+
+create-bts trx-count 1 timeslots c+s4 TCH/F TCH/F TCH/F TCH/H  TCH/H TCH/H PDCH
+create-bts trx-count 1 timeslots c+s4 TCH/F TCH/F TCH/F TCH/H  TCH/H TCH/H PDCH
+set-ts-use trx 1 0 states        *    -     -     -     TCH/H- -     -     *
+meas-rep repeat 10 lchan 1 0 4 0 rxlev 30 rxqual 0 ta 0 neighbors 20
+expect-no-chan
+congestion-check
+# FAIL: bts 1 has better rxlev, so the call should stay in bts 1. Instead, a handover to bts 0 happens.
+expect-ho from lchan 1 0 4 0 to lchan 0 0 1 0
+expect-ts-use trx 0 0 states * TCH/F - - - - - *
+expect-ts-use trx 1 0 states * - - - - - - *
+# the fail continues: later the better rxqual does *another* ho back to the original cell
+meas-rep lchan 0 0 1 0 rxlev 20 rxqual 0 ta 0 neighbors 30
+expect-ho from lchan 0 0 1 0 to lchan 1 0 1 0
+expect-ts-use trx 0 0 states * - - - - - - *
+expect-ts-use trx 1 0 states * TCH/F - - - - - *

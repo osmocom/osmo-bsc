@@ -4,6 +4,8 @@ pass test_amr_tch_f_to_h_congestion.ho_vty
 pass test_amr_tch_f_to_h_congestion_assignment.ho_vty
 pass test_amr_tch_f_to_h_congestion_assignment_2.ho_vty
 pass test_amr_tch_f_to_h_congestion_assignment_3.ho_vty
+pass test_amr_tch_h_to_f_congestion.ho_vty
+pass test_amr_tch_h_to_f_congestion_two_cells.ho_vty
 pass test_balance_congestion.ho_vty
 pass test_balance_congestion_2.ho_vty
 pass test_congestion.ho_vty
