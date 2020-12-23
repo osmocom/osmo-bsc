@@ -1597,9 +1597,8 @@ next_b1:
 			LOGPHOCAND(&clist[i], LOGL_DEBUG, "does not fulfill congestion requirements, skip\n");
 			continue;
 		}
-		/* omit assignment from AHS to AFS */
-		if (clist[i].lchan->ts->trx->bts == clist[i].bts
-		 && clist[i].lchan->type == GSM_LCHAN_TCH_H
+		/* omit TCH/H->TCH/F, for that we upgrade the lchan with currently the worst ratings in Pass 2. */
+		if (clist[i].lchan->type == GSM_LCHAN_TCH_H
 		    && (clist[i].requirements & REQUIREMENT_B_TCHF)) {
 			LOGPHOCAND(&clist[i], LOGL_DEBUG, "skip TCH/H -> TCH/F\n");
 			continue;
@@ -1684,9 +1683,8 @@ next_b2:
 
 			if (!(clist[i].requirements & REQUIREMENT_B_MASK))
 				continue;
-			/* omit all but assignment from AHS to AFS */
-			if (clist[i].lchan->ts->trx->bts != clist[i].bts
-			 || clist[i].lchan->type != GSM_LCHAN_TCH_H
+			/* only look at TCH/H->TCH/F upgrades */
+			if (clist[i].lchan->type != GSM_LCHAN_TCH_H
 			 || !(clist[i].requirements & REQUIREMENT_B_TCHF))
 				continue;
 
@@ -1749,9 +1747,8 @@ next_c1:
 
 		if (!(clist[i].requirements & REQUIREMENT_C_MASK))
 			continue;
-		/* omit assignment from AHS to AFS */
-		if (clist[i].lchan->ts->trx->bts == clist[i].bts
-		 && clist[i].lchan->type == GSM_LCHAN_TCH_H
+		/* omit TCH/H->TCH/F, for that we upgrade the lchan with currently the worst ratings in Pass 4. */
+		if (clist[i].lchan->type == GSM_LCHAN_TCH_H
 		 && (clist[i].requirements & REQUIREMENT_C_TCHF))
 			continue;
 		/* omit candidates that will not solve/reduce congestion */
@@ -1830,9 +1827,8 @@ next_c2:
 
 			if (!(clist[i].requirements & REQUIREMENT_C_MASK))
 				continue;
-			/* omit all but assignment from AHS to AFS */
-			if (clist[i].lchan->ts->trx->bts != clist[i].bts
-			 || clist[i].lchan->type != GSM_LCHAN_TCH_H
+			/* only look at TCH/H->TCH/F upgrades */
+			if (clist[i].lchan->type != GSM_LCHAN_TCH_H
 			 || !(clist[i].requirements & REQUIREMENT_C_TCHF))
 				continue;
 
