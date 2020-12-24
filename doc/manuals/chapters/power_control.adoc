@@ -201,6 +201,11 @@ in the tolerance window.  In the example above, RxQual=3 would not trigger the
 control loop to increase BS power, as well as RxLev=38 (-72 dBm) would not trigger
 power reduction.
 
+TIP: It's recommended to harmonize the increase step size with the RxLev threshold
+window in a way that the former is less or equal than/to the later.  For example,
+if the RxLev threshold is 32 .. 36 (-78 .. -74 dBm), then the window size is 4 dB,
+and thus the increase step should be less or equal (e.g. 2 or 4 dB).
+
 In 3GPP TS 45.008, lower and upper RxLev thresholds are referred as `L_RXLEV_XX_P`
 and `U_RXLEV_XX_P`, while the RxQual thresholds are referred as `L_RXQUAL_XX_P` and
 `U_RXQUAL_XX_P`, where the `XX` is either `DL` (Downlink) or `UL` (Uplink).

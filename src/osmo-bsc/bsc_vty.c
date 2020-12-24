@@ -4931,15 +4931,33 @@ DEFUN_USRATTR(cfg_power_ctrl_step_size,
 	      "Step size (2 or 4 dB)\n")
 {
 	struct gsm_power_ctrl_params *params = vty->index;
+	int inc_step_size_db = atoi(argv[0]);
+	int red_step_size_db = atoi(argv[1]);
 
-	if (atoi(argv[0]) % 2 || atoi(argv[1]) % 2) {
+	if (inc_step_size_db % 2 || red_step_size_db % 2) {
 		vty_out(vty, "%% Power change step size must be "
 			"an even number%s", VTY_NEWLINE);
 		return CMD_WARNING;
 	}
 
-	params->inc_step_size_db = atoi(argv[0]);
-	params->red_step_size_db = atoi(argv[1]);
+	/* Recommendation: POW_RED_STEP_SIZE <= POW_INCR_STEP_SIZE */
+	if (red_step_size_db > inc_step_size_db) {
+		vty_out(vty, "%% Increase step size (%d) should be greater "
+			"than reduce step size (%d), consider changing it%s",
+			inc_step_size_db, red_step_size_db, VTY_NEWLINE);
+	}
+
+	/* Recommendation: POW_INCR_STEP_SIZE <= (U_RXLEV_XX_P - L_RXLEV_XX_P) */
+	const struct gsm_power_ctrl_meas_params *mp = &params->rxlev_meas;
+	if (inc_step_size_db > (mp->upper_thresh - mp->lower_thresh)) {
+		vty_out(vty, "%% Increase step size (%d) should be less or equal "
+			"than/to the RxLev threshold window (%d, upper - lower), "
+			"consider changing it%s", inc_step_size_db,
+			mp->upper_thresh - mp->lower_thresh, VTY_NEWLINE);
+	}
+
+	params->inc_step_size_db = inc_step_size_db;
+	params->red_step_size_db = red_step_size_db;
 
 	return CMD_SUCCESS;
 }

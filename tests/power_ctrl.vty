@@ -124,6 +124,9 @@ OsmoBSC(config-ms-power-ctrl)# step-size inc 5 red 4
 OsmoBSC(config-ms-power-ctrl)# step-size inc 2 red 3
 % Power change step size must be an even number
 OsmoBSC(config-ms-power-ctrl)# step-size inc 2 red 4
+% Increase step size (2) should be greater than reduce step size (4), consider changing it
+
+OsmoBSC(config-ms-power-ctrl)# step-size inc 6 red 4
 OsmoBSC(config-ms-power-ctrl)# show running-config
 ...
   bs-power-control
@@ -133,7 +136,7 @@ OsmoBSC(config-ms-power-ctrl)# show running-config
 ...
   ms-power-control
    mode dyn-bts
-   step-size inc 2 red 4
+   step-size inc 6 red 4
 ...
 
 OsmoBSC(config-ms-power-ctrl)# rxlev-thresh lower?
