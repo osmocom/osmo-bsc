@@ -4,10 +4,7 @@
 
 create-n-bts 2
 network
- bts 0
-  handover2 min-free-slots tch/f 4
- bts 1
-  handover2 min-free-slots tch/f 4
+ handover2 min-free-slots tch/f 4
 codec tch/f FR
 set-ts-use trx 0 0 states * TCH/F TCH/F TCH/F - - - -
 set-ts-use trx 1 0 states * TCH/F - - - - - -
