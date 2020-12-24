@@ -1,15 +1,46 @@
-# Congestion check: favor moving a TCH/H that frees a half-used dyn TS completely
+# Congestion check: favor moving a TCH/H that frees a half-used dyn TS completely.
+# The algorithm should notice that this is about moving an lchan within the same cell, so all candidates will remain
+# with unchanged rxlev after a re-assignment; hence the current rxlev for each candidate should not make a difference.
 
 create-bts trx-count 1 timeslots c+s4 dyn   dyn    dyn    dyn    dyn  - -
+network
+ handover2 min-free-slots tch/h 6
+
+# Test with identical rxlev across lchans (trivial and unrealistic)
 set-ts-use    trx 0 0     states *    pdch  TCH/HH TCH/H- TCH/HH pdch - -
 meas-rep lchan 0 0 2 1 rxlev 30 rxqual 0 ta 0
 meas-rep lchan 0 0 3 0 rxlev 30 rxqual 0 ta 0
 meas-rep lchan 0 0 4 0 rxlev 30 rxqual 0 ta 0
 meas-rep lchan 0 0 4 1 rxlev 30 rxqual 0 ta 0
-# pick one to move:
-network
- bts 0
-  handover2 min-free-slots tch/h 6
 congestion-check
 expect-ho from lchan 0 0 3 0 to lchan 0 0 1 0
 expect-ts-use trx 0 0     states *    TCH/F TCH/HH pdch TCH/HH pdch - -
+
+# clear measurements for the next run
+set-ts-use    trx 0 0     states *    pdch pdch pdch pdch pdch - -
+
+# Check that a weaker rxlev coming up earlier in the congestion checking loop does not override the favored half-used
+# TCH/H
+set-ts-use    trx 0 0     states *    pdch  TCH/HH TCH/H- TCH/HH pdch - -
+meas-rep lchan 0 0 2 1 rxlev 30 rxqual 0 ta 0
+meas-rep lchan 0 0 3 0 rxlev 31 rxqual 0 ta 0
+meas-rep lchan 0 0 4 0 rxlev 32 rxqual 0 ta 0
+meas-rep lchan 0 0 4 1 rxlev 33 rxqual 0 ta 0
+congestion-check
+expect-ho from lchan 0 0 3 0 to lchan 0 0 1 0
+expect-ts-use trx 0 0     states *    TCH/F TCH/HH pdch TCH/HH pdch - -
+
+# clear measurements for the next run
+set-ts-use    trx 0 0     states *    pdch pdch pdch pdch pdch - -
+
+# Check that a weaker rxlev coming up later in the congestion checking loop does not override the favored half-used
+# TCH/H
+set-ts-use    trx 0 0     states *    pdch  TCH/HH TCH/H- TCH/HH pdch - -
+meas-rep lchan 0 0 2 1 rxlev 34 rxqual 0 ta 0
+meas-rep lchan 0 0 3 0 rxlev 33 rxqual 0 ta 0
+meas-rep lchan 0 0 4 0 rxlev 32 rxqual 0 ta 0
+meas-rep lchan 0 0 4 1 rxlev 31 rxqual 0 ta 0
+congestion-check
+# FAIL: should still pick lchan 0 0 3 0!
+expect-ho from lchan 0 0 4 1 to lchan 0 0 1 0
+expect-ts-use trx 0 0     states *    TCH/F TCH/HH TCH/H- TCH/H- pdch - -
