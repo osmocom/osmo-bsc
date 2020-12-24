@@ -19,24 +19,17 @@ one_test() {
 	set +e
 	"$build_dir"/handover_test "$test_path" > "$got_out" 2> "$got_err"
 	rc=$?
-	if [ "x$rc" = "x0" ]; then
-		expect_out="$test_path.ok"
-		expect_err="$test_path.err"
-		if [ "x$update" = "x-u" ]; then
-			cp "$got_out" "$expect_out"
-			cp "$got_err" "$expect_err"
-		else
-			if [ -f "$expect_out" ]; then
-				diff -u "$expect_out" "$got_out"
-				rc=$?
-			fi
-			if [ -f "$expect_err" ]; then
-				diff -u "$expect_err" "$got_err"
-				rc2=$?
-			fi
-			if [ "x$rc" = "x0" ]; then
-				rc=$rc2
-			fi
+	expect_out="$test_path.ok"
+	expect_err="$test_path.err"
+	if [ "x$rc" = "x0" -a  "x$update" = "x-u" ]; then
+		cp "$got_out" "$expect_out"
+		cp "$got_err" "$expect_err"
+	else
+		if [ -f "$expect_out" ]; then
+			diff -u "$expect_out" "$got_out" >&2
+		fi
+		if [ -f "$expect_err" ]; then
+			diff -u "$expect_err" "$got_err" >&2
 		fi
 	fi
 	rm "$got_out"
