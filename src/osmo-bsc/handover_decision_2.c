@@ -829,18 +829,18 @@ static inline void debug_candidate(struct ho_candidate *candidate,
 
 	if (candidate->cil)
 		LOGPHOLCHANTOREMOTE(lchan, candidate->cil, LOGL_DEBUG,
-				    "RX level %d -> %d\n",
+				    "RX level %d dBm -> %d dBm\n",
 				    rxlev2dbm(rxlev), rxlev2dbm(candidate->avg));
 
 	if (candidate->bts == lchan->ts->trx->bts)
 		LOGPHOLCHANTOBTS(lchan, candidate->bts, LOGL_DEBUG,
-		     "RX level %d; "
+		     "RX level %d dBm; "
 		     HO_CANDIDATE_FMT(f, F) "; " HO_CANDIDATE_FMT(h, H) "\n",
 		     rxlev2dbm(candidate->avg),
 		     HO_CANDIDATE_ARGS(f, F), HO_CANDIDATE_ARGS(h, H));
 	else if (candidate->bts)
 		LOGPHOLCHANTOBTS(lchan, candidate->bts, LOGL_DEBUG,
-		     "RX level %d -> %d; "
+		     "RX level %d dBm -> %d dBm; "
 		     HO_CANDIDATE_FMT(f, F) "; " HO_CANDIDATE_FMT(h, H) "\n",
 		     rxlev2dbm(rxlev), rxlev2dbm(candidate->avg),
 		     HO_CANDIDATE_ARGS(f, F), HO_CANDIDATE_ARGS(h, H));
@@ -946,8 +946,8 @@ static void collect_handover_candidate(struct gsm_lchan *lchan, struct neigh_mea
 		unsigned int pwr_hyst = ho_get_hodec2_pwr_hysteresis(bts->ho);
 		if (avg <= (av_rxlev + pwr_hyst)) {
 			LOGPHOCAND(&c, LOGL_DEBUG,
-				   "Not a candidate, because RX level (%d) is lower"
-				   " or equal than current RX level (%d) + hysteresis (%d)\n",
+				   "Not a candidate, because RX level (%d dBm) is lower"
+				   " or equal than current RX level (%d dBm) + hysteresis (%d)\n",
 				   rxlev2dbm(avg), rxlev2dbm(av_rxlev), pwr_hyst);
 			return;
 		}
@@ -958,8 +958,8 @@ static void collect_handover_candidate(struct gsm_lchan *lchan, struct neigh_mea
 	min_rxlev = ho_get_hodec2_min_rxlev(neigh_cfg);
 	if (rxlev2dbm(avg) < min_rxlev) {
 		LOGPHOCAND(&c, LOGL_DEBUG,
-			   "Not a candidate, because RX level (%d) is lower"
-			   " than the minimum required RX level (%d)\n",
+			   "Not a candidate, because RX level (%d dBm) is lower"
+			   " than the minimum required RX level (%d dBm)\n",
 			   rxlev2dbm(avg), min_rxlev);
 		return;
 	}
