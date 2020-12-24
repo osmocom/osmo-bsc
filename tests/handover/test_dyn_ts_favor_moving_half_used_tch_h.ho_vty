@@ -41,6 +41,5 @@ meas-rep lchan 0 0 3 0 rxlev 33 rxqual 0 ta 0
 meas-rep lchan 0 0 4 0 rxlev 32 rxqual 0 ta 0
 meas-rep lchan 0 0 4 1 rxlev 31 rxqual 0 ta 0
 congestion-check
-# FAIL: should still pick lchan 0 0 3 0!
-expect-ho from lchan 0 0 4 1 to lchan 0 0 1 0
-expect-ts-use trx 0 0     states *    TCH/F TCH/HH TCH/H- TCH/H- pdch - -
+expect-ho from lchan 0 0 3 0 to lchan 0 0 1 0
+expect-ts-use trx 0 0     states *    TCH/F TCH/HH pdch TCH/HH pdch - -

@@ -12,12 +12,6 @@ set-ts-use trx 1 0 states        *    -     -     -     TCH/H- -     -     *
 meas-rep repeat 10 lchan 1 0 4 0 rxlev 30 rxqual 0 ta 0 neighbors 20
 expect-no-chan
 congestion-check
-# FAIL: bts 1 has better rxlev, so the call should stay in bts 1. Instead, a handover to bts 0 happens.
-expect-ho from lchan 1 0 4 0 to lchan 0 0 1 0
-expect-ts-use trx 0 0 states * TCH/F - - - - - *
-expect-ts-use trx 1 0 states * - - - - - - *
-# the fail continues: later the better rxqual does *another* ho back to the original cell
-meas-rep lchan 0 0 1 0 rxlev 20 rxqual 0 ta 0 neighbors 30
-expect-ho from lchan 0 0 1 0 to lchan 1 0 1 0
+expect-ho from lchan 1 0 4 0 to lchan 1 0 1 0
 expect-ts-use trx 0 0 states * - - - - - - *
 expect-ts-use trx 1 0 states * TCH/F - - - - - *
