@@ -828,8 +828,8 @@ static void enc_meas_proc_params(struct msgb *msg, uint8_t ptype,
 	ave_cfg->param_id = ptype & 0x03;
 
 	/* H_REQAVE and H_REQT */
-	ave_cfg->h_reqave = mp->h_reqave & 0x03;
-	ave_cfg->h_reqt = mp->h_reqt & 0x03;
+	ave_cfg->h_reqave = mp->h_reqave & 0x1f;
+	ave_cfg->h_reqt = mp->h_reqt & 0x1f;
 
 	/* Averaging method and parameters */
 	ave_cfg->ave_method = (mp->algo - 1) & 0x07;
