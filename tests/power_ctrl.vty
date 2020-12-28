@@ -29,8 +29,8 @@ OsmoBSC(config-net-bts)# list with-flags
 OsmoBSC(config-net-bts)# bs-power-control
 OsmoBSC(config-bs-power-ctrl)# list with-flags
 ...
-  . lv  mode (static|dyn-bts) [reset]
-  . lv  bs-power (static|dyn-max) <0-30>
+  . l.  mode (static|dyn-bts) [reset]
+  . l.  bs-power (static|dyn-max) <0-30>
   . lv  step-size inc <2-6> red <2-4>
   . lv  rxlev-thresh lower <0-63> upper <0-63>
   . lv  rxqual-thresh lower <0-7> upper <0-7>
@@ -91,8 +91,8 @@ OsmoBSC(config-bs-power-ctrl)# exit
 OsmoBSC(config-net-bts)# ms-power-control
 OsmoBSC(config-ms-power-ctrl)# list with-flags
 ...
-  . lv  mode (static|dyn-bts) [reset]
-  . lv  bs-power (static|dyn-max) <0-30>
+  . l.  mode (static|dyn-bts) [reset]
+  . l.  bs-power (static|dyn-max) <0-30>
   . lv  step-size inc <2-6> red <2-4>
   . lv  rxlev-thresh lower <0-63> upper <0-63>
   . lv  rxqual-thresh lower <0-7> upper <0-7>

@@ -4881,7 +4881,6 @@ DEFUN(cfg_bts_power_ctrl,
 
 DEFUN_USRATTR(cfg_power_ctrl_mode,
 	      cfg_power_ctrl_mode_cmd,
-	      X(BSC_VTY_ATTR_VENDOR_SPECIFIC) |
 	      X(BSC_VTY_ATTR_NEW_LCHAN),
 	      "mode (static|dyn-bts) [reset]",
 	      "Power control mode\n"
@@ -4909,7 +4908,6 @@ DEFUN_USRATTR(cfg_power_ctrl_mode,
 
 DEFUN_USRATTR(cfg_power_ctrl_bs_power,
 	      cfg_power_ctrl_bs_power_cmd,
-	      X(BSC_VTY_ATTR_VENDOR_SPECIFIC) |
 	      X(BSC_VTY_ATTR_NEW_LCHAN),
 	      "bs-power (static|dyn-max) <0-30>",
 	      "BS Power IE value to be send to the BTS\n"
