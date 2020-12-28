@@ -1,0 +1,301 @@
+== Power control
+
+The objective of power control is to regulate the transmit power of the MS (Uplink)
+as well as the BTS (Downlink) in order to achieve the optimal reception conditions,
+i.e. a desired signal strength and a desired signal quality.
+
+There are two advantages of power control:
+
+- reduction of the average power consumption (especially in the MS), and
+- reduction of the co-channel interference for adjacent channel users.
+
+Power control can be performed either by the BSC, or by the BTS autonomously.
+OsmoBSC currently lacks the power control logic, so it cannot act as the regulating
+entity, however it's capable to instruct a BTS that supports autonomous power
+control to perform the power regulation.  This is achieved by including vendor-
+specific IEs with power control parameters in the channel activation messages
+on the A-bis/RSL interface.
+
+=== Power control parameters
+
+Unfortunately, 3GPP specifications do not specify the exact list of power control
+parameters and their encoding on the A-bis/RSL interface, so it's up to a BTS/BSC
+vendor what to send and in which format.  Furthermore, there is no public
+documentation on which parameters are accepted by particular BTS models.
+
+3GPP TS 44.008 nonetheless defines a minimal set of parameters for a general power
+control algorithm.  OsmoBSC allows to configure these parameters via the VTY
+interface, this is further described in the next sections.
+
+So far only the ip.access specific format is implemented, so it should be possible
+to enable power control for nanoBTS.  OsmoBTS also accepts this format, but may
+ignore some of the received parameters due to incomplete implementation.
+
+==== When the parameters come into effect?
+
+It depends on how the power control parameters are signaled to the BTS.  If a given
+BTS vendor/model requires _each_ RSL CHANnel ACTIVation message to contain the full
+set of parameters, than changing them in the BSC at run-time would affect all newly
+established logical channels immediately.  The existing connections would continue
+to use parameters which were in use during the time of channel activation.
+
+For both ip.access nanoBTS and OsmoBTS, the configured parameters are being sent
+only once when the A-bis/RSL link is established.  In all subsequent RSL messages,
+the MS/BS Power Parameters IE will be sent empty.  Therefore, changing most of
+dynamic power control parameters at run-time would affect neither the existing
+nor newly established logical channels.
+
+It's still possible to 'push' a modified set of MS/BS power control parameters to a
+BTS that accepts the default parameters at startup without triggering the A-bis/RSL
+link re-establishment and thus interrupting the service.  The following command
+triggers resending of both MS/BS power control parameters:
+
+----
+# Resending from the 'enable' node:
+OsmoBSC# bts 0 resend-power-control-defaults
+
+# Resending from any configuration node (note prefix 'do'):
+OsmoBSC(config-ms-power-ctrl)# do bts 0 resend-power-control-defaults
+----
+
+NOTE: The above statement mostly applies to parameters for dynamic power control
+mode (see below).  Switching between power control modes, as well as changing
+static/maximum power values, does not necessarily require resending of parameters.
+
+=== Power control configuration
+
+Two identical groups of parameters are available for both MS (Uplink) and BS
+(Downlink) power control.  This chapter is aimed to put some light on them.
+
+All parameters can be set via the VTY interface, currently within the scope of
+a BTS.  This means that all transceivers will 'inherit' the same configuration.
+
+----
+OsmoBSC(config)# network
+OsmoBSC(config-net)# bts 0
+OsmoBSC(config-net-bts)# ?
+...
+  bs-power-control              BS (Downlink) power control parameters
+  ms-power-control              MS (Uplink) power control parameters
+...
+----
+
+Either of these commands would lead to a separate node:
+
+----
+OsmoBSC(config-net-bts)# ms-power-control
+OsmoBSC(config-ms-power-ctrl)# list with-flags
+...
+  . l.  mode (static|dyn-bts) [reset]
+  . l.  bs-power (static|dyn-max) <0-30>
+  . lv  step-size inc <2-6> red <2-4>
+  . lv  rxlev-thresh lower <0-63> upper <0-63>
+  . lv  rxqual-thresh lower <0-7> upper <0-7>
+  . lv  rxlev-thresh-comp lower <0-31> <0-31> upper <0-31> <0-31>
+  . lv  rxqual-thresh-comp lower <0-31> <0-31> upper <0-31> <0-31>
+  . lv  no (rxlev-avg|rxqual-avg)
+  . lv  (rxlev-avg|rxqual-avg) params hreqave <1-31> hreqt <1-31>
+  . lv  (rxlev-avg|rxqual-avg) algo (unweighted|weighted|mod-median)
+  . lv  (rxlev-avg|rxqual-avg) algo osmo-ewma beta <1-99>
+----
+
+NOTE: Flag 'v' indicates that a given parameter is vendor specific, so different
+BTS vendors/models may ignore or even reject it.  Flag 'l' indicates that changing
+a given parameter at run-time would affect only the new connections.
+
+==== Power control mode
+
+Three power control modes exist:
+
+----
+OsmoBSC(config-ms-power-ctrl)# mode ?
+  static   Instruct the MS/BTS to use a static power level <1>
+  dyn-bts  Power control to be performed dynamically by the BTS itself <2>
+OsmoBSC(config-net-bts)# no (bs-power-control|ms-power-control) <3>
+----
+<1> Send RSL MS/BS Power IE alone indicating a static power level to the BTS.
+<2> Send both RSL MS/BS Power IE and vendor-specific MS/BS Power Parameters IE.
+<3> Do not send any power control IEs in RSL CHANnel ACTIVation messages.
+
+By default, `static` mode is used for BS power control, while `dyn-bts` is used
+for MS power control.  Changing the mode at run-time would not affect already
+established connections, only the new ones (check flag 'l').
+
+For BS power control, there is an additional parameter:
+
+----
+OsmoBSC(config-bs-power-ctrl)# bs-power ?
+  static   Fixed BS Power reduction value (for static mode)
+  dyn-max  Maximum BS Power reduction value (for dynamic mode)
+----
+
+that allows to configure the maximum BS power reduction value in `dyn-bts` mode,
+and a fixed power reduction value in `static` mode.  In the later case, no
+attenuation (0 dB) is applied by default (full power).
+
+==== Power change step size
+
+In order to slow down the reactivity of the power control loop and thus make it more
+robust against sporadic fluctuations of the input values (RxLev and RxQual), the
+transmit power on both Uplink and Downlink is changed gradually, step by step.
+
+OsmoBSC allows to configure the step sizes for both increasing and reducing directions
+separately.  The corresponding power control loop would apply different delta values
+to the current transmit power level in order to raise or lower it.
+
+.Example: Power change step size
+----
+network
+ bts 0
+  bs-power-control
+   mode dyn-bts <1>
+   bs-power dyn-max 12 <2>
+   step-size inc 6 red 4 <3>
+  ms-power-control
+   mode dyn-bts <1>
+   step-size inc 4 red 2 <4>
+----
+<1> Both MS and BS power control is to be performed by the BTS autonomously.
+<2> The BTS is allowed to reduce the power on Downlink up to 12 dB.
+<3> On Downlink, BS power can be increased by 6 dB or reduced by 4 dB at once.
+<4> On Uplink, MS power can be increased by 4 dB or reduced by 2 dB at once.
+
+NOTE: In the context of BS power control, terms 'increase' and 'decrease' have the
+same meaning as in the context of MS power control: to make the output power stronger
+or weaker respectively.  Even despite the BS power loop in fact controls the attenuation.
+
+TIP: It's recommended to pick the values in a way that the increase step is greater than
+the reduce step.  This way the system would be able to react on signal degradation
+quickly, while a good signal would not trigger radical power reduction.
+
+Both parameters are mentioned in 3GPP TS 45.008, table A.1:
+
+- Pow_Incr_Step_Size (range 2, 4 or 6 dB),
+- Pow_Red_Step_Size (range 2 or 4 dB).
+
+==== RxLev and RxQual thresholds
+
+The general idea of power control is to maintain the signal level (RxLev) and quality
+(RxQual) within the target ranges.  Each of these ranges can be defined as a pair of
+the lowest and the highest acceptable values called thresholds.
+
+The process of RxLev / RxQual threshold comparison is described in 3GPP TS 45.008,
+section A.3.2.1.  All parameters involved in the process can be found in table
+A.1 with the recommended default values.
+
+.Example: RxLev and RxQual threshold configuration
+----
+network
+ bts 0
+  bs-power-control
+   mode dyn-bts <1>
+   rxlev-thresh lower 32 upper 38 <2>
+   rxqual-thresh lower 3 upper 0 <3>
+----
+<1> BS power control is to be performed by the BTS autonomously.
+<2> RxLev is to be maintained in range 32 .. 38 (-78 .. -72 dBm).
+<3> RxQual is to be maintained in range 3 .. 0 (less is better).
+
+NOTE: For both RxLev and RxQual thresholds, the lower and upper values are included
+in the tolerance window.  In the example above, RxQual=3 would not trigger the
+control loop to increase BS power, as well as RxLev=38 (-72 dBm) would not trigger
+power reduction.
+
+In 3GPP TS 45.008, lower and upper RxLev thresholds are referred as `L_RXLEV_XX_P`
+and `U_RXLEV_XX_P`, while the RxQual thresholds are referred as `L_RXQUAL_XX_P` and
+`U_RXQUAL_XX_P`, where the `XX` is either `DL` (Downlink) or `UL` (Uplink).
+
+The process of threshold comparison actually involves more than just upper and lower
+values for RxLev and RxQual.  The received 'raw' measurements are being averaged and
+stored in a circular buffer, so the power change is triggered only if Pn averages out
+of Nn averages exceed the corresponding thresholds.
+
+.Example: RxLev and RxQual threshold comparators
+----
+network
+ bts 0
+  bs-power-control
+   mode dyn-bts <1>
+   rxlev-thresh lower 32 upper 38
+   rxlev-thresh-comp lower 10 12 <2> upper 19 20 <3>
+   rxqual-thresh lower 3 upper 0
+   rxqual-thresh-comp lower 5 7 <4> upper 15 18 <5>
+----
+<1> BS power control is to be performed by the BTS autonomously.
+<2> P1=10 out of N1=12 averages < L_RXLEV_XX_P => increase power.
+<3> P2=19 out of N2=20 averages > U_RXLEV_XX_P => decrease power.
+<4>  P3=5 out of  N3=7 averages > L_RXQUAL_XX_P => increase power.
+<5> P4=15 out of N4=18 averages < U_RXQUAL_XX_P => decrease power.
+
+==== Measurement averaging process
+
+3GPP 45.008, section A.3.1 requires that the measurement values reported by both
+an MS and the BTS are be pre-processed before appearing on the input of the
+corresponding power control loops in any of the following ways:
+
+- Unweighted average;
+- Weighted average, with the weightings determined by O&M;
+- Modified median calculation, with exceptionally high and low values
+  (outliers) removed before the median calculation.
+
+The pre-processing is expected to be performed for both MS and BS power control
+loops independently, for every input parameter (i.e. RxLev and RxQual).
+
+----
+OsmoBSC(config-bs-power-ctrl)# rxlev-avg algo ?
+  unweighted  Un-weighted average
+  weighted    Weighted average
+  mod-median  Modified median calculation
+  osmo-ewma   Exponentially Weighted Moving Average (EWMA)
+OsmoBSC(config-bs-power-ctrl)# rxqual-avg algo ?
+  unweighted  Un-weighted average
+  weighted    Weighted average
+  mod-median  Modified median calculation
+  osmo-ewma   Exponentially Weighted Moving Average (EWMA)
+----
+
+OsmoBTS features a non-standard Osmocom specific EWMA (Exponentially Weighted Moving
+Average) based pre-processing.  Other BTS models may support additional non-standard
+methods too, the corresponding VTY options can be added on request.
+
+Among with the averaging methods, 3GPP 45.008 also defines two pre-processing
+parameters in section A.3.1:
+
+- Hreqave - defines the period over which an average is produced, in terms of the
+  number of SACCH blocks containing measurement results, i.e. the number of
+  measurements contributing to each averaged measurement;
+
+- Hreqt - is the number of averaged results that are maintained.
+
+By default, OsmoBSC would not send any pre-processing parameters, so the BTS may
+apply its default pre-processing algorithm with default parameters, or may not
+apply any pre-processing at all - this is up to the vendor.  The pre-processing
+parameters need to be configured explicitly as shown in the example below.
+
+.Example: Explicit pre-processing configuration
+----
+network
+ bts 0
+  bs-power-control
+   mode dyn-bts <1>
+   rxlev-avg algo unweighted <2>
+   rxlev-avg params hreqave 4 hreqt 6 <3>
+   rxqual-avg algo osmo-ewma beta 50 <4>
+   rxqual-avg params hreqave 2 hreqt 3 <5>
+  ms-power-control
+   mode dyn-bts <1>
+   rxlev-avg algo unweighted <2>
+   rxlev-avg params hreqave 4 hreqt 6 <3>
+   rxqual-avg algo osmo-ewma beta 50 <4>
+   rxqual-avg params hreqave 2 hreqt 3 <5>
+----
+<1> Both MS and BS power control is to be performed by the BTS autonomously.
+<2> Unweighted average is applied to RxLev values.
+<3> RxLev Hreqave and Hreqt values: 4 out of 6 SACCH blocks produce an averaged measurement.
+<4> Osmocom specific EWMA is applied to RxQual values with smoothing factor = 50% (beta=0.5).
+<5> RxQual: Hreqave and Hreqt values: 2 out of 3 SACCH blocks produce an averaged measurement.
+
+// TODO: Document P_Con_INTERVAL (not implemented yet)
+// TODO: Document other power control parameters:
+//		OsmoBSC(config-net-bts)# ms max power <0-40>
+//		OsmoBSC(config-net-bts-trx)# max_power_red <0-100>
