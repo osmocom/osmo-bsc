@@ -4885,7 +4885,7 @@ DEFUN_USRATTR(cfg_power_ctrl_mode,
 	      X(BSC_VTY_ATTR_NEW_LCHAN),
 	      "mode (static|dyn-bts) [reset]",
 	      "Power control mode\n"
-	      "Instruct the MS/BTS to use a static power level (default)\n"
+	      "Instruct the MS/BTS to use a static power level\n"
 	      "Power control to be performed dynamically by the BTS itself\n"
 	      "Reset to default parameters for the given mode\n")
 {

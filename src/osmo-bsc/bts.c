@@ -504,8 +504,11 @@ int gsm_set_bts_type(struct gsm_bts *bts, enum gsm_bts_type type)
 	}
 
 	switch (bts->type) {
-	case GSM_BTS_TYPE_NANOBTS:
 	case GSM_BTS_TYPE_OSMOBTS:
+		/* Enable dynamic Uplink power control by default */
+		bts->ms_power_ctrl.mode = GSM_PWR_CTRL_MODE_DYN_BTS;
+		/* fall-through */
+	case GSM_BTS_TYPE_NANOBTS:
 		/* Set the default OML Stream ID to 0xff */
 		bts->oml_tei = 0xff;
 		bts->c0->nominal_power = 23;

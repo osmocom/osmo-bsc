@@ -1,12 +1,19 @@
 OsmoBSC> enable
 
-OsmoBSC# ### Dynamic power control must be disabled by default
+OsmoBSC# ### Default configuration
 OsmoBSC# show running-config
 ...
   bs-power-control
    mode static
   ms-power-control
-   mode static
+   mode dyn-bts
+   step-size inc 4 red 2
+   rxlev-thresh lower 32 upper 38
+   rxlev-thresh-comp lower 10 12 upper 19 20
+   no rxlev-avg
+   rxqual-thresh lower 3 upper 0
+   rxqual-thresh-comp lower 5 7 upper 15 18
+   no rxqual-avg
 ...
 
 OsmoBSC# ### Check that 'power-ctrl' node and its commands exist
@@ -48,7 +55,7 @@ OsmoBSC(config-bs-power-ctrl)# show running-config
    mode static
    bs-power static 6
   ms-power-control
-   mode static
+   mode dyn-bts
 ... !bs-power
 
 OsmoBSC(config-bs-power-ctrl)# ### Check default BS Power Parameters
@@ -66,7 +73,7 @@ OsmoBSC(config-bs-power-ctrl)# show running-config
    rxqual-thresh-comp lower 5 7 upper 15 18
    no rxqual-avg
   ms-power-control
-   mode static
+   mode dyn-bts
 ...
 
 OsmoBSC(config-bs-power-ctrl)# bs-power dyn-max 30
@@ -77,7 +84,7 @@ OsmoBSC(config-bs-power-ctrl)# show running-config
    bs-power dyn-max 30
 ... !bs-power
   ms-power-control
-   mode static
+   mode dyn-bts
 ... !bs-power
 
 OsmoBSC(config-bs-power-ctrl)# exit
@@ -97,19 +104,11 @@ OsmoBSC(config-ms-power-ctrl)# list with-flags
   . lv  (rxlev-avg|rxqual-avg) algo osmo-ewma beta <1-99>
 
 OsmoBSC(config-ms-power-ctrl)# ### Check default MS Power Parameters
-OsmoBSC(config-ms-power-ctrl)# mode dyn-bts
 OsmoBSC(config-ms-power-ctrl)# show running-config
 ...
   bs-power-control
    mode dyn-bts
-   bs-power dyn-max 30
-   step-size inc 4 red 2
-   rxlev-thresh lower 32 upper 38
-   rxlev-thresh-comp lower 10 12 upper 19 20
-   no rxlev-avg
-   rxqual-thresh lower 3 upper 0
-   rxqual-thresh-comp lower 5 7 upper 15 18
-   no rxqual-avg
+...
   ms-power-control
    mode dyn-bts
    step-size inc 4 red 2
@@ -230,7 +229,7 @@ OsmoBSC(config-bs-power-ctrl)# mode static reset
 OsmoBSC(config-bs-power-ctrl)# exit
 
 OsmoBSC(config-net-bts)# ms-power-control
-OsmoBSC(config-ms-power-ctrl)# mode static reset
+OsmoBSC(config-ms-power-ctrl)# mode dyn-bts reset
 % Reset to default parameters
 OsmoBSC(config-ms-power-ctrl)# exit
 
@@ -239,5 +238,12 @@ OsmoBSC(config-net-bts)# show running-config
   bs-power-control
    mode static
   ms-power-control
-   mode static
+   mode dyn-bts
+   step-size inc 4 red 2
+   rxlev-thresh lower 32 upper 38
+   rxlev-thresh-comp lower 10 12 upper 19 20
+   no rxlev-avg
+   rxqual-thresh lower 3 upper 0
+   rxqual-thresh-comp lower 5 7 upper 15 18
+   no rxqual-avg
 ...
