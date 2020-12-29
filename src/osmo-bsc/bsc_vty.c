@@ -910,7 +910,7 @@ static void config_write_power_ctrl_meas(struct vty *vty, unsigned int indent,
 
 	switch (mp->algo) {
 	case GSM_PWR_CTRL_MEAS_AVG_ALGO_NONE:
-		cfg_out("no %s-avg%s", param, VTY_NEWLINE);
+		/* Do not print any averaging parameters */
 		return; /* we're done */
 	case GSM_PWR_CTRL_MEAS_AVG_ALGO_UNWEIGHTED:
 		cfg_out("%s-avg algo unweighted%s", param, VTY_NEWLINE);

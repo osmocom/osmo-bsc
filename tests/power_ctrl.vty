@@ -10,10 +10,8 @@ OsmoBSC# show running-config
    step-size inc 4 red 2
    rxlev-thresh lower 32 upper 38
    rxlev-thresh-comp lower 10 12 upper 19 20
-   no rxlev-avg
    rxqual-thresh lower 3 upper 0
    rxqual-thresh-comp lower 5 7 upper 15 18
-   no rxqual-avg
 ...
 
 OsmoBSC# ### Check that 'power-ctrl' node and its commands exist
@@ -68,10 +66,8 @@ OsmoBSC(config-bs-power-ctrl)# show running-config
    step-size inc 4 red 2
    rxlev-thresh lower 32 upper 38
    rxlev-thresh-comp lower 10 12 upper 19 20
-   no rxlev-avg
    rxqual-thresh lower 3 upper 0
    rxqual-thresh-comp lower 5 7 upper 15 18
-   no rxqual-avg
   ms-power-control
    mode dyn-bts
 ...
@@ -114,10 +110,8 @@ OsmoBSC(config-ms-power-ctrl)# show running-config
    step-size inc 4 red 2
    rxlev-thresh lower 32 upper 38
    rxlev-thresh-comp lower 10 12 upper 19 20
-   no rxlev-avg
    rxqual-thresh lower 3 upper 0
    rxqual-thresh-comp lower 5 7 upper 15 18
-   no rxqual-avg
 ...
 
 OsmoBSC(config-ms-power-ctrl)# bs-power static 30
@@ -188,10 +182,6 @@ OsmoBSC(config-ms-power-ctrl)# show running-config
 ...
   bs-power-control
 ... !(rxlev-avg|rxqual-avg)
-   no rxlev-avg
-... !(rxlev-avg|rxqual-avg)
-   no rxqual-avg
-...
   ms-power-control
 ... !(rxlev-avg|rxqual-avg)
    rxlev-avg algo osmo-ewma beta 50
@@ -242,8 +232,6 @@ OsmoBSC(config-net-bts)# show running-config
    step-size inc 4 red 2
    rxlev-thresh lower 32 upper 38
    rxlev-thresh-comp lower 10 12 upper 19 20
-   no rxlev-avg
    rxqual-thresh lower 3 upper 0
    rxqual-thresh-comp lower 5 7 upper 15 18
-   no rxqual-avg
 ...
