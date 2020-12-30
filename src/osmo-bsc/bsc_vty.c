@@ -2744,13 +2744,14 @@ DEFUN_USRATTR(cfg_bts_rach_max_trans,
 
 #define REP_ACCH_STR "FACCH/SACCH repetition\n"
 
-DEFUN_ATTR(cfg_bts_rep_dl_facch,
-	   cfg_bts_rep_dl_facch_cmd,
-	   "repeat dl-facch (command|all)",
-	   REP_ACCH_STR
-	   "Enable DL-FACCH repetition for this BTS\n"
-	   "command LAPDm frames only\n"
-	   "all LAPDm frames\n", CMD_ATTR_IMMEDIATE)
+DEFUN_USRATTR(cfg_bts_rep_dl_facch,
+	      cfg_bts_rep_dl_facch_cmd,
+	      X(BSC_VTY_ATTR_NEW_LCHAN),
+	      "repeat dl-facch (command|all)",
+	      REP_ACCH_STR
+	      "Enable DL-FACCH repetition for this BTS\n"
+	      "command LAPDm frames only\n"
+	      "all LAPDm frames\n")
 {
 	struct gsm_bts *bts = vty->index;
 
@@ -2770,11 +2771,12 @@ DEFUN_ATTR(cfg_bts_rep_dl_facch,
 	return CMD_SUCCESS;
 }
 
-DEFUN_ATTR(cfg_bts_rep_no_dl_facch,
-	   cfg_bts_rep_no_dl_facch_cmd,
-	   "no repeat dl-facch",
-	   NO_STR REP_ACCH_STR
-	   "Disable DL-FACCH repetition for this BTS\n", CMD_ATTR_IMMEDIATE)
+DEFUN_USRATTR(cfg_bts_rep_no_dl_facch,
+	      cfg_bts_rep_no_dl_facch_cmd,
+	      X(BSC_VTY_ATTR_NEW_LCHAN),
+	      "no repeat dl-facch",
+	      NO_STR REP_ACCH_STR
+	      "Disable DL-FACCH repetition for this BTS\n")
 {
 	struct gsm_bts *bts = vty->index;
 
@@ -2784,13 +2786,13 @@ DEFUN_ATTR(cfg_bts_rep_no_dl_facch,
 	return CMD_SUCCESS;
 }
 
-DEFUN_ATTR(cfg_bts_rep_ul_dl_sacch,
-	   cfg_bts_rep_ul_dl_sacch_cmd,
-	   "repeat (ul-sacch|dl-sacch)",
-	   REP_ACCH_STR
-	   "Enable UL-SACCH repetition for this BTS\n"
-	   "Enable DL-SACCH repetition for this BTS\n",
-	   CMD_ATTR_IMMEDIATE)
+DEFUN_USRATTR(cfg_bts_rep_ul_dl_sacch,
+	      cfg_bts_rep_ul_dl_sacch_cmd,
+	      X(BSC_VTY_ATTR_NEW_LCHAN),
+	      "repeat (ul-sacch|dl-sacch)",
+	      REP_ACCH_STR
+	      "Enable UL-SACCH repetition for this BTS\n"
+	      "Enable DL-SACCH repetition for this BTS\n")
 {
 	struct gsm_bts *bts = vty->index;
 
@@ -2808,12 +2810,13 @@ DEFUN_ATTR(cfg_bts_rep_ul_dl_sacch,
 	return CMD_SUCCESS;
 }
 
-DEFUN_ATTR(cfg_bts_rep_no_ul_dl_sacch,
-	   cfg_bts_rep_no_ul_dl_sacch_cmd,
-	   "no repeat (ul-sacch|dl-sacch)",
-	   NO_STR REP_ACCH_STR
-	   "Disable UL-SACCH repetition for this BTS\n"
-	   "Disable DL-SACCH repetition for this BTS\n", CMD_ATTR_IMMEDIATE)
+DEFUN_USRATTR(cfg_bts_rep_no_ul_dl_sacch,
+	      cfg_bts_rep_no_ul_dl_sacch_cmd,
+	      X(BSC_VTY_ATTR_NEW_LCHAN),
+	      "no repeat (ul-sacch|dl-sacch)",
+	      NO_STR REP_ACCH_STR
+	      "Disable UL-SACCH repetition for this BTS\n"
+	      "Disable DL-SACCH repetition for this BTS\n")
 {
 	struct gsm_bts *bts = vty->index;
 
@@ -2825,20 +2828,20 @@ DEFUN_ATTR(cfg_bts_rep_no_ul_dl_sacch,
 	return CMD_SUCCESS;
 }
 
-DEFUN_ATTR(cfg_bts_rep_rxqual,
-	   cfg_bts_rep_rxqual_cmd,
-	   "repeat rxqual (0|1|2|3|4|5|6|7)",
-	   REP_ACCH_STR
-	   "Set UL-SACCH/DL-FACCH rxqual threshold-ber\n"
-	   "0 disabled (always on)\n"
-	   "1 0.26% to 0.30% BER\n"
-	   "2 0.51% to 0.64% BER\n"
-	   "3 1.0% to 1.3% BER\n"
-	   "4 1.9% to 2.7% BER (default)\n"
-	   "5 3.8% to 5.4% BER\n"
-	   "6 7.6% to 11.0% BER\n"
-	   "7 Greater than 15.0% BER\n",
-	   CMD_ATTR_IMMEDIATE)
+DEFUN_USRATTR(cfg_bts_rep_rxqual,
+	      cfg_bts_rep_rxqual_cmd,
+	      X(BSC_VTY_ATTR_NEW_LCHAN),
+	      "repeat rxqual (0|1|2|3|4|5|6|7)",
+	      REP_ACCH_STR
+	      "Set UL-SACCH/DL-FACCH rxqual threshold-ber\n"
+	      "0 disabled (always on)\n"
+	      "1 0.26% to 0.30% BER\n"
+	      "2 0.51% to 0.64% BER\n"
+	      "3 1.0% to 1.3% BER\n"
+	      "4 1.9% to 2.7% BER (default)\n"
+	      "5 3.8% to 5.4% BER\n"
+	      "6 7.6% to 11.0% BER\n"
+	      "7 Greater than 15.0% BER\n")
 {
 	struct gsm_bts *bts = vty->index;
 
