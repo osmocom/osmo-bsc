@@ -2760,7 +2760,7 @@ DEFUN_ATTR(cfg_bts_rep_dl_facch,
 		return CMD_WARNING;
 	}
 
-	if (!strcmp(argv[1], "command")) {
+	if (!strcmp(argv[0], "command")) {
 	        bts->repeated_acch_policy.dl_facch_cmd = true;
 	        bts->repeated_acch_policy.dl_facch_all = false;
 	} else {
