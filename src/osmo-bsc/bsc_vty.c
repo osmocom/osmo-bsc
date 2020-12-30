@@ -2784,11 +2784,13 @@ DEFUN_ATTR(cfg_bts_rep_no_dl_facch,
 	return CMD_SUCCESS;
 }
 
-DEFUN_ATTR(cfg_bts_rep_dl_sacch,
-	   cfg_bts_rep_dl_sacch_cmd,
-	   "repeat dl-sacch",
+DEFUN_ATTR(cfg_bts_rep_ul_dl_sacch,
+	   cfg_bts_rep_ul_dl_sacch_cmd,
+	   "repeat (ul-sacch|dl-sacch)",
 	   REP_ACCH_STR
-	   "Enable DL-SACCH repetition for this BTS\n", CMD_ATTR_IMMEDIATE)
+	   "Enable UL-SACCH repetition for this BTS\n"
+	   "Enable DL-SACCH repetition for this BTS\n",
+	   CMD_ATTR_IMMEDIATE)
 {
 	struct gsm_bts *bts = vty->index;
 
@@ -2798,52 +2800,27 @@ DEFUN_ATTR(cfg_bts_rep_dl_sacch,
 		return CMD_WARNING;
 	}
 
-	bts->repeated_acch_policy.dl_sacch = true;
+	if (strcmp(argv[0], "ul-sacch") == 0)
+		bts->repeated_acch_policy.ul_sacch = true;
+	else
+		bts->repeated_acch_policy.dl_sacch = true;
 
 	return CMD_SUCCESS;
 }
 
-DEFUN_ATTR(cfg_bts_rep_no_dl_sacch,
-	   cfg_bts_rep_no_dl_sacch_cmd,
-	   "no repeat dl-sacch",
+DEFUN_ATTR(cfg_bts_rep_no_ul_dl_sacch,
+	   cfg_bts_rep_no_ul_dl_sacch_cmd,
+	   "no repeat (ul-sacch|dl-sacch)",
 	   NO_STR REP_ACCH_STR
+	   "Disable UL-SACCH repetition for this BTS\n"
 	   "Disable DL-SACCH repetition for this BTS\n", CMD_ATTR_IMMEDIATE)
 {
 	struct gsm_bts *bts = vty->index;
 
-	bts->repeated_acch_policy.dl_sacch = false;
-
-	return CMD_SUCCESS;
-}
-
-DEFUN_ATTR(cfg_bts_rep_ul_sacch,
-	   cfg_bts_rep_ul_sacch_cmd,
-	   "repeat ul-sacch",
-	   REP_ACCH_STR
-	   "Enable UL-SACCH repetition for this BTS\n", CMD_ATTR_IMMEDIATE)
-{
-	struct gsm_bts *bts = vty->index;
-
-	if (bts->model->type != GSM_BTS_TYPE_OSMOBTS) {
-		vty_out(vty, "%% repeated ACCH not supported by BTS %u%s",
-			bts->nr, VTY_NEWLINE);
-		return CMD_WARNING;
-	}
-
-	bts->repeated_acch_policy.ul_sacch = true;
-
-	return CMD_SUCCESS;
-}
-
-DEFUN_ATTR(cfg_bts_rep_no_ul_sacch,
-	   cfg_bts_rep_no_ul_sacch_cmd,
-	   "no repeat ul-sacch",
-	   NO_STR REP_ACCH_STR
-	   "Disable UL-SACCH repetition for this BTS\n", CMD_ATTR_IMMEDIATE)
-{
-	struct gsm_bts *bts = vty->index;
-
-	bts->repeated_acch_policy.ul_sacch = false;
+	if (strcmp(argv[0], "ul-sacch") == 0)
+		bts->repeated_acch_policy.ul_sacch = false;
+	else
+		bts->repeated_acch_policy.dl_sacch = false;
 
 	return CMD_SUCCESS;
 }
@@ -7705,10 +7682,8 @@ int bsc_vty_init(struct gsm_network *network)
 	install_element(BTS_NODE, &cfg_bts_no_t3113_dynamic_cmd);
 	install_element(BTS_NODE, &cfg_bts_rep_dl_facch_cmd);
 	install_element(BTS_NODE, &cfg_bts_rep_no_dl_facch_cmd);
-	install_element(BTS_NODE, &cfg_bts_rep_dl_sacch_cmd);
-	install_element(BTS_NODE, &cfg_bts_rep_no_dl_sacch_cmd);
-	install_element(BTS_NODE, &cfg_bts_rep_ul_sacch_cmd);
-	install_element(BTS_NODE, &cfg_bts_rep_no_ul_sacch_cmd);
+	install_element(BTS_NODE, &cfg_bts_rep_ul_dl_sacch_cmd);
+	install_element(BTS_NODE, &cfg_bts_rep_no_ul_dl_sacch_cmd);
 	install_element(BTS_NODE, &cfg_bts_rep_rxqual_cmd);
 
 	neighbor_ident_vty_init(network, network->neighbor_bss_cells);
