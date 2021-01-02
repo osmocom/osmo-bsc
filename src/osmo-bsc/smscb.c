@@ -110,6 +110,8 @@ static void __bts_smscb_add(struct bts_smscb_chan_state *cstate, struct bts_smsc
 			return;
 		}
 	}
+	/* we didn't find any messages with longer period than us, insert us at tail */
+	llist_add_tail(&new->list, &cstate->messages);
 }
 
 /* stringify a SMSCB for logging */
