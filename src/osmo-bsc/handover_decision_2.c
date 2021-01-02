@@ -106,6 +106,7 @@ struct ho_candidate {
 	uint8_t requirements;		/* what is fulfilled */
 	int rxlev_current;
 	int rxlev_target;
+	int rxlev_afs_bias;
 };
 
 enum ho_reason {
@@ -1398,63 +1399,55 @@ static bool is_upgrade_to_tchf(const struct ho_candidate *c, uint8_t for_require
 /* Given two candidates, pick the one that should rather be moved during handover.
  * Return the better candidate in out-parameters best_cand and best_avg_db.
  */
-static bool pick_better_lchan_to_move(bool want_highest_db,
-				      struct ho_candidate **best_cand_p, unsigned int *best_avg_db_p,
-				      struct ho_candidate *other_cand, unsigned int other_avg_db)
+static struct ho_candidate *pick_better_lchan_to_move(bool want_highest_db,
+						      struct ho_candidate *a,
+						      struct ho_candidate *b)
 {
-	if (!*best_cand_p)
-		goto return_other;
+	int a_rxlev;
+	int b_rxlev;
 
-	if (want_highest_db && (*best_avg_db_p < other_avg_db))
-		goto return_other;
-	if (!want_highest_db && (*best_avg_db_p > other_avg_db))
-		goto return_other;
+	if (!a)
+		return b;
+	if (!b)
+		return a;
+
+	a_rxlev = a->rxlev_target + a->rxlev_afs_bias;
+	b_rxlev = b->rxlev_target + b->rxlev_afs_bias;
+
+	if (want_highest_db && a_rxlev < b_rxlev)
+		return b;
+	if (!want_highest_db && a_rxlev > b_rxlev)
+		return b;
 
 	/* The two lchans have identical ratings, prefer picking a dynamic timeslot: free PDCH and allow more timeslot
 	 * type flexibility for further congestion resolution. */
-	if (lchan_is_on_dynamic_ts(other_cand->lchan)) {
+	if (lchan_is_on_dynamic_ts(b->lchan)) {
 		/* If both are dynamic, prefer one that completely (or to a higher degree) frees its timeslot. */
-		if (lchan_is_on_dynamic_ts((*best_cand_p)->lchan)
-		    && ts_usage_count((*best_cand_p)->lchan->ts) < ts_usage_count(other_cand->lchan->ts))
-			return false;
+		if (lchan_is_on_dynamic_ts(a->lchan)
+		    && ts_usage_count(a->lchan->ts) < ts_usage_count(b->lchan->ts))
+			return a;
 		/* If both equally satisfy these preferences, it does not matter which one is picked.
 		 * Give slight preference to moving later dyn TS, so that a free dyn TS may group with following static
 		 * PDCH, though this depends on how the user configured the TS -- not harmful to do so anyway. */
-		goto return_other;
+		return b;
 	}
 
-	/* keep the same candidate. */
-	return false;
-
-return_other:
-	*best_cand_p = other_cand;
-	*best_avg_db_p = other_avg_db;
-	return true;
+	return a;
 }
 
-static struct ho_candidate *pick_best_candidate(int *applied_afs_bias,
-						struct ho_candidate *clist, int clist_len,
+static struct ho_candidate *pick_best_candidate(struct ho_candidate *clist, int clist_len,
 						bool want_highest_db,
 						bool omit_intra_cell_upgrade_to_tchf,
 						bool only_intra_cell_upgrade_to_tchf,
 						uint8_t for_requirement)
 {
 	struct ho_candidate *result = NULL;
-	unsigned int result_avg_rxlev;
-	int result_afs_bias = 0;
 	int i;
-
-	if (applied_afs_bias)
-		*applied_afs_bias = 0;
-
-	result_avg_rxlev = want_highest_db ? 0 : INT_MAX;
 
 	for (i = 0; i < clist_len; i++) {
 		struct ho_candidate *c = &clist[i];
 		bool intra_cell;
 		bool upgrade_to_tch_f;
-		int avg_rxlev;
-		int afs_bias;
 
 		/* For multiple passes of congestion resolution, already handovered candidates are marked by lchan =
 		 * NULL. (though at the time of writing, multiple passes of congestion resolution are DISABLED.) */
@@ -1478,21 +1471,15 @@ static struct ho_candidate *pick_best_candidate(int *applied_afs_bias,
 		    && (intra_cell && upgrade_to_tch_f))
 			continue;
 
-		avg_rxlev = c->rxlev_target;
-
 		/* improve AHS */
 		if (upgrade_to_tch_f)
-			afs_bias = ho_get_hodec2_afs_bias_rxlev(c->bts->ho);
+			c->rxlev_afs_bias = ho_get_hodec2_afs_bias_rxlev(c->bts->ho);
 		else
-			afs_bias = 0;
-		avg_rxlev += afs_bias;
+			c->rxlev_afs_bias = 0;
 
-		if (pick_better_lchan_to_move(want_highest_db, &result, &result_avg_rxlev, c, avg_rxlev))
-			result_afs_bias = afs_bias;
+		result = pick_better_lchan_to_move(want_highest_db, result, c);
 	}
 
-	if (applied_afs_bias)
-		*applied_afs_bias = result_afs_bias;
 	return result;
 }
 
@@ -1556,7 +1543,6 @@ static int bts_resolve_congestion(struct gsm_bts *bts, int tchf_congestion, int 
 	struct ho_candidate *best_cand = NULL;
 	int rc = 0;
 	int any_ho = 0;
-	int is_improved = 0;
 
 	if (tchf_congestion < 0)
 		tchf_congestion = 0;
@@ -1657,7 +1643,7 @@ next_b1:
 	/* TODO: attempt inter-BSC HO if no local cells qualify, and rely on the remote BSS to
 	 * deny receiving the handover if it also considers itself congested. Maybe do that only
 	 * when the cell is absolutely full, i.e. not only min-free-slots. (x) */
-	best_cand = pick_best_candidate(&is_improved, clist, candidates,
+	best_cand = pick_best_candidate(clist, candidates,
 					/* want_highest_db */ true,
 					/* omit_intra_cell_upgrade_to_tchf */ true,
 					/* only_intra_cell_upgrade_to_tchf */ false,
@@ -1666,7 +1652,7 @@ next_b1:
 		any_ho = 1;
 		LOGPHOCAND(best_cand, LOGL_DEBUG, "Best candidate: RX level %d%s\n",
 			   rxlev2dbm(best_cand->rxlev_target),
-			   is_improved ? " (applied AHS->AFS bias)" : "");
+			   best_cand->rxlev_afs_bias ? " (applied AHS->AFS bias)" : "");
 		trigger_ho(best_cand, best_cand->requirements & REQUIREMENT_B_MASK);
 #if 0
 		/* if there is still congestion, mark lchan as deleted
@@ -1698,7 +1684,7 @@ next_b2:
 	 * but simply pick the lowest one.
 	 * Upgrading TCH/H channels obviously only applies when TCH/H is actually congested. */
 	if (tchh_congestion > 0)
-		best_cand = pick_best_candidate(&is_improved, clist, candidates,
+		best_cand = pick_best_candidate(clist, candidates,
 						/* want_highest_db */ false,
 						/* omit_intra_cell_upgrade_to_tchf */ false,
 						/* only_intra_cell_upgrade_to_tchf */ true,
@@ -1707,7 +1693,7 @@ next_b2:
 		any_ho = 1;
 		LOGPHOCAND(best_cand, LOGL_INFO, "Worst candidate: RX level %d from TCH/H -> TCH/F%s\n",
 			   rxlev2dbm(best_cand->rxlev_target),
-			   is_improved ? " (applied AHS -> AFS rxlev bias)" : "");
+			   best_cand->rxlev_afs_bias ? " (applied AHS -> AFS rxlev bias)" : "");
 		trigger_ho(best_cand, best_cand->requirements & REQUIREMENT_B_MASK);
 #if 0
 		/* if there is still congestion, mark lchan as deleted
@@ -1733,7 +1719,7 @@ next_c1:
 	/* Select best candidate that balances congestion.
 	 * Again no remote BSS.
 	 * Again no TCH/H -> F upgrades within the same cell. */
-	best_cand = pick_best_candidate(&is_improved, clist, candidates,
+	best_cand = pick_best_candidate(clist, candidates,
 					/* want_highest_db */ true,
 					/* omit_intra_cell_upgrade_to_tchf */ true,
 					/* only_intra_cell_upgrade_to_tchf */ false,
@@ -1742,7 +1728,7 @@ next_c1:
 		any_ho = 1;
 		LOGPHOCAND(best_cand, LOGL_INFO, "Best candidate: RX level %d%s\n",
 			   rxlev2dbm(best_cand->rxlev_target),
-			   is_improved ? " (applied AHS -> AFS rxlev bias)" : "");
+			   best_cand->rxlev_afs_bias ? " (applied AHS -> AFS rxlev bias)" : "");
 		trigger_ho(best_cand, best_cand->requirements & REQUIREMENT_C_MASK);
 #if 0
 		/* if there is still congestion, mark lchan as deleted
@@ -1774,7 +1760,7 @@ next_c2:
 	/* Look for upgrading TCH/H to TCH/F within the same cell, which balances congestion, again upgrade the TCH/H
 	 * lchan that has the worst reception: */
 	if (tchh_congestion > 0)
-		best_cand = pick_best_candidate(&is_improved, clist, candidates,
+		best_cand = pick_best_candidate(clist, candidates,
 						/* want_highest_db */ false,
 						/* omit_intra_cell_upgrade_to_tchf */ false,
 						/* only_intra_cell_upgrade_to_tchf */ true,
@@ -1785,7 +1771,7 @@ next_c2:
 		any_ho = 1;
 		LOGPHOCAND(best_cand, LOGL_INFO, "Worst candidate: RX level %d from TCH/H -> TCH/F%s\n",
 			   rxlev2dbm(best_cand->rxlev_target),
-			   is_improved ? " (applied AHS -> AFS rxlev bias)" : "");
+			   best_cand->rxlev_afs_bias ? " (applied AHS -> AFS rxlev bias)" : "");
 		trigger_ho(best_cand, best_cand->requirements & REQUIREMENT_C_MASK);
 #if 0
 		/* if there is still congestion, mark lchan as deleted
