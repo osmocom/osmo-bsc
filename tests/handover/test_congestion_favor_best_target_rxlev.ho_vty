@@ -1,0 +1,33 @@
+# A handover should mostly favor the best target rxlev:
+# Two candidates for congestion resolution both reduce the RXLEV for the MS,
+# candidate A results in 10 RXLEV loss, candidate B only in 5 RXLEV loss.
+# But candidate A still results in a better RXLEV at the target than candidate B.
+# So tolerate more RXLEV reduction if the resulting RXLEV still remains better.
+create-bts trx-count 1 timeslots c+s4 TCH/F TCH/F TCH/F TCH/F TCH/F TCH/F TCH/F
+create-bts trx-count 1 timeslots c+s4 TCH/F TCH/F TCH/F TCH/F TCH/F TCH/F TCH/F
+
+network
+ bts 0
+  handover2 min-free-slots tch/f 6
+
+set-ts-use trx 0 0 states * TCH/F TCH/F - - - - -
+meas-rep lchan 0 0 1 0 rxlev 40 rxqual 0 ta 0 neighbors 30
+meas-rep lchan 0 0 2 0 rxlev 30 rxqual 0 ta 0 neighbors 25
+
+congestion-check
+expect-ho from lchan 0 0 1 0 to lchan 1 0 1 0
+expect-ts-use trx 0 0 states * - TCH/F - - - - -
+expect-ts-use trx 1 0 states * TCH/F - - - - - -
+
+# clear measurements for next run
+set-ts-use trx 0 0 states * - - - - - - -
+set-ts-use trx 1 0 states * - - - - - - -
+
+set-ts-use trx 0 0 states * TCH/F TCH/F - - - - -
+meas-rep lchan 0 0 1 0 rxlev 30 rxqual 0 ta 0 neighbors 25
+meas-rep lchan 0 0 2 0 rxlev 40 rxqual 0 ta 0 neighbors 30
+
+congestion-check
+expect-ho from lchan 0 0 2 0 to lchan 1 0 1 0
+expect-ts-use trx 0 0 states * TCH/F - - - - - -
+expect-ts-use trx 1 0 states * TCH/F - - - - - -
