@@ -60,6 +60,9 @@ static int bts_smscb_sched_add_before(struct bts_smscb_page **sched_arr, int sch
 	OSMO_ASSERT(smscb->num_pages <= ARRAY_SIZE(smscb->page));
 	OSMO_ASSERT(smscb->num_pages >= 1);
 
+	if (last_idx >= sched_arr_size)
+		return -ERANGE;
+
 	for (i = smscb->num_pages - 1; i >= 0; i--) {
 		while (sched_arr[arr_idx]) {
 			arr_idx--;
@@ -132,7 +135,7 @@ int bts_smscb_gen_sched_arr(struct bts_smscb_chan_state *cstate, struct bts_smsc
 		}
 		last_page = rc;
 
-		while (last_page < cstate->sched_arr_size) {
+		while (last_page + smscb->input.rep_period < cstate->sched_arr_size) {
 			/* store further instances in a way that the last block of the N+1th instance
 			 * happens no later than "interval" after the last block of the Nth instance */
 			rc = bts_smscb_sched_add_before(arr, arr_size,
