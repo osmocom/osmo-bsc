@@ -704,8 +704,14 @@ int __wrap_abis_rsl_sendmsg(struct msgb *msg)
 	switch (dh->c.msg_type) {
 	case RSL_MT_CHAN_ACTIV:
 		rc = parse_chan_act(lchan, dh->data);
-		if (rc == 0)
+		if (rc == 0) {
+			if (got_chan_req) {
+				fprintf(stderr, "Test script is erratic: a channel is requested"
+					" while a previous channel request is still unhandled\n");
+				exit(1);
+			}
 			got_chan_req = 1;
+		}
 		break;
 	case RSL_MT_RF_CHAN_REL:
 		rc = parse_chan_rel(lchan, dh->data);
