@@ -741,6 +741,11 @@ static struct gsm_lchan *parse_lchan_args(const char **argv)
 	return &ts->lchan[atoi(argv[3])];
 }
 
+static int vty_step = 1;
+
+#define VTY_ECHO() \
+	fprintf(stderr, "\n%d: %s\n", vty_step++, vty->buf)
+
 #define TS_USE " (TCH/F|TCH/H-|TCH/-H|TCH/HH|PDCH" \
 	       "|tch/f|tch/h-|tch/-h|tch/hh|pdch" \
 	       "|-|*)"
@@ -764,6 +769,7 @@ DEFUN(create_n_bts, create_n_bts_cmd,
 {
 	int i;
 	int n = atoi(argv[0]);
+	VTY_ECHO();
 	for (i = 0; i < n; i++)
 		_create_bts(1, NULL, 0);
 	return CMD_SUCCESS;
@@ -779,6 +785,7 @@ DEFUN(create_bts, create_bts_cmd,
       " shorthands: cs+4 = CCCH+SDCCH4; dyn = TCH/F_TCH/H_PDCH\n")
 {
 	int num_trx = atoi(argv[0]);
+	VTY_ECHO();
 	_create_bts(num_trx, argv + 1, argc - 1);
 	return CMD_SUCCESS;
 }
@@ -794,6 +801,7 @@ DEFUN(create_ms, create_ms_cmd,
 	const char *tch_type = argv[1];
 	const char *codec = argv[2];
 	struct gsm_lchan *lchan;
+	VTY_ECHO();
 	fprintf(stderr, "- Creating mobile at BTS %s on "
 		"%s with %s codec\n", bts_nr_str, tch_type, codec);
 	lchan = create_lchan(bts_by_num_str(bts_nr_str),
@@ -878,6 +886,7 @@ DEFUN(meas_rep, meas_rep_cmd,
       "meas-rep " MEAS_REP_ARGS,
       MEAS_REP_DOC MEAS_REP_ARGS_DOC)
 {
+	VTY_ECHO();
 	return _meas_rep(vty, argc, argv);
 }
 
@@ -888,6 +897,7 @@ DEFUN(meas_rep_repeat, meas_rep_repeat_cmd,
       MEAS_REP_ARGS_DOC)
 {
 	int count = atoi(argv[0]);
+	VTY_ECHO();
 	argv += 1;
 	argc -= 1;
 
@@ -900,6 +910,7 @@ DEFUN(congestion_check, congestion_check_cmd,
       "congestion-check",
       "Trigger a congestion check\n")
 {
+	VTY_ECHO();
 	fprintf(stderr, "- Triggering congestion check\n");
 	hodec2_congestion_check(bsc_gsmnet);
 	return CMD_SUCCESS;
@@ -909,6 +920,7 @@ DEFUN(expect_no_chan, expect_no_chan_cmd,
       "expect-no-chan",
       "Expect that no channel request was sent from BSC to any cell\n")
 {
+	VTY_ECHO();
 	fprintf(stderr, "- Expecting no channel request\n");
 	if (new_chan_req) {
 		fprintf(stderr, " * Got channel request at %s\n", gsm_lchan_name(new_chan_req));
@@ -962,6 +974,7 @@ DEFUN(expect_chan, expect_chan_cmd,
       "Expect a channel request from BSC to a cell for a specific lchan\n"
       LCHAN_ARGS_DOC)
 {
+	VTY_ECHO();
 	_expect_chan_activ(parse_lchan_args(argv));
 	return CMD_SUCCESS;
 }
@@ -971,6 +984,7 @@ DEFUN(expect_ho_req, expect_ho_req_cmd,
       "Expect a handover of a given lchan\n"
       LCHAN_ARGS_DOC)
 {
+	VTY_ECHO();
 	_expect_ho_req(parse_lchan_args(argv));
 	return CMD_SUCCESS;
 }
@@ -979,6 +993,7 @@ DEFUN(ho_detection, ho_detection_cmd,
       "ho-detect",
       "Send Handover Detection to the most recent HO target lchan\n")
 {
+	VTY_ECHO();
 	if (!last_chan_req) {
 		fprintf(stderr, "Cannot ack handover/assignment, because no chan request\n");
 		exit(1);
@@ -991,6 +1006,7 @@ DEFUN(ho_complete, ho_complete_cmd,
       "ho-complete",
       "Send Handover Complete for the most recent HO target lchan\n")
 {
+	VTY_ECHO();
 	if (!last_chan_req) {
 		fprintf(stderr, "Cannot ack handover/assignment, because no chan request\n");
 		exit(1);
@@ -1013,6 +1029,7 @@ DEFUN(expect_ho, expect_ho_cmd,
 {
 	struct gsm_lchan *from = parse_lchan_args(argv);
 	struct gsm_lchan *to = parse_lchan_args(argv+4);
+	VTY_ECHO();
 
 	_expect_chan_activ(to);
 	_expect_ho_req(from);
@@ -1026,6 +1043,7 @@ DEFUN(ho_failed, ho_failed_cmd,
       "ho-failed",
       "Fail the most recent handover request\n")
 {
+	VTY_ECHO();
 	if (!last_chan_req) {
 		fprintf(stderr, "Cannot fail handover, because no chan request\n");
 		exit(1);
@@ -1048,6 +1066,7 @@ DEFUN(expect_ts_use, expect_ts_use_cmd,
 {
 	struct gsm_bts *bts = bts_by_num_str(argv[0]);
 	struct gsm_bts_trx *trx = trx_by_num_str(bts, argv[1]);
+	VTY_ECHO();
 	argv += 2;
 	argc -= 2;
 	if (!_expect_ts_use(bts, trx, argv))
@@ -1060,6 +1079,7 @@ DEFUN(codec_f, codec_f_cmd,
 	"Define which codec should be used for new TCH/F lchans (for set-ts-use)\n"
 	"Configure the TCH/F codec to use\nAMR\nEFR\nFR\n")
 {
+	VTY_ECHO();
 	osmo_talloc_replace_string(ctx, &codec_tch_f, argv[0]);
 	return CMD_SUCCESS;
 }
@@ -1069,6 +1089,7 @@ DEFUN(codec_h, codec_h_cmd,
 	"Define which codec should be used for new TCH/H lchans (for set-ts-use)\n"
 	"Configure the TCH/H codec to use\nAMR\nHR\n")
 {
+	VTY_ECHO();
 	osmo_talloc_replace_string(ctx, &codec_tch_h, argv[0]);
 	return CMD_SUCCESS;
 }
@@ -1082,6 +1103,7 @@ DEFUN(set_ts_use, set_ts_use_cmd,
 {
 	struct gsm_bts *bts = bts_by_num_str(argv[0]);
 	struct gsm_bts_trx *trx = trx_by_num_str(bts, argv[1]);
+	VTY_ECHO();
 	argv += 2;
 	argc -= 2;
 	if (!_set_ts_use(bts, trx, argv))
