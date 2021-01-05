@@ -525,20 +525,8 @@ bool _set_ts_use(struct gsm_bts *bts, struct gsm_bts_trx *trx, const char * cons
 
 /* parse channel request */
 
-static int got_chan_req = 0;
-static struct gsm_lchan *chan_req_lchan = NULL;
-
-static int parse_chan_act(struct gsm_lchan *lchan, uint8_t *data)
-{
-	chan_req_lchan = lchan;
-	return 0;
-}
-
-static int parse_chan_rel(struct gsm_lchan *lchan, uint8_t *data)
-{
-	chan_req_lchan = lchan;
-	return 0;
-}
+static struct gsm_lchan *new_chan_req = NULL;
+static struct gsm_lchan *last_chan_req = NULL;
 
 /* parse handover request */
 
@@ -703,35 +691,30 @@ int __wrap_abis_rsl_sendmsg(struct msgb *msg)
 
 	switch (dh->c.msg_type) {
 	case RSL_MT_CHAN_ACTIV:
-		rc = parse_chan_act(lchan, dh->data);
-		if (rc == 0) {
-			if (got_chan_req) {
-				fprintf(stderr, "Test script is erratic: a channel is requested"
-					" while a previous channel request is still unhandled\n");
-				exit(1);
-			}
-			got_chan_req = 1;
+		if (new_chan_req) {
+			fprintf(stderr, "Test script is erratic: a channel is requested"
+				" while a previous channel request is still unhandled\n");
+			exit(1);
 		}
+		new_chan_req = lchan;
 		break;
 	case RSL_MT_RF_CHAN_REL:
-		rc = parse_chan_rel(lchan, dh->data);
-		if (rc == 0)
-			send_chan_act_ack(chan_req_lchan, 0);
+		send_chan_act_ack(lchan, 0);
 
 		/* send dyn TS back to PDCH if unused */
-		switch (chan_req_lchan->ts->pchan_on_init) {
+		switch (lchan->ts->pchan_on_init) {
 		case GSM_PCHAN_TCH_F_TCH_H_PDCH:
 		case GSM_PCHAN_TCH_F_PDCH:
-			switch (chan_req_lchan->ts->pchan_is) {
+			switch (lchan->ts->pchan_is) {
 			case GSM_PCHAN_TCH_H:
-				other_lchan = &chan_req_lchan->ts->lchan[
-					(chan_req_lchan == &chan_req_lchan->ts->lchan[0])?
+				other_lchan = &lchan->ts->lchan[
+					(lchan == &lchan->ts->lchan[0])?
 					1 : 0];
 				if (lchan_state_is(other_lchan, LCHAN_ST_ESTABLISHED))
 					break;
 				/* else fall thru */
 			case GSM_PCHAN_TCH_F:
-				chan_req_lchan->ts->pchan_is = GSM_PCHAN_PDCH;
+				lchan->ts->pchan_is = GSM_PCHAN_PDCH;
 				break;
 			default:
 				break;
@@ -895,7 +878,6 @@ static int _meas_rep(struct vty *vty, int argc, const char **argv)
 			fprintf(stderr, " * Neighbor cell #%d, actual BTS %d: rxlev=%d\n", i, neighbor_bts_nr,
 				nm[i].rxlev);
 	}
-	got_chan_req = 0;
 	gen_meas_rep(lc, rxlev, rxqual, ta, argc, nm);
 	return CMD_SUCCESS;
 }
@@ -943,7 +925,6 @@ DEFUN(congestion_check, congestion_check_cmd,
       "Trigger a congestion check\n")
 {
 	fprintf(stderr, "- Triggering congestion check\n");
-	got_chan_req = 0;
 	hodec2_congestion_check(bsc_gsmnet);
 	return CMD_SUCCESS;
 }
@@ -953,8 +934,8 @@ DEFUN(expect_no_chan, expect_no_chan_cmd,
       "Expect that no channel request was sent from BSC to any cell\n")
 {
 	fprintf(stderr, "- Expecting no channel request\n");
-	if (got_chan_req) {
-		fprintf(stderr, " * Got channel request at %s\n", gsm_lchan_name(chan_req_lchan));
+	if (new_chan_req) {
+		fprintf(stderr, " * Got channel request at %s\n", gsm_lchan_name(new_chan_req));
 		fprintf(stderr, "Test failed, because channel was requested\n");
 		exit(1);
 	}
@@ -966,18 +947,19 @@ static void _expect_chan_activ(struct gsm_lchan *lchan)
 {
 	fprintf(stderr, "- Expecting channel request at %s\n",
 		gsm_lchan_name(lchan));
-	if (!got_chan_req) {
+	if (!new_chan_req) {
 		fprintf(stderr, "Test failed, because no channel was requested\n");
 		exit(1);
 	}
-	fprintf(stderr, " * Got channel request at %s\n", gsm_lchan_name(chan_req_lchan));
-	if (lchan != chan_req_lchan) {
+	last_chan_req = new_chan_req;
+	new_chan_req = NULL;
+	fprintf(stderr, " * Got channel request at %s\n", gsm_lchan_name(last_chan_req));
+	if (lchan != last_chan_req) {
 		fprintf(stderr, "Test failed, because channel was requested on a different lchan than expected\n"
 		       "expected: %s  got: %s\n",
-		       gsm_lchan_name(lchan), gsm_lchan_name(chan_req_lchan));
+		       gsm_lchan_name(lchan), gsm_lchan_name(last_chan_req));
 		exit(1);
 	}
-	got_ho_req = 0;
 	send_chan_act_ack(lchan, 1);
 }
 
@@ -1019,7 +1001,7 @@ DEFUN(ho_detection, ho_detection_cmd,
       "ho-detect",
       "Send Handover Detection to the most recent HO target lchan\n")
 {
-	if (!got_chan_req) {
+	if (!last_chan_req) {
 		fprintf(stderr, "Cannot ack handover/assignment, because no chan request\n");
 		exit(1);
 	}
@@ -1027,7 +1009,7 @@ DEFUN(ho_detection, ho_detection_cmd,
 		fprintf(stderr, "Cannot ack handover/assignment, because no ho request\n");
 		exit(1);
 	}
-	send_ho_detect(chan_req_lchan);
+	send_ho_detect(last_chan_req);
 	return CMD_SUCCESS;
 }
 
@@ -1035,7 +1017,7 @@ DEFUN(ho_complete, ho_complete_cmd,
       "ho-complete",
       "Send Handover Complete for the most recent HO target lchan\n")
 {
-	if (!got_chan_req) {
+	if (!last_chan_req) {
 		fprintf(stderr, "Cannot ack handover/assignment, because no chan request\n");
 		exit(1);
 	}
@@ -1043,7 +1025,7 @@ DEFUN(ho_complete, ho_complete_cmd,
 		fprintf(stderr, "Cannot ack handover/assignment, because no ho request\n");
 		exit(1);
 	}
-	send_ho_complete(chan_req_lchan, true);
+	send_ho_complete(last_chan_req, true);
 	lchan_release_ack(ho_req_lchan);
 	return CMD_SUCCESS;
 }
@@ -1070,14 +1052,13 @@ DEFUN(ho_failed, ho_failed_cmd,
       "ho-failed",
       "Fail the most recent handover request\n")
 {
-	if (!got_chan_req) {
+	if (!last_chan_req) {
 		fprintf(stderr, "Cannot fail handover, because no chan request\n");
 		exit(1);
 	}
-	got_chan_req = 0;
 	got_ho_req = 0;
 	send_ho_complete(ho_req_lchan, false);
-	lchan_release_ack(chan_req_lchan);
+	lchan_release_ack(last_chan_req);
 	return CMD_SUCCESS;
 }
 
