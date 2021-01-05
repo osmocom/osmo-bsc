@@ -142,7 +142,6 @@ static int inp_sig_cb(unsigned int subsys, unsigned int signal,
 			om2k_bts_fsm_reset(isd->trx->bts);
 		else
 			om2k_trx_fsm_reset(isd->trx);
-		break;
 		/* Some datalink for a given TEI/SAPI went down, try to re-start it */
 		e1i_ts = &isd->line->ts[isd->ts_nr-1];
 		OSMO_ASSERT(e1i_ts->type == E1INP_TS_TYPE_SIGN);
