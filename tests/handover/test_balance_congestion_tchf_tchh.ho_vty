@@ -35,8 +35,7 @@ network
 set-ts-use trx 0 0 states		*	TCH/F	TCH/F	-	-	TCH/HH  -	-
 meas-rep lchan * * * * rxlev 20 rxqual 0 ta 0
 congestion-check
-# FAIL: should be the same as above, but seeing a handover from F to H
-expect-ho from lchan 0 0 1 0 to lchan 0 0 6 0
+expect-no-chan
 
 # TCH/F = +1, TCH/H = +2 above congestion. Moving a TCH/H to TCH/F would just
 # reverse the situation to F=+2 H=+1. Nothing happens.
@@ -49,5 +48,4 @@ expect-no-chan
 set-ts-use trx 0 0 states		*	TCH/F	TCH/F	-	-	TCH/HH  TCH/HH  -
 meas-rep lchan * * * * rxlev 20 rxqual 0 ta 0
 congestion-check
-# FAIL: should be the same as above, from lchan 0 0 5 0 to lchan 0 0 3 0, but no handover happens
-expect-no-chan
+expect-ho from lchan 0 0 5 0 to lchan 0 0 3 0

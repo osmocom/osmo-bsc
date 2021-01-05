@@ -1,8 +1,5 @@
-# Almost identical to test_amr_oscillation.ho_vty, this has just two more TCH/H slots in BTS 1, and does not trigger the
-# oscillation bug. The number of free TCH/H in BTS 1 should be unrelated to the congestion status of BTS 0, which
-# illustrates that the even distribution of congestion is fundamentally flawed.
-# This test script shows the desired behavior, though by common sense there should be no reason why we see the bug in
-# test_amr_oscillation.ho_vty and not here.
+# Almost identical to test_amr_oscillation.ho_vty, this has just two more TCH/H slots in BTS 1, and did not trigger the
+# oscillation bug (which has since been fixed, so that both tests behave identically now).
 
 create-bts trx-count 1 timeslots c+s4 TCH/F TCH/F TCH/F TCH/F  TCH/F  TCH/F PDCH
 network

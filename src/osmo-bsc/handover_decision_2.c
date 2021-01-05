@@ -443,6 +443,7 @@ static void check_requirements(struct ho_candidate *c)
 {
 	uint8_t requirement = 0;
 	unsigned int penalty_time;
+	int current_overbooked;
 	c->requirements = 0;
 
 	/* Requirement A */
@@ -625,14 +626,17 @@ static void check_requirements(struct ho_candidate *c)
 
 	/* Requirement C */
 
-	/* the nr of free timeslots of the target cell must be >= the
-	 * free slots of the current cell _after_ handover/assignment */
+	/* the nr of lchans surpassing congestion on the target cell must be <= the lchans surpassing congestion on the
+	 * current cell _after_ handover/assignment */
+	current_overbooked = c->current.min_free_tch - c->current.free_tch;
 	if (requirement & REQUIREMENT_A_TCHF) {
-		if (c->target.free_tchf - 1 >= c->current.free_tch + 1)
+		int target_overbooked = c->target.min_free_tchf - c->target.free_tchf;
+		if (target_overbooked + 1 <= current_overbooked - 1)
 			requirement |= REQUIREMENT_C_TCHF;
 	}
 	if (requirement & REQUIREMENT_A_TCHH) {
-		if (c->target.free_tchh - 1 >= c->current.free_tch + 1)
+		int target_overbooked = c->target.min_free_tchh - c->target.free_tchh;
+		if (target_overbooked + 1 <= current_overbooked - 1)
 			requirement |= REQUIREMENT_C_TCHH;
 	}
 
@@ -1743,8 +1747,7 @@ next_c1:
 		goto exit;
 	}
 
-	LOGPHOBTS(bts, LOGL_DEBUG, "Did not find a best candidate that fulfills requirement C"
-		  " (omitting change from AHS to AFS)\n");
+	LOGPHOBTS(bts, LOGL_DEBUG, "Did not find a best candidate that fulfills requirement C\n");
 
 exit:
 	/* free array */

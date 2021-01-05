@@ -1,6 +1,5 @@
 # Do not oscillate handover from TCH/F to TCH/H on a neighbor due to congestion,
 # and then back to the original cell due to RXLEV.
-# Currently this test script shows the undesired oscillation.
 
 create-bts trx-count 1 timeslots c+s4 TCH/F TCH/F TCH/F TCH/F  TCH/F  TCH/F PDCH
 network
@@ -25,24 +24,5 @@ expect-ts-use trx 1 0 states        *    TCH/F TCH/F TCH/F TCH/F  TCH/H- -     *
 # measurements continue to be the same
 meas-rep lchan 1 0 5 0 rxlev 20 rxqual 0 ta 0 neighbors 40
 
-# FAIL: RXLEV oscillation back to bts 0
-expect-ho from lchan 1 0 5 0 to lchan 0 0 2 0
-expect-ts-use trx 0 0 states        *    TCH/F TCH/F -     -      -      -     *
-expect-ts-use trx 1 0 states        *    TCH/F TCH/F TCH/F TCH/F  -      -     *
-meas-rep lchan 0 0 2 0 rxlev 40 rxqual 0 ta 0 neighbors 20
+# despite the better RXLEV, congestion prevents oscillation back to bts 0
 expect-no-chan
-
-# FAIL: congestion oscillation again to bts 1
-congestion-check
-expect-ho from lchan 0 0 2 0 to lchan 1 0 5 0
-expect-ts-use trx 0 0 states        *    TCH/F -     -     -      -      -     *
-expect-ts-use trx 1 0 states        *    TCH/F TCH/F TCH/F TCH/F  TCH/H- -     *
-
-# FAIL: RXLEV oscillation back to bts 0
-meas-rep lchan 1 0 5 0 rxlev 20 rxqual 0 ta 0 neighbors 40
-expect-ho from lchan 1 0 5 0 to lchan 0 0 2 0
-meas-rep lchan 0 0 2 0 rxlev 40 rxqual 0 ta 0 neighbors 20
-
-# FAIL: congestion oscillation again to bts 1
-congestion-check
-expect-ho from lchan 0 0 2 0 to lchan 1 0 5 0
