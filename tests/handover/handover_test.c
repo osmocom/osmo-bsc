@@ -528,42 +528,8 @@ bool _set_ts_use(struct gsm_bts *bts, struct gsm_bts_trx *trx, const char * cons
 static struct gsm_lchan *new_chan_req = NULL;
 static struct gsm_lchan *last_chan_req = NULL;
 
-/* parse handover request */
-
-static int got_ho_req = 0;
-static struct gsm_lchan *ho_req_lchan = NULL;
-
-static int parse_ho_command(struct gsm_lchan *lchan, uint8_t *data, int len)
-{
-	struct gsm48_hdr *gh = (struct gsm48_hdr *) data;
-	struct gsm48_ho_cmd *ho = (struct gsm48_ho_cmd *) gh->data;
-	int arfcn;
-	struct gsm_bts *neigh;
-
-	switch (gh->msg_type) {
-	case GSM48_MT_RR_HANDO_CMD:
-		arfcn = (ho->cell_desc.arfcn_hi << 8) | ho->cell_desc.arfcn_lo;
-
-		/* look up trx. since every dummy bts uses different arfcn and
-		 * only one trx, it is simple */
-		llist_for_each_entry(neigh, &bsc_gsmnet->bts_list, list) {
-			if (neigh->c0->arfcn != arfcn)
-				continue;
-			ho_req_lchan = lchan;
-			return 0;
-		}
-		break;
-	case GSM48_MT_RR_ASS_CMD:
-		ho_req_lchan = lchan;
-		return 0;
-		break;
-	default:
-		fprintf(stderr, "Error, expecting HO or AS command\n");
-		return -EINVAL;
-	}
-
-	return -1;
-}
+static struct gsm_lchan *new_ho_req = NULL;
+static struct gsm_lchan *last_ho_req = NULL;
 
 /* send channel activation ack */
 static void send_chan_act_ack(struct gsm_lchan *lchan, int act)
@@ -683,6 +649,7 @@ int __wrap_abis_rsl_sendmsg(struct msgb *msg)
 	int rc;
 	struct gsm_lchan *lchan = rsl_lchan_lookup(sign_link->trx, dh->chan_nr, &rc);
 	struct gsm_lchan *other_lchan;
+	struct gsm48_hdr *gh;
 
 	if (rc) {
 		fprintf(stderr, "rsl_lchan_lookup() failed\n");
@@ -726,9 +693,18 @@ int __wrap_abis_rsl_sendmsg(struct msgb *msg)
 
 		break;
 	case RSL_MT_DATA_REQ:
-		rc = parse_ho_command(lchan, msg->l3h, msgb_l3len(msg));
-		if (rc == 0)
-			got_ho_req = 1;
+		gh = (struct gsm48_hdr*)msg->l3h;
+		switch (gh->msg_type) {
+		case GSM48_MT_RR_HANDO_CMD:
+		case GSM48_MT_RR_ASS_CMD:
+			if (new_ho_req) {
+				fprintf(stderr, "Test script is erratic: a handover is requested"
+					" while a previous handover request is still unhandled\n");
+				exit(1);
+			}
+			new_ho_req = lchan;
+			break;
+		}
 		break;
 	case RSL_MT_IPAC_CRCX:
 		break;
@@ -968,15 +944,17 @@ static void _expect_ho_req(struct gsm_lchan *lchan)
 	fprintf(stderr, "- Expecting handover/assignment request at %s\n",
 		gsm_lchan_name(lchan));
 
-	if (!got_ho_req) {
+	if (!new_ho_req) {
 		fprintf(stderr, "Test failed, because no handover was requested\n");
 		exit(1);
 	}
-	fprintf(stderr, " * Got handover/assignment request at %s\n", gsm_lchan_name(ho_req_lchan));
-	if (ho_req_lchan != lchan) {
+	fprintf(stderr, " * Got handover/assignment request at %s\n", gsm_lchan_name(new_ho_req));
+	if (new_ho_req != lchan) {
 		fprintf(stderr, "Test failed, because handover/assignment was not commanded on the expected lchan\n");
 		exit(1);
 	}
+	last_ho_req = new_ho_req;
+	new_ho_req = NULL;
 }
 
 DEFUN(expect_chan, expect_chan_cmd,
@@ -1005,10 +983,6 @@ DEFUN(ho_detection, ho_detection_cmd,
 		fprintf(stderr, "Cannot ack handover/assignment, because no chan request\n");
 		exit(1);
 	}
-	if (!got_ho_req) {
-		fprintf(stderr, "Cannot ack handover/assignment, because no ho request\n");
-		exit(1);
-	}
 	send_ho_detect(last_chan_req);
 	return CMD_SUCCESS;
 }
@@ -1021,12 +995,12 @@ DEFUN(ho_complete, ho_complete_cmd,
 		fprintf(stderr, "Cannot ack handover/assignment, because no chan request\n");
 		exit(1);
 	}
-	if (!got_ho_req) {
+	if (!last_ho_req) {
 		fprintf(stderr, "Cannot ack handover/assignment, because no ho request\n");
 		exit(1);
 	}
 	send_ho_complete(last_chan_req, true);
-	lchan_release_ack(ho_req_lchan);
+	lchan_release_ack(last_ho_req);
 	return CMD_SUCCESS;
 }
 
@@ -1056,8 +1030,11 @@ DEFUN(ho_failed, ho_failed_cmd,
 		fprintf(stderr, "Cannot fail handover, because no chan request\n");
 		exit(1);
 	}
-	got_ho_req = 0;
-	send_ho_complete(ho_req_lchan, false);
+	if (!last_ho_req) {
+		fprintf(stderr, "Cannot fail handover, because no handover request\n");
+		exit(1);
+	}
+	send_ho_complete(last_ho_req, false);
 	lchan_release_ack(last_chan_req);
 	return CMD_SUCCESS;
 }
