@@ -433,113 +433,113 @@ static bool codec_type_is_supported(struct gsm_subscriber_connection *conn,
  *  * The number of free slots are checked for TCH/F and TCH/H slot types
  *    individually.
  */
-static uint8_t check_requirements(struct gsm_lchan *lchan, struct gsm_bts *bts, int tchf_count, int tchh_count)
+static void check_requirements(struct ho_candidate *c, int tchf_count, int tchh_count)
 {
 	int count;
 	uint8_t requirement = 0;
 	unsigned int penalty_time;
-	struct gsm_bts *current_bts = lchan->ts->trx->bts;
+	c->requirements = 0;
 
 	/* Requirement A */
 
 	/* the handover/assignment must not be disabled */
-	if (current_bts == bts) {
-		if (!ho_get_hodec2_as_active(bts->ho)) {
-			LOGPHOLCHAN(lchan, LOGL_DEBUG, "Assignment disabled\n");
-			return 0;
+	if (c->current.bts == c->target.bts) {
+		if (!ho_get_hodec2_as_active(c->target.bts->ho)) {
+			LOGPHOLCHAN(c->current.lchan, LOGL_DEBUG, "Assignment disabled\n");
+			return;
 		}
 	} else {
-		if (!ho_get_ho_active(bts->ho)) {
-			LOGPHOLCHANTOBTS(lchan, bts, LOGL_DEBUG,
+		if (!ho_get_ho_active(c->target.bts->ho)) {
+			LOGPHOLCHANTOBTS(c->current.lchan, c->target.bts, LOGL_DEBUG,
 					 "not a candidate, handover is disabled in target BTS\n");
-			return 0;
+			return;
 		}
 	}
 
 	/* the handover penalty timer must not run for this bts */
-	penalty_time = conn_penalty_time_remaining(lchan->conn, bts);
+	penalty_time = conn_penalty_time_remaining(c->current.lchan->conn, c->target.bts);
 	if (penalty_time) {
-		LOGPHOLCHANTOBTS(lchan, bts, LOGL_DEBUG, "not a candidate, target BTS still in penalty time"
+		LOGPHOLCHANTOBTS(c->current.lchan, c->target.bts, LOGL_DEBUG, "not a candidate, target BTS still in penalty time"
 				 " (%u seconds left)\n", penalty_time);
-		return 0;
+		return;
 	}
 
 	/* compatibility check for codecs.
 	 * if so, the candidates for full rate and half rate are selected */
-	switch (lchan->tch_mode) {
+	switch (c->current.lchan->tch_mode) {
 	case GSM48_CMODE_SPEECH_V1:
-		switch (lchan->type) {
+		switch (c->current.lchan->type) {
 		case GSM_LCHAN_TCH_F: /* mandatory */
 			requirement |= REQUIREMENT_A_TCHF;
 			break;
 		case GSM_LCHAN_TCH_H:
-			if (!bts->codec.hr) {
-				LOGPHOLCHANTOBTS(lchan, bts, LOGL_DEBUG,
+			if (!c->target.bts->codec.hr) {
+				LOGPHOLCHANTOBTS(c->current.lchan, c->target.bts, LOGL_DEBUG,
 						 "tch_mode='%s' type='%s' not supported\n",
 						 get_value_string(gsm48_chan_mode_names,
-								  lchan->tch_mode),
-						 gsm_lchant_name(lchan->type));
+								  c->current.lchan->tch_mode),
+						 gsm_lchant_name(c->current.lchan->type));
 				break;
 			}
-			if (codec_type_is_supported(lchan->conn, GSM0808_SCT_HR1))
+			if (codec_type_is_supported(c->current.lchan->conn, GSM0808_SCT_HR1))
 				requirement |= REQUIREMENT_A_TCHH;
 			break;
 		default:
-			LOGPHOLCHAN(lchan, LOGL_ERROR, "Unexpected channel type: neither TCH/F nor TCH/H for %s\n",
-				    get_value_string(gsm48_chan_mode_names, lchan->tch_mode));
-			return 0;
+			LOGPHOLCHAN(c->current.lchan, LOGL_ERROR, "Unexpected channel type: neither TCH/F nor TCH/H for %s\n",
+				    get_value_string(gsm48_chan_mode_names, c->current.lchan->tch_mode));
+			return;
 		}
 		break;
 	case GSM48_CMODE_SPEECH_EFR:
-		if (!bts->codec.efr) {
-			LOGPHOBTS(bts, LOGL_DEBUG, "EFR not supported\n");
+		if (!c->target.bts->codec.efr) {
+			LOGPHOBTS(c->target.bts, LOGL_DEBUG, "EFR not supported\n");
 			break;
 		}
-		if (codec_type_is_supported(lchan->conn, GSM0808_SCT_FR2))
+		if (codec_type_is_supported(c->current.lchan->conn, GSM0808_SCT_FR2))
 			requirement |= REQUIREMENT_A_TCHF;
 		break;
 	case GSM48_CMODE_SPEECH_AMR:
-		if (!bts->codec.amr) {
-			LOGPHOBTS(bts, LOGL_DEBUG, "AMR not supported\n");
+		if (!c->target.bts->codec.amr) {
+			LOGPHOBTS(c->target.bts, LOGL_DEBUG, "AMR not supported\n");
 			break;
 		}
-		if (codec_type_is_supported(lchan->conn, GSM0808_SCT_FR3))
+		if (codec_type_is_supported(c->current.lchan->conn, GSM0808_SCT_FR3))
 			requirement |= REQUIREMENT_A_TCHF;
-		if (codec_type_is_supported(lchan->conn, GSM0808_SCT_HR3))
+		if (codec_type_is_supported(c->current.lchan->conn, GSM0808_SCT_HR3))
 			requirement |= REQUIREMENT_A_TCHH;
 		break;
 	default:
-		LOGPHOLCHANTOBTS(lchan, bts, LOGL_DEBUG, "Not even considering: src is not a SPEECH mode lchan\n");
+		LOGPHOLCHANTOBTS(c->current.lchan, c->target.bts, LOGL_DEBUG, "Not even considering: src is not a SPEECH mode lchan\n");
 		/* FIXME: should allow handover of non-speech lchans */
-		return 0;
+		return;
 	}
 
 	/* no candidate, because new cell is incompatible */
 	if (!requirement) {
-		LOGPHOLCHANTOBTS(lchan, bts, LOGL_DEBUG, "not a candidate, because codec of MS and BTS are incompatible\n");
-		return 0;
+		LOGPHOLCHANTOBTS(c->current.lchan, c->target.bts, LOGL_DEBUG, "not a candidate, because codec of MS and BTS are incompatible\n");
+		return;
 	}
 
 	/* remove slot types that are not available */
 	if (!tchf_count && requirement & REQUIREMENT_A_TCHF) {
-		LOGPHOLCHANTOBTS(lchan, bts, LOGL_DEBUG,
+		LOGPHOLCHANTOBTS(c->current.lchan, c->target.bts, LOGL_DEBUG,
 				 "removing TCH/F, since all TCH/F lchans are in use\n");
 		requirement &= ~(REQUIREMENT_A_TCHF);
 	}
 	if (!tchh_count && requirement & REQUIREMENT_A_TCHH) {
-		LOGPHOLCHANTOBTS(lchan, bts, LOGL_DEBUG,
+		LOGPHOLCHANTOBTS(c->current.lchan, c->target.bts, LOGL_DEBUG,
 				 "removing TCH/H, since all TCH/H lchans are in use\n");
 		requirement &= ~(REQUIREMENT_A_TCHH);
 	}
 
 	if (!requirement) {
-		LOGPHOLCHANTOBTS(lchan, bts, LOGL_DEBUG, "not a candidate, because no suitable slots available\n");
-		return 0;
+		LOGPHOLCHANTOBTS(c->current.lchan, c->target.bts, LOGL_DEBUG, "not a candidate, because no suitable slots available\n");
+		return;
 	}
 
 	/* omit same channel type on same BTS (will not change anything) */
-	if (bts == current_bts) {
-		switch (lchan->type) {
+	if (c->target.bts == c->current.bts) {
+		switch (c->current.lchan->type) {
 		case GSM_LCHAN_TCH_F:
 			requirement &= ~(REQUIREMENT_A_TCHF);
 			break;
@@ -551,9 +551,9 @@ static uint8_t check_requirements(struct gsm_lchan *lchan, struct gsm_bts *bts, 
 		}
 
 		if (!requirement) {
-			LOGPHOLCHAN(lchan, LOGL_DEBUG,
+			LOGPHOLCHAN(c->current.lchan, LOGL_DEBUG,
 				    "Reassignment within cell not an option, no differing channel types available\n");
-			return 0;
+			return;
 		}
 	}
 
@@ -561,26 +561,26 @@ static uint8_t check_requirements(struct gsm_lchan *lchan, struct gsm_bts *bts, 
 	// This was useful in osmo-nitb. We're in osmo-bsc now and have no idea whether the osmo-msc does
 	// internal or external call control. Maybe a future config switch wants to add this behavior?
 	/* Built-in call control requires equal codec rates. Remove rates that are not equal. */
-	if (lchan->tch_mode == GSM48_CMODE_SPEECH_AMR
-	    && current_bts->network->mncc_recv != mncc_sock_from_cc) {
-		switch (lchan->type) {
+	if (c->current.lchan->tch_mode == GSM48_CMODE_SPEECH_AMR
+	    && c->current.bts->network->mncc_recv != mncc_sock_from_cc) {
+		switch (c->current.lchan->type) {
 		case GSM_LCHAN_TCH_F:
 			if ((requirement & REQUIREMENT_A_TCHF)
-			    && !!memcmp(&current_bts->mr_full, &bts->mr_full,
+			    && !!memcmp(&c->current.bts->mr_full, &c->target.bts->mr_full,
 					sizeof(struct amr_multirate_conf)))
 				requirement &= ~(REQUIREMENT_A_TCHF);
 			if ((requirement & REQUIREMENT_A_TCHH)
-			    && !!memcmp(&current_bts->mr_full, &bts->mr_half,
+			    && !!memcmp(&c->current.bts->mr_full, &c->target.bts->mr_half,
 					sizeof(struct amr_multirate_conf)))
 				requirement &= ~(REQUIREMENT_A_TCHH);
 			break;
 		case GSM_LCHAN_TCH_H:
 			if ((requirement & REQUIREMENT_A_TCHF)
-			    && !!memcmp(&current_bts->mr_half, &bts->mr_full,
+			    && !!memcmp(&c->current.bts->mr_half, &c->target.bts->mr_full,
 					sizeof(struct amr_multirate_conf)))
 				requirement &= ~(REQUIREMENT_A_TCHF);
 			if ((requirement & REQUIREMENT_A_TCHH)
-			    && !!memcmp(&current_bts->mr_half, &bts->mr_half,
+			    && !!memcmp(&c->current.bts->mr_half, &c->target.bts->mr_half,
 					sizeof(struct amr_multirate_conf)))
 				requirement &= ~(REQUIREMENT_A_TCHH);
 			break;
@@ -589,20 +589,20 @@ static uint8_t check_requirements(struct gsm_lchan *lchan, struct gsm_bts *bts, 
 		}
 
 		if (!requirement) {
-			LOGPHOLCHANTOBTS(lchan, bts, LOGL_DEBUG,
+			LOGPHOLCHANTOBTS(c->current.lchan, c->target.bts, LOGL_DEBUG,
 					 "not a candidate, cannot provide identical codec rate\n");
-			return 0;
+			return;
 		}
 	}
 #endif
 
 	/* the maximum number of unsynchronized handovers must no be exceeded */
-	if (current_bts != bts
-	    && bts_handover_count(bts, HO_SCOPE_ALL) >= ho_get_hodec2_ho_max(bts->ho)) {
-		LOGPHOLCHANTOBTS(lchan, bts, LOGL_DEBUG,
+	if (c->current.bts != c->target.bts
+	    && bts_handover_count(c->target.bts, HO_SCOPE_ALL) >= ho_get_hodec2_ho_max(c->target.bts->ho)) {
+		LOGPHOLCHANTOBTS(c->current.lchan, c->target.bts, LOGL_DEBUG,
 				 "not a candidate, number of allowed handovers (%d) would be exceeded\n",
-				 ho_get_hodec2_ho_max(bts->ho));
-		return 0;
+				 ho_get_hodec2_ho_max(c->target.bts->ho));
+		return;
 	}
 
 	/* Requirement B */
@@ -610,11 +610,11 @@ static uint8_t check_requirements(struct gsm_lchan *lchan, struct gsm_bts *bts, 
 	/* the minimum free timeslots that are defined for this cell must
 	 * be maintained _after_ handover/assignment */
 	if (requirement & REQUIREMENT_A_TCHF) {
-		if (tchf_count - 1 >= ho_get_hodec2_tchf_min_slots(bts->ho))
+		if (tchf_count - 1 >= ho_get_hodec2_tchf_min_slots(c->target.bts->ho))
 			requirement |= REQUIREMENT_B_TCHF;
 	}
 	if (requirement & REQUIREMENT_A_TCHH) {
-		if (tchh_count - 1 >= ho_get_hodec2_tchh_min_slots(bts->ho))
+		if (tchh_count - 1 >= ho_get_hodec2_tchh_min_slots(c->target.bts->ho))
 			requirement |= REQUIREMENT_B_TCHH;
 	}
 
@@ -622,8 +622,8 @@ static uint8_t check_requirements(struct gsm_lchan *lchan, struct gsm_bts *bts, 
 
 	/* the nr of free timeslots of the target cell must be >= the
 	 * free slots of the current cell _after_ handover/assignment */
-	count = bts_count_free_ts(current_bts,
-				  (lchan->type == GSM_LCHAN_TCH_H) ?
+	count = bts_count_free_ts(c->current.bts,
+				  (c->current.lchan->type == GSM_LCHAN_TCH_H) ?
 				   GSM_PCHAN_TCH_H : GSM_PCHAN_TCH_F);
 	if (requirement & REQUIREMENT_A_TCHF) {
 		if (tchf_count - 1 >= count + 1)
@@ -635,63 +635,63 @@ static uint8_t check_requirements(struct gsm_lchan *lchan, struct gsm_bts *bts, 
 	}
 
 	/* return mask of fulfilled requirements */
-	return requirement;
+	c->requirements = requirement;
 }
 
-static uint8_t check_requirements_remote_bss(struct gsm_lchan *lchan,
-					     const struct gsm0808_cell_id_list2 *cil)
+static void check_requirements_remote_bss(struct ho_candidate *c)
 {
 	uint8_t requirement = 0;
 	unsigned int penalty_time;
+	c->requirements = 0;
 
 	/* Requirement A */
 
 	/* the handover penalty timer must not run for this bts */
-	penalty_time = conn_penalty_time_remaining(lchan->conn, cil);
+	penalty_time = conn_penalty_time_remaining(c->current.lchan->conn, c->target.cil);
 	if (penalty_time) {
-		LOGPHOLCHANTOREMOTE(lchan, cil, LOGL_DEBUG,
+		LOGPHOLCHANTOREMOTE(c->current.lchan, c->target.cil, LOGL_DEBUG,
 				    "not a candidate, target BSS still in penalty time"
 				    " (%u seconds left)\n", penalty_time);
-		return 0;
+		return;
 	}
 
 	/* compatibility check for codecs -- we have no notion of what the remote BSS supports. We can
 	 * only assume that a handover would work, and use only the local requirements. */
-	switch (lchan->tch_mode) {
+	switch (c->current.lchan->tch_mode) {
 	case GSM48_CMODE_SPEECH_V1:
-		switch (lchan->type) {
+		switch (c->current.lchan->type) {
 		case GSM_LCHAN_TCH_F: /* mandatory */
 			requirement |= REQUIREMENT_A_TCHF;
 			break;
 		case GSM_LCHAN_TCH_H:
-			if (codec_type_is_supported(lchan->conn, GSM0808_SCT_HR1))
+			if (codec_type_is_supported(c->current.lchan->conn, GSM0808_SCT_HR1))
 				requirement |= REQUIREMENT_A_TCHH;
 			break;
 		default:
-			LOGPHOLCHAN(lchan, LOGL_ERROR, "Unexpected channel type: neither TCH/F nor TCH/H for %s\n",
-				    get_value_string(gsm48_chan_mode_names, lchan->tch_mode));
-			return 0;
+			LOGPHOLCHAN(c->current.lchan, LOGL_ERROR, "Unexpected channel type: neither TCH/F nor TCH/H for %s\n",
+				    get_value_string(gsm48_chan_mode_names, c->current.lchan->tch_mode));
+			return;
 		}
 		break;
 	case GSM48_CMODE_SPEECH_EFR:
-		if (codec_type_is_supported(lchan->conn, GSM0808_SCT_FR2))
+		if (codec_type_is_supported(c->current.lchan->conn, GSM0808_SCT_FR2))
 			requirement |= REQUIREMENT_A_TCHF;
 		break;
 	case GSM48_CMODE_SPEECH_AMR:
-		if (codec_type_is_supported(lchan->conn, GSM0808_SCT_FR3))
+		if (codec_type_is_supported(c->current.lchan->conn, GSM0808_SCT_FR3))
 			requirement |= REQUIREMENT_A_TCHF;
-		if (codec_type_is_supported(lchan->conn, GSM0808_SCT_HR3))
+		if (codec_type_is_supported(c->current.lchan->conn, GSM0808_SCT_HR3))
 			requirement |= REQUIREMENT_A_TCHH;
 		break;
 	default:
-		LOGPHOLCHAN(lchan, LOGL_DEBUG, "Not even considering: src is not a SPEECH mode lchan\n");
+		LOGPHOLCHAN(c->current.lchan, LOGL_DEBUG, "Not even considering: src is not a SPEECH mode lchan\n");
 		/* FIXME: should allow handover of non-speech lchans */
-		return 0;
+		return;
 	}
 
 	if (!requirement) {
-		LOGPHOLCHAN(lchan, LOGL_ERROR, "lchan doesn't fit its own requirements??\n");
-		return 0;
+		LOGPHOLCHAN(c->current.lchan, LOGL_ERROR, "lchan doesn't fit its own requirements??\n");
+		return;
 	}
 
 	/* Requirement B and C */
@@ -704,7 +704,7 @@ static uint8_t check_requirements_remote_bss(struct gsm_lchan *lchan,
 		requirement |= REQUIREMENT_B_TCHH | REQUIREMENT_C_TCHH;
 
 	/* return mask of fulfilled requirements */
-	return requirement;
+	c->requirements = requirement;
 }
 
 /* Trigger handover or assignment depending on the target BTS */
@@ -880,7 +880,7 @@ static void collect_assignment_candidate(struct gsm_lchan *lchan, struct ho_cand
 			.rxlev = rxlev_current, /* same cell, same rxlev */
 		},
 	};
-	c.requirements = check_requirements(c.current.lchan, c.target.bts, tchf_count, tchh_count),
+	check_requirements(&c, tchf_count, tchh_count);
 
 	debug_candidate(&c, tchf_count, tchh_count);
 
@@ -987,10 +987,9 @@ static void collect_handover_candidate(struct gsm_lchan *lchan, struct neigh_mea
 	if (neighbor_bts) {
 		tchf_count = bts_count_free_ts(neighbor_bts, GSM_PCHAN_TCH_F);
 		tchh_count = bts_count_free_ts(neighbor_bts, GSM_PCHAN_TCH_H);
-		c.requirements = check_requirements(lchan, neighbor_bts, tchf_count,
-						    tchh_count);
+		check_requirements(&c, tchf_count, tchh_count);
 	} else
-		c.requirements = check_requirements_remote_bss(lchan, neighbor_cil);
+		check_requirements_remote_bss(&c);
 
 	debug_candidate(&c, tchf_count, tchh_count);
 
