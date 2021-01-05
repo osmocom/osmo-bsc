@@ -971,11 +971,6 @@ static void _expect_chan_activ(struct gsm_lchan *lchan)
 		       gsm_lchan_name(lchan), gsm_lchan_name(chan_req_lchan));
 		exit(1);
 	}
-}
-
-static void _ack_chan_activ(struct gsm_lchan *lchan)
-{
-	fprintf(stderr, "- Acknowledging channel request on %s\n", gsm_lchan_name(lchan));
 	got_ho_req = 0;
 	send_chan_act_ack(lchan, 1);
 }
@@ -1002,15 +997,6 @@ DEFUN(expect_chan, expect_chan_cmd,
       LCHAN_ARGS_DOC)
 {
 	_expect_chan_activ(parse_lchan_args(argv));
-	return CMD_SUCCESS;
-}
-
-DEFUN(ack_chan, ack_chan_cmd,
-      "ack-chan",
-      "ACK a previous Channel Request\n")
-{
-	OSMO_ASSERT(got_chan_req);
-	_ack_chan_activ(chan_req_lchan);
 	return CMD_SUCCESS;
 }
 
@@ -1067,7 +1053,6 @@ DEFUN(expect_ho, expect_ho_cmd,
 	struct gsm_lchan *to = parse_lchan_args(argv+4);
 
 	_expect_chan_activ(to);
-	_ack_chan_activ(to);
 	_expect_ho_req(from);
 	send_ho_detect(to);
 	send_ho_complete(to, true);
@@ -1152,7 +1137,6 @@ static void ho_test_vty_init()
 	install_element(CONFIG_NODE, &congestion_check_cmd);
 	install_element(CONFIG_NODE, &expect_no_chan_cmd);
 	install_element(CONFIG_NODE, &expect_chan_cmd);
-	install_element(CONFIG_NODE, &ack_chan_cmd);
 	install_element(CONFIG_NODE, &expect_ho_req_cmd);
 	install_element(CONFIG_NODE, &ho_detection_cmd);
 	install_element(CONFIG_NODE, &ho_complete_cmd);
