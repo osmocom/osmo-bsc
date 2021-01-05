@@ -104,6 +104,8 @@ struct ho_candidate {
 		struct gsm_lchan *lchan;
 		struct gsm_bts *bts;
 		int rxlev;
+		int free_tch;
+		int min_free_tch;
 	} current;
 	struct {
 		struct neighbor_ident_key nik;	/* neighbor ARFCN+BSIC */
@@ -111,6 +113,10 @@ struct ho_candidate {
 		struct gsm_bts *bts;
 		int rxlev;
 		int rxlev_afs_bias;
+		int free_tchf;
+		int min_free_tchf;
+		int free_tchh;
+		int min_free_tchh;
 	} target;
 };
 
@@ -433,9 +439,8 @@ static bool codec_type_is_supported(struct gsm_subscriber_connection *conn,
  *  * The number of free slots are checked for TCH/F and TCH/H slot types
  *    individually.
  */
-static void check_requirements(struct ho_candidate *c, int tchf_count, int tchh_count)
+static void check_requirements(struct ho_candidate *c)
 {
-	int count;
 	uint8_t requirement = 0;
 	unsigned int penalty_time;
 	c->requirements = 0;
@@ -521,12 +526,12 @@ static void check_requirements(struct ho_candidate *c, int tchf_count, int tchh_
 	}
 
 	/* remove slot types that are not available */
-	if (!tchf_count && requirement & REQUIREMENT_A_TCHF) {
+	if (!c->target.free_tchf && (requirement & REQUIREMENT_A_TCHF)) {
 		LOGPHOLCHANTOBTS(c->current.lchan, c->target.bts, LOGL_DEBUG,
 				 "removing TCH/F, since all TCH/F lchans are in use\n");
 		requirement &= ~(REQUIREMENT_A_TCHF);
 	}
-	if (!tchh_count && requirement & REQUIREMENT_A_TCHH) {
+	if (!c->target.free_tchh && (requirement & REQUIREMENT_A_TCHH)) {
 		LOGPHOLCHANTOBTS(c->current.lchan, c->target.bts, LOGL_DEBUG,
 				 "removing TCH/H, since all TCH/H lchans are in use\n");
 		requirement &= ~(REQUIREMENT_A_TCHH);
@@ -610,11 +615,11 @@ static void check_requirements(struct ho_candidate *c, int tchf_count, int tchh_
 	/* the minimum free timeslots that are defined for this cell must
 	 * be maintained _after_ handover/assignment */
 	if (requirement & REQUIREMENT_A_TCHF) {
-		if (tchf_count - 1 >= ho_get_hodec2_tchf_min_slots(c->target.bts->ho))
+		if (c->target.free_tchf - 1 >= c->target.min_free_tchf)
 			requirement |= REQUIREMENT_B_TCHF;
 	}
 	if (requirement & REQUIREMENT_A_TCHH) {
-		if (tchh_count - 1 >= ho_get_hodec2_tchh_min_slots(c->target.bts->ho))
+		if (c->target.free_tchh - 1 >= c->target.min_free_tchh)
 			requirement |= REQUIREMENT_B_TCHH;
 	}
 
@@ -622,15 +627,12 @@ static void check_requirements(struct ho_candidate *c, int tchf_count, int tchh_
 
 	/* the nr of free timeslots of the target cell must be >= the
 	 * free slots of the current cell _after_ handover/assignment */
-	count = bts_count_free_ts(c->current.bts,
-				  (c->current.lchan->type == GSM_LCHAN_TCH_H) ?
-				   GSM_PCHAN_TCH_H : GSM_PCHAN_TCH_F);
 	if (requirement & REQUIREMENT_A_TCHF) {
-		if (tchf_count - 1 >= count + 1)
+		if (c->target.free_tchf - 1 >= c->current.free_tch + 1)
 			requirement |= REQUIREMENT_C_TCHF;
 	}
 	if (requirement & REQUIREMENT_A_TCHH) {
-		if (tchh_count - 1 >= count + 1)
+		if (c->target.free_tchh - 1 >= c->current.free_tch + 1)
 			requirement |= REQUIREMENT_C_TCHH;
 	}
 
@@ -826,12 +828,11 @@ static int trigger_ho(struct ho_candidate *c, uint8_t requirements)
 		  " less-or-equal congestion"))
 
 /* verbosely log about a handover candidate */
-static inline void debug_candidate(struct ho_candidate *candidate,
-				   int tchf_count, int tchh_count)
+static inline void debug_candidate(struct ho_candidate *candidate)
 {
 #define HO_CANDIDATE_FMT(tchx, TCHX) "TCH/" #TCHX "={free %d (want %d), " REQUIREMENTS_FMT "}"
 #define HO_CANDIDATE_ARGS(tchx, TCHX) \
-	     tch##tchx##_count, ho_get_hodec2_tch##tchx##_min_slots(candidate->target.bts->ho), \
+	     candidate->target.free_tch##tchx, candidate->target.min_free_tch##tchx, \
 	     REQUIREMENTS_ARGS(candidate->requirements, TCHX)
 
 	if (!candidate->target.bts && !candidate->target.cil)
@@ -858,16 +859,31 @@ static inline void debug_candidate(struct ho_candidate *candidate,
 		     HO_CANDIDATE_ARGS(f, F), HO_CANDIDATE_ARGS(h, H));
 }
 
+static void candidate_set_free_tch(struct ho_candidate *c)
+{
+	c->current.free_tch = bts_count_free_ts(c->current.bts, c->current.lchan->ts->pchan_is);
+	switch (c->current.lchan->ts->pchan_is) {
+	case GSM_PCHAN_TCH_F:
+		c->current.min_free_tch = ho_get_hodec2_tchf_min_slots(c->current.bts->ho);
+		break;
+	case GSM_PCHAN_TCH_H:
+		c->current.min_free_tch = ho_get_hodec2_tchh_min_slots(c->current.bts->ho);
+		break;
+	default:
+		break;
+	}
+	c->target.free_tchf = bts_count_free_ts(c->target.bts, GSM_PCHAN_TCH_F);
+	c->target.min_free_tchf = ho_get_hodec2_tchf_min_slots(c->target.bts->ho);
+	c->target.free_tchh = bts_count_free_ts(c->target.bts, GSM_PCHAN_TCH_H);
+	c->target.min_free_tchh = ho_get_hodec2_tchh_min_slots(c->target.bts->ho);
+}
+
 /* add candidate for re-assignment within the current cell */
 static void collect_assignment_candidate(struct gsm_lchan *lchan, struct ho_candidate *clist,
 					 unsigned int *candidates, int rxlev_current)
 {
 	struct gsm_bts *bts = lchan->ts->trx->bts;
-	int tchf_count, tchh_count;
 	struct ho_candidate c;
-
-	tchf_count = bts_count_free_ts(bts, GSM_PCHAN_TCH_F);
-	tchh_count = bts_count_free_ts(bts, GSM_PCHAN_TCH_H);
 
 	c = (struct ho_candidate){
 		.current = {
@@ -880,9 +896,10 @@ static void collect_assignment_candidate(struct gsm_lchan *lchan, struct ho_cand
 			.rxlev = rxlev_current, /* same cell, same rxlev */
 		},
 	};
-	check_requirements(&c, tchf_count, tchh_count);
+	candidate_set_free_tch(&c);
+	check_requirements(&c);
 
-	debug_candidate(&c, tchf_count, tchh_count);
+	debug_candidate(&c);
 
 	if (!c.requirements)
 		return;
@@ -898,8 +915,6 @@ static void collect_handover_candidate(struct gsm_lchan *lchan, struct neigh_mea
 				       int *neighbors_count)
 {
 	struct gsm_bts *bts = lchan->ts->trx->bts;
-	int tchf_count = 0;
-	int tchh_count = 0;
 	struct gsm_bts *neighbor_bts;
 	const struct gsm0808_cell_id_list2 *neighbor_cil;
 	struct neighbor_ident_key ni = {
@@ -958,6 +973,7 @@ static void collect_handover_candidate(struct gsm_lchan *lchan, struct neigh_mea
 			.rxlev = neigh_meas_avg(nmp, ho_get_hodec2_rxlev_neigh_avg_win(bts->ho)),
 		},
 	};
+	candidate_set_free_tch(&c);
 
 	/* Heed rxlev hysteresis only if the RXLEV/RXQUAL/TA levels of the MS aren't critically bad and
 	 * we're just looking for an improvement. If levels are critical, we desperately need a handover
@@ -985,13 +1001,11 @@ static void collect_handover_candidate(struct gsm_lchan *lchan, struct neigh_mea
 	}
 
 	if (neighbor_bts) {
-		tchf_count = bts_count_free_ts(neighbor_bts, GSM_PCHAN_TCH_F);
-		tchh_count = bts_count_free_ts(neighbor_bts, GSM_PCHAN_TCH_H);
-		check_requirements(&c, tchf_count, tchh_count);
+		check_requirements(&c);
 	} else
 		check_requirements_remote_bss(&c);
 
-	debug_candidate(&c, tchf_count, tchh_count);
+	debug_candidate(&c);
 
 	if (!c.requirements)
 		return;
@@ -1751,7 +1765,7 @@ exit:
 static void bts_congestion_check(struct gsm_bts *bts)
 {
 	int min_free_tchf, min_free_tchh;
-	int tchf_count, tchh_count;
+	int free_tchf, free_tchh;
 
 	global_ho_reason = HO_REASON_CONGESTION;
 
@@ -1777,19 +1791,19 @@ static void bts_congestion_check(struct gsm_bts *bts)
 		return;
 	}
 
-	tchf_count = bts_count_free_ts(bts, GSM_PCHAN_TCH_F);
-	tchh_count = bts_count_free_ts(bts, GSM_PCHAN_TCH_H);
+	free_tchf = bts_count_free_ts(bts, GSM_PCHAN_TCH_F);
+	free_tchh = bts_count_free_ts(bts, GSM_PCHAN_TCH_H);
 	LOGPHOBTS(bts, LOGL_INFO, "Congestion check: (free/want-free) TCH/F=%d/%d TCH/H=%d/%d\n",
-		  tchf_count, min_free_tchf, tchh_count, min_free_tchh);
+		  free_tchf, min_free_tchf, free_tchh, min_free_tchh);
 
 	/* only check BTS if congested */
-	if (tchf_count >= min_free_tchf && tchh_count >= min_free_tchh) {
+	if (free_tchf >= min_free_tchf && free_tchh >= min_free_tchh) {
 		LOGPHOBTS(bts, LOGL_DEBUG, "Not congested\n");
 		return;
 	}
 
 	LOGPHOBTS(bts, LOGL_DEBUG, "Attempting to resolve congestion...\n");
-	bts_resolve_congestion(bts, min_free_tchf - tchf_count, min_free_tchh - tchh_count);
+	bts_resolve_congestion(bts, min_free_tchf - free_tchf, min_free_tchh - free_tchh);
 }
 
 void hodec2_congestion_check(struct gsm_network *net)
