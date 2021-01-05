@@ -79,10 +79,10 @@
 	     ## args)
 
 #define LOGPHOCAND(candidate, level, fmt, args...) do {\
-	if ((candidate)->bts) \
-		LOGPHOLCHANTOBTS((candidate)->lchan, (candidate)->bts, level, fmt, ## args); \
-	else if ((candidate)->cil) \
-		LOGPHOLCHANTOREMOTE((candidate)->lchan, (candidate)->cil, level, fmt, ## args); \
+	if ((candidate)->target.bts) \
+		LOGPHOLCHANTOBTS((candidate)->current.lchan, (candidate)->target.bts, level, fmt, ## args); \
+	else if ((candidate)->target.cil) \
+		LOGPHOLCHANTOREMOTE((candidate)->current.lchan, (candidate)->target.cil, level, fmt, ## args); \
 	} while(0)
 
 
@@ -99,14 +99,19 @@
 #define REQUIREMENT_C_MASK	(REQUIREMENT_C_TCHF | REQUIREMENT_C_TCHH)
 
 struct ho_candidate {
-	struct gsm_lchan *lchan;	/* candidate for whom */
-	struct neighbor_ident_key nik;	/* neighbor ARFCN+BSIC */
-	struct gsm_bts *bts;		/* target BTS in local BSS */
-	const struct gsm0808_cell_id_list2 *cil; /* target cells in remote BSS */
 	uint8_t requirements;		/* what is fulfilled */
-	int rxlev_current;
-	int rxlev_target;
-	int rxlev_afs_bias;
+	struct {
+		struct gsm_lchan *lchan;
+		struct gsm_bts *bts;
+		int rxlev;
+	} current;
+	struct {
+		struct neighbor_ident_key nik;	/* neighbor ARFCN+BSIC */
+		const struct gsm0808_cell_id_list2 *cil; /* target cells in remote BSS */
+		struct gsm_bts *bts;
+		int rxlev;
+		int rxlev_afs_bias;
+	} target;
 };
 
 enum ho_reason {
@@ -705,24 +710,21 @@ static uint8_t check_requirements_remote_bss(struct gsm_lchan *lchan,
 /* Trigger handover or assignment depending on the target BTS */
 static int trigger_local_ho_or_as(struct ho_candidate *c, uint8_t requirements)
 {
-	struct gsm_lchan *lchan = c->lchan;
-	struct gsm_bts *new_bts = c->bts;
 	struct handover_out_req req;
-	struct gsm_bts *current_bts = lchan->ts->trx->bts;
 	int afs_bias = 0;
 	bool full_rate = false;
 
 	/* afs_bias becomes > 0, if AFS is used and is improved */
-	if (lchan->tch_mode == GSM48_CMODE_SPEECH_AMR)
-		afs_bias = ho_get_hodec2_afs_bias_rxlev(new_bts->ho);
+	if (c->current.lchan->tch_mode == GSM48_CMODE_SPEECH_AMR)
+		afs_bias = ho_get_hodec2_afs_bias_rxlev(c->target.bts->ho);
 
 	/* select TCH rate, prefer TCH/F if AFS is improved */
-	switch (lchan->type) {
+	switch (c->current.lchan->type) {
 	case GSM_LCHAN_TCH_F:
 		/* keep on full rate, if TCH/F is a candidate */
 		if ((requirements & REQUIREMENT_TCHF_MASK)) {
-			if (current_bts == new_bts) {
-				LOGPHOLCHAN(lchan, LOGL_INFO, "Not performing assignment: Already on target type\n");
+			if (c->current.bts == c->target.bts) {
+				LOGPHOLCHAN(c->current.lchan, LOGL_INFO, "Not performing assignment: Already on target type\n");
 				return 0;
 			}
 			full_rate = true;
@@ -730,7 +732,7 @@ static int trigger_local_ho_or_as(struct ho_candidate *c, uint8_t requirements)
 		}
 		/* change to half rate */
 		if (!(requirements & REQUIREMENT_TCHH_MASK)) {
-			LOGPHOLCHANTOBTS(lchan, new_bts, LOGL_ERROR,
+			LOGPHOLCHANTOBTS(c->current.lchan, c->target.bts, LOGL_ERROR,
 					 "neither TCH/F nor TCH/H requested, aborting ho/as\n");
 			return -EINVAL;
 		}
@@ -749,35 +751,35 @@ static int trigger_local_ho_or_as(struct ho_candidate *c, uint8_t requirements)
 		}
 		/* keep on half rate */
 		if (!(requirements & REQUIREMENT_TCHH_MASK)) {
-			LOGPHOLCHANTOBTS(lchan, new_bts, LOGL_ERROR,
+			LOGPHOLCHANTOBTS(c->current.lchan, c->target.bts, LOGL_ERROR,
 					 "neither TCH/F nor TCH/H requested, aborting ho/as\n");
 			return -EINVAL;
 		}
-		if (current_bts == new_bts) {
-			LOGPHOLCHAN(lchan, LOGL_INFO, "Not performing assignment: Already on target type\n");
+		if (c->current.bts == c->target.bts) {
+			LOGPHOLCHAN(c->current.lchan, LOGL_INFO, "Not performing assignment: Already on target type\n");
 			return 0;
 		}
 		break;
 	default:
-		LOGPHOLCHANTOBTS(lchan, new_bts, LOGL_ERROR, "lchan is neither TCH/F nor TCH/H, aborting ho/as\n");
+		LOGPHOLCHANTOBTS(c->current.lchan, c->target.bts, LOGL_ERROR, "c->current.lchan is neither TCH/F nor TCH/H, aborting ho/as\n");
 		return -EINVAL;
 	}
 
 	/* trigger handover or assignment */
-	if  (current_bts == new_bts)
-		LOGPHOLCHAN(lchan, LOGL_NOTICE, "Triggering assignment to %s, due to %s\n",
+	if  (c->current.bts == c->target.bts)
+		LOGPHOLCHAN(c->current.lchan, LOGL_NOTICE, "Triggering assignment to %s, due to %s\n",
 			    full_rate ? "TCH/F" : "TCH/H",
 			    ho_reason_name(global_ho_reason));
 	else
-		LOGPHOLCHANTOBTS(lchan, new_bts, LOGL_INFO,
+		LOGPHOLCHANTOBTS(c->current.lchan, c->target.bts, LOGL_INFO,
 				 "Triggering handover to %s, due to %s\n",
 				 full_rate ? "TCH/F" : "TCH/H",
 				 ho_reason_name(global_ho_reason));
 
 	req = (struct handover_out_req){
 		.from_hodec_id = HODEC2,
-		.old_lchan = lchan,
-		.target_nik = *bts_ident_key(new_bts),
+		.old_lchan = c->current.lchan,
+		.target_nik = *bts_ident_key(c->target.bts),
 		.new_lchan_type = full_rate? GSM_LCHAN_TCH_F : GSM_LCHAN_TCH_H,
 	};
 	handover_request(&req);
@@ -788,14 +790,14 @@ static int trigger_remote_bss_ho(struct ho_candidate *c, uint8_t requirements)
 {
 	struct handover_out_req req;
 
-	LOGPHOLCHANTOREMOTE(c->lchan, c->cil, LOGL_INFO,
+	LOGPHOLCHANTOREMOTE(c->current.lchan, c->target.cil, LOGL_INFO,
 			    "Triggering inter-BSC handover, due to %s\n",
 			    ho_reason_name(global_ho_reason));
 
 	req = (struct handover_out_req){
 		.from_hodec_id = HODEC2,
-		.old_lchan = c->lchan,
-		.target_nik = c->nik,
+		.old_lchan = c->current.lchan,
+		.target_nik = c->target.nik,
 	};
 	handover_request(&req);
 	return 0;
@@ -803,7 +805,7 @@ static int trigger_remote_bss_ho(struct ho_candidate *c, uint8_t requirements)
 
 static int trigger_ho(struct ho_candidate *c, uint8_t requirements)
 {
-	if (c->bts)
+	if (c->target.bts)
 		return trigger_local_ho_or_as(c, requirements);
 	else
 		return trigger_remote_bss_ho(c, requirements);
@@ -827,34 +829,32 @@ static int trigger_ho(struct ho_candidate *c, uint8_t requirements)
 static inline void debug_candidate(struct ho_candidate *candidate,
 				   int tchf_count, int tchh_count)
 {
-	struct gsm_lchan *lchan = candidate->lchan;
-
 #define HO_CANDIDATE_FMT(tchx, TCHX) "TCH/" #TCHX "={free %d (want %d), " REQUIREMENTS_FMT "}"
 #define HO_CANDIDATE_ARGS(tchx, TCHX) \
-	     tch##tchx##_count, ho_get_hodec2_tch##tchx##_min_slots(candidate->bts->ho), \
+	     tch##tchx##_count, ho_get_hodec2_tch##tchx##_min_slots(candidate->target.bts->ho), \
 	     REQUIREMENTS_ARGS(candidate->requirements, TCHX)
 
-	if (!candidate->bts && !candidate->cil)
-		LOGPHOLCHAN(lchan, LOGL_DEBUG, "Empty candidate\n");
-	if (candidate->bts && candidate->cil)
-		LOGPHOLCHAN(lchan, LOGL_ERROR, "Invalid candidate: both local- and remote-BSS target\n");
+	if (!candidate->target.bts && !candidate->target.cil)
+		LOGPHOLCHAN(candidate->current.lchan, LOGL_DEBUG, "Empty candidate\n");
+	if (candidate->target.bts && candidate->target.cil)
+		LOGPHOLCHAN(candidate->current.lchan, LOGL_ERROR, "Invalid candidate: both local- and remote-BSS target\n");
 
-	if (candidate->cil)
-		LOGPHOLCHANTOREMOTE(lchan, candidate->cil, LOGL_DEBUG,
+	if (candidate->target.cil)
+		LOGPHOLCHANTOREMOTE(candidate->current.lchan, candidate->target.cil, LOGL_DEBUG,
 				    "RX level %d dBm -> %d dBm\n",
-				    rxlev2dbm(candidate->rxlev_current), rxlev2dbm(candidate->rxlev_target));
+				    rxlev2dbm(candidate->current.rxlev), rxlev2dbm(candidate->target.rxlev));
 
-	if (candidate->bts == lchan->ts->trx->bts)
-		LOGPHOLCHANTOBTS(lchan, candidate->bts, LOGL_DEBUG,
+	if (candidate->target.bts == candidate->current.bts)
+		LOGPHOLCHANTOBTS(candidate->current.lchan, candidate->target.bts, LOGL_DEBUG,
 		     "RX level %d dBm; "
 		     HO_CANDIDATE_FMT(f, F) "; " HO_CANDIDATE_FMT(h, H) "\n",
-		     rxlev2dbm(candidate->rxlev_current),
+		     rxlev2dbm(candidate->current.rxlev),
 		     HO_CANDIDATE_ARGS(f, F), HO_CANDIDATE_ARGS(h, H));
-	else if (candidate->bts)
-		LOGPHOLCHANTOBTS(lchan, candidate->bts, LOGL_DEBUG,
+	else if (candidate->target.bts)
+		LOGPHOLCHANTOBTS(candidate->current.lchan, candidate->target.bts, LOGL_DEBUG,
 		     "RX level %d dBm -> %d dBm; "
 		     HO_CANDIDATE_FMT(f, F) "; " HO_CANDIDATE_FMT(h, H) "\n",
-		     rxlev2dbm(candidate->rxlev_current), rxlev2dbm(candidate->rxlev_target),
+		     rxlev2dbm(candidate->current.rxlev), rxlev2dbm(candidate->target.rxlev),
 		     HO_CANDIDATE_ARGS(f, F), HO_CANDIDATE_ARGS(h, H));
 }
 
@@ -870,12 +870,17 @@ static void collect_assignment_candidate(struct gsm_lchan *lchan, struct ho_cand
 	tchh_count = bts_count_free_ts(bts, GSM_PCHAN_TCH_H);
 
 	c = (struct ho_candidate){
-		.lchan = lchan,
-		.bts = bts,
-		.requirements = check_requirements(lchan, bts, tchf_count, tchh_count),
-		.rxlev_current = rxlev_current,
-		.rxlev_target = rxlev_current, /* same cell, same rxlev */
+		.current = {
+			.lchan = lchan,
+			.bts = bts,
+			.rxlev = rxlev_current,
+		},
+		.target = {
+			.bts = bts,
+			.rxlev = rxlev_current, /* same cell, same rxlev */
+		},
 	};
+	c.requirements = check_requirements(c.current.lchan, c.target.bts, tchf_count, tchh_count),
 
 	debug_candidate(&c, tchf_count, tchh_count);
 
@@ -941,12 +946,17 @@ static void collect_handover_candidate(struct gsm_lchan *lchan, struct neigh_mea
 	neigh_cfg = (neighbor_bts ? : bts)->ho;
 
 	c = (struct ho_candidate){
-		.lchan = lchan,
-		.nik = ni,
-		.bts = neighbor_bts,
-		.cil = neighbor_cil,
-		.rxlev_current = rxlev_current,
-		.rxlev_target = neigh_meas_avg(nmp, ho_get_hodec2_rxlev_neigh_avg_win(bts->ho)),
+		.current = {
+			.lchan = lchan,
+			.bts = bts,
+			.rxlev = rxlev_current,
+		},
+		.target = {
+			.nik = ni,
+			.bts = neighbor_bts,
+			.cil = neighbor_cil,
+			.rxlev = neigh_meas_avg(nmp, ho_get_hodec2_rxlev_neigh_avg_win(bts->ho)),
+		},
 	};
 
 	/* Heed rxlev hysteresis only if the RXLEV/RXQUAL/TA levels of the MS aren't critically bad and
@@ -954,11 +964,11 @@ static void collect_handover_candidate(struct gsm_lchan *lchan, struct neigh_mea
 	 * and thus skip the hysteresis check. */
 	if (!include_weaker_rxlev) {
 		int pwr_hyst = ho_get_hodec2_pwr_hysteresis(bts->ho);
-		if ((c.rxlev_target - c.rxlev_current) <= pwr_hyst) {
+		if ((c.target.rxlev - c.current.rxlev) <= pwr_hyst) {
 			LOGPHOCAND(&c, LOGL_DEBUG,
 				   "Not a candidate, because RX level (%d dBm) is lower"
 				   " or equal than current RX level (%d dBm) + hysteresis (%d)\n",
-				   rxlev2dbm(c.rxlev_target), rxlev2dbm(c.rxlev_current), pwr_hyst);
+				   rxlev2dbm(c.target.rxlev), rxlev2dbm(c.current.rxlev), pwr_hyst);
 			return;
 		}
 	}
@@ -966,11 +976,11 @@ static void collect_handover_candidate(struct gsm_lchan *lchan, struct neigh_mea
 	/* if the minimum level is not reached.
 	 * In case of a remote-BSS, use the current BTS' configuration. */
 	min_rxlev = ho_get_hodec2_min_rxlev(neigh_cfg);
-	if (rxlev2dbm(c.rxlev_target) < min_rxlev) {
+	if (rxlev2dbm(c.target.rxlev) < min_rxlev) {
 		LOGPHOCAND(&c, LOGL_DEBUG,
 			   "Not a candidate, because RX level (%d dBm) is lower"
 			   " than the minimum required RX level (%d dBm)\n",
-			   rxlev2dbm(c.rxlev_target), min_rxlev);
+			   rxlev2dbm(c.target.rxlev), min_rxlev);
 		return;
 	}
 
@@ -1122,14 +1132,14 @@ static int find_alternative_lchan(struct gsm_lchan *lchan, bool include_weaker_r
 			continue;
 
 		/* Only consider Local-BSS cells */
-		if (!clist[i].bts)
+		if (!clist[i].target.bts)
 			continue;
 
-		better = clist[i].rxlev_target - clist[i].rxlev_current;
+		better = clist[i].target.rxlev - clist[i].current.rxlev;
 		/* Apply AFS bias? */
 		afs_bias = 0;
 		if (ahs && (clist[i].requirements & REQUIREMENT_B_TCHF))
-			afs_bias = ho_get_hodec2_afs_bias_rxlev(clist[i].bts->ho);
+			afs_bias = ho_get_hodec2_afs_bias_rxlev(clist[i].target.bts->ho);
 		better += afs_bias;
 		if (better > best_better_db) {
 			best_cand = &clist[i];
@@ -1141,7 +1151,7 @@ static int find_alternative_lchan(struct gsm_lchan *lchan, bool include_weaker_r
 	/* perform handover, if there is a candidate */
 	if (best_cand) {
 		LOGPHOCAND(best_cand, LOGL_INFO, "Best candidate, RX level %d%s\n",
-			   rxlev2dbm(best_cand->rxlev_target),
+			   rxlev2dbm(best_cand->target.rxlev),
 			   best_applied_afs_bias ? " (applied AHS -> AFS rxlev bias)" : "");
 		return trigger_ho(best_cand, best_cand->requirements & REQUIREMENT_B_MASK);
 	}
@@ -1155,14 +1165,14 @@ static int find_alternative_lchan(struct gsm_lchan *lchan, bool include_weaker_r
 			continue;
 
 		/* Only consider Local-BSS cells */
-		if (!clist[i].bts)
+		if (!clist[i].target.bts)
 			continue;
 
-		better = clist[i].rxlev_target - clist[i].rxlev_current;
+		better = clist[i].target.rxlev - clist[i].current.rxlev;
 		/* Apply AFS bias? */
 		afs_bias = 0;
 		if (ahs && (clist[i].requirements & REQUIREMENT_C_TCHF))
-			afs_bias = ho_get_hodec2_afs_bias_rxlev(clist[i].bts->ho);
+			afs_bias = ho_get_hodec2_afs_bias_rxlev(clist[i].target.bts->ho);
 		better += afs_bias;
 		if (better > best_better_db) {
 			best_cand = &clist[i];
@@ -1174,7 +1184,7 @@ static int find_alternative_lchan(struct gsm_lchan *lchan, bool include_weaker_r
 	/* perform handover, if there is a candidate */
 	if (best_cand) {
 		LOGPHOCAND(best_cand, LOGL_INFO, "Best candidate, RX level %d%s\n",
-			   rxlev2dbm(best_cand->rxlev_target),
+			   rxlev2dbm(best_cand->target.rxlev),
 			   best_applied_afs_bias? " (applied AHS -> AFS rxlev bias)" : "");
 		return trigger_ho(best_cand, best_cand->requirements & REQUIREMENT_C_MASK);
 	}
@@ -1195,13 +1205,13 @@ static int find_alternative_lchan(struct gsm_lchan *lchan, bool include_weaker_r
 		if (!(clist[i].requirements & REQUIREMENT_A_MASK))
 			continue;
 
-		better = clist[i].rxlev_target - clist[i].rxlev_current;
+		better = clist[i].target.rxlev - clist[i].current.rxlev;
 		/* Apply AFS bias?
 		 * (never to remote-BSS neighbors, since we will not change the lchan type for those.) */
 		afs_bias = 0;
 		if (ahs && (clist[i].requirements & REQUIREMENT_A_TCHF)
-		    && clist[i].bts)
-			afs_bias = ho_get_hodec2_afs_bias_rxlev(clist[i].bts->ho);
+		    && clist[i].target.bts)
+			afs_bias = ho_get_hodec2_afs_bias_rxlev(clist[i].target.bts->ho);
 		better += afs_bias;
 		if (better > best_better_db) {
 			best_cand = &clist[i];
@@ -1213,7 +1223,7 @@ static int find_alternative_lchan(struct gsm_lchan *lchan, bool include_weaker_r
 	/* perform handover, if there is a candidate */
 	if (best_cand) {
 		LOGPHOCAND(best_cand, LOGL_INFO, "Best candidate: RX level %d%s\n",
-			   rxlev2dbm(best_cand->rxlev_target),
+			   rxlev2dbm(best_cand->target.rxlev),
 			   best_applied_afs_bias ? " (applied AHS -> AFS rxlev bias)" : "");
 		return trigger_ho(best_cand, best_cand->requirements & REQUIREMENT_A_MASK);
 	}
@@ -1386,8 +1396,8 @@ static unsigned int ts_usage_count(struct gsm_bts_trx_ts *ts)
 
 static bool is_upgrade_to_tchf(const struct ho_candidate *c, uint8_t for_requirement)
 {
-	return c->lchan
-		&& (c->lchan->type == GSM_LCHAN_TCH_H)
+	return c->current.lchan
+		&& (c->current.lchan->type == GSM_LCHAN_TCH_H)
 		&& ((c->requirements & for_requirement) & (REQUIREMENT_B_TCHF | REQUIREMENT_C_TCHF));
 }
 
@@ -1407,8 +1417,8 @@ static struct ho_candidate *pick_better_lchan_to_move(struct ho_candidate *a,
 	if (!b)
 		return a;
 
-	a_rxlev_change = a->rxlev_target - a->rxlev_current;
-	b_rxlev_change = b->rxlev_target - b->rxlev_current;
+	a_rxlev_change = a->target.rxlev - a->current.rxlev;
+	b_rxlev_change = b->target.rxlev - b->current.rxlev;
 
 	/* Typically, a congestion related handover reduces RXLEV. If there is a candidate that actually improves RXLEV,
 	 * prefer that, because it pre-empts a likely handover due to measurement results later.  Also favor unchanged
@@ -1420,8 +1430,8 @@ static struct ho_candidate *pick_better_lchan_to_move(struct ho_candidate *a,
 
 	if (a_rxlev_change < 0 && b_rxlev_change < 0) {
 		/* For handover that reduces RXLEV, favor the highest resulting RXLEV, AFS bias applied. */
-		int a_rxlev = a->rxlev_target + a->rxlev_afs_bias;
-		int b_rxlev = b->rxlev_target + b->rxlev_afs_bias;
+		int a_rxlev = a->target.rxlev + a->target.rxlev_afs_bias;
+		int b_rxlev = b->target.rxlev + b->target.rxlev_afs_bias;
 
 		if (a_rxlev > b_rxlev)
 			return a;
@@ -1433,16 +1443,16 @@ static struct ho_candidate *pick_better_lchan_to_move(struct ho_candidate *a,
 
 	/* Prefer picking a dynamic timeslot: free PDCH and allow more timeslot type flexibility for further
 	 * congestion resolution. */
-	if (lchan_is_on_dynamic_ts(b->lchan)) {
+	if (lchan_is_on_dynamic_ts(b->current.lchan)) {
 		unsigned int ac, bc;
 
-		if (!lchan_is_on_dynamic_ts(a->lchan))
+		if (!lchan_is_on_dynamic_ts(a->current.lchan))
 			return b;
 
 		/* Both are dynamic timeslots. Prefer one that completely (or to a higher degree) frees its
 		 * timeslot. */
-		ac = ts_usage_count(a->lchan->ts);
-		bc = ts_usage_count(b->lchan->ts);
+		ac = ts_usage_count(a->current.lchan->ts);
+		bc = ts_usage_count(b->current.lchan->ts);
 		if (bc < ac)
 			return b;
 		if (ac < bc)
@@ -1456,9 +1466,9 @@ static struct ho_candidate *pick_better_lchan_to_move(struct ho_candidate *a,
 	/* When upgrading TCH/H to TCH/F, favor moving a TCH/H with lower current rxlev, because presumably that
 	 * one benefits more from a higher bandwidth. */
 	if (is_upgrade_to_tchf(a, for_requirement) && is_upgrade_to_tchf(b, for_requirement)) {
-		if (b->rxlev_current < a->rxlev_current)
+		if (b->current.rxlev < a->current.rxlev)
 			return b;
-		if (a->rxlev_current < b->rxlev_current)
+		if (a->current.rxlev < b->current.rxlev)
 			return a;
 	}
 
@@ -1476,11 +1486,11 @@ static struct ho_candidate *pick_best_candidate(struct ho_candidate *clist, int 
 
 		/* For multiple passes of congestion resolution, already handovered candidates are marked by lchan =
 		 * NULL. (though at the time of writing, multiple passes of congestion resolution are DISABLED.) */
-		if (!c->lchan)
+		if (!c->current.lchan)
 			continue;
 
 		/* Omit remote BSS */
-		if (!c->bts)
+		if (!c->target.bts)
 			continue;
 
 		if (!(c->requirements & for_requirement))
@@ -1488,9 +1498,9 @@ static struct ho_candidate *pick_best_candidate(struct ho_candidate *clist, int 
 
 		/* improve AHS */
 		if (is_upgrade_to_tchf(c, for_requirement))
-			c->rxlev_afs_bias = ho_get_hodec2_afs_bias_rxlev(c->bts->ho);
+			c->target.rxlev_afs_bias = ho_get_hodec2_afs_bias_rxlev(c->target.bts->ho);
 		else
-			c->rxlev_afs_bias = 0;
+			c->target.rxlev_afs_bias = 0;
 
 		result = pick_better_lchan_to_move(result, c, for_requirement);
 	}
@@ -1643,7 +1653,7 @@ static int bts_resolve_congestion(struct gsm_bts *bts, int tchf_congestion, int 
 			LOGPHOCAND(&clist[i], LOGL_DEBUG, "#%d: req={TCH/F:" REQUIREMENTS_FMT ", TCH/H:" REQUIREMENTS_FMT "} avg-rxlev=%d dBm\n",
 				   i, REQUIREMENTS_ARGS(clist[i].requirements, F),
 				   REQUIREMENTS_ARGS(clist[i].requirements, H),
-				   rxlev2dbm(clist[i].rxlev_target));
+				   rxlev2dbm(clist[i].target.rxlev));
 		}
 	}
 
@@ -1662,8 +1672,8 @@ next_b1:
 	if (best_cand) {
 		any_ho = 1;
 		LOGPHOCAND(best_cand, LOGL_DEBUG, "Best candidate: RX level %d%s\n",
-			   rxlev2dbm(best_cand->rxlev_target),
-			   best_cand->rxlev_afs_bias ? " (applied AHS->AFS bias)" : "");
+			   rxlev2dbm(best_cand->target.rxlev),
+			   best_cand->target.rxlev_afs_bias ? " (applied AHS->AFS bias)" : "");
 		trigger_ho(best_cand, best_cand->requirements & REQUIREMENT_B_MASK);
 #if 0
 		/* if there is still congestion, mark lchan as deleted
@@ -1696,8 +1706,8 @@ next_c1:
 	if (best_cand) {
 		any_ho = 1;
 		LOGPHOCAND(best_cand, LOGL_INFO, "Best candidate: RX level %d%s\n",
-			   rxlev2dbm(best_cand->rxlev_target),
-			   best_cand->rxlev_afs_bias ? " (applied AHS -> AFS rxlev bias)" : "");
+			   rxlev2dbm(best_cand->target.rxlev),
+			   best_cand->target.rxlev_afs_bias ? " (applied AHS -> AFS rxlev bias)" : "");
 		trigger_ho(best_cand, best_cand->requirements & REQUIREMENT_C_MASK);
 #if 0
 		/* if there is still congestion, mark lchan as deleted
