@@ -1,0 +1,53 @@
+# Balance congestion across cells and across TCH/F and TCH/H.
+
+network
+ handover2 min-free-slots tch/f 3
+ handover2 min-free-slots tch/h 3
+
+create-bts trx-count 1 timeslots	c+s4	TCH/F	TCH/F	TCH/F	TCH/F	TCH/H	TCH/H	TCH/H
+
+# both TCH/H and TCH/F have one lchan above congestion, nothing happens
+set-ts-use trx 0 0 states		*	TCH/F	TCH/F	-	-	TCH/HH  TCH/HH  -
+meas-rep lchan * * * * rxlev 10 rxqual 0 ta 0
+congestion-check
+expect-no-chan
+
+# TCH/F = +1, TCH/H = +2 above congestion. Moving a TCH/H to TCH/F would just reverse the situation to F=+2 H=+1. Nothing happens.
+set-ts-use trx 0 0 states		*	TCH/F	TCH/F	-	-	TCH/HH  TCH/HH  TCH/H-
+meas-rep lchan * * * * rxlev 10 rxqual 0 ta 0
+congestion-check
+expect-no-chan
+
+# F=+1 H=+3. Balance to F=+2 H=+2
+set-ts-use trx 0 0 states		*	TCH/F	TCH/F	-	-	TCH/HH  TCH/HH  TCH/HH
+meas-rep lchan * * * * rxlev 10 rxqual 0 ta 0
+congestion-check
+expect-ho from lchan 0 0 5 0 to lchan 0 0 3 0
+
+# Now the exact same thing, just with different min-free-slots settings for
+# tch/f vs tch/h
+
+network
+ handover2 min-free-slots tch/f 3
+ handover2 min-free-slots tch/h 5
+
+# both TCH/H and TCH/F have one lchan above congestion, nothing happens
+set-ts-use trx 0 0 states		*	TCH/F	TCH/F	-	-	TCH/HH  -	-
+meas-rep lchan * * * * rxlev 20 rxqual 0 ta 0
+congestion-check
+# FAIL: should be the same as above, but seeing a handover from F to H
+expect-ho from lchan 0 0 1 0 to lchan 0 0 6 0
+
+# TCH/F = +1, TCH/H = +2 above congestion. Moving a TCH/H to TCH/F would just
+# reverse the situation to F=+2 H=+1. Nothing happens.
+set-ts-use trx 0 0 states		*	TCH/F	TCH/F	-	-	TCH/HH  TCH/H-  -
+meas-rep lchan * * * * rxlev 20 rxqual 0 ta 0
+congestion-check
+expect-no-chan
+
+# F=+1 H=+3. Balance to F=+2 H=+2
+set-ts-use trx 0 0 states		*	TCH/F	TCH/F	-	-	TCH/HH  TCH/HH  -
+meas-rep lchan * * * * rxlev 20 rxqual 0 ta 0
+congestion-check
+# FAIL: should be the same as above, from lchan 0 0 5 0 to lchan 0 0 3 0, but no handover happens
+expect-no-chan
