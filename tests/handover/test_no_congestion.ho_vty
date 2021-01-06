@@ -8,17 +8,7 @@ network
  handover2 min-free-slots tch/h 2
 set-ts-use trx 0 0 states * TCH/F TCH/F - - TCH/HH - -
 set-ts-use trx 1 0 states * TCH/F -     - - TCH/H- - -
-meas-rep lchan 0 0 1 0 rxlev 30 rxqual 0 ta 0 neighbors 20 1 20
-expect-no-chan
-meas-rep lchan 0 0 2 0 rxlev 30 rxqual 0 ta 0 neighbors 20 1 20
-expect-no-chan
-meas-rep lchan 0 0 5 0 rxlev 30 rxqual 0 ta 0 neighbors 20 1 20
-expect-no-chan
-meas-rep lchan 0 0 5 1 rxlev 30 rxqual 0 ta 0 neighbors 20 1 20
-expect-no-chan
-meas-rep lchan 1 0 1 0 rxlev 30 rxqual 0 ta 0 neighbors 20 1 20
-expect-no-chan
-meas-rep lchan 1 0 5 0 rxlev 30 rxqual 0 ta 0 neighbors 20 1 20
+meas-rep lchan * * * * rxlev 30 rxqual 0 ta 0 neighbors 20 1 20
 expect-no-chan
 congestion-check
 expect-no-chan

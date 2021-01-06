@@ -741,6 +741,50 @@ static struct gsm_lchan *parse_lchan_args(const char **argv)
 	return &ts->lchan[atoi(argv[3])];
 }
 
+#define LCHAN_WILDCARD_ARGS "lchan (<0-255>|*) (<0-255>|*) (<0-7>|*) (<0-7>|*)"
+#define LCHAN_WILDCARD_ARGS_DOC "identify an lchan\nBTS nr\nall BTS\nTRX nr\nall BTS\nTimeslot nr\nall TS\nSubslot nr\nall subslots\n"
+
+static void parse_lchan_wildcard_args(const char **argv, void (*cb)(struct gsm_lchan*, void*), void *cb_data)
+{
+	const char *bts_str = argv[0];
+	const char *trx_str = argv[1];
+	const char *ts_str = argv[2];
+	const char *ss_str = argv[3];
+	int bts_num = (strcmp(bts_str, "*") == 0)? -1 : atoi(bts_str);
+	int trx_num = (strcmp(trx_str, "*") == 0)? -1 : atoi(trx_str);
+	int ts_num = (strcmp(ts_str, "*") == 0)? -1 : atoi(ts_str);
+	int ss_num = (strcmp(ss_str, "*") == 0)? -1 : atoi(ss_str);
+
+	int bts_i;
+	int trx_i;
+	int ts_i;
+	int ss_i;
+
+	for (bts_i = ((bts_num == -1) ? 0 : bts_num);
+	     bts_i < ((bts_num == -1) ? bsc_gsmnet->num_bts : bts_num + 1);
+	     bts_i++) {
+		struct gsm_bts *bts = gsm_bts_num(bsc_gsmnet, bts_i);
+
+		for (trx_i = ((trx_num == -1) ? 0 : trx_num);
+		     trx_i < ((trx_num == -1) ? bts->num_trx : trx_num + 1);
+		     trx_i++) {
+			struct gsm_bts_trx *trx = gsm_bts_trx_num(bts, trx_i);
+
+			for (ts_i = ((ts_num == -1) ? 0 : ts_num);
+			     ts_i < ((ts_num == -1) ? 8 : ts_num + 1);
+			     ts_i++) {
+				struct gsm_bts_trx_ts *ts = &trx->ts[ts_i];
+
+				for (ss_i = ((ss_num == -1) ? 0 : ss_num);
+				     ss_i < ((ss_num == -1) ? pchan_subslots(ts->pchan_is) : ss_num + 1);
+				     ss_i++) {
+					cb(&ts->lchan[ss_i], cb_data);
+				}
+			}
+		}
+	}
+}
+
 static int vty_step = 1;
 
 #define VTY_ECHO() \
@@ -814,18 +858,24 @@ DEFUN(create_ms, create_ms_cmd,
 	return CMD_SUCCESS;
 }
 
-static int _meas_rep(struct vty *vty, int argc, const char **argv)
+struct meas_rep_data {
+	int argc;
+	const char **argv;
+};
+
+static void _meas_rep_cb(struct gsm_lchan *lc, void *data)
 {
-	struct gsm_lchan *lc;
+	struct meas_rep_data *d = data;
+	int argc = d->argc;
+	const char **argv = d->argv;
 	uint8_t rxlev;
 	uint8_t rxqual;
 	uint8_t ta;
 	int i;
 	struct neighbor_meas nm[6] = {};
 
-	lc = parse_lchan_args(argv);
-	argv += 4;
-	argc -= 4;
+	if (!lchan_state_is(lc, LCHAN_ST_ESTABLISHED))
+		return;
 
 	rxlev = atoi(argv[0]);
 	rxqual = atoi(argv[1]);
@@ -863,14 +913,24 @@ static int _meas_rep(struct vty *vty, int argc, const char **argv)
 				nm[i].rxlev);
 	}
 	gen_meas_rep(lc, rxlev, rxqual, ta, argc, nm);
+}
+
+static int _meas_rep(struct vty *vty, int argc, const char **argv)
+{
+	struct meas_rep_data d = {
+		.argc = argc - 4,
+		.argv = argv + 4,
+	};
+	parse_lchan_wildcard_args(argv, _meas_rep_cb, &d);
 	return CMD_SUCCESS;
 }
 
-#define MEAS_REP_ARGS  LCHAN_ARGS " rxlev <0-255> rxqual <0-7> ta <0-255>" \
+
+#define MEAS_REP_ARGS  LCHAN_WILDCARD_ARGS " rxlev <0-255> rxqual <0-7> ta <0-255>" \
 	" [neighbors] [<0-255>] [<0-255>] [<0-255>] [<0-255>] [<0-255>] [<0-255>]"
 #define MEAS_REP_DOC "Send measurement report\n"
 #define MEAS_REP_ARGS_DOC \
-      LCHAN_ARGS_DOC \
+      LCHAN_WILDCARD_ARGS_DOC \
       "rxlev\nrxlev\n" \
       "rxqual\nrxqual\n" \
       "timing advance\ntiming advance\n" \
