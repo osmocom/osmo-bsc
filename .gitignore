@@ -8,6 +8,7 @@ Makefile.in
 bscconfig.h
 bscconfig.h.in
 *.pc
+*~
 
 *.*~
 *.sw?
