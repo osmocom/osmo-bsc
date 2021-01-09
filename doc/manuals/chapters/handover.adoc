@@ -511,9 +511,11 @@ periodical congestion check attempts to distribute MS to less loaded neighbor
 cells. Every time, the one MS that will suffer the least RXLEV loss while still
 reducing congestion will be instructed to move first.
 
-If a cell and its neighbors are all loaded past their `min-free-slots`
-settings, the algorithmic aim is equal load: a load-based handover will never
-cause the target cell to be more congested than the source cell.
+If a cell and its neighbors are all loaded past their `min-free-slots` settings,
+the algorithmic aim is to improve the percentage of load above the
+`min-free-slots` setting: a load-based handover always requires the target cell
+to have a lower load percentage after handover than the source cell had before
+handover.
 
 The min-free-slots setting is a tradeoff between immediate voice service
 availability and optimal reception levels. A sane choice could be:

@@ -25,6 +25,7 @@
 #include <stdbool.h>
 #include <errno.h>
 #include <limits.h>
+#include <math.h>
 
 #include <osmocom/bsc/debug.h>
 #include <osmocom/bsc/gsm_data.h>
@@ -387,6 +388,26 @@ static bool codec_type_is_supported(struct gsm_subscriber_connection *conn,
 	return false;
 }
 
+#define LOAD_PRECISION 6
+
+/* Return a number representing overload, i.e. the fraction of lchans used above the congestion threshold.
+ * Think of it as a percentage of used lchans above congestion, just represented in a fixed-point fraction with N
+ * decimal digits of fractional part. If there is no congestion (free_tch >= min_free_tch), return 0.
+ */
+static int32_t load_above_congestion(int free_tch, int min_free_tch)
+{
+	int32_t v;
+	OSMO_ASSERT(free_tch >= 0);
+	/* Avoid division by zero when no congestion threshold is set, and return zero overload when there is no
+	 * congestion. */
+	if (free_tch >= min_free_tch)
+		return 0;
+	v = min_free_tch - free_tch;
+	v *= pow(10, LOAD_PRECISION);
+	v /= min_free_tch;
+	return v;
+}
+
 /*
  * Check what requirements the given cell fulfills.
  * A bit mask of fulfilled requirements is returned.
@@ -443,7 +464,7 @@ static void check_requirements(struct ho_candidate *c)
 {
 	uint8_t requirement = 0;
 	unsigned int penalty_time;
-	int current_overbooked;
+	int32_t current_overbooked;
 	c->requirements = 0;
 
 	/* Requirement A */
@@ -626,17 +647,25 @@ static void check_requirements(struct ho_candidate *c)
 
 	/* Requirement C */
 
-	/* the nr of lchans surpassing congestion on the target cell must be <= the lchans surpassing congestion on the
-	 * current cell _after_ handover/assignment */
-	current_overbooked = c->current.min_free_tch - c->current.free_tch;
+	/* the load percentage above congestion on the target cell *after* HO must be < the load percentage above
+	 * congestion on the current cell, hence the - 1 on the target. */
+	current_overbooked = load_above_congestion(c->current.free_tch, c->current.min_free_tch);
 	if (requirement & REQUIREMENT_A_TCHF) {
-		int target_overbooked = c->target.min_free_tchf - c->target.free_tchf;
-		if (target_overbooked + 1 <= current_overbooked - 1)
+		int32_t target_overbooked = load_above_congestion(c->target.free_tchf - 1, c->target.min_free_tchf);
+		LOGPHOLCHANTOBTS(c->current.lchan, c->target.bts, LOGL_DEBUG,
+				 "current overbooked = %s%%, TCH/F target overbooked after HO = %s%%\n",
+				 osmo_int_to_float_str_c(OTC_SELECT, current_overbooked, LOAD_PRECISION - 2),
+				 osmo_int_to_float_str_c(OTC_SELECT, target_overbooked, LOAD_PRECISION - 2));
+		if (target_overbooked < current_overbooked)
 			requirement |= REQUIREMENT_C_TCHF;
 	}
 	if (requirement & REQUIREMENT_A_TCHH) {
-		int target_overbooked = c->target.min_free_tchh - c->target.free_tchh;
-		if (target_overbooked + 1 <= current_overbooked - 1)
+		int32_t target_overbooked = load_above_congestion(c->target.free_tchh - 1, c->target.min_free_tchh);
+		LOGPHOLCHANTOBTS(c->current.lchan, c->target.bts, LOGL_DEBUG,
+				 "current overbooked = %s%%, TCH/H target overbooked after HO = %s%%\n",
+				 osmo_int_to_float_str_c(OTC_SELECT, current_overbooked, LOAD_PRECISION - 2),
+				 osmo_int_to_float_str_c(OTC_SELECT, target_overbooked, LOAD_PRECISION - 2));
+		if (target_overbooked < current_overbooked)
 			requirement |= REQUIREMENT_C_TCHH;
 	}
 

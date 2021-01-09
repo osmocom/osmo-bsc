@@ -29,6 +29,7 @@ set-ts-use trx 1 0 states        *    TCH/F TCH/F TCH/F TCH/F -     -     *
 meas-rep lchan * * * * rxlev 40 rxqual 0 ta 0 neighbors 30
 expect-no-chan
 
-# bts 0 is full, but by counting lchans above congestion, it should remain full.
+# bts 0 is full, by target_overbooked_after_ho==75% < current_overbooked_before_ho==100%, a congestion balancing to bts
+# 1 is performed.
 congestion-check
-expect-no-chan
+expect-ho from lchan 0 0 1 0 to lchan 1 0 5 0

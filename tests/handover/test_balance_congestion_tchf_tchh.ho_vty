@@ -6,46 +6,48 @@ network
 
 create-bts trx-count 1 timeslots	c+s4	TCH/F	TCH/F	TCH/F	TCH/F	TCH/H	TCH/H	TCH/H
 
-# both TCH/H and TCH/F have one lchan above congestion, nothing happens
+# both TCH/H and TCH/F have one lchan = 33% above congestion, nothing happens
 set-ts-use trx 0 0 states		*	TCH/F	TCH/F	-	-	TCH/HH  TCH/HH  -
 meas-rep lchan * * * * rxlev 10 rxqual 0 ta 0
 congestion-check
 expect-no-chan
 
-# TCH/F = +1, TCH/H = +2 above congestion. Moving a TCH/H to TCH/F would just reverse the situation to F=+2 H=+1. Nothing happens.
+# TCH/F = +1 = 33%, TCH/H = +2 = 66% above congestion.
+# Moving a TCH/H to TCH/F would just reverse the situation to F=+2=66%. Nothing happens.
 set-ts-use trx 0 0 states		*	TCH/F	TCH/F	-	-	TCH/HH  TCH/HH  TCH/H-
 meas-rep lchan * * * * rxlev 10 rxqual 0 ta 0
 congestion-check
 expect-no-chan
 
-# F=+1 H=+3. Balance to F=+2 H=+2
+# F=+1=33% H=+3=100%. Balance to F=+2=66% (which is < 100%) and H=+2=66%
 set-ts-use trx 0 0 states		*	TCH/F	TCH/F	-	-	TCH/HH  TCH/HH  TCH/HH
 meas-rep lchan * * * * rxlev 10 rxqual 0 ta 0
 congestion-check
 expect-ho from lchan 0 0 5 0 to lchan 0 0 3 0
 
-# Now the exact same thing, just with different min-free-slots settings for
-# tch/f vs tch/h
+# Now similar load percentages, just with different min-free-slots settings for tch/f vs tch/h.
 
 network
  handover2 min-free-slots tch/f 3
  handover2 min-free-slots tch/h 5
 
-# both TCH/H and TCH/F have one lchan above congestion, nothing happens
+# TCH/F has 1/3 = 33%, TCH/H has 1/5 = 20% overload.
+# Moving one to TCH/H would mean 40% overload on TCH/H, which is above the current TCH/F of 33%.
+# Nothing happens.
 set-ts-use trx 0 0 states		*	TCH/F	TCH/F	-	-	TCH/HH  -	-
 meas-rep lchan * * * * rxlev 20 rxqual 0 ta 0
 congestion-check
 expect-no-chan
 
-# TCH/F = +1, TCH/H = +2 above congestion. Moving a TCH/H to TCH/F would just
-# reverse the situation to F=+2 H=+1. Nothing happens.
+# TCH/F = +1 = 33%, TCH/H = +2 = 40% above congestion. Moving a TCH/H to TCH/F would result
+# in F=+2=66%>40%. Nothing happens.
 set-ts-use trx 0 0 states		*	TCH/F	TCH/F	-	-	TCH/HH  TCH/H-  -
 meas-rep lchan * * * * rxlev 20 rxqual 0 ta 0
 congestion-check
 expect-no-chan
 
-# F=+1 H=+3. Balance to F=+2 H=+2
-set-ts-use trx 0 0 states		*	TCH/F	TCH/F	-	-	TCH/HH  TCH/HH  -
+# F=+1=33% H=+4=80%. Balance to F=+2=66%<80% and H=+3=60%
+set-ts-use trx 0 0 states		*	TCH/F	TCH/F	-	-	TCH/HH  TCH/HH  TCH/H-
 meas-rep lchan * * * * rxlev 20 rxqual 0 ta 0
 congestion-check
 expect-ho from lchan 0 0 5 0 to lchan 0 0 3 0
