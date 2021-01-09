@@ -1,0 +1,34 @@
+# To balance congestion, use the remaining free percentage instead of free lchan counts.
+#
+# Cell A has min-free-slots 2, and has all slots occupied.
+# Cell B has min-free-slots 4, and has 2 slots remaining free.
+#
+# If we count congested lchans: cell A has a congestion count of 2: two more lchans in use than "allowed".
+# If we move one lchan over to cell B, it ends up with a congestion count of 3, which is worse than 2.
+# So when counting lchans, we decide that cell A should remain full.
+#
+# Instead, when comparing percentage of remaining lchans, we would see that cell A is loaded 100% above congestion (2 of
+# 2 remaining lchans in use), but when moving one lchan to cell B, it would only be 75% loaded above its treshold (3 of
+# 4 remaining lchans in use). So a percentage comparison would cause a handover to cell B.
+#
+# This test currently expects the behavior of counting lchans; a patch will change to use percentage, which should
+# reflect in this test.
+
+create-bts trx-count 1 timeslots c+s4 TCH/F TCH/F TCH/F TCH/F TCH/F TCH/F PDCH
+create-bts trx-count 1 timeslots c+s4 TCH/F TCH/F TCH/F TCH/F TCH/F TCH/F PDCH
+
+network
+ bts 0
+  handover2 min-free-slots tch/f 2
+ bts 1
+  handover2 min-free-slots tch/f 4
+
+set-ts-use trx 0 0 states        *    TCH/F TCH/F TCH/F TCH/F TCH/F TCH/F *
+set-ts-use trx 1 0 states        *    TCH/F TCH/F TCH/F TCH/F -     -     *
+
+meas-rep lchan * * * * rxlev 40 rxqual 0 ta 0 neighbors 30
+expect-no-chan
+
+# bts 0 is full, but by counting lchans above congestion, it should remain full.
+congestion-check
+expect-no-chan
