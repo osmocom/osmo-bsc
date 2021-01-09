@@ -46,6 +46,9 @@ and contacts the remote SMLC on SSN "SMLC (BSSMAP-LE)" (SSN code 252).
 The point-codes are configurable, and default to OsmoBSC's local point-code
 0.23.3 (187), and remote SMLC point-code 0.23.6 (190).
 
+Typically, multiple BSCs connect to the same SMLC, so that each BSC needs to
+have a distinct point-code, while the SMLC has a single, fixed point-code.
+
 To configure a different remote SMLC point-code, first configure an arbitrarily
 named SCCP address in the `cs7` address book, and then apply that to the
 `smlc-addr` configuration:
@@ -55,17 +58,31 @@ cs7 instance 0
  sccp-address my-smlc
   point-code 0.42.6
 smlc
+ enable
  smlc-addr my-smlc
 ----
 
-Similarly, OsmoBSC's local point-code on the Lb-interface is configured by the
-`bsc-addr` configuration:
+For the BSC side, it suffices to configure a point-code in the `cs7` section,
+so that the BSC typically uses the same point-code on A and Lb interfaces. In
+this example, the BSC has point-code `1.2.3` on the Lb interface:
+
+----
+cs7 instance 0
+ point-code 1.2.3
+smlc
+ enable
+----
+
+It is also possible to configure a distinct BSC's point-code on Lb, using the
+`bsc-addr` configuration. In the following example, the BSC uses point-code
+`0.42.3` only on the Lb interface, while the A interface remains unchanged:
 
 ----
 cs7 instance 0
  sccp-address my-bsc-on-lb
   point-code 0.42.3
 smlc
+ enable
  bsc-addr my-bsc-on-lb
 ----
 
