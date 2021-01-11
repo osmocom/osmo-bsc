@@ -35,7 +35,7 @@ ignore some of the received parameters due to incomplete implementation.
 
 It depends on how the power control parameters are signaled to the BTS.  If a given
 BTS vendor/model requires _each_ RSL CHANnel ACTIVation message to contain the full
-set of parameters, than changing them in the BSC at run-time would affect all newly
+set of parameters, then changing them in the BSC at run-time would affect all newly
 established logical channels immediately.  The existing connections would continue
 to use parameters which were in use during the time of channel activation.
 
@@ -45,7 +45,7 @@ the MS/BS Power Parameters IE will be sent empty.  Therefore, changing most of
 dynamic power control parameters at run-time would affect neither the existing
 nor newly established logical channels.
 
-It's still possible to 'push' a modified set of MS/BS power control parameters to a
+It's still possible to "push" a modified set of MS/BS power control parameters to a
 BTS that accepts the default parameters at startup without triggering the A-bis/RSL
 link re-establishment and thus interrupting the service.  The following command
 triggers resending of both MS/BS power control parameters:
@@ -68,7 +68,7 @@ Two identical groups of parameters are available for both MS (Uplink) and BS
 (Downlink) power control.  This chapter is aimed to put some light on them.
 
 All parameters can be set via the VTY interface, currently within the scope of
-a BTS.  This means that all transceivers will 'inherit' the same configuration.
+a BTS node.  This means that all transceivers will "inherit" the same configuration.
 
 ----
 OsmoBSC(config)# network
@@ -99,8 +99,8 @@ OsmoBSC(config-ms-power-ctrl)# list with-flags
   . lv  (rxlev-avg|rxqual-avg) algo osmo-ewma beta <1-99>
 ----
 
-NOTE: Flag 'v' indicates that a given parameter is vendor specific, so different
-BTS vendors/models may ignore or even reject it.  Flag 'l' indicates that changing
+NOTE: Flag `v` indicates that a given parameter is vendor specific, so different
+BTS vendors/models may ignore or even reject it.  Flag `l` indicates that changing
 a given parameter at run-time would affect only the new connections.
 
 ==== Power control mode
@@ -119,7 +119,7 @@ OsmoBSC(config-net-bts)# no (bs-power-control|ms-power-control) <3>
 
 By default, `static` mode is used for BS power control, while `dyn-bts` is used
 for MS power control.  Changing the mode at run-time would not affect already
-established connections, only the new ones (check flag 'l').
+established connections, only the new ones (check flag `l`).
 
 For BS power control, there is an additional parameter:
 
@@ -206,7 +206,7 @@ and `U_RXLEV_XX_P`, while the RxQual thresholds are referred as `L_RXQUAL_XX_P` 
 `U_RXQUAL_XX_P`, where the `XX` is either `DL` (Downlink) or `UL` (Uplink).
 
 The process of threshold comparison actually involves more than just upper and lower
-values for RxLev and RxQual.  The received 'raw' measurements are being averaged and
+values for RxLev and RxQual.  The received "raw" measurements are being averaged and
 stored in a circular buffer, so the power change is triggered only if Pn averages out
 of Nn averages exceed the corresponding thresholds.
 
@@ -230,15 +230,15 @@ network
 ==== Measurement averaging process
 
 3GPP 45.008, section A.3.1 requires that the measurement values reported by both
-an MS and the BTS are be pre-processed before appearing on the input of the
+an MS and the BTS are being pre-processed before appearing on the input of the
 corresponding power control loops in any of the following ways:
 
 - Unweighted average;
-- Weighted average, with the weightings determined by O&M;
+- Weighted average, with the weightings determined by O\&M;
 - Modified median calculation, with exceptionally high and low values
   (outliers) removed before the median calculation.
 
-The pre-processing is expected to be performed for both MS and BS power control
+The pre-processing is expected to be performed by both MS and BS power control
 loops independently, for every input parameter (i.e. RxLev and RxQual).
 
 ----
@@ -291,7 +291,7 @@ network
 ----
 <1> Both MS and BS power control is to be performed by the BTS autonomously.
 <2> Unweighted average is applied to RxLev values.
-<3> RxLev Hreqave and Hreqt values: 4 out of 6 SACCH blocks produce an averaged measurement.
+<3> RxLev: Hreqave and Hreqt values: 4 out of 6 SACCH blocks produce an averaged measurement.
 <4> Osmocom specific EWMA is applied to RxQual values with smoothing factor = 50% (beta=0.5).
 <5> RxQual: Hreqave and Hreqt values: 2 out of 3 SACCH blocks produce an averaged measurement.
 
