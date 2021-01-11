@@ -506,6 +506,18 @@ void assignment_fsm_start(struct gsm_subscriber_connection *conn, struct gsm_bts
 	 * down the assignment in case of failure. */
 	if (!conn->assignment.new_lchan) {
 		assignment_count_result(CTR_ASSIGNMENT_NO_CHANNEL);
+		switch (req->ch_mode_rate[0].chan_mode) {
+		case GSM48_CMODE_SIGN:
+			rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_CTR_ASSIGNMENT_NO_CHANNEL_SIGN]);
+			break;
+		case GSM48_CMODE_SPEECH_V1:
+		case GSM48_CMODE_SPEECH_EFR:
+		case GSM48_CMODE_SPEECH_AMR:
+			rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_CTR_ASSIGNMENT_NO_CHANNEL_SPEECH]);
+			break;
+		default:
+			break;
+		}
 		assignment_fail(GSM0808_CAUSE_NO_RADIO_RESOURCE_AVAILABLE,
 				"BSSMAP Assignment Command:"
 				" No lchan available for: pref=%s:%s / alt1=%s:%s / alt2=%s:%s\n",

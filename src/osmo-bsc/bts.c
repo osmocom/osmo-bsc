@@ -761,6 +761,27 @@ const struct rate_ctr_desc bts_ctr_description[] = {
 	[BTS_CTR_CHREQ_TOTAL] = \
 		{ "chreq:total",
 		  "Received channel requests" },
+	[BTS_CTR_CHREQ_ATTEMPTED_EMERG] = \
+		{ "chreq:attempted_emerg",
+		  "Received channel requests EMERG" },
+	[BTS_CTR_CHREQ_ATTEMPTED_CALL] = \
+		{ "chreq:attempted_call",
+		  "Received channel requests CALL" },
+	[BTS_CTR_CHREQ_ATTEMPTED_LOCATION_UPD] = \
+		{ "chreq:attempted_location_upd",
+		  "Received channel requests LOCATION_UPD" },
+	[BTS_CTR_CHREQ_ATTEMPTED_PAG] = \
+		{ "chreq:attempted_pag",
+		  "Received channel requests PAG" },
+	[BTS_CTR_CHREQ_ATTEMPTED_PDCH] = \
+		{ "chreq:attempted_pdch",
+		  "Received channel requests PDCH" },
+	[BTS_CTR_CHREQ_ATTEMPTED_OTHER] = \
+		{ "chreq:attempted_other",
+		  "Received channel requests OTHER" },
+	[BTS_CTR_CHREQ_ATTEMPTED_UNKNOWN] = \
+		{ "chreq:attempted_unknown",
+		  "Received channel requests UNKNOWN" },
 	[BTS_CTR_CHREQ_SUCCESSFUL] = \
 		{ "chreq:successful",
 		  "Successful channel requests (immediate assign sent)" },
@@ -815,6 +836,12 @@ const struct rate_ctr_desc bts_ctr_description[] = {
 	[BTS_CTR_CHAN_ACT_TOTAL] = \
 		{ "chan_act:total",
 		  "Total number of Channel Activations" },
+	[BTS_CTR_CHAN_ACT_SDCCH] = \
+		{ "chan_act:sdcch",
+		  "Number of SDCCH Channel Activations" },
+	[BTS_CTR_CHAN_ACT_TCH] = \
+		{ "chan_act:tch",
+		  "Number of TCH Channel Activations" },
 	[BTS_CTR_CHAN_ACT_NACK] = \
 		{ "chan_act:nack",
 		  "Number of Channel Activations that the BTS NACKed" },
@@ -913,6 +940,12 @@ const struct rate_ctr_desc bts_ctr_description[] = {
 	[BTS_CTR_ASSIGNMENT_NO_CHANNEL] = \
 		{ "assignment:no_channel",
 		  "Failure to allocate lchan for Assignment" },
+	[BTS_CTR_ASSIGNMENT_NO_CHANNEL_SIGN] = \
+		{ "assignment:no_channel_sign",
+		  "Failure to allocate signaling lchan for Assignment" },
+	[BTS_CTR_ASSIGNMENT_NO_CHANNEL_SPEECH] = \
+		{ "assignment:no_channel_speech",
+		  "Failure to allocate speech lchan for Assignment" },
 	[BTS_CTR_ASSIGNMENT_TIMEOUT] = \
 		{ "assignment:timeout",
 		  "Assignment timed out" },
@@ -922,7 +955,18 @@ const struct rate_ctr_desc bts_ctr_description[] = {
 	[BTS_CTR_ASSIGNMENT_ERROR] = \
 		{ "assignment:error",
 		  "Assignment failed for other reason" },
-
+	[BTS_CTR_LOCATION_UPDATE_ACCEPT] = \
+		{ "location_update:accept",
+		  "Location Update Accept" },
+	[BTS_CTR_LOCATION_UPDATE_REJECT] = \
+		{ "location_update:reject",
+		  "Location Update Reject" },
+	[BTS_CTR_LOCATION_UPDATE_DETACH] = \
+		{ "location_update:detach",
+		  "Location Update Detach" },
+	[BTS_CTR_LOCATION_UPDATE_UNKNOWN] = \
+		{ "location_update:unknown",
+		  "Location Update UNKNOWN" },
 	[BTS_CTR_HANDOVER_ATTEMPTED] = \
 		{ "handover:attempted",
 		  "Intra-BSC handover attempts" },

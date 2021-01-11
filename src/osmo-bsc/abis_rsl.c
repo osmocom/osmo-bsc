@@ -613,6 +613,17 @@ int rsl_tx_chan_activ(struct gsm_lchan *lchan, uint8_t act_type, uint8_t ho_ref)
 	msg->dst = trx->rsl_link;
 
 	rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_CTR_CHAN_ACT_TOTAL]);
+	switch (lchan->type) {
+	case GSM_LCHAN_SDCCH:
+		rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_CTR_CHAN_ACT_SDCCH]);
+		break;
+	case GSM_LCHAN_TCH_H:
+	case GSM_LCHAN_TCH_F:
+		rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_CTR_CHAN_ACT_TCH]);
+		break;
+	default:
+		break;
+	}
 
 	return abis_rsl_sendmsg(msg);
 }
@@ -1511,6 +1522,29 @@ static int rsl_rx_chan_rqd(struct msgb *msg)
 		get_value_string(gsm_chreq_descs, rqd->reason), rqd->ref.ra, bts->network->neci, rqd->reason);
 
 	rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_CTR_CHREQ_TOTAL]);
+	switch (rqd->reason) {
+	case GSM_CHREQ_REASON_EMERG:
+		rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_CTR_CHREQ_ATTEMPTED_EMERG]);
+		break;
+	case GSM_CHREQ_REASON_CALL:
+		rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_CTR_CHREQ_ATTEMPTED_CALL]);
+		break;
+	case GSM_CHREQ_REASON_LOCATION_UPD:
+		rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_CTR_CHREQ_ATTEMPTED_LOCATION_UPD]);
+		break;
+	case GSM_CHREQ_REASON_PAG:
+		rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_CTR_CHREQ_ATTEMPTED_PAG]);
+		break;
+	case GSM_CHREQ_REASON_PDCH:
+		rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_CTR_CHREQ_ATTEMPTED_PDCH]);
+		break;
+	case GSM_CHREQ_REASON_OTHER:
+		rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_CTR_CHREQ_ATTEMPTED_OTHER]);
+		break;
+	default:
+		rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_CTR_CHREQ_ATTEMPTED_UNKNOWN]);
+		break;
+	}
 
 	/* Enqueue request */
 	llist_add_tail(&rqd->entry, &bts->chan_rqd_queue);
