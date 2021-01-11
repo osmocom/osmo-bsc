@@ -103,7 +103,7 @@ Uplink DTX is possible on any TRX, and serves primarily two uses:
 . reducing the uplink interference caused in surrounding cells that
   re-use the same ARFCN.
 
-DTS for both uplink and downlink is implemented in the BTS.  Not all BTS
+DTX for both uplink and downlink is implemented in the BTS.  Not all BTS
 models support it.
 
 The Osmocom BSC component can instruct the BTS to enable or disable
