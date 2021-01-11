@@ -99,8 +99,6 @@ detected during cell selection.
 
 Uplink DTX is possible on any TRX, and serves primarily two uses:
 
-possible on any TRX, and serves primarily two uses:
-
 . reducing the MS battery consumption by transmitting at a lower duty cycle
 . reducing the uplink interference caused in surrounding cells that
   re-use the same ARFCN.
