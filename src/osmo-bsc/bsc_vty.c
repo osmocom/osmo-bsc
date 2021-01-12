@@ -2832,13 +2832,14 @@ DEFUN_USRATTR(cfg_bts_rep_rxqual,
 	      REP_ACCH_STR
 	      "Set UL-SACCH/DL-FACCH rxqual threshold-ber\n"
 	      "0 disabled (always on)\n"
-	      "1 0.26% to 0.30% BER\n"
-	      "2 0.51% to 0.64% BER\n"
-	      "3 1.0% to 1.3% BER\n"
-	      "4 1.9% to 2.7% BER (default)\n"
-	      "5 3.8% to 5.4% BER\n"
-	      "6 7.6% to 11.0% BER\n"
-	      "7 Greater than 15.0% BER\n")
+	      "1 BER >= 0.2%\n"
+	      "2 BER >= 0.4%\n"
+	      "3 BER >= 0.8%\n"
+	      "4 BER >= 1.6%\n"
+	      "5 BER >= 3.2%\n"
+	      "6 BER >= 6.4%\n"
+	      "7 BER >= 12.8%\n")
+	      /* See also: GSM 05.08, section 8.2.4 */
 {
 	struct gsm_bts *bts = vty->index;
 
