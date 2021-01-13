@@ -771,8 +771,7 @@ static void config_write_bts_gprs(struct vty *vty, struct gsm_bts *bts)
 			get_value_string(gprs_ns_timer_strs, i),
 			bts_sm->gprs.nse.timer[i], VTY_NEWLINE);
 	for (i = 0; i < ARRAY_SIZE(bts_sm->gprs.nsvc); i++) {
-		struct gsm_gprs_nsvc *nsvc =
-					&bts_sm->gprs.nsvc[i];
+		const struct gsm_gprs_nsvc *nsvc = &bts_sm->gprs.nsvc[i];
 		struct osmo_sockaddr_str remote = {};
 		uint16_t port;
 
