@@ -772,8 +772,7 @@ static void config_write_bts_gprs(struct vty *vty, struct gsm_bts *bts)
 			bts_sm->gprs.nse.timer[i], VTY_NEWLINE);
 	for (i = 0; i < ARRAY_SIZE(bts_sm->gprs.nsvc); i++) {
 		const struct gsm_gprs_nsvc *nsvc = &bts_sm->gprs.nsvc[i];
-		struct osmo_sockaddr_str remote = {};
-		uint16_t port;
+		struct osmo_sockaddr_str remote;
 
 		vty_out(vty, "  gprs nsvc %u nsvci %u%s", i,
 			nsvc->nsvci, VTY_NEWLINE);
@@ -781,18 +780,15 @@ static void config_write_bts_gprs(struct vty *vty, struct gsm_bts *bts)
 		vty_out(vty, "  gprs nsvc %u local udp port %u%s", i,
 			nsvc->local_port, VTY_NEWLINE);
 
-		if (osmo_sockaddr_str_from_sockaddr(&remote, &nsvc->remote.u.sas) ||
-				remote.af != AF_UNSPEC) {
-			vty_out(vty, "  gprs nsvc %u remote ip %s%s", i,
-				remote.ip, VTY_NEWLINE);
-		}
+		/* Most likely, the remote address is not configured (AF_UNSPEC).
+		 * Printing the port alone makes no sense, so let's just skip both. */
+		if (osmo_sockaddr_str_from_sockaddr(&remote, &nsvc->remote.u.sas) != 0)
+			continue;
 
-		/* Can't use remote.port because it's only valid when family != AF_UNSPEC, but the
-		 * port can be even configured when the IP isn't */
-		port = osmo_htons(nsvc->remote.u.sin.sin_port);
-		if (port)
-			vty_out(vty, "  gprs nsvc %u remote udp port %u%s", i,
-				port, VTY_NEWLINE);
+		vty_out(vty, "  gprs nsvc %u remote ip %s%s",
+			i, remote.ip, VTY_NEWLINE);
+		vty_out(vty, "  gprs nsvc %u remote udp port %u%s",
+			i, remote.port, VTY_NEWLINE);
 	}
 
 	/* EGPRS specific parameters */
