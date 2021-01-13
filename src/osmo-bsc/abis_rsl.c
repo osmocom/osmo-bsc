@@ -237,6 +237,12 @@ static void add_power_control_params(struct msgb *msg, enum abis_rsl_ie iei,
 	if (cp->mode != GSM_PWR_CTRL_MODE_DYN_BTS)
 		return;
 
+	/* No dynamic BS power control if the maximum is 0 dB */
+	if (cp->dir == GSM_PWR_CTRL_DIR_DL) {
+		if (lchan->bs_power_db == 0)
+			return;
+	}
+
 	/* Put tag first, length will be updated later */
 	uint8_t *ie_len = msgb_tl_put(msg, iei);
 	uint8_t msg_len = msgb_length(msg);
