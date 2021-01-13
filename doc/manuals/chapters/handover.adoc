@@ -634,6 +634,7 @@ following properties:
 * EARFCN (EUTRAN Absolute Radio Channel Number) on which the cell
   broadcasts
 * Reselection thresholds towards E-UTRAN cells:
+
 [width="30%"]
 |====
 | 0 | 0 dB
@@ -642,10 +643,12 @@ following properties:
 | 3 | 6 dB
 | ... | ...
 | 31 | 62 dB
-|=====
+|====
+
 * Priority of E-UTRAN frequency: 0 = lowest priority, ..., 7 = highest priority
 * QRXLEVMIN parameter: Minimum required RX level in the UTRAN FDD cell
   (dBm), see 3GPP TS 25.304.
+
 [width="30%"]
 |====
 | 0 | -140 dBm
@@ -654,6 +657,7 @@ following properties:
 | ... | ...
 | 31 | -78 dBm
 |====
+
 * Measurement bandwidth in MHz, see 3GPP TS 44.018 and 3GPP TS 44.060.
   This field specifies the minimum value of the channel bandwidth of all
   valid E-UTRAN cells on the specified EARFCN. It is defined by the
@@ -664,6 +668,7 @@ following properties:
   station supporting wideband RSRQ measurements shall measure over the
   indicated number of resource blocks. The field is coded according to
   the following table:
+
 [width="30%"]
 |====
 | 0 | N_RB = 6
