@@ -6820,6 +6820,17 @@ DEFUN_USRATTR(cfg_net_bsc_codec_list,
 	struct bsc_msc_data *data = bsc_msc_data(vty);
 	int i;
 
+	/* check all given arguments first */
+	for (i = 0; i < argc; ++i) {
+		/* check for hrX or frX */
+		if (strlen(argv[i]) != 3
+				|| argv[i][1] != 'r'
+				|| (argv[i][0] != 'h' && argv[i][0] != 'f')
+				|| argv[i][2] < 0x30
+				|| argv[i][2] > 0x39)
+			goto error;
+	}
+
 	/* free the old list... if it exists */
 	if (data->audio_support) {
 		talloc_free(data->audio_support);
@@ -6833,14 +6844,6 @@ DEFUN_USRATTR(cfg_net_bsc_codec_list,
 	data->audio_length = argc;
 
 	for (i = 0; i < argc; ++i) {
-		/* check for hrX or frX */
-		if (strlen(argv[i]) != 3
-				|| argv[i][1] != 'r'
-				|| (argv[i][0] != 'h' && argv[i][0] != 'f')
-				|| argv[i][2] < 0x30
-				|| argv[i][2] > 0x39)
-			goto error;
-
 		data->audio_support[i] = talloc_zero(data->audio_support,
 				struct gsm_audio_support);
 		data->audio_support[i]->ver = atoi(argv[i] + 2);
