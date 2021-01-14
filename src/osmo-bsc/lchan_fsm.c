@@ -379,9 +379,6 @@ void lchan_fsm_alloc(struct gsm_lchan *lchan)
  */
 static void lchan_reset(struct gsm_lchan *lchan)
 {
-	const struct gsm_bts_trx *trx = lchan->ts->trx;
-	const struct gsm_bts *bts = trx->bts;
-
 	LOG_LCHAN(lchan, LOGL_DEBUG, "Clearing lchan state\n");
 
 	if (lchan->conn)
@@ -411,12 +408,6 @@ static void lchan_reset(struct gsm_lchan *lchan)
 
 		.release.rr_cause = GSM48_RR_CAUSE_NORMAL,
 	};
-
-	/* Default BS Power reduction value (in 2 dB steps) */
-	if (bts->bs_power_ctrl.mode == GSM_PWR_CTRL_MODE_DYN_BTS)
-		lchan->bs_power = bts->bs_power_ctrl.bs_power_max_db / 2;
-	else
-		lchan->bs_power = bts->bs_power_ctrl.bs_power_val_db / 2;
 }
 
 static void lchan_fsm_unused_onenter(struct osmo_fsm_inst *fi, uint32_t prev_state)
@@ -595,6 +586,12 @@ static void lchan_fsm_wait_ts_ready_onenter(struct osmo_fsm_inst *fi, uint32_t p
 		/* Upon last entering the UNUSED state, from lchan_reset():
 		 * - bs_power is still zero, 0dB reduction, output power = Pn.
 		 * - TA is still zero, to be determined by RACH. */
+
+		/* Default BS Power reduction value (in 2 dB steps) */
+		if (bts->bs_power_ctrl.mode == GSM_PWR_CTRL_MODE_DYN_BTS)
+			lchan->bs_power = bts->bs_power_ctrl.bs_power_max_db / 2;
+		else
+			lchan->bs_power = bts->bs_power_ctrl.bs_power_val_db / 2;
 	}
 
 	if (info->chan_mode == GSM48_CMODE_SPEECH_AMR) {
