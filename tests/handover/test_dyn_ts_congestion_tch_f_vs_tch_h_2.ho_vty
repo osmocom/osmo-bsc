@@ -1,0 +1,34 @@
+# If a handover from one TCH kind to the other occupies a dynamic timeslot,
+# also adhere to congestion constraints of the other TCH kind, since taking up
+# a dyn TS may reduce the available slot count for both kinds of TCH.
+
+create-bts trx-count 1 timeslots c+s4 TCH/F TCH/F TCH/F dyn dyn dyn PDCH
+create-bts trx-count 1 timeslots c+s4 TCH/F TCH/F TCH/F dyn dyn dyn PDCH
+
+# A TCH/H has better rxlev at a neighbor, and the neighbor's TCH/H slots would
+# not become congested. But taking up a neighbor's dynamic timeslot for TCH/H
+# would reduce the TCH/F availability to cause congestion on TCH/F. No HO.
+
+network
+ handover2 min-free-slots tch/f 2
+ handover2 min-free-slots tch/h 2
+
+set-ts-use trx 0 0 states * - - - TCH/H- pdch pdch *
+set-ts-use trx 1 0 states * TCH/F TCH/F TCH/F TCH/HH pdch pdch *
+
+meas-rep lchan * * * * rxlev 40 rxqual 0 ta 0 neighbors 30
+expect-no-chan
+
+meas-rep lchan 0 0 4 0 rxlev 20 rxqual 0 ta 0 neighbors 40
+# no handover because that results in congestion on TCH/F in bts 1
+expect-no-chan
+
+
+# Now the same situation, except there already is a half occupied TCH/H, hence an added TCH/H would not change the TCH/F
+# situation. The handover is performed.
+
+set-ts-use trx 0 0 states * - - - TCH/H- pdch pdch *
+set-ts-use trx 1 0 states * TCH/F TCH/F TCH/F TCH/HH TCH/H- pdch *
+
+meas-rep lchan 0 0 4 0 rxlev 20 rxqual 0 ta 0 neighbors 40
+expect-ho from lchan 0 0 4 0 to lchan 1 0 5 1
