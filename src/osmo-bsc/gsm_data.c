@@ -841,6 +841,11 @@ bool ts_is_usable(const struct gsm_bts_trx_ts *ts)
 void conn_update_ms_power_class(struct gsm_subscriber_connection *conn, uint8_t power_class)
 {
 	struct gsm_bts *bts = conn_get_bts(conn);
+
+	/* MS Power class remains the same => do nothing */
+	if (power_class == conn->ms_power_class)
+		return;
+
 	LOGP(DRLL, LOGL_DEBUG, "MS Power class update: %" PRIu8 " -> %" PRIu8 "\n",
 	     conn->ms_power_class, power_class);
 
