@@ -1,0 +1,58 @@
+# If a handover from one TCH kind to the other occupies a dynamic timeslot,
+# also adhere to congestion constraints of the other TCH kind, since taking up
+# a dyn TS may reduce the available slot count for both kinds of TCH.
+
+create-bts trx-count 1 timeslots c+s4 TCH/F TCH/F TCH/F dyn dyn dyn PDCH
+create-bts trx-count 1 timeslots c+s4 TCH/F TCH/F TCH/F dyn dyn dyn PDCH
+
+# A TCH/F has better rxlev at a neighbor, and the neighbor's TCH/F slots would
+# not become congested. But taking up a neighbor's dynamic timeslot for TCH/F
+# would reduce the TCH/H availability to cause congestion on TCH/H. No HO.
+
+network
+ handover2 min-free-slots tch/f 0
+ handover2 min-free-slots tch/h 4
+
+set-ts-use trx 0 0 states * TCH/F - - pdch pdch pdch *
+set-ts-use trx 1 0 states * TCH/F TCH/F TCH/F TCH/HH pdch pdch *
+
+meas-rep lchan * * * * rxlev 40 rxqual 0 ta 0 neighbors 30
+expect-no-chan
+
+meas-rep lchan 0 0 1 0 rxlev 20 rxqual 0 ta 0 neighbors 40
+# FAIL: should not handover because that results in congestion on TCH/H in bts 1
+expect-ho from lchan 0 0 1 0 to lchan 1 0 5 0
+
+expect-ts-use trx 0 0 states * - - - pdch pdch pdch *
+expect-ts-use trx 1 0 states * TCH/F TCH/F TCH/F TCH/HH TCH/F pdch *
+meas-rep lchan * * * * rxlev 40 rxqual 0 ta 0 neighbors 30
+
+congestion-check
+# FAIL: really weird: handover one TCH/H to the same cell to TCH/F, taking up another dyn TS.
+# TCH/H congestion hence actually gets worse.
+expect-ho from lchan 1 0 4 1 to lchan 1 0 6 0
+expect-ts-use trx 0 0 states * - - - pdch pdch pdch *
+expect-ts-use trx 1 0 states * TCH/F TCH/F TCH/F TCH/H- TCH/F TCH/F *
+
+congestion-check
+# more FAIL: TCH/H moves to worse bts 0 due to congestion
+expect-ho from lchan 1 0 4 0 to lchan 0 0 4 0
+expect-ts-use trx 0 0 states * - - - TCH/H- pdch pdch *
+expect-ts-use trx 1 0 states * TCH/F TCH/F TCH/F pdch TCH/F TCH/F *
+
+congestion-check
+expect-no-chan
+
+meas-rep lchan 1 * * * rxlev 40 rxqual 0 ta 0 neighbors 30
+expect-no-chan
+
+meas-rep lchan 0 * * * rxlev 30 rxqual 0 ta 0 neighbors 40
+# FAIL: back to bts 1 because of rxlev, plus moving TCH/H to TCH/F!?
+expect-ho from lchan 0 0 4 0 to lchan 1 0 4 0
+
+expect-ts-use trx 0 0 states * - - - pdch pdch pdch *
+expect-ts-use trx 1 0 states * TCH/F TCH/F TCH/F TCH/F TCH/F TCH/F *
+
+congestion-check
+expect-no-chan
+# Stable situation now only because TCH/F has min-free-slots set to 0
