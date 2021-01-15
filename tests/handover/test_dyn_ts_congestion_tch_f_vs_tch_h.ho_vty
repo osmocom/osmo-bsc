@@ -20,12 +20,8 @@ meas-rep lchan * * * * rxlev 40 rxqual 0 ta 0 neighbors 30
 expect-no-chan
 
 meas-rep lchan 0 0 1 0 rxlev 20 rxqual 0 ta 0 neighbors 40
-# FAIL: should not handover because that results in congestion on TCH/H in bts 1
-expect-ho from lchan 0 0 1 0 to lchan 1 0 5 0
-
-expect-ts-use trx 0 0 states * - - - pdch pdch pdch *
-expect-ts-use trx 1 0 states * TCH/F TCH/F TCH/F TCH/HH TCH/F pdch *
-
+# no handover because that results in congestion on TCH/H in bts 1
+expect-no-chan
 
 ###
 
@@ -34,11 +30,9 @@ set-ts-use trx 1 0 states * TCH/F TCH/F TCH/F TCH/HH TCH/F pdch *
 meas-rep lchan * * * * rxlev 40 rxqual 0 ta 0 neighbors 30
 
 congestion-check
-# FAIL: really weird: handover one TCH/H to the same cell to TCH/F, taking up another dyn TS.
-# TCH/H congestion hence actually gets worse.
-expect-ho from lchan 1 0 4 1 to lchan 1 0 6 0
-expect-ts-use trx 0 0 states * - - - pdch pdch pdch *
-expect-ts-use trx 1 0 states * TCH/F TCH/F TCH/F TCH/H- TCH/F TCH/F *
+expect-ho from lchan 1 0 4 1 to lchan 0 0 4 0
+expect-ts-use trx 0 0 states * - - - TCH/H- pdch pdch *
+expect-ts-use trx 1 0 states * TCH/F TCH/F TCH/F TCH/H- TCH/F pdch *
 
 
 ###
@@ -65,12 +59,9 @@ meas-rep lchan 1 * * * rxlev 40 rxqual 0 ta 0 neighbors 30
 expect-no-chan
 
 meas-rep lchan 0 * * * rxlev 30 rxqual 0 ta 0 neighbors 40
-# FAIL: back to bts 1 because of rxlev, plus moving TCH/H to TCH/F!?
-expect-ho from lchan 0 0 4 0 to lchan 1 0 4 0
-
-expect-ts-use trx 0 0 states * - - - pdch pdch pdch *
-expect-ts-use trx 1 0 states * TCH/F TCH/F TCH/F TCH/F TCH/F TCH/F *
-
+# no HO because the target is congested on TCH/H. Moving to TCH/F would also
+# reduce TCH/H lchans because it would convert another dyn TS.
+expect-no-chan
 
 ###
 
@@ -78,5 +69,6 @@ set-ts-use trx 0 0 states * - - - pdch pdch pdch *
 set-ts-use trx 1 0 states * TCH/F TCH/F TCH/F TCH/F TCH/F TCH/F *
 
 congestion-check
+# FAIL: TCH/F occupy dynamic timeslots -- should hand over to bts 0 to free a
+# dyn TS and reduce TCH/H congestion.
 expect-no-chan
-# Stable situation now only because TCH/F has min-free-slots set to 0
