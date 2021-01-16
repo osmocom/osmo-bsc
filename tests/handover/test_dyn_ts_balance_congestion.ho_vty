@@ -1,0 +1,31 @@
+# To balance congestion, consider cross effects between TCH/F and TCH/H when occupying a dynamic timeslot in the target:
+# when balancing of TCH/F congestion would take up a dyn TS in the target, reducing TCH/H availability, the handover
+# should not cause worse TCH/H congestion than in the source cell.
+
+create-bts trx-count 1 timeslots c+s4 TCH/F TCH/F TCH/F TCH/F TCH/F TCH/F PDCH
+create-bts trx-count 1 timeslots c+s4 TCH/F TCH/F TCH/F TCH/F dyn   dyn   PDCH
+
+# for this test, avoid changing a TCH/F to a TCH/H by using a non-AMR codec
+codec tch/f FR
+
+network
+ bts 0
+  handover2 min-free-slots tch/f 2
+ bts 1
+  handover2 min-free-slots tch/f 4
+  handover2 min-free-slots tch/h 4
+
+set-ts-use trx 0 0 states        *    TCH/F TCH/F TCH/F TCH/F TCH/F TCH/F *
+set-ts-use trx 1 0 states        *    TCH/F TCH/F TCH/F TCH/F pdch  pdch  *
+
+meas-rep lchan * * * * rxlev 40 rxqual 0 ta 0 neighbors 30
+expect-no-chan
+
+# bts 0 is full for TCH/F. Looking at TCH/F, by target_overbooked_after_ho==75% < current_overbooked_before_ho==100%, a
+# congestion balancing to bts 1 would be performed. But the TCH/F on the target cell would occupy a dynamic timeslot.
+# That would reduce the TCH/H free slots by two and cause TCH/H being overbooked by 50%. On the source cell, TCH/H is
+# not congested. No handover is performed because 50% in the target is more congestion for TCH/H than 0% in the source
+# cell.
+congestion-check
+# FAIL: should not increase TCH/H congestion by occupying a dyn TS
+expect-ho from lchan 0 0 1 0 to lchan 1 0 5 0
