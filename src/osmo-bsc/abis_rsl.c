@@ -1610,12 +1610,12 @@ static bool force_free_lchan_for_emergency(struct chan_rqd *rqd)
 
 	/* First check the situation on the BTS, if we have TCH/H or TCH/F resources available for another (EMERGENCY)
 	 * call. If yes, then no (further) action has to be carried out. */
-	if (lchan_avail_by_type(rqd->bts, GSM_LCHAN_TCH_F)) {
+	if (lchan_avail_by_type(rqd->bts, GSM_LCHAN_TCH_F, true)) {
 		LOG_BTS(rqd->bts, DRSL, LOGL_NOTICE,
 			"CHAN RQD/EMERGENCY-PRIORITY: at least one TCH/F is (now) available!\n");
 		return false;
 	}
-	if (lchan_avail_by_type(rqd->bts, GSM_LCHAN_TCH_H)) {
+	if (lchan_avail_by_type(rqd->bts, GSM_LCHAN_TCH_H, true)) {
 		LOG_BTS(rqd->bts, DRSL, LOGL_NOTICE,
 			"CHAN RQD/EMERGENCY-PRIORITY: at least one TCH/H is (now) available!\n");
 		return false;

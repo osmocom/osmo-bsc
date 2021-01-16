@@ -32,13 +32,14 @@
 
 static struct gsm_lchan *
 _lc_find_trx(struct gsm_bts_trx *trx, enum gsm_phys_chan_config pchan,
-	     enum gsm_phys_chan_config as_pchan, bool allow_pchan_switch)
+	     enum gsm_phys_chan_config as_pchan, bool allow_pchan_switch, bool log)
 {
 	struct gsm_lchan *lchan;
 	struct gsm_bts_trx_ts *ts;
 	int j, start, stop, dir;
 
 #define LOGPLCHANALLOC(fmt, args...) \
+	if (log) \
 		LOGP(DRLL, LOGL_DEBUG, "looking for lchan %s%s%s%s: " fmt, \
 		     gsm_pchan_name(pchan), \
 		     pchan == as_pchan ? "" : " as ", \
@@ -103,7 +104,7 @@ _lc_find_trx(struct gsm_bts_trx *trx, enum gsm_phys_chan_config pchan,
 
 static struct gsm_lchan *
 _lc_dyn_find_bts(struct gsm_bts *bts, enum gsm_phys_chan_config pchan,
-		 enum gsm_phys_chan_config dyn_as_pchan)
+		 enum gsm_phys_chan_config dyn_as_pchan, bool log)
 {
 	struct gsm_bts_trx *trx;
 	struct gsm_lchan *lc;
@@ -119,13 +120,13 @@ _lc_dyn_find_bts(struct gsm_bts *bts, enum gsm_phys_chan_config pchan,
 	for (allow_pchan_switch = 0; allow_pchan_switch <= (try_pchan_switch ? 1 : 0); allow_pchan_switch++) {
 		if (bts->chan_alloc_reverse) {
 			llist_for_each_entry_reverse(trx, &bts->trx_list, list) {
-				lc = _lc_find_trx(trx, pchan, dyn_as_pchan, (bool)allow_pchan_switch);
+				lc = _lc_find_trx(trx, pchan, dyn_as_pchan, (bool)allow_pchan_switch, log);
 				if (lc)
 					return lc;
 			}
 		} else {
 			llist_for_each_entry(trx, &bts->trx_list, list) {
-				lc = _lc_find_trx(trx, pchan, dyn_as_pchan, (bool)allow_pchan_switch);
+				lc = _lc_find_trx(trx, pchan, dyn_as_pchan, (bool)allow_pchan_switch, log);
 				if (lc)
 					return lc;
 			}
@@ -136,9 +137,9 @@ _lc_dyn_find_bts(struct gsm_bts *bts, enum gsm_phys_chan_config pchan,
 }
 
 static struct gsm_lchan *
-_lc_find_bts(struct gsm_bts *bts, enum gsm_phys_chan_config pchan)
+_lc_find_bts(struct gsm_bts *bts, enum gsm_phys_chan_config pchan, bool log)
 {
-	return _lc_dyn_find_bts(bts, pchan, pchan);
+	return _lc_dyn_find_bts(bts, pchan, pchan, log);
 }
 
 struct gsm_lchan *lchan_select_by_chan_mode(struct gsm_bts *bts,
@@ -175,12 +176,13 @@ struct gsm_lchan *lchan_select_by_chan_mode(struct gsm_bts *bts,
 	return lchan_select_by_type(bts, type);
 }
 
-struct gsm_lchan *lchan_avail_by_type(struct gsm_bts *bts, enum gsm_chan_t type)
+struct gsm_lchan *lchan_avail_by_type(struct gsm_bts *bts, enum gsm_chan_t type, bool log)
 {
 	struct gsm_lchan *lchan = NULL;
 	enum gsm_phys_chan_config first, first_cbch, second, second_cbch;
 
-	LOG_BTS(bts, DRLL, LOGL_DEBUG, "lchan_avail_by_type(%s)\n", gsm_lchant_name(type));
+	if (log)
+		LOG_BTS(bts, DRLL, LOGL_DEBUG, "lchan_avail_by_type(%s)\n", gsm_lchant_name(type));
 
 	switch (type) {
 	case GSM_LCHAN_SDCCH:
@@ -196,20 +198,20 @@ struct gsm_lchan *lchan_avail_by_type(struct gsm_bts *bts, enum gsm_chan_t type)
 			second_cbch = GSM_PCHAN_SDCCH8_SACCH8C_CBCH;
 		}
 
-		lchan = _lc_find_bts(bts, first);
+		lchan = _lc_find_bts(bts, first, log);
 		if (lchan == NULL)
-			lchan = _lc_find_bts(bts, first_cbch);
+			lchan = _lc_find_bts(bts, first_cbch, log);
 		if (lchan == NULL)
-			lchan = _lc_find_bts(bts, second);
+			lchan = _lc_find_bts(bts, second, log);
 		if (lchan == NULL)
-			lchan = _lc_find_bts(bts, second_cbch);
+			lchan = _lc_find_bts(bts, second_cbch, log);
 		break;
 	case GSM_LCHAN_TCH_F:
-		lchan = _lc_find_bts(bts, GSM_PCHAN_TCH_F);
+		lchan = _lc_find_bts(bts, GSM_PCHAN_TCH_F, log);
 		/* If we don't have TCH/F available, try dynamic TCH/F_PDCH */
 		if (!lchan) {
 			lchan = _lc_dyn_find_bts(bts, GSM_PCHAN_TCH_F_PDCH,
-						 GSM_PCHAN_TCH_F);
+						 GSM_PCHAN_TCH_F, log);
 			/* TCH/F_PDCH used as TCH/F -- here, type is already
 			 * set to GSM_LCHAN_TCH_F, but for clarity's sake... */
 			if (lchan)
@@ -220,19 +222,19 @@ struct gsm_lchan *lchan_avail_by_type(struct gsm_bts *bts, enum gsm_chan_t type)
 		if (!lchan && bts->network->dyn_ts_allow_tch_f) {
 			lchan = _lc_dyn_find_bts(bts,
 						 GSM_PCHAN_TCH_F_TCH_H_PDCH,
-						 GSM_PCHAN_TCH_F);
+						 GSM_PCHAN_TCH_F, log);
 			if (lchan)
 				type = GSM_LCHAN_TCH_F;
 		}
 		break;
 	case GSM_LCHAN_TCH_H:
-		lchan = _lc_find_bts(bts, GSM_PCHAN_TCH_H);
+		lchan = _lc_find_bts(bts, GSM_PCHAN_TCH_H, log);
 		/* No dedicated TCH/x available -- try fully dynamic
 		 * TCH/F_TCH/H_PDCH */
 		if (!lchan) {
 			lchan = _lc_dyn_find_bts(bts,
 						 GSM_PCHAN_TCH_F_TCH_H_PDCH,
-						 GSM_PCHAN_TCH_H);
+						 GSM_PCHAN_TCH_H, log);
 			if (lchan)
 				type = GSM_LCHAN_TCH_H;
 		}
@@ -251,7 +253,7 @@ struct gsm_lchan *lchan_select_by_type(struct gsm_bts *bts, enum gsm_chan_t type
 {
 	struct gsm_lchan *lchan = NULL;
 
-	lchan = lchan_avail_by_type(bts, type);
+	lchan = lchan_avail_by_type(bts, type, true);
 
 	LOG_BTS(bts, DRLL, LOGL_DEBUG, "lchan_select_by_type(%s)\n", gsm_lchant_name(type));
 
