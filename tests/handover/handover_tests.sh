@@ -6,7 +6,7 @@ update="$3"
 test -d "$tests_dir"
 test -d "$build_dir"
 
-if [ -n "$update" -a "x$update" != "x-u" ]; then
+if [ -n "$update" -a "x$update" != "x-u" -a "x$update" != "x-U" ]; then
 	echo "unknown argument: $update"
 	exit 1
 fi
@@ -21,7 +21,7 @@ one_test() {
 	rc=$?
 	expect_out="$test_path.ok"
 	expect_err="$test_path.err"
-	if [ "x$rc" = "x0" -a  "x$update" = "x-u" ]; then
+	if [ "x$rc" = "x0" -a  "x$update" = "x-U" ]; then
 		cp "$got_out" "$expect_out"
 		cp "$got_err" "$expect_err"
 	else
@@ -50,7 +50,7 @@ done
 set +e
 cat "$results"
 failed="$(grep FAIL "$results")"
-if [ -z "$failed" -a "x$update" = "x-u" ]; then
+if [ -z "$failed" -a "x$update" != "x" ]; then
 	cp "$results" "$tests_dir"/handover_tests.ok
 fi
 rm "$results"
