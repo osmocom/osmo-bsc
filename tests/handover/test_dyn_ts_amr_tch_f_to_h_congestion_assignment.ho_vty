@@ -19,59 +19,59 @@ expect-no-chan
 
 create-ms bts 0 TCH/F AMR
 meas-rep lchan 0 0 5 0 rxlev 40 rxqual 0 ta 0 neighbors 30
-expect-ts-use trx 0 0 states * TCH/F TCH/F TCH/F TCH/F TCH/F pdch pdch
+expect-ts-use trx 0 0 states * TCH/F TCH/F TCH/F TCH/F TCH/F pdch *
 
 congestion-check
 expect-ho from lchan 0 0 5 0 to lchan 0 0 6 0
-expect-ts-use trx 0 0 states * TCH/F TCH/F TCH/F TCH/F pdch TCH/H- pdch
+expect-ts-use trx 0 0 states * TCH/F TCH/F TCH/F TCH/F pdch TCH/H- *
 
 congestion-check
 expect-ho from lchan 0 0 4 0 to lchan 0 0 6 1
-expect-ts-use trx 0 0 states * TCH/F TCH/F TCH/F pdch pdch TCH/HH pdch
+expect-ts-use trx 0 0 states * TCH/F TCH/F TCH/F pdch pdch TCH/HH *
 
 congestion-check
 expect-no-chan
 
 create-ms bts 0 TCH/F AMR
 meas-rep lchan 0 0 4 0 rxlev 40 rxqual 0 ta 0 neighbors 30
-expect-ts-use trx 0 0 states * TCH/F TCH/F TCH/F TCH/F pdch TCH/HH pdch
+expect-ts-use trx 0 0 states * TCH/F TCH/F TCH/F TCH/F pdch TCH/HH *
 
 congestion-check
 expect-ho from lchan 0 0 4 0 to lchan 0 0 5 0
-expect-ts-use trx 0 0 states * TCH/F TCH/F TCH/F pdch TCH/H- TCH/HH pdch
+expect-ts-use trx 0 0 states * TCH/F TCH/F TCH/F pdch TCH/H- TCH/HH *
 
 congestion-check
 expect-ho from lchan 0 0 1 0 to lchan 0 0 5 1
-expect-ts-use trx 0 0 states * - TCH/F TCH/F pdch TCH/HH TCH/HH pdch
+expect-ts-use trx 0 0 states * - TCH/F TCH/F pdch TCH/HH TCH/HH *
 
 congestion-check
 expect-no-chan
 
 create-ms bts 0 TCH/F AMR
 meas-rep lchan 0 0 1 0 rxlev 40 rxqual 0 ta 0 neighbors 30
-expect-ts-use trx 0 0 states * TCH/F TCH/F TCH/F pdch TCH/HH TCH/HH pdch
+expect-ts-use trx 0 0 states * TCH/F TCH/F TCH/F pdch TCH/HH TCH/HH *
 
 congestion-check
 expect-ho from lchan 0 0 1 0 to lchan 0 0 4 0
-expect-ts-use trx 0 0 states * - TCH/F TCH/F TCH/H- TCH/HH TCH/HH pdch
+expect-ts-use trx 0 0 states * - TCH/F TCH/F TCH/H- TCH/HH TCH/HH *
 
 congestion-check
 expect-ho from lchan 0 0 2 0 to lchan 0 0 4 1
-expect-ts-use trx 0 0 states * - - TCH/F TCH/HH TCH/HH TCH/HH pdch
+expect-ts-use trx 0 0 states * - - TCH/F TCH/HH TCH/HH TCH/HH *
 
 congestion-check
 expect-no-chan
 
 create-ms bts 0 TCH/F AMR
 meas-rep lchan 0 0 1 0 rxlev 40 rxqual 0 ta 0 neighbors 30
-expect-ts-use trx 0 0 states * TCH/F - TCH/F TCH/HH TCH/HH TCH/HH pdch
+expect-ts-use trx 0 0 states * TCH/F - TCH/F TCH/HH TCH/HH TCH/HH *
 
 congestion-check
 expect-no-chan
 
 create-ms bts 0 TCH/F AMR
 meas-rep lchan 0 0 2 0 rxlev 40 rxqual 0 ta 0 neighbors 30
-expect-ts-use trx 0 0 states * TCH/F TCH/F TCH/F TCH/HH TCH/HH TCH/HH pdch
+expect-ts-use trx 0 0 states * TCH/F TCH/F TCH/F TCH/HH TCH/HH TCH/HH *
 
 congestion-check
 expect-no-chan
