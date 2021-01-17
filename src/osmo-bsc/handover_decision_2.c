@@ -106,8 +106,18 @@ struct ho_candidate {
 		struct gsm_lchan *lchan;
 		struct gsm_bts *bts;
 		int rxlev;
+		/* free/min-free for the current TCH kind, same as either free_tch_f or free_tch_h below */
 		int free_tch;
 		int min_free_tch;
+		/* free/min-free for the two TCH kinds, to calculate F<->H cross effects for dynamic timeslots */
+		int free_tchf;
+		int min_free_tchf;
+		int free_tchh;
+		int min_free_tchh;
+		/* Effects of freeing a dynamic timeslot, i.e. turning it into PDCH mode and making available more free
+		 * TCH: */
+		int lchan_frees_tchf;
+		int lchan_frees_tchh;
 	} current;
 	struct {
 		struct neighbor_ident_key nik;	/* neighbor ARFCN+BSIC */
@@ -119,7 +129,8 @@ struct ho_candidate {
 		int min_free_tchf;
 		int free_tchh;
 		int min_free_tchh;
-		/* Effects of occupying a dynamic timeslot: */
+		/* Effects of occupying a dynamic timeslot, i.e. turning from PDCH into a specific TCH kind, and
+		 * reducing the number of free TCH for both TCH/F and TCH/H: */
 		int next_tchf_reduces_tchh;
 		int next_tchh_reduces_tchf;
 	} target;
@@ -154,6 +165,17 @@ static bool hodec2_initialized = false;
 static enum ho_reason global_ho_reason;
 
 static void congestion_check_cb(void *arg);
+
+static unsigned int ts_usage_count(struct gsm_bts_trx_ts *ts)
+{
+	struct gsm_lchan *lchan;
+	unsigned int count = 0;
+	ts_for_each_lchan(lchan, ts) {
+		if (lchan_state_is(lchan, LCHAN_ST_ESTABLISHED))
+			count++;
+	}
+	return count;
+}
 
 /* This function gets called on ho2 init, whenever the congestion check interval is changed, and also
  * when the timer has fired to trigger again after the next congestion check timeout. */
@@ -659,21 +681,75 @@ static void check_requirements(struct ho_candidate *c)
 	 * congestion on the current cell, hence the - 1 on the target. */
 	current_overbooked = load_above_congestion(c->current.free_tch, c->current.min_free_tch);
 	if (requirement & REQUIREMENT_A_TCHF) {
+		bool ok;
 		int32_t target_overbooked = load_above_congestion(c->target.free_tchf - 1, c->target.min_free_tchf);
 		LOGPHOLCHANTOBTS(c->current.lchan, c->target.bts, LOGL_DEBUG,
 				 "current overbooked = %s%%, TCH/F target overbooked after HO = %s%%\n",
 				 osmo_int_to_float_str_c(OTC_SELECT, current_overbooked, LOAD_PRECISION - 2),
 				 osmo_int_to_float_str_c(OTC_SELECT, target_overbooked, LOAD_PRECISION - 2));
-		if (target_overbooked < current_overbooked)
+		ok = target_overbooked < current_overbooked;
+		/* Look at dynamic timeslot effects on TCH/H: */
+		if (ok && c->target.next_tchf_reduces_tchh) {
+			/* Looking at the current TCH type and the target cell's TCH/F alone, congestion balancing
+			 * should happen. However, what if the target TCH/F is a dynamic timeslot -- would that cause
+			 * congestion on TCH/H above the current cell's TCH/H congestion? */
+			int32_t current_tchh_overbooked = load_above_congestion(c->current.free_tchh,
+										c->current.min_free_tchh);
+			int32_t target_tchh_overbooked;
+			int target_free_tchh_after_ho = c->target.free_tchh - c->target.next_tchf_reduces_tchh;
+			/* If this is a re-assignment within the same cell, and if the current candidate would free a
+			 * dynamic timeslot, then the target-overbooking after HO is reduced again by the freed dynamic
+			 * TS. */
+			if (c->current.bts == c->target.bts)
+				target_free_tchh_after_ho += c->current.lchan_frees_tchh;
+			target_tchh_overbooked = load_above_congestion(target_free_tchh_after_ho,
+								       c->target.min_free_tchh);
+			LOGPHOLCHANTOBTS(c->current.lchan, c->target.bts, LOGL_DEBUG,
+					 "dyn TS: current TCH/H overbooked = %s%%, TCH/H target overbooked after HO = %s%%\n",
+					 osmo_int_to_float_str_c(OTC_SELECT, current_tchh_overbooked, LOAD_PRECISION - 2),
+					 osmo_int_to_float_str_c(OTC_SELECT, target_tchh_overbooked, LOAD_PRECISION - 2));
+			/* For the current TCH kind, a handover should only happen if things actually get better
+			 * (condition is '<'). For dynamic timeslot cross effects TCH/F->TCH/H, it is fine to not make
+			 * it worse.  Hence the smaller-or-equal condition. */
+			ok = target_tchh_overbooked <= current_tchh_overbooked;
+		}
+		if (ok)
 			requirement |= REQUIREMENT_C_TCHF;
 	}
 	if (requirement & REQUIREMENT_A_TCHH) {
+		bool ok;
 		int32_t target_overbooked = load_above_congestion(c->target.free_tchh - 1, c->target.min_free_tchh);
 		LOGPHOLCHANTOBTS(c->current.lchan, c->target.bts, LOGL_DEBUG,
 				 "current overbooked = %s%%, TCH/H target overbooked after HO = %s%%\n",
 				 osmo_int_to_float_str_c(OTC_SELECT, current_overbooked, LOAD_PRECISION - 2),
 				 osmo_int_to_float_str_c(OTC_SELECT, target_overbooked, LOAD_PRECISION - 2));
-		if (target_overbooked < current_overbooked)
+		ok = target_overbooked < current_overbooked;
+		/* Look at dynamic timeslot effects on TCH/F: */
+		if (ok && c->target.next_tchh_reduces_tchf) {
+			/* Looking at the current TCH type and the target cell's TCH/H alone, congestion balancing
+			 * should happen. However, what if the target TCH/H is a dynamic timeslot -- would that cause
+			 * congestion on TCH/F above the current cell's TCH/F congestion? */
+			int32_t current_tchf_overbooked = load_above_congestion(c->current.free_tchf,
+										c->current.min_free_tchf);
+			int32_t target_tchf_overbooked;
+			int target_free_tchf_after_ho = c->target.free_tchf - c->target.next_tchh_reduces_tchf;
+			/* If this is a re-assignment within the same cell, and if the current candidate would free a
+			 * dynamic timeslot, then the target-overbooking after HO is reduced again by the freed dynamic
+			 * TS. */
+			if (c->current.bts == c->target.bts)
+				target_free_tchf_after_ho += c->current.lchan_frees_tchf;
+			target_tchf_overbooked = load_above_congestion(target_free_tchf_after_ho,
+								       c->target.min_free_tchf);
+			LOGPHOLCHANTOBTS(c->current.lchan, c->target.bts, LOGL_DEBUG,
+					 "dyn TS: current TCH/F overbooked = %s%%, TCH/F target overbooked after HO = %s%%\n",
+					 osmo_int_to_float_str_c(OTC_SELECT, current_tchf_overbooked, LOAD_PRECISION - 2),
+					 osmo_int_to_float_str_c(OTC_SELECT, target_tchf_overbooked, LOAD_PRECISION - 2));
+			/* For the current TCH kind, a handover should only happen if things actually get better
+			 * (condition is '<'). For dynamic timeslot cross effects TCH/H->TCH/F, it is fine to not make
+			 * it worse. Hence the smaller-or-equal condition. */
+			ok = target_tchf_overbooked <= current_tchf_overbooked;
+		}
+		if (ok)
 			requirement |= REQUIREMENT_C_TCHH;
 	}
 
@@ -904,17 +980,37 @@ static void candidate_set_free_tch(struct ho_candidate *c)
 {
 	struct gsm_lchan *next_lchan;
 
-	c->current.free_tch = bts_count_free_ts(c->current.bts, c->current.lchan->ts->pchan_is);
+	c->current.free_tchf = bts_count_free_ts(c->current.bts, GSM_PCHAN_TCH_F);
+	c->current.min_free_tchf = ho_get_hodec2_tchf_min_slots(c->current.bts->ho);
+	c->current.free_tchh = bts_count_free_ts(c->current.bts, GSM_PCHAN_TCH_H);
+	c->current.min_free_tchh = ho_get_hodec2_tchh_min_slots(c->current.bts->ho);
 	switch (c->current.lchan->ts->pchan_is) {
 	case GSM_PCHAN_TCH_F:
-		c->current.min_free_tch = ho_get_hodec2_tchf_min_slots(c->current.bts->ho);
+		c->current.free_tch = c->current.free_tchf;
+		c->current.min_free_tch = c->current.min_free_tchf;
+		c->current.lchan_frees_tchf = 1;
+		if (c->current.lchan->ts->pchan_on_init == GSM_PCHAN_TCH_F_TCH_H_PDCH)
+			c->current.lchan_frees_tchh = 2;
+		else
+			c->current.lchan_frees_tchh = 0;
 		break;
 	case GSM_PCHAN_TCH_H:
-		c->current.min_free_tch = ho_get_hodec2_tchh_min_slots(c->current.bts->ho);
+		c->current.free_tch = c->current.free_tchh;
+		c->current.min_free_tch = c->current.min_free_tchh;
+		c->current.lchan_frees_tchh = 1;
+		/* Freeing one of two TCH/H does not free a dyn TS and would not free a TCH/F. It has to be the last
+		 * TCH/H of a dynamic timeslot that is freed to get a new TCH/F in the current cell from the handover.
+		 * Hence the ts_usage_count() condition. */
+		if (c->current.lchan->ts->pchan_on_init == GSM_PCHAN_TCH_F_TCH_H_PDCH
+		    && ts_usage_count(c->current.lchan->ts) == 1)
+			c->current.lchan_frees_tchf = 1;
+		else
+			c->current.lchan_frees_tchf = 0;
 		break;
 	default:
 		break;
 	}
+
 	c->target.free_tchf = bts_count_free_ts(c->target.bts, GSM_PCHAN_TCH_F);
 	c->target.min_free_tchf = ho_get_hodec2_tchf_min_slots(c->target.bts->ho);
 	c->target.free_tchh = bts_count_free_ts(c->target.bts, GSM_PCHAN_TCH_H);
@@ -1453,17 +1549,6 @@ static bool lchan_is_on_dynamic_ts(struct gsm_lchan *lchan)
 {
 	return lchan->ts->pchan_on_init == GSM_PCHAN_TCH_F_TCH_H_PDCH
 		|| lchan->ts->pchan_on_init == GSM_PCHAN_TCH_F_PDCH;
-}
-
-static unsigned int ts_usage_count(struct gsm_bts_trx_ts *ts)
-{
-	struct gsm_lchan *lchan;
-	unsigned int count = 0;
-	ts_for_each_lchan(lchan, ts) {
-		if (lchan_state_is(lchan, LCHAN_ST_ESTABLISHED))
-			count++;
-	}
-	return count;
 }
 
 static bool is_upgrade_to_tchf(const struct ho_candidate *c, uint8_t for_requirement)

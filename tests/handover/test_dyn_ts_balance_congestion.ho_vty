@@ -27,5 +27,11 @@ expect-no-chan
 # not congested. No handover is performed because 50% in the target is more congestion for TCH/H than 0% in the source
 # cell.
 congestion-check
-# FAIL: should not increase TCH/H congestion by occupying a dyn TS
+expect-no-chan
+
+# If there is no constraint on TCH/H in the target cell, the handover does take place.
+network
+ bts 1
+  handover2 min-free-slots tch/h 2
+congestion-check
 expect-ho from lchan 0 0 1 0 to lchan 1 0 5 0
