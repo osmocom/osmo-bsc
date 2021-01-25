@@ -402,12 +402,16 @@ int bsc_paging_start(struct bsc_paging_params *params)
 /* select the best cipher permitted by the intersection of both masks */
 static int select_best_cipher(uint8_t msc_mask, uint8_t bsc_mask)
 {
+	/* A5/7 ... A5/3: We assume higher is better,
+	 * but: A5/1 is better than A5/2, which is better than A5/0 */
+	const uint8_t codec_strength[8] = { 7, 6, 5, 4, 3, 1, 2, 0 };
 	uint8_t intersection = msc_mask & bsc_mask;
 	int i;
 
-	for (i = 7; i >= 0; i--) {
-		if (intersection & (1 << i))
-			return i;
+	for (i = 0; i < ARRAY_SIZE(codec_strength); i++) {
+		uint8_t codec = codec_strength[i];
+		if (intersection & (1 << codec))
+			return codec;
 	}
 	return -1;
 }
