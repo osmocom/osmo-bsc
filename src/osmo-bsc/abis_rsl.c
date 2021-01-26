@@ -1546,6 +1546,17 @@ static int rsl_rx_chan_rqd(struct msgb *msg)
 		break;
 	}
 
+	/* Block emergency calls if we explicitly disable them via sysinfo. */
+	if (rqd->reason == GSM_CHREQ_REASON_EMERG) {
+		if (bts->si_common.rach_control.t2 & 0x4) {
+			LOG_BTS(bts, DRSL, LOGL_NOTICE, "CHAN RQD: MS attempts EMERGENCY CALL although EMERGENCY CALLS "
+				"are not allowed in sysinfo (spec violation by MS!)\n");
+			rsl_tx_imm_ass_rej(bts, &rqd->ref);
+			talloc_free(rqd);
+			return 0;
+		}
+	}
+
 	/* Enqueue request */
 	llist_add_tail(&rqd->entry, &bts->chan_rqd_queue);
 
@@ -1702,16 +1713,6 @@ void abis_rsl_chan_rqd_queue_poll(struct gsm_bts *bts)
 	 * - If there is still no channel available, try a TCH/F.
 	 *
 	 */
-	if (rqd->reason == GSM_CHREQ_REASON_EMERG) {
-		if (bts->si_common.rach_control.t2 & 0x4) {
-			LOG_BTS(bts, DRSL, LOGL_NOTICE, "CHAN RQD: MS attempts EMERGENCY CALL although EMERGENCY CALLS "
-				"are not allowed in sysinfo (spec violation by MS!)\n");
-			rsl_tx_imm_ass_rej(bts, &rqd->ref);
-			llist_del(&rqd->entry);
-			talloc_free(rqd);
-			return;
-		}
-	}
 
 	/* Emergency calls will be put on a free TCH/H or TCH/F directly in the code below, all other channel requests
 	 * will get an SDCCH first (if possible). */
