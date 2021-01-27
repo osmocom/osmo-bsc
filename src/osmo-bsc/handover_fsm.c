@@ -408,6 +408,13 @@ static void handover_start_intra_bsc(struct gsm_subscriber_connection *conn)
 		.s15_s0 = conn->lchan->activate.info.s15_s0,
 	};
 
+	/* For intra-cell handover, we know the accurate Timing Advance from the previous lchan. For inter-cell
+	 * handover, no Timing Advance for the new cell is known, so leave it unset. */
+	if (ho->new_bts == bts) {
+		info.ta = conn->lchan->last_ta;
+		info.ta_known = true;
+	}
+
 	lchan_activate(ho->new_lchan, &info);
 }
 

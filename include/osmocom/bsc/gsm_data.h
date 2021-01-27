@@ -571,6 +571,8 @@ struct lchan_activate_info {
 	/* During intra-BSC handover, we keep the MGW endpoint intact and just re-route to the new lchan. This
 	 * activate_info is for the new lchan, the re_use_mgw_endpoint_from_lchan points at the old lchan. */
 	struct gsm_lchan *re_use_mgw_endpoint_from_lchan;
+	bool ta_known;
+	uint8_t ta;
 };
 
 struct gsm_lchan {

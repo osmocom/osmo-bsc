@@ -487,6 +487,8 @@ void assignment_fsm_start(struct gsm_subscriber_connection *conn, struct gsm_bts
 			.requires_voice_stream = conn->assignment.requires_voice_stream,
 			.msc_assigned_cic = req->msc_assigned_cic,
 			.re_use_mgw_endpoint_from_lchan = conn->lchan,
+			.ta = conn->lchan->last_ta,
+			.ta_known = true,
 		};
 
 		osmo_fsm_inst_dispatch(conn->lchan->fi, LCHAN_EV_REQUEST_MODE_MODIFY, &info);
@@ -562,6 +564,8 @@ void assignment_fsm_start(struct gsm_subscriber_connection *conn, struct gsm_bts
 		.requires_voice_stream = conn->assignment.requires_voice_stream,
 		.msc_assigned_cic = req->msc_assigned_cic,
 		.re_use_mgw_endpoint_from_lchan = conn->lchan,
+		.ta = conn->lchan->last_ta,
+		.ta_known = true,
 	};
 	lchan_activate(conn->assignment.new_lchan, &info);
 }

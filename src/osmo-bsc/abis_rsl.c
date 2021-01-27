@@ -521,7 +521,6 @@ int rsl_tx_chan_activ(struct gsm_lchan *lchan, uint8_t act_type, uint8_t ho_ref)
 	struct msgb *msg;
 	int rc;
 	uint8_t *len;
-	uint8_t ta;
 
 	struct rsl_ie_chan_mode cm;
 	struct gsm48_chan_desc cd;
@@ -540,12 +539,6 @@ int rsl_tx_chan_activ(struct gsm_lchan *lchan, uint8_t act_type, uint8_t ho_ref)
 		     gsm_ts_and_pchan_name(lchan->ts));
 		return rc;
 	}
-
-	ta = lchan->last_ta;
-
-	/* BS11 requires TA shifted by 2 bits */
-	if (bts->type == GSM_BTS_TYPE_BS11)
-		ta <<= 2;
 
 	memset(&cd, 0, sizeof(cd));
 	gsm48_lchan2chan_desc(&cd, lchan);
@@ -601,7 +594,13 @@ int rsl_tx_chan_activ(struct gsm_lchan *lchan, uint8_t act_type, uint8_t ho_ref)
 	if (bts->ms_power_ctrl.mode != GSM_PWR_CTRL_MODE_NONE)
 		msgb_tv_put(msg, RSL_IE_MS_POWER, lchan->ms_power);
 
-	msgb_tv_put(msg, RSL_IE_TIMING_ADVANCE, ta);
+	if (lchan->activate.info.ta_known) {
+		uint8_t ta = lchan->activate.info.ta;
+		/* BS11 requires TA shifted by 2 bits */
+		if (bts->type == GSM_BTS_TYPE_BS11)
+			ta <<= 2;
+		msgb_tv_put(msg, RSL_IE_TIMING_ADVANCE, ta);
+	}
 
 	/* BS/MS Power Control Parameters (if supported by BTS model) */
 	add_power_control_params(msg, RSL_IE_BS_POWER_PARAM, lchan);
@@ -1756,13 +1755,14 @@ void abis_rsl_chan_rqd_queue_poll(struct gsm_bts *bts)
 	OSMO_ASSERT(lchan->rqd_ref);
 
 	*(lchan->rqd_ref) = rqd->ref;
-	lchan->last_ta = rqd->ta;
 
 	LOG_LCHAN(lchan, LOGL_DEBUG, "MS: Channel Request: reason=%s ra=0x%02x ta=%d\n",
 		  gsm_chreq_name(rqd->reason), rqd->ref.ra, rqd->ta);
 	info = (struct lchan_activate_info){
 		.activ_for = FOR_MS_CHANNEL_REQUEST,
 		.chan_mode = GSM48_CMODE_SIGN,
+		.ta = rqd->ta,
+		.ta_known = true,
 	};
 
 	lchan_activate(lchan, &info);

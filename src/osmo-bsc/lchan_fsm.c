@@ -580,7 +580,6 @@ static void lchan_fsm_wait_ts_ready_onenter(struct osmo_fsm_inst *fi, uint32_t p
 		ms_power_dbm = ms_pwr_dbm(bts->band, old_lchan->ms_power);
 		lchan_update_ms_power_ctrl_level(lchan, ms_power_dbm >= 0 ? ms_power_dbm : bts->ms_max_power);
 		lchan->bs_power = old_lchan->bs_power;
-		lchan->last_ta = old_lchan->last_ta;
 	} else {
 		lchan_update_ms_power_ctrl_level(lchan, bts->ms_max_power);
 		/* Upon last entering the UNUSED state, from lchan_reset():
@@ -702,8 +701,13 @@ static void lchan_fsm_wait_activ_ack_onenter(struct osmo_fsm_inst *fi, uint32_t 
 	lchan->encr = lchan->activate.info.encr;
 
 	rc = rsl_tx_chan_activ(lchan, act_type, ho_ref);
-	if (rc)
+	if (rc) {
 		lchan_fail_to(LCHAN_ST_UNUSED, "Tx Chan Activ failed: %s (%d)", strerror(-rc), rc);
+		return;
+	}
+
+	if (lchan->activate.info.ta_known)
+		lchan->last_ta = lchan->activate.info.ta;
 }
 
 static void lchan_fsm_post_activ_ack(struct osmo_fsm_inst *fi);
