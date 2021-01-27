@@ -313,7 +313,7 @@ static void lcs_loc_req_wait_loc_resp_onenter(struct osmo_fsm_inst *fi, uint32_t
 		plr.bssmap_le.perform_loc_req.apdu = (struct bsslap_pdu){
 			.msg_type = BSSLAP_MSGT_TA_LAYER3,
 			.ta_layer3 = {
-				.ta = lchan->rqd_ta,
+				.ta = lchan->last_ta,
 			},
 		};
 	} else {
@@ -365,7 +365,7 @@ static void lcs_loc_req_handover_performed(struct lcs_loc_req *lcs_loc_req)
 			.msg_type = BSSLAP_MSGT_RESET,
 			.reset = {
 				.cell_id = lchan->ts->trx->bts->cell_identity,
-				.ta = lchan->rqd_ta,
+				.ta = lchan->last_ta,
 				.cause = BSSLAP_CAUSE_INTRA_BSS_HO,
 			},
 		};

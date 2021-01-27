@@ -541,7 +541,7 @@ int rsl_tx_chan_activ(struct gsm_lchan *lchan, uint8_t act_type, uint8_t ho_ref)
 		return rc;
 	}
 
-	ta = lchan->rqd_ta;
+	ta = lchan->last_ta;
 
 	/* BS11 requires TA shifted by 2 bits */
 	if (bts->type == GSM_BTS_TYPE_BS11)
@@ -1147,8 +1147,8 @@ static int rsl_rx_meas_res(struct msgb *msg)
 		if (msg->lchan->ts->trx->bts->type == GSM_BTS_TYPE_BS11
 		 || msg->lchan->ts->trx->bts->type == GSM_BTS_TYPE_NOKIA_SITE)
 			mr->ms_l1.ta >>= 2;
-		/* store TA for next assignment/handover */
-		mr->lchan->rqd_ta = mr->ms_l1.ta;
+		/* store TA for handover decision, and for intra-cell re-assignment */
+		mr->lchan->last_ta = mr->ms_l1.ta;
 	}
 	if (TLVP_PRESENT(&tp, RSL_IE_L3_INFO)) {
 		msg->l3h = (uint8_t *) TLVP_VAL(&tp, RSL_IE_L3_INFO);
@@ -1756,7 +1756,7 @@ void abis_rsl_chan_rqd_queue_poll(struct gsm_bts *bts)
 	OSMO_ASSERT(lchan->rqd_ref);
 
 	*(lchan->rqd_ref) = rqd->ref;
-	lchan->rqd_ta = rqd->ta;
+	lchan->last_ta = rqd->ta;
 
 	LOG_LCHAN(lchan, LOGL_DEBUG, "MS: Channel Request: reason=%s ra=0x%02x ta=%d\n",
 		  gsm_chreq_name(rqd->reason), rqd->ref.ra, rqd->ta);
@@ -1788,7 +1788,7 @@ int rsl_tx_imm_assignment(struct gsm_lchan *lchan)
 
 	/* use request reference extracted from CHAN_RQD */
 	memcpy(&ia->req_ref, lchan->rqd_ref, sizeof(ia->req_ref));
-	ia->timing_advance = lchan->rqd_ta;
+	ia->timing_advance = lchan->last_ta;
 	if (!lchan->ts->hopping.enabled) {
 		ia->mob_alloc_len = 0;
 	} else {

@@ -580,7 +580,7 @@ static void lchan_fsm_wait_ts_ready_onenter(struct osmo_fsm_inst *fi, uint32_t p
 		ms_power_dbm = ms_pwr_dbm(bts->band, old_lchan->ms_power);
 		lchan_update_ms_power_ctrl_level(lchan, ms_power_dbm >= 0 ? ms_power_dbm : bts->ms_max_power);
 		lchan->bs_power = old_lchan->bs_power;
-		lchan->rqd_ta = old_lchan->rqd_ta;
+		lchan->last_ta = old_lchan->last_ta;
 	} else {
 		lchan_update_ms_power_ctrl_level(lchan, bts->ms_max_power);
 		/* Upon last entering the UNUSED state, from lchan_reset():

@@ -1543,10 +1543,10 @@ static void on_measurement_report(struct gsm_meas_rep *mr)
 
 	/* Max Distance */
 	if (lchan->meas_rep_count > 0
-	    && lchan->rqd_ta > ho_get_hodec2_max_distance(bts->ho)) {
+	    && lchan->last_ta > ho_get_hodec2_max_distance(bts->ho)) {
 		global_ho_reason = HO_REASON_MAX_DISTANCE;
 		LOGPHOLCHAN(lchan, LOGL_NOTICE, "TA is TOO HIGH: %u > %d\n",
-			    lchan->rqd_ta, ho_get_hodec2_max_distance(bts->ho));
+			    lchan->last_ta, ho_get_hodec2_max_distance(bts->ho));
 		/* start penalty timer to prevent coming back too
 		 * early. it must be started before selecting a better cell,
 		 * so there is no assignment selected, due to running
