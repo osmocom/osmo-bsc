@@ -444,8 +444,11 @@ void assignment_fsm_start(struct gsm_subscriber_connection *conn, struct gsm_bts
 		return;
 
 	/* There may be an already existing lchan, if yes, try to work with
-	 * the existing lchan. */
-	if (reuse_existing_lchan(conn)) {
+	 * the existing lchan.
+	 * If an RTP FSM is already set up for the lchan, Mode Modify is not yet supported -- see handling of
+	 * LCHAN_EV_REQUEST_MODE_MODIFY in lchan_fsm.c. To not break the lchan, do not even attempt to re-use an lchan
+	 * that already has an RTP stream set up, rather establish a new lchan (that transition is well implemented). */
+	if (reuse_existing_lchan(conn) && !conn->lchan->fi_rtp) {
 
 		/* If the requested mode and the current TCH mode matches up, just send the
 		 * assignment complete directly and be done with the assignment procedure. */
