@@ -657,7 +657,7 @@ struct gsm_lchan {
 		} ass_compl;
 	} abis_ip;
 
-	uint8_t rqd_ta;
+	uint8_t last_ta;
 
 	/* table of neighbor cell measurements */
 	struct neigh_meas_proc neigh_meas[MAX_NEIGH_MEAS];

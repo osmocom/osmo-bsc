@@ -210,7 +210,7 @@ void lcs_ta_req_got_ta_onenter(struct osmo_fsm_inst *fi, uint32_t prev_state)
 					.msg_type = BSSLAP_MSGT_TA_RESPONSE,
 					.ta_response = {
 						.cell_id = lchan->ts->trx->bts->cell_identity,
-						.ta = lchan->rqd_ta,
+						.ta = lchan->last_ta,
 					},
 				},
 			},
