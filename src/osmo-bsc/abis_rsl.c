@@ -982,6 +982,17 @@ static int rsl_rx_conn_fail(struct msgb *msg)
 	LOG_LCHAN(lchan, LOGL_ERROR, "CONNECTION FAIL%s\n", rsl_cause_name(&tp));
 
 	rate_ctr_inc(&lchan->ts->trx->bts->bts_ctrs->ctr[BTS_CTR_CHAN_RF_FAIL]);
+	switch (lchan->type) {
+	case GSM_LCHAN_SDCCH:
+		rate_ctr_inc(&lchan->ts->trx->bts->bts_ctrs->ctr[BTS_CTR_CHAN_RF_FAIL_SDCCH]);
+		break;
+	case GSM_LCHAN_TCH_H:
+	case GSM_LCHAN_TCH_F:
+		rate_ctr_inc(&lchan->ts->trx->bts->bts_ctrs->ctr[BTS_CTR_CHAN_RF_FAIL_TCH]);
+		break;
+	default:
+		break;
+	}
 
 	/* If the lchan is associated with a conn, we shall notify the MSC of the RSL Conn Failure, and
 	 * the connection will presumably be torn down and lead to an lchan release. During initial

@@ -791,6 +791,12 @@ const struct rate_ctr_desc bts_ctr_description[] = {
 	[BTS_CTR_CHAN_RF_FAIL] = \
 		{ "chan:rf_fail",
 		  "Received a RF failure indication from BTS" },
+	[BTS_CTR_CHAN_RF_FAIL_TCH] = \
+		{ "chan:rf_fail_tch",
+		  "Received a RF failure indication from BTS on a TCH channel" },
+	[BTS_CTR_CHAN_RF_FAIL_SDCCH] = \
+		{ "chan:rf_fail_sdcch",
+		  "Received a RF failure indication from BTS on an SDCCH channel" },
 	[BTS_CTR_CHAN_RLL_ERR] = \
 		{ "chan:rll_err",
 		  "Received a RLL failure with T200 cause from BTS" },
