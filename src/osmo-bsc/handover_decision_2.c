@@ -682,7 +682,11 @@ static void check_requirements(struct ho_candidate *c)
 	current_overbooked = load_above_congestion(c->current.free_tch, c->current.min_free_tch);
 	if (requirement & REQUIREMENT_A_TCHF) {
 		bool ok;
-		int32_t target_overbooked = load_above_congestion(c->target.free_tchf - 1, c->target.min_free_tchf);
+		int32_t target_overbooked;
+		int target_free_tchf_after_ho = c->target.free_tchf - 1;
+		if (c->current.bts == c->target.bts)
+			target_free_tchf_after_ho += c->current.lchan_frees_tchf;
+		target_overbooked = load_above_congestion(target_free_tchf_after_ho, c->target.min_free_tchf);
 		LOGPHOLCHANTOBTS(c->current.lchan, c->target.bts, LOGL_DEBUG,
 				 "current overbooked = %s%%, TCH/F target overbooked after HO = %s%%\n",
 				 osmo_int_to_float_str_c(OTC_SELECT, current_overbooked, LOAD_PRECISION - 2),
@@ -718,7 +722,11 @@ static void check_requirements(struct ho_candidate *c)
 	}
 	if (requirement & REQUIREMENT_A_TCHH) {
 		bool ok;
-		int32_t target_overbooked = load_above_congestion(c->target.free_tchh - 1, c->target.min_free_tchh);
+		int32_t target_overbooked;
+		int target_free_tchh_after_ho = c->target.free_tchh - 1;
+		if (c->current.bts == c->target.bts)
+			target_free_tchh_after_ho += c->current.lchan_frees_tchh;
+		target_overbooked = load_above_congestion(target_free_tchh_after_ho, c->target.min_free_tchh);
 		LOGPHOLCHANTOBTS(c->current.lchan, c->target.bts, LOGL_DEBUG,
 				 "current overbooked = %s%%, TCH/H target overbooked after HO = %s%%\n",
 				 osmo_int_to_float_str_c(OTC_SELECT, current_overbooked, LOAD_PRECISION - 2),
