@@ -1,0 +1,28 @@
+# If a handover from TCH/H to TCH/F frees a dynamic timeslot,
+# take the freed TCH/F from the soure timeslot into account,
+# when the target is a static timeslot.
+
+create-bts trx-count 1 timeslots c+s4 dyn TCH/F TCH/F TCH/F PDCH PDCH PDCH
+
+network
+ bts 0
+  handover2 min-free-slots tch/f 2
+  handover2 min-free-slots tch/h 2
+  handover2 assignment 1
+
+set-ts-use trx 0 0 states * TCH/H- - - - * * *
+# (there must be at least one measurement report on each lchan for congestion check to work)
+meas-rep lchan * * * * rxlev 40 rxqual 0 ta 0 neighbors 30
+congestion-check
+expect-ho from lchan 0 0 1 0 to lchan 0 0 2 0
+expect-ts-use trx 0 0 states * pdch TCH/F - - * * *
+
+# Again with one more TCH/F occupied, there will still be two free TCH/F after HO on the dyn TS
+set-ts-use trx 0 0 states * TCH/H- - - TCH/F * * *
+meas-rep lchan * * * * rxlev 40 rxqual 0 ta 0 neighbors 30
+congestion-check
+# FAIL: after the handover from the dyn TS to TCH/F, the dyn TS has freed a TCH/F, while the static TCH/F has reduced
+# the TCH/F count by one. So the resulting free slots are 2 TCH/F, which means no congestion. A handover should occur.
+expect-no-chan
+
+# (TCH/H -> TCH/F onto a dyn TS will always make TCH/H congestion worse, so there is no useful test case left here)
