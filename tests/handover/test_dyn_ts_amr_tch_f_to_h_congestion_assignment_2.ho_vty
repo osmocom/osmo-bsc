@@ -14,16 +14,15 @@ set-ts-use trx 0 0 states * TCH/F - - - * * *
 # (there must be at least one measurement report on each lchan for congestion check to work)
 meas-rep lchan * * * * rxlev 40 rxqual 0 ta 0 neighbors 30
 congestion-check
-# FAIL: after the handover from the dyn TS to TCH/H, the dyn TS has freed two TCH/H, while the static TCH/H has reduced
-# the TCH/H count by one. So the resulting free slots are 3 TCH/H, which means no congestion. A handover should occur.
-expect-no-chan
+expect-ho from lchan 0 0 1 0 to lchan 0 0 4 0
+expect-ts-use trx 0 0 states * pdch - - TCH/H- * * *
 
 # Again with one more TCH/H occupied, there will still be two free TCH/H after HO on the dyn TS
 set-ts-use trx 0 0 states * TCH/F - - TCH/H- * * *
 meas-rep lchan * * * * rxlev 40 rxqual 0 ta 0 neighbors 30
 congestion-check
-# FAIL: resulting free slots are 2 TCH/H, which means no congestion. A handover should occur.
-expect-no-chan
+expect-ho from lchan 0 0 1 0 to lchan 0 0 4 1
+expect-ts-use trx 0 0 states * pdch - - TCH/HH * * *
 
 # Again, with the target being a dyn TS
 create-bts trx-count 1 timeslots c+s4 dyn TCH/F TCH/F dyn PDCH PDCH PDCH
@@ -37,13 +36,12 @@ network
 set-ts-use trx 1 0 states * TCH/F TCH/F - pdch * * *
 meas-rep lchan 1 * * * rxlev 40 rxqual 0 ta 0 neighbors 30
 congestion-check
-# FAIL: after the handover from the dyn TS to TCH/H, the dyn TS has freed two TCH/H, while the static TCH/H has reduced
-# the TCH/H count by one. So the resulting free slots are 3 TCH/H, which means no congestion. A handover should occur.
-expect-no-chan
+expect-ho from lchan 1 0 1 0 to lchan 1 0 4 0
+expect-ts-use trx 1 0 states * pdch TCH/F - TCH/H- * * *
 
 # Again with one more TCH/H occupied, there will still be two free TCH/H after HO on the dyn TS
 set-ts-use trx 1 0 states * TCH/F TCH/F - TCH/H- * * *
 meas-rep lchan 1 * * * rxlev 40 rxqual 0 ta 0 neighbors 30
 congestion-check
-# FAIL: resulting free slots are 2 TCH/H, which means no congestion. A handover should occur.
-expect-no-chan
+expect-ho from lchan 1 0 1 0 to lchan 1 0 4 1
+expect-ts-use trx 1 0 states * pdch TCH/F - TCH/HH * * *
