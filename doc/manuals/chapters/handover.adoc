@@ -777,7 +777,8 @@ network
  neighbor-resolution bind 127.0.0.1 5000
 ----
 
-osmo-pcu will then be able to connect to the BSC and query for resolution during eg. NACC requests from MS.
+osmo-pcu will then be able to connect to the BSC and query for resolution during
+eg. NACC requests from MS.
 
 The relevant commands are::
 
