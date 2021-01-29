@@ -57,7 +57,7 @@ int bts_model_sysmobts_init(void)
 				sizeof(model_sysmobts._features_data);
 	memset(model_sysmobts.features.data, 0, model_sysmobts.features.data_len);
 
-        osmo_bts_set_feature(&model_sysmobts.features, BTS_FEAT_GPRS);
+	osmo_bts_set_feature(&model_sysmobts.features, BTS_FEAT_GPRS);
 	osmo_bts_set_feature(&model_sysmobts.features, BTS_FEAT_EGPRS);
 	osmo_bts_set_feature(&model_sysmobts.features, BTS_FEAT_PAGING_COORDINATION);
 	osmo_bts_set_feature(&model_sysmobts.features, BTS_FEAT_IPV6_NSVC);
