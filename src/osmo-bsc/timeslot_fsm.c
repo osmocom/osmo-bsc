@@ -366,6 +366,7 @@ static void ts_fsm_wait_pdch_act_onenter(struct osmo_fsm_inst *fi, uint32_t prev
 static void ts_fsm_wait_pdch_act(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
 	struct gsm_bts_trx_ts *ts = ts_fi_ts(fi);
+	struct rate_ctr_group *bts_ctrs = ts->trx->bts->bts_ctrs;
 	switch (event) {
 
 	case TS_EV_PDCH_ACT_ACK:
@@ -374,9 +375,9 @@ static void ts_fsm_wait_pdch_act(struct osmo_fsm_inst *fi, uint32_t event, void 
 
 	case TS_EV_PDCH_ACT_NACK:
 		if (ts->pchan_on_init == GSM_PCHAN_TCH_F_PDCH)
-			rate_ctr_inc(&ts->trx->bts->bts_ctrs->ctr[BTS_CTR_RSL_IPA_NACK]);
+			rate_ctr_inc(&bts_ctrs->ctr[BTS_CTR_RSL_IPA_NACK]);
 		else
-			rate_ctr_inc(&ts->trx->bts->bts_ctrs->ctr[BTS_CTR_CHAN_ACT_NACK]);
+			rate_ctr_inc(&bts_ctrs->ctr[BTS_CTR_CHAN_ACT_NACK]);
 		ts->pdch_act_allowed = false;
 		ts_fsm_error(fi, TS_ST_UNUSED, "Received PDCH activation NACK");
 		return;
@@ -659,6 +660,7 @@ static void ts_fsm_in_use(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 static void ts_fsm_borken_onenter(struct osmo_fsm_inst *fi, uint32_t prev_state)
 {
 	struct gsm_bts_trx_ts *ts = ts_fi_ts(fi);
+	struct gsm_bts *bts = ts->trx->bts;
 	enum bts_counter_id ctr;
 	switch (prev_state) {
 	case TS_ST_NOT_INITIALIZED:
@@ -685,8 +687,8 @@ static void ts_fsm_borken_onenter(struct osmo_fsm_inst *fi, uint32_t prev_state)
 	default:
 		ctr = BTS_CTR_TS_BORKEN_FROM_UNKNOWN;
 	}
-	rate_ctr_inc(&ts->trx->bts->bts_ctrs->ctr[ctr]);
-	osmo_stat_item_inc(ts->trx->bts->bts_statg->items[BTS_STAT_TS_BORKEN], 1);
+	rate_ctr_inc(&bts->bts_ctrs->ctr[ctr]);
+	osmo_stat_item_inc(bts->bts_statg->items[BTS_STAT_TS_BORKEN], 1);
 }
 
 static void ts_fsm_borken(struct osmo_fsm_inst *fi, uint32_t event, void *data)
@@ -783,9 +785,10 @@ static void ts_fsm_allstate(struct osmo_fsm_inst *fi, uint32_t event, void *data
 static void ts_fsm_cleanup(struct osmo_fsm_inst *fi, enum osmo_fsm_term_cause cause)
 {
 	struct gsm_bts_trx_ts *ts = ts_fi_ts(fi);
+	struct gsm_bts *bts = ts->trx->bts;
 	if (ts->fi->state == TS_ST_BORKEN) {
-		rate_ctr_inc(&ts->trx->bts->bts_ctrs->ctr[BTS_CTR_TS_BORKEN_EV_TEARDOWN]);
-		osmo_stat_item_dec(ts->trx->bts->bts_statg->items[BTS_STAT_TS_BORKEN], 1);
+		rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_CTR_TS_BORKEN_EV_TEARDOWN]);
+		osmo_stat_item_dec(bts->bts_statg->items[BTS_STAT_TS_BORKEN], 1);
 	}
 }
 

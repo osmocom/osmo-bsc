@@ -973,6 +973,7 @@ static int rsl_rx_conn_fail(struct msgb *msg)
 {
 	struct abis_rsl_dchan_hdr *dh = msgb_l2(msg);
 	struct gsm_lchan *lchan = msg->lchan;
+	struct rate_ctr_group *bts_ctrs = lchan->ts->trx->bts->bts_ctrs;
 	struct tlv_parsed tp;
 	const uint8_t *cause_p;
 
@@ -981,14 +982,14 @@ static int rsl_rx_conn_fail(struct msgb *msg)
 
 	LOG_LCHAN(lchan, LOGL_ERROR, "CONNECTION FAIL%s\n", rsl_cause_name(&tp));
 
-	rate_ctr_inc(&lchan->ts->trx->bts->bts_ctrs->ctr[BTS_CTR_CHAN_RF_FAIL]);
+	rate_ctr_inc(&bts_ctrs->ctr[BTS_CTR_CHAN_RF_FAIL]);
 	switch (lchan->type) {
 	case GSM_LCHAN_SDCCH:
-		rate_ctr_inc(&lchan->ts->trx->bts->bts_ctrs->ctr[BTS_CTR_CHAN_RF_FAIL_SDCCH]);
+		rate_ctr_inc(&bts_ctrs->ctr[BTS_CTR_CHAN_RF_FAIL_SDCCH]);
 		break;
 	case GSM_LCHAN_TCH_H:
 	case GSM_LCHAN_TCH_F:
-		rate_ctr_inc(&lchan->ts->trx->bts->bts_ctrs->ctr[BTS_CTR_CHAN_RF_FAIL_TCH]);
+		rate_ctr_inc(&bts_ctrs->ctr[BTS_CTR_CHAN_RF_FAIL_TCH]);
 		break;
 	default:
 		break;
@@ -1914,6 +1915,7 @@ static int abis_rsl_rx_cchan(struct msgb *msg)
 {
 	struct e1inp_sign_link *sign_link = msg->dst;
 	struct abis_rsl_dchan_hdr *rslh = msgb_l2(msg);
+	struct rate_ctr_group *bts_ctrs = sign_link->trx->bts->bts_ctrs;
 	int rc = 0;
 
 	msg->lchan = lchan_lookup(sign_link->trx, rslh->chan_nr,
@@ -1931,7 +1933,7 @@ static int abis_rsl_rx_cchan(struct msgb *msg)
 	case RSL_MT_DELETE_IND:
 		/* CCCH overloaded, IMM_ASSIGN was dropped */
 		LOGPLCHAN(msg->lchan, DRSL, LOGL_NOTICE, "DELETE INDICATION (Downlink CCCH overload)\n");
-		rate_ctr_inc(&sign_link->trx->bts->bts_ctrs->ctr[BTS_CTR_RSL_DELETE_IND]);
+		rate_ctr_inc(&bts_ctrs->ctr[BTS_CTR_RSL_DELETE_IND]);
 		break;
 	case RSL_MT_CBCH_LOAD_IND:
 		/* current load on the CBCH */
@@ -1943,7 +1945,7 @@ static int abis_rsl_rx_cchan(struct msgb *msg)
 	default:
 		LOGP(DRSL, LOGL_NOTICE, "Unknown Abis RSL TRX message type "
 			"0x%02x\n", rslh->c.msg_type);
-		rate_ctr_inc(&sign_link->trx->bts->bts_ctrs->ctr[BTS_CTR_RSL_UNKNOWN]);
+		rate_ctr_inc(&bts_ctrs->ctr[BTS_CTR_RSL_UNKNOWN]);
 		return -EINVAL;
 	}
 
