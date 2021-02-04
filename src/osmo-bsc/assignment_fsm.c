@@ -231,7 +231,7 @@ static void assignment_success(struct gsm_subscriber_connection *conn)
 	gscon_change_primary_lchan(conn, conn->assignment.new_lchan);
 	conn->assignment.new_lchan = NULL;
 
-	bts = conn_get_bts(conn);
+	OSMO_ASSERT((bts = conn_get_bts(conn)) != NULL);
 	if (is_siemens_bts(bts) && ts_is_tch(conn->lchan->ts)) {
 		/* HACK: store the actual Classmark 2 LV from the subscriber and use it here! */
 		uint8_t cm2_lv[] = { 0x02, 0x00, 0x00 };
