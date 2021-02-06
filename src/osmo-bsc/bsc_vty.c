@@ -5796,8 +5796,9 @@ DEFUN(bts_resend_power_ctrl_params,
 	return CMD_SUCCESS;
 }
 
-
-DEFUN(smscb_cmd, smscb_cmd_cmd,
+/* this command is now hidden, as it's a low-level debug hack, and people should
+ * instead use osmo-cbc these days */
+DEFUN_HIDDEN(smscb_cmd, smscb_cmd_cmd,
 	"bts <0-255> smscb-command (normal|schedule|default) <1-4> HEXSTRING",
 	"BTS related commands\n" BTS_NR_STR
 	"SMS Cell Broadcast\n"
@@ -5861,6 +5862,7 @@ DEFUN(smscb_cmd, smscb_cmd_cmd,
 		return CMD_WARNING;
 	}
 
+	/* SDCCH4 might not be correct here if the CBCH is on a SDCCH8? */
 	rsl_sms_cb_command(bts, RSL_CHAN_SDCCH4_ACCH, cb_cmd, false, buf, rc);
 
 	return CMD_SUCCESS;
