@@ -5209,14 +5209,18 @@ DEFUN_USRATTR(cfg_power_ctrl_avg_osmo_ewma,
 {
 	struct gsm_power_ctrl_params *params = vty->index;
 	struct gsm_power_ctrl_meas_params *avg_params;
+	const struct gsm_bts *bts;
 
-#if 0
-	if (trx->bts->type != GSM_BTS_TYPE_OSMOBTS) {
+	if (params->dir == GSM_PWR_CTRL_DIR_UL)
+		bts = container_of(params, struct gsm_bts, ms_power_ctrl);
+	else
+		bts = container_of(params, struct gsm_bts, bs_power_ctrl);
+
+	if (bts->type != GSM_BTS_TYPE_OSMOBTS) {
 		vty_out(vty, "%% EWMA is an OsmoBTS specific algorithm, "
 			"it's not usable for other BTS types%s", VTY_NEWLINE);
 		return CMD_WARNING;
 	}
-#endif
 
 	avg_params = POWER_CONTROL_MEAS_AVG_PARAMS(params);
 	avg_params->algo = GSM_PWR_CTRL_MEAS_AVG_ALGO_OSMO_EWMA;
