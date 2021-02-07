@@ -896,8 +896,8 @@ static void enc_power_params(struct msgb *msg, const struct gsm_power_ctrl_param
 	thresh_comp->p4 = cp->rxqual_meas.upper_cmp_p & 0x1f;
 	thresh_comp->n4 = cp->rxqual_meas.upper_cmp_n & 0x1f;
 
-	/* FIXME: TIMER_PWR_CON_INTERVAL (P_Con_INTERVAL) */
-	thresh_comp->pc_interval = 0; /* 0 .. 30 seconds */
+	/* Minimum interval between power level changes (P_CON_INTERVAL) */
+	thresh_comp->pc_interval = cp->ctrl_interval;
 
 	/* Change step limitations: POWER_{INC,RED}_STEP_SIZE */
 	thresh_comp->inc_step_size = cp->inc_step_size_db & 0x0f;

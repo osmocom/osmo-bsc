@@ -29,6 +29,7 @@ OsmoBSC(config-bs-power-ctrl)# list with-flags
 ...
   . l.  mode (static|dyn-bts) [reset]
   . l.  bs-power (static|dyn-max) <0-30>
+  . lv  ctrl-interval <0-31>
   . lv  step-size inc <2-6> red <2-4>
   . lv  rxlev-thresh lower <0-63> upper <0-63>
   . lv  rxqual-thresh lower <0-7> upper <0-7>
@@ -83,12 +84,23 @@ OsmoBSC(config-bs-power-ctrl)# show running-config
    mode dyn-bts
 ... !bs-power
 
+OsmoBSC(config-bs-power-ctrl)# ctrl-interval 31
+OsmoBSC(config-bs-power-ctrl)# show running-config
+...
+  bs-power-control
+...
+   ctrl-interval 31
+... !ctrl-interval
+  ms-power-control
+... !ctrl-interval
+
 OsmoBSC(config-bs-power-ctrl)# exit
 OsmoBSC(config-net-bts)# ms-power-control
 OsmoBSC(config-ms-power-ctrl)# list with-flags
 ...
   . l.  mode (static|dyn-bts) [reset]
   . l.  bs-power (static|dyn-max) <0-30>
+  . lv  ctrl-interval <0-31>
   . lv  step-size inc <2-6> red <2-4>
   . lv  rxlev-thresh lower <0-63> upper <0-63>
   . lv  rxqual-thresh lower <0-7> upper <0-7>
@@ -119,6 +131,20 @@ OsmoBSC(config-ms-power-ctrl)# bs-power static 30
 OsmoBSC(config-ms-power-ctrl)# bs-power dyn-max 30
 % This command is only valid for 'bs-power-control' node
 
+OsmoBSC(config-ms-power-ctrl)# ctrl-interval 2
+OsmoBSC(config-ms-power-ctrl)# show running-config
+...
+  bs-power-control
+   mode dyn-bts
+...
+   ctrl-interval 31
+... !ctrl-interval
+  ms-power-control
+   mode dyn-bts
+...
+   ctrl-interval 2
+... !ctrl-interval
+
 OsmoBSC(config-ms-power-ctrl)# step-size inc 5 red 4
 % Power change step size must be an even number
 OsmoBSC(config-ms-power-ctrl)# step-size inc 2 red 3
@@ -131,11 +157,12 @@ OsmoBSC(config-ms-power-ctrl)# show running-config
 ...
   bs-power-control
    mode dyn-bts
-   bs-power dyn-max 30
+...
    step-size inc 4 red 2
 ...
   ms-power-control
    mode dyn-bts
+...
    step-size inc 6 red 4
 ...
 

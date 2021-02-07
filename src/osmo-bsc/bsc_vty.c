@@ -957,6 +957,8 @@ static void config_write_power_ctrl(struct vty *vty, unsigned int indent,
 		if (cp->dir == GSM_PWR_CTRL_DIR_DL)
 			cfg_out(" bs-power dyn-max %u%s", cp->bs_power_max_db, VTY_NEWLINE);
 
+		if (cp->ctrl_interval > 0)
+			cfg_out(" ctrl-interval %u%s", cp->ctrl_interval, VTY_NEWLINE);
 		cfg_out(" step-size inc %u red %u%s",
 			cp->inc_step_size_db, cp->red_step_size_db,
 			VTY_NEWLINE);
@@ -4938,6 +4940,21 @@ DEFUN_USRATTR(cfg_power_ctrl_bs_power,
 	return CMD_SUCCESS;
 }
 
+DEFUN_USRATTR(cfg_power_ctrl_ctrl_interval,
+	      cfg_power_ctrl_ctrl_interval_cmd,
+	      X(BSC_VTY_ATTR_VENDOR_SPECIFIC) |
+	      X(BSC_VTY_ATTR_NEW_LCHAN),
+	      "ctrl-interval <0-31>",
+	      "Set power control interval (for dynamic mode)\n"
+	      "P_CON_INTERVAL, in units of 2 SACCH periods (0.96 seconds)\n")
+{
+	struct gsm_power_ctrl_params *params = vty->index;
+
+	params->ctrl_interval = atoi(argv[0]);
+
+	return CMD_SUCCESS;
+}
+
 DEFUN_USRATTR(cfg_power_ctrl_step_size,
 	      cfg_power_ctrl_step_size_cmd,
 	      X(BSC_VTY_ATTR_VENDOR_SPECIFIC) |
@@ -7742,6 +7759,7 @@ int bsc_vty_init(struct gsm_network *network)
 	install_node(&power_ctrl_node, dummy_config_write);
 	install_element(POWER_CTRL_NODE, &cfg_power_ctrl_mode_cmd);
 	install_element(POWER_CTRL_NODE, &cfg_power_ctrl_bs_power_cmd);
+	install_element(POWER_CTRL_NODE, &cfg_power_ctrl_ctrl_interval_cmd);
 	install_element(POWER_CTRL_NODE, &cfg_power_ctrl_step_size_cmd);
 	install_element(POWER_CTRL_NODE, &cfg_power_ctrl_rxlev_thresh_cmd);
 	install_element(POWER_CTRL_NODE, &cfg_power_ctrl_rxqual_thresh_cmd);

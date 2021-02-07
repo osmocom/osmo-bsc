@@ -1346,6 +1346,9 @@ struct gsm_power_ctrl_params {
 	uint8_t inc_step_size_db; /* increasing direction */
 	uint8_t red_step_size_db; /* reducing direction */
 
+	/* Minimum interval between power level changes */
+	uint8_t ctrl_interval; /* 1 step is 2 SACCH periods */
+
 	/* Measurement averaging parameters for RxLev & RxQual */
 	struct gsm_power_ctrl_meas_params rxqual_meas;
 	struct gsm_power_ctrl_meas_params rxlev_meas;
