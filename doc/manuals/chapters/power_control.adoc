@@ -117,8 +117,10 @@ OsmoBSC(config-net-bts)# no (bs-power-control|ms-power-control) <3>
 <2> Send both RSL MS/BS Power IE and vendor-specific MS/BS Power Parameters IE.
 <3> Do not send any power control IEs in RSL CHANnel ACTIVation messages.
 
-By default, `static` mode is used for BS power control, while `dyn-bts` is used
-for MS power control.  Changing the mode at run-time would not affect already
+By default, `static` mode is used for BS power control, while `dyn-bts` mode is
+automatically enabled for MS power control if vendor-specific format of the power
+control parameters (see above) is implemented for particular BTS model.  Otherwise
+`static` mode is used too.  Changing the mode at run-time would not affect already
 established connections, only the new ones (check flag `l`).
 
 For BS power control, there is an additional parameter:
