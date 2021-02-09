@@ -391,6 +391,9 @@ struct gsm_bts {
 			bool active; /* CCN_ACTIVE */
 			bool forced_vty; /* set by VTY ? */
 		} ccn; /* TS 44.060 sec 8.8.2 */
+		struct {
+			uint8_t alpha; /* ALPHA*10, units of 0.1, range <0-10> */
+		} pwr_ctrl; /* TS 44.060 Table 12.9.1 */
 	} gprs;
 
 	/* threshold (in percent) when BTS shall send CCCH LOAD IND */

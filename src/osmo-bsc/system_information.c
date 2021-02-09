@@ -1260,6 +1260,7 @@ static int generate_si13(enum osmo_sysinfo_type t, struct gsm_bts *bts)
 						     bts->gprs.ccn.active :
 						     osmo_bts_has_feature(&bts->model->features,
 									  BTS_FEAT_CCN);
+	si13_default.pwr_ctrl_pars.alpha = bts->gprs.pwr_ctrl.alpha;
 
 	ret = osmo_gsm48_rest_octets_si13_encode(si13->rest_octets, &si13_default);
 	if (ret < 0)

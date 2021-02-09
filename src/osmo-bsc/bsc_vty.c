@@ -761,6 +761,8 @@ static void config_write_bts_gprs(struct vty *vty, struct gsm_bts *bts)
 	if (bts->gprs.ccn.forced_vty)
 		vty_out(vty, "  gprs ccn-active %d%s",
 			bts->gprs.ccn.active ? 1 : 0, VTY_NEWLINE);
+	vty_out(vty, "  gprs power-control alpha %u%s",
+		bts->gprs.pwr_ctrl.alpha, VTY_NEWLINE);
 	vty_out(vty, "  gprs cell bvci %u%s", bts->gprs.cell.bvci,
 		VTY_NEWLINE);
 	for (i = 0; i < ARRAY_SIZE(bts->gprs.cell.timer); i++)
@@ -3505,6 +3507,22 @@ DEFUN_USRATTR(cfg_bts_gprs_ccn_active,
 
 	if (bts->gprs.ccn.forced_vty)
 		bts->gprs.ccn.active = argv[0][0] == '1';
+
+	return CMD_SUCCESS;
+}
+
+DEFUN_USRATTR(cfg_bts_gprs_pwr_ctrl_alpha,
+	      cfg_bts_gprs_pwr_ctrl_alpha_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_RSL_LINK),
+	      "gprs power-control alpha <0-10>",
+	      GPRS_TEXT
+	      "GPRS Global Power Control Parameters IE (SI13)\n"
+	      "Set alpha\n"
+	      "alpha for MS output power control in units of 0.1 (defaults to 0)\n")
+{
+	struct gsm_bts *bts = vty->index;
+
+	bts->gprs.pwr_ctrl.alpha = atoi(argv[0]);
 
 	return CMD_SUCCESS;
 }
@@ -7682,6 +7700,7 @@ int bsc_vty_init(struct gsm_network *network)
 	install_element(BTS_NODE, &cfg_bts_gprs_net_ctrl_ord_cmd);
 	install_element(BTS_NODE, &cfg_bts_gprs_ctrl_ack_cmd);
 	install_element(BTS_NODE, &cfg_bts_gprs_ccn_active_cmd);
+	install_element(BTS_NODE, &cfg_bts_gprs_pwr_ctrl_alpha_cmd);
 	install_element(BTS_NODE, &cfg_no_bts_gprs_ctrl_ack_cmd);
 	install_element(BTS_NODE, &cfg_bts_gprs_bvci_cmd);
 	install_element(BTS_NODE, &cfg_bts_gprs_cell_timer_cmd);
