@@ -276,6 +276,19 @@ struct neighbor_ident_key *bts_ident_key(const struct gsm_bts *bts)
 
 CTRL_CMD_DEFINE_RO(neighbor_resolve_cgi_ps_from_lac_ci, "neighbor_resolve_cgi_ps_from_lac_ci");
 
+static int gsm_bts_get_cgi_ps(const struct gsm_bts *bts, struct osmo_cell_global_id_ps *cgi_ps)
+{
+	if (bts->gprs.mode == BTS_GPRS_NONE)
+		return -ENOTSUP;
+
+	cgi_ps->rai.lac.plmn = bts->network->plmn;
+	cgi_ps->rai.lac.lac = bts->location_area_code;
+	cgi_ps->rai.rac = bts->gprs.rac;
+	cgi_ps->cell_identity = bts->cell_identity;
+
+	return 0;
+}
+
 static int get_neighbor_resolve_cgi_ps_from_lac_ci(struct ctrl_cmd *cmd, void *data)
 {
 	struct gsm_network *net = (struct gsm_network *)data;
@@ -284,7 +297,9 @@ static int get_neighbor_resolve_cgi_ps_from_lac_ci(struct ctrl_cmd *cmd, void *d
 	char *tmp = NULL, *tok, *saveptr;
 	struct neighbor_ident_key ni;
 	unsigned lac, cell_id;
-	const struct osmo_cell_global_id_ps *cgi_ps;
+	struct osmo_cell_global_id_ps local_cgi_ps;
+	const struct osmo_cell_global_id_ps *cgi_ps = NULL;
+	struct gsm_bts_ref *neigh;
 
 	if (!cmd->variable)
 		goto fmt_err;
@@ -335,10 +350,26 @@ static int get_neighbor_resolve_cgi_ps_from_lac_ci(struct ctrl_cmd *cmd, void *d
 	if (!neighbor_ident_key_valid(&ni))
 		goto fmt_err;
 
-	tgt_cell_li = neighbor_ident_get(net->neighbor_bss_cells, &ni);
-	if (!tgt_cell_li || tgt_cell_li->id_discr != CELL_IDENT_WHOLE_GLOBAL_PS || tgt_cell_li->id_list_len < 1)
-		goto notfound_err;
-	cgi_ps = &tgt_cell_li->id_list[0].global_ps;
+	/* Is there a local BTS that matches the key? */
+	llist_for_each_entry(neigh, &bts_found->local_neighbors, entry) {
+		struct gsm_bts *neigh_bts = neigh->bts;
+		struct neighbor_ident_key *neigh_bts_key = bts_ident_key(neigh_bts);
+		neigh_bts_key->from_bts = ni.from_bts;
+		if (!neighbor_ident_key_match(neigh_bts_key, &ni, true))
+			continue;
+		if (gsm_bts_get_cgi_ps(neigh->bts, &local_cgi_ps) < 0)
+			continue; /* Not supporting GPRS */
+		cgi_ps = &local_cgi_ps;
+		break;
+	}
+
+	/* No local neighbor found, looking for remote neighbors */
+	if (!cgi_ps) {
+		tgt_cell_li = neighbor_ident_get(net->neighbor_bss_cells, &ni);
+		if (!tgt_cell_li || tgt_cell_li->id_discr != CELL_IDENT_WHOLE_GLOBAL_PS || tgt_cell_li->id_list_len < 1)
+			goto notfound_err;
+		cgi_ps = &tgt_cell_li->id_list[0].global_ps;
+	}
 
 	ctrl_cmd_reply_printf(cmd, "%s", osmo_cgi_ps_name(cgi_ps));
 	talloc_free(tmp);

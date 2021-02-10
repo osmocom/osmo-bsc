@@ -501,11 +501,24 @@ class TestCtrlBSCNeighbor(TestCtrlBase):
     def ctrl_app(self):
         return (4248, "./src/osmo-bsc/osmo-bsc", "OsmoBSC", "bsc")
 
-    def testCtrlNeighborResolution(self):
+    def testCtrlNeighborResolutionLocalBtsNr(self):
+        r = self.do_get('neighbor_resolve_cgi_ps_from_lac_ci.1.123.871.63')
+        self.assertEqual(r['mtype'], 'GET_REPLY')
+        self.assertEqual(r['var'], 'neighbor_resolve_cgi_ps_from_lac_ci.1.123.871.63')
+        self.assertEqual(r['value'], '001-01-1-5-6969')
+
+    def testCtrlNeighborResolutionLocalWithoutArfcnBsic(self):
+        r = self.do_get('neighbor_resolve_cgi_ps_from_lac_ci.1.6969.880.55')
+        self.assertEqual(r['mtype'], 'GET_REPLY')
+        self.assertEqual(r['var'], 'neighbor_resolve_cgi_ps_from_lac_ci.1.6969.880.55')
+        self.assertEqual(r['value'], '001-01-1-6-123')
+
+    def testCtrlNeighborResolutionWrongSyntax(self):
         r = self.do_get('neighbor_resolve_cgi_ps_from_lac_ci')
         self.assertEqual(r['mtype'], 'ERROR')
         self.assertEqual(r['error'], 'The format is <src_lac>,<src_cell_id>,<dst_arfcn>,<dst_bsic>')
 
+    def testCtrlNeighborResolutionRemote(self):
         r = self.do_get('neighbor_resolve_cgi_ps_from_lac_ci.1.6969.23.32')
         self.assertEqual(r['mtype'], 'GET_REPLY')
         self.assertEqual(r['var'], 'neighbor_resolve_cgi_ps_from_lac_ci.1.6969.23.32')
