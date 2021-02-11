@@ -45,6 +45,8 @@ void neighbor_ident_iter(const struct neighbor_ident_list *nil,
 					   void *cb_data),
 			 void *cb_data);
 
+struct neighbor_ident_key *bts_ident_key(const struct gsm_bts *bts);
+
 void neighbor_ident_vty_init(struct gsm_network *net, struct neighbor_ident_list *nil);
 void neighbor_ident_vty_write_bts(struct vty *vty, const char *indent, struct gsm_bts *bts);
 void neighbor_ident_vty_write_network(struct vty *vty, const char *indent);

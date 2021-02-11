@@ -261,6 +261,17 @@ void neighbor_ident_iter(const struct neighbor_ident_list *nil,
 	}
 }
 
+struct neighbor_ident_key *bts_ident_key(const struct gsm_bts *bts)
+{
+	static struct neighbor_ident_key key;
+	key = (struct neighbor_ident_key){
+		.from_bts = NEIGHBOR_IDENT_KEY_ANY_BTS,
+		.arfcn = bts->c0->arfcn,
+		.bsic = bts->bsic,
+	};
+	return &key;
+}
+
 /* Neighbor Resolution CTRL iface */
 
 CTRL_CMD_DEFINE_RO(neighbor_resolve_cgi_ps_from_lac_ci, "neighbor_resolve_cgi_ps_from_lac_ci");

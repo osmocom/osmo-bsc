@@ -86,8 +86,6 @@ int find_handover_target_cell(struct gsm_bts **local_target_cell_p,
 			      struct gsm_subscriber_connection *conn, const struct neighbor_ident_key *search_for,
 			      bool log_errors);
 
-struct neighbor_ident_key *bts_ident_key(const struct gsm_bts *bts);
-
 void handover_parse_inter_bsc_mt(struct gsm_subscriber_connection *conn,
 				 struct msgb *ho_request_msg);
 

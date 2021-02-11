@@ -322,17 +322,6 @@ int find_handover_target_cell(struct gsm_bts **local_target_cell_p,
 	return -ENODEV;
 }
 
-struct neighbor_ident_key *bts_ident_key(const struct gsm_bts *bts)
-{
-	static struct neighbor_ident_key key;
-	key = (struct neighbor_ident_key){
-		.from_bts = NEIGHBOR_IDENT_KEY_ANY_BTS,
-		.arfcn = bts->c0->arfcn,
-		.bsic = bts->bsic,
-	};
-	return &key;
-}
-
 static int ho_logic_sig_cb(unsigned int subsys, unsigned int signal,
 			   void *handler_data, void *signal_data)
 {
