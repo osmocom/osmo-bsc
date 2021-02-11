@@ -2842,7 +2842,7 @@ DEFUN_USRATTR(cfg_bts_rep_rxqual,
 	      "1 BER >= 0.2%\n"
 	      "2 BER >= 0.4%\n"
 	      "3 BER >= 0.8%\n"
-	      "4 BER >= 1.6%\n"
+	      "4 BER >= 1.6% (default)\n"
 	      "5 BER >= 3.2%\n"
 	      "6 BER >= 6.4%\n"
 	      "7 BER >= 12.8%\n")
