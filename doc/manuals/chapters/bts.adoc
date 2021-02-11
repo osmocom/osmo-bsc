@@ -511,6 +511,75 @@ bts 0
 <5> The rotate subset size parameter will be increased one ACC slot at a time: len=0 -> len=1 -> len=2 -> len=3
 <6> The time until the subset size is further increased will be calculated based on current channel load
 
+=== Configuring FACCH/SACCH repetition
+
+osmo-bts supports repetition of FACCH, uplink SACCH and downlink SACCH as
+described in _3GPP TS 44.006_ <<3gpp-ts-44.006>>. When the feature is enabled
+it is applied dynamically, depending on the rf signal quality and MS
+capabilities. FACCH/SACCH repetition (or ACCH repetition) repeats the channel
+block transmission two times. This allows the transceiver to combine the symbols
+from two separate transmissions, which increases the probability that even a
+weak signal can be decoded.
+
+Enabling ACCH repetition is especially recommended when using the AMR speech
+codec. AMR already provides a forward error correction that is superior to
+the forward error correction used with FACCH or SACCH. ACCH repetition is a
+good way to even out this imbalance.
+
+The VTY configuration allows to enable repetition for all three channel types
+separately. For FACCH the operator has the option to restrict the repetition
+to LAPDM command frames only. Alternatively it is also possible to allow all
+LAPDM frame types for repetition. The following example shows a typical
+configuration where ACCH repetition is fully enabled.
+
+.Example typical configuration of ACCH repetition parameters at VTY BTS node
+----
+OsmoBSC(config-net-bts)# repeat dl-facch all
+OsmoBSC(config-net-bts)# repeat ul-sacch
+OsmoBSC(config-net-bts)# repeat dl-sacch
+OsmoBSC(config-net-bts)# repeat rxqual 4
+----
+
+It should be noted that unless the repetition is enabled explicitly, the
+repetition is turned off by default. If no threshold (see <<acch_rep_thr>>) is
+set, the default value 4 (BER >= 1.6%) will be used. The following example shows
+a minimal configuration where the repetition is only activated for FACCH LAPDM
+command frames.
+
+.Example minimal configuration of ACCH repetition parameters at VTY BTS node
+----
+OsmoBSC(config-net-bts)# repeat dl-facch command
+----
+
+Since it is not worthwhile to apply any repetition when the signal conditions
+are good enough to ensure a reliable transmission in one round, the operator
+has the option to set a threshold based on RXQUAL/BER at which the repetition
+is switched on. The threshold mechanism implements a hysteresis to prevent
+bouncing between repetition on and repetition off. Only when the signal quality
+is increased again by two rxqual levels, the repetition is turned off again. It
+is even possible to permanently enable repetition, regardless of the signal
+quality.
+
+[[acch_rep_thr]]
+.ACCH repetition thresholds
+[options="header",cols="20%,40%,40%"]
+|===
+|rxqual              |enable threshold                |disable threshold
+|0		     |(repetition always on)          |(repetition always on)
+|1                   |asciimath:[BER >= 0.2%]         |asciimath:[BER = 0%]
+|2                   |asciimath:[BER >= 0.4%]         |asciimath:[BER = 0%]
+|3                   |asciimath:[BER >= 0.8%]         |asciimath:[BER <= 0.2%]
+|4                   |asciimath:[BER >= 1.6%]         |asciimath:[BER <= 0.4%]
+|5                   |asciimath:[BER >= 3.2%]         |asciimath:[BER <= 0.8%]
+|6                   |asciimath:[BER >= 6.4%]         |asciimath:[BER <= 1.6%]
+|7                   |asciimath:[BER >= 12.8%]        |asciimath:[BER <= 3.2%]
+|===
+
+NOTE: osmo-bsc only sets the ACCH repetition parameters via RSL. Whether ACCH
+repetition can be used depends on the BTS model and osmo-bts version. To
+find out if a BTS supports ACCH repetition (BTS_FEAT_ACCH_REP), the VTY
+command `show bts` can be used.
+
 ==== RACH Parameter Configuration
 
 The following parameters allow control over how the MS can access the random
