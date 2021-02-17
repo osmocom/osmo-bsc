@@ -938,12 +938,30 @@ const struct rate_ctr_desc bts_ctr_description[] = {
 	[BTS_CTR_ASSIGNMENT_ATTEMPTED] = \
 		{ "assignment:attempted",
 		  "Assignment attempts" },
+	[BTS_CTR_ASSIGNMENT_ATTEMPTED_SIGN] = \
+		{ "assignment:attempted_sign",
+		  "Assignment of signaling lchan attempts" },
+	[BTS_CTR_ASSIGNMENT_ATTEMPTED_SPEECH] = \
+		{ "assignment:attempted_speech",
+		  "Assignment of speech lchan attempts" },
 	[BTS_CTR_ASSIGNMENT_COMPLETED] = \
 		{ "assignment:completed",
 		  "Assignment completed" },
+	[BTS_CTR_ASSIGNMENT_COMPLETED_SIGN] = \
+		{ "assignment:completed_sign",
+		  "Assignment of signaling lchan completed" },
+	[BTS_CTR_ASSIGNMENT_COMPLETED_SPEECH] = \
+		{ "assignment:completed_speech",
+		  "Assignment if speech lchan completed" },
 	[BTS_CTR_ASSIGNMENT_STOPPED] = \
 		{ "assignment:stopped",
 		  "Connection ended during Assignment" },
+	[BTS_CTR_ASSIGNMENT_STOPPED_SIGN] = \
+		{ "assignment:stopped_sign",
+		  "Connection ended during signaling lchan Assignment" },
+	[BTS_CTR_ASSIGNMENT_STOPPED_SPEECH] = \
+		{ "assignment:stopped_speech",
+		  "Connection ended during speech lchan Assignment" },
 	[BTS_CTR_ASSIGNMENT_NO_CHANNEL] = \
 		{ "assignment:no_channel",
 		  "Failure to allocate lchan for Assignment" },
@@ -956,12 +974,30 @@ const struct rate_ctr_desc bts_ctr_description[] = {
 	[BTS_CTR_ASSIGNMENT_TIMEOUT] = \
 		{ "assignment:timeout",
 		  "Assignment timed out" },
+	[BTS_CTR_ASSIGNMENT_TIMEOUT_SIGN] = \
+		{ "assignment:timeout_sign",
+		  "Assignment of signaling lchan timed out" },
+	[BTS_CTR_ASSIGNMENT_TIMEOUT_SPEECH] = \
+		{ "assignment:timeout_speech",
+		  "Assignment of speech lchan timed out" },
 	[BTS_CTR_ASSIGNMENT_FAILED] = \
 		{ "assignment:failed",
 		  "Received Assignment Failure message" },
+	[BTS_CTR_ASSIGNMENT_FAILED_SIGN] = \
+		{ "assignment:failed_sign",
+		  "Received Assignment Failure message on signaling lchan" },
+	[BTS_CTR_ASSIGNMENT_FAILED_SPEECH] = \
+		{ "assignment:failed_speech",
+		  "Received Assignment Failure message on speech lchan" },
 	[BTS_CTR_ASSIGNMENT_ERROR] = \
 		{ "assignment:error",
 		  "Assignment failed for other reason" },
+	[BTS_CTR_ASSIGNMENT_ERROR_SIGN] = \
+		{ "assignment:error_sign",
+		  "Assignment of signaling lchan failed for other reason" },
+	[BTS_CTR_ASSIGNMENT_ERROR_SPEECH] = \
+		{ "assignment:error_speech",
+		  "Assignment of speech lchan failed for other reason" },
 	[BTS_CTR_LOCATION_UPDATE_ACCEPT] = \
 		{ "location_update:accept",
 		  "Location Update Accept" },

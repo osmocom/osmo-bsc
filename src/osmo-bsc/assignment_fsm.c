@@ -82,8 +82,23 @@ static const struct osmo_tdef_state_timeout assignment_fsm_timeouts[32] = {
 			       bsc_ctr_description[BSC_##counter].name, \
 			       bsc_ctr_description[BSC_##counter].description); \
 		rate_ctr_inc(&conn->network->bsc_ctrs->ctr[BSC_##counter]); \
-		if (bts) \
+		if (bts) { \
 			rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_##counter]); \
+			if (BTS_##counter != BTS_CTR_ASSIGNMENT_NO_CHANNEL) { \
+				switch (conn->lchan->ch_mode_rate.chan_mode) { \
+				case GSM48_CMODE_SIGN: \
+					rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_##counter##_SIGN]); \
+					break; \
+				case GSM48_CMODE_SPEECH_V1: \
+				case GSM48_CMODE_SPEECH_EFR: \
+				case GSM48_CMODE_SPEECH_AMR: \
+					rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_##counter##_SPEECH]); \
+					break; \
+				default: \
+					break; \
+				} \
+			} \
+		} \
 	} while(0)
 
 #define assignment_count_result(counter) do { \
