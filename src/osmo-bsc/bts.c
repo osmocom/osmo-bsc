@@ -492,6 +492,9 @@ int gsm_set_bts_type(struct gsm_bts *bts, enum gsm_bts_type type)
 {
 	struct gsm_bts_model *model;
 
+	if (bts->type != GSM_BTS_TYPE_UNKNOWN && type != bts->type)
+		return -EBUSY;
+
 	model = bts_model_find(type);
 	if (!model)
 		return -EINVAL;

@@ -2333,6 +2333,9 @@ DEFUN_USRATTR(cfg_bts_type,
 	int rc;
 
 	rc = gsm_set_bts_type(bts, str2btstype(argv[0]));
+	if (rc == -EBUSY)
+		vty_out(vty, "%% Changing the type of an existing BTS is not supported.%s",
+			VTY_NEWLINE);
 	if (rc < 0)
 		return CMD_WARNING;
 
