@@ -131,7 +131,7 @@ int main()
 	void *ctx = talloc_named_const(NULL, 0, "bsc_subscr_test");
 	printf("Testing BSC subscriber core code.\n");
 	osmo_init_logging2(ctx, &log_info);
-	log_set_print_filename(osmo_stderr_target, 0);
+	log_set_print_filename2(osmo_stderr_target, LOG_FILENAME_NONE);
 	log_set_print_timestamp(osmo_stderr_target, 0);
 	log_set_use_color(osmo_stderr_target, 0);
 	log_set_print_category_hex(osmo_stderr_target, 0);
