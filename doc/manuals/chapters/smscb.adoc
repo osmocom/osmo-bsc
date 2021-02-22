@@ -102,3 +102,29 @@ OsmoBSC(config-cbc)# end
 ----
 
 For more details on the available configuration commands, please check the OsmoBSC VTY Reference.
+
+=== Counters
+
+OsmoBSC has two Cell Broadcast related rate counter groups for each BTS:
+
+* the basic CBCH ("cell broadcast channel 0")
+* the extended CBCH ("cell broadcast channel 1")
+
+See below example for a situation where no CBS messages were received yet from the CBC,
+and hence only NULL messages have been sent on both basic and extended CBCH:
+
+.Example: CBCH related rate counters on a BTS that didn't receive any CBS messages
+----
+cell broadcast channel 1:
+         cbch:rcvd_queued:          0 (0/s 0/m 0/h 0/d) Received + queued CBCH messages (Abis)
+        cbch:rcvd_dropped:          0 (0/s 0/m 0/h 0/d) Received + dropped CBCH messages (Abis)
+         cbch:sent_single:          0 (0/s 0/m 0/h 0/d) Sent single CBCH messages (Um)
+        cbch:sent_default:          0 (0/s 0/m 0/h 0/d) Sent default CBCH messages (Um)
+           cbch:sent_null:      31366 (0/s 45/m 2677/h 30588/d) Sent NULL CBCH messages (Um)
+cell broadcast channel 0:
+         cbch:rcvd_queued:          0 (0/s 0/m 0/h 0/d) Received + queued CBCH messages (Abis)
+        cbch:rcvd_dropped:          0 (0/s 0/m 0/h 0/d) Received + dropped CBCH messages (Abis)
+         cbch:sent_single:          0 (0/s 0/m 0/h 0/d) Sent single CBCH messages (Um)
+        cbch:sent_default:          0 (0/s 0/m 0/h 0/d) Sent default CBCH messages (Um)
+           cbch:sent_null:      31366 (1/s 46/m 2676/h 30588/d) Sent NULL CBCH messages (Um)
+----
