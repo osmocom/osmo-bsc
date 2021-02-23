@@ -1,3 +1,591 @@
+osmo-bsc (1.7.0) unstable; urgency=medium
+
+  [ Harald Welte ]
+  * Introduce nm_fail_rep_signal_data for "SS_NM, S_NM_FAIL_REP" signal
+  * OM2000: Add some more message types and IEs we now understand
+  * remove 'NAT' log category
+  * handorer.h: Fix compilation with gcc-10
+  * gsm_data.h: Comment the 'nokia' BTS fields
+  * bts_nokia_site: Fix LAPD segfault during reset procedure
+  * [cosmetic] system_information: Values are not guesses; more comments
+  * bs11_config: Print "Not Equipped" for MBCCU (TRX) that don't exist
+  * Count RSL DELETE INDICATION received from BTS
+  * system_information: Set BSS_PAGING_COORDINATION in SI13 for osmo-bts
+  * vty/bts_resend_cmd: Use gsm_bts_set_system_infos() to increment changemark
+  * osmo-bsc.spec.in: Use %config(noreplace) to retain current config file
+  * abis_nm: Avoid various "Unhandled message" errors on BS-11 startup
+  * Bring timeslot FSMs on BS-11 out of NOT_INITIALIZED state
+  * Don't print 'bogus channel load sample' message if total == 0
+  * bts_nokia_site: Clean up logging
+  * Add example configuration files for E1 BTS
+  * remove examples/osmo-bsc/ericsson/osmo-bsc.cfg
+  * osmo-bsc.spec.in: Package E1 config files
+  * osmo-bsc.spec.in: Add missing directories to package
+  * debian: Package E1 configuration file examples
+  * lchan_fsm: silently ignore LCHAN_EV_RLL_ERR_IND
+  * Add example config files for Ericsson DUG20 based BTS
+  * acc.c: Don't use C99 constructs, this breaks builds on Debian 8
+  * BS-11: Fix "CONNECT TERRESTRIAL TRAFFIC"
+  * Implement support for receiving BSSMAP CommonID from MSC
+  * osmo_bsc_sigtran.c: Remove unused #defines
+  * use osmo_fd_setup() whenever applicable
+  * debian/control: Recommend installation of osmo-mgw
+  * Use osmo_fd_*_{disable,enable}
+  * fix some size-t format string characters
+  * update aoip-mgw-options document with reality of 2020
+  * abis_om2000: Force TRX NM state to UNLOCKED once TRX is up
+  * osmobsc-usermanual: Add Chapter with AoIP message flow examples
+  * OM2K: Permit transition from WAIT_CONF_RES -> WAIT_ENABLE_ACCEPT
+  * OM2K: Skip the entire CON MO if there are no connection groups
+  * Add a bts_model->bts_init() and trx_init() call-back function
+  * abis_om2000: make om2k_mo_name() an exported function
+  * [cosmetic] abis_om2000: Re-format to use longer lines
+  * abis_om2000: Mark om2k_mo_fsm_start() as static
+  * abis_om2000: keep OM2K FSMs around, don't terminate
+  * om2000: Add "show bts 0 om2k-mo" command
+  * abis_om2000: Handle DP object in get_om2k_mo()
+  * smscb: Avoid scheduler array overflow
+  * smscb: Fix adding of SMSCB messages when no message with lower period exists
+  * select_best_cipher(): Prefer A5/1 over A5/2
+  * BS-11: Send proprietary MRPCI message after assignment + HO complete
+  * hide the "smscb-command" vty command; people should use osmo-cbc
+  * CBSP: document rate counters and their mapping to basic/extended CBCH
+
+  [ Philipp Maier ]
+  * bsc_main: use higher default loglevels.
+  * lchan_rtp_fsm: fix out_state_mask
+  * vty: check with is_ipaccess_bts() before using IPACC
+  * lchan_rtp_fsm: make _fsm_timer_cb and _fsm_cleanup static
+  * lchan_rtp_fsm: use E1 endpoints if the BTS is not ipaccess type
+  * e1: encode line number as trunk number in MGCP endpoint
+  * gsm_04_08_rr: block EMERGENCY SETUP when EMERGENCY CALLS are denied
+  * abis_rsl.c: make sure emergency calls are rejected early
+  * lchan_fsm: merge lchan_mr_config()
+  * lchan_fsm: make internal functions static.
+  * lchan_fsm: make rsl mode-modify working again
+  * abis_rsl: prioritize emergency calls over regular calls
+  * abis_rsl.c: flush channel request queue on RSL bootstrap
+  * abis_rsl: inform user when expired channel requests get tossed
+  * abis_rsl: fix memleak in rach dos reduction function
+  * bsc_vty: improve manual activation of lchans (debug / labtest)
+  * bsc_vty: fix manual channel activation
+  * bsc_vty: fix wrong else-if statement
+  * gsm_08_08: fix unreachable code in parse_powercap()
+  * osmo_bsc_bssap: actually check for lchan
+  * bts: add repeated acch mode flags + vty config
+  * abis_rsl: parse cm3 and indicate ACCH repetition cap to BTS
+  * bsc_vty: mark repeated ACCH value of 1.9% to 2.7% BER as default
+  * bsc_vty: fix acch_repetition ber threshold strings
+  * abis_rsl: check if emergency calling is disabled before premption
+  * bsc_vty: mark repeat rxqual 4 (BER >= 1.6) as default
+  * bts.adoc: describe ACCH repetition settings
+
+  [ Vadim Yanitskiy ]
+  * VTY: fix writing of custom timer values to a configuration file
+  * vty: fix: restore removed DNAT category as deprecated
+  * doc/manuals: remove deprecated DNAT from the VTY reference
+  * rest_octets: cosmetic: fix alignment in gprs_cell_options
+  * vty: 'gprs 11bit_rach_support_for_egprs': drop redundant check
+  * vty: 'gprs 11bit_rach_support_for_egprs': clarify error message
+  * vty: clarify EGPRS Packet Channel Request message support
+  * A-bis: fix logging level mismatch in abis_nm_rcvmsg_fom()
+  * bsc_subscr_find_or_create_by_{imsi,tmsi}(): fix NULL pointer dereference
+  * doc/manuals: regenerate the VTY reference file
+  * gsm_data: cosmetic: mark argument of is_*_bts() as const
+  * bts_unknown: fix: properly initialize the feature vector
+  * bts_sysmobts: fix: properly zero-initialize the feature vector
+  * bsc_bts_alloc_register(): fix possible NULL-pointer dereference
+  * handover_test: use 'unknown' BTS type instead of 'sysmobts'
+  * abis_nm: cosmetic: add curly braces to complex 'if' statements
+  * abis_nm: cosmetic: use sizeof() for printing buffer size
+  * abis_nm: fix: properly truncate feature vector reported by BTS
+  * abis_nm: fix ARFCN list encoding in Set Channel Attributes
+  * abis_nm: fix length indicator in Set Channel Attributes
+  * fix crashes due to OSMO_ASSERT(conn->lchan)
+  * abis_rsl: Mobile Allocation IE in CHANnel ACTIVation shall be empty
+  * system_information: publicly declare generate_cell_chan_list()
+  * system_information: constify bitvec in freq. list encoding API
+  * generate_ma_for_ts(): constify per cell/timeslot ARFCN bit-vectors
+  * gsm_04_08_rr: fix hopping parameters in RR Assignment Command
+  * doc/examples: remove deprecated 'dyn_ts_allow_tch_f'
+  * vty: ensure that all warning messages are prefixed with '%%'
+  * vty: fix missing comma in a warning message
+  * vty: introduce and use GPRS_CHECK_ENABLED() macro
+  * vty: allow enabling freq. hopping regardless of the feature vector
+  * debian/control: change maintainer to the Osmocom team / mailing list
+  * vty: fix copy-pasted 'no gprs control-ack-type-rach' description
+  * fix bsc_sapi_n_reject(): dlci is unsigned, use uint8_t
+  * bsc_subscr_conn_fsm: fix a memleak in rll_ind_cb()
+  * bsc_subscr_conn_fsm: use proper cause values in SAPI N REJECT
+  * abis_rsl: fix IAR Rest Octets in rsl_send_imm_ass_rej()
+  * vty: add a command to clear hopping ARFCN list
+  * gsm_04_08_rr: fix hopping parameters in RR Handover Command
+  * SI Type 4: fix missing CBCH Mobile Allocation IE
+  * generate_ma_for_ts(): use OSMO_BYTES_FOR_BITS() macro
+  * generate_ma_for_ts(): fix: properly encode ARFCN 0 (corner case)
+  * SI Type 4: prevent potential buffer overflow
+  * vty: propagate result of gsm_bts_set_system_infos()
+  * fix bootstrap_rsl(): check result of gsm_bts_trx_set_system_infos()
+  * abis_om2000: check result of gsm_bts_trx_set_system_infos()
+  * vty: clarify NM state owner printed by 'show trx N' command
+  * abis_nm: fix erroneous use of LOGPC() instead of LOGP()
+  * abis_nm: fix msgb memleak in _abis_nm_sendmsg()
+  * abis_nm: LOGPFOH()/DEBUGPFOH(): remove redundant context info
+  * abis_nm: abis_nm_get_ts(): use LOGPFOH() instead of generic LOGP()
+  * abis_nm: use btstype2str() in abis_nm_rcvmsg_manuf()
+  * abis_nm: use DEBUGPFOH() in abis_nm_rx_sw_act_req()
+  * abis_nm: use LOGPFOH()/DEBUGPFOH() in parse_attr_resp_info_unreported()
+  * abis_nm: improve logging message in abis_nm_get_attr()
+  * generate_ma_for_ts(): simplify MA bit-mask computation
+  * vty: fix unreacheable code / wrong check in lchan_act_all_trx()
+  * RSL/BSSAP: fix: properly convert between RSL Link ID and DLCI
+  * vty: add attributes to VTY commands indicating when they apply
+  * bts: move rate counter / stat item definitions from *.h to *.c
+  * main: add --vty-ref-mode, use vty_dump_xml_ref_mode()
+  * vty: add reminder messages about the radio link timeout
+  * gsm_08_08: fix NULL pointer dereference in bsc_cm_update()
+  * NM FSMs: fix DISABLED_NOTINSTALLED -> DISABLED_NOTINSTALLED
+  * vty: add new attribute for vendor-specific commands
+  * abis_rsl: turn rsl_msgb_alloc() a macro and move it to header
+  * power_control: add new structures and default parameters
+  * power_control: add encoding/init API to 'struct gsm_bts_model'
+  * power_control: send default parameters from bootstrap_rsl()
+  * power_control: add encoder for ip.access nanoBTS and OsmoBTS
+  * power_control: make use of MS/BS parameters in RSL messages
+  * power_control: add VTY commands for per-BTS configuration
+  * power_control: add VTY command for re-sending default parameters
+  * power_control: add VTY command to set static / maximum BS Power
+  * power_control: reflect MS/BS Power difference in the VTY prompt
+  * vty: cosmetic: make all 'struct cmd_node' definitions static
+  * power_control: encoding of H_REQAVE and H_REQT for ip.access
+  * power_control: fix swapped lower/upper RxQual threshold values
+  * power_control: enable dynamic MS power control for osmo-bts
+  * power_control: vty: some commands are not vendor specific
+  * vty: fix NULL-pointer dereference in cfg_bts_rep_dl_facch()
+  * power_control: vty: do not print 'no (rxlev-avg|rxqual-avg)'
+  * vty: join UL/DL SACCH repetition commands together
+  * vty: fix wrong attributes for UL/DL ACCH repetition commands
+  * ericsson_rbs2000: fix unreachable code in inp_sig_cb()
+  * power_control: add documentation on available configuration params
+  * manuals: fix a duplicate line in the description of DTXu
+  * manuals: fix a typo: s/DTS/DTX/
+  * power_control: cosmetic changes and fixes to the documentation
+  * power_control: add increase / reduce step size recommendations
+  * vty: use 'const' for *nsvc in config_write_bts_gprs()
+  * vty: fix writing empty IP address for unconfigured NSVCs
+  * power_control: fix: properly initialize per-lchan BS power
+  * vty: fix 'codec-list' command: check all given arguments first
+  * gsm_data: return early if MS Power class remains the same
+  * assignment_fsm: assert the result of conn_get_bts()
+  * power_control: check BTS model in cfg_power_ctrl_avg_osmo_ewma()
+  * power_control: enable Uplink DPC by default if format is known
+  * power_control: make P_CON_INTERVAL parameter configurable
+  * abis_nm: enrich debug messages with contextual info
+
+  [ Pau Espin Pedrol ]
+  * bssap: Avoid logging error if no optional Global Call Ref IE received
+  * bsc: Allow setting negative nominal tx power through VTY
+  * Avoid selecting channels from administratively locked trx
+  * bsc_main: Improve log line on Lost E1 link
+  * bsc_main: Use LOG_TRX in log line
+  * ipaccess_sign_link_up: Log sign_link type
+  * Use OSMO_FD_* instead of deprecated BSC_FD_*
+  * gsm_data.h: Drop duplicated include stdint.h
+  * Fix trailing whitespace in several files
+  * ipaccess_nanobts: Log ipaccess_sign_link_down event
+  * Move struct gsm_bts: gsm_data.* => bts.*
+  * bts: Drop duplicated function to get trx by number
+  * Move struct gsm_bts_trx: gsm-data.* => bts_trx.*
+  * Move gsm_bts_{trx_}set_system_infos APIs to bts{_trx}.*
+  * Move acc_ramp_init inside gsm_bts_alloc
+  * configure.ac: Fix trailing whitespace
+  * doc: Copy {bsc,bts}.adoc from osmo-gsm-manuals
+  * {bts,bsc}.adoc: Drop deprecated OsmoNITB references
+  * rename files acc_ramp.* -> acc.c*
+  * Introduce support for ACC subset rotation
+  * Introduce support for ACC ramping during whole BTS life cycle
+  * Support setting rt-prio and cpu-affinity mask through VTY
+  * Change default SCTP conn NULL->127.0.0.1 to localhost->localhost
+  * ctrl: Fix CTRL TRAP for {msc.X,msc_)connection_status not sent
+  * acc_test: Print allowed ACC from t2 and t3
+  * acc: Fix ACC rotate barring highest ACCs too quickly during wraparound
+  * tests: acc_test: Test more rotating scenarios
+  * Allow storing IPv6 address strings in BSSAP structs
+  * vty: Hide show running-config ACC ramping params if not enabled
+  * Fail on invalid IP addresses passed to IPACC MDCX
+  * Fix creating MGCP proxy socket if MGW listens on an IPv6 address
+  * lchan_rtp_fsm: Deferr IPACC MDCX after BTS side MGCP MDCX
+  * oml: Fix premature Opstart to Radio Carrier
+  * bssap: Use new DTAP DLCI helper fields from libosmocore
+  * abis_nm: Log Rx Change Administrative State ACK
+  * abis_nm: Log no state change detected
+  * abis_nm: Remove duplicated log line
+  * cosmetic: tests/ctrl_test_runner.py: Fix trailing whitespace
+  * ipa oml: tx OPSTART after unlocking, not before
+  * contrib/jenkins: Enable parallel make in make distcheck
+  * Set all NM OML objects to Locked by default
+  * Introduce NM BTS Site Manager FSM
+  * Introduce NM BTS FSM
+  * Introduce NM BaseBand Transceiver FSM
+  * Introduce NM RadioCarrier FSM
+  * Introduce Radio Channel FSM
+  * OML: Stay compatible with older osmo-bts versions
+  * abis_nm: Log Opstart NACK with error loglevel
+  * ipa: Fix use of null pointer in log macro
+  * nm_channel_fsm: Fix innocuous transition not permitted log error
+  * main: generate coredump and exit upon SIGABRT received
+  * ipaccess-proxy: generate coredump and exit upon SIGABRT received
+  * Store GPRS MOs directly under BTS SiteMgr object
+  * nm_bts_sm_fsm: Fix peer_has_no_avstate_offline not applied for nanobts
+  * Introduce NM GPRS NSE FSM
+  * Introduce NM GPRS CELL FSM
+  * abis_nm: Simplify param passing to abis_nm_rx_get_attr_resp()
+  * Handle BTS/BBTRANSC Get Attributes (Ack) in NM FSMs
+  * Fix typo in function nanobts_attr_nsvc_get
+  * oml: Delay configuring NSVC until BTS features are negotiated
+  * gsm_lchan_name: assert on NULL lchan
+  * Use rest_octets functionalities from libosmocore
+  * gitignore: Ignore *~
+  * doc: handover: Fix malformed table
+  * Introduce Neighbor Resolution Service
+  * cosmetic: doc: wrap line too long
+  * cosmetic: bts-sysmo: Fix whitespace indentation
+  * Allow configuring SI13 CCN_ACTIVE bit from VTY, enable by default on osmo-bts
+  * Introduce VTY cmd to configure Alpha in SI13
+  * Move bts_ident_key to neighbor_ident.c
+  * Fix neigh resolution service on local neighbours
+  * SI13: Enable sending GPRS Cell Options Extension Information on GPRS-only BTS
+  * tests: Explicitly drop category from log
+  * tests: Replace deprecated API log_set_print_filename
+
+  [ Oliver Smith ]
+  * tests/Makefile.am: allow running only one VTY test
+  * osmo-bsc/bsc_vty: set default gprs cell bvci to 2
+  * osmo-bsc/bsc_vty: fail on get_amr_from_arg error
+  * osmo-bsc-minimal.cfg: fix codec-list
+  * main: exit on mutually exclusive codecs settings
+  * abis_nm.c: rx_fail_evt_rep: fix sd.bts
+  * abis_nm: move fail report parsing to extra func
+  * VTY: add show bts failure report
+  * VTY: let all descriptions end in \n
+  * VTY: regenerate bsc_vty_reference.xml
+  * timers: T->X: 23002, 23004, 23005, 23006
+  * contrib: import RPM spec
+  * contrib: integrate RPM spec
+  * Makefile.am: EXTRA_DIST: debian, contrib/*.spec.in
+  * lchan_fsm, lchan_rtp_fsm: make all timers configurable
+  * contrib/jenkins: don't build osmo-gsm-manuals
+  * configure.ac: set -std=gnu11
+
+  [ Neels Hofmeyr ]
+  * manual: add "Multiple Instances" section, akin to other manuals
+  * manual: add SCCP/M3UA section from common chapters
+  * manual: add SCCPlite section
+  * manual: fix config example typo 'msc-addr'
+  * manuals: update bsc_vty_reference.xml
+  * deprecate 'msc' / 'ip.access rtp-base <port>'
+  * cosmetic: put comment back at proper place in bsc_vty.c
+  * drop IMSI filter and libfilter completely
+  * drop CC 'local-prefix' feature
+  * code cleanup: absorb complete_layer3() into bsc_compl_l3()
+  * drop all BSC originated USSD notification features
+  * doc/examples: remove deprecated ussd text config
+  * drop MSC types "local" vs "normal"
+  * flatten: move network->bsc_data->* to network->*
+  * CTRL: determine MSC connection status from RESET-ACK, not AS_ACTIVE
+  * create only one SCCP user per SCCP instance
+  * cosmetic: tweak rc type of is_cm_service_for_emerg()
+  * is_cm_service_for_emerg(): return false, not 0
+  * gsm0408_test.c: drop test_mi_functionality()
+  * refactor bsc_find_msc()'s round-robin
+  * add osmo-bsc --vty-ref-xml: dump VTY ref XML to stdout
+  * manuals: generate vty reference xml at build time
+  * osmo-bsc main: exit on cmdline option error
+  * remove extract_sub(), add bsc_subscr_find_or_create_by_mi()
+  * use osmo_mobile_identity API everywhere
+  * tweak log category for Compl L3 error
+  * MSC pooling: make NRI mappings VTY configurable
+  * MSC pooling: implement NAS node selection by NRI from TMSI
+  * MSC pooling: LU: ignore TMSI NRI from a different PLMN
+  * MSC pooling: add 'no allow-attach' for MSC off-loading
+  * mscpool: add user manual chapter
+  * vty: add 'mscpool roundrobin next' for ttcn3 tests
+  * log: add MSC number to bsc_subscr_conn_fsm id
+  * debug: log about matching Paging Response to earlier Paging
+  * MSC pooling: add rate counters
+  * merge files: absorb osmo_bsc_vty.c into bsc_vty.c
+  * vty: hide 'mscpool roundrobin next'
+  * fix segfault introduced by recent segfault fix
+  * create ASP+AS only once per cs7 instance
+  * si2quater: fix budget calculation for multiple EARFCNs
+  * SI2quater: allow storing 48 EARFCNs
+  * RR Release Cell selection IE: fix repeated EARFCNs encoding
+  * RR Channel Release: pass Cause code from BSSMAP Clear to the BTS
+  * propagate RSL error cause codes to RR Channel Release cause
+  * fix CBSP server: actually open the srv_link
+  * handover_test.c: add test case 29: TCH/F -> TCH/H
+  * handover_test.c: typo s/more/less in test 19 description
+  * hodec2: fix logging of requirements flags
+  * hodec2 congestion: consider only congested pchan types
+  * hodec2: do not keep candidates with zero requirements met
+  * hodec2: log requirements of best candidate, log rxlev in dBm
+  * cosmetic: bscon: use GSM48_RR_CAUSE_NORMAL instead of 0
+  * gscon timeout: use proper cause code for lchan release
+  * debug log: add RR Release cause code to the log
+  * info, error log: show MSC nr for new conn
+  * mscpool: fix refcount leak for unusual case of no bts
+  * CBSP: on RESET, also clear the etws_timer, and stop ETWS PN broadcast
+  * CBSP: log CBSP RESET on NOTICE
+  * CBSP: rewrite the CBSP link setup and 'cbc' VTY section
+  * CBSP: add local bind to client mode
+  * cosmetic: use local var in handover_start_intra_bsc()
+  * cosmetic: dissolve error-goto with single source in handover_start()
+  * ho counters: count invalid target cell as 'error', not 'no_channel'
+  * fix 'handover:*' counters: add missing / move increments
+  * fix 'handover:*' counters: remove bogus increments
+  * fix HO inter-BSC-IN target bts for counters
+  * add {BTS,BSC}_CTR_INTER_BSC_HO_OUT_FAILED for RR HO Failure
+  * bssap: do not send a Clear Request after a Clear Command
+  * handover_fsm: signal Clear from gscon, for proper HO result counts
+  * handover: fix detection for ambiguous HO neighbor ident
+  * CBSP: fix link startup when enabled in config file
+  * drop some unused members and function decls
+  * CBSP: adjust manual to reflect new 'cbc' VTY config
+  * CBSP VTY: re-add legacy cbc config for backwards compat
+  * dissolve bsc_grace_paging_request()
+  * drop bsc_subscr.lac
+  * drop unused Tdef for 992427
+  * add timer.vty
+  * clean up timer definitions: introduce groups, move some T to X
+  * tests: add missing *.vty to EXTRA_DIST
+  * log MSC nr for opening new A conn
+  * remove unused signature gsm48_handle_paging_resp()
+  * gscon_bssmap_clear(): guard against NULL msc
+  * compl l3: separate paging handling from bsc_scan_bts_msg()
+  * compl l3: parse Mobile Identity once
+  * compl l3: cosmetics around Create Layer 3
+  * compl l3: allocate conn in gsm_08_08.c, not gsm_04_08_rr.c
+  * compl l3: populate conn's bsc subscr from MI
+  * compl l3: move Paging Response handling out of bsc_find_msc()
+  * compl l3: move all message parsing out of bsc_find_msc()
+  * refactor paging: introduce bsc_paging_params
+  * refactor paging: introduce bsc_paging_start()
+  * refactor paging: add bsc_subscr to bsc_paging_params
+  * LCS: add paging reason, return in paging_request_stop()
+  * introduce osmo_use_count for bsc_subscr
+  * bsc_subscr_name: print both IMSI and TMSI
+  * cosmetic: fix naming of GSCON_EV_A_CONN_REQ -> GSCON_EV_MO_COMPL_L3
+  * LCS: implement re-use of existing A-interface conn
+  * LCS: SCCP next conn id: prepare Lb-interface
+  * LCS: implement the bulk of Location Services
+  * LCS: allow RSL EST IND during GSCON_ST_ACTIVE
+  * remove unused osmo_bsc_reset.h
+  * add doc/location_services_ta.msc
+  * BSSMAP RESET: generalize a_reset FSM
+  * BSSMAP RESET: move cancel-paging call to osmo_bsc_sigtran_reset()
+  * BSSMAP RESET: move RESET-ACK into reset fsm
+  * BSSMAP RESET: tweak logging
+  * BSSMAP RESET: also accept conn cfm events during ST_DISC
+  * LCS: disable Lb interface by default, add vty 'smlc' / 'enable'
+  * add smlc.vty test
+  * LCS: add proper BSSMAP-LE RESET re-using new generalized reset FSM
+  * LCS: Lb startup: no need to re-use existing SCCP user
+  * drop features 'core-location-area-code' and 'core-cell-identity'
+  * manual: describe LCS and Lb interface
+  * fix missing RR release when there is no MSC
+  * add fixme comment for OS#3833
+  * minor code dup: smlc_set_cs7_instance()
+  * handover vty doc: explain rxqual values
+  * handover_test: fix comment
+  * handover_test prep: move arfcn into create_bts()
+  * handover_test prep: move generate_si() into create_bts()
+  * handover_test prep: allow arbitrary timeslots in create_bts() code
+  * handover_test prep: allow configuring several trx in create_bts()
+  * handover_test prep: rename 'create-bts' to 'create-n-bts'
+  * handover_test cosmetic: eliminate bts array and bts_num from main()
+  * handover_test: allow arbitrary timeslot config and multiple TRX
+  * handover test: fix dyn ts: set pchan_is on act / rel
+  * handover test: add 'expect-ts-use' to clarify tests
+  * handover_test: add 'set-ts-use'
+  * handover_test: change 'meas-rep' params to bts-trx-ts-ss nr
+  * handover_test: drop secondary array of lchans
+  * handover test: add test 30: de-congest TCH/F by moving to dyn TS TCH/H
+  * handover_test: add test 31: TCH/H: re-use dyn TS
+  * fix TCH/H allocation: use half occupied dyn TS instead of switching more dyn TS
+  * hodec 2: prep: common pick_better_lchan_to_move() function
+  * hodec 2: favor moving dyn TS
+  * handover test 30: play through filling up all lchans
+  * handover_test: add test 32: half used TCH/H on dyn TS
+  * fix AMR start-mode auto: reflect proper ICMI in MultiRate Config IE
+  * AMR start-mode: send proper smod bits
+  * AMR start-mode auto: send smod bits as zero
+  * ctrl_test_runner.py: remove per-test startup delay
+  * hodec 2: prefer moving TCH/H from half-used dyn TS
+  * handover_test: implement as VTY shell
+  * handover_test: log sending ho complete
+  * handover_test: send ho detection
+  * handover_test: adjust logging for reproducability
+  * handover_test: set a fake osmo_mgcpc_ep_ci pointer
+  * handover_test: rename test scripts from numbers to names
+  * handover_test: gitignore
+  * tweak handover_tests.sh
+  * handover_test: cosmetic cfg simplifications in 5 tests
+  * handover_test: fix test_congestion.ho_vty meas-rep
+  * handover_test.c: properly release lchans in set-ts-use
+  * hodec2: cosmetic: add dBm unit to rxval logging
+  * hodec2: code dup / cosmetics
+  * handover_test: add 'meas-rep repeat N'
+  * handover_test: add test_congestion_favor_best_target_rxlev.ho_vty
+  * handover_test: add AMR TCH/H->/F tests, showing a bug
+  * handover_test: show ineffective intra-cell choice
+  * handover_test: add test_congestion_intra_vs_inter_cell.ho_vty
+  * hodec2: clarify current and target rxlev per candidate
+  * hodec2: cosmetic: clarify afs_bias, simplify pick_better_lchan_to_move()
+  * hodec2: fix candidate choices in congestion check
+  * handover_test: include ack-chan in expect-chan
+  * handover_test: safeguard against unhandled chan req
+  * handover_test: saner chan act handling
+  * handover_test: saner ho request handling
+  * handover_test: vty echo
+  * handover_test: show a bug: add test_congestion_no_oscillation.ho_vty
+  * hodec2: cosmetic: clarify ho_candidate.{current,target}
+  * hodec2: reduce check_requirements() args
+  * hodec2: add ho_candidate.{current,target}.free_tch
+  * handover_test: add lchan wildcards to meas-rep cmd
+  * handover_test: show bug: add test_balance_congestion_tchf_tchh.ho_vty
+  * hodec2: fix congestion oscillation bug
+  * handover_test: add test_balance_congestion_by_percentage.ho_vty
+  * hodec2: to balance congestion, use overload percent
+  * handover_test: enhance test_balance_congestion_by_percentage.ho_vty
+  * handover_tests.sh: update stdout/stderr only on capital -U arg
+  * fix for test_dyn_ts_favor_moving_half_used_tch_h.ho_vty
+  * cosmetic: in a ho test, use '*' instead of pdch
+  * show bug: add test_dyn_ts_congestion_tch_f_vs_tch_h.ho_vty
+  * fixate test_dyn_ts_congestion_tch_f_vs_tch_h.ho_vty
+  * hodec2: fix congestion resolution on dyn TS
+  * add test_dyn_ts_congestion_tch_f_vs_tch_h_2.ho_vty
+  * lchan_avail(): omit logging for handover decision 2
+  * show bug: add test_dyn_ts_balance_congestion.ho_vty
+  * hodec2: fix congestion balancing on dyn TS
+  * show bug: add test_dyn_ts_amr_tch_{f,h}_to_{h,f}_congestion_assignment_2.ho_vty
+  * hodec2: fix intra-cell congestion balancing with source lchan on dyn TS
+  * lchan assignment when RTP is set up: don't break on Mode Modify
+  * rename lchan->rqd_ta to last_ta
+  * lchan activation: indicate whether TA is known
+
+  [ Keith ]
+  * Meas Tools: Avoid OSMO_ASSERT due to uninitialised logging.
+  * Meas Tools: Avoid unusable terminal in case of error on osmo_sock_init
+  * Meas Tools, Avoid compiler format warnings
+  * Disallow changing the type of an existing BTS from the vty
+
+  [ Eric ]
+  * configure.ac: fix libtool issue  with clang and sanitizer
+
+  [ Sylvain Munaut ]
+  * om2k: Add definitions for the TG object
+  * om2k: Allow TG and MCTR to be manipulated via VTY
+  * om2k: Allow the CON configuration request to be triggered via VTY
+  * om2k: Add VTY command to allow TX of arbitrary message for testing
+  * om2k: Don't use slashes in FSM IDs and use dashes instead
+  * om2k: Fix TS channel config payload for non-superchannel case
+  * om2k: Fix type of msg_type in abis_om2k_tx_simple
+  * om2k: Acknowledge the HW Infos Reports
+  * om2k: Acknowledge the unknown MCTR messages we get from time to time
+  * om2k: Properly name message 0x0136, found to be MCTR Statistics Report
+  * om2k: Use the "from config" TS config to setup OM objects
+  * om2k: Dispatch TS_EV_OML_READY to TS FSM only when it's actually ready
+  * om2k: Fix the frequency specifier for TX/RX/TS conf requests
+  * bts_ericsson_rbs2000: Init all the TRX, not just C0
+  * bts_ericsson_rbs2000: Whitelist the E1d input driver
+  * om2k: Add option to limit OML version during negotiation
+  * om2k: Rename MCTR config request constants for consistency
+  * om2k: Add support for MCTR configuration
+  * om2k: Properly update the 'fake' 12.21 states using OM2000 status
+  * om2k: Wait for OM TRX links to stabilize before trying to bring up TRX
+  * chan_alloc: Don't re-invent trx_is_usable and use existing helper
+  * gsm_data: Update trx_is_usable for ericsson BTS
+  * om2k: Fix invalid use of linked list when building hopping freq list
+  * bts_nokia_site: Fake 12.21 OM objet state as "OK" when boot is done
+
+  [ Alexander Chemeris ]
+  * ctrs: Correctly count load total for dynamic timeslots.
+  * stats: Report per channel type load to statsd counters.
+  * stats: Remove dots from the end of stats descriptions.
+  * Fix indent whitespace and log message.
+  * stats: Fix stat group index for BTS stats.
+  * Fix a comment for the handle_unitdata_from_msc() function.
+  * chan_alloc: Add comments for the *_chan_load() functions.
+  * osmo_bsc_sigtran: Fix a SSCP-> SCCP typo in a comment
+  * stats: Add a stats gauge for the MSC links count.
+  * stats: report a number of configured BTS to a stats gauge.
+  * stats: Add counters for received BSSMAP messages.
+  * stats: Export connected OML/RSL links count per BTS.
+  * a_reset: Rename SIGTRAN connection to BSSMAP MSC assocation in log messages
+  * stats: Fix Rx DTAP error stat description
+  * bsc_subscr_conn_fsm: Fix a typo in the comment life->live
+  * lchan: Allow transition from BORKEN state to WAIT_RF_RELEASE_ACK
+  * timeslot_fsm: Allow PDCH_ACT_ACK in BORKEN state.
+  * stats: Only dereference a connection pointer after checking for NULL.
+  * handover_test: Properly allocate MSC data struct.
+  * stats: Add counters for Tx BSSMAP messages.
+  * stats: Rename BSSMAP Rx message counters to match Tx ones.
+  * bsc_vty: Coding style fix - brackets around a complex if/else
+  * log: Fix "Paging request failed" logging level
+  * log: Adjust "new SIGTRAN connection" logging level
+  * bssmap: Ignore repeated BSSMAP RESET ACK messages.
+  * log: Demote "CHAN RQD: reason" to INFO
+  * log: Demote "SAPI=%u ESTABLISH CONFIRM" message from ERROR to DEBUG.
+  * borken: Recover from more TS borken states.
+  * stats: Add counters and gauges for BORKEN lchans/TS
+  * stats: Add a BTS/BSC counter PAGING_NO_ACTIVE_PAGING.
+  * stats: Correctly count lchans under BORKEN TS.
+  * bssap: Handle BSSMAP CONFUSION message.
+  * Fix crash in bsc_patch_mm_info()
+  * bsc_patch: Don't even parse MM INFO if TZ patching is not enabled.
+  * bsc_subscr_conn_fsm: Fix crash in gscon_forget_lchan()
+  * stats: Count paging requests flushed due to MSC Reset.
+  * Return 0 from gsm0408_rcvmsg() if SCCP link is already closed.
+  * paging: Remove obsolete comment.
+  * chan_alloc: Fix typo in a comment.
+  * timeslot_fsm: Name TS FSM instances on allocation.
+
+  [ Daniel Willmann ]
+  * osmo-bsc: Use designated initializer in bts_stat_desc
+  * gsm_data.h: Remove period at end of counter description
+  * abis_rsl: Count successful channel requests
+  * Count assignment rates per BTS as well
+  * Remove punctuation in counter description
+  * Count handover per BTS as well as per BSC
+  * Count intra-cell and intra-bsc handover separately
+  * Add bts counters to count BTS events where we don't have a bts
+  * configure.ac: Require python3 for ext_tests
+
+  [ Alexander Couzens ]
+  * gsm_data: always set spare bits in channel description
+  * gsm 04.08: encode the LTE neighbors measurement bandwindth in Channel Release
+  * gsm 04.08: correct calculate the Cell Selection Indicator after release of all TCH and SDCCH
+  * osmo-bsc: fix a crash when receiving a RACH LOAD IND with 0
+  * abis_nm: abis_nm_perform_test: fix a potential null deref
+  * pcu_sock: use tn as variable name to improve readability
+  * pcuif_proto: protocol 9: add missing fields
+  * oml: encode IPv6 NSVC using the new OML attribute NM_ATT_OSMO_NS_LINK_CFG
+  * pcuif_proto: version 10: add frequency hopping parameters
+  * pcuif_proto: version 10: add support for IPv6 NSVCs
+  * bsc_vty: cfg_bts_gprs_nsvc_rip: add missing breaks
+  * bsc_vty: parse the return code to make coverity happy
+  * bts_ipaccess_nanobts: check if msgb_alloc fails
+  * sysmobts: expect feature IPV6_NSVC
+  * Introduce NM GPRS NSVC FSM
+
+  [ Michael Iedema ]
+  * stats: Add granularity to SDCCH/TCH/LU activity.
+  * stats: Add granularity to chan:rf_fail stat.
+  * cosmetic: shorten deref chains where possible
+  * stats: add SIGN/SPEECH assignment subcategories
+
+ -- Pau Espin Pedrol <pespin@sysmocom.de>  Tue, 23 Feb 2021 18:43:04 +0100
+
 osmo-bsc (1.6.0) unstable; urgency=medium
 
   [ Philipp Maier ]

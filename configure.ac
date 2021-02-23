@@ -51,15 +51,15 @@ AC_ARG_ENABLE([ipaccess-utils], [AS_HELP_STRING([--enable-ipaccess-utils], [Buil
 AM_CONDITIONAL(BUILD_IPA_UTILS, test "x$osmo_ac_ipa_utils" = "xyes")
 AC_SUBST(osmo_ac_ipa_utils)
 
-PKG_CHECK_MODULES(LIBOSMOCORE, libosmocore >= 1.4.0)
-PKG_CHECK_MODULES(LIBOSMOVTY, libosmovty >= 1.4.0)
-PKG_CHECK_MODULES(LIBOSMOCTRL, libosmoctrl >= 1.4.0)
-PKG_CHECK_MODULES(LIBOSMOGSM, libosmogsm >= 1.4.0)
-PKG_CHECK_MODULES(LIBOSMOABIS, libosmoabis >= 0.6.0)
-PKG_CHECK_MODULES(LIBOSMONETIF, libosmo-netif >= 0.6.0)
-PKG_CHECK_MODULES(LIBOSMOSIGTRAN, libosmo-sigtran >= 0.10.0)
-PKG_CHECK_MODULES(LIBOSMOSCCP, libosmo-sccp >= 0.10.0)
-PKG_CHECK_MODULES(LIBOSMOMGCPCLIENT, libosmo-mgcp-client >= 1.6.0)
+PKG_CHECK_MODULES(LIBOSMOCORE, libosmocore >= 1.5.0)
+PKG_CHECK_MODULES(LIBOSMOVTY, libosmovty >= 1.5.0)
+PKG_CHECK_MODULES(LIBOSMOCTRL, libosmoctrl >= 1.5.0)
+PKG_CHECK_MODULES(LIBOSMOGSM, libosmogsm >= 1.5.0)
+PKG_CHECK_MODULES(LIBOSMOABIS, libosmoabis >= 1.1.0)
+PKG_CHECK_MODULES(LIBOSMONETIF, libosmo-netif >= 1.1.0)
+PKG_CHECK_MODULES(LIBOSMOSIGTRAN, libosmo-sigtran >= 1.4.0)
+PKG_CHECK_MODULES(LIBOSMOSCCP, libosmo-sccp >= 1.4.0)
+PKG_CHECK_MODULES(LIBOSMOMGCPCLIENT, libosmo-mgcp-client >= 1.8.0)
 
 dnl checks for header files
 AC_HEADER_STDC
