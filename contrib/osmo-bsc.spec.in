@@ -33,7 +33,6 @@ BuildRequires:  systemd-rpm-macros
 BuildRequires:  pkgconfig(libcrypto) >= 0.9.5
 BuildRequires:  pkgconfig(libosmo-mgcp-client) >= 1.8.0
 BuildRequires:  pkgconfig(libosmo-netif) >= 1.1.0
-BuildRequires:  pkgconfig(libosmo-sccp) >= 1.4.0
 BuildRequires:  pkgconfig(libosmo-sigtran) >= 1.4.0
 BuildRequires:  pkgconfig(libosmoabis) >= 1.1.0
 BuildRequires:  pkgconfig(libosmocore) >= 1.5.0
