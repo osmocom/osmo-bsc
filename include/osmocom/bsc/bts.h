@@ -143,6 +143,7 @@ extern const struct rate_ctr_desc bts_ctr_description[];
 extern const struct rate_ctr_group_desc bts_ctrg_desc;
 
 enum {
+	BTS_STAT_UPTIME_SECONDS,
 	BTS_STAT_CHAN_LOAD_AVERAGE,
 	BTS_STAT_CHAN_CCCH_SDCCH4_USED,
 	BTS_STAT_CHAN_CCCH_SDCCH4_TOTAL,
@@ -645,6 +646,9 @@ int gsm_set_bts_type(struct gsm_bts *bts, enum gsm_bts_type type);
 struct gsm_bts_trx *gsm_bts_trx_num(const struct gsm_bts *bts, int num);
 
 int bts_gprs_mode_is_compat(struct gsm_bts *bts, enum bts_gprs_mode mode);
+
+#define BTS_STORE_UPTIME_INTERVAL 10 /* in seconds */
+void bts_store_uptime(struct gsm_bts *bts);
 
 unsigned long long bts_uptime(const struct gsm_bts *bts);
 

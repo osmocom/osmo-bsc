@@ -1216,6 +1216,9 @@ struct gsm_network {
 	/* Timer for periodic channel load measurements to maintain each BTS's T3122. */
 	struct osmo_timer_list t3122_chan_load_timer;
 
+	/* Timer to write each BTS's uptime counter state to the stats system. */
+	struct osmo_timer_list bts_store_uptime_timer;
+
 	struct {
 		struct mgcp_client_conf *conf;
 		struct mgcp_client *client;

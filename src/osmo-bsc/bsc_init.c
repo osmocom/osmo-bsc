@@ -85,6 +85,18 @@ static void update_t3122_chan_load_timer(void *data)
 	osmo_timer_schedule(&net->t3122_chan_load_timer, T3122_CHAN_LOAD_SAMPLE_INTERVAL, 0);
 }
 
+static void bsc_store_bts_uptime(void *data)
+{
+	struct gsm_network *net = data;
+	struct gsm_bts *bts;
+
+	llist_for_each_entry(bts, &net->bts_list, list)
+		bts_store_uptime(bts);
+
+	/* Keep this timer ticking. */
+	osmo_timer_schedule(&net->bts_store_uptime_timer, BTS_STORE_UPTIME_INTERVAL, 0);
+}
+
 static struct gsm_network *bsc_network_init(void *ctx)
 {
 	struct gsm_network *net = gsm_network_init(ctx);
@@ -127,6 +139,10 @@ static struct gsm_network *bsc_network_init(void *ctx)
 	 */
 	osmo_timer_setup(&net->t3122_chan_load_timer, update_t3122_chan_load_timer, net);
 	osmo_timer_schedule(&net->t3122_chan_load_timer, T3122_CHAN_LOAD_SAMPLE_INTERVAL, 0);
+
+	/* Init uptime tracking timer. */
+	osmo_timer_setup(&net->bts_store_uptime_timer, bsc_store_bts_uptime, net);
+	osmo_timer_schedule(&net->bts_store_uptime_timer, BTS_STORE_UPTIME_INTERVAL, 0);
 
 	net->cbc->net = net;
 	net->cbc->mode = BSC_CBC_LINK_MODE_DISABLED;

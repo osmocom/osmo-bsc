@@ -556,6 +556,11 @@ struct gsm_bts_trx *gsm_bts_trx_num(const struct gsm_bts *bts, int num)
 	return NULL;
 }
 
+void bts_store_uptime(struct gsm_bts *bts)
+{
+	osmo_stat_item_set(bts->bts_statg->items[BTS_STAT_UPTIME_SECONDS], bts_uptime(bts));
+}
+
 unsigned long long bts_uptime(const struct gsm_bts *bts)
 {
 	struct timespec tp;
@@ -1112,6 +1117,10 @@ const struct rate_ctr_group_desc bts_ctrg_desc = {
 };
 
 const struct osmo_stat_item_desc bts_stat_desc[] = {
+	[BTS_STAT_UPTIME_SECONDS] = \
+		{ "uptime:seconds",
+		  "Seconds of uptime",
+		  "s", 60, 0 },
 	[BTS_STAT_CHAN_LOAD_AVERAGE] = \
 		{ "chanloadavg",
 		  "Channel load average",
