@@ -24,13 +24,10 @@ EXTRA_DIST = \
 	handover_tests.sh \
 	handover_tests.ok \
 	$(srcdir)/test*.ho_vty \
-	neighbor_ident_test.ok \
-	neighbor_ident_test.err \
 	$(NULL)
 
 noinst_PROGRAMS = \
 	handover_test \
-	neighbor_ident_test \
 	$(NULL)
 
 handover_test_SOURCES = \
@@ -118,18 +115,6 @@ handover_test_LDADD = \
 	$(LIBOSMOMGCPCLIENT_LIBS) \
 	$(NULL)
 
-neighbor_ident_test_SOURCES = \
-	neighbor_ident_test.c \
-	$(NULL)
-
-neighbor_ident_test_LDADD = \
-	$(top_builddir)/src/osmo-bsc/neighbor_ident.o \
-	$(LIBOSMOCORE_LIBS) \
-	$(LIBOSMOGSM_LIBS) \
-	$(LIBOSMOCTRL_LIBS) \
-	$(NULL)
-
 .PHONY: update_exp
 update_exp:
-	$(builddir)/neighbor_ident_test >$(srcdir)/neighbor_ident_test.ok 2>$(srcdir)/neighbor_ident_test.err
 	$(srcdir)/handover_tests.sh $(srcdir) $(builddir) -u
