@@ -205,6 +205,7 @@ const char * const bts_default_ts[] = {
 static struct gsm_bts *_create_bts(int num_trx, const char * const *ts_args, int ts_args_count)
 {
 	static int arfcn = 870;
+	static int ci = 0;
 	struct gsm_bts *bts;
 	struct e1inp_sign_link *rsl_link;
 	int i;
@@ -220,6 +221,7 @@ static struct gsm_bts *_create_bts(int num_trx, const char * const *ts_args, int
 	}
 
 	bts->location_area_code = 23;
+	bts->cell_identity = ci++;
 	bts->c0->arfcn = arfcn++;
 
 	bts->codec.efr = 1;

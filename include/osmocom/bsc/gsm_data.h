@@ -207,6 +207,10 @@ struct handover {
 	enum gsm_chan_t new_lchan_type;
 	struct neighbor_ident_key target_cell;
 
+	/* For inter-BSC handover, this may reflect more than one Cell ID. Must also be set for intra-BSC handover,
+	 * because it is used as key for penalty timers (e.g. in handover decision 2). */
+	struct gsm0808_cell_id_list2 target_cell_ids;
+
 	uint8_t ho_ref;
 	struct gsm_bts *new_bts;
 	struct gsm_lchan *new_lchan;
@@ -248,7 +252,7 @@ struct gsm_subscriber_connection {
 
 	struct {
 		int failures;
-		struct penalty_timers *penalty_timers;
+		struct llist_head penalty_timers;
 	} hodec2;
 
 	/* "Codec List (MSC Preferred)" as received by the BSSAP Assignment Request. 3GPP 48.008

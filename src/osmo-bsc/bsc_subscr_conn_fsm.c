@@ -933,7 +933,7 @@ static void gscon_pre_term(struct osmo_fsm_inst *fi, enum osmo_fsm_term_cause ca
 	/* drop pending messages */
 	gscon_dtap_queue_flush(conn, 0);
 
-	penalty_timers_free(&conn->hodec2.penalty_timers);
+	penalty_timers_clear(&conn->hodec2.penalty_timers, NULL);
 }
 
 static int gscon_timer_cb(struct osmo_fsm_inst *fi)
@@ -1004,7 +1004,7 @@ struct gsm_subscriber_connection *bsc_subscr_con_allocate(struct gsm_network *ne
 
 	conn->network = net;
 	INIT_LLIST_HEAD(&conn->dtap_queue);
-	/* BTW, penalty timers will be initialized on-demand. */
+	INIT_LLIST_HEAD(&conn->hodec2.penalty_timers);
 	conn->sccp.conn_id = -1;
 
 	/* don't allocate from 'conn' context, as gscon_cleanup() will call talloc_free(conn) before

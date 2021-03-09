@@ -622,6 +622,8 @@ char *gsm_bts_name(const struct gsm_bts *bts);
 
 bool gsm_bts_matches_lai(const struct gsm_bts *bts, const struct osmo_location_area_id *lai);
 bool gsm_bts_matches_cell_id(const struct gsm_bts *bts, const struct gsm0808_cell_id *cell_id);
+void gsm_bts_cell_id(struct gsm0808_cell_id *cell_id, const struct gsm_bts *bts);
+void gsm_bts_cell_id_list(struct gsm0808_cell_id_list2 *cell_id_list, const struct gsm_bts *bts);
 
 int gsm_bts_local_neighbor_add(struct gsm_bts *bts, struct gsm_bts *neighbor);
 int gsm_bts_local_neighbor_del(struct gsm_bts *bts, const struct gsm_bts *neighbor);

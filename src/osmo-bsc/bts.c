@@ -414,6 +414,34 @@ bool gsm_bts_matches_cell_id(const struct gsm_bts *bts, const struct gsm0808_cel
 	}
 }
 
+/* Return a LAC+CI cell identity for the given BTS.
+ * (For matching a BTS within the local BSS, the PLMN code is not important.) */
+void gsm_bts_cell_id(struct gsm0808_cell_id *cell_id, const struct gsm_bts *bts)
+{
+	*cell_id = (struct gsm0808_cell_id){
+		.id_discr = CELL_IDENT_LAC_AND_CI,
+		.id.lac_and_ci = {
+			.lac = bts->location_area_code,
+			.ci = bts->cell_identity,
+		},
+	};
+}
+
+/* Same as gsm_bts_cell_id(), but return in a single-entry gsm0808_cell_id_list2. Useful for e.g.
+ * gsm0808_cell_id_list_add() and gsm0808_cell_id_lists_same(). */
+void gsm_bts_cell_id_list(struct gsm0808_cell_id_list2 *cell_id_list, const struct gsm_bts *bts)
+{
+	struct gsm0808_cell_id cell_id;
+	struct gsm0808_cell_id_list2 add;
+	int rc;
+	gsm_bts_cell_id(&cell_id, bts);
+	gsm0808_cell_id_to_list(&add, &cell_id);
+	/* Since the target list is empty, this should always succeed. */
+	(*cell_id_list) = (struct gsm0808_cell_id_list2){};
+	rc = gsm0808_cell_id_list_add(cell_id_list, &add);
+	OSMO_ASSERT(rc > 0);
+}
+
 static struct gsm_bts_ref *gsm_bts_ref_find(const struct llist_head *list, const struct gsm_bts *bts)
 {
 	struct gsm_bts_ref *ref;
