@@ -40,88 +40,238 @@
 #include <osmocom/bsc/bts.h>
 #include <osmocom/bsc/debug.h>
 
-struct neighbor_ident_list {
-	struct llist_head list;
-};
-
-struct neighbor_ident {
-	struct llist_head entry;
-
-	struct neighbor_ident_key key;
-	struct gsm0808_cell_id_list2 val;
-};
-
-#define APPEND_THING(func, args...) do { \
-		int remain = buflen - (pos - buf); \
-		int l = func(pos, remain, ##args); \
-		if (l < 0 || l > remain) \
-			pos = buf + buflen; \
-		else \
-			pos += l; \
-	} while(0)
-#define APPEND_STR(fmt, args...) APPEND_THING(snprintf, fmt, ##args)
-
-const char *_neighbor_ident_key_name(char *buf, size_t buflen, const struct neighbor_ident_key *ni_key)
+void bts_cell_ab(struct cell_ab *arfcn_bsic, const struct gsm_bts *bts)
 {
-	char *pos = buf;
-
-	APPEND_STR("BTS ");
-	if (ni_key->from_bts == NEIGHBOR_IDENT_KEY_ANY_BTS)
-		APPEND_STR("*");
-	else if (ni_key->from_bts >= 0 && ni_key->from_bts <= 255)
-		APPEND_STR("%d", ni_key->from_bts);
-	else
-		APPEND_STR("invalid(%d)", ni_key->from_bts);
-
-	APPEND_STR(" to ");
-	if (ni_key->bsic == BSIC_ANY)
-		APPEND_STR("ARFCN %u (any BSIC)", ni_key->arfcn);
-	else
-		APPEND_STR("ARFCN %u BSIC %u", ni_key->arfcn, ni_key->bsic & 0x3f);
-	return buf;
+	*arfcn_bsic = (struct cell_ab){
+		.arfcn = bts->c0->arfcn,
+		.bsic = bts->bsic,
+	};
 }
 
-const char *neighbor_ident_key_name(const struct neighbor_ident_key *ni_key)
+/* Find the local gsm_bts pointer that a specific other BTS' neighbor config refers to. Return NULL if there is no such
+ * local cell in this BSS.
+ */
+int resolve_local_neighbor(struct gsm_bts **local_neighbor_p, const struct gsm_bts *from_bts,
+			   const struct neighbor *neighbor)
 {
-	static char buf[64];
-	return _neighbor_ident_key_name(buf, sizeof(buf), ni_key);
+	struct gsm_bts *bts;
+	struct gsm_bts *bts_exact = NULL;
+	struct gsm_bts *bts_wildcard = NULL;
+	*local_neighbor_p = NULL;
+
+	switch (neighbor->type) {
+	case NEIGHBOR_TYPE_BTS_NR:
+		bts = gsm_bts_num(bsc_gsmnet, neighbor->bts_nr);
+		goto check_bts;
+
+	case NEIGHBOR_TYPE_CELL_ID:
+		/* Find cell id below */
+		break;
+
+	default:
+		return -ENOTSUP;
+	}
+
+	/* NEIGHBOR_TYPE_CELL_ID */
+	llist_for_each_entry(bts, &bsc_gsmnet->bts_list, list) {
+		struct gsm0808_cell_id cell_id;
+		gsm_bts_cell_id(&cell_id, bts);
+
+		if (gsm0808_cell_ids_match(&cell_id, &neighbor->cell_id.id, true)) {
+			if (bts_exact) {
+				LOGP(DHO, LOGL_ERROR,
+				     "Neighbor config error: Multiple BTS match %s (BTS %u and BTS %u)\n",
+				     gsm0808_cell_id_name_c(OTC_SELECT, &neighbor->cell_id.id),
+				     bts_exact->nr, bts->nr);
+				return -EINVAL;
+			} else {
+				bts_exact = bts;
+			}
+		}
+
+		if (!bts_wildcard && gsm0808_cell_ids_match(&cell_id, &neighbor->cell_id.id, false))
+			bts_wildcard = bts;
+	}
+
+	bts = (bts_exact ? : bts_wildcard);
+
+check_bts:
+	/* A cell cannot be its own neighbor */
+	if (bts == from_bts) {
+		LOGP(DHO, LOGL_ERROR,
+		     "Neighbor config error: BTS %u -> %s: this cell is configured as its own neighbor\n",
+		     from_bts->nr, neighbor_to_str_c(OTC_SELECT, neighbor));
+		return -EINVAL;
+	}
+
+	if (!bts)
+		return -ENOENT;
+
+	/* Double check whether ARFCN + BSIC config matches, if present. */
+	if (neighbor->cell_id.ab_present) {
+		struct cell_ab cell_ab;
+		bts_cell_ab(&cell_ab, bts);
+		if (!cell_ab_match(&cell_ab, &neighbor->cell_id.ab, false)) {
+			LOGP(DHO, LOGL_ERROR, "Neighbor config error: Local BTS %d matches %s, but not ARFCN+BSIC %s\n",
+			     bts->nr, gsm0808_cell_id_name_c(OTC_SELECT, &neighbor->cell_id.id),
+			     cell_ab_to_str_c(OTC_SELECT, &cell_ab));
+			return -EINVAL;
+		}
+	}
+
+	*local_neighbor_p = bts;
+	return 0;
 }
 
-struct neighbor_ident_list *neighbor_ident_init(void *talloc_ctx)
+int resolve_neighbors(struct gsm_bts **local_neighbor_p, struct gsm0808_cell_id_list2 *remote_neighbors,
+		      struct gsm_bts *from_bts, const struct cell_ab *target_ab, bool log_errors)
 {
-	struct neighbor_ident_list *nil = talloc_zero(talloc_ctx, struct neighbor_ident_list);
-	OSMO_ASSERT(nil);
-	INIT_LLIST_HEAD(&nil->list);
-	return nil;
+	struct neighbor *n;
+	struct gsm_bts *local_neighbor = NULL;
+	struct gsm0808_cell_id_list2 remotes = {};
+
+	*local_neighbor_p = NULL;
+	*remote_neighbors = (struct gsm0808_cell_id_list2){ 0 };
+
+	llist_for_each_entry(n, &from_bts->neighbors, entry) {
+		struct gsm_bts *neigh_bts;
+		if (resolve_local_neighbor(&neigh_bts, from_bts, n) == 0) {
+			/* This neighbor entry is a local cell neighbor. Do ARFCN and BSIC match? */
+			struct cell_ab ab;
+			bts_cell_ab(&ab, neigh_bts);
+			if (!cell_ab_match(&ab, target_ab, false))
+				continue;
+
+			/* Found a local cell neighbor that matches the target_ab */
+
+			/* If we already found one, these are ambiguous local neighbors */
+			if (local_neighbor) {
+				if (log_errors)
+					LOGP(DHO, LOGL_ERROR, "Neighbor config error:"
+					     " Local BTS %d -> %s resolves to local neighbor BTSes %u *and* %u\n",
+					     from_bts->nr, cell_ab_to_str_c(OTC_SELECT, target_ab), local_neighbor->nr,
+					     neigh_bts->nr);
+				return -ENOTSUP;
+			}
+			local_neighbor = neigh_bts;
+
+		} else if (n->type == NEIGHBOR_TYPE_CELL_ID && n->cell_id.ab_present) {
+			/* This neighbor entry is a remote-BSS neighbor. There may be multiple remote neighbors,
+			 * collect those in a gsm0808_cell_id_list2 (remote_target_cells). A limitation is that all of
+			 * them need to be of the same cell id type. */
+			struct gsm0808_cell_id_list2 add_item;
+			int rc;
+
+			if (!cell_ab_match(&n->cell_id.ab, target_ab, false))
+				continue;
+
+			/* Convert the gsm0808_cell_id to a list, so that we can use gsm0808_cell_id_list_add(). */
+			gsm0808_cell_id_to_list(&add_item, &n->cell_id.id);
+			rc = gsm0808_cell_id_list_add(&remotes, &add_item);
+			if (rc < 0) {
+				if (log_errors)
+					LOGP(DHO, LOGL_ERROR, "Neighbor config error:"
+					     " Local BTS %d -> %s resolves to remote-BSS neighbor %s;"
+					     " Could not store this in neighbors list %s\n",
+					     from_bts->nr, cell_ab_to_str_c(OTC_SELECT, target_ab),
+					     gsm0808_cell_id_name_c(OTC_SELECT, &n->cell_id.id),
+					     gsm0808_cell_id_list_name_c(OTC_SELECT, &remotes));
+				return rc;
+			}
+		}
+		/* else: neighbor entry that does not resolve to anything. */
+	}
+
+	if (local_neighbor_p)
+		*local_neighbor_p = local_neighbor;
+	if (remote_neighbors)
+		*remote_neighbors = remotes;
+
+	if (!local_neighbor && !remotes.id_list_len)
+		return -ENOENT;
+	return 0;
 }
 
-void neighbor_ident_free(struct neighbor_ident_list *nil)
+int cell_ab_to_str_buf(char *buf, size_t buflen, const struct cell_ab *cell)
 {
-	if (!nil)
-		return;
-	talloc_free(nil);
+	struct osmo_strbuf sb = { .buf = buf, .len = buflen };
+	OSMO_STRBUF_PRINTF(sb, "ARFCN-BSIC:%u", cell->arfcn);
+	if (cell->bsic == BSIC_ANY)
+		OSMO_STRBUF_PRINTF(sb, "-any");
+	else {
+		OSMO_STRBUF_PRINTF(sb, "-%u", cell->bsic);
+		if (cell->bsic > 0x3f)
+			OSMO_STRBUF_PRINTF(sb, "[ERANGE>63]");
+	}
+	return sb.chars_needed;
+}
+
+char *cell_ab_to_str_c(void *ctx, const struct cell_ab *cell)
+{
+	OSMO_NAME_C_IMPL(ctx, 64, "ERROR", cell_ab_to_str_buf, cell)
+}
+
+int neighbor_to_str_buf(char *buf, size_t buflen, const struct neighbor *n)
+{
+	struct osmo_strbuf sb = { .buf = buf, .len = buflen };
+	switch (n->type) {
+	case NEIGHBOR_TYPE_BTS_NR:
+		OSMO_STRBUF_PRINTF(sb, "BTS %u", n->bts_nr);
+		break;
+	case NEIGHBOR_TYPE_CELL_ID:
+		OSMO_STRBUF_APPEND_NOLEN(sb, gsm0808_cell_id_name_buf, &n->cell_id.id);
+		if (n->cell_id.ab_present) {
+			OSMO_STRBUF_PRINTF(sb, " ");
+			OSMO_STRBUF_APPEND(sb, cell_ab_to_str_buf, &n->cell_id.ab);
+		}
+		break;
+	case NEIGHBOR_TYPE_UNSET:
+		OSMO_STRBUF_PRINTF(sb, "UNSET");
+		break;
+	default:
+		OSMO_STRBUF_PRINTF(sb, "INVALID");
+		break;
+	}
+	return sb.chars_needed;
+}
+
+char *neighbor_to_str_c(void *ctx, const struct neighbor *n)
+{
+	OSMO_NAME_C_IMPL(ctx, 64, "ERROR", neighbor_to_str_buf, n);
+}
+
+bool neighbor_same(const struct neighbor *a, const struct neighbor *b, bool check_cell_ab)
+{
+	if (a == b)
+		return true;
+	if (a->type != b->type)
+		return false;
+
+	switch (a->type) {
+	case NEIGHBOR_TYPE_BTS_NR:
+		return a->bts_nr == b->bts_nr;
+
+	case NEIGHBOR_TYPE_CELL_ID:
+		if (check_cell_ab
+		    && (a->cell_id.ab_present != b->cell_id.ab_present
+			|| !cell_ab_match(&a->cell_id.ab, &b->cell_id.ab, true)))
+			return false;
+		return gsm0808_cell_ids_match(&a->cell_id.id, &b->cell_id.id, true);
+	default:
+		return a->type == b->type;
+	}
 }
 
 /* Return true when the entry matches the search_for requirements.
  * If exact_match is false, a BSIC_ANY entry acts as wildcard to match any search_for on that ARFCN,
- * and a BSIC_ANY in search_for likewise returns any one entry that matches the ARFCN;
- * also a from_bts == NEIGHBOR_IDENT_KEY_ANY_BTS in either entry or search_for will match.
- * If exact_match is true, only identical bsic values and identical from_bts values return a match.
+ * and a BSIC_ANY in search_for likewise returns any one entry that matches the ARFCN.
+ * If exact_match is true, only identical bsic values return a match.
  * Note, typically wildcard BSICs are only in entry, e.g. the user configured list, and search_for
  * contains a specific BSIC, e.g. as received from a Measurement Report. */
-bool neighbor_ident_key_match(const struct neighbor_ident_key *entry,
-			      const struct neighbor_ident_key *search_for,
-			      bool exact_match)
+bool cell_ab_match(const struct cell_ab *entry,
+		   const struct cell_ab *search_for,
+		   bool exact_match)
 {
-	if (exact_match
-	    && entry->from_bts != search_for->from_bts)
-		return false;
-
-	if (search_for->from_bts != NEIGHBOR_IDENT_KEY_ANY_BTS
-	    && entry->from_bts != NEIGHBOR_IDENT_KEY_ANY_BTS
-	    && entry->from_bts != search_for->from_bts)
-		return false;
-
 	if (entry->arfcn != search_for->arfcn)
 		return false;
 
@@ -134,142 +284,67 @@ bool neighbor_ident_key_match(const struct neighbor_ident_key *entry,
 	return entry->bsic == search_for->bsic;
 }
 
-static struct neighbor_ident *_neighbor_ident_get(const struct neighbor_ident_list *nil,
-						  const struct neighbor_ident_key *key,
-						  bool exact_match)
+bool cell_ab_valid(const struct cell_ab *cell)
 {
-	struct neighbor_ident *ni;
-	struct neighbor_ident *wildcard_match = NULL;
+	if (cell->bsic != BSIC_ANY && cell->bsic > 0x3f)
+		return false;
+	return true;
+}
 
-	/* Do both exact-bsic and wildcard matching in the same iteration:
-	 * Any exact match returns immediately, while for a wildcard match we still go through all
-	 * remaining items in case an exact match exists. */
-	llist_for_each_entry(ni, &nil->list, entry) {
-		if (neighbor_ident_key_match(&ni->key, key, true))
-			return ni;
-		if (!exact_match) {
-			if (neighbor_ident_key_match(&ni->key, key, false))
-				wildcard_match = ni;
+int neighbors_check_cfg()
+{
+	/* A local neighbor can be configured by BTS number, or by a cell ID. A local neighbor can omit the ARFCN+BSIC,
+	 * in which case those are taken from that local BTS config. If a local neighbor has ARFCN+BSIC configured, it
+	 * must match the local cell's configuration.
+	 *
+	 * A remote neighbor must always be a cell ID *and* ARFCN+BSIC.
+	 *
+	 * Hence any cell ID with ARFCN+BSIC where the cell ID is not found among the local cells is a remote-BSS
+	 * neighbor.
+	 */
+	struct gsm_bts *bts;
+	bool ok = true;
+
+	llist_for_each_entry(bts, &bsc_gsmnet->bts_list, list) {
+		struct neighbor *neighbor;
+		struct gsm_bts *local_neighbor;
+		llist_for_each_entry(neighbor, &bts->neighbors, entry) {
+			switch (neighbor->type) {
+
+			case NEIGHBOR_TYPE_BTS_NR:
+				if (!gsm_bts_num(bsc_gsmnet, neighbor->bts_nr)) {
+					LOGP(DHO, LOGL_ERROR, "Neighbor Configuration Error:"
+					     " BTS %u -> BTS %u: There is no BTS nr %u\n",
+					     bts->nr, neighbor->bts_nr, neighbor->bts_nr);
+					ok = false;
+				}
+				break;
+
+			default:
+				switch (resolve_local_neighbor(&local_neighbor, bts, neighbor)) {
+				case 0:
+					break;
+				case -ENOENT:
+					if (!neighbor->cell_id.ab_present) {
+						LOGP(DHO, LOGL_ERROR, "Neighbor Configuration Error:"
+						     " BTS %u -> %s: There is no such local neighbor\n",
+						     bts->nr, neighbor_to_str_c(OTC_SELECT, neighbor));
+						ok = false;
+					}
+					break;
+				default:
+					/* Error already logged in resolve_local_neighbor() */
+					ok = false;
+					break;
+				}
+				break;
+			}
 		}
 	}
-	return wildcard_match;
-}
 
-static void _neighbor_ident_free(struct neighbor_ident *ni)
-{
-	llist_del(&ni->entry);
-	talloc_free(ni);
-}
-
-bool neighbor_ident_key_valid(const struct neighbor_ident_key *key)
-{
-	if (key->from_bts != NEIGHBOR_IDENT_KEY_ANY_BTS
-	    && (key->from_bts < 0 || key->from_bts > 255))
-		return false;
-
-	if (key->bsic != BSIC_ANY && key->bsic > 0x3f)
-		return false;
-	return true;
-}
-
-/*! Add Cell Identifiers to an ARFCN+BSIC entry.
- * Exactly one kind of identifier is allowed per ARFCN+BSIC entry, and any number of entries of that kind
- * may be added up to the capacity of gsm0808_cell_id_list2, by one or more calls to this function. To
- * replace an existing entry, first call neighbor_ident_del(nil, key).
- * \returns number of entries in the resulting identifier list, or negative on error:
- *   see gsm0808_cell_id_list_add() for the meaning of returned error codes;
- *   return -ENOMEM when the list is not initialized, -ERANGE when the BSIC value is too large. */
-int neighbor_ident_add(struct neighbor_ident_list *nil, const struct neighbor_ident_key *key,
-		       const struct gsm0808_cell_id_list2 *val)
-{
-	struct neighbor_ident *ni;
-	int rc;
-
-	if (!nil)
-		return -ENOMEM;
-
-	if (!neighbor_ident_key_valid(key))
-		return -ERANGE;
-
-	ni = _neighbor_ident_get(nil, key, true);
-	if (!ni) {
-		ni = talloc_zero(nil, struct neighbor_ident);
-		OSMO_ASSERT(ni);
-		*ni = (struct neighbor_ident){
-			.key = *key,
-			.val = *val,
-		};
-		llist_add_tail(&ni->entry, &nil->list);
-		return ni->val.id_list_len;
-	}
-
-	rc = gsm0808_cell_id_list_add(&ni->val, val);
-
-	if (rc < 0)
-		return rc;
-
-	return ni->val.id_list_len;
-}
-
-/*! Find cell identity for given BTS, ARFCN and BSIC, as previously added by neighbor_ident_add().
- */
-const struct gsm0808_cell_id_list2 *neighbor_ident_get(const struct neighbor_ident_list *nil,
-						       const struct neighbor_ident_key *key)
-{
-	struct neighbor_ident *ni;
-	if (!nil)
-		return NULL;
-	ni = _neighbor_ident_get(nil, key, false);
-	if (!ni)
-		return NULL;
-	return &ni->val;
-}
-
-bool neighbor_ident_del(struct neighbor_ident_list *nil, const struct neighbor_ident_key *key)
-{
-	struct neighbor_ident *ni;
-	if (!nil)
-		return false;
-	ni = _neighbor_ident_get(nil, key, true);
-	if (!ni)
-		return false;
-	_neighbor_ident_free(ni);
-	return true;
-}
-
-void neighbor_ident_clear(struct neighbor_ident_list *nil)
-{
-	struct neighbor_ident *ni;
-	while ((ni = llist_first_entry_or_null(&nil->list, struct neighbor_ident, entry)))
-		_neighbor_ident_free(ni);
-}
-
-/*! Iterate all neighbor_ident_list entries and call iter_cb for each.
- * If iter_cb returns false, the iteration is stopped. */
-void neighbor_ident_iter(const struct neighbor_ident_list *nil,
-			 bool (* iter_cb )(const struct neighbor_ident_key *key,
-					   const struct gsm0808_cell_id_list2 *val,
-					   void *cb_data),
-			 void *cb_data)
-{
-	struct neighbor_ident *ni, *ni_next;
-	if (!nil)
-		return;
-	llist_for_each_entry_safe(ni, ni_next, &nil->list, entry) {
-		if (!iter_cb(&ni->key, &ni->val, cb_data))
-			return;
-	}
-}
-
-struct neighbor_ident_key *bts_ident_key(const struct gsm_bts *bts)
-{
-	static struct neighbor_ident_key key;
-	key = (struct neighbor_ident_key){
-		.from_bts = NEIGHBOR_IDENT_KEY_ANY_BTS,
-		.arfcn = bts->c0->arfcn,
-		.bsic = bts->bsic,
-	};
-	return &key;
+	if (!ok)
+		return -EINVAL;
+	return 0;
 }
 
 /* Neighbor Resolution CTRL iface */
@@ -293,13 +368,13 @@ static int get_neighbor_resolve_cgi_ps_from_lac_ci(struct ctrl_cmd *cmd, void *d
 {
 	struct gsm_network *net = (struct gsm_network *)data;
 	struct gsm_bts *bts_tmp, *bts_found = NULL;
-	const struct gsm0808_cell_id_list2 *tgt_cell_li = NULL;
 	char *tmp = NULL, *tok, *saveptr;
-	struct neighbor_ident_key ni;
+	struct cell_ab ab;
 	unsigned lac, cell_id;
 	struct osmo_cell_global_id_ps local_cgi_ps;
 	const struct osmo_cell_global_id_ps *cgi_ps = NULL;
-	struct gsm_bts_ref *neigh;
+	struct gsm_bts *local_neighbor = NULL;
+	struct gsm0808_cell_id_list2 remote_neighbors = { 0 };
 
 	if (!cmd->variable)
 		goto fmt_err;
@@ -324,13 +399,11 @@ static int get_neighbor_resolve_cgi_ps_from_lac_ci(struct ctrl_cmd *cmd, void *d
 
 	if (!(tok = strtok_r(NULL, ".", &saveptr)))
 		goto fmt_err;
-	ni.arfcn = atoi(tok);
+	ab.arfcn = atoi(tok);
 
 	if (!(tok = strtok_r(NULL, "\0", &saveptr)))
 		goto fmt_err;
-	ni.bsic = atoi(tok);
-
-	ni.from_bts = NEIGHBOR_IDENT_KEY_ANY_BTS;
+	ab.bsic = atoi(tok);
 
 	llist_for_each_entry(bts_tmp, &net->bts_list, list) {
 		if (bts_tmp->location_area_code != lac)
@@ -338,38 +411,40 @@ static int get_neighbor_resolve_cgi_ps_from_lac_ci(struct ctrl_cmd *cmd, void *d
 		if (bts_tmp->cell_identity != cell_id)
 			continue;
 		bts_found = bts_tmp;
-		ni.from_bts = bts_tmp->nr;
 		break;
 	}
 
 	if (!bts_found)
 		goto notfound_err;
 
-	LOG_BTS(bts_found, DLINP, LOGL_DEBUG, "Resolving neigbhor arfcn=%u bsic=%u\n", ni.arfcn, ni.bsic);
+	LOG_BTS(bts_found, DLINP, LOGL_DEBUG, "Resolving neighbor BTS %u -> %s\n", bts_found->nr,
+		cell_ab_to_str_c(OTC_SELECT, &ab));
 
-	if (!neighbor_ident_key_valid(&ni))
+	if (!cell_ab_valid(&ab))
 		goto fmt_err;
 
-	/* Is there a local BTS that matches the key? */
-	llist_for_each_entry(neigh, &bts_found->local_neighbors, entry) {
-		struct gsm_bts *neigh_bts = neigh->bts;
-		struct neighbor_ident_key *neigh_bts_key = bts_ident_key(neigh_bts);
-		neigh_bts_key->from_bts = ni.from_bts;
-		if (!neighbor_ident_key_match(neigh_bts_key, &ni, true))
-			continue;
-		if (gsm_bts_get_cgi_ps(neigh->bts, &local_cgi_ps) < 0)
-			continue; /* Not supporting GPRS */
-		cgi_ps = &local_cgi_ps;
-		break;
+	if (resolve_neighbors(&local_neighbor, &remote_neighbors, bts_found, &ab, true))
+		goto notfound_err;
+
+	/* resolve_neighbors() returns either a local_neighbor or remote_neighbors.
+	 * Local-BSS neighbor? */
+	if (local_neighbor) {
+		/* Supporting GPRS? */
+		if (gsm_bts_get_cgi_ps(local_neighbor, &local_cgi_ps) >= 0)
+			cgi_ps = &local_cgi_ps;
 	}
 
-	/* No local neighbor found, looking for remote neighbors */
-	if (!cgi_ps) {
-		tgt_cell_li = neighbor_ident_get(net->neighbor_bss_cells, &ni);
-		if (!tgt_cell_li || tgt_cell_li->id_discr != CELL_IDENT_WHOLE_GLOBAL_PS || tgt_cell_li->id_list_len < 1)
-			goto notfound_err;
-		cgi_ps = &tgt_cell_li->id_list[0].global_ps;
+	/* Remote-BSS neighbor?
+	 * By spec, there can be multiple remote neighbors for a given ARFCN+BSIC, but so far osmo-bsc enforces only a
+	 * single remote neighbor. */
+	if (remote_neighbors.id_list_len
+	    && remote_neighbors.id_discr == CELL_IDENT_WHOLE_GLOBAL_PS) {
+		cgi_ps = &remote_neighbors.id_list[0].global_ps;
 	}
+
+	/* No neighbor found */
+	if (!cgi_ps)
+		goto notfound_err;
 
 	ctrl_cmd_reply_printf(cmd, "%s", osmo_cgi_ps_name(cgi_ps));
 	talloc_free(tmp);

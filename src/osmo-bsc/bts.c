@@ -273,7 +273,7 @@ struct gsm_bts *gsm_bts_alloc(struct gsm_network *net, struct gsm_bts_sm *bts_sm
 
 	INIT_LLIST_HEAD(&bts->abis_queue);
 	INIT_LLIST_HEAD(&bts->loc_list);
-	INIT_LLIST_HEAD(&bts->local_neighbors);
+	INIT_LLIST_HEAD(&bts->neighbors);
 	INIT_LLIST_HEAD(&bts->oml_fail_rep);
 	INIT_LLIST_HEAD(&bts->chan_rqd_queue);
 
@@ -440,59 +440,6 @@ void gsm_bts_cell_id_list(struct gsm0808_cell_id_list2 *cell_id_list, const stru
 	(*cell_id_list) = (struct gsm0808_cell_id_list2){};
 	rc = gsm0808_cell_id_list_add(cell_id_list, &add);
 	OSMO_ASSERT(rc > 0);
-}
-
-static struct gsm_bts_ref *gsm_bts_ref_find(const struct llist_head *list, const struct gsm_bts *bts)
-{
-	struct gsm_bts_ref *ref;
-	if (!bts)
-		return NULL;
-	llist_for_each_entry(ref, list, entry) {
-		if (ref->bts == bts)
-			return ref;
-	}
-	return NULL;
-}
-
-/* Add a BTS reference to the local_neighbors list.
- * Return 1 if added, 0 if such an entry already existed, and negative on errors. */
-int gsm_bts_local_neighbor_add(struct gsm_bts *bts, struct gsm_bts *neighbor)
-{
-	struct gsm_bts_ref *ref;
-	if (!bts || !neighbor)
-		return -ENOMEM;
-
-	if (bts == neighbor)
-		return -EINVAL;
-
-	/* Already got this entry? */
-	ref = gsm_bts_ref_find(&bts->local_neighbors, neighbor);
-	if (ref)
-		return 0;
-
-	ref = talloc_zero(bts, struct gsm_bts_ref);
-	if (!ref)
-		return -ENOMEM;
-	ref->bts = neighbor;
-	llist_add_tail(&ref->entry, &bts->local_neighbors);
-	return 1;
-}
-
-/* Remove a BTS reference from the local_neighbors list.
- * Return 1 if removed, 0 if no such entry existed, and negative on errors. */
-int gsm_bts_local_neighbor_del(struct gsm_bts *bts, const struct gsm_bts *neighbor)
-{
-	struct gsm_bts_ref *ref;
-	if (!bts || !neighbor)
-		return -ENOMEM;
-
-	ref = gsm_bts_ref_find(&bts->local_neighbors, neighbor);
-	if (!ref)
-		return 0;
-
-	llist_del(&ref->entry);
-	talloc_free(ref);
-	return 1;
 }
 
 /* return the gsm_lchan for the CBCH (if it exists at all) */

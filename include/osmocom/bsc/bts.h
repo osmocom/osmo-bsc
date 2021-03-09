@@ -496,10 +496,13 @@ struct gsm_bts {
 
 	struct handover_cfg *ho;
 
-	/* A list of struct gsm_bts_ref, indicating neighbors of this BTS.
-	 * When the si_common neigh_list is in automatic mode, it is populated from this list as well as
-	 * gsm_network->neighbor_bss_cells. */
-	struct llist_head local_neighbors;
+	/* Local and remote neighbor configuration: a list of neighbors as written in the VTY config, not resolved to
+	 * actual cells. Entries may point at non-existing BTS numbers, or yet unconfigured ARFCN+BSIC. The point of
+	 * this list is to keep the config as the user entered it: a) to write it back exactly as entered, and b) to
+	 * allow adding neighbor cells that will only be configured further down in the config file.
+	 * An actual neighbor cell object (local or remote-BSS) is resolved "at runtime" whenever a neighbor is being
+	 * looked up. */
+	struct llist_head neighbors;
 
 	/* BTS-specific overrides for timer values from struct gsm_network. */
 	uint8_t T3122;	/* ASSIGNMENT REJECT wait indication */

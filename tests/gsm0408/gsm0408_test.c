@@ -59,6 +59,7 @@
 	}
 
 
+struct gsm_network *bsc_gsmnet = NULL;
 
 static inline void gen(struct gsm_bts *bts, const char *s)
 {
@@ -899,6 +900,7 @@ int main(int argc, char **argv)
 		printf("Network init failure.\n");
 		return EXIT_FAILURE;
 	}
+	bsc_gsmnet = net;
 
 	test_si_range_helpers();
 	test_arfcn_filter();

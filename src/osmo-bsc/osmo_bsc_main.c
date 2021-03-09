@@ -944,6 +944,11 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 
+	if (neighbors_check_cfg()) {
+		fprintf(stderr, "Errors in neighbor configuration, check the DHO log. exiting.\n");
+		exit(1);
+	}
+
 	/* start control interface after reading config for
 	 * ctrl_vty_get_bind_addr() */
 	bsc_gsmnet->ctrl = bsc_controlif_setup(bsc_gsmnet,

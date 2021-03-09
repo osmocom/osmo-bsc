@@ -82,8 +82,9 @@ enum handover_result bsc_tx_bssmap_ho_complete(struct gsm_subscriber_connection 
 void bsc_tx_bssmap_ho_failure(struct gsm_subscriber_connection *conn);
 
 int find_handover_target_cell(struct gsm_bts **local_target_cell_p,
-			      const struct gsm0808_cell_id_list2 **remote_target_cell_p,
-			      struct gsm_subscriber_connection *conn, const struct neighbor_ident_key *search_for,
+			      struct gsm0808_cell_id_list2 *remote_target_cells,
+			      struct gsm_subscriber_connection *conn,
+			      const struct cell_ab *search_for,
 			      bool log_errors);
 
 void handover_parse_inter_bsc_mt(struct gsm_subscriber_connection *conn,

@@ -83,8 +83,8 @@
 #define LOGPHOCAND(candidate, level, fmt, args...) do {\
 	if ((candidate)->target.bts) \
 		LOGPHOLCHANTOBTS((candidate)->current.lchan, (candidate)->target.bts, level, fmt, ## args); \
-	else if ((candidate)->target.cil) \
-		LOGPHOLCHANTOREMOTE((candidate)->current.lchan, (candidate)->target.cil, level, fmt, ## args); \
+	else if ((candidate)->target.cell_ids.id_list_len) \
+		LOGPHOLCHANTOREMOTE((candidate)->current.lchan, &(candidate)->target.cell_ids, level, fmt, ## args); \
 	} while(0)
 
 
@@ -120,8 +120,8 @@ struct ho_candidate {
 		int lchan_frees_tchh;
 	} current;
 	struct {
-		struct neighbor_ident_key nik;	/* neighbor ARFCN+BSIC */
-		const struct gsm0808_cell_id_list2 *cil; /* target cells in remote BSS */
+		struct cell_ab ab;	/* neighbor ARFCN+BSIC */
+		struct gsm0808_cell_id_list2 cell_ids; /* target cells in remote BSS */
 		struct gsm_bts *bts;
 		int rxlev;
 		int rxlev_afs_bias;
@@ -747,9 +747,9 @@ static void check_requirements_remote_bss(struct ho_candidate *c)
 	/* Requirement A */
 
 	/* the handover penalty timer must not run for this bts */
-	penalty_time = penalty_timers_remaining_list(&c->current.lchan->conn->hodec2.penalty_timers, c->target.cil);
+	penalty_time = penalty_timers_remaining_list(&c->current.lchan->conn->hodec2.penalty_timers, &c->target.cell_ids);
 	if (penalty_time) {
-		LOGPHOLCHANTOREMOTE(c->current.lchan, c->target.cil, LOGL_DEBUG,
+		LOGPHOLCHANTOREMOTE(c->current.lchan, &c->target.cell_ids, LOGL_DEBUG,
 				    "not a candidate, target BSS still in penalty time"
 				    " (%u seconds left)\n", penalty_time);
 		return;
@@ -879,9 +879,9 @@ static int trigger_local_ho_or_as(struct ho_candidate *c, uint8_t requirements)
 	req = (struct handover_out_req){
 		.from_hodec_id = HODEC2,
 		.old_lchan = c->current.lchan,
-		.target_nik = *bts_ident_key(c->target.bts),
 		.new_lchan_type = full_rate? GSM_LCHAN_TCH_F : GSM_LCHAN_TCH_H,
 	};
+	bts_cell_ab(&req.target_cell_ab, c->target.bts);
 	handover_request(&req);
 	return 0;
 }
@@ -890,14 +890,14 @@ static int trigger_remote_bss_ho(struct ho_candidate *c, uint8_t requirements)
 {
 	struct handover_out_req req;
 
-	LOGPHOLCHANTOREMOTE(c->current.lchan, c->target.cil, LOGL_INFO,
+	LOGPHOLCHANTOREMOTE(c->current.lchan, &c->target.cell_ids, LOGL_INFO,
 			    "Triggering inter-BSC handover, due to %s\n",
 			    ho_reason_name(global_ho_reason));
 
 	req = (struct handover_out_req){
 		.from_hodec_id = HODEC2,
 		.old_lchan = c->current.lchan,
-		.target_nik = c->target.nik,
+		.target_cell_ab = c->target.ab,
 	};
 	handover_request(&req);
 	return 0;
@@ -933,13 +933,13 @@ static inline void debug_candidate(struct ho_candidate *candidate)
 	     candidate->target.free_tch##tchx, candidate->target.min_free_tch##tchx, \
 	     REQUIREMENTS_ARGS(candidate->requirements, TCHX)
 
-	if (!candidate->target.bts && !candidate->target.cil)
+	if (!candidate->target.bts && !candidate->target.cell_ids.id_list_len)
 		LOGPHOLCHAN(candidate->current.lchan, LOGL_DEBUG, "Empty candidate\n");
-	if (candidate->target.bts && candidate->target.cil)
+	if (candidate->target.bts && candidate->target.cell_ids.id_list_len)
 		LOGPHOLCHAN(candidate->current.lchan, LOGL_ERROR, "Invalid candidate: both local- and remote-BSS target\n");
 
-	if (candidate->target.cil)
-		LOGPHOLCHANTOREMOTE(candidate->current.lchan, candidate->target.cil, LOGL_DEBUG,
+	if (candidate->target.cell_ids.id_list_len)
+		LOGPHOLCHANTOREMOTE(candidate->current.lchan, &candidate->target.cell_ids, LOGL_DEBUG,
 				    "RX level %d dBm -> %d dBm\n",
 				    rxlev2dbm(candidate->current.rxlev), rxlev2dbm(candidate->target.rxlev));
 
@@ -1052,9 +1052,8 @@ static void collect_handover_candidate(struct gsm_lchan *lchan, struct neigh_mea
 {
 	struct gsm_bts *bts = lchan->ts->trx->bts;
 	struct gsm_bts *neighbor_bts;
-	const struct gsm0808_cell_id_list2 *neighbor_cil;
-	struct neighbor_ident_key ni = {
-		.from_bts = bts->nr,
+	struct gsm0808_cell_id_list2 neighbor_cil;
+	struct cell_ab target_ab = {
 		.arfcn = nmp->arfcn,
 		.bsic = nmp->bsic,
 	};
@@ -1078,9 +1077,9 @@ static void collect_handover_candidate(struct gsm_lchan *lchan, struct neigh_mea
 	}
 
 	find_handover_target_cell(&neighbor_bts, &neighbor_cil,
-				  lchan->conn, &ni, false);
+				  lchan->conn, &target_ab, false);
 
-	if (!neighbor_bts && !neighbor_cil) {
+	if (!neighbor_bts && !neighbor_cil.id_list_len) {
 		LOGPHOBTS(bts, LOGL_DEBUG, "no neighbor ARFCN %u BSIC %u configured for this cell\n",
 			  nmp->arfcn, nmp->bsic);
 		return;
@@ -1103,9 +1102,9 @@ static void collect_handover_candidate(struct gsm_lchan *lchan, struct neigh_mea
 			.rxlev = rxlev_current,
 		},
 		.target = {
-			.nik = ni,
+			.ab = target_ab,
 			.bts = neighbor_bts,
-			.cil = neighbor_cil,
+			.cell_ids = neighbor_cil,
 			.rxlev = neigh_meas_avg(nmp, ho_get_hodec2_rxlev_neigh_avg_win(bts->ho)),
 		},
 	};

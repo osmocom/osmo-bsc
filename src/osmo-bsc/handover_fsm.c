@@ -146,7 +146,7 @@ const char *handover_status(struct gsm_subscriber_connection *conn)
 		snprintf(buf, sizeof(buf),
 			 "("LOG_FMT_FROM_LCHAN") --HO-> (%s) " LOG_FMT_HO_SCOPE,
 			 LOG_ARGS_FROM_LCHAN(conn->lchan),
-			 neighbor_ident_key_name(&ho->target_cell),
+			 cell_ab_to_str_c(OTC_SELECT, &ho->target_cell_ab),
 			 LOG_ARGS_HO_SCOPE(conn));
 
 	else if (ho->scope & HO_INTER_BSC_IN) {
@@ -226,9 +226,6 @@ void handover_request(struct handover_out_req *req)
 
 	conn = req->old_lchan->conn;
 	OSMO_ASSERT(conn && conn->fi);
-
-	/* Make sure the handover target neighbor_ident_key contains the correct source bts nr */
-	req->target_nik.from_bts = req->old_lchan->ts->trx->bts->nr;
 
 	/* To make sure we're allowed to start a handover, go through a gscon event dispatch. If that is accepted, the
 	 * same req is passed to handover_start(). */
@@ -315,10 +312,10 @@ void handover_start(struct handover_out_req *req)
 
 	OSMO_ASSERT(req && req->old_lchan && req->old_lchan->conn);
 	struct gsm_subscriber_connection *conn = req->old_lchan->conn;
-	const struct neighbor_ident_key *search_for = &req->target_nik;
+	const struct cell_ab *search_for = &req->target_cell_ab;
 	struct handover *ho = &conn->ho;
 	struct gsm_bts *local_target_cell = NULL;
-	const struct gsm0808_cell_id_list2 *remote_target_cell = NULL;
+	struct gsm0808_cell_id_list2 remote_target_cells = {};
 
 	if (conn->ho.fi) {
 		LOG_HO(conn, LOGL_ERROR, "Handover requested while another handover is ongoing; Ignore\n");
@@ -335,9 +332,9 @@ void handover_start(struct handover_out_req *req)
 	ho->from_hodec_id = req->from_hodec_id;
 	ho->new_lchan_type = req->new_lchan_type == GSM_LCHAN_NONE ?
 		req->old_lchan->type : req->new_lchan_type;
-	ho->target_cell = req->target_nik;
+	ho->target_cell_ab = req->target_cell_ab;
 
-	if (find_handover_target_cell(&local_target_cell, &remote_target_cell,
+	if (find_handover_target_cell(&local_target_cell, &remote_target_cells,
 				      conn, search_for, true)) {
 		handover_end(conn, HO_RESULT_ERROR);
 		return;
@@ -349,8 +346,8 @@ void handover_start(struct handover_out_req *req)
 		return;
 	}
 
-	if (remote_target_cell) {
-		handover_start_inter_bsc_out(conn, remote_target_cell);
+	if (remote_target_cells.id_list_len) {
+		handover_start_inter_bsc_out(conn, &remote_target_cells);
 		return;
 	}
 

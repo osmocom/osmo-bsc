@@ -35,43 +35,6 @@
 #include <osmocom/bsc/gsm_data.h>
 #include <osmocom/bsc/bts.h>
 
-static struct gsm_network *g_net = NULL;
-static struct neighbor_ident_list *g_neighbor_cells = NULL;
-
-/* Parse VTY parameters matching NEIGHBOR_IDENT_VTY_KEY_PARAMS. Pass a pointer so that argv[0] is the
- * ARFCN value followed by the BSIC keyword and value. vty *must* reference a BTS_NODE. */
-bool neighbor_ident_vty_parse_key_params(struct vty *vty, const char **argv,
-					 struct neighbor_ident_key *key)
-{
-	struct gsm_bts *bts = vty->index;
-
-	OSMO_ASSERT(vty->node == BTS_NODE);
-	OSMO_ASSERT(bts);
-
-	return neighbor_ident_bts_parse_key_params(vty, bts, argv, key);
-}
-
-/* same as neighbor_ident_vty_parse_key_params() but pass an explicit bts, so it works on any node. */
-bool neighbor_ident_bts_parse_key_params(struct vty *vty, struct gsm_bts *bts, const char **argv,
-					 struct neighbor_ident_key *key)
-{
-	const char *arfcn_str = argv[0];
-	const char *bsic_str = argv[1];
-
-	OSMO_ASSERT(bts);
-
-	*key = (struct neighbor_ident_key){
-		.from_bts = bts->nr,
-		.arfcn = atoi(arfcn_str),
-	};
-
-	if (!strcmp(bsic_str, "any"))
-		key->bsic = BSIC_ANY;
-	else
-		key->bsic = atoi(bsic_str);
-	return true;
-}
-
 #define NEIGHBOR_ADD_CMD "neighbor "
 #define NEIGHBOR_DEL_CMD "no neighbor "
 #define NEIGHBOR_DOC "Manage local and remote-BSS neighbor cells\n"
@@ -79,67 +42,51 @@ bool neighbor_ident_bts_parse_key_params(struct vty *vty, struct gsm_bts *bts, c
 #define NEIGHBOR_DEL_DOC NO_STR "Remove local or remote-BSS neighbor cell\n"
 
 #define LAC_PARAMS "lac <0-65535>"
+#define LAC_ARGC 1
 #define LAC_DOC "Neighbor cell by LAC\n" "LAC\n"
 
 #define LAC_CI_PARAMS "lac-ci <0-65535> <0-65535>"
+#define LAC_CI_ARGC 2
 #define LAC_CI_DOC "Neighbor cell by LAC and CI\n" "LAC\n" "CI\n"
 
 #define CGI_PARAMS "cgi <0-999> <0-999> <0-65535> <0-65535>"
+#define CGI_ARGC 4
 #define CGI_DOC "Neighbor cell by cgi\n" "MCC\n" "MNC\n" "LAC\n" "CI\n"
 
 #define CGI_PS_PARAMS "cgi-ps <0-999> <0-999> <0-65535> <0-255> <0-65535>"
+#define CGI_PS_ARGC 5
 #define CGI_PS_DOC "Neighbor cell by cgi (Packet Switched, with RAC)\n" "MCC\n" "MNC\n" "LAC\n" "RAC\n" "CI\n"
 
 #define LOCAL_BTS_PARAMS "bts <0-255>"
 #define LOCAL_BTS_DOC "Neighbor cell by local BTS number\n" "BTS number\n"
 
-static struct gsm_bts *neighbor_ident_vty_parse_bts_nr(struct vty *vty, const char **argv)
+static int neighbor_ident_vty_parse_lac(struct vty *vty, struct gsm0808_cell_id *cell_id, const char **argv)
 {
-	const char *bts_nr_str = argv[0];
-	struct gsm_bts *bts = gsm_bts_num(g_net, atoi(bts_nr_str));
-	if (!bts)
-		vty_out(vty, "%% No such BTS: nr = %s%s\n", bts_nr_str, VTY_NEWLINE);
-	return bts;
-}
-
-static struct gsm_bts *bts_by_cell_id(struct vty *vty, struct gsm0808_cell_id *cell_id)
-{
-	struct gsm_bts *bts = gsm_bts_by_cell_id(g_net, cell_id, 0);
-	if (!bts)
-		vty_out(vty, "%% No such BTS: %s%s\n", gsm0808_cell_id_name(cell_id), VTY_NEWLINE);
-	return bts;
-}
-
-static struct gsm0808_cell_id *neighbor_ident_vty_parse_lac(struct vty *vty, const char **argv)
-{
-	static struct gsm0808_cell_id cell_id;
-	cell_id = (struct gsm0808_cell_id){
+	*cell_id = (struct gsm0808_cell_id){
 		.id_discr = CELL_IDENT_LAC,
 		.id.lac = atoi(argv[0]),
 	};
-	return &cell_id;
+	return 0;
 }
 
-static struct gsm0808_cell_id *neighbor_ident_vty_parse_lac_ci(struct vty *vty, const char **argv)
+static int neighbor_ident_vty_parse_lac_ci(struct vty *vty, struct gsm0808_cell_id *cell_id, const char **argv)
 {
-	static struct gsm0808_cell_id cell_id;
-	cell_id = (struct gsm0808_cell_id){
+	*cell_id = (struct gsm0808_cell_id){
 		.id_discr = CELL_IDENT_LAC_AND_CI,
 		.id.lac_and_ci = {
 			.lac = atoi(argv[0]),
 			.ci = atoi(argv[1]),
 		},
 	};
-	return &cell_id;
+	return 0;
 }
 
-static struct gsm0808_cell_id *neighbor_ident_vty_parse_cgi(struct vty *vty, const char **argv)
+static int neighbor_ident_vty_parse_cgi(struct vty *vty, struct gsm0808_cell_id *cell_id, const char **argv)
 {
-	static struct gsm0808_cell_id cell_id;
-	cell_id = (struct gsm0808_cell_id){
+	*cell_id = (struct gsm0808_cell_id){
 		.id_discr = CELL_IDENT_WHOLE_GLOBAL,
 	};
-	struct osmo_cell_global_id *cgi = &cell_id.id.global;
+	struct osmo_cell_global_id *cgi = &cell_id->id.global;
 	const char *mcc = argv[0];
 	const char *mnc = argv[1];
 	const char *lac = argv[2];
@@ -147,25 +94,25 @@ static struct gsm0808_cell_id *neighbor_ident_vty_parse_cgi(struct vty *vty, con
 
 	if (osmo_mcc_from_str(mcc, &cgi->lai.plmn.mcc)) {
 		vty_out(vty, "%% Error decoding MCC: %s%s", mcc, VTY_NEWLINE);
-		return NULL;
+		return -1;
 	}
 
 	if (osmo_mnc_from_str(mnc, &cgi->lai.plmn.mnc, &cgi->lai.plmn.mnc_3_digits)) {
 		vty_out(vty, "%% Error decoding MNC: %s%s", mnc, VTY_NEWLINE);
-		return NULL;
+		return -1;
 	}
 
 	cgi->lai.lac = atoi(lac);
 	cgi->cell_identity = atoi(ci);
-	return &cell_id;
+	return 0;
 }
 
-static struct gsm0808_cell_id *neighbor_ident_vty_parse_cgi_ps(struct vty *vty, const char **argv)
+static int neighbor_ident_vty_parse_cgi_ps(struct vty *vty, struct gsm0808_cell_id *cell_id, const char **argv)
 {
-	static struct gsm0808_cell_id cell_id = {
+	*cell_id = (struct gsm0808_cell_id){
 		.id_discr = CELL_IDENT_WHOLE_GLOBAL_PS,
 	};
-	struct osmo_cell_global_id_ps *cgi_ps = &cell_id.id.global_ps;
+	struct osmo_cell_global_id_ps *cgi_ps = &cell_id->id.global_ps;
 	const char *mcc = argv[0];
 	const char *mnc = argv[1];
 	const char *lac = argv[2];
@@ -174,400 +121,350 @@ static struct gsm0808_cell_id *neighbor_ident_vty_parse_cgi_ps(struct vty *vty, 
 
 	if (osmo_mcc_from_str(mcc, &cgi_ps->rai.lac.plmn.mcc)) {
 		vty_out(vty, "%% Error decoding MCC: %s%s", mcc, VTY_NEWLINE);
-		return NULL;
+		return -1;
 	}
 
 	if (osmo_mnc_from_str(mnc, &cgi_ps->rai.lac.plmn.mnc, &cgi_ps->rai.lac.plmn.mnc_3_digits)) {
 		vty_out(vty, "%% Error decoding MNC: %s%s", mnc, VTY_NEWLINE);
-		return NULL;
+		return -1;
 	}
 
 	cgi_ps->rai.lac.lac = atoi(lac);
 	cgi_ps->rai.rac = atoi(rac);
 	cgi_ps->cell_identity = atoi(ci);
-	return &cell_id;
+	return 0;
 }
 
-static int add_local_bts(struct vty *vty, struct gsm_bts *neigh)
+void neighbor_ident_vty_parse_arfcn_bsic(struct cell_ab *ab, const char **argv)
 {
-	int rc;
+	const char *arfcn_str = argv[0];
+	const char *bsic_str = argv[1];
+
+	*ab = (struct cell_ab){
+		.arfcn = atoi(arfcn_str),
+		.bsic = (!strcmp(bsic_str, "any")) ? BSIC_ANY : atoi(bsic_str),
+	};
+}
+
+static int add_neighbor(struct vty *vty, struct neighbor *n)
+{
 	struct gsm_bts *bts = vty->index;
-	if (vty->node != BTS_NODE) {
-		vty_out(vty, "%% Error: cannot add local BTS neighbor, not on BTS node%s",
-			VTY_NEWLINE);
-		return CMD_WARNING;
+	struct neighbor *neighbor;
+
+	OSMO_ASSERT((vty->node == BTS_NODE) && bts);
+
+	llist_for_each_entry(neighbor, &bts->neighbors, entry) {
+		/* Check against duplicates */
+		if (neighbor_same(neighbor, n, false)) {
+			/* Found a match on Cell ID or BTS number, without ARFCN+BSIC. If they are fully identical, ignore the
+			 * duplicate. If the ARFCN+BSIC part differs, it's an error. */
+			vty_out(vty, "%% BTS %u already had neighbor %s%s", bts->nr, neighbor_to_str_c(OTC_SELECT, neighbor),
+				VTY_NEWLINE);
+			if (!neighbor_same(neighbor, n, true)) {
+				vty_out(vty, "%% ERROR: duplicate Cell ID in neighbor config, with differing ARFCN+BSIC: %s%s",
+					neighbor_to_str_c(OTC_SELECT, n), VTY_NEWLINE);
+				return CMD_WARNING;
+			}
+			/* Exact same neighbor again, just ignore. */
+			return CMD_SUCCESS;
+		}
+
+		/* Allow only one cell ID per remote-BSS neighbor, see OS#3656 */
+		if (n->type == NEIGHBOR_TYPE_CELL_ID
+		    && n->cell_id.ab_present && neighbor->cell_id.ab_present
+		    && cell_ab_match(&n->cell_id.ab, &neighbor->cell_id.ab, true)) {
+			vty_out(vty, "%% Error: only one Cell Identifier entry is allowed per remote neighbor."
+				" Already have: BTS %u -> %s%s", bts->nr,
+				neighbor_to_str_c(OTC_SELECT, neighbor), VTY_NEWLINE);
+			return CMD_WARNING;
+		}
 	}
-	if (!bts) {
-		vty_out(vty, "%% Error: cannot add local BTS neighbor, no BTS on this node%s",
-			VTY_NEWLINE);
-		return CMD_WARNING;
-	}
-	if (!neigh) {
-		vty_out(vty, "%% Error: cannot add local BTS neighbor to BTS %u, no such neighbor BTS%s"
-			"%% (To add remote-BSS neighbors, pass full ARFCN and BSIC as well)%s",
-			bts->nr, VTY_NEWLINE, VTY_NEWLINE);
-		return CMD_WARNING;
-	}
-	rc = gsm_bts_local_neighbor_add(bts, neigh);
-	if (rc < 0) {
-		vty_out(vty, "%% Error: cannot add local BTS %u as neighbor to BTS %u: %s%s",
-			neigh->nr, bts->nr, strerror(-rc), VTY_NEWLINE);
-		return CMD_WARNING;
-	} else
-		vty_out(vty, "%% BTS %u %s local neighbor BTS %u with LAC %u CI %u and ARFCN %u BSIC %u%s",
-			bts->nr, rc? "now has" : "already had",
-			neigh->nr, neigh->location_area_code, neigh->cell_identity,
-			neigh->c0->arfcn, neigh->bsic, VTY_NEWLINE);
+
+	neighbor = talloc_zero(bts, struct neighbor);
+	*neighbor = *n;
+	llist_add_tail(&neighbor->entry, &bts->neighbors);
 	return CMD_SUCCESS;
 }
 
-static int del_local_bts(struct vty *vty, struct gsm_bts *neigh)
+static int del_neighbor(struct vty *vty, struct neighbor *n)
 {
-	int rc;
 	struct gsm_bts *bts = vty->index;
-	if (vty->node != BTS_NODE) {
-		vty_out(vty, "%% Error: cannot remove local BTS neighbor, not on BTS node%s",
-			VTY_NEWLINE);
-		return CMD_WARNING;
+	struct neighbor *neighbor;
+
+	OSMO_ASSERT((vty->node == BTS_NODE) && bts);
+
+	llist_for_each_entry(neighbor, &bts->neighbors, entry) {
+		if (neighbor->type != n->type)
+			continue;
+
+		switch (n->type) {
+		case NEIGHBOR_TYPE_BTS_NR:
+			if (neighbor->bts_nr == n->bts_nr)
+				break;
+			continue;
+
+		case NEIGHBOR_TYPE_CELL_ID:
+			if (gsm0808_cell_ids_match(&neighbor->cell_id.id, &n->cell_id.id, true))
+				break;
+			continue;
+		default:
+			continue;
+		}
+
+		llist_del(&neighbor->entry);
+		talloc_free(neighbor);
+		return CMD_SUCCESS;
 	}
-	if (!bts) {
-		vty_out(vty, "%% Error: cannot remove local BTS neighbor, no BTS on this node%s",
-			VTY_NEWLINE);
-		return CMD_WARNING;
+
+	vty_out(vty, "%% Error: no such neighbor on BTS %d: %s%s",
+		bts->nr, neighbor_to_str_c(OTC_SELECT, n), VTY_NEWLINE);
+	return CMD_WARNING;
+}
+
+static int del_neighbor_by_cell_ab(struct vty *vty, const struct cell_ab *cell_ab)
+{
+	struct gsm_bts *bts = vty->index;
+	struct neighbor *neighbor, *safe;
+	struct gsm_bts *neighbor_bts;
+	struct cell_ab neighbor_ab;
+	int count = 0;
+
+	OSMO_ASSERT((vty->node == BTS_NODE) && bts);
+
+	llist_for_each_entry_safe(neighbor, safe, &bts->neighbors, entry) {
+		switch (neighbor->type) {
+		case NEIGHBOR_TYPE_BTS_NR:
+			if (resolve_local_neighbor(&neighbor_bts, bts, neighbor))
+				continue;
+			bts_cell_ab(&neighbor_ab, neighbor_bts);
+			if (!cell_ab_match(&neighbor_ab, cell_ab, false))
+				continue;
+			break;
+
+		case NEIGHBOR_TYPE_CELL_ID:
+			if (!neighbor->cell_id.ab_present)
+				continue;
+			if (!cell_ab_match(&neighbor->cell_id.ab, cell_ab, false))
+				continue;
+			break;
+		default:
+			continue;
+		}
+
+		llist_del(&neighbor->entry);
+		talloc_free(neighbor);
+		count++;
 	}
-	if (!neigh) {
-		vty_out(vty, "%% Error: cannot remove local BTS neighbor from BTS %u, no such neighbor BTS%s",
-			bts->nr, VTY_NEWLINE);
-		return CMD_WARNING;
-	}
-	rc = gsm_bts_local_neighbor_del(bts, neigh);
-	if (rc < 0) {
-		vty_out(vty, "%% Error: cannot remove local BTS %u neighbor from BTS %u: %s%s",
-			neigh->nr, bts->nr, strerror(-rc), VTY_NEWLINE);
-		return CMD_WARNING;
-	}
-	if (rc == 0)
-		vty_out(vty, "%% BTS %u is no neighbor of BTS %u%s",
-			neigh->nr, bts->nr, VTY_NEWLINE);
-	return CMD_SUCCESS;
+	if (count)
+		return CMD_SUCCESS;
+
+	vty_out(vty, "%% Cannot remove: no such neighbor on BTS %u: %s%s",
+		bts->nr, cell_ab_to_str_c(OTC_SELECT, cell_ab), VTY_NEWLINE);
+	return CMD_WARNING;
 }
 
 DEFUN(cfg_neighbor_add_bts_nr, cfg_neighbor_add_bts_nr_cmd,
 	NEIGHBOR_ADD_CMD LOCAL_BTS_PARAMS,
 	NEIGHBOR_ADD_DOC LOCAL_BTS_DOC)
 {
-	return add_local_bts(vty, neighbor_ident_vty_parse_bts_nr(vty, argv));
+	struct neighbor n = {
+		.type = NEIGHBOR_TYPE_BTS_NR,
+		.bts_nr = atoi(argv[0]),
+	};
+	return add_neighbor(vty, &n);
 }
 
 DEFUN(cfg_neighbor_add_lac, cfg_neighbor_add_lac_cmd,
 	NEIGHBOR_ADD_CMD LAC_PARAMS,
 	NEIGHBOR_ADD_DOC LAC_DOC)
 {
-	return add_local_bts(vty, bts_by_cell_id(vty, neighbor_ident_vty_parse_lac(vty, argv)));
+	struct neighbor n = {
+		.type = NEIGHBOR_TYPE_CELL_ID,
+	};
+	if (neighbor_ident_vty_parse_lac(vty, &n.cell_id.id, argv))
+		return CMD_WARNING;
+	return add_neighbor(vty, &n);
 }
 
 DEFUN(cfg_neighbor_add_lac_ci, cfg_neighbor_add_lac_ci_cmd,
 	NEIGHBOR_ADD_CMD LAC_CI_PARAMS,
 	NEIGHBOR_ADD_DOC LAC_CI_DOC)
 {
-	return add_local_bts(vty, bts_by_cell_id(vty, neighbor_ident_vty_parse_lac_ci(vty, argv)));
+	struct neighbor n = {
+		.type = NEIGHBOR_TYPE_CELL_ID,
+	};
+	if (neighbor_ident_vty_parse_lac_ci(vty, &n.cell_id.id, argv))
+		return CMD_WARNING;
+	return add_neighbor(vty, &n);
 }
 
 DEFUN(cfg_neighbor_add_cgi, cfg_neighbor_add_cgi_cmd,
 	NEIGHBOR_ADD_CMD CGI_PARAMS,
 	NEIGHBOR_ADD_DOC CGI_DOC)
 {
-	return add_local_bts(vty, bts_by_cell_id(vty, neighbor_ident_vty_parse_cgi(vty, argv)));
+	struct neighbor n = {
+		.type = NEIGHBOR_TYPE_CELL_ID,
+	};
+	if (neighbor_ident_vty_parse_cgi(vty, &n.cell_id.id, argv))
+		return CMD_WARNING;
+	return add_neighbor(vty, &n);
 }
 
 DEFUN(cfg_neighbor_add_cgi_ps, cfg_neighbor_add_cgi_ps_cmd,
 	NEIGHBOR_ADD_CMD CGI_PS_PARAMS,
 	NEIGHBOR_ADD_DOC CGI_PS_DOC)
 {
-	return add_local_bts(vty, bts_by_cell_id(vty, neighbor_ident_vty_parse_cgi_ps(vty, argv)));
-}
-
-bool neighbor_ident_key_matches_bts(const struct neighbor_ident_key *key, struct gsm_bts *bts)
-{
-	if (!bts || !key)
-		return false;
-	return key->arfcn == bts->c0->arfcn
-		&& (key->bsic == BSIC_ANY || key->bsic == bts->bsic);
-}
-
-static int add_remote_or_local_bts(struct vty *vty, const struct gsm0808_cell_id *cell_id,
-				   const struct neighbor_ident_key *key)
-{
-	int rc;
-	struct gsm_bts *local_neigh;
-	const struct gsm0808_cell_id_list2 *exists;
-	struct gsm0808_cell_id_list2 cil;
-	struct gsm_bts *bts = vty->index;
-
-	if (vty->node != BTS_NODE) {
-		vty_out(vty, "%% Error: cannot add BTS neighbor, not on BTS node%s",
-			VTY_NEWLINE);
-		return CMD_WARNING;
-	}
-	if (!bts) {
-		vty_out(vty, "%% Error: cannot add BTS neighbor, no BTS on this node%s",
-			VTY_NEWLINE);
-		return CMD_WARNING;
-	}
-
-	/* Is there a local BTS that matches the cell_id? */
-	local_neigh = gsm_bts_by_cell_id(g_net, cell_id, 0);
-	if (local_neigh) {
-		/* But do the advertised ARFCN and BSIC match as intended?
-		 * The user may omit ARFCN and BSIC for local cells, but if they are provided,
-		 * they need to match. */
-		if (!neighbor_ident_key_matches_bts(key, local_neigh)) {
-			vty_out(vty, "%% Error: bts %u: neighbor cell id %s indicates local BTS %u,"
-				" but it does not match ARFCN+BSIC %s%s",
-				bts->nr, gsm0808_cell_id_name(cell_id), local_neigh->nr,
-				neighbor_ident_key_name(key), VTY_NEWLINE);
-			/* TODO: error out fatally for non-interactive VTY? */
-			return CMD_WARNING;
-		}
-		return add_local_bts(vty, local_neigh);
-	}
-
-	/* Allow only one cell ID per remote-BSS neighbor, see OS#3656 */
-	exists = neighbor_ident_get(g_neighbor_cells, key);
-	if (exists) {
-		vty_out(vty, "%% Error: only one Cell Identifier entry is allowed per remote neighbor."
-			" Already have: %s -> %s%s", neighbor_ident_key_name(key),
-			gsm0808_cell_id_list_name(exists), VTY_NEWLINE);
-		return CMD_WARNING;
-	}
-
-	/* The cell_id is not known in this BSS, so it must be a remote cell. */
-	gsm0808_cell_id_to_list(&cil, cell_id);
-	rc = neighbor_ident_add(g_neighbor_cells, key, &cil);
-
-	if (rc < 0) {
-		const char *reason;
-		switch (rc) {
-		case -EINVAL:
-			reason = ": mismatching type between current and newly added cell identifier";
-			break;
-		case -ENOSPC:
-			reason = ": list is full";
-			break;
-		default:
-			reason = "";
-			break;
-		}
-
-		vty_out(vty, "%% Error adding neighbor-BSS Cell Identifier %s%s%s",
-			gsm0808_cell_id_name(cell_id), reason, VTY_NEWLINE);
-		return CMD_WARNING;
-	}
-
-	vty_out(vty, "%% %s now has %d remote BSS Cell Identifier List %s%s",
-		neighbor_ident_key_name(key), rc, rc == 1? "entry" : "entries", VTY_NEWLINE);
-	return CMD_SUCCESS;
-}
-
-static int del_by_key(struct vty *vty, const struct neighbor_ident_key *key)
-{
-	int removed = 0;
-	int rc;
-	struct gsm_bts *bts = vty->index;
-	struct gsm_bts_ref *neigh, *safe;
-
-	if (vty->node != BTS_NODE) {
-		vty_out(vty, "%% Error: cannot remove BTS neighbor, not on BTS node%s",
-			VTY_NEWLINE);
-		return CMD_WARNING;
-	}
-	if (!bts) {
-		vty_out(vty, "%% Error: cannot remove BTS neighbor, no BTS on this node%s",
-			VTY_NEWLINE);
-		return CMD_WARNING;
-	}
-
-	/* Is there a local BTS that matches the key? */
-	llist_for_each_entry_safe(neigh, safe, &bts->local_neighbors, entry) {
-		struct gsm_bts *neigh_bts = neigh->bts;
-		if (!neighbor_ident_key_matches_bts(key, neigh->bts))
-			continue;
-		rc = gsm_bts_local_neighbor_del(bts, neigh->bts);
-		if (rc > 0) {
-			vty_out(vty, "%% Removed local neighbor bts %u to bts %u%s",
-				bts->nr, neigh_bts->nr, VTY_NEWLINE);
-			removed += rc;
-		}
-	}
-
-	if (neighbor_ident_del(g_neighbor_cells, key)) {
-		vty_out(vty, "%% Removed remote BSS neighbor %s%s",
-			neighbor_ident_key_name(key), VTY_NEWLINE);
-		removed ++;
-	}
-
-	if (!removed) {
-		vty_out(vty, "%% Cannot remove, no such neighbor: %s%s",
-			neighbor_ident_key_name(key), VTY_NEWLINE);
-		return CMD_WARNING;
-	}
-	return CMD_SUCCESS;
-}
-
-struct nil_match_bts_data {
-	int bts_nr;
-	const struct neighbor_ident_key *found;
-};
-
-static bool nil_match_bts(const struct neighbor_ident_key *key,
-			  const struct gsm0808_cell_id_list2 *val,
-			  void *cb_data)
-{
-	struct nil_match_bts_data *d = cb_data;
-	if (key->from_bts == d->bts_nr) {
-		d->found = key;
-		return false;
-	}
-	return true;
-}
-
-bool neighbor_ident_bts_entry_exists(uint8_t from_bts)
-{
-	struct nil_match_bts_data d = {
-		.bts_nr = from_bts,
+	struct neighbor n = {
+		.type = NEIGHBOR_TYPE_CELL_ID,
 	};
-	neighbor_ident_iter(g_neighbor_cells, nil_match_bts, &d);
-	return (bool)d.found;
+	if (neighbor_ident_vty_parse_cgi_ps(vty, &n.cell_id.id, argv))
+		return CMD_WARNING;
+	return add_neighbor(vty, &n);
 }
 
 static int neighbor_del_all(struct vty *vty)
 {
-	int rc;
-	int removed = 0;
 	struct gsm_bts *bts = vty->index;
-
+	struct neighbor *n;
 	OSMO_ASSERT((vty->node == BTS_NODE) && bts);
 
-	/* Remove all local neighbors and print to VTY for the user to know what changed */
-	while (1) {
-		struct gsm_bts_ref *neigh = llist_first_entry_or_null(&bts->local_neighbors, struct gsm_bts_ref, entry);
-		struct gsm_bts *neigh_bts;
-		if (!neigh)
-			break;
-
-		neigh_bts = neigh->bts;
-		OSMO_ASSERT(neigh_bts);
-
-		/* It would be more efficient to just llist_del() the gsm_bts_ref directly, but for the sake of
-		 * safe/sane API use and against code dup, rather invoke the central gsm_bts_local_neighbor_del()
-		 * function intended for this task. */
-		rc = gsm_bts_local_neighbor_del(bts, neigh_bts);
-		if (rc > 0) {
-			vty_out(vty, "%% Removed local neighbor bts %u to bts %u%s",
-				bts->nr, neigh_bts->nr, VTY_NEWLINE);
-			removed += rc;
-		} else {
-			vty_out(vty, "%% Error while removing local neighbor bts %u to bts %u, aborted%s",
-				bts->nr, neigh_bts->nr, VTY_NEWLINE);
-			return CMD_WARNING;
-		}
-	}
-
-	/* Remove all remote-BSS neighbors */
-	while (1) {
-		struct neighbor_ident_key k;
-		struct nil_match_bts_data d = {
-			.bts_nr = bts->nr,
-		};
-		neighbor_ident_iter(g_neighbor_cells, nil_match_bts, &d);
-		if (!d.found)
-			break;
-		k = *d.found;
-		if (neighbor_ident_del(g_neighbor_cells, &k)) {
-			vty_out(vty, "%% Removed remote BSS neighbor %s%s",
-				neighbor_ident_key_name(&k), VTY_NEWLINE);
-			removed++;
-		} else {
-			vty_out(vty, "%% Error while removing remote BSS neighbor %s, aborted%s",
-				neighbor_ident_key_name(&k), VTY_NEWLINE);
-			return CMD_WARNING;
-		}
-	}
-
-	if (!removed)
+	if (llist_empty(&bts->neighbors)) {
 		vty_out(vty, "%% No neighbors configured%s", VTY_NEWLINE);
+		return CMD_SUCCESS;
+	}
+
+	/* Remove all local neighbors and print to VTY for the user to know what changed */
+	while ((n = llist_first_entry_or_null(&bts->neighbors, struct neighbor, entry))) {
+		vty_out(vty, "%% Removed neighbor: BTS %u to %s%s",
+			bts->nr, neighbor_to_str_c(OTC_SELECT, n), VTY_NEWLINE);
+		llist_del(&n->entry);
+		talloc_free(n);
+	}
 	return CMD_SUCCESS;
 }
 
 DEFUN(cfg_neighbor_add_lac_arfcn_bsic, cfg_neighbor_add_lac_arfcn_bsic_cmd,
-	NEIGHBOR_ADD_CMD LAC_PARAMS " " NEIGHBOR_IDENT_VTY_KEY_PARAMS,
-	NEIGHBOR_ADD_DOC LAC_DOC NEIGHBOR_IDENT_VTY_KEY_DOC)
+	NEIGHBOR_ADD_CMD LAC_PARAMS " " CELL_AB_VTY_PARAMS,
+	NEIGHBOR_ADD_DOC LAC_DOC CELL_AB_VTY_DOC)
 {
-	struct neighbor_ident_key nik;
-	struct gsm0808_cell_id *cell_id = neighbor_ident_vty_parse_lac(vty, argv);
-	if (!cell_id)
+	struct neighbor n = {
+		.type = NEIGHBOR_TYPE_CELL_ID,
+		.cell_id.ab_present = true,
+	};
+	if (neighbor_ident_vty_parse_lac(vty, &n.cell_id.id, argv))
 		return CMD_WARNING;
-	if (!neighbor_ident_vty_parse_key_params(vty, argv + 1, &nik))
-		return CMD_WARNING;
-	return add_remote_or_local_bts(vty, cell_id, &nik);
+	neighbor_ident_vty_parse_arfcn_bsic(&n.cell_id.ab, argv + LAC_ARGC);
+	return add_neighbor(vty, &n);
 }
 
 DEFUN(cfg_neighbor_add_lac_ci_arfcn_bsic, cfg_neighbor_add_lac_ci_arfcn_bsic_cmd,
-	NEIGHBOR_ADD_CMD LAC_CI_PARAMS " " NEIGHBOR_IDENT_VTY_KEY_PARAMS,
-	NEIGHBOR_ADD_DOC LAC_CI_DOC NEIGHBOR_IDENT_VTY_KEY_DOC)
+	NEIGHBOR_ADD_CMD LAC_CI_PARAMS " " CELL_AB_VTY_PARAMS,
+	NEIGHBOR_ADD_DOC LAC_CI_DOC CELL_AB_VTY_DOC)
 {
-	struct neighbor_ident_key nik;
-	struct gsm0808_cell_id *cell_id = neighbor_ident_vty_parse_lac_ci(vty, argv);
-	if (!cell_id)
+	struct neighbor n = {
+		.type = NEIGHBOR_TYPE_CELL_ID,
+		.cell_id.ab_present = true,
+	};
+	if (neighbor_ident_vty_parse_lac_ci(vty, &n.cell_id.id, argv))
 		return CMD_WARNING;
-	if (!neighbor_ident_vty_parse_key_params(vty, argv + 2, &nik))
-		return CMD_WARNING;
-	return add_remote_or_local_bts(vty, cell_id, &nik);
+	neighbor_ident_vty_parse_arfcn_bsic(&n.cell_id.ab, argv + LAC_CI_ARGC);
+	return add_neighbor(vty, &n);
 }
 
 DEFUN(cfg_neighbor_add_cgi_arfcn_bsic, cfg_neighbor_add_cgi_arfcn_bsic_cmd,
-	NEIGHBOR_ADD_CMD CGI_PARAMS " " NEIGHBOR_IDENT_VTY_KEY_PARAMS,
-	NEIGHBOR_ADD_DOC CGI_DOC NEIGHBOR_IDENT_VTY_KEY_DOC)
+	NEIGHBOR_ADD_CMD CGI_PARAMS " " CELL_AB_VTY_PARAMS,
+	NEIGHBOR_ADD_DOC CGI_DOC CELL_AB_VTY_DOC)
 {
-	struct neighbor_ident_key nik;
-	struct gsm0808_cell_id *cell_id = neighbor_ident_vty_parse_cgi(vty, argv);
-	if (!cell_id)
+	struct neighbor n = {
+		.type = NEIGHBOR_TYPE_CELL_ID,
+		.cell_id.ab_present = true,
+	};
+	if (neighbor_ident_vty_parse_cgi(vty, &n.cell_id.id, argv))
 		return CMD_WARNING;
-	if (!neighbor_ident_vty_parse_key_params(vty, argv + 4, &nik))
-		return CMD_WARNING;
-	return add_remote_or_local_bts(vty, cell_id, &nik);
+	neighbor_ident_vty_parse_arfcn_bsic(&n.cell_id.ab, argv + CGI_ARGC);
+	return add_neighbor(vty, &n);
 }
 
 DEFUN(cfg_neighbor_add_cgi_ps_arfcn_bsic, cfg_neighbor_add_cgi_ps_arfcn_bsic_cmd,
-	NEIGHBOR_ADD_CMD CGI_PS_PARAMS " " NEIGHBOR_IDENT_VTY_KEY_PARAMS,
-	NEIGHBOR_ADD_DOC CGI_PS_DOC NEIGHBOR_IDENT_VTY_KEY_DOC)
+	NEIGHBOR_ADD_CMD CGI_PS_PARAMS " " CELL_AB_VTY_PARAMS,
+	NEIGHBOR_ADD_DOC CGI_PS_DOC CELL_AB_VTY_DOC)
 {
-	struct neighbor_ident_key nik;
-	struct gsm0808_cell_id *cell_id = neighbor_ident_vty_parse_cgi_ps(vty, argv);
-	if (!cell_id)
+	struct neighbor n = {
+		.type = NEIGHBOR_TYPE_CELL_ID,
+		.cell_id.ab_present = true,
+	};
+	if (neighbor_ident_vty_parse_cgi_ps(vty, &n.cell_id.id, argv))
 		return CMD_WARNING;
-	if (!neighbor_ident_vty_parse_key_params(vty, argv + 5, &nik))
-		return CMD_WARNING;
-	return add_remote_or_local_bts(vty, cell_id, &nik);
+	neighbor_ident_vty_parse_arfcn_bsic(&n.cell_id.ab, argv + CGI_PS_ARGC);
+	return add_neighbor(vty, &n);
 }
 
 DEFUN(cfg_neighbor_del_bts_nr, cfg_neighbor_del_bts_nr_cmd,
 	NEIGHBOR_DEL_CMD LOCAL_BTS_PARAMS,
 	NEIGHBOR_DEL_DOC LOCAL_BTS_DOC)
 {
-	return del_local_bts(vty, neighbor_ident_vty_parse_bts_nr(vty, argv));
+	struct neighbor n = {
+		.type = NEIGHBOR_TYPE_BTS_NR,
+		.bts_nr = atoi(argv[0]),
+	};
+	return del_neighbor(vty, &n);
+}
+
+DEFUN(cfg_neighbor_del_lac, cfg_neighbor_del_lac_cmd,
+	NEIGHBOR_DEL_CMD LAC_PARAMS,
+	NEIGHBOR_DEL_DOC LAC_DOC)
+{
+	struct neighbor n = {
+		.type = NEIGHBOR_TYPE_CELL_ID,
+	};
+	if (neighbor_ident_vty_parse_lac(vty, &n.cell_id.id, argv))
+		return CMD_WARNING;
+	return del_neighbor(vty, &n);
+}
+
+DEFUN(cfg_neighbor_del_lac_ci, cfg_neighbor_del_lac_ci_cmd,
+	NEIGHBOR_DEL_CMD LAC_CI_PARAMS,
+	NEIGHBOR_DEL_DOC LAC_CI_DOC)
+{
+	struct neighbor n = {
+		.type = NEIGHBOR_TYPE_CELL_ID,
+	};
+	if (neighbor_ident_vty_parse_lac_ci(vty, &n.cell_id.id, argv))
+		return CMD_WARNING;
+	return del_neighbor(vty, &n);
+}
+
+DEFUN(cfg_neighbor_del_cgi, cfg_neighbor_del_cgi_cmd,
+	NEIGHBOR_DEL_CMD CGI_PARAMS,
+	NEIGHBOR_DEL_DOC CGI_DOC)
+{
+	struct neighbor n = {
+		.type = NEIGHBOR_TYPE_CELL_ID,
+	};
+	if (neighbor_ident_vty_parse_cgi(vty, &n.cell_id.id, argv))
+		return CMD_WARNING;
+	return del_neighbor(vty, &n);
+}
+
+DEFUN(cfg_neighbor_del_cgi_ps, cfg_neighbor_del_cgi_ps_cmd,
+	NEIGHBOR_DEL_CMD CGI_PS_PARAMS,
+	NEIGHBOR_DEL_DOC CGI_PS_DOC)
+{
+	struct neighbor n = {
+		.type = NEIGHBOR_TYPE_CELL_ID,
+	};
+	if (neighbor_ident_vty_parse_cgi_ps(vty, &n.cell_id.id, argv))
+		return CMD_WARNING;
+	return del_neighbor(vty, &n);
 }
 
 DEFUN(cfg_neighbor_del_arfcn_bsic, cfg_neighbor_del_arfcn_bsic_cmd,
-	NEIGHBOR_DEL_CMD NEIGHBOR_IDENT_VTY_KEY_PARAMS,
-	NEIGHBOR_DEL_DOC NEIGHBOR_IDENT_VTY_KEY_DOC)
+	NEIGHBOR_DEL_CMD CELL_AB_VTY_PARAMS,
+	NEIGHBOR_DEL_DOC CELL_AB_VTY_DOC)
 {
-	struct neighbor_ident_key key;
-
-	if (!neighbor_ident_vty_parse_key_params(vty, argv, &key))
-		return CMD_WARNING;
-
-	return del_by_key(vty, &key);
+	struct cell_ab ab;
+	neighbor_ident_vty_parse_arfcn_bsic(&ab, argv);
+	return del_neighbor_by_cell_ab(vty, &ab);
 }
 
 DEFUN(cfg_neighbor_del_all, cfg_neighbor_del_all_cmd,
@@ -584,133 +481,98 @@ DEFUN(cfg_neighbor_bind, cfg_neighbor_bind_cmd,
 	NEIGHBOR_DOC "Bind Neighbor Resolution Service (CTRL interface) to given ip and port\n"
 	IP_STR IPV6_STR "Port to bind the service to [defaults to 4248 if not provided]\n")
 {
-	osmo_talloc_replace_string(g_net, &g_net->neigh_ctrl.addr, argv[0]);
+	osmo_talloc_replace_string(bsc_gsmnet, &bsc_gsmnet->neigh_ctrl.addr, argv[0]);
 	if (argc > 1)
-		g_net->neigh_ctrl.port = atoi(argv[1]);
+		bsc_gsmnet->neigh_ctrl.port = atoi(argv[1]);
 	else
-		g_net->neigh_ctrl.port = OSMO_CTRL_PORT_BSC_NEIGH;
+		bsc_gsmnet->neigh_ctrl.port = OSMO_CTRL_PORT_BSC_NEIGH;
 	return CMD_SUCCESS;
 }
 
 void neighbor_ident_vty_write_network(struct vty *vty, const char *indent)
 {
-	if (g_net->neigh_ctrl.addr)
-		vty_out(vty, "%sneighbor-resolution bind %s %" PRIu16 "%s", indent, g_net->neigh_ctrl.addr,
-			g_net->neigh_ctrl.port, VTY_NEWLINE);
+	if (bsc_gsmnet->neigh_ctrl.addr)
+		vty_out(vty, "%sneighbor-resolution bind %s %" PRIu16 "%s", indent, bsc_gsmnet->neigh_ctrl.addr,
+			bsc_gsmnet->neigh_ctrl.port, VTY_NEWLINE);
 }
 
-
-struct write_neighbor_ident_entry_data {
-	struct vty *vty;
-	const char *indent;
-	struct gsm_bts *bts;
-};
-
-static bool write_neighbor_ident_list(const struct neighbor_ident_key *key,
-				      const struct gsm0808_cell_id_list2 *val,
-				      void *cb_data)
+static int vty_write_cell_id_u(struct vty *vty, enum CELL_IDENT id_discr, const union gsm0808_cell_id_u *cell_id_u)
 {
-	struct write_neighbor_ident_entry_data *d = cb_data;
-	struct vty *vty = d->vty;
-	int i;
+	const struct osmo_cell_global_id *cgi;
+	const struct osmo_cell_global_id_ps *cgi_ps;
 
-	if (d->bts) {
-		if (d->bts->nr != key->from_bts)
-			return true;
-	} else if (key->from_bts != NEIGHBOR_IDENT_KEY_ANY_BTS)
-			return true;
-
-#define NEIGH_BSS_WRITE(fmt, args...) do { \
-		vty_out(vty, "%sneighbor " fmt " arfcn %u ", d->indent, ## args, key->arfcn); \
-		if (key->bsic == BSIC_ANY) \
-			vty_out(vty, "bsic any"); \
-		else \
-			vty_out(vty, "bsic %u", key->bsic & 0x3f); \
-		vty_out(vty, "%s", VTY_NEWLINE); \
-	} while(0)
-
-	switch (val->id_discr) {
+	switch (id_discr) {
 	case CELL_IDENT_LAC:
-		for (i = 0; i < val->id_list_len; i++) {
-			NEIGH_BSS_WRITE("lac %u", val->id_list[i].lac);
-		}
+		vty_out(vty, "lac %u", cell_id_u->lac);
 		break;
 	case CELL_IDENT_LAC_AND_CI:
-		for (i = 0; i < val->id_list_len; i++) {
-			NEIGH_BSS_WRITE("lac-ci %u %u",
-					val->id_list[i].lac_and_ci.lac,
-					val->id_list[i].lac_and_ci.ci);
-		}
+		vty_out(vty, "lac-ci %u %u", cell_id_u->lac_and_ci.lac, cell_id_u->lac_and_ci.ci);
 		break;
 	case CELL_IDENT_WHOLE_GLOBAL:
-		for (i = 0; i < val->id_list_len; i++) {
-			const struct osmo_cell_global_id *cgi = &val->id_list[i].global;
-			NEIGH_BSS_WRITE("cgi %s %s %u %u",
-					osmo_mcc_name(cgi->lai.plmn.mcc),
-					osmo_mnc_name(cgi->lai.plmn.mnc, cgi->lai.plmn.mnc_3_digits),
-					cgi->lai.lac, cgi->cell_identity);
-		}
+		cgi = &cell_id_u->global;
+		vty_out(vty, "cgi %s %s %u %u",
+			osmo_mcc_name(cgi->lai.plmn.mcc),
+			osmo_mnc_name(cgi->lai.plmn.mnc, cgi->lai.plmn.mnc_3_digits),
+			cgi->lai.lac, cgi->cell_identity);
 		break;
 	case CELL_IDENT_WHOLE_GLOBAL_PS:
-		for (i = 0; i < val->id_list_len; i++) {
-			const struct osmo_cell_global_id_ps *cgi_ps = &val->id_list[i].global_ps;
-			NEIGH_BSS_WRITE("cgi-ps %s %s %u %u %u",
-					osmo_mcc_name(cgi_ps->rai.lac.plmn.mcc),
-					osmo_mnc_name(cgi_ps->rai.lac.plmn.mnc, cgi_ps->rai.lac.plmn.mnc_3_digits),
-					cgi_ps->rai.lac.lac, cgi_ps->rai.rac,
-					cgi_ps->cell_identity);
-		}
+		cgi_ps = &cell_id_u->global_ps;
+		vty_out(vty, "cgi-ps %s %s %u %u %u",
+			osmo_mcc_name(cgi_ps->rai.lac.plmn.mcc),
+			osmo_mnc_name(cgi_ps->rai.lac.plmn.mnc, cgi_ps->rai.lac.plmn.mnc_3_digits),
+			cgi_ps->rai.lac.lac, cgi_ps->rai.rac,
+			cgi_ps->cell_identity);
 		break;
 	default:
-		vty_out(vty, "%% Unsupported Cell Identity%s", VTY_NEWLINE);
+		return -1;
 	}
-#undef NEIGH_BSS_WRITE
-
-	return true;
-}
-
-void neighbor_ident_vty_write_remote_bss(struct vty *vty, const char *indent, struct gsm_bts *bts)
-{
-	struct write_neighbor_ident_entry_data d = {
-		.vty = vty,
-		.indent = indent,
-		.bts = bts,
-	};
-
-	neighbor_ident_iter(g_neighbor_cells, write_neighbor_ident_list, &d);
-}
-
-void neighbor_ident_vty_write_local_neighbors(struct vty *vty, const char *indent, struct gsm_bts *bts)
-{
-	struct gsm_bts_ref *neigh;
-
-	llist_for_each_entry(neigh, &bts->local_neighbors, entry) {
-		vty_out(vty, "%sneighbor bts %u%s", indent, neigh->bts->nr, VTY_NEWLINE);
-	}
+	return 0;
 }
 
 void neighbor_ident_vty_write_bts(struct vty *vty, const char *indent, struct gsm_bts *bts)
 {
-	neighbor_ident_vty_write_local_neighbors(vty, indent, bts);
-	neighbor_ident_vty_write_remote_bss(vty, indent, bts);
+	struct neighbor *n;
+
+	llist_for_each_entry(n, &bts->neighbors, entry) {
+		switch (n->type) {
+		case NEIGHBOR_TYPE_BTS_NR:
+			vty_out(vty, "%sneighbor bts %u%s", indent, n->bts_nr, VTY_NEWLINE);
+			break;
+
+		case NEIGHBOR_TYPE_CELL_ID:
+			vty_out(vty, "%sneighbor ", indent);
+			if (vty_write_cell_id_u(vty, n->cell_id.id.id_discr, &n->cell_id.id.id)) {
+				vty_out(vty, "[Unsupported Cell Identity]%s", VTY_NEWLINE);
+				continue;
+			}
+
+			if (n->cell_id.ab_present) {
+				vty_out(vty, " arfcn %u ", n->cell_id.ab.arfcn);
+				if (n->cell_id.ab.bsic == BSIC_ANY)
+					vty_out(vty, "bsic any");
+				else
+					vty_out(vty, "bsic %u", n->cell_id.ab.bsic & 0x3f);
+			}
+			vty_out(vty, "%s", VTY_NEWLINE);
+			break;
+
+		default:
+			/* Ignore anything invalid */
+			break;
+		}
+	}
 }
 
 DEFUN(show_bts_neighbor, show_bts_neighbor_cmd,
-      "show bts <0-255> neighbor " NEIGHBOR_IDENT_VTY_KEY_PARAMS,
+      "show bts <0-255> neighbor " CELL_AB_VTY_PARAMS,
       SHOW_STR "Display information about a BTS\n" "BTS number\n"
       "Query which cell would be the target for this neighbor ARFCN+BSIC\n"
-      NEIGHBOR_IDENT_VTY_KEY_DOC)
+      CELL_AB_VTY_DOC)
 {
-	int found = 0;
-	struct neighbor_ident_key key;
-	struct gsm_bts_ref *neigh;
-	const struct gsm0808_cell_id_list2 *res;
-	struct gsm_bts *bts = gsm_bts_num(g_net, atoi(argv[0]));
-	struct write_neighbor_ident_entry_data d = {
-		.vty = vty,
-		.indent = "% ",
-		.bts = bts,
-	};
+	struct cell_ab ab;
+	struct gsm_bts *local_neighbor = NULL;
+	struct gsm0808_cell_id_list2 remote_neighbors = { 0 };
+	struct gsm_bts *bts = gsm_bts_num(bsc_gsmnet, atoi(argv[0]));
 
 	if (!bts) {
 		vty_out(vty, "%% Error: cannot find BTS '%s'%s", argv[0],
@@ -718,35 +580,41 @@ DEFUN(show_bts_neighbor, show_bts_neighbor_cmd,
 		return CMD_WARNING;
 	}
 
-	if (!neighbor_ident_bts_parse_key_params(vty, bts, &argv[1], &key))
+	neighbor_ident_vty_parse_arfcn_bsic(&ab, &argv[1]);
+
+	switch (resolve_neighbors(&local_neighbor, &remote_neighbors, bts, &ab, true)) {
+	case 0:
+		break;
+	case -ENOENT:
+		vty_out(vty, "%% No entry for BTS %u -> %s%s", bts->nr, cell_ab_to_str_c(OTC_SELECT, &ab), VTY_NEWLINE);
 		return CMD_WARNING;
-
-	/* Is there a local BTS that matches the key? */
-	llist_for_each_entry(neigh, &bts->local_neighbors, entry) {
-		if (!neighbor_ident_key_matches_bts(&key, neigh->bts))
-			continue;
-		vty_out(vty, "%% %s resolves to local BTS %u lac-ci %u %u%s",
-			neighbor_ident_key_name(&key), neigh->bts->nr, neigh->bts->location_area_code,
-			neigh->bts->cell_identity, VTY_NEWLINE);
-		found++;
+	default:
+		vty_out(vty, "%% Error while resolving neighbors BTS %u -> %s%s", bts->nr,
+			cell_ab_to_str_c(OTC_SELECT, &ab), VTY_NEWLINE);
+		return CMD_WARNING;
 	}
 
-	res = neighbor_ident_get(g_neighbor_cells, &key);
-	if (res) {
-		write_neighbor_ident_list(&key, res, &d);
-		found++;
+	/* From successful rc == 0, there is exactly either a local_neighbor or a nonempty remote_neighbors list. */
+
+	vty_out(vty, "%% BTS %u -> %s resolves to", bts->nr, cell_ab_to_str_c(OTC_SELECT, &ab));
+	if (local_neighbor) {
+		vty_out(vty, " local BTS %u lac-ci %u %u%s",
+			local_neighbor->nr,
+			local_neighbor->location_area_code,
+			local_neighbor->cell_identity, VTY_NEWLINE);
 	}
 
-	if (!found)
-		vty_out(vty, "%% No entry for %s%s", neighbor_ident_key_name(&key), VTY_NEWLINE);
+	if (remote_neighbors.id_list_len) {
+		vty_out(vty, " remote-BSS neighbors: %s%s",
+			gsm0808_cell_id_list_name_c(OTC_SELECT, &remote_neighbors),
+			VTY_NEWLINE);
+	}
 
 	return CMD_SUCCESS;
 }
 
-void neighbor_ident_vty_init(struct gsm_network *net, struct neighbor_ident_list *nil)
+void neighbor_ident_vty_init()
 {
-	g_net = net;
-	g_neighbor_cells = nil;
 	install_element(GSMNET_NODE, &cfg_neighbor_bind_cmd);
 
 	install_element(BTS_NODE, &cfg_neighbor_add_bts_nr_cmd);
@@ -759,6 +627,10 @@ void neighbor_ident_vty_init(struct gsm_network *net, struct neighbor_ident_list
 	install_element(BTS_NODE, &cfg_neighbor_add_cgi_arfcn_bsic_cmd);
 	install_element(BTS_NODE, &cfg_neighbor_add_cgi_ps_arfcn_bsic_cmd);
 	install_element(BTS_NODE, &cfg_neighbor_del_bts_nr_cmd);
+	install_element(BTS_NODE, &cfg_neighbor_del_lac_cmd);
+	install_element(BTS_NODE, &cfg_neighbor_del_lac_ci_cmd);
+	install_element(BTS_NODE, &cfg_neighbor_del_cgi_cmd);
+	install_element(BTS_NODE, &cfg_neighbor_del_cgi_ps_cmd);
 	install_element(BTS_NODE, &cfg_neighbor_del_arfcn_bsic_cmd);
 	install_element(BTS_NODE, &cfg_neighbor_del_all_cmd);
 	install_element_ve(&show_bts_neighbor_cmd);

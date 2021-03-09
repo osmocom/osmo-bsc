@@ -39,6 +39,7 @@
 #include <search.h>
 
 void *ctx = NULL;
+struct gsm_network *bsc_gsmnet = NULL;
 
 enum test {
 	TEST_SCAN_TO_BTS,
@@ -125,6 +126,7 @@ static void test_scan(void)
 	struct gsm_network *net = gsm_network_init(ctx);
 	struct gsm_subscriber_connection *conn = talloc_zero(net, struct gsm_subscriber_connection);
 
+	bsc_gsmnet = net;
 	conn->network = net;
 
 	/* start testing with proper messages */
@@ -176,6 +178,7 @@ out:
 	}
 
 	talloc_free(net);
+	bsc_gsmnet = NULL;
 }
 
 static const struct log_info_cat log_categories[] = {

@@ -201,8 +201,7 @@ static void attempt_handover(struct gsm_meas_rep *mr)
 	req = (struct handover_out_req){
 		.from_hodec_id = HODEC1,
 		.old_lchan = mr->lchan,
-		.target_nik = {
-			.from_bts = bts->nr,
+		.target_cell_ab = {
 			.arfcn = best_cell->arfcn,
 			.bsic = best_cell->bsic,
 		},

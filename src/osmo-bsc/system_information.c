@@ -602,25 +602,6 @@ int generate_cell_chan_list(uint8_t *chan_list, struct gsm_bts *bts)
 	return bitvec2freq_list(chan_list, bv, bts, false, false);
 }
 
-struct generate_bcch_chan_list__ni_iter_data {
-	struct gsm_bts *bts;
-	struct bitvec *bv;
-};
-
-static bool generate_bcch_chan_list__ni_iter_cb(const struct neighbor_ident_key *key,
-						const struct gsm0808_cell_id_list2 *val,
-						void *cb_data)
-{
-	struct generate_bcch_chan_list__ni_iter_data *data = cb_data;
-
-	if (key->from_bts != NEIGHBOR_IDENT_KEY_ANY_BTS
-	    && key->from_bts != data->bts->nr)
-		return true;
-
-	bitvec_set_bit_pos(data->bv, key->arfcn, 1);
-	return true;
-}
-
 /*! generate a cell channel list as per Section 10.5.2.22 of 04.08
  *  \param[out] chan_list caller-provided output buffer
  *  \param[in] bts BTS descriptor used for input data
@@ -646,7 +627,7 @@ static int generate_bcch_chan_list(uint8_t *chan_list, struct gsm_bts *bts,
 		/* Zero-initialize the bit-vector */
 		memset(bv->data, 0, bv->data_len);
 
-		if (llist_empty(&bts->local_neighbors)) {
+		if (llist_empty(&bts->neighbors)) {
 			/* There are no explicit neighbors, assume all BTS are. */
 			llist_for_each_entry(cur_bts, &bts->network->bts_list, list) {
 				if (cur_bts == bts)
@@ -655,20 +636,20 @@ static int generate_bcch_chan_list(uint8_t *chan_list, struct gsm_bts *bts,
 			}
 		} else {
 			/* Only add explicit neighbor cells */
-			struct gsm_bts_ref *neigh;
-			llist_for_each_entry(neigh, &bts->local_neighbors, entry) {
-				bitvec_set_bit_pos(bv, neigh->bts->c0->arfcn, 1);
+			struct neighbor *n;
+			llist_for_each_entry(n, &bts->neighbors, entry) {
+				if (n->type == NEIGHBOR_TYPE_CELL_ID && n->cell_id.ab_present) {
+					bitvec_set_bit_pos(bv, n->cell_id.ab.arfcn, 1);
+				} else {
+					struct gsm_bts *neigh_bts;
+					if (resolve_local_neighbor(&neigh_bts, bts, n) == 0)
+						bitvec_set_bit_pos(bv, n->cell_id.ab.arfcn, 1);
+					else
+						LOGP(DHO, LOGL_ERROR,
+						     "Neither local nor remote neighbor: BTS %u -> %s\n",
+						     bts->nr, neighbor_to_str_c(OTC_SELECT, n));
+				}
 			}
-		}
-
-		/* Also add neighboring BSS cells' ARFCNs */
-		{
-			struct generate_bcch_chan_list__ni_iter_data data = {
-				.bv = bv,
-				.bts = bts,
-			};
-			neighbor_ident_iter(bts->network->neighbor_bss_cells,
-					    generate_bcch_chan_list__ni_iter_cb, &data);
 		}
 	}
 

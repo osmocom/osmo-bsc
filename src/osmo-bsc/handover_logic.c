@@ -126,7 +126,7 @@ int bts_handover_count(struct gsm_bts *bts, int ho_scopes)
 	return count;
 }
 
-/* Find out a handover target cell for the given neighbor_ident_key,
+/* Find out a handover target cell for the given arfcn_bsic,
  * and make sure there are no ambiguous matches.
  * Given a source BTS and a target ARFCN+BSIC, find which cell is the right handover target.
  * ARFCN+BSIC may be re-used within and/or across BSS, so make sure that only those cells that are explicitly
@@ -138,22 +138,20 @@ int bts_handover_count(struct gsm_bts *bts, int ho_scopes)
  * to be found.
  */
 int find_handover_target_cell(struct gsm_bts **local_target_cell_p,
-			      const struct gsm0808_cell_id_list2 **remote_target_cell_p,
-			      struct gsm_subscriber_connection *conn, const struct neighbor_ident_key *search_for,
+			      struct gsm0808_cell_id_list2 *remote_target_cells,
+			      struct gsm_subscriber_connection *conn,
+			      const struct cell_ab *search_for,
 			      bool log_errors)
 {
 	struct gsm_network *net = conn->network;
-	struct gsm_bts *from_bts;
 	struct gsm_bts *local_target_cell = NULL;
-	const struct gsm0808_cell_id_list2 *remote_target_cell = NULL;
-	struct gsm_bts_ref *neigh;
 	bool ho_active;
 	bool as_active;
+	struct gsm_bts *from_bts = conn->lchan->ts->trx->bts;
+	*remote_target_cells = (struct gsm0808_cell_id_list2){};
 
 	if (local_target_cell_p)
 		*local_target_cell_p = NULL;
-	if (remote_target_cell_p)
-		*remote_target_cell_p = NULL;
 
 	if (!search_for) {
 		if (log_errors)
@@ -161,7 +159,6 @@ int find_handover_target_cell(struct gsm_bts **local_target_cell_p,
 		return -EINVAL;
 	}
 
-	from_bts = gsm_bts_num(net, search_for->from_bts);
 	if (!from_bts) {
 		if (log_errors)
 			LOG_HO(conn, LOGL_ERROR, "Handover without source cell\n");
@@ -174,12 +171,11 @@ int find_handover_target_cell(struct gsm_bts **local_target_cell_p,
 	if (!ho_active && !as_active) {
 		if (log_errors)
 			LOG_HO(conn, LOGL_ERROR, "Cannot start Handover: Handover and Assignment disabled for this source cell (%s)\n",
-			       neighbor_ident_key_name(search_for));
+			       cell_ab_to_str_c(OTC_SELECT, search_for));
 		return -EINVAL;
 	}
 
-	if (llist_empty(&from_bts->local_neighbors)
-	    && !neighbor_ident_bts_entry_exists(from_bts->nr)) {
+	if (llist_empty(&from_bts->neighbors)) {
 		/* No explicit neighbor entries exist for this BTS. Hence apply the legacy default behavior that all
 		 * local cells are neighbors. */
 		struct gsm_bts *bts;
@@ -192,15 +188,16 @@ int find_handover_target_cell(struct gsm_bts **local_target_cell_p,
 		for (i = 0; i < 2; i++) {
 			bool exact_match = !i;
 			llist_for_each_entry(bts, &net->bts_list, list) {
-				struct neighbor_ident_key bts_key = *bts_ident_key(bts);
-				if (neighbor_ident_key_match(&bts_key, search_for, exact_match)) {
+				struct cell_ab bts_ab;
+				bts_cell_ab(&bts_ab, bts);
+				if (cell_ab_match(&bts_ab, search_for, exact_match)) {
 					if (local_target_cell) {
 						if (log_errors)
 							LOG_HO(conn, LOGL_ERROR,
 							       "NEIGHBOR CONFIGURATION ERROR: Multiple local cells match %s"
 							       " (BTS %d and BTS %d)."
 							       " Aborting Handover because of ambiguous network topology.\n",
-							       neighbor_ident_key_name(search_for),
+							       cell_ab_to_str_c(OTC_SELECT, search_for),
 							       local_target_cell->nr, bts->nr);
 						return -EINVAL;
 					}
@@ -214,7 +211,7 @@ int find_handover_target_cell(struct gsm_bts **local_target_cell_p,
 		if (!local_target_cell) {
 			if (log_errors)
 				LOG_HO(conn, LOGL_ERROR, "Cannot Handover, no cell matches %s\n",
-				       neighbor_ident_key_name(search_for));
+				       cell_ab_to_str_c(OTC_SELECT, search_for));
 			return -EINVAL;
 		}
 
@@ -222,14 +219,14 @@ int find_handover_target_cell(struct gsm_bts **local_target_cell_p,
 			if (log_errors)
 				LOG_HO(conn, LOGL_ERROR,
 				       "Cannot start re-assignment, Assignment disabled for this cell (%s)\n",
-				       neighbor_ident_key_name(search_for));
+				       cell_ab_to_str_c(OTC_SELECT, search_for));
 			return -EINVAL;
 		}
 		if (local_target_cell != from_bts && !ho_active) {
 			if (log_errors)
 				LOG_HO(conn, LOGL_ERROR,
 				       "Cannot start Handover, Handover disabled for this cell (%s)\n",
-				       neighbor_ident_key_name(search_for));
+				       cell_ab_to_str_c(OTC_SELECT, search_for));
 			return -EINVAL;
 		}
 
@@ -243,81 +240,60 @@ int find_handover_target_cell(struct gsm_bts **local_target_cell_p,
 
 	LOG_HO(conn, LOGL_DEBUG, "There are explicit neighbors configured for this cell\n");
 
-	/* Iterate explicit local neighbor cells */
-	llist_for_each_entry(neigh, &from_bts->local_neighbors, entry) {
-		struct gsm_bts *neigh_bts = neigh->bts;
-		struct neighbor_ident_key neigh_bts_key = *bts_ident_key(neigh_bts);
-		neigh_bts_key.from_bts = from_bts->nr;
-
-		LOG_HO(conn, LOGL_DEBUG, "Local neighbor %s\n", neighbor_ident_key_name(&neigh_bts_key));
-
-		if (!neighbor_ident_key_match(&neigh_bts_key, search_for, true)) {
-			LOG_HO(conn, LOGL_DEBUG, "Doesn't match %s\n", neighbor_ident_key_name(search_for));
-			continue;
-		}
-
-		if (local_target_cell) {
-			if (log_errors)
-				LOG_HO(conn, LOGL_ERROR,
-				       "NEIGHBOR CONFIGURATION ERROR: Multiple BTS match %s (BTS %d and BTS %d)."
-				       " Aborting Handover because of ambiguous network topology.\n",
-				       neighbor_ident_key_name(search_for), local_target_cell->nr, neigh_bts->nr);
-			return -EINVAL;
-		}
-
-		local_target_cell = neigh_bts;
+	if (resolve_neighbors(&local_target_cell, remote_target_cells, from_bts, search_for, log_errors)) {
+		LOG_HO(conn, LOGL_ERROR, "Cannot handover BTS %u -> %s: neighbor unknown\n",
+		       from_bts->nr, cell_ab_to_str_c(OTC_SELECT, search_for));
+		return -ENOENT;
 	}
 
-	/* Any matching remote-BSS neighbor cell? */
-	remote_target_cell = neighbor_ident_get(net->neighbor_bss_cells, search_for);
+	/* We have found possibly a local_target_cell (when != NULL), and / or remote_target_cells (when .id_list_len >
+	 * 0). Figure out what to do with them. */
 
-	if (remote_target_cell)
-		LOG_HO(conn, LOGL_DEBUG, "Found remote target cell %s\n",
-		       gsm0808_cell_id_list_name(remote_target_cell));
+	if (remote_target_cells->id_list_len)
+		LOG_HO(conn, LOGL_DEBUG, "Found remote target cell(s) %s\n",
+		       gsm0808_cell_id_list_name_c(OTC_SELECT, remote_target_cells));
 
-	if (local_target_cell && remote_target_cell) {
+	if (local_target_cell && remote_target_cells->id_list_len) {
 		if (log_errors)
-			LOG_HO(conn, LOGL_ERROR, "NEIGHBOR CONFIGURATION ERROR: Both a local and a remote-BSS cell match %s"
-			       " (BTS %d and remote %s)."
+			LOG_HO(conn, LOGL_ERROR, "NEIGHBOR CONFIGURATION ERROR: Both a local and a remote-BSS cell"
+			       " match BTS %u -> %s (BTS %d and remote %s)."
 			       " Aborting Handover because of ambiguous network topology.\n",
-			       neighbor_ident_key_name(search_for), local_target_cell->nr,
-			       gsm0808_cell_id_list_name(remote_target_cell));
+			       from_bts->nr, cell_ab_to_str_c(OTC_SELECT, search_for), local_target_cell->bts_nr,
+			       gsm0808_cell_id_list_name_c(OTC_SELECT, remote_target_cells));
 		return -EINVAL;
 	}
 
 	if (local_target_cell == from_bts && !as_active) {
 		if (log_errors)
 			LOG_HO(conn, LOGL_ERROR,
-			       "Cannot start re-assignment, Assignment disabled for this cell (%s)\n",
-			       neighbor_ident_key_name(search_for));
+			       "Cannot start re-assignment, Assignment disabled for this cell (BTS %u)\n",
+			       from_bts->nr);
 		return -EINVAL;
 	}
 
 	if (((local_target_cell && local_target_cell != from_bts)
-	     || remote_target_cell)
+	     || remote_target_cells->id_list_len)
 	    && !ho_active) {
 		if (log_errors)
 			LOG_HO(conn, LOGL_ERROR,
-			       "Cannot start Handover, Handover disabled for this cell (%s)\n",
-			       neighbor_ident_key_name(search_for));
+			       "Cannot start Handover, Handover disabled for this cell (BTS %u -> %s)\n",
+			       from_bts->bts_nr, cell_ab_to_str_c(OTC_SELECT, search_for));
 		return -EINVAL;
 	}
 
+	/* Return the result. After above checks, only one of local or remote cell has been found. */
 	if (local_target_cell) {
 		if (local_target_cell_p)
 			*local_target_cell_p = local_target_cell;
 		return 0;
 	}
 
-	if (remote_target_cell) {
-		if (remote_target_cell_p)
-			*remote_target_cell_p = remote_target_cell;
+	if (remote_target_cells->id_list_len)
 		return 0;
-	}
 
 	if (log_errors)
 		LOG_HO(conn, LOGL_ERROR, "Cannot handover %s: neighbor unknown\n",
-		       neighbor_ident_key_name(search_for));
+		       cell_ab_to_str_c(OTC_SELECT, search_for));
 
 	return -ENODEV;
 }

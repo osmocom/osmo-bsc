@@ -31,7 +31,6 @@
 #include <osmocom/abis/e1_input.h>
 #include <osmocom/bsc/meas_rep.h>
 #include <osmocom/bsc/acc.h>
-#include <osmocom/bsc/neighbor_ident.h>
 #include <osmocom/bsc/osmux.h>
 
 #define GSM_T3122_DEFAULT 10
@@ -174,10 +173,16 @@ extern const struct value_string handover_scope_names[];
 inline static const char *handover_scope_name(enum handover_scope val)
 { return get_value_string(handover_scope_names, val); }
 
+/* Cell ARFCN + BSIC. */
+struct cell_ab {
+	uint16_t arfcn;
+	uint8_t bsic;
+};
+
 struct handover_out_req {
 	enum hodec_id from_hodec_id;
 	struct gsm_lchan *old_lchan;
-	struct neighbor_ident_key target_nik;
+	struct cell_ab target_cell_ab;
 	enum gsm_chan_t new_lchan_type; /*< leave GSM_LCHAN_NONE to use same as old_lchan */
 };
 
@@ -205,7 +210,7 @@ struct handover {
 	enum hodec_id from_hodec_id;
 	enum handover_scope scope;
 	enum gsm_chan_t new_lchan_type;
-	struct neighbor_ident_key target_cell;
+	struct cell_ab target_cell_ab;
 
 	/* For inter-BSC handover, this may reflect more than one Cell ID. Must also be set for intra-BSC handover,
 	 * because it is used as key for penalty timers (e.g. in handover decision 2). */
@@ -850,12 +855,6 @@ struct load_counter {
 	unsigned int used;
 };
 
-/* Useful to track N-N relations between BTS, for example neighbors. */
-struct gsm_bts_ref {
-	struct llist_head entry;
-	struct gsm_bts *bts;
-};
-
 /* A single Page of a SMSCB message */
 struct bts_smscb_page {
 	/* SMSCB message we're part of */
@@ -1219,8 +1218,6 @@ struct gsm_network {
 		struct osmo_tdef *tdefs;
 	} mgw;
 
-	/* Remote BSS Cell Identifier Lists */
-	struct neighbor_ident_list *neighbor_bss_cells;
 	/* Remote BSS resolution sevice (CTRL iface) */
 	struct {
 		char *addr;

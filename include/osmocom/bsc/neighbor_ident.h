@@ -7,62 +7,84 @@
 #include <osmocom/core/linuxlist.h>
 #include <osmocom/ctrl/control_cmd.h>
 
+#include <osmocom/bsc/gsm_data.h>
+
 struct vty;
 struct gsm_network;
 struct gsm_bts;
-struct neighbor_ident_list;
 struct gsm0808_cell_id_list2;
 
 #define NEIGHBOR_IDENT_KEY_ANY_BTS -1
 
 #define BSIC_ANY 0xff
 
-struct neighbor_ident_key {
-	int from_bts; /*< BTS nr 0..255 or NEIGHBOR_IDENT_KEY_ANY_BTS */
-	uint16_t arfcn;
-	uint8_t bsic;
+enum neighbor_type {
+	NEIGHBOR_TYPE_UNSET = 0,
+	NEIGHBOR_TYPE_BTS_NR = 1,
+	NEIGHBOR_TYPE_CELL_ID = 2,
 };
 
-const char *neighbor_ident_key_name(const struct neighbor_ident_key *ni_key);
+/* One line of VTY neighbor configuration as entered by the user.
+ * One of three variants:
+ *
+ * - just the local-BSS neighbor BTS nr:
+ *     neighbor bts 123
+ *
+ * - a neighbor cell identifier *without* ARFCN+BSIC:
+ *     neighbor (lac|lac-ci|cgi|cgi-ps) 1 2 3...
+ *   This is an elaborate / BTS-nr-agnostic way of indicating a local-BSS neighbor cell.
+ *
+ * - a neighbor cell identifier *with* ARFCN+BSIC:
+ *     neighbor (lac|lac-ci|cgi|cgi-ps) 1 2 3... arfcn 456 bsic (23|any)
+ *   This can either be
+ *   - a remote-BSS neighbor cell, or
+ *   - a super elaborate way of indicating a local-BSS neighbor, if this cell id exists in the local BSS.
+ */
+struct neighbor {
+	struct llist_head entry;
 
-struct neighbor_ident_list *neighbor_ident_init(void *talloc_ctx);
-void neighbor_ident_free(struct neighbor_ident_list *nil);
+	enum neighbor_type type;
+	union {
+		uint8_t bts_nr;
+		struct {
+			struct gsm0808_cell_id id;
+			bool ab_present;
+			struct cell_ab ab;
+		} cell_id;
+	};
+};
 
-bool neighbor_ident_key_match(const struct neighbor_ident_key *entry,
-			      const struct neighbor_ident_key *search_for,
-			      bool exact_match);
+int resolve_local_neighbor(struct gsm_bts **local_neighbor_p, const struct gsm_bts *from_bts,
+			   const struct neighbor *neighbor);
+int resolve_remote_neighbors(struct gsm_bts *from_bts, const struct cell_ab *target_ab);
 
-int neighbor_ident_add(struct neighbor_ident_list *nil, const struct neighbor_ident_key *key,
-		       const struct gsm0808_cell_id_list2 *val);
-const struct gsm0808_cell_id_list2 *neighbor_ident_get(const struct neighbor_ident_list *nil,
-						       const struct neighbor_ident_key *key);
-bool neighbor_ident_del(struct neighbor_ident_list *nil, const struct neighbor_ident_key *key);
-void neighbor_ident_clear(struct neighbor_ident_list *nil);
+int cell_ab_to_str_buf(char *buf, size_t buflen, const struct cell_ab *cell);
+char *cell_ab_to_str_c(void *ctx, const struct cell_ab *cell);
 
-void neighbor_ident_iter(const struct neighbor_ident_list *nil,
-			 bool (* iter_cb )(const struct neighbor_ident_key *key,
-					   const struct gsm0808_cell_id_list2 *val,
-					   void *cb_data),
-			 void *cb_data);
+bool cell_ab_match(const struct cell_ab *entry, const struct cell_ab *search_for, bool exact_match);
+bool cell_ab_valid(const struct cell_ab *cell);
 
-struct neighbor_ident_key *bts_ident_key(const struct gsm_bts *bts);
+int neighbor_to_str_buf(char *buf, size_t buflen, const struct neighbor *n);
+char *neighbor_to_str_c(void *ctx, const struct neighbor *n);
+bool neighbor_same(const struct neighbor *a, const struct neighbor *b, bool check_cell_ab);
 
-void neighbor_ident_vty_init(struct gsm_network *net, struct neighbor_ident_list *nil);
+void bts_cell_ab(struct cell_ab *arfcn_bsic, const struct gsm_bts *bts);
+
+int resolve_neighbors(struct gsm_bts **local_neighbor_p, struct gsm0808_cell_id_list2 *remote_neighbors,
+		      struct gsm_bts *from_bts, const struct cell_ab *target_ab, bool log_errors);
+
+void neighbor_ident_vty_init();
 void neighbor_ident_vty_write_bts(struct vty *vty, const char *indent, struct gsm_bts *bts);
 void neighbor_ident_vty_write_network(struct vty *vty, const char *indent);
 
-bool neighbor_ident_bts_entry_exists(uint8_t from_bts);
+int neighbors_check_cfg();
 
-#define NEIGHBOR_IDENT_VTY_KEY_PARAMS "arfcn <0-1023> bsic (<0-63>|any)"
-#define NEIGHBOR_IDENT_VTY_KEY_DOC \
+#define CELL_AB_VTY_PARAMS "arfcn <0-1023> bsic (<0-63>|any)"
+#define CELL_AB_VTY_DOC \
 	"ARFCN of neighbor cell\n" "ARFCN value\n" \
 	"BSIC of neighbor cell\n" "BSIC value\n" \
 	"for all BSICs / use any BSIC in this ARFCN\n"
-bool neighbor_ident_vty_parse_key_params(struct vty *vty, const char **argv,
-					 struct neighbor_ident_key *key);
-bool neighbor_ident_bts_parse_key_params(struct vty *vty, struct gsm_bts *bts, const char **argv,
-					 struct neighbor_ident_key *key);
-
+void neighbor_ident_vty_parse_arfcn_bsic(struct cell_ab *ab, const char **argv);
 
 struct ctrl_handle *neighbor_controlif_setup(struct gsm_network *net);
 int neighbor_ctrl_cmds_install(struct gsm_network *net);

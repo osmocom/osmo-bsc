@@ -1881,8 +1881,8 @@ static int trigger_ho_or_as(struct vty *vty, struct gsm_lchan *from_lchan, struc
 		struct handover_out_req req = {
 			.from_hodec_id = HODEC_USER,
 			.old_lchan = from_lchan,
-			.target_nik = *bts_ident_key(to_bts),
 		};
+		bts_cell_ab(&req.target_cell_ab, to_bts);
 		handover_request(&req);
 	}
 	return CMD_SUCCESS;
@@ -2075,14 +2075,15 @@ DEFUN(assignment_any, assignment_any_cmd,
 }
 
 DEFUN(handover_any_to_arfcn_bsic, handover_any_to_arfcn_bsic_cmd,
-      "handover any to " NEIGHBOR_IDENT_VTY_KEY_PARAMS,
+      "handover any to " CELL_AB_VTY_PARAMS,
       MANUAL_HANDOVER_STR
       "Pick any actively used TCH/F or TCH/H lchan to handover to another cell."
       " This is likely to fail outside of a lab setup where you are certain that"
       " all MS are able to see the target cell.\n"
       "'to'\n"
-      NEIGHBOR_IDENT_VTY_KEY_DOC)
+      CELL_AB_VTY_DOC)
 {
+	struct cell_ab ab = {};
 	struct handover_out_req req;
 	struct gsm_lchan *from_lchan;
 
@@ -2095,12 +2096,8 @@ DEFUN(handover_any_to_arfcn_bsic, handover_any_to_arfcn_bsic_cmd,
 		.old_lchan = from_lchan,
 	};
 
-	if (!neighbor_ident_bts_parse_key_params(vty, from_lchan->ts->trx->bts,
-						 argv, &req.target_nik)) {
-		vty_out(vty, "%% BTS %u does not know about this neighbor%s",
-			from_lchan->ts->trx->bts->nr, VTY_NEWLINE);
-		return CMD_WARNING;
-	}
+	neighbor_ident_vty_parse_arfcn_bsic(&ab, argv);
+	req.target_cell_ab = ab;
 
 	handover_request(&req);
 	return CMD_SUCCESS;
@@ -7775,7 +7772,7 @@ int bsc_vty_init(struct gsm_network *network)
 	install_element(BTS_NODE, &cfg_bts_rep_no_ul_dl_sacch_cmd);
 	install_element(BTS_NODE, &cfg_bts_rep_rxqual_cmd);
 
-	neighbor_ident_vty_init(network, network->neighbor_bss_cells);
+	neighbor_ident_vty_init();
 	/* See also handover commands added on bts level from handover_vty.c */
 
 	install_element(BTS_NODE, &cfg_bts_power_ctrl_cmd);
