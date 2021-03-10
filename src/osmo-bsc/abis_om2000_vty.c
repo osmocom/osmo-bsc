@@ -81,6 +81,7 @@ static int dummy_config_write(struct vty *v)
 				"Central Function\n"	\
 				"Transmitter\n"		\
 				"Receiver\n"
+#define OM2K_VTY_HELP "Configure OM2K specific parameters\n"
 
 DEFUN(om2k_class_inst, om2k_class_inst_cmd,
 	"bts <0-255> om2000 class " OM2K_OBJCLASS_VTY
@@ -475,10 +476,31 @@ DEFUN_USRATTR(cfg_bts_alt_mode, cfg_bts_alt_mode_cmd,
 	return CMD_SUCCESS;
 }
 
+DEFUN_USRATTR(cfg_bts_om2k_sync, cfg_bts_om2k_sync_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_OML_LINK),
+	      "om2000 sync-source (internal|external)",
+	      OM2K_VTY_HELP
+	      "TF Synchronization Source\n"
+	      "Use Internal (E1)\n"
+	      "USe External (GPS)\n")
+{
+	struct gsm_bts *bts = vty->index;
+	if (bts->type != GSM_BTS_TYPE_RBS2000) {
+		vty_out(vty, "%% Command only works for RBS2000%s",
+			VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+	if (!strcmp(argv[0], "internal"))
+		bts->rbs2000.sync_src = OM2K_SYNC_SRC_INTERNAL;
+	else if (!strcmp(argv[0], "external"))
+		bts->rbs2000.sync_src = OM2K_SYNC_SRC_EXTERNAL;
+	return CMD_SUCCESS;
+}
+
 DEFUN_USRATTR(cfg_bts_om2k_version_limit, cfg_bts_om2k_version_limit_cmd,
 	      X(BSC_VTY_ATTR_RESTART_ABIS_OML_LINK),
 	      "om2000 version-limit (oml|rsl) gen <0-99> rev <0-99>",
-	      "Configure OM2K specific parameters\n"
+	      OM2K_VTY_HELP
 	      "Configure optional maximum protocol version to negotiate\n"
 	      "Limit OML IWD version\n" "Limit RSL IWD version\n"
 	      "Generation limit\n"
@@ -656,6 +678,10 @@ void abis_om2k_config_write_bts(struct vty *vty, struct gsm_bts *bts)
 				(bts->rbs2000.om2k_version[i].limit >> 8),
 				(bts->rbs2000.om2k_version[i].limit & 0xff),
 				VTY_NEWLINE);
+	vty_out(vty, "  om2000 sync-source %s%s",
+		bts->rbs2000.sync_src != OM2K_SYNC_SRC_EXTERNAL
+		? "internal" : "external",
+		VTY_NEWLINE);
 }
 
 static void vty_dump_om2k_mo(struct vty *vty, const struct om2k_mo *mo, const char *pfx)
@@ -755,6 +781,7 @@ int abis_om2k_vty_init(void)
 
 	install_element(BTS_NODE, &cfg_bts_is_conn_list_cmd);
 	install_element(BTS_NODE, &cfg_bts_alt_mode_cmd);
+	install_element(BTS_NODE, &cfg_bts_om2k_sync_cmd);
 	install_element(BTS_NODE, &cfg_bts_om2k_version_limit_cmd);
 	install_element(BTS_NODE, &cfg_om2k_con_group_cmd);
 	install_element(BTS_NODE, &del_om2k_con_group_cmd);

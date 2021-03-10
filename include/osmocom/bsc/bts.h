@@ -15,6 +15,7 @@
 #include "osmocom/bsc/gsm_data.h"
 #include "osmocom/bsc/bts_trx.h"
 #include "osmocom/bsc/bts_sm.h"
+#include "osmocom/bsc/abis_om2000.h"
 
 enum bts_counter_id {
 	BTS_CTR_CHREQ_TOTAL,
@@ -378,6 +379,7 @@ struct gsm_bts {
 				uint16_t limit;
 				uint16_t active;
 			} om2k_version[16];
+			enum om2k_sync_src sync_src;
 		} rbs2000;
 		struct {
 			uint8_t bts_type;

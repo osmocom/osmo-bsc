@@ -43,6 +43,11 @@ enum om2k_mo_state {
 	OM2K_MO_S_DISABLED,
 };
 
+enum om2k_sync_src {
+	OM2K_SYNC_SRC_INTERNAL	= 0x00,
+	OM2K_SYNC_SRC_EXTERNAL	= 0x01,
+};
+
 /* on-wire format for IS conn group */
 struct om2k_is_conn_grp {
 	uint16_t icp1;

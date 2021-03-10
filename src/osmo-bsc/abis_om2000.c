@@ -1389,7 +1389,7 @@ int abis_om2k_tx_tf_conf_req(struct gsm_bts *bts)
 	fill_om2k_hdr(o2k, &bts->rbs2000.tf.om2k_mo.addr, OM2K_MSGT_TF_CONF_REQ);
 
 	msgb_tv_put(msg, OM2K_DEI_TF_MODE, OM2K_TF_MODE_STANDALONE);
-	msgb_tv_put(msg, OM2K_DEI_TF_SYNC_SRC, 0x00);
+	msgb_tv_put(msg, OM2K_DEI_TF_SYNC_SRC, bts->rbs2000.sync_src);
 	msgb_tv_fixed_put(msg, OM2K_DEI_FS_OFFSET, sizeof(fs_offset_undef), fs_offset_undef);
 
 	DEBUGP(DNM, "Tx MO=%s %s\n", abis_om2k_mo_name(&bts->rbs2000.tf.om2k_mo.addr),
@@ -3103,6 +3103,7 @@ void abis_om2k_bts_init(struct gsm_bts *bts)
 
 	bts_fi = om2k_bts_fsm_alloc(bts);
 	bts->rbs2000.bts_fi = bts_fi;
+	bts->rbs2000.sync_src = OM2K_SYNC_SRC_INTERNAL;
 
 	om2k_mo_init(&bts->rbs2000.cf.om2k_mo, OM2K_MO_CLS_CF, bts->nr, 0xFF, 0);
 	om2k_mo_fsm_alloc(bts_fi, OM2K_BTS_EVT_CF_DONE, bts->c0, &bts->rbs2000.cf.om2k_mo);
