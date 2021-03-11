@@ -48,6 +48,12 @@ enum om2k_sync_src {
 	OM2K_SYNC_SRC_EXTERNAL	= 0x01,
 };
 
+enum om2k_rx_diversity {
+	OM2K_RX_DIVERSITY_B	= 0x01,
+	OM2K_RX_DIVERSITY_A	= 0x02,
+	OM2K_RX_DIVERSITY_AB	= 0x03,
+};
+
 /* on-wire format for IS conn group */
 struct om2k_is_conn_grp {
 	uint16_t icp1;
@@ -151,6 +157,7 @@ int abis_om2k_vty_init(void);
 
 struct vty;
 void abis_om2k_config_write_bts(struct vty *vty, struct gsm_bts *bts);
+void abis_om2k_config_write_trx(struct vty *vty, struct gsm_bts_trx *trx);
 
 const char *abis_om2k_mo_name(const struct abis_om2k_mo *mo);
 

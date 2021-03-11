@@ -1344,7 +1344,7 @@ int abis_om2k_tx_rx_conf_req(struct gsm_bts_trx *trx)
 
 	/* OM2K_DEI_FREQ_SPEC_RX: Using trx_nr as "RX address" only works for single MCTR case */
 	msgb_tv16_put(msg, OM2K_DEI_FREQ_SPEC_RX, 0x8000 | ((uint16_t)trx->nr << 10));
-	msgb_tv_put(msg, OM2K_DEI_RX_DIVERSITY, 0x02); /* A */
+	msgb_tv_put(msg, OM2K_DEI_RX_DIVERSITY, trx->rbs2000.rx_diversity);
 
 	return abis_om2k_sendmsg(trx->bts, msg);
 }
@@ -1518,7 +1518,7 @@ int abis_om2k_tx_ts_conf_req(struct gsm_bts_trx_ts *ts)
 	msgb_tv_put(msg, OM2K_DEI_HSN, ts->hopping.hsn);
 	msgb_tv_put(msg, OM2K_DEI_MAIO, ts->hopping.maio);
 	msgb_tv_put(msg, OM2K_DEI_BSIC, ts->trx->bts->bsic);
-	msgb_tv_put(msg, OM2K_DEI_RX_DIVERSITY, 0x02); /* A */
+	msgb_tv_put(msg, OM2K_DEI_RX_DIVERSITY, ts->trx->rbs2000.rx_diversity);
 	msgb_tv16_put(msg, OM2K_DEI_FN_OFFSET, 0);
 	msgb_tv_put(msg, OM2K_DEI_EXT_RANGE, 0); /* Off */
 	/* Optional: Interference Rejection Combining */
@@ -3076,6 +3076,7 @@ void abis_om2k_trx_init(struct gsm_bts_trx *trx)
 
 	trx_fi = om2k_trx_fsm_alloc(trx->bts->rbs2000.bts_fi, trx, OM2K_BTS_EVT_TRX_DONE);
 	trx->rbs2000.trx_fi = trx_fi;
+	trx->rbs2000.rx_diversity = OM2K_RX_DIVERSITY_A;
 
 	om2k_mo_init(&trx->rbs2000.trxc.om2k_mo, OM2K_MO_CLS_TRXC, bts->nr, 255, trx->nr);
 	om2k_mo_fsm_alloc(trx_fi, OM2K_TRX_EVT_TRXC_DONE, trx, &trx->rbs2000.trxc.om2k_mo);

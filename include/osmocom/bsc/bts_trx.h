@@ -13,6 +13,7 @@
 #include <osmocom/abis/e1_input.h>
 
 #include "osmocom/bsc/gsm_data.h"
+#include "osmocom/bsc/abis_om2000.h"
 
 struct gsm_bts;
 
@@ -76,6 +77,7 @@ struct gsm_bts_trx {
 			struct {
 				struct om2k_mo om2k_mo;
 			} tx;
+			enum om2k_rx_diversity rx_diversity;
 		} rbs2000;
 	};
 	struct gsm_bts_trx_ts ts[TRX_NR_TS];

@@ -174,6 +174,11 @@ static void config_write_bts(struct vty *vty, struct gsm_bts *bts)
 	abis_om2k_config_write_bts(vty, bts);
 }
 
+static void config_write_trx(struct vty *vty, struct gsm_bts_trx *trx)
+{
+	abis_om2k_config_write_trx(vty, trx);
+}
+
 static int bts_model_rbs2k_start(struct gsm_network *net);
 
 static void bts_model_rbs2k_e1line_bind_ops(struct e1inp_line *line)
@@ -201,6 +206,7 @@ static struct gsm_bts_model model_rbs2k = {
 	.trx_init = bts_model_rbs2k_trx_init,
 	.oml_rcvmsg = &abis_om2k_rcvmsg,
 	.config_write_bts = &config_write_bts,
+	.config_write_trx = &config_write_trx,
 	.e1line_bind_ops = &bts_model_rbs2k_e1line_bind_ops,
 };
 

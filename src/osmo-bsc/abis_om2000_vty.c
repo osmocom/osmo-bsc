@@ -574,6 +574,33 @@ DEFUN_USRATTR(cfg_bts_is_conn_list, cfg_bts_is_conn_list_cmd,
 	return CMD_SUCCESS;
 }
 
+DEFUN_USRATTR(cfg_trx_om2k_rx_diversity,
+		  cfg_trx_om2k_rx_diversity_cmd,
+		  X(BSC_VTY_ATTR_RESTART_ABIS_RSL_LINK),
+		  "om2000 rx-diversity-mode (a|ab|b)",
+		  OM2K_VTY_HELP
+		  "RX Diversity\n"
+		  "Antenna TX/RX (A)\n"
+		  "Both Antennas\n"
+		  "Antenna RX (B)\n")
+
+{
+	struct gsm_bts_trx *trx = vty->index;
+
+	if (trx->bts->type != GSM_BTS_TYPE_RBS2000) {
+		vty_out(vty, "%% Command only works for RBS2000%s",
+			VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	if (!strcmp(argv[0], "a"))
+		trx->rbs2000.rx_diversity = OM2K_RX_DIVERSITY_A;
+	else if (!strcmp(argv[0], "ab"))
+		trx->rbs2000.rx_diversity = OM2K_RX_DIVERSITY_AB;
+	else if (!strcmp(argv[0], "b"))
+		trx->rbs2000.rx_diversity = OM2K_RX_DIVERSITY_B;
+	return CMD_SUCCESS;
+}
 
 DEFUN(om2k_conf_req, om2k_conf_req_cmd,
 	"configuration-request",
@@ -651,6 +678,24 @@ static void dump_con_group(struct vty *vty, struct con_group *cg)
 				VTY_NEWLINE);
 		}
 	}
+}
+
+static const struct value_string om2k_rx_diversity_names[4] = {
+	{ OM2K_RX_DIVERSITY_A,		"a" },
+	{ OM2K_RX_DIVERSITY_AB,		"ab" },
+	{ OM2K_RX_DIVERSITY_B,		"b" },
+	{ 0, NULL }
+};
+
+static const char *rx_diversity2str(enum om2k_rx_diversity type)
+{
+	return get_value_string(om2k_rx_diversity_names, type);
+}
+
+void abis_om2k_config_write_trx(struct vty *vty, struct gsm_bts_trx *trx)
+{
+	vty_out(vty, "   om2000 rx-diversity-mode %s%s",
+		rx_diversity2str(trx->rbs2000.rx_diversity), VTY_NEWLINE);
 }
 
 void abis_om2k_config_write_bts(struct vty *vty, struct gsm_bts *bts)
@@ -785,6 +830,8 @@ int abis_om2k_vty_init(void)
 	install_element(BTS_NODE, &cfg_bts_om2k_version_limit_cmd);
 	install_element(BTS_NODE, &cfg_om2k_con_group_cmd);
 	install_element(BTS_NODE, &del_om2k_con_group_cmd);
+
+	install_element(TRX_NODE, &cfg_trx_om2k_rx_diversity_cmd);
 
 	return 0;
 }
