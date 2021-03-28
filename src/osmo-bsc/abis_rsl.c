@@ -1526,6 +1526,10 @@ static int rsl_rx_chan_rqd(struct msgb *msg)
 		return -EINVAL;
 	}
 	rqd->ta = rqd_hdr->data[sizeof(struct gsm48_req_ref)+2];
+	if (rqd->ta > 63) { /* TODO: make it configurable */
+		talloc_free(rqd);
+		return -EINVAL;
+	}
 
 	/* Determine channel request cause code */
 	rqd->reason = get_reason_by_chreq(rqd->ref.ra, bts->network->neci);
