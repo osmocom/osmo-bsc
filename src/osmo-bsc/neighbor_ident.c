@@ -130,8 +130,10 @@ int resolve_neighbors(struct gsm_bts **local_neighbor_p, struct gsm0808_cell_id_
 	struct gsm_bts *local_neighbor = NULL;
 	struct gsm0808_cell_id_list2 remotes = {};
 
-	*local_neighbor_p = NULL;
-	*remote_neighbors = (struct gsm0808_cell_id_list2){ 0 };
+	if (local_neighbor_p)
+		*local_neighbor_p = NULL;
+	if (remote_neighbors)
+		*remote_neighbors = (struct gsm0808_cell_id_list2){ 0 };
 
 	llist_for_each_entry(n, &from_bts->neighbors, entry) {
 		struct gsm_bts *neigh_bts;
