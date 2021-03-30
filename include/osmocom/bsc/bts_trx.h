@@ -31,8 +31,6 @@ struct gsm_bts_trx {
 	struct gsm_bts *bts;
 	/* number of this TRX in the BTS */
 	uint8_t nr;
-	/* human readable name / description */
-	char *description;
 	/* how do we talk RSL with this TRX? */
 	struct gsm_e1_subslot rsl_e1_link;
 	uint8_t rsl_tei;

@@ -726,9 +726,6 @@ static void config_write_trx_single(struct vty *vty, struct gsm_bts_trx *trx)
 	int i;
 
 	vty_out(vty, "  trx %u%s", trx->nr, VTY_NEWLINE);
-	if (trx->description)
-		vty_out(vty, "   description %s%s", trx->description,
-			VTY_NEWLINE);
 	vty_out(vty, "   rf_locked %u%s",
 		trx->mo.force_rf_lock ? 1 : 0,
 		VTY_NEWLINE);
@@ -983,8 +980,6 @@ static void config_write_bts_single(struct vty *vty, struct gsm_bts *bts)
 
 	vty_out(vty, " bts %u%s", bts->nr, VTY_NEWLINE);
 	vty_out(vty, "  type %s%s", btstype2str(bts->type), VTY_NEWLINE);
-	if (bts->description)
-		vty_out(vty, "  description %s%s", bts->description, VTY_NEWLINE);
 	vty_out(vty, "  band %s%s", gsm_band_name(bts->band), VTY_NEWLINE);
 	vty_out(vty, "  cell_identity %u%s", bts->cell_identity, VTY_NEWLINE);
 	vty_out(vty, "  location_area_code %u%s", bts->location_area_code,
@@ -1335,8 +1330,6 @@ static void trx_dump_vty(struct vty *vty, struct gsm_bts_trx *trx, bool print_rs
 
 	vty_out(vty, "TRX %u of BTS %u is on ARFCN %u%s",
 		trx->nr, trx->bts->nr, trx->arfcn, VTY_NEWLINE);
-	vty_out(vty, "Description: %s%s",
-		trx->description ? trx->description : "(null)", VTY_NEWLINE);
 	vty_out(vty, "  RF Nominal Power: %d dBm, reduced by %u dB, "
 		"resulting BS power: %d dBm%s",
 		trx->nominal_power, trx->max_power_red,
@@ -5322,7 +5315,6 @@ DEFUN_ATTR(cfg_trx,
 		return CMD_WARNING;
 
 	vty->index = trx;
-	vty->index_sub = &trx->description;
 	vty->node = TRX_NODE;
 
 	return CMD_SUCCESS;

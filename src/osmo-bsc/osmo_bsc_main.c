@@ -607,7 +607,6 @@ static int bsc_vty_go_parent(struct vty *vty)
 			/* set vty->index correctly ! */
 			struct gsm_bts_trx_ts *ts = vty->index;
 			vty->index = ts->trx;
-			vty->index_sub = &ts->trx->description;
 		}
 		break;
 	case OML_NODE:
