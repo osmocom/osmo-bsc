@@ -234,7 +234,7 @@ static struct gsm_bts *_create_bts(int num_trx, const char * const *ts_args, int
 
 	for (trx_i = 0; trx_i < num_trx; trx_i++) {
 		while (!(trx = gsm_bts_trx_num(bts, trx_i)))
-			gsm_bts_trx_alloc(bts);
+			gsm_bts_trx_alloc(bts, NULL);
 
 		trx->mo.nm_state.operational = NM_OPSTATE_ENABLED;
 		trx->mo.nm_state.availability = NM_AVSTATE_OK;

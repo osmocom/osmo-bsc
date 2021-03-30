@@ -121,7 +121,7 @@ static int create_trx1(struct gsm_bts *bts)
 	struct gsm_bts_trx *trx = gsm_bts_trx_num(bts, 1);
 
 	if (!trx)
-		trx = gsm_bts_trx_alloc(bts);
+		trx = gsm_bts_trx_alloc(bts, NULL);
 
 	fprintf(stdout, "Crating Objects for TRX1\n");
 

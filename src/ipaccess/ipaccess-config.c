@@ -1098,9 +1098,9 @@ int main(int argc, char **argv)
 	bts = gsm_bts_alloc_register(bsc_gsmnet, GSM_BTS_TYPE_NANOBTS,
 				     HARDCODED_BSIC);
 	/* ip.access supports up to 4 chained TRX */
-	gsm_bts_trx_alloc(bts);
-	gsm_bts_trx_alloc(bts);
-	gsm_bts_trx_alloc(bts);
+	gsm_bts_trx_alloc(bts, NULL);
+	gsm_bts_trx_alloc(bts, NULL);
+	gsm_bts_trx_alloc(bts, NULL);
 	bts->oml_tei = stream_id;
 
 	osmo_signal_register_handler(SS_NM, nm_sig_cb, NULL);

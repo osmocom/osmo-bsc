@@ -5293,7 +5293,7 @@ DEFUN_ATTR(cfg_trx,
 		return CMD_WARNING;
 	} else if (trx_nr == bts->num_trx) {
 		/* we need to allocate a new one */
-		trx = gsm_bts_trx_alloc(bts);
+		trx = gsm_bts_trx_alloc(bts, NULL);
 	} else
 		trx = gsm_bts_trx_num(bts, trx_nr);
 

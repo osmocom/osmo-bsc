@@ -212,7 +212,7 @@ struct gsm_bts *gsm_bts_alloc(struct gsm_network *net, struct gsm_bts_sm *bts_sm
 	bts->bts_statg = osmo_stat_item_group_alloc(bts, &bts_statg_desc, bts->nr);
 
 	/* create our primary TRX */
-	bts->c0 = gsm_bts_trx_alloc(bts);
+	bts->c0 = gsm_bts_trx_alloc(bts, NULL);
 	if (!bts->c0) {
 		rate_ctr_group_free(bts->bts_ctrs);
 		osmo_stat_item_group_free(bts->bts_statg);

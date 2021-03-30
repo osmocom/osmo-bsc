@@ -138,6 +138,24 @@ static void rx_get_attr_rep(struct gsm_bts *bts, bool allow_opstart)
 	nsvc = gsm_bts_sm_nsvc_num(bts->site_mgr, 0); /* we only support NSVC0 so far */
 	osmo_fsm_inst_dispatch(nsvc->mo.fi, NM_EV_FEATURE_NEGOTIATED, NULL);
 
+	/* VAMOS: set up shadow TRXes */
+	if (osmo_bts_has_feature(&bts->features, BTS_FEAT_VAMOS)) {
+		struct gsm_bts_trx *trx;
+		llist_for_each_entry(trx, &bts->trx_list, list) {
+			/* Does this TRX already have a shadow TRX set up? */
+			if (trx->vamos.shadow_trx)
+				continue;
+			/* Is this TRX itself a shadow TRX? */
+			if (trx->vamos.primary_trx)
+				continue;
+
+			/* This is a primary TRX that should have a shadow TRX, and the shadow TRX still needs to be set
+			 * up. */
+			gsm_bts_trx_alloc(bts, trx);
+		}
+	}
+
+
 	/* Move FSM forward */
 	configure_loop(bts, &bts->mo.nm_state, allow_opstart);
 }

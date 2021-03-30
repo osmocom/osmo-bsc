@@ -84,13 +84,21 @@ struct gsm_bts_trx {
 		} rbs2000;
 	};
 	struct gsm_bts_trx_ts ts[TRX_NR_TS];
+
+	struct {
+		/* If this is a primary TRX that has a shadow TRX, this points at the shadow TRX.
+		 * NULL when this TRX is a shadow TRX itself, and when there is no shadow TRX set up. */
+		struct gsm_bts_trx *shadow_trx;
+		/* If this is a shadow TRX, this points at the primary TRX. NULL if this is a primary TRX. */
+		struct gsm_bts_trx *primary_trx;
+	} vamos;
 };
 
 static inline struct gsm_bts_trx *gsm_bts_bb_trx_get_trx(struct gsm_bts_bb_trx *bb_transc) {
 	return (struct gsm_bts_trx *)container_of(bb_transc, struct gsm_bts_trx, bb_transc);
 }
 
-struct gsm_bts_trx *gsm_bts_trx_alloc(struct gsm_bts *bts);
+struct gsm_bts_trx *gsm_bts_trx_alloc(struct gsm_bts *bts, struct gsm_bts_trx *shadow_for_primary_trx);
 char *gsm_trx_name(const struct gsm_bts_trx *trx);
 
 struct gsm_lchan *rsl_lchan_lookup(struct gsm_bts_trx *trx, uint8_t chan_nr,
