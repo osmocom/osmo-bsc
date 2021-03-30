@@ -117,9 +117,15 @@ static void configure_loop(struct gsm_bts_bb_trx *bb_transc, struct gsm_nm_state
 	    !bb_transc->mo.opstart_sent) {
 		bb_transc->mo.opstart_sent = true;
 		abis_nm_opstart(trx->bts, NM_OC_BASEB_TRANSC, trx->bts->bts_nr, trx->nr, 0xff);
+
+		/* If the BTS has VAMOS capability, also start up the second "shadow TRX" */
+		if (osmo_bts_has_feature(&bts->features, BTS_FEAT_VAMOS))
+			abis_nm_opstart(trx->bts, NM_OC_BASEB_TRANSC, trx->bts->bts_nr, TRX_SHADOW_NR(trx->nr), 0xff);
+
 		/* TRX software is active, tell it to initiate RSL Link */
 		abis_nm_ipaccess_rsl_connect(trx, trx->bts->ip_access.rsl_ip,
 					     3003, trx->rsl_tei);
+
 	}
 }
 

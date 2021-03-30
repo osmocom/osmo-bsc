@@ -19,6 +19,11 @@ struct gsm_bts;
 
 #define TRX_NR_TS	8
 
+/* For VAMOS, there is a "shadow TRX" for each normal TRX, to handle multiple MS on the same timeslot. The shadow TRX is
+ * visible on OML and RSL, but there is only a single struct gsm_bts_trx for the TRX and the shadow TRX. Also, there is
+ * only a single timeslot FSM handling both the "normal" and the secondary VAMOS lchans. */
+#define TRX_SHADOW_NR(NR) (0x80 + (NR))
+
 struct gsm_bts_bb_trx {
 	struct gsm_abis_mo mo;
 };
