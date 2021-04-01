@@ -433,6 +433,8 @@ static void bts_dump_vty(struct vty *vty, struct gsm_bts *bts)
 	vty_out(vty, "  RACH Max transmissions: %u%s",
 		rach_max_trans_raw2val(bts->si_common.rach_control.max_trans),
 		VTY_NEWLINE);
+	vty_out(vty, "  RACH Max Delay (Max Access Delay IE in CHANnel ReQuireD): %u%s",
+		bts->rach_max_delay, VTY_NEWLINE);
 	if (bts->si_common.rach_control.cell_bar)
 		vty_out(vty, "  CELL IS BARRED%s", VTY_NEWLINE);
 	if (bts->dtxu != GSM48_DTX_SHALL_NOT_BE_USED)
@@ -1041,6 +1043,7 @@ static void config_write_bts_single(struct vty *vty, struct gsm_bts *bts)
 	vty_out(vty, "  rach max transmission %u%s",
 		rach_max_trans_raw2val(bts->si_common.rach_control.max_trans),
 		VTY_NEWLINE);
+	vty_out(vty, "  rach max-delay %u%s", bts->rach_max_delay, VTY_NEWLINE);
 
 	vty_out(vty, "  channel-description attach %u%s",
 		bts->si_common.chan_desc.att, VTY_NEWLINE);
@@ -2743,6 +2746,19 @@ DEFUN_USRATTR(cfg_bts_rach_max_trans,
 {
 	struct gsm_bts *bts = vty->index;
 	bts->si_common.rach_control.max_trans = rach_max_trans_val2raw(atoi(argv[0]));
+	return CMD_SUCCESS;
+}
+
+DEFUN_USRATTR(cfg_bts_rach_max_delay,
+	      cfg_bts_rach_max_delay_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_RSL_LINK),
+	      "rach max-delay <0-127>",
+	      RACH_STR
+	      "Set the max Access Delay IE value to accept in CHANnel ReQuireD\n"
+	      "Maximum Access Delay IE value to accept in CHANnel ReQuireD\n")
+{
+	struct gsm_bts *bts = vty->index;
+	bts->rach_max_delay = atoi(argv[0]);
 	return CMD_SUCCESS;
 }
 
@@ -7668,6 +7684,7 @@ int bsc_vty_init(struct gsm_network *network)
 	install_element(BTS_NODE, &cfg_bts_challoc_cmd);
 	install_element(BTS_NODE, &cfg_bts_rach_tx_integer_cmd);
 	install_element(BTS_NODE, &cfg_bts_rach_max_trans_cmd);
+	install_element(BTS_NODE, &cfg_bts_rach_max_delay_cmd);
 	install_element(BTS_NODE, &cfg_bts_chan_desc_att_cmd);
 	install_element(BTS_NODE, &cfg_bts_chan_dscr_att_cmd);
 	install_element(BTS_NODE, &cfg_bts_chan_desc_bs_pa_mfrms_cmd);

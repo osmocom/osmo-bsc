@@ -357,6 +357,8 @@ struct gsm_bts *gsm_bts_alloc(struct gsm_network *net, struct gsm_bts_sm *bts_sm
 	bts->bs_power_ctrl = power_ctrl_params_def;
 	bts->bs_power_ctrl.dir = GSM_PWR_CTRL_DIR_DL;
 
+	bts->rach_max_delay = 63;
+
 	return bts;
 }
 
@@ -767,6 +769,9 @@ const struct rate_ctr_desc bts_ctr_description[] = {
 	[BTS_CTR_CHREQ_NO_CHANNEL] = \
 		{ "chreq:no_channel",
 		  "Sent to MS no channel available" },
+	[BTS_CTR_CHREQ_MAX_DELAY_EXCEEDED] = \
+		{ "chreq:max_delay_exceeded",
+		  "Received channel requests with greater than permitted access delay" },
 	[BTS_CTR_CHAN_RF_FAIL] = \
 		{ "chan:rf_fail",
 		  "Received a RF failure indication from BTS" },
