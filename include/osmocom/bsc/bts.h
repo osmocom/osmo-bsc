@@ -28,6 +28,7 @@ enum bts_counter_id {
 	BTS_CTR_CHREQ_ATTEMPTED_UNKNOWN,
 	BTS_CTR_CHREQ_SUCCESSFUL,
 	BTS_CTR_CHREQ_NO_CHANNEL,
+	BTS_CTR_CHREQ_MAX_DELAY_EXCEEDED,
 	BTS_CTR_CHAN_RF_FAIL,
 	BTS_CTR_CHAN_RF_FAIL_TCH,
 	BTS_CTR_CHAN_RF_FAIL_SDCCH,
@@ -529,6 +530,9 @@ struct gsm_bts {
 	/* MS/BS Power Control parameters */
 	struct gsm_power_ctrl_params ms_power_ctrl;
 	struct gsm_power_ctrl_params bs_power_ctrl;
+
+	/* We will ignore CHAN RQD with access delay greater than rach_max_delay */
+	uint8_t rach_max_delay;
 };
 
 #define GSM_BTS_SI2Q(bts, i)   (struct gsm48_system_information_type_2quater *)((bts)->si_buf[SYSINFO_TYPE_2quater][i])

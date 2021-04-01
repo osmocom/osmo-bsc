@@ -1526,6 +1526,13 @@ static int rsl_rx_chan_rqd(struct msgb *msg)
 		return -EINVAL;
 	}
 	rqd->ta = rqd_hdr->data[sizeof(struct gsm48_req_ref)+2];
+	if (rqd->ta > bts->rach_max_delay) {
+		LOG_BTS(bts, DRSL, LOGL_INFO, "Ignoring CHAN RQD: Access Delay(%d) greater than %u\n",
+			rqd->ta, bts->rach_max_delay);
+		rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_CTR_CHREQ_MAX_DELAY_EXCEEDED]);
+		talloc_free(rqd);
+		return -EINVAL;
+	}
 
 	/* Determine channel request cause code */
 	rqd->reason = get_reason_by_chreq(rqd->ref.ra, bts->network->neci);
