@@ -56,7 +56,7 @@ void bts_chan_load(struct pchan_load *cl, const struct gsm_bts *bts)
 			struct gsm_lchan *lchan;
 
 			/* skip administratively deactivated timeslots */
-			if (!nm_is_running(&ts->mo.nm_state))
+			if (!is_ericsson_bts(trx->bts) && !nm_is_running(&ts->mo.nm_state))
 				continue;
 
 			/* Dynamic timeslots have to be counted separately
