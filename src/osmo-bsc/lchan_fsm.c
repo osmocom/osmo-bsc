@@ -1304,7 +1304,7 @@ static void lchan_fsm_borken(struct osmo_fsm_inst *fi, uint32_t event, void *dat
 		lchan->release.rr_cause = bsc_gsm48_rr_cause_from_rsl_cause(lchan->release.rsl_error_cause);
 		lchan_fsm_state_chg(LCHAN_ST_WAIT_AFTER_ERROR);
 		/* TODO: we used to do this only for sysmobts:
-			int do_free = is_sysmobts_v2(ts->trx->bts);
+			int do_free = is_osmobts(ts->trx->bts);
 			LOGP(DRSL, LOGL_NOTICE,
 				"%s CHAN REL ACK for broken channel. %s.\n",
 				gsm_lchan_name(lchan),

@@ -102,7 +102,7 @@ static int set_net_apply_config(struct ctrl_cmd *cmd, void *data)
 		 * so let's us just reboot it. For the sysmoBTS we can just
 		 * restart the process as all state is gone.
 		 */
-		if (!is_sysmobts_v2(bts) && strcmp(cmd->value, "restart") == 0) {
+		if (!is_osmobts(bts) && strcmp(cmd->value, "restart") == 0) {
 			struct gsm_bts_trx *trx;
 			llist_for_each_entry_reverse(trx, &bts->trx_list, list)
 				abis_nm_ipaccess_restart(trx);

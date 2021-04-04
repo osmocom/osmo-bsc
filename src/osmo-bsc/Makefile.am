@@ -53,7 +53,7 @@ osmo_bsc_SOURCES = \
 	bts_nokia_site.c \
 	bts_siemens_bs11.c \
 	bts_sm.c \
-	bts_sysmobts.c \
+	bts_osmobts.c \
 	bts_unknown.c \
 	chan_alloc.c \
 	codec_pref.c \

@@ -554,7 +554,7 @@ static inline int is_ipaccess_bts(const struct gsm_bts *bts)
 	return 0;
 }
 
-static inline int is_sysmobts_v2(const struct gsm_bts *bts)
+static inline int is_osmobts(const struct gsm_bts *bts)
 {
 	switch (bts->type) {
 	case GSM_BTS_TYPE_OSMOBTS:

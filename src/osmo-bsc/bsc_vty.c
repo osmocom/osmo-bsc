@@ -3795,7 +3795,7 @@ DEFUN_USRATTR(cfg_bts_no_si_unused_send_empty,
 {
 	struct gsm_bts *bts = vty->index;
 
-	if (!is_ipaccess_bts(bts) || is_sysmobts_v2(bts)) {
+	if (!is_ipaccess_bts(bts) || is_osmobts(bts)) {
 		vty_out(vty, "%% This command is only intended for ipaccess nanoBTS. See OS#3707.%s",
 			VTY_NEWLINE);
 		return CMD_WARNING;
@@ -5801,7 +5801,7 @@ DEFUN(restart_bts, restart_bts_cmd,
 		return CMD_WARNING;
 	}
 
-	if (!is_ipaccess_bts(bts) || is_sysmobts_v2(bts)) {
+	if (!is_ipaccess_bts(bts) || is_osmobts(bts)) {
 		vty_out(vty, "%% This command only works for ipaccess nanoBTS.%s",
 			VTY_NEWLINE);
 		return CMD_WARNING;

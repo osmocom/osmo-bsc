@@ -1,4 +1,4 @@
-/* sysmocom sysmoBTS specific code */
+/* Osmocom OsmoBTS specific code */
 
 /* (C) 2010-2012 by Harald Welte <laforge@gnumonks.org>
  *
@@ -41,29 +41,29 @@
 
 extern struct gsm_bts_model bts_model_nanobts;
 
-static struct gsm_bts_model model_sysmobts;
+static struct gsm_bts_model model_osmobts;
 
-int bts_model_sysmobts_init(void)
+int bts_model_osmobts_init(void)
 {
-	model_sysmobts = bts_model_nanobts;
-	model_sysmobts.name = "sysmobts";
-	model_sysmobts.type = GSM_BTS_TYPE_OSMOBTS;
+	model_osmobts = bts_model_nanobts;
+	model_osmobts.name = "osmo-bts";
+	model_osmobts.type = GSM_BTS_TYPE_OSMOBTS;
 
-	/* Unlike nanoBTS, sysmoBTS supports SI2bis and SI2ter fine */
-	model_sysmobts.force_combined_si = false;
+	/* Unlike nanoBTS, osmo-bts does support SI2bis and SI2ter fine */
+	model_osmobts.force_combined_si = false;
 
-	model_sysmobts.features.data = &model_sysmobts._features_data[0];
-	model_sysmobts.features.data_len =
-				sizeof(model_sysmobts._features_data);
-	memset(model_sysmobts.features.data, 0, model_sysmobts.features.data_len);
+	model_osmobts.features.data = &model_osmobts._features_data[0];
+	model_osmobts.features.data_len =
+				sizeof(model_osmobts._features_data);
+	memset(model_osmobts.features.data, 0, model_osmobts.features.data_len);
 
-	osmo_bts_set_feature(&model_sysmobts.features, BTS_FEAT_GPRS);
-	osmo_bts_set_feature(&model_sysmobts.features, BTS_FEAT_EGPRS);
-	osmo_bts_set_feature(&model_sysmobts.features, BTS_FEAT_PAGING_COORDINATION);
-	osmo_bts_set_feature(&model_sysmobts.features, BTS_FEAT_IPV6_NSVC);
-	osmo_bts_set_feature(&model_sysmobts.features, BTS_FEAT_CCN);
+	osmo_bts_set_feature(&model_osmobts.features, BTS_FEAT_GPRS);
+	osmo_bts_set_feature(&model_osmobts.features, BTS_FEAT_EGPRS);
+	osmo_bts_set_feature(&model_osmobts.features, BTS_FEAT_PAGING_COORDINATION);
+	osmo_bts_set_feature(&model_osmobts.features, BTS_FEAT_IPV6_NSVC);
+	osmo_bts_set_feature(&model_osmobts.features, BTS_FEAT_CCN);
 
-	model_sysmobts.nm_att_tlvdef.def[NM_ATT_OSMO_NS_LINK_CFG].type = TLV_TYPE_TL16V;
+	model_osmobts.nm_att_tlvdef.def[NM_ATT_OSMO_NS_LINK_CFG].type = TLV_TYPE_TL16V;
 
-	return gsm_bts_model_register(&model_sysmobts);
+	return gsm_bts_model_register(&model_osmobts);
 }
