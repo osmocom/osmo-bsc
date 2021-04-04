@@ -19,7 +19,7 @@ OsmoBSC(config-net)# neighbor-resolution bind 1.2.3.4 ?
   [<0-65535>]  Port to bind the service to [defaults to 4248 if not provided]
 
 OsmoBSC(config-net)# bts 0
-OsmoBSC(config-net-bts)# type sysmobts
+OsmoBSC(config-net-bts)# type osmo-bts
 OsmoBSC(config-net-bts)# base_station_id_code 10
 OsmoBSC(config-net-bts)# location_area_code 20
 OsmoBSC(config-net-bts)# cell_identity 30
@@ -29,7 +29,7 @@ OsmoBSC(config-net-bts-trx)# exit
 OsmoBSC(config-net-bts)# exit
 
 OsmoBSC(config-net)# bts 1
-OsmoBSC(config-net-bts)# type sysmobts
+OsmoBSC(config-net-bts)# type osmo-bts
 OsmoBSC(config-net-bts)# base_station_id_code 11
 OsmoBSC(config-net-bts)# location_area_code 21
 OsmoBSC(config-net-bts)# cell_identity 31
@@ -39,7 +39,7 @@ OsmoBSC(config-net-bts-trx)# exit
 OsmoBSC(config-net-bts)# exit
 
 OsmoBSC(config-net)# bts 2
-OsmoBSC(config-net-bts)# type sysmobts
+OsmoBSC(config-net-bts)# type osmo-bts
 OsmoBSC(config-net-bts)# base_station_id_code 12
 OsmoBSC(config-net-bts)# location_area_code 22
 OsmoBSC(config-net-bts)# cell_identity 65535

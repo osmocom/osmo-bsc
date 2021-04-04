@@ -105,7 +105,7 @@ like this:
 ----
 network
  bts 0
-  type sysmobts
+  type osmo-bts
   band DCS1800
   description The new BTS in Baikonur
   location_area_code 2342

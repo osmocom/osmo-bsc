@@ -67,7 +67,7 @@ const struct value_string bts_type_names[_NUM_GSM_BTS_TYPE + 1] = {
 	{ GSM_BTS_TYPE_NANOBTS,		"nanobts" },
 	{ GSM_BTS_TYPE_RBS2000,		"rbs2000" },
 	{ GSM_BTS_TYPE_NOKIA_SITE,	"nokia_site" },
-	{ GSM_BTS_TYPE_OSMOBTS,		"sysmobts" },
+	{ GSM_BTS_TYPE_OSMOBTS,		"osmo-bts" },
 	{ 0, NULL }
 };
 
@@ -77,7 +77,7 @@ const struct value_string bts_type_descs[_NUM_GSM_BTS_TYPE+1] = {
 	{ GSM_BTS_TYPE_NANOBTS,		"ip.access nanoBTS or compatible" },
 	{ GSM_BTS_TYPE_RBS2000,		"Ericsson RBS2000 Series" },
 	{ GSM_BTS_TYPE_NOKIA_SITE,	"Nokia {Metro,Ultra,In}Site" },
-	{ GSM_BTS_TYPE_OSMOBTS,		"sysmocom sysmoBTS" },
+	{ GSM_BTS_TYPE_OSMOBTS,		"Osmocom Base Transceiver Station" },
 	{ 0,				NULL }
 };
 

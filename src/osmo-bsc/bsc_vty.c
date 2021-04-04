@@ -2342,6 +2342,20 @@ DEFUN_USRATTR(cfg_bts_type,
 	return CMD_SUCCESS;
 }
 
+DEFUN_DEPRECATED(cfg_bts_type_sysmobts,
+		 cfg_bts_type_sysmobts_cmd,
+		 "type sysmobts",
+		 "Set the BTS type\n"
+		 "Deprecated alias for 'osmo-bts'\n")
+{
+	const char *args[] = { "osmo-bts" };
+
+	vty_out(vty, "%% BTS type 'sysmobts' is deprecated, "
+		"use 'type osmo-bts' instead.%s", VTY_NEWLINE);
+
+	return cfg_bts_type(self, vty, 1, args);
+}
+
 DEFUN_USRATTR(cfg_bts_band,
 	      cfg_bts_band_cmd,
 	      X(BSC_VTY_ATTR_RESTART_ABIS_OML_LINK),
@@ -7696,6 +7710,7 @@ int bsc_vty_init(struct gsm_network *network)
 	install_element(GSMNET_NODE, &cfg_bts_cmd);
 	install_node(&bts_node, config_write_bts);
 	install_element(BTS_NODE, &cfg_bts_type_cmd);
+	install_element(BTS_NODE, &cfg_bts_type_sysmobts_cmd);
 	install_element(BTS_NODE, &cfg_description_cmd);
 	install_element(BTS_NODE, &cfg_no_description_cmd);
 	install_element(BTS_NODE, &cfg_bts_band_cmd);
