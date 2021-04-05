@@ -577,8 +577,8 @@ static int bitvec2freq_list(uint8_t *chan_list, const struct bitvec *bv,
 /* generate a cell channel list as per Section 10.5.2.1b of 04.08 */
 int generate_cell_chan_list(uint8_t *chan_list, struct gsm_bts *bts)
 {
-	struct gsm_bts_trx *trx;
 	struct bitvec *bv = &bts->si_common.cell_alloc;
+	const struct gsm_bts_trx *trx;
 
 	/* Zero-initialize the bit-vector */
 	memset(bv->data, 0, bv->data_len);
@@ -589,7 +589,7 @@ int generate_cell_chan_list(uint8_t *chan_list, struct gsm_bts *bts)
 		/* Always add the TRX's ARFCN */
 		bitvec_set_bit_pos(bv, trx->arfcn, 1);
 		for (i = 0; i < ARRAY_SIZE(trx->ts); i++) {
-			struct gsm_bts_trx_ts *ts = &trx->ts[i];
+			const struct gsm_bts_trx_ts *ts = &trx->ts[i];
 			/* Add any ARFCNs present in hopping channels */
 			for (j = 0; j < 1024; j++) {
 				if (bitvec_get_bit_pos(&ts->hopping.arfcns, j))
