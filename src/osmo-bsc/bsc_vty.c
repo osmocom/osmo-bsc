@@ -5597,6 +5597,11 @@ DEFUN_USRATTR(cfg_ts_arfcn_add,
 		return CMD_WARNING;
 	}
 
+	if (bitvec_get_bit_pos(&ts->hopping.arfcns, arfcn) == ONE) {
+		vty_out(vty, "%% ARFCN %" PRIu16 " is already set%s", arfcn, VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
 	bitvec_set_bit_pos(&ts->hopping.arfcns, arfcn, 1);
 
 	return CMD_SUCCESS;
@@ -5615,6 +5620,11 @@ DEFUN_USRATTR(cfg_ts_arfcn_del,
 
 	if (gsm_arfcn2band_rc(arfcn, &unused) < 0) {
 		vty_out(vty, "%% Invalid arfcn %" PRIu16 " detected%s", arfcn, VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	if (bitvec_get_bit_pos(&ts->hopping.arfcns, arfcn) != ONE) {
+		vty_out(vty, "%% ARFCN %" PRIu16 " is not set%s", arfcn, VTY_NEWLINE);
 		return CMD_WARNING;
 	}
 
