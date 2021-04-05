@@ -357,7 +357,6 @@ static void bootstrap_rsl(struct gsm_bts_trx *trx)
 
 	for (i = 0; i < ARRAY_SIZE(trx->ts); i++) {
 		struct gsm_bts_trx_ts *ts = &trx->ts[i];
-		generate_ma_for_ts(ts);
 		OSMO_ASSERT(ts->fi);
 		osmo_fsm_inst_dispatch(ts->fi, TS_EV_RSL_READY, NULL);
 	}
