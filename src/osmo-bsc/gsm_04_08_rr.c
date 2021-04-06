@@ -592,9 +592,11 @@ int gsm48_send_rr_ass_cmd(struct gsm_lchan *dest_lchan, struct gsm_lchan *lchan,
 
 	/* Cell Channel Description (freq. hopping), TV (see 3GPP TS 44.018, 10.5.2.1b) */
 	if (lchan->ts->hopping.enabled) {
-		uint8_t *chan_desc = msgb_put(msg, 1 + 16); /* tag + fixed length */
-		generate_cell_chan_list(chan_desc + 1, dest_lchan->ts->trx->bts);
-		chan_desc[0] = GSM48_IE_CELL_CH_DESC;
+		const struct gsm48_system_information_type_1 *si1 = \
+			GSM_BTS_SI(lchan->ts->trx->bts, 1);
+		msgb_tv_fixed_put(msg, GSM48_IE_CELL_CH_DESC,
+				  sizeof(si1->cell_channel_description),
+				  si1->cell_channel_description);
 	}
 
 	msgb_tv_put(msg, GSM48_IE_CHANMODE_1, lchan->tch_mode);
