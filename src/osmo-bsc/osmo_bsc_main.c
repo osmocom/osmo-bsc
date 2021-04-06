@@ -260,10 +260,10 @@ static void generate_ma_for_ts(struct gsm_bts_trx_ts *ts)
 {
 	/* we have three bitvecs: the per-timeslot ARFCNs, the cell chan ARFCNs
 	 * and the MA */
+	const size_t num_cell_arfcns = ts->trx->bts->si_common.cell_chan_num;
 	const struct bitvec *cell_chan = &ts->trx->bts->si_common.cell_alloc;
 	const struct bitvec *ts_arfcn = &ts->hopping.arfcns;
 	struct bitvec *ma = &ts->hopping.ma;
-	unsigned int num_cell_arfcns;
 	int i;
 
 	/* re-set the MA to all-zero */
@@ -272,13 +272,6 @@ static void generate_ma_for_ts(struct gsm_bts_trx_ts *ts)
 
 	if (!ts->hopping.enabled)
 		return;
-
-	/* count the number of ARFCNs in the cell channel allocation */
-	num_cell_arfcns = 0;
-	for (i = 0; i < 1024; i++) {
-		if (bitvec_get_bit_pos(cell_chan, i))
-			num_cell_arfcns++;
-	}
 
 	/* pad it to octet-aligned number of bits */
 	ts->hopping.ma_len = OSMO_BYTES_FOR_BITS(num_cell_arfcns);
@@ -302,6 +295,20 @@ static void generate_ma_for_ts(struct gsm_bts_trx_ts *ts)
 			bitvec_set_bit_pos(ma, ma->cur_bit, 1);
 		else
 			bitvec_set_bit_pos(ma, ma->cur_bit, 0);
+	}
+}
+
+static void generate_ma_for_bts(struct gsm_bts *bts)
+{
+	struct gsm_bts_trx *trx;
+	unsigned int tn;
+
+	OSMO_ASSERT(bts->si_common.cell_chan_num > 0);
+	OSMO_ASSERT(bts->si_common.cell_chan_num <= 64);
+
+	llist_for_each_entry(trx, &bts->trx_list, list) {
+		for (tn = 0; tn < ARRAY_SIZE(trx->ts); tn++)
+			generate_ma_for_ts(&trx->ts[tn]);
 	}
 }
 
@@ -388,19 +395,9 @@ static int inp_sig_cb(unsigned int subsys, unsigned int signal,
 	switch (signal) {
 	case S_L_INP_TEI_UP:
 		if (isd->link_type == E1INP_SIGN_OML) {
-			/* TODO: this is required for the Nokia BTS, hopping is configured
-			   during OML, other MA is not set.  */
-			struct gsm_bts_trx *cur_trx;
-			uint8_t ca[20];
-			/* has to be called before generate_ma_for_ts to
-			  set bts->si_common.cell_alloc */
-			generate_cell_chan_list(ca, trx->bts);
-
-			llist_for_each_entry(cur_trx, &trx->bts->trx_list, list) {
-				int i;
-				for (i = 0; i < ARRAY_SIZE(cur_trx->ts); i++)
-					generate_ma_for_ts(&cur_trx->ts[i]);
-			}
+			/* Generate Mobile Allocation bit-masks for all timeslots.
+			 * This needs to be done here, because it's used for TS configuration. */
+			generate_ma_for_bts(trx->bts);
 		}
 		if (isd->link_type == E1INP_SIGN_RSL)
 			bootstrap_rsl(trx);

@@ -451,6 +451,7 @@ struct gsm_bts {
 		struct bitvec si5_neigh_list;
 		struct osmo_earfcn_si2q si2quater_neigh_list;
 		size_t uarfcn_length; /* index for uarfcn and scramble lists */
+		size_t cell_chan_num; /* number of channels in Cell Allocation */
 		struct {
 			/* bitmask large enough for all possible ARFCN's */
 			uint8_t neigh_list[1024/8];

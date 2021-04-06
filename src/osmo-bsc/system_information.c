@@ -574,31 +574,62 @@ static int bitvec2freq_list(uint8_t *chan_list, const struct bitvec *bv,
 	return -EINVAL;
 }
 
-/* generate a cell channel list as per Section 10.5.2.1b of 04.08 */
-int generate_cell_chan_list(uint8_t *chan_list, struct gsm_bts *bts)
+/* (Re)generate Cell Allocation (basically a bit-vector of all cell channels) */
+int generate_cell_chan_alloc(struct gsm_bts *bts)
 {
-	struct bitvec *bv = &bts->si_common.cell_alloc;
 	const struct gsm_bts_trx *trx;
+	unsigned int chan, chan_num;
+	unsigned int tn;
 
-	/* Zero-initialize the bit-vector */
-	memset(bv->data, 0, bv->data_len);
+	/* Temporary Cell Allocation bit-vector */
+	uint8_t ca[1024 / 8] = { 0 };
+	struct bitvec bv = {
+		.data_len = sizeof(ca),
+		.data = &ca[0],
+	};
 
-	/* first we generate a bitvec of all TRX ARFCN's in our BTS */
+	/* Calculate a bit-mask of all assigned ARFCNs */
 	llist_for_each_entry(trx, &bts->trx_list, list) {
-		unsigned int i, j;
 		/* Always add the TRX's ARFCN */
-		bitvec_set_bit_pos(bv, trx->arfcn, 1);
-		for (i = 0; i < ARRAY_SIZE(trx->ts); i++) {
-			const struct gsm_bts_trx_ts *ts = &trx->ts[i];
+		bitvec_set_bit_pos(&bv, trx->arfcn, 1);
+		for (tn = 0; tn < ARRAY_SIZE(trx->ts); tn++) {
+			const struct gsm_bts_trx_ts *ts = &trx->ts[tn];
 			/* Add any ARFCNs present in hopping channels */
-			for (j = 0; j < 1024; j++) {
-				if (bitvec_get_bit_pos(&ts->hopping.arfcns, j))
-					bitvec_set_bit_pos(bv, j, 1);
+			for (chan = 0; chan < sizeof(ca) * 8; chan++) {
+				if (bitvec_get_bit_pos(&ts->hopping.arfcns, chan) == ONE)
+					bitvec_set_bit_pos(&bv, chan, ONE);
 			}
 		}
 	}
 
-	/* then we generate a GSM 04.08 frequency list from the bitvec */
+	/* Calculate the overall number of assigned ARFCNs */
+	for (chan_num = 0, chan = 0; chan < sizeof(ca) * 8; chan++) {
+		if (bitvec_get_bit_pos(&bv, chan) == ONE)
+			chan_num++;
+	}
+
+	/* The Mobile Allocation IE may contain up to 64 bits, so here we
+	 * cannot allow more than 64 channels in Cell Allocation. */
+	if (chan_num > 64) {
+		LOGP(DRR, LOGL_ERROR, "Failed to (re)generate Cell Allocation: "
+		     "number of channels (%u) exceeds the maximum number of "
+		     "ARFCNs in Mobile Allocation (64)\n", chan_num);
+		return -E2BIG;
+	}
+
+	/* Commit the new Channel Allocation */
+	memcpy(&bts->si_common.data.cell_alloc[0], ca, sizeof(ca));
+	bts->si_common.cell_chan_num = chan_num;
+
+	return 0;
+}
+
+/* generate a cell channel list as per Section 10.5.2.1b of 04.08 */
+int generate_cell_chan_list(uint8_t *chan_list, struct gsm_bts *bts)
+{
+	const struct bitvec *bv = &bts->si_common.cell_alloc;
+
+	/* generate a Frequency List from the Cell Allocation */
 	return bitvec2freq_list(chan_list, bv, bts, false, false);
 }
 

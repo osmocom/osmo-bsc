@@ -5334,6 +5334,12 @@ DEFUN_USRATTR(cfg_trx_arfcn,
 
 	trx->arfcn = arfcn;
 
+	/* Update Cell Allocation (list of all the frequencies allocated to a cell) */
+	if (generate_cell_chan_alloc(trx->bts) != 0) {
+		vty_out(vty, "%% Failed to re-generate Cell Allocation%s", VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
 	/* FIXME: patch ARFCN into SYSTEM INFORMATION */
 	/* FIXME: use OML layer to update the ARFCN */
 	/* FIXME: use RSL layer to update SYSTEM INFORMATION */
@@ -5604,6 +5610,13 @@ DEFUN_USRATTR(cfg_ts_arfcn_add,
 
 	bitvec_set_bit_pos(&ts->hopping.arfcns, arfcn, 1);
 
+	/* Update Cell Allocation (list of all the frequencies allocated to a cell) */
+	if (generate_cell_chan_alloc(ts->trx->bts) != 0) {
+		vty_out(vty, "%% Failed to re-generate Cell Allocation%s", VTY_NEWLINE);
+		bitvec_set_bit_pos(&ts->hopping.arfcns, arfcn, ZERO); /* roll-back */
+		return CMD_WARNING;
+	}
+
 	return CMD_SUCCESS;
 }
 
@@ -5630,6 +5643,13 @@ DEFUN_USRATTR(cfg_ts_arfcn_del,
 
 	bitvec_set_bit_pos(&ts->hopping.arfcns, arfcn, 0);
 
+	/* Update Cell Allocation (list of all the frequencies allocated to a cell) */
+	if (generate_cell_chan_alloc(ts->trx->bts) != 0) {
+		vty_out(vty, "%% Failed to re-generate Cell Allocation%s", VTY_NEWLINE);
+		/* It's unlikely to happen on removal, so we don't roll-back */
+		return CMD_WARNING;
+	}
+
 	return CMD_SUCCESS;
 }
 
@@ -5643,6 +5663,13 @@ DEFUN_USRATTR(cfg_ts_arfcn_del_all,
 	struct gsm_bts_trx_ts *ts = vty->index;
 
 	bitvec_zero(&ts->hopping.arfcns);
+
+	/* Update Cell Allocation (list of all the frequencies allocated to a cell) */
+	if (generate_cell_chan_alloc(ts->trx->bts) != 0) {
+		vty_out(vty, "%% Failed to re-generate Cell Allocation%s", VTY_NEWLINE);
+		/* It's unlikely to happen on removal, so we don't roll-back */
+		return CMD_WARNING;
+	}
 
 	return CMD_SUCCESS;
 }
