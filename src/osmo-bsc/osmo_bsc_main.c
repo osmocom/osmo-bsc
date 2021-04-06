@@ -256,7 +256,7 @@ static int nm_sig_cb(unsigned int subsys, unsigned int signal,
 }
 
 /* Produce a MA as specified in 10.5.2.21 */
-static int generate_ma_for_ts(struct gsm_bts_trx_ts *ts)
+static void generate_ma_for_ts(struct gsm_bts_trx_ts *ts)
 {
 	/* we have three bitvecs: the per-timeslot ARFCNs, the cell chan ARFCNs
 	 * and the MA */
@@ -271,7 +271,7 @@ static int generate_ma_for_ts(struct gsm_bts_trx_ts *ts)
 	memset(ma->data, 0, ma->data_len);
 
 	if (!ts->hopping.enabled)
-		return 0;
+		return;
 
 	/* count the number of ARFCNs in the cell channel allocation */
 	num_cell_arfcns = 0;
@@ -303,8 +303,6 @@ static int generate_ma_for_ts(struct gsm_bts_trx_ts *ts)
 		else
 			bitvec_set_bit_pos(ma, ma->cur_bit, 0);
 	}
-
-	return 0;
 }
 
 static void bootstrap_rsl(struct gsm_bts_trx *trx)
