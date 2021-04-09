@@ -180,10 +180,23 @@ static void st_op_disabled_dependency(struct osmo_fsm_inst *fi, uint32_t event, 
 static void st_op_disabled_offline_on_enter(struct osmo_fsm_inst *fi, uint32_t prev_state)
 {
 	struct gsm_bts_bb_trx *bb_transc = (struct gsm_bts_bb_trx *)fi->priv;
+	struct gsm_bts_trx *trx;
 
 	/* Warning: In here we may be acessing an state older than new_state
 	   from prev (syncrhonous) FSM state */
 	configure_loop(bb_transc, &bb_transc->mo.nm_state, true);
+
+	/* A VAMOS *shadow* TRX does not send the initial OML status reports from BTS to BSC (for compatibility reasons
+	 * with non-Osmocom BSCs), so when the primary TRX gets switched to offline, make sure the shadow TRX gets moved
+	 * along likewise. */
+	trx = gsm_bts_bb_trx_get_trx(bb_transc);
+	if (trx->vamos.shadow_trx) {
+		/* this trx is a primary TRX that has a shadow TRX we should move along. */
+		nm_bb_transc_fsm_state_chg(trx->vamos.shadow_trx->mo.fi,
+					   NM_BB_TRANSC_ST_OP_DISABLED_OFFLINE);
+	}
+	/* else, this is either a primary TRX without a shadow TRX, or this itself is the shadow TRX. In
+	 * both cases no reason to take additional action. */
 }
 
 static void st_op_disabled_offline(struct osmo_fsm_inst *fi, uint32_t event, void *data)
