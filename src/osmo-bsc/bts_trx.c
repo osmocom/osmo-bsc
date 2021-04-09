@@ -73,8 +73,8 @@ struct gsm_bts_trx *gsm_bts_trx_alloc(struct gsm_bts *bts, struct gsm_bts_trx *s
 		trx->nr = TRX_SHADOW_NR(shadow_for_primary_trx->nr);
 		shadow_for_primary_trx->vamos.shadow_trx = trx;
 		trx->vamos.primary_trx = shadow_for_primary_trx;
-		LOGP(DNM, LOGL_NOTICE, "Allocating VAMOS shadow TRX: BTS %u TRX %u\n",
-		     bts->nr, trx->nr);
+		LOGP(DNM, LOGL_NOTICE, "Allocating VAMOS shadow TRX: BTS %u TRX %u -> shadow %u\n",
+		     bts->nr, shadow_for_primary_trx->nr, trx->nr);
 	}
 
 	trx->mo.fi = osmo_fsm_inst_alloc(&nm_rcarrier_fsm, trx, trx,
