@@ -77,11 +77,14 @@ struct gsm_bts_trx *gsm_bts_trx_alloc(struct gsm_bts *bts, struct gsm_bts_trx *s
 		     bts->nr, shadow_for_primary_trx->nr, trx->nr);
 	}
 
-	trx->mo.fi = osmo_fsm_inst_alloc(&nm_rcarrier_fsm, trx, trx,
-					 LOGL_INFO, NULL);
-	osmo_fsm_inst_update_id_f(trx->mo.fi, "bts%d-trx%d", bts->nr, trx->nr);
-	gsm_mo_init(&trx->mo, bts, NM_OC_RADIO_CARRIER,
-		    bts->nr, trx->nr, 0xff);
+	/* Skip Radio Carrier FSM for shadow TRXes */
+	if (!shadow_for_primary_trx) {
+		trx->mo.fi = osmo_fsm_inst_alloc(&nm_rcarrier_fsm, trx, trx,
+						 LOGL_INFO, NULL);
+		osmo_fsm_inst_update_id_f(trx->mo.fi, "bts%d-trx%d", bts->nr, trx->nr);
+		gsm_mo_init(&trx->mo, bts, NM_OC_RADIO_CARRIER,
+			    bts->nr, trx->nr, 0xff);
+	}
 
 	trx->bb_transc.mo.fi = osmo_fsm_inst_alloc(&nm_bb_transc_fsm, trx, &trx->bb_transc,
 						   LOGL_INFO, NULL);

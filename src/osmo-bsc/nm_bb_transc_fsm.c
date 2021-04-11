@@ -103,6 +103,7 @@ static void configure_loop(struct gsm_bts_bb_trx *bb_transc, struct gsm_nm_state
 
 	if (bb_transc->mo.get_attr_rep_received &&
 	    state->administrative != NM_STATE_UNLOCKED && !bb_transc->mo.adm_unlock_sent) {
+		LOGPFSML(trx->bb_transc.mo.fi, LOGL_NOTICE, "Changing Administrative State to Unlocked\n");
 		bb_transc->mo.adm_unlock_sent = true;
 		/* Note: nanoBTS sometimes fails NACKing the BaseBand
 		   Transceiver Unlock command while in Dependency, specially
@@ -192,7 +193,7 @@ static void st_op_disabled_offline_on_enter(struct osmo_fsm_inst *fi, uint32_t p
 	trx = gsm_bts_bb_trx_get_trx(bb_transc);
 	if (trx->vamos.shadow_trx) {
 		/* this trx is a primary TRX that has a shadow TRX we should move along. */
-		nm_bb_transc_fsm_state_chg(trx->vamos.shadow_trx->mo.fi,
+		nm_bb_transc_fsm_state_chg(trx->vamos.shadow_trx->bb_transc.mo.fi,
 					   NM_BB_TRANSC_ST_OP_DISABLED_OFFLINE);
 	}
 	/* else, this is either a primary TRX without a shadow TRX, or this itself is the shadow TRX. In

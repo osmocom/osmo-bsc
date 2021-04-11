@@ -364,17 +364,15 @@ gsm_objclass2mo(struct gsm_bts *bts, uint8_t obj_class,
 		mo = &trx->mo;
 		break;
 	case NM_OC_BASEB_TRANSC:
-		if (obj_inst->trx_nr >= bts->num_trx) {
-			return NULL;
-		}
 		trx = gsm_bts_trx_num(bts, obj_inst->trx_nr);
+		if (!trx)
+			return NULL;
 		mo = &trx->bb_transc.mo;
 		break;
 	case NM_OC_CHANNEL:
-		if (obj_inst->trx_nr >= bts->num_trx) {
-			return NULL;
-		}
 		trx = gsm_bts_trx_num(bts, obj_inst->trx_nr);
+		if (!trx)
+			return NULL;
 		if (obj_inst->ts_nr >= TRX_NR_TS)
 			return NULL;
 		mo = &trx->ts[obj_inst->ts_nr].mo;
