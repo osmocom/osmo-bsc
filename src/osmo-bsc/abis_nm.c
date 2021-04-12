@@ -3014,32 +3014,29 @@ static void rsl_connect_timeout(void *data)
 int abis_nm_ipaccess_rsl_connect(struct gsm_bts_trx *trx,
 				 uint32_t ip, uint16_t port, uint8_t stream)
 {
+	struct msgb *attr;
 	struct in_addr ia;
-	uint8_t attr[] = { NM_ATT_IPACC_STREAM_ID, 0,
-			    NM_ATT_IPACC_DST_IP_PORT, 0, 0,
-			    NM_ATT_IPACC_DST_IP, 0, 0, 0, 0 };
-
-	int attr_len = sizeof(attr);
 	int error;
 
 	osmo_timer_setup(&trx->rsl_connect_timeout, rsl_connect_timeout, trx);
 
-	ia.s_addr = htonl(ip);
-	attr[1] = stream;
-	attr[3] = port >> 8;
-	attr[4] = port & 0xff;
-	memcpy(attr + 6, &ia.s_addr, sizeof(uint32_t));
+	attr = msgb_alloc(32, "RSL-connect-attr");
+	msgb_tv_put(attr, NM_ATT_IPACC_STREAM_ID, stream);
+	msgb_tv16_put(attr, NM_ATT_IPACC_DST_IP_PORT, port);
 
 	/* if ip == 0, we use the default IP */
-	if (ip == 0)
-		attr_len -= 5;
+	if (ip != 0) {
+		ia.s_addr = htonl(ip);
+		msgb_tv_fixed_put(attr, NM_ATT_IPACC_DST_IP, 4, (void*)&ia.s_addr);
+	}
 
 	LOG_TRX(trx, DNM, LOGL_INFO, "IPA RSL CONNECT IP=%s PORT=%u STREAM=0x%02x\n",
 		inet_ntoa(ia), port, stream);
 
 	error = abis_nm_ipaccess_msg(trx->bts, NM_MT_IPACC_RSL_CONNECT,
 				     NM_OC_BASEB_TRANSC, trx->bts->bts_nr,
-				     trx->nr, 0xff, attr, attr_len);
+				     trx->nr, 0xff, attr->data, attr->len);
+	msgb_free(attr);
 	if (error == 0)
 		osmo_timer_schedule(&trx->rsl_connect_timeout, 60, 0);
 
