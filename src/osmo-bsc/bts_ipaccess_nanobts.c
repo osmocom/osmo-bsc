@@ -149,6 +149,10 @@ static int nm_statechg_event(int evt, struct nm_statechg_signal_data *nsd)
 	if (!is_ipaccess_bts(nsd->bts))
 		return 0;
 
+	OSMO_ASSERT(obj);
+	if (!obj)
+		return -1;
+
 	switch (obj_class) {
 	case NM_OC_SITE_MANAGER:
 		bts_sm = obj;
