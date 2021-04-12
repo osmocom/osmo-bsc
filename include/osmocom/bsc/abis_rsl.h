@@ -80,8 +80,6 @@ int abis_rsl_rcvmsg(struct msgb *msg);
 int rsl_release_request(struct gsm_lchan *lchan, uint8_t link_id,
 			enum rsl_rel_mode release_mode);
 
-int rsl_lchan_mark_broken(struct gsm_lchan *lchan, const char *broken);
-
 /* to be provided by external code */
 int rsl_deact_sacch(struct gsm_lchan *lchan);
 
