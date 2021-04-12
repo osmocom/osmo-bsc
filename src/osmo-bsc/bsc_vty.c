@@ -349,7 +349,7 @@ static void bts_dump_vty_features(struct vty *vty, struct gsm_bts *bts)
 	for (i = 0; i < _NUM_BTS_FEAT; i++) {
 		if (osmo_bts_has_feature(&bts->features, i)) {
 			vty_out(vty, "    %03u ", i);
-			vty_out(vty, "%-40s%s", osmo_bts_feature_name(i), VTY_NEWLINE);
+			vty_out(vty, "%-40s%s", osmo_bts_features_desc(i), VTY_NEWLINE);
 			no_features = false;
 		}
 	}

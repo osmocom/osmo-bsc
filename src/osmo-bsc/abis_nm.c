@@ -607,7 +607,7 @@ static int parse_attr_resp_info_attr(struct gsm_bts *bts, const struct gsm_bts_t
 			if (!Frep && Fexp) {
 				LOGPMO(&bts->mo, DNM, LOGL_NOTICE, "Get Attributes Response: "
 				       "reported feature '%s' is not supported, while we thought it is.\n",
-				       osmo_bts_feature_name(i));
+				       osmo_bts_features_name(i));
 			}
 		}
 	}
