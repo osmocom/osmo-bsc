@@ -44,6 +44,8 @@ struct gsm_bts_trx_ts;
 
 const char *ip_to_a(uint32_t ip);
 
+struct e1inp_sign_link *rsl_chan_link(const struct gsm_lchan *lchan);
+
 int rsl_bcch_info(const struct gsm_bts_trx *trx, enum osmo_sysinfo_type si_type, const uint8_t *data, int len);
 int rsl_sacch_filling(struct gsm_bts_trx *trx, uint8_t type,
 		      const uint8_t *data, int len);

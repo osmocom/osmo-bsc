@@ -90,7 +90,7 @@ int e1_reconfig_trx(struct gsm_bts_trx *trx)
 	if (trx->bts->type == GSM_BTS_TYPE_RBS2000) {
 		struct e1inp_sign_link *oml_link;
 		oml_link = e1inp_sign_link_create(sign_ts, E1INP_SIGN_OML, trx,
-						  trx->rsl_tei, SAPI_OML);
+						  trx->rsl_tei_primary, SAPI_OML);
 		if (!oml_link) {
 			LOG_TRX(trx, DLINP, LOGL_ERROR, "TRX OML link creation failed\n");
 			return -ENOMEM;
@@ -100,14 +100,14 @@ int e1_reconfig_trx(struct gsm_bts_trx *trx)
 		trx->oml_link = oml_link;
 	}
 	rsl_link = e1inp_sign_link_create(sign_ts, E1INP_SIGN_RSL,
-					  trx, trx->rsl_tei, SAPI_RSL);
+					  trx, trx->rsl_tei_primary, SAPI_RSL);
 	if (!rsl_link) {
 		LOG_TRX(trx, DLINP, LOGL_ERROR, "TRX RSL link creation failed\n");
 		return -ENOMEM;
 	}
-	if (trx->rsl_link)
-		e1inp_sign_link_destroy(trx->rsl_link);
-	trx->rsl_link = rsl_link;
+	if (trx->rsl_link_primary)
+		e1inp_sign_link_destroy(trx->rsl_link_primary);
+	trx->rsl_link_primary = rsl_link;
 
 	for (i = 0; i < TRX_NR_TS; i++)
 		e1_reconfig_ts(&trx->ts[i]);

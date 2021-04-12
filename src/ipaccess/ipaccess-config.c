@@ -159,7 +159,7 @@ static int ia_config_connect(struct gsm_bts *bts, struct sockaddr_in *sin)
 
 	/* create back-links from bts/trx */
 	bts->oml_link = oml_link;
-	bts->c0->rsl_link = rsl_link;
+	bts->c0->rsl_link_primary = rsl_link;
 
 	/* default port at BTS for incoming connections is 3006 */
 	if (sin->sin_port == 0)
@@ -1122,7 +1122,7 @@ int main(int argc, char **argv)
 	}
 
 	bts->oml_link->ts->sign.delay = 10;
-	bts->c0->rsl_link->ts->sign.delay = 10;
+	bts->c0->rsl_link_primary->ts->sign.delay = 10;
 	while (1) {
 		rc = osmo_select_main(0);
 		if (rc < 0)

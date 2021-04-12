@@ -119,7 +119,7 @@ static void configure_loop(struct gsm_bts_bb_trx *bb_transc, struct gsm_nm_state
 		abis_nm_opstart(trx->bts, NM_OC_BASEB_TRANSC, trx->bts->bts_nr, trx->nr, 0xff);
 		/* TRX software is active, tell it to initiate RSL Link */
 		abis_nm_ipaccess_rsl_connect(trx, trx->bts->ip_access.rsl_ip,
-					     3003, trx->rsl_tei);
+					     3003, trx->rsl_tei_primary);
 	}
 }
 

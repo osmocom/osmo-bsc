@@ -992,3 +992,4 @@ void pcu_info_update(struct gsm_bts *bts) {};
 int rsl_sacch_filling(struct gsm_bts_trx *trx, uint8_t type, const uint8_t *data, int len) { return 0; }
 int rsl_bcch_info(const struct gsm_bts_trx *trx, enum osmo_sysinfo_type si_type, const uint8_t *data, int len)
 { return 0; }
+struct e1inp_sign_link *rsl_chan_link(const struct gsm_lchan *lchan) { return NULL; }

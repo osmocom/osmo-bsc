@@ -525,12 +525,12 @@ find_bts_by_unitid(struct gsm_network *net, uint16_t site_id, uint16_t bts_id)
 /* These are exported because they are used by the VTY interface. */
 void ipaccess_drop_rsl(struct gsm_bts_trx *trx, const char *reason)
 {
-	if (!trx->rsl_link)
+	if (!trx->rsl_link_primary)
 		return;
 
 	LOG_TRX(trx, DLINP, LOGL_NOTICE, "Dropping RSL link: %s\n", reason);
-	e1inp_sign_link_destroy(trx->rsl_link);
-	trx->rsl_link = NULL;
+	e1inp_sign_link_destroy(trx->rsl_link_primary);
+	trx->rsl_link_primary = NULL;
 	osmo_stat_item_dec(trx->bts->bts_statg->items[BTS_STAT_RSL_CONNECTED], 1);
 
 	if (trx->bts->c0 == trx)
@@ -729,10 +729,10 @@ ipaccess_sign_link_up(void *unit_data, struct e1inp_line *line,
 		line = bts->oml_link->ts->line;
 		ts = e1inp_line_ipa_rsl_ts(line, dev->trx_id);
 		e1inp_ts_config_sign(ts, line);
-		sign_link = trx->rsl_link =
+		sign_link = trx->rsl_link_primary =
 				e1inp_sign_link_create(ts, E1INP_SIGN_RSL,
-						       trx, trx->rsl_tei, 0);
-		trx->rsl_link->ts->sign.delay = 0;
+						       trx, trx->rsl_tei_primary, 0);
+		trx->rsl_link_primary->ts->sign.delay = 0;
 		if (!(sign_link->trx->bts->ip_access.flags &
 					(RSL_UP << sign_link->trx->nr))) {
 			e1inp_event(sign_link->ts, S_L_INP_TEI_UP,
@@ -947,7 +947,7 @@ static int power_ctrl_send_def_params(const struct gsm_bts_trx *trx)
 	if (bs_power_ctrl->mode == GSM_PWR_CTRL_MODE_DYN_BTS)
 		add_power_params_ie(msg, RSL_IE_BS_POWER_PARAM, bs_power_ctrl);
 
-	msg->dst = trx->rsl_link;
+	msg->dst = trx->rsl_link_primary;
 
 	return abis_rsl_sendmsg(msg);
 }

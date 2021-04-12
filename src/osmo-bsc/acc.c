@@ -439,7 +439,7 @@ static int acc_ramp_nm_sig_cb(unsigned int subsys, unsigned int signal, void *ha
 		return 0;
 
 	/* RSL must already be up. We cannot send RACH system information to the BTS otherwise. */
-	if (trx->rsl_link == NULL) {
+	if (trx->rsl_link_primary == NULL) {
 		LOG_TRX(trx, DRSL, LOGL_DEBUG,
 			"ACC RAMP: ignoring state change because RSL link is down\n");
 		return 0;

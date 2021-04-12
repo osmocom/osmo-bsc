@@ -33,8 +33,8 @@ struct gsm_bts_trx {
 	uint8_t nr;
 	/* how do we talk RSL with this TRX? */
 	struct gsm_e1_subslot rsl_e1_link;
-	uint8_t rsl_tei;
-	struct e1inp_sign_link *rsl_link;
+	uint8_t rsl_tei_primary;
+	struct e1inp_sign_link *rsl_link_primary;
 
 	/* Timeout for initiating the RSL connection. */
 	struct osmo_timer_list rsl_connect_timeout;
