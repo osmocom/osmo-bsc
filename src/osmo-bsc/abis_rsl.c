@@ -251,7 +251,7 @@ int rsl_bcch_info(const struct gsm_bts_trx *trx, enum osmo_sysinfo_type si_type,
 			msgb_tlv_put(msg, RSL_IE_FULL_BCCH_INFO, len, data);
 	}
 
-	msg->dst = trx->rsl_link;
+	msg->dst = trx->rsl_link_primary;
 
 	return abis_rsl_sendmsg(msg);
 }
@@ -270,7 +270,7 @@ int rsl_sacch_filling(struct gsm_bts_trx *trx, uint8_t type,
 	if (data)
 		msgb_tl16v_put(msg, RSL_IE_L3_INFO, len, data);
 
-	msg->dst = trx->rsl_link;
+	msg->dst = trx->rsl_link_primary;
 
 	return abis_rsl_sendmsg(msg);
 }
@@ -290,7 +290,7 @@ int rsl_sacch_info_modify(struct gsm_lchan *lchan, uint8_t type,
 	if (data)
 		msgb_tl16v_put(msg, RSL_IE_L3_INFO, len, data);
 
-	msg->dst = lchan->ts->trx->rsl_link;
+	msg->dst = rsl_chan_link(lchan);
 
 	return abis_rsl_sendmsg(msg);
 }
@@ -320,7 +320,7 @@ int rsl_chan_bs_power_ctrl(struct gsm_lchan *lchan, unsigned int fpc, int db)
 	/* BS Power Control Parameters (if supported by BTS model) */
 	add_power_control_params(msg, RSL_IE_BS_POWER_PARAM, lchan);
 
-	msg->dst = lchan->ts->trx->rsl_link;
+	msg->dst = rsl_chan_link(lchan);
 
 	return abis_rsl_sendmsg(msg);
 }
@@ -345,7 +345,7 @@ int rsl_chan_ms_power_ctrl(struct gsm_lchan *lchan)
 	/* MS Power Control Parameters (if supported by BTS model) */
 	add_power_control_params(msg, RSL_IE_MS_POWER_PARAM, lchan);
 
-	msg->dst = lchan->ts->trx->rsl_link;
+	msg->dst = rsl_chan_link(lchan);
 
 	return abis_rsl_sendmsg(msg);
 }
@@ -605,7 +605,7 @@ int rsl_tx_chan_activ(struct gsm_lchan *lchan, uint8_t act_type, uint8_t ho_ref)
 
 	rep_acch_cap_for_bts(lchan, msg);
 
-	msg->dst = trx->rsl_link;
+	msg->dst = rsl_chan_link(lchan);
 
 	rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_CTR_CHAN_ACT_TOTAL]);
 	switch (lchan->type) {
@@ -665,7 +665,7 @@ int rsl_chan_mode_modify_req(struct gsm_lchan *lchan)
 
         rep_acch_cap_for_bts(lchan, msg);
 
-	msg->dst = lchan->ts->trx->rsl_link;
+	msg->dst = rsl_chan_link(lchan);
 
 	return abis_rsl_sendmsg(msg);
 }
@@ -697,7 +697,7 @@ int rsl_encryption_cmd(struct msgb *msg)
 	init_dchan_hdr(dh, RSL_MT_ENCR_CMD);
 	dh->chan_nr = chan_nr;
 
-	msg->dst = lchan->ts->trx->rsl_link;
+	msg->dst = rsl_chan_link(lchan);
 
 	return abis_rsl_sendmsg(msg);
 }
@@ -713,7 +713,7 @@ int rsl_deact_sacch(struct gsm_lchan *lchan)
 	dh->chan_nr = gsm_lchan2chan_nr(lchan);
 
 	msg->lchan = lchan;
-	msg->dst = lchan->ts->trx->rsl_link;
+	msg->dst = rsl_chan_link(lchan);
 
 	DEBUGP(DRSL, "%s DEACTivate SACCH CMD\n", gsm_lchan_name(lchan));
 
@@ -732,7 +732,7 @@ int rsl_tx_rf_chan_release(struct gsm_lchan *lchan)
 	dh->chan_nr = gsm_lchan2chan_nr(lchan);
 
 	msg->lchan = lchan;
-	msg->dst = lchan->ts->trx->rsl_link;
+	msg->dst = rsl_chan_link(lchan);
 
 	return abis_rsl_sendmsg(msg);
 }
@@ -767,7 +767,7 @@ int rsl_paging_cmd(struct gsm_bts *bts, uint8_t paging_group,
 	if (bts->type == GSM_BTS_TYPE_RBS2000 && is_gprs)
 		msgb_tv_put(msg, RSL_IE_ERIC_PACKET_PAG_IND, 0);
 
-	msg->dst = bts->c0->rsl_link;
+	msg->dst = bts->c0->rsl_link_primary;
 
 	return abis_rsl_sendmsg(msg);
 }
@@ -827,7 +827,7 @@ struct msgb *rsl_imm_assign_cmd_common(struct gsm_bts *bts, uint8_t len, uint8_t
 		break;
 	}
 
-	msg->dst = bts->c0->rsl_link;
+	msg->dst = bts->c0->rsl_link_primary;
 	return msg;
 }
 
@@ -870,7 +870,7 @@ int rsl_siemens_mrpci(struct gsm_lchan *lchan, struct rsl_mrpci *mrpci)
 	DEBUGP(DRSL, "%s TX Siemens MRPCI 0x%02x\n",
 		gsm_lchan_name(lchan), *(uint8_t *)mrpci);
 
-	msg->dst = lchan->ts->trx->rsl_link;
+	msg->dst = rsl_chan_link(lchan);
 
 	return abis_rsl_sendmsg(msg);
 }
@@ -888,7 +888,7 @@ int rsl_data_request(struct msgb *msg, uint8_t link_id)
 	rsl_rll_push_l3(msg, RSL_MT_DATA_REQ, gsm_lchan2chan_nr(msg->lchan),
 			link_id, 1);
 
-	msg->dst = msg->lchan->ts->trx->rsl_link;
+	msg->dst = rsl_chan_link(msg->lchan);
 
 	return abis_rsl_sendmsg(msg);
 }
@@ -901,7 +901,7 @@ int rsl_establish_request(struct gsm_lchan *lchan, uint8_t link_id)
 
 	msg = rsl_rll_simple(RSL_MT_EST_REQ, gsm_lchan2chan_nr(lchan),
 			     link_id, 0);
-	msg->dst = lchan->ts->trx->rsl_link;
+	msg->dst = rsl_chan_link(lchan);
 
 	DEBUGP(DRLL, "%s RSL RLL ESTABLISH REQ (link_id=0x%02x)\n",
 		gsm_lchan_name(lchan), link_id);
@@ -925,7 +925,7 @@ int rsl_release_request(struct gsm_lchan *lchan, uint8_t link_id,
 	/* 0 is normal release, 1 is local end */
 	msgb_tv_put(msg, RSL_IE_RELEASE_MODE, release_mode);
 
-	msg->dst = lchan->ts->trx->rsl_link;
+	msg->dst = rsl_chan_link(lchan);
 
 	DEBUGP(DRLL, "%s RSL RLL RELEASE REQ (link_id=0x%02x, reason=%u)\n",
 		gsm_lchan_name(lchan), link_id, release_mode);
@@ -2255,7 +2255,7 @@ int rsl_tx_ipacc_crcx(const struct gsm_lchan *lchan)
 	LOG_LCHAN(lchan, LOGL_DEBUG, "Sending IPACC CRCX to BTS: speech_mode=0x%02x RTP_PAYLOAD=%d\n",
 		  lchan->abis_ip.speech_mode, lchan->abis_ip.rtp_payload);
 
-	msg->dst = lchan->ts->trx->rsl_link;
+	msg->dst = rsl_chan_link(lchan);
 
 	return abis_rsl_sendmsg(msg);
 }
@@ -2286,7 +2286,7 @@ struct msgb *rsl_make_ipacc_mdcx(const struct gsm_lchan *lchan, uint32_t dest_ip
 	if (lchan->abis_ip.rtp_payload2)
 		msgb_tv_put(msg, RSL_IE_IPAC_RTP_PAYLOAD2, lchan->abis_ip.rtp_payload2);
 
-	msg->dst = lchan->ts->trx->rsl_link;
+	msg->dst = rsl_chan_link(lchan);
 
 	return msg;
 }
@@ -2483,7 +2483,7 @@ static int send_osmocom_style_pdch_chan_act(struct gsm_bts_trx_ts *ts, bool acti
 		}
 	}
 
-	msg->dst = ts->trx->rsl_link;
+	msg->dst = ts->trx->rsl_link_primary;
 	return abis_rsl_sendmsg(msg);
 }
 
@@ -2498,7 +2498,7 @@ static int send_ipacc_style_pdch_act(struct gsm_bts_trx_ts *ts, bool activate)
 	dh->c.msg_discr = ABIS_RSL_MDISC_DED_CHAN;
 	dh->chan_nr = gsm_pchan2chan_nr(GSM_PCHAN_TCH_F, ts->nr, 0);
 
-	msg->dst = ts->trx->rsl_link;
+	msg->dst = ts->trx->rsl_link_primary;
 	return abis_rsl_sendmsg(msg);
 }
 
@@ -2603,7 +2603,7 @@ int rsl_etws_pn_command(struct gsm_bts *bts, uint8_t chan_nr, const uint8_t *dat
 
 	msgb_tlv_put(msg, RSL_IE_SMSCB_MSG, len, data);
 
-	msg->dst = bts->c0->rsl_link;
+	msg->dst = bts->c0->rsl_link_primary;
 
 	return abis_rsl_sendmsg(msg);
 }
@@ -2629,7 +2629,7 @@ int rsl_sms_cb_command(struct gsm_bts *bts, uint8_t chan_number,
 	if (use_extended_cbch)
 		msgb_tv_put(cb_cmd, RSL_IE_SMSCB_CHAN_INDICATOR, 0x01);
 
-	cb_cmd->dst = bts->c0->rsl_link;
+	cb_cmd->dst = bts->c0->rsl_link_primary;
 
 	return abis_rsl_sendmsg(cb_cmd);
 }
@@ -2643,7 +2643,7 @@ int rsl_nokia_si_begin(struct gsm_bts_trx *trx)
 	ch->msg_discr = ABIS_RSL_MDISC_TRX;
 	ch->msg_type = 0x40; /* Nokia SI Begin */
 
-	msg->dst = trx->rsl_link;
+	msg->dst = trx->rsl_link_primary;
 
 	return abis_rsl_sendmsg(msg);
 }
@@ -2659,7 +2659,7 @@ int rsl_nokia_si_end(struct gsm_bts_trx *trx)
 
 	msgb_tv_put(msg, 0xFD, 0x00); /* Nokia Pagemode Info, No paging reorganisation required */
 
-	msg->dst = trx->rsl_link;
+	msg->dst = trx->rsl_link_primary;
 
 	return abis_rsl_sendmsg(msg);
 }
@@ -2676,7 +2676,12 @@ int rsl_bs_power_control(struct gsm_bts_trx *trx, uint8_t channel, uint8_t reduc
 	msgb_tv_put(msg, RSL_IE_CHAN_NR, channel);
 	msgb_tv_put(msg, RSL_IE_BS_POWER, reduction); /* reduction in 2dB steps */
 
-	msg->dst = trx->rsl_link;
+	msg->dst = trx->rsl_link_primary;
 
 	return abis_rsl_sendmsg(msg);
+}
+
+struct e1inp_sign_link *rsl_chan_link(const struct gsm_lchan *lchan)
+{
+	return lchan->ts->trx->rsl_link_primary;
 }

@@ -893,7 +893,7 @@ bool all_trx_rsl_connected_unlocked(const struct gsm_bts *bts)
 	}
 
 	llist_for_each_entry(trx, &bts->trx_list, list) {
-		if (!trx->rsl_link)
+		if (!trx->rsl_link_primary)
 			return false;
 
 		if (!trx_is_usable(trx))

@@ -175,7 +175,7 @@ static void gen_meas_rep(struct gsm_lchan *lchan,
 	mr->bcch_f_nc6_hi = neighbors[5].bcch_f >> 2;
 	mr->bcch_f_nc6_lo = neighbors[5].bcch_f & 3;
 
-	msg->dst = lchan->ts->trx->bts->c0->rsl_link;
+	msg->dst = rsl_chan_link(lchan);
 	msg->l2h = (unsigned char *)dh;
 	msg->l3h = (unsigned char *)gh;
 
@@ -231,7 +231,7 @@ static struct gsm_bts *_create_bts(int num_trx, const char * const *ts_args, int
 
 	rsl_link = talloc_zero(ctx, struct e1inp_sign_link);
 	rsl_link->trx = bts->c0;
-	bts->c0->rsl_link = rsl_link;
+	bts->c0->rsl_link_primary = rsl_link;
 
 	for (trx_i = 0; trx_i < num_trx; trx_i++) {
 		while (!(trx = gsm_bts_trx_num(bts, trx_i)))
@@ -555,7 +555,7 @@ static void send_chan_act_ack(struct gsm_lchan *lchan, int act)
 	dh->ie_chan = RSL_IE_CHAN_NR;
 	dh->chan_nr = gsm_lchan2chan_nr(lchan);
 
-	msg->dst = lchan->ts->trx->bts->c0->rsl_link;
+	msg->dst = rsl_chan_link(lchan);
 	msg->l2h = (unsigned char *)dh;
 
 	abis_rsl_rcvmsg(msg);
@@ -592,7 +592,7 @@ static void send_assignment_complete(struct gsm_lchan *lchan)
 	gh->proto_discr = GSM48_PDISC_RR;
 	gh->msg_type = GSM48_MT_RR_ASS_COMPL;
 
-	msg->dst = lchan->ts->trx->rsl_link;
+	msg->dst = rsl_chan_link(lchan);
 	msg->l2h = (unsigned char *)rh;
 	msg->l3h = (unsigned char *)gh;
 
@@ -616,7 +616,7 @@ static void send_est_ind(struct gsm_lchan *lchan)
 	rh->ie_link_id = RSL_IE_LINK_IDENT;
 	rh->link_id = 0x00;
 
-	msg->dst = lchan->ts->trx->bts->c0->rsl_link;
+	msg->dst = rsl_chan_link(lchan);
 	msg->l2h = (unsigned char *)rh;
 
 	abis_rsl_rcvmsg(msg);
@@ -638,7 +638,7 @@ static void send_ho_detect(struct gsm_lchan *lchan)
 	rh->ie_link_id = RSL_IE_LINK_IDENT;
 	rh->link_id = 0x00;
 
-	msg->dst = lchan->ts->trx->bts->c0->rsl_link;
+	msg->dst = rsl_chan_link(lchan);
 	msg->l2h = (unsigned char *)rh;
 
 	abis_rsl_rcvmsg(msg);
@@ -682,7 +682,7 @@ static void send_ho_complete(struct gsm_lchan *lchan, bool success)
 	gh->msg_type =
 		success ? GSM48_MT_RR_HANDO_COMPL : GSM48_MT_RR_HANDO_FAIL;
 
-	msg->dst = lchan->ts->trx->bts->c0->rsl_link;
+	msg->dst = rsl_chan_link(lchan);
 	msg->l2h = (unsigned char *)rh;
 	msg->l3h = (unsigned char *)gh;
 

@@ -735,7 +735,7 @@ static void config_write_trx_single(struct vty *vty, struct gsm_bts_trx *trx)
 	vty_out(vty, "   nominal power %u%s", trx->nominal_power, VTY_NEWLINE);
 	vty_out(vty, "   max_power_red %u%s", trx->max_power_red, VTY_NEWLINE);
 	config_write_e1_link(vty, &trx->rsl_e1_link, "   rsl ");
-	vty_out(vty, "   rsl e1 tei %u%s", trx->rsl_tei, VTY_NEWLINE);
+	vty_out(vty, "   rsl e1 tei %u%s", trx->rsl_tei_primary, VTY_NEWLINE);
 
 	if (trx->bts->model->config_write_trx)
 		trx->bts->model->config_write_trx(vty, trx);
@@ -1326,10 +1326,10 @@ static int config_write_net(struct vty *vty)
 
 static void trx_dump_vty(struct vty *vty, struct gsm_bts_trx *trx, bool print_rsl, bool show_connected)
 {
-	if (show_connected && !trx->rsl_link)
+	if (show_connected && !trx->rsl_link_primary)
 		return;
 
-	if (!show_connected && trx->rsl_link)
+	if (!show_connected && trx->rsl_link_primary)
 		return;
 
 	vty_out(vty, "TRX %u of BTS %u is on ARFCN %u%s",
@@ -1341,15 +1341,15 @@ static void trx_dump_vty(struct vty *vty, struct gsm_bts_trx *trx, bool print_rs
 	vty_out(vty, "  Radio Carrier NM State: ");
 	net_dump_nmstate(vty, &trx->mo.nm_state);
 	if (print_rsl)
-		vty_out(vty, "  RSL State: %s%s", trx->rsl_link? "connected" : "disconnected", VTY_NEWLINE);
+		vty_out(vty, "  RSL State: %s%s", trx->rsl_link_primary? "connected" : "disconnected", VTY_NEWLINE);
 	vty_out(vty, "  Baseband Transceiver NM State: ");
 	net_dump_nmstate(vty, &trx->bb_transc.mo.nm_state);
 	if (is_ipaccess_bts(trx->bts)) {
-		vty_out(vty, "  ip.access stream ID: 0x%02x ", trx->rsl_tei);
-		e1isl_dump_vty_tcp(vty, trx->rsl_link);
+		vty_out(vty, "  ip.access stream ID: 0x%02x ", trx->rsl_tei_primary);
+		e1isl_dump_vty_tcp(vty, trx->rsl_link_primary);
 	} else {
 		vty_out(vty, "  E1 Signalling Link:%s", VTY_NEWLINE);
-		e1isl_dump_vty(vty, trx->rsl_link);
+		e1isl_dump_vty(vty, trx->rsl_link_primary);
 	}
 }
 
@@ -5449,7 +5449,7 @@ DEFUN_USRATTR(cfg_trx_rsl_e1_tei,
 {
 	struct gsm_bts_trx *trx = vty->index;
 
-	trx->rsl_tei = atoi(argv[0]);
+	trx->rsl_tei_primary = atoi(argv[0]);
 
 	return CMD_SUCCESS;
 }

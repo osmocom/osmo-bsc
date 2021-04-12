@@ -434,7 +434,7 @@ static void nm_reconfig_trx(struct gsm_bts_trx *trx)
 		abis_nm_conn_terr_sign(trx, e1l->e1_nr, e1l->e1_ts,
 					e1l->e1_ts_ss);
 		abis_nm_establish_tei(trx->bts, trx->nr, e1l->e1_nr,
-				      e1l->e1_ts, e1l->e1_ts_ss, trx->rsl_tei);
+				      e1l->e1_ts, e1l->e1_ts_ss, trx->rsl_tei_primary);
 
 		/* Set Radio Attributes */
 		if (trx == trx->bts->c0)

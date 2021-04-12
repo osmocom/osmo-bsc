@@ -51,7 +51,7 @@
 int gsm48_sendmsg(struct msgb *msg)
 {
 	if (msg->lchan)
-		msg->dst = msg->lchan->ts->trx->rsl_link;
+		msg->dst = rsl_chan_link(msg->lchan);
 
 	msg->l3h = msg->data;
 	return rsl_data_request(msg, 0);

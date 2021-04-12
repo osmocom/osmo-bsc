@@ -1136,7 +1136,6 @@ static void gsm0808_send_rsl_dtap(struct gsm_subscriber_connection *conn,
 
 	sapi = link_id & 0x7;
 	msg->lchan = conn->lchan;
-	msg->dst = msg->lchan->ts->trx->rsl_link;
 
 	/* If we are on a TCH and need to submit a SMS (on SAPI=3) we need to use the SACH */
 	if (allow_sacch && sapi != 0) {
