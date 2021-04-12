@@ -809,7 +809,8 @@ static void gscon_fsm_allstate(struct osmo_fsm_inst *fi, uint32_t event, void *d
 {
 	struct gsm_subscriber_connection *conn = fi->priv;
 	const struct gscon_clear_cmd_data *ccd;
-	struct osmo_mobile_identity *mi_imsi;
+	const struct tlv_parsed *tp;
+	struct osmo_mobile_identity mi_imsi;
 
 	/* Regular allstate event processing */
 	switch (event) {
@@ -868,14 +869,19 @@ static void gscon_fsm_allstate(struct osmo_fsm_inst *fi, uint32_t event, void *d
 		break;
 	case GSCON_EV_A_COMMON_ID_IND:
 		OSMO_ASSERT(data);
-		mi_imsi = data;
+		tp = data;
+		if (osmo_mobile_identity_decode(&mi_imsi, TLVP_VAL(tp, GSM0808_IE_IMSI), TLVP_LEN(tp, GSM0808_IE_IMSI), false)
+		    || mi_imsi.type != GSM_MI_TYPE_IMSI) {
+			LOGPFSML(fi, LOGL_ERROR, "CommonID: could not parse IMSI\n");
+			return;
+		}
 		if (!conn->bsub)
-			conn->bsub = bsc_subscr_find_or_create_by_imsi(conn->network->bsc_subscribers, mi_imsi->imsi,
+			conn->bsub = bsc_subscr_find_or_create_by_imsi(conn->network->bsc_subscribers, mi_imsi.imsi,
 								       BSUB_USE_CONN);
 		else {
 			/* we already have a bsc_subscr associated; maybe that subscriber has no IMSI yet? */
 			if (!conn->bsub->imsi[0])
-				bsc_subscr_set_imsi(conn->bsub, mi_imsi->imsi);
+				bsc_subscr_set_imsi(conn->bsub, mi_imsi.imsi);
 		}
 		gscon_update_id(conn);
 		break;

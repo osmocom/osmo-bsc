@@ -1072,7 +1072,6 @@ static int bssmap_handle_common_id(struct gsm_subscriber_connection *conn,
 				   struct msgb *msg, unsigned int length)
 {
 	struct tlv_parsed tp;
-	struct osmo_mobile_identity mi_imsi;
 
 	osmo_bssap_tlv_parse(&tp, msg->l4h + 1, length - 1);
 
@@ -1084,13 +1083,7 @@ static int bssmap_handle_common_id(struct gsm_subscriber_connection *conn,
 		return -EINVAL;
 	}
 
-	if (osmo_mobile_identity_decode(&mi_imsi, TLVP_VAL(&tp, GSM0808_IE_IMSI), TLVP_LEN(&tp, GSM0808_IE_IMSI), false)
-	    || mi_imsi.type != GSM_MI_TYPE_IMSI) {
-		LOGPFSML(conn->fi, LOGL_ERROR, "CommonID: could not parse IMSI\n");
-		return -EINVAL;
-	}
-
-	osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_A_COMMON_ID_IND, &mi_imsi);
+	osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_A_COMMON_ID_IND, &tp);
 
 	return 0;
 }
