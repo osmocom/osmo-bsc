@@ -165,14 +165,14 @@ static void lchan_on_fully_established(struct gsm_lchan *lchan)
 			LOG_LCHAN(lchan, LOGL_ERROR,
 				  "lchan activation for assignment succeeded, but lchan has no conn:"
 				  " cannot trigger appropriate actions. Release.\n");
-			lchan_release(lchan, false, true, RSL_ERR_EQUIPMENT_FAIL);
+			lchan_release(lchan, false, true, RSL_ERR_EQUIPMENT_FAIL, NULL);
 			break;
 		}
 		if (!lchan->conn->assignment.fi) {
 			LOG_LCHAN(lchan, LOGL_ERROR,
 				  "lchan activation for assignment succeeded, but lchan has no"
 				  " assignment ongoing: cannot trigger appropriate actions. Release.\n");
-			lchan_release(lchan, false, true, RSL_ERR_EQUIPMENT_FAIL);
+			lchan_release(lchan, false, true, RSL_ERR_EQUIPMENT_FAIL, NULL);
 			break;
 		}
 		osmo_fsm_inst_dispatch(lchan->conn->assignment.fi, ASSIGNMENT_EV_LCHAN_ESTABLISHED,
@@ -186,14 +186,14 @@ static void lchan_on_fully_established(struct gsm_lchan *lchan)
 		if (!lchan->conn) {
 			LOG_LCHAN(lchan, LOGL_ERROR,
 				  "lchan activation for handover succeeded, but lchan has no conn\n");
-			lchan_release(lchan, false, true, RSL_ERR_EQUIPMENT_FAIL);
+			lchan_release(lchan, false, true, RSL_ERR_EQUIPMENT_FAIL, NULL);
 			break;
 		}
 		if (!lchan->conn->ho.fi) {
 			LOG_LCHAN(lchan, LOGL_ERROR,
 				  "lchan activation for handover succeeded, but lchan has no"
 				  " handover ongoing\n");
-			lchan_release(lchan, false, true, RSL_ERR_EQUIPMENT_FAIL);
+			lchan_release(lchan, false, true, RSL_ERR_EQUIPMENT_FAIL, NULL);
 			break;
 		}
 		osmo_fsm_inst_dispatch(lchan->conn->ho.fi, HO_EV_LCHAN_ESTABLISHED, lchan);
@@ -793,14 +793,14 @@ static void lchan_fsm_post_activ_ack(struct osmo_fsm_inst *fi)
 			LOG_LCHAN(lchan, LOGL_ERROR,
 				  "lchan activation for assignment succeeded, but lchan has no conn:"
 				  " cannot trigger appropriate actions. Release.\n");
-			lchan_release(lchan, false, true, RSL_ERR_EQUIPMENT_FAIL);
+			lchan_release(lchan, false, true, RSL_ERR_EQUIPMENT_FAIL, NULL);
 			break;
 		}
 		if (!lchan->conn->assignment.fi) {
 			LOG_LCHAN(lchan, LOGL_ERROR,
 				  "lchan activation for assignment succeeded, but lchan has no"
 				  " assignment ongoing: cannot trigger appropriate actions. Release.\n");
-			lchan_release(lchan, false, true, RSL_ERR_EQUIPMENT_FAIL);
+			lchan_release(lchan, false, true, RSL_ERR_EQUIPMENT_FAIL, NULL);
 			break;
 		}
 		/* After the Chan Activ Ack, the MS expects to receive an RR Assignment Command.
@@ -813,14 +813,14 @@ static void lchan_fsm_post_activ_ack(struct osmo_fsm_inst *fi)
 			LOG_LCHAN(lchan, LOGL_ERROR,
 				  "lchan activation for handover succeeded, but lchan has no conn:"
 				  " cannot trigger appropriate actions. Release.\n");
-			lchan_release(lchan, false, true, RSL_ERR_EQUIPMENT_FAIL);
+			lchan_release(lchan, false, true, RSL_ERR_EQUIPMENT_FAIL, NULL);
 			break;
 		}
 		if (!lchan->conn->ho.fi) {
 			LOG_LCHAN(lchan, LOGL_ERROR,
 				  "lchan activation for handover succeeded, but lchan has no"
 				  " handover ongoing: cannot trigger appropriate actions. Release.\n");
-			lchan_release(lchan, false, true, RSL_ERR_EQUIPMENT_FAIL);
+			lchan_release(lchan, false, true, RSL_ERR_EQUIPMENT_FAIL, NULL);
 			break;
 		}
 		/* After the Chan Activ Ack of the new lchan, send the MS an RR Handover Command on the
@@ -1589,7 +1589,8 @@ static int lchan_fsm_timer_cb(struct osmo_fsm_inst *fi)
 }
 
 void lchan_release(struct gsm_lchan *lchan, bool do_rr_release,
-		   bool err, enum gsm48_rr_cause cause_rr)
+		   bool err, enum gsm48_rr_cause cause_rr,
+		   const struct osmo_plmn_id *last_eutran_plmn)
 {
 	if (!lchan || !lchan->fi)
 		return;
@@ -1603,6 +1604,10 @@ void lchan_release(struct gsm_lchan *lchan, bool do_rr_release,
 	lchan->release.in_error = err;
 	lchan->release.do_rr_release = do_rr_release;
 	lchan->release.rr_cause = cause_rr;
+	if (last_eutran_plmn) {
+		lchan->release.last_eutran_plmn_valid = true;
+		memcpy(&lchan->release.last_eutran_plmn, last_eutran_plmn, sizeof(*last_eutran_plmn));
+	}
 
 	/* States waiting for events will notice the desire to release when done waiting, so it is enough
 	 * to mark for release. */

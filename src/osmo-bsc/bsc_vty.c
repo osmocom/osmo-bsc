@@ -77,6 +77,7 @@
 #include <osmocom/bsc/osmo_bsc.h>
 #include <osmocom/bsc/bts.h>
 #include <osmocom/mgcp_client/mgcp_client_endpoint_fsm.h>
+#include <osmocom/bsc/bsc_subscr_conn_fsm.h>
 
 #include <inttypes.h>
 
@@ -6111,7 +6112,8 @@ static int lchan_act_single(struct vty *vty, struct gsm_lchan *lchan, const char
 		}
 		vty_out(vty, "%% Asking for release of %s in state %s%s", gsm_lchan_name(lchan),
 			osmo_fsm_inst_state_name(lchan->fi), VTY_NEWLINE);
-		lchan_release(lchan, !!(lchan->conn), false, 0);
+		lchan_release(lchan, !!(lchan->conn), false, 0,
+			      gscon_last_eutran_plmn(lchan->conn));
 	}
 
 	return CMD_SUCCESS;

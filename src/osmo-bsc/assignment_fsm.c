@@ -117,7 +117,7 @@ void assignment_reset(struct gsm_subscriber_connection *conn)
 	if (conn->assignment.new_lchan) {
 		struct gsm_lchan *lchan = conn->assignment.new_lchan;
 		conn->assignment.new_lchan = NULL;
-		lchan_release(lchan, false, true, RSL_ERR_EQUIPMENT_FAIL);
+		lchan_release(lchan, false, true, RSL_ERR_EQUIPMENT_FAIL, NULL);
 	}
 
 	if (conn->assignment.created_ci_for_msc) {
@@ -262,7 +262,8 @@ static void assignment_success(struct gsm_subscriber_connection *conn)
 	if (!conn->assignment.fi) {
 		/* The lchan was ready, and we failed to tell the MSC about it. By releasing this lchan,
 		 * the conn will notice that its primary lchan is gone and should clean itself up. */
-		lchan_release(conn->lchan, true, true, RSL_ERR_EQUIPMENT_FAIL);
+		lchan_release(conn->lchan, true, true, RSL_ERR_EQUIPMENT_FAIL,
+			      gscon_last_eutran_plmn(conn));
 		return;
 	}
 

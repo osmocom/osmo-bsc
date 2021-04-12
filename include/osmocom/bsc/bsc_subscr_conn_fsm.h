@@ -2,6 +2,7 @@
 #include <osmocom/gsm/protocol/gsm_08_08.h>
 #include <osmocom/gsm/protocol/gsm_04_08.h>
 #include <osmocom/core/fsm.h>
+#include "osmocom/bsc/gsm_data.h"
 
 #define BSUB_USE_CONN "conn"
 
@@ -48,11 +49,6 @@ enum gscon_fsm_event {
 	GSCON_EV_LCS_LOC_REQ_END,
 };
 
-struct gscon_clear_cmd_data {
-	enum gsm0808_cause cause_0808;
-	bool is_csfb;
-};
-
 struct gsm_subscriber_connection;
 struct gsm_network;
 struct msgb;
@@ -93,3 +89,10 @@ void gscon_forget_mgw_endpoint_ci(struct gsm_subscriber_connection *conn, struct
 
 bool gscon_is_aoip(struct gsm_subscriber_connection *conn);
 bool gscon_is_sccplite(struct gsm_subscriber_connection *conn);
+
+
+static inline const struct osmo_plmn_id *gscon_last_eutran_plmn(const struct gsm_subscriber_connection *conn)
+{
+	return (conn && conn->last_eutran_plmn_valid) ?
+		&conn->last_eutran_plmn : NULL;
+}

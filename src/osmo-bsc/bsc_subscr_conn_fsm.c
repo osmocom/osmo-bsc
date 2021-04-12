@@ -195,7 +195,8 @@ static void gscon_release_lchan(struct gsm_subscriber_connection *conn, struct g
 		conn->ho.new_lchan = NULL;
 	if (conn->assignment.new_lchan == lchan)
 		conn->assignment.new_lchan = NULL;
-	lchan_release(lchan, do_rr_release, err, cause_rr);
+	lchan_release(lchan, do_rr_release, err, cause_rr,
+		      gscon_last_eutran_plmn(conn));
 }
 
 void gscon_release_lchans(struct gsm_subscriber_connection *conn, bool do_rr_release, enum gsm48_rr_cause cause_rr)
@@ -808,7 +809,7 @@ void gscon_forget_mgw_endpoint_ci(struct gsm_subscriber_connection *conn, struct
 static void gscon_fsm_allstate(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
 	struct gsm_subscriber_connection *conn = fi->priv;
-	const struct gscon_clear_cmd_data *ccd;
+	const enum gsm0808_cause *cause_0808;
 	const struct tlv_parsed *tp;
 	struct osmo_mobile_identity mi_imsi;
 
@@ -826,14 +827,12 @@ static void gscon_fsm_allstate(struct osmo_fsm_inst *fi, uint32_t event, void *d
 			osmo_fsm_inst_dispatch(conn->lcs.loc_req->fi, LCS_LOC_REQ_EV_CONN_CLEAR, NULL);
 
 		OSMO_ASSERT(data);
-		ccd = data;
-		if (conn->lchan)
-			conn->lchan->release.is_csfb = ccd->is_csfb;
+		cause_0808 = data;
 		/* MSC tells us to cleanly shut down */
 		if (conn->fi->state != ST_CLEARING)
 			osmo_fsm_inst_state_chg(fi, ST_CLEARING, 60, -4);
 		LOGPFSML(fi, LOGL_DEBUG, "Releasing all lchans (if any) after BSSMAP Clear Command\n");
-		gscon_release_lchans(conn, true, bsc_gsm48_rr_cause_from_gsm0808_cause(ccd->cause_0808));
+		gscon_release_lchans(conn, true, bsc_gsm48_rr_cause_from_gsm0808_cause(*cause_0808));
 		/* FIXME: Release all terestrial resources in ST_CLEARING */
 		/* According to 3GPP 48.008 3.1.9.1. "The BSS need not wait for the radio channel
 		 * release to be completed or for the guard timer to expire before returning the
@@ -882,6 +881,12 @@ static void gscon_fsm_allstate(struct osmo_fsm_inst *fi, uint32_t event, void *d
 			/* we already have a bsc_subscr associated; maybe that subscriber has no IMSI yet? */
 			if (!conn->bsub->imsi[0])
 				bsc_subscr_set_imsi(conn->bsub, mi_imsi.imsi);
+		}
+		if (TLVP_PRESENT(tp, GSM0808_IE_LAST_USED_EUTRAN_PLMN_ID)) {
+			conn->last_eutran_plmn_valid = true;
+			osmo_plmn_from_bcd(TLVP_VAL(tp, GSM0808_IE_LAST_USED_EUTRAN_PLMN_ID), &conn->last_eutran_plmn);
+			LOGPFSML(fi, LOGL_DEBUG, "subscr comes from E-UTRAN PLMN %s\n",
+				 osmo_plmn_name(&conn->last_eutran_plmn));
 		}
 		gscon_update_id(conn);
 		break;

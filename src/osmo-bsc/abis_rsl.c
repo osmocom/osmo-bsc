@@ -998,7 +998,7 @@ static int rsl_rx_conn_fail(struct msgb *msg)
 	 * the connection will presumably be torn down and lead to an lchan release. During initial
 	 * Channel Request from the MS, an lchan has no conn yet, so in that case release now. */
 	if (!lchan->conn)
-		lchan_release(lchan, false, true, *cause_p);
+		lchan_release(lchan, false, true, *cause_p, NULL);
 	else
 		osmo_fsm_inst_dispatch(lchan->conn->fi, GSCON_EV_RSL_CONN_FAIL, (void*)cause_p);
 
@@ -1672,7 +1672,8 @@ static bool force_free_lchan_for_emergency(struct chan_rqd *rqd)
 			"CHAN RQD/EMERGENCY-PRIORITY: inducing termination of lchan %s (state:%s) in favor of incoming EMERGENCY CALL!\n",
 			gsm_lchan_name(rqd->release_lchan), osmo_fsm_inst_state_name(rqd->release_lchan->fi));
 
-		lchan_release(rqd->release_lchan, !!(rqd->release_lchan->conn), true, 0);
+		lchan_release(rqd->release_lchan, !!(rqd->release_lchan->conn), true, 0,
+			      gscon_last_eutran_plmn(rqd->release_lchan->conn));
 	} else {
 		/* BTS is shutting down, give up... */
 		if (rqd->release_lchan->ts->fi->state == TS_ST_NOT_INITIALIZED)

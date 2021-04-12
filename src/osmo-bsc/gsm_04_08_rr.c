@@ -313,10 +313,10 @@ int gsm48_send_rr_release(struct gsm_lchan *lchan)
 	cause = msgb_put(msg, 1);
 	cause[0] = lchan->release.rr_cause;
 
-	if (lchan->release.is_csfb) {
+	if (lchan->release.last_eutran_plmn_valid) {
 		uint8_t buf[CELL_SEL_IND_AFTER_REL_MAX_BYTES];
 		int len;
-
+		/* FIXME: so far we assume all configured neigbhors match last_eutran_plmn */
 		len = generate_cell_sel_ind_after_rel(buf, sizeof(buf), lchan->ts->trx->bts);
 		if (len == 0) {
 			LOGPLCHAN(lchan, DRR, LOGL_NOTICE, "MSC indicated CSFB Fast Return, but "
@@ -996,13 +996,15 @@ static void dispatch_dtap(struct gsm_subscriber_connection *conn,
 			if (msg->lchan->ts->trx->bts->si_common.rach_control.t2 & 0x4) {
 				LOG_LCHAN(msg->lchan, LOGL_NOTICE, "MS attempts EMERGENCY SETUP although EMERGENCY CALLS"
                                           " are not allowed in sysinfo (spec violation by MS!)\n");
-				lchan_release(msg->lchan, true, true, GSM48_RR_CAUSE_PREMPTIVE_REL);
+				lchan_release(msg->lchan, true, true, GSM48_RR_CAUSE_PREMPTIVE_REL,
+					      gscon_last_eutran_plmn(msg->lchan->conn));
 				break;
 			}
 			if (!conn->sccp.msc->allow_emerg) {
 				LOG_LCHAN(msg->lchan, LOGL_NOTICE, "MS attempts EMERGENCY SETUP, but EMERGENCY CALLS are"
                                           " denied on this BSC (check BTS config!)\n");
-				lchan_release(msg->lchan, true, true, GSM48_RR_CAUSE_PREMPTIVE_REL);
+				lchan_release(msg->lchan, true, true, GSM48_RR_CAUSE_PREMPTIVE_REL,
+					      gscon_last_eutran_plmn(msg->lchan->conn));
 				break;
 			}
 		}

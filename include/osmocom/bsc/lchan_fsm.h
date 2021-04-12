@@ -53,7 +53,8 @@ void lchan_fsm_init();
 
 void lchan_fsm_alloc(struct gsm_lchan *lchan);
 void lchan_release(struct gsm_lchan *lchan, bool do_rr_release,
-		   bool err, enum gsm48_rr_cause cause_rr);
+		   bool err, enum gsm48_rr_cause cause_rr,
+		   const struct osmo_plmn_id *last_eutran_plmn);
 
 void lchan_activate(struct gsm_lchan *lchan, struct lchan_activate_info *info);
 void lchan_ready_to_switch_rtp(struct gsm_lchan *lchan);

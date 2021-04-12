@@ -334,6 +334,9 @@ struct gsm_subscriber_connection {
 
 	struct gsm48_classmark3 cm3;
 	bool cm3_valid;
+
+	bool last_eutran_plmn_valid;
+	struct osmo_plmn_id last_eutran_plmn;
 };
 
 
@@ -614,6 +617,8 @@ struct gsm_lchan {
 		bool requested;
 		bool do_rr_release;
 		enum gsm48_rr_cause rr_cause;
+		bool last_eutran_plmn_valid;
+		struct osmo_plmn_id last_eutran_plmn;
 
 		/* There is an RSL error cause of value 0, so we need a separate flag. */
 		bool in_error;
@@ -623,9 +628,6 @@ struct gsm_lchan {
 		/* If a release event is being handled, ignore other ricocheting release events until that
 		 * release handling has concluded. */
 		bool in_release_handler;
-
-		/* is this release at the end of a CSFB call? */
-		bool is_csfb;
 	} release;
 
 	/* The logical channel type */

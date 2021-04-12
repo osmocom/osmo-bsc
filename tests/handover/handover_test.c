@@ -449,7 +449,7 @@ static void lchan_release_ack(struct gsm_lchan *lchan)
 
 static void lchan_clear(struct gsm_lchan *lchan)
 {
-	lchan_release(lchan, true, false, 0);
+	lchan_release(lchan, true, false, 0, NULL);
 	lchan_release_ack(lchan);
 }
 

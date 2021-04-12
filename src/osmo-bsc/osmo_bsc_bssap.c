@@ -448,23 +448,27 @@ static int bssmap_handle_clear_cmd(struct gsm_subscriber_connection *conn,
 				   struct msgb *msg, unsigned int length)
 {
 	struct tlv_parsed tp;
-	struct gscon_clear_cmd_data ccd = {
-		.is_csfb = false,
-	};
+	enum gsm0808_cause cause_0808;
 
 	tlv_parse(&tp, gsm0808_att_tlvdef(), msg->l4h + 1, length - 1, 0, 0);
 
-	ccd.cause_0808 = gsm0808_get_cause(&tp);
-	if (ccd.cause_0808 < 0) {
+	cause_0808 = gsm0808_get_cause(&tp);
+	if (cause_0808 < 0) {
 		LOGPFSML(conn->fi, LOGL_ERROR, "Clear Command: Mandatory Cause IE not present.\n");
 		/* Clear anyway, but without a proper cause. */
-		ccd.cause_0808 = GSM0808_CAUSE_RADIO_INTERFACE_MESSAGE_FAILURE;
+		cause_0808 = GSM0808_CAUSE_RADIO_INTERFACE_MESSAGE_FAILURE;
 	}
 
-	if (TLVP_PRESENT(&tp, GSM0808_IE_CSFB_INDICATION))
-		ccd.is_csfb = true;
+	if (TLVP_PRESENT(&tp, GSM0808_IE_CSFB_INDICATION) &&
+	    !conn->last_eutran_plmn_valid) {
+		LOGPFSML(conn->fi, LOGL_NOTICE,
+			 "Clear Command: CSFB Indication present, "
+			 "but subscriber has no Last Used E-UTRAN PLMN Id! "
+			 "This probably means MSC doesn't support proper return "
+			 "to the last used PLMN after CS fallback.\n");
+	}
 
-	osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_A_CLEAR_CMD, &ccd);
+	osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_A_CLEAR_CMD, &cause_0808);
 
 	return 0;
 }
