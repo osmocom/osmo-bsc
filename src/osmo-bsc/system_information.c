@@ -33,11 +33,11 @@
 #include <osmocom/gsm/gsm48_ie.h>
 #include <osmocom/gsm/gsm48_rest_octets.h>
 #include <osmocom/gsm/gsm48.h>
+#include <osmocom/gsm/gsm48_arfcn_range_encode.h>
 
 #include <osmocom/bsc/debug.h>
 #include <osmocom/bsc/gsm_data.h>
 #include <osmocom/bsc/abis_rsl.h>
-#include <osmocom/bsc/arfcn_range_encode.h>
 #include <osmocom/bsc/gsm_04_08_rr.h>
 #include <osmocom/bsc/acc.h>
 #include <osmocom/bsc/neighbor_ident.h>
@@ -431,7 +431,7 @@ static inline int enc_freq_lst_var_bitmap(uint8_t *chan_list,
 	return 0;
 }
 
-int range_encode(enum gsm48_range r, int *arfcns, int arfcns_used, int *w,
+int range_encode(enum osmo_gsm48_range r, int *arfcns, int arfcns_used, int *w,
 		 int f0, uint8_t *chan_list)
 {
 	/*
@@ -440,22 +440,22 @@ int range_encode(enum gsm48_range r, int *arfcns, int arfcns_used, int *w,
 	 */
 	int rc, f0_included;
 
-	range_enc_filter_arfcns(arfcns, arfcns_used, f0, &f0_included);
+	osmo_gsm48_range_enc_filter_arfcns(arfcns, arfcns_used, f0, &f0_included);
 
-	rc = range_enc_arfcns(r, arfcns, arfcns_used, w, 0);
+	rc = osmo_gsm48_range_enc_arfcns(r, arfcns, arfcns_used, w, 0);
 	if (rc < 0)
 		return rc;
 
 	/* Select the range and the amount of bits needed */
 	switch (r) {
-	case ARFCN_RANGE_128:
-		return range_enc_range128(chan_list, f0, w);
-	case ARFCN_RANGE_256:
-		return range_enc_range256(chan_list, f0, w);
-	case ARFCN_RANGE_512:
-		return range_enc_range512(chan_list, f0, w);
-	case ARFCN_RANGE_1024:
-		return range_enc_range1024(chan_list, f0, f0_included, w);
+	case OSMO_GSM48_ARFCN_RANGE_128:
+		return osmo_gsm48_range_enc_128(chan_list, f0, w);
+	case OSMO_GSM48_ARFCN_RANGE_256:
+		return osmo_gsm48_range_enc_256(chan_list, f0, w);
+	case OSMO_GSM48_ARFCN_RANGE_512:
+		return osmo_gsm48_range_enc_512(chan_list, f0, w);
+	case OSMO_GSM48_ARFCN_RANGE_1024:
+		return osmo_gsm48_range_enc_1024(chan_list, f0, f0_included, w);
 	default:
 		return -ERANGE;
 	};
@@ -468,8 +468,8 @@ static inline int enc_freq_lst_range(uint8_t *chan_list,
 				const struct bitvec *bv, const struct gsm_bts *bts,
 				bool bis, bool ter, bool pgsm)
 {
-	int arfcns[RANGE_ENC_MAX_ARFCNS];
-	int w[RANGE_ENC_MAX_ARFCNS];
+	int arfcns[OSMO_GSM48_RANGE_ENC_MAX_ARFCNS];
+	int w[OSMO_GSM48_RANGE_ENC_MAX_ARFCNS];
 	int arfcns_used = 0;
 	int i, range, f0;
 
@@ -488,8 +488,8 @@ static inline int enc_freq_lst_range(uint8_t *chan_list,
 	/*
 	 * Check if the given list of ARFCNs can be encoded.
 	 */
-	range = range_enc_determine_range(arfcns, arfcns_used, &f0);
-	if (range == ARFCN_RANGE_INVALID)
+	range = osmo_gsm48_range_enc_determine_range(arfcns, arfcns_used, &f0);
+	if (range == OSMO_GSM48_ARFCN_RANGE_INVALID)
 		return -2;
 
 	memset(w, 0, sizeof(w));

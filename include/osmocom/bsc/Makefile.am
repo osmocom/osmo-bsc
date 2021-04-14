@@ -4,7 +4,6 @@ noinst_HEADERS = \
 	abis_om2000.h \
 	abis_rsl.h \
 	acc.h \
-	arfcn_range_encode.h \
 	assignment_fsm.h \
 	bsc_rll.h \
 	bsc_subscriber.h \

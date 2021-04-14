@@ -33,7 +33,6 @@ osmo_bsc_SOURCES = \
 	abis_om2000_vty.c \
 	abis_rsl.c \
 	acc.c \
-	arfcn_range_encode.c \
 	assignment_fsm.c \
 	bsc_ctrl_commands.c \
 	bsc_ctrl_lookup.c \

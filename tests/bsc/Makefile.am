@@ -36,7 +36,6 @@ bsc_test_SOURCES = \
 bsc_test_LDADD = \
 	$(top_builddir)/src/osmo-bsc/abis_nm.o \
 	$(top_builddir)/src/osmo-bsc/acc.o \
-	$(top_builddir)/src/osmo-bsc/arfcn_range_encode.o \
 	$(top_builddir)/src/osmo-bsc/osmo_bsc_filter.o \
 	$(top_builddir)/src/osmo-bsc/bsc_subscriber.o \
 	$(top_builddir)/src/osmo-bsc/bts.o \
