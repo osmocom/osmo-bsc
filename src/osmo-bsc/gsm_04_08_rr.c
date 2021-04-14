@@ -232,13 +232,6 @@ int get_reason_by_chreq(uint8_t ra, int neci)
 	return GSM_CHREQ_REASON_OTHER;
 }
 
-static void mr_config_for_ms(struct gsm_lchan *lchan, struct msgb *msg)
-{
-	if (lchan->tch_mode == GSM48_CMODE_SPEECH_AMR)
-		msgb_tlv_put(msg, GSM48_IE_MUL_RATE_CFG, lchan->mr_ms_lv[0],
-			lchan->mr_ms_lv + 1);
-}
-
 #define CELL_SEL_IND_AFTER_REL_EARCFN_ENTRY (1+16+4+1+1)
 #define CELL_SEL_IND_AFTER_REL_MAX_BITS (3+MAX_EARFCN_LIST*CELL_SEL_IND_AFTER_REL_EARCFN_ENTRY+1)
 #define CELL_SEL_IND_AFTER_REL_MAX_BYTES OSMO_BYTES_FOR_BITS(CELL_SEL_IND_AFTER_REL_MAX_BITS)
@@ -608,7 +601,9 @@ int gsm48_send_rr_ass_cmd(struct gsm_lchan *dest_lchan, struct gsm_lchan *lchan,
 	}
 
 	/* in case of multi rate we need to attach a config */
-	mr_config_for_ms(lchan, msg);
+	if (lchan->tch_mode == GSM48_CMODE_SPEECH_AMR)
+		msgb_tlv_put(msg, GSM48_IE_MUL_RATE_CFG, lchan->mr_ms_lv[0],
+			lchan->mr_ms_lv + 1);
 
 	return gsm48_sendmsg(msg);
 }
@@ -656,7 +651,9 @@ int gsm48_lchan_modify(struct gsm_lchan *lchan, uint8_t mode)
 	cmm->mode = mode;
 
 	/* in case of multi rate we need to attach a config */
-	mr_config_for_ms(lchan, msg);
+	if (lchan->tch_mode == GSM48_CMODE_SPEECH_AMR)
+		msgb_tlv_put(msg, GSM48_IE_MUL_RATE_CFG, lchan->mr_ms_lv[0],
+			lchan->mr_ms_lv + 1);
 
 	return gsm48_sendmsg(msg);
 }
