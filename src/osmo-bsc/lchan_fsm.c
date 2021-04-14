@@ -487,12 +487,12 @@ static void lchan_fsm_wait_after_error_onenter(struct osmo_fsm_inst *fi, uint32_
 static int mr_config_filter(struct gsm48_multi_rate_conf *mr_conf_result,
 			    bool full_rate,
 			    const struct amr_multirate_conf *amr_mrc,
-			    const struct gsm48_multi_rate_conf *mr_filter_bts,
 			    const struct gsm48_multi_rate_conf *mr_filter_msc,
 			    uint16_t s15_s0,
 			    const struct gsm_lchan *lchan_for_logging)
 {
 	int rc;
+	struct gsm48_multi_rate_conf *mr_filter_bts = (struct gsm48_multi_rate_conf*)amr_mrc->gsm48_ie;
 
 	/* Generate mr conf struct from S15-S0 bits */
 	if (gsm48_mr_cfg_from_gsm0808_sc_cfg(mr_conf_result, s15_s0) < 0) {
@@ -522,19 +522,17 @@ static int mr_config_filter(struct gsm48_multi_rate_conf *mr_conf_result,
 		}
 	}
 
-	if (mr_filter_bts) {
-		rc = calc_amr_rate_intersection(mr_conf_result, mr_filter_bts, mr_conf_result);
-		if (rc < 0) {
-			LOG_LCHAN(lchan_for_logging, LOGL_ERROR,
-				  "can not encode multirate configuration (invalid amr rate setting, BTS)\n");
-			return -EINVAL;
-		}
-
-		/* Set the ICMI according to the BTS. Above gsm48_mr_cfg_from_gsm0808_sc_cfg() always sets ICMI = 1, which
-		 * carried through all of the above rate intersections. */
-		mr_conf_result->icmi = mr_filter_bts->icmi;
-		mr_conf_result->smod = mr_filter_bts->smod;
+	rc = calc_amr_rate_intersection(mr_conf_result, mr_filter_bts, mr_conf_result);
+	if (rc < 0) {
+		LOG_LCHAN(lchan_for_logging, LOGL_ERROR,
+			  "can not encode multirate configuration (invalid amr rate setting, BTS)\n");
+		return -EINVAL;
 	}
+
+	/* Set the ICMI according to the BTS. Above gsm48_mr_cfg_from_gsm0808_sc_cfg() always sets ICMI = 1, which
+	 * carried through all of the above rate intersections. */
+	mr_conf_result->icmi = mr_filter_bts->icmi;
+	mr_conf_result->smod = mr_filter_bts->smod;
 
 	/* 10k2 and 12k2 only work for full rate */
 	if (!full_rate) {
@@ -570,19 +568,17 @@ static int lchan_mr_config(struct gsm_lchan *lchan, uint16_t s15_s0)
 	struct gsm_bts *bts = lchan->ts->trx->bts;
 	bool full_rate = lchan->type == GSM_LCHAN_TCH_F;
 	struct amr_multirate_conf *amr_mrc = full_rate ? &bts->mr_full : &bts->mr_half;
-	struct gsm48_multi_rate_conf *mr_filter_bts = NULL;
 	struct gsm48_multi_rate_conf *mr_filter_msc = NULL;
 	struct gsm48_multi_rate_conf mr_conf;
 	int rc;
 
-	if (lchan->activate.info.activ_for != ACTIVATE_FOR_VTY) {
-		mr_filter_bts = (struct gsm48_multi_rate_conf*)amr_mrc->gsm48_ie;
+	/* If activated for VTY, there may not be a conn indicating an MSC AMR configuration. */
+	if (lchan->conn && lchan->conn->sccp.msc)
 		mr_filter_msc = &lchan->conn->sccp.msc->amr_conf;
-	}
 
 	rc = mr_config_filter(&mr_conf,
 			      full_rate,
-			      amr_mrc, mr_filter_bts, mr_filter_msc,
+			      amr_mrc, mr_filter_msc,
 			      s15_s0,
 			      lchan);
 	if (rc)
