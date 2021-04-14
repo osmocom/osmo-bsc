@@ -566,14 +566,14 @@ int gsm48_send_ho_cmd(struct gsm_lchan *old_lchan, struct gsm_lchan *new_lchan,
 }
 
 /* Chapter 9.1.2: Assignment Command */
-int gsm48_send_rr_ass_cmd(struct gsm_lchan *current_lchan, struct gsm_lchan *lchan, uint8_t power_command)
+int gsm48_send_rr_ass_cmd(struct gsm_lchan *current_lchan, struct gsm_lchan *new_lchan, uint8_t power_command)
 {
 	struct msgb *msg = gsm48_msgb_alloc_name("GSM 04.08 ASS CMD");
 	struct gsm48_hdr *gh = (struct gsm48_hdr *) msgb_put(msg, sizeof(*gh));
 	struct gsm48_ass_cmd *ass =
 		(struct gsm48_ass_cmd *) msgb_put(msg, sizeof(*ass));
 
-	DEBUGP(DRR, "-> ASSIGNMENT COMMAND tch_mode=0x%02x\n", lchan->tch_mode);
+	DEBUGP(DRR, "-> ASSIGNMENT COMMAND tch_mode=0x%02x\n", new_lchan->tch_mode);
 
 	msg->lchan = current_lchan;
 	gh->proto_discr = GSM48_PDISC_RR;
@@ -587,28 +587,28 @@ int gsm48_send_rr_ass_cmd(struct gsm_lchan *current_lchan, struct gsm_lchan *lch
 	 * the chan_desc. But as long as multi-slot configurations
 	 * are not used we seem to be fine.
 	 */
-	gsm48_lchan2chan_desc(&ass->chan_desc, lchan);
+	gsm48_lchan2chan_desc(&ass->chan_desc, new_lchan);
 	ass->power_command = power_command;
 
 	/* Cell Channel Description (freq. hopping), TV (see 3GPP TS 44.018, 10.5.2.1b) */
-	if (lchan->ts->hopping.enabled) {
+	if (new_lchan->ts->hopping.enabled) {
 		const struct gsm48_system_information_type_1 *si1 = \
-			GSM_BTS_SI(lchan->ts->trx->bts, 1);
+			GSM_BTS_SI(new_lchan->ts->trx->bts, 1);
 		msgb_tv_fixed_put(msg, GSM48_IE_CELL_CH_DESC,
 				  sizeof(si1->cell_channel_description),
 				  si1->cell_channel_description);
 	}
 
-	msgb_tv_put(msg, GSM48_IE_CHANMODE_1, lchan->tch_mode);
+	msgb_tv_put(msg, GSM48_IE_CHANMODE_1, new_lchan->tch_mode);
 
 	/* Mobile Allocation (freq. hopping), TLV (see 3GPP TS 44.018, 10.5.2.21) */
-	if (lchan->ts->hopping.enabled) {
-		msgb_tlv_put(msg, GSM48_IE_MA_AFTER, lchan->ts->hopping.ma_len,
-			     lchan->ts->hopping.ma_data);
+	if (new_lchan->ts->hopping.enabled) {
+		msgb_tlv_put(msg, GSM48_IE_MA_AFTER, new_lchan->ts->hopping.ma_len,
+			     new_lchan->ts->hopping.ma_data);
 	}
 
 	/* in case of multi rate we need to attach a config */
-	mr_config_for_ms(lchan, msg);
+	mr_config_for_ms(new_lchan, msg);
 
 	return gsm48_sendmsg(msg);
 }
