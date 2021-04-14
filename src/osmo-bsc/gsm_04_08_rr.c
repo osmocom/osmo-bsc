@@ -558,6 +558,18 @@ int gsm48_send_ho_cmd(struct gsm_lchan *old_lchan, struct gsm_lchan *new_lchan,
 	return gsm48_sendmsg(msg);
 }
 
+void put_multi_rate_cfg(struct msgb *msg, struct gsm_bts *bts, struct gsm48_multi_rate_conf *mr_conf,
+			bool full_rate)
+{
+	/* AMR bits */
+	uint8_t mr_ms_lv[7];
+	uint8_t mr_bts_lv[7];
+
+	mr_config_render_lv(mr_ms_lv
+		msgb_tlv_put(msg, GSM48_IE_MUL_RATE_CFG, new_lchan->mr_ms_lv[0],
+			new_lchan->mr_ms_lv + 1);
+}
+
 /* Chapter 9.1.2: Assignment Command */
 int gsm48_send_rr_ass_cmd(struct gsm_lchan *current_lchan, struct gsm_lchan *new_lchan, uint8_t power_command)
 {
@@ -602,8 +614,8 @@ int gsm48_send_rr_ass_cmd(struct gsm_lchan *current_lchan, struct gsm_lchan *new
 
 	/* in case of multi rate we need to attach a config */
 	if (new_lchan->tch_mode == GSM48_CMODE_SPEECH_AMR)
-		msgb_tlv_put(msg, GSM48_IE_MUL_RATE_CFG, new_lchan->mr_ms_lv[0],
-			new_lchan->mr_ms_lv + 1);
+		put_multi_rate_cfg(msg, new_lchan->ts->trx->bts, new_lchan->activate.mr_config,
+				   new_lchan->type == LCHAN_TCH_F);
 
 	return gsm48_sendmsg(msg);
 }
