@@ -916,6 +916,13 @@ const struct value_string lchan_activate_mode_names[] = {
 	{}
 };
 
+const struct value_string lchan_modify_for_names[] = {
+	OSMO_VALUE_STRING(MODIFY_FOR_NONE),
+	OSMO_VALUE_STRING(MODIFY_FOR_ASSIGNMENT),
+	OSMO_VALUE_STRING(MODIFY_FOR_VTY),
+	{}
+};
+
 /* This may be specific to RR Channel Release, and the mappings were chosen by pure naive guessing without a proper
  * specification available. */
 enum gsm48_rr_cause bsc_gsm48_rr_cause_from_gsm0808_cause(enum gsm0808_cause c)

@@ -65,6 +65,7 @@ void lchan_release(struct gsm_lchan *lchan, bool do_rr_release,
 
 void lchan_activate(struct gsm_lchan *lchan, struct lchan_activate_info *info);
 void lchan_ready_to_switch_rtp(struct gsm_lchan *lchan);
+void lchan_mode_modify(struct gsm_lchan *lchan, struct lchan_modify_info *info);
 
 static inline const char *lchan_state_name(struct gsm_lchan *lchan)
 {

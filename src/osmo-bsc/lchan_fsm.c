@@ -66,6 +66,53 @@ bool lchan_may_receive_data(struct gsm_lchan *lchan)
 	}
 }
 
+static void lchan_on_mode_modify_success(struct gsm_lchan *lchan)
+{
+	lchan->modify.concluded = true;
+
+	switch (lchan->modify.info.modify_for) {
+
+	case MODIFY_FOR_ASSIGNMENT:
+		osmo_fsm_inst_dispatch(lchan->conn->assignment.fi, ASSIGNMENT_EV_LCHAN_MODIFIED, lchan);
+		break;
+
+	default:
+		break;
+	}
+}
+
+#define lchan_on_mode_modify_failure(lchan, modify_for, for_conn) \
+	_lchan_on_mode_modify_failure(lchan, modify_for, for_conn, \
+				     __FILE__, __LINE__)
+static void _lchan_on_mode_modify_failure(struct gsm_lchan *lchan, enum lchan_modify_for modify_for,
+					  struct gsm_subscriber_connection *for_conn,
+					  const char *file, int line)
+{
+	if (lchan->modify.concluded)
+		return;
+	lchan->modify.concluded = true;
+
+	switch (modify_for) {
+
+	case MODIFY_FOR_ASSIGNMENT:
+		LOG_LCHAN(lchan, LOGL_NOTICE, "Signalling Assignment FSM of error (%s)\n",
+			  lchan->last_error ? : "unknown error");
+		_osmo_fsm_inst_dispatch(for_conn->assignment.fi, ASSIGNMENT_EV_LCHAN_ERROR, lchan,
+					file, line);
+		return;
+
+	case MODIFY_FOR_VTY:
+		LOG_LCHAN(lchan, LOGL_ERROR, "VTY user invoked lchan Channel Mode Modify failed (%s)\n",
+			  lchan->last_error ? : "unknown error");
+		break;
+
+	default:
+		LOG_LCHAN(lchan, LOGL_ERROR, "lchan Channel Mode Modify failed (%s)\n",
+			  lchan->last_error ? : "unknown error");
+		break;
+	}
+}
+
 /* The idea here is that we must not require to change any lchan state in order to deny a request. */
 #define lchan_on_activation_failure(lchan, for_conn, activ_for) \
 	_lchan_on_activation_failure(lchan, for_conn, activ_for, \
@@ -120,6 +167,10 @@ static void _lchan_on_activation_failure(struct gsm_lchan *lchan, enum lchan_act
 	case ACTIVATE_FOR_VTY:
 		LOG_LCHAN(lchan, LOGL_ERROR, "VTY user invoked lchan activation failed (%s)\n",
 			  lchan->last_error ? : "unknown error");
+		break;
+
+	case ACTIVATE_FOR_MODE_MODIFY_RTP:
+		lchan_on_mode_modify_failure(lchan, lchan->modify.info.modify_for, for_conn);
 		break;
 
 	default:
@@ -181,6 +232,10 @@ static void lchan_on_fully_established(struct gsm_lchan *lchan)
 		/* The lchan->fi_rtp will be notified of LCHAN_RTP_EV_ESTABLISHED in
 		 * gscon_change_primary_lchan() upon handover_end(HO_RESULT_OK). On failure before then,
 		 * we will try to roll back a modified RTP connection. */
+		break;
+
+	case ACTIVATE_FOR_MODE_MODIFY_RTP:
+		lchan_on_mode_modify_success(lchan);
 		break;
 
 	default:
@@ -321,6 +376,18 @@ void lchan_activate(struct gsm_lchan *lchan, struct lchan_activate_info *info)
 abort:
 	lchan_on_activation_failure(lchan, info->activ_for, info->for_conn);
 	/* Remain in state UNUSED */
+}
+
+void lchan_mode_modify(struct gsm_lchan *lchan, struct lchan_modify_info *info)
+{
+	OSMO_ASSERT(lchan && info);
+
+	/* To make sure that the lchan is actually allowed to initiate Mode Modify, feed through an FSM event. */
+	if (osmo_fsm_inst_dispatch(lchan->fi, LCHAN_EV_REQUEST_MODE_MODIFY, info)) {
+		LOG_LCHAN(lchan, LOGL_ERROR,
+			  "Channel Mode Modify requested, but cannot dispatch LCHAN_EV_REQUEST_MODE_MODIFY event\n");
+		lchan_on_mode_modify_failure(lchan, info->modify_for, lchan->conn);
+	}
 }
 
 static void lchan_fsm_update_id(struct gsm_lchan *lchan)
@@ -881,7 +948,7 @@ static void lchan_fsm_wait_rll_rtp_establish(struct osmo_fsm_inst *fi, uint32_t 
 static void lchan_fsm_wait_rr_chan_mode_modify_ack_onenter(struct osmo_fsm_inst *fi, uint32_t prev_state)
 {
 	struct gsm_lchan *lchan = lchan_fi_lchan(fi);
-	gsm48_lchan_modify(lchan, lchan->activate.info.chan_mode);
+	gsm48_lchan_modify(lchan, lchan->modify.info.chan_mode);
 }
 
 static void lchan_fsm_wait_rr_chan_mode_modify_ack(struct osmo_fsm_inst *fi, uint32_t event, void *data)
@@ -921,10 +988,27 @@ static void lchan_fsm_wait_rsl_chan_mode_modify_ack(struct osmo_fsm_inst *fi, ui
 	switch (event) {
 
 	case LCHAN_EV_RSL_CHAN_MODE_MODIFY_ACK:
-		if (lchan->activate.info.requires_voice_stream)
+		/* The Channel Mode Modify was ACKed, now the requested values become the accepted and used values. */
+		lchan->tch_mode = lchan->modify.info.chan_mode;
+		lchan->s15_s0 = lchan->modify.info.s15_s0;
+
+		if (lchan->modify.info.requires_voice_stream
+		    && !lchan->fi_rtp) {
+			/* Continue with RTP stream establishing as done in lchan_activate(). Place the requested values in
+			 * lchan->activate.info and continue with voice stream setup. */
+			lchan->activate.info = (struct lchan_activate_info){
+				.activ_for = ACTIVATE_FOR_MODE_MODIFY_RTP,
+				.for_conn = lchan->conn,
+				.s15_s0 = lchan->modify.info.s15_s0,
+				.requires_voice_stream = true,
+				.msc_assigned_cic = lchan->modify.info.msc_assigned_cic,
+			};
+			lchan->activate.concluded = false;
 			lchan_fsm_state_chg(LCHAN_ST_WAIT_RLL_RTP_ESTABLISH);
-		else
+		} else {
 			lchan_fsm_state_chg(LCHAN_ST_ESTABLISHED);
+			lchan_on_mode_modify_success(lchan);
+		}
 		return;
 
 	case LCHAN_EV_RSL_CHAN_MODE_MODIFY_NACK:
@@ -1014,7 +1098,7 @@ static void handle_rll_rel_ind_or_conf(struct osmo_fsm_inst *fi, uint32_t event,
 static void lchan_fsm_established(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
 	struct gsm_lchan *lchan = lchan_fi_lchan(fi);
-	struct lchan_activate_info *info;
+	struct lchan_modify_info *modif_info;
 	struct osmo_mgcpc_ep_ci *use_mgwep_ci;
 
 	switch (event) {
@@ -1052,35 +1136,29 @@ static void lchan_fsm_established(struct osmo_fsm_inst *fi, uint32_t event, void
 			return;
 		}
 
-		info = data;
-		lchan->activate.info = *info;
+		modif_info = data;
+		lchan->modify.info = *modif_info;
+		lchan->modify.concluded = false;
+
 		use_mgwep_ci = lchan_use_mgw_endpoint_ci_bts(lchan);
 
-		if (info->chan_mode == GSM48_CMODE_SPEECH_AMR) {
-			if (lchan_mr_config(lchan, info->s15_s0) < 0) {
+		if (modif_info->chan_mode == GSM48_CMODE_SPEECH_AMR) {
+			if (lchan_mr_config(lchan, modif_info->s15_s0) < 0) {
 				lchan_fail("Can not generate multirate configuration IE\n");
 				return;
 			}
 		}
 
 		LOG_LCHAN(lchan, LOGL_INFO,
-			  "Modification requested: %s voice=%s MGW-ci=%s type=%s tch-mode=%s encr-alg=A5/%u ck=%s\n",
-			  lchan_activate_mode_name(lchan->activate.info.activ_for),
-			  lchan->activate.info.requires_voice_stream ? "yes" : "no",
-			  lchan->activate.info.requires_voice_stream ?
+			  "Modification requested: %s voice=%s MGW-ci=%s type=%s tch-mode=%s\n",
+			  lchan_modify_for_name(lchan->modify.info.modify_for),
+			  lchan->modify.info.requires_voice_stream ? "yes" : "no",
+			  lchan->modify.info.requires_voice_stream ?
 			  (use_mgwep_ci ? osmo_mgcpc_ep_ci_name(use_mgwep_ci) : "new")
 			  : "none",
 			  gsm_lchant_name(lchan->type),
-			  gsm48_chan_mode_name(lchan->tch_mode),
-			  (lchan->activate.info.encr.alg_id ? : 1) - 1,
-			  lchan->activate.info.encr.key_len ? osmo_hexdump_nospc(lchan->activate.info.encr.key,
-										 lchan->activate.info.encr.key_len) : "none");
+			  gsm48_chan_mode_name(lchan->tch_mode));
 
-		/* While the mode is changed the lchan is virtually "not activated", at least
-		 * from the FSM implementations perspective */
-		lchan->activate.concluded = false;
-
-		/* Initiate mode modification, start with the MS side (RR) */
 		lchan_fsm_state_chg(LCHAN_ST_WAIT_RR_CHAN_MODE_MODIFY_ACK);
 		return;
 
@@ -1389,8 +1467,9 @@ static const struct osmo_fsm_state lchan_fsm_states[] = {
 			| S(LCHAN_EV_RR_CHAN_MODE_MODIFY_ERROR)
 			,
 		.out_state_mask = 0
-			| S(LCHAN_ST_BORKEN)
 			| S(LCHAN_ST_WAIT_RSL_CHAN_MODE_MODIFY_ACK)
+			| S(LCHAN_ST_WAIT_RF_RELEASE_ACK)
+			| S(LCHAN_ST_BORKEN)
 			,
 	},
 	[LCHAN_ST_WAIT_RSL_CHAN_MODE_MODIFY_ACK] = {
@@ -1402,8 +1481,10 @@ static const struct osmo_fsm_state lchan_fsm_states[] = {
 			| S(LCHAN_EV_RSL_CHAN_MODE_MODIFY_NACK)
 			,
 		.out_state_mask = 0
-			| S(LCHAN_ST_BORKEN)
+			| S(LCHAN_ST_ESTABLISHED)
 			| S(LCHAN_ST_WAIT_RLL_RTP_ESTABLISH)
+			| S(LCHAN_ST_WAIT_RF_RELEASE_ACK)
+			| S(LCHAN_ST_BORKEN)
 			,
 	},
 	[LCHAN_ST_ESTABLISHED] = {
@@ -1514,6 +1595,7 @@ static const struct value_string lchan_fsm_event_names[] = {
 	OSMO_VALUE_STRING(LCHAN_EV_RR_CHAN_MODE_MODIFY_ERROR),
 	OSMO_VALUE_STRING(LCHAN_EV_RSL_CHAN_MODE_MODIFY_ACK),
 	OSMO_VALUE_STRING(LCHAN_EV_RSL_CHAN_MODE_MODIFY_NACK),
+	OSMO_VALUE_STRING(LCHAN_EV_REQUEST_MODE_MODIFY),
 	{}
 };
 

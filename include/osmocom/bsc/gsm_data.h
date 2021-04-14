@@ -564,6 +564,7 @@ enum lchan_activate_for {
 	ACTIVATE_FOR_ASSIGNMENT,
 	ACTIVATE_FOR_HANDOVER,
 	ACTIVATE_FOR_VTY,
+	ACTIVATE_FOR_MODE_MODIFY_RTP,
 };
 
 extern const struct value_string lchan_activate_mode_names[];
@@ -589,6 +590,25 @@ struct lchan_activate_info {
 	uint8_t ta;
 };
 
+enum lchan_modify_for {
+	MODIFY_FOR_NONE,
+	MODIFY_FOR_ASSIGNMENT,
+	MODIFY_FOR_VTY,
+};
+
+extern const struct value_string lchan_modify_for_names[];
+static inline const char *lchan_modify_for_name(enum lchan_modify_for modify_for)
+{ return get_value_string(lchan_modify_for_names, modify_for); }
+
+struct lchan_modify_info {
+	enum lchan_modify_for modify_for;
+	enum gsm48_chan_mode chan_mode;
+	bool requires_voice_stream;
+	uint16_t msc_assigned_cic;
+	/* AMR config */
+	uint16_t s15_s0;
+};
+
 struct gsm_lchan {
 	/* The TS that we're part of */
 	struct gsm_bts_trx_ts *ts;
@@ -612,6 +632,11 @@ struct gsm_lchan {
 		bool concluded;
 		enum gsm0808_cause gsm0808_error_cause;
 	} activate;
+
+	struct {
+		struct lchan_modify_info info;
+		bool concluded;
+	} modify;
 
 	struct {
 		/* If an event to release the lchan comes in while still waiting for responses, just mark this

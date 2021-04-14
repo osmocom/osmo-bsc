@@ -241,20 +241,23 @@ static void send_assignment_complete(struct gsm_subscriber_connection *conn)
 static void assignment_success(struct gsm_subscriber_connection *conn)
 {
 	struct gsm_bts *bts;
+	bool lchan_changed = (conn->assignment.new_lchan != NULL);
 
-	/* Take on the new lchan */
-	gscon_change_primary_lchan(conn, conn->assignment.new_lchan);
-	conn->assignment.new_lchan = NULL;
+	/* Take on the new lchan. If there only was a Channel Mode Modify, then there is no new lchan to take on. */
+	if (lchan_changed) {
+		gscon_change_primary_lchan(conn, conn->assignment.new_lchan);
 
-	OSMO_ASSERT((bts = conn_get_bts(conn)) != NULL);
-	if (is_siemens_bts(bts) && ts_is_tch(conn->lchan->ts)) {
-		/* HACK: store the actual Classmark 2 LV from the subscriber and use it here! */
-		uint8_t cm2_lv[] = { 0x02, 0x00, 0x00 };
-		send_siemens_mrpci(conn->lchan, cm2_lv);
+		OSMO_ASSERT((bts = conn_get_bts(conn)) != NULL);
+		if (is_siemens_bts(bts) && ts_is_tch(conn->lchan->ts)) {
+			/* HACK: store the actual Classmark 2 LV from the subscriber and use it here! */
+			uint8_t cm2_lv[] = { 0x02, 0x00, 0x00 };
+			send_siemens_mrpci(conn->lchan, cm2_lv);
+		}
+
+		/* apply LCLS configuration (if any) */
+		lcls_apply_config(conn);
 	}
-
-	/* apply LCLS configuration (if any) */
-	lcls_apply_config(conn);
+	conn->assignment.new_lchan = NULL;
 
 	send_assignment_complete(conn);
 	/* If something went wrong during send_assignment_complete(), the fi will be gone from
@@ -267,15 +270,17 @@ static void assignment_success(struct gsm_subscriber_connection *conn)
 		return;
 	}
 
-	/* Rembered this only for error handling: should assignment fail, assignment_reset() will release
-	 * the MGW endpoint right away. If successful, the conn continues to use the endpoint. */
-	conn->assignment.created_ci_for_msc = NULL;
+	if (lchan_changed) {
+		/* Rembered this only for error handling: should assignment fail, assignment_reset() will release
+		 * the MGW endpoint right away. If successful, the conn continues to use the endpoint. */
+		conn->assignment.created_ci_for_msc = NULL;
 
-	/* New RTP information is now accepted */
-	conn->user_plane.msc_assigned_cic = conn->assignment.req.msc_assigned_cic;
-	osmo_strlcpy(conn->user_plane.msc_assigned_rtp_addr, conn->assignment.req.msc_rtp_addr,
-		     sizeof(conn->user_plane.msc_assigned_rtp_addr));
-	conn->user_plane.msc_assigned_rtp_port = conn->assignment.req.msc_rtp_port;
+		/* New RTP information is now accepted */
+		conn->user_plane.msc_assigned_cic = conn->assignment.req.msc_assigned_cic;
+		osmo_strlcpy(conn->user_plane.msc_assigned_rtp_addr, conn->assignment.req.msc_rtp_addr,
+			     sizeof(conn->user_plane.msc_assigned_rtp_addr));
+		conn->user_plane.msc_assigned_rtp_port = conn->assignment.req.msc_rtp_port;
+	}
 
 	LOG_ASSIGNMENT(conn, LOGL_DEBUG, "Assignment successful\n");
 	osmo_fsm_inst_term(conn->assignment.fi, OSMO_FSM_TERM_REGULAR, 0);
@@ -285,7 +290,9 @@ static void assignment_success(struct gsm_subscriber_connection *conn)
 
 static void assignment_fsm_update_id(struct gsm_subscriber_connection *conn)
 {
-	struct gsm_lchan *new_lchan = conn->assignment.new_lchan;
+	/* Assignment can do a new channel activation, in which case new_lchan points at the new lchan.
+	 * Or assignment can Channel Mode Modify the already used lchan, in which case new_lchan == NULL. */
+	struct gsm_lchan *new_lchan = (conn->assignment.new_lchan ? : conn->lchan);
 	if (!new_lchan) {
 		osmo_fsm_inst_update_id(conn->assignment.fi, conn->fi->id);
 		return;
@@ -435,7 +442,8 @@ void assignment_fsm_start(struct gsm_subscriber_connection *conn, struct gsm_bts
 		[CH_RATE_FULL] = "FR",
 	};
 	struct osmo_fsm_inst *fi;
-	struct lchan_activate_info info;
+	struct lchan_activate_info activ_info;
+	struct lchan_modify_info modif_info;
 	int i;
 
 	OSMO_ASSERT(conn);
@@ -465,6 +473,8 @@ void assignment_fsm_start(struct gsm_subscriber_connection *conn, struct gsm_bts
 	 * LCHAN_EV_REQUEST_MODE_MODIFY in lchan_fsm.c. To not break the lchan, do not even attempt to re-use an lchan
 	 * that already has an RTP stream set up, rather establish a new lchan (that transition is well implemented). */
 	if (reuse_existing_lchan(conn) && !conn->lchan->fi_rtp) {
+		/* The new lchan is the old lchan, keep new_lchan == NULL. */
+		conn->assignment.new_lchan = NULL;
 
 		/* If the requested mode and the current TCH mode matches up, just send the
 		 * assignment complete directly and be done with the assignment procedure. */
@@ -494,28 +504,17 @@ void assignment_fsm_start(struct gsm_subscriber_connection *conn, struct gsm_bts
 			       gsm48_chan_mode_name(conn->lchan->ch_mode_rate.chan_mode),
 			       gsm_lchan_name(conn->lchan));
 
-		info = (struct lchan_activate_info){
-			.activ_for = ACTIVATE_FOR_ASSIGNMENT,
-			.for_conn = conn,
+		modif_info = (struct lchan_modify_info){
+			.modify_for = MODIFY_FOR_ASSIGNMENT,
 			.chan_mode = conn->lchan->ch_mode_rate.chan_mode,
-			.encr = conn->lchan->encr,
-			.s15_s0 = conn->lchan->ch_mode_rate.s15_s0,
 			.requires_voice_stream = conn->assignment.requires_voice_stream,
+			.s15_s0 = conn->lchan->ch_mode_rate.s15_s0,
 			.msc_assigned_cic = req->msc_assigned_cic,
-			.re_use_mgw_endpoint_from_lchan = conn->lchan,
-			.ta = conn->lchan->last_ta,
-			.ta_known = true,
 		};
 
-		osmo_fsm_inst_dispatch(conn->lchan->fi, LCHAN_EV_REQUEST_MODE_MODIFY, &info);
-
-		/* Since we opted not to allocate a new lchan, the new lchan is still the old lchan. */
-		conn->assignment.new_lchan = conn->lchan;
-
-		/* Also we need to skip the RR assignment, so we jump forward and wait for the lchan_fsm until it
-		 * reaches the established state again. */
-		assignment_fsm_state_chg(ASSIGNMENT_ST_WAIT_LCHAN_ESTABLISHED);
-
+		if (assignment_fsm_state_chg(ASSIGNMENT_ST_WAIT_LCHAN_MODIFIED))
+			return;
+		lchan_mode_modify(conn->lchan, &modif_info);
 		return;
 	}
 
@@ -571,7 +570,7 @@ void assignment_fsm_start(struct gsm_subscriber_connection *conn, struct gsm_bts
 		       req->use_osmux ? "yes" : "no");
 
 	assignment_fsm_state_chg(ASSIGNMENT_ST_WAIT_LCHAN_ACTIVE);
-	info = (struct lchan_activate_info){
+	activ_info = (struct lchan_activate_info){
 		.activ_for = ACTIVATE_FOR_ASSIGNMENT,
 		.for_conn = conn,
 		.chan_mode = conn->lchan->ch_mode_rate.chan_mode,
@@ -583,7 +582,7 @@ void assignment_fsm_start(struct gsm_subscriber_connection *conn, struct gsm_bts
 		.ta = conn->lchan->last_ta,
 		.ta_known = true,
 	};
-	lchan_activate(conn->assignment.new_lchan, &info);
+	lchan_activate(conn->assignment.new_lchan, &activ_info);
 }
 
 static void assignment_fsm_wait_lchan(struct osmo_fsm_inst *fi, uint32_t event, void *data)
@@ -695,8 +694,10 @@ static void assignment_fsm_wait_mgw_endpoint_to_msc_onenter(struct osmo_fsm_inst
 		       conn->assignment.req.msc_rtp_addr,
 		       conn->assignment.req.msc_rtp_port);
 
+	/* Assignment can do a new channel activation, in which case new_lchan points at the new lchan.
+	 * Or assignment can Channel Mode Modify the already used lchan, in which case new_lchan == NULL. */
 	if (!gscon_connect_mgw_to_msc(conn,
-				      conn->assignment.new_lchan,
+				      conn->assignment.new_lchan ? : conn->lchan,
 				      conn->assignment.req.msc_rtp_addr,
 				      conn->assignment.req.msc_rtp_port,
 				      fi,
@@ -742,6 +743,19 @@ static void assignment_fsm_wait_mgw_endpoint_to_msc(struct osmo_fsm_inst *fi, ui
 	}
 }
 
+static void assignment_fsm_wait_lchan_modified(struct osmo_fsm_inst *fi, uint32_t event, void *data)
+{
+	switch (event) {
+
+	case ASSIGNMENT_EV_LCHAN_MODIFIED:
+		assignment_fsm_post_lchan_established(fi);
+		return;
+
+	default:
+		OSMO_ASSERT(false);
+	}
+}
+
 #define S(x)	(1 << (x))
 
 static const struct osmo_fsm_state assignment_fsm_states[] = {
@@ -754,7 +768,7 @@ static const struct osmo_fsm_state assignment_fsm_states[] = {
 		.out_state_mask = 0
 			| S(ASSIGNMENT_ST_WAIT_LCHAN_ACTIVE)
 			| S(ASSIGNMENT_ST_WAIT_RR_ASS_COMPLETE)
-			| S(ASSIGNMENT_ST_WAIT_LCHAN_ESTABLISHED) /* MODE MODIFY */
+			| S(ASSIGNMENT_ST_WAIT_LCHAN_MODIFIED)
 			,
 	},
 	[ASSIGNMENT_ST_WAIT_RR_ASS_COMPLETE] = {
@@ -790,11 +804,22 @@ static const struct osmo_fsm_state assignment_fsm_states[] = {
 			| S(ASSIGNMENT_EV_MSC_MGW_FAIL)
 			,
 	},
+	[ASSIGNMENT_ST_WAIT_LCHAN_MODIFIED] = {
+		.name = "WAIT_LCHAN_MODIFIED",
+		.action = assignment_fsm_wait_lchan_modified,
+		.in_event_mask = 0
+			| S(ASSIGNMENT_EV_LCHAN_MODIFIED)
+			,
+		.out_state_mask = 0
+			| S(ASSIGNMENT_ST_WAIT_MGW_ENDPOINT_TO_MSC)
+			,
+	},
 };
 
 static const struct value_string assignment_fsm_event_names[] = {
 	OSMO_VALUE_STRING(ASSIGNMENT_EV_LCHAN_ACTIVE),
 	OSMO_VALUE_STRING(ASSIGNMENT_EV_LCHAN_ESTABLISHED),
+	OSMO_VALUE_STRING(ASSIGNMENT_EV_LCHAN_MODIFIED),
 	OSMO_VALUE_STRING(ASSIGNMENT_EV_LCHAN_ERROR),
 	OSMO_VALUE_STRING(ASSIGNMENT_EV_MSC_MGW_OK),
 	OSMO_VALUE_STRING(ASSIGNMENT_EV_MSC_MGW_FAIL),
@@ -807,6 +832,11 @@ static const struct value_string assignment_fsm_event_names[] = {
 void assignment_fsm_allstate_action(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
 	struct gsm_subscriber_connection *conn = assignment_fi_conn(fi);
+
+	/* Assignment can do a new channel activation, in which case new_lchan points at the new lchan.
+	 * Or assignment can Channel Mode Modify the already used lchan, in which case new_lchan == NULL. */
+	struct gsm_lchan *new_lchan = conn->assignment.new_lchan ? : conn->lchan;
+
 	switch (event) {
 
 	case ASSIGNMENT_EV_CONN_RELEASING:
@@ -815,10 +845,11 @@ void assignment_fsm_allstate_action(struct osmo_fsm_inst *fi, uint32_t event, vo
 		return;
 
 	case ASSIGNMENT_EV_LCHAN_ERROR:
-		if (data != conn->assignment.new_lchan)
+		if (data != new_lchan)
 			return;
-		assignment_fail(conn->assignment.new_lchan->activate.gsm0808_error_cause,
-				"Failed to activate lchan %s",
+		assignment_fail(new_lchan->activate.gsm0808_error_cause,
+				"Failed to %s lchan %s",
+				conn->assignment.new_lchan ? "activate" : "modify",
 				gsm_lchan_name(conn->assignment.new_lchan));
 		return;
 
