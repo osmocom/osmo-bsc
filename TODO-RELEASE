@@ -8,3 +8,4 @@
 # If any interfaces have been removed or changed since the last public release: c:r:0.
 #library	what		description / commit summary line
 libosmocore	>1.5.1		needs osmo_bts_features_name(), osmo_bts_features_desc()
+libosmogsm    >1.5.1            enum entry GSM0808_FE_IE_LAST_USED_EUTRAN_PLMN_ID

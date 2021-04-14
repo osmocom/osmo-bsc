@@ -202,6 +202,8 @@ struct handover_in_req {
 	uint16_t msc_assigned_cic;
 	char msc_assigned_rtp_addr[INET6_ADDRSTRLEN];
 	uint16_t msc_assigned_rtp_port;
+	bool last_eutran_plmn_valid;
+	struct osmo_plmn_id last_eutran_plmn;
 };
 
 struct handover {

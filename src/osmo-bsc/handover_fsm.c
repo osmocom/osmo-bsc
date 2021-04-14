@@ -417,6 +417,32 @@ static void handover_start_intra_bsc(struct gsm_subscriber_connection *conn)
 	lchan_activate(ho->new_lchan, &info);
 }
 
+/* 3GPP TS 48.008 § 3.2.2.58  Old BSS to New BSS Information */
+static void parse_old2new_bss_info(struct gsm_subscriber_connection *conn,
+				   const uint8_t* data, uint16_t len,
+				   struct handover_in_req *req)
+{
+	/* § 3.2.2.58: Information contained here shall take precedence over
+	   duplicate information from Information Elements in the HANDOVER
+	   REQUEST  as long as the coding is understood by the new BSS */
+	/* § 3.2.2.58: <<Reception of an erroneous "Old BSS to New BSS
+	   information" shall not cause a rejection of the HANDOVER REQUEST
+	   message; the "Old BSS to New BSS information" information element
+	   shall be discarded and the handover resource allocation procedure
+	   shall continue>>. See also 3.1.19.7. */
+	struct tlv_parsed tp;
+	if (tlv_parse(&tp, &gsm0808_old_bss_to_new_bss_info_att_tlvdef, data, len, 0, 0) <= 0) {
+		LOG_HO(conn, LOGL_NOTICE, "Failed to parse IE \"Old BSS to New BSS information\"\n");
+		return;
+	}
+
+	if (TLVP_VAL(&tp, GSM0808_FE_IE_LAST_USED_EUTRAN_PLMN_ID)) {
+		req->last_eutran_plmn_valid = true;
+		osmo_plmn_from_bcd(TLVP_VAL(&tp, GSM0808_FE_IE_LAST_USED_EUTRAN_PLMN_ID),
+				   &req->last_eutran_plmn);
+	}
+}
+
 /* 3GPP TS 48.008 § 3.2.1.8 Handover Request */
 static bool parse_ho_request(struct gsm_subscriber_connection *conn, const struct msgb *msg,
 			     struct handover_in_req *req)
@@ -557,6 +583,10 @@ static bool parse_ho_request(struct gsm_subscriber_connection *conn, const struc
 		return false;
 	}
 
+	if ((e = TLVP_GET(tp, GSM0808_IE_OLD_BSS_TO_NEW_BSS_INFORMATION))) {
+		parse_old2new_bss_info(conn, e->val, e->len, req);
+	}
+
 	/* A lot of IEs remain ignored... */
 
 	return true;
@@ -689,6 +719,12 @@ void handover_start_inter_bsc_in(struct gsm_subscriber_connection *conn,
 		}
 		memcpy(info.encr.key, req->ei.key, req->ei.key_len);
 		info.encr.key_len = req->ei.key_len;
+	}
+
+	if (req->last_eutran_plmn_valid) {
+		conn->last_eutran_plmn_valid = true;
+		memcpy(&conn->last_eutran_plmn, &req->last_eutran_plmn,
+		       sizeof(conn->last_eutran_plmn));
 	}
 
 	lchan_activate(ho->new_lchan, &info);
