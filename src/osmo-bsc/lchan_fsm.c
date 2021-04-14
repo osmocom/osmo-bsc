@@ -484,103 +484,115 @@ static void lchan_fsm_wait_after_error_onenter(struct osmo_fsm_inst *fi, uint32_
 }
 
 /* Configure the multirate setting on this channel. */
-static int lchan_mr_config(struct gsm_lchan *lchan, uint16_t s15_s0)
+static int mr_config_filter(struct gsm48_multi_rate_conf *mr_conf_result,
+			    bool full_rate,
+			    const struct amr_multirate_conf *amr_mrc,
+			    const struct gsm48_multi_rate_conf *mr_filter_bts,
+			    const struct gsm48_multi_rate_conf *mr_filter_msc,
+			    uint16_t s15_s0,
+			    const struct gsm_lchan *lchan_for_logging)
 {
-	struct gsm48_multi_rate_conf mr_conf;
-	bool full_rate = (lchan->type == GSM_LCHAN_TCH_F);
-	struct gsm_bts *bts = lchan->ts->trx->bts;
-	struct amr_multirate_conf *mr;
 	int rc;
-	int rc_rate;
-	struct gsm48_multi_rate_conf mr_conf_filtered;
-	const struct gsm48_multi_rate_conf *mr_conf_bts;
 
 	/* Generate mr conf struct from S15-S0 bits */
-	if (gsm48_mr_cfg_from_gsm0808_sc_cfg(&mr_conf, s15_s0) < 0) {
-		LOG_LCHAN(lchan, LOGL_ERROR,
+	if (gsm48_mr_cfg_from_gsm0808_sc_cfg(mr_conf_result, s15_s0) < 0) {
+		LOG_LCHAN(lchan_for_logging, LOGL_ERROR,
 			  "can not determine multirate configuration, S15-S0 (%04x) are ambiguous!\n", s15_s0);
 		return -EINVAL;
 	}
 
 	/* Do not include 12.2 kbps rate when S1 is set. */
-	if (lchan->type == GSM_LCHAN_TCH_H && (s15_s0 & GSM0808_SC_CFG_AMR_4_75_5_90_7_40_12_20)) {
-		/* See also 3GPP TS 28.062, chapter 7.11.3.1.3: "In case this Configuration
-		 * "Config-NB-Code = 1" is signalled in the TFO Negotiation for the HR_AMR
-		 * Codec Type,then it shall be assumed that AMR mode 12.2 kbps is (of course)
-		 * not included. */
-		mr_conf.m12_2 = 0;
+	if ((!full_rate) && (s15_s0 & GSM0808_SC_CFG_AMR_4_75_5_90_7_40_12_20)) {
+		/* See also 3GPP TS 28.062, chapter 7.11.3.1.3:
+		 *
+		 *   In case this Configuration "Config-NB-Code = 1" is signalled in the TFO Negotiation for the HR_AMR
+		 *   Codec Type, then it shall be assumed that AMR mode 12.2 kbps is (of course) not included.
+		 *
+		 * Further below, we log an error if 12k2 is included for a TCH/H lchan: removing this here ensures that
+		 * we don't log that error for GSM0808_SC_CFG_AMR_4_75_5_90_7_40_12_20 on a TCH/H lchan. */
+		mr_conf_result->m12_2 = 0;
 	}
 
-	/* There are two different active sets, depending on the channel rate,
-	 * make sure the appropate one is selected. */
-	if (full_rate)
-		mr = &bts->mr_full;
-	else
-		mr = &bts->mr_half;
-	mr_conf_bts = (struct gsm48_multi_rate_conf *)mr->gsm48_ie;
-
-	if (lchan->activate.info.activ_for == ACTIVATE_FOR_VTY)
-		/* If the channel is activated manually from VTY, then there is no
-		 * conn attached to the lchan, also no MSC is involved. Since this
-		 * option is for debugging and the codec choice is an intentional
-		 * decision by the VTY user, we do not filter the mr_conf. */
-		memcpy(&mr_conf_filtered, &mr_conf, sizeof(mr_conf_filtered));
-	else {
-		/* The VTY allows to forbid certain codec rates. Unfortunately we can
-		 * not articulate all of the prohibitions on through S0-S15 on the A
-		 * interface. To ensure that the VTY settings are observed we create
-		 * a manipulated copy of the mr_conf that ensures forbidden codec rates
-		 * are not used in the multirate configuration IE. */
-		rc_rate = calc_amr_rate_intersection(&mr_conf_filtered, &lchan->conn->sccp.msc->amr_conf, &mr_conf);
-		if (rc_rate < 0) {
-			LOG_LCHAN(lchan, LOGL_ERROR,
+	if (mr_filter_msc) {
+		rc = calc_amr_rate_intersection(mr_conf_result, mr_filter_msc, mr_conf_result);
+		if (rc < 0) {
+			LOG_LCHAN(lchan_for_logging, LOGL_ERROR,
 				  "can not encode multirate configuration (invalid amr rate setting, MSC)\n");
 			return -EINVAL;
 		}
 	}
 
-	/* The two last codec rates which are defined for AMR do only work with
-	 * full rate channels. We will pinch off those rates für half-rate
-	 * channels to ensure they are not included accidently. */
-	if (!full_rate) {
-		if (mr_conf_filtered.m10_2 || mr_conf_filtered.m12_2)
-			LOG_LCHAN(lchan, LOGL_ERROR, "ignoring unsupported amr codec rates\n");
-		mr_conf_filtered.m10_2 = 0;
-		mr_conf_filtered.m12_2 = 0;
-	}
-
-	/* Ensure that the resulting filtered conf is coherent with the
-	 * configuration that is set for the BTS and the specified rate.
-	 * if the channel activation was triggerd by the VTY, do not
-	 * filter anything (see also comment above) */
-	if (lchan->activate.info.activ_for != ACTIVATE_FOR_VTY) {
-		rc_rate = calc_amr_rate_intersection(&mr_conf_filtered, mr_conf_bts, &mr_conf_filtered);
-		if (rc_rate < 0) {
-			LOG_LCHAN(lchan, LOGL_ERROR,
+	if (mr_filter_bts) {
+		rc = calc_amr_rate_intersection(mr_conf_result, mr_filter_bts, mr_conf_result);
+		if (rc < 0) {
+			LOG_LCHAN(lchan_for_logging, LOGL_ERROR,
 				  "can not encode multirate configuration (invalid amr rate setting, BTS)\n");
 			return -EINVAL;
 		}
+
+		/* Set the ICMI according to the BTS. Above gsm48_mr_cfg_from_gsm0808_sc_cfg() always sets ICMI = 1, which
+		 * carried through all of the above rate intersections. */
+		mr_conf_result->icmi = mr_filter_bts->icmi;
+		mr_conf_result->smod = mr_filter_bts->smod;
 	}
 
-	/* Set the ICMI according to the BTS. Above gsm48_mr_cfg_from_gsm0808_sc_cfg() always sets ICMI = 1, which
-	 * carried through all of the above rate intersections. */
-	mr_conf_filtered.icmi = mr_conf_bts->icmi;
-	mr_conf_filtered.smod = mr_conf_bts->smod;
+	/* 10k2 and 12k2 only work for full rate */
+	if (!full_rate) {
+		if (mr_conf_result->m10_2 || mr_conf_result->m12_2)
+			LOG_LCHAN(lchan_for_logging, LOGL_ERROR,
+				  "half rate lchan: ignoring unsupported AMR codec rates 10k2 and 12k2\n");
+		mr_conf_result->m10_2 = 0;
+		mr_conf_result->m12_2 = 0;
+	}
 
-	/* Proceed with the generation of the multirate configuration IE
-	 * (MS and BTS) */
+	return 0;
+}
+
+static int mr_config_render_lv(uint8_t *mr_ms_lv, uint8_t *mr_bts_lv,
+			       const struct gsm48_multi_rate_conf *mr_conf,
+			       const struct amr_multirate_conf *amr_mrc,
+			       const struct gsm_lchan *logging)
+{
+	if (gsm48_multirate_config(mr_ms_lv, mr_conf, amr_mrc->ms_mode, amr_mrc->num_modes)) {
+		LOG_LCHAN(logging, LOGL_ERROR, "can not encode multirate configuration (MS)\n");
+		return -EINVAL;
+	}
+	if (gsm48_multirate_config(mr_bts_lv, mr_conf, amr_mrc->bts_mode, amr_mrc->num_modes)) {
+		LOG_LCHAN(logging, LOGL_ERROR, "can not encode multirate configuration (BTS)\n");
+		return -EINVAL;
+	}
+	return 0;
+}
+
+/* Configure the multirate setting on this channel. */
+static int lchan_mr_config(struct gsm_lchan *lchan, uint16_t s15_s0)
+{
+	struct gsm_bts *bts = lchan->ts->trx->bts;
+	bool full_rate = lchan->type == GSM_LCHAN_TCH_F;
+	struct amr_multirate_conf *amr_mrc = full_rate ? &bts->mr_full : &bts->mr_half;
+	struct gsm48_multi_rate_conf *mr_filter_bts = NULL;
+	struct gsm48_multi_rate_conf *mr_filter_msc = NULL;
+	struct gsm48_multi_rate_conf mr_conf;
+	int rc;
+
+	if (lchan->activate.info.activ_for != ACTIVATE_FOR_VTY) {
+		mr_filter_bts = (struct gsm48_multi_rate_conf*)amr_mrc->gsm48_ie;
+		mr_filter_msc = &lchan->conn->sccp.msc->amr_conf;
+	}
+
+	rc = mr_config_filter(&mr_conf,
+			      full_rate,
+			      amr_mrc, mr_filter_bts, mr_filter_msc,
+			      s15_s0,
+			      lchan);
+	if (rc)
+		return rc;
+
 	/* FIXME: this actually modifies the lchan->mr_ms_lv and ->mr_bts_lv before an ACK for these AMR bits has been
 	 * received. Until an ACK is received, all state should live in lchan->activate.* or lchan->modify.* ONLY. */
-	rc = gsm48_multirate_config(lchan->mr_ms_lv, &mr_conf_filtered, mr->ms_mode, mr->num_modes);
-	if (rc != 0) {
-		LOG_LCHAN(lchan, LOGL_ERROR, "can not encode multirate configuration (MS)\n");
-		return -EINVAL;
-	}
-	rc = gsm48_multirate_config(lchan->mr_bts_lv, &mr_conf_filtered, mr->bts_mode, mr->num_modes);
-	if (rc != 0) {
-		LOG_LCHAN(lchan, LOGL_ERROR, "can not encode multirate configuration (BTS)\n");
-		return -EINVAL;
-	}
+	rc = mr_config_render_lv(lchan->mr_ms_lv, lchan->mr_bts_lv, &mr_conf, amr_mrc, lchan);
+	if (rc)
+		return rc;
 
 	return 0;
 }
