@@ -584,6 +584,10 @@ struct lchan_activate_info {
 	uint8_t ta;
 };
 
+struct lchan_modify_info {
+	enum gsm48_chan_mode chan_mode;
+};
+
 struct gsm_lchan {
 	/* The TS that we're part of */
 	struct gsm_bts_trx_ts *ts;
