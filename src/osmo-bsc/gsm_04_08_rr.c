@@ -566,7 +566,7 @@ int gsm48_send_ho_cmd(struct gsm_lchan *old_lchan, struct gsm_lchan *new_lchan,
 }
 
 /* Chapter 9.1.2: Assignment Command */
-int gsm48_send_rr_ass_cmd(struct gsm_lchan *dest_lchan, struct gsm_lchan *lchan, uint8_t power_command)
+int gsm48_send_rr_ass_cmd(struct gsm_lchan *current_lchan, struct gsm_lchan *lchan, uint8_t power_command)
 {
 	struct msgb *msg = gsm48_msgb_alloc_name("GSM 04.08 ASS CMD");
 	struct gsm48_hdr *gh = (struct gsm48_hdr *) msgb_put(msg, sizeof(*gh));
@@ -575,7 +575,7 @@ int gsm48_send_rr_ass_cmd(struct gsm_lchan *dest_lchan, struct gsm_lchan *lchan,
 
 	DEBUGP(DRR, "-> ASSIGNMENT COMMAND tch_mode=0x%02x\n", lchan->tch_mode);
 
-	msg->lchan = dest_lchan;
+	msg->lchan = current_lchan;
 	gh->proto_discr = GSM48_PDISC_RR;
 	gh->msg_type = GSM48_MT_RR_ASS_CMD;
 
