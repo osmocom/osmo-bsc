@@ -6078,7 +6078,6 @@ static int lchan_act_single(struct vty *vty, struct gsm_lchan *lchan, const char
 			info = (struct lchan_activate_info) {
 				.activ_for = ACTIVATE_FOR_VTY,
 				.chan_mode = GSM48_CMODE_SPEECH_EFR,
-				.s15_s0 = amr_modes[amr_mode],
 				.requires_voice_stream = false,
 			};
 		} else if (!strcmp(codec_str, "amr")) {
