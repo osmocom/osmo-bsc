@@ -1358,12 +1358,19 @@ int bsc_tx_bssmap_ho_required(struct gsm_lchan *lchan, const struct gsm0808_cell
 {
 	int rc;
 	struct msgb *msg;
+	struct gsm_subscriber_connection *conn = lchan->conn;
 	struct gsm0808_handover_required params = {
 		.cause = GSM0808_CAUSE_BETTER_CELL,
 		.cil = *target_cells,
 		.current_channel_type_1_present = true,
 		.current_channel_type_1 = gsm0808_current_channel_type_1(lchan->type),
 	};
+
+	if (conn->last_eutran_plmn_valid) {
+		params.old_bss_to_new_bss_info_present = true;
+		params.old_bss_to_new_bss_info.last_eutran_plmn_id_present = true;
+		params.old_bss_to_new_bss_info.last_eutran_plmn_id = conn->last_eutran_plmn;
+	}
 
 	switch (lchan->type) {
 	case GSM_LCHAN_TCH_F:
@@ -1383,14 +1390,14 @@ int bsc_tx_bssmap_ho_required(struct gsm_lchan *lchan, const struct gsm0808_cell
 
 	msg = gsm0808_create_handover_required(&params);
 	if (!msg) {
-		LOG_HO(lchan->conn, LOGL_ERROR, "Cannot compose BSSMAP Handover Required message\n");
+		LOG_HO(conn, LOGL_ERROR, "Cannot compose BSSMAP Handover Required message\n");
 		return -EINVAL;
 	}
 
-	rate_ctr_inc(&lchan->conn->sccp.msc->msc_ctrs->ctr[MSC_CTR_BSSMAP_TX_DT1_HANDOVER_REQUIRED]);
-	rc = gscon_sigtran_send(lchan->conn, msg);
+	rate_ctr_inc(&conn->sccp.msc->msc_ctrs->ctr[MSC_CTR_BSSMAP_TX_DT1_HANDOVER_REQUIRED]);
+	rc = gscon_sigtran_send(conn, msg);
 	if (rc) {
-		LOG_HO(lchan->conn, LOGL_ERROR, "Cannot send BSSMAP Handover Required message\n");
+		LOG_HO(conn, LOGL_ERROR, "Cannot send BSSMAP Handover Required message\n");
 		return rc;
 	}
 
