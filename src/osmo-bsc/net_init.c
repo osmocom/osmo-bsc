@@ -54,6 +54,8 @@ static struct osmo_tdef gsm_network_T_defs[] = {
 	{ .T=-10, .default_val=5, .desc="Timeout for fully configured MGW endpoint" },
 	{ .T=-11, .default_val=5, .desc="Timeout for Perform Location Response from SMLC" },
 	{ .T=-12, .default_val=5, .desc="Timeout for obtaining TA after BSSLAP TA Request" },
+	{ .T=-13, .default_val=5, .desc="Timeout for RR Channel Mode Modify ACK (BSC <-> MS)" },
+	{ .T=-14, .default_val=5, .desc="Timeout for RSL Channel Mode Modify ACK (BSC <-> BTS)" },
 	{ .T=-3111, .default_val=4, .desc="Wait time after lchan was released in error (should be T3111 + 2s)" },
 	{ .T=-3210, .default_val=20, .desc="After L3 Complete, wait for MSC to confirm" },
 	{}

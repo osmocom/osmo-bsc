@@ -217,6 +217,8 @@ struct osmo_tdef_state_timeout lchan_fsm_timeouts[32] = {
 	[LCHAN_ST_WAIT_BEFORE_RF_RELEASE]	= { .T=3111 },
 	[LCHAN_ST_WAIT_RF_RELEASE_ACK]	= { .T=3111 },
 	[LCHAN_ST_WAIT_AFTER_ERROR]	= { .T=-3111 },
+	[LCHAN_ST_WAIT_RR_CHAN_MODE_MODIFY_ACK]	= { .T=-13 },
+	[LCHAN_ST_WAIT_RSL_CHAN_MODE_MODIFY_ACK]	= { .T=-14 },
 };
 
 /* Transition to a state, using the T timer defined in lchan_fsm_timeouts.
@@ -261,8 +263,8 @@ uint32_t lchan_fsm_on_error[34] = {
 	[LCHAN_ST_WAIT_RF_RELEASE_ACK] 		= LCHAN_ST_BORKEN,
 	[LCHAN_ST_WAIT_AFTER_ERROR] 		= LCHAN_ST_UNUSED,
 	[LCHAN_ST_BORKEN] 			= LCHAN_ST_BORKEN,
-	[LCHAN_ST_WAIT_RR_CHAN_MODE_MODIFY_ACK]	= LCHAN_ST_BORKEN,
-	[LCHAN_ST_WAIT_RSL_CHAN_MODE_MODIFY_ACK] 	= LCHAN_ST_BORKEN,
+	[LCHAN_ST_WAIT_RR_CHAN_MODE_MODIFY_ACK]	= LCHAN_ST_WAIT_RF_RELEASE_ACK,
+	[LCHAN_ST_WAIT_RSL_CHAN_MODE_MODIFY_ACK]	= LCHAN_ST_WAIT_RF_RELEASE_ACK,
 };
 
 #define lchan_fail(fmt, args...) lchan_fail_to(lchan_fsm_on_error[fi->state], fmt, ## args)
