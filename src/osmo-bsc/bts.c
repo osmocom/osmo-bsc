@@ -722,6 +722,7 @@ int bts_count_free_ts(struct gsm_bts *bts, enum gsm_phys_chan_config pchan)
 int gsm_bts_set_system_infos(struct gsm_bts *bts)
 {
 	struct gsm_bts_trx *trx;
+	int ret = 0;
 
 	/* Generate a new ID */
 	bts->bcch_change_mark += 1;
@@ -732,10 +733,10 @@ int gsm_bts_set_system_infos(struct gsm_bts *bts)
 
 		rc = gsm_bts_trx_set_system_infos(trx);
 		if (rc != 0)
-			return rc;
+			ret = rc;
 	}
 
-	return 0;
+	return ret;
 }
 
 const struct rate_ctr_desc bts_ctr_description[] = {

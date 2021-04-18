@@ -429,6 +429,10 @@ int gsm_bts_trx_set_system_infos(struct gsm_bts_trx *trx)
 
 	/* Third, we send the selected SI via RSL */
 
+	/* If the BTS is not up and running yet, don't send anything. */
+	if (!trx_is_usable(trx))
+		return -1;
+
 	for (n = 0; n < n_si; n++) {
 		i = gen_si[n];
 		/* 3GPP TS 08.58 §8.5.1 BCCH INFORMATION. If we don't currently

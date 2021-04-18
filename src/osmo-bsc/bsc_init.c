@@ -168,3 +168,15 @@ struct gsm_bts *bsc_bts_alloc_register(struct gsm_network *net, enum gsm_bts_typ
 
 	return bts;
 }
+
+int gsm_net_set_system_infos(void)
+{
+	struct gsm_bts *bts;
+	int ret = 0;
+	llist_for_each_entry(bts, &bsc_gsmnet->bts_list, list) {
+		int rc = gsm_bts_set_system_infos(bts);
+		if (rc)
+			ret = rc;
+	}
+	return ret;
+}
