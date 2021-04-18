@@ -673,12 +673,14 @@ static int generate_bcch_chan_list(uint8_t *chan_list, struct gsm_bts *bts,
 					bitvec_set_bit_pos(bv, n->cell_id.ab.arfcn, 1);
 				} else {
 					struct gsm_bts *neigh_bts;
-					if (resolve_local_neighbor(&neigh_bts, bts, n) == 0)
-						bitvec_set_bit_pos(bv, n->cell_id.ab.arfcn, 1);
-					else
+					if (resolve_local_neighbor(&neigh_bts, bts, n)) {
 						LOGP(DHO, LOGL_ERROR,
 						     "Neither local nor remote neighbor: BTS %u -> %s\n",
 						     bts->nr, neighbor_to_str_c(OTC_SELECT, n));
+						continue;
+					}
+					if (neigh_bts->c0)
+						bitvec_set_bit_pos(bv, neigh_bts->c0->arfcn, 1);
 				}
 			}
 		}
