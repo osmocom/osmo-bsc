@@ -2448,6 +2448,11 @@ DEFUN_USRATTR(cfg_bts_ci,
 	}
 	bts->cell_identity = ci;
 
+	/* Changing the CI of a BTS may affect the neighbor relations between cells, when other cells indicate a
+	 * neighbor cell by CI. Update the neighbors list in System Information. */
+	if (vty->type != VTY_FILE)
+		gsm_net_set_system_infos();
+
 	return CMD_SUCCESS;
 }
 
@@ -2473,6 +2478,11 @@ DEFUN_USRATTR(cfg_bts_lac,
 	}
 
 	bts->location_area_code = lac;
+
+	/* Changing the LAC of a BTS may affect the neighbor relations between cells, when other cells indicate a
+	 * neighbor cell by LAC. Update the neighbors list in System Information. */
+	if (vty->type != VTY_FILE)
+		gsm_net_set_system_infos();
 
 	return CMD_SUCCESS;
 }
@@ -2503,6 +2513,9 @@ DEFUN_USRATTR(cfg_bts_bsic,
 		return CMD_WARNING;
 	}
 	bts->bsic = bsic;
+
+	if (vty->type != VTY_FILE)
+		gsm_net_set_system_infos();
 
 	return CMD_SUCCESS;
 }
@@ -5347,7 +5360,9 @@ DEFUN_USRATTR(cfg_trx_arfcn,
 		return CMD_WARNING;
 	}
 
-	/* FIXME: patch ARFCN into SYSTEM INFORMATION */
+	if (vty->type != VTY_FILE)
+		gsm_net_set_system_infos();
+
 	/* FIXME: use OML layer to update the ARFCN */
 	/* FIXME: use RSL layer to update SYSTEM INFORMATION */
 
