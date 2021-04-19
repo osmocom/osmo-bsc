@@ -352,7 +352,8 @@ int rsl_chan_ms_power_ctrl(struct gsm_lchan *lchan)
 
 static int channel_mode_from_lchan(struct rsl_ie_chan_mode *cm,
 				   struct gsm_lchan *lchan,
-				   const struct channel_mode_and_rate *ch_mode_rate)
+				   const struct channel_mode_and_rate *ch_mode_rate,
+				   bool vamos)
 {
 	memset(cm, 0, sizeof(*cm));
 
@@ -375,10 +376,10 @@ static int channel_mode_from_lchan(struct rsl_ie_chan_mode *cm,
 		cm->chan_rt = RSL_CMOD_CRT_SDCCH;
 		break;
 	case GSM_LCHAN_TCH_F:
-		cm->chan_rt = RSL_CMOD_CRT_TCH_Bm;
+		cm->chan_rt = vamos ? RSL_CMOD_CRT_OSMO_TCH_VAMOS_Bm : RSL_CMOD_CRT_TCH_Bm;
 		break;
 	case GSM_LCHAN_TCH_H:
-		cm->chan_rt = RSL_CMOD_CRT_TCH_Lm;
+		cm->chan_rt = vamos ? RSL_CMOD_CRT_OSMO_TCH_VAMOS_Lm : RSL_CMOD_CRT_TCH_Lm;
 		break;
 	case GSM_LCHAN_NONE:
 	case GSM_LCHAN_UNKNOWN:
@@ -394,12 +395,15 @@ static int channel_mode_from_lchan(struct rsl_ie_chan_mode *cm,
 		cm->chan_rate = 0;
 		break;
 	case GSM48_CMODE_SPEECH_V1:
+	case GSM48_CMODE_SPEECH_V1_VAMOS:
 		cm->chan_rate = RSL_CMOD_SP_GSM1;
 		break;
 	case GSM48_CMODE_SPEECH_EFR:
+	case GSM48_CMODE_SPEECH_V2_VAMOS:
 		cm->chan_rate = RSL_CMOD_SP_GSM2;
 		break;
 	case GSM48_CMODE_SPEECH_AMR:
+	case GSM48_CMODE_SPEECH_V3_VAMOS:
 		cm->chan_rate = RSL_CMOD_SP_GSM3;
 		break;
 	case GSM48_CMODE_DATA_14k5:
@@ -499,6 +503,11 @@ static void rep_acch_cap_for_bts(struct gsm_lchan *lchan,
 	}
 }
 
+struct rsl_osmo_training_sequence_ie {
+	uint8_t tsc_set;
+	uint8_t tsc;
+} __attribute__ ((packed));
+
 /* Chapter 8.4.1 */
 int rsl_tx_chan_activ(struct gsm_lchan *lchan, uint8_t act_type, uint8_t ho_ref)
 {
@@ -519,7 +528,7 @@ int rsl_tx_chan_activ(struct gsm_lchan *lchan, uint8_t act_type, uint8_t ho_ref)
 	/* PDCH activation is a job for rsl_tx_dyn_ts_pdch_act_deact(); */
 	OSMO_ASSERT(act_type != RSL_ACT_OSMO_PDCH);
 
-	rc = channel_mode_from_lchan(&cm, lchan, &lchan->activate.info.ch_mode_rate);
+	rc = channel_mode_from_lchan(&cm, lchan, &lchan->activate.info.ch_mode_rate, false);
 	if (rc < 0) {
 		LOGP(DRSL, LOGL_ERROR,
 		     "%s Cannot find channel mode from lchan type\n",
@@ -634,7 +643,7 @@ int rsl_chan_mode_modify_req(struct gsm_lchan *lchan)
 	struct rsl_ie_chan_mode cm;
 	struct gsm_bts *bts = lchan->ts->trx->bts;
 
-	rc = channel_mode_from_lchan(&cm, lchan, &lchan->modify.info.ch_mode_rate);
+	rc = channel_mode_from_lchan(&cm, lchan, &lchan->modify.info.ch_mode_rate, lchan->modify.info.vamos);
 	if (rc < 0)
 		return rc;
 
@@ -664,6 +673,16 @@ int rsl_chan_mode_modify_req(struct gsm_lchan *lchan)
 	}
 
         rep_acch_cap_for_bts(lchan, msg);
+
+	/* Selecting a specific TSC Set is only applicable to VAMOS mode */
+	if (lchan->modify.info.vamos && lchan->modify.tsc_set >= 1) {
+		struct rsl_osmo_training_sequence_ie tsie = {
+			/* Convert from spec conforming "human readable" TSC Set 1-4 to 0-3 on the wire */
+			.tsc_set = lchan->modify.tsc_set - 1,
+			.tsc = lchan->modify.tsc,
+		};
+		msgb_tlv_put(msg, RSL_IE_OSMO_TRAINING_SEQUENCE, sizeof(tsie), (uint8_t*)&tsie);
+	}
 
 	msg->dst = rsl_chan_link(lchan);
 

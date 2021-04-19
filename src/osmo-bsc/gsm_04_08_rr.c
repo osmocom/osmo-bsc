@@ -694,6 +694,8 @@ int gsm48_lchan_modify(struct gsm_lchan *lchan, uint8_t mode)
 	tsc = (lchan->modify.info.tsc >= 0) ? lchan->modify.info.tsc : gsm_ts_tsc(lchan->ts); /* FIXME */
 	gsm48_lchan2chan_desc(&cmm->chan_desc, lchan, tsc);
 	cmm->mode = mode;
+	if (lchan->modify.info.vamos)
+		cmm->mode = gsm48_chan_mode_to_vamos(cmm->mode);
 
 	/* in case of multi rate we need to attach a config */
 	if (lchan->modify.info.ch_mode_rate.chan_mode == GSM48_CMODE_SPEECH_AMR) {
@@ -706,6 +708,12 @@ int gsm48_lchan_modify(struct gsm_lchan *lchan, uint8_t mode)
 		}
 	}
 
+	if (lchan->modify.info.vamos && lchan->modify.tsc_set > 0) {
+		/* Add the Extended TSC Set IE. So far we only need a TSC Set sent for VAMOS.
+		 * Convert from spec conforming "human readable" TSC Set 1-4 to 0-3 on the wire */
+		msgb_tv_put(msg, 0x6d, (lchan->modify.tsc_set - 1) & 0x3);
+	}
+
 	return gsm48_sendmsg(msg);
 }
 
@@ -714,14 +722,20 @@ int gsm48_rx_rr_modif_ack(struct msgb *msg)
 	struct gsm48_hdr *gh = msgb_l3(msg);
 	struct gsm48_chan_mode_modify *mod =
 				(struct gsm48_chan_mode_modify *) gh->data;
+	enum gsm48_chan_mode expect_chan_mode;
 
 	LOG_LCHAN(msg->lchan, LOGL_DEBUG, "CHANNEL MODE MODIFY ACK for %s\n",
 		  gsm48_chan_mode_name(mod->mode));
 
-	if (mod->mode != msg->lchan->modify.info.ch_mode_rate.chan_mode) {
+	/* The modify.info may indicate a non-VAMOS chan_mode, and indicate VAMOS-ness by info.vamos == true. Internally
+	 * we convert the chan_mode to a VAMOS chan_mode then, leaving the info unchanged. Also do this change here. */
+	expect_chan_mode = msg->lchan->modify.info.ch_mode_rate.chan_mode;
+	if (msg->lchan->modify.info.vamos)
+		expect_chan_mode = gsm48_chan_mode_to_vamos(expect_chan_mode);
+	if (mod->mode != expect_chan_mode) {
 		LOG_LCHAN(msg->lchan, LOGL_ERROR,
 			  "CHANNEL MODE MODIFY ACK has wrong mode: Wanted: %s Got: %s\n",
-			  gsm48_chan_mode_name(msg->lchan->modify.info.ch_mode_rate.chan_mode),
+			  gsm48_chan_mode_name(expect_chan_mode),
 			  gsm48_chan_mode_name(mod->mode));
 		return -1;
 	}

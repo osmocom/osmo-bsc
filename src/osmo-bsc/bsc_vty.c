@@ -192,6 +192,34 @@ static int dummy_config_write(struct vty *v)
 	return CMD_SUCCESS;
 }
 
+/* resolve a gsm_bts_trx_ts basd on the given numeric identifiers */
+static struct gsm_bts_trx_ts *vty_get_ts(struct vty *vty, const char *bts_str, const char *trx_str,
+					 const char *ts_str)
+{
+	int bts_nr = atoi(bts_str);
+	int trx_nr = atoi(trx_str);
+	int ts_nr = atoi(ts_str);
+	struct gsm_bts *bts;
+	struct gsm_bts_trx *trx;
+	struct gsm_bts_trx_ts *ts;
+
+	bts = gsm_bts_num(gsmnet_from_vty(vty), bts_nr);
+	if (!bts) {
+		vty_out(vty, "%% No such BTS (%d)%s", bts_nr, VTY_NEWLINE);
+		return NULL;
+	}
+
+	trx = gsm_bts_trx_num(bts, trx_nr);
+	if (!trx) {
+		vty_out(vty, "%% No such TRX (%d)%s", trx_nr, VTY_NEWLINE);
+		return NULL;
+	}
+
+	ts = &trx->ts[ts_nr];
+
+	return ts;
+}
+
 static void net_dump_nmstate(struct vty *vty, struct gsm_nm_state *nms)
 {
 	vty_out(vty,"Oper '%s', Admin '%s', Avail '%s'%s",
@@ -1958,8 +1986,26 @@ static int ho_or_as(struct vty *vty, const char *argv[], int argc)
 	return CMD_WARNING;
 }
 
+static int trigger_vamos_mode_modify(struct vty *vty, struct gsm_lchan *lchan, int tsc_set, int tsc)
+{
+	struct lchan_modify_info info = {
+		.modify_for = MODIFY_FOR_VTY,
+		.ch_mode_rate = lchan->current_ch_mode_rate,
+		.requires_voice_stream = (lchan->fi_rtp != NULL),
+		.vamos = true,
+		.tsc_set = tsc_set,
+		.tsc = tsc,
+	};
+
+	lchan_mode_modify(lchan, &info);
+	return CMD_SUCCESS;
+}
+
 #define MANUAL_HANDOVER_STR "Manually trigger handover (for debugging)\n"
 #define MANUAL_ASSIGNMENT_STR "Manually trigger assignment (for debugging)\n"
+
+#define MANUAL_VAMOS_STR "Manually initiate VAMOS lchan multiplexing (for debugging)\n"
+#define MANUAL_VAMOS_MODIFY_STR "Send Channel Mode Modify to change an lchan to prepare it for serving a second MS via VAMOS\n"
 
 DEFUN(handover_subscr_conn,
       handover_subscr_conn_cmd,
@@ -2118,6 +2164,46 @@ DEFUN(handover_any_to_arfcn_bsic, handover_any_to_arfcn_bsic_cmd,
 
 	handover_request(&req);
 	return CMD_SUCCESS;
+}
+
+#define TSC_ARGS_OPT "[tsc] [<1-4>] [<0-7>]"
+#define TSC_ARGS_DOC \
+      "Provide specific TSC Set and Training Sequence Code\n" \
+      "TSC Set\n" \
+      "Training Sequence Code\n"
+
+DEFUN(vamos_modify_lchan, vamos_modify_lchan_cmd,
+      "vamos modify lchan <0-255> <0-255> <0-7> <0-1> " TSC_ARGS_OPT,
+      /* Note above, only subslots 0-1 because only TCH/F and TCH/H make sense to be modified to VAMOS mode. */
+      MANUAL_VAMOS_STR
+      MANUAL_VAMOS_MODIFY_STR
+      "Pick a specific lchan to modify to VAMOS mode\n"
+      BTS_TRX_TS_LCHAN_STR
+      TSC_ARGS_DOC)
+{
+	struct gsm_bts_trx_ts *ts;
+	struct gsm_lchan *lchan;
+	int ss_nr = atoi(argv[3]);
+	int tsc_set = (argc > 5) ? atoi(argv[5]) : -1;
+	int tsc = (argc > 6) ? atoi(argv[6]) : -1;
+
+	ts = vty_get_ts(vty, argv[0], argv[1], argv[2]);
+	if (!ts)
+		return CMD_WARNING;
+
+	if (ss_nr >= ts->max_primary_lchans) {
+		vty_out(vty, "Invalid sub-slot number for this timeslot type%s", VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	if (!osmo_bts_has_feature(&ts->trx->bts->features, BTS_FEAT_VAMOS)) {
+		vty_out(vty, "BTS does not support VAMOS%s", VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	lchan = &ts->lchan[ss_nr];
+
+	return trigger_vamos_mode_modify(vty, lchan, tsc_set, tsc);
 }
 
 static void paging_dump_vty(struct vty *vty, struct gsm_paging_request *pag)
@@ -5966,34 +6052,6 @@ DEFUN_HIDDEN(smscb_cmd, smscb_cmd_cmd,
 	return CMD_SUCCESS;
 }
 
-/* resolve a gsm_bts_trx_ts basd on the given numeric identifiers */
-static struct gsm_bts_trx_ts *vty_get_ts(struct vty *vty, const char *bts_str, const char *trx_str,
-					 const char *ts_str)
-{
-	int bts_nr = atoi(bts_str);
-	int trx_nr = atoi(trx_str);
-	int ts_nr = atoi(ts_str);
-	struct gsm_bts *bts;
-	struct gsm_bts_trx *trx;
-	struct gsm_bts_trx_ts *ts;
-
-	bts = gsm_bts_num(gsmnet_from_vty(vty), bts_nr);
-	if (!bts) {
-		vty_out(vty, "%% No such BTS (%d)%s", bts_nr, VTY_NEWLINE);
-		return NULL;
-	}
-
-	trx = gsm_bts_trx_num(bts, trx_nr);
-	if (!trx) {
-		vty_out(vty, "%% No such TRX (%d)%s", trx_nr, VTY_NEWLINE);
-		return NULL;
-	}
-
-	ts = &trx->ts[ts_nr];
-
-	return ts;
-}
-
 DEFUN(pdch_act, pdch_act_cmd,
 	"bts <0-255> trx <0-255> timeslot <0-7> pdch (activate|deactivate)",
 	BTS_NR_TRX_TS_STR2
@@ -7722,6 +7780,8 @@ int bsc_vty_init(struct gsm_network *network)
 	install_element(ENABLE_NODE, &assignment_any_cmd);
 	install_element(ENABLE_NODE, &handover_any_to_arfcn_bsic_cmd);
 	/* See also handover commands added on net level from handover_vty.c */
+
+	install_element(ENABLE_NODE, &vamos_modify_lchan_cmd);
 
 	logging_vty_add_cmds();
 	osmo_talloc_vty_add_cmds();

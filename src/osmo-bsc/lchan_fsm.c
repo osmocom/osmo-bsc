@@ -382,6 +382,17 @@ void lchan_mode_modify(struct gsm_lchan *lchan, struct lchan_modify_info *info)
 {
 	OSMO_ASSERT(lchan && info);
 
+	if ((info->vamos || lchan->vamos.is_secondary)
+	    && !osmo_bts_has_feature(&lchan->ts->trx->bts->features, BTS_FEAT_VAMOS)) {
+		lchan->last_error = talloc_strdup(lchan->ts->trx, "VAMOS related Channel Mode Modify requested,"
+						  " but BTS does not support VAMOS");
+		LOG_LCHAN(lchan, LOGL_ERROR,
+			  "VAMOS related Channel Mode Modify requested, but BTS %u does not support VAMOS\n",
+			  lchan->ts->trx->bts->nr);
+		lchan_on_mode_modify_failure(lchan, info->modify_for, lchan->conn);
+		return;
+	}
+
 	/* To make sure that the lchan is actually allowed to initiate Mode Modify, feed through an FSM event. */
 	if (osmo_fsm_inst_dispatch(lchan->fi, LCHAN_EV_REQUEST_MODE_MODIFY, info)) {
 		LOG_LCHAN(lchan, LOGL_ERROR,
@@ -973,6 +984,7 @@ static void lchan_fsm_wait_rsl_chan_mode_modify_ack(struct osmo_fsm_inst *fi, ui
 		lchan->current_mr_conf = lchan->modify.mr_conf_filtered;
 		lchan->tsc_set = lchan->modify.tsc_set;
 		lchan->tsc = lchan->modify.tsc;
+		lchan->vamos.enabled = lchan->modify.info.vamos;
 
 		if (lchan->modify.info.requires_voice_stream
 		    && !lchan->fi_rtp) {
@@ -1113,18 +1125,13 @@ static void lchan_fsm_established(struct osmo_fsm_inst *fi, uint32_t event, void
 		/* FIXME: Add missing implementation to handle an already existing RTP voice stream on MODE MODIFY.
 		 * there may be transitions from VOICE to SIGNALLING and also from VOICE to VOICE with a different
 		 * codec. */
-		if (lchan->fi_rtp) {
-			lchan_fail("MODE MODIFY not implemented when RTP voice stream is already active (VOICE => SIGNALLING, VOICE/CODEC_A => VOICE/CODEC_B)\n");
-			return;
-		}
-
 		modif_info = data;
 		lchan->modify.info = *modif_info;
 		lchan->modify.concluded = false;
 
 		use_mgwep_ci = lchan_use_mgw_endpoint_ci_bts(lchan);
 
-		if (modif_info->ch_mode_rate.chan_mode == GSM48_CMODE_SPEECH_AMR) {
+		if (gsm48_chan_mode_to_non_vamos(modif_info->ch_mode_rate.chan_mode) == GSM48_CMODE_SPEECH_AMR) {
 			if (lchan_mr_config(&lchan->modify.mr_conf_filtered, lchan, modif_info->ch_mode_rate.s15_s0)
 			    < 0) {
 				lchan_fail("Can not generate multirate configuration IE\n");
@@ -1132,10 +1139,12 @@ static void lchan_fsm_established(struct osmo_fsm_inst *fi, uint32_t event, void
 			}
 		}
 
+		/* If enabling VAMOS mode and no specific TSC Set was selected, make sure to select a sane TSC Set by
+		 * default: Set 1 for the primary and Set 2 for the shadow lchan. For non-VAMOS lchans, TSC Set 1. */
 		if (lchan->modify.info.tsc_set > 0)
 			lchan->modify.tsc_set = lchan->modify.info.tsc_set;
 		else
-			lchan->modify.tsc_set = 1;
+			lchan->modify.tsc_set = lchan->vamos.is_secondary ? 2 : 1;
 
 		/* Use the TSC provided in the modification request, if any. Otherwise use the timeslot's configured
 		 * TSC. */

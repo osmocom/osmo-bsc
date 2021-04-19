@@ -626,6 +626,8 @@ struct lchan_modify_info {
 	/* TSC to use, or -1 for automatically determining the TSC to use. Valid range is 0 to 7, as described in 3GPP
 	 * TS 45.002. */
 	int tsc;
+
+	bool vamos;
 };
 
 struct gsm_lchan {
@@ -739,6 +741,9 @@ struct gsm_lchan {
 		/* Whether this lchan represents a secondary "shadow" lchan to multiplex a second MS onto a primary
 		 * "normal" lchan */
 		bool is_secondary;
+
+		/* Whether this lchan is activated/modified into a mode that allows VAMOS multiplexing at this moment */
+		bool enabled;
 	} vamos;
 
 	/* Circuit-Switched TSC Set in use, or -1 if no specific TSC Set was requested. The valid range is 1-4 as

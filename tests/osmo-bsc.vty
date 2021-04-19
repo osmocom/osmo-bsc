@@ -1,5 +1,43 @@
 OsmoBSC> enable
 
+OsmoBSC# list
+...
+  vamos modify lchan <0-255> <0-255> <0-7> <0-1> [tsc] [<1-4>] [<0-7>]
+...
+
+OsmoBSC# vamos?
+  vamos  Manually initiate VAMOS lchan multiplexing (for debugging)
+
+OsmoBSC# vamos ?
+  modify  Send Channel Mode Modify to change an lchan to prepare it for serving a second MS via VAMOS
+
+OsmoBSC# vamos modify ?
+  lchan  Pick a specific lchan to modify to VAMOS mode
+
+OsmoBSC# vamos modify lchan ?
+  <0-255>  BTS Number
+
+OsmoBSC# vamos modify lchan 0 ?
+  <0-255>  TRX Number
+
+OsmoBSC# vamos modify lchan 0 0 ?
+  <0-7>  Timeslot Number
+
+OsmoBSC# vamos modify lchan 0 0 0 ?
+  <0-1>  Logical Channel Number
+
+OsmoBSC# vamos modify lchan 0 0 0 0 ?
+  [tsc]  Provide specific TSC Set and Training Sequence Code
+
+OsmoBSC# vamos modify lchan 0 0 0 0 tsc ?
+  [<1-4>]  TSC Set
+
+OsmoBSC# vamos modify lchan 0 0 0 0 tsc 1 ?
+  [<0-7>]  Training Sequence Code
+
+OsmoBSC# vamos modify lchan 0 0 0 0 tsc 1 0 ?
+  <cr>  
+
 OsmoBSC# configure terminal
 OsmoBSC(config)# network
 OsmoBSC(config-net)# list
