@@ -56,7 +56,7 @@ static const struct osmo_tdef_state_timeout lcs_ta_req_fsm_timeouts[32] = {
 	osmo_tdef_fsm_inst_state_chg(FI, STATE, \
 				     lcs_ta_req_fsm_timeouts, \
 				     (bsc_gsmnet)->T_defs, \
-				     5)
+				     -1)
 
 #define lcs_ta_req_fail(cause, fmt, args...) do { \
 		LOG_LCS_TA_REQ(lcs_ta_req, LOGL_ERROR, "BSSLAP TA Request failed in state %s: " fmt "\n", \
