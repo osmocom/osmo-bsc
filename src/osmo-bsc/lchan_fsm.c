@@ -382,6 +382,16 @@ void lchan_mode_modify(struct gsm_lchan *lchan, struct lchan_modify_info *info)
 {
 	OSMO_ASSERT(lchan && info);
 
+	if (info->vamos && !osmo_bts_has_feature(&lchan->ts->trx->bts->features, BTS_FEAT_VAMOS)) {
+		lchan->last_error = talloc_strdup(lchan->ts->trx, "VAMOS related Channel Mode Modify requested,"
+						  " but BTS does not support VAMOS");
+		LOG_LCHAN(lchan, LOGL_ERROR,
+			  "VAMOS related Channel Mode Modify requested, but BTS %u does not support VAMOS\n",
+			  lchan->ts->trx->bts->nr);
+		lchan_on_mode_modify_failure(lchan, info->modify_for, lchan->conn);
+		return;
+	}
+
 	/* To make sure that the lchan is actually allowed to initiate Mode Modify, feed through an FSM event. */
 	if (osmo_fsm_inst_dispatch(lchan->fi, LCHAN_EV_REQUEST_MODE_MODIFY, info)) {
 		LOG_LCHAN(lchan, LOGL_ERROR,
@@ -973,6 +983,7 @@ static void lchan_fsm_wait_rsl_chan_mode_modify_ack(struct osmo_fsm_inst *fi, ui
 		lchan->current_mr_conf = lchan->modify.mr_conf_filtered;
 		lchan->tsc_set = lchan->modify.tsc_set;
 		lchan->tsc = lchan->modify.tsc;
+		lchan->vamos.enabled = lchan->modify.info.vamos;
 
 		if (lchan->modify.info.requires_voice_stream
 		    && !lchan->fi_rtp) {
@@ -1118,7 +1129,13 @@ static void lchan_fsm_established(struct osmo_fsm_inst *fi, uint32_t event, void
 		use_mgwep_ci = lchan_use_mgw_endpoint_ci_bts(lchan);
 
 		lchan->modify.ch_mode_rate = lchan->modify.info.ch_mode_rate;
-		/* future: automatically adjust chan_mode in lchan->modify.ch_mode_rate */
+		lchan->modify.ch_mode_rate.chan_mode = (lchan->modify.info.vamos
+						? gsm48_chan_mode_to_vamos(lchan->modify.info.ch_mode_rate.chan_mode)
+						: gsm48_chan_mode_to_non_vamos(lchan->modify.info.ch_mode_rate.chan_mode));
+		if (lchan->modify.ch_mode_rate.chan_mode < 0) {
+			lchan_fail("Invalid chan_mode: %s", gsm48_chan_mode_name(lchan->modify.info.ch_mode_rate.chan_mode));
+			return;
+		}
 
 		if (gsm48_chan_mode_to_non_vamos(modif_info->ch_mode_rate.chan_mode) == GSM48_CMODE_SPEECH_AMR) {
 			if (lchan_mr_config(&lchan->modify.mr_conf_filtered, lchan, modif_info->ch_mode_rate.s15_s0)

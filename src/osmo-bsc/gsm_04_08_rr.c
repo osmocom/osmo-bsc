@@ -702,6 +702,12 @@ int gsm48_lchan_modify(struct gsm_lchan *lchan, uint8_t mode)
 		}
 	}
 
+	if (lchan->modify.info.vamos && lchan->modify.tsc_set > 0) {
+		/* Add the Extended TSC Set IE. So far we only need a TSC Set sent for VAMOS.
+		 * Convert from spec conforming "human readable" TSC Set 1-4 to 0-3 on the wire */
+		msgb_tv_put(msg, GSM48_IE_EXTENDED_TSC_SET, (lchan->modify.tsc_set - 1) & 0x3);
+	}
+
 	return gsm48_sendmsg(msg);
 }
 

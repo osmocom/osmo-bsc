@@ -626,6 +626,8 @@ struct lchan_modify_info {
 	/* TSC to use, or -1 for automatically determining the TSC to use. Valid range is 0 to 7, as described in 3GPP
 	 * TS 45.002. */
 	int tsc;
+
+	bool vamos;
 };
 
 struct gsm_lchan {
@@ -741,6 +743,11 @@ struct gsm_lchan {
 	int tsc_set;
 	/* Training Sequence Code in use. The valid range is 0-7 as described in the spec 3GPP TS 45.002. */
 	uint8_t tsc;
+
+	struct {
+		/* Whether this lchan is activated/modified into a mode that allows VAMOS multiplexing at this moment */
+		bool enabled;
+	} vamos;
 };
 
 /* One Timeslot in a TRX */
