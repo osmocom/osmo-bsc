@@ -67,6 +67,8 @@ struct gsm_bts_trx *gsm_bts_trx_alloc(struct gsm_bts *bts)
 	trx->bts = bts;
 	trx->nr = bts->num_trx++;
 
+	gsm_bts_trx_set_tei(trx, 0);
+
 	trx->mo.fi = osmo_fsm_inst_alloc(&nm_rcarrier_fsm, trx, trx,
 					 LOGL_INFO, NULL);
 	osmo_fsm_inst_update_id_f(trx->mo.fi, "bts%d-trx%d", bts->nr, trx->nr);
@@ -454,4 +456,10 @@ err_out:
 	     "most likely a problem with neighbor cell list generation\n",
 	     get_value_string(osmo_sitype_strs, i), bts->nr, strerror(-rc));
 	return rc;
+}
+
+void gsm_bts_trx_set_tei(struct gsm_bts_trx *trx, uint8_t tei)
+{
+	trx->rsl_tei_primary = tei;
+	trx->rsl_tei_vamos = 0x80 + tei;
 }

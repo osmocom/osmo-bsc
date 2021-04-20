@@ -1346,6 +1346,8 @@ static void trx_dump_vty(struct vty *vty, struct gsm_bts_trx *trx, bool print_rs
 	net_dump_nmstate(vty, &trx->bb_transc.mo.nm_state);
 	if (is_ipaccess_bts(trx->bts)) {
 		vty_out(vty, "  ip.access stream ID: 0x%02x ", trx->rsl_tei_primary);
+		if (trx->rsl_link_vamos)
+			vty_out(vty, "  ip.access stream ID for VAMOS shadow lchans: 0x%02x ", trx->rsl_tei_vamos);
 		e1isl_dump_vty_tcp(vty, trx->rsl_link_primary);
 	} else {
 		vty_out(vty, "  E1 Signalling Link:%s", VTY_NEWLINE);
@@ -5449,7 +5451,7 @@ DEFUN_USRATTR(cfg_trx_rsl_e1_tei,
 {
 	struct gsm_bts_trx *trx = vty->index;
 
-	trx->rsl_tei_primary = atoi(argv[0]);
+	gsm_bts_trx_set_tei(trx, atoi(argv[0]));
 
 	return CMD_SUCCESS;
 }

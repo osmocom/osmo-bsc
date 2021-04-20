@@ -730,6 +730,12 @@ struct gsm_lchan {
 	 * channel_mode_and_rate. */
 	struct channel_mode_and_rate current_ch_mode_rate;
 	struct gsm48_multi_rate_conf current_mr_conf;
+
+	struct {
+		/* Whether this lchan represents a secondary "shadow" lchan to multiplex a second MS onto a primary
+		 * "normal" lchan */
+		bool is_secondary;
+	} vamos;
 };
 
 /* One Timeslot in a TRX */

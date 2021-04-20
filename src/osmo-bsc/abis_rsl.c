@@ -2683,5 +2683,7 @@ int rsl_bs_power_control(struct gsm_bts_trx *trx, uint8_t channel, uint8_t reduc
 
 struct e1inp_sign_link *rsl_chan_link(const struct gsm_lchan *lchan)
 {
+	if (lchan->vamos.is_secondary)
+		return lchan->ts->trx->rsl_link_vamos;
 	return lchan->ts->trx->rsl_link_primary;
 }

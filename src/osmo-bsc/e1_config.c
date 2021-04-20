@@ -107,6 +107,8 @@ int e1_reconfig_trx(struct gsm_bts_trx *trx)
 	}
 	if (trx->rsl_link_primary)
 		e1inp_sign_link_destroy(trx->rsl_link_primary);
+	if (trx->rsl_link_vamos)
+		e1inp_sign_link_destroy(trx->rsl_link_vamos);
 	trx->rsl_link_primary = rsl_link;
 
 	for (i = 0; i < TRX_NR_TS; i++)

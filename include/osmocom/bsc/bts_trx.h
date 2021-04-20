@@ -34,7 +34,9 @@ struct gsm_bts_trx {
 	/* how do we talk RSL with this TRX? */
 	struct gsm_e1_subslot rsl_e1_link;
 	uint8_t rsl_tei_primary;
+	uint8_t rsl_tei_vamos;
 	struct e1inp_sign_link *rsl_link_primary;
+	struct e1inp_sign_link *rsl_link_vamos;
 
 	/* Timeout for initiating the RSL connection. */
 	struct osmo_timer_list rsl_connect_timeout;
@@ -99,3 +101,5 @@ int trx_count_free_ts(struct gsm_bts_trx *trx, enum gsm_phys_chan_config pchan);
 bool trx_has_valid_pchan_config(const struct gsm_bts_trx *trx);
 
 int gsm_bts_trx_set_system_infos(struct gsm_bts_trx *trx);
+
+void gsm_bts_trx_set_tei(struct gsm_bts_trx *trx, uint8_t tei);

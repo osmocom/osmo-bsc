@@ -531,6 +531,10 @@ void ipaccess_drop_rsl(struct gsm_bts_trx *trx, const char *reason)
 	LOG_TRX(trx, DLINP, LOGL_NOTICE, "Dropping RSL link: %s\n", reason);
 	e1inp_sign_link_destroy(trx->rsl_link_primary);
 	trx->rsl_link_primary = NULL;
+	if (trx->rsl_link_vamos) {
+		e1inp_sign_link_destroy(trx->rsl_link_vamos);
+		trx->rsl_link_vamos = NULL;
+	}
 	osmo_stat_item_dec(trx->bts->bts_statg->items[BTS_STAT_RSL_CONNECTED], 1);
 
 	if (trx->bts->c0 == trx)
@@ -739,6 +743,19 @@ ipaccess_sign_link_up(void *unit_data, struct e1inp_line *line,
 					sign_link->tei, sign_link->sapi);
 			sign_link->trx->bts->ip_access.flags |=
 					(RSL_UP << sign_link->trx->nr);
+		}
+		if (osmo_bts_has_feature(&bts->features, BTS_FEAT_VAMOS)) {
+			sign_link = trx->rsl_link_vamos =
+					e1inp_sign_link_create(ts, E1INP_SIGN_RSL,
+							       trx, trx->rsl_tei_vamos, 0);
+			trx->rsl_link_vamos->ts->sign.delay = 0;
+			if (!(sign_link->trx->bts->ip_access.flags &
+						(RSL_UP << sign_link->trx->nr))) {
+				e1inp_event(sign_link->ts, S_L_INP_TEI_UP,
+						sign_link->tei, sign_link->sapi);
+				sign_link->trx->bts->ip_access.flags |=
+						(RSL_UP << sign_link->trx->nr);
+			}
 		}
 		osmo_stat_item_inc(bts->bts_statg->items[BTS_STAT_RSL_CONNECTED], 1);
 		break;
