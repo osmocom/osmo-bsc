@@ -942,10 +942,6 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 
-	/* Make the 'show bts' information list the neighbor ARFCNs by updating the
-	 * system_information.si_common.neigh_list. */
-	gsm_net_set_system_infos();
-
 	/* start control interface after reading config for
 	 * ctrl_vty_get_bind_addr() */
 	bsc_gsmnet->ctrl = bsc_controlif_setup(bsc_gsmnet,

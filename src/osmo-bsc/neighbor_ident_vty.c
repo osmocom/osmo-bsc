@@ -183,10 +183,6 @@ static int add_neighbor(struct vty *vty, struct neighbor *n)
 	neighbor = talloc_zero(bts, struct neighbor);
 	*neighbor = *n;
 	llist_add_tail(&neighbor->entry, &bts->neighbors);
-
-	if (vty->type != VTY_FILE)
-		gsm_bts_set_system_infos(bts);
-
 	return CMD_SUCCESS;
 }
 
@@ -217,10 +213,6 @@ static int del_neighbor(struct vty *vty, struct neighbor *n)
 
 		llist_del(&neighbor->entry);
 		talloc_free(neighbor);
-
-		if (vty->type != VTY_FILE)
-			gsm_bts_set_system_infos(bts);
-
 		return CMD_SUCCESS;
 	}
 
