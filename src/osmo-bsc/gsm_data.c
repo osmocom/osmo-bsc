@@ -565,8 +565,8 @@ static const uint8_t subslots_per_pchan[] = {
 	[GSM_PCHAN_TCH_F_PDCH] = 1,
 };
 
-/*! According to ts->pchan and possibly ts->dyn_pchan, return the number of
- * logical channels available in the timeslot. */
+/*! Return the maximum number of logical channels that may be used in a timeslot of the given physical channel
+ * configuration. */
 uint8_t pchan_subslots(enum gsm_phys_chan_config pchan)
 {
 	if (pchan < 0 || pchan >= ARRAY_SIZE(subslots_per_pchan))
