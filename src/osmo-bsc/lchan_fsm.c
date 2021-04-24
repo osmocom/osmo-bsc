@@ -649,7 +649,7 @@ static void lchan_fsm_wait_ts_ready_onenter(struct osmo_fsm_inst *fi, uint32_t p
 			lchan->bs_power = bts->bs_power_ctrl.bs_power_val_db / 2;
 	}
 
-	if (info->ch_mode_rate.chan_mode == GSM48_CMODE_SPEECH_AMR) {
+	if (gsm48_chan_mode_to_non_vamos(info->ch_mode_rate.chan_mode) == GSM48_CMODE_SPEECH_AMR) {
 		if (lchan_mr_config(&lchan->activate.mr_conf_filtered, lchan, info->ch_mode_rate.s15_s0) < 0) {
 			lchan_fail("Can not generate multirate configuration IE\n");
 			return;

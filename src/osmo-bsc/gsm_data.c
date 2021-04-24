@@ -337,8 +337,9 @@ char *gsm_ts_and_pchan_name(const struct gsm_bts_trx_ts *ts)
 char *gsm_lchan_name_compute(void *ctx, const struct gsm_lchan *lchan)
 {
 	struct gsm_bts_trx_ts *ts = lchan->ts;
-	return talloc_asprintf(ctx, "(bts=%d,trx=%d,ts=%d,ss=%d)",
-			       ts->trx->bts->nr, ts->trx->nr, ts->nr, lchan->nr);
+	return talloc_asprintf(ctx, "(bts=%d,trx=%d,ts=%d,ss=%d%s)",
+			       ts->trx->bts->nr, ts->trx->nr, ts->nr, lchan->nr,
+			       lchan->vamos.is_secondary ? "-VAMOS" : "");
 }
 
 /* obtain the MO structure for a given object instance */
@@ -545,9 +546,13 @@ uint8_t gsm_pchan2chan_nr(enum gsm_phys_chan_config pchan,
 
 uint8_t gsm_lchan2chan_nr(const struct gsm_lchan *lchan)
 {
-	/* Note: non-standard Osmocom style dyn TS PDCH mode chan_nr is only used within
-	 * rsl_tx_dyn_ts_pdch_act_deact(). */
-	return gsm_pchan2chan_nr(lchan->ts->pchan_is, lchan->ts->nr, lchan->nr);
+	uint8_t lchan_nr = lchan->nr;
+	/* The VAMOS lchans are behind the primary ones in the ts->lchan[] array. They keep their lchan->nr as in the
+	 * array, but on the wire they are the "shadow" lchans for the primary lchans. For example, for TCH/F, there is
+	 * a primary ts->lchan[0] and a VAMOS ts->lchan[1]. Still, the VAMOS lchan should send chan_nr = 0. */
+	if (lchan->vamos.is_secondary)
+		lchan_nr -= lchan->ts->max_primary_lchans;
+	return gsm_pchan2chan_nr(lchan->ts->pchan_is, lchan->ts->nr, lchan_nr);
 }
 
 static const uint8_t subslots_per_pchan[] = {
@@ -574,6 +579,30 @@ uint8_t pchan_subslots(enum gsm_phys_chan_config pchan)
 	return subslots_per_pchan[pchan];
 }
 
+static const uint8_t subslots_per_pchan_vamos[] = {
+	[GSM_PCHAN_NONE] = 0,
+	[GSM_PCHAN_CCCH] = 0,
+	[GSM_PCHAN_PDCH] = 0,
+	[GSM_PCHAN_CCCH_SDCCH4] = 0,
+	/* VAMOS: on a TCH/F, there may be a TCH/H shadow */
+	[GSM_PCHAN_TCH_F] = 2,
+	[GSM_PCHAN_TCH_H] = 2,
+	[GSM_PCHAN_SDCCH8_SACCH8C] = 0,
+	[GSM_PCHAN_CCCH_SDCCH4_CBCH] = 0,
+	[GSM_PCHAN_SDCCH8_SACCH8C_CBCH] = 0,
+	[GSM_PCHAN_TCH_F_TCH_H_PDCH] = 2,
+	[GSM_PCHAN_TCH_F_PDCH] = 2,
+};
+
+/* Return the maximum number of VAMOS secondary lchans that may be used in a timeslot of the given physical channel
+ * configuration. */
+uint8_t pchan_subslots_vamos(enum gsm_phys_chan_config pchan)
+{
+	if (pchan < 0 || pchan >= ARRAY_SIZE(subslots_per_pchan_vamos))
+		return 0;
+	return subslots_per_pchan_vamos[pchan];
+}
+
 static bool pchan_is_tch(enum gsm_phys_chan_config pchan)
 {
 	switch (pchan) {
@@ -588,6 +617,80 @@ static bool pchan_is_tch(enum gsm_phys_chan_config pchan)
 bool ts_is_tch(struct gsm_bts_trx_ts *ts)
 {
 	return pchan_is_tch(ts->pchan_is);
+}
+
+struct gsm_lchan *gsm_lchan_vamos_to_primary(const struct gsm_lchan *lchan_vamos, int idx)
+{
+	struct gsm_lchan *lchan_primary;
+	if (!lchan_vamos || !lchan_vamos->vamos.is_secondary)
+		return NULL;
+
+	lchan_primary = &lchan_vamos->ts->lchan[0];
+
+	switch (idx) {
+	case 0:
+		goto return_lchan_primary;
+	case 1:
+		break;
+	default:
+		return NULL;
+	}
+
+	switch (lchan_primary->type) {
+	case GSM_LCHAN_TCH_F:
+		return NULL;
+
+	default:
+	case GSM_LCHAN_TCH_H:
+		lchan_primary = &lchan_vamos->ts->lchan[1];
+		break;
+	}
+
+return_lchan_primary:
+	if (!lchan_primary->fi)
+		return NULL;
+	return lchan_primary;
+}
+
+struct gsm_lchan *gsm_lchan_primary_to_vamos(const struct gsm_lchan *lchan_primary, int idx)
+{
+	struct gsm_lchan *first_vamos_lchan;
+	struct gsm_lchan *lchan_vamos;
+	struct gsm_bts_trx_ts *ts;
+	if (!lchan_primary || lchan_primary->vamos.is_secondary)
+		return NULL;
+
+	ts = lchan_primary->ts;
+
+	first_vamos_lchan = &ts->lchan[ts->max_primary_lchans];
+	if (first_vamos_lchan == ts->lchan)
+		return NULL;
+
+	lchan_vamos = first_vamos_lchan;
+
+	switch (idx) {
+	case 0:
+		goto return_lchan_vamos;
+	case 1:
+		break;
+	default:
+		return NULL;
+	}
+
+	switch (lchan_vamos->type) {
+	case GSM_LCHAN_TCH_F:
+		return NULL;
+
+	default:
+	case GSM_LCHAN_TCH_H:
+		lchan_vamos = first_vamos_lchan + 1;
+		break;
+	}
+
+return_lchan_vamos:
+	if (!lchan_vamos->fi)
+		return NULL;
+	return lchan_vamos;
 }
 
 struct gsm_bts *conn_get_bts(struct gsm_subscriber_connection *conn) {

@@ -189,22 +189,45 @@ static void ts_fsm_err_ready_to_go_in_pdch(struct osmo_fsm_inst *fi, struct gsm_
 
 void ts_set_pchan_is(struct gsm_bts_trx_ts *ts, enum gsm_phys_chan_config pchan_is)
 {
+	int i;
+	struct gsm_lchan *lchan;
 	ts->pchan_is = pchan_is;
 	ts->max_primary_lchans = pchan_subslots(ts->pchan_is);
 	LOG_TS(ts, LOGL_DEBUG, "pchan_is=%s max_primary_lchans=%d max_lchans_possible=%d\n",
 	       gsm_pchan_name(ts->pchan_is), ts->max_primary_lchans, ts->max_lchans_possible);
+	switch (ts->pchan_is) {
+	case GSM_PCHAN_TCH_F:
+	case GSM_PCHAN_TCH_H:
+		for (i = 0; i < ts->max_lchans_possible; i++) {
+			lchan = &ts->lchan[i];
+			if (i < ts->max_primary_lchans)
+				lchan->vamos.is_secondary = false;
+			else
+				lchan->vamos.is_secondary = true;
+		}
+		break;
+	default:
+		ts_for_n_lchans(lchan, ts, ts->max_lchans_possible)
+			lchan->vamos.is_secondary = false;
+		break;
+	}
 }
 
 static void ts_setup_lchans(struct gsm_bts_trx_ts *ts)
 {
 	int i, max_lchans;
+	int max_lchans_vamos;
 
 	ts->pchan_on_init = ts->pchan_from_config;
 	ts_fsm_update_id(ts);
 
 	max_lchans = pchan_subslots(ts->pchan_on_init);
-	LOG_TS(ts, LOGL_DEBUG, "max lchans: %d\n", max_lchans);
-	ts->max_lchans_possible = max_lchans;
+	if (osmo_bts_has_feature(&ts->trx->bts->features, BTS_FEAT_VAMOS))
+		max_lchans_vamos = pchan_subslots_vamos(ts->pchan_on_init);
+	else
+		max_lchans_vamos = 0;
+	LOG_TS(ts, LOGL_DEBUG, "max lchans: %d + %d VAMOS secondaries\n", max_lchans, max_lchans_vamos);
+	ts->max_lchans_possible = max_lchans + max_lchans_vamos;
 	ts->max_primary_lchans = 0;
 
 	for (i = 0; i < ts->max_lchans_possible; i++) {
