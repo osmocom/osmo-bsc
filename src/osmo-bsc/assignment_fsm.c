@@ -640,6 +640,7 @@ static void assignment_fsm_wait_lchan_active_onenter(struct osmo_fsm_inst *fi, u
 		.ta_known = true,
 		.tsc_set = req->tsc_set,
 		.tsc = req->tsc,
+		.vamos = conn->assignment.new_lchan->vamos.is_secondary,
 	};
 	lchan_activate(conn->assignment.new_lchan, &activ_info);
 }

@@ -1708,10 +1708,11 @@ static bool force_free_lchan_for_emergency(struct chan_rqd *rqd)
 	 * This will take a short amount of time. We need to come back and check regulary to see if we managed to
 	 * free up another lchan. */
 	if (!rqd->release_lchan) {
+		struct gsm_lchan *release_lchan;
 		/* Pick any busy TCH/F or TCH/H lchan and inititate a channel
 		 * release to make room for the incoming emergency call */
-		rqd->release_lchan = get_any_lchan(rqd->bts);
-		if (!rqd->release_lchan) {
+		rqd->release_lchan = release_lchan = get_any_lchan(rqd->bts);
+		if (!release_lchan) {
 			/* It can not happen that we first find out that there
 			 * is no TCH/H or TCH/F available and at the same time
 			 * we ware unable to find any busy TCH/H or TCH/F. In
@@ -1724,10 +1725,16 @@ static bool force_free_lchan_for_emergency(struct chan_rqd *rqd)
 
 		LOG_BTS(rqd->bts, DRSL, LOGL_NOTICE,
 			"CHAN RQD/EMERGENCY-PRIORITY: inducing termination of lchan %s (state:%s) in favor of incoming EMERGENCY CALL!\n",
-			gsm_lchan_name(rqd->release_lchan), osmo_fsm_inst_state_name(rqd->release_lchan->fi));
+			gsm_lchan_name(release_lchan), osmo_fsm_inst_state_name(release_lchan->fi));
 
-		lchan_release(rqd->release_lchan, !!(rqd->release_lchan->conn), true, 0,
-			      gscon_last_eutran_plmn(rqd->release_lchan->conn));
+		lchan_release(release_lchan, !!(release_lchan->conn), true, 0,
+			      gscon_last_eutran_plmn(release_lchan->conn));
+
+		/* Also release any overlapping VAMOS multiplexes on this lchan */
+		release_lchan = gsm_lchan_primary_to_vamos(release_lchan);
+		if (release_lchan)
+			lchan_release(release_lchan, !!(release_lchan->conn), true, 0,
+				      gscon_last_eutran_plmn(release_lchan->conn));
 	} else {
 		/* BTS is shutting down, give up... */
 		if (rqd->release_lchan->ts->fi->state == TS_ST_NOT_INITIALIZED)

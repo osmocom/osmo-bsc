@@ -1041,8 +1041,11 @@ uint8_t gsm_ts_tsc(const struct gsm_bts_trx_ts *ts);
 
 enum gsm_phys_chan_config ts_pchan(struct gsm_bts_trx_ts *ts);
 uint8_t pchan_subslots(enum gsm_phys_chan_config pchan);
+uint8_t pchan_subslots_vamos(enum gsm_phys_chan_config pchan);
 bool ts_is_tch(struct gsm_bts_trx_ts *ts);
 
+struct gsm_lchan *gsm_lchan_vamos_to_primary(const struct gsm_lchan *lchan_vamos);
+struct gsm_lchan *gsm_lchan_primary_to_vamos(const struct gsm_lchan *lchan_primary);
 
 struct gsm_bts *conn_get_bts(struct gsm_subscriber_connection *conn);
 
