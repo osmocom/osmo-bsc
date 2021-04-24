@@ -215,8 +215,6 @@ static void ts_setup_lchans(struct gsm_bts_trx_ts *ts)
 		ts->pchan_is = ts->pchan_on_init;
 		break;
 	}
-
-	LOG_TS(ts, LOGL_DEBUG, "lchans initialized: %d\n", max_lchans);
 }
 
 static void ts_fsm_not_initialized(struct osmo_fsm_inst *fi, uint32_t event, void *data)
