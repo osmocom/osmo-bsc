@@ -334,14 +334,11 @@ char *gsm_ts_and_pchan_name(const struct gsm_bts_trx_ts *ts)
 	return ts2str;
 }
 
-char *gsm_lchan_name_compute(const struct gsm_lchan *lchan)
+char *gsm_lchan_name_compute(void *ctx, const struct gsm_lchan *lchan)
 {
 	struct gsm_bts_trx_ts *ts = lchan->ts;
-
-	snprintf(ts2str, sizeof(ts2str), "(bts=%d,trx=%d,ts=%d,ss=%d)",
-		 ts->trx->bts->nr, ts->trx->nr, ts->nr, lchan->nr);
-
-	return ts2str;
+	return talloc_asprintf(ctx, "(bts=%d,trx=%d,ts=%d,ss=%d)",
+			       ts->trx->bts->nr, ts->trx->nr, ts->nr, lchan->nr);
 }
 
 /* obtain the MO structure for a given object instance */
