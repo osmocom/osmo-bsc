@@ -602,6 +602,8 @@ struct lchan_activate_info {
 	/* TSC to use, or -1 for automatically determining the TSC to use. Valid range is 0 to 7, as described in 3GPP
 	 * TS 45.002. */
 	int tsc;
+
+	bool vamos;
 };
 
 enum lchan_modify_for {

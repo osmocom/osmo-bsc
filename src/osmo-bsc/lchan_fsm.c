@@ -311,6 +311,16 @@ void lchan_activate(struct gsm_lchan *lchan, struct lchan_activate_info *info)
 
 	OSMO_ASSERT(lchan && info);
 
+	if ((info->vamos || lchan->vamos.is_secondary)
+	    && !osmo_bts_has_feature(&lchan->ts->trx->bts->features, BTS_FEAT_VAMOS)) {
+		lchan->last_error = talloc_strdup(lchan->ts->trx, "VAMOS related channel activation requested,"
+						  " but BTS does not support VAMOS");
+		LOG_LCHAN(lchan, LOGL_ERROR,
+			  "VAMOS related channel activation requested, but BTS %u does not support VAMOS\n",
+			  lchan->ts->trx->bts->nr);
+		goto abort;
+	}
+
 	if (!lchan_state_is(lchan, LCHAN_ST_UNUSED))
 		goto abort;
 
@@ -726,10 +736,12 @@ static void lchan_fsm_wait_activ_ack_onenter(struct osmo_fsm_inst *fi, uint32_t 
 
 	lchan->encr = lchan->activate.info.encr;
 
+	/* If enabling VAMOS mode and no specific TSC Set was selected, make sure to select a sane TSC Set by
+	 * default: Set 1 for the primary and Set 2 for the shadow lchan. For non-VAMOS lchans, TSC Set 1. */
 	if (lchan->activate.info.tsc_set > 0)
 		lchan->activate.tsc_set = lchan->activate.info.tsc_set;
 	else
-		lchan->activate.tsc_set = 1;
+		lchan->activate.tsc_set = lchan->vamos.is_secondary ? 2 : 1;
 
 	/* Use the TSC provided in the modification request, if any. Otherwise use the timeslot's configured
 	 * TSC. */
@@ -808,6 +820,7 @@ static void lchan_fsm_post_activ_ack(struct osmo_fsm_inst *fi)
 
 	lchan->current_ch_mode_rate = lchan->activate.info.ch_mode_rate;
 	lchan->current_mr_conf = lchan->activate.mr_conf_filtered;
+	lchan->vamos.enabled = lchan->activate.info.vamos;
 	lchan->tsc_set = lchan->activate.tsc_set;
 	lchan->tsc = lchan->activate.tsc;
 	LOG_LCHAN(lchan, LOGL_INFO, "Rx Activ ACK %s\n",

@@ -528,7 +528,7 @@ int rsl_tx_chan_activ(struct gsm_lchan *lchan, uint8_t act_type, uint8_t ho_ref)
 	/* PDCH activation is a job for rsl_tx_dyn_ts_pdch_act_deact(); */
 	OSMO_ASSERT(act_type != RSL_ACT_OSMO_PDCH);
 
-	rc = channel_mode_from_lchan(&cm, lchan, &lchan->activate.info.ch_mode_rate, false);
+	rc = channel_mode_from_lchan(&cm, lchan, &lchan->activate.info.ch_mode_rate, lchan->activate.info.vamos);
 	if (rc < 0) {
 		LOGP(DRSL, LOGL_ERROR,
 		     "%s Cannot find channel mode from lchan type\n",
@@ -613,6 +613,16 @@ int rsl_tx_chan_activ(struct gsm_lchan *lchan, uint8_t act_type, uint8_t ho_ref)
 	}
 
 	rep_acch_cap_for_bts(lchan, msg);
+
+	/* Selecting a specific TSC Set is only applicable to VAMOS mode */
+	if (lchan->activate.info.vamos && lchan->activate.tsc_set >= 1) {
+		struct rsl_osmo_training_sequence_ie tsie = {
+			/* Convert from spec conforming "human readable" TSC Set 1-4 to 0-3 on the wire */
+			.tsc_set = lchan->activate.tsc_set - 1,
+			.tsc = lchan->activate.tsc,
+		};
+		msgb_tlv_put(msg, RSL_IE_OSMO_TRAINING_SEQUENCE, sizeof(tsie), (uint8_t*)&tsie);
+	}
 
 	msg->dst = rsl_chan_link(lchan);
 
