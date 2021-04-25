@@ -6,12 +6,13 @@ OsmoBSC# list
 ...
 
 OsmoBSC# bts 0 trx 0 timeslot 0 sub-slot 0 ?
-  activate    Manual Channel Activation (e.g. for BER test)
-  deactivate  Manual Channel Deactivation (e.g. for BER test)
-  modify      Manually send Channel Mode Modify (for debugging)
-  mdcx        Modify RTP Connection
-  handover    Manually trigger handover (for debugging)
-  assignment  Manually trigger assignment (for debugging)
+  activate        Manual Channel Activation (e.g. for BER test)
+  activate-vamos  Manual Channel Activation, in VAMOS mode
+  deactivate      Manual Channel Deactivation (e.g. for BER test)
+  modify          Manually send Channel Mode Modify (for debugging)
+  mdcx            Modify RTP Connection
+  handover        Manually trigger handover (for debugging)
+  assignment      Manually trigger assignment (for debugging)
 
 OsmoBSC# bts 0 trx 0 timeslot 0 sub-slot 0 modify ?
   vamos      Enable VAMOS channel mode
@@ -32,7 +33,7 @@ OsmoBSC# bts 0 trx 0 timeslot 0 sub-slot 0 modify vamos tsc 1 0 ?
 
 OsmoBSC# list
 ...
-  bts <0-255> trx <0-255> timeslot <0-7> sub-slot <0-7> (activate|deactivate) (hr|fr|efr|amr|sig) [<0-7>]
+  bts <0-255> trx <0-255> timeslot <0-7> sub-slot <0-7> (activate|activate-vamos|deactivate) (hr|fr|efr|amr|sig) [<0-7>]
 ...
 
 OsmoBSC# bts?
@@ -65,12 +66,13 @@ OsmoBSC# bts 0 trx 0 timeslot 0 sub-slot ?
   <0-7>  Sub-slot Number
 
 OsmoBSC# bts 0 trx 0 timeslot 0 sub-slot 0 ?
-  activate    Manual Channel Activation (e.g. for BER test)
-  deactivate  Manual Channel Deactivation (e.g. for BER test)
-  modify      Manually send Channel Mode Modify (for debugging)
-  mdcx        Modify RTP Connection
-  handover    Manually trigger handover (for debugging)
-  assignment  Manually trigger assignment (for debugging)
+  activate        Manual Channel Activation (e.g. for BER test)
+  activate-vamos  Manual Channel Activation, in VAMOS mode
+  deactivate      Manual Channel Deactivation (e.g. for BER test)
+  modify          Manually send Channel Mode Modify (for debugging)
+  mdcx            Modify RTP Connection
+  handover        Manually trigger handover (for debugging)
+  assignment      Manually trigger assignment (for debugging)
 
 OsmoBSC# bts 0 trx 0 timeslot 0 sub-slot 0 activate ?
   hr   Half-Rate v1

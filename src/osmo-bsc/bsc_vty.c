@@ -6215,6 +6215,13 @@ static int lchan_act_single(struct vty *vty, struct gsm_lchan *lchan, const char
 
 		info.ch_mode_rate.chan_rate = chan_t_to_chan_rate(lchan_t);
 
+		if (activate == 2 || lchan->vamos.is_secondary) {
+			info.vamos = true;
+			info.tsc_set = lchan->vamos.is_secondary ? 1 : 0;
+			info.tsc = 0;
+			info.ch_mode_rate.chan_mode = gsm48_chan_mode_to_vamos(info.ch_mode_rate.chan_mode);
+		}
+
 		vty_out(vty, "%% activating lchan %s as %s%s", gsm_lchan_name(lchan), gsm_chan_t_name(lchan->type),
 			VTY_NEWLINE);
 		lchan_activate(lchan, &info);
@@ -6287,9 +6294,10 @@ static int lchan_act_trx(struct vty *vty, struct gsm_bts_trx *trx, int activate)
  * manually in a given mode/codec.  This is useful for receiver
  * performance testing (FER/RBER/...) */
 DEFUN(lchan_act, lchan_act_cmd,
-	"bts <0-255> trx <0-255> timeslot <0-7> sub-slot <0-7> (activate|deactivate) (hr|fr|efr|amr|sig) [<0-7>]",
+	"bts <0-255> trx <0-255> timeslot <0-7> sub-slot <0-7> (activate|activate-vamos|deactivate) (hr|fr|efr|amr|sig) [<0-7>]",
 	BTS_NR_TRX_TS_SS_STR2
 	"Manual Channel Activation (e.g. for BER test)\n"
+	"Manual Channel Activation, in VAMOS mode\n"
 	"Manual Channel Deactivation (e.g. for BER test)\n"
 	"Half-Rate v1\n" "Full-Rate\n" "Enhanced Full Rate\n" "Adaptive Multi-Rate\n" "Signalling\n" "AMR Mode\n")
 {
@@ -6312,6 +6320,8 @@ DEFUN(lchan_act, lchan_act_cmd,
 
 	if (!strcmp(act_str, "activate"))
 		activate = 1;
+	else if (!strcmp(act_str, "activate-vamos"))
+		activate = 2;
 	else
 		activate = 0;
 
