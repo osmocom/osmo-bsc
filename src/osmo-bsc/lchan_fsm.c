@@ -1592,7 +1592,7 @@ void lchan_release(struct gsm_lchan *lchan, bool do_rr_release,
 		   bool err, enum gsm48_rr_cause cause_rr,
 		   const struct osmo_plmn_id *last_eutran_plmn)
 {
-	if (!lchan || !lchan->fi)
+	if (!lchan || !lchan->fi || lchan->fi->state == LCHAN_ST_UNUSED)
 		return;
 
 	if (lchan->release.in_release_handler)
