@@ -1624,7 +1624,7 @@ static void lchan_dump_full_vty(struct vty *vty, struct gsm_lchan *lchan)
 		ms_pwr_dbm(lchan->ts->trx->bts->band, lchan->ms_power),
 		VTY_NEWLINE);
 	vty_out(vty, "  Channel Mode / Codec: %s%s",
-		gsm48_chan_mode_name(lchan->tch_mode),
+		gsm48_chan_mode_name(lchan->current_ch_mode_rate.chan_mode),
 		VTY_NEWLINE);
 	if (lchan->conn && lchan->conn->bsub) {
 		vty_out(vty, "  Subscriber:%s", VTY_NEWLINE);
@@ -6071,13 +6071,17 @@ static int lchan_act_single(struct vty *vty, struct gsm_lchan *lchan, const char
 		if (!strcmp(codec_str, "hr") || !strcmp(codec_str, "fr")) {
 			info = (struct lchan_activate_info) {
 				.activ_for = ACTIVATE_FOR_VTY,
-				.chan_mode = GSM48_CMODE_SPEECH_V1,
+				.ch_mode_rate = {
+					.chan_mode = GSM48_CMODE_SPEECH_V1,
+				},
 				.requires_voice_stream = false,
 			};
 		} else if (!strcmp(codec_str, "efr")) {
 			info = (struct lchan_activate_info) {
 				.activ_for = ACTIVATE_FOR_VTY,
-				.chan_mode = GSM48_CMODE_SPEECH_EFR,
+				.ch_mode_rate = {
+					.chan_mode = GSM48_CMODE_SPEECH_EFR,
+				},
 				.requires_voice_stream = false,
 			};
 		} else if (!strcmp(codec_str, "amr")) {
@@ -6087,20 +6091,26 @@ static int lchan_act_single(struct vty *vty, struct gsm_lchan *lchan, const char
 			}
 			info = (struct lchan_activate_info) {
 				.activ_for = ACTIVATE_FOR_VTY,
-				.chan_mode = GSM48_CMODE_SPEECH_AMR,
-				.s15_s0 = amr_modes[amr_mode],
+				.ch_mode_rate = {
+					.chan_mode = GSM48_CMODE_SPEECH_AMR,
+					.s15_s0 = amr_modes[amr_mode],
+				},
 				.requires_voice_stream = false,
 			};
 		} else if (!strcmp(codec_str, "sig")) {
 			info = (struct lchan_activate_info) {
 				.activ_for = ACTIVATE_FOR_VTY,
-				.chan_mode = GSM48_CMODE_SIGN,
+				.ch_mode_rate = {
+					.chan_mode = GSM48_CMODE_SIGN,
+				},
 				.requires_voice_stream = false,
 			};
 		} else {
 			vty_out(vty, "%% Invalid channel mode specified!%s", VTY_NEWLINE);
 			return CMD_WARNING;
 		}
+
+		info.ch_mode_rate.chan_rate = chan_t_to_chan_rate(lchan_t);
 
 		vty_out(vty, "%% activating lchan %s as %s%s", gsm_lchan_name(lchan), gsm_chan_t_name(lchan->type),
 			VTY_NEWLINE);

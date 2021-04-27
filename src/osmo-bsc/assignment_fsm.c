@@ -85,7 +85,7 @@ static const struct osmo_tdef_state_timeout assignment_fsm_timeouts[32] = {
 		if (bts) { \
 			rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_##counter]); \
 			if (BTS_##counter != BTS_CTR_ASSIGNMENT_NO_CHANNEL) { \
-				switch (conn->lchan->ch_mode_rate.chan_mode) { \
+				switch (conn->assignment.req.ch_mode_rate_list[0].chan_mode) { \
 				case GSM48_CMODE_SIGN: \
 					rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_##counter##_SIGN]); \
 					break; \
@@ -175,18 +175,18 @@ static void send_assignment_complete(struct gsm_subscriber_connection *conn)
 	struct gsm_lchan *lchan = conn->lchan;
 	struct osmo_fsm_inst *fi = conn->fi;
 
-	chosen_channel = gsm0808_chosen_channel(lchan->type, lchan->tch_mode);
+	chosen_channel = gsm0808_chosen_channel(lchan->type, lchan->current_ch_mode_rate.chan_mode);
 	if (!chosen_channel) {
 		assignment_fail(GSM0808_CAUSE_EQUIPMENT_FAILURE,
 				"Unable to compose Chosen Channel for mode=%s type=%s",
-				get_value_string(gsm48_chan_mode_names, lchan->tch_mode),
+				get_value_string(gsm48_chan_mode_names, lchan->current_ch_mode_rate.chan_mode),
 				gsm_lchant_name(lchan->type));
 		return;
 	}
 
 	/* Generate voice related fields */
 	if (conn->assignment.requires_voice_stream) {
-		perm_spch = gsm0808_permitted_speech(lchan->type, lchan->tch_mode);
+		perm_spch = gsm0808_permitted_speech(lchan->type, lchan->current_ch_mode_rate.chan_mode);
 
 		if (gscon_is_aoip(conn)) {
 			if (!osmo_mgcpc_ep_ci_get_crcx_info_to_sockaddr(conn->user_plane.mgw_endpoint_ci_msc,
@@ -212,7 +212,7 @@ static void send_assignment_complete(struct gsm_subscriber_connection *conn)
 		if (gscon_is_aoip(conn)) {
 			/* Extrapolate speech codec from speech mode */
 			gsm0808_speech_codec_from_chan_type(&sc, perm_spch);
-			sc.cfg = conn->lchan->activate.info.s15_s0;
+			sc.cfg = conn->lchan->activate.info.ch_mode_rate.s15_s0;
 			sc_ptr = &sc;
 		}
 	}
@@ -395,11 +395,11 @@ static int check_requires_voice_stream(struct gsm_subscriber_connection *conn)
 	 * a mismatch is not permitted */
 
 	for (i = 0; i < req->n_ch_mode_rate; i++) {
-		rc = check_requires_voice(&requires_voice_alt, req->ch_mode_rate[i].chan_mode);
+		rc = check_requires_voice(&requires_voice_alt, req->ch_mode_rate_list[i].chan_mode);
 		if (rc < 0) {
 			assignment_fail(GSM0808_CAUSE_REQ_CODEC_TYPE_OR_CONFIG_NOT_SUPP,
 					"Channel mode not supported (prev level %d): %s", i,
-					gsm48_chan_mode_name(req->ch_mode_rate[i].chan_mode));
+					gsm48_chan_mode_name(req->ch_mode_rate_list[i].chan_mode));
 			return -EINVAL;
 		}
 
@@ -408,8 +408,8 @@ static int check_requires_voice_stream(struct gsm_subscriber_connection *conn)
 		else if (requires_voice_alt != requires_voice_pref) {
 			assignment_fail(GSM0808_CAUSE_REQ_CODEC_TYPE_OR_CONFIG_NOT_SUPP,
 					"Requested a mix of Signalling and non-Signalling channel modes: %s != %s",
-					gsm48_chan_mode_name(req->ch_mode_rate[0].chan_mode),
-					gsm48_chan_mode_name(req->ch_mode_rate[i].chan_mode));
+					gsm48_chan_mode_name(req->ch_mode_rate_list[0].chan_mode),
+					gsm48_chan_mode_name(req->ch_mode_rate_list[i].chan_mode));
 			return -EINVAL;
 		}
 	}
@@ -431,9 +431,9 @@ static bool reuse_existing_lchan(struct gsm_subscriber_connection *conn)
 	/* Check if the currently existing lchan is compatible with the
 	 * preferred rate/codec. */
 	for (i = 0; i < req->n_ch_mode_rate; i++) {
-		if (!lchan_type_compat_with_mode(conn->lchan->type, &req->ch_mode_rate[i]))
+		if (!lchan_type_compat_with_mode(conn->lchan->type, &req->ch_mode_rate_list[i]))
 			continue;
-		conn->lchan->ch_mode_rate = req->ch_mode_rate[i];
+		conn->assignment.selected_ch_mode_rate = req->ch_mode_rate_list[i];
 		return true;
 	}
 
@@ -485,12 +485,12 @@ void assignment_fsm_start(struct gsm_subscriber_connection *conn, struct gsm_bts
 
 		/* If the requested mode and the current TCH mode matches up, just send the
 		 * assignment complete directly and be done with the assignment procedure. */
-		if (conn->lchan->tch_mode == conn->lchan->ch_mode_rate.chan_mode) {
+		if (conn->lchan->current_ch_mode_rate.chan_mode == conn->assignment.selected_ch_mode_rate.chan_mode) {
 			LOG_ASSIGNMENT(conn, LOGL_DEBUG,
 				       "Current lchan mode is compatible with requested chan_mode,"
 				       " sending BSSMAP Assignment Complete directly."
 				       " requested chan_mode=%s; current lchan is %s\n",
-				       gsm48_chan_mode_name(conn->lchan->ch_mode_rate.chan_mode),
+				       gsm48_chan_mode_name(conn->assignment.selected_ch_mode_rate.chan_mode),
 				       gsm_lchan_name(conn->lchan));
 
 			if (req->assign_for == ASSIGN_FOR_BSSMAP_REQ)
@@ -509,14 +509,13 @@ void assignment_fsm_start(struct gsm_subscriber_connection *conn, struct gsm_bts
 		LOG_ASSIGNMENT(conn, LOGL_DEBUG,
 			       "Current lchan mode is not compatible with requested chan_mode,"
 			       " so we will modify it. requested chan_mode=%s; current lchan is %s\n",
-			       gsm48_chan_mode_name(conn->lchan->ch_mode_rate.chan_mode),
+			       gsm48_chan_mode_name(conn->assignment.selected_ch_mode_rate.chan_mode),
 			       gsm_lchan_name(conn->lchan));
 
 		modif_info = (struct lchan_modify_info){
 			.modify_for = MODIFY_FOR_ASSIGNMENT,
-			.chan_mode = conn->lchan->ch_mode_rate.chan_mode,
+			.ch_mode_rate = conn->assignment.selected_ch_mode_rate,
 			.requires_voice_stream = conn->assignment.requires_voice_stream,
-			.s15_s0 = conn->lchan->ch_mode_rate.s15_s0,
 			.msc_assigned_cic = req->msc_assigned_cic,
 		};
 
@@ -529,22 +528,23 @@ void assignment_fsm_start(struct gsm_subscriber_connection *conn, struct gsm_bts
 	/* Try to allocate a new lchan in order of preference */
 	for (i = 0; i < req->n_ch_mode_rate; i++) {
 		conn->assignment.new_lchan = lchan_select_by_chan_mode(bts,
-		    req->ch_mode_rate[i].chan_mode, req->ch_mode_rate[i].chan_rate);
-		/* FIXME: at this point there is merely an assignment request with a given ch_mode_rate. Writing this to
-		 * conn->lchan->ch_mode_rate is a violation of scopes: the lchan->* state should only be modified
-		 * *after* the assignment is confirmed to be completed. Before that, this data should live in
-		 * conn->assignment or the lchan_activate_info, the designated places for not-yet-confirmed data. See
-		 * OS#3833 */
-		conn->lchan->ch_mode_rate = req->ch_mode_rate[i];
-		if (conn->assignment.new_lchan)
-			break;
+		    req->ch_mode_rate_list[i].chan_mode, req->ch_mode_rate_list[i].chan_rate);
+		if (!conn->assignment.new_lchan)
+			continue;
+		LOG_ASSIGNMENT(conn, LOGL_DEBUG, "selected new lchan %s for mode[%d] = %s channel_rate=%d\n",
+			       gsm_lchan_name(conn->assignment.new_lchan),
+			       i, gsm48_chan_mode_name(req->ch_mode_rate_list[i].chan_mode),
+			       req->ch_mode_rate_list[i].chan_rate);
+
+		conn->assignment.selected_ch_mode_rate = req->ch_mode_rate_list[i];
+		break;
 	}
 
 	/* Check whether the lchan allocation was successful or not and tear
 	 * down the assignment in case of failure. */
 	if (!conn->assignment.new_lchan) {
 		assignment_count_result(CTR_ASSIGNMENT_NO_CHANNEL);
-		switch (req->ch_mode_rate[0].chan_mode) {
+		switch (req->ch_mode_rate_list[0].chan_mode) {
 		case GSM48_CMODE_SIGN:
 			rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_CTR_ASSIGNMENT_NO_CHANNEL_SIGN]);
 			break;
@@ -559,12 +559,12 @@ void assignment_fsm_start(struct gsm_subscriber_connection *conn, struct gsm_bts
 		assignment_fail(GSM0808_CAUSE_NO_RADIO_RESOURCE_AVAILABLE,
 				"BSSMAP Assignment Command:"
 				" No lchan available for: pref=%s:%s / alt1=%s:%s / alt2=%s:%s\n",
-				gsm48_chan_mode_name(req->ch_mode_rate[0].chan_mode),
-				rate_names[req->ch_mode_rate[0].chan_rate],
-				req->n_ch_mode_rate > 1 ? gsm48_chan_mode_name(req->ch_mode_rate[1].chan_mode) : "",
-				req->n_ch_mode_rate > 1 ? rate_names[req->ch_mode_rate[1].chan_rate] : "",
-				req->n_ch_mode_rate > 2 ? gsm48_chan_mode_name(req->ch_mode_rate[2].chan_mode) : "",
-				req->n_ch_mode_rate > 2 ? rate_names[req->ch_mode_rate[2].chan_rate] : ""
+				gsm48_chan_mode_name(req->ch_mode_rate_list[0].chan_mode),
+				rate_names[req->ch_mode_rate_list[0].chan_rate],
+				req->n_ch_mode_rate > 1 ? gsm48_chan_mode_name(req->ch_mode_rate_list[1].chan_mode) : "",
+				req->n_ch_mode_rate > 1 ? rate_names[req->ch_mode_rate_list[1].chan_rate] : "",
+				req->n_ch_mode_rate > 2 ? gsm48_chan_mode_name(req->ch_mode_rate_list[2].chan_mode) : "",
+				req->n_ch_mode_rate > 2 ? rate_names[req->ch_mode_rate_list[2].chan_rate] : ""
 		);
 		return;
 	}
@@ -572,8 +572,8 @@ void assignment_fsm_start(struct gsm_subscriber_connection *conn, struct gsm_bts
 	assignment_fsm_update_id(conn);
 	LOG_ASSIGNMENT(conn, LOGL_INFO, "Starting Assignment: chan_mode=%s, chan_type=%s,"
 		       " aoip=%s MSC-rtp=%s:%u (osmux=%s)\n",
-		       gsm48_chan_mode_name(conn->lchan->ch_mode_rate.chan_mode),
-		       rate_names[conn->lchan->ch_mode_rate.chan_rate],
+		       gsm48_chan_mode_name(conn->assignment.selected_ch_mode_rate.chan_mode),
+		       rate_names[conn->assignment.selected_ch_mode_rate.chan_rate],
 		       req->aoip ? "yes" : "no", req->msc_rtp_addr, req->msc_rtp_port,
 		       req->use_osmux ? "yes" : "no");
 
@@ -581,9 +581,8 @@ void assignment_fsm_start(struct gsm_subscriber_connection *conn, struct gsm_bts
 	activ_info = (struct lchan_activate_info){
 		.activ_for = ACTIVATE_FOR_ASSIGNMENT,
 		.for_conn = conn,
-		.chan_mode = conn->lchan->ch_mode_rate.chan_mode,
+		.ch_mode_rate = conn->assignment.selected_ch_mode_rate,
 		.encr = conn->lchan->encr,
-		.s15_s0 = conn->lchan->ch_mode_rate.s15_s0,
 		.requires_voice_stream = conn->assignment.requires_voice_stream,
 		.msc_assigned_cic = req->msc_assigned_cic,
 		.re_use_mgw_endpoint_from_lchan = conn->lchan,

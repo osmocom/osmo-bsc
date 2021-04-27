@@ -234,7 +234,7 @@ int get_reason_by_chreq(uint8_t ra, int neci)
 
 static void mr_config_for_ms(struct gsm_lchan *lchan, struct msgb *msg)
 {
-	if (lchan->tch_mode == GSM48_CMODE_SPEECH_AMR)
+	if (lchan->current_ch_mode_rate.chan_mode == GSM48_CMODE_SPEECH_AMR)
 		msgb_tlv_put(msg, GSM48_IE_MUL_RATE_CFG, lchan->mr_ms_lv[0],
 			lchan->mr_ms_lv + 1);
 }
@@ -538,7 +538,7 @@ struct msgb *gsm48_make_ho_cmd(struct gsm_lchan *new_lchan, uint8_t power_comman
 	}
 	/* FIXME: optional bits for type of synchronization? */
 
-	msgb_tv_put(msg, GSM48_IE_CHANMODE_1, new_lchan->tch_mode);
+	msgb_tv_put(msg, GSM48_IE_CHANMODE_1, new_lchan->current_ch_mode_rate.chan_mode);
 
 	/* Mobile Allocation (after time), TLV (see 3GPP TS 44.018, 10.5.2.21) */
 	if (new_lchan->ts->hopping.enabled) {
@@ -548,7 +548,7 @@ struct msgb *gsm48_make_ho_cmd(struct gsm_lchan *new_lchan, uint8_t power_comman
 	}
 
 	/* in case of multi rate we need to attach a config */
-	if (new_lchan->tch_mode == GSM48_CMODE_SPEECH_AMR)
+	if (new_lchan->current_ch_mode_rate.chan_mode == GSM48_CMODE_SPEECH_AMR)
 		msgb_tlv_put(msg, GSM48_IE_MUL_RATE_CFG, new_lchan->mr_ms_lv[0],
 			new_lchan->mr_ms_lv + 1);
 
@@ -573,7 +573,8 @@ int gsm48_send_rr_ass_cmd(struct gsm_lchan *current_lchan, struct gsm_lchan *new
 	struct gsm48_ass_cmd *ass =
 		(struct gsm48_ass_cmd *) msgb_put(msg, sizeof(*ass));
 
-	DEBUGP(DRR, "-> ASSIGNMENT COMMAND tch_mode=0x%02x\n", new_lchan->tch_mode);
+	DEBUGP(DRR, "-> ASSIGNMENT COMMAND tch_mode=0x%02x\n",
+	       current_lchan->conn->assignment.selected_ch_mode_rate.chan_mode);
 
 	msg->lchan = current_lchan;
 	gh->proto_discr = GSM48_PDISC_RR;
@@ -599,7 +600,7 @@ int gsm48_send_rr_ass_cmd(struct gsm_lchan *current_lchan, struct gsm_lchan *new
 				  si1->cell_channel_description);
 	}
 
-	msgb_tv_put(msg, GSM48_IE_CHANMODE_1, new_lchan->tch_mode);
+	msgb_tv_put(msg, GSM48_IE_CHANMODE_1, current_lchan->conn->assignment.selected_ch_mode_rate.chan_mode);
 
 	/* Mobile Allocation (freq. hopping), TLV (see 3GPP TS 44.018, 10.5.2.21) */
 	if (new_lchan->ts->hopping.enabled) {
@@ -645,7 +646,6 @@ int gsm48_lchan_modify(struct gsm_lchan *lchan, uint8_t mode)
 
 	DEBUGP(DRR, "-> CHANNEL MODE MODIFY mode=0x%02x\n", mode);
 
-	lchan->tch_mode = mode;
 	msg->lchan = lchan;
 	gh->proto_discr = GSM48_PDISC_RR;
 	gh->msg_type = GSM48_MT_RR_CHAN_MODE_MODIF;
@@ -670,10 +670,10 @@ int gsm48_rx_rr_modif_ack(struct msgb *msg)
 	LOG_LCHAN(msg->lchan, LOGL_DEBUG, "CHANNEL MODE MODIFY ACK for %s\n",
 		  gsm48_chan_mode_name(mod->mode));
 
-	if (mod->mode != msg->lchan->tch_mode) {
+	if (mod->mode != msg->lchan->modify.info.ch_mode_rate.chan_mode) {
 		LOG_LCHAN(msg->lchan, LOGL_ERROR,
 			  "CHANNEL MODE MODIFY ACK has wrong mode: Wanted: %s Got: %s\n",
-			  gsm48_chan_mode_name(msg->lchan->tch_mode),
+			  gsm48_chan_mode_name(msg->lchan->modify.info.ch_mode_rate.chan_mode),
 			  gsm48_chan_mode_name(mod->mode));
 		return -1;
 	}

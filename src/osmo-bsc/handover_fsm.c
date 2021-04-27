@@ -61,7 +61,7 @@
 		lchan ? lchan->ts->nr : 0, \
 		lchan ? gsm_lchant_name(lchan->type) : "?", \
 		lchan ? lchan->nr : 0, \
-		lchan ? gsm48_chan_mode_name(lchan->tch_mode) : "?"
+		lchan ? gsm48_chan_mode_name(lchan->current_ch_mode_rate.chan_mode) : "?"
 
 #define LOG_FMT_TO_LCHAN "%u-%u-%u-%s%s%s-%u"
 #define LOG_ARGS_TO_LCHAN(lchan) \
@@ -398,14 +398,14 @@ static void handover_start_intra_bsc(struct gsm_subscriber_connection *conn)
 	info = (struct lchan_activate_info){
 		.activ_for = ACTIVATE_FOR_HANDOVER,
 		.for_conn = conn,
-		.chan_mode = conn->lchan->tch_mode,
+		.ch_mode_rate = conn->lchan->current_ch_mode_rate,
 		.encr = conn->lchan->encr,
 		.requires_voice_stream = conn->lchan->mgw_endpoint_ci_bts ? true : false,
 		.msc_assigned_cic = conn->ho.inter_bsc_in.msc_assigned_cic,
 		.re_use_mgw_endpoint_from_lchan = conn->lchan,
 		.wait_before_switching_rtp = true,
-		.s15_s0 = conn->lchan->activate.info.s15_s0,
 	};
+	info.ch_mode_rate.chan_rate = chan_t_to_chan_rate(ho->new_lchan->type);
 
 	/* For intra-cell handover, we know the accurate Timing Advance from the previous lchan. For inter-cell
 	 * handover, no Timing Advance for the new cell is known, so leave it unset. */
@@ -696,8 +696,7 @@ void handover_start_inter_bsc_in(struct gsm_subscriber_connection *conn,
 	info = (struct lchan_activate_info){
 		.activ_for = ACTIVATE_FOR_HANDOVER,
 		.for_conn = conn,
-		.chan_mode = ch_mode_rate.chan_mode,
-		.s15_s0 = ch_mode_rate.s15_s0,
+		.ch_mode_rate = ch_mode_rate,
 		.requires_voice_stream = chan_mode_is_tch(ch_mode_rate.chan_mode),
 		.msc_assigned_cic = req->msc_assigned_cic,
 	};
@@ -849,7 +848,7 @@ static void send_handover_performed(struct gsm_subscriber_connection *conn)
 	};
 
 	/* Chosen Channel 3.2.2.33 */
-	ho_perf_params.chosen_channel = gsm0808_chosen_channel(lchan->type, lchan->tch_mode);
+	ho_perf_params.chosen_channel = gsm0808_chosen_channel(lchan->type, lchan->current_ch_mode_rate.chan_mode);
 	if (!ho_perf_params.chosen_channel) {
 		LOG_HO(conn, LOGL_ERROR, "Failed to generate Chosen Channel IE, can't send HANDOVER PERFORMED!\n");
 		return;
@@ -862,14 +861,15 @@ static void send_handover_performed(struct gsm_subscriber_connection *conn)
 
 	if (ho->new_lchan->activate.info.requires_voice_stream) {
 		/* Speech Version (chosen) 3.2.2.51 */
-		ho_perf_params.speech_version_chosen = gsm0808_permitted_speech(lchan->type, lchan->tch_mode);
+		ho_perf_params.speech_version_chosen = gsm0808_permitted_speech(lchan->type,
+										lchan->current_ch_mode_rate.chan_mode);
 		ho_perf_params.speech_version_chosen_present = true;
 
 		/* Speech Codec (chosen) 3.2.2.104 */
 		if (gscon_is_aoip(conn)) {
 			/* Extrapolate speech codec from speech mode */
 			gsm0808_speech_codec_from_chan_type(&sc, ho_perf_params.speech_version_chosen);
-			sc.cfg = conn->lchan->ch_mode_rate.s15_s0;
+			sc.cfg = conn->lchan->current_ch_mode_rate.s15_s0;
 			memcpy(&ho_perf_params.speech_codec_chosen, &sc, sizeof(sc));
 			ho_perf_params.speech_codec_chosen_present = true;
 		}

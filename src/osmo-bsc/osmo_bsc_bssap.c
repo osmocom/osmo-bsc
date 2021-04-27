@@ -679,12 +679,12 @@ static int select_codecs(struct assignment_request *req, struct gsm0808_channel_
 
 	switch (ct->ch_rate_type) {
 	case GSM0808_SPEECH_FULL_BM:
-		rc = match_codec_pref(&req->ch_mode_rate[nc], ct, &conn->codec_list, msc, bts,
+		rc = match_codec_pref(&req->ch_mode_rate_list[nc], ct, &conn->codec_list, msc, bts,
 				      RATE_PREF_FR);
 		nc += (rc == 0) ? 1 : 0;
 		break;
 	case GSM0808_SPEECH_HALF_LM:
-		rc = match_codec_pref(&req->ch_mode_rate[nc], ct, &conn->codec_list, msc, bts,
+		rc = match_codec_pref(&req->ch_mode_rate_list[nc], ct, &conn->codec_list, msc, bts,
 				      RATE_PREF_HR);
 		nc += (rc == 0) ? 1 : 0;
 		break;
@@ -692,19 +692,19 @@ static int select_codecs(struct assignment_request *req, struct gsm0808_channel_
 	case GSM0808_SPEECH_PERM_NO_CHANGE:
 	case GSM0808_SPEECH_FULL_PREF_NO_CHANGE:
 	case GSM0808_SPEECH_FULL_PREF:
-		rc = match_codec_pref(&req->ch_mode_rate[nc], ct, &conn->codec_list, msc, bts,
+		rc = match_codec_pref(&req->ch_mode_rate_list[nc], ct, &conn->codec_list, msc, bts,
 				      RATE_PREF_FR);
 		nc += (rc == 0) ? 1 : 0;
-		rc = match_codec_pref(&req->ch_mode_rate[nc], ct, &conn->codec_list, msc, bts,
+		rc = match_codec_pref(&req->ch_mode_rate_list[nc], ct, &conn->codec_list, msc, bts,
 				      RATE_PREF_HR);
 		nc += (rc == 0) ? 1 : 0;
 		break;
 	case GSM0808_SPEECH_HALF_PREF_NO_CHANGE:
 	case GSM0808_SPEECH_HALF_PREF:
-		rc = match_codec_pref(&req->ch_mode_rate[nc], ct, &conn->codec_list, msc, bts,
+		rc = match_codec_pref(&req->ch_mode_rate_list[nc], ct, &conn->codec_list, msc, bts,
 				      RATE_PREF_HR);
 		nc += (rc == 0) ? 1 : 0;
-		rc = match_codec_pref(&req->ch_mode_rate[nc], ct, &conn->codec_list, msc, bts,
+		rc = match_codec_pref(&req->ch_mode_rate_list[nc], ct, &conn->codec_list, msc, bts,
 				      RATE_PREF_FR);
 		nc += (rc == 0) ? 1 : 0;
 		break;
@@ -726,8 +726,8 @@ static int select_codecs(struct assignment_request *req, struct gsm0808_channel_
 		DEBUGP(DMSC, "Found matching audio type (pref=%d): %s %s for channel_type ="
 		       " { ch_indctr=0x%x, ch_rate_type=0x%x, perm_spch=[ %s] }\n",
 		       i,
-		       req->ch_mode_rate[i].chan_rate == CH_RATE_FULL ? "full rate" : "half rate",
-		       get_value_string(gsm48_chan_mode_names, req->ch_mode_rate[i].chan_mode),
+		       req->ch_mode_rate_list[i].chan_rate == CH_RATE_FULL ? "full rate" : "half rate",
+		       get_value_string(gsm48_chan_mode_names, req->ch_mode_rate_list[i].chan_mode),
 		       ct->ch_indctr, ct->ch_rate_type, osmo_hexdump(ct->perm_spch, ct->perm_spch_len));
 	}
 
@@ -742,43 +742,43 @@ static int select_sign_chan(struct assignment_request *req, struct gsm0808_chann
 
 	switch (ct->ch_rate_type) {
 	case GSM0808_SIGN_ANY:
-		req->ch_mode_rate[nc++].chan_rate = CH_RATE_SDCCH;
-		req->ch_mode_rate[nc++].chan_rate = CH_RATE_HALF;
-		req->ch_mode_rate[nc++].chan_rate = CH_RATE_FULL;
+		req->ch_mode_rate_list[nc++].chan_rate = CH_RATE_SDCCH;
+		req->ch_mode_rate_list[nc++].chan_rate = CH_RATE_HALF;
+		req->ch_mode_rate_list[nc++].chan_rate = CH_RATE_FULL;
 		break;
 	case GSM0808_SIGN_SDCCH:
-		req->ch_mode_rate[nc++].chan_rate = CH_RATE_SDCCH;
+		req->ch_mode_rate_list[nc++].chan_rate = CH_RATE_SDCCH;
 		break;
 	case GSM0808_SIGN_SDCCH_FULL_BM:
-		req->ch_mode_rate[nc++].chan_rate = CH_RATE_SDCCH;
-		req->ch_mode_rate[nc++].chan_rate = CH_RATE_FULL;
+		req->ch_mode_rate_list[nc++].chan_rate = CH_RATE_SDCCH;
+		req->ch_mode_rate_list[nc++].chan_rate = CH_RATE_FULL;
 		break;
 	case GSM0808_SIGN_SDCCH_HALF_LM:
-		req->ch_mode_rate[nc++].chan_rate = CH_RATE_SDCCH;
-		req->ch_mode_rate[nc++].chan_rate = CH_RATE_HALF;
+		req->ch_mode_rate_list[nc++].chan_rate = CH_RATE_SDCCH;
+		req->ch_mode_rate_list[nc++].chan_rate = CH_RATE_HALF;
 		break;
 	case GSM0808_SIGN_FULL_BM:
-		req->ch_mode_rate[nc++].chan_rate = CH_RATE_FULL;
+		req->ch_mode_rate_list[nc++].chan_rate = CH_RATE_FULL;
 		break;
 	case GSM0808_SIGN_HALF_LM:
-		req->ch_mode_rate[nc++].chan_rate = CH_RATE_HALF;
+		req->ch_mode_rate_list[nc++].chan_rate = CH_RATE_HALF;
 		break;
 	case GSM0808_SIGN_FULL_PREF:
 	case GSM0808_SIGN_FULL_PREF_NO_CHANGE:
-		req->ch_mode_rate[nc++].chan_rate = CH_RATE_FULL;
-		req->ch_mode_rate[nc++].chan_rate = CH_RATE_HALF;
+		req->ch_mode_rate_list[nc++].chan_rate = CH_RATE_FULL;
+		req->ch_mode_rate_list[nc++].chan_rate = CH_RATE_HALF;
 		break;
 	case GSM0808_SIGN_HALF_PREF:
 	case GSM0808_SIGN_HALF_PREF_NO_CHANGE:
-		req->ch_mode_rate[nc++].chan_rate = CH_RATE_HALF;
-		req->ch_mode_rate[nc++].chan_rate = CH_RATE_FULL;
+		req->ch_mode_rate_list[nc++].chan_rate = CH_RATE_HALF;
+		req->ch_mode_rate_list[nc++].chan_rate = CH_RATE_FULL;
 		break;
 	default:
 		break;
 	}
 
 	for (i = 0; i < nc; i++)
-		req->ch_mode_rate[i].chan_mode = GSM48_CMODE_SIGN;
+		req->ch_mode_rate_list[i].chan_mode = GSM48_CMODE_SIGN;
 
 	req->n_ch_mode_rate = nc;
 
@@ -1379,7 +1379,7 @@ int bsc_tx_bssmap_ho_required(struct gsm_lchan *lchan, const struct gsm0808_cell
 	case GSM_LCHAN_TCH_H:
 		params.speech_version_used_present = true;
 		params.speech_version_used = gsm0808_permitted_speech(lchan->type,
-								      lchan->tch_mode);
+								      lchan->current_ch_mode_rate.chan_mode);
 		if (!params.speech_version_used) {
 			LOG_HO(lchan->conn, LOGL_ERROR, "Cannot encode Speech Version (Used)"
 			       " for BSSMAP Handover Required message\n");
@@ -1417,9 +1417,10 @@ int bsc_tx_bssmap_ho_request_ack(struct gsm_subscriber_connection *conn, struct 
 		.l3_info = rr_ho_command->data,
 		.l3_info_len = rr_ho_command->len,
 		.chosen_channel_present = true,
-		.chosen_channel = gsm0808_chosen_channel(new_lchan->type, new_lchan->tch_mode),
+		.chosen_channel = gsm0808_chosen_channel(new_lchan->type, new_lchan->current_ch_mode_rate.chan_mode),
 		.chosen_encr_alg = new_lchan->encr.alg_id,
-		.chosen_speech_version = gsm0808_permitted_speech(new_lchan->type, new_lchan->tch_mode),
+		.chosen_speech_version = gsm0808_permitted_speech(new_lchan->type,
+								  new_lchan->current_ch_mode_rate.chan_mode),
 	};
 
 	if (gscon_is_aoip(conn)) {
@@ -1475,7 +1476,7 @@ enum handover_result bsc_tx_bssmap_ho_complete(struct gsm_subscriber_connection 
 		.chosen_encr_alg = lchan->encr.alg_id,
 
 		.chosen_channel_present = true,
-		.chosen_channel = gsm0808_chosen_channel(lchan->type, lchan->tch_mode),
+		.chosen_channel = gsm0808_chosen_channel(lchan->type, lchan->current_ch_mode_rate.chan_mode),
 
 		.lcls_bss_status_present = (lcls_status != 0xff),
 		.lcls_bss_status = lcls_status,
@@ -1483,7 +1484,7 @@ enum handover_result bsc_tx_bssmap_ho_complete(struct gsm_subscriber_connection 
 
 	/* speech_codec_chosen */
 	if (ho->new_lchan->activate.info.requires_voice_stream && gscon_is_aoip(conn)) {
-		int perm_spch = gsm0808_permitted_speech(lchan->type, lchan->tch_mode);
+		int perm_spch = gsm0808_permitted_speech(lchan->type, lchan->current_ch_mode_rate.chan_mode);
 		params.speech_codec_chosen_present = true;
 		rc = gsm0808_speech_codec_from_chan_type(&params.speech_codec_chosen, perm_spch);
 		if (rc) {

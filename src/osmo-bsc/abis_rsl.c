@@ -70,7 +70,7 @@ static void count_codecs(struct gsm_bts *bts, struct gsm_lchan *lchan)
 	OSMO_ASSERT(bts);
 
 	if (lchan->type == GSM_LCHAN_TCH_H) {
-		switch (lchan->tch_mode) {
+		switch (lchan->current_ch_mode_rate.chan_mode) {
 		case GSM48_CMODE_SPEECH_AMR:
 			rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_CTR_CODEC_AMR_H]);
 			break;
@@ -81,7 +81,7 @@ static void count_codecs(struct gsm_bts *bts, struct gsm_lchan *lchan)
 			break;
 		}
 	} else if (lchan->type == GSM_LCHAN_TCH_F) {
-		switch (lchan->tch_mode) {
+		switch (lchan->current_ch_mode_rate.chan_mode) {
 		case GSM48_CMODE_SPEECH_AMR:
 			rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_CTR_CODEC_AMR_F]);
 			break;
@@ -351,7 +351,8 @@ int rsl_chan_ms_power_ctrl(struct gsm_lchan *lchan)
 }
 
 static int channel_mode_from_lchan(struct rsl_ie_chan_mode *cm,
-				   struct gsm_lchan *lchan)
+				   struct gsm_lchan *lchan,
+				   const struct channel_mode_and_rate *ch_mode_rate)
 {
 	memset(cm, 0, sizeof(*cm));
 
@@ -366,7 +367,7 @@ static int channel_mode_from_lchan(struct rsl_ie_chan_mode *cm,
 	cm->spd_ind = lchan->rsl_cmode;
 
 	if (lchan->rsl_cmode == RSL_CMOD_SPD_SIGN &&
-	    lchan->tch_mode != GSM48_CMODE_SIGN)
+	    ch_mode_rate->chan_mode != GSM48_CMODE_SIGN)
 		LOGP(DRSL, LOGL_ERROR, "unsupported: rsl_mode == signalling, "
 			"but tch_mode != signalling\n");
 
@@ -389,7 +390,7 @@ static int channel_mode_from_lchan(struct rsl_ie_chan_mode *cm,
 		return -EINVAL;
 	}
 
-	switch (lchan->tch_mode) {
+	switch (ch_mode_rate->chan_mode) {
 	case GSM48_CMODE_SIGN:
 		cm->chan_rate = 0;
 		break;
@@ -408,7 +409,7 @@ static int channel_mode_from_lchan(struct rsl_ie_chan_mode *cm,
 		switch (lchan->csd_mode) {
 		case LCHAN_CSD_M_NT:
 			/* non-transparent CSD with RLP */
-			switch (lchan->tch_mode) {
+			switch (ch_mode_rate->chan_mode) {
 			case GSM48_CMODE_DATA_14k5:
 				cm->chan_rate = RSL_CMOD_SP_NT_14k5;
 				break;
@@ -421,7 +422,7 @@ static int channel_mode_from_lchan(struct rsl_ie_chan_mode *cm,
 			default:
 				LOGP(DRSL, LOGL_ERROR,
 				     "unsupported lchan->tch_mode %u\n",
-				     lchan->tch_mode);
+				     ch_mode_rate->chan_mode);
 				return -EINVAL;
 			}
 			break;
@@ -458,20 +459,19 @@ static int channel_mode_from_lchan(struct rsl_ie_chan_mode *cm,
 		}
 		break;
 	default:
-		LOGP(DRSL, LOGL_ERROR,
-		     "unsupported lchan->tch_mode %u\n",
-		     lchan->tch_mode);
+		LOGP(DRSL, LOGL_ERROR, "unsupported channel mode %u\n", ch_mode_rate->chan_mode);
 		return -EINVAL;
 	}
 
 	return 0;
 }
 
-static void mr_config_for_bts(struct gsm_lchan *lchan, struct msgb *msg)
+static void mr_config_for_bts(struct gsm_lchan *lchan, struct msgb *msg,
+			      const struct channel_mode_and_rate *ch_mode_rate)
 {
 	uint8_t len;
 
-	if (lchan->tch_mode != GSM48_CMODE_SPEECH_AMR)
+	if (ch_mode_rate->chan_mode != GSM48_CMODE_SPEECH_AMR)
 		return;
 
 	len = lchan->mr_bts_lv[0];
@@ -532,7 +532,7 @@ int rsl_tx_chan_activ(struct gsm_lchan *lchan, uint8_t act_type, uint8_t ho_ref)
 	/* PDCH activation is a job for rsl_tx_dyn_ts_pdch_act_deact(); */
 	OSMO_ASSERT(act_type != RSL_ACT_OSMO_PDCH);
 
-	rc = channel_mode_from_lchan(&cm, lchan);
+	rc = channel_mode_from_lchan(&cm, lchan, &lchan->activate.info.ch_mode_rate);
 	if (rc < 0) {
 		LOGP(DRSL, LOGL_ERROR,
 		     "%s Cannot find channel mode from lchan type\n",
@@ -606,7 +606,7 @@ int rsl_tx_chan_activ(struct gsm_lchan *lchan, uint8_t act_type, uint8_t ho_ref)
 	add_power_control_params(msg, RSL_IE_BS_POWER_PARAM, lchan);
 	add_power_control_params(msg, RSL_IE_MS_POWER_PARAM, lchan);
 
-	mr_config_for_bts(lchan, msg);
+	mr_config_for_bts(lchan, msg, &lchan->activate.info.ch_mode_rate);
 	rep_acch_cap_for_bts(lchan, msg);
 
 	msg->dst = trx->rsl_link;
@@ -637,7 +637,7 @@ int rsl_chan_mode_modify_req(struct gsm_lchan *lchan)
 	uint8_t chan_nr = gsm_lchan2chan_nr(lchan);
 	struct rsl_ie_chan_mode cm;
 
-	rc = channel_mode_from_lchan(&cm, lchan);
+	rc = channel_mode_from_lchan(&cm, lchan, &lchan->modify.info.ch_mode_rate);
 	if (rc < 0)
 		return rc;
 
@@ -656,7 +656,7 @@ int rsl_chan_mode_modify_req(struct gsm_lchan *lchan)
 			msgb_tlv_put(msg, RSL_IE_ENCR_INFO, rc, encr_info);
 	}
 
-	mr_config_for_bts(lchan, msg);
+	mr_config_for_bts(lchan, msg, &lchan->modify.info.ch_mode_rate);
         rep_acch_cap_for_bts(lchan, msg);
 
 	msg->dst = lchan->ts->trx->rsl_link;
@@ -1768,7 +1768,10 @@ void abis_rsl_chan_rqd_queue_poll(struct gsm_bts *bts)
 		  gsm_chreq_name(rqd->reason), rqd->ref.ra, rqd->ta);
 	info = (struct lchan_activate_info){
 		.activ_for = ACTIVATE_FOR_MS_CHANNEL_REQUEST,
-		.chan_mode = GSM48_CMODE_SIGN,
+		.ch_mode_rate = {
+			.chan_mode = GSM48_CMODE_SIGN,
+			.chan_rate = CH_RATE_SDCCH,
+		},
 		.ta = rqd->ta,
 		.ta_known = true,
 	};

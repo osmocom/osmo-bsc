@@ -569,6 +569,8 @@ static int lchan_mr_config(struct gsm_lchan *lchan, uint16_t s15_s0)
 
 	/* Proceed with the generation of the multirate configuration IE
 	 * (MS and BTS) */
+	/* FIXME: this actually modifies the lchan->mr_ms_lv and ->mr_bts_lv before an ACK for these AMR bits has been
+	 * received. Until an ACK is received, all state should live in lchan->activate.* or lchan->modify.* ONLY. */
 	rc = gsm48_multirate_config(lchan->mr_ms_lv, &mr_conf_filtered, mr->ms_mode, mr->num_modes);
 	if (rc != 0) {
 		LOG_LCHAN(lchan, LOGL_ERROR, "can not encode multirate configuration (MS)\n");
@@ -580,7 +582,6 @@ static int lchan_mr_config(struct gsm_lchan *lchan, uint16_t s15_s0)
 		return -EINVAL;
 	}
 
-	lchan->s15_s0 = s15_s0;
 	return 0;
 }
 
@@ -645,30 +646,28 @@ static void lchan_fsm_wait_ts_ready_onenter(struct osmo_fsm_inst *fi, uint32_t p
 			lchan->bs_power = bts->bs_power_ctrl.bs_power_val_db / 2;
 	}
 
-	if (info->chan_mode == GSM48_CMODE_SPEECH_AMR) {
-		if (lchan_mr_config(lchan, info->s15_s0) < 0) {
+	if (info->ch_mode_rate.chan_mode == GSM48_CMODE_SPEECH_AMR) {
+		if (lchan_mr_config(lchan, info->ch_mode_rate.s15_s0) < 0) {
 			lchan_fail("Can not generate multirate configuration IE\n");
 			return;
 		}
 	}
 
-	switch (info->chan_mode) {
+	switch (info->ch_mode_rate.chan_mode) {
 
 	case GSM48_CMODE_SIGN:
 		lchan->rsl_cmode = RSL_CMOD_SPD_SIGN;
-		lchan->tch_mode = GSM48_CMODE_SIGN;
 		break;
 
 	case GSM48_CMODE_SPEECH_V1:
 	case GSM48_CMODE_SPEECH_EFR:
 	case GSM48_CMODE_SPEECH_AMR:
 		lchan->rsl_cmode = RSL_CMOD_SPD_SPEECH;
-		lchan->tch_mode = info->chan_mode;
 		break;
 
 	default:
 		lchan_fail("Not implemented: cannot activate for chan mode %s",
-			   gsm48_chan_mode_name(info->chan_mode));
+			   gsm48_chan_mode_name(info->ch_mode_rate.chan_mode));
 		return;
 	}
 
@@ -682,7 +681,7 @@ static void lchan_fsm_wait_ts_ready_onenter(struct osmo_fsm_inst *fi, uint32_t p
 			(use_mgwep_ci ? osmo_mgcpc_ep_ci_name(use_mgwep_ci) : "new")
 			: "none",
 		  gsm_lchant_name(lchan->type),
-		  gsm48_chan_mode_name(lchan->tch_mode),
+		  gsm48_chan_mode_name(lchan->activate.info.ch_mode_rate.chan_mode),
 		  (lchan->activate.info.encr.alg_id ? : 1)-1,
 		  lchan->activate.info.encr.key_len ? osmo_hexdump_nospc(lchan->activate.info.encr.key,
 									 lchan->activate.info.encr.key_len) : "none");
@@ -822,6 +821,11 @@ static void lchan_fsm_post_activ_ack(struct osmo_fsm_inst *fi)
 {
 	int rc;
 	struct gsm_lchan *lchan = lchan_fi_lchan(fi);
+
+	lchan->current_ch_mode_rate = lchan->activate.info.ch_mode_rate;
+	LOG_LCHAN(lchan, LOGL_INFO, "Rx Activ ACK %s\n",
+		  gsm48_chan_mode_name(lchan->current_ch_mode_rate.chan_mode));
+
 	if (lchan->release.requested) {
 		lchan_fail_to(LCHAN_ST_WAIT_RF_RELEASE_ACK, "Release requested while activating");
 		return;
@@ -948,7 +952,7 @@ static void lchan_fsm_wait_rll_rtp_establish(struct osmo_fsm_inst *fi, uint32_t 
 static void lchan_fsm_wait_rr_chan_mode_modify_ack_onenter(struct osmo_fsm_inst *fi, uint32_t prev_state)
 {
 	struct gsm_lchan *lchan = lchan_fi_lchan(fi);
-	gsm48_lchan_modify(lchan, lchan->modify.info.chan_mode);
+	gsm48_lchan_modify(lchan, lchan->modify.info.ch_mode_rate.chan_mode);
 }
 
 static void lchan_fsm_wait_rr_chan_mode_modify_ack(struct osmo_fsm_inst *fi, uint32_t event, void *data)
@@ -989,8 +993,7 @@ static void lchan_fsm_wait_rsl_chan_mode_modify_ack(struct osmo_fsm_inst *fi, ui
 
 	case LCHAN_EV_RSL_CHAN_MODE_MODIFY_ACK:
 		/* The Channel Mode Modify was ACKed, now the requested values become the accepted and used values. */
-		lchan->tch_mode = lchan->modify.info.chan_mode;
-		lchan->s15_s0 = lchan->modify.info.s15_s0;
+		lchan->current_ch_mode_rate = lchan->modify.info.ch_mode_rate;
 
 		if (lchan->modify.info.requires_voice_stream
 		    && !lchan->fi_rtp) {
@@ -999,7 +1002,7 @@ static void lchan_fsm_wait_rsl_chan_mode_modify_ack(struct osmo_fsm_inst *fi, ui
 			lchan->activate.info = (struct lchan_activate_info){
 				.activ_for = ACTIVATE_FOR_MODE_MODIFY_RTP,
 				.for_conn = lchan->conn,
-				.s15_s0 = lchan->modify.info.s15_s0,
+				.ch_mode_rate = lchan->modify.info.ch_mode_rate,
 				.requires_voice_stream = true,
 				.msc_assigned_cic = lchan->modify.info.msc_assigned_cic,
 			};
@@ -1142,8 +1145,8 @@ static void lchan_fsm_established(struct osmo_fsm_inst *fi, uint32_t event, void
 
 		use_mgwep_ci = lchan_use_mgw_endpoint_ci_bts(lchan);
 
-		if (modif_info->chan_mode == GSM48_CMODE_SPEECH_AMR) {
-			if (lchan_mr_config(lchan, modif_info->s15_s0) < 0) {
+		if (modif_info->ch_mode_rate.chan_mode == GSM48_CMODE_SPEECH_AMR) {
+			if (lchan_mr_config(lchan, modif_info->ch_mode_rate.s15_s0) < 0) {
 				lchan_fail("Can not generate multirate configuration IE\n");
 				return;
 			}
@@ -1157,7 +1160,7 @@ static void lchan_fsm_established(struct osmo_fsm_inst *fi, uint32_t event, void
 			  (use_mgwep_ci ? osmo_mgcpc_ep_ci_name(use_mgwep_ci) : "new")
 			  : "none",
 			  gsm_lchant_name(lchan->type),
-			  gsm48_chan_mode_name(lchan->tch_mode));
+			  gsm48_chan_mode_name(lchan->modify.info.ch_mode_rate.chan_mode));
 
 		lchan_fsm_state_chg(LCHAN_ST_WAIT_RR_CHAN_MODE_MODIFY_ACK);
 		return;

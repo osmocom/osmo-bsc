@@ -345,15 +345,14 @@ static bool lcls_enable_possible(const struct gsm_subscriber_connection *conn)
 		return false;
 	}
 
-	if (conn->lchan->tch_mode != conn->lcls.other->lchan->tch_mode
+	if (conn->lchan->current_ch_mode_rate.chan_mode != conn->lcls.other->lchan->current_ch_mode_rate.chan_mode
 	    && conn->sccp.msc->lcls_codec_mismatch_allow == false) {
 		LOGPFSM(conn->lcls.fi,
 			"Not enabling LS due to TCH-mode mismatch: %s:%s != %s:%s\n",
 			gsm_lchan_name(conn->lchan),
-			gsm48_chan_mode_name(conn->lchan->tch_mode),
+			gsm48_chan_mode_name(conn->lchan->current_ch_mode_rate.chan_mode),
 			gsm_lchan_name(conn->lcls.other->lchan),
-			gsm48_chan_mode_name(conn->lcls.other->lchan->
-					     tch_mode));
+			gsm48_chan_mode_name(conn->lcls.other->lchan->current_ch_mode_rate.chan_mode));
 		return false;
 	}
 

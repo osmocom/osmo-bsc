@@ -397,14 +397,14 @@ struct gsm_lchan *lchan_act(struct gsm_lchan *lchan, int full_rate, const char *
 
 	create_conn(lchan);
 	if (!strcasecmp(codec, "FR") && full_rate)
-		lchan->tch_mode = GSM48_CMODE_SPEECH_V1;
+		lchan->current_ch_mode_rate.chan_mode = GSM48_CMODE_SPEECH_V1;
 	else if (!strcasecmp(codec, "HR") && !full_rate)
-		lchan->tch_mode = GSM48_CMODE_SPEECH_V1;
+		lchan->current_ch_mode_rate.chan_mode = GSM48_CMODE_SPEECH_V1;
 	else if (!strcasecmp(codec, "EFR") && full_rate)
-		lchan->tch_mode = GSM48_CMODE_SPEECH_EFR;
+		lchan->current_ch_mode_rate.chan_mode = GSM48_CMODE_SPEECH_EFR;
 	else if (!strcasecmp(codec, "AMR")) {
-		lchan->tch_mode = GSM48_CMODE_SPEECH_AMR;
-		lchan->activate.info.s15_s0 = 0x0002;
+		lchan->current_ch_mode_rate.chan_mode = GSM48_CMODE_SPEECH_AMR;
+		lchan->current_ch_mode_rate.s15_s0 = 0x0002;
 	} else {
 		fprintf(stderr, "Given codec unknown\n");
 		exit(EXIT_FAILURE);

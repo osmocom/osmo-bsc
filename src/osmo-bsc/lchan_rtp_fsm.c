@@ -268,19 +268,19 @@ static void lchan_rtp_fsm_wait_ipacc_crcx_ack_onenter(struct osmo_fsm_inst *fi, 
 		return;
 	}
 
-	val = ipacc_speech_mode(lchan->tch_mode, lchan->type);
+	val = ipacc_speech_mode(lchan->activate.info.ch_mode_rate.chan_mode, lchan->type);
 	if (val < 0) {
 		lchan_rtp_fail("Cannot determine Abis/IP speech mode for tch_mode=%s type=%s\n",
-			   get_value_string(gsm48_chan_mode_names, lchan->tch_mode),
+			   get_value_string(gsm48_chan_mode_names, lchan->activate.info.ch_mode_rate.chan_mode),
 			   gsm_lchant_name(lchan->type));
 		return;
 	}
 	lchan->abis_ip.speech_mode = val;
 
-	val = ipacc_payload_type(lchan->tch_mode, lchan->type);
+	val = ipacc_payload_type(lchan->activate.info.ch_mode_rate.chan_mode, lchan->type);
 	if (val < 0) {
 		lchan_rtp_fail("Cannot determine Abis/IP payload type for tch_mode=%s type=%s\n",
-			   get_value_string(gsm48_chan_mode_names, lchan->tch_mode),
+			   get_value_string(gsm48_chan_mode_names, lchan->activate.info.ch_mode_rate.chan_mode),
 			   gsm_lchant_name(lchan->type));
 		return;
 	}
@@ -834,14 +834,14 @@ static int chan_mode_to_mgcp_bss_pt(enum mgcp_codecs codec)
 
 void mgcp_pick_codec(struct mgcp_conn_peer *verb_info, const struct gsm_lchan *lchan, bool bss_side)
 {
-	enum mgcp_codecs codec = chan_mode_to_mgcp_codec(lchan->tch_mode,
+	enum mgcp_codecs codec = chan_mode_to_mgcp_codec(lchan->activate.info.ch_mode_rate.chan_mode,
 							 lchan->type == GSM_LCHAN_TCH_H? false : true);
 	int custom_pt;
 
 	if (codec < 0) {
 		LOG_LCHAN(lchan, LOGL_ERROR,
 			  "Unable to determine MGCP codec type for %s in chan-mode %s\n",
-			  gsm_lchant_name(lchan->type), gsm48_chan_mode_name(lchan->tch_mode));
+			  gsm_lchant_name(lchan->type), gsm48_chan_mode_name(lchan->activate.info.ch_mode_rate.chan_mode));
 		verb_info->codecs_len = 0;
 		return;
 	}
