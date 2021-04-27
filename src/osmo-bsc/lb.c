@@ -58,6 +58,11 @@ int bssmap_le_tx_reset()
 		},
 	};
 
+	if (!bsc_gsmnet->smlc->sccp_user) {
+		LOGP(DRESET, LOGL_DEBUG, "Not sending RESET to SMLC, Lb link down\n");
+		return -1;
+	}
+
 	ss7 = osmo_ss7_instance_find(bsc_gsmnet->smlc->cs7_instance);
 	OSMO_ASSERT(ss7);
 	LOGP(DRESET, LOGL_INFO, "Sending RESET to SMLC: %s\n", osmo_sccp_addr_name(ss7, &bsc_gsmnet->smlc->smlc_addr));
