@@ -609,6 +609,15 @@ static int bsc_vty_go_parent(struct vty *vty)
 			vty->index = ts->trx;
 		}
 		break;
+	case ACC_RAMP_NODE:
+		vty->node = BTS_NODE;
+		{
+			/* set vty->index correctly ! */
+			struct acc_ramp *acc_ramp = vty->index;
+			vty->index = acc_ramp->bts;
+			vty->index_sub = &acc_ramp->bts->description;
+		}
+		break;
 	case OML_NODE:
 	case OM2K_NODE:
 		vty->node = ENABLE_NODE;

@@ -17,6 +17,7 @@ enum bsc_vty_node {
 	BTS_NODE,
 	TRX_NODE,
 	TS_NODE,
+	ACC_RAMP_NODE,
 	OML_NODE,
 	NAT_NODE,
 	NAT_BSC_NODE,

@@ -1,0 +1,159 @@
+OsmoBSC> enable
+
+OsmoBSC# ### Default configuration
+OsmoBSC# show running-config
+...
+  access-control-class-ramp
+   no chan-load-enabled
+   no cpu-load-enabled
+...
+
+OsmoBSC# ### Check that 'access-control-class-ramp' node and its commands exist
+OsmoBSC# configure terminal
+OsmoBSC(config)# network
+OsmoBSC(config-net)# bts 0
+OsmoBSC(config-net-bts)# list with-flags
+...
+  ! ...  access-control-class-ramp
+...
+
+OsmoBSC(config-net-bts)# ### Check that legacy deprecated cmds still work
+OsmoBSC(config-net-bts)# access-control-class-ramping
+% 'bts' / 'access-control-class-ramping' config is deprecated, use 'bts' / 'access-control-class-ramp' / 'chan-load-enabled' instead
+OsmoBSC(config-net-bts)# show running-config
+...
+  access-control-class-ramp
+   chan-load-enabled
+   chan-load-step-interval 5
+   chan-load-step-size 1
+   chan-load-thresholds 71 89
+   no cpu-load-enabled
+...
+OsmoBSC(config-net-bts)# access-control-class-ramping-step-interval 10
+% 'bts' / 'access-control-class-ramping-step-interval' config is deprecated, use 'bts' / 'access-control-class-ramp' / 'chan-load-step-interval' instead
+OsmoBSC(config-net-bts)# access-control-class-ramping-step-size 2
+% 'bts' / 'access-control-class-ramping-step-size' config is deprecated, use 'bts' / 'access-control-class-ramp' / 'step-size' instead
+OsmoBSC(config-net-bts)# access-control-class-ramping-chan-load 80 90
+% 'bts' / 'access-control-class-ramping-chan-load' config is deprecated, use 'bts' / 'access-control-class-ramp' / 'chan-load-thresholds' instead
+OsmoBSC(config-net-bts)# show running-config
+...
+  access-control-class-ramp
+   chan-load-enabled
+   chan-load-step-interval 10
+   chan-load-step-size 2
+   chan-load-thresholds 80 90
+   no cpu-load-enabled
+...
+OsmoBSC(config-net-bts)# no access-control-class-ramping
+% 'bts' / 'no access-control-class-ramping' config is deprecated, use 'bts' / 'access-control-class-ramp' / 'no chan-load-enabled' instead
+OsmoBSC(config-net-bts)# show running-config
+...
+  access-control-class-ramp
+   no chan-load-enabled
+   no cpu-load-enabled
+...
+
+OsmoBSC(config-net-bts)# ### Now test new cmd set
+OsmoBSC(config-net-bts)# access-control-class-ramp
+OsmoBSC(config-net-bts-acc-ramp)# list with-flags
+...
+  !   chan-load-enabled
+  !   no chan-load-enabled
+  !   chan-load-step-interval (<5-600>)
+  !   chan-load-step-size (<1-10>)
+  !   chan-load-thresholds <0-100> <0-100>
+  !   cpu-load-enabled
+  !   no cpu-load-enabled
+  !   cpu-load-step-interval (<5-600>)
+  !   cpu-load-step-size (<1-10>)
+  !   cpu-load-thresholds <0-100> <0-100>
+...
+OsmoBSC(config-net-bts-acc-ramp)# no chan-load-enabled
+OsmoBSC(config-net-bts-acc-ramp)# chan-load-enabled
+OsmoBSC(config-net-bts-acc-ramp)# show running-config
+...
+  access-control-class-ramp
+   chan-load-enabled
+   chan-load-step-interval 10
+   chan-load-step-size 2
+   chan-load-thresholds 80 90
+   no cpu-load-enabled
+...
+OsmoBSC(config-net-bts-acc-ramp)# chan-load-step-interval 6
+OsmoBSC(config-net-bts-acc-ramp)# chan-load-step-size 2
+OsmoBSC(config-net-bts-acc-ramp)# chan-load-thresholds 10 50
+OsmoBSC(config-net-bts-acc-ramp)# show running-config
+...
+  access-control-class-ramp
+   chan-load-enabled
+   chan-load-step-interval 6
+   chan-load-step-size 2
+   chan-load-thresholds 10 50
+   no cpu-load-enabled
+...
+
+OsmoBSC(config-net-bts-acc-ramp)# ### Now same for CPU load
+OsmoBSC(config-net-bts-acc-ramp)# no cpu-load-enabled
+OsmoBSC(config-net-bts-acc-ramp)# cpu-load-enabled
+OsmoBSC(config-net-bts-acc-ramp)# show running-config
+...
+  access-control-class-ramp
+   chan-load-enabled
+   chan-load-step-interval 6
+   chan-load-step-size 2
+   chan-load-thresholds 10 50
+   cpu-load-enabled
+   cpu-load-step-interval 5
+   cpu-load-step-size 1
+   cpu-load-thresholds 71 89
+...
+OsmoBSC(config-net-bts-acc-ramp)# cpu-load-step-interval 7
+OsmoBSC(config-net-bts-acc-ramp)# cpu-load-step-size 3
+OsmoBSC(config-net-bts-acc-ramp)# cpu-load-thresholds 12 60
+OsmoBSC(config-net-bts-acc-ramp)# show running-config
+...
+  access-control-class-ramp
+   chan-load-enabled
+   chan-load-step-interval 6
+   chan-load-step-size 2
+   chan-load-thresholds 10 50
+   cpu-load-enabled
+   cpu-load-step-interval 7
+   cpu-load-step-size 3
+   cpu-load-thresholds 12 60
+...
+
+
+OsmoBSC(config-net-bts-acc-ramp)# ### Try incorrect use
+OsmoBSC(config-net-bts-acc-ramp)# chan-load-step-interval 2
+% Unknown command.
+OsmoBSC(config-net-bts-acc-ramp)# chan-load-step-size 0
+% Unknown command.
+OsmoBSC(config-net-bts-acc-ramp)# chan-load-thresholds 80 70
+% Unable to set ACC channel load thresholds
+OsmoBSC(config-net-bts-acc-ramp)# cpu-load-step-interval 2
+% Unknown command.
+OsmoBSC(config-net-bts-acc-ramp)# cpu-load-step-size 0
+% Unknown command.
+OsmoBSC(config-net-bts-acc-ramp)# cpu-load-thresholds 80 70
+% Unable to set ACC channel load thresholds
+
+
+OsmoBSC(config-net-bts-acc-ramp)# ### Disable them
+OsmoBSC(config-net-bts-acc-ramp)# no chan-load-enabled
+OsmoBSC(config-net-bts-acc-ramp)# show running-config
+...
+  access-control-class-ramp
+   no chan-load-enabled
+   cpu-load-enabled
+   cpu-load-step-interval 7
+   cpu-load-step-size 3
+   cpu-load-thresholds 12 60
+...
+OsmoBSC(config-net-bts-acc-ramp)# no cpu-load-enabled
+OsmoBSC(config-net-bts-acc-ramp)# show running-config
+...
+  access-control-class-ramp
+   no chan-load-enabled
+   no cpu-load-enabled
+...

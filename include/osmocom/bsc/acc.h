@@ -77,14 +77,21 @@ void acc_mgr_apply_acc(struct acc_mgr *acc_mgr, struct gsm48_rach_control *rach_
 #define ACC_RAMP_CHAN_LOAD_THRESHOLD_LOW 71
 #define ACC_RAMP_CHAN_LOAD_THRESHOLD_UP 89
 
+#define ACC_RAMP_CPU_LOAD_THRESHOLD_LOW 71
+#define ACC_RAMP_CPU_LOAD_THRESHOLD_UP 89
+
 /*!
  * Data structure used to manage ACC ramping. Please avoid setting or reading fields
  * in this structure directly. Use the accessor functions below instead.
  */
-struct acc_ramp {
-	struct gsm_bts *bts; /*!< backpointer to BTS using this ACC ramp */
-
-	bool acc_ramping_enabled; /*!< whether ACC ramping is enabled */
+struct acc_ramp_thresh_load;
+struct acc_ramp_thresh_load_ops {
+	bool (*can_increase_len_allowed_ramp)(const struct acc_ramp_thresh_load *ld);
+	bool (*can_decrease_len_allowed_ramp)(const struct acc_ramp_thresh_load *ld);
+};
+struct acc_ramp_thresh_load {
+	struct acc_ramp *acc_ramp; /* backpointer */
+	bool enabled; /*!< whether ACC ramping type is enabled */
 
 	/*!
 	 * This controls the maximum number of ACCs to allow per ramping step (1 - 10).
@@ -103,67 +110,99 @@ struct acc_ramp {
 	struct osmo_timer_list step_timer;
 
 	/*!
-	* Channel Load Upper/Lower Thresholds:
+	* Load Upper/Lower Thresholds:
 	* They control how ramping subset size of allowed ACCs changes in
-	* relation to current channel load (%, 0-100): Under the lower
+	* relation to current load (%, 0-100): Under the lower
 	* threshold, subset size may be increased; above the upper threshold,
 	* subset size may be decreased.
 	*/
-	unsigned int chan_load_lower_threshold;
-	unsigned int chan_load_upper_threshold;
+	unsigned int lower_threshold;
+	unsigned int upper_threshold;
+	struct acc_ramp_thresh_load_ops ops;
+};
+struct acc_ramp {
+	struct gsm_bts *bts; /*!< backpointer to BTS using this ACC ramp */
+
+	struct acc_ramp_thresh_load chanld;
+	struct acc_ramp_thresh_load cpuld;
 };
 
+/*************
+ * CHAN LOAD *
+ *************/
 /*!
- * Enable or disable ACC ramping.
+ * Enable or disable ACC ramping based on Chan Load.
  * When enabled, ramping begins once acc_ramp_start() is called.
  * When disabled, an ACC ramping process in progress will continue
  * unless acc_ramp_abort() is called as well.
  * \param[in] acc_ramp Pointer to acc_ramp structure.
  */
-static inline void acc_ramp_set_enabled(struct acc_ramp *acc_ramp, bool enable)
+static inline void acc_ramp_thld_set_enabled(struct acc_ramp_thresh_load *thld, bool enable)
 {
-	acc_ramp->acc_ramping_enabled = enable;
+	thld->enabled = enable;
 }
 
 /*!
- * Return true if ACC ramping is currently enabled, else false.
+ * Return true if ACC ramping based on Chan Load is currently enabled, else false.
  * \param[in] acc_ramp Pointer to acc_ramp structure.
  */
-static inline bool acc_ramp_is_enabled(struct acc_ramp *acc_ramp)
+static inline bool acc_ramp_thld_is_enabled(const struct acc_ramp_thresh_load *thld)
 {
-	return acc_ramp->acc_ramping_enabled;
+	return thld->enabled;
 }
 
 /*!
- * Return the current ACC ramp step size.
+ * Return the current Chan Load ACC ramp step size.
  * \param[in] acc_ramp Pointer to acc_ramp structure.
  */
-static inline unsigned int acc_ramp_get_step_size(struct acc_ramp *acc_ramp)
+static inline unsigned int acc_ramp_thld_get_step_size(const struct acc_ramp_thresh_load *thld)
 {
-	return acc_ramp->step_size;
+	return thld->step_size;
 }
 
 /*!
- * Return the current ACC ramp step interval (in seconds)
+ * Return the current Chan Load ACC ramp step interval (in seconds)
  * \param[in] acc_ramp Pointer to acc_ramp structure.
  */
-static inline unsigned int acc_ramp_get_step_interval(struct acc_ramp *acc_ramp)
+static inline unsigned int acc_ramp_thld_get_step_interval(const struct acc_ramp_thresh_load *thld)
 {
-	return acc_ramp->step_interval_sec;
+	return thld->step_interval_sec;
 }
 
 /*!
- * Return the current ACC ramp step interval (in seconds)
+ * Return the current Chan Load ACC ramp step interval (in seconds)
  * \param[in] acc_ramp Pointer to acc_ramp structure.
  */
-static inline unsigned int acc_ramp_is_running(struct acc_ramp *acc_ramp)
+static inline unsigned int acc_ramp_thld_is_running(struct acc_ramp_thresh_load *thld)
 {
-	return acc_ramp->step_interval_sec;
+	return osmo_timer_pending(&thld->step_timer);
+}
+
+int acc_ramp_thld_set_step_size(struct acc_ramp_thresh_load *thld, unsigned int step_size);
+int acc_ramp_thld_set_step_interval(struct acc_ramp_thresh_load *thld, unsigned int step_interval);
+int acc_ramp_thld_set_thresholds(struct acc_ramp_thresh_load *thld, unsigned int low_threshold, unsigned int up_threshold);
+
+/*************
+ * GENERIC   *
+ *************/
+
+static inline bool acc_ramp_is_enabled(const struct acc_ramp *acc_ramp)
+{
+	return acc_ramp_thld_is_enabled(&acc_ramp->chanld) ||
+	       acc_ramp_thld_is_enabled(&acc_ramp->cpuld);
+}
+
+static inline bool acc_ramp_can_increase_len_allowed_ramp(const struct acc_ramp *acc_ramp)
+{
+	if (acc_ramp_thld_is_enabled(&acc_ramp->chanld) &&
+	    !acc_ramp->chanld.ops.can_increase_len_allowed_ramp(&acc_ramp->chanld))
+		return false;
+	if (acc_ramp_thld_is_enabled(&acc_ramp->cpuld) &&
+	    !acc_ramp->cpuld.ops.can_increase_len_allowed_ramp(&acc_ramp->cpuld))
+		return false;
+	return true;
 }
 
 void acc_ramp_init(struct acc_ramp *acc_ramp, struct gsm_bts *bts);
-int acc_ramp_set_step_size(struct acc_ramp *acc_ramp, unsigned int step_size);
-int acc_ramp_set_step_interval(struct acc_ramp *acc_ramp, unsigned int step_interval);
-int acc_ramp_set_chan_load_thresholds(struct acc_ramp *acc_ramp, unsigned int low_threshold, unsigned int up_threshold);
 void acc_ramp_trigger(struct acc_ramp *acc_ramp);
 void acc_ramp_abort(struct acc_ramp *acc_ramp);

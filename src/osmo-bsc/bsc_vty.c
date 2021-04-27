@@ -172,6 +172,12 @@ static struct cmd_node ts_node = {
 	1,
 };
 
+static struct cmd_node acc_ramp_node = {
+	ACC_RAMP_NODE,
+	"%s(config-net-bts-acc-ramp)# ",
+	1,
+};
+
 static struct gsm_network *vty_global_gsm_network = NULL;
 
 struct gsm_network *gsmnet_from_vty(struct vty *v)
@@ -359,6 +365,34 @@ static void bts_dump_vty_features(struct vty *vty, struct gsm_bts *bts)
 		vty_out(vty, "    (not available)%s", VTY_NEWLINE);
 }
 
+static void bts_dump_vty_acc_ramp(struct vty *vty, struct gsm_bts *bts)
+{
+	const struct acc_ramp_thresh_load *methods[] = {&bts->acc_ramp.chanld,
+							&bts->acc_ramp.cpuld};
+	const char *method_names[] = {"Channel Load", "CPU Load"};
+	const struct acc_ramp_thresh_load *m;
+	const char *name;
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(methods); i++) {
+		m = methods[i];
+		name = method_names[i];
+		vty_out(vty, "  Access Control Class ramping (%s): %senabled%s", name,
+			acc_ramp_thld_is_enabled(m) ? "" : "not ", VTY_NEWLINE);
+		if (acc_ramp_thld_is_enabled(m)) {
+			vty_out(vty, "  Access Control Class ramping (%s) step interval: %u seconds%s",
+				name, acc_ramp_thld_get_step_interval(m), VTY_NEWLINE);
+			vty_out(vty, "  Access Control Class (%s) thresholds: (%" PRIu8 ", %" PRIu8 ")%s",
+				name, bts->acc_ramp.chanld.lower_threshold,
+				bts->acc_ramp.chanld.upper_threshold, VTY_NEWLINE);
+			vty_out(vty, "  enabling %u Access Control Class%s per %s ramping step%s",
+				acc_ramp_thld_get_step_size(m),
+				acc_ramp_thld_get_step_size(m) > 1 ? "es" : "",
+				name, VTY_NEWLINE);
+		}
+	}
+}
+
 static void bts_dump_vty(struct vty *vty, struct gsm_bts *bts)
 {
 	struct pchan_load pl;
@@ -417,18 +451,7 @@ static void bts_dump_vty(struct vty *vty, struct gsm_bts *bts)
 		bts->si_common.cell_sel_par.cell_resel_hyst*2, VTY_NEWLINE);
 	vty_out(vty, "  Access Control Class rotation allow mask: 0x%" PRIx16 "%s",
 		bts->acc_mgr.allowed_subset_mask, VTY_NEWLINE);
-	vty_out(vty, "  Access Control Class ramping: %senabled%s",
-		acc_ramp_is_enabled(&bts->acc_ramp) ? "" : "not ", VTY_NEWLINE);
-	if (acc_ramp_is_enabled(&bts->acc_ramp)) {
-		vty_out(vty, "  Access Control Class ramping step interval: %u seconds%s",
-			acc_ramp_get_step_interval(&bts->acc_ramp), VTY_NEWLINE);
-		vty_out(vty, "  Access Control Class channel load thresholds: (%" PRIu8 ", %" PRIu8 ")%s",
-			bts->acc_ramp.chan_load_lower_threshold,
-			bts->acc_ramp.chan_load_upper_threshold, VTY_NEWLINE);
-	        vty_out(vty, "  enabling %u Access Control Class%s per ramping step%s",
-			acc_ramp_get_step_size(&bts->acc_ramp),
-			acc_ramp_get_step_size(&bts->acc_ramp) > 1 ? "es" : "", VTY_NEWLINE);
-	}
+	bts_dump_vty_acc_ramp(vty, bts);
 	vty_out(vty, "  RACH TX-Integer: %u%s", bts->si_common.rach_control.tx_integer,
 		VTY_NEWLINE);
 	vty_out(vty, "  RACH Max transmissions: %u%s",
@@ -974,6 +997,33 @@ static void config_write_power_ctrl(struct vty *vty, unsigned int indent,
 
 #undef cfg_out
 
+static void config_write_bts_acc_ramp(struct vty *vty, struct acc_ramp *acc_ramp, const char* prefix)
+{
+	vty_out(vty, "%saccess-control-class-ramp%s", prefix, VTY_NEWLINE);
+
+	vty_out(vty, "%s %schan-load-enabled%s", prefix,
+		acc_ramp_thld_is_enabled(&acc_ramp->chanld) ? "" : "no ", VTY_NEWLINE);
+	if (acc_ramp_thld_is_enabled(&acc_ramp->chanld)) {
+		vty_out(vty, "%s chan-load-step-interval %u%s", prefix,
+			acc_ramp_thld_get_step_interval(&acc_ramp->chanld), VTY_NEWLINE);
+		vty_out(vty, "%s chan-load-step-size %u%s", prefix,
+			acc_ramp_thld_get_step_size(&acc_ramp->chanld), VTY_NEWLINE);
+		vty_out(vty, "%s chan-load-thresholds %u %u%s", prefix,
+			acc_ramp->chanld.lower_threshold, acc_ramp->chanld.upper_threshold, VTY_NEWLINE);
+	}
+
+	vty_out(vty, "%s %scpu-load-enabled%s", prefix,
+		acc_ramp_thld_is_enabled(&acc_ramp->cpuld) ? "" : "no ", VTY_NEWLINE);
+	if (acc_ramp_thld_is_enabled(&acc_ramp->cpuld)) {
+		vty_out(vty, "%s cpu-load-step-interval %u%s", prefix,
+			acc_ramp_thld_get_step_interval(&acc_ramp->cpuld), VTY_NEWLINE);
+		vty_out(vty, "%s cpu-load-step-size %u%s", prefix,
+			acc_ramp_thld_get_step_size(&acc_ramp->cpuld), VTY_NEWLINE);
+		vty_out(vty, "%s cpu-load-thresholds %u %u%s", prefix,
+			acc_ramp->cpuld.lower_threshold, acc_ramp->cpuld.upper_threshold, VTY_NEWLINE);
+	}
+}
+
 static void config_write_bts_single(struct vty *vty, struct gsm_bts *bts)
 {
 	int i;
@@ -1073,15 +1123,7 @@ static void config_write_bts_single(struct vty *vty, struct gsm_bts *bts)
 		vty_out(vty, "  access-control-class-rotate %" PRIu8 "%s", bts->acc_mgr.len_allowed_adm, VTY_NEWLINE);
 	if (bts->acc_mgr.rotation_time_sec != ACC_MGR_QUANTUM_DEFAULT)
 		vty_out(vty, "  access-control-class-rotate-quantum %" PRIu32 "%s", bts->acc_mgr.rotation_time_sec, VTY_NEWLINE);
-	vty_out(vty, "  %saccess-control-class-ramping%s", acc_ramp_is_enabled(&bts->acc_ramp) ? "" : "no ", VTY_NEWLINE);
-	if (acc_ramp_is_enabled(&bts->acc_ramp)) {
-		vty_out(vty, "  access-control-class-ramping-step-interval %u%s",
-			acc_ramp_get_step_interval(&bts->acc_ramp), VTY_NEWLINE);
-		vty_out(vty, "  access-control-class-ramping-step-size %u%s", acc_ramp_get_step_size(&bts->acc_ramp),
-			VTY_NEWLINE);
-		vty_out(vty, "  access-control-class-ramping-chan-load %u %u%s",
-			bts->acc_ramp.chan_load_lower_threshold, bts->acc_ramp.chan_load_upper_threshold, VTY_NEWLINE);
-	}
+	config_write_bts_acc_ramp(vty, &bts->acc_ramp, "  ");
 	if (!bts->si_unused_send_empty)
 		vty_out(vty, "  no system-information unused-send-empty%s", VTY_NEWLINE);
 	for (i = SYSINFO_TYPE_1; i < _MAX_SYSINFO_TYPE; i++) {
@@ -4109,21 +4151,31 @@ DEFUN_ATTR(cfg_bts_acc_rotate_quantum,
 	return CMD_SUCCESS;
 }
 
-DEFUN_ATTR(cfg_bts_acc_ramping,
-	   cfg_bts_acc_ramping_cmd,
-	   "access-control-class-ramping",
-	   "Enable Access Control Class ramping\n",
+/* per BTS configuration of ACC ramping */
+DEFUN_ATTR(cfg_acc_ramp,
+	   cfg_acc_ramp_cmd,
+	   "access-control-class-ramp",
+	   "Configure Access Control Ramping for current BTS\n",
 	   CMD_ATTR_IMMEDIATE)
 {
 	struct gsm_bts *bts = vty->index;
+
+	vty->index = &bts->acc_ramp;
+	vty->node = ACC_RAMP_NODE;
+
+	return CMD_SUCCESS;
+}
+
+static int _vty_acc_ramp_thld_enable(struct acc_ramp_thresh_load *thld)
+{
 	struct gsm_bts_trx *trx;
 
-	if (!acc_ramp_is_enabled(&bts->acc_ramp)) {
-		acc_ramp_set_enabled(&bts->acc_ramp, true);
+	if (!acc_ramp_thld_is_enabled(thld)) {
+		acc_ramp_thld_set_enabled(thld, true);
 		/* Start ramping if at least one TRX is usable */
-		llist_for_each_entry(trx, &bts->trx_list, list) {
+		llist_for_each_entry(trx, &thld->acc_ramp->bts->trx_list, list) {
 			if (trx_is_usable(trx)) {
-				acc_ramp_trigger(&bts->acc_ramp);
+				acc_ramp_trigger(thld->acc_ramp);
 				break;
 			}
 		}
@@ -4135,49 +4187,98 @@ DEFUN_ATTR(cfg_bts_acc_ramping,
 	 */
 	return CMD_SUCCESS;
 }
+DEFUN_ATTR(cfg_acc_ramp_chanld_enable,
+	   cfg_acc_ramp_chanld_enable_cmd,
+	   "chan-load-enabled",
+	   "Enable Access Control Class ramping based on Channel Load\n",
+	   CMD_ATTR_IMMEDIATE)
+{
+	struct acc_ramp *acc_ramp = vty->index;
+	return _vty_acc_ramp_thld_enable(&acc_ramp->chanld);
+}
+DEFUN_ATTR(cfg_acc_ramp_cpuld_enable,
+	   cfg_acc_ramp_cpuld_enable_cmd,
+	   "cpu-load-enabled",
+	   "Enable Access Control Class ramping based on CPU Load\n",
+	   CMD_ATTR_IMMEDIATE)
+{
+	struct acc_ramp *acc_ramp = vty->index;
+	return _vty_acc_ramp_thld_enable(&acc_ramp->cpuld);
+}
+DEFUN_ATTR(cfg_bts_acc_ramping,
+	   cfg_bts_acc_ramping_cmd,
+	   "access-control-class-ramping",
+	   "Enable Access Control Class ramping\n",
+	   CMD_ATTR_IMMEDIATE | CMD_ATTR_DEPRECATED)
+{
+	struct gsm_bts *bts = vty->index;
+	vty_out(vty, "%% 'bts' / 'access-control-class-ramping' config is deprecated, "
+		"use 'bts' / 'access-control-class-ramp' / 'chan-load-enabled' instead%s",
+		VTY_NEWLINE);
+	return _vty_acc_ramp_thld_enable(&bts->acc_ramp.chanld);
+}
 
+
+static int _vty_acc_ramp_thld_disable(struct vty *vty, struct acc_ramp_thresh_load *thld)
+{
+	struct gsm_bts_trx *trx;
+
+	if (acc_ramp_thld_is_enabled(thld)) {
+		acc_ramp_thld_set_enabled(thld, false);
+		/* Stop ramping if at least one TRX is usable (otherwise it
+		 * should already be stopped) */
+		llist_for_each_entry(trx, &thld->acc_ramp->bts->trx_list, list) {
+			if (trx_is_usable(trx)) {
+				acc_ramp_trigger(thld->acc_ramp);
+				break;
+			}
+		}
+		//if (gsm_bts_set_system_infos(acc_ramp->bts) != 0) {
+		//	vty_out(vty, "%% Failed to (re)generate System Information "
+		//		"messages, check the logs%s", VTY_NEWLINE);
+		//	return CMD_WARNING;
+		//}
+	}
+
+	return CMD_SUCCESS;
+}
+DEFUN_ATTR(cfg_acc_ramp_chanld_no_enable,
+	   cfg_acc_ramp_chanld_no_enable_cmd,
+	   "no chan-load-enabled",
+	    NO_STR
+	   "Enable Access Control Class ramping based on Channel Load\n",
+	   CMD_ATTR_IMMEDIATE)
+{
+	struct acc_ramp *acc_ramp = vty->index;
+	return _vty_acc_ramp_thld_disable(vty, &acc_ramp->chanld);
+}
+DEFUN_ATTR(cfg_acc_ramp_cpuld_no_enable,
+	   cfg_acc_ramp_cpuld_no_enable_cmd,
+	   "no cpu-load-enabled",
+	    NO_STR
+	   "Enable Access Control Class ramping based on CPU Load\n",
+	   CMD_ATTR_IMMEDIATE)
+{
+	struct acc_ramp *acc_ramp = vty->index;
+	return _vty_acc_ramp_thld_disable(vty, &acc_ramp->cpuld);
+}
 DEFUN_ATTR(cfg_bts_no_acc_ramping,
 	   cfg_bts_no_acc_ramping_cmd,
 	   "no access-control-class-ramping",
 	   NO_STR
 	   "Disable Access Control Class ramping\n",
-	   CMD_ATTR_IMMEDIATE)
+	   CMD_ATTR_IMMEDIATE | CMD_ATTR_DEPRECATED)
 {
 	struct gsm_bts *bts = vty->index;
-
-	if (acc_ramp_is_enabled(&bts->acc_ramp)) {
-		acc_ramp_abort(&bts->acc_ramp);
-		acc_ramp_set_enabled(&bts->acc_ramp, false);
-		if (gsm_bts_set_system_infos(bts) != 0) {
-			vty_out(vty, "%% Filed to (re)generate System Information "
-				"messages, check the logs%s", VTY_NEWLINE);
-			return CMD_WARNING;
-		}
-	}
-
-	return CMD_SUCCESS;
+	vty_out(vty, "%% 'bts' / 'no access-control-class-ramping' config is deprecated, "
+		"use 'bts' / 'access-control-class-ramp' / 'no chan-load-enabled' instead%s",
+		VTY_NEWLINE);
+	return _vty_acc_ramp_thld_disable(vty, &bts->acc_ramp.chanld);
 }
 
-DEFUN_ATTR(cfg_bts_acc_ramping_step_interval,
-	   cfg_bts_acc_ramping_step_interval_cmd,
-	   "access-control-class-ramping-step-interval (<"
-	   OSMO_STRINGIFY_VAL(ACC_RAMP_STEP_INTERVAL_MIN) "-"
-	   OSMO_STRINGIFY_VAL(ACC_RAMP_STEP_INTERVAL_MAX) ">|dynamic)",
-	   "Configure Access Control Class ramping step interval\n"
-	   "Set a fixed step interval (in seconds)\n"
-	   "Use dynamic step interval based on BTS channel load (deprecated, don't use, ignored)\n",
-	   CMD_ATTR_IMMEDIATE)
+static int _vty_acc_ramp_thld_step_interval(struct vty *vty, struct acc_ramp_thresh_load *thld, unsigned int step_interval)
 {
-	struct gsm_bts *bts = vty->index;
-	bool dynamic = (strcmp(argv[0], "dynamic") == 0);
-	int error;
-
-	if (dynamic) {
-		vty_out(vty, "%% access-control-class-ramping-step-interval 'dynamic' value is deprecated, ignoring it%s", VTY_NEWLINE);
-		return CMD_SUCCESS;
-	}
-
-	error = acc_ramp_set_step_interval(&bts->acc_ramp, atoi(argv[0]));
+	int error = acc_ramp_thld_set_step_interval(thld, step_interval);
 	if (error != 0) {
 		if (error == -ERANGE)
 			vty_out(vty, "%% Unable to set ACC ramp step interval: value out of range%s", VTY_NEWLINE);
@@ -4188,20 +4289,57 @@ DEFUN_ATTR(cfg_bts_acc_ramping_step_interval,
 
 	return CMD_SUCCESS;
 }
-
-DEFUN_ATTR(cfg_bts_acc_ramping_step_size,
-	   cfg_bts_acc_ramping_step_size_cmd,
-	   "access-control-class-ramping-step-size (<"
-	   OSMO_STRINGIFY_VAL(ACC_RAMP_STEP_SIZE_MIN) "-"
-	   OSMO_STRINGIFY_VAL(ACC_RAMP_STEP_SIZE_MAX) ">)",
-	   "Configure Access Control Class ramping step size\n"
-	   "Set the number of Access Control Classes to enable per ramping step\n",
+DEFUN_ATTR(cfg_acc_ramp_chanld_step_interval,
+	   cfg_acc_ramp_chanld_step_interval_cmd,
+	   "chan-load-step-interval (<"
+	   OSMO_STRINGIFY_VAL(ACC_RAMP_STEP_INTERVAL_MIN) "-"
+	   OSMO_STRINGIFY_VAL(ACC_RAMP_STEP_INTERVAL_MAX) ">)",
+	   "Configure Access Control Class ramping step interval (Chan Load based)\n"
+	   "Set a fixed step interval (in seconds)\n",
 	   CMD_ATTR_IMMEDIATE)
 {
+	struct acc_ramp *acc_ramp = vty->index;
+	return _vty_acc_ramp_thld_step_interval(vty, &acc_ramp->chanld, atoi(argv[0]));
+}
+DEFUN_ATTR(cfg_acc_ramp_cpuld_step_interval,
+	   cfg_acc_ramp_cpuld_step_interval_cmd,
+	   "cpu-load-step-interval (<"
+	   OSMO_STRINGIFY_VAL(ACC_RAMP_STEP_INTERVAL_MIN) "-"
+	   OSMO_STRINGIFY_VAL(ACC_RAMP_STEP_INTERVAL_MAX) ">)",
+	   "Configure Access Control Class ramping step interval (CPU Load based)\n"
+	   "Set a fixed step interval (in seconds)\n",
+	   CMD_ATTR_IMMEDIATE)
+{
+	struct acc_ramp *acc_ramp = vty->index;
+	return _vty_acc_ramp_thld_step_interval(vty, &acc_ramp->cpuld, atoi(argv[0]));
+}
+DEFUN_ATTR(cfg_bts_acc_ramping_step_interval,
+	   cfg_bts_acc_ramping_step_interval_cmd,
+	   "access-control-class-ramping-step-interval (<"
+	   OSMO_STRINGIFY_VAL(ACC_RAMP_STEP_INTERVAL_MIN) "-"
+	   OSMO_STRINGIFY_VAL(ACC_RAMP_STEP_INTERVAL_MAX) ">|dynamic)",
+	   "Configure Access Control Class ramping step interval\n"
+	   "Set a fixed step interval (in seconds)\n"
+	   "Use dynamic step interval based on BTS channel load (deprecated, don't use, ignored)\n",
+	   CMD_ATTR_IMMEDIATE | CMD_ATTR_DEPRECATED)
+{
 	struct gsm_bts *bts = vty->index;
-	int error;
+	bool dynamic = (strcmp(argv[0], "dynamic") == 0);
+	vty_out(vty, "%% 'bts' / 'access-control-class-ramping-step-interval' config is deprecated, "
+		"use 'bts' / 'access-control-class-ramp' / 'chan-load-step-interval' instead%s",
+		VTY_NEWLINE);
+	if (dynamic) {
+		vty_out(vty, "%% access-control-class-ramping-step-interval 'dynamic' value is deprecated, ignoring it%s", VTY_NEWLINE);
+		return CMD_SUCCESS;
+	}
+	return _vty_acc_ramp_thld_step_interval(vty, &bts->acc_ramp.chanld, atoi(argv[0]));
+}
 
-	error = acc_ramp_set_step_size(&bts->acc_ramp, atoi(argv[0]));
+
+static int _vty_acc_ramp_thld_step_size(struct vty *vty, struct acc_ramp_thresh_load *thld, unsigned int step_size)
+{
+	int error;
+	error = acc_ramp_thld_set_step_size(thld, step_size);
 	if (error != 0) {
 		if (error == -ERANGE)
 			vty_out(vty, "%% Unable to set ACC ramp step size: value out of range%s", VTY_NEWLINE);
@@ -4212,25 +4350,93 @@ DEFUN_ATTR(cfg_bts_acc_ramping_step_size,
 
 	return CMD_SUCCESS;
 }
+DEFUN_ATTR(cfg_acc_ramp_chanld_step_size,
+	   cfg_acc_ramp_chanld_step_size_cmd,
+	   "chan-load-step-size (<"
+	   OSMO_STRINGIFY_VAL(ACC_RAMP_STEP_SIZE_MIN) "-"
+	   OSMO_STRINGIFY_VAL(ACC_RAMP_STEP_SIZE_MAX) ">)",
+	   "Configure Access Control Class ramping step size (Chan Load based)\n"
+	   "Set the number of Access Control Classes to enable per ramping step\n",
+	   CMD_ATTR_IMMEDIATE)
+{
+	struct acc_ramp *acc_ramp = vty->index;
+	return _vty_acc_ramp_thld_step_size(vty, &acc_ramp->chanld, atoi(argv[0]));
+}
+DEFUN_ATTR(cfg_acc_ramp_cpuld_step_size,
+	   cfg_acc_ramp_cpuld_step_size_cmd,
+	   "cpu-load-step-size (<"
+	   OSMO_STRINGIFY_VAL(ACC_RAMP_STEP_SIZE_MIN) "-"
+	   OSMO_STRINGIFY_VAL(ACC_RAMP_STEP_SIZE_MAX) ">)",
+	   "Configure Access Control Class ramping step size (CPU Load based)\n"
+	   "Set the number of Access Control Classes to enable per ramping step\n",
+	   CMD_ATTR_IMMEDIATE)
+{
+	struct acc_ramp *acc_ramp = vty->index;
+	return _vty_acc_ramp_thld_step_size(vty, &acc_ramp->cpuld, atoi(argv[0]));
+}
+DEFUN_ATTR(cfg_bts_acc_ramping_step_size,
+	   cfg_bts_acc_ramping_step_size_cmd,
+	   "access-control-class-ramping-step-size (<"
+	   OSMO_STRINGIFY_VAL(ACC_RAMP_STEP_SIZE_MIN) "-"
+	   OSMO_STRINGIFY_VAL(ACC_RAMP_STEP_SIZE_MAX) ">)",
+	   "Configure Access Control Class ramping step size\n"
+	   "Set the number of Access Control Classes to enable per ramping step\n",
+	   CMD_ATTR_IMMEDIATE | CMD_ATTR_DEPRECATED)
+{
+	struct gsm_bts *bts = vty->index;
+	vty_out(vty, "%% 'bts' / 'access-control-class-ramping-step-size' config is deprecated, "
+		"use 'bts' / 'access-control-class-ramp' / 'step-size' instead%s",
+		VTY_NEWLINE);
+	return _vty_acc_ramp_thld_step_size(vty, &bts->acc_ramp.chanld, atoi(argv[0]));
+}
 
+
+static int _vty_acc_ramp_thld_thresholds(struct vty *vty, struct acc_ramp_thresh_load *thld,
+					   unsigned int low_threshold, unsigned int up_threshold)
+{
+	int rc;
+	rc = acc_ramp_thld_set_thresholds(thld, low_threshold, up_threshold);
+	if (rc < 0) {
+		vty_out(vty, "%% Unable to set ACC channel load thresholds%s", VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+	return CMD_SUCCESS;
+}
+DEFUN_ATTR(cfg_acc_ramp_chanld_thresholds,
+	   cfg_acc_ramp_chanld_thresholds_cmd,
+	   "chan-load-thresholds <0-100> <0-100>",
+	   "Configure Access Control Class ramping channel load thresholds\n"
+	   "Lower Channel load threshold (%) below which subset size of allowed broadcast ACCs can be increased\n"
+	   "Upper channel load threshold (%) above which subset size of allowed broadcast ACCs can be decreased\n",
+	   CMD_ATTR_IMMEDIATE)
+{
+	struct acc_ramp *acc_ramp = vty->index;
+	return _vty_acc_ramp_thld_thresholds(vty, &acc_ramp->chanld, atoi(argv[0]), atoi(argv[1]));
+}
+DEFUN_ATTR(cfg_acc_ramp_cpuld_thresholds,
+	   cfg_acc_ramp_cpuld_thresholds_cmd,
+	   "cpu-load-thresholds <0-100> <0-100>",
+	   "Configure Access Control Class ramping CPU load thresholds\n"
+	   "Lower CPU load threshold (%) below which subset size of allowed broadcast ACCs can be increased\n"
+	   "Upper CPU load threshold (%) above which subset size of allowed broadcast ACCs can be decreased\n",
+	   CMD_ATTR_IMMEDIATE)
+{
+	struct acc_ramp *acc_ramp = vty->index;
+	return _vty_acc_ramp_thld_thresholds(vty, &acc_ramp->cpuld, atoi(argv[0]), atoi(argv[1]));
+}
 DEFUN_ATTR(cfg_bts_acc_ramping_chan_load,
 	   cfg_bts_acc_ramping_chan_load_cmd,
 	   "access-control-class-ramping-chan-load <0-100> <0-100>",
 	   "Configure Access Control Class ramping channel load thresholds\n"
 	   "Lower Channel load threshold (%) below which subset size of allowed broadcast ACCs can be increased\n"
 	   "Upper channel load threshold (%) above which subset size of allowed broadcast ACCs can be decreased\n",
-	   CMD_ATTR_IMMEDIATE)
+	   CMD_ATTR_IMMEDIATE | CMD_ATTR_DEPRECATED)
 {
 	struct gsm_bts *bts = vty->index;
-	int rc;
-
-	rc = acc_ramp_set_chan_load_thresholds(&bts->acc_ramp, atoi(argv[0]), atoi(argv[1]));
-	if (rc < 0) {
-		vty_out(vty, "%% Unable to set ACC channel load thresholds%s", VTY_NEWLINE);
-		return CMD_WARNING;
-	}
-
-	return CMD_SUCCESS;
+	vty_out(vty, "%% 'bts' / 'access-control-class-ramping-chan-load' config is deprecated, "
+		"use 'bts' / 'access-control-class-ramp' / 'chan-load-thresholds' instead%s",
+		VTY_NEWLINE);
+	return _vty_acc_ramp_thld_thresholds(vty, &bts->acc_ramp.chanld, atoi(argv[0]), atoi(argv[1]));
 }
 
 #define EXCL_RFLOCK_STR "Exclude this BTS from the global RF Lock\n"
@@ -7837,6 +8043,19 @@ int bsc_vty_init(struct gsm_network *network)
 
 	neighbor_ident_vty_init();
 	/* See also handover commands added on bts level from handover_vty.c */
+
+	install_element(BTS_NODE, &cfg_acc_ramp_cmd);
+	install_node(&acc_ramp_node, dummy_config_write);
+	install_element(ACC_RAMP_NODE, &cfg_acc_ramp_chanld_enable_cmd);
+	install_element(ACC_RAMP_NODE, &cfg_acc_ramp_chanld_no_enable_cmd);
+	install_element(ACC_RAMP_NODE, &cfg_acc_ramp_chanld_step_interval_cmd);
+	install_element(ACC_RAMP_NODE, &cfg_acc_ramp_chanld_step_size_cmd);
+	install_element(ACC_RAMP_NODE, &cfg_acc_ramp_chanld_thresholds_cmd);
+	install_element(ACC_RAMP_NODE, &cfg_acc_ramp_cpuld_enable_cmd);
+	install_element(ACC_RAMP_NODE, &cfg_acc_ramp_cpuld_no_enable_cmd);
+	install_element(ACC_RAMP_NODE, &cfg_acc_ramp_cpuld_step_interval_cmd);
+	install_element(ACC_RAMP_NODE, &cfg_acc_ramp_cpuld_step_size_cmd);
+	install_element(ACC_RAMP_NODE, &cfg_acc_ramp_cpuld_thresholds_cmd);
 
 	install_element(BTS_NODE, &cfg_bts_power_ctrl_cmd);
 	install_element(BTS_NODE, &cfg_bts_no_power_ctrl_cmd);

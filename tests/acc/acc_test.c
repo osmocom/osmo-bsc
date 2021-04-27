@@ -64,8 +64,8 @@ static inline void _bts_del(struct gsm_bts *bts, const char *msg)
 	rate_ctr_group_free(bts->bts_ctrs);
 	if (osmo_timer_pending(&bts->acc_mgr.rotate_timer))
 		osmo_timer_del(&bts->acc_mgr.rotate_timer);
-	if (osmo_timer_pending(&bts->acc_ramp.step_timer))
-		osmo_timer_del(&bts->acc_ramp.step_timer);
+	if (osmo_timer_pending(&bts->acc_ramp.chanld.step_timer))
+		osmo_timer_del(&bts->acc_ramp.chanld.step_timer);
 	/* no need to llist_del(&bts->list), we never registered the bts there. */
 	talloc_free(bts->site_mgr);
 	fprintf(stderr, "BTS deallocated OK in %s()\n", msg);
@@ -254,18 +254,18 @@ static void test_acc_ramp(struct gsm_network *net)
 	struct acc_ramp *acc_ramp = &bts->acc_ramp;
 
 	/* Validate are all allowed by default after allocation: */
-	OSMO_ASSERT(acc_ramp_is_enabled(acc_ramp) == false);
-	OSMO_ASSERT(acc_ramp_get_step_size(acc_ramp) == ACC_RAMP_STEP_SIZE_DEFAULT);
-	OSMO_ASSERT(acc_ramp_get_step_interval(acc_ramp) == ACC_RAMP_STEP_INTERVAL_MIN);
+	OSMO_ASSERT(acc_ramp_thld_is_enabled(&acc_ramp->chanld) == false);
+	OSMO_ASSERT(acc_ramp_thld_get_step_size(&acc_ramp->chanld) == ACC_RAMP_STEP_SIZE_DEFAULT);
+	OSMO_ASSERT(acc_ramp_thld_get_step_interval(&acc_ramp->chanld) == ACC_RAMP_STEP_INTERVAL_MIN);
 
 	/* Set super high rotation time so it doesn't interfer here: */
 	acc_mgr_set_rotation_time(acc_mgr, 5000);
 
-	OSMO_ASSERT(acc_ramp_set_step_interval(acc_ramp, 1) == -ERANGE);
-	OSMO_ASSERT(acc_ramp_set_step_interval(acc_ramp, 50) == 0);
-	OSMO_ASSERT(acc_ramp_set_chan_load_thresholds(acc_ramp, 100, 100) == 0);
-	acc_ramp_set_step_size(acc_ramp, 1);
-	acc_ramp_set_enabled(acc_ramp, true);
+	OSMO_ASSERT(acc_ramp_thld_set_step_interval(&acc_ramp->chanld, 1) == -ERANGE);
+	OSMO_ASSERT(acc_ramp_thld_set_step_interval(&acc_ramp->chanld, 50) == 0);
+	OSMO_ASSERT(acc_ramp_thld_set_thresholds(&acc_ramp->chanld, 100, 100) == 0);
+	acc_ramp_thld_set_step_size(&acc_ramp->chanld, 1);
+	acc_ramp_thld_set_enabled(&acc_ramp->chanld, true);
 
 	osmo_gettimeofday_override_time = (struct timeval) {0, 0};
 	acc_ramp_trigger(acc_ramp);
@@ -288,17 +288,17 @@ static void test_acc_ramp2(struct gsm_network *net)
 	struct acc_ramp *acc_ramp = &bts->acc_ramp;
 
 	/* Validate are all allowed by default after allocation: */
-	OSMO_ASSERT(acc_ramp_is_enabled(acc_ramp) == false);
-	OSMO_ASSERT(acc_ramp_get_step_size(acc_ramp) == ACC_RAMP_STEP_SIZE_DEFAULT);
-	OSMO_ASSERT(acc_ramp_get_step_interval(acc_ramp) == ACC_RAMP_STEP_INTERVAL_MIN);
+	OSMO_ASSERT(acc_ramp_thld_is_enabled(&acc_ramp->chanld) == false);
+	OSMO_ASSERT(acc_ramp_thld_get_step_size(&acc_ramp->chanld) == ACC_RAMP_STEP_SIZE_DEFAULT);
+	OSMO_ASSERT(acc_ramp_thld_get_step_interval(&acc_ramp->chanld) == ACC_RAMP_STEP_INTERVAL_MIN);
 
 	/* Set super high rotation time so it doesn't interfer here: */
 	acc_mgr_set_rotation_time(acc_mgr, 5000);
 	/* Set adm len to test that ramping won't go over it */
 	acc_mgr_set_len_allowed_adm(acc_mgr, 7);
 
-	acc_ramp_set_step_size(acc_ramp, 3);
-	acc_ramp_set_enabled(acc_ramp, true);
+	acc_ramp_thld_set_step_size(&acc_ramp->chanld, 3);
+	acc_ramp_thld_set_enabled(&acc_ramp->chanld, true);
 
 	osmo_gettimeofday_override_time = (struct timeval) {0, 0};
 	acc_ramp_trigger(acc_ramp);
@@ -321,9 +321,9 @@ static void test_acc_ramp3(struct gsm_network *net)
 	struct acc_ramp *acc_ramp = &bts->acc_ramp;
 
 	/* Validate are all allowed by default after allocation: */
-	OSMO_ASSERT(acc_ramp_is_enabled(acc_ramp) == false);
-	OSMO_ASSERT(acc_ramp_get_step_size(acc_ramp) == ACC_RAMP_STEP_SIZE_DEFAULT);
-	OSMO_ASSERT(acc_ramp_get_step_interval(acc_ramp) == ACC_RAMP_STEP_INTERVAL_MIN);
+	OSMO_ASSERT(acc_ramp_thld_is_enabled(&acc_ramp->chanld) == false);
+	OSMO_ASSERT(acc_ramp_thld_get_step_size(&acc_ramp->chanld) == ACC_RAMP_STEP_SIZE_DEFAULT);
+	OSMO_ASSERT(acc_ramp_thld_get_step_interval(&acc_ramp->chanld) == ACC_RAMP_STEP_INTERVAL_MIN);
 
 	/* Set super high rotation time so it doesn't interfer here: */
 	acc_mgr_set_rotation_time(acc_mgr, 5000);
@@ -333,8 +333,8 @@ static void test_acc_ramp3(struct gsm_network *net)
 	bts->si_common.rach_control.t3 |= 0xa5;
 	acc_mgr_perm_subset_changed(acc_mgr, &bts->si_common.rach_control);
 
-	acc_ramp_set_step_size(acc_ramp, 1);
-	acc_ramp_set_enabled(acc_ramp, true);
+	acc_ramp_thld_set_step_size(&acc_ramp->chanld, 1);
+	acc_ramp_thld_set_enabled(&acc_ramp->chanld, true);
 
 	osmo_gettimeofday_override_time = (struct timeval) {0, 0};
 	acc_ramp_trigger(acc_ramp);
@@ -358,20 +358,20 @@ static void test_acc_ramp_up_rotate(struct gsm_network *net, unsigned int chan_l
 	int n;
 
 	/* Validate are all allowed by default after allocation: */
-	OSMO_ASSERT(acc_ramp_is_enabled(acc_ramp) == false);
-	OSMO_ASSERT(acc_ramp_get_step_size(acc_ramp) == ACC_RAMP_STEP_SIZE_DEFAULT);
-	OSMO_ASSERT(acc_ramp_get_step_interval(acc_ramp) == ACC_RAMP_STEP_INTERVAL_MIN);
+	OSMO_ASSERT(acc_ramp_thld_is_enabled(&acc_ramp->chanld) == false);
+	OSMO_ASSERT(acc_ramp_thld_get_step_size(&acc_ramp->chanld) == ACC_RAMP_STEP_SIZE_DEFAULT);
+	OSMO_ASSERT(acc_ramp_thld_get_step_interval(&acc_ramp->chanld) == ACC_RAMP_STEP_INTERVAL_MIN);
 
-	OSMO_ASSERT(acc_ramp_set_step_interval(acc_ramp, 250) == 0);
+	OSMO_ASSERT(acc_ramp_thld_set_step_interval(&acc_ramp->chanld, 250) == 0);
 	acc_mgr_set_rotation_time(acc_mgr, 100);
 	/* Test that ramping + rotation won't go over permanently barred ACC*/
 	fprintf(stderr, "*** Barring one ACC ***\n");
 	bts->si_common.rach_control.t2 |= 0x02;
 	acc_mgr_perm_subset_changed(acc_mgr, &bts->si_common.rach_control);
 
-	OSMO_ASSERT(acc_ramp_set_step_size(acc_ramp, 1) == 0);
-	OSMO_ASSERT(acc_ramp_set_chan_load_thresholds(acc_ramp, low_threshold, up_threshold) == 0);
-	acc_ramp_set_enabled(acc_ramp, true);
+	OSMO_ASSERT(acc_ramp_thld_set_step_size(&acc_ramp->chanld, 1) == 0);
+	OSMO_ASSERT(acc_ramp_thld_set_thresholds(&acc_ramp->chanld, low_threshold, up_threshold) == 0);
+	acc_ramp_thld_set_enabled(&acc_ramp->chanld, true);
 
 	bts->chan_load_avg = chan_load; /*set % channel load */
 
@@ -380,7 +380,7 @@ static void test_acc_ramp_up_rotate(struct gsm_network *net, unsigned int chan_l
 
 	n = 5;
 	while (true) {
-		OSMO_ASSERT(osmo_timer_pending(&acc_ramp->step_timer));
+		OSMO_ASSERT(osmo_timer_pending(&acc_ramp->chanld.step_timer));
 		if (osmo_timer_pending(&acc_mgr->rotate_timer)) {
 			if ((osmo_gettimeofday_override_time.tv_sec + 50) % 250 == 0)
 				osmo_gettimeofday_override_time.tv_sec += 50;
@@ -416,20 +416,20 @@ static void test_acc_ramp_updown_rotate(struct gsm_network *net, unsigned int lo
 	bool up = true;
 
 	/* Validate are all allowed by default after allocation: */
-	OSMO_ASSERT(acc_ramp_is_enabled(acc_ramp) == false);
-	OSMO_ASSERT(acc_ramp_get_step_size(acc_ramp) == ACC_RAMP_STEP_SIZE_DEFAULT);
-	OSMO_ASSERT(acc_ramp_get_step_interval(acc_ramp) == ACC_RAMP_STEP_INTERVAL_MIN);
+	OSMO_ASSERT(acc_ramp_thld_is_enabled(&acc_ramp->chanld) == false);
+	OSMO_ASSERT(acc_ramp_thld_get_step_size(&acc_ramp->chanld) == ACC_RAMP_STEP_SIZE_DEFAULT);
+	OSMO_ASSERT(acc_ramp_thld_get_step_interval(&acc_ramp->chanld) == ACC_RAMP_STEP_INTERVAL_MIN);
 
-	OSMO_ASSERT(acc_ramp_set_step_interval(acc_ramp, 250) == 0);
+	OSMO_ASSERT(acc_ramp_thld_set_step_interval(&acc_ramp->chanld, 250) == 0);
 	acc_mgr_set_rotation_time(acc_mgr, 100);
 	/* Test that ramping + rotation won't go over permanently barred ACC*/
 	fprintf(stderr, "*** Barring one ACC ***\n");
 	bts->si_common.rach_control.t2 |= 0x02;
 	acc_mgr_perm_subset_changed(acc_mgr, &bts->si_common.rach_control);
 
-	OSMO_ASSERT(acc_ramp_set_step_size(acc_ramp, 1) == 0);
-	OSMO_ASSERT(acc_ramp_set_chan_load_thresholds(acc_ramp, low_threshold, up_threshold) == 0);
-	acc_ramp_set_enabled(acc_ramp, true);
+	OSMO_ASSERT(acc_ramp_thld_set_step_size(&acc_ramp->chanld, 1) == 0);
+	OSMO_ASSERT(acc_ramp_thld_set_thresholds(&acc_ramp->chanld, low_threshold, up_threshold) == 0);
+	acc_ramp_thld_set_enabled(&acc_ramp->chanld, true);
 
 	bts->chan_load_avg = min_load; /* set % channel load */
 
@@ -438,7 +438,7 @@ static void test_acc_ramp_updown_rotate(struct gsm_network *net, unsigned int lo
 
 	/* 50 ev loop iterations */
 	for (i = 0; i < 50; i++) {
-		OSMO_ASSERT(osmo_timer_pending(&acc_ramp->step_timer));
+		OSMO_ASSERT(osmo_timer_pending(&acc_ramp->chanld.step_timer));
 		if (osmo_timer_pending(&acc_mgr->rotate_timer)) {
 			if ((osmo_gettimeofday_override_time.tv_sec + 50) % 250 == 0)
 				osmo_gettimeofday_override_time.tv_sec += 50;
