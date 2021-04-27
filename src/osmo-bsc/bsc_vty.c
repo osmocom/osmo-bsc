@@ -78,6 +78,7 @@
 #include <osmocom/bsc/bts.h>
 #include <osmocom/mgcp_client/mgcp_client_endpoint_fsm.h>
 #include <osmocom/bsc/bsc_subscr_conn_fsm.h>
+#include <osmocom/bsc/assignment_fsm.h>
 
 #include <inttypes.h>
 
@@ -1867,23 +1868,32 @@ DEFUN(show_subscr_conn,
 	return CMD_SUCCESS;
 }
 
-static int trigger_ho_or_as(struct vty *vty, struct gsm_lchan *from_lchan, struct gsm_bts *to_bts)
+static int trigger_as(struct vty *vty, struct gsm_lchan *from_lchan, struct gsm_lchan *to_lchan)
 {
-	if (!to_bts || from_lchan->ts->trx->bts == to_bts) {
-		LOGP(DHO, LOGL_NOTICE, "%s Manually triggering Assignment from VTY\n",
-		     gsm_lchan_name(from_lchan));
-		to_bts = from_lchan->ts->trx->bts;
-	} else
-		LOGP(DHO, LOGL_NOTICE, "%s (ARFCN %u) --> BTS %u Manually triggering Handover from VTY\n",
-		     gsm_lchan_name(from_lchan), from_lchan->ts->trx->arfcn, to_bts->nr);
-	{
-		struct handover_out_req req = {
-			.from_hodec_id = HODEC_USER,
-			.old_lchan = from_lchan,
-		};
-		bts_cell_ab(&req.target_cell_ab, to_bts);
-		handover_request(&req);
+	LOG_LCHAN(from_lchan, LOGL_NOTICE, "Manually triggering Assignment from VTY\n");
+	if (!to_lchan) {
+		to_lchan = lchan_select_by_type(from_lchan->ts->trx->bts, from_lchan->type);
+		vty_out(vty, "Error: cannot find free lchan of type %s%s",
+			gsm_lchant_name(from_lchan->type), VTY_NEWLINE);
 	}
+	if (reassignment_request_to_lchan(ACTIVATE_FOR_VTY, from_lchan, to_lchan)) {
+		vty_out(vty, "Error: not allowed to start assignment for %s%s",
+			gsm_lchan_name(from_lchan), VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+	return CMD_SUCCESS;
+}
+
+static int trigger_ho(struct vty *vty, struct gsm_lchan *from_lchan, struct gsm_bts *to_bts)
+{
+	struct handover_out_req req = {
+		.from_hodec_id = HODEC_USER,
+		.old_lchan = from_lchan,
+	};
+	bts_cell_ab(&req.target_cell_ab, to_bts);
+	LOGP(DHO, LOGL_NOTICE, "%s (ARFCN %u) --> BTS %u Manually triggering Handover from VTY\n",
+	     gsm_lchan_name(from_lchan), from_lchan->ts->trx->arfcn, to_bts->nr);
+	handover_request(&req);
 	return CMD_SUCCESS;
 }
 
@@ -1897,11 +1907,10 @@ static int ho_or_as(struct vty *vty, const char *argv[], int argc)
 	unsigned int trx_nr = atoi(argv[1]);
 	unsigned int ts_nr = atoi(argv[2]);
 	unsigned int ss_nr = atoi(argv[3]);
-	unsigned int bts_nr_new;
 	const char *action;
 
 	if (argc > 4) {
-		bts_nr_new = atoi(argv[4]);
+		unsigned int bts_nr_new = atoi(argv[4]);
 
 		/* Lookup the BTS where we want to handover to */
 		llist_for_each_entry(bts, &net->bts_list, list) {
@@ -1930,7 +1939,10 @@ static int ho_or_as(struct vty *vty, const char *argv[], int argc)
 		    conn->lchan->ts->nr == ts_nr && conn->lchan->nr == ss_nr) {
 			vty_out(vty, "starting %s for lchan %s...%s", action, conn->lchan->name, VTY_NEWLINE);
 			lchan_dump_full_vty(vty, conn->lchan);
-			return trigger_ho_or_as(vty, conn->lchan, new_bts);
+			if (new_bts)
+				return trigger_ho(vty, conn->lchan, new_bts);
+			else
+				return trigger_as(vty, conn->lchan, NULL);
 		}
 	}
 
@@ -2055,7 +2067,7 @@ DEFUN(handover_any, handover_any_cmd,
 	if (!to_bts)
 		return CMD_WARNING;
 
-	return trigger_ho_or_as(vty, from_lchan, to_bts);
+	return trigger_ho(vty, from_lchan, to_bts);
 }
 
 DEFUN(assignment_any, assignment_any_cmd,
@@ -2070,7 +2082,7 @@ DEFUN(assignment_any, assignment_any_cmd,
 	if (!from_lchan)
 		return CMD_WARNING;
 
-	return trigger_ho_or_as(vty, from_lchan, NULL);
+	return trigger_as(vty, from_lchan, NULL);
 }
 
 DEFUN(handover_any_to_arfcn_bsic, handover_any_to_arfcn_bsic_cmd,
