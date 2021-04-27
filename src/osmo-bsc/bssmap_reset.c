@@ -70,6 +70,14 @@ struct bssmap_reset *bssmap_reset_alloc(void *ctx, const char *label, const stru
 	return bssmap_reset;
 }
 
+void bssmap_reset_term_and_free(struct bssmap_reset *bssmap_reset)
+{
+	if (!bssmap_reset)
+		return;
+	osmo_fsm_inst_term(bssmap_reset->fi, OSMO_FSM_TERM_REQUEST, NULL);
+	talloc_free(bssmap_reset);
+}
+
 static void link_up(struct bssmap_reset *bssmap_reset)
 {
 	LOGPFSML(bssmap_reset->fi, LOGL_NOTICE, "link up\n");

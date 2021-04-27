@@ -1405,6 +1405,7 @@ void osmo_bsc_sigtran_tx_reset_ack(void) {}
 void osmo_bsc_sigtran_reset(void) {}
 void bssmap_reset_alloc(void) {}
 void bssmap_reset_is_conn_ready(void) {}
+void bssmap_reset_term_and_free(void) {}
 const char *osmo_mgcpc_ep_name(const struct osmo_mgcpc_ep *ep)
 {
 	return "fake-ep";

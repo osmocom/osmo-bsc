@@ -399,6 +399,12 @@ static void lb_start_reset_fsm()
 	bsc_gsmnet->smlc->bssmap_reset = bssmap_reset_alloc(bsc_gsmnet, "Lb", &cfg);
 }
 
+static void lb_stop_reset_fsm()
+{
+	bssmap_reset_term_and_free(bsc_gsmnet->smlc->bssmap_reset);
+	bsc_gsmnet->smlc->bssmap_reset = NULL;
+}
+
 static int lb_start()
 {
 	uint32_t default_pc;
@@ -482,6 +488,7 @@ static int lb_stop()
 	LOGP(DLCS, LOGL_INFO, "Shutting down Lb link\n");
 
 	lb_cancel_all();
+	lb_stop_reset_fsm();
 	osmo_sccp_user_unbind(bsc_gsmnet->smlc->sccp_user);
 	bsc_gsmnet->smlc->sccp_user = NULL;
 	return 0;
