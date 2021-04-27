@@ -154,6 +154,14 @@ struct assignment_request {
 	/* Rate/codec setting in preference order (need at least 1 !) */
 	int n_ch_mode_rate;
 	struct channel_mode_and_rate ch_mode_rate_list[3];
+
+	/* An assignment request usually requests to assign any available lchan, to match above requirements. This may
+	 * also choose to just keep the current lchan and merely modify it as appropriate. In these cases, keep
+	 * target_lchan == NULL.
+	 * In some situations, an assignment to a specific target lchan is requested (congestion resolution, VAMOS
+	 * multiplexing, user request via VTY). In these situations, select a target lchan beforehand and point
+	 * target_lchan to it. */
+	struct gsm_lchan *target_lchan;
 };
 
 /* State of an ongoing Assignment, while the assignment_fsm is still busy. This serves as state separation to keep the

@@ -438,6 +438,48 @@ static bool reuse_existing_lchan(struct gsm_subscriber_connection *conn)
 	return false;
 }
 
+static int _reassignment_request(enum assign_for assign_for, struct gsm_lchan *lchan, struct gsm_lchan *to_lchan,
+				 enum gsm_chan_t new_lchan_type)
+{
+	struct gsm_subscriber_connection *conn = lchan->conn;
+	struct assignment_request req = {
+		.assign_for = assign_for,
+		.aoip = gscon_is_aoip(conn),
+		.msc_assigned_cic = conn->user_plane.msc_assigned_cic,
+		.msc_rtp_port = conn->user_plane.msc_assigned_rtp_port,
+		.n_ch_mode_rate = 1,
+		.ch_mode_rate_list = { lchan->current_ch_mode_rate },
+		.target_lchan = to_lchan,
+	};
+
+	if (to_lchan)
+		new_lchan_type = to_lchan->type;
+	req.ch_mode_rate_list[0].chan_rate = chan_t_to_chan_rate(new_lchan_type);
+	/* lchan activation will automatically convert chan_mode to a VAMOS equivalent if required.
+	 * So rather always pass the plain non-VAMOS mode. */
+	req.ch_mode_rate_list[0].chan_mode = gsm48_chan_mode_to_non_vamos(lchan->current_ch_mode_rate.chan_mode);
+
+	OSMO_STRLCPY_ARRAY(req.msc_rtp_addr, conn->user_plane.msc_assigned_rtp_addr);
+
+	if (conn->user_plane.mgw_endpoint_ci_msc) {
+		req.use_osmux = osmo_mgcpc_ep_ci_get_crcx_info_to_osmux_cid(conn->user_plane.mgw_endpoint_ci_msc,
+									    &req.osmux_cid);
+	}
+
+	return osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_ASSIGNMENT_START, &req);
+}
+
+int reassignment_request_to_lchan(enum assign_for assign_for, struct gsm_lchan *lchan, struct gsm_lchan *to_lchan)
+{
+	return _reassignment_request(assign_for, lchan, to_lchan, 0);
+}
+
+int reassignment_request_to_chan_type(enum assign_for assign_for, struct gsm_lchan *lchan,
+				      enum gsm_chan_t new_lchan_type)
+{
+	return _reassignment_request(assign_for, lchan, NULL, new_lchan_type);
+}
+
 void assignment_fsm_start(struct gsm_subscriber_connection *conn, struct gsm_bts *bts,
 			  struct assignment_request *req)
 {
@@ -470,13 +512,8 @@ void assignment_fsm_start(struct gsm_subscriber_connection *conn, struct gsm_bts
 	if (check_requires_voice_stream(conn) < 0)
 		return;
 
-	/* There may be an already existing lchan, if yes, try to work with
-	 * the existing lchan.
-	 * If an RTP FSM is already set up for the lchan, Mode Modify is not yet supported -- see handling of
-	 * LCHAN_EV_REQUEST_MODE_MODIFY in lchan_fsm.c. To not break the lchan, do not even attempt to re-use an lchan
-	 * that already has an RTP stream set up, rather establish a new lchan (that transition is well implemented). */
-	if (reuse_existing_lchan(conn) && !conn->lchan->fi_rtp) {
-		/* The new lchan is the old lchan, keep new_lchan == NULL. */
+	if (!req->target_lchan && reuse_existing_lchan(conn)) {
+		/* The already existing lchan is suitable for this mode */
 		conn->assignment.new_lchan = NULL;
 
 		/* If the requested mode and the current TCH mode matches up, just send the
@@ -512,19 +549,48 @@ void assignment_fsm_start(struct gsm_subscriber_connection *conn, struct gsm_bts
 		return;
 	}
 
-	/* Try to allocate a new lchan in order of preference */
-	for (i = 0; i < req->n_ch_mode_rate; i++) {
-		conn->assignment.new_lchan = lchan_select_by_chan_mode(bts,
-		    req->ch_mode_rate_list[i].chan_mode, req->ch_mode_rate_list[i].chan_rate);
-		if (!conn->assignment.new_lchan)
-			continue;
-		LOG_ASSIGNMENT(conn, LOGL_DEBUG, "selected new lchan %s for mode[%d] = %s channel_rate=%d\n",
-			       gsm_lchan_name(conn->assignment.new_lchan),
-			       i, gsm48_chan_mode_name(req->ch_mode_rate_list[i].chan_mode),
-			       req->ch_mode_rate_list[i].chan_rate);
+	if (req->target_lchan) {
+		bool matching_mode;
 
-		conn->assignment.selected_ch_mode_rate = req->ch_mode_rate_list[i];
-		break;
+		/* The caller already picked a target lchan to assign to. No need to try re-using the current lchan or
+		 * picking a new one. */
+		if (!lchan_state_is(req->target_lchan, LCHAN_ST_UNUSED)) {
+			assignment_fail(GSM0808_CAUSE_NO_RADIO_RESOURCE_AVAILABLE,
+					"Assignment to lchan %s requested, but lchan is already in use (state=%s)\n",
+					gsm_lchan_name(req->target_lchan),
+					osmo_fsm_inst_state_name(req->target_lchan->fi));
+			return;
+		}
+
+		conn->assignment.new_lchan = req->target_lchan;
+		matching_mode = false;
+		for (i = 0; i < req->n_ch_mode_rate; i++) {
+			if (!lchan_type_compat_with_mode(conn->assignment.new_lchan->type, &req->ch_mode_rate_list[i]))
+				continue;
+			conn->assignment.selected_ch_mode_rate = req->ch_mode_rate_list[i];
+			matching_mode = true;
+		}
+		if (!matching_mode) {
+			assignment_fail(GSM0808_CAUSE_NO_RADIO_RESOURCE_AVAILABLE,
+					"Assignment to lchan %s requested, but lchan is not compatible\n",
+					gsm_lchan_name(req->target_lchan));
+			return;
+		}
+	} else {
+		/* Try to allocate a new lchan in order of preference */
+		for (i = 0; i < req->n_ch_mode_rate; i++) {
+			conn->assignment.new_lchan = lchan_select_by_chan_mode(bts,
+			    req->ch_mode_rate_list[i].chan_mode, req->ch_mode_rate_list[i].chan_rate);
+			if (!conn->assignment.new_lchan)
+				continue;
+			LOG_ASSIGNMENT(conn, LOGL_DEBUG, "selected new lchan %s for mode[%d] = %s channel_rate=%d\n",
+				       gsm_lchan_name(conn->assignment.new_lchan),
+				       i, gsm48_chan_mode_name(req->ch_mode_rate_list[i].chan_mode),
+				       req->ch_mode_rate_list[i].chan_rate);
+
+			conn->assignment.selected_ch_mode_rate = req->ch_mode_rate_list[i];
+			break;
+		}
 	}
 
 	/* Check whether the lchan allocation was successful or not and tear
