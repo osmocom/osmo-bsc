@@ -105,6 +105,8 @@ enum channel_rate {
 	CH_RATE_FULL,
 };
 
+enum channel_rate chan_t_to_chan_rate(enum gsm_chan_t chan_t);
+
 struct channel_mode_and_rate {
 	enum gsm48_chan_mode chan_mode;
 	enum channel_rate chan_rate;
@@ -137,7 +139,7 @@ struct assignment_request {
 
 	/* Rate/codec setting in preference order (need at least 1 !) */
 	int n_ch_mode_rate;
-	struct channel_mode_and_rate ch_mode_rate[3];
+	struct channel_mode_and_rate ch_mode_rate_list[3];
 };
 
 /* State of an ongoing Assignment, while the assignment_fsm is still busy. This serves as state separation to keep the
@@ -146,6 +148,7 @@ struct assignment_request {
 struct assignment_fsm_data {
 	struct assignment_request req;
 	bool requires_voice_stream;
+	struct channel_mode_and_rate selected_ch_mode_rate;
 
 	struct osmo_fsm_inst *fi;
 	struct gsm_lchan *new_lchan;
@@ -585,12 +588,8 @@ static inline const char *lchan_activate_mode_name(enum lchan_activate_for activ
 struct lchan_activate_info {
 	enum lchan_activate_for activ_for;
 	struct gsm_subscriber_connection *for_conn;
-	/* This always is for a specific lchan, so its lchan->type indicates full or half rate.
-	 * When a dyn TS was selected, the lchan->type has been set to the desired rate. */
-	enum gsm48_chan_mode chan_mode;
+	struct channel_mode_and_rate ch_mode_rate;
 	struct gsm_encr encr;
-	/* AMR config */
-	uint16_t s15_s0;
 	bool requires_voice_stream;
 	bool wait_before_switching_rtp; /*< true = requires LCHAN_EV_READY_TO_SWITCH_RTP */
 	uint16_t msc_assigned_cic;
@@ -613,11 +612,9 @@ static inline const char *lchan_modify_for_name(enum lchan_modify_for modify_for
 
 struct lchan_modify_info {
 	enum lchan_modify_for modify_for;
-	enum gsm48_chan_mode chan_mode;
+	struct channel_mode_and_rate ch_mode_rate;
 	bool requires_voice_stream;
 	uint16_t msc_assigned_cic;
-	/* AMR config */
-	uint16_t s15_s0;
 };
 
 struct gsm_lchan {
@@ -672,8 +669,6 @@ struct gsm_lchan {
 	enum gsm_chan_t type;
 	/* RSL channel mode */
 	enum rsl_cmod_spd rsl_cmode;
-	/* If TCH, traffic channel mode */
-	enum gsm48_chan_mode tch_mode;
 	enum lchan_csd_mode csd_mode;
 	/* Power levels for MS and BTS */
 	uint8_t bs_power;
@@ -684,8 +679,6 @@ struct gsm_lchan {
 	/* AMR bits */
 	uint8_t mr_ms_lv[7];
 	uint8_t mr_bts_lv[7];
-	/* AMR bits were based on these rate bits: */
-	uint16_t s15_s0;
 
 	/* Established data link layer services */
 	uint8_t sapis[8];
@@ -727,12 +720,9 @@ struct gsm_lchan {
 
 	struct gsm_subscriber_connection *conn;
 
-	/* Depending on the preferences that where submitted together with
-	 * the assignment and the current channel load, the BSC has to select
-	 * one of the offered codec/rates. The final selection by the BSC is
-	 * stored here and is used when sending the assignment complete or
-	 * when performing a handover procedure. */
-	struct channel_mode_and_rate ch_mode_rate;
+	/* After the Channel Activation ACK or RSL Mode Modify ACK is received, this reflects the actually used
+	 * channel_mode_and_rate. */
+	struct channel_mode_and_rate current_ch_mode_rate;
 };
 
 /* One Timeslot in a TRX */

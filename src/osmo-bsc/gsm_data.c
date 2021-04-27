@@ -685,6 +685,22 @@ enum gsm_phys_chan_config gsm_pchan_by_lchan_type(enum gsm_chan_t type)
 	}
 }
 
+enum channel_rate chan_t_to_chan_rate(enum gsm_chan_t chan_t)
+{
+	switch (chan_t) {
+	case GSM_LCHAN_SDCCH:
+		return CH_RATE_SDCCH;
+	case GSM_LCHAN_TCH_F:
+		return CH_RATE_FULL;
+	case GSM_LCHAN_TCH_H:
+		return CH_RATE_HALF;
+	default:
+		/* For other channel types, the channel_rate value is never used. It is fine to return an invalid value,
+		 * and callers don't actually need to check for this. */
+		return -1;
+	}
+}
+
 /* Can the timeslot in principle be used as this PCHAN kind? */
 bool ts_is_capable_of_pchan(struct gsm_bts_trx_ts *ts, enum gsm_phys_chan_config pchan)
 {
