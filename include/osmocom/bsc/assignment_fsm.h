@@ -41,6 +41,10 @@ enum assignment_fsm_event {
 
 void assignment_fsm_init();
 
+int reassignment_request_to_lchan(enum assign_for assign_for, struct gsm_lchan *lchan, struct gsm_lchan *to_lchan);
+int reassignment_request_to_chan_type(enum assign_for assign_for, struct gsm_lchan *lchan,
+				      enum gsm_chan_t new_lchan_type);
+
 void assignment_fsm_start(struct gsm_subscriber_connection *conn, struct gsm_bts *bts,
 			  struct assignment_request *req);
 void assignment_reset(struct gsm_subscriber_connection *conn);
