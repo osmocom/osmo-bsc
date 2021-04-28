@@ -681,12 +681,12 @@ static int select_codecs(struct assignment_request *req, struct gsm0808_channel_
 	case GSM0808_SPEECH_FULL_BM:
 		rc = match_codec_pref(&req->ch_mode_rate[nc], ct, &conn->codec_list, msc, bts,
 				      RATE_PREF_FR);
-		nc += (rc == 0);
+		nc += (rc == 0) ? 1 : 0;
 		break;
 	case GSM0808_SPEECH_HALF_LM:
 		rc = match_codec_pref(&req->ch_mode_rate[nc], ct, &conn->codec_list, msc, bts,
 				      RATE_PREF_HR);
-		nc += (rc == 0);
+		nc += (rc == 0) ? 1 : 0;
 		break;
 	case GSM0808_SPEECH_PERM:
 	case GSM0808_SPEECH_PERM_NO_CHANGE:
@@ -694,19 +694,19 @@ static int select_codecs(struct assignment_request *req, struct gsm0808_channel_
 	case GSM0808_SPEECH_FULL_PREF:
 		rc = match_codec_pref(&req->ch_mode_rate[nc], ct, &conn->codec_list, msc, bts,
 				      RATE_PREF_FR);
-		nc += (rc == 0);
+		nc += (rc == 0) ? 1 : 0;
 		rc = match_codec_pref(&req->ch_mode_rate[nc], ct, &conn->codec_list, msc, bts,
 				      RATE_PREF_HR);
-		nc += (rc == 0);
+		nc += (rc == 0) ? 1 : 0;
 		break;
 	case GSM0808_SPEECH_HALF_PREF_NO_CHANGE:
 	case GSM0808_SPEECH_HALF_PREF:
 		rc = match_codec_pref(&req->ch_mode_rate[nc], ct, &conn->codec_list, msc, bts,
 				      RATE_PREF_HR);
-		nc += (rc == 0);
+		nc += (rc == 0) ? 1 : 0;
 		rc = match_codec_pref(&req->ch_mode_rate[nc], ct, &conn->codec_list, msc, bts,
 				      RATE_PREF_FR);
-		nc += (rc == 0);
+		nc += (rc == 0) ? 1 : 0;
 		break;
 	default:
 		rc = -EINVAL;
