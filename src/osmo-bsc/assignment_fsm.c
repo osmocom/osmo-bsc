@@ -84,19 +84,17 @@ static const struct osmo_tdef_state_timeout assignment_fsm_timeouts[32] = {
 		rate_ctr_inc(&conn->network->bsc_ctrs->ctr[BSC_##counter]); \
 		if (bts) { \
 			rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_##counter]); \
-			if (BTS_##counter != BTS_CTR_ASSIGNMENT_NO_CHANNEL) { \
-				switch (conn->assignment.req.ch_mode_rate_list[0].chan_mode) { \
-				case GSM48_CMODE_SIGN: \
-					rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_##counter##_SIGN]); \
-					break; \
-				case GSM48_CMODE_SPEECH_V1: \
-				case GSM48_CMODE_SPEECH_EFR: \
-				case GSM48_CMODE_SPEECH_AMR: \
-					rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_##counter##_SPEECH]); \
-					break; \
-				default: \
-					break; \
-				} \
+			switch (conn->assignment.req.ch_mode_rate_list[0].chan_mode) { \
+			case GSM48_CMODE_SIGN: \
+				rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_##counter##_SIGN]); \
+				break; \
+			case GSM48_CMODE_SPEECH_V1: \
+			case GSM48_CMODE_SPEECH_EFR: \
+			case GSM48_CMODE_SPEECH_AMR: \
+				rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_##counter##_SPEECH]); \
+				break; \
+			default: \
+				break; \
 			} \
 		} \
 	} while(0)
@@ -458,8 +456,6 @@ void assignment_fsm_start(struct gsm_subscriber_connection *conn, struct gsm_bts
 	OSMO_ASSERT(!conn->assignment.fi);
 	OSMO_ASSERT(!conn->assignment.new_lchan);
 
-	assignment_count(CTR_ASSIGNMENT_ATTEMPTED);
-
 	fi = osmo_fsm_inst_alloc_child(&assignment_fsm, conn->fi, GSCON_EV_ASSIGNMENT_END);
 	OSMO_ASSERT(fi);
 	conn->assignment.fi = fi;
@@ -468,6 +464,8 @@ void assignment_fsm_start(struct gsm_subscriber_connection *conn, struct gsm_bts
 	/* Create a copy of the request data and use that copy from now on. */
 	conn->assignment.req = *req;
 	req = &conn->assignment.req;
+
+	assignment_count(CTR_ASSIGNMENT_ATTEMPTED);
 
 	/* Check if we need a voice stream. If yes, set the appropriate struct
 	 * members in conn */
@@ -544,18 +542,6 @@ void assignment_fsm_start(struct gsm_subscriber_connection *conn, struct gsm_bts
 	 * down the assignment in case of failure. */
 	if (!conn->assignment.new_lchan) {
 		assignment_count_result(CTR_ASSIGNMENT_NO_CHANNEL);
-		switch (req->ch_mode_rate_list[0].chan_mode) {
-		case GSM48_CMODE_SIGN:
-			rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_CTR_ASSIGNMENT_NO_CHANNEL_SIGN]);
-			break;
-		case GSM48_CMODE_SPEECH_V1:
-		case GSM48_CMODE_SPEECH_EFR:
-		case GSM48_CMODE_SPEECH_AMR:
-			rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_CTR_ASSIGNMENT_NO_CHANNEL_SPEECH]);
-			break;
-		default:
-			break;
-		}
 		assignment_fail(GSM0808_CAUSE_NO_RADIO_RESOURCE_AVAILABLE,
 				"BSSMAP Assignment Command:"
 				" No lchan available for: pref=%s:%s / alt1=%s:%s / alt2=%s:%s\n",
