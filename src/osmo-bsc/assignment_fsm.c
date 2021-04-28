@@ -430,11 +430,12 @@ static bool reuse_existing_lchan(struct gsm_subscriber_connection *conn)
 
 	/* Check if the currently existing lchan is compatible with the
 	 * preferred rate/codec. */
-	for (i = 0; i < req->n_ch_mode_rate; i++)
-		if (lchan_type_compat_with_mode(conn->lchan->type, &req->ch_mode_rate[i])) {
-			conn->lchan->ch_mode_rate = req->ch_mode_rate[i];
-			return true;
-		}
+	for (i = 0; i < req->n_ch_mode_rate; i++) {
+		if (!lchan_type_compat_with_mode(conn->lchan->type, &req->ch_mode_rate[i]))
+			continue;
+		conn->lchan->ch_mode_rate = req->ch_mode_rate[i];
+		return true;
+	}
 
 	return false;
 }
