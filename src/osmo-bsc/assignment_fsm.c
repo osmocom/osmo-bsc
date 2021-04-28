@@ -554,10 +554,10 @@ void assignment_fsm_start(struct gsm_subscriber_connection *conn, struct gsm_bts
 				" No lchan available for: pref=%s:%s / alt1=%s:%s / alt2=%s:%s\n",
 				gsm48_chan_mode_name(req->ch_mode_rate[0].chan_mode),
 				rate_names[req->ch_mode_rate[0].chan_rate],
-				req->n_ch_mode_rate >= 1 ? gsm48_chan_mode_name(req->ch_mode_rate[0].chan_mode) : "",
-				req->n_ch_mode_rate >= 1 ? rate_names[req->ch_mode_rate[0].chan_rate] : "",
-				req->n_ch_mode_rate >= 2 ? gsm48_chan_mode_name(req->ch_mode_rate[0].chan_mode) : "",
-				req->n_ch_mode_rate >= 2 ? rate_names[req->ch_mode_rate[0].chan_rate] : ""
+				req->n_ch_mode_rate > 1 ? gsm48_chan_mode_name(req->ch_mode_rate[1].chan_mode) : "",
+				req->n_ch_mode_rate > 1 ? rate_names[req->ch_mode_rate[1].chan_rate] : "",
+				req->n_ch_mode_rate > 2 ? gsm48_chan_mode_name(req->ch_mode_rate[2].chan_mode) : "",
+				req->n_ch_mode_rate > 2 ? rate_names[req->ch_mode_rate[2].chan_rate] : ""
 		);
 		return;
 	}
