@@ -401,7 +401,7 @@ static int check_requires_voice_stream(struct gsm_subscriber_connection *conn)
 			requires_voice_pref = requires_voice_alt;
 		else if (requires_voice_alt != requires_voice_pref) {
 			assignment_fail(GSM0808_CAUSE_REQ_CODEC_TYPE_OR_CONFIG_NOT_SUPP,
-					"Inconsistent channel modes: %s != %s",
+					"Requested a mix of Signalling and non-Signalling channel modes: %s != %s",
 					gsm48_chan_mode_name(req->ch_mode_rate[0].chan_mode),
 					gsm48_chan_mode_name(req->ch_mode_rate[i].chan_mode));
 			return -EINVAL;
