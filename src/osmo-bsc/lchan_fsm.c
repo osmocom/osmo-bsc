@@ -546,51 +546,23 @@ static int mr_config_filter(struct gsm48_multi_rate_conf *mr_conf_result,
 	return 0;
 }
 
-static int mr_config_render_lv(uint8_t *mr_ms_lv, uint8_t *mr_bts_lv,
-			       const struct gsm48_multi_rate_conf *mr_conf,
-			       const struct amr_multirate_conf *amr_mrc,
-			       const struct gsm_lchan *logging)
-{
-	if (gsm48_multirate_config(mr_ms_lv, mr_conf, amr_mrc->ms_mode, amr_mrc->num_modes)) {
-		LOG_LCHAN(logging, LOGL_ERROR, "can not encode multirate configuration (MS)\n");
-		return -EINVAL;
-	}
-	if (gsm48_multirate_config(mr_bts_lv, mr_conf, amr_mrc->bts_mode, amr_mrc->num_modes)) {
-		LOG_LCHAN(logging, LOGL_ERROR, "can not encode multirate configuration (BTS)\n");
-		return -EINVAL;
-	}
-	return 0;
-}
-
 /* Configure the multirate setting on this channel. */
-static int lchan_mr_config(struct gsm_lchan *lchan, uint16_t s15_s0)
+static int lchan_mr_config(struct gsm48_multi_rate_conf *mr_conf, const struct gsm_lchan *lchan, uint16_t s15_s0)
 {
 	struct gsm_bts *bts = lchan->ts->trx->bts;
 	bool full_rate = lchan->type == GSM_LCHAN_TCH_F;
 	struct amr_multirate_conf *amr_mrc = full_rate ? &bts->mr_full : &bts->mr_half;
 	struct gsm48_multi_rate_conf *mr_filter_msc = NULL;
-	struct gsm48_multi_rate_conf mr_conf;
-	int rc;
 
 	/* If activated for VTY, there may not be a conn indicating an MSC AMR configuration. */
 	if (lchan->conn && lchan->conn->sccp.msc)
 		mr_filter_msc = &lchan->conn->sccp.msc->amr_conf;
 
-	rc = mr_config_filter(&mr_conf,
-			      full_rate,
-			      amr_mrc, mr_filter_msc,
-			      s15_s0,
-			      lchan);
-	if (rc)
-		return rc;
-
-	/* FIXME: this actually modifies the lchan->mr_ms_lv and ->mr_bts_lv before an ACK for these AMR bits has been
-	 * received. Until an ACK is received, all state should live in lchan->activate.* or lchan->modify.* ONLY. */
-	rc = mr_config_render_lv(lchan->mr_ms_lv, lchan->mr_bts_lv, &mr_conf, amr_mrc, lchan);
-	if (rc)
-		return rc;
-
-	return 0;
+	return mr_config_filter(mr_conf,
+				full_rate,
+				amr_mrc, mr_filter_msc,
+				s15_s0,
+				lchan);
 }
 
 static void lchan_fsm_unused(struct osmo_fsm_inst *fi, uint32_t event, void *data)
@@ -655,7 +627,7 @@ static void lchan_fsm_wait_ts_ready_onenter(struct osmo_fsm_inst *fi, uint32_t p
 	}
 
 	if (info->ch_mode_rate.chan_mode == GSM48_CMODE_SPEECH_AMR) {
-		if (lchan_mr_config(lchan, info->ch_mode_rate.s15_s0) < 0) {
+		if (lchan_mr_config(&lchan->activate.mr_conf_filtered, lchan, info->ch_mode_rate.s15_s0) < 0) {
 			lchan_fail("Can not generate multirate configuration IE\n");
 			return;
 		}
@@ -813,6 +785,7 @@ static void lchan_fsm_post_activ_ack(struct osmo_fsm_inst *fi)
 	struct gsm_lchan *lchan = lchan_fi_lchan(fi);
 
 	lchan->current_ch_mode_rate = lchan->activate.info.ch_mode_rate;
+	lchan->current_mr_conf = lchan->activate.mr_conf_filtered;
 	LOG_LCHAN(lchan, LOGL_INFO, "Rx Activ ACK %s\n",
 		  gsm48_chan_mode_name(lchan->current_ch_mode_rate.chan_mode));
 
@@ -984,6 +957,7 @@ static void lchan_fsm_wait_rsl_chan_mode_modify_ack(struct osmo_fsm_inst *fi, ui
 	case LCHAN_EV_RSL_CHAN_MODE_MODIFY_ACK:
 		/* The Channel Mode Modify was ACKed, now the requested values become the accepted and used values. */
 		lchan->current_ch_mode_rate = lchan->modify.info.ch_mode_rate;
+		lchan->current_mr_conf = lchan->modify.mr_conf_filtered;
 
 		if (lchan->modify.info.requires_voice_stream
 		    && !lchan->fi_rtp) {
@@ -1136,7 +1110,8 @@ static void lchan_fsm_established(struct osmo_fsm_inst *fi, uint32_t event, void
 		use_mgwep_ci = lchan_use_mgw_endpoint_ci_bts(lchan);
 
 		if (modif_info->ch_mode_rate.chan_mode == GSM48_CMODE_SPEECH_AMR) {
-			if (lchan_mr_config(lchan, modif_info->ch_mode_rate.s15_s0) < 0) {
+			if (lchan_mr_config(&lchan->modify.mr_conf_filtered, lchan, modif_info->ch_mode_rate.s15_s0)
+			    < 0) {
 				lchan_fail("Can not generate multirate configuration IE\n");
 				return;
 			}

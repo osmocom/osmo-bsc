@@ -463,21 +463,11 @@ static int channel_mode_from_lchan(struct rsl_ie_chan_mode *cm,
 	return 0;
 }
 
-static void mr_config_for_bts(struct gsm_lchan *lchan, struct msgb *msg,
-			      const struct channel_mode_and_rate *ch_mode_rate)
+static int put_mr_config_for_bts(struct msgb *msg, const struct gsm48_multi_rate_conf *mr_conf_filtered,
+				 const struct amr_multirate_conf *mr_modes)
 {
-	uint8_t len;
-
-	if (ch_mode_rate->chan_mode != GSM48_CMODE_SPEECH_AMR)
-		return;
-
-	len = lchan->mr_bts_lv[0];
-	if (!len) {
-		LOG_LCHAN(lchan, LOGL_ERROR, "Missing Multirate Config (len is zero)\n");
-		return;
-	}
-	msgb_tlv_put(msg, RSL_IE_MR_CONFIG, lchan->mr_bts_lv[0],
-		     lchan->mr_bts_lv + 1);
+	msgb_put_u8(msg, RSL_IE_MR_CONFIG);
+	return gsm48_multirate_config(msg, mr_conf_filtered, mr_modes->bts_mode, mr_modes->num_modes);
 }
 
 /* indicate FACCH/SACCH Repetition to be performed by BTS,
@@ -603,7 +593,16 @@ int rsl_tx_chan_activ(struct gsm_lchan *lchan, uint8_t act_type, uint8_t ho_ref)
 	add_power_control_params(msg, RSL_IE_BS_POWER_PARAM, lchan);
 	add_power_control_params(msg, RSL_IE_MS_POWER_PARAM, lchan);
 
-	mr_config_for_bts(lchan, msg, &lchan->activate.info.ch_mode_rate);
+	if (lchan->activate.info.ch_mode_rate.chan_mode == GSM48_CMODE_SPEECH_AMR) {
+		rc = put_mr_config_for_bts(msg, &lchan->activate.mr_conf_filtered,
+					   (lchan->type == GSM_LCHAN_TCH_F) ? &bts->mr_full : &bts->mr_half);
+		if (rc) {
+			LOG_LCHAN(lchan, LOGL_ERROR, "Cannot encode MultiRate Configuration IE\n");
+			msgb_free(msg);
+			return rc;
+		}
+	}
+
 	rep_acch_cap_for_bts(lchan, msg);
 
 	msg->dst = trx->rsl_link;
@@ -633,6 +632,7 @@ int rsl_chan_mode_modify_req(struct gsm_lchan *lchan)
 
 	uint8_t chan_nr = gsm_lchan2chan_nr(lchan);
 	struct rsl_ie_chan_mode cm;
+	struct gsm_bts *bts = lchan->ts->trx->bts;
 
 	rc = channel_mode_from_lchan(&cm, lchan, &lchan->modify.info.ch_mode_rate);
 	if (rc < 0)
@@ -653,7 +653,16 @@ int rsl_chan_mode_modify_req(struct gsm_lchan *lchan)
 			msgb_tlv_put(msg, RSL_IE_ENCR_INFO, rc, encr_info);
 	}
 
-	mr_config_for_bts(lchan, msg, &lchan->modify.info.ch_mode_rate);
+	if (lchan->modify.info.ch_mode_rate.chan_mode == GSM48_CMODE_SPEECH_AMR) {
+		rc = put_mr_config_for_bts(msg, &lchan->modify.mr_conf_filtered,
+					   (lchan->type == GSM_LCHAN_TCH_F) ? &bts->mr_full : &bts->mr_half);
+		if (rc) {
+			LOG_LCHAN(lchan, LOGL_ERROR, "Cannot encode MultiRate Configuration IE\n");
+			msgb_free(msg);
+			return rc;
+		}
+	}
+
         rep_acch_cap_for_bts(lchan, msg);
 
 	msg->dst = lchan->ts->trx->rsl_link;
