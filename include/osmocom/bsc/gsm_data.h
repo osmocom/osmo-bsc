@@ -668,7 +668,6 @@ struct gsm_lchan {
 	/* The logical channel type */
 	enum gsm_chan_t type;
 	/* RSL channel mode */
-	enum rsl_cmod_spd rsl_cmode;
 	enum lchan_csd_mode csd_mode;
 	/* Power levels for MS and BTS */
 	uint8_t bs_power;
@@ -1389,5 +1388,7 @@ struct gsm_power_ctrl_params {
 };
 
 extern const struct gsm_power_ctrl_params power_ctrl_params_def;
+
+enum rsl_cmod_spd chan_mode_to_rsl_cmod_spd(enum gsm48_chan_mode chan_mode);
 
 #endif /* _GSM_DATA_H */
