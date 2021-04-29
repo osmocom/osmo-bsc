@@ -634,6 +634,7 @@ struct gsm_lchan {
 
 	struct {
 		struct lchan_activate_info info;
+		struct gsm48_multi_rate_conf mr_conf_filtered;
 		bool activ_ack; /*< true as soon as RSL Chan Activ Ack is received */
 		bool immediate_assignment_sent;
 		/*! This flag ensures that when an lchan activation has succeeded, and we have already
@@ -645,6 +646,7 @@ struct gsm_lchan {
 
 	struct {
 		struct lchan_modify_info info;
+		struct gsm48_multi_rate_conf mr_conf_filtered;
 		bool concluded;
 	} modify;
 
@@ -674,10 +676,6 @@ struct gsm_lchan {
 	uint8_t ms_power;
 	/* Encryption information */
 	struct gsm_encr encr;
-
-	/* AMR bits */
-	uint8_t mr_ms_lv[7];
-	uint8_t mr_bts_lv[7];
 
 	/* Established data link layer services */
 	uint8_t sapis[8];
@@ -722,6 +720,7 @@ struct gsm_lchan {
 	/* After the Channel Activation ACK or RSL Mode Modify ACK is received, this reflects the actually used
 	 * channel_mode_and_rate. */
 	struct channel_mode_and_rate current_ch_mode_rate;
+	struct gsm48_multi_rate_conf current_mr_conf;
 };
 
 /* One Timeslot in a TRX */

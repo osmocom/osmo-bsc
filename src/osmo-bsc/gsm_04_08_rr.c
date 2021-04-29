@@ -232,11 +232,11 @@ int get_reason_by_chreq(uint8_t ra, int neci)
 	return GSM_CHREQ_REASON_OTHER;
 }
 
-static void mr_config_for_ms(struct gsm_lchan *lchan, struct msgb *msg)
+static int put_mr_config_for_ms(struct msgb *msg, const struct gsm48_multi_rate_conf *mr_conf_filtered,
+				const struct amr_multirate_conf *mr_modes)
 {
-	if (lchan->current_ch_mode_rate.chan_mode == GSM48_CMODE_SPEECH_AMR)
-		msgb_tlv_put(msg, GSM48_IE_MUL_RATE_CFG, lchan->mr_ms_lv[0],
-			lchan->mr_ms_lv + 1);
+	msgb_put_u8(msg, GSM48_IE_MUL_RATE_CFG);
+	return gsm48_multirate_config(msg, mr_conf_filtered, mr_modes->ms_mode, mr_modes->num_modes);
 }
 
 #define CELL_SEL_IND_AFTER_REL_EARCFN_ENTRY (1+16+4+1+1)
@@ -397,12 +397,12 @@ static void gsm48_cell_desc(struct gsm48_cell_desc *cd,
 }
 
 /*! \brief Encode a TS 04.08 multirate config LV according to 10.5.2.21aa.
- *  \param[out] lv caller-allocated buffer of 7 bytes. First octet is is length.
+ *  \param[out] msg msgb to append to.
  *  \param[in] mr_conf multi-rate configuration to encode (selected modes).
  *  \param[in] modes array describing the AMR modes.
  *  \param[in] num_modes length of the modes array.
  *  \returns 0 on success, -EINVAL on failure. */
-int gsm48_multirate_config(uint8_t *lv,
+int gsm48_multirate_config(struct msgb *msg,
 			   const struct gsm48_multi_rate_conf *mr_conf,
 			   const struct amr_mode *modes, unsigned int num_modes)
 {
@@ -413,6 +413,8 @@ int gsm48_multirate_config(uint8_t *lv,
 	bool mode_valid;
 	uint8_t *gsm48_ie = (uint8_t *) mr_conf;
 	const struct amr_mode *modes_selected[4];
+	uint8_t *len;
+	uint8_t *data;
 
 	/* Check if modes for consistency (order and duplicates) */
 	for (i = 0; i < num_modes; i++) {
@@ -482,28 +484,49 @@ int gsm48_multirate_config(uint8_t *lv,
 
 	/* When the caller is not interested in any result, skip the actual
 	 * composition of the IE (dry run) */
-	if (!lv)
+	if (!msg)
 		return 0;
 
 	/* Compose output buffer */
-	lv[0] = (num == 1) ? 2 : (num + 2);
-	memcpy(lv + 1, gsm48_ie, 2);
+	/* length */
+	len = msgb_put(msg, 1);
+
+	/* Write octet 3 (Multirate speech version, NSCB, ICMI, spare, Start mode)
+	 * and octet 4 (Set of AMR codec modes) */
+	data = msgb_put(msg, 2);
+	memcpy(data, gsm48_ie, 2);
 	if (num == 1)
-		return 0;
+		goto return_msg;
 
-	lv[3] = modes_selected[0]->threshold & 0x3f;
-	lv[4] = modes_selected[0]->hysteresis << 4;
+	/* more than 1 mode: write octet 5 and 6: threshold 1 and hysteresis 1 */
+	data = msgb_put(msg, 2);
+	data[0] = modes_selected[0]->threshold & 0x3f;
+	data[1] = modes_selected[0]->hysteresis << 4;
 	if (num == 2)
-		return 0;
-	lv[4] |= (modes_selected[1]->threshold & 0x3f) >> 2;
-	lv[5] = modes_selected[1]->threshold << 6;
-	lv[5] |= (modes_selected[1]->hysteresis & 0x0f) << 2;
-	if (num == 3)
-		return 0;
-	lv[5] |= (modes_selected[2]->threshold & 0x3f) >> 4;
-	lv[6] = modes_selected[2]->threshold << 4;
-	lv[6] |= modes_selected[2]->hysteresis & 0x0f;
+		goto return_msg;
 
+	/* more than 2 modes: complete octet 6 and add octet 7: threshold 2 and hysteresis 2.
+	 * Threshold 2 starts in octet 6. */
+	data[1] |= (modes_selected[1]->threshold & 0x3f) >> 2;
+	/* octet 7 */
+	data = msgb_put(msg, 1);
+	data[0] = modes_selected[1]->threshold << 6;
+	data[0] |= (modes_selected[1]->hysteresis & 0x0f) << 2;
+	if (num == 3)
+		goto return_msg;
+
+	/* four modes: complete octet 7 and add octet 8: threshold 3 and hysteresis 3.
+	 * Threshold 3 starts in octet 7. */
+	data[0] |= (modes_selected[2]->threshold & 0x3f) >> 4;
+	/* octet 8 */
+	data = msgb_put(msg, 1);
+	data[0] = modes_selected[2]->threshold << 4;
+	data[0] |= modes_selected[2]->hysteresis & 0x0f;
+
+return_msg:
+	/* Place written len in the IE length field. msg->tail points one byte after the last data octet, len points at
+	 * the L octet of the TLV. */
+	*len = (msg->tail - 1) - len;
 	return 0;
 }
 
@@ -516,6 +539,7 @@ struct msgb *gsm48_make_ho_cmd(struct gsm_lchan *new_lchan, uint8_t power_comman
 	struct gsm48_hdr *gh = (struct gsm48_hdr *) msgb_put(msg, sizeof(*gh));
 	struct gsm48_ho_cmd *ho =
 		(struct gsm48_ho_cmd *) msgb_put(msg, sizeof(*ho));
+	struct gsm_bts *bts = new_lchan->ts->trx->bts;
 
 	gh->proto_discr = GSM48_PDISC_RR;
 	gh->msg_type = GSM48_MT_RR_HANDO_CMD;
@@ -548,9 +572,14 @@ struct msgb *gsm48_make_ho_cmd(struct gsm_lchan *new_lchan, uint8_t power_comman
 	}
 
 	/* in case of multi rate we need to attach a config */
-	if (new_lchan->current_ch_mode_rate.chan_mode == GSM48_CMODE_SPEECH_AMR)
-		msgb_tlv_put(msg, GSM48_IE_MUL_RATE_CFG, new_lchan->mr_ms_lv[0],
-			new_lchan->mr_ms_lv + 1);
+	if (new_lchan->current_ch_mode_rate.chan_mode == GSM48_CMODE_SPEECH_AMR) {
+		if (put_mr_config_for_ms(msg, &new_lchan->current_mr_conf,
+					 (new_lchan->type == GSM_LCHAN_TCH_F) ? &bts->mr_full : &bts->mr_half)) {
+			LOG_LCHAN(new_lchan, LOGL_ERROR, "Cannot encode MultiRate Configuration IE\n");
+			msgb_free(msg);
+			return NULL;
+		}
+	}
 
 	return msg;
 }
@@ -572,9 +601,10 @@ int gsm48_send_rr_ass_cmd(struct gsm_lchan *current_lchan, struct gsm_lchan *new
 	struct gsm48_hdr *gh = (struct gsm48_hdr *) msgb_put(msg, sizeof(*gh));
 	struct gsm48_ass_cmd *ass =
 		(struct gsm48_ass_cmd *) msgb_put(msg, sizeof(*ass));
+	struct gsm_bts *bts = new_lchan->ts->trx->bts;
 
 	DEBUGP(DRR, "-> ASSIGNMENT COMMAND tch_mode=0x%02x\n",
-	       current_lchan->conn->assignment.selected_ch_mode_rate.chan_mode);
+	       new_lchan->current_ch_mode_rate.chan_mode);
 
 	msg->lchan = current_lchan;
 	gh->proto_discr = GSM48_PDISC_RR;
@@ -593,14 +623,13 @@ int gsm48_send_rr_ass_cmd(struct gsm_lchan *current_lchan, struct gsm_lchan *new
 
 	/* Cell Channel Description (freq. hopping), TV (see 3GPP TS 44.018, 10.5.2.1b) */
 	if (new_lchan->ts->hopping.enabled) {
-		const struct gsm48_system_information_type_1 *si1 = \
-			GSM_BTS_SI(new_lchan->ts->trx->bts, 1);
+		const struct gsm48_system_information_type_1 *si1 = GSM_BTS_SI(bts, 1);
 		msgb_tv_fixed_put(msg, GSM48_IE_CELL_CH_DESC,
 				  sizeof(si1->cell_channel_description),
 				  si1->cell_channel_description);
 	}
 
-	msgb_tv_put(msg, GSM48_IE_CHANMODE_1, current_lchan->conn->assignment.selected_ch_mode_rate.chan_mode);
+	msgb_tv_put(msg, GSM48_IE_CHANMODE_1, new_lchan->current_ch_mode_rate.chan_mode);
 
 	/* Mobile Allocation (freq. hopping), TLV (see 3GPP TS 44.018, 10.5.2.21) */
 	if (new_lchan->ts->hopping.enabled) {
@@ -609,7 +638,15 @@ int gsm48_send_rr_ass_cmd(struct gsm_lchan *current_lchan, struct gsm_lchan *new
 	}
 
 	/* in case of multi rate we need to attach a config */
-	mr_config_for_ms(new_lchan, msg);
+	if (new_lchan->current_ch_mode_rate.chan_mode == GSM48_CMODE_SPEECH_AMR) {
+		int rc = put_mr_config_for_ms(msg, &new_lchan->current_mr_conf,
+					      (new_lchan->type == GSM_LCHAN_TCH_F) ? &bts->mr_full : &bts->mr_half);
+		if (rc) {
+			LOG_LCHAN(current_lchan, LOGL_ERROR, "Cannot encode MultiRate Configuration IE\n");
+			msgb_free(msg);
+			return rc;
+		}
+	}
 
 	return gsm48_sendmsg(msg);
 }
@@ -643,6 +680,7 @@ int gsm48_lchan_modify(struct gsm_lchan *lchan, uint8_t mode)
 	struct gsm48_hdr *gh = (struct gsm48_hdr *) msgb_put(msg, sizeof(*gh));
 	struct gsm48_chan_mode_modify *cmm =
 		(struct gsm48_chan_mode_modify *) msgb_put(msg, sizeof(*cmm));
+	struct gsm_bts *bts = lchan->ts->trx->bts;
 
 	DEBUGP(DRR, "-> CHANNEL MODE MODIFY mode=0x%02x\n", mode);
 
@@ -656,7 +694,15 @@ int gsm48_lchan_modify(struct gsm_lchan *lchan, uint8_t mode)
 	cmm->mode = mode;
 
 	/* in case of multi rate we need to attach a config */
-	mr_config_for_ms(lchan, msg);
+	if (lchan->modify.info.ch_mode_rate.chan_mode == GSM48_CMODE_SPEECH_AMR) {
+		int rc = put_mr_config_for_ms(msg, &lchan->modify.mr_conf_filtered,
+					      (lchan->type == GSM_LCHAN_TCH_F) ? &bts->mr_full : &bts->mr_half);
+		if (rc) {
+			LOG_LCHAN(lchan, LOGL_ERROR, "Cannot encode MultiRate Configuration IE\n");
+			msgb_free(msg);
+			return rc;
+		}
+	}
 
 	return gsm48_sendmsg(msg);
 }
