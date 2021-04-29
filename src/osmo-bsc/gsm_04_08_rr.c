@@ -678,24 +678,6 @@ int gsm48_rx_rr_modif_ack(struct msgb *msg)
 		return -1;
 	}
 
-	/* update the channel type */
-	switch (mod->mode) {
-	case GSM48_CMODE_SIGN:
-		msg->lchan->rsl_cmode = RSL_CMOD_SPD_SIGN;
-		break;
-	case GSM48_CMODE_SPEECH_V1:
-	case GSM48_CMODE_SPEECH_EFR:
-	case GSM48_CMODE_SPEECH_AMR:
-		msg->lchan->rsl_cmode = RSL_CMOD_SPD_SPEECH;
-		break;
-	case GSM48_CMODE_DATA_14k5:
-	case GSM48_CMODE_DATA_12k0:
-	case GSM48_CMODE_DATA_6k0:
-	case GSM48_CMODE_DATA_3k6:
-		msg->lchan->rsl_cmode = RSL_CMOD_SPD_DATA;
-		break;
-	}
-
 	return 0;
 }
 

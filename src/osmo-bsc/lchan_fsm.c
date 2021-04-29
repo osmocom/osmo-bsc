@@ -653,24 +653,6 @@ static void lchan_fsm_wait_ts_ready_onenter(struct osmo_fsm_inst *fi, uint32_t p
 		}
 	}
 
-	switch (info->ch_mode_rate.chan_mode) {
-
-	case GSM48_CMODE_SIGN:
-		lchan->rsl_cmode = RSL_CMOD_SPD_SIGN;
-		break;
-
-	case GSM48_CMODE_SPEECH_V1:
-	case GSM48_CMODE_SPEECH_EFR:
-	case GSM48_CMODE_SPEECH_AMR:
-		lchan->rsl_cmode = RSL_CMOD_SPD_SPEECH;
-		break;
-
-	default:
-		lchan_fail("Not implemented: cannot activate for chan mode %s",
-			   gsm48_chan_mode_name(info->ch_mode_rate.chan_mode));
-		return;
-	}
-
 	use_mgwep_ci = lchan_use_mgw_endpoint_ci_bts(lchan);
 
 	LOG_LCHAN(lchan, LOGL_INFO,

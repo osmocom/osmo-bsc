@@ -1059,3 +1059,22 @@ const struct gsm_power_ctrl_params power_ctrl_params_def = {
 		.h_reqt = 6, /* TODO: investigate a reasonable default value */
 	},
 };
+
+enum rsl_cmod_spd chan_mode_to_rsl_cmod_spd(enum gsm48_chan_mode chan_mode)
+{
+	switch (chan_mode) {
+	case GSM48_CMODE_SIGN:
+		return RSL_CMOD_SPD_SIGN;
+	case GSM48_CMODE_SPEECH_V1:
+	case GSM48_CMODE_SPEECH_EFR:
+	case GSM48_CMODE_SPEECH_AMR:
+		return RSL_CMOD_SPD_SPEECH;
+	case GSM48_CMODE_DATA_14k5:
+	case GSM48_CMODE_DATA_12k0:
+	case GSM48_CMODE_DATA_6k0:
+	case GSM48_CMODE_DATA_3k6:
+		return RSL_CMOD_SPD_DATA;
+	default:
+		return -EINVAL;
+	}
+}
