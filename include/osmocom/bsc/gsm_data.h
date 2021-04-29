@@ -107,10 +107,24 @@ enum channel_rate {
 
 enum channel_rate chan_t_to_chan_rate(enum gsm_chan_t chan_t);
 
+enum lchan_csd_mode {
+	LCHAN_CSD_M_NT,
+	LCHAN_CSD_M_T_1200_75,
+	LCHAN_CSD_M_T_600,
+	LCHAN_CSD_M_T_1200,
+	LCHAN_CSD_M_T_2400,
+	LCHAN_CSD_M_T_9600,
+	LCHAN_CSD_M_T_14400,
+	LCHAN_CSD_M_T_29000,
+	LCHAN_CSD_M_T_32000,
+};
+
 struct channel_mode_and_rate {
 	enum gsm48_chan_mode chan_mode;
 	enum channel_rate chan_rate;
 	uint16_t s15_s0;
+	/* only used for GSM48_CMODE_DATA_* */
+	enum lchan_csd_mode csd_mode;
 };
 
 enum assign_for {
@@ -499,18 +513,6 @@ struct amr_multirate_conf {
 };
 /* /BTS ONLY */
 
-enum lchan_csd_mode {
-	LCHAN_CSD_M_NT,
-	LCHAN_CSD_M_T_1200_75,
-	LCHAN_CSD_M_T_600,
-	LCHAN_CSD_M_T_1200,
-	LCHAN_CSD_M_T_2400,
-	LCHAN_CSD_M_T_9600,
-	LCHAN_CSD_M_T_14400,
-	LCHAN_CSD_M_T_29000,
-	LCHAN_CSD_M_T_32000,
-};
-
 /* State of the SAPIs in the lchan */
 enum lchan_sapi_state {
 	LCHAN_SAPI_S_NONE,
@@ -667,8 +669,6 @@ struct gsm_lchan {
 
 	/* The logical channel type */
 	enum gsm_chan_t type;
-	/* RSL channel mode */
-	enum lchan_csd_mode csd_mode;
 	/* Power levels for MS and BTS */
 	uint8_t bs_power;
 	uint8_t ms_power;

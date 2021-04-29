@@ -405,7 +405,7 @@ static int channel_mode_from_lchan(struct rsl_ie_chan_mode *cm,
 	case GSM48_CMODE_DATA_14k5:
 	case GSM48_CMODE_DATA_12k0:
 	case GSM48_CMODE_DATA_6k0:
-		switch (lchan->csd_mode) {
+		switch (ch_mode_rate->csd_mode) {
 		case LCHAN_CSD_M_NT:
 			/* non-transparent CSD with RLP */
 			switch (ch_mode_rate->chan_mode) {
@@ -451,9 +451,7 @@ static int channel_mode_from_lchan(struct rsl_ie_chan_mode *cm,
 			cm->chan_rate = RSL_CMOD_CSD_T_32000;
 			break;
 		default:
-			LOGP(DRSL, LOGL_ERROR,
-			     "unsupported lchan->csd_mode %u\n",
-			     lchan->csd_mode);
+			LOGP(DRSL, LOGL_ERROR, "unsupported csd_mode %u\n", ch_mode_rate->csd_mode);
 			return -EINVAL;
 		}
 		break;
