@@ -810,7 +810,7 @@ static void test_gsm48_multirate_config()
 	rc = gsm48_multirate_config(lv, gsm48_ie, mr.ms_mode, 4);
 	OSMO_ASSERT(rc == 0);
 	printf("gsm48_multirate_config(): rc=%i, lv=%s\n", rc,
-	       osmo_hexdump_nospc(lv, lv[0]));
+	       osmo_hexdump_nospc(lv, 1 + lv[0]));
 
 	/* Test #2: 4 active set members, but wrong mode order: */
 	mr.ms_mode[3].mode = 2;
@@ -832,7 +832,7 @@ static void test_gsm48_multirate_config()
 	rc = gsm48_multirate_config(lv, gsm48_ie, mr.ms_mode, 3);
 	OSMO_ASSERT(rc == 0);
 	printf("gsm48_multirate_config(): rc=%i, lv=%s\n", rc,
-	       osmo_hexdump_nospc(lv, lv[0]));
+	       osmo_hexdump_nospc(lv, 1 + lv[0]));
 
 	/* Test #4: 3 active set members, but wrong mode order: */
 	mr.ms_mode[0].mode = 2;
@@ -852,7 +852,7 @@ static void test_gsm48_multirate_config()
 	rc = gsm48_multirate_config(lv, gsm48_ie, mr.ms_mode, 2);
 	OSMO_ASSERT(rc == 0);
 	printf("gsm48_multirate_config(): rc=%i, lv=%s\n", rc,
-	       osmo_hexdump_nospc(lv, lv[0]));
+	       osmo_hexdump_nospc(lv, 1 + lv[0]));
 
 	/* Test #6: 2 active set members, but wrong mode order: */
 	mr.ms_mode[1].mode = 2;
@@ -870,7 +870,7 @@ static void test_gsm48_multirate_config()
 	rc = gsm48_multirate_config(lv, gsm48_ie, mr.ms_mode, 1);
 	OSMO_ASSERT(rc == 0);
 	printf("gsm48_multirate_config(): rc=%i, lv=%s\n", rc,
-	       osmo_hexdump_nospc(lv, lv[0]));
+	       osmo_hexdump_nospc(lv, 1 + lv[0]));
 
 	/* Test #8: 0 active set members: */
 	mr.ms_mode[0].mode = 0;
