@@ -600,7 +600,7 @@ bool gscon_connect_mgw_to_msc(struct gsm_subscriber_connection *conn,
 
 	ci = conn->user_plane.mgw_endpoint_ci_msc;
 	if (ci) {
-		const struct mgcp_conn_peer *prev_crcx_info = osmo_mgcpc_ep_ci_get_rtp_info(ci);
+		const struct mgcp_conn_peer *prev_crcx_info = osmo_mgcpc_ep_ci_get_remote_rtp_info(ci);
 
 		if (!conn->user_plane.mgw_endpoint) {
 			LOGPFSML(conn->fi, LOGL_ERROR, "Internal error: conn has a CI but no endpoint\n");
@@ -618,6 +618,8 @@ bool gscon_connect_mgw_to_msc(struct gsm_subscriber_connection *conn,
 			LOGPFSML(conn->fi, LOGL_DEBUG,
 				 "MSC side MGW endpoint ci is already configured to %s\n",
 				 osmo_mgcpc_ep_ci_name(ci));
+			/* Immediately dispatch the success event */
+			osmo_fsm_inst_dispatch(notify, event_success, notify_data);
 			return true;
 		}
 
