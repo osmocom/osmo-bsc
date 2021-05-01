@@ -134,13 +134,17 @@ void assignment_reset(struct gsm_subscriber_connection *conn)
 
 static void on_assignment_failure(struct gsm_subscriber_connection *conn)
 {
-	struct msgb *resp = gsm0808_create_assignment_failure(conn->assignment.failure_cause, NULL);
+	/* Send Assignment Failure to MSC only when the assignment was requested via BSSAP. Do not send anything to the
+	 * MSC if re-assignment was requested for congestion resolution, for VAMOS multiplexing, or by VTY. */
+	if (conn->assignment.req.assign_for == ASSIGN_FOR_BSSMAP_REQ) {
+		struct msgb *resp = gsm0808_create_assignment_failure(conn->assignment.failure_cause, NULL);
 
-	if (!resp) {
-		LOG_ASSIGNMENT(conn, LOGL_ERROR, "Unable to compose BSSMAP Assignment Failure message\n");
-	} else {
-		rate_ctr_inc(&conn->sccp.msc->msc_ctrs->ctr[MSC_CTR_BSSMAP_TX_DT1_ASSIGMENT_FAILURE]);
-		gscon_sigtran_send(conn, resp);
+		if (!resp) {
+			LOG_ASSIGNMENT(conn, LOGL_ERROR, "Unable to compose BSSMAP Assignment Failure message\n");
+		} else {
+			rate_ctr_inc(&conn->sccp.msc->msc_ctrs->ctr[MSC_CTR_BSSMAP_TX_DT1_ASSIGMENT_FAILURE]);
+			gscon_sigtran_send(conn, resp);
+		}
 	}
 
 	/* If assignment failed as early as in assignment_fsm_start(), there may not be an fi yet. */
@@ -259,15 +263,17 @@ static void assignment_success(struct gsm_subscriber_connection *conn)
 	}
 	conn->assignment.new_lchan = NULL;
 
-	send_assignment_complete(conn);
-	/* If something went wrong during send_assignment_complete(), the fi will be gone from
-	 * error handling in there. Almost a success, but then again the whole thing failed. */
-	if (!conn->assignment.fi) {
-		/* The lchan was ready, and we failed to tell the MSC about it. By releasing this lchan,
-		 * the conn will notice that its primary lchan is gone and should clean itself up. */
-		lchan_release(conn->lchan, true, true, RSL_ERR_EQUIPMENT_FAIL,
-			      gscon_last_eutran_plmn(conn));
-		return;
+	if (conn->assignment.req.assign_for == ASSIGN_FOR_BSSMAP_REQ) {
+		send_assignment_complete(conn);
+		/* If something went wrong during send_assignment_complete(), the fi will be gone from
+		 * error handling in there. Almost a success, but then again the whole thing failed. */
+		if (!conn->assignment.fi) {
+			/* The lchan was ready, and we failed to tell the MSC about it. By releasing this lchan,
+			 * the conn will notice that its primary lchan is gone and should clean itself up. */
+			lchan_release(conn->lchan, true, true, RSL_ERR_EQUIPMENT_FAIL,
+				      gscon_last_eutran_plmn(conn));
+			return;
+		}
 	}
 
 	if (lchan_changed) {
@@ -486,7 +492,8 @@ void assignment_fsm_start(struct gsm_subscriber_connection *conn, struct gsm_bts
 				       gsm48_chan_mode_name(conn->lchan->ch_mode_rate.chan_mode),
 				       gsm_lchan_name(conn->lchan));
 
-			send_assignment_complete(conn);
+			if (req->assign_for == ASSIGN_FOR_BSSMAP_REQ)
+				send_assignment_complete(conn);
 			/* If something went wrong during send_assignment_complete(),
 			 * the fi will be gone from error handling in there. */
 			if (conn->assignment.fi) {
