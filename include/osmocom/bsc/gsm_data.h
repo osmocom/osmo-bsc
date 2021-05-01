@@ -111,10 +111,21 @@ struct channel_mode_and_rate {
 	uint16_t s15_s0;
 };
 
+enum assign_for {
+	ASSIGN_FOR_NONE,
+	ASSIGN_FOR_BSSMAP_REQ,
+};
+
+extern const struct value_string assign_for_names[];
+static inline const char *assign_for_name(enum assign_for assign_for)
+{ return get_value_string(assign_for_names, assign_for); }
+
 /* Information retrieved during an Assignment Request from the MSC. This is storage of the Assignment instructions
  * parsed from the Assignment Request message, to pass on until the gscon and assignment FSMs have decided whether an
  * Assignment is actually going to be carried out. Should remain unchanged after initial decoding. */
 struct assignment_request {
+	enum assign_for assign_for;
+
 	bool aoip;
 
 	uint16_t msc_assigned_cic;

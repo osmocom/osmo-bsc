@@ -923,6 +923,7 @@ static int bssmap_handle_assignm_req(struct gsm_subscriber_connection *conn,
 		}
 
 		req = (struct assignment_request){
+			.assign_for = ASSIGN_FOR_BSSMAP_REQ,
 			.aoip = aoip,
 			.msc_assigned_cic = cic,
 			.use_osmux = use_osmux,
@@ -951,6 +952,7 @@ static int bssmap_handle_assignm_req(struct gsm_subscriber_connection *conn,
 		break;
 	case GSM0808_CHAN_SIGN:
 		req = (struct assignment_request){
+			.assign_for = ASSIGN_FOR_BSSMAP_REQ,
 			.aoip = aoip,
 		};
 
