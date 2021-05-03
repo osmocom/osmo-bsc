@@ -7,7 +7,7 @@ create-n-bts 2
 set-ts-use trx 0 0 states * TCH/F - - - - - -
 meas-rep lchan 0 0 1 0 rxlev 20 rxqual 0 ta 0 neighbors 30
 expect-chan lchan 1 0 1 0
-expect-ho-req lchan 0 0 1 0
+expect-ho-cmd lchan 0 0 1 0
 ho-failed
 expect-ts-use trx 0 0 states * TCH/F - - - - - -
 expect-ts-use trx 1 0 states * - - - - - - -

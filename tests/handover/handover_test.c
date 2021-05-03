@@ -532,8 +532,8 @@ bool _set_ts_use(struct gsm_bts *bts, struct gsm_bts_trx *trx, const char * cons
 static struct gsm_lchan *new_chan_req = NULL;
 static struct gsm_lchan *last_chan_req = NULL;
 
-static struct gsm_lchan *new_ho_req = NULL;
-static struct gsm_lchan *last_ho_req = NULL;
+static struct gsm_lchan *new_ho_cmd = NULL;
+static struct gsm_lchan *last_ho_cmd = NULL;
 
 /* send channel activation ack */
 static void send_chan_act_ack(struct gsm_lchan *lchan, int act)
@@ -701,12 +701,12 @@ int __wrap_abis_rsl_sendmsg(struct msgb *msg)
 		switch (gh->msg_type) {
 		case GSM48_MT_RR_HANDO_CMD:
 		case GSM48_MT_RR_ASS_CMD:
-			if (new_ho_req) {
-				fprintf(stderr, "Test script is erratic: a handover is requested"
-					" while a previous handover request is still unhandled\n");
+			if (new_ho_cmd) {
+				fprintf(stderr, "Test script is erratic: seen a Handover Command"
+					" while a previous Handover Command is still unhandled\n");
 				exit(1);
 			}
-			new_ho_req = lchan;
+			new_ho_cmd = lchan;
 			break;
 		}
 		break;
@@ -1035,27 +1035,27 @@ static void _expect_chan_activ(struct gsm_lchan *lchan)
 	send_chan_act_ack(lchan, 1);
 }
 
-static void _expect_ho_req(struct gsm_lchan *lchan)
+static void _expect_ho_cmd(struct gsm_lchan *lchan)
 {
-	fprintf(stderr, "- Expecting handover/assignment request at %s\n",
+	fprintf(stderr, "- Expecting Handover/Assignment Command at %s\n",
 		gsm_lchan_name(lchan));
 
-	if (!new_ho_req) {
-		fprintf(stderr, "Test failed, because no handover was requested\n");
+	if (!new_ho_cmd) {
+		fprintf(stderr, "Test failed, no Handover Command\n");
 		exit(1);
 	}
-	fprintf(stderr, " * Got handover/assignment request at %s\n", gsm_lchan_name(new_ho_req));
-	if (new_ho_req != lchan) {
-		fprintf(stderr, "Test failed, because handover/assignment was not commanded on the expected lchan\n");
+	fprintf(stderr, " * Got Handover/Assignment Command at %s\n", gsm_lchan_name(new_ho_cmd));
+	if (new_ho_cmd != lchan) {
+		fprintf(stderr, "Test failed, Handover/Assignment Command not on the expected lchan\n");
 		exit(1);
 	}
-	last_ho_req = new_ho_req;
-	new_ho_req = NULL;
+	last_ho_cmd = new_ho_cmd;
+	new_ho_cmd = NULL;
 }
 
 DEFUN(expect_chan, expect_chan_cmd,
       "expect-chan " LCHAN_ARGS,
-      "Expect a channel request from BSC to a cell for a specific lchan\n"
+      "Expect RSL Channel Activation of a specific lchan\n"
       LCHAN_ARGS_DOC)
 {
 	VTY_ECHO();
@@ -1063,13 +1063,13 @@ DEFUN(expect_chan, expect_chan_cmd,
 	return CMD_SUCCESS;
 }
 
-DEFUN(expect_ho_req, expect_ho_req_cmd,
-      "expect-ho-req " LCHAN_ARGS,
-      "Expect a handover of a given lchan\n"
+DEFUN(expect_handover_command, expect_handover_command_cmd,
+      "expect-ho-cmd " LCHAN_ARGS,
+      "Expect an RR Handover Command sent to a specific lchan\n"
       LCHAN_ARGS_DOC)
 {
 	VTY_ECHO();
-	_expect_ho_req(parse_lchan_args(argv));
+	_expect_ho_cmd(parse_lchan_args(argv));
 	return CMD_SUCCESS;
 }
 
@@ -1095,12 +1095,12 @@ DEFUN(ho_complete, ho_complete_cmd,
 		fprintf(stderr, "Cannot ack handover/assignment, because no chan request\n");
 		exit(1);
 	}
-	if (!last_ho_req) {
+	if (!last_ho_cmd) {
 		fprintf(stderr, "Cannot ack handover/assignment, because no ho request\n");
 		exit(1);
 	}
 	send_ho_complete(last_chan_req, true);
-	lchan_release_ack(last_ho_req);
+	lchan_release_ack(last_ho_cmd);
 	return CMD_SUCCESS;
 }
 
@@ -1116,7 +1116,7 @@ DEFUN(expect_ho, expect_ho_cmd,
 	VTY_ECHO();
 
 	_expect_chan_activ(to);
-	_expect_ho_req(from);
+	_expect_ho_cmd(from);
 	send_ho_detect(to);
 	send_ho_complete(to, true);
 	lchan_release_ack(from);
@@ -1132,11 +1132,11 @@ DEFUN(ho_failed, ho_failed_cmd,
 		fprintf(stderr, "Cannot fail handover, because no chan request\n");
 		exit(1);
 	}
-	if (!last_ho_req) {
+	if (!last_ho_cmd) {
 		fprintf(stderr, "Cannot fail handover, because no handover request\n");
 		exit(1);
 	}
-	send_ho_complete(last_ho_req, false);
+	send_ho_complete(last_ho_cmd, false);
 	lchan_release_ack(last_chan_req);
 	return CMD_SUCCESS;
 }
@@ -1208,7 +1208,7 @@ static void ho_test_vty_init()
 	install_element(CONFIG_NODE, &congestion_check_cmd);
 	install_element(CONFIG_NODE, &expect_no_chan_cmd);
 	install_element(CONFIG_NODE, &expect_chan_cmd);
-	install_element(CONFIG_NODE, &expect_ho_req_cmd);
+	install_element(CONFIG_NODE, &expect_handover_command_cmd);
 	install_element(CONFIG_NODE, &ho_detection_cmd);
 	install_element(CONFIG_NODE, &ho_complete_cmd);
 	install_element(CONFIG_NODE, &expect_ho_cmd);
