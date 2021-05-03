@@ -25,6 +25,4 @@ labelloc=t; label="Handover FSM: Intra-BSC"
 	lchan -> WAIT_LCHAN_ESTABLISHED [label="HO_EV_LCHAN_\nESTABLISHED",style=dotted]
 
 	WAIT_LCHAN_ESTABLISHED -> terminate [label="non-TCH"]
-	WAIT_LCHAN_ESTABLISHED -> WAIT_MGW_ENDPOINT_TO_MSC
-	WAIT_MGW_ENDPOINT_TO_MSC -> terminate [label="handover_end()"]
 }
