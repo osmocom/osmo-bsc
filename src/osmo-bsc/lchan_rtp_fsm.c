@@ -63,7 +63,7 @@ struct osmo_tdef_state_timeout lchan_rtp_fsm_timeouts[32] = {
 #define lchan_rtp_fail(fmt, args...) do { \
 		struct gsm_lchan *_lchan = fi->priv; \
 		uint32_t state_was = fi->state; \
-		lchan_set_last_error(_lchan, "lchan-rtp failure in state %s: " fmt, \
+		LCHAN_SET_LAST_ERROR(_lchan, "lchan-rtp failure in state %s: " fmt, \
 				     osmo_fsm_state_name(fi->fsm, state_was), ## args); \
 		osmo_fsm_inst_dispatch(_lchan->fi, LCHAN_EV_RTP_ERROR, 0); \
 	} while(0)

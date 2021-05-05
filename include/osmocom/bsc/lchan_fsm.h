@@ -12,6 +12,13 @@
 		LOGP(DRSL, level, "%s (not initialized) " fmt, gsm_lchan_name(lchan), ## args); \
 	} while(0)
 
+#define LCHAN_SET_LAST_ERROR(LCHAN, fmt, args...) do { \
+		if ((LCHAN)->last_error) \
+			talloc_free((LCHAN)->last_error); \
+		(LCHAN)->last_error = talloc_asprintf((LCHAN)->ts->trx, fmt, ##args); \
+		LOG_LCHAN(LCHAN, LOGL_ERROR, "%s\n", (LCHAN)->last_error); \
+	} while(0)
+
 enum lchan_fsm_state {
 	LCHAN_ST_UNUSED,
 	LCHAN_ST_CBCH, /*< Blocked by CBCH channel combination, not usable as SDCCH. */
@@ -73,7 +80,5 @@ static inline bool lchan_state_is(struct gsm_lchan *lchan, uint32_t state)
 bool lchan_may_receive_data(struct gsm_lchan *lchan);
 
 void lchan_forget_conn(struct gsm_lchan *lchan);
-
-void lchan_set_last_error(struct gsm_lchan *lchan, const char *fmt, ...);
 
 void lchan_fsm_skip_error(struct gsm_lchan *lchan);

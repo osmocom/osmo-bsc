@@ -66,25 +66,6 @@ bool lchan_may_receive_data(struct gsm_lchan *lchan)
 	}
 }
 
-void lchan_set_last_error(struct gsm_lchan *lchan, const char *fmt, ...)
-{
-	va_list ap;
-	/* This dance allows using an existing error reason in above fmt */
-	char *last_error_was = lchan->last_error;
-	lchan->last_error = NULL;
-
-	if (fmt) {
-		va_start(ap, fmt);
-		lchan->last_error = talloc_vasprintf(lchan->ts->trx, fmt, ap);
-		va_end(ap);
-
-		LOG_LCHAN(lchan, LOGL_ERROR, "%s\n", lchan->last_error);
-	}
-
-	if (last_error_was)
-		talloc_free(last_error_was);
-}
-
 /* The idea here is that we must not require to change any lchan state in order to deny a request. */
 #define lchan_on_activation_failure(lchan, for_conn, activ_for) \
 	_lchan_on_activation_failure(lchan, for_conn, activ_for, \
@@ -240,7 +221,7 @@ struct osmo_tdef_state_timeout lchan_fsm_timeouts[32] = {
 		const uint32_t state_chg = STATE_CHG; \
 		LOG_LCHAN(_lchan, LOGL_DEBUG, "Handling failure, will then transition to state %s\n", \
 			  osmo_fsm_state_name(fsm, state_chg)); \
-		lchan_set_last_error(_lchan, "lchan %s in state %s: " fmt, \
+		LCHAN_SET_LAST_ERROR(_lchan, "lchan %s in state %s: " fmt, \
 				     _lchan->activate.concluded ? "failure" : "allocation failed", \
 				     osmo_fsm_state_name(fsm, state_was), ## args); \
 		lchan_on_activation_failure(_lchan, _lchan->activate.info.activ_for, _lchan->conn); \
@@ -547,7 +528,9 @@ static void lchan_fsm_unused(struct osmo_fsm_inst *fi, uint32_t event, void *dat
 		OSMO_ASSERT(info);
 		OSMO_ASSERT(!lchan->conn);
 		OSMO_ASSERT(!lchan->mgw_endpoint_ci_bts);
-		lchan_set_last_error(lchan, NULL);
+		if (lchan->last_error)
+			talloc_free(lchan->last_error);
+		lchan->last_error = NULL;
 		lchan->release.requested = false;
 
 		lchan->activate.info = *info;
