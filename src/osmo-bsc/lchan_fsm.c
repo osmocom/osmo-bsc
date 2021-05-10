@@ -70,7 +70,7 @@ bool lchan_may_receive_data(struct gsm_lchan *lchan)
 #define lchan_on_activation_failure(lchan, for_conn, activ_for) \
 	_lchan_on_activation_failure(lchan, for_conn, activ_for, \
 				     __FILE__, __LINE__)
-static void _lchan_on_activation_failure(struct gsm_lchan *lchan, enum lchan_activate_mode activ_for,
+static void _lchan_on_activation_failure(struct gsm_lchan *lchan, enum lchan_activate_for activ_for,
 					 struct gsm_subscriber_connection *for_conn,
 					 const char *file, int line)
 {

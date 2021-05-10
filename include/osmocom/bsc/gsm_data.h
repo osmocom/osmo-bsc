@@ -558,7 +558,7 @@ struct gsm_encr {
  */
 #define ts_for_each_potential_lchan(lchan, ts) ts_as_pchan_for_each_lchan(lchan, ts, (ts)->pchan_on_init)
 
-enum lchan_activate_mode {
+enum lchan_activate_for {
 	ACTIVATE_FOR_NONE,
 	ACTIVATE_FOR_MS_CHANNEL_REQUEST,
 	ACTIVATE_FOR_ASSIGNMENT,
@@ -567,11 +567,11 @@ enum lchan_activate_mode {
 };
 
 extern const struct value_string lchan_activate_mode_names[];
-static inline const char *lchan_activate_mode_name(enum lchan_activate_mode activ_for)
+static inline const char *lchan_activate_mode_name(enum lchan_activate_for activ_for)
 { return get_value_string(lchan_activate_mode_names, activ_for); }
 
 struct lchan_activate_info {
-	enum lchan_activate_mode activ_for;
+	enum lchan_activate_for activ_for;
 	struct gsm_subscriber_connection *for_conn;
 	/* This always is for a specific lchan, so its lchan->type indicates full or half rate.
 	 * When a dyn TS was selected, the lchan->type has been set to the desired rate. */
