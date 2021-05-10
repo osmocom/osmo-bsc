@@ -31,7 +31,7 @@ msc {
 
 	ho box ho [label="lchan_select_by_type()"];
 	ho abox ho [label="HO_ST_WAIT_\nLCHAN_ACTIVE"];
-	lchan <- ho [label="lchan_activate(FOR_HANDOVER)"];
+	lchan <- ho [label="lchan_activate(ACTIVATE_FOR_HANDOVER)"];
 	lchan rbox lchan [label="(most details omitted, see lchan_fsm diagrams)"];
 
 	...;

@@ -396,7 +396,7 @@ static void handover_start_intra_bsc(struct gsm_subscriber_connection *conn)
 	ho_fsm_state_chg(HO_ST_WAIT_LCHAN_ACTIVE);
 
 	info = (struct lchan_activate_info){
-		.activ_for = FOR_HANDOVER,
+		.activ_for = ACTIVATE_FOR_HANDOVER,
 		.for_conn = conn,
 		.chan_mode = conn->lchan->tch_mode,
 		.encr = conn->lchan->encr,
@@ -694,7 +694,7 @@ void handover_start_inter_bsc_in(struct gsm_subscriber_connection *conn,
 	ho_fsm_state_chg(HO_ST_WAIT_LCHAN_ACTIVE);
 
 	info = (struct lchan_activate_info){
-		.activ_for = FOR_HANDOVER,
+		.activ_for = ACTIVATE_FOR_HANDOVER,
 		.for_conn = conn,
 		.chan_mode = ch_mode_rate.chan_mode,
 		.s15_s0 = ch_mode_rate.s15_s0,

@@ -559,11 +559,11 @@ struct gsm_encr {
 #define ts_for_each_potential_lchan(lchan, ts) ts_as_pchan_for_each_lchan(lchan, ts, (ts)->pchan_on_init)
 
 enum lchan_activate_mode {
-	FOR_NONE,
-	FOR_MS_CHANNEL_REQUEST,
-	FOR_ASSIGNMENT,
-	FOR_HANDOVER,
-	FOR_VTY,
+	ACTIVATE_FOR_NONE,
+	ACTIVATE_FOR_MS_CHANNEL_REQUEST,
+	ACTIVATE_FOR_ASSIGNMENT,
+	ACTIVATE_FOR_HANDOVER,
+	ACTIVATE_FOR_VTY,
 };
 
 extern const struct value_string lchan_activate_mode_names[];

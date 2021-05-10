@@ -1767,7 +1767,7 @@ void abis_rsl_chan_rqd_queue_poll(struct gsm_bts *bts)
 	LOG_LCHAN(lchan, LOGL_DEBUG, "MS: Channel Request: reason=%s ra=0x%02x ta=%d\n",
 		  gsm_chreq_name(rqd->reason), rqd->ref.ra, rqd->ta);
 	info = (struct lchan_activate_info){
-		.activ_for = FOR_MS_CHANNEL_REQUEST,
+		.activ_for = ACTIVATE_FOR_MS_CHANNEL_REQUEST,
 		.chan_mode = GSM48_CMODE_SIGN,
 		.ta = rqd->ta,
 		.ta_known = true,

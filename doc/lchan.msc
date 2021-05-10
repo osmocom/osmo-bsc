@@ -34,11 +34,11 @@ msc {
 	...;
 	ts -> lchan [label="LCHAN_EV_TS_READY"];
 	lchan abox lchan [label="LCHAN_ST_\nWAIT_ACTIV_ACK"];
-	--- [label="IF FOR_MS_CHANNEL_REQUEST"];
+	--- [label="IF ACTIVATE_FOR_MS_CHANNEL_REQUEST"];
 	ms <= lchan [label="RSL Chan Activ (RSL_ACT_INTRA_IMM_ASS)"];
-	--- [label="ELSE: FOR_ASSIGNMENT"];
+	--- [label="ELSE: ACTIVATE_FOR_ASSIGNMENT"];
 	ms <= lchan [label="RSL Chan Activ (RSL_ACT_INTRA_NORM_ASS)"];
-	--- [label="ELSE: FOR_HANDOVER"];
+	--- [label="ELSE: ACTIVATE_FOR_HANDOVER"];
 	ms <= lchan [label="RSL Chan Activ (RSL_ACT_INTER_ASYNC)"];
 	--- [label="END"];
 	...;
@@ -47,12 +47,12 @@ msc {
 	ms => lchan [label="RSL Chan Activ ACK"];
 	lchan box lchan [label="lchan_fsm_post_activ_ack()"];
 
-	--- [label="IF FOR_MS_CHANNEL_REQUEST"];
+	--- [label="IF ACTIVATE_FOR_MS_CHANNEL_REQUEST"];
 	ms <= lchan [label="RR Immediate Assignment"];
-	--- [label="ELSE: FOR_ASSIGNMENT"];
+	--- [label="ELSE: ACTIVATE_FOR_ASSIGNMENT"];
 	lchan rbox lchan [label="dispatch\nASSIGNMENT_EV_\nLCHAN_ACTIVE\n(see Assignment FSM diagrams)"];
 	ms <= lchan [label="RR Assignment Command"];
-	--- [label="ELSE: FOR_HANDOVER"];
+	--- [label="ELSE: ACTIVATE_FOR_HANDOVER"];
 	lchan rbox lchan [label="dispatch\nHO_EV_LCHAN_ACTIVE\n(see Handover FSM diagrams)"];
 	--- [label="END"];
 
@@ -107,12 +107,12 @@ msc {
 	ms => lchan [label="RLL Establish Ind"];
 	lchan abox lchan [label="LCHAN_ST_\nESTABLISHED"];
 	lchan box lchan [label="lchan_on_fully_established()"];
-	--- [label="IF FOR_MS_CHANNEL_REQUEST"];
+	--- [label="IF ACTIVATE_FOR_MS_CHANNEL_REQUEST"];
 	ms note lchan [label="No action required. The MS will have sent an L3 message in the RLL
 		Establish Ind and is then free to dispatch DTAP."];
-	--- [label="ELSE: FOR_ASSIGNMENT"];
+	--- [label="ELSE: ACTIVATE_FOR_ASSIGNMENT"];
 	lchan rbox lchan [label="dispatch\nASSIGNMENT_EV_\nLCHAN_ESTABLISHED\n(see Assignment FSM diagrams)"];
-	--- [label="ELSE: FOR_HANDOVER"];
+	--- [label="ELSE: ACTIVATE_FOR_HANDOVER"];
 	lchan rbox lchan [label="dispatch\nHO_EV_LCHAN_ESTABLISHED\n(see Handover FSM diagrams)"];
 	--- [label="END"];
 	...;
@@ -202,11 +202,11 @@ msc {
 
 	ms rbox mgwep [label="On any error"];
 	|||;
-	--- [label="IF FOR_MS_CHANNEL_REQUEST"];
+	--- [label="IF ACTIVATE_FOR_MS_CHANNEL_REQUEST"];
 	ms <= lchan [label="RR Immediate Assign Reject"];
-	--- [label="ELSE: FOR_ASSIGNMENT"];
+	--- [label="ELSE: ACTIVATE_FOR_ASSIGNMENT"];
 	lchan rbox lchan [label="dispatch\nASSIGNMENT_EV_\nLCHAN_ERROR\n(see Assignment FSM diagrams)"];
-	--- [label="ELSE: FOR_HANDOVER"];
+	--- [label="ELSE: ACTIVATE_FOR_HANDOVER"];
 	lchan rbox lchan [label="dispatch\nHO_EV_LCHAN_ERROR\n(see Handover FSM diagrams)"];
 	--- [label="END"];
 	|||;

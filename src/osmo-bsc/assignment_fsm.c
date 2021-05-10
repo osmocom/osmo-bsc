@@ -495,7 +495,7 @@ void assignment_fsm_start(struct gsm_subscriber_connection *conn, struct gsm_bts
 			       gsm_lchan_name(conn->lchan));
 
 		info = (struct lchan_activate_info){
-			.activ_for = FOR_ASSIGNMENT,
+			.activ_for = ACTIVATE_FOR_ASSIGNMENT,
 			.for_conn = conn,
 			.chan_mode = conn->lchan->ch_mode_rate.chan_mode,
 			.encr = conn->lchan->encr,
@@ -572,7 +572,7 @@ void assignment_fsm_start(struct gsm_subscriber_connection *conn, struct gsm_bts
 
 	assignment_fsm_state_chg(ASSIGNMENT_ST_WAIT_LCHAN_ACTIVE);
 	info = (struct lchan_activate_info){
-		.activ_for = FOR_ASSIGNMENT,
+		.activ_for = ACTIVATE_FOR_ASSIGNMENT,
 		.for_conn = conn,
 		.chan_mode = conn->lchan->ch_mode_rate.chan_mode,
 		.encr = conn->lchan->encr,

@@ -30,7 +30,7 @@ msc {
 	|||;
 	lchan abox lchan [label="UNUSED"];
 	ass box ass [label="conn->assignment.new_lchan = lchan_select_by_chan_mode()"];
-	lchan <- ass [label="lchan_activate(FOR_ASSIGNMENT)"];
+	lchan <- ass [label="lchan_activate(ACTIVATE_FOR_ASSIGNMENT)"];
 	lchan abox lchan [label="WAIT_TS_READY"];
 	lchan rbox lchan [label="most details omitted, see lchan_fsm and lchan_rtp_fsm diagrams"];
 	...;

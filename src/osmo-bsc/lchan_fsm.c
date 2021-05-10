@@ -80,7 +80,7 @@ static void _lchan_on_activation_failure(struct gsm_lchan *lchan, enum lchan_act
 
 	switch (activ_for) {
 
-	case FOR_MS_CHANNEL_REQUEST:
+	case ACTIVATE_FOR_MS_CHANNEL_REQUEST:
 		if (!lchan->activate.immediate_assignment_sent) {
 			/* Failure before Immediate Assignment message, send a reject. */
 			LOG_LCHAN(lchan, LOGL_NOTICE, "Tx Immediate Assignment Reject (%s)\n",
@@ -92,14 +92,14 @@ static void _lchan_on_activation_failure(struct gsm_lchan *lchan, enum lchan_act
 		 * lchan_on_activation_failure(), no additional action or logging needed. */
 		break;
 
-	case FOR_ASSIGNMENT:
+	case ACTIVATE_FOR_ASSIGNMENT:
 		LOG_LCHAN(lchan, LOGL_NOTICE, "Signalling Assignment FSM of error (%s)\n",
 			  lchan->last_error ? : "unknown error");
 		_osmo_fsm_inst_dispatch(for_conn->assignment.fi, ASSIGNMENT_EV_LCHAN_ERROR, lchan,
 					file, line);
 		return;
 
-	case FOR_HANDOVER:
+	case ACTIVATE_FOR_HANDOVER:
 		LOG_LCHAN(lchan, LOGL_NOTICE, "Signalling Handover FSM of error (%s)\n",
 			  lchan->last_error ? : "unknown error");
 		if (!for_conn) {
@@ -117,7 +117,7 @@ static void _lchan_on_activation_failure(struct gsm_lchan *lchan, enum lchan_act
 		_osmo_fsm_inst_dispatch(for_conn->ho.fi, HO_EV_LCHAN_ERROR, lchan, file, line);
 		break;
 
-	case FOR_VTY:
+	case ACTIVATE_FOR_VTY:
 		LOG_LCHAN(lchan, LOGL_ERROR, "VTY user invoked lchan activation failed (%s)\n",
 			  lchan->last_error ? : "unknown error");
 		break;
@@ -136,12 +136,12 @@ static void lchan_on_fully_established(struct gsm_lchan *lchan)
 	lchan->activate.concluded = true;
 
 	switch (lchan->activate.info.activ_for) {
-	case FOR_MS_CHANNEL_REQUEST:
+	case ACTIVATE_FOR_MS_CHANNEL_REQUEST:
 		/* No signalling to do here, MS is free to use the channel, and should go on to connect
 		 * to the MSC and establish a subscriber connection. */
 		break;
 
-	case FOR_ASSIGNMENT:
+	case ACTIVATE_FOR_ASSIGNMENT:
 		if (!lchan->conn) {
 			LOG_LCHAN(lchan, LOGL_ERROR,
 				  "lchan activation for assignment succeeded, but lchan has no conn:"
@@ -163,7 +163,7 @@ static void lchan_on_fully_established(struct gsm_lchan *lchan)
 		 * will try to roll back a modified RTP connection. */
 		break;
 
-	case FOR_HANDOVER:
+	case ACTIVATE_FOR_HANDOVER:
 		if (!lchan->conn) {
 			LOG_LCHAN(lchan, LOGL_ERROR,
 				  "lchan activation for handover succeeded, but lchan has no conn\n");
@@ -264,7 +264,7 @@ void lchan_activate(struct gsm_lchan *lchan, struct lchan_activate_info *info)
 
 	switch (info->activ_for) {
 
-	case FOR_ASSIGNMENT:
+	case ACTIVATE_FOR_ASSIGNMENT:
 		if (!info->for_conn
 		    || !info->for_conn->fi) {
 			LOG_LCHAN(lchan, LOGL_ERROR, "Activation requested, but no conn\n");
@@ -281,7 +281,7 @@ void lchan_activate(struct gsm_lchan *lchan, struct lchan_activate_info *info)
 		}
 		break;
 
-	case FOR_HANDOVER:
+	case ACTIVATE_FOR_HANDOVER:
 		if (!info->for_conn
 		    || !info->for_conn->fi) {
 			LOG_LCHAN(lchan, LOGL_ERROR, "Activation requested, but no conn\n");
@@ -452,7 +452,7 @@ static int lchan_mr_config(struct gsm_lchan *lchan, uint16_t s15_s0)
 		mr = &bts->mr_half;
 	mr_conf_bts = (struct gsm48_multi_rate_conf *)mr->gsm48_ie;
 
-	if (lchan->activate.info.activ_for == FOR_VTY)
+	if (lchan->activate.info.activ_for == ACTIVATE_FOR_VTY)
 		/* If the channel is activated manually from VTY, then there is no
 		 * conn attached to the lchan, also no MSC is involved. Since this
 		 * option is for debugging and the codec choice is an intentional
@@ -486,7 +486,7 @@ static int lchan_mr_config(struct gsm_lchan *lchan, uint16_t s15_s0)
 	 * configuration that is set for the BTS and the specified rate.
 	 * if the channel activation was triggerd by the VTY, do not
 	 * filter anything (see also comment above) */
-	if (lchan->activate.info.activ_for != FOR_VTY) {
+	if (lchan->activate.info.activ_for != ACTIVATE_FOR_VTY) {
 		rc_rate = calc_amr_rate_intersection(&mr_conf_filtered, mr_conf_bts, &mr_conf_filtered);
 		if (rc_rate < 0) {
 			LOG_LCHAN(lchan, LOGL_ERROR,
@@ -670,15 +670,15 @@ static void lchan_fsm_wait_activ_ack_onenter(struct osmo_fsm_inst *fi, uint32_t 
 	}
 
 	switch (lchan->activate.info.activ_for) {
-	case FOR_MS_CHANNEL_REQUEST:
+	case ACTIVATE_FOR_MS_CHANNEL_REQUEST:
 		act_type = RSL_ACT_INTRA_IMM_ASS;
 		break;
-	case FOR_HANDOVER:
+	case ACTIVATE_FOR_HANDOVER:
 		act_type = lchan->conn->ho.async ? RSL_ACT_INTER_ASYNC : RSL_ACT_INTER_SYNC;
 		ho_ref = lchan->conn->ho.ho_ref;
 		break;
 	default:
-	case FOR_ASSIGNMENT:
+	case ACTIVATE_FOR_ASSIGNMENT:
 		act_type = RSL_ACT_INTRA_NORM_ASS;
 		break;
 	}
@@ -762,7 +762,7 @@ static void lchan_fsm_post_activ_ack(struct osmo_fsm_inst *fi)
 
 	switch (lchan->activate.info.activ_for) {
 
-	case FOR_MS_CHANNEL_REQUEST:
+	case ACTIVATE_FOR_MS_CHANNEL_REQUEST:
 		rc = rsl_tx_imm_assignment(lchan);
 		if (rc) {
 			lchan_fail("Failed to Tx RR Immediate Assignment message (rc=%d %s)\n",
@@ -773,7 +773,7 @@ static void lchan_fsm_post_activ_ack(struct osmo_fsm_inst *fi)
 		lchan->activate.immediate_assignment_sent = true;
 		break;
 
-	case FOR_ASSIGNMENT:
+	case ACTIVATE_FOR_ASSIGNMENT:
 		if (!lchan->conn) {
 			LOG_LCHAN(lchan, LOGL_ERROR,
 				  "lchan activation for assignment succeeded, but lchan has no conn:"
@@ -793,7 +793,7 @@ static void lchan_fsm_post_activ_ack(struct osmo_fsm_inst *fi)
 		osmo_fsm_inst_dispatch(lchan->conn->assignment.fi, ASSIGNMENT_EV_LCHAN_ACTIVE, lchan);
 		break;
 
-	case FOR_HANDOVER:
+	case ACTIVATE_FOR_HANDOVER:
 		if (!lchan->conn) {
 			LOG_LCHAN(lchan, LOGL_ERROR,
 				  "lchan activation for handover succeeded, but lchan has no conn:"
@@ -833,7 +833,7 @@ static void lchan_fsm_wait_rll_rtp_establish_onenter(struct osmo_fsm_inst *fi, u
 
 	/* When activating a channel for VTY, skip waiting for activity from
 	 * lchan_rtp_fsm, but only if no voice stream is required. */
-	if (lchan->activate.info.activ_for == FOR_VTY &&
+	if (lchan->activate.info.activ_for == ACTIVATE_FOR_VTY &&
 	    !lchan->activate.info.requires_voice_stream) {
 		lchan_fsm_state_chg(LCHAN_ST_ESTABLISHED);
 	}

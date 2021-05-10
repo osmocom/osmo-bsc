@@ -12,7 +12,7 @@ labelloc=t; label="Handover FSM: Intra-BSC"
 	invisible -> old_lchan [style=invisible,arrowhead=none]
 
 	intra -> WAIT_LCHAN_ACTIVE [label="handover_start()",style=dotted]
-        WAIT_LCHAN_ACTIVE -> lchan [label="lchan_activate(FOR_HANDOVER)",style=dotted]
+        WAIT_LCHAN_ACTIVE -> lchan [label="lchan_activate(ACTIVATE_FOR_HANDOVER)",style=dotted]
 	lchan -> WAIT_LCHAN_ACTIVE [label="HO_EV_\nLCHAN_\nACTIVE,ERROR",style=dotted,constraint=false]
         WAIT_LCHAN_ACTIVE -> WAIT_RR_HO_DETECT
         WAIT_RR_HO_DETECT -> old_lchan [label="RR Handover\nCommand",style=dotted,constraint=false]

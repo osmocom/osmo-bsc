@@ -6070,13 +6070,13 @@ static int lchan_act_single(struct vty *vty, struct gsm_lchan *lchan, const char
 		lchan->type = lchan_t;
 		if (!strcmp(codec_str, "hr") || !strcmp(codec_str, "fr")) {
 			info = (struct lchan_activate_info) {
-				.activ_for = FOR_VTY,
+				.activ_for = ACTIVATE_FOR_VTY,
 				.chan_mode = GSM48_CMODE_SPEECH_V1,
 				.requires_voice_stream = false,
 			};
 		} else if (!strcmp(codec_str, "efr")) {
 			info = (struct lchan_activate_info) {
-				.activ_for = FOR_VTY,
+				.activ_for = ACTIVATE_FOR_VTY,
 				.chan_mode = GSM48_CMODE_SPEECH_EFR,
 				.s15_s0 = amr_modes[amr_mode],
 				.requires_voice_stream = false,
@@ -6087,14 +6087,14 @@ static int lchan_act_single(struct vty *vty, struct gsm_lchan *lchan, const char
 				return CMD_WARNING;
 			}
 			info = (struct lchan_activate_info) {
-				.activ_for = FOR_VTY,
+				.activ_for = ACTIVATE_FOR_VTY,
 				.chan_mode = GSM48_CMODE_SPEECH_AMR,
 				.s15_s0 = amr_modes[amr_mode],
 				.requires_voice_stream = false,
 			};
 		} else if (!strcmp(codec_str, "sig")) {
 			info = (struct lchan_activate_info) {
-				.activ_for = FOR_VTY,
+				.activ_for = ACTIVATE_FOR_VTY,
 				.chan_mode = GSM48_CMODE_SIGN,
 				.requires_voice_stream = false,
 			};
