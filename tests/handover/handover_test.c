@@ -439,12 +439,14 @@ struct gsm_lchan *create_lchan(struct gsm_bts *bts, int full_rate, const char *c
 
 static void lchan_release_ack(struct gsm_lchan *lchan)
 {
-	if (lchan->fi && lchan->fi->state == LCHAN_ST_WAIT_BEFORE_RF_RELEASE) {
-		/* don't wait before release */
-		osmo_fsm_inst_state_chg(lchan->fi, LCHAN_ST_WAIT_RF_RELEASE_ACK, 0, 0);
-		/* ack the release */
-		osmo_fsm_inst_dispatch(lchan->fi, LCHAN_EV_RSL_RF_CHAN_REL_ACK, 0);
-	}
+	if (!lchan->fi || lchan->fi->state != LCHAN_ST_WAIT_BEFORE_RF_RELEASE)
+		return;
+	/* don't wait before release */
+	osmo_fsm_inst_state_chg(lchan->fi, LCHAN_ST_WAIT_RF_RELEASE_ACK, 0, 0);
+	if (lchan->fi->state == LCHAN_ST_UNUSED)
+		return;
+	/* ack the release */
+	osmo_fsm_inst_dispatch(lchan->fi, LCHAN_EV_RSL_RF_CHAN_REL_ACK, 0);
 }
 
 static void lchan_clear(struct gsm_lchan *lchan)
