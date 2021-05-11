@@ -10,5 +10,5 @@ set-ts-use trx 0 0 states        *    -     -     -     TCH/H- -     -     *
 meas-rep lchan 0 0 4 0 rxlev 30 rxqual 0 ta 0
 expect-no-chan
 congestion-check
-expect-ho from lchan 0 0 4 0 to lchan 0 0 1 0
+expect-as from lchan 0 0 4 0 to lchan 0 0 1 0
 expect-ts-use trx 0 0 states * TCH/F - - - - - *

@@ -19,7 +19,7 @@ network
  bts 0
   handover2 assignment 1
 meas-rep lchan 0 0 5 0 rxlev 0 rxqual 0 ta 0 neighbors 30
-expect-ho from lchan 0 0 5 0 to lchan 0 0 1 0
+expect-as from lchan 0 0 5 0 to lchan 0 0 1 0
 expect-ts-use trx 0 0 states * TCH/F - - - - - -
 network
  bts 0

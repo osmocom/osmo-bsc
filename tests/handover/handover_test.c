@@ -35,6 +35,7 @@
 #include <osmocom/bsc/bsc_subscriber.h>
 #include <osmocom/bsc/lchan_select.h>
 #include <osmocom/bsc/lchan_fsm.h>
+#include <osmocom/bsc/assignment_fsm.h>
 #include <osmocom/bsc/handover_decision.h>
 #include <osmocom/bsc/system_information.h>
 #include <osmocom/bsc/handover.h>
@@ -372,6 +373,10 @@ void create_conn(struct gsm_lchan *lchan)
 	snprintf(imsi, sizeof(imsi), "%06u", next_imsi);
 	lchan->conn->bsub = bsc_subscr_find_or_create_by_imsi(net->bsc_subscribers, imsi, BSUB_USE_CONN);
 
+	/* Set RTP data that the MSC normally would have sent */
+	OSMO_STRLCPY_ARRAY(conn->user_plane.msc_assigned_rtp_addr, "1.2.3.4");
+	conn->user_plane.msc_assigned_rtp_port = 1234;
+
 	/* kick the FSM from INIT through to the ACTIVE state */
 	osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_MO_COMPL_L3, NULL);
 	osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_A_CONN_CFM, NULL);
@@ -535,6 +540,9 @@ static struct gsm_lchan *last_chan_req = NULL;
 static struct gsm_lchan *new_ho_cmd = NULL;
 static struct gsm_lchan *last_ho_cmd = NULL;
 
+static struct gsm_lchan *new_as_cmd = NULL;
+static struct gsm_lchan *last_as_cmd = NULL;
+
 /* send channel activation ack */
 static void send_chan_act_ack(struct gsm_lchan *lchan, int act)
 {
@@ -549,6 +557,44 @@ static void send_chan_act_ack(struct gsm_lchan *lchan, int act)
 
 	msg->dst = lchan->ts->trx->bts->c0->rsl_link;
 	msg->l2h = (unsigned char *)dh;
+
+	abis_rsl_rcvmsg(msg);
+}
+
+/* Send RR Assignment Complete for SAPI[0] */
+static void send_assignment_complete(struct gsm_lchan *lchan)
+{
+	struct msgb *msg = msgb_alloc_headroom(256, 64, "RSL");
+	struct abis_rsl_rll_hdr *rh;
+	uint8_t chan_nr = gsm_lchan2chan_nr(lchan);
+	uint8_t *buf;
+	struct gsm48_hdr *gh;
+	struct gsm48_ho_cpl *hc;
+
+	fprintf(stderr, "- Send RR Assignment Complete for %s\n", gsm_lchan_name(lchan));
+
+	rh = (struct abis_rsl_rll_hdr *) msgb_put(msg, sizeof(*rh));
+	rh->c.msg_discr = ABIS_RSL_MDISC_RLL;
+	rh->c.msg_type = RSL_MT_DATA_IND;
+	rh->ie_chan = RSL_IE_CHAN_NR;
+	rh->chan_nr = chan_nr;
+	rh->ie_link_id = RSL_IE_LINK_IDENT;
+	rh->link_id = 0x00;
+
+	buf = msgb_put(msg, 3);
+	buf[0] = RSL_IE_L3_INFO;
+	buf[1] = (sizeof(*gh) + sizeof(*hc)) >> 8;
+	buf[2] = (sizeof(*gh) + sizeof(*hc)) & 0xff;
+
+	gh = (struct gsm48_hdr *) msgb_put(msg, sizeof(*gh));
+	hc = (struct gsm48_ho_cpl *) msgb_put(msg, sizeof(*hc));
+
+	gh->proto_discr = GSM48_PDISC_RR;
+	gh->msg_type = GSM48_MT_RR_ASS_COMPL;
+
+	msg->dst = lchan->ts->trx->rsl_link;
+	msg->l2h = (unsigned char *)rh;
+	msg->l3h = (unsigned char *)gh;
 
 	abis_rsl_rcvmsg(msg);
 }
@@ -700,13 +746,20 @@ int __wrap_abis_rsl_sendmsg(struct msgb *msg)
 		gh = (struct gsm48_hdr*)msg->l3h;
 		switch (gh->msg_type) {
 		case GSM48_MT_RR_HANDO_CMD:
-		case GSM48_MT_RR_ASS_CMD:
-			if (new_ho_cmd) {
+			if (new_ho_cmd || new_as_cmd) {
 				fprintf(stderr, "Test script is erratic: seen a Handover Command"
-					" while a previous Handover Command is still unhandled\n");
+					" while a previous Assignment or Handover Command is still unhandled\n");
 				exit(1);
 			}
 			new_ho_cmd = lchan;
+			break;
+		case GSM48_MT_RR_ASS_CMD:
+			if (new_ho_cmd || new_as_cmd) {
+				fprintf(stderr, "Test script is erratic: seen an Assignment Command"
+					" while a previous Assignment or Handover Command is still unhandled\n");
+				exit(1);
+			}
+			new_as_cmd = lchan;
 			break;
 		}
 		break;
@@ -1037,20 +1090,38 @@ static void _expect_chan_activ(struct gsm_lchan *lchan)
 
 static void _expect_ho_cmd(struct gsm_lchan *lchan)
 {
-	fprintf(stderr, "- Expecting Handover/Assignment Command at %s\n",
+	fprintf(stderr, "- Expecting Handover Command at %s\n",
 		gsm_lchan_name(lchan));
 
 	if (!new_ho_cmd) {
 		fprintf(stderr, "Test failed, no Handover Command\n");
 		exit(1);
 	}
-	fprintf(stderr, " * Got Handover/Assignment Command at %s\n", gsm_lchan_name(new_ho_cmd));
+	fprintf(stderr, " * Got Handover Command at %s\n", gsm_lchan_name(new_ho_cmd));
 	if (new_ho_cmd != lchan) {
-		fprintf(stderr, "Test failed, Handover/Assignment Command not on the expected lchan\n");
+		fprintf(stderr, "Test failed, Handover Command not on the expected lchan\n");
 		exit(1);
 	}
 	last_ho_cmd = new_ho_cmd;
 	new_ho_cmd = NULL;
+}
+
+static void _expect_as_cmd(struct gsm_lchan *lchan)
+{
+	fprintf(stderr, "- Expecting Assignment Command at %s\n",
+		gsm_lchan_name(lchan));
+
+	if (!new_as_cmd) {
+		fprintf(stderr, "Test failed, no Assignment Command\n");
+		exit(1);
+	}
+	fprintf(stderr, " * Got Assignment Command at %s\n", gsm_lchan_name(new_as_cmd));
+	if (new_as_cmd != lchan) {
+		fprintf(stderr, "Test failed, Assignment Command not on the expected lchan\n");
+		exit(1);
+	}
+	last_as_cmd = new_as_cmd;
+	new_as_cmd = NULL;
 }
 
 DEFUN(expect_chan, expect_chan_cmd,
@@ -1070,6 +1141,16 @@ DEFUN(expect_handover_command, expect_handover_command_cmd,
 {
 	VTY_ECHO();
 	_expect_ho_cmd(parse_lchan_args(argv));
+	return CMD_SUCCESS;
+}
+
+DEFUN(expect_assignment_command, expect_assignment_command_cmd,
+      "expect-as-cmd " LCHAN_ARGS,
+      "Expect Assignment Command for a given lchan\n"
+      LCHAN_ARGS_DOC)
+{
+	VTY_ECHO();
+	_expect_as_cmd(parse_lchan_args(argv));
 	return CMD_SUCCESS;
 }
 
@@ -1109,7 +1190,7 @@ DEFUN(expect_ho, expect_ho_cmd,
       "Expect a handover of a specific lchan to a specific target lchan;"
       " shorthand for expect-chan, ack-chan, expect-ho, ho-complete.\n"
       "lchan to handover from\n" LCHAN_ARGS_DOC
-      "lchan that to handover to\n" LCHAN_ARGS_DOC)
+      "lchan to handover to\n" LCHAN_ARGS_DOC)
 {
 	struct gsm_lchan *from = parse_lchan_args(argv);
 	struct gsm_lchan *to = parse_lchan_args(argv+4);
@@ -1119,6 +1200,31 @@ DEFUN(expect_ho, expect_ho_cmd,
 	_expect_ho_cmd(from);
 	send_ho_detect(to);
 	send_ho_complete(to, true);
+
+	lchan_release_ack(from);
+	return CMD_SUCCESS;
+}
+
+DEFUN(expect_as, expect_as_cmd,
+      "expect-as from " LCHAN_ARGS " to " LCHAN_ARGS,
+      "Expect an intra-cell re-assignment of a specific lchan to a specific target lchan;"
+      " shorthand for expect-chan, ack-chan, expect-as, TODO.\n"
+      "lchan to be re-assigned elsewhere\n" LCHAN_ARGS_DOC
+      "new lchan to re-assign to\n" LCHAN_ARGS_DOC)
+{
+	struct gsm_lchan *from = parse_lchan_args(argv);
+	struct gsm_lchan *to = parse_lchan_args(argv+4);
+	VTY_ECHO();
+
+	_expect_chan_activ(to);
+	if (from->ts->trx->bts != to->ts->trx->bts) {
+		vty_out(vty, "%% Error: re-assignment only works within the same BTS%s", VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+	_expect_as_cmd(from);
+	send_assignment_complete(to);
+	send_est_ind(to);
+
 	lchan_release_ack(from);
 	return CMD_SUCCESS;
 }
@@ -1209,9 +1315,11 @@ static void ho_test_vty_init()
 	install_element(CONFIG_NODE, &expect_no_chan_cmd);
 	install_element(CONFIG_NODE, &expect_chan_cmd);
 	install_element(CONFIG_NODE, &expect_handover_command_cmd);
+	install_element(CONFIG_NODE, &expect_assignment_command_cmd);
 	install_element(CONFIG_NODE, &ho_detection_cmd);
 	install_element(CONFIG_NODE, &ho_complete_cmd);
 	install_element(CONFIG_NODE, &expect_ho_cmd);
+	install_element(CONFIG_NODE, &expect_as_cmd);
 	install_element(CONFIG_NODE, &ho_failed_cmd);
 	install_element(CONFIG_NODE, &expect_ts_use_cmd);
 	install_element(CONFIG_NODE, &codec_f_cmd);
@@ -1330,7 +1438,8 @@ int main(int argc, char **argv)
 
 	osmo_init_logging2(ctx, &log_info);
 
-	log_set_print_filename2(osmo_stderr_target, LOG_FILENAME_NONE);
+	log_set_print_filename2(osmo_stderr_target, LOG_FILENAME_BASENAME);
+	log_set_print_filename_pos(osmo_stderr_target, LOG_FILENAME_POS_LINE_END);
 	log_set_print_category(osmo_stderr_target, 1);
 	log_set_print_category_hex(osmo_stderr_target, 0);
 	log_set_print_level(osmo_stderr_target, 1);
@@ -1349,6 +1458,7 @@ int main(int argc, char **argv)
 	lchan_fsm_init();
 	bsc_subscr_conn_fsm_init();
 	handover_fsm_init();
+	assignment_fsm_init();
 
 	ho_set_algorithm(bsc_gsmnet->ho, 2);
 	ho_set_ho_active(bsc_gsmnet->ho, true);
@@ -1436,4 +1546,13 @@ const char *osmo_mgcpc_ep_name(const struct osmo_mgcpc_ep *ep)
 const char *osmo_mgcpc_ep_ci_name(const struct osmo_mgcpc_ep_ci *ci)
 {
 	return "fake-ci";
+}
+const struct mgcp_conn_peer *osmo_mgcpc_ep_ci_get_rtp_info(const struct osmo_mgcpc_ep_ci *ci)
+{
+	static struct mgcp_conn_peer ret = {
+		.addr = "1.2.3.4",
+		.port = 1234,
+		.endpoint = "fake-endpoint",
+	};
+	return &ret;
 }

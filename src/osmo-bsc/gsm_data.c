@@ -942,6 +942,7 @@ const struct value_string lchan_modify_for_names[] = {
 const struct value_string assign_for_names[] = {
 	OSMO_VALUE_STRING(ASSIGN_FOR_NONE),
 	OSMO_VALUE_STRING(ASSIGN_FOR_BSSMAP_REQ),
+	OSMO_VALUE_STRING(ASSIGN_FOR_CONGESTION_RESOLUTION),
 	{}
 };
 
