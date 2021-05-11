@@ -23,7 +23,7 @@ expect-no-chan
 set-ts-use trx 0 0 states		*	TCH/F	TCH/F	-	-	TCH/HH  TCH/HH  TCH/HH
 meas-rep lchan * * * * rxlev 10 rxqual 0 ta 0
 congestion-check
-expect-ho from lchan 0 0 5 0 to lchan 0 0 3 0
+expect-as from lchan 0 0 5 0 to lchan 0 0 3 0
 
 # Now similar load percentages, just with different min-free-slots settings for tch/f vs tch/h.
 
@@ -50,4 +50,4 @@ expect-no-chan
 set-ts-use trx 0 0 states		*	TCH/F	TCH/F	-	-	TCH/HH  TCH/HH  TCH/H-
 meas-rep lchan * * * * rxlev 20 rxqual 0 ta 0
 congestion-check
-expect-ho from lchan 0 0 5 0 to lchan 0 0 3 0
+expect-as from lchan 0 0 5 0 to lchan 0 0 3 0

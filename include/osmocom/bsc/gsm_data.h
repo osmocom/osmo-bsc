@@ -130,6 +130,7 @@ struct channel_mode_and_rate {
 enum assign_for {
 	ASSIGN_FOR_NONE,
 	ASSIGN_FOR_BSSMAP_REQ,
+	ASSIGN_FOR_CONGESTION_RESOLUTION,
 };
 
 extern const struct value_string assign_for_names[];

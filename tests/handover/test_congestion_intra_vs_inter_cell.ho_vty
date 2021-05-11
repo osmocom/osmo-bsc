@@ -12,7 +12,7 @@ meas-rep lchan 0 0 6 0 rxlev 30 rxqual 0 ta 0 neighbors 20
 expect-no-chan
 
 congestion-check
-expect-ho from lchan 0 0 6 0 to lchan 0 0 1 0
+expect-as from lchan 0 0 6 0 to lchan 0 0 1 0
 expect-ts-use trx 0 0 states * TCH/F - - - TCH/H- - *
 expect-ts-use trx 1 0 states * - - - - - - *
 
@@ -27,7 +27,7 @@ meas-rep lchan 0 0 6 0 rxlev 31 rxqual 0 ta 0 neighbors 20
 expect-no-chan
 
 congestion-check
-expect-ho from lchan 0 0 5 0 to lchan 0 0 1 0
+expect-as from lchan 0 0 5 0 to lchan 0 0 1 0
 expect-ts-use trx 0 0 states * TCH/F - - - - TCH/H- *
 expect-ts-use trx 1 0 states * - - - - - - *
 
@@ -42,7 +42,7 @@ meas-rep lchan 0 0 6 0 rxlev 31 rxqual 0 ta 0 neighbors 21
 expect-no-chan
 
 congestion-check
-expect-ho from lchan 0 0 5 0 to lchan 0 0 1 0
+expect-as from lchan 0 0 5 0 to lchan 0 0 1 0
 expect-ts-use trx 0 0 states * TCH/F - - - - TCH/H- *
 expect-ts-use trx 1 0 states * - - - - - - *
 
@@ -57,7 +57,7 @@ meas-rep lchan 0 0 6 0 rxlev 31 rxqual 0 ta 0 neighbors 20
 expect-no-chan
 
 congestion-check
-expect-ho from lchan 0 0 5 0 to lchan 0 0 1 0
+expect-as from lchan 0 0 5 0 to lchan 0 0 1 0
 expect-ts-use trx 0 0 states * TCH/F - - - - TCH/H- *
 expect-ts-use trx 1 0 states * - - - - - - *
 
@@ -72,7 +72,7 @@ meas-rep lchan 0 0 6 0 rxlev 31 rxqual 0 ta 0 neighbors 31
 expect-no-chan
 
 congestion-check
-expect-ho from lchan 0 0 5 0 to lchan 0 0 1 0
+expect-as from lchan 0 0 5 0 to lchan 0 0 1 0
 expect-ts-use trx 0 0 states * TCH/F - - - - TCH/H- *
 expect-ts-use trx 1 0 states * - - - - - - *
 
@@ -87,7 +87,7 @@ meas-rep lchan 0 0 6 0 rxlev 30 rxqual 0 ta 0 neighbors 30
 expect-no-chan
 
 congestion-check
-expect-ho from lchan 0 0 6 0 to lchan 0 0 1 0
+expect-as from lchan 0 0 6 0 to lchan 0 0 1 0
 expect-ts-use trx 0 0 states * TCH/F - - - TCH/H- - *
 expect-ts-use trx 1 0 states * - - - - - - *
 

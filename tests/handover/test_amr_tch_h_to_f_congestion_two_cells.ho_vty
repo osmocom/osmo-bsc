@@ -12,6 +12,6 @@ set-ts-use trx 1 0 states        *    -     -     -     TCH/H- -     -     *
 meas-rep repeat 10 lchan 1 0 4 0 rxlev 30 rxqual 0 ta 0 neighbors 20
 expect-no-chan
 congestion-check
-expect-ho from lchan 1 0 4 0 to lchan 1 0 1 0
+expect-as from lchan 1 0 4 0 to lchan 1 0 1 0
 expect-ts-use trx 0 0 states * - - - - - - *
 expect-ts-use trx 1 0 states * TCH/F - - - - - *
