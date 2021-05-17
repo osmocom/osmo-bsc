@@ -42,6 +42,8 @@ EXTRA_DIST = \
 	timer.vty \
 	power_ctrl.vty \
 	ctrl/osmo-bsc-neigh-test.cfg \
+	ctrl/osmo-bsc-apply-config-file.cfg \
+	ctrl/osmo-bsc-apply-config-file-invalid.cfg \
 	$(NULL)
 
 TESTSUITE = $(srcdir)/testsuite

@@ -22,6 +22,9 @@
 #include <time.h>
 
 #include <osmocom/ctrl/control_cmd.h>
+
+#include <osmocom/vty/command.h>
+
 #include <osmocom/gsm/gsm48.h>
 #include <osmocom/bsc/ipaccess.h>
 #include <osmocom/bsc/gsm_data.h>
@@ -31,6 +34,53 @@
 #include <osmocom/bsc/osmo_bsc_rf.h>
 #include <osmocom/bsc/bsc_msc_data.h>
 #include <osmocom/bsc/bts.h>
+
+static int verify_net_apply_config_file(struct ctrl_cmd *cmd, const char *value, void *_data)
+{
+	FILE *cfile;
+
+	if (!cmd->value || cmd->value[0] == '\0')
+		return -1;
+
+	cfile = fopen(cmd->value, "r");
+	if (!cfile)
+		return -1;
+
+	fclose(cfile);
+
+	return 0;
+}
+static int set_net_apply_config_file(struct ctrl_cmd *cmd, void *_data)
+{
+	int rc;
+	FILE *cfile;
+	unsigned cmd_ret = CTRL_CMD_ERROR;
+
+	LOGP(DCTRL, LOGL_NOTICE, "Applying VTY snippet from %s...\n", cmd->value);
+	cfile = fopen(cmd->value, "r");
+	if (!cfile) {
+		LOGP(DCTRL, LOGL_NOTICE, "Applying VTY snippet from %s: fopen() failed: %d\n",
+		     cmd->value, errno);
+		cmd->reply = "NoFile";
+		goto close_ret;
+	}
+
+	rc = vty_read_config_filep(cfile, NULL);
+	LOGP(DCTRL, LOGL_NOTICE, "Applying VTY snippet from %s returned %d\n", cmd->value, rc);
+	if (rc) {
+		cmd->reply = talloc_asprintf(cmd, "ParseError=%d", rc);
+		if (!cmd->reply)
+			cmd->reply = "OOM";
+		goto close_ret;
+	}
+
+	cmd->reply = "OK";
+	cmd_ret = CTRL_CMD_REPLY;
+close_ret:
+	fclose(cfile);
+	return cmd_ret;
+}
+CTRL_CMD_DEFINE_WO(net_apply_config_file, "apply-config-file");
 
 CTRL_CMD_DEFINE(net_mcc, "mcc");
 static int get_net_mcc(struct ctrl_cmd *cmd, void *_data)
@@ -477,6 +527,7 @@ CTRL_CMD_DEFINE(trx_max_power, "max-power-reduction");
 int bsc_base_ctrl_cmds_install(void)
 {
 	int rc = 0;
+	rc |= ctrl_cmd_install(CTRL_NODE_ROOT, &cmd_net_apply_config_file);
 	rc |= ctrl_cmd_install(CTRL_NODE_ROOT, &cmd_net_mnc);
 	rc |= ctrl_cmd_install(CTRL_NODE_ROOT, &cmd_net_mcc);
 	rc |= ctrl_cmd_install(CTRL_NODE_ROOT, &cmd_net_apply_config);

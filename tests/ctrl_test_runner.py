@@ -488,6 +488,44 @@ class TestCtrlBSC(TestCtrlBase):
         self.assertEqual(r['var'], 'mcc')
         self.assertEqual(r['value'], '002')
 
+
+    def testApplyConfigFile(self):
+
+        vty_file = os.path.join(confpath, 'tests/ctrl/osmo-bsc-apply-config-file.cfg')
+        vty_file_invalid = os.path.join(confpath, 'tests/ctrl/osmo-bsc-apply-config-file-invalid.cfg')
+
+        # Test some invalid input
+        r = self.do_set('apply-config-file', 'wrong-file-name-nonexistent')
+        self.assertEqual(r['mtype'], 'ERROR')
+
+        # Test some existing file with invalid content
+        r = self.do_set('apply-config-file', vty_file_invalid)
+        self.assertEqual(r['mtype'], 'ERROR')
+
+        #bts1 shouldn't exist yet, let's check:
+        r = self.do_get('bts.1.location-area-code')
+        self.assertEqual(r['mtype'], 'ERROR')
+        self.assertEqual(r['error'], 'Error while resolving object')
+
+        r = self.do_set('apply-config-file', vty_file)
+        print('respose: ' + str(r))
+        self.assertEqual(r['mtype'], 'SET_REPLY')
+        self.assertEqual(r['var'], 'apply-config-file')
+        self.assertEqual(r['value'], 'OK')
+
+        # BTS1 should exist now:
+        r = self.do_get('bts.1.location-area-code')
+        self.assertEqual(r['mtype'], 'GET_REPLY')
+        self.assertEqual(r['var'], 'bts.1.location-area-code')
+        self.assertEqual(r['value'], '1')
+
+        # Set it again
+        r = self.do_set('apply-config-file', vty_file)
+        self.assertEqual(r['mtype'], 'SET_REPLY')
+        self.assertEqual(r['var'], 'apply-config-file')
+        self.assertEqual(r['value'], 'OK')
+
+
 class TestCtrlBSCNeighbor(TestCtrlBase):
 
     def tearDown(self):
