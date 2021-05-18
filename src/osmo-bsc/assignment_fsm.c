@@ -447,8 +447,6 @@ void assignment_fsm_start(struct gsm_subscriber_connection *conn, struct gsm_bts
 		[CH_RATE_FULL] = "FR",
 	};
 	struct osmo_fsm_inst *fi;
-	struct lchan_activate_info activ_info;
-	struct lchan_modify_info modif_info;
 	int i;
 
 	OSMO_ASSERT(conn);
@@ -510,16 +508,7 @@ void assignment_fsm_start(struct gsm_subscriber_connection *conn, struct gsm_bts
 			       gsm48_chan_mode_name(conn->assignment.selected_ch_mode_rate.chan_mode),
 			       gsm_lchan_name(conn->lchan));
 
-		modif_info = (struct lchan_modify_info){
-			.modify_for = MODIFY_FOR_ASSIGNMENT,
-			.ch_mode_rate = conn->assignment.selected_ch_mode_rate,
-			.requires_voice_stream = conn->assignment.requires_voice_stream,
-			.msc_assigned_cic = req->msc_assigned_cic,
-		};
-
-		if (assignment_fsm_state_chg(ASSIGNMENT_ST_WAIT_LCHAN_MODIFIED))
-			return;
-		lchan_mode_modify(conn->lchan, &modif_info);
+		assignment_fsm_state_chg(ASSIGNMENT_ST_WAIT_LCHAN_MODIFIED);
 		return;
 	}
 
@@ -564,7 +553,13 @@ void assignment_fsm_start(struct gsm_subscriber_connection *conn, struct gsm_bts
 		       req->use_osmux ? "yes" : "no");
 
 	assignment_fsm_state_chg(ASSIGNMENT_ST_WAIT_LCHAN_ACTIVE);
-	activ_info = (struct lchan_activate_info){
+}
+
+static void assignment_fsm_wait_lchan_active_onenter(struct osmo_fsm_inst *fi, uint32_t prev_state)
+{
+	struct gsm_subscriber_connection *conn = assignment_fi_conn(fi);
+	struct assignment_request *req = &conn->assignment.req;
+	struct lchan_activate_info activ_info = {
 		.activ_for = ACTIVATE_FOR_ASSIGNMENT,
 		.for_conn = conn,
 		.ch_mode_rate = conn->assignment.selected_ch_mode_rate,
@@ -578,14 +573,17 @@ void assignment_fsm_start(struct gsm_subscriber_connection *conn, struct gsm_bts
 	lchan_activate(conn->assignment.new_lchan, &activ_info);
 }
 
-static void assignment_fsm_wait_lchan(struct osmo_fsm_inst *fi, uint32_t event, void *data)
+static void assignment_fsm_wait_lchan_active(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
 	struct gsm_subscriber_connection *conn = assignment_fi_conn(fi);
 	switch (event) {
 
 	case ASSIGNMENT_EV_LCHAN_ACTIVE:
-		if (data != conn->assignment.new_lchan)
+		if (data != conn->assignment.new_lchan) {
+			LOG_ASSIGNMENT(conn, LOGL_ERROR, "Some unrelated lchan was activated, ignoring: %s\n",
+				       gsm_lchan_name(data));
 			return;
+		}
 
 		/* The TS may have changed its pchan_is */
 		assignment_fsm_update_id(conn);
@@ -736,6 +734,19 @@ static void assignment_fsm_wait_mgw_endpoint_to_msc(struct osmo_fsm_inst *fi, ui
 	}
 }
 
+static void assignment_fsm_wait_lchan_modified_onenter(struct osmo_fsm_inst *fi, uint32_t prev_state)
+{
+	struct gsm_subscriber_connection *conn = assignment_fi_conn(fi);
+	struct assignment_request *req = &conn->assignment.req;
+	struct lchan_modify_info modif_info = {
+		.modify_for = MODIFY_FOR_ASSIGNMENT,
+		.ch_mode_rate = conn->assignment.selected_ch_mode_rate,
+		.requires_voice_stream = conn->assignment.requires_voice_stream,
+		.msc_assigned_cic = req->msc_assigned_cic,
+	};
+	lchan_mode_modify(conn->lchan, &modif_info);
+}
+
 static void assignment_fsm_wait_lchan_modified(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
 	switch (event) {
@@ -754,7 +765,8 @@ static void assignment_fsm_wait_lchan_modified(struct osmo_fsm_inst *fi, uint32_
 static const struct osmo_fsm_state assignment_fsm_states[] = {
 	[ASSIGNMENT_ST_WAIT_LCHAN_ACTIVE] = {
 		.name = "WAIT_LCHAN_ACTIVE",
-		.action = assignment_fsm_wait_lchan,
+		.onenter = assignment_fsm_wait_lchan_active_onenter,
+		.action = assignment_fsm_wait_lchan_active,
 		.in_event_mask = 0
 			| S(ASSIGNMENT_EV_LCHAN_ACTIVE)
 			,
@@ -799,6 +811,7 @@ static const struct osmo_fsm_state assignment_fsm_states[] = {
 	},
 	[ASSIGNMENT_ST_WAIT_LCHAN_MODIFIED] = {
 		.name = "WAIT_LCHAN_MODIFIED",
+		.onenter = assignment_fsm_wait_lchan_modified_onenter,
 		.action = assignment_fsm_wait_lchan_modified,
 		.in_event_mask = 0
 			| S(ASSIGNMENT_EV_LCHAN_MODIFIED)
