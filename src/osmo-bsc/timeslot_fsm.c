@@ -112,7 +112,7 @@ static int ts_count_active_lchans(struct gsm_bts_trx_ts *ts)
 	struct gsm_lchan *lchan;
 	int count = 0;
 
-	ts_for_each_lchan(lchan, ts) {
+	ts_for_n_lchans(lchan, ts, ts->max_lchans_possible) {
 		if (lchan->fi->state == LCHAN_ST_UNUSED)
 			continue;
 		count++;
@@ -125,7 +125,7 @@ static void ts_lchans_dispatch(struct gsm_bts_trx_ts *ts, int lchan_state, uint3
 {
 	struct gsm_lchan *lchan;
 
-	ts_for_each_potential_lchan(lchan, ts) {
+	ts_for_n_lchans(lchan, ts, ts->max_lchans_possible) {
 		if (lchan_state >= 0
 		    && !lchan_state_is(lchan, lchan_state))
 			continue;
@@ -137,7 +137,7 @@ static void ts_terminate_lchan_fsms(struct gsm_bts_trx_ts *ts)
 {
 	struct gsm_lchan *lchan;
 
-	ts_for_each_potential_lchan(lchan, ts) {
+	ts_for_n_lchans(lchan, ts, ts->max_lchans_possible) {
 		osmo_fsm_inst_term(lchan->fi, OSMO_FSM_TERM_REQUEST, NULL);
 	}
 }
@@ -146,7 +146,7 @@ static int ts_lchans_waiting(struct gsm_bts_trx_ts *ts)
 {
 	struct gsm_lchan *lchan;
 	int count = 0;
-	ts_for_each_potential_lchan(lchan, ts)
+	ts_for_n_lchans(lchan, ts, ts->max_lchans_possible)
 		if (lchan->fi->state == LCHAN_ST_WAIT_TS_READY)
 			count++;
 	return count;
@@ -565,7 +565,7 @@ static void ts_fsm_in_use_onenter(struct osmo_fsm_inst *fi, uint32_t prev_state)
 	ts->pdch_act_allowed = true;
 
 	/* For static TS, check validity. For dyn TS, figure out which PCHAN this should become. */
-	ts_for_each_potential_lchan(lchan, ts) {
+	ts_for_n_lchans(lchan, ts, ts->max_lchans_possible) {
 		if (lchan_state_is(lchan, LCHAN_ST_UNUSED))
 			continue;
 
@@ -952,7 +952,7 @@ static struct osmo_fsm ts_fsm = {
 bool ts_is_lchan_waiting_for_pchan(struct gsm_bts_trx_ts *ts, enum gsm_phys_chan_config *target_pchan)
 {
 	struct gsm_lchan *lchan;
-	ts_for_each_potential_lchan(lchan, ts) {
+	ts_for_n_lchans(lchan, ts, ts->max_lchans_possible) {
 		if (lchan->fi->state == LCHAN_ST_WAIT_TS_READY) {
 			if (target_pchan)
 				*target_pchan = gsm_pchan_by_lchan_type(lchan->type);

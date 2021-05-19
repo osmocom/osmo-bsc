@@ -73,15 +73,7 @@ void bts_chan_load(struct pchan_load *cl, const struct gsm_bts *bts)
 				pl->total++;
 			}
 
-			/* Count allocated logical channels.
-			 * Note: A GSM_PCHAN_TCH_F_TCH_H_PDCH can be switched
-			 * to a single TCH/F or to two TCH/H. So when it's in
-			 * the TCH/H mode, total number of available channels
-			 * is 1 more than when it's in the TCH/F mode.
-			 * I.e. "total" count will fluctuate depending on
-			 * whether GSM_PCHAN_TCH_F_TCH_H_PDCH timeslot is
-			 * in TCH/F or TCH/H (or in NONE/PDCH) mode. */
-			ts_for_each_lchan(lchan, ts) {
+			ts_for_n_lchans(lchan, ts, ts->max_primary_lchans) {
 				/* don't even count CBCH slots in total */
 				if (lchan->type == GSM_LCHAN_CBCH)
 					continue;

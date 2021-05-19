@@ -112,7 +112,7 @@ int bts_handover_count(struct gsm_bts *bts, int ho_scopes)
 			if (!nm_is_running(&ts->mo.nm_state))
 				continue;
 
-			ts_for_each_lchan(lchan, ts) {
+			ts_for_n_lchans(lchan, ts, ts->max_lchans_possible) {
 				if (!lchan->conn)
 					continue;
 				if (!lchan->conn->ho.fi)
