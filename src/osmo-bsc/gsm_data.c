@@ -1072,6 +1072,9 @@ enum rsl_cmod_spd chan_mode_to_rsl_cmod_spd(enum gsm48_chan_mode chan_mode)
 	case GSM48_CMODE_SPEECH_V1:
 	case GSM48_CMODE_SPEECH_EFR:
 	case GSM48_CMODE_SPEECH_AMR:
+	case GSM48_CMODE_SPEECH_V1_VAMOS:
+	case GSM48_CMODE_SPEECH_V2_VAMOS:
+	case GSM48_CMODE_SPEECH_V3_VAMOS:
 		return RSL_CMOD_SPD_SPEECH;
 	case GSM48_CMODE_DATA_14k5:
 	case GSM48_CMODE_DATA_12k0:
