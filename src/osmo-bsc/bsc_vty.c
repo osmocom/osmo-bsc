@@ -6532,6 +6532,78 @@ DEFUN(lchan_mdcx, lchan_mdcx_cmd,
 	return CMD_SUCCESS;
 }
 
+DEFUN(lchan_reassign, lchan_reassign_cmd,
+	"bts <0-255> trx <0-255> timeslot <0-7> (sub-slot|vamos-sub-slot) <0-7> "
+	"reassign-to trx <0-255> timeslot <0-7> (sub-slot|vamos-sub-slot) <0-7> "
+	TSC_ARGS_OPT,
+	BTS_NR_TRX_TS_STR2
+	"Primary sub-slot\n" "VAMOS secondary shadow subslot, range <0-1>, only valid for TCH type timeslots\n"
+	SS_NR_STR
+	"Trigger Assignment to an unused lchan on the same cell\n"
+	"Target TRX\nTRX nr\nTarget timeslot\ntimeslot nr\n"
+	"Primary sub-slot\n" "VAMOS secondary shadow subslot, range <0-1>, only valid for TCH type timeslots\n"
+	SS_NR_STR
+	TSC_ARGS_DOC)
+{
+	const char *bts_str = argv[0];
+	const char *from_trx_str = argv[1];
+	const char *from_ts_str = argv[2];
+	bool from_vamos = (strcmp(argv[3], "vamos-sub-slot") == 0);
+	int from_ss_nr = atoi(argv[4]);
+	const char *to_trx_str = argv[5];
+	const char *to_ts_str = argv[6];
+	bool to_vamos = (strcmp(argv[7], "vamos-sub-slot") == 0);
+	int to_ss_nr = atoi(argv[8]);
+	int tsc_set = (argc > 10) ? atoi(argv[10]) : -1;
+	int tsc = (argc > 11) ? atoi(argv[11]) : -1;
+
+	struct gsm_bts_trx_ts *from_ts;
+	struct gsm_bts_trx_ts *to_ts;
+	struct gsm_lchan *from_lchan;
+	struct gsm_lchan *to_lchan;
+
+	LOGP(DLGLOBAL, LOGL_NOTICE, "hi\n");
+
+	from_ts = vty_get_ts(vty, bts_str, from_trx_str, from_ts_str);
+	if (!from_ts)
+		return CMD_WARNING;
+	to_ts = vty_get_ts(vty, bts_str, to_trx_str, to_ts_str);
+	if (!to_ts)
+		return CMD_WARNING;
+
+	if (from_vamos)
+		from_ss_nr += from_ts->max_primary_lchans;
+	from_lchan = &from_ts->lchan[from_ss_nr];
+
+	if (to_vamos)
+		to_ss_nr += to_ts->max_primary_lchans;
+	to_lchan = &to_ts->lchan[to_ss_nr];
+
+	if (!lchan_state_is(from_lchan, LCHAN_ST_ESTABLISHED)) {
+		vty_out(vty, "cannot re-assign, source lchan is not in ESTABLISHED state%s", VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+	if (!lchan_state_is(to_lchan, LCHAN_ST_UNUSED)) {
+		vty_out(vty, "cannot re-assign, target lchan is already in use%s", VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	/* lchan_select_*() sets the lchan->type, we need to do the same here, so that activation will work out. */
+	to_lchan->type = chan_mode_to_chan_type(from_lchan->current_ch_mode_rate.chan_mode,
+						from_lchan->current_ch_mode_rate.chan_rate);
+
+	LOG_LCHAN(from_lchan, LOGL_NOTICE, "VTY requests re-assignment of this lchan to %s%s\n",
+		  gsm_lchan_name(to_lchan), to_lchan->vamos.is_secondary ? " (to VAMOS mode)" : "");
+	LOG_LCHAN(to_lchan, LOGL_NOTICE, "VTY requests re-assignment of %s to this lchan%s TSC %d/%d\n",
+		  gsm_lchan_name(from_lchan), to_lchan->vamos.is_secondary ? " (to VAMOS mode)" : "",
+		  tsc_set, tsc);
+	if (reassignment_request_to_lchan(ASSIGN_FOR_VTY, from_lchan, to_lchan, tsc_set, tsc)) {
+		vty_out(vty, "failed to request re-assignment%s", VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+	return CMD_SUCCESS;
+}
+
 DEFUN(ctrl_trap, ctrl_trap_cmd,
 	"ctrl-interface generate-trap TRAP VALUE",
 	"Commands related to the CTRL Interface\n"
@@ -8010,6 +8082,7 @@ int bsc_vty_init(struct gsm_network *network)
 	install_element(ENABLE_NODE, &lchan_act_all_trx_cmd);
 	install_element(ENABLE_NODE, &lchan_mdcx_cmd);
 	install_element(ENABLE_NODE, &lchan_set_borken_cmd);
+	install_element(ENABLE_NODE, &lchan_reassign_cmd);
 
 	install_element(ENABLE_NODE, &handover_subscr_conn_cmd);
 	install_element(ENABLE_NODE, &assignment_subscr_conn_cmd);
