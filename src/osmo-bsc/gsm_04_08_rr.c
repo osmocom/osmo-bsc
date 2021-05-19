@@ -546,7 +546,7 @@ struct msgb *gsm48_make_ho_cmd(struct gsm_lchan *new_lchan, uint8_t power_comman
 
 	/* mandatory bits */
 	gsm48_cell_desc(&ho->cell_desc, new_lchan->ts->trx->bts);
-	gsm48_lchan2chan_desc(&ho->chan_desc, new_lchan);
+	gsm48_lchan2chan_desc(&ho->chan_desc, new_lchan, gsm_ts_tsc(new_lchan->ts));
 	ho->ho_ref = ho_ref;
 	ho->power_command = power_command;
 
@@ -618,7 +618,7 @@ int gsm48_send_rr_ass_cmd(struct gsm_lchan *current_lchan, struct gsm_lchan *new
 	 * the chan_desc. But as long as multi-slot configurations
 	 * are not used we seem to be fine.
 	 */
-	gsm48_lchan2chan_desc(&ass->chan_desc, new_lchan);
+	gsm48_lchan2chan_desc(&ass->chan_desc, new_lchan, gsm_ts_tsc(new_lchan->ts));
 	ass->power_command = power_command;
 
 	/* Cell Channel Description (freq. hopping), TV (see 3GPP TS 44.018, 10.5.2.1b) */
@@ -690,7 +690,7 @@ int gsm48_lchan_modify(struct gsm_lchan *lchan, uint8_t mode)
 
 	/* fill the channel information element, this code
 	 * should probably be shared with rsl_rx_chan_rqd() */
-	gsm48_lchan2chan_desc(&cmm->chan_desc, lchan);
+	gsm48_lchan2chan_desc(&cmm->chan_desc, lchan, gsm_ts_tsc(lchan->ts));
 	cmm->mode = mode;
 
 	/* in case of multi rate we need to attach a config */
