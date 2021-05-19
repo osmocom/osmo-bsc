@@ -11,6 +11,7 @@ OsmoBSC# bts 0 trx 0 timeslot 0 sub-slot 0 ?
   deactivate      Manual Channel Deactivation (e.g. for BER test)
   modify          Manually send Channel Mode Modify (for debugging)
   mdcx            Modify RTP Connection
+  reassign-to     Trigger Assignment to an unused lchan on the same cell
   handover        Manually trigger handover (for debugging)
   assignment      Manually trigger assignment (for debugging)
 
@@ -72,6 +73,7 @@ OsmoBSC# bts 0 trx 0 timeslot 0 sub-slot 0 ?
   deactivate      Manual Channel Deactivation (e.g. for BER test)
   modify          Manually send Channel Mode Modify (for debugging)
   mdcx            Modify RTP Connection
+  reassign-to     Trigger Assignment to an unused lchan on the same cell
   handover        Manually trigger handover (for debugging)
   assignment      Manually trigger assignment (for debugging)
 
@@ -86,6 +88,42 @@ OsmoBSC# bts 0 trx 0 timeslot 0 sub-slot 0 activate fr ?
   [<0-7>]  AMR Mode
 
 OsmoBSC# bts 0 trx 0 timeslot 0 sub-slot 0 activate fr 0 ?
+  <cr>  
+
+OsmoBSC# list
+...
+  bts <0-255> trx <0-255> timeslot <0-7> (sub-slot|vamos-sub-slot) <0-7> reassign-to trx <0-255> timeslot <0-7> (sub-slot|vamos-sub-slot) <0-7> [tsc] [<1-4>] [<0-7>]
+...
+
+OsmoBSC# bts 0 trx 0 timeslot 0 sub-slot 0 reassign-to ?
+  trx  Target TRX
+
+OsmoBSC# bts 0 trx 0 timeslot 0 sub-slot 0 reassign-to trx ?
+  <0-255>  TRX nr
+
+OsmoBSC# bts 0 trx 0 timeslot 0 sub-slot 0 reassign-to trx 0 ?
+  timeslot  Target timeslot
+
+OsmoBSC# bts 0 trx 0 timeslot 0 sub-slot 0 reassign-to trx 0 timeslot ?
+  <0-7>  timeslot nr
+
+OsmoBSC# bts 0 trx 0 timeslot 0 sub-slot 0 reassign-to trx 0 timeslot 0 ?
+  sub-slot        Primary sub-slot
+  vamos-sub-slot  VAMOS secondary shadow subslot, range <0-1>, only valid for TCH type timeslots
+
+OsmoBSC# bts 0 trx 0 timeslot 0 sub-slot 0 reassign-to trx 0 timeslot 0 vamos-sub-slot ?
+  <0-7>  Sub-slot Number
+
+OsmoBSC# bts 0 trx 0 timeslot 0 sub-slot 0 reassign-to trx 0 timeslot 0 vamos-sub-slot 0 ?
+  [tsc]  Provide specific TSC Set and Training Sequence Code
+
+OsmoBSC# bts 0 trx 0 timeslot 0 sub-slot 0 reassign-to trx 0 timeslot 0 vamos-sub-slot 0 tsc ?
+  [<1-4>]  TSC Set
+
+OsmoBSC# bts 0 trx 0 timeslot 0 sub-slot 0 reassign-to trx 0 timeslot 0 vamos-sub-slot 0 tsc 1 ?
+  [<0-7>]  Training Sequence Code
+
+OsmoBSC# bts 0 trx 0 timeslot 0 sub-slot 0 reassign-to trx 0 timeslot 0 vamos-sub-slot 0 tsc 1 0 ?
   <cr>  
 
 OsmoBSC# configure terminal
