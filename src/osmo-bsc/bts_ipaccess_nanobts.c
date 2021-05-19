@@ -678,10 +678,11 @@ ipaccess_sign_link_up(void *unit_data, struct e1inp_line *line,
 	struct e1inp_sign_link *sign_link = NULL;
 	struct timespec tp;
 	int rc;
+	struct e1inp_ts *sign_ts = e1inp_line_ipa_oml_ts(line);
 
 	bts = find_bts_by_unitid(bsc_gsmnet, dev->site_id, dev->bts_id);
 	if (!bts) {
-		ipaccess_sign_link_reject(dev, &line->ts[E1INP_SIGN_OML - 1]);
+		ipaccess_sign_link_reject(dev, sign_ts);
 		return NULL;
 	}
 	DEBUGP(DLINP, "%s: Identified BTS %u/%u/%u\n", e1inp_signtype_name(type),
@@ -701,7 +702,7 @@ ipaccess_sign_link_up(void *unit_data, struct e1inp_line *line,
 
 		/* create new OML link. */
 		sign_link = bts->oml_link =
-			e1inp_sign_link_create(&line->ts[E1INP_SIGN_OML - 1],
+			e1inp_sign_link_create(sign_ts,
 						E1INP_SIGN_OML, bts->c0,
 						bts->oml_tei, 0);
 		rc = clock_gettime(CLOCK_MONOTONIC, &tp);
@@ -726,7 +727,7 @@ ipaccess_sign_link_up(void *unit_data, struct e1inp_line *line,
 
 		/* set new RSL link for this TRX. */
 		line = bts->oml_link->ts->line;
-		ts = &line->ts[E1INP_SIGN_RSL + dev->trx_id - 1];
+		ts = e1inp_line_ipa_rsl_ts(line, dev->trx_id);
 		e1inp_ts_config_sign(ts, line);
 		sign_link = trx->rsl_link =
 				e1inp_sign_link_create(ts, E1INP_SIGN_RSL,
@@ -751,7 +752,7 @@ ipaccess_sign_link_up(void *unit_data, struct e1inp_line *line,
 static void ipaccess_sign_link_down(struct e1inp_line *line)
 {
 	/* No matter what link went down, we close both signal links. */
-	struct e1inp_ts *ts = &line->ts[E1INP_SIGN_OML-1];
+	struct e1inp_ts *ts = e1inp_line_ipa_oml_ts(line);
 	struct gsm_bts *bts = NULL;
 	struct e1inp_sign_link *link;
 
