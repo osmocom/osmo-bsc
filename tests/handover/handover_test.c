@@ -463,7 +463,8 @@ static void lchan_clear(struct gsm_lchan *lchan)
 static void ts_clear(struct gsm_bts_trx_ts *ts)
 {
 	struct gsm_lchan *lchan;
-	ts_for_each_lchan(lchan, ts) {
+
+	ts_for_n_lchans(lchan, ts, ts->max_lchans_possible) {
 		if (lchan_state_is(lchan, LCHAN_ST_UNUSED))
 			continue;
 		lchan_clear(lchan);

@@ -1691,7 +1691,7 @@ static int dump_lchan_trx_ts(struct gsm_bts_trx_ts *ts, struct vty *vty,
 			     bool all)
 {
 	struct gsm_lchan *lchan;
-	ts_for_each_lchan(lchan, ts) {
+	ts_for_n_lchans(lchan, ts, ts->max_lchans_possible) {
 		if (lchan_state_is(lchan, LCHAN_ST_UNUSED) && all == false)
 			continue;
 		dump_cb(vty, lchan);
@@ -1997,7 +1997,7 @@ static struct gsm_lchan *find_used_voice_lchan(struct vty *vty, int random_idx)
 					if (ts->fi->state != TS_ST_IN_USE)
 						continue;
 
-					ts_for_each_lchan(lchan, ts) {
+					ts_for_n_lchans(lchan, ts, ts->max_lchans_possible) {
 						if (lchan_state_is(lchan, LCHAN_ST_ESTABLISHED)
 						    && (lchan->type == GSM_LCHAN_TCH_F
 							|| lchan->type == GSM_LCHAN_TCH_H)) {
@@ -6160,7 +6160,7 @@ static int lchan_act_trx(struct vty *vty, struct gsm_bts_trx *trx, int activate)
 
 	for (ts_nr = 0; ts_nr < TRX_NR_TS; ts_nr++) {
 		ts = &trx->ts[ts_nr];
-		ts_for_each_potential_lchan(lchan, ts) {
+		ts_for_n_lchans(lchan, ts, ts->max_lchans_possible) {
 			switch (ts->pchan_on_init) {
 			case GSM_PCHAN_SDCCH8_SACCH8C:
 			case GSM_PCHAN_CCCH_SDCCH4_CBCH:

@@ -554,41 +554,20 @@ struct gsm_encr {
 	     bsc_subscr_name(lchan && lchan->conn ? lchan->conn->bsub : NULL), \
 	     ## args)
 
-/* Iterate lchans that have an FSM allocated based based on explicit pchan kind
- * (GSM_PCHAN_* constant).
- * Remark: PDCH related lchans are not handled in BSC but in PCU, so trying to
- * 	  iterate through GSM_PCHAN_PDCH is considered a void loop.
- */
-#define ts_as_pchan_for_each_lchan(lchan, ts, as_pchan) \
-	for (lchan = (ts)->lchan; \
-	     ((lchan - (ts)->lchan) < ARRAY_SIZE((ts)->lchan)) \
-	     && lchan->fi \
-	     && lchan->nr < pchan_subslots(as_pchan); \
-	     lchan++)
-
-/* Iterate lchans that have an FSM allocated based on current PCHAN
- * mode set in \ref ts.
+/* Iterate at most N lchans of the given timeslot.
  * usage:
  * struct gsm_lchan *lchan;
  * struct gsm_bts_trx_ts *ts = get_some_timeslot();
- * ts_for_each_lchan(lchan, ts) {
- * 	LOGPLCHAN(DMAIN, LOGL_DEBUG, "hello world\n");
+ * ts_for_n_lchans(lchan, ts, 3) {
+ *         LOG_LCHAN(lchan, LOGL_DEBUG, "hello world\n");
  * }
  */
-#define ts_for_each_lchan(lchan, ts) ts_as_pchan_for_each_lchan(lchan, ts, (ts)->pchan_is)
-
-/* Iterate over all possible lchans available that have an FSM allocated based
- * on PCHAN \ref ts (dynamic) configuration.
- * Iterate all lchan instances set up by this \ref ts type, including those
- * lchans currently disabled or in process of being enabled (e.g. due to dynamic
- * timeslot in switchover). Compare ts_for_each_lchan(), which iterates only the
- * enabled lchans.
- * For example, it is useful in case dynamic timeslot \ref ts is in process of
- * switching from configuration PDCH (no lchans) to TCH_F (1 lchan), where
- * pchan_is is still set to PDCH but \ref ts may contain already an \ref lchan
- * of type TCH_F which initiated the request to switch the \ts configuration.
- */
-#define ts_for_each_potential_lchan(lchan, ts) ts_as_pchan_for_each_lchan(lchan, ts, (ts)->pchan_on_init)
+#define ts_for_n_lchans(lchan, ts, N) \
+	for (lchan = (ts)->lchan; \
+	     ((lchan - (ts)->lchan) < ARRAY_SIZE((ts)->lchan)) \
+	     && lchan->fi \
+	     && ((lchan - (ts)->lchan) < (N)); \
+	     lchan++)
 
 enum lchan_activate_for {
 	ACTIVATE_FOR_NONE,

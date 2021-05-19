@@ -267,7 +267,7 @@ int trx_count_free_ts(struct gsm_bts_trx *trx, enum gsm_phys_chan_config pchan)
 		if (ts->pchan_is != pchan)
 			continue;
 
-		ts_for_each_lchan(lchan, ts) {
+		ts_for_n_lchans(lchan, ts, ts->max_primary_lchans) {
 			if (lchan_state_is(lchan, LCHAN_ST_UNUSED))
 				count++;
 		}

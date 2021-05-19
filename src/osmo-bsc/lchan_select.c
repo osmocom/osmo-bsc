@@ -65,6 +65,7 @@ _lc_find_trx(struct gsm_bts_trx *trx, enum gsm_phys_chan_config pchan,
 	}
 
 	for (j = start; j != stop; j += dir) {
+		int lchans_as_pchan;
 		ts = &trx->ts[j];
 		if (!ts_is_usable(ts))
 			continue;
@@ -84,7 +85,8 @@ _lc_find_trx(struct gsm_bts_trx *trx, enum gsm_phys_chan_config pchan,
 		}
 
 		/* TS is (going to be) in desired pchan mode. Go ahead and check for an available lchan. */
-		ts_as_pchan_for_each_lchan(lchan, ts, as_pchan) {
+		lchans_as_pchan = pchan_subslots(as_pchan);
+		ts_for_n_lchans(lchan, ts, lchans_as_pchan) {
 			if (lchan->fi->state == LCHAN_ST_UNUSED) {
 				LOGPLCHANALLOC("%s ss=%d is available%s\n",
 					       gsm_ts_and_pchan_name(ts), lchan->nr,

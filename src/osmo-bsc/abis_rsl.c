@@ -1606,7 +1606,7 @@ static struct gsm_lchan *get_any_lchan(struct gsm_bts *bts)
 		trx = gsm_bts_trx_num(bts, trx_nr);
 		for (ts_nr = 0; ts_nr < TRX_NR_TS; ts_nr++) {
 			ts = &trx->ts[ts_nr];
-			ts_for_each_lchan(lchan, ts) {
+			ts_for_n_lchans(lchan, ts, ts->max_primary_lchans) {
 				if (lchan->type == GSM_LCHAN_TCH_F || lchan->type == GSM_LCHAN_TCH_H) {
 					if (bts->chan_alloc_reverse) {
 						if (lchan->fi->state == LCHAN_ST_ESTABLISHED)

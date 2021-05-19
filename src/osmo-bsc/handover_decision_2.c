@@ -171,7 +171,7 @@ static unsigned int ts_usage_count(struct gsm_bts_trx_ts *ts)
 {
 	struct gsm_lchan *lchan;
 	unsigned int count = 0;
-	ts_for_each_lchan(lchan, ts) {
+	ts_for_n_lchans(lchan, ts, ts->max_lchans_possible) {
 		if (lchan_state_is(lchan, LCHAN_ST_ESTABLISHED))
 			count++;
 	}
