@@ -196,7 +196,7 @@ int e1_reconfig_bts(struct gsm_bts *bts)
 	if (bts->oml_link)
 		e1inp_sign_link_destroy(bts->oml_link);
 	bts->oml_link = oml_link;
-	rc = clock_gettime(CLOCK_MONOTONIC, &tp);
+	rc = osmo_clock_gettime(CLOCK_MONOTONIC, &tp);
 	bts->uptime = (rc < 0) ? 0 : tp.tv_sec; /* we don't need sub-second precision for uptime */
 
 	llist_for_each_entry(trx, &bts->trx_list, list)

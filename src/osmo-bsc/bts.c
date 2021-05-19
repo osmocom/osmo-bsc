@@ -570,7 +570,7 @@ unsigned long long bts_uptime(const struct gsm_bts *bts)
 		return 0;
 	}
 
-	if (clock_gettime(CLOCK_MONOTONIC, &tp) != 0) {
+	if (osmo_clock_gettime(CLOCK_MONOTONIC, &tp) != 0) {
 		LOGP(DNM, LOGL_ERROR, "BTS %u uptime computation failure: %s\n", bts->nr, strerror(errno));
 		return 0;
 	}

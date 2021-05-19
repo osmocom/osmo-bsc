@@ -705,7 +705,7 @@ ipaccess_sign_link_up(void *unit_data, struct e1inp_line *line,
 			e1inp_sign_link_create(sign_ts,
 						E1INP_SIGN_OML, bts->c0,
 						bts->oml_tei, 0);
-		rc = clock_gettime(CLOCK_MONOTONIC, &tp);
+		rc = osmo_clock_gettime(CLOCK_MONOTONIC, &tp);
 		bts->uptime = (rc < 0) ? 0 : tp.tv_sec; /* we don't need sub-second precision for uptime */
 		if (!(sign_link->trx->bts->ip_access.flags & OML_UP)) {
 			e1inp_event(sign_link->ts, S_L_INP_TEI_UP,
