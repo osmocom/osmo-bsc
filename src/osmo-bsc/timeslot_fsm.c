@@ -283,6 +283,7 @@ static void ts_fsm_not_initialized(struct osmo_fsm_inst *fi, uint32_t event, voi
 		{
 			/* TS is not initialized, no lchan can be requested. */
 			struct gsm_lchan *lchan = data;
+			LOG_TS(ts, LOGL_ERROR, "timeslot not initialized, cannot request lchan\n");
 			if (lchan && lchan->fi)
 				osmo_fsm_inst_dispatch(fi, LCHAN_EV_TS_ERROR, NULL);
 		}
