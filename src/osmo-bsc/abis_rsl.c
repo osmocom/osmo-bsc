@@ -1701,19 +1701,12 @@ static struct gsm_lchan *get_any_lchan(struct gsm_bts *bts)
 			ts = &trx->ts[ts_nr];
 			ts_for_n_lchans(lchan, ts, ts->max_primary_lchans) {
 				if (lchan->type == GSM_LCHAN_TCH_F || lchan->type == GSM_LCHAN_TCH_H) {
-					if (bts->chan_alloc_reverse) {
-						if (lchan->fi->state == LCHAN_ST_ESTABLISHED)
+					if (lchan->fi->state == LCHAN_ST_ESTABLISHED) {
+						if (!lchan_est || bts->chan_alloc_reverse)
 							lchan_est = lchan;
-						else
-							lchan_any = lchan;
 					} else {
-						if (lchan->fi->state == LCHAN_ST_ESTABLISHED) {
-							if (!lchan_est)
-								lchan_est = lchan;
-						} else {
-							if (!lchan_any)
-								lchan_any = lchan;
-						}
+						if (!lchan_any || bts->chan_alloc_reverse)
+							lchan_any = lchan;
 					}
 				}
 			}
