@@ -142,37 +142,46 @@ _lc_find_bts(struct gsm_bts *bts, enum gsm_phys_chan_config pchan, bool log)
 	return _lc_dyn_find_bts(bts, pchan, pchan, log);
 }
 
-struct gsm_lchan *lchan_select_by_chan_mode(struct gsm_bts *bts,
-					    enum gsm48_chan_mode chan_mode, enum channel_rate chan_rate)
+enum gsm_chan_t chan_mode_to_chan_type(enum gsm48_chan_mode chan_mode, enum channel_rate chan_rate)
 {
-	enum gsm_chan_t type;
-
 	switch (chan_mode) {
 	case GSM48_CMODE_SIGN:
 		switch (chan_rate) {
-		case CH_RATE_SDCCH: type = GSM_LCHAN_SDCCH; break;
-		case CH_RATE_HALF:  type = GSM_LCHAN_TCH_H; break;
-		case CH_RATE_FULL:  type = GSM_LCHAN_TCH_F; break;
-		default: return NULL;
+		case CH_RATE_SDCCH:
+			return GSM_LCHAN_SDCCH;
+		case CH_RATE_HALF:
+			return GSM_LCHAN_TCH_H;
+		case CH_RATE_FULL:
+			return GSM_LCHAN_TCH_F;
+		default:
+			return GSM_LCHAN_NONE;
 		}
-		break;
 	case GSM48_CMODE_SPEECH_EFR:
 		/* EFR works over FR channels only */
 		if (chan_rate != CH_RATE_FULL)
-			return NULL;
+			return GSM_LCHAN_NONE;
 		/* fall through */
 	case GSM48_CMODE_SPEECH_V1:
 	case GSM48_CMODE_SPEECH_AMR:
 		switch (chan_rate) {
-		case CH_RATE_HALF:  type = GSM_LCHAN_TCH_H; break;
-		case CH_RATE_FULL:  type = GSM_LCHAN_TCH_F; break;
-		default: return NULL;
+		case CH_RATE_HALF:
+			return GSM_LCHAN_TCH_H;
+		case CH_RATE_FULL:
+			return GSM_LCHAN_TCH_F;
+		default:
+			return GSM_LCHAN_NONE;
 		}
-		break;
 	default:
-		return NULL;
+		return GSM_LCHAN_NONE;
 	}
+}
 
+struct gsm_lchan *lchan_select_by_chan_mode(struct gsm_bts *bts,
+					    enum gsm48_chan_mode chan_mode, enum channel_rate chan_rate)
+{
+	enum gsm_chan_t type = chan_mode_to_chan_type(chan_mode, chan_rate);
+	if (type == GSM_LCHAN_NONE)
+		return NULL;
 	return lchan_select_by_type(bts, type);
 }
 
