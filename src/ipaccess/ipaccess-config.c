@@ -144,17 +144,18 @@ static int ia_config_connect(struct gsm_bts *bts, struct sockaddr_in *sin)
 	}
 	line->ops = &ipaccess_e1inp_line_ops;
 
-	/* create E1 timeslots for signalling and TRAU frames */
-	e1inp_ts_config_sign(&line->ts[1-1], line);
-	e1inp_ts_config_sign(&line->ts[2-1], line);
+	sign_ts = e1inp_line_ipa_oml_ts(line);
+	rsl_ts = e1inp_line_ipa_rsl_ts(line, 0);
 
-	/* create signalling links for TS1 */
-	sign_ts = &line->ts[1-1];
-	rsl_ts = &line->ts[2-1];
+	/* create E1 timeslots for signalling and TRAU frames */
+	e1inp_ts_config_sign(sign_ts, line);
+	e1inp_ts_config_sign(rsl_ts, line);
+
+	/* create signalling links for TRX0 */
 	oml_link = e1inp_sign_link_create(sign_ts, E1INP_SIGN_OML,
-					  bts->c0, 0xff, 0);
+					  bts->c0, IPAC_PROTO_OML, 0);
 	rsl_link = e1inp_sign_link_create(rsl_ts, E1INP_SIGN_RSL,
-					  bts->c0, 0, 0);
+					  bts->c0, IPAC_PROTO_RSL, 0);
 
 	/* create back-links from bts/trx */
 	bts->oml_link = oml_link;
