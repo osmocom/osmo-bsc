@@ -125,11 +125,15 @@ static inline void init_dchan_hdr(struct abis_rsl_dchan_hdr *dh,
 }
 
 /* call rsl_lchan_lookup and set the log context */
-static struct gsm_lchan *lchan_lookup(struct gsm_bts_trx *trx, uint8_t chan_nr,
+static struct gsm_lchan *lchan_lookup(struct e1inp_sign_link *sign_link, uint8_t chan_nr,
 				      const char *log_name)
 {
 	int rc;
-	struct gsm_lchan *lchan = rsl_lchan_lookup(trx, chan_nr, &rc);
+	/* If no VAMOS link was set up, rsl_tei_vamos may reflect the same as rsl_tei_primary. Make sure that the
+	 * primary tei matches stronger. */
+	bool vamos = (sign_link->tei != sign_link->trx->rsl_tei_primary)
+		     && (sign_link->tei == sign_link->trx->rsl_tei_vamos);
+	struct gsm_lchan *lchan = rsl_lchan_lookup(sign_link->trx, chan_nr, vamos, &rc);
 
 	if (!lchan) {
 		LOGP(DRSL, LOGL_ERROR, "%sunknown chan_nr=0x%02x\n",
@@ -1255,7 +1259,7 @@ static int abis_rsl_rx_dchan(struct msgb *msg)
 		return -EINVAL;
 	}
 
-	msg->lchan = lchan_lookup(sign_link->trx, rslh->chan_nr,
+	msg->lchan = lchan_lookup(sign_link, rslh->chan_nr,
 				  "Abis RSL rx DCHAN: ");
 	if (!msg->lchan) {
 		LOGP(DRSL, LOGL_ERROR,
@@ -1975,7 +1979,7 @@ static int abis_rsl_rx_cchan(struct msgb *msg)
 	struct rate_ctr_group *bts_ctrs = sign_link->trx->bts->bts_ctrs;
 	int rc = 0;
 
-	msg->lchan = lchan_lookup(sign_link->trx, rslh->chan_nr,
+	msg->lchan = lchan_lookup(sign_link, rslh->chan_nr,
 				  "Abis RSL rx CCHAN: ");
 
 	switch (rslh->c.msg_type) {
@@ -2046,7 +2050,7 @@ static int abis_rsl_rx_rll(struct msgb *msg)
 	int rc = 0;
 	uint8_t sapi = rllh->link_id & 0x7;
 
-	msg->lchan = lchan_lookup(sign_link->trx, rllh->chan_nr, "Abis RSL rx RLL: ");
+	msg->lchan = lchan_lookup(sign_link, rllh->chan_nr, "Abis RSL rx RLL: ");
 
 	switch (rllh->c.msg_type) {
 	case RSL_MT_DATA_IND:
@@ -2452,7 +2456,7 @@ static int abis_rsl_rx_ipacc(struct msgb *msg)
 	struct abis_rsl_rll_hdr *rllh = msgb_l2(msg);
 	int rc = 0;
 
-	msg->lchan = lchan_lookup(sign_link->trx, rllh->chan_nr,
+	msg->lchan = lchan_lookup(sign_link, rllh->chan_nr,
 				  "Abis RSL rx IPACC: ");
 
 	if (!msg->lchan) {

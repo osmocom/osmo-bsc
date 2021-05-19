@@ -146,7 +146,7 @@ char *gsm_trx_name(const struct gsm_bts_trx *trx)
 }
 
 /* determine logical channel based on TRX and channel number IE */
-struct gsm_lchan *rsl_lchan_lookup(struct gsm_bts_trx *trx, uint8_t chan_nr,
+struct gsm_lchan *rsl_lchan_lookup(struct gsm_bts_trx *trx, uint8_t chan_nr, bool vamos,
 				   int *rc)
 {
 	uint8_t ts_nr = chan_nr & 0x07;
@@ -180,6 +180,12 @@ struct gsm_lchan *rsl_lchan_lookup(struct gsm_bts_trx *trx, uint8_t chan_nr,
 		ok = (ts->pchan_on_init == GSM_PCHAN_TCH_F_TCH_H_PDCH);
 	} else
 		return NULL;
+
+	if (vamos) {
+		if (!osmo_bts_has_feature(&trx->bts->features, BTS_FEAT_VAMOS))
+			return NULL;
+		lch_idx += ts->max_primary_lchans;
+	}
 
 	if (rc && ok)
 		*rc = 0;

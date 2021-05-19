@@ -90,7 +90,7 @@ static inline struct gsm_bts_trx *gsm_bts_bb_trx_get_trx(struct gsm_bts_bb_trx *
 struct gsm_bts_trx *gsm_bts_trx_alloc(struct gsm_bts *bts);
 char *gsm_trx_name(const struct gsm_bts_trx *trx);
 
-struct gsm_lchan *rsl_lchan_lookup(struct gsm_bts_trx *trx, uint8_t chan_nr,
+struct gsm_lchan *rsl_lchan_lookup(struct gsm_bts_trx *trx, uint8_t chan_nr, bool vamos,
 				   int *rc);
 
 void gsm_trx_lock_rf(struct gsm_bts_trx *trx, bool locked, const char *reason);

@@ -698,7 +698,8 @@ int __wrap_abis_rsl_sendmsg(struct msgb *msg)
 	struct abis_rsl_dchan_hdr *dh = (struct abis_rsl_dchan_hdr *) msg->data;
 	struct e1inp_sign_link *sign_link = msg->dst;
 	int rc;
-	struct gsm_lchan *lchan = rsl_lchan_lookup(sign_link->trx, dh->chan_nr, &rc);
+	struct gsm_lchan *lchan = rsl_lchan_lookup(sign_link->trx, dh->chan_nr,
+						   false && (sign_link->tei == sign_link->trx->rsl_tei_vamos), &rc);
 	struct gsm_lchan *other_lchan;
 	struct gsm48_hdr *gh;
 
