@@ -271,7 +271,7 @@ static struct gsm_bts *_create_bts(int num_trx, const char * const *ts_args, int
 			switch (trx->ts[i].pchan_on_init) {
 			case GSM_PCHAN_TCH_F_TCH_H_PDCH:
 			case GSM_PCHAN_TCH_F_PDCH:
-				trx->ts[i].pchan_is = GSM_PCHAN_PDCH;
+				ts_set_pchan_is(&trx->ts[i], GSM_PCHAN_PDCH);
 				break;
 			default:
 				break;
@@ -392,10 +392,10 @@ struct gsm_lchan *lchan_act(struct gsm_lchan *lchan, int full_rate, const char *
 	lchan->mgw_endpoint_ci_bts = (void*)1;
 
 	if (lchan->ts->pchan_on_init == GSM_PCHAN_TCH_F_TCH_H_PDCH)
-		lchan->ts->pchan_is = full_rate ? GSM_PCHAN_TCH_F : GSM_PCHAN_TCH_H;
+		ts_set_pchan_is(lchan->ts, full_rate ? GSM_PCHAN_TCH_F : GSM_PCHAN_TCH_H);
 	if (lchan->ts->pchan_on_init == GSM_PCHAN_TCH_F_PDCH) {
 		OSMO_ASSERT(full_rate);
-		lchan->ts->pchan_is = GSM_PCHAN_TCH_F;
+		ts_set_pchan_is(lchan->ts, GSM_PCHAN_TCH_F);
 	}
 
 	LOG_LCHAN(lchan, LOGL_DEBUG, "activated by handover_test.c\n");
@@ -731,7 +731,7 @@ int __wrap_abis_rsl_sendmsg(struct msgb *msg)
 					break;
 				/* else fall thru */
 			case GSM_PCHAN_TCH_F:
-				lchan->ts->pchan_is = GSM_PCHAN_PDCH;
+				ts_set_pchan_is(lchan->ts, GSM_PCHAN_PDCH);
 				break;
 			default:
 				break;

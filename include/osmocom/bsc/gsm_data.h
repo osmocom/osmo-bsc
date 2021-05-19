@@ -821,6 +821,12 @@ struct gsm_bts_trx_ts {
 		} rbs2000;
 	};
 
+	/* Maximum number of lchans that could become usable, for example by switching a dynamic timeslot's type or by
+	 * enabling VAMOS secondary lchans. This does include the maximum count of possible VAMOS secondary lchans. */
+	uint8_t max_lchans_possible;
+	/* Currently usable lchans, according to the current pchan mode (for dynamic timeslots, this may change).
+	 * Does not include count of secondary VAMOS lchans. */
+	uint8_t max_primary_lchans;
 	struct gsm_lchan lchan[TS_MAX_LCHAN];
 };
 

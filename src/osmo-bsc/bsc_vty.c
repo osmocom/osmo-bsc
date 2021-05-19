@@ -6428,9 +6428,9 @@ DEFUN(lchan_mdcx, lchan_mdcx_cmd,
 		return CMD_WARNING;
 	}
 
-	if (ss_nr >= pchan_subslots(ts->pchan_is)) {
+	if (ss_nr >= ts->max_primary_lchans) {
 		vty_out(vty, "%% subslot index %d too large for physical channel %s (%u slots)%s",
-			ss_nr, gsm_pchan_name(ts->pchan_is), pchan_subslots(ts->pchan_is),
+			ss_nr, gsm_pchan_name(ts->pchan_is), ts->max_primary_lchans,
 			VTY_NEWLINE);
 		return CMD_WARNING;
 	}

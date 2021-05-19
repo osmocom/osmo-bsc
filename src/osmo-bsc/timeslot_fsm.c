@@ -187,6 +187,14 @@ static void ts_fsm_err_ready_to_go_in_pdch(struct osmo_fsm_inst *fi, struct gsm_
 		     osmo_fsm_inst_state_name(fi), gsm_lchan_name(lchan));
 }
 
+void ts_set_pchan_is(struct gsm_bts_trx_ts *ts, enum gsm_phys_chan_config pchan_is)
+{
+	ts->pchan_is = pchan_is;
+	ts->max_primary_lchans = pchan_subslots(ts->pchan_is);
+	LOG_TS(ts, LOGL_DEBUG, "pchan_is=%s max_primary_lchans=%d max_lchans_possible=%d\n",
+	       gsm_pchan_name(ts->pchan_is), ts->max_primary_lchans, ts->max_lchans_possible);
+}
+
 static void ts_setup_lchans(struct gsm_bts_trx_ts *ts)
 {
 	int i, max_lchans;
@@ -196,8 +204,10 @@ static void ts_setup_lchans(struct gsm_bts_trx_ts *ts)
 
 	max_lchans = pchan_subslots(ts->pchan_on_init);
 	LOG_TS(ts, LOGL_DEBUG, "max lchans: %d\n", max_lchans);
+	ts->max_lchans_possible = max_lchans;
+	ts->max_primary_lchans = 0;
 
-	for (i = 0; i < max_lchans; i++) {
+	for (i = 0; i < ts->max_lchans_possible; i++) {
 		/* If we receive more than one Channel OPSTART ACK, don't fail on the second init. */
 		if (ts->lchan[i].fi)
 			continue;
@@ -206,13 +216,13 @@ static void ts_setup_lchans(struct gsm_bts_trx_ts *ts)
 
 	switch (ts->pchan_on_init) {
 	case GSM_PCHAN_TCH_F_TCH_H_PDCH:
-		ts->pchan_is = GSM_PCHAN_NONE;
+		ts_set_pchan_is(ts, GSM_PCHAN_NONE);
 		break;
 	case GSM_PCHAN_TCH_F_PDCH:
-		ts->pchan_is = GSM_PCHAN_TCH_F;
+		ts_set_pchan_is(ts, GSM_PCHAN_TCH_F);
 		break;
 	default:
-		ts->pchan_is = ts->pchan_on_init;
+		ts_set_pchan_is(ts, ts->pchan_on_init);
 		break;
 	}
 }
@@ -418,7 +428,7 @@ static void ts_fsm_pdch_onenter(struct osmo_fsm_inst *fi, uint32_t prev_state)
 	case GSM_PCHAN_TCH_F_TCH_H_PDCH:
 	case GSM_PCHAN_TCH_F_PDCH:
 	case GSM_PCHAN_PDCH:
-		ts->pchan_is = GSM_PCHAN_PDCH;
+		ts_set_pchan_is(ts, GSM_PCHAN_PDCH);
 		break;
 	default:
 		ts_fsm_error(fi, TS_ST_BORKEN, "pchan %s is incapable of activating PDCH",
@@ -491,10 +501,10 @@ static void ts_fsm_wait_pdch_deact(struct osmo_fsm_inst *fi, uint32_t event, voi
 		/* Remove pchan = PDCH status, but double check. */
 		switch (ts->pchan_on_init) {
 		case GSM_PCHAN_TCH_F_TCH_H_PDCH:
-			ts->pchan_is = GSM_PCHAN_NONE;
+			ts_set_pchan_is(ts, GSM_PCHAN_NONE);
 			break;
 		case GSM_PCHAN_TCH_F_PDCH:
-			ts->pchan_is = GSM_PCHAN_TCH_F;
+			ts_set_pchan_is(ts, GSM_PCHAN_TCH_F);
 			break;
 		default:
 			ts_fsm_error(fi, TS_ST_BORKEN, "pchan %s is incapable of deactivating PDCH",
@@ -616,7 +626,7 @@ static void ts_fsm_in_use_onenter(struct osmo_fsm_inst *fi, uint32_t prev_state)
 	/* Make sure dyn TS pchan_is is updated. For TCH/F_PDCH, there are only PDCH or TCH/F modes, but
 	 * for Osmocom style TCH/F_TCH/H_PDCH the pchan_is == NONE until an lchan is activated. */
 	if (ts->pchan_on_init == GSM_PCHAN_TCH_F_TCH_H_PDCH)
-		ts->pchan_is = gsm_pchan_by_lchan_type(activating_type);
+		ts_set_pchan_is(ts, gsm_pchan_by_lchan_type(activating_type));
 	ts_lchans_dispatch(ts, LCHAN_ST_WAIT_TS_READY, LCHAN_EV_TS_READY);
 }
 
@@ -762,7 +772,8 @@ static void ts_fsm_allstate(struct osmo_fsm_inst *fi, uint32_t event, void *data
 			osmo_fsm_inst_state_chg(fi, TS_ST_NOT_INITIALIZED, 0, 0);
 		OSMO_ASSERT(fi->state == TS_ST_NOT_INITIALIZED);
 		ts_terminate_lchan_fsms(ts);
-		ts->pchan_is = ts->pchan_on_init = GSM_PCHAN_NONE;
+		ts->pchan_on_init = GSM_PCHAN_NONE;
+		ts_set_pchan_is(ts, GSM_PCHAN_NONE);
 		ts_fsm_update_id(ts);
 		break;
 
@@ -771,7 +782,7 @@ static void ts_fsm_allstate(struct osmo_fsm_inst *fi, uint32_t event, void *data
 		if (fi->state != TS_ST_NOT_INITIALIZED)
 			osmo_fsm_inst_state_chg(fi, TS_ST_NOT_INITIALIZED, 0, 0);
 		OSMO_ASSERT(fi->state == TS_ST_NOT_INITIALIZED);
-		ts->pchan_is = GSM_PCHAN_NONE;
+		ts_set_pchan_is(ts, GSM_PCHAN_NONE);
 		ts_lchans_dispatch(ts, -1, LCHAN_EV_TS_ERROR);
 		break;
 
