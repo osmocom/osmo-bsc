@@ -59,18 +59,17 @@ void bts_chan_load(struct pchan_load *cl, const struct gsm_bts *bts)
 			if (!nm_is_running(&ts->mo.nm_state))
 				continue;
 
-			/* Dynamic timeslots have to be counted separately
-			 * when not in TCH/F or TCH/H mode because they don't
-			 * have an lchan's allocated to them. At the same time,
-			 * dynamic timeslots in NONE and PDCH modes are same
-			 * as in UNUSED mode from the CS channel load perspective
-			 * beause they can be switched to TCH mode at any moment.
-			 * I.e. they are "available" for TCH. */
+			/* A dynamic timeslot currently in PDCH mode are available as TCH, beause they can be switched
+			 * to TCH mode at any moment. Count TCH/F_TCH/H_PDCH as one total timeslot, even though it may
+			 * be switched to TCH/H and would then count as two -- hence opt for pessimistic load. */
 			if ((ts->pchan_on_init == GSM_PCHAN_TCH_F_TCH_H_PDCH ||
 			     ts->pchan_on_init == GSM_PCHAN_TCH_F_PDCH) &&
 			    (ts->pchan_is == GSM_PCHAN_NONE ||
 			     ts->pchan_is == GSM_PCHAN_PDCH)) {
 				pl->total++;
+				/* Below loop would not count this timeslot, since in PDCH mode it has no usable
+				 * timeslots. But let's make it clear that the timeslot must not be counted again: */
+				continue;
 			}
 
 			ts_for_n_lchans(lchan, ts, ts->max_primary_lchans) {
