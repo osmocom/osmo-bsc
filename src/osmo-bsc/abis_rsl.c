@@ -528,7 +528,7 @@ int rsl_tx_chan_activ(struct gsm_lchan *lchan, uint8_t act_type, uint8_t ho_ref)
 	}
 
 	memset(&cd, 0, sizeof(cd));
-	gsm48_lchan2chan_desc(&cd, lchan);
+	gsm48_lchan2chan_desc(&cd, lchan, gsm_ts_tsc(lchan->ts));
 
 	msg = rsl_msgb_alloc();
 	dh = (struct abis_rsl_dchan_hdr *) msgb_put(msg, sizeof(*dh));
@@ -1801,7 +1801,7 @@ int rsl_tx_imm_assignment(struct gsm_lchan *lchan)
 	ia->proto_discr = GSM48_PDISC_RR;
 	ia->msg_type = GSM48_MT_RR_IMM_ASS;
 	ia->page_mode = GSM48_PM_SAME;
-	gsm48_lchan2chan_desc(&ia->chan_desc, lchan);
+	gsm48_lchan2chan_desc(&ia->chan_desc, lchan, gsm_ts_tsc(lchan->ts));
 
 	/* use request reference extracted from CHAN_RQD */
 	memcpy(&ia->req_ref, lchan->rqd_ref, sizeof(ia->req_ref));

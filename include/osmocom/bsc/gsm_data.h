@@ -1003,8 +1003,10 @@ uint8_t gsm_lchan_as_pchan2chan_nr(const struct gsm_lchan *lchan,
 				   enum gsm_phys_chan_config as_pchan);
 
 void gsm48_lchan2chan_desc(struct gsm48_chan_desc *cd,
-			   const struct gsm_lchan *lchan);
-void gsm48_lchan2chan_desc_as_configured(struct gsm48_chan_desc *cd, const struct gsm_lchan *lchan);
+			   const struct gsm_lchan *lchan,
+			   uint8_t tsc);
+void gsm48_lchan2chan_desc_as_configured(struct gsm48_chan_desc *cd, const struct gsm_lchan *lchan,
+					 uint8_t tsc);
 
 uint8_t gsm_ts_tsc(const struct gsm_bts_trx_ts *ts);
 

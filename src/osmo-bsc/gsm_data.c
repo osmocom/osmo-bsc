@@ -596,17 +596,18 @@ struct gsm_bts *conn_get_bts(struct gsm_subscriber_connection *conn) {
 	return conn->lchan->ts->trx->bts;
 }
 
-static void _chan_desc_fill_tail(struct gsm48_chan_desc *cd, const struct gsm_lchan *lchan)
+static void _chan_desc_fill_tail(struct gsm48_chan_desc *cd, const struct gsm_lchan *lchan,
+				 uint8_t tsc)
 {
 	if (!lchan->ts->hopping.enabled) {
 		uint16_t arfcn = lchan->ts->trx->arfcn & 0x3ff;
-		cd->h0.tsc = gsm_ts_tsc(lchan->ts);
+		cd->h0.tsc = tsc;
 		cd->h0.h = 0;
 		cd->h0.spare = 0;
 		cd->h0.arfcn_high = arfcn >> 8;
 		cd->h0.arfcn_low = arfcn & 0xff;
 	} else {
-		cd->h1.tsc = gsm_ts_tsc(lchan->ts);
+		cd->h1.tsc = tsc;
 		cd->h1.h = 1;
 		cd->h1.maio_high = lchan->ts->hopping.maio >> 2;
 		cd->h1.maio_low = lchan->ts->hopping.maio & 0x03;
@@ -615,20 +616,22 @@ static void _chan_desc_fill_tail(struct gsm48_chan_desc *cd, const struct gsm_lc
 }
 
 void gsm48_lchan2chan_desc(struct gsm48_chan_desc *cd,
-			   const struct gsm_lchan *lchan)
+			   const struct gsm_lchan *lchan,
+			   uint8_t tsc)
 {
 	cd->chan_nr = gsm_lchan2chan_nr(lchan);
-	_chan_desc_fill_tail(cd, lchan);
+	_chan_desc_fill_tail(cd, lchan, tsc);
 }
 
 /* like gsm48_lchan2chan_desc() above, but use ts->pchan_from_config to
  * return a channel description based on what is configured, rather than
  * what the current state of the pchan type is */
 void gsm48_lchan2chan_desc_as_configured(struct gsm48_chan_desc *cd,
-					 const struct gsm_lchan *lchan)
+					 const struct gsm_lchan *lchan,
+					 uint8_t tsc)
 {
 	cd->chan_nr = gsm_pchan2chan_nr(lchan->ts->pchan_from_config, lchan->ts->nr, lchan->nr);
-	_chan_desc_fill_tail(cd, lchan);
+	_chan_desc_fill_tail(cd, lchan, tsc);
 }
 
 uint8_t gsm_ts_tsc(const struct gsm_bts_trx_ts *ts)
