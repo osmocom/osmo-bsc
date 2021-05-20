@@ -225,7 +225,7 @@ this cell at all.
 ==== `gprs cell bvci <2-65535>`
 
 Configures the 'BSSGP Virtual Circuit Identifier'. It must be unique
-between all BGSGP connections to one SGSN.
+between all BSSGP connections to one SGSN.
 
 NOTE: It is up to the system administrator to ensure all PCUs are
 allocated an unique bvci. OsmoBSC will not ensure this policy.
