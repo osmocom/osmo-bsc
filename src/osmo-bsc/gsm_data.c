@@ -625,6 +625,28 @@ struct gsm_lchan *gsm_lchan_vamos_to_primary(const struct gsm_lchan *lchan_vamos
 	if (!lchan_vamos || !lchan_vamos->vamos.is_secondary)
 		return NULL;
 
+	/*
+	 *  TCH/F [0]
+	 *  -------------------   1:1 primary <-> secondary relation,
+	 *  -------------------   lchan_vamos[0] --> lchan[0]
+	 *  TCH/F [0]
+	 *
+	 *  TCH/H [0] TCH/H [1]   first a 1:1 primary <-> secondary relation,
+	 *  ---------|---------   but in addition, each lchan also relates to
+	 *  ---------|---------   the other primary/secondary index:
+	 *  TCH/H [0] TCH/H [1]   lchan_vamos[0] --> lchan[1] and lchan_vamos[1] --> lchan[0]
+	 *
+	 *  TCH/F [0]
+	 *  -------------------   lchan_vamos[0] --> lchan[0]
+	 *  ---------|---------   lchan_vamos[1] --> lchan[0]
+	 *  TCH/H [0] TCH/H [1]
+	 *
+	 *  TCH/H [0] TCH/H [1]
+	 *  ---------|---------   lchan_vamos[0] --> lchan[0]
+	 *  -------------------   lchan_vamos[0] --> lchan[1]
+	 *  TCH/F [0]
+	 */
+
 	lchan_primary = &lchan_vamos->ts->lchan[0];
 
 	switch (idx) {
@@ -661,6 +683,28 @@ struct gsm_lchan *gsm_lchan_primary_to_vamos(const struct gsm_lchan *lchan_prima
 		return NULL;
 
 	ts = lchan_primary->ts;
+
+	/*
+	 *  TCH/F [0]
+	 *  -------------------   1:1 primary <-> secondary relation,
+	 *  -------------------   lchan[0] --> lchan_vamos[1]
+	 *  TCH/F [0]
+	 *
+	 *  TCH/H [0] TCH/H [1]   first a 1:1 primary <-> secondary relation,
+	 *  ---------|---------   but in addition, each lchan also relates to
+	 *  ---------|---------   the other primary/secondary index:
+	 *  TCH/H [0] TCH/H [1]   lchan[0] --> lchan_vamos[1] and lchan[1] --> lchan_vamos[0]
+	 *
+	 *  TCH/H [0] TCH/H [1]
+	 *  ---------|---------   lchan[0] --> lchan_vamos[0]
+	 *  -------------------   lchan[1] --> lchan_vamos[0]
+	 *  TCH/F [0]
+	 *
+	 *  TCH/F [0]
+	 *  -------------------   lchan[0] --> lchan_vamos[0]
+	 *  ---------|---------   lchan[0] --> lchan_vamos[1]
+	 *  TCH/H [0] TCH/H [1]
+	 */
 
 	first_vamos_lchan = &ts->lchan[ts->max_primary_lchans];
 	if (first_vamos_lchan == ts->lchan)
