@@ -1876,7 +1876,7 @@ static int trigger_as(struct vty *vty, struct gsm_lchan *from_lchan, struct gsm_
 		vty_out(vty, "Error: cannot find free lchan of type %s%s",
 			gsm_lchant_name(from_lchan->type), VTY_NEWLINE);
 	}
-	if (reassignment_request_to_lchan(ACTIVATE_FOR_VTY, from_lchan, to_lchan)) {
+	if (reassignment_request_to_lchan(ACTIVATE_FOR_VTY, from_lchan, to_lchan, -1, -1)) {
 		vty_out(vty, "Error: not allowed to start assignment for %s%s",
 			gsm_lchan_name(from_lchan), VTY_NEWLINE);
 		return CMD_WARNING;
@@ -6044,7 +6044,10 @@ DEFUN(pdch_act, pdch_act_cmd,
 /* Activate / Deactivate a single lchan with a specific codec mode */
 static int lchan_act_single(struct vty *vty, struct gsm_lchan *lchan, const char *codec_str, int amr_mode, int activate)
 {
-	struct lchan_activate_info info = { };
+	struct lchan_activate_info info = {
+		.tsc_set = -1,
+		.tsc = -1,
+	};
 	uint16_t amr_modes[8] =
 	    { GSM0808_SC_CFG_AMR_4_75, GSM0808_SC_CFG_AMR_4_75_5_90_7_40_12_20, GSM0808_SC_CFG_AMR_5_90,
 	      GSM0808_SC_CFG_AMR_6_70, GSM0808_SC_CFG_AMR_7_40, GSM0808_SC_CFG_AMR_7_95, GSM0808_SC_CFG_AMR_10_2,

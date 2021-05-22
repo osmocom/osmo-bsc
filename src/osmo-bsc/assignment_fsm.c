@@ -439,7 +439,7 @@ static bool reuse_existing_lchan(struct gsm_subscriber_connection *conn)
 }
 
 static int _reassignment_request(enum assign_for assign_for, struct gsm_lchan *lchan, struct gsm_lchan *to_lchan,
-				 enum gsm_chan_t new_lchan_type)
+				 enum gsm_chan_t new_lchan_type, int tsc_set, int tsc)
 {
 	struct gsm_subscriber_connection *conn = lchan->conn;
 	struct assignment_request req = {
@@ -450,6 +450,8 @@ static int _reassignment_request(enum assign_for assign_for, struct gsm_lchan *l
 		.n_ch_mode_rate = 1,
 		.ch_mode_rate_list = { lchan->current_ch_mode_rate },
 		.target_lchan = to_lchan,
+		.tsc_set = tsc_set,
+		.tsc = tsc,
 	};
 
 	if (to_lchan)
@@ -469,15 +471,16 @@ static int _reassignment_request(enum assign_for assign_for, struct gsm_lchan *l
 	return osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_ASSIGNMENT_START, &req);
 }
 
-int reassignment_request_to_lchan(enum assign_for assign_for, struct gsm_lchan *lchan, struct gsm_lchan *to_lchan)
+int reassignment_request_to_lchan(enum assign_for assign_for, struct gsm_lchan *lchan, struct gsm_lchan *to_lchan,
+				  int tsc_set, int tsc)
 {
-	return _reassignment_request(assign_for, lchan, to_lchan, 0);
+	return _reassignment_request(assign_for, lchan, to_lchan, 0, tsc_set, tsc);
 }
 
 int reassignment_request_to_chan_type(enum assign_for assign_for, struct gsm_lchan *lchan,
 				      enum gsm_chan_t new_lchan_type)
 {
-	return _reassignment_request(assign_for, lchan, NULL, new_lchan_type);
+	return _reassignment_request(assign_for, lchan, NULL, new_lchan_type, -1, -1);
 }
 
 void assignment_fsm_start(struct gsm_subscriber_connection *conn, struct gsm_bts *bts,
@@ -635,6 +638,8 @@ static void assignment_fsm_wait_lchan_active_onenter(struct osmo_fsm_inst *fi, u
 		.re_use_mgw_endpoint_from_lchan = conn->lchan,
 		.ta = conn->lchan->last_ta,
 		.ta_known = true,
+		.tsc_set = req->tsc_set,
+		.tsc = req->tsc,
 	};
 	lchan_activate(conn->assignment.new_lchan, &activ_info);
 }

@@ -163,6 +163,13 @@ struct assignment_request {
 	 * multiplexing, user request via VTY). In these situations, select a target lchan beforehand and point
 	 * target_lchan to it. */
 	struct gsm_lchan *target_lchan;
+
+	/* TSC Set to use, or -1 for automatically determining the TSC Set to use. Valid range is 1 to 4, as described
+	 * in 3GPP TS 45.002. */
+	int tsc_set;
+	/* TSC to use, or -1 for automatically determining the TSC to use. Valid range is 0 to 7, as described in 3GPP
+	 * TS 45.002. */
+	int tsc;
 };
 
 /* State of an ongoing Assignment, while the assignment_fsm is still busy. This serves as state separation to keep the
@@ -609,6 +616,13 @@ struct lchan_activate_info {
 	struct gsm_lchan *re_use_mgw_endpoint_from_lchan;
 	bool ta_known;
 	uint8_t ta;
+
+	/* TSC Set to use, or -1 for automatically determining the TSC Set to use. Valid range is 1 to 4, as described
+	 * in 3GPP TS 45.002. */
+	int tsc_set;
+	/* TSC to use, or -1 for automatically determining the TSC to use. Valid range is 0 to 7, as described in 3GPP
+	 * TS 45.002. */
+	int tsc;
 };
 
 enum lchan_modify_for {
@@ -626,6 +640,13 @@ struct lchan_modify_info {
 	struct channel_mode_and_rate ch_mode_rate;
 	bool requires_voice_stream;
 	uint16_t msc_assigned_cic;
+
+	/* TSC Set to use, or -1 for automatically determining the TSC Set to use. Valid range is 1 to 4, as described
+	 * in 3GPP TS 45.002. */
+	int tsc_set;
+	/* TSC to use, or -1 for automatically determining the TSC to use. Valid range is 0 to 7, as described in 3GPP
+	 * TS 45.002. */
+	int tsc;
 };
 
 struct gsm_lchan {
@@ -651,11 +672,15 @@ struct gsm_lchan {
 		 * occur later, e.g. during release, that we don't send a NACK out of context. */
 		bool concluded;
 		enum gsm0808_cause gsm0808_error_cause;
+		int tsc_set;
+		uint8_t tsc;
 	} activate;
 
 	struct {
 		struct lchan_modify_info info;
 		struct gsm48_multi_rate_conf mr_conf_filtered;
+		int tsc_set;
+		uint8_t tsc;
 		bool concluded;
 	} modify;
 
@@ -730,6 +755,12 @@ struct gsm_lchan {
 	 * channel_mode_and_rate. */
 	struct channel_mode_and_rate current_ch_mode_rate;
 	struct gsm48_multi_rate_conf current_mr_conf;
+
+	/* Circuit-Switched TSC Set in use, or -1 if no specific TSC Set was requested. The valid range is 1-4 as
+	 * described in the spec 3GPP TS 45.002. */
+	int tsc_set;
+	/* Training Sequence Code in use. The valid range is 0-7 as described in the spec 3GPP TS 45.002. */
+	uint8_t tsc;
 };
 
 /* One Timeslot in a TRX */
