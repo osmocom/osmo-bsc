@@ -457,6 +457,8 @@ static void lchan_reset(struct gsm_lchan *lchan)
 		.last_error = lchan->last_error,
 
 		.release.rr_cause = GSM48_RR_CAUSE_NORMAL,
+
+		.tsc_set = 1,
 	};
 }
 
@@ -713,6 +715,15 @@ static void lchan_fsm_wait_activ_ack_onenter(struct osmo_fsm_inst *fi, uint32_t 
 
 	lchan->encr = lchan->activate.info.encr;
 
+	if (lchan->activate.info.tsc_set > 0)
+		lchan->activate.tsc_set = lchan->activate.info.tsc_set;
+	else
+		lchan->activate.tsc_set = 1;
+
+	/* Use the TSC provided in the modification request, if any. Otherwise use the timeslot's configured
+	 * TSC. */
+	lchan->activate.tsc = (lchan->activate.info.tsc >= 0) ? lchan->activate.info.tsc : gsm_ts_tsc(lchan->ts);
+
 	rc = rsl_tx_chan_activ(lchan, act_type, ho_ref);
 	if (rc) {
 		lchan_fail_to(LCHAN_ST_UNUSED, "Tx Chan Activ failed: %s (%d)", strerror(-rc), rc);
@@ -786,6 +797,8 @@ static void lchan_fsm_post_activ_ack(struct osmo_fsm_inst *fi)
 
 	lchan->current_ch_mode_rate = lchan->activate.info.ch_mode_rate;
 	lchan->current_mr_conf = lchan->activate.mr_conf_filtered;
+	lchan->tsc_set = lchan->activate.tsc_set;
+	lchan->tsc = lchan->activate.tsc;
 	LOG_LCHAN(lchan, LOGL_INFO, "Rx Activ ACK %s\n",
 		  gsm48_chan_mode_name(lchan->current_ch_mode_rate.chan_mode));
 
@@ -958,6 +971,8 @@ static void lchan_fsm_wait_rsl_chan_mode_modify_ack(struct osmo_fsm_inst *fi, ui
 		/* The Channel Mode Modify was ACKed, now the requested values become the accepted and used values. */
 		lchan->current_ch_mode_rate = lchan->modify.info.ch_mode_rate;
 		lchan->current_mr_conf = lchan->modify.mr_conf_filtered;
+		lchan->tsc_set = lchan->modify.tsc_set;
+		lchan->tsc = lchan->modify.tsc;
 
 		if (lchan->modify.info.requires_voice_stream
 		    && !lchan->fi_rtp) {
@@ -1117,15 +1132,25 @@ static void lchan_fsm_established(struct osmo_fsm_inst *fi, uint32_t event, void
 			}
 		}
 
+		if (lchan->modify.info.tsc_set > 0)
+			lchan->modify.tsc_set = lchan->modify.info.tsc_set;
+		else
+			lchan->modify.tsc_set = 1;
+
+		/* Use the TSC provided in the modification request, if any. Otherwise use the timeslot's configured
+		 * TSC. */
+		lchan->modify.tsc = (lchan->modify.info.tsc >= 0) ? lchan->modify.info.tsc : gsm_ts_tsc(lchan->ts);
+
 		LOG_LCHAN(lchan, LOGL_INFO,
-			  "Modification requested: %s voice=%s MGW-ci=%s type=%s tch-mode=%s\n",
+			  "Modification requested: %s voice=%s MGW-ci=%s type=%s tch-mode=%s tsc=%d/%u\n",
 			  lchan_modify_for_name(lchan->modify.info.modify_for),
 			  lchan->modify.info.requires_voice_stream ? "yes" : "no",
 			  lchan->modify.info.requires_voice_stream ?
 			  (use_mgwep_ci ? osmo_mgcpc_ep_ci_name(use_mgwep_ci) : "new")
 			  : "none",
 			  gsm_lchant_name(lchan->type),
-			  gsm48_chan_mode_name(lchan->modify.info.ch_mode_rate.chan_mode));
+			  gsm48_chan_mode_name(lchan->modify.info.ch_mode_rate.chan_mode),
+			  lchan->modify.tsc_set, lchan->modify.tsc);
 
 		lchan_fsm_state_chg(LCHAN_ST_WAIT_RR_CHAN_MODE_MODIFY_ACK);
 		return;

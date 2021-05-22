@@ -369,7 +369,7 @@ static void lcs_loc_req_handover_performed(struct lcs_loc_req *lcs_loc_req)
 				.cause = BSSLAP_CAUSE_INTRA_BSS_HO,
 			},
 		};
-		gsm48_lchan2chan_desc(&apdu->reset.chan_desc, lchan, gsm_ts_tsc(lchan->ts));
+		gsm48_lchan2chan_desc(&apdu->reset.chan_desc, lchan, lchan->tsc);
 	}
 
 	lcs_loc_req_send(lcs_loc_req, &bsslap);
