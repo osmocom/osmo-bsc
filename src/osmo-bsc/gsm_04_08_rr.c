@@ -618,6 +618,12 @@ int gsm48_send_rr_ass_cmd(struct gsm_lchan *current_lchan, struct gsm_lchan *new
 	 * the chan_desc. But as long as multi-slot configurations
 	 * are not used we seem to be fine.
 	 */
+	LOG_LCHAN(current_lchan, LOGL_INFO, "Tx RR Assignment Command to re-assign this channel to %s%s TSC Set %d TSC %d\n",
+		  gsm_lchan_name(new_lchan), new_lchan->vamos.enabled ? " in VAMOS mode" : "", new_lchan->tsc_set,
+		  new_lchan->tsc);
+	LOG_LCHAN(new_lchan, LOGL_INFO, "Tx RR Assignment Command to re-assign %s to this channel%s TSC Set %d TSC %d\n",
+		  gsm_lchan_name(current_lchan), new_lchan->vamos.enabled ? " in VAMOS mode" : "", new_lchan->tsc_set,
+		  new_lchan->tsc);
 	gsm48_lchan2chan_desc(&ass->chan_desc, new_lchan, new_lchan->tsc);
 	ass->power_command = power_command;
 
