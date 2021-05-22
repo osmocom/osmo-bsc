@@ -610,6 +610,13 @@ int gsm48_send_rr_ass_cmd(struct gsm_lchan *current_lchan, struct gsm_lchan *new
 	DEBUGP(DRR, "-> ASSIGNMENT COMMAND tch_mode=0x%02x\n",
 	       new_lchan->current_ch_mode_rate.chan_mode);
 
+	LOG_LCHAN(current_lchan, LOGL_INFO, "Tx RR Assignment Command to re-assign this channel to %s%s TSC Set %d TSC %d\n",
+		  gsm_lchan_name(new_lchan), new_lchan->vamos.enabled ? " in VAMOS mode" : "", new_lchan->tsc_set,
+		  new_lchan->tsc);
+	LOG_LCHAN(new_lchan, LOGL_INFO, "Tx RR Assignment Command to re-assign %s to this channel%s TSC Set %d TSC %d\n",
+		  gsm_lchan_name(current_lchan), new_lchan->vamos.enabled ? " in VAMOS mode" : "", new_lchan->tsc_set,
+		  new_lchan->tsc);
+
 	msg->lchan = current_lchan;
 	gh->proto_discr = GSM48_PDISC_RR;
 	gh->msg_type = GSM48_MT_RR_ASS_CMD;
