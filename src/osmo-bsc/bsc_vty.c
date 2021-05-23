@@ -1682,6 +1682,8 @@ static void lchan_dump_full_vty(struct vty *vty, struct gsm_lchan *lchan)
 		VTY_NEWLINE);
 	if (!lchan_state_is(lchan, LCHAN_ST_UNUSED))
 		vty_out(vty, "  Training Sequence: Set %d Code %u%s", (lchan->tsc_set > 0 ? lchan->tsc_set : 1), lchan->tsc, VTY_NEWLINE);
+	if (lchan->vamos.enabled)
+		vty_out(vty, "  VAMOS: enabled%s", VTY_NEWLINE);
 	if (lchan->conn && lchan->conn->bsub) {
 		vty_out(vty, "  Subscriber:%s", VTY_NEWLINE);
 		bsc_subscr_dump_vty(vty, lchan->conn->bsub);
@@ -1726,9 +1728,10 @@ static void lchan_dump_short_vty(struct vty *vty, struct gsm_lchan *lchan)
 		lchan->ts->trx->bts->nr, lchan->ts->trx->nr, lchan->ts->nr,
 		gsm_pchan_name(lchan->ts->pchan_on_init));
 	vty_out_dyn_ts_status(vty, lchan->ts);
-	vty_out(vty, ", Lchan %u, Type %s TSC-s%dc%u, State %s - L1 MS Power: %u dBm RXL-FULL-dl: %4d dBm RXL-FULL-ul: %4d dBm%s",
+	vty_out(vty, ", Lchan %u, Type %s%s TSC-s%dc%u, State %s - L1 MS Power: %u dBm RXL-FULL-dl: %4d dBm RXL-FULL-ul: %4d dBm%s",
 		lchan->nr,
 		gsm_lchant_name(lchan->type),
+		lchan->vamos.enabled ? " (VAMOS)" : "",
 		lchan->tsc_set > 0 ? lchan->tsc_set : 1,
 		lchan->tsc,
 		lchan_state_name(lchan),
