@@ -603,7 +603,7 @@ void assignment_fsm_start(struct gsm_subscriber_connection *conn, struct gsm_bts
 		assignment_count_result(CTR_ASSIGNMENT_NO_CHANNEL);
 		assignment_fail(GSM0808_CAUSE_NO_RADIO_RESOURCE_AVAILABLE,
 				"BSSMAP Assignment Command:"
-				" No lchan available for: pref=%s:%s / alt1=%s:%s / alt2=%s:%s\n",
+				" No lchan available for: pref=%s:%s / alt1=%s:%s / alt2=%s:%s",
 				gsm48_chan_mode_name(req->ch_mode_rate_list[0].chan_mode),
 				rate_names[req->ch_mode_rate_list[0].chan_rate],
 				req->n_ch_mode_rate > 1 ? gsm48_chan_mode_name(req->ch_mode_rate_list[1].chan_mode) : "",
