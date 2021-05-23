@@ -6297,8 +6297,10 @@ static int lchan_act_trx(struct vty *vty, struct gsm_bts_trx *trx, int activate)
  * manually in a given mode/codec.  This is useful for receiver
  * performance testing (FER/RBER/...) */
 DEFUN(lchan_act, lchan_act_cmd,
-	"bts <0-255> trx <0-255> timeslot <0-7> sub-slot <0-7> (activate|activate-vamos|deactivate) (hr|fr|efr|amr|sig) [<0-7>]",
-	BTS_NR_TRX_TS_SS_STR2
+	"bts <0-255> trx <0-255> timeslot <0-7> (sub-slot|vamos-sub-slot) <0-7> (activate|activate-vamos|deactivate) (hr|fr|efr|amr|sig) [<0-7>]",
+	BTS_NR_TRX_TS_STR2
+	"Primary sub-slot\n" "VAMOS secondary shadow subslot, range <0-1>, only valid for TCH type timeslots\n"
+	SS_NR_STR
 	"Manual Channel Activation (e.g. for BER test)\n"
 	"Manual Channel Activation, in VAMOS mode\n"
 	"Manual Channel Deactivation (e.g. for BER test)\n"
@@ -6306,18 +6308,32 @@ DEFUN(lchan_act, lchan_act_cmd,
 {
 	struct gsm_bts_trx_ts *ts;
 	struct gsm_lchan *lchan;
-	int ss_nr = atoi(argv[3]);
-	const char *act_str = argv[4];
-	const char *codec_str = argv[5];
+	bool vamos = (strcmp(argv[3], "vamos-sub-slot") == 0);
+	int ss_nr = atoi(argv[4]);
+	const char *act_str = argv[5];
+	const char *codec_str = argv[6];
 	int activate;
 	int amr_mode = -1;
 
-	if (argc > 6)
-		amr_mode = atoi(argv[6]);
+	if (argc > 7)
+		amr_mode = atoi(argv[7]);
 
 	ts = vty_get_ts(vty, argv[0], argv[1], argv[2]);
 	if (!ts)
 		return CMD_WARNING;
+
+	if (ss_nr >= ts->max_primary_lchans) {
+		vty_out(vty, "Invalid sub-slot number for this timeslot type%s", VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	if (vamos && !osmo_bts_has_feature(&ts->trx->bts->features, BTS_FEAT_VAMOS)) {
+		vty_out(vty, "BTS does not support VAMOS%s", VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	if (vamos)
+		ss_nr += ts->max_primary_lchans;
 
 	lchan = &ts->lchan[ss_nr];
 

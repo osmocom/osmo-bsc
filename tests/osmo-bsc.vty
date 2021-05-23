@@ -33,7 +33,7 @@ OsmoBSC# bts 0 trx 0 timeslot 0 sub-slot 0 modify vamos tsc 1 0 ?
 
 OsmoBSC# list
 ...
-  bts <0-255> trx <0-255> timeslot <0-7> sub-slot <0-7> (activate|activate-vamos|deactivate) (hr|fr|efr|amr|sig) [<0-7>]
+  bts <0-255> trx <0-255> timeslot <0-7> (sub-slot|vamos-sub-slot) <0-7> (activate|activate-vamos|deactivate) (hr|fr|efr|amr|sig) [<0-7>]
 ...
 
 OsmoBSC# bts?
@@ -59,8 +59,9 @@ OsmoBSC# bts 0 trx 0 timeslot ?
   <0-7>  Timeslot Number
 
 OsmoBSC# bts 0 trx 0 timeslot 0 ?
-  pdch      Packet Data Channel
-  sub-slot  Sub-slot for manual command
+  pdch            Packet Data Channel
+  sub-slot        Primary sub-slot
+  vamos-sub-slot  VAMOS secondary shadow subslot, range <0-1>, only valid for TCH type timeslots
 
 OsmoBSC# bts 0 trx 0 timeslot 0 sub-slot ?
   <0-7>  Sub-slot Number
