@@ -648,6 +648,12 @@ int gsm48_send_rr_ass_cmd(struct gsm_lchan *current_lchan, struct gsm_lchan *new
 		}
 	}
 
+	/* For VAMOS, include the TSC Set number in the Extended TSC Set IE.
+	 * We don't put any PS domain related values, only the lowest two CS domain bits.
+	 * Convert from spec conforming "human readable" TSC Set 1-4 to 0-3 on the wire. */
+	if (new_lchan->vamos.enabled && new_lchan->tsc_set > 0)
+		msgb_tv_put(msg, GSM48_IE_EXTENDED_TSC_SET, new_lchan->tsc_set - 1);
+
 	return gsm48_sendmsg(msg);
 }
 
