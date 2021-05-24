@@ -29,6 +29,62 @@ OsmoBSC# bts 0 trx 0 timeslot 0 sub-slot 0 modify vamos tsc 1 ?
 OsmoBSC# bts 0 trx 0 timeslot 0 sub-slot 0 modify vamos tsc 1 0 ?
   <cr>  
 
+
+OsmoBSC# list
+...
+  bts <0-255> trx <0-255> timeslot <0-7> sub-slot <0-7> (activate|deactivate) (hr|fr|efr|amr|sig) [<0-7>]
+...
+
+OsmoBSC# bts?
+  bts  BTS Specific Commands
+
+OsmoBSC# bts ?
+  <0-255>  BTS Number
+
+OsmoBSC# bts 0 ?
+  resend-system-information      Re-generate + re-send BCCH SYSTEM INFORMATION
+  resend-power-control-defaults  Re-generate + re-send default MS/BS Power control parameters
+  trx                            TRX for manual command
+  oml                            Manipulate the OML managed objects
+  om2000                         Manipulate the OM2000 managed objects
+
+OsmoBSC# bts 0 trx ?
+  <0-255>  TRX Number
+
+OsmoBSC# bts 0 trx 0 ?
+  timeslot  Timeslot for manual command
+
+OsmoBSC# bts 0 trx 0 timeslot ?
+  <0-7>  Timeslot Number
+
+OsmoBSC# bts 0 trx 0 timeslot 0 ?
+  pdch      Packet Data Channel
+  sub-slot  Sub-slot for manual command
+
+OsmoBSC# bts 0 trx 0 timeslot 0 sub-slot ?
+  <0-7>  Sub-slot Number
+
+OsmoBSC# bts 0 trx 0 timeslot 0 sub-slot 0 ?
+  activate    Manual Channel Activation (e.g. for BER test)
+  deactivate  Manual Channel Deactivation (e.g. for BER test)
+  modify      Manually send Channel Mode Modify (for debugging)
+  mdcx        Modify RTP Connection
+  handover    Manually trigger handover (for debugging)
+  assignment  Manually trigger assignment (for debugging)
+
+OsmoBSC# bts 0 trx 0 timeslot 0 sub-slot 0 activate ?
+  hr   Half-Rate v1
+  fr   Full-Rate
+  efr  Enhanced Full Rate
+  amr  Adaptive Multi-Rate
+  sig  Signalling
+
+OsmoBSC# bts 0 trx 0 timeslot 0 sub-slot 0 activate fr ?
+  [<0-7>]  AMR Mode
+
+OsmoBSC# bts 0 trx 0 timeslot 0 sub-slot 0 activate fr 0 ?
+  <cr>  
+
 OsmoBSC# configure terminal
 OsmoBSC(config)# network
 OsmoBSC(config-net)# list
