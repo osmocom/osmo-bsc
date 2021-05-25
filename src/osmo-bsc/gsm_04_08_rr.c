@@ -417,13 +417,13 @@ int gsm48_multirate_config(struct msgb *msg,
 	uint8_t *data;
 
 	/* Check if modes for consistency (order and duplicates) */
-	for (i = 0; i < num_modes; i++) {
-		if (i > 0 && modes[i - 1].mode > modes[i].mode) {
+	for (i = 1; i < num_modes; i++) {
+		if (modes[i - 1].mode > modes[i].mode) {
 			LOGP(DRR, LOGL_ERROR,
 			     "BUG: Multirate codec with inconsistent config (mode order).\n");
 			return -EINVAL;
 		}
-		if (i > 0 && modes[i - 1].mode == modes[i].mode) {
+		if (modes[i - 1].mode == modes[i].mode) {
 			LOGP(DRR, LOGL_ERROR,
 			     "BUG: Multirate codec with inconsistent config (duplicate modes).\n");
 			return -EINVAL;
