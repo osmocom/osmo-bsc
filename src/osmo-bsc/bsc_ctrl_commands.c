@@ -62,7 +62,7 @@ static int set_net_apply_config_file(struct ctrl_cmd *cmd, void *_data)
 		LOGP(DCTRL, LOGL_NOTICE, "Applying VTY snippet from %s: fopen() failed: %d\n",
 		     cmd->value, errno);
 		cmd->reply = "NoFile";
-		goto close_ret;
+		return cmd_ret;
 	}
 
 	rc = vty_read_config_filep(cfile, NULL);
