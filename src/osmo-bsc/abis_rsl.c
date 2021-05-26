@@ -1088,12 +1088,13 @@ static void print_meas_rep(struct gsm_lchan *lchan, struct gsm_meas_rep *mr)
 
 	DEBUGP(DMEAS, "%s\n", print_meas_rep_c(OTC_SELECT, lchan, mr));
 
-	if (mr->num_cell == 7)
-		return;
-	for (i = 0; i < mr->num_cell; i++) {
-		struct gsm_meas_rep_cell *mrc = &mr->cell[i];
-		DEBUGP(DMEAS, "IDX=%u ARFCN=%u BSIC=%u => %d dBm\n",
-			mrc->neigh_idx, mrc->arfcn, mrc->bsic, rxlev2dbm(mrc->rxlev));
+	if (mr->num_cell != 7
+	    && log_check_level(DMEAS, LOGL_DEBUG)) {
+		for (i = 0; i < mr->num_cell; i++) {
+			struct gsm_meas_rep_cell *mrc = &mr->cell[i];
+			DEBUGP(DMEAS, "IDX=%u ARFCN=%u BSIC=%u => %d dBm\n",
+			       mrc->neigh_idx, mrc->arfcn, mrc->bsic, rxlev2dbm(mrc->rxlev));
+		}
 	}
 
 	if (bsub)
