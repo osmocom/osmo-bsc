@@ -82,7 +82,7 @@ void __wrap_osmo_mgcpc_ep_ci_request(struct osmo_mgcpc_ep_ci *ci,
 
 uint8_t meas_rep_ba = 0, meas_rep_valid = 1, meas_valid = 1, meas_multi_rep = 0;
 uint8_t meas_ul_rxlev = 0, meas_ul_rxqual = 0;
-uint8_t meas_tx_power_ms = 0, meas_tx_power_bs = 0;
+uint8_t meas_tx_power_ms = 0;
 uint8_t meas_dtx_ms = 0, meas_dtx_bs = 0, meas_nr = 0;
 char *codec_tch_f = NULL;
 char *codec_tch_h = NULL;
@@ -94,7 +94,7 @@ struct neighbor_meas {
 };
 
 static void gen_meas_rep(struct gsm_lchan *lchan,
-			 uint8_t rxlev, uint8_t rxqual, uint8_t ta,
+			 uint8_t bs_power_db, uint8_t rxlev, uint8_t rxqual, uint8_t ta,
 			 int neighbors_count, struct neighbor_meas *neighbors)
 {
 	struct msgb *msg = msgb_alloc_headroom(256, 64, "RSL");
@@ -117,7 +117,7 @@ static void gen_meas_rep(struct gsm_lchan *lchan,
 	ulm[2] = (meas_ul_rxqual << 3) | meas_ul_rxqual;
 	msgb_tlv_put(msg, RSL_IE_UPLINK_MEAS, sizeof(ulm), ulm);
 
-	msgb_tv_put(msg, RSL_IE_BS_POWER, meas_tx_power_bs);
+	msgb_tv_put(msg, RSL_IE_BS_POWER, (bs_power_db / 2) & 0xf);
 
 	l1i[0] = 0;
 	l1i[1] = ta;
@@ -865,6 +865,7 @@ DEFUN(create_ms, create_ms_cmd,
 struct meas_rep_data {
 	int argc;
 	const char **argv;
+	uint8_t bs_power_db;
 };
 
 static void _meas_rep_cb(struct gsm_lchan *lc, void *data)
@@ -916,14 +917,15 @@ static void _meas_rep_cb(struct gsm_lchan *lc, void *data)
 			fprintf(stderr, " * Neighbor cell #%d, actual BTS %d: rxlev=%d\n", i, neighbor_bts_nr,
 				nm[i].rxlev);
 	}
-	gen_meas_rep(lc, rxlev, rxqual, ta, argc, nm);
+	gen_meas_rep(lc, d->bs_power_db, rxlev, rxqual, ta, argc, nm);
 }
 
-static int _meas_rep(struct vty *vty, int argc, const char **argv)
+static int _meas_rep(struct vty *vty, uint8_t bs_power_db, int argc, const char **argv)
 {
 	struct meas_rep_data d = {
 		.argc = argc - 4,
 		.argv = argv + 4,
+		.bs_power_db = bs_power_db,
 	};
 	parse_lchan_wildcard_args(argv, _meas_rep_cb, &d);
 	return CMD_SUCCESS;
@@ -951,7 +953,7 @@ DEFUN(meas_rep, meas_rep_cmd,
       MEAS_REP_DOC MEAS_REP_ARGS_DOC)
 {
 	VTY_ECHO();
-	return _meas_rep(vty, argc, argv);
+	return _meas_rep(vty, 0, argc, argv);
 }
 
 DEFUN(meas_rep_repeat, meas_rep_repeat_cmd,
@@ -966,7 +968,25 @@ DEFUN(meas_rep_repeat, meas_rep_repeat_cmd,
 	argc -= 1;
 
 	while (count--)
-		_meas_rep(vty, argc, argv);
+		_meas_rep(vty, 0, argc, argv);
+	return CMD_SUCCESS;
+}
+
+DEFUN(meas_rep_repeat_bspower, meas_rep_repeat_bspower_cmd,
+      "meas-rep repeat <0-999> bspower <0-31> " MEAS_REP_ARGS,
+      MEAS_REP_DOC
+      "Resend the same measurement report N times\nN\n"
+      "Send a nonzero BS Power value in the measurement report (downlink power reduction)\nBS Power reduction in dB\n"
+      MEAS_REP_ARGS_DOC)
+{
+	int count = atoi(argv[0]);
+	uint8_t bs_power_db = atoi(argv[1]);
+	VTY_ECHO();
+	argv += 2;
+	argc -= 2;
+
+	while (count--)
+		_meas_rep(vty, bs_power_db, argc, argv);
 	return CMD_SUCCESS;
 }
 
@@ -1184,6 +1204,7 @@ static void ho_test_vty_init()
 	install_element(CONFIG_NODE, &create_ms_cmd);
 	install_element(CONFIG_NODE, &meas_rep_cmd);
 	install_element(CONFIG_NODE, &meas_rep_repeat_cmd);
+	install_element(CONFIG_NODE, &meas_rep_repeat_bspower_cmd);
 	install_element(CONFIG_NODE, &congestion_check_cmd);
 	install_element(CONFIG_NODE, &expect_no_chan_cmd);
 	install_element(CONFIG_NODE, &expect_chan_cmd);
