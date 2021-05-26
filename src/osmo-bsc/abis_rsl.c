@@ -1014,59 +1014,80 @@ static int rsl_rx_conn_fail(struct msgb *msg)
 	return 0;
 }
 
-static void print_meas_rep_uni(struct gsm_meas_rep_unidir *mru,
-				const char *prefix)
+static void print_meas_rep_uni(struct osmo_strbuf *sb, struct gsm_meas_rep_unidir *mru, const char *prefix)
 {
-	DEBUGPC(DMEAS, "RXL-FULL-%s=%3ddBm RXL-SUB-%s=%3ddBm ",
-		prefix, rxlev2dbm(mru->full.rx_lev),
-		prefix, rxlev2dbm(mru->sub.rx_lev));
-	DEBUGPC(DMEAS, "RXQ-FULL-%s=%d RXQ-SUB-%s=%d ",
-		prefix, mru->full.rx_qual, prefix, mru->sub.rx_qual);
+	OSMO_STRBUF_PRINTF(*sb, "RXL-FULL-%s=%3ddBm RXL-SUB-%s=%3ddBm ",
+			   prefix, rxlev2dbm(mru->full.rx_lev),
+			   prefix, rxlev2dbm(mru->sub.rx_lev));
+	OSMO_STRBUF_PRINTF(*sb, "RXQ-FULL-%s=%d RXQ-SUB-%s=%d ",
+			   prefix, mru->full.rx_qual, prefix, mru->sub.rx_qual);
 }
 
-static void print_meas_rep(struct gsm_lchan *lchan, struct gsm_meas_rep *mr)
+static int print_meas_rep_buf(char *buf, size_t len, struct gsm_lchan *lchan, struct gsm_meas_rep *mr)
 {
-	int i;
 	const char *name = "";
 	struct bsc_subscr *bsub = NULL;
+	struct osmo_strbuf sb = { .buf = buf, .len = len };
 
 	if (lchan && lchan->conn) {
 		bsub = lchan->conn->bsub;
 		if (bsub) {
-			log_set_context(LOG_CTX_BSC_SUBSCR, bsub);
 			name = bsc_subscr_name(bsub);
 		} else
 			name = lchan->name;
 	}
 
-	DEBUGP(DMEAS, "[%s] MEASUREMENT RESULT NR=%d ", name, mr->nr);
+	OSMO_STRBUF_PRINTF(sb, "[%s] MEASUREMENT RESULT NR=%d ", name, mr->nr);
 
 	if (mr->flags & MEAS_REP_F_DL_DTX)
-		DEBUGPC(DMEAS, "DTXd ");
+		OSMO_STRBUF_PRINTF(sb, "DTXd ");
 
-	print_meas_rep_uni(&mr->ul, "ul");
-	DEBUGPC(DMEAS, "BS_POWER=%ddB ", mr->bs_power_db);
+	print_meas_rep_uni(&sb, &mr->ul, "ul");
+	OSMO_STRBUF_PRINTF(sb, "BS_POWER=%ddB ", mr->bs_power_db);
 
 	if (mr->flags & MEAS_REP_F_MS_TO)
-		DEBUGPC(DMEAS, "MS_TO=%d ", mr->ms_timing_offset);
+		OSMO_STRBUF_PRINTF(sb, "MS_TO=%d ", mr->ms_timing_offset);
 
 	if (mr->flags & MEAS_REP_F_MS_L1) {
-		DEBUGPC(DMEAS, "L1_MS_PWR=%3ddBm ", mr->ms_l1.pwr);
-		DEBUGPC(DMEAS, "L1_FPC=%u ",
-			mr->flags & MEAS_REP_F_FPC ? 1 : 0);
-		DEBUGPC(DMEAS, "L1_TA=%u ", mr->ms_l1.ta);
+		OSMO_STRBUF_PRINTF(sb, "L1_MS_PWR=%3ddBm ", mr->ms_l1.pwr);
+		OSMO_STRBUF_PRINTF(sb, "L1_FPC=%u ", mr->flags & MEAS_REP_F_FPC ? 1 : 0);
+		OSMO_STRBUF_PRINTF(sb, "L1_TA=%u ", mr->ms_l1.ta);
 	}
 
 	if (mr->flags & MEAS_REP_F_UL_DTX)
-		DEBUGPC(DMEAS, "DTXu ");
+		OSMO_STRBUF_PRINTF(sb, "DTXu ");
 	if (mr->flags & MEAS_REP_F_BA1)
-		DEBUGPC(DMEAS, "BA1 ");
+		OSMO_STRBUF_PRINTF(sb, "BA1 ");
 	if (!(mr->flags & MEAS_REP_F_DL_VALID))
-		DEBUGPC(DMEAS, "NOT VALID ");
+		OSMO_STRBUF_PRINTF(sb, "NOT VALID ");
 	else
-		print_meas_rep_uni(&mr->dl, "dl");
+		print_meas_rep_uni(&sb, &mr->dl, "dl");
 
-	DEBUGPC(DMEAS, "NUM_NEIGH=%u\n", mr->num_cell);
+	OSMO_STRBUF_PRINTF(sb, "NUM_NEIGH=%u", mr->num_cell);
+
+	return sb.chars_needed;
+}
+
+static char *print_meas_rep_c(void *ctx, struct gsm_lchan *lchan, struct gsm_meas_rep *mr)
+{
+	/* A naive count of required characters gets me to ~200, so 256 should be safe to get a large enough buffer on
+	 * the first time. */
+	OSMO_NAME_C_IMPL(ctx, 256, "ERROR", print_meas_rep_buf, lchan, mr)
+}
+
+static void print_meas_rep(struct gsm_lchan *lchan, struct gsm_meas_rep *mr)
+{
+	int i;
+	struct bsc_subscr *bsub = NULL;
+
+	if (lchan && lchan->conn) {
+		bsub = lchan->conn->bsub;
+		if (bsub)
+			log_set_context(LOG_CTX_BSC_SUBSCR, bsub);
+	}
+
+	DEBUGP(DMEAS, "%s\n", print_meas_rep_c(OTC_SELECT, lchan, mr));
+
 	if (mr->num_cell == 7)
 		return;
 	for (i = 0; i < mr->num_cell; i++) {
