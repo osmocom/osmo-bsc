@@ -546,7 +546,7 @@ struct msgb *gsm48_make_ho_cmd(struct gsm_lchan *new_lchan, uint8_t power_comman
 
 	/* mandatory bits */
 	gsm48_cell_desc(&ho->cell_desc, new_lchan->ts->trx->bts);
-	if (gsm48_lchan2chan_desc(&ho->chan_desc, new_lchan, gsm_ts_tsc(new_lchan->ts))) {
+	if (gsm48_lchan2chan_desc(&ho->chan_desc, new_lchan, gsm_ts_tsc(new_lchan->ts), false)) {
 		msgb_free(msg);
 		return NULL;
 	}
@@ -622,7 +622,7 @@ int gsm48_send_rr_ass_cmd(struct gsm_lchan *current_lchan, struct gsm_lchan *new
 	 * the chan_desc. But as long as multi-slot configurations
 	 * are not used we seem to be fine.
 	 */
-	rc = gsm48_lchan2chan_desc(&ass->chan_desc, new_lchan, new_lchan->tsc);
+	rc = gsm48_lchan2chan_desc(&ass->chan_desc, new_lchan, new_lchan->tsc, false);
 	if (rc) {
 		msgb_free(msg);
 		return rc;
@@ -703,7 +703,7 @@ int gsm48_lchan_modify(struct gsm_lchan *lchan, uint8_t mode)
 	gh->proto_discr = GSM48_PDISC_RR;
 	gh->msg_type = GSM48_MT_RR_CHAN_MODE_MODIF;
 
-	rc = gsm48_lchan2chan_desc(&cmm->chan_desc, lchan, lchan->modify.tsc);
+	rc = gsm48_lchan2chan_desc(&cmm->chan_desc, lchan, lchan->modify.tsc, false);
 	if (rc) {
 		msgb_free(msg);
 		return rc;

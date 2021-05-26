@@ -1028,12 +1028,12 @@ gsm_objclass2obj(struct gsm_bts *bts, uint8_t obj_class,
 	     const struct abis_om_obj_inst *obj_inst);
 
 int gsm_pchan2chan_nr(enum gsm_phys_chan_config pchan,
-		      uint8_t ts_nr, uint8_t lchan_nr);
-int gsm_lchan2chan_nr(const struct gsm_lchan *lchan);
+		      uint8_t ts_nr, uint8_t lchan_nr, bool vamos_is_secondary);
+int gsm_lchan2chan_nr(const struct gsm_lchan *lchan, bool allow_osmo_cbits);
 
 int gsm48_lchan2chan_desc(struct gsm48_chan_desc *cd,
 			  const struct gsm_lchan *lchan,
-			  uint8_t tsc);
+			  uint8_t tsc, bool allow_osmo_cbits);
 int gsm48_lchan2chan_desc_as_configured(struct gsm48_chan_desc *cd, const struct gsm_lchan *lchan,
 					uint8_t tsc);
 

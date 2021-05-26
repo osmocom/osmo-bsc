@@ -103,7 +103,7 @@ static void gen_meas_rep(struct gsm_lchan *lchan,
 	uint8_t ulm[3], l1i[2], *buf;
 	struct gsm48_hdr *gh;
 	struct gsm48_meas_res *mr;
-	int chan_nr = gsm_lchan2chan_nr(lchan);
+	int chan_nr = gsm_lchan2chan_nr(lchan, true);
 	OSMO_ASSERT(chan_nr >= 0);
 
 	dh = (struct abis_rsl_dchan_hdr *) msgb_put(msg, sizeof(*dh));
@@ -555,7 +555,7 @@ static void send_chan_act_ack(struct gsm_lchan *lchan, int act)
 	dh->c.msg_discr = ABIS_RSL_MDISC_DED_CHAN;
 	dh->c.msg_type = (act) ? RSL_MT_CHAN_ACTIV_ACK : RSL_MT_RF_CHAN_REL_ACK;
 	dh->ie_chan = RSL_IE_CHAN_NR;
-	dh->chan_nr = gsm_lchan2chan_nr(lchan);
+	dh->chan_nr = gsm_lchan2chan_nr(lchan, true);
 
 	msg->dst = rsl_chan_link(lchan);
 	msg->l2h = (unsigned char *)dh;
@@ -568,7 +568,7 @@ static void send_assignment_complete(struct gsm_lchan *lchan)
 {
 	struct msgb *msg = msgb_alloc_headroom(256, 64, "RSL");
 	struct abis_rsl_rll_hdr *rh;
-	uint8_t chan_nr = gsm_lchan2chan_nr(lchan);
+	uint8_t chan_nr = gsm_lchan2chan_nr(lchan, true);
 	uint8_t *buf;
 	struct gsm48_hdr *gh;
 	struct gsm48_ho_cpl *hc;
@@ -606,7 +606,7 @@ static void send_est_ind(struct gsm_lchan *lchan)
 {
 	struct msgb *msg = msgb_alloc_headroom(256, 64, "RSL");
 	struct abis_rsl_rll_hdr *rh;
-	uint8_t chan_nr = gsm_lchan2chan_nr(lchan);
+	uint8_t chan_nr = gsm_lchan2chan_nr(lchan, true);
 
 	fprintf(stderr, "- Send EST IND for %s\n", gsm_lchan_name(lchan));
 
@@ -628,7 +628,7 @@ static void send_ho_detect(struct gsm_lchan *lchan)
 {
 	struct msgb *msg = msgb_alloc_headroom(256, 64, "RSL");
 	struct abis_rsl_rll_hdr *rh;
-	uint8_t chan_nr = gsm_lchan2chan_nr(lchan);
+	uint8_t chan_nr = gsm_lchan2chan_nr(lchan, true);
 
 	fprintf(stderr, "- Send HO DETECT for %s\n", gsm_lchan_name(lchan));
 
@@ -654,7 +654,7 @@ static void send_ho_complete(struct gsm_lchan *lchan, bool success)
 {
 	struct msgb *msg = msgb_alloc_headroom(256, 64, "RSL");
 	struct abis_rsl_rll_hdr *rh;
-	uint8_t chan_nr = gsm_lchan2chan_nr(lchan);
+	uint8_t chan_nr = gsm_lchan2chan_nr(lchan, true);
 	uint8_t *buf;
 	struct gsm48_hdr *gh;
 	struct gsm48_ho_cpl *hc;

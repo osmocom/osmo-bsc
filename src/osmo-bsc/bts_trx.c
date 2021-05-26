@@ -151,6 +151,7 @@ struct gsm_lchan *rsl_lchan_lookup(struct gsm_bts_trx *trx, uint8_t chan_nr,
 	uint8_t cbits = chan_nr >> 3;
 	uint8_t lch_idx;
 	struct gsm_bts_trx_ts *ts = &trx->ts[ts_nr];
+	bool vamos = false;
 	bool ok;
 
 	if (rc)
@@ -159,6 +160,21 @@ struct gsm_lchan *rsl_lchan_lookup(struct gsm_bts_trx *trx, uint8_t chan_nr,
 	/* Why call ts_is_capable_of_pchan() here? Dynamic timeslots may receive RSL Channel Activation ACK on a
 	 * timeslot that is in transition between pchan modes. That ACK actually confirms the pchan switch, so instead
 	 * of checking the current pchan mode, we must allow any pchans that a dyn TS is capable of. */
+
+	/* Interpret Osmocom specific cbits only for OsmoBTS type */
+	if (trx->bts->model->type == GSM_BTS_TYPE_OSMOBTS) {
+		/* For VAMOS cbits, set vamos = true and handle cbits as their equivalent non-VAMOS cbits below. */
+		switch (cbits) {
+		case ABIS_RSL_CHAN_NR_CBITS_OSMO_VAMOS_Bm_ACCHs:
+		case ABIS_RSL_CHAN_NR_CBITS_OSMO_VAMOS_Lm_ACCHs(0):
+		case ABIS_RSL_CHAN_NR_CBITS_OSMO_VAMOS_Lm_ACCHs(1):
+			cbits &= ~RSL_CHAN_OSMO_VAMOS_MASK;
+			vamos = true;
+			break;
+		default:
+			break;
+		}
+	}
 
 	switch (cbits) {
 	case ABIS_RSL_CHAN_NR_CBITS_Bm_ACCHs:
@@ -207,6 +223,8 @@ struct gsm_lchan *rsl_lchan_lookup(struct gsm_bts_trx *trx, uint8_t chan_nr,
 	if (rc && ok)
 		*rc = 0;
 
+	if (vamos && (trx->bts->model->type == GSM_BTS_TYPE_OSMOBTS))
+		lch_idx += ts->max_primary_lchans;
 	return &ts->lchan[lch_idx];
 }
 
