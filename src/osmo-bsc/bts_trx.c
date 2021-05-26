@@ -67,6 +67,8 @@ struct gsm_bts_trx *gsm_bts_trx_alloc(struct gsm_bts *bts)
 	trx->bts = bts;
 	trx->nr = bts->num_trx++;
 
+	trx->rsl_tei_primary = trx->nr;
+
 	trx->mo.fi = osmo_fsm_inst_alloc(&nm_rcarrier_fsm, trx, trx,
 					 LOGL_INFO, NULL);
 	osmo_fsm_inst_update_id_f(trx->mo.fi, "bts%d-trx%d", bts->nr, trx->nr);
