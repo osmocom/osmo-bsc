@@ -1,0 +1,16 @@
+# Do not oscillate handover when the BTS applies BS power reduction
+
+create-bts trx-count 1 timeslots c+s4 TCH/F TCH/F TCH/F TCH/F TCH/F TCH/F PDCH
+create-bts trx-count 1 timeslots c+s4 TCH/F TCH/F TCH/F TCH/F TCH/F TCH/F PDCH
+
+set-ts-use trx 0 0 states        *    TCH/F -     -     -     -     -     *
+
+meas-rep repeat 10 bspower 20 lchan 0 0 1 0 rxlev 20 rxqual 0 ta 0 neighbors 30
+# FAIL: there should be no handover, because the bspower reduction of 20 with an rxlev of 20 (= 40) is stronger than the
+# neighbor at 30. But since osmo-bsc fails to take the BS Power into account, it hands over to the neighbor.
+#expect-no-chan
+expect-ho from lchan 0 0 1 0 to lchan 1 0 1 0
+
+# When the neighbor then reports the stronger original cell, we get handover oscillation
+meas-rep repeat 10 bspower 0 lchan 1 0 1 0 rxlev 30 rxqual 0 ta 0 neighbors 40
+expect-ho from lchan 1 0 1 0 to lchan 0 0 1 0

@@ -10,6 +10,7 @@ pass test_balance_congestion.ho_vty
 pass test_balance_congestion_2.ho_vty
 pass test_balance_congestion_by_percentage.ho_vty
 pass test_balance_congestion_tchf_tchh.ho_vty
+pass test_bs_power.ho_vty
 pass test_congestion.ho_vty
 pass test_congestion_favor_best_target_rxlev.ho_vty
 pass test_congestion_intra_vs_inter_cell.ho_vty
