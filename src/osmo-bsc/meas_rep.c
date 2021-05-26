@@ -31,11 +31,15 @@ static int get_field(const struct gsm_meas_rep *rep,
 	case MEAS_REP_DL_RXLEV_FULL:
 		if (!(rep->flags & MEAS_REP_F_DL_VALID))
 			return -EINVAL;
-		return rep->dl.full.rx_lev;
+		/* Add BS Power value to rxlev: improve the RXLEV value by the amount of power that the BTS is reducing
+		 * transmission. Note that bs_power is coded as dB/2, a positive value indicating the amount of power reduction
+		 * on the downlink; rxlev is coded in dB, where a higher number means stronger signal. */
+		return rep->dl.full.rx_lev + (rep->bs_power * 2);
 	case MEAS_REP_DL_RXLEV_SUB:
 		if (!(rep->flags & MEAS_REP_F_DL_VALID))
 			return -EINVAL;
-		return rep->dl.sub.rx_lev;
+		/* Apply BS Power as explained above */
+		return rep->dl.sub.rx_lev + (rep->bs_power * 2);
 	case MEAS_REP_DL_RXQUAL_FULL:
 		if (!(rep->flags & MEAS_REP_F_DL_VALID))
 			return -EINVAL;
