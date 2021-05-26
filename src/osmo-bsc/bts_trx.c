@@ -156,28 +156,49 @@ struct gsm_lchan *rsl_lchan_lookup(struct gsm_bts_trx *trx, uint8_t chan_nr,
 	if (rc)
 		*rc = -EINVAL;
 
-	if (cbits == 0x01) {
+	switch (cbits) {
+	case ABIS_RSL_CHAN_NR_CBITS_Bm_ACCHs:
 		lch_idx = 0;	/* TCH/F */
 		ok = ts_is_capable_of_pchan(ts, GSM_PCHAN_TCH_F)
 			|| ts->pchan_on_init == GSM_PCHAN_PDCH; /* PDCH? really? */
-	} else if ((cbits & 0x1e) == 0x02) {
+		break;
+	case ABIS_RSL_CHAN_NR_CBITS_Lm_ACCHs(0):
+	case ABIS_RSL_CHAN_NR_CBITS_Lm_ACCHs(1):
 		lch_idx = cbits & 0x1;	/* TCH/H */
 		ok = ts_is_capable_of_pchan(ts, GSM_PCHAN_TCH_H);
-	} else if ((cbits & 0x1c) == 0x04) {
+		break;
+	case ABIS_RSL_CHAN_NR_CBITS_SDCCH4_ACCH(0):
+	case ABIS_RSL_CHAN_NR_CBITS_SDCCH4_ACCH(1):
+	case ABIS_RSL_CHAN_NR_CBITS_SDCCH4_ACCH(2):
+	case ABIS_RSL_CHAN_NR_CBITS_SDCCH4_ACCH(3):
 		lch_idx = cbits & 0x3;	/* SDCCH/4 */
 		ok = ts_is_capable_of_pchan(ts, GSM_PCHAN_CCCH_SDCCH4);
-	} else if ((cbits & 0x18) == 0x08) {
+		break;
+	case ABIS_RSL_CHAN_NR_CBITS_SDCCH8_ACCH(0):
+	case ABIS_RSL_CHAN_NR_CBITS_SDCCH8_ACCH(1):
+	case ABIS_RSL_CHAN_NR_CBITS_SDCCH8_ACCH(2):
+	case ABIS_RSL_CHAN_NR_CBITS_SDCCH8_ACCH(3):
+	case ABIS_RSL_CHAN_NR_CBITS_SDCCH8_ACCH(4):
+	case ABIS_RSL_CHAN_NR_CBITS_SDCCH8_ACCH(5):
+	case ABIS_RSL_CHAN_NR_CBITS_SDCCH8_ACCH(6):
+	case ABIS_RSL_CHAN_NR_CBITS_SDCCH8_ACCH(7):
 		lch_idx = cbits & 0x7;	/* SDCCH/8 */
 		ok = ts_is_capable_of_pchan(ts, GSM_PCHAN_SDCCH8_SACCH8C);
-	} else if (cbits == 0x10 || cbits == 0x11 || cbits == 0x12) {
+		break;
+	case ABIS_RSL_CHAN_NR_CBITS_BCCH:
+	case ABIS_RSL_CHAN_NR_CBITS_RACH:
+	case ABIS_RSL_CHAN_NR_CBITS_PCH_AGCH:
 		lch_idx = 0; /* CCCH? */
 		ok = ts_is_capable_of_pchan(ts, GSM_PCHAN_CCCH);
 		/* FIXME: we should not return first sdcch4 !!! */
-	} else if ((chan_nr & RSL_CHAN_NR_MASK) == RSL_CHAN_OSMO_PDCH) {
+		break;
+	case ABIS_RSL_CHAN_NR_CBITS_OSMO_PDCH:
 		lch_idx = 0;
 		ok = (ts->pchan_on_init == GSM_PCHAN_TCH_F_TCH_H_PDCH);
-	} else
+		break;
+	default:
 		return NULL;
+	}
 
 	if (rc && ok)
 		*rc = 0;
