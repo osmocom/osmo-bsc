@@ -1439,10 +1439,7 @@ static void on_measurement_report(struct gsm_meas_rep *mr)
 	}
 
 	/* get average levels. if not enough measurements yet, value is < 0 */
-	av_rxlev = get_meas_rep_avg(lchan,
-				    ho_get_hodec2_full_tdma(bts->ho) ?
-				    MEAS_REP_DL_RXLEV_FULL : MEAS_REP_DL_RXLEV_SUB,
-				    ho_get_hodec2_rxlev_avg_win(bts->ho));
+	av_rxlev = current_rxlev(lchan);
 	av_rxqual = get_meas_rep_avg(lchan,
 				     ho_get_hodec2_full_tdma(bts->ho) ?
 				     MEAS_REP_DL_RXQUAL_FULL : MEAS_REP_DL_RXQUAL_SUB,
