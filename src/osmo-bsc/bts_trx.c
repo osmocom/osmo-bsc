@@ -156,6 +156,10 @@ struct gsm_lchan *rsl_lchan_lookup(struct gsm_bts_trx *trx, uint8_t chan_nr,
 	if (rc)
 		*rc = -EINVAL;
 
+	/* Why call ts_is_capable_of_pchan() here? Dynamic timeslots may receive RSL Channel Activation ACK on a
+	 * timeslot that is in transition between pchan modes. That ACK actually confirms the pchan switch, so instead
+	 * of checking the current pchan mode, we must allow any pchans that a dyn TS is capable of. */
+
 	switch (cbits) {
 	case ABIS_RSL_CHAN_NR_CBITS_Bm_ACCHs:
 		lch_idx = 0;	/* TCH/F */
