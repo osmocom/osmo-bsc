@@ -111,7 +111,7 @@ int meas_db_insert(struct meas_db_state *st, const char *imsi,
 
 
 	SCK_OK(st->db, sqlite3_bind_int(st->stmt_ins_mr, 5, mr->nr));
-	SCK_OK(st->db, sqlite3_bind_int(st->stmt_ins_mr, 6, mr->bs_power));
+	SCK_OK(st->db, sqlite3_bind_int(st->stmt_ins_mr, 6, mr->bs_power_db / 2));
 
 	if (mr->flags & MEAS_REP_F_MS_TO)
 		SCK_OK(st->db, sqlite3_bind_int(st->stmt_ins_mr, 7, mr->ms_timing_offset));

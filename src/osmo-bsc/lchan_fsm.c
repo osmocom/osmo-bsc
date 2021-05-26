@@ -614,18 +614,18 @@ static void lchan_fsm_wait_ts_ready_onenter(struct osmo_fsm_inst *fi, uint32_t p
 	if (old_lchan && old_lchan->ts->trx->bts == bts) {
 		ms_power_dbm = ms_pwr_dbm(bts->band, old_lchan->ms_power);
 		lchan_update_ms_power_ctrl_level(lchan, ms_power_dbm >= 0 ? ms_power_dbm : bts->ms_max_power);
-		lchan->bs_power = old_lchan->bs_power;
+		lchan->bs_power_db = old_lchan->bs_power_db;
 	} else {
 		lchan_update_ms_power_ctrl_level(lchan, bts->ms_max_power);
 		/* Upon last entering the UNUSED state, from lchan_reset():
-		 * - bs_power is still zero, 0dB reduction, output power = Pn.
+		 * - bs_power_db is still zero, 0dB reduction, output power = Pn.
 		 * - TA is still zero, to be determined by RACH. */
 
 		/* Default BS Power reduction value (in 2 dB steps) */
 		if (bts->bs_power_ctrl.mode == GSM_PWR_CTRL_MODE_DYN_BTS)
-			lchan->bs_power = bts->bs_power_ctrl.bs_power_max_db / 2;
+			lchan->bs_power_db = bts->bs_power_ctrl.bs_power_max_db;
 		else
-			lchan->bs_power = bts->bs_power_ctrl.bs_power_val_db / 2;
+			lchan->bs_power_db = bts->bs_power_ctrl.bs_power_val_db;
 	}
 
 	if (gsm48_chan_mode_to_non_vamos(info->ch_mode_rate.chan_mode) == GSM48_CMODE_SPEECH_AMR) {

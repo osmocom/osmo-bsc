@@ -62,7 +62,7 @@ static void print_meas_rep_json(struct gsm_meas_rep *mr)
 	printf(", \"UL_MEAS\":{");
 	print_meas_rep_uni_json(&mr->ul);
 	printf("}");
-	printf(", \"BS_POWER\":%d", mr->bs_power);
+	printf(", \"BS_POWER\":%d", mr->bs_power_db / 2);
 	if (mr->flags & MEAS_REP_F_MS_TO)
 		printf(", \"MS_TO\":%d", mr->ms_timing_offset);
 

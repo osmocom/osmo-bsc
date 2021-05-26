@@ -300,6 +300,7 @@ int rsl_chan_bs_power_ctrl(struct gsm_lchan *lchan, unsigned int fpc, int db)
 	struct abis_rsl_dchan_hdr *dh;
 	struct msgb *msg;
 	uint8_t chan_nr = gsm_lchan2chan_nr(lchan);
+	uint8_t bs_power_enc;
 
 	db = abs(db);
 	if (db > 30)
@@ -307,15 +308,15 @@ int rsl_chan_bs_power_ctrl(struct gsm_lchan *lchan, unsigned int fpc, int db)
 
 	msg = rsl_msgb_alloc();
 
-	lchan->bs_power = db/2;
+	bs_power_enc = db / 2;
 	if (fpc)
-		lchan->bs_power |= 0x10;
+		bs_power_enc |= 0x10;
 
 	dh = (struct abis_rsl_dchan_hdr *) msgb_put(msg, sizeof(*dh));
 	init_dchan_hdr(dh, RSL_MT_BS_POWER_CONTROL);
 	dh->chan_nr = chan_nr;
 
-	msgb_tv_put(msg, RSL_IE_BS_POWER, lchan->bs_power);
+	msgb_tv_put(msg, RSL_IE_BS_POWER, bs_power_enc);
 
 	/* BS Power Control Parameters (if supported by BTS model) */
 	add_power_control_params(msg, RSL_IE_BS_POWER_PARAM, lchan);
@@ -579,7 +580,7 @@ int rsl_tx_chan_activ(struct gsm_lchan *lchan, uint8_t act_type, uint8_t ho_ref)
 	}
 
 	if (bts->bs_power_ctrl.mode != GSM_PWR_CTRL_MODE_NONE)
-		msgb_tv_put(msg, RSL_IE_BS_POWER, lchan->bs_power);
+		msgb_tv_put(msg, RSL_IE_BS_POWER, lchan->bs_power_db / 2);
 	if (bts->ms_power_ctrl.mode != GSM_PWR_CTRL_MODE_NONE)
 		msgb_tv_put(msg, RSL_IE_MS_POWER, lchan->ms_power);
 
@@ -1044,7 +1045,7 @@ static void print_meas_rep(struct gsm_lchan *lchan, struct gsm_meas_rep *mr)
 		DEBUGPC(DMEAS, "DTXd ");
 
 	print_meas_rep_uni(&mr->ul, "ul");
-	DEBUGPC(DMEAS, "BS_POWER=%d ", mr->bs_power);
+	DEBUGPC(DMEAS, "BS_POWER=%ddB ", mr->bs_power_db);
 
 	if (mr->flags & MEAS_REP_F_MS_TO)
 		DEBUGPC(DMEAS, "MS_TO=%d ", mr->ms_timing_offset);
@@ -1099,6 +1100,7 @@ static int rsl_rx_meas_res(struct msgb *msg)
 	uint8_t len;
 	const uint8_t *val;
 	int rc;
+	uint8_t bs_power_enc;
 
 	if (!lchan_may_receive_data(msg->lchan)) {
 		LOG_LCHAN(msg->lchan, LOGL_DEBUG, "MEAS RES for inactive channel\n");
@@ -1132,7 +1134,8 @@ static int rsl_rx_meas_res(struct msgb *msg)
 		mr->ul.sub.rx_qual = val[2] & 0x7;
 	}
 
-	mr->bs_power = *TLVP_VAL(&tp, RSL_IE_BS_POWER);
+	bs_power_enc = *TLVP_VAL(&tp, RSL_IE_BS_POWER);
+	mr->bs_power_db = (bs_power_enc & 0x0f) * 2;
 
 	/* Optional Parts */
 	if (TLVP_PRESENT(&tp, RSL_IE_MS_TIMING_OFFSET)) {

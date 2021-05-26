@@ -686,7 +686,7 @@ struct gsm_lchan {
 	/* The logical channel type */
 	enum gsm_chan_t type;
 	/* Power levels for MS and BTS */
-	uint8_t bs_power;
+	uint8_t bs_power_db;
 	uint8_t ms_power;
 	/* Encryption information */
 	struct gsm_encr encr;
