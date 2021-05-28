@@ -594,7 +594,7 @@ static bool parse_ho_request(struct gsm_subscriber_connection *conn, const struc
 
 static bool chan_mode_is_tch(enum gsm48_chan_mode mode)
 {
-	switch (mode) {
+	switch (gsm48_chan_mode_to_non_vamos(mode)) {
 	case GSM48_CMODE_SPEECH_V1:
 	case GSM48_CMODE_SPEECH_EFR:
 	case GSM48_CMODE_SPEECH_AMR:

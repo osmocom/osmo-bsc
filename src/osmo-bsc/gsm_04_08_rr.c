@@ -572,7 +572,7 @@ struct msgb *gsm48_make_ho_cmd(struct gsm_lchan *new_lchan, uint8_t power_comman
 	}
 
 	/* in case of multi rate we need to attach a config */
-	if (new_lchan->current_ch_mode_rate.chan_mode == GSM48_CMODE_SPEECH_AMR) {
+	if (gsm48_chan_mode_to_non_vamos(new_lchan->current_ch_mode_rate.chan_mode) == GSM48_CMODE_SPEECH_AMR) {
 		if (put_mr_config_for_ms(msg, &new_lchan->current_mr_conf,
 					 (new_lchan->type == GSM_LCHAN_TCH_F) ? &bts->mr_full : &bts->mr_half)) {
 			LOG_LCHAN(new_lchan, LOGL_ERROR, "Cannot encode MultiRate Configuration IE\n");
@@ -638,7 +638,7 @@ int gsm48_send_rr_ass_cmd(struct gsm_lchan *current_lchan, struct gsm_lchan *new
 	}
 
 	/* in case of multi rate we need to attach a config */
-	if (new_lchan->current_ch_mode_rate.chan_mode == GSM48_CMODE_SPEECH_AMR) {
+	if (gsm48_chan_mode_to_non_vamos(new_lchan->current_ch_mode_rate.chan_mode) == GSM48_CMODE_SPEECH_AMR) {
 		int rc = put_mr_config_for_ms(msg, &new_lchan->current_mr_conf,
 					      (new_lchan->type == GSM_LCHAN_TCH_F) ? &bts->mr_full : &bts->mr_half);
 		if (rc) {
@@ -696,7 +696,7 @@ int gsm48_lchan_modify(struct gsm_lchan *lchan, uint8_t mode)
 	cmm->mode = mode;
 
 	/* in case of multi rate we need to attach a config */
-	if (lchan->modify.info.ch_mode_rate.chan_mode == GSM48_CMODE_SPEECH_AMR) {
+	if (gsm48_chan_mode_to_non_vamos(lchan->modify.info.ch_mode_rate.chan_mode) == GSM48_CMODE_SPEECH_AMR) {
 		int rc = put_mr_config_for_ms(msg, &lchan->modify.mr_conf_filtered,
 					      (lchan->type == GSM_LCHAN_TCH_F) ? &bts->mr_full : &bts->mr_half);
 		if (rc) {

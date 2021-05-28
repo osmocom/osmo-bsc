@@ -479,7 +479,7 @@ static void check_requirements(struct ho_candidate *c)
 
 	/* compatibility check for codecs.
 	 * if so, the candidates for full rate and half rate are selected */
-	switch (c->current.lchan->current_ch_mode_rate.chan_mode) {
+	switch (gsm48_chan_mode_to_non_vamos(c->current.lchan->current_ch_mode_rate.chan_mode)) {
 	case GSM48_CMODE_SPEECH_V1:
 		switch (c->current.lchan->type) {
 		case GSM_LCHAN_TCH_F: /* mandatory */
@@ -575,7 +575,7 @@ static void check_requirements(struct ho_candidate *c)
 	// This was useful in osmo-nitb. We're in osmo-bsc now and have no idea whether the osmo-msc does
 	// internal or external call control. Maybe a future config switch wants to add this behavior?
 	/* Built-in call control requires equal codec rates. Remove rates that are not equal. */
-	if (c->current.lchan->tch_mode == GSM48_CMODE_SPEECH_AMR
+	if (gsm48_chan_mode_to_non_vamos(c->current.lchan->tch_mode) == GSM48_CMODE_SPEECH_AMR
 	    && c->current.bts->network->mncc_recv != mncc_sock_from_cc) {
 		switch (c->current.lchan->type) {
 		case GSM_LCHAN_TCH_F:
@@ -759,7 +759,7 @@ static void check_requirements_remote_bss(struct ho_candidate *c)
 
 	/* compatibility check for codecs -- we have no notion of what the remote BSS supports. We can
 	 * only assume that a handover would work, and use only the local requirements. */
-	switch (c->current.lchan->current_ch_mode_rate.chan_mode) {
+	switch (gsm48_chan_mode_to_non_vamos(c->current.lchan->current_ch_mode_rate.chan_mode)) {
 	case GSM48_CMODE_SPEECH_V1:
 		switch (c->current.lchan->type) {
 		case GSM_LCHAN_TCH_F: /* mandatory */
@@ -817,7 +817,7 @@ static int trigger_local_ho_or_as(struct ho_candidate *c, uint8_t requirements)
 	bool full_rate = false;
 
 	/* afs_bias becomes > 0, if AFS is used and is improved */
-	if (c->current.lchan->current_ch_mode_rate.chan_mode == GSM48_CMODE_SPEECH_AMR)
+	if (gsm48_chan_mode_to_non_vamos(c->current.lchan->current_ch_mode_rate.chan_mode) == GSM48_CMODE_SPEECH_AMR)
 		afs_bias = ho_get_hodec2_afs_bias_rxlev(c->target.bts->ho);
 
 	/* select TCH rate, prefer TCH/F if AFS is improved */
@@ -1247,7 +1247,7 @@ static void collect_candidates_for_lchan(struct gsm_lchan *lchan,
 static int find_alternative_lchan(struct gsm_lchan *lchan, bool include_weaker_rxlev)
 {
 	struct gsm_bts *bts = lchan->ts->trx->bts;
-	int ahs = (lchan->current_ch_mode_rate.chan_mode == GSM48_CMODE_SPEECH_AMR
+	int ahs = (gsm48_chan_mode_to_non_vamos(lchan->current_ch_mode_rate.chan_mode) == GSM48_CMODE_SPEECH_AMR
 		   && lchan->type == GSM_LCHAN_TCH_H);
 	int rxlev_current;
 	struct ho_candidate clist[1 + ARRAY_SIZE(lchan->neigh_meas)];
@@ -1455,7 +1455,7 @@ static void on_measurement_report(struct gsm_meas_rep *mr)
 
 	/* improve levels in case of AFS, if defined */
 	if (lchan->type == GSM_LCHAN_TCH_F
-	 && lchan->current_ch_mode_rate.chan_mode == GSM48_CMODE_SPEECH_AMR) {
+	 && gsm48_chan_mode_to_non_vamos(lchan->current_ch_mode_rate.chan_mode) == GSM48_CMODE_SPEECH_AMR) {
 		int av_rxlev_was = av_rxlev;
 		int av_rxqual_was = av_rxqual;
 		int rxlev_bias = ho_get_hodec2_afs_bias_rxlev(bts->ho);

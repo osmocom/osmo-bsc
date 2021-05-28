@@ -796,7 +796,7 @@ static struct osmo_fsm lchan_rtp_fsm = {
 /* Depending on the channel mode and rate, return the codec type that is signalled towards the MGW. */
 static enum mgcp_codecs chan_mode_to_mgcp_codec(enum gsm48_chan_mode chan_mode, bool full_rate)
 {
-	switch (chan_mode) {
+	switch (gsm48_chan_mode_to_non_vamos(chan_mode)) {
 	case GSM48_CMODE_SPEECH_V1:
 		if (full_rate)
 			return CODEC_GSM_8000_1;

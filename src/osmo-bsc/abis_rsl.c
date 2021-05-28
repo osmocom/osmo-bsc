@@ -70,7 +70,7 @@ static void count_codecs(struct gsm_bts *bts, struct gsm_lchan *lchan)
 	OSMO_ASSERT(bts);
 
 	if (lchan->type == GSM_LCHAN_TCH_H) {
-		switch (lchan->current_ch_mode_rate.chan_mode) {
+		switch (gsm48_chan_mode_to_non_vamos(lchan->current_ch_mode_rate.chan_mode)) {
 		case GSM48_CMODE_SPEECH_AMR:
 			rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_CTR_CODEC_AMR_H]);
 			break;
@@ -81,7 +81,7 @@ static void count_codecs(struct gsm_bts *bts, struct gsm_lchan *lchan)
 			break;
 		}
 	} else if (lchan->type == GSM_LCHAN_TCH_F) {
-		switch (lchan->current_ch_mode_rate.chan_mode) {
+		switch (gsm48_chan_mode_to_non_vamos(lchan->current_ch_mode_rate.chan_mode)) {
 		case GSM48_CMODE_SPEECH_AMR:
 			rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_CTR_CODEC_AMR_F]);
 			break;
@@ -389,7 +389,7 @@ static int channel_mode_from_lchan(struct rsl_ie_chan_mode *cm,
 		return -EINVAL;
 	}
 
-	switch (ch_mode_rate->chan_mode) {
+	switch (gsm48_chan_mode_to_non_vamos(ch_mode_rate->chan_mode)) {
 	case GSM48_CMODE_SIGN:
 		cm->chan_rate = 0;
 		break;
@@ -593,7 +593,7 @@ int rsl_tx_chan_activ(struct gsm_lchan *lchan, uint8_t act_type, uint8_t ho_ref)
 	add_power_control_params(msg, RSL_IE_BS_POWER_PARAM, lchan);
 	add_power_control_params(msg, RSL_IE_MS_POWER_PARAM, lchan);
 
-	if (lchan->activate.info.ch_mode_rate.chan_mode == GSM48_CMODE_SPEECH_AMR) {
+	if (gsm48_chan_mode_to_non_vamos(lchan->activate.info.ch_mode_rate.chan_mode) == GSM48_CMODE_SPEECH_AMR) {
 		rc = put_mr_config_for_bts(msg, &lchan->activate.mr_conf_filtered,
 					   (lchan->type == GSM_LCHAN_TCH_F) ? &bts->mr_full : &bts->mr_half);
 		if (rc) {
@@ -653,7 +653,7 @@ int rsl_chan_mode_modify_req(struct gsm_lchan *lchan)
 			msgb_tlv_put(msg, RSL_IE_ENCR_INFO, rc, encr_info);
 	}
 
-	if (lchan->modify.info.ch_mode_rate.chan_mode == GSM48_CMODE_SPEECH_AMR) {
+	if (gsm48_chan_mode_to_non_vamos(lchan->modify.info.ch_mode_rate.chan_mode) == GSM48_CMODE_SPEECH_AMR) {
 		rc = put_mr_config_for_bts(msg, &lchan->modify.mr_conf_filtered,
 					   (lchan->type == GSM_LCHAN_TCH_F) ? &bts->mr_full : &bts->mr_half);
 		if (rc) {
@@ -2095,7 +2095,7 @@ static int abis_rsl_rx_rll(struct msgb *msg)
 /* Return an ip.access BTS speech mode value (uint8_t) or negative on error. */
 int ipacc_speech_mode(enum gsm48_chan_mode tch_mode, enum gsm_chan_t type)
 {
-	switch (tch_mode) {
+	switch (gsm48_chan_mode_to_non_vamos(tch_mode)) {
 	case GSM48_CMODE_SPEECH_V1:
 		switch (type) {
 		case GSM_LCHAN_TCH_F:
@@ -2143,7 +2143,7 @@ void ipacc_speech_mode_set_direction(uint8_t *speech_mode, bool send)
 /* Return an ip.access BTS payload type value (uint8_t) or negative on error. */
 int ipacc_payload_type(enum gsm48_chan_mode tch_mode, enum gsm_chan_t type)
 {
-	switch (tch_mode) {
+	switch (gsm48_chan_mode_to_non_vamos(tch_mode)) {
 	case GSM48_CMODE_SPEECH_V1:
 		switch (type) {
 		case GSM_LCHAN_TCH_F:

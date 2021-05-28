@@ -146,7 +146,7 @@ _lc_find_bts(struct gsm_bts *bts, enum gsm_phys_chan_config pchan, bool log)
 
 enum gsm_chan_t chan_mode_to_chan_type(enum gsm48_chan_mode chan_mode, enum channel_rate chan_rate)
 {
-	switch (chan_mode) {
+	switch (gsm48_chan_mode_to_non_vamos(chan_mode)) {
 	case GSM48_CMODE_SIGN:
 		switch (chan_rate) {
 		case CH_RATE_SDCCH:

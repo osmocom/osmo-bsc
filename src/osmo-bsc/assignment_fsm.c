@@ -84,7 +84,7 @@ static const struct osmo_tdef_state_timeout assignment_fsm_timeouts[32] = {
 		rate_ctr_inc(&conn->network->bsc_ctrs->ctr[BSC_##counter]); \
 		if (bts) { \
 			rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_##counter]); \
-			switch (conn->assignment.req.ch_mode_rate_list[0].chan_mode) { \
+			switch (gsm48_chan_mode_to_non_vamos(conn->assignment.req.ch_mode_rate_list[0].chan_mode)) { \
 			case GSM48_CMODE_SIGN: \
 				rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_##counter##_SIGN]); \
 				break; \
@@ -317,7 +317,7 @@ static bool lchan_type_compat_with_mode(enum gsm_chan_t type, const struct chann
 	enum gsm48_chan_mode chan_mode = ch_mode_rate->chan_mode;
 	enum channel_rate chan_rate = ch_mode_rate->chan_rate;
 
-	switch (chan_mode) {
+	switch (gsm48_chan_mode_to_non_vamos(chan_mode)) {
 	case GSM48_CMODE_SIGN:
 		switch (type) {
 		case GSM_LCHAN_TCH_F: return chan_rate == CH_RATE_FULL;
@@ -361,7 +361,7 @@ static int check_requires_voice(bool *requires_voice, enum gsm48_chan_mode chan_
 {
 	*requires_voice = false;
 
-	switch (chan_mode) {
+	switch (gsm48_chan_mode_to_non_vamos(chan_mode)) {
 	case GSM48_CMODE_SPEECH_V1:
 	case GSM48_CMODE_SPEECH_EFR:
 	case GSM48_CMODE_SPEECH_AMR:

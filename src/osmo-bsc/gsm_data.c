@@ -1066,7 +1066,7 @@ const struct gsm_power_ctrl_params power_ctrl_params_def = {
 
 enum rsl_cmod_spd chan_mode_to_rsl_cmod_spd(enum gsm48_chan_mode chan_mode)
 {
-	switch (chan_mode) {
+	switch (gsm48_chan_mode_to_non_vamos(chan_mode)) {
 	case GSM48_CMODE_SIGN:
 		return RSL_CMOD_SPD_SIGN;
 	case GSM48_CMODE_SPEECH_V1:
