@@ -534,7 +534,7 @@ int rsl_tx_chan_activ(struct gsm_lchan *lchan, uint8_t act_type, uint8_t ho_ref)
 	/* PDCH activation is a job for rsl_tx_dyn_ts_pdch_act_deact(); */
 	OSMO_ASSERT(act_type != RSL_ACT_OSMO_PDCH);
 
-	rc = channel_mode_from_lchan(&cm, lchan, &lchan->activate.info.ch_mode_rate, false);
+	rc = channel_mode_from_lchan(&cm, lchan, &lchan->activate.ch_mode_rate, false);
 	if (rc < 0) {
 		LOGP(DRSL, LOGL_ERROR,
 		     "%s Cannot find channel mode from lchan type\n",
@@ -608,7 +608,7 @@ int rsl_tx_chan_activ(struct gsm_lchan *lchan, uint8_t act_type, uint8_t ho_ref)
 	add_power_control_params(msg, RSL_IE_BS_POWER_PARAM, lchan);
 	add_power_control_params(msg, RSL_IE_MS_POWER_PARAM, lchan);
 
-	if (gsm48_chan_mode_to_non_vamos(lchan->activate.info.ch_mode_rate.chan_mode) == GSM48_CMODE_SPEECH_AMR) {
+	if (gsm48_chan_mode_to_non_vamos(lchan->activate.ch_mode_rate.chan_mode) == GSM48_CMODE_SPEECH_AMR) {
 		rc = put_mr_config_for_bts(msg, &lchan->activate.mr_conf_filtered,
 					   (lchan->type == GSM_LCHAN_TCH_F) ? &bts->mr_full : &bts->mr_half);
 		if (rc) {

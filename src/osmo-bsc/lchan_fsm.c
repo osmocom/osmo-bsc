@@ -639,8 +639,11 @@ static void lchan_fsm_wait_ts_ready_onenter(struct osmo_fsm_inst *fi, uint32_t p
 			lchan->bs_power_db = bts->bs_power_ctrl.bs_power_val_db;
 	}
 
-	if (gsm48_chan_mode_to_non_vamos(info->ch_mode_rate.chan_mode) == GSM48_CMODE_SPEECH_AMR) {
-		if (lchan_mr_config(&lchan->activate.mr_conf_filtered, lchan, info->ch_mode_rate.s15_s0) < 0) {
+	lchan->activate.ch_mode_rate = lchan->activate.info.ch_mode_rate;
+	/* future: automatically adjust chan_mode in lchan->activate.ch_mode_rate */
+
+	if (gsm48_chan_mode_to_non_vamos(lchan->activate.ch_mode_rate.chan_mode) == GSM48_CMODE_SPEECH_AMR) {
+		if (lchan_mr_config(&lchan->activate.mr_conf_filtered, lchan, lchan->activate.ch_mode_rate.s15_s0) < 0) {
 			lchan_fail("Can not generate multirate configuration IE\n");
 			return;
 		}
@@ -656,7 +659,7 @@ static void lchan_fsm_wait_ts_ready_onenter(struct osmo_fsm_inst *fi, uint32_t p
 			(use_mgwep_ci ? osmo_mgcpc_ep_ci_name(use_mgwep_ci) : "new")
 			: "none",
 		  gsm_lchant_name(lchan->type),
-		  gsm48_chan_mode_name(lchan->activate.info.ch_mode_rate.chan_mode),
+		  gsm48_chan_mode_name(lchan->activate.ch_mode_rate.chan_mode),
 		  (lchan->activate.info.encr.alg_id ? : 1)-1,
 		  lchan->activate.info.encr.key_len ? osmo_hexdump_nospc(lchan->activate.info.encr.key,
 									 lchan->activate.info.encr.key_len) : "none");
@@ -806,7 +809,7 @@ static void lchan_fsm_post_activ_ack(struct osmo_fsm_inst *fi)
 	int rc;
 	struct gsm_lchan *lchan = lchan_fi_lchan(fi);
 
-	lchan->current_ch_mode_rate = lchan->activate.info.ch_mode_rate;
+	lchan->current_ch_mode_rate = lchan->activate.ch_mode_rate;
 	lchan->current_mr_conf = lchan->activate.mr_conf_filtered;
 	lchan->tsc_set = lchan->activate.tsc_set;
 	lchan->tsc = lchan->activate.tsc;
@@ -999,6 +1002,9 @@ static void lchan_fsm_wait_rsl_chan_mode_modify_ack(struct osmo_fsm_inst *fi, ui
 				.tsc_set = -1,
 				.tsc = -1,
 			};
+			lchan->activate.ch_mode_rate = lchan->activate.info.ch_mode_rate;
+			/* future: automatically adjust chan_mode in lchan->activate.ch_mode_rate */
+
 			lchan->activate.concluded = false;
 			lchan_fsm_state_chg(LCHAN_ST_WAIT_RLL_RTP_ESTABLISH);
 		} else {

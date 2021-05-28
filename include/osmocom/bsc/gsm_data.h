@@ -645,6 +645,7 @@ struct gsm_lchan {
 
 	struct {
 		struct lchan_activate_info info;
+		struct channel_mode_and_rate ch_mode_rate;
 		struct gsm48_multi_rate_conf mr_conf_filtered;
 		bool activ_ack; /*< true as soon as RSL Chan Activ Ack is received */
 		bool immediate_assignment_sent;
