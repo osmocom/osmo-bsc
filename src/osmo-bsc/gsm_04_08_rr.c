@@ -696,7 +696,7 @@ int gsm48_lchan_modify(struct gsm_lchan *lchan, uint8_t mode)
 	cmm->mode = mode;
 
 	/* in case of multi rate we need to attach a config */
-	if (gsm48_chan_mode_to_non_vamos(lchan->modify.info.ch_mode_rate.chan_mode) == GSM48_CMODE_SPEECH_AMR) {
+	if (gsm48_chan_mode_to_non_vamos(lchan->modify.ch_mode_rate.chan_mode) == GSM48_CMODE_SPEECH_AMR) {
 		int rc = put_mr_config_for_ms(msg, &lchan->modify.mr_conf_filtered,
 					      (lchan->type == GSM_LCHAN_TCH_F) ? &bts->mr_full : &bts->mr_half);
 		if (rc) {
@@ -718,10 +718,10 @@ int gsm48_rx_rr_modif_ack(struct msgb *msg)
 	LOG_LCHAN(msg->lchan, LOGL_DEBUG, "CHANNEL MODE MODIFY ACK for %s\n",
 		  gsm48_chan_mode_name(mod->mode));
 
-	if (mod->mode != msg->lchan->modify.info.ch_mode_rate.chan_mode) {
+	if (mod->mode != msg->lchan->modify.ch_mode_rate.chan_mode) {
 		LOG_LCHAN(msg->lchan, LOGL_ERROR,
 			  "CHANNEL MODE MODIFY ACK has wrong mode: Wanted: %s Got: %s\n",
-			  gsm48_chan_mode_name(msg->lchan->modify.info.ch_mode_rate.chan_mode),
+			  gsm48_chan_mode_name(msg->lchan->modify.ch_mode_rate.chan_mode),
 			  gsm48_chan_mode_name(mod->mode));
 		return -1;
 	}

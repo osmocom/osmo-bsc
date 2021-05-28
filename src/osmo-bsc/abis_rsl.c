@@ -634,7 +634,7 @@ int rsl_chan_mode_modify_req(struct gsm_lchan *lchan)
 	struct rsl_ie_chan_mode cm;
 	struct gsm_bts *bts = lchan->ts->trx->bts;
 
-	rc = channel_mode_from_lchan(&cm, lchan, &lchan->modify.info.ch_mode_rate);
+	rc = channel_mode_from_lchan(&cm, lchan, &lchan->modify.ch_mode_rate);
 	if (rc < 0)
 		return rc;
 
@@ -653,7 +653,7 @@ int rsl_chan_mode_modify_req(struct gsm_lchan *lchan)
 			msgb_tlv_put(msg, RSL_IE_ENCR_INFO, rc, encr_info);
 	}
 
-	if (gsm48_chan_mode_to_non_vamos(lchan->modify.info.ch_mode_rate.chan_mode) == GSM48_CMODE_SPEECH_AMR) {
+	if (gsm48_chan_mode_to_non_vamos(lchan->modify.ch_mode_rate.chan_mode) == GSM48_CMODE_SPEECH_AMR) {
 		rc = put_mr_config_for_bts(msg, &lchan->modify.mr_conf_filtered,
 					   (lchan->type == GSM_LCHAN_TCH_F) ? &bts->mr_full : &bts->mr_half);
 		if (rc) {

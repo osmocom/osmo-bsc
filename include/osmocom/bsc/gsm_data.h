@@ -657,6 +657,7 @@ struct gsm_lchan {
 
 	struct {
 		struct lchan_modify_info info;
+		struct channel_mode_and_rate ch_mode_rate;
 		struct gsm48_multi_rate_conf mr_conf_filtered;
 		int tsc_set;
 		uint8_t tsc;

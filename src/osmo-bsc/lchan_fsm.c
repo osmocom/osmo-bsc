@@ -928,7 +928,7 @@ static void lchan_fsm_wait_rll_rtp_establish(struct osmo_fsm_inst *fi, uint32_t 
 static void lchan_fsm_wait_rr_chan_mode_modify_ack_onenter(struct osmo_fsm_inst *fi, uint32_t prev_state)
 {
 	struct gsm_lchan *lchan = lchan_fi_lchan(fi);
-	gsm48_lchan_modify(lchan, lchan->modify.info.ch_mode_rate.chan_mode);
+	gsm48_lchan_modify(lchan, lchan->modify.ch_mode_rate.chan_mode);
 }
 
 static void lchan_fsm_wait_rr_chan_mode_modify_ack(struct osmo_fsm_inst *fi, uint32_t event, void *data)
@@ -969,7 +969,7 @@ static void lchan_fsm_wait_rsl_chan_mode_modify_ack(struct osmo_fsm_inst *fi, ui
 
 	case LCHAN_EV_RSL_CHAN_MODE_MODIFY_ACK:
 		/* The Channel Mode Modify was ACKed, now the requested values become the accepted and used values. */
-		lchan->current_ch_mode_rate = lchan->modify.info.ch_mode_rate;
+		lchan->current_ch_mode_rate = lchan->modify.ch_mode_rate;
 		lchan->current_mr_conf = lchan->modify.mr_conf_filtered;
 		lchan->tsc_set = lchan->modify.tsc_set;
 		lchan->tsc = lchan->modify.tsc;
@@ -981,7 +981,7 @@ static void lchan_fsm_wait_rsl_chan_mode_modify_ack(struct osmo_fsm_inst *fi, ui
 			lchan->activate.info = (struct lchan_activate_info){
 				.activ_for = ACTIVATE_FOR_MODE_MODIFY_RTP,
 				.for_conn = lchan->conn,
-				.ch_mode_rate = lchan->modify.info.ch_mode_rate,
+				.ch_mode_rate = lchan->modify.ch_mode_rate,
 				.requires_voice_stream = true,
 				.msc_assigned_cic = lchan->modify.info.msc_assigned_cic,
 			};
@@ -1124,6 +1124,9 @@ static void lchan_fsm_established(struct osmo_fsm_inst *fi, uint32_t event, void
 
 		use_mgwep_ci = lchan_use_mgw_endpoint_ci_bts(lchan);
 
+		lchan->modify.ch_mode_rate = lchan->modify.info.ch_mode_rate;
+		/* future: automatically adjust chan_mode in lchan->modify.ch_mode_rate */
+
 		if (gsm48_chan_mode_to_non_vamos(modif_info->ch_mode_rate.chan_mode) == GSM48_CMODE_SPEECH_AMR) {
 			if (lchan_mr_config(&lchan->modify.mr_conf_filtered, lchan, modif_info->ch_mode_rate.s15_s0)
 			    < 0) {
@@ -1149,7 +1152,7 @@ static void lchan_fsm_established(struct osmo_fsm_inst *fi, uint32_t event, void
 			  (use_mgwep_ci ? osmo_mgcpc_ep_ci_name(use_mgwep_ci) : "new")
 			  : "none",
 			  gsm_lchant_name(lchan->type),
-			  gsm48_chan_mode_name(lchan->modify.info.ch_mode_rate.chan_mode),
+			  gsm48_chan_mode_name(lchan->modify.ch_mode_rate.chan_mode),
 			  lchan->modify.tsc_set, lchan->modify.tsc);
 
 		lchan_fsm_state_chg(LCHAN_ST_WAIT_RR_CHAN_MODE_MODIFY_ACK);
