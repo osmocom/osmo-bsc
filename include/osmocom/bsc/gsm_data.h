@@ -1008,7 +1008,7 @@ const char *gsm_lchant_name(enum gsm_chan_t c);
 const char *gsm_chreq_name(enum gsm_chreq_reason_t c);
 char *gsm_ts_name(const struct gsm_bts_trx_ts *ts);
 char *gsm_ts_and_pchan_name(const struct gsm_bts_trx_ts *ts);
-char *gsm_lchan_name_compute(void *ctx, const struct gsm_lchan *lchan);
+void lchan_update_name(struct gsm_lchan *lchan);
 
 static inline char *gsm_lchan_name(const struct gsm_lchan *lchan)
 {

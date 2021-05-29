@@ -111,7 +111,7 @@ struct gsm_bts_trx *gsm_bts_trx_alloc(struct gsm_bts *bts)
 			lchan->nr = l;
 			lchan->type = GSM_LCHAN_NONE;
 
-			lchan->name = gsm_lchan_name_compute(trx, lchan);
+			lchan_update_name(lchan);
 		}
 	}
 

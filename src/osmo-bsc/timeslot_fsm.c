@@ -204,11 +204,14 @@ void ts_set_pchan_is(struct gsm_bts_trx_ts *ts, enum gsm_phys_chan_config pchan_
 				lchan->vamos.is_secondary = false;
 			else
 				lchan->vamos.is_secondary = true;
+			lchan_fsm_update_id(lchan);
 		}
 		break;
 	default:
-		ts_for_n_lchans(lchan, ts, ts->max_lchans_possible)
+		ts_for_n_lchans(lchan, ts, ts->max_lchans_possible) {
 			lchan->vamos.is_secondary = false;
+			lchan_fsm_update_id(lchan);
+		}
 		break;
 	}
 }

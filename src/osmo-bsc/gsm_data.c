@@ -334,12 +334,15 @@ char *gsm_ts_and_pchan_name(const struct gsm_bts_trx_ts *ts)
 	return ts2str;
 }
 
-char *gsm_lchan_name_compute(void *ctx, const struct gsm_lchan *lchan)
+void lchan_update_name(struct gsm_lchan *lchan)
 {
 	struct gsm_bts_trx_ts *ts = lchan->ts;
-	return talloc_asprintf(ctx, "(bts=%d,trx=%d,ts=%d,ss=%d%s)",
-			       ts->trx->bts->nr, ts->trx->nr, ts->nr, lchan->nr,
-			       lchan->vamos.is_secondary ? "-VAMOS" : "");
+	if (lchan->name)
+		talloc_free(lchan->name);
+	lchan->name = talloc_asprintf(ts->trx, "(bts=%d,trx=%d,ts=%d,ss=%s%d)",
+				      ts->trx->bts->nr, ts->trx->nr, ts->nr,
+				      lchan->vamos.is_secondary ? "shadow" : "",
+				      lchan->nr - (lchan->vamos.is_secondary ? ts->max_primary_lchans : 0));
 }
 
 /* obtain the MO structure for a given object instance */

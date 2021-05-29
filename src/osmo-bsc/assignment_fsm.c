@@ -302,14 +302,15 @@ static void assignment_fsm_update_id(struct gsm_subscriber_connection *conn)
 		return;
 	}
 
-	osmo_fsm_inst_update_id_f(conn->assignment.fi, "%s_%u-%u-%u-%s%s%s-%u",
+	osmo_fsm_inst_update_id_f(conn->assignment.fi, "%s_%u-%u-%u-%s%s%s-%s%u",
 				  conn->fi->id,
 				  new_lchan->ts->trx->bts->nr, new_lchan->ts->trx->nr, new_lchan->ts->nr,
 				  gsm_pchan_id(new_lchan->ts->pchan_on_init),
 				  (new_lchan->ts->pchan_on_init == new_lchan->ts->pchan_is)? "" : "as",
 				  (new_lchan->ts->pchan_on_init == new_lchan->ts->pchan_is)? ""
 					  : gsm_pchan_id(new_lchan->ts->pchan_is),
-				  new_lchan->nr);
+				  new_lchan->vamos.is_secondary ? "shadow" : "",
+				  new_lchan->nr - (new_lchan->vamos.is_secondary ? new_lchan->ts->max_primary_lchans : 0));
 }
 
 static bool lchan_type_compat_with_mode(enum gsm_chan_t type, const struct channel_mode_and_rate *ch_mode_rate)
