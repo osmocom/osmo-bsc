@@ -720,7 +720,7 @@ static void lchan_fsm_wait_ts_ready(struct osmo_fsm_inst *fi, uint32_t event, vo
 			return;
 		}
 
-		lchan_fail("Failed to setup RTP stream: %s in state %s\n",
+		lchan_fail("Failed to setup RTP stream: %s in state %s",
 			   osmo_fsm_event_name(fi->fsm, event),
 			   osmo_fsm_inst_state_name(fi));
 		return;
@@ -858,7 +858,7 @@ static void lchan_fsm_post_activ_ack(struct osmo_fsm_inst *fi)
 	case ACTIVATE_FOR_MS_CHANNEL_REQUEST:
 		rc = rsl_tx_imm_assignment(lchan);
 		if (rc) {
-			lchan_fail("Failed to Tx RR Immediate Assignment message (rc=%d %s)\n",
+			lchan_fail("Failed to Tx RR Immediate Assignment message (rc=%d %s)",
 				   rc, strerror(-rc));
 			return;
 		}
@@ -961,7 +961,7 @@ static void lchan_fsm_wait_rll_rtp_establish(struct osmo_fsm_inst *fi, uint32_t 
 			return;
 		}
 
-		lchan_fail("Failed to setup RTP stream: %s in state %s\n",
+		lchan_fail("Failed to setup RTP stream: %s in state %s",
 			   osmo_fsm_event_name(fi->fsm, event),
 			   osmo_fsm_inst_state_name(fi));
 		return;
@@ -986,7 +986,7 @@ static void lchan_fsm_wait_rr_chan_mode_modify_ack(struct osmo_fsm_inst *fi, uin
 		return;
 
 	case LCHAN_EV_RR_CHAN_MODE_MODIFY_ERROR:
-		lchan_fail("Failed to change channel mode on the MS side: %s in state %s\n",
+		lchan_fail("Failed to change channel mode on the MS side: %s in state %s",
 			   osmo_fsm_event_name(fi->fsm, event),
 			   osmo_fsm_inst_state_name(fi));
 		return;
@@ -1003,7 +1003,7 @@ static void lchan_fsm_wait_rsl_chan_mode_modify_ack_onenter(struct osmo_fsm_inst
 
 	rc = rsl_chan_mode_modify_req(lchan);
 	if (rc < 0) {
-		lchan_fail("Failed to send rsl message to change the channel mode on the BTS side: state %s\n",
+		lchan_fail("Failed to send rsl message to change the channel mode on the BTS side: state %s",
 			   osmo_fsm_inst_state_name(fi));
 	}
 }
@@ -1046,7 +1046,7 @@ static void lchan_fsm_wait_rsl_chan_mode_modify_ack(struct osmo_fsm_inst *fi, ui
 		return;
 
 	case LCHAN_EV_RSL_CHAN_MODE_MODIFY_NACK:
-		lchan_fail("Failed to change channel mode on the BTS side: %s in state %s\n",
+		lchan_fail("Failed to change channel mode on the BTS side: %s in state %s",
 			   osmo_fsm_event_name(fi->fsm, event),
 			   osmo_fsm_inst_state_name(fi));
 		return;
@@ -1155,7 +1155,7 @@ static void lchan_fsm_established(struct osmo_fsm_inst *fi, uint32_t event, void
 			return;
 		}
 
-		lchan_fail("RTP stream closed unexpectedly: %s in state %s\n",
+		lchan_fail("RTP stream closed unexpectedly: %s in state %s",
 			   osmo_fsm_event_name(fi->fsm, event),
 			   osmo_fsm_inst_state_name(fi));
 		return;
@@ -1179,7 +1179,7 @@ static void lchan_fsm_established(struct osmo_fsm_inst *fi, uint32_t event, void
 		if (gsm48_chan_mode_to_non_vamos(modif_info->ch_mode_rate.chan_mode) == GSM48_CMODE_SPEECH_AMR) {
 			if (lchan_mr_config(&lchan->modify.mr_conf_filtered, lchan, modif_info->ch_mode_rate.s15_s0)
 			    < 0) {
-				lchan_fail("Can not generate multirate configuration IE\n");
+				lchan_fail("Can not generate multirate configuration IE");
 				return;
 			}
 		}
