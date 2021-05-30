@@ -1016,8 +1016,6 @@ gsm_objclass2obj(struct gsm_bts *bts, uint8_t obj_class,
 uint8_t gsm_pchan2chan_nr(enum gsm_phys_chan_config pchan,
 			  uint8_t ts_nr, uint8_t lchan_nr);
 uint8_t gsm_lchan2chan_nr(const struct gsm_lchan *lchan);
-uint8_t gsm_lchan_as_pchan2chan_nr(const struct gsm_lchan *lchan,
-				   enum gsm_phys_chan_config as_pchan);
 
 void gsm48_lchan2chan_desc(struct gsm48_chan_desc *cd,
 			   const struct gsm_lchan *lchan,
