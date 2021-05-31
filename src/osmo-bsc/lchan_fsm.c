@@ -604,6 +604,21 @@ static void lchan_fsm_unused(struct osmo_fsm_inst *fi, uint32_t event, void *dat
 	}
 }
 
+static int lchan_activate_set_ch_mode_rate_and_mr_config(struct gsm_lchan *lchan)
+{
+	struct osmo_fsm_inst *fi = lchan->fi;
+	lchan->activate.ch_mode_rate = lchan->activate.info.ch_mode_rate;
+	/* future: automatically adjust chan_mode in lchan->activate.ch_mode_rate */
+
+	if (gsm48_chan_mode_to_non_vamos(lchan->activate.ch_mode_rate.chan_mode) == GSM48_CMODE_SPEECH_AMR) {
+		if (lchan_mr_config(&lchan->activate.mr_conf_filtered, lchan, lchan->activate.ch_mode_rate.s15_s0) < 0) {
+			lchan_fail("Can not generate multirate configuration IE");
+			return -EINVAL;
+		}
+	}
+	return 0;
+}
+
 static void lchan_fsm_wait_ts_ready_onenter(struct osmo_fsm_inst *fi, uint32_t prev_state)
 {
 	struct gsm_lchan *lchan = lchan_fi_lchan(fi);
@@ -639,15 +654,8 @@ static void lchan_fsm_wait_ts_ready_onenter(struct osmo_fsm_inst *fi, uint32_t p
 			lchan->bs_power_db = bts->bs_power_ctrl.bs_power_val_db;
 	}
 
-	lchan->activate.ch_mode_rate = lchan->activate.info.ch_mode_rate;
-	/* future: automatically adjust chan_mode in lchan->activate.ch_mode_rate */
-
-	if (gsm48_chan_mode_to_non_vamos(lchan->activate.ch_mode_rate.chan_mode) == GSM48_CMODE_SPEECH_AMR) {
-		if (lchan_mr_config(&lchan->activate.mr_conf_filtered, lchan, lchan->activate.ch_mode_rate.s15_s0) < 0) {
-			lchan_fail("Can not generate multirate configuration IE\n");
-			return;
-		}
-	}
+	if (lchan_activate_set_ch_mode_rate_and_mr_config(lchan))
+		return;
 
 	use_mgwep_ci = lchan_use_mgw_endpoint_ci_bts(lchan);
 
@@ -1002,8 +1010,8 @@ static void lchan_fsm_wait_rsl_chan_mode_modify_ack(struct osmo_fsm_inst *fi, ui
 				.tsc_set = -1,
 				.tsc = -1,
 			};
-			lchan->activate.ch_mode_rate = lchan->activate.info.ch_mode_rate;
-			/* future: automatically adjust chan_mode in lchan->activate.ch_mode_rate */
+			if (lchan_activate_set_ch_mode_rate_and_mr_config(lchan))
+				return;
 
 			lchan->activate.concluded = false;
 			lchan_fsm_state_chg(LCHAN_ST_WAIT_RLL_RTP_ESTABLISH);
