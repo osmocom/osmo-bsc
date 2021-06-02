@@ -354,6 +354,7 @@ static int channel_mode_from_lchan(struct rsl_ie_chan_mode *cm,
 				   struct gsm_lchan *lchan,
 				   const struct channel_mode_and_rate *ch_mode_rate)
 {
+	int rc;
 	memset(cm, 0, sizeof(*cm));
 
 	/* FIXME: what to do with data calls ? */
@@ -364,11 +365,12 @@ static int channel_mode_from_lchan(struct rsl_ie_chan_mode *cm,
 		cm->dtx_dtu |= RSL_CMOD_DTXd;
 
 	/* set TCH Speech/Data */
-	cm->spd_ind = chan_mode_to_rsl_cmod_spd(ch_mode_rate->chan_mode);
-	if (cm->spd_ind < 0) {
+	rc = chan_mode_to_rsl_cmod_spd(ch_mode_rate->chan_mode);
+	if (rc < 0) {
 		LOGP(DRSL, LOGL_ERROR, "unsupported: chan_mode = 0x%02x\n", ch_mode_rate->chan_mode);
-		return cm->spd_ind;
+		return rc;
 	}
+	cm->spd_ind = rc;
 
 	switch (lchan->type) {
 	case GSM_LCHAN_SDCCH:
