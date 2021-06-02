@@ -681,7 +681,6 @@ int gsm48_lchan_modify(struct gsm_lchan *lchan, uint8_t mode)
 	struct gsm48_chan_mode_modify *cmm =
 		(struct gsm48_chan_mode_modify *) msgb_put(msg, sizeof(*cmm));
 	struct gsm_bts *bts = lchan->ts->trx->bts;
-	uint8_t tsc;
 
 	DEBUGP(DRR, "-> CHANNEL MODE MODIFY mode=0x%02x\n", mode);
 
@@ -689,10 +688,7 @@ int gsm48_lchan_modify(struct gsm_lchan *lchan, uint8_t mode)
 	gh->proto_discr = GSM48_PDISC_RR;
 	gh->msg_type = GSM48_MT_RR_CHAN_MODE_MODIF;
 
-	/* fill the channel information element, this code
-	 * should probably be shared with rsl_rx_chan_rqd() */
-	tsc = (lchan->modify.tsc >= 0) ? lchan->modify.tsc : gsm_ts_tsc(lchan->ts);
-	gsm48_lchan2chan_desc(&cmm->chan_desc, lchan, tsc);
+	gsm48_lchan2chan_desc(&cmm->chan_desc, lchan, lchan->modify.tsc);
 	cmm->mode = mode;
 
 	/* in case of multi rate we need to attach a config */
