@@ -100,10 +100,11 @@ static void gen_meas_rep(struct gsm_lchan *lchan,
 {
 	struct msgb *msg = msgb_alloc_headroom(256, 64, "RSL");
 	struct abis_rsl_dchan_hdr *dh;
-	uint8_t chan_nr = gsm_lchan2chan_nr(lchan);
 	uint8_t ulm[3], l1i[2], *buf;
 	struct gsm48_hdr *gh;
 	struct gsm48_meas_res *mr;
+	int chan_nr = gsm_lchan2chan_nr(lchan);
+	OSMO_ASSERT(chan_nr >= 0);
 
 	dh = (struct abis_rsl_dchan_hdr *) msgb_put(msg, sizeof(*dh));
 	dh->c.msg_discr = ABIS_RSL_MDISC_DED_CHAN;

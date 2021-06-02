@@ -1018,7 +1018,8 @@ static int generate_si4(enum osmo_sysinfo_type t, struct gsm_bts *bts)
 		struct gsm48_chan_desc cd;
 
 		/* 10.5.2.5 (TV) CBCH Channel Description IE */
-		gsm48_lchan2chan_desc_as_configured(&cd, cbch_lchan, gsm_ts_tsc(cbch_lchan->ts));
+		if (gsm48_lchan2chan_desc_as_configured(&cd, cbch_lchan, gsm_ts_tsc(cbch_lchan->ts)))
+			return -EINVAL;
 		tail = tv_fixed_put(tail, GSM48_IE_CBCH_CHAN_DESC,
 				    sizeof(cd), (uint8_t *) &cd);
 		l2_plen += 1 + sizeof(cd);

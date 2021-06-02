@@ -546,7 +546,10 @@ struct msgb *gsm48_make_ho_cmd(struct gsm_lchan *new_lchan, uint8_t power_comman
 
 	/* mandatory bits */
 	gsm48_cell_desc(&ho->cell_desc, new_lchan->ts->trx->bts);
-	gsm48_lchan2chan_desc(&ho->chan_desc, new_lchan, gsm_ts_tsc(new_lchan->ts));
+	if (gsm48_lchan2chan_desc(&ho->chan_desc, new_lchan, gsm_ts_tsc(new_lchan->ts))) {
+		msgb_free(msg);
+		return NULL;
+	}
 	ho->ho_ref = ho_ref;
 	ho->power_command = power_command;
 
@@ -597,6 +600,7 @@ int gsm48_send_ho_cmd(struct gsm_lchan *old_lchan, struct gsm_lchan *new_lchan,
 /* Chapter 9.1.2: Assignment Command */
 int gsm48_send_rr_ass_cmd(struct gsm_lchan *current_lchan, struct gsm_lchan *new_lchan, uint8_t power_command)
 {
+	int rc;
 	struct msgb *msg = gsm48_msgb_alloc_name("GSM 04.08 ASS CMD");
 	struct gsm48_hdr *gh = (struct gsm48_hdr *) msgb_put(msg, sizeof(*gh));
 	struct gsm48_ass_cmd *ass =
@@ -618,7 +622,11 @@ int gsm48_send_rr_ass_cmd(struct gsm_lchan *current_lchan, struct gsm_lchan *new
 	 * the chan_desc. But as long as multi-slot configurations
 	 * are not used we seem to be fine.
 	 */
-	gsm48_lchan2chan_desc(&ass->chan_desc, new_lchan, new_lchan->tsc);
+	rc = gsm48_lchan2chan_desc(&ass->chan_desc, new_lchan, new_lchan->tsc);
+	if (rc) {
+		msgb_free(msg);
+		return rc;
+	}
 	ass->power_command = power_command;
 
 	/* Cell Channel Description (freq. hopping), TV (see 3GPP TS 44.018, 10.5.2.1b) */
@@ -682,6 +690,7 @@ int gsm48_send_rr_app_info(struct gsm_lchan *lchan, uint8_t apdu_id, uint8_t apd
 /* 9.1.5 Channel mode modify: Modify the mode on the MS side */
 int gsm48_lchan_modify(struct gsm_lchan *lchan, uint8_t mode)
 {
+	int rc;
 	struct msgb *msg = gsm48_msgb_alloc_name("GSM 04.08 CHN MOD");
 	struct gsm48_hdr *gh = (struct gsm48_hdr *) msgb_put(msg, sizeof(*gh));
 	struct gsm48_chan_mode_modify *cmm =
@@ -694,7 +703,11 @@ int gsm48_lchan_modify(struct gsm_lchan *lchan, uint8_t mode)
 	gh->proto_discr = GSM48_PDISC_RR;
 	gh->msg_type = GSM48_MT_RR_CHAN_MODE_MODIF;
 
-	gsm48_lchan2chan_desc(&cmm->chan_desc, lchan, lchan->modify.tsc);
+	rc = gsm48_lchan2chan_desc(&cmm->chan_desc, lchan, lchan->modify.tsc);
+	if (rc) {
+		msgb_free(msg);
+		return rc;
+	}
 	cmm->mode = mode;
 
 	/* in case of multi rate we need to attach a config */

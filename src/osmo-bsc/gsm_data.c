@@ -495,23 +495,26 @@ gsm_objclass2obj(struct gsm_bts *bts, uint8_t obj_class,
 }
 
 /* See Table 10.5.25 of GSM04.08 */
-uint8_t gsm_pchan2chan_nr(enum gsm_phys_chan_config pchan,
-			  uint8_t ts_nr, uint8_t lchan_nr)
+int gsm_pchan2chan_nr(enum gsm_phys_chan_config pchan,
+		      uint8_t ts_nr, uint8_t lchan_nr)
 {
 	uint8_t cbits, chan_nr;
 
 	switch (pchan) {
 	case GSM_PCHAN_TCH_F:
 	case GSM_PCHAN_TCH_F_PDCH:
-		OSMO_ASSERT(lchan_nr == 0);
+		if (lchan_nr != 0)
+			return -EINVAL;
 		cbits = 0x01;
 		break;
 	case GSM_PCHAN_PDCH:
-		OSMO_ASSERT(lchan_nr == 0);
+		if (lchan_nr != 0)
+			return -EINVAL;
 		cbits = RSL_CHAN_OSMO_PDCH >> 3;
 		break;
 	case GSM_PCHAN_TCH_H:
-		OSMO_ASSERT(lchan_nr < 2);
+		if (lchan_nr > 1)
+			return -EINVAL;
 		cbits = 0x02;
 		cbits += lchan_nr;
 		break;
@@ -525,19 +528,21 @@ uint8_t gsm_pchan2chan_nr(enum gsm_phys_chan_config pchan,
 		if (lchan_nr == CCCH_LCHAN)
 			chan_nr = 0;
 		else
-			OSMO_ASSERT(lchan_nr < 4);
+			return -EINVAL;
 		cbits = 0x04;
 		cbits += lchan_nr;
 		break;
 	case GSM_PCHAN_SDCCH8_SACCH8C:
 	case GSM_PCHAN_SDCCH8_SACCH8C_CBCH:
-		OSMO_ASSERT(lchan_nr < 8);
+		if (lchan_nr > 7)
+			return -EINVAL;
 		cbits = 0x08;
 		cbits += lchan_nr;
 		break;
 	default:
 	case GSM_PCHAN_CCCH:
-		OSMO_ASSERT(lchan_nr == 0);
+		if (lchan_nr != 0)
+			return -EINVAL;
 		cbits = 0x10;
 		break;
 	}
@@ -547,15 +552,23 @@ uint8_t gsm_pchan2chan_nr(enum gsm_phys_chan_config pchan,
 	return chan_nr;
 }
 
-uint8_t gsm_lchan2chan_nr(const struct gsm_lchan *lchan)
+int gsm_lchan2chan_nr(const struct gsm_lchan *lchan)
 {
+	int rc;
 	uint8_t lchan_nr = lchan->nr;
 	/* The VAMOS lchans are behind the primary ones in the ts->lchan[] array. They keep their lchan->nr as in the
 	 * array, but on the wire they are the "shadow" lchans for the primary lchans. For example, for TCH/F, there is
 	 * a primary ts->lchan[0] and a VAMOS ts->lchan[1]. Still, the VAMOS lchan should send chan_nr = 0. */
 	if (lchan->vamos.is_secondary)
 		lchan_nr -= lchan->ts->max_primary_lchans;
-	return gsm_pchan2chan_nr(lchan->ts->pchan_is, lchan->ts->nr, lchan_nr);
+	rc = gsm_pchan2chan_nr(lchan->ts->pchan_is, lchan->ts->nr, lchan_nr);
+	/* Log an error so that we don't need to add logging to each caller of this function */
+	if (rc < 0)
+		LOG_LCHAN(lchan, LOGL_ERROR,
+			  "Error encoding Channel Number: pchan %s ts %u ss %u%s\n",
+			  gsm_pchan_name(lchan->ts->pchan_from_config), lchan->ts->nr, lchan->nr,
+			  lchan->vamos.is_secondary ? " (VAMOS shadow)" : "");
+	return rc;
 }
 
 static const uint8_t subslots_per_pchan[] = {
@@ -677,23 +690,40 @@ static void _chan_desc_fill_tail(struct gsm48_chan_desc *cd, const struct gsm_lc
 	}
 }
 
-void gsm48_lchan2chan_desc(struct gsm48_chan_desc *cd,
-			   const struct gsm_lchan *lchan,
-			   uint8_t tsc)
+int gsm48_lchan2chan_desc(struct gsm48_chan_desc *cd,
+			  const struct gsm_lchan *lchan,
+			  uint8_t tsc)
 {
-	cd->chan_nr = gsm_lchan2chan_nr(lchan);
+	int chan_nr = gsm_lchan2chan_nr(lchan);
+	if (chan_nr < 0) {
+		/* Log an error so that we don't need to add logging to each caller of this function */
+		LOG_LCHAN(lchan, LOGL_ERROR, "Error encoding Channel Number\n");
+		return chan_nr;
+	}
+	cd->chan_nr = chan_nr;
 	_chan_desc_fill_tail(cd, lchan, tsc);
+	return 0;
 }
 
 /* like gsm48_lchan2chan_desc() above, but use ts->pchan_from_config to
  * return a channel description based on what is configured, rather than
  * what the current state of the pchan type is */
-void gsm48_lchan2chan_desc_as_configured(struct gsm48_chan_desc *cd,
-					 const struct gsm_lchan *lchan,
-					 uint8_t tsc)
+int gsm48_lchan2chan_desc_as_configured(struct gsm48_chan_desc *cd,
+					const struct gsm_lchan *lchan,
+					uint8_t tsc)
 {
-	cd->chan_nr = gsm_pchan2chan_nr(lchan->ts->pchan_from_config, lchan->ts->nr, lchan->nr);
+	int chan_nr = gsm_pchan2chan_nr(lchan->ts->pchan_from_config, lchan->ts->nr, lchan->nr);
+	if (chan_nr < 0) {
+		/* Log an error so that we don't need to add logging to each caller of this function */
+		LOG_LCHAN(lchan, LOGL_ERROR,
+			  "Error encoding Channel Number: pchan %s ts %u ss %u%s (rc = %d)\n",
+			  gsm_pchan_name(lchan->ts->pchan_from_config), lchan->ts->nr, lchan->nr,
+			  lchan->vamos.is_secondary ? " (VAMOS shadow)" : "", chan_nr);
+		return chan_nr;
+	}
+	cd->chan_nr = chan_nr;
 	_chan_desc_fill_tail(cd, lchan, tsc);
+	return 0;
 }
 
 uint8_t gsm_ts_tsc(const struct gsm_bts_trx_ts *ts)

@@ -243,13 +243,19 @@ static inline void lcls_rsl(const struct gsm_subscriber_connection *conn, bool e
        uint32_t ip = enable ? conn->lcls.other->lchan->abis_ip.bound_ip : lchan->abis_ip.connect_ip;
        /* RSL_IE_IPAC_REMOTE_PORT */
        uint16_t port = enable ? conn->lcls.other->lchan->abis_ip.bound_port : lchan->abis_ip.connect_port;
+       struct msgb *msg;
 
        if (!conn->lcls.other) {
 	       LOGPFSM(conn->lcls.fi, "%s LCLS: other conn is not available!\n", enable ? "enable" : "disable");
                return;
        }
 
-       abis_rsl_sendmsg(rsl_make_ipacc_mdcx(lchan, ip, port));
+       msg = rsl_make_ipacc_mdcx(lchan, ip, port);
+       if (!msg) {
+	       LOGPFSML(conn->lcls.fi, LOGL_ERROR, "Error encoding IPACC MDCX\n");
+	       return;
+       }
+       abis_rsl_sendmsg(msg);
 }
 
 static inline bool lcls_check_toggle_allowed(const struct gsm_subscriber_connection *conn, bool enable)
