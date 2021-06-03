@@ -1,0 +1,73 @@
+# Low RxLev causes upgrade of TCH/H to TCH/F
+
+network
+ handover2 afs-bias rxlev 0
+ handover2 min rxlev -80
+ handover2 window rxlev averaging 10
+
+create-bts trx-count 1 timeslots c+s4 TCH/F TCH/F TCH/F TCH/H  TCH/H  PDCH PDCH
+
+
+set-ts-use trx 0 0 states        *    -     -     -     TCH/HH TCH/HH *    *
+meas-rep repeat 9 lchan 0 0 4 0 rxlev 23 rxqual 1 ta 0
+# not enough values for rxlev averaging
+expect-no-chan
+meas-rep lchan 0 0 4 0 rxlev 23 rxqual 1 ta 0
+# average rxlev is now -110 + 23 = -87 < -80: reassign to TCH/F due to bad rxlev
+#expect-as from lchan 0 0 4 0 to lchan 0 0 1 0
+#expect-ts-use trx 0 0 states     *    TCH/F -     -     TCH/-H TCH/HH *    *
+# FAIL: osmo-bsc does not move to TCH/F from bad rxlev
+expect-no-chan
+
+
+# This situation actually balances congestion
+set-ts-use trx 0 0 states        *    TCH/F -     -     TCH/HH TCH/HH *    *
+meas-rep repeat 9 lchan 0 0 4 0 rxlev 23 rxqual 1 ta 0
+# not enough values for rxlev averaging
+expect-no-chan
+meas-rep lchan 0 0 4 0 rxlev 23 rxqual 1 ta 0
+# average rxlev is now -110 + 23 = -87 < -80: reassign to TCH/F due to bad rxlev
+#expect-as from lchan 0 0 4 0 to lchan 0 0 2 0
+#expect-ts-use trx 0 0 states     *    TCH/F TCH/F -     TCH/-H TCH/HH *    *
+# FAIL: osmo-bsc does not move to TCH/F from bad rxlev
+expect-no-chan
+
+# This situation moves congestion from TCH/H to TCH/F (TCH/H was 100% congested, then makes TCH/F 100% congested)
+# The congestion requirements would normally forbid this, but since this is an "RxQual emergency", we should reassign.
+set-ts-use trx 0 0 states        *    TCH/F TCH/F -     TCH/HH TCH/HH *    *
+meas-rep repeat 9 lchan 0 0 4 0 rxlev 23 rxqual 1 ta 0
+# not enough values for rxlev averaging
+expect-no-chan
+meas-rep lchan 0 0 4 0 rxlev 23 rxqual 1 ta 0
+# average rxlev is now -110 + 23 = -87 < -80: reassign to TCH/F due to bad rxlev
+#expect-as from lchan 0 0 4 0 to lchan 0 0 3 0
+#expect-ts-use trx 0 0 states     *    TCH/F TCH/F TCH/F TCH/-H TCH/HH *    *
+# FAIL: osmo-bsc does not move to TCH/F from bad rxlev
+expect-no-chan
+
+# This situation worsens congestion (TCH/H was 50% congested, then makes TCH/F 100% congested)
+# The congestion requirements would normally forbid this, but since this is an "RxQual emergency", we should reassign.
+set-ts-use trx 0 0 states        *    TCH/F TCH/F -     TCH/H- TCH/HH *    *
+meas-rep repeat 9 lchan 0 0 4 0 rxlev 23 rxqual 1 ta 0
+# not enough values for rxlev averaging
+expect-no-chan
+meas-rep lchan 0 0 4 0 rxlev 23 rxqual 1 ta 0
+# average rxlev is now -110 + 23 = -87 < -80: reassign to TCH/F due to bad rxlev
+#expect-as from lchan 0 0 4 0 to lchan 0 0 3 0
+#expect-ts-use trx 0 0 states     *    TCH/F TCH/F TCH/F -      TCH/HH *    *
+# FAIL: osmo-bsc does not move to TCH/F from bad rxlev
+expect-no-chan
+
+
+# This situation creates congestion (TCH/H was not congested, then makes TCH/F 50% congested)
+# The congestion requirements would normally forbid this, but since this is an "RxQual emergency", we should reassign.
+set-ts-use trx 0 0 states        *    TCH/F -     -     TCH/H- -      *    *
+meas-rep repeat 9 lchan 0 0 4 0 rxlev 23 rxqual 1 ta 0
+# not enough values for rxlev averaging
+expect-no-chan
+meas-rep lchan 0 0 4 0 rxlev 23 rxqual 1 ta 0
+# average rxlev is now -110 + 23 = -87 < -80: reassign to TCH/F due to bad rxlev
+#expect-as from lchan 0 0 4 0 to lchan 0 0 2 0
+#expect-ts-use trx 0 0 states     *    TCH/F TCH/F -     -      -      *    *
+# FAIL: osmo-bsc does not move to TCH/F from bad rxlev
+expect-no-chan

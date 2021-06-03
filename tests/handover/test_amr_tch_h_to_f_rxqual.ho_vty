@@ -1,0 +1,18 @@
+# Low RxQual causes upgrade of TCH/H to TCH/F
+
+network
+ handover2 afs-bias rxlev 0
+ handover2 min rxqual 5
+ handover2 window rxqual averaging 2
+
+create-bts trx-count 1 timeslots c+s4 TCH/F TCH/F TCH/F TCH/H  TCH/H TCH/H PDCH
+set-ts-use trx 0 0 states        *    -     -     -     TCH/H- -     -     *
+meas-rep lchan 0 0 4 0 rxlev 30 rxqual 6 ta 0
+# not enough valus for rxqual averaging
+expect-no-chan
+meas-rep lchan 0 0 4 0 rxlev 30 rxqual 6 ta 0
+# average rxqual now at 6 which is worse than 5, reassign to TCH/F due to bad rxqual.
+#expect-as from lchan 0 0 4 0 to lchan 0 0 1 0
+#expect-ts-use trx 0 0 states * TCH/F - - - - - *
+# FAIL: osmo-bsc does not move to TCH/F from bad rxqual
+expect-no-chan
