@@ -35,11 +35,12 @@ struct msgb *nanobts_attr_bts_get(struct gsm_bts *bts)
 	if (!msgb)
 		return NULL;
 
-	memcpy(buf, "\x55\x5b\x61\x67\x6d\x73", 6);
-	msgb_tv_fixed_put(msgb, NM_ATT_INTERF_BOUND, 6, buf);
-
-	/* interference avg. period in numbers of SACCH multifr */
-	msgb_tv_put(msgb, NM_ATT_INTAVE_PARAM, 0x06);
+	/* Interference level Boundaries: 0 .. X5 (3GPP TS 52.021, section 9.4.25) */
+	msgb_tv_fixed_put(msgb, NM_ATT_INTERF_BOUND,
+			  sizeof(bts->interf_meas_params.bounds_dbm),
+			  &bts->interf_meas_params.bounds_dbm[0]);
+	/* Intave: Interference Averaging period (3GPP TS 52.021, section 9.4.24) */
+	msgb_tv_put(msgb, NM_ATT_INTAVE_PARAM, bts->interf_meas_params.avg_period);
 
 	rlt = gsm_bts_get_radio_link_timeout(bts);
 	if (rlt == -1) {

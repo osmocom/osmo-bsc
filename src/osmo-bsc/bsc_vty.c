@@ -1236,6 +1236,25 @@ static void config_write_bts_single(struct vty *vty, struct gsm_bts *bts)
 	    || bts->repeated_acch_policy.dl_facch_cmd)
 		vty_out(vty, "  repeat rxqual %u%s", bts->repeated_acch_policy.rxqual, VTY_NEWLINE);
 
+	if (bts->interf_meas_params.avg_period != interf_meas_params_def.avg_period) {
+		vty_out(vty, "  interference-meas avg-period %u%s",
+			bts->interf_meas_params.avg_period,
+			VTY_NEWLINE);
+	}
+	if (memcmp(bts->interf_meas_params.bounds_dbm,
+		   interf_meas_params_def.bounds_dbm,
+		   sizeof(interf_meas_params_def.bounds_dbm))) {
+		vty_out(vty, "  interference-meas level-bounds "
+			"%d %d %d %d %d %d%s",
+			-1 * bts->interf_meas_params.bounds_dbm[0],
+			-1 * bts->interf_meas_params.bounds_dbm[1],
+			-1 * bts->interf_meas_params.bounds_dbm[2],
+			-1 * bts->interf_meas_params.bounds_dbm[3],
+			-1 * bts->interf_meas_params.bounds_dbm[4],
+			-1 * bts->interf_meas_params.bounds_dbm[5],
+			VTY_NEWLINE);
+	}
+
 	/* BS/MS Power Control parameters */
 	config_write_power_ctrl(vty, 2, &bts->bs_power_ctrl);
 	config_write_power_ctrl(vty, 2, &bts->ms_power_ctrl);
@@ -4890,6 +4909,46 @@ DEFUN_ATTR(cfg_bts_no_t3113_dynamic, cfg_bts_no_t3113_dynamic_cmd,
 	return CMD_SUCCESS;
 }
 
+DEFUN_USRATTR(cfg_bts_interf_meas_avg_period,
+	      cfg_bts_interf_meas_avg_period_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_OML_LINK),
+	      "interference-meas avg-period <1-31>",
+	      "Interference measurement parameters\n"
+	      "Averaging period (Intave)\n"
+	      "Number of SACCH multiframes\n")
+{
+	struct gsm_bts *bts = vty->index;
+
+	bts->interf_meas_params.avg_period = atoi(argv[0]);
+
+	return CMD_SUCCESS;
+}
+
+DEFUN_USRATTR(cfg_bts_interf_meas_level_bounds,
+	      cfg_bts_interf_meas_level_bounds_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_OML_LINK),
+	      "interference-meas level-bounds "
+		"<-120-0> <-120-0> <-120-0> <-120-0> <-120-0> <-120-0>",
+	      "Interference measurement parameters\n"
+	      "Interference level Boundaries\n"
+	      "Interference boundary 0 (dBm)\n"
+	      "Interference boundary X1 (dBm)\n"
+	      "Interference boundary X2 (dBm)\n"
+	      "Interference boundary X3 (dBm)\n"
+	      "Interference boundary X4 (dBm)\n"
+	      "Interference boundary X5 (dBm)\n")
+{
+	struct gsm_bts *bts = vty->index;
+	unsigned int i;
+
+	for (i = 0; i < ARRAY_SIZE(bts->interf_meas_params.bounds_dbm); i++) {
+		bts->interf_meas_params.bounds_dbm[i] = abs(atoi(argv[i]));
+		/* TODO: ensure ascending (or descending?) order */
+	}
+
+	return CMD_SUCCESS;
+}
+
 #define BS_POWER_CONTROL_CMD \
 	"bs-power-control"
 #define MS_POWER_CONTROL_CMD \
@@ -7868,6 +7927,8 @@ int bsc_vty_init(struct gsm_network *network)
 	install_element(BTS_NODE, &cfg_bts_rep_ul_dl_sacch_cmd);
 	install_element(BTS_NODE, &cfg_bts_rep_no_ul_dl_sacch_cmd);
 	install_element(BTS_NODE, &cfg_bts_rep_rxqual_cmd);
+	install_element(BTS_NODE, &cfg_bts_interf_meas_avg_period_cmd);
+	install_element(BTS_NODE, &cfg_bts_interf_meas_level_bounds_cmd);
 
 	neighbor_ident_vty_init();
 	/* See also handover commands added on bts level from handover_vty.c */

@@ -1414,6 +1414,16 @@ struct gsm_power_ctrl_params {
 
 extern const struct gsm_power_ctrl_params power_ctrl_params_def;
 
+/* Interference Measurement Parameters */
+struct gsm_interf_meas_params {
+	/* Intave: Interference Averaging period (see 3GPP TS 45.008, table A.1) */
+	uint8_t avg_period; /* number of SACCH multiframes, 1 .. 31 */
+	/* Interference level Boundaries (see 3GPP TS 52.021, section 9.4.25) */
+	uint8_t bounds_dbm[6]; /* -x dBm values for boundaries 0 .. X5 */
+};
+
+extern const struct gsm_interf_meas_params interf_meas_params_def;
+
 enum rsl_cmod_spd chan_mode_to_rsl_cmod_spd(enum gsm48_chan_mode chan_mode);
 
 #endif /* _GSM_DATA_H */

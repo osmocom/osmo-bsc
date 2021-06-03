@@ -534,6 +534,9 @@ struct gsm_bts {
 	struct gsm_power_ctrl_params ms_power_ctrl;
 	struct gsm_power_ctrl_params bs_power_ctrl;
 
+	/* Interference Measurement Parameters */
+	struct gsm_interf_meas_params interf_meas_params;
+
 	/* We will ignore CHAN RQD with access delay greater than rach_max_delay */
 	uint8_t rach_max_delay;
 };

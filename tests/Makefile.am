@@ -41,6 +41,7 @@ EXTRA_DIST = \
 	osmo-bsc.vty \
 	timer.vty \
 	power_ctrl.vty \
+	interf_meas.vty \
 	ctrl/osmo-bsc-neigh-test.cfg \
 	ctrl/osmo-bsc-apply-config-file.cfg \
 	ctrl/osmo-bsc-apply-config-file-invalid.cfg \

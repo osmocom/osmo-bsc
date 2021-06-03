@@ -1,0 +1,42 @@
+OsmoBSC> enable
+
+OsmoBSC# ### Default configuration
+OsmoBSC# show running-config
+... !interference-meas
+
+OsmoBSC# configure terminal
+OsmoBSC(config)# network
+OsmoBSC(config-net)# bts 0
+
+OsmoBSC(config-net-bts)# interference-meas?
+  interference-meas  Interference measurement parameters
+OsmoBSC(config-net-bts)# interference-meas ?
+  avg-period    Averaging period (Intave)
+  level-bounds  Interference level Boundaries
+
+OsmoBSC(config-net-bts)# ### Averaging period
+OsmoBSC(config-net-bts)# interference-meas avg-period ?
+  <1-31>  Number of SACCH multiframes
+OsmoBSC(config-net-bts)# interference-meas avg-period 0
+% Unknown command.
+OsmoBSC(config-net-bts)# interference-meas avg-period 30
+OsmoBSC(config-net-bts)# show running-config
+... !interference-meas
+ bts 0
+... !interference-meas
+  interference-meas avg-period 30
+... !interference-meas
+
+OsmoBSC(config-net-bts)# ### Interference level Boundaries
+OsmoBSC(config-net-bts)# interference-meas level-bounds ?
+  <-120-0>  Interference boundary 0 (dBm)
+OsmoBSC(config-net-bts)# interference-meas level-bounds -85 -90 -95 -100 -105 ?
+  <-120-0>  Interference boundary X5 (dBm)
+OsmoBSC(config-net-bts)# interference-meas level-bounds -85 -90 -95 -100 -105 -110
+OsmoBSC(config-net-bts)# show running-config
+... !interference-meas
+ bts 0
+... !interference-meas
+  interference-meas avg-period 30
+  interference-meas level-bounds -85 -90 -95 -100 -105 -110
+... !interference-meas

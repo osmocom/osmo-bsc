@@ -1002,6 +1002,19 @@ enum gsm48_rr_cause bsc_gsm48_rr_cause_from_rsl_cause(uint8_t c)
 	}
 }
 
+/* Default Interference Measurement Parameters */
+const struct gsm_interf_meas_params interf_meas_params_def = {
+	.avg_period = 6, /* 6 SACCH periods */
+	.bounds_dbm = {
+		 85, /*  0:  -85 dBm */
+		 91, /* X1:  -91 dBm */
+		 97, /* X2:  -97 dBm */
+		103, /* X3: -103 dBm */
+		109, /* X4: -109 dBm */
+		115, /* X5: -115 dBm */
+	},
+};
+
 /* Default MS/BS Power Control parameters (see 3GPP TS 45.008, table A.1) */
 const struct gsm_power_ctrl_params power_ctrl_params_def = {
 	/* Static Power Control is the safe default */
