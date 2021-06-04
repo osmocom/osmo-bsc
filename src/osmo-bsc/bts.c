@@ -565,10 +565,8 @@ unsigned long long bts_uptime(const struct gsm_bts *bts)
 {
 	struct timespec tp;
 
-	if (!bts->uptime || !bts->oml_link) {
-		LOGP(DNM, LOGL_INFO, "BTS %u OML link uptime unavailable\n", bts->nr);
+	if (!bts->uptime || !bts->oml_link)
 		return 0;
-	}
 
 	if (osmo_clock_gettime(CLOCK_MONOTONIC, &tp) != 0) {
 		LOGP(DNM, LOGL_ERROR, "BTS %u uptime computation failure: %s\n", bts->nr, strerror(errno));
