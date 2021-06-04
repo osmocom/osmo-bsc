@@ -697,10 +697,12 @@ static void signal_handler(int signum)
 	switch (signum) {
 	case SIGINT:
 	case SIGTERM:
+		/* If SIGTERM was already sent before, just terminate immediately. */
+		if (osmo_select_shutdown_requested())
+			exit(-1);
 		bsc_shutdown_net(bsc_gsmnet);
 		osmo_signal_dispatch(SS_L_GLOBAL, S_L_GLOBAL_SHUTDOWN, NULL);
-		sleep(3);
-		exit(0);
+		osmo_select_shutdown_request();
 		break;
 	case SIGABRT:
 		/* in case of abort, we want to obtain a talloc report and
@@ -1033,7 +1035,7 @@ int main(int argc, char **argv)
 		}
 	}
 
-	while (1) {
+	while (!osmo_select_shutdown_done()) {
 		osmo_select_main_ctx(0);
 	}
 
