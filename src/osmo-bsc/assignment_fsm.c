@@ -808,14 +808,18 @@ static void assignment_fsm_wait_mgw_endpoint_to_msc(struct osmo_fsm_inst *fi, ui
 static void assignment_fsm_wait_lchan_modified_onenter(struct osmo_fsm_inst *fi, uint32_t prev_state)
 {
 	struct gsm_subscriber_connection *conn = assignment_fi_conn(fi);
+	struct gsm_lchan *lchan = conn->lchan;
 	struct assignment_request *req = &conn->assignment.req;
 	struct lchan_modify_info modif_info = {
 		.modify_for = MODIFY_FOR_ASSIGNMENT,
 		.ch_mode_rate = conn->assignment.selected_ch_mode_rate,
 		.requires_voice_stream = conn->assignment.requires_voice_stream,
 		.msc_assigned_cic = req->msc_assigned_cic,
+		/* keep previous training sequence code */
+		.tsc_set = lchan->tsc_set,
+		.tsc = lchan->tsc,
 	};
-	lchan_mode_modify(conn->lchan, &modif_info);
+	lchan_mode_modify(lchan, &modif_info);
 }
 
 static void assignment_fsm_wait_lchan_modified(struct osmo_fsm_inst *fi, uint32_t event, void *data)

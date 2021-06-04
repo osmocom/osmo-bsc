@@ -1782,6 +1782,8 @@ void abis_rsl_chan_rqd_queue_poll(struct gsm_bts *bts)
 		},
 		.ta = rqd->ta,
 		.ta_known = true,
+		.tsc_set = -1,
+		.tsc = -1,
 	};
 
 	lchan_activate(lchan, &info);

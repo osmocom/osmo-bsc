@@ -928,6 +928,8 @@ static int bssmap_handle_assignm_req(struct gsm_subscriber_connection *conn,
 			.msc_assigned_cic = cic,
 			.use_osmux = use_osmux,
 			.osmux_cid = osmux_cid,
+			.tsc_set = -1,
+			.tsc = -1,
 		};
 
 		/* Match codec information from the assignment command against the
@@ -954,6 +956,8 @@ static int bssmap_handle_assignm_req(struct gsm_subscriber_connection *conn,
 		req = (struct assignment_request){
 			.assign_for = ASSIGN_FOR_BSSMAP_REQ,
 			.aoip = aoip,
+			.tsc_set = -1,
+			.tsc = -1,
 		};
 
 		rc = select_sign_chan(&req, &ct);
