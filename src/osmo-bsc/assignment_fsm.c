@@ -81,17 +81,17 @@ static const struct osmo_tdef_state_timeout assignment_fsm_timeouts[32] = {
 		LOG_ASSIGNMENT(conn, LOGL_DEBUG, "incrementing rate counter: %s %s\n", \
 			       bsc_ctr_description[BSC_##counter].name, \
 			       bsc_ctr_description[BSC_##counter].description); \
-		rate_ctr_inc(&conn->network->bsc_ctrs->ctr[BSC_##counter]); \
+		rate_ctr_inc(rate_ctr_group_get_ctr(conn->network->bsc_ctrs, BSC_##counter)); \
 		if (bts) { \
-			rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_##counter]); \
+			rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_##counter)); \
 			switch (gsm48_chan_mode_to_non_vamos(conn->assignment.req.ch_mode_rate_list[0].chan_mode)) { \
 			case GSM48_CMODE_SIGN: \
-				rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_##counter##_SIGN]); \
+				rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_##counter##_SIGN)); \
 				break; \
 			case GSM48_CMODE_SPEECH_V1: \
 			case GSM48_CMODE_SPEECH_EFR: \
 			case GSM48_CMODE_SPEECH_AMR: \
-				rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_##counter##_SPEECH]); \
+				rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_##counter##_SPEECH)); \
 				break; \
 			default: \
 				break; \
@@ -140,7 +140,7 @@ static void on_assignment_failure(struct gsm_subscriber_connection *conn)
 		if (!resp) {
 			LOG_ASSIGNMENT(conn, LOGL_ERROR, "Unable to compose BSSMAP Assignment Failure message\n");
 		} else {
-			rate_ctr_inc(&conn->sccp.msc->msc_ctrs->ctr[MSC_CTR_BSSMAP_TX_DT1_ASSIGMENT_FAILURE]);
+			rate_ctr_inc(rate_ctr_group_get_ctr(conn->sccp.msc->msc_ctrs, MSC_CTR_BSSMAP_TX_DT1_ASSIGMENT_FAILURE));
 			gscon_sigtran_send(conn, resp);
 		}
 	}
@@ -230,7 +230,7 @@ static void send_assignment_complete(struct gsm_subscriber_connection *conn)
 	    conn->assignment.req.use_osmux)
 		_gsm0808_ass_compl_extend_osmux(resp, osmux_cid);
 
-	rate_ctr_inc(&conn->sccp.msc->msc_ctrs->ctr[MSC_CTR_BSSMAP_TX_DT1_ASSIGMENT_COMPLETE]);
+	rate_ctr_inc(rate_ctr_group_get_ctr(conn->sccp.msc->msc_ctrs, MSC_CTR_BSSMAP_TX_DT1_ASSIGMENT_COMPLETE));
 	rc = gscon_sigtran_send(conn, resp);
 	if (rc) {
 		assignment_fail(GSM0808_CAUSE_EQUIPMENT_FAILURE,

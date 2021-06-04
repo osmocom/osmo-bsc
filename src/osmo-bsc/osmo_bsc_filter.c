@@ -123,16 +123,16 @@ int bsc_scan_msc_msg(struct gsm_subscriber_connection *conn, struct msgb *msg)
 		struct rate_ctr_group *bts_ctrs = conn->lchan->ts->trx->bts->bts_ctrs;
 		switch (mtype) {
 		case GSM48_MT_MM_LOC_UPD_ACCEPT:
-			rate_ctr_inc(&bts_ctrs->ctr[BTS_CTR_LOCATION_UPDATE_ACCEPT]);
+			rate_ctr_inc(rate_ctr_group_get_ctr(bts_ctrs, BTS_CTR_LOCATION_UPDATE_ACCEPT));
 			break;
 		case GSM48_MT_MM_LOC_UPD_REJECT:
-			rate_ctr_inc(&bts_ctrs->ctr[BTS_CTR_LOCATION_UPDATE_REJECT]);
+			rate_ctr_inc(rate_ctr_group_get_ctr(bts_ctrs, BTS_CTR_LOCATION_UPDATE_REJECT));
 			break;
 		case GSM48_MT_MM_IMSI_DETACH_IND:
-			rate_ctr_inc(&bts_ctrs->ctr[BTS_CTR_LOCATION_UPDATE_DETACH]);
+			rate_ctr_inc(rate_ctr_group_get_ctr(bts_ctrs, BTS_CTR_LOCATION_UPDATE_DETACH));
 			break;
 		default:
-			rate_ctr_inc(&bts_ctrs->ctr[BTS_CTR_LOCATION_UPDATE_UNKNOWN]);
+			rate_ctr_inc(rate_ctr_group_get_ctr(bts_ctrs, BTS_CTR_LOCATION_UPDATE_UNKNOWN));
 			break;
 		}
 	}

@@ -88,7 +88,7 @@
 		LOG_HO(conn, LOGL_DEBUG, "(BSC) incrementing rate counter: %s %s\n", \
 		       bsc_ctr_description[counter].name, \
 		       bsc_ctr_description[counter].description); \
-		rate_ctr_inc(&conn->network->bsc_ctrs->ctr[counter]); \
+		rate_ctr_inc(rate_ctr_group_get_ctr(conn->network->bsc_ctrs, counter)); \
 	} while(0)
 
 /* Assume presence of local var 'conn' as struct gsm_subscriber_connection.
@@ -102,9 +102,9 @@
 		       bts_ctr_description[counter].name, \
 		       bts_ctr_description[counter].description); \
 		if (bts) \
-			rate_ctr_inc(&bts->bts_ctrs->ctr[counter]); \
+			rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, counter)); \
 		else \
-			rate_ctr_inc(&conn->network->bts_unknown_ctrs->ctr[counter]); \
+			rate_ctr_inc(rate_ctr_group_get_ctr(conn->network->bts_unknown_ctrs, counter)); \
 	} while(0)
 
 #define ho_count(bts, counter) do { \
@@ -881,7 +881,7 @@ static void send_handover_performed(struct gsm_subscriber_connection *conn)
 		return;
 	}
 
-	rate_ctr_inc(&conn->sccp.msc->msc_ctrs->ctr[MSC_CTR_BSSMAP_TX_DT1_HANDOVER_PERFORMED]);
+	rate_ctr_inc(rate_ctr_group_get_ctr(conn->sccp.msc->msc_ctrs, MSC_CTR_BSSMAP_TX_DT1_HANDOVER_PERFORMED));
 	rc = gscon_sigtran_send(conn, msg);
 	if (rc < 0) {
 		LOG_HO(conn, LOGL_ERROR, "message sending failed, can't send HANDOVER PERFORMED!\n");

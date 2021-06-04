@@ -531,7 +531,7 @@ void ipaccess_drop_rsl(struct gsm_bts_trx *trx, const char *reason)
 	LOG_TRX(trx, DLINP, LOGL_NOTICE, "Dropping RSL link: %s\n", reason);
 	e1inp_sign_link_destroy(trx->rsl_link_primary);
 	trx->rsl_link_primary = NULL;
-	osmo_stat_item_dec(trx->bts->bts_statg->items[BTS_STAT_RSL_CONNECTED], 1);
+	osmo_stat_item_dec(osmo_stat_item_group_get_item(trx->bts->bts_statg, BTS_STAT_RSL_CONNECTED), 1);
 
 	if (trx->bts->c0 == trx)
 		paging_flush_bts(trx->bts, NULL);
@@ -555,7 +555,7 @@ void ipaccess_drop_oml(struct gsm_bts *bts, const char *reason)
 	e1inp_sign_link_destroy(bts->oml_link);
 	bts->oml_link = NULL;
 	bts->uptime = 0;
-	osmo_stat_item_dec(bts->bts_statg->items[BTS_STAT_OML_CONNECTED], 1);
+	osmo_stat_item_dec(osmo_stat_item_group_get_item(bts->bts_statg, BTS_STAT_OML_CONNECTED), 1);
 
 	/* we have issues reconnecting RSL, drop everything. */
 	llist_for_each_entry(trx, &bts->trx_list, list) {
@@ -631,7 +631,7 @@ static void ipaccess_sign_link_reject(const struct ipaccess_unit *dev, const str
 	/* Write to log and increase counter */
 	LOGP(DLINP, LOGL_ERROR, "Unable to find BTS configuration for %u/%u/%u, disconnecting\n", site_id, bts_id,
 		trx_id);
-	rate_ctr_inc(&bsc_gsmnet->bsc_ctrs->ctr[BSC_CTR_UNKNOWN_UNIT_ID]);
+	rate_ctr_inc(rate_ctr_group_get_ctr(bsc_gsmnet->bsc_ctrs, BSC_CTR_UNKNOWN_UNIT_ID));
 
 	/* Get remote IP */
 	if (osmo_sock_get_remote_ip(ts->driver.ipaccess.fd.fd, ip, sizeof(ip)))
@@ -712,7 +712,7 @@ ipaccess_sign_link_up(void *unit_data, struct e1inp_line *line,
 					sign_link->tei, sign_link->sapi);
 			sign_link->trx->bts->ip_access.flags |= OML_UP;
 		}
-		osmo_stat_item_inc(bts->bts_statg->items[BTS_STAT_OML_CONNECTED], 1);
+		osmo_stat_item_inc(osmo_stat_item_group_get_item(bts->bts_statg, BTS_STAT_OML_CONNECTED), 1);
 		break;
 	case E1INP_SIGN_RSL: {
 		struct e1inp_ts *ts;
@@ -740,7 +740,7 @@ ipaccess_sign_link_up(void *unit_data, struct e1inp_line *line,
 			sign_link->trx->bts->ip_access.flags |=
 					(RSL_UP << sign_link->trx->nr);
 		}
-		osmo_stat_item_inc(bts->bts_statg->items[BTS_STAT_RSL_CONNECTED], 1);
+		osmo_stat_item_inc(osmo_stat_item_group_get_item(bts->bts_statg, BTS_STAT_RSL_CONNECTED), 1);
 		break;
 	}
 	default:

@@ -161,7 +161,7 @@ static void gscon_bssmap_clear(struct gsm_subscriber_connection *conn,
 		return;
 	}
 
-	rate_ctr_inc(&conn->sccp.msc->msc_ctrs->ctr[MSC_CTR_BSSMAP_TX_DT1_CLEAR_RQST]);
+	rate_ctr_inc(rate_ctr_group_get_ctr(conn->sccp.msc->msc_ctrs, MSC_CTR_BSSMAP_TX_DT1_CLEAR_RQST));
 	rc = osmo_bsc_sigtran_send(conn, resp);
 	if (rc < 0)
 		LOGPFSML(conn->fi, LOGL_ERROR, "Unable to deliver BSSMAP Clear Request message\n");
@@ -176,7 +176,7 @@ static void forward_dtap(struct gsm_subscriber_connection *conn, struct msgb *ms
 	OSMO_ASSERT(conn);
 
 	resp = gsm0808_create_dtap(msg, OBSC_LINKID_CB(msg));
-	rate_ctr_inc(&conn->sccp.msc->msc_ctrs->ctr[MSC_CTR_BSSMAP_TX_DT1_DTAP]);
+	rate_ctr_inc(rate_ctr_group_get_ctr(conn->sccp.msc->msc_ctrs, MSC_CTR_BSSMAP_TX_DT1_DTAP));
 	gscon_sigtran_send(conn, resp);
 }
 
@@ -843,7 +843,7 @@ static void gscon_fsm_allstate(struct osmo_fsm_inst *fi, uint32_t event, void *d
 		/* Close MGCP connections */
 		osmo_mgcpc_ep_clear(conn->user_plane.mgw_endpoint);
 
-		rate_ctr_inc(&conn->sccp.msc->msc_ctrs->ctr[MSC_CTR_BSSMAP_TX_DT1_CLEAR_COMPLETE]);
+		rate_ctr_inc(rate_ctr_group_get_ctr(conn->sccp.msc->msc_ctrs, MSC_CTR_BSSMAP_TX_DT1_CLEAR_COMPLETE));
 		gscon_sigtran_send(conn, gsm0808_create_clear_complete());
 		break;
 	case GSCON_EV_A_DISC_IND:

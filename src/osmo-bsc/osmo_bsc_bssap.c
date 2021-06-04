@@ -343,7 +343,7 @@ static int bssmap_handle_paging(struct bsc_msc_data *msc,
 
 int bsc_paging_start(struct bsc_paging_params *params)
 {
-	rate_ctr_inc(&bsc_gsmnet->bsc_ctrs->ctr[BSC_CTR_PAGING_ATTEMPTED]);
+	rate_ctr_inc(rate_ctr_group_get_ctr(bsc_gsmnet->bsc_ctrs, BSC_CTR_PAGING_ATTEMPTED));
 
 	if (!params->bsub) {
 		params->bsub = bsc_subscr_find_or_create_by_imsi(bsc_gsmnet->bsc_subscribers, params->imsi.imsi,
@@ -569,7 +569,7 @@ reject:
 		return -1;
 	}
 
-	rate_ctr_inc(&conn->sccp.msc->msc_ctrs->ctr[MSC_CTR_BSSMAP_TX_DT1_CIPHER_REJECT]);
+	rate_ctr_inc(rate_ctr_group_get_ctr(conn->sccp.msc->msc_ctrs, MSC_CTR_BSSMAP_TX_DT1_CIPHER_REJECT));
 	osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_TX_SCCP, resp);
 	return -1;
 }
@@ -650,7 +650,7 @@ static int bssmap_handle_lcls_connect_ctrl(struct gsm_subscriber_connection *con
 	LOGPFSM(conn->fi, "Tx LCLS CONNECT CTRL ACK (%s)\n",
 		gsm0808_lcls_status_name(lcls_get_status(conn)));
 	resp = gsm0808_create_lcls_conn_ctrl_ack(lcls_get_status(conn));
-	rate_ctr_inc(&conn->sccp.msc->msc_ctrs->ctr[MSC_CTR_BSSMAP_TX_DT1_LCLS_CONNECT_CTRL_ACK]);
+	rate_ctr_inc(rate_ctr_group_get_ctr(conn->sccp.msc->msc_ctrs, MSC_CTR_BSSMAP_TX_DT1_LCLS_CONNECT_CTRL_ACK));
 	osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_TX_SCCP, resp);
 
 	return 0;
@@ -973,7 +973,7 @@ reject:
 	resp = gsm0808_create_assignment_failure(cause, NULL);
 	OSMO_ASSERT(resp);
 
-	rate_ctr_inc(&conn->sccp.msc->msc_ctrs->ctr[MSC_CTR_BSSMAP_TX_DT1_ASSIGMENT_FAILURE]);
+	rate_ctr_inc(rate_ctr_group_get_ctr(conn->sccp.msc->msc_ctrs, MSC_CTR_BSSMAP_TX_DT1_ASSIGMENT_FAILURE));
 	osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_TX_SCCP, resp);
 	return -1;
 }
@@ -1396,7 +1396,7 @@ int bsc_tx_bssmap_ho_required(struct gsm_lchan *lchan, const struct gsm0808_cell
 		return -EINVAL;
 	}
 
-	rate_ctr_inc(&conn->sccp.msc->msc_ctrs->ctr[MSC_CTR_BSSMAP_TX_DT1_HANDOVER_REQUIRED]);
+	rate_ctr_inc(rate_ctr_group_get_ctr(conn->sccp.msc->msc_ctrs, MSC_CTR_BSSMAP_TX_DT1_HANDOVER_REQUIRED));
 	rc = gscon_sigtran_send(conn, msg);
 	if (rc) {
 		LOG_HO(conn, LOGL_ERROR, "Cannot send BSSMAP Handover Required message\n");
@@ -1443,7 +1443,7 @@ int bsc_tx_bssmap_ho_request_ack(struct gsm_subscriber_connection *conn, struct 
 		params.aoip_transport_layer = &ss;
 	}
 
-	rate_ctr_inc(&conn->sccp.msc->msc_ctrs->ctr[MSC_CTR_BSSMAP_TX_DT1_HANDOVER_RQST_ACKNOWLEDGE]);
+	rate_ctr_inc(rate_ctr_group_get_ctr(conn->sccp.msc->msc_ctrs, MSC_CTR_BSSMAP_TX_DT1_HANDOVER_RQST_ACKNOWLEDGE));
 	LOG_HO(conn, LOGL_DEBUG, "Sending BSSMAP Handover Request Acknowledge\n");
 	msg = gsm0808_create_handover_request_ack2(&params);
 	msgb_free(rr_ho_command);
@@ -1459,7 +1459,7 @@ int bsc_tx_bssmap_ho_detect(struct gsm_subscriber_connection *conn)
 	if (!msg)
 		return -ENOMEM;
 
-	rate_ctr_inc(&conn->sccp.msc->msc_ctrs->ctr[MSC_CTR_BSSMAP_TX_DT1_HANDOVER_DETECT]);
+	rate_ctr_inc(rate_ctr_group_get_ctr(conn->sccp.msc->msc_ctrs, MSC_CTR_BSSMAP_TX_DT1_HANDOVER_DETECT));
 	return osmo_bsc_sigtran_send(conn, msg);
 }
 
@@ -1499,7 +1499,7 @@ enum handover_result bsc_tx_bssmap_ho_complete(struct gsm_subscriber_connection 
 		return HO_RESULT_ERROR;
 	}
 
-	rate_ctr_inc(&conn->sccp.msc->msc_ctrs->ctr[MSC_CTR_BSSMAP_TX_DT1_HANDOVER_COMPLETE]);
+	rate_ctr_inc(rate_ctr_group_get_ctr(conn->sccp.msc->msc_ctrs, MSC_CTR_BSSMAP_TX_DT1_HANDOVER_COMPLETE));
 	rc = osmo_bsc_sigtran_send(conn, msg);
 	if (rc) {
 		LOG_HO(conn, LOGL_ERROR, "Cannot send BSSMAP Handover Complete message\n");
@@ -1521,7 +1521,7 @@ void bsc_tx_bssmap_ho_failure(struct gsm_subscriber_connection *conn)
 		return;
 	}
 
-	rate_ctr_inc(&conn->sccp.msc->msc_ctrs->ctr[MSC_CTR_BSSMAP_TX_DT1_HANDOVER_FAILURE]);
+	rate_ctr_inc(rate_ctr_group_get_ctr(conn->sccp.msc->msc_ctrs, MSC_CTR_BSSMAP_TX_DT1_HANDOVER_FAILURE));
 	rc = osmo_bsc_sigtran_send(conn, msg);
 	if (rc)
 		LOG_HO(conn, LOGL_ERROR, "Cannot send BSSMAP Handover Failure message (rc=%d %s)\n",

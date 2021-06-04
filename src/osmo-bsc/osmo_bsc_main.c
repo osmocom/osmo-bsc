@@ -405,10 +405,10 @@ static int inp_sig_cb(unsigned int subsys, unsigned int signal,
 		LOG_TRX(trx, DLMI, LOGL_ERROR, "Lost E1 %s link\n", e1inp_signtype_name(isd->link_type));
 
 		if (isd->link_type == E1INP_SIGN_OML) {
-			rate_ctr_inc(&trx->bts->bts_ctrs->ctr[BTS_CTR_BTS_OML_FAIL]);
+			rate_ctr_inc(rate_ctr_group_get_ctr(trx->bts->bts_ctrs, BTS_CTR_BTS_OML_FAIL));
 			all_ts_dispatch_event(trx, TS_EV_OML_DOWN);
 		} else if (isd->link_type == E1INP_SIGN_RSL) {
-			rate_ctr_inc(&trx->bts->bts_ctrs->ctr[BTS_CTR_BTS_RSL_FAIL]);
+			rate_ctr_inc(rate_ctr_group_get_ctr(trx->bts->bts_ctrs, BTS_CTR_BTS_RSL_FAIL));
 			acc_ramp_abort(&trx->bts->acc_ramp);
 			all_ts_dispatch_event(trx, TS_EV_RSL_DOWN);
 			if (trx->nr == 0)

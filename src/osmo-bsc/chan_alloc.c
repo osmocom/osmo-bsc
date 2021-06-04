@@ -121,36 +121,36 @@ static void chan_load_stat_set(enum gsm_phys_chan_config pchan,
 	case GSM_PCHAN_UNKNOWN:
 		break;
 	case GSM_PCHAN_CCCH_SDCCH4:
-		osmo_stat_item_set(bts->bts_statg->items[BTS_STAT_CHAN_CCCH_SDCCH4_USED], lc->used);
-		osmo_stat_item_set(bts->bts_statg->items[BTS_STAT_CHAN_CCCH_SDCCH4_TOTAL], lc->total);
+		osmo_stat_item_set(osmo_stat_item_group_get_item(bts->bts_statg, BTS_STAT_CHAN_CCCH_SDCCH4_USED), lc->used);
+		osmo_stat_item_set(osmo_stat_item_group_get_item(bts->bts_statg, BTS_STAT_CHAN_CCCH_SDCCH4_TOTAL), lc->total);
 		break;
 	case GSM_PCHAN_TCH_F:
-		osmo_stat_item_set(bts->bts_statg->items[BTS_STAT_CHAN_TCH_F_USED], lc->used);
-		osmo_stat_item_set(bts->bts_statg->items[BTS_STAT_CHAN_TCH_F_TOTAL], lc->total);
+		osmo_stat_item_set(osmo_stat_item_group_get_item(bts->bts_statg, BTS_STAT_CHAN_TCH_F_USED), lc->used);
+		osmo_stat_item_set(osmo_stat_item_group_get_item(bts->bts_statg, BTS_STAT_CHAN_TCH_F_TOTAL), lc->total);
 		break;
 	case GSM_PCHAN_TCH_H:
-		osmo_stat_item_set(bts->bts_statg->items[BTS_STAT_CHAN_TCH_H_USED], lc->used);
-		osmo_stat_item_set(bts->bts_statg->items[BTS_STAT_CHAN_TCH_H_TOTAL], lc->total);
+		osmo_stat_item_set(osmo_stat_item_group_get_item(bts->bts_statg, BTS_STAT_CHAN_TCH_H_USED), lc->used);
+		osmo_stat_item_set(osmo_stat_item_group_get_item(bts->bts_statg, BTS_STAT_CHAN_TCH_H_TOTAL), lc->total);
 		break;
 	case GSM_PCHAN_SDCCH8_SACCH8C:
-		osmo_stat_item_set(bts->bts_statg->items[BTS_STAT_CHAN_SDCCH8_USED], lc->used);
-		osmo_stat_item_set(bts->bts_statg->items[BTS_STAT_CHAN_SDCCH8_TOTAL], lc->total);
+		osmo_stat_item_set(osmo_stat_item_group_get_item(bts->bts_statg, BTS_STAT_CHAN_SDCCH8_USED), lc->used);
+		osmo_stat_item_set(osmo_stat_item_group_get_item(bts->bts_statg, BTS_STAT_CHAN_SDCCH8_TOTAL), lc->total);
 		break;
 	case GSM_PCHAN_TCH_F_PDCH:
-		osmo_stat_item_set(bts->bts_statg->items[BTS_STAT_CHAN_TCH_F_PDCH_USED], lc->used);
-		osmo_stat_item_set(bts->bts_statg->items[BTS_STAT_CHAN_TCH_F_PDCH_TOTAL], lc->total);
+		osmo_stat_item_set(osmo_stat_item_group_get_item(bts->bts_statg, BTS_STAT_CHAN_TCH_F_PDCH_USED), lc->used);
+		osmo_stat_item_set(osmo_stat_item_group_get_item(bts->bts_statg, BTS_STAT_CHAN_TCH_F_PDCH_TOTAL), lc->total);
 		break;
 	case GSM_PCHAN_CCCH_SDCCH4_CBCH:
-		osmo_stat_item_set(bts->bts_statg->items[BTS_STAT_CHAN_CCCH_SDCCH4_CBCH_USED], lc->used);
-		osmo_stat_item_set(bts->bts_statg->items[BTS_STAT_CHAN_CCCH_SDCCH4_CBCH_TOTAL], lc->total);
+		osmo_stat_item_set(osmo_stat_item_group_get_item(bts->bts_statg, BTS_STAT_CHAN_CCCH_SDCCH4_CBCH_USED), lc->used);
+		osmo_stat_item_set(osmo_stat_item_group_get_item(bts->bts_statg, BTS_STAT_CHAN_CCCH_SDCCH4_CBCH_TOTAL), lc->total);
 		break;
 	case GSM_PCHAN_SDCCH8_SACCH8C_CBCH:
-		osmo_stat_item_set(bts->bts_statg->items[BTS_STAT_CHAN_SDCCH8_CBCH_USED], lc->used);
-		osmo_stat_item_set(bts->bts_statg->items[BTS_STAT_CHAN_SDCCH8_CBCH_TOTAL], lc->total);
+		osmo_stat_item_set(osmo_stat_item_group_get_item(bts->bts_statg, BTS_STAT_CHAN_SDCCH8_CBCH_USED), lc->used);
+		osmo_stat_item_set(osmo_stat_item_group_get_item(bts->bts_statg, BTS_STAT_CHAN_SDCCH8_CBCH_TOTAL), lc->total);
 		break;
 	case GSM_PCHAN_TCH_F_TCH_H_PDCH:
-		osmo_stat_item_set(bts->bts_statg->items[BTS_STAT_CHAN_TCH_F_TCH_H_PDCH_USED], lc->used);
-		osmo_stat_item_set(bts->bts_statg->items[BTS_STAT_CHAN_TCH_F_TCH_H_PDCH_TOTAL], lc->total);
+		osmo_stat_item_set(osmo_stat_item_group_get_item(bts->bts_statg, BTS_STAT_CHAN_TCH_F_TCH_H_PDCH_USED), lc->used);
+		osmo_stat_item_set(osmo_stat_item_group_get_item(bts->bts_statg, BTS_STAT_CHAN_TCH_F_TCH_H_PDCH_TOTAL), lc->total);
 		break;
 	default:
 		LOG_BTS(bts, DRLL, LOGL_NOTICE, "Unknown channel type %d\n", pchan);
@@ -232,7 +232,7 @@ bts_update_t3122_chan_load(struct gsm_bts *bts)
 		(load & 0xffffff00) >> 8, (load & 0xff) / 10);
 	bts->chan_load_avg = ((load & 0xffffff00) >> 8);
 	OSMO_ASSERT(bts->chan_load_avg <= 100);
-	osmo_stat_item_set(bts->bts_statg->items[BTS_STAT_CHAN_LOAD_AVERAGE], bts->chan_load_avg);
+	osmo_stat_item_set(osmo_stat_item_group_get_item(bts->bts_statg, BTS_STAT_CHAN_LOAD_AVERAGE), bts->chan_load_avg);
 
 	/* Calculate new T3122 wait indicator. */
 	wait_ind = ((used / total) * max_wait_ind);
@@ -244,5 +244,5 @@ bts_update_t3122_chan_load(struct gsm_bts *bts)
 
 	LOG_BTS(bts, DRLL, LOGL_DEBUG, "T3122 wait indicator set to %"PRIu64" seconds\n", wait_ind);
 	bts->T3122 = (uint8_t)wait_ind;
-	osmo_stat_item_set(bts->bts_statg->items[BTS_STAT_T3122], wait_ind);
+	osmo_stat_item_set(osmo_stat_item_group_get_item(bts->bts_statg, BTS_STAT_T3122), wait_ind);
 }

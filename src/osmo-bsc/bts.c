@@ -558,7 +558,7 @@ struct gsm_bts_trx *gsm_bts_trx_num(const struct gsm_bts *bts, int num)
 
 void bts_store_uptime(struct gsm_bts *bts)
 {
-	osmo_stat_item_set(bts->bts_statg->items[BTS_STAT_UPTIME_SECONDS], bts_uptime(bts));
+	osmo_stat_item_set(osmo_stat_item_group_get_item(bts->bts_statg, BTS_STAT_UPTIME_SECONDS), bts_uptime(bts));
 }
 
 unsigned long long bts_uptime(const struct gsm_bts *bts)

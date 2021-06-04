@@ -536,16 +536,16 @@ static void bts_dump_vty(struct vty *vty, struct gsm_bts *bts)
 	bts_dump_vty_cbch(vty, &bts->cbch_extended);
 
 	vty_out(vty, "  Channel Requests        : %"PRIu64" total, %"PRIu64" no channel%s",
-		bts->bts_ctrs->ctr[BTS_CTR_CHREQ_TOTAL].current,
-		bts->bts_ctrs->ctr[BTS_CTR_CHREQ_NO_CHANNEL].current,
+		rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_CHREQ_TOTAL)->current,
+		rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_CHREQ_NO_CHANNEL)->current,
 		VTY_NEWLINE);
 	vty_out(vty, "  Channel Failures        : %"PRIu64" rf_failures, %"PRIu64" rll failures%s",
-		bts->bts_ctrs->ctr[BTS_CTR_CHAN_RF_FAIL].current,
-		bts->bts_ctrs->ctr[BTS_CTR_CHAN_RLL_ERR].current,
+		rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_CHAN_RF_FAIL)->current,
+		rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_CHAN_RLL_ERR)->current,
 		VTY_NEWLINE);
 	vty_out(vty, "  BTS failures            : %"PRIu64" OML, %"PRIu64" RSL%s",
-		bts->bts_ctrs->ctr[BTS_CTR_BTS_OML_FAIL].current,
-		bts->bts_ctrs->ctr[BTS_CTR_BTS_RSL_FAIL].current,
+		rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_BTS_OML_FAIL)->current,
+		rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_BTS_RSL_FAIL)->current,
 		VTY_NEWLINE);
 
 	vty_out_stat_item_group(vty, "  ", bts->bts_statg);
@@ -2318,7 +2318,7 @@ DEFUN_ATTR(cfg_bts,
 		/* allocate a new one */
 		bts = bsc_bts_alloc_register(gsmnet, GSM_BTS_TYPE_UNKNOWN,
 					     HARDCODED_BSIC);
-		osmo_stat_item_inc(gsmnet->bsc_statg->items[BSC_STAT_NUM_BTS_TOTAL], 1);
+		osmo_stat_item_inc(osmo_stat_item_group_get_item(gsmnet->bsc_statg, BSC_STAT_NUM_BTS_TOTAL), 1);
 	} else
 		bts = gsm_bts_num(gsmnet, bts_nr);
 
@@ -6390,7 +6390,7 @@ DEFUN_HIDDEN(lchan_set_borken, lchan_set_borken_cmd,
 		}
 	} else {
 		if (lchan->fi->state == LCHAN_ST_BORKEN) {
-			rate_ctr_inc(&lchan->ts->trx->bts->bts_ctrs->ctr[BTS_CTR_LCHAN_BORKEN_EV_VTY]);
+			rate_ctr_inc(rate_ctr_group_get_ctr(lchan->ts->trx->bts->bts_ctrs, BTS_CTR_LCHAN_BORKEN_EV_VTY));
 			osmo_fsm_inst_state_chg(lchan->fi, LCHAN_ST_UNUSED, 0, 0);
 		} else {
 			vty_out(vty,

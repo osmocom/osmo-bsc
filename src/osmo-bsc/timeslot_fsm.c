@@ -383,9 +383,9 @@ static void ts_fsm_wait_pdch_act(struct osmo_fsm_inst *fi, uint32_t event, void 
 
 	case TS_EV_PDCH_ACT_NACK:
 		if (ts->pchan_on_init == GSM_PCHAN_TCH_F_PDCH)
-			rate_ctr_inc(&bts_ctrs->ctr[BTS_CTR_RSL_IPA_NACK]);
+			rate_ctr_inc(rate_ctr_group_get_ctr(bts_ctrs, BTS_CTR_RSL_IPA_NACK));
 		else
-			rate_ctr_inc(&bts_ctrs->ctr[BTS_CTR_CHAN_ACT_NACK]);
+			rate_ctr_inc(rate_ctr_group_get_ctr(bts_ctrs, BTS_CTR_CHAN_ACT_NACK));
 		ts->pdch_act_allowed = false;
 		ts_fsm_error(fi, TS_ST_UNUSED, "Received PDCH activation NACK");
 		return;
@@ -520,7 +520,7 @@ static void ts_fsm_wait_pdch_deact(struct osmo_fsm_inst *fi, uint32_t event, voi
 
 	case TS_EV_PDCH_DEACT_NACK:
 		if (ts->pchan_on_init == GSM_PCHAN_TCH_F_PDCH)
-			rate_ctr_inc(&ts->trx->bts->bts_ctrs->ctr[BTS_CTR_RSL_IPA_NACK]);
+			rate_ctr_inc(rate_ctr_group_get_ctr(ts->trx->bts->bts_ctrs, BTS_CTR_RSL_IPA_NACK));
 		/* For Osmocom style dyn TS, there actually is no NACK, since there is no RF Channel
 		 * Release NACK message in RSL. */
 		ts_fsm_error(fi, TS_ST_BORKEN, "Received PDCH deactivation NACK");
@@ -695,8 +695,8 @@ static void ts_fsm_borken_onenter(struct osmo_fsm_inst *fi, uint32_t prev_state)
 	default:
 		ctr = BTS_CTR_TS_BORKEN_FROM_UNKNOWN;
 	}
-	rate_ctr_inc(&bts->bts_ctrs->ctr[ctr]);
-	osmo_stat_item_inc(bts->bts_statg->items[BTS_STAT_TS_BORKEN], 1);
+	rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, ctr));
+	osmo_stat_item_inc(osmo_stat_item_group_get_item(bts->bts_statg, BTS_STAT_TS_BORKEN), 1);
 }
 
 static void ts_fsm_borken(struct osmo_fsm_inst *fi, uint32_t event, void *data)
@@ -720,8 +720,8 @@ static void ts_fsm_borken(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 			struct gsm_bts *bts = ts->trx->bts;
 			/* Late PDCH activation ACK/NACK is not a crime.
 			 * Just process them as normal. */
-			rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_CTR_TS_BORKEN_EV_PDCH_ACT_ACK_NACK]);
-			osmo_stat_item_dec(bts->bts_statg->items[BTS_STAT_TS_BORKEN], 1);
+			rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_TS_BORKEN_EV_PDCH_ACT_ACK_NACK));
+			osmo_stat_item_dec(osmo_stat_item_group_get_item(bts->bts_statg, BTS_STAT_TS_BORKEN), 1);
 			ts_fsm_wait_pdch_act(fi, event, data);
 			return;
 		}
@@ -733,8 +733,8 @@ static void ts_fsm_borken(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 			struct gsm_bts *bts = ts->trx->bts;
 			/* Late PDCH deactivation ACK/NACK is also not a crime.
 			 * Just process them as normal. */
-			rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_CTR_TS_BORKEN_EV_PDCH_DEACT_ACK_NACK]);
-			osmo_stat_item_dec(bts->bts_statg->items[BTS_STAT_TS_BORKEN], 1);
+			rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_TS_BORKEN_EV_PDCH_DEACT_ACK_NACK));
+			osmo_stat_item_dec(osmo_stat_item_group_get_item(bts->bts_statg, BTS_STAT_TS_BORKEN), 1);
 			ts_fsm_wait_pdch_deact(fi, event, data);
 			return;
 		}
@@ -796,8 +796,8 @@ static void ts_fsm_cleanup(struct osmo_fsm_inst *fi, enum osmo_fsm_term_cause ca
 	struct gsm_bts_trx_ts *ts = ts_fi_ts(fi);
 	struct gsm_bts *bts = ts->trx->bts;
 	if (ts->fi->state == TS_ST_BORKEN) {
-		rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_CTR_TS_BORKEN_EV_TEARDOWN]);
-		osmo_stat_item_dec(bts->bts_statg->items[BTS_STAT_TS_BORKEN], 1);
+		rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_TS_BORKEN_EV_TEARDOWN));
+		osmo_stat_item_dec(osmo_stat_item_group_get_item(bts->bts_statg, BTS_STAT_TS_BORKEN), 1);
 	}
 }
 

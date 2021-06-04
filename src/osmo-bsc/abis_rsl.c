@@ -72,10 +72,10 @@ static void count_codecs(struct gsm_bts *bts, struct gsm_lchan *lchan)
 	if (lchan->type == GSM_LCHAN_TCH_H) {
 		switch (gsm48_chan_mode_to_non_vamos(lchan->current_ch_mode_rate.chan_mode)) {
 		case GSM48_CMODE_SPEECH_AMR:
-			rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_CTR_CODEC_AMR_H]);
+			rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_CODEC_AMR_H));
 			break;
 		case GSM48_CMODE_SPEECH_V1:
-			rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_CTR_CODEC_V1_HR]);
+			rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_CODEC_V1_HR));
 			break;
 		default:
 			break;
@@ -83,13 +83,13 @@ static void count_codecs(struct gsm_bts *bts, struct gsm_lchan *lchan)
 	} else if (lchan->type == GSM_LCHAN_TCH_F) {
 		switch (gsm48_chan_mode_to_non_vamos(lchan->current_ch_mode_rate.chan_mode)) {
 		case GSM48_CMODE_SPEECH_AMR:
-			rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_CTR_CODEC_AMR_F]);
+			rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_CODEC_AMR_F));
 			break;
 		case GSM48_CMODE_SPEECH_V1:
-			rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_CTR_CODEC_V1_FR]);
+			rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_CODEC_V1_FR));
 			break;
 		case GSM48_CMODE_SPEECH_EFR:
-			rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_CTR_CODEC_EFR]);
+			rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_CODEC_EFR));
 			break;
 		default:
 			break;
@@ -609,14 +609,14 @@ int rsl_tx_chan_activ(struct gsm_lchan *lchan, uint8_t act_type, uint8_t ho_ref)
 
 	msg->dst = rsl_chan_link(lchan);
 
-	rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_CTR_CHAN_ACT_TOTAL]);
+	rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_CHAN_ACT_TOTAL));
 	switch (lchan->type) {
 	case GSM_LCHAN_SDCCH:
-		rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_CTR_CHAN_ACT_SDCCH]);
+		rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_CHAN_ACT_SDCCH));
 		break;
 	case GSM_LCHAN_TCH_H:
 	case GSM_LCHAN_TCH_F:
-		rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_CTR_CHAN_ACT_TCH]);
+		rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_CHAN_ACT_TCH));
 		break;
 	default:
 		break;
@@ -956,7 +956,7 @@ static int rsl_rx_chan_act_nack(struct msgb *msg)
 	struct gsm_lchan *lchan = msg->lchan;
 	const uint8_t *cause_p;
 
-	rate_ctr_inc(&msg->lchan->ts->trx->bts->bts_ctrs->ctr[BTS_CTR_CHAN_ACT_NACK]);
+	rate_ctr_inc(rate_ctr_group_get_ctr(msg->lchan->ts->trx->bts->bts_ctrs, BTS_CTR_CHAN_ACT_NACK));
 
 	if (dh->ie_chan != RSL_IE_CHAN_NR) {
 		LOG_LCHAN(msg->lchan, LOGL_ERROR, "Invalid IE: expected CHAN_NR IE (0x%x), got 0x%x\n",
@@ -989,14 +989,14 @@ static int rsl_rx_conn_fail(struct msgb *msg)
 
 	LOG_LCHAN(lchan, LOGL_ERROR, "CONNECTION FAIL%s\n", rsl_cause_name(&tp));
 
-	rate_ctr_inc(&bts_ctrs->ctr[BTS_CTR_CHAN_RF_FAIL]);
+	rate_ctr_inc(rate_ctr_group_get_ctr(bts_ctrs, BTS_CTR_CHAN_RF_FAIL));
 	switch (lchan->type) {
 	case GSM_LCHAN_SDCCH:
-		rate_ctr_inc(&bts_ctrs->ctr[BTS_CTR_CHAN_RF_FAIL_SDCCH]);
+		rate_ctr_inc(rate_ctr_group_get_ctr(bts_ctrs, BTS_CTR_CHAN_RF_FAIL_SDCCH));
 		break;
 	case GSM_LCHAN_TCH_H:
 	case GSM_LCHAN_TCH_F:
-		rate_ctr_inc(&bts_ctrs->ctr[BTS_CTR_CHAN_RF_FAIL_TCH]);
+		rate_ctr_inc(rate_ctr_group_get_ctr(bts_ctrs, BTS_CTR_CHAN_RF_FAIL_TCH));
 		break;
 	default:
 		break;
@@ -1278,7 +1278,7 @@ static int abis_rsl_rx_dchan(struct msgb *msg)
 		break;
 	case RSL_MT_MODE_MODIFY_NACK:
 		LOG_LCHAN(msg->lchan, LOGL_DEBUG, "CHANNEL MODE MODIFY NACK\n");
-		rate_ctr_inc(&sign_link->trx->bts->bts_ctrs->ctr[BTS_CTR_MODE_MODIFY_NACK]);
+		rate_ctr_inc(rate_ctr_group_get_ctr(sign_link->trx->bts->bts_ctrs, BTS_CTR_MODE_MODIFY_NACK));
 		osmo_fsm_inst_dispatch(msg->lchan->fi, LCHAN_EV_RSL_CHAN_MODE_MODIFY_NACK, NULL);
 		break;
 	case RSL_MT_IPAC_PDCH_ACT_ACK:
@@ -1303,12 +1303,12 @@ static int abis_rsl_rx_dchan(struct msgb *msg)
 	case RSL_MT_MR_CODEC_MOD_PER:
 		LOG_LCHAN(msg->lchan, LOGL_NOTICE, "Unimplemented Abis RSL DChan msg 0x%02x\n",
 			  rslh->c.msg_type);
-		rate_ctr_inc(&sign_link->trx->bts->bts_ctrs->ctr[BTS_CTR_RSL_UNKNOWN]);
+		rate_ctr_inc(rate_ctr_group_get_ctr(sign_link->trx->bts->bts_ctrs, BTS_CTR_RSL_UNKNOWN));
 		break;
 	default:
 		LOG_LCHAN(msg->lchan, LOGL_NOTICE, "Unknown Abis RSL DChan msg 0x%02x\n",
 			  rslh->c.msg_type);
-		rate_ctr_inc(&sign_link->trx->bts->bts_ctrs->ctr[BTS_CTR_RSL_UNKNOWN]);
+		rate_ctr_inc(rate_ctr_group_get_ctr(sign_link->trx->bts->bts_ctrs, BTS_CTR_RSL_UNKNOWN));
 		return -EINVAL;
 	}
 
@@ -1357,7 +1357,7 @@ static int abis_rsl_rx_trx(struct msgb *msg)
 	default:
 		LOGP(DRSL, LOGL_NOTICE, "%s Unknown Abis RSL TRX message "
 			"type 0x%02x\n", gsm_trx_name(sign_link->trx), rslh->msg_type);
-		rate_ctr_inc(&sign_link->trx->bts->bts_ctrs->ctr[BTS_CTR_RSL_UNKNOWN]);
+		rate_ctr_inc(rate_ctr_group_get_ctr(sign_link->trx->bts->bts_ctrs, BTS_CTR_RSL_UNKNOWN));
 		return -EINVAL;
 	}
 	return rc;
@@ -1537,7 +1537,7 @@ static int rsl_rx_chan_rqd(struct msgb *msg)
 	if (rqd->ta > bts->rach_max_delay) {
 		LOG_BTS(bts, DRSL, LOGL_INFO, "Ignoring CHAN RQD: Access Delay(%d) greater than %u\n",
 			rqd->ta, bts->rach_max_delay);
-		rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_CTR_CHREQ_MAX_DELAY_EXCEEDED]);
+		rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_CHREQ_MAX_DELAY_EXCEEDED));
 		talloc_free(rqd);
 		return -EINVAL;
 	}
@@ -1547,28 +1547,28 @@ static int rsl_rx_chan_rqd(struct msgb *msg)
 	LOG_BTS(bts, DRSL, LOGL_INFO, "CHAN RQD: reason: %s (ra=0x%02x, neci=0x%02x, chreq_reason=0x%02x)\n",
 		get_value_string(gsm_chreq_descs, rqd->reason), rqd->ref.ra, bts->network->neci, rqd->reason);
 
-	rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_CTR_CHREQ_TOTAL]);
+	rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_CHREQ_TOTAL));
 	switch (rqd->reason) {
 	case GSM_CHREQ_REASON_EMERG:
-		rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_CTR_CHREQ_ATTEMPTED_EMERG]);
+		rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_CHREQ_ATTEMPTED_EMERG));
 		break;
 	case GSM_CHREQ_REASON_CALL:
-		rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_CTR_CHREQ_ATTEMPTED_CALL]);
+		rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_CHREQ_ATTEMPTED_CALL));
 		break;
 	case GSM_CHREQ_REASON_LOCATION_UPD:
-		rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_CTR_CHREQ_ATTEMPTED_LOCATION_UPD]);
+		rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_CHREQ_ATTEMPTED_LOCATION_UPD));
 		break;
 	case GSM_CHREQ_REASON_PAG:
-		rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_CTR_CHREQ_ATTEMPTED_PAG]);
+		rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_CHREQ_ATTEMPTED_PAG));
 		break;
 	case GSM_CHREQ_REASON_PDCH:
-		rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_CTR_CHREQ_ATTEMPTED_PDCH]);
+		rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_CHREQ_ATTEMPTED_PDCH));
 		break;
 	case GSM_CHREQ_REASON_OTHER:
-		rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_CTR_CHREQ_ATTEMPTED_OTHER]);
+		rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_CHREQ_ATTEMPTED_OTHER));
 		break;
 	default:
-		rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_CTR_CHREQ_ATTEMPTED_UNKNOWN]);
+		rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_CHREQ_ATTEMPTED_UNKNOWN));
 		break;
 	}
 
@@ -1759,7 +1759,7 @@ void abis_rsl_chan_rqd_queue_poll(struct gsm_bts *bts)
 	if (!lchan) {
 		LOG_BTS(bts, DRSL, LOGL_NOTICE, "CHAN RQD: no resources for %s 0x%x\n",
 			gsm_lchant_name(lctype), rqd->ref.ra);
-		rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_CTR_CHREQ_NO_CHANNEL]);
+		rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_CHREQ_NO_CHANNEL));
 		rsl_tx_imm_ass_rej(bts, &rqd->ref);
 		llist_del(&rqd->entry);
 		talloc_free(rqd);
@@ -1821,7 +1821,7 @@ int rsl_tx_imm_assignment(struct gsm_lchan *lchan)
 	rc = rsl_imm_assign_cmd(bts, sizeof(*ia)+ia->mob_alloc_len, (uint8_t *) ia);
 
 	if (!rc)
-		rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_CTR_CHREQ_SUCCESSFUL]);
+		rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_CHREQ_SUCCESSFUL));
 
 	return rc;
 }
@@ -1864,8 +1864,8 @@ static int rsl_rx_ccch_load(struct msgb *msg)
 				busy_percent = 100;
 			}
 
-			osmo_stat_item_set(sd.bts->bts_statg->items[BTS_STAT_RACH_BUSY], busy_percent);
-			osmo_stat_item_set(sd.bts->bts_statg->items[BTS_STAT_RACH_ACCESS], access_percent);
+			osmo_stat_item_set(osmo_stat_item_group_get_item(sd.bts->bts_statg, BTS_STAT_RACH_BUSY), busy_percent);
+			osmo_stat_item_set(osmo_stat_item_group_get_item(sd.bts->bts_statg, BTS_STAT_RACH_ACCESS), access_percent);
 			/* dispatch signal */
 			osmo_signal_dispatch(SS_CCCH, S_CCCH_RACH_LOAD, &sd);
 		}
@@ -1952,7 +1952,7 @@ static int abis_rsl_rx_cchan(struct msgb *msg)
 	case RSL_MT_DELETE_IND:
 		/* CCCH overloaded, IMM_ASSIGN was dropped */
 		LOGPLCHAN(msg->lchan, DRSL, LOGL_NOTICE, "DELETE INDICATION (Downlink CCCH overload)\n");
-		rate_ctr_inc(&bts_ctrs->ctr[BTS_CTR_RSL_DELETE_IND]);
+		rate_ctr_inc(rate_ctr_group_get_ctr(bts_ctrs, BTS_CTR_RSL_DELETE_IND));
 		break;
 	case RSL_MT_CBCH_LOAD_IND:
 		/* current load on the CBCH */
@@ -1964,7 +1964,7 @@ static int abis_rsl_rx_cchan(struct msgb *msg)
 	default:
 		LOGP(DRSL, LOGL_NOTICE, "Unknown Abis RSL TRX message type "
 			"0x%02x\n", rslh->c.msg_type);
-		rate_ctr_inc(&bts_ctrs->ctr[BTS_CTR_RSL_UNKNOWN]);
+		rate_ctr_inc(rate_ctr_group_get_ctr(bts_ctrs, BTS_CTR_RSL_UNKNOWN));
 		return -EINVAL;
 	}
 
@@ -1988,7 +1988,7 @@ static int rsl_rx_rll_err_ind(struct msgb *msg)
 
 	rll_indication(msg->lchan, rllh->link_id, BSC_RLLR_IND_ERR_IND);
 
-	rate_ctr_inc(&msg->lchan->ts->trx->bts->bts_ctrs->ctr[BTS_CTR_CHAN_RLL_ERR]);
+	rate_ctr_inc(rate_ctr_group_get_ctr(msg->lchan->ts->trx->bts->bts_ctrs, BTS_CTR_CHAN_RLL_ERR));
 
 	osmo_fsm_inst_dispatch(msg->lchan->fi, LCHAN_EV_RLL_ERR_IND, &rlm_cause);
 
@@ -2089,7 +2089,7 @@ static int abis_rsl_rx_rll(struct msgb *msg)
 	default:
 		LOG_LCHAN(msg->lchan, LOGL_NOTICE, "SAPI=%u Unknown Abis RLL message type 0x%02x\n",
 			  sapi, rllh->c.msg_type);
-		rate_ctr_inc(&sign_link->trx->bts->bts_ctrs->ctr[BTS_CTR_RSL_UNKNOWN]);
+		rate_ctr_inc(rate_ctr_group_get_ctr(sign_link->trx->bts->bts_ctrs, BTS_CTR_RSL_UNKNOWN));
 	}
 	return rc;
 }
@@ -2348,7 +2348,7 @@ static int abis_rsl_rx_ipacc_crcx_nack(struct msgb *msg)
 	struct e1inp_sign_link *sign_link = msg->dst;
 	struct gsm_lchan *lchan = msg->lchan;
 
-	rate_ctr_inc(&sign_link->trx->bts->bts_ctrs->ctr[BTS_CTR_RSL_IPA_NACK]);
+	rate_ctr_inc(rate_ctr_group_get_ctr(sign_link->trx->bts->bts_ctrs, BTS_CTR_RSL_IPA_NACK));
 
 	if (!lchan->fi_rtp) {
 		LOG_LCHAN(msg->lchan, LOGL_ERROR, "Rx RSL IPACC: CRCX NACK message for unconfigured lchan\n");
@@ -2386,7 +2386,7 @@ static int abis_rsl_rx_ipacc_mdcx_nack(struct msgb *msg)
 	struct e1inp_sign_link *sign_link = msg->dst;
 	struct gsm_lchan *lchan = msg->lchan;
 
-	rate_ctr_inc(&sign_link->trx->bts->bts_ctrs->ctr[BTS_CTR_RSL_IPA_NACK]);
+	rate_ctr_inc(rate_ctr_group_get_ctr(sign_link->trx->bts->bts_ctrs, BTS_CTR_RSL_IPA_NACK));
 
 	if (!lchan->fi_rtp) {
 		LOG_LCHAN(msg->lchan, LOGL_ERROR, "Rx RSL IPACC: MDCX NACK message for unconfigured lchan\n");
@@ -2455,7 +2455,7 @@ static int abis_rsl_rx_ipacc(struct msgb *msg)
 	default:
 		LOG_LCHAN(msg->lchan, LOGL_NOTICE, "Unknown ip.access msg_type 0x%02x\n",
 			  rllh->c.msg_type);
-		rate_ctr_inc(&sign_link->trx->bts->bts_ctrs->ctr[BTS_CTR_RSL_UNKNOWN]);
+		rate_ctr_inc(rate_ctr_group_get_ctr(sign_link->trx->bts->bts_ctrs, BTS_CTR_RSL_UNKNOWN));
 		break;
 	}
 
@@ -2584,7 +2584,7 @@ int abis_rsl_rcvmsg(struct msgb *msg)
 	default:
 		LOGP(DRSL, LOGL_NOTICE, "unknown RSL message discriminator "
 			"0x%02x\n", rslh->msg_discr);
-		rate_ctr_inc(&sign_link->trx->bts->bts_ctrs->ctr[BTS_CTR_RSL_UNKNOWN]);
+		rate_ctr_inc(rate_ctr_group_get_ctr(sign_link->trx->bts->bts_ctrs, BTS_CTR_RSL_UNKNOWN));
 		rc = -EINVAL;
 	}
 	msgb_free(msg);

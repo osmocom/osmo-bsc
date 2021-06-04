@@ -68,7 +68,7 @@ int bssmap_le_tx_reset()
 	LOGP(DRESET, LOGL_INFO, "Sending RESET to SMLC: %s\n", osmo_sccp_addr_name(ss7, &bsc_gsmnet->smlc->smlc_addr));
 	msg = osmo_bssap_le_enc(&reset);
 
-	rate_ctr_inc(&bsc_gsmnet->smlc->ctrs->ctr[SMLC_CTR_BSSMAP_LE_TX_UDT_RESET]);
+	rate_ctr_inc(rate_ctr_group_get_ctr(bsc_gsmnet->smlc->ctrs, SMLC_CTR_BSSMAP_LE_TX_UDT_RESET));
 	return osmo_sccp_tx_unitdata_msg(bsc_gsmnet->smlc->sccp_user, &bsc_gsmnet->smlc->bsc_addr,
 					 &bsc_gsmnet->smlc->smlc_addr, msg);
 }
@@ -90,7 +90,7 @@ int bssmap_le_tx_reset_ack()
 	LOGP(DRESET, LOGL_NOTICE, "Sending RESET ACK to SMLC: %s\n", osmo_sccp_addr_name(ss7, &bsc_gsmnet->smlc->smlc_addr));
 	msg = osmo_bssap_le_enc(&reset_ack);
 
-	rate_ctr_inc(&bsc_gsmnet->smlc->ctrs->ctr[SMLC_CTR_BSSMAP_LE_TX_UDT_RESET_ACK]);
+	rate_ctr_inc(rate_ctr_group_get_ctr(bsc_gsmnet->smlc->ctrs, SMLC_CTR_BSSMAP_LE_TX_UDT_RESET_ACK));
 	return osmo_sccp_tx_unitdata_msg(bsc_gsmnet->smlc->sccp_user, &bsc_gsmnet->smlc->bsc_addr,
 					 &bsc_gsmnet->smlc->smlc_addr, msg);
 }
@@ -101,7 +101,7 @@ static int handle_unitdata_from_smlc(const struct osmo_sccp_addr *smlc_addr, str
 	struct osmo_ss7_instance *ss7;
 	struct bssap_le_pdu bssap_le;
 	struct osmo_bssap_le_err *err;
-	struct rate_ctr *ctr = bsc_gsmnet->smlc->ctrs->ctr;
+	struct rate_ctr_group *ctrg = bsc_gsmnet->smlc->ctrs;
 
 	ss7 = osmo_sccp_get_ss7(osmo_sccp_get_sccp(scu));
 	OSMO_ASSERT(ss7);
@@ -109,13 +109,13 @@ static int handle_unitdata_from_smlc(const struct osmo_sccp_addr *smlc_addr, str
 	if (osmo_sccp_addr_cmp(smlc_addr, &bsc_gsmnet->smlc->smlc_addr, OSMO_SCCP_ADDR_T_MASK)) {
 		LOGP(DLCS, LOGL_ERROR, "Rx BSSMAP-LE UnitData from unknown remote address: %s\n",
 		     osmo_sccp_addr_name(ss7, smlc_addr));
-		rate_ctr_inc(&ctr[SMLC_CTR_BSSMAP_LE_RX_UNKNOWN_PEER]);
+		rate_ctr_inc(rate_ctr_group_get_ctr(ctrg, SMLC_CTR_BSSMAP_LE_RX_UNKNOWN_PEER));
 		return -EINVAL;
 	}
 
 	if (osmo_bssap_le_dec(&bssap_le, &err, msg, msg)) {
 		LOGP(DLCS, LOGL_ERROR, "Rx BSSAP-LE UnitData with error: %s\n", err->logmsg);
-		rate_ctr_inc(&ctr[SMLC_CTR_BSSMAP_LE_RX_UDT_ERR_INVALID_MSG]);
+		rate_ctr_inc(rate_ctr_group_get_ctr(ctrg, SMLC_CTR_BSSMAP_LE_RX_UDT_ERR_INVALID_MSG));
 		return -EINVAL;
 	}
 
@@ -126,17 +126,17 @@ static int handle_unitdata_from_smlc(const struct osmo_sccp_addr *smlc_addr, str
 
 	switch (bssap_le.bssmap_le.msg_type) {
 	case BSSMAP_LE_MSGT_RESET:
-		rate_ctr_inc(&ctr[SMLC_CTR_BSSMAP_LE_RX_UDT_RESET]);
+		rate_ctr_inc(rate_ctr_group_get_ctr(ctrg, SMLC_CTR_BSSMAP_LE_RX_UDT_RESET));
 		LOGP(DLCS, LOGL_NOTICE, "RESET from SMLC: %s\n", osmo_sccp_addr_name(ss7, smlc_addr));
 		return osmo_fsm_inst_dispatch(bsc_gsmnet->smlc->bssmap_reset->fi, BSSMAP_RESET_EV_RX_RESET, NULL);
 
 	case BSSMAP_LE_MSGT_RESET_ACK:
-		rate_ctr_inc(&ctr[SMLC_CTR_BSSMAP_LE_RX_UDT_RESET_ACK]);
+		rate_ctr_inc(rate_ctr_group_get_ctr(ctrg, SMLC_CTR_BSSMAP_LE_RX_UDT_RESET_ACK));
 		LOGP(DLCS, LOGL_NOTICE, "RESET-ACK from SMLC: %s\n", osmo_sccp_addr_name(ss7, smlc_addr));
 		return osmo_fsm_inst_dispatch(bsc_gsmnet->smlc->bssmap_reset->fi, BSSMAP_RESET_EV_RX_RESET_ACK, NULL);
 
 	default:
-		rate_ctr_inc(&ctr[SMLC_CTR_BSSMAP_LE_RX_UDT_ERR_INVALID_MSG]);
+		rate_ctr_inc(rate_ctr_group_get_ctr(ctrg, SMLC_CTR_BSSMAP_LE_RX_UDT_ERR_INVALID_MSG));
 		LOGP(DLCS, LOGL_ERROR, "Rx unimplemented UDT message type %s\n",
 		     osmo_bssap_le_pdu_to_str_c(OTC_SELECT, &bssap_le));
 		return -EINVAL;
@@ -255,9 +255,9 @@ static int lb_open_conn(struct gsm_subscriber_connection *conn, struct msgb *msg
 	rc = osmo_sccp_tx_conn_req_msg(bsc_gsmnet->smlc->sccp_user, conn_id, &bsc_gsmnet->smlc->bsc_addr,
 				       &bsc_gsmnet->smlc->smlc_addr, msg);
 	if (rc >= 0)
-		rate_ctr_inc(&bsc_gsmnet->smlc->ctrs->ctr[SMLC_CTR_BSSMAP_LE_TX_SUCCESS]);
+		rate_ctr_inc(rate_ctr_group_get_ctr(bsc_gsmnet->smlc->ctrs, SMLC_CTR_BSSMAP_LE_TX_SUCCESS));
 	else
-		rate_ctr_inc(&bsc_gsmnet->smlc->ctrs->ctr[SMLC_CTR_BSSMAP_LE_TX_ERR_SEND]);
+		rate_ctr_inc(rate_ctr_group_get_ctr(bsc_gsmnet->smlc->ctrs, SMLC_CTR_BSSMAP_LE_TX_ERR_SEND));
 	if (rc >= 0)
 		conn->lcs.lb.state = SUBSCR_SCCP_ST_WAIT_CONN_CONF;
 
@@ -304,9 +304,9 @@ int lb_send(struct gsm_subscriber_connection *conn, const struct bssap_le_pdu *b
 	LOGPFSMSL(conn->fi, DLCS, LOGL_DEBUG, "Tx %s\n", osmo_bssap_le_pdu_to_str_c(OTC_SELECT, bssap_le));
 	rc = osmo_sccp_tx_data_msg(bsc_gsmnet->smlc->sccp_user, conn->lcs.lb.conn_id, msg);
 	if (rc >= 0)
-		rate_ctr_inc(&bsc_gsmnet->smlc->ctrs->ctr[SMLC_CTR_BSSMAP_LE_TX_SUCCESS]);
+		rate_ctr_inc(rate_ctr_group_get_ctr(bsc_gsmnet->smlc->ctrs, SMLC_CTR_BSSMAP_LE_TX_SUCCESS));
 	else
-		rate_ctr_inc(&bsc_gsmnet->smlc->ctrs->ctr[SMLC_CTR_BSSMAP_LE_TX_ERR_SEND]);
+		rate_ctr_inc(rate_ctr_group_get_ctr(bsc_gsmnet->smlc->ctrs, SMLC_CTR_BSSMAP_LE_TX_ERR_SEND));
 
 count_tx:
 	if (rc < 0)
@@ -314,24 +314,24 @@ count_tx:
 
 	switch (bssap_le->bssmap_le.msg_type) {
 	case BSSMAP_LE_MSGT_PERFORM_LOC_REQ:
-		rate_ctr_inc(&bsc_gsmnet->smlc->ctrs->ctr[SMLC_CTR_BSSMAP_LE_TX_DT1_PERFORM_LOCATION_REQUEST]);
+		rate_ctr_inc(rate_ctr_group_get_ctr(bsc_gsmnet->smlc->ctrs, SMLC_CTR_BSSMAP_LE_TX_DT1_PERFORM_LOCATION_REQUEST));
 		break;
 	case BSSMAP_LE_MSGT_PERFORM_LOC_ABORT:
-		rate_ctr_inc(&bsc_gsmnet->smlc->ctrs->ctr[SMLC_CTR_BSSMAP_LE_TX_DT1_PERFORM_LOCATION_ABORT]);
+		rate_ctr_inc(rate_ctr_group_get_ctr(bsc_gsmnet->smlc->ctrs, SMLC_CTR_BSSMAP_LE_TX_DT1_PERFORM_LOCATION_ABORT));
 		break;
 	case BSSMAP_LE_MSGT_CONN_ORIENTED_INFO:
 		switch (bssap_le->bssmap_le.conn_oriented_info.apdu.msg_type) {
 		case BSSLAP_MSGT_TA_RESPONSE:
-			rate_ctr_inc(&bsc_gsmnet->smlc->ctrs->ctr[SMLC_CTR_BSSMAP_LE_TX_DT1_BSSLAP_TA_RESPONSE]);
+			rate_ctr_inc(rate_ctr_group_get_ctr(bsc_gsmnet->smlc->ctrs, SMLC_CTR_BSSMAP_LE_TX_DT1_BSSLAP_TA_RESPONSE));
 			break;
 		case BSSLAP_MSGT_REJECT:
-			rate_ctr_inc(&bsc_gsmnet->smlc->ctrs->ctr[SMLC_CTR_BSSMAP_LE_TX_DT1_BSSLAP_REJECT]);
+			rate_ctr_inc(rate_ctr_group_get_ctr(bsc_gsmnet->smlc->ctrs, SMLC_CTR_BSSMAP_LE_TX_DT1_BSSLAP_REJECT));
 			break;
 		case BSSLAP_MSGT_RESET:
-			rate_ctr_inc(&bsc_gsmnet->smlc->ctrs->ctr[SMLC_CTR_BSSMAP_LE_TX_DT1_BSSLAP_RESET]);
+			rate_ctr_inc(rate_ctr_group_get_ctr(bsc_gsmnet->smlc->ctrs, SMLC_CTR_BSSMAP_LE_TX_DT1_BSSLAP_RESET));
 			break;
 		case BSSLAP_MSGT_ABORT:
-			rate_ctr_inc(&bsc_gsmnet->smlc->ctrs->ctr[SMLC_CTR_BSSMAP_LE_TX_DT1_BSSLAP_ABORT]);
+			rate_ctr_inc(rate_ctr_group_get_ctr(bsc_gsmnet->smlc->ctrs, SMLC_CTR_BSSMAP_LE_TX_DT1_BSSLAP_ABORT));
 			break;
 		default:
 			break;

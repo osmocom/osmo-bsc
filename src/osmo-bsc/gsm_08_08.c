@@ -77,7 +77,7 @@ void bsc_sapi_n_reject(struct gsm_subscriber_connection *conn,
 	LOGP(DMSC, LOGL_NOTICE, "Tx MSC SAPI N REJECT (dlci=0x%02x, cause='%s')\n",
 	     dlci, gsm0808_cause_name(cause));
 	resp = gsm0808_create_sapi_reject_cause(dlci, cause);
-	rate_ctr_inc(&conn->sccp.msc->msc_ctrs->ctr[MSC_CTR_BSSMAP_TX_DT1_SAPI_N_REJECT]);
+	rate_ctr_inc(rate_ctr_group_get_ctr(conn->sccp.msc->msc_ctrs, MSC_CTR_BSSMAP_TX_DT1_SAPI_N_REJECT));
 	rc = osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_TX_SCCP, resp);
 	if (rc != 0)
 		msgb_free(resp);
@@ -94,7 +94,7 @@ void bsc_cipher_mode_compl(struct gsm_subscriber_connection *conn, struct msgb *
 
 	LOGP(DMSC, LOGL_DEBUG, "CIPHER MODE COMPLETE from MS, forwarding to MSC\n");
 	resp = gsm0808_create_cipher_complete(msg, chosen_encr);
-	rate_ctr_inc(&conn->sccp.msc->msc_ctrs->ctr[MSC_CTR_BSSMAP_TX_DT1_CIPHER_COMPLETE]);
+	rate_ctr_inc(rate_ctr_group_get_ctr(conn->sccp.msc->msc_ctrs, MSC_CTR_BSSMAP_TX_DT1_CIPHER_COMPLETE));
 	rc = osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_TX_SCCP, resp);
 	if (rc != 0)
 		msgb_free(resp);
@@ -233,7 +233,7 @@ static struct bsc_msc_data *bsc_find_msc(struct gsm_subscriber_connection *conn,
 			if (nri_matches_msc) {
 				LOG_NRI(LOGL_DEBUG, "matches msc %d, but this MSC is currently not connected\n",
 					msc->nr);
-				rate_ctr_inc(&msc->msc_ctrs->ctr[MSC_CTR_MSCPOOL_SUBSCR_ATTACH_LOST]);
+				rate_ctr_inc(rate_ctr_group_get_ctr(msc->msc_ctrs, MSC_CTR_MSCPOOL_SUBSCR_ATTACH_LOST));
 			}
 			continue;
 		}
@@ -245,10 +245,10 @@ static struct bsc_msc_data *bsc_find_msc(struct gsm_subscriber_connection *conn,
 					msc->nr);
 			} else {
 				LOG_NRI(LOGL_DEBUG, "matches msc %d\n", msc->nr);
-				rate_ctr_inc(&msc->msc_ctrs->ctr[MSC_CTR_MSCPOOL_SUBSCR_KNOWN]);
+				rate_ctr_inc(rate_ctr_group_get_ctr(msc->msc_ctrs, MSC_CTR_MSCPOOL_SUBSCR_KNOWN));
 				if (is_emerg) {
-					rate_ctr_inc(&msc->msc_ctrs->ctr[MSC_CTR_MSCPOOL_EMERG_FORWARDED]);
-					rate_ctr_inc(&bsc_gsmnet->bsc_ctrs->ctr[BSC_CTR_MSCPOOL_EMERG_FORWARDED]);
+					rate_ctr_inc(rate_ctr_group_get_ctr(msc->msc_ctrs, MSC_CTR_MSCPOOL_EMERG_FORWARDED));
+					rate_ctr_inc(rate_ctr_group_get_ctr(bsc_gsmnet->bsc_ctrs, BSC_CTR_MSCPOOL_EMERG_FORWARDED));
 				}
 				return msc;
 			}
@@ -283,9 +283,9 @@ static struct bsc_msc_data *bsc_find_msc(struct gsm_subscriber_connection *conn,
 	 * them are usable -- wrap to the start. */
 	msc_target = msc_round_robin_next ? : msc_round_robin_first;
 	if (!msc_target) {
-		rate_ctr_inc(&bsc_gsmnet->bsc_ctrs->ctr[BSC_CTR_MSCPOOL_SUBSCR_NO_MSC]);
+		rate_ctr_inc(rate_ctr_group_get_ctr(bsc_gsmnet->bsc_ctrs, BSC_CTR_MSCPOOL_SUBSCR_NO_MSC));
 		if (is_emerg)
-			rate_ctr_inc(&bsc_gsmnet->bsc_ctrs->ctr[BSC_CTR_MSCPOOL_EMERG_LOST]);
+			rate_ctr_inc(rate_ctr_group_get_ctr(bsc_gsmnet->bsc_ctrs, BSC_CTR_MSCPOOL_EMERG_LOST));
 		return NULL;
 	}
 
@@ -293,13 +293,13 @@ static struct bsc_msc_data *bsc_find_msc(struct gsm_subscriber_connection *conn,
 	     osmo_mobile_identity_to_str_c(OTC_SELECT, mi), msc_target->nr);
 
 	if (is_null_nri)
-		rate_ctr_inc(&msc_target->msc_ctrs->ctr[MSC_CTR_MSCPOOL_SUBSCR_REATTACH]);
+		rate_ctr_inc(rate_ctr_group_get_ctr(msc_target->msc_ctrs, MSC_CTR_MSCPOOL_SUBSCR_REATTACH));
 	else
-		rate_ctr_inc(&msc_target->msc_ctrs->ctr[MSC_CTR_MSCPOOL_SUBSCR_NEW]);
+		rate_ctr_inc(rate_ctr_group_get_ctr(msc_target->msc_ctrs, MSC_CTR_MSCPOOL_SUBSCR_NEW));
 
 	if (is_emerg) {
-		rate_ctr_inc(&msc_target->msc_ctrs->ctr[MSC_CTR_MSCPOOL_EMERG_FORWARDED]);
-		rate_ctr_inc(&bsc_gsmnet->bsc_ctrs->ctr[BSC_CTR_MSCPOOL_EMERG_FORWARDED]);
+		rate_ctr_inc(rate_ctr_group_get_ctr(msc_target->msc_ctrs, MSC_CTR_MSCPOOL_EMERG_FORWARDED));
+		rate_ctr_inc(rate_ctr_group_get_ctr(bsc_gsmnet->bsc_ctrs, BSC_CTR_MSCPOOL_EMERG_FORWARDED));
 	}
 
 	/* An MSC was picked by round-robin, so update the next round-robin nr to pick */
@@ -457,12 +457,12 @@ int bsc_compl_l3(struct gsm_lchan *lchan, struct msgb *msg, uint16_t chosen_chan
 				     "%s Unsolicited Paging Response, possibly an MT-CSFB call.\n",
 				     osmo_mobile_identity_to_str_c(OTC_SELECT, &mi));
 
-			rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_CTR_PAGING_NO_ACTIVE_PAGING]);
-			rate_ctr_inc(&bsc_gsmnet->bsc_ctrs->ctr[BSC_CTR_PAGING_NO_ACTIVE_PAGING]);
+			rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_PAGING_NO_ACTIVE_PAGING));
+			rate_ctr_inc(rate_ctr_group_get_ctr(bsc_gsmnet->bsc_ctrs, BSC_CTR_PAGING_NO_ACTIVE_PAGING));
 		} else if (is_msc_usable(paged_from_msc, is_emerg)) {
 			LOG_COMPL_L3(pdisc, mtype, LOGL_DEBUG, "%s matches earlier Paging from msc %d\n",
 				     osmo_mobile_identity_to_str_c(OTC_SELECT, &mi), paged_from_msc->nr);
-			rate_ctr_inc(&paged_from_msc->msc_ctrs->ctr[MSC_CTR_MSCPOOL_SUBSCR_PAGED]);
+			rate_ctr_inc(rate_ctr_group_get_ctr(paged_from_msc->msc_ctrs, MSC_CTR_MSCPOOL_SUBSCR_PAGED));
 		} else {
 			LOG_COMPL_L3(pdisc, mtype, LOGL_DEBUG,
 				     "%s matches earlier Paging from msc %d, but this MSC is not connected\n",
@@ -617,7 +617,7 @@ void bsc_cm_update(struct gsm_subscriber_connection *conn,
 	if (!msc_connected(conn))
 		return;
 
-	rate_ctr_inc(&conn->sccp.msc->msc_ctrs->ctr[MSC_CTR_BSSMAP_TX_DT1_CLASSMARK_UPDATE]);
+	rate_ctr_inc(rate_ctr_group_get_ctr(conn->sccp.msc->msc_ctrs, MSC_CTR_BSSMAP_TX_DT1_CLASSMARK_UPDATE));
 	resp = gsm0808_create_classmark_update(cm2, cm2_len, cm3, cm3_len);
 	rc = osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_TX_SCCP, resp);
 	if (rc != 0)

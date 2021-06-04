@@ -281,7 +281,7 @@ static void paging_T3113_expired(void *data)
 	     req, bsc_subscr_name(req->bsub));
 
 	/* must be destroyed before calling cbfn, to prevent double free */
-	rate_ctr_inc(&req->bts->bts_ctrs->ctr[BTS_CTR_PAGING_EXPIRED]);
+	rate_ctr_inc(rate_ctr_group_get_ctr(req->bts->bts_ctrs, BTS_CTR_PAGING_EXPIRED));
 
 	/* destroy it now. Do not access req afterwards */
 	paging_remove_request(&req->bts->paging, req);
@@ -331,11 +331,11 @@ static int _paging_request(const struct bsc_paging_params *params, struct gsm_bt
 	struct gsm_paging_request *req;
 	unsigned int t3113_timeout_s;
 
-	rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_CTR_PAGING_ATTEMPTED]);
+	rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_PAGING_ATTEMPTED));
 
 	if (paging_pending_request(bts_entry, params->bsub)) {
 		LOG_PAGING_BTS(params, bts, DPAG, LOGL_INFO, "Paging request already pending for this subscriber\n");
-		rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_CTR_PAGING_ALREADY]);
+		rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_PAGING_ALREADY));
 		return -EEXIST;
 	}
 
@@ -432,8 +432,8 @@ int paging_request_stop(struct bsc_msc_data **msc_p, enum bsc_paging_reason *rea
 	count = paging_request_stop_bts(&paged_from_msc, &reasons, bts, bsub);
 	if (paged_from_msc) {
 		count++;
-		rate_ctr_inc(&bts->bts_ctrs->ctr[BTS_CTR_PAGING_RESPONDED]);
-		rate_ctr_inc(&bts->network->bsc_ctrs->ctr[BSC_CTR_PAGING_RESPONDED]);
+		rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_PAGING_RESPONDED));
+		rate_ctr_inc(rate_ctr_group_get_ctr(bts->network->bsc_ctrs, BSC_CTR_PAGING_RESPONDED));
 	}
 
 	llist_for_each_entry(bts_i, &bsc_gsmnet->bts_list, list) {
@@ -522,7 +522,7 @@ void paging_flush_bts(struct gsm_bts *bts, struct bsc_msc_data *msc)
 		num_cancelled++;
 	}
 
-	rate_ctr_add(&bts->bts_ctrs->ctr[BTS_CTR_PAGING_MSC_FLUSH], num_cancelled);
+	rate_ctr_add(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_PAGING_MSC_FLUSH), num_cancelled);
 }
 
 /*! Flush all paging requests issued by \a msc on any BTS in \a net */

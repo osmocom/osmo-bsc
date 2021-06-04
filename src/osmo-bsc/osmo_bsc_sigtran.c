@@ -94,7 +94,7 @@ void osmo_bsc_sigtran_tx_reset(const struct bsc_msc_data *msc)
 	if (msc_is_aoip(msc) && msc->use_osmux != OSMUX_USAGE_OFF)
 		_gsm0808_extend_announce_osmux(msg);
 
-	rate_ctr_inc(&msc->msc_ctrs->ctr[MSC_CTR_BSSMAP_TX_UDT_RESET]);
+	rate_ctr_inc(rate_ctr_group_get_ctr(msc->msc_ctrs, MSC_CTR_BSSMAP_TX_UDT_RESET));
 	osmo_sccp_tx_unitdata_msg(msc->a.sccp_user, &msc->a.bsc_addr,
 				  &msc->a.msc_addr, msg);
 }
@@ -114,7 +114,7 @@ void osmo_bsc_sigtran_tx_reset_ack(const struct bsc_msc_data *msc)
 	if (msc_is_aoip(msc) && msc->use_osmux != OSMUX_USAGE_OFF)
 		_gsm0808_extend_announce_osmux(msg);
 
-	rate_ctr_inc(&msc->msc_ctrs->ctr[MSC_CTR_BSSMAP_TX_UDT_RESET_ACK]);
+	rate_ctr_inc(rate_ctr_group_get_ctr(msc->msc_ctrs, MSC_CTR_BSSMAP_TX_UDT_RESET_ACK));
 	osmo_sccp_tx_unitdata_msg(msc->a.sccp_user, &msc->a.bsc_addr,
 				  &msc->a.msc_addr, msg);
 }
@@ -374,26 +374,26 @@ int osmo_bsc_sigtran_send(struct gsm_subscriber_connection *conn, struct msgb *m
 	if (msg->len >= 3) {
 		switch (msg->data[0]) {
 		case BSSAP_MSG_BSS_MANAGEMENT:
-			rate_ctr_inc(&msc->msc_ctrs->ctr[MSC_CTR_BSSMAP_TX_BSS_MANAGEMENT]);
+			rate_ctr_inc(rate_ctr_group_get_ctr(msc->msc_ctrs, MSC_CTR_BSSMAP_TX_BSS_MANAGEMENT));
 			LOGP(DMSC, LOGL_INFO, "Tx MSC: BSSMAP: %s\n",
 			     gsm0808_bssmap_name(msg->data[2]));
 			break;
 		case BSSAP_MSG_DTAP:
-			rate_ctr_inc(&msc->msc_ctrs->ctr[MSC_CTR_BSSMAP_TX_DTAP]);
+			rate_ctr_inc(rate_ctr_group_get_ctr(msc->msc_ctrs, MSC_CTR_BSSMAP_TX_DTAP));
 			LOGP(DMSC, LOGL_INFO, "Tx MSC: DTAP\n");
 			break;
 		default:
-			rate_ctr_inc(&msc->msc_ctrs->ctr[MSC_CTR_BSSMAP_TX_UNKNOWN]);
+			rate_ctr_inc(rate_ctr_group_get_ctr(msc->msc_ctrs, MSC_CTR_BSSMAP_TX_UNKNOWN));
 			LOGP(DMSC, LOGL_ERROR, "Tx MSC: unknown message type: 0x%x\n",
 			     msg->data[0]);
 		}
 	} else {
-		rate_ctr_inc(&msc->msc_ctrs->ctr[MSC_CTR_BSSMAP_TX_SHORT]);
+		rate_ctr_inc(rate_ctr_group_get_ctr(msc->msc_ctrs, MSC_CTR_BSSMAP_TX_SHORT));
 		LOGP(DMSC, LOGL_ERROR, "Tx MSC: message too short: %u\n", msg->len);
 	}
 
 	if (a_reset_conn_ready(msc) == false) {
-		rate_ctr_inc(&msc->msc_ctrs->ctr[MSC_CTR_BSSMAP_TX_ERR_CONN_NOT_READY]);
+		rate_ctr_inc(rate_ctr_group_get_ctr(msc->msc_ctrs, MSC_CTR_BSSMAP_TX_ERR_CONN_NOT_READY));
 		LOGP(DMSC, LOGL_ERROR, "MSC is not connected. Dropping.\n");
 		msgb_free(msg);
 		return -EINVAL;
@@ -408,9 +408,9 @@ int osmo_bsc_sigtran_send(struct gsm_subscriber_connection *conn, struct msgb *m
 
 	rc = osmo_sccp_tx_data_msg(msc->a.sccp_user, conn_id, msg);
 	if (rc >= 0)
-		rate_ctr_inc(&msc->msc_ctrs->ctr[MSC_CTR_BSSMAP_TX_SUCCESS]);
+		rate_ctr_inc(rate_ctr_group_get_ctr(msc->msc_ctrs, MSC_CTR_BSSMAP_TX_SUCCESS));
 	else
-		rate_ctr_inc(&msc->msc_ctrs->ctr[MSC_CTR_BSSMAP_TX_ERR_SEND]);
+		rate_ctr_inc(rate_ctr_group_get_ctr(msc->msc_ctrs, MSC_CTR_BSSMAP_TX_ERR_SEND));
 
 	return rc;
 }

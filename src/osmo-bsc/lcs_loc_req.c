@@ -190,7 +190,7 @@ static int handle_bssmap_le_conn_oriented_info(struct lcs_loc_req *lcs_loc_req, 
 {
 	switch (bssmap_le->conn_oriented_info.apdu.msg_type) {
 	case BSSLAP_MSGT_TA_REQUEST:
-		rate_ctr_inc(&bsc_gsmnet->smlc->ctrs->ctr[SMLC_CTR_BSSMAP_LE_RX_DT1_BSSLAP_TA_REQUEST]);
+		rate_ctr_inc(rate_ctr_group_get_ctr(bsc_gsmnet->smlc->ctrs, SMLC_CTR_BSSMAP_LE_RX_DT1_BSSLAP_TA_REQUEST));
 		LOG_LCS_LOC_REQ(lcs_loc_req, LOGL_DEBUG, "rx BSSLAP TA Request\n");
 		/* The TA Request message contains only the message type. */
 		return lcs_ta_req_start(lcs_loc_req);
@@ -206,7 +206,7 @@ int lcs_loc_req_rx_bssmap_le(struct gsm_subscriber_connection *conn, struct msgb
 	struct lcs_loc_req *lcs_loc_req = conn->lcs.loc_req;
 	struct bssap_le_pdu bssap_le;
 	struct osmo_bssap_le_err *err;
-	struct rate_ctr *ctr = bsc_gsmnet->smlc->ctrs->ctr;
+	struct rate_ctr_group *ctrg = bsc_gsmnet->smlc->ctrs;
 
 	if (!lcs_loc_req) {
 		LOGPFSMSL(conn->fi, DLCS, LOGL_ERROR,
@@ -216,13 +216,13 @@ int lcs_loc_req_rx_bssmap_le(struct gsm_subscriber_connection *conn, struct msgb
 
 	if (osmo_bssap_le_dec(&bssap_le, &err, msg, msg)) {
 		LOG_LCS_LOC_REQ(lcs_loc_req, LOGL_ERROR, "Rx BSSAP-LE message with error: %s\n", err->logmsg);
-		rate_ctr_inc(&ctr[SMLC_CTR_BSSMAP_LE_RX_DT1_ERR_INVALID_MSG]);
+		rate_ctr_inc(rate_ctr_group_get_ctr(ctrg, SMLC_CTR_BSSMAP_LE_RX_DT1_ERR_INVALID_MSG));
 		return -EINVAL;
 	}
 
 	if (bssap_le.discr != BSSAP_LE_MSG_DISCR_BSSMAP_LE) {
 		LOG_LCS_LOC_REQ(lcs_loc_req, LOGL_ERROR, "Rx BSSAP-LE: discr %d not implemented\n", bssap_le.discr);
-		rate_ctr_inc(&ctr[SMLC_CTR_BSSMAP_LE_RX_DT1_ERR_INVALID_MSG]);
+		rate_ctr_inc(rate_ctr_group_get_ctr(ctrg, SMLC_CTR_BSSMAP_LE_RX_DT1_ERR_INVALID_MSG));
 		return -ENOTSUP;
 	}
 
@@ -231,9 +231,9 @@ int lcs_loc_req_rx_bssmap_le(struct gsm_subscriber_connection *conn, struct msgb
 	switch (bssap_le.bssmap_le.msg_type) {
 	case BSSMAP_LE_MSGT_PERFORM_LOC_RESP:
 		if (bssap_le.bssmap_le.perform_loc_resp.location_estimate_present)
-			rate_ctr_inc(&ctr[SMLC_CTR_BSSMAP_LE_RX_DT1_PERFORM_LOCATION_RESPONSE_SUCCESS]);
+			rate_ctr_inc(rate_ctr_group_get_ctr(ctrg, SMLC_CTR_BSSMAP_LE_RX_DT1_PERFORM_LOCATION_RESPONSE_SUCCESS));
 		else
-			rate_ctr_inc(&ctr[SMLC_CTR_BSSMAP_LE_RX_DT1_PERFORM_LOCATION_RESPONSE_FAILURE]);
+			rate_ctr_inc(rate_ctr_group_get_ctr(ctrg, SMLC_CTR_BSSMAP_LE_RX_DT1_PERFORM_LOCATION_RESPONSE_FAILURE));
 		return osmo_fsm_inst_dispatch(lcs_loc_req->fi, LCS_LOC_REQ_EV_RX_LB_PERFORM_LOCATION_RESPONSE,
 					      &bssap_le.bssmap_le);
 
@@ -457,9 +457,7 @@ static void lcs_loc_req_got_loc_resp_onenter(struct osmo_fsm_inst *fi, uint32_t 
 			LOG_LCS_LOC_REQ(lcs_loc_req, LOGL_ERROR,
 					"Failed to send Perform Location Response (A-interface)\n");
 		else
-			rate_ctr_inc(&lcs_loc_req->conn->sccp.msc->msc_ctrs->ctr[
-				plr.location_estimate_present ? MSC_CTR_BSSMAP_TX_DT1_PERFORM_LOCATION_RESPONSE_SUCCESS
-				: MSC_CTR_BSSMAP_TX_DT1_PERFORM_LOCATION_RESPONSE_FAILURE]);
+			rate_ctr_inc(rate_ctr_group_get_ctr(lcs_loc_req->conn->sccp.msc->msc_ctrs, plr.location_estimate_present ? MSC_CTR_BSSMAP_TX_DT1_PERFORM_LOCATION_RESPONSE_SUCCESS : MSC_CTR_BSSMAP_TX_DT1_PERFORM_LOCATION_RESPONSE_FAILURE));
 	}
 	osmo_fsm_inst_term(fi, OSMO_FSM_TERM_REGULAR, NULL);
 }
@@ -498,7 +496,7 @@ static void lcs_loc_req_failed_onenter(struct osmo_fsm_inst *fi, uint32_t prev_s
 			LOG_LCS_LOC_REQ(lcs_loc_req, LOGL_ERROR,
 					"Failed to send BSSMAP Perform Location Response (A-interface)\n");
 		else
-			rate_ctr_inc(&lcs_loc_req->conn->sccp.msc->msc_ctrs->ctr[MSC_CTR_BSSMAP_TX_DT1_PERFORM_LOCATION_RESPONSE_FAILURE]);
+			rate_ctr_inc(rate_ctr_group_get_ctr(lcs_loc_req->conn->sccp.msc->msc_ctrs, MSC_CTR_BSSMAP_TX_DT1_PERFORM_LOCATION_RESPONSE_FAILURE));
 	}
 	osmo_fsm_inst_term(fi, OSMO_FSM_TERM_REGULAR, NULL);
 }
