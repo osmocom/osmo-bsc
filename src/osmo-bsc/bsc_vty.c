@@ -6060,6 +6060,10 @@ static int lchan_act_single(struct vty *vty, struct gsm_lchan *lchan, const char
 	if (activate) {
 		LOG_LCHAN(lchan, LOGL_NOTICE, "attempt from VTY to activate lchan %s with codec %s\n",
 			  gsm_lchan_name(lchan), codec_str);
+		if (!lchan->fi) {
+			vty_out(vty, "%% Cannot activate: Channel not initialized%s", VTY_NEWLINE);
+			return CMD_WARNING;
+		}
 
 		int lchan_t;
 		if (lchan->fi->state != LCHAN_ST_UNUSED) {
