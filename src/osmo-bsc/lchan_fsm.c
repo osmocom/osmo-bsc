@@ -984,6 +984,8 @@ static void lchan_fsm_wait_rsl_chan_mode_modify_ack(struct osmo_fsm_inst *fi, ui
 				.ch_mode_rate = lchan->modify.ch_mode_rate,
 				.requires_voice_stream = true,
 				.msc_assigned_cic = lchan->modify.info.msc_assigned_cic,
+				.tsc_set = -1,
+				.tsc = -1,
 			};
 			lchan->activate.concluded = false;
 			lchan_fsm_state_chg(LCHAN_ST_WAIT_RLL_RTP_ESTABLISH);
