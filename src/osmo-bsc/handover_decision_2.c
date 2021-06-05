@@ -1251,7 +1251,7 @@ static void collect_candidates_for_lchan(struct gsm_lchan *lchan,
  * If minimum RXLEV, minimum RXQUAL or maximum TA are exceeded, the caller should pass
  * include_weaker_rxlev=true so that handover is performed despite congestion.
  */
-static int find_alternative_lchan(struct gsm_lchan *lchan, bool include_weaker_rxlev)
+static int find_alternative_lchan(struct gsm_lchan *lchan, bool include_weaker_rxlev, bool request_upgrade_to_tch_f)
 {
 	struct gsm_bts *bts = lchan->ts->trx->bts;
 	int ahs = (gsm48_chan_mode_to_non_vamos(lchan->current_ch_mode_rate.chan_mode) == GSM48_CMODE_SPEECH_AMR
@@ -1372,7 +1372,11 @@ static int find_alternative_lchan(struct gsm_lchan *lchan, bool include_weaker_r
 		    && clist[i].target.bts)
 			afs_bias = ho_get_hodec2_afs_bias_rxlev(clist[i].target.bts->ho);
 		better += afs_bias;
-		if (better > best_better_db) {
+		if (better > best_better_db
+		    || (better >= best_better_db /* Upgrade from TCH/H to TCH/F: allow for equal rxlev */
+			&& request_upgrade_to_tch_f
+			&& is_upgrade_to_tchf(&clist[i], REQUIREMENT_A_MASK))) {
+
 			best_cand = &clist[i];
 			best_better_db = better;
 			best_applied_afs_bias = afs_bias? true : false;
@@ -1494,7 +1498,7 @@ static void on_measurement_report(struct gsm_meas_rep *mr)
 			global_ho_reason = HO_REASON_BAD_QUALITY;
 			LOGPHOLCHAN(lchan, LOGL_INFO, "Trying handover/assignment due to bad quality\n");
 		}
-		find_alternative_lchan(lchan, true);
+		find_alternative_lchan(lchan, true, true);
 		return;
 	}
 
@@ -1503,7 +1507,7 @@ static void on_measurement_report(struct gsm_meas_rep *mr)
 		global_ho_reason = HO_REASON_LOW_RXLEVEL;
 		LOGPHOLCHAN(lchan, LOGL_NOTICE, "RX level is TOO LOW: %d < %d\n",
 			    rxlev2dbm(av_rxlev), ho_get_hodec2_min_rxlev(bts->ho));
-		find_alternative_lchan(lchan, true);
+		find_alternative_lchan(lchan, true, true);
 		return;
 	}
 
@@ -1521,7 +1525,7 @@ static void on_measurement_report(struct gsm_meas_rep *mr)
 		gsm_bts_cell_id(&bts_id, bts);
 		penalty_timers_add(lchan->conn, &lchan->conn->hodec2.penalty_timers, &bts_id,
 				   ho_get_hodec2_penalty_max_dist(bts->ho));
-		find_alternative_lchan(lchan, true);
+		find_alternative_lchan(lchan, true, false);
 		return;
 	}
 
@@ -1532,7 +1536,7 @@ static void on_measurement_report(struct gsm_meas_rep *mr)
 	/* try handover to a better cell */
 	if (av_rxlev >= 0 && (mr->nr % pwr_interval) == 0) {
 		global_ho_reason = HO_REASON_BETTER_CELL;
-		find_alternative_lchan(lchan, false);
+		find_alternative_lchan(lchan, false, false);
 	}
 }
 

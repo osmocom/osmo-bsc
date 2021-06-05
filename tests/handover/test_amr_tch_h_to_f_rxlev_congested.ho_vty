@@ -14,10 +14,8 @@ meas-rep repeat 9 lchan 0 0 4 0 rxlev 23 rxqual 1 ta 0
 expect-no-chan
 meas-rep lchan 0 0 4 0 rxlev 23 rxqual 1 ta 0
 # average rxlev is now -110 + 23 = -87 < -80: reassign to TCH/F due to bad rxlev
-#expect-as from lchan 0 0 4 0 to lchan 0 0 1 0
-#expect-ts-use trx 0 0 states     *    TCH/F -     -     TCH/-H TCH/HH *    *
-# FAIL: osmo-bsc does not move to TCH/F from bad rxlev
-expect-no-chan
+expect-as from lchan 0 0 4 0 to lchan 0 0 1 0
+expect-ts-use trx 0 0 states     *    TCH/F -     -     TCH/-H TCH/HH *    *
 
 
 # This situation actually balances congestion
@@ -27,10 +25,8 @@ meas-rep repeat 9 lchan 0 0 4 0 rxlev 23 rxqual 1 ta 0
 expect-no-chan
 meas-rep lchan 0 0 4 0 rxlev 23 rxqual 1 ta 0
 # average rxlev is now -110 + 23 = -87 < -80: reassign to TCH/F due to bad rxlev
-#expect-as from lchan 0 0 4 0 to lchan 0 0 2 0
-#expect-ts-use trx 0 0 states     *    TCH/F TCH/F -     TCH/-H TCH/HH *    *
-# FAIL: osmo-bsc does not move to TCH/F from bad rxlev
-expect-no-chan
+expect-as from lchan 0 0 4 0 to lchan 0 0 2 0
+expect-ts-use trx 0 0 states     *    TCH/F TCH/F -     TCH/-H TCH/HH *    *
 
 # This situation moves congestion from TCH/H to TCH/F (TCH/H was 100% congested, then makes TCH/F 100% congested)
 # The congestion requirements would normally forbid this, but since this is an "RxQual emergency", we should reassign.
@@ -40,10 +36,8 @@ meas-rep repeat 9 lchan 0 0 4 0 rxlev 23 rxqual 1 ta 0
 expect-no-chan
 meas-rep lchan 0 0 4 0 rxlev 23 rxqual 1 ta 0
 # average rxlev is now -110 + 23 = -87 < -80: reassign to TCH/F due to bad rxlev
-#expect-as from lchan 0 0 4 0 to lchan 0 0 3 0
-#expect-ts-use trx 0 0 states     *    TCH/F TCH/F TCH/F TCH/-H TCH/HH *    *
-# FAIL: osmo-bsc does not move to TCH/F from bad rxlev
-expect-no-chan
+expect-as from lchan 0 0 4 0 to lchan 0 0 3 0
+expect-ts-use trx 0 0 states     *    TCH/F TCH/F TCH/F TCH/-H TCH/HH *    *
 
 # This situation worsens congestion (TCH/H was 50% congested, then makes TCH/F 100% congested)
 # The congestion requirements would normally forbid this, but since this is an "RxQual emergency", we should reassign.
@@ -53,10 +47,8 @@ meas-rep repeat 9 lchan 0 0 4 0 rxlev 23 rxqual 1 ta 0
 expect-no-chan
 meas-rep lchan 0 0 4 0 rxlev 23 rxqual 1 ta 0
 # average rxlev is now -110 + 23 = -87 < -80: reassign to TCH/F due to bad rxlev
-#expect-as from lchan 0 0 4 0 to lchan 0 0 3 0
-#expect-ts-use trx 0 0 states     *    TCH/F TCH/F TCH/F -      TCH/HH *    *
-# FAIL: osmo-bsc does not move to TCH/F from bad rxlev
-expect-no-chan
+expect-as from lchan 0 0 4 0 to lchan 0 0 3 0
+expect-ts-use trx 0 0 states     *    TCH/F TCH/F TCH/F -      TCH/HH *    *
 
 
 # This situation creates congestion (TCH/H was not congested, then makes TCH/F 50% congested)
@@ -67,7 +59,5 @@ meas-rep repeat 9 lchan 0 0 4 0 rxlev 23 rxqual 1 ta 0
 expect-no-chan
 meas-rep lchan 0 0 4 0 rxlev 23 rxqual 1 ta 0
 # average rxlev is now -110 + 23 = -87 < -80: reassign to TCH/F due to bad rxlev
-#expect-as from lchan 0 0 4 0 to lchan 0 0 2 0
-#expect-ts-use trx 0 0 states     *    TCH/F TCH/F -     -      -      *    *
-# FAIL: osmo-bsc does not move to TCH/F from bad rxlev
-expect-no-chan
+expect-as from lchan 0 0 4 0 to lchan 0 0 2 0
+expect-ts-use trx 0 0 states     *    TCH/F TCH/F -     -      -      *    *

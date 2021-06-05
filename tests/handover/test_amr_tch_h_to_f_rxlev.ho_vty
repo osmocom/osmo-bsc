@@ -12,7 +12,5 @@ meas-rep repeat 9 lchan 0 0 4 0 rxlev 23 rxqual 1 ta 0
 expect-no-chan
 meas-rep lchan 0 0 4 0 rxlev 23 rxqual 1 ta 0
 # average rxlev is now -110 + 23 = -87 < -80: reassign to TCH/F due to bad rxlev
-#expect-as from lchan 0 0 4 0 to lchan 0 0 1 0
-#expect-ts-use trx 0 0 states * TCH/F - - - - - *
-# FAIL: osmo-bsc does not move to TCH/F from bad rxlev
-expect-no-chan
+expect-as from lchan 0 0 4 0 to lchan 0 0 1 0
+expect-ts-use trx 0 0 states * TCH/F - - - - - *

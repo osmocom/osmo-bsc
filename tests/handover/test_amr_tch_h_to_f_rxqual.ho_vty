@@ -12,7 +12,5 @@ meas-rep lchan 0 0 4 0 rxlev 30 rxqual 6 ta 0
 expect-no-chan
 meas-rep lchan 0 0 4 0 rxlev 30 rxqual 6 ta 0
 # average rxqual now at 6 which is worse than 5, reassign to TCH/F due to bad rxqual.
-#expect-as from lchan 0 0 4 0 to lchan 0 0 1 0
-#expect-ts-use trx 0 0 states * TCH/F - - - - - *
-# FAIL: osmo-bsc does not move to TCH/F from bad rxqual
-expect-no-chan
+expect-as from lchan 0 0 4 0 to lchan 0 0 1 0
+expect-ts-use trx 0 0 states * TCH/F - - - - - *

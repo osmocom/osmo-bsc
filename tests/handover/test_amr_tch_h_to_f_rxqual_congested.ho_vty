@@ -17,10 +17,8 @@ meas-rep lchan 0 0 4 0 rxlev 50 rxqual 6 ta 0
 expect-no-chan
 meas-rep lchan 0 0 4 0 rxlev 50 rxqual 6 ta 0
 # average rxqual now at 6 which is worse than 5, reassign to TCH/F due to bad rxqual.
-#expect-as from lchan 0 0 4 0 to lchan 0 0 1 0
-#expect-ts-use trx 0 0 states     *    TCH/F -     -     TCH/-H TCH/HH *    *
-# FAIL: osmo-bsc does not move to TCH/F from bad rxqual
-expect-no-chan
+expect-as from lchan 0 0 4 0 to lchan 0 0 1 0
+expect-ts-use trx 0 0 states     *    TCH/F -     -     TCH/-H TCH/HH *    *
 
 
 # This situation actually balances congestion
@@ -30,10 +28,8 @@ meas-rep lchan 0 0 4 0 rxlev 50 rxqual 6 ta 0
 expect-no-chan
 meas-rep lchan 0 0 4 0 rxlev 50 rxqual 6 ta 0
 # average rxqual now at 6 which is worse than 5, reassign to TCH/F due to bad rxqual.
-#expect-as from lchan 0 0 4 0 to lchan 0 0 2 0
-#expect-ts-use trx 0 0 states     *    TCH/F TCH/F -     TCH/-H TCH/HH *    *
-# FAIL: osmo-bsc does not move to TCH/F from bad rxqual
-expect-no-chan
+expect-as from lchan 0 0 4 0 to lchan 0 0 2 0
+expect-ts-use trx 0 0 states     *    TCH/F TCH/F -     TCH/-H TCH/HH *    *
 
 
 # This situation moves congestion from TCH/H to TCH/F (TCH/H was 100% congested, then makes TCH/F 100% congested)
@@ -44,10 +40,8 @@ meas-rep lchan 0 0 4 0 rxlev 50 rxqual 6 ta 0
 expect-no-chan
 meas-rep lchan 0 0 4 0 rxlev 50 rxqual 6 ta 0
 # average rxqual now at 6 which is worse than 5, reassign to TCH/F due to bad rxqual.
-#expect-as from lchan 0 0 4 0 to lchan 0 0 3 0
-#expect-ts-use trx 0 0 states     *    TCH/F TCH/F TCH/F TCH/-H TCH/HH *    *
-# FAIL: osmo-bsc does not move to TCH/F from bad rxqual
-expect-no-chan
+expect-as from lchan 0 0 4 0 to lchan 0 0 3 0
+expect-ts-use trx 0 0 states     *    TCH/F TCH/F TCH/F TCH/-H TCH/HH *    *
 
 
 # This situation worsens congestion (TCH/H was 50% congested, then makes TCH/F 100% congested)
@@ -58,10 +52,8 @@ meas-rep lchan 0 0 4 0 rxlev 50 rxqual 6 ta 0
 expect-no-chan
 meas-rep lchan 0 0 4 0 rxlev 50 rxqual 6 ta 0
 # average rxqual now at 6 which is worse than 5, reassign to TCH/F due to bad rxqual.
-#expect-as from lchan 0 0 4 0 to lchan 0 0 3 0
-#expect-ts-use trx 0 0 states     *    TCH/F TCH/F TCH/F -      TCH/HH *    *
-# FAIL: osmo-bsc does not move to TCH/F from bad rxqual
-expect-no-chan
+expect-as from lchan 0 0 4 0 to lchan 0 0 3 0
+expect-ts-use trx 0 0 states     *    TCH/F TCH/F TCH/F -      TCH/HH *    *
 
 
 # This situation creates congestion (TCH/H was not congested, then makes TCH/F 50% congested)
@@ -72,7 +64,5 @@ meas-rep lchan 0 0 4 0 rxlev 50 rxqual 6 ta 0
 expect-no-chan
 meas-rep lchan 0 0 4 0 rxlev 50 rxqual 6 ta 0
 # average rxqual now at 6 which is worse than 5, reassign to TCH/F due to bad rxqual.
-#expect-as from lchan 0 0 4 0 to lchan 0 0 2 0
-#expect-ts-use trx 0 0 states     *    TCH/F TCH/F -     -      -      *    *
-# FAIL: osmo-bsc does not move to TCH/F from bad rxqual
-expect-no-chan
+expect-as from lchan 0 0 4 0 to lchan 0 0 2 0
+expect-ts-use trx 0 0 states     *    TCH/F TCH/F -     -      -      *    *
