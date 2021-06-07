@@ -193,7 +193,7 @@ void write_uni(struct ms_state *ms, struct ms_state_uni *msu,
 	if (dir == DIR_UL) {
 		pwr = ms->mr.ms_l1.pwr;
 	} else {
-		pwr = ms->mr.bs_power;
+		pwr = ms->mr.bs_power_db / 2;
 	}
 
 	color = A_REVERSE | COLOR_PAIR(lev_col) | ' ';
