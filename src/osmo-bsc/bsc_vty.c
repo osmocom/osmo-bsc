@@ -6777,7 +6777,7 @@ DEFUN_USRATTR(cfg_net_mnc,
 DEFUN_USRATTR(cfg_net_encryption,
 	      cfg_net_encryption_cmd,
 	      X(BSC_VTY_ATTR_NEW_LCHAN),
-	      "encryption a5 <0-3> [<0-3>] [<0-3>] [<0-3>]",
+	      "encryption a5 <0-4> [<0-4>] [<0-4>] [<0-4>]",
 	      "Encryption options\n"
 	      "GSM A5 Air Interface Encryption\n"
 	      "A5/n Algorithm Number\n"
