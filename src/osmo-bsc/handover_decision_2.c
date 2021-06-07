@@ -171,7 +171,7 @@ static bool is_upgrade_to_tchf(const struct ho_candidate *c, uint8_t for_require
 {
 	return c->current.lchan
 		&& (c->current.lchan->type == GSM_LCHAN_TCH_H)
-		&& ((c->requirements & for_requirement) & (REQUIREMENT_B_TCHF | REQUIREMENT_C_TCHF));
+		&& ((c->requirements & for_requirement) & REQUIREMENT_TCHF_MASK);
 }
 
 static unsigned int ts_usage_count(struct gsm_bts_trx_ts *ts)
