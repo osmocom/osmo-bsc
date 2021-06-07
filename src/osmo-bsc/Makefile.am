@@ -61,6 +61,7 @@ osmo_bsc_SOURCES = \
 	gsm_04_08_rr.c \
 	gsm_data.c \
 	handover_cfg.c \
+	handover_ctrl.c \
 	handover_decision.c \
 	handover_decision_2.c \
 	handover_fsm.c \

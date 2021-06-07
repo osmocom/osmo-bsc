@@ -28,6 +28,7 @@
 #include <osmocom/bsc/signal.h>
 #include <osmocom/bsc/a_reset.h>
 #include <osmocom/bsc/bts.h>
+#include <osmocom/bsc/handover_ctrl.h>
 
 #include <osmocom/core/linuxlist.h>
 #include <osmocom/core/signal.h>
@@ -695,6 +696,9 @@ int bsc_ctrl_cmds_install(struct gsm_network *net)
 	int rc;
 
 	rc = bsc_base_ctrl_cmds_install();
+	if (rc)
+		goto end;
+	rc = bsc_ho_ctrl_cmds_install(net);
 	if (rc)
 		goto end;
 	rc = ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_loc);

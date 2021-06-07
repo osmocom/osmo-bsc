@@ -23,6 +23,7 @@ noinst_HEADERS = \
 	gsm_data.h \
 	handover.h \
 	handover_cfg.h \
+	handover_ctrl.h \
 	handover_decision.h \
 	handover_decision_2.h \
 	handover_fsm.h \

@@ -50,6 +50,7 @@ handover_test_LDADD = \
 	$(top_builddir)/src/osmo-bsc/acc.o \
 	$(top_builddir)/src/osmo-bsc/assignment_fsm.o \
 	$(top_builddir)/src/osmo-bsc/bsc_ctrl_commands.o \
+	$(top_builddir)/src/osmo-bsc/handover_ctrl.o \
 	$(top_builddir)/src/osmo-bsc/bsc_init.o \
 	$(top_builddir)/src/osmo-bsc/bsc_rf_ctrl.o \
 	$(top_builddir)/src/osmo-bsc/bsc_rll.o \

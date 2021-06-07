@@ -40,6 +40,34 @@ TRX-specific commands are additionally prefixed with TRX number e. g.
 |bts.N.rf_state|RO|No|"<oper>,<admin>,<pol>"|See <<rfs>> for details.
 |bts.N.trx.M.arfcn|RW|No|"<arfcn>"|Set/Get ARFCN (value between (0, 1023)).
 |bts.N.trx.M.max-power-reduction|RW|No|"<mpr>"|See <<mpr>> for details.
+|[bts.N.]handover.active|RW|No|"0","1","default"|Enable/disable handover.
+|[bts.N.]handover.algorithm|RW|No|"1","2","default"|Choose algorithm for handover decision (hodec1 or hodec2).
+|[bts.N.]handover1.window.rxlev.averaging|RW|No|<1-10>,"default"|How many RxLev measurements to use for averaging.
+|[bts.N.]handover1.window.rxqual.averaging|RW|No|<1-10>,"default"|How many RxQual measurements to use for averaging.
+|[bts.N.]handover1.window.rxlev.neighbor.averaging|RW|No|<1-10>,"default"|How many Neighbor RxLev measurements to use for averaging.
+|[bts.N.]handover1.power.budget.interval|RW|No|<1-99>,"default"|How often to check for a better cell (SACCH frames).
+|[bts.N.]handover1.power.budget.hysteresis|RW|No|<0-999>,"default"|How many dB stronger must a neighbor be to become a HO candidate.
+|[bts.N.]handover1.maximum.distance|RW|No|<0-9999>,"default"|Maximum Timing-Advance value (i.e. MS distance) before triggering HO.
+|[bts.N.]handover2.window.rxlev.averaging|RW|No|<1-10>,"default"|How many RxLev measurements to use for averaging.
+|[bts.N.]handover2.window.rxqual.averaging|RW|No|<1-10>,"default"|How many RxQual measurements to use for averaging.
+|[bts.N.]handover2.window.rxlev.neighbor.averaging|RW|No|<1-10>,"default"|window rxlev neighbor averaging.
+|[bts.N.]handover2.power.budget.interval|RW|No|<1-99>,"default"|How many dB stronger must a neighbor be to become a HO candidate.
+|[bts.N.]handover2.power.budget.hysteresis|RW|No|<0-999>,"default"|How many dB stronger must a neighbor be to become a HO candidate.
+|[bts.N.]handover2.maximum.distance|RW|No|<0-9999>,"default"|Maximum Timing-Advance value (i.e. MS distance) before triggering HO.
+|[bts.N.]handover2.assignment|RW|No|"0","1","default"|Enable or disable in-call channel re-assignment within the same cell.
+|[bts.N.]handover2.tdma-measurement|RW|No|"full","subset","default"|Define measurement set of TDMA frames.
+|[bts.N.]handover2.min.rxlev|RW|No|<-110--50>,"default"|How weak may RxLev of an MS become before triggering HO.
+|[bts.N.]handover2.min.rxqual|RW|No|<0-7>,"default"|How bad may RxQual of an MS become before triggering HO.
+|[bts.N.]handover2.afs-bias.rxlev|RW|No|<0-20>,"default"|RxLev improvement bias for AFS over other codecs.
+|[bts.N.]handover2.afs-bias.rxqual|RW|No|<0-7>,"default"|RxQual improvement bias for AFS over other codecs.
+|[bts.N.]handover2.min-free-slots.tch-f|RW|No|<0-9999>,"default"|Minimum free TCH/F timeslots before cell is considered congested.
+|[bts.N.]handover2.min-free-slots.tch-h|RW|No|<0-9999>,"default"|Minimum free TCH/H timeslots before cell is considered congested.
+|[bts.N.]handover2.max-handovers|RW|No|<1-9999>,"default"|Maximum number of concurrent handovers allowed per cell.
+|[bts.N.]handover2.penalty-time.max-distance|RW|No|<0-99999>,"default"|ime to suspend handover for a subscriber after leaving this cell due to exceeding max distance.
+|[bts.N.]handover2.penalty-time.failed-ho|RW|No|<0-99999>,"default"|Time to suspend handover for a subscriber after a failed handover into this cell.
+|[bts.N.]handover2.penalty-time.failed-assignment|RW|No|<0-99999>,"default"|Time to suspend handover for a subscriber after a failed re-assignment within this cell.
+|[bts.N.]handover2.retries|RW|No|<0-9>,"default"|Number of times to immediately retry a failed handover/assignment, before a penalty time is applied.
+|handover2.congestion-check|RW|No|"disabled",<1-999>,"now"|Congestion check interval in seconds, "now" triggers immediate congestion check.
 |===
 
 [[notif]]
