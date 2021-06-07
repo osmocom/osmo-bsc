@@ -1295,9 +1295,10 @@ static int find_alternative_lchan(struct gsm_lchan *lchan, bool include_weaker_r
 			continue;
 
 		better = clist[i].target.rxlev - clist[i].current.rxlev;
-		/* Apply AFS bias? */
+		/* Apply AFS bias? Skip AFS bias for all intra-cell candidates. */
 		afs_bias = 0;
-		if (ahs && (clist[i].requirements & REQUIREMENT_B_TCHF))
+		if (clist[i].target.bts != bts
+		    && ahs && (clist[i].requirements & REQUIREMENT_B_TCHF))
 			afs_bias = ho_get_hodec2_afs_bias_rxlev(clist[i].target.bts->ho);
 		better += afs_bias;
 		if (better > best_better_db) {
@@ -1328,9 +1329,10 @@ static int find_alternative_lchan(struct gsm_lchan *lchan, bool include_weaker_r
 			continue;
 
 		better = clist[i].target.rxlev - clist[i].current.rxlev;
-		/* Apply AFS bias? */
+		/* Apply AFS bias? Skip AFS bias for all intra-cell candidates. */
 		afs_bias = 0;
-		if (ahs && (clist[i].requirements & REQUIREMENT_C_TCHF))
+		if (clist[i].target.bts != bts
+		    && ahs && (clist[i].requirements & REQUIREMENT_C_TCHF))
 			afs_bias = ho_get_hodec2_afs_bias_rxlev(clist[i].target.bts->ho);
 		better += afs_bias;
 		if (better > best_better_db) {
@@ -1365,11 +1367,11 @@ static int find_alternative_lchan(struct gsm_lchan *lchan, bool include_weaker_r
 			continue;
 
 		better = clist[i].target.rxlev - clist[i].current.rxlev;
-		/* Apply AFS bias?
+		/* Apply AFS bias? Skip AFS bias for all intra-cell candidates.
 		 * (never to remote-BSS neighbors, since we will not change the lchan type for those.) */
 		afs_bias = 0;
 		if (ahs && (clist[i].requirements & REQUIREMENT_A_TCHF)
-		    && clist[i].target.bts)
+		    && clist[i].target.bts && clist[i].target.bts != bts)
 			afs_bias = ho_get_hodec2_afs_bias_rxlev(clist[i].target.bts->ho);
 		better += afs_bias;
 		if (better > best_better_db
