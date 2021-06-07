@@ -167,6 +167,13 @@ static enum ho_reason global_ho_reason;
 
 static void congestion_check_cb(void *arg);
 
+static bool is_upgrade_to_tchf(const struct ho_candidate *c, uint8_t for_requirement)
+{
+	return c->current.lchan
+		&& (c->current.lchan->type == GSM_LCHAN_TCH_H)
+		&& ((c->requirements & for_requirement) & (REQUIREMENT_B_TCHF | REQUIREMENT_C_TCHF));
+}
+
 static unsigned int ts_usage_count(struct gsm_bts_trx_ts *ts)
 {
 	struct gsm_lchan *lchan;
@@ -1533,13 +1540,6 @@ static bool lchan_is_on_dynamic_ts(struct gsm_lchan *lchan)
 {
 	return lchan->ts->pchan_on_init == GSM_PCHAN_TCH_F_TCH_H_PDCH
 		|| lchan->ts->pchan_on_init == GSM_PCHAN_TCH_F_PDCH;
-}
-
-static bool is_upgrade_to_tchf(const struct ho_candidate *c, uint8_t for_requirement)
-{
-	return c->current.lchan
-		&& (c->current.lchan->type == GSM_LCHAN_TCH_H)
-		&& ((c->requirements & for_requirement) & (REQUIREMENT_B_TCHF | REQUIREMENT_C_TCHF));
 }
 
 /* Given two candidates, pick the one that should rather be moved during handover.
