@@ -1,5 +1,34 @@
 OsmoBSC> enable
 
+OsmoBSC# list
+...
+  bts <0-255> trx <0-255> timeslot <0-7> sub-slot <0-7> modify (vamos|non-vamos) [tsc] [<1-4>] [<0-7>]
+...
+
+OsmoBSC# bts 0 trx 0 timeslot 0 sub-slot 0 ?
+  activate    Manual Channel Activation (e.g. for BER test)
+  deactivate  Manual Channel Deactivation (e.g. for BER test)
+  modify      Manually send Channel Mode Modify (for debugging)
+  mdcx        Modify RTP Connection
+  handover    Manually trigger handover (for debugging)
+  assignment  Manually trigger assignment (for debugging)
+
+OsmoBSC# bts 0 trx 0 timeslot 0 sub-slot 0 modify ?
+  vamos      Enable VAMOS channel mode
+  non-vamos  Disable VAMOS channel mode
+
+OsmoBSC# bts 0 trx 0 timeslot 0 sub-slot 0 modify vamos ?
+  [tsc]  Provide specific TSC Set and Training Sequence Code
+
+OsmoBSC# bts 0 trx 0 timeslot 0 sub-slot 0 modify vamos tsc ?
+  [<1-4>]  TSC Set
+
+OsmoBSC# bts 0 trx 0 timeslot 0 sub-slot 0 modify vamos tsc 1 ?
+  [<0-7>]  Training Sequence Code
+
+OsmoBSC# bts 0 trx 0 timeslot 0 sub-slot 0 modify vamos tsc 1 0 ?
+  <cr>  
+
 OsmoBSC# configure terminal
 OsmoBSC(config)# network
 OsmoBSC(config-net)# list
