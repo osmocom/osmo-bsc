@@ -177,7 +177,13 @@ struct assignment_request {
  * currently used lchan and gscon unmodified until the outcome of an Assignment is known. If the Assignment fails, this
  * state is simply discarded, and the gscon carries on with the original lchan remaining unchanged. */
 struct assignment_fsm_data {
+	/* The request as made by the caller, see GSCON_EV_ASSIGNMENT_START or reassignment_request_to_lchan() /
+	 * reassignment_request_to_chan_type().
+	 * conn->assignment.req is treated immutable: remains unchanged throughout the Assignment. The mutable fields
+	 * are below: choices and automatic adjustments are stored in conn->assignment.*, not conn->assignment.req.
+	 */
 	struct assignment_request req;
+
 	bool requires_voice_stream;
 	struct channel_mode_and_rate selected_ch_mode_rate;
 
@@ -647,7 +653,13 @@ struct gsm_lchan {
 	struct osmo_mgcpc_ep_ci *mgw_endpoint_ci_bts;
 
 	struct {
+		/* The request as made by the caller, see lchan_activate().
+		 * lchan->activate.info is treated immutable: remains unchanged throughout the Activation.
+		 * The mutable versions are below: some values need automatic adjustments, in which case they are copied
+		 * from immutable lchan->activate.info.* to lchan->activate.*, for example lchan->activate.ch_mode_rate
+		 * is initially a copy of lchan->activate.info.ch_mode_rate, and is possibly adjusted afterwards. */
 		struct lchan_activate_info info;
+
 		struct channel_mode_and_rate ch_mode_rate;
 		struct gsm48_multi_rate_conf mr_conf_filtered;
 		bool activ_ack; /*< true as soon as RSL Chan Activ Ack is received */
@@ -662,7 +674,13 @@ struct gsm_lchan {
 	} activate;
 
 	struct {
+		/* The request as made by the caller, see lchan_mode_modify().
+		 * lchan->modify.info is treated immutable: remains unchanged throughout the Mode Modify.
+		 * The mutable versions are below: some values need automatic adjustments, in which case they are copied
+		 * from immutable lchan->modify.info.* to lchan->modify.*, for example lchan->modify.ch_mode_rate
+		 * is initially a copy of lchan->modify.info.ch_mode_rate, and is possibly adjusted afterwards. */
 		struct lchan_modify_info info;
+
 		struct channel_mode_and_rate ch_mode_rate;
 		struct gsm48_multi_rate_conf mr_conf_filtered;
 		int tsc_set;
