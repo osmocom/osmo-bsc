@@ -745,6 +745,10 @@ struct gsm_lchan {
 	uint8_t tsc;
 
 	struct {
+		/* Whether this lchan represents a secondary "shadow" lchan to multiplex a second MS onto a primary
+		 * "normal" lchan */
+		bool is_secondary;
+
 		/* Whether this lchan is activated/modified into a mode that allows VAMOS multiplexing at this moment */
 		bool enabled;
 	} vamos;

@@ -382,7 +382,8 @@ void lchan_mode_modify(struct gsm_lchan *lchan, struct lchan_modify_info *info)
 {
 	OSMO_ASSERT(lchan && info);
 
-	if (info->vamos && !osmo_bts_has_feature(&lchan->ts->trx->bts->features, BTS_FEAT_VAMOS)) {
+	if ((info->vamos || lchan->vamos.is_secondary)
+	    && !osmo_bts_has_feature(&lchan->ts->trx->bts->features, BTS_FEAT_VAMOS)) {
 		lchan->last_error = talloc_strdup(lchan->ts->trx, "VAMOS related Channel Mode Modify requested,"
 						  " but BTS does not support VAMOS");
 		LOG_LCHAN(lchan, LOGL_ERROR,
@@ -1145,10 +1146,12 @@ static void lchan_fsm_established(struct osmo_fsm_inst *fi, uint32_t event, void
 			}
 		}
 
+		/* If enabling VAMOS mode and no specific TSC Set was selected, make sure to select a sane TSC Set by
+		 * default: Set 1 for the primary and Set 2 for the shadow lchan. For non-VAMOS lchans, TSC Set 1. */
 		if (lchan->modify.info.tsc_set > 0)
 			lchan->modify.tsc_set = lchan->modify.info.tsc_set;
 		else
-			lchan->modify.tsc_set = 1;
+			lchan->modify.tsc_set = lchan->vamos.is_secondary ? 2 : 1;
 
 		/* Use the TSC provided in the modification request, if any. Otherwise use the timeslot's configured
 		 * TSC. */
