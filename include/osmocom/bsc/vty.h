@@ -18,8 +18,6 @@ enum bsc_vty_node {
 	TRX_NODE,
 	TS_NODE,
 	OML_NODE,
-	NAT_NODE,
-	NAT_BSC_NODE,
 	MSC_NODE,
 	OM2K_NODE,
 	OM2K_CON_GROUP_NODE,
