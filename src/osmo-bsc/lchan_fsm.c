@@ -1111,15 +1111,6 @@ static void lchan_fsm_established(struct osmo_fsm_inst *fi, uint32_t event, void
 		return;
 
 	case LCHAN_EV_REQUEST_MODE_MODIFY:
-
-		/* FIXME: Add missing implementation to handle an already existing RTP voice stream on MODE MODIFY.
-		 * there may be transitions from VOICE to SIGNALLING and also from VOICE to VOICE with a different
-		 * codec. */
-		if (lchan->fi_rtp) {
-			lchan_fail("MODE MODIFY not implemented when RTP voice stream is already active (VOICE => SIGNALLING, VOICE/CODEC_A => VOICE/CODEC_B)\n");
-			return;
-		}
-
 		modif_info = data;
 		lchan->modify.info = *modif_info;
 		lchan->modify.concluded = false;
