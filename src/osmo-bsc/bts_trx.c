@@ -225,7 +225,7 @@ struct gsm_lchan *rsl_lchan_lookup(struct gsm_bts_trx *trx, uint8_t chan_nr,
 	if (rc && ok)
 		*rc = 0;
 
-	if (vamos && (trx->bts->model->type == GSM_BTS_TYPE_OSMOBTS))
+	if (vamos)
 		lch_idx += ts->max_primary_lchans;
 	return &ts->lchan[lch_idx];
 }
