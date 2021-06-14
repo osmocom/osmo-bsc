@@ -6657,6 +6657,10 @@ DEFUN(lchan_reassign, lchan_reassign_cmd,
 		vty_out(vty, "cannot re-assign, source lchan is not in ESTABLISHED state%s", VTY_NEWLINE);
 		return CMD_WARNING;
 	}
+	if (!to_lchan->fi) {
+		vty_out(vty, "cannot re-assign, target lchan is not initialized%s", VTY_NEWLINE);
+		return CMD_WARNING;
+	}
 	if (!lchan_state_is(to_lchan, LCHAN_ST_UNUSED)) {
 		vty_out(vty, "cannot re-assign, target lchan is already in use%s", VTY_NEWLINE);
 		return CMD_WARNING;
