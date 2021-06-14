@@ -152,13 +152,36 @@ static void pad_macblock(uint8_t *out, const uint8_t *in, int len)
 		memset(out+len, 0x2b, GSM_MACBLOCK_LEN - len);
 }
 
-/* Chapter 9.3.7: Encryption Information */
+/* Chapter 9.3.7: Encryption Information
+ * Return negative on error, number of bytes written to 'out' on success.
+ * 'out' must provide room for 17 bytes. */
 static int build_encr_info(uint8_t *out, struct gsm_lchan *lchan)
 {
 	*out++ = lchan->encr.alg_id & 0xff;
-	if (lchan->encr.key_len)
-		memcpy(out, lchan->encr.key, lchan->encr.key_len);
-	return lchan->encr.key_len + 1;
+	switch (lchan->encr.alg_id) {
+	case GSM0808_ALG_ID_A5_1:
+	case GSM0808_ALG_ID_A5_2:
+	case GSM0808_ALG_ID_A5_3:
+		if (!lchan->encr.key_len) {
+			LOG_LCHAN(lchan, LOGL_ERROR, "A5/%d encryption chosen, but missing Kc\n", lchan->encr.alg_id);
+			return -EINVAL;
+		}
+		/* fall through */
+	case GSM0808_ALG_ID_A5_0:
+		/* When A5/0 is chosen, no encryption is active, so technically, no key is needed. However, 3GPP TS
+		 * 48.058 9.3.7 Encryption Information stays quite silent about presence or absence of a key for A5/0.
+		 * The only thing specified is how to indicate the length of the key; the possibility that the key may
+		 * be zero length is not explicitly mentioned. So it seems that we should always send the key along,
+		 * even for A5/0. Currently our ttcn3 test suite does expect the key to be present also for A5/0, see
+		 * f_cipher_mode() in bsc/MSC_ConnectionHandler.ttcn. */
+		if (lchan->encr.key_len)
+			memcpy(out, lchan->encr.key, lchan->encr.key_len);
+		return 1 + lchan->encr.key_len;
+
+	default:
+		LOG_LCHAN(lchan, LOGL_ERROR, "A5/%d encryption not supported\n", lchan->encr.alg_id);
+		return -EINVAL;
+	}
 }
 
 /* If the TLV contain an RSL Cause IE, return pointer to the cause value. If there is no Cause IE, return
@@ -595,6 +618,10 @@ int rsl_tx_chan_activ(struct gsm_lchan *lchan, uint8_t act_type, uint8_t ho_ref)
 		rc = build_encr_info(encr_info, lchan);
 		if (rc > 0)
 			msgb_tlv_put(msg, RSL_IE_ENCR_INFO, rc, encr_info);
+		if (rc < 0) {
+			msgb_free(msg);
+			return rc;
+		}
 	}
 
 	switch (act_type) {
@@ -688,6 +715,10 @@ int rsl_chan_mode_modify_req(struct gsm_lchan *lchan)
 		rc = build_encr_info(encr_info, lchan);
 		if (rc > 0)
 			msgb_tlv_put(msg, RSL_IE_ENCR_INFO, rc, encr_info);
+		if (rc < 0) {
+			msgb_free(msg);
+			return rc;
+		}
 	}
 
 	if (gsm48_chan_mode_to_non_vamos(lchan->modify.ch_mode_rate.chan_mode) == GSM48_CMODE_SPEECH_AMR) {
