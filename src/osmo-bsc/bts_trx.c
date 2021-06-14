@@ -170,7 +170,7 @@ struct gsm_lchan *rsl_lchan_lookup(struct gsm_bts_trx *trx, uint8_t chan_nr,
 		case ABIS_RSL_CHAN_NR_CBITS_OSMO_VAMOS_Bm_ACCHs:
 		case ABIS_RSL_CHAN_NR_CBITS_OSMO_VAMOS_Lm_ACCHs(0):
 		case ABIS_RSL_CHAN_NR_CBITS_OSMO_VAMOS_Lm_ACCHs(1):
-			cbits &= ~RSL_CHAN_OSMO_VAMOS_MASK;
+			cbits = (chan_nr & ~RSL_CHAN_OSMO_VAMOS_MASK) >> 3;
 			vamos = true;
 			break;
 		default:
