@@ -454,6 +454,7 @@ static bool parse_ho_request(struct gsm_subscriber_connection *conn, const struc
 	int payload_length;
 	bool aoip = gscon_is_aoip(conn);
 	bool sccplite = gscon_is_sccplite(conn);
+	bool has_a54 = false;
 
 	if ((aoip && sccplite) || !(aoip || sccplite)) {
 		LOG_HO(conn, LOGL_ERROR, "Received BSSMAP Handover Request, but conn is not"
@@ -485,6 +486,15 @@ static bool parse_ho_request(struct gsm_subscriber_connection *conn, const struc
 		return false;
 	}
 
+	if ((e = TLVP_GET(tp, GSM0808_IE_KC_128))) {
+		if (e->len != 16) {
+			LOG_HO(conn, LOGL_ERROR, "Invalid length in Kc128 IE: %u bytes (expected 16)\n", e->len);
+			return false;
+		}
+		memcpy(req->kc128, e->val, 16);
+		req->kc128_present = true;
+	}
+
 	if ((e = TLVP_GET(tp, GSM0808_IE_CLASSMARK_INFORMATION_TYPE_1))) {
 		if (e->len != sizeof(req->classmark.classmark1)) {
 			LOG_HO(conn, LOGL_ERROR, "Classmark Information 1 has wrong size\n");
@@ -513,9 +523,10 @@ static bool parse_ho_request(struct gsm_subscriber_connection *conn, const struc
 			       req->chosen_encr_alg);
 	}
 
-	LOG_HO(conn, LOGL_DEBUG, "Handover Request encryption info: chosen=A5/%u key=%s\n",
-	       (req->chosen_encr_alg ? : 1) - 1, req->ei.key_len?
-	       osmo_hexdump_nospc(req->ei.key, req->ei.key_len) : "none");
+	LOG_HO(conn, LOGL_DEBUG, "Handover Request encryption info: chosen=A5/%u key=%s kc128=%s\n",
+	       (req->chosen_encr_alg ? : 1) - 1,
+	       req->ei.key_len ? osmo_hexdump_nospc(req->ei.key, req->ei.key_len) : "none",
+	       has_a54 ? osmo_hexdump_nospc(req->kc128, 16) : "none");
 
 	if (TLVP_PRESENT(tp, GSM0808_IE_AOIP_TRASP_ADDR)) {
 		int rc;
@@ -718,6 +729,11 @@ void handover_start_inter_bsc_in(struct gsm_subscriber_connection *conn,
 		}
 		memcpy(info.encr.key, req->ei.key, req->ei.key_len);
 		info.encr.key_len = req->ei.key_len;
+	}
+
+	if (req->kc128_present) {
+		memcpy(info.encr.kc128, req->kc128, 16);
+		info.encr.kc128_present = true;
 	}
 
 	if (req->last_eutran_plmn_valid) {

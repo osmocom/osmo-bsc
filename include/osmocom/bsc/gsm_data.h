@@ -241,6 +241,8 @@ struct handover_in_req {
 	struct gsm0808_channel_type ct;
 	struct gsm0808_speech_codec_list scl;
 	struct gsm0808_encrypt_info ei;
+	bool kc128_present;
+	uint8_t kc128[16];
 	struct gsm_classmark classmark;
 	/* chosen_encr_alg reflects the encoded value as in RSL_ENC_ALG_A5(a5_numer):
 	 * chosen_encr_alg == 1 means A5/0 i.e. no encryption, chosen_encr_alg == 4 means A5/3.
