@@ -6687,10 +6687,12 @@ DEFUN(lchan_reassign, lchan_reassign_cmd,
 	to_lchan->type = chan_mode_to_chan_type(from_lchan->current_ch_mode_rate.chan_mode,
 						from_lchan->current_ch_mode_rate.chan_rate);
 
-	LOG_LCHAN(from_lchan, LOGL_NOTICE, "VTY requests re-assignment of this lchan to %s%s\n",
-		  gsm_lchan_name(to_lchan), to_lchan->vamos.is_secondary ? " (to VAMOS mode)" : "");
-	LOG_LCHAN(to_lchan, LOGL_NOTICE, "VTY requests re-assignment of %s to this lchan%s TSC %d/%d\n",
-		  gsm_lchan_name(from_lchan), to_lchan->vamos.is_secondary ? " (to VAMOS mode)" : "",
+	LOG_LCHAN(from_lchan, LOGL_NOTICE, "VTY requests re-assignment of this lchan to %s %s%s\n",
+		  gsm_lchan_name(to_lchan), gsm_lchant_name(to_lchan->type),
+		  to_lchan->vamos.is_secondary ? " (to VAMOS mode)" : "");
+	LOG_LCHAN(to_lchan, LOGL_NOTICE, "VTY requests re-assignment of %s %s to this lchan%s TSC %d/%d\n",
+		  gsm_lchan_name(from_lchan), gsm_lchant_name(from_lchan->type),
+		  to_lchan->vamos.is_secondary ? " (to VAMOS mode)" : "",
 		  tsc_set, tsc);
 	if (reassignment_request_to_lchan(ASSIGN_FOR_VTY, from_lchan, to_lchan, tsc_set, tsc)) {
 		vty_out(vty, "failed to request re-assignment%s", VTY_NEWLINE);
