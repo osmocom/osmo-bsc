@@ -416,34 +416,6 @@ static int select_best_cipher(uint8_t msc_mask, uint8_t bsc_mask)
 	return -1;
 }
 
-/*! We received a GSM 08.08 CIPHER MODE from the MSC */
-static int gsm0808_cipher_mode(struct gsm_subscriber_connection *conn, int cipher,
-			       const uint8_t *key, int len, int include_imeisv)
-{
-	if (cipher > 0 && key == NULL) {
-		LOGP(DRSL, LOGL_ERROR, "%s: Need to have an encryption key.\n",
-		     bsc_subscr_name(conn->bsub));
-		return -1;
-	}
-
-	if (len > MAX_A5_KEY_LEN) {
-		LOGP(DRSL, LOGL_ERROR, "%s: The key is too long: %d\n",
-		     bsc_subscr_name(conn->bsub), len);
-		return -1;
-	}
-
-	LOGP(DRSL, LOGL_DEBUG, "(subscr %s) Cipher Mode: cipher=%d key=%s include_imeisv=%d\n",
-	     bsc_subscr_name(conn->bsub), cipher, osmo_hexdump_nospc(key, len), include_imeisv);
-
-	conn->lchan->encr.alg_id = RSL_ENC_ALG_A5(cipher);
-	if (key) {
-		conn->lchan->encr.key_len = len;
-		memcpy(conn->lchan->encr.key, key, len);
-	}
-
-	return gsm48_send_rr_ciph_mode(conn->lchan, include_imeisv);
-}
-
 static int bssmap_handle_clear_cmd(struct gsm_subscriber_connection *conn,
 				   struct msgb *msg, unsigned int length)
 {
@@ -553,11 +525,32 @@ static int bssmap_handle_cipher_mode(struct gsm_subscriber_connection *conn,
 		goto reject;
 	}
 
-	/* To complete the confusion, gsm0808_cipher_mode again expects the encryption as a number
-	 * from 0 to 7. */
-	if (gsm0808_cipher_mode(conn, chosen_cipher, enc_key, enc_key_len,
-				include_imeisv)) {
+	if (chosen_cipher > 0 && !enc_key_len) {
+		LOGP(DRSL, LOGL_ERROR, "%s: Need to have an encryption key.\n",
+		     bsc_subscr_name(conn->bsub));
 		reject_cause = GSM0808_CAUSE_PROTOCOL_ERROR_BETWEEN_BSS_AND_MSC;
+		goto reject;
+	}
+
+	if (enc_key_len > MAX_A5_KEY_LEN) {
+		LOGP(DRSL, LOGL_ERROR, "%s: The key is too long: %d\n",
+		     bsc_subscr_name(conn->bsub), len);
+		reject_cause = GSM0808_CAUSE_PROTOCOL_ERROR_BETWEEN_BSS_AND_MSC;
+		goto reject;
+	}
+
+	conn->lchan->encr.alg_id = RSL_ENC_ALG_A5(chosen_cipher);
+	if (enc_key_len) {
+		conn->lchan->encr.key_len = enc_key_len;
+		memcpy(conn->lchan->encr.key, enc_key, enc_key_len);
+	}
+
+	LOGP(DRSL, LOGL_DEBUG, "(subscr %s) Cipher Mode: cipher=%d key=%s include_imeisv=%d\n",
+	     bsc_subscr_name(conn->bsub), chosen_cipher, osmo_hexdump_nospc(enc_key, enc_key_len),
+	     include_imeisv);
+
+	if (gsm48_send_rr_ciph_mode(conn->lchan, include_imeisv) < 0) {
+		reject_cause = GSM0808_CAUSE_RADIO_INTERFACE_FAILURE;
 		goto reject;
 	}
 	return 0;
