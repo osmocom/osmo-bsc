@@ -178,6 +178,14 @@ static int build_encr_info(uint8_t *out, struct gsm_lchan *lchan)
 			memcpy(out, lchan->encr.key, lchan->encr.key_len);
 		return 1 + lchan->encr.key_len;
 
+	case GSM0808_ALG_ID_A5_4:
+		if (!lchan->encr.kc128_present) {
+			LOG_LCHAN(lchan, LOGL_ERROR, "A5/4 encryption chosen, but missing Kc128\n");
+			return -EINVAL;
+		}
+		memcpy(out, lchan->encr.kc128, sizeof(lchan->encr.kc128));
+		return 1 + sizeof(lchan->encr.kc128);
+
 	default:
 		LOG_LCHAN(lchan, LOGL_ERROR, "A5/%d encryption not supported\n", lchan->encr.alg_id);
 		return -EINVAL;

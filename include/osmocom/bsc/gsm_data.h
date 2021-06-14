@@ -554,6 +554,8 @@ struct gsm_encr {
 	uint8_t alg_id;
 	uint8_t key_len;
 	uint8_t key[MAX_A5_KEY_LEN];
+	bool kc128_present;
+	uint8_t kc128[16];
 };
 
 #define LOGPLCHAN(lchan, ss, level, fmt, args...) \

@@ -466,6 +466,7 @@ static int bssmap_handle_cipher_mode(struct gsm_subscriber_connection *conn,
 	uint16_t enc_key_len;
 	uint8_t enc_bits_msc;
 	int chosen_cipher;
+	const struct tlv_p_entry *ie_kc128;
 
 	if (!conn || !conn->lchan) {
 		LOGP(DMSC, LOGL_ERROR, "No lchan/msc_data in cipher mode command.\n");
@@ -544,9 +545,26 @@ static int bssmap_handle_cipher_mode(struct gsm_subscriber_connection *conn,
 		conn->lchan->encr.key_len = enc_key_len;
 		memcpy(conn->lchan->encr.key, enc_key, enc_key_len);
 	}
+	if ((ie_kc128 = TLVP_GET(&tp, GSM0808_IE_KC_128))) {
+		if (ie_kc128->len != sizeof(conn->lchan->encr.kc128)) {
+			LOGPFSML(conn->fi, LOGL_ERROR, "Kc128 IE has wrong length: %u (expect %zu)\n",
+				 ie_kc128->len, sizeof(conn->lchan->encr.kc128));
+			reject_cause = GSM0808_CAUSE_INFORMATION_ELEMENT_OR_FIELD_MISSING;
+			goto reject;
+		}
+		memcpy(conn->lchan->encr.kc128, ie_kc128->val, sizeof(conn->lchan->encr.kc128));
+		conn->lchan->encr.kc128_present = true;
+	}
 
-	LOGP(DRSL, LOGL_DEBUG, "(subscr %s) Cipher Mode: cipher=%d key=%s include_imeisv=%d\n",
+	if (chosen_cipher == 4 && !conn->lchan->encr.kc128_present) {
+		LOGPFSML(conn->fi, LOGL_ERROR, "A5/4 encryption selected, but no Kc128\n");
+		reject_cause = GSM0808_CAUSE_INFORMATION_ELEMENT_OR_FIELD_MISSING;
+		goto reject;
+	}
+
+	LOGP(DRSL, LOGL_DEBUG, "(subscr %s) Cipher Mode: cipher=%d key=%s kc128=%s include_imeisv=%d\n",
 	     bsc_subscr_name(conn->bsub), chosen_cipher, osmo_hexdump_nospc(enc_key, enc_key_len),
+	     ie_kc128? osmo_hexdump_nospc_c(OTC_SELECT, ie_kc128->val, ie_kc128->len) : "-",
 	     include_imeisv);
 
 	if (gsm48_send_rr_ciph_mode(conn->lchan, include_imeisv) < 0) {
