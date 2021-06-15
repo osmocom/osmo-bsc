@@ -388,8 +388,11 @@ struct gsm_subscriber_connection {
 	struct gsm48_classmark3 cm3;
 	bool cm3_valid;
 
-	bool last_eutran_plmn_valid;
-	struct osmo_plmn_id last_eutran_plmn;
+	struct {
+		bool allowed; /* Is fast return to LTE allowed once the conn is released? */
+		bool last_eutran_plmn_valid; /* Is information stored in field below available? */
+		struct osmo_plmn_id last_eutran_plmn;
+	} fast_return;
 };
 
 

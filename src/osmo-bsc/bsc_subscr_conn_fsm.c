@@ -885,10 +885,11 @@ static void gscon_fsm_allstate(struct osmo_fsm_inst *fi, uint32_t event, void *d
 				bsc_subscr_set_imsi(conn->bsub, mi_imsi.imsi);
 		}
 		if (TLVP_PRESENT(tp, GSM0808_IE_LAST_USED_EUTRAN_PLMN_ID)) {
-			conn->last_eutran_plmn_valid = true;
-			osmo_plmn_from_bcd(TLVP_VAL(tp, GSM0808_IE_LAST_USED_EUTRAN_PLMN_ID), &conn->last_eutran_plmn);
+			conn->fast_return.allowed = true; /* Always allowed for CSFB */
+			conn->fast_return.last_eutran_plmn_valid = true;
+			osmo_plmn_from_bcd(TLVP_VAL(tp, GSM0808_IE_LAST_USED_EUTRAN_PLMN_ID), &conn->fast_return.last_eutran_plmn);
 			LOGPFSML(fi, LOGL_DEBUG, "subscr comes from E-UTRAN PLMN %s\n",
-				 osmo_plmn_name(&conn->last_eutran_plmn));
+				 osmo_plmn_name(&conn->fast_return.last_eutran_plmn));
 		}
 		gscon_update_id(conn);
 		break;

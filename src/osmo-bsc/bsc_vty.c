@@ -1289,6 +1289,9 @@ static void config_write_bts_single(struct vty *vty, struct gsm_bts *bts)
 			VTY_NEWLINE);
 	}
 
+	if (!bts->srvcc_fast_return_allowed)
+		vty_out(vty, "  srvcc fast-return forbid%s", VTY_NEWLINE);
+
 	/* BS/MS Power Control parameters */
 	config_write_power_ctrl(vty, 2, &bts->bs_power_ctrl);
 	config_write_power_ctrl(vty, 2, &bts->ms_power_ctrl);
@@ -5001,6 +5004,20 @@ DEFUN_USRATTR(cfg_bts_interf_meas_level_bounds,
 	return CMD_SUCCESS;
 }
 
+DEFUN_ATTR(cfg_bts_srvcc_fast_return, cfg_bts_srvcc_fast_return_cmd,
+	   "srvcc fast-return (allow|forbid)",
+	   "SRVCC Configuration\n"
+	   "Allow or forbid Fast Return to 4G on Channel Release in this BTS\n"
+	   "Allow\n"
+	   "Forbid\n",
+	   CMD_ATTR_IMMEDIATE)
+{
+	struct gsm_bts *bts = vty->index;
+
+	bts->srvcc_fast_return_allowed = strcmp(argv[0], "allow") == 0;
+	return CMD_SUCCESS;
+}
+
 #define BS_POWER_CONTROL_CMD \
 	"bs-power-control"
 #define MS_POWER_CONTROL_CMD \
@@ -8105,6 +8122,7 @@ int bsc_vty_init(struct gsm_network *network)
 	install_element(BTS_NODE, &cfg_bts_rep_rxqual_cmd);
 	install_element(BTS_NODE, &cfg_bts_interf_meas_avg_period_cmd);
 	install_element(BTS_NODE, &cfg_bts_interf_meas_level_bounds_cmd);
+	install_element(BTS_NODE, &cfg_bts_srvcc_fast_return_cmd);
 
 	neighbor_ident_vty_init();
 	/* See also handover commands added on bts level from handover_vty.c */

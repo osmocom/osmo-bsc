@@ -93,6 +93,8 @@ bool gscon_is_sccplite(struct gsm_subscriber_connection *conn);
 
 static inline const struct osmo_plmn_id *gscon_last_eutran_plmn(const struct gsm_subscriber_connection *conn)
 {
-	return (conn && conn->last_eutran_plmn_valid) ?
-		&conn->last_eutran_plmn : NULL;
+	return (conn && conn->fast_return.allowed &&
+		conn->fast_return.last_eutran_plmn_valid) ?
+			&conn->fast_return.last_eutran_plmn :
+			NULL;
 }

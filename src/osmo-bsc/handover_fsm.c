@@ -721,9 +721,10 @@ void handover_start_inter_bsc_in(struct gsm_subscriber_connection *conn,
 	}
 
 	if (req->last_eutran_plmn_valid) {
-		conn->last_eutran_plmn_valid = true;
-		memcpy(&conn->last_eutran_plmn, &req->last_eutran_plmn,
-		       sizeof(conn->last_eutran_plmn));
+		conn->fast_return.allowed = ho->new_bts->srvcc_fast_return_allowed;
+		conn->fast_return.last_eutran_plmn_valid = true;
+		memcpy(&conn->fast_return.last_eutran_plmn, &req->last_eutran_plmn,
+		       sizeof(conn->fast_return.last_eutran_plmn));
 	}
 
 	lchan_activate(ho->new_lchan, &info);

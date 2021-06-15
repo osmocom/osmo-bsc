@@ -539,6 +539,9 @@ struct gsm_bts {
 
 	/* We will ignore CHAN RQD with access delay greater than rach_max_delay */
 	uint8_t rach_max_delay;
+
+	/* Is Fast return to LTE allowed during Chan Release in this BTS? */
+	bool srvcc_fast_return_allowed;
 };
 
 #define GSM_BTS_SI2Q(bts, i)   (struct gsm48_system_information_type_2quater *)((bts)->si_buf[SYSINFO_TYPE_2quater][i])

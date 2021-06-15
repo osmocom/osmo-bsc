@@ -460,7 +460,7 @@ static int bssmap_handle_clear_cmd(struct gsm_subscriber_connection *conn,
 	}
 
 	if (TLVP_PRESENT(&tp, GSM0808_IE_CSFB_INDICATION) &&
-	    !conn->last_eutran_plmn_valid) {
+	    !conn->fast_return.last_eutran_plmn_valid) {
 		LOGPFSML(conn->fi, LOGL_NOTICE,
 			 "Clear Command: CSFB Indication present, "
 			 "but subscriber has no Last Used E-UTRAN PLMN Id! "
@@ -1372,10 +1372,13 @@ int bsc_tx_bssmap_ho_required(struct gsm_lchan *lchan, const struct gsm0808_cell
 		.current_channel_type_1 = gsm0808_current_channel_type_1(lchan->type),
 	};
 
-	if (conn->last_eutran_plmn_valid) {
+	/* Even if fast_return is now allowed locally, we may still want to
+	 * signal the Last EUTRAN PLMN Id to the new cell, since destination
+	 * config may differ and allow fast return */
+	if (conn->fast_return.last_eutran_plmn_valid) {
 		params.old_bss_to_new_bss_info_present = true;
 		params.old_bss_to_new_bss_info.last_eutran_plmn_id_present = true;
-		params.old_bss_to_new_bss_info.last_eutran_plmn_id = conn->last_eutran_plmn;
+		params.old_bss_to_new_bss_info.last_eutran_plmn_id = conn->fast_return.last_eutran_plmn;
 	}
 
 	switch (lchan->type) {
