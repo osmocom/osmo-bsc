@@ -53,7 +53,7 @@ static inline const char *tdma2a(bool val)
 /* The HO_CFG_ONE_MEMBER macro gets redefined, depending on whether to define struct members,
  * function declarations or definitions... It is of the format
  *   HO_CFG_ONE_MEMBER(TYPE, NAME, DEFAULT_VAL,
- *                     VTY_CMD, VTY_CMD_ARG, VTY_ARG_EVAL,
+ *                     VTY_CMD_PREFIX, VTY_CMD, VTY_CMD_ARG, VTY_ARG_EVAL,
  *                     VTY_WRITE_FMT, VTY_WRITE_CONV,
  *                     VTY_DOC)
  * Then using HO_CFG_ALL_MEMBERS can save a lot of code dup in defining API declaration, API
