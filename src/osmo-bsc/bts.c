@@ -1110,6 +1110,28 @@ const struct rate_ctr_desc bts_ctr_description[] = {
 	[BTS_CTR_INTER_BSC_HO_IN_ERROR] = \
 		{ "interbsc_ho_in:error",
 		  "Handover from remote BSS failed for other reason" },
+
+	[BTS_CTR_SRVCC_ATTEMPTED] = \
+		{ "srvcc:attempted",
+		  "Intra-BSC handover attempts" },
+	[BTS_CTR_SRVCC_COMPLETED] = \
+		{ "srvcc:completed",
+		  "Intra-BSC handover completed" },
+	[BTS_CTR_SRVCC_STOPPED] = \
+		{ "srvcc:stopped",
+		  "Connection ended during HO" },
+	[BTS_CTR_SRVCC_NO_CHANNEL] = \
+		{ "srvcc:no_channel",
+		  "Failure to allocate lchan for HO" },
+	[BTS_CTR_SRVCC_TIMEOUT] = \
+		{ "srvcc:timeout",
+		   "Handover timed out" },
+	[BTS_CTR_SRVCC_FAILED] = \
+		{ "srvcc:failed",
+		  "Received Handover Fail messages" },
+	[BTS_CTR_SRVCC_ERROR] = \
+		{ "srvcc:error",
+		  "Re-assignment failed for other reason" },
 };
 
 const struct rate_ctr_group_desc bts_ctrg_desc = {

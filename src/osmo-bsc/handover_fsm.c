@@ -725,6 +725,7 @@ void handover_start_inter_bsc_in(struct gsm_subscriber_connection *conn,
 		conn->fast_return.last_eutran_plmn_valid = true;
 		memcpy(&conn->fast_return.last_eutran_plmn, &req->last_eutran_plmn,
 		       sizeof(conn->fast_return.last_eutran_plmn));
+		ho_count(ho->new_bts, CTR_SRVCC_ATTEMPTED);
 	}
 
 	lchan_activate(ho->new_lchan, &info);
@@ -823,6 +824,9 @@ static int result_counter_bts(enum handover_scope scope, enum handover_result re
 		return result_counter_BTS_INTER_BSC_HO_IN(result);
 	}
 }
+
+FUNC_RESULT_COUNTER(BSC, SRVCC)
+FUNC_RESULT_COUNTER(BTS, SRVCC)
 
 static void send_handover_performed(struct gsm_subscriber_connection *conn)
 {
@@ -977,6 +981,11 @@ void handover_end(struct gsm_subscriber_connection *conn, enum handover_result r
 	ho_count_bsc(result_counter_bsc(ho->scope, result));
 	ho_count_bts(bts, result_counter_BTS_HANDOVER(result));
 	ho_count_bts(bts, result_counter_bts(ho->scope, result));
+	if (ho->scope & HO_INTER_BSC_IN && conn->fast_return.last_eutran_plmn_valid) {
+		/* From outside local BSC and with Last EUTRAN PLMN Id => SRVCC */
+		ho_count_bsc(result_counter_BSC_SRVCC(result));
+		ho_count_bts(bts, result_counter_BTS_SRVCC(result));
+	}
 
 	LOG_HO(conn, LOGL_INFO, "Result: %s\n", handover_result_name(result));
 
