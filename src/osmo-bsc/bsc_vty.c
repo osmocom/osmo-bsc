@@ -5099,7 +5099,7 @@ DEFUN_USRATTR(cfg_power_ctrl_bs_power,
 	      cfg_power_ctrl_bs_power_cmd,
 	      X(BSC_VTY_ATTR_NEW_LCHAN),
 	      "bs-power (static|dyn-max) <0-30>",
-	      "BS Power IE value to be send to the BTS\n"
+	      "BS Power IE value to be sent to the BTS\n"
 	      "Fixed BS Power reduction value (for static mode)\n"
 	      "Maximum BS Power reduction value (for dynamic mode)\n"
 	      "BS Power reduction value (in dB, even numbers only)\n")
