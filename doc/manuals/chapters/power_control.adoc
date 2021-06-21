@@ -327,3 +327,84 @@ network
 // TODO: Document other power control parameters:
 //		OsmoBSC(config-net-bts)# ms max power <0-40>
 //		OsmoBSC(config-net-bts-trx)# max_power_red <0-100>
+
+=== BCCH carrier power reduction operation
+
+According to 3GPP TS 45.008, section 7.1, the BCCH carrier (sometimes called C0) of
+a BTS shall maintain continuous Downlink transmission at full power in order to
+stay "visible" to the mobile stations.  Because of that, early versions of this 3GPP
+document prohibited BS power reduction on C0.  However, a new feature was introduced
+in version 13.0.0 (2015-11) - "BCCH carrier power reduction operation".
+
+This is a special mode of operation, in which the variation of RF power level for
+some timeslots is relaxed for the purpose of energy saving.  In other words, the
+output power on some timeslots, except the timeslot(s) carrying BCCH/CCCH, can be
+lower than the full power.  In this case the maximum allowed difference is 6 dB.
+
+Of course, energy saving comes at a price and has impacts to the network KPI.  In
+particular, it does negatively affect cell reselection performance and does increase
+handover failure and call drop rates.  This is why BCCH carrier power reduction
+operation mode is not enabled by default.  More information on potential impact
+and the simulation results can be found in 3GPP TR 45.926.
+
+==== Supported BTS models
+
+At the time of writing this manual, the only BTS model that can be instructed to
+enter or leave the BCCH power reduction mode is osmo-bts-trx.  Support for other
+BTS vendors/models may be added in the future.
+
+TIP: If you're using OsmoBTS, make sure that it reports feature #021 "BCCH carrier
+power reduction mode" in the feature vector.  This can be checked by issuing
+`show bts` command in OsmoBSC's VTY interface.
+
+==== Managing BCCH carrier power reduction
+
+The BCCH carrier power reduction can be controlled via the CTRL and VTY interfaces.
+There is currently no logic in OsmoBSC for automatic activation and deactivation
+of this mode, so it's up to the network operator (or an external monitoring suite)
+when and depending on which factors to toggle it.  Setting a value greater than
+zero enables the BCCH power reduction mode;  setting zero disables it completely.
+
+.Example: Activating BCCH carrier power reduction via the VTY
+----
+OsmoBSC> enable
+OsmoBSC# bts 0 <1> c0-power-reduction ?
+  <0-6>  Power reduction value (in dB, even numbers only)
+OsmoBSC# bts 0 <1> c0-power-reduction 4 <2>
+----
+<1> BTS number for which to activate BCCH carrier power reduction
+<2> Maximum BCCH carrier power reduction (in 2 dB steps, 4 dB in this example)
+
+.Example: Activating BCCH carrier power reduction via the CTRL
+----
+$ osmo_ctrl.py \
+	--host 127.0.0.1 <1> -p 4249 \
+	--set "bts.0.c0-power-reduction" 4 <2>
+----
+<1> Remote address of the host running osmo-bsc (localhost in this example)
+<2> Maximum BCCH carrier power reduction (in 2 dB steps, 4 dB in this example)
+
+Once activated, it's possible to introspect the current maximum reduction value:
+
+.Example: Checking BCCH carrier power reduction state via the VTY
+----
+OsmoBSC> enable
+OsmoBSC# show bts 0 <1>
+BTS 0 is of osmo-bts type in band DCS1800, has CI 0 LAC 1, BSIC 63 (NCC=7, BCC=7) and 2 TRX
+  Description: (null)
+  ARFCNs: 751 753
+  BCCH carrier power reduction (maximum): 4 dB <2>
+  ...
+----
+<1> BTS number for which to show BCCH carrier power reduction state
+<2> Maximum BCCH carrier power reduction currently applied
+
+.Example: Checking BCCH carrier power reduction state via the CTRL
+----
+$ osmo_ctrl.py \
+	--host 127.0.0.1 <1> -p 4249 \
+	--get "bts.0.c0-power-reduction"
+Got message: b'GET_REPLY 3652121201381481804 bts.0.c0-power-reduction 4 <2>'
+----
+<1> Remote address of the host running osmo-bsc (localhost in this example)
+<2> Maximum BCCH carrier power reduction currently applied

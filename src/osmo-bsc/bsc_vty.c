@@ -444,6 +444,8 @@ static void bts_dump_vty(struct vty *vty, struct gsm_bts *bts)
 	if (strnlen(bts->pcu_version, MAX_VERSION_LENGTH))
 		vty_out(vty, "  PCU version %s connected%s", bts->pcu_version,
 			VTY_NEWLINE);
+	vty_out(vty, "  BCCH carrier power reduction (maximum): %u dB%s",
+		bts->c0_max_power_red_db, VTY_NEWLINE);
 	vty_out(vty, "  MS Max power: %u dBm%s", bts->ms_max_power, VTY_NEWLINE);
 	vty_out(vty, "  Minimum Rx Level for Access: %i dBm%s",
 		rxlev2dbm(bts->si_common.cell_sel_par.rxlev_acc_min),
@@ -6020,6 +6022,45 @@ DEFUN(bts_resend_power_ctrl_params,
 	return CMD_SUCCESS;
 }
 
+DEFUN(bts_c0_power_red,
+      bts_c0_power_red_cmd,
+      "bts <0-255> c0-power-reduction <0-6>",
+      "BTS Specific Commands\n" BTS_NR_STR
+      "BCCH carrier power reduction operation\n"
+      "Power reduction value (in dB, even numbers only)\n")
+{
+	int bts_nr = atoi(argv[0]);
+	int red = atoi(argv[1]);
+	struct gsm_bts *bts;
+	int rc;
+
+	bts = gsm_bts_num(gsmnet_from_vty(vty), bts_nr);
+	if (!bts) {
+		vty_out(vty, "%% No such BTS (%d)%s", bts_nr, VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	if (red % 2 != 0) {
+		vty_out(vty, "%% Incorrect BCCH power reduction value, "
+			"an even number is expected%s", VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	rc = gsm_bts_set_c0_power_red(bts, red);
+	if (rc == -ENOTSUP) {
+		vty_out(vty, "%% BCCH carrier power reduction operation mode "
+			"is not supported for BTS%u%s", bts_nr, VTY_NEWLINE);
+		return CMD_WARNING;
+	} else if (rc != 0) {
+		vty_out(vty, "%% Failed to %sable BCCH carrier power reduction "
+			"operation mode for BTS%u%s", red ? "en" : "dis",
+			bts_nr, VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	return CMD_SUCCESS;
+}
+
 /* this command is now hidden, as it's a low-level debug hack, and people should
  * instead use osmo-cbc these days */
 DEFUN_HIDDEN(smscb_cmd, smscb_cmd_cmd,
@@ -8172,6 +8213,7 @@ int bsc_vty_init(struct gsm_network *network)
 	install_element(ENABLE_NODE, &restart_bts_cmd);
 	install_element(ENABLE_NODE, &bts_resend_sysinfo_cmd);
 	install_element(ENABLE_NODE, &bts_resend_power_ctrl_params_cmd);
+	install_element(ENABLE_NODE, &bts_c0_power_red_cmd);
 	install_element(ENABLE_NODE, &pdch_act_cmd);
 	install_element(ENABLE_NODE, &lchan_act_cmd);
 	install_element(ENABLE_NODE, &lchan_act_all_cmd);

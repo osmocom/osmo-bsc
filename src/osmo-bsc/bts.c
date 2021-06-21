@@ -1,5 +1,5 @@
 /* (C) 2008-2018 by Harald Welte <laforge@gnumonks.org>
- * (C) 2020 by sysmocom s.f.m.c. GmbH <info@sysmocom.de>
+ * (C) 2021 by sysmocom s.f.m.c. GmbH <info@sysmocom.de>
  *
  * All Rights Reserved
  *
@@ -743,6 +743,24 @@ int gsm_bts_set_system_infos(struct gsm_bts *bts)
 		if (rc != 0)
 			return rc;
 	}
+
+	return 0;
+}
+
+int gsm_bts_set_c0_power_red(struct gsm_bts *bts, const uint8_t red)
+{
+	int rc;
+
+	if (!osmo_bts_has_feature(&bts->features, BTS_FEAT_BCCH_POWER_RED))
+		return -ENOTSUP;
+	if (bts->model->power_ctrl_set_c0_power_red == NULL)
+		return -ENOTSUP;
+
+	rc = bts->model->power_ctrl_set_c0_power_red(bts, red);
+	if (rc != 0)
+		return rc;
+
+	bts->c0_max_power_red_db = red;
 
 	return 0;
 }

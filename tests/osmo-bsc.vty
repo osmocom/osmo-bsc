@@ -46,9 +46,13 @@ OsmoBSC# bts ?
 OsmoBSC# bts 0 ?
   resend-system-information      Re-generate + re-send BCCH SYSTEM INFORMATION
   resend-power-control-defaults  Re-generate + re-send default MS/BS Power control parameters
+  c0-power-reduction             BCCH carrier power reduction operation
   trx                            TRX for manual command
   oml                            Manipulate the OML managed objects
   om2000                         Manipulate the OM2000 managed objects
+
+OsmoBSC# bts 0 c0-power-reduction ?
+  <0-6>  Power reduction value (in dB, even numbers only)
 
 OsmoBSC# bts 0 trx ?
   <0-255>  TRX Number

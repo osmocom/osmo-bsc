@@ -1,6 +1,7 @@
 /* Osmocom OsmoBTS specific code */
 
 /* (C) 2010-2012 by Harald Welte <laforge@gnumonks.org>
+ * (C) 2021 by sysmocom - s.m.f.c. GmbH <info@sysmocom.de>
  *
  * All Rights Reserved
  *
@@ -43,6 +44,35 @@ extern struct gsm_bts_model bts_model_nanobts;
 
 static struct gsm_bts_model model_osmobts;
 
+static int power_ctrl_set_c0_power_red(const struct gsm_bts *bts,
+				       const uint8_t red)
+{
+	struct abis_rsl_dchan_hdr *dh;
+	struct msgb *msg;
+
+	msg = rsl_msgb_alloc();
+	if (msg == NULL)
+		return -ENOMEM;
+
+	LOGP(DRSL, LOGL_NOTICE, "%sabling BCCH carrier power reduction "
+	     "operation mode for BTS%u (maximum %u dB)\n",
+	     red ? "En" : "Dis", bts->nr, red);
+
+	/* Abuse the standard BS POWER CONTROL message by specifying 'Common Channel'
+	 * in the Protocol Discriminator field and 'BCCH' in the Channel Number IE. */
+	dh = (struct abis_rsl_dchan_hdr *) msgb_put(msg, sizeof(*dh));
+	dh->c.msg_discr = ABIS_RSL_MDISC_COM_CHAN;
+	dh->c.msg_type = RSL_MT_BS_POWER_CONTROL;
+	dh->ie_chan = RSL_IE_CHAN_NR;
+	dh->chan_nr = RSL_CHAN_BCCH;
+
+	msgb_tv_put(msg, RSL_IE_BS_POWER, red / 2);
+
+	msg->dst = bts->c0->rsl_link_primary;
+
+	return abis_rsl_sendmsg(msg);
+}
+
 int bts_model_osmobts_init(void)
 {
 	model_osmobts = bts_model_nanobts;
@@ -51,6 +81,9 @@ int bts_model_osmobts_init(void)
 
 	/* Unlike nanoBTS, osmo-bts does support SI2bis and SI2ter fine */
 	model_osmobts.force_combined_si = false;
+
+	/* Power control API */
+	model_osmobts.power_ctrl_set_c0_power_red = &power_ctrl_set_c0_power_red;
 
 	model_osmobts.features.data = &model_osmobts._features_data[0];
 	model_osmobts.features.data_len =

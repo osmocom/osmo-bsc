@@ -236,6 +236,8 @@ struct gsm_bts_model {
 	int (*power_ctrl_enc_rsl_params)(struct msgb *msg, const struct gsm_power_ctrl_params *cp);
 	/* (Optional) function for sending default MS/BS Power Control paramaters */
 	int (*power_ctrl_send_def_params)(const struct gsm_bts_trx *trx);
+	/* (Optional) function for toggling BCCH carrier power reduction operation */
+	int (*power_ctrl_set_c0_power_red)(const struct gsm_bts *bts, const uint8_t red);
 
 	void (*config_write_bts)(struct vty *vty, struct gsm_bts *bts);
 	void (*config_write_trx)(struct vty *vty, struct gsm_bts_trx *trx);
@@ -543,6 +545,9 @@ struct gsm_bts {
 	struct gsm_power_ctrl_params ms_power_ctrl;
 	struct gsm_power_ctrl_params bs_power_ctrl;
 
+	/* Maximum BCCH carrier power reduction */
+	uint8_t c0_max_power_red_db;
+
 	/* Interference Measurement Parameters */
 	struct gsm_interf_meas_params interf_meas_params;
 
@@ -690,6 +695,8 @@ void gsm_bts_all_ts_dispatch(struct gsm_bts *bts, uint32_t ts_ev, void *data);
 int bts_count_free_ts(struct gsm_bts *bts, enum gsm_phys_chan_config pchan);
 
 int gsm_bts_set_system_infos(struct gsm_bts *bts);
+
+int gsm_bts_set_c0_power_red(struct gsm_bts *bts, const uint8_t red);
 
 int gsm_bts_model_register(struct gsm_bts_model *model);
 struct gsm_bts_model *bts_model_find(enum gsm_bts_type type);

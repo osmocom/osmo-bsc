@@ -550,6 +550,54 @@ static int set_trx_max_power(struct ctrl_cmd *cmd, void *_data)
 }
 CTRL_CMD_DEFINE(trx_max_power, "max-power-reduction");
 
+static int verify_bts_c0_power_red(struct ctrl_cmd *cmd, const char *value, void *_data)
+{
+	const int red = atoi(value);
+
+	if (red < 0 || red > 6) {
+		cmd->reply = "Value is out of range";
+		return 1;
+	} else if (red % 2 != 0) {
+		cmd->reply = "Value must be even";
+		return 1;
+	}
+
+	return 0;
+}
+
+static int get_bts_c0_power_red(struct ctrl_cmd *cmd, void *data)
+{
+	const struct gsm_bts *bts = cmd->node;
+
+	cmd->reply = talloc_asprintf(cmd, "%u", bts->c0_max_power_red_db);
+	if (!cmd->reply) {
+		cmd->reply = "OOM.";
+		return CTRL_CMD_ERROR;
+	}
+
+	return CTRL_CMD_REPLY;
+}
+
+static int set_bts_c0_power_red(struct ctrl_cmd *cmd, void *data)
+{
+	struct gsm_bts *bts = cmd->node;
+	const int red = atoi(cmd->value);
+	int rc;
+
+	rc = gsm_bts_set_c0_power_red(bts, red);
+	if (rc == -ENOTSUP) {
+		cmd->reply = "BCCH carrier power reduction is not supported";
+		return CTRL_CMD_ERROR;
+	} else if (rc != 0) {
+		cmd->reply = "Failed to enable BCCH carrier power reduction";
+		return CTRL_CMD_ERROR;
+	}
+
+	return get_bts_c0_power_red(cmd, data);
+}
+
+CTRL_CMD_DEFINE(bts_c0_power_red, "c0-power-reduction");
+
 int bsc_base_ctrl_cmds_install(void)
 {
 	int rc = 0;
@@ -571,6 +619,7 @@ int bsc_base_ctrl_cmds_install(void)
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_oml_up);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_gprs_mode);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_rf_state);
+	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_c0_power_red);
 
 	rc |= ctrl_cmd_install(CTRL_NODE_TRX, &cmd_trx_max_power);
 	rc |= ctrl_cmd_install(CTRL_NODE_TRX, &cmd_trx_arfcn);
