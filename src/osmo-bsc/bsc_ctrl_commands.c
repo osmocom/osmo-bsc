@@ -24,6 +24,7 @@
 #include <osmocom/ctrl/control_cmd.h>
 
 #include <osmocom/vty/command.h>
+#include <osmocom/vty/misc.h>
 
 #include <osmocom/gsm/gsm48.h>
 #include <osmocom/bsc/ipaccess.h>
@@ -81,6 +82,31 @@ close_ret:
 	return cmd_ret;
 }
 CTRL_CMD_DEFINE_WO(net_apply_config_file, "apply-config-file");
+
+static int verify_net_write_config_file(struct ctrl_cmd *cmd, const char *value, void *_data)
+{
+	return 0;
+}
+static int set_net_write_config_file(struct ctrl_cmd *cmd, void *_data)
+{
+	const char *cfile_name;
+	unsigned cmd_ret = CTRL_CMD_ERROR;
+
+	if (strcmp(cmd->value, "overwrite"))
+		host_config_set(cmd->value);
+
+	cfile_name = host_config_file();
+
+	LOGP(DCTRL, LOGL_NOTICE, "Writing VTY config to file %s...\n", cfile_name);
+	if (osmo_vty_write_config_file(cfile_name) < 0)
+		goto ret;
+
+	cmd->reply = "OK";
+	cmd_ret = CTRL_CMD_REPLY;
+ret:
+	return cmd_ret;
+}
+CTRL_CMD_DEFINE_WO(net_write_config_file, "write-config-file");
 
 CTRL_CMD_DEFINE(net_mcc, "mcc");
 static int get_net_mcc(struct ctrl_cmd *cmd, void *_data)
@@ -528,6 +554,7 @@ int bsc_base_ctrl_cmds_install(void)
 {
 	int rc = 0;
 	rc |= ctrl_cmd_install(CTRL_NODE_ROOT, &cmd_net_apply_config_file);
+	rc |= ctrl_cmd_install(CTRL_NODE_ROOT, &cmd_net_write_config_file);
 	rc |= ctrl_cmd_install(CTRL_NODE_ROOT, &cmd_net_mnc);
 	rc |= ctrl_cmd_install(CTRL_NODE_ROOT, &cmd_net_mcc);
 	rc |= ctrl_cmd_install(CTRL_NODE_ROOT, &cmd_net_apply_config);

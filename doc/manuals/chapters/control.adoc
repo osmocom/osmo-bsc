@@ -27,6 +27,7 @@ TRX-specific commands are additionally prefixed with TRX number e. g.
 |inform-msc-v1|WO|Yes|Arbitrary value| See <<infomsc>> for details.
 |rf_locked|RW|No|"0","1"|See <<rfl>> for details.
 |number-of-bts|RO|No|"<num>"|Get number of configured BTS.
+|write-config-file|WO|No|"overwrite", "<filename>"|Write running configuration to file.
 |bts.N.location-area-code|RW|No|"<lac>"|Set/Get LAC (value between (0, 65535)).
 |bts.N.cell-identity|RW|No|"<id>"|Set/Get Cell Identity (value between (0, 65535)).
 |bts.N.apply-configuration|WO|No|Ignored|Restart BTS via OML.
