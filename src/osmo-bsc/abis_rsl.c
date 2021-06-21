@@ -1987,7 +1987,7 @@ static int rsl_rx_ccch_load(struct msgb *msg)
 		osmo_signal_dispatch(SS_CCCH, S_CCCH_PAGING_LOAD, &sd);
 		break;
 	case RSL_IE_RACH_LOAD:
-		if (msg->data_len >= 7) {
+		if (msgb_length(msg) >= 7) {
 			int32_t busy_percent, access_percent;
 			/* build data for signal */
 			sd.rach_slot_count = rslh->data[2] << 8 | rslh->data[3];
