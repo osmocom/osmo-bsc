@@ -42,7 +42,6 @@ enum neighbor_type {
  */
 struct neighbor {
 	struct llist_head entry;
-
 	enum neighbor_type type;
 	union {
 		uint8_t bts_nr;
@@ -52,6 +51,8 @@ struct neighbor {
 			struct cell_ab ab;
 		} cell_id;
 	};
+	bool dynamic; /* Generated dynamically by means like ANR, not from config */
+	struct timespec last_meas_detected; /* Last time it was detected by (pkt) meas report, triggered by ANR */
 };
 
 int resolve_local_neighbor(struct gsm_bts **local_neighbor_p, const struct gsm_bts *from_bts,

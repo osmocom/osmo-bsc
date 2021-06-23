@@ -387,7 +387,7 @@ int gsm48_send_rr_ciph_mode(struct gsm_lchan *lchan, int want_imeisv)
 	return rsl_encryption_cmd(msg);
 }
 
-static void gsm48_cell_desc(struct gsm48_cell_desc *cd,
+void gsm48_cell_desc(struct gsm48_cell_desc *cd,
 			    const struct gsm_bts *bts)
 {
 	cd->ncc = (bts->bsic >> 3 & 0x7);

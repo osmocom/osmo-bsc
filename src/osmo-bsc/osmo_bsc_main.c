@@ -633,6 +633,9 @@ static int bsc_vty_go_parent(struct vty *vty)
 		vty->node = CONFIG_NODE;
 		vty->index = NULL;
 		break;
+	case ANR_NODE:
+		vty->node = GSMNET_NODE;
+		break;
 	default:
 		osmo_ss7_vty_go_parent(vty);
 	}

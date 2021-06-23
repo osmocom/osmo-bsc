@@ -24,6 +24,8 @@
 #include <osmocom/bsc/bts.h>
 #include <osmocom/bsc/debug.h>
 #include <osmocom/bsc/nm_common_fsm.h>
+#include <osmocom/bsc/abis_osmo.h>
+#include <osmocom/bsc/neighbor_ident.h>
 
 const struct value_string bts_attribute_names[] = {
 	OSMO_VALUE_STRING(BTS_TYPE_VARIANT),
@@ -364,6 +366,8 @@ struct gsm_bts *gsm_bts_alloc(struct gsm_network *net, struct gsm_bts_sm *bts_sm
 
 	/* SRVCC is enabled by default */
 	bts->srvcc_fast_return_allowed = true;
+	/* Enabled ANR by default for this BTS, since default BSC config disables it globally anyway */
+	bts->anr_enabled = true;
 
 	return bts;
 }
@@ -581,6 +585,41 @@ unsigned long long bts_uptime(const struct gsm_bts *bts)
 
 	/* monotonic clock helps to ensure that the conversion is valid */
 	return difftime(tp.tv_sec, bts->uptime);
+}
+
+int bts_anr_request(struct gsm_bts *bts, const struct gsm48_cell_desc *cell_desc_li, unsigned int num_cells)
+{
+	if (!bts->anr_enabled) {
+		LOGP(DNM, LOGL_DEBUG, "BTS%u: ANR Req: ANR disabled by config\n", bts->nr);
+		return 0;
+	}
+	if (!bts->osmo_link) {
+		LOGP(DNM, LOGL_INFO, "BTS%u: ANR Req: OSMO link is down\n", bts->nr);
+		return 0;
+	}
+	if (!osmo_bts_has_feature(&bts->features, BTS_FEAT_ABIS_OSMO_PCU)) {
+		LOGP(DNM, LOGL_INFO, "BTS%u: ANR Req: Abis OSMO_PCU proto not supported\n", bts->nr);
+		return 0;
+	}
+	LOGP(DNM, LOGL_INFO, "BTS%u: ANR Req (%u cells)\n", bts->nr, num_cells);
+	return abis_osmo_pcu_tx_anr_req(bts, cell_desc_li, num_cells);
+}
+
+void bts_anr_expiration(struct gsm_bts *bts, const struct timespec *expire_ts)
+{
+	struct neighbor *n, *n2;
+	llist_for_each_entry_safe(n, n2, &bts->neighbors, entry) {
+		if (!n->dynamic)
+			continue;
+		if (timespeccmp(&n->last_meas_detected, expire_ts, >=))
+			continue;
+		LOGP(DNM, LOGL_INFO, "BTS%u: ANR Expire: Remove dynamic neighbor %s\n",
+		     bts->nr, neighbor_to_str_c(OTC_SELECT, n));
+		llist_del(&n->entry);
+		talloc_free(n);
+		/* TODO: force SI list update ?*/
+		break;
+	}
 }
 
 char *get_model_oml_status(const struct gsm_bts *bts)

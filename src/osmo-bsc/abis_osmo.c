@@ -32,6 +32,7 @@
 #include <osmocom/bsc/debug.h>
 #include <osmocom/bsc/bts.h>
 #include <osmocom/bsc/pcuif_proto.h>
+#include <osmocom/bsc/neighbor_ident.h>
 
 #define OM_HEADROOM_SIZE	128
 
@@ -40,7 +41,6 @@
 ///////////////////////////////////////
 #define PCUIF_HDR_SIZE ( sizeof(struct gsm_pcu_if) - sizeof(((struct gsm_pcu_if *)0)->u) )
 
-#if 0
 static struct msgb *abis_osmo_pcu_msgb_alloc(uint8_t msg_type, uint8_t bts_nr, size_t extra_size)
 {
 	struct msgb *msg;
@@ -62,7 +62,100 @@ static int abis_osmo_pcu_sendmsg(struct gsm_bts *bts, struct msgb *msg)
 	ipa_prepend_header_ext(msg, IPAC_PROTO_EXT_PCU);
 	return abis_osmo_sendmsg(bts, msg);
 }
-#endif
+
+int abis_osmo_pcu_tx_anr_req(struct gsm_bts *bts, const struct gsm48_cell_desc *cell_desc_li, unsigned int num_cells)
+{
+	struct msgb *msg = abis_osmo_pcu_msgb_alloc(PCU_IF_MSG_CONTAINER, bts->bts_nr, sizeof(struct gsm_pcu_if_anr_req));
+	struct gsm_pcu_if *pcu_prim = (struct gsm_pcu_if *) msgb_data(msg);
+	struct gsm_pcu_if_anr_req *anr_req = (struct gsm_pcu_if_anr_req *)&pcu_prim->u.container.data[0];
+
+	msgb_put(msg, sizeof(pcu_prim->u.container) + sizeof(struct gsm_pcu_if_anr_req));
+	pcu_prim->u.container.msg_type = PCU_IF_MSG_ANR_REQ;
+	osmo_store16be(sizeof(struct gsm_pcu_if_anr_req), &pcu_prim->u.container.length);
+
+	anr_req->num_cells = num_cells;
+	OSMO_ASSERT(num_cells <= ARRAY_SIZE(anr_req->cell_list));
+	if (num_cells)
+		memcpy(anr_req->cell_list, cell_desc_li, sizeof(*cell_desc_li) * num_cells);
+
+	return abis_osmo_pcu_sendmsg(bts, msg);
+}
+
+#define ANR_NEIGH_RXLEV_INVALID 0xff
+static int rcvmsg_pcu_anr_cnf(struct gsm_bts *bts, const struct gsm_pcu_if_anr_cnf* anr_cnf)
+{
+	unsigned int i;
+	struct timespec now;
+	struct gsm_bts *neigh_bts;
+	bool neigh_bts_found;
+	struct neighbor *n;
+
+	osmo_clock_gettime(CLOCK_MONOTONIC, &now);
+	LOGP(DNM, LOGL_INFO, "(bts=%d) Rx ANR Confirmation (%u cells)\n",
+	     bts->nr, anr_cnf->num_cells);
+
+	for (i = 0; i < anr_cnf->num_cells; i++) {
+		const struct gsm48_cell_desc *cell_desc = (const struct gsm48_cell_desc *)&anr_cnf->cell_list[i];
+		uint16_t arfcn = (cell_desc->arfcn_hi << 8) | cell_desc->arfcn_lo;
+		uint8_t bsic = (cell_desc->ncc << 3) | cell_desc->bcc;
+
+		if (anr_cnf->rxlev_list[i] == ANR_NEIGH_RXLEV_INVALID) {
+			LOGP(DNM, LOGL_INFO, "(bts=%d) ANR: ARFCN=%u BSIC=%u is NOT a neighbor (not found)\n",
+			     bts->nr, arfcn, bsic);
+			continue;
+		}
+		if (anr_cnf->rxlev_list[i] < bts->network->anr.rxlev_threshold) {
+			LOGP(DNM, LOGL_INFO,
+			    "(bts=%d) ANR: ARFCN=%u BSIC=%u RXLEV=%u (%d dBm) is NOT a neighbor (< rxlev %u)\n",
+			     bts->nr, arfcn, bsic, anr_cnf->rxlev_list[i], anr_cnf->rxlev_list[i] - 110,
+			     bts->network->anr.rxlev_threshold);
+			continue;
+		}
+		LOGP(DNM, LOGL_INFO, "(bts=%d) ANR: ARFCN=%u BSIC=%u RXLEV=%u (%d dBm) is a neighbor\n",
+		     bts->nr, arfcn, bsic, anr_cnf->rxlev_list[i], anr_cnf->rxlev_list[i] - 110);
+
+		/* Find BTS owning ARFCN+BSIC: */
+		neigh_bts_found = false;
+		llist_for_each_entry(neigh_bts, &bts->network->bts_list, list) {
+			if (neigh_bts->c0->arfcn != arfcn || neigh_bts->bsic != bsic)
+				continue;
+			neigh_bts_found = true;
+			break;
+		}
+		if (!neigh_bts_found) {
+			LOGP(DNM, LOGL_NOTICE, "(bts=%d) ANR: ARFCN=%u BSIC=%u RXLEV=%u (%d dBm) matches no BTS configured in BSC!\n",
+			     bts->nr, arfcn, bsic, anr_cnf->rxlev_list[i], anr_cnf->rxlev_list[i] - 110);
+			continue;
+		}
+
+		/* Try to find existing neighbour and update it. */
+		neigh_bts_found = false;
+		llist_for_each_entry(n, &bts->neighbors, entry) {
+			if (n->type != NEIGHBOR_TYPE_BTS_NR)
+				continue;
+			if (n->bts_nr != neigh_bts->nr)
+				continue;
+			neigh_bts_found = true;
+			n->last_meas_detected = now;
+			break;
+		}
+		/* If the neighbour didn't exist yet, create it and add it to the list */
+		if (!neigh_bts_found) {
+			LOGP(DNM, LOGL_NOTICE, "(bts=%d) ANR: Added new dynamic neighbor BTS%d\n",
+			     bts->nr, neigh_bts->nr);
+			n = talloc(bts, struct neighbor);
+			*n = (struct neighbor){
+				.type = NEIGHBOR_TYPE_BTS_NR,
+				.bts_nr = neigh_bts->nr,
+				.dynamic = true,
+				.last_meas_detected = now,
+			};
+			llist_add_tail(&n->entry, &bts->neighbors);
+			/* TODO: force re-creation of SI? */
+		}
+	}
+	return 0;
+}
 
 static int rcvmsg_pcu_container(struct gsm_bts *bts, struct gsm_pcu_if_container *container, size_t container_len)
 {
@@ -79,6 +172,13 @@ static int rcvmsg_pcu_container(struct gsm_bts *bts, struct gsm_pcu_if_container
 	     bts->nr, container->msg_type);
 
 	switch (container->msg_type) {
+	case PCU_IF_MSG_ANR_CNF:
+		if (data_length < sizeof(struct gsm_pcu_if_anr_cnf)) {
+			LOGP(DNM, LOGL_ERROR, "ABIS_OSMO_PCU CONTAINER ANR_CNF message too short\n");
+			return -EINVAL;
+		}
+		rc = rcvmsg_pcu_anr_cnf(bts, (struct gsm_pcu_if_anr_cnf*)&container->data);
+		break;
 	default:
 		LOGP(DNM, LOGL_NOTICE, "(bts=%d) Rx ABIS_OSMO_PCU unexpected msg type (%u) inside container!\n",
 		     bts->nr, container->msg_type);

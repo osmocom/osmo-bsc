@@ -179,6 +179,12 @@ static struct cmd_node ts_node = {
 	1,
 };
 
+static struct cmd_node anr_node = {
+	ANR_NODE,
+	"%s(config-net-anr)# ",
+	1,
+};
+
 static struct gsm_network *vty_global_gsm_network = NULL;
 
 struct gsm_network *gsmnet_from_vty(struct vty *v)
@@ -1294,6 +1300,9 @@ static void config_write_bts_single(struct vty *vty, struct gsm_bts *bts)
 	if (!bts->srvcc_fast_return_allowed)
 		vty_out(vty, "  srvcc fast-return forbid%s", VTY_NEWLINE);
 
+	vty_out(vty, "  anr %s%s",
+		bts->anr_enabled ? "enable" : "disable", VTY_NEWLINE);
+
 	/* BS/MS Power Control parameters */
 	config_write_power_ctrl(vty, 2, &bts->bs_power_ctrl);
 	config_write_power_ctrl(vty, 2, &bts->ms_power_ctrl);
@@ -1308,6 +1317,18 @@ static int config_write_bts(struct vty *v)
 
 	llist_for_each_entry(bts, &gsmnet->bts_list, list)
 		config_write_bts_single(v, bts);
+
+	return CMD_SUCCESS;
+}
+
+static int config_write_anr(struct vty *vty)
+{
+	struct gsm_network *gsmnet = gsmnet_from_vty(vty);
+	vty_out(vty, " anr%s", VTY_NEWLINE);
+	vty_out(vty, "  scan-frequency %u%s", gsmnet->anr.scan_frequency / 60, VTY_NEWLINE);
+	vty_out(vty, "  expiration-frequency %u%s", gsmnet->anr.scan_frequency / 60, VTY_NEWLINE);
+	vty_out(vty, "  expiration-time %u%s", gsmnet->anr.expiration_time / 60, VTY_NEWLINE);
+	vty_out(vty, "  rxlev-threshold %u%s", gsmnet->anr.rxlev_threshold, VTY_NEWLINE);
 
 	return CMD_SUCCESS;
 }
@@ -2371,6 +2392,73 @@ DEFUN_ATTR(cfg_net_nri_null_del,
 	}
 	if (rc < 0)
 		return CMD_WARNING;
+	return CMD_SUCCESS;
+}
+
+/* ANR configuration */
+DEFUN_ATTR(cfg_anr,
+	   cfg_anr_cmd,
+	   "anr",
+	   "Configure ANR (Automatic Neighbor Registration) parameters\n",
+	   CMD_ATTR_IMMEDIATE)
+{
+	vty->node = ANR_NODE;
+	return CMD_SUCCESS;
+}
+
+DEFUN_ATTR(cfg_anr_scan_frequency,
+	   cfg_anr_scan_frequency_cmd,
+	   "scan-frequency <0-100000>",
+	   "Initiate ANR scan at given frequency\n"
+	   "Time in minutes (0 = disabled, default)",
+	   CMD_ATTR_IMMEDIATE)
+{
+	struct gsm_network *gsmnet = gsmnet_from_vty(vty);
+	gsmnet->anr.scan_frequency = atoi(argv[0]) * 60;
+	if (gsmnet->anr.scan_frequency)
+		osmo_timer_schedule(&gsmnet->anr.request_timer, gsmnet->anr.scan_frequency, 0);
+	else
+		osmo_timer_del(&gsmnet->anr.request_timer);
+	return CMD_SUCCESS;
+}
+
+DEFUN_ATTR(cfg_anr_expiration_frequency,
+	   cfg_anr_expiration_frequency_cmd,
+	   "expiration-frequency <0-100000>",
+	   "Frequency at which to trigger expiration lookup timer\n"
+	   "Frequency in minutes (0 = default)",
+	   CMD_ATTR_IMMEDIATE)
+{
+	struct gsm_network *gsmnet = gsmnet_from_vty(vty);
+	gsmnet->anr.expiration_frequency = atoi(argv[0]) * 60;
+	if (gsmnet->anr.expiration_frequency)
+		osmo_timer_schedule(&gsmnet->anr.expiration_timer, gsmnet->anr.expiration_frequency, 0);
+	else
+		osmo_timer_del(&gsmnet->anr.expiration_timer);
+	return CMD_SUCCESS;
+}
+
+DEFUN_ATTR(cfg_anr_expiration_time,
+	   cfg_anr_expiration_time_cmd,
+	   "expiration-time <0-100000>",
+	   "Expire dynamic neighbors not detected since a given amount of time\n"
+	   "Time to expire a dynamic neighbor, in minutes (0 = disabled, default)",
+	   CMD_ATTR_IMMEDIATE)
+{
+	struct gsm_network *gsmnet = gsmnet_from_vty(vty);
+	gsmnet->anr.expiration_time = atoi(argv[0]) * 60;
+	return CMD_SUCCESS;
+}
+
+DEFUN_ATTR(cfg_anr_rxlev_threshold,
+	   cfg_anr_rxlev_threshold_cmd,
+	   "rxlev-threshold <0-255>",
+	   "Accept only dynamic neighbors with a minimum RXLEV provided by MS\n"
+	   "RXLEV (0 = default)",
+	   CMD_ATTR_IMMEDIATE)
+{
+	struct gsm_network *gsmnet = gsmnet_from_vty(vty);
+	gsmnet->anr.rxlev_threshold = atoi(argv[0]);
 	return CMD_SUCCESS;
 }
 
@@ -5017,6 +5105,21 @@ DEFUN_ATTR(cfg_bts_srvcc_fast_return, cfg_bts_srvcc_fast_return_cmd,
 	struct gsm_bts *bts = vty->index;
 
 	bts->srvcc_fast_return_allowed = strcmp(argv[0], "allow") == 0;
+	return CMD_SUCCESS;
+}
+
+DEFUN_ATTR(cfg_bts_anr_enable_disable,
+	   cfg_bts_anr_enable_disable_cmd,
+	   "anr (enable|disable)",
+	   "Allow or forbid ANR (Automatic Neighbor Registration) on this BTS\n"
+	   "Allow ANR\n" "Forbid ANR\n",
+	   CMD_ATTR_IMMEDIATE)
+{
+	struct gsm_bts *bts = vty->index;
+	if (strcmp(argv[0], "enable") == 0)
+		bts->anr_enabled = true;
+	else
+		bts->anr_enabled = false;
 	return CMD_SUCCESS;
 }
 
@@ -8033,6 +8136,13 @@ int bsc_vty_init(struct gsm_network *network)
 	install_element(GSMNET_NODE, &cfg_net_nri_null_add_cmd);
 	install_element(GSMNET_NODE, &cfg_net_nri_null_del_cmd);
 
+	install_element(GSMNET_NODE, &cfg_anr_cmd);
+	install_node(&anr_node, config_write_anr);
+	install_element(ANR_NODE, &cfg_anr_scan_frequency_cmd);
+	install_element(ANR_NODE, &cfg_anr_expiration_frequency_cmd);
+	install_element(ANR_NODE, &cfg_anr_expiration_time_cmd);
+	install_element(ANR_NODE, &cfg_anr_rxlev_threshold_cmd);
+
 	install_element(GSMNET_NODE, &cfg_bts_cmd);
 	install_node(&bts_node, config_write_bts);
 	install_element(BTS_NODE, &cfg_bts_type_cmd);
@@ -8169,6 +8279,7 @@ int bsc_vty_init(struct gsm_network *network)
 	install_element(BTS_NODE, &cfg_bts_interf_meas_avg_period_cmd);
 	install_element(BTS_NODE, &cfg_bts_interf_meas_level_bounds_cmd);
 	install_element(BTS_NODE, &cfg_bts_srvcc_fast_return_cmd);
+	install_element(BTS_NODE, &cfg_bts_anr_enable_disable_cmd);
 
 	neighbor_ident_vty_init();
 	/* See also handover commands added on bts level from handover_vty.c */

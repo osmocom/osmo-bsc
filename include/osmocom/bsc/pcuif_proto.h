@@ -26,6 +26,10 @@
 #define PCU_IF_MSG_TXT_IND	0x70	/* Text indication for BTS */
 #define PCU_IF_MSG_CONTAINER	0x80	/* Transparent container message */
 
+/* msg_type coming from BSC (inside PCU_IF_MSG_CONTAINER) */
+#define PCU_IF_MSG_ANR_REQ	0x81	/* Automatic Neighbor Registration Request */
+#define PCU_IF_MSG_ANR_CNF	0x82	/* Automatic Neighbor Registration Confirmation (meas results) */
+
 /* sapi */
 #define PCU_IF_SAPI_RACH	0x01	/* channel request on CCCH */
 #define PCU_IF_SAPI_AGCH	0x02	/* assignment on AGCH */
@@ -224,6 +228,19 @@ struct gsm_pcu_if_container {
 	uint8_t 	spare;
 	uint16_t	length; /* network byte order */
 	uint8_t		data[0];
+} __attribute__ ((packed));
+
+/* Used inside container: */
+struct gsm_pcu_if_anr_req {
+	uint8_t		num_cells;
+	uint16_t	cell_list[96];  /* struct gsm48_cell_desc */
+} __attribute__ ((packed));
+
+/* PCU confirms back with measurements of target cells */
+struct gsm_pcu_if_anr_cnf {
+	uint8_t		num_cells;
+	uint16_t	cell_list[32];  /* struct gsm48_cell_desc */
+	uint8_t		rxlev_list[32]; /* value 0xff: invalid */
 } __attribute__ ((packed));
 
 struct gsm_pcu_if {

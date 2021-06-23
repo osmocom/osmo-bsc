@@ -12,6 +12,7 @@ struct gsm_lchan;
 struct gsm_meas_rep;
 struct gsm_network;
 struct gsm_subscriber_connection;
+struct gsm_bts;
 
 void gsm_net_update_ctype(struct gsm_network *network);
 enum gsm_chan_t get_ctype_by_chreq(struct gsm_network *network, uint8_t ra);
@@ -42,6 +43,8 @@ struct msgb *gsm48_create_loc_upd_rej(uint8_t cause);
 
 struct msgb *gsm48_create_rr_status(uint8_t cause);
 int gsm48_tx_rr_status(struct gsm_subscriber_connection *conn, uint8_t cause);
+
+void gsm48_cell_desc(struct gsm48_cell_desc *cd, const struct gsm_bts *bts);
 
 #define GSM48_ALLOC_SIZE        2048
 #define GSM48_ALLOC_HEADROOM    256

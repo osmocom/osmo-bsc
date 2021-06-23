@@ -1349,6 +1349,18 @@ struct gsm_network {
 	struct osmo_nri_ranges *null_nri_ranges;
 
 	struct smlc_config *smlc;
+
+	struct {
+		unsigned int scan_frequency; /* frequency of request_timer, in seconds. 0 = disabled */
+		unsigned int expiration_frequency; /* frequency of expiration_timer, in seconds. 0 = disabled */
+		unsigned int expiration_time; /* maximum allowed time for a dynamic neigh without detection, in seconds. 0 = disabled */
+		unsigned int rxlev_threshold; /* Minimum RXLEV an MS must provide for a neighboru to be considered valid */
+		/* Timer to submit Measure Neighbours Request from time to time. */
+		struct osmo_timer_list request_timer;
+		/* Timer to delete dynamic neighbours generated from ANR which are not recently detected. */
+		struct osmo_timer_list expiration_timer;
+
+	} anr;
 };
 
 struct gsm_audio_support {

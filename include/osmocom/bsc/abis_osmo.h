@@ -31,3 +31,5 @@ struct gsm_bts;
 
 int abis_osmo_rcvmsg(struct msgb *msg);
 int abis_osmo_sendmsg(struct gsm_bts *bts, struct msgb *msg);
+
+int abis_osmo_pcu_tx_anr_req(struct gsm_bts *bts, const struct gsm48_cell_desc *cell_desc_li, unsigned int num_cells);

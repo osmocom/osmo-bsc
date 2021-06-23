@@ -196,3 +196,5 @@ int rsl_sacch_filling(struct gsm_bts_trx *trx, uint8_t type, const uint8_t *data
 int rsl_bcch_info(const struct gsm_bts_trx *trx, enum osmo_sysinfo_type si_type, const uint8_t *data, int len)
 { return 0; }
 int gsm_generate_si(struct gsm_bts *bts, enum osmo_sysinfo_type si_type) { return 0; }
+struct neighbor;
+char *neighbor_to_str_c(void *ctx, const struct neighbor *n) { return NULL; }

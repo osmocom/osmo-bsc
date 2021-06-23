@@ -97,6 +97,51 @@ static void bsc_store_bts_uptime(void *data)
 	osmo_timer_schedule(&net->bts_store_uptime_timer, BTS_STORE_UPTIME_INTERVAL, 0);
 }
 
+static void bsc_anr_request(void *data)
+{
+	struct gsm_network *net = data;
+	struct gsm_bts *bts;
+	struct gsm48_cell_desc cell_desc[256];
+	unsigned int num_cells = 0;
+
+	/* Build list of ARFCN+BSIC: */
+	llist_for_each_entry(bts, &net->bts_list, list) {
+		if (num_cells == ARRAY_SIZE(cell_desc)) {
+			LOGP(DNM, LOGL_ERROR,
+			    "ANR Req: Unable to build list larger than %zu elements",
+			    ARRAY_SIZE(cell_desc));
+			break;
+		}
+		gsm48_cell_desc(&cell_desc[num_cells], bts);
+		num_cells++;
+	}
+
+	llist_for_each_entry(bts, &net->bts_list, list)
+		bts_anr_request(bts, cell_desc, num_cells);
+
+	/* Keep this timer ticking. */
+	osmo_timer_schedule(&net->anr.request_timer, net->anr.scan_frequency, 0);
+}
+
+static void bsc_anr_expiration(void *data)
+{
+	struct gsm_network *net = data;
+	struct gsm_bts *bts;
+	struct timespec now, res;
+	struct timespec max_age = {
+		.tv_sec = net->anr.expiration_time,
+		.tv_nsec = 0,
+	};
+	osmo_clock_gettime(CLOCK_MONOTONIC, &now);
+	timespecsub(&now, &max_age, &res);
+
+	llist_for_each_entry(bts, &net->bts_list, list)
+		bts_anr_expiration(bts, &res);
+
+	/* Keep this timer ticking. */
+	osmo_timer_schedule(&net->anr.expiration_timer, net->anr.expiration_frequency, 0);
+}
+
 static struct gsm_network *bsc_network_init(void *ctx)
 {
 	struct gsm_network *net = gsm_network_init(ctx);
@@ -143,6 +188,10 @@ static struct gsm_network *bsc_network_init(void *ctx)
 	/* Init uptime tracking timer. */
 	osmo_timer_setup(&net->bts_store_uptime_timer, bsc_store_bts_uptime, net);
 	osmo_timer_schedule(&net->bts_store_uptime_timer, BTS_STORE_UPTIME_INTERVAL, 0);
+
+	/* Init ANR tracking timer. */
+	osmo_timer_setup(&net->anr.request_timer, bsc_anr_request, net);
+	osmo_timer_setup(&net->anr.expiration_timer, bsc_anr_expiration, net);
 
 	net->cbc->net = net;
 	net->cbc->mode = BSC_CBC_LINK_MODE_DISABLED;

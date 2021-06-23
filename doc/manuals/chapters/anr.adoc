@@ -1,0 +1,159 @@
+[[anr]]
+== Automatic Neighbor Registration (ANR)
+
+Automatic Neighbor Registration (ANR from now on) is the process by which the
+BSC is able to dynamically resolve the topology of the network, that is, cells neighboring
+one another, by means of requesting and processing measurement reports from MS
+camping on the network.
+
+This feature is not described in any 3GPP TS specification, but it can be
+implemented by using standard specification features. The communication between
+BSC and PCU, though, is not standardized, and hence Osmocom specific protocol is
+used.
+
+ANR can be implemented using either (or both) CS and PS domains. In CS, MS are
+requested to provide Measurement Reports through SACCH, while in PS MS are
+requested to provide Packet measurement Reports through PDCH.
+
+=== ANR on CS domain (BTS)
+
+OsmOBSC doesn't implement this method, since the former (CS) relies on
+SACCH which is slow (throughput constrainer) and usually already constringed
+with usual usage, so using it for ANR would probably affect the operation of the
+network.
+
+=== ANR on PS domain (PCU)
+
+Under the PS domain, the BSC provides a list of target desired frequencies to
+the PCU and requests it to orchestrate the reporting of measures from MS on
+those frequencies. The provided list of desired target frequencies is basically
+the entire list of BCCH frequencies (TRX0) of all BTS under the management of
+the BSC.
+
+In order to communicate with OsmoPCU, OsmoBSC uses the PCUIF protocol. Since in
+the Osmocom architecture usually the PCU is directly attached to the BTS and hence
+there's no direct connection between the BSC and the PCU, a new transport link
+needs to be added to allow them to communicate. The implemented solution so far
+is to reuse the underlying IPA multiplex of the IPA/OML link between OsmoBSC and
+OsmoBTS to support forwarding PCUIF messages between the BSC and the PCU.
+
+OsmoBTS supporting the above mentioned protocol extension, must signal so during
+BTS Get Attr during OML link set up (see feature `BTS_FEAT_ABIS_OSMO_PCU`).
+
+When OsmoBSC wants to start the ANR procedure, and hence ask the PCU to provide
+measurement reports for the target BCCH frequencies, it does so by submitting a
+`PCU_IF_MSG_ANR_REQ` message on the above described protocol.
+
+Upon receiving that messages (forwarded from the BTS), the PCU is then
+responsible for the following tasks:
+
+Splitting the entire BCCH frequency list into smaller chunks::
+This is done for several reasons. Mainly, because an MS can only measure and
+hence provide measurement reports for up to 32 frequencies at a time.
+Furthermore, splitting the list into several MS is more fair since load is
+spread among several subscribers. Finally, spreading the load also means quicker
+results, with less noticeable operational affectation on the MS registered with
+the cell.
+
+Selecting candidate MS to issue and provide the measurement reports for a chunk of frequencies::
+The process is different whether the MS is in Idle mode or in Active
+(MAC-shared) mode. So far OsmoPCU only supports selecting and managing this
+procedure on MS in Active mode (holding an active TBF). The exact procedure is
+described bee, see <<anr_neigh_list>>.
+
+Report the measurements for each chunk of frequencies back to the BSC::
+This is done by means of sending back the recorded measurement reports obtained
+from MS in a message of type `PCU_IF_MSG_ANR_CNF`, which will then be forwarded
+by the BTS to the BSC.
+
+[[anr_neigh_list]]
+==== Gathering Measurements (TBF active mode)
+
+The purpose of this section is to describe the techinque used by the PCU to be
+able to retrieve measurements from an MS on the desired chunk of frequency list.
+
+In general, the MS can be instructed to send Packet Measurement Reports to the
+network when in PDCH by means of one of these:
+
+* Broadcasting Network Control Order NC1 or NC2 in CCCH System Information.
+* Setting Network Control Order to NC1 or NC2 when sending a _Packet Measurement
+  Order_ message to it.
+
+In general, the MS does the measurements on up to 32 BCCH frequencies from a
+list called the _Neighbour List_, which is built up locally based on the
+frequencies received in System Information 2, also called _BA(GPRS)_ or
+_BA(list)_ (they both are the same since no PBCCH is used).
+
+However, when in ANR, we want to instruct each MS to issue measurements on a
+different list of desired target frequencies, which is different from that of
+the currently announced neighbors in the cell (SI2, see above).
+The MS can be instructed to build up a different local _Neighbour List_ by using
+the `NC_FREQUENCY_LIST` bits present in _Packet Measurement Order_ sent to it.
+
+The `NC_FREQUENCY_LIST` contains an array of frequencies to remove, and an array
+of frequencies to add to the local _Neighbour List_ of the MS. Hence OsmoPCU
+builds up the `NC_FREQUENCY_LIST` with additions or removals taking into
+consideration the `BA(GPRS)` from SI2 and the target desired chunk of
+frequencies, so that when applying the bits, the MS ends up having a local
+_Neighbour List_ matching that of the chunk of frequencies we want to measure.
+
+This `NC_FREQUENCY_LIST` is sent to the MS using one or more instances of
+_Packet Measurement Order_ messages (increasing `PMO_IND`), and also setting
+`NETWORK_CONTROL_ORDER` to `NC1` in order to ask that MS to start sending
+_Packet Measurement Reports_.
+
+Once the desired _Packet Measurement Reports_ are received, OsmoPCU then sends a
+new _Packet Measurement Order_ message with an empty `NC_FREQUENCY_LIST` (which
+resets the local _Neighbour List_ to `BA(GPRS)` according to 3GPP  TS 44.040 sec
+5.6.3.2), and sets `NETWORK_CONTROL_ORDER` to `RESET`.
+
+
+=== Configuring ANR
+
+ANR is mostly configured globally for the entire BSC, and it is configured to be disabled by default:
+
+.Example: Default ANR configuration
+----
+network
+ anr
+  scan-frequency 0 <1>
+  expiration-frequency 0 <2>
+  expiration-time 0
+  rxlev-threshold 0
+----
+<1> Disable (value 0) sending of ANR Requests towards PCU of all cells
+<2> Disable (value 0) expiration of dynamically found neighbors.
+
+Hence, one can see than using `scan frequency 0` alone effectively disables ANR
+for all BTS, and in that case expiration related values doesn't matter because
+no dynamic neighor is ever created. One can also quickly (1 minute delay) all
+dynamic neighbors by diabling ANR (`scan-frequency 0`), then setting
+`expiration-frequency 1` and `expiration-time 0`.
+
+On the other hand, a more typical configuration with ANR enabled could be:
+
+.Example: Default ANR configuration
+----
+network
+ anr
+  scan-frequency 30 <1>
+  expiration-frequency 15 <2>
+  expiration-time 600 <3>
+  rxlev-threshold 35 <4>
+----
+<1> An ANR request is scheduled for each cell every 30 minutes
+<2> Run the expiration timer to drop dynamic neighbors every 10 minutes
+<3> When the expiration timer runs, drop dynamic neighbors for which we didn't receive any measurement over last 10 hours (600 min).
+<4> Don't register, as neighbors, cells with Measurement Reports containing RXLEV lesser than 35 (-85dBm).
+
+Finally, ANR can also be enabled or disabled specifically for each BTS. The
+default configuration is to have it enabled by default, since anyway the default
+global config doesn't activate ANR. Hence, once the user enables ANR globally,
+the default is to enable it for all BTS under the BSC.
+
+.Example: Forbid use of ANR in a specific BTS
+----
+network
+ bts 0
+  anr disable
+----

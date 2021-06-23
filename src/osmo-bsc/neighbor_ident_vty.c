@@ -534,6 +534,11 @@ void neighbor_ident_vty_write_bts(struct vty *vty, const char *indent, struct gs
 	struct neighbor *n;
 
 	llist_for_each_entry(n, &bts->neighbors, entry) {
+
+		/* Don't store dynamically found neighbours */
+		if (n->dynamic)
+			continue;
+
 		switch (n->type) {
 		case NEIGHBOR_TYPE_BTS_NR:
 			vty_out(vty, "%sneighbor bts %u%s", indent, n->bts_nr, VTY_NEWLINE);
@@ -601,7 +606,8 @@ DEFUN(show_bts_neighbor, show_bts_neighbor_cmd,
 		vty_out(vty, " local BTS %u lac-ci %u %u%s",
 			local_neighbor->nr,
 			local_neighbor->location_area_code,
-			local_neighbor->cell_identity, VTY_NEWLINE);
+			local_neighbor->cell_identity,
+			VTY_NEWLINE);
 	}
 
 	if (remote_neighbors.id_list_len) {

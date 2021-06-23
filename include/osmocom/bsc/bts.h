@@ -556,6 +556,8 @@ struct gsm_bts {
 
 	/* Is Fast return to LTE allowed during Chan Release in this BTS? */
 	bool srvcc_fast_return_allowed;
+
+	bool anr_enabled; /* Is ANR enabled for this BTS (VTY)? */
 };
 
 #define GSM_BTS_SI2Q(bts, i)   (struct gsm48_system_information_type_2quater *)((bts)->si_buf[SYSINFO_TYPE_2quater][i])
@@ -669,6 +671,9 @@ int bts_gprs_mode_is_compat(struct gsm_bts *bts, enum bts_gprs_mode mode);
 
 #define BTS_STORE_UPTIME_INTERVAL 10 /* in seconds */
 void bts_store_uptime(struct gsm_bts *bts);
+
+int bts_anr_request(struct gsm_bts *bts, const struct gsm48_cell_desc *cell_desc_li, unsigned int num_cells);
+void bts_anr_expiration(struct gsm_bts *bts, const struct timespec *expire_ts);
 
 unsigned long long bts_uptime(const struct gsm_bts *bts);
 

@@ -34,6 +34,8 @@ include::{srcdir}/chapters/mscpool.adoc[]
 
 include::{srcdir}/chapters/smlc.adoc[]
 
+include::{srcdir}/chapters/anr.adoc[]
+
 include::./common/chapters/qos-dscp-pcp.adoc[]
 
 include::./common/chapters/counters-overview.adoc[]
