@@ -50,6 +50,7 @@ ipaccess_config_LDADD = \
 	$(top_builddir)/src/osmo-bsc/bts_sm.o \
 	$(top_builddir)/src/osmo-bsc/bts_trx.o \
 	$(top_builddir)/src/osmo-bsc/abis_nm.o \
+	$(top_builddir)/src/osmo-bsc/abis_osmo.o \
 	$(top_builddir)/src/osmo-bsc/acc.o \
 	$(top_builddir)/src/osmo-bsc/bts_ipaccess_nanobts.o \
 	$(top_builddir)/src/osmo-bsc/bts_ipaccess_nanobts_omlattr.o \
@@ -74,6 +75,7 @@ ipaccess_proxy_SOURCES = \
 
 ipaccess_proxy_LDADD = \
 	$(top_builddir)/src/osmo-bsc/abis_nm.o \
+	$(top_builddir)/src/osmo-bsc/abis_osmo.o \
 	$(top_builddir)/src/osmo-bsc/acc.o \
 	$(top_builddir)/src/osmo-bsc/bts.o \
 	$(top_builddir)/src/osmo-bsc/bts_sm.o \

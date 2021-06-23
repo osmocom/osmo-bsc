@@ -37,6 +37,7 @@
 #include <osmocom/bsc/gsm_data.h>
 #include <osmocom/bsc/abis_nm.h>
 #include <osmocom/bsc/abis_rsl.h>
+#include <osmocom/bsc/abis_osmo.h>
 #include <osmocom/bsc/debug.h>
 #include <osmocom/abis/subchan_demux.h>
 #include <osmocom/gsm/ipa.h>
@@ -557,6 +558,10 @@ void ipaccess_drop_oml(struct gsm_bts *bts, const char *reason)
 	bts->uptime = 0;
 	osmo_stat_item_dec(osmo_stat_item_group_get_item(bts->bts_statg, BTS_STAT_OML_CONNECTED), 1);
 
+	/* Also drop the associated OSMO link */
+	e1inp_sign_link_destroy(bts->osmo_link);
+	bts->osmo_link = NULL;
+
 	/* we have issues reconnecting RSL, drop everything. */
 	llist_for_each_entry(trx, &bts->trx_list, list) {
 		ipaccess_drop_rsl(trx, "OML link drop");
@@ -713,6 +718,10 @@ ipaccess_sign_link_up(void *unit_data, struct e1inp_line *line,
 			sign_link->trx->bts->ip_access.flags |= OML_UP;
 		}
 		osmo_stat_item_inc(osmo_stat_item_group_get_item(bts->bts_statg, BTS_STAT_OML_CONNECTED), 1);
+
+		/* Create link for E1INP_SIGN_OSMO */
+		//SAPI must be 0, no IPAC_PROTO_EXT_PCU, see ipaccess_bts_read_cb
+		bts->osmo_link = e1inp_sign_link_create(sign_ts, E1INP_SIGN_OSMO, bts->c0, IPAC_PROTO_OSMO, 0);
 		break;
 	case E1INP_SIGN_RSL: {
 		struct e1inp_ts *ts;
@@ -784,6 +793,9 @@ static int ipaccess_sign_link(struct msgb *msg)
 	        break;
 	case E1INP_SIGN_OML:
 	        ret = abis_nm_rcvmsg(msg);
+	        break;
+	case E1INP_SIGN_OSMO:
+	        ret = abis_osmo_rcvmsg(msg);
 	        break;
 	default:
 		LOGP(DLINP, LOGL_ERROR, "Unknown signal link type %d\n",

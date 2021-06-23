@@ -26,6 +26,7 @@ acc_test_SOURCES = \
 
 acc_test_LDADD = \
 	$(top_builddir)/src/osmo-bsc/abis_nm.o \
+	$(top_builddir)/src/osmo-bsc/abis_osmo.o \
 	$(top_builddir)/src/osmo-bsc/acc.o \
 	$(top_builddir)/src/osmo-bsc/bts.o \
 	$(top_builddir)/src/osmo-bsc/bts_sm.o \

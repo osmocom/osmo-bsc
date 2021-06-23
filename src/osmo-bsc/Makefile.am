@@ -31,6 +31,7 @@ osmo_bsc_SOURCES = \
 	abis_nm_vty.c \
 	abis_om2000.c \
 	abis_om2000_vty.c \
+	abis_osmo.c \
 	abis_rsl.c \
 	acc.c \
 	assignment_fsm.c \

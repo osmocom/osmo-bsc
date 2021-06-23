@@ -2,6 +2,7 @@ noinst_HEADERS = \
 	a_reset.h \
 	abis_nm.h \
 	abis_om2000.h \
+	abis_osmo.h \
 	abis_rsl.h \
 	acc.h \
 	assignment_fsm.h \

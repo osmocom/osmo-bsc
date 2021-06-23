@@ -291,6 +291,8 @@ struct gsm_bts {
 
 	/* Connected PCU version (if any) */
 	char pcu_version[MAX_VERSION_LENGTH];
+	/* PCU sign_link, over OML line: */
+	struct e1inp_sign_link *osmo_link;
 
 	/* maximum Tx power that the MS is permitted to use in this cell */
 	int ms_max_power;
