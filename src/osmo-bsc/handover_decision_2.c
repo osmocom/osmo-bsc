@@ -1005,7 +1005,7 @@ static void candidate_set_free_tch(struct ho_candidate *c)
 		c->current.free_tch = c->current.free_tchf;
 		c->current.min_free_tch = c->current.min_free_tchf;
 		c->current.lchan_frees_tchf = 1;
-		if (c->current.lchan->ts->pchan_on_init == GSM_PCHAN_TCH_F_TCH_H_PDCH)
+		if (c->current.lchan->ts->pchan_on_init == GSM_PCHAN_OSMO_DYN)
 			c->current.lchan_frees_tchh = 2;
 		else
 			c->current.lchan_frees_tchh = 0;
@@ -1017,7 +1017,7 @@ static void candidate_set_free_tch(struct ho_candidate *c)
 		/* Freeing one of two TCH/H does not free a dyn TS and would not free a TCH/F. It has to be the last
 		 * TCH/H of a dynamic timeslot that is freed to get a new TCH/F in the current cell from the handover.
 		 * Hence the ts_usage_count() condition. */
-		if (c->current.lchan->ts->pchan_on_init == GSM_PCHAN_TCH_F_TCH_H_PDCH
+		if (c->current.lchan->ts->pchan_on_init == GSM_PCHAN_OSMO_DYN
 		    && ts_usage_count(c->current.lchan->ts) == 1)
 			c->current.lchan_frees_tchf = 1;
 		else
@@ -1034,7 +1034,7 @@ static void candidate_set_free_tch(struct ho_candidate *c)
 
 	/* Would the next TCH/F lchan occupy a dynamic timeslot that currently counts for free TCH/H timeslots? */
 	next_lchan = lchan_avail_by_type(c->target.bts, GSM_LCHAN_TCH_F, false);
-	if (next_lchan && next_lchan->ts->pchan_on_init == GSM_PCHAN_TCH_F_TCH_H_PDCH)
+	if (next_lchan && next_lchan->ts->pchan_on_init == GSM_PCHAN_OSMO_DYN)
 		c->target.next_tchf_reduces_tchh = 2;
 	else
 		c->target.next_tchf_reduces_tchh = 0;
@@ -1042,7 +1042,7 @@ static void candidate_set_free_tch(struct ho_candidate *c)
 	/* Would the next TCH/H lchan occupy a dynamic timeslot that currently counts for free TCH/F timeslots?
 	 * Note that a dyn TS already in TCH/H mode (half occupied) would not reduce free TCH/F. */
 	next_lchan = lchan_avail_by_type(c->target.bts, GSM_LCHAN_TCH_H, false);
-	if (next_lchan && next_lchan->ts->pchan_on_init == GSM_PCHAN_TCH_F_TCH_H_PDCH
+	if (next_lchan && next_lchan->ts->pchan_on_init == GSM_PCHAN_OSMO_DYN
 	    && next_lchan->ts->pchan_is != GSM_PCHAN_TCH_H)
 		c->target.next_tchh_reduces_tchf = 1;
 	else
@@ -1568,7 +1568,7 @@ static void on_measurement_report(struct gsm_meas_rep *mr)
 
 static bool lchan_is_on_dynamic_ts(struct gsm_lchan *lchan)
 {
-	return lchan->ts->pchan_on_init == GSM_PCHAN_TCH_F_TCH_H_PDCH
+	return lchan->ts->pchan_on_init == GSM_PCHAN_OSMO_DYN
 		|| lchan->ts->pchan_on_init == GSM_PCHAN_TCH_F_PDCH;
 }
 

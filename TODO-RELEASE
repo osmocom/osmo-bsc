@@ -12,3 +12,4 @@ libosmogsm    >1.5.1            enum entry GSM0808_FE_IE_LAST_USED_EUTRAN_PLMN_I
 libosmogsm    >1.5.1            introduced struct needed gsm0808_old_bss_to_new_bss_info->last_eutran_plmn_id
 libosmo-mgcp-client >1.8.0	need osmo_mgcpc_ep_ci_get_remote_rtp_info()
 libosmovty	>1.5.1		needs vty_read_config_filep()
+libosmosgsm     >1.5.1          needs GSM_PCHAN_OSMO_DYN

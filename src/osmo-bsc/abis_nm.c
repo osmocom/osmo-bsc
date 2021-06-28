@@ -1892,7 +1892,7 @@ static int verify_chan_comb(struct gsm_bts_trx_ts *ts, uint8_t chan_comb,
 		switch (chan_comb) {
 		case NM_CHANC_TCHHalf:
 		case NM_CHANC_TCHHalf2:
-		case NM_CHANC_OSMO_TCHFull_TCHHalf_PDCH:
+		case NM_CHANC_OSMO_DYN:
 			/* not supported */
 			*reason = "TCH/H is not supported.";
 			return -EINVAL;
@@ -1990,7 +1990,7 @@ static int verify_chan_comb(struct gsm_bts_trx_ts *ts, uint8_t chan_comb,
 				case NM_CHANC_TCHHalf:
 				case NM_CHANC_IPAC_TCHFull_TCHHalf:
 				case NM_CHANC_IPAC_TCHFull_PDCH:
-				case NM_CHANC_OSMO_TCHFull_TCHHalf_PDCH:
+				case NM_CHANC_OSMO_DYN:
 					return 0;
 				default:
 					*reason = "TS1 must carry a CBCH, SDCCH or TCH.";
@@ -2022,7 +2022,7 @@ static int verify_chan_comb(struct gsm_bts_trx_ts *ts, uint8_t chan_comb,
 				return 0;
 			case NM_CHANC_IPAC_PDCH:
 			case NM_CHANC_IPAC_TCHFull_PDCH:
-			case NM_CHANC_OSMO_TCHFull_TCHHalf_PDCH:
+			case NM_CHANC_OSMO_DYN:
 				if (ts->trx->nr == 0)
 					return 0;
 				else {

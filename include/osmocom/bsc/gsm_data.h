@@ -796,7 +796,7 @@ struct gsm_bts_trx_ts {
 	 * vty after OML activation. Gets written on vty 'write file'. */
 	enum gsm_phys_chan_config pchan_from_config;
 	/* When the timeslot OML is established, pchan_from_config is copied here. This is the pchan
-	 * currently in effect; for dynamic ts, this is the dyn kind (GSM_PCHAN_TCH_F_TCH_H_PDCH or
+	 * currently in effect; for dynamic ts, this is the dyn kind (GSM_PCHAN_OSMO_DYN or
 	 * GSM_PCHAN_TCH_F_PDCH) and does not show the pchan type currently active. */
 	enum gsm_phys_chan_config pchan_on_init;
 	/* This is the *actual* pchan type currently active. For dynamic timeslots, this reflects either
@@ -1302,7 +1302,7 @@ struct gsm_network {
 	/* control interface */
 	struct ctrl_handle *ctrl;
 
-	/* Allow or disallow TCH/F on dynamic TCH/F_TCH/H_PDCH; OS#1778 */
+	/* Allow or disallow TCH/F on dynamic TCH/F_TCH/H_SDCCH8_PDCH; OS#1778 */
 	bool dyn_ts_allow_tch_f;
 
 	/* all active subscriber connections. */

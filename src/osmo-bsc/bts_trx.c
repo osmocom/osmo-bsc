@@ -216,7 +216,7 @@ struct gsm_lchan *rsl_lchan_lookup(struct gsm_bts_trx *trx, uint8_t chan_nr,
 		break;
 	case ABIS_RSL_CHAN_NR_CBITS_OSMO_PDCH:
 		lch_idx = 0;
-		ok = (ts->pchan_on_init == GSM_PCHAN_TCH_F_TCH_H_PDCH);
+		ok = (ts->pchan_on_init == GSM_PCHAN_OSMO_DYN);
 		break;
 	default:
 		return NULL;
@@ -296,7 +296,7 @@ int trx_count_free_ts(struct gsm_bts_trx *trx, enum gsm_phys_chan_config pchan)
 					count++;
 				continue;
 
-			case GSM_PCHAN_TCH_F_TCH_H_PDCH:
+			case GSM_PCHAN_OSMO_DYN:
 				if (pchan == GSM_PCHAN_TCH_F)
 					count++;
 				else if (pchan == GSM_PCHAN_TCH_H)

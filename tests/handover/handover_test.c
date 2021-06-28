@@ -187,7 +187,7 @@ enum gsm_phys_chan_config pchan_from_str(const char *str)
 {
 	enum gsm_phys_chan_config pchan;
 	if (!strcmp(str, "dyn"))
-		return GSM_PCHAN_TCH_F_TCH_H_PDCH;
+		return GSM_PCHAN_OSMO_DYN;
 	if (!strcmp(str, "c+s4"))
 		return GSM_PCHAN_CCCH_SDCCH4;
 	if (!strcmp(str, "-"))
@@ -270,7 +270,7 @@ static struct gsm_bts *_create_bts(int num_trx, const char * const *ts_args, int
 
 			/* Unused dyn TS start out as used for PDCH */
 			switch (trx->ts[i].pchan_on_init) {
-			case GSM_PCHAN_TCH_F_TCH_H_PDCH:
+			case GSM_PCHAN_OSMO_DYN:
 			case GSM_PCHAN_TCH_F_PDCH:
 				ts_set_pchan_is(&trx->ts[i], GSM_PCHAN_PDCH);
 				break;
@@ -392,7 +392,7 @@ struct gsm_lchan *lchan_act(struct gsm_lchan *lchan, int full_rate, const char *
 	/* Fake osmo_mgcpc_ep_ci to indicate that the lchan is used for voice */
 	lchan->mgw_endpoint_ci_bts = (void*)1;
 
-	if (lchan->ts->pchan_on_init == GSM_PCHAN_TCH_F_TCH_H_PDCH)
+	if (lchan->ts->pchan_on_init == GSM_PCHAN_OSMO_DYN)
 		ts_set_pchan_is(lchan->ts, full_rate ? GSM_PCHAN_TCH_F : GSM_PCHAN_TCH_H);
 	if (lchan->ts->pchan_on_init == GSM_PCHAN_TCH_F_PDCH) {
 		OSMO_ASSERT(full_rate);
@@ -722,7 +722,7 @@ int __wrap_abis_rsl_sendmsg(struct msgb *msg)
 
 		/* send dyn TS back to PDCH if unused */
 		switch (lchan->ts->pchan_on_init) {
-		case GSM_PCHAN_TCH_F_TCH_H_PDCH:
+		case GSM_PCHAN_OSMO_DYN:
 		case GSM_PCHAN_TCH_F_PDCH:
 			switch (lchan->ts->pchan_is) {
 			case GSM_PCHAN_TCH_H:
@@ -884,8 +884,8 @@ DEFUN(create_bts, create_bts_cmd,
       "Create N TRX in the new BTS\n"
       "TRX count\n"
       "Timeslot config\n"
-      "Timeslot types for 8 * trx-count, each being one of CCCH+SDCCH4|SDCCH8|TCH/F|TCH/H|TCH/F_TCH/H_PDCH|...;"
-      " shorthands: cs+4 = CCCH+SDCCH4; dyn = TCH/F_TCH/H_PDCH\n")
+      "Timeslot types for 8 * trx-count, each being one of CCCH+SDCCH4|SDCCH8|TCH/F|TCH/H|TCH/F_TCH/H_SDCCH8_PDCH|...;"
+      " shorthands: cs+4 = CCCH+SDCCH4; dyn = TCH/F_TCH/H_SDCCH8_PDCH\n")
 {
 	int num_trx = atoi(argv[0]);
 	VTY_ECHO();

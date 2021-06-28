@@ -59,10 +59,10 @@ void bts_chan_load(struct pchan_load *cl, const struct gsm_bts *bts)
 			if (!nm_is_running(&ts->mo.nm_state))
 				continue;
 
-			/* A dynamic timeslot currently in PDCH mode are available as TCH, beause they can be switched
-			 * to TCH mode at any moment. Count TCH/F_TCH/H_PDCH as one total timeslot, even though it may
+			/* A dynamic timeslot currently in PDCH mode are available as TCH or SDCCH8, beause they can be switched
+			 * to TCH or SDCCH mode at any moment. Count TCH/F_TCH/H_SDCCH8_PDCH as one total timeslot, even though it may
 			 * be switched to TCH/H and would then count as two -- hence opt for pessimistic load. */
-			if ((ts->pchan_on_init == GSM_PCHAN_TCH_F_TCH_H_PDCH ||
+			if ((ts->pchan_on_init == GSM_PCHAN_OSMO_DYN ||
 			     ts->pchan_on_init == GSM_PCHAN_TCH_F_PDCH) &&
 			    (ts->pchan_is == GSM_PCHAN_NONE ||
 			     ts->pchan_is == GSM_PCHAN_PDCH)) {
@@ -147,9 +147,9 @@ static void chan_load_stat_set(enum gsm_phys_chan_config pchan,
 		osmo_stat_item_set(osmo_stat_item_group_get_item(bts->bts_statg, BTS_STAT_CHAN_SDCCH8_CBCH_USED), lc->used);
 		osmo_stat_item_set(osmo_stat_item_group_get_item(bts->bts_statg, BTS_STAT_CHAN_SDCCH8_CBCH_TOTAL), lc->total);
 		break;
-	case GSM_PCHAN_TCH_F_TCH_H_PDCH:
-		osmo_stat_item_set(osmo_stat_item_group_get_item(bts->bts_statg, BTS_STAT_CHAN_TCH_F_TCH_H_PDCH_USED), lc->used);
-		osmo_stat_item_set(osmo_stat_item_group_get_item(bts->bts_statg, BTS_STAT_CHAN_TCH_F_TCH_H_PDCH_TOTAL), lc->total);
+	case GSM_PCHAN_OSMO_DYN:
+		osmo_stat_item_set(osmo_stat_item_group_get_item(bts->bts_statg, BTS_STAT_CHAN_OSMO_DYN_USED), lc->used);
+		osmo_stat_item_set(osmo_stat_item_group_get_item(bts->bts_statg, BTS_STAT_CHAN_OSMO_DYN_TOTAL), lc->total);
 		break;
 	default:
 		LOG_BTS(bts, DRLL, LOGL_NOTICE, "Unknown channel type %d\n", pchan);

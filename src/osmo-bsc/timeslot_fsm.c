@@ -85,7 +85,7 @@ static enum lchan_sanity is_lchan_sane(struct gsm_bts_trx_ts *ts, struct gsm_lch
 		return LCHAN_IS_READY_TO_GO;
 
 	switch (ts->pchan_on_init) {
-	case GSM_PCHAN_TCH_F_TCH_H_PDCH:
+	case GSM_PCHAN_OSMO_DYN:
 		if (lchan->type == GSM_LCHAN_TCH_H)
 			return LCHAN_NEEDS_PCHAN_CHANGE;
 		/* fall thru */
@@ -241,7 +241,7 @@ static void ts_setup_lchans(struct gsm_bts_trx_ts *ts)
 	}
 
 	switch (ts->pchan_on_init) {
-	case GSM_PCHAN_TCH_F_TCH_H_PDCH:
+	case GSM_PCHAN_OSMO_DYN:
 		ts_set_pchan_is(ts, GSM_PCHAN_NONE);
 		break;
 	case GSM_PCHAN_TCH_F_PDCH:
@@ -314,7 +314,7 @@ static void ts_fsm_unused_onenter(struct osmo_fsm_inst *fi, uint32_t prev_state)
 	}
 
 	switch (ts->pchan_on_init) {
-	case GSM_PCHAN_TCH_F_TCH_H_PDCH:
+	case GSM_PCHAN_OSMO_DYN:
 	case GSM_PCHAN_TCH_F_PDCH:
 		if (bts->gprs.mode == BTS_GPRS_NONE) {
 			LOG_TS(ts, LOGL_DEBUG, "GPRS mode is 'none': not activating PDCH.\n");
@@ -451,7 +451,7 @@ static void ts_fsm_pdch_onenter(struct osmo_fsm_inst *fi, uint32_t prev_state)
 
 	/* Set pchan = PDCH status, but double check. */
 	switch (ts->pchan_on_init) {
-	case GSM_PCHAN_TCH_F_TCH_H_PDCH:
+	case GSM_PCHAN_OSMO_DYN:
 	case GSM_PCHAN_TCH_F_PDCH:
 	case GSM_PCHAN_PDCH:
 		ts_set_pchan_is(ts, GSM_PCHAN_PDCH);
@@ -526,7 +526,7 @@ static void ts_fsm_wait_pdch_deact(struct osmo_fsm_inst *fi, uint32_t event, voi
 	case TS_EV_PDCH_DEACT_ACK:
 		/* Remove pchan = PDCH status, but double check. */
 		switch (ts->pchan_on_init) {
-		case GSM_PCHAN_TCH_F_TCH_H_PDCH:
+		case GSM_PCHAN_OSMO_DYN:
 			ts_set_pchan_is(ts, GSM_PCHAN_NONE);
 			break;
 		case GSM_PCHAN_TCH_F_PDCH:
@@ -650,8 +650,8 @@ static void ts_fsm_in_use_onenter(struct osmo_fsm_inst *fi, uint32_t prev_state)
 	}
 
 	/* Make sure dyn TS pchan_is is updated. For TCH/F_PDCH, there are only PDCH or TCH/F modes, but
-	 * for Osmocom style TCH/F_TCH/H_PDCH the pchan_is == NONE until an lchan is activated. */
-	if (ts->pchan_on_init == GSM_PCHAN_TCH_F_TCH_H_PDCH)
+	 * for Osmocom style TCH/F_TCH/H_SDCCH8_PDCH the pchan_is == NONE until an lchan is activated. */
+	if (ts->pchan_on_init == GSM_PCHAN_OSMO_DYN)
 		ts_set_pchan_is(ts, gsm_pchan_by_lchan_type(activating_type));
 	ts_lchans_dispatch(ts, LCHAN_ST_WAIT_TS_READY, LCHAN_EV_TS_READY);
 }
@@ -1019,7 +1019,7 @@ bool ts_is_pchan_switching(struct gsm_bts_trx_ts *ts, enum gsm_phys_chan_config 
 		 * waiting for PDCH DEACT (N)ACK */
 		if (target_pchan) {
 			switch (ts->pchan_on_init) {
-			case GSM_PCHAN_TCH_F_TCH_H_PDCH:
+			case GSM_PCHAN_OSMO_DYN:
 				if (target_pchan)
 					*target_pchan = GSM_PCHAN_NONE;
 				break;

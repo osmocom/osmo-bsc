@@ -1411,7 +1411,7 @@ static uint8_t pchan2comb(enum gsm_phys_chan_config pchan)
 	case GSM_PCHAN_TCH_H:
 	case GSM_PCHAN_PDCH:
 	case GSM_PCHAN_TCH_F_PDCH:
-	case GSM_PCHAN_TCH_F_TCH_H_PDCH:
+	case GSM_PCHAN_OSMO_DYN:
 		return 8;
 	default:
 		return 0;
@@ -1423,7 +1423,7 @@ static uint8_t ts2comb(struct gsm_bts_trx_ts *ts)
 	if (ts->pchan_on_init == GSM_PCHAN_TCH_F_PDCH) {
 		LOGP(DNM, LOGL_ERROR, "%s pchan %s not intended for use with OM2000, use %s instead\n",
 		     gsm_ts_and_pchan_name(ts), gsm_pchan_name(GSM_PCHAN_TCH_F_PDCH),
-		     gsm_pchan_name(GSM_PCHAN_TCH_F_TCH_H_PDCH));
+		     gsm_pchan_name(GSM_PCHAN_OSMO_DYN));
 		/* If we allowed initialization of TCH/F_PDCH, it would fail
 		 * when we try to send the ip.access specific RSL PDCH Act
 		 * message for it. Rather fail completely right now: */

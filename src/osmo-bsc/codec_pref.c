@@ -197,7 +197,7 @@ static bool test_codec_support_bts(const struct gsm_bts *bts, uint8_t perm_spch)
 	llist_for_each_entry(trx, &bts->trx_list, list) {
 		for (i = 0; i < TRX_NR_TS; i++) {
 			pchan = trx->ts[i].pchan_from_config;
-			if (pchan == GSM_PCHAN_TCH_F_TCH_H_PDCH)
+			if (pchan == GSM_PCHAN_OSMO_DYN)
 				rate_match = true;
 			else if (full_rate && pchan == GSM_PCHAN_TCH_F)
 				rate_match = true;

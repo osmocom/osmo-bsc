@@ -1256,13 +1256,13 @@ const struct osmo_stat_item_desc bts_stat_desc[] = {
 		{ "chan_sdcch8_cbch:total",
 		  "Number of SDCCH8+CBCH channels total",
 		  "", 60, 0 },
-	[BTS_STAT_CHAN_TCH_F_TCH_H_PDCH_USED] = \
-		{ "chan_tch_f_tch_h_pdch:used",
-		  "Number of TCH/F_TCH/H_PDCH channels used",
+	[BTS_STAT_CHAN_OSMO_DYN_USED] = \
+		{ "chan_osmo_dyn:used",
+		  "Number of TCH/F_TCH/H_SDCCH8_PDCH channels used",
 		  "", 60, 0 },
-	[BTS_STAT_CHAN_TCH_F_TCH_H_PDCH_TOTAL] = \
-		{ "chan_tch_f_tch_h_pdch:total",
-		  "Number of TCH/F_TCH/H_PDCH channels total",
+	[BTS_STAT_CHAN_OSMO_DYN_TOTAL] = \
+		{ "chan_osmo_dyn:total",
+		  "Number of TCH/F_TCH/H_SDCCH8_PDCH channels total",
 		  "", 60, 0 },
 	[BTS_STAT_T3122] = \
 		{ "T3122",

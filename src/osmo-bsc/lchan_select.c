@@ -70,7 +70,7 @@ _lc_find_trx(struct gsm_bts_trx *trx, enum gsm_phys_chan_config pchan,
 		if (!ts_is_usable(ts))
 			continue;
 		/* The caller first selects what kind of TS to search in, e.g. looking for exact
-		 * GSM_PCHAN_TCH_F, or maybe among dynamic GSM_PCHAN_TCH_F_TCH_H_PDCH... */
+		 * GSM_PCHAN_TCH_F, or maybe among dynamic GSM_PCHAN_OSMO_DYN... */
 		if (ts->pchan_on_init != pchan) {
 			LOGPLCHANALLOC("%s is != %s\n", gsm_ts_and_pchan_name(ts),
 				       gsm_pchan_name(pchan));
@@ -227,7 +227,7 @@ struct gsm_lchan *lchan_avail_by_type(struct gsm_bts *bts, enum gsm_chan_t type,
 		/* Try fully dynamic TCH/F_TCH/H_PDCH as TCH/F... */
 		if (!lchan && bts->network->dyn_ts_allow_tch_f)
 			lchan = _lc_dyn_find_bts(bts,
-						 GSM_PCHAN_TCH_F_TCH_H_PDCH,
+						 GSM_PCHAN_OSMO_DYN,
 						 GSM_PCHAN_TCH_F, log);
 		break;
 	case GSM_LCHAN_TCH_H:
@@ -236,7 +236,7 @@ struct gsm_lchan *lchan_avail_by_type(struct gsm_bts *bts, enum gsm_chan_t type,
 		 * TCH/F_TCH/H_PDCH */
 		if (!lchan)
 			lchan = _lc_dyn_find_bts(bts,
-						 GSM_PCHAN_TCH_F_TCH_H_PDCH,
+						 GSM_PCHAN_OSMO_DYN,
 						 GSM_PCHAN_TCH_H, log);
 		break;
 	default:

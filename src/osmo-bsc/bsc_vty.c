@@ -1484,7 +1484,7 @@ static void vty_out_dyn_ts_details(struct vty *vty, struct gsm_bts_trx_ts *ts)
 {
 	/* show dyn TS details, if applicable */
 	switch (ts->pchan_on_init) {
-	case GSM_PCHAN_TCH_F_TCH_H_PDCH:
+	case GSM_PCHAN_OSMO_DYN:
 		vty_out(vty, "  Osmocom Dyn TS:");
 		vty_out_dyn_ts_status(vty, ts);
 		vty_out(vty, VTY_NEWLINE);
@@ -5648,7 +5648,7 @@ DEFUN_USRATTR(cfg_ts_pchan,
 }
 
 /* used for backwards compatibility with old config files that still
- * have uppercase pchan type names */
+ * have uppercase pchan type names. Also match older names for existing types.  */
 DEFUN_HIDDEN(cfg_ts_pchan_compat,
       cfg_ts_pchan_compat_cmd,
       "phys_chan_config PCHAN",
@@ -5659,8 +5659,12 @@ DEFUN_HIDDEN(cfg_ts_pchan_compat,
 
 	pchanc = gsm_pchan_parse(argv[0]);
 	if (pchanc < 0) {
-		vty_out(vty, "Unknown physical channel name '%s'%s", argv[0], VTY_NEWLINE);
-		return CMD_ERR_NO_MATCH;
+		if (strcasecmp(argv[0], "tch/f_tch/h_pdch") == 0) {
+			pchanc = GSM_PCHAN_OSMO_DYN;
+		} else {
+			vty_out(vty, "Unknown physical channel name '%s'%s", argv[0], VTY_NEWLINE);
+			return CMD_ERR_NO_MATCH;
+		}
 	}
 
 	ts->pchan_from_config = pchanc;
@@ -6155,9 +6159,9 @@ DEFUN(pdch_act, pdch_act_cmd,
 		return CMD_WARNING;
 	}
 
-	if (ts->pchan_on_init != GSM_PCHAN_TCH_F_TCH_H_PDCH
+	if (ts->pchan_on_init != GSM_PCHAN_OSMO_DYN
 	    && ts->pchan_on_init != GSM_PCHAN_TCH_F_PDCH) {
-		vty_out(vty, "%% Timeslot %u is not dynamic TCH/F_TCH/H_PDCH or TCH/F_PDCH%s",
+		vty_out(vty, "%% Timeslot %u is not dynamic TCH/F_TCH/H_SDCCH8_PDCH or TCH/F_PDCH%s",
 			ts->nr, VTY_NEWLINE);
 		return CMD_WARNING;
 	}
@@ -6217,10 +6221,10 @@ static int lchan_act_single(struct vty *vty, struct gsm_lchan *lchan, const char
 		if (lchan_t < 0) {
 			if (lchan->ts->pchan_on_init == GSM_PCHAN_TCH_F_PDCH && !strcmp(codec_str, "fr"))
 				lchan_t = GSM_LCHAN_TCH_F;
-			else if (lchan->ts->pchan_on_init == GSM_PCHAN_TCH_F_TCH_H_PDCH && !strcmp(codec_str, "hr"))
+			else if (lchan->ts->pchan_on_init == GSM_PCHAN_OSMO_DYN && !strcmp(codec_str, "hr"))
 				lchan_t = GSM_LCHAN_TCH_H;
 			else if ((lchan->ts->pchan_on_init == GSM_PCHAN_TCH_F_PDCH
-				  || lchan->ts->pchan_on_init == GSM_PCHAN_TCH_F_TCH_H_PDCH)
+				  || lchan->ts->pchan_on_init == GSM_PCHAN_OSMO_DYN)
 				 && !strcmp(codec_str, "fr"))
 				lchan_t = GSM_LCHAN_TCH_F;
 			else {
@@ -6323,7 +6327,7 @@ static int lchan_act_trx(struct vty *vty, struct gsm_bts_trx *trx, int activate)
 				break;
 			case GSM_PCHAN_TCH_F:
 			case GSM_PCHAN_TCH_F_PDCH:
-			case GSM_PCHAN_TCH_F_TCH_H_PDCH:
+			case GSM_PCHAN_OSMO_DYN:
 				codec_str = "fr";
 				break;
 			case GSM_PCHAN_TCH_H:
@@ -6336,9 +6340,9 @@ static int lchan_act_trx(struct vty *vty, struct gsm_bts_trx *trx, int activate)
 			if (codec_str && skip_next == false) {
 				lchan_act_single(vty, lchan, codec_str, -1, activate);
 
-				/* We use GSM_PCHAN_TCH_F_TCH_H_PDCH slots as TCH_F for this test, so we
+				/* We use GSM_PCHAN_OSMO_DYN slots as TCH_F for this test, so we
 				 * must not use the TCH_H reserved lchan in subslot 1. */
-				if (ts->pchan_on_init == GSM_PCHAN_TCH_F_TCH_H_PDCH)
+				if (ts->pchan_on_init == GSM_PCHAN_OSMO_DYN)
 					skip_next = true;
 			}
 			else {

@@ -191,7 +191,7 @@ const struct value_string gsm_pchant_names[] = {
 	{ GSM_PCHAN_UNKNOWN,	"UNKNOWN" },
 	{ GSM_PCHAN_CCCH_SDCCH4_CBCH, "CCCH+SDCCH4+CBCH" },
 	{ GSM_PCHAN_SDCCH8_SACCH8C_CBCH, "SDCCH8+CBCH" },
-	{ GSM_PCHAN_TCH_F_TCH_H_PDCH, "TCH/F_TCH/H_PDCH" },
+	{ GSM_PCHAN_OSMO_DYN, "TCH/F_TCH/H_SDCCH8_PDCH" },
 	{ 0,			NULL }
 };
 
@@ -207,7 +207,7 @@ const struct value_string gsm_pchan_ids[] = {
 	{ GSM_PCHAN_UNKNOWN,	"UNKNOWN" },
 	{ GSM_PCHAN_CCCH_SDCCH4_CBCH, "CCCH_SDCCH4_CBCH" },
 	{ GSM_PCHAN_SDCCH8_SACCH8C_CBCH, "SDCCH8_CBCH" },
-	{ GSM_PCHAN_TCH_F_TCH_H_PDCH, "TCH_F_TCH_H_PDCH" },
+	{ GSM_PCHAN_OSMO_DYN, "OSMO_DYN" },
 	{ 0,			NULL }
 };
 
@@ -224,7 +224,7 @@ const struct value_string gsm_pchant_descs[13] = {
 	{ GSM_PCHAN_UNKNOWN,	"Unknown / Unsupported channel combination" },
 	{ GSM_PCHAN_CCCH_SDCCH4_CBCH, "FCCH + SCH + BCCH + CCCH + CBCH + 3 SDCCH + 2 SACCH (Comb. V)" },
 	{ GSM_PCHAN_SDCCH8_SACCH8C_CBCH, "7 SDCCH + 4 SACCH + CBCH (Comb. VII)" },
-	{ GSM_PCHAN_TCH_F_TCH_H_PDCH, "Dynamic TCH/F or TCH/H or GPRS PDCH" },
+	{ GSM_PCHAN_OSMO_DYN, "Dynamic TCH/F or TCH/H or SDCCH/8 or GPRS PDCH" },
 	{ 0,			NULL }
 };
 
@@ -604,7 +604,7 @@ static const uint8_t subslots_per_pchan[] = {
 	[GSM_PCHAN_CCCH_SDCCH4_CBCH] = 4,
 	[GSM_PCHAN_SDCCH8_SACCH8C_CBCH] = 8,
 	/* Dyn TS: maximum allowed subslots */
-	[GSM_PCHAN_TCH_F_TCH_H_PDCH] = 2,
+	[GSM_PCHAN_OSMO_DYN] = 2,
 	[GSM_PCHAN_TCH_F_PDCH] = 1,
 };
 
@@ -628,7 +628,7 @@ static const uint8_t subslots_per_pchan_vamos[] = {
 	[GSM_PCHAN_SDCCH8_SACCH8C] = 0,
 	[GSM_PCHAN_CCCH_SDCCH4_CBCH] = 0,
 	[GSM_PCHAN_SDCCH8_SACCH8C_CBCH] = 0,
-	[GSM_PCHAN_TCH_F_TCH_H_PDCH] = 2,
+	[GSM_PCHAN_OSMO_DYN] = 2,
 	[GSM_PCHAN_TCH_F_PDCH] = 2,
 };
 
@@ -832,7 +832,7 @@ bool ts_is_capable_of_pchan(struct gsm_bts_trx_ts *ts, enum gsm_phys_chan_config
 			return false;
 		}
 
-	case GSM_PCHAN_TCH_F_TCH_H_PDCH:
+	case GSM_PCHAN_OSMO_DYN:
 		switch (pchan) {
 		case GSM_PCHAN_TCH_F:
 		case GSM_PCHAN_TCH_H:
@@ -904,7 +904,7 @@ bool ts_is_capable_of_lchant(struct gsm_bts_trx_ts *ts, enum gsm_chan_t type)
 			return false;
 		}
 
-	case GSM_PCHAN_TCH_F_TCH_H_PDCH:
+	case GSM_PCHAN_OSMO_DYN:
 		switch (type) {
 		case GSM_LCHAN_TCH_F:
 		case GSM_LCHAN_TCH_H:

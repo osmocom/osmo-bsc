@@ -1054,7 +1054,7 @@ int rsl_release_request(struct gsm_lchan *lchan, uint8_t link_id,
 static bool msg_for_osmocom_dyn_ts(struct msgb *msg)
 {
 	struct abis_rsl_dchan_hdr *rslh = msgb_l2(msg);
-	if (msg->lchan->ts->pchan_on_init != GSM_PCHAN_TCH_F_TCH_H_PDCH)
+	if (msg->lchan->ts->pchan_on_init != GSM_PCHAN_OSMO_DYN)
 		return false;
 	/* dyn TS messages always come in on the first lchan of a timeslot */
 	if (msg->lchan->nr != 0)
@@ -2676,7 +2676,7 @@ int rsl_tx_dyn_ts_pdch_act_deact(struct gsm_bts_trx_ts *ts, bool activate)
 	const char *act;
 
 	switch (ts->pchan_on_init) {
-	case GSM_PCHAN_TCH_F_TCH_H_PDCH:
+	case GSM_PCHAN_OSMO_DYN:
 		what = "Osmocom dyn TS";
 		act = activate? "PDCH Chan Activ" : "PDCH Chan RF Release";
 

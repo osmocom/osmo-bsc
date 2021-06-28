@@ -234,7 +234,7 @@ class TestCtrlBSC(TestCtrlBase):
         self.assertEqual(r['value'],
 		'CCCH+SDCCH4,0,0 TCH/F,0,0 TCH/H,0,0 SDCCH8,0,0'
 		+ ' TCH/F_PDCH,0,0 CCCH+SDCCH4+CBCH,0,0'
-		+ ' SDCCH8+CBCH,0,0 TCH/F_TCH/H_PDCH,0,0')
+		+ ' SDCCH8+CBCH,0,0 TCH/F_TCH/H_SDCCH8_PDCH,0,0')
 
     def testBtsOmlConnectionState(self):
         """Check OML state. It will not be connected"""
