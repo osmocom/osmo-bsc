@@ -86,6 +86,8 @@ static enum lchan_sanity is_lchan_sane(struct gsm_bts_trx_ts *ts, struct gsm_lch
 
 	switch (ts->pchan_on_init) {
 	case GSM_PCHAN_OSMO_DYN:
+		if (lchan->type == GSM_LCHAN_SDCCH)
+			return LCHAN_NEEDS_PCHAN_CHANGE;
 		if (lchan->type == GSM_LCHAN_TCH_H)
 			return LCHAN_NEEDS_PCHAN_CHANGE;
 		/* fall thru */

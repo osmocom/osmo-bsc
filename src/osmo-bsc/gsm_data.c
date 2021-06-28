@@ -792,6 +792,8 @@ enum gsm_phys_chan_config gsm_pchan_by_lchan_type(enum gsm_chan_t type)
 		return GSM_PCHAN_TCH_F;
 	case GSM_LCHAN_TCH_H:
 		return GSM_PCHAN_TCH_H;
+	case GSM_LCHAN_SDCCH:
+		return GSM_PCHAN_SDCCH8_SACCH8C;
 	case GSM_LCHAN_NONE:
 	case GSM_LCHAN_PDTCH:
 		/* TODO: so far lchan->type is NONE in PDCH mode. PDTCH is only
@@ -837,6 +839,7 @@ bool ts_is_capable_of_pchan(struct gsm_bts_trx_ts *ts, enum gsm_phys_chan_config
 		case GSM_PCHAN_TCH_F:
 		case GSM_PCHAN_TCH_H:
 		case GSM_PCHAN_PDCH:
+		case GSM_PCHAN_SDCCH8_SACCH8C:
 			return true;
 		default:
 			return false;
@@ -909,6 +912,7 @@ bool ts_is_capable_of_lchant(struct gsm_bts_trx_ts *ts, enum gsm_chan_t type)
 		case GSM_LCHAN_TCH_F:
 		case GSM_LCHAN_TCH_H:
 		case GSM_LCHAN_PDTCH:
+		case GSM_LCHAN_SDCCH:
 			return true;
 		default:
 			return false;
