@@ -357,6 +357,30 @@ TIP: If you're using OsmoBTS, make sure that it reports feature #021 "BCCH carri
 power reduction mode" in the feature vector.  This can be checked by issuing
 `show bts` command in OsmoBSC's VTY interface.
 
+==== Interworking with static and dynamic power control
+
+The key difference between BCCH carrier power reduction and the BS power control
+is that the former affects *inactive* timeslots (or sub-channels), so only dummy
+bursts are affected.  The later depends on the Downlink measurement reports sent
+by the MS, and thus applies to *active* channels only.  However, both features
+are interconnected: the maximum BCCH carrier power reduction value constrains
+the BS Power value that can be used for dynamic or static BS power control.
+
+BS power control on the BCCH carrier will not be enabled unless the BTS is in BCCH
+carrier power reduction mode of operation.  Once it is, the BS power reduction
+value in either of `dyn-bts` or `static` modes would be constrained by currently
+applied BCCH power reduction value, and thus would never exceed the maximum of 6 dB.
+
+For example, consider a BTS with BS power control configured to use _dynamic_ mode
+and the maximum power reduction of 16 dB.  Once this BTS is switched into the BCCH
+carrier power reduction mode with the maximum attenuation of 4 dB, the maximum
+power reduction value for the BS power loop on the C0 carrier would be 4 dB.
+
+Moreover, according to 3GPP TS 45.008, between a timeslot used for BCCH/CCCH and
+the timeslot preceding it, the difference in output power actually transmitted by
+the BTS shall not exceed 3 dB.  This means that on some timeslots the power
+reduction value can be constrained even further.
+
 ==== Managing BCCH carrier power reduction
 
 The BCCH carrier power reduction can be controlled via the CTRL and VTY interfaces.

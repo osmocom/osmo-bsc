@@ -675,6 +675,13 @@ static void lchan_fsm_wait_ts_ready_onenter(struct osmo_fsm_inst *fi, uint32_t p
 			lchan->bs_power_db = bts->bs_power_ctrl.bs_power_val_db;
 	}
 
+	/* BS Power Control is generally not allowed on the BCCH/CCCH carrier.
+	 * However, we allow it in the BCCH carrier power reduction mode of operation. */
+	if (lchan->ts->trx == bts->c0) {
+		lchan->bs_power_db = OSMO_MIN(lchan->ts->c0_max_power_red_db,
+					      lchan->bs_power_db);
+	}
+
 	if (lchan_activate_set_ch_mode_rate_and_mr_config(lchan))
 		return;
 

@@ -749,6 +749,8 @@ int gsm_bts_set_system_infos(struct gsm_bts *bts)
 
 int gsm_bts_set_c0_power_red(struct gsm_bts *bts, const uint8_t red)
 {
+	struct gsm_bts_trx *c0 = bts->c0;
+	unsigned int tn;
 	int rc;
 
 	if (!osmo_bts_has_feature(&bts->features, BTS_FEAT_BCCH_POWER_RED))
@@ -759,6 +761,35 @@ int gsm_bts_set_c0_power_red(struct gsm_bts *bts, const uint8_t red)
 	rc = bts->model->power_ctrl_set_c0_power_red(bts, red);
 	if (rc != 0)
 		return rc;
+
+	/* Timeslot 0 is always transmitting BCCH/CCCH */
+	c0->ts[0].c0_max_power_red_db = 0;
+
+	for (tn = 1; tn < ARRAY_SIZE(c0->ts); tn++) {
+		struct gsm_bts_trx_ts *ts = &c0->ts[tn];
+		struct gsm_bts_trx_ts *prev = ts - 1;
+
+		switch (ts->pchan_is) {
+		/* Not allowed on CCCH/BCCH */
+		case GSM_PCHAN_CCCH:
+			/* Preceeding timeslot shall not exceed 2 dB */
+			if (prev->c0_max_power_red_db > 0)
+				prev->c0_max_power_red_db = 2;
+			/* fall-through */
+		/* Not recommended on SDCCH/8 */
+		case GSM_PCHAN_SDCCH8_SACCH8C:
+		case GSM_PCHAN_SDCCH8_SACCH8C_CBCH:
+			ts->c0_max_power_red_db = 0;
+			break;
+		default:
+			ts->c0_max_power_red_db = red;
+			break;
+		}
+	}
+
+	/* Timeslot 7 is always preceding BCCH/CCCH */
+	if (c0->ts[7].c0_max_power_red_db > 0)
+		c0->ts[7].c0_max_power_red_db = 2;
 
 	bts->c0_max_power_red_db = red;
 

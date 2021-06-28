@@ -841,6 +841,9 @@ struct gsm_bts_trx_ts {
 		} rbs2000;
 	};
 
+	/* Maximum BCCH carrier power reduction */
+	uint8_t c0_max_power_red_db;
+
 	/* Maximum number of lchans that could become usable, for example by switching a dynamic timeslot's type or by
 	 * enabling VAMOS secondary lchans. This does include the maximum count of possible VAMOS secondary lchans. */
 	uint8_t max_lchans_possible;
