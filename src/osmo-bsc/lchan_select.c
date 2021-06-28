@@ -220,35 +220,24 @@ struct gsm_lchan *lchan_avail_by_type(struct gsm_bts *bts, enum gsm_chan_t type,
 	case GSM_LCHAN_TCH_F:
 		lchan = _lc_find_bts(bts, GSM_PCHAN_TCH_F, log);
 		/* If we don't have TCH/F available, try dynamic TCH/F_PDCH */
-		if (!lchan) {
+		if (!lchan)
 			lchan = _lc_dyn_find_bts(bts, GSM_PCHAN_TCH_F_PDCH,
 						 GSM_PCHAN_TCH_F, log);
-			/* TCH/F_PDCH used as TCH/F -- here, type is already
-			 * set to GSM_LCHAN_TCH_F, but for clarity's sake... */
-			if (lchan)
-				type = GSM_LCHAN_TCH_F;
-		}
 
 		/* Try fully dynamic TCH/F_TCH/H_PDCH as TCH/F... */
-		if (!lchan && bts->network->dyn_ts_allow_tch_f) {
+		if (!lchan && bts->network->dyn_ts_allow_tch_f)
 			lchan = _lc_dyn_find_bts(bts,
 						 GSM_PCHAN_TCH_F_TCH_H_PDCH,
 						 GSM_PCHAN_TCH_F, log);
-			if (lchan)
-				type = GSM_LCHAN_TCH_F;
-		}
 		break;
 	case GSM_LCHAN_TCH_H:
 		lchan = _lc_find_bts(bts, GSM_PCHAN_TCH_H, log);
 		/* No dedicated TCH/x available -- try fully dynamic
 		 * TCH/F_TCH/H_PDCH */
-		if (!lchan) {
+		if (!lchan)
 			lchan = _lc_dyn_find_bts(bts,
 						 GSM_PCHAN_TCH_F_TCH_H_PDCH,
 						 GSM_PCHAN_TCH_H, log);
-			if (lchan)
-				type = GSM_LCHAN_TCH_H;
-		}
 		break;
 	default:
 		LOG_BTS(bts, DRLL, LOGL_ERROR, "Unknown gsm_chan_t %u\n", type);
