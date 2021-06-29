@@ -250,6 +250,15 @@ static int current_rxlev(struct gsm_lchan *lchan)
 				ho_get_hodec2_rxlev_avg_win(bts->ho));
 }
 
+static int current_rxqual(struct gsm_lchan *lchan)
+{
+	struct gsm_bts *bts = lchan->ts->trx->bts;
+	return get_meas_rep_avg(lchan,
+				ho_get_hodec2_full_tdma(bts->ho) ?
+					MEAS_REP_DL_RXQUAL_FULL : MEAS_REP_DL_RXQUAL_SUB,
+				ho_get_hodec2_rxqual_avg_win(bts->ho));
+}
+
 static bool is_low_rxlev(int rxlev_current, struct handover_cfg *neigh_cfg)
 {
 	return rxlev_current >= 0
@@ -1464,10 +1473,7 @@ static void on_measurement_report(struct gsm_meas_rep *mr)
 
 	/* get average levels. if not enough measurements yet, value is < 0 */
 	av_rxlev = current_rxlev(lchan);
-	av_rxqual = get_meas_rep_avg(lchan,
-				     ho_get_hodec2_full_tdma(bts->ho) ?
-				     MEAS_REP_DL_RXQUAL_FULL : MEAS_REP_DL_RXQUAL_SUB,
-				     ho_get_hodec2_rxqual_avg_win(bts->ho));
+	av_rxqual = current_rxqual(lchan);
 	if (av_rxlev < 0 && av_rxqual < 0) {
 		LOGPHOLCHAN(lchan, LOGL_INFO, "Skipping, Not enough recent measurements\n");
 		return;
