@@ -250,6 +250,12 @@ static int current_rxlev(struct gsm_lchan *lchan)
 				ho_get_hodec2_rxlev_avg_win(bts->ho));
 }
 
+static bool is_low_rxlev(int rxlev_current, struct handover_cfg *neigh_cfg)
+{
+	return rxlev_current >= 0
+		&& rxlev2dbm(rxlev_current) < ho_get_hodec2_min_rxlev(neigh_cfg);
+}
+
 /* obtain averaged rxlev for given neighbor */
 static int neigh_meas_avg(struct neigh_meas_proc *nmp, int window)
 {
@@ -1069,7 +1075,6 @@ static void collect_handover_candidate(struct gsm_lchan *lchan, struct neigh_mea
 		.bsic = nmp->bsic,
 	};
 	struct ho_candidate c;
-	int min_rxlev;
 	struct handover_cfg *neigh_cfg;
 
 	/* skip empty slots */
@@ -1137,12 +1142,11 @@ static void collect_handover_candidate(struct gsm_lchan *lchan, struct neigh_mea
 
 	/* if the minimum level is not reached.
 	 * In case of a remote-BSS, use the current BTS' configuration. */
-	min_rxlev = ho_get_hodec2_min_rxlev(neigh_cfg);
-	if (rxlev2dbm(c.target.rxlev) < min_rxlev) {
+	if (is_low_rxlev(c.target.rxlev, neigh_cfg)) {
 		LOGPHOCAND(&c, LOGL_DEBUG,
 			   "Not a candidate, because RX level (%d dBm) is lower"
 			   " than the minimum required RX level (%d dBm)\n",
-			   rxlev2dbm(c.target.rxlev), min_rxlev);
+			   rxlev2dbm(c.target.rxlev), ho_get_hodec2_min_rxlev(neigh_cfg));
 		return;
 	}
 
@@ -1505,7 +1509,7 @@ static void on_measurement_report(struct gsm_meas_rep *mr)
 	}
 
 	/* Low Level */
-	if (av_rxlev >= 0 && rxlev2dbm(av_rxlev) < ho_get_hodec2_min_rxlev(bts->ho)) {
+	if (is_low_rxlev(av_rxlev, bts->ho)) {
 		global_ho_reason = HO_REASON_LOW_RXLEVEL;
 		LOGPHOLCHAN(lchan, LOGL_NOTICE, "RX level is TOO LOW: %d < %d\n",
 			    rxlev2dbm(av_rxlev), ho_get_hodec2_min_rxlev(bts->ho));
