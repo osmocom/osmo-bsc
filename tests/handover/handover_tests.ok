@@ -12,6 +12,7 @@ pass test_amr_tch_h_to_f_rxlev_congested.ho_vty
 pass test_amr_tch_h_to_f_rxlev_oscillation.ho_vty
 pass test_amr_tch_h_to_f_rxqual.ho_vty
 pass test_amr_tch_h_to_f_rxqual_congested.ho_vty
+pass test_amr_tch_h_to_f_rxqual_oscillation.ho_vty
 pass test_balance_congestion.ho_vty
 pass test_balance_congestion_2.ho_vty
 pass test_balance_congestion_by_percentage.ho_vty
