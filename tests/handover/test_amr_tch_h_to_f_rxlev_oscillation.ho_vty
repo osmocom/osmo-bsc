@@ -1,0 +1,29 @@
+# Low RxLev causes upgrade of TCH/H to TCH/F.
+# That leads to congestion of TCH/F, but do not handover back to non-congested TCH/H.
+
+network
+ handover2 afs-bias rxlev 0
+ handover2 min rxlev -80
+ handover2 window rxlev averaging 1
+ handover2 min-free-slots tch/f 3
+ handover2 min-free-slots tch/h 4
+
+create-bts trx-count 1 timeslots c+s4 TCH/F TCH/F TCH/F TCH/H  TCH/H TCH/H PDCH
+set-ts-use trx 0 0 states        *    -     -     -     TCH/H- -     -     *
+meas-rep lchan 0 0 4 0 rxlev 23 rxqual 1 ta 0
+# average rxlev is now -110 + 23 = -87 < -80: reassign to TCH/F due to bad rxlev
+expect-as from lchan 0 0 4 0 to lchan 0 0 1 0
+expect-ts-use trx 0 0 states * TCH/F - - - - - *
+
+meas-rep lchan 0 0 1 0 rxlev 23 rxqual 1 ta 0
+congestion-check
+# FAIL: should stay on TCH/F because rxlev is low, do not oscillate between TCH/F and /H.
+expect-as from lchan 0 0 1 0 to lchan 0 0 4 0
+expect-ts-use trx 0 0 states * - - - TCH/H- - - *
+meas-rep lchan 0 0 4 0 rxlev 23 rxqual 1 ta 0
+expect-as from lchan 0 0 4 0 to lchan 0 0 1 0
+expect-ts-use trx 0 0 states * TCH/F - - - - - *
+meas-rep lchan 0 0 1 0 rxlev 23 rxqual 1 ta 0
+congestion-check
+expect-as from lchan 0 0 1 0 to lchan 0 0 4 0
+expect-ts-use trx 0 0 states * - - - TCH/H- - - *

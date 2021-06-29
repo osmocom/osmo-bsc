@@ -9,6 +9,7 @@ pass test_amr_tch_h_to_f_congestion.ho_vty
 pass test_amr_tch_h_to_f_congestion_two_cells.ho_vty
 pass test_amr_tch_h_to_f_rxlev.ho_vty
 pass test_amr_tch_h_to_f_rxlev_congested.ho_vty
+pass test_amr_tch_h_to_f_rxlev_oscillation.ho_vty
 pass test_amr_tch_h_to_f_rxqual.ho_vty
 pass test_amr_tch_h_to_f_rxqual_congested.ho_vty
 pass test_balance_congestion.ho_vty
