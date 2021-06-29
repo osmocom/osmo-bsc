@@ -1191,7 +1191,10 @@ static void collect_candidates_for_lchan(struct gsm_lchan *lchan,
 	assignment = ho_get_hodec2_as_active(bts->ho);
 	handover = ho_get_ho_active(bts->ho);
 
-	if (assignment)
+	/* See if re-assignment within the same cell can resolve congestion.
+	 * But: when TCH/F has low rxlev, do not re-assign. If a low rxlev TCH/F were re-assigned to TCH/H, we would
+	 * subsequently oscillate back to TCH/F due to low rxlev. So skip TCH/F with low rxlev. */
+	if (assignment && !(lchan->type == GSM_LCHAN_TCH_F && is_low_rxlev(rxlev_current, bts->ho)))
 		collect_assignment_candidate(lchan, clist, candidates, rxlev_current);
 
 	if (handover) {
