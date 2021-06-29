@@ -265,6 +265,15 @@ static bool is_low_rxlev(int rxlev_current, struct handover_cfg *neigh_cfg)
 		&& rxlev2dbm(rxlev_current) < ho_get_hodec2_min_rxlev(neigh_cfg);
 }
 
+static bool is_low_rxqual(int rxqual_current, struct handover_cfg *neigh_cfg)
+{
+	/* min_rxqual is actually a bit of a misnomer, low quality is a high number. So the "min" refers to the minimum
+	 * acceptable level of quality, and "min or better" here means "rxqual number must be SMALLER-or-equal than the
+	 * min-rxqual setting". */
+	return rxqual_current >= 0
+		&& rxqual_current > ho_get_hodec2_min_rxqual(neigh_cfg);
+}
+
 /* obtain averaged rxlev for given neighbor */
 static int neigh_meas_avg(struct neigh_meas_proc *nmp, int window)
 {
@@ -1203,7 +1212,9 @@ static void collect_candidates_for_lchan(struct gsm_lchan *lchan,
 	/* See if re-assignment within the same cell can resolve congestion.
 	 * But: when TCH/F has low rxlev, do not re-assign. If a low rxlev TCH/F were re-assigned to TCH/H, we would
 	 * subsequently oscillate back to TCH/F due to low rxlev. So skip TCH/F with low rxlev. */
-	if (assignment && !(lchan->type == GSM_LCHAN_TCH_F && is_low_rxlev(rxlev_current, bts->ho)))
+	if (assignment
+	    && !(lchan->type == GSM_LCHAN_TCH_F
+		 && (is_low_rxlev(rxlev_current, bts->ho) || is_low_rxqual(current_rxqual(lchan), bts->ho))))
 		collect_assignment_candidate(lchan, clist, candidates, rxlev_current);
 
 	if (handover) {

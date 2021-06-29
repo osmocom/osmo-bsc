@@ -17,13 +17,4 @@ expect-ts-use trx 0 0 states * TCH/F - - - - - *
 
 meas-rep lchan 0 0 1 0 rxlev 30 rxqual 6 ta 0
 congestion-check
-# FAIL: should stay on TCH/F because rxqual is low, do not oscillate between TCH/F and /H.
-expect-as from lchan 0 0 1 0 to lchan 0 0 4 0
-expect-ts-use trx 0 0 states * - - - TCH/H- - - *
-meas-rep lchan 0 0 4 0 rxlev 30 rxqual 6 ta 0
-expect-as from lchan 0 0 4 0 to lchan 0 0 1 0
-expect-ts-use trx 0 0 states * TCH/F - - - - - *
-meas-rep lchan 0 0 1 0 rxlev 30 rxqual 6 ta 0
-congestion-check
-expect-as from lchan 0 0 1 0 to lchan 0 0 4 0
-expect-ts-use trx 0 0 states * - - - TCH/H- - - *
+expect-no-chan
