@@ -1065,7 +1065,6 @@ int gsm48_lchan2chan_desc_as_configured(struct gsm48_chan_desc *cd, const struct
 
 uint8_t gsm_ts_tsc(const struct gsm_bts_trx_ts *ts);
 
-enum gsm_phys_chan_config ts_pchan(struct gsm_bts_trx_ts *ts);
 uint8_t pchan_subslots(enum gsm_phys_chan_config pchan);
 uint8_t pchan_subslots_vamos(enum gsm_phys_chan_config pchan);
 bool ts_is_tch(struct gsm_bts_trx_ts *ts);
