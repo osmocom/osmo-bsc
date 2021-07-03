@@ -118,6 +118,25 @@ msc 1
  nri add 512 767
  nri add 1024 1025
 ...
+
+OsmoBSC(config-net)# nri null ?
+  add  Add NULL-NRI value (or range)
+  del  Remove NRI value or range from the NRI mapping for this MSC
+
+OsmoBSC(config-net)# nri null add ?
+  <0-32767>  First value of the NRI value range, should not surpass the configured 'nri bitlen'.
+OsmoBSC(config-net)# nri null add 0 ?
+  [<0-32767>]  Last value of the NRI value range, should not surpass the configured 'nri bitlen' and be larger than the first value; if omitted, apply only the first value.
+OsmoBSC(config-net)# nri null add 0 0 ?
+  <cr>  
+
+OsmoBSC(config-net)# nri null del ?
+  <0-32767>  First value of the NRI value range, should not surpass the configured 'nri bitlen'.
+OsmoBSC(config-net)# nri null del 0 ?
+  [<0-32767>]  Last value of the NRI value range, should not surpass the configured 'nri bitlen' and be larger than the first value; if omitted, apply only the first value.
+OsmoBSC(config-net)# nri null del 0 0 ?
+  <cr>  
+
 OsmoBSC(config-net)# exit
 
 OsmoBSC(config)# msc 0
