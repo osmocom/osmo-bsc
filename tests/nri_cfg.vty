@@ -79,6 +79,19 @@ msc 1
  nri add 1024 1025
 
 OsmoBSC(config)# network
+
+OsmoBSC(config-net)# list
+...
+  nri bitlen <1-15>
+...
+
+OsmoBSC(config-net)# nri ?
+  bitlen  Set number of bits that an NRI has, to extract from TMSI identities (always starting just after the TMSI's most significant octet).
+  null    Define NULL-NRI values that cause re-assignment of an MS to a different MSC, for MSC pooling.
+
+OsmoBSC(config-net)# nri bitlen ?
+  <1-15>  bit count (default: 10)
+
 OsmoBSC(config-net)# nri bitlen 11
 OsmoBSC(config-net)# show running-config
 ...

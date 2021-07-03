@@ -2326,7 +2326,7 @@ DEFUN_ATTR(cfg_net_nri_bitlen,
 	   "nri bitlen <1-15>",
 	   NRI_STR
 	   "Set number of bits that an NRI has, to extract from TMSI identities (always starting just after the TMSI's most significant octet).\n"
-	   "bit count (default: " OSMO_STRINGIFY_VAL(NRI_BITLEN_DEFAULT) ")\n",
+	   "bit count (default: " OSMO_STRINGIFY_VAL(OSMO_NRI_BITLEN_DEFAULT) ")\n",
 	   CMD_ATTR_IMMEDIATE)
 {
 	struct gsm_network *gsmnet = gsmnet_from_vty(vty);
