@@ -38,18 +38,6 @@ static inline int bool2i(bool arg)
 	return arg? 1 : 0;
 }
 
-static inline bool a2tdma(const char *arg)
-{
-	if (!strcmp(arg, "full"))
-		return true;
-	return false;
-}
-
-static inline const char *tdma2a(bool val)
-{
-	return val? "full" : "subset";
-}
-
 /* The HO_CFG_ONE_MEMBER macro gets redefined, depending on whether to define struct members,
  * function declarations or definitions... It is of the format
  *   HO_CFG_ONE_MEMBER(TYPE, NAME, DEFAULT_VAL,
@@ -188,10 +176,13 @@ static inline const char *tdma2a(bool val)
 		"Disable in-call assignment\n" \
 		"Enable in-call assignment\n") \
 	\
-	HO_CFG_ONE_MEMBER(bool, hodec2_full_tdma, subset, \
-		"handover2 ", "tdma-measurement", "full|subset", a2tdma, "%s", tdma2a, \
+	HO_CFG_ONE_MEMBER(enum tdma_meas_set, hodec2_tdma_meas_set, subset, \
+		"handover2 ", "tdma-measurement", "auto|full|subset", \
+		tdma_meas_set_from_str, "%s", tdma_meas_set_name, \
 		HO_CFG_STR_HANDOVER2 \
 		"Define measurement set of TDMA frames\n" \
+		"Use full set when DTX is not in use, use subset when DTX is in use," \
+		" as indicated by each Measurement Report\n" \
 		"Full set of 102/104 TDMA frames\n" \
 		"Sub set of 4 TDMA frames (SACCH)\n") \
 	\
