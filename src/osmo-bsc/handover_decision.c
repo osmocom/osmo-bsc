@@ -214,7 +214,6 @@ static void attempt_handover(struct gsm_meas_rep *mr)
 static void on_measurement_report(struct gsm_meas_rep *mr)
 {
 	struct gsm_bts *bts = mr->lchan->ts->trx->bts;
-	enum tdma_meas_set meas_set;
 	int av_rxlev;
 	unsigned int pwr_interval;
 
@@ -231,18 +230,16 @@ static void on_measurement_report(struct gsm_meas_rep *mr)
 		return;
 	}
 
-	meas_set = (mr->flags & MEAS_REP_F_DL_DTX) ? TDMA_MEAS_SET_SUB : TDMA_MEAS_SET_FULL;
-
 	/* parse actual neighbor cell info */
 	if (mr->num_cell > 0 && mr->num_cell < 7)
 		process_meas_neigh(mr);
 
-	av_rxlev = get_meas_rep_avg(mr->lchan, TDMA_MEAS_FIELD_RXLEV, TDMA_MEAS_DIR_DL, meas_set,
+	av_rxlev = get_meas_rep_avg(mr->lchan, TDMA_MEAS_FIELD_RXLEV, TDMA_MEAS_DIR_DL, TDMA_MEAS_SET_AUTO,
 				    ho_get_hodec1_rxlev_avg_win(bts->ho));
 
 	/* Interference HO */
 	if (rxlev2dbm(av_rxlev) > -85 &&
-	    meas_rep_n_out_of_m_be(mr->lchan, TDMA_MEAS_FIELD_RXQUAL, TDMA_MEAS_DIR_DL, meas_set, 3, 4, 5)) {
+	    meas_rep_n_out_of_m_be(mr->lchan, TDMA_MEAS_FIELD_RXQUAL, TDMA_MEAS_DIR_DL, TDMA_MEAS_SET_AUTO, 3, 4, 5)) {
 		LOGPC(DHO, LOGL_INFO, "HO cause: Interference HO av_rxlev=%d dBm\n",
 		      rxlev2dbm(av_rxlev));
 		attempt_handover(mr);
@@ -250,7 +247,7 @@ static void on_measurement_report(struct gsm_meas_rep *mr)
 	}
 
 	/* Bad Quality */
-	if (meas_rep_n_out_of_m_be(mr->lchan, TDMA_MEAS_FIELD_RXQUAL, TDMA_MEAS_DIR_DL, meas_set, 3, 4, 5)) {
+	if (meas_rep_n_out_of_m_be(mr->lchan, TDMA_MEAS_FIELD_RXQUAL, TDMA_MEAS_DIR_DL, TDMA_MEAS_SET_AUTO, 3, 4, 5)) {
 		LOGPC(DHO, LOGL_INFO, "HO cause: Bad Quality av_rxlev=%d dBm\n", rxlev2dbm(av_rxlev));
 		attempt_handover(mr);
 		return;
