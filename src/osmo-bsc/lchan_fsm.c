@@ -1349,6 +1349,13 @@ static void lchan_fsm_wait_rf_release_ack(struct osmo_fsm_inst *fi, uint32_t eve
 		/* ignore late lchan_rtp_fsm release events */
 		return;
 
+	case LCHAN_EV_RLL_REL_IND:
+		/* let's just ignore this.  We are already logging the fact
+		 * that this message was received inside abis_rsl.c. There can
+		 * be any number of reasons why the radio link layer failed.
+		 */
+		return;
+
 	default:
 		OSMO_ASSERT(false);
 	}
@@ -1594,6 +1601,7 @@ static const struct osmo_fsm_state lchan_fsm_states[] = {
 		.action = lchan_fsm_wait_rf_release_ack,
 		.in_event_mask = 0
 			| S(LCHAN_EV_RSL_RF_CHAN_REL_ACK)
+			| S(LCHAN_EV_RLL_REL_IND) /* ignore late REL_IND of SAPI[0] */
 			| S(LCHAN_EV_RTP_RELEASED) /* ignore late lchan_rtp_fsm release events */
 			,
 		.out_state_mask = 0
