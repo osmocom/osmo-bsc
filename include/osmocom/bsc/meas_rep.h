@@ -68,6 +68,12 @@ enum tdma_meas_set {
 	TDMA_MEAS_SET_AUTO,
 };
 
+extern const struct value_string tdma_meas_set_names[];
+static inline const char *tdma_meas_set_name(enum tdma_meas_set val)
+{ return get_value_string(tdma_meas_set_names, val); }
+static inline enum tdma_meas_set tdma_meas_set_from_str(const char *name)
+{ return get_string_value(tdma_meas_set_names, name); }
+
 /* obtain an average over the last 'num' fields in the meas reps */
 int get_meas_rep_avg(const struct gsm_lchan *lchan,
 		     enum tdma_meas_field field, enum tdma_meas_dir dir, enum tdma_meas_set set,

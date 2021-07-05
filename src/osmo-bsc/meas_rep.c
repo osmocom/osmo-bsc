@@ -81,8 +81,14 @@ unsigned int calc_initial_idx(unsigned int array_size,
 }
 
 static inline enum meas_rep_field choose_meas_rep_field(enum tdma_meas_field field, enum tdma_meas_dir dir,
-							enum tdma_meas_set set)
+							enum tdma_meas_set set, const struct gsm_meas_rep *meas_rep)
 {
+	if (set == TDMA_MEAS_SET_AUTO) {
+		bool dtx_in_use;
+		dtx_in_use = (meas_rep->flags & ((dir == TDMA_MEAS_DIR_UL) ? MEAS_REP_F_UL_DTX : MEAS_REP_F_DL_DTX));
+		set = (dtx_in_use ? TDMA_MEAS_SET_SUB : TDMA_MEAS_SET_FULL);
+	}
+
 	osmo_static_assert(TDMA_MEAS_FIELD_RXLEV >= 0 && TDMA_MEAS_FIELD_RXLEV <= 1
 			   && TDMA_MEAS_FIELD_RXQUAL >= 0 && TDMA_MEAS_FIELD_RXQUAL <= 1
 			   && TDMA_MEAS_DIR_UL >= 0 && TDMA_MEAS_DIR_UL <= 1
@@ -139,7 +145,7 @@ int get_meas_rep_avg(const struct gsm_lchan *lchan,
 		enum meas_rep_field use_field;
 		int val;
 
-		use_field = choose_meas_rep_field(field, dir, set);
+		use_field = choose_meas_rep_field(field, dir, set, &lchan->meas_rep[j]);
 		val = get_field(&lchan->meas_rep[j], use_field);
 
 		if (val >= 0) {
@@ -170,7 +176,7 @@ int meas_rep_n_out_of_m_be(const struct gsm_lchan *lchan,
 		enum meas_rep_field use_field;
 		int val;
 
-		use_field = choose_meas_rep_field(field, dir, set);
+		use_field = choose_meas_rep_field(field, dir, set, &lchan->meas_rep[j]);
 		val = get_field(&lchan->meas_rep[j], use_field);
 
 		if (val >= be) /* implies that val < 0 will not count */
@@ -182,3 +188,10 @@ int meas_rep_n_out_of_m_be(const struct gsm_lchan *lchan,
 
 	return 0;
 }
+
+const struct value_string tdma_meas_set_names[] = {
+	{ TDMA_MEAS_SET_FULL, "full" },
+	{ TDMA_MEAS_SET_SUB, "subset" },
+	{ TDMA_MEAS_SET_AUTO, "auto" },
+	{}
+};

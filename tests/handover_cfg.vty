@@ -178,7 +178,7 @@ OsmoBSC(config-net)# list
   handover2 power budget hysteresis (<0-999>|default)
   handover2 maximum distance (<0-9999>|default)
   handover2 assignment (0|1|default)
-  handover2 tdma-measurement (full|subset|default)
+  handover2 tdma-measurement (auto|full|subset|default)
   handover2 min rxlev (<-110--50>|default)
   handover2 min rxqual (<0-7>|default)
   handover2 afs-bias rxlev (<0-20>|default)
@@ -335,6 +335,7 @@ OsmoBSC(config-net)# handover2 assignment ?
   default  Use default (0), remove explicit setting on this node
 
 OsmoBSC(config-net)# handover2 tdma-measurement ?
+  auto     Use full set when DTX is not in use, use subset when DTX is in use, as indicated by each Measurement Report
   full     Full set of 102/104 TDMA frames
   subset   Sub set of 4 TDMA frames (SACCH)
   default  Use default (subset), remove explicit setting on this node
@@ -553,6 +554,7 @@ OsmoBSC(config-net-bts)# handover2 assignment ?
   default  Use default (0), remove explicit setting on this node
 
 OsmoBSC(config-net-bts)# handover2 tdma-measurement ?
+  auto     Use full set when DTX is not in use, use subset when DTX is in use, as indicated by each Measurement Report
   full     Full set of 102/104 TDMA frames
   subset   Sub set of 4 TDMA frames (SACCH)
   default  Use default (subset), remove explicit setting on this node
