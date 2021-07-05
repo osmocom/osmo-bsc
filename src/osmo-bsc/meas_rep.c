@@ -80,9 +80,47 @@ unsigned int calc_initial_idx(unsigned int array_size,
 	return idx;
 }
 
-/* obtain an average over the last 'num' fields in the meas reps */
+static inline enum meas_rep_field choose_meas_rep_field(enum tdma_meas_field field, enum tdma_meas_dir dir,
+							enum tdma_meas_set set)
+{
+	osmo_static_assert(TDMA_MEAS_FIELD_RXLEV >= 0 && TDMA_MEAS_FIELD_RXLEV <= 1
+			   && TDMA_MEAS_FIELD_RXQUAL >= 0 && TDMA_MEAS_FIELD_RXQUAL <= 1
+			   && TDMA_MEAS_DIR_UL >= 0 && TDMA_MEAS_DIR_UL <= 1
+			   && TDMA_MEAS_DIR_DL >= 0 && TDMA_MEAS_DIR_DL <= 1
+			   && TDMA_MEAS_SET_FULL >= 0 && TDMA_MEAS_SET_FULL <= 1
+			   && TDMA_MEAS_SET_SUB >= 0 && TDMA_MEAS_SET_SUB <= 1,
+			   choose_meas_rep_field__mux_macro_input_ranges);
+#define MUX(FIELD, DIR, SET) ((FIELD) + ((DIR) << 1) + ((SET) << 2))
+
+	switch (MUX(field, dir, set)) {
+	case MUX(TDMA_MEAS_FIELD_RXLEV, TDMA_MEAS_DIR_UL, TDMA_MEAS_SET_FULL):
+		return MEAS_REP_UL_RXLEV_FULL;
+	case MUX(TDMA_MEAS_FIELD_RXLEV, TDMA_MEAS_DIR_UL, TDMA_MEAS_SET_SUB):
+		return MEAS_REP_UL_RXLEV_SUB;
+	case MUX(TDMA_MEAS_FIELD_RXLEV, TDMA_MEAS_DIR_DL, TDMA_MEAS_SET_FULL):
+		return MEAS_REP_DL_RXLEV_FULL;
+	case MUX(TDMA_MEAS_FIELD_RXLEV, TDMA_MEAS_DIR_DL, TDMA_MEAS_SET_SUB):
+		return MEAS_REP_DL_RXLEV_SUB;
+	case MUX(TDMA_MEAS_FIELD_RXQUAL, TDMA_MEAS_DIR_UL, TDMA_MEAS_SET_FULL):
+		return MEAS_REP_UL_RXQUAL_FULL;
+	case MUX(TDMA_MEAS_FIELD_RXQUAL, TDMA_MEAS_DIR_UL, TDMA_MEAS_SET_SUB):
+		return MEAS_REP_UL_RXQUAL_SUB;
+	case MUX(TDMA_MEAS_FIELD_RXQUAL, TDMA_MEAS_DIR_DL, TDMA_MEAS_SET_FULL):
+		return MEAS_REP_DL_RXQUAL_FULL;
+	case MUX(TDMA_MEAS_FIELD_RXQUAL, TDMA_MEAS_DIR_DL, TDMA_MEAS_SET_SUB):
+		return MEAS_REP_DL_RXQUAL_SUB;
+	default:
+		OSMO_ASSERT(false);
+	}
+
+#undef MUX
+}
+
+/* obtain an average over the last 'num' fields in the meas reps. For 'field', pass either DL_RXLEV or DL_RXQUAL, and
+ * by tdma_meas_set, choose between full, subset or automatic choice of set. */
 int get_meas_rep_avg(const struct gsm_lchan *lchan,
-		     enum meas_rep_field field, unsigned int num)
+		     enum tdma_meas_field field, enum tdma_meas_dir dir, enum tdma_meas_set set,
+		     unsigned int num)
 {
 	unsigned int i, idx;
 	int avg = 0, valid_num = 0;
@@ -98,7 +136,11 @@ int get_meas_rep_avg(const struct gsm_lchan *lchan,
 
 	for (i = 0; i < num; i++) {
 		int j = (idx+i) % ARRAY_SIZE(lchan->meas_rep);
-		int val = get_field(&lchan->meas_rep[j], field);
+		enum meas_rep_field use_field;
+		int val;
+
+		use_field = choose_meas_rep_field(field, dir, set);
+		val = get_field(&lchan->meas_rep[j], use_field);
 
 		if (val >= 0) {
 			avg += val;
@@ -114,8 +156,8 @@ int get_meas_rep_avg(const struct gsm_lchan *lchan,
 
 /* Check if N out of M last values for FIELD are >= bd */
 int meas_rep_n_out_of_m_be(const struct gsm_lchan *lchan,
-			enum meas_rep_field field,
-			unsigned int n, unsigned int m, int be)
+			   enum tdma_meas_field field, enum tdma_meas_dir dir, enum tdma_meas_set set,
+			   unsigned int n, unsigned int m, int be)
 {
 	unsigned int i, idx;
 	int count = 0;
@@ -125,7 +167,11 @@ int meas_rep_n_out_of_m_be(const struct gsm_lchan *lchan,
 
 	for (i = 0; i < m; i++) {
 		int j = (idx + i) % ARRAY_SIZE(lchan->meas_rep);
-		int val = get_field(&lchan->meas_rep[j], field);
+		enum meas_rep_field use_field;
+		int val;
+
+		use_field = choose_meas_rep_field(field, dir, set);
+		val = get_field(&lchan->meas_rep[j], use_field);
 
 		if (val >= be) /* implies that val < 0 will not count */
 			count++;

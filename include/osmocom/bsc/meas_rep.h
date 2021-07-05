@@ -51,14 +51,32 @@ struct gsm_meas_rep {
 	struct gsm_meas_rep_cell cell[6];
 };
 
+enum tdma_meas_field {
+	TDMA_MEAS_FIELD_RXLEV = 0,
+	TDMA_MEAS_FIELD_RXQUAL = 1,
+};
+
+enum tdma_meas_dir {
+	TDMA_MEAS_DIR_UL = 0,
+	TDMA_MEAS_DIR_DL = 1,
+};
+
+/* (function choose_meas_rep_field() depends on FULL and SUB being 0 and 1, but doesn't care about AUTO's value) */
+enum tdma_meas_set {
+	TDMA_MEAS_SET_FULL = 0,
+	TDMA_MEAS_SET_SUB = 1,
+	TDMA_MEAS_SET_AUTO,
+};
+
 /* obtain an average over the last 'num' fields in the meas reps */
 int get_meas_rep_avg(const struct gsm_lchan *lchan,
-		     enum meas_rep_field field, unsigned int num);
+		     enum tdma_meas_field field, enum tdma_meas_dir dir, enum tdma_meas_set set,
+		     unsigned int num);
 
 /* Check if N out of M last values for FIELD are >= bd */
 int meas_rep_n_out_of_m_be(const struct gsm_lchan *lchan,
-			enum meas_rep_field field,
-			unsigned int n, unsigned int m, int be);
+			   enum tdma_meas_field field, enum tdma_meas_dir dir, enum tdma_meas_set set,
+			   unsigned int n, unsigned int m, int be);
 
 unsigned int calc_initial_idx(unsigned int array_size,
 			      unsigned int meas_rep_idx,
