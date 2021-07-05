@@ -244,18 +244,16 @@ static struct gsm_meas_rep_cell *cell_in_rep(struct gsm_meas_rep *mr, uint16_t a
 static int current_rxlev(struct gsm_lchan *lchan)
 {
 	struct gsm_bts *bts = lchan->ts->trx->bts;
-	return get_meas_rep_avg(lchan,
-				ho_get_hodec2_full_tdma(bts->ho) ?
-					MEAS_REP_DL_RXLEV_FULL : MEAS_REP_DL_RXLEV_SUB,
+	return get_meas_rep_avg(lchan, TDMA_MEAS_FIELD_RXLEV, TDMA_MEAS_DIR_DL,
+				ho_get_hodec2_full_tdma(bts->ho) ? TDMA_MEAS_SET_FULL : TDMA_MEAS_SET_SUB,
 				ho_get_hodec2_rxlev_avg_win(bts->ho));
 }
 
 static int current_rxqual(struct gsm_lchan *lchan)
 {
 	struct gsm_bts *bts = lchan->ts->trx->bts;
-	return get_meas_rep_avg(lchan,
-				ho_get_hodec2_full_tdma(bts->ho) ?
-					MEAS_REP_DL_RXQUAL_FULL : MEAS_REP_DL_RXQUAL_SUB,
+	return get_meas_rep_avg(lchan, TDMA_MEAS_FIELD_RXQUAL, TDMA_MEAS_DIR_DL,
+				ho_get_hodec2_full_tdma(bts->ho) ? TDMA_MEAS_SET_FULL : TDMA_MEAS_SET_SUB,
 				ho_get_hodec2_rxqual_avg_win(bts->ho));
 }
 
