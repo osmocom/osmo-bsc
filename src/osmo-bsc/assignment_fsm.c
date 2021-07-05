@@ -575,6 +575,7 @@ void assignment_fsm_start(struct gsm_subscriber_connection *conn, struct gsm_bts
 			matching_mode = true;
 		}
 		if (!matching_mode) {
+			OSMO_ASSERT(conn->lchan);
 			assignment_fail(GSM0808_CAUSE_NO_RADIO_RESOURCE_AVAILABLE,
 					"Assignment of lchan %s to %s type %s requested, but lchan is not compatible",
 					gsm_lchan_name(conn->lchan),
