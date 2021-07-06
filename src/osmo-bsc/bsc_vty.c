@@ -1682,6 +1682,14 @@ static void lchan_dump_full_vty(struct vty *vty, struct gsm_lchan *lchan)
 		- lchan->bs_power_db,
 		ms_pwr_dbm(lchan->ts->trx->bts->band, lchan->ms_power),
 		VTY_NEWLINE);
+
+	vty_out(vty, "  Interference Level: ");
+	if (lchan->interf_dbm == INTERF_DBM_UNKNOWN)
+		vty_out(vty, "unknown");
+	else
+		vty_out(vty, "%d dBm (%u)", lchan->interf_dbm, lchan->interf_band);
+	vty_out(vty, "%s", VTY_NEWLINE);
+
 	vty_out(vty, "  Channel Mode / Codec: %s%s",
 		gsm48_chan_mode_name(lchan->current_ch_mode_rate.chan_mode),
 		VTY_NEWLINE);
@@ -1733,8 +1741,21 @@ static void lchan_dump_short_vty(struct vty *vty, struct gsm_lchan *lchan)
 		lchan->ts->trx->bts->nr, lchan->ts->trx->nr, lchan->ts->nr,
 		gsm_pchan_name(lchan->ts->pchan_on_init));
 	vty_out_dyn_ts_status(vty, lchan->ts);
-	vty_out(vty, ", Lchan %u, Type %s%s TSC-s%dc%u, State %s - L1 MS Power: %u dBm RXL-FULL-dl: %4d dBm RXL-FULL-ul: %4d dBm%s",
-		lchan->nr,
+	vty_out(vty, ", Lchan %u", lchan->nr);
+
+	if (lchan_state_is(lchan, LCHAN_ST_UNUSED)) {
+		vty_out(vty, ", Type %s, State %s - Interference Level: ",
+			gsm_pchan_name(lchan->ts->pchan_is),
+			lchan_state_name(lchan));
+		if (lchan->interf_dbm == INTERF_DBM_UNKNOWN)
+			vty_out(vty, "unknown");
+		else
+			vty_out(vty, "%d dBm (%u)", lchan->interf_dbm, lchan->interf_band);
+		vty_out(vty, "%s", VTY_NEWLINE);
+		return;
+	}
+
+	vty_out(vty, ", Type %s%s TSC-s%dc%u, State %s - L1 MS Power: %u dBm RXL-FULL-dl: %4d dBm RXL-FULL-ul: %4d dBm%s",
 		gsm_lchant_name(lchan->type),
 		lchan->vamos.enabled ? " (VAMOS)" : "",
 		lchan->tsc_set > 0 ? lchan->tsc_set : 1,

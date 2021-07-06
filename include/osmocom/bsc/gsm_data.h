@@ -646,6 +646,9 @@ struct lchan_modify_info {
 	bool vamos;
 };
 
+#define INTERF_DBM_UNKNOWN 0
+#define INTERF_BAND_UNKNOWN 0xff
+
 struct gsm_lchan {
 	/* The TS that we're part of */
 	struct gsm_bts_trx_ts *ts;
@@ -781,6 +784,14 @@ struct gsm_lchan {
 		/* Whether this lchan is activated/modified into a mode that allows VAMOS multiplexing at this moment */
 		bool enabled;
 	} vamos;
+
+	/* dBm value of interference level as reported in the most recent Resource Indication, if any for this lchan. Or
+	 * INTERF_DBM_UNKNOWN if this lchan was not included in the most recent Resource Indication.
+	 * The range is typically -115 to -85 dBm, here stored 1:1 as a signed integer, to ease comparison. */
+	int16_t interf_dbm;
+	/* Actual reported interference band index, or INTERF_BAND_UNKNOWN if this lchan was not included in the most
+	 * recent Resource Indication. */
+	uint8_t interf_band;
 };
 
 /* One Timeslot in a TRX */

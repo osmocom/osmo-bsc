@@ -1467,6 +1467,75 @@ static int rsl_rx_error_rep(struct msgb *msg)
 	return 0;
 }
 
+static int rsl_rx_resource_indication(struct msgb *msg)
+{
+	struct abis_rsl_common_hdr *rslh = msgb_l2(msg);
+	struct tlv_parsed tp;
+	struct e1inp_sign_link *sign_link = msg->dst;
+	struct tlv_p_entry *res_info_ie;
+	struct gsm_bts_trx *trx = sign_link->trx;
+	struct gsm_lchan *lchan;
+	int ts_nr;
+	int i;
+
+	rsl_tlv_parse(&tp, rslh->data, msgb_l2len(msg) - sizeof(*rslh));
+
+	LOGP(DRSL, LOGL_DEBUG, "%s Rx Resource Indication\n", gsm_trx_name(trx));
+
+	/* First clear out all ratings, because only the last resource indication counts. If we can't parse the message,
+	 * then there are no ratings. */
+	for (ts_nr = 0; ts_nr < TRX_NR_TS; ts_nr++) {
+		struct gsm_bts_trx_ts *ts = &trx->ts[ts_nr];
+		ts_for_n_lchans(lchan, ts, ts->max_lchans_possible) {
+			lchan->interf_dbm = INTERF_DBM_UNKNOWN;
+			lchan->interf_band = INTERF_BAND_UNKNOWN;
+		}
+	}
+
+	res_info_ie = TLVP_GET_MINLEN(&tp, RSL_IE_RESOURCE_INFO, 2);
+	if (!res_info_ie) {
+		LOGP(DRSL, LOGL_ERROR, "Rx Resource Indication: missing Resource Info IE\n");
+		return -ENOENT;
+	}
+
+	/* The IE value is defined in 3GPP TS 48.058 9.3.21 Resource Information:
+	 * one octet channel nr, one octet interference level, channel nr, interference level, ...
+	 * Where channel nr is cbits + tn (as usual),
+	 * and interference level is a 3bit value in the most significant bits of the octet.
+	 * Evaluate each pair and update interference ratings for all lchans in this trx. */
+
+	/* There must be an even amount of octets in the value */
+	if (res_info_ie->len & 1) {
+		LOGP(DRSL, LOGL_ERROR, "Rx Resource Indication: Resource Info IE has odd length\n");
+		return -EINVAL;
+	}
+
+	/* Now iterate the reported levels and update corresponding lchans */
+	for (i = 0; i < res_info_ie->len; i += 2) {
+		struct gsm_bts *bts = trx->bts;
+		uint8_t chan_nr = res_info_ie->val[i];
+		uint8_t interf_band = res_info_ie->val[i + 1] >> 5;
+
+		lchan = lchan_lookup(trx, chan_nr, "Abis RSL Rx Resource Indication: ");
+		if (!lchan)
+			continue;
+
+		/* Store the actual received index */
+		lchan->interf_band = interf_band;
+		/* Clamp the index to 5 before accessing array of interference band bounds */
+		interf_band = OSMO_MIN(interf_band, ARRAY_SIZE(bts->interf_meas_params.bounds_dbm)-1);
+		/* FIXME: when testing with ip.access nanoBTS, we observe a value range of 1..6. According to spec, it
+		 * seems like values 0..5 are intended: 3GPP TS 48.058 9.3.21 Resource Information says:
+		 * "The Interf Band field (bits 6-8) indicates in binary the interference level expressed as one of five
+		 * possible interference level bands as defined by O&M."
+		 * and 3GPP TS 52.021 9.4.25 "Interference level Boundaries" (OML) defines values 0, X1, X2, X3, X4, X5.
+		 * If nanoBTS sends 6, the above code clamps it to 5, so that we lose one band in accuracy. */
+		lchan->interf_dbm = -((int16_t)bts->interf_meas_params.bounds_dbm[interf_band]);
+	}
+
+	return 0;
+}
+
 static int abis_rsl_rx_trx(struct msgb *msg)
 {
 	struct abis_rsl_common_hdr *rslh = msgb_l2(msg);
@@ -1479,7 +1548,7 @@ static int abis_rsl_rx_trx(struct msgb *msg)
 		break;
 	case RSL_MT_RF_RES_IND:
 		/* interference on idle channels of TRX */
-		//DEBUGP(DRSL, "%s RF Resource Indication\n", gsm_trx_name(sign_link->trx));
+		rc = rsl_rx_resource_indication(msg);
 		break;
 	case RSL_MT_OVERLOAD:
 		/* indicate CCCH / ACCH / processor overload */

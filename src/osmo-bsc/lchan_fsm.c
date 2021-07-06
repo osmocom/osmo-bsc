@@ -488,6 +488,8 @@ static void lchan_reset(struct gsm_lchan *lchan)
 		.release.rr_cause = GSM48_RR_CAUSE_NORMAL,
 
 		.tsc_set = 1,
+		.interf_dbm = INTERF_DBM_UNKNOWN,
+		.interf_band = INTERF_BAND_UNKNOWN,
 	};
 }
 
