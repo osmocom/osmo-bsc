@@ -433,6 +433,8 @@ void lchan_fsm_init()
 	lchan_rtp_fsm_init();
 }
 
+static void lchan_reset(struct gsm_lchan *lchan);
+
 void lchan_fsm_alloc(struct gsm_lchan *lchan)
 {
 	OSMO_ASSERT(lchan->ts);
@@ -444,6 +446,7 @@ void lchan_fsm_alloc(struct gsm_lchan *lchan)
 	lchan->fi->priv = lchan;
 	lchan_fsm_update_id(lchan);
 	LOGPFSML(lchan->fi, LOGL_DEBUG, "new lchan\n");
+	lchan_reset(lchan);
 }
 
 /* Clear volatile state of the lchan. Clear all except
