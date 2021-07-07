@@ -643,7 +643,7 @@ int generate_cell_chan_list(uint8_t *chan_list, struct gsm_bts *bts)
 static int generate_bcch_chan_list(uint8_t *chan_list, struct gsm_bts *bts,
 	bool si5, bool bis, bool ter)
 {
-	struct gsm_bts *cur_bts;
+	//struct gsm_bts *cur_bts;
 	struct bitvec *bv;
 	int rc;
 
@@ -660,11 +660,11 @@ static int generate_bcch_chan_list(uint8_t *chan_list, struct gsm_bts *bts,
 
 		if (llist_empty(&bts->neighbors)) {
 			/* There are no explicit neighbors, assume all BTS are. */
-			llist_for_each_entry(cur_bts, &bts->network->bts_list, list) {
-				if (cur_bts == bts)
-					continue;
-				bitvec_set_bit_pos(bv, cur_bts->c0->arfcn, 1);
-			}
+			//llist_for_each_entry(cur_bts, &bts->network->bts_list, list) {
+			//	if (cur_bts == bts)
+			//		continue;
+			//	bitvec_set_bit_pos(bv, cur_bts->c0->arfcn, 1);
+			//}
 		} else {
 			/* Only add explicit neighbor cells */
 			struct neighbor *n;

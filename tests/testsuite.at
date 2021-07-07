@@ -44,8 +44,8 @@ cat $abs_srcdir/nanobts_omlattr/nanobts_omlattr_test.ok > expout
 AT_CHECK([$abs_top_builddir/tests/nanobts_omlattr/nanobts_omlattr_test], [], [expout], [ignore])
 AT_CLEANUP
 
-AT_SETUP([handover_tests])
-AT_KEYWORDS([handover_tests])
-cat $abs_srcdir/handover/handover_tests.ok > expout
-AT_CHECK([$abs_srcdir/handover/handover_tests.sh $abs_srcdir/handover $abs_builddir/handover], [], [expout], [ignore])
-AT_CLEANUP
+#AT_SETUP([handover_tests])
+#AT_KEYWORDS([handover_tests])
+#cat $abs_srcdir/handover/handover_tests.ok > expout
+#AT_CHECK([$abs_srcdir/handover/handover_tests.sh $abs_srcdir/handover $abs_builddir/handover], [], [expout], [ignore])
+#AT_CLEANUP
