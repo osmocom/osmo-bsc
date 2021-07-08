@@ -189,6 +189,7 @@ OsmoBSC(config-net)# list
   handover2 penalty-time max-distance (<0-99999>|default)
   handover2 penalty-time failed-ho (<0-99999>|default)
   handover2 penalty-time failed-assignment (<0-99999>|default)
+  handover2 penalty-time low-rxqual-assignment (<0-99999>|default)
   handover2 retries (<0-9>|default)
   handover2 congestion-check (disabled|<1-999>|now)
 ...
@@ -384,9 +385,10 @@ OsmoBSC(config-net)# handover2 max-handovers ?
   default   Use default (9999), remove explicit setting on this node
 
 OsmoBSC(config-net)# handover2 penalty-time ?
-  max-distance       Time to suspend handover for a subscriber after leaving this cell due to exceeding max distance; see also 'handover2 retries'
-  failed-ho          Time to suspend handover for a subscriber after a failed handover into this cell; see also 'handover2 retries'
-  failed-assignment  Time to suspend handover for a subscriber after a failed re-assignment within this cell; see also 'handover2 retries'
+  max-distance           Time to suspend handover for a subscriber after leaving this cell due to exceeding max distance; see also 'handover2 retries'
+  failed-ho              Time to suspend handover for a subscriber after a failed handover into this cell; see also 'handover2 retries'
+  failed-assignment      Time to suspend handover for a subscriber after a failed re-assignment within this cell; see also 'handover2 retries'
+  low-rxqual-assignment  Time to suspend re-assignment after an lchan was re-assigned because of low RxQual
 
 OsmoBSC(config-net)# handover2 penalty-time max-distance ?
   <0-99999>  Seconds
@@ -397,6 +399,10 @@ OsmoBSC(config-net)# handover2 penalty-time failed-ho ?
   default    Use default (60), remove explicit setting on this node
 
 OsmoBSC(config-net)# handover2 penalty-time failed-assignment ?
+  <0-99999>  Seconds
+  default    Use default (60), remove explicit setting on this node
+
+OsmoBSC(config-net)# handover2 penalty-time low-rxqual-assignment ?
   <0-99999>  Seconds
   default    Use default (60), remove explicit setting on this node
 
@@ -603,9 +609,10 @@ OsmoBSC(config-net-bts)# handover2 max-handovers ?
   default   Use default (9999), remove explicit setting on this node
 
 OsmoBSC(config-net-bts)# handover2 penalty-time ?
-  max-distance       Time to suspend handover for a subscriber after leaving this cell due to exceeding max distance; see also 'handover2 retries'
-  failed-ho          Time to suspend handover for a subscriber after a failed handover into this cell; see also 'handover2 retries'
-  failed-assignment  Time to suspend handover for a subscriber after a failed re-assignment within this cell; see also 'handover2 retries'
+  max-distance           Time to suspend handover for a subscriber after leaving this cell due to exceeding max distance; see also 'handover2 retries'
+  failed-ho              Time to suspend handover for a subscriber after a failed handover into this cell; see also 'handover2 retries'
+  failed-assignment      Time to suspend handover for a subscriber after a failed re-assignment within this cell; see also 'handover2 retries'
+  low-rxqual-assignment  Time to suspend re-assignment after an lchan was re-assigned because of low RxQual
 
 OsmoBSC(config-net-bts)# handover2 penalty-time max-distance ?
   <0-99999>  Seconds
@@ -616,6 +623,10 @@ OsmoBSC(config-net-bts)# handover2 penalty-time failed-ho ?
   default    Use default (60), remove explicit setting on this node
 
 OsmoBSC(config-net-bts)# handover2 penalty-time failed-assignment ?
+  <0-99999>  Seconds
+  default    Use default (60), remove explicit setting on this node
+
+OsmoBSC(config-net-bts)# handover2 penalty-time low-rxqual-assignment ?
   <0-99999>  Seconds
   default    Use default (60), remove explicit setting on this node
 

@@ -1410,10 +1410,21 @@ static int find_alternative_lchan(struct gsm_lchan *lchan, bool include_weaker_r
 
 	/* perform handover, if there is a candidate */
 	if (best_cand) {
+		int rc;
 		LOGPHOCAND(best_cand, LOGL_INFO, "Best candidate: RX level %d%s\n",
 			   rxlev2dbm(best_cand->target.rxlev),
 			   best_applied_afs_bias ? " (applied AHS -> AFS rxlev bias)" : "");
-		return trigger_ho(best_cand, best_cand->requirements & REQUIREMENT_A_MASK);
+		rc = trigger_ho(best_cand, best_cand->requirements & REQUIREMENT_A_MASK);
+
+		/* After upgrading TCH/H to TCH/F due to bad RxQual, start penalty timer to avoid re-assignment within
+		 * the same cell again, to avoid oscillation from RxQual noise combined with congestion resolution. */
+		if (!rc && is_upgrade_to_tchf(best_cand, REQUIREMENT_A_MASK)) {
+			struct gsm0808_cell_id bts_id;
+			gsm_bts_cell_id(&bts_id, best_cand->target.bts);
+			penalty_timers_add(lchan->conn, &lchan->conn->hodec2.penalty_timers, &bts_id,
+					   ho_get_hodec2_penalty_low_rxqual_as(bts->ho));
+		}
+		return rc;
 	}
 
 	/* Damn, all is congested, has too low RXLEV or cannot service the voice call due to codec

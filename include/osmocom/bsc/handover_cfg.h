@@ -261,6 +261,13 @@ static inline int bool2i(bool arg)
 		" see also 'handover2 retries'\n" \
 		"Seconds\n") \
 	\
+	HO_CFG_ONE_MEMBER(int, hodec2_penalty_low_rxqual_as, 60, \
+		"handover2 ", "penalty-time low-rxqual-assignment", "<0-99999>", atoi, "%d", as_is, \
+		HO_CFG_STR_HANDOVER2 \
+		HO_CFG_STR_PENALTY_TIME \
+		"Time to suspend re-assignment after an lchan was re-assigned because of low RxQual\n" \
+		"Seconds\n") \
+	\
 	HO_CFG_ONE_MEMBER(int, hodec2_retries, 0, \
 		"handover2 ", "retries", "<0-9>", atoi, "%d", as_is, \
 		HO_CFG_STR_HANDOVER2 \
