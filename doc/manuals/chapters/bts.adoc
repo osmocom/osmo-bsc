@@ -272,10 +272,11 @@ specification for the detailed meaning of those timers.
 
 === Dynamic Timeslot Configuration (TCH / PDCH)
 
-A dynamic timeslot is in principle a voice timeslot (TCH) that is used to serve
-GPRS data (PDCH) when no voice call is active on it. This enhances GPRS
-bandwidth while no voice calls are active, which is dynamically scaled down as
-voice calls need to be served. This is a tremendous improvement in service over
+A dynamic timeslot is in principle a timeslot that is used to serve GPRS data
+(PDCH), but that can be switched to be used either for voice (TCH) or signalling
+(SDCCH8) when all other static timeslots are already in use. This enhances GPRS
+bandwidth while there is no CS load, and is dynamically scaled down as CS
+services need to be served. This is a tremendous improvement in service over
 statically assigning a fixed number of timeslots for voice and data.
 
 The causality is as follows: to establish a voice call, the
@@ -313,7 +314,7 @@ a PCU, SGSN and GGSN to provide the actual data service.
 ==== Osmocom Style Dynamic Timeslots (TCH/F_TCH/H_SDCCH8_PDCH)
 
 Timeslots of the `TCH/F_TCH/H_SDCCH8_PDCH` type dynamically switch between TCH/F,
-TCH/H and PDCH, depending on the channel kind requested by the MSC. The RSL
+TCH/H, SDCCH8 and PDCH, depending on the channel kind requested by the MSC. The RSL
 messaging for `TCH/F_TCH/H_SDCCH8_PDCH` timeslots is compatible with Ericsson RBS.
 
 BTS models supporting this timeslot kind are shown in <<dyn_ts_compat>>.
