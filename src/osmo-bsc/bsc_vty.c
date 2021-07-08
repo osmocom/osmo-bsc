@@ -1073,6 +1073,8 @@ static void config_write_bts_single(struct vty *vty, struct gsm_bts *bts)
 	vty_out(vty, "  channel allocator %s%s",
 		bts->chan_alloc_reverse ? "descending" : "ascending",
 		VTY_NEWLINE);
+	if (bts->chan_alloc_avoid_interf)
+		vty_out(vty, "  channel allocator avoid-interference 1%s", VTY_NEWLINE);
 	vty_out(vty, "  rach tx integer %u%s",
 		bts->si_common.rach_control.tx_integer, VTY_NEWLINE);
 	vty_out(vty, "  rach max transmission %u%s",
@@ -2835,6 +2837,25 @@ DEFUN_ATTR(cfg_bts_challoc,
 		bts->chan_alloc_reverse = 0;
 	else
 		bts->chan_alloc_reverse = 1;
+
+	return CMD_SUCCESS;
+}
+
+DEFUN_ATTR(cfg_bts_chan_alloc_interf,
+	   cfg_bts_chan_alloc_interf_cmd,
+	   "channel allocator avoid-interference (0|1)",
+	   "Channel Allocator\n" "Channel Allocator\n"
+	   "Configure whether reported interference levels from RES IND are used in channel allocation\n"
+	   "Ignore interference levels (default). Always assign lchans in a deterministic order.\n"
+	   "In channel allocation, prefer lchans with less interference.\n",
+	   CMD_ATTR_IMMEDIATE)
+{
+	struct gsm_bts *bts = vty->index;
+
+	if (!strcmp(argv[0], "0"))
+		bts->chan_alloc_avoid_interf = false;
+	else
+		bts->chan_alloc_avoid_interf = true;
 
 	return CMD_SUCCESS;
 }
@@ -8081,6 +8102,7 @@ int bsc_vty_init(struct gsm_network *network)
 	install_element(BTS_NODE, &cfg_bts_oml_e1_cmd);
 	install_element(BTS_NODE, &cfg_bts_oml_e1_tei_cmd);
 	install_element(BTS_NODE, &cfg_bts_challoc_cmd);
+	install_element(BTS_NODE, &cfg_bts_chan_alloc_interf_cmd);
 	install_element(BTS_NODE, &cfg_bts_rach_tx_integer_cmd);
 	install_element(BTS_NODE, &cfg_bts_rach_max_trans_cmd);
 	install_element(BTS_NODE, &cfg_bts_rach_max_delay_cmd);

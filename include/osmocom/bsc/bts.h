@@ -450,6 +450,10 @@ struct gsm_bts {
 	 * rather than starting from TRX0 and go upwards? */
 	int chan_alloc_reverse;
 
+	/* When true, interference measurements from the BTS are used in the channel allocator to favor lchans with less
+	 * interference reported in RSL Resource Indication. */
+	bool chan_alloc_avoid_interf;
+
 	enum neigh_list_manual_mode neigh_list_manual_mode;
 	/* parameters from which we build SYSTEM INFORMATION */
 	struct {

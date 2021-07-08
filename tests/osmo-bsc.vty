@@ -147,3 +147,40 @@ network
  meas-feed destination 127.0.0.23 4223
  meas-feed scenario foo23
 ...
+
+
+OsmoBSC(config-net)# bts 0
+
+OsmoBSC(config-net-bts)# list
+...
+  channel allocator avoid-interference (0|1)
+...
+
+OsmoBSC(config-net-bts)# channel?
+  channel  Channel Allocator
+
+OsmoBSC(config-net-bts)# channel ?
+  allocator  Channel Allocator
+
+OsmoBSC(config-net-bts)# channel allocator ?
+  ascending           Allocate Timeslots and Transceivers in ascending order
+  descending          Allocate Timeslots and Transceivers in descending order
+  avoid-interference  Configure whether reported interference levels from RES IND are used in channel allocation
+
+OsmoBSC(config-net-bts)# channel allocator avoid-interference ?
+  0  Ignore interference levels (default). Always assign lchans in a deterministic order.
+  1  In channel allocation, prefer lchans with less interference.
+
+OsmoBSC(config-net-bts)# show running-config
+... !channel allocator avoid-interference
+OsmoBSC(config-net-bts)# channel allocator avoid-interference 1
+OsmoBSC(config-net-bts)# show running-config
+...
+ bts 0
+...
+  channel allocator avoid-interference 1
+...
+
+OsmoBSC(config-net-bts)# channel allocator avoid-interference 0
+OsmoBSC(config-net-bts)# show running-config
+... !channel allocator avoid-interference
