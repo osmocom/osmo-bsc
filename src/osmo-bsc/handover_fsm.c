@@ -219,7 +219,7 @@ static const struct osmo_tdef_state_timeout ho_fsm_timeouts[32] = {
 	} while(0)
 
 /* issue handover to a cell identified by ARFCN and BSIC */
-void handover_request(struct handover_out_req *req)
+int handover_request(struct handover_out_req *req)
 {
 	struct gsm_subscriber_connection *conn;
 	OSMO_ASSERT(req->old_lchan);
@@ -229,7 +229,7 @@ void handover_request(struct handover_out_req *req)
 
 	/* To make sure we're allowed to start a handover, go through a gscon event dispatch. If that is accepted, the
 	 * same req is passed to handover_start(). */
-	osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_HANDOVER_START, req);
+	return osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_HANDOVER_START, req);
 }
 
 /* Check that ho has old_lchan and/or new_lchan and conn pointers match.

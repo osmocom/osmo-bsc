@@ -854,7 +854,7 @@ static int trigger_local_ho_or_as(struct ho_candidate *c, uint8_t requirements)
 		if ((requirements & REQUIREMENT_TCHF_MASK)) {
 			if (c->current.bts == c->target.bts) {
 				LOGPHOLCHAN(c->current.lchan, LOGL_INFO, "Not performing assignment: Already on target type\n");
-				return 0;
+				return -EALREADY;
 			}
 			full_rate = true;
 			break;
@@ -886,7 +886,7 @@ static int trigger_local_ho_or_as(struct ho_candidate *c, uint8_t requirements)
 		}
 		if (c->current.bts == c->target.bts) {
 			LOGPHOLCHAN(c->current.lchan, LOGL_INFO, "Not performing assignment: Already on target type\n");
-			return 0;
+			return -EALREADY;
 		}
 		break;
 	default:
@@ -899,8 +899,8 @@ static int trigger_local_ho_or_as(struct ho_candidate *c, uint8_t requirements)
 		LOGPHOLCHAN(c->current.lchan, LOGL_NOTICE, "Triggering assignment to %s, due to %s\n",
 			    full_rate ? "TCH/F" : "TCH/H",
 			    ho_reason_name(global_ho_reason));
-		reassignment_request_to_chan_type(ASSIGN_FOR_CONGESTION_RESOLUTION, c->current.lchan,
-						  full_rate? GSM_LCHAN_TCH_F : GSM_LCHAN_TCH_H);
+		return reassignment_request_to_chan_type(ASSIGN_FOR_CONGESTION_RESOLUTION, c->current.lchan,
+							 full_rate? GSM_LCHAN_TCH_F : GSM_LCHAN_TCH_H);
 	} else {
 		struct handover_out_req req = {
 			.from_hodec_id = HODEC2,

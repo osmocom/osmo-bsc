@@ -57,7 +57,7 @@ struct handover_rr_detect_data {
 
 void handover_fsm_init();
 
-void handover_request(struct handover_out_req *req);
+int handover_request(struct handover_out_req *req);
 void handover_start(struct handover_out_req *req);
 void handover_start_inter_bsc_in(struct gsm_subscriber_connection *conn,
 				 struct msgb *ho_request_msg);
