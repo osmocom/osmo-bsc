@@ -358,7 +358,7 @@ struct gsm_bts *gsm_bts_alloc(struct gsm_network *net, struct gsm_bts_sm *bts_sm
 	bts->bs_power_ctrl.dir = GSM_PWR_CTRL_DIR_DL;
 
 	/* Interference Measurement Parameters (defaults) */
-	bts->interf_meas_params = interf_meas_params_def;
+	bts->interf_meas_params_cfg = interf_meas_params_def;
 
 	bts->rach_max_delay = 63;
 

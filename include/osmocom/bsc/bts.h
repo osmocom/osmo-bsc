@@ -552,8 +552,10 @@ struct gsm_bts {
 	/* Maximum BCCH carrier power reduction */
 	uint8_t c0_max_power_red_db;
 
-	/* Interference Measurement Parameters */
-	struct gsm_interf_meas_params interf_meas_params;
+	/* Interference Measurement Parameters, as read from VTY */
+	struct gsm_interf_meas_params interf_meas_params_cfg;
+	/* Interference Measurement Parameters, as last sent via OML */
+	struct gsm_interf_meas_params interf_meas_params_used;
 
 	/* We will ignore CHAN RQD with access delay greater than rach_max_delay */
 	uint8_t rach_max_delay;

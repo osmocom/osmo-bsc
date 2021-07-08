@@ -1118,6 +1118,9 @@ DEFUN(res_ind, res_ind_cmd,
 	uint8_t *res_info_len;
 	VTY_ECHO();
 
+	/* In this test suite, always act as if the interf_meas_params_cfg were already sent to the BTS via OML */
+	bts->interf_meas_params_used = bts->interf_meas_params_cfg;
+
 	argv += 2;
 	argc -= 2;
 

@@ -37,10 +37,10 @@ struct msgb *nanobts_attr_bts_get(struct gsm_bts *bts)
 
 	/* Interference level Boundaries: 0 .. X5 (3GPP TS 52.021, section 9.4.25) */
 	msgb_tv_fixed_put(msgb, NM_ATT_INTERF_BOUND,
-			  sizeof(bts->interf_meas_params.bounds_dbm),
-			  &bts->interf_meas_params.bounds_dbm[0]);
+			  sizeof(bts->interf_meas_params_cfg.bounds_dbm),
+			  &bts->interf_meas_params_cfg.bounds_dbm[0]);
 	/* Intave: Interference Averaging period (3GPP TS 52.021, section 9.4.24) */
-	msgb_tv_put(msgb, NM_ATT_INTAVE_PARAM, bts->interf_meas_params.avg_period);
+	msgb_tv_put(msgb, NM_ATT_INTAVE_PARAM, bts->interf_meas_params_cfg.avg_period);
 
 	rlt = gsm_bts_get_radio_link_timeout(bts);
 	if (rlt == -1) {

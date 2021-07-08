@@ -1276,22 +1276,22 @@ static void config_write_bts_single(struct vty *vty, struct gsm_bts *bts)
 	    || bts->repeated_acch_policy.dl_facch_cmd)
 		vty_out(vty, "  repeat rxqual %u%s", bts->repeated_acch_policy.rxqual, VTY_NEWLINE);
 
-	if (bts->interf_meas_params.avg_period != interf_meas_params_def.avg_period) {
+	if (bts->interf_meas_params_cfg.avg_period != interf_meas_params_def.avg_period) {
 		vty_out(vty, "  interference-meas avg-period %u%s",
-			bts->interf_meas_params.avg_period,
+			bts->interf_meas_params_cfg.avg_period,
 			VTY_NEWLINE);
 	}
-	if (memcmp(bts->interf_meas_params.bounds_dbm,
+	if (memcmp(bts->interf_meas_params_cfg.bounds_dbm,
 		   interf_meas_params_def.bounds_dbm,
 		   sizeof(interf_meas_params_def.bounds_dbm))) {
 		vty_out(vty, "  interference-meas level-bounds "
 			"%d %d %d %d %d %d%s",
-			-1 * bts->interf_meas_params.bounds_dbm[0],
-			-1 * bts->interf_meas_params.bounds_dbm[1],
-			-1 * bts->interf_meas_params.bounds_dbm[2],
-			-1 * bts->interf_meas_params.bounds_dbm[3],
-			-1 * bts->interf_meas_params.bounds_dbm[4],
-			-1 * bts->interf_meas_params.bounds_dbm[5],
+			-1 * bts->interf_meas_params_cfg.bounds_dbm[0],
+			-1 * bts->interf_meas_params_cfg.bounds_dbm[1],
+			-1 * bts->interf_meas_params_cfg.bounds_dbm[2],
+			-1 * bts->interf_meas_params_cfg.bounds_dbm[3],
+			-1 * bts->interf_meas_params_cfg.bounds_dbm[4],
+			-1 * bts->interf_meas_params_cfg.bounds_dbm[5],
 			VTY_NEWLINE);
 	}
 
@@ -5040,7 +5040,7 @@ DEFUN_USRATTR(cfg_bts_interf_meas_avg_period,
 {
 	struct gsm_bts *bts = vty->index;
 
-	bts->interf_meas_params.avg_period = atoi(argv[0]);
+	bts->interf_meas_params_cfg.avg_period = atoi(argv[0]);
 
 	return CMD_SUCCESS;
 }
@@ -5062,11 +5062,10 @@ DEFUN_USRATTR(cfg_bts_interf_meas_level_bounds,
 	struct gsm_bts *bts = vty->index;
 	unsigned int i;
 
-	for (i = 0; i < ARRAY_SIZE(bts->interf_meas_params.bounds_dbm); i++) {
-		bts->interf_meas_params.bounds_dbm[i] = abs(atoi(argv[i]));
+	for (i = 0; i < ARRAY_SIZE(bts->interf_meas_params_cfg.bounds_dbm); i++) {
+		bts->interf_meas_params_cfg.bounds_dbm[i] = abs(atoi(argv[i]));
 		/* TODO: ensure ascending (or descending?) order */
 	}
-
 	return CMD_SUCCESS;
 }
 
