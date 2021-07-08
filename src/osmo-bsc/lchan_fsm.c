@@ -1712,7 +1712,14 @@ static int lchan_fsm_timer_cb(struct osmo_fsm_inst *fi)
 		lchan->release.in_error = true;
 		lchan->release.rsl_error_cause = RSL_ERR_INTERWORKING;
 		lchan->release.rr_cause = bsc_gsm48_rr_cause_from_rsl_cause(lchan->release.rsl_error_cause);
-		lchan_fail("Timeout");
+		if (fi->state  == LCHAN_ST_WAIT_RLL_RTP_ESTABLISH) {
+			lchan_fail("Timeout (rll_ready=%s,voice_require=%s,voice_ready=%s)",
+				   (lchan->sapis[0] != LCHAN_SAPI_UNUSED) ? "yes" : "no",
+				   lchan->activate.info.requires_voice_stream ? "yes" : "no",
+				   lchan_rtp_established(lchan) ? "yes" : "no");
+		} else {
+			 lchan_fail("Timeout");
+		}
 		return 0;
 	}
 }
