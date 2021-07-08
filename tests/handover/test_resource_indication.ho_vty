@@ -12,8 +12,7 @@ network
 
 res-ind trx 0 0 levels           -    1     2     3     4     3     2     -
 create-ms bts 0 TCH/F AMR
-# FAIL: interference is ignored
-expect-ts-use trx 0 0 states     *    TCH/F -     -     -     -     -     *
+expect-ts-use trx 0 0 states     *    -     -     -     TCH/F -     -     *
 
 # The ordering may also be configured reversed, still the lowest dBm value should win
 network
@@ -23,26 +22,22 @@ network
 
 res-ind trx 0 0 levels           -    5     4     2     -     3     4     -
 create-ms bts 0 TCH/F AMR
-# FAIL: interference is ignored
-expect-ts-use trx 0 0 states     *    TCH/F TCH/F -     -     -     -     *
+expect-ts-use trx 0 0 states     *    -     -     TCH/F TCH/F -     -     *
 
 # Favor lchans that have an indicated interference level
 res-ind trx 0 0 levels           -    -     -     -     -     4     3     -
 create-ms bts 0 TCH/F AMR
-# FAIL: interference is ignored
-expect-ts-use trx 0 0 states     *    TCH/F TCH/F TCH/F -     -     -     *
+expect-ts-use trx 0 0 states     *    -     -     TCH/F TCH/F -     TCH/F *
 
 # For equal levels, pick the first
 res-ind trx 0 0 levels           -    2     2     -     -     2     -     -
 create-ms bts 0 TCH/F AMR
-# FAIL: interference is ignored
-expect-ts-use trx 0 0 states     *    TCH/F TCH/F TCH/F TCH/F -     -     *
+expect-ts-use trx 0 0 states     *    TCH/F -     TCH/F TCH/F -     TCH/F *
 
 # Test clamping of indexes > 5
 res-ind trx 0 0 levels           -    -     6     -     -     4     -     -
 create-ms bts 0 TCH/F AMR
-# FAIL: interference is ignored
-expect-ts-use trx 0 0 states     *    TCH/F TCH/F TCH/F TCH/F TCH/F -     *
+expect-ts-use trx 0 0 states     *    TCH/F -     TCH/F TCH/F TCH/F TCH/F *
 
 # Also test for TCH/H
 create-bts trx-count 1 timeslots c+s4 TCH/H  TCH/H  TCH/H  TCH/H  TCH/H  TCH/H  PDCH
@@ -54,23 +49,19 @@ network
 
 res-ind trx 1 0 levels           -    54     32     21     23     45     54     -
 create-ms bts 1 TCH/H AMR
-# FAIL: interference is ignored
-expect-ts-use trx 1 0 states     *    TCH/H- -      -      -      -      -      *
+expect-ts-use trx 1 0 states     *    -      -      TCH/-H -      -      -      *
 
 # Favor lchans that have an indicated interference level
 res-ind trx 1 0 levels           -    -      -      4-     3-     -      -      -
 create-ms bts 1 TCH/H AMR
-# FAIL: interference is ignored
-expect-ts-use trx 1 0 states     *    TCH/HH -      -      -      -      -      *
+expect-ts-use trx 1 0 states     *    -      -      TCH/-H TCH/H- -      -      *
 
 # For equal levels, pick the first
 res-ind trx 1 0 levels           -    -2     22     2-     -2     22     2-     -
 create-ms bts 1 TCH/H AMR
-# FAIL: interference is ignored
-expect-ts-use trx 1 0 states     *    TCH/HH TCH/H- -      -      -      -      *
+expect-ts-use trx 1 0 states     *    TCH/-H -      TCH/-H TCH/H- -      -      *
 
 # Test clamping of indexes > 5
 res-ind trx 1 0 levels           -    7-     67     6-     -7     54     6-     -
 create-ms bts 1 TCH/H AMR
-# FAIL: interference is ignored
-expect-ts-use trx 1 0 states     *    TCH/HH TCH/HH -      -      -      -      *
+expect-ts-use trx 1 0 states     *    TCH/-H -      TCH/-H TCH/H- TCH/-H -      *

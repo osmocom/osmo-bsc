@@ -30,22 +30,36 @@
 #include <osmocom/bsc/lchan_select.h>
 #include <osmocom/bsc/bts.h>
 
+static struct gsm_lchan *pick_better_lchan(struct gsm_lchan *a, struct gsm_lchan *b)
+{
+	if (!a)
+		return b;
+	if (!b)
+		return a;
+	/* comparing negative dBm values: smaller value means less interference. */
+	if (b->interf_dbm < a->interf_dbm)
+		return b;
+	return a;
+}
+
 static struct gsm_lchan *
 _lc_find_trx(struct gsm_bts_trx *trx, enum gsm_phys_chan_config pchan,
 	     enum gsm_phys_chan_config as_pchan, bool allow_pchan_switch, bool log)
 {
 	struct gsm_lchan *lchan;
+	struct gsm_lchan *found_lchan = NULL;
 	struct gsm_bts_trx_ts *ts;
 	int j, start, stop, dir;
 
-#define LOGPLCHANALLOC(fmt, args...) \
+#define LOGPLCHANALLOC(fmt, args...) do { \
 	if (log) \
 		LOGP(DRLL, LOGL_DEBUG, "looking for lchan %s%s%s%s: " fmt, \
 		     gsm_pchan_name(pchan), \
 		     pchan == as_pchan ? "" : " as ", \
 		     pchan == as_pchan ? "" : gsm_pchan_name(as_pchan), \
 		     ((pchan != as_pchan) && !allow_pchan_switch) ? " without pchan switch" : "", \
-		     ## args)
+		     ## args); \
+	} while (0)
 
 	if (!trx_is_usable(trx)) {
 		LOGPLCHANALLOC("%s trx not usable\n", gsm_trx_name(trx));
@@ -87,20 +101,43 @@ _lc_find_trx(struct gsm_bts_trx *trx, enum gsm_phys_chan_config pchan,
 		/* TS is (going to be) in desired pchan mode. Go ahead and check for an available lchan. */
 		lchans_as_pchan = pchan_subslots(as_pchan);
 		ts_for_n_lchans(lchan, ts, lchans_as_pchan) {
-			if (lchan->fi->state == LCHAN_ST_UNUSED) {
-				LOGPLCHANALLOC("%s ss=%d is available%s\n",
+			struct gsm_lchan *was = found_lchan;
+
+			if (lchan->fi->state != LCHAN_ST_UNUSED) {
+				LOGPLCHANALLOC("%s ss=%d in type=%s,state=%s not suitable\n",
 					       gsm_ts_and_pchan_name(ts), lchan->nr,
-					       ts->pchan_is != as_pchan ? " after dyn PCHAN change" : "");
-				return lchan;
+					       gsm_lchant_name(lchan->type),
+					       osmo_fsm_inst_state_name(lchan->fi));
+				continue;
 			}
-			LOGPLCHANALLOC("%s ss=%d in type=%s,state=%s not suitable\n",
-				       gsm_ts_and_pchan_name(ts), lchan->nr,
-				       gsm_lchant_name(lchan->type),
-				       osmo_fsm_inst_state_name(lchan->fi));
+
+			found_lchan = pick_better_lchan(found_lchan, lchan);
+			if (found_lchan != was)
+				LOGPLCHANALLOC("%s ss=%d interf=%u=%ddBm is %s%s\n",
+					       gsm_ts_and_pchan_name(ts), lchan->nr,
+					       lchan->interf_band, lchan->interf_dbm,
+					       was == NULL ? "available" : "better",
+					       ts->pchan_is != as_pchan ? ", after dyn PCHAN change" : "");
+			else
+				LOGPLCHANALLOC("%s ss=%d interf=%u=%ddBm is also available but not better\n",
+					       gsm_ts_and_pchan_name(ts), lchan->nr,
+					       lchan->interf_band, lchan->interf_dbm);
+
+			/* When picking an lchan with least interference, continue to loop across all lchans. When
+			 * ignoring interference levels, return the first match. */
+			if (found_lchan && !trx->bts->chan_alloc_avoid_interf)
+				return found_lchan;
 		}
 	}
 
-	return NULL;
+	if (found_lchan)
+		LOGPLCHANALLOC("%s ss=%d interf=%ddBm%s is the best pick\n",
+			       gsm_ts_and_pchan_name(found_lchan->ts), found_lchan->nr,
+			       found_lchan->interf_dbm,
+			       found_lchan->ts->pchan_is != as_pchan ? ", after dyn PCHAN change," : "");
+	else
+		LOGPLCHANALLOC("Nothing found");
+	return found_lchan;
 #undef LOGPLCHANALLOC
 }
 
