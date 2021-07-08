@@ -5051,7 +5051,9 @@ DEFUN_USRATTR(cfg_bts_interf_meas_level_bounds,
 	      "interference-meas level-bounds "
 		"<-120-0> <-120-0> <-120-0> <-120-0> <-120-0> <-120-0>",
 	      "Interference measurement parameters\n"
-	      "Interference level Boundaries\n"
+	      "Interference level Boundaries. 3GPP do not specify whether these should be in ascending or descending"
+	      " order (3GPP TS 48.058 9.3.21 / 3GPP TS 52.021 9.4.25). OsmoBSC supports either ordering, but possibly"
+	      " some BTS models only return meaningful interference levels with one specific ordering.\n"
 	      "Interference boundary 0 (dBm)\n"
 	      "Interference boundary X1 (dBm)\n"
 	      "Interference boundary X2 (dBm)\n"
@@ -5064,7 +5066,6 @@ DEFUN_USRATTR(cfg_bts_interf_meas_level_bounds,
 
 	for (i = 0; i < ARRAY_SIZE(bts->interf_meas_params_cfg.bounds_dbm); i++) {
 		bts->interf_meas_params_cfg.bounds_dbm[i] = abs(atoi(argv[i]));
-		/* TODO: ensure ascending (or descending?) order */
 	}
 	return CMD_SUCCESS;
 }

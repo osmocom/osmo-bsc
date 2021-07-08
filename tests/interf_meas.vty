@@ -12,7 +12,7 @@ OsmoBSC(config-net-bts)# interference-meas?
   interference-meas  Interference measurement parameters
 OsmoBSC(config-net-bts)# interference-meas ?
   avg-period    Averaging period (Intave)
-  level-bounds  Interference level Boundaries
+  level-bounds  Interference level Boundaries. 3GPP do not specify whether these should be in ascending or descending order (3GPP TS 48.058 9.3.21 / 3GPP TS 52.021 9.4.25). OsmoBSC supports either ordering, but possibly some BTS models only return meaningful interference levels with one specific ordering.
 
 OsmoBSC(config-net-bts)# ### Averaging period
 OsmoBSC(config-net-bts)# interference-meas avg-period ?
