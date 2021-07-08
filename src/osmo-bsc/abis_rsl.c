@@ -1523,14 +1523,14 @@ static int rsl_rx_resource_indication(struct msgb *msg)
 		/* Store the actual received index */
 		lchan->interf_band = interf_band;
 		/* Clamp the index to 5 before accessing array of interference band bounds */
-		interf_band = OSMO_MIN(interf_band, ARRAY_SIZE(bts->interf_meas_params.bounds_dbm)-1);
+		interf_band = OSMO_MIN(interf_band, ARRAY_SIZE(bts->interf_meas_params_used.bounds_dbm)-1);
 		/* FIXME: when testing with ip.access nanoBTS, we observe a value range of 1..6. According to spec, it
 		 * seems like values 0..5 are intended: 3GPP TS 48.058 9.3.21 Resource Information says:
 		 * "The Interf Band field (bits 6-8) indicates in binary the interference level expressed as one of five
 		 * possible interference level bands as defined by O&M."
 		 * and 3GPP TS 52.021 9.4.25 "Interference level Boundaries" (OML) defines values 0, X1, X2, X3, X4, X5.
 		 * If nanoBTS sends 6, the above code clamps it to 5, so that we lose one band in accuracy. */
-		lchan->interf_dbm = -((int16_t)bts->interf_meas_params.bounds_dbm[interf_band]);
+		lchan->interf_dbm = -((int16_t)bts->interf_meas_params_used.bounds_dbm[interf_band]);
 	}
 
 	return 0;

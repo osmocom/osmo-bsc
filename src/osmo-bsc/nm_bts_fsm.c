@@ -116,6 +116,9 @@ static void configure_loop(struct gsm_bts *bts, struct gsm_nm_state *state, bool
 		abis_nm_chg_adm_state(bts, NM_OC_BTS,
 				      bts->bts_nr, 0xff, 0xff,
 				      NM_STATE_UNLOCKED);
+		/* Message containing BTS attributes, including the interference band bounds, was ACKed by the BTS.
+		 * Store the sent bounds as the ones being used for logging and comparing intereference levels. */
+		bts->interf_meas_params_used = bts->interf_meas_params_cfg;
 	}
 
 	if (allow_opstart && state->administrative == NM_STATE_UNLOCKED &&
