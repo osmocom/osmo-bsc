@@ -1045,6 +1045,93 @@ DEFUN(meas_rep_repeat_bspower, meas_rep_repeat_bspower_cmd,
 	return CMD_SUCCESS;
 }
 
+DEFUN(res_ind, res_ind_cmd,
+      "res-ind trx <0-255> <0-255> levels .LEVELS",
+      "Send Resource Indication for a specific TRX, indicating interference levels per lchan\n"
+      "Indicate a BTS and TRX\n" "BTS nr\n" "TRX nr\n"
+      "Indicate interference levels: each level is an index to bts->interf_meas_params.bounds_dbm[],"
+      " i.e. <0-5> or '-' to omit a report for this timeslot/lchan."
+      " Separate timeslots by spaces, for individual subslots directly concatenate values."
+      " If a timeslot has more subslots than provided, the last given value is repeated."
+      " For example: 'res-ind trx 0 0 levels - 1 23 -': on BTS 0 TRX 0, omit ratings for the entire first timeslot,"
+      " send level=1 for timeslot 1, and for timeslot 2 send level=2 for subslot 0 and level=3 for subslot 1.\n")
+{
+	int i;
+	uint8_t level;
+	struct gsm_bts *bts = bts_by_num_str(argv[0]);
+	struct gsm_bts_trx *trx = trx_by_num_str(bts, argv[1]);
+	struct msgb *msg = msgb_alloc_headroom(256, 64, "RES-IND");
+	struct abis_rsl_common_hdr *rslh;
+	uint8_t *res_info_len;
+	VTY_ECHO();
+
+	argv += 2;
+	argc -= 2;
+
+	rslh = (struct abis_rsl_common_hdr*)msgb_put(msg, sizeof(*rslh));
+	rslh->msg_discr = ABIS_RSL_MDISC_TRX;
+	rslh->msg_type = RSL_MT_RF_RES_IND;
+	msgb_put_u8(msg, RSL_IE_RESOURCE_INFO);
+	res_info_len = msg->tail;
+	msgb_put_u8(msg, 0);
+
+	level = 0xff;
+	for (i = 0; i < ARRAY_SIZE(trx->ts); i++) {
+		const char *ts_str;
+		struct gsm_lchan *lchan;
+		size_t given_subslots = 0;
+		struct gsm_bts_trx_ts *ts = &trx->ts[i];
+
+		if (i < argc) {
+			ts_str = argv[i];
+			given_subslots = strlen(ts_str);
+		}
+
+		ts_for_n_lchans(lchan, ts, ts->max_lchans_possible) {
+			int chan_nr;
+
+			if (lchan->nr < given_subslots) {
+				char subslot_val = ts_str[lchan->nr];
+				switch (subslot_val) {
+				case '-':
+					level = INTERF_BAND_UNKNOWN;
+					break;
+				case '0':
+				case '1':
+				case '2':
+				case '3':
+				case '4':
+				case '5':
+				case '6':
+				case '7':
+					level = subslot_val - '0';
+					break;
+				default:
+					OSMO_ASSERT(false);
+				}
+			}
+
+			if (level == INTERF_BAND_UNKNOWN)
+				continue;
+
+			chan_nr = gsm_lchan2chan_nr(lchan, true);
+			if (chan_nr < 0)
+				continue;
+
+			msgb_put_u8(msg, chan_nr);
+			msgb_put_u8(msg, level << 5);
+		}
+	}
+
+	*res_info_len = msg->tail - res_info_len - 1;
+
+	msg->dst = trx->rsl_link_primary;
+	msg->l2h = msg->data;
+	abis_rsl_rcvmsg(msg);
+
+	return CMD_SUCCESS;
+}
+
 DEFUN(congestion_check, congestion_check_cmd,
       "congestion-check",
       "Trigger a congestion check\n")
@@ -1313,6 +1400,7 @@ static void ho_test_vty_init()
 	install_element(CONFIG_NODE, &meas_rep_cmd);
 	install_element(CONFIG_NODE, &meas_rep_repeat_cmd);
 	install_element(CONFIG_NODE, &meas_rep_repeat_bspower_cmd);
+	install_element(CONFIG_NODE, &res_ind_cmd);
 	install_element(CONFIG_NODE, &congestion_check_cmd);
 	install_element(CONFIG_NODE, &expect_no_chan_cmd);
 	install_element(CONFIG_NODE, &expect_chan_cmd);

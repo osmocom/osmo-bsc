@@ -47,6 +47,7 @@ pass test_neighbor_congested.ho_vty
 pass test_neighbor_full.ho_vty
 pass test_no_congestion.ho_vty
 pass test_penalty_timer.ho_vty
+pass test_resource_indication.ho_vty
 pass test_rxqual.ho_vty
 pass test_rxqual_vs_congestion.ho_vty
 pass test_stay_in_better_cell.ho_vty
