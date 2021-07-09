@@ -1912,6 +1912,62 @@ static bool force_free_lchan_for_emergency(struct chan_rqd *rqd)
 	return true;
 }
 
+struct gsm_lchan *_select_sdcch_for_call(struct gsm_bts *bts, const struct chan_rqd *rqd, enum gsm_chan_t lctype)
+{
+	struct gsm_lchan *lchan = NULL;
+	int free_tchf, free_tcch;
+	bool needs_dyn_switch;
+
+
+	lchan = lchan_avail_by_type(bts, GSM_LCHAN_SDCCH, false);
+	if (!lchan)
+		return NULL;
+
+	needs_dyn_switch = lchan->ts->pchan_on_init == GSM_PCHAN_OSMO_DYN &&
+					lchan->ts->pchan_is != GSM_PCHAN_SDCCH8_SACCH8C;
+
+	free_tchf = bts_count_free_ts(bts, GSM_PCHAN_TCH_F);
+	free_tcch = bts_count_free_ts(bts, GSM_PCHAN_TCH_H);
+	if (free_tchf == 0 && free_tcch == 0) {
+		LOG_BTS(bts, DRSL, LOGL_INFO,
+			"CHAN RQD: 0x%x Requesting %s reason=call but no TCH available\n",
+			rqd->ref.ra, gsm_lchant_name(lctype));
+		return NULL;
+	}
+
+	/* There's a TCH available and we'll not switch any of them, so we are fine */
+	if (!needs_dyn_switch)
+		goto select_lchan;
+
+	/* We need to switch, but there's at least 2 TCH TS available so we are fine: */
+	if (free_tchf > 1 || free_tcch > 2)
+		goto select_lchan;
+
+	/* At this point (needs_dyn_switch==true), following cases are possible:
+	 * [A] H=0, F=1
+	 * [B] H=1, F=0
+	 * [B] H=1, F=1
+	 * [C] H=2, F=1
+	 * If condition [C] is met, it means there's 1 dynamic TS and it's the
+	 * same as the dynamic TS available for SDCCH requiring switch, so selecting
+	 * it would basically leave us without free TCH, so avoid selecting it.
+	 * Regarding the other conditions, it basically results in them being
+	 * different TS than the one we want to switch, so we are fine selecting
+	 * the TS for SDCCH */
+	if (free_tchf == 1 && free_tcch == 2) {
+		LOG_BTS(bts, DRSL, LOGL_INFO,
+			"CHAN RQD: 0x%x Requesting %s reason=call but dyn TS switch to "
+			"SDCCH would starve the single available TCH timeslot\n",
+			rqd->ref.ra, gsm_lchant_name(lctype));
+		return NULL;
+	}
+
+select_lchan:
+	/* FIXME: we already have lchan, simply do lchan->type = GSM_LCHAN_SDCCH? Split lchan_select_by_type in 2 functions? */
+	lchan = lchan_select_by_type(bts, GSM_LCHAN_SDCCH);
+	return lchan;
+}
+
 void abis_rsl_chan_rqd_queue_poll(struct gsm_bts *bts)
 {
 	struct lchan_activate_info info;
@@ -1948,10 +2004,14 @@ void abis_rsl_chan_rqd_queue_poll(struct gsm_bts *bts)
 	 *
 	 */
 
-	/* Emergency calls will be put on a free TCH/H or TCH/F directly in the code below, all other channel requests
-	 * will get an SDCCH first (if possible). */
-	if (rqd->reason != GSM_CHREQ_REASON_EMERG)
+	if (GSM_CHREQ_REASON_CALL) {
+		 lchan = _select_sdcch_for_call(bts, rqd, lctype);
+	} else if (rqd->reason != GSM_CHREQ_REASON_EMERG) {
 		lchan = lchan_select_by_type(bts, GSM_LCHAN_SDCCH);
+	}
+	/* else: Emergency calls will be put on a free TCH/H or TCH/F directly
+	 * in the code below, all other channel requests will get an SDCCH first
+	 * (if possible). */
 
 	if (!lchan) {
 		LOG_BTS(bts, DRSL, LOGL_NOTICE, "CHAN RQD: no resources for %s 0x%x, retrying with %s\n",
