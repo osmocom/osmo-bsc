@@ -1102,6 +1102,8 @@ static void config_write_bts_single(struct vty *vty, struct gsm_bts *bts)
 		vty_out(vty, "  cell barred 1%s", VTY_NEWLINE);
 	if ((bts->si_common.rach_control.t2 & 0x4) == 0)
 		vty_out(vty, "  rach emergency call allowed 1%s", VTY_NEWLINE);
+	if (bts->si_common.rach_control.re == 0)
+		vty_out(vty, "  rach call-reestablishment allowed 1%s", VTY_NEWLINE);
 	if ((bts->si_common.rach_control.t3) != 0)
 		for (i = 0; i < 8; i++)
 			if (bts->si_common.rach_control.t3 & (0x1 << i))
@@ -3167,6 +3169,26 @@ DEFUN_USRATTR(cfg_bts_rach_ec_allowed,
 		bts->si_common.rach_control.t2 |= 0x4;
 	else
 		bts->si_common.rach_control.t2 &= ~0x4;
+
+	return CMD_SUCCESS;
+}
+
+DEFUN_USRATTR(cfg_bts_rach_re_allowed,
+	      cfg_bts_rach_re_allowed_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_RSL_LINK),
+	      "rach call-reestablishment allowed (0|1)",
+	      RACH_STR
+	      "Resume calls after radio link failure\n"
+	      "Resume calls after radio link failure\n"
+	      "Forbid MS to reestablish calls\n"
+	      "Allow MS to try to reestablish calls\n")
+{
+	struct gsm_bts *bts = vty->index;
+
+	if (atoi(argv[0]) == 0)
+		bts->si_common.rach_control.re = 1;
+	else
+		bts->si_common.rach_control.re = 0;
 
 	return CMD_SUCCESS;
 }
@@ -8117,6 +8139,7 @@ int bsc_vty_init(struct gsm_network *network)
 	install_element(BTS_NODE, &cfg_bts_rach_nm_ldavg_cmd);
 	install_element(BTS_NODE, &cfg_bts_cell_barred_cmd);
 	install_element(BTS_NODE, &cfg_bts_rach_ec_allowed_cmd);
+	install_element(BTS_NODE, &cfg_bts_rach_re_allowed_cmd);
 	install_element(BTS_NODE, &cfg_bts_rach_ac_class_cmd);
 	install_element(BTS_NODE, &cfg_bts_ms_max_power_cmd);
 	install_element(BTS_NODE, &cfg_bts_cell_resel_hyst_cmd);
