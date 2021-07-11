@@ -5,3 +5,8 @@ set-ts-use    trx 0 0     states *    -     -     -     pdch TCH/H- pdch pdch
 create-ms bts 0 TCH/H AMR
 expect-ts-use trx 0 0     states *    -     -     -     pdch TCH/HH pdch pdch
 
+# in static timeslots, there is NO preference to fill half-used TCH/H first
+create-bts trx-count 1 timeslots c+s4 TCH/F TCH/F TCH/F TCH/H  TCH/H  TCH/H  PDCH
+set-ts-use    trx 1 0     states *    -     -     -     -      TCH/H- -      pdch
+create-ms bts 1 TCH/H AMR
+set-ts-use    trx 1 0     states *    -     -     -     TCH/H- TCH/H- -      pdch
