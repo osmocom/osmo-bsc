@@ -32,6 +32,7 @@ pass test_dyn_ts_congestion_tch_f_vs_tch_h.ho_vty
 pass test_dyn_ts_congestion_tch_f_vs_tch_h_2.ho_vty
 pass test_dyn_ts_favor_half_used_tch_h_as_target.ho_vty
 pass test_dyn_ts_favor_moving_half_used_tch_h.ho_vty
+pass test_dyn_ts_favor_static_ts_as_target.ho_vty
 pass test_ho_to_better_cell.ho_vty
 pass test_ho_to_better_cell_2.ho_vty
 pass test_hysteresis.ho_vty
