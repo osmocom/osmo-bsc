@@ -114,6 +114,18 @@ static void _lchan_on_activation_failure(struct gsm_lchan *lchan, enum lchan_act
 	case FOR_ASSIGNMENT:
 		LOG_LCHAN(lchan, LOGL_NOTICE, "Signalling Assignment FSM of error (%s)\n",
 			  lchan->last_error ? : "unknown error");
+		if (!for_conn) {
+			LOG_LCHAN(lchan, LOGL_ERROR,
+				  "lchan activation for Assignment failed, but activation request has"
+				  " no conn\n");
+			break;
+		}
+		if (!for_conn->assignment.fi) {
+			LOG_LCHAN(lchan, LOGL_ERROR,
+				  "lchan activation for Assignment failed, but conn has no ongoing"
+				  " assignment procedure\n");
+			break;
+		}
 		_osmo_fsm_inst_dispatch(for_conn->assignment.fi, ASSIGNMENT_EV_LCHAN_ERROR, lchan,
 					file, line);
 		return;
