@@ -1,0 +1,38 @@
+# If both a static and a dynamic TCH/H (even without pchan switch!) are available, we always prefer static TS.
+create-bts trx-count 1 timeslots c+s4  dyn    TCH/H  dyn    TCH/H  dyn    TCH/H  PDCH
+
+network
+ bts 0
+  channel allocator ascending
+
+set-ts-use    trx 0 0     states *     TCH/-H TCH/-H TCH/-H TCH/-H TCH/-H TCH/-H *
+
+# the dynamic timeslot is already in TCH/H mode, and needs no pchan switch. It appears first in the list, hence it would
+# be used first -- but we prefer using static TS when still available:
+create-ms bts 0 TCH/H AMR
+expect-ts-use trx 0 0     states *     TCH/-H TCH/HH TCH/-H TCH/-H TCH/-H TCH/-H *
+#                                                 ^
+
+# Interference ratings do NOT influence whether a static or dynamic lchan (even without pchan switch) is going to be
+# assigned.
+network
+ bts 0
+  channel allocator avoid-interference 1
+  interference-meas level-bounds -115 -109 -103 -97 -91 -85
+#                                  0    1    2   3   4   5
+
+# Here the dyn TS lchan happens to have less interference. But still the choice to prefer static over dynamic weighs
+# stronger. The static TS with least interference is picked.
+#                                      dyn    TCH/H  dyn    TCH/H  dyn    TCH/H
+expect-ts-use trx 0 0     states *     TCH/-H TCH/HH TCH/-H TCH/-H TCH/-H TCH/-H *
+res-ind trx 0 0 levels           -         4-     --     1-     4-     3-     2- -
+create-ms bts 0 TCH/H AMR
+expect-ts-use trx 0 0     states *     TCH/-H TCH/HH TCH/-H TCH/-H TCH/-H TCH/HH *
+#                                                                             ^
+create-ms bts 0 TCH/H AMR
+expect-ts-use trx 0 0     states *     TCH/-H TCH/HH TCH/-H TCH/HH TCH/-H TCH/HH *
+#                                                               ^
+# now only dynamic TS are left. The one dyn lchan with least interference is picked
+create-ms bts 0 TCH/H AMR
+expect-ts-use trx 0 0     states *     TCH/-H TCH/HH TCH/HH TCH/HH TCH/-H TCH/HH *
+#                                                        ^
