@@ -1077,7 +1077,7 @@ DEFUN(res_ind, res_ind_cmd,
 
 	level = 0xff;
 	for (i = 0; i < ARRAY_SIZE(trx->ts); i++) {
-		const char *ts_str;
+		const char *ts_str = NULL;
 		struct gsm_lchan *lchan;
 		size_t given_subslots = 0;
 		struct gsm_bts_trx_ts *ts = &trx->ts[i];
@@ -1090,7 +1090,7 @@ DEFUN(res_ind, res_ind_cmd,
 		ts_for_n_lchans(lchan, ts, ts->max_lchans_possible) {
 			int chan_nr;
 
-			if (lchan->nr < given_subslots) {
+			if (lchan->nr < given_subslots && ts_str) {
 				char subslot_val = ts_str[lchan->nr];
 				switch (subslot_val) {
 				case '-':
