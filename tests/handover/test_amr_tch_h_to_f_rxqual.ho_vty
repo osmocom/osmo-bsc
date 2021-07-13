@@ -14,3 +14,29 @@ meas-rep lchan 0 0 4 0 rxlev 30 rxqual 6 ta 0
 # average rxqual now at 6 which is worse than 5, reassign to TCH/F due to bad rxqual.
 expect-as from lchan 0 0 4 0 to lchan 0 0 1 0
 expect-ts-use trx 0 0 states * TCH/F - - - - - *
+meas-rep repeat 2 lchan 0 0 1 0 rxlev 30 rxqual 5 ta 0
+
+# After the upgrade to TCH/F, there should be a penalty timer against re-assgnment within this cell.
+# Configure congestion resolution so that it would normally want to do a re-assignment:
+network
+ handover2 min-free-slots tch/f 3
+ handover2 window rxlev averaging 1
+ handover2 min rxlev -90
+
+# The penalty timer is still active, no re-assignment from congestion of TCH/H
+congestion-check
+# "FAIL": the penalty timer is not yet implemented
+#expect-no-chan
+#expect-ts-use trx 0 0 states * TCH/F - - - - - *
+expect-as from lchan 0 0 1 0 to lchan 0 0 4 0
+expect-ts-use trx 0 0 states * - - - TCH/H- - - *
+
+# But handover to another cell is not held off
+create-bts trx-count 1 timeslots c+s4 TCH/F TCH/F TCH/F TCH/H  TCH/H TCH/H PDCH
+set-ts-use trx 0 0 states * TCH/F - - - - - *
+expect-ts-use trx 1 0 states * - - - - - - *
+
+meas-rep lchan 0 0 1 0 rxlev 30 rxqual 5 ta 0 neighbors 35
+expect-ho from lchan 0 0 1 0 to lchan 1 0 4 0
+expect-ts-use trx 0 0 states * - - - - - - *
+expect-ts-use trx 1 0 states * - - - TCH/H- - - *
