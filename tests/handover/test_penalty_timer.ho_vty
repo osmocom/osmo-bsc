@@ -3,6 +3,12 @@
 # Even though the cell is still better, handover will not be performed
 # due to penalty timer after handover failure
 
+network
+ # set the timeout for LCHAN_ST_WAIT_AFTER_ERROR
+ timer X3111 5
+ # set penalty timeout
+ handover2 penalty-time failed-ho 23
+
 create-n-bts 2
 set-ts-use trx 0 0 states * TCH/F - - - - - -
 meas-rep lchan 0 0 1 0 rxlev 20 rxqual 0 ta 0 neighbors 30
@@ -11,7 +17,15 @@ expect-ho-cmd lchan 0 0 1 0
 ho-failed
 # first BTS still services the call:
 expect-ts-use trx 0 0 states * TCH/F - - - - - -
+
 # lchan 1 0 1 0 is in LCHAN_ST_WAIT_AFTER_ERROR because the handover failed:
 expect-ts-use trx 1 0 states * !     - - - - - -
+wait 4
+expect-ts-use trx 1 0 states * !     - - - - - -
+wait 1
+expect-ts-use trx 1 0 states * -     - - - - - -
+# back to UNUSED
+
+# No handover because the penalty timer is still running
 meas-rep lchan 0 0 1 0 rxlev 20 rxqual 0 ta 0 neighbors 30
 expect-no-chan
