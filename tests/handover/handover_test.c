@@ -287,6 +287,34 @@ static struct gsm_bts *_create_bts(int num_trx, const char * const *ts_args, int
 	return bts;
 }
 
+char *lchans_use_str(struct gsm_bts_trx_ts *ts, const char *established_prefix, char established_char)
+{
+	char state_chars[8] = { 0 };
+	struct gsm_lchan *lchan;
+	bool any_lchans_established = false;
+	bool any_lchans_in_use = false;
+	ts_for_n_lchans(lchan, ts, ts->max_primary_lchans) {
+		char state_char;
+		if (lchan_state_is(lchan, LCHAN_ST_UNUSED)) {
+			state_char = '-';
+		} else {
+			any_lchans_in_use = true;
+			if (lchan_state_is(lchan, LCHAN_ST_ESTABLISHED)) {
+				any_lchans_established = true;
+				state_char = established_char;
+			} else {
+				state_char = '!';
+			}
+		}
+		state_chars[lchan->nr] = state_char;
+	}
+	if (!any_lchans_in_use)
+		return "-";
+	if (!any_lchans_established)
+		established_prefix = "";
+	return talloc_asprintf(OTC_SELECT, "%s%s", established_prefix, state_chars);
+}
+
 const char *ts_use_str(struct gsm_bts_trx_ts *ts)
 {
 	switch (ts->pchan_is) {
@@ -297,20 +325,10 @@ const char *ts_use_str(struct gsm_bts_trx_ts *ts)
 		return "-";
 
 	case GSM_PCHAN_TCH_F:
-		if (lchan_state_is(&ts->lchan[0], LCHAN_ST_ESTABLISHED))
-			return "TCH/F";
-		else
-			return "-";
+		return lchans_use_str(ts, "TCH/", 'F');
 
 	case GSM_PCHAN_TCH_H:
-		if (lchan_state_is(&ts->lchan[0], LCHAN_ST_ESTABLISHED)
-		    && lchan_state_is(&ts->lchan[1], LCHAN_ST_ESTABLISHED))
-			return "TCH/HH";
-		if (lchan_state_is(&ts->lchan[0], LCHAN_ST_ESTABLISHED))
-			return "TCH/H-";
-		if (lchan_state_is(&ts->lchan[1], LCHAN_ST_ESTABLISHED))
-			return "TCH/-H";
-		return "-";
+		return lchans_use_str(ts, "TCH/", 'H');
 
 	default:
 		return gsm_pchan_name(ts->pchan_is);
