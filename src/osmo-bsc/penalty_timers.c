@@ -30,10 +30,10 @@
 
 static unsigned int time_now(void)
 {
-	time_t now;
-	time(&now);
-	/* FIXME: use monotonic clock */
-	return (unsigned int)now;
+	struct timespec tp;
+	if (osmo_clock_gettime(CLOCK_MONOTONIC, &tp))
+		return 0;
+	return (unsigned int)tp.tv_sec;
 }
 
 /* Add a penalty timer for a target cell ID.
