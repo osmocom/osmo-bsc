@@ -94,6 +94,41 @@ struct neighbor_meas {
 	uint8_t bcch_f;
 };
 
+const struct timeval fake_time_start_time = { 123, 456 };
+
+void fake_time_passes(time_t secs, suseconds_t usecs)
+{
+	struct timeval diff;
+	/* Add time to osmo_fsm timers, using osmo_gettimeofday() */
+	osmo_gettimeofday_override_add(secs, usecs);
+	/* Add time to penalty timers, using osmo_clock_gettime() */
+	osmo_clock_override_add(CLOCK_MONOTONIC, secs, usecs * 1000);
+
+	timersub(&osmo_gettimeofday_override_time, &fake_time_start_time, &diff);
+	fprintf(stderr, "Total time passed: %d.%06d s\n", (int)diff.tv_sec, (int)diff.tv_usec);
+
+	osmo_timers_prepare();
+	osmo_timers_update();
+}
+
+void fake_time_start()
+{
+	struct timespec *clock_override;
+
+	/* osmo_fsm uses osmo_gettimeofday(). To affect FSM timeouts, we need osmo_gettimeofday_override. */
+	osmo_gettimeofday_override_time = fake_time_start_time;
+	osmo_gettimeofday_override = true;
+
+	/* Penalty timers use osmo_clock_gettime(CLOCK_MONOTONIC). To affect these timeouts, we need
+	 * osmo_gettimeofday_override. */
+	clock_override = osmo_clock_override_gettimespec(CLOCK_MONOTONIC);
+	OSMO_ASSERT(clock_override);
+	clock_override->tv_sec = fake_time_start_time.tv_sec;
+	clock_override->tv_nsec = fake_time_start_time.tv_usec * 1000;
+	osmo_clock_override_enable(CLOCK_MONOTONIC, true);
+	fake_time_passes(0, 0);
+}
+
 static void gen_meas_rep(struct gsm_lchan *lchan,
 			 uint8_t bs_power_db, uint8_t rxlev, uint8_t rxqual, uint8_t ta,
 			 int neighbors_count, struct neighbor_meas *neighbors)
@@ -1410,6 +1445,22 @@ DEFUN(set_ts_use, set_ts_use_cmd,
 	return CMD_SUCCESS;
 }
 
+DEFUN(wait, wait_cmd,
+	"wait <0-999999> [<0-999>]",
+	"Let some fake time pass. The test continues instantaneously, but this overrides osmo_gettimeofday() to let"
+	" given amount of time pass virtually.\n"
+	"Seconds to fake-wait\n"
+	"Microseconds to fake-wait, in addition to the seconds waited\n")
+{
+	time_t seconds = atoi(argv[0]);
+	suseconds_t useconds = 0;
+	VTY_ECHO();
+	if (argc > 1)
+		useconds = atoi(argv[1]) * 1000;
+	fake_time_passes(seconds, useconds);
+	return CMD_SUCCESS;
+}
+
 static void ho_test_vty_init()
 {
 	install_element(CONFIG_NODE, &create_n_bts_cmd);
@@ -1433,6 +1484,7 @@ static void ho_test_vty_init()
 	install_element(CONFIG_NODE, &codec_f_cmd);
 	install_element(CONFIG_NODE, &codec_h_cmd);
 	install_element(CONFIG_NODE, &set_ts_use_cmd);
+	install_element(CONFIG_NODE, &wait_cmd);
 }
 
 static const struct log_info_cat log_categories[] = {
@@ -1553,6 +1605,10 @@ int main(int argc, char **argv)
 	log_set_print_level(osmo_stderr_target, 1);
 	log_set_print_timestamp(osmo_stderr_target, 0);
 	osmo_fsm_log_addr(false);
+
+	/* the 'wait' command above, intended to test penalty timers, adds seconds to the monotonic clock in "fake
+	 * time". */
+	fake_time_start();
 
 	bsc_network_alloc();
 	if (!bsc_gsmnet)
