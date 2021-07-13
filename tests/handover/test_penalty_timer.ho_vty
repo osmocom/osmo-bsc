@@ -29,3 +29,17 @@ expect-ts-use trx 1 0 states * -     - - - - - -
 # No handover because the penalty timer is still running
 meas-rep lchan 0 0 1 0 rxlev 20 rxqual 0 ta 0 neighbors 30
 expect-no-chan
+
+wait 17
+# at this point, the penalty timer has not yet expired. (4+1+17 = 22 < 23)
+meas-rep lchan 0 0 1 0 rxlev 20 rxqual 0 ta 0 neighbors 30
+expect-no-chan
+expect-ts-use trx 0 0 states * TCH/F - - - - - -
+expect-ts-use trx 1 0 states * - - - - - - -
+
+wait 1
+# now the penalty timer of 23 seconds has passed and the handover is attempted again.
+meas-rep lchan 0 0 1 0 rxlev 20 rxqual 0 ta 0 neighbors 30
+expect-ho from lchan 0 0 1 0 to lchan 1 0 1 0
+expect-ts-use trx 0 0 states * - - - - - - -
+expect-ts-use trx 1 0 states * TCH/F - - - - - -
