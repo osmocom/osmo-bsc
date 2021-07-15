@@ -1915,9 +1915,8 @@ static bool force_free_lchan_for_emergency(struct chan_rqd *rqd)
 struct gsm_lchan *_select_sdcch_for_call(struct gsm_bts *bts, const struct chan_rqd *rqd, enum gsm_chan_t lctype)
 {
 	struct gsm_lchan *lchan = NULL;
-	int free_tchf, free_tcch;
+	int free_tchf, free_tchh;
 	bool needs_dyn_switch;
-
 
 	lchan = lchan_avail_by_type(bts, GSM_LCHAN_SDCCH, false);
 	if (!lchan)
@@ -1927,20 +1926,21 @@ struct gsm_lchan *_select_sdcch_for_call(struct gsm_bts *bts, const struct chan_
 					lchan->ts->pchan_is != GSM_PCHAN_SDCCH8_SACCH8C;
 
 	free_tchf = bts_count_free_ts(bts, GSM_PCHAN_TCH_F);
-	free_tcch = bts_count_free_ts(bts, GSM_PCHAN_TCH_H);
-	if (free_tchf == 0 && free_tcch == 0) {
+	free_tchh = bts_count_free_ts(bts, GSM_PCHAN_TCH_H);
+	if (free_tchf == 0 && free_tchh == 0) {
 		LOG_BTS(bts, DRSL, LOGL_INFO,
 			"CHAN RQD: 0x%x Requesting %s reason=call but no TCH available\n",
 			rqd->ref.ra, gsm_lchant_name(lctype));
 		return NULL;
 	}
 
-	/* There's a TCH available and we'll not switch any of them, so we are fine */
+	/* There's a TCH available and we'll not switch any dyn ts, so we are
+	 * fine (we can switch one of them to SDCCH8 and still have one left) */
 	if (!needs_dyn_switch)
 		goto select_lchan;
 
 	/* We need to switch, but there's at least 2 TCH TS available so we are fine: */
-	if (free_tchf > 1 || free_tcch > 2)
+	if (free_tchf > 1 || free_tchh > 2)
 		goto select_lchan;
 
 	/* At this point (needs_dyn_switch==true), following cases are possible:
@@ -1948,13 +1948,14 @@ struct gsm_lchan *_select_sdcch_for_call(struct gsm_bts *bts, const struct chan_
 	 * [B] H=1, F=0
 	 * [B] H=1, F=1
 	 * [C] H=2, F=1
-	 * If condition [C] is met, it means there's 1 dynamic TS and it's the
-	 * same as the dynamic TS available for SDCCH requiring switch, so selecting
-	 * it would basically leave us without free TCH, so avoid selecting it.
-	 * Regarding the other conditions, it basically results in them being
-	 * different TS than the one we want to switch, so we are fine selecting
-	 * the TS for SDCCH */
-	if (free_tchf == 1 && free_tcch == 2) {
+	 * If condition [C] is met, it means there's 1 dynamic TS (because a dyn
+	 * TS is counted both as 1 free TCH/F and 2 free TCH/H at the same time)
+	 * and it's the same as the dynamic TS available for SDCCH requiring
+	 * switch, so selecting it would basically leave us without free TCH, so
+	 * avoid selecting it. Regarding the other conditions, it basically
+	 * results in them being different TS than the one we want to switch, so
+	 * we are fine selecting the TS for SDCCH */
+	if (free_tchf == 1 && free_tchh == 2) {
 		LOG_BTS(bts, DRSL, LOGL_INFO,
 			"CHAN RQD: 0x%x Requesting %s reason=call but dyn TS switch to "
 			"SDCCH would starve the single available TCH timeslot\n",
