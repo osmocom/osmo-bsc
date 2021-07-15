@@ -1964,8 +1964,7 @@ struct gsm_lchan *_select_sdcch_for_call(struct gsm_bts *bts, const struct chan_
 	}
 
 select_lchan:
-	/* FIXME: we already have lchan, simply do lchan->type = GSM_LCHAN_SDCCH? Split lchan_select_by_type in 2 functions? */
-	lchan = lchan_select_by_type(bts, GSM_LCHAN_SDCCH);
+	lchan_select_set_type(lchan, GSM_LCHAN_SDCCH);
 	return lchan;
 }
 
