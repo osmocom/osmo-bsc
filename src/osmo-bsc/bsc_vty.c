@@ -6299,7 +6299,7 @@ static int lchan_act_single(struct vty *vty, struct gsm_lchan *lchan, const char
 		}
 
 		/* configure the lchan */
-		lchan->type = lchan_t;
+		lchan_select_set_type(lchan, lchan_t);
 		if (!strcmp(codec_str, "hr") || !strcmp(codec_str, "fr")) {
 			info = (struct lchan_activate_info) {
 				.activ_for = ACTIVATE_FOR_VTY,
@@ -6792,9 +6792,9 @@ DEFUN(lchan_reassign, lchan_reassign_cmd,
 		return CMD_WARNING;
 	}
 
-	/* lchan_select_*() sets the lchan->type, we need to do the same here, so that activation will work out. */
-	to_lchan->type = chan_mode_to_chan_type(from_lchan->current_ch_mode_rate.chan_mode,
-						from_lchan->current_ch_mode_rate.chan_rate);
+	/* Set lchan type, so that activation will work out. */
+	lchan_select_set_type(to_lchan, chan_mode_to_chan_type(from_lchan->current_ch_mode_rate.chan_mode,
+							       from_lchan->current_ch_mode_rate.chan_rate));
 
 	LOG_LCHAN(from_lchan, LOGL_NOTICE, "VTY requests re-assignment of this lchan to %s%s\n",
 		  gsm_lchan_name(to_lchan), to_lchan->vamos.is_secondary ? " (to VAMOS mode)" : "");

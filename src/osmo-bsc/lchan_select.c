@@ -296,16 +296,26 @@ struct gsm_lchan *lchan_select_by_type(struct gsm_bts *bts, enum gsm_chan_t type
 {
 	struct gsm_lchan *lchan = NULL;
 
-	lchan = lchan_avail_by_type(bts, type, true);
-
 	LOG_BTS(bts, DRLL, LOGL_DEBUG, "lchan_select_by_type(%s)\n", gsm_lchant_name(type));
 
-	if (lchan) {
-		lchan->type = type;
-		LOG_LCHAN(lchan, LOGL_INFO, "Selected\n");
-	} else
+	lchan = lchan_avail_by_type(bts, type, true);
+
+	if (!lchan) {
 		LOG_BTS(bts, DRLL, LOGL_NOTICE, "Failed to select %s channel\n",
 			gsm_lchant_name(type));
+		return NULL;
+	}
 
+	lchan_select_set_type(lchan, type);
 	return lchan;
+}
+
+/* Set available lchan to given type. Usually used on lchan obtained with
+ * lchan_avail_by_type. The next logical step is lchan_activate() on it, which
+ * would possibly cause dynamic timeslot pchan switching, taken care of by the
+ * lchan and timeslot FSMs. */
+void lchan_select_set_type(struct gsm_lchan *lchan, enum gsm_chan_t type)
+{
+	lchan->type = type;
+	LOG_LCHAN(lchan, LOGL_INFO, "Selected\n");
 }
