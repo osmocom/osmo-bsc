@@ -1458,6 +1458,7 @@ static void lchan_fsm_borken(struct osmo_fsm_inst *fi, uint32_t event, void *dat
 
 	case LCHAN_EV_RTP_RELEASED:
 	case LCHAN_EV_RTP_ERROR:
+	case LCHAN_EV_RLL_REL_IND:
 		return;
 
 	default:
@@ -1647,6 +1648,7 @@ static const struct osmo_fsm_state lchan_fsm_states[] = {
 			| S(LCHAN_EV_RSL_RF_CHAN_REL_ACK)
 			| S(LCHAN_EV_RTP_ERROR)
 			| S(LCHAN_EV_RTP_RELEASED)
+			| S(LCHAN_EV_RLL_REL_IND)
 			,
 		.out_state_mask = 0
 			| S(LCHAN_ST_WAIT_RF_RELEASE_ACK)
