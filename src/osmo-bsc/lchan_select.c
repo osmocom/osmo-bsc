@@ -136,7 +136,7 @@ _lc_find_trx(struct gsm_bts_trx *trx, enum gsm_phys_chan_config pchan,
 			       found_lchan->interf_dbm,
 			       found_lchan->ts->pchan_is != as_pchan ? ", after dyn PCHAN change," : "");
 	else
-		LOGPLCHANALLOC("Nothing found");
+		LOGPLCHANALLOC("Nothing found\n");
 	return found_lchan;
 #undef LOGPLCHANALLOC
 }
