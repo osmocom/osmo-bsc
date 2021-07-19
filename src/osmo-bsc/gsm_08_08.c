@@ -415,8 +415,13 @@ int bsc_compl_l3(struct gsm_lchan *lchan, struct msgb *msg, uint16_t chosen_chan
 
 	/* If this Mobile Identity already has an active bsc_subscr, look whether there also is an active A-interface
 	 * conn for this subscriber. This may be the case during a Perform Location Request (LCS) from the MSC that
-	 * started on an IDLE MS, and now the MS is becoming active. Associate with the existing conn. */
-	if (bsub)
+	 * started on an IDLE MS, and now the MS is becoming active. Associate with the existing conn.
+	 *
+	 * However, for a CM Re-Establishment Request, we must *not* re-use the existing conn, but allocate a second
+	 * conn for the same bsub. The previous conn will be Clear'ed by the MSC as soon as it receives the L3 Complete
+	 * message == the CM Re-Establishment Request.
+	 */
+	if (bsub && !(pdisc == GSM48_PDISC_MM && mtype == GSM48_MT_MM_CM_REEST_REQ))
 		conn = bsc_conn_by_bsub(bsub);
 
 	if (!conn) {
