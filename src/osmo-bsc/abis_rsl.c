@@ -1495,7 +1495,7 @@ static int rsl_rx_resource_indication(struct msgb *msg)
 	res_info_ie = TLVP_GET(&tp, RSL_IE_RESOURCE_INFO);
 	if (!res_info_ie) {
 		LOGP(DRSL, LOGL_ERROR, "Rx Resource Indication: missing Resource Info IE\n");
-		return -ENOENT;
+		return -EINVAL;
 	}
 
 	/* The IE value is defined in 3GPP TS 48.058 9.3.21 Resource Information:
