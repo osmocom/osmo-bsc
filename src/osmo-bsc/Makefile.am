@@ -55,6 +55,7 @@ osmo_bsc_SOURCES = \
 	bts_sm.c \
 	bts_osmobts.c \
 	bts_unknown.c \
+	bts_vty.c \
 	chan_alloc.c \
 	codec_pref.c \
 	e1_config.c \

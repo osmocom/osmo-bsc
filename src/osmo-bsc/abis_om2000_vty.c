@@ -63,11 +63,6 @@ struct oml_node_state {
 	struct con_group *cg;
 };
 
-static int dummy_config_write(struct vty *v)
-{
-	return CMD_SUCCESS;
-}
-
 /* FIXME: auto-generate those strings from the value_string lists */
 #define OM2K_OBJCLASS_VTY "(trxc|tg|ts|tf|is|con|dp|mctr|cf|tx|rx)"
 #define OM2K_OBJCLASS_VTY_HELP 	"TRX Controller\n"	\

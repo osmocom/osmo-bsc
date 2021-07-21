@@ -54,11 +54,6 @@ struct oml_node_state {
 	uint8_t obj_inst[3];
 };
 
-static int dummy_config_write(struct vty *v)
-{
-	return CMD_SUCCESS;
-}
-
 /* FIXME: auto-generate those strings from the value_string lists */
 #define NM_OBJCLASS_VTY "(site-manager|bts|radio-carrier|baseband-transceiver|channel|adjc|handover|power-contorl|btse|rack|test|envabtse|bport|gprs-nse|gprs-cell|gprs-nsvc|siemenshw)"
 #define NM_OBJCLASS_VTY_HELP	"Site Manager Object\n"			\
