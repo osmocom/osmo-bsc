@@ -1492,7 +1492,7 @@ static int rsl_rx_resource_indication(struct msgb *msg)
 		}
 	}
 
-	res_info_ie = TLVP_GET_MINLEN(&tp, RSL_IE_RESOURCE_INFO, 2);
+	res_info_ie = TLVP_GET(&tp, RSL_IE_RESOURCE_INFO);
 	if (!res_info_ie) {
 		LOGP(DRSL, LOGL_ERROR, "Rx Resource Indication: missing Resource Info IE\n");
 		return -ENOENT;
@@ -1510,7 +1510,9 @@ static int rsl_rx_resource_indication(struct msgb *msg)
 		return -EINVAL;
 	}
 
-	/* Now iterate the reported levels and update corresponding lchans */
+	/* Now iterate the reported levels and update corresponding lchans.
+	 * Note that an empty res_info_ie can also make sense, if no lchans are idle and no interference ratings are
+	 * present. The practical effect of the message then is to invalidate previous interference ratings. */
 	for (i = 0; i < res_info_ie->len; i += 2) {
 		struct gsm_bts *bts = trx->bts;
 		uint8_t chan_nr = res_info_ie->val[i];
