@@ -1728,7 +1728,8 @@ static int lchan_act_deact(struct vty *vty, const char **argv, int argc)
 		return CMD_WARNING;
 
 	if (ss_nr >= ts->max_primary_lchans) {
-		vty_out(vty, "Invalid sub-slot number for this timeslot type%s", VTY_NEWLINE);
+		vty_out(vty, "Invalid sub-slot number %d for this timeslot type: %s (%u)%s", ss_nr,
+			gsm_pchan_name(ts->pchan_on_init), ts->max_primary_lchans, VTY_NEWLINE);
 		return CMD_WARNING;
 	}
 
