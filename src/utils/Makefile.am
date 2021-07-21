@@ -47,26 +47,7 @@ bs11_config_SOURCES = \
 	$(NULL)
 
 bs11_config_LDADD = \
-	$(top_builddir)/src/osmo-bsc/abis_nm.o \
-	$(top_builddir)/src/osmo-bsc/abis_osmo.o \
-	$(top_builddir)/src/osmo-bsc/acc.o \
-	$(top_builddir)/src/osmo-bsc/bts.o \
-	$(top_builddir)/src/osmo-bsc/bts_sm.o \
-	$(top_builddir)/src/osmo-bsc/bts_trx.o \
-	$(top_builddir)/src/osmo-bsc/bts_siemens_bs11.o \
-	$(top_builddir)/src/osmo-bsc/bts_ipaccess_nanobts_omlattr.o \
-	$(top_builddir)/src/osmo-bsc/e1_config.o \
-	$(top_builddir)/src/osmo-bsc/gsm_data.o \
-	$(top_builddir)/src/osmo-bsc/net_init.o \
-	$(top_builddir)/src/osmo-bsc/nm_common_fsm.o \
-	$(top_builddir)/src/osmo-bsc/nm_bts_sm_fsm.o \
-	$(top_builddir)/src/osmo-bsc/nm_bts_fsm.o \
-	$(top_builddir)/src/osmo-bsc/nm_bb_transc_fsm.o \
-	$(top_builddir)/src/osmo-bsc/nm_channel_fsm.o \
-	$(top_builddir)/src/osmo-bsc/nm_gprs_cell_fsm.o \
-	$(top_builddir)/src/osmo-bsc/nm_gprs_nse_fsm.o \
-	$(top_builddir)/src/osmo-bsc/nm_gprs_nsvc_fsm.o \
-	$(top_builddir)/src/osmo-bsc/nm_rcarrier_fsm.o \
+	$(top_builddir)/src/osmo-bsc/libbsc.la \
 	$(LIBOSMOCORE_LIBS) \
 	$(LIBOSMOGSM_LIBS) \
 	$(LIBOSMOABIS_LIBS) \
@@ -132,23 +113,7 @@ meas_json_SOURCES = \
 	$(NULL)
 
 meas_json_LDADD = \
-	$(top_builddir)/src/osmo-bsc/abis_nm.o \
-	$(top_builddir)/src/osmo-bsc/abis_osmo.o \
-	$(top_builddir)/src/osmo-bsc/acc.o \
-	$(top_builddir)/src/osmo-bsc/bts.o \
-	$(top_builddir)/src/osmo-bsc/bts_sm.o \
-	$(top_builddir)/src/osmo-bsc/bts_ipaccess_nanobts_omlattr.o \
-	$(top_builddir)/src/osmo-bsc/bts_trx.o \
-	$(top_builddir)/src/osmo-bsc/gsm_data.o \
-	$(top_builddir)/src/osmo-bsc/nm_common_fsm.o \
-	$(top_builddir)/src/osmo-bsc/nm_bts_sm_fsm.o \
-	$(top_builddir)/src/osmo-bsc/nm_bts_fsm.o \
-	$(top_builddir)/src/osmo-bsc/nm_bb_transc_fsm.o \
-	$(top_builddir)/src/osmo-bsc/nm_channel_fsm.o \
-	$(top_builddir)/src/osmo-bsc/nm_gprs_cell_fsm.o \
-	$(top_builddir)/src/osmo-bsc/nm_gprs_nse_fsm.o \
-	$(top_builddir)/src/osmo-bsc/nm_gprs_nsvc_fsm.o \
-	$(top_builddir)/src/osmo-bsc/nm_rcarrier_fsm.o \
+	$(top_builddir)/src/osmo-bsc/libbsc.la \
 	$(LIBOSMOCORE_LIBS) \
 	$(LIBOSMOGSM_LIBS) \
 	$(LIBOSMOABIS_LIBS) \

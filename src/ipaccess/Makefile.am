@@ -46,25 +46,7 @@ ipaccess_config_SOURCES = \
 
 # FIXME: resolve the bogus dependencies patched around here:
 ipaccess_config_LDADD = \
-	$(top_builddir)/src/osmo-bsc/bts.o \
-	$(top_builddir)/src/osmo-bsc/bts_sm.o \
-	$(top_builddir)/src/osmo-bsc/bts_trx.o \
-	$(top_builddir)/src/osmo-bsc/abis_nm.o \
-	$(top_builddir)/src/osmo-bsc/abis_osmo.o \
-	$(top_builddir)/src/osmo-bsc/acc.o \
-	$(top_builddir)/src/osmo-bsc/bts_ipaccess_nanobts.o \
-	$(top_builddir)/src/osmo-bsc/bts_ipaccess_nanobts_omlattr.o \
-	$(top_builddir)/src/osmo-bsc/gsm_data.o \
-	$(top_builddir)/src/osmo-bsc/net_init.o \
-	$(top_builddir)/src/osmo-bsc/nm_common_fsm.o \
-	$(top_builddir)/src/osmo-bsc/nm_bts_sm_fsm.o \
-	$(top_builddir)/src/osmo-bsc/nm_bts_fsm.o \
-	$(top_builddir)/src/osmo-bsc/nm_bb_transc_fsm.o \
-	$(top_builddir)/src/osmo-bsc/nm_channel_fsm.o \
-	$(top_builddir)/src/osmo-bsc/nm_gprs_cell_fsm.o \
-	$(top_builddir)/src/osmo-bsc/nm_gprs_nse_fsm.o \
-	$(top_builddir)/src/osmo-bsc/nm_gprs_nsvc_fsm.o \
-	$(top_builddir)/src/osmo-bsc/nm_rcarrier_fsm.o \
+	$(top_builddir)/src/osmo-bsc/libbsc.la \
 	$(OSMO_LIBS) \
 	$(NULL)
 
@@ -74,22 +56,6 @@ ipaccess_proxy_SOURCES = \
 	$(NULL)
 
 ipaccess_proxy_LDADD = \
-	$(top_builddir)/src/osmo-bsc/abis_nm.o \
-	$(top_builddir)/src/osmo-bsc/abis_osmo.o \
-	$(top_builddir)/src/osmo-bsc/acc.o \
-	$(top_builddir)/src/osmo-bsc/bts.o \
-	$(top_builddir)/src/osmo-bsc/bts_sm.o \
-	$(top_builddir)/src/osmo-bsc/bts_ipaccess_nanobts_omlattr.o \
-	$(top_builddir)/src/osmo-bsc/bts_trx.o \
-	$(top_builddir)/src/osmo-bsc/gsm_data.o \
-	$(top_builddir)/src/osmo-bsc/nm_common_fsm.o \
-	$(top_builddir)/src/osmo-bsc/nm_bts_sm_fsm.o \
-	$(top_builddir)/src/osmo-bsc/nm_bts_fsm.o \
-	$(top_builddir)/src/osmo-bsc/nm_bb_transc_fsm.o \
-	$(top_builddir)/src/osmo-bsc/nm_channel_fsm.o \
-	$(top_builddir)/src/osmo-bsc/nm_gprs_cell_fsm.o \
-	$(top_builddir)/src/osmo-bsc/nm_gprs_nse_fsm.o \
-	$(top_builddir)/src/osmo-bsc/nm_gprs_nsvc_fsm.o \
-	$(top_builddir)/src/osmo-bsc/nm_rcarrier_fsm.o \
+	$(top_builddir)/src/osmo-bsc/libbsc.la \
 	$(OSMO_LIBS) \
 	$(NULL)

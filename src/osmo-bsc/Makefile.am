@@ -21,11 +21,9 @@ AM_LDFLAGS = \
 	$(COVERAGE_LDFLAGS) \
 	$(NULL)
 
-bin_PROGRAMS = \
-	osmo-bsc \
-	$(NULL)
+noinst_LTLIBRARIES = libbsc.la
 
-osmo_bsc_SOURCES = \
+libbsc_la_SOURCES = \
 	a_reset.c \
 	abis_nm.c \
 	abis_nm_vty.c \
@@ -95,7 +93,6 @@ osmo_bsc_SOURCES = \
 	osmo_bsc_filter.c \
 	osmo_bsc_grace.c \
 	osmo_bsc_lcls.c \
-	osmo_bsc_main.c \
 	osmo_bsc_mgcp.c \
 	osmo_bsc_msc.c \
 	osmo_bsc_sigtran.c \
@@ -110,7 +107,28 @@ osmo_bsc_SOURCES = \
 	cbsp_link.c \
 	$(NULL)
 
+libbsc_la_LIBADD = \
+	$(LIBOSMOCORE_LIBS) \
+	$(LIBOSMOGSM_LIBS) \
+	$(LIBOSMOVTY_LIBS) \
+	$(LIBOSMOCTRL_LIBS) \
+	$(LIBOSMONETIF_LIBS) \
+	$(COVERAGE_LDFLAGS) \
+	$(LIBOSMOABIS_LIBS) \
+	$(LIBOSMOSIGTRAN_LIBS) \
+	$(LIBOSMOMGCPCLIENT_LIBS) \
+	$(NULL)
+
+bin_PROGRAMS = \
+	osmo-bsc \
+	$(NULL)
+
+osmo_bsc_SOURCES = \
+	osmo_bsc_main.c \
+	$(NULL)
+
 osmo_bsc_LDADD = \
+	libbsc.la \
 	$(LIBOSMOCORE_LIBS) \
 	$(LIBOSMOGSM_LIBS) \
 	$(LIBOSMOVTY_LIBS) \
