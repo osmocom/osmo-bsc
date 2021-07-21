@@ -34,7 +34,8 @@ OsmoBSC# bts 0 trx 0 timeslot 0 sub-slot 0 modify vamos tsc 1 0 ?
 
 OsmoBSC# list
 ...
-  bts <0-255> trx <0-255> timeslot <0-7> (sub-slot|vamos-sub-slot) <0-7> (activate|activate-vamos|deactivate) (hr|fr|efr|amr|sig) [<0-7>]
+  bts <0-255> trx <0-255> timeslot <0-7> (sub-slot|vamos-sub-slot) <0-7> (activate|activate-vamos) (hr|fr|efr|amr|sig) [<0-7>]
+  bts <0-255> trx <0-255> timeslot <0-7> (sub-slot|vamos-sub-slot) <0-7> deactivate
 ...
 
 OsmoBSC# bts?

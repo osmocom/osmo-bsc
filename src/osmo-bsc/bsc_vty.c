@@ -1548,6 +1548,11 @@ static int lchan_act_single(struct vty *vty, struct gsm_lchan *lchan, const char
 	      GSM0808_SC_CFG_AMR_12_2 };
 
 	if (activate) {
+		if (!codec_str) {
+			vty_out(vty, "%% Error: need a channel type argument to activate%s", VTY_NEWLINE);
+			return CMD_WARNING;
+		}
+
 		LOG_LCHAN(lchan, LOGL_NOTICE, "attempt from VTY to activate lchan %s with codec %s\n",
 			  gsm_lchan_name(lchan), codec_str);
 		if (!lchan->fi) {
@@ -1700,28 +1705,21 @@ static int lchan_act_trx(struct vty *vty, struct gsm_bts_trx *trx, int activate)
 	return CMD_SUCCESS;
 }
 
-/* Debug/Measurement command to activate a given logical channel
- * manually in a given mode/codec.  This is useful for receiver
- * performance testing (FER/RBER/...) */
-DEFUN(lchan_act, lchan_act_cmd,
-	"bts <0-255> trx <0-255> timeslot <0-7> (sub-slot|vamos-sub-slot) <0-7> (activate|activate-vamos|deactivate) (hr|fr|efr|amr|sig) [<0-7>]",
-	BTS_NR_TRX_TS_STR2
-	"Primary sub-slot\n" "VAMOS secondary shadow subslot, range <0-1>, only valid for TCH type timeslots\n"
-	SS_NR_STR
-	"Manual Channel Activation (e.g. for BER test)\n"
-	"Manual Channel Activation, in VAMOS mode\n"
-	"Manual Channel Deactivation (e.g. for BER test)\n"
-	"Half-Rate v1\n" "Full-Rate\n" "Enhanced Full Rate\n" "Adaptive Multi-Rate\n" "Signalling\n" "AMR Mode\n")
+static int lchan_act_deact(struct vty *vty, const char **argv, int argc)
 {
 	struct gsm_bts_trx_ts *ts;
 	struct gsm_lchan *lchan;
 	bool vamos = (strcmp(argv[3], "vamos-sub-slot") == 0);
 	int ss_nr = atoi(argv[4]);
-	const char *act_str = argv[5];
-	const char *codec_str = argv[6];
+	const char *act_str = NULL;
+	const char *codec_str = NULL;
 	int activate;
 	int amr_mode = -1;
 
+	if (argc > 5)
+		act_str = argv[5];
+	if (argc > 6)
+		codec_str = argv[6];
 	if (argc > 7)
 		amr_mode = atoi(argv[7]);
 
@@ -1744,14 +1742,41 @@ DEFUN(lchan_act, lchan_act_cmd,
 
 	lchan = &ts->lchan[ss_nr];
 
-	if (!strcmp(act_str, "activate"))
+	if (!act_str)
+		activate = 0;
+	else if (!strcmp(act_str, "activate"))
 		activate = 1;
 	else if (!strcmp(act_str, "activate-vamos"))
 		activate = 2;
 	else
-		activate = 0;
+		return CMD_WARNING;
 
 	return lchan_act_single(vty, lchan, codec_str, amr_mode, activate);
+}
+
+/* Debug/Measurement command to activate a given logical channel
+ * manually in a given mode/codec.  This is useful for receiver
+ * performance testing (FER/RBER/...) */
+DEFUN(lchan_act, lchan_act_cmd,
+	"bts <0-255> trx <0-255> timeslot <0-7> (sub-slot|vamos-sub-slot) <0-7> (activate|activate-vamos) (hr|fr|efr|amr|sig) [<0-7>]",
+	BTS_NR_TRX_TS_STR2
+	"Primary sub-slot\n" "VAMOS secondary shadow subslot, range <0-1>, only valid for TCH type timeslots\n"
+	SS_NR_STR
+	"Manual Channel Activation (e.g. for BER test)\n"
+	"Manual Channel Activation, in VAMOS mode\n"
+	"Half-Rate v1\n" "Full-Rate\n" "Enhanced Full Rate\n" "Adaptive Multi-Rate\n" "Signalling\n" "AMR Mode\n")
+{
+	return lchan_act_deact(vty, argv, argc);
+}
+
+DEFUN(lchan_deact, lchan_deact_cmd,
+	"bts <0-255> trx <0-255> timeslot <0-7> (sub-slot|vamos-sub-slot) <0-7> deactivate",
+	BTS_NR_TRX_TS_STR2
+	"Primary sub-slot\n" "VAMOS secondary shadow subslot, range <0-1>, only valid for TCH type timeslots\n"
+	SS_NR_STR
+	"Manual Channel Deactivation (e.g. for BER test)\n")
+{
+	return lchan_act_deact(vty, argv, argc);
 }
 
 #define ACTIVATE_ALL_LCHANS_STR "Manual Channel Activation of all logical channels (e.g. for BER test)\n"
@@ -3365,6 +3390,7 @@ int bsc_vty_init(struct gsm_network *network)
 	install_element(ENABLE_NODE, &bts_c0_power_red_cmd);
 	install_element(ENABLE_NODE, &pdch_act_cmd);
 	install_element(ENABLE_NODE, &lchan_act_cmd);
+	install_element(ENABLE_NODE, &lchan_deact_cmd);
 	install_element(ENABLE_NODE, &lchan_act_all_cmd);
 	install_element(ENABLE_NODE, &lchan_act_all_bts_cmd);
 	install_element(ENABLE_NODE, &lchan_act_all_trx_cmd);
