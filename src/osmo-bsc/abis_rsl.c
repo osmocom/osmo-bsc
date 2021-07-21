@@ -2014,18 +2014,20 @@ void abis_rsl_chan_rqd_queue_poll(struct gsm_bts *bts)
 	 * (if possible). */
 
 	if (!lchan) {
-		LOG_BTS(bts, DRSL, LOGL_NOTICE, "CHAN RQD: no resources for %s 0x%x, retrying with %s\n",
-			gsm_lchant_name(GSM_LCHAN_SDCCH), rqd->ref.ra, gsm_lchant_name(GSM_LCHAN_TCH_H));
+		LOG_BTS(bts, DRSL, LOGL_NOTICE, "CHAN RQD[%s]: no resources for %s 0x%x, retrying with %s\n",
+			get_value_string(gsm_chreq_descs, rqd->reason), gsm_lchant_name(GSM_LCHAN_SDCCH),
+			rqd->ref.ra, gsm_lchant_name(GSM_LCHAN_TCH_H));
 		lchan = lchan_select_by_type(bts, GSM_LCHAN_TCH_H);
 	}
 	if (!lchan) {
-		LOG_BTS(bts, DRSL, LOGL_NOTICE, "CHAN RQD: no resources for %s 0x%x, retrying with %s\n",
-			gsm_lchant_name(GSM_LCHAN_SDCCH), rqd->ref.ra, gsm_lchant_name(GSM_LCHAN_TCH_F));
+		LOG_BTS(bts, DRSL, LOGL_NOTICE, "CHAN RQD[%s]: no resources for %s 0x%x, retrying with %s\n",
+			get_value_string(gsm_chreq_descs, rqd->reason), gsm_lchant_name(GSM_LCHAN_SDCCH),
+			rqd->ref.ra, gsm_lchant_name(GSM_LCHAN_TCH_F));
 		lchan = lchan_select_by_type(bts, GSM_LCHAN_TCH_F);
 	}
 	if (!lchan) {
-		LOG_BTS(bts, DRSL, LOGL_NOTICE, "CHAN RQD: no resources for %s 0x%x\n",
-			gsm_lchant_name(lctype), rqd->ref.ra);
+		LOG_BTS(bts, DRSL, LOGL_NOTICE, "CHAN RQD[%s]: no resources for %s 0x%x\n",
+			get_value_string(gsm_chreq_descs, rqd->reason), gsm_lchant_name(lctype), rqd->ref.ra);
 		rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_CHREQ_NO_CHANNEL));
 		rsl_tx_imm_ass_rej(bts, &rqd->ref);
 		llist_del(&rqd->entry);
