@@ -13,6 +13,8 @@ struct gsm_nm_state;
 struct pchan_load;
 struct gsm_lchan;
 struct bsc_subscr;
+struct gsm_e1_subslot;
+struct e1inp_sign_link;
 struct vty;
 
 void openbsc_vty_print_statistics(struct vty *vty, struct gsm_network *);
@@ -52,6 +54,15 @@ void trx_dump_vty(struct vty *vty, struct gsm_bts_trx *trx, bool print_rsl, bool
 void ts_dump_vty(struct vty *vty, struct gsm_bts_trx_ts *ts);
 void lchan_dump_full_vty(struct vty *vty, struct gsm_lchan *lchan);
 void lchan_dump_short_vty(struct vty *vty, struct gsm_lchan *lchan);
+
+int bts_trx_vty_init(void);
+void config_write_trx_single(struct vty *vty, struct gsm_bts_trx *trx);
+void config_write_e1_link(struct vty *vty, struct gsm_e1_subslot *e1_link,
+				 const char *prefix);
+void e1isl_dump_vty_tcp(struct vty *vty, const struct e1inp_sign_link *e1l);
+void e1isl_dump_vty(struct vty *vty, struct e1inp_sign_link *e1l);
+void parse_e1_link(struct gsm_e1_subslot *e1_link, const char *line,
+			  const char *ts, const char *ss);
 
 enum bsc_vty_cmd_attr {
 	BSC_VTY_ATTR_RESTART_ABIS_OML_LINK = 0,
