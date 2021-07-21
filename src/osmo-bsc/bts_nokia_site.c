@@ -80,6 +80,7 @@ static void bootstrap_om_trx(struct gsm_bts_trx *trx)
 
 static int shutdown_om(struct gsm_bts *bts)
 {
+	gsm_bts_stats_reset(bts);
 	/* TODO !? */
 	return 0;
 }

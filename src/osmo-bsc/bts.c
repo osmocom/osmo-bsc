@@ -796,6 +796,26 @@ int gsm_bts_set_c0_power_red(struct gsm_bts *bts, const uint8_t red)
 	return 0;
 }
 
+void gsm_bts_stats_reset(struct gsm_bts *bts)
+{
+	osmo_stat_item_set(osmo_stat_item_group_get_item(bts->bts_statg, BTS_STAT_CHAN_CCCH_SDCCH4_USED), 0);
+	osmo_stat_item_set(osmo_stat_item_group_get_item(bts->bts_statg, BTS_STAT_CHAN_CCCH_SDCCH4_TOTAL), 0);
+	osmo_stat_item_set(osmo_stat_item_group_get_item(bts->bts_statg, BTS_STAT_CHAN_TCH_F_USED), 0);
+	osmo_stat_item_set(osmo_stat_item_group_get_item(bts->bts_statg, BTS_STAT_CHAN_TCH_F_TOTAL), 0);
+	osmo_stat_item_set(osmo_stat_item_group_get_item(bts->bts_statg, BTS_STAT_CHAN_TCH_H_USED), 0);
+	osmo_stat_item_set(osmo_stat_item_group_get_item(bts->bts_statg, BTS_STAT_CHAN_TCH_H_TOTAL), 0);
+	osmo_stat_item_set(osmo_stat_item_group_get_item(bts->bts_statg, BTS_STAT_CHAN_SDCCH8_USED), 0);
+	osmo_stat_item_set(osmo_stat_item_group_get_item(bts->bts_statg, BTS_STAT_CHAN_SDCCH8_TOTAL), 0);
+	osmo_stat_item_set(osmo_stat_item_group_get_item(bts->bts_statg, BTS_STAT_CHAN_TCH_F_PDCH_USED), 0);
+	osmo_stat_item_set(osmo_stat_item_group_get_item(bts->bts_statg, BTS_STAT_CHAN_TCH_F_PDCH_TOTAL), 0);
+	osmo_stat_item_set(osmo_stat_item_group_get_item(bts->bts_statg, BTS_STAT_CHAN_CCCH_SDCCH4_CBCH_USED), 0);
+	osmo_stat_item_set(osmo_stat_item_group_get_item(bts->bts_statg, BTS_STAT_CHAN_CCCH_SDCCH4_CBCH_TOTAL), 0);
+	osmo_stat_item_set(osmo_stat_item_group_get_item(bts->bts_statg, BTS_STAT_CHAN_SDCCH8_CBCH_USED), 0);
+	osmo_stat_item_set(osmo_stat_item_group_get_item(bts->bts_statg, BTS_STAT_CHAN_SDCCH8_CBCH_TOTAL), 0);
+	osmo_stat_item_set(osmo_stat_item_group_get_item(bts->bts_statg, BTS_STAT_CHAN_OSMO_DYN_USED), 0);
+	osmo_stat_item_set(osmo_stat_item_group_get_item(bts->bts_statg, BTS_STAT_CHAN_OSMO_DYN_TOTAL), 0);
+}
+
 const struct rate_ctr_desc bts_ctr_description[] = {
 	[BTS_CTR_CHREQ_TOTAL] = \
 		{ "chreq:total",

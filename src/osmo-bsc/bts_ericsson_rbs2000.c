@@ -52,6 +52,7 @@ static void bootstrap_om_trx(struct gsm_bts_trx *trx)
 static int shutdown_om(struct gsm_bts *bts)
 {
 	gsm_bts_all_ts_dispatch(bts, TS_EV_OML_DOWN, NULL);
+	gsm_bts_stats_reset(bts);
 
 	/* FIXME */
 	return 0;

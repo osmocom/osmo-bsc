@@ -32,6 +32,7 @@
 #include <osmocom/gsm/tlv.h>
 #include <osmocom/core/msgb.h>
 #include <osmocom/core/socket.h>
+#include <osmocom/core/stat_item.h>
 #include <osmocom/core/talloc.h>
 #include <osmocom/core/utils.h>
 #include <osmocom/bsc/gsm_data.h>
@@ -557,6 +558,7 @@ void ipaccess_drop_oml(struct gsm_bts *bts, const char *reason)
 	bts->oml_link = NULL;
 	bts->uptime = 0;
 	osmo_stat_item_dec(osmo_stat_item_group_get_item(bts->bts_statg, BTS_STAT_OML_CONNECTED), 1);
+	gsm_bts_stats_reset(bts);
 
 	/* Also drop the associated OSMO link */
 	e1inp_sign_link_destroy(bts->osmo_link);

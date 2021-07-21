@@ -704,6 +704,8 @@ int gsm_bts_set_system_infos(struct gsm_bts *bts);
 
 int gsm_bts_set_c0_power_red(struct gsm_bts *bts, const uint8_t red);
 
+void gsm_bts_stats_reset(struct gsm_bts *bts);
+
 int gsm_bts_model_register(struct gsm_bts_model *model);
 struct gsm_bts_model *bts_model_find(enum gsm_bts_type type);
 

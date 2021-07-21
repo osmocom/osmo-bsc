@@ -552,6 +552,7 @@ static int shutdown_om(struct gsm_bts *bts)
 	/* Reset BTS Site manager resource */
 	abis_nm_bs11_reset_resource(bts);
 
+	gsm_bts_stats_reset(bts);
 	gsm_bts_all_ts_dispatch(bts, TS_EV_OML_DOWN, NULL);
 
 	return 0;
