@@ -2004,7 +2004,7 @@ void abis_rsl_chan_rqd_queue_poll(struct gsm_bts *bts)
 	 *
 	 */
 
-	if (GSM_CHREQ_REASON_CALL) {
+	if (rqd->reason == GSM_CHREQ_REASON_CALL) {
 		 lchan = _select_sdcch_for_call(bts, rqd, lctype);
 	} else if (rqd->reason != GSM_CHREQ_REASON_EMERG) {
 		lchan = lchan_select_by_type(bts, GSM_LCHAN_SDCCH);
