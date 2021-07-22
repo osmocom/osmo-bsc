@@ -565,6 +565,25 @@ DEFUN_ATTR(cfg_bts_chan_alloc_interf,
 	return CMD_SUCCESS;
 }
 
+DEFUN_ATTR(cfg_bts_chan_alloc_allow_tch_for_signalling,
+	   cfg_bts_chan_alloc_allow_tch_for_signalling_cmd,
+	   "channel allocator allow-tch-for-signalling (0|1)",
+	   "Channel Allocator\n" "Channel Allocator\n"
+	   "Configure whether TCH/H or TCH/F channels can be used to serve non-call-related signalling if SDCCHs are exhausted\n"
+	   "Forbid use of TCH for non-call-related signalling purposes\n"
+	   "Allow use of TCH for non-call-related signalling purposes (default)\n",
+	   CMD_ATTR_IMMEDIATE)
+{
+	struct gsm_bts *bts = vty->index;
+
+	if (!strcmp(argv[0], "0"))
+		bts->chan_alloc_allow_tch_for_signalling = false;
+	else
+		bts->chan_alloc_allow_tch_for_signalling = true;
+
+	return CMD_SUCCESS;
+}
+
 #define RACH_STR "Random Access Control Channel\n"
 
 DEFUN_USRATTR(cfg_bts_rach_tx_integer,
@@ -3736,6 +3755,8 @@ static void config_write_bts_single(struct vty *vty, struct gsm_bts *bts)
 		VTY_NEWLINE);
 	if (bts->chan_alloc_avoid_interf)
 		vty_out(vty, "  channel allocator avoid-interference 1%s", VTY_NEWLINE);
+	if (!bts->chan_alloc_allow_tch_for_signalling)
+		vty_out(vty, "  channel allocator allow-tch-for-signalling 0%s", VTY_NEWLINE);
 	vty_out(vty, "  rach tx integer %u%s",
 		bts->si_common.rach_control.tx_integer, VTY_NEWLINE);
 	vty_out(vty, "  rach max transmission %u%s",
@@ -4018,6 +4039,7 @@ int bts_vty_init(void)
 	install_element(BTS_NODE, &cfg_bts_oml_e1_tei_cmd);
 	install_element(BTS_NODE, &cfg_bts_challoc_cmd);
 	install_element(BTS_NODE, &cfg_bts_chan_alloc_interf_cmd);
+	install_element(BTS_NODE, &cfg_bts_chan_alloc_allow_tch_for_signalling_cmd);
 	install_element(BTS_NODE, &cfg_bts_rach_tx_integer_cmd);
 	install_element(BTS_NODE, &cfg_bts_rach_max_trans_cmd);
 	install_element(BTS_NODE, &cfg_bts_rach_max_delay_cmd);

@@ -454,6 +454,10 @@ struct gsm_bts {
 	 * interference reported in RSL Resource Indication. */
 	bool chan_alloc_avoid_interf;
 
+	/* When true (default), TCH can be allocated to serve
+	 * non-voicecall-related signalling services when SDCCHs are exhausted */
+	bool chan_alloc_allow_tch_for_signalling;
+
 	enum neigh_list_manual_mode neigh_list_manual_mode;
 	/* parameters from which we build SYSTEM INFORMATION */
 	struct {

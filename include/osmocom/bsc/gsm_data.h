@@ -419,6 +419,11 @@ enum gsm_chreq_reason_t {
 	GSM_CHREQ_REASON_PDCH,
 };
 
+static inline bool gsm_chreq_reason_is_voicecall(enum gsm_chreq_reason_t reason)
+{
+	return reason == GSM_CHREQ_REASON_EMERG || reason == GSM_CHREQ_REASON_CALL;
+}
+
 /* lchans 0..3 are SDCCH in combined channel configuration,
    use 4 as magic number for BCCH hack - see osmo-bts-../oml.c:opstart_compl() */
 #define CCCH_LCHAN 4

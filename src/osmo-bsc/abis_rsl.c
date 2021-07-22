@@ -2015,17 +2015,19 @@ void abis_rsl_chan_rqd_queue_poll(struct gsm_bts *bts)
 	 * in the code below, all other channel requests will get an SDCCH first
 	 * (if possible). */
 
-	if (!lchan) {
-		LOG_BTS(bts, DRSL, LOGL_NOTICE, "CHAN RQD[%s]: no resources for %s 0x%x, retrying with %s\n",
-			get_value_string(gsm_chreq_descs, rqd->reason), gsm_lchant_name(GSM_LCHAN_SDCCH),
-			rqd->ref.ra, gsm_lchant_name(GSM_LCHAN_TCH_H));
-		lchan = lchan_select_by_type(bts, GSM_LCHAN_TCH_H);
-	}
-	if (!lchan) {
-		LOG_BTS(bts, DRSL, LOGL_NOTICE, "CHAN RQD[%s]: no resources for %s 0x%x, retrying with %s\n",
-			get_value_string(gsm_chreq_descs, rqd->reason), gsm_lchant_name(GSM_LCHAN_SDCCH),
-			rqd->ref.ra, gsm_lchant_name(GSM_LCHAN_TCH_F));
-		lchan = lchan_select_by_type(bts, GSM_LCHAN_TCH_F);
+	if (gsm_chreq_reason_is_voicecall(rqd->reason) || bts->chan_alloc_allow_tch_for_signalling) {
+		if (!lchan) {
+			LOG_BTS(bts, DRSL, LOGL_NOTICE, "CHAN RQD[%s]: no resources for %s 0x%x, retrying with %s\n",
+				get_value_string(gsm_chreq_descs, rqd->reason), gsm_lchant_name(GSM_LCHAN_SDCCH),
+				rqd->ref.ra, gsm_lchant_name(GSM_LCHAN_TCH_H));
+			lchan = lchan_select_by_type(bts, GSM_LCHAN_TCH_H);
+		}
+		if (!lchan) {
+			LOG_BTS(bts, DRSL, LOGL_NOTICE, "CHAN RQD[%s]: no resources for %s 0x%x, retrying with %s\n",
+				get_value_string(gsm_chreq_descs, rqd->reason), gsm_lchant_name(GSM_LCHAN_SDCCH),
+				rqd->ref.ra, gsm_lchant_name(GSM_LCHAN_TCH_F));
+			lchan = lchan_select_by_type(bts, GSM_LCHAN_TCH_F);
+		}
 	}
 	if (!lchan) {
 		LOG_BTS(bts, DRSL, LOGL_NOTICE, "CHAN RQD[%s]: no resources for %s 0x%x\n",
