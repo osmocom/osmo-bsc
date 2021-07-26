@@ -52,6 +52,7 @@
 #include <osmocom/bsc/bts.h>
 #include <osmocom/bsc/paging.h>
 #include <osmocom/bsc/vty.h>
+#include <osmocom/mgcp_client/mgcp_client_pool.h>
 
 #include "../../bscconfig.h"
 
@@ -1615,6 +1616,12 @@ int main(int argc, char **argv)
 
 	bsc_network_alloc();
 	if (!bsc_gsmnet)
+		exit(1);
+
+	/* The MGCP client which is handling the pool (mgcp_client_pool_vty_init) is used from the bsc_vty_init, so
+	 * we must allocate an empty mgw pool even though we do not need it for this test. */
+	bsc_gsmnet->mgw.mgw_pool = mgcp_client_pool_alloc(bsc_gsmnet);
+	if (!bsc_gsmnet->mgw.mgw_pool)
 		exit(1);
 
 	vty_init(&vty_info);

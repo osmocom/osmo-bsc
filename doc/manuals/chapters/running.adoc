@@ -143,6 +143,9 @@ msc 0
 DLCX to the media gateway. This helps to clear lingering calls from the
 media gateway when the OsmoBSC is restarted.
 
+NOTE: OsmoBSC is also able to handle a pool of media gateways for load
+distribution. See also <<mgw_pooling>>.
+
 
 ==== Configure Lb to connect to an SMLC
 

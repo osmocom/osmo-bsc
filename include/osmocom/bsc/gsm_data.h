@@ -1203,8 +1203,15 @@ struct gsm_network {
 	struct osmo_timer_list bts_store_uptime_timer;
 
 	struct {
+		/* Single MGCP client configuration under msc node (also required for
+		 * MGCP proxy when sccp-lite is used) */
 		struct mgcp_client_conf *conf;
-		struct mgcp_client *client;
+
+		/* MGW pool, also includes the single MGCP client as fallback if no
+		 * pool is configured. */
+		struct mgcp_client_pool *mgw_pool;
+
+		/* Timer definitions, the same for all MGW pool members */
 		struct osmo_tdef *tdefs;
 	} mgw;
 

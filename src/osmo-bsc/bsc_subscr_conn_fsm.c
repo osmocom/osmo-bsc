@@ -45,6 +45,7 @@
 #include <osmocom/bsc/assignment_fsm.h>
 #include <osmocom/bsc/codec_pref.h>
 #include <osmocom/mgcp_client/mgcp_client_endpoint_fsm.h>
+#include <osmocom/mgcp_client/mgcp_client_pool.h>
 #include <osmocom/core/byteswap.h>
 #include <osmocom/bsc/lb.h>
 #include <osmocom/bsc/lcs_loc_req.h>
@@ -518,39 +519,47 @@ struct osmo_mgcpc_ep *gscon_ensure_mgw_endpoint(struct gsm_subscriber_connection
 						uint16_t msc_assigned_cic, struct gsm_lchan *for_lchan)
 {
 	const char *epname;
+	struct mgcp_client *mgcp_client = NULL;
 
 	if (conn->user_plane.mgw_endpoint)
 		return conn->user_plane.mgw_endpoint;
+
+	if (gscon_is_sccplite(conn) || gscon_is_aoip(conn)) {
+		/* Get MGCP client from pool */
+		mgcp_client = mgcp_client_pool_get(conn->network->mgw.mgw_pool);
+		if (!mgcp_client) {
+			LOGPFSML(conn->fi, LOGL_ERROR,
+				 "cannot ensure MGW endpoint -- no MGW configured, check configuration!\n");
+			conn->user_plane.mgw_endpoint = NULL;
+			return NULL;
+		}
+	}
 
 	if (gscon_is_sccplite(conn)) {
 		/* derive endpoint name from CIC on A interface side */
 		conn->user_plane.mgw_endpoint =
 			osmo_mgcpc_ep_alloc(conn->fi, GSCON_EV_FORGET_MGW_ENDPOINT,
-					    conn->network->mgw.client,
+					    mgcp_client,
 					    conn->network->mgw.tdefs,
 					    conn->fi->id,
 					    "%x@%s", msc_assigned_cic,
-					    mgcp_client_endpoint_domain(conn->network->mgw.client));
+					    mgcp_client_endpoint_domain(mgcp_client));
 		LOGPFSML(conn->fi, LOGL_DEBUG, "MGW endpoint name derived from CIC 0x%x: %s\n",
 			 msc_assigned_cic, osmo_mgcpc_ep_name(conn->user_plane.mgw_endpoint));
 
 	} else if (gscon_is_aoip(conn)) {
-
 		if (is_ipaccess_bts(for_lchan->ts->trx->bts))
 			/* use dynamic RTPBRIDGE endpoint allocation in MGW */
-			epname = mgcp_client_rtpbridge_wildcard(conn->network->mgw.client);
+			epname = mgcp_client_rtpbridge_wildcard(mgcp_client);
 		else {
-			epname = mgcp_client_e1_epname(conn, conn->network->mgw.client, for_lchan->ts->e1_link.e1_nr,
+			epname = mgcp_client_e1_epname(conn, mgcp_client, for_lchan->ts->e1_link.e1_nr,
 						       for_lchan->ts->e1_link.e1_ts, 16,
 						       for_lchan->ts->e1_link.e1_ts_ss*2);
 		}
 
 		conn->user_plane.mgw_endpoint =
-			osmo_mgcpc_ep_alloc(conn->fi, GSCON_EV_FORGET_MGW_ENDPOINT,
-					    conn->network->mgw.client,
-					    conn->network->mgw.tdefs,
-					    conn->fi->id,
-					    "%s", epname);
+			osmo_mgcpc_ep_alloc(conn->fi, GSCON_EV_FORGET_MGW_ENDPOINT, mgcp_client,
+					    conn->network->mgw.tdefs, conn->fi->id, "%s", epname);
 	} else {
 		LOGPFSML(conn->fi, LOGL_ERROR, "Conn is neither SCCPlite nor AoIP!?\n");
 		return NULL;
@@ -801,6 +810,12 @@ void gscon_forget_lchan(struct gsm_subscriber_connection *conn, struct gsm_lchan
 
 static void gscon_forget_mgw_endpoint(struct gsm_subscriber_connection *conn)
 {
+	struct mgcp_client *mgcp_client;
+
+	/* Put MGCP client back into MGW pool */
+	mgcp_client = osmo_mgcpc_ep_client(conn->user_plane.mgw_endpoint);
+	mgcp_client_pool_put(mgcp_client);
+
 	conn->user_plane.mgw_endpoint = NULL;
 	conn->user_plane.mgw_endpoint_ci_msc = NULL;
 	conn->ho.created_ci_for_msc = NULL;

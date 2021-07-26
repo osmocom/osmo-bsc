@@ -32,6 +32,8 @@ include::{srcdir}/chapters/smscb.adoc[]
 
 include::{srcdir}/chapters/mscpool.adoc[]
 
+include::{srcdir}/chapters/mgwpool.adoc[]
+
 include::{srcdir}/chapters/smlc.adoc[]
 
 include::./common/chapters/qos-dscp-pcp.adoc[]

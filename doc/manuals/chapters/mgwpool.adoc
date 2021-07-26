@@ -1,0 +1,243 @@
+[[mgw_pooling]]
+== MGW Pooling
+
+OsmoBSC is able to use a pool of media gateway (MGW) instances since mid 2021.
+The aim of MGW pooling is to evenly distribute the RTP voice stream load across
+multiple MGW instances. This can help to scale out over multiple VMs or physical
+machines. Until osmo-mgw includes multithreading support, it may also be used to
+scale-out to multiple cores on a single host.
+
+The load distribution is managed in such a way that when a new call is placed,
+the pool will automatically assign the call to the MGW with the lowest load.
+
+MGW pooling is recommended for larger RAN installations. For small networks and
+lab installations the classic method with one MGW per BSC offers sufficient
+performance.
+
+=== VTY configuration
+
+In OsmoBSC the MGW is controlled via an MGCP-Client. The VTY commands to
+configure the MGCP-Client are part of the 'msc' node due to historical reasons.
+Unfortunately this concept does not allow to configure multiple MGCP-Client
+instances as required by MGW pooling. In order to support MGW pooling a new
+'mgw' node has been added under the 'network' node.
+
+=== Existing configuration files
+
+Existing OsmoBSC configuration files will continue to work, but as soon as an
+MGW pool is configured the 'mgw' settings under the 'msc' node will be ignored.
+
+Example configuration with only one MGCP-Client under the 'msc' node:
+----
+msc 0
+ mgw remote-ip 127.0.0.1
+ mgw remote-port 2428
+----
+
+=== MGW pool configuration
+
+To setup an MGW pool, the user must first install multiple OsmoMGW instances, so
+that they won’t interfere with each other. This can be done using different
+local host IP addresses or different ports. When OsmoMGW is installed from
+packages, the systemd configuration may also require adjustment.
+
+The VTY settings under the 'mgw' node works the same way as the VTY settings for
+the MGW under the 'msc' node.
+
+Example configuration with two MGCP-Client instances in a pool:
+----
+ mgw 0
+  mgw remote-ip 127.0.0.1
+  mgw remote-port 2432
+  mgw local-ip 127.0.0.1
+  mgw local-port 2431
+  mgw endpoint-domain mgw0 <1>
+ mgw 1
+  mgw remote-ip 127.0.0.1
+  mgw remote-port 2430
+  mgw local-ip 127.0.0.1
+  mgw local-port 2429
+  mgw endpoint-domain mgw1 <1>
+----
+
+<1> When working with multiple MGW / MGCP-Client instances, the domain name for
+each MGW should be different. Otherwise it won't be possible to distinguish the
+endpoint names in the log. It should also be noted that the domain name must
+match the configuration of the related OsmoMGW instance.
+
+=== MGW pool management
+
+While it was not possible to change the MGCP-Client configuration under the
+“msc” node at runtime, the pool is fully runtime-manageable. The only limitation
+is that an MGCP-Client can not be restarted or removed as long as it is serving
+calls (see also: <<mgw_pooling_blocking>>).
+
+==== MGW pool status
+
+The VTY implements a 'show mgw-pool' command that lists the currently configured
+MGW pool members, their status and call utilization.
+
+----
+OsmoBSC> show mgw-pool
+% MGW-Pool:
+%  MGW 0
+%   mgcp-client:   connected
+%   service:       unblocked
+%   ongoing calls: 1
+%  MGW 1
+%   mgcp-client:   connected
+%   service:       unblocked
+%   ongoing calls: 0
+----
+
+==== Adding an MGW / MGCP-Client to the MGW pool
+
+To add a new MGCP-Client to the pool, the 'mgw' node is used. Like with the
+'bts' or the 'msc' node a reference number is used that usually starts at 0.
+However it is still possible to assign any number from 0-255. The enumeration
+also may contain gaps.
+
+----
+OsmoBSC> enable
+OsmoBSC# configure terminal
+OsmoBSC(config)# network
+OsmoBSC(config-net)# mgw 2
+OsmoBSC(config-mgw)# mgw
+  local-ip         local bind to connect to MGW from
+  local-port       local port to connect to MGW from
+  remote-ip        remote IP address to reach the MGW at
+  remote-port      remote port to reach the MGW at
+  endpoint-domain  Set the domain name to send in MGCP messages, e.g. the part 'foo' in 'rtpbridge/*@foo'.
+  reset-endpoint   Add an endpoint name that should be reset (DLCX) on connect to the reset-endpoint list,e.g. 'rtpbridge/*'
+----
+
+The newly added MGW will immediately appear in the mgw-pool list but it won't
+be used until its configuration finished by reconnecting it.
+
+----
+% MGW-Pool:
+%  MGW 0
+%   mgcp-client:   connected
+%   service:       unblocked
+%   ongoing calls: 2
+%  MGW 1
+%   mgcp-client:   connected
+%   service:       unblocked
+%   ongoing calls: 3
+%  MGW 2
+%   mgcp-client:   disconnected
+%   service:       unblocked
+%   ongoing calls: 0
+----
+
+==== Reconnecting an MGW / MGCP-Client
+
+It may become necessary to reconnect an MGCP-Client. This is the case when the
+VTY configuration was changed at runtime. In order to make the changes effective
+the MGW configuration must be reloaded by reconnecting the MGW connection. Also
+newly created MGW instances require a reconnect once their configuration is
+done.
+
+To reconnect an MGCP-Client use the 'reconnect' VTY command:
+----
+OsmoBSC# mgw 2 reconnect
+----
+
+The mgcp-client status should immediately change to 'connected'. The MGW is now
+ready to be used for new calls.
+
+----
+OsmoBSC# show mgw-pool
+% MGW-Pool:
+%  MGW 0
+%   mgcp-client:   connected
+%   service:       unblocked
+%   ongoing calls: 2
+%  MGW 1
+%   mgcp-client:   connected
+%   service:       unblocked
+%   ongoing calls: 3
+%  MGW 2
+%   mgcp-client:   connected
+%   service:       unblocked
+%   ongoing calls: 0
+----
+
+It should be noted that MGCP a protocol is used via UDP, the connect only
+happens locally to forward the UDP datagrams properly. Also (unless a reset
+endpoint is configured like in the example config above) there will be no
+immediate interaction with the MGW. However, the log should at least confirm
+the the connect worked and the MGCP client has been created successfully.
+
+----
+Mon Aug  2 17:15:00 2021 DLMGCP mgcp_client.c:788 MGCP client: using endpoint domain '@mgw'
+Mon Aug  2 17:15:00 2021 DLMGCP mgcp_client.c:908 MGCP GW connection: r=127.0.0.1:2427<->l=127.0.0.1:2727
+----
+
+It is strongly advised to check the activity on the related MGW and to follow
+the log in order to see that the communication between OsmoBSC and the MGW is
+working correctly.
+
+[[mgw_pooling_blocking]]
+==== Blocking an MGW / MGCP-Client
+
+If it becomes apparent that an MGCP-Client must be restarted or removed from
+the config (maintenance) the operator can put that MGCP-Client into a blocked
+mode. A blocked MGCP-Client will still serve the ongoing calls but it will not
+be picked for the assignment of new calls.
+
+To block an MGCP-Client use the 'block' VTY command:
+----
+OsmoBSC# mgw 2 block
+OsmoBSC# show mgw-pool
+% MGW-Pool:
+%  MGW 0
+%   mgcp-client:   connected
+%   service:       unblocked
+%   ongoing calls: 11
+%  MGW 1
+%   mgcp-client:   connected
+%   service:       unblocked
+%   ongoing calls: 12
+%  MGW 2
+%   mgcp-client:   connected
+%   service:       blocked
+%   ongoing calls: 10
+----
+
+When the number of ongoing calls has tapered off, the MGW / MGCP-Client can be
+restarted or removed if necessary.
+
+----
+OsmoBSC# show mgw-pool
+% MGW-Pool:
+%  MGW 0
+%   mgcp-client:   connected
+%   service:       unblocked
+%   ongoing calls: 15
+%  MGW 1
+%   mgcp-client:   connected
+%   service:       unblocked
+%   ongoing calls: 14
+%  MGW 2
+%   mgcp-client:   connected
+%   service:       blocked
+%   ongoing calls: 0
+----
+
+If the blockade should be reverted, the 'unblock' VTY command can be used in
+the same way to remove the blockade. (Reconnecting will not remove the
+blockade.)
+
+==== Removing an MGW / MGCP-Client
+
+An MGCP-Client is removed from the pool using the 'no mgw' command from the
+configure terminal. The MGCP-Client instance will automatically be terminated
+and the related resources are freed. The only requirement is that there are no
+ongoing calls on the selected instance.
+
+----
+OsmoBSC# configure terminal
+OsmoBSC(config)# network
+OsmoBSC(config-net)# no mgw 2
+----

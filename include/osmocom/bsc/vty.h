@@ -23,6 +23,7 @@ struct buffer *vty_argv_to_buffer(int argc, const char *argv[], int base);
 
 enum bsc_vty_node {
 	GSMNET_NODE = _LAST_OSMOVTY_NODE + 1,
+        MGW_NODE,
 	BTS_NODE,
 	TRX_NODE,
 	TS_NODE,

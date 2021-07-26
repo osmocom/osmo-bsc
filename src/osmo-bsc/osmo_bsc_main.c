@@ -57,6 +57,7 @@
 #include <osmocom/vty/cpu_sched_vty.h>
 
 #include <osmocom/mgcp_client/mgcp_client_endpoint_fsm.h>
+#include <osmocom/mgcp_client/mgcp_client_pool.h>
 
 #include <osmocom/abis/abis.h>
 #include <osmocom/bsc/abis_om2000.h>
@@ -70,6 +71,7 @@
 #include <osmocom/bsc/bsc_stats.h>
 
 #include <osmocom/mgcp_client/mgcp_client.h>
+#include <osmocom/mgcp_client/mgcp_client_pool.h>
 
 #include <osmocom/sigtran/xua_msg.h>
 
@@ -867,6 +869,41 @@ extern void *tall_fle_ctx;
 extern void *tall_tqe_ctx;
 extern void *tall_ctr_ctx;
 
+static int bsc_mgw_setup(void)
+{
+	struct mgcp_client *mgcp_client_single;
+	unsigned int pool_members_initalized;
+
+	/* Initalize MGW pool. This initalizes and connects all MGCP clients that are currently configured in
+	 * the pool. Adding additional MGCP clients to the pool is possible but the user has to configure and
+	 * (re)connect them manually from the VTY. */
+	pool_members_initalized = mgcp_client_pool_connect(bsc_gsmnet->mgw.mgw_pool);
+	if (pool_members_initalized) {
+		LOGP(DNM, LOGL_NOTICE,
+		     "MGW pool with %u pool members configured, (ignoring MGW configuration in VTY node 'msc').\n",
+		     pool_members_initalized);
+		return 0;
+	}
+
+	/* Initialize and connect a single MGCP client. This MGCP client will appear as the one and only pool
+	 * member if there is no MGW pool configured. */
+	LOGP(DNM, LOGL_NOTICE, "No MGW pool configured, using MGW configuration in VTY node 'msc'\n");
+        mgcp_client_single = mgcp_client_init(bsc_gsmnet, bsc_gsmnet->mgw.conf);
+	if (!mgcp_client_single) {
+		LOGP(DNM, LOGL_ERROR, "MGW (single) client initalization failed\n");
+		return -EINVAL;
+	}
+	if (mgcp_client_connect(mgcp_client_single)) {
+		LOGP(DNM, LOGL_ERROR, "MGW (single) connect failed at (%s:%u)\n",
+		     bsc_gsmnet->mgw.conf->remote_addr,
+		     bsc_gsmnet->mgw.conf->remote_port);
+		return -EINVAL;
+	}
+	mgcp_client_pool_register_single(bsc_gsmnet->mgw.mgw_pool, mgcp_client_single);
+
+	return 0;
+}
+
 int main(int argc, char **argv)
 {
 	struct bsc_msc_data *msc;
@@ -897,6 +934,7 @@ int main(int argc, char **argv)
 	}
 
 	bsc_gsmnet->mgw.conf = talloc_zero(bsc_gsmnet, struct mgcp_client_conf);
+	bsc_gsmnet->mgw.mgw_pool = mgcp_client_pool_alloc(bsc_gsmnet);
 	mgcp_client_conf_init(bsc_gsmnet->mgw.conf);
 
 	bts_init();
@@ -1000,14 +1038,8 @@ int main(int argc, char **argv)
 		}
 	}
 
-	bsc_gsmnet->mgw.client = mgcp_client_init(bsc_gsmnet, bsc_gsmnet->mgw.conf);
-
-	if (mgcp_client_connect(bsc_gsmnet->mgw.client)) {
-		LOGP(DNM, LOGL_ERROR, "MGW connect failed at (%s:%u)\n",
-		     bsc_gsmnet->mgw.conf->remote_addr,
-		     bsc_gsmnet->mgw.conf->remote_port);
+	if (bsc_mgw_setup() != 0)
 		exit(1);
-	}
 
 	if (osmo_bsc_sigtran_init(&bsc_gsmnet->mscs) != 0) {
 		LOGP(DNM, LOGL_ERROR, "Failed to initialize sigtran backhaul.\n");
