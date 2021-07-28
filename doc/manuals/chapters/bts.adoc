@@ -470,23 +470,35 @@ network
 <2> Rotate the generated permanent list subsets every 20 seconds in a fair fashion
 
 Furthermore, cells with large number of subscribers and limited overlapping
-coverage may become overwhelmed with traffic after the cell starts brodacasting.
+coverage may become overwhelmed with traffic after the cell starts broadcasting.
 This is especially true in areas with little to no reception from other
 networks. To manage the load, OsmoBSC has an option to further restrict the
 rotating ACC subset during startup and slowly increment it over time and taking
-current load into account.
+current channel load into account.
+The channel load will always be checked, even after the start up procedure, at
+an interval specified by the `access-control-class-ramping-step-interval` VTY
+command. It will either keep, increase or decrease the size of the current
+rotating ACC subset based on certain thresholds configured by
+the `access-control-class-ramping-chan-load` VTY command.
+As a result, if ACC ramping is enabled (`access-control-class-ramping`), the
+number of concurrent allowed ACCs will start with *1* and will fluctuate over
+time based on channel load in the interval *[1, `access-control-rotate`]*. This
+means at any time there will be at least *1* allowed ACC which, together with
+ACC rotation, will prevent from subscriber being unable to use the network.
 
 .Example: Ramp up access to the BTS after startup
 ----
 network
  bts 0
   access-control-class-ramping <1>
-  access-control-class-ramping-step-interval 30 <2>
-  access-control-class-ramping-step-size 1 <3>
+  access-control-class-ramping-step-size 1 <2>
+  access-control-class-ramping-step-interval 30 <3>
+  access-control-class-ramping-chan-load 71 89 <4>
 ----
 <1> Turn on access-control-class ramping
-<2> Enable more ACCs every 30 seconds
-<3> At each step enable one more ACC
+<2> At each step enable one more ACC
+<3> Check whether to allow more/less ACCs every 30 seconds
+<4> The rotate subset size is increased if channel load is < 71%, and decreased if channel load is > 89%.
 
 
 Here a full example of all the mechanisms combined can be found:
@@ -503,14 +515,16 @@ bts 0
   access-control-class-rotate-quantum 20 <3>
   access-control-class-ramping <4>
   access-control-class-ramping-step-size 1 <5>
-  access-control-class-ramping-step-interval dynamic <6>
+  access-control-class-ramping-step-interval 30 <6>
+  access-control-class-ramping-chan-load 71 89 <7>
 ----
 <1> ACCs 5-9 are administratively barred, ie they will never be used until somebody manually enables them in VTY config
 <2> Allow access through temporary subsets of len=3 from ACC set 0-4: (0,1,2) -> (1,2,3) -> (2,3,4) -> (3,4,0), etc.
 <3> Each subset iteration will happen every 20 seconds
-<4> During startup since ramping is enabled, it will further restrict the rotate subset size parameter (len=3)
-<5> The rotate subset size parameter will be increased one ACC slot at a time: len=0 -> len=1 -> len=2 -> len=3
-<6> The time until the subset size is further increased will be calculated based on current channel load
+<4> Ramping is enabled: during startup it will further restrict the rotate subset size parameter (start at len=1, end at len=3)
+<5> The rotate subset size parameter will be increased or decreased one ACC slot at a time: len=1 -> len=2 -> len=3
+<6> Check to further increase or decrease the rotate subset size based on current channel load is triggered every 30 seconds
+<7> The rotate subset size is increased if channel load is < 71%, and decreased if channel load is > 89%.
 
 === Configuring FACCH/SACCH repetition
 
