@@ -699,13 +699,15 @@ void gscon_change_primary_lchan(struct gsm_subscriber_connection *conn, struct g
 	/* On release, do not receive release events that look like the primary lchan is gone. */
 	struct gsm_lchan *old_lchan = conn->lchan;
 
+	OSMO_ASSERT(new_lchan);
+
 	if (old_lchan == new_lchan)
 		return;
 
-	if (!old_lchan && new_lchan)
+	if (!old_lchan)
 		LOGPFSML(conn->fi, LOGL_DEBUG, "setting primary lchan for this conn to %s\n",
 			 new_lchan->fi? osmo_fsm_inst_name(new_lchan->fi) : gsm_lchan_name(new_lchan));
-	else if (old_lchan && new_lchan)
+	else
 		LOGPFSML(conn->fi, LOGL_DEBUG, "primary lchan for this conn changes from %s to %s\n",
 			 old_lchan->fi? osmo_fsm_inst_name(old_lchan->fi) : gsm_lchan_name(old_lchan),
 			 new_lchan->fi? osmo_fsm_inst_name(new_lchan->fi) : gsm_lchan_name(new_lchan));
