@@ -172,7 +172,7 @@ void gsm_mo_init(struct gsm_abis_mo *mo, struct gsm_bts *bts,
 const struct value_string gsm_chreq_descs[] = {
 	{ GSM_CHREQ_REASON_EMERG,	"emergency call" },
 	{ GSM_CHREQ_REASON_PAG,		"answer to paging" },
-	{ GSM_CHREQ_REASON_CALL,	"call re-establishment" },
+	{ GSM_CHREQ_REASON_CALL,	"call (re-)establishment" },
 	{ GSM_CHREQ_REASON_LOCATION_UPD,"Location updating" },
 	{ GSM_CHREQ_REASON_PDCH,	"one phase packet access" },
 	{ GSM_CHREQ_REASON_OTHER,	"other" },
