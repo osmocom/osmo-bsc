@@ -141,10 +141,24 @@ int gscon_sigtran_send(struct gsm_subscriber_connection *conn, struct msgb *msg)
 static void gscon_bssmap_clear(struct gsm_subscriber_connection *conn,
 			       enum gsm0808_cause cause)
 {
+	/* already clearing? */
+	switch (conn->fi->state) {
+	case ST_CLEARING:
+		return;
+	default:
+		break;
+	}
 
+	conn->clear_cause = cause;
+	conn_fsm_state_chg(ST_CLEARING);
+}
+
+static void gscon_fsm_clearing_onenter(struct osmo_fsm_inst *fi, uint32_t prev_state)
+{
 	struct msgb *resp;
 	int rc;
-	conn->clear_cause = cause;
+	struct gsm_subscriber_connection *conn = fi->priv;
+	enum gsm0808_cause cause = conn->clear_cause;
 
 	if (conn->rx_clear_command) {
 		LOGPFSML(conn->fi, LOGL_DEBUG, "Not sending BSSMAP CLEAR REQUEST, already got CLEAR COMMAND from MSC\n");
@@ -152,14 +166,14 @@ static void gscon_bssmap_clear(struct gsm_subscriber_connection *conn,
 	}
 
 	if (!conn->sccp.msc) {
-		LOGPFSML(conn->fi, LOGL_ERROR, "Unable to deliver BSSMAP Clear Request message, no MSC for this conn\n");
+		LOGPFSML(fi, LOGL_ERROR, "Unable to deliver BSSMAP Clear Request message, no MSC for this conn\n");
 		return;
 	}
 
-	LOGPFSML(conn->fi, LOGL_DEBUG, "Tx BSSMAP CLEAR REQUEST(%s) to MSC\n", gsm0808_cause_name(cause));
+	LOGPFSML(fi, LOGL_DEBUG, "Tx BSSMAP CLEAR REQUEST(%s) to MSC\n", gsm0808_cause_name(cause));
 	resp = gsm0808_create_clear_rqst(cause);
 	if (!resp) {
-		LOGPFSML(conn->fi, LOGL_ERROR, "Unable to compose BSSMAP Clear Request message\n");
+		LOGPFSML(fi, LOGL_ERROR, "Unable to compose BSSMAP Clear Request message\n");
 		return;
 	}
 
@@ -355,8 +369,6 @@ static void gscon_fsm_init(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 			       osmo_fsm_inst_state_name(conn->fi));
 		}
 		gscon_bssmap_clear(conn, GSM0808_CAUSE_EQUIPMENT_FAILURE);
-		if (conn->fi->state != ST_CLEARING)
-			osmo_fsm_inst_state_chg(fi, ST_CLEARING, 60, -4);
 		return;
 	default:
 		OSMO_ASSERT(false);
@@ -376,7 +388,6 @@ static void gscon_fsm_wait_cc(struct osmo_fsm_inst *fi, uint32_t event, void *da
 			   confirmed connection, then instead simply drop the connection */
 			LOGPFSML(fi, LOGL_INFO,
 				 "Connection confirmed but lchan was dropped previously, clearing conn\n");
-			osmo_fsm_inst_state_chg(conn->fi, ST_CLEARING, 60, -4);
 			gscon_bssmap_clear(conn, GSM0808_CAUSE_EQUIPMENT_FAILURE);
 			break;
 		}
@@ -705,6 +716,7 @@ static const struct osmo_fsm_state gscon_fsm_states[] = {
 	},
 	[ST_CLEARING] = {
 		.name = "CLEARING",
+		.onenter = gscon_fsm_clearing_onenter,
 		/* dead end state */
 	 },
 };
@@ -763,11 +775,6 @@ void gscon_lchan_releasing(struct gsm_subscriber_connection *conn, struct gsm_lc
 			   yet so we cannot release it. First wait for the CC, and release in gscon_fsm_wait_cc(). */
 			break;
 		default:
-			/* Ensure that the FSM is in ST_CLEARING. */
-			osmo_fsm_inst_state_chg(conn->fi, ST_CLEARING, 60, -4);
-			/* fall thru, omit an error log if already in ST_CLEARING */
-		case ST_CLEARING:
-			/* Request a Clear Command from the MSC. */
 			gscon_bssmap_clear(conn, GSM0808_CAUSE_EQUIPMENT_FAILURE);
 			break;
 		}
@@ -806,8 +813,7 @@ void gscon_forget_lchan(struct gsm_subscriber_connection *conn, struct gsm_lchan
 				 osmo_fsm_inst_name(conn->fi), detach_label);
 	}
 
-	if ((conn->fi && conn->fi->state != ST_CLEARING)
-	    && !conn->lchan
+	if (!conn->lchan
 	    && !conn->ho.new_lchan
 	    && !conn->assignment.new_lchan
 	    && !conn->lcs.loc_req)
@@ -1205,7 +1211,6 @@ static void gsm0808_send_rsl_dtap(struct gsm_subscriber_connection *conn,
 failed_to_send:
 	LOGPFSML(conn->fi, LOGL_ERROR, "Tx BSSMAP CLEAR REQUEST to MSC\n");
 	gscon_bssmap_clear(conn, GSM0808_CAUSE_EQUIPMENT_FAILURE);
-	osmo_fsm_inst_state_chg(conn->fi, ST_ACTIVE, 0, 0);
 }
 
 void gscon_submit_rsl_dtap(struct gsm_subscriber_connection *conn,
