@@ -1710,3 +1710,7 @@ const struct mgcp_conn_peer *osmo_mgcpc_ep_ci_get_rtp_info(const struct osmo_mgc
 	};
 	return &ret;
 }
+struct mgcp_client *osmo_mgcpc_ep_client(const struct osmo_mgcpc_ep *ep)
+{
+	return NULL;
+}
