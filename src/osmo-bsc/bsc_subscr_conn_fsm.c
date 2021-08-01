@@ -67,7 +67,8 @@ enum gscon_fsm_states {
 	ST_ASSIGNMENT,
 	ST_HANDOVER,
 	/* BSSMAP CLEAR has been received */
-	ST_CLEARING,
+	ST_WAIT_CLEAR_CMD,
+	ST_WAIT_SCCP_RLSD,
 };
 
 static const struct value_string gscon_fsm_event_names[] = {
@@ -95,7 +96,8 @@ static const struct value_string gscon_fsm_event_names[] = {
 
 struct osmo_tdef_state_timeout conn_fsm_timeouts[32] = {
 	[ST_WAIT_CC] = { .T = -3210 },
-	[ST_CLEARING] = { .T = -4 },
+	[ST_WAIT_CLEAR_CMD] = { .T = -4 },
+	[ST_WAIT_SCCP_RLSD] = { .T = -4 },
 };
 
 /* Transition to a state, using the T timer defined in conn_fsm_timeouts.
@@ -143,44 +145,71 @@ static void gscon_bssmap_clear(struct gsm_subscriber_connection *conn,
 {
 	/* already clearing? */
 	switch (conn->fi->state) {
-	case ST_CLEARING:
+	case ST_WAIT_CLEAR_CMD:
+	case ST_WAIT_SCCP_RLSD:
 		return;
 	default:
 		break;
 	}
 
 	conn->clear_cause = cause;
-	conn_fsm_state_chg(ST_CLEARING);
+	conn_fsm_state_chg(ST_WAIT_CLEAR_CMD);
 }
 
-static void gscon_fsm_clearing_onenter(struct osmo_fsm_inst *fi, uint32_t prev_state)
+static void gscon_fsm_wait_clear_cmd_onenter(struct osmo_fsm_inst *fi, uint32_t prev_state)
 {
 	struct msgb *resp;
 	int rc;
 	struct gsm_subscriber_connection *conn = fi->priv;
 	enum gsm0808_cause cause = conn->clear_cause;
 
-	if (conn->rx_clear_command) {
-		LOGPFSML(conn->fi, LOGL_DEBUG, "Not sending BSSMAP CLEAR REQUEST, already got CLEAR COMMAND from MSC\n");
-		return;
-	}
-
 	if (!conn->sccp.msc) {
 		LOGPFSML(fi, LOGL_ERROR, "Unable to deliver BSSMAP Clear Request message, no MSC for this conn\n");
-		return;
+		goto nothing_sent;
 	}
 
 	LOGPFSML(fi, LOGL_DEBUG, "Tx BSSMAP CLEAR REQUEST(%s) to MSC\n", gsm0808_cause_name(cause));
 	resp = gsm0808_create_clear_rqst(cause);
 	if (!resp) {
 		LOGPFSML(fi, LOGL_ERROR, "Unable to compose BSSMAP Clear Request message\n");
-		return;
+		goto nothing_sent;
 	}
 
 	rate_ctr_inc(rate_ctr_group_get_ctr(conn->sccp.msc->msc_ctrs, MSC_CTR_BSSMAP_TX_DT1_CLEAR_RQST));
 	rc = osmo_bsc_sigtran_send(conn, resp);
-	if (rc < 0)
+	if (rc < 0) {
 		LOGPFSML(conn->fi, LOGL_ERROR, "Unable to deliver BSSMAP Clear Request message\n");
+		goto nothing_sent;
+	}
+	return;
+
+nothing_sent:
+	/* Normally, we request a CLEAR from the MSC and terminate as soon as the CLEAR COMMAND has been issued by the
+	 * MSC. But if we are trying to clear without being able to send anything to the MSC, we might as well shut down
+	 * the conn right away now. */
+	conn_fsm_state_chg(ST_WAIT_SCCP_RLSD);
+}
+
+void gscon_fsm_wait_sccp_rlsd_onenter(struct osmo_fsm_inst *fi, uint32_t prev_state)
+{
+	struct gsm_subscriber_connection *conn = fi->priv;
+
+	/* According to 3GPP 48.008 3.1.9.1. "The BSS need not wait for the radio channel
+	 * release to be completed or for the guard timer to expire before returning the
+	 * CLEAR COMPLETE message" */
+	if (!gscon_sigtran_send(conn, gsm0808_create_clear_complete()))
+		rate_ctr_inc(rate_ctr_group_get_ctr(conn->sccp.msc->msc_ctrs, MSC_CTR_BSSMAP_TX_DT1_CLEAR_COMPLETE));
+
+	/* Give the handover_fsm a chance to book this as handover success before tearing down everything,
+	 * making it look like a sudden death failure. */
+	if (conn->ho.fi)
+		osmo_fsm_inst_dispatch(conn->ho.fi, HO_EV_CONN_RELEASING, NULL);
+
+	if (conn->lcs.loc_req)
+		osmo_fsm_inst_dispatch(conn->lcs.loc_req->fi, LCS_LOC_REQ_EV_CONN_CLEAR, NULL);
+
+	gscon_release_lchans(conn, true, bsc_gsm48_rr_cause_from_gsm0808_cause(conn->clear_cause));
+	osmo_mgcpc_ep_clear(conn->user_plane.mgw_endpoint);
 }
 
 /* forward MO DTAP from RSL side to BSSAP side */
@@ -682,13 +711,13 @@ static const struct osmo_fsm_state gscon_fsm_states[] = {
 		.name = "INIT",
 		.in_event_mask = S(GSCON_EV_MO_COMPL_L3) | S(GSCON_EV_A_CONN_IND)
 			| S(GSCON_EV_HANDOVER_END),
-		.out_state_mask = S(ST_WAIT_CC) | S(ST_ACTIVE) | S(ST_CLEARING),
+		.out_state_mask = S(ST_WAIT_CC) | S(ST_ACTIVE) | S(ST_WAIT_CLEAR_CMD) | S(ST_WAIT_SCCP_RLSD),
 		.action = gscon_fsm_init,
 	 },
 	[ST_WAIT_CC] = {
 		.name = "WAIT_CC",
 		.in_event_mask = S(GSCON_EV_A_CONN_CFM),
-		.out_state_mask = S(ST_ACTIVE) | S(ST_CLEARING),
+		.out_state_mask = S(ST_ACTIVE) | S(ST_WAIT_CLEAR_CMD) | S(ST_WAIT_SCCP_RLSD),
 		.action = gscon_fsm_wait_cc,
 	},
 	[ST_ACTIVE] = {
@@ -698,27 +727,32 @@ static const struct osmo_fsm_state gscon_fsm_states[] = {
 				 | S(GSCON_EV_LCS_LOC_REQ_END)
 				 | S(GSCON_EV_MO_COMPL_L3)
 				 ,
-		.out_state_mask = S(ST_CLEARING) | S(ST_ASSIGNMENT) |
+		.out_state_mask = S(ST_WAIT_CLEAR_CMD) | S(ST_WAIT_SCCP_RLSD) | S(ST_ASSIGNMENT) |
 				  S(ST_HANDOVER),
 		.action = gscon_fsm_active,
 	},
 	[ST_ASSIGNMENT] = {
 		.name = "ASSIGNMENT",
 		.in_event_mask = EV_TRANSPARENT_SCCP | S(GSCON_EV_ASSIGNMENT_END),
-		.out_state_mask = S(ST_ACTIVE) | S(ST_CLEARING),
+		.out_state_mask = S(ST_ACTIVE) | S(ST_WAIT_CLEAR_CMD) | S(ST_WAIT_SCCP_RLSD),
 		.action = gscon_fsm_assignment,
 	},
 	[ST_HANDOVER] = {
 		.name = "HANDOVER",
 		.in_event_mask = EV_TRANSPARENT_SCCP | S(GSCON_EV_HANDOVER_END),
-		.out_state_mask = S(ST_ACTIVE) | S(ST_CLEARING),
+		.out_state_mask = S(ST_ACTIVE) | S(ST_WAIT_CLEAR_CMD) | S(ST_WAIT_SCCP_RLSD),
 		.action = gscon_fsm_handover,
 	},
-	[ST_CLEARING] = {
-		.name = "CLEARING",
-		.onenter = gscon_fsm_clearing_onenter,
-		/* dead end state */
-	 },
+	[ST_WAIT_CLEAR_CMD] = {
+		.name = "WAIT_CLEAR_CMD",
+		.onenter = gscon_fsm_wait_clear_cmd_onenter,
+		.out_state_mask = S(ST_WAIT_SCCP_RLSD),
+	},
+	[ST_WAIT_SCCP_RLSD] = {
+		.name = "WAIT_SCCP_RLSD",
+		.onenter = gscon_fsm_wait_sccp_rlsd_onenter,
+		.in_event_mask = S(GSCON_EV_HANDOVER_END),
+	},
 };
 
 void gscon_change_primary_lchan(struct gsm_subscriber_connection *conn, struct gsm_lchan *new_lchan)
@@ -848,44 +882,19 @@ void gscon_forget_mgw_endpoint_ci(struct gsm_subscriber_connection *conn, struct
 static void gscon_fsm_allstate(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
 	struct gsm_subscriber_connection *conn = fi->priv;
-	const enum gsm0808_cause *cause_0808;
 	const struct tlv_parsed *tp;
 	struct osmo_mobile_identity mi_imsi;
 
 	/* Regular allstate event processing */
 	switch (event) {
 	case GSCON_EV_A_CLEAR_CMD:
-		conn->rx_clear_command = true;
-
-		/* Give the handover_fsm a chance to book this as handover success before tearing down everything,
-		 * making it look like a sudden death failure. */
-		if (conn->ho.fi)
-			osmo_fsm_inst_dispatch(conn->ho.fi, HO_EV_CONN_RELEASING, NULL);
-
-		if (conn->lcs.loc_req)
-			osmo_fsm_inst_dispatch(conn->lcs.loc_req->fi, LCS_LOC_REQ_EV_CONN_CLEAR, NULL);
-
 		OSMO_ASSERT(data);
-		cause_0808 = data;
-		/* MSC tells us to cleanly shut down */
-		if (conn->fi->state != ST_CLEARING)
-			osmo_fsm_inst_state_chg(fi, ST_CLEARING, 60, -4);
-		LOGPFSML(fi, LOGL_DEBUG, "Releasing all lchans (if any) after BSSMAP Clear Command\n");
-		gscon_release_lchans(conn, true, bsc_gsm48_rr_cause_from_gsm0808_cause(*cause_0808));
-		/* FIXME: Release all terestrial resources in ST_CLEARING */
-		/* According to 3GPP 48.008 3.1.9.1. "The BSS need not wait for the radio channel
-		 * release to be completed or for the guard timer to expire before returning the
-		 * CLEAR COMPLETE message" */
-
-		/* Close MGCP connections */
-		osmo_mgcpc_ep_clear(conn->user_plane.mgw_endpoint);
-
-		rate_ctr_inc(rate_ctr_group_get_ctr(conn->sccp.msc->msc_ctrs, MSC_CTR_BSSMAP_TX_DT1_CLEAR_COMPLETE));
-		gscon_sigtran_send(conn, gsm0808_create_clear_complete());
+		conn->clear_cause = *(const enum gsm0808_cause *)data;
+		conn_fsm_state_chg(ST_WAIT_SCCP_RLSD);
 		break;
 	case GSCON_EV_A_DISC_IND:
-		/* MSC or SIGTRAN network has hard-released SCCP connection,
-		 * terminate the FSM now. */
+		/* MSC or SIGTRAN network has hard-released SCCP connection, terminate the FSM now.
+		 * Cleanup is done in gscon_pre_term() and gscon_cleanup(). */
 		osmo_fsm_inst_term(fi, OSMO_FSM_TERM_REGULAR, data);
 		break;
 	case GSCON_EV_FORGET_MGW_ENDPOINT:
@@ -975,6 +984,13 @@ static void gscon_pre_term(struct osmo_fsm_inst *fi, enum osmo_fsm_term_cause ca
 
 	osmo_mgcpc_ep_clear(conn->user_plane.mgw_endpoint);
 	conn->user_plane.mgw_endpoint = NULL;
+	conn->user_plane.mgw_endpoint = NULL;
+
+	if (conn->ho.fi)
+		osmo_fsm_inst_dispatch(conn->ho.fi, HO_EV_CONN_RELEASING, NULL);
+
+	if (conn->lcs.loc_req)
+		osmo_fsm_inst_dispatch(conn->lcs.loc_req->fi, LCS_LOC_REQ_EV_CONN_CLEAR, NULL);
 
 	if (conn->lcls.fi) {
 		/* request termination of LCLS FSM */
@@ -1013,8 +1029,9 @@ static int gscon_timer_cb(struct osmo_fsm_inst *fi)
 	case -4:
 		/* The MSC has sent a BSSMAP Clear Command, we acknowledged that, but the conn was never
 		 * disconnected. */
-		LOGPFSML(fi, LOGL_ERROR, "Long after a BSSMAP Clear Command, the conn is still not"
-			 " released. For sanity, discarding this conn now.\n");
+		LOGPFSML(fi, LOGL_ERROR, "Long after expecting %s, the conn is still not"
+			 " released. For sanity, discarding this conn now.\n",
+			 fi->state == ST_WAIT_CLEAR_CMD ? "BSSMAP Clear Command" : "SCCP RLSD");
 		a_reset_conn_fail(conn->sccp.msc);
 		osmo_fsm_inst_term(fi, OSMO_FSM_TERM_ERROR, NULL);
 		break;
