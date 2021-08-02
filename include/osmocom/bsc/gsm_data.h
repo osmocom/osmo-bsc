@@ -406,6 +406,8 @@ struct gsm_subscriber_connection {
 		bool last_eutran_plmn_valid; /* Is information stored in field below available? */
 		struct osmo_plmn_id last_eutran_plmn;
 	} fast_return;
+
+	enum gsm0808_cause clear_cause;
 };
 
 
