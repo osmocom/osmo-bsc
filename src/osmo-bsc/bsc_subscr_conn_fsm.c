@@ -144,6 +144,7 @@ static void gscon_bssmap_clear(struct gsm_subscriber_connection *conn,
 
 	struct msgb *resp;
 	int rc;
+	conn->clear_cause = cause;
 
 	if (conn->rx_clear_command) {
 		LOGPFSML(conn->fi, LOGL_DEBUG, "Not sending BSSMAP CLEAR REQUEST, already got CLEAR COMMAND from MSC\n");
@@ -976,9 +977,7 @@ static void gscon_pre_term(struct osmo_fsm_inst *fi, enum osmo_fsm_term_cause ca
 	}
 
 	LOGPFSML(fi, LOGL_DEBUG, "Releasing all lchans (if any) because this conn is terminating\n");
-	/* when things go smoothly, the lchan should have been released before FSM instance termination. So if this is
-	 * necessary it's probably "abnormal". */
-	gscon_release_lchans(conn, true, GSM48_RR_CAUSE_ABNORMAL_UNSPEC);
+	gscon_release_lchans(conn, true, bsc_gsm48_rr_cause_from_gsm0808_cause(conn->clear_cause));
 
 	/* drop pending messages */
 	gscon_dtap_queue_flush(conn, 0);
@@ -1056,6 +1055,9 @@ struct gsm_subscriber_connection *bsc_subscr_con_allocate(struct gsm_network *ne
 	INIT_LLIST_HEAD(&conn->dtap_queue);
 	INIT_LLIST_HEAD(&conn->hodec2.penalty_timers);
 	conn->sccp.conn_id = -1;
+
+	/* Default clear cause (on RR translates to GSM48_RR_CAUSE_ABNORMAL_UNSPEC) */
+	conn->clear_cause = GSM0808_CAUSE_EQUIPMENT_FAILURE;
 
 	/* don't allocate from 'conn' context, as gscon_cleanup() will call talloc_free(conn) before
 	 * libosmocore will call talloc_free(conn->fi), i.e. avoid use-after-free during cleanup */
