@@ -35,8 +35,6 @@ arguments:
 	Set the global log level for logging to stderr. This has mostly
 	been deprecated by VTY based logging configuration, see
 	<<logging>> for more information.
-*-l, --local='IP'*::
-	Specify the local IP address of the OsmoBSC-MGCP
 *-r, --rf-ctl 'RFCTL'*::
 	Offer a Unix domain socket for RF control at the path/filename
 	'RFCTL' in the file system.

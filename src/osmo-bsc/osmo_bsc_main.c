@@ -104,7 +104,6 @@ static void print_help()
 	printf("  -T --timestamp		Print a timestamp in the debug output.\n");
 	printf("  -V --version               	Print the version of OsmoBSC.\n");
 	printf("  -c --config-file filename	The config file to use.\n");
-	printf("  -l --local IP			The local address of the MGCP.\n");
 	printf("  -e --log-level number		Set a global loglevel.\n");
 	printf("  -r --rf-ctl NAME		A unix domain socket to listen for cmds.\n");
 	printf("  -t --testmode			A special mode to provoke failures at the MSC.\n");
@@ -152,7 +151,6 @@ static void handle_options(int argc, char **argv)
 			{"disable-color", 0, 0, 's'},
 			{"timestamp", 0, 0, 'T'},
 			{"version", 0, 0, 'V' },
-			{"local", 1, 0, 'l'},
 			{"log-level", 1, 0, 'e'},
 			{"rf-ctl", 1, 0, 'r'},
 			{"testmode", 0, 0, 't'},
