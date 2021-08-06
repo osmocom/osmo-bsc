@@ -657,6 +657,21 @@ static int lchan_activate_set_ch_mode_rate_and_mr_config(struct gsm_lchan *lchan
 	return 0;
 }
 
+static int lchan_send_imm_ass(struct osmo_fsm_inst *fi)
+{
+	int rc;
+	struct gsm_lchan *lchan = lchan_fi_lchan(fi);
+	rc = rsl_tx_imm_assignment(lchan);
+	if (rc) {
+		lchan_fail("Failed to Tx RR Immediate Assignment message (rc=%d %s)",
+			   rc, strerror(-rc));
+		return rc;
+	}
+	LOG_LCHAN(lchan, LOGL_DEBUG, "Tx RR Immediate Assignment\n");
+	lchan->activate.immediate_assignment_sent = true;
+	return rc;
+}
+
 static void lchan_fsm_wait_ts_ready_onenter(struct osmo_fsm_inst *fi, uint32_t prev_state)
 {
 	struct gsm_lchan *lchan = lchan_fi_lchan(fi);
@@ -801,6 +816,12 @@ static void lchan_fsm_wait_activ_ack_onenter(struct osmo_fsm_inst *fi, uint32_t 
 
 	if (lchan->activate.info.ta_known)
 		lchan->last_ta = lchan->activate.info.ta;
+
+	if (lchan->activate.info.imm_ass_time == IMM_ASS_TIME_PRE_CHAN_ACK) {
+		/* Send the Immediate Assignment directly after the Channel Activation request, saving one Abis
+		 * roundtrip between ChanRqd and Imm Ass. */
+		lchan_send_imm_ass(fi);
+	}
 }
 
 static void lchan_fsm_post_activ_ack(struct osmo_fsm_inst *fi);
@@ -861,7 +882,6 @@ static void lchan_fsm_wait_activ_ack(struct osmo_fsm_inst *fi, uint32_t event, v
 
 static void lchan_fsm_post_activ_ack(struct osmo_fsm_inst *fi)
 {
-	int rc;
 	struct gsm_lchan *lchan = lchan_fi_lchan(fi);
 
 	lchan->current_ch_mode_rate = lchan->activate.ch_mode_rate;
@@ -880,14 +900,12 @@ static void lchan_fsm_post_activ_ack(struct osmo_fsm_inst *fi)
 	switch (lchan->activate.info.activ_for) {
 
 	case ACTIVATE_FOR_MS_CHANNEL_REQUEST:
-		rc = rsl_tx_imm_assignment(lchan);
-		if (rc) {
-			lchan_fail("Failed to Tx RR Immediate Assignment message (rc=%d %s)",
-				   rc, strerror(-rc));
-			return;
+		if (lchan->activate.info.imm_ass_time == IMM_ASS_TIME_POST_CHAN_ACK) {
+			if (lchan_send_imm_ass(fi)) {
+				/* lchan_fail() was already called in lchan_send_imm_ass() */
+				return;
+			}
 		}
-		LOG_LCHAN(lchan, LOGL_DEBUG, "Tx RR Immediate Assignment\n");
-		lchan->activate.immediate_assignment_sent = true;
 		break;
 
 	case ACTIVATE_FOR_ASSIGNMENT:

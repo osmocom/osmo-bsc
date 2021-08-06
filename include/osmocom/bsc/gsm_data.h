@@ -628,6 +628,11 @@ struct lchan_activate_info {
 	int tsc;
 
 	bool vamos;
+
+	/* A copy of bts->imm_ass_time at the time where Channel Activation was requested. A change in the VTY
+	 * configuration has immediate effect on the value, so make sure we don't get mixed up when it gets changed
+	 * while a channel activation is in progress. */
+	enum imm_ass_time imm_ass_time;
 };
 
 enum lchan_modify_for {
