@@ -566,6 +566,9 @@ struct gsm_bts {
 
 	/* Is Fast return to LTE allowed during Chan Release in this BTS? */
 	bool srvcc_fast_return_allowed;
+
+	/* At what point in the channel allocation sequence to dispatch the Immediate Assignment (Abis optimization) */
+	enum imm_ass_time imm_ass_time;
 };
 
 #define GSM_BTS_SI2Q(bts, i)   (struct gsm48_system_information_type_2quater *)((bts)->si_buf[SYSINFO_TYPE_2quater][i])

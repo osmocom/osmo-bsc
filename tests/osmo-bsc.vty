@@ -204,3 +204,21 @@ OsmoBSC(config-net-bts)# show running-config
 OsmoBSC(config-net-bts)# channel allocator allow-tch-for-signalling 1
 OsmoBSC(config-net-bts)# show running-config
 ... !channel allocator allow-tch-for-signalling
+
+OsmoBSC(config-net-bts)# immediate-assignment?
+  immediate-assignment  Configure time of Immediate Assignment after ChanRqd RACH (Abis optimization)
+OsmoBSC(config-net-bts)# immediate-assignment ?
+  post-chan-ack  Send the Immediate Assignment after the Channel Activation ACK (normal sequence)
+  pre-chan-ack   Send the Immediate Assignment directly after Channel Activation (early), without waiting for the ACK; This may help with double allocations on high latency Abis links
+OsmoBSC(config-net-bts)# show running-config
+... !immediate-assignment
+OsmoBSC(config-net-bts)# immediate-assignment pre-chan-ack
+OsmoBSC(config-net-bts)# show running-config
+...
+ bts 0
+...
+  immediate-assignment pre-chan-ack
+...
+OsmoBSC(config-net-bts)# immediate-assignment post-chan-ack
+OsmoBSC(config-net-bts)# show running-config
+... !immediate-assignment

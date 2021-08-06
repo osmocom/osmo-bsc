@@ -2806,6 +2806,23 @@ DEFUN_ATTR(cfg_bts_srvcc_fast_return, cfg_bts_srvcc_fast_return_cmd,
 	return CMD_SUCCESS;
 }
 
+DEFUN_ATTR(cfg_bts_immediate_assignment, cfg_bts_immediate_assignment_cmd,
+	   "immediate-assignment (post-chan-ack|pre-chan-ack)",
+	   "Configure time of Immediate Assignment after ChanRqd RACH (Abis optimization)\n"
+	   "Send the Immediate Assignment after the Channel Activation ACK (normal sequence)\n"
+	   "Send the Immediate Assignment directly after Channel Activation (early), without waiting for the ACK;"
+	   " This may help with double allocations on high latency Abis links\n",
+	   CMD_ATTR_IMMEDIATE)
+{
+	struct gsm_bts *bts = vty->index;
+
+	if (!strcmp(argv[0], "pre-chan-ack"))
+		bts->imm_ass_time = IMM_ASS_TIME_PRE_CHAN_ACK;
+	else
+		bts->imm_ass_time = IMM_ASS_TIME_POST_CHAN_ACK;
+	return CMD_SUCCESS;
+}
+
 #define BS_POWER_CONTROL_CMD \
 	"bs-power-control"
 #define MS_POWER_CONTROL_CMD \
@@ -3980,6 +3997,16 @@ static void config_write_bts_single(struct vty *vty, struct gsm_bts *bts)
 	if (!bts->srvcc_fast_return_allowed)
 		vty_out(vty, "  srvcc fast-return forbid%s", VTY_NEWLINE);
 
+	switch (bts->imm_ass_time) {
+	default:
+	case IMM_ASS_TIME_POST_CHAN_ACK:
+		/* default value */
+		break;
+	case IMM_ASS_TIME_PRE_CHAN_ACK:
+		vty_out(vty, "  immediate-assignment pre-chan-ack%s", VTY_NEWLINE);
+		break;
+	}
+
 	/* BS/MS Power Control parameters */
 	config_write_power_ctrl(vty, 2, &bts->bs_power_ctrl);
 	config_write_power_ctrl(vty, 2, &bts->ms_power_ctrl);
@@ -4150,6 +4177,7 @@ int bts_vty_init(void)
 	install_element(BTS_NODE, &cfg_bts_interf_meas_avg_period_cmd);
 	install_element(BTS_NODE, &cfg_bts_interf_meas_level_bounds_cmd);
 	install_element(BTS_NODE, &cfg_bts_srvcc_fast_return_cmd);
+	install_element(BTS_NODE, &cfg_bts_immediate_assignment_cmd);
 
 	neighbor_ident_vty_init();
 	/* See also handover commands added on bts level from handover_vty.c */

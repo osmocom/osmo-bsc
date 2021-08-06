@@ -601,6 +601,11 @@ extern const struct value_string lchan_activate_mode_names[];
 static inline const char *lchan_activate_mode_name(enum lchan_activate_for activ_for)
 { return get_value_string(lchan_activate_mode_names, activ_for); }
 
+enum imm_ass_time {
+	IMM_ASS_TIME_POST_CHAN_ACK = 0,
+	IMM_ASS_TIME_PRE_CHAN_ACK,
+};
+
 struct lchan_activate_info {
 	enum lchan_activate_for activ_for;
 	struct gsm_subscriber_connection *for_conn;
