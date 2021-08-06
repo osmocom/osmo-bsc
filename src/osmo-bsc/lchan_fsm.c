@@ -896,14 +896,14 @@ static void lchan_fsm_post_activ_ack(struct osmo_fsm_inst *fi)
 				  "lchan activation for assignment succeeded, but lchan has no conn:"
 				  " cannot trigger appropriate actions. Release.\n");
 			lchan_release(lchan, false, true, RSL_ERR_EQUIPMENT_FAIL, NULL);
-			break;
+			return;
 		}
 		if (!lchan->conn->assignment.fi) {
 			LOG_LCHAN(lchan, LOGL_ERROR,
 				  "lchan activation for assignment succeeded, but lchan has no"
 				  " assignment ongoing: cannot trigger appropriate actions. Release.\n");
 			lchan_release(lchan, false, true, RSL_ERR_EQUIPMENT_FAIL, NULL);
-			break;
+			return;
 		}
 		/* After the Chan Activ Ack, the MS expects to receive an RR Assignment Command.
 		 * Let the assignment_fsm handle that. */
@@ -916,14 +916,14 @@ static void lchan_fsm_post_activ_ack(struct osmo_fsm_inst *fi)
 				  "lchan activation for handover succeeded, but lchan has no conn:"
 				  " cannot trigger appropriate actions. Release.\n");
 			lchan_release(lchan, false, true, RSL_ERR_EQUIPMENT_FAIL, NULL);
-			break;
+			return;
 		}
 		if (!lchan->conn->ho.fi) {
 			LOG_LCHAN(lchan, LOGL_ERROR,
 				  "lchan activation for handover succeeded, but lchan has no"
 				  " handover ongoing: cannot trigger appropriate actions. Release.\n");
 			lchan_release(lchan, false, true, RSL_ERR_EQUIPMENT_FAIL, NULL);
-			break;
+			return;
 		}
 		/* After the Chan Activ Ack of the new lchan, send the MS an RR Handover Command on the
 		 * old channel. The handover_fsm handles that. */
