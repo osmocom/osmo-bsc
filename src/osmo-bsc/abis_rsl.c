@@ -2072,6 +2072,7 @@ int rsl_tx_imm_assignment(struct gsm_lchan *lchan)
 	struct gsm_bts *bts = lchan->ts->trx->bts;
 	uint8_t buf[GSM_MACBLOCK_LEN];
 	struct gsm48_imm_ass *ia = (struct gsm48_imm_ass *) buf;
+	enum gsm_phys_chan_config pchan;
 
 	/* create IMMEDIATE ASSIGN 04.08 message */
 	memset(ia, 0, sizeof(*ia));
@@ -2079,7 +2080,15 @@ int rsl_tx_imm_assignment(struct gsm_lchan *lchan)
 	ia->proto_discr = GSM48_PDISC_RR;
 	ia->msg_type = GSM48_MT_RR_IMM_ASS;
 	ia->page_mode = GSM48_PM_SAME;
-	rc = gsm48_lchan2chan_desc(&ia->chan_desc, lchan, lchan->tsc, true);
+
+	/* In case the dyn TS is not ready yet, ts->pchan_is still reflects the previous pchan type; so get the pchan
+	 * kind from lchan->type, which already reflects the target type. This only happens for dynamic timeslots.
+	 * gsm_pchan_by_lchan_type() isn't always exact, which is fine for dyn TS with their limited pchan kinds. */
+	if (lchan_state_is(lchan, LCHAN_ST_WAIT_TS_READY))
+		pchan = gsm_pchan_by_lchan_type(lchan->type);
+	else
+		pchan = lchan->ts->pchan_is;
+	rc = gsm48_lchan_and_pchan2chan_desc(&ia->chan_desc, lchan, pchan, lchan->tsc, true);
 	if (rc) {
 		LOG_LCHAN(lchan, LOGL_ERROR, "Error encoding Channel Number\n");
 		return rc;

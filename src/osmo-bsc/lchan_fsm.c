@@ -739,6 +739,12 @@ static void lchan_fsm_wait_ts_ready_onenter(struct osmo_fsm_inst *fi, uint32_t p
 	/* Prepare an MGW endpoint CI if appropriate. */
 	if (lchan->activate.info.requires_voice_stream)
 		lchan_rtp_fsm_start(lchan);
+
+	if (lchan->activate.info.imm_ass_time == IMM_ASS_TIME_PRE_TS_ACK) {
+		/* Send the Immediate Assignment even before the timeslot is ready, saving a dyn TS timeslot roundtrip
+		 * on Abis (experimental). */
+		lchan_send_imm_ass(fi);
+	}
 }
 
 static void lchan_fsm_wait_ts_ready(struct osmo_fsm_inst *fi, uint32_t event, void *data)

@@ -2807,16 +2807,20 @@ DEFUN_ATTR(cfg_bts_srvcc_fast_return, cfg_bts_srvcc_fast_return_cmd,
 }
 
 DEFUN_ATTR(cfg_bts_immediate_assignment, cfg_bts_immediate_assignment_cmd,
-	   "immediate-assignment (post-chan-ack|pre-chan-ack)",
+	   "immediate-assignment (post-chan-ack|pre-chan-ack|pre-ts-ack)",
 	   "Configure time of Immediate Assignment after ChanRqd RACH (Abis optimization)\n"
 	   "Send the Immediate Assignment after the Channel Activation ACK (normal sequence)\n"
 	   "Send the Immediate Assignment directly after Channel Activation (early), without waiting for the ACK;"
-	   " This may help with double allocations on high latency Abis links\n",
+	   " This may help with double allocations on high latency Abis links\n"
+	   "EXPERIMENTAL: If a dynamic timeslot switch is necessary, send the Immediate Assignment even before the"
+	   " timeslot is switched, i.e. even before the Channel Activation is sent (very early)\n",
 	   CMD_ATTR_IMMEDIATE)
 {
 	struct gsm_bts *bts = vty->index;
 
-	if (!strcmp(argv[0], "pre-chan-ack"))
+	if (!strcmp(argv[0], "pre-ts-ack"))
+		bts->imm_ass_time = IMM_ASS_TIME_PRE_TS_ACK;
+	else if (!strcmp(argv[0], "pre-chan-ack"))
 		bts->imm_ass_time = IMM_ASS_TIME_PRE_CHAN_ACK;
 	else
 		bts->imm_ass_time = IMM_ASS_TIME_POST_CHAN_ACK;
@@ -4004,6 +4008,9 @@ static void config_write_bts_single(struct vty *vty, struct gsm_bts *bts)
 		break;
 	case IMM_ASS_TIME_PRE_CHAN_ACK:
 		vty_out(vty, "  immediate-assignment pre-chan-ack%s", VTY_NEWLINE);
+		break;
+	case IMM_ASS_TIME_PRE_TS_ACK:
+		vty_out(vty, "  immediate-assignment pre-ts-ack%s", VTY_NEWLINE);
 		break;
 	}
 

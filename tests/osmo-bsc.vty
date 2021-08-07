@@ -210,6 +210,7 @@ OsmoBSC(config-net-bts)# immediate-assignment?
 OsmoBSC(config-net-bts)# immediate-assignment ?
   post-chan-ack  Send the Immediate Assignment after the Channel Activation ACK (normal sequence)
   pre-chan-ack   Send the Immediate Assignment directly after Channel Activation (early), without waiting for the ACK; This may help with double allocations on high latency Abis links
+  pre-ts-ack     EXPERIMENTAL: If a dynamic timeslot switch is necessary, send the Immediate Assignment even before the timeslot is switched, i.e. even before the Channel Activation is sent (very early)
 OsmoBSC(config-net-bts)# show running-config
 ... !immediate-assignment
 OsmoBSC(config-net-bts)# immediate-assignment pre-chan-ack
@@ -218,6 +219,13 @@ OsmoBSC(config-net-bts)# show running-config
  bts 0
 ...
   immediate-assignment pre-chan-ack
+...
+OsmoBSC(config-net-bts)# immediate-assignment pre-ts-ack
+OsmoBSC(config-net-bts)# show running-config
+...
+ bts 0
+...
+  immediate-assignment pre-ts-ack
 ...
 OsmoBSC(config-net-bts)# immediate-assignment post-chan-ack
 OsmoBSC(config-net-bts)# show running-config

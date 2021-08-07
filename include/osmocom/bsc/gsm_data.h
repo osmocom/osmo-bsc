@@ -604,6 +604,7 @@ static inline const char *lchan_activate_mode_name(enum lchan_activate_for activ
 enum imm_ass_time {
 	IMM_ASS_TIME_POST_CHAN_ACK = 0,
 	IMM_ASS_TIME_PRE_CHAN_ACK,
+	IMM_ASS_TIME_PRE_TS_ACK,
 };
 
 struct lchan_activate_info {
