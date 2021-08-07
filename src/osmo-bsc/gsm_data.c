@@ -562,7 +562,7 @@ int gsm_pchan2chan_nr(enum gsm_phys_chan_config pchan,
 /* For RSL, to talk to osmo-bts, we introduce Osmocom specific channel number cbits to indicate VAMOS secondary lchans.
  * However, in RR, which is sent to the MS, these special cbits must not be sent, but their "normal" equivalent; for RR
  * messages, pass allow_osmo_cbits = false. */
-int gsm_lchan2chan_nr(const struct gsm_lchan *lchan, bool allow_osmo_cbits)
+int gsm_lchan_and_pchan2chan_nr(const struct gsm_lchan *lchan, enum gsm_phys_chan_config pchan, bool allow_osmo_cbits)
 {
 	int rc;
 	uint8_t lchan_nr = lchan->nr;
@@ -582,7 +582,7 @@ int gsm_lchan2chan_nr(const struct gsm_lchan *lchan, bool allow_osmo_cbits)
 	 * a primary ts->lchan[0] and a VAMOS ts->lchan[1]. Still, the VAMOS lchan should send chan_nr = 0. */
 	if (lchan->vamos.is_secondary)
 		lchan_nr -= lchan->ts->max_primary_lchans;
-	rc = gsm_pchan2chan_nr(lchan->ts->pchan_is, lchan->ts->nr, lchan_nr,
+	rc = gsm_pchan2chan_nr(pchan, lchan->ts->nr, lchan_nr,
 			       allow_osmo_cbits ? lchan->vamos.is_secondary : false);
 	/* Log an error so that we don't need to add logging to each caller of this function */
 	if (rc < 0)
@@ -591,6 +591,11 @@ int gsm_lchan2chan_nr(const struct gsm_lchan *lchan, bool allow_osmo_cbits)
 			  gsm_pchan_name(lchan->ts->pchan_from_config), lchan->ts->nr, lchan->nr,
 			  lchan->vamos.is_secondary ? " (VAMOS shadow)" : "");
 	return rc;
+}
+
+int gsm_lchan2chan_nr(const struct gsm_lchan *lchan, bool allow_osmo_cbits)
+{
+	return gsm_lchan_and_pchan2chan_nr(lchan, lchan->ts->pchan_is, allow_osmo_cbits);
 }
 
 static const uint8_t subslots_per_pchan[] = {
@@ -712,14 +717,18 @@ static void _chan_desc_fill_tail(struct gsm48_chan_desc *cd, const struct gsm_lc
 	}
 }
 
-int gsm48_lchan2chan_desc(struct gsm48_chan_desc *cd,
-			  const struct gsm_lchan *lchan,
-			  uint8_t tsc, bool allow_osmo_cbits)
+int gsm48_lchan_and_pchan2chan_desc(struct gsm48_chan_desc *cd,
+				    const struct gsm_lchan *lchan,
+				    enum gsm_phys_chan_config pchan,
+				    uint8_t tsc, bool allow_osmo_cbits)
 {
-	int chan_nr = gsm_lchan2chan_nr(lchan, allow_osmo_cbits);
+	int chan_nr = gsm_lchan_and_pchan2chan_nr(lchan, pchan, allow_osmo_cbits);
 	if (chan_nr < 0) {
 		/* Log an error so that we don't need to add logging to each caller of this function */
-		LOG_LCHAN(lchan, LOGL_ERROR, "Error encoding Channel Number\n");
+		LOG_LCHAN(lchan, LOGL_ERROR,
+			  "Error encoding Channel Number: pchan %s ts %u ss %u%s (rc = %d)\n",
+			  gsm_pchan_name(pchan), lchan->ts->nr, lchan->nr,
+			  lchan->vamos.is_secondary ? " (VAMOS shadow)" : "", chan_nr);
 		return chan_nr;
 	}
 	cd->chan_nr = chan_nr;
@@ -727,26 +736,11 @@ int gsm48_lchan2chan_desc(struct gsm48_chan_desc *cd,
 	return 0;
 }
 
-/* like gsm48_lchan2chan_desc() above, but use ts->pchan_from_config to
- * return a channel description based on what is configured, rather than
- * what the current state of the pchan type is */
-int gsm48_lchan2chan_desc_as_configured(struct gsm48_chan_desc *cd,
-					const struct gsm_lchan *lchan,
-					uint8_t tsc)
+int gsm48_lchan2chan_desc(struct gsm48_chan_desc *cd,
+			  const struct gsm_lchan *lchan,
+			  uint8_t tsc, bool allow_osmo_cbits)
 {
-	int chan_nr = gsm_pchan2chan_nr(lchan->ts->pchan_from_config, lchan->ts->nr, lchan->nr,
-					lchan->vamos.is_secondary);
-	if (chan_nr < 0) {
-		/* Log an error so that we don't need to add logging to each caller of this function */
-		LOG_LCHAN(lchan, LOGL_ERROR,
-			  "Error encoding Channel Number: pchan %s ts %u ss %u%s (rc = %d)\n",
-			  gsm_pchan_name(lchan->ts->pchan_from_config), lchan->ts->nr, lchan->nr,
-			  lchan->vamos.is_secondary ? " (VAMOS shadow)" : "", chan_nr);
-		return chan_nr;
-	}
-	cd->chan_nr = chan_nr;
-	_chan_desc_fill_tail(cd, lchan, tsc);
-	return 0;
+	return gsm48_lchan_and_pchan2chan_desc(cd, lchan, lchan->ts->pchan_is, tsc, allow_osmo_cbits);
 }
 
 uint8_t gsm_ts_tsc(const struct gsm_bts_trx_ts *ts)

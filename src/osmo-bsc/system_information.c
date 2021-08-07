@@ -1017,8 +1017,10 @@ static int generate_si4(enum osmo_sysinfo_type t, struct gsm_bts *bts)
 		const struct gsm_bts_trx_ts *ts = cbch_lchan->ts;
 		struct gsm48_chan_desc cd;
 
-		/* 10.5.2.5 (TV) CBCH Channel Description IE */
-		if (gsm48_lchan2chan_desc_as_configured(&cd, cbch_lchan, gsm_ts_tsc(cbch_lchan->ts)))
+		/* 10.5.2.5 (TV) CBCH Channel Description IE.
+		 * CBCH is never in VAMOS mode, so just pass allow_osmo_cbits == false. */
+		if (gsm48_lchan_and_pchan2chan_desc(&cd, cbch_lchan, cbch_lchan->ts->pchan_from_config,
+						    gsm_ts_tsc(cbch_lchan->ts), false))
 			return -EINVAL;
 		tail = tv_fixed_put(tail, GSM48_IE_CBCH_CHAN_DESC,
 				    sizeof(cd), (uint8_t *) &cd);
