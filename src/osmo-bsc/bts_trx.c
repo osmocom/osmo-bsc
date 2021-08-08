@@ -183,11 +183,17 @@ struct gsm_lchan *rsl_lchan_lookup(struct gsm_bts_trx *trx, uint8_t chan_nr,
 		lch_idx = 0;	/* TCH/F */
 		ok = ts_is_capable_of_pchan(ts, GSM_PCHAN_TCH_F)
 			|| ts->pchan_on_init == GSM_PCHAN_PDCH; /* PDCH? really? */
+		if (!ok)
+			LOG_TRX(trx, DRSL, LOGL_ERROR, "chan_nr %x cbits %x: ts %s is not capable of GSM_PCHAN_TCH_F\n",
+				chan_nr, cbits, gsm_ts_and_pchan_name(ts));
 		break;
 	case ABIS_RSL_CHAN_NR_CBITS_Lm_ACCHs(0):
 	case ABIS_RSL_CHAN_NR_CBITS_Lm_ACCHs(1):
 		lch_idx = cbits & 0x1;	/* TCH/H */
 		ok = ts_is_capable_of_pchan(ts, GSM_PCHAN_TCH_H);
+		if (!ok)
+			LOG_TRX(trx, DRSL, LOGL_ERROR, "chan_nr 0x%x cbits 0x%x: %s is not capable of GSM_PCHAN_TCH_H\n",
+				chan_nr, cbits, gsm_ts_and_pchan_name(ts));
 		break;
 	case ABIS_RSL_CHAN_NR_CBITS_SDCCH4_ACCH(0):
 	case ABIS_RSL_CHAN_NR_CBITS_SDCCH4_ACCH(1):
@@ -195,6 +201,9 @@ struct gsm_lchan *rsl_lchan_lookup(struct gsm_bts_trx *trx, uint8_t chan_nr,
 	case ABIS_RSL_CHAN_NR_CBITS_SDCCH4_ACCH(3):
 		lch_idx = cbits & 0x3;	/* SDCCH/4 */
 		ok = ts_is_capable_of_pchan(ts, GSM_PCHAN_CCCH_SDCCH4);
+		if (!ok)
+			LOG_TRX(trx, DRSL, LOGL_ERROR, "chan_nr 0x%x cbits 0x%x: %s is not capable of GSM_PCHAN_CCCH_SDCCH4\n",
+				chan_nr, cbits, gsm_ts_and_pchan_name(ts));
 		break;
 	case ABIS_RSL_CHAN_NR_CBITS_SDCCH8_ACCH(0):
 	case ABIS_RSL_CHAN_NR_CBITS_SDCCH8_ACCH(1):
@@ -206,17 +215,26 @@ struct gsm_lchan *rsl_lchan_lookup(struct gsm_bts_trx *trx, uint8_t chan_nr,
 	case ABIS_RSL_CHAN_NR_CBITS_SDCCH8_ACCH(7):
 		lch_idx = cbits & 0x7;	/* SDCCH/8 */
 		ok = ts_is_capable_of_pchan(ts, GSM_PCHAN_SDCCH8_SACCH8C);
+		if (!ok)
+			LOG_TRX(trx, DRSL, LOGL_ERROR, "chan_nr 0x%x cbits 0x%x: %s is not capable of GSM_PCHAN_SDCCH8_SACCH8C\n",
+				chan_nr, cbits, gsm_ts_and_pchan_name(ts));
 		break;
 	case ABIS_RSL_CHAN_NR_CBITS_BCCH:
 	case ABIS_RSL_CHAN_NR_CBITS_RACH:
 	case ABIS_RSL_CHAN_NR_CBITS_PCH_AGCH:
 		lch_idx = 0; /* CCCH? */
 		ok = ts_is_capable_of_pchan(ts, GSM_PCHAN_CCCH);
+		if (!ok)
+			LOG_TRX(trx, DRSL, LOGL_ERROR, "chan_nr 0x%x cbits 0x%x: %s is not capable of GSM_PCHAN_CCCH\n",
+				chan_nr, cbits, gsm_ts_and_pchan_name(ts));
 		/* FIXME: we should not return first sdcch4 !!! */
 		break;
 	case ABIS_RSL_CHAN_NR_CBITS_OSMO_PDCH:
 		lch_idx = 0;
 		ok = (ts->pchan_on_init == GSM_PCHAN_OSMO_DYN);
+		if (!ok)
+			LOG_TRX(trx, DRSL, LOGL_ERROR, "chan_nr 0x%x cbits 0x%x: %s is not GSM_PCHAN_OSMO_DYN\n",
+				chan_nr, cbits, gsm_ts_and_pchan_name(ts));
 		break;
 	default:
 		return NULL;
