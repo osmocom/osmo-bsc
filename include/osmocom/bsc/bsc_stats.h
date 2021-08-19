@@ -88,6 +88,8 @@ extern const struct rate_ctr_group_desc bsc_ctrg_desc;
 /* OsmoBSC stat_item indexes */
 enum {
 	BSC_STAT_NUM_BTS_TOTAL,
+	BSC_STAT_NUM_MSC_CONNECTED,
+	BSC_STAT_NUM_MSC_TOTAL,
 };
 
 /* BTS counter index if a BTS could not be found

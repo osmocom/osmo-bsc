@@ -111,6 +111,8 @@ const struct rate_ctr_group_desc bsc_ctrg_desc = {
 
 static const struct osmo_stat_item_desc bsc_stat_desc[] = {
 	[BSC_STAT_NUM_BTS_TOTAL] = { "num_bts:total", "Number of configured BTS for this BSC", "", 16, 0 },
+	[BSC_STAT_NUM_MSC_CONNECTED] = { "num_msc:connected", "Number of actively connected MSCs", "", 16, 0 },
+	[BSC_STAT_NUM_MSC_TOTAL] = { "num_msc:total", "Number of configured MSCs, not necessarily connected", "", 1, 0 },
 };
 
 const struct osmo_stat_item_group_desc bsc_statg_desc = {

@@ -25,6 +25,7 @@
 #include <osmocom/bsc/bsc_msc_data.h>
 #include <osmocom/bsc/osmo_bsc_sigtran.h>
 #include <osmocom/bsc/bssmap_reset.h>
+#include <osmocom/bsc/bsc_stats.h>
 
 static void a_reset_tx_reset(void *data)
 {
@@ -43,6 +44,7 @@ static void a_reset_link_up(void *data)
 	struct bsc_msc_data *msc = data;
 	LOGP(DMSC, LOGL_NOTICE, "(msc%d) BSSMAP assocation is up\n", msc->nr);
 	osmo_stat_item_inc(osmo_stat_item_group_get_item(msc->msc_statg, MSC_STAT_MSC_LINKS_ACTIVE), 1);
+	osmo_stat_item_inc(osmo_stat_item_group_get_item(msc->network->bsc_statg, BSC_STAT_NUM_MSC_CONNECTED), 1);
 	osmo_signal_dispatch(SS_MSC, S_MSC_CONNECTED, msc);
 }
 
@@ -51,6 +53,7 @@ static void a_reset_link_lost(void *data)
 	struct bsc_msc_data *msc = data;
 	LOGP(DMSC, LOGL_NOTICE, "(msc%d) BSSMAP assocation is down\n", msc->nr);
 	osmo_stat_item_dec(osmo_stat_item_group_get_item(msc->msc_statg, MSC_STAT_MSC_LINKS_ACTIVE), 1);
+	osmo_stat_item_dec(osmo_stat_item_group_get_item(msc->network->bsc_statg, BSC_STAT_NUM_MSC_CONNECTED), 1);
 	osmo_signal_dispatch(SS_MSC, S_MSC_LOST, msc);
 	osmo_bsc_sigtran_reset(msc);
 }
@@ -76,6 +79,7 @@ void a_reset_alloc(struct bsc_msc_data *msc, const char *name)
 	}
 
 	msc->a.bssmap_reset = bssmap_reset_alloc(msc, name, &cfg);
+	osmo_stat_item_inc(osmo_stat_item_group_get_item(msc->network->bsc_statg, BSC_STAT_NUM_MSC_TOTAL), 1);
 }
 
 /* Confirm that we successfully received a reset acknowledge message */
