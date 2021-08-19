@@ -147,8 +147,8 @@ static const struct rate_ctr_group_desc msc_ctrg_desc = {
 };
 
 static const struct osmo_stat_item_desc msc_stat_desc[] = {
-	{ "msc_links:active", "Number of active MSC links", "", 16, 0 },
-	{ "msc_links:total", "Number of configured MSC links", "", 16, 0 },
+	[MSC_STAT_MSC_LINKS_ACTIVE] = { "msc_links:active", "Number of active MSC links", "", 16, 0 },
+	[MSC_STAT_MSC_LINKS_TOTAL] = { "msc_links:total", "Number of configured MSC links", "", 16, 0 },
 };
 
 static const struct osmo_stat_item_group_desc msc_statg_desc = {

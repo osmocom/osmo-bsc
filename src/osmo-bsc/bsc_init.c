@@ -47,7 +47,7 @@
 #include <stdbool.h>
 
 static const struct osmo_stat_item_desc bsc_stat_desc[] = {
-	{ "num_bts:total", "Number of configured BTS for this BSC", "", 16, 0 },
+	[BSC_STAT_NUM_BTS_TOTAL] = { "num_bts:total", "Number of configured BTS for this BSC", "", 16, 0 },
 };
 
 static const struct osmo_stat_item_group_desc bsc_statg_desc = {
