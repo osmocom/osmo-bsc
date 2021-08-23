@@ -62,6 +62,7 @@
 #include <osmocom/bsc/bts.h>
 #include <osmocom/bsc/bsc_subscr_conn_fsm.h>
 #include <osmocom/bsc/assignment_fsm.h>
+#include <osmocom/bsc/bssmap_reset.h>
 
 #include <inttypes.h>
 
@@ -3324,6 +3325,28 @@ DEFUN_HIDDEN(mscpool_roundrobin_next, mscpool_roundrobin_next_cmd,
 	return CMD_SUCCESS;
 }
 
+DEFUN(msc_bssmap_reset, msc_bssmap_reset_cmd,
+      "msc " MSC_NR_RANGE " bssmap reset",
+      "Query or manipulate a specific A-interface link\n"
+      "MSC nr\n"
+      "Query or manipulate BSSMAP layer of A-interface\n"
+      "Flip this MSC to disconnected state and re-send BSSMAP RESET\n")
+{
+	int msc_nr = atoi(argv[0]);
+	struct bsc_msc_data *msc;
+
+	msc = osmo_msc_data_find(bsc_gsmnet, msc_nr);
+
+	if (!msc) {
+		vty_out(vty, "%% No such MSC: nr %d\n", msc_nr);
+		return CMD_WARNING;
+	}
+
+	LOGP(DMSC, LOGL_NOTICE, "(msc%d) VTY requests BSSMAP RESET\n", msc_nr);
+	bssmap_reset_resend_reset(msc->a.bssmap_reset);
+	return CMD_SUCCESS;
+}
+
 int bsc_vty_init(struct gsm_network *network)
 {
 	OSMO_ASSERT(vty_global_gsm_network == NULL);
@@ -3477,6 +3500,7 @@ int bsc_vty_init(struct gsm_network *network)
 
 	install_element(ENABLE_NODE, &gen_position_trap_cmd);
 	install_element(ENABLE_NODE, &mscpool_roundrobin_next_cmd);
+	install_element(ENABLE_NODE, &msc_bssmap_reset_cmd);
 
 	install_element(CFG_LOG_NODE, &logging_fltr_imsi_cmd);
 

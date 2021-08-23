@@ -27,4 +27,5 @@ struct bssmap_reset {
 
 struct bssmap_reset *bssmap_reset_alloc(void *ctx, const char *label, const struct bssmap_reset_cfg *cfg);
 bool bssmap_reset_is_conn_ready(const struct bssmap_reset *bssmap_reset);
+void bssmap_reset_resend_reset(struct bssmap_reset *bssmap_reset);
 void bssmap_reset_term_and_free(struct bssmap_reset *bssmap_reset);
