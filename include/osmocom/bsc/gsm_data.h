@@ -1350,6 +1350,13 @@ struct gsm_power_ctrl_params {
 	/* Measurement averaging parameters for RxLev & RxQual */
 	struct gsm_power_ctrl_meas_params rxqual_meas;
 	struct gsm_power_ctrl_meas_params rxlev_meas;
+	/* Measurement averaging parameters for C/I: */
+	struct gsm_power_ctrl_meas_params ci_fr_meas;
+	struct gsm_power_ctrl_meas_params ci_hr_meas;
+	struct gsm_power_ctrl_meas_params ci_amr_fr_meas;
+	struct gsm_power_ctrl_meas_params ci_amr_hr_meas;
+	struct gsm_power_ctrl_meas_params ci_sdcch_meas;
+	struct gsm_power_ctrl_meas_params ci_gprs_meas;
 };
 
 extern const struct gsm_power_ctrl_params power_ctrl_params_def;

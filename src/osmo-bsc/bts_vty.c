@@ -3034,6 +3034,8 @@ DEFUN_USRATTR(cfg_power_ctrl_step_size,
 	"RxLev value (signal strength, 0 is worst, 63 is best)\n"
 #define POWER_CONTROL_MEAS_RXQUAL_DESC \
 	"RxQual value (signal quality, 0 is best, 7 is worst)\n"
+#define POWER_CONTROL_MEAS_CI_DESC \
+	"C/I value (Carrier-to-Interference (dB), 0 is worst, 30 is best)\n"
 
 DEFUN_USRATTR(cfg_power_ctrl_rxlev_thresh,
 	      cfg_power_ctrl_rxlev_thresh_cmd,
@@ -3090,10 +3092,74 @@ DEFUN_USRATTR(cfg_power_ctrl_rxqual_thresh,
 	return CMD_SUCCESS;
 }
 
+#define VTY_CMD_CI_TYPE "(fr-efr|hr|amr-fr|amr-hr|sdcch|gprs)"
+#define VTY_DESC_CI_TYPE \
+	"Channel Type FR/EFR\n" \
+	"Channel Type HR\n" \
+	"Channel Type AMR FR\n" \
+	"Channel Type AMR HR\n" \
+	"Channel Type SDCCH\n" \
+	"Channel Type (E)GPRS\n"
+static struct gsm_power_ctrl_meas_params *ci_thresh_by_conn_type(struct gsm_power_ctrl_params *params, const char *type)
+{
+	if (!strcmp(type, "fr-efr"))
+		return &params->ci_fr_meas;
+	if (!strcmp(type, "hr"))
+		return &params->ci_hr_meas;
+	if (!strcmp(type, "amr-fr"))
+		return &params->ci_amr_fr_meas;
+	if (!strcmp(type, "amr-hr"))
+		return &params->ci_amr_hr_meas;
+	if (!strcmp(type, "sdcch"))
+		return &params->ci_sdcch_meas;
+	if (!strcmp(type, "gprs"))
+		return &params->ci_gprs_meas;
+	OSMO_ASSERT(false);
+	return NULL;
+}
+
+DEFUN_USRATTR(cfg_power_ctrl_ci_thresh,
+	      cfg_power_ctrl_ci_thresh_cmd,
+	      X(BSC_VTY_ATTR_VENDOR_SPECIFIC) |
+	      X(BSC_VTY_ATTR_NEW_LCHAN),
+	      "ci-thresh " VTY_CMD_CI_TYPE " lower <0-30> upper <0-30>",
+	      "Set target C/I thresholds (for dynamic mode), only available in ms-power-control\n"
+	      VTY_DESC_CI_TYPE
+	      "Lower C/I value\n"
+	      "Lower " POWER_CONTROL_MEAS_RXQUAL_DESC
+	      "Upper C/I value\n"
+	      "Upper " POWER_CONTROL_MEAS_RXQUAL_DESC)
+{
+	struct gsm_power_ctrl_params *params = vty->index;
+	const char *type = argv[0];
+	int lower = atoi(argv[1]);
+	int upper = atoi(argv[2]);
+	struct gsm_power_ctrl_meas_params *meas_params;
+
+	if (params->dir != GSM_PWR_CTRL_DIR_UL) {
+		vty_out(vty, "%% C/I based power loop only possible in Uplink!%s", VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	if (lower > upper) {
+		vty_out(vty, "%% Lower 'rxqual-rxqual' (%d) must be less than upper (%d)%s",
+			upper, lower, VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	meas_params = ci_thresh_by_conn_type(params, type);
+
+	meas_params->lower_thresh = lower;
+	meas_params->upper_thresh = upper;
+
+	return CMD_SUCCESS;
+}
+
 #define POWER_CONTROL_MEAS_THRESH_COMP_CMD(meas) \
 	meas " lower <0-31> <0-31> upper <0-31> <0-31>"
-#define POWER_CONTROL_MEAS_THRESH_COMP_DESC(meas, lp, ln, up, un) \
+#define POWER_CONTROL_MEAS_THRESH_COMP_DESC(meas, opt_param, lp, ln, up, un) \
 	"Set " meas " threshold comparators (for dynamic mode)\n" \
+	opt_param \
 	"Lower " meas " threshold comparators (see 3GPP TS 45.008, A.3.2.1)\n" lp ln \
 	"Upper " meas " threshold comparators (see 3GPP TS 45.008, A.3.2.1)\n" up un
 
@@ -3102,7 +3168,7 @@ DEFUN_USRATTR(cfg_power_ctrl_rxlev_thresh_comp,
 	      X(BSC_VTY_ATTR_VENDOR_SPECIFIC) |
 	      X(BSC_VTY_ATTR_NEW_LCHAN),
 	      POWER_CONTROL_MEAS_THRESH_COMP_CMD("rxlev-thresh-comp"),
-	      POWER_CONTROL_MEAS_THRESH_COMP_DESC("RxLev",
+	      POWER_CONTROL_MEAS_THRESH_COMP_DESC("RxLev", /*empty*/,
 		"P1 (default 10)\n", "N1 (default 12)\n",
 		"P2 (default 10)\n", "N2 (default 12)\n"))
 {
@@ -3137,7 +3203,7 @@ DEFUN_USRATTR(cfg_power_ctrl_rxqual_thresh_comp,
 	      X(BSC_VTY_ATTR_VENDOR_SPECIFIC) |
 	      X(BSC_VTY_ATTR_NEW_LCHAN),
 	      POWER_CONTROL_MEAS_THRESH_COMP_CMD("rxqual-thresh-comp"),
-	      POWER_CONTROL_MEAS_THRESH_COMP_DESC("RxQual",
+	      POWER_CONTROL_MEAS_THRESH_COMP_DESC("RxQual", /*empty*/,
 		"P3 (default 5)\n", "N3 (default 7)\n",
 		"P4 (default 15)\n", "N4 (default 18)\n"))
 {
@@ -3163,6 +3229,45 @@ DEFUN_USRATTR(cfg_power_ctrl_rxqual_thresh_comp,
 	params->rxqual_meas.lower_cmp_n = lower_cmp_n;
 	params->rxqual_meas.upper_cmp_p = upper_cmp_p;
 	params->rxqual_meas.upper_cmp_n = upper_cmp_n;
+
+	return CMD_SUCCESS;
+}
+
+DEFUN_USRATTR(cfg_power_ctrl_ci_thresh_comp,
+	      cfg_power_ctrl_ci_thresh_comp_cmd,
+	      X(BSC_VTY_ATTR_VENDOR_SPECIFIC) |
+	      X(BSC_VTY_ATTR_NEW_LCHAN),
+	      POWER_CONTROL_MEAS_THRESH_COMP_CMD("ci-thresh-comp " VTY_CMD_CI_TYPE),
+	      POWER_CONTROL_MEAS_THRESH_COMP_DESC("Carrier-to_interference (C/I)",
+		VTY_DESC_CI_TYPE,
+		"Lower P (default 5)\n", "Lower N (default 7)\n",
+		"Upper P (default 15)\n", "Upper N (default 18)\n"))
+{
+	struct gsm_power_ctrl_params *params = vty->index;
+	struct gsm_power_ctrl_meas_params *meas_params;
+	int lower_cmp_p = atoi(argv[1]);
+	int lower_cmp_n = atoi(argv[2]);
+	int upper_cmp_p = atoi(argv[3]);
+	int upper_cmp_n = atoi(argv[4]);
+
+	if (lower_cmp_p > lower_cmp_n) {
+		vty_out(vty, "%% Lower C/I P %d must be less than N %d%s",
+			lower_cmp_p, lower_cmp_n, VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	if (upper_cmp_p > upper_cmp_n) {
+		vty_out(vty, "%% Upper C/I P %d must be less than N %d%s",
+			upper_cmp_p, upper_cmp_n, VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	meas_params = ci_thresh_by_conn_type(params, argv[0]);
+
+	meas_params->lower_cmp_p = lower_cmp_p;
+	meas_params->lower_cmp_n = lower_cmp_n;
+	meas_params->upper_cmp_p = upper_cmp_p;
+	meas_params->upper_cmp_n = upper_cmp_n;
 
 	return CMD_SUCCESS;
 }
@@ -3272,6 +3377,114 @@ DEFUN_USRATTR(cfg_power_ctrl_avg_osmo_ewma,
 	}
 
 	avg_params = POWER_CONTROL_MEAS_AVG_PARAMS(params);
+	avg_params->algo = GSM_PWR_CTRL_MEAS_AVG_ALGO_OSMO_EWMA;
+	avg_params->ewma.alpha = 100 - atoi(argv[1]);
+
+	return CMD_SUCCESS;
+}
+
+/* C/I related power control measurements */
+#define POWER_CONTROL_CI_MEAS_AVG_DESC \
+	"C/I (Carrier-to-Interference) measurement averaging (for dynamic mode)\n"
+
+DEFUN_USRATTR(cfg_power_ctrl_no_ci_avg,
+	      cfg_power_ctrl_no_ci_avg_cmd,
+	      X(BSC_VTY_ATTR_VENDOR_SPECIFIC) |
+	      X(BSC_VTY_ATTR_NEW_LCHAN),
+	      "no ci-avg " VTY_CMD_CI_TYPE,
+	      NO_STR POWER_CONTROL_CI_MEAS_AVG_DESC VTY_DESC_CI_TYPE)
+{
+	struct gsm_power_ctrl_params *params = vty->index;
+	struct gsm_power_ctrl_meas_params *avg_params;
+
+	avg_params = ci_thresh_by_conn_type(params, argv[0]);
+	avg_params->algo = GSM_PWR_CTRL_MEAS_AVG_ALGO_NONE;
+
+	return CMD_SUCCESS;
+}
+
+DEFUN_USRATTR(cfg_power_ctrl_ci_avg_params,
+	      cfg_power_ctrl_ci_avg_params_cmd,
+	      X(BSC_VTY_ATTR_VENDOR_SPECIFIC) |
+	      X(BSC_VTY_ATTR_NEW_LCHAN),
+	      "ci-avg " VTY_CMD_CI_TYPE " params hreqave <1-31> hreqt <1-31>",
+	      POWER_CONTROL_CI_MEAS_AVG_DESC VTY_DESC_CI_TYPE
+	      "Configure general averaging parameters\n"
+	      "Hreqave: the period over which an average is produced\n"
+	      "Hreqave value (so that Hreqave * Hreqt < 32)\n"
+	      "Hreqt: the number of averaged results that are maintained\n"
+	      "Hreqt value (so that Hreqave * Hreqt < 32)\n")
+{
+	struct gsm_power_ctrl_params *params = vty->index;
+	struct gsm_power_ctrl_meas_params *avg_params;
+	int h_reqave = atoi(argv[1]);
+	int h_reqt = atoi(argv[2]);
+
+	if (h_reqave * h_reqt > 31) {
+		vty_out(vty, "%% Hreqave (%d) * Hreqt (%d) = %d must be < 32%s",
+			h_reqave, h_reqt, h_reqave * h_reqt, VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	avg_params = ci_thresh_by_conn_type(params, argv[0]);
+	avg_params->h_reqave = h_reqave;
+	avg_params->h_reqt = h_reqt;
+
+	return CMD_SUCCESS;
+}
+
+DEFUN_USRATTR(cfg_power_ctrl_ci_avg_algo,
+	      cfg_power_ctrl_ci_avg_algo_cmd,
+	      X(BSC_VTY_ATTR_VENDOR_SPECIFIC) |
+	      X(BSC_VTY_ATTR_NEW_LCHAN),
+	      /* FIXME: add algorithm specific parameters */
+	      "ci-avg " VTY_CMD_CI_TYPE " algo (unweighted|weighted|mod-median)",
+	      POWER_CONTROL_CI_MEAS_AVG_DESC VTY_DESC_CI_TYPE
+	      "Select the averaging algorithm\n"
+	      "Un-weighted average\n" "Weighted average\n"
+	      "Modified median calculation\n")
+{
+	struct gsm_power_ctrl_params *params = vty->index;
+	struct gsm_power_ctrl_meas_params *avg_params;
+
+	avg_params = ci_thresh_by_conn_type(params, argv[0]);
+	if (strcmp(argv[1], "unweighted") == 0)
+		avg_params->algo = GSM_PWR_CTRL_MEAS_AVG_ALGO_UNWEIGHTED;
+	else if (strcmp(argv[1], "weighted") == 0)
+		avg_params->algo = GSM_PWR_CTRL_MEAS_AVG_ALGO_WEIGHTED;
+	else if (strcmp(argv[1], "mod-median") == 0)
+		avg_params->algo = GSM_PWR_CTRL_MEAS_AVG_ALGO_MOD_MEDIAN;
+
+	return CMD_SUCCESS;
+}
+
+DEFUN_USRATTR(cfg_power_ctrl_ci_avg_osmo_ewma,
+	      cfg_power_ctrl_ci_avg_osmo_ewma_cmd,
+	      X(BSC_VTY_ATTR_VENDOR_SPECIFIC) |
+	      X(BSC_VTY_ATTR_NEW_LCHAN),
+	      "ci-avg " VTY_CMD_CI_TYPE " algo osmo-ewma beta <1-99>",
+	      POWER_CONTROL_CI_MEAS_AVG_DESC VTY_DESC_CI_TYPE
+	      "Select the averaging algorithm\n"
+	      "Exponentially Weighted Moving Average (EWMA)\n"
+	      "Smoothing factor (in %): beta = (100 - alpha)\n"
+	      "1% - lowest smoothing, 99% - highest smoothing\n")
+{
+	struct gsm_power_ctrl_params *params = vty->index;
+	struct gsm_power_ctrl_meas_params *avg_params;
+	const struct gsm_bts *bts;
+
+	if (params->dir == GSM_PWR_CTRL_DIR_UL)
+		bts = container_of(params, struct gsm_bts, ms_power_ctrl);
+	else
+		bts = container_of(params, struct gsm_bts, bs_power_ctrl);
+
+	if (bts->type != GSM_BTS_TYPE_OSMOBTS) {
+		vty_out(vty, "%% EWMA is an OsmoBTS specific algorithm, "
+			"it's not usable for other BTS types%s", VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	avg_params = ci_thresh_by_conn_type(params, argv[0]);
 	avg_params->algo = GSM_PWR_CTRL_MEAS_AVG_ALGO_OSMO_EWMA;
 	avg_params->ewma.alpha = 100 - atoi(argv[1]);
 
@@ -3653,31 +3866,14 @@ static void config_write_bts_amr(struct vty *vty, struct gsm_bts *bts,
 	vty_out(vty, "%*s" fmt, indent, "", ##args);
 
 static void config_write_power_ctrl_meas(struct vty *vty, unsigned int indent,
-					 const struct gsm_power_ctrl_params *cp,
-					 uint8_t ptype)
+					 const struct gsm_power_ctrl_meas_params *mp,
+					 const char *param, const char *param2)
 {
-	const struct gsm_power_ctrl_meas_params *mp;
-	const char *param;
-
-	switch (ptype) {
-	case IPAC_RXLEV_AVE:
-		mp = &cp->rxlev_meas;
-		param = "rxlev";
-		break;
-	case IPAC_RXQUAL_AVE:
-		mp = &cp->rxqual_meas;
-		param = "rxqual";
-		break;
-	default:
-		/* Shall not happen */
-		OSMO_ASSERT(0);
-	}
-
-	cfg_out("%s-thresh lower %u upper %u%s",
-		param, mp->lower_thresh, mp->upper_thresh,
+	cfg_out("%s-thresh%s lower %u upper %u%s",
+		param, param2, mp->lower_thresh, mp->upper_thresh,
 		VTY_NEWLINE);
-	cfg_out("%s-thresh-comp lower %u %u upper %u %u%s",
-		param, mp->lower_cmp_p, mp->lower_cmp_n,
+	cfg_out("%s-thresh-comp%s lower %u %u upper %u %u%s",
+		param, param2, mp->lower_cmp_p, mp->lower_cmp_n,
 		mp->upper_cmp_p, mp->upper_cmp_n,
 		VTY_NEWLINE);
 
@@ -3686,23 +3882,23 @@ static void config_write_power_ctrl_meas(struct vty *vty, unsigned int indent,
 		/* Do not print any averaging parameters */
 		return; /* we're done */
 	case GSM_PWR_CTRL_MEAS_AVG_ALGO_UNWEIGHTED:
-		cfg_out("%s-avg algo unweighted%s", param, VTY_NEWLINE);
+		cfg_out("%s-avg%s algo unweighted%s", param, param2, VTY_NEWLINE);
 		break;
 	case GSM_PWR_CTRL_MEAS_AVG_ALGO_WEIGHTED:
-		cfg_out("%s-avg algo weighted%s", param, VTY_NEWLINE);
+		cfg_out("%s-avg%s algo weighted%s", param, param2, VTY_NEWLINE);
 		break;
 	case GSM_PWR_CTRL_MEAS_AVG_ALGO_MOD_MEDIAN:
-		cfg_out("%s-avg algo mod-median%s", param, VTY_NEWLINE);
+		cfg_out("%s-avg%s algo mod-median%s", param, param2, VTY_NEWLINE);
 		break;
 	case GSM_PWR_CTRL_MEAS_AVG_ALGO_OSMO_EWMA:
-		cfg_out("%s-avg algo osmo-ewma beta %u%s",
-			param, 100 - mp->ewma.alpha,
+		cfg_out("%s-avg%s algo osmo-ewma beta %u%s",
+			param, param2, 100 - mp->ewma.alpha,
 			VTY_NEWLINE);
 		break;
 	}
 
-	cfg_out("%s-avg params hreqave %u hreqt %u%s",
-		param, mp->h_reqave, mp->h_reqt,
+	cfg_out("%s-avg%s params hreqave %u hreqt %u%s",
+		param, param2, mp->h_reqave, mp->h_reqt,
 		VTY_NEWLINE);
 }
 
@@ -3739,8 +3935,16 @@ static void config_write_power_ctrl(struct vty *vty, unsigned int indent,
 			VTY_NEWLINE);
 
 		/* Measurement processing / averaging parameters */
-		config_write_power_ctrl_meas(vty, indent + 1, cp, IPAC_RXLEV_AVE);
-		config_write_power_ctrl_meas(vty, indent + 1, cp, IPAC_RXQUAL_AVE);
+		config_write_power_ctrl_meas(vty, indent + 1, &cp->rxlev_meas, "rxlev", "");
+		config_write_power_ctrl_meas(vty, indent + 1, &cp->rxqual_meas, "rxqual", "");
+		if (cp->dir == GSM_PWR_CTRL_DIR_UL) {
+			config_write_power_ctrl_meas(vty, indent + 1, &cp->ci_fr_meas, "ci", " fr-efr");
+			config_write_power_ctrl_meas(vty, indent + 1, &cp->ci_hr_meas, "ci", " hr");
+			config_write_power_ctrl_meas(vty, indent + 1, &cp->ci_amr_fr_meas, "ci", " amr-fr");
+			config_write_power_ctrl_meas(vty, indent + 1, &cp->ci_amr_hr_meas, "ci", " amr-hr");
+			config_write_power_ctrl_meas(vty, indent + 1, &cp->ci_sdcch_meas, "ci", " sdcch");
+			config_write_power_ctrl_meas(vty, indent + 1, &cp->ci_gprs_meas, "ci", " gprs");
+		}
 		break;
 	}
 }
@@ -4238,12 +4442,18 @@ int bts_vty_init(void)
 	install_element(POWER_CTRL_NODE, &cfg_power_ctrl_step_size_cmd);
 	install_element(POWER_CTRL_NODE, &cfg_power_ctrl_rxlev_thresh_cmd);
 	install_element(POWER_CTRL_NODE, &cfg_power_ctrl_rxqual_thresh_cmd);
+	install_element(POWER_CTRL_NODE, &cfg_power_ctrl_ci_thresh_cmd);
 	install_element(POWER_CTRL_NODE, &cfg_power_ctrl_rxlev_thresh_comp_cmd);
 	install_element(POWER_CTRL_NODE, &cfg_power_ctrl_rxqual_thresh_comp_cmd);
+	install_element(POWER_CTRL_NODE, &cfg_power_ctrl_ci_thresh_comp_cmd);
 	install_element(POWER_CTRL_NODE, &cfg_power_ctrl_no_avg_cmd);
 	install_element(POWER_CTRL_NODE, &cfg_power_ctrl_avg_params_cmd);
 	install_element(POWER_CTRL_NODE, &cfg_power_ctrl_avg_algo_cmd);
 	install_element(POWER_CTRL_NODE, &cfg_power_ctrl_avg_osmo_ewma_cmd);
+	install_element(POWER_CTRL_NODE, &cfg_power_ctrl_no_ci_avg_cmd);
+	install_element(POWER_CTRL_NODE, &cfg_power_ctrl_ci_avg_params_cmd);
+	install_element(POWER_CTRL_NODE, &cfg_power_ctrl_ci_avg_algo_cmd);
+	install_element(POWER_CTRL_NODE, &cfg_power_ctrl_ci_avg_osmo_ewma_cmd);
 
 
 	return bts_trx_vty_init();

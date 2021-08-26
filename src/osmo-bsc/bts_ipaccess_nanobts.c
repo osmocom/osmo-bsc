@@ -920,13 +920,17 @@ static void enc_power_params(struct msgb *msg, const struct gsm_power_ctrl_param
 	thresh_comp->red_step_size = cp->red_step_size_db & 0x0f;
 }
 
+void osmobts_enc_power_params_osmo_ext(struct msgb *msg, const struct gsm_power_ctrl_params *cp);
 static void add_power_params_ie(struct msgb *msg, enum abis_rsl_ie iei,
+				const struct gsm_bts_trx *trx,
 				const struct gsm_power_ctrl_params *cp)
 {
 	uint8_t *ie_len = msgb_tl_put(msg, iei);
 	uint8_t msg_len = msgb_length(msg);
 
 	enc_power_params(msg, cp);
+	if (iei == RSL_IE_MS_POWER_PARAM && is_osmobts(trx->bts))
+		osmobts_enc_power_params_osmo_ext(msg, cp);
 
 	*ie_len = msgb_length(msg) - msg_len;
 }
@@ -958,9 +962,9 @@ static int power_ctrl_send_def_params(const struct gsm_bts_trx *trx)
 
 	/* MS/BS Power Parameters IEs */
 	if (ms_power_ctrl->mode == GSM_PWR_CTRL_MODE_DYN_BTS)
-		add_power_params_ie(msg, RSL_IE_MS_POWER_PARAM, ms_power_ctrl);
+		add_power_params_ie(msg, RSL_IE_MS_POWER_PARAM, trx, ms_power_ctrl);
 	if (bs_power_ctrl->mode == GSM_PWR_CTRL_MODE_DYN_BTS)
-		add_power_params_ie(msg, RSL_IE_BS_POWER_PARAM, bs_power_ctrl);
+		add_power_params_ie(msg, RSL_IE_BS_POWER_PARAM, trx, bs_power_ctrl);
 
 	msg->dst = trx->rsl_link_primary;
 

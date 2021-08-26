@@ -44,6 +44,105 @@ extern struct gsm_bts_model bts_model_nanobts;
 
 static struct gsm_bts_model model_osmobts;
 
+static void enc_osmo_meas_proc_params(struct msgb *msg, const struct gsm_power_ctrl_params *mp)
+{
+	struct osmo_preproc_ave_cfg *ave_cfg;
+	uint8_t *ie_len;
+
+	/* No averaging => no Measurement Averaging parameters */
+	if (mp->ci_fr_meas.algo == GSM_PWR_CTRL_MEAS_AVG_ALGO_NONE &&
+	    mp->ci_hr_meas.algo == GSM_PWR_CTRL_MEAS_AVG_ALGO_NONE &&
+	    mp->ci_amr_fr_meas.algo == GSM_PWR_CTRL_MEAS_AVG_ALGO_NONE &&
+	    mp->ci_amr_hr_meas.algo == GSM_PWR_CTRL_MEAS_AVG_ALGO_NONE &&
+	    mp->ci_sdcch_meas.algo == GSM_PWR_CTRL_MEAS_AVG_ALGO_NONE &&
+	    mp->ci_gprs_meas.algo == GSM_PWR_CTRL_MEAS_AVG_ALGO_NONE)
+		return;
+
+	/* (TLV) Measurement Averaging parameters for RxLev/RxQual */
+	ie_len = msgb_tl_put(msg, RSL_IPAC_EIE_OSMO_MEAS_AVG_CFG);
+
+	ave_cfg = (struct osmo_preproc_ave_cfg *) msgb_put(msg, sizeof(*ave_cfg));
+
+#define ENC_PROC(PARAMS, TO, TYPE) do { \
+	(TO)->TYPE.ave_enabled = (PARAMS)->TYPE##_meas.algo != GSM_PWR_CTRL_MEAS_AVG_ALGO_NONE; \
+	if ((TO)->TYPE.ave_enabled) { \
+		/* H_REQAVE and H_REQT */ \
+		(TO)->TYPE.h_reqave = (PARAMS)->TYPE##_meas.h_reqave & 0x1f; \
+		(TO)->TYPE.h_reqt = (PARAMS)->TYPE##_meas.h_reqt & 0x1f; \
+		/* Averaging method and parameters */ \
+		(TO)->TYPE.ave_method = ((PARAMS)->TYPE##_meas.algo - 1) & 0x07; \
+		switch ((PARAMS)->TYPE##_meas.algo) { \
+		case GSM_PWR_CTRL_MEAS_AVG_ALGO_OSMO_EWMA: \
+			msgb_v_put(msg, (PARAMS)->TYPE##_meas.ewma.alpha); \
+			break; \
+		case GSM_PWR_CTRL_MEAS_AVG_ALGO_WEIGHTED: \
+		case GSM_PWR_CTRL_MEAS_AVG_ALGO_MOD_MEDIAN: \
+			/* FIXME: unknown format */ \
+			break; \
+		case GSM_PWR_CTRL_MEAS_AVG_ALGO_UNWEIGHTED: \
+		case GSM_PWR_CTRL_MEAS_AVG_ALGO_NONE: \
+			/* No parameters here */ \
+			break; \
+		} \
+	} \
+	} while (0)
+	ENC_PROC(mp, ave_cfg, ci_fr);
+	ENC_PROC(mp, ave_cfg, ci_hr);
+	ENC_PROC(mp, ave_cfg, ci_amr_fr);
+	ENC_PROC(mp, ave_cfg, ci_amr_hr);
+	ENC_PROC(mp, ave_cfg, ci_sdcch);
+	ENC_PROC(mp, ave_cfg, ci_gprs);
+#undef ENC_PROC
+
+	/* Update length part of the containing IE */
+	*ie_len = msg->tail - (ie_len + 1);
+}
+
+/* Appends Osmocom specific extension IEs into RSL_IE_MS_POWER_PARAM */
+void osmobts_enc_power_params_osmo_ext(struct msgb *msg, const struct gsm_power_ctrl_params *cp)
+{
+	struct osmo_preproc_pc_thresh *osmo_thresh;
+	struct osmo_preproc_pc_comp *osmo_thresh_comp;
+	uint8_t *ie_len;
+
+	/* (TLV) Measurement Averaging Configure (C/I) */
+	enc_osmo_meas_proc_params(msg, cp);
+
+	/* (TLV) Thresholds (C/I) */
+	ie_len = msgb_tl_put(msg, RSL_IPAC_EIE_OSMO_MS_PWR_CTL);
+	osmo_thresh = (struct osmo_preproc_pc_thresh *) msgb_put(msg, sizeof(*osmo_thresh));
+	#define ENC_THRESH_CI(TYPE) \
+		osmo_thresh->l_##TYPE = cp->TYPE##_meas.lower_thresh; \
+		osmo_thresh->u_##TYPE = cp->TYPE##_meas.upper_thresh
+	ENC_THRESH_CI(ci_fr);
+	ENC_THRESH_CI(ci_hr);
+	ENC_THRESH_CI(ci_amr_fr);
+	ENC_THRESH_CI(ci_amr_hr);
+	ENC_THRESH_CI(ci_sdcch);
+	ENC_THRESH_CI(ci_gprs);
+	#undef ENC_THRESH_CI
+	/* Update length part of the containing IE */
+	*ie_len = msg->tail - (ie_len + 1);
+
+	/* (TLV) PC Threshold Comparators (C/I) */
+	ie_len = msgb_tl_put(msg, RSL_IPAC_EIE_OSMO_PC_THRESH_COMP);
+	osmo_thresh_comp = (struct osmo_preproc_pc_comp *) msgb_put(msg, sizeof(*osmo_thresh_comp));
+	#define ENC_THRESH_CI(TYPE) \
+		osmo_thresh_comp->TYPE.lower_p = cp->TYPE##_meas.lower_cmp_p & 0x1f; \
+		osmo_thresh_comp->TYPE.lower_n = cp->TYPE##_meas.lower_cmp_n & 0x1f; \
+		osmo_thresh_comp->TYPE.upper_p = cp->TYPE##_meas.upper_cmp_p & 0x1f; \
+		osmo_thresh_comp->TYPE.upper_n = cp->TYPE##_meas.upper_cmp_n & 0x1f
+	ENC_THRESH_CI(ci_fr);
+	ENC_THRESH_CI(ci_hr);
+	ENC_THRESH_CI(ci_amr_fr);
+	ENC_THRESH_CI(ci_amr_hr);
+	ENC_THRESH_CI(ci_sdcch);
+	ENC_THRESH_CI(ci_gprs);
+	#undef ENC_THRESH_CI
+	/* Update length part of the containing IE */
+	*ie_len = msg->tail - (ie_len + 1);
+}
+
 static int power_ctrl_set_c0_power_red(const struct gsm_bts *bts,
 				       const uint8_t red)
 {

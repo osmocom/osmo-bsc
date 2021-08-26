@@ -29,7 +29,9 @@ interface, this is further described in the next sections.
 
 So far only the ip.access specific format is implemented, so it should be possible
 to enable power control for nanoBTS.  OsmoBTS also accepts this format, but may
-ignore some of the received parameters due to incomplete implementation.
+ignore some of the received parameters due to incomplete implementation. On the
+other hand, OsmoBTS may support some extra parameters coming in Osmocom specific
+IEs not supported by nanoBTS, such as those configuring C/I measurement thresholds.
 
 ==== When the parameters come into effect?
 
@@ -92,12 +94,18 @@ OsmoBSC(config-ms-power-ctrl)# list with-flags
   . lv  step-size inc <2-6> red <2-4>
   . lv  rxlev-thresh lower <0-63> upper <0-63>
   . lv  rxqual-thresh lower <0-7> upper <0-7>
+  . lv  ci-thresh (fr-efr|hr|amr-fr|amr-hr|sdcch|gprs) lower <0-30> upper <0-30>
   . lv  rxlev-thresh-comp lower <0-31> <0-31> upper <0-31> <0-31>
   . lv  rxqual-thresh-comp lower <0-31> <0-31> upper <0-31> <0-31>
+  . lv  ci-thresh-comp (fr-efr|hr|amr-fr|amr-hr|sdcch|gprs) lower <0-31> <0-31> upper <0-31> <0-31>
   . lv  no (rxlev-avg|rxqual-avg)
   . lv  (rxlev-avg|rxqual-avg) params hreqave <1-31> hreqt <1-31>
   . lv  (rxlev-avg|rxqual-avg) algo (unweighted|weighted|mod-median)
   . lv  (rxlev-avg|rxqual-avg) algo osmo-ewma beta <1-99>
+  . lv  no ci-avg (fr-efr|hr|amr-fr|amr-hr|sdcch|gprs)
+  . lv  ci-avg (fr-efr|hr|amr-fr|amr-hr|sdcch|gprs) params hreqave <1-31> hreqt <1-31>
+  . lv  ci-avg (fr-efr|hr|amr-fr|amr-hr|sdcch|gprs) algo (unweighted|weighted|mod-median)
+  . lv  ci-avg (fr-efr|hr|amr-fr|amr-hr|sdcch|gprs) algo osmo-ewma beta <1-99>
 ----
 
 NOTE: Flag `v` indicates that a given parameter is vendor specific, so different
@@ -160,8 +168,9 @@ second Uplink SACCH block is skipped;  value 2 corresponds to the interval of
 ==== Power change step size
 
 In order to slow down the reactivity of the power control loop and thus make it more
-robust against sporadic fluctuations of the input values (RxLev and RxQual), the
-transmit power on both Uplink and Downlink is changed gradually, step by step.
+robust against sporadic fluctuations of the input values (RxLev and either
+RxQual or C/I), the transmit power on both Uplink and Downlink is changed
+gradually, step by step.
 
 OsmoBSC allows to configure the step sizes for both increasing and reducing directions
 separately.  The corresponding power control loop would apply different delta values
@@ -258,6 +267,43 @@ network
 <6> P3=5 out of  N3=7 averages > L_RXQUAL_XX_P => increase power.
 <7> P4=15 out of N4=18 averages < U_RXQUAL_XX_P => decrease power.
 
+==== Carrier-to-Interference (C/I) thresholds
+
+Carrier-to-Interference (C/I) provides a similar description of link quality to
+that provided by RxQual. However, C/I provides higher granularity than RxQual
+levels (0-7), hence providing the operator with a more refined way to set up
+targets levels and thresholds. C/I measurements can only be used for MS Power
+Control, since values are only available on the Uplink when computed by the BTS,
+and the MS doesn't provide figure for the Downlink to the BTS/BSC during
+measurement Reports.
+
+Usual C/I value range for MS uplink channels are between 0dB to 30dB, with 9dB
+being a usual average target around cell edges. Furthermore, publicly available
+studies conclude that different channel types with different codecs used have
+different target C/I where signal is considered good enough. This means MS using
+a given channel type with better codec capabilities can be instructed to
+transmit at lower levels, hence reducing noise or channel interference among MS.
+
+OsmoBTS MS Power Control Loop algorithm supports using C/I computed
+measurements. Related parameters can be configured similar to those of RxLev or
+RxQual (see previous section), with the main difference being that instead of
+having a global set of parameters, there's one set per channel type, hence
+allowing different parametrization based on the channel type in use by the MS.
+
+.Example: C/I threshold comparators for AMR-FR
+----
+network
+ bts 0
+  ms-power-control
+   mode dyn-bts <1>
+   ci-thresh amr-fr lower 7 upper 11 <2>
+   ci-thresh-comp amr-fr lower 2 10 <3> upper 3 4 <4>
+----
+<1> MS power control is to be performed by the BTS autonomously.
+<2> L_CI_AMR_FR_XX_P=7, U_CI_AMR_FR_XX_P=11.
+<3> P0=2 out of N1=10 averages < L_CI_AMR_FR_XX_P => increase power.
+<4> P1=3 out of N2=4 averages > U_CI_AMR_FR_XX_P => decrease power.
+
 ==== Measurement averaging process
 
 3GPP 45.008, section A.3.1 requires that the measurement values reported by both
@@ -270,7 +316,7 @@ corresponding power control loops in any of the following ways:
   (outliers) removed before the median calculation.
 
 The pre-processing is expected to be performed by both MS and BS power control
-loops independently, for every input parameter (i.e. RxLev and RxQual).
+loops independently, for every input parameter (i.e. RxLev, RxQual and C/I).
 
 ----
 OsmoBSC(config-bs-power-ctrl)# rxlev-avg algo ?
@@ -319,12 +365,16 @@ network
    rxlev-avg params hreqave 4 hreqt 6 <3>
    rxqual-avg algo osmo-ewma beta 50 <4>
    rxqual-avg params hreqave 2 hreqt 3 <5>
+   ci-avg amr-fr algo osmo-ewma beta 50 <6>
+   ci-avg amr-fr params hreqave 2 hreqt 3 <7>
 ----
 <1> Both MS and BS power control is to be performed by the BTS autonomously.
 <2> Unweighted average is applied to RxLev values.
 <3> RxLev: Hreqave and Hreqt values: 4 out of 6 SACCH blocks produce an averaged measurement.
 <4> Osmocom specific EWMA is applied to RxQual values with smoothing factor = 50% (beta=0.5).
 <5> RxQual: Hreqave and Hreqt values: 2 out of 3 SACCH blocks produce an averaged measurement.
+<6> Osmocom specific EWMA is applied to C/I values on AMR-FR channels with smoothing factor = 50% (beta=0.5).
+<7> C/I AMR-FR: Hreqave and Hreqt values: 2 out of 3 SACCH blocks produce an averaged measurement.
 
 // TODO: Document other power control parameters:
 //		OsmoBSC(config-net-bts)# ms max power <0-40>
