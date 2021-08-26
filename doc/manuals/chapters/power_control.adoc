@@ -139,7 +139,7 @@ attenuation (0 dB) is applied by default (full power).
 ==== Power control interval
 
 Having requested a transmit power level, the MS/BS power control loop may optionally
-by suspended for a certain number of SACCH multiframes defined by VTY parameter
+be suspended for a certain number of SACCH multiframes defined by VTY parameter
 `ctrl-interval`.  Given that SACCH is relatively slow and transmission of a data block
 takes 480 ms, suspension allows an observation of the effect of one power control
 decision before initiating the next one.
