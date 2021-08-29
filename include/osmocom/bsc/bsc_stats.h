@@ -21,6 +21,7 @@
 #include <osmocom/core/rate_ctr.h>
 
 struct osmo_stat_item_group_desc;
+struct gsm_network;
 
 /* OsmoBSC rate_ctr indexes */
 enum {
@@ -87,7 +88,11 @@ extern const struct rate_ctr_group_desc bsc_ctrg_desc;
 
 /* OsmoBSC stat_item indexes */
 enum {
+	BSC_STAT_NUM_BTS_OML_CONNECTED,
+	BSC_STAT_NUM_BTS_ALL_TRX_RSL_CONNECTED,
 	BSC_STAT_NUM_BTS_TOTAL,
+	BSC_STAT_NUM_TRX_RSL_CONNECTED,
+	BSC_STAT_NUM_TRX_TOTAL,
 	BSC_STAT_NUM_MSC_CONNECTED,
 	BSC_STAT_NUM_MSC_TOTAL,
 };
@@ -98,3 +103,5 @@ enum {
 #define BTS_STAT_IDX_UNKNOWN (UINT16_MAX + 1)
 
 extern const struct osmo_stat_item_group_desc bsc_statg_desc;
+
+void bsc_update_connection_stats(struct gsm_network *net);

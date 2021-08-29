@@ -123,7 +123,6 @@ DEFUN_ATTR(cfg_bts,
 		/* allocate a new one */
 		bts = bsc_bts_alloc_register(gsmnet, GSM_BTS_TYPE_UNKNOWN,
 					     HARDCODED_BSIC);
-		osmo_stat_item_inc(osmo_stat_item_group_get_item(gsmnet->bsc_statg, BSC_STAT_NUM_BTS_TOTAL), 1);
 	} else
 		bts = gsm_bts_num(gsmnet, bts_nr);
 

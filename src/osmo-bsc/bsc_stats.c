@@ -23,6 +23,9 @@
 #include <osmocom/core/stats.h>
 #include <osmocom/core/stat_item.h>
 
+#include <osmocom/bsc/gsm_data.h>
+#include <osmocom/bsc/bts.h>
+
 const struct rate_ctr_desc bsc_ctr_description[] = {
 	[BSC_CTR_ASSIGNMENT_ATTEMPTED] =	{"assignment:attempted", "Assignment attempts"},
 	[BSC_CTR_ASSIGNMENT_COMPLETED] =	{"assignment:completed", "Assignment completed"},
@@ -110,7 +113,11 @@ const struct rate_ctr_group_desc bsc_ctrg_desc = {
 };
 
 static const struct osmo_stat_item_desc bsc_stat_desc[] = {
+	[BSC_STAT_NUM_BTS_OML_CONNECTED] = { "num_bts:oml_connected", "Number of BTS for this BSC where OML is up", "", 16, 0 },
+	[BSC_STAT_NUM_BTS_ALL_TRX_RSL_CONNECTED] = { "num_bts:all_trx_rsl_connected", "Number of BTS for this BSC where RSL is up for all TRX", "", 16, 0 },
 	[BSC_STAT_NUM_BTS_TOTAL] = { "num_bts:total", "Number of configured BTS for this BSC", "", 16, 0 },
+	[BSC_STAT_NUM_TRX_RSL_CONNECTED] = { "num_trx:rsl_connected", "Number of TRX where RSL is up, total sum across all BTS", "", 16, 0 },
+	[BSC_STAT_NUM_TRX_TOTAL] = { "num_trx:total", "Number of configured TRX, total sum across all BTS", "", 1, 0 },
 	[BSC_STAT_NUM_MSC_CONNECTED] = { "num_msc:connected", "Number of actively connected MSCs", "", 16, 0 },
 	[BSC_STAT_NUM_MSC_TOTAL] = { "num_msc:total", "Number of configured MSCs, not necessarily connected", "", 1, 0 },
 };
@@ -122,3 +129,55 @@ const struct osmo_stat_item_group_desc bsc_statg_desc = {
 	.num_items = ARRAY_SIZE(bsc_stat_desc),
 	.item_desc = bsc_stat_desc,
 };
+
+/* Count all BTS and TRX OML and RSL stati and update stat items */
+void bsc_update_connection_stats(struct gsm_network *net)
+{
+	struct gsm_bts *bts;
+	struct gsm_bts_trx *trx;
+
+	/* Nr of configured BTS and total sum of configured TRX across all BTS */
+	int num_bts = 0;
+	int num_trx_total = 0;
+	/* Nr of BTS where OML is up */
+	int bts_oml_connected = 0;
+	/* Nr of TRX across all BTS where RSL is up */
+	int trx_rsl_connected_total = 0;
+	/* Nr of BTS that have all TRX RSL up */
+	int bts_rsl_all_trx_connected = 0;
+
+	llist_for_each_entry(bts, &net->bts_list, list) {
+		bool oml_connected = false;
+		int num_trx = 0;
+		int trx_rsl_connected = 0;
+
+		llist_for_each_entry(trx, &bts->trx_list, list) {
+			/* If any one trx is usable, it means OML for this BTS is connected */
+			if (trx_is_usable(trx))
+				oml_connected = true;
+
+			/* Count nr of TRX for this BTS */
+			num_trx++;
+			if (trx->ts[0].is_rsl_ready)
+				trx_rsl_connected++;
+		}
+
+		num_trx_total += num_trx;
+		trx_rsl_connected_total += trx_rsl_connected;
+
+		num_bts++;
+		if (oml_connected)
+			bts_oml_connected++;
+		if (trx_rsl_connected == num_trx)
+			bts_rsl_all_trx_connected++;
+	}
+
+	osmo_stat_item_set(osmo_stat_item_group_get_item(net->bsc_statg, BSC_STAT_NUM_BTS_OML_CONNECTED),
+			   bts_oml_connected);
+	osmo_stat_item_set(osmo_stat_item_group_get_item(net->bsc_statg, BSC_STAT_NUM_BTS_ALL_TRX_RSL_CONNECTED),
+			   bts_rsl_all_trx_connected);
+	osmo_stat_item_set(osmo_stat_item_group_get_item(net->bsc_statg, BSC_STAT_NUM_BTS_TOTAL), num_bts);
+	osmo_stat_item_set(osmo_stat_item_group_get_item(net->bsc_statg, BSC_STAT_NUM_TRX_RSL_CONNECTED),
+			   trx_rsl_connected_total);
+	osmo_stat_item_set(osmo_stat_item_group_get_item(net->bsc_statg, BSC_STAT_NUM_TRX_TOTAL), num_trx_total);
+}

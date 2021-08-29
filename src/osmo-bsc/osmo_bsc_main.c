@@ -380,6 +380,18 @@ static void all_ts_dispatch_event(struct gsm_bts_trx *trx, uint32_t event)
 	}
 }
 
+struct osmo_timer_list update_connection_stats_timer;
+
+/* Periodically call bsc_update_connection_stats() to keep stat items updated.
+ * It would be nicer to trigger this only when OML or RSL state is seen to flip. I tried hard to find all code paths
+ * that should call this and failed to get accurate results; this trivial timer covers all of them. */
+static void update_connection_stats_cb(void *data)
+{
+	bsc_update_connection_stats(bsc_gsmnet);
+	osmo_timer_setup(&update_connection_stats_timer, update_connection_stats_cb, NULL);
+	osmo_timer_schedule(&update_connection_stats_timer, 1, 0);
+}
+
 /* Callback function to be called every time we receive a signal from INPUT */
 static int inp_sig_cb(unsigned int subsys, unsigned int signal,
 		      void *handler_data, void *signal_data)
@@ -1057,6 +1069,8 @@ int main(int argc, char **argv)
 	signal(SIGUSR1, &signal_handler);
 	signal(SIGUSR2, &signal_handler);
 	osmo_init_ignore_signals();
+
+	update_connection_stats_cb(NULL);
 
 	if (daemonize) {
 		rc = osmo_daemonize();
