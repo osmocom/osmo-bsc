@@ -26,6 +26,7 @@
 #include <osmocom/bsc/gsm_08_08.h>
 #include <osmocom/bsc/codec_pref.h>
 #include <osmocom/bsc/lchan_fsm.h>
+#include <osmocom/bsc/bsc_stats.h>
 
 #include <osmocom/bsc/gsm_04_08_rr.h>
 #include <osmocom/bsc/a_reset.h>

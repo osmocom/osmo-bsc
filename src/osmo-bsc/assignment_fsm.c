@@ -36,6 +36,7 @@
 #include <osmocom/bsc/lchan_select.h>
 #include <osmocom/bsc/abis_rsl.h>
 #include <osmocom/bsc/bts.h>
+#include <osmocom/bsc/bsc_stats.h>
 
 #include <osmocom/bsc/assignment_fsm.h>
 

@@ -7,6 +7,7 @@ noinst_HEADERS = \
 	acc.h \
 	assignment_fsm.h \
 	bsc_rll.h \
+	bsc_stats.h \
 	bsc_subscriber.h \
 	bsc_subscr_conn_fsm.h \
 	bss.h \

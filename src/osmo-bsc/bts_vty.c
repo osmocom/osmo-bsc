@@ -49,6 +49,7 @@
 #include <osmocom/bsc/neighbor_ident.h>
 #include <osmocom/bsc/smscb.h>
 #include <osmocom/bsc/bts.h>
+#include <osmocom/bsc/bsc_stats.h>
 
 #include <inttypes.h>
 

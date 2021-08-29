@@ -38,6 +38,7 @@
 #include <osmocom/bsc/neighbor_ident.h>
 #include <osmocom/bsc/bts.h>
 #include <osmocom/bsc/lb.h>
+#include <osmocom/bsc/bsc_stats.h>
 
 #include <osmocom/bsc/smscb.h>
 #include <osmocom/gsm/protocol/gsm_48_049.h>
@@ -45,18 +46,6 @@
 #include <time.h>
 #include <limits.h>
 #include <stdbool.h>
-
-static const struct osmo_stat_item_desc bsc_stat_desc[] = {
-	[BSC_STAT_NUM_BTS_TOTAL] = { "num_bts:total", "Number of configured BTS for this BSC", "", 16, 0 },
-};
-
-static const struct osmo_stat_item_group_desc bsc_statg_desc = {
-	.group_name_prefix = "bsc",
-	.group_description = "base station controller",
-	.class_id = OSMO_STATS_CLASS_GLOBAL,
-	.num_items = ARRAY_SIZE(bsc_stat_desc),
-	.item_desc = bsc_stat_desc,
-};
 
 int bsc_shutdown_net(struct gsm_network *net)
 {

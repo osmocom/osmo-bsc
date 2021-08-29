@@ -45,6 +45,7 @@
 #include <osmocom/bsc/gsm_08_08.h>
 #include <osmocom/bsc/bts.h>
 #include <osmocom/bsc/lcs_loc_req.h>
+#include <osmocom/bsc/bsc_stats.h>
 
 #define LOG_FMT_BTS "bts %u lac-ci %u-%u arfcn-bsic %d-%d"
 #define LOG_ARGS_BTS(bts) \

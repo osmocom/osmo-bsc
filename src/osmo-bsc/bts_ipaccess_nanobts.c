@@ -51,6 +51,7 @@
 #include <osmocom/bsc/bts.h>
 #include <osmocom/bsc/bts_sm.h>
 #include <osmocom/bsc/nm_common_fsm.h>
+#include <osmocom/bsc/bsc_stats.h>
 
 static int bts_model_nanobts_start(struct gsm_network *net);
 static void bts_model_nanobts_e1line_bind_ops(struct e1inp_line *line);
