@@ -1027,6 +1027,9 @@ static void dispatch_dtap(struct gsm_subscriber_connection *conn,
 		case GSM48_MT_RR_CLSM_CHG:
 			handle_classmark_chg(conn, msg);
 			break;
+		case GSM48_MT_RR_UTRAN_CLSM_CHG:
+			/* TODO: forward to the MSC? */
+			break;
 		case GSM48_MT_RR_APP_INFO:
 			/* Passing RR APP INFO to MSC, not quite
 			 * according to spec */
