@@ -1588,47 +1588,25 @@ static int lchan_act_single(struct vty *vty, struct gsm_lchan *lchan, const char
 		/* configure the lchan */
 		lchan_select_set_type(lchan, lchan_t);
 		if (!strcmp(codec_str, "hr") || !strcmp(codec_str, "fr")) {
-			info = (struct lchan_activate_info) {
-				.activ_for = ACTIVATE_FOR_VTY,
-				.ch_mode_rate = {
-					.chan_mode = GSM48_CMODE_SPEECH_V1,
-				},
-				.requires_voice_stream = false,
-			};
+			info.ch_mode_rate.chan_mode = GSM48_CMODE_SPEECH_V1;
 		} else if (!strcmp(codec_str, "efr")) {
-			info = (struct lchan_activate_info) {
-				.activ_for = ACTIVATE_FOR_VTY,
-				.ch_mode_rate = {
-					.chan_mode = GSM48_CMODE_SPEECH_EFR,
-				},
-				.requires_voice_stream = false,
-			};
+			info.ch_mode_rate.chan_mode = GSM48_CMODE_SPEECH_EFR;
 		} else if (!strcmp(codec_str, "amr")) {
 			if (amr_mode == -1) {
 				vty_out(vty, "%% AMR requires specification of AMR mode%s", VTY_NEWLINE);
 				return CMD_WARNING;
 			}
-			info = (struct lchan_activate_info) {
-				.activ_for = ACTIVATE_FOR_VTY,
-				.ch_mode_rate = {
-					.chan_mode = GSM48_CMODE_SPEECH_AMR,
-					.s15_s0 = amr_modes[amr_mode],
-				},
-				.requires_voice_stream = false,
-			};
+			info.ch_mode_rate.chan_mode = GSM48_CMODE_SPEECH_AMR;
+			info.ch_mode_rate.s15_s0 = amr_modes[amr_mode];
 		} else if (!strcmp(codec_str, "sig")) {
-			info = (struct lchan_activate_info) {
-				.activ_for = ACTIVATE_FOR_VTY,
-				.ch_mode_rate = {
-					.chan_mode = GSM48_CMODE_SIGN,
-				},
-				.requires_voice_stream = false,
-			};
+			info.ch_mode_rate.chan_mode = GSM48_CMODE_SIGN;
 		} else {
 			vty_out(vty, "%% Invalid channel mode specified!%s", VTY_NEWLINE);
 			return CMD_WARNING;
 		}
 
+		info.activ_for = ACTIVATE_FOR_VTY;
+		info.requires_voice_stream = false;
 		info.ch_mode_rate.chan_rate = chan_t_to_chan_rate(lchan_t);
 
 		if (activate == 2 || lchan->vamos.is_secondary) {
