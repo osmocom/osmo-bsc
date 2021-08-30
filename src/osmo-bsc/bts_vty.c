@@ -747,6 +747,41 @@ DEFUN_USRATTR(cfg_bts_rep_rxqual,
 	return CMD_SUCCESS;
 }
 
+#define TOP_ACCH_STR "Temporary ACCH overpower\n"
+
+DEFUN_USRATTR(cfg_bts_top_dl_acch,
+	      cfg_bts_top_dl_acch_cmd,
+	      X(BSC_VTY_ATTR_NEW_LCHAN),
+	      "overpower dl-acch <1-4>",
+	      TOP_ACCH_STR
+	      "Enable ACCH overpower for this BTS\n"
+	      "overpower value in dB\n")
+{
+	struct gsm_bts *bts = vty->index;
+
+	if (bts->model->type != GSM_BTS_TYPE_OSMOBTS) {
+		vty_out(vty, "%% repeated ACCH not supported by BTS %u%s",
+			bts->nr, VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+        bts->temporary_overpower.overpower_db = atoi(argv[0]);
+	return CMD_SUCCESS;
+}
+
+DEFUN_USRATTR(cfg_bts_top_no_dl_acch,
+	      cfg_bts_top_no_dl_acch_cmd,
+	      X(BSC_VTY_ATTR_NEW_LCHAN),
+	      "no overpower dl-acch",
+	      NO_STR TOP_ACCH_STR
+	      "Disable ACCH overpower for this BTS\n")
+{
+	struct gsm_bts *bts = vty->index;
+
+	bts->temporary_overpower.overpower_db = 0;
+
+	return CMD_SUCCESS;
+}
 
 #define CD_STR "Channel Description\n"
 
@@ -3967,6 +4002,9 @@ static void config_write_bts_single(struct vty *vty, struct gsm_bts *bts)
 
 	ho_vty_write_bts(vty, bts);
 
+	if (bts->temporary_overpower.overpower_db > 0)
+		vty_out(vty, "  overpower dl-acch %u%s", bts->temporary_overpower.overpower_db, VTY_NEWLINE);
+
 	if (bts->repeated_acch_policy.dl_facch_all)
 		vty_out(vty, "  repeat dl-facch all%s", VTY_NEWLINE);
 	else if (bts->repeated_acch_policy.dl_facch_cmd)
@@ -4182,6 +4220,8 @@ int bts_vty_init(void)
 	install_element(BTS_NODE, &cfg_bts_rep_ul_dl_sacch_cmd);
 	install_element(BTS_NODE, &cfg_bts_rep_no_ul_dl_sacch_cmd);
 	install_element(BTS_NODE, &cfg_bts_rep_rxqual_cmd);
+	install_element(BTS_NODE, &cfg_bts_top_dl_acch_cmd);
+	install_element(BTS_NODE, &cfg_bts_top_no_dl_acch_cmd);
 	install_element(BTS_NODE, &cfg_bts_interf_meas_avg_period_cmd);
 	install_element(BTS_NODE, &cfg_bts_interf_meas_level_bounds_cmd);
 	install_element(BTS_NODE, &cfg_bts_srvcc_fast_return_cmd);

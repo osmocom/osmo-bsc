@@ -549,6 +549,11 @@ struct gsm_bts {
 	 * enable/disable certain ACCH repeation features individually */
 	struct abis_rsl_osmo_rep_acch_cap repeated_acch_policy;
 
+	/* osmocom specific FACCH/SACCH temporary overpower value. This value
+	 * is set to a constant value by the VTY. Temporary overpower is only
+	 * applied when FACCH/SACCH repetition is not applicable or disabled */
+	struct abis_rsl_osmo_temp_ovp_acch_cap temporary_overpower;
+
 	/* MS/BS Power Control parameters */
 	struct gsm_power_ctrl_params ms_power_ctrl;
 	struct gsm_power_ctrl_params bs_power_ctrl;
