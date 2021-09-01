@@ -3086,7 +3086,7 @@ DEFUN_USRATTR(cfg_power_ctrl_rxlev_thresh_comp,
 
 	if (upper_cmp_p > upper_cmp_n) {
 		vty_out(vty, "%% Upper RxLev P2 %d must be less than N2 %d%s",
-			lower_cmp_p, lower_cmp_n, VTY_NEWLINE);
+			upper_cmp_p, upper_cmp_n, VTY_NEWLINE);
 		return CMD_WARNING;
 	}
 
@@ -3121,7 +3121,7 @@ DEFUN_USRATTR(cfg_power_ctrl_rxqual_thresh_comp,
 
 	if (upper_cmp_p > upper_cmp_n) {
 		vty_out(vty, "%% Upper RxQual P4 %d must be less than N4 %d%s",
-			lower_cmp_p, lower_cmp_n, VTY_NEWLINE);
+			upper_cmp_p, upper_cmp_n, VTY_NEWLINE);
 		return CMD_WARNING;
 	}
 
