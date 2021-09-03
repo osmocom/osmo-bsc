@@ -165,6 +165,10 @@ int osmo_bsc_msc_init(struct bsc_msc_data *msc)
 	uint16_t mgw_port;
 	int rc;
 
+	/* Everything below refers to SCCP-Lite MSC connections only. */
+	if (msc_is_aoip(msc))
+		return 0;
+
 	if (net->mgw.conf->remote_port >= 0)
 		mgw_port = net->mgw.conf->remote_port;
 	else
