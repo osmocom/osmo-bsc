@@ -245,16 +245,18 @@ network
  bts 0
   bs-power-control
    mode dyn-bts <1>
-   rxlev-thresh lower 32 upper 38
-   rxlev-thresh-comp lower 10 12 <2> upper 19 20 <3>
-   rxqual-thresh lower 3 upper 0
-   rxqual-thresh-comp lower 5 7 <4> upper 15 18 <5>
+   rxlev-thresh lower 32 upper 38 <2>
+   rxlev-thresh-comp lower 10 12 <3> upper 19 20 <4>
+   rxqual-thresh lower 3 upper 0 <5>
+   rxqual-thresh-comp lower 5 7 <6> upper 15 18 <7>
 ----
 <1> BS power control is to be performed by the BTS autonomously.
-<2> P1=10 out of N1=12 averages < L_RXLEV_XX_P => increase power.
-<3> P2=19 out of N2=20 averages > U_RXLEV_XX_P => decrease power.
-<4>  P3=5 out of  N3=7 averages > L_RXQUAL_XX_P => increase power.
-<5> P4=15 out of N4=18 averages < U_RXQUAL_XX_P => decrease power.
+<2> L_RXLEV_XX_P=32, U_RXLEV_XX_P=38.
+<3> P1=10 out of N1=12 averages < L_RXLEV_XX_P => increase power.
+<4> P2=19 out of N2=20 averages > U_RXLEV_XX_P => decrease power.
+<5> L_RXQUAL_XX_P=3, U_RXQAUL_XX_P=0.
+<6> P3=5 out of  N3=7 averages > L_RXQUAL_XX_P => increase power.
+<7> P4=15 out of N4=18 averages < U_RXQUAL_XX_P => decrease power.
 
 ==== Measurement averaging process
 
