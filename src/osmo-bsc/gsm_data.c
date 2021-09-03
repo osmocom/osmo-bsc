@@ -1173,11 +1173,11 @@ const struct gsm_power_ctrl_params power_ctrl_params_def = {
 		.upper_thresh = 0, /* U_RXQUAL_XX_P (BER < 0.2%) */
 
 		/* Increase {UL,DL}_TXPWR if at least LOWER_CMP_P averages
-		 * out of LOWER_CMP_N averages are lower than L_RXLEV_XX_P */
+		 * out of LOWER_CMP_N averages are lower than L_RXQUAL_XX_P */
 		.lower_cmp_p = 5, /* P3 as in 3GPP TS 45.008, A.3.2.1 (case c) */
 		.lower_cmp_n = 7, /* N3 as in 3GPP TS 45.008, A.3.2.1 (case c) */
 		/* Decrease {UL,DL}_TXPWR if at least UPPER_CMP_P averages
-		 * out of UPPER_CMP_N averages are greater than L_RXLEV_XX_P */
+		 * out of UPPER_CMP_N averages are greater than L_RXQUAL_XX_P */
 		.upper_cmp_p = 15, /* P4 as in 3GPP TS 45.008, A.3.2.1 (case d) */
 		.upper_cmp_n = 18, /* N4 as in 3GPP TS 45.008, A.3.2.1 (case d) */
 
