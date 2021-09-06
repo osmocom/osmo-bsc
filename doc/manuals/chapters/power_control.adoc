@@ -163,7 +163,22 @@ Setting `ctrl-interval` to 1 increases the interval to 960 ms, so basically ever
 second Uplink SACCH block is skipped;  value 2 corresponds to the interval of
 1920 ms, so 3/4 received SACCH blocks are skipped.
 
-3GPP TS 45.008 briefly mentiones this parameter in table A.1 (P_Con_INTERVAL).
+3GPP TS 45.008 briefly mentions this parameter in table A.1 (P_Con_INTERVAL).
+
+A small time graph is depicted below for better understanding of the meaning of
+values for this parameter, since it is not obvious at all.
+
+.Example: Suspension interval accomplished by several values of P_CON_INTERVAL
+----
+|<-->| - one SACCH multi-frame period
+|    |
+|----|----|----|----|----|----|----|----|----> SACCH multi-frames
+a) *    *    *    *    *    *    *    *    *      P_CON_INTERVAL=0 (0.48 s, default)
+b) *         *         *         *         *      P_CON_INTERVAL=1 (0.96 s)
+c) *                   *                   *      P_CON_INTERVAL=2 (1.92 s)
+d) *                             *                P_CON_INTERVAL=3 (2.88 s)
+e) *                                       *      P_CON_INTERVAL=4 (3.84 s)
+----
 
 ==== Power change step size
 
