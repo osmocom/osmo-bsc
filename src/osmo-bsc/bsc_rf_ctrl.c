@@ -124,6 +124,82 @@ enum osmo_bsc_rf_policy osmo_bsc_rf_get_policy_by_bts(struct gsm_bts *bts)
 	}
 }
 
+enum osmo_bsc_rf_opstate osmo_bsc_rf_get_opstate_by_trx(struct gsm_bts_trx *trx)
+{
+	if (trx->mo.nm_state.operational == NM_OPSTATE_ENABLED)
+		return OSMO_BSC_RF_OPSTATE_OPERATIONAL;
+	return OSMO_BSC_RF_OPSTATE_INOPERATIONAL;
+}
+
+enum osmo_bsc_rf_adminstate osmo_bsc_rf_get_adminstate_by_trx(struct gsm_bts_trx *trx)
+{
+	if (trx->mo.nm_state.administrative == NM_STATE_UNLOCKED)
+		return OSMO_BSC_RF_ADMINSTATE_UNLOCKED;
+	return OSMO_BSC_RF_ADMINSTATE_LOCKED;
+}
+
+/* Return a string listing the state of the given TRX.
+ * The string has the form:
+ *  <bts_nr>,<trx_nr>,<opstate>,<adminstate>,<rf_policy>,<rsl_status>;
+ */
+static int bsc_rf_state_of_trx_buf(char *buf, size_t buflen, struct gsm_bts_trx *trx)
+{
+	struct osmo_strbuf sb = { .buf = buf, .len = buflen };
+	OSMO_STRBUF_PRINTF(sb, "%u,%u,%s,%s,%s,%s;",
+			   trx->bts->nr, trx->nr,
+			   osmo_bsc_rf_get_opstate_name(osmo_bsc_rf_get_opstate_by_trx(trx)),
+			   osmo_bsc_rf_get_adminstate_name(osmo_bsc_rf_get_adminstate_by_trx(trx)),
+			   osmo_bsc_rf_get_policy_name(osmo_bsc_rf_get_policy_by_bts(trx->bts)),
+			   trx->rsl_link_primary ? "rsl-up" : "rsl-down");
+	return sb.chars_needed;
+}
+
+static int bsc_rf_states_of_bts_buf(char *buf, size_t buflen, struct gsm_bts *bts)
+{
+	struct gsm_bts_trx *trx;
+	struct osmo_strbuf sb = { .buf = buf, .len = buflen };
+
+	llist_for_each_entry(trx, &bts->trx_list, list) {
+		OSMO_STRBUF_APPEND(sb, bsc_rf_state_of_trx_buf, trx);
+	}
+	return sb.chars_needed;
+}
+
+/* Return a string listing the states of each TRX for the given BTS.
+ * The string has the form:
+ * <bts_nr>,<trx_nr>,<opstate>,<adminstate>,<rf_policy>,<rsl_status>;<bts_nr>,<trx_nr>,...;...;
+ * \param ctx  Talloc context to allocate the returned string from.
+ * \param bts  BTS of which to list the TRX states.
+ * \return talloc allocated string.
+ */
+char *bsc_rf_states_of_bts_c(void *ctx, struct gsm_bts *bts)
+{
+	OSMO_NAME_C_IMPL(ctx, 256, "ERROR", bsc_rf_states_of_bts_buf, bts);
+}
+
+static int bsc_rf_states_buf(char *buf, size_t buflen)
+{
+	struct gsm_bts *bts;
+	struct osmo_strbuf sb = { .buf = buf, .len = buflen };
+
+	llist_for_each_entry(bts, &bsc_gsmnet->bts_list, list) {
+		OSMO_STRBUF_APPEND(sb, bsc_rf_states_of_bts_buf, bts);
+	}
+	return sb.chars_needed;
+}
+
+/* Return a string listing the states of all TRX of all BTS.
+ * The string has the form:
+ * <bts_nr>,<trx_nr>,<opstate>,<adminstate>,<rf_policy>,<rsl_status>;<bts_nr>,<trx_nr>,...;...;
+ * \param ctx  Talloc context to allocate the returned string from.
+ * \param bts  BTS of which to list the TRX states, or NULL to list all TRX of all BTS.
+ * \return talloc allocated string.
+ */
+char *bsc_rf_states_c(void *ctx)
+{
+	OSMO_NAME_C_IMPL(ctx, 4096, "ERROR", bsc_rf_states_buf);
+}
+
 static int lock_each_trx(struct gsm_network *net, bool lock)
 {
 	struct gsm_bts *bts;

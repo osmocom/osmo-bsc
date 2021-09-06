@@ -60,7 +60,12 @@ const char *osmo_bsc_rf_get_policy_name(enum osmo_bsc_rf_policy policy);
 enum osmo_bsc_rf_opstate osmo_bsc_rf_get_opstate_by_bts(struct gsm_bts *bts);
 enum osmo_bsc_rf_adminstate osmo_bsc_rf_get_adminstate_by_bts(struct gsm_bts *bts);
 enum osmo_bsc_rf_policy osmo_bsc_rf_get_policy_by_bts(struct gsm_bts *bts);
+enum osmo_bsc_rf_opstate osmo_bsc_rf_get_opstate_by_trx(struct gsm_bts_trx *trx);
+enum osmo_bsc_rf_adminstate osmo_bsc_rf_get_adminstate_by_trx(struct gsm_bts_trx *trx);
 struct osmo_bsc_rf *osmo_bsc_rf_create(const char *path, struct gsm_network *net);
 void osmo_bsc_rf_schedule_lock(struct osmo_bsc_rf *rf, char cmd);
+
+char *bsc_rf_states_of_bts_c(void *ctx, struct gsm_bts *bts);
+char *bsc_rf_states_c(void *ctx);
 
 #endif

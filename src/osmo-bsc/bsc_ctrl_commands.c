@@ -420,6 +420,42 @@ static int get_bts_rf_state(struct ctrl_cmd *cmd, void *data)
 }
 CTRL_CMD_DEFINE_RO(bts_rf_state, "rf_state");
 
+/* Return a list of the states of each TRX for a given BTS:
+ * <bts_nr>,<trx_nr>,<opstate>,<adminstate>,<rf_policy>;<bts_nr>,<trx_nr>,...
+ */
+static int get_bts_rf_states(struct ctrl_cmd *cmd, void *data)
+{
+	struct gsm_bts *bts = cmd->node;
+
+	if (!bts) {
+		cmd->reply = "bts not found.";
+		return CTRL_CMD_ERROR;
+	}
+
+	cmd->reply = bsc_rf_states_of_bts_c(cmd, bts);
+	if (!cmd->reply) {
+		cmd->reply = "OOM.";
+		return CTRL_CMD_ERROR;
+	}
+
+	return CTRL_CMD_REPLY;
+}
+CTRL_CMD_DEFINE_RO(bts_rf_states, "rf_states");
+
+/* Return a list of the states of each TRX for all BTS:
+ * <bts_nr>,<trx_nr>,<opstate>,<adminstate>,<rf_policy>;<bts_nr>,<trx_nr>,...
+ */
+static int get_net_rf_states(struct ctrl_cmd *cmd, void *data)
+{
+	cmd->reply = bsc_rf_states_c(cmd);
+	if (!cmd->reply) {
+		cmd->reply = "OOM.";
+		return CTRL_CMD_ERROR;
+	}
+	return CTRL_CMD_REPLY;
+}
+CTRL_CMD_DEFINE_RO(net_rf_states, "rf_states");
+
 static int get_net_rf_lock(struct ctrl_cmd *cmd, void *data)
 {
 	struct gsm_network *net = cmd->node;
@@ -609,6 +645,7 @@ int bsc_base_ctrl_cmds_install(void)
 	rc |= ctrl_cmd_install(CTRL_NODE_ROOT, &cmd_net_mcc_mnc_apply);
 	rc |= ctrl_cmd_install(CTRL_NODE_ROOT, &cmd_net_rf_lock);
 	rc |= ctrl_cmd_install(CTRL_NODE_ROOT, &cmd_net_bts_num);
+	rc |= ctrl_cmd_install(CTRL_NODE_ROOT, &cmd_net_rf_states);
 
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_lac);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_ci);
@@ -619,6 +656,7 @@ int bsc_base_ctrl_cmds_install(void)
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_oml_up);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_gprs_mode);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_rf_state);
+	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_rf_states);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_c0_power_red);
 
 	rc |= ctrl_cmd_install(CTRL_NODE_TRX, &cmd_trx_max_power);
