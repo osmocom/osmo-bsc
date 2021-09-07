@@ -32,6 +32,7 @@
 #include <osmocom/bsc/debug.h>
 #include <osmocom/bsc/bts.h>
 #include <osmocom/bsc/pcuif_proto.h>
+#include <osmocom/bsc/neighbor_ident.h>
 
 #define OM_HEADROOM_SIZE	128
 
@@ -40,7 +41,6 @@
 ///////////////////////////////////////
 #define PCUIF_HDR_SIZE ( sizeof(struct gsm_pcu_if) - sizeof(((struct gsm_pcu_if *)0)->u) )
 
-#if 0
 static struct msgb *abis_osmo_pcu_msgb_alloc(uint8_t msg_type, uint8_t bts_nr, size_t extra_size)
 {
 	struct msgb *msg;
@@ -62,7 +62,65 @@ static int abis_osmo_pcu_sendmsg(struct gsm_bts *bts, struct msgb *msg)
 	ipa_prepend_header_ext(msg, IPAC_PROTO_EXT_PCU);
 	return abis_osmo_sendmsg(bts, msg);
 }
-#endif
+
+static int abis_osmo_pcu_tx_neigh_addr_cnf(struct gsm_bts *bts, const struct gsm_pcu_if_neigh_addr_req *naddr_req,
+				    uint8_t err_code, const struct osmo_cell_global_id_ps *cgi_ps)
+{
+	struct msgb *msg = abis_osmo_pcu_msgb_alloc(PCU_IF_MSG_CONTAINER, bts->bts_nr, sizeof(struct gsm_pcu_if_neigh_addr_cnf));
+	struct gsm_pcu_if *pcu_prim = (struct gsm_pcu_if *) msgb_data(msg);
+	struct gsm_pcu_if_neigh_addr_cnf *naddr_cnf = (struct gsm_pcu_if_neigh_addr_cnf *)&pcu_prim->u.container.data[0];
+
+	msgb_put(msg, sizeof(pcu_prim->u.container) + sizeof(struct gsm_pcu_if_neigh_addr_cnf));
+	pcu_prim->u.container.msg_type = PCU_IF_MSG_NEIGH_ADDR_CNF;
+	osmo_store16be(sizeof(struct gsm_pcu_if_neigh_addr_cnf), &pcu_prim->u.container.length);
+
+	naddr_cnf->orig_req = *naddr_req;
+	naddr_cnf->err_code = err_code;
+	if (err_code == 0) {
+		osmo_store16be(cgi_ps->rai.lac.plmn.mcc, &naddr_cnf->cgi_ps.mcc);
+		osmo_store16be(cgi_ps->rai.lac.plmn.mnc, &naddr_cnf->cgi_ps.mnc);
+		naddr_cnf->cgi_ps.mnc_3_digits = cgi_ps->rai.lac.plmn.mnc_3_digits;
+		osmo_store16be(cgi_ps->rai.lac.lac, &naddr_cnf->cgi_ps.lac);
+		naddr_cnf->cgi_ps.rac = cgi_ps->rai.rac;
+		osmo_store16be(cgi_ps->cell_identity, &naddr_cnf->cgi_ps.cell_identity);
+	}
+
+	return abis_osmo_pcu_sendmsg(bts, msg);
+}
+
+static int rcvmsg_pcu_neigh_addr_req(struct gsm_bts *bts, const struct gsm_pcu_if_neigh_addr_req *naddr_req)
+{
+
+	struct cell_ab ab;
+	uint16_t local_lac, local_ci;
+	struct osmo_cell_global_id_ps cgi_ps;
+	int rc;
+
+	local_lac = osmo_load16be(&naddr_req->local_lac);
+	local_ci = osmo_load16be(&naddr_req->local_ci);
+	ab = (struct cell_ab){
+		.arfcn = osmo_load16be(&naddr_req->tgt_arfcn),
+		.bsic = naddr_req->tgt_bsic,
+	};
+
+	LOGP(DNM, LOGL_INFO, "(bts=%d) Rx Neighbor Address Resolution Req (ARFCN=%u,BSIC=%u) from (LAC=%u,CI=%u)\n",
+	     bts->nr, ab.arfcn, ab.bsic, local_lac, local_ci);
+
+	if (!cell_ab_valid(&ab)) {
+		rc = 2;
+		goto do_fail;
+	}
+
+	if (neighbor_address_resolution(bts->network, &ab, local_lac, local_ci, &cgi_ps) < 0) {
+		rc = 1;
+		goto do_fail;
+	}
+	return abis_osmo_pcu_tx_neigh_addr_cnf(bts, naddr_req, 0, &cgi_ps);
+
+do_fail:
+	return abis_osmo_pcu_tx_neigh_addr_cnf(bts, naddr_req, rc, NULL);
+}
+
 
 static int rcvmsg_pcu_container(struct gsm_bts *bts, struct gsm_pcu_if_container *container, size_t container_len)
 {
@@ -79,6 +137,13 @@ static int rcvmsg_pcu_container(struct gsm_bts *bts, struct gsm_pcu_if_container
 	     bts->nr, container->msg_type);
 
 	switch (container->msg_type) {
+	case PCU_IF_MSG_NEIGH_ADDR_REQ:
+		if (data_length < sizeof(struct gsm_pcu_if_neigh_addr_req)) {
+			LOGP(DNM, LOGL_ERROR, "ABIS_OSMO_PCU CONTAINER ANR_CNF message too short\n");
+			return -EINVAL;
+		}
+		rc = rcvmsg_pcu_neigh_addr_req(bts, (struct gsm_pcu_if_neigh_addr_req *)&container->data);
+		break;
 	default:
 		LOGP(DNM, LOGL_NOTICE, "(bts=%d) Rx ABIS_OSMO_PCU unexpected msg type (%u) inside container!\n",
 		     bts->nr, container->msg_type);

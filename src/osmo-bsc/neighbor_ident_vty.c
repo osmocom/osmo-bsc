@@ -481,6 +481,10 @@ DEFUN(cfg_neighbor_bind, cfg_neighbor_bind_cmd,
 	NEIGHBOR_DOC "Bind Neighbor Resolution Service (CTRL interface) to given ip and port\n"
 	IP_STR IPV6_STR "Port to bind the service to [defaults to 4248 if not provided]\n")
 {
+	vty_out(vty, "%% Warning: The CTRL interface for Neighbor Address Resolution is now deprecated."
+		"Upgrade osmo-pcu and drop the 'neighbor-resolution bind " VTY_IPV46_CMD " [<0-65535>]' VTY "
+		"option in order to let osmo-pcu use the new resoluton method using the PCUIF over IPA "
+		"multiplex, which will work out of the box without required configuration.%s", VTY_NEWLINE);
 	osmo_talloc_replace_string(bsc_gsmnet, &bsc_gsmnet->neigh_ctrl.addr, argv[0]);
 	if (argc > 1)
 		bsc_gsmnet->neigh_ctrl.port = atoi(argv[1]);

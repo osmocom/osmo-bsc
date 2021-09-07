@@ -747,19 +747,41 @@ network
 This PS information is solely used by the Neighbor Resolution Service, aimed at
 nodes other than BSC itself, and described below.
 
-=== Neighbor Resolution Service CTRL interface
+=== Neighbor Address Resolution Service
 
-This service is provided in order to provide the PCU a way to translate
+This service is provided in order to provide the PCU with a way to translate
 ARCFCN+BSIC into CGI-PS in order to use RIM services and accomplish PS
 Handovers.
 
 This interface is Osmocom specific, since the standard doesn't provide any
 specifications on how to provide this kind of information to the PCU.
 
-Since the PCU can be either BSC-colocated or BTS-colocated (hence on a different
-host than BSC), this must be a network-based interface. Since the service is
-Osmocom-specific, it was decided to re-use the CTRL interface available in most
-Osmocom processes (see <<control>>).
+Since the PCU can be either BSC co-located or BTS co-located (hence on a
+different host than BSC), messages may need to be sent over the network at some
+point.
+
+In consequence, it was decided implement a new _Container_ type message in
+PCUIF which the PCU can use to directly communicate with the BSC. If the PCU is
+BSC co-located, then the BSC can directly communicate over the unix socket. If
+the PCU is BTS co-located, then PCU sends PCUIF messages over the unix socket to
+the BTS, and the BTS forwards the PCUIF messages transparently over the the IPA
+multiplex of the OML connection towards the BSC and back.
+
+Support for this interface is available by default nowadays in OsmoPCU, OsmoBTS
+and OsmoBSC, and requires no specific configuration, it will just work out of
+the box.
+
+==== Neighbor Address Resolution Service CTRL interface (deprecated)
+
+Before the existence of the PCUIF forwarded over IPA multiplex interface (see
+above), the Neighbor Address Resolution Service was implemented by means of a
+CTRL interface, similar to the one used in most Osmocom processes (see
+<<control>>).
+
+CAUTION: This interface is nowadays considered deprecated and should not be used
+anymore. Any related VTY options should be dropped from configuration files, to
+let OsmoPCU use the new interface instead. This section is kept here for a while
+as a reference for old deployments using old versions of the programs.
 
 Due to security concerns, the set of CTRL commands available in this
 service is configured in a different IP address and port, since the service

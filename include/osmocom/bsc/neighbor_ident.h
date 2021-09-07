@@ -86,6 +86,10 @@ int neighbors_check_cfg();
 	"for all BSICs / use any BSIC in this ARFCN\n"
 void neighbor_ident_vty_parse_arfcn_bsic(struct cell_ab *ab, const char **argv);
 
+int neighbor_address_resolution(const struct gsm_network *net, const struct cell_ab *ab,
+				uint16_t lac, uint16_t cell_id,
+				struct osmo_cell_global_id_ps *res_cgi_ps);
+
 struct ctrl_handle *neighbor_controlif_setup(struct gsm_network *net);
 int neighbor_ctrl_cmds_install(struct gsm_network *net);
 

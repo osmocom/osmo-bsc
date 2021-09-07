@@ -26,6 +26,10 @@
 #define PCU_IF_MSG_TXT_IND	0x70	/* Text indication for BTS */
 #define PCU_IF_MSG_CONTAINER	0x80	/* Transparent container message */
 
+/* msg_type coming from BSC (inside PCU_IF_MSG_CONTAINER) */
+#define PCU_IF_MSG_NEIGH_ADDR_REQ	0x81	/* Neighbor Address Resolution Request */
+#define PCU_IF_MSG_NEIGH_ADDR_CNF	0x82	/* Neighbor Address Resolution Confirmation */
+
 /* sapi */
 #define PCU_IF_SAPI_RACH	0x01	/* channel request on CCCH */
 #define PCU_IF_SAPI_AGCH	0x02	/* assignment on AGCH */
@@ -224,6 +228,30 @@ struct gsm_pcu_if_container {
 	uint8_t 	spare;
 	uint16_t	length; /* network byte order */
 	uint8_t		data[0];
+} __attribute__ ((packed));
+
+/*** Used inside container: NOTE: values must be network byte order here! ***/
+/* Neighbor Address Resolution Request */
+struct gsm_pcu_if_neigh_addr_req {
+	uint16_t	local_lac;
+	uint16_t	local_ci;
+	uint16_t	tgt_arfcn;
+	uint8_t		tgt_bsic;
+} __attribute__ ((packed));
+
+/* Neighbor Address Resolution Confirmation */
+struct gsm_pcu_if_neigh_addr_cnf {
+	struct gsm_pcu_if_neigh_addr_req orig_req;
+	uint8_t		err_code; /* 0 success, !0 failed & below unset */
+	/* RAI + CI (CGI-PS): */
+	struct __attribute__ ((packed)) {
+		uint16_t	mcc;
+		uint16_t	mnc;
+		uint8_t		mnc_3_digits;
+		uint16_t	lac;
+		uint8_t		rac;
+		uint16_t	cell_identity;
+	} cgi_ps;
 } __attribute__ ((packed));
 
 struct gsm_pcu_if {

@@ -366,17 +366,69 @@ static int gsm_bts_get_cgi_ps(const struct gsm_bts *bts, struct osmo_cell_global
 	return 0;
 }
 
-static int get_neighbor_resolve_cgi_ps_from_lac_ci(struct ctrl_cmd *cmd, void *data)
+/* Attempt resolution of cgi_ps from ARFCN+BSIC of neighbor from BTS identified by LAC+CI */
+int neighbor_address_resolution(const struct gsm_network *net, const struct cell_ab *ab,
+				uint16_t lac, uint16_t cell_id,
+				struct osmo_cell_global_id_ps *res_cgi_ps)
 {
-	struct gsm_network *net = (struct gsm_network *)data;
 	struct gsm_bts *bts_tmp, *bts_found = NULL;
-	char *tmp = NULL, *tok, *saveptr;
-	struct cell_ab ab;
-	unsigned lac, cell_id;
 	struct osmo_cell_global_id_ps local_cgi_ps;
 	const struct osmo_cell_global_id_ps *cgi_ps = NULL;
 	struct gsm_bts *local_neighbor = NULL;
 	struct gsm0808_cell_id_list2 remote_neighbors = { 0 };
+
+	llist_for_each_entry(bts_tmp, &net->bts_list, list) {
+		if (bts_tmp->location_area_code != lac)
+			continue;
+		if (bts_tmp->cell_identity != cell_id)
+			continue;
+		bts_found = bts_tmp;
+		break;
+	}
+
+	if (!bts_found)
+		goto notfound_err;
+
+	LOG_BTS(bts_found, DLINP, LOGL_DEBUG, "Resolving neighbor BTS %u -> %s\n", bts_found->nr,
+		cell_ab_to_str_c(OTC_SELECT, ab));
+
+	if (resolve_neighbors(&local_neighbor, &remote_neighbors, bts_found, ab, true))
+		goto notfound_err;
+
+	/* resolve_neighbors() returns either a local_neighbor or remote_neighbors.
+	 * Local-BSS neighbor? */
+	if (local_neighbor) {
+		/* Supporting GPRS? */
+		if (gsm_bts_get_cgi_ps(local_neighbor, &local_cgi_ps) >= 0)
+			cgi_ps = &local_cgi_ps;
+	}
+
+	/* Remote-BSS neighbor?
+	 * By spec, there can be multiple remote neighbors for a given ARFCN+BSIC, but so far osmo-bsc enforces only a
+	 * single remote neighbor. */
+	if (remote_neighbors.id_list_len
+	    && remote_neighbors.id_discr == CELL_IDENT_WHOLE_GLOBAL_PS) {
+		cgi_ps = &remote_neighbors.id_list[0].global_ps;
+	}
+
+	/* No neighbor found */
+	if (!cgi_ps)
+		goto notfound_err;
+
+	*res_cgi_ps = *cgi_ps;
+	return 0;
+
+notfound_err:
+	return -1;
+}
+
+static int get_neighbor_resolve_cgi_ps_from_lac_ci(struct ctrl_cmd *cmd, void *data)
+{
+	struct gsm_network *net = (struct gsm_network *)data;
+	char *tmp = NULL, *tok, *saveptr;
+	struct cell_ab ab;
+	unsigned int lac, cell_id;
+	struct osmo_cell_global_id_ps cgi_ps;
 
 	if (!cmd->variable)
 		goto fmt_err;
@@ -407,48 +459,13 @@ static int get_neighbor_resolve_cgi_ps_from_lac_ci(struct ctrl_cmd *cmd, void *d
 		goto fmt_err;
 	ab.bsic = atoi(tok);
 
-	llist_for_each_entry(bts_tmp, &net->bts_list, list) {
-		if (bts_tmp->location_area_code != lac)
-			continue;
-		if (bts_tmp->cell_identity != cell_id)
-			continue;
-		bts_found = bts_tmp;
-		break;
-	}
-
-	if (!bts_found)
-		goto notfound_err;
-
-	LOG_BTS(bts_found, DLINP, LOGL_DEBUG, "Resolving neighbor BTS %u -> %s\n", bts_found->nr,
-		cell_ab_to_str_c(OTC_SELECT, &ab));
-
 	if (!cell_ab_valid(&ab))
 		goto fmt_err;
 
-	if (resolve_neighbors(&local_neighbor, &remote_neighbors, bts_found, &ab, true))
+	if (neighbor_address_resolution(net, &ab, lac, cell_id, &cgi_ps) < 0)
 		goto notfound_err;
 
-	/* resolve_neighbors() returns either a local_neighbor or remote_neighbors.
-	 * Local-BSS neighbor? */
-	if (local_neighbor) {
-		/* Supporting GPRS? */
-		if (gsm_bts_get_cgi_ps(local_neighbor, &local_cgi_ps) >= 0)
-			cgi_ps = &local_cgi_ps;
-	}
-
-	/* Remote-BSS neighbor?
-	 * By spec, there can be multiple remote neighbors for a given ARFCN+BSIC, but so far osmo-bsc enforces only a
-	 * single remote neighbor. */
-	if (remote_neighbors.id_list_len
-	    && remote_neighbors.id_discr == CELL_IDENT_WHOLE_GLOBAL_PS) {
-		cgi_ps = &remote_neighbors.id_list[0].global_ps;
-	}
-
-	/* No neighbor found */
-	if (!cgi_ps)
-		goto notfound_err;
-
-	ctrl_cmd_reply_printf(cmd, "%s", osmo_cgi_ps_name(cgi_ps));
+	ctrl_cmd_reply_printf(cmd, "%s", osmo_cgi_ps_name(&cgi_ps));
 	talloc_free(tmp);
 	return CTRL_CMD_REPLY;
 
