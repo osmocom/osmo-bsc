@@ -672,6 +672,8 @@ static int lchan_send_imm_ass(struct osmo_fsm_inst *fi)
 	return rc;
 }
 
+static void post_activ_ack_accept_preliminary_settings(struct gsm_lchan *lchan);
+
 static void lchan_fsm_wait_ts_ready_onenter(struct osmo_fsm_inst *fi, uint32_t prev_state)
 {
 	struct gsm_lchan *lchan = lchan_fi_lchan(fi);
@@ -717,6 +719,17 @@ static void lchan_fsm_wait_ts_ready_onenter(struct osmo_fsm_inst *fi, uint32_t p
 	if (lchan_activate_set_ch_mode_rate_and_mr_config(lchan))
 		return;
 
+	/* If enabling VAMOS mode and no specific TSC Set was selected, make sure to select a sane TSC Set by
+	 * default: Set 1 for the primary and Set 2 for the shadow lchan. For non-VAMOS lchans, TSC Set 1. */
+	if (lchan->activate.info.tsc_set > 0)
+		lchan->activate.tsc_set = lchan->activate.info.tsc_set;
+	else
+		lchan->activate.tsc_set = lchan->vamos.is_secondary ? 2 : 1;
+
+	/* Use the TSC provided in the modification request, if any. Otherwise use the timeslot's configured
+	 * TSC. */
+	lchan->activate.tsc = (lchan->activate.info.tsc >= 0) ? lchan->activate.info.tsc : gsm_ts_tsc(lchan->ts);
+
 	use_mgwep_ci = lchan_use_mgw_endpoint_ci_bts(lchan);
 
 	LOG_LCHAN(lchan, LOGL_INFO,
@@ -742,7 +755,13 @@ static void lchan_fsm_wait_ts_ready_onenter(struct osmo_fsm_inst *fi, uint32_t p
 
 	if (lchan->activate.info.imm_ass_time == IMM_ASS_TIME_PRE_TS_ACK) {
 		/* Send the Immediate Assignment even before the timeslot is ready, saving a dyn TS timeslot roundtrip
-		 * on Abis (experimental). */
+		 * on Abis (experimental).
+		 *
+		 * Until the Channel Activation ACK is received, various values still are preliminary and hence live in
+		 * lchan->activate.*. We're doing things early here and need e.g. an accurate lchan->tsc, so already
+		 * copy the preliminary values from lchan->activate.* into the operative places in lchan->* prematurely.
+		 */
+		post_activ_ack_accept_preliminary_settings(lchan);
 		lchan_send_imm_ass(fi);
 	}
 }
@@ -801,18 +820,12 @@ static void lchan_fsm_wait_activ_ack_onenter(struct osmo_fsm_inst *fi, uint32_t 
 		break;
 	}
 
+	/* rsl_tx_chan_activ() and build_encr_info() access lchan->encr, make sure it reflects the values requested for
+	 * activation.
+	 * TODO: rather leave it in lchan->activate.info.encr until the ACK is received, which means that
+	 * rsl_tx_chan_activ() should use lchan->activate.info.encr and build_encr_info() should be passed encr as an
+	 * explicit argument. */
 	lchan->encr = lchan->activate.info.encr;
-
-	/* If enabling VAMOS mode and no specific TSC Set was selected, make sure to select a sane TSC Set by
-	 * default: Set 1 for the primary and Set 2 for the shadow lchan. For non-VAMOS lchans, TSC Set 1. */
-	if (lchan->activate.info.tsc_set > 0)
-		lchan->activate.tsc_set = lchan->activate.info.tsc_set;
-	else
-		lchan->activate.tsc_set = lchan->vamos.is_secondary ? 2 : 1;
-
-	/* Use the TSC provided in the modification request, if any. Otherwise use the timeslot's configured
-	 * TSC. */
-	lchan->activate.tsc = (lchan->activate.info.tsc >= 0) ? lchan->activate.info.tsc : gsm_ts_tsc(lchan->ts);
 
 	rc = rsl_tx_chan_activ(lchan, act_type, ho_ref);
 	if (rc) {
@@ -825,7 +838,13 @@ static void lchan_fsm_wait_activ_ack_onenter(struct osmo_fsm_inst *fi, uint32_t 
 
 	if (lchan->activate.info.imm_ass_time == IMM_ASS_TIME_PRE_CHAN_ACK) {
 		/* Send the Immediate Assignment directly after the Channel Activation request, saving one Abis
-		 * roundtrip between ChanRqd and Imm Ass. */
+		 * roundtrip between ChanRqd and Imm Ass.
+		 *
+		 * Until the Channel Activation ACK is received, various values still are preliminary and hence live in
+		 * lchan->activate.*. We're doing things early here and need e.g. an accurate lchan->tsc, so already
+		 * copy the preliminary values from lchan->activate.* into the operative places in lchan->* prematurely.
+		 */
+		post_activ_ack_accept_preliminary_settings(lchan);
 		lchan_send_imm_ass(fi);
 	}
 }
@@ -886,15 +905,20 @@ static void lchan_fsm_wait_activ_ack(struct osmo_fsm_inst *fi, uint32_t event, v
 	}
 }
 
-static void lchan_fsm_post_activ_ack(struct osmo_fsm_inst *fi)
+static void post_activ_ack_accept_preliminary_settings(struct gsm_lchan *lchan)
 {
-	struct gsm_lchan *lchan = lchan_fi_lchan(fi);
-
 	lchan->current_ch_mode_rate = lchan->activate.ch_mode_rate;
 	lchan->current_mr_conf = lchan->activate.mr_conf_filtered;
 	lchan->vamos.enabled = lchan->activate.info.vamos;
 	lchan->tsc_set = lchan->activate.tsc_set;
 	lchan->tsc = lchan->activate.tsc;
+}
+
+static void lchan_fsm_post_activ_ack(struct osmo_fsm_inst *fi)
+{
+	struct gsm_lchan *lchan = lchan_fi_lchan(fi);
+
+	post_activ_ack_accept_preliminary_settings(lchan);
 	LOG_LCHAN(lchan, LOGL_INFO, "Rx Activ ACK %s\n",
 		  gsm48_chan_mode_name(lchan->current_ch_mode_rate.chan_mode));
 
