@@ -536,6 +536,37 @@ static int verify_net_rf_lock(struct ctrl_cmd *cmd, const char *value, void *dat
 }
 CTRL_CMD_DEFINE(net_rf_lock, "rf_locked");
 
+static int get_trx_rf_locked(struct ctrl_cmd *cmd, void *data)
+{
+	struct gsm_bts_trx *trx = cmd->node;
+	/* Return rf_locked = 1 only if it is explicitly locked. If it is in shutdown or null state, do not "trick" the
+	 * caller into thinking that sending "rf_locked 0" is necessary to bring the TRX up. */
+	cmd->reply = (trx->mo.nm_state.administrative == NM_STATE_LOCKED) ? "1" : "0";
+	return CTRL_CMD_REPLY;
+}
+
+static int set_trx_rf_locked(struct ctrl_cmd *cmd, void *data)
+{
+	struct gsm_bts_trx *trx = cmd->node;
+	int locked;
+	if (osmo_str_to_int(&locked, cmd->value, 10, 0, 1)) {
+		cmd->reply = "Invalid value";
+		return CTRL_CMD_ERROR;
+	}
+
+	gsm_trx_lock_rf(trx, locked, "ctrl");
+
+	/* Let's not assume the nm FSM has already switched its state, just return the intended rf_locked value. */
+	cmd->reply = locked ? "1" : "0";
+	return CTRL_CMD_REPLY;
+}
+
+static int verify_trx_rf_locked(struct ctrl_cmd *cmd, const char *value, void *data)
+{
+	return osmo_str_to_int(NULL, value, 10, 0, 1);
+}
+CTRL_CMD_DEFINE(trx_rf_locked, "rf_locked");
+
 static int get_net_bts_num(struct ctrl_cmd *cmd, void *data)
 {
 	struct gsm_network *net = cmd->node;
@@ -661,6 +692,7 @@ int bsc_base_ctrl_cmds_install(void)
 
 	rc |= ctrl_cmd_install(CTRL_NODE_TRX, &cmd_trx_max_power);
 	rc |= ctrl_cmd_install(CTRL_NODE_TRX, &cmd_trx_arfcn);
+	rc |= ctrl_cmd_install(CTRL_NODE_TRX, &cmd_trx_rf_locked);
 
 	return rc;
 }

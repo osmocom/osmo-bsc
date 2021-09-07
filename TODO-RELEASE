@@ -14,3 +14,4 @@ libosmo-mgcp-client >1.8.0	need osmo_mgcpc_ep_ci_get_remote_rtp_info()
 libosmovty	>1.5.1		needs vty_read_config_filep()
 libosmosgsm     >1.5.1          needs GSM_PCHAN_OSMO_DYN
 libosmocore     >1.5.1          RSL_IPAC_EIE_OSMO*, struct osmo_preproc_*
+libosmocore	>1.5.1		needs osmo_str_to_int()
