@@ -700,7 +700,7 @@ static void lchan_fsm_wait_ts_ready_onenter(struct osmo_fsm_inst *fi, uint32_t p
 		 * - bs_power_db is still zero, 0dB reduction, output power = Pn.
 		 * - TA is still zero, to be determined by RACH. */
 
-		/* Default BS Power reduction value (in 2 dB steps) */
+		/* Default BS Power reduction value (in dB) */
 		if (bts->bs_power_ctrl.mode == GSM_PWR_CTRL_MODE_DYN_BTS)
 			lchan->bs_power_db = bts->bs_power_ctrl.bs_power_max_db;
 		else
