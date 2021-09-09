@@ -691,7 +691,7 @@ static void lchan_fsm_wait_ts_ready_onenter(struct osmo_fsm_inst *fi, uint32_t p
 	lchan->conn = info->for_conn;
 
 	/* If there is a previous lchan, and the new lchan is on the same cell as previous one,
-	 * take over power and TA values. Otherwise, use max power and zero TA. */
+	 * take over power values. Otherwise, use max power. */
 	if (old_lchan && old_lchan->ts->trx->bts == bts) {
 		ms_power_dbm = ms_pwr_dbm(bts->band, old_lchan->ms_power);
 		lchan_update_ms_power_ctrl_level(lchan, ms_power_dbm >= 0 ? ms_power_dbm : bts->ms_max_power);
@@ -699,8 +699,7 @@ static void lchan_fsm_wait_ts_ready_onenter(struct osmo_fsm_inst *fi, uint32_t p
 	} else {
 		lchan_update_ms_power_ctrl_level(lchan, bts->ms_max_power);
 		/* Upon last entering the UNUSED state, from lchan_reset():
-		 * - bs_power_db is still zero, 0dB reduction, output power = Pn.
-		 * - TA is still zero, to be determined by RACH. */
+		 * - bs_power_db is still zero, 0dB reduction, output power = Pn. */
 
 		/* Default BS Power reduction value (in dB) */
 		if (bts->bs_power_ctrl.mode == GSM_PWR_CTRL_MODE_DYN_BTS)
