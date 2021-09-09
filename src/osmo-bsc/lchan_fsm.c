@@ -681,7 +681,7 @@ static void lchan_fsm_wait_ts_ready_onenter(struct osmo_fsm_inst *fi, uint32_t p
 	struct osmo_mgcpc_ep_ci *use_mgwep_ci;
 	struct gsm_lchan *old_lchan = lchan->activate.info.re_use_mgw_endpoint_from_lchan;
 	struct lchan_activate_info *info = &lchan->activate.info;
-	int ms_power_dbm;
+	int ms_power_dbm = bts->ms_max_power;
 
 	if (lchan->release.requested) {
 		lchan_fail("Release requested while activating");
@@ -691,23 +691,17 @@ static void lchan_fsm_wait_ts_ready_onenter(struct osmo_fsm_inst *fi, uint32_t p
 	lchan->conn = info->for_conn;
 
 	/* If there is a previous lchan, and the new lchan is on the same cell as previous one,
-	 * take over power values. Otherwise, use max power. */
+	 * take over MS power values. Otherwise, use configured MS max power. */
 	if (old_lchan && old_lchan->ts->trx->bts == bts) {
-		ms_power_dbm = ms_pwr_dbm(bts->band, old_lchan->ms_power);
-		lchan_update_ms_power_ctrl_level(lchan, ms_power_dbm >= 0 ? ms_power_dbm : bts->ms_max_power);
-		lchan->bs_power_db = old_lchan->bs_power_db;
-	} else {
-		lchan_update_ms_power_ctrl_level(lchan, bts->ms_max_power);
-		/* Upon last entering the UNUSED state, from lchan_reset():
-		 * - bs_power_db is still zero, 0dB reduction, output power = Pn. */
-
-		/* Default BS Power reduction value (in dB) */
-		if (bts->bs_power_ctrl.mode == GSM_PWR_CTRL_MODE_DYN_BTS)
-			lchan->bs_power_db = bts->bs_power_ctrl.bs_power_max_db;
-		else
-			lchan->bs_power_db = bts->bs_power_ctrl.bs_power_val_db;
+		if ((ms_power_dbm = ms_pwr_dbm(bts->band, old_lchan->ms_power)) == 0)
+			ms_power_dbm = bts->ms_max_power;
 	}
+	lchan_update_ms_power_ctrl_level(lchan, ms_power_dbm);
 
+	/* Default BS Power reduction value (in dB) */
+	lchan->bs_power_db = (bts->bs_power_ctrl.mode == GSM_PWR_CTRL_MODE_DYN_BTS) ?
+				bts->bs_power_ctrl.bs_power_max_db :
+				bts->bs_power_ctrl.bs_power_val_db;
 	/* BS Power Control is generally not allowed on the BCCH/CCCH carrier.
 	 * However, we allow it in the BCCH carrier power reduction mode of operation. */
 	if (lchan->ts->trx == bts->c0) {
