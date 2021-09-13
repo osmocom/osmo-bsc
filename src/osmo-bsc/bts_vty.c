@@ -2978,7 +2978,7 @@ DEFUN_USRATTR(cfg_power_ctrl_ctrl_interval,
 	      X(BSC_VTY_ATTR_NEW_LCHAN),
 	      "ctrl-interval <0-31>",
 	      "Set power control interval (for dynamic mode)\n"
-	      "P_CON_INTERVAL, in units of 2 SACCH periods (0.96 seconds)\n")
+	      "P_CON_INTERVAL, in units of 2 SACCH periods (0.96 seconds)(default=1)\n")
 {
 	struct gsm_power_ctrl_params *params = vty->index;
 
@@ -3928,8 +3928,7 @@ static void config_write_power_ctrl(struct vty *vty, unsigned int indent,
 		if (cp->dir == GSM_PWR_CTRL_DIR_DL)
 			cfg_out(" bs-power dyn-max %u%s", cp->bs_power_max_db, VTY_NEWLINE);
 
-		if (cp->ctrl_interval > 0)
-			cfg_out(" ctrl-interval %u%s", cp->ctrl_interval, VTY_NEWLINE);
+		cfg_out(" ctrl-interval %u%s", cp->ctrl_interval, VTY_NEWLINE);
 		cfg_out(" step-size inc %u red %u%s",
 			cp->inc_step_size_db, cp->red_step_size_db,
 			VTY_NEWLINE);

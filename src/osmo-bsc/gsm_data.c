@@ -1142,6 +1142,8 @@ const struct gsm_power_ctrl_params power_ctrl_params_def = {
 	.inc_step_size_db = 4, /* 2, 4, or 6 dB */
 	.red_step_size_db = 2, /* 2 or 4 dB */
 
+	.ctrl_interval = 1, /* Trigger loop every second SACCH block. TS 45.008 sec 4.7.1 */
+
 	/* RxLev measurement parameters */
 	.rxlev_meas = {
 		/* Thresholds for RxLev (see 3GPP TS 45.008, A.3.2.1) */

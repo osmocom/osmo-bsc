@@ -150,20 +150,46 @@ Having requested a transmit power level, the MS/BS power control loop may option
 be suspended for a certain number of SACCH multiframes defined by VTY parameter
 `ctrl-interval`.  Given that SACCH is relatively slow and transmission of a data block
 takes 480 ms, suspension allows an observation of the effect of one power control
-decision before initiating the next one.
+decision before initiating the next one. This is mostly important due to the
+fact that MS must change the transmit power at nominal steps of 2dB every 60ms
+(TS 45.008 sec 4.7.1). As a result, if the network requests the MS to change its
+transmit power by several MS Power Levels at a time, the MS will do so gradually
+over the next measurement period. Hence, upon next received L1 SACCH block, the
+_MS_PWR_ value announced by the MS will match only the one used to transmit the
+last block, and so the related measured RxLevel/RxQual values will be
+inaccurate. By skipping one or several SACCH blocks, the algorithm will always
+use values which match correctly the announced _MS_PWR_ and the measured
+RxLevel/RxQual (because the _MS_PWR_ will already have changed and hence will be
+kept stable over that measurement period).
 
 ----
 OsmoBSC(config-bs-power-ctrl)# ctrl-interval ?
   <0-31>  P_CON_INTERVAL, in units of 2 SACCH periods (0.96 seconds)
 ----
 
-By default, the suspension interval is set to 0 for both MS/BS power control loops,
-therefore the power control decision is taken every 480 ms (one SACCH block period).
-Setting `ctrl-interval` to 1 increases the interval to 960 ms, so basically every
-second Uplink SACCH block is skipped;  value 2 corresponds to the interval of
-1920 ms, so 3/4 received SACCH blocks are skipped.
+The value to use for this parameter is closely related to that of VTY option
+`step-size inc <2-6> red <2-4>`, which configures the maximum step (in dB) at
+which the MS Power can be requested to changed when the MS Power Control Loop is
+triggered. The higher the `step-size`, the more time it will need the MS to do
+the necessary ramping of 2 dB steps, and hence the amount of time required for
+the MS to settle on the requested MS Power Level for an entire SACCH block. Or
+equally, the time the network can start using the full measurement period to
+trigger the MS Power Control Loop again with reliable measurements
+(`P_CON_INTERVAL`).
 
-3GPP TS 45.008 briefly mentions this parameter in table A.1 (P_Con_INTERVAL).
+By default, increment `step-size` is set to 4 dB and the decrement `step-size`
+is set to 2 dB, hence the MS requiring `4 * 60 = 240` milliseconds. That's less
+than 1 measurement period (480 ms), hence only the first measurement period
+needs to be skipped. Therefore, the suspension interval is set to 1 for both
+MS/BS power control loops, and so the power control decision is taken every 960
+ms (every second SACCH block period).
+
+Setting `ctrl-interval` to 0 increases the interval to 480 ms, so basically no
+SACCH block is skipped and MS Power Control loop is triggered upon receival of
+every UL SACCH block. Value 2 corresponds to the interval of 1920 ms, so 3/4
+received SACCH blocks are skipped.
+
+3GPP TS 45.008 briefly mentions this parameter in table A.1 (`P_Con_INTERVAL`).
 
 A small time graph is depicted below for better understanding of the meaning of
 values for this parameter, since it is not obvious at all.
@@ -173,8 +199,8 @@ values for this parameter, since it is not obvious at all.
 |<-->| - one SACCH multi-frame period
 |    |
 |----|----|----|----|----|----|----|----|----> SACCH multi-frames
-a) *    *    *    *    *    *    *    *    *      P_CON_INTERVAL=0 (0.48 s, default)
-b) *         *         *         *         *      P_CON_INTERVAL=1 (0.96 s)
+a) *    *    *    *    *    *    *    *    *      P_CON_INTERVAL=0 (0.48 s)
+b) *         *         *         *         *      P_CON_INTERVAL=1 (0.96 s, default)
 c) *                   *                   *      P_CON_INTERVAL=2 (1.92 s)
 d) *                             *                P_CON_INTERVAL=3 (2.88 s)
 e) *                                       *      P_CON_INTERVAL=4 (3.84 s)
