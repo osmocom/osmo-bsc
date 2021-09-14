@@ -420,8 +420,9 @@ static int get_bts_rf_state(struct ctrl_cmd *cmd, void *data)
 }
 CTRL_CMD_DEFINE_RO(bts_rf_state, "rf_state");
 
-/* Return a list of the states of each TRX for a given BTS:
- * <bts_nr>,<trx_nr>,<opstate>,<adminstate>,<rf_policy>;<bts_nr>,<trx_nr>,...
+/* Return a list of the states of each TRX for a given BTS.
+ * <bts_nr>,<trx_nr>,<opstate>,<adminstate>,<rf_policy>,<rsl_status>;<bts_nr>,<trx_nr>,...;...;
+ * For details on the string, see bsc_rf_states_c();
  */
 static int get_bts_rf_states(struct ctrl_cmd *cmd, void *data)
 {
@@ -443,7 +444,8 @@ static int get_bts_rf_states(struct ctrl_cmd *cmd, void *data)
 CTRL_CMD_DEFINE_RO(bts_rf_states, "rf_states");
 
 /* Return a list of the states of each TRX for all BTS:
- * <bts_nr>,<trx_nr>,<opstate>,<adminstate>,<rf_policy>;<bts_nr>,<trx_nr>,...
+ * <bts_nr>,<trx_nr>,<opstate>,<adminstate>,<rf_policy>,<rsl_status>;<bts_nr>,<trx_nr>,...;...;
+ * For details on the string, see bsc_rf_states_c();
  */
 static int get_net_rf_states(struct ctrl_cmd *cmd, void *data)
 {

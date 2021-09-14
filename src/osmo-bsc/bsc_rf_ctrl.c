@@ -139,8 +139,7 @@ enum osmo_bsc_rf_adminstate osmo_bsc_rf_get_adminstate_by_trx(struct gsm_bts_trx
 }
 
 /* Return a string listing the state of the given TRX.
- * The string has the form:
- *  <bts_nr>,<trx_nr>,<opstate>,<adminstate>,<rf_policy>,<rsl_status>;
+ * For details, see bsc_rf_states_c().
  */
 static int bsc_rf_state_of_trx_buf(char *buf, size_t buflen, struct gsm_bts_trx *trx)
 {
@@ -154,6 +153,9 @@ static int bsc_rf_state_of_trx_buf(char *buf, size_t buflen, struct gsm_bts_trx 
 	return sb.chars_needed;
 }
 
+/* Same as bsc_rf_states_of_bts_c() but return result in a fixed-size buffer.
+ * For details, see bsc_rf_states_c().
+ * Return the amount of characters that would be written to the buffer if it is large enough, like snprintf(). */
 static int bsc_rf_states_of_bts_buf(char *buf, size_t buflen, struct gsm_bts *bts)
 {
 	struct gsm_bts_trx *trx;
@@ -166,8 +168,8 @@ static int bsc_rf_states_of_bts_buf(char *buf, size_t buflen, struct gsm_bts *bt
 }
 
 /* Return a string listing the states of each TRX for the given BTS.
- * The string has the form:
- * <bts_nr>,<trx_nr>,<opstate>,<adminstate>,<rf_policy>,<rsl_status>;<bts_nr>,<trx_nr>,...;...;
+ * For details, see bsc_rf_states_c().
+ *
  * \param ctx  Talloc context to allocate the returned string from.
  * \param bts  BTS of which to list the TRX states.
  * \return talloc allocated string.
@@ -177,6 +179,9 @@ char *bsc_rf_states_of_bts_c(void *ctx, struct gsm_bts *bts)
 	OSMO_NAME_C_IMPL(ctx, 256, "ERROR", bsc_rf_states_of_bts_buf, bts);
 }
 
+/* Same as bsc_rf_states_c() but return result in a fixed-size buffer.
+ * For details, see bsc_rf_states_c().
+ * Return the amount of characters that would be written to the buffer if it is large enough, like snprintf(). */
 static int bsc_rf_states_buf(char *buf, size_t buflen)
 {
 	struct gsm_bts *bts;
@@ -191,8 +196,17 @@ static int bsc_rf_states_buf(char *buf, size_t buflen)
 /* Return a string listing the states of all TRX of all BTS.
  * The string has the form:
  * <bts_nr>,<trx_nr>,<opstate>,<adminstate>,<rf_policy>,<rsl_status>;<bts_nr>,<trx_nr>,...;...;
+ * (always terminates in a semicolon).
+ *
+ * Meaning of the elements:
+ * - bts_nr: 0..255  -- BTS index.
+ * - trx_nr: 0..255  -- TRX index.
+ * - opstate: inoperational|operational  -- whether RF is active.
+ * - adminstate: unlocked|locked -- whether the TRX is configured as RF-locked.
+ * - rf_policy: off|on|grace|unknown -- which state RF should be in according to user rf_lock requests.
+ * - rsl_status: rsl-up|rsl-down -- 'rsl-up' if an RSL link to the TRX is currently present.
+ *
  * \param ctx  Talloc context to allocate the returned string from.
- * \param bts  BTS of which to list the TRX states, or NULL to list all TRX of all BTS.
  * \return talloc allocated string.
  */
 char *bsc_rf_states_c(void *ctx)
