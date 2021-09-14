@@ -238,6 +238,7 @@ AC_OUTPUT(
     tests/subscr/Makefile
     tests/nanobts_omlattr/Makefile
     tests/handover/Makefile
+    tests/time_cc/Makefile
     doc/Makefile
     doc/examples/Makefile
     doc/manuals/Makefile
