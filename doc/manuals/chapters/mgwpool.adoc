@@ -47,12 +47,14 @@ the MGW under the 'msc' node.
 Example configuration with two MGCP-Client instances in a pool:
 ----
  mgw 0
+  description media-gw-0 <2>
   mgw remote-ip 127.0.0.1
   mgw remote-port 2432
   mgw local-ip 127.0.0.1
   mgw local-port 2431
   mgw endpoint-domain mgw0 <1>
  mgw 1
+  description media-gw-1 <2>
   mgw remote-ip 127.0.0.1
   mgw remote-port 2430
   mgw local-ip 127.0.0.1
@@ -64,6 +66,10 @@ Example configuration with two MGCP-Client instances in a pool:
 each MGW should be different. Otherwise it won't be possible to distinguish the
 endpoint names in the log. It should also be noted that the domain name must
 match the configuration of the related OsmoMGW instance.
+
+<2> It is also possible to assign a descriptive name to each MGW instance. The
+MGCP client specific log lines will then use this name as logging context. If
+no description is set, the domain name will be used.
 
 === MGW pool management
 
@@ -80,11 +86,11 @@ MGW pool members, their status and call utilization.
 ----
 OsmoBSC> show mgw-pool
 % MGW-Pool:
-%  MGW 0
+%  MGW 0:media-gw-0
 %   mgcp-client:   connected
 %   service:       unblocked
 %   ongoing calls: 1
-%  MGW 1
+%  MGW 1:media-gw-1
 %   mgcp-client:   connected
 %   service:       unblocked
 %   ongoing calls: 0
@@ -116,19 +122,22 @@ be used until its configuration finished by reconnecting it.
 
 ----
 % MGW-Pool:
-%  MGW 0
+%  MGW 0:media-gw-0
 %   mgcp-client:   connected
 %   service:       unblocked
 %   ongoing calls: 2
-%  MGW 1
+%  MGW 1:media-gw-1
 %   mgcp-client:   connected
 %   service:       unblocked
 %   ongoing calls: 3
-%  MGW 2
+%  MGW 2:mgw <1>
 %   mgcp-client:   disconnected
 %   service:       unblocked
 %   ongoing calls: 0
 ----
+
+<1> In this example a description is not set yet, so the domain name ("mgw")
+is displayed.
 
 ==== Reconnecting an MGW / MGCP-Client
 
@@ -149,15 +158,15 @@ ready to be used for new calls.
 ----
 OsmoBSC# show mgw-pool
 % MGW-Pool:
-%  MGW 0
+%  MGW 0:media-gw-0
 %   mgcp-client:   connected
 %   service:       unblocked
 %   ongoing calls: 2
-%  MGW 1
+%  MGW 1:media-gw-1
 %   mgcp-client:   connected
 %   service:       unblocked
 %   ongoing calls: 3
-%  MGW 2
+%  MGW 2:mgw
 %   mgcp-client:   connected
 %   service:       unblocked
 %   ongoing calls: 0
@@ -191,15 +200,15 @@ To block an MGCP-Client use the 'block' VTY command:
 OsmoBSC# mgw 2 block
 OsmoBSC# show mgw-pool
 % MGW-Pool:
-%  MGW 0
+%  MGW 0:media-gw-0
 %   mgcp-client:   connected
 %   service:       unblocked
 %   ongoing calls: 11
-%  MGW 1
+%  MGW 1:media-gw-1
 %   mgcp-client:   connected
 %   service:       unblocked
 %   ongoing calls: 12
-%  MGW 2
+%  MGW 2:mgw
 %   mgcp-client:   connected
 %   service:       blocked
 %   ongoing calls: 10
@@ -211,15 +220,15 @@ restarted or removed if necessary.
 ----
 OsmoBSC# show mgw-pool
 % MGW-Pool:
-%  MGW 0
+%  MGW 0:media-gw-0
 %   mgcp-client:   connected
 %   service:       unblocked
 %   ongoing calls: 15
-%  MGW 1
+%  MGW 1:media-gw-1
 %   mgcp-client:   connected
 %   service:       unblocked
 %   ongoing calls: 14
-%  MGW 2
+%  MGW 2:mgw
 %   mgcp-client:   connected
 %   service:       blocked
 %   ongoing calls: 0
