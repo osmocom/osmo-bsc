@@ -162,6 +162,8 @@ void bsc_update_connection_stats(struct gsm_network *net)
 				trx_rsl_connected++;
 		}
 
+		osmo_stat_item_set(osmo_stat_item_group_get_item(bts->bts_statg, BTS_STAT_NUM_TRX_RSL_CONNECTED),
+				   trx_rsl_connected);
 		osmo_stat_item_set(osmo_stat_item_group_get_item(bts->bts_statg, BTS_STAT_NUM_TRX_TOTAL),
 				   num_trx);
 

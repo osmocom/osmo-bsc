@@ -1301,7 +1301,7 @@ const struct osmo_stat_item_desc bts_stat_desc[] = {
 		  "", 16, 0   },
 	[BTS_STAT_RSL_CONNECTED] = \
 		{ "rsl_connected",
-		  "Number of RSL links connected",
+		  "Number of RSL links connected (same as num_trx:rsl_connected)",
 		  "", 16, 0   },
 	[BTS_STAT_LCHAN_BORKEN] = \
 		{ "lchan_borken",
@@ -1311,6 +1311,10 @@ const struct osmo_stat_item_desc bts_stat_desc[] = {
 		{ "ts_borken",
 		  "Number of timeslots in the BORKEN state",
 		  "", 16, 0 },
+	[BTS_STAT_NUM_TRX_RSL_CONNECTED] = \
+		{ "num_trx:rsl_connected",
+		  "Number of TRX in this BTS where RSL is up",
+		  "" },
 	[BTS_STAT_NUM_TRX_TOTAL] = \
 		{ "num_trx:total",
 		  "Number of configured TRX in this BTS",
