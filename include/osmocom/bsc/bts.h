@@ -175,6 +175,7 @@ enum {
 	BTS_STAT_RSL_CONNECTED,
 	BTS_STAT_LCHAN_BORKEN,
 	BTS_STAT_TS_BORKEN,
+	BTS_STAT_NUM_TRX_TOTAL,
 };
 
 extern const struct osmo_stat_item_desc bts_stat_desc[];

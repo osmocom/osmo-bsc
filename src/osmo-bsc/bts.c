@@ -1311,6 +1311,10 @@ const struct osmo_stat_item_desc bts_stat_desc[] = {
 		{ "ts_borken",
 		  "Number of timeslots in the BORKEN state",
 		  "", 16, 0 },
+	[BTS_STAT_NUM_TRX_TOTAL] = \
+		{ "num_trx:total",
+		  "Number of configured TRX in this BTS",
+		  "" },
 };
 
 const struct osmo_stat_item_group_desc bts_statg_desc = {
