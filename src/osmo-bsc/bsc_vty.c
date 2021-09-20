@@ -1892,6 +1892,57 @@ DEFUN_HIDDEN(lchan_act_all_trx, lchan_act_all_trx_cmd,
 	return CMD_SUCCESS;
 }
 
+DEFUN(lchan_set_mspower, lchan_set_mspower_cmd,
+      "bts <0-255> trx <0-255> timeslot <0-7> sub-slot <0-7> ms-power <0-40> [verify]\n",
+      BTS_NR_TRX_TS_SS_STR2
+      "Manually force MS Uplink Power Level in dBm on the lchan (for testing)\n"
+      "Set transmit power of the MS in dBm\n"
+      "Check requested level against BAND and UE Power Class.\n")
+{
+	struct gsm_bts *bts;
+	struct gsm_bts_trx *trx;
+	struct gsm_bts_trx_ts *ts;
+	struct gsm_lchan *lchan;
+	int bts_nr = atoi(argv[0]);
+	int trx_nr = atoi(argv[1]);
+	int ss_nr = atoi(argv[3]);
+	bool verify = (argc > 5);
+
+	bts = gsm_bts_num(gsmnet_from_vty(vty), bts_nr);
+	if (!bts) {
+		vty_out(vty, "%% No such BTS (%d)%s", bts_nr, VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	trx = gsm_bts_trx_num(bts, trx_nr);
+	if (!trx) {
+		vty_out(vty, "%% No such TRX (%d)%s", trx_nr, VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	ts = vty_get_ts(vty, argv[0], argv[1], argv[2]);
+	if (!ts) {
+		vty_out(vty, "%% No such TS (%d)%s", atoi(argv[2]), VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+	if (ss_nr >= ts->max_primary_lchans) {
+		vty_out(vty, "%% Invalid sub-slot number for this timeslot type%s", VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	lchan = &ts->lchan[ss_nr];
+	if (!lchan->fi)
+		return CMD_WARNING;
+
+	if (verify) {
+		lchan_update_ms_power_ctrl_level(lchan, atoi(argv[4]));
+		return CMD_SUCCESS;
+	}
+	lchan->ms_power = ms_pwr_ctl_lvl(ts->trx->bts->band, atoi(argv[4]));
+	rsl_chan_ms_power_ctrl(lchan);
+	return CMD_SUCCESS;
+}
+
 DEFUN(vamos_modify_lchan, vamos_modify_lchan_cmd,
       "bts <0-255> trx <0-255> timeslot <0-7> sub-slot <0-7> modify (vamos|non-vamos) " TSC_ARGS_OPT,
       BTS_NR_TRX_TS_SS_STR2
@@ -3410,6 +3461,7 @@ int bsc_vty_init(struct gsm_network *network)
 	install_element(ENABLE_NODE, &lchan_mdcx_cmd);
 	install_element(ENABLE_NODE, &lchan_set_borken_cmd);
 	install_element(ENABLE_NODE, &lchan_reassign_cmd);
+	install_element(ENABLE_NODE, &lchan_set_mspower_cmd);
 
 	install_element(ENABLE_NODE, &handover_subscr_conn_cmd);
 	install_element(ENABLE_NODE, &assignment_subscr_conn_cmd);

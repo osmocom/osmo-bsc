@@ -12,6 +12,7 @@ OsmoBSC# bts 0 trx 0 timeslot 0 sub-slot 0 ?
   modify          Manually send Channel Mode Modify (for debugging)
   mdcx            Modify RTP Connection
   reassign-to     Trigger Assignment to an unused lchan on the same cell
+  ms-power        Manually force MS Uplink Power Level in dBm on the lchan (for testing)
   handover        Manually trigger handover (for debugging)
   assignment      Manually trigger assignment (for debugging)
 
@@ -79,6 +80,7 @@ OsmoBSC# bts 0 trx 0 timeslot 0 sub-slot 0 ?
   modify          Manually send Channel Mode Modify (for debugging)
   mdcx            Modify RTP Connection
   reassign-to     Trigger Assignment to an unused lchan on the same cell
+  ms-power        Manually force MS Uplink Power Level in dBm on the lchan (for testing)
   handover        Manually trigger handover (for debugging)
   assignment      Manually trigger assignment (for debugging)
 
