@@ -38,6 +38,7 @@ OsmoBSC(config-bs-power-ctrl)# list with-flags
   . lv  rxlev-thresh-comp lower <0-31> <0-31> upper <0-31> <0-31>
   . lv  rxqual-thresh-comp lower <0-31> <0-31> upper <0-31> <0-31>
   . lv  ci-thresh-comp (fr-efr|hr|amr-fr|amr-hr|sdcch|gprs) lower <0-31> <0-31> upper <0-31> <0-31>
+  . lv  ci-thresh-comp disable all
   . lv  no (rxlev-avg|rxqual-avg)
   . lv  (rxlev-avg|rxqual-avg) params hreqave <1-31> hreqt <1-31>
   . lv  (rxlev-avg|rxqual-avg) algo (unweighted|weighted|mod-median)
@@ -118,6 +119,7 @@ OsmoBSC(config-ms-power-ctrl)# list with-flags
   . lv  rxlev-thresh-comp lower <0-31> <0-31> upper <0-31> <0-31>
   . lv  rxqual-thresh-comp lower <0-31> <0-31> upper <0-31> <0-31>
   . lv  ci-thresh-comp (fr-efr|hr|amr-fr|amr-hr|sdcch|gprs) lower <0-31> <0-31> upper <0-31> <0-31>
+  . lv  ci-thresh-comp disable all
   . lv  no (rxlev-avg|rxqual-avg)
   . lv  (rxlev-avg|rxqual-avg) params hreqave <1-31> hreqt <1-31>
   . lv  (rxlev-avg|rxqual-avg) algo (unweighted|weighted|mod-median)
@@ -294,4 +296,41 @@ OsmoBSC(config-net-bts)# show running-config
    rxlev-thresh-comp lower 10 12 upper 19 20
    rxqual-thresh lower 3 upper 0
    rxqual-thresh-comp lower 5 7 upper 15 18
+...
+
+OsmoBSC(config-net-bts)# ### Check 'ci-thresh-comp disable all' works properly:
+OsmoBSC(config-net-bts)# ms-power-control
+OsmoBSC(config-ms-power-ctrl)# show running-config
+...
+  ms-power-control
+...
+   ci-thresh-comp fr-efr lower 5 7 upper 15 18
+...
+   ci-thresh-comp hr lower 5 7 upper 15 18
+...
+   ci-thresh-comp amr-fr lower 5 7 upper 15 18
+...
+   ci-thresh-comp amr-hr lower 5 7 upper 15 18
+...
+   ci-thresh-comp sdcch lower 5 7 upper 15 18
+...
+   ci-thresh-comp gprs lower 5 7 upper 15 18
+...
+
+OsmoBSC(config-ms-power-ctrl)# ci-thresh-comp disable all
+OsmoBSC(config-ms-power-ctrl)# show running-config
+...
+  ms-power-control
+...
+   ci-thresh-comp fr-efr lower 0 0 upper 0 0
+...
+   ci-thresh-comp hr lower 0 0 upper 0 0
+...
+   ci-thresh-comp amr-fr lower 0 0 upper 0 0
+...
+   ci-thresh-comp amr-hr lower 0 0 upper 0 0
+...
+   ci-thresh-comp sdcch lower 0 0 upper 0 0
+...
+   ci-thresh-comp gprs lower 0 0 upper 0 0
 ...

@@ -3272,6 +3272,35 @@ DEFUN_USRATTR(cfg_power_ctrl_ci_thresh_comp,
 	return CMD_SUCCESS;
 }
 
+DEFUN_USRATTR(cfg_power_ctrl_ci_thresh_comp_disable,
+	      cfg_power_ctrl_ci_thresh_comp_disable_cmd,
+	      X(BSC_VTY_ATTR_VENDOR_SPECIFIC) |
+	      X(BSC_VTY_ATTR_NEW_LCHAN),
+	      "ci-thresh-comp disable all",
+	      "Set Carrier-to_interference (C/I) threshold comparators (for dynamic mode)\n"
+	      "Disable C/I comparison in control loop (sets LOWER_CMP_N and UPPER_CMP_N to zero)\n"
+	      "Disable C/I comparison for all channel types\n")
+{
+	struct gsm_power_ctrl_params *params = vty->index;
+
+#define DISABLE_MEAS_PC(PARAMS, TYPE) \
+	(PARAMS)->TYPE##_meas.lower_cmp_p = 0; \
+	(PARAMS)->TYPE##_meas.lower_cmp_n = 0; \
+	(PARAMS)->TYPE##_meas.upper_cmp_p = 0; \
+	(PARAMS)->TYPE##_meas.upper_cmp_n = 0
+
+	DISABLE_MEAS_PC(params, ci_fr);
+	DISABLE_MEAS_PC(params, ci_hr);
+	DISABLE_MEAS_PC(params, ci_amr_fr);
+	DISABLE_MEAS_PC(params, ci_amr_hr);
+	DISABLE_MEAS_PC(params, ci_sdcch);
+	DISABLE_MEAS_PC(params, ci_gprs);
+
+#undef DISABLE_MEAS_PC
+
+	return CMD_SUCCESS;
+}
+
 #define POWER_CONTROL_MEAS_AVG_CMD \
 	"(rxlev-avg|rxqual-avg)"
 #define POWER_CONTROL_MEAS_AVG_DESC \
@@ -4445,6 +4474,7 @@ int bts_vty_init(void)
 	install_element(POWER_CTRL_NODE, &cfg_power_ctrl_rxlev_thresh_comp_cmd);
 	install_element(POWER_CTRL_NODE, &cfg_power_ctrl_rxqual_thresh_comp_cmd);
 	install_element(POWER_CTRL_NODE, &cfg_power_ctrl_ci_thresh_comp_cmd);
+	install_element(POWER_CTRL_NODE, &cfg_power_ctrl_ci_thresh_comp_disable_cmd);
 	install_element(POWER_CTRL_NODE, &cfg_power_ctrl_no_avg_cmd);
 	install_element(POWER_CTRL_NODE, &cfg_power_ctrl_avg_params_cmd);
 	install_element(POWER_CTRL_NODE, &cfg_power_ctrl_avg_algo_cmd);

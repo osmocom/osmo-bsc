@@ -345,6 +345,14 @@ network
 <3> P0=2 out of N1=10 averages < L_CI_AMR_FR_XX_P => increase power.
 <4> P1=3 out of N2=4 averages > U_CI_AMR_FR_XX_P => decrease power.
 
+NOTE: The BSC can instruct a BTS to disable C/I related logic in its
+autonomous MS Power Control Loop for a given channel type (hence not taking C/I
+measurements into account) by means of setting both related LOWER_CMP_N and
+UPPER_CMP_N parameters to zero (see _ci-thresh-comp_ VTY command). For the sake
+of easing configuration, a placeholder VTY command to disable C/I for all
+channel types is available under VTY node _ms-power-control_ as *_ci-thresh-comp
+disable all_*.
+
 ==== Measurement averaging process
 
 3GPP 45.008, section A.3.1 requires that the measurement values reported by both
