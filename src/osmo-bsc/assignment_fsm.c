@@ -611,6 +611,15 @@ static void assignment_fsm_wait_rr_ass_complete_onenter(struct osmo_fsm_inst *fi
 	int rc;
 	struct gsm_subscriber_connection *conn = assignment_fi_conn(fi);
 
+	/* There may be situations where the SDCCH gets released while the TCH is still being activated. We will then
+	 * receive ChanActivAck message from the BTS when the TCH is ready. Since the SDCCH is already released by
+	 * then conn->lchan will be NULL in this case. */
+	if (!conn->lchan) {
+		assignment_fail(GSM0808_CAUSE_EQUIPMENT_FAILURE,
+				"Unable to send RR Assignment Command: conn without lchan");
+		return;
+	}
+
 	rc = gsm48_send_rr_ass_cmd(conn->lchan, conn->assignment.new_lchan,
 				   conn->lchan->ms_power);
 
