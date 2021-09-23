@@ -855,6 +855,12 @@ static const struct log_info_cat osmo_bsc_categories[] = {
 		.description = "RESET/ACK on A and Lb interfaces",
 		.enabled = 1, .loglevel = LOGL_NOTICE,
 	},
+	[DLOOP] = {
+		.name = "DLOOP",
+		.description = "Control loops",
+		.color = "\033[0;34m",
+		.enabled = 1, .loglevel = LOGL_NOTICE,
+	},
 };
 
 static int filter_fn(const struct log_context *ctx, struct log_target *tar)

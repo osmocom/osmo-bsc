@@ -2915,10 +2915,11 @@ DEFUN(cfg_bts_power_ctrl,
 DEFUN_USRATTR(cfg_power_ctrl_mode,
 	      cfg_power_ctrl_mode_cmd,
 	      X(BSC_VTY_ATTR_NEW_LCHAN),
-	      "mode (static|dyn-bts) [reset]",
+	      "mode (static|dyn-bts|dyn-bsc) [reset]",
 	      "Power control mode\n"
 	      "Instruct the MS/BTS to use a static power level\n"
 	      "Power control to be performed dynamically by the BTS itself\n"
+	      "Power control to be performed dynamically at this BSC\n"
 	      "Reset to default parameters for the given mode\n")
 {
 	struct gsm_power_ctrl_params *params = vty->index;
@@ -2935,6 +2936,13 @@ DEFUN_USRATTR(cfg_power_ctrl_mode,
 		params->mode = GSM_PWR_CTRL_MODE_STATIC;
 	else if (strcmp(argv[0], "dyn-bts") == 0)
 		params->mode = GSM_PWR_CTRL_MODE_DYN_BTS;
+	else if (strcmp(argv[0], "dyn-bsc") == 0) {
+		if (params->dir == GSM_PWR_CTRL_DIR_DL) {
+			vty_out(vty, "%% mode dyn-bsc not supported for Downlink.%s", VTY_NEWLINE);
+			return CMD_WARNING;
+		}
+		params->mode = GSM_PWR_CTRL_MODE_DYN_BSC;
+	}
 
 	return CMD_SUCCESS;
 }
@@ -3138,6 +3146,11 @@ DEFUN_USRATTR(cfg_power_ctrl_ci_thresh,
 	int lower = atoi(argv[1]);
 	int upper = atoi(argv[2]);
 	struct gsm_power_ctrl_meas_params *meas_params;
+
+	if (params->mode == GSM_PWR_CTRL_MODE_DYN_BSC) {
+		vty_out(vty, "%% C/I based power loop not possible in dyn-bsc mode!%s", VTY_NEWLINE);
+		return CMD_WARNING;
+	}
 
 	if (params->dir != GSM_PWR_CTRL_DIR_UL) {
 		vty_out(vty, "%% C/I based power loop only possible in Uplink!%s", VTY_NEWLINE);
@@ -3962,8 +3975,10 @@ static void config_write_power_ctrl(struct vty *vty, unsigned int indent,
 			cfg_out(" bs-power static %u%s", cp->bs_power_val_db, VTY_NEWLINE);
 		break;
 	case GSM_PWR_CTRL_MODE_DYN_BTS:
+	case GSM_PWR_CTRL_MODE_DYN_BSC:
 		cfg_out("%s%s", node_name, VTY_NEWLINE);
-		cfg_out(" mode dyn-bts%s", VTY_NEWLINE);
+		cfg_out(" mode %s%s",
+			cp->mode == GSM_PWR_CTRL_MODE_DYN_BTS ? "dyn-bts" : "dyn-bsc", VTY_NEWLINE);
 		if (cp->dir == GSM_PWR_CTRL_DIR_DL)
 			cfg_out(" bs-power dyn-max %u%s", cp->bs_power_max_db, VTY_NEWLINE);
 
@@ -3975,7 +3990,8 @@ static void config_write_power_ctrl(struct vty *vty, unsigned int indent,
 		/* Measurement processing / averaging parameters */
 		config_write_power_ctrl_meas(vty, indent + 1, &cp->rxlev_meas, "rxlev", "");
 		config_write_power_ctrl_meas(vty, indent + 1, &cp->rxqual_meas, "rxqual", "");
-		if (cp->dir == GSM_PWR_CTRL_DIR_UL && is_osmobts(bts)) {
+		if (cp->dir == GSM_PWR_CTRL_DIR_UL && is_osmobts(bts)
+		    && cp->mode == GSM_PWR_CTRL_MODE_DYN_BTS) {
 			config_write_power_ctrl_meas(vty, indent + 1, &cp->ci_fr_meas, "ci", " fr-efr");
 			config_write_power_ctrl_meas(vty, indent + 1, &cp->ci_hr_meas, "ci", " hr");
 			config_write_power_ctrl_meas(vty, indent + 1, &cp->ci_amr_fr_meas, "ci", " amr-fr");

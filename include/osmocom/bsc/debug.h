@@ -29,6 +29,7 @@ enum {
 	DCBS,
 	DLCS,
 	DRESET,
+	DLOOP,
 	Debug_LastEntry,
 };
 

@@ -55,6 +55,7 @@
 #include <osmocom/bsc/handover_fsm.h>
 #include <osmocom/bsc/smscb.h>
 #include <osmocom/bsc/bts.h>
+#include <osmocom/bsc/power_control.h>
 
 static void send_lchan_signal(int sig_no, struct gsm_lchan *lchan,
 			      struct gsm_meas_rep *resp)
@@ -1340,6 +1341,8 @@ static int rsl_rx_meas_res(struct msgb *msg)
 	     gsm_lchan_name(mr->lchan), mr->lchan->meas_rep_count, mr->lchan->meas_rep_last_seen_nr);
 
 	print_meas_rep(msg->lchan, mr);
+
+	lchan_ms_pwr_ctrl(msg->lchan, mr);
 
 	send_lchan_signal(S_LCHAN_MEAS_REP, msg->lchan, mr);
 

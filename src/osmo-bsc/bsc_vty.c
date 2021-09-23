@@ -1363,6 +1363,12 @@ DEFUN(bts_resend_power_ctrl_params,
 		return CMD_WARNING;
 	}
 
+	if (bts->ms_power_ctrl.mode != GSM_PWR_CTRL_MODE_DYN_BTS) {
+		vty_out(vty, "%% Not Sending default MS/BS Power control parameters "
+			"because BTS%d is not using dyn-bts mode%s", bts_nr, VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
 	if (bts->model->power_ctrl_send_def_params == NULL) {
 		vty_out(vty, "%% Sending default MS/BS Power control parameters "
 			"for BTS%d is not implemented%s", bts_nr, VTY_NEWLINE);

@@ -62,4 +62,5 @@ noinst_HEADERS = \
 	penalty_timers.h \
 	osmo_bsc_lcls.h \
 	smscb.h \
+	power_control.h \
 	$(NULL)

@@ -673,6 +673,27 @@ struct lchan_modify_info {
 #define INTERF_DBM_UNKNOWN 0
 #define INTERF_BAND_UNKNOWN 0xff
 
+/* Measurement pre-processing state */
+struct gsm_power_ctrl_meas_proc_state {
+	/* Number of measurements processed */
+	unsigned int meas_num;
+	/* Algorithm specific data */
+	union {
+		struct {
+			/* Scaled up 100 times average value */
+			int Avg100;
+		} ewma;
+	};
+};
+
+struct lchan_power_ctrl_state {
+	/* Measurement pre-processing state (for dynamic mode) */
+	struct gsm_power_ctrl_meas_proc_state rxlev_meas_proc;
+	struct gsm_power_ctrl_meas_proc_state rxqual_meas_proc;
+	/* Number of SACCH blocks to skip (for dynamic mode) */
+	int skip_block_num;
+};
+
 struct gsm_lchan {
 	/* The TS that we're part of */
 	struct gsm_bts_trx_ts *ts;
@@ -820,6 +841,8 @@ struct gsm_lchan {
 	/* Actual reported interference band index, or INTERF_BAND_UNKNOWN if this lchan was not included in the most
 	 * recent Resource Indication. */
 	uint8_t interf_band;
+	/* MS power control state */
+	struct lchan_power_ctrl_state ms_power_ctrl;
 };
 
 /* One Timeslot in a TRX */
@@ -1342,6 +1365,9 @@ enum gsm_power_ctrl_mode {
 	GSM_PWR_CTRL_MODE_STATIC,
 	/* Send MS/BS Power [Parameters] IEs (dynamic mode) */
 	GSM_PWR_CTRL_MODE_DYN_BTS,
+	/* Do not send MS/BS Power IEs and use BSC Power Loop */
+	GSM_PWR_CTRL_MODE_DYN_BSC,
+
 };
 
 /* MS/BS Power Control Parameters */

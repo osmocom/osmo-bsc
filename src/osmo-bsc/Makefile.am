@@ -106,6 +106,7 @@ libbsc_la_SOURCES = \
 	smscb.c \
 	cbch_scheduler.c \
 	cbsp_link.c \
+	power_control.c \
 	$(NULL)
 
 libbsc_la_LIBADD = \
