@@ -32,6 +32,7 @@
 #include <osmocom/bsc/meas_rep.h>
 #include <osmocom/bsc/acc.h>
 #include <osmocom/bsc/osmux.h>
+#include <osmocom/bsc/time_cc.h>
 
 #define GSM_T3122_DEFAULT 10
 
@@ -1260,6 +1261,9 @@ struct gsm_network {
 	struct osmo_nri_ranges *null_nri_ranges;
 
 	struct smlc_config *smlc;
+
+	struct time_cc all_allocated_sdcch;
+	struct time_cc all_allocated_tch;
 };
 
 struct gsm_audio_support {

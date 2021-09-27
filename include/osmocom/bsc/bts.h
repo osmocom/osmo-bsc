@@ -158,6 +158,8 @@ enum bts_counter_id {
 	BTS_CTR_SRVCC_TIMEOUT,
 	BTS_CTR_SRVCC_FAILED,
 	BTS_CTR_SRVCC_ERROR,
+	BTS_CTR_ALL_ALLOCATED_SDCCH,
+	BTS_CTR_ALL_ALLOCATED_TCH,
 };
 
 extern const struct rate_ctr_desc bts_ctr_description[];
@@ -590,6 +592,9 @@ struct gsm_bts {
 
 	/* At what point in the channel allocation sequence to dispatch the Immediate Assignment (Abis optimization) */
 	enum imm_ass_time imm_ass_time;
+
+	struct time_cc all_allocated_sdcch;
+	struct time_cc all_allocated_tch;
 };
 
 #define GSM_BTS_SI2Q(bts, i)   (struct gsm48_system_information_type_2quater *)((bts)->si_buf[SYSINFO_TYPE_2quater][i])

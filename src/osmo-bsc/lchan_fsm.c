@@ -40,6 +40,7 @@
 #include <osmocom/bsc/bsc_msc_data.h>
 #include <osmocom/bsc/codec_pref.h>
 #include <osmocom/bsc/bts.h>
+#include <osmocom/bsc/bsc_stats.h>
 
 static struct osmo_fsm lchan_fsm;
 
@@ -517,6 +518,8 @@ static void lchan_fsm_unused_onenter(struct osmo_fsm_inst *fi, uint32_t prev_sta
 	lchan_reset(lchan);
 	osmo_fsm_inst_dispatch(lchan->ts->fi, TS_EV_LCHAN_UNUSED, lchan);
 
+	bsc_update_time_cc_all_allocated(bts->network);
+
 	/* Poll the channel request queue, so that waiting calls can make use of the lchan that just
 	 * has become unused now. */
 	abis_rsl_chan_rqd_queue_poll(bts);
@@ -696,6 +699,8 @@ static void lchan_fsm_wait_ts_ready_onenter(struct osmo_fsm_inst *fi, uint32_t p
 		lchan_fail("Release requested while activating");
 		return;
 	}
+
+	bsc_update_time_cc_all_allocated(bts->network);
 
 	lchan->conn = info->for_conn;
 

@@ -56,6 +56,20 @@ static struct osmo_tdef gsm_network_T_defs[] = {
 	{ .T=-12, .default_val=5, .desc="Timeout for obtaining TA after BSSLAP TA Request" },
 	{ .T=-13, .default_val=5, .desc="Timeout for RR Channel Mode Modify ACK (BSC <-> MS)" },
 	{ .T=-14, .default_val=5, .desc="Timeout for RSL Channel Mode Modify ACK (BSC <-> BTS)" },
+	{ .T = -16, .default_val = 1000, .unit = OSMO_TDEF_MS,
+		.desc = "Granularity for all_allocated:* rate counters: amount of milliseconds that one counter increment"
+			" represents. See also X17, X18" },
+	{ .T = -17, .default_val = 0, .unit = OSMO_TDEF_MS,
+		.desc = "Rounding threshold for all_allocated:* rate counters: round up to the next counter increment"
+			" after this many milliseconds. If set to half of X16 (or 0), employ the usual round() behavior:"
+			" round up after half of a granularity period. If set to 1, behave like ceil(): already"
+			" increment the counter immediately when all channels are allocated. If set >= X16, behave like"
+			" floor(): only increment after a full X16 period of all channels being occupied."
+			" See also X16, X18" },
+	{ .T = -18, .default_val = 60000, .unit = OSMO_TDEF_MS,
+		.desc = "Forget-sum period for all_allocated:* rate counters:"
+			" after this amount of idle time, forget internally cumulated time remainders. Zero to always"
+			" keep remainders. See also X16, X17." },
 	{ .T=-3111, .default_val=4, .desc="Wait time after lchan was released in error (should be T3111 + 2s)" },
 	{ .T=-3210, .default_val=20, .desc="After L3 Complete, wait for MSC to confirm" },
 	{}

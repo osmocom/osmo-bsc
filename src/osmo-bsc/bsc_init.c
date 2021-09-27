@@ -120,6 +120,29 @@ static struct gsm_network *bsc_network_init(void *ctx)
 	if (!net->bts_unknown_statg)
 		goto err_free_all;
 
+	net->all_allocated_sdcch = (struct time_cc){
+		.cfg = {
+			.gran_usec = 1*1000000,
+			.forget_sum_usec = 60*1000000,
+			.rate_ctr = rate_ctr_group_get_ctr(net->bsc_ctrs, BSC_CTR_ALL_ALLOCATED_SDCCH),
+			.T_gran = -16,
+			.T_round_threshold = -17,
+			.T_forget_sum = -18,
+			.T_defs = net->T_defs,
+		},
+	};
+	net->all_allocated_tch = (struct time_cc){
+		.cfg = {
+			.gran_usec = 1*1000000,
+			.forget_sum_usec = 60*1000000,
+			.rate_ctr = rate_ctr_group_get_ctr(net->bsc_ctrs, BSC_CTR_ALL_ALLOCATED_TCH),
+			.T_gran = -16,
+			.T_round_threshold = -17,
+			.T_forget_sum = -18,
+			.T_defs = net->T_defs,
+		},
+	};
+
 	INIT_LLIST_HEAD(&net->bts_rejected);
 	gsm_net_update_ctype(net);
 

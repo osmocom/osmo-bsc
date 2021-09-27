@@ -25,6 +25,7 @@
 
 #include <osmocom/bsc/gsm_data.h>
 #include <osmocom/bsc/bts.h>
+#include <osmocom/bsc/chan_counts.h>
 
 const struct rate_ctr_desc bsc_ctr_description[] = {
 	[BSC_CTR_ASSIGNMENT_ATTEMPTED] =	{"assignment:attempted", "Assignment attempts"},
@@ -102,6 +103,8 @@ const struct rate_ctr_desc bsc_ctr_description[] = {
 						 "Emergency call requests forwarded to an MSC (see also per-MSC counters"},
 	[BSC_CTR_MSCPOOL_EMERG_LOST] =		{"mscpool:emerg:lost",
 						 "Emergency call requests lost because no MSC was found available"},
+	[BSC_CTR_ALL_ALLOCATED_SDCCH] =		{"all_allocated:sdcch", "Cumulative counter of seconds where all SDCCH channels were allocated"},
+	[BSC_CTR_ALL_ALLOCATED_TCH] =		{"all_allocated:tch", "Cumulative counter of seconds where all TCH channels were allocated"},
 };
 
 const struct rate_ctr_group_desc bsc_ctrg_desc = {
@@ -185,4 +188,49 @@ void bsc_update_connection_stats(struct gsm_network *net)
 	osmo_stat_item_set(osmo_stat_item_group_get_item(net->bsc_statg, BSC_STAT_NUM_TRX_RSL_CONNECTED),
 			   trx_rsl_connected_total);
 	osmo_stat_item_set(osmo_stat_item_group_get_item(net->bsc_statg, BSC_STAT_NUM_TRX_TOTAL), num_trx_total);
+
+	/* Make sure to notice cells that become disconnected */
+	bsc_update_time_cc_all_allocated(net);
+}
+
+void bsc_update_time_cc_all_allocated(struct gsm_network *net)
+{
+	struct gsm_bts *bts;
+	struct gsm_bts_trx *trx;
+
+	struct chan_counts bsc_counts;
+	chan_counts_zero(&bsc_counts);
+
+	llist_for_each_entry(bts, &net->bts_list, list) {
+		struct chan_counts bts_counts;
+		chan_counts_zero(&bts_counts);
+
+		llist_for_each_entry(trx, &bts->trx_list, list) {
+			struct chan_counts trx_counts;
+			chan_counts_for_trx(&trx_counts, trx);
+			chan_counts_add(&bts_counts, &trx_counts);
+		}
+
+		time_cc_set_flag(&bts->all_allocated_sdcch,
+				 bts_counts.val[CHAN_COUNTS1_ALL][CHAN_COUNTS2_MAX_TOTAL][GSM_LCHAN_SDCCH]
+				 && !bts_counts.val[CHAN_COUNTS1_ALL][CHAN_COUNTS2_FREE][GSM_LCHAN_SDCCH]);
+
+		time_cc_set_flag(&bts->all_allocated_tch,
+				 (bts_counts.val[CHAN_COUNTS1_ALL][CHAN_COUNTS2_MAX_TOTAL][GSM_LCHAN_TCH_F]
+				  + bts_counts.val[CHAN_COUNTS1_ALL][CHAN_COUNTS2_MAX_TOTAL][GSM_LCHAN_TCH_H])
+				 && !(bts_counts.val[CHAN_COUNTS1_ALL][CHAN_COUNTS2_FREE][GSM_LCHAN_TCH_F]
+				      + bts_counts.val[CHAN_COUNTS1_ALL][CHAN_COUNTS2_FREE][GSM_LCHAN_TCH_H]));
+
+		chan_counts_add(&bsc_counts, &bts_counts);
+	}
+
+	time_cc_set_flag(&net->all_allocated_sdcch,
+			 bsc_counts.val[CHAN_COUNTS1_ALL][CHAN_COUNTS2_MAX_TOTAL][GSM_LCHAN_SDCCH]
+			 && !bsc_counts.val[CHAN_COUNTS1_ALL][CHAN_COUNTS2_FREE][GSM_LCHAN_SDCCH]);
+
+	time_cc_set_flag(&net->all_allocated_tch,
+			 (bsc_counts.val[CHAN_COUNTS1_ALL][CHAN_COUNTS2_MAX_TOTAL][GSM_LCHAN_TCH_F]
+			  + bsc_counts.val[CHAN_COUNTS1_ALL][CHAN_COUNTS2_MAX_TOTAL][GSM_LCHAN_TCH_H])
+			 && !(bsc_counts.val[CHAN_COUNTS1_ALL][CHAN_COUNTS2_FREE][GSM_LCHAN_TCH_F]
+			      + bsc_counts.val[CHAN_COUNTS1_ALL][CHAN_COUNTS2_FREE][GSM_LCHAN_TCH_H]));
 }

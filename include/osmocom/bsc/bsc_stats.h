@@ -81,6 +81,8 @@ enum {
 	BSC_CTR_MSCPOOL_SUBSCR_NO_MSC,
 	BSC_CTR_MSCPOOL_EMERG_FORWARDED,
 	BSC_CTR_MSCPOOL_EMERG_LOST,
+	BSC_CTR_ALL_ALLOCATED_SDCCH,
+	BSC_CTR_ALL_ALLOCATED_TCH,
 };
 
 extern const struct rate_ctr_desc bsc_ctr_description[];
@@ -105,3 +107,4 @@ enum {
 extern const struct osmo_stat_item_group_desc bsc_statg_desc;
 
 void bsc_update_connection_stats(struct gsm_network *net);
+void bsc_update_time_cc_all_allocated(struct gsm_network *net);

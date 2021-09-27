@@ -211,6 +211,29 @@ struct gsm_bts *gsm_bts_alloc(struct gsm_network *net, struct gsm_bts_sm *bts_sm
 	}
 	bts->bts_statg = osmo_stat_item_group_alloc(bts, &bts_statg_desc, bts->nr);
 
+	bts->all_allocated_sdcch = (struct time_cc){
+		.cfg = {
+			.gran_usec = 1*1000000,
+			.forget_sum_usec = 60*1000000,
+			.rate_ctr = rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_ALL_ALLOCATED_SDCCH),
+			.T_gran = -16,
+			.T_round_threshold = -17,
+			.T_forget_sum = -18,
+			.T_defs = net->T_defs,
+		},
+	};
+	bts->all_allocated_tch = (struct time_cc){
+		.cfg = {
+			.gran_usec = 1*1000000,
+			.forget_sum_usec = 60*1000000,
+			.rate_ctr = rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_ALL_ALLOCATED_TCH),
+			.T_gran = -16,
+			.T_round_threshold = -17,
+			.T_forget_sum = -18,
+			.T_defs = net->T_defs,
+		},
+	};
+
 	/* create our primary TRX */
 	bts->c0 = gsm_bts_trx_alloc(bts);
 	if (!bts->c0) {
@@ -1236,6 +1259,12 @@ const struct rate_ctr_desc bts_ctr_description[] = {
 	[BTS_CTR_SRVCC_ERROR] = \
 		{ "srvcc:error",
 		  "Re-assignment failed for other reason" },
+	[BTS_CTR_ALL_ALLOCATED_SDCCH] = \
+		{ "all_allocated:sdcch",
+		  "Cumulative counter of seconds where all SDCCH channels were allocated" },
+	[BTS_CTR_ALL_ALLOCATED_TCH] = \
+		{ "all_allocated:tch",
+		  "Cumulative counter of seconds where all TCH channels were allocated" },
 };
 
 const struct rate_ctr_group_desc bts_ctrg_desc = {
