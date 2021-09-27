@@ -112,8 +112,15 @@ void osmobts_enc_power_params_osmo_ext(struct msgb *msg, const struct gsm_power_
 	ie_len = msgb_tl_put(msg, RSL_IPAC_EIE_OSMO_MS_PWR_CTL);
 	osmo_thresh = (struct osmo_preproc_pc_thresh *) msgb_put(msg, sizeof(*osmo_thresh));
 	#define ENC_THRESH_CI(TYPE) \
-		osmo_thresh->l_##TYPE = cp->TYPE##_meas.lower_thresh; \
-		osmo_thresh->u_##TYPE = cp->TYPE##_meas.upper_thresh
+		do { \
+			if (cp->TYPE##_meas.enabled) { \
+				osmo_thresh->l_##TYPE = cp->TYPE##_meas.lower_thresh; \
+				osmo_thresh->u_##TYPE = cp->TYPE##_meas.upper_thresh; \
+			} else { \
+				osmo_thresh->l_##TYPE = 0; \
+				osmo_thresh->u_##TYPE = 0; \
+			} \
+		} while (0)
 	ENC_THRESH_CI(ci_fr);
 	ENC_THRESH_CI(ci_hr);
 	ENC_THRESH_CI(ci_amr_fr);
@@ -128,10 +135,19 @@ void osmobts_enc_power_params_osmo_ext(struct msgb *msg, const struct gsm_power_
 	ie_len = msgb_tl_put(msg, RSL_IPAC_EIE_OSMO_PC_THRESH_COMP);
 	osmo_thresh_comp = (struct osmo_preproc_pc_comp *) msgb_put(msg, sizeof(*osmo_thresh_comp));
 	#define ENC_THRESH_CI(TYPE) \
-		osmo_thresh_comp->TYPE.lower_p = cp->TYPE##_meas.lower_cmp_p & 0x1f; \
-		osmo_thresh_comp->TYPE.lower_n = cp->TYPE##_meas.lower_cmp_n & 0x1f; \
-		osmo_thresh_comp->TYPE.upper_p = cp->TYPE##_meas.upper_cmp_p & 0x1f; \
-		osmo_thresh_comp->TYPE.upper_n = cp->TYPE##_meas.upper_cmp_n & 0x1f
+		do { \
+			if (cp->TYPE##_meas.enabled) { \
+				osmo_thresh_comp->TYPE.lower_p = cp->TYPE##_meas.lower_cmp_p & 0x1f; \
+				osmo_thresh_comp->TYPE.lower_n = cp->TYPE##_meas.lower_cmp_n & 0x1f; \
+				osmo_thresh_comp->TYPE.upper_p = cp->TYPE##_meas.upper_cmp_p & 0x1f; \
+				osmo_thresh_comp->TYPE.upper_n = cp->TYPE##_meas.upper_cmp_n & 0x1f; \
+			} else { \
+				osmo_thresh_comp->TYPE.lower_p = 0; \
+				osmo_thresh_comp->TYPE.lower_n = 0; \
+				osmo_thresh_comp->TYPE.upper_p = 0; \
+				osmo_thresh_comp->TYPE.upper_n = 0; \
+			} \
+		} while (0)
 	ENC_THRESH_CI(ci_fr);
 	ENC_THRESH_CI(ci_hr);
 	ENC_THRESH_CI(ci_amr_fr);

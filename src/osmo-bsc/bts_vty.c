@@ -3093,6 +3093,7 @@ DEFUN_USRATTR(cfg_power_ctrl_rxqual_thresh,
 }
 
 #define VTY_CMD_CI_TYPE "(fr-efr|hr|amr-fr|amr-hr|sdcch|gprs)"
+#define VTY_CMD_CI_OR_ALL_TYPE "(fr-efr|hr|amr-fr|amr-hr|sdcch|gprs|all)"
 #define VTY_DESC_CI_TYPE \
 	"Channel Type FR/EFR\n" \
 	"Channel Type HR\n" \
@@ -3100,6 +3101,8 @@ DEFUN_USRATTR(cfg_power_ctrl_rxqual_thresh,
 	"Channel Type AMR HR\n" \
 	"Channel Type SDCCH\n" \
 	"Channel Type (E)GPRS\n"
+#define VTY_DESC_CI_OR_ALL_TYPE VTY_DESC_CI_TYPE "All Channel Types\n"
+
 static struct gsm_power_ctrl_meas_params *ci_thresh_by_conn_type(struct gsm_power_ctrl_params *params, const char *type)
 {
 	if (!strcmp(type, "fr-efr"))
@@ -3151,6 +3154,35 @@ DEFUN_USRATTR(cfg_power_ctrl_ci_thresh,
 
 	meas_params->lower_thresh = lower;
 	meas_params->upper_thresh = upper;
+
+	return CMD_SUCCESS;
+}
+
+DEFUN_USRATTR(cfg_power_ctrl_ci_thresh_disable,
+	      cfg_power_ctrl_ci_thresh_disable_cmd,
+	      X(BSC_VTY_ATTR_VENDOR_SPECIFIC) |
+	      X(BSC_VTY_ATTR_NEW_LCHAN),
+	      "ci-thresh " VTY_CMD_CI_OR_ALL_TYPE " (enable|disable)",
+	      "Set target C/I thresholds (for dynamic mode), only available in ms-power-control\n"
+	      VTY_DESC_CI_OR_ALL_TYPE
+	      "Enable C/I comparison in control loop\n"
+	      "Disable C/I comparison in control loop\n")
+{
+	struct gsm_power_ctrl_params *params = vty->index;
+
+	bool enable = strcmp(argv[1], "enable") == 0;
+
+	if (strcmp(argv[0], "all") == 0) {
+		params->ci_fr_meas.enabled = enable;
+		params->ci_hr_meas.enabled = enable;
+		params->ci_amr_fr_meas.enabled = enable;
+		params->ci_amr_hr_meas.enabled = enable;
+		params->ci_sdcch_meas.enabled = enable;
+		params->ci_gprs_meas.enabled = enable;
+	} else {
+		struct gsm_power_ctrl_meas_params *meas_params = ci_thresh_by_conn_type(params, argv[0]);
+		meas_params->enabled = enable;
+	}
 
 	return CMD_SUCCESS;
 }
@@ -3268,35 +3300,6 @@ DEFUN_USRATTR(cfg_power_ctrl_ci_thresh_comp,
 	meas_params->lower_cmp_n = lower_cmp_n;
 	meas_params->upper_cmp_p = upper_cmp_p;
 	meas_params->upper_cmp_n = upper_cmp_n;
-
-	return CMD_SUCCESS;
-}
-
-DEFUN_USRATTR(cfg_power_ctrl_ci_thresh_comp_disable,
-	      cfg_power_ctrl_ci_thresh_comp_disable_cmd,
-	      X(BSC_VTY_ATTR_VENDOR_SPECIFIC) |
-	      X(BSC_VTY_ATTR_NEW_LCHAN),
-	      "ci-thresh-comp disable all",
-	      "Set Carrier-to_interference (C/I) threshold comparators (for dynamic mode)\n"
-	      "Disable C/I comparison in control loop (sets LOWER_CMP_N and UPPER_CMP_N to zero)\n"
-	      "Disable C/I comparison for all channel types\n")
-{
-	struct gsm_power_ctrl_params *params = vty->index;
-
-#define DISABLE_MEAS_PC(PARAMS, TYPE) \
-	(PARAMS)->TYPE##_meas.lower_cmp_p = 0; \
-	(PARAMS)->TYPE##_meas.lower_cmp_n = 0; \
-	(PARAMS)->TYPE##_meas.upper_cmp_p = 0; \
-	(PARAMS)->TYPE##_meas.upper_cmp_n = 0
-
-	DISABLE_MEAS_PC(params, ci_fr);
-	DISABLE_MEAS_PC(params, ci_hr);
-	DISABLE_MEAS_PC(params, ci_amr_fr);
-	DISABLE_MEAS_PC(params, ci_amr_hr);
-	DISABLE_MEAS_PC(params, ci_sdcch);
-	DISABLE_MEAS_PC(params, ci_gprs);
-
-#undef DISABLE_MEAS_PC
 
 	return CMD_SUCCESS;
 }
@@ -3898,6 +3901,12 @@ static void config_write_power_ctrl_meas(struct vty *vty, unsigned int indent,
 					 const struct gsm_power_ctrl_meas_params *mp,
 					 const char *param, const char *param2)
 {
+	if (strcmp(param, "ci") == 0) {
+		cfg_out("%s-thresh%s %s%s",
+			param, param2, mp->enabled ? "enable" : "disable",
+			VTY_NEWLINE);
+	}
+
 	cfg_out("%s-thresh%s lower %u upper %u%s",
 		param, param2, mp->lower_thresh, mp->upper_thresh,
 		VTY_NEWLINE);
@@ -4471,11 +4480,11 @@ int bts_vty_init(void)
 	install_element(POWER_CTRL_NODE, &cfg_power_ctrl_step_size_cmd);
 	install_element(POWER_CTRL_NODE, &cfg_power_ctrl_rxlev_thresh_cmd);
 	install_element(POWER_CTRL_NODE, &cfg_power_ctrl_rxqual_thresh_cmd);
+	install_element(POWER_CTRL_NODE, &cfg_power_ctrl_ci_thresh_disable_cmd);
 	install_element(POWER_CTRL_NODE, &cfg_power_ctrl_ci_thresh_cmd);
 	install_element(POWER_CTRL_NODE, &cfg_power_ctrl_rxlev_thresh_comp_cmd);
 	install_element(POWER_CTRL_NODE, &cfg_power_ctrl_rxqual_thresh_comp_cmd);
 	install_element(POWER_CTRL_NODE, &cfg_power_ctrl_ci_thresh_comp_cmd);
-	install_element(POWER_CTRL_NODE, &cfg_power_ctrl_ci_thresh_comp_disable_cmd);
 	install_element(POWER_CTRL_NODE, &cfg_power_ctrl_no_avg_cmd);
 	install_element(POWER_CTRL_NODE, &cfg_power_ctrl_avg_params_cmd);
 	install_element(POWER_CTRL_NODE, &cfg_power_ctrl_avg_algo_cmd);

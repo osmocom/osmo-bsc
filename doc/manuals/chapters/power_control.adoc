@@ -33,6 +33,7 @@ ignore some of the received parameters due to incomplete implementation. On the
 other hand, OsmoBTS may support some extra parameters coming in Osmocom specific
 IEs not supported by nanoBTS, such as those configuring C/I measurement thresholds.
 
+[[apply_pwr_ctrl]]
 ==== When the parameters come into effect?
 
 It depends on how the power control parameters are signaled to the BTS.  If a given
@@ -337,21 +338,24 @@ network
  bts 0
   ms-power-control
    mode dyn-bts <1>
-   ci-thresh amr-fr lower 7 upper 11 <2>
-   ci-thresh-comp amr-fr lower 2 10 <3> upper 3 4 <4>
+   ci-thresh amr-fr enable <2>
+   ci-thresh amr-fr lower 7 upper 11 <3>
+   ci-thresh-comp amr-fr lower 2 10 <4> upper 3 4 <5>
 ----
 <1> MS power control is to be performed by the BTS autonomously.
-<2> L_CI_AMR_FR_XX_P=7, U_CI_AMR_FR_XX_P=11.
-<3> P0=2 out of N1=10 averages < L_CI_AMR_FR_XX_P => increase power.
-<4> P1=3 out of N2=4 averages > U_CI_AMR_FR_XX_P => decrease power.
+<2> MS power control loop should take C/I into account.
+<3> L_CI_AMR_FR_XX_P=7, U_CI_AMR_FR_XX_P=11.
+<4> P0=2 out of N1=10 averages < L_CI_AMR_FR_XX_P => increase power.
+<5> P1=3 out of N2=4 averages > U_CI_AMR_FR_XX_P => decrease power.
 
 NOTE: The BSC can instruct a BTS to disable C/I related logic in its
 autonomous MS Power Control Loop for a given channel type (hence not taking C/I
 measurements into account) by means of setting both related LOWER_CMP_N and
 UPPER_CMP_N parameters to zero (see _ci-thresh-comp_ VTY command). For the sake
 of easing configuration, a placeholder VTY command to disable C/I for all
-channel types is available under VTY node _ms-power-control_ as *_ci-thresh-comp
-disable all_*.
+channel types is available under VTY node _ms-power-control_ as *_ci-thresh
+all disable_*. Afterwards, the new configuration must be deployed to the target
+BTS (see <<apply_pwr_ctrl>>).
 
 ==== Measurement averaging process
 

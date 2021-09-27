@@ -1146,6 +1146,7 @@ const struct gsm_power_ctrl_params power_ctrl_params_def = {
 
 	/* RxLev measurement parameters */
 	.rxlev_meas = {
+		.enabled = true,
 		/* Thresholds for RxLev (see 3GPP TS 45.008, A.3.2.1) */
 		.lower_thresh = 32, /* L_RXLEV_XX_P (-78 dBm) */
 		.upper_thresh = 38, /* U_RXLEV_XX_P (-72 dBm) */
@@ -1170,6 +1171,7 @@ const struct gsm_power_ctrl_params power_ctrl_params_def = {
 
 	/* RxQual measurement parameters */
 	.rxqual_meas = {
+		.enabled = true,
 		/* Thresholds for RxQual (see 3GPP TS 45.008, A.3.2.1) */
 		.lower_thresh = 3, /* L_RXQUAL_XX_P (0.8% <= BER < 1.6%) */
 		.upper_thresh = 0, /* U_RXQUAL_XX_P (BER < 0.2%) */
@@ -1198,6 +1200,7 @@ const struct gsm_power_ctrl_params power_ctrl_params_def = {
 	 * above the target.
 	 */
 	.ci_fr_meas = { /* FR: Target C/I = 15 dB, Soft blocking threshold = 10 dB */
+		.enabled = true,
 		.lower_thresh = 13,
 		.upper_thresh = 17,
 
@@ -1219,6 +1222,7 @@ const struct gsm_power_ctrl_params power_ctrl_params_def = {
 		.h_reqt = 6, /* TODO: investigate a reasonable default value */
 	},
 	.ci_hr_meas = { /* HR: Target C/I = 18 dB, Soft blocking threshold = 13 dB */
+		.enabled = true,
 		.lower_thresh = 16,
 		.upper_thresh = 21,
 
@@ -1240,6 +1244,7 @@ const struct gsm_power_ctrl_params power_ctrl_params_def = {
 		.h_reqt = 6, /* TODO: investigate a reasonable default value */
 	},
 	.ci_amr_fr_meas = { /* AMR-FR: Target C/I = 9 dB, Soft blocking threshold = 4 dB */
+		.enabled = true,
 		.lower_thresh = 7,
 		.upper_thresh = 11,
 
@@ -1261,6 +1266,7 @@ const struct gsm_power_ctrl_params power_ctrl_params_def = {
 		.h_reqt = 6, /* TODO: investigate a reasonable default value */
 	},
 	.ci_amr_hr_meas = { /* AMR-HR: Target C/I = 15 dB, Soft blocking threshold = 10 dB */
+		.enabled = true,
 		.lower_thresh = 13,
 		.upper_thresh = 17,
 
@@ -1282,6 +1288,7 @@ const struct gsm_power_ctrl_params power_ctrl_params_def = {
 		.h_reqt = 6, /* TODO: investigate a reasonable default value */
 	},
 	.ci_sdcch_meas = { /* SDCCH: Target C/I = 14 dB, Soft blocking threshold = 9 dB */
+		.enabled = true,
 		.lower_thresh = 12,
 		.upper_thresh = 16,
 
@@ -1303,6 +1310,7 @@ const struct gsm_power_ctrl_params power_ctrl_params_def = {
 		.h_reqt = 6, /* TODO: investigate a reasonable default value */
 	},
 	.ci_gprs_meas = { /* GPRS: Target C/I = 20 dB, Soft blocking threshold = 15 dB */
+		.enabled = true,
 		.lower_thresh = 18,
 		.upper_thresh = 24,
 

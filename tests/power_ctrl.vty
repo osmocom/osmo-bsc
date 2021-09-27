@@ -34,11 +34,11 @@ OsmoBSC(config-bs-power-ctrl)# list with-flags
   . lv  step-size inc <2-6> red <2-4>
   . lv  rxlev-thresh lower <0-63> upper <0-63>
   . lv  rxqual-thresh lower <0-7> upper <0-7>
+  . lv  ci-thresh (fr-efr|hr|amr-fr|amr-hr|sdcch|gprs|all) (enable|disable)
   . lv  ci-thresh (fr-efr|hr|amr-fr|amr-hr|sdcch|gprs) lower <0-30> upper <0-30>
   . lv  rxlev-thresh-comp lower <0-31> <0-31> upper <0-31> <0-31>
   . lv  rxqual-thresh-comp lower <0-31> <0-31> upper <0-31> <0-31>
   . lv  ci-thresh-comp (fr-efr|hr|amr-fr|amr-hr|sdcch|gprs) lower <0-31> <0-31> upper <0-31> <0-31>
-  . lv  ci-thresh-comp disable all
   . lv  no (rxlev-avg|rxqual-avg)
   . lv  (rxlev-avg|rxqual-avg) params hreqave <1-31> hreqt <1-31>
   . lv  (rxlev-avg|rxqual-avg) algo (unweighted|weighted|mod-median)
@@ -115,11 +115,11 @@ OsmoBSC(config-ms-power-ctrl)# list with-flags
   . lv  step-size inc <2-6> red <2-4>
   . lv  rxlev-thresh lower <0-63> upper <0-63>
   . lv  rxqual-thresh lower <0-7> upper <0-7>
+  . lv  ci-thresh (fr-efr|hr|amr-fr|amr-hr|sdcch|gprs|all) (enable|disable)
   . lv  ci-thresh (fr-efr|hr|amr-fr|amr-hr|sdcch|gprs) lower <0-30> upper <0-30>
   . lv  rxlev-thresh-comp lower <0-31> <0-31> upper <0-31> <0-31>
   . lv  rxqual-thresh-comp lower <0-31> <0-31> upper <0-31> <0-31>
   . lv  ci-thresh-comp (fr-efr|hr|amr-fr|amr-hr|sdcch|gprs) lower <0-31> <0-31> upper <0-31> <0-31>
-  . lv  ci-thresh-comp disable all
   . lv  no (rxlev-avg|rxqual-avg)
   . lv  (rxlev-avg|rxqual-avg) params hreqave <1-31> hreqt <1-31>
   . lv  (rxlev-avg|rxqual-avg) algo (unweighted|weighted|mod-median)
@@ -143,16 +143,22 @@ OsmoBSC(config-ms-power-ctrl)# show running-config
    rxlev-thresh-comp lower 10 12 upper 19 20
    rxqual-thresh lower 3 upper 0
    rxqual-thresh-comp lower 5 7 upper 15 18
+   ci-thresh fr-efr enable
    ci-thresh fr-efr lower 13 upper 17
    ci-thresh-comp fr-efr lower 5 7 upper 15 18
+   ci-thresh hr enable
    ci-thresh hr lower 16 upper 21
    ci-thresh-comp hr lower 5 7 upper 15 18
+   ci-thresh amr-fr enable
    ci-thresh amr-fr lower 7 upper 11
    ci-thresh-comp amr-fr lower 5 7 upper 15 18
+   ci-thresh amr-hr enable
    ci-thresh amr-hr lower 13 upper 17
    ci-thresh-comp amr-hr lower 5 7 upper 15 18
+   ci-thresh sdcch enable
    ci-thresh sdcch lower 12 upper 16
    ci-thresh-comp sdcch lower 5 7 upper 15 18
+   ci-thresh gprs enable
    ci-thresh gprs lower 18 upper 24
    ci-thresh-comp gprs lower 5 7 upper 15 18
 ...
@@ -304,33 +310,47 @@ OsmoBSC(config-ms-power-ctrl)# show running-config
 ...
   ms-power-control
 ...
+   ci-thresh fr-efr enable
+   ci-thresh fr-efr lower 13 upper 17
    ci-thresh-comp fr-efr lower 5 7 upper 15 18
-...
+   ci-thresh hr enable
+   ci-thresh hr lower 16 upper 21
    ci-thresh-comp hr lower 5 7 upper 15 18
-...
+   ci-thresh amr-fr enable
+   ci-thresh amr-fr lower 7 upper 11
    ci-thresh-comp amr-fr lower 5 7 upper 15 18
-...
+   ci-thresh amr-hr enable
+   ci-thresh amr-hr lower 13 upper 17
    ci-thresh-comp amr-hr lower 5 7 upper 15 18
-...
+   ci-thresh sdcch enable
+   ci-thresh sdcch lower 12 upper 16
    ci-thresh-comp sdcch lower 5 7 upper 15 18
-...
+   ci-thresh gprs enable
+   ci-thresh gprs lower 18 upper 24
    ci-thresh-comp gprs lower 5 7 upper 15 18
 ...
 
-OsmoBSC(config-ms-power-ctrl)# ci-thresh-comp disable all
+OsmoBSC(config-ms-power-ctrl)# ci-thresh all disable
 OsmoBSC(config-ms-power-ctrl)# show running-config
 ...
   ms-power-control
 ...
-   ci-thresh-comp fr-efr lower 0 0 upper 0 0
-...
-   ci-thresh-comp hr lower 0 0 upper 0 0
-...
-   ci-thresh-comp amr-fr lower 0 0 upper 0 0
-...
-   ci-thresh-comp amr-hr lower 0 0 upper 0 0
-...
-   ci-thresh-comp sdcch lower 0 0 upper 0 0
-...
-   ci-thresh-comp gprs lower 0 0 upper 0 0
+   ci-thresh fr-efr disable
+   ci-thresh fr-efr lower 13 upper 17
+   ci-thresh-comp fr-efr lower 5 7 upper 15 18
+   ci-thresh hr disable
+   ci-thresh hr lower 16 upper 21
+   ci-thresh-comp hr lower 5 7 upper 15 18
+   ci-thresh amr-fr disable
+   ci-thresh amr-fr lower 7 upper 11
+   ci-thresh-comp amr-fr lower 5 7 upper 15 18
+   ci-thresh amr-hr disable
+   ci-thresh amr-hr lower 13 upper 17
+   ci-thresh-comp amr-hr lower 5 7 upper 15 18
+   ci-thresh sdcch disable
+   ci-thresh sdcch lower 12 upper 16
+   ci-thresh-comp sdcch lower 5 7 upper 15 18
+   ci-thresh gprs disable
+   ci-thresh gprs lower 18 upper 24
+   ci-thresh-comp gprs lower 5 7 upper 15 18
 ...

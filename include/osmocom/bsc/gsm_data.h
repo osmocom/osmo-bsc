@@ -1289,6 +1289,9 @@ enum gsm_power_ctrl_meas_avg_algo {
 
 /* MS/BS Power related measurement parameters */
 struct gsm_power_ctrl_meas_params {
+	/* Are these measurement paremeters to be taken into account by loop? */
+	bool enabled;
+
 	/* Thresholds (see 3GPP TS 45.008, section A.3.2.1) */
 	uint8_t lower_thresh; /* lower (decreasing) direction */
 	uint8_t upper_thresh; /* upper (increasing) direction */
