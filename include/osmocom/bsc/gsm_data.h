@@ -1263,7 +1263,9 @@ struct gsm_network {
 	struct smlc_config *smlc;
 
 	struct time_cc all_allocated_sdcch;
+	struct time_cc all_allocated_static_sdcch;
 	struct time_cc all_allocated_tch;
+	struct time_cc all_allocated_static_tch;
 };
 
 struct gsm_audio_support {

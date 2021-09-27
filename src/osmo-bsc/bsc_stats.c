@@ -104,7 +104,11 @@ const struct rate_ctr_desc bsc_ctr_description[] = {
 	[BSC_CTR_MSCPOOL_EMERG_LOST] =		{"mscpool:emerg:lost",
 						 "Emergency call requests lost because no MSC was found available"},
 	[BSC_CTR_ALL_ALLOCATED_SDCCH] =		{"all_allocated:sdcch", "Cumulative counter of seconds where all SDCCH channels were allocated"},
+	[BSC_CTR_ALL_ALLOCATED_STATIC_SDCCH] =	{"all_allocated:static_sdcch",
+						 "Cumulative counter of seconds where all non-dynamic SDCCH channels were allocated"},
 	[BSC_CTR_ALL_ALLOCATED_TCH] =		{"all_allocated:tch", "Cumulative counter of seconds where all TCH channels were allocated"},
+	[BSC_CTR_ALL_ALLOCATED_STATIC_TCH] =	{"all_allocated:static_tch",
+						 "Cumulative counter of seconds where all non-dynamic TCH channels were allocated"},
 };
 
 const struct rate_ctr_group_desc bsc_ctrg_desc = {
@@ -215,11 +219,21 @@ void bsc_update_time_cc_all_allocated(struct gsm_network *net)
 				 bts_counts.val[CHAN_COUNTS1_ALL][CHAN_COUNTS2_MAX_TOTAL][GSM_LCHAN_SDCCH]
 				 && !bts_counts.val[CHAN_COUNTS1_ALL][CHAN_COUNTS2_FREE][GSM_LCHAN_SDCCH]);
 
+		time_cc_set_flag(&bts->all_allocated_static_sdcch,
+				 bts_counts.val[CHAN_COUNTS1_STATIC][CHAN_COUNTS2_MAX_TOTAL][GSM_LCHAN_SDCCH]
+				 && !bts_counts.val[CHAN_COUNTS1_STATIC][CHAN_COUNTS2_FREE][GSM_LCHAN_SDCCH]);
+
 		time_cc_set_flag(&bts->all_allocated_tch,
 				 (bts_counts.val[CHAN_COUNTS1_ALL][CHAN_COUNTS2_MAX_TOTAL][GSM_LCHAN_TCH_F]
 				  + bts_counts.val[CHAN_COUNTS1_ALL][CHAN_COUNTS2_MAX_TOTAL][GSM_LCHAN_TCH_H])
 				 && !(bts_counts.val[CHAN_COUNTS1_ALL][CHAN_COUNTS2_FREE][GSM_LCHAN_TCH_F]
 				      + bts_counts.val[CHAN_COUNTS1_ALL][CHAN_COUNTS2_FREE][GSM_LCHAN_TCH_H]));
+
+		time_cc_set_flag(&bts->all_allocated_static_tch,
+				 (bts_counts.val[CHAN_COUNTS1_STATIC][CHAN_COUNTS2_MAX_TOTAL][GSM_LCHAN_TCH_F]
+				  + bts_counts.val[CHAN_COUNTS1_STATIC][CHAN_COUNTS2_MAX_TOTAL][GSM_LCHAN_TCH_H])
+				 && !(bts_counts.val[CHAN_COUNTS1_STATIC][CHAN_COUNTS2_FREE][GSM_LCHAN_TCH_F]
+				      + bts_counts.val[CHAN_COUNTS1_STATIC][CHAN_COUNTS2_FREE][GSM_LCHAN_TCH_H]));
 
 		chan_counts_add(&bsc_counts, &bts_counts);
 	}
@@ -228,9 +242,19 @@ void bsc_update_time_cc_all_allocated(struct gsm_network *net)
 			 bsc_counts.val[CHAN_COUNTS1_ALL][CHAN_COUNTS2_MAX_TOTAL][GSM_LCHAN_SDCCH]
 			 && !bsc_counts.val[CHAN_COUNTS1_ALL][CHAN_COUNTS2_FREE][GSM_LCHAN_SDCCH]);
 
+	time_cc_set_flag(&net->all_allocated_static_sdcch,
+			 bsc_counts.val[CHAN_COUNTS1_STATIC][CHAN_COUNTS2_MAX_TOTAL][GSM_LCHAN_SDCCH]
+			 && !bsc_counts.val[CHAN_COUNTS1_STATIC][CHAN_COUNTS2_FREE][GSM_LCHAN_SDCCH]);
+
 	time_cc_set_flag(&net->all_allocated_tch,
 			 (bsc_counts.val[CHAN_COUNTS1_ALL][CHAN_COUNTS2_MAX_TOTAL][GSM_LCHAN_TCH_F]
 			  + bsc_counts.val[CHAN_COUNTS1_ALL][CHAN_COUNTS2_MAX_TOTAL][GSM_LCHAN_TCH_H])
 			 && !(bsc_counts.val[CHAN_COUNTS1_ALL][CHAN_COUNTS2_FREE][GSM_LCHAN_TCH_F]
 			      + bsc_counts.val[CHAN_COUNTS1_ALL][CHAN_COUNTS2_FREE][GSM_LCHAN_TCH_H]));
+
+	time_cc_set_flag(&net->all_allocated_static_tch,
+			 (bsc_counts.val[CHAN_COUNTS1_STATIC][CHAN_COUNTS2_MAX_TOTAL][GSM_LCHAN_TCH_F]
+			  + bsc_counts.val[CHAN_COUNTS1_STATIC][CHAN_COUNTS2_MAX_TOTAL][GSM_LCHAN_TCH_H])
+			 && !(bsc_counts.val[CHAN_COUNTS1_STATIC][CHAN_COUNTS2_FREE][GSM_LCHAN_TCH_F]
+			      + bsc_counts.val[CHAN_COUNTS1_STATIC][CHAN_COUNTS2_FREE][GSM_LCHAN_TCH_H]));
 }

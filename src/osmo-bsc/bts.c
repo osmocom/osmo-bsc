@@ -222,11 +222,33 @@ struct gsm_bts *gsm_bts_alloc(struct gsm_network *net, struct gsm_bts_sm *bts_sm
 			.T_defs = net->T_defs,
 		},
 	};
+	bts->all_allocated_static_sdcch = (struct time_cc){
+		.cfg = {
+			.gran_usec = 1*1000000,
+			.forget_sum_usec = 60*1000000,
+			.rate_ctr = rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_ALL_ALLOCATED_STATIC_SDCCH),
+			.T_gran = -16,
+			.T_round_threshold = -17,
+			.T_forget_sum = -18,
+			.T_defs = net->T_defs,
+		},
+	};
 	bts->all_allocated_tch = (struct time_cc){
 		.cfg = {
 			.gran_usec = 1*1000000,
 			.forget_sum_usec = 60*1000000,
 			.rate_ctr = rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_ALL_ALLOCATED_TCH),
+			.T_gran = -16,
+			.T_round_threshold = -17,
+			.T_forget_sum = -18,
+			.T_defs = net->T_defs,
+		},
+	};
+	bts->all_allocated_static_tch = (struct time_cc){
+		.cfg = {
+			.gran_usec = 1*1000000,
+			.forget_sum_usec = 60*1000000,
+			.rate_ctr = rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_ALL_ALLOCATED_STATIC_TCH),
 			.T_gran = -16,
 			.T_round_threshold = -17,
 			.T_forget_sum = -18,
@@ -1262,9 +1284,15 @@ const struct rate_ctr_desc bts_ctr_description[] = {
 	[BTS_CTR_ALL_ALLOCATED_SDCCH] = \
 		{ "all_allocated:sdcch",
 		  "Cumulative counter of seconds where all SDCCH channels were allocated" },
+	[BTS_CTR_ALL_ALLOCATED_STATIC_SDCCH] = \
+		{ "all_allocated:static_sdcch",
+		  "Cumulative counter of seconds where all non-dynamic SDCCH channels were allocated" },
 	[BTS_CTR_ALL_ALLOCATED_TCH] = \
 		{ "all_allocated:tch",
 		  "Cumulative counter of seconds where all TCH channels were allocated" },
+	[BTS_CTR_ALL_ALLOCATED_STATIC_TCH] = \
+		{ "all_allocated:static_tch",
+		  "Cumulative counter of seconds where all non-dynamic TCH channels were allocated" },
 };
 
 const struct rate_ctr_group_desc bts_ctrg_desc = {

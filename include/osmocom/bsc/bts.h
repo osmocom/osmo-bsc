@@ -159,7 +159,9 @@ enum bts_counter_id {
 	BTS_CTR_SRVCC_FAILED,
 	BTS_CTR_SRVCC_ERROR,
 	BTS_CTR_ALL_ALLOCATED_SDCCH,
+	BTS_CTR_ALL_ALLOCATED_STATIC_SDCCH,
 	BTS_CTR_ALL_ALLOCATED_TCH,
+	BTS_CTR_ALL_ALLOCATED_STATIC_TCH,
 };
 
 extern const struct rate_ctr_desc bts_ctr_description[];
@@ -594,7 +596,9 @@ struct gsm_bts {
 	enum imm_ass_time imm_ass_time;
 
 	struct time_cc all_allocated_sdcch;
+	struct time_cc all_allocated_static_sdcch;
 	struct time_cc all_allocated_tch;
+	struct time_cc all_allocated_static_tch;
 };
 
 #define GSM_BTS_SI2Q(bts, i)   (struct gsm48_system_information_type_2quater *)((bts)->si_buf[SYSINFO_TYPE_2quater][i])
