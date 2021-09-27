@@ -916,7 +916,7 @@ static const struct value_string assignment_fsm_event_names[] = {
 	{}
 };
 
-void assignment_fsm_allstate_action(struct osmo_fsm_inst *fi, uint32_t event, void *data)
+static void assignment_fsm_allstate_action(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
 	struct gsm_subscriber_connection *conn = assignment_fi_conn(fi);
 
