@@ -292,54 +292,6 @@ void gsm_trx_all_ts_dispatch(struct gsm_bts_trx *trx, uint32_t ts_ev, void *data
 	}
 }
 
-int trx_count_free_ts(struct gsm_bts_trx *trx, enum gsm_phys_chan_config pchan)
-{
-	struct gsm_bts_trx_ts *ts;
-	struct gsm_lchan *lchan;
-	int j;
-	int count = 0;
-
-	if (!trx_is_usable(trx))
-		return 0;
-
-	for (j = 0; j < ARRAY_SIZE(trx->ts); j++) {
-		ts = &trx->ts[j];
-		if (!ts_is_usable(ts))
-			continue;
-
-		if (ts->pchan_is == GSM_PCHAN_PDCH) {
-			/* Dynamic timeslots in PDCH mode will become TCH if needed. */
-			switch (ts->pchan_on_init) {
-			case GSM_PCHAN_TCH_F_PDCH:
-				if (pchan == GSM_PCHAN_TCH_F)
-					count++;
-				continue;
-
-			case GSM_PCHAN_OSMO_DYN:
-				if (pchan == GSM_PCHAN_TCH_F)
-					count++;
-				else if (pchan == GSM_PCHAN_TCH_H)
-					count += 2;
-				continue;
-
-			default:
-				/* Not dynamic, not applicable. */
-				continue;
-			}
-		}
-
-		if (ts->pchan_is != pchan)
-			continue;
-
-		ts_for_n_lchans(lchan, ts, ts->max_primary_lchans) {
-			if (lchan_state_is(lchan, LCHAN_ST_UNUSED))
-				count++;
-		}
-	}
-
-	return count;
-}
-
 bool trx_has_valid_pchan_config(const struct gsm_bts_trx *trx)
 {
 	bool combined = false;

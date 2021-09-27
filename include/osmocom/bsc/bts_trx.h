@@ -95,7 +95,6 @@ void gsm_trx_lock_rf(struct gsm_bts_trx *trx, bool locked, const char *reason);
 bool trx_is_usable(const struct gsm_bts_trx *trx);
 
 void gsm_trx_all_ts_dispatch(struct gsm_bts_trx *trx, uint32_t ts_ev, void *data);
-int trx_count_free_ts(struct gsm_bts_trx *trx, enum gsm_phys_chan_config pchan);
 bool trx_has_valid_pchan_config(const struct gsm_bts_trx *trx);
 
 int gsm_bts_trx_set_system_infos(struct gsm_bts_trx *trx);

@@ -719,19 +719,6 @@ void gsm_bts_all_ts_dispatch(struct gsm_bts *bts, uint32_t ts_ev, void *data)
 		gsm_trx_all_ts_dispatch(trx, ts_ev, data);
 }
 
-
-/* Count number of free TS of given pchan type */
-int bts_count_free_ts(struct gsm_bts *bts, enum gsm_phys_chan_config pchan)
-{
-	struct gsm_bts_trx *trx;
-	int count = 0;
-
-	llist_for_each_entry(trx, &bts->trx_list, list)
-		count += trx_count_free_ts(trx, pchan);
-
-	return count;
-}
-
 /* set all system information types for a BTS */
 int gsm_bts_set_system_infos(struct gsm_bts *bts)
 {

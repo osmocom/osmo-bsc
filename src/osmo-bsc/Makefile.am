@@ -57,6 +57,7 @@ libbsc_la_SOURCES = \
 	bts_vty.c \
 	bts_trx_vty.c \
 	chan_alloc.c \
+	chan_counts.c \
 	codec_pref.c \
 	e1_config.c \
 	gsm_04_08_rr.c \

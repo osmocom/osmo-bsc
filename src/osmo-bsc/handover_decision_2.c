@@ -42,6 +42,7 @@
 #include <osmocom/bsc/timeslot_fsm.h>
 #include <osmocom/bsc/bts.h>
 #include <osmocom/bsc/lchan_select.h>
+#include <osmocom/bsc/chan_counts.h>
 
 #define LOGPHOBTS(bts, level, fmt, args...) \
 	LOGP(DHODEC, level, "(BTS %u) " fmt, bts->nr, ## args)
@@ -990,12 +991,15 @@ static inline void debug_candidate(struct ho_candidate *candidate)
 
 static void candidate_set_free_tch(struct ho_candidate *c)
 {
+	struct chan_counts bts_counts;
 	struct gsm_lchan *next_lchan;
 
-	c->current.free_tchf = bts_count_free_ts(c->current.bts, GSM_PCHAN_TCH_F);
+	chan_counts_for_bts(&bts_counts, c->current.bts);
+	c->current.free_tchf = bts_counts.val[CHAN_COUNTS1_ALL][CHAN_COUNTS2_FREE][GSM_LCHAN_TCH_F];
 	c->current.min_free_tchf = ho_get_hodec2_tchf_min_slots(c->current.bts->ho);
-	c->current.free_tchh = bts_count_free_ts(c->current.bts, GSM_PCHAN_TCH_H);
+	c->current.free_tchh = bts_counts.val[CHAN_COUNTS1_ALL][CHAN_COUNTS2_FREE][GSM_LCHAN_TCH_H];
 	c->current.min_free_tchh = ho_get_hodec2_tchh_min_slots(c->current.bts->ho);
+
 	switch (c->current.lchan->ts->pchan_is) {
 	case GSM_PCHAN_TCH_F:
 		c->current.free_tch = c->current.free_tchf;
@@ -1023,9 +1027,10 @@ static void candidate_set_free_tch(struct ho_candidate *c)
 		break;
 	}
 
-	c->target.free_tchf = bts_count_free_ts(c->target.bts, GSM_PCHAN_TCH_F);
+	chan_counts_for_bts(&bts_counts, c->target.bts);
+	c->target.free_tchf = bts_counts.val[CHAN_COUNTS1_ALL][CHAN_COUNTS2_FREE][GSM_LCHAN_TCH_F];
 	c->target.min_free_tchf = ho_get_hodec2_tchf_min_slots(c->target.bts->ho);
-	c->target.free_tchh = bts_count_free_ts(c->target.bts, GSM_PCHAN_TCH_H);
+	c->target.free_tchh = bts_counts.val[CHAN_COUNTS1_ALL][CHAN_COUNTS2_FREE][GSM_LCHAN_TCH_H];
 	c->target.min_free_tchh = ho_get_hodec2_tchh_min_slots(c->target.bts->ho);
 
 	/* Would the next TCH/F lchan occupy a dynamic timeslot that currently counts for free TCH/H timeslots? */
@@ -1928,6 +1933,7 @@ exit:
 
 static void bts_congestion_check(struct gsm_bts *bts)
 {
+	struct chan_counts bts_counts;
 	int min_free_tchf, min_free_tchh;
 	int free_tchf, free_tchh;
 
@@ -1955,8 +1961,9 @@ static void bts_congestion_check(struct gsm_bts *bts)
 		return;
 	}
 
-	free_tchf = bts_count_free_ts(bts, GSM_PCHAN_TCH_F);
-	free_tchh = bts_count_free_ts(bts, GSM_PCHAN_TCH_H);
+	chan_counts_for_bts(&bts_counts, bts);
+	free_tchf = bts_counts.val[CHAN_COUNTS1_ALL][CHAN_COUNTS2_FREE][GSM_LCHAN_TCH_F];
+	free_tchh = bts_counts.val[CHAN_COUNTS1_ALL][CHAN_COUNTS2_FREE][GSM_LCHAN_TCH_H];
 	LOGPHOBTS(bts, LOGL_INFO, "Congestion check: (free/want-free) TCH/F=%d/%d TCH/H=%d/%d\n",
 		  free_tchf, min_free_tchf, free_tchh, min_free_tchh);
 

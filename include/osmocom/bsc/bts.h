@@ -726,8 +726,6 @@ void gsm_bts_set_radio_link_timeout(struct gsm_bts *bts, int value);
 
 void gsm_bts_all_ts_dispatch(struct gsm_bts *bts, uint32_t ts_ev, void *data);
 
-int bts_count_free_ts(struct gsm_bts *bts, enum gsm_phys_chan_config pchan);
-
 int gsm_bts_set_system_infos(struct gsm_bts *bts);
 
 int gsm_bts_set_c0_power_red(struct gsm_bts *bts, const uint8_t red);

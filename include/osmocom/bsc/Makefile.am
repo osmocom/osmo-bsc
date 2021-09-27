@@ -16,6 +16,7 @@ noinst_HEADERS = \
 	bts_trx.h \
 	bts_ipaccess_nanobts_omlattr.h \
 	chan_alloc.h \
+	chan_counts.h \
 	codec_pref.h \
 	ctrl.h \
 	debug.h \
