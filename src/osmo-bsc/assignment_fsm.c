@@ -945,7 +945,7 @@ void assignment_fsm_allstate_action(struct osmo_fsm_inst *fi, uint32_t event, vo
 	}
 }
 
-int assignment_fsm_timer_cb(struct osmo_fsm_inst *fi)
+static int assignment_fsm_timer_cb(struct osmo_fsm_inst *fi)
 {
 	struct gsm_subscriber_connection *conn = assignment_fi_conn(fi);
 	assignment_count_result(CTR_ASSIGNMENT_TIMEOUT);
