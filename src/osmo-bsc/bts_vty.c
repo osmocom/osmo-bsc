@@ -3932,6 +3932,7 @@ static void config_write_power_ctrl_meas(struct vty *vty, unsigned int indent,
 }
 
 static void config_write_power_ctrl(struct vty *vty, unsigned int indent,
+				    const struct gsm_bts *bts,
 				    const struct gsm_power_ctrl_params *cp)
 {
 	const char *node_name;
@@ -3965,7 +3966,7 @@ static void config_write_power_ctrl(struct vty *vty, unsigned int indent,
 		/* Measurement processing / averaging parameters */
 		config_write_power_ctrl_meas(vty, indent + 1, &cp->rxlev_meas, "rxlev", "");
 		config_write_power_ctrl_meas(vty, indent + 1, &cp->rxqual_meas, "rxqual", "");
-		if (cp->dir == GSM_PWR_CTRL_DIR_UL) {
+		if (cp->dir == GSM_PWR_CTRL_DIR_UL && is_osmobts(bts)) {
 			config_write_power_ctrl_meas(vty, indent + 1, &cp->ci_fr_meas, "ci", " fr-efr");
 			config_write_power_ctrl_meas(vty, indent + 1, &cp->ci_hr_meas, "ci", " hr");
 			config_write_power_ctrl_meas(vty, indent + 1, &cp->ci_amr_fr_meas, "ci", " amr-fr");
@@ -4285,8 +4286,8 @@ static void config_write_bts_single(struct vty *vty, struct gsm_bts *bts)
 	}
 
 	/* BS/MS Power Control parameters */
-	config_write_power_ctrl(vty, 2, &bts->bs_power_ctrl);
-	config_write_power_ctrl(vty, 2, &bts->ms_power_ctrl);
+	config_write_power_ctrl(vty, 2, bts, &bts->bs_power_ctrl);
+	config_write_power_ctrl(vty, 2, bts, &bts->ms_power_ctrl);
 
 	config_write_bts_model(vty, bts);
 }
