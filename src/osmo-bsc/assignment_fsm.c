@@ -452,8 +452,14 @@ static int _reassignment_request(enum assign_for assign_for, struct gsm_lchan *l
 		.n_ch_mode_rate = 1,
 		.ch_mode_rate_list = { lchan->current_ch_mode_rate },
 		.target_lchan = to_lchan,
-		.tsc_set = tsc_set,
-		.tsc = tsc,
+		.tsc_set = {
+			.present = (tsc_set >= 0),
+			.val = tsc_set,
+		},
+		.tsc = {
+			.present = (tsc >= 0),
+			.val = tsc,
+		},
 	};
 
 	if (to_lchan)
@@ -831,8 +837,14 @@ static void assignment_fsm_wait_lchan_modified_onenter(struct osmo_fsm_inst *fi,
 		.requires_voice_stream = conn->assignment.requires_voice_stream,
 		.msc_assigned_cic = req->msc_assigned_cic,
 		/* keep previous training sequence code */
-		.tsc_set = lchan->tsc_set,
-		.tsc = lchan->tsc,
+		.tsc_set = {
+			.present = (lchan->tsc_set >= 0),
+			.val = lchan->tsc_set,
+		},
+		.tsc = {
+			.present = (lchan->tsc >= 0),
+			.val = lchan->tsc,
+		},
 	};
 	lchan_mode_modify(lchan, &modif_info);
 }

@@ -714,13 +714,13 @@ static void lchan_fsm_wait_ts_ready_onenter(struct osmo_fsm_inst *fi, uint32_t p
 
 	/* If enabling VAMOS mode and no specific TSC Set was selected, make sure to select a sane TSC Set by
 	 * default: Set 1 for the primary and Set 2 for the shadow lchan. For non-VAMOS lchans, TSC Set 1. */
-	if (lchan->activate.info.tsc_set > 0)
-		lchan->activate.tsc_set = lchan->activate.info.tsc_set;
+	if (lchan->activate.info.tsc_set.present)
+		lchan->activate.tsc_set = lchan->activate.info.tsc_set.val;
 	else
 		lchan->activate.tsc_set = lchan->vamos.is_secondary ? 2 : 1;
 
 	/* Use the TSC provided in the activation request, if any. Otherwise use the timeslot's configured TSC. */
-	lchan->activate.tsc = (lchan->activate.info.tsc >= 0) ? lchan->activate.info.tsc : gsm_ts_tsc(lchan->ts);
+	lchan->activate.tsc = lchan->activate.info.tsc.present ? lchan->activate.info.tsc.val : gsm_ts_tsc(lchan->ts);
 
 	use_mgwep_ci = lchan_use_mgw_endpoint_ci_bts(lchan);
 
@@ -1095,8 +1095,6 @@ static void lchan_fsm_wait_rsl_chan_mode_modify_ack(struct osmo_fsm_inst *fi, ui
 				.ch_mode_rate = lchan->modify.ch_mode_rate,
 				.requires_voice_stream = true,
 				.msc_assigned_cic = lchan->modify.info.msc_assigned_cic,
-				.tsc_set = -1,
-				.tsc = -1,
 			};
 			if (lchan_activate_set_ch_mode_rate_and_mr_config(lchan))
 				return;
@@ -1250,14 +1248,14 @@ static void lchan_fsm_established(struct osmo_fsm_inst *fi, uint32_t event, void
 
 		/* If enabling VAMOS mode and no specific TSC Set was selected, make sure to select a sane TSC Set by
 		 * default: Set 1 for the primary and Set 2 for the shadow lchan. For non-VAMOS lchans, TSC Set 1. */
-		if (lchan->modify.info.tsc_set > 0)
-			lchan->modify.tsc_set = lchan->modify.info.tsc_set;
+		if (lchan->modify.info.tsc_set.present)
+			lchan->modify.tsc_set = lchan->modify.info.tsc_set.val;
 		else
 			lchan->modify.tsc_set = lchan->vamos.is_secondary ? 2 : 1;
 
 		/* Use the TSC provided in the modification request, if any. Otherwise use the timeslot's configured
 		 * TSC. */
-		lchan->modify.tsc = (lchan->modify.info.tsc >= 0) ? lchan->modify.info.tsc : gsm_ts_tsc(lchan->ts);
+		lchan->modify.tsc = lchan->modify.info.tsc.present ? lchan->modify.info.tsc.val : gsm_ts_tsc(lchan->ts);
 
 		LOG_LCHAN(lchan, LOGL_INFO,
 			  "Modification requested: %s voice=%s MGW-ci=%s type=%s tch-mode=%s tsc=%d/%u\n",

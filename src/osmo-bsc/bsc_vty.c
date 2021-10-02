@@ -849,6 +849,7 @@ static int ho_or_as(struct vty *vty, const char *argv[], int argc)
 	return CMD_WARNING;
 }
 
+/* tsc_set and tsc: -1 to automatically determine which TSC Set / which TSC to use. */
 static int trigger_vamos_mode_modify(struct vty *vty, struct gsm_lchan *lchan, bool vamos, int tsc_set, int tsc)
 {
 	struct lchan_modify_info info = {
@@ -856,8 +857,14 @@ static int trigger_vamos_mode_modify(struct vty *vty, struct gsm_lchan *lchan, b
 		.ch_mode_rate = lchan->current_ch_mode_rate,
 		.requires_voice_stream = (lchan->fi_rtp != NULL),
 		.vamos = vamos,
-		.tsc_set = tsc_set,
-		.tsc = tsc,
+		.tsc_set = {
+			.present = (tsc_set >= 0),
+			.val = tsc_set,
+		},
+		.tsc = {
+			.present = (tsc >= 0),
+			.val = tsc,
+		},
 	};
 
 	lchan_mode_modify(lchan, &info);
@@ -1540,10 +1547,7 @@ DEFUN(pdch_act, pdch_act_cmd,
 /* Activate / Deactivate a single lchan with a specific codec mode */
 static int lchan_act_single(struct vty *vty, struct gsm_lchan *lchan, const char *codec_str, int amr_mode, int activate)
 {
-	struct lchan_activate_info info = {
-		.tsc_set = -1,
-		.tsc = -1,
-	};
+	struct lchan_activate_info info = {0};
 	uint16_t amr_modes[8] =
 	    { GSM0808_SC_CFG_AMR_4_75, GSM0808_SC_CFG_AMR_4_75_5_90_7_40_12_20, GSM0808_SC_CFG_AMR_5_90,
 	      GSM0808_SC_CFG_AMR_6_70, GSM0808_SC_CFG_AMR_7_40, GSM0808_SC_CFG_AMR_7_95, GSM0808_SC_CFG_AMR_10_2,
@@ -1612,8 +1616,12 @@ static int lchan_act_single(struct vty *vty, struct gsm_lchan *lchan, const char
 
 		if (activate == 2 || lchan->vamos.is_secondary) {
 			info.vamos = true;
-			info.tsc_set = lchan->vamos.is_secondary ? 1 : 0;
-			info.tsc = 0;
+			if (lchan->vamos.is_secondary) {
+				info.tsc_set.present = true;
+				info.tsc_set.val = 1;
+			}
+			info.tsc.present = true;
+			info.tsc.val = 0;
 			info.ch_mode_rate.chan_mode = gsm48_chan_mode_to_vamos(info.ch_mode_rate.chan_mode);
 		}
 

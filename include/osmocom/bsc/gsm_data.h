@@ -138,6 +138,14 @@ extern const struct value_string assign_for_names[];
 static inline const char *assign_for_name(enum assign_for assign_for)
 { return get_value_string(assign_for_names, assign_for); }
 
+/* If .present is false, use the default value defined elsewhere. If true, use .val below.
+ * (A practical benefit of this is that the default initialization sets .present to false, so that even if a .val == 0
+ * is a valid value, a struct containing this as member does not need to explicitly set .val = INVALID_VAL_CONSTANT.) */
+struct optional_val {
+	bool present;
+	int val;
+};
+
 /* Information retrieved during an Assignment Request from the MSC. This is storage of the Assignment instructions
  * parsed from the Assignment Request message, to pass on until the gscon and assignment FSMs have decided whether an
  * Assignment is actually going to be carried out. Should remain unchanged after initial decoding. */
@@ -165,12 +173,12 @@ struct assignment_request {
 	 * target_lchan to it. */
 	struct gsm_lchan *target_lchan;
 
-	/* TSC Set to use, or -1 for automatically determining the TSC Set to use. Valid range is 1 to 4, as described
-	 * in 3GPP TS 45.002. */
-	int tsc_set;
-	/* TSC to use, or -1 for automatically determining the TSC to use. Valid range is 0 to 7, as described in 3GPP
-	 * TS 45.002. */
-	int tsc;
+	/* The TSC Set to use if 'use' is true, otherwise automatically determine the TSC Set value to use. Valid range
+	 * is 1 to 4, as described in 3GPP TS 45.002. */
+	struct optional_val tsc_set;
+	/* The TSC to use if 'use' is true, otherwise automatically determine the TSC value to use. Valid range is 0 to
+	 * 7, as described in 3GPP TS 45.002. */
+	struct optional_val tsc;
 };
 
 /* State of an ongoing Assignment, while the assignment_fsm is still busy. This serves as state separation to keep the
@@ -621,12 +629,12 @@ struct lchan_activate_info {
 	bool ta_known;
 	uint8_t ta;
 
-	/* TSC Set to use, or -1 for automatically determining the TSC Set to use. Valid range is 1 to 4, as described
-	 * in 3GPP TS 45.002. */
-	int tsc_set;
-	/* TSC to use, or -1 for automatically determining the TSC to use. Valid range is 0 to 7, as described in 3GPP
-	 * TS 45.002. */
-	int tsc;
+	/* The TSC Set to use if 'use' is true, otherwise automatically determine the TSC Set value to use. Valid range
+	 * is 1 to 4, as described in 3GPP TS 45.002. */
+	struct optional_val tsc_set;
+	/* The TSC to use if 'use' is true, otherwise automatically determine the TSC value to use. Valid range is 0 to
+	 * 7, as described in 3GPP TS 45.002. */
+	struct optional_val tsc;
 
 	bool vamos;
 
@@ -652,12 +660,12 @@ struct lchan_modify_info {
 	bool requires_voice_stream;
 	uint16_t msc_assigned_cic;
 
-	/* TSC Set to use, or -1 for automatically determining the TSC Set to use. Valid range is 1 to 4, as described
-	 * in 3GPP TS 45.002. */
-	int tsc_set;
-	/* TSC to use, or -1 for automatically determining the TSC to use. Valid range is 0 to 7, as described in 3GPP
-	 * TS 45.002. */
-	int tsc;
+	/* The TSC Set to use if 'use' is true, otherwise automatically determine the TSC Set value to use. Valid range
+	 * is 1 to 4, as described in 3GPP TS 45.002. */
+	struct optional_val tsc_set;
+	/* The TSC to use if 'use' is true, otherwise automatically determine the TSC value to use. Valid range is 0 to
+	 * 7, as described in 3GPP TS 45.002. */
+	struct optional_val tsc;
 
 	bool vamos;
 };
@@ -695,7 +703,9 @@ struct gsm_lchan {
 		 * occur later, e.g. during release, that we don't send a NACK out of context. */
 		bool concluded;
 		enum gsm0808_cause gsm0808_error_cause;
+		/* Actually used TSC Set. */
 		int tsc_set;
+		/* Actually used TSC. */
 		uint8_t tsc;
 	} activate;
 
@@ -709,7 +719,9 @@ struct gsm_lchan {
 
 		struct channel_mode_and_rate ch_mode_rate;
 		struct gsm48_multi_rate_conf mr_conf_filtered;
+		/* Actually used TSC Set. */
 		int tsc_set;
+		/* Actually used TSC. */
 		uint8_t tsc;
 		bool concluded;
 	} modify;
