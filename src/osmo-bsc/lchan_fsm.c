@@ -719,8 +719,7 @@ static void lchan_fsm_wait_ts_ready_onenter(struct osmo_fsm_inst *fi, uint32_t p
 	else
 		lchan->activate.tsc_set = lchan->vamos.is_secondary ? 2 : 1;
 
-	/* Use the TSC provided in the modification request, if any. Otherwise use the timeslot's configured
-	 * TSC. */
+	/* Use the TSC provided in the activation request, if any. Otherwise use the timeslot's configured TSC. */
 	lchan->activate.tsc = (lchan->activate.info.tsc >= 0) ? lchan->activate.info.tsc : gsm_ts_tsc(lchan->ts);
 
 	use_mgwep_ci = lchan_use_mgw_endpoint_ci_bts(lchan);
