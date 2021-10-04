@@ -7,7 +7,7 @@ OsmoBSC# show running-config
    mode static
   ms-power-control
    mode dyn-bts
-   ctrl-interval 1
+   ctrl-interval 2
    step-size inc 4 red 2
    rxlev-thresh lower 32 upper 38
    rxlev-thresh-comp lower 10 12 upper 19 20
@@ -102,7 +102,7 @@ OsmoBSC(config-bs-power-ctrl)# show running-config
 ...
   ms-power-control
 ...
-   ctrl-interval 1
+   ctrl-interval 2
 ...
 
 OsmoBSC(config-bs-power-ctrl)# exit
@@ -137,7 +137,7 @@ OsmoBSC(config-ms-power-ctrl)# show running-config
 ...
   ms-power-control
    mode dyn-bts
-   ctrl-interval 1
+   ctrl-interval 2
    step-size inc 4 red 2
    rxlev-thresh lower 32 upper 38
    rxlev-thresh-comp lower 10 12 upper 19 20
@@ -296,7 +296,7 @@ OsmoBSC(config-net-bts)# show running-config
    mode static
   ms-power-control
    mode dyn-bts
-   ctrl-interval 1
+   ctrl-interval 2
    step-size inc 4 red 2
    rxlev-thresh lower 32 upper 38
    rxlev-thresh-comp lower 10 12 upper 19 20

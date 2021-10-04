@@ -1395,6 +1395,8 @@ struct gsm_power_ctrl_params {
 };
 
 extern const struct gsm_power_ctrl_params power_ctrl_params_def;
+void power_ctrl_params_def_reset(struct gsm_power_ctrl_params *params,
+				 enum gsm_power_ctrl_dir dir);
 
 /* Interference Measurement Parameters */
 struct gsm_interf_meas_params {

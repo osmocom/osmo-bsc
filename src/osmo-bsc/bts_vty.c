@@ -2927,9 +2927,7 @@ DEFUN_USRATTR(cfg_power_ctrl_mode,
 	/* Do we need to reset? */
 	if (argc > 1) {
 		vty_out(vty, "%% Reset to default parameters%s", VTY_NEWLINE);
-		enum gsm_power_ctrl_dir dir = params->dir;
-		*params = power_ctrl_params_def;
-		params->dir = dir;
+		power_ctrl_params_def_reset(params, params->dir);
 	}
 
 	if (strcmp(argv[0], "static") == 0)

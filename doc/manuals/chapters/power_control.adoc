@@ -168,6 +168,23 @@ OsmoBSC(config-bs-power-ctrl)# ctrl-interval ?
   <0-31>  P_CON_INTERVAL, in units of 2 SACCH periods (0.96 seconds)
 ----
 
+3GPP TS 45.008 briefly mentions this parameter in table A.1 (`P_Con_INTERVAL`).
+
+A small time graph is depicted below for better understanding of the meaning of
+values for this parameter, since it is not obvious at all.
+
+.Example: Suspension interval accomplished by several values of P_CON_INTERVAL
+----
+|<-->| - one SACCH multi-frame period
+|    |
+|----|----|----|----|----|----|----|----|----> SACCH multi-frames
+a) *    *    *    *    *    *    *    *    *      P_CON_INTERVAL=0 (0.48 s)
+b) *         *         *         *         *      P_CON_INTERVAL=1 (0.96 s)
+c) *                   *                   *      P_CON_INTERVAL=2 (1.92 s, default)
+d) *                             *                P_CON_INTERVAL=3 (2.88 s)
+e) *                                       *      P_CON_INTERVAL=4 (3.84 s)
+----
+
 The value to use for this parameter is closely related to that of VTY option
 `step-size inc <2-6> red <2-4>`, which configures the maximum step (in dB) at
 which the MS Power can be requested to changed when the MS Power Control Loop is
@@ -181,31 +198,42 @@ trigger the MS Power Control Loop again with reliable measurements
 By default, increment `step-size` is set to 4 dB and the decrement `step-size`
 is set to 2 dB, hence the MS requiring `4 * 60 = 240` milliseconds. That's less
 than 1 measurement period (480 ms), hence only the first measurement period
-needs to be skipped. Therefore, the suspension interval is set to 1 for both
-MS/BS power control loops, and so the power control decision is taken every 960
-ms (every second SACCH block period).
+needs to be skipped. Therefore, a suspension interval of 1 for both
+MS/BS power control loops can be used, and so the power control decision is
+taken every 960 ms (every second SACCH block period).
+
+However, OsmoBSC currently uses a default value of `ctrl-interval 2`
+(`P_CON_INTERVAL=2`, 1.92s, 3/4 received SACCH blocks are skipped), because
+that's the minimum amount of frames required for one loop step to run
+completely, that is: BTS fetching measurements and transmitting the new MS Power
+Level, then the MS retrieving the MS Power Level, transmitting with that exact
+MS Power level during the entire period and then finally submitting the
+Measurement Result containing that same MS Power Level. Using a value of
+`P_CON_INTERVAL=1` also provides good results, but in that case the loop tends
+to produce more temporary power oscillations due to the loop acting on periods
+where an older (earlier requested) MS Power level is still in use (and
+announced) by the MS.
+
+.Example: Timeline showing propagation of a new MS Power Level (P_CON_INTERVAL=2)
+----
+|<------------->| - one SACCH multi-frame period
+| 1             | 2             | 3             | 4             | ---> SACCH multi-frames
+|SA0|SA1|SA2|SA3|SA0|SA1|SA2|SA3|SA0|SA1|SA2|SA3|SA0|SA1|SA2|SA3| ---> SACCH bursts
+|<1>|...|...|<2>|<3>|...|...|<4>|<5>|...|...|<6>|<7>|...|...|<8>|
+----
+<1> BTS sends new requested MS Power Level in header of SACCH
+<2> MS receives SACCH block (new MS Power Level)
+<3> MS starts ramping towards new MS Power Level (hence potentially variable power used over the period)
+<4> MS should already be in desired MS Power Level (for step increments of less-or-equal than 8 dB)
+<5> MS starts transmitting at desired MS Power level constantly (ramping is over)
+<6> MS builds Measurement Results to be sent on next SACCH period
+<7> MS sends the Measurement Results of the previous multiframe to the BTS
+<8> BTS receives the Measurement Results from MS on SACCH, starts next loop iteration
+
 
 Setting `ctrl-interval` to 0 increases the interval to 480 ms, so basically no
 SACCH block is skipped and MS Power Control loop is triggered upon receival of
-every UL SACCH block. Value 2 corresponds to the interval of 1920 ms, so 3/4
-received SACCH blocks are skipped.
-
-3GPP TS 45.008 briefly mentions this parameter in table A.1 (`P_Con_INTERVAL`).
-
-A small time graph is depicted below for better understanding of the meaning of
-values for this parameter, since it is not obvious at all.
-
-.Example: Suspension interval accomplished by several values of P_CON_INTERVAL
-----
-|<-->| - one SACCH multi-frame period
-|    |
-|----|----|----|----|----|----|----|----|----> SACCH multi-frames
-a) *    *    *    *    *    *    *    *    *      P_CON_INTERVAL=0 (0.48 s)
-b) *         *         *         *         *      P_CON_INTERVAL=1 (0.96 s, default)
-c) *                   *                   *      P_CON_INTERVAL=2 (1.92 s)
-d) *                             *                P_CON_INTERVAL=3 (2.88 s)
-e) *                                       *      P_CON_INTERVAL=4 (3.84 s)
-----
+every UL SACCH block.
 
 ==== Power change step size
 

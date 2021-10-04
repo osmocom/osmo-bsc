@@ -1333,6 +1333,16 @@ const struct gsm_power_ctrl_params power_ctrl_params_def = {
 	},
 };
 
+void power_ctrl_params_def_reset(struct gsm_power_ctrl_params *params,
+				 enum gsm_power_ctrl_dir dir)
+{
+	*params = power_ctrl_params_def;
+	params->dir = dir;
+	if (dir == GSM_PWR_CTRL_DIR_UL)
+		/* Trigger loop every fourth SACCH block (1.92s). TS 45.008 sec 4.7.1: */
+		params->ctrl_interval = 2;
+}
+
 enum rsl_cmod_spd chan_mode_to_rsl_cmod_spd(enum gsm48_chan_mode chan_mode)
 {
 	switch (gsm48_chan_mode_to_non_vamos(chan_mode)) {
