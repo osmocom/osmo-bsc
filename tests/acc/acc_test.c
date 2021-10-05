@@ -524,8 +524,8 @@ int main(int argc, char **argv)
 	return EXIT_SUCCESS;
 }
 
-/* Whenever ACC code changes the set of barred ACCs, gsm_bts_set_system_infos()
- * is called which ends up calling pcu_info_update */
+/* stub: Whenever ACC code changes the set of barred ACCs, gsm_bts_set_system_infos()
+ * is called which ends up calling pcu_info_update. */
 void pcu_info_update(struct gsm_bts *bts) {
 	struct gsm48_rach_control rach_control = {0};
 
@@ -545,15 +545,15 @@ void pcu_info_update(struct gsm_bts *bts) {
 	);
 }
 
-
-struct gsm_subscriber_connection *bsc_subscr_con_allocate(struct gsm_network *net) {
-	OSMO_ASSERT(0);
-}
-
-bool on_gsm_ts_init(struct gsm_bts_trx_ts *ts) { return true; }
-void ts_fsm_alloc(struct gsm_bts_trx_ts *ts) {}
-int rsl_chan_ms_power_ctrl(struct gsm_lchan *lchan) { return 0; }
-int rsl_sacch_filling(struct gsm_bts_trx *trx, uint8_t type, const uint8_t *data, int len) { return 0; }
+/* stub: Whenever ACC code changes the set of barred ACCs, gsm_bts_set_system_infos()
+ * is called which ends up calling rsl_bcch_info. We need to return success to
+ * have pcu_info_update() called. */
 int rsl_bcch_info(const struct gsm_bts_trx *trx, enum osmo_sysinfo_type si_type, const uint8_t *data, int len)
 { return 0; }
-int gsm_generate_si(struct gsm_bts *bts, enum osmo_sysinfo_type si_type) { return 0; }
+
+/* stub: Whenever ACC code changes the set of barred ACCs, gsm_bts_set_system_infos()
+ * is called which ends up calling rsl_sacch_filling. We need to return success to
+ * have pcu_info_update() called. */
+int rsl_sacch_filling(struct gsm_bts_trx *trx, uint8_t type,
+		      const uint8_t *data, int len)
+{ return 0; }

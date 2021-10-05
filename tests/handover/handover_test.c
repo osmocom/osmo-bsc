@@ -1682,31 +1682,17 @@ void trau_mux_unmap() {}
 void trau_mux_map_lchan() {}
 void trau_recv_lchan() {}
 void trau_send_frame() {}
-int osmo_bsc_sigtran_send(struct gsm_subscriber_connection *conn, struct msgb *msg) { return 0; }
+/* Stub */
 int osmo_bsc_sigtran_open_conn(struct gsm_subscriber_connection *conn, struct msgb *msg) { return 0; }
 void bsc_sapi_n_reject(struct gsm_subscriber_connection *conn, uint8_t dlci, enum gsm0808_cause cause) {}
 void bsc_cipher_mode_compl(struct gsm_subscriber_connection *conn, struct msgb *msg, uint8_t chosen_encr) {}
 int bsc_compl_l3(struct gsm_lchan *lchan, struct msgb *msg, uint16_t chosen_channel)
-{ return 0; }
-int bsc_paging_start(struct bsc_paging_params *params)
 { return 0; }
 void bsc_dtap(struct gsm_subscriber_connection *conn, uint8_t link_id, struct msgb *msg) {}
 void bsc_assign_compl(struct gsm_subscriber_connection *conn, uint8_t rr_cause) {}
 void bsc_cm_update(struct gsm_subscriber_connection *conn,
 		   const uint8_t *cm2, uint8_t cm2_len,
 		   const uint8_t *cm3, uint8_t cm3_len) {}
-struct gsm0808_handover_required;
-int bsc_tx_bssmap_ho_required(struct gsm_lchan *lchan, const struct gsm0808_cell_id_list2 *target_cells)
-{ return 0; }
-int bsc_tx_bssmap_ho_request_ack(struct gsm_subscriber_connection *conn, struct msgb *rr_ho_command)
-{ return 0; }
-int bsc_tx_bssmap_ho_detect(struct gsm_subscriber_connection *conn) { return 0; }
-enum handover_result bsc_tx_bssmap_ho_complete(struct gsm_subscriber_connection *conn,
-					       struct gsm_lchan *lchan) { return HO_RESULT_OK; }
-void bsc_tx_bssmap_ho_failure(struct gsm_subscriber_connection *conn) {}
-void osmo_bsc_sigtran_tx_reset(void) {}
-void osmo_bsc_sigtran_tx_reset_ack(void) {}
-void osmo_bsc_sigtran_reset(void) {}
 const char *osmo_mgcpc_ep_name(const struct osmo_mgcpc_ep *ep)
 {
 	return "fake-ep";

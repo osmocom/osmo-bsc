@@ -312,7 +312,8 @@ enum bsc_con osmo_bsc_sigtran_new_conn(struct gsm_subscriber_connection *conn, s
 }
 
 /* Open a new connection oriented sigtran connection */
-int osmo_bsc_sigtran_open_conn(struct gsm_subscriber_connection *conn, struct msgb *msg)
+/* Allow test to overwrite it */
+__attribute__((weak)) int osmo_bsc_sigtran_open_conn(struct gsm_subscriber_connection *conn, struct msgb *msg)
 {
 	struct osmo_ss7_instance *ss7;
 	struct bsc_msc_data *msc;

@@ -221,30 +221,3 @@ int main(int argc, char **argv)
 	talloc_free(ctx);
 	return 0;
 }
-
-struct gsm_subscriber_connection *bsc_subscr_con_allocate(struct gsm_network *net) {
-	OSMO_ASSERT(0);
-}
-
-void bsc_sapi_n_reject(struct gsm_subscriber_connection *conn, uint8_t dlci, enum gsm0808_cause cause) {}
-void bsc_cipher_mode_compl(struct gsm_subscriber_connection *conn, struct msgb *msg, uint8_t chosen_encr) {}
-int bsc_compl_l3(struct gsm_lchan *lchan, struct msgb *msg, uint16_t chosen_channel)
-{ return 0; }
-void bsc_dtap(struct gsm_subscriber_connection *conn, uint8_t link_id, struct msgb *msg) {}
-void bsc_assign_compl(struct gsm_subscriber_connection *conn, uint8_t rr_cause) {}
-void bsc_assign_fail(struct gsm_subscriber_connection *conn, uint8_t cause, uint8_t *rr_cause) {}
-void bsc_cm_update(struct gsm_subscriber_connection *conn,
-		   const uint8_t *cm2, uint8_t cm2_len,
-		   const uint8_t *cm3, uint8_t cm3_len) {}
-void gscon_submit_rsl_dtap(struct gsm_subscriber_connection *conn,
-			   struct msgb *msg, int link_id, int allow_sacch) {}
-void ts_fsm_alloc(struct gsm_bts_trx_ts *ts) {}
-void lchan_activate(struct gsm_lchan *lchan, void *info) {}
-bool neighbor_ident_bts_entry_exists(uint8_t from_bts) { return false; }
-const char *handover_status(struct gsm_subscriber_connection *conn) { return "x"; }
-int rsl_chan_ms_power_ctrl(struct gsm_lchan *lchan) { return 0; }
-void pcu_info_update(struct gsm_bts *bts) {};
-int rsl_sacch_filling(struct gsm_bts_trx *trx, uint8_t type, const uint8_t *data, int len) { return 0; }
-int rsl_bcch_info(const struct gsm_bts_trx *trx, enum osmo_sysinfo_type si_type, const uint8_t *data, int len)
-{ return 0; }
-int gsm_generate_si(struct gsm_bts *bts, enum osmo_sysinfo_type si_type) { return 0; }

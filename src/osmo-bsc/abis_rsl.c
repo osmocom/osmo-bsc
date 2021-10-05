@@ -260,7 +260,9 @@ static void add_power_control_params(struct msgb *msg, enum abis_rsl_ie iei,
 }
 
 /* Send a BCCH_INFO message as per Chapter 8.5.1 */
-int rsl_bcch_info(const struct gsm_bts_trx *trx, enum osmo_sysinfo_type si_type, const uint8_t *data, int len)
+/* Allow test to overwrite it */
+__attribute__((weak)) int rsl_bcch_info(const struct gsm_bts_trx *trx, enum osmo_sysinfo_type si_type,
+					const uint8_t *data, int len)
 {
 	struct abis_rsl_dchan_hdr *dh;
 	const struct gsm_bts *bts = trx->bts;
@@ -294,7 +296,8 @@ int rsl_bcch_info(const struct gsm_bts_trx *trx, enum osmo_sysinfo_type si_type,
 	return abis_rsl_sendmsg(msg);
 }
 
-int rsl_sacch_filling(struct gsm_bts_trx *trx, uint8_t type,
+/* Allow test to overwrite it */
+__attribute__((weak)) int rsl_sacch_filling(struct gsm_bts_trx *trx, uint8_t type,
 		      const uint8_t *data, int len)
 {
 	struct abis_rsl_common_hdr *ch;

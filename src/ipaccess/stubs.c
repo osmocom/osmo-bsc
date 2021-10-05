@@ -30,17 +30,3 @@ bool on_gsm_ts_init(struct gsm_bts_trx_ts *ts)
 	/* No TS init required here. */
 	return true;
 }
-
-int abis_rsl_rcvmsg(struct msgb *msg)
-{
-	/* No RSL handling here */
-	return 0;
-}
-
-void paging_flush_bts(struct gsm_bts *bts, struct bsc_msc_data *msc)
-{
-	/* No paging flushing */
-}
-
-void ts_fsm_alloc(struct gsm_bts_trx_ts *ts)
-{}

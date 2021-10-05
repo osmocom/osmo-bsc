@@ -32,76 +32,7 @@
 #include <stdio.h>
 #include <string.h>
 
-struct gsm_bts_model bts_model_nanobts = {
-	.type = GSM_BTS_TYPE_NANOBTS,
-	.name = "nanobts",
-	.start = NULL,
-	.oml_rcvmsg = NULL,
-	.e1line_bind_ops = NULL,
-	.nm_att_tlvdef = {
-			  .def = {
-				  /* ip.access specifics */
-				  [NM_ATT_IPACC_DST_IP] = {TLV_TYPE_FIXED, 4},
-				  [NM_ATT_IPACC_DST_IP_PORT] =
-				  {TLV_TYPE_FIXED, 2},
-				  [NM_ATT_IPACC_STREAM_ID] = {TLV_TYPE_TV,},
-				  [NM_ATT_IPACC_SEC_OML_CFG] =
-				  {TLV_TYPE_FIXED, 6},
-				  [NM_ATT_IPACC_IP_IF_CFG] =
-				  {TLV_TYPE_FIXED, 8},
-				  [NM_ATT_IPACC_IP_GW_CFG] =
-				  {TLV_TYPE_FIXED, 12},
-				  [NM_ATT_IPACC_IN_SERV_TIME] =
-				  {TLV_TYPE_FIXED, 4},
-				  [NM_ATT_IPACC_LOCATION] = {TLV_TYPE_TL16V},
-				  [NM_ATT_IPACC_PAGING_CFG] =
-				  {TLV_TYPE_FIXED, 2},
-				  [NM_ATT_IPACC_UNIT_ID] = {TLV_TYPE_TL16V},
-				  [NM_ATT_IPACC_UNIT_NAME] = {TLV_TYPE_TL16V},
-				  [NM_ATT_IPACC_SNMP_CFG] = {TLV_TYPE_TL16V},
-				  [NM_ATT_IPACC_PRIM_OML_CFG_LIST] =
-				  {TLV_TYPE_TL16V},
-				  [NM_ATT_IPACC_NV_FLAGS] = {TLV_TYPE_TL16V},
-				  [NM_ATT_IPACC_FREQ_CTRL] =
-				  {TLV_TYPE_FIXED, 2},
-				  [NM_ATT_IPACC_PRIM_OML_FB_TOUT] =
-				  {TLV_TYPE_TL16V},
-				  [NM_ATT_IPACC_CUR_SW_CFG] = {TLV_TYPE_TL16V},
-				  [NM_ATT_IPACC_TIMING_BUS] = {TLV_TYPE_TL16V},
-				  [NM_ATT_IPACC_CGI] = {TLV_TYPE_TL16V},
-				  [NM_ATT_IPACC_RAC] = {TLV_TYPE_TL16V},
-				  [NM_ATT_IPACC_OBJ_VERSION] = {TLV_TYPE_TL16V},
-				  [NM_ATT_IPACC_GPRS_PAGING_CFG] =
-				  {TLV_TYPE_TL16V},
-				  [NM_ATT_IPACC_NSEI] = {TLV_TYPE_TL16V},
-				  [NM_ATT_IPACC_BVCI] = {TLV_TYPE_TL16V},
-				  [NM_ATT_IPACC_NSVCI] = {TLV_TYPE_TL16V},
-				  [NM_ATT_IPACC_NS_CFG] = {TLV_TYPE_TL16V},
-				  [NM_ATT_IPACC_BSSGP_CFG] = {TLV_TYPE_TL16V},
-				  [NM_ATT_IPACC_NS_LINK_CFG] = {TLV_TYPE_TL16V},
-				  [NM_ATT_IPACC_RLC_CFG] = {TLV_TYPE_TL16V},
-				  [NM_ATT_IPACC_ALM_THRESH_LIST] =
-				  {TLV_TYPE_TL16V},
-				  [NM_ATT_IPACC_MONIT_VAL_LIST] =
-				  {TLV_TYPE_TL16V},
-				  [NM_ATT_IPACC_TIB_CONTROL] = {TLV_TYPE_TL16V},
-				  [NM_ATT_IPACC_SUPP_FEATURES] =
-				  {TLV_TYPE_TL16V},
-				  [NM_ATT_IPACC_CODING_SCHEMES] =
-				  {TLV_TYPE_TL16V},
-				  [NM_ATT_IPACC_RLC_CFG_2] = {TLV_TYPE_TL16V},
-				  [NM_ATT_IPACC_HEARTB_TOUT] = {TLV_TYPE_TL16V},
-				  [NM_ATT_IPACC_UPTIME] = {TLV_TYPE_TL16V},
-				  [NM_ATT_IPACC_RLC_CFG_3] = {TLV_TYPE_TL16V},
-				  [NM_ATT_IPACC_SSL_CFG] = {TLV_TYPE_TL16V},
-				  [NM_ATT_IPACC_SEC_POSSIBLE] =
-				  {TLV_TYPE_TL16V},
-				  [NM_ATT_IPACC_IML_SSL_STATE] =
-				  {TLV_TYPE_TL16V},
-				  [NM_ATT_IPACC_REVOC_DATE] = {TLV_TYPE_TL16V},
-				  },
-			  },
-};
+extern struct gsm_bts_model bts_model_nanobts;
 
 static void test_nanobts_attr_bts_get(struct gsm_bts *bts, uint8_t *expected)
 {
@@ -323,25 +254,3 @@ int main(int argc, char **argv)
 	talloc_free(ctx);
 	return 0;
 }
-
-/* stubs */
-struct osmo_prim_hdr;
-int bssgp_prim_cb(struct osmo_prim_hdr *oph, void *ctx)
-{
-	abort();
-}
-
-struct gsm_subscriber_connection *bsc_subscr_con_allocate(struct gsm_network *net) {
-	OSMO_ASSERT(0);
-}
-
-bool on_gsm_ts_init(struct gsm_bts_trx_ts *ts)
-{ return true; }
-
-void ts_fsm_alloc(struct gsm_bts_trx_ts *ts) {}
-int rsl_chan_ms_power_ctrl(struct gsm_lchan *lchan) { return 0; }
-void pcu_info_update(struct gsm_bts *bts) {};
-int rsl_sacch_filling(struct gsm_bts_trx *trx, uint8_t type, const uint8_t *data, int len) { return 0; }
-int rsl_bcch_info(const struct gsm_bts_trx *trx, enum osmo_sysinfo_type si_type, const uint8_t *data, int len)
-{ return 0; }
-int gsm_generate_si(struct gsm_bts *bts, enum osmo_sysinfo_type si_type) { return 0; }

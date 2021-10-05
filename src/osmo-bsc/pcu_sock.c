@@ -263,7 +263,8 @@ static int pcu_tx_info_ind(struct gsm_bts *bts)
 	return pcu_sock_send(bts, msg);
 }
 
-void pcu_info_update(struct gsm_bts *bts)
+/* Allow test to overwrite it */
+__attribute__((weak)) void pcu_info_update(struct gsm_bts *bts)
 {
 	if (pcu_connected(bts))
 		pcu_tx_info_ind(bts);
