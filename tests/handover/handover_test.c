@@ -1626,7 +1626,6 @@ int main(int argc, char **argv)
 	bsc_vty_init(bsc_gsmnet);
 	ho_test_vty_init();
 
-	ts_fsm_init();
 	lchan_fsm_init();
 	bsc_subscr_conn_fsm_init();
 	handover_fsm_init();

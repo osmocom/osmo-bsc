@@ -52,7 +52,7 @@ static void ts_fsm_update_id(struct gsm_bts_trx_ts *ts)
 				  gsm_pchan_id(ts->pchan_on_init));
 }
 
-void ts_fsm_init()
+static __attribute__((constructor)) void ts_fsm_init(void)
 {
 	OSMO_ASSERT(osmo_fsm_register(&ts_fsm) == 0);
 }

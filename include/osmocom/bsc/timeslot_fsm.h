@@ -42,8 +42,6 @@ enum ts_fsm_event {
         TS_EV_PDCH_DEACT_NACK,
 };
 
-void ts_fsm_init();
-
 void ts_fsm_alloc(struct gsm_bts_trx_ts *ts);
 void ts_fsm_free(struct gsm_bts_trx_ts *ts);
 
