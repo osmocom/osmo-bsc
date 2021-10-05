@@ -120,7 +120,7 @@ static void st_op_disabled_dependency_on_enter(struct osmo_fsm_inst *fi, uint32_
 	 * be sent during Dependency, so we simply move to OFFLINE state here to
 	 * avoid duplicating code. However, RadioCarrier seems to be implemented
 	 * correctly and goes to Offline state during startup. If some HW
-	 * version is found with the aboev estated bug, this code needs to be
+	 * version is found with the above estated bug, this code needs to be
 	 * enabled, similar to what we do in nm_bb_transc_fsm:
 	 */
 	/*if (trx->bts->site_mgr.peer_has_no_avstate_offline) {
