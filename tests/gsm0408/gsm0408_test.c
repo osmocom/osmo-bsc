@@ -57,9 +57,6 @@
 			__FILE__, __LINE__, (int) res, # cmp, (int) wanted);	\
 	}
 
-
-struct gsm_network *bsc_gsmnet = NULL;
-
 static inline void gen(struct gsm_bts *bts, const char *s)
 {
 	int r;

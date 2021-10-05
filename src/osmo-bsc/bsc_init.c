@@ -47,6 +47,8 @@
 #include <limits.h>
 #include <stdbool.h>
 
+struct gsm_network *bsc_gsmnet;
+
 int bsc_shutdown_net(struct gsm_network *net)
 {
 	struct gsm_bts *bts;

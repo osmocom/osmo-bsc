@@ -58,8 +58,6 @@
 #include <osmocom/bsc/bss.h>
 #include <osmocom/bsc/bts.h>
 
-struct gsm_network *bsc_gsmnet;
-
 static int net_listen_testnr;
 static int restart;
 static bool get_attr;

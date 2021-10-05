@@ -39,7 +39,6 @@
 #include <search.h>
 
 void *ctx = NULL;
-struct gsm_network *bsc_gsmnet = NULL;
 
 enum test {
 	TEST_SCAN_TO_BTS,

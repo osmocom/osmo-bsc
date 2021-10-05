@@ -58,8 +58,6 @@
 
 void *ctx;
 
-struct gsm_network *bsc_gsmnet;
-
 /* override, requires '-Wl,--wrap=osmo_mgcpc_ep_ci_request'.
  * Catch modification of an MGCP connection. */
 void __real_osmo_mgcpc_ep_ci_request(struct osmo_mgcpc_ep_ci *ci,
