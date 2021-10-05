@@ -836,13 +836,14 @@ static void assignment_fsm_wait_lchan_modified_onenter(struct osmo_fsm_inst *fi,
 		.ch_mode_rate = conn->assignment.selected_ch_mode_rate,
 		.requires_voice_stream = conn->assignment.requires_voice_stream,
 		.msc_assigned_cic = req->msc_assigned_cic,
-		/* keep previous training sequence code */
+		/* keep previous training sequence code. TSC is always present, TSC Set may or may not be an explicit
+		 * value. */
 		.tsc_set = {
 			.present = (lchan->tsc_set >= 0),
 			.val = lchan->tsc_set,
 		},
 		.tsc = {
-			.present = (lchan->tsc >= 0),
+			.present = true,
 			.val = lchan->tsc,
 		},
 	};
