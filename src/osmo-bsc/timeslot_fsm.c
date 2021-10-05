@@ -66,6 +66,14 @@ void ts_fsm_alloc(struct gsm_bts_trx_ts *ts)
 	ts_fsm_update_id(ts);
 }
 
+void ts_fsm_free(struct gsm_bts_trx_ts *ts)
+{
+	if (ts->fi) {
+		osmo_fsm_inst_free(ts->fi);
+		ts->fi = NULL;
+	}
+}
+
 enum lchan_sanity {
 	LCHAN_IS_INSANE = -1,
 	LCHAN_IS_READY_TO_GO,

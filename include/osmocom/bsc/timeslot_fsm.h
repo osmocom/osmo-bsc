@@ -45,6 +45,7 @@ enum ts_fsm_event {
 void ts_fsm_init();
 
 void ts_fsm_alloc(struct gsm_bts_trx_ts *ts);
+void ts_fsm_free(struct gsm_bts_trx_ts *ts);
 
 bool ts_is_capable_of_pchan(struct gsm_bts_trx_ts *ts, enum gsm_phys_chan_config pchan);
 bool ts_is_capable_of_lchant(struct gsm_bts_trx_ts *ts, enum gsm_chan_t type);

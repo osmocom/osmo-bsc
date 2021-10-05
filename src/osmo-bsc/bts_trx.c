@@ -50,6 +50,7 @@ static int gsm_bts_trx_talloc_destructor(struct gsm_bts_trx *trx)
 			osmo_fsm_inst_free(ts->mo.fi);
 			ts->mo.fi = NULL;
 		}
+		ts_fsm_free(ts);
 	}
 	return 0;
 }
