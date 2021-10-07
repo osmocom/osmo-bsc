@@ -95,16 +95,8 @@ static void configure_loop(struct gsm_bts_trx_ts *ts, struct gsm_nm_state *state
 	if (!ts->mo.set_attr_sent && !ts->mo.set_attr_ack_received) {
 		ts->mo.set_attr_sent = true;
 		ccomb = abis_nm_chcomb4pchan(ts->pchan_from_config);
-		if (abis_nm_set_channel_attr(ts, ccomb) == -EINVAL) {
-			/* FIXME: using this here makes crazy lots of .o
-			   dependencies be fulled in, ending up in
-			   osmo_bsc_main.o which conficts due to containing its
-			   own main() */
-			LOGPFSML(ts->mo.fi, LOGL_ERROR,
-				 "FIXME: Here OML link should br dropped, "
-				 "something is wrong in your setup!\n");
-			//ipaccess_drop_oml_deferred(trx->bts);
-		}
+		if (abis_nm_set_channel_attr(ts, ccomb) == -EINVAL)
+			ipaccess_drop_oml_deferred(trx->bts);
 	}
 
 	if (state->administrative != NM_STATE_UNLOCKED && !ts->mo.adm_unlock_sent) {
