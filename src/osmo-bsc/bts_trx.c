@@ -232,9 +232,9 @@ struct gsm_lchan *rsl_lchan_lookup(struct gsm_bts_trx *trx, uint8_t chan_nr,
 		break;
 	case ABIS_RSL_CHAN_NR_CBITS_OSMO_PDCH:
 		lch_idx = 0;
-		ok = (ts->pchan_on_init == GSM_PCHAN_OSMO_DYN);
+		ok = ts_is_capable_of_pchan(ts, GSM_PCHAN_PDCH);
 		if (!ok)
-			LOG_TRX(trx, DRSL, LOGL_ERROR, "chan_nr 0x%x cbits 0x%x: %s is not GSM_PCHAN_OSMO_DYN\n",
+			LOG_TRX(trx, DRSL, LOGL_ERROR, "chan_nr 0x%x cbits 0x%x: %s is not capable of GSM_PCHAN_PDCH\n",
 				chan_nr, cbits, gsm_ts_and_pchan_name(ts));
 		break;
 	default:
