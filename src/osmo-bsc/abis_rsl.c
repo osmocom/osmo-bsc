@@ -1514,9 +1514,7 @@ static int rsl_rx_resource_indication(struct msgb *msg)
 	struct gsm_bts_trx *trx = sign_link->trx;
 	struct gsm_lchan *lchan;
 	int ts_nr;
-	int i;
-
-	rsl_tlv_parse(&tp, rslh->data, msgb_l2len(msg) - sizeof(*rslh));
+	int rc, i;
 
 	LOGP(DRSL, LOGL_DEBUG, "%s Rx Resource Indication\n", gsm_trx_name(trx));
 
@@ -1528,6 +1526,12 @@ static int rsl_rx_resource_indication(struct msgb *msg)
 			lchan->interf_dbm = INTERF_DBM_UNKNOWN;
 			lchan->interf_band = INTERF_BAND_UNKNOWN;
 		}
+	}
+
+	rc = rsl_tlv_parse(&tp, rslh->data, msgb_l2len(msg) - sizeof(*rslh));
+	if (rc < 0) {
+		LOGP(DRSL, LOGL_ERROR, "Rx Resource Indication: failed to parse the message\n");
+		return -EINVAL;
 	}
 
 	res_info_ie = TLVP_GET(&tp, RSL_IE_RESOURCE_INFO);
