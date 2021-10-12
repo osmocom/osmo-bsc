@@ -273,6 +273,7 @@ struct gsm_bts *gsm_bts_alloc(struct gsm_network *net, struct gsm_bts_sm *bts_sm
 	bts->si_common.chan_desc.t3212 = osmo_tdef_get(net->T_defs, 3212, OSMO_TDEF_CUSTOM, -1);
 	bts->si_common.cell_options.pwrc = 0; /* PWRC not set */
 	bts->si_common.cell_sel_par.acs = 0;
+	bts->si_common.ncc_permitted = 0xff;
 	gsm_bts_set_radio_link_timeout(bts, 32); /* Use RADIO LINK TIMEOUT of 32 */
 
 	INIT_LLIST_HEAD(&bts->abis_queue);

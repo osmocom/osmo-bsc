@@ -169,7 +169,7 @@ generated valid SI2quater [06/06]: [23] 59 06 07 4c c0 04 87 00 00 b3 08 4b b8 4
 BTS deallocated OK in test_si2q_long()
 BTS allocation OK in test_si_ba_ind()
 Testing if BA-IND is set as expected in SI2xxx and SI5xxx
-SI2: 59 06 1a 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 e5 04 00 
+SI2: 59 06 1a 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ff e5 04 00 
 SI2bis: 55 06 02 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 e5 04 00 2b 
 SI2ter: 49 06 03 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 2b 2b 2b 2b 
 SI5: 06 1d 10 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
