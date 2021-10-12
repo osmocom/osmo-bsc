@@ -446,14 +446,6 @@ static int bootstrap_bts(struct gsm_bts *bts)
 	if (!bts->model)
 		return -EFAULT;
 
-	if (bts->model->start && !bts->model->started) {
-		int ret = bts->model->start(bts->network);
-		if (ret < 0)
-			return ret;
-
-		bts->model->started = true;
-	}
-
 	/* FIXME: What about secondary TRX of a BTS?  What about a BTS that has TRX
 	 * in different bands? Why is 'band' a parameter of the BTS and not of the TRX? */
 	switch (bts->band) {
