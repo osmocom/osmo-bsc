@@ -446,8 +446,6 @@ static int bootstrap_bts(struct gsm_bts *bts)
 	if (!bts->model)
 		return -EFAULT;
 
-	/* FIXME: What about secondary TRX of a BTS?  What about a BTS that has TRX
-	 * in different bands? Why is 'band' a parameter of the BTS and not of the TRX? */
 	switch (bts->band) {
 	case GSM_BAND_1800:
 		if (bts->c0->arfcn < 512 || bts->c0->arfcn > 885) {
