@@ -490,9 +490,6 @@ static int bootstrap_bts(struct gsm_bts *bts)
 
 	/* Control Channel Description is set from vty/config */
 
-	/* Indicate R99 MSC in SI3 */
-	bts->si_common.chan_desc.mscr = 1;
-
 	/* Determine the value of CCCH_CONF. Is TS0/C0 combined? */
 	if (bts->c0->ts[0].pchan_from_config != GSM_PCHAN_CCCH) {
 		bts->si_common.chan_desc.ccch_conf = RSL_BCCH_CCCH_CONF_1_C;

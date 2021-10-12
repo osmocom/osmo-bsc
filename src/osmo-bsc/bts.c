@@ -266,6 +266,7 @@ struct gsm_bts *gsm_bts_alloc(struct gsm_network *net, struct gsm_bts_sm *bts_sm
 	bts->si_common.rach_control.tx_integer = 9;  /* 12 slots spread - 217/115 slots delay */
 	bts->si_common.rach_control.max_trans = 3; /* 7 retransmissions */
 	bts->si_common.rach_control.t2 = 4; /* no emergency calls */
+	bts->si_common.chan_desc.mscr = 1; /* Indicate R99 MSC in SI3 */
 	bts->si_common.chan_desc.att = 1; /* attachment required */
 	bts->si_common.chan_desc.bs_pa_mfrms = RSL_BS_PA_MFRMS_5; /* paging frames */
 	bts->si_common.chan_desc.bs_ag_blks_res = 1; /* reserved AGCH blocks */
