@@ -510,8 +510,6 @@ static int bootstrap_bts(struct gsm_bts *bts)
 		bts->si_common.chan_desc.ccch_conf = (n << 1);
 	}
 
-	bts->si_common.cell_sel_par.acs = 0;
-
 	bts->si_common.ncc_permitted = 0xff;
 
 	bts->chan_load_samples_idx = 0;
