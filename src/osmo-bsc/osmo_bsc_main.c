@@ -512,8 +512,6 @@ static int bootstrap_bts(struct gsm_bts *bts)
 
 	bts->si_common.ncc_permitted = 0xff;
 
-	bts->chan_load_samples_idx = 0;
-
 	/* ACC ramping is initialized from vty/config */
 
 	/* Initialize the BTS state */
