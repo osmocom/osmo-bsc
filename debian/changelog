@@ -1,3 +1,10 @@
+osmo-bsc (1.7.1) unstable; urgency=medium
+
+  [ Philipp Maier ]
+  * assignment_fsm: Check for conn->lchan
+
+ -- Oliver Smith <osmith@sysmocom.de>  Tue, 12 Oct 2021 16:57:13 +0200
+
 osmo-bsc (1.7.0) unstable; urgency=medium
 
   [ Harald Welte ]
