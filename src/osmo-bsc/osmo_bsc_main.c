@@ -108,7 +108,6 @@ static void print_help()
 	printf("  -c --config-file filename	The config file to use.\n");
 	printf("  -e --log-level number		Set a global loglevel.\n");
 	printf("  -r --rf-ctl NAME		A unix domain socket to listen for cmds.\n");
-	printf("  -t --testmode			A special mode to provoke failures at the MSC.\n");
 
 	printf("\nVTY reference generation:\n");
 	printf("     --vty-ref-mode MODE	VTY reference generation mode (e.g. 'expert').\n");
@@ -155,13 +154,12 @@ static void handle_options(int argc, char **argv)
 			{"version", 0, 0, 'V' },
 			{"log-level", 1, 0, 'e'},
 			{"rf-ctl", 1, 0, 'r'},
-			{"testmode", 0, 0, 't'},
 			{"vty-ref-mode", 1, &long_option, 1},
 			{"vty-ref-xml", 0, &long_option, 2},
 			{0, 0, 0, 0}
 		};
 
-		c = getopt_long(argc, argv, "hd:DsTVc:e:r:t",
+		c = getopt_long(argc, argv, "hd:DsTVc:e:r:",
 				long_options, &option_index);
 		if (c == -1)
 			break;
