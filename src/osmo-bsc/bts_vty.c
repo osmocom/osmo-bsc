@@ -716,21 +716,25 @@ DEFUN_USRATTR(cfg_bts_rep_no_ul_dl_sacch,
 	return CMD_SUCCESS;
 }
 
+/* See 3GPP TS 45.008, section 8.2.4 */
+#define RXQUAL_THRESH_CMD \
+	"rxqual (0|1|2|3|4|5|6|7)"
+#define RXQUAL_THRESH_CMD_DESC \
+	"Set RxQual (BER) threshold (default 4)\n" \
+	"BER >= 0% (always on)\n" \
+	"BER >= 0.2%\n" \
+	"BER >= 0.4%\n" \
+	"BER >= 0.8%\n" \
+	"BER >= 1.6% (default)\n" \
+	"BER >= 3.2%\n" \
+	"BER >= 6.4%\n" \
+	"BER >= 12.8%\n"
+
 DEFUN_USRATTR(cfg_bts_rep_rxqual,
 	      cfg_bts_rep_rxqual_cmd,
 	      X(BSC_VTY_ATTR_NEW_LCHAN),
-	      "repeat rxqual (0|1|2|3|4|5|6|7)",
-	      REP_ACCH_STR
-	      "Set UL-SACCH/DL-FACCH rxqual threshold-ber\n"
-	      "0 disabled (always on)\n"
-	      "1 BER >= 0.2%\n"
-	      "2 BER >= 0.4%\n"
-	      "3 BER >= 0.8%\n"
-	      "4 BER >= 1.6% (default)\n"
-	      "5 BER >= 3.2%\n"
-	      "6 BER >= 6.4%\n"
-	      "7 BER >= 12.8%\n")
-	      /* See also: GSM 05.08, section 8.2.4 */
+	      "repeat " RXQUAL_THRESH_CMD,
+	      REP_ACCH_STR RXQUAL_THRESH_CMD_DESC)
 {
 	struct gsm_bts *bts = vty->index;
 
@@ -751,9 +755,11 @@ DEFUN_USRATTR(cfg_bts_rep_rxqual,
 DEFUN_USRATTR(cfg_bts_top_dl_acch,
 	      cfg_bts_top_dl_acch_cmd,
 	      X(BSC_VTY_ATTR_NEW_LCHAN),
-	      "overpower dl-acch <1-4>",
+	      "overpower (dl-acch|dl-sacch|dl-facch) <1-4>",
 	      TOP_ACCH_STR
-	      "Enable ACCH overpower for this BTS\n"
+	      "Enable overpower for both SACCH and FACCH\n"
+	      "Enable overpower for SACCH only\n"
+	      "Enable overpower for FACCH only\n"
 	      "Overpower value in dB\n")
 {
 	struct gsm_bts *bts = vty->index;
@@ -764,7 +770,16 @@ DEFUN_USRATTR(cfg_bts_top_dl_acch,
 		return CMD_WARNING;
 	}
 
-        bts->temporary_overpower.overpower_db = atoi(argv[0]);
+	bts->temporary_overpower.sacch_enable = 0;
+	bts->temporary_overpower.facch_enable = 0;
+
+	if (!strcmp(argv[0], "dl-acch") || !strcmp(argv[0], "dl-sacch"))
+		bts->temporary_overpower.sacch_enable = 1;
+	if (!strcmp(argv[0], "dl-acch") || !strcmp(argv[0], "dl-facch"))
+		bts->temporary_overpower.facch_enable = 1;
+
+	bts->temporary_overpower.overpower_db = atoi(argv[1]);
+
 	return CMD_SUCCESS;
 }
 
@@ -778,6 +793,27 @@ DEFUN_USRATTR(cfg_bts_top_no_dl_acch,
 	struct gsm_bts *bts = vty->index;
 
 	bts->temporary_overpower.overpower_db = 0;
+	bts->temporary_overpower.sacch_enable = 0;
+	bts->temporary_overpower.facch_enable = 0;
+
+	return CMD_SUCCESS;
+}
+
+DEFUN_USRATTR(cfg_bts_top_dl_acch_rxqual,
+	      cfg_bts_top_dl_acch_rxqual_cmd,
+	      X(BSC_VTY_ATTR_NEW_LCHAN),
+	      "overpower " RXQUAL_THRESH_CMD,
+	      TOP_ACCH_STR RXQUAL_THRESH_CMD_DESC)
+{
+	struct gsm_bts *bts = vty->index;
+
+	if (bts->model->type != GSM_BTS_TYPE_OSMOBTS) {
+		vty_out(vty, "%% ACCH overpower is not supported by BTS %u%s",
+			bts->nr, VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	bts->temporary_overpower.rxqual = atoi(argv[0]);
 
 	return CMD_SUCCESS;
 }
@@ -4257,8 +4293,25 @@ static void config_write_bts_single(struct vty *vty, struct gsm_bts *bts)
 
 	ho_vty_write_bts(vty, bts);
 
-	if (bts->temporary_overpower.overpower_db > 0)
-		vty_out(vty, "  overpower dl-acch %u%s", bts->temporary_overpower.overpower_db, VTY_NEWLINE);
+	if (bts->temporary_overpower.overpower_db > 0) {
+		const struct abis_rsl_osmo_temp_ovp_acch_cap *top = \
+			&bts->temporary_overpower;
+		const char *mode = NULL;
+
+		if (top->sacch_enable && top->facch_enable)
+			mode = "dl-acch";
+		else if (top->sacch_enable)
+			mode = "dl-sacch";
+		else if (top->facch_enable)
+			mode = "dl-facch";
+		else /* shall not happen */
+			OSMO_ASSERT(0);
+
+		vty_out(vty, "  overpower %s %u%s",
+			mode, top->overpower_db, VTY_NEWLINE);
+		vty_out(vty, "  overpower rxqual %u%s",
+			top->rxqual, VTY_NEWLINE);
+	}
 
 	if (bts->repeated_acch_policy.dl_facch_all)
 		vty_out(vty, "  repeat dl-facch all%s", VTY_NEWLINE);
@@ -4477,6 +4530,7 @@ int bts_vty_init(void)
 	install_element(BTS_NODE, &cfg_bts_rep_rxqual_cmd);
 	install_element(BTS_NODE, &cfg_bts_top_dl_acch_cmd);
 	install_element(BTS_NODE, &cfg_bts_top_no_dl_acch_cmd);
+	install_element(BTS_NODE, &cfg_bts_top_dl_acch_rxqual_cmd);
 	install_element(BTS_NODE, &cfg_bts_interf_meas_avg_period_cmd);
 	install_element(BTS_NODE, &cfg_bts_interf_meas_level_bounds_cmd);
 	install_element(BTS_NODE, &cfg_bts_srvcc_fast_return_cmd);
