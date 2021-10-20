@@ -84,7 +84,7 @@ doc/manuals/*.pdf
 doc/manuals/*__*.png
 doc/manuals/*.check
 doc/manuals/generated/
-doc/manuals/osmomsc-usermanual.xml
+doc/manuals/osmobsc-usermanual.xml
 doc/manuals/common
 doc/manuals/build
 
