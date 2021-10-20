@@ -759,7 +759,7 @@ DEFUN_USRATTR(cfg_bts_top_dl_acch,
 	struct gsm_bts *bts = vty->index;
 
 	if (bts->model->type != GSM_BTS_TYPE_OSMOBTS) {
-		vty_out(vty, "%% repeated ACCH not supported by BTS %u%s",
+		vty_out(vty, "%% ACCH overpower is not supported by BTS %u%s",
 			bts->nr, VTY_NEWLINE);
 		return CMD_WARNING;
 	}
