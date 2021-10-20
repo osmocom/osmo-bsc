@@ -1,3 +1,10 @@
+osmo-bsc (1.7.2) unstable; urgency=medium
+
+  [ Vadim Yanitskiy ]
+  * lchan_fsm: fix potential NULL-pointer dereference
+
+ -- Pau Espin Pedrol <pespin@sysmocom.de>  Wed, 20 Oct 2021 18:34:47 +0200
+
 osmo-bsc (1.7.1) unstable; urgency=medium
 
   [ Philipp Maier ]
