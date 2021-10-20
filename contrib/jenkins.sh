@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# jenkins build helper script for openbsc.  This is how we build on jenkins.osmocom.org
+# jenkins build helper script for osmo-bsc.  This is how we build on jenkins.osmocom.org
 #
 # environment variables:
 # * WITH_MANUALS: build manual PDFs if set to "1"
