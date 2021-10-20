@@ -754,7 +754,7 @@ DEFUN_USRATTR(cfg_bts_top_dl_acch,
 	      "overpower dl-acch <1-4>",
 	      TOP_ACCH_STR
 	      "Enable ACCH overpower for this BTS\n"
-	      "overpower value in dB\n")
+	      "Overpower value in dB\n")
 {
 	struct gsm_bts *bts = vty->index;
 
