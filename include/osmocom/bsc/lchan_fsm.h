@@ -72,7 +72,7 @@ static inline const char *lchan_state_name(struct gsm_lchan *lchan)
 	return lchan->fi ? osmo_fsm_inst_state_name(lchan->fi) : "NULL";
 }
 
-static inline bool lchan_state_is(struct gsm_lchan *lchan, uint32_t state)
+static inline bool lchan_state_is(const struct gsm_lchan *lchan, uint32_t state)
 {
 	return (!lchan->fi && state == LCHAN_ST_UNUSED)
 		|| (lchan->fi && lchan->fi->state == state);
