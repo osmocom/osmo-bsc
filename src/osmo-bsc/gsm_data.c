@@ -633,7 +633,7 @@ static const uint8_t subslots_per_pchan_vamos[] = {
 	[GSM_PCHAN_SDCCH8_SACCH8C] = 0,
 	[GSM_PCHAN_CCCH_SDCCH4_CBCH] = 0,
 	[GSM_PCHAN_SDCCH8_SACCH8C_CBCH] = 0,
-	[GSM_PCHAN_OSMO_DYN] = 2,
+	[GSM_PCHAN_OSMO_DYN] = 0,
 	[GSM_PCHAN_TCH_F_PDCH] = 2,
 };
 
