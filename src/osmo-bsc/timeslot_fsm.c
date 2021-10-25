@@ -243,6 +243,7 @@ static void ts_setup_lchans(struct gsm_bts_trx_ts *ts)
 	ts->max_lchans_possible = max_lchans + max_lchans_vamos;
 	ts->max_primary_lchans = 0;
 
+	OSMO_ASSERT(ts->max_lchans_possible <= TS_MAX_LCHAN);
 	for (i = 0; i < ts->max_lchans_possible; i++) {
 		/* If we receive more than one Channel OPSTART ACK, don't fail on the second init. */
 		if (ts->lchan[i].fi)
