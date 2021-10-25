@@ -609,7 +609,7 @@ static const uint8_t subslots_per_pchan[] = {
 	[GSM_PCHAN_CCCH_SDCCH4_CBCH] = 4,
 	[GSM_PCHAN_SDCCH8_SACCH8C_CBCH] = 8,
 	/* Dyn TS: maximum allowed subslots */
-	[GSM_PCHAN_OSMO_DYN] = 2,
+	[GSM_PCHAN_OSMO_DYN] = 8,
 	[GSM_PCHAN_TCH_F_PDCH] = 1,
 };
 
