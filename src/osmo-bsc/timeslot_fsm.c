@@ -201,19 +201,24 @@ void ts_set_pchan_is(struct gsm_bts_trx_ts *ts, enum gsm_phys_chan_config pchan_
 {
 	int i;
 	struct gsm_lchan *lchan;
+	uint8_t max_lchans_possible_vamos;
+
 	ts->pchan_is = pchan_is;
 	ts->max_primary_lchans = pchan_subslots(ts->pchan_is);
-	LOG_TS(ts, LOGL_DEBUG, "pchan_is=%s max_primary_lchans=%d max_lchans_possible=%d\n",
-	       gsm_pchan_name(ts->pchan_is), ts->max_primary_lchans, ts->max_lchans_possible);
+	max_lchans_possible_vamos = pchan_subslots_vamos(ts->pchan_is);
+	LOG_TS(ts, LOGL_DEBUG, "pchan_is=%s max_primary_lchans=%d max_lchans_possible=%d (%u VAMOS)\n",
+	       gsm_pchan_name(ts->pchan_is), ts->max_primary_lchans, ts->max_lchans_possible,
+	       max_lchans_possible_vamos);
 	switch (ts->pchan_is) {
 	case GSM_PCHAN_TCH_F:
 	case GSM_PCHAN_TCH_H:
 		for (i = 0; i < ts->max_lchans_possible; i++) {
 			lchan = &ts->lchan[i];
-			if (i < ts->max_primary_lchans)
-				lchan->vamos.is_secondary = false;
-			else
+			if (i >= ts->max_primary_lchans &&
+			    (i - ts->max_primary_lchans) < (int)max_lchans_possible_vamos)
 				lchan->vamos.is_secondary = true;
+			else
+				lchan->vamos.is_secondary = false;
 			lchan_fsm_update_id(lchan);
 		}
 		break;
