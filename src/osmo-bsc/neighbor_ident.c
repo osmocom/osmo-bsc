@@ -489,6 +489,7 @@ int neighbor_ctrl_cmds_install(struct gsm_network *net)
 
 struct ctrl_handle *neighbor_controlif_setup(struct gsm_network *net)
 {
+	/* See also osmobsc-usermanual.pdf, section 14.1 Neighbor Address Resolution Service */
 	return ctrl_interface_setup_dynip2(net, net->neigh_ctrl.addr, net->neigh_ctrl.port,
 					   NULL, _LAST_CTRL_NODE_NEIGHBOR);
 }
