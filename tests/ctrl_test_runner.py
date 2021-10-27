@@ -525,6 +525,46 @@ class TestCtrlBSC(TestCtrlBase):
         self.assertEqual(r['var'], 'apply-config-file')
         self.assertEqual(r['value'], 'OK')
 
+    def testNeighborList(self):
+	# Enter manual neighbor-list mode
+        r = self.do_set('bts.0.neighbor-list.mode', 'manual')
+        print('respose: ' + str(r))
+        self.assertEqual(r['mtype'], 'SET_REPLY')
+        self.assertEqual(r['var'], 'bts.0.neighbor-list.mode')
+        self.assertEqual(r['value'], 'OK')
+
+	# Add an ARFCN
+        r = self.do_set('bts.0.neighbor-list.add', '123')
+        print('respose: ' + str(r))
+        self.assertEqual(r['mtype'], 'SET_REPLY')
+        self.assertEqual(r['var'], 'bts.0.neighbor-list.add')
+        self.assertEqual(r['value'], 'OK')
+
+	# Delete the ARFCN again
+        r = self.do_set('bts.0.neighbor-list.del', '123')
+        print('respose: ' + str(r))
+        self.assertEqual(r['mtype'], 'SET_REPLY')
+        self.assertEqual(r['var'], 'bts.0.neighbor-list.del')
+        self.assertEqual(r['value'], 'OK')
+
+	# Go back to automatic neighbor-list mode
+        r = self.do_set('bts.0.neighbor-list.mode', 'automatic')
+        print('respose: ' + str(r))
+        self.assertEqual(r['mtype'], 'SET_REPLY')
+        self.assertEqual(r['var'], 'bts.0.neighbor-list.mode')
+        self.assertEqual(r['value'], 'OK')
+
+	# This must not work as we are in automatic neighbor-list mode
+        r = self.do_set('bts.0.neighbor-list.add', '123')
+        print('respose: ' + str(r))
+        self.assertEqual(r['mtype'], 'ERROR')
+        self.assertEqual(r['error'], 'Neighbor list not in manual mode')
+
+	# Try an invalid neighbor-list mode
+        r = self.do_set('bts.0.neighbor-list.mode', 'qwertzuiop')
+        print('respose: ' + str(r))
+        self.assertEqual(r['mtype'], 'ERROR')
+        self.assertEqual(r['error'], 'Invalid mode')
 
 class TestCtrlBSCNeighbor(TestCtrlBase):
 

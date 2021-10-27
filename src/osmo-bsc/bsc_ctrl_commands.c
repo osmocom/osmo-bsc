@@ -668,6 +668,120 @@ static int set_bts_c0_power_red(struct ctrl_cmd *cmd, void *data)
 
 CTRL_CMD_DEFINE(bts_c0_power_red, "c0-power-reduction");
 
+static int verify_bts_neighbor_list_add_del(struct ctrl_cmd *cmd, const char *value, void *_data)
+{
+	int arfcn;
+
+	if (osmo_str_to_int(&arfcn, value, 10, 0, 1023) < 0) {
+		cmd->reply = "Invalid ARFCN value";
+		return 1;
+	}
+
+	return 0;
+}
+
+static int set_bts_neighbor_list_add_del(struct ctrl_cmd *cmd, void *data, bool add)
+{
+	struct gsm_bts *bts = cmd->node;
+	struct bitvec *bv = &bts->si_common.neigh_list;
+	int arfcn_int;
+	uint16_t arfcn;
+	enum gsm_band unused;
+
+	if (osmo_str_to_int(&arfcn_int, cmd->value, 10, 0, 1023) < 0) {
+		cmd->reply = "Failed to parse ARFCN value";
+		return CTRL_CMD_ERROR;
+	}
+	arfcn = (uint16_t) arfcn_int;
+
+	if (bts->neigh_list_manual_mode == NL_MODE_AUTOMATIC) {
+		cmd->reply = "Neighbor list not in manual mode";
+		return CTRL_CMD_ERROR;
+	}
+
+	if (gsm_arfcn2band_rc(arfcn, &unused) < 0) {
+		cmd->reply = "Invalid arfcn detected";
+		return CTRL_CMD_ERROR;
+	}
+
+	if (add)
+		bitvec_set_bit_pos(bv, arfcn, 1);
+	else
+		bitvec_set_bit_pos(bv, arfcn, 0);
+
+	cmd->reply = "OK";
+	return CTRL_CMD_REPLY;
+}
+
+static int verify_bts_neighbor_list_add(struct ctrl_cmd *cmd, const char *value, void *_data)
+{
+	return verify_bts_neighbor_list_add_del(cmd, value, _data);
+}
+
+static int set_bts_neighbor_list_add(struct ctrl_cmd *cmd, void *data)
+{
+	return set_bts_neighbor_list_add_del(cmd, data, true);
+}
+
+CTRL_CMD_DEFINE_WO(bts_neighbor_list_add, "neighbor-list add");
+
+static int verify_bts_neighbor_list_del(struct ctrl_cmd *cmd, const char *value, void *_data)
+{
+	return verify_bts_neighbor_list_add_del(cmd, value, _data);
+}
+
+static int set_bts_neighbor_list_del(struct ctrl_cmd *cmd, void *data)
+{
+	return set_bts_neighbor_list_add_del(cmd, data, false);
+}
+
+CTRL_CMD_DEFINE_WO(bts_neighbor_list_del, "neighbor-list del");
+
+static int verify_bts_neighbor_list_mode(struct ctrl_cmd *cmd, const char *value, void *_data)
+{
+	if (!strcmp(value, "automatic"))
+		return 0;
+	if (!strcmp(value, "manual"))
+		return 0;
+	if (!strcmp(value, "manual-si5"))
+		return 0;
+
+	cmd->reply = "Invalid mode";
+	return 1;
+}
+
+static int set_bts_neighbor_list_mode(struct ctrl_cmd *cmd, void *data)
+{
+	struct gsm_bts *bts = cmd->node;
+	int mode;
+
+	if (!strcmp(cmd->value, "automatic"))
+		mode = NL_MODE_AUTOMATIC;
+	else if (!strcmp(cmd->value, "manual"))
+		mode = NL_MODE_MANUAL;
+	else if (!strcmp(cmd->value, "manual-si5"))
+		mode = NL_MODE_MANUAL_SI5SEP;
+
+	switch (mode) {
+	case NL_MODE_MANUAL_SI5SEP:
+	case NL_MODE_MANUAL:
+		/* make sure we clear the current list when switching to
+		 * manual mode */
+		if (bts->neigh_list_manual_mode == 0)
+			memset(&bts->si_common.data.neigh_list, 0, sizeof(bts->si_common.data.neigh_list));
+		break;
+	default:
+		break;
+	}
+
+	bts->neigh_list_manual_mode = mode;
+
+	cmd->reply = "OK";
+	return CTRL_CMD_REPLY;
+}
+
+CTRL_CMD_DEFINE_WO(bts_neighbor_list_mode, "neighbor-list mode");
+
 int bsc_base_ctrl_cmds_install(void)
 {
 	int rc = 0;
@@ -692,6 +806,9 @@ int bsc_base_ctrl_cmds_install(void)
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_rf_state);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_rf_states);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_c0_power_red);
+	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_neighbor_list_add);
+	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_neighbor_list_del);
+	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_neighbor_list_mode);
 
 	rc |= neighbor_ident_ctrl_init();
 

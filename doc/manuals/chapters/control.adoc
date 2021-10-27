@@ -68,6 +68,9 @@ TRX-specific commands are additionally prefixed with TRX number e. g.
 |[bts.N.]handover2.penalty-time.failed-assignment|RW|No|<0-99999>,"default"|Time to suspend handover for a subscriber after a failed re-assignment within this cell.
 |[bts.N.]handover2.retries|RW|No|<0-9>,"default"|Number of times to immediately retry a failed handover/assignment, before a penalty time is applied.
 |handover2.congestion-check|RW|No|"disabled",<1-999>,"now"|Congestion check interval in seconds, "now" triggers immediate congestion check.
+|bts.N.neighbor-list.mode|WO|No|"automatic","manual","manual-si5"|Mode of Neighbor List generation.
+|bts.N.neighbor-list.add|WO|No|<0-1023>|Add to manual neighbor list.
+|bts.N.neighbor-list.del|WO|No|<0-1023>|Delete from manual neighbor list.
 |===
 
 [[notif]]
