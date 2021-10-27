@@ -120,4 +120,29 @@ RF Ctrl is enabled in the BSC Configuration.
 Set/Get the value of maximum power reduction. Even values between 0 and 22 are
 accepted.
 
+=== add/del neighbor cell
+
+The control interface allows for editing the neighbor cell configuration. Neighbor
+cells can be added or removed during runtime. It is also possible to clear the
+entire neighbor list if necessary.
+
+.Variables available over control interface
+[options="header",width="100%",cols="20%,5%,5%,50%,20%"]
+|===
+|Name|Access|Trap|Value|Comment
+|bts.N.neighbor-bts.add|WO|No|"<num>"|Add neighbor cell by local BTS number.
+|bts.N.neighbor-bts.del|WO|No|"<num>"|Delete neighbor cell by local BTS number.
+|bts.N.neighbor-lac.add|WO|No|"<lac>[-<arfcn>-<bsic>]"|Add neighbor cell by LAC.
+|bts.N.neighbor-lac.del|WO|No|"<lac>[-<arfcn>-<bsic>]"|Delete neighbor cell by LAC.
+|bts.N.neighbor-lac-ci.add|WO|No|"<lac>-<ci>[-<arfcn>-<bsic>]"|Add neighbor cell by LAC and CI.
+|bts.N.neighbor-lac-ci.del|WO|No|"<lac>-<ci>[-<arfcn>-<bsic>]"|Delete neighbor cell by LAC and CI.
+|bts.N.neighbor-cgi.add|WO|No|"<mcc>-<mnc>-<lac>-<ci>[-<arfcn>-<bsic>]"|Add neighbor cell by cgi.
+|bts.N.neighbor-cgi.del|WO|No|"<mcc>-<mnc>-<lac>-<ci>[-<arfcn>-<bsic>]"|Delete neighbor cell by cgi.
+|bts.N.neighbor-cgi-ps.add|WO|No|"<mcc>-<mnc>-<lac>-<rac>-<ci>[-<arfcn>-<bsic>]"|Add neighbor cell by cgi (Packet Switched, with RAC)
+|bts.N.neighbor-cgi-ps.del|WO|No|"<mcc>-<mnc>-<lac>-<rac>-<ci>[-<arfcn>-<bsic>]"|Delete neighbor cell by cgi (Packet Switched, with RAC).
+|bts.N.neighbor-clear|WO|No|Ignored|Delete all neighbor cells.
+|===
+
+NOTE: The bsic-number (<bsic>) can also be set to "any" if no explcit bsic shall be given
+
 FIXME: add variables defined in src/ctrl/control_if.c?

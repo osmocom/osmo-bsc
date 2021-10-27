@@ -35,6 +35,7 @@
 #include <osmocom/bsc/osmo_bsc_rf.h>
 #include <osmocom/bsc/bsc_msc_data.h>
 #include <osmocom/bsc/bts.h>
+#include <osmocom/bsc/neighbor_ident.h>
 
 static int verify_net_apply_config_file(struct ctrl_cmd *cmd, const char *value, void *_data)
 {
@@ -691,6 +692,8 @@ int bsc_base_ctrl_cmds_install(void)
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_rf_state);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_rf_states);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_c0_power_red);
+
+	rc |= neighbor_ident_ctrl_init();
 
 	rc |= ctrl_cmd_install(CTRL_NODE_TRX, &cmd_trx_max_power);
 	rc |= ctrl_cmd_install(CTRL_NODE_TRX, &cmd_trx_arfcn);

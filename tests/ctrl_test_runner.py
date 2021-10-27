@@ -562,6 +562,177 @@ class TestCtrlBSCNeighbor(TestCtrlBase):
         self.assertEqual(r['var'], 'neighbor_resolve_cgi_ps_from_lac_ci.1.6969.23.32')
         self.assertEqual(r['value'], '023-42-423-2-5')
 
+
+class TestCtrlBSCNeighborCell(TestCtrlBase):
+
+    def tearDown(self):
+        TestCtrlBase.tearDown(self)
+        os.unlink("tmp_dummy_sock")
+
+    def ctrl_command(self):
+        return ["./src/osmo-bsc/osmo-bsc", "-r", "tmp_dummy_sock", "-c",
+                "tests/ctrl/osmo-bsc-neigh-test.cfg"]
+
+    def ctrl_app(self):
+        return (4249, "./src/osmo-bsc/osmo-bsc", "OsmoBSC", "bsc")
+
+    def testCtrlAddDelBTS(self):
+        r = self.do_set('bts.0.neighbor-bts.add', '1')
+        print('respose: ' + str(r))
+        self.assertEqual(r['mtype'], 'SET_REPLY')
+        self.assertEqual(r['var'], 'bts.0.neighbor-bts.add')
+        self.assertEqual(r['value'], 'OK')
+        r = self.do_set('bts.0.neighbor-bts.del', '1')
+        print('respose: ' + str(r))
+        self.assertEqual(r['mtype'], 'SET_REPLY')
+        self.assertEqual(r['var'], 'bts.0.neighbor-bts.del')
+        self.assertEqual(r['value'], 'OK')
+
+    def testCtrlAddDelLAC(self):
+	# without ARFCN+BSIC:
+        r = self.do_set('bts.0.neighbor-lac.add', '100')
+        print('respose: ' + str(r))
+        self.assertEqual(r['mtype'], 'SET_REPLY')
+        self.assertEqual(r['var'], 'bts.0.neighbor-lac.add')
+        self.assertEqual(r['value'], 'OK')
+        r = self.do_set('bts.0.neighbor-lac.del', '100')
+        print('respose: ' + str(r))
+        self.assertEqual(r['mtype'], 'SET_REPLY')
+        self.assertEqual(r['var'], 'bts.0.neighbor-lac.del')
+        self.assertEqual(r['value'], 'OK')
+
+	# with ARFCN+BSIC:
+        r = self.do_set('bts.0.neighbor-lac.add', '100-123-4')
+        print('respose: ' + str(r))
+        self.assertEqual(r['mtype'], 'SET_REPLY')
+        self.assertEqual(r['var'], 'bts.0.neighbor-lac.add')
+        self.assertEqual(r['value'], 'OK')
+        r = self.do_set('bts.0.neighbor-lac.del', '100-123-4')
+        print('respose: ' + str(r))
+        self.assertEqual(r['mtype'], 'SET_REPLY')
+        self.assertEqual(r['var'], 'bts.0.neighbor-lac.del')
+        self.assertEqual(r['value'], 'OK')
+
+    def testCtrlAddDelLACCI(self):
+	# without ARFCN+BSIC:
+        r = self.do_set('bts.0.neighbor-lac-ci.add', '100-200')
+        print('respose: ' + str(r))
+        self.assertEqual(r['mtype'], 'SET_REPLY')
+        self.assertEqual(r['var'], 'bts.0.neighbor-lac-ci.add')
+        self.assertEqual(r['value'], 'OK')
+        r = self.do_set('bts.0.neighbor-lac-ci.del', '100-200')
+        print('respose: ' + str(r))
+        self.assertEqual(r['mtype'], 'SET_REPLY')
+        self.assertEqual(r['var'], 'bts.0.neighbor-lac-ci.del')
+        self.assertEqual(r['value'], 'OK')
+
+	# with ARFCN+BSIC:
+        r = self.do_set('bts.0.neighbor-lac-ci.add', '100-200-123-any')
+        print('respose: ' + str(r))
+        self.assertEqual(r['mtype'], 'SET_REPLY')
+        self.assertEqual(r['var'], 'bts.0.neighbor-lac-ci.add')
+        self.assertEqual(r['value'], 'OK')
+        r = self.do_set('bts.0.neighbor-lac-ci.del', '100-200-123-any')
+        print('respose: ' + str(r))
+        self.assertEqual(r['mtype'], 'SET_REPLY')
+        self.assertEqual(r['var'], 'bts.0.neighbor-lac-ci.del')
+        self.assertEqual(r['value'], 'OK')
+
+    def testCtrlAddDelCGI(self):
+	# without ARFCN+BSIC:
+        r = self.do_set('bts.0.neighbor-cgi.add', '001-01-100-200')
+        print('respose: ' + str(r))
+        self.assertEqual(r['mtype'], 'SET_REPLY')
+        self.assertEqual(r['var'], 'bts.0.neighbor-cgi.add')
+        self.assertEqual(r['value'], 'OK')
+        r = self.do_set('bts.0.neighbor-cgi.del', '001-01-100-200')
+        print('respose: ' + str(r))
+        self.assertEqual(r['mtype'], 'SET_REPLY')
+        self.assertEqual(r['var'], 'bts.0.neighbor-cgi.del')
+        self.assertEqual(r['value'], 'OK')
+
+	# with ARFCN+BSIC:
+        r = self.do_set('bts.0.neighbor-cgi.add', '001-01-100-200-123-4')
+        print('respose: ' + str(r))
+        self.assertEqual(r['mtype'], 'SET_REPLY')
+        self.assertEqual(r['var'], 'bts.0.neighbor-cgi.add')
+        self.assertEqual(r['value'], 'OK')
+        r = self.do_set('bts.0.neighbor-cgi.del', '001-01-100-200-123-4')
+        print('respose: ' + str(r))
+        self.assertEqual(r['mtype'], 'SET_REPLY')
+        self.assertEqual(r['var'], 'bts.0.neighbor-cgi.del')
+        self.assertEqual(r['value'], 'OK')
+
+    def testCtrlAddDelCGIPS(self):
+	# without ARFCN+BSIC:
+        r = self.do_set('bts.0.neighbor-cgi-ps.add', '001-01-100-33-200')
+        print('respose: ' + str(r))
+        self.assertEqual(r['mtype'], 'SET_REPLY')
+        self.assertEqual(r['var'], 'bts.0.neighbor-cgi-ps.add')
+        self.assertEqual(r['value'], 'OK')
+        r = self.do_set('bts.0.neighbor-cgi-ps.del', '001-01-100-33-200')
+        print('respose: ' + str(r))
+        self.assertEqual(r['mtype'], 'SET_REPLY')
+        self.assertEqual(r['var'], 'bts.0.neighbor-cgi-ps.del')
+        self.assertEqual(r['value'], 'OK')
+
+	# with ARFCN+BSIC:
+        r = self.do_set('bts.0.neighbor-cgi-ps.add', '001-01-100-33-200-123-any')
+        print('respose: ' + str(r))
+        self.assertEqual(r['mtype'], 'SET_REPLY')
+        self.assertEqual(r['var'], 'bts.0.neighbor-cgi-ps.add')
+        self.assertEqual(r['value'], 'OK')
+        r = self.do_set('bts.0.neighbor-cgi-ps.del', '001-01-100-33-200-123-any')
+        print('respose: ' + str(r))
+        self.assertEqual(r['mtype'], 'SET_REPLY')
+        self.assertEqual(r['var'], 'bts.0.neighbor-cgi-ps.del')
+        self.assertEqual(r['value'], 'OK')
+
+    def testCtrlClearNeighbors(self):
+        r = self.do_set('bts.0.neighbor-clear', 'ignored')
+        print('respose: ' + str(r))
+        self.assertEqual(r['mtype'], 'SET_REPLY')
+        self.assertEqual(r['var'], 'bts.0.neighbor-clear')
+        self.assertEqual(r['value'], 'OK')
+
+    def testCtrlErrs(self):
+	# Missing BSIC
+        r = self.do_set('bts.0.neighbor-lac.add', '100-123')
+        print('respose: ' + str(r))
+        self.assertEqual(r['mtype'], 'ERROR')
+        self.assertEqual(r['error'], 'Value failed verification.')
+
+	# Short value (missing RAC)
+        r = self.do_set('bts.0.neighbor-cgi-ps.del', '001-01-100-200-123-1')
+        print('respose: ' + str(r))
+        self.assertEqual(r['mtype'], 'ERROR')
+        self.assertEqual(r['error'], 'Value failed verification.')
+
+	# Long value
+        r = self.do_set('bts.0.neighbor-cgi-ps.del', '001-01-100-33-200-123-1-2')
+        print('respose: ' + str(r))
+        self.assertEqual(r['mtype'], 'ERROR')
+        self.assertEqual(r['error'], 'Value failed verification.')
+
+	# Out of range values
+        r = self.do_set('bts.0.neighbor-cgi.add', '100001-1123401-100-200')
+        print('respose: ' + str(r))
+        self.assertEqual(r['mtype'], 'ERROR')
+        self.assertEqual(r['error'], 'Value failed verification.')
+
+	# Garbage
+        r = self.do_set('bts.0.neighbor-lac-ci.add', '0G1-Z1-1U0-a3-2p0')
+        print('respose: ' + str(r))
+        self.assertEqual(r['mtype'], 'ERROR')
+        self.assertEqual(r['error'], 'Value failed verification.')
+
+	# Delete something that shouldn't be there
+        r = self.do_set('bts.0.neighbor-cgi-ps.del', '001-01-100-33-200-123-any')
+        print('respose: ' + str(r))
+        self.assertEqual(r['mtype'], 'ERROR')
+        self.assertEqual(r['error'], 'Failed to delete neighbor')
+
+
 def add_bsc_test(suite, workdir, klass):
     if not os.path.isfile(os.path.join(workdir, "src/osmo-bsc/osmo-bsc")):
         print("Skipping the BSC test")
@@ -601,5 +772,6 @@ if __name__ == '__main__':
     suite = unittest.TestSuite()
     add_bsc_test(suite, workdir, TestCtrlBSC)
     add_bsc_test(suite, workdir, TestCtrlBSCNeighbor)
+    add_bsc_test(suite, workdir, TestCtrlBSCNeighborCell)
     res = unittest.TextTestRunner(verbosity=verbose_level).run(suite)
     sys.exit(len(res.errors) + len(res.failures))

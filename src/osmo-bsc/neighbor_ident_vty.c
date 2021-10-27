@@ -146,23 +146,32 @@ void neighbor_ident_vty_parse_arfcn_bsic(struct cell_ab *ab, const char **argv)
 	};
 }
 
-static int add_neighbor(struct vty *vty, struct neighbor *n)
+#define LOGPORVTY(vty, fmt, args...) \
+{ \
+	if (vty) \
+		vty_out(vty, "%% " fmt "%s", ## args, VTY_NEWLINE); \
+	else \
+		LOGP(DLINP, LOGL_NOTICE, fmt "\n", ## args); \
+} while (0) \
+
+/* Delete a neighbor from neighborlist. When the parameter *vty is set to NULL all error messages are redirected to the
+ * logtext. */
+int neighbor_ident_add_neighbor(struct vty *vty, struct gsm_bts *bts, struct neighbor *n)
 {
-	struct gsm_bts *bts = vty->index;
 	struct neighbor *neighbor;
 
-	OSMO_ASSERT((vty->node == BTS_NODE) && bts);
+	OSMO_ASSERT(bts);
+	OSMO_ASSERT(!vty || (vty->node == BTS_NODE));
 
 	llist_for_each_entry(neighbor, &bts->neighbors, entry) {
 		/* Check against duplicates */
 		if (neighbor_same(neighbor, n, false)) {
 			/* Found a match on Cell ID or BTS number, without ARFCN+BSIC. If they are fully identical, ignore the
 			 * duplicate. If the ARFCN+BSIC part differs, it's an error. */
-			vty_out(vty, "%% BTS %u already had neighbor %s%s", bts->nr, neighbor_to_str_c(OTC_SELECT, neighbor),
-				VTY_NEWLINE);
+			LOGPORVTY(vty, "BTS %u already had neighbor %s", bts->nr, neighbor_to_str_c(OTC_SELECT, neighbor));
 			if (!neighbor_same(neighbor, n, true)) {
-				vty_out(vty, "%% ERROR: duplicate Cell ID in neighbor config, with differing ARFCN+BSIC: %s%s",
-					neighbor_to_str_c(OTC_SELECT, n), VTY_NEWLINE);
+				LOGPORVTY(vty, "ERROR: duplicate Cell ID in neighbor config, with differing ARFCN+BSIC: %s",
+					neighbor_to_str_c(OTC_SELECT, n));
 				return CMD_WARNING;
 			}
 			/* Exact same neighbor again, just ignore. */
@@ -173,9 +182,9 @@ static int add_neighbor(struct vty *vty, struct neighbor *n)
 		if (n->type == NEIGHBOR_TYPE_CELL_ID
 		    && n->cell_id.ab_present && neighbor->cell_id.ab_present
 		    && cell_ab_match(&n->cell_id.ab, &neighbor->cell_id.ab, true)) {
-			vty_out(vty, "%% Error: only one Cell Identifier entry is allowed per remote neighbor."
-				" Already have: BTS %u -> %s%s", bts->nr,
-				neighbor_to_str_c(OTC_SELECT, neighbor), VTY_NEWLINE);
+			LOGPORVTY(vty, "Error: only one Cell Identifier entry is allowed per remote neighbor."
+				" Already have: BTS %u -> %s", bts->nr,
+				neighbor_to_str_c(OTC_SELECT, neighbor));
 			return CMD_WARNING;
 		}
 	}
@@ -186,12 +195,14 @@ static int add_neighbor(struct vty *vty, struct neighbor *n)
 	return CMD_SUCCESS;
 }
 
-static int del_neighbor(struct vty *vty, struct neighbor *n)
+/* Delete a neighbor from neighborlist. When the parameter *vty is set to NULL all error messages are redirected to the
+ * logtext. */
+int neighbor_ident_del_neighbor(struct vty *vty, struct gsm_bts *bts, struct neighbor *n)
 {
-	struct gsm_bts *bts = vty->index;
 	struct neighbor *neighbor;
 
-	OSMO_ASSERT((vty->node == BTS_NODE) && bts);
+	OSMO_ASSERT(bts);
+	OSMO_ASSERT(!vty || (vty->node == BTS_NODE));
 
 	llist_for_each_entry(neighbor, &bts->neighbors, entry) {
 		if (neighbor->type != n->type)
@@ -216,8 +227,8 @@ static int del_neighbor(struct vty *vty, struct neighbor *n)
 		return CMD_SUCCESS;
 	}
 
-	vty_out(vty, "%% Error: no such neighbor on BTS %d: %s%s",
-		bts->nr, neighbor_to_str_c(OTC_SELECT, n), VTY_NEWLINE);
+	LOGPORVTY(vty, "Error: no such neighbor on BTS %d: %s",
+		  bts->nr, neighbor_to_str_c(OTC_SELECT, n));
 	return CMD_WARNING;
 }
 
@@ -271,7 +282,7 @@ DEFUN(cfg_neighbor_add_bts_nr, cfg_neighbor_add_bts_nr_cmd,
 		.type = NEIGHBOR_TYPE_BTS_NR,
 		.bts_nr = atoi(argv[0]),
 	};
-	return add_neighbor(vty, &n);
+	return neighbor_ident_add_neighbor(vty, vty->index, &n);
 }
 
 DEFUN(cfg_neighbor_add_lac, cfg_neighbor_add_lac_cmd,
@@ -283,7 +294,7 @@ DEFUN(cfg_neighbor_add_lac, cfg_neighbor_add_lac_cmd,
 	};
 	if (neighbor_ident_vty_parse_lac(vty, &n.cell_id.id, argv))
 		return CMD_WARNING;
-	return add_neighbor(vty, &n);
+	return neighbor_ident_add_neighbor(vty, vty->index, &n);
 }
 
 DEFUN(cfg_neighbor_add_lac_ci, cfg_neighbor_add_lac_ci_cmd,
@@ -295,7 +306,7 @@ DEFUN(cfg_neighbor_add_lac_ci, cfg_neighbor_add_lac_ci_cmd,
 	};
 	if (neighbor_ident_vty_parse_lac_ci(vty, &n.cell_id.id, argv))
 		return CMD_WARNING;
-	return add_neighbor(vty, &n);
+	return neighbor_ident_add_neighbor(vty, vty->index, &n);
 }
 
 DEFUN(cfg_neighbor_add_cgi, cfg_neighbor_add_cgi_cmd,
@@ -307,7 +318,7 @@ DEFUN(cfg_neighbor_add_cgi, cfg_neighbor_add_cgi_cmd,
 	};
 	if (neighbor_ident_vty_parse_cgi(vty, &n.cell_id.id, argv))
 		return CMD_WARNING;
-	return add_neighbor(vty, &n);
+	return neighbor_ident_add_neighbor(vty, vty->index, &n);
 }
 
 DEFUN(cfg_neighbor_add_cgi_ps, cfg_neighbor_add_cgi_ps_cmd,
@@ -319,7 +330,7 @@ DEFUN(cfg_neighbor_add_cgi_ps, cfg_neighbor_add_cgi_ps_cmd,
 	};
 	if (neighbor_ident_vty_parse_cgi_ps(vty, &n.cell_id.id, argv))
 		return CMD_WARNING;
-	return add_neighbor(vty, &n);
+	return neighbor_ident_add_neighbor(vty, vty->index, &n);
 }
 
 static int neighbor_del_all(struct vty *vty)
@@ -354,7 +365,7 @@ DEFUN(cfg_neighbor_add_lac_arfcn_bsic, cfg_neighbor_add_lac_arfcn_bsic_cmd,
 	if (neighbor_ident_vty_parse_lac(vty, &n.cell_id.id, argv))
 		return CMD_WARNING;
 	neighbor_ident_vty_parse_arfcn_bsic(&n.cell_id.ab, argv + LAC_ARGC);
-	return add_neighbor(vty, &n);
+	return neighbor_ident_add_neighbor(vty, vty->index, &n);
 }
 
 DEFUN(cfg_neighbor_add_lac_ci_arfcn_bsic, cfg_neighbor_add_lac_ci_arfcn_bsic_cmd,
@@ -368,7 +379,7 @@ DEFUN(cfg_neighbor_add_lac_ci_arfcn_bsic, cfg_neighbor_add_lac_ci_arfcn_bsic_cmd
 	if (neighbor_ident_vty_parse_lac_ci(vty, &n.cell_id.id, argv))
 		return CMD_WARNING;
 	neighbor_ident_vty_parse_arfcn_bsic(&n.cell_id.ab, argv + LAC_CI_ARGC);
-	return add_neighbor(vty, &n);
+	return neighbor_ident_add_neighbor(vty, vty->index, &n);
 }
 
 DEFUN(cfg_neighbor_add_cgi_arfcn_bsic, cfg_neighbor_add_cgi_arfcn_bsic_cmd,
@@ -382,7 +393,7 @@ DEFUN(cfg_neighbor_add_cgi_arfcn_bsic, cfg_neighbor_add_cgi_arfcn_bsic_cmd,
 	if (neighbor_ident_vty_parse_cgi(vty, &n.cell_id.id, argv))
 		return CMD_WARNING;
 	neighbor_ident_vty_parse_arfcn_bsic(&n.cell_id.ab, argv + CGI_ARGC);
-	return add_neighbor(vty, &n);
+	return neighbor_ident_add_neighbor(vty, vty->index, &n);
 }
 
 DEFUN(cfg_neighbor_add_cgi_ps_arfcn_bsic, cfg_neighbor_add_cgi_ps_arfcn_bsic_cmd,
@@ -396,7 +407,7 @@ DEFUN(cfg_neighbor_add_cgi_ps_arfcn_bsic, cfg_neighbor_add_cgi_ps_arfcn_bsic_cmd
 	if (neighbor_ident_vty_parse_cgi_ps(vty, &n.cell_id.id, argv))
 		return CMD_WARNING;
 	neighbor_ident_vty_parse_arfcn_bsic(&n.cell_id.ab, argv + CGI_PS_ARGC);
-	return add_neighbor(vty, &n);
+	return neighbor_ident_add_neighbor(vty, vty->index, &n);
 }
 
 DEFUN(cfg_neighbor_del_bts_nr, cfg_neighbor_del_bts_nr_cmd,
@@ -407,7 +418,7 @@ DEFUN(cfg_neighbor_del_bts_nr, cfg_neighbor_del_bts_nr_cmd,
 		.type = NEIGHBOR_TYPE_BTS_NR,
 		.bts_nr = atoi(argv[0]),
 	};
-	return del_neighbor(vty, &n);
+	return neighbor_ident_del_neighbor(vty, vty->index, &n);
 }
 
 DEFUN(cfg_neighbor_del_lac, cfg_neighbor_del_lac_cmd,
@@ -419,7 +430,7 @@ DEFUN(cfg_neighbor_del_lac, cfg_neighbor_del_lac_cmd,
 	};
 	if (neighbor_ident_vty_parse_lac(vty, &n.cell_id.id, argv))
 		return CMD_WARNING;
-	return del_neighbor(vty, &n);
+	return neighbor_ident_del_neighbor(vty, vty->index, &n);
 }
 
 DEFUN(cfg_neighbor_del_lac_ci, cfg_neighbor_del_lac_ci_cmd,
@@ -431,7 +442,7 @@ DEFUN(cfg_neighbor_del_lac_ci, cfg_neighbor_del_lac_ci_cmd,
 	};
 	if (neighbor_ident_vty_parse_lac_ci(vty, &n.cell_id.id, argv))
 		return CMD_WARNING;
-	return del_neighbor(vty, &n);
+	return neighbor_ident_del_neighbor(vty, vty->index, &n);
 }
 
 DEFUN(cfg_neighbor_del_cgi, cfg_neighbor_del_cgi_cmd,
@@ -443,7 +454,7 @@ DEFUN(cfg_neighbor_del_cgi, cfg_neighbor_del_cgi_cmd,
 	};
 	if (neighbor_ident_vty_parse_cgi(vty, &n.cell_id.id, argv))
 		return CMD_WARNING;
-	return del_neighbor(vty, &n);
+	return neighbor_ident_del_neighbor(vty, vty->index, &n);
 }
 
 DEFUN(cfg_neighbor_del_cgi_ps, cfg_neighbor_del_cgi_ps_cmd,
@@ -455,7 +466,7 @@ DEFUN(cfg_neighbor_del_cgi_ps, cfg_neighbor_del_cgi_ps_cmd,
 	};
 	if (neighbor_ident_vty_parse_cgi_ps(vty, &n.cell_id.id, argv))
 		return CMD_WARNING;
-	return del_neighbor(vty, &n);
+	return neighbor_ident_del_neighbor(vty, vty->index, &n);
 }
 
 DEFUN(cfg_neighbor_del_arfcn_bsic, cfg_neighbor_del_arfcn_bsic_cmd,

@@ -78,6 +78,7 @@ libbsc_la_SOURCES = \
 	meas_rep.c \
 	neighbor_ident.c \
 	neighbor_ident_vty.c \
+	neighbor_ident_ctrl.c \
 	net_init.c \
 	nm_common_fsm.c \
 	nm_bb_transc_fsm.c \

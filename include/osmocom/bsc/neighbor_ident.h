@@ -77,6 +77,10 @@ void neighbor_ident_vty_init();
 void neighbor_ident_vty_write_bts(struct vty *vty, const char *indent, struct gsm_bts *bts);
 void neighbor_ident_vty_write_network(struct vty *vty, const char *indent);
 
+int neighbor_ident_add_neighbor(struct vty *vty, struct gsm_bts *bts, struct neighbor *n);
+int neighbor_ident_del_neighbor(struct vty *vty, struct gsm_bts *bts, struct neighbor *n);
+int neighbor_ident_ctrl_init(void);
+
 int neighbors_check_cfg();
 
 #define CELL_AB_VTY_PARAMS "arfcn <0-1023> bsic (<0-63>|any)"
