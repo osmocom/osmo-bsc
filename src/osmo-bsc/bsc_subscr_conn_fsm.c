@@ -955,8 +955,14 @@ static void gscon_cleanup(struct osmo_fsm_inst *fi, enum osmo_fsm_term_cause cau
 static void gscon_pre_term(struct osmo_fsm_inst *fi, enum osmo_fsm_term_cause cause)
 {
 	struct gsm_subscriber_connection *conn = fi->priv;
+	struct mgcp_client *mgcp_client;
+
+	/* Put MGCP client back into MGW pool */
+	mgcp_client = osmo_mgcpc_ep_client(conn->user_plane.mgw_endpoint);
+	mgcp_client_pool_put(mgcp_client);
 
 	osmo_mgcpc_ep_clear(conn->user_plane.mgw_endpoint);
+	conn->user_plane.mgw_endpoint = NULL;
 
 	if (conn->lcls.fi) {
 		/* request termination of LCLS FSM */
