@@ -32,7 +32,7 @@ TRX-specific commands are additionally prefixed with TRX number e. g.
 |bts.N.location-area-code|RW|No|"<lac>"|Set/Get LAC (value between (0, 65535)).
 |bts.N.cell-identity|RW|No|"<id>"|Set/Get Cell Identity (value between (0, 65535)).
 |bts.N.apply-configuration|WO|No|Ignored|Restart BTS via OML.
-|bts.N.send-new-system-informations|WO|No|Ignored|Regenerate System Information messages for given BTS.
+|bts.N.send-new-system-informations|WO|No|Ignored|Regenerate and resend System Information messages for given BTS.
 |bts.N.channel-load|RO|No|"<name>,<used>,<total>"|See <<chanlo>> for details.
 |bts.N.oml-connection-state|RO|No|"connected", "disconnected", "degraded"|Indicate the status of OML connection of BTS.
 |bts.N.oml-uptime|RO|No|<uptime>|Return OML link uptime in seconds.
