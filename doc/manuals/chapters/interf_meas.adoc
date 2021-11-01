@@ -1,0 +1,72 @@
+== Interference reporting
+
+According to 3GPP 48.058, section 6.1, the BTS shall periodically report the
+interference levels on *idle* channels using the "Radio resource indication"
+procedure.  This is done by sending the `RF RESource INDication` message,
+which is specified in sections 8.6.1 and 9.3.21.
+
+// TODO: BSC -> MSC reporting (3GPP TS 48.008, section 3.1.3)
+
+=== Interference reporting parameters
+
+The interference band is calculated by the BTS based on the `Interference level
+Boundaries` and the `Averaging period`.  These parameters are sent by the BSC
+over the A-bis/OML, and can be configured via the VTY interface.
+
+Below are the default values for them:
+
+----
+network
+ bts 0
+  interference-meas avg-period 6 <1>
+  interference-meas level-bounds -85 <2> -91 -97 -103 -109 -115 <3>
+----
+<1> Averaging period (`Intave`) in SACCH multiframe periods (480ms).
+<2> Interference level boundary `0` (in dBm).
+<3> Interference level boundary `X5` (in dBm).
+
+The `Intave` parameter defines the averaging and reporting period.  With the
+default value of 6 SACCH multiframe periods the BTS is instructed to report
+averaged interference levels approximately every 3 seconds.
+
+According to 3GPP TS 48.008, there exist five interference bands and six
+`Interference level Boundaries` (`0`, `X1`, ... `X5`).  The BTS shall map the
+averaged interference levels (initially in dBm) into these 5 bands.
+
+----
+-85 dBm    -91 dBm    -97 dBm   -103 dBm   -109 dBm   -115 dBm
+   | <1>      | <2>      | <3>      | <4>      | <5>      | <6>
+   +----------+----------+----------+----------+----------+
+   |  band 1  |  band 2  |  band 3  |  band 4  |  band 5  |
+   +----------+----------+----------+----------+----------+
+----
+<1> Interference level boundary `0` (outer).
+<2> Interference level boundary `X1`.
+<3> Interference level boundary `X2`.
+<4> Interference level boundary `X3`.
+<5> Interference level boundary `X4`.
+<6> Interference level boundary `X5` (outer).
+
+Unfortunately, it's not clearly defined by 3GPP how the BTS is supposed to map
+dBm values outside of the outer boundaries (`0` and `X5`) to band values.  The
+ip.access nanoBTS, for example, would map values -75 dBm and -120 dBm to bands
+1 and 5, respectively.  osmo-bts replicates this behavior.
+
+=== PDCH and dynamic timeslot handling
+
+The BTS may optionally report interference levels for PDCH timeslots.  This
+may be useful for the BSC to determine whether dynamic PDCH timeslots might
+be better used for new circuit switched connections, or whether alternative
+PDCH resources should be allocated for interference reasons.
+
+NOTE: Currently osmo-bsc makes no use of PDCH interference reports, neither
+they get forwarded to the BSC co-located PCU over the PCUIF.
+
+For dynamic timeslots (`TCH/F_TCH/H_SDCCH/8_PDCH` and `TCH/F_PDCH`), the
+following expectations apply:
+
+* when in TCH/F mode: no interference reports, because the only sub-channel is active;
+* when in TCH/H mode: interference reports for *inactive* sub-channels only;
+* when in SDCCH mode: interference reports for *inactive* sub-channels only;
+* when in PDCH mode: optional interference reports;
+** measurements can be performed during IDLE TDMA frames.

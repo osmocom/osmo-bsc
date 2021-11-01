@@ -26,6 +26,8 @@ include::{srcdir}/chapters/bsc.adoc[]
 
 include::{srcdir}/chapters/power_control.adoc[]
 
+include::{srcdir}/chapters/interf_meas.adoc[]
+
 include::{srcdir}/chapters/handover.adoc[]
 
 include::{srcdir}/chapters/smscb.adoc[]
