@@ -101,23 +101,6 @@ void bsc_cipher_mode_compl(struct gsm_subscriber_connection *conn, struct msgb *
 		msgb_free(resp);
 }
 
-/* 9.2.5 CM service accept */
-int gsm48_tx_mm_serv_ack(struct gsm_subscriber_connection *conn)
-{
-	struct msgb *msg = gsm48_msgb_alloc_name("GSM 04.08 SERV ACK");
-	struct gsm48_hdr *gh = (struct gsm48_hdr *) msgb_put(msg, sizeof(*gh));
-
-	msg->lchan = conn->lchan;
-
-	gh->proto_discr = GSM48_PDISC_MM;
-	gh->msg_type = GSM48_MT_MM_CM_SERV_ACC;
-
-	DEBUGP(DMM, "-> CM SERVICE ACK\n");
-
-	gscon_submit_rsl_dtap(conn, msg, 0, 0);
-	return 0;
-}
-
 static bool is_cm_service_for_emerg(struct msgb *msg)
 {
 	struct gsm48_service_request *cm;
