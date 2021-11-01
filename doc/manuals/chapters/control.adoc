@@ -148,4 +148,4 @@ entire neighbor list if necessary.
 
 NOTE: The bsic-number (<bsic>) can also be set to "any" if no explcit bsic shall be given
 
-FIXME: add variables defined in src/ctrl/control_if.c?
+//FIXME: add variables defined in src/ctrl/control_if.c?
