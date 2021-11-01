@@ -849,6 +849,27 @@ const struct rate_ctr_desc bts_ctr_description[] = {
 	[BTS_CTR_CHREQ_SUCCESSFUL] = \
 		{ "chreq:successful",
 		  "Successful channel requests (immediate assign sent)" },
+	[BTS_CTR_CHREQ_SUCCESSFUL_EMERG] = \
+		{ "chreq:successful_emerg",
+		  "Sent Immediate Assignment for EMERG" },
+	[BTS_CTR_CHREQ_SUCCESSFUL_CALL] = \
+		{ "chreq:successful_call",
+		  "Sent Immediate Assignment for CALL" },
+	[BTS_CTR_CHREQ_SUCCESSFUL_LOCATION_UPD] = \
+		{ "chreq:successful_location_upd",
+		  "Sent Immediate Assignment for LOCATION_UPD" },
+	[BTS_CTR_CHREQ_SUCCESSFUL_PAG] = \
+		{ "chreq:successful_pag",
+		  "Sent Immediate Assignment for PAG" },
+	[BTS_CTR_CHREQ_SUCCESSFUL_PDCH] = \
+		{ "chreq:successful_pdch",
+		  "Sent Immediate Assignment for PDCH" },
+	[BTS_CTR_CHREQ_SUCCESSFUL_OTHER] = \
+		{ "chreq:successful_other",
+		  "Sent Immediate Assignment for OTHER" },
+	[BTS_CTR_CHREQ_SUCCESSFUL_UNKNOWN] = \
+		{ "chreq:successful_unknown",
+		  "Sent Immediate Assignment for UNKNOWN" },
 	[BTS_CTR_CHREQ_NO_CHANNEL] = \
 		{ "chreq:no_channel",
 		  "Sent to MS no channel available" },

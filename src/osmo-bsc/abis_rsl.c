@@ -2097,6 +2097,7 @@ void abis_rsl_chan_rqd_queue_poll(struct gsm_bts *bts)
 		  gsm_chreq_name(rqd->reason), rqd->ref.ra, rqd->ta);
 	info = (struct lchan_activate_info){
 		.activ_for = ACTIVATE_FOR_MS_CHANNEL_REQUEST,
+		.chreq_reason = rqd->reason,
 		.ch_mode_rate = {
 			.chan_mode = GSM48_CMODE_SIGN,
 			.chan_rate = CH_RATE_SDCCH,
@@ -2110,6 +2111,35 @@ void abis_rsl_chan_rqd_queue_poll(struct gsm_bts *bts)
 	llist_del(&rqd->entry);
 	talloc_free(rqd);
 	return;
+}
+
+static void imm_ass_rate_ctr(struct gsm_lchan *lchan)
+{
+	struct gsm_bts *bts = lchan->ts->trx->bts;
+	rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_CHREQ_SUCCESSFUL));
+	switch (lchan->activate.info.chreq_reason) {
+	case GSM_CHREQ_REASON_EMERG:
+		rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_CHREQ_ATTEMPTED_EMERG));
+		break;
+	case GSM_CHREQ_REASON_CALL:
+		rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_CHREQ_ATTEMPTED_CALL));
+		break;
+	case GSM_CHREQ_REASON_LOCATION_UPD:
+		rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_CHREQ_ATTEMPTED_LOCATION_UPD));
+		break;
+	case GSM_CHREQ_REASON_PAG:
+		rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_CHREQ_ATTEMPTED_PAG));
+		break;
+	case GSM_CHREQ_REASON_PDCH:
+		rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_CHREQ_ATTEMPTED_PDCH));
+		break;
+	case GSM_CHREQ_REASON_OTHER:
+		rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_CHREQ_ATTEMPTED_OTHER));
+		break;
+	default:
+		rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_CHREQ_ATTEMPTED_UNKNOWN));
+		break;
+	}
 }
 
 int rsl_tx_imm_assignment(struct gsm_lchan *lchan)
@@ -2156,7 +2186,7 @@ int rsl_tx_imm_assignment(struct gsm_lchan *lchan)
 	rc = rsl_imm_assign_cmd(bts, sizeof(*ia)+ia->mob_alloc_len, (uint8_t *) ia);
 
 	if (!rc)
-		rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_CHREQ_SUCCESSFUL));
+		imm_ass_rate_ctr(lchan);
 
 	return rc;
 }

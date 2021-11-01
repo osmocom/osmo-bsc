@@ -632,6 +632,10 @@ static void lchan_fsm_unused(struct osmo_fsm_inst *fi, uint32_t event, void *dat
 		lchan->release.requested = false;
 
 		lchan->activate.info = *info;
+		/* To avoid confusion, invalidate info.chreq_reason value if it isn't for a CHREQ */
+		if (lchan->activate.info.activ_for != ACTIVATE_FOR_MS_CHANNEL_REQUEST)
+			lchan->activate.info.chreq_reason = -1;
+
 		lchan->activate.concluded = false;
 		lchan_fsm_state_chg(LCHAN_ST_WAIT_TS_READY);
 		break;

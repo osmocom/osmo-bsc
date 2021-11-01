@@ -617,6 +617,8 @@ enum imm_ass_time {
 
 struct lchan_activate_info {
 	enum lchan_activate_for activ_for;
+	/* If activ_for == ACTIVATE_FOR_MS_CHANNEL_REQUEST, the original CHREQ reason. */
+	enum gsm_chreq_reason_t chreq_reason;
 	struct gsm_subscriber_connection *for_conn;
 	struct channel_mode_and_rate ch_mode_rate;
 	struct gsm_encr encr;
