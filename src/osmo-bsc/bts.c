@@ -1146,10 +1146,10 @@ const struct rate_ctr_desc bts_ctr_description[] = {
 
 	[BTS_CTR_INTRA_BSC_HO_ATTEMPTED] = \
 		{ "intra_bsc_ho:attempted",
-		  "Intra-BSC handover attempts" },
+		  "Intra-BSC inter-cell handover attempts" },
 	[BTS_CTR_INTRA_BSC_HO_COMPLETED] = \
 		{ "intra_bsc_ho:completed",
-		  "Intra-BSC handover completed" },
+		  "Intra-BSC inter-cell handover completed" },
 	[BTS_CTR_INTRA_BSC_HO_STOPPED] = \
 		{ "intra_bsc_ho:stopped",
 		  "Connection ended during HO" },
@@ -1164,7 +1164,7 @@ const struct rate_ctr_desc bts_ctr_description[] = {
 		  "Received Handover Fail messages" },
 	[BTS_CTR_INTRA_BSC_HO_ERROR] = \
 		{ "intra_bsc_ho:error",
-		  "Re-assignment failed for other reason" },
+		  "Intra-BSC inter-cell HO failed for other reason" },
 
 	[BTS_CTR_INTER_BSC_HO_OUT_ATTEMPTED] = \
 		{ "interbsc_ho_out:attempted",
