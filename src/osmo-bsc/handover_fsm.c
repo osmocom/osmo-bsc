@@ -387,6 +387,7 @@ static void handover_start_intra_bsc(struct gsm_subscriber_connection *conn)
 	} else {
 		ho_count(bts, CTR_INTRA_BSC_HO_ATTEMPTED);
 		ho_fsm_update_id(fi, "intraBSC");
+		ho_count_bts(ho->new_bts, BTS_CTR_INCOMING_INTRA_BSC_HO_ATTEMPTED);
 	}
 
 	if (!ho->new_lchan) {
@@ -829,6 +830,7 @@ static int result_counter_bsc(enum handover_scope scope, enum handover_result re
 FUNC_RESULT_COUNTER(BTS, HANDOVER)
 FUNC_RESULT_COUNTER(BTS, INTRA_CELL_HO)
 FUNC_RESULT_COUNTER(BTS, INTRA_BSC_HO)
+FUNC_RESULT_COUNTER(BTS, INCOMING_INTRA_BSC_HO)
 FUNC_RESULT_COUNTER(BTS, INTER_BSC_HO_IN)
 
 /* INTRA_BSC_HO_OUT does not have a NO_CHANNEL result, so can't do this with FUNC_RESULT_COUNTER() macro. */
@@ -1020,6 +1022,9 @@ void handover_end(struct gsm_subscriber_connection *conn, enum handover_result r
 	ho_count_bsc(result_counter_bsc(ho->scope, result));
 	ho_count_bts(bts, result_counter_BTS_HANDOVER(result));
 	ho_count_bts(bts, result_counter_bts(ho->scope, result));
+	/* For inter-cell HO, also increment the "INCOMING" counters on the target BTS. */
+	if (ho->scope & HO_INTRA_BSC)
+		ho_count_bts(ho->new_bts, result_counter_BTS_INCOMING_INTRA_BSC_HO(result));
 	if (ho->scope & HO_INTER_BSC_IN && conn->fast_return.last_eutran_plmn_valid) {
 		/* From outside local BSC and with Last EUTRAN PLMN Id => SRVCC */
 		ho_count_bsc(result_counter_BSC_SRVCC(result));

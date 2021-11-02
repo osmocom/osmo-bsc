@@ -1166,6 +1166,28 @@ const struct rate_ctr_desc bts_ctr_description[] = {
 		{ "intra_bsc_ho:error",
 		  "Intra-BSC inter-cell HO failed for other reason" },
 
+	[BTS_CTR_INCOMING_INTRA_BSC_HO_ATTEMPTED] = \
+		{ "incoming_intra_bsc_ho:attempted",
+		  "Incoming intra-BSC inter-cell handover attempts" },
+	[BTS_CTR_INCOMING_INTRA_BSC_HO_COMPLETED] = \
+		{ "incoming_intra_bsc_ho:completed",
+		  "Incoming intra-BSC inter-cell handover completed" },
+	[BTS_CTR_INCOMING_INTRA_BSC_HO_STOPPED] = \
+		{ "incoming_intra_bsc_ho:stopped",
+		  "Connection ended during HO" },
+	[BTS_CTR_INCOMING_INTRA_BSC_HO_NO_CHANNEL] = \
+		{ "incoming_intra_bsc_ho:no_channel",
+		  "Failure to allocate lchan for HO" },
+	[BTS_CTR_INCOMING_INTRA_BSC_HO_TIMEOUT] = \
+		{ "incoming_intra_bsc_ho:timeout",
+		  "Handover timed out" },
+	[BTS_CTR_INCOMING_INTRA_BSC_HO_FAILED] = \
+		{ "incoming_intra_bsc_ho:failed",
+		  "Received Handover Fail messages" },
+	[BTS_CTR_INCOMING_INTRA_BSC_HO_ERROR] = \
+		{ "incoming_intra_bsc_ho:error",
+		  "Incoming intra-BSC inter-cell HO failed for other reason" },
+
 	[BTS_CTR_INTER_BSC_HO_OUT_ATTEMPTED] = \
 		{ "interbsc_ho_out:attempted",
 		  "Attempts to handover to remote BSS" },
