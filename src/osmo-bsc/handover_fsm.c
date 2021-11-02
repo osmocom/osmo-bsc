@@ -108,10 +108,13 @@
 			rate_ctr_inc(rate_ctr_group_get_ctr(conn->network->bts_unknown_ctrs, counter)); \
 	} while (0)
 
+/* Count handover result on both bts and bsc level.
+ * Call with 'counter' being the counter name without the "BSC_"/"BTS_" part,
+ * e.g. ho_count(conn_get_bts(conn), CTR_HANDOVER_ATTEMPTED); */
 #define ho_count(bts, counter) do { \
-        ho_count_bsc(BSC_##counter); \
-        ho_count_bts(bts, BTS_##counter); \
-} while (0)
+		ho_count_bsc(BSC_##counter); \
+		ho_count_bts(bts, BTS_##counter); \
+	} while (0)
 
 static uint8_t g_next_ho_ref = 1;
 
@@ -748,6 +751,23 @@ void handover_start_inter_bsc_in(struct gsm_subscriber_connection *conn,
 	lchan_activate(ho->new_lchan, &info);
 }
 
+/* Create functions result_counter_{BSC,BTS}_{HANDOVER,...}(), to evaluate the handover result and return
+ * BSC_CTR_HANDOVER_ATTEMPTED,
+ * BSC_CTR_HANDOVER_COMPLETED,
+ * BSC_CTR_HANDOVER_STOPPED,
+ * BSC_CTR_HANDOVER_NO_CHANNEL,
+ * BSC_CTR_HANDOVER_TIMEOUT,
+ * BSC_CTR_HANDOVER_FAILED,
+ * BSC_CTR_HANDOVER_ERROR,
+ * or
+ * BTS_CTR_HANDOVER_ATTEMPTED,
+ * BTS_CTR_HANDOVER_COMPLETED,
+ * BTS_CTR_HANDOVER_STOPPED,
+ * BTS_CTR_HANDOVER_NO_CHANNEL,
+ * BTS_CTR_HANDOVER_TIMEOUT,
+ * BTS_CTR_HANDOVER_FAILED,
+ * BTS_CTR_HANDOVER_ERROR,
+ */
 #define FUNC_RESULT_COUNTER(obj, name) \
 static int result_counter_##obj##_##name(enum handover_result result) \
 { \
@@ -773,6 +793,7 @@ FUNC_RESULT_COUNTER(BSC, INTRA_CELL_HO)
 FUNC_RESULT_COUNTER(BSC, INTRA_BSC_HO)
 FUNC_RESULT_COUNTER(BSC, INTER_BSC_HO_IN)
 
+/* INTRA_BSC_HO_OUT does not have a NO_CHANNEL result, so can't do this with FUNC_RESULT_COUNTER() macro. */
 static int result_counter_BSC_INTER_BSC_HO_OUT(enum handover_result result) {
 	switch (result) {
 	case HO_RESULT_OK:
@@ -810,6 +831,7 @@ FUNC_RESULT_COUNTER(BTS, INTRA_CELL_HO)
 FUNC_RESULT_COUNTER(BTS, INTRA_BSC_HO)
 FUNC_RESULT_COUNTER(BTS, INTER_BSC_HO_IN)
 
+/* INTRA_BSC_HO_OUT does not have a NO_CHANNEL result, so can't do this with FUNC_RESULT_COUNTER() macro. */
 static int result_counter_BTS_INTER_BSC_HO_OUT(enum handover_result result) {
 	switch (result) {
 	case HO_RESULT_OK:
