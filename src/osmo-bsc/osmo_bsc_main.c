@@ -389,53 +389,6 @@ static void update_connection_stats_cb(void *data)
 	osmo_timer_schedule(&update_connection_stats_timer, 1, 0);
 }
 
-/* Callback function to be called every time we receive a signal from INPUT */
-static int inp_sig_cb(unsigned int subsys, unsigned int signal,
-		      void *handler_data, void *signal_data)
-{
-	struct input_signal_data *isd = signal_data;
-	struct gsm_bts_trx *trx = isd->trx;
-
-	if (subsys != SS_L_INPUT)
-		return -EINVAL;
-
-	LOGP(DLMI, LOGL_DEBUG, "%s(): Input signal '%s' received\n", __func__,
-		get_value_string(e1inp_signal_names, signal));
-	switch (signal) {
-	case S_L_INP_TEI_UP:
-		if (isd->link_type == E1INP_SIGN_OML) {
-			/* Generate Mobile Allocation bit-masks for all timeslots.
-			 * This needs to be done here, because it's used for TS configuration. */
-			generate_ma_for_bts(trx->bts);
-		}
-		if (isd->link_type == E1INP_SIGN_RSL)
-			bootstrap_rsl(trx);
-		break;
-	case S_L_INP_TEI_DN:
-		LOG_TRX(trx, DLMI, LOGL_ERROR, "Lost E1 %s link\n", e1inp_signtype_name(isd->link_type));
-
-		if (isd->link_type == E1INP_SIGN_OML) {
-			rate_ctr_inc(rate_ctr_group_get_ctr(trx->bts->bts_ctrs, BTS_CTR_BTS_OML_FAIL));
-			all_ts_dispatch_event(trx, TS_EV_OML_DOWN);
-		} else if (isd->link_type == E1INP_SIGN_RSL) {
-			rate_ctr_inc(rate_ctr_group_get_ctr(trx->bts->bts_ctrs, BTS_CTR_BTS_RSL_FAIL));
-			acc_ramp_abort(&trx->bts->acc_ramp);
-			all_ts_dispatch_event(trx, TS_EV_RSL_DOWN);
-			if (trx->nr == 0)
-				osmo_timer_del(&trx->bts->cbch_timer);
-		}
-
-		gsm_bts_sm_mo_reset(trx->bts->site_mgr);
-
-		abis_nm_clear_queue(trx->bts);
-		break;
-	default:
-		break;
-	}
-
-	return 0;
-}
-
 static int check_bts(struct gsm_bts *bts)
 {
 	struct gsm_bts_trx *trx;
@@ -516,6 +469,53 @@ static void bootstrap_bts(struct gsm_bts *bts)
 
 	/* Initialize the BTS state */
 	gsm_bts_sm_mo_reset(bts->site_mgr);
+}
+
+/* Callback function to be called every time we receive a signal from INPUT */
+static int inp_sig_cb(unsigned int subsys, unsigned int signal,
+		      void *handler_data, void *signal_data)
+{
+	struct input_signal_data *isd = signal_data;
+	struct gsm_bts_trx *trx = isd->trx;
+
+	if (subsys != SS_L_INPUT)
+		return -EINVAL;
+
+	LOGP(DLMI, LOGL_DEBUG, "%s(): Input signal '%s' received\n", __func__,
+		get_value_string(e1inp_signal_names, signal));
+	switch (signal) {
+	case S_L_INP_TEI_UP:
+		if (isd->link_type == E1INP_SIGN_OML) {
+			/* Generate Mobile Allocation bit-masks for all timeslots.
+			 * This needs to be done here, because it's used for TS configuration. */
+			generate_ma_for_bts(trx->bts);
+		}
+		if (isd->link_type == E1INP_SIGN_RSL)
+			bootstrap_rsl(trx);
+		break;
+	case S_L_INP_TEI_DN:
+		LOG_TRX(trx, DLMI, LOGL_ERROR, "Lost E1 %s link\n", e1inp_signtype_name(isd->link_type));
+
+		if (isd->link_type == E1INP_SIGN_OML) {
+			rate_ctr_inc(rate_ctr_group_get_ctr(trx->bts->bts_ctrs, BTS_CTR_BTS_OML_FAIL));
+			all_ts_dispatch_event(trx, TS_EV_OML_DOWN);
+		} else if (isd->link_type == E1INP_SIGN_RSL) {
+			rate_ctr_inc(rate_ctr_group_get_ctr(trx->bts->bts_ctrs, BTS_CTR_BTS_RSL_FAIL));
+			acc_ramp_abort(&trx->bts->acc_ramp);
+			all_ts_dispatch_event(trx, TS_EV_RSL_DOWN);
+			if (trx->nr == 0)
+				osmo_timer_del(&trx->bts->cbch_timer);
+		}
+
+		gsm_bts_sm_mo_reset(trx->bts->site_mgr);
+
+		abis_nm_clear_queue(trx->bts);
+		break;
+	default:
+		break;
+	}
+
+	return 0;
 }
 
 static int bsc_network_configure(const char *config_file)
