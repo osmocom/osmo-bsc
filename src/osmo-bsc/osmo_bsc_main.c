@@ -436,10 +436,9 @@ static int inp_sig_cb(unsigned int subsys, unsigned int signal,
 	return 0;
 }
 
-static int bootstrap_bts(struct gsm_bts *bts)
+static int check_bts(struct gsm_bts *bts)
 {
 	struct gsm_bts_trx *trx;
-	unsigned int n = 0;
 
 	if (!bts->model)
 		return -EFAULT;
@@ -484,6 +483,13 @@ static int bootstrap_bts(struct gsm_bts *bts)
 		}
 	}
 
+	return 0;
+}
+
+static void bootstrap_bts(struct gsm_bts *bts)
+{
+	unsigned int n = 0;
+
 	/* Control Channel Description is set from vty/config */
 
 	/* Determine the value of CCCH_CONF. Is TS0/C0 combined? */
@@ -510,8 +516,6 @@ static int bootstrap_bts(struct gsm_bts *bts)
 
 	/* Initialize the BTS state */
 	gsm_bts_sm_mo_reset(bts->site_mgr);
-
-	return 0;
 }
 
 static int bsc_network_configure(const char *config_file)
@@ -535,11 +539,12 @@ static int bsc_network_configure(const char *config_file)
 	osmo_signal_register_handler(SS_L_INPUT, inp_sig_cb, NULL);
 
 	llist_for_each_entry(bts, &bsc_gsmnet->bts_list, list) {
-		rc = bootstrap_bts(bts);
+		rc = check_bts(bts);
 		if (rc < 0) {
-			LOGP(DNM, LOGL_FATAL, "Error bootstrapping BTS\n");
+			LOGP(DNM, LOGL_FATAL, "(bts=%u) cannot bootstrap BTS, invalid BTS configuration\n", bts->nr);
 			return rc;
 		}
+		bootstrap_bts(bts);
 		rc = e1_reconfig_bts(bts);
 		if (rc < 0) {
 			LOGP(DNM, LOGL_FATAL, "Error enabling E1 input driver\n");
