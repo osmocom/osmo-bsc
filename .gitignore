@@ -48,7 +48,6 @@ hlr.sqlite3
 src/utils/bs11_config
 src/ipaccess/ipaccess-config
 src/ipaccess/abisip-find
-src/ipaccess/ipaccess-firmware
 src/ipaccess/ipaccess-proxy
 src/utils/isdnsync
 src/osmo-bsc_nat/osmo-bsc_nat
