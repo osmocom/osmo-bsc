@@ -691,6 +691,12 @@ int rsl_tx_chan_activ(struct gsm_lchan *lchan, uint8_t act_type, uint8_t ho_ref)
 		if (bts->type == GSM_BTS_TYPE_BS11)
 			ta <<= 2;
 		msgb_tv_put(msg, RSL_IE_TIMING_ADVANCE, ta);
+	} else if ((act_type & 0x06) == 0x00) {
+		/* Note '4)' in section 8.4.1: The Timing Advance element must be
+		 * included if activation type is intra cell channel change. */
+		LOG_LCHAN(lchan, LOGL_NOTICE, "Timing Advance IE shall be present, "
+			  "but the actual value is not known => assuming 0\n");
+		msgb_tv_put(msg, RSL_IE_TIMING_ADVANCE, 0);
 	}
 
 	/* BS/MS Power Control Parameters (if supported by BTS model) */
