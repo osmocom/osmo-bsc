@@ -806,8 +806,8 @@ static void lchan_fsm_wait_activ_ack_onenter(struct osmo_fsm_inst *fi, uint32_t 
 		act_type = lchan->conn->ho.async ? RSL_ACT_INTER_ASYNC : RSL_ACT_INTER_SYNC;
 		ho_ref = lchan->conn->ho.ho_ref;
 		break;
-	default:
 	case ACTIVATE_FOR_ASSIGNMENT:
+	default:
 		act_type = RSL_ACT_INTRA_NORM_ASS;
 		break;
 	}
