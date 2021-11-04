@@ -959,7 +959,7 @@ static void assignment_fsm_allstate_action(struct osmo_fsm_inst *fi, uint32_t ev
 		assignment_fail(new_lchan->activate.gsm0808_error_cause,
 				"Failed to %s lchan %s",
 				conn->assignment.new_lchan ? "activate" : "modify",
-				conn->assignment.new_lchan ? gsm_lchan_name(conn->assignment.new_lchan) : "");
+				gsm_lchan_name(new_lchan));
 		return;
 
 	default:
