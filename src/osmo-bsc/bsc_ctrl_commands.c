@@ -753,7 +753,7 @@ static int verify_bts_neighbor_list_mode(struct ctrl_cmd *cmd, const char *value
 static int set_bts_neighbor_list_mode(struct ctrl_cmd *cmd, void *data)
 {
 	struct gsm_bts *bts = cmd->node;
-	int mode;
+	int mode = NL_MODE_AUTOMATIC;
 
 	if (!strcmp(cmd->value, "automatic"))
 		mode = NL_MODE_AUTOMATIC;
