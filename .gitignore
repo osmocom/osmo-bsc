@@ -2,6 +2,7 @@ debian/*.log
 *.o
 *.lo
 *.a
+*.la
 .deps
 Makefile
 Makefile.in
