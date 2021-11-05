@@ -19,7 +19,7 @@ Below are the default values for them:
 network
  bts 0
   interference-meas avg-period 6 <1>
-  interference-meas level-bounds -85 <2> -91 -97 -103 -109 -115 <3>
+  interference-meas level-bounds -115 <2> -109 -103 -97 -91 -85 <3>
 ----
 <1> Averaging period (`Intave`) in SACCH multiframe periods (480ms).
 <2> Interference level boundary `0` (in dBm).
@@ -34,11 +34,11 @@ According to 3GPP TS 48.008, there exist five interference bands and six
 averaged interference levels (initially in dBm) into these 5 bands.
 
 ----
--85 dBm    -91 dBm    -97 dBm   -103 dBm   -109 dBm   -115 dBm
-   | <1>      | <2>      | <3>      | <4>      | <5>      | <6>
-   +----------+----------+----------+----------+----------+
-   |  band 1  |  band 2  |  band 3  |  band 4  |  band 5  |
-   +----------+----------+----------+----------+----------+
+-115 dBm   -109 dBm   -103 dBm    -97 dBm    -91 dBm    -85 dBm
+    | <1>      | <2>      | <3>      | <4>      | <5>      | <6>
+    +----------+----------+----------+----------+----------+
+    |  band 1  |  band 2  |  band 3  |  band 4  |  band 5  |
+    +----------+----------+----------+----------+----------+
 ----
 <1> Interference level boundary `0` (outer).
 <2> Interference level boundary `X1`.
@@ -49,7 +49,7 @@ averaged interference levels (initially in dBm) into these 5 bands.
 
 Unfortunately, it's not clearly defined by 3GPP how the BTS is supposed to map
 dBm values outside of the outer boundaries (`0` and `X5`) to band values.  The
-ip.access nanoBTS, for example, would map values -75 dBm and -120 dBm to bands
+ip.access nanoBTS, for example, would map values -120 dBm and -75 dBm to bands
 1 and 5, respectively.  osmo-bts replicates this behavior.
 
 === PDCH and dynamic timeslot handling

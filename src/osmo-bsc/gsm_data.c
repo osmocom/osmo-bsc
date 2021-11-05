@@ -1120,12 +1120,12 @@ enum gsm48_rr_cause bsc_gsm48_rr_cause_from_rsl_cause(uint8_t c)
 const struct gsm_interf_meas_params interf_meas_params_def = {
 	.avg_period = 6, /* 6 SACCH periods */
 	.bounds_dbm = {
-		 85, /*  0:  -85 dBm */
-		 91, /* X1:  -91 dBm */
-		 97, /* X2:  -97 dBm */
-		103, /* X3: -103 dBm */
-		109, /* X4: -109 dBm */
-		115, /* X5: -115 dBm */
+		115, /*  0: -115 dBm */
+		109, /* X1: -109 dBm */
+		103, /* X2: -103 dBm */
+		 97, /* X3:  -97 dBm */
+		 91, /* X4:  -91 dBm */
+		 85, /* X5:  -85 dBm */
 	},
 };
 
