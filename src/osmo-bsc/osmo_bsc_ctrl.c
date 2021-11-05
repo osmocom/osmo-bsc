@@ -428,19 +428,26 @@ static int set_bts_loc(struct ctrl_cmd *cmd, void *data)
 	if (!tmp)
 		goto oom;
 
+	tstamp = strtok_r(tmp, ",", &saveptr);
+	valid = strtok_r(NULL, ",", &saveptr);
+	lat = strtok_r(NULL, ",", &saveptr);
+	lon = strtok_r(NULL, ",", &saveptr);
+	height = strtok_r(NULL, "\0", &saveptr);
+
+	/* Check if one of the strtok results was NULL. This will probably never occur since we will only see verified
+	 * input in this code path */
+	if ((tstamp == NULL) || (valid == NULL) || (lat == NULL) || (lon == NULL) || (height == NULL)) {
+		talloc_free(tmp);
+		cmd->reply = "parse error";
+		return CTRL_CMD_ERROR;
+	}
+
 	curloc = talloc_zero(tall_bsc_ctx, struct bts_location);
 	if (!curloc) {
 		talloc_free(tmp);
 		goto oom;
 	}
 	INIT_LLIST_HEAD(&curloc->list);
-
-
-	tstamp = strtok_r(tmp, ",", &saveptr);
-	valid = strtok_r(NULL, ",", &saveptr);
-	lat = strtok_r(NULL, ",", &saveptr);
-	lon = strtok_r(NULL, ",", &saveptr);
-	height = strtok_r(NULL, "\0", &saveptr);
 
 	curloc->tstamp = atol(tstamp);
 	curloc->valid = get_string_value(bts_loc_fix_names, valid);
