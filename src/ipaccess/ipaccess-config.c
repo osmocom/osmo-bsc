@@ -925,7 +925,7 @@ static const struct log_info_cat log_categories[] = {
 		.name = "DNM",
 		.description = "A-bis Network Management / O&M (NM/OML)",
 		.color = "\033[1;36m",
-		.loglevel = LOGL_DEBUG,
+		.loglevel = LOGL_NOTICE,
 		.enabled = 1,
 	},
 };
