@@ -17,7 +17,7 @@
 	else \
 		LOGP(DHODEC, level, "%s: " fmt, \
 		     handover_status(conn), ## args); \
-	} while(0)
+	} while (0)
 
 struct gsm_network;
 struct gsm_lchan;

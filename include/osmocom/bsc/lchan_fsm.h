@@ -10,14 +10,14 @@
 		LOGPFSML((lchan)->fi, level, "(type=%s) " fmt, gsm_lchant_name((lchan)->type), ## args); \
 	else \
 		LOGP(DRSL, level, "%s (not initialized) " fmt, gsm_lchan_name(lchan), ## args); \
-	} while(0)
+	} while (0)
 
 #define LCHAN_SET_LAST_ERROR(LCHAN, fmt, args...) do { \
 		if ((LCHAN)->last_error) \
 			talloc_free((LCHAN)->last_error); \
 		(LCHAN)->last_error = talloc_asprintf((LCHAN)->ts->trx, fmt, ##args); \
 		LOG_LCHAN(LCHAN, LOGL_ERROR, "%s\n", (LCHAN)->last_error); \
-	} while(0)
+	} while (0)
 
 enum lchan_fsm_state {
 	LCHAN_ST_UNUSED,

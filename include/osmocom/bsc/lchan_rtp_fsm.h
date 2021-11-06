@@ -7,7 +7,7 @@
 	else \
 		LOGP(DLMGCP, level, "%s (not initialized) " fmt, gsm_lchan_name(lchan), \
 		     ## args); \
-	} while(0)
+	} while (0)
 
 struct gsm_lchan;
 struct mgcp_conn_peer;

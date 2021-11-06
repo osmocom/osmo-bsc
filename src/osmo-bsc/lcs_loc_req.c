@@ -81,7 +81,7 @@ static const struct osmo_tdef_state_timeout lcs_loc_req_fsm_timeouts[32] = {
 			.cause_val = cause, \
 		}; \
 		lcs_loc_req_fsm_state_chg(lcs_loc_req->fi, LCS_LOC_REQ_ST_FAILED); \
-	} while(0)
+	} while (0)
 
 static struct lcs_loc_req *lcs_loc_req_alloc(struct osmo_fsm_inst *parent_fi, uint32_t parent_event_term)
 {
@@ -110,7 +110,7 @@ static bool parse_bssmap_perf_loc_req(struct lcs_loc_req *lcs_loc_req, struct ms
 #define PARSE_ERR(ERRMSG) do { \
 			lcs_loc_req_fail(LCS_CAUSE_PROTOCOL_ERROR, "rx BSSMAP Perform Location Request: " ERRMSG); \
 			return false; \
-		} while(0)
+		} while (0)
 
 	payload_length = msg->tail - msg->l4h;
 	if (tlv_parse2(tp_arr, 1, gsm0808_att_tlvdef(), msg->l4h + 1, payload_length - 1, 0, 0) <= 0)

@@ -74,7 +74,7 @@ static const struct osmo_tdef_state_timeout assignment_fsm_timeouts[32] = {
 			       osmo_fsm_inst_state_name(fi), gsm0808_cause_name(cause), ## args); \
 		assignment_count_result(CTR_ASSIGNMENT_ERROR); \
 		on_assignment_failure(_conn); \
-	} while(0)
+	} while (0)
 
 /* Assume presence of local var 'conn' as struct gsm_subscriber_connection */
 #define assignment_count(counter) do { \
@@ -98,7 +98,7 @@ static const struct osmo_tdef_state_timeout assignment_fsm_timeouts[32] = {
 				break; \
 			} \
 		} \
-	} while(0)
+	} while (0)
 
 #define assignment_count_result(counter) do { \
 		if (!conn->assignment.result_rate_ctr_done) { \
@@ -109,7 +109,7 @@ static const struct osmo_tdef_state_timeout assignment_fsm_timeouts[32] = {
 				       "result rate counter already recorded, NOT counting as: %s %s\n", \
 				       bsc_ctr_description[BSC_##counter].name, \
 				       bsc_ctr_description[BSC_##counter].description); \
-	} while(0)
+	} while (0)
 
 void assignment_reset(struct gsm_subscriber_connection *conn)
 {

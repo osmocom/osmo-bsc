@@ -302,7 +302,7 @@ struct osmo_tdef_state_timeout lchan_fsm_timeouts[32] = {
 		else \
 			LOG_LCHAN(_lchan, LOGL_DEBUG, "After failure handling, already in state %s\n", \
 				  osmo_fsm_state_name(fsm, state_chg)); \
-	} while(0)
+	} while (0)
 
 /* Which state to transition to when lchan_fail() is called in a given state. */
 uint32_t lchan_fsm_on_error[34] = {

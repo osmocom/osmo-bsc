@@ -90,7 +90,7 @@
 		       bsc_ctr_description[counter].name, \
 		       bsc_ctr_description[counter].description); \
 		rate_ctr_inc(rate_ctr_group_get_ctr(conn->network->bsc_ctrs, counter)); \
-	} while(0)
+	} while (0)
 
 /* Assume presence of local var 'conn' as struct gsm_subscriber_connection.
  * Handles bts == NULL gracefully
@@ -106,12 +106,12 @@
 			rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, counter)); \
 		else \
 			rate_ctr_inc(rate_ctr_group_get_ctr(conn->network->bts_unknown_ctrs, counter)); \
-	} while(0)
+	} while (0)
 
 #define ho_count(bts, counter) do { \
         ho_count_bsc(BSC_##counter); \
         ho_count_bts(bts, BTS_##counter); \
-} while(0)
+} while (0)
 
 static uint8_t g_next_ho_ref = 1;
 
@@ -212,12 +212,12 @@ static const struct osmo_tdef_state_timeout ho_fsm_timeouts[32] = {
 		LOG_HO(conn, LOGL_ERROR, "Handover failed in state %s, %s: " fmt "\n", \
 		       osmo_fsm_inst_state_name(conn->fi), handover_result_name(result), ## args); \
 		handover_end(conn, result); \
-	} while(0)
+	} while (0)
 
 #define ho_success() do { \
 		LOG_HO(conn, LOGL_DEBUG, "Handover succeeded\n"); \
 		handover_end(conn, HO_RESULT_OK); \
-	} while(0)
+	} while (0)
 
 /* issue handover to a cell identified by ARFCN and BSIC */
 int handover_request(struct handover_out_req *req)

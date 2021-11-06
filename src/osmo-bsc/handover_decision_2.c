@@ -86,7 +86,7 @@
 		LOGPHOLCHANTOBTS((candidate)->current.lchan, (candidate)->target.bts, level, fmt, ## args); \
 	else if ((candidate)->target.cell_ids.id_list_len) \
 		LOGPHOLCHANTOREMOTE((candidate)->current.lchan, &(candidate)->target.cell_ids, level, fmt, ## args); \
-	} while(0)
+	} while (0)
 
 
 #define REQUIREMENT_A_TCHF	0x01

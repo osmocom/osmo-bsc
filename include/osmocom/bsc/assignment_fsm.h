@@ -17,7 +17,7 @@
 		     conn->assignment.new_lchan ? " of " : "", \
 		     conn->assignment.new_lchan ? gsm_lchan_name(conn->assignment.new_lchan) : "", \
 		     ## args); \
-	} while(0)
+	} while (0)
 
 enum assignment_fsm_state {
 	ASSIGNMENT_ST_WAIT_LCHAN_ACTIVE,

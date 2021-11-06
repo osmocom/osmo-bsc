@@ -63,7 +63,7 @@ static const struct osmo_tdef_state_timeout lcs_ta_req_fsm_timeouts[32] = {
 			       lcs_ta_req ? osmo_fsm_inst_state_name(lcs_ta_req->fi) : "NULL", ## args); \
 		lcs_ta_req->failure_cause = cause; \
 		lcs_ta_req_fsm_state_chg(lcs_ta_req->fi, LCS_TA_REQ_ST_FAILED); \
-	} while(0)
+	} while (0)
 
 static struct osmo_fsm lcs_ta_req_fsm;
 

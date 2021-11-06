@@ -8,7 +8,7 @@
 			LOGPFSML((LOC_REQ)->fi, level, fmt, ## args); \
 		else \
 			LOGP(DLCS, level, "LCS Perf Loc Req: " fmt, ## args); \
-	} while(0)
+	} while (0)
 
 struct lcs_ta_req;
 

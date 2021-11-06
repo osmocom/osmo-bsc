@@ -11,7 +11,7 @@
 		LOGPFSML((TA_REQ)->fi, level, fmt, ## args); \
 	else \
 		LOGP(DLCS, level, "LCS TA Req: " fmt, ## args); \
-	} while(0)
+	} while (0)
 
 enum lcs_ta_req_fsm_event {
 	LCS_TA_REQ_EV_GOT_TA,

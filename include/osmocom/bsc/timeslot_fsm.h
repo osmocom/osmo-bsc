@@ -17,7 +17,7 @@
 		     gsm_ts_name(ts), \
 		     ## args, \
 		     (!fmt || !*fmt || fmt[strlen(fmt)-1] != '\n') ? "\n" : ""); \
-	} while(0)
+	} while (0)
 
 enum ts_fsm_state {
 	TS_ST_NOT_INITIALIZED,
