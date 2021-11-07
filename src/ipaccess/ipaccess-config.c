@@ -516,8 +516,10 @@ static int ipa_nvflag_set(uint16_t *flags, uint16_t *mask, const char *name, int
 {
 	int rc;
 	rc = get_string_value(ipa_nvflag_strs, name);
-	if (rc < 0)
+	if (rc < 0) {
+		fprintf(stderr, "Unknown attribute '%s'\n", name);
 		return rc;
+	}
 
 	*mask |= rc;
 	if (en)
