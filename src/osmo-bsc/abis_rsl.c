@@ -555,30 +555,15 @@ static void rep_acch_cap_for_bts(struct gsm_lchan *lchan,
 /* indicate Temporary overpower of SACCH and FACCH channels */
 static void top_acch_cap_for_bts(struct gsm_lchan *lchan, struct msgb *msg)
 {
-	struct abis_rsl_osmo_temp_ovp_acch_cap cap;
 	struct gsm_bts *bts = lchan->ts->trx->bts;
-	bool acch_rep_enabled;
-	bool acch_rep_supp_by_ms;
 
 	/* The BTS_FEAT_ACCH_TEMP_OVP IE is a proprietary IE, that can only be used with osmo-bts type BTSs */
 	if (!(bts->model->type == GSM_BTS_TYPE_OSMOBTS && osmo_bts_has_feature(&bts->features, BTS_FEAT_ACCH_TEMP_OVP)))
 		return;
 
-	memcpy(&cap, &bts->temporary_overpower, sizeof(cap));
-
-	/* The user has enabled one of the two downlink related ACCH repetition features. */
-	acch_rep_enabled = bts->repeated_acch_policy.dl_sacch || bts->repeated_acch_policy.dl_facch_all
-	    || bts->repeated_acch_policy.dl_facch_cmd;
-
-	/* The MS indicates support for ACCH repetition */
-	acch_rep_supp_by_ms = lchan->conn && lchan->conn->cm3_valid && lchan->conn->cm3.repeated_acch_capability;
-
-	/* If the MS fully supports repeated ACCH capabilites as specified in 3GPP TS 44.006, section 10 and 11. and if
-	 * ACCH repetition is enabled for this BTS, then we will not apply temporary overpower. */
-	if (acch_rep_enabled && acch_rep_supp_by_ms)
-		cap.overpower_db = 0;
-
-	msgb_tlv_put(msg, RSL_IE_OSMO_TEMP_OVP_ACCH_CAP, sizeof(cap), (uint8_t*) &cap);
+	msgb_tlv_put(msg, RSL_IE_OSMO_TEMP_OVP_ACCH_CAP,
+		     sizeof(bts->temporary_overpower),
+		     (void *)&bts->temporary_overpower);
 }
 
 /* Write RSL_IE_OSMO_TRAINING_SEQUENCE to msgb. The tsc_set argument's range is 1-4, tsc argument range is 0-7. */
