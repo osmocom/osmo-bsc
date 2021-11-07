@@ -281,6 +281,7 @@ static int print_attr_rep(struct msgb *mb)
 	char oml_ip[20] = {0};
 	uint16_t oml_port = 0;
 	char unit_id[40]  = {0};
+	unsigned int indent = 0;
 
 
 	abis_nm_tlv_parse(&tp, bts, foh->data, oh->length-sizeof(*foh));
@@ -290,8 +291,23 @@ static int print_attr_rep(struct msgb *mb)
 
 	abis_nm_tlv_attr_unit_id(&tp, unit_id,  sizeof(unit_id));
 
-	fprintf(stdout, "{ \"primary_oml_ip\": \"%s\", \"primary_oml_port\": %" PRIu16 ", \"unit_id\": \"%s\" }\n",
-		oml_ip, oml_port, unit_id);
+#define ENDL(last) \
+	fprintf(stdout, "%s\n", last ? "" : ",")
+#define print_offset(fmt, args...) \
+	fprintf(stdout, "%*s" fmt, indent * 4, "", ## args)
+#define print_field(field, fmt, args...) \
+	print_offset("\"%s\": \"" fmt "\"", field, ## args)
+
+	print_offset("{\n");
+	indent++;
+
+	print_field("primary_oml_ip", "%s", oml_ip); ENDL(false);
+	print_field("primary_oml_port", "%u", oml_port); ENDL(false);
+	print_field("unit_id", "%s", unit_id); ENDL(true);
+
+	indent--;
+	print_offset("}\n");
+
 	return 0;
 }
 
