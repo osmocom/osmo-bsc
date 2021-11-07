@@ -1007,6 +1007,106 @@ int rsl_siemens_mrpci(struct gsm_lchan *lchan, struct rsl_mrpci *mrpci)
 }
 
 
+/* For 3GPP TS 52.402 unsuccReqsForService, we need to decode the DTAP and count CM Service Reject messages. */
+static void count_unsucc_reqs_for_service(const struct msgb *msg)
+{
+	struct gsm_bts *bts = msg->lchan->ts->trx->bts;
+	const struct gsm48_hdr *gh;
+	uint8_t pdisc, mtype;
+	uint8_t cause;
+
+	if (msgb_l3len(msg) < sizeof(*gh))
+		return;
+
+	gh = msgb_l3(msg);
+	pdisc = gsm48_hdr_pdisc(gh);
+	mtype = gsm48_hdr_msg_type(gh);
+
+	if (pdisc != GSM48_PDISC_MM || mtype != GSM48_MT_MM_CM_SERV_REJ)
+		return;
+
+	rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_CM_SERV_REJ));
+
+	cause = gh->data[0];
+	switch (cause) {
+	case GSM48_REJECT_IMSI_UNKNOWN_IN_HLR:
+		rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_CM_SERV_REJ_IMSI_UNKNOWN_IN_HLR));
+		break;
+	case GSM48_REJECT_ILLEGAL_MS:
+		rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_CM_SERV_REJ_ILLEGAL_MS));
+		break;
+	case GSM48_REJECT_IMSI_UNKNOWN_IN_VLR:
+		rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_CM_SERV_REJ_IMSI_UNKNOWN_IN_VLR));
+		break;
+	case GSM48_REJECT_IMEI_NOT_ACCEPTED:
+		rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_CM_SERV_REJ_IMEI_NOT_ACCEPTED));
+		break;
+	case GSM48_REJECT_ILLEGAL_ME:
+		rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_CM_SERV_REJ_ILLEGAL_ME));
+		break;
+	case GSM48_REJECT_PLMN_NOT_ALLOWED:
+		rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_CM_SERV_REJ_PLMN_NOT_ALLOWED));
+		break;
+	case GSM48_REJECT_LOC_NOT_ALLOWED:
+		rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_CM_SERV_REJ_LOC_NOT_ALLOWED));
+		break;
+	case GSM48_REJECT_ROAMING_NOT_ALLOWED:
+		rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_CM_SERV_REJ_ROAMING_NOT_ALLOWED));
+		break;
+	case GSM48_REJECT_NETWORK_FAILURE:
+		rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_CM_SERV_REJ_NETWORK_FAILURE));
+		break;
+	case GSM48_REJECT_SYNCH_FAILURE:
+		rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_CM_SERV_REJ_SYNCH_FAILURE));
+		break;
+	case GSM48_REJECT_CONGESTION:
+		rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_CM_SERV_REJ_CONGESTION));
+		break;
+	case GSM48_REJECT_SRV_OPT_NOT_SUPPORTED:
+		rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_CM_SERV_REJ_SRV_OPT_NOT_SUPPORTED));
+		break;
+	case GSM48_REJECT_RQD_SRV_OPT_NOT_SUPPORTED:
+		rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_CM_SERV_REJ_RQD_SRV_OPT_NOT_SUPPORTED));
+		break;
+	case GSM48_REJECT_SRV_OPT_TMP_OUT_OF_ORDER:
+		rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_CM_SERV_REJ_SRV_OPT_TMP_OUT_OF_ORDER));
+		break;
+	case GSM48_REJECT_CALL_CAN_NOT_BE_IDENTIFIED:
+		rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_CM_SERV_REJ_CALL_CAN_NOT_BE_IDENTIFIED));
+		break;
+	case GSM48_REJECT_INCORRECT_MESSAGE:
+		rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_CM_SERV_REJ_INCORRECT_MESSAGE));
+		break;
+	case GSM48_REJECT_INVALID_MANDANTORY_INF:
+		rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_CM_SERV_REJ_INVALID_MANDANTORY_INF));
+		break;
+	case GSM48_REJECT_MSG_TYPE_NOT_IMPLEMENTED:
+		rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_CM_SERV_REJ_MSG_TYPE_NOT_IMPLEMENTED));
+		break;
+	case GSM48_REJECT_MSG_TYPE_NOT_COMPATIBLE:
+		rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_CM_SERV_REJ_MSG_TYPE_NOT_COMPATIBLE));
+		break;
+	case GSM48_REJECT_INF_ELEME_NOT_IMPLEMENTED:
+		rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_CM_SERV_REJ_INF_ELEME_NOT_IMPLEMENTED));
+		break;
+	case GSM48_REJECT_CONDTIONAL_IE_ERROR:
+		rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_CM_SERV_REJ_CONDTIONAL_IE_ERROR));
+		break;
+	case GSM48_REJECT_MSG_NOT_COMPATIBLE:
+		rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_CM_SERV_REJ_MSG_NOT_COMPATIBLE));
+		break;
+	default:
+		if (cause >= 48 && cause <= 63) {
+			rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_CM_SERV_REJ_RETRY_IN_NEW_CELL));
+			break;
+		}
+		/* else fall thru */
+	case GSM48_REJECT_PROTOCOL_ERROR:
+		rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_CM_SERV_REJ_PROTOCOL_ERROR));
+		break;
+	}
+}
+
 /* Send "DATA REQUEST" message with given L3 Info payload */
 /* Chapter 8.3.1 */
 int rsl_data_request(struct msgb *msg, uint8_t link_id)
@@ -1018,6 +1118,8 @@ int rsl_data_request(struct msgb *msg, uint8_t link_id)
 		msgb_free(msg);
 		return -EINVAL;
 	}
+
+	count_unsucc_reqs_for_service(msg);
 
 	chan_nr = gsm_lchan2chan_nr(msg->lchan, true);
 	if (chan_nr < 0) {

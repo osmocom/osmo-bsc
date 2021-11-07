@@ -1293,6 +1293,81 @@ const struct rate_ctr_desc bts_ctr_description[] = {
 	[BTS_CTR_ALL_ALLOCATED_STATIC_TCH] = \
 		{ "all_allocated:static_tch",
 		  "Cumulative counter of seconds where all non-dynamic TCH channels were allocated" },
+
+	[BTS_CTR_CM_SERV_REJ] = \
+		{ "cm_serv_rej", "MSC sent CM Service Reject" },
+	[BTS_CTR_CM_SERV_REJ_IMSI_UNKNOWN_IN_HLR] = \
+		{ "cm_serv_rej:imsi_unknown_in_hlr",
+		  "MSC sent CM Service Reject with cause IMSI_UNKNOWN_IN_HLR" },
+	[BTS_CTR_CM_SERV_REJ_ILLEGAL_MS] = \
+		{ "cm_serv_rej:illegal_ms",
+		  "MSC sent CM Service Reject with cause ILLEGAL_MS" },
+	[BTS_CTR_CM_SERV_REJ_IMSI_UNKNOWN_IN_VLR] = \
+		{ "cm_serv_rej:imsi_unknown_in_vlr",
+		  "MSC sent CM Service Reject with cause IMSI_UNKNOWN_IN_VLR" },
+	[BTS_CTR_CM_SERV_REJ_IMEI_NOT_ACCEPTED] = \
+		{ "cm_serv_rej:imei_not_accepted",
+		  "MSC sent CM Service Reject with cause IMEI_NOT_ACCEPTED" },
+	[BTS_CTR_CM_SERV_REJ_ILLEGAL_ME] = \
+		{ "cm_serv_rej:illegal_me",
+		  "MSC sent CM Service Reject with cause ILLEGAL_ME" },
+	[BTS_CTR_CM_SERV_REJ_PLMN_NOT_ALLOWED] = \
+		{ "cm_serv_rej:plmn_not_allowed",
+		  "MSC sent CM Service Reject with cause PLMN_NOT_ALLOWED" },
+	[BTS_CTR_CM_SERV_REJ_LOC_NOT_ALLOWED] = \
+		{ "cm_serv_rej:loc_not_allowed",
+		  "MSC sent CM Service Reject with cause LOC_NOT_ALLOWED" },
+	[BTS_CTR_CM_SERV_REJ_ROAMING_NOT_ALLOWED] = \
+		{ "cm_serv_rej:roaming_not_allowed",
+		  "MSC sent CM Service Reject with cause ROAMING_NOT_ALLOWED" },
+	[BTS_CTR_CM_SERV_REJ_NETWORK_FAILURE] = \
+		{ "cm_serv_rej:network_failure",
+		  "MSC sent CM Service Reject with cause NETWORK_FAILURE" },
+	[BTS_CTR_CM_SERV_REJ_SYNCH_FAILURE] = \
+		{ "cm_serv_rej:synch_failure",
+		  "MSC sent CM Service Reject with cause SYNCH_FAILURE" },
+	[BTS_CTR_CM_SERV_REJ_CONGESTION] = \
+		{ "cm_serv_rej:congestion",
+		  "MSC sent CM Service Reject with cause CONGESTION" },
+	[BTS_CTR_CM_SERV_REJ_SRV_OPT_NOT_SUPPORTED] = \
+		{ "cm_serv_rej:srv_opt_not_supported",
+		  "MSC sent CM Service Reject with cause SRV_OPT_NOT_SUPPORTED" },
+	[BTS_CTR_CM_SERV_REJ_RQD_SRV_OPT_NOT_SUPPORTED] = \
+		{ "cm_serv_rej:rqd_srv_opt_not_supported",
+		  "MSC sent CM Service Reject with cause RQD_SRV_OPT_NOT_SUPPORTED" },
+	[BTS_CTR_CM_SERV_REJ_SRV_OPT_TMP_OUT_OF_ORDER] = \
+		{ "cm_serv_rej:srv_opt_tmp_out_of_order",
+		  "MSC sent CM Service Reject with cause SRV_OPT_TMP_OUT_OF_ORDER" },
+	[BTS_CTR_CM_SERV_REJ_CALL_CAN_NOT_BE_IDENTIFIED] = \
+		{ "cm_serv_rej:call_can_not_be_identified",
+		  "MSC sent CM Service Reject with cause CALL_CAN_NOT_BE_IDENTIFIED" },
+	[BTS_CTR_CM_SERV_REJ_INCORRECT_MESSAGE] = \
+		{ "cm_serv_rej:incorrect_message",
+		  "MSC sent CM Service Reject with cause INCORRECT_MESSAGE" },
+	[BTS_CTR_CM_SERV_REJ_INVALID_MANDANTORY_INF] = \
+		{ "cm_serv_rej:invalid_mandantory_inf",
+		  "MSC sent CM Service Reject with cause INVALID_MANDANTORY_INF" },
+	[BTS_CTR_CM_SERV_REJ_MSG_TYPE_NOT_IMPLEMENTED] = \
+		{ "cm_serv_rej:msg_type_not_implemented",
+		  "MSC sent CM Service Reject with cause MSG_TYPE_NOT_IMPLEMENTED" },
+	[BTS_CTR_CM_SERV_REJ_MSG_TYPE_NOT_COMPATIBLE] = \
+		{ "cm_serv_rej:msg_type_not_compatible",
+		  "MSC sent CM Service Reject with cause MSG_TYPE_NOT_COMPATIBLE" },
+	[BTS_CTR_CM_SERV_REJ_INF_ELEME_NOT_IMPLEMENTED] = \
+		{ "cm_serv_rej:inf_eleme_not_implemented",
+		  "MSC sent CM Service Reject with cause INF_ELEME_NOT_IMPLEMENTED" },
+	[BTS_CTR_CM_SERV_REJ_CONDTIONAL_IE_ERROR] = \
+		{ "cm_serv_rej:condtional_ie_error",
+		  "MSC sent CM Service Reject with cause CONDTIONAL_IE_ERROR" },
+	[BTS_CTR_CM_SERV_REJ_MSG_NOT_COMPATIBLE] = \
+		{ "cm_serv_rej:msg_not_compatible",
+		  "MSC sent CM Service Reject with cause MSG_NOT_COMPATIBLE" },
+	[BTS_CTR_CM_SERV_REJ_PROTOCOL_ERROR] = \
+		{ "cm_serv_rej:protocol_error",
+		  "MSC sent CM Service Reject with cause PROTOCOL_ERROR" },
+	[BTS_CTR_CM_SERV_REJ_RETRY_IN_NEW_CELL] = \
+		{ "cm_serv_rej:retry_in_new_cell",
+		  "MSC sent CM Service Reject with cause 00110000..00111111, Retry upon entry in a new cell" },
 };
 
 const struct rate_ctr_group_desc bts_ctrg_desc = {
