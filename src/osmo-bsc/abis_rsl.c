@@ -1177,21 +1177,11 @@ static void print_meas_rep_uni(struct osmo_strbuf *sb, struct gsm_meas_rep_unidi
 			   prefix, mru->full.rx_qual, prefix, mru->sub.rx_qual);
 }
 
-static int print_meas_rep_buf(char *buf, size_t len, struct gsm_lchan *lchan, struct gsm_meas_rep *mr)
+static int print_meas_rep_buf(char *buf, size_t len, struct gsm_meas_rep *mr)
 {
-	const char *name = "";
-	struct bsc_subscr *bsub = NULL;
 	struct osmo_strbuf sb = { .buf = buf, .len = len };
 
-	if (lchan && lchan->conn) {
-		bsub = lchan->conn->bsub;
-		if (bsub) {
-			name = bsc_subscr_name(bsub);
-		} else
-			name = lchan->name;
-	}
-
-	OSMO_STRBUF_PRINTF(sb, "[%s] MEASUREMENT RESULT NR=%d ", name, mr->nr);
+	OSMO_STRBUF_PRINTF(sb, "MEASUREMENT RESULT NR=%d ", mr->nr);
 
 	if (mr->flags & MEAS_REP_F_DL_DTX)
 		OSMO_STRBUF_PRINTF(sb, "DTXd ");
@@ -1222,25 +1212,30 @@ static int print_meas_rep_buf(char *buf, size_t len, struct gsm_lchan *lchan, st
 	return sb.chars_needed;
 }
 
-static char *print_meas_rep_c(void *ctx, struct gsm_lchan *lchan, struct gsm_meas_rep *mr)
+static char *print_meas_rep_c(void *ctx, struct gsm_meas_rep *mr)
 {
 	/* A naive count of required characters gets me to ~200, so 256 should be safe to get a large enough buffer on
 	 * the first time. */
-	OSMO_NAME_C_IMPL(ctx, 256, "ERROR", print_meas_rep_buf, lchan, mr)
+	OSMO_NAME_C_IMPL(ctx, 256, "ERROR", print_meas_rep_buf, mr)
 }
 
 static void print_meas_rep(struct gsm_lchan *lchan, struct gsm_meas_rep *mr)
 {
 	int i;
+	const char *name = "";
 	struct bsc_subscr *bsub = NULL;
 
 	if (lchan && lchan->conn) {
 		bsub = lchan->conn->bsub;
-		if (bsub)
+		if (bsub) {
 			log_set_context(LOG_CTX_BSC_SUBSCR, bsub);
+			name = bsc_subscr_name(bsub);
+		} else {
+			name = lchan->name;
+		}
 	}
 
-	DEBUGP(DMEAS, "%s\n", print_meas_rep_c(OTC_SELECT, lchan, mr));
+	DEBUGP(DMEAS, "[%s] %s\n", name, print_meas_rep_c(OTC_SELECT, mr));
 
 	if (mr->num_cell != 7
 	    && log_check_level(DMEAS, LOGL_DEBUG)) {
