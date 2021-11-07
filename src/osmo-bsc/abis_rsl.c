@@ -1168,7 +1168,9 @@ static int rsl_rx_conn_fail(struct msgb *msg)
 	return 0;
 }
 
-static void print_meas_rep_uni(struct osmo_strbuf *sb, struct gsm_meas_rep_unidir *mru, const char *prefix)
+static void print_meas_rep_uni(struct osmo_strbuf *sb,
+			       const struct gsm_meas_rep_unidir *mru,
+			       const char *prefix)
 {
 	OSMO_STRBUF_PRINTF(*sb, "RXL-FULL-%s=%3ddBm RXL-SUB-%s=%3ddBm ",
 			   prefix, rxlev2dbm(mru->full.rx_lev),
@@ -1177,7 +1179,7 @@ static void print_meas_rep_uni(struct osmo_strbuf *sb, struct gsm_meas_rep_unidi
 			   prefix, mru->full.rx_qual, prefix, mru->sub.rx_qual);
 }
 
-static int print_meas_rep_buf(char *buf, size_t len, struct gsm_meas_rep *mr)
+static int print_meas_rep_buf(char *buf, size_t len, const struct gsm_meas_rep *mr)
 {
 	struct osmo_strbuf sb = { .buf = buf, .len = len };
 
@@ -1212,14 +1214,14 @@ static int print_meas_rep_buf(char *buf, size_t len, struct gsm_meas_rep *mr)
 	return sb.chars_needed;
 }
 
-static char *print_meas_rep_c(void *ctx, struct gsm_meas_rep *mr)
+static char *print_meas_rep_c(void *ctx, const struct gsm_meas_rep *mr)
 {
 	/* A naive count of required characters gets me to ~200, so 256 should be safe to get a large enough buffer on
 	 * the first time. */
 	OSMO_NAME_C_IMPL(ctx, 256, "ERROR", print_meas_rep_buf, mr)
 }
 
-static void print_meas_rep(struct gsm_lchan *lchan, struct gsm_meas_rep *mr)
+static void print_meas_rep(struct gsm_lchan *lchan, const struct gsm_meas_rep *mr)
 {
 	int i;
 	const char *name = "";
@@ -1240,7 +1242,7 @@ static void print_meas_rep(struct gsm_lchan *lchan, struct gsm_meas_rep *mr)
 	if (mr->num_cell != 7
 	    && log_check_level(DMEAS, LOGL_DEBUG)) {
 		for (i = 0; i < mr->num_cell; i++) {
-			struct gsm_meas_rep_cell *mrc = &mr->cell[i];
+			const struct gsm_meas_rep_cell *mrc = &mr->cell[i];
 			DEBUGP(DMEAS, "IDX=%u ARFCN=%u BSIC=%u => %d dBm\n",
 			       mrc->neigh_idx, mrc->arfcn, mrc->bsic, rxlev2dbm(mrc->rxlev));
 		}
