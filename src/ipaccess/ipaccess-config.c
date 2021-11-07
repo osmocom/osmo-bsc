@@ -501,7 +501,7 @@ static const struct value_string ipa_nvflag_strs[] = {
 	{ 0x0002, "static-gw" },
 	{ 0x0004, "no-dhcp-vsi" },
 	{ 0x0008, "dhcp-enabled" },
-	{ 0x0040, "led-disabled" },
+	{ 0x0040, "led-enabled" },
 	{ 0x0100, "secondary-oml-enabled" },
 	{ 0x0200, "diag-enabled" },
 	{ 0x0400, "cli-enabled" },
