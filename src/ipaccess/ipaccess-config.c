@@ -268,6 +268,8 @@ static int nwl_sig_cb(unsigned int subsys, unsigned int signal,
 	return 0;
 }
 
+static const struct value_string ipa_nvflag_strs[];
+
 static int print_attr_rep(struct msgb *mb)
 {
 	/* Parse using nanoBTS own formatting for Get Attribute Response */
@@ -303,7 +305,33 @@ static int print_attr_rep(struct msgb *mb)
 
 	print_field("primary_oml_ip", "%s", oml_ip); ENDL(false);
 	print_field("primary_oml_port", "%u", oml_port); ENDL(false);
-	print_field("unit_id", "%s", unit_id); ENDL(true);
+	print_field("unit_id", "%s", unit_id); ENDL(false);
+
+	uint16_t Fx = (TLVP_VAL(&tp, NM_ATT_IPACC_NV_FLAGS)[2] << 8)
+		    | (TLVP_VAL(&tp, NM_ATT_IPACC_NV_FLAGS)[0] << 0);
+	uint16_t Mx = (TLVP_VAL(&tp, NM_ATT_IPACC_NV_FLAGS)[3] << 8)
+		    | (TLVP_VAL(&tp, NM_ATT_IPACC_NV_FLAGS)[1] << 0);
+	const struct value_string *nvflag = ipa_nvflag_strs;
+
+	print_offset("\"nv_flags\": {\n");
+	indent++;
+
+	while (nvflag->value && nvflag->str) {
+		const char *val = (Fx & nvflag->value) ? "yes" : "no";
+		if (~Mx & nvflag->value)
+			val = "unknown";
+		print_field(nvflag->str, "%s", val);
+
+		nvflag++;
+
+		if (nvflag->value && nvflag->str)
+			ENDL(false); /* more fields to print */
+		else
+			ENDL(true); /* this was the last field */
+	}
+
+	indent--;
+	print_offset("}\n");
 
 	indent--;
 	print_offset("}\n");
@@ -559,6 +587,7 @@ static void bootstrap_om(struct gsm_bts_trx *trx)
 	if (get_attr) {
 		msgb_put_u8(nmsg_get, NM_ATT_IPACC_PRIM_OML_CFG);
 		msgb_put_u8(nmsg_get, NM_ATT_IPACC_UNIT_ID);
+		msgb_put_u8(nmsg_get, NM_ATT_IPACC_NV_FLAGS);
 	}
 	if (unit_id) {
 		len = strlen(unit_id);
