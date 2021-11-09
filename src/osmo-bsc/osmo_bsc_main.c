@@ -477,6 +477,7 @@ static int inp_sig_cb(unsigned int subsys, unsigned int signal,
 {
 	struct input_signal_data *isd = signal_data;
 	struct gsm_bts_trx *trx = isd->trx;
+	int rc;
 
 	if (subsys != SS_L_INPUT)
 		return -EINVAL;
@@ -489,9 +490,24 @@ static int inp_sig_cb(unsigned int subsys, unsigned int signal,
 			/* Generate Mobile Allocation bit-masks for all timeslots.
 			 * This needs to be done here, because it's used for TS configuration. */
 			generate_ma_for_bts(trx->bts);
+			/* Check parameters and apply vty config dependent parameters */
+			rc = check_bts(trx->bts);
+			if (rc < 0) {
+				LOGP(DNM, LOGL_ERROR, "(bts=%u) Error in BTS configuration -- cannot bootstrap BTS\n",
+				     trx->bts->nr);
+				return rc;
+			}
+			bootstrap_bts(trx->bts);
 		}
-		if (isd->link_type == E1INP_SIGN_RSL)
+		if (isd->link_type == E1INP_SIGN_RSL) {
+			rc = check_bts(trx->bts);
+			if (rc < 0) {
+				LOGP(DNM, LOGL_ERROR, "(bts=%u) Error in BTS configuration -- cannot bootstrap RSL\n",
+				     trx->bts->nr);
+				return rc;
+			}
 			bootstrap_rsl(trx);
+		}
 		break;
 	case S_L_INP_TEI_DN:
 		LOG_TRX(trx, DLMI, LOGL_ERROR, "Lost E1 %s link\n", e1inp_signtype_name(isd->link_type));
