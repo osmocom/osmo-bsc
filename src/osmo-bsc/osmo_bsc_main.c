@@ -469,6 +469,10 @@ static void bootstrap_bts(struct gsm_bts *bts)
 
 	/* Initialize the BTS state */
 	gsm_bts_sm_mo_reset(bts->site_mgr);
+
+	/* Generate Mobile Allocation bit-masks for all timeslots.
+	 * This needs to be done here, because it's used for TS configuration. */
+	generate_ma_for_bts(bts);
 }
 
 /* Callback function to be called every time we receive a signal from INPUT */
@@ -487,9 +491,6 @@ static int inp_sig_cb(unsigned int subsys, unsigned int signal,
 	switch (signal) {
 	case S_L_INP_TEI_UP:
 		if (isd->link_type == E1INP_SIGN_OML) {
-			/* Generate Mobile Allocation bit-masks for all timeslots.
-			 * This needs to be done here, because it's used for TS configuration. */
-			generate_ma_for_bts(trx->bts);
 			/* Check parameters and apply vty config dependent parameters */
 			rc = check_bts(trx->bts);
 			if (rc < 0) {
