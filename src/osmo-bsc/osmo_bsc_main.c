@@ -389,56 +389,6 @@ static void update_connection_stats_cb(void *data)
 	osmo_timer_schedule(&update_connection_stats_timer, 1, 0);
 }
 
-static int check_bts(struct gsm_bts *bts)
-{
-	struct gsm_bts_trx *trx;
-
-	if (!bts->model)
-		return -EFAULT;
-
-	switch (bts->band) {
-	case GSM_BAND_1800:
-		if (bts->c0->arfcn < 512 || bts->c0->arfcn > 885) {
-			LOGP(DNM, LOGL_ERROR, "(bts=%u) GSM1800 channel (%u) must be between 512-885.\n",
-			     bts->nr, bts->c0->arfcn);
-			return -EINVAL;
-		}
-		break;
-	case GSM_BAND_1900:
-		if (bts->c0->arfcn < 512 || bts->c0->arfcn > 810) {
-			LOGP(DNM, LOGL_ERROR, "(bts=%u) GSM1900 channel (%u) must be between 512-810.\n",
-			     bts->nr, bts->c0->arfcn);
-		}
-		break;
-	case GSM_BAND_900:
-		if ((bts->c0->arfcn > 124 && bts->c0->arfcn < 955) ||
-		    bts->c0->arfcn > 1023)  {
-			LOGP(DNM, LOGL_ERROR, "(bts=%u) GSM900 channel (%u) must be between 0-124, 955-1023.\n",
-			     bts->nr, bts->c0->arfcn);
-		}
-		break;
-	case GSM_BAND_850:
-		if (bts->c0->arfcn < 128 || bts->c0->arfcn > 251) {
-			LOGP(DNM, LOGL_ERROR, "(bts=%u) GSM850 channel (%u) must be between 128-251.\n",
-			     bts->nr, bts->c0->arfcn);
-		}
-		break;
-	default:
-		LOGP(DNM, LOGL_ERROR, "(bts=%u) Unsupported frequency band.\n", bts->nr);
-	}
-
-	/* Verify the physical channel mapping */
-	llist_for_each_entry(trx, &bts->trx_list, list) {
-		if (!trx_has_valid_pchan_config(trx)) {
-			LOGP(DNM, LOGL_ERROR, "TRX %u has invalid timeslot "
-					      "configuration\n", trx->nr);
-			return -EINVAL;
-		}
-	}
-
-	return 0;
-}
-
 static void bootstrap_bts(struct gsm_bts *bts)
 {
 	unsigned int n = 0;
@@ -492,7 +442,7 @@ static int inp_sig_cb(unsigned int subsys, unsigned int signal,
 	case S_L_INP_TEI_UP:
 		if (isd->link_type == E1INP_SIGN_OML) {
 			/* Check parameters and apply vty config dependent parameters */
-			rc = check_bts(trx->bts);
+			rc = gsm_bts_check_cfg(trx->bts);
 			if (rc < 0) {
 				LOGP(DNM, LOGL_ERROR, "(bts=%u) Error in BTS configuration -- cannot bootstrap BTS\n",
 				     trx->bts->nr);
@@ -501,7 +451,7 @@ static int inp_sig_cb(unsigned int subsys, unsigned int signal,
 			bootstrap_bts(trx->bts);
 		}
 		if (isd->link_type == E1INP_SIGN_RSL) {
-			rc = check_bts(trx->bts);
+			rc = gsm_bts_check_cfg(trx->bts);
 			if (rc < 0) {
 				LOGP(DNM, LOGL_ERROR, "(bts=%u) Error in BTS configuration -- cannot bootstrap RSL\n",
 				     trx->bts->nr);
@@ -556,7 +506,7 @@ static int bsc_network_configure(const char *config_file)
 	osmo_signal_register_handler(SS_L_INPUT, inp_sig_cb, NULL);
 
 	llist_for_each_entry(bts, &bsc_gsmnet->bts_list, list) {
-		rc = check_bts(bts);
+		rc = gsm_bts_check_cfg(bts);
 		if (rc < 0) {
 			LOGP(DNM, LOGL_FATAL, "(bts=%u) cannot bootstrap BTS, invalid BTS configuration\n", bts->nr);
 			return rc;

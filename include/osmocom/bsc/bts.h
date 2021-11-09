@@ -717,6 +717,7 @@ static inline const struct osmo_location_area_id *bts_lai(struct gsm_bts *bts)
 }
 
 struct gsm_bts *gsm_bts_alloc(struct gsm_network *net, struct gsm_bts_sm *bts_sm, uint8_t bts_num);
+int gsm_bts_check_cfg(struct gsm_bts *bts);
 
 char *gsm_bts_name(const struct gsm_bts *bts);
 

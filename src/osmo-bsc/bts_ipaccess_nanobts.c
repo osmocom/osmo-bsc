@@ -696,6 +696,14 @@ ipaccess_sign_link_up(void *unit_data, struct e1inp_line *line,
 	DEBUGP(DLINP, "%s: Identified BTS %u/%u/%u\n", e1inp_signtype_name(type),
 			dev->site_id, dev->bts_id, dev->trx_id);
 
+	/* Check if this BTS has a valid configuration. If not we will drop it
+	 * immediately. */
+	if (gsm_bts_check_cfg(bts) != 0) {
+		LOGP(DLINP, LOGL_NOTICE, "(bts=%u) BTS config invalid, dropping BTS!\n", bts->nr);
+		ipaccess_drop_oml_deferred(bts);
+		return NULL;
+	}
+
 	switch(type) {
 	case E1INP_SIGN_OML:
 		/* remove old OML signal link for this BTS. */
