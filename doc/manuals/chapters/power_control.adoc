@@ -565,3 +565,61 @@ Got message: b'GET_REPLY 3652121201381481804 bts.0.c0-power-reduction 4 <2>'
 ----
 <1> Remote address of the host running osmo-bsc (localhost in this example)
 <2> Maximum BCCH carrier power reduction currently applied
+
+=== Temporary ACCH overpower
+
+Temporary overpower (TOP) is a power control technique that allows to improve
+SACCH/FACCH performance in case of bad C/I.  The key idea of TOP is to
+increment the BS transmit power by 2..4 dB only for FACCH/SACCH bursts, while
+keeping all voice bursts at the lower (normal) level as determined by the
+downlink power control loop.  This allows to reduce call drop rate and
+increase capacity in deployments with tight frequency reuse.
+
+NOTE: It's not possible to increase the current BS power beyond the maximum
+transmit power level supported by the PHY.  Thus if the BTS is already
+transmitting at full power, the overpower logic cannot increase it even
+further.  This is also why TOP must be employed *together with BS power
+control*, either static or dynamic.
+
+The main area of use for TOP is traffic channels employing the AMR (Adaptive
+Multi Rate) codec, which is more robust to interference than the associated
+signalling channels.  While AMR provides sufficient speech quality even at
+very low C/I levels, the associated signalling channels may be suffering from
+channel coding errors.  This imbalance can be compensated by employing TOP,
+which can be efficiently combined with the ACCH repetition technique.
+
+This feature requires no support on the mobile station side and can be used
+with UEs implementing the most recent 3GPP relese features, as well as legacy
+UEs.  However, it needs to be implemented in the BTS.  Given that TOP itself
+is not specified in 3GPP specifications, osmo-bsc uses Osmocom specific
+A-bis/RSL IEs in order to activate it.  Therefore, only the recent osmo-bts
+versions may be instructed to activate this feature.  Make sure that feature
+#023 "FACCH/SACCH Temporary overpower" is present in the feature vector.
+This can be checked by issuing `show bts` command in OsmoBSC's VTY interface.
+
+TOP is disabled by default.  Below is a configuration example enabling it:
+
+----
+network
+ bts 0
+  overpower dl-acch 2 <1>
+  overpower rxqual 4 <2>
+----
+<1> Overpower of maximum 2 dB for both SACCH and FACCH.
+<2> Enable TOP only if RxQual is worse than 4 (BER >= 1.6%).
+
+It's also possible to enable TOP only for FACCH or SACCH selectively, or
+or keep it enabled permanently regardless of the reported RxQual:
+
+----
+OsmoBSC(config-net-bts)# overpower ?
+  dl-acch   Enable overpower for both SACCH and FACCH
+  dl-sacch  Enable overpower for SACCH only
+  dl-facch  Enable overpower for FACCH only
+
+OsmoBSC(config-net-bts)# overpower rxqual 0?
+  0  BER >= 0% (always on)
+----
+
+These parameters are indicated to the BTS during a logical channel activation
+or modifications procedures, so they can be changed at run-time.
