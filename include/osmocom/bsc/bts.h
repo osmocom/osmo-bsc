@@ -622,10 +622,10 @@ struct gsm_bts {
 	/* At what point in the channel allocation sequence to dispatch the Immediate Assignment (Abis optimization) */
 	enum imm_ass_time imm_ass_time;
 
-	struct time_cc all_allocated_sdcch;
-	struct time_cc all_allocated_static_sdcch;
-	struct time_cc all_allocated_tch;
-	struct time_cc all_allocated_static_tch;
+	struct osmo_time_cc all_allocated_sdcch;
+	struct osmo_time_cc all_allocated_static_sdcch;
+	struct osmo_time_cc all_allocated_tch;
+	struct osmo_time_cc all_allocated_static_tch;
 };
 
 #define GSM_BTS_SI2Q(bts, i)   (struct gsm48_system_information_type_2quater *)((bts)->si_buf[SYSINFO_TYPE_2quater][i])

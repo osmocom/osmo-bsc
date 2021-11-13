@@ -105,7 +105,6 @@ libbsc_la_SOURCES = \
 	bssmap_reset.c \
 	system_information.c \
 	timeslot_fsm.c \
-	time_cc.c \
 	smscb.c \
 	cbch_scheduler.c \
 	cbsp_link.c \

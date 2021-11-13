@@ -58,7 +58,6 @@ noinst_HEADERS = \
 	signal.h \
 	system_information.h \
 	timeslot_fsm.h \
-	time_cc.h \
 	vty.h \
 	gsm_08_08.h \
 	penalty_timers.h \

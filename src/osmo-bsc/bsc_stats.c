@@ -215,46 +215,46 @@ void bsc_update_time_cc_all_allocated(struct gsm_network *net)
 			chan_counts_add(&bts_counts, &trx_counts);
 		}
 
-		time_cc_set_flag(&bts->all_allocated_sdcch,
-				 bts_counts.val[CHAN_COUNTS1_ALL][CHAN_COUNTS2_MAX_TOTAL][GSM_LCHAN_SDCCH]
-				 && !bts_counts.val[CHAN_COUNTS1_ALL][CHAN_COUNTS2_FREE][GSM_LCHAN_SDCCH]);
+		osmo_time_cc_set_flag(&bts->all_allocated_sdcch,
+				      bts_counts.val[CHAN_COUNTS1_ALL][CHAN_COUNTS2_MAX_TOTAL][GSM_LCHAN_SDCCH]
+				      && !bts_counts.val[CHAN_COUNTS1_ALL][CHAN_COUNTS2_FREE][GSM_LCHAN_SDCCH]);
 
-		time_cc_set_flag(&bts->all_allocated_static_sdcch,
-				 bts_counts.val[CHAN_COUNTS1_STATIC][CHAN_COUNTS2_MAX_TOTAL][GSM_LCHAN_SDCCH]
-				 && !bts_counts.val[CHAN_COUNTS1_STATIC][CHAN_COUNTS2_FREE][GSM_LCHAN_SDCCH]);
+		osmo_time_cc_set_flag(&bts->all_allocated_static_sdcch,
+				      bts_counts.val[CHAN_COUNTS1_STATIC][CHAN_COUNTS2_MAX_TOTAL][GSM_LCHAN_SDCCH]
+				      && !bts_counts.val[CHAN_COUNTS1_STATIC][CHAN_COUNTS2_FREE][GSM_LCHAN_SDCCH]);
 
-		time_cc_set_flag(&bts->all_allocated_tch,
-				 (bts_counts.val[CHAN_COUNTS1_ALL][CHAN_COUNTS2_MAX_TOTAL][GSM_LCHAN_TCH_F]
-				  + bts_counts.val[CHAN_COUNTS1_ALL][CHAN_COUNTS2_MAX_TOTAL][GSM_LCHAN_TCH_H])
-				 && !(bts_counts.val[CHAN_COUNTS1_ALL][CHAN_COUNTS2_FREE][GSM_LCHAN_TCH_F]
-				      + bts_counts.val[CHAN_COUNTS1_ALL][CHAN_COUNTS2_FREE][GSM_LCHAN_TCH_H]));
+		osmo_time_cc_set_flag(&bts->all_allocated_tch,
+				      (bts_counts.val[CHAN_COUNTS1_ALL][CHAN_COUNTS2_MAX_TOTAL][GSM_LCHAN_TCH_F]
+				       + bts_counts.val[CHAN_COUNTS1_ALL][CHAN_COUNTS2_MAX_TOTAL][GSM_LCHAN_TCH_H])
+				      && !(bts_counts.val[CHAN_COUNTS1_ALL][CHAN_COUNTS2_FREE][GSM_LCHAN_TCH_F]
+					   + bts_counts.val[CHAN_COUNTS1_ALL][CHAN_COUNTS2_FREE][GSM_LCHAN_TCH_H]));
 
-		time_cc_set_flag(&bts->all_allocated_static_tch,
-				 (bts_counts.val[CHAN_COUNTS1_STATIC][CHAN_COUNTS2_MAX_TOTAL][GSM_LCHAN_TCH_F]
-				  + bts_counts.val[CHAN_COUNTS1_STATIC][CHAN_COUNTS2_MAX_TOTAL][GSM_LCHAN_TCH_H])
-				 && !(bts_counts.val[CHAN_COUNTS1_STATIC][CHAN_COUNTS2_FREE][GSM_LCHAN_TCH_F]
-				      + bts_counts.val[CHAN_COUNTS1_STATIC][CHAN_COUNTS2_FREE][GSM_LCHAN_TCH_H]));
+		osmo_time_cc_set_flag(&bts->all_allocated_static_tch,
+				      (bts_counts.val[CHAN_COUNTS1_STATIC][CHAN_COUNTS2_MAX_TOTAL][GSM_LCHAN_TCH_F]
+				       + bts_counts.val[CHAN_COUNTS1_STATIC][CHAN_COUNTS2_MAX_TOTAL][GSM_LCHAN_TCH_H])
+				      && !(bts_counts.val[CHAN_COUNTS1_STATIC][CHAN_COUNTS2_FREE][GSM_LCHAN_TCH_F]
+					   + bts_counts.val[CHAN_COUNTS1_STATIC][CHAN_COUNTS2_FREE][GSM_LCHAN_TCH_H]));
 
 		chan_counts_add(&bsc_counts, &bts_counts);
 	}
 
-	time_cc_set_flag(&net->all_allocated_sdcch,
-			 bsc_counts.val[CHAN_COUNTS1_ALL][CHAN_COUNTS2_MAX_TOTAL][GSM_LCHAN_SDCCH]
-			 && !bsc_counts.val[CHAN_COUNTS1_ALL][CHAN_COUNTS2_FREE][GSM_LCHAN_SDCCH]);
+	osmo_time_cc_set_flag(&net->all_allocated_sdcch,
+			      bsc_counts.val[CHAN_COUNTS1_ALL][CHAN_COUNTS2_MAX_TOTAL][GSM_LCHAN_SDCCH]
+			      && !bsc_counts.val[CHAN_COUNTS1_ALL][CHAN_COUNTS2_FREE][GSM_LCHAN_SDCCH]);
 
-	time_cc_set_flag(&net->all_allocated_static_sdcch,
-			 bsc_counts.val[CHAN_COUNTS1_STATIC][CHAN_COUNTS2_MAX_TOTAL][GSM_LCHAN_SDCCH]
-			 && !bsc_counts.val[CHAN_COUNTS1_STATIC][CHAN_COUNTS2_FREE][GSM_LCHAN_SDCCH]);
+	osmo_time_cc_set_flag(&net->all_allocated_static_sdcch,
+			      bsc_counts.val[CHAN_COUNTS1_STATIC][CHAN_COUNTS2_MAX_TOTAL][GSM_LCHAN_SDCCH]
+			      && !bsc_counts.val[CHAN_COUNTS1_STATIC][CHAN_COUNTS2_FREE][GSM_LCHAN_SDCCH]);
 
-	time_cc_set_flag(&net->all_allocated_tch,
-			 (bsc_counts.val[CHAN_COUNTS1_ALL][CHAN_COUNTS2_MAX_TOTAL][GSM_LCHAN_TCH_F]
-			  + bsc_counts.val[CHAN_COUNTS1_ALL][CHAN_COUNTS2_MAX_TOTAL][GSM_LCHAN_TCH_H])
-			 && !(bsc_counts.val[CHAN_COUNTS1_ALL][CHAN_COUNTS2_FREE][GSM_LCHAN_TCH_F]
-			      + bsc_counts.val[CHAN_COUNTS1_ALL][CHAN_COUNTS2_FREE][GSM_LCHAN_TCH_H]));
+	osmo_time_cc_set_flag(&net->all_allocated_tch,
+			      (bsc_counts.val[CHAN_COUNTS1_ALL][CHAN_COUNTS2_MAX_TOTAL][GSM_LCHAN_TCH_F]
+			       + bsc_counts.val[CHAN_COUNTS1_ALL][CHAN_COUNTS2_MAX_TOTAL][GSM_LCHAN_TCH_H])
+			      && !(bsc_counts.val[CHAN_COUNTS1_ALL][CHAN_COUNTS2_FREE][GSM_LCHAN_TCH_F]
+				   + bsc_counts.val[CHAN_COUNTS1_ALL][CHAN_COUNTS2_FREE][GSM_LCHAN_TCH_H]));
 
-	time_cc_set_flag(&net->all_allocated_static_tch,
-			 (bsc_counts.val[CHAN_COUNTS1_STATIC][CHAN_COUNTS2_MAX_TOTAL][GSM_LCHAN_TCH_F]
-			  + bsc_counts.val[CHAN_COUNTS1_STATIC][CHAN_COUNTS2_MAX_TOTAL][GSM_LCHAN_TCH_H])
-			 && !(bsc_counts.val[CHAN_COUNTS1_STATIC][CHAN_COUNTS2_FREE][GSM_LCHAN_TCH_F]
-			      + bsc_counts.val[CHAN_COUNTS1_STATIC][CHAN_COUNTS2_FREE][GSM_LCHAN_TCH_H]));
+	osmo_time_cc_set_flag(&net->all_allocated_static_tch,
+			      (bsc_counts.val[CHAN_COUNTS1_STATIC][CHAN_COUNTS2_MAX_TOTAL][GSM_LCHAN_TCH_F]
+			       + bsc_counts.val[CHAN_COUNTS1_STATIC][CHAN_COUNTS2_MAX_TOTAL][GSM_LCHAN_TCH_H])
+			      && !(bsc_counts.val[CHAN_COUNTS1_STATIC][CHAN_COUNTS2_FREE][GSM_LCHAN_TCH_F]
+				   + bsc_counts.val[CHAN_COUNTS1_STATIC][CHAN_COUNTS2_FREE][GSM_LCHAN_TCH_H]));
 }

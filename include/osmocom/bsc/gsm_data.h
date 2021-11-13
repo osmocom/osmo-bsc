@@ -18,6 +18,7 @@
 #include <osmocom/gsm/gsm48.h>
 #include <osmocom/core/fsm.h>
 #include <osmocom/core/tdef.h>
+#include <osmocom/core/time_cc.h>
 
 #include <osmocom/crypt/auth.h>
 
@@ -32,7 +33,6 @@
 #include <osmocom/bsc/meas_rep.h>
 #include <osmocom/bsc/acc.h>
 #include <osmocom/bsc/osmux.h>
-#include <osmocom/bsc/time_cc.h>
 
 #define GSM_T3122_DEFAULT 10
 
@@ -1262,10 +1262,10 @@ struct gsm_network {
 
 	struct smlc_config *smlc;
 
-	struct time_cc all_allocated_sdcch;
-	struct time_cc all_allocated_static_sdcch;
-	struct time_cc all_allocated_tch;
-	struct time_cc all_allocated_static_tch;
+	struct osmo_time_cc all_allocated_sdcch;
+	struct osmo_time_cc all_allocated_static_sdcch;
+	struct osmo_time_cc all_allocated_tch;
+	struct osmo_time_cc all_allocated_static_tch;
 };
 
 struct gsm_audio_support {

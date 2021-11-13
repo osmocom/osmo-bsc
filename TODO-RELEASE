@@ -16,3 +16,4 @@ libosmosgsm     >1.5.1          needs GSM_PCHAN_OSMO_DYN
 libosmocore     >1.5.1          RSL_IPAC_EIE_OSMO*, struct osmo_preproc_*
 libosmocore	>1.5.1		needs osmo_str_to_int()
 libosmocore	>1.5.1		needs new osmo_stat_item implementation (omits FIFO size for stat item)
+libosmocore	>=1.6		need osmo_time_cc
