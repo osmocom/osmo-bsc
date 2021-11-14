@@ -650,11 +650,11 @@ DEFUN_USRATTR(cfg_bts_rep_dl_facch,
 	}
 
 	if (!strcmp(argv[0], "command")) {
-		bts->repeated_acch_policy.dl_facch_cmd = true;
-		bts->repeated_acch_policy.dl_facch_all = false;
+		bts->rep_acch_cap.dl_facch_cmd = true;
+		bts->rep_acch_cap.dl_facch_all = false;
 	} else {
-		bts->repeated_acch_policy.dl_facch_cmd = true;
-		bts->repeated_acch_policy.dl_facch_all = true;
+		bts->rep_acch_cap.dl_facch_cmd = true;
+		bts->rep_acch_cap.dl_facch_all = true;
 	}
 	return CMD_SUCCESS;
 }
@@ -668,8 +668,8 @@ DEFUN_USRATTR(cfg_bts_rep_no_dl_facch,
 {
 	struct gsm_bts *bts = vty->index;
 
-	bts->repeated_acch_policy.dl_facch_cmd = false;
-	bts->repeated_acch_policy.dl_facch_all = false;
+	bts->rep_acch_cap.dl_facch_cmd = false;
+	bts->rep_acch_cap.dl_facch_all = false;
 
 	return CMD_SUCCESS;
 }
@@ -691,9 +691,9 @@ DEFUN_USRATTR(cfg_bts_rep_ul_dl_sacch,
 	}
 
 	if (strcmp(argv[0], "ul-sacch") == 0)
-		bts->repeated_acch_policy.ul_sacch = true;
+		bts->rep_acch_cap.ul_sacch = true;
 	else
-		bts->repeated_acch_policy.dl_sacch = true;
+		bts->rep_acch_cap.dl_sacch = true;
 
 	return CMD_SUCCESS;
 }
@@ -709,9 +709,9 @@ DEFUN_USRATTR(cfg_bts_rep_no_ul_dl_sacch,
 	struct gsm_bts *bts = vty->index;
 
 	if (strcmp(argv[0], "ul-sacch") == 0)
-		bts->repeated_acch_policy.ul_sacch = false;
+		bts->rep_acch_cap.ul_sacch = false;
 	else
-		bts->repeated_acch_policy.dl_sacch = false;
+		bts->rep_acch_cap.dl_sacch = false;
 
 	return CMD_SUCCESS;
 }
@@ -745,7 +745,7 @@ DEFUN_USRATTR(cfg_bts_rep_rxqual,
 	}
 
 	/* See also: GSM 05.08, section 8.2.4 */
-	bts->repeated_acch_policy.rxqual = atoi(argv[0]);
+	bts->rep_acch_cap.rxqual = atoi(argv[0]);
 
 	return CMD_SUCCESS;
 }
@@ -4313,18 +4313,18 @@ static void config_write_bts_single(struct vty *vty, struct gsm_bts *bts)
 			top->rxqual, VTY_NEWLINE);
 	}
 
-	if (bts->repeated_acch_policy.dl_facch_all)
+	if (bts->rep_acch_cap.dl_facch_all)
 		vty_out(vty, "  repeat dl-facch all%s", VTY_NEWLINE);
-	else if (bts->repeated_acch_policy.dl_facch_cmd)
+	else if (bts->rep_acch_cap.dl_facch_cmd)
 		vty_out(vty, "  repeat dl-facch command%s", VTY_NEWLINE);
-	if (bts->repeated_acch_policy.dl_sacch)
+	if (bts->rep_acch_cap.dl_sacch)
 		vty_out(vty, "  repeat dl-sacch%s", VTY_NEWLINE);
-	if (bts->repeated_acch_policy.ul_sacch)
+	if (bts->rep_acch_cap.ul_sacch)
 		vty_out(vty, "  repeat ul-sacch%s", VTY_NEWLINE);
-	if (bts->repeated_acch_policy.ul_sacch
-	    || bts->repeated_acch_policy.dl_facch_cmd
-	    || bts->repeated_acch_policy.dl_facch_cmd)
-		vty_out(vty, "  repeat rxqual %u%s", bts->repeated_acch_policy.rxqual, VTY_NEWLINE);
+	if (bts->rep_acch_cap.ul_sacch
+	    || bts->rep_acch_cap.dl_facch_cmd
+	    || bts->rep_acch_cap.dl_facch_cmd)
+		vty_out(vty, "  repeat rxqual %u%s", bts->rep_acch_cap.rxqual, VTY_NEWLINE);
 
 	if (bts->interf_meas_params_cfg.avg_period != interf_meas_params_def.avg_period) {
 		vty_out(vty, "  interference-meas avg-period %u%s",

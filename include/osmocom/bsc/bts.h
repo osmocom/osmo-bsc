@@ -591,7 +591,7 @@ struct gsm_bts {
 	struct llist_head chan_rqd_queue;
 
 	/* ACCH Repetition capabilities */
-	struct abis_rsl_osmo_rep_acch_cap repeated_acch_policy;
+	struct abis_rsl_osmo_rep_acch_cap rep_acch_cap;
 
 	/* ACCH Temporary overpower capabilities */
 	struct abis_rsl_osmo_temp_ovp_acch_cap temporary_overpower;

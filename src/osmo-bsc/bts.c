@@ -398,7 +398,7 @@ struct gsm_bts *gsm_bts_alloc(struct gsm_network *net, struct gsm_bts_sm *bts_sm
 	acc_ramp_init(&bts->acc_ramp, bts);
 
 	/* Default RxQual threshold for ACCH repetition/overpower */
-	bts->repeated_acch_policy.rxqual = 4;
+	bts->rep_acch_cap.rxqual = 4;
 	bts->temporary_overpower.rxqual = 4;
 
 	/* MS Power Control parameters (defaults) */
