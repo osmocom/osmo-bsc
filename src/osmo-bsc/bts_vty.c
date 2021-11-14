@@ -650,11 +650,11 @@ DEFUN_USRATTR(cfg_bts_rep_dl_facch,
 	}
 
 	if (!strcmp(argv[0], "command")) {
-	        bts->repeated_acch_policy.dl_facch_cmd = true;
-	        bts->repeated_acch_policy.dl_facch_all = false;
+		bts->repeated_acch_policy.dl_facch_cmd = true;
+		bts->repeated_acch_policy.dl_facch_all = false;
 	} else {
-	        bts->repeated_acch_policy.dl_facch_cmd = true;
-	        bts->repeated_acch_policy.dl_facch_all = true;
+		bts->repeated_acch_policy.dl_facch_cmd = true;
+		bts->repeated_acch_policy.dl_facch_all = true;
 	}
 	return CMD_SUCCESS;
 }
