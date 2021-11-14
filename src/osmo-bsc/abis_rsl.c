@@ -526,8 +526,8 @@ static int put_mr_config_for_bts(struct msgb *msg, const struct gsm48_multi_rate
 
 /* indicate FACCH/SACCH Repetition to be performed by BTS,
  * see also: 3GPP TS 44.006, section 10 and 11 */
-static void rep_acch_cap_for_bts(const struct gsm_lchan *lchan,
-				 struct msgb *msg)
+static void put_rep_acch_cap_ie(const struct gsm_lchan *lchan,
+				struct msgb *msg)
 {
 	struct abis_rsl_osmo_rep_acch_cap *cap;
 	const struct gsm_bts *bts = lchan->ts->trx->bts;
@@ -554,7 +554,7 @@ static void rep_acch_cap_for_bts(const struct gsm_lchan *lchan,
 }
 
 /* indicate Temporary overpower of SACCH and FACCH channels */
-static void top_acch_cap_for_bts(const struct gsm_lchan *lchan, struct msgb *msg)
+static void put_top_acch_cap_ie(const struct gsm_lchan *lchan, struct msgb *msg)
 {
 	const struct gsm_bts *bts = lchan->ts->trx->bts;
 
@@ -699,8 +699,8 @@ int rsl_tx_chan_activ(struct gsm_lchan *lchan, uint8_t act_type, uint8_t ho_ref)
 		}
 	}
 
-	rep_acch_cap_for_bts(lchan, msg);
-	top_acch_cap_for_bts(lchan, msg);
+	put_rep_acch_cap_ie(lchan, msg);
+	put_top_acch_cap_ie(lchan, msg);
 
 	/* Selecting a specific TSC Set is only applicable to VAMOS mode */
 	if (lchan->activate.info.vamos && lchan->activate.tsc_set >= 1)
@@ -771,8 +771,8 @@ int rsl_chan_mode_modify_req(struct gsm_lchan *lchan)
 		}
 	}
 
-        rep_acch_cap_for_bts(lchan, msg);
-        top_acch_cap_for_bts(lchan, msg);
+	put_rep_acch_cap_ie(lchan, msg);
+	put_top_acch_cap_ie(lchan, msg);
 
 	/* Selecting a specific TSC Set is only applicable to VAMOS mode. Send this Osmocom specific IE only to OsmoBTS
 	 * types. */
