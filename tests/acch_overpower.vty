@@ -31,21 +31,21 @@ OsmoBSC(config-net-bts)# show running-config
 ...
   overpower dl-acch 2
   overpower rxqual 4
-  overpower chan-mode any
+  overpower chan-mode speech-amr
 ...
 OsmoBSC(config-net-bts)# overpower dl-sacch 3
 OsmoBSC(config-net-bts)# show running-config
 ...
   overpower dl-sacch 3
   overpower rxqual 4
-  overpower chan-mode any
+  overpower chan-mode speech-amr
 ...
 OsmoBSC(config-net-bts)# overpower dl-facch 4
 OsmoBSC(config-net-bts)# show running-config
 ...
   overpower dl-facch 4
   overpower rxqual 4
-  overpower chan-mode any
+  overpower chan-mode speech-amr
 ...
 
 OsmoBSC(config-net-bts)# overpower rxqual ?
@@ -62,25 +62,25 @@ OsmoBSC(config-net-bts)# show running-config
 ...
   overpower dl-facch 4
   overpower rxqual 0
-  overpower chan-mode any
+  overpower chan-mode speech-amr
 ...
 OsmoBSC(config-net-bts)# overpower rxqual 7
 OsmoBSC(config-net-bts)# show running-config
 ...
   overpower dl-facch 4
   overpower rxqual 7
-  overpower chan-mode any
+  overpower chan-mode speech-amr
 ...
 
 OsmoBSC(config-net-bts)# overpower chan-mode ?
-  speech-amr  Speech channels using AMR codec
-  any         Any kind of channel mode (default)
-OsmoBSC(config-net-bts)# overpower chan-mode speech-amr
+  speech-amr  Speech channels using AMR codec (default)
+  any         Any kind of channel mode
+OsmoBSC(config-net-bts)# overpower chan-mode any
 OsmoBSC(config-net-bts)# show running-config
 ...
   overpower dl-facch 4
   overpower rxqual 7
-  overpower chan-mode speech-amr
+  overpower chan-mode any
 ...
 
 OsmoBSC(config-net-bts)# no overpower dl-acch

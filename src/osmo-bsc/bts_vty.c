@@ -830,8 +830,8 @@ DEFUN_USRATTR(cfg_bts_top_dl_acch_chan_mode,
 	      "overpower chan-mode (speech-amr|any)",
 	      TOP_ACCH_STR
 	      "Allow temporary overpower for specific Channel mode(s)\n"
-	      "Speech channels using AMR codec\n"
-	      "Any kind of channel mode (default)\n")
+	      "Speech channels using AMR codec (default)\n"
+	      "Any kind of channel mode\n")
 {
 	struct gsm_bts *bts = vty->index;
 

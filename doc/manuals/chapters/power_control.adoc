@@ -604,14 +604,17 @@ network
  bts 0
   overpower dl-acch 2 <1>
   overpower rxqual 4 <2>
-  overpower chan-mode any <3>
+  overpower chan-mode speech-amr <3>
 ----
 <1> Overpower of maximum 2 dB for both SACCH and FACCH.
 <2> Enable TOP only if RxQual is worse than 4 (BER >= 1.6%).
-<3> Permit TOP for any kinds of dedicated channels.
+<3> Permit TOP only for speech channels using AMR codec.
 
-It's also possible to enable TOP only for FACCH or SACCH selectively, or
-or keep it enabled permanently regardless of the reported RxQual:
+For advanced use cases, OsmoBSC can be configured to:
+
+* enable TOP only for FACCH or SACCH selectively, and/or
+* keep TOP enabled permanently regardless of the reported RxQual, and/or
+* permit TOP for any kind of dedicated channels.
 
 ----
 OsmoBSC(config-net-bts)# overpower ?
@@ -621,6 +624,10 @@ OsmoBSC(config-net-bts)# overpower ?
 
 OsmoBSC(config-net-bts)# overpower rxqual 0?
   0  BER >= 0% (always on)
+
+OsmoBSC(config-net-bts)# overpower chan-mode ?
+  speech-amr  Speech channels using AMR codec (default)
+  any         Any kind of channel mode
 ----
 
 These parameters are indicated to the BTS during a logical channel activation
