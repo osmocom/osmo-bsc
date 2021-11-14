@@ -554,13 +554,27 @@ static void put_rep_acch_cap_ie(const struct gsm_lchan *lchan,
 }
 
 /* indicate Temporary overpower of SACCH and FACCH channels */
-static void put_top_acch_cap_ie(const struct gsm_lchan *lchan, struct msgb *msg)
+static void put_top_acch_cap_ie(const struct gsm_lchan *lchan,
+				const struct rsl_ie_chan_mode *cm,
+				struct msgb *msg)
 {
 	const struct gsm_bts *bts = lchan->ts->trx->bts;
 
 	/* The BTS_FEAT_ACCH_TEMP_OVP IE is a proprietary IE, that can only be used with osmo-bts type BTSs */
 	if (!(bts->model->type == GSM_BTS_TYPE_OSMOBTS && osmo_bts_has_feature(&bts->features, BTS_FEAT_ACCH_TEMP_OVP)))
 		return;
+
+	/* Check if TOP is permitted for the given Channel Mode */
+	switch (bts->top_acch_chan_mode) {
+	case TOP_ACCH_CHAN_MODE_SPEECH_V3:
+		if (cm->spd_ind != RSL_CMOD_SPD_SPEECH)
+			return;
+		if (cm->chan_rate != RSL_CMOD_SP_GSM3)
+			return;
+		break;
+	case TOP_ACCH_CHAN_MODE_ANY:
+		break;
+	}
 
 	msgb_tlv_put(msg, RSL_IE_OSMO_TEMP_OVP_ACCH_CAP,
 		     sizeof(bts->top_acch_cap),
@@ -700,7 +714,7 @@ int rsl_tx_chan_activ(struct gsm_lchan *lchan, uint8_t act_type, uint8_t ho_ref)
 	}
 
 	put_rep_acch_cap_ie(lchan, msg);
-	put_top_acch_cap_ie(lchan, msg);
+	put_top_acch_cap_ie(lchan, &cm, msg);
 
 	/* Selecting a specific TSC Set is only applicable to VAMOS mode */
 	if (lchan->activate.info.vamos && lchan->activate.tsc_set >= 1)
@@ -772,7 +786,7 @@ int rsl_chan_mode_modify_req(struct gsm_lchan *lchan)
 	}
 
 	put_rep_acch_cap_ie(lchan, msg);
-	put_top_acch_cap_ie(lchan, msg);
+	put_top_acch_cap_ie(lchan, &cm, msg);
 
 	/* Selecting a specific TSC Set is only applicable to VAMOS mode. Send this Osmocom specific IE only to OsmoBTS
 	 * types. */

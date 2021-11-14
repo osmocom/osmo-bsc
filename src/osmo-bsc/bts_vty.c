@@ -818,6 +818,34 @@ DEFUN_USRATTR(cfg_bts_top_dl_acch_rxqual,
 	return CMD_SUCCESS;
 }
 
+static const struct value_string top_acch_chan_mode_name[] = {
+	{ TOP_ACCH_CHAN_MODE_ANY,		"any" },
+	{ TOP_ACCH_CHAN_MODE_SPEECH_V3,		"speech-amr" },
+	{ 0, NULL }
+};
+
+DEFUN_USRATTR(cfg_bts_top_dl_acch_chan_mode,
+	      cfg_bts_top_dl_acch_chan_mode_cmd,
+	      X(BSC_VTY_ATTR_NEW_LCHAN),
+	      "overpower chan-mode (speech-amr|any)",
+	      TOP_ACCH_STR
+	      "Allow temporary overpower for specific Channel mode(s)\n"
+	      "Speech channels using AMR codec\n"
+	      "Any kind of channel mode (default)\n")
+{
+	struct gsm_bts *bts = vty->index;
+
+	if (bts->model->type != GSM_BTS_TYPE_OSMOBTS) {
+		vty_out(vty, "%% ACCH overpower is not supported by BTS %u%s",
+			bts->nr, VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	bts->top_acch_chan_mode = get_string_value(top_acch_chan_mode_name, argv[0]);
+
+	return CMD_SUCCESS;
+}
+
 #define CD_STR "Channel Description\n"
 
 DEFUN_USRATTR(cfg_bts_chan_desc_att,
@@ -4311,6 +4339,10 @@ static void config_write_bts_single(struct vty *vty, struct gsm_bts *bts)
 			mode, top->overpower_db, VTY_NEWLINE);
 		vty_out(vty, "  overpower rxqual %u%s",
 			top->rxqual, VTY_NEWLINE);
+		vty_out(vty, "  overpower chan-mode %s%s",
+			get_value_string(top_acch_chan_mode_name,
+					 bts->top_acch_chan_mode),
+			VTY_NEWLINE);
 	}
 
 	if (bts->rep_acch_cap.dl_facch_all)
@@ -4531,6 +4563,7 @@ int bts_vty_init(void)
 	install_element(BTS_NODE, &cfg_bts_top_dl_acch_cmd);
 	install_element(BTS_NODE, &cfg_bts_top_no_dl_acch_cmd);
 	install_element(BTS_NODE, &cfg_bts_top_dl_acch_rxqual_cmd);
+	install_element(BTS_NODE, &cfg_bts_top_dl_acch_chan_mode_cmd);
 	install_element(BTS_NODE, &cfg_bts_interf_meas_avg_period_cmd);
 	install_element(BTS_NODE, &cfg_bts_interf_meas_level_bounds_cmd);
 	install_element(BTS_NODE, &cfg_bts_srvcc_fast_return_cmd);

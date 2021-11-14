@@ -595,6 +595,11 @@ struct gsm_bts {
 
 	/* ACCH Temporary overpower capabilities */
 	struct abis_rsl_osmo_temp_ovp_acch_cap top_acch_cap;
+	/* Channel mode(s) for which to allow TOP */
+	enum {
+		TOP_ACCH_CHAN_MODE_ANY = 0,	/* Any kind of channel mode */
+		TOP_ACCH_CHAN_MODE_SPEECH_V3,	/* Speech channels using AMR codec */
+	} top_acch_chan_mode;
 
 	/* MS/BS Power Control parameters */
 	struct gsm_power_ctrl_params ms_power_ctrl;

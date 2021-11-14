@@ -12,15 +12,17 @@ OsmoBSC(config-net-bts)# list with-flags
   . ..l  overpower (dl-acch|dl-sacch|dl-facch) <1-4>
   . ..l  no overpower dl-acch
   . ..l  overpower rxqual (0|1|2|3|4|5|6|7)
+  . ..l  overpower chan-mode (speech-amr|any)
 ...
 
 OsmoBSC(config-net-bts)# overpower?
   overpower  Temporary ACCH overpower
 OsmoBSC(config-net-bts)# overpower ?
-  dl-acch   Enable overpower for both SACCH and FACCH
-  dl-sacch  Enable overpower for SACCH only
-  dl-facch  Enable overpower for FACCH only
-  rxqual    Set RxQual (BER) threshold (default 4)
+  dl-acch    Enable overpower for both SACCH and FACCH
+  dl-sacch   Enable overpower for SACCH only
+  dl-facch   Enable overpower for FACCH only
+  rxqual     Set RxQual (BER) threshold (default 4)
+  chan-mode  Allow temporary overpower for specific Channel mode(s)
 
 OsmoBSC(config-net-bts)# overpower dl-acch ?
   <1-4>  Overpower value in dB
@@ -29,18 +31,21 @@ OsmoBSC(config-net-bts)# show running-config
 ...
   overpower dl-acch 2
   overpower rxqual 4
+  overpower chan-mode any
 ...
 OsmoBSC(config-net-bts)# overpower dl-sacch 3
 OsmoBSC(config-net-bts)# show running-config
 ...
   overpower dl-sacch 3
   overpower rxqual 4
+  overpower chan-mode any
 ...
 OsmoBSC(config-net-bts)# overpower dl-facch 4
 OsmoBSC(config-net-bts)# show running-config
 ...
   overpower dl-facch 4
   overpower rxqual 4
+  overpower chan-mode any
 ...
 
 OsmoBSC(config-net-bts)# overpower rxqual ?
@@ -57,12 +62,25 @@ OsmoBSC(config-net-bts)# show running-config
 ...
   overpower dl-facch 4
   overpower rxqual 0
+  overpower chan-mode any
 ...
 OsmoBSC(config-net-bts)# overpower rxqual 7
 OsmoBSC(config-net-bts)# show running-config
 ...
   overpower dl-facch 4
   overpower rxqual 7
+  overpower chan-mode any
+...
+
+OsmoBSC(config-net-bts)# overpower chan-mode ?
+  speech-amr  Speech channels using AMR codec
+  any         Any kind of channel mode (default)
+OsmoBSC(config-net-bts)# overpower chan-mode speech-amr
+OsmoBSC(config-net-bts)# show running-config
+...
+  overpower dl-facch 4
+  overpower rxqual 7
+  overpower chan-mode speech-amr
 ...
 
 OsmoBSC(config-net-bts)# no overpower dl-acch

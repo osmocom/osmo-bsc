@@ -604,9 +604,11 @@ network
  bts 0
   overpower dl-acch 2 <1>
   overpower rxqual 4 <2>
+  overpower chan-mode any <3>
 ----
 <1> Overpower of maximum 2 dB for both SACCH and FACCH.
 <2> Enable TOP only if RxQual is worse than 4 (BER >= 1.6%).
+<3> Permit TOP for any kinds of dedicated channels.
 
 It's also possible to enable TOP only for FACCH or SACCH selectively, or
 or keep it enabled permanently regardless of the reported RxQual:
