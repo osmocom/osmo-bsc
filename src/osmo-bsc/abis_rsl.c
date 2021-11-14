@@ -540,7 +540,7 @@ static void rep_acch_cap_for_bts(struct gsm_lchan *lchan,
 
 	cap = (struct abis_rsl_osmo_rep_acch_cap*) msg->tail;
 	msgb_tlv_put(msg, RSL_IE_OSMO_REP_ACCH_CAP, sizeof(*cap),
-		     (uint8_t*) &bts->repeated_acch_policy);
+		     (uint8_t *)&bts->repeated_acch_policy);
 
 	if (!(lchan->conn && lchan->conn->cm3_valid
 	      && lchan->conn->cm3.repeated_acch_capability)) {
