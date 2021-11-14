@@ -27,7 +27,7 @@ BTS_a1 -> BTS_b0 [label="(5) BSC decides to do\ninter-BSC Handover",style=dashed
 
 {BSC_a,BSC_b} -> MSC [arrowhead=none,label=A]
 
-BSC_a -> MSC [label="(6) --> Handover Required\nto LAC=42 CI=6\n(10) <-- Handover Command",style=dashed,constraint=false,arrowhead=none]
+BSC_a -> MSC [label="(6) --> Handover Required\nto LAC=42 CI=3\n(10) <-- Handover Command",style=dashed,constraint=false,arrowhead=none]
 MSC -> BSC_b [label="(7) <-- Handover Request\n(9) --> Handover Request ACK",style=dashed,constraint=false,arrowhead=none]
 
 BSC_b -> BTS_b0 [label="(8) activate new lchan",style=dashed,constraint=false]
