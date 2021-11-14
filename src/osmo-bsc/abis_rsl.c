@@ -689,7 +689,7 @@ int rsl_tx_chan_activ(struct gsm_lchan *lchan, uint8_t act_type, uint8_t ho_ref)
 	add_power_control_params(msg, RSL_IE_BS_POWER_PARAM, lchan);
 	add_power_control_params(msg, RSL_IE_MS_POWER_PARAM, lchan);
 
-	if (gsm48_chan_mode_to_non_vamos(lchan->activate.ch_mode_rate.chan_mode) == GSM48_CMODE_SPEECH_AMR) {
+	if (cm.chan_rate == RSL_CMOD_SP_GSM3) {
 		rc = put_mr_config_for_bts(msg, &lchan->activate.mr_conf_filtered,
 					   (lchan->type == GSM_LCHAN_TCH_F) ? &bts->mr_full : &bts->mr_half);
 		if (rc) {
@@ -761,7 +761,7 @@ int rsl_chan_mode_modify_req(struct gsm_lchan *lchan)
 		}
 	}
 
-	if (gsm48_chan_mode_to_non_vamos(lchan->modify.ch_mode_rate.chan_mode) == GSM48_CMODE_SPEECH_AMR) {
+	if (cm.chan_rate == RSL_CMOD_SP_GSM3) {
 		rc = put_mr_config_for_bts(msg, &lchan->modify.mr_conf_filtered,
 					   (lchan->type == GSM_LCHAN_TCH_F) ? &bts->mr_full : &bts->mr_half);
 		if (rc) {
