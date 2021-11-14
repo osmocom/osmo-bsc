@@ -526,11 +526,11 @@ static int put_mr_config_for_bts(struct msgb *msg, const struct gsm48_multi_rate
 
 /* indicate FACCH/SACCH Repetition to be performed by BTS,
  * see also: 3GPP TS 44.006, section 10 and 11 */
-static void rep_acch_cap_for_bts(struct gsm_lchan *lchan,
+static void rep_acch_cap_for_bts(const struct gsm_lchan *lchan,
 				 struct msgb *msg)
 {
 	struct abis_rsl_osmo_rep_acch_cap *cap;
-	struct gsm_bts *bts = lchan->ts->trx->bts;
+	const struct gsm_bts *bts = lchan->ts->trx->bts;
 
 	/* The RSL_IE_OSMO_REP_ACCH_CAP IE is a proprietary IE, that can only
 	 * be used with osmo-bts type BTSs */
@@ -554,9 +554,9 @@ static void rep_acch_cap_for_bts(struct gsm_lchan *lchan,
 }
 
 /* indicate Temporary overpower of SACCH and FACCH channels */
-static void top_acch_cap_for_bts(struct gsm_lchan *lchan, struct msgb *msg)
+static void top_acch_cap_for_bts(const struct gsm_lchan *lchan, struct msgb *msg)
 {
-	struct gsm_bts *bts = lchan->ts->trx->bts;
+	const struct gsm_bts *bts = lchan->ts->trx->bts;
 
 	/* The BTS_FEAT_ACCH_TEMP_OVP IE is a proprietary IE, that can only be used with osmo-bts type BTSs */
 	if (!(bts->model->type == GSM_BTS_TYPE_OSMOBTS && osmo_bts_has_feature(&bts->features, BTS_FEAT_ACCH_TEMP_OVP)))
