@@ -770,15 +770,15 @@ DEFUN_USRATTR(cfg_bts_top_dl_acch,
 		return CMD_WARNING;
 	}
 
-	bts->temporary_overpower.sacch_enable = 0;
-	bts->temporary_overpower.facch_enable = 0;
+	bts->top_acch_cap.sacch_enable = 0;
+	bts->top_acch_cap.facch_enable = 0;
 
 	if (!strcmp(argv[0], "dl-acch") || !strcmp(argv[0], "dl-sacch"))
-		bts->temporary_overpower.sacch_enable = 1;
+		bts->top_acch_cap.sacch_enable = 1;
 	if (!strcmp(argv[0], "dl-acch") || !strcmp(argv[0], "dl-facch"))
-		bts->temporary_overpower.facch_enable = 1;
+		bts->top_acch_cap.facch_enable = 1;
 
-	bts->temporary_overpower.overpower_db = atoi(argv[1]);
+	bts->top_acch_cap.overpower_db = atoi(argv[1]);
 
 	return CMD_SUCCESS;
 }
@@ -792,9 +792,9 @@ DEFUN_USRATTR(cfg_bts_top_no_dl_acch,
 {
 	struct gsm_bts *bts = vty->index;
 
-	bts->temporary_overpower.overpower_db = 0;
-	bts->temporary_overpower.sacch_enable = 0;
-	bts->temporary_overpower.facch_enable = 0;
+	bts->top_acch_cap.overpower_db = 0;
+	bts->top_acch_cap.sacch_enable = 0;
+	bts->top_acch_cap.facch_enable = 0;
 
 	return CMD_SUCCESS;
 }
@@ -813,7 +813,7 @@ DEFUN_USRATTR(cfg_bts_top_dl_acch_rxqual,
 		return CMD_WARNING;
 	}
 
-	bts->temporary_overpower.rxqual = atoi(argv[0]);
+	bts->top_acch_cap.rxqual = atoi(argv[0]);
 
 	return CMD_SUCCESS;
 }
@@ -4293,9 +4293,9 @@ static void config_write_bts_single(struct vty *vty, struct gsm_bts *bts)
 
 	ho_vty_write_bts(vty, bts);
 
-	if (bts->temporary_overpower.overpower_db > 0) {
+	if (bts->top_acch_cap.overpower_db > 0) {
 		const struct abis_rsl_osmo_temp_ovp_acch_cap *top = \
-			&bts->temporary_overpower;
+			&bts->top_acch_cap;
 		const char *mode = NULL;
 
 		if (top->sacch_enable && top->facch_enable)

@@ -594,7 +594,7 @@ struct gsm_bts {
 	struct abis_rsl_osmo_rep_acch_cap rep_acch_cap;
 
 	/* ACCH Temporary overpower capabilities */
-	struct abis_rsl_osmo_temp_ovp_acch_cap temporary_overpower;
+	struct abis_rsl_osmo_temp_ovp_acch_cap top_acch_cap;
 
 	/* MS/BS Power Control parameters */
 	struct gsm_power_ctrl_params ms_power_ctrl;

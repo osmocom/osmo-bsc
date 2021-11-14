@@ -563,8 +563,8 @@ static void top_acch_cap_for_bts(struct gsm_lchan *lchan, struct msgb *msg)
 		return;
 
 	msgb_tlv_put(msg, RSL_IE_OSMO_TEMP_OVP_ACCH_CAP,
-		     sizeof(bts->temporary_overpower),
-		     (void *)&bts->temporary_overpower);
+		     sizeof(bts->top_acch_cap),
+		     (void *)&bts->top_acch_cap);
 }
 
 /* Write RSL_IE_OSMO_TRAINING_SEQUENCE to msgb. The tsc_set argument's range is 1-4, tsc argument range is 0-7. */
