@@ -1,3 +1,390 @@
+osmo-bsc (1.8.0) unstable; urgency=medium
+
+  [ Harald Welte ]
+  * remove obsolete dependency on libosmo-sccp
+  * manual: Include QoS chapter and add osmo-bsc specific example
+
+  [ Javi ]
+  * Add vty command for Ericsson RBS2000 sync
+  * Add command to enable RX diversity to RBS2000
+
+  [ Oliver Smith ]
+  * stats: T3122 related: num_values 16 -> 60
+  * src/utils/meas_vis.c: fix bs_power -> bs_power_db
+  * handover_test: fix ts_str may be uninitialized
+  * bsc_ctrl_commands: fix uninitialized value (mode)
+  * Revert "Turn some compiler warnings into errors"
+
+  [ Neels Hofmeyr ]
+  * refactor handover penalty timers
+  * drop neighbor_ident_test.c
+  * fix/refactor neighbor config
+  * debug log, lchan_fsm: explain leaving wait_rll_rtp_establish state
+  * fixup for neighbor config for coverity
+  * drop unused func decl rsl_lchan_mark_broken()
+  * drop unused gsm_bts_trx->description
+  * deprecation: use osmo_bts_features_*()
+  * fix wrong ARFCNs in local-cell neighbor config
+  * update neighbor ARFCNs on startup and config changes
+  * manual: Location Services: clarify BSC side address
+  * abis_nm_ipaccess_rsl_connect(): use msgb to compose attr
+  * Lb: stop RESET FSM when sccp_user is unbound
+  * Lb: RESET FSM: never send sccp_user == NULL
+  * Lb: add missing X12 timer configurability
+  * Lb: make sure we never have missing timer configurability
+  * gsm_lchan_name_compute with ctx
+  * log: drop duplicate logging in ts_setup_lchans()
+  * comment: tweak pchan_subslots() description
+  * lchan_release(): do not release UNUSED lchan
+  * lchan_fsm: mode modify: fix missing timeouts and error transitions
+  * fix test_gsm48_multirate_config: dump the complete AMR lv buffer
+  * test_gsm48_multirate_config: rather keep 4x amr_mode
+  * assignment_fsm: fix failure log message for lchan unavailable
+  * select_codecs(): do not confuse bool 'true' with integer value 1
+  * gsm48_send_rr_ass_cmd(): rename dest_lchan to current_lchan
+  * gsm48_send_rr_ass_cmd(): rename lchan to new_lchan
+  * log: show src file,line of lchan_set_last_error
+  * add missing arg braces in LOG_LCHAN macro
+  * gscon MGCP: properly skip redundant MDCX towards MSC
+  * cosmetic: rename FOR_* to ACTIVATE_FOR_*
+  * cosmetic: rename lchan_activate_mode to lchan_activate_for
+  * lchan and assignment FSMs: make Channel Mode Modify more sane
+  * assignment_fsm: tweak error log msg for mixed modes
+  * handover_test: ack release only when lchan is still waiting
+  * hodec2: remove code dup of rxlev averaging
+  * handover_test: add bspower to meas-rep cmd
+  * add test_bs_power.ho_vty to show BS Power HO oscillation
+  * assignment_fsm: send BSSMAP response only after Assignment Request
+  * cosmetic scoping in reuse_existing_lchan()
+  * potential segfault: vty chan act: do not set AMR bits for EFR
+  * make sure channel mode and s15_s0 are updated only after an ACK
+  * remove special case from assignment_count_result()
+  * eliminate lchan->rsl_cmode
+  * move lchan->csd_mode into channel_mode_and_rate
+  * AMR config cleanup step 1: split lchan_mr_config()
+  * AMR config cleanup step 2: filter modes also for VTY
+  * AMR config cleanup step 3: generate AMR LV on msg composition
+  * handover dot charts: fix wrong transitions regarding MGW
+  * handover_test: fix naming/wording: 'handover-req' should be 'handover-cmd'
+  * assignment_fsm: tweak state transitions (prep for reassignment)
+  * assignment_fsm: allow assignment to a specific lchan
+  * vty: actually trigger Assignment for 'assignment', not HO
+  * hodec 2: do intra-cell congestion resolution by Assignment
+  * RSL link: explicitly select rsl_link based on lchan
+  * add chan_mode_to_chan_type()
+  * gsm48_lchan2chan_desc(): expose TSC as param
+  * allow explixit TSC Set and TSC on chan activ / modif / assignment
+  * VTY: dump TSC Set and TSC for each timeslot
+  * add fields to reflect nr of lchans in ts struct
+  * replace ts_*_for_each_lchan() with ts_for_n_lchans()
+  * ensure chan_mode comparisons in non-VAMOS mode
+  * lchan_fsm: introduce lchan.modify.ch_mode_rate to allow tweaking
+  * Drop duplicated arfcn_range_encode.c available in libosmocore
+  * fixup for Mode Modify TSC
+  * fix rc handling in channel_mode_from_lchan()
+  * drop unused func decl gsm_lchan_as_pchan2chan_nr()
+  * handover: apply meas report BS Power to RXLEV, fix ho oscillation
+  * change bs_power to bs_power_db
+  * meas rep logging: replace a dozen DEBUGPC() with one DEBUGP()
+  * meas rep logging: use log_check_level() to skip a logging loop
+  * fixup: pass tsc = -1 for previous default training sequence code
+  * hodec2: add handover_test cases for upgrade of TCH/H -> TCH/F
+  * cosmetic prep: hodec2: move is_upgrade_to_tchf() further up
+  * hodec2: fix is_upgrade_to_tchf() for requirement A
+  * allow mode modify when RTP stream is active
+  * implement Channel Mode Modify to VAMOS mode
+  * vty: add lchan modify '(vamos|non-vamos)' command
+  * add lchan->vamos.is_secondary flag
+  * vty-test: osmo-bsc.vty: test doc of lchan activate cmd
+  * lchan_fsm: introduce lchan.activate.ch_mode_rate to allow tweaking
+  * add missing AMR config for RTP activation after mode modify
+  * implement CHANnel ACTIVate to VAMOS mode
+  * RR Assignment for VAMOS: send TSC Set
+  * add VAMOS secondary lchans to timeslot struct
+  * update the lchan name to always reflect VAMOS shadowness
+  * rsl_lchan_lookup(): turn cbits if-cascade into a switch()
+  * rsl_lchan_lookup(): add comment explaining ts_is_capable_of_pchan()
+  * RSL chan_nr: replace OSMO_ASSERT with error handling
+  * RSL: rx and tx VAMOS Channel Number cbits for VAMOS lchans
+  * VTY: 'show lchan': show that lchan is in VAMOS mode
+  * VTY: add 'vamos-subslot' to activate a secondary lchan
+  * VTY: add lchan re-assignment command
+  * log: assignment_fsm: drop newline from assignment_fail
+  * log: assignment_fsm: tweak err msg for incompatible chan
+  * clarify bts_chan_load
+  * get_any_lchan(): reduce minor code dup
+  * cosmetic loop simplification in gsm48_multirate_config()
+  * RSL: set default TEI according to TRX number
+  * lchan_fsm: lchan_fail() strings should not have a terminating newline
+  * gsm_data.h: add comments about immutable activ/modif/assign request info
+  * hodec2: implement upgrade TCH/H -> TCH/F (without AFS bias)
+  * fixup for vamos: fix wrong cbits in rsl_lchan_lookup()
+  * vty: reassign: add missing check for valid target lchan
+  * hodec2: don't apply AFS bias to same-cell lchans
+  * rsl_data_request() check lchan pointer before access
+  * rsl_lchan_lookup: drop redundant condition
+  * rewire build_encr_info() to return errors
+  * dissolve gsm0808_cipher_mode() into bssmap_handle_cipher_mode()
+  * implement A5/4 in Ciphering Mode procedure
+  * support A5/4 in inter-BSC Handover
+  * use osmo_select_shutdown to get rid of SIGTERM sleep
+  * vty: allow 5 encryption algo entries
+  * hodec2: add test case showing low rxlev tch/h<->tch/f oscillation
+  * hodec2: add test case showing low rxqual tch/h<->tch/f oscillation
+  * handover_decision_2.c: add is_low_rxlev()
+  * hodec2: fix low rxlev tch/h<->tch/f oscillation
+  * handover_decision_2.c: add current_rxqual()
+  * hodec2: fix low rxqual tch/h<->tch/f oscillation
+  * vty: fix doc: default value for 'nri bitlen'
+  * vty: add vty doc test for 'nri null' commands
+  * hodec2: [1/2] implement automatic choice between FULL and SUBSET measurements
+  * hodec2: [2/2] implement automatic choice between FULL and SUBSET measurements
+  * hodec1: use same automatic FULL/SUBSET choice as in hodec2
+  * lchan: call reset() upon alloc
+  * RES IND: parse msg and store interference levels in lchans
+  * RES IND: add VTY: bts / channel allocator avoid-interference (0|1)
+  * RES IND: add test_resource_indication.ho_vty
+  * RES IND: pick lchan with least interference
+  * ensure trigger_ho() returns zero only when HO or AS was indeed triggered
+  * handover_test: also show when an lchan is busy
+  * switch handover penalty timers to CLOCK_MONOTONIC
+  * handover_test: add fake-time 'wait'
+  * test_penalty_timer.ho_vty: show lchan recovery
+  * handover tests: test passing of penalty timeout
+  * hodec2: add low-rxqual-assignment penalty timer (1/2)
+  * hodec2: add low-rxqual-assignment penalty timer (2/2)
+  * separate 'interference-meas level-bounds' cfg and used
+  * vty 'interference-meas level-bounds': explain duality in ordering
+  * add test_dyn_ts_favor_static_ts_as_target.ho_vty
+  * extend test_dyn_ts_favor_half_used_tch_h_as_target.ho_vty
+  * RES IND: allow empty Resource Information IE
+  * RES IND: tweak error code on missing Resource Information IE
+  * fix CM Re-Establishment Request: allocate new A conn
+  * log: fix missing newline in lchan_select.c
+  * debug log: indicate change of primary lchan on a conn
+  * vty: lchan deact: allow omitting the lchan type arg
+  * vty: improve err msg for invalid subslot nr
+  * coverity: quench null deref warning in gscon_change_primary_lchan()
+  * lchan_fsm_post_activ_ack(): return upon release
+  * introduce gsm48_lchan_and_pchan2chan_desc()
+  * error log: improve lchan lookup error msg
+  * early IMM ASS 1/n: add vty config option
+  * early IMM ASS 2/n: implement 'pre-chan-ack'
+  * early IMM ASS 3/n: implement 'pre-ts-ack'
+  * stat_item desc: add explicit indexes for clarity
+  * vty: add "msc N bssmap reset" command
+  * move BSC level stats and rate counters to new bsc_stats.[hc]
+  * add stat items bsc.0.num_msc:connected, .num_msc:total
+  * add stat_items for BTS and TRX connection stati
+  * fixup for Early IMM ASS: use proper TSC
+  * add CTRL 'rf_states' and 'bts.N.rf_states'
+  * add CTRL bts.N.trx.M.rf_locked (RW)
+  * fixup comments for 'rf_states' CTRL command
+  * fix comment in lchan_fsm.c: s/modification/activation
+  * fix TSC / TSC Set used for Handover
+  * tsc fixup: tweak condition for coverity
+  * drop obsolete comment
+  * stat: add bts.N.num_trx:total
+  * stat: add bts.N.num_trx:rsl_connected
+  * constify lchan_state_is()
+  * add chreq:successful_<reason> rate counters
+  * drop unused gsm48_tx_mm_serv_ack()
+  * for linter: s/while(0)/while (0)
+  * cosmetic tweaks on handover counting code
+  * tweak intra-bsc ho counter descriptions
+  * implement incoming_intra_bsc_ho:* rate counters
+  * refactor lchan counting
+  * add time_cc API: cumlative counter for time, reported as rate_ctr
+  * implement all_allocated:{sdcch,tch} rate counters
+  * implement all_allocated:{static_sdcch,static_tch} rate counters
+  * implement bts.N.cm_serv_rej:<cause> rate counters
+  * move time_cc to libosmocore osmo_time_cc
+
+  [ Keith ]
+  * Ignore CHANnel ReQuireD with Access Delay IE > 63
+  * Fix MEAS parsing, as Ericsson RBS reports TA shifted by 2 bits.
+  * Add vty command to manually force MS Uplink Power
+  * Implement MS Uplink Power Control Loop
+
+  [ Vadim Yanitskiy ]
+  * [hopping] vty: ensure no duplicate hopping ARFCN entries
+  * [hopping] generate_cell_chan_list(): make some pointers const
+  * [hopping] gsm48_send_rr_ass_cmd(): use Cell Channel Description from SI1
+  * [hopping] generate_ma_for_ts() returns no meaningful value
+  * abis_nm: rework warnings about unknown / not supported features
+  * abis_nm: cosmetic: use osmo_bts_feature_name()
+  * [hopping] Rework generation of Cell/Mobile Allocation
+  * [hopping] bootstrap_rsl(): do not call generate_ma_for_ts() again
+  * vty: deprecate BTS type 'sysmobts' in favor of 'osmo-bts'
+  * Replace all references to 'sysmobts' with 'osmo-bts'
+  * VTY: fix NULL-pointer dereference in lchan_act_single()
+  * bts_uptime(): do not spam logs with 'OML link uptime unavailable'
+  * Make interference measurement parameters configurable
+  * VTY: fix typo in a command description: s/send/sent/
+  * PCUIF protocol: add message definition for interference report
+  * abis_rsl: fix rsl_rx_ccch_load(): properly check the message length
+  * gsm_data.h: remove declaration of non-existing ts_pchan()
+  * power_control: omit BS Power Parameters IE if the maximum is 0 dB
+  * power_control: implement BCCH carrier power reduction operation
+  * power_control: constrain BS power reduction on BCCH carrier
+  * lchan_fsm: fix potential NULL-pointer dereference
+  * gsm_04_08_rr: silently ignore RR UTRAN Classmark Change
+  * rsl_rx_resource_indication(): check result of rsl_tlv_parse()
+  * rsl_lchan_lookup(): fix handling of ABIS_RSL_CHAN_NR_CBITS_OSMO_PDCH
+  * [overpower] VTY: cosmetic: fix lower case in command description
+  * [overpower] VTY: fix copy-pasted warning message
+  * [overpower] VTY: add more ACCH overpower related parameters
+  * [overpower] Add VTY transcript tests for all commands
+  * .gitignore: also ignore *.la files
+  * .gitignore: remove non-existing ipaccess-firmware binary
+  * lchan_fsm: cosmetic: move a 'case' below the 'default' branch
+  * rsl_tx_chan_activ(): fix manual channel activation for nanoBTS
+  * abis_rsl: do not pass lchan to print_meas_rep_buf()
+  * abis_rsl: print_meas_rep_{buf,uni}() accept const *mr
+  * abis_rsl: permit simultaneous ACCH repetition and overpower
+  * ipaccess-config: reduce verbosity of the OML logging
+  * ipaccess-config: fix wrong flag name in ipa_nvflag_strs[]
+  * ipaccess-config: warn about unknown flag name
+  * doc/manuals: add documentation for interference reporting
+  * gsm_data: use ascending order for interference boundaries
+  * doc/manuals: add documentation for Temporary ACCH Overpower
+  * doc/manuals: fix wrong CI in the inter-BSC handover diagram
+  * tests/Makefile.am: do not try removing non-existing files
+  * abis_rsl: simplify checking if channel mode is AMR
+  * abis_rsl: cosmetic: fix coding style rep_acch_cap_for_bts()
+  * bts_vty: fix tabs-vs-spaces issues in cfg_bts_rep_dl_facch
+  * struct gsm_bts: simplify comments for ACCH repetition/overpower
+  * struct gsm_bts: s/repeated_acch_policy/rep_acch_cap/g
+  * struct gsm_bts: s/temporary_overpower/top_acch_cap/g
+  * abis_rsl: {rep,top}_acch_cap_for_bts(): make *lchan const
+  * abis_rsl: s/*_acch_cap_for_bts/put_*_acch_cap_ie/g
+  * [overpower] Allow configuring specific channel mode(s)
+  * [overpower] By default, permit only for speech channels using AMR
+
+  [ Alexander Chemeris ]
+  * stats: Count transitions from BORKEN state due to LCHAN_EV_TS_ERROR signal.
+
+  [ Pau Espin Pedrol ]
+  * cosmetic: Fix typo in func description
+  * bssap: pass whole tlv_parsed to event GSCON_EV_A_COMMON_ID_IND
+  * Send EUTRAN neighs based on whether Common Id msg contained Last used E-UTRAN PLMN ID
+  * Revert "update neighbor ARFCNs on startup and config changes"
+  * SRVCC: Parse Last Used E-UTRAN PLMN Id in Handover Request
+  * SRVCC: Forward Last EUTRAN PLMN Id in Handover Required
+  * osmo-bsc: Avoid erroring every few secs about unconnected BTS
+  * Fix bts->description field not printed in config write
+  * ipaccess-config: Clean up sign_link setup helper
+  * bsc: Clean up TS selection in ipaccess_sign_link_up/down
+  * bsc: Use osmo_clock_gettime everywhere
+  * ctrl: Introduce CTRL SET cmd to apply VTY cfg file
+  * ctrl: Avoid fclose() on NULL pointer
+  * Use new stat item/ctr getter APIs
+  * vty: Drop unused old node enum fields
+  * Introduce VTY command to disable srvcc fast-return on target BTS
+  * Introduce counters to track SRVCC procedures
+  * pcuif_proto.h: Add new container messages
+  * Support proto IPAC_PROTO_EXT_PCU BSC<->PCU
+  * lchan-select: Avoid setting variable for no reason
+  * assignment_fsm: Fix null pointer dereference rx ASSIGNMENT_EV_LCHAN_ERROR
+  * assignment_fsm: Add assert to guard ptr access
+  * Rename osmo dyn ts enums to contain SDCCH8
+  * Support SDCCH8 in osmo dyn ts
+  * lchan_fsm: Allow rx LCHAN_EV_RLL_REL_IND in WAIT_RF_RELEASE_ACK
+  * doc: bts.adoc: Update dyn ts section to include SDCCH8 support
+  * lchan_fsm: Improve timeout logging line in state WAIT_RLL_RTP_ESTABLISH
+  * Avoid switching dyn ts to sdcch8 if it starves later TCH
+  * cosmetic: Small improvements to _select_sdcch_for_call
+  * Add new lchan_select_set_type() API helper
+  * _select_sdcch_for_call: Avoid 2nd lchan lookup when finally selecting it
+  * lchan_fsm: Allow rx LCHAN_EV_RLL_REL_IND in state BORKEN
+  * abis_rsl: Log chan rqd reason on resource exhaustion log message
+  * Fix recent regression in CHREQ allocation
+  * Split bsc_vty.c creating bts_vty.c
+  * Split bts_vty.c creating bts_trx_vty.c
+  * Introduce libbsc to avoid linking long lists of .o files
+  * Introduce VTY option to forbid use of TCH for non-voicecall signalling
+  * Clarify string name for GSM_CHREQ_REASON_CALL
+  * doc: Improve ACC ramp documentation
+  * doc: manual: Fix typo in text
+  * vty: Fix wrong TSC sent when activating lchan through VTY
+  * vty: Fix wrongs params passed in vty warning message
+  * cosmetic: power_ctrl_params_def: Fix typo in comment
+  * doc: power_control.adoc: Improve VTY snippet foot notes
+  * MS Power Control Loop: Support set up of C/I parameters for osmo-bts
+  * doc: power_control.adoc: Add small time graph showcasing P_CON_INTERVAL
+  * lchan_fsm: Fix comment
+  * lchan_fsm: Fix comment
+  * lchan_fsm: Avoid inheriting bs_power from old lchan
+  * Support Neighbor Address Resolution over PCUIF IPA multiplex
+  * Power Control Loop: Set P_CON_INTERVAL to 1 by default
+  * MS Power Control Loop: Support turn off C/I based logic
+  * bts_vty: Print C/I power params for osmo-bts only
+  * MS Power Control Loop: Allow Turn off/on C/I independent from value setting
+  * cosmetic: fix comment typos in signal.h
+  * cosmetic: Fix typo in comment
+  * MS Power Control Loop: Use P_CON_INTERVAL=2 by default
+  * bts_trx: Fix timeslot_fsm not properly freed during trx free() [1/4]
+  * Move global var bsc_gsmnet into libbsc [2/4]
+  * Move ts_fsm_init to static constructor [3/4]
+  * Get rid of lots of stubs [4/4]
+  * nm_channel_fsm: drop ipa link if SetChannelAttr fails
+  * gitignore: Fix typo
+  * jenkins.sh: Fix typo
+  * Set subslots_per_pchan[GSM_PCHAN_OSMO_DYN] = 8
+  * timeslot_fsm: Add assert to make sure we never go out of bounds in ts->lchan array
+  * Set subslots_per_pchan_vamos[GSM_PCHAN_OSMO_DYN] = 0
+  * assignment_fsm: Log modified lchan in assignment_fsm_allstate_action()
+  * lchan_fsm: Fix possible NULL ptr dereference in _lchan_on_mode_modify_failure()
+  * Properly handle dyn TS TCH with vamos after updating subslots_per_pchan
+
+  [ Michael Iedema ]
+  * stats: add BTS uptime counter
+
+  [ Philipp Maier ]
+  * bts.adoc: fix typo BGSGP -> BSSGP
+  * handover_cfg: add missing VTY_CMD_PREFIX in comment
+  * bsc_ctrl_commands: add command to write vty config
+  * control.adoc: add doc for apply-config-file
+  * bsc_vty: add vty option to allow call-reestablishment
+  * handover_ctrl: add control interface for handover settings
+  * running.adoc: explain mgw reset-endpoint VTY setting
+  * osmo_bsc_main: remove unused commandline option -l
+  * bty_vty: add VTY settungs for temporary overpower
+  * osmo_bsc_main: integrate MGW pooling into osmo-bsc
+  * osmo_bsc_msc: do not initalize MGCP proxy for AoIP MSCs
+  * doc/mgwpool: update documentation
+  * assignment_fsm: make assignment_fsm_timer_cb static
+  * assignment_fsm: make assignment_fsm_allstate_action static
+  * assignment_fsm: Check for conn->lchan
+  * osmo_bsc_main: remove code dup in bootstrap_bts()
+  * bts: set R99 MSC flag in SI13 in bts_alloc
+  * bts: set pwrc value in bts_alloc
+  * bts: set acs value in bts_alloc
+  * drop chan_load_samples_idx initalization from bootstrap_bts()
+  * bts: set ncc_permitted from bts_alloc
+  * osmo_bsc_main: remove not longer needed fixme note
+  * osmo_bsc_main: remove unused option -t --testmode
+  * bsc_subscr_conn_fsm: fix mgw-pool ref counting
+  * neighbor_ident: add comment about Neighbor Address Resolution Service
+  * control.adoc: improve description of command bts.N.send-new-system-informations
+  * heighbor_ident: add/del neighbor cells via ctrl interface
+  * bsc_ctrl_commands: change neighbor-list mode/arfcn via control interface
+  * control.adoc: comment out fixme note
+  * osmo_bsc_main: bootstrap_bts: print errornous ARFCN number
+  * osmo_bsc_main: separate checks from bootstrap_bts
+  * osmo_bsc_main: move inp_sig_cb() below check_bts and bootstrap_bts
+  * osmo_bsc_ctrl: make sure strtok results are checked
+  * osmo_bsc_main: call bootstrap_bts when OML TEI comes up
+  * osmo_bsc_main: move generate_ma_for_bts() into bootstrap_bts()
+
+  [ Eric ]
+  * vty: allow A5/4 encryption in config
+
+  [ Daniel Willmann ]
+  * bts: Clear BTS_STAT_CHAN_*_{TOTAL,USED} on bts disconnect
+
+ -- Pau Espin Pedrol <pespin@sysmocom.de>  Tue, 16 Nov 2021 17:21:59 +0100
+
 osmo-bsc (1.7.0) unstable; urgency=medium
 
   [ Harald Welte ]
