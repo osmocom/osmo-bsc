@@ -1363,7 +1363,7 @@ static int parse_sdp_header(struct abis_nm_sw *sw)
 	}
 
 	if (strncmp(firmware_header.magic, " SDP", 4) != 0) {
-		LOGPMO(mo, DNM, LOGL_ERROR, "The magic number1 is wrong.\n");
+		LOGPMO(mo, DNM, LOGL_ERROR, "The magic number is wrong.\n");
 		return -1;
 	}
 
