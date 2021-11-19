@@ -51,6 +51,7 @@
 #include <osmocom/bsc/bts.h>
 #include <osmocom/bsc/nm_common_fsm.h>
 #include <osmocom/gsm/bts_features.h>
+#include <osmocom/bsc/ipaccess.h>
 
 #define OM_ALLOC_SIZE		1024
 #define OM_HEADROOM_SIZE	128
@@ -1342,13 +1343,6 @@ static int sw_activate(struct abis_nm_sw *sw)
 	return abis_nm_sendmsg(sw->bts, msg);
 }
 
-struct sdp_firmware {
-	char magic[4];
-	char more_magic[4];
-	unsigned int header_length;
-	unsigned int file_length;
-} __attribute__ ((packed));
-
 static int parse_sdp_header(struct abis_nm_sw *sw)
 {
 	const struct gsm_abis_mo *mo = &sw->bts->mo;
@@ -1368,13 +1362,15 @@ static int parse_sdp_header(struct abis_nm_sw *sw)
 	}
 
 	if (firmware_header.more_magic[0] != 0x10 ||
-	    firmware_header.more_magic[1] != 0x02 ||
-	    firmware_header.more_magic[2] != 0x00 ||
-	    firmware_header.more_magic[3] != 0x00) {
+	    firmware_header.more_magic[1] != 0x02) {
 		LOGPMO(mo, DNM, LOGL_ERROR, "The more magic number is wrong.\n");
 		return -1;
 	}
 
+	if (firmware_header.more_more_magic != 0x0000) {
+		LOGPMO(mo, DNM, LOGL_ERROR, "The more more magic number is wrong.\n");
+		return -1;
+	}
 
 	if (fstat(sw->fd, &stat) == -1) {
 		LOGPMO(mo, DNM, LOGL_ERROR, "Could not stat the file.\n");
