@@ -521,6 +521,11 @@ struct osmo_mgcpc_ep *gscon_ensure_mgw_endpoint(struct gsm_subscriber_connection
 	const char *epname;
 	struct mgcp_client *mgcp_client = NULL;
 
+	if (!conn) {
+		LOG_LCHAN(for_lchan, LOGL_ERROR, "no conn!\n");
+		return NULL;
+	}
+
 	if (conn->user_plane.mgw_endpoint)
 		return conn->user_plane.mgw_endpoint;
 
