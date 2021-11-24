@@ -1345,7 +1345,7 @@ static void print_meas_rep(struct gsm_lchan *lchan, const struct gsm_meas_rep *m
 	    && log_check_level(DMEAS, LOGL_DEBUG)) {
 		for (i = 0; i < mr->num_cell; i++) {
 			const struct gsm_meas_rep_cell *mrc = &mr->cell[i];
-			DEBUGP(DMEAS, "IDX=%u ARFCN=%u BSIC=%u => %d dBm\n",
+			DEBUGP(DMEAS, "IDX=%u ARFCN=%u BSIC=%u RXLEV=%ddBm\n",
 			       mrc->neigh_idx, mrc->arfcn, mrc->bsic, rxlev2dbm(mrc->rxlev));
 		}
 	}
