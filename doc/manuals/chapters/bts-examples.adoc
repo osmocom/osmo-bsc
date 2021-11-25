@@ -174,3 +174,120 @@ network
 For building a multi-TRX setup, you also need to connect the TIB cables
 between the two nanoBTS units, as well as the coaxial/RF AUX cabling.
 ====
+
+=== Example configuration for OsmoBSC with E1 BTS
+
+The following configuration sample illustrates the usage of BTSs that are
+connected via an E1/T1 backhaul.
+
+.OsmoBSC configured for single-TRX E1 Ericsson DUG20
+====
+----
+e1_input <1>
+ e1_line 0 driver dahdi
+ e1_line 0 port 3
+network
+ network country code 1
+ mobile network code 1
+ encryption a5 0
+ neci 1
+ handover 0
+ bts 0
+  type rbs2000
+  band GSM900
+  om2000 version-limit oml gen 12 rev 10 <2>
+  cell_identity 0
+  location_area_code 1
+  training_sequence_code 7
+  base_station_id_code 63
+  ms max power 15
+  cell reselection hysteresis 4
+  rxlev access min 0
+  channel allocator ascending
+  rach tx integer 9
+  rach max transmission 7
+  oml e1 line 0 timeslot 1 sub-slot full <3>
+  oml e1 tei 62 <4>
+  gprs mode none
+  is-connection-list add 4 512 12 <5>
+  is-connection-list add 16 524 12
+  is-connection-list add 28 536 12
+  is-connection-list add 40 548 12
+  trx 0
+   rf_locked 0
+   arfcn 123
+   nominal power 42
+   max_power_red 12
+   rsl e1 line 0 timeslot 1 sub-slot full <6>
+   rsl e1 tei 0 <7>
+   timeslot 0
+    phys_chan_config CCCH+SDCCH4
+    hopping enabled 0
+    e1 line 0 timeslot 1 sub-slot full <8>
+   timeslot 1
+    phys_chan_config TCH/F
+    hopping enabled 0
+    e1 line 0 timeslot 2 sub-slot 1 <9>
+   timeslot 2
+    phys_chan_config TCH/F
+    hopping enabled 0
+    e1 line 0 timeslot 2 sub-slot 2
+   timeslot 3
+    phys_chan_config TCH/F
+    hopping enabled 0
+    e1 line 0 timeslot 2 sub-slot 3
+   timeslot 4
+    phys_chan_config TCH/F
+    hopping enabled 0
+    e1 line 0 timeslot 3 sub-slot 0
+   timeslot 5
+    phys_chan_config TCH/F
+    hopping enabled 0
+    e1 line 0 timeslot 3 sub-slot 1
+   timeslot 6
+    phys_chan_config TCH/F
+    hopping enabled 0
+    e1 line 0 timeslot 3 sub-slot 2
+   timeslot 7
+    phys_chan_config TCH/F
+    hopping enabled 0
+    e1 line 0 timeslot 3 sub-slot 3
+----
+====
+
+<1> In this example we use a dahdi E1 card. This card has 4 ports. Here we use port numer 3. It should be noted that the dahdi driver also requires additional configuration, which is not covered by this manual.
+
+<2> In this example we use an E1 Ericsson DUG20, which uses an OML dialect, called "OM2000".
+
+<3> The first usable timeslot on an E1 line is TS1. In this example we will assume that TS1-TS3 are connected to the BTS stright through. TS1 will handle all signaling traffic. Here we assign this timeslot to OML.
+
+<4> OML always requires a TEI (Terminal Equipment Identifier) to set up. This number can be found in the manual of the BTS.
+
+<5> This BTS has an built in “Interface Switch” (IS) that offers flexible way to reconfigure the interconnection between the internal components of the BTS and the external E1 line. This depends on the exact BTS type and configuration.
+
+<6> Similar to OML we assign TS1 to RSL as well.
+
+<7> Like with OML, RSL also requires a TEI to be configured. Usually each TRX will have a specific TEI assigned.
+
+<8> CCCH+SDCCH4 will also be mapped on TS1. The traffic for those control channels will be multiplexed alongside the RSL and OML traffic.
+
+<9> The bandwidth of one E1 timeslot matches the bandwidth of 4 GSM air interface timeslots. The E1 timeslot is split up into four sub-slots, which are then assigned to one GSM air interface timeslot each. Since the first timeslot on the first TRX is already used for signaling we begin the sub-slot counting with sub-slot 1 for alignment reasons.
+
+=== E1 Line number and MGCP trunk number
+The switching of the voice channels is done via OsmoMGW, which acts as a media
+converter between E1 and VoIP (RTP). OsmoBSC will use the E1 line number to
+address the trunk via MGCP.
+
+When configuring OsmoMGW, one needs to make sure that the trunk number that is
+set up on OsmoMGW, matches the line number that is set up on OsmoBSC. When those
+numbers mismatch the trunk cannot be addressed correctly.
+
+.OsmoMGW trunk configuration that matches the OsmoBSC configuration above
+====
+----
+  trunk 0
+   rtp keep-alive once
+   no rtp keep-alive
+   line 0
+----
+====
