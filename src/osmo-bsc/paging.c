@@ -66,6 +66,7 @@ void *tall_paging_ctx = NULL;
 static void paging_remove_request(struct gsm_bts_paging_state *paging_bts,
 				  struct gsm_paging_request *to_be_deleted)
 {
+	to_be_deleted->bsub->active_paging_requests--;
 	osmo_timer_del(&to_be_deleted->T3113);
 	llist_del(&to_be_deleted->entry);
 	bsc_subscr_put(to_be_deleted->bsub, BSUB_USE_PAGING_REQUEST);
@@ -284,6 +285,11 @@ static void paging_T3113_expired(void *data)
 	/* must be destroyed before calling cbfn, to prevent double free */
 	rate_ctr_inc(rate_ctr_group_get_ctr(req->bts->bts_ctrs, BTS_CTR_PAGING_EXPIRED));
 
+	/* If last BTS paging times out (active_paging_requests will be
+	 * decremented in paging_remove_request below): */
+	if (req->bsub->active_paging_requests == 1)
+		rate_ctr_inc(rate_ctr_group_get_ctr(bsc_gsmnet->bsc_ctrs, BSC_CTR_PAGING_EXPIRED));
+
 	/* destroy it now. Do not access req afterwards */
 	paging_remove_request(&req->bts->paging, req);
 
@@ -341,6 +347,7 @@ static int _paging_request(const struct bsc_paging_params *params, struct gsm_bt
 	}
 
 	LOG_PAGING_BTS(params, bts, DPAG, LOGL_DEBUG, "Start paging\n");
+	params->bsub->active_paging_requests++;
 	req = talloc_zero(tall_paging_ctx, struct gsm_paging_request);
 	OSMO_ASSERT(req);
 	req->reason = params->reason;

@@ -93,6 +93,7 @@ const struct rate_ctr_desc bsc_ctr_description[] = {
 	[BSC_CTR_PAGING_ATTEMPTED] =		{"paging:attempted", "Paging attempts for a subscriber"},
 	[BSC_CTR_PAGING_DETACHED] =		{"paging:detached", "Paging request send failures because no responsible BTS was found"},
 	[BSC_CTR_PAGING_RESPONDED] =		{"paging:responded", "Paging attempts with successful response"},
+	[BSC_CTR_PAGING_EXPIRED] =		{"paging:expired", "Paging Request expired because of timeout T3113"},
 	[BSC_CTR_PAGING_NO_ACTIVE_PAGING] =	{"paging:no_active_paging", "Paging response without an active paging request (arrived after paging expiration?)"},
 
 	[BSC_CTR_UNKNOWN_UNIT_ID] =		{"abis:unknown_unit_id", "Connection attempts from unknown IPA CCM Unit ID"},

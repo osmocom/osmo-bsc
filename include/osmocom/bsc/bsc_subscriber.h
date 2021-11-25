@@ -17,6 +17,8 @@ struct bsc_subscr {
 
 	char imsi[GSM23003_IMSI_MAX_DIGITS+1];
 	uint32_t tmsi;
+
+	uint32_t active_paging_requests;
 };
 
 const char *bsc_subscr_name(struct bsc_subscr *bsub);
