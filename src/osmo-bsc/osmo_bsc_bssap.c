@@ -114,8 +114,7 @@ static int bssmap_handle_reset(struct bsc_msc_data *msc,
 /* Page a subscriber based on TMSI and LAC via the specified BTS.
  * The msc parameter is the MSC which issued the corresponding paging request.
  * Log an error if paging failed. */
-static void
-page_subscriber(const struct bsc_paging_params *params, struct gsm_bts *bts, uint32_t lac)
+static void page_subscriber(const struct bsc_paging_params *params, struct gsm_bts *bts, uint32_t lac)
 {
 	int ret;
 
@@ -132,16 +131,14 @@ page_subscriber(const struct bsc_paging_params *params, struct gsm_bts *bts, uin
 			       "Paging request failed, or repeated paging on LAC %u\n", lac);
 }
 
-static void
-page_all_bts(const struct bsc_paging_params *params)
+static void page_all_bts(const struct bsc_paging_params *params)
 {
 	struct gsm_bts *bts;
 	llist_for_each_entry(bts, &bsc_gsmnet->bts_list, list)
 		page_subscriber(params, bts, GSM_LAC_RESERVED_ALL_BTS);
 }
 
-static void
-page_cgi(const struct bsc_paging_params *params)
+static void page_cgi(const struct bsc_paging_params *params)
 {
 	int i;
 	for (i = 0; i < params->cil.id_list_len; i++) {
@@ -170,8 +167,7 @@ page_cgi(const struct bsc_paging_params *params)
 	}
 }
 
-static void
-page_lac_and_ci(const struct bsc_paging_params *params)
+static void page_lac_and_ci(const struct bsc_paging_params *params)
 {
 	int i;
 
@@ -193,8 +189,7 @@ page_lac_and_ci(const struct bsc_paging_params *params)
 	}
 }
 
-static void
-page_ci(const struct bsc_paging_params *params)
+static void page_ci(const struct bsc_paging_params *params)
 {
 	int i;
 
@@ -214,8 +209,7 @@ page_ci(const struct bsc_paging_params *params)
 	}
 }
 
-static void
-page_lai_and_lac(const struct bsc_paging_params *params)
+static void page_lai_and_lac(const struct bsc_paging_params *params)
 {
 	int i;
 
@@ -242,8 +236,7 @@ page_lai_and_lac(const struct bsc_paging_params *params)
 	}
 }
 
-static void
-page_lac(const struct bsc_paging_params *params)
+static void page_lac(const struct bsc_paging_params *params)
 {
 	int i;
 
