@@ -88,11 +88,19 @@ static const struct osmo_tdef_state_timeout assignment_fsm_timeouts[32] = {
 			switch (gsm48_chan_mode_to_non_vamos(conn->assignment.req.ch_mode_rate_list[0].chan_mode)) { \
 			case GSM48_CMODE_SIGN: \
 				rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_##counter##_SIGN)); \
+				LOG_ASSIGNMENT(conn, LOGL_DEBUG, "incrementing rate counter: bts%u %s %s\n", \
+					       bts->nr, \
+					       bts_ctr_description[BTS_##counter##_SIGN].name, \
+					       bts_ctr_description[BTS_##counter##_SIGN].description); \
 				break; \
 			case GSM48_CMODE_SPEECH_V1: \
 			case GSM48_CMODE_SPEECH_EFR: \
 			case GSM48_CMODE_SPEECH_AMR: \
 				rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_##counter##_SPEECH)); \
+				LOG_ASSIGNMENT(conn, LOGL_DEBUG, "incrementing rate counter: bts%u %s %s\n", \
+					       bts->nr, \
+					       bts_ctr_description[BTS_##counter##_SPEECH].name, \
+					       bts_ctr_description[BTS_##counter##_SPEECH].description); \
 				break; \
 			default: \
 				break; \
