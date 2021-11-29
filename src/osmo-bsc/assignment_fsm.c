@@ -295,10 +295,10 @@ static void assignment_success(struct gsm_subscriber_connection *conn)
 		conn->user_plane.msc_assigned_rtp_port = conn->assignment.req.msc_rtp_port;
 	}
 
+	assignment_count_result(CTR_ASSIGNMENT_COMPLETED);
+
 	LOG_ASSIGNMENT(conn, LOGL_DEBUG, "Assignment successful\n");
 	osmo_fsm_inst_term(conn->assignment.fi, OSMO_FSM_TERM_REGULAR, 0);
-
-	assignment_count_result(CTR_ASSIGNMENT_COMPLETED);
 }
 
 static void assignment_fsm_update_id(struct gsm_subscriber_connection *conn)
