@@ -478,8 +478,11 @@ static void lchan_reset(struct gsm_lchan *lchan)
 {
 	LOG_LCHAN(lchan, LOGL_DEBUG, "Clearing lchan state\n");
 
-	if (lchan->conn)
-		gscon_forget_lchan(lchan->conn, lchan);
+	if (lchan->conn) {
+		struct gsm_subscriber_connection *conn = lchan->conn;
+		lchan_forget_conn(lchan);
+		gscon_forget_lchan(conn, lchan);
+	}
 
 	if (lchan->rqd_ref) {
 		talloc_free(lchan->rqd_ref);
@@ -1392,8 +1395,9 @@ static void lchan_fsm_wait_rf_release_ack_onenter(struct osmo_fsm_inst *fi, uint
 	 * lchan_reset(), we make sure it does. But in case of releases from error handling, the
 	 * conn might as well notice now already that its lchan is becoming unusable. */
 	if (lchan->conn) {
-		gscon_forget_lchan(lchan->conn, lchan);
+		struct gsm_subscriber_connection *conn = lchan->conn;
 		lchan_forget_conn(lchan);
+		gscon_forget_lchan(conn, lchan);
 	}
 
 	rc = rsl_tx_rf_chan_release(lchan);
