@@ -210,6 +210,10 @@ void gscon_fsm_wait_sccp_rlsd_onenter(struct osmo_fsm_inst *fi, uint32_t prev_st
 
 	gscon_release_lchans(conn, true, bsc_gsm48_rr_cause_from_gsm0808_cause(conn->clear_cause));
 	osmo_mgcpc_ep_clear(conn->user_plane.mgw_endpoint);
+
+	/* If there is no SCCP connection at all, then no need to wait for an SCCP RLSD. */
+	if (!conn->sccp.msc || conn->sccp.state != SUBSCR_SCCP_ST_CONNECTED)
+		osmo_fsm_inst_term(fi, OSMO_FSM_TERM_REGULAR, NULL);
 }
 
 /* forward MO DTAP from RSL side to BSSAP side */
