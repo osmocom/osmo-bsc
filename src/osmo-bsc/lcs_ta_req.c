@@ -122,17 +122,6 @@ void lcs_ta_req_wait_ta_onenter(struct osmo_fsm_inst *fi, uint32_t prev_state)
 		return;
 	}
 
-	paging = (struct bsc_paging_params){
-		.reason = BSC_PAGING_FOR_LCS,
-		.msc = loc_req->conn->sccp.msc,
-		.bsub = loc_req->conn->bsub,
-		.tmsi = GSM_RESERVED_TMSI,
-		.imsi = loc_req->req.imsi,
-		.chan_needed = RSL_CHANNEED_ANY,
-	};
-	if (paging.bsub)
-		bsc_subscr_get(paging.bsub, BSUB_USE_PAGING_START);
-
 	/* Do we already have an active lchan with knowledge of TA? */
 	lchan = loc_req->conn->lchan;
 	if (lchan) {
@@ -146,6 +135,17 @@ void lcs_ta_req_wait_ta_onenter(struct osmo_fsm_inst *fi, uint32_t prev_state)
 				"No IMSI in BSSMAP Location Request and no active lchan, cannot start Paging");
 		return;
 	}
+
+	paging = (struct bsc_paging_params){
+		.reason = BSC_PAGING_FOR_LCS,
+		.msc = loc_req->conn->sccp.msc,
+		.bsub = loc_req->conn->bsub,
+		.tmsi = GSM_RESERVED_TMSI,
+		.imsi = loc_req->req.imsi,
+		.chan_needed = RSL_CHANNEED_ANY,
+	};
+	if (paging.bsub)
+		bsc_subscr_get(paging.bsub, BSUB_USE_PAGING_START);
 
 	if (!loc_req->req.cell_id_present) {
 		LOG_LCS_TA_REQ(lcs_ta_req, LOGL_DEBUG,
