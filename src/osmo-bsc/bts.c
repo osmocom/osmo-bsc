@@ -441,6 +441,7 @@ int gsm_bts_check_cfg(struct gsm_bts *bts)
 		if (bts->c0->arfcn < 512 || bts->c0->arfcn > 810) {
 			LOGP(DNM, LOGL_ERROR, "(bts=%u) GSM1900 channel (%u) must be between 512-810.\n",
 			     bts->nr, bts->c0->arfcn);
+			return -EINVAL;
 		}
 		break;
 	case GSM_BAND_900:
@@ -448,16 +449,19 @@ int gsm_bts_check_cfg(struct gsm_bts *bts)
 		    bts->c0->arfcn > 1023)  {
 			LOGP(DNM, LOGL_ERROR, "(bts=%u) GSM900 channel (%u) must be between 0-124, 955-1023.\n",
 			     bts->nr, bts->c0->arfcn);
+			return -EINVAL;
 		}
 		break;
 	case GSM_BAND_850:
 		if (bts->c0->arfcn < 128 || bts->c0->arfcn > 251) {
 			LOGP(DNM, LOGL_ERROR, "(bts=%u) GSM850 channel (%u) must be between 128-251.\n",
 			     bts->nr, bts->c0->arfcn);
+			return -EINVAL;
 		}
 		break;
 	default:
 		LOGP(DNM, LOGL_ERROR, "(bts=%u) Unsupported frequency band.\n", bts->nr);
+		return -EINVAL;
 	}
 
 	/* Verify the physical channel mapping */
