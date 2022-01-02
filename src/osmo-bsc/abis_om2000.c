@@ -3042,17 +3042,18 @@ int abis_om2k_rcvmsg(struct msgb *msg)
 	if (!mo) {
 		LOGP(DNM, LOGL_ERROR, "Couldn't resolve MO for OM2K msg "
 		     "%s: %s\n", get_value_string(om2k_msgcode_vals, msg_type), msgb_hexdump(msg));
-		return 0;
+		goto no_mo;
 	}
 	if (!mo->fsm) {
 		LOGP(DNM, LOGL_ERROR, "MO object should not generate any message. fsm == NULL "
 		     "%s: %s\n", get_value_string(om2k_msgcode_vals, msg_type), msgb_hexdump(msg));
-		return 0;
+		goto no_mo;
 	}
 
 	/* Dispatch message to that MO */
 	om2k_mo_fsm_recvmsg(bts, mo, &odm);
 
+no_mo:
 	msgb_free(msg);
 	return rc;
 }
