@@ -2965,7 +2965,8 @@ int abis_om2k_rcvmsg(struct msgb *msg)
 	switch (msg_type) {
 	case OM2K_MSGT_CAL_TIME_REQ:
 		rc = abis_om2k_cal_time_resp(bts);
-		break;
+		/* we receive this from MOs without FSM (https://osmocom.org/issues/4670) */
+		goto no_mo;
 	case OM2K_MSGT_FAULT_REP:
 		display_fault_maps(msg->l2h, msgb_l2len(msg), &o2h->mo);
 		rc = abis_om2k_tx_simple(bts, &o2h->mo, OM2K_MSGT_FAULT_REP_ACK);
