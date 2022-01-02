@@ -2970,7 +2970,8 @@ int abis_om2k_rcvmsg(struct msgb *msg)
 	case OM2K_MSGT_FAULT_REP:
 		display_fault_maps(msg->l2h, msgb_l2len(msg), &o2h->mo);
 		rc = abis_om2k_tx_simple(bts, &o2h->mo, OM2K_MSGT_FAULT_REP_ACK);
-		break;
+		/* we receive this from MOs without FSM (https://osmocom.org/issues/4643) */
+		goto no_mo;
 	case OM2K_MSGT_NEGOT_REQ:
 		rc = om2k_rx_negot_req(msg);
 		break;
