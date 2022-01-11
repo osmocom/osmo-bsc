@@ -1,3 +1,21 @@
+osmo-bsc (1.8.1) unstable; urgency=medium
+
+  [ Oliver Smith ]
+  * bsc_subscr_conn_fsm: fix crash if !conn
+
+  [ Neels Hofmeyr ]
+  * hodec2: fix segv for inter-BSC ho target
+  * fix chreq:* counters: typos in chreq:successful_* constants
+  * fix assignment success counters: count *before* cleanup of fsm state
+
+  [ Pau Espin Pedrol ]
+  * Disable C/I based MS Power Control Loop by default
+
+  [ Harald Welte ]
+  * om2000: Fix memory leak in OM2000 message handling
+
+ -- Pau Espin Pedrol <pespin@sysmocom.de>  Tue, 11 Jan 2022 12:01:05 +0100
+
 osmo-bsc (1.8.0) unstable; urgency=medium
 
   [ Harald Welte ]
