@@ -1208,16 +1208,6 @@ static int bssmap_rcvmsg_dt1(struct gsm_subscriber_connection *conn,
 	return ret;
 }
 
-/* RSL Link Identifier is defined in 3GPP TS 3GPP TS 48.058, section 9.3.2.
- * .... .SSS - SAPI value used on the radio link;
- * ...P P... - priority for SAPI0 messages;
- * CC.. .... - control channel identification:
- *   00.. .... - main signalling channel (FACCH or SDCCH),
- *   01.. .... - SACCH,
- *   other values are reserved. */
-#define DLCI2RSL_LINK_ID(dlci) \
-	((dlci & 0xc0) == 0xc0 ? 0x40 : 0x00) | (dlci & 0x07)
-
 static int dtap_rcvmsg(struct gsm_subscriber_connection *conn,
 		       struct msgb *msg, unsigned int length)
 {

@@ -536,15 +536,6 @@ early_exit:
 	return rc;
 }
 
-/* Data Link Connection Identifier (DLCI) is defined in 3GPP TS 48.006, section 9.3.2.
- * .... .SSS - SAPI value used on the radio link;
- * CC.. .... - control channel identification:
- *   00.. .... - indicates that the control channel is not further specified,
- *   10.. .... - represents the FACCH or the SDCCH,
- *   11.. .... - represents the SACCH,
- *   other values are reserved. */
-#define RSL_LINK_ID2DLCI(link_id) \
-	(link_id & 0x40 ? 0xc0 : 0x80) | (link_id & 0x07)
 
 /*! MS->BSC/MSC: Um L3 message. */
 void bsc_dtap(struct gsm_subscriber_connection *conn, uint8_t link_id, struct msgb *msg)

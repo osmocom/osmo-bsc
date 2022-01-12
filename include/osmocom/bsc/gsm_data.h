@@ -56,6 +56,26 @@ struct smlc_config;
 
 #define OBSC_LINKID_CB(__msgb)	(__msgb)->cb[3]
 
+/* Data Link Connection Identifier (DLCI) is defined in 3GPP TS 48.006, section 9.3.2.
+ * .... .SSS - SAPI value used on the radio link;
+ * CC.. .... - control channel identification:
+ *   00.. .... - indicates that the control channel is not further specified,
+ *   10.. .... - represents the FACCH or the SDCCH,
+ *   11.. .... - represents the SACCH,
+ *   other values are reserved. */
+#define RSL_LINK_ID2DLCI(link_id) \
+	((link_id & 0x40 ? 0xc0 : 0x80) | (link_id & 0x07))
+
+/* RSL Link Identifier is defined in 3GPP TS 3GPP TS 48.058, section 9.3.2.
+ * .... .SSS - SAPI value used on the radio link;
+ * ...P P... - priority for SAPI0 messages;
+ * CC.. .... - control channel identification:
+ *   00.. .... - main signalling channel (FACCH or SDCCH),
+ *   01.. .... - SACCH,
+ *   other values are reserved. */
+#define DLCI2RSL_LINK_ID(dlci) \
+	((dlci & 0xc0) == 0xc0 ? 0x40 : 0x00) | (dlci & 0x07)
+
 /* 3-bit long values */
 #define EARFCN_PRIO_INVALID 8
 #define EARFCN_MEAS_BW_INVALID 8
