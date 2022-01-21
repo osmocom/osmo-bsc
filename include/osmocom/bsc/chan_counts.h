@@ -4,7 +4,7 @@
 struct gsm_bts;
 struct gsm_bts_trx;
 
-/* First array index to typedef chan_counts_arr. */
+/* First array index to chan_counts.val. */
 enum chan_counts_dim1 {
 	CHAN_COUNTS1_ALL = 0,
 	CHAN_COUNTS1_STATIC = 1,
@@ -12,7 +12,7 @@ enum chan_counts_dim1 {
 	_CHAN_COUNTS1_NUM
 };
 
-/* Second array index to typedef chan_counts_arr. */
+/* Second array index to chan_counts.val. */
 enum chan_counts_dim2 {
 	/* The maximum possible nr of lchans of this type. Counts all dynamic timeslots as if they are fully available
 	 * for this type, regardless of the current pchan mode. (For CHAN_COUNTS1_STATIC, of course no dyn TS are counted
