@@ -27,6 +27,7 @@
 #include <osmocom/bsc/neighbor_ident.h>
 
 static struct osmo_tdef gsm_network_T_defs[] = {
+	{ .T=4, .default_val=5, .desc="Timeout to receive BSSMAP RESET ACKNOWLEDGE from the MSC" },
 	{ .T=7, .default_val=10, .desc="inter-BSC/MSC Handover outgoing, BSSMAP HO Required to HO Command timeout" },
 	{ .T=8, .default_val=10, .desc="inter-BSC/MSC Handover outgoing, BSSMAP HO Command to final Clear timeout" },
 	{ .T=10, .default_val=6, .desc="RR Assignment" },

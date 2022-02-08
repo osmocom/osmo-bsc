@@ -47,7 +47,7 @@ static const struct osmo_tdef_state_timeout bssmap_reset_timeouts[32] = {
 	osmo_tdef_fsm_inst_state_chg(FI, STATE, \
 				     bssmap_reset_timeouts, \
 				     (bsc_gsmnet)->T_defs, \
-				     5)
+				     -1)
 
 struct bssmap_reset *bssmap_reset_alloc(void *ctx, const char *label, const struct bssmap_reset_cfg *cfg)
 {
