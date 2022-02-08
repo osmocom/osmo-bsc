@@ -1,6 +1,7 @@
 OsmoBSC> enable
 
 OsmoBSC# show timer
+net: T4 = 5 s	Timeout to receive BSSMAP RESET ACKNOWLEDGE from the MSC (default: 5 s)
 net: T7 = 10 s	inter-BSC/MSC Handover outgoing, BSSMAP HO Required to HO Command timeout (default: 10 s)
 net: T8 = 10 s	inter-BSC/MSC Handover outgoing, BSSMAP HO Command to final Clear timeout (default: 10 s)
 net: T10 = 6 s	RR Assignment (default: 6 s)
@@ -53,6 +54,7 @@ X4 = 60 s	After Clear Request, wait for MSC to Clear Command (sanity) (default: 
 OsmoBSC# configure terminal
 OsmoBSC(config)# network
 OsmoBSC(config-net)# timer
+net: T4 = 5 s	Timeout to receive BSSMAP RESET ACKNOWLEDGE from the MSC (default: 5 s)
 net: T7 = 10 s	inter-BSC/MSC Handover outgoing, BSSMAP HO Required to HO Command timeout (default: 10 s)
 net: T8 = 10 s	inter-BSC/MSC Handover outgoing, BSSMAP HO Command to final Clear timeout (default: 10 s)
 net: T10 = 6 s	RR Assignment (default: 6 s)
