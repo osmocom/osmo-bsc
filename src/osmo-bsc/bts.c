@@ -524,6 +524,7 @@ bool gsm_bts_matches_cell_id(const struct gsm_bts *bts, const struct gsm0808_cel
 	case CELL_IDENT_UTRAN_PLMN_LAC_RNC:
 	case CELL_IDENT_UTRAN_RNC:
 	case CELL_IDENT_UTRAN_LAC_RNC:
+	case CELL_IDENT_SAI:
 		return false;
 	default:
 		OSMO_ASSERT(false);
