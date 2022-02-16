@@ -490,6 +490,7 @@ static bool parse_ho_request(struct gsm_subscriber_connection *conn, const struc
 		LOG_HO(conn, LOGL_ERROR, "Failed to parse Encryption Information IE\n");
 		return false;
 	}
+	req->ei_as_bitmask = *e->val;
 
 	if ((e = TLVP_GET(tp, GSM0808_IE_KC_128))) {
 		if (e->len != 16) {
@@ -630,6 +631,7 @@ void handover_start_inter_bsc_in(struct gsm_subscriber_connection *conn,
 	int match_idx;
 	struct osmo_fsm_inst *fi;
 	struct channel_mode_and_rate ch_mode_rate = {};
+	int chosen_a5_n;
 
 	handover_fsm_alloc(conn);
 
@@ -717,16 +719,28 @@ void handover_start_inter_bsc_in(struct gsm_subscriber_connection *conn,
 		.msc_assigned_cic = req->msc_assigned_cic,
 	};
 
-	if (req->chosen_encr_alg) {
-		info.encr.alg_id = req->chosen_encr_alg;
-		if (info.encr.alg_id > 1 && !req->ei.key_len) {
-			ho_fail(HO_RESULT_ERROR, "Chosen Encryption Algorithm (Serving) reflects A5/%u"
-				" but there is no key (Encryption Information)", info.encr.alg_id - 1);
+	/* Figure out the encryption algorithm */
+	chosen_a5_n = select_best_cipher(req->ei_as_bitmask, bsc_gsmnet->a5_encryption_mask);
+	if (chosen_a5_n < 0) {
+		ho_fail(HO_RESULT_FAIL_RR_HO_FAIL,
+			"There is no A5 encryption mode that both BSC and MSC permit: MSC 0x%x & BSC 0x%x = 0\n",
+			req->ei_as_bitmask, bsc_gsmnet->a5_encryption_mask);
+		return;
+	}
+	if (chosen_a5_n > 0 && !req->ei.key_len) {
+		/* There is no key. Is A5/0 permitted? */
+		if ((req->ei_as_bitmask & bsc_gsmnet->a5_encryption_mask & 0x1) == 0x1) {
+			chosen_a5_n = 0;
+		} else {
+			ho_fail(HO_RESULT_ERROR,
+				"Encryption is required, but there is no key (Encryption Information)");
 			return;
 		}
 	}
 
-	if (req->ei.key_len) {
+	/* Put encryption info in the chan activation info */
+	info.encr.alg_id = ALG_A5_NR_TO_RSL(chosen_a5_n);
+	if (chosen_a5_n > 0) {
 		if (req->ei.key_len > sizeof(info.encr.key)) {
 			ho_fail(HO_RESULT_ERROR, "Encryption Information IE key length is too large: %u\n",
 				req->ei.key_len);
@@ -965,7 +979,7 @@ void handover_end(struct gsm_subscriber_connection *conn, enum handover_result r
 				result = bsc_tx_bssmap_ho_complete(conn, ho->new_lchan);
 		}
 		/* Not 'else': above checks may still result in HO_RESULT_ERROR. */
-		if (result == HO_RESULT_ERROR) {
+		if (result != HO_RESULT_OK) {
 			/* Return a BSSMAP Handover Failure, as described in 3GPP TS 48.008 3.1.5.2.2
 			 * "Handover Resource Allocation Failure" */
 			bsc_tx_bssmap_ho_failure(conn);

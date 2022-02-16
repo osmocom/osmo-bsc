@@ -270,6 +270,8 @@ struct handover_in_req {
 	struct gsm0808_channel_type ct;
 	struct gsm0808_speech_codec_list scl;
 	struct gsm0808_encrypt_info ei;
+	/* The same information as in 'ei' but as the handy bitmask as on the wire. */
+	uint8_t ei_as_bitmask;
 	bool kc128_present;
 	uint8_t kc128[16];
 	struct gsm_classmark classmark;
@@ -1456,5 +1458,7 @@ struct gsm_interf_meas_params {
 extern const struct gsm_interf_meas_params interf_meas_params_def;
 
 enum rsl_cmod_spd chan_mode_to_rsl_cmod_spd(enum gsm48_chan_mode chan_mode);
+
+int select_best_cipher(uint8_t msc_mask, uint8_t bsc_mask);
 
 #endif /* _GSM_DATA_H */
