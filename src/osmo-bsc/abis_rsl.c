@@ -660,7 +660,7 @@ int rsl_tx_chan_activ(struct gsm_lchan *lchan, uint8_t act_type, uint8_t ho_ref)
 	msg->l3h = len + 1;
 	*len = msgb_l3len(msg);
 
-	if (lchan->encr.alg_id > RSL_ENC_ALG_A5(0)) {
+	if (lchan->encr.alg_id > ALG_A5_NR_TO_RSL(0)) {
 		uint8_t encr_info[MAX_A5_KEY_LEN+2];
 		rc = build_encr_info(encr_info, lchan);
 		if (rc > 0)
@@ -764,7 +764,7 @@ int rsl_chan_mode_modify_req(struct gsm_lchan *lchan)
 	msgb_tlv_put(msg, RSL_IE_CHAN_MODE, sizeof(cm),
 		     (uint8_t *) &cm);
 
-	if (lchan->encr.alg_id > RSL_ENC_ALG_A5(0)) {
+	if (lchan->encr.alg_id > ALG_A5_NR_TO_RSL(0)) {
 		uint8_t encr_info[MAX_A5_KEY_LEN+2];
 		rc = build_encr_info(encr_info, lchan);
 		if (rc > 0)

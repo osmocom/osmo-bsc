@@ -534,7 +534,7 @@ static int bssmap_handle_cipher_mode(struct gsm_subscriber_connection *conn,
 		goto reject;
 	}
 
-	conn->lchan->encr.alg_id = RSL_ENC_ALG_A5(chosen_cipher);
+	conn->lchan->encr.alg_id = ALG_A5_NR_TO_RSL(chosen_cipher);
 	if (enc_key_len) {
 		conn->lchan->encr.key_len = enc_key_len;
 		memcpy(conn->lchan->encr.key, enc_key, enc_key_len);
