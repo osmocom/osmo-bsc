@@ -393,17 +393,18 @@ int bsc_paging_start(struct bsc_paging_params *params)
 	return 0;
 }
 
-/* select the best cipher permitted by the intersection of both masks */
+/* Select the best cipher permitted by the intersection of both masks. Return as the n in A5/n, or -1 if the
+ * intersection is empty. */
 int select_best_cipher(uint8_t msc_mask, uint8_t bsc_mask)
 {
 	/* A5/7 ... A5/3: We assume higher is better,
 	 * but: A5/1 is better than A5/2, which is better than A5/0 */
-	const uint8_t codec_strength[8] = { 7, 6, 5, 4, 3, 1, 2, 0 };
+	const uint8_t codec_by_strength[8] = { 7, 6, 5, 4, 3, 1, 2, 0 };
 	uint8_t intersection = msc_mask & bsc_mask;
 	int i;
 
-	for (i = 0; i < ARRAY_SIZE(codec_strength); i++) {
-		uint8_t codec = codec_strength[i];
+	for (i = 0; i < ARRAY_SIZE(codec_by_strength); i++) {
+		uint8_t codec = codec_by_strength[i];
 		if (intersection & (1 << codec))
 			return codec;
 	}
@@ -509,9 +510,6 @@ static int bssmap_handle_cipher_mode(struct gsm_subscriber_connection *conn,
 	 * a5_encryption == 2 --> 0x04 ... */
 	enc_bits_msc = data[0];
 
-	/* The bit-mask of permitted ciphers from the MSC (sent in ASSIGNMENT COMMAND) is intersected
-	 * with the vty-configured mask a the BSC.  Finally, the best (highest) possible cipher is
-	 * chosen. */
 	chosen_cipher = select_best_cipher(enc_bits_msc, bsc_gsmnet->a5_encryption_mask);
 	if (chosen_cipher < 0) {
 		LOGP(DMSC, LOGL_ERROR, "Reject: no overlapping A5 ciphers between BSC (0x%02x) "
