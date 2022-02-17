@@ -506,7 +506,24 @@ struct om2k_mo {
 #define A38_XOR_MIN_KEY_LEN	12
 #define A38_XOR_MAX_KEY_LEN	16
 #define A38_COMP128_KEY_LEN	16
-#define RSL_ENC_ALG_A5(x)	(x+1)
+
+/* There are these representations of A5/n:
+ *
+ * - (uint8_t)(1<<n), either as a single bit, or combined as a list of
+ *   permitted algorithms.
+ *   A5/0 == 0x01, A5/3 == 0x08, none = 0
+ *
+ * - n+1, used on the RSL wire.
+ *   A5/0 == 1, A5/3 == 4, none = 0
+ *
+ * - n, used for human interaction and returned by select_best_cipher().
+ *   A5/0 == 0, A5/3 == 3, none <= -1
+ *
+ * These macros convert from n to the other representations:
+ */
+#define ALG_A5_NR_TO_RSL(A5_N) ((A5_N) >= 0 ? (A5_N)+1 : 0)
+#define ALG_A5_NR_TO_PERM_ALG_BITS(A5_N) ((A5_N) >= 0 ? 1<<(A5_N) : 0)
+
 /* Up to 16 SI2quater are multiplexed; each fits 3 EARFCNS, so the practical maximum is 3*16.
  * The real maximum that fits in a total of 16 SI2quater rest octets also depends on the bits left by other SI2quater
  * rest octets elements, so to really fit 48 EARFCNs most other SI2quater elements need to be omitted. */

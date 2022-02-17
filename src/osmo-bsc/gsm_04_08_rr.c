@@ -374,7 +374,7 @@ int gsm48_send_rr_ciph_mode(struct gsm_lchan *lchan, int want_imeisv)
 
 	DEBUGP(DRR, "TX CIPHERING MODE CMD\n");
 
-	if (lchan->encr.alg_id <= RSL_ENC_ALG_A5(0))
+	if (lchan->encr.alg_id <= ALG_A5_NR_TO_RSL(0))
 		ciph_mod_set = 0;
 	else
 		ciph_mod_set = (lchan->encr.alg_id-2)<<1 | 1;
