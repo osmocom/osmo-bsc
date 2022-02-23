@@ -1431,7 +1431,7 @@ int bsc_tx_bssmap_ho_request_ack(struct gsm_subscriber_connection *conn, struct 
 								  new_lchan->current_ch_mode_rate.chan_mode),
 	};
 
-	if (gscon_is_aoip(conn)) {
+	if (gscon_is_aoip(conn) && new_lchan->activate.info.requires_voice_stream) {
 		struct osmo_sockaddr_str to_msc_rtp;
 		const struct mgcp_conn_peer *rtp_info = osmo_mgcpc_ep_ci_get_rtp_info(conn->user_plane.mgw_endpoint_ci_msc);
 		if (!rtp_info) {
