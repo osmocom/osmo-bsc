@@ -1434,6 +1434,8 @@ int bsc_tx_bssmap_ho_request_ack(struct gsm_subscriber_connection *conn, struct 
 	if (gscon_is_aoip(conn) && new_lchan->activate.info.requires_voice_stream) {
 		struct osmo_sockaddr_str to_msc_rtp;
 		const struct mgcp_conn_peer *rtp_info = osmo_mgcpc_ep_ci_get_rtp_info(conn->user_plane.mgw_endpoint_ci_msc);
+		int rc;
+		int perm_spch;
 		if (!rtp_info) {
 			LOG_HO(conn, LOGL_ERROR,
 			       "Handover Request Acknowledge: no RTP address known to send as"
@@ -1449,6 +1451,15 @@ int bsc_tx_bssmap_ho_request_ack(struct gsm_subscriber_connection *conn, struct 
 			return -EINVAL;
 		}
 		params.aoip_transport_layer = &ss;
+
+		/* speech_codec_chosen */
+		perm_spch = gsm0808_permitted_speech(new_lchan->type, new_lchan->current_ch_mode_rate.chan_mode);
+		params.speech_codec_chosen_present = true;
+		rc = gsm0808_speech_codec_from_chan_type(&params.speech_codec_chosen, perm_spch);
+		if (rc) {
+			LOG_HO(conn, LOGL_ERROR, "Unable to compose Speech Codec (Chosen)\n");
+			return -EINVAL;
+		}
 	}
 
 	rate_ctr_inc(rate_ctr_group_get_ctr(conn->sccp.msc->msc_ctrs, MSC_CTR_BSSMAP_TX_DT1_HANDOVER_RQST_ACKNOWLEDGE));
