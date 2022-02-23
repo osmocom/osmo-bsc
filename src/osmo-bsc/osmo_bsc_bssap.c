@@ -1460,6 +1460,10 @@ int bsc_tx_bssmap_ho_request_ack(struct gsm_subscriber_connection *conn, struct 
 			LOG_HO(conn, LOGL_ERROR, "Unable to compose Speech Codec (Chosen)\n");
 			return -EINVAL;
 		}
+
+		/* Codec list (BSS Supported) */
+		params.more_items = true;
+		gen_bss_supported_codec_list(&params.codec_list_bss_supported, conn->sccp.msc, new_lchan->ts->trx->bts);
 	}
 
 	rate_ctr_inc(rate_ctr_group_get_ctr(conn->sccp.msc->msc_ctrs, MSC_CTR_BSSMAP_TX_DT1_HANDOVER_RQST_ACKNOWLEDGE));
