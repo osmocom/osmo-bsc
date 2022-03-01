@@ -504,20 +504,29 @@ static int bitvec2freq_list(uint8_t *chan_list, const struct bitvec *bv,
 	bool pgsm = false;
 	memset(chan_list, 0, 16);
 
-	if (bts->band == GSM_BAND_900
-	 && bts->c0->arfcn >= 1 && bts->c0->arfcn <= 124)
+	/* According to 3GPP TS 44.018, section 10.5.2.1b.2, only ARFCN values
+	 * in range 1..124 can be encoded using the 'bit map 0' format. */
+	if (bts->band == GSM_BAND_900)
 		pgsm = true;
+	/* Check presence of E-GSM ARFCN 0 */
+	if (pgsm && bitvec_get_bit_pos(bv, 0) == ONE)
+		pgsm = false;
+	/* Check presence of E-GSM ARFCNs 975..1023 */
+	for (i = 975; pgsm && i <= 1023; i++) {
+		if (bitvec_get_bit_pos(bv, i) == ONE)
+			pgsm = false;
+	}
+
 	/* P-GSM-only handsets only support 'bit map 0 format' */
 	if (!bis && !ter && pgsm) {
 		chan_list[0] = 0;
 
-		for (i = 0; i < bv->data_len*8; i++) {
-			if (i >= 1 && i <= 124
-			 && bitvec_get_bit_pos(bv, i)) {
-				rc = freq_list_bm0_set_arfcn(chan_list, i);
-				if (rc < 0)
-					return rc;
-			}
+		for (i = 1; i <= 124; i++) {
+			if (!bitvec_get_bit_pos(bv, i))
+				continue;
+			rc = freq_list_bm0_set_arfcn(chan_list, i);
+			if (rc < 0)
+				return rc;
 		}
 		return 0;
 	}
