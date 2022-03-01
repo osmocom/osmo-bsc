@@ -553,7 +553,7 @@ static int bitvec2freq_list(uint8_t *chan_list, const struct bitvec *bv,
 			max = i;
 	}
 
-	if (max == -1) {
+	if (arfcns == 0) {
 		/* Empty set, use 'bit map 0 format' */
 		chan_list[0] = 0;
 		return 0;
