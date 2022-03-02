@@ -709,7 +709,7 @@ static int list_arfcn(uint8_t *chan_list, uint8_t mask, char *text)
 	struct gsm_sysinfo_freq freq[1024];
 
 	memset(freq, 0, sizeof(freq));
-	gsm48_decode_freq_list(freq, chan_list, 16, 0xce, 1);
+	gsm48_decode_freq_list(freq, chan_list, 16, mask, 1);
 	for (i = 0; i < 1024; i++) {
 		if (freq[i].mask) {
 			if (!n)
