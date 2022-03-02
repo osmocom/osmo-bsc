@@ -29,6 +29,7 @@
 #include <osmocom/bsc/system_information.h>
 #include <osmocom/bsc/abis_rsl.h>
 #include <osmocom/bsc/bts.h>
+#include <osmocom/bsc/bss.h>
 
 #include <osmocom/core/application.h>
 #include <osmocom/core/byteswap.h>
@@ -555,6 +556,71 @@ static void test_gsm48_multirate_config()
 	msgb_free(msg);
 }
 
+/* Similar to list_arfcn() from system_information.c, but uses printf().
+ * Another difference is that the text is printed even if n is 0. */
+static void print_cell_chan_desc(uint8_t *cd, const char *text)
+{
+	struct gsm_sysinfo_freq freq[1024];
+	unsigned int n = 0, i;
+
+	memset(freq, 0, sizeof(freq));
+	gsm48_decode_freq_list(freq, cd, 16, 0xce, 1);
+
+	printf("%s:", text);
+	for (i = 0; i < 1024; i++) {
+		if (!freq[i].mask)
+			continue;
+		printf(" %u", i);
+		n++;
+	}
+	if (!n)
+		printf(" (empty set)");
+	printf("\n");
+}
+
+static void test_cell_chan_desc(struct gsm_network *net)
+{
+	struct gsm_bts *bts = bts_init(net);
+	uint8_t cell_chan_desc[16];
+
+	printf("Testing generation of the Cell Channel Description IE:\n");
+
+	bts_model_unknown_init();
+	bts->type = GSM_BTS_TYPE_UNKNOWN;
+	bts->model = bts_model_find(bts->type);
+	OSMO_ASSERT(bts->model != NULL);
+
+	bts->band = GSM_BAND_900;
+	bts->c0->arfcn = 10; /* BCCH carrier */
+
+	/* Case a) only the BCCH carrier */
+	bitvec_set_bit_pos(&bts->si_common.cell_alloc, bts->c0->arfcn, ONE);
+
+	OSMO_ASSERT(generate_cell_chan_list(&cell_chan_desc[0], bts) == 0);
+	print_cell_chan_desc(&cell_chan_desc[0], "Case a) only the BCCH carrier");
+
+	/* Case b) more carriers from P-GSM band */
+	bitvec_set_bit_pos(&bts->si_common.cell_alloc, 1, ONE);
+	bitvec_set_bit_pos(&bts->si_common.cell_alloc, 3, ONE);
+	bitvec_set_bit_pos(&bts->si_common.cell_alloc, 64, ONE);
+	bitvec_set_bit_pos(&bts->si_common.cell_alloc, 99, ONE);
+	bitvec_set_bit_pos(&bts->si_common.cell_alloc, 124, ONE);
+
+	OSMO_ASSERT(generate_cell_chan_list(&cell_chan_desc[0], bts) == 0);
+	print_cell_chan_desc(&cell_chan_desc[0], "Case b) more carriers from P-GSM band");
+
+	/* Case c) more carriers from E-GSM band */
+	bitvec_set_bit_pos(&bts->si_common.cell_alloc, 0, ONE);
+	bitvec_set_bit_pos(&bts->si_common.cell_alloc, 975, ONE);
+	bitvec_set_bit_pos(&bts->si_common.cell_alloc, 1001, ONE);
+	bitvec_set_bit_pos(&bts->si_common.cell_alloc, 1023, ONE);
+
+	OSMO_ASSERT(generate_cell_chan_list(&cell_chan_desc[0], bts) == 0);
+	print_cell_chan_desc(&cell_chan_desc[0], "Case c) more carriers from E-GSM band");
+
+	bts_del(bts);
+}
+
 static const struct log_info_cat log_categories[] = {
 };
 
@@ -590,6 +656,8 @@ int main(int argc, char **argv)
 	test_gsm48_ra_id_by_bts();
 
 	test_gsm48_multirate_config();
+
+	test_cell_chan_desc(net);
 
 	printf("Done.\n");
 
