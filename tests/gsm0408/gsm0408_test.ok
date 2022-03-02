@@ -243,4 +243,10 @@ gsm48_multirate_config(): rc=0, lv=0620b40bf330d8
 gsm48_multirate_config(): rc=0, lv=0520340bf330
 gsm48_multirate_config(): rc=0, lv=0420140bf0
 gsm48_multirate_config(): rc=0, lv=022004
+BTS allocation OK in test_cell_chan_desc()
+Testing generation of the Cell Channel Description IE:
+Case a) only the BCCH carrier: 10
+Case b) more carriers from P-GSM band: 1 3 10 64 99 124
+Case c) more carriers from E-GSM band: 1 3 10 64 99 124
+BTS deallocated OK in test_cell_chan_desc()
 Done.
