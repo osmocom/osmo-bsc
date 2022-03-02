@@ -63,18 +63,18 @@ Those timers can be configured using the `timer tXXXX` command.
 .Configurable Timers
 |===
 |node|timer|default|description
-|network|t3101|10|Timeout for 'Immediate Assignment' (sec)
-|network|t3103|?|Timeout for Handover (sec)
-|network|t3105|40|Repetition of 'Physical Information' (sec)
-|network|t3107|?|?
-|network|t3109|?|RSL SACCH deactivation timeout (sec)
-|network|t3111|?|RSL timeout to wait before releasing the RF channel (sec)
-|network|t3113|60|Time to try paging for a subscriber (sec)
-|network|t3115|?|?
-|network|t3117|?|?
-|network|t3119|?|?
+|network|t3101|3|Timeout for 'Immediate Assignment' (sec)
+|network|t3103|5|Timeout for Handover (sec)
+|network|t3105|100|Repetition of 'Physical Information' (millisec)
+|network|t3107|5|?
+|network|t3109|5|RSL SACCH deactivation timeout (sec)
+|network|t3111|2|RSL timeout to wait before releasing the RF channel (sec)
+|network|t3113|7|Time to try paging for a subscriber (sec)
+|network|t3115|10|?
+|network|t3117|10|?
+|network|t3119|10|?
 |network|t3122|10|Waiting time after 'Immediate Assignment Reject'
-|network|t3141|?|?
+|network|t3141|10|?
 |===
 
 //TODO: split between BSC and MSC timers
