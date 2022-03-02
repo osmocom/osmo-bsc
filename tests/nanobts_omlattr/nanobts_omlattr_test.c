@@ -43,7 +43,7 @@ static void test_nanobts_attr_bts_get(struct gsm_bts *bts, uint8_t *expected)
 	msgb = nanobts_attr_bts_get(bts);
 	printf("result=  %s\n", osmo_hexdump_nospc(msgb->data, msgb->len));
 	printf("expected=%s\n", osmo_hexdump_nospc(expected, msgb->len));
-	OSMO_ASSERT(memcmp(msgb->data, expected, msgb->len) == 0);
+	OSMO_ASSERT(msgb_eq_data_print(msgb, expected, msgb->len));
 	msgb_free(msgb);
 
 	printf("ok.\n");
@@ -59,7 +59,7 @@ static void test_nanobts_attr_nse_get(struct gsm_bts *bts, uint8_t *expected)
 	msgb = nanobts_attr_nse_get(bts->site_mgr);
 	printf("result=  %s\n", osmo_hexdump_nospc(msgb->data, msgb->len));
 	printf("expected=%s\n", osmo_hexdump_nospc(expected, msgb->len));
-	OSMO_ASSERT(memcmp(msgb->data, expected, msgb->len) == 0);
+	OSMO_ASSERT(msgb_eq_data_print(msgb, expected, msgb->len));
 	msgb_free(msgb);
 
 	printf("ok.\n");
@@ -75,7 +75,7 @@ static void test_nanobts_attr_cell_get(struct gsm_bts *bts, uint8_t *expected)
 	msgb = nanobts_attr_cell_get(bts);
 	printf("result=  %s\n", osmo_hexdump_nospc(msgb->data, msgb->len));
 	printf("expected=%s\n", osmo_hexdump_nospc(expected, msgb->len));
-	OSMO_ASSERT(memcmp(msgb->data, expected, msgb->len) == 0);
+	OSMO_ASSERT(msgb_eq_data_print(msgb, expected, msgb->len));
 	msgb_free(msgb);
 
 	printf("ok.\n");
@@ -91,7 +91,7 @@ static void test_nanobts_attr_nsvc_get(struct gsm_bts *bts, uint8_t *expected)
 	msgb = nanobts_attr_nsvc_get(bts);
 	printf("result=  %s\n", osmo_hexdump_nospc(msgb->data, msgb->len));
 	printf("expected=%s\n", osmo_hexdump_nospc(expected, msgb->len));
-	OSMO_ASSERT(memcmp(msgb->data, expected, msgb->len) == 0);
+	OSMO_ASSERT(msgb_eq_data_print(msgb, expected, msgb->len));
 	msgb_free(msgb);
 
 	printf("ok.\n");
@@ -109,7 +109,7 @@ static void test_nanobts_attr_radio_get(struct gsm_bts *bts,
 	msgb = nanobts_attr_radio_get(bts, trx);
 	printf("result=  %s\n", osmo_hexdump_nospc(msgb->data, msgb->len));
 	printf("expected=%s\n", osmo_hexdump_nospc(expected, msgb->len));
-	OSMO_ASSERT(memcmp(msgb->data, expected, msgb->len) == 0);
+	OSMO_ASSERT(msgb_eq_data_print(msgb, expected, msgb->len));
 	msgb_free(msgb);
 
 	printf("ok.\n");
