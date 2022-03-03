@@ -522,6 +522,12 @@ static void lchan_rtp_fsm_ready(struct osmo_fsm_inst *fi, uint32_t event, void *
 		lchan_rtp_fsm_state_chg(LCHAN_RTP_ST_ROLLBACK);
 		return;
 
+	case LCHAN_RTP_EV_READY_TO_SWITCH_RTP:
+		/* Ignore / silence an "event not permitted" error. In case of an inter-BSC incoming handover, there is
+		 * no previous lchan to be switched over, and we are already in this state when the usual handover code
+		 * path emits this event. */
+		return;
+
 	default:
 		OSMO_ASSERT(false);
 	}
@@ -704,6 +710,7 @@ static const struct osmo_fsm_state lchan_rtp_fsm_states[] = {
 			| S(LCHAN_RTP_EV_ESTABLISHED)
 			| S(LCHAN_RTP_EV_RELEASE)
 			| S(LCHAN_RTP_EV_ROLLBACK)
+			| S(LCHAN_RTP_EV_READY_TO_SWITCH_RTP)
 			,
 		.out_state_mask = 0
 			| S(LCHAN_RTP_ST_ESTABLISHED)
