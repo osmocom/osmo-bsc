@@ -1175,8 +1175,8 @@ static int bssmap_rcvmsg_dt1(struct gsm_subscriber_connection *conn,
 		rate_ctr_inc(&ctrs[MSC_CTR_BSSMAP_RX_DT1_CIPHER_MODE_CMD]);
 		ret = bssmap_handle_cipher_mode(conn, msg, length);
 		break;
-	case BSS_MAP_MSG_ASSIGMENT_RQST:
-		rate_ctr_inc(&ctrs[MSC_CTR_BSSMAP_RX_DT1_ASSIGMENT_RQST]);
+	case BSS_MAP_MSG_ASSIGNMENT_RQST:
+		rate_ctr_inc(&ctrs[MSC_CTR_BSSMAP_RX_DT1_ASSIGNMENT_RQST]);
 		ret = bssmap_handle_assignm_req(conn, msg, length);
 		break;
 	case BSS_MAP_MSG_LCLS_CONNECT_CTRL:
