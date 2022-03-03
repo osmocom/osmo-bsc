@@ -323,6 +323,7 @@ static void handle_bssap_n_connect(struct osmo_fsm_inst *fi, struct osmo_scu_pri
 
 	switch (bssmap_type) {
 	case BSS_MAP_MSG_HANDOVER_RQST:
+		rate_ctr_inc(&conn->sccp.msc->msc_ctrs->ctr[MSC_CTR_BSSMAP_RX_DT1_HANDOVER_RQST]);
 		/* Inter-BSC MT Handover Request, another BSS is handovering to us. */
 		handover_start_inter_bsc_in(conn, msg);
 		return;
