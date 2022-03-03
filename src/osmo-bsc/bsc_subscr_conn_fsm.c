@@ -332,7 +332,7 @@ static void handle_initial_user_data(struct osmo_fsm_inst *fi, struct msgb *msg)
 	switch (bssmap_type) {
 	case BSS_MAP_MSG_HANDOVER_RQST:
 		rate_ctr_inc(&conn->sccp.msc->msc_ctrs->ctr[MSC_CTR_BSSMAP_RX_DT1_HANDOVER_RQST]);
-		/* Inter-BSC MT Handover Request, another BSS is handovering to us. */
+		/* Inter-BSC incoming Handover Request, another BSS is handovering to us. */
 		handover_start_inter_bsc_in(conn, msg);
 		return;
 
@@ -462,7 +462,7 @@ static void gscon_fsm_wait_initial_user_data(struct osmo_fsm_inst *fi, uint32_t 
 				return;
 			}
 			LOG_HO(conn, LOGL_ERROR,
-			       "Conn is in state %s, the only accepted handover kind is inter-BSC MT\n",
+			       "Conn is in state %s, the only accepted handover kind is inter-BSC incoming handover\n",
 			       osmo_fsm_inst_state_name(conn->fi));
 		}
 		gscon_bssmap_clear(conn, GSM0808_CAUSE_EQUIPMENT_FAILURE);
