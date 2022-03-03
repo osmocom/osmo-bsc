@@ -272,14 +272,14 @@ static void handle_bssap_n_connect(struct osmo_fsm_inst *fi, struct osmo_scu_pri
 	}
 
 	if (msgb_l3len(msg) < sizeof(*bs)) {
-		LOGPFSML(fi, LOGL_NOTICE, "message too short for BSSMAP header (%u < %zu)\n",
+		LOGPFSML(fi, LOGL_ERROR, "message too short for BSSMAP header (%u < %zu)\n",
 			 msgb_l3len(msg), sizeof(*bs));
 		goto refuse;
 	}
 
 	bs = (struct bssmap_header*)msgb_l3(msg);
 	if (msgb_l3len(msg) < (bs->length + sizeof(*bs))) {
-		LOGPFSML(fi, LOGL_NOTICE,
+		LOGPFSML(fi, LOGL_ERROR,
 			 "message too short for length indicated in BSSMAP header (%u < %u)\n",
 			 msgb_l3len(msg), bs->length);
 		goto refuse;
@@ -289,7 +289,7 @@ static void handle_bssap_n_connect(struct osmo_fsm_inst *fi, struct osmo_scu_pri
 	case BSSAP_MSG_BSS_MANAGEMENT:
 		break;
 	default:
-		LOGPFSML(fi, LOGL_NOTICE,
+		LOGPFSML(fi, LOGL_ERROR,
 			 "message type not allowed for N-CONNECT: %s\n", gsm0808_bssap_name(bs->type));
 		goto refuse;
 	}
@@ -306,7 +306,7 @@ static void handle_bssap_n_connect(struct osmo_fsm_inst *fi, struct osmo_scu_pri
 		break;
 
 	default:
-		LOGPFSML(fi, LOGL_NOTICE, "No support for N-CONNECT: %s: %s\n",
+		LOGPFSML(fi, LOGL_ERROR, "No support for N-CONNECT: %s: %s\n",
 			 gsm0808_bssap_name(bs->type), gsm0808_bssmap_name(bssmap_type));
 		goto refuse;
 	}
