@@ -60,6 +60,8 @@
 
 enum gscon_fsm_states {
 	ST_INIT,
+	/* wait for initial BSSMAP after the MSC opened a new SCCP connection */
+	ST_WAIT_INITIAL_USER_DATA,
 	/* waiting for CC from MSC */
 	ST_WAIT_CC,
 	/* active connection */
@@ -73,6 +75,7 @@ enum gscon_fsm_states {
 
 static const struct value_string gscon_fsm_event_names[] = {
 	{GSCON_EV_A_CONN_IND, "MT-CONNECT.ind"},
+	{GSCON_EV_A_INITIAL_USER_DATA, "A_INITIAL_USER_DATA"},
 	{GSCON_EV_MO_COMPL_L3, "MO_COMPL_L3"},
 	{GSCON_EV_A_CONN_CFM, "MO-CONNECT.cfm"},
 	{GSCON_EV_A_CLEAR_CMD, "CLEAR_CMD"},
@@ -95,6 +98,7 @@ static const struct value_string gscon_fsm_event_names[] = {
 };
 
 struct osmo_tdef_state_timeout conn_fsm_timeouts[32] = {
+	[ST_WAIT_INITIAL_USER_DATA] = { .T = -25 },
 	[ST_WAIT_CC] = { .T = -3210 },
 	[ST_WAIT_CLEAR_CMD] = { .T = -4 },
 	[ST_WAIT_SCCP_RLSD] = { .T = -4 },
@@ -258,23 +262,21 @@ void gscon_release_lchans(struct gsm_subscriber_connection *conn, bool do_rr_rel
 	gscon_release_lchan(conn, conn->lchan, do_rr_release, false, cause_rr);
 }
 
-static void handle_bssap_n_connect(struct osmo_fsm_inst *fi, struct osmo_scu_prim *scu_prim)
+static int validate_initial_user_data(struct osmo_fsm_inst *fi, struct msgb *msg)
 {
-	struct gsm_subscriber_connection *conn = fi->priv;
-	struct msgb *msg = scu_prim->oph.msg;
 	struct bssmap_header *bs;
-	uint8_t bssmap_type;
+	enum BSS_MAP_MSG_TYPE bssmap_type;
 
 	msg->l3h = msgb_l2(msg);
 	if (!msgb_l3(msg)) {
 		LOGPFSML(fi, LOGL_ERROR, "internal error: no l3 in msg\n");
-		goto refuse;
+		return -EINVAL;
 	}
 
 	if (msgb_l3len(msg) < sizeof(*bs)) {
 		LOGPFSML(fi, LOGL_ERROR, "message too short for BSSMAP header (%u < %zu)\n",
 			 msgb_l3len(msg), sizeof(*bs));
-		goto refuse;
+		return -EINVAL;
 	}
 
 	bs = (struct bssmap_header*)msgb_l3(msg);
@@ -282,7 +284,7 @@ static void handle_bssap_n_connect(struct osmo_fsm_inst *fi, struct osmo_scu_pri
 		LOGPFSML(fi, LOGL_ERROR,
 			 "message too short for length indicated in BSSMAP header (%u < %u)\n",
 			 msgb_l3len(msg), bs->length);
-		goto refuse;
+		return -EINVAL;
 	}
 
 	switch (bs->type) {
@@ -290,36 +292,42 @@ static void handle_bssap_n_connect(struct osmo_fsm_inst *fi, struct osmo_scu_pri
 		break;
 	default:
 		LOGPFSML(fi, LOGL_ERROR,
-			 "message type not allowed for N-CONNECT: %s\n", gsm0808_bssap_name(bs->type));
-		goto refuse;
+			 "message type not allowed for initial BSSMAP: %s\n", gsm0808_bssap_name(bs->type));
+		return -EINVAL;
 	}
 
 	msg->l4h = &msg->l3h[sizeof(*bs)];
+
+	/* Validate initial message type. See also BSC_Tests.TC_outbound_connect. */
 	bssmap_type = msg->l4h[0];
-
-	LOGPFSML(fi, LOGL_DEBUG, "Rx N-CONNECT: %s: %s\n", gsm0808_bssap_name(bs->type),
-		 gsm0808_bssmap_name(bssmap_type));
-
 	switch (bssmap_type) {
 	case BSS_MAP_MSG_HANDOVER_RQST:
 	case BSS_MAP_MSG_PERFORM_LOCATION_RQST:
-		break;
+		return 0;
 
 	default:
-		LOGPFSML(fi, LOGL_ERROR, "No support for N-CONNECT: %s: %s\n",
+		LOGPFSML(fi, LOGL_ERROR, "No support for initial BSSMAP: %s: %s\n",
 			 gsm0808_bssap_name(bs->type), gsm0808_bssmap_name(bssmap_type));
-		goto refuse;
+		return -EINVAL;
 	}
+}
 
-	/* First off, accept the new conn. */
-	if (osmo_sccp_tx_conn_resp(conn->sccp.msc->a.sccp_user, scu_prim->u.connect.conn_id,
-				   &scu_prim->u.connect.called_addr, NULL, 0)) {
-		LOGPFSML(fi, LOGL_ERROR, "Cannot send SCCP CONN RESP\n");
-		goto refuse;
-	}
+static void handle_initial_user_data(struct osmo_fsm_inst *fi, struct msgb *msg)
+{
+	struct gsm_subscriber_connection *conn = fi->priv;
+	struct bssmap_header *bs;
+	enum BSS_MAP_MSG_TYPE bssmap_type;
 
-	/* Make sure the conn FSM will osmo_sccp_tx_disconn() on term */
-	conn->sccp.state = SUBSCR_SCCP_ST_CONNECTED;
+	/* validate_initial_user_data() must be called before this */
+	OSMO_ASSERT(msgb_l4(msg));
+
+	bs = msgb_l3(msg);
+	bssmap_type = msg->l4h[0];
+
+	/* FIXME: Extract optional IMSI and update FSM using osmo_fsm_inst_set_id() (OS#2969) */
+
+	LOGPFSML(fi, LOGL_DEBUG, "Rx initial BSSMAP: %s: %s\n", gsm0808_bssap_name(bs->type),
+		 gsm0808_bssmap_name(bssmap_type));
 
 	switch (bssmap_type) {
 	case BSS_MAP_MSG_HANDOVER_RQST:
@@ -336,13 +344,51 @@ static void handle_bssap_n_connect(struct osmo_fsm_inst *fi, struct osmo_scu_pri
 		return;
 
 	default:
-		OSMO_ASSERT(false);
+		LOGPFSML(fi, LOGL_ERROR, "No support for initial BSSMAP: %s: %s\n",
+			 gsm0808_bssap_name(bs->type), gsm0808_bssmap_name(bssmap_type));
+		osmo_fsm_inst_term(fi, OSMO_FSM_TERM_REGULAR, NULL);
+		return;
+	}
+}
+
+static void handle_sccp_n_connect(struct osmo_fsm_inst *fi, struct osmo_scu_prim *scu_prim)
+{
+	struct gsm_subscriber_connection *conn = fi->priv;
+	struct msgb *msg = scu_prim->oph.msg;
+
+	/* Make sure the conn FSM will osmo_sccp_tx_disconn() on term */
+	conn->sccp.state = SUBSCR_SCCP_ST_CONNECTED;
+
+	msg->l3h = msgb_l2(msg);
+
+	/* If (BSSMAP) user data is included, validate it before accepting the connection */
+	if (msgb_l3(msg) && msgb_l3len(msg)) {
+		if (validate_initial_user_data(fi, msg)) {
+			osmo_fsm_inst_term(fi, OSMO_FSM_TERM_REGULAR, NULL);
+			return;
+		}
 	}
 
-refuse:
-	osmo_sccp_tx_disconn(conn->sccp.msc->a.sccp_user, scu_prim->u.connect.conn_id,
-			     &scu_prim->u.connect.called_addr, 0);
-	osmo_fsm_inst_term(fi, OSMO_FSM_TERM_REGULAR, NULL);
+	/* accept the new conn. */
+	if (osmo_sccp_tx_conn_resp(conn->sccp.msc->a.sccp_user, scu_prim->u.connect.conn_id,
+				   &scu_prim->u.connect.called_addr, NULL, 0)) {
+		LOGPFSML(fi, LOGL_ERROR, "Cannot send SCCP CONN RESP\n");
+		osmo_fsm_inst_term(fi, OSMO_FSM_TERM_REGULAR, NULL);
+		return;
+	}
+
+	/* The initial user data may already be included in this N-Connect, or it may come later in a separate message.
+	 * If it is already included, also go to ST_WAIT_INITIAL_USER_DATA now, so that we don't have to tend to two
+	 * separate code paths doing the same thing (handling of HANDOVER_END). */
+	OSMO_ASSERT(conn_fsm_state_chg(ST_WAIT_INITIAL_USER_DATA) == 0);
+
+	/* It is usually a bad idea to continue using a fi after a state change, because the fi might terminate during
+	 * the state change. In this case it is certain that the fi stays around for the initial user data. */
+	if (msgb_l3(msg) && msgb_l3len(msg)) {
+		handle_initial_user_data(fi, msg);
+	} else {
+		LOGPFSML(fi, LOGL_DEBUG, "N-Connect does not contain user data (no BSSMAP message included)\n");
+	}
 }
 
 static void gscon_fsm_init(struct osmo_fsm_inst *fi, uint32_t event, void *data)
@@ -351,7 +397,6 @@ static void gscon_fsm_init(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 	struct osmo_scu_prim *scu_prim = NULL;
 	struct msgb *msg = NULL;
 	int rc;
-	enum handover_result ho_result;
 
 	switch (event) {
 	case GSCON_EV_MO_COMPL_L3:
@@ -379,11 +424,28 @@ static void gscon_fsm_init(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 			osmo_fsm_inst_term(fi, OSMO_FSM_TERM_REGULAR, NULL);
 			return;
 		}
-		/* FIXME: Extract optional IMSI and update FSM using osmo_fsm_inst_set_id()
-		 * related: OS2969 (same as above) */
-
-		handle_bssap_n_connect(fi, scu_prim);
+		handle_sccp_n_connect(fi, scu_prim);
 		break;
+	default:
+		OSMO_ASSERT(false);
+	}
+}
+
+static void gscon_fsm_wait_initial_user_data(struct osmo_fsm_inst *fi, uint32_t event, void *data)
+{
+	struct gsm_subscriber_connection *conn = fi->priv;
+	struct msgb *msg = data;
+	enum handover_result ho_result;
+
+	switch (event) {
+	case GSCON_EV_A_INITIAL_USER_DATA:
+		if (validate_initial_user_data(fi, msg)) {
+			osmo_fsm_inst_term(fi, OSMO_FSM_TERM_REGULAR, NULL);
+			return;
+		}
+		handle_initial_user_data(fi, msg);
+		break;
+
 	case GSCON_EV_HANDOVER_END:
 		ho_result = HO_RESULT_ERROR;
 		if (data)
@@ -715,10 +777,20 @@ bool gscon_connect_mgw_to_msc(struct gsm_subscriber_connection *conn,
 static const struct osmo_fsm_state gscon_fsm_states[] = {
 	[ST_INIT] = {
 		.name = "INIT",
-		.in_event_mask = S(GSCON_EV_MO_COMPL_L3) | S(GSCON_EV_A_CONN_IND)
-			| S(GSCON_EV_HANDOVER_END),
-		.out_state_mask = S(ST_WAIT_CC) | S(ST_ACTIVE) | S(ST_WAIT_CLEAR_CMD) | S(ST_WAIT_SCCP_RLSD),
+		.in_event_mask = S(GSCON_EV_MO_COMPL_L3) | S(GSCON_EV_A_CONN_IND),
+		.out_state_mask = 0
+			| S(ST_WAIT_INITIAL_USER_DATA)
+			| S(ST_WAIT_CC) | S(ST_ACTIVE) | S(ST_WAIT_CLEAR_CMD) | S(ST_WAIT_SCCP_RLSD),
 		.action = gscon_fsm_init,
+	},
+	[ST_WAIT_INITIAL_USER_DATA] = {
+		.name = "WAIT_INITIAL_USER_DATA",
+		.in_event_mask = 0
+			| S(GSCON_EV_A_INITIAL_USER_DATA)
+			| S(GSCON_EV_HANDOVER_END)
+			,
+		.out_state_mask = S(ST_WAIT_CC) | S(ST_ACTIVE) | S(ST_WAIT_CLEAR_CMD) | S(ST_WAIT_SCCP_RLSD),
+		.action = gscon_fsm_wait_initial_user_data,
 	 },
 	[ST_WAIT_CC] = {
 		.name = "WAIT_CC",

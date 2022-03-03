@@ -981,6 +981,24 @@ reject:
 	return -1;
 }
 
+/* Handle Handover Request message, part of inter-BSC handover:
+ * The MSC opened a new SCCP connection and is asking this BSS to accept an inter-BSC incoming handover.
+ * If we accept, we'll send a Handover Request Acknowledge.
+ * This function is only called when the Handover Request is *not* included in the initial SCCP N-Connect message, but
+ * follows an "empty" N-Connect in a separate DT1 message.
+ */
+static int bssmap_handle_handover_request(struct gsm_subscriber_connection *conn, struct msgb *msg)
+{
+	if (osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_A_INITIAL_USER_DATA, msg)) {
+		/* A Handover Request message should come in on a newly opened SCCP conn. Apparently the MSC has sent a
+		 * Handover Request on an already busy SCCP conn, and naturally we cannot accept another subscriber
+		 * here. This is unlikely to ever happen in practice. Respond in the only possible way: */
+		bsc_tx_bssmap_ho_failure(conn);
+		return -EINVAL;
+	}
+	return 0;
+}
+
 /* Handle Handover Command message, part of inter-BSC handover:
  * This BSS sent a Handover Required message.
  * The MSC contacts the remote BSS and receives from it an RR Handover Command; this BSSMAP Handover
@@ -1164,6 +1182,10 @@ static int bssmap_rcvmsg_dt1(struct gsm_subscriber_connection *conn,
 	case BSS_MAP_MSG_LCLS_CONNECT_CTRL:
 		rate_ctr_inc(&ctrs[MSC_CTR_BSSMAP_RX_DT1_LCLS_CONNECT_CTRL]);
 		ret = bssmap_handle_lcls_connect_ctrl(conn, msg, length);
+		break;
+	case BSS_MAP_MSG_HANDOVER_RQST:
+		rate_ctr_inc(&ctrs[MSC_CTR_BSSMAP_RX_DT1_HANDOVER_RQST]);
+		ret = bssmap_handle_handover_request(conn, msg);
 		break;
 	case BSS_MAP_MSG_HANDOVER_CMD:
 		rate_ctr_inc(&ctrs[MSC_CTR_BSSMAP_RX_DT1_HANDOVER_CMD]);
