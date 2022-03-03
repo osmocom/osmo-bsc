@@ -664,7 +664,7 @@ void handover_start_inter_bsc_in(struct gsm_subscriber_connection *conn,
 	ho_fsm_update_id(fi, "interBSCin");
 
 	if (!parse_ho_request(conn, ho_request_msg, req)) {
-		ho_fail(HO_RESULT_ERROR, "Invalid Handover Request message from MSC\n");
+		ho_fail(HO_RESULT_ERROR, "Invalid Handover Request message from MSC");
 		return;
 	}
 
@@ -740,7 +740,7 @@ void handover_start_inter_bsc_in(struct gsm_subscriber_connection *conn,
 	chosen_a5_n = select_best_cipher(req->ei_as_bitmask, bsc_gsmnet->a5_encryption_mask);
 	if (chosen_a5_n < 0) {
 		ho_fail(HO_RESULT_FAIL_RR_HO_FAIL,
-			"There is no A5 encryption mode that both BSC and MSC permit: MSC 0x%x & BSC 0x%x = 0\n",
+			"There is no A5 encryption mode that both BSC and MSC permit: MSC 0x%x & BSC 0x%x = 0",
 			req->ei_as_bitmask, bsc_gsmnet->a5_encryption_mask);
 		return;
 	}
@@ -759,7 +759,7 @@ void handover_start_inter_bsc_in(struct gsm_subscriber_connection *conn,
 	info.encr.alg_id = ALG_A5_NR_TO_RSL(chosen_a5_n);
 	if (chosen_a5_n > 0) {
 		if (req->ei.key_len > sizeof(info.encr.key)) {
-			ho_fail(HO_RESULT_ERROR, "Encryption Information IE key length is too large: %u\n",
+			ho_fail(HO_RESULT_ERROR, "Encryption Information IE key length is too large: %u",
 				req->ei.key_len);
 			return;
 		}
