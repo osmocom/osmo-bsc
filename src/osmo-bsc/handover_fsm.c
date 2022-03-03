@@ -604,6 +604,23 @@ static bool parse_ho_request(struct gsm_subscriber_connection *conn, const struc
 		parse_old2new_bss_info(conn, e->val, e->len, req);
 	}
 
+	/* Decode "Codec List (MSC Preferred)". First set len = 0 to empty the list. (For inter-BSC incoming handover,
+	 * there can't possibly be a list here already, because the conn has just now been created; just do ensure
+	 * sanity.) */
+	conn->codec_list = (struct gsm0808_speech_codec_list){};
+	if ((e = TLVP_GET(tp, GSM0808_IE_SPEECH_CODEC_LIST))) {
+		if (gsm0808_dec_speech_codec_list(&conn->codec_list, e->val, e->len) < 0) {
+			LOG_HO(conn, LOGL_ERROR, "incoming inter-BSC Handover: HO Request:"
+			       " Unable to decode Codec List (MSC Preferred)\n");
+			return false;
+		}
+	}
+	if (aoip && !conn->codec_list.len) {
+		LOG_HO(conn, LOGL_ERROR, "incoming inter-BSC Handover: HO Request:"
+		       " Invalid or empty Codec List (MSC Preferred)\n");
+		return false;
+	}
+
 	/* A lot of IEs remain ignored... */
 
 	return true;
