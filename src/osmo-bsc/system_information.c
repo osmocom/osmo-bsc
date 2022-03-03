@@ -1207,7 +1207,7 @@ static int generate_si6(enum osmo_sysinfo_type t, struct gsm_bts *bts)
 	gsm48_set_dtx(&si6->cell_options, bts->dtxu, bts->dtxu, false);
 
 	/* SI6 Rest Octets: 10.5.2.35a: PCH / NCH info, VBS/VGCS options */
-	si6_ro_info.band_indicator_1900 = is_dcs_net(bts);
+	si6_ro_info.band_indicator_1900 = !is_dcs_net(bts);
 	rc = osmo_gsm48_rest_octets_si6_encode(si6->rest_octets, &si6_ro_info);
 
 	return l2_plen + rc;
