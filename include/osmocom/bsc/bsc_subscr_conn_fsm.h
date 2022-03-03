@@ -9,6 +9,7 @@
 enum gscon_fsm_event {
 	/* local SCCP stack tells us incoming conn from MSC */
 	GSCON_EV_A_CONN_IND,
+	GSCON_EV_A_INITIAL_USER_DATA,
 	/* RSL side requests CONNECT to MSC */
 	GSCON_EV_MO_COMPL_L3,
 	/* MSC confirms the SCCP connection */
