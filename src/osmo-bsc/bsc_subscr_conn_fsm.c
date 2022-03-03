@@ -328,6 +328,7 @@ static void handle_bssap_n_connect(struct osmo_fsm_inst *fi, struct osmo_scu_pri
 		return;
 
 	case BSS_MAP_MSG_PERFORM_LOCATION_RQST:
+		rate_ctr_inc(&conn->sccp.msc->msc_ctrs->ctr[MSC_CTR_BSSMAP_RX_DT1_PERFORM_LOCATION_REQUEST]);
 		/* Location Services: MSC asks for location of an IDLE subscriber */
 		conn_fsm_state_chg(ST_ACTIVE);
 		lcs_loc_req_start(conn, msg);
