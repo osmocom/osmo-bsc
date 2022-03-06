@@ -984,7 +984,7 @@ const struct rate_ctr_desc bts_ctr_description[] = {
 		  "Received a TEI down on a OML link" },
 	[BTS_CTR_BTS_RSL_FAIL] = \
 		{ "rsl_fail",
-		  "Received a TEI down on a OML link" },
+		  "Received a TEI down on a RSL link" },
 	[BTS_CTR_CODEC_AMR_F] = \
 		{ "codec:amr_f",
 		  "Count the usage of AMR/F codec by channel mode requested" },
