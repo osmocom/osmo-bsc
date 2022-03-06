@@ -465,7 +465,12 @@ static int inp_sig_cb(unsigned int subsys, unsigned int signal,
 
 		if (isd->link_type == E1INP_SIGN_OML) {
 			rate_ctr_inc(rate_ctr_group_get_ctr(trx->bts->bts_ctrs, BTS_CTR_BTS_OML_FAIL));
-			all_ts_dispatch_event(trx, TS_EV_OML_DOWN);
+			/* ip.access BTS models have a single global A-bis/OML link for all
+			 * transceivers, so once it's lost we need to notify them all. */
+			if (is_ipaccess_bts(trx->bts))
+				gsm_bts_all_ts_dispatch(trx->bts, TS_EV_OML_DOWN, NULL);
+			else /* Other BTS models (e.g. Ericsson) have per-TRX OML links */
+				gsm_trx_all_ts_dispatch(trx, TS_EV_OML_DOWN, NULL);
 		} else if (isd->link_type == E1INP_SIGN_RSL) {
 			rate_ctr_inc(rate_ctr_group_get_ctr(trx->bts->bts_ctrs, BTS_CTR_BTS_RSL_FAIL));
 			acc_ramp_abort(&trx->bts->acc_ramp);
