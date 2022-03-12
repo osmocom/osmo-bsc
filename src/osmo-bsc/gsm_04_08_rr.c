@@ -545,7 +545,7 @@ struct msgb *gsm48_make_ho_cmd(struct gsm_lchan *new_lchan, uint8_t power_comman
 	gh->msg_type = GSM48_MT_RR_HANDO_CMD;
 
 	/* mandatory bits */
-	gsm48_cell_desc(&ho->cell_desc, new_lchan->ts->trx->bts);
+	gsm48_cell_desc(&ho->cell_desc, bts);
 	if (gsm48_lchan2chan_desc(&ho->chan_desc, new_lchan, gsm_ts_tsc(new_lchan->ts), false)) {
 		msgb_free(msg);
 		return NULL;
@@ -554,7 +554,6 @@ struct msgb *gsm48_make_ho_cmd(struct gsm_lchan *new_lchan, uint8_t power_comman
 	ho->power_command = power_command;
 
 	if (new_lchan->ts->hopping.enabled) {
-		struct gsm_bts *bts = new_lchan->ts->trx->bts;
 		struct gsm48_system_information_type_1 *si1;
 
 		si1 = GSM_BTS_SI(bts, SYSINFO_TYPE_1);
