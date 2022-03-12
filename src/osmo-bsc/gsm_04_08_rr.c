@@ -587,16 +587,6 @@ struct msgb *gsm48_make_ho_cmd(struct gsm_lchan *new_lchan, uint8_t power_comman
 	return msg;
 }
 
-int gsm48_send_ho_cmd(struct gsm_lchan *old_lchan, struct gsm_lchan *new_lchan,
-		      uint8_t power_command, uint8_t ho_ref)
-{
-	struct msgb *msg = gsm48_make_ho_cmd(new_lchan, power_command, ho_ref);
-	if (!msg)
-		return -EINVAL;
-	msg->lchan = old_lchan;
-	return gsm48_sendmsg(msg);
-}
-
 /* Chapter 9.1.2: Assignment Command */
 int gsm48_send_rr_ass_cmd(struct gsm_lchan *current_lchan, struct gsm_lchan *new_lchan, uint8_t power_command)
 {
