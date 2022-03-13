@@ -756,7 +756,7 @@ void handover_start_inter_bsc_in(struct gsm_subscriber_connection *conn,
 	}
 
 	/* Put encryption info in the chan activation info */
-	info.encr.alg_id = ALG_A5_NR_TO_RSL(chosen_a5_n);
+	info.encr.alg_a5_n = chosen_a5_n;
 	if (chosen_a5_n > 0) {
 		if (req->ei.key_len > sizeof(info.encr.key)) {
 			ho_fail(HO_RESULT_ERROR, "Encryption Information IE key length is too large: %u",
@@ -933,7 +933,7 @@ static void send_handover_performed(struct gsm_subscriber_connection *conn)
 	ho_perf_params.chosen_channel_present = true;
 
 	/* Chosen Encryption Algorithm 3.2.2.44 */
-	ho_perf_params.chosen_encr_alg = lchan->encr.alg_id;
+	ho_perf_params.chosen_encr_alg = ALG_A5_NR_TO_BSSAP(lchan->encr.alg_a5_n);
 	ho_perf_params.chosen_encr_alg_present = true;
 
 	if (ho->new_lchan->activate.info.requires_voice_stream) {

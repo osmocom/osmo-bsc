@@ -368,16 +368,14 @@ int gsm48_send_rr_ciph_mode(struct gsm_lchan *lchan, int want_imeisv)
 {
 	struct msgb *msg = gsm48_msgb_alloc_name("GSM 04.08 CIPH");
 	struct gsm48_hdr *gh;
-	uint8_t ciph_mod_set;
+	uint8_t ciph_mod_set = 0x00;
 
 	msg->lchan = lchan;
 
 	DEBUGP(DRR, "TX CIPHERING MODE CMD\n");
 
-	if (lchan->encr.alg_id <= ALG_A5_NR_TO_RSL(0))
-		ciph_mod_set = 0;
-	else
-		ciph_mod_set = (lchan->encr.alg_id-2)<<1 | 1;
+	if (lchan->encr.alg_a5_n > 0)
+		ciph_mod_set = (lchan->encr.alg_a5_n - 1) << 1 | 0x01;
 
 	gh = (struct gsm48_hdr *) msgb_put(msg, sizeof(*gh) + 1);
 	gh->proto_discr = GSM48_PDISC_RR;
@@ -592,9 +590,8 @@ struct msgb *gsm48_make_ho_cmd(const struct gsm_lchan *new_lchan,
 	 * Shall be included in the case of inter-RAT handover. */
 	if (ho_scope & HO_INTER_BSC_IN) {
 		uint8_t cms = 0x00;
-		/* This formula copied from gsm48_send_rr_ciph_mode() */
-		if (new_lchan->encr.alg_id > ALG_A5_NR_TO_RSL(0))
-			cms = (new_lchan->encr.alg_id - 2) << 1 | 1;
+		if (new_lchan->encr.alg_a5_n > 0)
+			cms = (new_lchan->encr.alg_a5_n - 1) << 1 | 1;
 		/* T (4 bit) + V (4 bit), see 3GPP TS 44.018, 10.5.2.9 */
 		msgb_v_put(msg, GSM48_IE_CIP_MODE_SET | (cms & 0x0f));
 	}
@@ -1014,7 +1011,7 @@ static void dispatch_dtap(struct gsm_subscriber_connection *conn,
 				osmo_fsm_inst_dispatch(conn->ho.fi, HO_EV_RR_HO_FAIL, msg);
 			break;
 		case GSM48_MT_RR_CIPH_M_COMPL:
-			bsc_cipher_mode_compl(conn, msg, conn->lchan->encr.alg_id);
+			bsc_cipher_mode_compl(conn, msg, conn->lchan->encr.alg_a5_n);
 			break;
 		case GSM48_MT_RR_ASS_COMPL:
 			if (conn->assignment.fi)

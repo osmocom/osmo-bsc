@@ -532,7 +532,7 @@ static int bssmap_handle_cipher_mode(struct gsm_subscriber_connection *conn,
 		goto reject;
 	}
 
-	conn->lchan->encr.alg_id = ALG_A5_NR_TO_RSL(chosen_cipher);
+	conn->lchan->encr.alg_a5_n = chosen_cipher;
 	if (enc_key_len) {
 		conn->lchan->encr.key_len = enc_key_len;
 		memcpy(conn->lchan->encr.key, enc_key, enc_key_len);
@@ -1436,7 +1436,7 @@ int bsc_tx_bssmap_ho_request_ack(struct gsm_subscriber_connection *conn, struct 
 		.l3_info_len = rr_ho_command->len,
 		.chosen_channel_present = true,
 		.chosen_channel = gsm0808_chosen_channel(new_lchan->type, new_lchan->current_ch_mode_rate.chan_mode),
-		.chosen_encr_alg = new_lchan->encr.alg_id,
+		.chosen_encr_alg = ALG_A5_NR_TO_BSSAP(new_lchan->encr.alg_a5_n),
 		.chosen_speech_version = gsm0808_permitted_speech(new_lchan->type,
 								  new_lchan->current_ch_mode_rate.chan_mode),
 	};
@@ -1506,7 +1506,7 @@ enum handover_result bsc_tx_bssmap_ho_complete(struct gsm_subscriber_connection 
 
 	struct gsm0808_handover_complete params = {
 		.chosen_encr_alg_present = true,
-		.chosen_encr_alg = lchan->encr.alg_id,
+		.chosen_encr_alg = ALG_A5_NR_TO_BSSAP(lchan->encr.alg_a5_n),
 
 		.chosen_channel_present = true,
 		.chosen_channel = gsm0808_chosen_channel(lchan->type, lchan->current_ch_mode_rate.chan_mode),

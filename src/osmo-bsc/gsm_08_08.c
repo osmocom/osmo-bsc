@@ -85,7 +85,7 @@ void bsc_sapi_n_reject(struct gsm_subscriber_connection *conn,
 }
 
 /*! MS->MSC: Tell MSC that ciphering has been enabled. */
-void bsc_cipher_mode_compl(struct gsm_subscriber_connection *conn, struct msgb *msg, uint8_t chosen_encr)
+void bsc_cipher_mode_compl(struct gsm_subscriber_connection *conn, struct msgb *msg, uint8_t chosen_a5_n)
 {
 	int rc;
 	struct msgb *resp;
@@ -94,7 +94,7 @@ void bsc_cipher_mode_compl(struct gsm_subscriber_connection *conn, struct msgb *
 		return;
 
 	LOGP(DMSC, LOGL_DEBUG, "CIPHER MODE COMPLETE from MS, forwarding to MSC\n");
-	resp = gsm0808_create_cipher_complete(msg, chosen_encr);
+	resp = gsm0808_create_cipher_complete(msg, ALG_A5_NR_TO_BSSAP(chosen_a5_n));
 	rate_ctr_inc(rate_ctr_group_get_ctr(conn->sccp.msc->msc_ctrs, MSC_CTR_BSSMAP_TX_DT1_CIPHER_COMPLETE));
 	rc = osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_TX_SCCP, resp);
 	if (rc != 0)

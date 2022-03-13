@@ -159,13 +159,13 @@ static void pad_macblock(uint8_t *out, const uint8_t *in, int len)
  * 'out' must provide room for 17 bytes. */
 static int build_encr_info(uint8_t *out, struct gsm_lchan *lchan)
 {
-	*out++ = lchan->encr.alg_id & 0xff;
-	switch (lchan->encr.alg_id) {
+	out[0] = ALG_A5_NR_TO_RSL(lchan->encr.alg_a5_n);
+	switch (out[0]) {
 	case GSM0808_ALG_ID_A5_1:
 	case GSM0808_ALG_ID_A5_2:
 	case GSM0808_ALG_ID_A5_3:
 		if (!lchan->encr.key_len) {
-			LOG_LCHAN(lchan, LOGL_ERROR, "A5/%d encryption chosen, but missing Kc\n", lchan->encr.alg_id);
+			LOG_LCHAN(lchan, LOGL_ERROR, "A5/%d encryption chosen, but missing Kc\n", lchan->encr.alg_a5_n);
 			return -EINVAL;
 		}
 		/* fall through */
@@ -177,7 +177,7 @@ static int build_encr_info(uint8_t *out, struct gsm_lchan *lchan)
 		 * even for A5/0. Currently our ttcn3 test suite does expect the key to be present also for A5/0, see
 		 * f_cipher_mode() in bsc/MSC_ConnectionHandler.ttcn. */
 		if (lchan->encr.key_len)
-			memcpy(out, lchan->encr.key, lchan->encr.key_len);
+			memcpy(&out[1], lchan->encr.key, lchan->encr.key_len);
 		return 1 + lchan->encr.key_len;
 
 	case GSM0808_ALG_ID_A5_4:
@@ -185,11 +185,11 @@ static int build_encr_info(uint8_t *out, struct gsm_lchan *lchan)
 			LOG_LCHAN(lchan, LOGL_ERROR, "A5/4 encryption chosen, but missing Kc128\n");
 			return -EINVAL;
 		}
-		memcpy(out, lchan->encr.kc128, sizeof(lchan->encr.kc128));
+		memcpy(&out[1], lchan->encr.kc128, sizeof(lchan->encr.kc128));
 		return 1 + sizeof(lchan->encr.kc128);
 
 	default:
-		LOG_LCHAN(lchan, LOGL_ERROR, "A5/%d encryption not supported\n", lchan->encr.alg_id);
+		LOG_LCHAN(lchan, LOGL_ERROR, "A5/%d encryption not supported\n", lchan->encr.alg_a5_n);
 		return -EINVAL;
 	}
 }
@@ -660,7 +660,7 @@ int rsl_tx_chan_activ(struct gsm_lchan *lchan, uint8_t act_type, uint8_t ho_ref)
 	msg->l3h = len + 1;
 	*len = msgb_l3len(msg);
 
-	if (lchan->encr.alg_id > ALG_A5_NR_TO_RSL(0)) {
+	if (lchan->encr.alg_a5_n > 0) {
 		uint8_t encr_info[MAX_A5_KEY_LEN+2];
 		rc = build_encr_info(encr_info, lchan);
 		if (rc > 0)
@@ -764,7 +764,7 @@ int rsl_chan_mode_modify_req(struct gsm_lchan *lchan)
 	msgb_tlv_put(msg, RSL_IE_CHAN_MODE, sizeof(cm),
 		     (uint8_t *) &cm);
 
-	if (lchan->encr.alg_id > ALG_A5_NR_TO_RSL(0)) {
+	if (lchan->encr.alg_a5_n > 0) {
 		uint8_t encr_info[MAX_A5_KEY_LEN+2];
 		rc = build_encr_info(encr_info, lchan);
 		if (rc > 0)

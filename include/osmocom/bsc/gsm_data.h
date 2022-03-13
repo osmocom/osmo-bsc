@@ -546,6 +546,7 @@ struct om2k_mo {
  * These macros convert from n to the other representations:
  */
 #define ALG_A5_NR_TO_RSL(A5_N) ((A5_N) >= 0 ? (A5_N)+1 : 0)
+#define ALG_A5_NR_TO_BSSAP(A5_N) ALG_A5_NR_TO_RSL(A5_N)
 #define ALG_A5_NR_TO_PERM_ALG_BITS(A5_N) ((A5_N) >= 0 ? 1<<(A5_N) : 0)
 
 /* Up to 16 SI2quater are multiplexed; each fits 3 EARFCNS, so the practical maximum is 3*16.
@@ -608,7 +609,7 @@ enum lchan_sapi_state {
 #define MAX_A5_KEY_LEN	(128/8)
 
 struct gsm_encr {
-	uint8_t alg_id;
+	uint8_t alg_a5_n; /* N: 0 (A5/0), 1 (A5/1), ... 7 (A5/7) */
 	uint8_t key_len;
 	uint8_t key[MAX_A5_KEY_LEN];
 	bool kc128_present;

@@ -226,7 +226,7 @@ static void send_assignment_complete(struct gsm_subscriber_connection *conn)
 
 	resp = gsm0808_create_ass_compl2(lchan->abis_ip.ass_compl.rr_cause,
 					 chosen_channel,
-					 lchan->encr.alg_id, perm_spch,
+					 ALG_A5_NR_TO_BSSAP(lchan->encr.alg_a5_n), perm_spch,
 					 addr_local_p, sc_ptr, NULL, lcls_get_status(conn));
 
 	if (!resp) {
