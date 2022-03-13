@@ -534,6 +534,7 @@ return_msg:
 
 /* Chapter 9.1.15: Handover Command */
 struct msgb *gsm48_make_ho_cmd(const struct gsm_lchan *new_lchan,
+			       enum handover_scope ho_scope,
 			       uint8_t power_command, uint8_t ho_ref)
 {
 	struct msgb *msg = gsm48_msgb_alloc_name("GSM 04.08 HO CMD");
@@ -572,6 +573,18 @@ struct msgb *gsm48_make_ho_cmd(const struct gsm_lchan *new_lchan,
 		msgb_tlv_put(msg, GSM48_IE_MA_AFTER,
 			     new_lchan->ts->hopping.ma_len,
 			     new_lchan->ts->hopping.ma_data);
+	}
+
+	/* (O) Cipher Mode Setting, TV (see 3GPP TS 44.018, 9.1.15.10).
+	 * Omitted in the case of intra-RAT (GERAN-to-GERAN) handover.
+	 * Shall be included in the case of inter-RAT handover. */
+	if (ho_scope & HO_INTER_BSC_IN) {
+		uint8_t cms = 0x00;
+		/* This formula copied from gsm48_send_rr_ciph_mode() */
+		if (new_lchan->encr.alg_id > ALG_A5_NR_TO_RSL(0))
+			cms = (new_lchan->encr.alg_id - 2) << 1 | 1;
+		/* T (4 bit) + V (4 bit), see 3GPP TS 44.018, 10.5.2.9 */
+		msgb_v_put(msg, GSM48_IE_CIP_MODE_SET | (cms & 0x0f));
 	}
 
 	/* in case of multi rate we need to attach a config */
