@@ -533,13 +533,14 @@ return_msg:
 #define GSM48_HOCMD_CCHDESC_LEN	16
 
 /* Chapter 9.1.15: Handover Command */
-struct msgb *gsm48_make_ho_cmd(struct gsm_lchan *new_lchan, uint8_t power_command, uint8_t ho_ref)
+struct msgb *gsm48_make_ho_cmd(const struct gsm_lchan *new_lchan,
+			       uint8_t power_command, uint8_t ho_ref)
 {
 	struct msgb *msg = gsm48_msgb_alloc_name("GSM 04.08 HO CMD");
 	struct gsm48_hdr *gh = (struct gsm48_hdr *) msgb_put(msg, sizeof(*gh));
 	struct gsm48_ho_cmd *ho =
 		(struct gsm48_ho_cmd *) msgb_put(msg, sizeof(*ho));
-	struct gsm_bts *bts = new_lchan->ts->trx->bts;
+	const struct gsm_bts *bts = new_lchan->ts->trx->bts;
 
 	gh->proto_discr = GSM48_PDISC_RR;
 	gh->msg_type = GSM48_MT_RR_HANDO_CMD;
