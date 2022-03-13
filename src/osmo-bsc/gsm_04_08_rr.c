@@ -534,7 +534,7 @@ return_msg:
 
 /* Chapter 9.1.15: Handover Command */
 struct msgb *gsm48_make_ho_cmd(const struct gsm_lchan *new_lchan,
-			       enum handover_scope ho_scope,
+			       enum handover_scope ho_scope, bool async,
 			       uint8_t power_command, uint8_t ho_ref)
 {
 	struct msgb *msg = gsm48_msgb_alloc_name("GSM 04.08 HO CMD");
@@ -555,6 +555,19 @@ struct msgb *gsm48_make_ho_cmd(const struct gsm_lchan *new_lchan,
 	ho->ho_ref = ho_ref;
 	ho->power_command = power_command;
 
+	/* Synchronization Indication, TV (see 3GPP TS 44.018, 9.1.15.1).
+	 * In the case of inter-RAT handover, always include this IE for the sake of
+	 * explicitness.  In the case of intra-RAT handover, include this IE only for
+	 * the synchronized handover.  If omitted, non-synchronized handover is assumed. */
+	if (!async || (ho_scope & HO_INTER_BSC_IN)) {
+		/* Only the SI field (Non-synchronized/Synchronized) is present.
+		 * TODO: ROT (Report Observed Time Difference), currently 0.
+		 * TODO: NCI (Normal cell indication), currently 0. */
+		const uint8_t sync_ind = async ? 0x00 : 0x01;
+		/* T (4 bit) + V (4 bit), see 3GPP TS 44.018, 10.5.2.39 */
+		msgb_v_put(msg, GSM48_IE_SYNC_IND | (sync_ind & 0x0f));
+	}
+
 	if (new_lchan->ts->hopping.enabled) {
 		struct gsm_bts *bts = new_lchan->ts->trx->bts;
 		struct gsm48_system_information_type_1 *si1;
@@ -565,7 +578,6 @@ struct msgb *gsm48_make_ho_cmd(const struct gsm_lchan *new_lchan,
 				  GSM48_HOCMD_CCHDESC_LEN,
 				  si1->cell_channel_description);
 	}
-	/* FIXME: optional bits for type of synchronization? */
 
 	msgb_tv_put(msg, GSM48_IE_CHANMODE_1, new_lchan->current_ch_mode_rate.chan_mode);
 

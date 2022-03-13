@@ -1199,7 +1199,7 @@ static void ho_fsm_wait_rr_ho_detect_onenter(struct osmo_fsm_inst *fi, uint32_t 
 	struct handover *ho = &conn->ho;
 
 	struct msgb *rr_ho_cmd = gsm48_make_ho_cmd(ho->new_lchan,
-						   ho->scope,
+						   ho->async, ho->scope,
 						   ho->new_lchan->ms_power,
 						   ho->ho_ref);
 	if (!rr_ho_cmd) {

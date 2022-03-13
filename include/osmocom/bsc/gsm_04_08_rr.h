@@ -27,7 +27,7 @@ int gsm48_multirate_config(struct msgb *msg,
 			   const struct gsm48_multi_rate_conf *mr_conf,
 			   const struct amr_mode *modes, unsigned int num_modes);
 struct msgb *gsm48_make_ho_cmd(const struct gsm_lchan *new_lchan,
-			       enum handover_scope ho_scope,
+			       enum handover_scope ho_scope, bool async,
 			       uint8_t power_command, uint8_t ho_ref);
 int gsm48_send_rr_ass_cmd(struct gsm_lchan *dest_lchan, struct gsm_lchan *lchan, uint8_t power_command);
 int gsm48_send_rr_app_info(struct gsm_lchan *lchan, uint8_t apdu_id, uint8_t apdu_flags,
