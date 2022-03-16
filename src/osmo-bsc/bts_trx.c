@@ -382,7 +382,7 @@ static int rsl_si(struct gsm_bts_trx *trx, enum osmo_sysinfo_type i, int si_len)
 /* set all system information types for a TRX */
 int gsm_bts_trx_set_system_infos(struct gsm_bts_trx *trx)
 {
-	int i, rc;
+	int rc;
 	struct gsm_bts *bts = trx->bts;
 	uint8_t gen_si[_MAX_SYSINFO_TYPE], n_si = 0, n;
 	int si_len[_MAX_SYSINFO_TYPE];
@@ -420,42 +420,49 @@ int gsm_bts_trx_set_system_infos(struct gsm_bts_trx *trx)
 	/* Second, we generate the selected SI via RSL */
 
 	for (n = 0; n < n_si; n++) {
-		i = gen_si[n];
+		const enum osmo_sysinfo_type si_type = gen_si[n];
+
 		/* Only generate SI if this SI is not in "static" (user-defined) mode */
-		if (!(bts->si_mode_static & (1 << i))) {
+		if (!(bts->si_mode_static & (1 << si_type))) {
 			/* Set SI as being valid. gsm_generate_si() might unset
 			 * it, if SI is not required. */
-			bts->si_valid |= (1 << i);
-			rc = gsm_generate_si(bts, i);
+			bts->si_valid |= (1 << si_type);
+			rc = gsm_generate_si(bts, si_type);
 			if (rc < 0)
 				goto err_out;
-			si_len[i] = rc;
+			si_len[si_type] = rc;
 		} else {
-			if (i == SYSINFO_TYPE_5 || i == SYSINFO_TYPE_5bis
-			 || i == SYSINFO_TYPE_5ter)
-				si_len[i] = 18;
-			else if (i == SYSINFO_TYPE_6)
-				si_len[i] = 11;
-			else
-				si_len[i] = 23;
+			switch (si_type) {
+			case SYSINFO_TYPE_5:
+			case SYSINFO_TYPE_5bis:
+			case SYSINFO_TYPE_5ter:
+				si_len[si_type] = 18;
+				break;
+			case SYSINFO_TYPE_6:
+				si_len[si_type] = 11;
+				break;
+			default:
+				si_len[si_type] = 23;
+			}
 		}
 	}
 
 	/* Third, we send the selected SI via RSL */
 
 	for (n = 0; n < n_si; n++) {
-		i = gen_si[n];
+		const enum osmo_sysinfo_type si_type = gen_si[n];
+
 		/* 3GPP TS 08.58 §8.5.1 BCCH INFORMATION. If we don't currently
 		 * have this SI, we send a zero-length RSL BCCH FILLING /
 		 * SACCH FILLING in order to deactivate the SI, in case it
 		 * might have previously been active */
-		if (!GSM_BTS_HAS_SI(bts, i)) {
+		if (!GSM_BTS_HAS_SI(bts, si_type)) {
 			if (bts->si_unused_send_empty)
-				rc = rsl_si(trx, i, 0);
+				rc = rsl_si(trx, si_type, 0);
 			else
 				rc = 0; /* some nanoBTS fw don't like receiving empty unsupported SI */
 		} else
-			rc = rsl_si(trx, i, si_len[i]);
+			rc = rsl_si(trx, si_type, si_len[si_type]);
 		if (rc < 0)
 			return rc;
 	}
@@ -468,6 +475,6 @@ int gsm_bts_trx_set_system_infos(struct gsm_bts_trx *trx)
 err_out:
 	LOGP(DRR, LOGL_ERROR, "Cannot generate SI%s for BTS %u: error <%s>, "
 	     "most likely a problem with neighbor cell list generation\n",
-	     get_value_string(osmo_sitype_strs, i), bts->nr, strerror(-rc));
+	     get_value_string(osmo_sitype_strs, gen_si[n]), bts->nr, strerror(-rc));
 	return rc;
 }
