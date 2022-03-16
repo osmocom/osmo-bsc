@@ -963,6 +963,10 @@ static int generate_si3(enum osmo_sysinfo_type t, struct gsm_bts *bts)
 	si3->header.skip_indicator = 0;
 	si3->header.system_information = GSM48_MT_RR_SYSINFO_3;
 
+	/* The value in bts->si_common.chan_desc may get out of sync with the actual value
+	 * in net->T_defs (e.g. after changing it via the VTY), so we need to sync it here. */
+	bts->si_common.chan_desc.t3212 = osmo_tdef_get(bts->network->T_defs, 3212, OSMO_TDEF_CUSTOM, 0);
+
 	si3->cell_identity = htons(bts->cell_identity);
 	gsm48_generate_lai2(&si3->lai, bts_lai(bts));
 	si3->control_channel_desc = bts->si_common.chan_desc;

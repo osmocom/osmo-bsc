@@ -2333,13 +2333,14 @@ DEFUN_ATTR(cfg_net_no_timezone,
 	return CMD_SUCCESS;
 }
 
-/* FIXME: changing this value would not affect generated System Information */
-DEFUN(cfg_net_per_loc_upd, cfg_net_per_loc_upd_cmd,
-      "periodic location update <6-1530>",
-      "Periodic Location Updating Interval\n"
-      "Periodic Location Updating Interval\n"
-      "Periodic Location Updating Interval\n"
-      "Periodic Location Updating Interval in Minutes\n")
+DEFUN_USRATTR(cfg_net_per_loc_upd,
+	      cfg_net_per_loc_upd_cmd,
+	      BSC_VTY_ATTR_RESTART_ABIS_RSL_LINK,
+	      "periodic location update <6-1530>",
+	      "Periodic Location Updating Interval\n"
+	      "Periodic Location Updating Interval\n"
+	      "Periodic Location Updating Interval\n"
+	      "Periodic Location Updating Interval in Minutes\n")
 {
 	struct gsm_network *net = vty->index;
 	struct osmo_tdef *d = osmo_tdef_get_entry(net->T_defs, 3212);
@@ -2350,13 +2351,14 @@ DEFUN(cfg_net_per_loc_upd, cfg_net_per_loc_upd_cmd,
 	return CMD_SUCCESS;
 }
 
-/* FIXME: changing this value would not affect generated System Information */
-DEFUN(cfg_net_no_per_loc_upd, cfg_net_no_per_loc_upd_cmd,
-      "no periodic location update",
-      NO_STR
-      "Periodic Location Updating Interval\n"
-      "Periodic Location Updating Interval\n"
-      "Periodic Location Updating Interval\n")
+DEFUN_USRATTR(cfg_net_no_per_loc_upd,
+	      cfg_net_no_per_loc_upd_cmd,
+	      BSC_VTY_ATTR_RESTART_ABIS_RSL_LINK,
+	      "no periodic location update",
+	      NO_STR
+	      "Periodic Location Updating Interval\n"
+	      "Periodic Location Updating Interval\n"
+	      "Periodic Location Updating Interval\n")
 {
 	struct gsm_network *net = vty->index;
 	struct osmo_tdef *d = osmo_tdef_get_entry(net->T_defs, 3212);
