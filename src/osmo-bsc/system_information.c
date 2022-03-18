@@ -1200,44 +1200,11 @@ static int generate_si6(enum osmo_sysinfo_type t, struct gsm_bts *bts)
 	return l2_plen + rc;
 }
 
-static struct osmo_gsm48_si13_info si13_default = {
-	.cell_opts = {
-		.nmo 		= GPRS_NMO_II,
-		.t3168		= 2000,
-		.t3192		= 1500,
-		.drx_timer_max	= 3,
-		.bs_cv_max	= 15,
-		.ctrl_ack_type_use_block = true,
-		.ext_info_present = true,
-		.ext_info = {
-			.egprs_supported = 0,		/* overridden in gsm_generate_si() */
-			.use_egprs_p_ch_req = 0,	/* overridden in generate_si13() */
-			.bep_period = 5,
-			.pfc_supported = 0,
-			.dtm_supported = 0,
-			.bss_paging_coordination = 0,	/* overridden in generate_si13() */
-			.ccn_active = false,		/* overridden in generate_si13() */
-		},
-	},
-	.pwr_ctrl_pars = {
-		.alpha		= 0,	/* a = 0.0 */
-		.t_avg_w	= 16,
-		.t_avg_t	= 16,
-		.pc_meas_chan	= 0, 	/* downling measured on CCCH */
-		.n_avg_i	= 8,
-	},
-	.bcch_change_mark	= 1,
-	.si_change_field	= 0,
-	.rac		= 0,	/* needs to be patched */
-	.spgc_ccch_sup 	= 0,
-	.net_ctrl_ord	= 0,
-	.prio_acc_thr	= 6,
-};
-
 static int generate_si13(enum osmo_sysinfo_type t, struct gsm_bts *bts)
 {
 	struct gsm48_system_information_type_13 *si13 =
 		(struct gsm48_system_information_type_13 *) GSM_BTS_SI(bts, t);
+	struct osmo_gsm48_si13_info si13_info;
 	int ret;
 
 	memset(si13, GSM_MACBLOCK_PADDING, GSM_MACBLOCK_LEN);
@@ -1246,43 +1213,67 @@ static int generate_si13(enum osmo_sysinfo_type t, struct gsm_bts *bts)
 	si13->header.skip_indicator = 0;
 	si13->header.system_information = GSM48_MT_RR_SYSINFO_13;
 
-	si13_default.rac = bts->gprs.rac;
-	si13_default.net_ctrl_ord = bts->gprs.net_ctrl_ord;
-
-	si13_default.cell_opts.ctrl_ack_type_use_block =
-		bts->gprs.ctrl_ack_type_use_block;
-
-	/* Information about the other SIs */
-	si13_default.bcch_change_mark = bts->bcch_change_mark;
+	si13_info = (struct osmo_gsm48_si13_info){
+		.cell_opts = {
+			.nmo		= GPRS_NMO_II,
+			.t3168		= 2000,
+			.t3192		= 1500,
+			.drx_timer_max	= 3,
+			.bs_cv_max	= 15,
+			.ctrl_ack_type_use_block = bts->gprs.ctrl_ack_type_use_block,
+			.ext_info_present = true,
+			.ext_info = {
+				.egprs_supported = 0,		/* overridden below */
+				.use_egprs_p_ch_req = 0,	/* overridden below */
+				.bep_period = 5,
+				.pfc_supported = 0,
+				.dtm_supported = 0,
+				.bss_paging_coordination = 0,	/* overridden below */
+				.ccn_active = false,		/* overridden below */
+			},
+		},
+		.pwr_ctrl_pars = {
+			.alpha		= bts->gprs.pwr_ctrl.alpha,	/* a = 0.0 */
+			.t_avg_w	= 16,
+			.t_avg_t	= 16,
+			.pc_meas_chan	= 0,	/* downling measured on CCCH */
+			.n_avg_i	= 8,
+		},
+		.bcch_change_mark	= bts->bcch_change_mark, /* Information about the other SIs */
+		.si_change_field	= 0,
+		.rac		= bts->gprs.rac,
+		.spgc_ccch_sup	= 0,
+		.net_ctrl_ord	= bts->gprs.net_ctrl_ord,
+		.prio_acc_thr	= 6,
+	};
 
 	switch (bts->gprs.mode) {
 	case BTS_GPRS_EGPRS:
-		si13_default.cell_opts.ext_info.egprs_supported = 1;
+		si13_info.cell_opts.ext_info.egprs_supported = 1;
 		/* Whether EGPRS capable MSs shall use EGPRS PACKET CHANNEL REQUEST */
 		if (bts->gprs.egprs_pkt_chan_request)
-			si13_default.cell_opts.ext_info.use_egprs_p_ch_req = 1;
+			si13_info.cell_opts.ext_info.use_egprs_p_ch_req = 1;
 		else
-			si13_default.cell_opts.ext_info.use_egprs_p_ch_req = 0;
+			si13_info.cell_opts.ext_info.use_egprs_p_ch_req = 0;
 		break;
 	case BTS_GPRS_GPRS:
 	case BTS_GPRS_NONE:
-		si13_default.cell_opts.ext_info.egprs_supported = 0;
-		si13_default.cell_opts.ext_info.use_egprs_p_ch_req = 0;
+		si13_info.cell_opts.ext_info.egprs_supported = 0;
+		si13_info.cell_opts.ext_info.use_egprs_p_ch_req = 0;
 		break;
 	}
 
 	if (osmo_bts_has_feature(&bts->features, BTS_FEAT_PAGING_COORDINATION))
-		si13_default.cell_opts.ext_info.bss_paging_coordination = 1;
+		si13_info.cell_opts.ext_info.bss_paging_coordination = 1;
 	else
-		si13_default.cell_opts.ext_info.bss_paging_coordination = 0;
+		si13_info.cell_opts.ext_info.bss_paging_coordination = 0;
 
-	si13_default.cell_opts.ext_info.ccn_active = bts->gprs.ccn.forced_vty ?
-						     bts->gprs.ccn.active :
-						     osmo_bts_has_feature(&bts->model->features,
-									  BTS_FEAT_CCN);
-	si13_default.pwr_ctrl_pars.alpha = bts->gprs.pwr_ctrl.alpha;
+	si13_info.cell_opts.ext_info.ccn_active = bts->gprs.ccn.forced_vty ?
+						  bts->gprs.ccn.active :
+						  osmo_bts_has_feature(&bts->model->features,
+								       BTS_FEAT_CCN);
 
-	ret = osmo_gsm48_rest_octets_si13_encode(si13->rest_octets, &si13_default);
+	ret = osmo_gsm48_rest_octets_si13_encode(si13->rest_octets, &si13_info);
 	if (ret < 0)
 		return ret;
 
