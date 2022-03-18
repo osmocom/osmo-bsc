@@ -1256,7 +1256,7 @@ static int generate_si13(enum osmo_sysinfo_type t, struct gsm_bts *bts)
 	si13_default.bcch_change_mark = bts->bcch_change_mark;
 
 	/* Whether EGPRS capable MSs shall use EGPRS PACKET CHANNEL REQUEST */
-	if (bts->gprs.egprs_pkt_chan_request)
+	if (bts->gprs.egprs_pkt_chan_request && si13_default.cell_opts.ext_info.egprs_supported)
 		si13_default.cell_opts.ext_info.use_egprs_p_ch_req = 1;
 	else
 		si13_default.cell_opts.ext_info.use_egprs_p_ch_req = 0;
