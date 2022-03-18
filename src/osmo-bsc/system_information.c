@@ -1255,11 +1255,21 @@ static int generate_si13(enum osmo_sysinfo_type t, struct gsm_bts *bts)
 	/* Information about the other SIs */
 	si13_default.bcch_change_mark = bts->bcch_change_mark;
 
-	/* Whether EGPRS capable MSs shall use EGPRS PACKET CHANNEL REQUEST */
-	if (bts->gprs.egprs_pkt_chan_request && si13_default.cell_opts.ext_info.egprs_supported)
-		si13_default.cell_opts.ext_info.use_egprs_p_ch_req = 1;
-	else
+	switch (bts->gprs.mode) {
+	case BTS_GPRS_EGPRS:
+		si13_default.cell_opts.ext_info.egprs_supported = 1;
+		/* Whether EGPRS capable MSs shall use EGPRS PACKET CHANNEL REQUEST */
+		if (bts->gprs.egprs_pkt_chan_request)
+			si13_default.cell_opts.ext_info.use_egprs_p_ch_req = 1;
+		else
+			si13_default.cell_opts.ext_info.use_egprs_p_ch_req = 0;
+		break;
+	case BTS_GPRS_GPRS:
+	case BTS_GPRS_NONE:
+		si13_default.cell_opts.ext_info.egprs_supported = 0;
 		si13_default.cell_opts.ext_info.use_egprs_p_ch_req = 0;
+		break;
+	}
 
 	if (osmo_bts_has_feature(&bts->features, BTS_FEAT_PAGING_COORDINATION))
 		si13_default.cell_opts.ext_info.bss_paging_coordination = 1;
@@ -1306,16 +1316,11 @@ int gsm_generate_si(struct gsm_bts *bts, enum osmo_sysinfo_type si_type)
 
 	switch (bts->gprs.mode) {
 	case BTS_GPRS_EGPRS:
-		si_info.gprs_ind.present = 1;
-		si13_default.cell_opts.ext_info.egprs_supported = 1;
-		break;
 	case BTS_GPRS_GPRS:
 		si_info.gprs_ind.present = 1;
-		si13_default.cell_opts.ext_info.egprs_supported = 0;
 		break;
 	case BTS_GPRS_NONE:
 		si_info.gprs_ind.present = 0;
-		si13_default.cell_opts.ext_info.egprs_supported = 0;
 		break;
 	}
 
