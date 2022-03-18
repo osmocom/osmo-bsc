@@ -1208,15 +1208,15 @@ static struct osmo_gsm48_si13_info si13_default = {
 		.drx_timer_max	= 3,
 		.bs_cv_max	= 15,
 		.ctrl_ack_type_use_block = true,
-		.ext_info_present = 0,
+		.ext_info_present = true,
 		.ext_info = {
 			.egprs_supported = 0,		/* overridden in gsm_generate_si() */
 			.use_egprs_p_ch_req = 0,	/* overridden in generate_si13() */
 			.bep_period = 5,
 			.pfc_supported = 0,
 			.dtm_supported = 0,
-			.bss_paging_coordination = 0,
-			.ccn_active = false,
+			.bss_paging_coordination = 0,	/* overridden in generate_si13() */
+			.ccn_active = false,		/* overridden in generate_si13() */
 		},
 	},
 	.pwr_ctrl_pars = {
@@ -1309,7 +1309,6 @@ int gsm_generate_si(struct gsm_bts *bts, enum osmo_sysinfo_type si_type)
 		si13_default.cell_opts.ext_info.egprs_supported = 1;
 		/* fallthrough */
 	case BTS_GPRS_GPRS:
-		si13_default.cell_opts.ext_info_present = 1;
 		si_info.gprs_ind.present = 1;
 		break;
 	case BTS_GPRS_NONE:
