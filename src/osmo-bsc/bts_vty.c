@@ -1376,7 +1376,7 @@ DEFUN_USRATTR(cfg_bts_gprs_nsvc_rip,
 		return CMD_WARNING;
 	}
 
-	/* Can't use osmo_sockaddr_str_to_sockaddr() because the port would be overriden */
+	/* Can't use osmo_sockaddr_str_to_sockaddr() because the port would be overridden */
 	bts->site_mgr->gprs.nsvc[idx].remote.u.sas.ss_family = remote.af;
 	switch (remote.af) {
 	case AF_INET:
