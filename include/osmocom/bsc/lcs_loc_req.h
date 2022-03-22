@@ -34,6 +34,12 @@ struct lcs_loc_req {
 		bool client_type_present;
 		enum bssmap_le_lcs_client_type client_type;
 
+		bool priority_present;
+		uint8_t priority;
+
+		bool qos_present;
+		struct osmo_bssmap_le_lcs_qos qos;
+
 		struct osmo_mobile_identity imsi;
 		struct osmo_mobile_identity imei;
 	} req;

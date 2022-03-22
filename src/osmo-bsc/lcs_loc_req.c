@@ -134,6 +134,22 @@ static bool parse_bssmap_perf_loc_req(struct lcs_loc_req *lcs_loc_req, struct ms
 	} else if (lcs_loc_req->req.location_type.location_information == BSSMAP_LE_LOC_INFO_CURRENT_GEOGRAPHIC)
 		PARSE_ERR("Missing LCS Client Type IE");
 
+	/* 3GPP TS 49.031, section 10.15 (O) "LCS Priority" */
+	if (TLVP_PRES_LEN(tp, GSM0808_IE_LCS_PRIORITY, 1)) {
+		lcs_loc_req->req.priority = *TLVP_VAL(tp, GSM0808_IE_LCS_PRIORITY);
+		lcs_loc_req->req.priority_present = true;
+	}
+
+	/* 3GPP TS 49.031, section 10.16 (C) "LCS QoS" */
+	if (TLVP_PRES_LEN(tp, GSM0808_IE_LCS_QOS, sizeof(lcs_loc_req->req.qos))) {
+		size_t qos_len = TLVP_LEN(tp, GSM0808_IE_LCS_QOS);
+		if (qos_len > sizeof(lcs_loc_req->req.qos))
+			qos_len = sizeof(lcs_loc_req->req.qos);
+		memcpy(&lcs_loc_req->req.qos, TLVP_VAL(tp, GSM0808_IE_LCS_QOS), qos_len);
+		lcs_loc_req->req.qos_present = true;
+	} else if (lcs_loc_req->req.location_type.location_information == BSSMAP_LE_LOC_INFO_CURRENT_GEOGRAPHIC)
+		PARSE_ERR("Missing LCS QoS IE");
+
 	if ((e = TLVP_GET(tp, GSM0808_IE_IMSI))) {
 		if (osmo_mobile_identity_decode(&lcs_loc_req->req.imsi, e->val, e->len, false)
 		    || lcs_loc_req->req.imsi.type != GSM_MI_TYPE_IMSI)
@@ -145,8 +161,6 @@ static bool parse_bssmap_perf_loc_req(struct lcs_loc_req *lcs_loc_req, struct ms
 		    || lcs_loc_req->req.imei.type != GSM_MI_TYPE_IMEI)
 			PARSE_ERR("Failed to parse IMEI IE");
 	}
-
-	// FIXME LCS QoS IE is mandatory for requesting the location
 
 	/* A lot of IEs remain ignored... */
 
@@ -310,6 +324,14 @@ static void lcs_loc_req_wait_loc_resp_onenter(struct osmo_fsm_inst *fi, uint32_t
 
 				.lcs_client_type_present = lcs_loc_req->req.client_type_present,
 				.lcs_client_type = lcs_loc_req->req.client_type,
+
+				.more_items = true,
+
+				.lcs_priority_present = lcs_loc_req->req.priority_present,
+				.lcs_priority = lcs_loc_req->req.priority,
+
+				.lcs_qos_present = lcs_loc_req->req.qos_present,
+				.lcs_qos = lcs_loc_req->req.qos,
 			},
 		},
 	};
