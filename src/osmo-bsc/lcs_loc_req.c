@@ -127,6 +127,13 @@ static bool parse_bssmap_perf_loc_req(struct lcs_loc_req *lcs_loc_req, struct ms
 		lcs_loc_req->req.cell_id_present = true;
 	}
 
+	/* 3GPP TS 49.031, section 10.14 (C) "LCS Client Type" */
+	if (TLVP_PRES_LEN(tp, GSM0808_IE_LCS_CLIENT_TYPE, 1)) {
+		lcs_loc_req->req.client_type = *TLVP_VAL(tp, GSM0808_IE_LCS_CLIENT_TYPE);
+		lcs_loc_req->req.client_type_present = true;
+	} else if (lcs_loc_req->req.location_type.location_information == BSSMAP_LE_LOC_INFO_CURRENT_GEOGRAPHIC)
+		PARSE_ERR("Missing LCS Client Type IE");
+
 	if ((e = TLVP_GET(tp, GSM0808_IE_IMSI))) {
 		if (osmo_mobile_identity_decode(&lcs_loc_req->req.imsi, e->val, e->len, false)
 		    || lcs_loc_req->req.imsi.type != GSM_MI_TYPE_IMSI)
@@ -300,6 +307,9 @@ static void lcs_loc_req_wait_loc_resp_onenter(struct osmo_fsm_inst *fi, uint32_t
 				.cell_id = lcs_loc_req->req.cell_id,
 				.imsi = lcs_loc_req->req.imsi,
 				.imei = lcs_loc_req->req.imei,
+
+				.lcs_client_type_present = lcs_loc_req->req.client_type_present,
+				.lcs_client_type = lcs_loc_req->req.client_type,
 			},
 		},
 	};

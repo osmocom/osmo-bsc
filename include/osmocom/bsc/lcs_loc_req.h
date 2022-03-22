@@ -31,6 +31,9 @@ struct lcs_loc_req {
 		bool cell_id_present;
 		struct gsm0808_cell_id cell_id;
 
+		bool client_type_present;
+		enum bssmap_le_lcs_client_type client_type;
+
 		struct osmo_mobile_identity imsi;
 		struct osmo_mobile_identity imei;
 	} req;
