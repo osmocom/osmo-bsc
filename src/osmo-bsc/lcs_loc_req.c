@@ -104,7 +104,7 @@ static bool parse_bssmap_perf_loc_req(struct lcs_loc_req *lcs_loc_req, struct ms
 {
 	struct tlv_parsed tp_arr[1];
 	struct tlv_parsed *tp = &tp_arr[0];
-	struct tlv_p_entry *e;
+	const struct tlv_p_entry *e;
 	int payload_length;
 
 #define PARSE_ERR(ERRMSG) do { \
