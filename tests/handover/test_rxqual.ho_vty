@@ -19,3 +19,11 @@ expect-ho from lchan 0 0 1 0 to lchan 1 0 1 0
 expect-ts-use trx 0 0 states * - - - - - - -
 expect-ts-use trx 1 0 states * TCH/F - - - - - -
 
+# Now the channel is on bts 1, which has lower rxlev than bts 0.
+# The result is an undesired ho oscillation
+meas-rep lchan 1 0 1 0 rxlev 30 rxqual 0 ta 0 neighbors 40
+expect-ho from lchan 1 0 1 0 to lchan 0 0 1 0
+meas-rep repeat 10 lchan 0 0 1 0 rxlev 40 rxqual 6 ta 0 neighbors 30
+expect-ho from lchan 0 0 1 0 to lchan 1 0 1 0
+meas-rep lchan 1 0 1 0 rxlev 30 rxqual 0 ta 0 neighbors 40
+expect-ho from lchan 1 0 1 0 to lchan 0 0 1 0
