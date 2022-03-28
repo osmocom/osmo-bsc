@@ -22,6 +22,7 @@
 #include <limits.h>
 
 #include <osmocom/core/stats.h>
+#include <osmocom/core/utils.h>
 #include <osmocom/core/select.h>
 #include <osmocom/core/msgb.h>
 #include <osmocom/core/talloc.h>
@@ -384,6 +385,9 @@ static struct bts_smscb_message *bts_smscb_msg_from_wrepl(struct gsm_bts *bts,
 		page = &smscb->page[i++];
 		msg_param = (struct gsm23041_msg_param_gsm *) &page->data[0];
 
+		/* ensure we don't overflow in the memcpy below */
+		osmo_static_assert(sizeof(*page) > sizeof(*msg_param) + sizeof(cont->data), smscb_space);
+
 		/* build 6 byte header according to TS 23.041 9.4.1.2 */
 		osmo_store16be(wrepl->new_serial_nr, &msg_param->serial_nr);
 		osmo_store16be(wrepl->msg_id, &msg_param->message_id);
@@ -393,7 +397,9 @@ static struct bts_smscb_message *bts_smscb_msg_from_wrepl(struct gsm_bts *bts,
 
 		OSMO_ASSERT(cont->user_len <= ARRAY_SIZE(cont->data));
 		OSMO_ASSERT(cont->user_len <= ARRAY_SIZE(page->data) - sizeof(*msg_param));
-		memcpy(&msg_param->content, cont->data, cont->user_len);
+		/* we must not use cont->user_len as length here, as it would truncate any
+		 * possible 7-bit padding at the end. Always copy the whole page */
+		memcpy(&msg_param->content, cont->data, sizeof(cont->data));
 		bytes_used = sizeof(*msg_param) + cont->user_len;
 		/* compute number of valid blocks in page */
 		page->num_blocks = bytes_used / 22;
