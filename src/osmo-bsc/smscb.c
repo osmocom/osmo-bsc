@@ -681,6 +681,29 @@ static int bts_rx_reset(struct gsm_bts *bts, const struct osmo_cbsp_decoded *dec
 	return 0;
 }
 
+static int bts_rx_status_query(struct gsm_bts *bts, const struct osmo_cbsp_decoded *dec,
+			       struct response_state *r_state, void *priv)
+{
+	const struct osmo_cbsp_msg_status_query *query = &dec->u.msg_status_query;
+	struct bts_smscb_chan_state *chan_state;
+	struct bts_smscb_message *smscb;
+	bool extended = false;
+
+	if (query->channel_ind == 0x01)
+		extended = true;
+	chan_state = bts_get_smscb_chan(bts, extended);
+
+	/* Find message by msg_id + old_serial_nr */
+	smscb = bts_find_smscb(chan_state, query->msg_id, query->old_serial_nr);
+	if (!smscb)
+		return -CBSP_CAUSE_MSG_REF_NOT_IDENTIFIED;
+
+	append_bcast_compl(r_state, chan_state->bts, smscb);
+
+	return 0;
+}
+
+
 /*********************************************************************************
  * Receive of CBSP from CBC
  *********************************************************************************/
@@ -824,6 +847,48 @@ static int cbsp_rx_reset(struct bsc_cbc_link *cbc, const struct osmo_cbsp_decode
 	return rc;
 }
 
+static int cbsp_rx_status_query(struct bsc_cbc_link *cbc, const struct osmo_cbsp_decoded *dec)
+{
+	const struct osmo_cbsp_msg_status_query *query = &dec->u.msg_status_query;
+	struct gsm_network *net = cbc->net;
+	struct response_state *r_state = talloc_zero(cbc, struct response_state);
+	struct osmo_cbsp_decoded *resp;
+	int rc;
+
+	LOGP(DCBS, LOGL_DEBUG, "CBSP Rx MESSAGE STATUS QUERY\n");
+
+	rc = cbsp_per_bts(net, r_state, &dec->u.msg_status_query.cell_list, bts_rx_status_query, dec, NULL);
+	if (rc < 0) {
+		resp = osmo_cbsp_decoded_alloc(cbc, CBSP_MSGT_MSG_STATUS_QUERY_FAIL);
+		struct osmo_cbsp_msg_status_query_failure *fail = &resp->u.msg_status_query_fail;
+		fail->msg_id = query->msg_id;
+		fail->old_serial_nr = query->old_serial_nr;
+		fail->channel_ind = query->channel_ind;
+		llist_replace_head(&fail->fail_list, &r_state->fail);
+
+		fail->num_compl_list.id_discr = r_state->num_completed.id_discr;
+		llist_replace_head(&fail->num_compl_list.list, &r_state->num_completed.list);
+	} else {
+		resp = osmo_cbsp_decoded_alloc(cbc, CBSP_MSGT_MSG_STATUS_QUERY_COMPL);
+		struct osmo_cbsp_msg_status_query_complete *compl = &resp->u.msg_status_query_compl;
+		compl->msg_id = query->msg_id;
+		compl->old_serial_nr = query->old_serial_nr;
+		compl->channel_ind = query->channel_ind;
+
+		if (dec->u.msg_status_query.cell_list.id_discr == CELL_IDENT_BSS) {
+			/* replace the list of individual cell identities with CELL_IDENT_BSS */
+			compl->num_compl_list.id_discr = CELL_IDENT_BSS;
+			/* no need to free num_completed_list entries, hierarchical talloc works */
+		} else {
+			compl->num_compl_list.id_discr = r_state->num_completed.id_discr;
+			llist_replace_head(&compl->num_compl_list.list, &r_state->num_completed.list);
+		}
+	}
+	cbsp_tx_decoded(cbc, resp);
+	talloc_free(r_state);
+	return rc;
+}
+
 
 /*! process an incoming, already decoded CBSP message from the CBC.
  *  \param[in] cbc link to the CBC
@@ -846,8 +911,10 @@ int cbsp_rx_decoded(struct bsc_cbc_link *cbc, const struct osmo_cbsp_decoded *de
 	case CBSP_MSGT_RESET:		/* stop broadcasting of all messages */
 		rc = cbsp_rx_reset(cbc, dec);
 		break;
-	case CBSP_MSGT_LOAD_QUERY:
 	case CBSP_MSGT_MSG_STATUS_QUERY:
+		rc = cbsp_rx_status_query(cbc, dec);
+		break;
+	case CBSP_MSGT_LOAD_QUERY:
 	case CBSP_MSGT_SET_DRX:
 		LOGP(DCBS, LOGL_ERROR, "Received Unimplemented CBSP Message Type %s",
 			get_value_string(cbsp_msg_type_names, dec->msg_type));
