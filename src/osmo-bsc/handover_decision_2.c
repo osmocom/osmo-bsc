@@ -914,6 +914,19 @@ static int trigger_local_ho_or_as(struct ho_candidate *c, uint8_t requirements)
 				 full_rate ? "TCH/F" : "TCH/H",
 				 ho_reason_name(global_ho_reason));
 		handover_request(&req);
+
+		/* Apply penalty timer hodec2_penalty_low_rxqual_ho */
+		if (global_ho_reason == HO_REASON_INTERFERENCE
+		    || global_ho_reason == HO_REASON_BAD_QUALITY) {
+			struct gsm0808_cell_id bts_id;
+			struct gsm_subscriber_connection *conn = c->current.lchan->conn;
+			int timeout = ho_get_hodec2_penalty_low_rxqual_ho(c->current.bts->ho);
+			gsm_bts_cell_id(&bts_id, c->current.bts);
+			LOGPHOCAND(c, LOGL_DEBUG, "Applying penalty-time low-rxqual-ho %d s on bts %u (%s), reason: %s\n",
+				   timeout, c->current.bts->nr, gsm0808_cell_id_name_c(OTC_SELECT, &bts_id),
+				   ho_reason_name(global_ho_reason));
+			penalty_timers_add(conn, &conn->hodec2.penalty_timers, &bts_id, timeout);
+		}
 	}
 	return 0;
 }

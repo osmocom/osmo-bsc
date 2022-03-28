@@ -10,6 +10,10 @@
 # See Performance Enhancements in a Frequency Hopping GSM Network (Nielsen Wigard 2002), Chapter
 # 2.1.1, "Interference" in the list of triggers on p.157.
 
+# first show undesired oscillation when penalty-time low-rxqual-ho is disabled
+network
+ handover2 penalty-time low-rxqual-ho 0
+
 create-n-bts 2
 set-ts-use trx 0 0 states * TCH/F - - - - - -
 meas-rep repeat 9 lchan 0 0 1 0 rxlev 40 rxqual 6 ta 0 neighbors 30
@@ -20,10 +24,26 @@ expect-ts-use trx 0 0 states * - - - - - - -
 expect-ts-use trx 1 0 states * TCH/F - - - - - -
 
 # Now the channel is on bts 1, which has lower rxlev than bts 0.
-# The result is an undesired ho oscillation
+# The result is an undesired ho oscillation, because the penalty timer is zero
 meas-rep lchan 1 0 1 0 rxlev 30 rxqual 0 ta 0 neighbors 40
 expect-ho from lchan 1 0 1 0 to lchan 0 0 1 0
+
+# Set a proper penalty timeout and report bad-rxqual again
+network
+ handover2 penalty-time low-rxqual-ho 10
 meas-rep repeat 10 lchan 0 0 1 0 rxlev 40 rxqual 6 ta 0 neighbors 30
 expect-ho from lchan 0 0 1 0 to lchan 1 0 1 0
+
+# This time the penalty timer prevents oscillation
+meas-rep repeat 10 lchan 1 0 1 0 rxlev 30 rxqual 0 ta 0 neighbors 40
+expect-no-chan
+
+# After the penalty timeout passes, we do go back to the cell with stronger rxlev
+wait 10
 meas-rep lchan 1 0 1 0 rxlev 30 rxqual 0 ta 0 neighbors 40
 expect-ho from lchan 1 0 1 0 to lchan 0 0 1 0
+# If the rxqual is still bad here after the penalty timeout, well, then we quickly snap back to the weaker cell, once
+meas-rep repeat 10 lchan 0 0 1 0 rxlev 40 rxqual 6 ta 0 neighbors 30
+expect-ho from lchan 0 0 1 0 to lchan 1 0 1 0
+meas-rep repeat 10 lchan 1 0 1 0 rxlev 30 rxqual 0 ta 0 neighbors 40
+expect-no-chan

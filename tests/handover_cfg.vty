@@ -190,6 +190,7 @@ OsmoBSC(config-net)# list
   handover2 penalty-time failed-ho (<0-99999>|default)
   handover2 penalty-time failed-assignment (<0-99999>|default)
   handover2 penalty-time low-rxqual-assignment (<0-99999>|default)
+  handover2 penalty-time low-rxqual-ho (<0-99999>|default)
   handover2 retries (<0-9>|default)
   handover2 congestion-check (disabled|<1-999>|now)
 ...
@@ -389,6 +390,7 @@ OsmoBSC(config-net)# handover2 penalty-time ?
   failed-ho              Time to suspend handover for a subscriber after a failed handover into this cell; see also 'handover2 retries'
   failed-assignment      Time to suspend handover for a subscriber after a failed re-assignment within this cell; see also 'handover2 retries'
   low-rxqual-assignment  Time to suspend re-assignment after an lchan was re-assigned because of low RxQual
+  low-rxqual-ho          Time to suspend handover back to a cell after bad RxQual caused handover away from it
 
 OsmoBSC(config-net)# handover2 penalty-time max-distance ?
   <0-99999>  Seconds
@@ -613,6 +615,7 @@ OsmoBSC(config-net-bts)# handover2 penalty-time ?
   failed-ho              Time to suspend handover for a subscriber after a failed handover into this cell; see also 'handover2 retries'
   failed-assignment      Time to suspend handover for a subscriber after a failed re-assignment within this cell; see also 'handover2 retries'
   low-rxqual-assignment  Time to suspend re-assignment after an lchan was re-assigned because of low RxQual
+  low-rxqual-ho          Time to suspend handover back to a cell after bad RxQual caused handover away from it
 
 OsmoBSC(config-net-bts)# handover2 penalty-time max-distance ?
   <0-99999>  Seconds
