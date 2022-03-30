@@ -246,7 +246,7 @@ static void bts_cbch_send_one(struct bts_smscb_chan_state *cstate)
 	bts_smscb_page_done(cstate, page);
 }
 
-static void bts_cbch_timer(void *data)
+static void bts_cbch_timer_cb(void *data)
 {
 	struct gsm_bts *bts = (struct gsm_bts *)data;
 
@@ -259,7 +259,7 @@ static void bts_cbch_timer(void *data)
 /* There is one SMSCB message (page) per eight 51-multiframes, i.e. 1.882 seconds */
 void bts_cbch_timer_schedule(struct gsm_bts *bts)
 {
-	osmo_timer_setup(&bts->cbch_timer, &bts_cbch_timer, bts);
+	osmo_timer_setup(&bts->cbch_timer, &bts_cbch_timer_cb, bts);
 	osmo_timer_schedule(&bts->cbch_timer, 1, 882920);
 }
 
