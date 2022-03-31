@@ -1221,7 +1221,12 @@ static int rsl_rx_chan_act_nack(struct msgb *msg)
 		return -EINVAL;
 	}
 
-	rsl_tlv_parse(&tp, dh->data, msgb_l2len(msg)-sizeof(*dh));
+	if (rsl_tlv_parse(&tp, dh->data, msgb_l2len(msg) - sizeof(*dh)) < 0) {
+		LOG_LCHAN(msg->lchan, LOGL_ERROR, "Failed to parse RSL %s\n",
+			  rsl_or_ipac_msg_name(dh->c.msg_type));
+		return -EINVAL;
+	}
+
 	cause_p = rsl_cause(&tp);
 	LOG_LCHAN(lchan, LOGL_ERROR, "CHANNEL ACTIVATE NACK%s\n", rsl_cause_name(&tp));
 
@@ -1241,7 +1246,12 @@ static int rsl_rx_conn_fail(struct msgb *msg)
 	struct tlv_parsed tp;
 	const uint8_t *cause_p;
 
-	rsl_tlv_parse(&tp, dh->data, msgb_l2len(msg)-sizeof(*dh));
+	if (rsl_tlv_parse(&tp, dh->data, msgb_l2len(msg) - sizeof(*dh)) < 0) {
+		LOG_LCHAN(msg->lchan, LOGL_ERROR, "Failed to parse RSL %s\n",
+			  rsl_or_ipac_msg_name(dh->c.msg_type));
+		return -EINVAL;
+	}
+
 	cause_p = rsl_cause(&tp);
 
 	LOG_LCHAN(lchan, LOGL_ERROR, "CONNECTION FAIL%s\n", rsl_cause_name(&tp));
@@ -1385,7 +1395,11 @@ static int rsl_rx_meas_res(struct msgb *msg)
 	memset(mr, 0, sizeof(*mr));
 	mr->lchan = msg->lchan;
 
-	rsl_tlv_parse(&tp, dh->data, msgb_l2len(msg)-sizeof(*dh));
+	if (rsl_tlv_parse(&tp, dh->data, msgb_l2len(msg) - sizeof(*dh)) < 0) {
+		LOG_LCHAN(msg->lchan, LOGL_ERROR, "Failed to parse RSL %s\n",
+			  rsl_or_ipac_msg_name(dh->c.msg_type));
+		return -EINVAL;
+	}
 
 	if (!TLVP_PRESENT(&tp, RSL_IE_MEAS_RES_NR) ||
 	    !TLVP_PRESENT(&tp, RSL_IE_UPLINK_MEAS) ||
@@ -1466,7 +1480,11 @@ static int rsl_rx_hando_det(struct msgb *msg)
 		.msg = msg,
 	};
 
-	rsl_tlv_parse(&tp, dh->data, msgb_l2len(msg)-sizeof(*dh));
+	if (rsl_tlv_parse(&tp, dh->data, msgb_l2len(msg) - sizeof(*dh)) < 0) {
+		LOG_LCHAN(msg->lchan, LOGL_ERROR, "Failed to parse RSL %s\n",
+			  rsl_or_ipac_msg_name(dh->c.msg_type));
+		return -EINVAL;
+	}
 
 	if (TLVP_PRESENT(&tp, RSL_IE_ACCESS_DELAY))
 		d.access_delay = TLVP_VAL(&tp, RSL_IE_ACCESS_DELAY);
@@ -1608,7 +1626,11 @@ static int rsl_rx_error_rep(struct msgb *msg)
 	if (msgb_l2len(msg) < sizeof(*rslh))
 		return -EINVAL;
 
-	rsl_tlv_parse(&tp, rslh->data, msgb_l2len(msg)-sizeof(*rslh));
+	if (rsl_tlv_parse(&tp, rslh->data, msgb_l2len(msg) - sizeof(*rslh)) < 0) {
+		LOGP(DRSL, LOGL_ERROR, "%s Failed to parse RSL %s\n",
+		     gsm_trx_name(sign_link->trx), rsl_or_ipac_msg_name(rslh->msg_type));
+		return -EINVAL;
+	}
 
 	LOGP(DRSL, LOGL_ERROR, "%s ERROR REPORT%s\n",
 	     gsm_trx_name(sign_link->trx), rsl_cause_name(&tp));
@@ -1625,7 +1647,7 @@ static int rsl_rx_resource_indication(struct msgb *msg)
 	struct gsm_bts_trx *trx = sign_link->trx;
 	struct gsm_lchan *lchan;
 	int ts_nr;
-	int rc, i;
+	int i;
 
 	LOGP(DRSL, LOGL_DEBUG, "%s Rx Resource Indication\n", gsm_trx_name(trx));
 
@@ -1639,9 +1661,9 @@ static int rsl_rx_resource_indication(struct msgb *msg)
 		}
 	}
 
-	rc = rsl_tlv_parse(&tp, rslh->data, msgb_l2len(msg) - sizeof(*rslh));
-	if (rc < 0) {
-		LOGP(DRSL, LOGL_ERROR, "Rx Resource Indication: failed to parse the message\n");
+	if (rsl_tlv_parse(&tp, rslh->data, msgb_l2len(msg) - sizeof(*rslh)) < 0) {
+		LOGP(DRSL, LOGL_ERROR, "%s Failed to parse RSL %s\n",
+		     gsm_trx_name(trx), rsl_or_ipac_msg_name(rslh->msg_type));
 		return -EINVAL;
 	}
 
@@ -2361,7 +2383,12 @@ static int rsl_rx_cbch_load(struct msgb *msg)
 	struct tlv_parsed tp;
 	uint8_t slot_count;
 
-	rsl_tlv_parse(&tp, rslh->data, msgb_l2len(msg) - sizeof(*rslh));
+	if (rsl_tlv_parse(&tp, rslh->data, msgb_l2len(msg) - sizeof(*rslh)) < 0) {
+		LOGP(DRSL, LOGL_ERROR, "%s Failed to parse RSL %s\n",
+		     gsm_trx_name(sign_link->trx), rsl_or_ipac_msg_name(rslh->c.msg_type));
+		return -EINVAL;
+	}
+
 	if (!TLVP_PRESENT(&tp, RSL_IE_CBCH_LOAD_INFO)) {
 		LOG_BTS(bts, DRSL, LOGL_ERROR, "CBCH LOAD IND without mandatory CBCH Load Info IE\n");
 		return -1;
@@ -2452,7 +2479,12 @@ static int rsl_rx_rll_err_ind(struct msgb *msg)
 	struct abis_rsl_rll_hdr *rllh = msgb_l2(msg);
 	uint8_t rlm_cause;
 
-	rsl_tlv_parse(&tp, rllh->data, msgb_l2len(msg) - sizeof(*rllh));
+	if (rsl_tlv_parse(&tp, rllh->data, msgb_l2len(msg) - sizeof(*rllh)) < 0) {
+		LOG_LCHAN(msg->lchan, LOGL_ERROR, "Failed to parse RSL %s\n",
+			  rsl_or_ipac_msg_name(rllh->c.msg_type));
+		return -EINVAL;
+	}
+
 	if (!TLVP_PRESENT(&tp, RSL_IE_RLM_CAUSE)) {
 		LOG_LCHAN(msg->lchan, LOGL_ERROR, "ERROR INDICATION without mandantory cause.\n");
 		return -1;
@@ -2822,7 +2854,12 @@ static int abis_rsl_rx_ipacc_crcx_ack(struct msgb *msg)
 	* address and port number to which it has bound the given logical
 	* channel */
 
-	rsl_tlv_parse(&tv, dh->data, msgb_l2len(msg)-sizeof(*dh));
+	if (rsl_tlv_parse(&tv, dh->data, msgb_l2len(msg) - sizeof(*dh)) < 0) {
+		LOG_LCHAN(msg->lchan, LOGL_ERROR, "Failed to parse RSL %s\n",
+			  rsl_or_ipac_msg_name(dh->c.msg_type));
+		return -EINVAL;
+	}
+
 	if (!TLVP_PRESENT(&tv, RSL_IE_IPAC_LOCAL_PORT) ||
 	    !TLVP_PRESENT(&tv, RSL_IE_IPAC_LOCAL_IP) ||
 	    !TLVP_PRESENT(&tv, RSL_IE_IPAC_CONN_ID)) {
@@ -2867,7 +2904,12 @@ static int abis_rsl_rx_ipacc_mdcx_ack(struct msgb *msg)
 	 * it now tells us the IP address and port number to which it has
 	 * connected the given logical channel */
 
-	rsl_tlv_parse(&tv, dh->data, msgb_l2len(msg)-sizeof(*dh));
+	if (rsl_tlv_parse(&tv, dh->data, msgb_l2len(msg) - sizeof(*dh)) < 0) {
+		LOG_LCHAN(msg->lchan, LOGL_ERROR, "Failed to parse RSL %s\n",
+			  rsl_or_ipac_msg_name(dh->c.msg_type));
+		return -EINVAL;
+	}
+
 	ipac_parse_rtp(lchan, &tv, "MDCX");
 
 	osmo_fsm_inst_dispatch(lchan->fi_rtp, LCHAN_RTP_EV_IPACC_MDCX_ACK, 0);
@@ -2895,7 +2937,12 @@ static int abis_rsl_rx_ipacc_dlcx_ind(struct msgb *msg)
 	struct abis_rsl_dchan_hdr *dh = msgb_l2(msg);
 	struct tlv_parsed tv;
 
-	rsl_tlv_parse(&tv, dh->data, msgb_l2len(msg)-sizeof(*dh));
+	if (rsl_tlv_parse(&tv, dh->data, msgb_l2len(msg) - sizeof(*dh)) < 0) {
+		LOG_LCHAN(msg->lchan, LOGL_ERROR, "Failed to parse RSL %s\n",
+			  rsl_or_ipac_msg_name(dh->c.msg_type));
+		return -EINVAL;
+	}
+
 	LOG_LCHAN(msg->lchan, LOGL_NOTICE, "Rx IPACC DLCX IND%s\n",
 		  rsl_cause_name(&tv));
 
