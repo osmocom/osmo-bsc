@@ -1502,6 +1502,9 @@ static int abis_rsl_rx_dchan(struct msgb *msg)
 	int rc = 0;
 	struct e1inp_sign_link *sign_link = msg->dst;
 
+	if (msgb_l2len(msg) < sizeof(*rslh))
+		return -EINVAL;
+
 	if (rslh->ie_chan != RSL_IE_CHAN_NR) {
 		LOGP(DRSL, LOGL_ERROR,
 		     "Rx RSL DCHAN: invalid RSL header, expecting Channel Number IE tag, got 0x%x\n",
@@ -1601,6 +1604,9 @@ static int rsl_rx_error_rep(struct msgb *msg)
 	struct abis_rsl_common_hdr *rslh = msgb_l2(msg);
 	struct tlv_parsed tp;
 	struct e1inp_sign_link *sign_link = msg->dst;
+
+	if (msgb_l2len(msg) < sizeof(*rslh))
+		return -EINVAL;
 
 	rsl_tlv_parse(&tp, rslh->data, msgb_l2len(msg)-sizeof(*rslh));
 
@@ -2403,6 +2409,9 @@ static int abis_rsl_rx_cchan(struct msgb *msg)
 	struct rate_ctr_group *bts_ctrs = sign_link->trx->bts->bts_ctrs;
 	int rc = 0;
 
+	if (msgb_l2len(msg) < sizeof(*rslh))
+		return -EINVAL;
+
 	msg->lchan = lchan_lookup(sign_link->trx, rslh->chan_nr,
 				  "Abis RSL rx CCHAN: ");
 
@@ -2472,8 +2481,12 @@ static int abis_rsl_rx_rll(struct msgb *msg)
 	struct e1inp_sign_link *sign_link = msg->dst;
 	struct abis_rsl_rll_hdr *rllh = msgb_l2(msg);
 	int rc = 0;
-	uint8_t sapi = rllh->link_id & 0x7;
+	uint8_t sapi;
 
+	if (msgb_l2len(msg) < sizeof(*rllh))
+		return -1;
+
+	sapi = rllh->link_id & 0x7;
 	msg->lchan = lchan_lookup(sign_link->trx, rllh->chan_nr, "Abis RSL rx RLL: ");
 
 	switch (rllh->c.msg_type) {
@@ -2894,6 +2907,9 @@ static int abis_rsl_rx_ipacc(struct msgb *msg)
 	struct e1inp_sign_link *sign_link = msg->dst;
 	struct abis_rsl_rll_hdr *rllh = msgb_l2(msg);
 	int rc = 0;
+
+	if (msgb_l2len(msg) < sizeof(*rllh))
+		return -EINVAL;
 
 	msg->lchan = lchan_lookup(sign_link->trx, rllh->chan_nr,
 				  "Abis RSL rx IPACC: ");
