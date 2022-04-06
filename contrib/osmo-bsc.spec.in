@@ -122,14 +122,14 @@ make %{?_smp_mflags} check || (find . -name testsuite.log -exec cat {} +)
 %dir %{_docdir}/%{name}/examples/osmo-bsc
 %{_docdir}/%{name}/examples/osmo-bsc/osmo-bsc.cfg
 %{_docdir}/%{name}/examples/osmo-bsc/osmo-bsc_custom-sccp.cfg
+%{_docdir}/%{name}/examples/osmo-bsc/osmo-bsc-4trx-fh.confmerge
+%{_docdir}/%{name}/examples/osmo-bsc/osmo-bsc-4trx.cfg
 %{_docdir}/%{name}/examples/osmo-bsc/osmo-bsc-minimal.cfg
 %dir %{_docdir}/%{name}/examples/osmo-bsc/ericsson
 %dir %{_docdir}/%{name}/examples/osmo-bsc/nokia
 %dir %{_docdir}/%{name}/examples/osmo-bsc/siemens
 %{_docdir}/%{name}/examples/osmo-bsc/*/osmo-bsc*.cfg
 %dir %{_sysconfdir}/osmocom
-%config(noreplace) %{_sysconfdir}/osmocom/osmo-bsc-4trx-fh.confmerge
-%config(noreplace) %{_sysconfdir}/osmocom/osmo-bsc-4trx.cfg
 %config(noreplace) %{_sysconfdir}/osmocom/osmo-bsc.cfg
 %{_unitdir}/%{name}.service
 
