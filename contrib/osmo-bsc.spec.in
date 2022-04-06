@@ -128,6 +128,8 @@ make %{?_smp_mflags} check || (find . -name testsuite.log -exec cat {} +)
 %dir %{_docdir}/%{name}/examples/osmo-bsc/siemens
 %{_docdir}/%{name}/examples/osmo-bsc/*/osmo-bsc*.cfg
 %dir %{_sysconfdir}/osmocom
+%config(noreplace) %{_sysconfdir}/osmocom/osmo-bsc-4trx-fh.confmerge
+%config(noreplace) %{_sysconfdir}/osmocom/osmo-bsc-4trx.cfg
 %config(noreplace) %{_sysconfdir}/osmocom/osmo-bsc.cfg
 %{_unitdir}/%{name}.service
 
