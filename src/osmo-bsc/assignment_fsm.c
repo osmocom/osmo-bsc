@@ -283,11 +283,11 @@ static void assignment_success(struct gsm_subscriber_connection *conn)
 		}
 	}
 
-	if (lchan_changed) {
-		/* Rembered this only for error handling: should assignment fail, assignment_reset() will release
-		 * the MGW endpoint right away. If successful, the conn continues to use the endpoint. */
-		conn->assignment.created_ci_for_msc = NULL;
+	/* Rembered this only for error handling: should assignment fail, assignment_reset() will release
+	 * the MGW endpoint right away. If successful, the conn continues to use the endpoint. */
+	conn->assignment.created_ci_for_msc = NULL;
 
+	if (lchan_changed) {
 		/* New RTP information is now accepted */
 		conn->user_plane.msc_assigned_cic = conn->assignment.req.msc_assigned_cic;
 		osmo_strlcpy(conn->user_plane.msc_assigned_rtp_addr, conn->assignment.req.msc_rtp_addr,
