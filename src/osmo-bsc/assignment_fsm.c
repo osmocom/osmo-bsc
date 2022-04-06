@@ -287,13 +287,12 @@ static void assignment_success(struct gsm_subscriber_connection *conn)
 	 * the MGW endpoint right away. If successful, the conn continues to use the endpoint. */
 	conn->assignment.created_ci_for_msc = NULL;
 
-	if (lchan_changed) {
-		/* New RTP information is now accepted */
-		conn->user_plane.msc_assigned_cic = conn->assignment.req.msc_assigned_cic;
-		osmo_strlcpy(conn->user_plane.msc_assigned_rtp_addr, conn->assignment.req.msc_rtp_addr,
-			     sizeof(conn->user_plane.msc_assigned_rtp_addr));
-		conn->user_plane.msc_assigned_rtp_port = conn->assignment.req.msc_rtp_port;
-	}
+	/* New RTP information is now accepted. If there is no RTP stream, this information is zero / empty. Either way
+	 * store the result of this assignment. */
+	conn->user_plane.msc_assigned_cic = conn->assignment.req.msc_assigned_cic;
+	osmo_strlcpy(conn->user_plane.msc_assigned_rtp_addr, conn->assignment.req.msc_rtp_addr,
+		     sizeof(conn->user_plane.msc_assigned_rtp_addr));
+	conn->user_plane.msc_assigned_rtp_port = conn->assignment.req.msc_rtp_port;
 
 	assignment_count_result(CTR_ASSIGNMENT_COMPLETED);
 
