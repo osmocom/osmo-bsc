@@ -1142,8 +1142,6 @@ const struct gsm_power_ctrl_params power_ctrl_params_def = {
 	.inc_step_size_db = 4, /* 2, 4, or 6 dB */
 	.red_step_size_db = 2, /* 2 or 4 dB */
 
-	.ctrl_interval = 1, /* Trigger loop every second SACCH block. TS 45.008 sec 4.7.1 */
-
 	/* RxLev measurement parameters */
 	.rxlev_meas = {
 		.enabled = true,
@@ -1338,9 +1336,12 @@ void power_ctrl_params_def_reset(struct gsm_power_ctrl_params *params,
 {
 	*params = power_ctrl_params_def;
 	params->dir = dir;
+
+	/* Trigger loop every N-th SACCH block.  See 3GPP TS 45.008 section 4.7.1. */
 	if (dir == GSM_PWR_CTRL_DIR_UL)
-		/* Trigger loop every fourth SACCH block (1.92s). TS 45.008 sec 4.7.1: */
-		params->ctrl_interval = 2;
+		params->ctrl_interval = 2; /* N=4 (1.92s) */
+	else
+		params->ctrl_interval = 1; /* N=2 (0.960) */
 }
 
 enum rsl_cmod_spd chan_mode_to_rsl_cmod_spd(enum gsm48_chan_mode chan_mode)
