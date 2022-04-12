@@ -1448,7 +1448,8 @@ static int find_alternative_lchan(struct gsm_lchan *lchan, bool include_weaker_r
 
 		/* After upgrading TCH/H to TCH/F due to bad RxQual, start penalty timer to avoid re-assignment within
 		 * the same cell again, to avoid oscillation from RxQual noise combined with congestion resolution. */
-		if (!rc && is_upgrade_to_tchf(best_cand, REQUIREMENT_A_MASK)) {
+		if (!rc && best_cand->target.bts == best_cand->current.bts
+		    && is_upgrade_to_tchf(best_cand, REQUIREMENT_A_MASK)) {
 			struct gsm0808_cell_id bts_id;
 			gsm_bts_cell_id(&bts_id, best_cand->target.bts);
 			penalty_timers_add(lchan->conn, &lchan->conn->hodec2.penalty_timers, &bts_id,
