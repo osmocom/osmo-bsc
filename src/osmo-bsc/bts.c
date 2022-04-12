@@ -334,51 +334,93 @@ struct gsm_bts *gsm_bts_alloc(struct gsm_network *net, struct gsm_bts_sm *bts_sm
 	};
 
 	/* Set reasonable defaults for AMR-FR and AMR-HR rate configuration.
-	 * (see also 3GPP TS 28.062, Table 7.11.3.1.3-2) */
+	 * The values are taken from 3GPP TS 51.010-1 (version 13.11.0).
+	 * See 14.2.19.4.1 and 14.2.20.4.1 for AMR-FR and AMR-HR, respectively. */
 	static const struct gsm48_multi_rate_conf amr_fr_mr_cfg = {
 		.m4_75 = 1,
 		.m5_90 = 1,
-		.m7_40 = 1,
+		.m7_95 = 1,
 		.m12_2 = 1
 	};
 	static const struct gsm48_multi_rate_conf amr_hr_mr_cfg = {
 		.m4_75 = 1,
 		.m5_90 = 1,
-		.m7_40 = 1,
+		.m6_70 = 1,
+		.m7_95 = 1,
 	};
 
 	memcpy(bts->mr_full.gsm48_ie, &amr_fr_mr_cfg, sizeof(bts->mr_full.gsm48_ie));
 	memcpy(bts->mr_half.gsm48_ie, &amr_hr_mr_cfg, sizeof(bts->mr_half.gsm48_ie));
 
-	static const struct amr_mode amr_ms_bts_mode[] = {
+	/*                   ^ C/I (dB)             |  FR  /  HR  |
+	 *            |      |
+	 *            |      |
+	 *   MODE4    |      |
+	 *          = |  ----+----  THR_MX_Up(3)    | 20.5 / 18.0 |
+	 *          | |      |
+	 *          | =  ----+----  THR_MX_Dn(4)    | 18.5 / 16.0 |
+	 *   MODE3  |        |
+	 *          | =  ----+----  THR_MX_Up(2)    | 14.5 / 14.0 |
+	 *          | |      |
+	 *          = |  ----+----  THR_MX_Dn(3)    | 12.5 / 12.0 |
+	 *   MODE2    |      |
+	 *          = |  ----+----  THR_MX_Up(1)    |  8.5 / 10.0 |
+	 *          | |      |
+	 *          | =  ----+----  THR_MX_Dn(2)    |  6.5 /  8.0 |
+	 *   MODE1  |        |
+	 *          |        |
+	 *          |        |
+	 */
+	static const struct amr_mode amr_fr_ms_bts_mode[] = {
 		{
 			.mode = 0, /* 4.75k */
-			.threshold = 32,
-			.hysteresis = 8,
+			.threshold = 13, /* THR_MX_Dn(2): 6.5 dB */
+			.hysteresis = 4, /* THR_MX_Up(1): 8.5 dB */
 		},
 		{
 			.mode = 2, /* 5.90k */
-			.threshold = 32,
-			.hysteresis = 8,
+			.threshold = 25, /* THR_MX_Dn(3): 12.5 dB */
+			.hysteresis = 4, /* THR_MX_Up(2): 14.5 dB */
 		},
 		{
-			.mode = 4, /* 7.40k */
-			.threshold = 32,
-			.hysteresis = 8,
+			.mode = 5, /* 7.95k */
+			.threshold = 37, /* THR_MX_Dn(4): 18.5 dB */
+			.hysteresis = 4, /* THR_MX_Up(3): 20.5 dB */
 		},
 		{
 			.mode = 7, /* 12.2k */
 			/* this is the last mode, so no threshold */
 		},
 	};
+	static const struct amr_mode amr_hr_ms_bts_mode[] = {
+		{
+			.mode = 0, /* 4.75k */
+			.threshold = 16, /* THR_MX_Dn(2):  8.0 dB */
+			.hysteresis = 4, /* THR_MX_Up(1): 10.0 dB */
+		},
+		{
+			.mode = 2, /* 5.90k */
+			.threshold = 24, /* THR_MX_Dn(3): 12.0 dB */
+			.hysteresis = 4, /* THR_MX_Up(2): 14.0 dB */
+		},
+		{
+			.mode = 3, /* 6.70k */
+			.threshold = 32, /* THR_MX_Dn(4): 16.0 dB */
+			.hysteresis = 4, /* THR_MX_Up(3): 18.0 dB */
+		},
+		{
+			.mode = 5, /* 7.95k */
+			/* this is the last mode, so no threshold */
+		},
+	};
 
-	memcpy(&bts->mr_full.ms_mode[0], &amr_ms_bts_mode[0], sizeof(amr_ms_bts_mode));
-	memcpy(&bts->mr_full.bts_mode[0], &amr_ms_bts_mode[0], sizeof(amr_ms_bts_mode));
-	bts->mr_full.num_modes = 4;
+	memcpy(&bts->mr_full.ms_mode[0], &amr_fr_ms_bts_mode[0], sizeof(amr_fr_ms_bts_mode));
+	memcpy(&bts->mr_full.bts_mode[0], &amr_fr_ms_bts_mode[0], sizeof(amr_fr_ms_bts_mode));
+	bts->mr_full.num_modes = ARRAY_SIZE(amr_fr_ms_bts_mode);
 
-	memcpy(&bts->mr_half.ms_mode[0], &amr_ms_bts_mode[0], sizeof(amr_ms_bts_mode));
-	memcpy(&bts->mr_half.bts_mode[0], &amr_ms_bts_mode[0], sizeof(amr_ms_bts_mode));
-	bts->mr_half.num_modes = 3;
+	memcpy(&bts->mr_half.ms_mode[0], &amr_hr_ms_bts_mode[0], sizeof(amr_hr_ms_bts_mode));
+	memcpy(&bts->mr_half.bts_mode[0], &amr_hr_ms_bts_mode[0], sizeof(amr_hr_ms_bts_mode));
+	bts->mr_half.num_modes = ARRAY_SIZE(amr_hr_ms_bts_mode);
 
 	bts_init_cbch_state(&bts->cbch_basic, bts);
 	bts_init_cbch_state(&bts->cbch_extended, bts);
