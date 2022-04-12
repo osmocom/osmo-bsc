@@ -169,8 +169,6 @@ static int gsm_bts_talloc_destructor(struct gsm_bts *bts)
 struct gsm_bts *gsm_bts_alloc(struct gsm_network *net, struct gsm_bts_sm *bts_sm, uint8_t bts_num)
 {
 	struct gsm_bts *bts = talloc_zero(bts_sm, struct gsm_bts);
-	struct gsm48_multi_rate_conf mr_cfg;
-	int i;
 
 	if (!bts)
 		return NULL;
@@ -337,58 +335,49 @@ struct gsm_bts *gsm_bts_alloc(struct gsm_network *net, struct gsm_bts_sm *bts_sm
 
 	/* Set reasonable defaults for AMR-FR and AMR-HR rate configuration.
 	 * (see also 3GPP TS 28.062, Table 7.11.3.1.3-2) */
-	mr_cfg = (struct gsm48_multi_rate_conf) {
+	static const struct gsm48_multi_rate_conf amr_fr_mr_cfg = {
 		.m4_75 = 1,
-		.m5_15 = 0,
 		.m5_90 = 1,
-		.m6_70 = 0,
 		.m7_40 = 1,
-		.m7_95 = 0,
-		.m10_2 = 0,
 		.m12_2 = 1
 	};
-	memcpy(bts->mr_full.gsm48_ie, &mr_cfg, sizeof(bts->mr_full.gsm48_ie));
-	bts->mr_full.ms_mode[0].mode = 0;
-	bts->mr_full.ms_mode[1].mode = 2;
-	bts->mr_full.ms_mode[2].mode = 4;
-	bts->mr_full.ms_mode[3].mode = 7;
-	bts->mr_full.bts_mode[0].mode = 0;
-	bts->mr_full.bts_mode[1].mode = 2;
-	bts->mr_full.bts_mode[2].mode = 4;
-	bts->mr_full.bts_mode[3].mode = 7;
-	for (i = 0; i < 3; i++) {
-		bts->mr_full.ms_mode[i].hysteresis = 8;
-		bts->mr_full.ms_mode[i].threshold = 32;
-		bts->mr_full.bts_mode[i].hysteresis = 8;
-		bts->mr_full.bts_mode[i].threshold = 32;
-	}
+	static const struct gsm48_multi_rate_conf amr_hr_mr_cfg = {
+		.m4_75 = 1,
+		.m5_90 = 1,
+		.m7_40 = 1,
+	};
+
+	memcpy(bts->mr_full.gsm48_ie, &amr_fr_mr_cfg, sizeof(bts->mr_full.gsm48_ie));
+	memcpy(bts->mr_half.gsm48_ie, &amr_hr_mr_cfg, sizeof(bts->mr_half.gsm48_ie));
+
+	static const struct amr_mode amr_ms_bts_mode[] = {
+		{
+			.mode = 0, /* 4.75k */
+			.threshold = 32,
+			.hysteresis = 8,
+		},
+		{
+			.mode = 2, /* 5.90k */
+			.threshold = 32,
+			.hysteresis = 8,
+		},
+		{
+			.mode = 4, /* 7.40k */
+			.threshold = 32,
+			.hysteresis = 8,
+		},
+		{
+			.mode = 7, /* 12.2k */
+			/* this is the last mode, so no threshold */
+		},
+	};
+
+	memcpy(&bts->mr_full.ms_mode[0], &amr_ms_bts_mode[0], sizeof(amr_ms_bts_mode));
+	memcpy(&bts->mr_full.bts_mode[0], &amr_ms_bts_mode[0], sizeof(amr_ms_bts_mode));
 	bts->mr_full.num_modes = 4;
 
-	mr_cfg = (struct gsm48_multi_rate_conf) {
-		.m4_75 = 1,
-		.m5_15 = 0,
-		.m5_90 = 1,
-		.m6_70 = 0,
-		.m7_40 = 1,
-		.m7_95 = 0,
-		.m10_2 = 0,
-		.m12_2 = 0
-	};
-	memcpy(bts->mr_half.gsm48_ie, &mr_cfg, sizeof(bts->mr_half.gsm48_ie));
-	bts->mr_half.ms_mode[0].mode = 0;
-	bts->mr_half.ms_mode[1].mode = 2;
-	bts->mr_half.ms_mode[2].mode = 4;
-	bts->mr_half.ms_mode[3].mode = 7;
-	bts->mr_half.bts_mode[0].mode = 0;
-	bts->mr_half.bts_mode[1].mode = 2;
-	bts->mr_half.bts_mode[2].mode = 4;
-	bts->mr_half.bts_mode[3].mode = 7;
-	for (i = 0; i < 3; i++) {
-		bts->mr_half.ms_mode[i].hysteresis = 8;
-		bts->mr_half.ms_mode[i].threshold = 32;
-		bts->mr_half.bts_mode[i].hysteresis = 8;
-		bts->mr_half.bts_mode[i].threshold = 32;
-	}
+	memcpy(&bts->mr_half.ms_mode[0], &amr_ms_bts_mode[0], sizeof(amr_ms_bts_mode));
+	memcpy(&bts->mr_half.bts_mode[0], &amr_ms_bts_mode[0], sizeof(amr_ms_bts_mode));
 	bts->mr_half.num_modes = 3;
 
 	bts_init_cbch_state(&bts->cbch_basic, bts);
