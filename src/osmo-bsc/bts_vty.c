@@ -2386,10 +2386,12 @@ DEFUN_ATTR(cfg_bts_no_depends_on, cfg_bts_no_depends_on_cmd,
 
 #define AMR_TEXT "Adaptive Multi Rate settings\n"
 #define AMR_MODE_TEXT "Codec modes to use with AMR codec\n"
-#define AMR_START_TEXT "Initial codec to use with AMR\n" \
-	"Automatically\nFirst codec\nSecond codec\nThird codec\nFourth codec\n"
-#define AMR_TH_TEXT "AMR threshold between codecs\nMS side\nBTS side\n"
-#define AMR_HY_TEXT "AMR hysteresis between codecs\nMS side\nBTS side\n"
+#define AMR_START_TEXT "Initial codec mode to use with AMR\n" \
+	"Automatically\nFirst mode\nSecond mode\nThird mode\nFourth mode\n"
+#define AMR_MS_BTS_TEXT "MS side\nBTS side\n"
+#define AMR_TH_TEXT "Lower threshold(s) for switching between codec modes\n" AMR_MS_BTS_TEXT
+#define AMR_HY_TEXT "Hysteresis value(s) to obtain the higher threshold(s) " \
+		    "for switching between codec modes\n" AMR_MS_BTS_TEXT
 
 static int get_amr_from_arg(struct vty *vty, int argc, const char *argv[], int full)
 {
@@ -2546,8 +2548,10 @@ static int check_amr_config(struct vty *vty)
 #define AMR_TCHH_PAR_STR " (0|1|2|3|4|5)"
 #define AMR_TCHH_HELP_STR "4,75k\n5,15k\n5,90k\n6,70k\n7,40k\n7,95k\n"
 
-#define	AMR_TH_HELP_STR "Threshold between codec 1 and 2\n"
-#define	AMR_HY_HELP_STR "Hysteresis between codec 1 and 2\n"
+#define	AMR_TH_HELP_STR(a, b) \
+	"Threshold between codec mode " a " and " b " (in 0.5 dB steps)\n"
+#define	AMR_HY_HELP_STR(a, b) \
+	"Hysteresis between codec mode " a " and " b " (in 0.5 dB steps)\n"
 
 DEFUN_USRATTR(cfg_bts_amr_fr_modes1,
 	      cfg_bts_amr_fr_modes1_cmd,
@@ -2612,7 +2616,7 @@ DEFUN_USRATTR(cfg_bts_amr_fr_thres1,
 	      X(BSC_VTY_ATTR_NEW_LCHAN),
 	      "amr tch-f threshold (ms|bts) <0-63>",
 	      AMR_TEXT "Full Rate\n" AMR_TH_TEXT
-	      AMR_TH_HELP_STR)
+	      AMR_TH_HELP_STR("1", "2"))
 {
 	get_amr_th_from_arg(vty, 2, argv, 1);
 	return check_amr_config(vty);
@@ -2623,7 +2627,8 @@ DEFUN_USRATTR(cfg_bts_amr_fr_thres2,
 	      X(BSC_VTY_ATTR_NEW_LCHAN),
 	      "amr tch-f threshold (ms|bts) <0-63> <0-63>",
 	      AMR_TEXT "Full Rate\n" AMR_TH_TEXT
-	      AMR_TH_HELP_STR AMR_TH_HELP_STR)
+	      AMR_TH_HELP_STR("1", "2")
+	      AMR_TH_HELP_STR("2", "3"))
 {
 	get_amr_th_from_arg(vty, 3, argv, 1);
 	return check_amr_config(vty);
@@ -2634,7 +2639,9 @@ DEFUN_USRATTR(cfg_bts_amr_fr_thres3,
 	      X(BSC_VTY_ATTR_NEW_LCHAN),
 	      "amr tch-f threshold (ms|bts) <0-63> <0-63> <0-63>",
 	      AMR_TEXT "Full Rate\n" AMR_TH_TEXT
-	      AMR_TH_HELP_STR AMR_TH_HELP_STR AMR_TH_HELP_STR)
+	      AMR_TH_HELP_STR("1", "2")
+	      AMR_TH_HELP_STR("2", "3")
+	      AMR_TH_HELP_STR("3", "4"))
 {
 	get_amr_th_from_arg(vty, 4, argv, 1);
 	return check_amr_config(vty);
@@ -2645,7 +2652,7 @@ DEFUN_USRATTR(cfg_bts_amr_fr_hyst1,
 	      X(BSC_VTY_ATTR_NEW_LCHAN),
 	      "amr tch-f hysteresis (ms|bts) <0-15>",
 	      AMR_TEXT "Full Rate\n" AMR_HY_TEXT
-	      AMR_HY_HELP_STR)
+	      AMR_HY_HELP_STR("1", "2"))
 {
 	get_amr_hy_from_arg(vty, 2, argv, 1);
 	return check_amr_config(vty);
@@ -2656,7 +2663,8 @@ DEFUN_USRATTR(cfg_bts_amr_fr_hyst2,
 	      X(BSC_VTY_ATTR_NEW_LCHAN),
 	      "amr tch-f hysteresis (ms|bts) <0-15> <0-15>",
 	      AMR_TEXT "Full Rate\n" AMR_HY_TEXT
-	      AMR_HY_HELP_STR AMR_HY_HELP_STR)
+	      AMR_HY_HELP_STR("1", "2")
+	      AMR_HY_HELP_STR("2", "3"))
 {
 	get_amr_hy_from_arg(vty, 3, argv, 1);
 	return CMD_SUCCESS;
@@ -2667,7 +2675,9 @@ DEFUN_USRATTR(cfg_bts_amr_fr_hyst3,
 	      X(BSC_VTY_ATTR_NEW_LCHAN),
 	      "amr tch-f hysteresis (ms|bts) <0-15> <0-15> <0-15>",
 	      AMR_TEXT "Full Rate\n" AMR_HY_TEXT
-	      AMR_HY_HELP_STR AMR_HY_HELP_STR AMR_HY_HELP_STR)
+	      AMR_HY_HELP_STR("1", "2")
+	      AMR_HY_HELP_STR("2", "3")
+	      AMR_HY_HELP_STR("3", "4"))
 {
 	get_amr_hy_from_arg(vty, 4, argv, 1);
 	return check_amr_config(vty);
@@ -2736,7 +2746,7 @@ DEFUN_USRATTR(cfg_bts_amr_hr_thres1,
 	      X(BSC_VTY_ATTR_NEW_LCHAN),
 	      "amr tch-h threshold (ms|bts) <0-63>",
 	      AMR_TEXT "Half Rate\n" AMR_TH_TEXT
-	      AMR_TH_HELP_STR)
+	      AMR_TH_HELP_STR("1", "2"))
 {
 	get_amr_th_from_arg(vty, 2, argv, 0);
 	return check_amr_config(vty);
@@ -2747,7 +2757,8 @@ DEFUN_USRATTR(cfg_bts_amr_hr_thres2,
 	      X(BSC_VTY_ATTR_NEW_LCHAN),
 	      "amr tch-h threshold (ms|bts) <0-63> <0-63>",
 	      AMR_TEXT "Half Rate\n" AMR_TH_TEXT
-	      AMR_TH_HELP_STR AMR_TH_HELP_STR)
+	      AMR_TH_HELP_STR("1", "2")
+	      AMR_TH_HELP_STR("2", "3"))
 {
 	get_amr_th_from_arg(vty, 3, argv, 0);
 	return check_amr_config(vty);
@@ -2758,7 +2769,9 @@ DEFUN_USRATTR(cfg_bts_amr_hr_thres3,
 	      X(BSC_VTY_ATTR_NEW_LCHAN),
 	      "amr tch-h threshold (ms|bts) <0-63> <0-63> <0-63>",
 	      AMR_TEXT "Half Rate\n" AMR_TH_TEXT
-	      AMR_TH_HELP_STR AMR_TH_HELP_STR AMR_TH_HELP_STR)
+	      AMR_TH_HELP_STR("1", "2")
+	      AMR_TH_HELP_STR("2", "3")
+	      AMR_TH_HELP_STR("3", "4"))
 {
 	get_amr_th_from_arg(vty, 4, argv, 0);
 	return check_amr_config(vty);
@@ -2769,7 +2782,7 @@ DEFUN_USRATTR(cfg_bts_amr_hr_hyst1,
 	      X(BSC_VTY_ATTR_NEW_LCHAN),
 	      "amr tch-h hysteresis (ms|bts) <0-15>",
 	      AMR_TEXT "Half Rate\n" AMR_HY_TEXT
-	      AMR_HY_HELP_STR)
+	      AMR_HY_HELP_STR("1", "2"))
 {
 	get_amr_hy_from_arg(vty, 2, argv, 0);
 	return check_amr_config(vty);
@@ -2780,7 +2793,8 @@ DEFUN_USRATTR(cfg_bts_amr_hr_hyst2,
 	      X(BSC_VTY_ATTR_NEW_LCHAN),
 	      "amr tch-h hysteresis (ms|bts) <0-15> <0-15>",
 	      AMR_TEXT "Half Rate\n" AMR_HY_TEXT
-	      AMR_HY_HELP_STR AMR_HY_HELP_STR)
+	      AMR_HY_HELP_STR("1", "2")
+	      AMR_HY_HELP_STR("2", "3"))
 {
 	get_amr_hy_from_arg(vty, 3, argv, 0);
 	return check_amr_config(vty);
@@ -2791,7 +2805,9 @@ DEFUN_USRATTR(cfg_bts_amr_hr_hyst3,
 	      X(BSC_VTY_ATTR_NEW_LCHAN),
 	      "amr tch-h hysteresis (ms|bts) <0-15> <0-15> <0-15>",
 	      AMR_TEXT "Half Rate\n" AMR_HY_TEXT
-	      AMR_HY_HELP_STR AMR_HY_HELP_STR AMR_HY_HELP_STR)
+	      AMR_HY_HELP_STR("1", "2")
+	      AMR_HY_HELP_STR("2", "3")
+	      AMR_HY_HELP_STR("3", "4"))
 {
 	get_amr_hy_from_arg(vty, 4, argv, 0);
 	return check_amr_config(vty);
