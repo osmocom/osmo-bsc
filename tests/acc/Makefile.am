@@ -16,7 +16,7 @@ EXTRA_DIST = \
 	acc_test.ok \
 	$(NULL)
 
-noinst_PROGRAMS = \
+check_PROGRAMS = \
 	acc_test \
 	$(NULL)
 

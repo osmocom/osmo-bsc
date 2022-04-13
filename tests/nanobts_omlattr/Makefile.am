@@ -10,7 +10,7 @@ AM_CFLAGS = \
 	$(LIBOSMOABIS_CFLAGS) \
 	$(NULL)
 
-noinst_PROGRAMS = \
+check_PROGRAMS = \
 	nanobts_omlattr_test \
 	$(NULL)
 

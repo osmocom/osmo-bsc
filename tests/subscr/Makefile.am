@@ -22,7 +22,7 @@ EXTRA_DIST = \
 	bsc_subscr_test.err \
 	$(NULL)
 
-noinst_PROGRAMS = \
+check_PROGRAMS = \
 	bsc_subscr_test \
 	$(NULL)
 

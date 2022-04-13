@@ -16,7 +16,7 @@ EXTRA_DIST = \
 	abis_test.ok \
 	$(NULL)
 
-noinst_PROGRAMS = \
+check_PROGRAMS = \
 	abis_test \
 	$(NULL)
 

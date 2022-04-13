@@ -18,7 +18,7 @@ EXTRA_DIST = \
 	codec_pref_test.ok \
 	$(NULL)
 
-noinst_PROGRAMS = \
+check_PROGRAMS = \
 	codec_pref_test \
 	$(NULL)
 

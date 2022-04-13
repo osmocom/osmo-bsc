@@ -11,7 +11,7 @@ AM_CFLAGS = \
 	$(LIBOSMOABIS_CFLAGS) \
 	$(NULL)
 
-noinst_PROGRAMS = \
+check_PROGRAMS = \
 	gsm0408_test \
 	$(NULL)
 

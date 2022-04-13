@@ -26,7 +26,7 @@ EXTRA_DIST = \
 	$(srcdir)/test*.ho_vty \
 	$(NULL)
 
-noinst_PROGRAMS = \
+check_PROGRAMS = \
 	handover_test \
 	$(NULL)
 
