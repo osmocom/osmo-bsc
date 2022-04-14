@@ -651,6 +651,8 @@ static int bts_rx_kill(struct gsm_bts *bts, const struct osmo_cbsp_decoded *dec,
 	if (!smscb)
 		return -CBSP_CAUSE_MSG_REF_NOT_IDENTIFIED;
 
+	append_bcast_compl(r_state, chan_state->bts, smscb);
+
 	/* Remove it */
 	bts_smscb_del(smscb, chan_state, "KILL");
 	return 0;
