@@ -1203,6 +1203,13 @@ static void handle_rll_rel_ind_or_conf(struct osmo_fsm_inst *fi, uint32_t event,
 	if (lchan->conn && sapi == 0 && !(link_id & 0xc0)) {
 		LOG_LCHAN(lchan, LOGL_DEBUG, "lchan is releasing\n");
 		gscon_lchan_releasing(lchan->conn, lchan);
+
+		/* if SAPI=0 is gone, it makes no sense if other SAPIs are still around,
+		 * this is not a valid configuration and we should forget about them.
+		 * This is particularly relevant in case of Ericsson RBS6000, which doesn't
+		 * seem to send a RLL_REL_IND for SAPI=3 if there was already one for SAPI=0 */
+		for_each_active_sapi(sapi, 1, lchan)
+			lchan->sapis[sapi] = LCHAN_SAPI_UNUSED;
 	}
 
 	/* The caller shall check whether all SAPIs are released and cause a state chg */
