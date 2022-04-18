@@ -1255,6 +1255,10 @@ static void rll_ind_cb(struct gsm_lchan *lchan, uint8_t link_id, void *_data, en
 				  GSM0808_CAUSE_BSS_NOT_EQUIPPED);
 		msgb_free(msg);
 		break;
+	default:
+		LOGPLCHAN(lchan, DRLL, LOGL_NOTICE, "Received unknown rllr_ind %u\n", rllr_ind);
+		msgb_free(msg);
+		break;
 	}
 }
 
