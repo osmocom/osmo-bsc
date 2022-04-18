@@ -2486,7 +2486,7 @@ static int rsl_rx_rll_err_ind(struct msgb *msg)
 	}
 
 	if (!TLVP_PRESENT(&tp, RSL_IE_RLM_CAUSE)) {
-		LOG_LCHAN(msg->lchan, LOGL_ERROR, "ERROR INDICATION without mandantory cause.\n");
+		LOG_LCHAN(msg->lchan, LOGL_ERROR, "ERROR INDICATION without mandatory cause.\n");
 		return -1;
 	}
 
