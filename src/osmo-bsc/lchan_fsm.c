@@ -1198,8 +1198,7 @@ static void handle_rll_rel_ind_or_conf(struct osmo_fsm_inst *fi, uint32_t event,
 	lchan->sapis[sapi] = LCHAN_SAPI_UNUSED;
 	rll_indication(lchan, link_id, BSC_RLLR_IND_REL_IND);
 
-	/* Releasing SAPI 0 means the conn becomes invalid; but not if the link_id contains a TCH flag.
-	 * (TODO: is this the correct interpretation?) */
+	/* Releasing SAPI 0 means the conn becomes invalid; but not if the link_id contains a SACCH flag. */
 	if (lchan->conn && sapi == 0 && !(link_id & 0xc0)) {
 		LOG_LCHAN(lchan, LOGL_DEBUG, "lchan is releasing\n");
 		gscon_lchan_releasing(lchan->conn, lchan);
