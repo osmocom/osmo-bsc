@@ -63,7 +63,7 @@ static void update_msc_osmux_support(struct bsc_msc_data *msc,
 	int rc;
 	bool old_value = msc->remote_supports_osmux;
 
-	rc = tlv_parse(&tp, gsm0808_att_tlvdef(), msg->l4h + 1, length - 1, 0, 0);
+	rc = osmo_bssap_tlv_parse(&tp, msg->l4h + 1, length - 1);
 	if (rc < 0)
 		LOGP(DMSC, LOGL_NOTICE, "Failed parsing TLV looking for Osmux support\n");
 
@@ -270,7 +270,10 @@ static int bssmap_handle_paging(struct bsc_msc_data *msc,
 		.tmsi = GSM_RESERVED_TMSI,
 	};
 
-	tlv_parse(&tp, gsm0808_att_tlvdef(), msg->l4h + 1, payload_length - 1, 0, 0);
+	if (osmo_bssap_tlv_parse(&tp, msg->l4h + 1, payload_length - 1) < 0) {
+		LOGP(DMSC, LOGL_ERROR, "%s(): tlv_parse() failed\n", __func__);
+		return -1;
+	}
 	remain = payload_length - 1;
 
 	if (!TLVP_PRESENT(&tp, GSM0808_IE_IMSI)) {
@@ -417,7 +420,10 @@ static int bssmap_handle_clear_cmd(struct gsm_subscriber_connection *conn,
 	struct tlv_parsed tp;
 	enum gsm0808_cause cause_0808;
 
-	tlv_parse(&tp, gsm0808_att_tlvdef(), msg->l4h + 1, length - 1, 0, 0);
+	if (osmo_bssap_tlv_parse(&tp, msg->l4h + 1, length - 1) < 0) {
+		LOGPFSML(conn->fi, LOGL_ERROR, "%s(): tlv_parse() failed\n", __func__);
+		return -1;
+	}
 
 	cause_0808 = gsm0808_get_cause(&tp);
 	if (cause_0808 < 0) {
@@ -476,7 +482,11 @@ static int bssmap_handle_cipher_mode(struct gsm_subscriber_connection *conn,
 
 	conn->ciphering_handled = 1;
 
-	tlv_parse(&tp, gsm0808_att_tlvdef(), msg->l4h + 1, payload_length - 1, 0, 0);
+	if (osmo_bssap_tlv_parse(&tp, msg->l4h + 1, payload_length - 1) < 0) {
+		LOGPFSML(conn->fi, LOGL_ERROR, "%s(): tlv_parse() failed\n", __func__);
+		return -1;
+	}
+
 	if (!TLVP_PRESENT(&tp, GSM0808_IE_ENCRYPTION_INFORMATION)) {
 		LOGP(DMSC, LOGL_ERROR, "IE Encryption Information missing.\n");
 		reject_cause = GSM0808_CAUSE_INFORMATION_ELEMENT_OR_FIELD_MISSING;
@@ -624,16 +634,14 @@ static int bssmap_handle_lcls_connect_ctrl(struct gsm_subscriber_connection *con
 	struct msgb *resp;
 	struct tlv_parsed tp;
 	const uint8_t *config, *control;
-	int rc;
 
 	OSMO_ASSERT(conn);
 
-	rc = tlv_parse(&tp, gsm0808_att_tlvdef(), msg->l4h + 1, length - 1, 0, 0);
-	if (rc < 0) {
-		LOGPFSML(conn->fi, LOGL_ERROR, "Error parsing TLVs of LCLS CONNT CTRL: %s\n",
-			 msgb_hexdump(msg));
-		return rc;
+	if (osmo_bssap_tlv_parse(&tp, msg->l4h + 1, length - 1) < 0) {
+		LOGPFSML(conn->fi, LOGL_ERROR, "%s(): tlv_parse() failed\n", __func__);
+		return -1;
 	}
+
 	config = TLVP_VAL_MINLEN(&tp, GSM0808_IE_LCLS_CONFIG, 1);
 	control = TLVP_VAL_MINLEN(&tp, GSM0808_IE_LCLS_CONN_STATUS_CTRL, 1);
 
@@ -816,7 +824,10 @@ static int bssmap_handle_assignm_req(struct gsm_subscriber_connection *conn,
 
 	aoip = gscon_is_aoip(conn);
 
-	tlv_parse(&tp, gsm0808_att_tlvdef(), msg->l4h + 1, length - 1, 0, 0);
+	if (osmo_bssap_tlv_parse(&tp, msg->l4h + 1, length - 1) < 0) {
+		LOGPFSML(conn->fi, LOGL_ERROR, "%s(): tlv_parse() failed\n", __func__);
+		return -1;
+	}
 
 	/* Check for channel type element, if its missing, immediately reject */
 	if (!TLVP_PRESENT(&tp, GSM0808_IE_CHANNEL_TYPE)) {
@@ -1019,7 +1030,10 @@ static int bssmap_handle_handover_cmd(struct gsm_subscriber_connection *conn,
 		return -EINVAL;
 	}
 
-	tlv_parse(&tp, gsm0808_att_tlvdef(), msg->l4h + 1, length - 1, 0, 0);
+	if (osmo_bssap_tlv_parse(&tp, msg->l4h + 1, length - 1) < 0) {
+		LOGPFSML(conn->fi, LOGL_ERROR, "%s(): tlv_parse() failed\n", __func__);
+		return -1;
+	}
 
 	/* Check for channel type element, if its missing, immediately reject */
 	if (!TLVP_PRESENT(&tp, GSM0808_IE_LAYER_3_INFORMATION)) {
@@ -1057,7 +1071,10 @@ static int bssmap_handle_confusion(struct gsm_subscriber_connection *conn,
 	enum gsm0808_cause_class cause_class;
 	struct gsm0808_diagnostics *diag;
 
-	osmo_bssap_tlv_parse(&tp, msg->l4h + 1, length - 1);
+	if (osmo_bssap_tlv_parse(&tp, msg->l4h + 1, length - 1) < 0) {
+		LOGPFSML(conn->fi, LOGL_ERROR, "%s(): tlv_parse() failed\n", __func__);
+		return -1;
+	}
 
 	/* Check for the Cause and Diagnostic mandatory elements */
 	if (!TLVP_PRESENT(&tp, GSM0808_IE_CAUSE) || !TLVP_PRESENT(&tp, GSM0808_IE_DIAGNOSTIC)) {
@@ -1100,7 +1117,10 @@ static int bssmap_handle_common_id(struct gsm_subscriber_connection *conn,
 {
 	struct tlv_parsed tp;
 
-	osmo_bssap_tlv_parse(&tp, msg->l4h + 1, length - 1);
+	if (osmo_bssap_tlv_parse(&tp, msg->l4h + 1, length - 1) < 0) {
+		LOGPFSML(conn->fi, LOGL_ERROR, "%s(): tlv_parse() failed\n", __func__);
+		return -1;
+	}
 
 	/* Check for the mandatory elements */
 	if (!TLVP_PRESENT(&tp, GSM0808_IE_IMSI)) {
