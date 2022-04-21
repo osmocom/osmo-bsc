@@ -962,26 +962,6 @@ struct gsm_bts_trx_ts {
 
 #define GSM_LCHAN_SI(lchan, i) (void *)((lchan)->si.buf[i][0])
 
-/*
- * This keeps track of the paging status of one BTS. It
- * includes a number of pending requests, a back pointer
- * to the gsm_bts, a timer and some more state.
- */
-struct gsm_bts_paging_state {
-	/* pending requests */
-	struct llist_head pending_requests;
-	struct gsm_bts *bts;
-
-	struct osmo_timer_list work_timer;
-	struct osmo_timer_list credit_timer;
-
-	/* free chans needed */
-	int free_chans_need;
-
-	/* load */
-	uint16_t available_slots;
-};
-
 struct gsm_envabtse {
 	struct gsm_abis_mo mo;
 };

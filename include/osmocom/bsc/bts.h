@@ -17,6 +17,7 @@
 #include "osmocom/bsc/bts_trx.h"
 #include "osmocom/bsc/bts_sm.h"
 #include "osmocom/bsc/abis_om2000.h"
+#include "osmocom/bsc/paging.h"
 
 enum bts_counter_id {
 	BTS_CTR_CHREQ_TOTAL,
