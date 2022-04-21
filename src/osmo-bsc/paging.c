@@ -204,8 +204,8 @@ static void paging_handle_pending_requests(struct gsm_bts_paging_state *paging_b
 		return;
 	}
 
-	request = llist_entry(paging_bts->pending_requests.next,
-			      struct gsm_paging_request, entry);
+	request = llist_first_entry(&paging_bts->pending_requests,
+				    struct gsm_paging_request, entry);
 
 	/* we need to determine the number of free channels */
 	if (paging_bts->free_chans_need != -1) {
