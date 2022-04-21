@@ -60,6 +60,9 @@ void *tall_paging_ctx = NULL;
 
 #define PAGING_TIMER 0, 500000
 
+/* How many paging requests to Tx on RSL at max before going back to main loop */
+#define MAX_PAGE_REQ_PER_ITER 20
+
 /*
  * Kill one paging request update the internal list...
  */
@@ -182,7 +185,8 @@ count_tch:
  */
 static void paging_handle_pending_requests(struct gsm_bts_paging_state *paging_bts)
 {
-	struct gsm_paging_request *request = NULL;
+	struct gsm_paging_request *request, *initial_request;
+	unsigned int num_paged = 0;
 
 	/*
 	 * Determine if the pending_requests list is empty and
@@ -193,43 +197,53 @@ static void paging_handle_pending_requests(struct gsm_bts_paging_state *paging_b
 		return;
 	}
 
-	/*
-	 * In case the BTS does not provide us with load indication and we
-	 * ran out of slots, call an autofill routine. It might be that the
-	 * BTS did not like our paging messages and then we have counted down
-	 * to zero and we do not get any messages.
-	 */
-	if (paging_bts->available_slots == 0) {
-		osmo_timer_schedule(&paging_bts->credit_timer, 5, 0);
-		return;
-	}
-
-	request = llist_first_entry(&paging_bts->pending_requests,
-				    struct gsm_paging_request, entry);
-
-	/* we need to determine the number of free channels */
-	if (paging_bts->free_chans_need != -1 &&
-	    can_send_pag_req(request->bts, request->chan_type) != 0) {
-		LOG_PAGING_BTS(request, request->bts, DPAG, LOGL_INFO,
-			"Paging delayed: not enough free channels (<%d)\n",
-			 paging_bts->free_chans_need);
-		goto skip_paging;
-	}
-
 	/* Skip paging if the bts is down. */
-	if (!request->bts->oml_link)
-		goto skip_paging;
+	if (!paging_bts->bts->oml_link)
+		goto sched_next_iter;
 
-	/* handle the paging request now */
-	page_ms(request);
-	paging_bts->available_slots--;
-	request->attempts++;
+	/* do while loop: Try send at most first MAX_PAGE_REQ_PER_ITER paging
+	 * requests (or before if there are no more available slots). Since
+	 * transmitted requests are re-appended at the end of the list, we check
+	 * until we find the first req again, in order to avoid retransmitting
+	 * repeated requests until next time paging is scheduled. */
+	initial_request = llist_first_entry(&paging_bts->pending_requests,
+					    struct gsm_paging_request, entry);
+	request = initial_request;
+	do {
+		/*
+		 * In case the BTS does not provide us with load indication and we
+		 * ran out of slots, call an autofill routine. It might be that the
+		 * BTS did not like our paging messages and then we have counted down
+		 * to zero and we do not get any messages.
+		 */
+		if (paging_bts->available_slots == 0) {
+			osmo_timer_schedule(&paging_bts->credit_timer, 5, 0);
+			return;
+		}
 
-	/* take the current and add it to the back */
-	llist_del(&request->entry);
-	llist_add_tail(&request->entry, &paging_bts->pending_requests);
+		/* we need to determine the number of free channels */
+		if (paging_bts->free_chans_need != -1 &&
+		    can_send_pag_req(request->bts, request->chan_type) != 0) {
+			LOG_PAGING_BTS(request, request->bts, DPAG, LOGL_INFO,
+				"Paging delayed: not enough free channels (<%d)\n",
+				 paging_bts->free_chans_need);
+			goto sched_next_iter;
+		}
 
-skip_paging:
+		/* handle the paging request now */
+		page_ms(request);
+		paging_bts->available_slots--;
+		request->attempts++;
+		num_paged++;
+
+		llist_del(&request->entry);
+		llist_add_tail(&request->entry, &paging_bts->pending_requests);
+		request = llist_first_entry(&paging_bts->pending_requests,
+					    struct gsm_paging_request, entry);
+	} while (request != initial_request && num_paged < MAX_PAGE_REQ_PER_ITER);
+
+	/* Once done iterating, prepare next scheduling: */
+sched_next_iter:
 	osmo_timer_schedule(&paging_bts->work_timer, PAGING_TIMER);
 }
 
