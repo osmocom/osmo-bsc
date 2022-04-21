@@ -61,7 +61,7 @@ static void handle_mfm(const struct pcap_pkthdr *h,
 static void pcap_cb(u_char *user, const struct pcap_pkthdr *h,
 		   const u_char *bytes)
 {
-	const char *cur = bytes;
+	const u_char *cur = bytes;
 	const struct iphdr *ip;
 	const struct udphdr *udp;
 	const struct meas_feed_meas *mfm;
