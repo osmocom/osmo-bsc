@@ -205,8 +205,8 @@ int bts_model_osmobts_init(void)
 				sizeof(model_osmobts._features_data);
 	memset(model_osmobts.features.data, 0, model_osmobts.features.data_len);
 
-	/* Order alphabetically and remember to adjust bts_model_init in
-	 * OsmoBTS to report new features. */
+	/* Order alphabetically and remember to adjust bts_init/bts_model_init
+	 * in OsmoBTS to report new features. */
 	osmo_bts_set_feature(&model_osmobts.features, BTS_FEAT_CCN);
 	osmo_bts_set_feature(&model_osmobts.features, BTS_FEAT_EGPRS);
 	osmo_bts_set_feature(&model_osmobts.features, BTS_FEAT_GPRS);
