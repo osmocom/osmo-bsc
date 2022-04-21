@@ -200,8 +200,6 @@ static void paging_handle_pending_requests(struct gsm_bts_paging_state *paging_b
 	 * to zero and we do not get any messages.
 	 */
 	if (paging_bts->available_slots == 0) {
-		osmo_timer_setup(&paging_bts->credit_timer, paging_give_credit,
-				 paging_bts);
 		osmo_timer_schedule(&paging_bts->credit_timer, 5, 0);
 		return;
 	}
@@ -248,6 +246,7 @@ void paging_init(struct gsm_bts *bts)
 	bts->paging.available_slots = 20;
 	INIT_LLIST_HEAD(&bts->paging.pending_requests);
 	osmo_timer_setup(&bts->paging.work_timer, paging_worker, &bts->paging);
+	osmo_timer_setup(&bts->paging.credit_timer, paging_give_credit, &bts->paging);
 }
 
 /*! do we have any pending paging requests for given subscriber? */
