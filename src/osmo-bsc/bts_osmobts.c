@@ -205,11 +205,13 @@ int bts_model_osmobts_init(void)
 				sizeof(model_osmobts._features_data);
 	memset(model_osmobts.features.data, 0, model_osmobts.features.data_len);
 
-	osmo_bts_set_feature(&model_osmobts.features, BTS_FEAT_GPRS);
-	osmo_bts_set_feature(&model_osmobts.features, BTS_FEAT_EGPRS);
-	osmo_bts_set_feature(&model_osmobts.features, BTS_FEAT_PAGING_COORDINATION);
-	osmo_bts_set_feature(&model_osmobts.features, BTS_FEAT_IPV6_NSVC);
+	/* Order alphabetically and remember to adjust bts_model_init in
+	 * OsmoBTS to report new features. */
 	osmo_bts_set_feature(&model_osmobts.features, BTS_FEAT_CCN);
+	osmo_bts_set_feature(&model_osmobts.features, BTS_FEAT_EGPRS);
+	osmo_bts_set_feature(&model_osmobts.features, BTS_FEAT_GPRS);
+	osmo_bts_set_feature(&model_osmobts.features, BTS_FEAT_IPV6_NSVC);
+	osmo_bts_set_feature(&model_osmobts.features, BTS_FEAT_PAGING_COORDINATION);
 
 	model_osmobts.nm_att_tlvdef.def[NM_ATT_OSMO_NS_LINK_CFG].type = TLV_TYPE_TL16V;
 
