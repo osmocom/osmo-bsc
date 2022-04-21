@@ -288,8 +288,7 @@ static void paging_T3113_expired(void *data)
 	log_set_context(LOG_CTX_BSC_SUBSCR, NULL);
 }
 
-#define GSM_FRAME_DURATION_us	4615
-#define GSM51_MFRAME_DURATION_us (51 * GSM_FRAME_DURATION_us) /* 235365 us */
+#define GSM51_MFRAME_DURATION_us (51 * GSM_TDMA_FN_DURATION_uS) /* 235365 us */
 static unsigned int calculate_timer_3113(struct gsm_bts *bts)
 {
 	unsigned int to_us, to;
