@@ -64,6 +64,7 @@
 #include <osmocom/bsc/bsc_subscr_conn_fsm.h>
 #include <osmocom/bsc/assignment_fsm.h>
 #include <osmocom/bsc/bssmap_reset.h>
+#include <osmocom/bsc/bsc_msc_data.h>
 
 #include <inttypes.h>
 
