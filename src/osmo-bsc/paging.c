@@ -240,22 +240,14 @@ static void paging_worker(void *data)
 }
 
 /*! initialize the bts paging state, if it hasn't been initialized yet */
-static void paging_init_if_needed(struct gsm_bts *bts)
+void paging_init(struct gsm_bts *bts)
 {
-	if (bts->paging.bts)
-		return;
-
 	bts->paging.bts = bts;
-
-	/* This should be initialized only once. There is currently no code that sets bts->paging.bts
-	 * back to NULL, so let's just assert this one instead of graceful handling. */
-	OSMO_ASSERT(llist_empty(&bts->paging.pending_requests));
-
-	osmo_timer_setup(&bts->paging.work_timer, paging_worker,
-			 &bts->paging);
-
+	bts->paging.free_chans_need = -1;
 	/* Large number, until we get a proper message */
 	bts->paging.available_slots = 20;
+	INIT_LLIST_HEAD(&bts->paging.pending_requests);
+	osmo_timer_setup(&bts->paging.work_timer, paging_worker, &bts->paging);
 }
 
 /*! do we have any pending paging requests for given subscriber? */
@@ -379,9 +371,6 @@ int paging_request_bts(const struct bsc_paging_params *params, struct gsm_bts *b
 	if (!trx_is_usable(bts->c0))
 		return 0;
 
-	/* maybe it is the first time we use it */
-	paging_init_if_needed(bts);
-
 	/* Trigger paging, pass any error to the caller */
 	rc = _paging_request(params, bts);
 	if (rc < 0)
@@ -404,8 +393,6 @@ static int paging_request_stop_bts(struct bsc_msc_data **msc_p, enum bsc_paging_
 
 	*msc_p = NULL;
 	*reason_p = BSC_PAGING_NONE;
-
-	paging_init_if_needed(bts);
 
 	llist_for_each_entry_safe(req, req2, &bts_entry->pending_requests,
 				  entry) {
@@ -474,8 +461,6 @@ int paging_request_cancel(struct bsc_subscr *bsub, enum bsc_paging_reason reason
 	llist_for_each_entry(bts, &bsc_gsmnet->bts_list, list) {
 		struct gsm_paging_request *req, *req2;
 
-		paging_init_if_needed(bts);
-
 		llist_for_each_entry_safe(req, req2, &bts->paging.pending_requests, entry) {
 			if (req->bsub != bsub)
 				continue;
@@ -492,7 +477,6 @@ int paging_request_cancel(struct bsc_subscr *bsub, enum bsc_paging_reason reason
 /*! Update the BTS paging buffer slots on given BTS */
 void paging_update_buffer_space(struct gsm_bts *bts, uint16_t free_slots)
 {
-	paging_init_if_needed(bts);
 
 	osmo_timer_del(&bts->paging.credit_timer);
 	bts->paging.available_slots = free_slots;
@@ -505,8 +489,6 @@ unsigned int paging_pending_requests_nr(struct gsm_bts *bts)
 	unsigned int requests = 0;
 	struct gsm_paging_request *req;
 
-	paging_init_if_needed(bts);
-
 	llist_for_each_entry(req, &bts->paging.pending_requests, entry)
 		++requests;
 
@@ -518,8 +500,6 @@ void paging_flush_bts(struct gsm_bts *bts, struct bsc_msc_data *msc)
 {
 	struct gsm_paging_request *req, *req2;
 	int num_cancelled = 0;
-
-	paging_init_if_needed(bts);
 
 	llist_for_each_entry_safe(req, req2, &bts->paging.pending_requests, entry) {
 		if (msc && req->msc != msc)

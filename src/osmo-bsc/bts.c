@@ -24,6 +24,7 @@
 #include <osmocom/bsc/bts.h>
 #include <osmocom/bsc/debug.h>
 #include <osmocom/bsc/nm_common_fsm.h>
+#include <osmocom/bsc/paging.h>
 
 const struct value_string bts_attribute_names[] = {
 	OSMO_VALUE_STRING(BTS_TYPE_VARIANT),
@@ -268,8 +269,7 @@ struct gsm_bts *gsm_bts_alloc(struct gsm_network *net, struct gsm_bts_sm *bts_sm
 	bts->rach_b_thresh = -1;
 	bts->rach_ldavg_slots = -1;
 
-	bts->paging.free_chans_need = -1;
-	INIT_LLIST_HEAD(&bts->paging.pending_requests);
+	paging_init(bts);
 
 	bts->features.data = &bts->_features_data[0];
 	bts->features.data_len = sizeof(bts->_features_data);

@@ -89,6 +89,8 @@ struct gsm_paging_request {
 	enum bsc_paging_reason reason;
 };
 
+void paging_init(struct gsm_bts *bts);
+
 /* schedule paging request */
 int paging_request_bts(const struct bsc_paging_params *params, struct gsm_bts *bts);
 
