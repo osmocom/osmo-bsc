@@ -256,8 +256,12 @@ static int abis_nm_rx_statechg_rep(struct msgb *mb)
 
 	new_state = *nm_state;
 
+	if (abis_nm_tlv_parse(&tp, bts, foh->data, oh->length - sizeof(*foh)) < 0) {
+		LOGPFOH(DNM, LOGL_ERROR, foh, "%s(): tlv_parse failed\n", __func__);
+		return -EINVAL;
+	}
+
 	DEBUGPFOH(DNM, foh, "STATE CHG: ");
-	abis_nm_tlv_parse(&tp, bts, foh->data, oh->length-sizeof(*foh));
 	if (TLVP_PRESENT(&tp, NM_ATT_OPER_STATE)) {
 		new_state.operational = *TLVP_VAL(&tp, NM_ATT_OPER_STATE);
 		DEBUGPC(DNM, "OP_STATE=%s ",
@@ -375,8 +379,10 @@ struct nm_fail_rep_signal_data *abis_nm_fail_evt_rep_parse(struct msgb *mb, stru
 	sd = talloc_zero(tall_bsc_ctx, struct nm_fail_rep_signal_data);
 	OSMO_ASSERT(sd);
 
-	if (abis_nm_tlv_parse(&sd->tp, bts, foh->data, oh->length-sizeof(*foh)) < 0)
+	if (abis_nm_tlv_parse(&sd->tp, bts, foh->data, oh->length - sizeof(*foh)) < 0) {
+		LOGPFOH(DNM, LOGL_ERROR, foh, "%s(): tlv_parse failed\n", __func__);
 		goto fail;
+	}
 
 	if (TLVP_PRESENT(&sd->tp, NM_ATT_ADD_TEXT)) {
 		const uint8_t *val = TLVP_VAL(&sd->tp, NM_ATT_ADD_TEXT);
@@ -678,7 +684,11 @@ static int parse_attr_resp_info(struct gsm_bts *bts, const struct gsm_bts_trx *t
 	/* After parsing unreported attribute id list inside Response info,
 	   there's a list of reported attribute ids and their values, in a TLV
 	   list form. */
-	abis_nm_tlv_parse(tp, bts, data, data_len);
+	if (abis_nm_tlv_parse(tp, bts, data, data_len) < 0) {
+		LOGPFOH(DNM, LOGL_ERROR, foh, "%s(): tlv_parse failed\n", __func__);
+		return -EINVAL;
+	}
+
 	return parse_attr_resp_info_attr(bts, trx, foh, tp);
 }
 
@@ -698,7 +708,10 @@ static int abis_nm_rx_get_attr_resp(struct msgb *mb)
 
 	DEBUGPFOH(DNM, foh, "Get Attributes Response\n");
 
-	abis_nm_tlv_parse(&tp, bts, foh->data, oh->length-sizeof(*foh));
+	if (abis_nm_tlv_parse(&tp, bts, foh->data, oh->length - sizeof(*foh)) < 0) {
+		LOGPFOH(DNM, LOGL_ERROR, foh, "%s(): tlv_parse failed\n", __func__);
+		return -EINVAL;
+	}
 
 	/* nanoBTS doesn't send Get Attribute Response Info, uses its own format */
 	if (bts->type != GSM_BTS_TYPE_NANOBTS)
@@ -734,7 +747,11 @@ static int abis_nm_rx_sw_act_req(struct msgb *mb)
 		return ret;
 	}
 
-	abis_nm_tlv_parse(&tp, sign_link->trx->bts, foh->data, oh->length-sizeof(*foh));
+	if (abis_nm_tlv_parse(&tp, sign_link->trx->bts, foh->data, oh->length - sizeof(*foh)) < 0) {
+		LOGPFOH(DNM, LOGL_ERROR, foh, "%s(): tlv_parse failed\n", __func__);
+		return -EINVAL;
+	}
+
 	sw_config = TLVP_VAL(&tp, NM_ATT_SW_CONFIG);
 	sw_config_len = TLVP_LEN(&tp, NM_ATT_SW_CONFIG);
 	if (!TLVP_PRESENT(&tp, NM_ATT_SW_CONFIG)) {
@@ -771,7 +788,11 @@ static int abis_nm_rx_chg_adm_state_ack(struct msgb *mb)
 	struct tlv_parsed tp;
 	uint8_t adm_state;
 
-	abis_nm_tlv_parse(&tp, sign_link->trx->bts, foh->data, oh->length-sizeof(*foh));
+	if (abis_nm_tlv_parse(&tp, sign_link->trx->bts, foh->data, oh->length - sizeof(*foh)) < 0) {
+		LOGPFOH(DNM, LOGL_ERROR, foh, "%s(): tlv_parse failed\n", __func__);
+		return -EINVAL;
+	}
+
 	if (!TLVP_PRESENT(&tp, NM_ATT_ADM_STATE))
 		return -EINVAL;
 
@@ -790,8 +811,12 @@ static int abis_nm_rx_lmt_event(struct msgb *mb)
 	struct e1inp_sign_link *sign_link = mb->dst;
 	struct tlv_parsed tp;
 
+	if (abis_nm_tlv_parse(&tp, sign_link->trx->bts, foh->data, oh->length - sizeof(*foh)) < 0) {
+		LOGPFOH(DNM, LOGL_ERROR, foh, "%s(): tlv_parse failed\n", __func__);
+		return -EINVAL;
+	}
+
 	DEBUGPFOH(DNM, foh, "LMT Event ");
-	abis_nm_tlv_parse(&tp, sign_link->trx->bts, foh->data, oh->length-sizeof(*foh));
 	if (TLVP_PRESENT(&tp, NM_ATT_BS11_LMT_LOGON_SESSION) &&
 	    TLVP_LEN(&tp, NM_ATT_BS11_LMT_LOGON_SESSION) >= 1) {
 		uint8_t onoff = *TLVP_VAL(&tp, NM_ATT_BS11_LMT_LOGON_SESSION);
@@ -943,9 +968,12 @@ static int abis_nm_rcvmsg_fom(struct msgb *mb)
 		struct nm_nack_signal_data nack_data;
 		struct tlv_parsed tp;
 
-		LOGPFOH(DNM, LOGL_NOTICE, foh, "%s NACK ", abis_nm_nack_name(mt));
+		if (abis_nm_tlv_parse(&tp, bts, foh->data, oh->length - sizeof(*foh)) < 0) {
+			LOGPFOH(DNM, LOGL_ERROR, foh, "%s(): tlv_parse failed\n", __func__);
+			return -EINVAL;
+		}
 
-		abis_nm_tlv_parse(&tp, bts, foh->data, oh->length-sizeof(*foh));
+		LOGPFOH(DNM, LOGL_NOTICE, foh, "%s NACK ", abis_nm_nack_name(mt));
 		if (TLVP_PRESENT(&tp, NM_ATT_NACK_CAUSES))
 			LOGPC(DNM, LOGL_NOTICE, "CAUSE=%s\n",
 				abis_nm_nack_cause_name(*TLVP_VAL(&tp, NM_ATT_NACK_CAUSES)));
@@ -2838,7 +2866,10 @@ static int abis_nm_rx_ipacc(struct msgb *msg)
 		return -EINVAL;
 	}
 
-	abis_nm_tlv_parse(&tp, sign_link->trx->bts, foh->data, oh->length-sizeof(*foh));
+	if (abis_nm_tlv_parse(&tp, sign_link->trx->bts, foh->data, oh->length - sizeof(*foh)) < 0) {
+		LOGPFOH(DNM, LOGL_ERROR, foh, "%s(): tlv_parse failed\n", __func__);
+		return -EINVAL;
+	}
 
 	/* The message might be received over the main OML link, so we cannot
 	 * just use sign_link->trx. Resolve it by number from the FOM header. */
