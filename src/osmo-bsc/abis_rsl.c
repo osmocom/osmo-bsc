@@ -2328,14 +2328,14 @@ static int rsl_rx_ccch_load(struct msgb *msg)
 	struct ccch_signal_data sd;
 
 	sd.bts = sign_link->trx->bts;
-	sd.rach_slot_count = -1;
-	sd.rach_busy_count = -1;
-	sd.rach_access_count = -1;
+	sd.rach_slot_count = UINT16_MAX;
+	sd.rach_busy_count = UINT16_MAX;
+	sd.rach_access_count = UINT16_MAX;
 
 	switch (rslh->data[0]) {
 	case RSL_IE_PAGING_LOAD:
 		sd.pg_buf_space = rslh->data[1] << 8 | rslh->data[2];
-		if (is_ipaccess_bts(sign_link->trx->bts) && sd.pg_buf_space == 0xffff) {
+		if (is_ipaccess_bts(sign_link->trx->bts) && sd.pg_buf_space == UINT16_MAX) {
 			/* paging load below configured threshold, use 50 as default */
 			sd.pg_buf_space = 50;
 		}
