@@ -62,16 +62,13 @@ void set_ts_e1link(struct gsm_bts_trx_ts *ts, uint8_t e1_nr,
 struct gsm_bts *gsm_bts_by_lac(struct gsm_network *net, unsigned int lac,
 				struct gsm_bts *start_bts)
 {
-	int i;
 	struct gsm_bts *bts;
 	int skip = 0;
 
 	if (start_bts)
 		skip = 1;
 
-	for (i = 0; i < net->num_bts; i++) {
-		bts = gsm_bts_num(net, i);
-
+	llist_for_each_entry(bts, &net->bts_list, list) {
 		if (skip) {
 			if (start_bts == bts)
 				skip = 0;
