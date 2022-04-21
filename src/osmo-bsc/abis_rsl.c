@@ -2520,6 +2520,8 @@ static int abis_rsl_rx_rll(struct msgb *msg)
 
 	sapi = rllh->link_id & 0x7;
 	msg->lchan = lchan_lookup(sign_link->trx, rllh->chan_nr, "Abis RSL rx RLL: ");
+	if (OSMO_UNLIKELY(msg->lchan == NULL))
+		return -1;
 
 	switch (rllh->c.msg_type) {
 	case RSL_MT_DATA_IND:
