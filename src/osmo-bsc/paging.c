@@ -208,9 +208,12 @@ static void paging_handle_pending_requests(struct gsm_bts_paging_state *paging_b
 				    struct gsm_paging_request, entry);
 
 	/* we need to determine the number of free channels */
-	if (paging_bts->free_chans_need != -1) {
-		if (can_send_pag_req(request->bts, request->chan_type) != 0)
-			goto skip_paging;
+	if (paging_bts->free_chans_need != -1 &&
+	    can_send_pag_req(request->bts, request->chan_type) != 0) {
+		LOG_PAGING_BTS(request, request->bts, DPAG, LOGL_INFO,
+			"Paging delayed: not enough free channels (<%d)\n",
+			 paging_bts->free_chans_need);
+		goto skip_paging;
 	}
 
 	/* Skip paging if the bts is down. */
