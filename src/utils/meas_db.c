@@ -59,8 +59,6 @@ struct meas_db_state {
 static int _insert_ud(struct meas_db_state *st, unsigned long meas_id, int dtx,
 		      int uplink, const struct gsm_meas_rep_unidir *ud)
 {
-	unsigned long rowid;
-
 	SCK_OK(st->db, sqlite3_bind_int(st->stmt_ins_ud, 1, meas_id));
 	SCK_OK(st->db, sqlite3_bind_int(st->stmt_ins_ud, 2,
 					rxlev2dbm(ud->full.rx_lev)));
@@ -86,7 +84,6 @@ int meas_db_insert(struct meas_db_state *st, const char *imsi,
 		   const char *scenario,
 		   const struct gsm_meas_rep *mr)
 {
-	int rc;
 	sqlite3_int64 rowid, ul_rowid, dl_rowid;
 
 	SCK_OK(st->db, sqlite3_bind_int(st->stmt_ins_mr, 1, timestamp));
@@ -257,7 +254,7 @@ static const char *create_stmts[] = {
 
 static int check_create_tbl(struct meas_db_state *st)
 {
-	int i, rc;
+	int i;
 
 	for (i = 0; i < ARRAY_SIZE(create_stmts); i++) {
 		SCK_OK(st->db, sqlite3_exec(st->db, create_stmts[i],
