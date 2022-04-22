@@ -266,20 +266,6 @@ void paging_init(struct gsm_bts *bts)
 	osmo_timer_setup(&bts->paging.credit_timer, paging_give_credit, &bts->paging);
 }
 
-/*! do we have any pending paging requests for given subscriber? */
-static int paging_pending_request(struct gsm_bts_paging_state *bts,
-				  struct bsc_subscr *bsub)
-{
-	struct gsm_paging_request *req;
-
-	llist_for_each_entry(req, &bts->pending_requests, entry) {
-		if (bsub == req->bsub)
-			return 1;
-	}
-
-	return 0;
-}
-
 /*! Call-back once T3113 (paging timeout) expires for given paging_request */
 static void paging_T3113_expired(void *data)
 {
@@ -342,15 +328,27 @@ static unsigned int calculate_timer_3113(struct gsm_bts *bts)
 static int _paging_request(const struct bsc_paging_params *params, struct gsm_bts *bts)
 {
 	struct gsm_bts_paging_state *bts_entry = &bts->paging;
-	struct gsm_paging_request *req;
+	struct gsm_paging_request *req, *last_initial_req = NULL;
 	unsigned int t3113_timeout_s;
 
 	rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_PAGING_ATTEMPTED));
 
-	if (paging_pending_request(bts_entry, params->bsub)) {
-		LOG_PAGING_BTS(params, bts, DPAG, LOGL_INFO, "Paging request already pending for this subscriber\n");
-		rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_PAGING_ALREADY));
-		return -EEXIST;
+	/* Iterate list of pending requests to find if we already have one for
+	 * the given subscriber. While on it, find the last
+	 * not-yet-ever-once-transmitted request; the new request will be added
+	 * immediately after it, giving higher prio to initial transmissions
+	 * (no retrans). This avoids new subscribers being paged to be delayed
+	 * if the paging queue is full due to a lot of retranmissions.
+	 * Retranmissions usually mean MS are not reachable/available, so the
+	 * rationale here is to prioritize new subs which may be available. */
+	llist_for_each_entry(req, &bts_entry->pending_requests, entry) {
+		if (params->bsub == req->bsub) {
+			LOG_PAGING_BTS(params, bts, DPAG, LOGL_INFO, "Paging request already pending for this subscriber\n");
+			rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_PAGING_ALREADY));
+			return -EEXIST;
+		}
+		if (req->attempts == 0)
+			last_initial_req = req;
 	}
 
 	LOG_PAGING_BTS(params, bts, DPAG, LOGL_DEBUG, "Start paging\n");
@@ -364,9 +362,15 @@ static int _paging_request(const struct bsc_paging_params *params, struct gsm_bt
 	req->chan_type = params->chan_needed;
 	req->msc = params->msc;
 	osmo_timer_setup(&req->T3113, paging_T3113_expired, req);
+
+	/* there's no initial req (attempts==0), add to the start of the list */
+	if (last_initial_req == NULL)
+		llist_add(&req->entry, &bts_entry->pending_requests);
+	else/* Add in the middle of the list after last_initial_req */
+		__llist_add(&req->entry, &last_initial_req->entry, last_initial_req->entry.next);
+
 	t3113_timeout_s = calculate_timer_3113(bts);
 	osmo_timer_schedule(&req->T3113, t3113_timeout_s, 0);
-	llist_add_tail(&req->entry, &bts_entry->pending_requests);
 	paging_schedule_if_needed(bts_entry);
 
 	return 0;
