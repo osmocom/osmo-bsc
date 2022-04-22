@@ -317,7 +317,7 @@ DEFUN_USRATTR(cfg_ts_tsc,
 {
 	struct gsm_bts_trx_ts *ts = vty->index;
 
-	if (!osmo_bts_has_feature(&ts->trx->bts->model->features, BTS_FEAT_MULTI_TSC)) {
+	if (!osmo_bts_has_feature(&ts->trx->bts->features, BTS_FEAT_MULTI_TSC)) {
 		vty_out(vty, "%% This BTS does not support a TSC != BCC, "
 			"falling back to BCC%s", VTY_NEWLINE);
 		ts->tsc = -1;
@@ -341,7 +341,7 @@ DEFUN_USRATTR(cfg_ts_hopping,
 	struct gsm_bts_trx_ts *ts = vty->index;
 	int enabled = atoi(argv[0]);
 
-	if (enabled && !osmo_bts_has_feature(&ts->trx->bts->model->features, BTS_FEAT_HOPPING)) {
+	if (enabled && !osmo_bts_has_feature(&ts->trx->bts->features, BTS_FEAT_HOPPING)) {
 		vty_out(vty, "%% BTS model does not seem to support freq. hopping%s", VTY_NEWLINE);
 		/* Allow enabling frequency hopping anyway, because the BTS might not have
 		 * connected yet (thus not sent the feature vector), so we cannot know for

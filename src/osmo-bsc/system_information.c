@@ -1270,8 +1270,7 @@ static int generate_si13(enum osmo_sysinfo_type t, struct gsm_bts *bts)
 
 	si13_info.cell_opts.ext_info.ccn_active = bts->gprs.ccn.forced_vty ?
 						  bts->gprs.ccn.active :
-						  osmo_bts_has_feature(&bts->model->features,
-								       BTS_FEAT_CCN);
+						  osmo_bts_has_feature(&bts->features, BTS_FEAT_CCN);
 
 	ret = osmo_gsm48_rest_octets_si13_encode(si13->rest_octets, &si13_info);
 	if (ret < 0)

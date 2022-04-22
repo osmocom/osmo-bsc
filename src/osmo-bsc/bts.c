@@ -615,6 +615,13 @@ struct gsm_lchan *gsm_bts_get_cbch(struct gsm_bts *bts)
 int gsm_set_bts_model(struct gsm_bts *bts, struct gsm_bts_model *model)
 {
 	bts->model = model;
+
+	/* Copy hardcoded feature list from BTS model. For some BTS we support
+	 * reporting features at runtime (as of writing nanobts, OsmoBTS),
+	 * which will then replace this list. */
+	if (model)
+		memcpy(bts->_features_data, bts->model->_features_data, sizeof(bts->_features_data));
+
 	return 0;
 }
 
@@ -683,11 +690,11 @@ int gsm_set_bts_type(struct gsm_bts *bts, enum gsm_bts_type type)
 int bts_gprs_mode_is_compat(struct gsm_bts *bts, enum bts_gprs_mode mode)
 {
 	if (mode != BTS_GPRS_NONE &&
-	    !osmo_bts_has_feature(&bts->model->features, BTS_FEAT_GPRS)) {
+	    !osmo_bts_has_feature(&bts->features, BTS_FEAT_GPRS)) {
 		return 0;
 	}
 	if (mode == BTS_GPRS_EGPRS &&
-	    !osmo_bts_has_feature(&bts->model->features, BTS_FEAT_EGPRS)) {
+	    !osmo_bts_has_feature(&bts->features, BTS_FEAT_EGPRS)) {
 		return 0;
 	}
 
