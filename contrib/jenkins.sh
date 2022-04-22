@@ -27,6 +27,17 @@ osmo-build-dep.sh libosmocore "" '--disable-doxygen --enable-gnutls'
 
 verify_value_string_arrays_are_terminated.py $(find . -name "*.[hc]")
 
+# Check for wrong use of osmo_bts_has_feature (OS#5538)
+bts_features_wrong_use="$(grep -r -n 'osmo_bts_has_feature.*->model->features' | grep -v 'jenkins.sh')" || true
+if [ -n "$bts_features_wrong_use" ]; then
+	set +x
+	echo
+	echo "ERROR: Don't use osmo_bts_has_feature with bts->model->features. Use bts->features instead."
+	echo
+	echo "$bts_features_wrong_use"
+	exit 1
+fi
+
 export PKG_CONFIG_PATH="$inst/lib/pkgconfig:$PKG_CONFIG_PATH"
 export LD_LIBRARY_PATH="$inst/lib"
 export PATH="$inst/bin:$PATH"
