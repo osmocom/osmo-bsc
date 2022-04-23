@@ -1960,7 +1960,7 @@ static int rsl_rx_chan_rqd(struct msgb *msg)
 	if (rqd->reason == GSM_CHREQ_REASON_EMERG) {
 		if (bts->si_common.rach_control.t2 & 0x4) {
 			LOG_BTS(bts, DRSL, LOGL_NOTICE, "CHAN RQD: MS attempts EMERGENCY CALL although EMERGENCY CALLS "
-				"are not allowed in sysinfo (spec violation by MS!)\n");
+				"are not allowed in sysinfo (cfg: network / bts / rach emergency call allowed 0)\n");
 			rsl_tx_imm_ass_rej(bts, &rqd->ref);
 			talloc_free(rqd);
 			return 0;
@@ -2067,7 +2067,7 @@ static bool force_free_lchan_for_emergency(struct chan_rqd *rqd)
 			lchan_release(release_lchan, !!(release_lchan->conn), true, GSM48_RR_CAUSE_PREMPTIVE_REL,
 				      gscon_last_eutran_plmn(release_lchan->conn));
 	} else {
-		/* BTS is shutting down, give up... */
+		/* if BTS has shut down, give up... */
 		if (rqd->release_lchan->ts->fi->state == TS_ST_NOT_INITIALIZED)
 			return false;
 

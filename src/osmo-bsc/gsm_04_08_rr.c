@@ -1061,14 +1061,15 @@ static void dispatch_dtap(struct gsm_subscriber_connection *conn,
 		if (msg_type == GSM48_MT_CC_EMERG_SETUP) {
 			if (msg->lchan->ts->trx->bts->si_common.rach_control.t2 & 0x4) {
 				LOG_LCHAN(msg->lchan, LOGL_NOTICE, "MS attempts EMERGENCY SETUP although EMERGENCY CALLS"
-                                          " are not allowed in sysinfo (spec violation by MS!)\n");
+					  " are not allowed in sysinfo (cfg: network / bts / rach emergency call allowed 0)\n");
 				lchan_release(msg->lchan, true, true, GSM48_RR_CAUSE_PREMPTIVE_REL,
 					      gscon_last_eutran_plmn(msg->lchan->conn));
 				break;
 			}
 			if (!conn->sccp.msc->allow_emerg) {
 				LOG_LCHAN(msg->lchan, LOGL_NOTICE, "MS attempts EMERGENCY SETUP, but EMERGENCY CALLS are"
-                                          " denied on this BSC (check BTS config!)\n");
+					  " denied on MSC %d (cfg: msc %d / allow-emergency deny)\n",
+					  conn->sccp.msc->nr, conn->sccp.msc->nr);
 				lchan_release(msg->lchan, true, true, GSM48_RR_CAUSE_PREMPTIVE_REL,
 					      gscon_last_eutran_plmn(msg->lchan->conn));
 				break;
