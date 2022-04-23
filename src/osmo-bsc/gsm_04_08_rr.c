@@ -1062,7 +1062,7 @@ static void dispatch_dtap(struct gsm_subscriber_connection *conn,
 			if (msg->lchan->ts->trx->bts->si_common.rach_control.t2 & 0x4) {
 				LOG_LCHAN(msg->lchan, LOGL_NOTICE, "MS attempts EMERGENCY SETUP although EMERGENCY CALLS"
 					  " are not allowed in sysinfo (cfg: network / bts / rach emergency call allowed 0)\n");
-				lchan_release(msg->lchan, true, true, GSM48_RR_CAUSE_PREMPTIVE_REL,
+				lchan_release(msg->lchan, true, true, GSM48_RR_CAUSE_PROT_ERROR_UNSPC,
 					      gscon_last_eutran_plmn(msg->lchan->conn));
 				break;
 			}
@@ -1070,7 +1070,7 @@ static void dispatch_dtap(struct gsm_subscriber_connection *conn,
 				LOG_LCHAN(msg->lchan, LOGL_NOTICE, "MS attempts EMERGENCY SETUP, but EMERGENCY CALLS are"
 					  " denied on MSC %d (cfg: msc %d / allow-emergency deny)\n",
 					  conn->sccp.msc->nr, conn->sccp.msc->nr);
-				lchan_release(msg->lchan, true, true, GSM48_RR_CAUSE_PREMPTIVE_REL,
+				lchan_release(msg->lchan, true, true, GSM48_RR_CAUSE_PROT_ERROR_UNSPC,
 					      gscon_last_eutran_plmn(msg->lchan->conn));
 				break;
 			}
