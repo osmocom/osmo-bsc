@@ -2058,13 +2058,13 @@ static bool force_free_lchan_for_emergency(struct chan_rqd *rqd)
 			"CHAN RQD/EMERGENCY-PRIORITY: inducing termination of lchan %s (state:%s) in favor of incoming EMERGENCY CALL!\n",
 			gsm_lchan_name(release_lchan), osmo_fsm_inst_state_name(release_lchan->fi));
 
-		lchan_release(release_lchan, !!(release_lchan->conn), true, 0,
+		lchan_release(release_lchan, !!(release_lchan->conn), true, GSM48_RR_CAUSE_PREMPTIVE_REL,
 			      gscon_last_eutran_plmn(release_lchan->conn));
 
 		/* Also release any overlapping VAMOS multiplexes on this lchan */
 		release_lchan = gsm_lchan_primary_to_vamos(release_lchan);
 		if (release_lchan)
-			lchan_release(release_lchan, !!(release_lchan->conn), true, 0,
+			lchan_release(release_lchan, !!(release_lchan->conn), true, GSM48_RR_CAUSE_PREMPTIVE_REL,
 				      gscon_last_eutran_plmn(release_lchan->conn));
 	} else {
 		/* BTS is shutting down, give up... */
