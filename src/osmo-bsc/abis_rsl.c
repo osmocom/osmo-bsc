@@ -2058,6 +2058,11 @@ static bool force_free_lchan_for_emergency(struct chan_rqd *rqd)
 			"CHAN RQD/EMERGENCY-PRIORITY: inducing termination of lchan %s (state:%s) in favor of incoming EMERGENCY CALL!\n",
 			gsm_lchan_name(release_lchan), osmo_fsm_inst_state_name(release_lchan->fi));
 
+		/* Make sure the Clear Request to the MSC has the proper cause */
+		if (release_lchan->conn)
+			gscon_bssmap_clear(release_lchan->conn, GSM0808_CAUSE_PREEMPTION);
+		/* The gscon FSM would only release the lchan after the MSC responds with a Clear Command.
+		 * But we need it released right now. Also with the right RR cause. */
 		lchan_release(release_lchan, !!(release_lchan->conn), true, GSM48_RR_CAUSE_PREMPTIVE_REL,
 			      gscon_last_eutran_plmn(release_lchan->conn));
 

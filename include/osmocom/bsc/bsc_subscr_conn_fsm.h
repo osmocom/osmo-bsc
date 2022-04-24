@@ -66,6 +66,7 @@ void gscon_update_id(struct gsm_subscriber_connection *conn);
 void gscon_submit_rsl_dtap(struct gsm_subscriber_connection *conn,
 			   struct msgb *msg, int link_id, int allow_sacch);
 int gscon_sigtran_send(struct gsm_subscriber_connection *conn, struct msgb *msg);
+void gscon_bssmap_clear(struct gsm_subscriber_connection *conn, enum gsm0808_cause cause);
 
 struct osmo_mgcpc_ep *gscon_ensure_mgw_endpoint(struct gsm_subscriber_connection *conn,
 						uint16_t msc_assigned_cic, struct gsm_lchan *for_lchan);
