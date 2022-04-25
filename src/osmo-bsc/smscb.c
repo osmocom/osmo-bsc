@@ -243,6 +243,12 @@ static void append_bcast_compl(struct response_state *r_state, struct gsm_bts *b
 	llist_add_tail(&cent->list, &r_state->num_completed.list);
 }
 
+static bool etws_msg_id_matches(uint16_t a, uint16_t b)
+{
+	/* ETWS messages are identified by the twelve most significant bits of the Message ID */
+	return (a & 0xFFF0) == (b & 0xFFF0);
+}
+
 /*! Iterate over all BTSs, find matching ones, execute command on BTS, add result
  *  to succeeded/failed lists.
  *  \param[in] net GSM network in which we operate
@@ -665,23 +671,53 @@ static int bts_rx_kill(struct gsm_bts *bts, const struct osmo_cbsp_decoded *dec,
 			struct response_state *r_state, void *priv)
 {
 	const struct osmo_cbsp_kill *kill = &dec->u.kill;
-	struct bts_smscb_chan_state *chan_state;
-	struct bts_smscb_message *smscb;
-	bool extended = false;
 
-	if (kill->channel_ind && *kill->channel_ind == 0x01)
-		extended = true;
-	chan_state = bts_get_smscb_chan(bts, extended);
+	if (kill->channel_ind) {
+		/* KILL for CBS message */
+		struct bts_smscb_chan_state *chan_state;
+		struct bts_smscb_message *smscb;
+		bool extended = false;
 
-	/* Find message by msg_id + old_serial_nr */
-	smscb = bts_find_smscb(chan_state, kill->msg_id, kill->old_serial_nr);
-	if (!smscb)
-		return -CBSP_CAUSE_MSG_REF_NOT_IDENTIFIED;
+		if (*kill->channel_ind == 0x01)
+			extended = true;
 
-	append_bcast_compl(r_state, chan_state->bts, smscb);
+		chan_state = bts_get_smscb_chan(bts, extended);
 
-	/* Remove it */
-	bts_smscb_del(smscb, chan_state, "KILL");
+		/* Find message by msg_id + old_serial_nr */
+		smscb = bts_find_smscb(chan_state, kill->msg_id, kill->old_serial_nr);
+		if (!smscb)
+			return -CBSP_CAUSE_MSG_REF_NOT_IDENTIFIED;
+
+		append_bcast_compl(r_state, chan_state->bts, smscb);
+
+		/* Remove it */
+		bts_smscb_del(smscb, chan_state, "KILL");
+	} else {
+		/* KILL for Emergency */
+		struct bts_etws_state *bes = &bts->etws;
+
+		if (!bes->active) {
+			LOG_BTS(bts, DCBS, LOGL_NOTICE, "Rx CBSP KILL (Emerg) but no emergency "
+				"broadcast is currently active in this cell\n");
+			return -CBSP_CAUSE_MSG_REF_NOT_IDENTIFIED;
+		}
+
+		if (kill->msg_id != bes->input.msg_id) {
+			LOG_BTS(bts, DCBS, LOGL_NOTICE, "Rx CBSP KILL (Emerg) for msg_id 0x%04x, but "
+				"current emergency msg_id is 0x%04x\n", kill->msg_id, bes->input.msg_id);
+			return -CBSP_CAUSE_MSG_REF_NOT_IDENTIFIED;
+		}
+
+		if (!etws_msg_id_matches(kill->old_serial_nr, bes->input.serial_nr)) {
+			LOG_BTS(bts, DCBS, LOGL_NOTICE, "Rx CBSP KILL (Emerg) for old_serial_nr 0x%04x, but "
+				"current emergency serial_nr is 0x%04x\n",
+				kill->old_serial_nr, bes->input.serial_nr);
+			return -CBSP_CAUSE_MSG_REF_NOT_IDENTIFIED;
+		}
+
+		/* stop broadcasting the PN in this BTS */
+		etws_pn_stop(bts, false);
+	}
 	return 0;
 }
 
