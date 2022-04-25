@@ -589,7 +589,7 @@ struct gsm_bts {
 	struct osmo_timer_list cbch_timer;
 	struct bts_smscb_chan_state cbch_basic;
 	struct bts_smscb_chan_state cbch_extended;
-	struct osmo_timer_list etws_timer;	/* when to stop ETWS PN */
+	struct bts_etws_state etws;
 
 	struct llist_head oml_fail_rep;
 	struct llist_head chan_rqd_queue;

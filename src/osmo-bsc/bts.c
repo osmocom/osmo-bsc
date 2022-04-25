@@ -25,6 +25,7 @@
 #include <osmocom/bsc/debug.h>
 #include <osmocom/bsc/nm_common_fsm.h>
 #include <osmocom/bsc/paging.h>
+#include <osmocom/bsc/smscb.h>
 
 const struct value_string bts_attribute_names[] = {
 	OSMO_VALUE_STRING(BTS_TYPE_VARIANT),
@@ -427,6 +428,7 @@ struct gsm_bts *gsm_bts_alloc(struct gsm_network *net, struct gsm_bts_sm *bts_sm
 
 	bts_init_cbch_state(&bts->cbch_basic, bts);
 	bts_init_cbch_state(&bts->cbch_extended, bts);
+	bts_etws_init(bts);
 
 	acc_mgr_init(&bts->acc_mgr, bts);
 	acc_ramp_init(&bts->acc_ramp, bts);
