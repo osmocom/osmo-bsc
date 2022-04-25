@@ -472,7 +472,7 @@ struct gsm_bts {
 	} gprs;
 
 	/* threshold (in percent) when BTS shall send CCCH LOAD IND */
-	int ccch_load_ind_thresh;
+	uint8_t ccch_load_ind_thresh;
 
 	/* RACH NM values */
 	int rach_b_thresh;
