@@ -59,8 +59,6 @@ static void llist_replace_head(struct llist_head *new, struct llist_head *old)
 	INIT_LLIST_HEAD(old);
 }
 
-#define ETWS_PRIM_NOTIF_SIZE	56
-
 /* Build a ETWS Primary Notification message as per TS 23.041 9.4.1.3 */
 static int gen_etws_primary_notification(uint8_t *out, uint16_t serial_nr, uint16_t msg_id,
 					 uint16_t warn_type, const uint8_t *sec_info)
@@ -471,24 +469,52 @@ static int tx_cbsp_keepalive_compl(struct bsc_cbc_link *cbc)
  * Per-BTS Processing of CBSP from CBC, called via cbsp_per_bts()
  *********************************************************************************/
 
+static void etws_pn_stop(struct gsm_bts *bts, bool timeout)
+{
+	if (osmo_bts_has_feature(&bts->features, BTS_FEAT_ETWS_PN)) {
+		LOG_BTS(bts, DCBS, LOGL_NOTICE, "ETWS PN broadcast via PCH disabled (cause=%s)\n",
+			timeout ? "timeout" : "request");
+		rsl_etws_pn_command(bts, RSL_CHAN_PCH_AGCH, NULL, 0);
+	}
+	bts->etws.active = false;
+	if (!timeout)
+		osmo_timer_del(&bts->etws.timer);
+}
+
 /* timer call-back once ETWS warning period has expired */
 static void etws_pn_cb(void *data)
 {
 	struct gsm_bts *bts = (struct gsm_bts *)data;
-	LOG_BTS(bts, DCBS, LOGL_NOTICE, "ETWS PN Timeout; disabling broadcast via PCH\n");
-	rsl_etws_pn_command(bts, RSL_CHAN_PCH_AGCH, NULL, 0);
+	etws_pn_stop(bts, true);
 }
 
 static void etws_primary_to_bts(struct gsm_bts *bts, const struct osmo_cbsp_write_replace *wrepl)
 {
-	uint8_t etws_primary[ETWS_PRIM_NOTIF_SIZE];
+	struct bts_etws_state *bes = &bts->etws;
 	struct gsm_bts_trx *trx;
 	unsigned int count = 0;
 	int i, j;
 
-	gen_etws_primary_notification(etws_primary, wrepl->new_serial_nr, wrepl->msg_id,
-				      wrepl->u.emergency.warning_type,
-				      wrepl->u.emergency.warning_sec_info);
+	if (bes->input.sec_info) {
+		talloc_free(bes->input.sec_info);
+		bes->input.sec_info = NULL;
+	}
+
+	/* copy over all the data to per-BTS private state */
+	bes->input.msg_id = wrepl->msg_id;
+	bes->input.serial_nr = wrepl->new_serial_nr;
+	bes->input.warn_type = wrepl->u.emergency.warning_type;
+	if (wrepl->u.emergency.warning_sec_info) {
+		bes->input.sec_info = talloc_named_const(bts, ETWS_SEC_INFO_SIZE, "etws_sec_info");
+		if (bes->input.sec_info)
+			memcpy(bes->input.sec_info, wrepl->u.emergency.warning_sec_info, ETWS_SEC_INFO_SIZE);
+	}
+
+	/* generate the encoded ETWS PN */
+	gen_etws_primary_notification(bes->primary, bes->input.serial_nr, bes->input.msg_id,
+				      bes->input.warn_type, bes->input.sec_info);
+
+	bes->active = true;
 
 	/* iterate over all lchan in each TS in each TRX of this BTS */
 	llist_for_each_entry(trx, &bts->trx_list, list) {
@@ -498,8 +524,8 @@ static void etws_primary_to_bts(struct gsm_bts *bts, const struct osmo_cbsp_writ
 				struct gsm_lchan *lchan = &ts->lchan[j];
 				if (!lchan_may_receive_data(lchan))
 					continue;
-				gsm48_send_rr_app_info(lchan, 0x1, 0x0, etws_primary,
-							sizeof(etws_primary));
+				gsm48_send_rr_app_info(lchan, 0x1, 0x0, bes->primary,
+							sizeof(bes->primary));
 				count++;
 			}
 		}
@@ -510,11 +536,10 @@ static void etws_primary_to_bts(struct gsm_bts *bts, const struct osmo_cbsp_writ
 
 	/* Notify BTS of primary ETWS notification via vendor-specific Abis message */
 	if (osmo_bts_has_feature(&bts->features, BTS_FEAT_ETWS_PN)) {
-		rsl_etws_pn_command(bts, RSL_CHAN_PCH_AGCH, etws_primary, sizeof(etws_primary));
+		rsl_etws_pn_command(bts, RSL_CHAN_PCH_AGCH, bes->primary, sizeof(bes->primary));
 		LOG_BTS(bts, DCBS, LOGL_NOTICE, "Sent ETWS Primary Notification via common channel\n");
 		if (wrepl->u.emergency.warning_period != 0xffffffff) {
-			osmo_timer_setup(&bts->etws_timer, etws_pn_cb, bts);
-			osmo_timer_schedule(&bts->etws_timer, wrepl->u.emergency.warning_period, 0);
+			osmo_timer_schedule(&bts->etws.timer, wrepl->u.emergency.warning_period, 0);
 		} else
 			LOG_BTS(bts, DCBS, LOGL_NOTICE, "Unlimited ETWS PN broadcast, this breaks "
 				"normal network operation due to PCH blockage\n");
@@ -676,7 +701,7 @@ static int bts_rx_reset(struct gsm_bts *bts, const struct osmo_cbsp_decoded *dec
 	llist_for_each_entry_safe(smscb, smscb2, &chan_state->messages, list)
 		bts_smscb_del(smscb, chan_state, "RESET");
 
-	osmo_timer_del(&bts->etws_timer);
+	osmo_timer_del(&bts->etws.timer);
 
 	/* Make sure that broadcast is disabled */
 	rsl_etws_pn_command(bts, RSL_CHAN_PCH_AGCH, NULL, 0);
@@ -990,4 +1015,12 @@ DEFUN(bts_show_cbs, bts_show_cbs_cmd,
 void smscb_vty_init(void)
 {
 	install_element_ve(&bts_show_cbs_cmd);
+}
+
+
+/* initialize the ETWS state of a BTS */
+void bts_etws_init(struct gsm_bts *bts)
+{
+	bts->etws.active = false;
+	osmo_timer_setup(&bts->etws.timer, etws_pn_cb, bts);
 }

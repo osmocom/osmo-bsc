@@ -1106,6 +1106,27 @@ struct bts_smscb_chan_state {
 	uint8_t overflow;
 };
 
+#define ETWS_PRIM_NOTIF_SIZE	56
+#define ETWS_SEC_INFO_SIZE	(ETWS_PRIM_NOTIF_SIZE - sizeof(struct gsm341_etws_message))
+
+/* per-BTS ETWS/PWS (Emergency) state */
+struct bts_etws_state {
+	/* are we actively broadcasting emergency in this cell? */
+	bool active;
+	/* input parameters received from CBC */
+	struct {
+		uint16_t msg_id;
+		uint16_t serial_nr;
+		uint16_t warn_type;
+		uint8_t *sec_info;
+	} input;
+	/* encoded ETWS primary notification */
+	uint8_t primary[ETWS_PRIM_NOTIF_SIZE];
+
+	/* timer running for the duration of the ETWS Primary Notification (PN) */
+	struct osmo_timer_list timer;
+};
+
 struct bts_oml_fail_rep {
 	struct llist_head list;
 	time_t time;
