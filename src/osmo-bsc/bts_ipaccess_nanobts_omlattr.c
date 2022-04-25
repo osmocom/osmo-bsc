@@ -71,7 +71,7 @@ struct msgb *nanobts_gen_set_bts_attr(struct gsm_bts *bts)
 	msgb_tv_put(msgb, NM_ATT_CCCH_L_T, bts->ccch_load_ind_thresh);
 
 	/* CCCH Load Indication Period (3GPP TS 12.21 sec 9.4.11), seconds */
-	msgb_tv_put(msgb, NM_ATT_CCCH_L_I_P, 1);
+	msgb_tv_put(msgb, NM_ATT_CCCH_L_I_P, bts->ccch_load_ind_period);
 
 	/* RACH Busy Threshold (3GPP TS 12.21 sec 9.4.44), -dBm */
 	buf[0] = 90;	/* -90 dBm as default "busy" threshold */

@@ -926,6 +926,19 @@ DEFUN_USRATTR(cfg_bts_ccch_load_ind_thresh,
 	return CMD_SUCCESS;
 }
 
+DEFUN_USRATTR(cfg_bts_ccch_load_ind_period,
+	      cfg_bts_ccch_load_ind_period_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_OML_LINK),
+	      "ccch load-indication-period <0-255>",
+	      CCCH_STR
+	      "Period of time at which BTS sends RSL CCCH LOAD IND\n"
+	      "CCCH Load Indication Period in seconds (Default: 1)\n")
+{
+	struct gsm_bts *bts = vty->index;
+	bts->ccch_load_ind_period = atoi(argv[0]);
+	return CMD_SUCCESS;
+}
+
 #define NM_STR "Network Management\n"
 
 DEFUN_USRATTR(cfg_bts_rach_nm_b_thresh,
@@ -4166,6 +4179,9 @@ static void config_write_bts_single(struct vty *vty, struct gsm_bts *bts)
 	if (bts->ccch_load_ind_thresh != 10)
 		vty_out(vty, "  ccch load-indication-threshold %u%s",
 			bts->ccch_load_ind_thresh, VTY_NEWLINE);
+	if (bts->ccch_load_ind_period != 1)
+		vty_out(vty, "  ccch load-indication-period %u%s",
+			bts->ccch_load_ind_period, VTY_NEWLINE);
 	if (bts->rach_b_thresh != -1)
 		vty_out(vty, "  rach nm busy threshold %u%s",
 			bts->rach_b_thresh, VTY_NEWLINE);
@@ -4479,6 +4495,7 @@ int bts_vty_init(void)
 	install_element(BTS_NODE, &cfg_bts_chan_desc_bs_ag_blks_res_cmd);
 	install_element(BTS_NODE, &cfg_bts_chan_dscr_bs_ag_blks_res_cmd);
 	install_element(BTS_NODE, &cfg_bts_ccch_load_ind_thresh_cmd);
+	install_element(BTS_NODE, &cfg_bts_ccch_load_ind_period_cmd);
 	install_element(BTS_NODE, &cfg_bts_rach_nm_b_thresh_cmd);
 	install_element(BTS_NODE, &cfg_bts_rach_nm_ldavg_cmd);
 	install_element(BTS_NODE, &cfg_bts_cell_barred_cmd);

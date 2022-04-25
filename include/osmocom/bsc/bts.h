@@ -471,8 +471,10 @@ struct gsm_bts {
 		} pwr_ctrl; /* TS 44.060 Table 12.9.1 */
 	} gprs;
 
-	/* threshold (in percent) when BTS shall send CCCH LOAD IND */
+	/* CCCH Load Threshold: threshold (in percent) when BTS shall send CCCH LOAD IND */
 	uint8_t ccch_load_ind_thresh;
+	/* CCCH Load Indication Period: how often (secs) to send CCCH LOAD IND when over CCCH Load Threshold. */
+	uint8_t ccch_load_ind_period;
 
 	/* RACH NM values */
 	int rach_b_thresh;
