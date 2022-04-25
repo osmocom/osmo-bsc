@@ -121,7 +121,7 @@ struct gsm_bts *gsm_bts_alloc_register(struct gsm_network *net, enum gsm_bts_typ
 	net->num_bts++;
 
 	bts->type = type;
-	bts->model = model;
+	gsm_set_bts_model(bts, model);
 	bts->bsic = bsic;
 
 	llist_add_tail(&bts->list, &net->bts_list);

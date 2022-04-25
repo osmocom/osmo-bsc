@@ -734,6 +734,7 @@ int gsm_bts_local_neighbor_del(struct gsm_bts *bts, const struct gsm_bts *neighb
 /* return the gsm_lchan for the CBCH (if it exists at all) */
 struct gsm_lchan *gsm_bts_get_cbch(struct gsm_bts *bts);
 
+int gsm_set_bts_model(struct gsm_bts *bts, struct gsm_bts_model *model);
 int gsm_set_bts_type(struct gsm_bts *bts, enum gsm_bts_type type);
 
 struct gsm_bts_trx *gsm_bts_trx_num(const struct gsm_bts *bts, int num);
