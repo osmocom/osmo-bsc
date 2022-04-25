@@ -791,11 +791,16 @@ static int cbsp_rx_kill(struct bsc_cbc_link *cbc, const struct osmo_cbsp_decoded
 		fail->channel_ind = kill->channel_ind;
 		llist_replace_head(&fail->fail_list, &r_state->fail);
 
-		fail->cell_list.id_discr = r_state->success.id_discr;
-		llist_replace_head(&fail->cell_list.list, &r_state->success.list);
-
-		fail->num_compl_list.id_discr = r_state->num_completed.id_discr;
-		llist_replace_head(&fail->num_compl_list.list, &r_state->num_completed.list);
+		/* if the KILL relates to CBS, the "Channel Indicator" IE is present */
+		if (kill->channel_ind) {
+			/* only if it was CBS */
+			fail->num_compl_list.id_discr = r_state->num_completed.id_discr;
+			llist_replace_head(&fail->num_compl_list.list, &r_state->num_completed.list);
+		} else {
+			/* only if it was emergency */
+			fail->cell_list.id_discr = r_state->success.id_discr;
+			llist_replace_head(&fail->cell_list.list, &r_state->success.list);
+		}
 	} else {
 		resp = osmo_cbsp_decoded_alloc(cbc, CBSP_MSGT_KILL_COMPL);
 		struct osmo_cbsp_kill_complete *compl = &resp->u.kill_compl;
@@ -803,11 +808,16 @@ static int cbsp_rx_kill(struct bsc_cbc_link *cbc, const struct osmo_cbsp_decoded
 		compl->old_serial_nr = kill->old_serial_nr;
 		compl->channel_ind = kill->channel_ind;
 
-		compl->cell_list.id_discr = r_state->success.id_discr;
-		llist_replace_head(&compl->cell_list.list, &r_state->success.list);
-
-		compl->num_compl_list.id_discr = r_state->num_completed.id_discr;
-		llist_replace_head(&compl->num_compl_list.list, &r_state->num_completed.list);
+		/* if the KILL relates to CBS, the "Channel Indicator" IE is present */
+		if (kill->channel_ind) {
+			/* only if it was CBS */
+			compl->num_compl_list.id_discr = r_state->num_completed.id_discr;
+			llist_replace_head(&compl->num_compl_list.list, &r_state->num_completed.list);
+		} else {
+			/* only if it was emergency */
+			compl->cell_list.id_discr = r_state->success.id_discr;
+			llist_replace_head(&compl->cell_list.list, &r_state->success.list);
+		}
 	}
 
 	cbsp_tx_decoded(cbc, resp);
