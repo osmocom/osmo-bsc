@@ -494,12 +494,36 @@ static void etws_pn_cb(void *data)
 	etws_pn_stop(bts, true);
 }
 
-static void etws_primary_to_bts(struct gsm_bts *bts, const struct osmo_cbsp_write_replace *wrepl)
+static int etws_primary_to_bts(struct gsm_bts *bts, const struct osmo_cbsp_write_replace *wrepl)
 {
 	struct bts_etws_state *bes = &bts->etws;
 	struct gsm_bts_trx *trx;
 	unsigned int count = 0;
 	int i, j;
+
+	if (bes->active) {
+		/* we were already broadcasting emergency before receiving this WRITE-REPLACE */
+
+		/* If only the New Serial Number IE, and not the Old Serial Number IE, is included in the
+		 * WRITE-REPLACE message, then the BSC shall interpret the message as a write request, i.e. a
+		 * broadcast request of a new emergency message without replacing an ongoing emergency message
+		 * broadcast. */
+		if (!wrepl->old_serial_nr) {
+			/* If a write request is received for a cell where an emergency message broadcast is
+			 * currently ongoing, the write request is considered as failed */
+			LOG_BTS(bts, DCBS, LOGL_NOTICE, "Rx CBSP WRITE rejected due to ongoing emergency "
+				"while no Old Serial Nr IE present in CBSP WRITE\n");
+			return -CBSP_CAUSE_BSC_CAPACITY_EXCEEDED;
+		}
+
+		if (!etws_msg_id_matches(*wrepl->old_serial_nr, bes->input.serial_nr)) {
+			LOG_BTS(bts, DCBS, LOGL_NOTICE, "Rx CBSP WRITE-REPLACE old_serial 0x%04x doesn't match "
+				"current serial 0x%04x. Is the CBC confused?\n",
+				*wrepl->old_serial_nr, bes->input.serial_nr);
+			/* we allow the WRITE-REPLACE to continue, TS 48.049 doesn't specify how to
+			 * handle situations like this */
+		}
+	}
 
 	if (bes->input.sec_info) {
 		talloc_free(bes->input.sec_info);
@@ -553,6 +577,8 @@ static void etws_primary_to_bts(struct gsm_bts *bts, const struct osmo_cbsp_writ
 	} else
 		LOG_BTS(bts, DCBS, LOGL_NOTICE, "Unlimited ETWS PN broadcast, this breaks "
 			"normal network operation due to PCH blockage\n");
+
+	return 0;
 }
 
 /*! Try to execute a write-replace operation; roll-back if it fails.
@@ -624,8 +650,7 @@ static int bts_rx_write_replace(struct gsm_bts *bts, const struct osmo_cbsp_deco
 	int rc;
 
 	if (!wrepl->is_cbs) {
-		etws_primary_to_bts(bts, wrepl);
-		return 0;
+		return etws_primary_to_bts(bts, wrepl);
 	}
 
 	/* check if cell has a CBCH at all */
