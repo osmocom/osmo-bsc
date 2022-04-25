@@ -538,13 +538,15 @@ static void etws_primary_to_bts(struct gsm_bts *bts, const struct osmo_cbsp_writ
 	if (osmo_bts_has_feature(&bts->features, BTS_FEAT_ETWS_PN)) {
 		rsl_etws_pn_command(bts, RSL_CHAN_PCH_AGCH, bes->primary, sizeof(bes->primary));
 		LOG_BTS(bts, DCBS, LOGL_NOTICE, "Sent ETWS Primary Notification via common channel\n");
-		if (wrepl->u.emergency.warning_period != 0xffffffff) {
-			osmo_timer_schedule(&bts->etws.timer, wrepl->u.emergency.warning_period, 0);
-		} else
-			LOG_BTS(bts, DCBS, LOGL_NOTICE, "Unlimited ETWS PN broadcast, this breaks "
-				"normal network operation due to PCH blockage\n");
 	} else
 		LOG_BTS(bts, DCBS, LOGL_ERROR, "BTS doesn't support RSL command for ETWS PN\n");
+
+	/* start the expiration timer, if any */
+	if (wrepl->u.emergency.warning_period != 0xffffffff) {
+		osmo_timer_schedule(&bts->etws.timer, wrepl->u.emergency.warning_period, 0);
+	} else
+		LOG_BTS(bts, DCBS, LOGL_NOTICE, "Unlimited ETWS PN broadcast, this breaks "
+			"normal network operation due to PCH blockage\n");
 }
 
 /*! Try to execute a write-replace operation; roll-back if it fails.
