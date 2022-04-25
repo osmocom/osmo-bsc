@@ -601,21 +601,17 @@ static int parse_attr_resp_info_attr(struct gsm_bts *bts, const struct gsm_bts_t
 
 		memcpy(bts->_features_data, TLVP_VAL(tp, NM_ATT_MANUF_ID), len);
 
-		/* Check each BTS feature in the reported vector */
+		/* Log each BTS feature in the reported vector */
 		for (i = 0; i < len * 8; i++) {
-			bool Frep = osmo_bts_has_feature(&bts->features, i);
-			if (i >= _NUM_BTS_FEAT && Frep) {
-				LOGPMO(&bts->mo, DNM, LOGL_NOTICE, "Get Attributes Response: "
-				       "unknown feature 0x%02x. Consider upgrading osmo-bsc.\n", i);
+			if (!osmo_bts_has_feature(&bts->features, i))
 				continue;
-			}
 
-			bool Fexp = osmo_bts_has_feature(&bts->model->features, i);
-			if (!Frep && Fexp) {
-				LOGPMO(&bts->mo, DNM, LOGL_NOTICE, "Get Attributes Response: "
-				       "reported feature '%s' is not supported, while we thought it is.\n",
-				       osmo_bts_features_name(i));
-			}
+			if (i >= _NUM_BTS_FEAT)
+				LOGPMO(&bts->mo, DNM, LOGL_NOTICE, "Get Attributes Response: unknown feature 0x%02x is"
+				       " supported\n", i);
+			else
+				LOGPMO(&bts->mo, DNM, LOGL_NOTICE, "Get Attributes Response: feature '%s' is"
+				       " supported\n", osmo_bts_features_name(i));
 		}
 	}
 
