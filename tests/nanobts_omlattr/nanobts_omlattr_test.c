@@ -34,13 +34,13 @@
 
 extern struct gsm_bts_model bts_model_nanobts;
 
-static void test_nanobts_attr_bts_get(struct gsm_bts *bts, uint8_t *expected)
+static void test_nanobts_gen_set_bts_attr(struct gsm_bts *bts, uint8_t *expected)
 {
 	struct msgb *msgb;
 
-	printf("Testing nanobts_attr_bts_get()...\n");
+	printf("Testing nanobts_gen_set_bts_attr()...\n");
 
-	msgb = nanobts_attr_bts_get(bts);
+	msgb = nanobts_gen_set_bts_attr(bts);
 	printf("result=  %s\n", osmo_hexdump_nospc(msgb->data, msgb->len));
 	printf("expected=%s\n", osmo_hexdump_nospc(expected, msgb->len));
 	OSMO_ASSERT(msgb_eq_data_print(msgb, expected, msgb->len));
@@ -50,13 +50,13 @@ static void test_nanobts_attr_bts_get(struct gsm_bts *bts, uint8_t *expected)
 	printf("\n");
 }
 
-static void test_nanobts_attr_nse_get(struct gsm_bts *bts, uint8_t *expected)
+static void test_nanobts_gen_set_nse_attr(struct gsm_bts *bts, uint8_t *expected)
 {
 	struct msgb *msgb;
 
-	printf("Testing nanobts_attr_nse_get()...\n");
+	printf("Testing nanobts_gen_set_nse_attr()...\n");
 
-	msgb = nanobts_attr_nse_get(bts->site_mgr);
+	msgb = nanobts_gen_set_nse_attr(bts->site_mgr);
 	printf("result=  %s\n", osmo_hexdump_nospc(msgb->data, msgb->len));
 	printf("expected=%s\n", osmo_hexdump_nospc(expected, msgb->len));
 	OSMO_ASSERT(msgb_eq_data_print(msgb, expected, msgb->len));
@@ -66,13 +66,13 @@ static void test_nanobts_attr_nse_get(struct gsm_bts *bts, uint8_t *expected)
 	printf("\n");
 }
 
-static void test_nanobts_attr_cell_get(struct gsm_bts *bts, uint8_t *expected)
+static void test_nanobts_gen_set_cell_attr(struct gsm_bts *bts, uint8_t *expected)
 {
 	struct msgb *msgb;
 
-	printf("Testing nanobts_attr_cell_get()...\n");
+	printf("Testing nanobts_gen_set_cell_attr()...\n");
 
-	msgb = nanobts_attr_cell_get(bts);
+	msgb = nanobts_gen_set_cell_attr(bts);
 	printf("result=  %s\n", osmo_hexdump_nospc(msgb->data, msgb->len));
 	printf("expected=%s\n", osmo_hexdump_nospc(expected, msgb->len));
 	OSMO_ASSERT(msgb_eq_data_print(msgb, expected, msgb->len));
@@ -82,13 +82,13 @@ static void test_nanobts_attr_cell_get(struct gsm_bts *bts, uint8_t *expected)
 	printf("\n");
 }
 
-static void test_nanobts_attr_nsvc_get(struct gsm_bts *bts, uint8_t *expected)
+static void test_nanobts_gen_set_nsvc_attr(struct gsm_bts *bts, uint8_t *expected)
 {
 	struct msgb *msgb;
 
-	printf("Testing nanobts_attr_nsvc_get()...\n");
+	printf("Testing nanobts_gen_set_nsvc_attr()...\n");
 
-	msgb = nanobts_attr_nsvc_get(bts);
+	msgb = nanobts_gen_set_nsvc_attr(bts);
 	printf("result=  %s\n", osmo_hexdump_nospc(msgb->data, msgb->len));
 	printf("expected=%s\n", osmo_hexdump_nospc(expected, msgb->len));
 	OSMO_ASSERT(msgb_eq_data_print(msgb, expected, msgb->len));
@@ -98,15 +98,15 @@ static void test_nanobts_attr_nsvc_get(struct gsm_bts *bts, uint8_t *expected)
 	printf("\n");
 }
 
-static void test_nanobts_attr_radio_get(struct gsm_bts *bts,
+static void test_nanobts_gen_set_radio_attr(struct gsm_bts *bts,
 					struct gsm_bts_trx *trx,
 					uint8_t *expected)
 {
 	struct msgb *msgb;
 
-	printf("Testing nanobts_attr_nsvc_get()...\n");
+	printf("Testing nanobts_gen_set_nsvc_attr()...\n");
 
-	msgb = nanobts_attr_radio_get(bts, trx);
+	msgb = nanobts_gen_set_radio_attr(bts, trx);
 	printf("result=  %s\n", osmo_hexdump_nospc(msgb->data, msgb->len));
 	printf("expected=%s\n", osmo_hexdump_nospc(expected, msgb->len));
 	OSMO_ASSERT(msgb_eq_data_print(msgb, expected, msgb->len));
@@ -154,7 +154,7 @@ int main(int argc, char **argv)
 	bts->network = net;
 	trx = talloc_zero(ctx, struct gsm_bts_trx);
 
-	/* Parameters needed by nanobts_attr_bts_get() */
+	/* Parameters needed by nanobts_gen_set_bts_attr() */
 	bts->rach_b_thresh = -1;
 	bts->rach_ldavg_slots = -1;
 	bts->c0->arfcn = 866;
@@ -173,7 +173,7 @@ int main(int argc, char **argv)
 		0x01, 0x05, 0x39
 	};
 
-	/* Parameters needed to test nanobts_attr_nse_get() */
+	/* Parameters needed to test nanobts_gen_set_nse_attr() */
 	bts->site_mgr->gprs.nse.nsei = 101;
 	uint8_t attr_nse_expected[] =
 	    { 0x9d, 0x00, 0x02, 0x00, 0x65, 0xa0, 0x00, 0x07, 0x03, 0x03, 0x03,
@@ -182,7 +182,7 @@ int main(int argc, char **argv)
 		0x0a, 0x03, 0x0a, 0x03
 	};
 
-	/* Parameters needed to test nanobts_attr_cell_get() */
+	/* Parameters needed to test nanobts_gen_set_cell_attr() */
 	bts->gprs.rac = 0x00;
 	bts->gprs.cell.bvci = 2;
 	bts->gprs.mode = BTS_GPRS_GPRS;
@@ -194,7 +194,7 @@ int main(int argc, char **argv)
 		0xfa, 0x00, 0xfa, 0x02
 	};
 
-	/* Parameters needed to test nanobts_attr_nsvc_get() */
+	/* Parameters needed to test nanobts_gen_set_nsvc_attr() */
 	struct osmo_sockaddr_str addr;
 	osmo_sockaddr_str_from_str(&addr, "10.9.1.101", 23000);
 	osmo_sockaddr_str_to_sockaddr(&addr, &bts->site_mgr->gprs.nsvc[0].remote.u.sas);
@@ -205,7 +205,7 @@ int main(int argc, char **argv)
 		0x09, 0x01, 0x65, 0x5a, 0x3c
 	};
 
-	/* Parameters needed to test nanobts_attr_radio_get() */
+	/* Parameters needed to test nanobts_gen_set_radio_attr() */
 	trx->arfcn = 866;
 	trx->max_power_red = 22;
 	bts->c0->max_power_red = 22;
@@ -213,11 +213,11 @@ int main(int argc, char **argv)
 	    { 0x2d, 0x0b, 0x05, 0x00, 0x02, 0x03, 0x62 };
 
 	/* Run tests */
-	test_nanobts_attr_bts_get(bts, attr_bts_expected);
-	test_nanobts_attr_nse_get(bts, attr_nse_expected);
-	test_nanobts_attr_cell_get(bts, attr_cell_expected);
-	test_nanobts_attr_nsvc_get(bts, attr_nscv_expected);
-	test_nanobts_attr_radio_get(bts, trx, attr_radio_expected);
+	test_nanobts_gen_set_bts_attr(bts, attr_bts_expected);
+	test_nanobts_gen_set_nse_attr(bts, attr_nse_expected);
+	test_nanobts_gen_set_cell_attr(bts, attr_cell_expected);
+	test_nanobts_gen_set_nsvc_attr(bts, attr_nscv_expected);
+	test_nanobts_gen_set_radio_attr(bts, trx, attr_radio_expected);
 
 	/* NSVC IPv6 test */
 	struct osmo_sockaddr_str addr6;
@@ -234,7 +234,7 @@ int main(int argc, char **argv)
 	      0xfd, 0x00, 0x56, 0x78, 0x90, 0x12, 0x34, 0x56,
 	      0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90, 0x12,
 	    };
-	test_nanobts_attr_nsvc_get(bts, attr_nscv6_expected);
+	test_nanobts_gen_set_nsvc_attr(bts, attr_nscv6_expected);
 
 
 	printf("Done\n");

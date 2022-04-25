@@ -92,7 +92,7 @@ static void configure_loop(struct gsm_bts_trx *trx, struct gsm_nm_state *state, 
 
 	if (!trx->mo.set_attr_sent && !trx->mo.set_attr_ack_received) {
 		trx->mo.set_attr_sent = true;
-		msgb = nanobts_attr_radio_get(trx->bts, trx);
+		msgb = nanobts_gen_set_radio_attr(trx->bts, trx);
 		abis_nm_set_radio_attr(trx, msgb->data, msgb->len);
 		msgb_free(msgb);
 	}

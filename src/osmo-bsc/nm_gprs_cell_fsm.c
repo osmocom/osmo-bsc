@@ -95,7 +95,7 @@ static void configure_loop(struct gsm_gprs_cell *cell, struct gsm_nm_state *stat
 
 	if (!cell->mo.set_attr_sent && !cell->mo.set_attr_ack_received) {
 		cell->mo.set_attr_sent = true;
-		msgb = nanobts_attr_cell_get(bts);
+		msgb = nanobts_gen_set_cell_attr(bts);
 		OSMO_ASSERT(msgb);
 		abis_nm_ipaccess_set_attr(bts, NM_OC_GPRS_CELL, bts->bts_nr,
 					  0, 0xff, msgb->data, msgb->len);

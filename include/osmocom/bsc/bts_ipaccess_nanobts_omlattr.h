@@ -28,9 +28,9 @@ struct gsm_bts_sm;
 struct gsm_bts;
 struct gsm_bts_trx;
 
-struct msgb *nanobts_attr_bts_get(struct gsm_bts *bts);
-struct msgb *nanobts_attr_nse_get(struct gsm_bts_sm *bts_sm);
-struct msgb *nanobts_attr_cell_get(struct gsm_bts *bts);
-struct msgb *nanobts_attr_nsvc_get(struct gsm_bts *bts);
-struct msgb *nanobts_attr_radio_get(struct gsm_bts *bts,
+struct msgb *nanobts_gen_set_bts_attr(struct gsm_bts *bts);
+struct msgb *nanobts_gen_set_nse_attr(struct gsm_bts_sm *bts_sm);
+struct msgb *nanobts_gen_set_cell_attr(struct gsm_bts *bts);
+struct msgb *nanobts_gen_set_nsvc_attr(struct gsm_bts *bts);
+struct msgb *nanobts_gen_set_radio_attr(struct gsm_bts *bts,
 				    struct gsm_bts_trx *trx);

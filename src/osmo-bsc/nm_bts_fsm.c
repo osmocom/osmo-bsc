@@ -105,7 +105,7 @@ static void configure_loop(struct gsm_bts *bts, struct gsm_nm_state *state, bool
 	if (bts->mo.get_attr_rep_received &&
 	    !bts->mo.set_attr_sent && !bts->mo.set_attr_ack_received) {
 		bts->mo.set_attr_sent = true;
-		msgb = nanobts_attr_bts_get(bts);
+		msgb = nanobts_gen_set_bts_attr(bts);
 		abis_nm_set_bts_attr(bts, msgb->data, msgb->len);
 		msgb_free(msgb);
 	}

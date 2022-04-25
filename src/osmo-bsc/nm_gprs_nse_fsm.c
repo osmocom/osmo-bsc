@@ -94,7 +94,7 @@ static void configure_loop(struct gsm_gprs_nse *nse, struct gsm_nm_state *state,
 
 	if (!nse->mo.set_attr_sent && !nse->mo.set_attr_ack_received) {
 		nse->mo.set_attr_sent = true;
-		msgb = nanobts_attr_nse_get(bts_sm);
+		msgb = nanobts_gen_set_nse_attr(bts_sm);
 		abis_nm_ipaccess_set_attr(bts, NM_OC_GPRS_NSE, bts->bts_nr,
 					  0xff, 0xff, msgb->data,
 					  msgb->len);

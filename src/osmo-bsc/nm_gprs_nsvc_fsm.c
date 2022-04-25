@@ -107,7 +107,7 @@ static void configure_loop(struct gsm_gprs_nsvc *nsvc, struct gsm_nm_state *stat
 			return;
 		}
 		nsvc->mo.set_attr_sent = true;
-		msgb = nanobts_attr_nsvc_get(nsvc->bts);
+		msgb = nanobts_gen_set_nsvc_attr(nsvc->bts);
 		OSMO_ASSERT(msgb);
 		abis_nm_ipaccess_set_attr(nsvc->bts, NM_OC_GPRS_NSVC, nsvc->bts->bts_nr,
 					  nsvc->id, 0xff, msgb->data, msgb->len);
