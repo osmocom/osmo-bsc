@@ -58,8 +58,6 @@
 
 void *tall_paging_ctx = NULL;
 
-#define PAGING_TIMER 0, 500000
-
 /* How many paging requests to Tx on RSL at max before going back to main loop */
 #define MAX_PAGE_REQ_PER_ITER 20
 
@@ -106,23 +104,23 @@ static void page_ms(struct gsm_paging_request *request)
 	log_set_context(LOG_CTX_BSC_SUBSCR, NULL);
 }
 
+static void paging_handle_pending_requests(struct gsm_bts_paging_state *paging_bts);
+
 static void paging_schedule_if_needed(struct gsm_bts_paging_state *paging_bts)
 {
-	if (llist_empty(&paging_bts->pending_requests))
-		return;
-
+	/* paging_handle_pending_requests() will schedule work_timer if work
+	 * needs to be partitioned in several iterations. */
 	if (!osmo_timer_pending(&paging_bts->work_timer))
-		osmo_timer_schedule(&paging_bts->work_timer, PAGING_TIMER);
+		paging_handle_pending_requests(paging_bts);
 }
 
-
-static void paging_handle_pending_requests(struct gsm_bts_paging_state *paging_bts);
 static void paging_give_credit(void *data)
 {
 	struct gsm_bts_paging_state *paging_bts_st = data;
 	struct gsm_bts *bts = paging_bts_st->bts;
 	paging_bts_st->available_slots = paging_estimate_available_slots(bts, bts->ccch_load_ind_period * 2);
-	paging_handle_pending_requests(paging_bts_st);
+	paging_schedule_if_needed(paging_bts_st);
+	osmo_timer_schedule(&bts->paging.credit_timer, bts->ccch_load_ind_period * 2, 0);
 }
 
 /*! count the number of free channels for given RSL channel type required
@@ -210,16 +208,11 @@ static void paging_handle_pending_requests(struct gsm_bts_paging_state *paging_b
 					    struct gsm_paging_request, entry);
 	request = initial_request;
 	do {
-		/*
-		 * In case the BTS does not provide us with load indication and we
-		 * ran out of slots, call an autofill routine. It might be that the
-		 * BTS did not like our paging messages and then we have counted down
-		 * to zero and we do not get any messages.
+		/* We run out of available slots. Wait until next CCCH Load Ind
+		 * arrives or credit_timer triggers to keep processing requests.
 		 */
-		if (paging_bts->available_slots == 0) {
-			osmo_timer_schedule(&paging_bts->credit_timer, bts->ccch_load_ind_period * 2, 0);
+		if (paging_bts->available_slots == 0)
 			return;
-		}
 
 		/* we need to determine the number of free channels */
 		if (paging_bts->free_chans_need != -1 &&
@@ -244,7 +237,7 @@ static void paging_handle_pending_requests(struct gsm_bts_paging_state *paging_b
 
 	/* Once done iterating, prepare next scheduling: */
 sched_next_iter:
-	osmo_timer_schedule(&paging_bts->work_timer, PAGING_TIMER);
+	osmo_timer_schedule(&paging_bts->work_timer, 0, 500000);
 }
 
 static void paging_worker(void *data)
@@ -263,6 +256,7 @@ void paging_init(struct gsm_bts *bts)
 	INIT_LLIST_HEAD(&bts->paging.pending_requests);
 	osmo_timer_setup(&bts->paging.work_timer, paging_worker, &bts->paging);
 	osmo_timer_setup(&bts->paging.credit_timer, paging_give_credit, &bts->paging);
+	osmo_timer_schedule(&bts->paging.credit_timer, bts->ccch_load_ind_period * 2, 0);
 }
 
 /* Called upon the bts struct being freed */
@@ -502,10 +496,10 @@ int paging_request_cancel(struct bsc_subscr *bsub, enum bsc_paging_reason reason
 /*! Update the BTS paging buffer slots on given BTS */
 void paging_update_buffer_space(struct gsm_bts *bts, uint16_t free_slots)
 {
-
-	osmo_timer_del(&bts->paging.credit_timer);
 	bts->paging.available_slots = free_slots;
 	paging_schedule_if_needed(&bts->paging);
+	/* Re-arm credit_timer */
+	osmo_timer_schedule(&bts->paging.credit_timer, bts->ccch_load_ind_period * 2, 0);
 }
 
 /*! Count the number of pending paging requests on given BTS */
