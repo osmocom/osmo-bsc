@@ -149,6 +149,8 @@ static const struct gprs_rlc_cfg rlc_cfg_default = {
 
 static int gsm_bts_talloc_destructor(struct gsm_bts *bts)
 {
+	paging_destructor(bts);
+
 	bts->site_mgr->bts[0] = NULL;
 
 	if (bts->gprs.cell.mo.fi) {

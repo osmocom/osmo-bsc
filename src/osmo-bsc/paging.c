@@ -266,6 +266,13 @@ void paging_init(struct gsm_bts *bts)
 	osmo_timer_setup(&bts->paging.credit_timer, paging_give_credit, &bts->paging);
 }
 
+/* Called upon the bts struct being freed */
+void paging_destructor(struct gsm_bts *bts)
+{
+	osmo_timer_del(&bts->paging.credit_timer);
+	osmo_timer_del(&bts->paging.work_timer);
+}
+
 /*! Call-back once T3113 (paging timeout) expires for given paging_request */
 static void paging_T3113_expired(void *data)
 {

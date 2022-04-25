@@ -110,6 +110,7 @@ struct gsm_bts_paging_state {
 };
 
 void paging_init(struct gsm_bts *bts);
+void paging_destructor(struct gsm_bts *bts);
 
 /* schedule paging request */
 int paging_request_bts(const struct bsc_paging_params *params, struct gsm_bts *bts);
