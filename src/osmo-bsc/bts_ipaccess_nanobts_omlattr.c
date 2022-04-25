@@ -26,6 +26,7 @@
 #include <osmocom/bsc/bts.h>
 #include <osmocom/gsm/bts_features.h>
 
+/* 3GPP TS 52.021 section 8.6.1 Set BTS Attributes */
 struct msgb *nanobts_attr_bts_get(struct gsm_bts *bts)
 {
 	struct msgb *msgb;
@@ -35,13 +36,14 @@ struct msgb *nanobts_attr_bts_get(struct gsm_bts *bts)
 	if (!msgb)
 		return NULL;
 
-	/* Interference level Boundaries: 0 .. X5 (3GPP TS 52.021, section 9.4.25) */
+	/* Interference level Boundaries: 0 .. X5 (3GPP TS 52.021 sec 9.4.25) */
 	msgb_tv_fixed_put(msgb, NM_ATT_INTERF_BOUND,
 			  sizeof(bts->interf_meas_params_cfg.bounds_dbm),
 			  &bts->interf_meas_params_cfg.bounds_dbm[0]);
-	/* Intave: Interference Averaging period (3GPP TS 52.021, section 9.4.24) */
+	/* Intave: Interference Averaging period (3GPP TS 52.021 sec 9.4.24) */
 	msgb_tv_put(msgb, NM_ATT_INTAVE_PARAM, bts->interf_meas_params_cfg.avg_period);
 
+	/* Connection Failure Criterion (3GPP TS 52.021 sec 9.4.14) */
 	rlt = gsm_bts_get_radio_link_timeout(bts);
 	if (rlt == -1) {
 		/* Osmocom extension: Use infinite radio link timeout */
@@ -54,28 +56,30 @@ struct msgb *nanobts_attr_bts_get(struct gsm_bts *bts)
 	}
 	msgb_tl16v_put(msgb, NM_ATT_CONN_FAIL_CRIT, 2, buf);
 
+	/* T200 (3GPP TS 52.021 sec 9.4.53) */
 	memcpy(buf, "\x1e\x24\x24\xa8\x34\x21\xa8", 7);
 	msgb_tv_fixed_put(msgb, NM_ATT_T200, 7, buf);
 
+	/* Max Timing Advance (3GPP TS 52.021 sec 9.4.31) */
 	msgb_tv_put(msgb, NM_ATT_MAX_TA, 0x3f);
 
-	/* seconds */
+	/* Overload Period (3GPP TS 52.021 sec 9.4.39), seconds */
 	memcpy(buf, "\x00\x01\x0a", 3);
 	msgb_tv_fixed_put(msgb, NM_ATT_OVERL_PERIOD, 3, buf);
 
-	/* percent */
+	/* CCCH Load Threshold (3GPP TS 12.21 sec 9.4.12), percent */
 	msgb_tv_put(msgb, NM_ATT_CCCH_L_T, bts->ccch_load_ind_thresh);
 
-	/* seconds */
+	/* CCCH Load Indication Period (3GPP TS 12.21 sec 9.4.11), seconds */
 	msgb_tv_put(msgb, NM_ATT_CCCH_L_I_P, 1);
 
-	/* busy threshold in - dBm */
+	/* RACH Busy Threshold (3GPP TS 12.21 sec 9.4.44), -dBm */
 	buf[0] = 90;	/* -90 dBm as default "busy" threshold */
 	if (bts->rach_b_thresh != -1)
 		buf[0] = bts->rach_b_thresh & 0xff;
 	msgb_tv_put(msgb, NM_ATT_RACH_B_THRESH, buf[0]);
 
-	/* rach load averaging 1000 slots */
+	/* RACH Load Averaging Slots (3GPP TS 12.21 sec 9.4.45), 1000 slots */
 	buf[0] = 0x03;
 	buf[1] = 0xe8;
 	if (bts->rach_ldavg_slots != -1) {
@@ -84,16 +88,18 @@ struct msgb *nanobts_attr_bts_get(struct gsm_bts *bts)
 	}
 	msgb_tv_fixed_put(msgb, NM_ATT_LDAVG_SLOTS, 2, buf);
 
-	/* 10 milliseconds */
+	/* BTS Air Timer (3GPP TS 12.21 sec 9.4.10), 10 milliseconds */
 	msgb_tv_put(msgb, NM_ATT_BTS_AIR_TIMER, osmo_tdef_get(bts->network->T_defs, 3105, OSMO_TDEF_MS, -1)/10);
 
-	/* 10 retransmissions of physical config */
+	/* NY1 (3GPP TS 12.21 sec 9.4.37), 10 retransmissions of physical config */
 	msgb_tv_put(msgb, NM_ATT_NY1, 10);
 
+	/* BCCH ARFCN (3GPP TS 12.21 sec 9.4.8) */
 	buf[0] = (bts->c0->arfcn >> 8) & 0x0f;
 	buf[1] = bts->c0->arfcn & 0xff;
 	msgb_tv_fixed_put(msgb, NM_ATT_BCCH_ARFCN, 2, buf);
 
+	/* BSIC (3GPP TS 12.21 sec 9.4.9) */
 	msgb_tv_put(msgb, NM_ATT_BSIC, bts->bsic);
 
 	abis_nm_ipaccess_cgi(buf, bts);
