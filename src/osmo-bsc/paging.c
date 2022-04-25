@@ -119,11 +119,10 @@ static void paging_schedule_if_needed(struct gsm_bts_paging_state *paging_bts)
 static void paging_handle_pending_requests(struct gsm_bts_paging_state *paging_bts);
 static void paging_give_credit(void *data)
 {
-	struct gsm_bts_paging_state *paging_bts = data;
-
-	LOG_BTS(paging_bts->bts, DPAG, LOGL_NOTICE, "No PCH LOAD IND, adding 20 slots)\n");
-	paging_bts->available_slots = 20;
-	paging_handle_pending_requests(paging_bts);
+	struct gsm_bts_paging_state *paging_bts_st = data;
+	struct gsm_bts *bts = paging_bts_st->bts;
+	paging_bts_st->available_slots = paging_estimate_available_slots(bts, bts->ccch_load_ind_period * 2);
+	paging_handle_pending_requests(paging_bts_st);
 }
 
 /*! count the number of free channels for given RSL channel type required
@@ -187,6 +186,7 @@ static void paging_handle_pending_requests(struct gsm_bts_paging_state *paging_b
 {
 	struct gsm_paging_request *request, *initial_request;
 	unsigned int num_paged = 0;
+	struct gsm_bts *bts = paging_bts->bts;
 
 	/*
 	 * Determine if the pending_requests list is empty and
@@ -198,7 +198,7 @@ static void paging_handle_pending_requests(struct gsm_bts_paging_state *paging_b
 	}
 
 	/* Skip paging if the bts is down. */
-	if (!paging_bts->bts->oml_link)
+	if (!bts->oml_link)
 		goto sched_next_iter;
 
 	/* do while loop: Try send at most first MAX_PAGE_REQ_PER_ITER paging
@@ -217,7 +217,7 @@ static void paging_handle_pending_requests(struct gsm_bts_paging_state *paging_b
 		 * to zero and we do not get any messages.
 		 */
 		if (paging_bts->available_slots == 0) {
-			osmo_timer_schedule(&paging_bts->credit_timer, 5, 0);
+			osmo_timer_schedule(&paging_bts->credit_timer, bts->ccch_load_ind_period * 2, 0);
 			return;
 		}
 
@@ -259,8 +259,7 @@ void paging_init(struct gsm_bts *bts)
 {
 	bts->paging.bts = bts;
 	bts->paging.free_chans_need = -1;
-	/* Large number, until we get a proper message */
-	bts->paging.available_slots = 20;
+	bts->paging.available_slots = paging_estimate_available_slots(bts, bts->ccch_load_ind_period * 2);
 	INIT_LLIST_HEAD(&bts->paging.pending_requests);
 	osmo_timer_setup(&bts->paging.work_timer, paging_worker, &bts->paging);
 	osmo_timer_setup(&bts->paging.credit_timer, paging_give_credit, &bts->paging);
@@ -546,4 +545,15 @@ void paging_flush_network(struct gsm_network *net, struct bsc_msc_data *msc)
 
 	llist_for_each_entry(bts, &net->bts_list, list)
 		paging_flush_bts(bts, msc);
+}
+
+/*! Estimate available_slots credit over a time period, used when below CCCH Load Indication Threshold */
+uint16_t paging_estimate_available_slots(struct gsm_bts *bts, unsigned int time_span_s)
+{
+	/* TODO: use gsm48_number_of_paging_subchannels() instead? */
+	unsigned int n_pag_blocks = gsm0502_get_n_pag_blocks(&bts->si_common.chan_desc);
+	uint16_t available_slots = n_pag_blocks * time_span_s * 1000000 / GSM51_MFRAME_DURATION_us;
+	LOG_BTS(bts, DPAG, LOGL_DEBUG, "Estimated %u paging available_slots over %u seconds\n",
+		available_slots, time_span_s);
+	return available_slots;
 }
