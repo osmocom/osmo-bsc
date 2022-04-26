@@ -1,0 +1,42 @@
+Notes about BTS feature check code
+---
+
+Feature reporting:
+- For most BTS we hardcode a list of assumed features in the BTS model's
+  _init() function, e.g. bts_model_bs11_init(). These features get copied to
+  bts->features once the BTS model is set.
+- nanobts and osmo-bts are special, they support reporting features during OML
+  bring up (features_get_reported set in struct_gsm_bts_model):
+  - For osmo-bts, we do not assume any features in the BTS model and just let
+    it report all available features.
+  - For nanobts, we wait for the reported features and then extend them with
+    the features set in the bts model. This is needed because the features enum
+    gets extended by us for osmo-bts, it may have features that nanobts does
+    not report but has implemented.
+- Once features are available (either through feature reporting or copied from
+  the bts model), features_known is true in struct gsm_bts.
+
+Implementing a feature check:
+- Check that features_known is true, in case the check may be done before the
+  BTS is connected and has reported its features (e.g. in VTY config parsing)
+- Use osmo_bts_has_feature()
+- Example:
+  if (bts->features_known && !osmo_bts_has_feature(&bts->features, BTS_FEAT_MULTI_TSC))
+
+VTY and feature checks:
+- Some VTY commands only make sense if a BTS supports a certain feature
+- Implement the following checks:
+  - In the VTY command, check if the BTS has the feature.
+  - In gsm_bts_check_cfg() (or called funcs like trx_has_valid_pchan_config),
+    check if the VTY command for the feature is set and if the BTS has the
+    feature.
+- In both cases, do not fail the checks if bts->features_known is false.
+
+Resulting functionality:
+- For BTS that do not support feature reporting, the VTY config is checked
+  against the hardcoded feature set as it gets parsed.
+- For BTS that do support feature reporting, the VTY config is checked when
+  features get reported. The BTS gets rejected if the config is invalid for the
+  available features.
+- Once a BTS is up and running, VTY commands changing the behavior check
+  against the available feature sets.

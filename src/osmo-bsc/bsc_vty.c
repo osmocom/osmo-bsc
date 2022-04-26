@@ -1700,6 +1700,7 @@ static int lchan_act_trx(struct vty *vty, struct gsm_bts_trx *trx, int activate)
 static int lchan_act_deact(struct vty *vty, const char **argv, int argc)
 {
 	struct gsm_bts_trx_ts *ts;
+	struct gsm_bts *bts;
 	struct gsm_lchan *lchan;
 	bool vamos = (strcmp(argv[3], "vamos-sub-slot") == 0);
 	int ss_nr = atoi(argv[4]);
@@ -1725,7 +1726,8 @@ static int lchan_act_deact(struct vty *vty, const char **argv, int argc)
 		return CMD_WARNING;
 	}
 
-	if (vamos && !osmo_bts_has_feature(&ts->trx->bts->features, BTS_FEAT_VAMOS)) {
+	bts = ts->trx->bts;
+	if (vamos && bts->features_known && !osmo_bts_has_feature(&bts->features, BTS_FEAT_VAMOS)) {
 		vty_out(vty, "BTS does not support VAMOS%s", VTY_NEWLINE);
 		return CMD_WARNING;
 	}
@@ -1955,6 +1957,7 @@ DEFUN(vamos_modify_lchan, vamos_modify_lchan_cmd,
       TSC_ARGS_DOC)
 {
 	struct gsm_bts_trx_ts *ts;
+	struct gsm_bts *bts;
 	struct gsm_lchan *lchan;
 	int ss_nr = atoi(argv[3]);
 	const char *vamos_str = argv[4];
@@ -1971,7 +1974,8 @@ DEFUN(vamos_modify_lchan, vamos_modify_lchan_cmd,
 		return CMD_WARNING;
 	}
 
-	if (!osmo_bts_has_feature(&ts->trx->bts->features, BTS_FEAT_VAMOS)) {
+	bts = ts->trx->bts;
+	if (bts->features_known && !osmo_bts_has_feature(&bts->features, BTS_FEAT_VAMOS)) {
 		vty_out(vty, "%% BTS does not support VAMOS%s", VTY_NEWLINE);
 		return CMD_WARNING;
 	}

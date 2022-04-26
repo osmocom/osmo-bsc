@@ -500,6 +500,14 @@ int gsm_bts_check_cfg(struct gsm_bts *bts)
 		return -EINVAL;
 	}
 
+	if (bts->features_known) {
+		if (!bts_gprs_mode_is_compat(bts, bts->gprs.mode)) {
+			LOGP(DNM, LOGL_ERROR, "(bts=%u) GPRS mode set to '%s', but BTS does not support it\n", bts->nr,
+			     bts_gprs_mode_name(bts->gprs.mode));
+			return -EINVAL;
+		}
+	}
+
 	/* Verify the physical channel mapping */
 	llist_for_each_entry(trx, &bts->trx_list, list) {
 		if (!trx_has_valid_pchan_config(trx)) {
@@ -621,11 +629,15 @@ int gsm_set_bts_model(struct gsm_bts *bts, struct gsm_bts_model *model)
 {
 	bts->model = model;
 
-	/* Copy hardcoded feature list from BTS model. For some BTS we support
-	 * reporting features at runtime (as of writing nanobts, OsmoBTS),
-	 * which will then replace this list. */
-	if (model)
+	/* Copy hardcoded feature list from BTS model, unless the BTS supports
+	 * reporting features at runtime (as of writing nanobts, OsmoBTS). */
+	if (!model || model->features_get_reported) {
+		memset(bts->_features_data, 0, sizeof(bts->_features_data));
+		bts->features_known = false;
+	} else {
 		memcpy(bts->_features_data, bts->model->_features_data, sizeof(bts->_features_data));
+		bts->features_known = true;
+	}
 
 	return 0;
 }

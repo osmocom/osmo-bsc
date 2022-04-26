@@ -1592,7 +1592,7 @@ DEFUN_USRATTR(cfg_bts_gprs_mode,
 	struct gsm_bts *bts = vty->index;
 	enum bts_gprs_mode mode = bts_gprs_mode_parse(argv[0], NULL);
 
-	if (!bts_gprs_mode_is_compat(bts, mode)) {
+	if (bts->features_known && !bts_gprs_mode_is_compat(bts, mode)) {
 		vty_out(vty, "%% This BTS type does not support %s%s", argv[0],
 			VTY_NEWLINE);
 		return CMD_WARNING;

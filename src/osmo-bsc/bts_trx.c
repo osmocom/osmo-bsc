@@ -338,6 +338,20 @@ bool trx_has_valid_pchan_config(const struct gsm_bts_trx *trx)
 				result = false;
 			}
 		}
+
+		if (trx->bts->features_known) {
+			const struct bitvec *ft = &trx->bts->features;
+
+			if (ts->hopping.enabled && !osmo_bts_has_feature(ft, BTS_FEAT_HOPPING)) {
+				LOGP(DNM, LOGL_ERROR, "TS%d has freq. hopping enabled, but BTS does not support it\n", i);
+				result = false;
+			}
+
+			if (ts->tsc != -1 && !osmo_bts_has_feature(ft, BTS_FEAT_MULTI_TSC)) {
+				LOGP(DNM, LOGL_ERROR, "TS%d has TSC != BCC, but BTS does not support it\n", i);
+				result = false;
+			}
+		}
 	}
 
 	return result;

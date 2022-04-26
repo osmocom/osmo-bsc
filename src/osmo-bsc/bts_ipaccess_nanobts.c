@@ -131,6 +131,7 @@ struct gsm_bts_model bts_model_nanobts = {
 			[NM_ATT_IPACC_REVOC_DATE] =	{ TLV_TYPE_TL16V },
 		},
 	},
+	.features_get_reported = true,
 };
 
 
