@@ -196,7 +196,7 @@ static void paging_handle_pending_requests(struct gsm_bts_paging_state *paging_b
 	}
 
 	/* Skip paging if the bts is down. */
-	if (!bts->oml_link)
+	if (!bts->c0->rsl_link_primary)
 		goto sched_next_iter;
 
 	/* do while loop: Try send at most first MAX_PAGE_REQ_PER_ITER paging
