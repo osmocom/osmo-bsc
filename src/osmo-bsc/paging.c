@@ -324,6 +324,7 @@ static unsigned int calculate_timer_3113(struct gsm_bts *bts)
 {
 	unsigned int to_us, to;
 	struct osmo_tdef *d = osmo_tdef_get_entry(bts->network->T_defs, 3113);
+	unsigned int rach_max_trans, rach_tx_integer, bs_pa_mfrms;
 
 	/* Note: d should always contain a valid pointer since all timers,
 	 * including 3113 are statically pre-defined in
@@ -337,10 +338,14 @@ static unsigned int calculate_timer_3113(struct gsm_bts *bts)
 
 	/* MFRMS defines repeat interval of paging messages for MSs that belong
 	 * to same paging group across multiple 51 frame multiframes.
-	 * MAXTRANS defines maximum number of RACH retransmissions.
+	 * MAXTRANS defines maximum number of RACH retransmissions, spread over
+	 * TXINTEGER slots.
 	 */
-	to_us = GSM51_MFRAME_DURATION_us * (bts->si_common.chan_desc.bs_pa_mfrms + 2) *
-		bts->si_common.rach_control.max_trans;
+	rach_max_trans = rach_max_trans_raw2val(bts->si_common.rach_control.max_trans);
+	rach_tx_integer = rach_tx_integer_raw2val(bts->si_common.rach_control.tx_integer);
+	bs_pa_mfrms = (bts->si_common.chan_desc.bs_pa_mfrms + 2);
+	to_us = GSM51_MFRAME_DURATION_us * bs_pa_mfrms +
+		GSM_TDMA_FN_DURATION_uS * rach_tx_integer * rach_max_trans;
 
 	/* ceiling in seconds + extra time */
 	to = (to_us + 999999) / 1000000 + d->val;
