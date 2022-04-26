@@ -82,6 +82,8 @@ struct gsm_paging_request {
 
 	/* How often did we ask the BTS to page? */
 	int attempts;
+	/* Timestamp of last time the subscriber was paged */
+	struct timespec last_attempt_ts;
 
 	/* MSC that has issued this paging */
 	struct bsc_msc_data *msc;

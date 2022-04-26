@@ -59,7 +59,19 @@
 void *tall_paging_ctx = NULL;
 
 /* How many paging requests to Tx on RSL at max before going back to main loop */
-#define MAX_PAGE_REQ_PER_ITER 20
+#define MAX_PAGE_REQ_PER_ITER 10
+
+/* How often to attempt sending new paging requests (initial, not retrans): 250ms */
+static const struct timespec initial_period = {
+	.tv_sec = 0,
+	.tv_nsec = 250 * 1000 * 1000,
+};
+
+/* Minimum period between retransmits of paging req to a subscriber: 500ms */
+static const struct timespec retrans_period = {
+	.tv_sec = 0,
+	.tv_nsec = 500 * 1000 * 1000,
+};
 
 /*
  * Kill one paging request update the internal list...
@@ -185,6 +197,7 @@ static void paging_handle_pending_requests(struct gsm_bts_paging_state *paging_b
 	struct gsm_paging_request *request, *initial_request;
 	unsigned int num_paged = 0;
 	struct gsm_bts *bts = paging_bts->bts;
+	struct timespec now, retrans_ts;
 
 	/*
 	 * Determine if the pending_requests list is empty and
@@ -198,6 +211,8 @@ static void paging_handle_pending_requests(struct gsm_bts_paging_state *paging_b
 	/* Skip paging if the bts is down. */
 	if (!bts->c0->rsl_link_primary)
 		goto sched_next_iter;
+
+	osmo_clock_gettime(CLOCK_MONOTONIC, &now);
 
 	/* do while loop: Try send at most first MAX_PAGE_REQ_PER_ITER paging
 	 * requests (or before if there are no more available slots). Since
@@ -223,9 +238,23 @@ static void paging_handle_pending_requests(struct gsm_bts_paging_state *paging_b
 			goto sched_next_iter;
 		}
 
+		/* If we reach around back of the queue (retransmitions), check
+		 * if time to retransmit has elapsed. Otherwise, wait until its
+		 * time to retransmit. */
+		if (request->attempts > 0) {
+			timespecadd(&request->last_attempt_ts, &retrans_period, &retrans_ts);
+			if (timespeccmp(&now, &retrans_ts, <)) {
+				struct timespec tdiff;
+				timespecsub(&retrans_ts, &now, &tdiff);
+				osmo_timer_schedule(&paging_bts->work_timer, tdiff.tv_sec, tdiff.tv_nsec / 1000);
+				return;
+			}
+		}
+
 		/* handle the paging request now */
 		page_ms(request);
 		paging_bts->available_slots--;
+		request->last_attempt_ts = now;
 		request->attempts++;
 		num_paged++;
 
@@ -237,7 +266,7 @@ static void paging_handle_pending_requests(struct gsm_bts_paging_state *paging_b
 
 	/* Once done iterating, prepare next scheduling: */
 sched_next_iter:
-	osmo_timer_schedule(&paging_bts->work_timer, 0, 500000);
+	osmo_timer_schedule(&paging_bts->work_timer, initial_period.tv_sec, initial_period.tv_nsec / 1000);
 }
 
 static void paging_worker(void *data)
