@@ -492,7 +492,7 @@ int main(int argc, char **argv)
 	osmo_gettimeofday_override = true;
 	osmo_gettimeofday_override_time = (struct timeval) {0, 0};
 
-	tall_bsc_ctx = talloc_named_const(NULL, 0, "gsm0408_test");
+	tall_bsc_ctx = talloc_named_const(NULL, 0, "acc_test");
 	osmo_init_logging2(tall_bsc_ctx, &log_info);
 	log_set_log_level(osmo_stderr_target, LOGL_INFO);
 	log_set_print_category_hex(osmo_stderr_target, 0);
