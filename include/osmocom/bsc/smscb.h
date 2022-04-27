@@ -66,3 +66,4 @@ int bsc_cbc_link_restart(void);
 int cbsp_tx_decoded(struct bsc_cbc_link *cbc, struct osmo_cbsp_decoded *decoded);
 
 void bts_etws_init(struct gsm_bts *bts);
+void bts_etws_bootstrap(struct gsm_bts *bts);

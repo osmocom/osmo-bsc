@@ -363,6 +363,10 @@ static void bootstrap_rsl(struct gsm_bts_trx *trx)
 	if (trx->nr == 0 && gsm_bts_get_cbch(trx->bts))
 		bts_cbch_timer_schedule(trx->bts);
 
+	/* Start ETWS/PWS Primary Notification, if active */
+	if (trx->nr == 0)
+		bts_etws_bootstrap(trx->bts);
+
 	/* Drop all expired channel requests in the list */
 	abis_rsl_chan_rqd_queue_flush(trx->bts);
 }

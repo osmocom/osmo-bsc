@@ -494,12 +494,44 @@ static void etws_pn_cb(void *data)
 	etws_pn_stop(bts, true);
 }
 
-static int etws_primary_to_bts(struct gsm_bts *bts, const struct osmo_cbsp_write_replace *wrepl)
+
+/* the actual "execution" part: Send ETWS to all active lchan in the BTS and via PCH */
+static void bts_send_etws(struct gsm_bts *bts)
 {
 	struct bts_etws_state *bes = &bts->etws;
 	struct gsm_bts_trx *trx;
 	unsigned int count = 0;
 	int i, j;
+
+	/* iterate over all lchan in each TS in each TRX of this BTS */
+	llist_for_each_entry(trx, &bts->trx_list, list) {
+		for (i = 0; i < ARRAY_SIZE(trx->ts); i++) {
+			struct gsm_bts_trx_ts *ts = &trx->ts[i];
+			for (j = 0; j < ARRAY_SIZE(ts->lchan); j++) {
+				struct gsm_lchan *lchan = &ts->lchan[j];
+				if (!lchan_may_receive_data(lchan))
+					continue;
+				gsm48_send_rr_app_info(lchan, 0x1, 0x0, bes->primary,
+							sizeof(bes->primary));
+				count++;
+			}
+		}
+	}
+
+	LOG_BTS(bts, DCBS, LOGL_NOTICE, "Sent ETWS Primary Notification via %u dedicated channels\n",
+		count);
+
+	/* Notify BTS of primary ETWS notification via vendor-specific Abis message */
+	if (osmo_bts_has_feature(&bts->features, BTS_FEAT_ETWS_PN)) {
+		rsl_etws_pn_command(bts, RSL_CHAN_PCH_AGCH, bes->primary, sizeof(bes->primary));
+		LOG_BTS(bts, DCBS, LOGL_NOTICE, "Sent ETWS Primary Notification via common channel\n");
+	} else
+		LOG_BTS(bts, DCBS, LOGL_ERROR, "BTS doesn't support RSL command for ETWS PN\n");
+}
+
+static int etws_primary_to_bts(struct gsm_bts *bts, const struct osmo_cbsp_write_replace *wrepl)
+{
+	struct bts_etws_state *bes = &bts->etws;
 
 	if (bes->active) {
 		/* we were already broadcasting emergency before receiving this WRITE-REPLACE */
@@ -546,30 +578,7 @@ static int etws_primary_to_bts(struct gsm_bts *bts, const struct osmo_cbsp_write
 
 	bes->active = true;
 
-	/* iterate over all lchan in each TS in each TRX of this BTS */
-	llist_for_each_entry(trx, &bts->trx_list, list) {
-		for (i = 0; i < ARRAY_SIZE(trx->ts); i++) {
-			struct gsm_bts_trx_ts *ts = &trx->ts[i];
-			for (j = 0; j < ARRAY_SIZE(ts->lchan); j++) {
-				struct gsm_lchan *lchan = &ts->lchan[j];
-				if (!lchan_may_receive_data(lchan))
-					continue;
-				gsm48_send_rr_app_info(lchan, 0x1, 0x0, bes->primary,
-							sizeof(bes->primary));
-				count++;
-			}
-		}
-	}
-
-	LOG_BTS(bts, DCBS, LOGL_NOTICE, "Sent ETWS Primary Notification via %u dedicated channels\n",
-		count);
-
-	/* Notify BTS of primary ETWS notification via vendor-specific Abis message */
-	if (osmo_bts_has_feature(&bts->features, BTS_FEAT_ETWS_PN)) {
-		rsl_etws_pn_command(bts, RSL_CHAN_PCH_AGCH, bes->primary, sizeof(bes->primary));
-		LOG_BTS(bts, DCBS, LOGL_NOTICE, "Sent ETWS Primary Notification via common channel\n");
-	} else
-		LOG_BTS(bts, DCBS, LOGL_ERROR, "BTS doesn't support RSL command for ETWS PN\n");
+	bts_send_etws(bts);
 
 	/* start the expiration timer, if any */
 	if (wrepl->u.emergency.warning_period != 0xffffffff) {
@@ -1086,4 +1095,11 @@ void bts_etws_init(struct gsm_bts *bts)
 {
 	bts->etws.active = false;
 	osmo_timer_setup(&bts->etws.timer, etws_pn_cb, bts);
+}
+
+/* BSC is bootstrapping a BTS; install any currently active ETWS PN */
+void bts_etws_bootstrap(struct gsm_bts *bts)
+{
+	if (bts->etws.active)
+		bts_send_etws(bts);
 }
