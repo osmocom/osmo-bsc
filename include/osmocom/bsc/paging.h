@@ -33,14 +33,14 @@
 struct bsc_msc_data;
 
 #define LOG_PAGING(PARAMS, SUBSYS, LEVEL, fmt, args...) \
-	LOGP(SUBSYS, LEVEL, "(msc%d) Paging%s: %s: " fmt, \
+	LOGP(SUBSYS, LEVEL, "(msc=%d) Paging%s: %s: " fmt, \
 	     (PARAMS)->msc ? (PARAMS)->msc->nr : -1, \
 	     (PARAMS)->reason == BSC_PAGING_FOR_LCS ? " for LCS" : "", \
 	     bsc_subscr_name((PARAMS)->bsub), \
 	     ##args)
 
 #define LOG_PAGING_BTS(PARAMS, BTS, SUBSYS, LEVEL, fmt, args...) \
-	LOG_PAGING(PARAMS, SUBSYS, LEVEL, "(bts%u) " fmt, (BTS) ? (BTS)->nr : 255, ##args)
+	LOG_PAGING(PARAMS, SUBSYS, LEVEL, "(bts=%u) " fmt, (BTS) ? (BTS)->nr : 255, ##args)
 
 #define BSUB_USE_PAGING_START "paging-start"
 #define BSUB_USE_PAGING_REQUEST "paging-req"

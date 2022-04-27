@@ -94,9 +94,9 @@ static void page_ms(struct gsm_paging_request *request)
 
 	log_set_context(LOG_CTX_BSC_SUBSCR, request->bsub);
 
-	LOG_BTS(bts, DPAG, LOGL_INFO, "Going to send paging commands: %s"
-		" for ch. type %d (attempt %d)\n", bsc_subscr_name(request->bsub),
-		request->chan_type, request->attempts);
+	LOG_PAGING_BTS(request, bts, DPAG, LOGL_INFO,
+		       "Going to send paging command for ch. type %d (attempt %d)\n",
+		       request->chan_type, request->attempts);
 
 	if (request->bsub->tmsi == GSM_RESERVED_TMSI) {
 		mi = (struct osmo_mobile_identity){
@@ -130,7 +130,11 @@ static void paging_give_credit(void *data)
 {
 	struct gsm_bts_paging_state *paging_bts_st = data;
 	struct gsm_bts *bts = paging_bts_st->bts;
-	paging_bts_st->available_slots = paging_estimate_available_slots(bts, bts->ccch_load_ind_period * 2);
+	uint16_t estimated_slots = paging_estimate_available_slots(bts, bts->ccch_load_ind_period * 2);
+	LOG_BTS(bts, DPAG, LOGL_INFO,
+		"Timeout waiting for CCCH Load Indication, assuming BTS is below Load Threshold (available_slots %u -> %u)\n",
+		paging_bts_st->available_slots, estimated_slots);
+	paging_bts_st->available_slots = estimated_slots;
 	paging_schedule_if_needed(paging_bts_st);
 	osmo_timer_schedule(&bts->paging.credit_timer, bts->ccch_load_ind_period * 2, 0);
 }
@@ -226,8 +230,11 @@ static void paging_handle_pending_requests(struct gsm_bts_paging_state *paging_b
 		/* We run out of available slots. Wait until next CCCH Load Ind
 		 * arrives or credit_timer triggers to keep processing requests.
 		 */
-		if (paging_bts->available_slots == 0)
+		if (paging_bts->available_slots == 0) {
+			LOG_PAGING_BTS(request, request->bts, DPAG, LOGL_INFO,
+				       "Paging delayed: waiting for available slots at BTS\n");
 			return;
+		}
 
 		/* we need to determine the number of free channels */
 		if (paging_bts->free_chans_need != -1 &&
@@ -246,6 +253,8 @@ static void paging_handle_pending_requests(struct gsm_bts_paging_state *paging_b
 			if (timespeccmp(&now, &retrans_ts, <)) {
 				struct timespec tdiff;
 				timespecsub(&retrans_ts, &now, &tdiff);
+				LOG_PAGING_BTS(request, request->bts, DPAG, LOGL_DEBUG,
+					"Paging delayed: retransmission happens later\n");
 				osmo_timer_schedule(&paging_bts->work_timer, tdiff.tv_sec, tdiff.tv_nsec / 1000);
 				return;
 			}
@@ -266,6 +275,8 @@ static void paging_handle_pending_requests(struct gsm_bts_paging_state *paging_b
 
 	/* Once done iterating, prepare next scheduling: */
 sched_next_iter:
+	LOG_BTS(bts, DPAG, LOGL_DEBUG, "Paged %u subscribers during last iteration. Scheduling next batch (available_slots=%u)\n",
+		num_paged, paging_bts->available_slots);
 	osmo_timer_schedule(&paging_bts->work_timer, initial_period.tv_sec, initial_period.tv_nsec / 1000);
 }
 
@@ -302,8 +313,7 @@ static void paging_T3113_expired(void *data)
 
 	log_set_context(LOG_CTX_BSC_SUBSCR, req->bsub);
 
-	LOGP(DPAG, LOGL_INFO, "T3113 expired for request %p (%s)\n",
-	     req, bsc_subscr_name(req->bsub));
+	 LOG_PAGING_BTS(req, req->bts, DPAG, LOGL_INFO, "T3113 expired\n");
 
 	/* must be destroyed before calling cbfn, to prevent double free */
 	rate_ctr_inc(rate_ctr_group_get_ctr(req->bts->bts_ctrs, BTS_CTR_PAGING_EXPIRED));
@@ -320,9 +330,10 @@ static void paging_T3113_expired(void *data)
 }
 
 #define GSM51_MFRAME_DURATION_us (51 * GSM_TDMA_FN_DURATION_uS) /* 235365 us */
-static unsigned int calculate_timer_3113(struct gsm_bts *bts)
+static unsigned int calculate_timer_3113(struct gsm_paging_request *req)
 {
 	unsigned int to_us, to;
+	struct gsm_bts *bts = req->bts;
 	struct osmo_tdef *d = osmo_tdef_get_entry(bts->network->T_defs, 3113);
 	unsigned int rach_max_trans, rach_tx_integer, bs_pa_mfrms;
 
@@ -349,7 +360,7 @@ static unsigned int calculate_timer_3113(struct gsm_bts *bts)
 
 	/* ceiling in seconds + extra time */
 	to = (to_us + 999999) / 1000000 + d->val;
-	LOG_BTS(bts, DPAG, LOGL_DEBUG, "Paging request: T3113 expires in %u seconds\n", to);
+	LOG_PAGING_BTS(req, bts, DPAG, LOGL_DEBUG, "Paging request: T3113 expires in %u seconds\n", to);
 	return to;
 }
 
@@ -403,7 +414,7 @@ static int _paging_request(const struct bsc_paging_params *params, struct gsm_bt
 	else/* Add in the middle of the list after last_initial_req */
 		__llist_add(&req->entry, &last_initial_req->entry, last_initial_req->entry.next);
 
-	t3113_timeout_s = calculate_timer_3113(bts);
+	t3113_timeout_s = calculate_timer_3113(req);
 	osmo_timer_schedule(&req->T3113, t3113_timeout_s, 0);
 	paging_schedule_if_needed(bts_entry);
 
@@ -453,7 +464,7 @@ static int paging_request_stop_bts(struct bsc_msc_data **msc_p, enum bsc_paging_
 			continue;
 		*msc_p = req->msc;
 		*reason_p = req->reason;
-		LOG_BTS(bts, DPAG, LOGL_DEBUG, "Stop paging %s\n", bsc_subscr_name(bsub));
+		LOG_PAGING_BTS(req, bts, DPAG, LOGL_DEBUG, "Stop paging\n");
 		paging_remove_request(&bts->paging, req);
 		return 1;
 	}
@@ -519,7 +530,7 @@ int paging_request_cancel(struct bsc_subscr *bsub, enum bsc_paging_reason reason
 				continue;
 			if (!(req->reason & reasons))
 				continue;
-			LOG_BTS(bts, DPAG, LOGL_DEBUG, "Cancel paging %s\n", bsc_subscr_name(bsub));
+			LOG_PAGING_BTS(req, bts, DPAG, LOGL_DEBUG, "Cancel paging\n");
 			paging_remove_request(&bts->paging, req);
 			count++;
 		}
@@ -530,6 +541,8 @@ int paging_request_cancel(struct bsc_subscr *bsub, enum bsc_paging_reason reason
 /*! Update the BTS paging buffer slots on given BTS */
 void paging_update_buffer_space(struct gsm_bts *bts, uint16_t free_slots)
 {
+	LOG_BTS(bts, DPAG, LOGL_DEBUG, "Rx CCCH Load Indication from BTS (available_slots %u -> %u)\n",
+		bts->paging.available_slots, free_slots);
 	bts->paging.available_slots = free_slots;
 	paging_schedule_if_needed(&bts->paging);
 	/* Re-arm credit_timer */
@@ -558,7 +571,7 @@ void paging_flush_bts(struct gsm_bts *bts, struct bsc_msc_data *msc)
 		if (msc && req->msc != msc)
 			continue;
 		/* now give up the data structure */
-		LOG_BTS(bts, DPAG, LOGL_DEBUG, "Stop paging %s (flush)\n", bsc_subscr_name(req->bsub));
+		LOG_PAGING_BTS(req, bts, DPAG, LOGL_DEBUG, "Stop paging (flush)\n");
 		paging_remove_request(&bts->paging, req);
 		num_cancelled++;
 	}
