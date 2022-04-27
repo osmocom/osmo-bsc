@@ -499,6 +499,7 @@ int main(int argc, char **argv)
 	log_set_print_category(osmo_stderr_target, 0);
 	log_set_print_filename2(osmo_stderr_target, LOG_FILENAME_NONE);
 	log_set_use_color(osmo_stderr_target, 0);
+	log_parse_category_mask(osmo_stderr_target, "DRSL,1:");
 	osmo_fsm_log_addr(false);
 
 	net = gsm_network_init(tall_bsc_ctx);
