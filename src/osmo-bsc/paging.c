@@ -330,7 +330,9 @@ static void paging_T3113_expired(void *data)
 }
 
 #define GSM51_MFRAME_DURATION_us (51 * GSM_TDMA_FN_DURATION_uS) /* 235365 us */
-static unsigned int calculate_timer_3113(struct gsm_paging_request *req)
+static unsigned int paging_estimate_delay_us(struct gsm_bts *bts, unsigned int num_reqs);
+
+static unsigned int calculate_timer_3113(struct gsm_paging_request *req, unsigned int reqs_before)
 {
 	unsigned int to_us, to;
 	struct gsm_bts *bts = req->bts;
@@ -345,8 +347,6 @@ static unsigned int calculate_timer_3113(struct gsm_paging_request *req)
 	if (!bts->T3113_dynamic)
 		return d->val;
 
-	/* TODO: take into account load of paging group for req->bsub */
-
 	/* MFRMS defines repeat interval of paging messages for MSs that belong
 	 * to same paging group across multiple 51 frame multiframes.
 	 * MAXTRANS defines maximum number of RACH retransmissions, spread over
@@ -357,6 +357,9 @@ static unsigned int calculate_timer_3113(struct gsm_paging_request *req)
 	bs_pa_mfrms = (bts->si_common.chan_desc.bs_pa_mfrms + 2);
 	to_us = GSM51_MFRAME_DURATION_us * bs_pa_mfrms +
 		GSM_TDMA_FN_DURATION_uS * rach_tx_integer * rach_max_trans;
+
+	/* Now add some extra time based on how many requests need to be transmitted before this one: */
+	to_us += paging_estimate_delay_us(bts, reqs_before);
 
 	/* ceiling in seconds + extra time */
 	to = (to_us + 999999) / 1000000 + d->val;
@@ -375,6 +378,9 @@ static int _paging_request(const struct bsc_paging_params *params, struct gsm_bt
 	struct gsm_bts_paging_state *bts_entry = &bts->paging;
 	struct gsm_paging_request *req, *last_initial_req = NULL;
 	unsigned int t3113_timeout_s;
+	unsigned int reqs_before_same_pgroup = 0;
+	uint8_t pgroup = gsm0502_calc_paging_group(&bts->si_common.chan_desc,
+						   str_to_imsi(params->bsub->imsi));
 
 	rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_PAGING_ATTEMPTED));
 
@@ -392,8 +398,15 @@ static int _paging_request(const struct bsc_paging_params *params, struct gsm_bt
 			rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_PAGING_ALREADY));
 			return -EEXIST;
 		}
-		if (req->attempts == 0)
+		if (req->attempts == 0) {
 			last_initial_req = req;
+			if (req->pgroup == pgroup)
+				reqs_before_same_pgroup++;
+		} else if (last_initial_req == NULL) {
+			/* If no req with attempts=0 was found, we'll append to end of list, so keep counting. */
+			if (req->pgroup == pgroup)
+				reqs_before_same_pgroup++;
+		}
 	}
 
 	LOG_PAGING_BTS(params, bts, DPAG, LOGL_DEBUG, "Start paging\n");
@@ -405,6 +418,7 @@ static int _paging_request(const struct bsc_paging_params *params, struct gsm_bt
 	bsc_subscr_get(req->bsub, BSUB_USE_PAGING_REQUEST);
 	req->bts = bts;
 	req->chan_type = params->chan_needed;
+	req->pgroup = pgroup;
 	req->msc = params->msc;
 	osmo_timer_setup(&req->T3113, paging_T3113_expired, req);
 
@@ -414,7 +428,7 @@ static int _paging_request(const struct bsc_paging_params *params, struct gsm_bt
 	else/* Add in the middle of the list after last_initial_req */
 		__llist_add(&req->entry, &last_initial_req->entry, last_initial_req->entry.next);
 
-	t3113_timeout_s = calculate_timer_3113(req);
+	t3113_timeout_s = calculate_timer_3113(req, reqs_before_same_pgroup);
 	osmo_timer_schedule(&req->T3113, t3113_timeout_s, 0);
 	paging_schedule_if_needed(bts_entry);
 
@@ -597,4 +611,20 @@ uint16_t paging_estimate_available_slots(struct gsm_bts *bts, unsigned int time_
 	LOG_BTS(bts, DPAG, LOGL_DEBUG, "Estimated %u paging available_slots over %u seconds\n",
 		available_slots, time_span_s);
 	return available_slots;
+}
+
+/*! Conservative estimate of time needed by BTS to schedule a number of paging
+ * requests (num_reqs), based on current load at the BSC queue (doesn't take into
+ * account BTs own buffer) */
+static unsigned int paging_estimate_delay_us(struct gsm_bts *bts, unsigned int num_reqs)
+{
+	unsigned int n_pag_blocks = gsm0502_get_n_pag_blocks(&bts->si_common.chan_desc);
+	unsigned int n_mframes = (num_reqs + (n_pag_blocks - 1)) / n_pag_blocks;
+	unsigned int time_us = n_mframes * GSM51_MFRAME_DURATION_us;
+	/* the multiframes are not consecutive for a paging group, let's add the spacing between: */
+	if (n_mframes > 1) {
+		unsigned int bs_pa_mfrms = (bts->si_common.chan_desc.bs_pa_mfrms + 2);
+		time_us += (n_mframes - 1) * bs_pa_mfrms * GSM51_MFRAME_DURATION_us;
+	}
+	return time_us;
 }
