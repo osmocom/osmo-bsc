@@ -604,13 +604,6 @@ static int inp_sig_cb(unsigned int subsys, unsigned int signal,
 
 static int bts_model_bs11_start(struct gsm_network *net)
 {
-	model_bs11.features.data = &model_bs11._features_data[0];
-	model_bs11.features.data_len = sizeof(model_bs11._features_data);
-
-	osmo_bts_set_feature(&model_bs11.features, BTS_FEAT_HOPPING);
-	osmo_bts_set_feature(&model_bs11.features, BTS_FEAT_HSCSD);
-	osmo_bts_set_feature(&model_bs11.features, BTS_FEAT_MULTI_TSC);
-
 	osmo_signal_register_handler(SS_L_INPUT, inp_sig_cb, NULL);
 	osmo_signal_register_handler(SS_L_GLOBAL, gbl_sig_cb, NULL);
 
@@ -619,5 +612,12 @@ static int bts_model_bs11_start(struct gsm_network *net)
 
 int bts_model_bs11_init(void)
 {
+	model_bs11.features.data = &model_bs11._features_data[0];
+	model_bs11.features.data_len = sizeof(model_bs11._features_data);
+
+	osmo_bts_set_feature(&model_bs11.features, BTS_FEAT_HOPPING);
+	osmo_bts_set_feature(&model_bs11.features, BTS_FEAT_HSCSD);
+	osmo_bts_set_feature(&model_bs11.features, BTS_FEAT_MULTI_TSC);
+
 	return gsm_bts_model_register(&model_bs11);
 }

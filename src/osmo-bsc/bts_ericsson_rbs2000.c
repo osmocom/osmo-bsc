@@ -213,6 +213,14 @@ static struct gsm_bts_model model_rbs2k = {
 
 static int bts_model_rbs2k_start(struct gsm_network *net)
 {
+	osmo_signal_register_handler(SS_L_INPUT, inp_sig_cb, NULL);
+	osmo_signal_register_handler(SS_L_GLOBAL, gbl_sig_cb, NULL);
+
+	return 0;
+}
+
+int bts_model_rbs2k_init(void)
+{
 	model_rbs2k.features.data = &model_rbs2k._features_data[0];
 	model_rbs2k.features.data_len = sizeof(model_rbs2k._features_data);
 
@@ -222,13 +230,5 @@ static int bts_model_rbs2k_start(struct gsm_network *net)
 	osmo_bts_set_feature(&model_rbs2k.features, BTS_FEAT_HSCSD);
 	osmo_bts_set_feature(&model_rbs2k.features, BTS_FEAT_MULTI_TSC);
 
-	osmo_signal_register_handler(SS_L_INPUT, inp_sig_cb, NULL);
-	osmo_signal_register_handler(SS_L_GLOBAL, gbl_sig_cb, NULL);
-
-	return 0;
-}
-
-int bts_model_rbs2k_init(void)
-{
 	return gsm_bts_model_register(&model_rbs2k);
 }
