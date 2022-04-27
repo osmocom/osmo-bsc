@@ -3051,6 +3051,8 @@ int abis_nm_ipaccess_rsl_connect(struct gsm_bts_trx *trx,
 	if (ip != 0) {
 		ia.s_addr = htonl(ip);
 		msgb_tv_fixed_put(attr, NM_ATT_IPACC_DST_IP, 4, (void*)&ia.s_addr);
+	} else {
+		ia = (struct in_addr){};
 	}
 
 	LOG_TRX(trx, DNM, LOGL_INFO, "IPA RSL CONNECT IP=%s PORT=%u STREAM=0x%02x\n",
