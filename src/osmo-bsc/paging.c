@@ -84,6 +84,8 @@ static void paging_remove_request(struct gsm_bts_paging_state *paging_bts,
 	llist_del(&to_be_deleted->entry);
 	bsc_subscr_put(to_be_deleted->bsub, BSUB_USE_PAGING_REQUEST);
 	talloc_free(to_be_deleted);
+	if (llist_empty(&paging_bts->pending_requests))
+		osmo_timer_del(&paging_bts->work_timer);
 }
 
 static void page_ms(struct gsm_paging_request *request)
