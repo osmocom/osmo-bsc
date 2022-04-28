@@ -613,6 +613,20 @@ static int parse_attr_resp_info_attr(struct gsm_bts *bts, const struct gsm_bts_t
 				LOGPMO(&bts->mo, DNM, LOGL_NOTICE, "Get Attributes Response: feature '%s' is"
 				       " supported\n", osmo_bts_features_name(i));
 		}
+
+		/* Add features from the BTS model: nanobts may support more
+		 * features than it reports, since we extend the enum of
+		 * features for osmo-bts. */
+		if (bts->type == GSM_BTS_TYPE_NANOBTS) {
+			for (i = 0; i < _NUM_BTS_FEAT; i++) {
+				if (osmo_bts_has_feature(&bts->model->features, i) /* intentional check against bts model */
+				    && !osmo_bts_has_feature(&bts->features, i)) {
+					LOGPMO(&bts->mo, DNM, LOGL_NOTICE, "Get Attributes Response: feature '%s' is"
+					       " assumed to be supported\n", osmo_bts_features_name(i));
+					osmo_bts_set_feature(&bts->features, i);
+				}
+			}
+		}
 	}
 
 	/* Parse Attribute Response Info content for 3GPP TS 52.021 §9.4.28 Manufacturer Dependent State */
