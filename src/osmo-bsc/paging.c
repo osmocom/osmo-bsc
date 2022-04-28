@@ -432,7 +432,28 @@ static int _paging_request(const struct bsc_paging_params *params, struct gsm_bt
 
 	t3113_timeout_s = calculate_timer_3113(req, reqs_before_same_pgroup);
 	osmo_timer_schedule(&req->T3113, t3113_timeout_s, 0);
-	paging_schedule_if_needed(bts_entry);
+
+	/* Trigger scheduler if needed: */
+	if (!osmo_timer_pending(&bts_entry->work_timer)) {
+		paging_handle_pending_requests(bts_entry);
+	} else if (last_initial_req == NULL) {
+		/* Worker timer is armed -> there was already one req before
+		 * last_initial_req is NULL -> There were no initial requests in
+		 *       the list, aka the timer is waiting for retransmition,
+		 *       which is a longer period.
+		 * Let's recaculate the time to adapt it to initial_period: */
+		struct timespec now, elapsed, tdiff;
+		osmo_clock_gettime(CLOCK_MONOTONIC, &now);
+		/* This is what used to be the first req (retrans state) in the queue: */
+		req = llist_entry(req->entry.next, struct gsm_paging_request, entry);
+		timespecsub(&now, &req->last_attempt_ts, &elapsed);
+		if (timespeccmp(&elapsed, &initial_period, <)) {
+			timespecsub(&initial_period, &elapsed, &tdiff);
+		} else {
+			tdiff = (struct timespec){.tv_sec = 0, .tv_nsec = 0 };
+		}
+		osmo_timer_schedule(&bts_entry->work_timer, tdiff.tv_sec, tdiff.tv_nsec / 1000);
+	} /* else: worker is already ongoing submitting initial requests, nothing do be done */
 
 	return 0;
 }
