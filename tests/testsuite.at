@@ -1,19 +1,6 @@
 AT_INIT
 AT_BANNER([Regression tests.])
 
-AT_SETUP([gsm0408])
-AT_KEYWORDS([gsm0408])
-cat $abs_srcdir/gsm0408/gsm0408_test.ok > expout
-AT_CHECK([$abs_top_builddir/tests/gsm0408/gsm0408_test], [], [expout], [ignore])
-AT_CLEANUP
-
-AT_SETUP([bsc_subscr])
-AT_KEYWORDS([bsc_subscr])
-cat $abs_srcdir/subscr/bsc_subscr_test.ok > expout
-cat $abs_srcdir/subscr/bsc_subscr_test.err > experr
-AT_CHECK([$abs_top_builddir/tests/subscr/bsc_subscr_test], [], [expout], [experr])
-AT_CLEANUP
-
 AT_SETUP([abis])
 AT_KEYWORDS([abis])
 cat $abs_srcdir/abis/abis_test.ok > expout
@@ -38,14 +25,27 @@ cat $abs_srcdir/codec_pref/codec_pref_test.ok > expout
 AT_CHECK([$abs_top_builddir/tests/codec_pref/codec_pref_test], [], [expout], [ignore])
 AT_CLEANUP
 
-AT_SETUP([nanobts_omlattr])
-AT_KEYWORDS([nanobts_omlattr])
-cat $abs_srcdir/nanobts_omlattr/nanobts_omlattr_test.ok > expout
-AT_CHECK([$abs_top_builddir/tests/nanobts_omlattr/nanobts_omlattr_test], [], [expout], [ignore])
+AT_SETUP([gsm0408])
+AT_KEYWORDS([gsm0408])
+cat $abs_srcdir/gsm0408/gsm0408_test.ok > expout
+AT_CHECK([$abs_top_builddir/tests/gsm0408/gsm0408_test], [], [expout], [ignore])
 AT_CLEANUP
 
 AT_SETUP([handover_tests])
 AT_KEYWORDS([handover_tests])
 cat $abs_srcdir/handover/handover_tests.ok > expout
 AT_CHECK([$abs_srcdir/handover/handover_tests.sh $abs_srcdir/handover $abs_builddir/handover], [], [expout], [ignore])
+AT_CLEANUP
+
+AT_SETUP([nanobts_omlattr])
+AT_KEYWORDS([nanobts_omlattr])
+cat $abs_srcdir/nanobts_omlattr/nanobts_omlattr_test.ok > expout
+AT_CHECK([$abs_top_builddir/tests/nanobts_omlattr/nanobts_omlattr_test], [], [expout], [ignore])
+AT_CLEANUP
+
+AT_SETUP([subscr])
+AT_KEYWORDS([subscr])
+cat $abs_srcdir/subscr/bsc_subscr_test.ok > expout
+cat $abs_srcdir/subscr/bsc_subscr_test.err > experr
+AT_CHECK([$abs_top_builddir/tests/subscr/bsc_subscr_test], [], [expout], [experr])
 AT_CLEANUP

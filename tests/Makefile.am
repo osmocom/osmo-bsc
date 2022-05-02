@@ -1,12 +1,12 @@
 SUBDIRS = \
+	abis \
 	acc \
 	bsc \
 	codec_pref \
 	gsm0408 \
-	abis \
-	subscr \
-	nanobts_omlattr \
 	handover \
+	nanobts_omlattr \
+	subscr \
 	$(NULL)
 
 # The `:;' works around a Bash 3.2 bug when the output is not writeable.

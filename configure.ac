@@ -230,14 +230,14 @@ AC_OUTPUT(
     src/utils/Makefile
     tests/Makefile
     tests/atlocal
+    tests/abis/Makefile
     tests/acc/Makefile
-    tests/gsm0408/Makefile
     tests/bsc/Makefile
     tests/codec_pref/Makefile
-    tests/abis/Makefile
-    tests/subscr/Makefile
-    tests/nanobts_omlattr/Makefile
+    tests/gsm0408/Makefile
     tests/handover/Makefile
+    tests/nanobts_omlattr/Makefile
+    tests/subscr/Makefile
     doc/Makefile
     doc/examples/Makefile
     doc/manuals/Makefile
