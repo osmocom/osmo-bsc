@@ -163,6 +163,9 @@ static int gsm_bts_talloc_destructor(struct gsm_bts *bts)
 		osmo_fsm_inst_free(bts->mo.fi);
 		bts->mo.fi = NULL;
 	}
+
+	osmo_stat_item_group_free(bts->bts_statg);
+	rate_ctr_group_free(bts->bts_ctrs);
 	return 0;
 }
 

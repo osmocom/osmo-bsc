@@ -58,8 +58,6 @@ static inline struct gsm_bts *_bts_init(struct gsm_network *net, const char *msg
 #define bts_del(bts) _bts_del(bts, __func__)
 static inline void _bts_del(struct gsm_bts *bts, const char *msg)
 {
-	osmo_stat_item_group_free(bts->bts_statg);
-	rate_ctr_group_free(bts->bts_ctrs);
 	if (osmo_timer_pending(&bts->acc_mgr.rotate_timer))
 		osmo_timer_del(&bts->acc_mgr.rotate_timer);
 	if (osmo_timer_pending(&bts->acc_ramp.step_timer))
