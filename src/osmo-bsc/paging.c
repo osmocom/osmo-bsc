@@ -311,6 +311,7 @@ void paging_init(struct gsm_bts *bts)
 /* Called upon the bts struct being freed */
 void paging_destructor(struct gsm_bts *bts)
 {
+	paging_flush_bts(bts, NULL);
 	osmo_timer_del(&bts->paging.credit_timer);
 	osmo_timer_del(&bts->paging.work_timer);
 }
