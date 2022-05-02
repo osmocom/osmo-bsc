@@ -33,9 +33,7 @@
 
 static void clock_debug(char* str)
 {
-	struct timespec ts;
 	struct timeval tv;
-	osmo_clock_gettime(CLOCK_MONOTONIC, &ts);
 	osmo_gettimeofday(&tv, NULL);
 	fprintf(stderr, "sys={%lu.%06lu}: %s\n",
 		tv.tv_sec, tv.tv_usec, str);
