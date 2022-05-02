@@ -880,14 +880,14 @@ int rsl_paging_cmd(struct gsm_bts *bts, uint8_t paging_group,
 		   const struct osmo_mobile_identity *mi,
 		   uint8_t chan_needed, bool is_gprs)
 {
-	struct abis_rsl_dchan_hdr *dh;
+	struct abis_rsl_cchan_hdr *cch;
 	struct msgb *msg = rsl_msgb_alloc();
 	uint8_t *l;
 	int rc;
 
-	dh = (struct abis_rsl_dchan_hdr *) msgb_put(msg, sizeof(*dh));
-	init_dchan_hdr(dh, RSL_MT_PAGING_CMD);
-	dh->chan_nr = RSL_CHAN_PCH_AGCH;
+	cch = (struct abis_rsl_cchan_hdr *) msgb_put(msg, sizeof(*cch));
+	rsl_init_cchan_hdr(cch, RSL_MT_PAGING_CMD);
+	cch->chan_nr = RSL_CHAN_PCH_AGCH;
 
 	msgb_tv_put(msg, RSL_IE_PAGING_GROUP, paging_group);
 
