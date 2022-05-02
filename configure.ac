@@ -237,6 +237,7 @@ AC_OUTPUT(
     tests/gsm0408/Makefile
     tests/handover/Makefile
     tests/nanobts_omlattr/Makefile
+    tests/paging/Makefile
     tests/subscr/Makefile
     doc/Makefile
     doc/examples/Makefile

@@ -6,6 +6,7 @@ SUBDIRS = \
 	gsm0408 \
 	handover \
 	nanobts_omlattr \
+	paging \
 	subscr \
 	$(NULL)
 
