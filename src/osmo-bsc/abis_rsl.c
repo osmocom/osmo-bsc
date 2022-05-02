@@ -926,23 +926,6 @@ int rsl_forward_layer3_info(struct gsm_lchan *lchan, const uint8_t *l3_info, uin
 	return rsl_data_request(msg, 0);
 }
 
-int imsi_str2bcd(uint8_t *bcd_out, const char *str_in)
-{
-	int i, len = strlen(str_in);
-
-	for (i = 0; i < len; i++) {
-		int num = str_in[i] - 0x30;
-		if (num < 0 || num > 9)
-			return -1;
-		if (i % 2 == 0)
-			bcd_out[i/2] = num;
-		else
-			bcd_out[i/2] |= (num << 4);
-	}
-
-	return 0;
-}
-
 /* Chapter 8.5.6 */
 struct msgb *rsl_imm_assign_cmd_common(struct gsm_bts *bts, uint8_t len, uint8_t *val)
 {
