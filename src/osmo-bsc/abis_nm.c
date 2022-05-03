@@ -719,6 +719,12 @@ static int abis_nm_rx_get_attr_resp(struct msgb *mb)
 	else
 		rc = parse_attr_resp_info_attr(bts, trx, foh, &tp);
 
+	if (gsm_bts_check_cfg(bts) != 0) {
+		LOGP(DLINP, LOGL_ERROR, "(bts=%u) BTS config invalid, dropping BTS!\n", bts->nr);
+		ipaccess_drop_oml_deferred(bts);
+		return -EINVAL;
+	}
+
 	osmo_signal_dispatch(SS_NM, S_NM_GET_ATTR_REP, mb);
 
 	return rc;
