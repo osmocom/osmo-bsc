@@ -367,16 +367,6 @@ static void bootstrap_rsl(struct gsm_bts_trx *trx)
 	abis_rsl_chan_rqd_queue_flush(trx->bts);
 }
 
-static void all_ts_dispatch_event(struct gsm_bts_trx *trx, uint32_t event)
-{
-	int ts_i;
-	for (ts_i = 0; ts_i < ARRAY_SIZE(trx->ts); ts_i++) {
-		struct gsm_bts_trx_ts *ts = &trx->ts[ts_i];
-		if (ts->fi)
-			osmo_fsm_inst_dispatch(ts->fi, event, 0);
-	}
-}
-
 struct osmo_timer_list update_connection_stats_timer;
 
 /* Periodically call bsc_update_connection_stats() to keep stat items updated.
@@ -474,7 +464,7 @@ static int inp_sig_cb(unsigned int subsys, unsigned int signal,
 		} else if (isd->link_type == E1INP_SIGN_RSL) {
 			rate_ctr_inc(rate_ctr_group_get_ctr(trx->bts->bts_ctrs, BTS_CTR_BTS_RSL_FAIL));
 			acc_ramp_abort(&trx->bts->acc_ramp);
-			all_ts_dispatch_event(trx, TS_EV_RSL_DOWN);
+			gsm_trx_all_ts_dispatch(trx, TS_EV_RSL_DOWN, NULL);
 			if (trx->nr == 0)
 				osmo_timer_del(&trx->bts->cbch_timer);
 		}
