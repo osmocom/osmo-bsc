@@ -21,6 +21,7 @@
  */
 
 #include <osmocom/bsc/nm_common_fsm.h>
+#include <osmocom/bsc/signal.h>
 
 const struct value_string nm_fsm_event_names[] = {
 	{ NM_EV_SW_ACT_REP, "SW_ACT_REP" },
@@ -34,3 +35,17 @@ const struct value_string nm_fsm_event_names[] = {
 	{ NM_EV_FEATURE_NEGOTIATED, "FEATURE_NEGOTIATED" },
 	{ 0, NULL }
 };
+
+void nm_obj_fsm_becomes_enabled_disabled(struct gsm_bts *bts, void *obj,
+					 enum abis_nm_obj_class obj_class, bool running)
+{
+	struct nm_running_chg_signal_data nsd;
+
+	memset(&nsd, 0, sizeof(nsd));
+	nsd.bts = bts;
+	nsd.obj_class = obj_class;
+	nsd.obj = obj;
+	nsd.running = running;
+
+	osmo_signal_dispatch(SS_NM, S_NM_RUNNING_CHG, &nsd);
+}

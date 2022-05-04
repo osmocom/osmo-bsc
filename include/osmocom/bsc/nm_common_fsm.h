@@ -25,6 +25,9 @@
 
 #include <osmocom/core/fsm.h>
 #include <osmocom/core/utils.h>
+#include <osmocom/gsm/protocol/gsm_12_21.h>
+
+struct gsm_bts;
 
 /* Common */
 enum nm_fsm_events {
@@ -111,3 +114,7 @@ enum nm_gprs_op_nsvc_fsm_states {
 	NM_GPRS_NSVC_ST_OP_ENABLED,
 };
 extern struct osmo_fsm nm_gprs_nsvc_fsm;
+
+void nm_obj_fsm_becomes_enabled_disabled(struct gsm_bts *bts, void *obj,
+					 enum abis_nm_obj_class obj_class,
+					 bool running);

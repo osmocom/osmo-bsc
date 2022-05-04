@@ -40,6 +40,16 @@
 #define nm_rcarrier_fsm_state_chg(fi, NEXT_STATE) \
 	osmo_fsm_inst_state_chg(fi, NEXT_STATE, 0, 0)
 
+static inline void nm_rcarrier_fsm_becomes_enabled(struct gsm_bts_trx *trx)
+{
+	nm_obj_fsm_becomes_enabled_disabled(trx->bts, trx, NM_OC_RADIO_CARRIER, true);
+}
+
+static inline void nm_rcarrier_fsm_becomes_disabled(struct gsm_bts_trx *trx)
+{
+	nm_obj_fsm_becomes_enabled_disabled(trx->bts, trx, NM_OC_RADIO_CARRIER, false);
+}
+
 //////////////////////////
 // FSM STATE ACTIONS
 //////////////////////////
@@ -228,10 +238,13 @@ static void st_op_enabled_on_enter(struct osmo_fsm_inst *fi, uint32_t prev_state
 	trx->mo.adm_unlock_sent = false;
 	trx->mo.set_attr_ack_received = false;
 	trx->mo.set_attr_sent = false;
+
+	nm_rcarrier_fsm_becomes_enabled(trx);
 }
 
 static void st_op_enabled(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
+	struct gsm_bts_trx *trx = (struct gsm_bts_trx *)fi->priv;
 	struct nm_statechg_signal_data *nsd;
 	const struct gsm_nm_state *new_state;
 
@@ -244,13 +257,16 @@ static void st_op_enabled(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 		switch (new_state->availability) { /* operational = DISABLED */
 		case NM_AVSTATE_NOT_INSTALLED:
 		case NM_AVSTATE_POWER_OFF:
+			nm_rcarrier_fsm_becomes_disabled(trx);
 			nm_rcarrier_fsm_state_chg(fi, NM_RCARRIER_ST_OP_DISABLED_NOTINSTALLED);
 			return;
 		case NM_AVSTATE_DEPENDENCY:
+			nm_rcarrier_fsm_becomes_disabled(trx);
 			nm_rcarrier_fsm_state_chg(fi, NM_RCARRIER_ST_OP_DISABLED_DEPENDENCY);
 			return;
 		case NM_AVSTATE_OFF_LINE:
 		case NM_AVSTATE_OK:
+			nm_rcarrier_fsm_becomes_disabled(trx);
 			nm_rcarrier_fsm_state_chg(fi, NM_RCARRIER_ST_OP_DISABLED_OFFLINE);
 			return;
 		default:
@@ -278,8 +294,11 @@ static void st_op_allstate(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 				      trx->mo.force_rf_lock ? NM_STATE_LOCKED : NM_STATE_UNLOCKED);
 		break;
 	case NM_EV_OML_DOWN:
-		if (fi->state != NM_RCARRIER_ST_OP_DISABLED_NOTINSTALLED)
+		if (fi->state != NM_RCARRIER_ST_OP_DISABLED_NOTINSTALLED) {
+			if (fi->state == NM_RCARRIER_ST_OP_ENABLED)
+				nm_rcarrier_fsm_becomes_disabled(trx);
 			nm_rcarrier_fsm_state_chg(fi, NM_RCARRIER_ST_OP_DISABLED_NOTINSTALLED);
+		}
 		break;
 	default:
 		OSMO_ASSERT(0);

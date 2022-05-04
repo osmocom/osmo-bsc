@@ -40,6 +40,18 @@
 #define nm_bb_transc_fsm_state_chg(fi, NEXT_STATE) \
 	osmo_fsm_inst_state_chg(fi, NEXT_STATE, 0, 0)
 
+static inline void nm_bb_transc_fsm_becomes_enabled(struct gsm_bts_bb_trx *bb_transc)
+{
+	struct gsm_bts_trx *trx = gsm_bts_bb_trx_get_trx(bb_transc);
+	nm_obj_fsm_becomes_enabled_disabled(trx->bts, bb_transc, NM_OC_BASEB_TRANSC, true);
+}
+
+static inline void nm_bb_transc_fsm_becomes_disabled(struct gsm_bts_bb_trx *bb_transc)
+{
+	struct gsm_bts_trx *trx = gsm_bts_bb_trx_get_trx(bb_transc);
+	nm_obj_fsm_becomes_enabled_disabled(trx->bts, bb_transc, NM_OC_BASEB_TRANSC, false);
+}
+
 //////////////////////////
 // FSM STATE ACTIONS
 //////////////////////////
@@ -243,10 +255,13 @@ static void st_op_enabled_on_enter(struct osmo_fsm_inst *fi, uint32_t prev_state
 	bb_transc->mo.get_attr_rep_received = false;
 	bb_transc->mo.opstart_sent = false;
 	bb_transc->mo.adm_unlock_sent = false;
+
+	nm_bb_transc_fsm_becomes_enabled(bb_transc);
 }
 
 static void st_op_enabled(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
+	struct gsm_bts_bb_trx *bb_transc = (struct gsm_bts_bb_trx *)fi->priv;
 	struct nm_statechg_signal_data *nsd;
 	const struct gsm_nm_state *new_state;
 
@@ -259,13 +274,16 @@ static void st_op_enabled(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 		switch (new_state->availability) { /* operational = DISABLED */
 		case NM_AVSTATE_NOT_INSTALLED:
 		case NM_AVSTATE_POWER_OFF:
+			nm_bb_transc_fsm_becomes_disabled(bb_transc);
 			nm_bb_transc_fsm_state_chg(fi, NM_BB_TRANSC_ST_OP_DISABLED_NOTINSTALLED);
 			return;
 		case NM_AVSTATE_DEPENDENCY:
+			nm_bb_transc_fsm_becomes_disabled(bb_transc);
 			nm_bb_transc_fsm_state_chg(fi, NM_BB_TRANSC_ST_OP_DISABLED_DEPENDENCY);
 			return;
 		case NM_AVSTATE_OFF_LINE:
 		case NM_AVSTATE_OK:
+			nm_bb_transc_fsm_becomes_disabled(bb_transc);
 			nm_bb_transc_fsm_state_chg(fi, NM_BB_TRANSC_ST_OP_DISABLED_OFFLINE);
 			return;
 		default:
@@ -287,8 +305,11 @@ static void st_op_allstate(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 		bb_transc->mo.opstart_sent = false;
 		break;
 	case NM_EV_OML_DOWN:
-		if (fi->state != NM_BB_TRANSC_ST_OP_DISABLED_NOTINSTALLED)
+		if (fi->state != NM_BB_TRANSC_ST_OP_DISABLED_NOTINSTALLED) {
+			if (fi->state == NM_BB_TRANSC_ST_OP_ENABLED)
+				nm_bb_transc_fsm_becomes_disabled(bb_transc);
 			nm_bb_transc_fsm_state_chg(fi, NM_BB_TRANSC_ST_OP_DISABLED_NOTINSTALLED);
+		}
 		break;
 	default:
 		OSMO_ASSERT(0);

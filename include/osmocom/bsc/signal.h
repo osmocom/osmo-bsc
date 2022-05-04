@@ -77,6 +77,7 @@ enum signal_nm {
 	S_NM_SET_RADIO_ATTR_ACK, /* Received Set Radio Carrier Attributes Ack, arg is struct msgb *oml_msg */
 	S_NM_SET_CHAN_ATTR_ACK, /* Received Set Radio Channel Attributes Ack, arg is struct msgb *oml_msg */
 	S_NM_SET_BTS_ATTR_ACK,  /* Received Set BTS Attributes Ack, arg is struct msgb *oml_msg */
+	S_NM_RUNNING_CHG,	/* Object moves from/to NM running state (op=Enabled adm=Unlocked avail=OK) */
 };
 
 /* SS_LCHAN signals */
@@ -138,6 +139,14 @@ struct nm_statechg_signal_data {
 	struct abis_om_obj_inst *obj_inst;
 	/* This pointer is valid for RBS2000 MO */
 	struct abis_om2k_mo *om2k_mo;
+};
+
+/* data for <SS_NM, S_NM_RUNNING_CHG>: */
+struct nm_running_chg_signal_data {
+	struct gsm_bts *bts;
+	uint8_t obj_class;
+	void *obj;
+	bool running;
 };
 
 struct nm_om2k_signal_data {
