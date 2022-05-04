@@ -305,15 +305,6 @@ static int abis_nm_rx_statechg_rep(struct msgb *mb)
 	} else {
 		DEBUGPC(DNM, "(No State change detected)\n");
 	}
-#if 0
-	if (op_state == 1) {
-		/* try to enable objects that are disabled */
-		abis_nm_opstart(bts, foh->obj_class,
-				foh->obj_inst.bts_nr,
-				foh->obj_inst.trx_nr,
-				foh->obj_inst.ts_nr);
-	}
-#endif
 	return 0;
 }
 
