@@ -641,7 +641,6 @@ void paging_flush_network(struct gsm_network *net, struct bsc_msc_data *msc)
 /*! Estimate available_slots credit over a time period, used when below CCCH Load Indication Threshold */
 uint16_t paging_estimate_available_slots(struct gsm_bts *bts, unsigned int time_span_s)
 {
-	/* TODO: use gsm48_number_of_paging_subchannels() instead? */
 	unsigned int n_pag_blocks = gsm0502_get_n_pag_blocks(&bts->si_common.chan_desc);
 	uint16_t available_slots = n_pag_blocks * time_span_s * 1000000 / GSM51_MFRAME_DURATION_us;
 	LOG_BTS(bts, DPAG, LOGL_DEBUG, "Estimated %u paging available_slots over %u seconds\n",
