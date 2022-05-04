@@ -161,6 +161,8 @@ static inline unsigned int acc_ramp_is_running(struct acc_ramp *acc_ramp)
 	return acc_ramp->step_interval_sec;
 }
 
+void acc_ramp_global_init(void);
+
 void acc_ramp_init(struct acc_ramp *acc_ramp, struct gsm_bts *bts);
 int acc_ramp_set_step_size(struct acc_ramp *acc_ramp, unsigned int step_size);
 int acc_ramp_set_step_interval(struct acc_ramp *acc_ramp, unsigned int step_interval);

@@ -414,7 +414,6 @@ static void do_acc_ramping_step(void *data)
 static int acc_ramp_nm_sig_cb(unsigned int subsys, unsigned int signal, void *handler_data, void *signal_data)
 {
 	struct nm_statechg_signal_data *nsd = signal_data;
-	struct acc_ramp *acc_ramp = handler_data;
 	struct gsm_bts_trx *trx = NULL;
 	bool trigger_ramping = false, abort_ramping = false;
 
@@ -523,9 +522,9 @@ static int acc_ramp_nm_sig_cb(unsigned int subsys, unsigned int signal, void *ha
 	}
 
 	if (trigger_ramping)
-		acc_ramp_trigger(acc_ramp);
+		acc_ramp_trigger(&trx->bts->acc_ramp);
 	else if (abort_ramping)
-		acc_ramp_abort(acc_ramp);
+		acc_ramp_abort(&trx->bts->acc_ramp);
 
 	return 0;
 }
@@ -548,7 +547,6 @@ void acc_ramp_init(struct acc_ramp *acc_ramp, struct gsm_bts *bts)
 	acc_ramp->chan_load_lower_threshold = ACC_RAMP_CHAN_LOAD_THRESHOLD_LOW;
 	acc_ramp->chan_load_upper_threshold = ACC_RAMP_CHAN_LOAD_THRESHOLD_UP;
 	osmo_timer_setup(&acc_ramp->step_timer, do_acc_ramping_step, acc_ramp);
-	osmo_signal_register_handler(SS_NM, acc_ramp_nm_sig_cb, acc_ramp);
 }
 
 /*!
@@ -645,4 +643,9 @@ void acc_ramp_abort(struct acc_ramp *acc_ramp)
 		osmo_timer_del(&acc_ramp->step_timer);
 
 	acc_mgr_set_len_allowed_ramp(&acc_ramp->bts->acc_mgr, 10);
+}
+
+void acc_ramp_global_init(void)
+{
+	osmo_signal_register_handler(SS_NM, acc_ramp_nm_sig_cb, NULL);
 }
