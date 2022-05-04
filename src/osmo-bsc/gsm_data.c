@@ -760,7 +760,7 @@ uint8_t gsm_ts_tsc(const struct gsm_bts_trx_ts *ts)
 bool nm_is_running(const struct gsm_nm_state *s) {
 	if (s->operational != NM_OPSTATE_ENABLED)
 		return false;
-	if ((s->availability != NM_AVSTATE_OK) && (s->availability != 0xff))
+	if (s->availability != NM_AVSTATE_OK)
 		return false;
 	if (s->administrative != NM_STATE_UNLOCKED)
 		return false;
