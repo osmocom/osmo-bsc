@@ -992,9 +992,10 @@ static void update_mo_state(struct gsm_bts *bts, struct abis_om2k_mo *mo, uint8_
 		break;
 	}
 
-	osmo_signal_dispatch(SS_NM, S_NM_STATECHG, &nsd);
-
+	/* Update current state before emitting signal: */
 	nm_state->availability = nsd.new_state.availability;
+
+	osmo_signal_dispatch(SS_NM, S_NM_STATECHG, &nsd);
 }
 
 static void update_op_state(struct gsm_bts *bts, const struct abis_om2k_mo *mo, uint8_t op_state)

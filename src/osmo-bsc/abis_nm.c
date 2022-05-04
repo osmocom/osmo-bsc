@@ -230,8 +230,10 @@ static int update_admstate(struct gsm_bts *bts, uint8_t obj_class,
 
 	nsd.new_state.administrative = adm_state;
 
-	osmo_signal_dispatch(SS_NM, S_NM_STATECHG, &nsd);
+	/* Update current state before emitting signal: */
 	nm_state->administrative = adm_state;
+
+	osmo_signal_dispatch(SS_NM, S_NM_STATECHG, &nsd);
 	return 0;
 }
 
@@ -296,10 +298,10 @@ static int abis_nm_rx_statechg_rep(struct msgb *mb)
 	    nsd.new_state.operational != nsd.old_state.operational ||
 	    nsd.new_state.availability != nsd.old_state.availability) {
 		DEBUGPC(DNM, "\n");
-		/* Update the operational state of a given object in our in-memory data
+		/* Update the state of a given object in our in-memory data
  		* structures and send an event to the higher layer */
-		osmo_signal_dispatch(SS_NM, S_NM_STATECHG, &nsd);
 		*nm_state = nsd.new_state;
+		osmo_signal_dispatch(SS_NM, S_NM_STATECHG, &nsd);
 	} else {
 		DEBUGPC(DNM, "(No State change detected)\n");
 	}
