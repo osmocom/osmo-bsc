@@ -210,7 +210,7 @@ static int abis_nm_rcvmsg_sw(struct msgb *mb);
 static int update_admstate(struct gsm_bts *bts, uint8_t obj_class,
 			   struct abis_om_obj_inst *obj_inst, uint8_t adm_state)
 {
-	struct gsm_nm_state *nm_state, new_state;
+	struct gsm_nm_state *nm_state;
 	struct nm_statechg_signal_data nsd;
 
 	memset(&nsd, 0, sizeof(nsd));
@@ -222,18 +222,16 @@ static int update_admstate(struct gsm_bts *bts, uint8_t obj_class,
 	if (!nm_state)
 		return -1;
 
-	new_state = *nm_state;
-	new_state.administrative = adm_state;
-
 	nsd.bts = bts;
 	nsd.obj_class = obj_class;
-	nsd.old_state = nm_state;
-	nsd.new_state = &new_state;
+	nsd.old_state = *nm_state;
+	nsd.new_state = *nm_state;
 	nsd.obj_inst = obj_inst;
+
+	nsd.new_state.administrative = adm_state;
+
 	osmo_signal_dispatch(SS_NM, S_NM_STATECHG, &nsd);
-
 	nm_state->administrative = adm_state;
-
 	return 0;
 }
 
@@ -244,17 +242,27 @@ static int abis_nm_rx_statechg_rep(struct msgb *mb)
 	struct e1inp_sign_link *sign_link = mb->dst;
 	struct gsm_bts *bts = sign_link->trx->bts;
 	struct tlv_parsed tp;
-	struct gsm_nm_state *nm_state, new_state;
+	struct gsm_nm_state *nm_state;
+	struct nm_statechg_signal_data nsd;
 
-	memset(&new_state, 0, sizeof(new_state));
+	memset(&nsd, 0, sizeof(nsd));
 
+	nsd.obj = gsm_objclass2obj(bts, foh->obj_class, &foh->obj_inst);
+	if (!nsd.obj) {
+		LOGPFOH(DNM, LOGL_ERROR, foh, "unknown managed object\n");
+		return -EINVAL;
+	}
 	nm_state = gsm_objclass2nmstate(bts, foh->obj_class, &foh->obj_inst);
 	if (!nm_state) {
 		LOGPFOH(DNM, LOGL_ERROR, foh, "unknown managed object\n");
 		return -EINVAL;
 	}
 
-	new_state = *nm_state;
+	nsd.obj_class = foh->obj_class;
+	nsd.old_state = *nm_state;
+	nsd.new_state = *nm_state;
+	nsd.obj_inst = &foh->obj_inst;
+	nsd.bts = bts;
 
 	if (abis_nm_tlv_parse(&tp, bts, foh->data, oh->length - sizeof(*foh)) < 0) {
 		LOGPFOH(DNM, LOGL_ERROR, foh, "%s(): tlv_parse failed\n", __func__);
@@ -263,45 +271,35 @@ static int abis_nm_rx_statechg_rep(struct msgb *mb)
 
 	DEBUGPFOH(DNM, foh, "STATE CHG: ");
 	if (TLVP_PRESENT(&tp, NM_ATT_OPER_STATE)) {
-		new_state.operational = *TLVP_VAL(&tp, NM_ATT_OPER_STATE);
+		nsd.new_state.operational = *TLVP_VAL(&tp, NM_ATT_OPER_STATE);
 		DEBUGPC(DNM, "OP_STATE=%s ",
-			abis_nm_opstate_name(new_state.operational));
+			abis_nm_opstate_name(nsd.new_state.operational));
 	}
 	if (TLVP_PRESENT(&tp, NM_ATT_AVAIL_STATUS)) {
 		if (TLVP_LEN(&tp, NM_ATT_AVAIL_STATUS) == 0)
-			new_state.availability = NM_AVSTATE_OK;
+			nsd.new_state.availability = NM_AVSTATE_OK;
 		else
-			new_state.availability = *TLVP_VAL(&tp, NM_ATT_AVAIL_STATUS);
+			nsd.new_state.availability = *TLVP_VAL(&tp, NM_ATT_AVAIL_STATUS);
 		DEBUGPC(DNM, "AVAIL=%s(%02x) ",
-			abis_nm_avail_name(new_state.availability),
-			new_state.availability);
+			abis_nm_avail_name(nsd.new_state.availability),
+			nsd.new_state.availability);
 	} else
-		new_state.availability = NM_AVSTATE_OK;
+		nsd.new_state.availability = NM_AVSTATE_OK;
 	if (TLVP_PRESENT(&tp, NM_ATT_ADM_STATE)) {
-		new_state.administrative = *TLVP_VAL(&tp, NM_ATT_ADM_STATE);
+		nsd.new_state.administrative = *TLVP_VAL(&tp, NM_ATT_ADM_STATE);
 		DEBUGPC(DNM, "ADM=%2s ",
 			get_value_string(abis_nm_adm_state_names,
-					 new_state.administrative));
+					 nsd.new_state.administrative));
 	}
 
-	if ((new_state.administrative != 0 && nm_state->administrative == 0) ||
-	    new_state.operational != nm_state->operational ||
-	    new_state.availability != nm_state->availability) {
+	if ((nsd.new_state.administrative != 0 && nsd.old_state.administrative == 0) ||
+	    nsd.new_state.operational != nsd.old_state.operational ||
+	    nsd.new_state.availability != nsd.old_state.availability) {
 		DEBUGPC(DNM, "\n");
 		/* Update the operational state of a given object in our in-memory data
  		* structures and send an event to the higher layer */
-		struct nm_statechg_signal_data nsd;
-		nsd.obj = gsm_objclass2obj(bts, foh->obj_class, &foh->obj_inst);
-		nsd.obj_class = foh->obj_class;
-		nsd.old_state = nm_state;
-		nsd.new_state = &new_state;
-		nsd.obj_inst = &foh->obj_inst;
-		nsd.bts = bts;
 		osmo_signal_dispatch(SS_NM, S_NM_STATECHG, &nsd);
-		nm_state->operational = new_state.operational;
-		nm_state->availability = new_state.availability;
-		if (nm_state->administrative == 0)
-			nm_state->administrative = new_state.administrative;
+		*nm_state = nsd.new_state;
 	} else {
 		DEBUGPC(DNM, "(No State change detected)\n");
 	}

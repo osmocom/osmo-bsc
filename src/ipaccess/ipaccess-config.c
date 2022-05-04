@@ -369,8 +369,8 @@ static int nm_sig_cb(unsigned int subsys, unsigned int signal,
 		break;
 	case S_NM_STATECHG:
 		nsd = signal_data;
-		nm_state_event(signal, nsd->obj_class, nsd->obj, nsd->old_state,
-				nsd->new_state, nsd->obj_inst);
+		nm_state_event(signal, nsd->obj_class, nsd->obj, &nsd->old_state,
+				&nsd->new_state, nsd->obj_inst);
 		break;
 	case S_NM_GET_ATTR_REP:
 		fprintf(stderr, "Received SIGNAL S_NM_GET_ATTR_REP\n");

@@ -950,12 +950,19 @@ static void *mo2obj(struct gsm_bts *bts, struct abis_om2k_mo *mo)
 static void update_mo_state(struct gsm_bts *bts, struct abis_om2k_mo *mo, uint8_t mo_state)
 {
 	struct gsm_nm_state *nm_state = mo2nm_state(bts, mo);
-	struct gsm_nm_state new_state;
 	struct nm_statechg_signal_data nsd;
 	bool has_enabled_state;
 
 	if (!nm_state)
 		return;
+
+	memset(&nsd, 0, sizeof(nsd));
+
+	nsd.bts = bts;
+	nsd.obj = mo2obj(bts, mo);
+	nsd.old_state = *nm_state;
+	nsd.new_state = *nm_state;
+	nsd.om2k_mo = mo;
 
 	switch (mo->class) {
 	case OM2K_MO_CLS_CF:
@@ -967,36 +974,27 @@ static void update_mo_state(struct gsm_bts *bts, struct abis_om2k_mo *mo, uint8_
 		break;
 	}
 
-	new_state = *nm_state;
 	switch (mo_state) {
 	case OM2K_MOSTATE_RESET:
-		new_state.availability = NM_AVSTATE_POWER_OFF;
+		nsd.new_state.availability = NM_AVSTATE_POWER_OFF;
 		break;
 	case OM2K_MOSTATE_STARTED:
-		new_state.availability = has_enabled_state ? NM_AVSTATE_OFF_LINE : NM_AVSTATE_OK;
+		nsd.new_state.availability = has_enabled_state ? NM_AVSTATE_OFF_LINE : NM_AVSTATE_OK;
 		break;
 	case OM2K_MOSTATE_ENABLED:
-		new_state.availability = NM_AVSTATE_OK;
+		nsd.new_state.availability = NM_AVSTATE_OK;
 		break;
 	case OM2K_MOSTATE_DISABLED:
-		new_state.availability = NM_AVSTATE_POWER_OFF;
+		nsd.new_state.availability = NM_AVSTATE_POWER_OFF;
 		break;
 	default:
-		new_state.availability = NM_AVSTATE_DEGRADED;
+		nsd.new_state.availability = NM_AVSTATE_DEGRADED;
 		break;
 	}
 
-	memset(&nsd, 0, sizeof(nsd));
-
-	nsd.bts = bts;
-	nsd.obj = mo2obj(bts, mo);
-	nsd.old_state = nm_state;
-	nsd.new_state = &new_state;
-	nsd.om2k_mo = mo;
-
 	osmo_signal_dispatch(SS_NM, S_NM_STATECHG, &nsd);
 
-	nm_state->availability = new_state.availability;
+	nm_state->availability = nsd.new_state.availability;
 }
 
 static void update_op_state(struct gsm_bts *bts, const struct abis_om2k_mo *mo, uint8_t op_state)

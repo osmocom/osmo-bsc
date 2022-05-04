@@ -427,11 +427,11 @@ static int acc_ramp_nm_sig_cb(unsigned int subsys, unsigned int signal, void *ha
 	trx = nsd->obj;
 
 	LOG_TRX(trx, DRSL, LOGL_DEBUG, "ACC RAMP: administrative state %s -> %s\n",
-	    get_value_string(abis_nm_adm_state_names, nsd->old_state->administrative),
-	    get_value_string(abis_nm_adm_state_names, nsd->new_state->administrative));
+	    get_value_string(abis_nm_adm_state_names, nsd->old_state.administrative),
+	    get_value_string(abis_nm_adm_state_names, nsd->new_state.administrative));
 	LOG_TRX(trx, DRSL, LOGL_DEBUG, "ACC RAMP: operational state %s -> %s\n",
-	    abis_nm_opstate_name(nsd->old_state->operational),
-	    abis_nm_opstate_name(nsd->new_state->operational));
+	    abis_nm_opstate_name(nsd->old_state.operational),
+	    abis_nm_opstate_name(nsd->new_state.operational));
 
 	/* We only care about state changes of the first TRX. */
 	if (trx->nr != 0)
@@ -445,21 +445,21 @@ static int acc_ramp_nm_sig_cb(unsigned int subsys, unsigned int signal, void *ha
 	}
 
 	/* Trigger or abort ACC ramping based on the new state of this TRX. */
-	if (nsd->old_state->administrative != nsd->new_state->administrative) {
-		switch (nsd->new_state->administrative) {
+	if (nsd->old_state.administrative != nsd->new_state.administrative) {
+		switch (nsd->new_state.administrative) {
 		case NM_STATE_UNLOCKED:
-			if (nsd->old_state->operational != nsd->new_state->operational) {
+			if (nsd->old_state.operational != nsd->new_state.operational) {
 				/*
 				 * Administrative and operational state have both changed.
 				 * Trigger ramping only if TRX 0 will be both enabled and unlocked.
 				 */
-				if (nsd->new_state->operational == NM_OPSTATE_ENABLED)
+				if (nsd->new_state.operational == NM_OPSTATE_ENABLED)
 					trigger_ramping = true;
 				else
 					LOG_TRX(trx, DRSL, LOGL_DEBUG,
 						"ACC RAMP: ignoring state change because TRX is "
 						"transitioning into operational state '%s'\n",
-						abis_nm_opstate_name(nsd->new_state->operational));
+						abis_nm_opstate_name(nsd->new_state.operational));
 			} else {
 				/*
 				 * Operational state has not changed.
@@ -479,24 +479,24 @@ static int acc_ramp_nm_sig_cb(unsigned int subsys, unsigned int signal, void *ha
 		case NM_STATE_NULL:
 		default:
 			LOG_TRX(trx, DRSL, LOGL_ERROR, "ACC RAMP: unrecognized administrative state '0x%x' "
-				"reported for TRX 0\n", nsd->new_state->administrative);
+				"reported for TRX 0\n", nsd->new_state.administrative);
 			break;
 		}
 	}
-	if (nsd->old_state->operational != nsd->new_state->operational) {
-		switch (nsd->new_state->operational) {
+	if (nsd->old_state.operational != nsd->new_state.operational) {
+		switch (nsd->new_state.operational) {
 		case NM_OPSTATE_ENABLED:
-			if (nsd->old_state->administrative != nsd->new_state->administrative) {
+			if (nsd->old_state.administrative != nsd->new_state.administrative) {
 				/*
 				 * Administrative and operational state have both changed.
 				 * Trigger ramping only if TRX 0 will be both enabled and unlocked.
 				 */
-				if (nsd->new_state->administrative == NM_STATE_UNLOCKED)
+				if (nsd->new_state.administrative == NM_STATE_UNLOCKED)
 					trigger_ramping = true;
 				else
 					LOG_TRX(trx, DRSL, LOGL_DEBUG, "ACC RAMP: ignoring state change "
 						"because TRX is transitioning into administrative state '%s'\n",
-						get_value_string(abis_nm_adm_state_names, nsd->new_state->administrative));
+						get_value_string(abis_nm_adm_state_names, nsd->new_state.administrative));
 			} else {
 				/*
 				 * Administrative state has not changed.
@@ -516,7 +516,7 @@ static int acc_ramp_nm_sig_cb(unsigned int subsys, unsigned int signal, void *ha
 		case NM_OPSTATE_NULL:
 		default:
 			LOG_TRX(trx, DRSL, LOGL_ERROR, "ACC RAMP: unrecognized operational state '0x%x' "
-			     "reported for TRX 0\n", nsd->new_state->administrative);
+			     "reported for TRX 0\n", nsd->new_state.administrative);
 			break;
 		}
 	}

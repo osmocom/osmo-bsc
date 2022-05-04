@@ -64,7 +64,7 @@ static void st_op_disabled_notinstalled(struct osmo_fsm_inst *fi, uint32_t event
 		break;
 	case NM_EV_STATE_CHG_REP:
 		nsd = (struct nm_statechg_signal_data *)data;
-		new_state = nsd->new_state;
+		new_state = &nsd->new_state;
 		if (new_state->operational == NM_OPSTATE_ENABLED) {
 			/* nanobts always go directly into Reported ENABLED state during
 			   startup, but we still need to OPSTART it, otherwise it won't
@@ -107,7 +107,7 @@ static void st_op_disabled_dependency(struct osmo_fsm_inst *fi, uint32_t event, 
 	switch (event) {
 	case NM_EV_STATE_CHG_REP:
 		nsd = (struct nm_statechg_signal_data *)data;
-		new_state = nsd->new_state;
+		new_state = &nsd->new_state;
 		if (new_state->operational == NM_OPSTATE_ENABLED) {
 			nm_bts_sm_fsm_state_chg(fi, NM_BTS_SM_ST_OP_ENABLED);
 			return;
@@ -147,7 +147,7 @@ static void st_op_disabled_offline(struct osmo_fsm_inst *fi, uint32_t event, voi
 	switch (event) {
 	case NM_EV_STATE_CHG_REP:
 		nsd = (struct nm_statechg_signal_data *)data;
-		new_state = nsd->new_state;
+		new_state = &nsd->new_state;
 		if (new_state->operational == NM_OPSTATE_ENABLED) {
 			nm_bts_sm_fsm_state_chg(fi, NM_BTS_SM_ST_OP_ENABLED);
 			return;
@@ -178,7 +178,7 @@ static void st_op_enabled(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 	switch (event) {
 	case NM_EV_STATE_CHG_REP:
 		nsd = (struct nm_statechg_signal_data *)data;
-		new_state = nsd->new_state;
+		new_state = &nsd->new_state;
 		if (new_state->operational == NM_OPSTATE_ENABLED)
 			return;
 		switch (new_state->availability) { /* operational = DISABLED */

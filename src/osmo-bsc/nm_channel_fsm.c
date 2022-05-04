@@ -65,7 +65,7 @@ static void st_op_disabled_notinstalled(struct osmo_fsm_inst *fi, uint32_t event
 		break;
 	case NM_EV_STATE_CHG_REP:
 		nsd = (struct nm_statechg_signal_data *)data;
-		new_state = nsd->new_state;
+		new_state = &nsd->new_state;
 		if (new_state->operational == NM_OPSTATE_ENABLED) {
 			/*should not happen... */
 			nm_chan_fsm_state_chg(fi, NM_CHAN_ST_OP_ENABLED);
@@ -138,7 +138,7 @@ static void st_op_disabled_dependency(struct osmo_fsm_inst *fi, uint32_t event, 
 		return;
 	case NM_EV_STATE_CHG_REP:
 		nsd = (struct nm_statechg_signal_data *)data;
-		new_state = nsd->new_state;
+		new_state = &nsd->new_state;
 		if (new_state->operational == NM_OPSTATE_ENABLED) {
 			/* should not happen... */
 			nm_chan_fsm_state_chg(fi, NM_CHAN_ST_OP_ENABLED);
@@ -187,7 +187,7 @@ static void st_op_disabled_offline(struct osmo_fsm_inst *fi, uint32_t event, voi
 		return;
 	case NM_EV_STATE_CHG_REP:
 		nsd = (struct nm_statechg_signal_data *)data;
-		new_state = nsd->new_state;
+		new_state = &nsd->new_state;
 		if (new_state->operational == NM_OPSTATE_ENABLED) {
 			nm_chan_fsm_state_chg(fi, NM_CHAN_ST_OP_ENABLED);
 			return;
@@ -241,7 +241,7 @@ static void st_op_enabled(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 	switch (event) {
 	case NM_EV_STATE_CHG_REP:
 		nsd = (struct nm_statechg_signal_data *)data;
-		new_state = nsd->new_state;
+		new_state = &nsd->new_state;
 		if (new_state->operational == NM_OPSTATE_ENABLED)
 			return;
 		switch (new_state->availability) { /* operational = DISABLED */
