@@ -131,8 +131,8 @@ struct nm_statechg_signal_data {
 	struct gsm_bts *bts;
 	uint8_t obj_class;
 	void *obj;
-	struct gsm_nm_state *old_state;
-	struct gsm_nm_state *new_state;
+	const struct gsm_nm_state *old_state;
+	const struct gsm_nm_state *new_state;
 
 	/* This pointer is valid for TS 12.21 MO */
 	struct abis_om_obj_inst *obj_inst;

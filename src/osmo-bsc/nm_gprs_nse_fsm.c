@@ -58,7 +58,7 @@ static void st_op_disabled_notinstalled_on_enter(struct osmo_fsm_inst *fi, uint3
 static void st_op_disabled_notinstalled(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
 	struct nm_statechg_signal_data *nsd;
-	struct gsm_nm_state *new_state;
+	const struct gsm_nm_state *new_state;
 
 	switch (event) {
 	case NM_EV_SW_ACT_REP:
@@ -87,7 +87,7 @@ static void st_op_disabled_notinstalled(struct osmo_fsm_inst *fi, uint32_t event
 	}
 }
 
-static void configure_loop(struct gsm_gprs_nse *nse, struct gsm_nm_state *state, bool allow_opstart)
+static void configure_loop(struct gsm_gprs_nse *nse, const struct gsm_nm_state *state, bool allow_opstart)
 {
 	struct msgb *msgb;
 	struct gsm_bts_sm *bts_sm = container_of(nse, struct gsm_bts_sm, gprs.nse);
@@ -139,7 +139,7 @@ static void st_op_disabled_dependency(struct osmo_fsm_inst *fi, uint32_t event, 
 {
 	struct gsm_gprs_nse *nse = (struct gsm_gprs_nse *)fi->priv;
 	struct nm_statechg_signal_data *nsd;
-	struct gsm_nm_state *new_state;
+	const struct gsm_nm_state *new_state;
 
 	switch (event) {
 	case NM_EV_SET_ATTR_ACK:
@@ -189,7 +189,7 @@ static void st_op_disabled_offline(struct osmo_fsm_inst *fi, uint32_t event, voi
 	struct gsm_gprs_nse *nse = (struct gsm_gprs_nse *)fi->priv;
 	struct gsm_bts_sm *bts_sm = container_of(nse, struct gsm_bts_sm, gprs.nse);
 	struct nm_statechg_signal_data *nsd;
-	struct gsm_nm_state *new_state;
+	const struct gsm_nm_state *new_state;
 
 	switch (event) {
 	case NM_EV_SET_ATTR_ACK:
@@ -248,7 +248,7 @@ static void st_op_enabled_on_enter(struct osmo_fsm_inst *fi, uint32_t prev_state
 static void st_op_enabled(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
 	struct nm_statechg_signal_data *nsd;
-	struct gsm_nm_state *new_state;
+	const struct gsm_nm_state *new_state;
 
 	switch (event) {
 	case NM_EV_STATE_CHG_REP:

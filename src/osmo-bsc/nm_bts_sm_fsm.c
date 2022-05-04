@@ -57,7 +57,7 @@ static void st_op_disabled_notinstalled(struct osmo_fsm_inst *fi, uint32_t event
 	struct gsm_bts_sm *site_mgr = (struct gsm_bts_sm *)fi->priv;
 	struct gsm_bts *bts = gsm_bts_sm_get_bts(site_mgr);
 	struct nm_statechg_signal_data *nsd;
-	struct gsm_nm_state *new_state;
+	const struct gsm_nm_state *new_state;
 
 	switch (event) {
 	case NM_EV_SW_ACT_REP:
@@ -102,7 +102,7 @@ static void st_op_disabled_notinstalled(struct osmo_fsm_inst *fi, uint32_t event
 static void st_op_disabled_dependency(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
 	struct nm_statechg_signal_data *nsd;
-	struct gsm_nm_state *new_state;
+	const struct gsm_nm_state *new_state;
 
 	switch (event) {
 	case NM_EV_STATE_CHG_REP:
@@ -142,7 +142,7 @@ static void st_op_disabled_offline_on_enter(struct osmo_fsm_inst *fi, uint32_t p
 static void st_op_disabled_offline(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
 	struct nm_statechg_signal_data *nsd;
-	struct gsm_nm_state *new_state;
+	const struct gsm_nm_state *new_state;
 
 	switch (event) {
 	case NM_EV_STATE_CHG_REP:
@@ -173,7 +173,7 @@ static void st_op_disabled_offline(struct osmo_fsm_inst *fi, uint32_t event, voi
 static void st_op_enabled(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
 	struct nm_statechg_signal_data *nsd;
-	struct gsm_nm_state *new_state;
+	const struct gsm_nm_state *new_state;
 
 	switch (event) {
 	case NM_EV_STATE_CHG_REP:

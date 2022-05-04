@@ -340,7 +340,7 @@ static int print_attr_rep(struct msgb *mb)
 }
 
 static int nm_state_event(int evt, uint8_t obj_class, void *obj,
-			  struct gsm_nm_state *old_state, struct gsm_nm_state *new_state,
+			  const struct gsm_nm_state *old_state, const struct gsm_nm_state *new_state,
 			  struct abis_om_obj_inst *obj_inst);
 
 static int nm_sig_cb(unsigned int subsys, unsigned int signal,
@@ -677,7 +677,7 @@ out_err:
 }
 
 static int nm_state_event(int evt, uint8_t obj_class, void *obj,
-			  struct gsm_nm_state *old_state, struct gsm_nm_state *new_state,
+			  const struct gsm_nm_state *old_state, const struct gsm_nm_state *new_state,
 			  struct abis_om_obj_inst *obj_inst)
 {
 	if (obj_class == NM_OC_BASEB_TRANSC) {

@@ -59,7 +59,7 @@ static void st_op_disabled_notinstalled_on_enter(struct osmo_fsm_inst *fi, uint3
 static void st_op_disabled_notinstalled(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
 	struct nm_statechg_signal_data *nsd;
-	struct gsm_nm_state *new_state;
+	const struct gsm_nm_state *new_state;
 
 	switch (event) {
 	case NM_EV_FEATURE_NEGOTIATED:
@@ -90,7 +90,7 @@ static void st_op_disabled_notinstalled(struct osmo_fsm_inst *fi, uint32_t event
 	}
 }
 
-static void configure_loop(struct gsm_gprs_nsvc *nsvc, struct gsm_nm_state *state, bool allow_opstart)
+static void configure_loop(struct gsm_gprs_nsvc *nsvc, const struct gsm_nm_state *state, bool allow_opstart)
 {
 	struct msgb *msgb;
 
@@ -151,7 +151,7 @@ static void st_op_disabled_dependency(struct osmo_fsm_inst *fi, uint32_t event, 
 {
 	struct gsm_gprs_nsvc *nsvc = (struct gsm_gprs_nsvc *)fi->priv;
 	struct nm_statechg_signal_data *nsd;
-	struct gsm_nm_state *new_state;
+	const struct gsm_nm_state *new_state;
 
 	switch (event) {
 	case NM_EV_FEATURE_NEGOTIATED:
@@ -203,7 +203,7 @@ static void st_op_disabled_offline(struct osmo_fsm_inst *fi, uint32_t event, voi
 {
 	struct gsm_gprs_nsvc *nsvc = (struct gsm_gprs_nsvc *)fi->priv;
 	struct nm_statechg_signal_data *nsd;
-	struct gsm_nm_state *new_state;
+	const struct gsm_nm_state *new_state;
 
 	switch (event) {
 	case NM_EV_FEATURE_NEGOTIATED:
@@ -265,7 +265,7 @@ static void st_op_enabled_on_enter(struct osmo_fsm_inst *fi, uint32_t prev_state
 static void st_op_enabled(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
 	struct nm_statechg_signal_data *nsd;
-	struct gsm_nm_state *new_state;
+	const struct gsm_nm_state *new_state;
 
 	switch (event) {
 	case NM_EV_STATE_CHG_REP:
