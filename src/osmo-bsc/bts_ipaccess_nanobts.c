@@ -576,13 +576,14 @@ void ipaccess_drop_oml(struct gsm_bts *bts, const char *reason)
 		}
 	}
 
+	osmo_fsm_inst_dispatch(bts->mo.fi, NM_EV_OML_DOWN, NULL);
+	osmo_fsm_inst_dispatch(bts->gprs.cell.mo.fi, NM_EV_OML_DOWN, NULL);
+
 	osmo_fsm_inst_dispatch(bts->site_mgr->mo.fi, NM_EV_OML_DOWN, NULL);
 	osmo_fsm_inst_dispatch(bts->site_mgr->gprs.nse.mo.fi, NM_EV_OML_DOWN, NULL);
 	for (i = 0; i < ARRAY_SIZE(bts->site_mgr->gprs.nsvc); i++)
 		osmo_fsm_inst_dispatch(bts->site_mgr->gprs.nsvc[i].mo.fi, NM_EV_OML_DOWN, NULL);
 
-	osmo_fsm_inst_dispatch(bts->mo.fi, NM_EV_OML_DOWN, NULL);
-	osmo_fsm_inst_dispatch(bts->gprs.cell.mo.fi, NM_EV_OML_DOWN, NULL);
 	gsm_bts_all_ts_dispatch(bts, TS_EV_OML_DOWN, NULL);
 
 	bts->ip_access.flags = 0;
