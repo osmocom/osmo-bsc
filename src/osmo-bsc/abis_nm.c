@@ -269,14 +269,14 @@ static int abis_nm_rx_statechg_rep(struct msgb *mb)
 	}
 	if (TLVP_PRESENT(&tp, NM_ATT_AVAIL_STATUS)) {
 		if (TLVP_LEN(&tp, NM_ATT_AVAIL_STATUS) == 0)
-			new_state.availability = 0xff;
+			new_state.availability = NM_AVSTATE_OK;
 		else
 			new_state.availability = *TLVP_VAL(&tp, NM_ATT_AVAIL_STATUS);
 		DEBUGPC(DNM, "AVAIL=%s(%02x) ",
 			abis_nm_avail_name(new_state.availability),
 			new_state.availability);
 	} else
-		new_state.availability = 0xff;
+		new_state.availability = NM_AVSTATE_OK;
 	if (TLVP_PRESENT(&tp, NM_ATT_ADM_STATE)) {
 		new_state.administrative = *TLVP_VAL(&tp, NM_ATT_ADM_STATE);
 		DEBUGPC(DNM, "ADM=%2s ",
