@@ -689,7 +689,7 @@ static int nm_state_event(int evt, uint8_t obj_class, void *obj,
 		}
 	} else if (evt == S_NM_STATECHG_OPER &&
 	    obj_class == NM_OC_RADIO_CARRIER &&
-	    new_state->availability == 3) {
+	    new_state->availability == NM_AVSTATE_OFF_LINE) {
 		struct gsm_bts_trx *trx = obj;
 
 		if (net_listen_testnr)
