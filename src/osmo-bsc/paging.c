@@ -223,10 +223,6 @@ static void paging_handle_pending_requests(struct gsm_bts_paging_state *paging_b
 		return;
 	}
 
-	/* Skip paging if the bts is down. */
-	if (!bts->c0->rsl_link_primary)
-		goto sched_next_iter;
-
 	osmo_clock_gettime(CLOCK_MONOTONIC, &now);
 	paging_bts->last_sched_ts = now;
 
@@ -307,12 +303,10 @@ void paging_init(struct gsm_bts *bts)
 {
 	bts->paging.bts = bts;
 	bts->paging.free_chans_need = -1;
-	unsigned int load_ind_timeout = bts_no_ccch_load_ind_timeout_sec(bts);
-	bts->paging.available_slots = paging_estimate_available_slots(bts, load_ind_timeout);
+	bts->paging.available_slots = 0;
 	INIT_LLIST_HEAD(&bts->paging.pending_requests);
 	osmo_timer_setup(&bts->paging.work_timer, paging_worker, &bts->paging);
 	osmo_timer_setup(&bts->paging.credit_timer, paging_give_credit, &bts->paging);
-	osmo_timer_schedule(&bts->paging.credit_timer, load_ind_timeout, 0);
 }
 
 /* Called upon the bts struct being freed */
@@ -625,10 +619,12 @@ void paging_update_buffer_space(struct gsm_bts *bts, uint16_t free_slots)
 	LOG_BTS(bts, DPAG, LOGL_DEBUG, "Rx CCCH Load Indication from BTS (available_slots %u -> %u)\n",
 		bts->paging.available_slots, free_slots);
 	bts->paging.available_slots = free_slots;
-	paging_schedule_if_needed(&bts->paging);
-	/* Re-arm credit_timer */
-	osmo_timer_schedule(&bts->paging.credit_timer,
-			    bts_no_ccch_load_ind_timeout_sec(bts), 0);
+	/* Re-arm credit_timer if needed */
+	if (trx_is_usable(bts->c0)) {
+		paging_schedule_if_needed(&bts->paging);
+		osmo_timer_schedule(&bts->paging.credit_timer,
+				    bts_no_ccch_load_ind_timeout_sec(bts), 0);
+	}
 }
 
 /*! Count the number of pending paging requests on given BTS */
@@ -705,4 +701,63 @@ static unsigned int paging_estimate_delay_us(struct gsm_bts *bts, unsigned int n
 		time_us += (n_mframes - 1) * bs_pa_mfrms * GSM51_MFRAME_DURATION_us;
 	}
 	return time_us;
+}
+
+/* Callback function to be called every time we receive a signal from NM */
+static int nm_sig_cb(unsigned int subsys, unsigned int signal,
+		     void *handler_data, void *signal_data)
+{
+	struct nm_running_chg_signal_data *nsd;
+	struct gsm_bts *bts;
+	struct gsm_bts_trx *trx;
+	unsigned int load_ind_timeout;
+
+	if (signal != S_NM_RUNNING_CHG)
+		return 0;
+
+	nsd = signal_data;
+	bts = nsd->bts;
+
+	switch (nsd->obj_class) {
+	case NM_OC_RADIO_CARRIER:
+		trx = (struct gsm_bts_trx *)nsd->obj;
+		break;
+	case NM_OC_BASEB_TRANSC:
+		trx = gsm_bts_bb_trx_get_trx((struct gsm_bts_bb_trx *)nsd->obj);
+		break;
+	default:
+		return 0;
+	}
+
+	/* We only care about state changes of C0. */
+	if (trx != trx->bts->c0)
+		return 0;
+
+	if (nsd->running) {
+		if (trx_is_usable(trx)) {
+			LOG_BTS(bts, DPAG, LOGL_INFO, "C0 becomes available for paging\n");
+			/* Fill in initial credit */
+			load_ind_timeout = bts_no_ccch_load_ind_timeout_sec(bts);
+			bts->paging.available_slots = paging_estimate_available_slots(bts, load_ind_timeout);
+			/* Start scheduling credit_timer */
+			osmo_timer_schedule(&bts->paging.credit_timer,
+					    bts_no_ccch_load_ind_timeout_sec(bts), 0);
+			/* work_timer will be started when new paging requests arrive. */
+		}
+	} else {
+		/* If credit timer was not pending it means C0 was already unavailable before (rcarrier||bbtransc) */
+		if (osmo_timer_pending(&bts->paging.credit_timer)) {
+			LOG_BTS(bts, DPAG, LOGL_INFO, "C0 becomes unavailable for paging\n");
+			/* Note: flushing will osmo_timer_del(&bts->paging.work_timer) when queue becomes empty */
+			paging_flush_bts(bts, NULL);
+			osmo_timer_del(&bts->paging.credit_timer);
+		}
+	}
+	return 0;
+}
+
+/* To be called once at startup of the process: */
+void paging_global_init(void)
+{
+	osmo_signal_register_handler(SS_NM, nm_sig_cb, NULL);
 }

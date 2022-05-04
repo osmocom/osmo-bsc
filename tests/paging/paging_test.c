@@ -63,6 +63,7 @@ static void clock_inc(unsigned int sec, unsigned int usec)
 #define bts_init(net) _bts_init(net, __func__)
 static inline struct gsm_bts *_bts_init(struct gsm_network *net, const char *msg)
 {
+	struct nm_running_chg_signal_data nsd;
 	struct gsm_bts_sm *bts_sm = gsm_bts_sm_alloc(net, 0);
 	struct gsm_bts *bts = bts_sm->bts[0];
 	if (!bts) {
@@ -81,6 +82,14 @@ static inline struct gsm_bts *_bts_init(struct gsm_network *net, const char *msg
 	bts->c0->bb_transc.mo.nm_state.availability = NM_AVSTATE_OK;
 	bts->c0->bb_transc.mo.nm_state.administrative = NM_STATE_UNLOCKED;
 	bts->c0->rsl_link_primary = (struct e1inp_sign_link *)(intptr_t)0x01; /* Fake RSL is UP */
+
+	/* Emulate signal stating the TRX C0 is ready: */
+	memset(&nsd, 0, sizeof(nsd));
+	nsd.bts = bts;
+	nsd.obj_class = NM_OC_RADIO_CARRIER;
+	nsd.obj = bts->c0;
+	nsd.running = true;
+	osmo_signal_dispatch(SS_NM, S_NM_RUNNING_CHG, &nsd);
 
 	return bts;
 }
@@ -246,6 +255,7 @@ int main(int argc, char **argv)
 		fprintf(stderr, "Network init failure.\n");
 		return EXIT_FAILURE;
 	}
+	paging_global_init();
 
 	test_paging500(net);
 	test_paging500_samepgroup(net);

@@ -934,6 +934,7 @@ int main(int argc, char **argv)
 	handover_fsm_init();
 	lb_init();
 	acc_ramp_global_init();
+	paging_global_init();
 
 	/* Read the config */
 	rc = bsc_network_configure(config_file);

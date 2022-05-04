@@ -118,6 +118,8 @@ struct gsm_bts_paging_state {
 	uint16_t available_slots;
 };
 
+void paging_global_init(void);
+
 void paging_init(struct gsm_bts *bts);
 void paging_destructor(struct gsm_bts *bts);
 
