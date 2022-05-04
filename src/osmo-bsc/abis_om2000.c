@@ -994,7 +994,7 @@ static void update_mo_state(struct gsm_bts *bts, struct abis_om2k_mo *mo, uint8_
 	nsd.new_state = &new_state;
 	nsd.om2k_mo = mo;
 
-	osmo_signal_dispatch(SS_NM, S_NM_STATECHG_ADM, &nsd);
+	osmo_signal_dispatch(SS_NM, S_NM_STATECHG, &nsd);
 
 	nm_state->availability = new_state.availability;
 }

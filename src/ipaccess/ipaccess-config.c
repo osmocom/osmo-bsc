@@ -367,8 +367,7 @@ static int nm_sig_cb(unsigned int subsys, unsigned int signal,
 			printf("The BTS has nacked the restart. Exiting.\n");
 		exit(0);
 		break;
-	case S_NM_STATECHG_OPER:
-	case S_NM_STATECHG_ADM:
+	case S_NM_STATECHG:
 		nsd = signal_data;
 		nm_state_event(signal, nsd->obj_class, nsd->obj, nsd->old_state,
 				nsd->new_state, nsd->obj_inst);
@@ -687,7 +686,7 @@ static int nm_state_event(int evt, uint8_t obj_class, void *obj,
 			bootstrap_om(trx);
 			found_trx = 1;
 		}
-	} else if (evt == S_NM_STATECHG_OPER &&
+	} else if (evt == S_NM_STATECHG &&
 	    obj_class == NM_OC_RADIO_CARRIER &&
 	    new_state->availability == NM_AVSTATE_OFF_LINE) {
 		struct gsm_bts_trx *trx = obj;

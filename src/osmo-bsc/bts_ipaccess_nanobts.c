@@ -457,8 +457,7 @@ static int bts_ipa_nm_sig_cb(unsigned int subsys, unsigned int signal,
 	switch (signal) {
 	case S_NM_SW_ACTIV_REP:
 		return sw_activ_rep(signal_data);
-	case S_NM_STATECHG_OPER:
-	case S_NM_STATECHG_ADM:
+	case S_NM_STATECHG:
 		return nm_statechg_event(signal, signal_data);
 	case S_NM_OPSTART_ACK:
 		nm_rx_opstart_ack(signal_data);

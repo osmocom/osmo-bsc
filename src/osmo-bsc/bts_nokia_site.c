@@ -204,8 +204,7 @@ static int nm_sig_cb(unsigned int subsys, unsigned int signal,
 		return 0;
 
 	switch (signal) {
-	case S_NM_STATECHG_OPER:
-	case S_NM_STATECHG_ADM:
+	case S_NM_STATECHG:
 		nm_statechg_evt(signal, signal_data);
 		break;
 	default:

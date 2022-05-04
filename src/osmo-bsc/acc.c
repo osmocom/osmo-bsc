@@ -419,7 +419,7 @@ static int acc_ramp_nm_sig_cb(unsigned int subsys, unsigned int signal, void *ha
 	bool trigger_ramping = false, abort_ramping = false;
 
 	/* Handled signals map to an Administrative State Change ACK, or a State Changed Event Report. */
-	if (signal != S_NM_STATECHG_ADM && signal != S_NM_STATECHG_OPER)
+	if (signal != S_NM_STATECHG)
 		return 0;
 
 	if (nsd->obj_class != NM_OC_RADIO_CARRIER)

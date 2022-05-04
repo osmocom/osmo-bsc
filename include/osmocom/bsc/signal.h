@@ -69,8 +69,7 @@ enum signal_nm {
 	S_NM_IPACC_RESTART_ACK, /* nanoBTS has send a restart ack */
 	S_NM_IPACC_RESTART_NACK,/* nanoBTS has send a restart ack */
 	S_NM_TEST_REP,		/* GSM 12.21 Test Report */
-	S_NM_STATECHG_OPER,	/* Operational State changed*/
-	S_NM_STATECHG_ADM,	/* Administrative State changed */
+	S_NM_STATECHG,		/* NM Oper/Admin/Avail State changed. arg is struct nm_statechg_signal_data*/
 	S_NM_OM2K_CONF_RES,	/* OM2K Configuration Result */
 	S_NM_OPSTART_ACK,	/* Received OPSTART ACK, arg is struct msgb *oml_msg */
 	S_NM_OPSTART_NACK,	/* Received OPSTART NACK, arg is struct msgb *oml_msg */
@@ -127,6 +126,7 @@ struct ipacc_ack_signal_data {
 
 struct abis_om2k_mo;
 
+/* data for <SS_NM, S_NM_STATECHG>: */
 struct nm_statechg_signal_data {
 	struct gsm_bts *bts;
 	uint8_t obj_class;

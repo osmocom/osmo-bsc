@@ -230,7 +230,7 @@ static int update_admstate(struct gsm_bts *bts, uint8_t obj_class,
 	nsd.old_state = nm_state;
 	nsd.new_state = &new_state;
 	nsd.obj_inst = obj_inst;
-	osmo_signal_dispatch(SS_NM, S_NM_STATECHG_ADM, &nsd);
+	osmo_signal_dispatch(SS_NM, S_NM_STATECHG, &nsd);
 
 	nm_state->administrative = adm_state;
 
@@ -297,7 +297,7 @@ static int abis_nm_rx_statechg_rep(struct msgb *mb)
 		nsd.new_state = &new_state;
 		nsd.obj_inst = &foh->obj_inst;
 		nsd.bts = bts;
-		osmo_signal_dispatch(SS_NM, S_NM_STATECHG_OPER, &nsd);
+		osmo_signal_dispatch(SS_NM, S_NM_STATECHG, &nsd);
 		nm_state->operational = new_state.operational;
 		nm_state->availability = new_state.availability;
 		if (nm_state->administrative == 0)
