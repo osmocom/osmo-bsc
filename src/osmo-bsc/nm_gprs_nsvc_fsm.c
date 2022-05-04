@@ -90,7 +90,8 @@ static void st_op_disabled_notinstalled(struct osmo_fsm_inst *fi, uint32_t event
 	}
 }
 
-static void configure_loop(struct gsm_gprs_nsvc *nsvc, struct gsm_nm_state *state, bool allow_opstart) {
+static void configure_loop(struct gsm_gprs_nsvc *nsvc, struct gsm_nm_state *state, bool allow_opstart)
+{
 	struct msgb *msgb;
 
 	if (nsvc->bts->gprs.mode == BTS_GPRS_NONE)

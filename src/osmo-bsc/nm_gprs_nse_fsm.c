@@ -87,7 +87,8 @@ static void st_op_disabled_notinstalled(struct osmo_fsm_inst *fi, uint32_t event
 	}
 }
 
-static void configure_loop(struct gsm_gprs_nse *nse, struct gsm_nm_state *state, bool allow_opstart) {
+static void configure_loop(struct gsm_gprs_nse *nse, struct gsm_nm_state *state, bool allow_opstart)
+{
 	struct msgb *msgb;
 	struct gsm_bts_sm *bts_sm = container_of(nse, struct gsm_bts_sm, gprs.nse);
 	struct gsm_bts *bts = gsm_bts_sm_get_bts(bts_sm);
