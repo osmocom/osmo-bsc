@@ -44,7 +44,6 @@ EXTRA_DIST = \
 	power_ctrl.vty \
 	interf_meas.vty \
 	acch_overpower.vty \
-	bts_features.vty \
 	ctrl/osmo-bsc-neigh-test.cfg \
 	ctrl/osmo-bsc-apply-config-file.cfg \
 	ctrl/osmo-bsc-apply-config-file-invalid.cfg \

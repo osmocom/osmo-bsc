@@ -298,12 +298,9 @@ struct gsm_bts_model {
 
 	struct tlv_definition nm_att_tlvdef;
 
-	/* features of a given BTS model set via gsm_bts_model_register()
-	 * locally, see doc/bts-features.txt */
+	/* features of a given BTS model set via gsm_bts_model_register() locally */
 	struct bitvec features;
 	uint8_t _features_data[MAX_BTS_FEATURES/8];
-	/* BTS reports features during OML bring up */
-	bool features_get_reported;
 };
 
 struct gsm_gprs_cell {
@@ -340,13 +337,9 @@ struct gsm_bts {
 	char version[MAX_VERSION_LENGTH];
 	char sub_model[MAX_VERSION_LENGTH];
 
-	/* features of a given BTS either hardcoded or set/reported via OML,
-	 * see doc/bts-features.txt */
+	/* features of a given BTS set/reported via OML */
 	struct bitvec features;
 	uint8_t _features_data[MAX_BTS_FEATURES/8];
-	/* Features have been reported by the BTS or were copied from the BTS
-	 * model */
-	bool features_known;
 
 	/* Connected PCU version (if any) */
 	char pcu_version[MAX_VERSION_LENGTH];

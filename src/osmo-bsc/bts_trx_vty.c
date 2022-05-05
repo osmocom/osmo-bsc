@@ -316,9 +316,8 @@ DEFUN_USRATTR(cfg_ts_tsc,
 	      "Training Sequence Code of the Timeslot\n" "TSC\n")
 {
 	struct gsm_bts_trx_ts *ts = vty->index;
-	const struct gsm_bts *bts = ts->trx->bts;
 
-	if (bts->features_known && !osmo_bts_has_feature(&bts->features, BTS_FEAT_MULTI_TSC)) {
+	if (!osmo_bts_has_feature(&ts->trx->bts->features, BTS_FEAT_MULTI_TSC)) {
 		vty_out(vty, "%% This BTS does not support a TSC != BCC, "
 			"falling back to BCC%s", VTY_NEWLINE);
 		ts->tsc = -1;
@@ -340,12 +339,13 @@ DEFUN_USRATTR(cfg_ts_hopping,
 	      "Disable frequency hopping\n" "Enable frequency hopping\n")
 {
 	struct gsm_bts_trx_ts *ts = vty->index;
-	const struct gsm_bts *bts = ts->trx->bts;
 	int enabled = atoi(argv[0]);
 
-	if (enabled && bts->features_known && !osmo_bts_has_feature(&bts->features, BTS_FEAT_HOPPING)) {
-		vty_out(vty, "%% BTS does not support freq. hopping%s", VTY_NEWLINE);
-		return CMD_WARNING;
+	if (enabled && !osmo_bts_has_feature(&ts->trx->bts->features, BTS_FEAT_HOPPING)) {
+		vty_out(vty, "%% BTS model does not seem to support freq. hopping%s", VTY_NEWLINE);
+		/* Allow enabling frequency hopping anyway, because the BTS might not have
+		 * connected yet (thus not sent the feature vector), so we cannot know for
+		 * sure.  Jet print a warning and let it go. */
 	}
 
 	ts->hopping.enabled = enabled;

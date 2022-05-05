@@ -591,7 +591,6 @@ static int parse_attr_resp_info_attr(struct gsm_bts *bts, const struct gsm_bts_t
 		}
 
 		memcpy(bts->_features_data, TLVP_VAL(tp, NM_ATT_MANUF_ID), len);
-		bts->features_known = true;
 
 		/* Log each BTS feature in the reported vector */
 		for (i = 0; i < len * 8; i++) {
