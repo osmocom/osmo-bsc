@@ -262,7 +262,8 @@ static void paging_handle_pending_requests(struct gsm_bts_paging_state *paging_b
 				struct timespec tdiff;
 				timespecsub(&retrans_ts, &now, &tdiff);
 				LOG_PAGING_BTS(request, request->bts, DPAG, LOGL_DEBUG,
-					"Paging delayed: retransmission happens later\n");
+					       "Paging delayed: retransmission happens in %lld.%06lds\n",
+					       (long long)tdiff.tv_sec, tdiff.tv_nsec / 1000);
 				osmo_timer_schedule(&paging_bts->work_timer, tdiff.tv_sec, tdiff.tv_nsec / 1000);
 				return;
 			}
@@ -283,8 +284,10 @@ static void paging_handle_pending_requests(struct gsm_bts_paging_state *paging_b
 
 	/* Once done iterating, prepare next scheduling: */
 sched_next_iter:
-	LOG_BTS(bts, DPAG, LOGL_DEBUG, "Paged %u subscribers during last iteration. Scheduling next batch (available_slots=%u)\n",
-		num_paged, paging_bts->available_slots);
+	LOG_BTS(bts, DPAG, LOGL_DEBUG, "Paged %u subscribers during last iteration. "
+		"Scheduling next batch in %lld.%06lds (available_slots=%u)\n",
+		num_paged, (long long)initial_period.tv_sec, initial_period.tv_nsec / 1000,
+		paging_bts->available_slots);
 	osmo_timer_schedule(&paging_bts->work_timer, initial_period.tv_sec, initial_period.tv_nsec / 1000);
 }
 
@@ -455,15 +458,19 @@ static int _paging_request(const struct bsc_paging_params *params, struct gsm_bt
 		 *       which is a longer period.
 		 * Let's recaculate the time to adapt it to initial_period: */
 		struct timespec now, elapsed, tdiff;
+		struct gsm_paging_request *first_retrans_req;
 		osmo_clock_gettime(CLOCK_MONOTONIC, &now);
 		/* This is what used to be the first req (retrans state) in the queue: */
-		req = llist_entry(req->entry.next, struct gsm_paging_request, entry);
-		timespecsub(&now, &req->last_attempt_ts, &elapsed);
+		first_retrans_req = llist_entry(req->entry.next, struct gsm_paging_request, entry);
+		timespecsub(&now, &first_retrans_req->last_attempt_ts, &elapsed);
 		if (timespeccmp(&elapsed, &initial_period, <)) {
 			timespecsub(&initial_period, &elapsed, &tdiff);
 		} else {
 			tdiff = (struct timespec){.tv_sec = 0, .tv_nsec = 0 };
 		}
+		LOG_PAGING_BTS(req, req->bts, DPAG, LOGL_DEBUG,
+			       "New req arrived: re-scheduling next batch in %lld.%06lds\n",
+			       (long long)tdiff.tv_sec, tdiff.tv_nsec / 1000);
 		osmo_timer_schedule(&bts_entry->work_timer, tdiff.tv_sec, tdiff.tv_nsec / 1000);
 	} /* else: worker is already ongoing submitting initial requests, nothing do be done */
 
