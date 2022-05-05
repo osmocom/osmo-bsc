@@ -469,7 +469,11 @@ static int _paging_request(const struct bsc_paging_params *params, struct gsm_bt
 		LOG_PAGING_BTS(req, req->bts, DPAG, LOGL_DEBUG,
 			       "New req arrived: re-scheduling next batch in %lld.%06lds\n",
 			       (long long)tdiff.tv_sec, tdiff.tv_nsec / 1000);
-		osmo_timer_schedule(&bts_entry->work_timer, tdiff.tv_sec, tdiff.tv_nsec / 1000);
+		/* Avoid scheduling timer for short periods, run cb directly: */
+		if (tdiff.tv_sec == 0 && tdiff.tv_nsec < 5000)
+			paging_worker(bts_entry);
+		else
+			osmo_timer_schedule(&bts_entry->work_timer, tdiff.tv_sec, tdiff.tv_nsec / 1000);
 	} /* else: worker is already ongoing submitting initial requests, nothing do be done */
 
 	return 0;
