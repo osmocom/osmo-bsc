@@ -225,6 +225,7 @@ static void paging_handle_pending_requests(struct gsm_bts_paging_state *paging_b
 		goto sched_next_iter;
 
 	osmo_clock_gettime(CLOCK_MONOTONIC, &now);
+	paging_bts->last_sched_ts = now;
 
 	/* do while loop: Try send at most first MAX_PAGE_REQ_PER_ITER paging
 	 * requests (or before if there are no more available slots). Since
@@ -458,11 +459,8 @@ static int _paging_request(const struct bsc_paging_params *params, struct gsm_bt
 		 *       which is a longer period.
 		 * Let's recaculate the time to adapt it to initial_period: */
 		struct timespec now, elapsed, tdiff;
-		struct gsm_paging_request *first_retrans_req;
 		osmo_clock_gettime(CLOCK_MONOTONIC, &now);
-		/* This is what used to be the first req (retrans state) in the queue: */
-		first_retrans_req = llist_entry(req->entry.next, struct gsm_paging_request, entry);
-		timespecsub(&now, &first_retrans_req->last_attempt_ts, &elapsed);
+		timespecsub(&now, &bts_entry->last_sched_ts, &elapsed);
 		if (timespeccmp(&elapsed, &initial_period, <)) {
 			timespecsub(&initial_period, &elapsed, &tdiff);
 		} else {

@@ -106,6 +106,9 @@ struct gsm_bts_paging_state {
 	struct osmo_timer_list work_timer;
 	struct osmo_timer_list credit_timer;
 
+	/* Last time paging worker was triggered */
+	struct timespec last_sched_ts;
+
 	/* free chans needed */
 	int free_chans_need;
 
