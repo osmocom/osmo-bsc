@@ -101,6 +101,8 @@ struct gsm_paging_request {
 struct gsm_bts_paging_state {
 	/* pending requests */
 	struct llist_head pending_requests;
+	/* Number of requests in pending_requests_len */
+	unsigned int pending_requests_len;
 	struct gsm_bts *bts;
 
 	struct osmo_timer_list work_timer;

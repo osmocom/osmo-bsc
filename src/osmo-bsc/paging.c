@@ -61,6 +61,8 @@ void *tall_paging_ctx = NULL;
 /* How many paging requests to Tx on RSL at max before going back to main loop */
 #define MAX_PAGE_REQ_PER_ITER 10
 
+#define MAX_TX_DELAY_TIME_SEC 60
+
 /* How often to attempt sending new paging requests (initial, not retrans): 250ms */
 static const struct timespec initial_period = {
 	.tv_sec = 0,
@@ -87,6 +89,7 @@ static void paging_remove_request(struct gsm_bts_paging_state *paging_bts,
 	to_be_deleted->bsub->active_paging_requests--;
 	osmo_timer_del(&to_be_deleted->T3113);
 	llist_del(&to_be_deleted->entry);
+	paging_bts->pending_requests_len--;
 	bsc_subscr_put(to_be_deleted->bsub, BSUB_USE_PAGING_REQUEST);
 	talloc_free(to_be_deleted);
 	if (llist_empty(&paging_bts->pending_requests))
@@ -400,6 +403,12 @@ static int _paging_request(const struct bsc_paging_params *params, struct gsm_bt
 
 	rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_PAGING_ATTEMPTED));
 
+	/* don't try to queue more requests than we can realistically handle within MAX_TX_DELAY_TIME_SEC seconds */
+	if (paging_pending_requests_nr(bts) > paging_estimate_available_slots(bts, MAX_TX_DELAY_TIME_SEC)) {
+		rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_PAGING_OVERLOAD));
+		return -ENOSPC;
+	}
+
 	/* Iterate list of pending requests to find if we already have one for
 	 * the given subscriber. While on it, find the last
 	 * not-yet-ever-once-transmitted request; the new request will be added
@@ -440,6 +449,7 @@ static int _paging_request(const struct bsc_paging_params *params, struct gsm_bt
 	req->msc = params->msc;
 	osmo_timer_setup(&req->T3113, paging_T3113_expired, req);
 
+	bts_entry->pending_requests_len++;
 	/* there's no initial req (attempts==0), add to the start of the list */
 	if (last_initial_req == NULL)
 		llist_add(&req->entry, &bts_entry->pending_requests);
@@ -611,13 +621,7 @@ void paging_update_buffer_space(struct gsm_bts *bts, uint16_t free_slots)
 /*! Count the number of pending paging requests on given BTS */
 unsigned int paging_pending_requests_nr(struct gsm_bts *bts)
 {
-	unsigned int requests = 0;
-	struct gsm_paging_request *req;
-
-	llist_for_each_entry(req, &bts->paging.pending_requests, entry)
-		++requests;
-
-	return requests;
+	return bts->paging.pending_requests_len;
 }
 
 /*! Flush all paging requests at a given BTS for a given MSC (or NULL if all MSC should be flushed). */
