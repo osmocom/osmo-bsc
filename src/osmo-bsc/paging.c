@@ -360,8 +360,10 @@ static unsigned int calculate_timer_3113(struct gsm_paging_request *req, unsigne
 	 * struct osmo_tdef gsm_network_T_defs. */
 	OSMO_ASSERT(d);
 
-	if (!bts->T3113_dynamic)
-		return d->val;
+	if (!bts->T3113_dynamic) {
+		to = d->val;
+		goto ret;
+	}
 
 	/* MFRMS defines repeat interval of paging messages for MSs that belong
 	 * to same paging group across multiple 51 frame multiframes.
@@ -385,6 +387,8 @@ static unsigned int calculate_timer_3113(struct gsm_paging_request *req, unsigne
 		to = 60;
 
 	LOG_PAGING_BTS(req, bts, DPAG, LOGL_DEBUG, "Paging request: T3113 expires in %u seconds\n", to);
+ret:
+	osmo_stat_item_set(osmo_stat_item_group_get_item(bts->bts_statg, BTS_STAT_T3113), to);
 	return to;
 }
 

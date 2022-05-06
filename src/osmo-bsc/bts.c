@@ -975,6 +975,7 @@ void gsm_bts_stats_reset(struct gsm_bts *bts)
 	osmo_stat_item_set(osmo_stat_item_group_get_item(bts->bts_statg, BTS_STAT_CHAN_SDCCH8_CBCH_TOTAL), 0);
 	osmo_stat_item_set(osmo_stat_item_group_get_item(bts->bts_statg, BTS_STAT_CHAN_OSMO_DYN_USED), 0);
 	osmo_stat_item_set(osmo_stat_item_group_get_item(bts->bts_statg, BTS_STAT_CHAN_OSMO_DYN_TOTAL), 0);
+	osmo_stat_item_set(osmo_stat_item_group_get_item(bts->bts_statg, BTS_STAT_T3113), 0);
 }
 
 const struct rate_ctr_desc bts_ctr_description[] = {
@@ -1617,6 +1618,10 @@ const struct osmo_stat_item_desc bts_stat_desc[] = {
 		{ "num_trx:total",
 		  "Number of configured TRX in this BTS",
 		  "" },
+	[BTS_STAT_T3113] = \
+		{ "t3113",
+		  "T3113 paging timer",
+		  "s", 60, 0 },
 };
 
 const struct osmo_stat_item_group_desc bts_statg_desc = {
