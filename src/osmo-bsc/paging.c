@@ -353,7 +353,7 @@ static unsigned int paging_estimate_delay_us(struct gsm_bts *bts, unsigned int n
 static unsigned int calculate_timer_3113(struct gsm_paging_request *req, unsigned int reqs_before,
 					 unsigned int reqs_before_same_pgroup)
 {
-	unsigned int to_us, to;
+	unsigned int to_us, estimated_to, to;
 	struct gsm_bts *bts = req->bts;
 	struct osmo_tdef *d = osmo_tdef_get_entry(bts->network->T_defs, 3113);
 	unsigned int rach_max_trans, rach_tx_integer, bs_pa_mfrms;
@@ -381,8 +381,17 @@ static unsigned int calculate_timer_3113(struct gsm_paging_request *req, unsigne
 	to_us += paging_estimate_delay_us(bts, reqs_before, reqs_before_same_pgroup);
 
 	/* ceiling in seconds + extra time */
-	to = (to_us + 999999) / 1000000 + d->val;
-	LOG_PAGING_BTS(req, bts, DPAG, LOGL_DEBUG, "Paging request: T3113 expires in %u seconds\n", to);
+	estimated_to = (to_us + 999999) / 1000000 + d->val;
+
+	/* upper bound: 60s (OS#5553) */
+	if (estimated_to > MAX_TX_DELAY_TIME_SEC)
+		to = MAX_TX_DELAY_TIME_SEC;
+	else
+		to = estimated_to;
+
+	LOG_PAGING_BTS(req, bts, DPAG, LOGL_DEBUG,
+		       "Paging request: T3113 expires in %u seconds (estimated %u)\n",
+		       to, estimated_to);
 	return to;
 }
 
