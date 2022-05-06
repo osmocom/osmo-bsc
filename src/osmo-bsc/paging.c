@@ -409,6 +409,12 @@ static int _paging_request(const struct bsc_paging_params *params, struct gsm_bt
 
 	rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_PAGING_ATTEMPTED));
 
+	/* don't try to queie more requests than we can realistically handle within 60s */
+	if (llist_count(&bts_entry->pending_requests) > paging_estimate_available_slots(bts, 60)) {
+		rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_PAGING_OVERLOAD));
+		return -ENOSPC;
+	}
+
 	/* Iterate list of pending requests to find if we already have one for
 	 * the given subscriber. While on it, find the last
 	 * not-yet-ever-once-transmitted request; the new request will be added

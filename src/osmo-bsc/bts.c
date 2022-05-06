@@ -1072,6 +1072,9 @@ const struct rate_ctr_desc bts_ctr_description[] = {
 	[BTS_CTR_PAGING_MSC_FLUSH] = \
 		{ "paging:msc_flush",
 		  "Paging flushed due to MSC Reset BSSMAP message" },
+	[BTS_CTR_PAGING_OVERLOAD] = \
+		{ "paging:overload",
+		  "Paging dropped due to BSC Paging queue overload" },
 	[BTS_CTR_CHAN_ACT_TOTAL] = \
 		{ "chan_act:total",
 		  "Total number of Channel Activations" },
