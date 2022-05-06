@@ -379,6 +379,11 @@ static unsigned int calculate_timer_3113(struct gsm_paging_request *req, unsigne
 
 	/* ceiling in seconds + extra time */
 	to = (to_us + 999999) / 1000000 + d->val;
+
+	/* upper bound: 60s (OS#5553) */
+	if (to > 60)
+		to = 60;
+
 	LOG_PAGING_BTS(req, bts, DPAG, LOGL_DEBUG, "Paging request: T3113 expires in %u seconds\n", to);
 	return to;
 }
