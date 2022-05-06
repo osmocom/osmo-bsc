@@ -798,7 +798,7 @@ void bts_depend_mark(struct gsm_bts *bts, int dep)
 	int idx, bit;
 	depends_calc_index_bit(dep, &idx, &bit);
 
-	bts->depends_on[idx] |= 1 << bit;
+	bts->depends_on[idx] |= 1U << bit;
 }
 
 void bts_depend_clear(struct gsm_bts *bts, int dep)
@@ -806,7 +806,7 @@ void bts_depend_clear(struct gsm_bts *bts, int dep)
 	int idx, bit;
 	depends_calc_index_bit(dep, &idx, &bit);
 
-	bts->depends_on[idx] &= ~(1 << bit);
+	bts->depends_on[idx] &= ~(1U << bit);
 }
 
 int bts_depend_is_depedency(struct gsm_bts *base, struct gsm_bts *other)
@@ -815,7 +815,7 @@ int bts_depend_is_depedency(struct gsm_bts *base, struct gsm_bts *other)
 	depends_calc_index_bit(other->nr, &idx, &bit);
 
 	/* Check if there is a depends bit */
-	return (base->depends_on[idx] & (1 << bit)) > 0;
+	return (base->depends_on[idx] & (1U << bit)) > 0;
 }
 
 static int bts_is_online(struct gsm_bts *bts)
