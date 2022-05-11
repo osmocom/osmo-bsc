@@ -566,11 +566,9 @@ static int etws_primary_to_bts(struct gsm_bts *bts, const struct osmo_cbsp_write
 	bes->input.msg_id = wrepl->msg_id;
 	bes->input.serial_nr = wrepl->new_serial_nr;
 	bes->input.warn_type = wrepl->u.emergency.warning_type;
-	if (wrepl->u.emergency.warning_sec_info) {
-		bes->input.sec_info = talloc_named_const(bts, ETWS_SEC_INFO_SIZE, "etws_sec_info");
-		if (bes->input.sec_info)
-			memcpy(bes->input.sec_info, wrepl->u.emergency.warning_sec_info, ETWS_SEC_INFO_SIZE);
-	}
+	bes->input.sec_info = talloc_named_const(bts, ETWS_SEC_INFO_SIZE, "etws_sec_info");
+	if (bes->input.sec_info)
+		memcpy(bes->input.sec_info, wrepl->u.emergency.warning_sec_info, ETWS_SEC_INFO_SIZE);
 
 	/* generate the encoded ETWS PN */
 	gen_etws_primary_notification(bes->primary, bes->input.serial_nr, bes->input.msg_id,
