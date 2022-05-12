@@ -878,8 +878,9 @@ void gscon_lchan_releasing(struct gsm_subscriber_connection *conn, struct gsm_lc
 		lchan_forget_conn(conn->lchan);
 		conn->lchan = NULL;
 	}
-	/* If the conn has no lchan anymore, it was released by the BTS and needs to Clear towards MSC. */
-	if (!conn->lchan) {
+	/* If the conn has no lchan anymore, it was released by the BTS and needs to Clear towards MSC.
+	 * However, if a Location Request is still busy, do not send Clear Request. */
+	if (!conn->lchan && !conn->lcs.loc_req) {
 		switch (conn->fi->state) {
 		case ST_WAIT_CC:
 			/* The SCCP connection was not yet confirmed by a CC, the BSSAP is not fully established
@@ -984,7 +985,9 @@ static void gscon_fsm_allstate(struct osmo_fsm_inst *fi, uint32_t event, void *d
 			conn->lchan->release.rr_cause =
 				bsc_gsm48_rr_cause_from_rsl_cause(conn->lchan->release.rsl_error_cause);
 		}
-		gscon_bssmap_clear(conn, GSM0808_CAUSE_RADIO_INTERFACE_FAILURE);
+		/* Request BSSMAP Clear, but do not abort an ongoing Location Request */
+		if (!conn->lcs.loc_req)
+			gscon_bssmap_clear(conn, GSM0808_CAUSE_RADIO_INTERFACE_FAILURE);
 		break;
 	case GSCON_EV_MGW_MDCX_RESP_MSC:
 		LOGPFSML(fi, LOGL_DEBUG, "Rx MDCX of MSC side (LCLS?)\n");
