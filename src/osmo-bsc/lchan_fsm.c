@@ -528,14 +528,6 @@ static void lchan_reset(struct gsm_lchan *lchan)
 		lchan->mgw_endpoint_ci_bts = NULL;
 	}
 
-	/* Ensure that the osmo_timer in lchan->active_cc is stopped. This is particularly important for lchan FSM
-	 * deallocation, so that the timer is no longer active when the lchan FSM instance gets discarded
-	 * (lchan_fsm_cleanup() calls this function), see OS#5554.
-	 *
-	 * Besides that, it is also good to make sure the timer is stopped when the lchan resets, to avoid any false
-	 * counts being accumulated, however obscure an error situation may be. */
-	osmo_time_cc_cleanup(&lchan->active_cc);
-
 	/* NUL all volatile state */
 	*lchan = (struct gsm_lchan){
 		.ts = lchan->ts,
