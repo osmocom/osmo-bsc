@@ -569,13 +569,6 @@ void lchan_dump_full_vty(struct vty *vty, struct gsm_lchan *lchan)
 	vty_out(vty, "BTS %u, TRX %u, Timeslot %u, Lchan %u: Type %s%s",
 		lchan->ts->trx->bts->nr, lchan->ts->trx->nr, lchan->ts->nr,
 		lchan->nr, gsm_lchant_name(lchan->type), VTY_NEWLINE);
-
-	if (lchan->activate.concluded) {
-		vty_out(vty, "  Activated %s seconds ago%s",
-			osmo_int_to_float_str_c(OTC_SELECT, gsm_lchan_active_duration_ms(lchan), 3),
-			VTY_NEWLINE);
-	}
-
 	vty_out_dyn_ts_details(vty, lchan->ts);
 	vty_out(vty, "  Connection: %u, State: %s%s%s%s",
 		lchan->conn ? 1: 0, lchan_state_name(lchan),

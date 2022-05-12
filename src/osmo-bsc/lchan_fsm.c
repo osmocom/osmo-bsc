@@ -200,32 +200,9 @@ static void _lchan_on_activation_failure(struct gsm_lchan *lchan, enum lchan_act
 
 static void lchan_on_fully_established(struct gsm_lchan *lchan)
 {
-	struct rate_ctr *rate_ctr;
-
 	if (lchan->activate.concluded)
 		return;
 	lchan->activate.concluded = true;
-
-	/* Assign timekeeper to appropriate rate counter */
-	switch (lchan->type) {
-	case GSM_LCHAN_TCH_H:
-	case GSM_LCHAN_TCH_F:
-		rate_ctr = rate_ctr_group_get_ctr(lchan->ts->trx->bts->bts_ctrs, BTS_CTR_CHAN_TCH_ACTIVE_DECISECONDS_TOTAL);
-		break;
-	case GSM_LCHAN_SDCCH:
-		rate_ctr = rate_ctr_group_get_ctr(lchan->ts->trx->bts->bts_ctrs, BTS_CTR_CHAN_SDCCH_ACTIVE_DECISECONDS_TOTAL);
-		break;
-	default:
-		rate_ctr = NULL;
-		break;
-	}
-	lchan->active_cc.cfg.rate_ctr = rate_ctr;
-
-	/* This reset allows showing on vty how long ago a single active lchan was activated.
-	 * This reset does not affect rate_ctr statistics. */
-	osmo_time_cc_cleanup(&lchan->active_cc);
-	/* Start the timekeeper */
-	osmo_time_cc_set_flag(&lchan->active_cc, true);
 
 	switch (lchan->activate.info.activ_for) {
 	case ACTIVATE_FOR_MS_CHANNEL_REQUEST:
@@ -486,16 +463,6 @@ void lchan_fsm_alloc(struct gsm_lchan *lchan)
 	OSMO_ASSERT(lchan->fi);
 	lchan->fi->priv = lchan;
 	lchan_fsm_update_id(lchan);
-
-	/* Configure timekeeper to track this lchan's cumulative active milliseconds */
-	lchan->active_cc = (struct osmo_time_cc){
-		.cfg = {
-			.gran_usec = 1*100000,
-			.forget_sum_usec = 1,
-			.rate_ctr = NULL,
-		},
-	};
-
 	LOGPFSML(lchan->fi, LOGL_DEBUG, "new lchan\n");
 	lchan_reset(lchan);
 }
@@ -544,8 +511,6 @@ static void lchan_reset(struct gsm_lchan *lchan)
 		.tsc_set = 1,
 		.interf_dbm = INTERF_DBM_UNKNOWN,
 		.interf_band = INTERF_BAND_UNKNOWN,
-
-		.active_cc = lchan->active_cc,
 	};
 }
 
@@ -553,10 +518,6 @@ static void lchan_fsm_unused_onenter(struct osmo_fsm_inst *fi, uint32_t prev_sta
 {
 	struct gsm_lchan *lchan = lchan_fi_lchan(fi);
 	struct gsm_bts *bts = lchan->ts->trx->bts;
-
-	/* Stop the timekeeper */
-	osmo_time_cc_set_flag(&lchan->active_cc, false);
-
 	lchan_reset(lchan);
 	osmo_fsm_inst_dispatch(lchan->ts->fi, TS_EV_LCHAN_UNUSED, lchan);
 

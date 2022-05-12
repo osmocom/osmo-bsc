@@ -3677,8 +3677,6 @@ void bts_dump_vty(struct vty *vty, struct gsm_bts *bts)
 	struct gsm_bts_trx *trx;
 	int ts_hopping_total;
 	int ts_non_hopping_total;
-	const struct rate_ctr *activations_tch;
-	const struct rate_ctr *activations_sdcch;
 
 	vty_out(vty, "BTS %u is of %s type in band %s, has CI %u LAC %u, "
 		"BSIC %u (NCC=%u, BCC=%u) and %u TRX%s",
@@ -3853,29 +3851,6 @@ void bts_dump_vty(struct vty *vty, struct gsm_bts *bts)
 		rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_CHREQ_TOTAL)->current,
 		rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_CHREQ_NO_CHANNEL)->current,
 		VTY_NEWLINE);
-
-	vty_out(vty, "  Channel Activations     :%s", VTY_NEWLINE);
-	activations_tch = rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_CHAN_ACT_TCH);
-	vty_out(vty, "    TCH   %"PRIu64"", activations_tch->current);
-	if (activations_tch->intv[RATE_CTR_INTV_HOUR].rate > 0) {
-		const struct rate_ctr *active_time_tch_ds = rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_CHAN_TCH_ACTIVE_DECISECONDS_TOTAL);
-		vty_out(vty, " (avg lifespan %s seconds in last hour)",
-			osmo_int_to_float_str_c(OTC_SELECT,
-				100 * active_time_tch_ds->intv[RATE_CTR_INTV_HOUR].rate
-				/ activations_tch->intv[RATE_CTR_INTV_HOUR].rate, 3));
-	}
-	vty_out(vty, "%s", VTY_NEWLINE);
-	activations_sdcch = rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_CHAN_ACT_SDCCH);
-	vty_out(vty, "    SDCCH %"PRIu64"", activations_sdcch->current);
-	if (activations_sdcch->intv[RATE_CTR_INTV_HOUR].rate > 0) {
-		const struct rate_ctr *active_time_sdcch_ds = rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_CHAN_SDCCH_ACTIVE_DECISECONDS_TOTAL);
-		vty_out(vty, " (avg lifespan %s seconds in last hour)",
-			osmo_int_to_float_str_c(OTC_SELECT,
-				100 * active_time_sdcch_ds->intv[RATE_CTR_INTV_HOUR].rate
-				/ activations_sdcch->intv[RATE_CTR_INTV_HOUR].rate, 3));
-	}
-	vty_out(vty, "%s", VTY_NEWLINE);
-
 	vty_out(vty, "  Channel Failures        : %"PRIu64" rf_failures, %"PRIu64" rll failures%s",
 		rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_CHAN_RF_FAIL)->current,
 		rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_CHAN_RLL_ERR)->current,
