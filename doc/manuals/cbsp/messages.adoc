@@ -1,0 +1,73 @@
+== CBSP Messages
+
+=== List of Messages
+
+The following tables list the CBSP messages used by OsmoBSC BSC-CBC interface,
+grouped by their level of compliance with 3GPP TS 48.049.
+
+==== Messages Compliant With TS 48.049
+
+Specific additions and limitations apply, see the linked sections.
+
+.Messages compliant with TS 48.049
+[options="header",cols="10%,20%,45%,5%,20%"]
+|===
+| TS 48.049 § | This document § | Message | <-/-> | Received/Sent by OsmoBSC
+| 8.1.3.1  | - | WRITE-REPLACE | <- | Received
+| 8.1.3.2  | - | WRITE-REPLACE COMPLETE | -> | Sent
+| 8.1.3.3  | - | WRITE-REPLACE FAILURE | -> | Sent
+| 8.1.3.4  | - | KILL | <- | Received
+| 8.1.3.5  | - | KILL COMPLETE | -> | Sent
+| 8.1.3.6  | - | KILL FAILURE | -> | Sent
+| 8.1.3.10 | - | MESSAGE STATUS QUERY | <- | Received
+| 8.1.3.11 | - | MESSAGE STATUS QUERY COMPLETE | -> | Sent
+| 8.1.3.12 | - | MESSAGE STATUS QUERY FAILURE | -> | Sent
+| 8.1.3.16 | - | RESET | <- | Received
+| 8.1.3.17 | - | RESET COMPLETE | -> | Sent
+| 8.1.3.18 | <<RESET_FAILURE>> | RESET FAILURE | -> | Sent
+| 8.1.3.18a | <<KEEP_ALIVE>> | KEEP-ALIVE | <- | Received
+| 8.1.3.18b | - | KEEP-ALIVE COMPLETE | -> | Sent
+| 8.1.3.19 | <<RESTART>> | RESTART | -> | Sent
+|===
+
+==== Messages Not Implemented by OsmoBSC
+
+.3GPP TS 48.049 messages not implemented by OsmoBSC
+[options="header",cols="30%,45%,5%,20%"]
+|===
+| TS 48.049 § | Message | <-/-> | Received/Sent by OsmoBSC
+| 8.1.3.7  | LOAD QUERY | <- | Received
+| 8.1.3.8  | LOAD QUERY COMPLETE | -> | Sent
+| 8.1.3.9  | LOAD QUERY FAILURE | -> | Sent
+| 8.1.3.13 | SET-DRX | <- | Received
+| 8.1.3.14 | SET-DRX COMPLETE | -> | Sent
+| 8.1.3.15 | SET-DRX FAILURE | -> | Sent
+| 8.1.3.20 | FAILURE | -> | Sent
+| 8.1.3.21 | ERROR INDICATION | -> | Sent
+|===
+
+
+=== Message Limitation Details
+
+[[RESET_FAILURE]]
+==== RESET FAILURE
+
+Encoding of this message is implemented, but there is currently no
+condition in the OsmoBSC code that would make a RESET operation fail on
+an existing cell, except if the CBC were to identify
+a non-existent cell in its _Cell List IE_.
+
+[[KEEP_ALIVE]]
+==== KEEP-ALIVE
+
+The message is received and generates a corresponding KEEP-ALIVE
+COMPLETE answer.  However, the _Keep Alive Repetition Period IE_ is not
+interpreted.
+
+[[RESTART]]
+==== RESTART
+
+The RESTART message is sent only at the time of establishment of every
+CBSP link.  It is not sent when subsequent cells become available during
+runtime of the CBSP link.
+

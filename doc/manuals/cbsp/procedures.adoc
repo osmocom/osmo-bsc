@@ -1,0 +1,83 @@
+== CBSP Procedures
+
+=== List of Procedures
+
+The following tables list the CBSP procedures used by the OsmoBSC BSC-CBC interface,
+grouped by their level of compliance with 3GPP TS 48.049.
+
+==== Procedures Compliant With TS 48.049
+
+Specific additions and limitations apply, see the linked sections.
+
+.Procedures compliant with TS 48.049
+[options="header",cols="10%,20%,40%,30%"]
+|===
+| TS 48.049 § | This document § | Procedure | Originated/Terminated by OsmoBSC
+| 7.2 | <<PROC_WRITE_REPLACE>> | Write-Replace | Terminated
+| 7.3 | - | Kill | Terminated
+| 7.5 | - | Message Status Query | Terminated
+| 7.7a | <<PROC_KEEP_ALIVE>> | Keep Alive | Terminated
+| 7.8 | <<RESTART_IND>> | Restart Indication | Originated
+|===
+
+
+[[PROC_WRITE_REPLACE]]
+===== Write-Replace
+
+Procedures for _Write_ and _Replace_ of CBS messages as per 3GPP TS 48.049 Section 7.2.2.2
+are fully supported.
+
+Procedures for _Write_ and _Replace_ of ETWS messages as per 3GPP TS
+48.059 Section 7.2.2.2 are fully supported.  Transmission of the ETWS
+Primary Notification is implemented as follows, assuming related support
+is present in the related BTS and PCU software (true for OsmoBTS >= 1.2.0
+and OsmoPCU >= 0.8.0):
+
+* broadcast to MS in idle mode / packet idle mode by sending a
+  vendor-specific A-bis RSL message to each affected BTS.  A
+  vendor-specific mechanism is needed as 3GPP TS 48.058 does not specify
+  any standard message for this.  See the section on _Osmocom ETWS
+  Command_ in <<osmobts-abis-spec>> for more details.
+* broadcast to MS in dedicated mode by sending the ETWS PN via every
+  currently active dedicated channel (SDCCH, FACCH) within the affected
+  BTSs.
+
+As an additional clarification to 3GPP TS 48.049, OsmoBSC rejects (via
+WRITE-REPLACE FAILURE) any _write_ procedure for an emergency message if
+there already is another emergency message active in a cell.  The
+_replace_ procedure must be used (by specifying the _Old Serial Number
+IE_) if the only existing emergency message of a cell shall be replaced.
+
+[[PROC_KEEP_ALIVE]]
+===== Keep-Alive
+
+The Keep-Alive procedure is implemented only in as far as incoming
+Keep-Alive requests are responded to.
+
+The BSC currently does not use the _Keep Alive Repetition Period IE_.
+This is permitted as 3GPP TS 48.049 states the information _may_ be used
+by the BSC.
+
+[[PROC_RESTART_IND]]
+===== Restart Indication
+
+Restart indications are currently only sent whenever any BSC-CBC link is
+established.  They are not sent once subsequent cells become available
+or are re-initialized due to A-bis link failure.
+
+However, CBSP state for both CBS and Emergency messages is kept
+persistent in the BSC and if cells reboot / restart during the duration
+of a CBS / emergency message, they will resume broadcasts as expected.
+
+
+==== Procedures Not Implemented by OsmoBSC
+
+.3GPP TS 48.049 procedures not implemented by OsmoBSC
+[options="header",cols="30%,40%,30%"]
+|===
+| TS 48.049 § | Procedure | Originated/Terminated by OsmoBSC
+| 7.4 | Load Status Enquiry | Terminated
+| 7.6 | Set DRX | Terminated
+| 7.9 | Failure Indication | Originated
+| 7.10 | Error Indication | Originated
+|===

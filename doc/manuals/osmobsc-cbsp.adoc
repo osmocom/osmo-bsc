@@ -1,0 +1,69 @@
+:gfdl-enabled:
+
+OsmoBSC CBSP Protocol Specification
+===================================
+Harald Welte <hwelte@sysmocom.de>
+
+== Introduction
+
+This document describes the CBSP interface of *OsmoBSC* as spoken on the
+BSC-CBC interface. Based on 3GPP TS 48.049 <<3gpp-ts-48-049>>, this document indicates
+which of the 3GPP specified CBSP messages and IEs are implemented
+according to 3GPP specifications, which of these are not or not fully
+implemented, as well as OsmoBSC-specific extensions to the CBSP
+interface not specified by 3GPP.
+
+For details on the standard CBSP messages and IE definitions,
+please refer to the 3GPP documents.
+
+.3GPP document versions referred to by this document
+[cols="20%,80%"]
+|===
+|3GPP TS 48.049 | version 12.0.0 Release 12
+|===
+
+.IETF documents referred to by his document
+[cols="20%,80%"]
+|===
+|IETF RFC 793 | Transmission Control Protocol
+|===
+
+== Overview
+
+The OsmoBSC BSC-CBC interface consists of CBSP messages transmitted over
+TCP.
+
+The default TCP destination port number is TCP port 48049; this can be
+changed by configuration, as described in the OsmoBSC user manual
+<<userman-osmobsc>> and/or VTY reference manual <<vty-ref-osmobsc>>.
+
+.TCP port numbers used by OsmoBTS Abis/IP
+[options="header",width="50%",cols="35%,65%"]
+|===
+|TCP Port Number|Usage
+|48049|CBSP
+|===
+
+OsmoBSC implements both _TCP server_ and _TCP client_ role; it is hence
+configurable whether the CBC establishes the TCP connection to the BSC
+(BSC in _TCP server_ role) or if the BSC establishes the TCP connection
+to the CBC (BSC in _TCP client_ role).
+
+Currently, only transport of TCP via IPv4 is implemented.
+
+Any IP-capable link-layer protocol implemented in the underlying Linux
+operating system can be used to transport the IP/TCP/CBSP of OsmoBSC.
+
+
+include::{srcdir}/cbsp/procedures.adoc[]
+
+include::{srcdir}/cbsp/messages.adoc[]
+
+
+include::./common/chapters/port_numbers.adoc[]
+
+include::./common/chapters/bibliography.adoc[]
+
+include::./common/chapters/glossary.adoc[]
+
+include::./common/chapters/gfdl.adoc[]
