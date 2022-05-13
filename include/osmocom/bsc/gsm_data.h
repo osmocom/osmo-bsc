@@ -29,6 +29,7 @@
 #include <osmocom/gsm/rxlev_stat.h>
 #include <osmocom/gsm/protocol/gsm_08_58.h>
 #include <osmocom/gsm/protocol/gsm_12_21.h>
+#include <osmocom/gsm/protocol/gsm_03_41.h>
 #include <osmocom/abis/e1_input.h>
 #include <osmocom/bsc/meas_rep.h>
 #include <osmocom/bsc/acc.h>
@@ -1098,7 +1099,7 @@ struct bts_etws_state {
 		uint16_t msg_id;
 		uint16_t serial_nr;
 		uint16_t warn_type;
-		uint8_t *sec_info;
+		uint8_t sec_info[ETWS_SEC_INFO_SIZE];
 	} input;
 	/* encoded ETWS primary notification */
 	uint8_t primary[ETWS_PRIM_NOTIF_SIZE];

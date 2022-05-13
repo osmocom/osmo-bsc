@@ -70,9 +70,7 @@ static int gen_etws_primary_notification(uint8_t *out, uint16_t serial_nr, uint1
 	osmo_store16be(serial_nr, out);
 	etws->msg_id = osmo_htons(msg_id);
 	etws->warning_type = osmo_htons(warn_type);
-
-	if (sec_info)
-		memcpy(etws->data, sec_info, ETWS_PRIM_NOTIF_SIZE - sizeof(*etws));
+	memcpy(etws->data, sec_info, ETWS_PRIM_NOTIF_SIZE - sizeof(*etws));
 
 	return ETWS_PRIM_NOTIF_SIZE;
 }
@@ -557,18 +555,11 @@ static int etws_primary_to_bts(struct gsm_bts *bts, const struct osmo_cbsp_write
 		}
 	}
 
-	if (bes->input.sec_info) {
-		talloc_free(bes->input.sec_info);
-		bes->input.sec_info = NULL;
-	}
-
 	/* copy over all the data to per-BTS private state */
 	bes->input.msg_id = wrepl->msg_id;
 	bes->input.serial_nr = wrepl->new_serial_nr;
 	bes->input.warn_type = wrepl->u.emergency.warning_type;
-	bes->input.sec_info = talloc_named_const(bts, ETWS_SEC_INFO_SIZE, "etws_sec_info");
-	if (bes->input.sec_info)
-		memcpy(bes->input.sec_info, wrepl->u.emergency.warning_sec_info, ETWS_SEC_INFO_SIZE);
+	memcpy(bes->input.sec_info, wrepl->u.emergency.warning_sec_info, sizeof(bes->input.sec_info));
 
 	/* generate the encoded ETWS PN */
 	gen_etws_primary_notification(bes->primary, bes->input.serial_nr, bes->input.msg_id,
