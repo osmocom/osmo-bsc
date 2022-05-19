@@ -204,6 +204,10 @@ static void lchan_on_fully_established(struct gsm_lchan *lchan)
 		return;
 	lchan->activate.concluded = true;
 
+	/* Set active state timekeeping markers. */
+	osmo_clock_gettime(CLOCK_MONOTONIC, &lchan->active_start);
+	lchan->active_stored = lchan->active_start;
+
 	switch (lchan->activate.info.activ_for) {
 	case ACTIVATE_FOR_MS_CHANNEL_REQUEST:
 		/* No signalling to do here, MS is free to use the channel, and should go on to connect

@@ -741,6 +741,61 @@ void bts_store_uptime(struct gsm_bts *bts)
 	osmo_stat_item_set(osmo_stat_item_group_get_item(bts->bts_statg, BTS_STAT_UPTIME_SECONDS), bts_uptime(bts));
 }
 
+void bts_store_lchan_durations(struct gsm_bts *bts)
+{
+	struct gsm_bts_trx *trx;
+	int i, j;
+	struct timespec now, elapsed;
+	uint64_t elapsed_ms;
+	uint64_t elapsed_tch_ms = 0;
+	uint64_t elapsed_sdcch_ms = 0;
+
+	/* Ignore BTS that are not in operation. */
+	if (!trx_is_usable(bts->c0))
+		return;
+
+	/* Grab storage time to be used for all lchans. */
+	osmo_clock_gettime(CLOCK_MONOTONIC, &now);
+
+	/* Iterate over all lchans. */
+	llist_for_each_entry(trx, &bts->trx_list, list) {
+		for (i = 0; i < ARRAY_SIZE(trx->ts); i++) {
+			struct gsm_bts_trx_ts *ts = &trx->ts[i];
+			for (j = 0; j < ARRAY_SIZE(ts->lchan); j++) {
+				struct gsm_lchan *lchan = &ts->lchan[j];
+
+				/* Ignore lchans whose activation timestamps are not yet set. */
+				if (lchan->active_stored.tv_sec == 0 && lchan->active_stored.tv_nsec == 0)
+					continue;
+
+				/* Calculate elapsed time since last storage. */
+				timespecsub(&now, &lchan->active_stored, &elapsed);
+				elapsed_ms = elapsed.tv_sec * 1000 + elapsed.tv_nsec / 1000000;
+
+				/* Assign elapsed time to appropriate bucket. */
+				switch (lchan->type) {
+				case GSM_LCHAN_TCH_H:
+				case GSM_LCHAN_TCH_F:
+					elapsed_tch_ms += elapsed_ms;
+					break;
+				case GSM_LCHAN_SDCCH:
+					elapsed_sdcch_ms += elapsed_ms;
+					break;
+				default:
+					continue;
+				}
+
+				/* Update storage time. */
+				lchan->active_stored = now;
+			}
+		}
+	}
+
+	/* Export to rate counters. */
+	rate_ctr_add(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_CHAN_TCH_ACTIVE_MILLISECONDS_TOTAL), elapsed_tch_ms);
+	rate_ctr_add(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_CHAN_SDCCH_ACTIVE_MILLISECONDS_TOTAL), elapsed_sdcch_ms);
+}
+
 unsigned long long bts_uptime(const struct gsm_bts *bts)
 {
 	struct timespec tp;
@@ -1099,6 +1154,12 @@ const struct rate_ctr_desc bts_ctr_description[] = {
 	[BTS_CTR_CHAN_ACT_NACK] = \
 		{ "chan_act:nack",
 		  "Number of Channel Activations that the BTS NACKed" },
+	[BTS_CTR_CHAN_TCH_ACTIVE_MILLISECONDS_TOTAL] = \
+		{ "chan_tch:active_milliseconds:total",
+		  "Cumulative number of milliseconds of TCH channel activity" },
+	[BTS_CTR_CHAN_SDCCH_ACTIVE_MILLISECONDS_TOTAL] = \
+		{ "chan_sdcch:active_milliseconds:total",
+		  "Cumulative number of milliseconds of SDCCH channel activity" },
 	[BTS_CTR_RSL_UNKNOWN] = \
 		{ "rsl:unknown",
 		  "Number of unknown/unsupported RSL messages received from BTS" },

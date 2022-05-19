@@ -889,6 +889,9 @@ struct gsm_lchan {
 	uint8_t interf_band;
 	/* MS power control state */
 	struct lchan_power_ctrl_state ms_power_ctrl;
+	/* Timestamps and markers to track active state duration. */
+	struct timespec active_start;
+	struct timespec active_stored;
 };
 
 /* One Timeslot in a TRX */
@@ -1147,6 +1150,7 @@ const char *gsm_chreq_name(enum gsm_chreq_reason_t c);
 char *gsm_ts_name(const struct gsm_bts_trx_ts *ts);
 char *gsm_ts_and_pchan_name(const struct gsm_bts_trx_ts *ts);
 void lchan_update_name(struct gsm_lchan *lchan);
+uint64_t gsm_lchan_active_duration_ms(const struct gsm_lchan *lchan);
 
 static inline char *gsm_lchan_name(const struct gsm_lchan *lchan)
 {
@@ -1277,6 +1281,9 @@ struct gsm_network {
 
 	/* Timer to write each BTS's uptime counter state to the stats system. */
 	struct osmo_timer_list bts_store_uptime_timer;
+
+	/* Timer to write each BTS's set of lchan duration counters' state to the stats system. */
+	struct osmo_timer_list bts_store_lchan_durations_timer;
 
 	struct {
 		/* Single MGCP client configuration under msc node (also required for

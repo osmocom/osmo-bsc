@@ -60,6 +60,8 @@ enum bts_counter_id {
 	BTS_CTR_CHAN_ACT_SDCCH,
 	BTS_CTR_CHAN_ACT_TCH,
 	BTS_CTR_CHAN_ACT_NACK,
+	BTS_CTR_CHAN_TCH_ACTIVE_MILLISECONDS_TOTAL,
+	BTS_CTR_CHAN_SDCCH_ACTIVE_MILLISECONDS_TOTAL,
 	BTS_CTR_RSL_UNKNOWN,
 	BTS_CTR_RSL_IPA_NACK,
 	BTS_CTR_RSL_DELETE_IND,
@@ -756,6 +758,9 @@ int bts_gprs_mode_is_compat(struct gsm_bts *bts, enum bts_gprs_mode mode);
 void bts_store_uptime(struct gsm_bts *bts);
 
 unsigned long long bts_uptime(const struct gsm_bts *bts);
+
+#define BTS_STORE_LCHAN_DURATIONS_INTERVAL 1 /* in seconds */
+void bts_store_lchan_durations(struct gsm_bts *bts);
 
 char *get_model_oml_status(const struct gsm_bts *bts);
 /* reset the state of all MO in the BTS */

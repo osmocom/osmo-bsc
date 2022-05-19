@@ -88,6 +88,18 @@ static void bsc_store_bts_uptime(void *data)
 	osmo_timer_schedule(&net->bts_store_uptime_timer, BTS_STORE_UPTIME_INTERVAL, 0);
 }
 
+static void bsc_store_bts_lchan_durations(void *data)
+{
+	struct gsm_network *net = data;
+	struct gsm_bts *bts;
+
+	llist_for_each_entry(bts, &net->bts_list, list)
+		bts_store_lchan_durations(bts);
+
+	/* Keep this timer ticking. */
+	osmo_timer_schedule(&net->bts_store_lchan_durations_timer, BTS_STORE_LCHAN_DURATIONS_INTERVAL, 0);
+}
+
 static struct gsm_network *bsc_network_init(void *ctx)
 {
 	struct gsm_network *net = gsm_network_init(ctx);
@@ -179,6 +191,10 @@ static struct gsm_network *bsc_network_init(void *ctx)
 	/* Init uptime tracking timer. */
 	osmo_timer_setup(&net->bts_store_uptime_timer, bsc_store_bts_uptime, net);
 	osmo_timer_schedule(&net->bts_store_uptime_timer, BTS_STORE_UPTIME_INTERVAL, 0);
+
+	/* Init lchan duration tracking timer. */
+	osmo_timer_setup(&net->bts_store_lchan_durations_timer, bsc_store_bts_lchan_durations, net);
+	osmo_timer_schedule(&net->bts_store_lchan_durations_timer, BTS_STORE_LCHAN_DURATIONS_INTERVAL, 0);
 
 	net->cbc->net = net;
 	net->cbc->mode = BSC_CBC_LINK_MODE_DISABLED;

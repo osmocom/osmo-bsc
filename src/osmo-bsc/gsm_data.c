@@ -342,6 +342,21 @@ void lchan_update_name(struct gsm_lchan *lchan)
 				      lchan->nr - (lchan->vamos.is_secondary ? ts->max_primary_lchans : 0));
 }
 
+/* If the lchan is currently active, return the duration since activation in milliseconds.
+ * Otherwise return 0. */
+uint64_t gsm_lchan_active_duration_ms(const struct gsm_lchan *lchan)
+{
+	struct timespec now, elapsed;
+
+	if (lchan->active_start.tv_sec == 0 && lchan->active_start.tv_nsec == 0)
+		return 0;
+
+	osmo_clock_gettime(CLOCK_MONOTONIC, &now);
+	timespecsub(&now, &lchan->active_start, &elapsed);
+
+	return elapsed.tv_sec * 1000 + elapsed.tv_nsec / 1000000;
+}
+
 /* obtain the MO structure for a given object instance */
 static inline struct gsm_abis_mo *
 gsm_objclass2mo(struct gsm_bts *bts, uint8_t obj_class,
