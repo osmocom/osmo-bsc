@@ -600,7 +600,7 @@ int gsm_lchan_and_pchan2chan_nr(const struct gsm_lchan *lchan, enum gsm_phys_cha
 	if (rc < 0)
 		LOG_LCHAN(lchan, LOGL_ERROR,
 			  "Error encoding Channel Number: pchan %s ts %u ss %u%s\n",
-			  gsm_pchan_name(lchan->ts->pchan_from_config), lchan->ts->nr, lchan->nr,
+			  gsm_pchan_name(lchan->ts->pchan_from_config), lchan->ts->nr, lchan_nr,
 			  lchan->vamos.is_secondary ? " (VAMOS shadow)" : "");
 	return rc;
 }
