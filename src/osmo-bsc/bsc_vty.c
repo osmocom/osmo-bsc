@@ -1787,9 +1787,7 @@ DEFUN_HIDDEN(lchan_act_bts, lchan_act_all_cmd,
 	struct gsm_network *net = gsmnet_from_vty(vty);
 	const char *act_str = argv[0];
 	int activate;
-	int bts_nr;
 	struct gsm_bts *bts;
-	int trx_nr;
 	struct gsm_bts_trx *trx;
 
 	if (!strcmp(act_str, "activate-all-lchan"))
@@ -1797,12 +1795,9 @@ DEFUN_HIDDEN(lchan_act_bts, lchan_act_all_cmd,
 	else
 		activate = 0;
 
-	for (bts_nr = 0; bts_nr < net->num_bts; bts_nr++) {
-		bts = gsm_bts_num(gsmnet_from_vty(vty), bts_nr);
-		for (trx_nr = 0; trx_nr < bts->num_trx; trx_nr++) {
-			trx = gsm_bts_trx_num(bts, trx_nr);
+	llist_for_each_entry(bts, &net->bts_list, list) {
+		llist_for_each_entry(trx, &bts->trx_list, list)
 			lchan_act_trx(vty, trx, activate);
-		}
 	}
 
 	vty_out(vty, "%% All channels have been %s on all BTS/TRX, please "
