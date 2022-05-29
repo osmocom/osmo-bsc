@@ -525,7 +525,7 @@ static void lchan_fsm_unused_onenter(struct osmo_fsm_inst *fi, uint32_t prev_sta
 	lchan_reset(lchan);
 	osmo_fsm_inst_dispatch(lchan->ts->fi, TS_EV_LCHAN_UNUSED, lchan);
 
-	bsc_update_time_cc_all_allocated(bts->network);
+	all_allocated_update_bsc();
 
 	/* Poll the channel request queue, so that waiting calls can make use of the lchan that just
 	 * has become unused now. */
@@ -707,7 +707,7 @@ static void lchan_fsm_wait_ts_ready_onenter(struct osmo_fsm_inst *fi, uint32_t p
 		return;
 	}
 
-	bsc_update_time_cc_all_allocated(bts->network);
+	all_allocated_update_bsc();
 
 	lchan->conn = info->for_conn;
 

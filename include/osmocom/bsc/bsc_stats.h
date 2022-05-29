@@ -110,4 +110,5 @@ enum {
 extern const struct osmo_stat_item_group_desc bsc_statg_desc;
 
 void bsc_update_connection_stats(struct gsm_network *net);
-void bsc_update_time_cc_all_allocated(struct gsm_network *net);
+
+void all_allocated_update_bsc();

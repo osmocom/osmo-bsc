@@ -195,67 +195,46 @@ void bsc_update_connection_stats(struct gsm_network *net)
 	osmo_stat_item_set(osmo_stat_item_group_get_item(net->bsc_statg, BSC_STAT_NUM_TRX_TOTAL), num_trx_total);
 
 	/* Make sure to notice cells that become disconnected */
-	bsc_update_time_cc_all_allocated(net);
+	all_allocated_update_bsc();
 }
 
-void bsc_update_time_cc_all_allocated(struct gsm_network *net)
+static void all_allocated_update(struct all_allocated *all_allocated, const struct chan_counts *c)
 {
-	struct gsm_bts *bts;
-	struct gsm_bts_trx *trx;
+	osmo_time_cc_set_flag(&all_allocated->sdcch,
+			      c->val[CHAN_COUNTS1_ALL][CHAN_COUNTS2_MAX_TOTAL][GSM_LCHAN_SDCCH]
+			      && !c->val[CHAN_COUNTS1_ALL][CHAN_COUNTS2_FREE][GSM_LCHAN_SDCCH]);
 
+	osmo_time_cc_set_flag(&all_allocated->static_sdcch,
+			      c->val[CHAN_COUNTS1_STATIC][CHAN_COUNTS2_MAX_TOTAL][GSM_LCHAN_SDCCH]
+			      && !c->val[CHAN_COUNTS1_STATIC][CHAN_COUNTS2_FREE][GSM_LCHAN_SDCCH]);
+
+	osmo_time_cc_set_flag(&all_allocated->tch,
+			      (c->val[CHAN_COUNTS1_ALL][CHAN_COUNTS2_MAX_TOTAL][GSM_LCHAN_TCH_F]
+			       + c->val[CHAN_COUNTS1_ALL][CHAN_COUNTS2_MAX_TOTAL][GSM_LCHAN_TCH_H])
+			      && !(c->val[CHAN_COUNTS1_ALL][CHAN_COUNTS2_FREE][GSM_LCHAN_TCH_F]
+				   + c->val[CHAN_COUNTS1_ALL][CHAN_COUNTS2_FREE][GSM_LCHAN_TCH_H]));
+
+	osmo_time_cc_set_flag(&all_allocated->static_tch,
+			      (c->val[CHAN_COUNTS1_STATIC][CHAN_COUNTS2_MAX_TOTAL][GSM_LCHAN_TCH_F]
+			       + c->val[CHAN_COUNTS1_STATIC][CHAN_COUNTS2_MAX_TOTAL][GSM_LCHAN_TCH_H])
+			      && !(c->val[CHAN_COUNTS1_STATIC][CHAN_COUNTS2_FREE][GSM_LCHAN_TCH_F]
+				   + c->val[CHAN_COUNTS1_STATIC][CHAN_COUNTS2_FREE][GSM_LCHAN_TCH_H]));
+}
+
+void all_allocated_update_bsc()
+{
+	struct gsm_network *net = bsc_gsmnet;
+	struct gsm_bts *bts;
 	struct chan_counts bsc_counts;
+
 	chan_counts_zero(&bsc_counts);
 
 	llist_for_each_entry(bts, &net->bts_list, list) {
 		struct chan_counts bts_counts;
-		chan_counts_zero(&bts_counts);
-
-		llist_for_each_entry(trx, &bts->trx_list, list) {
-			struct chan_counts trx_counts;
-			chan_counts_for_trx(&trx_counts, trx);
-			chan_counts_add(&bts_counts, &trx_counts);
-		}
-
-		osmo_time_cc_set_flag(&bts->all_allocated_sdcch,
-				      bts_counts.val[CHAN_COUNTS1_ALL][CHAN_COUNTS2_MAX_TOTAL][GSM_LCHAN_SDCCH]
-				      && !bts_counts.val[CHAN_COUNTS1_ALL][CHAN_COUNTS2_FREE][GSM_LCHAN_SDCCH]);
-
-		osmo_time_cc_set_flag(&bts->all_allocated_static_sdcch,
-				      bts_counts.val[CHAN_COUNTS1_STATIC][CHAN_COUNTS2_MAX_TOTAL][GSM_LCHAN_SDCCH]
-				      && !bts_counts.val[CHAN_COUNTS1_STATIC][CHAN_COUNTS2_FREE][GSM_LCHAN_SDCCH]);
-
-		osmo_time_cc_set_flag(&bts->all_allocated_tch,
-				      (bts_counts.val[CHAN_COUNTS1_ALL][CHAN_COUNTS2_MAX_TOTAL][GSM_LCHAN_TCH_F]
-				       + bts_counts.val[CHAN_COUNTS1_ALL][CHAN_COUNTS2_MAX_TOTAL][GSM_LCHAN_TCH_H])
-				      && !(bts_counts.val[CHAN_COUNTS1_ALL][CHAN_COUNTS2_FREE][GSM_LCHAN_TCH_F]
-					   + bts_counts.val[CHAN_COUNTS1_ALL][CHAN_COUNTS2_FREE][GSM_LCHAN_TCH_H]));
-
-		osmo_time_cc_set_flag(&bts->all_allocated_static_tch,
-				      (bts_counts.val[CHAN_COUNTS1_STATIC][CHAN_COUNTS2_MAX_TOTAL][GSM_LCHAN_TCH_F]
-				       + bts_counts.val[CHAN_COUNTS1_STATIC][CHAN_COUNTS2_MAX_TOTAL][GSM_LCHAN_TCH_H])
-				      && !(bts_counts.val[CHAN_COUNTS1_STATIC][CHAN_COUNTS2_FREE][GSM_LCHAN_TCH_F]
-					   + bts_counts.val[CHAN_COUNTS1_STATIC][CHAN_COUNTS2_FREE][GSM_LCHAN_TCH_H]));
-
+		chan_counts_for_bts(&bts_counts, bts);
+		all_allocated_update(&bts->all_allocated, &bts_counts);
 		chan_counts_add(&bsc_counts, &bts_counts);
 	}
 
-	osmo_time_cc_set_flag(&net->all_allocated_sdcch,
-			      bsc_counts.val[CHAN_COUNTS1_ALL][CHAN_COUNTS2_MAX_TOTAL][GSM_LCHAN_SDCCH]
-			      && !bsc_counts.val[CHAN_COUNTS1_ALL][CHAN_COUNTS2_FREE][GSM_LCHAN_SDCCH]);
-
-	osmo_time_cc_set_flag(&net->all_allocated_static_sdcch,
-			      bsc_counts.val[CHAN_COUNTS1_STATIC][CHAN_COUNTS2_MAX_TOTAL][GSM_LCHAN_SDCCH]
-			      && !bsc_counts.val[CHAN_COUNTS1_STATIC][CHAN_COUNTS2_FREE][GSM_LCHAN_SDCCH]);
-
-	osmo_time_cc_set_flag(&net->all_allocated_tch,
-			      (bsc_counts.val[CHAN_COUNTS1_ALL][CHAN_COUNTS2_MAX_TOTAL][GSM_LCHAN_TCH_F]
-			       + bsc_counts.val[CHAN_COUNTS1_ALL][CHAN_COUNTS2_MAX_TOTAL][GSM_LCHAN_TCH_H])
-			      && !(bsc_counts.val[CHAN_COUNTS1_ALL][CHAN_COUNTS2_FREE][GSM_LCHAN_TCH_F]
-				   + bsc_counts.val[CHAN_COUNTS1_ALL][CHAN_COUNTS2_FREE][GSM_LCHAN_TCH_H]));
-
-	osmo_time_cc_set_flag(&net->all_allocated_static_tch,
-			      (bsc_counts.val[CHAN_COUNTS1_STATIC][CHAN_COUNTS2_MAX_TOTAL][GSM_LCHAN_TCH_F]
-			       + bsc_counts.val[CHAN_COUNTS1_STATIC][CHAN_COUNTS2_MAX_TOTAL][GSM_LCHAN_TCH_H])
-			      && !(bsc_counts.val[CHAN_COUNTS1_STATIC][CHAN_COUNTS2_FREE][GSM_LCHAN_TCH_F]
-				   + bsc_counts.val[CHAN_COUNTS1_STATIC][CHAN_COUNTS2_FREE][GSM_LCHAN_TCH_H]));
+	all_allocated_update(&net->all_allocated, &bsc_counts);
 }

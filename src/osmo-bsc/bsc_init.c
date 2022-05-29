@@ -132,7 +132,7 @@ static struct gsm_network *bsc_network_init(void *ctx)
 	if (!net->bts_unknown_statg)
 		goto err_free_all;
 
-	net->all_allocated_sdcch = (struct osmo_time_cc){
+	net->all_allocated.sdcch = (struct osmo_time_cc){
 		.cfg = {
 			.gran_usec = 1*1000000,
 			.forget_sum_usec = 60*1000000,
@@ -143,7 +143,7 @@ static struct gsm_network *bsc_network_init(void *ctx)
 			.T_defs = net->T_defs,
 		},
 	};
-	net->all_allocated_static_sdcch = (struct osmo_time_cc){
+	net->all_allocated.static_sdcch = (struct osmo_time_cc){
 		.cfg = {
 			.gran_usec = 1*1000000,
 			.forget_sum_usec = 60*1000000,
@@ -154,7 +154,7 @@ static struct gsm_network *bsc_network_init(void *ctx)
 			.T_defs = net->T_defs,
 		},
 	};
-	net->all_allocated_tch = (struct osmo_time_cc){
+	net->all_allocated.tch = (struct osmo_time_cc){
 		.cfg = {
 			.gran_usec = 1*1000000,
 			.forget_sum_usec = 60*1000000,
@@ -165,7 +165,7 @@ static struct gsm_network *bsc_network_init(void *ctx)
 			.T_defs = net->T_defs,
 		},
 	};
-	net->all_allocated_static_tch = (struct osmo_time_cc){
+	net->all_allocated.static_tch = (struct osmo_time_cc){
 		.cfg = {
 			.gran_usec = 1*1000000,
 			.forget_sum_usec = 60*1000000,

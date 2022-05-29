@@ -1203,6 +1203,13 @@ struct gsm_tz {
 	int dst; /* daylight savings */
 };
 
+struct all_allocated {
+	struct osmo_time_cc sdcch;
+	struct osmo_time_cc static_sdcch;
+	struct osmo_time_cc tch;
+	struct osmo_time_cc static_tch;
+};
+
 struct gsm_network {
 	struct osmo_plmn_id plmn;
 
@@ -1313,10 +1320,7 @@ struct gsm_network {
 
 	struct smlc_config *smlc;
 
-	struct osmo_time_cc all_allocated_sdcch;
-	struct osmo_time_cc all_allocated_static_sdcch;
-	struct osmo_time_cc all_allocated_tch;
-	struct osmo_time_cc all_allocated_static_tch;
+	struct all_allocated all_allocated;
 };
 
 struct gsm_audio_support {
