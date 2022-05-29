@@ -960,10 +960,8 @@ bool ts_is_capable_of_lchant(struct gsm_bts_trx_ts *ts, enum gsm_chan_t type)
 
 bool ts_is_usable(const struct gsm_bts_trx_ts *ts)
 {
-	if (!trx_is_usable(ts->trx)) {
-		LOGP(DRLL, LOGL_DEBUG, "%s not usable\n", gsm_trx_name(ts->trx));
+	if (!trx_is_usable(ts->trx))
 		return false;
-	}
 
 	if (!ts->fi)
 		return false;
