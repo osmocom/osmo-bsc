@@ -955,6 +955,9 @@ void gscon_forget_mgw_endpoint_ci(struct gsm_subscriber_connection *conn, struct
 
 	if (conn->user_plane.mgw_endpoint_ci_msc == ci)
 		conn->user_plane.mgw_endpoint_ci_msc = NULL;
+
+	if (conn->assignment.created_ci_for_msc == ci)
+		conn->assignment.created_ci_for_msc = NULL;
 }
 
 static void gscon_fsm_allstate(struct osmo_fsm_inst *fi, uint32_t event, void *data)

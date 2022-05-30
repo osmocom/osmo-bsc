@@ -128,10 +128,13 @@ void assignment_reset(struct gsm_subscriber_connection *conn)
 	}
 
 	if (conn->assignment.created_ci_for_msc) {
-		gscon_forget_mgw_endpoint_ci(conn, conn->assignment.created_ci_for_msc);
+		/* Store ci pointer locally, because gscon_forget_mgw_endpoint_ci() NULLs
+		 * conn->assignment.created_ci_for_msc. */
+		struct osmo_mgcpc_ep_ci *ci = conn->assignment.created_ci_for_msc;
+		gscon_forget_mgw_endpoint_ci(conn, ci);
 		/* If this is the last endpoint released, the mgw_endpoint_fsm will terminate and tell
 		 * the gscon about it. */
-		osmo_mgcpc_ep_ci_dlcx(conn->assignment.created_ci_for_msc);
+		osmo_mgcpc_ep_ci_dlcx(ci);
 	}
 
 	conn->assignment = (struct assignment_fsm_data){
