@@ -229,6 +229,7 @@ void ts_set_pchan_is(struct gsm_bts_trx_ts *ts, enum gsm_phys_chan_config pchan_
 		}
 		break;
 	}
+	chan_counts_ts_update(ts);
 }
 
 static void ts_setup_lchans(struct gsm_bts_trx_ts *ts)
@@ -315,10 +316,18 @@ static void ts_fsm_not_initialized(struct osmo_fsm_inst *fi, uint32_t event, voi
 	osmo_fsm_inst_state_chg(fi, TS_ST_UNUSED, 0, 0);
 }
 
+static void ts_fsm_not_initialized_onenter(struct osmo_fsm_inst *fi, uint32_t prev_state)
+{
+	struct gsm_bts_trx_ts *ts = ts_fi_ts(fi);
+	chan_counts_ts_clear(ts);
+}
+
 static void ts_fsm_unused_onenter(struct osmo_fsm_inst *fi, uint32_t prev_state)
 {
 	struct gsm_bts_trx_ts *ts = ts_fi_ts(fi);
 	struct gsm_bts *bts = ts->trx->bts;
+
+	chan_counts_ts_update(ts);
 
 	/* We are entering the unused state. There must by definition not be any lchans waiting to be
 	 * activated. */
@@ -665,6 +674,8 @@ static void ts_fsm_in_use_onenter(struct osmo_fsm_inst *fi, uint32_t prev_state)
 		return;
 	}
 
+	chan_counts_ts_update(ts);
+
 	/* Make sure dyn TS pchan_is is updated. For TCH/F_PDCH, there are only PDCH or TCH/F modes, but
 	 * for Osmocom style TCH/F_TCH/H_SDCCH8_PDCH the pchan_is == NONE until an lchan is activated. */
 	if (ts->pchan_on_init == GSM_PCHAN_OSMO_DYN)
@@ -848,6 +859,7 @@ static void ts_fsm_cleanup(struct osmo_fsm_inst *fi, enum osmo_fsm_term_cause ca
 static const struct osmo_fsm_state ts_fsm_states[] = {
 	[TS_ST_NOT_INITIALIZED] = {
 		.name = "NOT_INITIALIZED",
+		.onenter = ts_fsm_not_initialized_onenter,
 		.action = ts_fsm_not_initialized,
 		.in_event_mask = 0
 			| S(TS_EV_OML_READY)

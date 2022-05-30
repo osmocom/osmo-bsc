@@ -34,6 +34,7 @@
 #include <osmocom/bsc/meas_rep.h>
 #include <osmocom/bsc/acc.h>
 #include <osmocom/bsc/osmux.h>
+#include <osmocom/bsc/chan_counts.h>
 
 #define GSM_T3122_DEFAULT 10
 
@@ -962,6 +963,8 @@ struct gsm_bts_trx_ts {
 	 * Does not include count of secondary VAMOS lchans. */
 	uint8_t max_primary_lchans;
 	struct gsm_lchan lchan[TS_MAX_LCHAN];
+
+	struct chan_counts chan_counts;
 };
 
 #define GSM_LCHAN_SI(lchan, i) (void *)((lchan)->si.buf[i][0])
@@ -1320,6 +1323,7 @@ struct gsm_network {
 
 	struct smlc_config *smlc;
 
+	struct chan_counts chan_counts;
 	struct all_allocated all_allocated;
 };
 

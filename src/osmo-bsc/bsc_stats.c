@@ -183,6 +183,8 @@ void bsc_update_connection_stats(struct gsm_network *net)
 			bts_oml_connected++;
 		if (trx_rsl_connected == num_trx)
 			bts_rsl_all_trx_connected++;
+
+		all_allocated_update_bts(bts);
 	}
 
 	osmo_stat_item_set(osmo_stat_item_group_get_item(net->bsc_statg, BSC_STAT_NUM_BTS_OML_CONNECTED),
@@ -194,8 +196,9 @@ void bsc_update_connection_stats(struct gsm_network *net)
 			   trx_rsl_connected_total);
 	osmo_stat_item_set(osmo_stat_item_group_get_item(net->bsc_statg, BSC_STAT_NUM_TRX_TOTAL), num_trx_total);
 
-	/* Make sure to notice cells that become disconnected */
-	all_allocated_update_bsc();
+	/* This is optional, just running this to catch bugs in chan_counts accounting. If there is a bug, there will be
+	 * a DLGLOBAL ERROR logged, and the error gets fixed. */
+	chan_counts_bsc_verify();
 }
 
 static void all_allocated_update(struct all_allocated *all_allocated, const struct chan_counts *c)
@@ -221,20 +224,13 @@ static void all_allocated_update(struct all_allocated *all_allocated, const stru
 				   + c->val[CHAN_COUNTS1_STATIC][CHAN_COUNTS2_FREE][GSM_LCHAN_TCH_H]));
 }
 
+void all_allocated_update_bts(struct gsm_bts *bts)
+{
+	all_allocated_update(&bts->all_allocated, &bts->chan_counts);
+}
+
 void all_allocated_update_bsc()
 {
 	struct gsm_network *net = bsc_gsmnet;
-	struct gsm_bts *bts;
-	struct chan_counts bsc_counts;
-
-	chan_counts_zero(&bsc_counts);
-
-	llist_for_each_entry(bts, &net->bts_list, list) {
-		struct chan_counts bts_counts;
-		chan_counts_for_bts(&bts_counts, bts);
-		all_allocated_update(&bts->all_allocated, &bts_counts);
-		chan_counts_add(&bsc_counts, &bts_counts);
-	}
-
-	all_allocated_update(&net->all_allocated, &bsc_counts);
+	all_allocated_update(&net->all_allocated, &net->chan_counts);
 }

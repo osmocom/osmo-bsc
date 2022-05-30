@@ -3,6 +3,14 @@
 
 struct gsm_bts;
 struct gsm_bts_trx;
+struct gsm_bts_trx_ts;
+struct gsm_lchan;
+
+void chan_counts_sig_init();
+void chan_counts_ts_update(struct gsm_bts_trx_ts *ts);
+void chan_counts_ts_clear(struct gsm_bts_trx_ts *ts);
+void chan_counts_trx_update(struct gsm_bts_trx *trx);
+void chan_counts_bsc_verify();
 
 /* First array index to chan_counts.val. */
 enum chan_counts_dim1 {
@@ -29,15 +37,27 @@ enum chan_counts_dim2 {
 };
 
 struct chan_counts {
-	unsigned int val[_CHAN_COUNTS1_NUM][_CHAN_COUNTS2_NUM][_GSM_LCHAN_MAX];
+	/* Signed type, so that chan_counts_diff() can return negative values. */
+	int val[_CHAN_COUNTS1_NUM][_CHAN_COUNTS2_NUM][_GSM_LCHAN_MAX];
 };
-
-void chan_counts_for_bts(struct chan_counts *bts_counts, const struct gsm_bts *bts);
-void chan_counts_for_trx(struct chan_counts *trx_counts, const struct gsm_bts_trx *trx);
 
 static inline void chan_counts_zero(struct chan_counts *counts)
 {
 	*counts = (struct chan_counts){0};
+}
+
+static inline bool chan_counts_is_zero(const struct chan_counts *counts)
+{
+	int i1, i2, i3;
+	for (i1 = 0; i1 < _CHAN_COUNTS1_NUM; i1++) {
+		for (i2 = 0; i2 < _CHAN_COUNTS2_NUM; i2++) {
+			for (i3 = 0; i3 < _GSM_LCHAN_MAX; i3++) {
+				if (counts->val[i1][i2][i3])
+					return false;
+			}
+		}
+	}
+	return true;
 }
 
 static inline void chan_counts_dim3_add(struct chan_counts *dst,
@@ -68,9 +88,24 @@ static inline void chan_counts_dim2_add(struct chan_counts *dst, enum chan_count
 		chan_counts_dim3_add(dst, dst_dim1, i, add, add_dim1, i);
 }
 
+static inline void chan_counts_dim2_sub(struct chan_counts *dst, enum chan_counts_dim1 dst_dim1,
+					const struct chan_counts *sub, enum chan_counts_dim1 sub_dim1)
+{
+	int i;
+	for (i = 0; i < _CHAN_COUNTS2_NUM; i++)
+		chan_counts_dim3_sub(dst, dst_dim1, i, sub, sub_dim1, i);
+}
+
 static inline void chan_counts_add(struct chan_counts *dst, const struct chan_counts *add)
 {
 	int i;
 	for (i = 0; i < _CHAN_COUNTS1_NUM; i++)
 		chan_counts_dim2_add(dst, i, add, i);
+}
+
+static inline void chan_counts_sub(struct chan_counts *dst, const struct chan_counts *sub)
+{
+	int i;
+	for (i = 0; i < _CHAN_COUNTS1_NUM; i++)
+		chan_counts_dim2_sub(dst, i, sub, i);
 }

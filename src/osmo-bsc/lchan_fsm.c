@@ -523,13 +523,18 @@ static void lchan_fsm_unused_onenter(struct osmo_fsm_inst *fi, uint32_t prev_sta
 	struct gsm_lchan *lchan = lchan_fi_lchan(fi);
 	struct gsm_bts *bts = lchan->ts->trx->bts;
 	lchan_reset(lchan);
+	chan_counts_ts_update(lchan->ts);
 	osmo_fsm_inst_dispatch(lchan->ts->fi, TS_EV_LCHAN_UNUSED, lchan);
-
-	all_allocated_update_bsc();
 
 	/* Poll the channel request queue, so that waiting calls can make use of the lchan that just
 	 * has become unused now. */
 	abis_rsl_chan_rqd_queue_poll(bts);
+}
+
+static void lchan_fsm_cbch_onenter(struct osmo_fsm_inst *fi, uint32_t prev_state)
+{
+	struct gsm_lchan *lchan = lchan_fi_lchan(fi);
+	chan_counts_ts_update(lchan->ts);
 }
 
 static void lchan_fsm_wait_after_error_onenter(struct osmo_fsm_inst *fi, uint32_t prev_state)
@@ -707,7 +712,7 @@ static void lchan_fsm_wait_ts_ready_onenter(struct osmo_fsm_inst *fi, uint32_t p
 		return;
 	}
 
-	all_allocated_update_bsc();
+	chan_counts_ts_update(lchan->ts);
 
 	lchan->conn = info->for_conn;
 
@@ -1477,6 +1482,7 @@ static void lchan_fsm_borken_onenter(struct osmo_fsm_inst *fi, uint32_t prev_sta
 
 	/* The actual action besides all the beancounting above */
 	lchan_reset(lchan);
+	chan_counts_ts_update(lchan->ts);
 }
 
 static void lchan_fsm_borken(struct osmo_fsm_inst *fi, uint32_t event, void *data)
@@ -1550,6 +1556,7 @@ static const struct osmo_fsm_state lchan_fsm_states[] = {
 	},
 	[LCHAN_ST_CBCH] = {
 		.name = "CBCH",
+		.onenter = lchan_fsm_cbch_onenter,
 		.out_state_mask = 0
 			| S(LCHAN_ST_UNUSED)
 			,

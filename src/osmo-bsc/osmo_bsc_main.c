@@ -1026,6 +1026,7 @@ int main(int argc, char **argv)
 	osmo_init_ignore_signals();
 
 	update_connection_stats_cb(NULL);
+	chan_counts_sig_init();
 
 	if (daemonize) {
 		rc = osmo_daemonize();

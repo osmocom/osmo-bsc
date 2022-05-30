@@ -2079,7 +2079,6 @@ static bool force_free_lchan_for_emergency(struct chan_rqd *rqd)
 
 struct gsm_lchan *_select_sdcch_for_call(struct gsm_bts *bts, const struct chan_rqd *rqd, enum gsm_chan_t lctype)
 {
-	struct chan_counts bts_counts;
 	struct gsm_lchan *lchan = NULL;
 	int free_tchf, free_tchh;
 	bool needs_dyn_switch;
@@ -2091,9 +2090,8 @@ struct gsm_lchan *_select_sdcch_for_call(struct gsm_bts *bts, const struct chan_
 	needs_dyn_switch = lchan->ts->pchan_on_init == GSM_PCHAN_OSMO_DYN &&
 					lchan->ts->pchan_is != GSM_PCHAN_SDCCH8_SACCH8C;
 
-	chan_counts_for_bts(&bts_counts, bts);
-	free_tchf = bts_counts.val[CHAN_COUNTS1_ALL][CHAN_COUNTS2_FREE][GSM_LCHAN_TCH_F];
-	free_tchh = bts_counts.val[CHAN_COUNTS1_ALL][CHAN_COUNTS2_FREE][GSM_LCHAN_TCH_H];
+	free_tchf = bts->chan_counts.val[CHAN_COUNTS1_ALL][CHAN_COUNTS2_FREE][GSM_LCHAN_TCH_F];
+	free_tchh = bts->chan_counts.val[CHAN_COUNTS1_ALL][CHAN_COUNTS2_FREE][GSM_LCHAN_TCH_H];
 	if (free_tchf == 0 && free_tchh == 0) {
 		LOG_BTS(bts, DRSL, LOGL_INFO,
 			"CHAN RQD: 0x%x Requesting %s reason=call but no TCH available\n",

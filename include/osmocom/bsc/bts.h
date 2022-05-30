@@ -637,6 +637,7 @@ struct gsm_bts {
 	/* At what point in the channel allocation sequence to dispatch the Immediate Assignment (Abis optimization) */
 	enum imm_ass_time imm_ass_time;
 
+	struct chan_counts chan_counts;
 	struct all_allocated all_allocated;
 };
 

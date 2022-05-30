@@ -79,6 +79,8 @@ struct gsm_bts_trx {
 		} rbs2000;
 	};
 	struct gsm_bts_trx_ts ts[TRX_NR_TS];
+
+	struct chan_counts chan_counts;
 };
 
 static inline struct gsm_bts_trx *gsm_bts_bb_trx_get_trx(struct gsm_bts_bb_trx *bb_transc) {

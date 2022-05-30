@@ -479,6 +479,8 @@ struct gsm_lchan *lchan_act(struct gsm_lchan *lchan, int full_rate, const char *
 		.len = 5,
 	};
 
+	chan_counts_ts_update(lchan->ts);
+
 	return lchan;
 }
 
@@ -522,6 +524,7 @@ static void ts_clear(struct gsm_bts_trx_ts *ts)
 			continue;
 		lchan_clear(lchan);
 	}
+	chan_counts_ts_update(ts);
 }
 
 bool _set_ts_use(struct gsm_bts *bts, struct gsm_bts_trx *trx, const char * const *ts_use)
