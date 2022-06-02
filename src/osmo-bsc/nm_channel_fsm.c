@@ -168,8 +168,6 @@ static void st_op_disabled_offline_on_enter(struct osmo_fsm_inst *fi, uint32_t p
 {
 	struct gsm_bts_trx_ts *ts = (struct gsm_bts_trx_ts *)fi->priv;
 
-	/* Warning: In here we may be acessing an state older than new_state
-	   from prev (syncrhonous) FSM state */
 	configure_loop(ts, &ts->mo.nm_state, true);
 }
 

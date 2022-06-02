@@ -178,8 +178,6 @@ static void st_op_disabled_offline_on_enter(struct osmo_fsm_inst *fi, uint32_t p
 {
 	struct gsm_gprs_cell *cell = (struct gsm_gprs_cell *)fi->priv;
 
-	/* Warning: In here we may be acessing an state older than new_state
-	   from prev (syncrhonous) FSM state */
 	configure_loop(cell, &cell->mo.nm_state, true);
 }
 
