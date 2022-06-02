@@ -250,8 +250,27 @@ static void st_op_enabled(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 	case NM_EV_STATE_CHG_REP:
 		nsd = (struct nm_statechg_signal_data *)data;
 		new_state = &nsd->new_state;
-		if (new_state->operational == NM_OPSTATE_ENABLED)
+		/* Op state stays in Enabled, hence either Avail or Admin changed: */
+		if (new_state->operational == NM_OPSTATE_ENABLED) {
+			/* Some sort of availability change we don't care about: */
+			if (nsd->old_state.administrative == new_state->administrative)
+				return;
+			/* HACK: Admin state change without Op state change:
+			 * According to TS 52.021 sec 5.3.1, Locking the NM obj should make
+			 * it go into Disabled Dependency state, but current and older
+			 * versions of osmo-bts (and potentially nanobts?) don't move from
+			 * Operative=Enabled state and only change the Adminsitrative one.
+			 * Let's account for this behavior here: */
+			switch (new_state->administrative) {
+			case NM_STATE_LOCKED:
+				nm_rcarrier_fsm_becomes_disabled(trx);
+				break;
+			case NM_STATE_UNLOCKED:
+				nm_rcarrier_fsm_becomes_enabled(trx);
+				break;
+			}
 			return;
+		}
 		switch (new_state->availability) { /* operational = DISABLED */
 		case NM_AVSTATE_NOT_INSTALLED:
 		case NM_AVSTATE_POWER_OFF:
