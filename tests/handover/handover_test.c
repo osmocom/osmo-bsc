@@ -488,7 +488,8 @@ struct gsm_lchan *create_lchan(struct gsm_bts *bts, int full_rate, const char *c
 {
 	struct gsm_lchan *lchan;
 
-	lchan = lchan_select_by_type(bts, (full_rate) ? GSM_LCHAN_TCH_F : GSM_LCHAN_TCH_H);
+	lchan = lchan_select_by_type(bts, (full_rate) ? GSM_LCHAN_TCH_F : GSM_LCHAN_TCH_H,
+				     SELECT_FOR_HANDOVER);
 	if (!lchan) {
 		fprintf(stderr, "No resource for lchan\n");
 		exit(EXIT_FAILURE);

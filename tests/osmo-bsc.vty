@@ -166,10 +166,19 @@ OsmoBSC(config-net-bts)# channel ?
   allocator  Channel Allocator
 
 OsmoBSC(config-net-bts)# channel allocator ?
-  ascending              Allocate Timeslots and Transceivers in ascending order
-  descending             Allocate Timeslots and Transceivers in descending order
+  mode                   Channel allocation mode
   avoid-interference     Configure whether reported interference levels from RES IND are used in channel allocation
   tch-signalling-policy  Configure when TCH/H or TCH/F channels can be used to serve signalling if SDCCHs are exhausted
+
+OsmoBSC(config-net-bts)# channel allocator mode ?
+  set-all     Set a single mode for all variants
+  chan-req    Channel allocation for CHANNEL REQUEST (RACH)
+  assignment  Channel allocation for assignment
+  handover    Channel allocation for handover
+
+OsmoBSC(config-net-bts)# channel allocator mode set-all ?
+  ascending   Allocate Timeslots and Transceivers in ascending order
+  descending  Allocate Timeslots and Transceivers in descending order
 
 OsmoBSC(config-net-bts)# channel allocator avoid-interference ?
   0  Ignore interference levels (default). Always assign lchans in a deterministic order.

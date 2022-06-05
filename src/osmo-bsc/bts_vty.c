@@ -533,20 +533,51 @@ DEFUN_USRATTR(cfg_bts_oml_e1_tei,
 	"Channel Allocator\n" \
 	"Channel Allocator\n"
 
-DEFUN_ATTR(cfg_bts_challoc,
-	   cfg_bts_challoc_cmd,
-	   CHAN_ALLOC_CMD " (ascending|descending)",
-	   CHAN_ALLOC_DESC
-	   "Allocate Timeslots and Transceivers in ascending order\n"
-	   "Allocate Timeslots and Transceivers in descending order\n",
-	   CMD_ATTR_IMMEDIATE)
+#define CHAN_ALLOC_ASC_DSC "(ascending|descending)"
+#define CHAN_ALLOC_ASC_DSC_DESC \
+	"Allocate Timeslots and Transceivers in ascending order\n" \
+	"Allocate Timeslots and Transceivers in descending order\n"
+
+DEFUN_ATTR(cfg_bts_challoc_mode_all,
+	   cfg_bts_challoc_mode_all_cmd,
+	   CHAN_ALLOC_CMD " " CHAN_ALLOC_ASC_DSC,
+	   CHAN_ALLOC_DESC CHAN_ALLOC_ASC_DSC_DESC,
+	   CMD_ATTR_IMMEDIATE | CMD_ATTR_HIDDEN)
 {
+	bool reverse = !strcmp(argv[0], "descending");
 	struct gsm_bts *bts = vty->index;
 
-	if (!strcmp(argv[0], "ascending"))
-		bts->chan_alloc_reverse = 0;
-	else
-		bts->chan_alloc_reverse = 1;
+	bts->chan_alloc_chan_req_reverse = reverse;
+	bts->chan_alloc_assignment_reverse = reverse;
+	bts->chan_alloc_handover_reverse = reverse;
+
+	return CMD_SUCCESS;
+}
+
+DEFUN_ATTR(cfg_bts_challoc_mode,
+	   cfg_bts_challoc_mode_cmd,
+	   CHAN_ALLOC_CMD
+	   " mode (set-all|chan-req|assignment|handover) "
+	   CHAN_ALLOC_ASC_DSC,
+	   CHAN_ALLOC_DESC
+	   "Channel allocation mode\n"
+	   "Set a single mode for all variants\n"
+	   "Channel allocation for CHANNEL REQUEST (RACH)\n"
+	   "Channel allocation for assignment\n"
+	   "Channel allocation for handover\n"
+	   CHAN_ALLOC_ASC_DSC_DESC,
+	   CMD_ATTR_IMMEDIATE)
+{
+	bool reverse = !strcmp(argv[1], "descending");
+	bool set_all = !strcmp(argv[0], "set-all");
+	struct gsm_bts *bts = vty->index;
+
+	if (set_all || !strcmp(argv[0], "chan-req"))
+		bts->chan_alloc_chan_req_reverse = reverse;
+	if (set_all || !strcmp(argv[0], "assignment"))
+		bts->chan_alloc_assignment_reverse = reverse;
+	if (set_all || !strcmp(argv[0], "handover"))
+		bts->chan_alloc_handover_reverse = reverse;
 
 	return CMD_SUCCESS;
 }
@@ -4212,8 +4243,14 @@ static void config_write_bts_single(struct vty *vty, struct gsm_bts *bts)
 		vty_out(vty, "  radio-link-timeout %d%s",
 			gsm_bts_get_radio_link_timeout(bts), VTY_NEWLINE);
 
-	vty_out(vty, "  channel allocator %s%s",
-		bts->chan_alloc_reverse ? "descending" : "ascending",
+	vty_out(vty, "  channel allocator mode chan-req %s%s",
+		bts->chan_alloc_chan_req_reverse ? "descending" : "ascending",
+		VTY_NEWLINE);
+	vty_out(vty, "  channel allocator mode assignment %s%s",
+		bts->chan_alloc_assignment_reverse ? "descending" : "ascending",
+		VTY_NEWLINE);
+	vty_out(vty, "  channel allocator mode handover %s%s",
+		bts->chan_alloc_handover_reverse ? "descending" : "ascending",
 		VTY_NEWLINE);
 	if (bts->chan_alloc_avoid_interf)
 		vty_out(vty, "  channel allocator avoid-interference 1%s", VTY_NEWLINE);
@@ -4543,7 +4580,8 @@ int bts_vty_init(void)
 	install_element(BTS_NODE, &cfg_bts_deprecated_stream_id_cmd);
 	install_element(BTS_NODE, &cfg_bts_oml_e1_cmd);
 	install_element(BTS_NODE, &cfg_bts_oml_e1_tei_cmd);
-	install_element(BTS_NODE, &cfg_bts_challoc_cmd);
+	install_element(BTS_NODE, &cfg_bts_challoc_mode_cmd);
+	install_element(BTS_NODE, &cfg_bts_challoc_mode_all_cmd);
 	install_element(BTS_NODE, &cfg_bts_chan_alloc_interf_cmd);
 	install_element(BTS_NODE, &cfg_bts_chan_alloc_tch_signalling_policy_cmd);
 	install_element(BTS_NODE, &cfg_bts_chan_alloc_allow_tch_for_signalling_cmd);

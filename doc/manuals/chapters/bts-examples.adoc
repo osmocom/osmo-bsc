@@ -32,7 +32,9 @@ network
   ms max power 15
   cell reselection hysteresis 4
   rxlev access min 0
-  channel allocator ascending
+  channel allocator mode chan-req ascending
+  channel allocator mode assignment ascending
+  channel allocator mode handover ascending
   rach tx integer 9
   rach max transmission 7
   ipa unit-id 1801 0 <4>
@@ -110,7 +112,9 @@ network
   ms max power 15
   cell reselection hysteresis 4
   rxlev access min 0
-  channel allocator ascending
+  channel allocator mode chan-req ascending
+  channel allocator mode assignment ascending
+  channel allocator mode handover ascending
   rach tx integer 9
   rach max transmission 7
   ipa unit-id 1800 0 <1>
@@ -203,7 +207,9 @@ network
   ms max power 15
   cell reselection hysteresis 4
   rxlev access min 0
-  channel allocator ascending
+  channel allocator mode chan-req ascending
+  channel allocator mode assignment ascending
+  channel allocator mode handover ascending
   rach tx integer 9
   rach max transmission 7
   oml e1 line 0 timeslot 1 sub-slot full <3>

@@ -1978,10 +1978,10 @@ static struct gsm_lchan *get_any_lchan(struct gsm_bts *bts)
 			ts_for_n_lchans(lchan, ts, ts->max_primary_lchans) {
 				if (lchan->type == GSM_LCHAN_TCH_F || lchan->type == GSM_LCHAN_TCH_H) {
 					if (lchan->fi->state == LCHAN_ST_ESTABLISHED) {
-						if (!lchan_est || bts->chan_alloc_reverse)
+						if (!lchan_est || bts->chan_alloc_chan_req_reverse)
 							lchan_est = lchan;
 					} else {
-						if (!lchan_any || bts->chan_alloc_reverse)
+						if (!lchan_any || bts->chan_alloc_chan_req_reverse)
 							lchan_any = lchan;
 					}
 				}
@@ -2007,12 +2007,12 @@ static bool force_free_lchan_for_emergency(struct chan_rqd *rqd)
 
 	/* First check the situation on the BTS, if we have TCH/H or TCH/F resources available for another (EMERGENCY)
 	 * call. If yes, then no (further) action has to be carried out. */
-	if (lchan_avail_by_type(rqd->bts, GSM_LCHAN_TCH_F, true)) {
+	if (lchan_avail_by_type(rqd->bts, GSM_LCHAN_TCH_F, SELECT_FOR_MS_CHAN_REQ, true)) {
 		LOG_BTS(rqd->bts, DRSL, LOGL_NOTICE,
 			"CHAN RQD/EMERGENCY-PRIORITY: at least one TCH/F is (now) available!\n");
 		return false;
 	}
-	if (lchan_avail_by_type(rqd->bts, GSM_LCHAN_TCH_H, true)) {
+	if (lchan_avail_by_type(rqd->bts, GSM_LCHAN_TCH_H, SELECT_FOR_MS_CHAN_REQ, true)) {
 		LOG_BTS(rqd->bts, DRSL, LOGL_NOTICE,
 			"CHAN RQD/EMERGENCY-PRIORITY: at least one TCH/H is (now) available!\n");
 		return false;
@@ -2083,7 +2083,7 @@ struct gsm_lchan *_select_sdcch_for_call(struct gsm_bts *bts, const struct chan_
 	int free_tchf, free_tchh;
 	bool needs_dyn_switch;
 
-	lchan = lchan_avail_by_type(bts, GSM_LCHAN_SDCCH, false);
+	lchan = lchan_avail_by_type(bts, GSM_LCHAN_SDCCH, SELECT_FOR_MS_CHAN_REQ, false);
 	if (!lchan)
 		return NULL;
 
@@ -2172,7 +2172,8 @@ void abis_rsl_chan_rqd_queue_poll(struct gsm_bts *bts)
 	if (rqd->reason == GSM_CHREQ_REASON_CALL) {
 		 lchan = _select_sdcch_for_call(bts, rqd, lctype);
 	} else if (rqd->reason != GSM_CHREQ_REASON_EMERG) {
-		lchan = lchan_select_by_type(bts, GSM_LCHAN_SDCCH);
+		lchan = lchan_select_by_type(bts, GSM_LCHAN_SDCCH,
+					     SELECT_FOR_MS_CHAN_REQ);
 	}
 	/* else: Emergency calls will be put on a free TCH/H or TCH/F directly
 	 * in the code below, all other channel requests will get an SDCCH first
@@ -2187,13 +2188,15 @@ void abis_rsl_chan_rqd_queue_poll(struct gsm_bts *bts)
 			LOG_BTS(bts, DRSL, LOGL_NOTICE, "CHAN RQD[%s]: no resources for %s 0x%x, retrying with %s\n",
 				get_value_string(gsm_chreq_descs, rqd->reason), gsm_lchant_name(GSM_LCHAN_SDCCH),
 				rqd->ref.ra, gsm_lchant_name(GSM_LCHAN_TCH_H));
-			lchan = lchan_select_by_type(bts, GSM_LCHAN_TCH_H);
+			lchan = lchan_select_by_type(bts, GSM_LCHAN_TCH_H,
+						     SELECT_FOR_MS_CHAN_REQ);
 		}
 		if (!lchan) {
 			LOG_BTS(bts, DRSL, LOGL_NOTICE, "CHAN RQD[%s]: no resources for %s 0x%x, retrying with %s\n",
 				get_value_string(gsm_chreq_descs, rqd->reason), gsm_lchant_name(GSM_LCHAN_SDCCH),
 				rqd->ref.ra, gsm_lchant_name(GSM_LCHAN_TCH_F));
-			lchan = lchan_select_by_type(bts, GSM_LCHAN_TCH_F);
+			lchan = lchan_select_by_type(bts, GSM_LCHAN_TCH_F,
+						     SELECT_FOR_MS_CHAN_REQ);
 		}
 	}
 	if (!lchan) {
