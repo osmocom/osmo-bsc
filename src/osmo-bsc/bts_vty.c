@@ -528,10 +528,15 @@ DEFUN_USRATTR(cfg_bts_oml_e1_tei,
 	return CMD_SUCCESS;
 }
 
+#define CHAN_ALLOC_CMD "channel allocator"
+#define CHAN_ALLOC_DESC \
+	"Channel Allocator\n" \
+	"Channel Allocator\n"
+
 DEFUN_ATTR(cfg_bts_challoc,
 	   cfg_bts_challoc_cmd,
-	   "channel allocator (ascending|descending)",
-	   "Channel Allocator\n" "Channel Allocator\n"
+	   CHAN_ALLOC_CMD " (ascending|descending)",
+	   CHAN_ALLOC_DESC
 	   "Allocate Timeslots and Transceivers in ascending order\n"
 	   "Allocate Timeslots and Transceivers in descending order\n",
 	   CMD_ATTR_IMMEDIATE)
@@ -548,8 +553,8 @@ DEFUN_ATTR(cfg_bts_challoc,
 
 DEFUN_ATTR(cfg_bts_chan_alloc_interf,
 	   cfg_bts_chan_alloc_interf_cmd,
-	   "channel allocator avoid-interference (0|1)",
-	   "Channel Allocator\n" "Channel Allocator\n"
+	   CHAN_ALLOC_CMD " avoid-interference (0|1)",
+	   CHAN_ALLOC_DESC
 	   "Configure whether reported interference levels from RES IND are used in channel allocation\n"
 	   "Ignore interference levels (default). Always assign lchans in a deterministic order.\n"
 	   "In channel allocation, prefer lchans with less interference.\n",
@@ -567,8 +572,8 @@ DEFUN_ATTR(cfg_bts_chan_alloc_interf,
 
 DEFUN_ATTR(cfg_bts_chan_alloc_tch_signalling_policy,
 	   cfg_bts_chan_alloc_tch_signalling_policy_cmd,
-	   "channel allocator tch-signalling-policy (never|emergency|voice|always)",
-	   "Channel Allocator\n" "Channel Allocator\n"
+	   CHAN_ALLOC_CMD " tch-signalling-policy (never|emergency|voice|always)",
+	   CHAN_ALLOC_DESC
 	   "Configure when TCH/H or TCH/F channels can be used to serve signalling if SDCCHs are exhausted\n"
 	   "Never allow TCH for signalling purposes\n"
 	   "Only allow TCH for signalling purposes when establishing an emergency call\n"
@@ -592,8 +597,8 @@ DEFUN_ATTR(cfg_bts_chan_alloc_tch_signalling_policy,
 
 DEFUN_ATTR(cfg_bts_chan_alloc_allow_tch_for_signalling,
 	   cfg_bts_chan_alloc_allow_tch_for_signalling_cmd,
-	   "channel allocator allow-tch-for-signalling (0|1)",
-	   "Channel Allocator\n" "Channel Allocator\n"
+	   CHAN_ALLOC_CMD " allow-tch-for-signalling (0|1)",
+	   CHAN_ALLOC_DESC
 	   "Configure whether TCH/H or TCH/F channels can be used to serve non-call-related signalling if SDCCHs are exhausted\n"
 	   "Forbid use of TCH for non-call-related signalling purposes\n"
 	   "Allow use of TCH for non-call-related signalling purposes (default)\n",
