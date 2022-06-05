@@ -19,7 +19,9 @@ All parameters with their respective default values are listed below:
 ----
 network
  bts 0
-  channel allocator ascending
+  channel allocator mode chan-req ascending
+  channel allocator mode assignment ascending
+  channel allocator mode handover ascending
   channel allocator avoid-interference 0
   channel allocator tch-signalling-policy always
 ----
@@ -41,10 +43,21 @@ selected in both ascending and descending modes.
 The allocation mode to be used can be configured using the following VTY command:
 
 ----
-OsmoBSC(config-net-bts)# channel allocator ?
-  ascending              Allocate Timeslots and Transceivers in ascending order
-  descending             Allocate Timeslots and Transceivers in descending order
+OsmoBSC(config-net-bts)# channel allocator mode ? <1>
+  set-all     Set a single mode for all variants
+  chan-req    Channel allocation for CHANNEL REQUEST (RACH)
+  assignment  Channel allocation for assignment
+  handover    Channel allocation for handover
+
+OsmoBSC(config-net-bts)# channel allocator mode set-all ? <2>
+  ascending   Allocate Timeslots and Transceivers in ascending order
+  descending  Allocate Timeslots and Transceivers in descending order
 ----
+<1> It's optionally possible to configure different allocation modes for
+different allocation causes, e.g. `ascending` for `chan-req` and `descending`
+for both `assignment` and `handover`.
+<2> `set-all` is equivalent to the old (deprecated) command syntax:
+`channel allocator (ascending|descending)`.
 
 ==== Interference aware channel allocation
 

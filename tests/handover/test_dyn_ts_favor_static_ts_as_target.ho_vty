@@ -3,7 +3,7 @@ create-bts trx-count 1 timeslots c+s4  dyn    TCH/H  dyn    TCH/H  dyn    TCH/H 
 
 network
  bts 0
-  channel allocator ascending
+  channel allocator mode set-all ascending
 
 set-ts-use    trx 0 0     states *     TCH/-H TCH/-H TCH/-H TCH/-H TCH/-H TCH/-H *
 

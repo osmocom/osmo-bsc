@@ -517,7 +517,9 @@ struct gsm_bts {
 
 	/* should the channel allocator allocate channels from high TRX to TRX0,
 	 * rather than starting from TRX0 and go upwards? */
-	int chan_alloc_reverse;
+	bool chan_alloc_chan_req_reverse;
+	bool chan_alloc_assignment_reverse;
+	bool chan_alloc_handover_reverse;
 
 	/* When true, interference measurements from the BTS are used in the channel allocator to favor lchans with less
 	 * interference reported in RSL Resource Indication. */

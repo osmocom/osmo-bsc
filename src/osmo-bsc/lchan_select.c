@@ -35,6 +35,13 @@ struct lchan_select_ts_list {
 	unsigned int num;
 };
 
+const struct value_string lchan_select_reason_names[] = {
+	OSMO_VALUE_STRING(SELECT_FOR_MS_CHAN_REQ),
+	OSMO_VALUE_STRING(SELECT_FOR_ASSIGNMENT),
+	OSMO_VALUE_STRING(SELECT_FOR_HANDOVER),
+	{0, NULL}
+};
+
 static struct gsm_lchan *pick_better_lchan(struct gsm_lchan *a, struct gsm_lchan *b)
 {
 	if (!a)
@@ -190,6 +197,7 @@ enum gsm_chan_t chan_mode_to_chan_type(enum gsm48_chan_mode chan_mode, enum chan
 
 static void populate_ts_list(struct lchan_select_ts_list *ts_list,
 			     struct gsm_bts *bts,
+			     bool chan_alloc_reverse,
 			     bool log)
 {
 	struct gsm_bts_trx *trx;
@@ -208,7 +216,7 @@ static void populate_ts_list(struct lchan_select_ts_list *ts_list,
 	ts_list->num = num;
 
 	/* Reverse the timeslot list if required */
-	if (bts->chan_alloc_reverse) {
+	if (chan_alloc_reverse) {
 		for (unsigned int tn = 0; tn < num / 2; tn++) {
 			struct gsm_bts_trx_ts *temp = ts_list->list[tn];
 			ts_list->list[tn] = ts_list->list[num - tn - 1];
@@ -218,22 +226,40 @@ static void populate_ts_list(struct lchan_select_ts_list *ts_list,
 }
 
 struct gsm_lchan *lchan_select_by_chan_mode(struct gsm_bts *bts,
-					    enum gsm48_chan_mode chan_mode, enum channel_rate chan_rate)
+					    enum gsm48_chan_mode chan_mode,
+					    enum channel_rate chan_rate,
+					    enum lchan_select_reason reason)
 {
 	enum gsm_chan_t type = chan_mode_to_chan_type(chan_mode, chan_rate);
 	if (type == GSM_LCHAN_NONE)
 		return NULL;
-	return lchan_select_by_type(bts, type);
+	return lchan_select_by_type(bts, type, reason);
 }
 
-struct gsm_lchan *lchan_avail_by_type(struct gsm_bts *bts, enum gsm_chan_t type, bool log)
+struct gsm_lchan *lchan_avail_by_type(struct gsm_bts *bts, enum gsm_chan_t type,
+				      enum lchan_select_reason reason, bool log)
 {
 	struct gsm_lchan *lchan = NULL;
 	enum gsm_phys_chan_config first, first_cbch, second, second_cbch;
 	struct lchan_select_ts_list ts_list;
+	bool chan_alloc_reverse;
 
-	if (log)
-		LOG_BTS(bts, DRLL, LOGL_DEBUG, "lchan_avail_by_type(%s)\n", gsm_lchant_name(type));
+	if (log) {
+		LOG_BTS(bts, DRLL, LOGL_DEBUG, "lchan_avail_by_type(type=%s, reason=%s)\n",
+			gsm_lchant_name(type), lchan_select_reason_name(reason));
+	}
+
+	switch (reason) {
+	case SELECT_FOR_MS_CHAN_REQ:
+		chan_alloc_reverse = bts->chan_alloc_chan_req_reverse;
+		break;
+	case SELECT_FOR_ASSIGNMENT:
+		chan_alloc_reverse = bts->chan_alloc_assignment_reverse;
+		break;
+	case SELECT_FOR_HANDOVER:
+		chan_alloc_reverse = bts->chan_alloc_handover_reverse;
+		break;
+	}
 
 	/* Allocate an array with pointers to all timeslots of a BTS */
 	ts_list.list = talloc_array_ptrtype(bts, ts_list.list, bts->num_trx * 8);
@@ -241,11 +267,11 @@ struct gsm_lchan *lchan_avail_by_type(struct gsm_bts *bts, enum gsm_chan_t type,
 		return NULL;
 
 	/* Populate this array with the actual pointers */
-	populate_ts_list(&ts_list, bts, log);
+	populate_ts_list(&ts_list, bts, chan_alloc_reverse, log);
 
 	switch (type) {
 	case GSM_LCHAN_SDCCH:
-		if (bts->chan_alloc_reverse) {
+		if (chan_alloc_reverse) {
 			first = GSM_PCHAN_SDCCH8_SACCH8C;
 			first_cbch = GSM_PCHAN_SDCCH8_SACCH8C_CBCH;
 			second = GSM_PCHAN_CCCH_SDCCH4;
@@ -302,17 +328,20 @@ struct gsm_lchan *lchan_avail_by_type(struct gsm_bts *bts, enum gsm_chan_t type,
 /* Return a matching lchan from a specific BTS that is currently available. The next logical step is
  * lchan_activate() on it, which would possibly cause dynamic timeslot pchan switching, taken care of by
  * the lchan and timeslot FSMs. */
-struct gsm_lchan *lchan_select_by_type(struct gsm_bts *bts, enum gsm_chan_t type)
+struct gsm_lchan *lchan_select_by_type(struct gsm_bts *bts,
+				       enum gsm_chan_t type,
+				       enum lchan_select_reason reason)
 {
 	struct gsm_lchan *lchan = NULL;
 
-	LOG_BTS(bts, DRLL, LOGL_DEBUG, "lchan_select_by_type(%s)\n", gsm_lchant_name(type));
+	LOG_BTS(bts, DRLL, LOGL_DEBUG, "lchan_select_by_type(type=%s, reason=%s)\n",
+		gsm_lchant_name(type), lchan_select_reason_name(reason));
 
-	lchan = lchan_avail_by_type(bts, type, true);
+	lchan = lchan_avail_by_type(bts, type, reason, true);
 
 	if (!lchan) {
-		LOG_BTS(bts, DRLL, LOGL_NOTICE, "Failed to select %s channel\n",
-			gsm_lchant_name(type));
+		LOG_BTS(bts, DRLL, LOGL_NOTICE, "Failed to select %s channel (%s)\n",
+			gsm_lchant_name(type), lchan_select_reason_name(reason));
 		return NULL;
 	}
 

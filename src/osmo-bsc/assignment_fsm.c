@@ -604,7 +604,9 @@ void assignment_fsm_start(struct gsm_subscriber_connection *conn, struct gsm_bts
 		/* Try to allocate a new lchan in order of preference */
 		for (i = 0; i < req->n_ch_mode_rate; i++) {
 			conn->assignment.new_lchan = lchan_select_by_chan_mode(bts,
-			    req->ch_mode_rate_list[i].chan_mode, req->ch_mode_rate_list[i].chan_rate);
+									       req->ch_mode_rate_list[i].chan_mode,
+									       req->ch_mode_rate_list[i].chan_rate,
+									       SELECT_FOR_ASSIGNMENT);
 			if (!conn->assignment.new_lchan)
 				continue;
 			LOG_ASSIGNMENT(conn, LOGL_DEBUG, "selected new lchan %s for mode[%d] = %s channel_rate=%d\n",

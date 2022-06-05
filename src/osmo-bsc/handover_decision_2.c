@@ -1050,7 +1050,7 @@ static void candidate_set_free_tch(struct ho_candidate *c)
 
 		/* Would the next TCH/F lchan occupy a dynamic timeslot that currently counts for free TCH/H timeslots?
 		 */
-		next_lchan = lchan_avail_by_type(c->target.bts, GSM_LCHAN_TCH_F, false);
+		next_lchan = lchan_avail_by_type(c->target.bts, GSM_LCHAN_TCH_F, SELECT_FOR_HANDOVER, false);
 		if (next_lchan && next_lchan->ts->pchan_on_init == GSM_PCHAN_OSMO_DYN)
 			c->target.next_tchf_reduces_tchh = 2;
 		else
@@ -1058,7 +1058,7 @@ static void candidate_set_free_tch(struct ho_candidate *c)
 
 		/* Would the next TCH/H lchan occupy a dynamic timeslot that currently counts for free TCH/F timeslots?
 		 * Note that a dyn TS already in TCH/H mode (half occupied) would not reduce free TCH/F. */
-		next_lchan = lchan_avail_by_type(c->target.bts, GSM_LCHAN_TCH_H, false);
+		next_lchan = lchan_avail_by_type(c->target.bts, GSM_LCHAN_TCH_H, SELECT_FOR_HANDOVER, false);
 		if (next_lchan && next_lchan->ts->pchan_on_init == GSM_PCHAN_OSMO_DYN
 		    && next_lchan->ts->pchan_is != GSM_PCHAN_TCH_H)
 			c->target.next_tchh_reduces_tchf = 1;

@@ -379,7 +379,9 @@ static void handover_start_intra_bsc(struct gsm_subscriber_connection *conn)
 	ho->async = true;
 	gsm_bts_cell_id_list(&ho->target_cell_ids, ho->new_bts);
 
-	ho->new_lchan = lchan_select_by_type(ho->new_bts, ho->new_lchan_type);
+	ho->new_lchan = lchan_select_by_type(ho->new_bts,
+					     ho->new_lchan_type,
+					     SELECT_FOR_HANDOVER);
 
 	if (ho->scope & HO_INTRA_CELL) {
 		ho_count(bts, CTR_INTRA_CELL_HO_ATTEMPTED);
@@ -696,7 +698,10 @@ void handover_start_inter_bsc_in(struct gsm_subscriber_connection *conn,
 		       ch_mode_rate.chan_rate == CH_RATE_FULL ?  "full-rate" : "half-rate",
 		       gsm0808_channel_type_name(&req->ct));
 
-		lchan = lchan_select_by_chan_mode(bts, ch_mode_rate.chan_mode, ch_mode_rate.chan_rate);
+		lchan = lchan_select_by_chan_mode(bts,
+						  ch_mode_rate.chan_mode,
+						  ch_mode_rate.chan_rate,
+						  SELECT_FOR_HANDOVER);
 		if (!lchan) {
 			LOG_HO(conn, LOGL_DEBUG, "BTS %u has no matching free channels\n", bts->nr);
 			continue;
