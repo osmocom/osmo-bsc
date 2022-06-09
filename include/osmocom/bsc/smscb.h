@@ -18,7 +18,6 @@ int cbsp_tx_restart(struct bsc_cbc_link *cbc, bool is_emerg);
 const char *bts_smscb_chan_state_name(const struct bts_smscb_chan_state *cstate);
 unsigned int bts_smscb_chan_load_percent(const struct bts_smscb_chan_state *cstate);
 unsigned int bts_smscb_chan_page_count(const struct bts_smscb_chan_state *cstate);
-void smscb_vty_init(void);
 
 /* cbch_scheduler.c */
 int bts_smscb_gen_sched_arr(struct bts_smscb_chan_state *cstate, struct bts_smscb_page ***arr_out);
@@ -61,9 +60,12 @@ struct bsc_cbc_link {
 		struct msgb *msg;
 	} client;
 };
-void cbc_vty_init(void);
 int bsc_cbc_link_restart(void);
 int cbsp_tx_decoded(struct bsc_cbc_link *cbc, struct osmo_cbsp_decoded *decoded);
 
 void bts_etws_init(struct gsm_bts *bts);
 void bts_etws_bootstrap(struct gsm_bts *bts);
+
+/* smscb_vty.c: */
+void smscb_vty_init(void);
+void cbc_vty_init(void);

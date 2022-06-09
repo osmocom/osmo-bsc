@@ -38,7 +38,6 @@
 #include <osmocom/bsc/debug.h>
 #include <osmocom/bsc/gsm_data.h>
 #include <osmocom/bsc/smscb.h>
-#include <osmocom/bsc/vty.h>
 #include <osmocom/bsc/gsm_04_08_rr.h>
 #include <osmocom/bsc/lchan_fsm.h>
 #include <osmocom/bsc/abis_rsl.h>
@@ -1025,59 +1024,6 @@ int cbsp_rx_decoded(struct bsc_cbc_link *cbc, const struct osmo_cbsp_decoded *de
 	}
 	return rc;
 }
-
-/*********************************************************************************
- * VTY Interface (Introspection)
- *********************************************************************************/
-
-static void vty_dump_smscb_chan_state(struct vty *vty, const struct bts_smscb_chan_state *cs)
-{
-	const struct bts_smscb_message *sm;
-
-	vty_out(vty, "%s CBCH:%s", cs == &cs->bts->cbch_basic ? "BASIC" : "EXTENDED", VTY_NEWLINE);
-
-	vty_out(vty, " MsgId | SerNo | Pg |      Category | Perd | #Tx  | #Req | DCS%s", VTY_NEWLINE);
-	vty_out(vty, "-------|-------|----|---------------|------|------|------|----%s", VTY_NEWLINE);
-	llist_for_each_entry(sm, &cs->messages, list) {
-		vty_out(vty, "  %04x |  %04x | %2u | %13s | %4u | %4u | %4u | %02x%s",
-			sm->input.msg_id, sm->input.serial_nr, sm->num_pages,
-			get_value_string(cbsp_category_names, sm->input.category),
-			sm->input.rep_period, sm->bcast_count, sm->input.num_bcast_req,
-			sm->input.dcs, VTY_NEWLINE);
-	}
-	vty_out(vty, "%s", VTY_NEWLINE);
-}
-
-DEFUN(bts_show_cbs, bts_show_cbs_cmd,
-	"show bts <0-255> smscb [(basic|extended)]",
-	SHOW_STR "Display information about a BTS\n" "BTS number\n"
-	"SMS Cell Broadcast State\n"
-	"Show only information related to CBCH BASIC\n"
-	"Show only information related to CBCH EXTENDED\n")
-{
-	struct gsm_network *net = gsmnet_from_vty(vty);
-	int bts_nr = atoi(argv[0]);
-	struct gsm_bts *bts;
-
-	if (bts_nr >= net->num_bts) {
-		vty_out(vty, "%% can't find BTS '%s'%s", argv[0], VTY_NEWLINE);
-		return CMD_WARNING;
-	}
-	bts = gsm_bts_num(net, bts_nr);
-
-	if (argc < 2 || !strcmp(argv[1], "basic"))
-		vty_dump_smscb_chan_state(vty, &bts->cbch_basic);
-	if (argc < 2 || !strcmp(argv[1], "extended"))
-		vty_dump_smscb_chan_state(vty, &bts->cbch_extended);
-
-	return CMD_SUCCESS;
-}
-
-void smscb_vty_init(void)
-{
-	install_element_ve(&bts_show_cbs_cmd);
-}
-
 
 /* initialize the ETWS state of a BTS */
 void bts_etws_init(struct gsm_bts *bts)

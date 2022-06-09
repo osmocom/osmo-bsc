@@ -106,6 +106,7 @@ libbsc_la_SOURCES = \
 	system_information.c \
 	timeslot_fsm.c \
 	smscb.c \
+	smscb_vty.c \
 	cbch_scheduler.c \
 	cbsp_link.c \
 	power_control.c \
