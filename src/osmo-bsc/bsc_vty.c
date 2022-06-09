@@ -1148,7 +1148,7 @@ DEFUN_DEPRECATED(cfg_net_dtx,
        return CMD_SUCCESS;
 }
 
-#define NRI_STR "Mapping of Network Resource Indicators to this MSC, for MSC pooling\n"
+#define NRI_STR "Mapping of Network Resource Indicators, for MSC pooling\n"
 #define NULL_NRI_STR "Define NULL-NRI values that cause re-assignment of an MS to a different MSC, for MSC pooling.\n"
 #define NRI_FIRST_LAST_STR "First value of the NRI value range, should not surpass the configured 'nri bitlen'.\n" \
 	"Last value of the NRI value range, should not surpass the configured 'nri bitlen' and be larger than the" \
@@ -1195,7 +1195,7 @@ DEFUN_ATTR(cfg_net_nri_null_add,
 DEFUN_ATTR(cfg_net_nri_null_del,
 	   cfg_net_nri_null_del_cmd,
 	   "nri null del <0-32767> [<0-32767>]",
-	   NRI_STR NULL_NRI_STR "Remove NRI value or range from the NRI mapping for this MSC\n"
+	   NRI_STR NULL_NRI_STR "Remove NRI value or range from the NRI mapping\n"
 	   NRI_FIRST_LAST_STR,
 	   CMD_ATTR_IMMEDIATE)
 {
