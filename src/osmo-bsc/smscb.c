@@ -476,6 +476,54 @@ int cbsp_tx_restart(struct bsc_cbc_link *cbc, bool is_emerg)
 	return cbsp_tx_decoded(cbc, cbsp);
 }
 
+/* transmit a CBSP RESTART-INDICATION message stating a cell is operative again */
+int cbsp_tx_restart_bts(struct bsc_cbc_link *cbc, bool is_emerg, struct gsm_bts *bts)
+{
+	struct osmo_cbsp_decoded *cbsp = osmo_cbsp_decoded_alloc(cbc, CBSP_MSGT_RESTART);
+	struct osmo_cbsp_cell_ent cell_ent;
+
+	if (is_emerg)
+		cbsp->u.restart.bcast_msg_type = 0x01;
+	cbsp->u.restart.recovery_ind = 0x00; /* message data available */
+	cbsp->u.restart.cell_list.id_discr = CELL_IDENT_LAC_AND_CI;
+
+	cell_ent = (struct osmo_cbsp_cell_ent){
+		.cell_id = {
+			.lac_and_ci = {
+				.lac = bts->location_area_code,
+				.ci = bts->cell_identity,
+			}
+		}
+	};
+	llist_add(&cell_ent.list, &cbsp->u.restart.cell_list.list);
+
+	return cbsp_tx_decoded(cbc, cbsp);
+}
+
+/* transmit a CBSP FAILURE-INDICATION message stating all message data was lost for one cell */
+int cbsp_tx_failure_bts(struct bsc_cbc_link *cbc, bool is_emerg, struct gsm_bts *bts)
+{
+	struct osmo_cbsp_decoded *cbsp = osmo_cbsp_decoded_alloc(cbc, CBSP_MSGT_FAILURE);
+	struct osmo_cbsp_fail_ent fail_ent;
+
+	if (is_emerg)
+		cbsp->u.failure.bcast_msg_type = 0x01;
+
+	fail_ent = (struct osmo_cbsp_fail_ent){
+		.id_discr = CELL_IDENT_LAC_AND_CI,
+		.cell_id = {
+			.lac_and_ci = {
+				.lac = bts->location_area_code,
+				.ci = bts->cell_identity,
+			}
+		},
+		.cause = OSMO_CBSP_CAUSE_CELL_BROADCAST_NOT_OPERATIONAL
+	};
+	llist_add(&fail_ent.list, &cbsp->u.failure.fail_list);
+
+	return cbsp_tx_decoded(cbc, cbsp);
+}
+
 /* transmit a CBSP KEEPALIVE COMPLETE to the CBC */
 static int tx_cbsp_keepalive_compl(struct bsc_cbc_link *cbc)
 {
@@ -1093,12 +1141,14 @@ static int nm_sig_cb(unsigned int subsys, unsigned int signal,
 			bts_cbch_timer_schedule(trx->bts);
 			/* Start ETWS/PWS Primary Notification, if active */
 			bts_etws_bootstrap(trx->bts);
+			cbsp_tx_restart_bts(bts->network->cbc, false, bts);
 		}
 	} else {
 		if (osmo_timer_pending(&bts->cbch_timer)) {
 			/* If timer is ongoing it means CBCH was available */
 			LOG_BTS(bts, DCBS, LOGL_INFO, "BTS becomes unavailable for CBCH\n");
 			osmo_timer_del(&bts->cbch_timer);
+			cbsp_tx_failure_bts(bts->network->cbc, false, bts);
 		} /* else: CBCH was already unavailable before */
 	}
 	return 0;
