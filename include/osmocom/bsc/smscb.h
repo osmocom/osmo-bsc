@@ -9,6 +9,7 @@
 struct bsc_cbc_link;
 
 /* smscb.c */
+void smscb_global_init(void);
 void bts_smscb_del(struct bts_smscb_message *smscb, struct bts_smscb_chan_state *cstate,
 		   const char *reason);
 const char *bts_smscb_msg2str(const struct bts_smscb_message *smscb);
@@ -25,7 +26,9 @@ struct bts_smscb_page *bts_smscb_pull_page(struct bts_smscb_chan_state *cstate);
 void bts_smscb_page_done(struct bts_smscb_chan_state *cstate, struct bts_smscb_page *page);
 int bts_smscb_rx_cbch_load_ind(struct gsm_bts *bts, bool cbch_extended, bool is_overflow,
 			       uint8_t slot_count);
+void bts_cbch_init(struct gsm_bts *bts);
 void bts_cbch_timer_schedule(struct gsm_bts *bts);
+void bts_cbch_timer_cb(void *data);
 
 enum bsc_cbc_link_mode {
 	BSC_CBC_LINK_MODE_DISABLED = 0,
@@ -64,7 +67,6 @@ int bsc_cbc_link_restart(void);
 int cbsp_tx_decoded(struct bsc_cbc_link *cbc, struct osmo_cbsp_decoded *decoded);
 
 void bts_etws_init(struct gsm_bts *bts);
-void bts_etws_bootstrap(struct gsm_bts *bts);
 
 /* smscb_vty.c: */
 void smscb_vty_init(void);

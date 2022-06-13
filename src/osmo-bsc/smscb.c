@@ -27,6 +27,7 @@
 #include <osmocom/core/msgb.h>
 #include <osmocom/core/talloc.h>
 #include <osmocom/core/byteswap.h>
+#include <osmocom/core/signal.h>
 
 #include <osmocom/gsm/cbsp.h>
 #include <osmocom/gsm/protocol/gsm_23_041.h>
@@ -42,6 +43,7 @@
 #include <osmocom/bsc/lchan_fsm.h>
 #include <osmocom/bsc/abis_rsl.h>
 #include <osmocom/bsc/bts.h>
+#include <osmocom/bsc/signal.h>
 
 /*********************************************************************************
  * Helper Functions
@@ -72,6 +74,19 @@ static int gen_etws_primary_notification(uint8_t *out, uint16_t serial_nr, uint1
 	memcpy(etws->data, sec_info, ETWS_PRIM_NOTIF_SIZE - sizeof(*etws));
 
 	return ETWS_PRIM_NOTIF_SIZE;
+}
+
+static void bts_cbch_init_state(struct bts_smscb_chan_state *cstate, struct gsm_bts *bts)
+{
+	cstate->bts = bts;
+	INIT_LLIST_HEAD(&cstate->messages);
+}
+
+void bts_cbch_init(struct gsm_bts *bts)
+{
+	bts_cbch_init_state(&bts->cbch_basic, bts);
+	bts_cbch_init_state(&bts->cbch_extended, bts);
+	osmo_timer_setup(&bts->cbch_timer, &bts_cbch_timer_cb, bts);
 }
 
 /*! Obtain SMSCB Channel State for given BTS (basic or extended CBCH) */
@@ -1033,8 +1048,64 @@ void bts_etws_init(struct gsm_bts *bts)
 }
 
 /* BSC is bootstrapping a BTS; install any currently active ETWS PN */
-void bts_etws_bootstrap(struct gsm_bts *bts)
+static void bts_etws_bootstrap(struct gsm_bts *bts)
 {
 	if (bts->etws.active)
 		bts_send_etws(bts);
+}
+
+/* Callback function to be called every time we receive a signal from NM */
+static int nm_sig_cb(unsigned int subsys, unsigned int signal,
+		     void *handler_data, void *signal_data)
+{
+	struct nm_running_chg_signal_data *nsd;
+	struct gsm_bts *bts;
+	struct gsm_bts_trx *trx;
+
+	if (signal != S_NM_RUNNING_CHG)
+		return 0;
+
+	nsd = signal_data;
+	bts = nsd->bts;
+
+	switch (nsd->obj_class) {
+	case NM_OC_RADIO_CARRIER:
+		trx = (struct gsm_bts_trx *)nsd->obj;
+		break;
+	case NM_OC_BASEB_TRANSC:
+		trx = gsm_bts_bb_trx_get_trx((struct gsm_bts_bb_trx *)nsd->obj);
+		break;
+	default:
+		return 0;
+	}
+
+	struct gsm_lchan *cbch = gsm_bts_get_cbch(bts);
+	if (!cbch)
+		return 0;
+	/* We only care about state changes of TRX holding the CBCH. */
+	if (trx != cbch->ts->trx)
+		return 0;
+
+	if (nsd->running) {
+		if (trx_is_usable(trx)) {
+			LOG_BTS(bts, DCBS, LOGL_INFO, "BTS becomes available for CBCH\n");
+			/* Start CBCH transmit timer if CBCH is present */
+			bts_cbch_timer_schedule(trx->bts);
+			/* Start ETWS/PWS Primary Notification, if active */
+			bts_etws_bootstrap(trx->bts);
+		}
+	} else {
+		if (osmo_timer_pending(&bts->cbch_timer)) {
+			/* If timer is ongoing it means CBCH was available */
+			LOG_BTS(bts, DCBS, LOGL_INFO, "BTS becomes unavailable for CBCH\n");
+			osmo_timer_del(&bts->cbch_timer);
+		} /* else: CBCH was already unavailable before */
+	}
+	return 0;
+}
+
+/* To be called once at startup of the process: */
+void smscb_global_init(void)
+{
+	osmo_signal_register_handler(SS_NM, nm_sig_cb, NULL);
 }

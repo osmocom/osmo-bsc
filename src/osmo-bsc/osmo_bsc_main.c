@@ -359,14 +359,6 @@ static void bootstrap_rsl(struct gsm_bts_trx *trx)
 		osmo_fsm_inst_dispatch(ts->fi, TS_EV_RSL_READY, NULL);
 	}
 
-	/* Start CBCH transmit timer if CBCH is present */
-	if (trx->nr == 0 && gsm_bts_get_cbch(trx->bts))
-		bts_cbch_timer_schedule(trx->bts);
-
-	/* Start ETWS/PWS Primary Notification, if active */
-	if (trx->nr == 0)
-		bts_etws_bootstrap(trx->bts);
-
 	/* Drop all expired channel requests in the list */
 	abis_rsl_chan_rqd_queue_flush(trx->bts);
 }
@@ -469,8 +461,6 @@ static int inp_sig_cb(unsigned int subsys, unsigned int signal,
 			rate_ctr_inc(rate_ctr_group_get_ctr(trx->bts->bts_ctrs, BTS_CTR_BTS_RSL_FAIL));
 			acc_ramp_abort(&trx->bts->acc_ramp);
 			gsm_trx_all_ts_dispatch(trx, TS_EV_RSL_DOWN, NULL);
-			if (trx->nr == 0)
-				osmo_timer_del(&trx->bts->cbch_timer);
 		}
 
 		gsm_bts_sm_mo_reset(trx->bts->site_mgr);
@@ -935,6 +925,7 @@ int main(int argc, char **argv)
 	lb_init();
 	acc_ramp_global_init();
 	paging_global_init();
+	smscb_global_init();
 
 	/* Read the config */
 	rc = bsc_network_configure(config_file);

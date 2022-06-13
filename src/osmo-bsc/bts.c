@@ -93,12 +93,6 @@ const char *btstype2str(enum gsm_bts_type type)
 	return get_value_string(bts_type_names, type);
 }
 
-static void bts_init_cbch_state(struct bts_smscb_chan_state *cstate, struct gsm_bts *bts)
-{
-	cstate->bts = bts;
-	INIT_LLIST_HEAD(&cstate->messages);
-}
-
 static LLIST_HEAD(bts_models);
 
 struct gsm_bts_model *bts_model_find(enum gsm_bts_type type)
@@ -151,6 +145,8 @@ static const struct gprs_rlc_cfg rlc_cfg_default = {
 static int gsm_bts_talloc_destructor(struct gsm_bts *bts)
 {
 	paging_destructor(bts);
+
+	osmo_timer_del(&bts->cbch_timer);
 
 	bts->site_mgr->bts[0] = NULL;
 
@@ -429,8 +425,7 @@ struct gsm_bts *gsm_bts_alloc(struct gsm_network *net, struct gsm_bts_sm *bts_sm
 	memcpy(&bts->mr_half.bts_mode[0], &amr_hr_ms_bts_mode[0], sizeof(amr_hr_ms_bts_mode));
 	bts->mr_half.num_modes = ARRAY_SIZE(amr_hr_ms_bts_mode);
 
-	bts_init_cbch_state(&bts->cbch_basic, bts);
-	bts_init_cbch_state(&bts->cbch_extended, bts);
+	bts_cbch_init(bts);
 	bts_etws_init(bts);
 
 	acc_mgr_init(&bts->acc_mgr, bts);
