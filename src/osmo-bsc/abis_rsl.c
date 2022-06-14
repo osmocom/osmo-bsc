@@ -2178,7 +2178,11 @@ void abis_rsl_chan_rqd_queue_poll(struct gsm_bts *bts)
 	 * in the code below, all other channel requests will get an SDCCH first
 	 * (if possible). */
 
-	if (gsm_chreq_reason_is_voicecall(rqd->reason) || bts->chan_alloc_allow_tch_for_signalling) {
+	if (bts->chan_alloc_tch_signalling_policy == BTS_TCH_SIGNALLING_ALWAYS ||
+	    (bts->chan_alloc_tch_signalling_policy == BTS_TCH_SIGNALLING_VOICE &&
+	     gsm_chreq_reason_is_voicecall(rqd->reason)) ||
+	    (bts->chan_alloc_tch_signalling_policy == BTS_TCH_SIGNALLING_EMERG &&
+	     rqd->reason == GSM_CHREQ_REASON_EMERG)) {
 		if (!lchan) {
 			LOG_BTS(bts, DRSL, LOGL_NOTICE, "CHAN RQD[%s]: no resources for %s 0x%x, retrying with %s\n",
 				get_value_string(gsm_chreq_descs, rqd->reason), gsm_lchant_name(GSM_LCHAN_SDCCH),

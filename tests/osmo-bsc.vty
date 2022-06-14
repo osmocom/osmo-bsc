@@ -166,18 +166,20 @@ OsmoBSC(config-net-bts)# channel ?
   allocator  Channel Allocator
 
 OsmoBSC(config-net-bts)# channel allocator ?
-  ascending                 Allocate Timeslots and Transceivers in ascending order
-  descending                Allocate Timeslots and Transceivers in descending order
-  avoid-interference        Configure whether reported interference levels from RES IND are used in channel allocation
-  allow-tch-for-signalling  Configure whether TCH/H or TCH/F channels can be used to serve non-call-related signalling if SDCCHs are exhausted
+  ascending              Allocate Timeslots and Transceivers in ascending order
+  descending             Allocate Timeslots and Transceivers in descending order
+  avoid-interference     Configure whether reported interference levels from RES IND are used in channel allocation
+  tch-signalling-policy  Configure when TCH/H or TCH/F channels can be used to serve signalling if SDCCHs are exhausted
 
 OsmoBSC(config-net-bts)# channel allocator avoid-interference ?
   0  Ignore interference levels (default). Always assign lchans in a deterministic order.
   1  In channel allocation, prefer lchans with less interference.
 
-OsmoBSC(config-net-bts)# channel allocator allow-tch-for-signalling ?
-  0  Forbid use of TCH for non-call-related signalling purposes
-  1  Allow use of TCH for non-call-related signalling purposes (default)
+OsmoBSC(config-net-bts)# channel allocator tch-signalling-policy ?
+  never      Never allow TCH for signalling purposes
+  emergency  Only allow TCH for signalling purposes when establishing an emergency call
+  voice      Allow TCH for signalling purposes when establishing any voice call
+  always     Always allow TCH for signalling purposes (default)
 
 OsmoBSC(config-net-bts)# show running-config
 ... !channel allocator avoid-interference
@@ -194,18 +196,34 @@ OsmoBSC(config-net-bts)# show running-config
 ... !channel allocator avoid-interference
 
 OsmoBSC(config-net-bts)# show running-config
-... !channel allocator allow-tch-for-signalling
-OsmoBSC(config-net-bts)# channel allocator allow-tch-for-signalling 0
+... !channel allocator tch-signalling-policy
+OsmoBSC(config-net-bts)# channel allocator tch-signalling-policy never
 OsmoBSC(config-net-bts)# show running-config
 ...
  bts 0
 ...
-  channel allocator allow-tch-for-signalling 0
+  channel allocator tch-signalling-policy never
 ...
 
-OsmoBSC(config-net-bts)# channel allocator allow-tch-for-signalling 1
+OsmoBSC(config-net-bts)# channel allocator tch-signalling-policy emergency
 OsmoBSC(config-net-bts)# show running-config
-... !channel allocator allow-tch-for-signalling
+...
+ bts 0
+...
+  channel allocator tch-signalling-policy emergency
+...
+
+OsmoBSC(config-net-bts)# channel allocator tch-signalling-policy voice
+OsmoBSC(config-net-bts)# show running-config
+...
+ bts 0
+...
+  channel allocator tch-signalling-policy voice
+...
+
+OsmoBSC(config-net-bts)# channel allocator tch-signalling-policy always
+OsmoBSC(config-net-bts)# show running-config
+... !channel allocator tch-signalling-policy
 
 OsmoBSC(config-net-bts)# immediate-assignment?
   immediate-assignment  Configure time of Immediate Assignment after ChanRqd RACH (Abis optimization)

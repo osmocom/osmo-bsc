@@ -565,6 +565,31 @@ DEFUN_ATTR(cfg_bts_chan_alloc_interf,
 	return CMD_SUCCESS;
 }
 
+DEFUN_ATTR(cfg_bts_chan_alloc_tch_signalling_policy,
+	   cfg_bts_chan_alloc_tch_signalling_policy_cmd,
+	   "channel allocator tch-signalling-policy (never|emergency|voice|always)",
+	   "Channel Allocator\n" "Channel Allocator\n"
+	   "Configure when TCH/H or TCH/F channels can be used to serve signalling if SDCCHs are exhausted\n"
+	   "Never allow TCH for signalling purposes\n"
+	   "Only allow TCH for signalling purposes when establishing an emergency call\n"
+	   "Allow TCH for signalling purposes when establishing any voice call\n"
+	   "Always allow TCH for signalling purposes (default)\n",
+	   CMD_ATTR_IMMEDIATE)
+{
+	struct gsm_bts *bts = vty->index;
+
+	if (!strcmp(argv[0], "never"))
+		bts->chan_alloc_tch_signalling_policy = BTS_TCH_SIGNALLING_NEVER;
+	else if (!strcmp(argv[0], "emergency"))
+		bts->chan_alloc_tch_signalling_policy = BTS_TCH_SIGNALLING_EMERG;
+	else if (!strcmp(argv[0], "voice"))
+		bts->chan_alloc_tch_signalling_policy = BTS_TCH_SIGNALLING_VOICE;
+	else
+		bts->chan_alloc_tch_signalling_policy = BTS_TCH_SIGNALLING_ALWAYS;
+
+	return CMD_SUCCESS;
+}
+
 DEFUN_ATTR(cfg_bts_chan_alloc_allow_tch_for_signalling,
 	   cfg_bts_chan_alloc_allow_tch_for_signalling_cmd,
 	   "channel allocator allow-tch-for-signalling (0|1)",
@@ -572,14 +597,16 @@ DEFUN_ATTR(cfg_bts_chan_alloc_allow_tch_for_signalling,
 	   "Configure whether TCH/H or TCH/F channels can be used to serve non-call-related signalling if SDCCHs are exhausted\n"
 	   "Forbid use of TCH for non-call-related signalling purposes\n"
 	   "Allow use of TCH for non-call-related signalling purposes (default)\n",
-	   CMD_ATTR_IMMEDIATE)
+	   CMD_ATTR_IMMEDIATE|CMD_ATTR_DEPRECATED)
 {
 	struct gsm_bts *bts = vty->index;
 
+	vty_out(vty, "%% 'allow-tch-for-signalling' is deprecated, use 'tch-signalling-policy' instead.%s", VTY_NEWLINE);
+
 	if (!strcmp(argv[0], "0"))
-		bts->chan_alloc_allow_tch_for_signalling = false;
+		bts->chan_alloc_tch_signalling_policy = BTS_TCH_SIGNALLING_VOICE;
 	else
-		bts->chan_alloc_allow_tch_for_signalling = true;
+		bts->chan_alloc_tch_signalling_policy = BTS_TCH_SIGNALLING_ALWAYS;
 
 	return CMD_SUCCESS;
 }
@@ -4185,8 +4212,12 @@ static void config_write_bts_single(struct vty *vty, struct gsm_bts *bts)
 		VTY_NEWLINE);
 	if (bts->chan_alloc_avoid_interf)
 		vty_out(vty, "  channel allocator avoid-interference 1%s", VTY_NEWLINE);
-	if (!bts->chan_alloc_allow_tch_for_signalling)
-		vty_out(vty, "  channel allocator allow-tch-for-signalling 0%s", VTY_NEWLINE);
+	if (bts->chan_alloc_tch_signalling_policy == BTS_TCH_SIGNALLING_NEVER)
+		vty_out(vty, "  channel allocator tch-signalling-policy never%s", VTY_NEWLINE);
+	else if (bts->chan_alloc_tch_signalling_policy == BTS_TCH_SIGNALLING_EMERG)
+		vty_out(vty, "  channel allocator tch-signalling-policy emergency%s", VTY_NEWLINE);
+	else if (bts->chan_alloc_tch_signalling_policy == BTS_TCH_SIGNALLING_VOICE)
+		vty_out(vty, "  channel allocator tch-signalling-policy voice%s", VTY_NEWLINE);
 	vty_out(vty, "  rach tx integer %u%s",
 		bts->si_common.rach_control.tx_integer, VTY_NEWLINE);
 	vty_out(vty, "  rach max transmission %u%s",
@@ -4509,6 +4540,7 @@ int bts_vty_init(void)
 	install_element(BTS_NODE, &cfg_bts_oml_e1_tei_cmd);
 	install_element(BTS_NODE, &cfg_bts_challoc_cmd);
 	install_element(BTS_NODE, &cfg_bts_chan_alloc_interf_cmd);
+	install_element(BTS_NODE, &cfg_bts_chan_alloc_tch_signalling_policy_cmd);
 	install_element(BTS_NODE, &cfg_bts_chan_alloc_allow_tch_for_signalling_cmd);
 	install_element(BTS_NODE, &cfg_bts_rach_tx_integer_cmd);
 	install_element(BTS_NODE, &cfg_bts_rach_max_trans_cmd);

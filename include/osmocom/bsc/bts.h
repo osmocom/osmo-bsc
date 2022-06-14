@@ -259,6 +259,13 @@ enum bts_attribute {
 	TRX_PHY_VERSION,
 };
 
+enum bts_tch_signalling_policy {
+	BTS_TCH_SIGNALLING_NEVER,
+	BTS_TCH_SIGNALLING_EMERG,
+	BTS_TCH_SIGNALLING_VOICE,
+	BTS_TCH_SIGNALLING_ALWAYS,
+};
+
 struct vty;
 
 struct gsm_bts_model {
@@ -514,9 +521,8 @@ struct gsm_bts {
 	 * interference reported in RSL Resource Indication. */
 	bool chan_alloc_avoid_interf;
 
-	/* When true (default), TCH can be allocated to serve
-	 * non-voicecall-related signalling services when SDCCHs are exhausted */
-	bool chan_alloc_allow_tch_for_signalling;
+	/* If SDCCHs are exhausted, when can we use TCH for signalling purposes. */
+	enum bts_tch_signalling_policy chan_alloc_tch_signalling_policy;
 
 	enum neigh_list_manual_mode neigh_list_manual_mode;
 	/* parameters from which we build SYSTEM INFORMATION */
