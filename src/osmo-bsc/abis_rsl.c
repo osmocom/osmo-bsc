@@ -2007,12 +2007,12 @@ static bool force_free_lchan_for_emergency(struct chan_rqd *rqd)
 
 	/* First check the situation on the BTS, if we have TCH/H or TCH/F resources available for another (EMERGENCY)
 	 * call. If yes, then no (further) action has to be carried out. */
-	if (lchan_avail_by_type(rqd->bts, GSM_LCHAN_TCH_F, SELECT_FOR_MS_CHAN_REQ, true)) {
+	if (lchan_avail_by_type(rqd->bts, GSM_LCHAN_TCH_F, SELECT_FOR_MS_CHAN_REQ, NULL, true)) {
 		LOG_BTS(rqd->bts, DRSL, LOGL_NOTICE,
 			"CHAN RQD/EMERGENCY-PRIORITY: at least one TCH/F is (now) available!\n");
 		return false;
 	}
-	if (lchan_avail_by_type(rqd->bts, GSM_LCHAN_TCH_H, SELECT_FOR_MS_CHAN_REQ, true)) {
+	if (lchan_avail_by_type(rqd->bts, GSM_LCHAN_TCH_H, SELECT_FOR_MS_CHAN_REQ, NULL, true)) {
 		LOG_BTS(rqd->bts, DRSL, LOGL_NOTICE,
 			"CHAN RQD/EMERGENCY-PRIORITY: at least one TCH/H is (now) available!\n");
 		return false;
@@ -2083,7 +2083,7 @@ struct gsm_lchan *_select_sdcch_for_call(struct gsm_bts *bts, const struct chan_
 	int free_tchf, free_tchh;
 	bool needs_dyn_switch;
 
-	lchan = lchan_avail_by_type(bts, GSM_LCHAN_SDCCH, SELECT_FOR_MS_CHAN_REQ, false);
+	lchan = lchan_avail_by_type(bts, GSM_LCHAN_SDCCH, SELECT_FOR_MS_CHAN_REQ, NULL, false);
 	if (!lchan)
 		return NULL;
 
@@ -2173,7 +2173,8 @@ void abis_rsl_chan_rqd_queue_poll(struct gsm_bts *bts)
 		 lchan = _select_sdcch_for_call(bts, rqd, lctype);
 	} else if (rqd->reason != GSM_CHREQ_REASON_EMERG) {
 		lchan = lchan_select_by_type(bts, GSM_LCHAN_SDCCH,
-					     SELECT_FOR_MS_CHAN_REQ);
+					     SELECT_FOR_MS_CHAN_REQ,
+					     NULL);
 	}
 	/* else: Emergency calls will be put on a free TCH/H or TCH/F directly
 	 * in the code below, all other channel requests will get an SDCCH first
@@ -2189,14 +2190,16 @@ void abis_rsl_chan_rqd_queue_poll(struct gsm_bts *bts)
 				get_value_string(gsm_chreq_descs, rqd->reason), gsm_lchant_name(GSM_LCHAN_SDCCH),
 				rqd->ref.ra, gsm_lchant_name(GSM_LCHAN_TCH_H));
 			lchan = lchan_select_by_type(bts, GSM_LCHAN_TCH_H,
-						     SELECT_FOR_MS_CHAN_REQ);
+						     SELECT_FOR_MS_CHAN_REQ,
+						     NULL);
 		}
 		if (!lchan) {
 			LOG_BTS(bts, DRSL, LOGL_NOTICE, "CHAN RQD[%s]: no resources for %s 0x%x, retrying with %s\n",
 				get_value_string(gsm_chreq_descs, rqd->reason), gsm_lchant_name(GSM_LCHAN_SDCCH),
 				rqd->ref.ra, gsm_lchant_name(GSM_LCHAN_TCH_F));
 			lchan = lchan_select_by_type(bts, GSM_LCHAN_TCH_F,
-						     SELECT_FOR_MS_CHAN_REQ);
+						     SELECT_FOR_MS_CHAN_REQ,
+						     NULL);
 		}
 	}
 	if (!lchan) {

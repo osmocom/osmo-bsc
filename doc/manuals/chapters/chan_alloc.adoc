@@ -28,12 +28,15 @@ network
 
 ==== Channel allocation modes
 
-Currently only the following two simple channel allocation modes are supported:
+Currently the following channel allocation modes are supported:
 
 - ascending (default): allocates channels in ascending order,
 starting from timeslot 0 of the first TRX (also called C0, the BCCH carrier);
 - descending: allocates channels in descending order,
-starting from timeslot 7 of the last TRX.
+starting from timeslot 7 of the last TRX;
+- dynamic (only for assignment): dynamically choose between ascending
+and descending order depending on some additional parameters
+(see <<chan_alloc_dyn_mode>>).
 
 NOTE: Regardless of the chosen mode, logical channels (sub-slots) are always
 selected in ascending order.  For example, if a timeslot is configured as SDCCH/8
@@ -52,12 +55,72 @@ OsmoBSC(config-net-bts)# channel allocator mode ? <1>
 OsmoBSC(config-net-bts)# channel allocator mode set-all ? <2>
   ascending   Allocate Timeslots and Transceivers in ascending order
   descending  Allocate Timeslots and Transceivers in descending order
+
+OsmoBSC(config-net-bts)# channel allocator mode assignment ? <3>
+  ascending   Allocate Timeslots and Transceivers in ascending order
+  descending  Allocate Timeslots and Transceivers in descending order
+  dynamic     Dynamic lchan selection based on configured parameters <3>
 ----
 <1> It's optionally possible to configure different allocation modes for
 different allocation causes, e.g. `ascending` for `chan-req` and `descending`
 for both `assignment` and `handover`.
 <2> `set-all` is equivalent to the old (deprecated) command syntax:
 `channel allocator (ascending|descending)`.
+<3> The `dynamic` mode can be selected only for `assignment`.
+
+[[chan_alloc_dyn_mode]]
+===== Dynamic channel allocation mode
+
+There exists an additional channel allocation mode, which can be employed
+during a TCH channel allocation for assignment.  This mode selects between
+ascending and descending order depending on pre-configured parameters:
+
+- Uplink RxLev threshold and number of samples for averaging,
+- C0 (BCCH carrier) channel load threshold.
+
+This is useful in setups where Tx power of the RF carriers cannot be adjusted
+dynamically at run-time and thus no BS Power Control can be performed.  In
+such setups the BCCH carrier is transmitting at relatively higher power than
+the other RF carriers.  The key idea is to allocate channels in a smarter way,
+so that UEs with poor signal would get channels on carriers with high Tx power,
+while UEs with good signal could use carriers with lower Tx power.
+
+The configuration parameters for dynamic selection are listed below:
+
+----
+OsmoBSC(config-net-bts)# channel allocator dynamic-param ?
+  sort-by-trx-power  Whether to sort TRX instances by their respective power levels
+  ul-rxlev           Uplink RxLev
+  c0-chan-load       C0 (BCCH carrier) channel load
+
+channel allocator dynamic-param sort-by-trx-power ?
+  0  Do not sort, use the same order as in the configuration file
+  1  Sort TRX instances by their power levels in descending order
+
+OsmoBSC(config-net-bts)# channel allocator dynamic-param ul-rxlev thresh ?
+  <0-63>  Uplink RxLev threshold
+OsmoBSC(config-net-bts)# channel allocator dynamic-param ul-rxlev thresh 50 avg-num ?
+  <1-10>  Minimum number of RxLev samples for averaging
+OsmoBSC(config-net-bts)# channel allocator dynamic-param c0-chan-load thresh ?
+  <0-100>  Channel load threshold (in %)
+----
+
+The default values are:
+
+----
+network
+ bts 0
+  channel allocator dynamic-param sort-by-trx-power 0 <1>
+  channel allocator dynamic-param ul-rxlev thresh 50 avg-num 2 <2>
+  channel allocator dynamic-param c0-chan-load thresh 60 <3>
+----
+<1> Assume that RF carriers are listed in descending order sorted by Tx power.
+<2> Use descending order if AVG of at least two Uplink RxLev samples >= 50 (-60 dBm).
+<3> Use descending order if more than 60% logical channels of C0 are occupied.
+
+NOTE: The final ascending/descending order decision is based on the two conditions.
+The descending order will be used only if *both conditions are met*, otherwise the
+allocator will use ascending order.
 
 ==== Interference aware channel allocation
 

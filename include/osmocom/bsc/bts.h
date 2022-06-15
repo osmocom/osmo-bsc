@@ -521,6 +521,16 @@ struct gsm_bts {
 	bool chan_alloc_assignment_reverse;
 	bool chan_alloc_handover_reverse;
 
+	/* Whether to use dynamic allocation mode for assignment */
+	bool chan_alloc_assignment_dynamic;
+	/* Parameters used for dynamic mode of allocation */
+	struct {
+		bool sort_by_trx_power;
+		uint8_t ul_rxlev_thresh;
+		uint8_t ul_rxlev_avg_num;
+		uint8_t c0_chan_load_thresh;
+	} chan_alloc_dyn_params;
+
 	/* When true, interference measurements from the BTS are used in the channel allocator to favor lchans with less
 	 * interference reported in RSL Resource Indication. */
 	bool chan_alloc_avoid_interf;

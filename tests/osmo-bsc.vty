@@ -167,6 +167,7 @@ OsmoBSC(config-net-bts)# channel ?
 
 OsmoBSC(config-net-bts)# channel allocator ?
   mode                   Channel allocation mode
+  dynamic-param          Parameters for dynamic channel allocation mode
   avoid-interference     Configure whether reported interference levels from RES IND are used in channel allocation
   tch-signalling-policy  Configure when TCH/H or TCH/F channels can be used to serve signalling if SDCCHs are exhausted
 
@@ -179,6 +180,31 @@ OsmoBSC(config-net-bts)# channel allocator mode ?
 OsmoBSC(config-net-bts)# channel allocator mode set-all ?
   ascending   Allocate Timeslots and Transceivers in ascending order
   descending  Allocate Timeslots and Transceivers in descending order
+
+OsmoBSC(config-net-bts)# channel allocator mode handover ?
+  ascending   Allocate Timeslots and Transceivers in ascending order
+  descending  Allocate Timeslots and Transceivers in descending order
+
+OsmoBSC(config-net-bts)# channel allocator mode assignment ?
+  ascending   Allocate Timeslots and Transceivers in ascending order
+  descending  Allocate Timeslots and Transceivers in descending order
+  dynamic     Dynamic lchan selection based on configured parameters
+
+OsmoBSC(config-net-bts)# channel allocator dynamic-param ?
+  sort-by-trx-power  Whether to sort TRX instances by their respective power levels
+  ul-rxlev           Uplink RxLev
+  c0-chan-load       C0 (BCCH carrier) channel load
+
+OsmoBSC(config-net-bts)# channel allocator dynamic-param sort-by-trx-power ?
+  0  Do not sort, use the same order as in the configuration file
+  1  Sort TRX instances by their power levels in descending order
+
+OsmoBSC(config-net-bts)# channel allocator dynamic-param ul-rxlev thresh ?
+  <0-63>  Uplink RxLev threshold
+OsmoBSC(config-net-bts)# channel allocator dynamic-param ul-rxlev thresh 50 avg-num ?
+  <1-10>  Minimum number of RxLev samples for averaging
+OsmoBSC(config-net-bts)# channel allocator dynamic-param c0-chan-load thresh ?
+  <0-100>  Channel load threshold (in %)
 
 OsmoBSC(config-net-bts)# channel allocator avoid-interference ?
   0  Ignore interference levels (default). Always assign lchans in a deterministic order.

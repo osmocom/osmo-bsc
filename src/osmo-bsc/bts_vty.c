@@ -550,6 +550,7 @@ DEFUN_ATTR(cfg_bts_challoc_mode_all,
 	bts->chan_alloc_chan_req_reverse = reverse;
 	bts->chan_alloc_assignment_reverse = reverse;
 	bts->chan_alloc_handover_reverse = reverse;
+	bts->chan_alloc_assignment_dynamic = false;
 
 	return CMD_SUCCESS;
 }
@@ -574,10 +575,85 @@ DEFUN_ATTR(cfg_bts_challoc_mode,
 
 	if (set_all || !strcmp(argv[0], "chan-req"))
 		bts->chan_alloc_chan_req_reverse = reverse;
-	if (set_all || !strcmp(argv[0], "assignment"))
+	if (set_all || !strcmp(argv[0], "assignment")) {
 		bts->chan_alloc_assignment_reverse = reverse;
+		bts->chan_alloc_assignment_dynamic = false;
+	}
 	if (set_all || !strcmp(argv[0], "handover"))
 		bts->chan_alloc_handover_reverse = reverse;
+
+	return CMD_SUCCESS;
+}
+
+DEFUN_ATTR(cfg_bts_challoc_mode_ass_dynamic,
+	   cfg_bts_challoc_mode_ass_dynamic_cmd,
+	   CHAN_ALLOC_CMD " mode assignment dynamic",
+	   CHAN_ALLOC_DESC
+	   "Channel allocation mode\n"
+	   "Channel allocation for assignment\n"
+	   "Dynamic lchan selection based on configured parameters\n",
+	   CMD_ATTR_IMMEDIATE)
+{
+	struct gsm_bts *bts = vty->index;
+
+	bts->chan_alloc_assignment_dynamic = true;
+
+	return CMD_SUCCESS;
+}
+
+#define CHAN_ALLOC_DYN_PARAM_CMD \
+	CHAN_ALLOC_CMD " dynamic-param"
+#define CHAN_ALLOC_DYN_PARAM_DESC \
+	CHAN_ALLOC_DESC \
+	"Parameters for dynamic channel allocation mode\n"
+
+DEFUN_ATTR(cfg_bts_challoc_dynamic_param_sort_by_trx_power,
+	   cfg_bts_challoc_dynamic_param_sort_by_trx_power_cmd,
+	   CHAN_ALLOC_DYN_PARAM_CMD " sort-by-trx-power (0|1)",
+	   CHAN_ALLOC_DYN_PARAM_DESC
+	   "Whether to sort TRX instances by their respective power levels\n"
+	   "Do not sort, use the same order as in the configuration file\n"
+	   "Sort TRX instances by their power levels in descending order\n",
+	   CMD_ATTR_IMMEDIATE)
+{
+	struct gsm_bts *bts = vty->index;
+
+	bts->chan_alloc_dyn_params.sort_by_trx_power = (argv[0][0] == '1');
+
+	return CMD_SUCCESS;
+}
+
+DEFUN_ATTR(cfg_bts_challoc_dynamic_param_ul_rxlev,
+	   cfg_bts_challoc_dynamic_param_ul_rxlev_cmd,
+	   CHAN_ALLOC_DYN_PARAM_CMD " ul-rxlev thresh <0-63> avg-num <1-10>",
+	   CHAN_ALLOC_DYN_PARAM_DESC
+	   "Uplink RxLev\n"
+	   "Uplink RxLev threshold\n"
+	   "Uplink RxLev threshold\n"
+	   "Minimum number of RxLev samples for averaging\n"
+	   "Minimum number of RxLev samples for averaging\n",
+	   CMD_ATTR_IMMEDIATE)
+{
+	struct gsm_bts *bts = vty->index;
+
+	bts->chan_alloc_dyn_params.ul_rxlev_thresh = atoi(argv[0]);
+	bts->chan_alloc_dyn_params.ul_rxlev_avg_num = atoi(argv[1]);
+
+	return CMD_SUCCESS;
+}
+
+DEFUN_ATTR(cfg_bts_challoc_dynamic_param_c0_chan_load,
+	   cfg_bts_challoc_dynamic_param_c0_chan_load_cmd,
+	   CHAN_ALLOC_DYN_PARAM_CMD " c0-chan-load thresh <0-100>",
+	   CHAN_ALLOC_DYN_PARAM_DESC
+	   "C0 (BCCH carrier) channel load\n"
+	   "Channel load threshold\n"
+	   "Channel load threshold (in %)\n",
+	   CMD_ATTR_IMMEDIATE)
+{
+	struct gsm_bts *bts = vty->index;
+
+	bts->chan_alloc_dyn_params.c0_chan_load_thresh = atoi(argv[0]);
 
 	return CMD_SUCCESS;
 }
@@ -4246,9 +4322,24 @@ static void config_write_bts_single(struct vty *vty, struct gsm_bts *bts)
 	vty_out(vty, "  channel allocator mode chan-req %s%s",
 		bts->chan_alloc_chan_req_reverse ? "descending" : "ascending",
 		VTY_NEWLINE);
-	vty_out(vty, "  channel allocator mode assignment %s%s",
-		bts->chan_alloc_assignment_reverse ? "descending" : "ascending",
-		VTY_NEWLINE);
+	if (bts->chan_alloc_assignment_dynamic) {
+		vty_out(vty, "  channel allocator mode assignment dynamic%s",
+			VTY_NEWLINE);
+		vty_out(vty, "  channel allocator dynamic-param sort-by-trx-power %c%s",
+			bts->chan_alloc_dyn_params.sort_by_trx_power ? '1' : '0',
+			VTY_NEWLINE);
+		vty_out(vty, "  channel allocator dynamic-param ul-rxlev thresh %u avg-num %u%s",
+			bts->chan_alloc_dyn_params.ul_rxlev_thresh,
+			bts->chan_alloc_dyn_params.ul_rxlev_avg_num,
+			VTY_NEWLINE);
+		vty_out(vty, "  channel allocator dynamic-param c0-chan-load thresh %u%s",
+			bts->chan_alloc_dyn_params.c0_chan_load_thresh,
+			VTY_NEWLINE);
+	} else {
+		vty_out(vty, "  channel allocator mode assignment %s%s",
+			bts->chan_alloc_assignment_reverse ? "descending" : "ascending",
+			VTY_NEWLINE);
+	}
 	vty_out(vty, "  channel allocator mode handover %s%s",
 		bts->chan_alloc_handover_reverse ? "descending" : "ascending",
 		VTY_NEWLINE);
@@ -4582,6 +4673,10 @@ int bts_vty_init(void)
 	install_element(BTS_NODE, &cfg_bts_oml_e1_tei_cmd);
 	install_element(BTS_NODE, &cfg_bts_challoc_mode_cmd);
 	install_element(BTS_NODE, &cfg_bts_challoc_mode_all_cmd);
+	install_element(BTS_NODE, &cfg_bts_challoc_mode_ass_dynamic_cmd);
+	install_element(BTS_NODE, &cfg_bts_challoc_dynamic_param_sort_by_trx_power_cmd);
+	install_element(BTS_NODE, &cfg_bts_challoc_dynamic_param_ul_rxlev_cmd);
+	install_element(BTS_NODE, &cfg_bts_challoc_dynamic_param_c0_chan_load_cmd);
 	install_element(BTS_NODE, &cfg_bts_chan_alloc_interf_cmd);
 	install_element(BTS_NODE, &cfg_bts_chan_alloc_tch_signalling_policy_cmd);
 	install_element(BTS_NODE, &cfg_bts_chan_alloc_allow_tch_for_signalling_cmd);

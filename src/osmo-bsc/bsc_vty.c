@@ -772,7 +772,8 @@ static int trigger_as(struct vty *vty, struct gsm_lchan *from_lchan, struct gsm_
 	if (!to_lchan) {
 		struct gsm_bts *bts = from_lchan->ts->trx->bts;
 		to_lchan = lchan_select_by_type(bts, from_lchan->type,
-						SELECT_FOR_ASSIGNMENT);
+						SELECT_FOR_ASSIGNMENT,
+						from_lchan);
 		vty_out(vty, "Error: cannot find free lchan of type %s%s",
 			gsm_lchant_name(from_lchan->type), VTY_NEWLINE);
 	}
@@ -958,7 +959,8 @@ static struct gsm_bts *find_other_bts_with_free_slots(struct vty *vty, struct gs
 
 		llist_for_each_entry(trx, &bts->trx_list, list) {
 			struct gsm_lchan *lchan = lchan_select_by_type(bts, free_type,
-								       SELECT_FOR_HANDOVER);
+								       SELECT_FOR_HANDOVER,
+								       NULL);
 			if (!lchan)
 				continue;
 
