@@ -59,10 +59,11 @@ OsmoBSC(config-net-bts)# channel allocator avoid-interference ?
   1  In channel allocation, prefer lchans with less interference.
 ----
 
-NOTE: Interference levels are compared within the scope of a single TRX, which
-is selected with respect to the configured allocation mode.  This means that
-the selection logic would ignore channels on the other TRXes, even if they
-are better according to the interference reports from the BTS.
+NOTE: Interference levels are compared within the scope of the whole BTS.  This
+means that the selection logic may pick channels on the other TRXes, if they are
+better according to the interference reports from the BTS.  This feature makes
+the allocation order non-deterministic and therefore nullifies the meaning of
+channel allocation modes described above.
 
 ==== TCH sigalling policy
 
