@@ -1155,6 +1155,12 @@ const struct rate_ctr_desc bts_ctr_description[] = {
 	[BTS_CTR_CHAN_SDCCH_ACTIVE_MILLISECONDS_TOTAL] = \
 		{ "chan_sdcch:active_milliseconds:total",
 		  "Cumulative number of milliseconds of SDCCH channel activity" },
+	[BTS_CTR_CHAN_TCH_FULLY_ESTABLISHED] = \
+		{ "chan_tch:fully_established",
+		  "Number of TCH channels which have reached the fully established state" },
+	[BTS_CTR_CHAN_SDCCH_FULLY_ESTABLISHED] = \
+		{ "chan_sdcch:fully_established",
+		  "Number of SDCCH channels which have reached the fully established state" },
 	[BTS_CTR_RSL_UNKNOWN] = \
 		{ "rsl:unknown",
 		  "Number of unknown/unsupported RSL messages received from BTS" },

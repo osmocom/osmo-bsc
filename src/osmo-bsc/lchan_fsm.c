@@ -208,6 +208,19 @@ static void lchan_on_fully_established(struct gsm_lchan *lchan)
 	osmo_clock_gettime(CLOCK_MONOTONIC, &lchan->active_start);
 	lchan->active_stored = lchan->active_start;
 
+	/* Increment rate counters tracking fully established lchans. */
+	switch (lchan->type) {
+	case GSM_LCHAN_TCH_H:
+	case GSM_LCHAN_TCH_F:
+		rate_ctr_inc(rate_ctr_group_get_ctr(lchan->ts->trx->bts->bts_ctrs, BTS_CTR_CHAN_TCH_FULLY_ESTABLISHED));
+		break;
+	case GSM_LCHAN_SDCCH:
+		rate_ctr_inc(rate_ctr_group_get_ctr(lchan->ts->trx->bts->bts_ctrs, BTS_CTR_CHAN_SDCCH_FULLY_ESTABLISHED));
+		break;
+	default:
+		break;
+	}
+
 	switch (lchan->activate.info.activ_for) {
 	case ACTIVATE_FOR_MS_CHANNEL_REQUEST:
 		/* No signalling to do here, MS is free to use the channel, and should go on to connect
