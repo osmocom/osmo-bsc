@@ -2,7 +2,7 @@
  *
  * (C) 2008 by Harald Welte <laforge@gnumonks.org>
  * (C) 2008, 2009 by Holger Hans Peter Freyther <zecke@selfish.org>
- * (C) 2018 by sysmocom - s.f.m.c. GmbH <info@sysmocom.de>
+ * (C) 2018-2022 by sysmocom - s.f.m.c. GmbH <info@sysmocom.de>
  *
  * All Rights Reserved
  *
@@ -30,6 +30,11 @@
 #include <osmocom/bsc/lchan_select.h>
 #include <osmocom/bsc/bts.h>
 
+struct lchan_select_ts_list {
+	struct gsm_bts_trx_ts **list;
+	unsigned int num;
+};
+
 static struct gsm_lchan *pick_better_lchan(struct gsm_lchan *a, struct gsm_lchan *b)
 {
 	if (!a)
@@ -42,14 +47,13 @@ static struct gsm_lchan *pick_better_lchan(struct gsm_lchan *a, struct gsm_lchan
 	return a;
 }
 
-static struct gsm_lchan *
-_lc_find_trx(struct gsm_bts_trx *trx, enum gsm_phys_chan_config pchan,
-	     enum gsm_phys_chan_config as_pchan, bool allow_pchan_switch, bool log)
+static struct gsm_lchan *_lc_find(struct lchan_select_ts_list *ts_list,
+				  enum gsm_phys_chan_config pchan,
+				  enum gsm_phys_chan_config as_pchan,
+				  bool allow_pchan_switch, bool log)
 {
 	struct gsm_lchan *lchan;
 	struct gsm_lchan *found_lchan = NULL;
-	struct gsm_bts_trx_ts *ts;
-	int j, start, stop, dir;
 
 #define LOGPLCHANALLOC(fmt, args...) do { \
 	if (log) \
@@ -61,28 +65,10 @@ _lc_find_trx(struct gsm_bts_trx *trx, enum gsm_phys_chan_config pchan,
 		     ## args); \
 	} while (0)
 
-	if (!trx_is_usable(trx)) {
-		LOGPLCHANALLOC("%s trx not usable\n", gsm_trx_name(trx));
-		return NULL;
-	}
-
-	if (trx->bts->chan_alloc_reverse) {
-		/* check TS 7..0 */
-		start = 7;
-		stop = -1;
-		dir = -1;
-	} else {
-		/* check TS 0..7 */
-		start = 0;
-		stop = 8;
-		dir = 1;
-	}
-
-	for (j = start; j != stop; j += dir) {
+	for (unsigned int tn = 0; tn < ts_list->num; tn++) {
+		struct gsm_bts_trx_ts *ts = ts_list->list[tn];
 		int lchans_as_pchan;
-		ts = &trx->ts[j];
-		if (!ts_is_usable(ts))
-			continue;
+
 		/* The caller first selects what kind of TS to search in, e.g. looking for exact
 		 * GSM_PCHAN_TCH_F, or maybe among dynamic GSM_PCHAN_OSMO_DYN... */
 		if (ts->pchan_on_init != pchan) {
@@ -125,7 +111,7 @@ _lc_find_trx(struct gsm_bts_trx *trx, enum gsm_phys_chan_config pchan,
 
 			/* When picking an lchan with least interference, continue to loop across all lchans. When
 			 * ignoring interference levels, return the first match. */
-			if (found_lchan && !trx->bts->chan_alloc_avoid_interf)
+			if (found_lchan && !ts->trx->bts->chan_alloc_avoid_interf)
 				return found_lchan;
 		}
 	}
@@ -141,44 +127,31 @@ _lc_find_trx(struct gsm_bts_trx *trx, enum gsm_phys_chan_config pchan,
 #undef LOGPLCHANALLOC
 }
 
-static struct gsm_lchan *
-_lc_dyn_find_bts(struct gsm_bts *bts, enum gsm_phys_chan_config pchan,
-		 enum gsm_phys_chan_config dyn_as_pchan, bool log)
+static struct gsm_lchan *lc_dyn_find(struct lchan_select_ts_list *ts_list,
+				     enum gsm_phys_chan_config pchan,
+				     enum gsm_phys_chan_config dyn_as_pchan,
+				     bool log)
 {
-	struct gsm_bts_trx *trx;
-	struct gsm_lchan *lc;
-	int allow_pchan_switch;
-	bool try_pchan_switch;
+	struct gsm_lchan *lchan;
 
 	/* First find an lchan that needs no change in its timeslot pchan mode.
 	 * In particular, this ensures that handover to a dynamic timeslot in TCH/H favors timeslots that are currently
 	 * using only one of two TCH/H, so that we don't switch more dynamic timeslots to TCH/H than necessary.
 	 * For non-dynamic timeslots, it is not necessary to do a second pass with allow_pchan_switch ==
 	 * true, because they never switch anyway. */
-	try_pchan_switch = (pchan != dyn_as_pchan);
-	for (allow_pchan_switch = 0; allow_pchan_switch <= (try_pchan_switch ? 1 : 0); allow_pchan_switch++) {
-		if (bts->chan_alloc_reverse) {
-			llist_for_each_entry_reverse(trx, &bts->trx_list, list) {
-				lc = _lc_find_trx(trx, pchan, dyn_as_pchan, (bool)allow_pchan_switch, log);
-				if (lc)
-					return lc;
-			}
-		} else {
-			llist_for_each_entry(trx, &bts->trx_list, list) {
-				lc = _lc_find_trx(trx, pchan, dyn_as_pchan, (bool)allow_pchan_switch, log);
-				if (lc)
-					return lc;
-			}
-		}
-	}
+	if ((lchan = _lc_find(ts_list, pchan, dyn_as_pchan, false, log)))
+		return lchan;
+	if ((lchan = _lc_find(ts_list, pchan, dyn_as_pchan, true, log)))
+		return lchan;
 
 	return NULL;
 }
 
-static struct gsm_lchan *
-_lc_find_bts(struct gsm_bts *bts, enum gsm_phys_chan_config pchan, bool log)
+static struct gsm_lchan *lc_find(struct lchan_select_ts_list *ts_list,
+				 enum gsm_phys_chan_config pchan,
+				 bool log)
 {
-	return _lc_dyn_find_bts(bts, pchan, pchan, log);
+	return _lc_find(ts_list, pchan, pchan, false, log);
 }
 
 enum gsm_chan_t chan_mode_to_chan_type(enum gsm48_chan_mode chan_mode, enum channel_rate chan_rate)
@@ -215,6 +188,35 @@ enum gsm_chan_t chan_mode_to_chan_type(enum gsm48_chan_mode chan_mode, enum chan
 	}
 }
 
+static void populate_ts_list(struct lchan_select_ts_list *ts_list,
+			     struct gsm_bts *bts,
+			     bool log)
+{
+	struct gsm_bts_trx *trx;
+	unsigned int num = 0;
+
+	llist_for_each_entry(trx, &bts->trx_list, list) {
+		for (unsigned int tn = 0; tn < ARRAY_SIZE(trx->ts); tn++) {
+			struct gsm_bts_trx_ts *ts = &trx->ts[tn];
+			if (ts_is_usable(ts))
+				ts_list->list[num++] = ts;
+			else if (log)
+				LOGP(DRLL, LOGL_DEBUG, "%s is not usable\n", gsm_ts_name(ts));
+		}
+	}
+
+	ts_list->num = num;
+
+	/* Reverse the timeslot list if required */
+	if (bts->chan_alloc_reverse) {
+		for (unsigned int tn = 0; tn < num / 2; tn++) {
+			struct gsm_bts_trx_ts *temp = ts_list->list[tn];
+			ts_list->list[tn] = ts_list->list[num - tn - 1];
+			ts_list->list[num - tn - 1] = temp;
+		}
+	}
+}
+
 struct gsm_lchan *lchan_select_by_chan_mode(struct gsm_bts *bts,
 					    enum gsm48_chan_mode chan_mode, enum channel_rate chan_rate)
 {
@@ -228,9 +230,18 @@ struct gsm_lchan *lchan_avail_by_type(struct gsm_bts *bts, enum gsm_chan_t type,
 {
 	struct gsm_lchan *lchan = NULL;
 	enum gsm_phys_chan_config first, first_cbch, second, second_cbch;
+	struct lchan_select_ts_list ts_list;
 
 	if (log)
 		LOG_BTS(bts, DRLL, LOGL_DEBUG, "lchan_avail_by_type(%s)\n", gsm_lchant_name(type));
+
+	/* Allocate an array with pointers to all timeslots of a BTS */
+	ts_list.list = talloc_array_ptrtype(bts, ts_list.list, bts->num_trx * 8);
+	if (OSMO_UNLIKELY(ts_list.list == NULL))
+		return NULL;
+
+	/* Populate this array with the actual pointers */
+	populate_ts_list(&ts_list, bts, log);
 
 	switch (type) {
 	case GSM_LCHAN_SDCCH:
@@ -246,45 +257,44 @@ struct gsm_lchan *lchan_avail_by_type(struct gsm_bts *bts, enum gsm_chan_t type,
 			second_cbch = GSM_PCHAN_SDCCH8_SACCH8C_CBCH;
 		}
 
-		lchan = _lc_find_bts(bts, first, log);
+		lchan = lc_find(&ts_list, first, log);
 		if (lchan == NULL)
-			lchan = _lc_find_bts(bts, first_cbch, log);
+			lchan = lc_find(&ts_list, first_cbch, log);
 		if (lchan == NULL)
-			lchan = _lc_find_bts(bts, second, log);
+			lchan = lc_find(&ts_list, second, log);
 		if (lchan == NULL)
-			lchan = _lc_find_bts(bts, second_cbch, log);
+			lchan = lc_find(&ts_list, second_cbch, log);
 		/* No dedicated SDCCH available -- try fully dynamic
 		 * TCH/F_TCH/H_SDCCH8_PDCH if BTS supports it: */
 		if (lchan == NULL && osmo_bts_has_feature(&bts->features, BTS_FEAT_DYN_TS_SDCCH8))
-			lchan = _lc_dyn_find_bts(bts,
-						 GSM_PCHAN_OSMO_DYN,
-						 GSM_PCHAN_SDCCH8_SACCH8C, log);
+			lchan = lc_dyn_find(&ts_list, GSM_PCHAN_OSMO_DYN,
+						      GSM_PCHAN_SDCCH8_SACCH8C, log);
 		break;
 	case GSM_LCHAN_TCH_F:
-		lchan = _lc_find_bts(bts, GSM_PCHAN_TCH_F, log);
+		lchan = lc_find(&ts_list, GSM_PCHAN_TCH_F, log);
 		/* If we don't have TCH/F available, try dynamic TCH/F_PDCH */
 		if (!lchan)
-			lchan = _lc_dyn_find_bts(bts, GSM_PCHAN_TCH_F_PDCH,
-						 GSM_PCHAN_TCH_F, log);
+			lchan = lc_dyn_find(&ts_list, GSM_PCHAN_TCH_F_PDCH,
+						      GSM_PCHAN_TCH_F, log);
 
 		/* Try fully dynamic TCH/F_TCH/H_PDCH as TCH/F... */
 		if (!lchan && bts->network->dyn_ts_allow_tch_f)
-			lchan = _lc_dyn_find_bts(bts,
-						 GSM_PCHAN_OSMO_DYN,
-						 GSM_PCHAN_TCH_F, log);
+			lchan = lc_dyn_find(&ts_list, GSM_PCHAN_OSMO_DYN,
+						      GSM_PCHAN_TCH_F, log);
 		break;
 	case GSM_LCHAN_TCH_H:
-		lchan = _lc_find_bts(bts, GSM_PCHAN_TCH_H, log);
+		lchan = lc_find(&ts_list, GSM_PCHAN_TCH_H, log);
 		/* No dedicated TCH/x available -- try fully dynamic
 		 * TCH/F_TCH/H_PDCH */
 		if (!lchan)
-			lchan = _lc_dyn_find_bts(bts,
-						 GSM_PCHAN_OSMO_DYN,
-						 GSM_PCHAN_TCH_H, log);
+			lchan = lc_dyn_find(&ts_list, GSM_PCHAN_OSMO_DYN,
+						      GSM_PCHAN_TCH_H, log);
 		break;
 	default:
 		LOG_BTS(bts, DRLL, LOGL_ERROR, "Unknown gsm_chan_t %u\n", type);
 	}
+
+	talloc_free(ts_list.list);
 
 	return lchan;
 }
