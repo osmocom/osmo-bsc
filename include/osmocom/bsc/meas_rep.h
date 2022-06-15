@@ -88,4 +88,7 @@ unsigned int calc_initial_idx(unsigned int array_size,
 			      unsigned int meas_rep_idx,
 			      unsigned int num_values);
 
+int meas_get_field(const struct gsm_meas_rep *rep,
+		   enum meas_rep_field field);
+
 #endif /* _MEAS_REP_H */

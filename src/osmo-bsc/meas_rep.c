@@ -24,8 +24,8 @@
 #include <osmocom/bsc/gsm_data.h>
 #include <osmocom/bsc/meas_rep.h>
 
-static int get_field(const struct gsm_meas_rep *rep,
-		     enum meas_rep_field field)
+int meas_get_field(const struct gsm_meas_rep *rep,
+		   enum meas_rep_field field)
 {
 	switch (field) {
 	case MEAS_REP_DL_RXLEV_FULL:
@@ -146,7 +146,7 @@ int get_meas_rep_avg(const struct gsm_lchan *lchan,
 		int val;
 
 		use_field = choose_meas_rep_field(field, dir, set, &lchan->meas_rep[j]);
-		val = get_field(&lchan->meas_rep[j], use_field);
+		val = meas_get_field(&lchan->meas_rep[j], use_field);
 
 		if (val >= 0) {
 			avg += val;
@@ -177,7 +177,7 @@ int meas_rep_n_out_of_m_be(const struct gsm_lchan *lchan,
 		int val;
 
 		use_field = choose_meas_rep_field(field, dir, set, &lchan->meas_rep[j]);
-		val = get_field(&lchan->meas_rep[j], use_field);
+		val = meas_get_field(&lchan->meas_rep[j], use_field);
 
 		if (val >= be) /* implies that val < 0 will not count */
 			count++;

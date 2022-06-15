@@ -13,12 +13,16 @@ static inline const char *lchan_select_reason_name(enum lchan_select_reason reas
 
 struct gsm_lchan *lchan_select_by_type(struct gsm_bts *bts,
 				       enum gsm_chan_t type,
-				       enum lchan_select_reason reason);
+				       enum lchan_select_reason reason,
+				       void *ctx);
 enum gsm_chan_t chan_mode_to_chan_type(enum gsm48_chan_mode chan_mode, enum channel_rate chan_rate);
 struct gsm_lchan *lchan_select_by_chan_mode(struct gsm_bts *bts,
 					    enum gsm48_chan_mode chan_mode,
 					    enum channel_rate chan_rate,
-					    enum lchan_select_reason reason);
-struct gsm_lchan *lchan_avail_by_type(struct gsm_bts *bts, enum gsm_chan_t type,
-				      enum lchan_select_reason reason, bool log);
+					    enum lchan_select_reason reason,
+					    void *ctx);
+struct gsm_lchan *lchan_avail_by_type(struct gsm_bts *bts,
+				      enum gsm_chan_t type,
+				      enum lchan_select_reason reason,
+				      void *ctx, bool log);
 void lchan_select_set_type(struct gsm_lchan *lchan, enum gsm_chan_t type);

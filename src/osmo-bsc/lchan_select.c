@@ -21,6 +21,8 @@
  *
  */
 
+#include <stdlib.h>
+
 #include <osmocom/bsc/debug.h>
 
 #include <osmocom/bsc/gsm_data.h>
@@ -195,15 +197,41 @@ enum gsm_chan_t chan_mode_to_chan_type(enum gsm48_chan_mode chan_mode, enum chan
 	}
 }
 
+static int qsort_func(const void *_a, const void *_b)
+{
+	const struct gsm_bts_trx *trx_a = *(const struct gsm_bts_trx **)_a;
+	const struct gsm_bts_trx *trx_b = *(const struct gsm_bts_trx **)_b;
+
+	int pwr_a = trx_a->nominal_power - trx_a->max_power_red;
+	int pwr_b = trx_b->nominal_power - trx_b->max_power_red;
+
+	/* Sort in descending order */
+	return pwr_b - pwr_a;
+}
+
 static void populate_ts_list(struct lchan_select_ts_list *ts_list,
 			     struct gsm_bts *bts,
 			     bool chan_alloc_reverse,
+			     bool sort_by_trx_power,
 			     bool log)
 {
+	struct gsm_bts_trx **trx_list;
 	struct gsm_bts_trx *trx;
 	unsigned int num = 0;
 
-	llist_for_each_entry(trx, &bts->trx_list, list) {
+	/* Allocate an array with pointers to all TRX instances of a BTS */
+	trx_list = talloc_array_ptrtype(bts, trx_list, bts->num_trx);
+	OSMO_ASSERT(trx_list != NULL);
+
+	llist_for_each_entry(trx, &bts->trx_list, list)
+		trx_list[trx->nr] = trx;
+
+	/* Sort by TRX power is descending order (if needed) */
+	if (sort_by_trx_power)
+		qsort(&trx_list[0], bts->num_trx, sizeof(trx), &qsort_func);
+
+	for (unsigned int trxn = 0; trxn < bts->num_trx; trxn++) {
+		trx = trx_list[trxn];
 		for (unsigned int tn = 0; tn < ARRAY_SIZE(trx->ts); tn++) {
 			struct gsm_bts_trx_ts *ts = &trx->ts[tn];
 			if (ts_is_usable(ts))
@@ -213,6 +241,7 @@ static void populate_ts_list(struct lchan_select_ts_list *ts_list,
 		}
 	}
 
+	talloc_free(trx_list);
 	ts_list->num = num;
 
 	/* Reverse the timeslot list if required */
@@ -225,23 +254,75 @@ static void populate_ts_list(struct lchan_select_ts_list *ts_list,
 	}
 }
 
+static bool chan_alloc_ass_dynamic_reverse(struct gsm_bts *bts,
+					   void *ctx, bool log)
+{
+	const struct load_counter *ll = &bts->c0->lchan_load;
+	const struct gsm_lchan *old_lchan = ctx;
+	unsigned int lchan_load;
+	int avg_ul_rxlev;
+
+	OSMO_ASSERT(old_lchan != NULL);
+	OSMO_ASSERT(old_lchan->ts->trx->bts == bts);
+
+#define LOG_COND(fmt, args...) \
+	if (log) { \
+		LOG_LCHAN(old_lchan, LOGL_DEBUG, fmt, ## args); \
+	} while (0)
+
+	/* Condition a) Channel load on the C0 (BCCH carrier) */
+	lchan_load = ll->total ? ll->used * 100 / ll->total : 0;
+	if (lchan_load < bts->chan_alloc_dyn_params.c0_chan_load_thresh) {
+		LOG_COND("C0 Channel Load %u%% < thresh %u%% => using ascending order\n",
+			 lchan_load, bts->chan_alloc_dyn_params.c0_chan_load_thresh);
+		return false;
+	}
+
+	/* Condition b) average Uplink RxLev */
+	avg_ul_rxlev = get_meas_rep_avg(old_lchan, TDMA_MEAS_FIELD_RXLEV,
+					TDMA_MEAS_DIR_UL, TDMA_MEAS_SET_AUTO,
+					bts->chan_alloc_dyn_params.ul_rxlev_avg_num);
+	if (avg_ul_rxlev < 0) {
+		LOG_COND("Unknown AVG UL RxLev => using ascending order\n");
+		return false;
+	}
+	if (avg_ul_rxlev < bts->chan_alloc_dyn_params.ul_rxlev_thresh) {
+		LOG_COND("AVG UL RxLev %u < thresh %u => using ascending order\n",
+			 avg_ul_rxlev, bts->chan_alloc_dyn_params.ul_rxlev_thresh);
+		return false;
+	}
+
+	LOG_COND("C0 Channel Load %u%% >= thresh %u%% and "
+		 "AVG UL RxLev %u >= thresh %u => using descending order\n",
+		 lchan_load, bts->chan_alloc_dyn_params.c0_chan_load_thresh,
+		 avg_ul_rxlev, bts->chan_alloc_dyn_params.ul_rxlev_thresh);
+
+#undef LOG_COND
+
+	return true;
+}
+
 struct gsm_lchan *lchan_select_by_chan_mode(struct gsm_bts *bts,
 					    enum gsm48_chan_mode chan_mode,
 					    enum channel_rate chan_rate,
-					    enum lchan_select_reason reason)
+					    enum lchan_select_reason reason,
+					    void *ctx)
 {
 	enum gsm_chan_t type = chan_mode_to_chan_type(chan_mode, chan_rate);
 	if (type == GSM_LCHAN_NONE)
 		return NULL;
-	return lchan_select_by_type(bts, type, reason);
+	return lchan_select_by_type(bts, type, reason, ctx);
 }
 
-struct gsm_lchan *lchan_avail_by_type(struct gsm_bts *bts, enum gsm_chan_t type,
-				      enum lchan_select_reason reason, bool log)
+struct gsm_lchan *lchan_avail_by_type(struct gsm_bts *bts,
+				      enum gsm_chan_t type,
+				      enum lchan_select_reason reason,
+				      void *ctx, bool log)
 {
 	struct gsm_lchan *lchan = NULL;
 	enum gsm_phys_chan_config first, first_cbch, second, second_cbch;
 	struct lchan_select_ts_list ts_list;
+	bool sort_by_trx_power = false;
 	bool chan_alloc_reverse;
 
 	if (log) {
@@ -254,7 +335,12 @@ struct gsm_lchan *lchan_avail_by_type(struct gsm_bts *bts, enum gsm_chan_t type,
 		chan_alloc_reverse = bts->chan_alloc_chan_req_reverse;
 		break;
 	case SELECT_FOR_ASSIGNMENT:
-		chan_alloc_reverse = bts->chan_alloc_assignment_reverse;
+		if (bts->chan_alloc_assignment_dynamic) {
+			chan_alloc_reverse = chan_alloc_ass_dynamic_reverse(bts, ctx, log);
+			sort_by_trx_power = bts->chan_alloc_dyn_params.sort_by_trx_power;
+		} else {
+			chan_alloc_reverse = bts->chan_alloc_assignment_reverse;
+		}
 		break;
 	case SELECT_FOR_HANDOVER:
 		chan_alloc_reverse = bts->chan_alloc_handover_reverse;
@@ -267,7 +353,7 @@ struct gsm_lchan *lchan_avail_by_type(struct gsm_bts *bts, enum gsm_chan_t type,
 		return NULL;
 
 	/* Populate this array with the actual pointers */
-	populate_ts_list(&ts_list, bts, chan_alloc_reverse, log);
+	populate_ts_list(&ts_list, bts, chan_alloc_reverse, sort_by_trx_power, log);
 
 	switch (type) {
 	case GSM_LCHAN_SDCCH:
@@ -330,14 +416,15 @@ struct gsm_lchan *lchan_avail_by_type(struct gsm_bts *bts, enum gsm_chan_t type,
  * the lchan and timeslot FSMs. */
 struct gsm_lchan *lchan_select_by_type(struct gsm_bts *bts,
 				       enum gsm_chan_t type,
-				       enum lchan_select_reason reason)
+				       enum lchan_select_reason reason,
+				       void *ctx)
 {
 	struct gsm_lchan *lchan = NULL;
 
 	LOG_BTS(bts, DRLL, LOGL_DEBUG, "lchan_select_by_type(type=%s, reason=%s)\n",
 		gsm_lchant_name(type), lchan_select_reason_name(reason));
 
-	lchan = lchan_avail_by_type(bts, type, reason, true);
+	lchan = lchan_avail_by_type(bts, type, reason, ctx, true);
 
 	if (!lchan) {
 		LOG_BTS(bts, DRLL, LOGL_NOTICE, "Failed to select %s channel (%s)\n",

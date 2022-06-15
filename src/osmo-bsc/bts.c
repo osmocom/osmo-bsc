@@ -292,6 +292,9 @@ struct gsm_bts *gsm_bts_alloc(struct gsm_network *net, struct gsm_bts_sm *bts_sm
 	bts->early_classmark_allowed_3g = true; /* 3g Early Classmark Sending controlled by bts->early_classmark_allowed param */
 	bts->si_unused_send_empty = true;
 	bts->chan_alloc_tch_signalling_policy = BTS_TCH_SIGNALLING_ALWAYS;
+	bts->chan_alloc_dyn_params.ul_rxlev_thresh = 50; /* >= -60 dBm */
+	bts->chan_alloc_dyn_params.ul_rxlev_avg_num = 2; /* at least 2 samples */
+	bts->chan_alloc_dyn_params.c0_chan_load_thresh = 60; /* >= 60% */
 	bts->si_common.cell_sel_par.cell_resel_hyst = 2; /* 4 dB */
 	bts->si_common.cell_sel_par.rxlev_acc_min = 0;
 	bts->si_common.si2quater_neigh_list.arfcn = bts->si_common.data.earfcn_list;
