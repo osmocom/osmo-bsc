@@ -747,6 +747,11 @@ void trx_dump_vty(struct vty *vty, struct gsm_bts_trx *trx, bool print_rsl, bool
 		vty_out(vty, "  E1 Signalling Link:%s", VTY_NEWLINE);
 		e1isl_dump_vty(vty, trx->rsl_link_primary);
 	}
+
+	const struct load_counter *ll = &trx->lchan_load;
+	vty_out(vty, "  Channel load: %u%%%s",
+		ll->total ? ll->used * 100 / ll->total : 0,
+		VTY_NEWLINE);
 }
 
 void config_write_e1_link(struct vty *vty, struct gsm_e1_subslot *e1_link,

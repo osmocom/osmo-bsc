@@ -81,6 +81,7 @@ struct gsm_bts_trx {
 	struct gsm_bts_trx_ts ts[TRX_NR_TS];
 
 	struct chan_counts chan_counts;
+	struct load_counter lchan_load;
 };
 
 static inline struct gsm_bts_trx *gsm_bts_bb_trx_get_trx(struct gsm_bts_bb_trx *bb_transc) {
