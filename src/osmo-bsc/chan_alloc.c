@@ -44,7 +44,11 @@ void bts_chan_load(struct pchan_load *cl, const struct gsm_bts *bts)
 	struct gsm_bts_trx *trx;
 
 	llist_for_each_entry(trx, &bts->trx_list, list) {
+		struct load_counter *ll = &trx->lchan_load;
 		int i;
+
+		/* init per-TRX load counters */
+		memset(ll, 0, sizeof(*ll));
 
 		/* skip administratively deactivated transceivers */
 		if (!trx_is_usable(trx))
@@ -66,6 +70,7 @@ void bts_chan_load(struct pchan_load *cl, const struct gsm_bts *bts)
 			     ts->pchan_on_init == GSM_PCHAN_TCH_F_PDCH) &&
 			    (ts->pchan_is == GSM_PCHAN_NONE ||
 			     ts->pchan_is == GSM_PCHAN_PDCH)) {
+				ll->total++;
 				pl->total++;
 				/* Below loop would not count this timeslot, since in PDCH mode it has no usable
 				 * timeslots. But let's make it clear that the timeslot must not be counted again: */
@@ -77,11 +82,13 @@ void bts_chan_load(struct pchan_load *cl, const struct gsm_bts *bts)
 				if (lchan->type == GSM_LCHAN_CBCH)
 					continue;
 
+				ll->total++;
 				pl->total++;
 
 				/* lchans under a BORKEN TS should be counted
 				 * as used just as BORKEN lchans under a normal TS */
 				if (ts->fi->state == TS_ST_BORKEN) {
+					ll->used++;
 					pl->used++;
 					continue;
 				}
@@ -90,6 +97,7 @@ void bts_chan_load(struct pchan_load *cl, const struct gsm_bts *bts)
 				case LCHAN_ST_UNUSED:
 					break;
 				default:
+					ll->used++;
 					pl->used++;
 					break;
 				}
