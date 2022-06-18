@@ -19,8 +19,8 @@ Build-Depends: debhelper (>=9),
                libosmo-mgcp-client-dev (>= 1.9.0),
                osmo-gsm-manuals-dev (>= 1.2.0)
 Standards-Version: 3.9.8
-Vcs-Git: git://git.osmocom.org/osmo-bsc.git
-Vcs-Browser: https://git.osmocom.org/osmo-bsc/
+Vcs-Git: https://gitea.osmocom.org/cellular-infrastructure/osmo-bsc
+Vcs-Browser: https://gitea.osmocom.org/cellular-infrastructure/osmo-bsc
 Homepage: https://projects.osmocom.org/projects/osmo-bsc
 
 Package: osmo-bsc
