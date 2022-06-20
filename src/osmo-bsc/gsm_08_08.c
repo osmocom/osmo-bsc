@@ -71,12 +71,14 @@ void bsc_sapi_n_reject(struct gsm_subscriber_connection *conn,
 {
 	int rc;
 	struct msgb *resp;
+	struct gsm_bts *bts;
 
 	if (!msc_connected(conn))
 		return;
 
-	LOGP(DMSC, LOGL_NOTICE, "Tx MSC SAPI N REJECT (dlci=0x%02x, cause='%s')\n",
-	     dlci, gsm0808_cause_name(cause));
+	bts = conn_get_bts(conn);
+	LOG_BTS(bts, DMSC, LOGL_NOTICE, "Tx MSC SAPI N REJECT (dlci=0x%02x, cause='%s')\n",
+		dlci, gsm0808_cause_name(cause));
 	resp = gsm0808_create_sapi_reject_cause(dlci, cause);
 	rate_ctr_inc(rate_ctr_group_get_ctr(conn->sccp.msc->msc_ctrs, MSC_CTR_BSSMAP_TX_DT1_SAPI_N_REJECT));
 	rc = osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_TX_SCCP, resp);
