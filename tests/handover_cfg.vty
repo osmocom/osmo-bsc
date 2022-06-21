@@ -6,7 +6,7 @@ OsmoBSC> enable
 
 OsmoBSC# ### No handover config present
 OsmoBSC# show running-config
-... !handover
+... !^\s+handover
 
 OsmoBSC# ### Toggling handover on network level affects 'show network':
 OsmoBSC# configure terminal
@@ -44,17 +44,17 @@ OsmoBSC(config-net)# ### HO is 'on' globally, bts 0 disables it, bts 1 tweaks a 
 OsmoBSC(config-net)# show running-config
 ...
 network
-... !handover
+... !^\s+handover
  handover 1
-... !handover
+... !^\s+handover
  bts 0
-... !handover
+... !^\s+handover
   handover 0
-... !handover
+... !^\s+handover
  bts 1
-... !handover
+... !^\s+handover
   handover1 power budget interval 23
-... !handover
+... !^\s+handover
 
 OsmoBSC(config-net)# ### Set global default to 'off', now bts 1 also uses the global default of 'off':
 OsmoBSC(config-net)# handover 0
@@ -65,17 +65,17 @@ OsmoBSC(config-net)# do show network
 OsmoBSC(config-net)# show running-config
 ...
 network
-... !handover
+... !^\s+handover
  handover 0
-... !handover
+... !^\s+handover
  bts 0
-... !handover
+... !^\s+handover
   handover 0
-... !handover
+... !^\s+handover
  bts 1
-... !handover
+... !^\s+handover
   handover1 power budget interval 23
-... !handover
+... !^\s+handover
 
 OsmoBSC(config-net)# ### Remove the global setting, i.e. use the factory default net level, with same effect:
 OsmoBSC(config-net)# handover default
@@ -89,15 +89,15 @@ OsmoBSC(config-net)# do show network
 OsmoBSC(config-net)# show running-config
 ...
 network
-... !handover
+... !^\s+handover
  bts 0
-... !handover
+... !^\s+handover
   handover 0
-... !handover
+... !^\s+handover
  bts 1
-... !handover
+... !^\s+handover
   handover1 power budget interval 23
-... !handover
+... !^\s+handover
 
 OsmoBSC(config-net)# ### Re-enable net-level handover, but bts 0 remains disabled explicitly
 OsmoBSC(config-net)# handover 1
@@ -108,17 +108,17 @@ OsmoBSC(config-net)# do show network
 OsmoBSC(config-net)# show running-config
 ...
 network
-... !handover
+... !^\s+handover
  handover 1
-... !handover
+... !^\s+handover
  bts 0
-... !handover
+... !^\s+handover
   handover 0
-... !handover
+... !^\s+handover
  bts 1
-... !handover
+... !^\s+handover
   handover1 power budget interval 23
-... !handover
+... !^\s+handover
 
 OsmoBSC(config-net)# ### Remove explicit setting of bts 0 to also use the global setting:
 OsmoBSC(config-net)# bts 0
@@ -133,15 +133,15 @@ OsmoBSC(config-net-bts)# do show network
 OsmoBSC(config-net-bts)# show running-config
 ...
 network
-... !handover
+... !^\s+handover
  handover 1
-... !handover
+... !^\s+handover
  bts 0
-... !handover
+... !^\s+handover
  bts 1
-... !handover
+... !^\s+handover
   handover1 power budget interval 23
-... !handover
+... !^\s+handover
 
 OsmoBSC(config-net-bts)# ### Verify that 'min rxlev' value range stops at -50
 OsmoBSC(config-net-bts)# handover2 min rxlev ?
