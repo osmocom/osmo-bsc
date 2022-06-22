@@ -1,3 +1,4 @@
+[[interf_rep]]
 == Interference reporting
 
 According to 3GPP 48.058, section 6.1, the BTS shall periodically report the

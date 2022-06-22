@@ -1,0 +1,79 @@
+== Channel allocation
+
+Radio resource management is one of the main tasks of the Base Station Controller.
+This involves selection, activation, and deactivation of logical channels, which
+are maintained by connected Base Stations.  The number of usable logical channels
+is limited by total number of radio carriers and may vary depending on the physical
+channel combinations assigned to their timeslots.  Thus a major goal of the this
+task is to manage all the available resources in an efficient way, shifting the
+balance between service quality and the overall capacity.
+
+=== Channel allocation parameters
+
+OsmoBSC's channel allocator can be configured via the VTY interface.  All
+relevant parameters are limited by the scope of a BTS node they belong to.
+There is currently no way to define global configuration for all BTS.
+
+All parameters with their respective default values are listed below:
+
+----
+network
+ bts 0
+  channel allocator ascending
+  channel allocator avoid-interference 0
+  channel allocator tch-signalling-policy always
+----
+
+==== Channel allocation modes
+
+Currently only the following two simple channel allocation modes are supported:
+
+- ascending (default): allocates channels in ascending order,
+starting from timeslot 0 of the first TRX (also called C0, the BCCH carrier);
+- descending: allocates channels in descending order,
+starting from timeslot 7 of the last TRX.
+
+NOTE: Regardless of the chosen mode, logical channels (sub-slots) are always
+selected in ascending order.  For example, if a timeslot is configured as SDCCH/8
+and all 8 sub-slots are not in use, then the first SDCCH(0) sub-slot will be
+selected in both ascending and descending modes.
+
+The allocation mode to be used can be configured using the following VTY command:
+
+----
+OsmoBSC(config-net-bts)# channel allocator ?
+  ascending              Allocate Timeslots and Transceivers in ascending order
+  descending             Allocate Timeslots and Transceivers in descending order
+----
+
+==== Interference aware channel allocation
+
+The channel allocator can be configured to prefer logical channels with least
+interference, based on interference measurements periodically sent by the BTSs
+(see <<interf_rep>>).  This is an optional feature, which is disabled by default.
+
+----
+OsmoBSC(config-net-bts)# channel allocator avoid-interference ?
+  0  Ignore interference levels (default). Always assign lchans
+     in a deterministic order.
+  1  In channel allocation, prefer lchans with less interference.
+----
+
+NOTE: Interference levels are compared within the scope of a single TRX, which
+is selected with respect to the configured allocation mode.  This means that
+the selection logic would ignore channels on the other TRXes, even if they
+are better according to the interference reports from the BTS.
+
+==== TCH sigalling policy
+
+By default, in a situation when all SDCCHs are exhausted, OsmoBSC will be using TCH
+channels for signalling (e.g for Location Updating or call establishment).  This
+behavior can be restricted to certain kinds of signalling or disabled completely.
+
+----
+OsmoBSC(config-net-bts)# channel allocator tch-signalling-policy ?
+  never      Never allow TCH for signalling purposes
+  emergency  Only allow TCH for signalling purposes when establishing an emergency call
+  voice      Allow TCH for signalling purposes when establishing any voice call
+  always     Always allow TCH for signalling purposes (default)
+----
