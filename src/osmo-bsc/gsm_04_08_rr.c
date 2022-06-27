@@ -325,8 +325,9 @@ int gsm48_send_rr_release(struct gsm_lchan *lchan)
 			msgb_tlv_put(msg, GSM48_IE_CELL_SEL_IND_AFTER_REL, len, buf);
 	}
 
-	DEBUGP(DRR, "Sending Channel Release: Chan: Number: %d Type: %d RR-Cause: 0x%x '%s'\n",
-		lchan->nr, lchan->type, lchan->release.rr_cause, rr_cause_name(lchan->release.rr_cause));
+	DEBUGP(DRR, "%s Tx Channel Release (cause=0x%02x '%s')\n",
+	       gsm_lchan_name(lchan),  lchan->release.rr_cause,
+	       rr_cause_name(lchan->release.rr_cause));
 
 	/* Send actual release request to MS */
 	return gsm48_sendmsg(msg);
@@ -358,7 +359,8 @@ int gsm48_send_rr_classmark_enquiry(struct gsm_lchan *lchan)
 	gh->proto_discr = GSM48_PDISC_RR;
 	gh->msg_type = GSM48_MT_RR_CLSM_ENQ;
 
-	DEBUGP(DRR, "%s TX CLASSMARK ENQUIRY %u\n", gsm_lchan_name(lchan), msgb_length(msg));
+	DEBUGP(DRR, "%s Tx CLASSMARK ENQUIRY (len=%u)\n",
+	       gsm_lchan_name(lchan), msgb_length(msg));
 
 	return gsm48_sendmsg(msg);
 }
@@ -372,7 +374,7 @@ int gsm48_send_rr_ciph_mode(struct gsm_lchan *lchan, int want_imeisv)
 
 	msg->lchan = lchan;
 
-	DEBUGP(DRR, "TX CIPHERING MODE CMD\n");
+	DEBUGP(DRR, "%s Tx CIPHERING MODE CMD\n", gsm_lchan_name(lchan));
 
 	if (lchan->encr.alg_a5_n > 0)
 		ciph_mod_set = (lchan->encr.alg_a5_n - 1) << 1 | 0x01;
@@ -619,7 +621,8 @@ int gsm48_send_rr_ass_cmd(struct gsm_lchan *current_lchan, struct gsm_lchan *new
 		(struct gsm48_ass_cmd *) msgb_put(msg, sizeof(*ass));
 	struct gsm_bts *bts = new_lchan->ts->trx->bts;
 
-	DEBUGP(DRR, "-> ASSIGNMENT COMMAND tch_mode=0x%02x\n",
+	DEBUGP(DRR, "%s Tx ASSIGNMENT COMMAND (tch_mode=0x%02x)\n",
+	       gsm_lchan_name(current_lchan),
 	       new_lchan->current_ch_mode_rate.chan_mode);
 
 	msg->lchan = current_lchan;
@@ -709,7 +712,8 @@ int gsm48_lchan_modify(struct gsm_lchan *lchan, uint8_t mode)
 		(struct gsm48_chan_mode_modify *) msgb_put(msg, sizeof(*cmm));
 	struct gsm_bts *bts = lchan->ts->trx->bts;
 
-	DEBUGP(DRR, "-> CHANNEL MODE MODIFY mode=0x%02x\n", mode);
+	DEBUGP(DRR, "%s Tx CHANNEL MODE MODIFY (mode=0x%02x)\n",
+	       gsm_lchan_name(lchan), mode);
 
 	msg->lchan = lchan;
 	gh->proto_discr = GSM48_PDISC_RR;
