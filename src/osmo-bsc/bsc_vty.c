@@ -774,7 +774,7 @@ static int trigger_as(struct vty *vty, struct gsm_lchan *from_lchan, struct gsm_
 		vty_out(vty, "Error: cannot find free lchan of type %s%s",
 			gsm_lchant_name(from_lchan->type), VTY_NEWLINE);
 	}
-	if (reassignment_request_to_lchan(ACTIVATE_FOR_VTY, from_lchan, to_lchan, -1, -1)) {
+	if (reassignment_request_to_lchan(ASSIGN_FOR_VTY, from_lchan, to_lchan, -1, -1)) {
 		vty_out(vty, "Error: not allowed to start assignment for %s%s",
 			gsm_lchan_name(from_lchan), VTY_NEWLINE);
 		return CMD_WARNING;
