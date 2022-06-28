@@ -286,7 +286,10 @@ static int print_attr_rep(struct msgb *mb)
 	unsigned int indent = 0;
 
 
-	abis_nm_tlv_parse(&tp, bts, foh->data, oh->length-sizeof(*foh));
+	if (abis_nm_tlv_parse(&tp, bts, foh->data, oh->length-sizeof(*foh)) < 0) {
+		LOGPFOH(DNM, LOGL_ERROR, foh, "%s(): tlv_parse failed\n", __func__);
+		return -EINVAL;
+	}
 
 	abis_nm_tlv_attr_primary_oml(&tp, &ia, &oml_port);
 	osmo_strlcpy(oml_ip, inet_ntoa(ia), sizeof(oml_ip));
