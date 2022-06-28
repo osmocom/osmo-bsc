@@ -301,7 +301,7 @@ int cbsp_tx_decoded(struct bsc_cbc_link *cbc, struct osmo_cbsp_decoded *cbsp)
 	struct msgb *msg;
 
 	if (!cbc->client.cli && !cbc->server.srv) {
-		LOGP(DCBS, LOGL_ERROR, "Discarding Tx CBSP Message Type %s, link is down\n",
+		LOGP(DCBS, LOGL_INFO, "Discarding Tx CBSP Message Type %s, link is down\n",
 			 get_value_string(cbsp_msg_type_names, cbsp->msg_type));
 		talloc_free(cbsp);
 		return 0;
