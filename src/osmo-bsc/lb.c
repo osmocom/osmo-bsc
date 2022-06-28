@@ -100,7 +100,7 @@ static int handle_unitdata_from_smlc(const struct osmo_sccp_addr *smlc_addr, str
 {
 	struct osmo_ss7_instance *ss7;
 	struct bssap_le_pdu bssap_le;
-	struct osmo_bssap_le_err *err;
+	struct osmo_bssap_le_err *err = NULL;
 	struct rate_ctr_group *ctrg = bsc_gsmnet->smlc->ctrs;
 
 	ss7 = osmo_sccp_get_ss7(osmo_sccp_get_sccp(scu));

@@ -226,7 +226,7 @@ int lcs_loc_req_rx_bssmap_le(struct gsm_subscriber_connection *conn, struct msgb
 {
 	struct lcs_loc_req *lcs_loc_req = conn->lcs.loc_req;
 	struct bssap_le_pdu bssap_le;
-	struct osmo_bssap_le_err *err;
+	struct osmo_bssap_le_err *err = NULL;
 	struct rate_ctr_group *ctrg = bsc_gsmnet->smlc->ctrs;
 
 	if (!lcs_loc_req) {
