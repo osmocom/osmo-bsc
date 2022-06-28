@@ -300,6 +300,13 @@ int cbsp_tx_decoded(struct bsc_cbc_link *cbc, struct osmo_cbsp_decoded *cbsp)
 {
 	struct msgb *msg;
 
+	if (!cbc->client.cli && !cbc->server.srv) {
+		LOGP(DCBS, LOGL_ERROR, "Discarding Tx CBSP Message Type %s, link is down\n",
+			 get_value_string(cbsp_msg_type_names, cbsp->msg_type));
+		talloc_free(cbsp);
+		return 0;
+	}
+
 	msg = osmo_cbsp_encode(cbc, cbsp);
 	if (!msg) {
 		LOGP(DCBS, LOGL_ERROR, "Unable to encode CBSP Message Type %s: %s\n",
@@ -311,10 +318,6 @@ int cbsp_tx_decoded(struct bsc_cbc_link *cbc, struct osmo_cbsp_decoded *cbsp)
 		osmo_stream_cli_send(cbc->client.cli, msg);
 	else if (cbc->server.srv)
 		osmo_stream_srv_send(cbc->server.srv, msg);
-	else {
-		LOGP(DCBS, LOGL_ERROR, "Discarding CBSP Message, link is down: %s\n", msgb_hexdump(msg));
-		msgb_free(msg);
-	}
 
 	talloc_free(cbsp);
 	return 0;
