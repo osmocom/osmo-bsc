@@ -310,6 +310,7 @@ enum abis_om2k_dei {
 	OM2K_DEI_MAX_ALLOWED_POWER		= 0xa9,
 	OM2K_DEI_MAX_ALLOWED_NUM_TRXCS		= 0xaa,
 	OM2K_DEI_MCTR_FEAT_STATUS_BMAP		= 0xab,
+	OM2K_DEI_SEEN_UNKNOWN_D2		= 0xd2,
 };
 
 enum abis_om2k_mostate {
@@ -388,6 +389,7 @@ const struct tlv_definition om2k_att_tlvdef = {
 		[OM2K_DEI_FS_OFFSET] =		{ TLV_TYPE_FIXED, 5 },
 		[OM2K_DEI_EXT_COND_MAP_2_EXT] = { TLV_TYPE_FIXED, 4 },
 		[OM2K_DEI_TSS_MO_STATE] = 	{ TLV_TYPE_FIXED, 4 },
+		[OM2K_DEI_SEEN_UNKNOWN_D2] =	{ TLV_TYPE_FIXED, 6 },
 	},
 };
 
@@ -2882,7 +2884,7 @@ static void display_fault_maps(const uint8_t *src, unsigned int src_len,
 
 		/* Bail if an the maximum number of TLV fields
 		 * have been parsed */
-		if (tlv_count >= 11) {
+		if (tlv_count >= 20) {
 			LOGP(DNM, LOGL_ERROR, "Rx MO=%s Fault Report: too many tlv elements!\n",
 			     abis_om2k_mo_name(mo));
 			return;
