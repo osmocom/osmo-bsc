@@ -1,3 +1,251 @@
+osmo-bsc (1.9.0) unstable; urgency=medium
+
+  [ Philipp Maier ]
+  * abis_nm: fix typo
+  * abis_nm: use struct sdp_firmware from libosmocore
+  * bts-examples: add example for E1 connected BTS
+  * abis_nm: actively block BTSs with invalid configuration
+  * bts: add missing return -EINVAL statements
+  * bts: fix sourcecode formatting (excess whitespace)
+  * nm_bts_fsm: fix sourcecode formatting
+  * bssmap_reset: make T4 user configurable
+
+  [ Oliver Smith ]
+  * bsc_subscr_conn_fsm: fix crash if !conn
+  * Cosmetic: osmo-bsc/osmo_bsc_bssap: fix formatting
+  * stats: add bsc.paging:expired
+  * treewide: remove FSF address
+  * contrib/osmo-bsc.spec.in: add new config files
+  * contrib/osmo-bsc.spec.in: fix 4trx example paths
+  * bts_model_osmobts_init: order feats alphabetically
+  * Cosmetic: bts_model_osmobts_init: update comment
+  * abis_nm: don't compare assumed/reported features
+  * gsm_data: add gsm_set_bts_model
+  * Always use reported features if available
+  * contrib/jenkins.sh: check osmo_bts_has_feature use
+  * abis_nm_ipaccess_rsl_connect: initialize ia
+  * bts_model_*_start: move set_feature calls to _init
+  * abis_nm: add bts model features to reported ones
+  * Check VTY config against features reported by BTS
+  * abis_nm: run gsm_bts_check_cfg during oml bring up
+  * Cosmetic: bsc_vty: tweak msc pooling strings
+
+  [ Neels Hofmeyr ]
+  * hodec2: fix segv for inter-BSC ho target
+  * dbg log: abis_rsl print_meas_rep(): clarify rxlev
+  * fix chreq:* counters: typos in chreq:successful_* constants
+  * dbg log: also log assignment counters on BTS level
+  * fix assignment success counters: count *before* cleanup of fsm state
+  * log: always include timeouts in FSM transition logging
+  * lchan/gscon: always clear both cross ref pointers
+  * lcs: fix bsc_subscr use_count leak
+  * fix gscon clear 1/n: store clear cause in gscon
+  * fix gscon clear 2/n: proper state transition to ST_CLEARING
+  * fix gscon clear 3/n: separate state for SCCP RLSD
+  * gscon clear: without SCCP conn, no need to wait for RLSD timeout
+  * fix two comments in chan_counts.h
+  * rename RSL_ENC_ALG_A5 to ALG_A5_NR_TO_RSL, clarify
+  * fix inter-BSC-in handover encryption
+  * cosmetics around select_best_cipher()
+  * inter-BSC HO in: add speech IEs only on speech mode lchans
+  * inter-BSC HO in: add Speech Codec (Chosen) IE to HO Req Ack
+  * inter-BSC HO in: add Codec List (BSS Supported) IE to HO Req Ack
+  * tweak logl to ERROR for invalid initial BSSMAP
+  * silence bogus error: event not permitted: READY_TO_SWITCH_RTP
+  * add missing counter increment for Perform Location Request
+  * add counter for inter-BSC incoming Handover Request
+  * support "empty" SCCP N-Connect from MSC
+  * tweak error msg: s/inter-BSC MT/inter-BSC incoming
+  * inter-BSC incoming HO: store Codec List (MSC Preferred)
+  * fix extraneous newlines in ho_fail() invocations
+  * fix typo in name of BSS_MAP_MSG_ASSIGNMENT_RQST
+  * hodec2: show reported ho oscillation from bad rxqual
+  * hodec2: add penalty-time low-rxqual-ho
+  * assignment_fsm: always mark MGCP ci as completed
+  * assignment_fsm: always update RTP info
+  * hodec2: apply penalty_low_rxqual_as only on assignment
+  * emerg call: fix RR release cause for pre-emption
+  * emerg call: tweak log, comments
+  * emerg call deny: fix RR release cause
+  * emerg call deny: log on LOGL_ERROR
+  * emerg call: send BSSMAP Clear Req cause as preemption
+  * fix fallout from: 'stats: new trackers for lchan life duration'
+  * do not BSSMAP Clear on lchan rel when LCS is still ongoing
+  * fix rare segfault in MGCP client handling
+  * drop log from ts_is_usable()
+  * code cleanup for all_allocated timers, no functional change
+  * fix performance for chan_counts and all_allocated stats
+
+  [ Pau Espin Pedrol ]
+  * Disable C/I based MS Power Control Loop by default
+  * Drop unneeded ax_check_compile_flag.m4
+  * Fix DLCI CC bits transmitted in SAPI "n" REJECT
+  * bts: Add explicit switch case for Cell Id SAI
+  * doc: bsc.adoc: Update timer info from code (gsm_network_T_defs)
+  * tests: nanobts_omlattr_test: Use msgb_eq_data_print() helper
+  * ipa oml: Fix encoding of T3105
+  * bts_vty.c: Fix typo in comment
+  * SI13: Always send ext_info
+  * SI13: Make sure egprs_supported field is always updated
+  * SI13: Avoid enabling use_egprs_p_ch_req if egprs not supported
+  * system_information: Move all si13 specific val update to generate_si13()
+  * SI13: Get rid of si13_default
+  * bsc_vty: Add missing header
+  * bts: Simplify bts->paging initialization
+  * tests/bsc/Makefile.am: remove duplicate CFLAGS
+  * Move struct gsm_bts_paging_state to paging.h
+  * paging: Use define available in libosmogsm
+  * rsl_rx_ccch_load: Use UINT16_MAX instead of -1
+  * paging: Avoid setting up credit_timer every time
+  * paging: Use llist_first_entry() macro
+  * paging: Log skip paging due to not enough free channels
+  * paging: Submit up to 20 paging requests in a single work iteration
+  * paging: Prioritize requests for new subscribers over retransmitions
+  * cosmetic:: Document TLVs in nanobts_attr_bts_get()
+  * Rename functions generating OML SetAttr messages
+  * bts: Use uint8_t instead of int for ccch_load_ind_thresh
+  * Introduce VTY command 'ccch load-indication-period <0-255>'
+  * bts: Make sure paging timers are deleted when struct gsm_bts is freed
+  * tests: acc_test: fix typo in talloc ctx name
+  * tests: acc_test: Get rid on unrelated logs in expect file
+  * paging: Estimate available_slots based on BTS config when no CCCH Load Ind received
+  * paging: Rework timer lifecycle logic
+  * paging: Check C0 RSL link instead of OML link
+  * paging: Decouple retransmit period from regular worker interval
+  * paging: Improve calculate_timer_3113()
+  * paging: Improve logging
+  * paging: Increase T3113 based on paging group load in BSC queue
+  * paging: Early stop work_timer when paging queue becomes empty
+  * paging: Recalculate work timer if waiting for retrans
+  * paging: Document 'ccch_load_ind_period * 2' value
+  * tests: Order tests alphabetically
+  * tests/acc: Remove unused var
+  * abis_rsl.c: Drop unused function
+  * abis_rsl: Use proper struct in rsl_paging_cmd
+  * bts: Properly free ctr/stat when bts object is freed
+  * paging: Flush pending paging requests when bts obj freed
+  * paging: Take into account extra delay of all paging groups in BSC queue
+  * tests: Introduce paging_test
+  * paging: Remove TODO comment
+  * Drop duplicate function helper
+  * Remove commented out code
+  * abis_nm: Use proper define for avail state 0xff
+  * ipaccess-config: Use proper define for nm availability value
+  * abis_nm: Merge signals S_NM_STATECHG_ADM and S_NM_STATECHG_OPER
+  * cosmetic: Fix open brace in same line as func definition
+  * constify state pointers of struct gsm_nm_state
+  * acc: Fix erratic ramping behavior when several BTS configured
+  * nm_statechg_signal_data: Convert state ptr to data
+  * nm_is_running(): Drop duplicate check
+  * bts_ipa: Send NM_EV_OML_DOWN following object tree in order
+  * paging: Improve logging
+  * paging: Fix recalculate work timer if waiting for retrans
+  * paging: Avoid unnecessary immediate polling in mainloop
+  * Revert "fix fallout from: 'stats: new trackers for lchan life duration'"
+  * Revert "stats: new trackers for lchan life duration"
+  * Update current NM object state before signalling S_NM_STATECHG
+  * Introduce new signal S_NM_RUNNING_CHG and implement it for rcarrier,bbtransc
+  * paging: start/stop credit_timer based on C0 running
+  * acc: Simplify start/stop by using new signal S_NM_RUNNING_CHG
+  * nm_*_fsm: Remove comment no longer applying
+  * nm_rcarrier_fsm: Trigger S_NM_RUNNING_CHG when Admin st changes in op=Enabled
+  * Move all SMSCB/CBC vty code to its own file
+  * smscb: Base cell operational life cycle on CBCH being operative
+  * smscb: Tx CBSP FAILURE/RESTART for specific cell when it becomes (un)operational
+  * cbsp: Avoid encoding CBSP message if link is down
+
+  [ Vadim Yanitskiy ]
+  * ipaccess-config: improve readability of printed attribute response
+  * ipaccess-config: request and print NM_ATT_IPACC_NV_FLAGS
+  * system_information: fix unused 'mask' parameter in list_arfcn()
+  * tests/gsm0408: add testing coverage for generate_cell_chan_list()
+  * bitvec2freq_list(): determine empty set by checking the ARFCN count
+  * bitvec2freq_list(): fix handling of E-GSM ARFCNs
+  * Fix description of BTS_CTR_BTS_RSL_FAIL: s/OML/RSL/
+  * fix inp_sig_cb(): dispatch TS_EV_OML_DOWN to all transceivers
+  * system_information: use is_ipaccess_bts() helper
+  * system_information: fix DCS/PCS band indicator in generate_si6()
+  * gsm48_send_ho_cmd(): this function is not used, remove it
+  * gsm48_make_ho_cmd(): cosmetic: use existing BTS pointer
+  * gsm48_make_ho_cmd(): make 'struct gsm_lchan' pointer const
+  * gsm48_make_ho_cmd(): optionally add Cipher Mode Setting IE
+  * gsm48_make_ho_cmd(): optionally add Synchronization Indication IE
+  * fixup: gsm48_make_ho_cmd(): optionally add Synchronization Indication IE
+  * gsm_bts_trx_set_system_infos(): cosmetic: improve readability
+  * System Information Type 3: allow updating T3212 at run-time
+  * parse_bssmap_perf_loc_req(): make 'struct tlv_p_entry' pointer const
+  * BSSMAP LE: fix handling of LCS Client Type IE
+  * BSSMAP LE: handle optional LCS {Client Type, QoS} IEs
+  * struct gsm_encr: store alg_id in human-readable format
+  * cbch_scheduler: cosmetic: s/bts_cbch_timer/bts_cbch_timer_cb/
+  * fix gsm_bts_get_cbch(): CBCH can be allocated on Cn
+  * abis_rsl: always check return value of rsl_tlv_parse()
+  * doc/examples: avoid using deprecated configuration commands
+  * doc/examples: add a multi-trx config config example
+  * doc/examples: add a confmerge file with example hopping parameters
+  * power_ctrl_params_def_reset(): set .ctrl_interval for both UL/DL
+  * Move power control related definitions to power_control.h
+  * VTY: clarify help for the Adaptive Multi Rate settings
+  * bts: gsm_bts_alloc(): rework default multi-rate configuration
+  * bts: gsm_bts_alloc(): use reasonable multi-rate config defaults
+  * tests: use 'check_PROGRAMS' instead of 'noinst_PROGRAMS'
+  * abis_rsl: fix NULL pointer dereference in abis_rsl_rx_rll()
+  * gsm_data: use llist_for_each_entry() in gsm_bts_by_lac()
+  * bssap: always check return value of tlv_parse()
+  * abis_nm: always check return value of tlv_parse()
+  * utils/meas_db: fix -Wunused-variable warnings
+  * utils/meas_pcap2db: fix -Wpointer-sign in pcap_cb()
+  * smscb: fix meaningless condition in etws_primary_to_bts()
+  * bsc_vty: use llist_for_each_entry in lchan_act_all_cmd
+  * fix gsm_lchan_and_pchan2chan_nr(): log proper lchan_nr value
+  * VTY: cosmetic: define and use CHAN_ALLOC_{CMD,DESC}
+  * tests/handover_cfg.vty: use more precise regex for forbidden lines
+  * bts_chan_load(): also calculate per-TRX channel load
+  * doc/manuals: document channel allocation parameters
+  * gsm_04_08_rr: ensure lchan info is present in all logging messages
+  * VTY: fix wrong enum value s/ACTIVATE_FOR_VTY/ASSIGN_FOR_VTY/
+  * ipaccess-config: check value returned by abis_nm_tlv_parse()
+
+  [ Harald Welte ]
+  * om2000: Fix memory leak in OM2000 message handling
+  * om2000: Don't print "should not generate any message" on CAL_TIME_REQ
+  * om2000: Don't print "should not generate any message" on FAULT_REP
+  * SMSCB: Preserve padding at end of page in CBSP -> RSL conversion
+  * CBSP: implement MESSAGE STATUS QUERY
+  * abis_rsl: Ensure message length is sufficient for respective header
+  * smscb: Populate "Number of Broadcasts Completed" to KILL COMPLETE
+  * abis_rsl: Fix typo in log message
+  * Handle unknown rllr_ind enum values in rll_ind_cb()
+  * lchan_fsm: Ignore other SAPIs of RLL_REL_IND for SAPI=0 is received
+  * lchan_fsm.c: Fix misleading comment
+  * Fix compile errors on #warning with '-Wall' on gcc-11.2
+  * smscb: Don't include extraneous IEs in CBSP KILL COMPLETE / FAILURE
+  * smscb: Store ETWS input state from CBSP
+  * smscb: Always start ETWS timer even in cells without ETWS support
+  * cbsp: Implement KILL for Emergency Broadcast
+  * cbsp: Reject CBSP WRITE for emergency if emergency already active
+  * bts.c: prevent signed integer overflow in depends_on code
+  * paging: Avoid queueing more than 60 second estimated requests
+  * paging: Implement upper bound of 60s for dynamic T3113
+  * Add stat_item for per-bts [dynamic] T3113 timer
+  * smscb: Send ETWS PN to BTS if ETWS active before BTS connects
+  * smscb: "Warning Security Information is always present in ETWS
+  * Add new Manual "OsmoBSC CBSP Protocol Specification"
+  * convert README to README.md; expand on all fronts
+  * update git URLs (git -> https; gitea)
+
+  [ Michael Iedema ]
+  * stats: new trackers for lchan life duration
+  * stats: new trackers for lchan life duration (v2)
+  * Expand VTY option which controls use of TCH for signalling
+  * stats: track TCH/SDCCH lchans reaching fully-established state
+  * logs: also record which BTS is signaling a SAPI REJECT
+
+  [ Keith ]
+  * Improve parsing of om2000 fault reports
+
+ -- Pau Espin Pedrol <pespin@sysmocom.de>  Wed, 29 Jun 2022 11:18:10 +0200
+
 osmo-bsc (1.8.0) unstable; urgency=medium
 
   [ Harald Welte ]
