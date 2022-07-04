@@ -44,14 +44,11 @@ osmo-bsc-*.tar.bz2
 osmo-bsc-*.tar.gz
 
 # apps and app data
-hlr.sqlite3
 src/utils/bs11_config
 src/ipaccess/ipaccess-config
 src/ipaccess/abisip-find
 src/ipaccess/ipaccess-proxy
 src/utils/isdnsync
-src/osmo-bsc_nat/osmo-bsc_nat
-src/osmo-bsc_nat/*.cfg*
 src/osmo-bsc/osmo-bsc
 src/osmo-bsc/*.cfg*
 src/utils/meas_vis
