@@ -122,6 +122,7 @@ libbsc_la_LIBADD = \
 	$(LIBOSMOABIS_LIBS) \
 	$(LIBOSMOSIGTRAN_LIBS) \
 	$(LIBOSMOMGCPCLIENT_LIBS) \
+	-lm \
 	$(NULL)
 
 bin_PROGRAMS = \
