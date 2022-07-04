@@ -323,7 +323,7 @@ struct gsm_lchan *lchan_avail_by_type(struct gsm_bts *bts,
 	enum gsm_phys_chan_config first, first_cbch, second, second_cbch;
 	struct lchan_select_ts_list ts_list;
 	bool sort_by_trx_power = false;
-	bool chan_alloc_reverse;
+	bool chan_alloc_reverse = false;
 
 	if (log) {
 		LOG_BTS(bts, DRLL, LOGL_DEBUG, "lchan_avail_by_type(type=%s, reason=%s)\n",
