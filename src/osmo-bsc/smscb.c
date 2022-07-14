@@ -481,20 +481,15 @@ int cbsp_tx_restart_bts(struct bsc_cbc_link *cbc, bool is_emerg, struct gsm_bts 
 {
 	struct osmo_cbsp_decoded *cbsp = osmo_cbsp_decoded_alloc(cbc, CBSP_MSGT_RESTART);
 	struct osmo_cbsp_cell_ent cell_ent;
+	struct osmo_cell_global_id *cgi;
 
 	if (is_emerg)
 		cbsp->u.restart.bcast_msg_type = 0x01;
 	cbsp->u.restart.recovery_ind = 0x00; /* message data available */
-	cbsp->u.restart.cell_list.id_discr = CELL_IDENT_LAC_AND_CI;
+	cbsp->u.restart.cell_list.id_discr = CELL_IDENT_WHOLE_GLOBAL;
 
-	cell_ent = (struct osmo_cbsp_cell_ent){
-		.cell_id = {
-			.lac_and_ci = {
-				.lac = bts->location_area_code,
-				.ci = bts->cell_identity,
-			}
-		}
-	};
+	cgi = bts_get_cgi(bts);
+	cell_ent.cell_id.global = *cgi;
 	llist_add(&cell_ent.list, &cbsp->u.restart.cell_list.list);
 
 	return cbsp_tx_decoded(cbc, cbsp);
@@ -505,20 +500,15 @@ int cbsp_tx_failure_bts(struct bsc_cbc_link *cbc, bool is_emerg, struct gsm_bts 
 {
 	struct osmo_cbsp_decoded *cbsp = osmo_cbsp_decoded_alloc(cbc, CBSP_MSGT_FAILURE);
 	struct osmo_cbsp_fail_ent fail_ent;
+	struct osmo_cell_global_id *cgi;
 
 	if (is_emerg)
 		cbsp->u.failure.bcast_msg_type = 0x01;
 
-	fail_ent = (struct osmo_cbsp_fail_ent){
-		.id_discr = CELL_IDENT_LAC_AND_CI,
-		.cell_id = {
-			.lac_and_ci = {
-				.lac = bts->location_area_code,
-				.ci = bts->cell_identity,
-			}
-		},
-		.cause = OSMO_CBSP_CAUSE_CELL_BROADCAST_NOT_OPERATIONAL
-	};
+	cgi = bts_get_cgi(bts);
+	fail_ent.id_discr = CELL_IDENT_WHOLE_GLOBAL;
+	fail_ent.cell_id.global = *cgi;
+	fail_ent.cause = OSMO_CBSP_CAUSE_CELL_BROADCAST_NOT_OPERATIONAL;
 	llist_add(&fail_ent.list, &cbsp->u.failure.fail_list);
 
 	return cbsp_tx_decoded(cbc, cbsp);
