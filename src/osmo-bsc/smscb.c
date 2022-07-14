@@ -1131,6 +1131,7 @@ static int nm_sig_cb(unsigned int subsys, unsigned int signal,
 			bts_cbch_timer_schedule(trx->bts);
 			/* Start ETWS/PWS Primary Notification, if active */
 			bts_etws_bootstrap(trx->bts);
+			cbsp_tx_restart_bts(bts->network->cbc, true, bts);
 			cbsp_tx_restart_bts(bts->network->cbc, false, bts);
 		}
 	} else {
@@ -1138,6 +1139,7 @@ static int nm_sig_cb(unsigned int subsys, unsigned int signal,
 			/* If timer is ongoing it means CBCH was available */
 			LOG_BTS(bts, DCBS, LOGL_INFO, "BTS becomes unavailable for CBCH\n");
 			osmo_timer_del(&bts->cbch_timer);
+			cbsp_tx_failure_bts(bts->network->cbc, true, bts);
 			cbsp_tx_failure_bts(bts->network->cbc, false, bts);
 		} /* else: CBCH was already unavailable before */
 	}
