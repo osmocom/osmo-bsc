@@ -137,8 +137,7 @@ static inline struct gsm_bts *_bts_init(struct gsm_network *net, const char *msg
 #define bts_del(bts) _bts_del(bts, __func__)
 static inline void _bts_del(struct gsm_bts *bts, const char *msg)
 {
-	if (osmo_timer_pending(&bts->acc_mgr.rotate_timer))
-		osmo_timer_del(&bts->acc_mgr.rotate_timer);
+	osmo_timer_del(&bts->acc_mgr.rotate_timer);
 	/* no need to llist_del(&bts->list), we never registered the bts there. */
 	talloc_free(bts->site_mgr);
 	printf("BTS deallocated OK in %s()\n", msg);

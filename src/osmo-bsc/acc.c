@@ -73,9 +73,8 @@ static void acc_mgr_enable_rotation_cond(struct acc_mgr *acc_mgr)
 		if (!osmo_timer_pending(&acc_mgr->rotate_timer))
 			osmo_timer_schedule(&acc_mgr->rotate_timer, acc_mgr->rotation_time_sec, 0);
 	} else {
-		/* No rotation needed, disable rotation timer */
-		if (osmo_timer_pending(&acc_mgr->rotate_timer))
-			osmo_timer_del(&acc_mgr->rotate_timer);
+		/* No rotation needed, disable rotation timer (if pending) */
+		osmo_timer_del(&acc_mgr->rotate_timer);
 	}
 }
 
@@ -565,8 +564,7 @@ void acc_ramp_trigger(struct acc_ramp *acc_ramp)
  */
 void acc_ramp_abort(struct acc_ramp *acc_ramp)
 {
-	if (osmo_timer_pending(&acc_ramp->step_timer))
-		osmo_timer_del(&acc_ramp->step_timer);
+	osmo_timer_del(&acc_ramp->step_timer);
 
 	acc_mgr_set_len_allowed_ramp(&acc_ramp->bts->acc_mgr, 10);
 }
