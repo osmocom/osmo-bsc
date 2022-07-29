@@ -44,8 +44,19 @@
 #include <osmocom/bsc/abis_om2000.h>
 #include <osmocom/bsc/signal.h>
 #include <osmocom/bsc/timeslot_fsm.h>
+#include <osmocom/bsc/nm_common_fsm.h>
 #include <osmocom/bsc/bts.h>
 #include <osmocom/abis/e1_input.h>
+
+static inline void abis_om2000_fsm_transc_becomes_enabled(struct gsm_bts_trx *trx)
+{
+	nm_obj_fsm_becomes_enabled_disabled(trx->bts, trx, NM_OC_RADIO_CARRIER, true);
+}
+
+static inline void abis_om2000_fsm_transc_becomes_disabled(struct gsm_bts_trx *trx)
+{
+	nm_obj_fsm_becomes_enabled_disabled(trx->bts, trx, NM_OC_RADIO_CARRIER, false);
+}
 
 /* FIXME: move to libosmocore */
 struct osmo_fsm_inst *osmo_fsm_inst_alloc_child_id(struct osmo_fsm *fsm,
@@ -2205,14 +2216,19 @@ static void om2k_trx_s_done_onenter(struct osmo_fsm_inst *fi, uint32_t prev_stat
 	/* See e1_config:bts_isdn_sign_link() / OS#4914 */
 	otfp->trx->mo.nm_state.administrative = NM_STATE_UNLOCKED;
 
+	abis_om2000_fsm_transc_becomes_enabled(otfp->trx);
+
 	if (fi->proc.parent)
 		osmo_fsm_inst_dispatch(fi->proc.parent, otfp->done_event, NULL);
 }
 
 static void om2k_trx_allstate(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
+	struct om2k_trx_fsm_priv *otfp = fi->priv;
+
 	switch (event) {
 	case OM2K_TRX_EVT_RESET:
+		abis_om2000_fsm_transc_becomes_disabled(otfp->trx);
 		osmo_fsm_inst_broadcast_children(fi, event, data);
 		osmo_fsm_inst_state_chg(fi, OM2K_TRX_S_INIT, 0, 0);
 		break;
