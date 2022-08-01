@@ -940,6 +940,10 @@ static void gscon_forget_mgw_endpoint(struct gsm_subscriber_connection *conn)
 	mgcp_client = osmo_mgcpc_ep_client(conn->user_plane.mgw_endpoint);
 	mgcp_client_pool_put(mgcp_client);
 
+	/* Be sure that the endpoint CI we are maintaining in user_plane
+	 * is also removed from the other locations as well. */
+	gscon_forget_mgw_endpoint_ci(conn, conn->user_plane.mgw_endpoint_ci_msc);
+
 	conn->user_plane.mgw_endpoint = NULL;
 	conn->user_plane.mgw_endpoint_ci_msc = NULL;
 	conn->ho.created_ci_for_msc = NULL;
