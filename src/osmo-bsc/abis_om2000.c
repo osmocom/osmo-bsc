@@ -51,11 +51,13 @@
 static inline void abis_om2000_fsm_transc_becomes_enabled(struct gsm_bts_trx *trx)
 {
 	nm_obj_fsm_becomes_enabled_disabled(trx->bts, trx, NM_OC_RADIO_CARRIER, true);
+	nm_obj_fsm_becomes_enabled_disabled(trx->bts, &trx->bb_transc, NM_OC_BASEB_TRANSC, true);
 }
 
 static inline void abis_om2000_fsm_transc_becomes_disabled(struct gsm_bts_trx *trx)
 {
 	nm_obj_fsm_becomes_enabled_disabled(trx->bts, trx, NM_OC_RADIO_CARRIER, false);
+	nm_obj_fsm_becomes_enabled_disabled(trx->bts, &trx->bb_transc, NM_OC_BASEB_TRANSC, false);
 }
 
 /* FIXME: move to libosmocore */
@@ -989,6 +991,30 @@ static enum abis_nm_avail_state abis_nm_av_state_from_om2k_av_state(struct abis_
 	}
 }
 
+/* The OM2000 -> 12.21 mapping we do doesn't have a separate bb_transc MO,
+ * for compatibility reasons we pretend to have it anyway. */
+static void update_bb_trxc_mo_state(struct gsm_bts *bts, struct abis_om2k_mo *mo, uint8_t mo_state)
+{
+	struct nm_statechg_signal_data nsd;
+	struct gsm_bts_trx *trx;
+
+	trx = gsm_bts_trx_num(bts, mo->inst);
+	if (!trx)
+		return;
+
+	memset(&nsd, 0, sizeof(nsd));
+
+	nsd.bts = bts;
+	nsd.obj = mo2obj(bts, mo);
+	nsd.old_state = trx->bb_transc.mo.nm_state;
+	nsd.new_state = trx->bb_transc.mo.nm_state;
+	nsd.om2k_mo = mo;
+
+	nsd.new_state.availability = abis_nm_av_state_from_om2k_av_state(mo, mo_state);
+	trx->bb_transc.mo.nm_state.availability = nsd.new_state.availability;
+	osmo_signal_dispatch(SS_NM, S_NM_STATECHG, &nsd);
+}
+
 static void update_mo_state(struct gsm_bts *bts, struct abis_om2k_mo *mo, uint8_t mo_state)
 {
 	struct gsm_nm_state *nm_state = mo2nm_state(bts, mo);
@@ -1009,8 +1035,11 @@ static void update_mo_state(struct gsm_bts *bts, struct abis_om2k_mo *mo, uint8_
 
 	/* Update current state before emitting signal: */
 	nm_state->availability = nsd.new_state.availability;
-
 	osmo_signal_dispatch(SS_NM, S_NM_STATECHG, &nsd);
+
+	/* When the TRXC MO is updated, also update the BB TRXC accordingly. */
+	if (mo->class == OM2K_MO_CLS_TRXC)
+		update_bb_trxc_mo_state(bts, mo, mo_state);
 }
 
 /* Derive an OML Operational state from an OM2000 OP state */
@@ -1024,6 +1053,29 @@ static enum abis_nm_op_state abis_nm_op_state_from_om2k_op_state(uint8_t op_stat
 	default:
 		return NM_OPSTATE_NULL;
 	}
+}
+
+/* (see comment in update_bb_trxc_mo_state() above) */
+static void update_bb_trxc_op_state(struct gsm_bts *bts, const struct abis_om2k_mo *mo, uint8_t op_state)
+{
+	struct nm_statechg_signal_data nsd;
+	struct gsm_bts_trx *trx;
+
+	trx = gsm_bts_trx_num(bts, mo->inst);
+	if (!trx)
+		return;
+
+	memset(&nsd, 0, sizeof(nsd));
+
+	nsd.bts = bts;
+	nsd.obj = mo2obj(bts, mo);
+	nsd.old_state = trx->bb_transc.mo.nm_state;
+	nsd.new_state = trx->bb_transc.mo.nm_state;
+	nsd.om2k_mo = mo;
+
+	nsd.new_state.operational = abis_nm_op_state_from_om2k_op_state(op_state);
+	trx->bb_transc.mo.nm_state.operational = nsd.new_state.operational;
+	osmo_signal_dispatch(SS_NM, S_NM_STATECHG, &nsd);
 }
 
 static void update_op_state(struct gsm_bts *bts, const struct abis_om2k_mo *mo, uint8_t op_state)
@@ -1047,6 +1099,10 @@ static void update_op_state(struct gsm_bts *bts, const struct abis_om2k_mo *mo, 
 	/* Update current state before emitting signal: */
 	nm_state->operational = nsd.new_state.operational;
 	osmo_signal_dispatch(SS_NM, S_NM_STATECHG, &nsd);
+
+	/* When the TRXC MO is updated, also update the BB TRXC accordingly. */
+	if (mo->class == OM2K_MO_CLS_TRXC)
+		update_bb_trxc_op_state(bts, mo, op_state);
 }
 
 static int abis_om2k_sendmsg(struct gsm_bts *bts, struct msgb *msg)
@@ -2227,6 +2283,7 @@ static void om2k_trx_s_done_onenter(struct osmo_fsm_inst *fi, uint32_t prev_stat
 {
 	struct om2k_trx_fsm_priv *otfp = fi->priv;
 	struct nm_statechg_signal_data nsd;
+	struct nm_statechg_signal_data nsd_bb_transc;
 	struct gsm_bts_trx *trx = otfp->trx;
 
 	memset(&nsd, 0, sizeof(nsd));
@@ -2241,6 +2298,19 @@ static void om2k_trx_s_done_onenter(struct osmo_fsm_inst *fi, uint32_t prev_stat
 	nsd.new_state.administrative = NM_STATE_UNLOCKED;
 	trx->mo.nm_state.administrative = nsd.new_state.administrative;
 	osmo_signal_dispatch(SS_NM, S_NM_STATECHG, &nsd);
+
+	/* The OM2000 -> 12.21 mapping we do doesn't have separate bb_transc MO,
+	 * for compatibility reasons we pretend to have it anyway and mirror the
+	 * mo state of the TRXC on it. */
+	memset(&nsd_bb_transc, 0, sizeof(nsd));
+	nsd_bb_transc.bts = trx->bts;
+	nsd_bb_transc.obj = &trx->bb_transc;
+	nsd_bb_transc.old_state = trx->bb_transc.mo.nm_state;
+	nsd_bb_transc.new_state = trx->bb_transc.mo.nm_state;
+	nsd_bb_transc.om2k_mo = &trx->rbs2000.trxc.om2k_mo.addr;
+	nsd_bb_transc.new_state.administrative = NM_STATE_UNLOCKED;
+	trx->bb_transc.mo.nm_state.administrative = nsd_bb_transc.new_state.administrative;
+	osmo_signal_dispatch(SS_NM, S_NM_STATECHG, &nsd_bb_transc);
 
 	abis_om2000_fsm_transc_becomes_enabled(trx);
 
