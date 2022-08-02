@@ -245,6 +245,8 @@ bool bssmap_reset_is_conn_ready(const struct bssmap_reset *bssmap_reset)
 
 void bssmap_reset_resend_reset(struct bssmap_reset *bssmap_reset)
 {
+	OSMO_ASSERT(bssmap_reset);
+
 	/* Immediately (1ms) kick off reset sending mechanism */
 	osmo_fsm_inst_state_chg_ms(bssmap_reset->fi, BSSMAP_RESET_ST_DISC, 1, 0);
 }
