@@ -2226,11 +2226,23 @@ static void om2k_trx_s_send_si(struct osmo_fsm_inst *fi, uint32_t prev_state)
 static void om2k_trx_s_done_onenter(struct osmo_fsm_inst *fi, uint32_t prev_state)
 {
 	struct om2k_trx_fsm_priv *otfp = fi->priv;
+	struct nm_statechg_signal_data nsd;
+	struct gsm_bts_trx *trx = otfp->trx;
+
+	memset(&nsd, 0, sizeof(nsd));
+
+	nsd.bts = trx->bts;
+	nsd.obj = trx;
+	nsd.old_state = trx->mo.nm_state;
+	nsd.new_state = trx->mo.nm_state;
+	nsd.om2k_mo = &trx->rbs2000.trxc.om2k_mo.addr;
 
 	/* See e1_config:bts_isdn_sign_link() / OS#4914 */
-	otfp->trx->mo.nm_state.administrative = NM_STATE_UNLOCKED;
+	nsd.new_state.administrative = NM_STATE_UNLOCKED;
+	trx->mo.nm_state.administrative = nsd.new_state.administrative;
+	osmo_signal_dispatch(SS_NM, S_NM_STATECHG, &nsd);
 
-	abis_om2000_fsm_transc_becomes_enabled(otfp->trx);
+	abis_om2000_fsm_transc_becomes_enabled(trx);
 
 	if (fi->proc.parent)
 		osmo_fsm_inst_dispatch(fi->proc.parent, otfp->done_event, NULL);
