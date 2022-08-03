@@ -1029,16 +1029,24 @@ static enum abis_nm_op_state abis_nm_op_state_from_om2k_op_state(uint8_t op_stat
 static void update_op_state(struct gsm_bts *bts, const struct abis_om2k_mo *mo, uint8_t op_state)
 {
 	struct gsm_nm_state *nm_state = mo2nm_state(bts, mo);
-	struct gsm_nm_state new_state;
+	struct nm_statechg_signal_data nsd;
 
 	if (!nm_state)
 		return;
 
-	new_state = *nm_state;
+	memset(&nsd, 0, sizeof(nsd));
 
-	new_state.operational = abis_nm_op_state_from_om2k_op_state(op_state);
+	nsd.bts = bts;
+	nsd.obj = mo2obj(bts, mo);
+	nsd.old_state = *nm_state;
+	nsd.new_state = *nm_state;
+	nsd.om2k_mo = mo;
 
-	nm_state->operational = new_state.operational;
+	nsd.new_state.operational = abis_nm_op_state_from_om2k_op_state(op_state);
+
+	/* Update current state before emitting signal: */
+	nm_state->operational = nsd.new_state.operational;
+	osmo_signal_dispatch(SS_NM, S_NM_STATECHG, &nsd);
 }
 
 static int abis_om2k_sendmsg(struct gsm_bts *bts, struct msgb *msg)
