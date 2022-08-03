@@ -960,22 +960,10 @@ static void *mo2obj(struct gsm_bts *bts, struct abis_om2k_mo *mo)
 	return NULL;
 }
 
-static void update_mo_state(struct gsm_bts *bts, struct abis_om2k_mo *mo, uint8_t mo_state)
+/* Derive an OML Availability state from an OM2000 MO state */
+static enum abis_nm_avail_state abis_nm_av_state_from_om2k_av_state(struct abis_om2k_mo *mo, uint8_t mo_state)
 {
-	struct gsm_nm_state *nm_state = mo2nm_state(bts, mo);
-	struct nm_statechg_signal_data nsd;
 	bool has_enabled_state;
-
-	if (!nm_state)
-		return;
-
-	memset(&nsd, 0, sizeof(nsd));
-
-	nsd.bts = bts;
-	nsd.obj = mo2obj(bts, mo);
-	nsd.old_state = *nm_state;
-	nsd.new_state = *nm_state;
-	nsd.om2k_mo = mo;
 
 	switch (mo->class) {
 	case OM2K_MO_CLS_CF:
@@ -989,26 +977,53 @@ static void update_mo_state(struct gsm_bts *bts, struct abis_om2k_mo *mo, uint8_
 
 	switch (mo_state) {
 	case OM2K_MOSTATE_RESET:
-		nsd.new_state.availability = NM_AVSTATE_POWER_OFF;
-		break;
+		return NM_AVSTATE_POWER_OFF;
 	case OM2K_MOSTATE_STARTED:
-		nsd.new_state.availability = has_enabled_state ? NM_AVSTATE_OFF_LINE : NM_AVSTATE_OK;
-		break;
+		return has_enabled_state ? NM_AVSTATE_OFF_LINE : NM_AVSTATE_OK;
 	case OM2K_MOSTATE_ENABLED:
-		nsd.new_state.availability = NM_AVSTATE_OK;
-		break;
+		return NM_AVSTATE_OK;
 	case OM2K_MOSTATE_DISABLED:
-		nsd.new_state.availability = NM_AVSTATE_POWER_OFF;
-		break;
+		return NM_AVSTATE_POWER_OFF;
 	default:
-		nsd.new_state.availability = NM_AVSTATE_DEGRADED;
-		break;
+		return NM_AVSTATE_DEGRADED;
 	}
+}
+
+static void update_mo_state(struct gsm_bts *bts, struct abis_om2k_mo *mo, uint8_t mo_state)
+{
+	struct gsm_nm_state *nm_state = mo2nm_state(bts, mo);
+	struct nm_statechg_signal_data nsd;
+
+	if (!nm_state)
+		return;
+
+	memset(&nsd, 0, sizeof(nsd));
+
+	nsd.bts = bts;
+	nsd.obj = mo2obj(bts, mo);
+	nsd.old_state = *nm_state;
+	nsd.new_state = *nm_state;
+	nsd.om2k_mo = mo;
+
+	nsd.new_state.availability = abis_nm_av_state_from_om2k_av_state(mo, mo_state);
 
 	/* Update current state before emitting signal: */
 	nm_state->availability = nsd.new_state.availability;
 
 	osmo_signal_dispatch(SS_NM, S_NM_STATECHG, &nsd);
+}
+
+/* Derive an OML Operational state from an OM2000 OP state */
+static enum abis_nm_op_state abis_nm_op_state_from_om2k_op_state(uint8_t op_state)
+{
+	switch (op_state) {
+	case 1:
+		return NM_OPSTATE_ENABLED;
+	case 0:
+		return NM_OPSTATE_DISABLED;
+	default:
+		return NM_OPSTATE_NULL;
+	}
 }
 
 static void update_op_state(struct gsm_bts *bts, const struct abis_om2k_mo *mo, uint8_t op_state)
@@ -1020,17 +1035,8 @@ static void update_op_state(struct gsm_bts *bts, const struct abis_om2k_mo *mo, 
 		return;
 
 	new_state = *nm_state;
-	switch (op_state) {
-	case 1:
-		new_state.operational = NM_OPSTATE_ENABLED;
-		break;
-	case 0:
-		new_state.operational = NM_OPSTATE_DISABLED;
-		break;
-	default:
-		new_state.operational = NM_OPSTATE_NULL;
-		break;
-	}
+
+	new_state.operational = abis_nm_op_state_from_om2k_op_state(op_state);
 
 	nm_state->operational = new_state.operational;
 }
