@@ -138,7 +138,7 @@ struct nm_statechg_signal_data {
 	/* This pointer is valid for TS 12.21 MO */
 	struct abis_om_obj_inst *obj_inst;
 	/* This pointer is valid for RBS2000 MO */
-	struct abis_om2k_mo *om2k_mo;
+	const struct abis_om2k_mo *om2k_mo;
 };
 
 /* data for <SS_NM, S_NM_RUNNING_CHG>: */
