@@ -932,7 +932,7 @@ static struct gsm_nm_state *mo2nm_state(struct gsm_bts *bts, const struct abis_o
 	return nm_state;
 }
 
-static void *mo2obj(struct gsm_bts *bts, struct abis_om2k_mo *mo)
+static void *mo2obj(struct gsm_bts *bts, const struct abis_om2k_mo *mo)
 {
 	struct gsm_bts_trx *trx;
 
