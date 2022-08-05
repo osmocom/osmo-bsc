@@ -738,8 +738,10 @@ void trx_dump_vty(struct vty *vty, struct gsm_bts_trx *trx, bool print_rsl, bool
 	net_dump_nmstate(vty, &trx->mo.nm_state);
 	if (print_rsl)
 		vty_out(vty, "  RSL State: %s%s", trx->rsl_link_primary? "connected" : "disconnected", VTY_NEWLINE);
-	vty_out(vty, "  Baseband Transceiver NM State: ");
-	net_dump_nmstate(vty, &trx->bb_transc.mo.nm_state);
+
+	vty_out(vty, "  %sBaseband Transceiver NM State: ", is_ericsson_bts(trx->bts) ? "[Virtual] " : "");
+		net_dump_nmstate(vty, &trx->bb_transc.mo.nm_state);
+
 	if (is_ipaccess_bts(trx->bts)) {
 		vty_out(vty, "  ip.access stream ID: 0x%02x ", trx->rsl_tei_primary);
 		e1isl_dump_vty_tcp(vty, trx->rsl_link_primary);
