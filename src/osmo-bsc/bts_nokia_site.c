@@ -797,6 +797,9 @@ static int make_fu_config(struct gsm_bts_trx *trx, uint8_t id,
 		case GSM_PCHAN_CCCH_SDCCH4:
 			chan_config = 1;
 			break;
+		case GSM_PCHAN_CCCH_SDCCH4_CBCH:
+			chan_config = 3;
+			break;
 		case GSM_PCHAN_TCH_F:
 			chan_config = 6;	/* 9 should work too */
 			break;
@@ -805,6 +808,9 @@ static int make_fu_config(struct gsm_bts_trx *trx, uint8_t id,
 			break;
 		case GSM_PCHAN_SDCCH8_SACCH8C:
 			chan_config = 4;
+			break;
+		case GSM_PCHAN_SDCCH8_SACCH8C_CBCH:
+			chan_config = 5;
 			break;
 		case GSM_PCHAN_PDCH:
 			chan_config = 11;
