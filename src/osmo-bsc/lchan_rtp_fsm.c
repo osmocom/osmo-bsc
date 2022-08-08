@@ -861,8 +861,8 @@ void mgcp_pick_codec(struct mgcp_conn_peer *verb_info, const struct gsm_lchan *l
 	custom_pt = chan_mode_to_mgcp_bss_pt(codec);
 	if (bss_side && custom_pt > 0) {
 		verb_info->ptmap[0].codec = codec;
-	        verb_info->ptmap[0].pt = custom_pt;
-	        verb_info->ptmap_len = 1;
+		verb_info->ptmap[0].pt = custom_pt;
+		verb_info->ptmap_len = 1;
 	}
 
 	/* AMR requires additional parameters to be set up (framing mode) */
