@@ -235,12 +235,6 @@ enum gsm_phys_chan_config gsm_pchan_parse(const char *name)
 	return get_string_value(gsm_pchant_names, name);
 }
 
-/* TODO: move to libosmocore, next to gsm_chan_t_names? */
-const char *gsm_lchant_name(enum gsm_chan_t c)
-{
-	return get_value_string(gsm_chan_t_names, c);
-}
-
 static const struct value_string chreq_names[] = {
 	{ GSM_CHREQ_REASON_EMERG,	"EMERGENCY" },
 	{ GSM_CHREQ_REASON_PAG,		"PAGING" },

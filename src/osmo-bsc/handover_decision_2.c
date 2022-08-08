@@ -53,7 +53,7 @@
 	     lchan->ts->trx->nr, \
 	     lchan->ts->nr, \
 	     lchan->nr, \
-	     gsm_lchant_name(lchan->type), \
+	     gsm_chan_t_name(lchan->type), \
 	     gsm48_chan_mode_name(lchan->current_ch_mode_rate.chan_mode), \
 	     bsc_subscr_name(lchan->conn? lchan->conn->bsub : NULL), \
 	     ## args)
@@ -64,7 +64,7 @@
 	     lchan->ts->trx->nr, \
 	     lchan->ts->nr, \
 	     lchan->nr, \
-	     gsm_lchant_name(lchan->type), \
+	     gsm_chan_t_name(lchan->type), \
 	     gsm48_chan_mode_name(lchan->current_ch_mode_rate.chan_mode), \
 	     new_bts->nr, \
 	     bsc_subscr_name(lchan->conn? lchan->conn->bsub : NULL), \
@@ -76,7 +76,7 @@
 	     lchan->ts->trx->nr, \
 	     lchan->ts->nr, \
 	     lchan->nr, \
-	     gsm_lchant_name(lchan->type), \
+	     gsm_chan_t_name(lchan->type), \
 	     gsm48_chan_mode_name(lchan->current_ch_mode_rate.chan_mode), \
 	     gsm0808_cell_id_list_name(remote_cil), \
 	     bsc_subscr_name(lchan->conn? lchan->conn->bsub : NULL), \
@@ -519,7 +519,7 @@ static void check_requirements(struct ho_candidate *c)
 						 "tch_mode='%s' type='%s' not supported\n",
 						 get_value_string(gsm48_chan_mode_names,
 								  c->current.lchan->current_ch_mode_rate.chan_mode),
-						 gsm_lchant_name(c->current.lchan->type));
+						 gsm_chan_t_name(c->current.lchan->type));
 				break;
 			}
 			if (codec_type_is_supported(c->current.lchan->conn, GSM0808_SCT_HR1))

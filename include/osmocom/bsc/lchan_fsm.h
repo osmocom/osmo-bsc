@@ -7,7 +7,7 @@
 /* This macro automatically includes a final \n, if omitted. */
 #define LOG_LCHAN(lchan, level, fmt, args...) do { \
 	if ((lchan)->fi) \
-		LOGPFSML((lchan)->fi, level, "(type=%s) " fmt, gsm_lchant_name((lchan)->type), ## args); \
+		LOGPFSML((lchan)->fi, level, "(type=%s) " fmt, gsm_chan_t_name((lchan)->type), ## args); \
 	else \
 		LOGP(DRSL, level, "%s (not initialized) " fmt, gsm_lchan_name(lchan), ## args); \
 	} while (0)

@@ -439,7 +439,7 @@ static int channel_mode_from_lchan(struct rsl_ie_chan_mode *cm,
 	default:
 		LOGP(DRSL, LOGL_ERROR,
 		     "unsupported activation lchan->type %u %s\n",
-		     lchan->type, gsm_lchant_name(lchan->type));
+		     lchan->type, gsm_chan_t_name(lchan->type));
 		return -EINVAL;
 	}
 
@@ -2095,7 +2095,7 @@ struct gsm_lchan *_select_sdcch_for_call(struct gsm_bts *bts, const struct chan_
 	if (free_tchf == 0 && free_tchh == 0) {
 		LOG_BTS(bts, DRSL, LOGL_INFO,
 			"CHAN RQD: 0x%x Requesting %s reason=call but no TCH available\n",
-			rqd->ref.ra, gsm_lchant_name(lctype));
+			rqd->ref.ra, gsm_chan_t_name(lctype));
 		return NULL;
 	}
 
@@ -2124,7 +2124,7 @@ struct gsm_lchan *_select_sdcch_for_call(struct gsm_bts *bts, const struct chan_
 		LOG_BTS(bts, DRSL, LOGL_INFO,
 			"CHAN RQD: 0x%x Requesting %s reason=call but dyn TS switch to "
 			"SDCCH would starve the single available TCH timeslot\n",
-			rqd->ref.ra, gsm_lchant_name(lctype));
+			rqd->ref.ra, gsm_chan_t_name(lctype));
 		return NULL;
 	}
 
@@ -2187,16 +2187,16 @@ void abis_rsl_chan_rqd_queue_poll(struct gsm_bts *bts)
 	     rqd->reason == GSM_CHREQ_REASON_EMERG)) {
 		if (!lchan) {
 			LOG_BTS(bts, DRSL, LOGL_NOTICE, "CHAN RQD[%s]: no resources for %s 0x%x, retrying with %s\n",
-				get_value_string(gsm_chreq_descs, rqd->reason), gsm_lchant_name(GSM_LCHAN_SDCCH),
-				rqd->ref.ra, gsm_lchant_name(GSM_LCHAN_TCH_H));
+				get_value_string(gsm_chreq_descs, rqd->reason), gsm_chan_t_name(GSM_LCHAN_SDCCH),
+				rqd->ref.ra, gsm_chan_t_name(GSM_LCHAN_TCH_H));
 			lchan = lchan_select_by_type(bts, GSM_LCHAN_TCH_H,
 						     SELECT_FOR_MS_CHAN_REQ,
 						     NULL);
 		}
 		if (!lchan) {
 			LOG_BTS(bts, DRSL, LOGL_NOTICE, "CHAN RQD[%s]: no resources for %s 0x%x, retrying with %s\n",
-				get_value_string(gsm_chreq_descs, rqd->reason), gsm_lchant_name(GSM_LCHAN_SDCCH),
-				rqd->ref.ra, gsm_lchant_name(GSM_LCHAN_TCH_F));
+				get_value_string(gsm_chreq_descs, rqd->reason), gsm_chan_t_name(GSM_LCHAN_SDCCH),
+				rqd->ref.ra, gsm_chan_t_name(GSM_LCHAN_TCH_F));
 			lchan = lchan_select_by_type(bts, GSM_LCHAN_TCH_F,
 						     SELECT_FOR_MS_CHAN_REQ,
 						     NULL);
@@ -2204,7 +2204,7 @@ void abis_rsl_chan_rqd_queue_poll(struct gsm_bts *bts)
 	}
 	if (!lchan) {
 		LOG_BTS(bts, DRSL, LOGL_NOTICE, "CHAN RQD[%s]: no resources for %s 0x%x\n",
-			get_value_string(gsm_chreq_descs, rqd->reason), gsm_lchant_name(lctype), rqd->ref.ra);
+			get_value_string(gsm_chreq_descs, rqd->reason), gsm_chan_t_name(lctype), rqd->ref.ra);
 		rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_CHREQ_NO_CHANNEL));
 		rsl_tx_imm_ass_rej(bts, &rqd->ref);
 		llist_del(&rqd->entry);

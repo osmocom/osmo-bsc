@@ -622,7 +622,7 @@ struct gsm_encr {
 	LOGP(ss, level, "%s (ss=%d,%s) (%s) " fmt, \
 	     lchan ? gsm_ts_and_pchan_name(lchan->ts) : "-", \
 	     lchan ? lchan->nr : 0, \
-	     lchan ? gsm_lchant_name(lchan->type) : "-", \
+	     lchan ? gsm_chan_t_name(lchan->type) : "-", \
 	     bsc_subscr_name(lchan && lchan->conn ? lchan->conn->bsub : NULL), \
 	     ## args)
 
@@ -1148,7 +1148,6 @@ const char *gsm_pchan_name(enum gsm_phys_chan_config c);
 static inline const char *gsm_pchan_id(enum gsm_phys_chan_config c)
 { return get_value_string(gsm_pchan_ids, c); }
 enum gsm_phys_chan_config gsm_pchan_parse(const char *name);
-const char *gsm_lchant_name(enum gsm_chan_t c);
 const char *gsm_chreq_name(enum gsm_chreq_reason_t c);
 char *gsm_ts_name(const struct gsm_bts_trx_ts *ts);
 char *gsm_ts_and_pchan_name(const struct gsm_bts_trx_ts *ts);

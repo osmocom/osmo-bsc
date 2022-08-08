@@ -633,7 +633,7 @@ static void ts_fsm_in_use_onenter(struct osmo_fsm_inst *fi, uint32_t prev_state)
 
 		if (!ok && lchan_state_is(lchan, LCHAN_ST_WAIT_TS_READY)) {
 			LOG_TS(ts, LOGL_ERROR, "lchan activation of %s is not permitted for %s (%s)\n",
-			       gsm_lchant_name(lchan->type), gsm_pchan_name(ts->pchan_on_init),
+			       gsm_chan_t_name(lchan->type), gsm_pchan_name(ts->pchan_on_init),
 			       gsm_lchan_name(lchan));
 			lchan_dispatch(lchan, LCHAN_EV_TS_ERROR);
 		}
@@ -645,7 +645,7 @@ static void ts_fsm_in_use_onenter(struct osmo_fsm_inst *fi, uint32_t prev_state)
 			activating_type = lchan->type;
 		else if (activating_type != lchan->type) {
 			LOG_TS(ts, LOGL_ERROR, "lchan type %s mismatches %s (%s)\n",
-			       gsm_lchant_name(lchan->type), gsm_lchant_name(activating_type),
+			       gsm_chan_t_name(lchan->type), gsm_chan_t_name(activating_type),
 			       gsm_lchan_name(lchan));
 			lchan_dispatch(lchan, LCHAN_EV_TS_ERROR);
 		}
@@ -664,7 +664,7 @@ static void ts_fsm_in_use_onenter(struct osmo_fsm_inst *fi, uint32_t prev_state)
 		break;
 
 	default:
-		LOG_TS(ts, LOGL_ERROR, "cannot use timeslot as %s\n", gsm_lchant_name(activating_type));
+		LOG_TS(ts, LOGL_ERROR, "cannot use timeslot as %s\n", gsm_chan_t_name(activating_type));
 		ts_lchans_dispatch(ts, LCHAN_ST_WAIT_TS_READY, LCHAN_EV_TS_ERROR);
 		break;
 	}

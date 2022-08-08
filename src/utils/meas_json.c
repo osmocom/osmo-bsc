@@ -99,7 +99,7 @@ static void print_chan_info_json(struct meas_feed_meas *mfm)
 {
 	printf("\"lchan_type\":\"%s\", \"pchan_type\":\"%s\", "
 		   "\"bts_nr\":%d, \"trx_nr\":%d, \"ts_nr\":%d, \"ss_nr\":%d",
-	gsm_lchant_name(mfm->lchan_type), gsm_pchan_name(mfm->pchan_type),
+	gsm_chan_t_name(mfm->lchan_type), gsm_pchan_name(mfm->pchan_type),
 	mfm->bts_nr, mfm->trx_nr, mfm->ts_nr, mfm->ss_nr);
 }
 

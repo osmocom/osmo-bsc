@@ -775,7 +775,7 @@ static int trigger_as(struct vty *vty, struct gsm_lchan *from_lchan, struct gsm_
 						SELECT_FOR_ASSIGNMENT,
 						from_lchan);
 		vty_out(vty, "Error: cannot find free lchan of type %s%s",
-			gsm_lchant_name(from_lchan->type), VTY_NEWLINE);
+			gsm_chan_t_name(from_lchan->type), VTY_NEWLINE);
 	}
 	if (reassignment_request_to_lchan(ASSIGN_FOR_VTY, from_lchan, to_lchan, -1, -1)) {
 		vty_out(vty, "Error: not allowed to start assignment for %s%s",
@@ -965,13 +965,13 @@ static struct gsm_bts *find_other_bts_with_free_slots(struct vty *vty, struct gs
 				continue;
 
 			vty_out(vty, "Found unused %s slot: %s%s",
-				gsm_lchant_name(free_type), gsm_lchan_name(lchan), VTY_NEWLINE);
+				gsm_chan_t_name(free_type), gsm_lchan_name(lchan), VTY_NEWLINE);
 			lchan_dump_full_vty(vty, lchan);
 			return bts;
 		}
 	}
 	vty_out(vty, "%% Cannot find any BTS (other than BTS %u) with free %s lchan%s",
-		not_this_bts? not_this_bts->nr : 255, gsm_lchant_name(free_type), VTY_NEWLINE);
+		not_this_bts ? not_this_bts->nr : 255, gsm_chan_t_name(free_type), VTY_NEWLINE);
 	return NULL;
 }
 

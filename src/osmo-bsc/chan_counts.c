@@ -101,7 +101,7 @@ int chan_counts_to_str_buf(char *buf, size_t buflen, const struct chan_counts *c
 						OSMO_STRBUF_PRINTF(sb, " %s.%s{", chan_counts_dim1_name[i1],
 								   chan_counts_dim2_name[i2]);
 					}
-					OSMO_STRBUF_PRINTF(sb, " %s=%d", gsm_lchant_name(i3), v);
+					OSMO_STRBUF_PRINTF(sb, " %s=%d", gsm_chan_t_name(i3), v);
 				}
 			}
 

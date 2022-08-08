@@ -770,7 +770,7 @@ static void lchan_fsm_wait_ts_ready_onenter(struct osmo_fsm_inst *fi, uint32_t p
 		  lchan->activate.info.requires_voice_stream ?
 			(use_mgwep_ci ? osmo_mgcpc_ep_ci_name(use_mgwep_ci) : "new")
 			: "none",
-		  gsm_lchant_name(lchan->type),
+		  gsm_chan_t_name(lchan->type),
 		  gsm48_chan_mode_name(lchan->activate.ch_mode_rate.chan_mode),
 		  lchan->activate.info.encr.alg_a5_n,
 		  lchan->activate.info.encr.key_len ? osmo_hexdump_nospc(lchan->activate.info.encr.key,
@@ -1309,7 +1309,7 @@ static void lchan_fsm_established(struct osmo_fsm_inst *fi, uint32_t event, void
 			  lchan->modify.info.requires_voice_stream ?
 			  (use_mgwep_ci ? osmo_mgcpc_ep_ci_name(use_mgwep_ci) : "new")
 			  : "none",
-			  gsm_lchant_name(lchan->type),
+			  gsm_chan_t_name(lchan->type),
 			  gsm48_chan_mode_name(lchan->modify.ch_mode_rate.chan_mode),
 			  lchan->modify.tsc_set, lchan->modify.tsc);
 

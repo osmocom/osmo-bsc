@@ -60,7 +60,7 @@
 		lchan ? lchan->ts->trx->bts->nr : 0, \
 		lchan ? lchan->ts->trx->nr : 0, \
 		lchan ? lchan->ts->nr : 0, \
-		lchan ? gsm_lchant_name(lchan->type) : "?", \
+		lchan ? gsm_chan_t_name(lchan->type) : "?", \
 		lchan ? lchan->nr : 0, \
 		lchan ? gsm48_chan_mode_name(lchan->current_ch_mode_rate.chan_mode) : "?"
 
@@ -138,7 +138,7 @@ const char *handover_status(struct gsm_subscriber_connection *conn)
 				 "("LOG_FMT_FROM_LCHAN") --HO-> ("LOG_FMT_BTS",%s) " LOG_FMT_HO_SCOPE,
 				 LOG_ARGS_FROM_LCHAN(conn->lchan),
 				 LOG_ARGS_BTS(ho->new_bts),
-				 gsm_lchant_name(ho->new_lchan_type),
+				 gsm_chan_t_name(ho->new_lchan_type),
 				 LOG_ARGS_HO_SCOPE(conn));
 		else
 			snprintf(buf, sizeof(buf),
@@ -167,14 +167,14 @@ const char *handover_status(struct gsm_subscriber_connection *conn)
 				 ho->inter_bsc_in.cell_id_serving_name,
 				 ho->inter_bsc_in.cell_id_target_name,
 				 LOG_ARGS_BTS(ho->new_bts),
-				 gsm_lchant_name(ho->new_lchan_type),
+				 gsm_chan_t_name(ho->new_lchan_type),
 				 LOG_ARGS_HO_SCOPE(conn));
 		else
 			snprintf(buf, sizeof(buf),
 				 "(remote:%s) --HO-> (local:%s,%s) " LOG_FMT_HO_SCOPE,
 				 ho->inter_bsc_in.cell_id_serving_name,
 				 ho->inter_bsc_in.cell_id_target_name,
-				 gsm_lchant_name(ho->new_lchan_type),
+				 gsm_chan_t_name(ho->new_lchan_type),
 				 LOG_ARGS_HO_SCOPE(conn));
 	} else
 		snprintf(buf, sizeof(buf), LOG_FMT_HO_SCOPE, LOG_ARGS_HO_SCOPE(conn));
@@ -396,7 +396,7 @@ static void handover_start_intra_bsc(struct gsm_subscriber_connection *conn)
 	if (!ho->new_lchan) {
 		ho_fail(HO_RESULT_FAIL_NO_CHANNEL,
 			"No %s lchan available on BTS %u",
-			gsm_lchant_name(ho->new_lchan_type), ho->new_bts->nr);
+			gsm_chan_t_name(ho->new_lchan_type), ho->new_bts->nr);
 		return;
 	}
 	LOG_HO(conn, LOGL_DEBUG, "Selected lchan %s\n", gsm_lchan_name(ho->new_lchan));

@@ -568,7 +568,7 @@ void lchan_dump_full_vty(struct vty *vty, struct gsm_lchan *lchan)
 
 	vty_out(vty, "BTS %u, TRX %u, Timeslot %u, Lchan %u: Type %s%s",
 		lchan->ts->trx->bts->nr, lchan->ts->trx->nr, lchan->ts->nr,
-		lchan->nr, gsm_lchant_name(lchan->type), VTY_NEWLINE);
+		lchan->nr, gsm_chan_t_name(lchan->type), VTY_NEWLINE);
 
 	if (lchan->activate.concluded) {
 		vty_out(vty, "  Active for: %s seconds%s",
@@ -661,7 +661,7 @@ void lchan_dump_short_vty(struct vty *vty, struct gsm_lchan *lchan)
 	}
 
 	vty_out(vty, ", Type %s%s TSC-s%dc%u, State %s - L1 MS Power: %u dBm RXL-FULL-dl: %4d dBm RXL-FULL-ul: %4d dBm%s",
-		gsm_lchant_name(lchan->type),
+		gsm_chan_t_name(lchan->type),
 		lchan->vamos.enabled ? " (VAMOS)" : "",
 		lchan->tsc_set > 0 ? lchan->tsc_set : 1,
 		lchan->tsc,

@@ -190,7 +190,7 @@ static void send_assignment_complete(struct gsm_subscriber_connection *conn)
 		assignment_fail(GSM0808_CAUSE_EQUIPMENT_FAILURE,
 				"Unable to compose Chosen Channel for mode=%s type=%s",
 				get_value_string(gsm48_chan_mode_names, lchan->current_ch_mode_rate.chan_mode),
-				gsm_lchant_name(lchan->type));
+				gsm_chan_t_name(lchan->type));
 		return;
 	}
 
@@ -597,7 +597,7 @@ void assignment_fsm_start(struct gsm_subscriber_connection *conn, struct gsm_bts
 					"Assignment of lchan %s to %s type %s requested, but lchan is not compatible",
 					gsm_lchan_name(conn->lchan),
 					gsm_lchan_name(req->target_lchan),
-					gsm_lchant_name(conn->assignment.new_lchan->type));
+					gsm_chan_t_name(conn->assignment.new_lchan->type));
 			return;
 		}
 	} else {

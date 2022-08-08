@@ -101,7 +101,7 @@ static struct gsm_lchan *_lc_find(struct lchan_select_ts_list *ts_list,
 			if (lchan->fi->state != LCHAN_ST_UNUSED) {
 				LOGPLCHANALLOC("%s ss=%d in type=%s,state=%s not suitable\n",
 					       gsm_ts_and_pchan_name(ts), lchan->nr,
-					       gsm_lchant_name(lchan->type),
+					       gsm_chan_t_name(lchan->type),
 					       osmo_fsm_inst_state_name(lchan->fi));
 				continue;
 			}
@@ -327,7 +327,7 @@ struct gsm_lchan *lchan_avail_by_type(struct gsm_bts *bts,
 
 	if (log) {
 		LOG_BTS(bts, DRLL, LOGL_DEBUG, "lchan_avail_by_type(type=%s, reason=%s)\n",
-			gsm_lchant_name(type), lchan_select_reason_name(reason));
+			gsm_chan_t_name(type), lchan_select_reason_name(reason));
 	}
 
 	switch (reason) {
@@ -422,13 +422,13 @@ struct gsm_lchan *lchan_select_by_type(struct gsm_bts *bts,
 	struct gsm_lchan *lchan = NULL;
 
 	LOG_BTS(bts, DRLL, LOGL_DEBUG, "lchan_select_by_type(type=%s, reason=%s)\n",
-		gsm_lchant_name(type), lchan_select_reason_name(reason));
+		gsm_chan_t_name(type), lchan_select_reason_name(reason));
 
 	lchan = lchan_avail_by_type(bts, type, reason, ctx, true);
 
 	if (!lchan) {
 		LOG_BTS(bts, DRLL, LOGL_NOTICE, "Failed to select %s channel (%s)\n",
-			gsm_lchant_name(type), lchan_select_reason_name(reason));
+			gsm_chan_t_name(type), lchan_select_reason_name(reason));
 		return NULL;
 	}
 
