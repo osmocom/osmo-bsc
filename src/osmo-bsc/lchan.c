@@ -31,6 +31,15 @@
 #include <osmocom/bsc/bts_trx.h>
 #include <osmocom/bsc/abis_rsl.h>
 
+void lchan_init(struct gsm_lchan *lchan, struct gsm_bts_trx_ts *ts, unsigned int nr)
+{
+	lchan->ts = ts;
+	lchan->nr = nr;
+	lchan->type = GSM_LCHAN_NONE;
+
+	lchan_update_name(lchan);
+}
+
 void lchan_update_name(struct gsm_lchan *lchan)
 {
 	struct gsm_bts_trx_ts *ts = lchan->ts;

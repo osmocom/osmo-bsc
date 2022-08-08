@@ -356,6 +356,8 @@ struct gsm_lchan {
 
 #define GSM_LCHAN_SI(lchan, i) (void *)((lchan)->si.buf[i][0])
 
+void lchan_init(struct gsm_lchan *lchan, struct gsm_bts_trx_ts *ts, unsigned int nr);
+
 void lchan_update_name(struct gsm_lchan *lchan);
 uint64_t gsm_lchan_active_duration_ms(const struct gsm_lchan *lchan);
 

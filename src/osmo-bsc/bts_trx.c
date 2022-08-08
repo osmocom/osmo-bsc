@@ -108,14 +108,8 @@ struct gsm_bts_trx *gsm_bts_trx_alloc(struct gsm_bts *bts)
 		ts->hopping.ma.data = ts->hopping.ma_data;
 
 		for (l = 0; l < TS_MAX_LCHAN; l++) {
-			struct gsm_lchan *lchan;
-			lchan = &ts->lchan[l];
-
-			lchan->ts = ts;
-			lchan->nr = l;
-			lchan->type = GSM_LCHAN_NONE;
-
-			lchan_update_name(lchan);
+			struct gsm_lchan *lchan = &ts->lchan[l];
+			lchan_init(lchan, ts, l);
 		}
 	}
 
