@@ -85,8 +85,8 @@ linecolor="green"];
 	...;
 
 	---		[label="BSC finally can report successful TCH assignment"];
-	bsc -> m_sc	[label="SCCP DT1 (BSSMAP ASSGN CMPL (3GPP AoIP MGW:3000))"];
-	m_sc box m_sc	[label="Connect remote RTP to MGW addr from ASSGN CMPL"];
+	bsc -> m_sc	[label="SCCP DT1 (BSSMAP ASSIGN CMPL (3GPP AoIP MGW:3000))"];
+	m_sc box m_sc	[label="Connect remote RTP to MGW addr from ASSIGN CMPL"];
 	...;
 
 	mgw <-> m_sc	[label="RTP Audio MGW:3000 MSC:4000", textcolor="blue", linecolor="blue"];

@@ -10,13 +10,13 @@ msc {
 	ms -> m_sc	[label="DTAP CC SETUP"];
 	ms <- m_sc	[label="DTAP CC CALL PROCEEDING"];
 
-	bsc <- m_sc 	[label="BSSAP ASSGN REQ"];
+	bsc <- m_sc 	[label="BSSAP ASSIGN REQ"];
 	bsc box m_sc	[label="E1 TS for PCM specified by CIC"];
 	bts <- bsc 	[label="RSL CHAN ACT"];
 	bts -> bsc 	[label="RSL CHAN ACT ACK"];
 	bts box bsc	[label="E1 TS + 16k sub-slot configured for given lchan"];
 	ms <-> bsc	[label="Assignment"];
-	bsc -> m_sc	[label="BSSAP ASSGN CMPL"];
+	bsc -> m_sc	[label="BSSAP ASSIGN CMPL"];
 
 	...;
 	trau <- m_sc	[label="PCM Audio in full E1 slot"];

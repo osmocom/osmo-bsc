@@ -11,7 +11,7 @@ msc {
 	ms <- m_sc	[label="DTAP CC CALL PROCEEDING"];
 
 	m_sc box m_sc	[label="Bind arbitrary local port (4000)"];
-	bsc <- m_sc 	[label="BSSAP ASSGN REQ (3GPP AoIP MSC:4000)"];
+	bsc <- m_sc 	[label="BSSAP ASSIGN REQ (3GPP AoIP MSC:4000)"];
 	bts <- bsc 	[label="RSL CHAN ACT"];
 	bts -> bsc 	[label="RSL CHAN ACT ACK"];
 	ms <-> bsc	[label="Assignment"];
@@ -22,8 +22,8 @@ msc {
 	mgcp -> bsc	[label="MGCP CRCX ts1/ss2@mgw OK (MGW:3000)"];
 	...;
 
-	bsc -> m_sc	[label="BSSAP ASSGN CMPL (3GPP AoIP MGW:3000)"];
-	m_sc box m_sc	[label="Connect remote RTP to MGW addr from ASSGN CMPL"];
+	bsc -> m_sc	[label="BSSAP ASSIGN CMPL (3GPP AoIP MGW:3000)"];
+	m_sc box m_sc	[label="Connect remote RTP to MGW addr from ASSIGN CMPL"];
 	...;
 
 	mgcp <=> m_sc	[label="RTP Audio MGW:3000 MSC:4000"];
