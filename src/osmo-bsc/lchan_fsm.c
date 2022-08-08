@@ -41,6 +41,7 @@
 #include <osmocom/bsc/codec_pref.h>
 #include <osmocom/bsc/bts.h>
 #include <osmocom/bsc/bsc_stats.h>
+#include <osmocom/bsc/lchan.h>
 
 static struct osmo_fsm lchan_fsm;
 

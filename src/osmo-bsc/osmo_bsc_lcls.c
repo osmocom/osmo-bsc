@@ -30,6 +30,7 @@
 #include <osmocom/bsc/gsm_data.h>
 #include <osmocom/bsc/osmo_bsc_lcls.h>
 #include <osmocom/bsc/lchan_rtp_fsm.h>
+#include <osmocom/bsc/lchan.h>
 #include <osmocom/mgcp_client/mgcp_client_endpoint_fsm.h>
 
 struct value_string lcls_event_names[] = {
@@ -561,7 +562,7 @@ static void lcls_req_lcls_not_supp_fn(struct osmo_fsm_inst *fi, uint32_t event, 
 	case LCLS_EV_UPDATE_CFG_CSC:
 		if (lcls_handle_cfg_update(conn, data) != 0)
 			return;
-		//FIXME osmo_fsm_inst_state_chg(fi, 
+		//FIXME osmo_fsm_inst_state_chg(fi,
 		return;
 	case LCLS_EV_APPLY_CFG_CSC:
 		if (lcls_perform_correlation(conn) != 0) {

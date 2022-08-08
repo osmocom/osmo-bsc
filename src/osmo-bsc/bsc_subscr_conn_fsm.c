@@ -32,6 +32,7 @@
 #include <osmocom/bsc/handover_fsm.h>
 #include <osmocom/bsc/lchan_fsm.h>
 #include <osmocom/bsc/lchan_rtp_fsm.h>
+#include <osmocom/bsc/lchan.h>
 #include <osmocom/bsc/bsc_subscriber.h>
 #include <osmocom/bsc/osmo_bsc_sigtran.h>
 #include <osmocom/bsc/osmo_bsc_lcls.h>

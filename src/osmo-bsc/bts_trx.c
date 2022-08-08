@@ -31,6 +31,7 @@
 #include <osmocom/bsc/pcu_if.h>
 #include <osmocom/bsc/debug.h>
 #include <osmocom/bsc/nm_common_fsm.h>
+#include <osmocom/bsc/lchan.h>
 
 static int gsm_bts_trx_talloc_destructor(struct gsm_bts_trx *trx)
 {

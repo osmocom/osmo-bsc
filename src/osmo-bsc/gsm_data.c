@@ -325,32 +325,6 @@ char *gsm_ts_and_pchan_name(const struct gsm_bts_trx_ts *ts)
 	return ts2str;
 }
 
-void lchan_update_name(struct gsm_lchan *lchan)
-{
-	struct gsm_bts_trx_ts *ts = lchan->ts;
-	if (lchan->name)
-		talloc_free(lchan->name);
-	lchan->name = talloc_asprintf(ts->trx, "(bts=%d,trx=%d,ts=%d,ss=%s%d)",
-				      ts->trx->bts->nr, ts->trx->nr, ts->nr,
-				      lchan->vamos.is_secondary ? "shadow" : "",
-				      lchan->nr - (lchan->vamos.is_secondary ? ts->max_primary_lchans : 0));
-}
-
-/* If the lchan is currently active, return the duration since activation in milliseconds.
- * Otherwise return 0. */
-uint64_t gsm_lchan_active_duration_ms(const struct gsm_lchan *lchan)
-{
-	struct timespec now, elapsed;
-
-	if (lchan->active_start.tv_sec == 0 && lchan->active_start.tv_nsec == 0)
-		return 0;
-
-	osmo_clock_gettime(CLOCK_MONOTONIC, &now);
-	timespecsub(&now, &lchan->active_start, &elapsed);
-
-	return elapsed.tv_sec * 1000 + elapsed.tv_nsec / 1000000;
-}
-
 /* obtain the MO structure for a given object instance */
 static inline struct gsm_abis_mo *
 gsm_objclass2mo(struct gsm_bts *bts, uint8_t obj_class,
@@ -668,36 +642,6 @@ bool ts_is_tch(struct gsm_bts_trx_ts *ts)
 	return pchan_is_tch(ts->pchan_is);
 }
 
-/* For a VAMOS secondary shadow lchan, return its primary lchan. If the lchan is not a secondary lchan, return NULL. */
-struct gsm_lchan *gsm_lchan_vamos_to_primary(const struct gsm_lchan *lchan_vamos)
-{
-	struct gsm_lchan *lchan_primary;
-	if (!lchan_vamos || !lchan_vamos->vamos.is_secondary)
-		return NULL;
-	/* OsmoBSC currently does not support mixed TCH/F + TCH/H VAMOS multiplexes. Hence the primary <-> secondary
-	 * relation is a simple index shift in the lchan array. If mixed multiplexes were allowed, a TCH/F primary might
-	 * have two TCH/H VAMOS secondary lchans, etc. Fortunately, we don't need to care about that. */
-	lchan_primary = (struct gsm_lchan*)lchan_vamos - lchan_vamos->ts->max_primary_lchans;
-	if (!lchan_primary->fi)
-		return NULL;
-	return lchan_primary;
-}
-
-/* For a primary lchan, return its VAMOS secondary shadow lchan. If the lchan is not a primary lchan, return NULL. */
-struct gsm_lchan *gsm_lchan_primary_to_vamos(const struct gsm_lchan *lchan_primary)
-{
-	struct gsm_lchan *lchan_vamos;
-	if (!lchan_primary || lchan_primary->vamos.is_secondary)
-		return NULL;
-	/* OsmoBSC currently does not support mixed TCH/F + TCH/H VAMOS multiplexes. Hence the primary <-> secondary
-	 * relation is a simple index shift in the lchan array. If mixed multiplexes were allowed, a TCH/F primary might
-	 * have two TCH/H VAMOS secondary lchans, etc. Fortunately, we don't need to care about that. */
-	lchan_vamos = (struct gsm_lchan*)lchan_primary + lchan_primary->ts->max_primary_lchans;
-	if (!lchan_vamos->fi)
-		return NULL;
-	return lchan_vamos;
-}
-
 struct gsm_bts *conn_get_bts(struct gsm_subscriber_connection *conn) {
 	if (!conn || !conn->lchan)
 		return NULL;
@@ -988,59 +932,6 @@ void conn_update_ms_power_class(struct gsm_subscriber_connection *conn, uint8_t 
 	   on track with band maximum values */
 	if (bts && conn->lchan)
 		lchan_update_ms_power_ctrl_level(conn->lchan, bts->ms_max_power);
-}
-
-void lchan_update_ms_power_ctrl_level(struct gsm_lchan *lchan, int ms_power_dbm)
-{
-	struct gsm_bts *bts = lchan->ts->trx->bts;
-	struct gsm_subscriber_connection *conn = lchan->conn;
-	int max_pwr_dbm_pwclass, new_pwr;
-	bool send_pwr_ctrl_msg = false;
-
-	LOG_LCHAN(lchan, LOGL_DEBUG,
-		  "MS Power level update requested: %d dBm\n", ms_power_dbm);
-
-	if (!conn)
-		goto ms_power_default;
-
-	if (conn->ms_power_class == 0)
-		goto ms_power_default;
-
-	if ((max_pwr_dbm_pwclass = (int)ms_class_gmsk_dbm(bts->band, conn->ms_power_class)) < 0) {
-		LOG_LCHAN(lchan, LOGL_INFO,
-			 "Failed getting max ms power for power class %" PRIu8
-			 " on band %s, providing default max ms power\n",
-			 conn->ms_power_class, gsm_band_name(bts->band));
-		goto ms_power_default;
-	}
-
-	/* Current configured max pwr is above maximum one allowed on
-	   current band + ms power class, so use that one. */
-	if (ms_power_dbm > max_pwr_dbm_pwclass)
-		ms_power_dbm = max_pwr_dbm_pwclass;
-
-ms_power_default:
-	if ((new_pwr = ms_pwr_ctl_lvl(bts->band, ms_power_dbm)) < 0) {
-		LOG_LCHAN(lchan, LOGL_INFO,
-			 "Failed getting max ms power level %d on band %s,"
-			 " providing default max ms power\n",
-			 ms_power_dbm, gsm_band_name(bts->band));
-		return;
-	}
-
-	LOG_LCHAN(lchan, LOGL_DEBUG,
-		  "MS Power level update (power class %" PRIu8 "): %" PRIu8 " -> %d\n",
-		  conn ? conn->ms_power_class : 0, lchan->ms_power, new_pwr);
-
-	/* If chan was already activated and max ms_power changes (due to power
-	   classmark received), send an MS Power Control message */
-	if (lchan->activate.activ_ack && new_pwr != lchan->ms_power)
-		send_pwr_ctrl_msg = true;
-
-	lchan->ms_power = new_pwr;
-
-	if (send_pwr_ctrl_msg)
-		rsl_chan_ms_power_ctrl(lchan);
 }
 
 const struct value_string lchan_activate_mode_names[] = {

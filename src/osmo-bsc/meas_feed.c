@@ -20,6 +20,7 @@
 #include <osmocom/bsc/vty.h>
 #include <osmocom/bsc/debug.h>
 #include <osmocom/bsc/bts.h>
+#include <osmocom/bsc/lchan.h>
 
 struct meas_feed_state {
 	struct osmo_wqueue wqueue;

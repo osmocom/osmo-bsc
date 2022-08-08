@@ -46,7 +46,7 @@
 #include <osmocom/bsc/bsc_msc_data.h>
 #include <osmocom/bsc/system_information.h>
 #include <osmocom/bsc/bts.h>
-
+#include <osmocom/bsc/lchan.h>
 
 int gsm48_sendmsg(struct msgb *msg)
 {

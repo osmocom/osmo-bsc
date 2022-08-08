@@ -57,6 +57,7 @@
 #include <osmocom/bsc/bts.h>
 #include <osmocom/bsc/power_control.h>
 #include <osmocom/bsc/chan_counts.h>
+#include <osmocom/bsc/lchan.h>
 
 static void send_lchan_signal(int sig_no, struct gsm_lchan *lchan,
 			      struct gsm_meas_rep *resp)

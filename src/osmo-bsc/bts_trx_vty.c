@@ -39,6 +39,7 @@
 #include <osmocom/bsc/system_information.h>
 #include <osmocom/bsc/debug.h>
 #include <osmocom/bsc/timeslot_fsm.h>
+#include <osmocom/bsc/lchan.h>
 #include <osmocom/bsc/lchan_fsm.h>
 #include <osmocom/bsc/lchan_select.h>
 #include <osmocom/bsc/bts.h>

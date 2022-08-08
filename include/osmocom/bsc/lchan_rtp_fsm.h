@@ -1,6 +1,8 @@
 /* osmo-bsc API to manage lchans, logical channels in GSM cells. */
 #pragma once
 
+#include <osmocom/bsc/lchan.h>
+
 #define LOG_LCHAN_RTP(lchan, level, fmt, args...) do { \
 	if (lchan->fi_rtp) \
 		LOGPFSML(lchan->fi_rtp, level, fmt, ## args); \

@@ -52,6 +52,7 @@
 #include <osmocom/bsc/bts.h>
 #include <osmocom/bsc/paging.h>
 #include <osmocom/bsc/vty.h>
+#include <osmocom/bsc/lchan.h>
 #include <osmocom/mgcp_client/mgcp_client_pool.h>
 
 #include "../../bscconfig.h"

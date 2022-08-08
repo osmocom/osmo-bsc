@@ -4,6 +4,7 @@
 #include <osmocom/gsm/protocol/gsm_04_08.h>
 
 #include <osmocom/bsc/debug.h>
+#include <osmocom/bsc/lchan.h>
 
 /* This macro automatically includes a final \n, if omitted. */
 #define LOG_ASSIGNMENT(conn, level, fmt, args...) do { \

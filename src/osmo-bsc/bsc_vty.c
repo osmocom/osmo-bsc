@@ -65,6 +65,7 @@
 #include <osmocom/bsc/assignment_fsm.h>
 #include <osmocom/bsc/bssmap_reset.h>
 #include <osmocom/bsc/bsc_msc_data.h>
+#include <osmocom/bsc/lchan.h>
 
 #include <inttypes.h>
 
