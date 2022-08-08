@@ -138,9 +138,10 @@ static void lchan_rtp_fsm_wait_mgw_endpoint_available_onenter(struct osmo_fsm_in
 							      uint32_t prev_state)
 {
 	struct gsm_lchan *lchan = lchan_rtp_fi_lchan(fi);
+	struct gsm_bts *bts = lchan->ts->trx->bts;
 	struct osmo_mgcpc_ep *mgwep;
 	struct osmo_mgcpc_ep_ci *use_mgwep_ci = lchan_use_mgw_endpoint_ci_bts(lchan);
-	struct mgcp_conn_peer crcx_info = {};
+	struct mgcp_conn_peer crcx_info;
 
 	if (!is_ipaccess_bts(lchan->ts->trx->bts)) {
 		LOG_LCHAN_RTP(lchan, LOGL_DEBUG, "Audio link to-BTS via E1, skipping IPACC\n");
@@ -163,13 +164,20 @@ static void lchan_rtp_fsm_wait_mgw_endpoint_available_onenter(struct osmo_fsm_in
 
 	lchan->mgw_endpoint_ci_bts = osmo_mgcpc_ep_ci_add(mgwep, "to-BTS");
 
+	crcx_info = (struct mgcp_conn_peer){
+		.ptime = 20,
+		.x_osmo_osmux_use = bts->use_osmux != OSMUX_USAGE_OFF,
+		.x_osmo_osmux_cid = -1, /* -1 is wildcard */
+	};
 	if (lchan->conn) {
 		crcx_info.call_id = lchan->conn->sccp.conn_id;
 		if (lchan->conn->sccp.msc)
 			crcx_info.x_osmo_ign = lchan->conn->sccp.msc->x_osmo_ign;
 	}
-	crcx_info.ptime = 20;
 	mgcp_pick_codec(&crcx_info, lchan, true);
+	/* TODO: lchan_rtp_fail() here if crcx_info->codecs[] contains non-AMR and bts->use_osmux=ONLY.
+	  If bts->use_osmux=ON, only set .x_osmo_osmux_use if there's an AMR in crcx_info->codecs[].
+	  IF osmux=no, always set x_osmo_osmux_use=false*/
 
 	osmo_mgcpc_ep_ci_request(lchan->mgw_endpoint_ci_bts, MGCP_VERB_CRCX, &crcx_info,
 				fi, LCHAN_RTP_EV_MGW_ENDPOINT_AVAILABLE, LCHAN_RTP_EV_MGW_ENDPOINT_ERROR,
@@ -179,11 +187,26 @@ static void lchan_rtp_fsm_wait_mgw_endpoint_available_onenter(struct osmo_fsm_in
 static void lchan_rtp_fsm_wait_mgw_endpoint_available(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
 	struct gsm_lchan *lchan = lchan_rtp_fi_lchan(fi);
+	struct gsm_bts *bts = lchan->ts->trx->bts;
 	switch (event) {
 
 	case LCHAN_RTP_EV_MGW_ENDPOINT_AVAILABLE:
 		LOG_LCHAN_RTP(lchan, LOGL_DEBUG, "MGW endpoint: %s\n",
 			      osmo_mgcpc_ep_ci_name(lchan_use_mgw_endpoint_ci_bts(lchan)));
+		if (osmo_mgcpc_ep_ci_get_crcx_info_to_osmux_cid(lchan->mgw_endpoint_ci_bts,
+								&lchan->abis_ip.osmux.local_cid)) {
+			if (bts->use_osmux == OSMUX_USAGE_OFF) {
+				lchan_rtp_fail("Got Osmux CID from MGW but we didn't ask for it");
+				return;
+			}
+			lchan->abis_ip.osmux.use = true;
+		} else {
+			if (bts->use_osmux == OSMUX_USAGE_ONLY) {
+				lchan_rtp_fail("Got no Osmux CID from MGW but Osmux is mandatory");
+				return;
+			}
+			lchan->abis_ip.osmux.use = false;
+		}
 		lchan_rtp_fsm_state_chg(LCHAN_RTP_ST_WAIT_LCHAN_READY);
 		return;
 
@@ -415,6 +438,8 @@ static void connect_mgw_endpoint_to_lchan(struct osmo_fsm_inst *fi,
 	mdcx_info = (struct mgcp_conn_peer){
 		.port = to_lchan->abis_ip.bound_port,
 		.ptime = 20,
+		.x_osmo_osmux_use = lchan->abis_ip.osmux.use,
+		.x_osmo_osmux_cid = lchan->abis_ip.osmux.remote_cid,
 	};
 	mgcp_pick_codec(&mdcx_info, to_lchan, true);
 

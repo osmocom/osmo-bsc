@@ -590,6 +590,9 @@ struct gsm_bts {
 	struct amr_multirate_conf mr_full;
 	struct amr_multirate_conf mr_half;
 
+	/* osmux config: */
+	enum osmux_usage use_osmux;
+
 	/* PCU socket state */
 	char *pcu_sock_path;
 	struct pcu_sock_state *pcu_state;

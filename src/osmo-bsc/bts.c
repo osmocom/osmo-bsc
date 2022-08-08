@@ -428,6 +428,8 @@ struct gsm_bts *gsm_bts_alloc(struct gsm_network *net, struct gsm_bts_sm *bts_sm
 	memcpy(&bts->mr_half.bts_mode[0], &amr_hr_ms_bts_mode[0], sizeof(amr_hr_ms_bts_mode));
 	bts->mr_half.num_modes = ARRAY_SIZE(amr_hr_ms_bts_mode);
 
+	bts->use_osmux = OSMUX_USAGE_OFF;
+
 	bts_cbch_init(bts);
 	bts_etws_init(bts);
 
@@ -505,6 +507,13 @@ int gsm_bts_check_cfg(struct gsm_bts *bts)
 		if (!bts_gprs_mode_is_compat(bts, bts->gprs.mode)) {
 			LOGP(DNM, LOGL_ERROR, "(bts=%u) GPRS mode set to '%s', but BTS does not support it\n", bts->nr,
 			     bts_gprs_mode_name(bts->gprs.mode));
+			return -EINVAL;
+		}
+		if (bts->use_osmux == OSMUX_USAGE_ONLY &&
+		    !osmo_bts_has_feature(&bts->features, BTS_FEAT_OSMUX)) {
+			LOGP(DNM, LOGL_ERROR,
+			     "(bts=%u) osmux use set to 'only', but BTS does not support Osmux\n",
+			     bts->nr);
 			return -EINVAL;
 		}
 	}

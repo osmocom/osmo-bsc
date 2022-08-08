@@ -299,6 +299,12 @@ struct gsm_lchan {
 			uint8_t rr_cause;
 			bool valid;
 		} ass_compl;
+
+		struct {
+			bool use;
+			uint8_t local_cid;
+			uint8_t remote_cid;
+		} osmux;
 	} abis_ip;
 
 	/* At first, the Timing Advance from the initial Channel Request. Later, the Timing Advance value received from

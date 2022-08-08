@@ -2739,11 +2739,15 @@ static void ipac_parse_rtp(struct gsm_lchan *lchan, struct tlv_parsed *tv, const
 		port = ntohs(port);
 		lchan->abis_ip.connect_port = port;
 	}
+	if (TLVP_PRESENT(tv, RSL_IE_OSMO_OSMUX_CID)) {
+		lchan->abis_ip.osmux.remote_cid = tlvp_val8(tv, RSL_IE_OSMO_OSMUX_CID, 0);
+	}
 
 	LOG_LCHAN(lchan, LOGL_DEBUG, "Rx IPACC %s ACK:"
-		  " BTS=%s:%u conn_id=%u rtp_payload2=0x%02x speech_mode=0x%02x\n",
+		  " BTS=%s:%u conn_id=%u rtp_payload2=0x%02x speech_mode=0x%02x osmux_use=%d osmux_loc_cid=%d\n",
 		  label, ip_to_a(lchan->abis_ip.bound_ip), lchan->abis_ip.bound_port,
-		  lchan->abis_ip.conn_id, lchan->abis_ip.rtp_payload2, lchan->abis_ip.speech_mode);
+		  lchan->abis_ip.conn_id, lchan->abis_ip.rtp_payload2, lchan->abis_ip.speech_mode,
+		  lchan->abis_ip.osmux.use, lchan->abis_ip.osmux.local_cid);
 }
 
 /*! Send Issue IPA RSL CRCX to configure the RTP port of the BTS.
@@ -2768,9 +2772,13 @@ int rsl_tx_ipacc_crcx(const struct gsm_lchan *lchan)
 	/* 0x1- == receive-only, 0x-1 == EFR codec */
 	msgb_tv_put(msg, RSL_IE_IPAC_SPEECH_MODE, lchan->abis_ip.speech_mode);
 	msgb_tv_put(msg, RSL_IE_IPAC_RTP_PAYLOAD, lchan->abis_ip.rtp_payload);
+	if (lchan->abis_ip.osmux.use)
+		msgb_tlv_put(msg, RSL_IE_OSMO_OSMUX_CID, 1, &lchan->abis_ip.osmux.local_cid);
 
-	LOG_LCHAN(lchan, LOGL_DEBUG, "Sending IPACC CRCX to BTS: speech_mode=0x%02x RTP_PAYLOAD=%d\n",
-		  lchan->abis_ip.speech_mode, lchan->abis_ip.rtp_payload);
+	LOG_LCHAN(lchan, LOGL_DEBUG,
+		  "Sending IPACC CRCX to BTS: speech_mode=0x%02x RTP_PAYLOAD=%d osmux_use=%d osmux_loc_cid=%d\n",
+		  lchan->abis_ip.speech_mode, lchan->abis_ip.rtp_payload,
+		  lchan->abis_ip.osmux.use, lchan->abis_ip.osmux.local_cid);
 
 	msg->dst = rsl_chan_link(lchan);
 
@@ -2808,6 +2816,8 @@ struct msgb *rsl_make_ipacc_mdcx(const struct gsm_lchan *lchan, uint32_t dest_ip
 	msgb_tv_put(msg, RSL_IE_IPAC_RTP_PAYLOAD, lchan->abis_ip.rtp_payload);
 	if (lchan->abis_ip.rtp_payload2)
 		msgb_tv_put(msg, RSL_IE_IPAC_RTP_PAYLOAD2, lchan->abis_ip.rtp_payload2);
+	if (lchan->abis_ip.osmux.use)
+		msgb_tlv_put(msg, RSL_IE_OSMO_OSMUX_CID, 1, &lchan->abis_ip.osmux.local_cid);
 
 	msg->dst = rsl_chan_link(lchan);
 
@@ -2862,6 +2872,15 @@ static int abis_rsl_rx_ipacc_crcx_ack(struct msgb *msg)
 	    !TLVP_PRESENT(&tv, RSL_IE_IPAC_LOCAL_IP) ||
 	    !TLVP_PRESENT(&tv, RSL_IE_IPAC_CONN_ID)) {
 		LOGP(DRSL, LOGL_NOTICE, "mandatory IE missing\n");
+		return -EINVAL;
+	}
+
+	if (!lchan->abis_ip.osmux.use && TLVP_PRESENT(&tv, RSL_IE_OSMO_OSMUX_CID)) {
+		LOGP(DRSL, LOGL_NOTICE, "Received unexpected IE Osmux CID\n");
+		return -EINVAL;
+	}
+	if (lchan->abis_ip.osmux.use && !TLVP_PRESENT(&tv, RSL_IE_OSMO_OSMUX_CID)) {
+		LOGP(DRSL, LOGL_NOTICE, "Mandatory IE Osmux CID missing\n");
 		return -EINVAL;
 	}
 

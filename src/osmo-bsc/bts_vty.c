@@ -2965,6 +2965,42 @@ DEFUN_USRATTR(cfg_bts_amr_hr_hyst3,
 	return check_amr_config(vty);
 }
 
+#define OSMUX_STR "RTP multiplexing\n"
+DEFUN_USRATTR(cfg_bts_osmux,
+	      cfg_bts_osmux_cmd,
+	      X(BSC_VTY_ATTR_NEW_LCHAN),
+	      "osmux (on|off|only)",
+	      OSMUX_STR "Enable OSMUX\n" "Disable OSMUX\n" "Only use OSMUX\n")
+{
+	struct gsm_bts *bts = vty->index;
+	enum osmux_usage use;
+
+	if (strcmp(argv[0], "off") == 0)
+		use = OSMUX_USAGE_OFF;
+	else if (strcmp(argv[0], "on") == 0)
+		use = OSMUX_USAGE_ON;
+	else if (strcmp(argv[0], "only") == 0)
+		use = OSMUX_USAGE_ONLY;
+	else
+		goto err;
+
+	if (!is_osmobts(bts))
+		goto err;
+
+	if (bts->features_known && use != OSMUX_USAGE_OFF &&
+	    !osmo_bts_has_feature(&bts->features, BTS_FEAT_OSMUX))
+		goto err;
+
+	bts->use_osmux = use;
+	return CMD_SUCCESS;
+
+err:
+	LOGP(DNM, LOGL_ERROR,
+	     "(bts=%u) Unable to set 'osmux %s', BTS does not support Osmux\n",
+	     bts->nr, argv[0]);
+	return CMD_WARNING;
+}
+
 #define TNUM_STR "T-number, optionally preceded by 't' or 'T'\n"
 DEFUN_ATTR(cfg_bts_t3113_dynamic, cfg_bts_t3113_dynamic_cmd,
 	   "timer-dynamic TNNNN",
@@ -4512,6 +4548,11 @@ static void config_write_bts_single(struct vty *vty, struct gsm_bts *bts)
 	config_write_bts_amr(vty, bts, &bts->mr_full, 1);
 	config_write_bts_amr(vty, bts, &bts->mr_half, 0);
 
+	if (bts->use_osmux != OSMUX_USAGE_OFF) {
+		vty_out(vty, " osmux %s%s", bts->use_osmux == OSMUX_USAGE_ON ? "on" : "only",
+			VTY_NEWLINE);
+	}
+
 	config_write_bts_gprs(vty, bts);
 
 	if (bts->excl_from_rf_lock)
@@ -4773,6 +4814,7 @@ int bts_vty_init(void)
 	install_element(BTS_NODE, &cfg_bts_amr_hr_hyst2_cmd);
 	install_element(BTS_NODE, &cfg_bts_amr_hr_hyst3_cmd);
 	install_element(BTS_NODE, &cfg_bts_amr_hr_start_mode_cmd);
+	install_element(BTS_NODE, &cfg_bts_osmux_cmd);
 	install_element(BTS_NODE, &cfg_bts_pcu_sock_cmd);
 	install_element(BTS_NODE, &cfg_bts_acc_rotate_cmd);
 	install_element(BTS_NODE, &cfg_bts_acc_rotate_quantum_cmd);
