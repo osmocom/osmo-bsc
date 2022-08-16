@@ -36,16 +36,13 @@ if test "x$PKG_CONFIG_INSTALLED" = "xno"; then
 fi
 PKG_PROG_PKG_CONFIG([0.20])
 
-dnl checks for libraries
-AC_SEARCH_LIBS([dlopen], [dl dld], [LIBRARY_DL="$LIBS";LIBS=""])
-AC_SUBST(LIBRARY_DL)
-
 # Enable/disable ipaccess-utils (src/ipacces/)?
 AC_ARG_ENABLE([ipaccess-utils], [AS_HELP_STRING([--enable-ipaccess-utils], [Build ipaccess utils: abisip-find, ipaccess-config, ...])],
     [osmo_ac_ipa_utils="$enableval"],[osmo_ac_ipa_utils="yes"])
 AM_CONDITIONAL(BUILD_IPA_UTILS, test "x$osmo_ac_ipa_utils" = "xyes")
 AC_SUBST(osmo_ac_ipa_utils)
 
+dnl checks for libraries
 PKG_CHECK_MODULES(LIBOSMOCORE, libosmocore >= 1.7.0)
 PKG_CHECK_MODULES(LIBOSMOVTY, libosmovty >= 1.7.0)
 PKG_CHECK_MODULES(LIBOSMOCTRL, libosmoctrl >= 1.7.0)
