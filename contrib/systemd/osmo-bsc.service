@@ -5,6 +5,8 @@ Wants=osmo-mgw.service
 [Service]
 Type=simple
 Restart=always
+StateDirectory=osmocom
+WorkingDirectory=%S/osmocom
 ExecStart=/usr/bin/osmo-bsc -c /etc/osmocom/osmo-bsc.cfg -s
 RestartSec=2
 
