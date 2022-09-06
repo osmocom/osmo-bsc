@@ -4,9 +4,9 @@ OsmoBSC# configure terminal
 OsmoBSC(config)# msc 0
 
 OsmoBSC(config-msc)# codec-list?
-  codec-list  Set the allowed audio codecs
+  codec-list  Set the allowed audio codecs and their order of preference
 OsmoBSC(config-msc)# codec-list ?
-  LIST  List of audio codecs, e.g. fr3 fr1 hr3
+  LIST  List of audio codecs in order of preference, e.g. 'codec-list fr3 fr2 fr1 hr3 hr1'. (fr3: AMR-FR, hr3: AMR-HR, fr2: GSM-EFR, fr1: GSM-FR, hr1: GSM-HR)
 
 OsmoBSC(config-msc)# # Default list -- should match the default in osmo_msc_data_alloc()
 OsmoBSC(config-msc)# show running-config

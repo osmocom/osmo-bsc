@@ -2706,8 +2706,9 @@ DEFUN_USRATTR(cfg_net_bsc_codec_list,
 	      cfg_net_bsc_codec_list_cmd,
 	      BSC_VTY_ATTR_NEW_LCHAN,
 	      "codec-list .LIST",
-	      "Set the allowed audio codecs\n"
-	      "List of audio codecs, e.g. fr3 fr1 hr3\n")
+	      "Set the allowed audio codecs and their order of preference\n"
+	      "List of audio codecs in order of preference, e.g. 'codec-list fr3 fr2 fr1 hr3 hr1'."
+	      " (fr3: AMR-FR, hr3: AMR-HR, fr2: GSM-EFR, fr1: GSM-FR, hr1: GSM-HR)\n")
 {
 	struct bsc_msc_data *data = bsc_msc_data(vty);
 	int i;
