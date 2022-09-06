@@ -2536,9 +2536,11 @@ DEFUN_ATTR(cfg_bts_no_depends_on, cfg_bts_no_depends_on_cmd,
 }
 
 #define AMR_TEXT "Adaptive Multi Rate settings\n"
-#define AMR_MODE_TEXT "Codec modes to use with AMR codec\n"
+#define AMR_MODE_TEXT "Codec modes to use with AMR codec. Only specific mode combinations make sense," \
+		" see 3GPP TS 28.062, Table 7.11.3.1.3-2. Note that S1 = '0 2 4 7' is defined mandatory in BSSAP.\n"
+		// !! ^ that means '0 2 4 7' is the only useful setting for this vty cmd !!
 #define AMR_START_TEXT "Initial codec mode to use with AMR\n" \
-	"Automatically\nFirst mode\nSecond mode\nThird mode\nFourth mode\n"
+	"Automatically\nFirst mode (lowest rate)\nSecond mode\nThird mode\nFourth mode (highest rate)\n"
 #define AMR_MS_BTS_TEXT "MS side\nBTS side\n"
 #define AMR_TH_TEXT "Lower threshold(s) for switching between codec modes\n" AMR_MS_BTS_TEXT
 #define AMR_HY_TEXT "Hysteresis value(s) to obtain the higher threshold(s) " \
