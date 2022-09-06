@@ -63,7 +63,7 @@ PDCH resources should be allocated for interference reasons.
 NOTE: Currently osmo-bsc makes no use of PDCH interference reports, neither
 they get forwarded to the BSC co-located PCU over the PCUIF.
 
-For dynamic timeslots (`TCH/F_TCH/H_SDCCH/8_PDCH` and `TCH/F_PDCH`), the
+For dynamic timeslots (`DYNAMIC/OSMOCOM` and `DYNAMIC/IPACCESS`), the
 following expectations apply:
 
 * when in TCH/F mode: no interference reports, because the only sub-channel is active;

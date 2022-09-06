@@ -296,7 +296,7 @@ all BTS models support dynamic channels.
 .Dynamic timeslot support by various BTS models
 [cols="50%,25%,25%"]
 |===
-|                    |`TCH/F_TCH/H_SDCCH8_PDCH` |`TCH/F_PDCH`
+|                    |`DYNAMIC/OSMOCOM` |`DYNAMIC/IPACCESS`
 |ip.access nanoBTS   |-                  |supported
 |Ericsson RBS        |supported          |-
 |sysmoBTS using _osmo-bts-sysmo_ |supported |supported
@@ -311,11 +311,13 @@ non-standard RSL messages used for these timeslot kinds.
 NOTE: Same as for dedicated PDCH timeslots, you need to enable GPRS and operate
 a PCU, SGSN and GGSN to provide the actual data service.
 
-==== Osmocom Style Dynamic Timeslots (TCH/F_TCH/H_SDCCH8_PDCH)
+==== Osmocom Style Dynamic Timeslots (DYNAMIC/OSMOCOM)
 
-Timeslots of the `TCH/F_TCH/H_SDCCH8_PDCH` type dynamically switch between TCH/F,
+`DYNAMIC/OSMOCOM` is an alias for `TCH/F_TCH/H_SDCCH8_PDCH`.
+
+Timeslots of the `DYNAMIC/OSMOCOM` type dynamically switch between TCH/F,
 TCH/H, SDCCH8 and PDCH, depending on the channel kind requested by the MSC. The RSL
-messaging for `TCH/F_TCH/H_SDCCH8_PDCH` timeslots is compatible with Ericsson RBS.
+messaging for these timeslots is compatible with Ericsson RBS.
 
 BTS models supporting this timeslot kind are shown in <<dyn_ts_compat>>.
 
@@ -334,10 +336,12 @@ network
 In OsmoNITB, disabling TCH/F on Osmocom dynamic timeslots is the default. In
 OsmoBSC, the default is to allow both.
 
-==== ip.access Style Dynamic Timeslots (TCH/F_PDCH)
+==== ip.access Style Dynamic Timeslots (DYNAMIC/IPACCESS)
 
-Timeslots of the `TCH/F_PDCH` type dynamically switch between TCH/F and PDCH.
-The RSL messaging for `TCH/F_PDCH` timeslots is compatible with ip.access
+`DYNAMIC/IPACCESS` is an alias for `TCH/F_PDCH`.
+
+Timeslots of the `DYNAMIC/IPACCESS` type dynamically switch between TCH/F and PDCH.
+The RSL messaging for `DYNAMIC/IPACCESS` timeslots is compatible with ip.access
 nanoBTS.
 
 BTS models supporting this timeslot kind are shown in <<dyn_ts_compat>>.
@@ -350,7 +354,7 @@ timeslots to TCH, and no PDCH timeslots would be left for GPRS service.
 
 ==== Dynamic Timeslot Configuration Examples
 
-This is an extract of an `osmo-bsc`` config file. A timeslot configuration with
+This is an extract of an `osmo-bsc` config file. A timeslot configuration with
 five Osmocom style dynamic timeslots and one dedicated PDCH may look like this:
 
 ----
@@ -362,20 +366,20 @@ network
    timeslot 1
     phys_chan_config SDCCH8
    timeslot 2
-    phys_chan_config TCH/F_TCH/H_SDCCH8_PDCH
+    phys_chan_config DYNAMIC/OSMOCOM
    timeslot 3
-    phys_chan_config TCH/F_TCH/H_SDCCH8_PDCH
+    phys_chan_config DYNAMIC/OSMOCOM
    timeslot 4
-    phys_chan_config TCH/F_TCH/H_SDCCH8_PDCH
+    phys_chan_config DYNAMIC/OSMOCOM
    timeslot 5
-    phys_chan_config TCH/F_TCH/H_SDCCH8_PDCH
+    phys_chan_config DYNAMIC/OSMOCOM
    timeslot 6
-    phys_chan_config TCH/F_TCH/H_SDCCH8_PDCH
+    phys_chan_config DYNAMIC/OSMOCOM
    timeslot 7
     phys_chan_config PDCH
 ----
 
-With the ip.access nanoBTS, only `TCH/F_PDCH` dynamic timeslots are supported,
+With the ip.access nanoBTS, only `DYNAMIC/IPACCESS` dynamic timeslots are supported,
 and hence a nanoBTS configuration may look like this:
 
 ----
@@ -387,15 +391,15 @@ network
    timeslot 1
     phys_chan_config SDCCH8
    timeslot 2
-    phys_chan_config TCH/F_PDCH
+    phys_chan_config DYNAMIC/IPACCESS
    timeslot 3
-    phys_chan_config TCH/F_PDCH
+    phys_chan_config DYNAMIC/IPACCESS
    timeslot 4
-    phys_chan_config TCH/F_PDCH
+    phys_chan_config DYNAMIC/IPACCESS
    timeslot 5
-    phys_chan_config TCH/F_PDCH
+    phys_chan_config DYNAMIC/IPACCESS
    timeslot 6
-    phys_chan_config TCH/F_PDCH
+    phys_chan_config DYNAMIC/IPACCESS
    timeslot 7
     phys_chan_config PDCH
 ----

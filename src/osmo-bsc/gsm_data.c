@@ -184,10 +184,14 @@ const struct value_string gsm_pchant_names[] = {
 	{ GSM_PCHAN_TCH_H,	"TCH/H" },
 	{ GSM_PCHAN_SDCCH8_SACCH8C, "SDCCH8" },
 	{ GSM_PCHAN_PDCH,	"PDCH" },
-	{ GSM_PCHAN_TCH_F_PDCH,	"TCH/F_PDCH" },
+	{ GSM_PCHAN_TCH_F_PDCH,	"DYNAMIC/IPACCESS" },
 	{ GSM_PCHAN_UNKNOWN,	"UNKNOWN" },
 	{ GSM_PCHAN_CCCH_SDCCH4_CBCH, "CCCH+SDCCH4+CBCH" },
 	{ GSM_PCHAN_SDCCH8_SACCH8C_CBCH, "SDCCH8+CBCH" },
+	{ GSM_PCHAN_OSMO_DYN, "DYNAMIC/OSMOCOM" },
+	/* make get_string_value() return GSM_PCHAN_TCH_F_PDCH for both "DYNAMIC/IPACCESS" and "TCH/F_PDCH" */
+	{ GSM_PCHAN_TCH_F_PDCH,	"TCH/F_PDCH" },
+	/* make get_string_value() return GSM_PCHAN_OSMO_DYN for both "DYNAMIC/OSMOCOM" and "TCH/F_TCH/H_SDCCH8_PDCH" */
 	{ GSM_PCHAN_OSMO_DYN, "TCH/F_TCH/H_SDCCH8_PDCH" },
 	/* When adding items here, you must also add matching items to gsm_pchant_descs[]! */
 	{ 0,			NULL }
@@ -220,11 +224,19 @@ const struct value_string gsm_pchant_descs[] = {
 	{ GSM_PCHAN_TCH_H,	"2 TCH/H + 2 FACCH/H + 2 SACCH (Comb. II)" },
 	{ GSM_PCHAN_SDCCH8_SACCH8C, "8 SDCCH + 4 SACCH (Comb. VII)" },
 	{ GSM_PCHAN_PDCH,	"Packet Data Channel for GPRS/EDGE" },
-	{ GSM_PCHAN_TCH_F_PDCH,	"Dynamic TCH/F or GPRS PDCH" },
+	{ GSM_PCHAN_TCH_F_PDCH,	"Dynamic TCH/F or GPRS PDCH"
+				" (dynamic/ipaccess is an alias for tch/f_pdch)" },
 	{ GSM_PCHAN_UNKNOWN,	"Unknown / Unsupported channel combination" },
 	{ GSM_PCHAN_CCCH_SDCCH4_CBCH, "FCCH + SCH + BCCH + CCCH + CBCH + 3 SDCCH + 2 SACCH (Comb. V)" },
 	{ GSM_PCHAN_SDCCH8_SACCH8C_CBCH, "7 SDCCH + 4 SACCH + CBCH (Comb. VII)" },
-	{ GSM_PCHAN_OSMO_DYN, "Dynamic TCH/F or TCH/H or SDCCH/8 or GPRS PDCH" },
+	{ GSM_PCHAN_OSMO_DYN,	"Dynamic TCH/F or TCH/H or SDCCH/8 or GPRS PDCH"
+				" (dynamic/osmocom is an alias for tch/f_tch/h_sdcch8_pdch)" },
+	/* These duplicate entries are needed to provide a description for both the DYNAMIC/... aliases and their
+	 * explicit versions 'TCH/F_PDCH' / 'TCH/F_TCH/H_SDCCH8_PDCH', see bts_trx_vty_init() */
+	{ GSM_PCHAN_TCH_F_PDCH,	"Dynamic TCH/F or GPRS PDCH"
+				" (dynamic/ipaccess is an alias for tch/f_pdch)" },
+	{ GSM_PCHAN_OSMO_DYN,	"Dynamic TCH/F or TCH/H or SDCCH/8 or GPRS PDCH"
+				" (dynamic/osmocom is an alias for tch/f_tch/h_sdcch8_pdch)" },
 	{ 0,			NULL }
 };
 
