@@ -7,7 +7,7 @@ OsmoBSC(config-net-bts-trx)# timeslot 0
 
 OsmoBSC(config-net-bts-trx-ts)# list
 ...
-  phys_chan_config (none|ccch|ccch+sdcch4|tch/f|tch/h|sdcch8|pdch|tch/f_pdch|unknown|ccch+sdcch4+cbch|sdcch8+cbch|tch/f_tch/h_sdcch8_pdch)
+  phys_chan_config (none|ccch|ccch+sdcch4|tch/f|tch/h|sdcch8|pdch|dynamic/ipaccess|unknown|ccch+sdcch4+cbch|sdcch8+cbch|dynamic/osmocom|tch/f_pdch|tch/f_tch/h_sdcch8_pdch)
   training_sequence_code <0-7>
   hopping enabled (0|1)
   hopping sequence-number <0-63>
@@ -28,11 +28,13 @@ OsmoBSC(config-net-bts-trx-ts)# phys_chan_config ?
   tch/h                    2 TCH/H + 2 FACCH/H + 2 SACCH (Comb. II)
   sdcch8                   8 SDCCH + 4 SACCH (Comb. VII)
   pdch                     Packet Data Channel for GPRS/EDGE
-  tch/f_pdch               Dynamic TCH/F or GPRS PDCH
+  dynamic/ipaccess         Dynamic TCH/F or GPRS PDCH (dynamic/ipaccess is an alias for tch/f_pdch)
   unknown                  Unknown / Unsupported channel combination
   ccch+sdcch4+cbch         FCCH + SCH + BCCH + CCCH + CBCH + 3 SDCCH + 2 SACCH (Comb. V)
   sdcch8+cbch              7 SDCCH + 4 SACCH + CBCH (Comb. VII)
-  tch/f_tch/h_sdcch8_pdch  Dynamic TCH/F or TCH/H or SDCCH/8 or GPRS PDCH
+  dynamic/osmocom          Dynamic TCH/F or TCH/H or SDCCH/8 or GPRS PDCH (dynamic/osmocom is an alias for tch/f_tch/h_sdcch8_pdch)
+  tch/f_pdch               Dynamic TCH/F or GPRS PDCH (dynamic/ipaccess is an alias for tch/f_pdch)
+  tch/f_tch/h_sdcch8_pdch  Dynamic TCH/F or TCH/H or SDCCH/8 or GPRS PDCH (dynamic/osmocom is an alias for tch/f_tch/h_sdcch8_pdch)
 
 OsmoBSC(config-net-bts-trx-ts)# phys_chan_config none
 OsmoBSC(config-net-bts-trx-ts)# show running-config
@@ -67,5 +69,5 @@ OsmoBSC(config-net-bts-trx-ts)# show running-config
   trx 0
 ...
    timeslot 0
-    phys_chan_config TCH/F_TCH/H_SDCCH8_PDCH
+    phys_chan_config DYNAMIC/OSMOCOM
 ...
