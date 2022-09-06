@@ -178,19 +178,22 @@ static bool test_codec_support_bts_rate(const struct gsm_bts *bts, const bool fu
 {
 	unsigned int i;
 	struct gsm_bts_trx *trx;
-	enum gsm_phys_chan_config pchan;
 
 	llist_for_each_entry(trx, &bts->trx_list, list) {
 		for (i = 0; i < TRX_NR_TS; i++) {
-			pchan = trx->ts[i].pchan_from_config;
-			if (pchan == GSM_PCHAN_OSMO_DYN)
+			switch (trx->ts[i].pchan_from_config) {
+			case GSM_PCHAN_OSMO_DYN:
 				return true;
-			else if (full_rate && pchan == GSM_PCHAN_TCH_F)
-				return true;
-			else if (full_rate && pchan == GSM_PCHAN_TCH_F_PDCH)
-				return true;
-			else if (!full_rate && pchan == GSM_PCHAN_TCH_H)
-				return true;
+			case GSM_PCHAN_TCH_F:
+			case GSM_PCHAN_TCH_F_PDCH:
+				if (full_rate)
+					return true;
+			case GSM_PCHAN_TCH_H:
+				if (!full_rate)
+					return true;
+			default:
+				continue;
+			}
 		}
 	}
 
@@ -220,21 +223,12 @@ static bool test_codec_support_bts(const struct gsm_bts *bts, uint8_t perm_spch)
 		 * selectively disable GSM-RF per BTS via VTY. */
 		return true;
 	case GSM0808_PERM_FR2:
-		if (bts_codec->efr)
-			return true;
-		break;
+		return (bool)bts_codec->efr;
 	case GSM0808_PERM_FR3:
-		if (bts_codec->amr)
-			return true;
-		break;
-	case GSM0808_PERM_HR1:
-		if (bts_codec->hr)
-			return true;
-		break;
 	case GSM0808_PERM_HR3:
-		if (bts_codec->amr)
-			return true;
-		break;
+		return (bool)bts_codec->amr;
+	case GSM0808_PERM_HR1:
+		return (bool)bts_codec->hr;
 	default:
 		return false;
 	}
