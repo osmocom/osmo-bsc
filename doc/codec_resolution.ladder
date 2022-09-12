@@ -1,0 +1,136 @@
+{hscale=1.7}
+ms = MS/BTS
+cfg = osmo-bsc.cfg
+bsc = osmo-bsc
+msc = MSC
+sip = SIP
+
+ms -> bsc	EST IND / Compl L3
+cfg -> bsc	'msc 0'
+		'codec-list fr3 hr3 fr2 fr1 hr1'
+bsc () .	build Speech Codec List
+		gen_bss_supported_codec_list()
+bsc -> msc	Compl L3
+bsc [] msc	Speech Codec List (BSS Supported)
+		{GSM0808_SCT_FR3 + AMR-cfg,
+		GSM0808_SCT_HR3 + AMR-cfg,
+		GSM0808_SCT_FR2,
+		GSM0808_SCT_FR1,
+		GSM0808_SCT_HR1}
+---		AMR-cfg:
+bsc [] msc	S0-S15: 16bit flags
+		S0 = 1: 4.75 ---- ---- ---- ---- ---- ---- ----
+		S1 = 1: 4.75 ---- 5.90 ---- 7.40 ---- ---- 12.2
+		S2 = 1: ---- ---- 5.90 ---- ---- ---- ---- ----
+		S3 = 1: ---- ---- ---- 6.70 ---- ---- ---- ----
+		S4 = 1: ---- ---- ---- ---- 7.40 ---- ---- ----
+		S5 = 1: ---- ---- ---- ---- ---- 7.95 ---- ----
+		S6 = 1: ---- ---- ---- ---- ---- ---- 10.2 ----
+		S7 = 1: ---- ---- ---- ---- ---- ---- ---- 12.2
+
+		S8 = 1: 4.75 ---- 5.90 ---- ---- ---- ---- ----
+		S9 = 1: 4.75 ---- 5.90 6.70 ---- ---- ---- ----
+		S10= 1: 4.75 ---- 5.90 6.70 7.40 ---- ---- ----
+		S11= 1: ---- ---- ---- ---- ---- ---- ---- ----
+		S12= 1: 4.75 ---- 5.90 6.70 ---- ---- 10.2 ----
+		S13= 1: ---- ---- ---- ---- ---- ---- ---- ----
+		S14= 1: 4.75 ---- 5.90 ---- ---- 7.95 ---- 12.2
+		S15= 1: ---- ---- ---- ---- ---- ---- ---- ----
+
+		3GPP TS 28.062 Table 7.11.3.1.3-2: "Preferred Configurations",
+		some removed as specified in 3GPP TS 48.008 3.2.2.103
+
+cfg -> bsc	'bts 0'
+		'amr tch-x modes 0 2 4 7'
+bsc () .	convert AMR modes to
+		bts-S0-S15
+cfg -> bsc	'msc 0'
+		'amr-config 4_75k allowed'
+bsc () .	convert AMR modes to
+		msc-S0-S15
+bsc -> msc	Compl L3 Speech Codec List:
+		bitwise AND:
+		bts-S0-S15 & msc-S0-S15
+---
+
+ms -> msc	Bearer Capabilities
+msc <- sip	SDP
+msc [] sip	m=audio 12345 RTP/AVP 112 3 111 110
+		a=rtpmap:112 AMR/8000
+		a=fmtp:112 mode-set=0,2,4,7
+		a=rtpmap:3 GSM/8000
+		a=rtpmap:111 GSM-HR-08/8000
+		a=rtpmap:110 GSM-EFR/8000
+
+msc () .	combine:
+		BSC: Speech Codec List
+		MS: Bearer Cap
+		SIP: SDP
+
+bsc <- msc	BSSMAP Assignment Request
+		contains
+		Channel Type
+		Speech Codec List (MSC Preferred)
+bsc [] msc	Channel Type
+		Channel Rate And Type:
+		- [prefer] full rate
+		- [prefer] half rate
+		- indicated by Permitted Speech list
+		Permitted Speech [1..9]:
+		{GSM0808_PERM_FR3,
+		GSM0808_PERM_HR3,
+		GSM0808_PERM_FR2,
+		GSM0808_PERM_FR1,
+		GSM0808_PERM_HR1}
+bsc [] msc	Speech Codec List (MSC Preferred)
+		{GSM0808_SCT_FR3 + AMR-cfg,
+		GSM0808_SCT_HR3 + AMR-cfg,
+		GSM0808_SCT_FR2,
+		GSM0808_SCT_FR1,
+		GSM0808_SCT_HR1}
+
+cfg -> bsc	'msc 0'
+		'codec-list fr3 hr3 fr2 fr1 hr1'
+cfg -> bsc	'bts 0'
+		'phys_chan_cfg TCH/F'
+cfg -> bsc	'bts 0'
+		'codec-support amr efr fr hr'
+
+cfg () bsc	combine:
+		'msc 0' 'codec-list fr3 hr3 fr2 fr1 hr1'
+		'bts 0' 'phys_chan_cfg TCH/F'
+		'bts 0' 'codec-support amr efr fr hr'
+		MSC: Channel Type
+		MSC: Speech Codec List (MSC Preferred)
+		=>
+		{GSM48_CMODE_SPEECH_AMR, FR, S0-S15},
+		{GSM48_CMODE_SPEECH_AMR, HR, S0-S15}
+
+cfg -> bsc	'bts 0'
+		'amr tch-x bts threshold'
+		'amr tch-x bts hysteresis'
+ms <- bsc	RSL CHANnel ACTIVation
+ms [] bsc	Channel Rate and Type: Full/Half rate
+		Speech Coding Algorithm Version: 3 (=AMR)
+		MultiRate Configuration:
+		- 4.75 | 5.90 | 7.40 | 12.2
+		- Threshold / Hysteresis x 3
+cfg -> bsc	'bts 0'
+		'amr tch-x ms threshold'
+		'amr tch-x ms hysteresis'
+ms <- bsc	RSL Assignment Command
+ms [] bsc	Channel Description: TCH/F
+		Speech Coding Algorithm Version: 3 (=AMR)
+		MultiRate Configuration:
+		- 4.75 | 5.90 | 7.40 | 12.2
+		- Threshold / Hysteresis x 3
+
+bsc -> msc	BSSMAP Assignment Complete
+bsc [] msc	Chosen Channel: Speech, Full Rate
+		Speech Version (Chosen): FR3
+		Speech Codec (Chosen): FR AMR, S0-S15
+
+msc -> sip	SDP (optional)
+msc [] sip	m=audio 12345 RTP/AVP 112
+		a=rtpmap:112 AMR/8000
+		a=fmtp:112 mode-set=0,2,4,7
