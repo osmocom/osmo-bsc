@@ -14,6 +14,7 @@ msc: \
 	$(builddir)/handover-inter-bsc-in.png \
 	$(builddir)/mgw-endpoint.png \
 	$(builddir)/location_services_ta.png \
+	$(builddir)/codec_resolution.png \
 	$(NULL)
 
 dot: \
