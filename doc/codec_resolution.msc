@@ -1,0 +1,48 @@
+msc {
+  hscale="1.7";
+  ms[label="MS/BTS"],cfg[label="osmo-bsc.cfg"],bsc[label="osmo-bsc"],__msc[label="MSC"],sip[label="SIP"];
+
+  ms => bsc [label="EST IND / Compl L3"];
+  cfg => bsc [label="'msc 0'\n'codec-list fr3 hr3 fr2 fr1 hr1'"];
+  bsc rbox bsc [label="build Speech Codec List\ngen_bss_supported_codec_list()"];
+  bsc => __msc [label="Compl L3"];
+  bsc note __msc [label="Speech Codec List (BSS Supported)\n{GSM0808_SCT_FR3 + AMR-cfg,\nGSM0808_SCT_HR3 + AMR-cfg,\nGSM0808_SCT_FR2,\nGSM0808_SCT_FR1,\nGSM0808_SCT_HR1}"];
+  --- [label="AMR-cfg:"];
+  bsc note __msc [label="S0-S15: 16bit flags\nS0 = 1: 4.75 ---- ---- ---- ---- ---- ---- ----\nS1 = 1: 4.75 ---- 5.90 ---- 7.40 ---- ---- 12.2\nS2 = 1: ---- ---- 5.90 ---- ---- ---- ---- ----\nS3 = 1: ---- ---- ---- 6.70 ---- ---- ---- ----\nS4 = 1: ---- ---- ---- ---- 7.40 ---- ---- ----\nS5 = 1: ---- ---- ---- ---- ---- 7.95 ---- ----\nS6 = 1: ---- ---- ---- ---- ---- ---- 10.2 ----\nS7 = 1: ---- ---- ---- ---- ---- ---- ---- 12.2\n\nS8 = 1: 4.75 ---- 5.90 ---- ---- ---- ---- ----\nS9 = 1: 4.75 ---- 5.90 6.70 ---- ---- ---- ----\nS10= 1: 4.75 ---- 5.90 6.70 7.40 ---- ---- ----\nS11= 1: ---- ---- ---- ---- ---- ---- ---- ----\nS12= 1: 4.75 ---- 5.90 6.70 ---- ---- 10.2 ----\nS13= 1: ---- ---- ---- ---- ---- ---- ---- ----\nS14= 1: 4.75 ---- 5.90 ---- ---- 7.95 ---- 12.2\nS15= 1: ---- ---- ---- ---- ---- ---- ---- ----\n\n3GPP TS 28.062 Table 7.11.3.1.3-2: \"Preferred Configurations\",\nsome removed as specified in 3GPP TS 48.008 3.2.2.103"];
+
+  cfg => bsc [label="'bts 0'\n'amr tch-x modes 0 2 4 7'"];
+  bsc rbox bsc [label="convert AMR modes to\nbts-S0-S15"];
+  cfg => bsc [label="'msc 0'\n'amr-config 4_75k allowed'"];
+  bsc rbox bsc [label="convert AMR modes to\nmsc-S0-S15"];
+  bsc => __msc [label="Compl L3 Speech Codec List:\nbitwise AND:\nbts-S0-S15 & msc-S0-S15"];
+  ---;
+
+  ms => __msc [label="Bearer Capabilities"];
+  __msc <= sip [label="SDP"];
+  __msc note sip [label="m=audio 12345 RTP/AVP 112 3 111 110\na=rtpmap:112 AMR/8000\na=fmtp:112 mode-set=0,2,4,7\na=rtpmap:3 GSM/8000\na=rtpmap:111 GSM-HR-08/8000\na=rtpmap:110 GSM-EFR/8000"];
+
+  __msc rbox __msc [label="combine:\nBSC: Speech Codec List\nMS: Bearer Cap\nSIP: SDP"];
+
+  bsc <= __msc [label="BSSMAP Assignment Request\ncontains\nChannel Type\nSpeech Codec List (MSC Preferred)"];
+  bsc note __msc [label="Channel Type\nChannel Rate And Type:\n- [prefer] full rate\n- [prefer] half rate\n- indicated by Permitted Speech list\nPermitted Speech [1..9]:\n{GSM0808_PERM_FR3,\nGSM0808_PERM_HR3,\nGSM0808_PERM_FR2,\nGSM0808_PERM_FR1,\nGSM0808_PERM_HR1}"];
+  bsc note __msc [label="Speech Codec List (MSC Preferred)\n{GSM0808_SCT_FR3 + AMR-cfg,\nGSM0808_SCT_HR3 + AMR-cfg,\nGSM0808_SCT_FR2,\nGSM0808_SCT_FR1,\nGSM0808_SCT_HR1}"];
+
+  cfg => bsc [label="'msc 0'\n'codec-list fr3 hr3 fr2 fr1 hr1'"];
+  cfg => bsc [label="'bts 0'\n'phys_chan_cfg TCH/F'"];
+  cfg => bsc [label="'bts 0'\n'codec-support amr efr fr hr'"];
+
+  cfg rbox bsc [label="combine:\n'msc 0' 'codec-list fr3 hr3 fr2 fr1 hr1'\n'bts 0' 'phys_chan_cfg TCH/F'\n'bts 0' 'codec-support amr efr fr hr'\nMSC: Channel Type\nMSC: Speech Codec List (MSC Preferred)\n=>\n{GSM48_CMODE_SPEECH_AMR, FR, S0-S15},\n{GSM48_CMODE_SPEECH_AMR, HR, S0-S15}"];
+
+  cfg => bsc [label="'bts 0'\n'amr tch-x bts threshold'\n'amr tch-x bts hysteresis'"];
+  ms <= bsc [label="RSL CHANnel ACTIVation"];
+  ms note bsc [label="Channel Rate and Type: Full/Half rate\nSpeech Coding Algorithm Version: 3 (=AMR)\nMultiRate Configuration:\n- 4.75 | 5.90 | 7.40 | 12.2\n- Threshold / Hysteresis x 3"];
+  cfg => bsc [label="'bts 0'\n'amr tch-x ms threshold'\n'amr tch-x ms hysteresis'"];
+  ms <= bsc [label="RSL Assignment Command"];
+  ms note bsc [label="Channel Description: TCH/F\nSpeech Coding Algorithm Version: 3 (=AMR)\nMultiRate Configuration:\n- 4.75 | 5.90 | 7.40 | 12.2\n- Threshold / Hysteresis x 3"];
+
+  bsc => __msc [label="BSSMAP Assignment Complete"];
+  bsc note __msc [label="Chosen Channel: Speech, Full Rate\nSpeech Version (Chosen): FR3\nSpeech Codec (Chosen): FR AMR, S0-S15"];
+
+  __msc => sip [label="SDP (optional)"];
+  __msc note sip [label="m=audio 12345 RTP/AVP 112\na=rtpmap:112 AMR/8000\na=fmtp:112 mode-set=0,2,4,7"];
+}
