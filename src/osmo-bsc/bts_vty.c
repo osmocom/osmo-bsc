@@ -276,17 +276,15 @@ DEFUN_USRATTR(cfg_bts_ci,
 DEFUN_USRATTR(cfg_bts_lac,
 	      cfg_bts_lac_cmd,
 	      X(BSC_VTY_ATTR_RESTART_ABIS_RSL_LINK),
-	      "location_area_code <0-65535>",
-	      "Set the Location Area Code (LAC) of this BTS\n" "LAC\n")
+	      "location_area_code (<0-65535>|<0x0000-0xffff>)",
+	      "Set the Location Area Code (LAC) of this BTS\n"
+	      "LAC in decimal format\n"
+	      "LAC in hexadecimal format\n")
 {
 	struct gsm_bts *bts = vty->index;
-	int lac = atoi(argv[0]);
-
-	if (lac < 0 || lac > 0xffff) {
-		vty_out(vty, "%% LAC %d is not in the valid range (0-65535)%s",
-			lac, VTY_NEWLINE);
+	int lac;
+	if (osmo_str_to_int(&lac, argv[0], 0, 0, 0xffff) < 0)
 		return CMD_WARNING;
-	}
 
 	if (lac == GSM_LAC_RESERVED_DETACHED || lac == GSM_LAC_RESERVED_ALL_BTS) {
 		vty_out(vty, "%% LAC %d is reserved by GSM 04.08%s",
@@ -4307,7 +4305,7 @@ static void config_write_bts_single(struct vty *vty, struct gsm_bts *bts)
 		vty_out(vty, "  description %s%s", bts->description, VTY_NEWLINE);
 	vty_out(vty, "  band %s%s", gsm_band_name(bts->band), VTY_NEWLINE);
 	vty_out(vty, "  cell_identity %u%s", bts->cell_identity, VTY_NEWLINE);
-	vty_out(vty, "  location_area_code %u%s", bts->location_area_code,
+	vty_out(vty, "  location_area_code 0x%04x%s", bts->location_area_code,
 		VTY_NEWLINE);
 	if (bts->dtxu != GSM48_DTX_SHALL_NOT_BE_USED)
 		vty_out(vty, "  dtx uplink%s%s",

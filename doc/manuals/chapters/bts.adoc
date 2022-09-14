@@ -108,7 +108,7 @@ network
   type osmo-bts
   band DCS1800
   description The new BTS in Baikonur
-  location_area_code 2342
+  location_area_code 0x0926
   cell_identity 5
   base_station_id_code 63
   ip.access unit_id 8888 0

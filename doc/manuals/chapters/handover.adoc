@@ -223,15 +223,15 @@ network
 network
 
  bts 0
-  # this cell's LAC=23 CI=5
-  location_area_code 23
+  # this cell's LAC=0x0017 CI=5
+  location_area_code 0x0017
   cell_identity 5
   # reference bts 1
   neighbor lac-ci 23 6
 
  bts 1
-  # this cell's LAC=23 CI=6
-  location_area_code 23
+  # this cell's LAC=0x0017 CI=6
+  location_area_code 0x0017
   cell_identity 6
   # reference bts 0
   neighbor lac-ci 23 5
@@ -252,8 +252,8 @@ desirable to use the `neighbor bts <0-255>` format, or omit the redundant
 network
 
  bts 0
-  # this cell's LAC=23 CI=5
-  location_area_code 23
+  # this cell's LAC=0x0017 CI=5
+  location_area_code 0x0017
   cell_identity 5
   # this cell's ARFCN=1 BSIC=1
   trx 0
@@ -263,8 +263,8 @@ network
   neighbor lac-ci 23 6 arfcn 2 bsic 2
 
  bts 1
-  # LAC=23 CI=6
-  location_area_code 23
+  # LAC=0x0017 CI=6
+  location_area_code 0x0017
   cell_identity 6
   # this cell's ARFCN=2 BSIC=2
   trx 0
@@ -286,8 +286,8 @@ Indication and 3.2.1.9 HANDOVER REQUIRED).
 # BSC Alpha's osmo-bsc.cfg
 network
  bts 0
-  # this cell's LAC=23 CI=6
-  location_area_code 23
+  # this cell's LAC=0x0017 CI=6
+  location_area_code 0x0017
   cell_identity 6
   # this cell's ARFCN=2 BSIC=2
   trx 0
@@ -299,8 +299,8 @@ network
 # BSC Beta's osmo-bsc.cfg
 network
  bts 0
-  # this cell's LAC=42 CI=3
-  location_area_code 42
+  # this cell's LAC=0x002A CI=3
+  location_area_code 0x002A
   cell_identity 3
   # this cell's ARFCN=1 BSIC=3
   trx 0

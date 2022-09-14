@@ -257,7 +257,7 @@ static struct gsm_bts *_create_bts(int num_trx, const char * const *ts_args, int
 		return NULL;
 	}
 
-	bts->location_area_code = 23;
+	bts->location_area_code = 0x0017;
 	bts->cell_identity = ci++;
 	bts->c0->arfcn = arfcn++;
 

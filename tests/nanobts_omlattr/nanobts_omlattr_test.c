@@ -160,7 +160,7 @@ int main(int argc, char **argv)
 	bts->c0->arfcn = 866;
 	bts->cell_identity = 1337;
 	bts->network->plmn = (struct osmo_plmn_id){ .mcc=1, .mnc=1 };
-	bts->location_area_code = 1;
+	bts->location_area_code = 0x0001;
 	bts->gprs.rac = 0;
 	uint8_t attr_bts_expected[] =
 	    { 0x19, 0x73, 0x6d, 0x67, 0x61, 0x5b, 0x55, 0x18, 0x06, 0x0e, 0x00,

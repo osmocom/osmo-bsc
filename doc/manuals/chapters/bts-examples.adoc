@@ -26,7 +26,7 @@ network
   type nanobts <2>
   band DCS1800 <3>
   cell_identity 0
-  location_area_code 1
+  location_area_code 0x0001
   training_sequence_code 7
   base_station_id_code 63
   ms max power 15
@@ -104,7 +104,7 @@ network
   type nanobts
   band DCS1800
   cell_identity 0
-  location_area_code 1
+  location_area_code 0x0001
   training_sequence_code 7
   base_station_id_code 63
   ms max power 15
@@ -197,7 +197,7 @@ network
   band GSM900
   om2000 version-limit oml gen 12 rev 10 <2>
   cell_identity 0
-  location_area_code 1
+  location_area_code 0x0001
   training_sequence_code 7
   base_station_id_code 63
   ms max power 15
