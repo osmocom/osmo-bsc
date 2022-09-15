@@ -566,7 +566,7 @@ static int pcu_sock_read(struct osmo_fd *bfd)
 	struct msgb *msg;
 	int rc;
 
-	msg = msgb_alloc(sizeof(*pcu_prim), "pcu_sock_rx");
+	msg = msgb_alloc(sizeof(*pcu_prim) + 1000, "pcu_sock_rx");
 	if (!msg)
 		return -ENOMEM;
 
