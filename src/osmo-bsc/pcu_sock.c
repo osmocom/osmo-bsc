@@ -567,8 +567,10 @@ static int pcu_sock_read(struct osmo_fd *bfd)
 		goto close;
 
 	if (rc < 0) {
-		if (errno == EAGAIN)
+		if (errno == EAGAIN) {
+			msgb_free(msg);
 			return 0;
+		}
 		goto close;
 	}
 
