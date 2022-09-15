@@ -448,8 +448,17 @@ static int pcu_rx_data_req(struct gsm_bts *bts, uint8_t msg_type,
 	return rc;
 }
 
+#define CHECK_IF_MSG_SIZE(prim_len, prim_msg) \
+	do { \
+		size_t _len = PCUIF_HDR_SIZE + sizeof(prim_msg); \
+		if (prim_len < _len) { \
+			LOGP(DPCU, LOGL_ERROR, "Received %zu bytes on PCU Socket, but primitive %s " \
+			     "size is %zu, discarding\n", prim_len, #prim_msg, _len); \
+			return -EINVAL; \
+		} \
+	} while (0)
 static int pcu_rx(struct gsm_network *net, uint8_t msg_type,
-	struct gsm_pcu_if *pcu_prim)
+	struct gsm_pcu_if *pcu_prim, size_t prim_len)
 {
 	int rc = 0;
 	struct gsm_bts *bts;
@@ -460,6 +469,7 @@ static int pcu_rx(struct gsm_network *net, uint8_t msg_type,
 	switch (msg_type) {
 	case PCU_IF_MSG_DATA_REQ:
 	case PCU_IF_MSG_PAG_REQ:
+		CHECK_IF_MSG_SIZE(prim_len, pcu_prim->u.data_req);
 		rc = pcu_rx_data_req(bts, msg_type, &pcu_prim->u.data_req);
 		break;
 	default:
@@ -574,7 +584,14 @@ static int pcu_sock_read(struct osmo_fd *bfd)
 		goto close;
 	}
 
-	rc = pcu_rx(state->net, pcu_prim->msg_type, pcu_prim);
+	if (rc < PCUIF_HDR_SIZE) {
+		LOGP(DPCU, LOGL_ERROR, "Received %d bytes on PCU Socket, but primitive hdr size "
+		     "is %zu, discarding\n", rc, PCUIF_HDR_SIZE);
+		msgb_free(msg);
+		return 0;
+	}
+
+	rc = pcu_rx(state->net, pcu_prim->msg_type, pcu_prim, rc);
 
 	/* as we always synchronously process the message in pcu_rx() and
 	 * its callbacks, we can free the message here. */

@@ -5,6 +5,8 @@
 
 extern int pcu_direct;
 
+#define PCUIF_HDR_SIZE (sizeof(struct gsm_pcu_if) - sizeof(((struct gsm_pcu_if *)0)->u))
+
 struct pcu_sock_state {
 	struct gsm_network *net;
 	struct osmo_fd listen_bfd;	/* fd for listen socket */
