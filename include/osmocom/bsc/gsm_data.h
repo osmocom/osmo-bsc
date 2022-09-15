@@ -447,6 +447,8 @@ struct gsm_abis_mo {
 	bool get_attr_rep_received;
 	bool set_attr_sent;
 	bool set_attr_ack_received;
+	bool rsl_connect_sent;
+	bool rsl_connect_ack_received;
 	bool force_rf_lock;
 };
 

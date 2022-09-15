@@ -32,6 +32,7 @@
 #include <osmocom/bsc/signal.h>
 #include <osmocom/bsc/abis_nm.h>
 #include <osmocom/bsc/bts_ipaccess_nanobts_omlattr.h>
+#include <osmocom/bsc/ipaccess.h>
 #include <osmocom/bsc/nm_common_fsm.h>
 #include <osmocom/bsc/debug.h>
 
@@ -63,6 +64,8 @@ static void st_op_disabled_notinstalled_on_enter(struct osmo_fsm_inst *fi, uint3
 	bb_transc->mo.get_attr_sent = false;
 	bb_transc->mo.get_attr_rep_received = false;
 	bb_transc->mo.adm_unlock_sent = false;
+	bb_transc->mo.rsl_connect_sent = false;
+	bb_transc->mo.rsl_connect_ack_received = false;
 	bb_transc->mo.opstart_sent = false;
 }
 
@@ -125,13 +128,21 @@ static void configure_loop(struct gsm_bts_bb_trx *bb_transc, const struct gsm_nm
 				      NM_STATE_UNLOCKED);
 	}
 
+	/* Provision BTS with RSL IP addr & port to connect to: */
 	if (allow_opstart && state->administrative == NM_STATE_UNLOCKED &&
-	    !bb_transc->mo.opstart_sent) {
-		bb_transc->mo.opstart_sent = true;
-		abis_nm_opstart(trx->bts, NM_OC_BASEB_TRANSC, trx->bts->bts_nr, trx->nr, 0xff);
-		/* TRX software is active, tell it to initiate RSL Link */
+	    !bb_transc->mo.rsl_connect_sent && !bb_transc->mo.rsl_connect_ack_received) {
+		bb_transc->mo.rsl_connect_sent = true;
 		abis_nm_ipaccess_rsl_connect(trx, trx->bts->ip_access.rsl_ip,
 					     3003, trx->rsl_tei_primary);
+	}
+
+	/* OPSTART after receiving RSL CONNECT ACK. We cannot delay until the
+	 * RSL/IPA socket is connected to us because nanoBTS only attempts
+	 * connection after receiving an OPSTART: */
+	if (allow_opstart && state->administrative == NM_STATE_UNLOCKED &&
+	    bb_transc->mo.rsl_connect_ack_received && !bb_transc->mo.opstart_sent) {
+		bb_transc->mo.opstart_sent = true;
+		abis_nm_opstart(trx->bts, NM_OC_BASEB_TRANSC, trx->bts->bts_nr, trx->nr, 0xff);
 	}
 }
 
@@ -150,6 +161,7 @@ static void st_op_disabled_dependency_on_enter(struct osmo_fsm_inst *fi, uint32_
 static void st_op_disabled_dependency(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
 	struct gsm_bts_bb_trx *bb_transc = (struct gsm_bts_bb_trx *)fi->priv;
+	struct gsm_bts_trx *trx = gsm_bts_bb_trx_get_trx(bb_transc);
 	struct nm_statechg_signal_data *nsd;
 	const struct gsm_nm_state *new_state;
 
@@ -159,6 +171,14 @@ static void st_op_disabled_dependency(struct osmo_fsm_inst *fi, uint32_t event, 
 		bb_transc->mo.get_attr_sent = false;
 		configure_loop(bb_transc, &bb_transc->mo.nm_state, false);
 		return;
+	case NM_EV_RSL_CONNECT_ACK:
+		bb_transc->mo.rsl_connect_ack_received = true;
+		bb_transc->mo.rsl_connect_sent = false;
+		configure_loop(bb_transc, &bb_transc->mo.nm_state, false);
+		break;
+	case NM_EV_RSL_CONNECT_NACK:
+		ipaccess_drop_oml_deferred(trx->bts);
+		break;
 	case NM_EV_STATE_CHG_REP:
 		nsd = (struct nm_statechg_signal_data *)data;
 		new_state = &nsd->new_state;
@@ -207,6 +227,14 @@ static void st_op_disabled_offline(struct osmo_fsm_inst *fi, uint32_t event, voi
 		bb_transc->mo.get_attr_sent = false;
 		configure_loop(bb_transc, &bb_transc->mo.nm_state, true);
 		return;
+	case NM_EV_RSL_CONNECT_ACK:
+		bb_transc->mo.rsl_connect_ack_received = true;
+		bb_transc->mo.rsl_connect_sent = false;
+		configure_loop(bb_transc, &bb_transc->mo.nm_state, true);
+		break;
+	case NM_EV_RSL_CONNECT_NACK:
+		ipaccess_drop_oml_deferred(trx->bts);
+		break;
 	case NM_EV_STATE_CHG_REP:
 		nsd = (struct nm_statechg_signal_data *)data;
 		new_state = &nsd->new_state;
@@ -251,8 +279,10 @@ static void st_op_enabled_on_enter(struct osmo_fsm_inst *fi, uint32_t prev_state
 	  reused as soon as we move back to Disabled */
 	bb_transc->mo.get_attr_sent = false;
 	bb_transc->mo.get_attr_rep_received = false;
-	bb_transc->mo.opstart_sent = false;
 	bb_transc->mo.adm_unlock_sent = false;
+	bb_transc->mo.rsl_connect_ack_received = false;
+	bb_transc->mo.rsl_connect_sent = false;
+	bb_transc->mo.opstart_sent = false;
 
 	nm_bb_transc_fsm_becomes_enabled(bb_transc);
 }
@@ -330,7 +360,9 @@ static struct osmo_fsm_state nm_bb_transc_fsm_states[] = {
 	[NM_BB_TRANSC_ST_OP_DISABLED_DEPENDENCY] = {
 		.in_event_mask =
 			X(NM_EV_STATE_CHG_REP) |
-			X(NM_EV_GET_ATTR_REP),
+			X(NM_EV_GET_ATTR_REP) |
+			X(NM_EV_RSL_CONNECT_ACK) |
+			X(NM_EV_RSL_CONNECT_NACK),
 		.out_state_mask =
 			X(NM_BB_TRANSC_ST_OP_DISABLED_NOTINSTALLED) |
 			X(NM_BB_TRANSC_ST_OP_DISABLED_OFFLINE) |
@@ -342,7 +374,9 @@ static struct osmo_fsm_state nm_bb_transc_fsm_states[] = {
 	[NM_BB_TRANSC_ST_OP_DISABLED_OFFLINE] = {
 		.in_event_mask =
 			X(NM_EV_STATE_CHG_REP) |
-			X(NM_EV_GET_ATTR_REP),
+			X(NM_EV_GET_ATTR_REP) |
+			X(NM_EV_RSL_CONNECT_ACK) |
+			X(NM_EV_RSL_CONNECT_NACK),
 		.out_state_mask =
 			X(NM_BB_TRANSC_ST_OP_DISABLED_NOTINSTALLED) |
 			X(NM_BB_TRANSC_ST_OP_DISABLED_DEPENDENCY) |

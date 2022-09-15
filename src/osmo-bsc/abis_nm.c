@@ -2966,6 +2966,7 @@ static int abis_nm_rx_ipacc(struct msgb *msg)
 		signal.foh = foh;
 		osmo_signal_dispatch(SS_NM, S_NM_IPACC_NACK, &signal);
 		break;
+	case NM_MT_IPACC_RSL_CONNECT_ACK:
 	case NM_MT_IPACC_SET_NVATTR_ACK:
 	case NM_MT_IPACC_SET_ATTR_ACK:
 		signal.bts = bts;

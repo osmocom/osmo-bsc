@@ -40,6 +40,8 @@ enum nm_fsm_events {
 	NM_EV_OML_DOWN,
 	NM_EV_FORCE_LOCK, /* Only supported by RadioCarrier so far */
 	NM_EV_FEATURE_NEGOTIATED, /* Sent by BTS to NSVC MO */
+	NM_EV_RSL_CONNECT_ACK, /* Sent by BTS to BBTRANSC MO */
+	NM_EV_RSL_CONNECT_NACK, /* Sent by BTS to BBTRANSC MO */
 };
 extern const struct value_string nm_fsm_event_names[];
 

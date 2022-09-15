@@ -443,11 +443,55 @@ static void nm_rx_ipacc_set_attr_ack(struct ipacc_ack_signal_data *sig_data)
 	}
 }
 
+static void nm_rx_ipacc_rsl_connect_ack(struct ipacc_ack_signal_data *sig_data)
+{
+	struct gsm_bts *bts = sig_data->bts;
+	struct abis_om_fom_hdr *foh = sig_data->foh;
+	struct gsm_bts_trx *trx;
+
+	if (foh->obj_class != NM_OC_BASEB_TRANSC) {
+		LOGPFOH(DNM, LOGL_ERROR, foh, "IPACC RSL Connect ACK received on incorrect object class %d!\n", foh->obj_class);
+		return;
+	}
+
+	trx = gsm_bts_trx_num(bts, foh->obj_inst.trx_nr);
+	osmo_fsm_inst_dispatch(trx->bb_transc.mo.fi, NM_EV_RSL_CONNECT_ACK, NULL);
+}
+
 static void nm_rx_ipacc_ack(struct ipacc_ack_signal_data *sig_data)
 {
 	switch (sig_data->foh->msg_type) {
 	case NM_MT_IPACC_SET_ATTR_ACK:
 		nm_rx_ipacc_set_attr_ack(sig_data);
+		break;
+	case NM_MT_IPACC_RSL_CONNECT_ACK:
+		nm_rx_ipacc_rsl_connect_ack(sig_data);
+		break;
+	default:
+		break;
+	}
+}
+
+static void nm_rx_ipacc_rsl_connect_nack(struct ipacc_ack_signal_data *sig_data)
+{
+	struct gsm_bts *bts = sig_data->bts;
+	struct abis_om_fom_hdr *foh = sig_data->foh;
+	struct gsm_bts_trx *trx;
+
+	if (foh->obj_class != NM_OC_BASEB_TRANSC) {
+		LOGPFOH(DNM, LOGL_ERROR, foh, "IPACC RSL Connect NACK received on incorrect object class %d!\n", foh->obj_class);
+		return;
+	}
+
+	trx = gsm_bts_trx_num(bts, foh->obj_inst.trx_nr);
+	osmo_fsm_inst_dispatch(trx->bb_transc.mo.fi, NM_EV_RSL_CONNECT_NACK, NULL);
+}
+
+static void nm_rx_ipacc_nack(struct ipacc_ack_signal_data *sig_data)
+{
+	switch (sig_data->foh->msg_type) {
+	case NM_MT_IPACC_RSL_CONNECT_ACK:
+		nm_rx_ipacc_rsl_connect_nack(sig_data);
 		break;
 	default:
 		break;
@@ -486,6 +530,9 @@ static int bts_ipa_nm_sig_cb(unsigned int subsys, unsigned int signal,
 		return 0;
 	case S_NM_IPACC_ACK:
 		nm_rx_ipacc_ack(signal_data);
+		return 0;
+	case S_NM_IPACC_NACK:
+		nm_rx_ipacc_nack(signal_data);
 		return 0;
 	default:
 		break;

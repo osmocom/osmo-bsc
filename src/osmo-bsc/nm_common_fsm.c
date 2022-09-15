@@ -33,6 +33,8 @@ const struct value_string nm_fsm_event_names[] = {
 	{ NM_EV_OML_DOWN, "OML_DOWN" },
 	{ NM_EV_FORCE_LOCK, "FORCE_LOCK_CHG" },
 	{ NM_EV_FEATURE_NEGOTIATED, "FEATURE_NEGOTIATED" },
+	{ NM_EV_RSL_CONNECT_ACK, "RSL_CONNECT_ACK" },
+	{ NM_EV_RSL_CONNECT_NACK, "RSL_CONNECT_NACK" },
 	{ 0, NULL }
 };
 
