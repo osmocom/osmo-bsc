@@ -413,19 +413,15 @@ static void nm_rx_set_chan_attr_ack(struct msgb *oml_msg)
 	osmo_fsm_inst_dispatch(ts->mo.fi, NM_EV_SET_ATTR_ACK, NULL);
 }
 
-static void nm_rx_ipacc_set_attr_ack(struct msgb *oml_msg)
+static void nm_rx_ipacc_set_attr_ack(struct ipacc_ack_signal_data *sig_data)
 {
-	struct e1inp_sign_link *sign_link = oml_msg->dst;
-	struct gsm_bts *bts = sign_link->trx->bts;
-	struct abis_om_hdr *oh = msgb_l2(oml_msg);
-	uint8_t idstrlen = oh->data[0];
-	struct abis_om_fom_hdr *foh;
+	struct gsm_bts *bts = sig_data->bts;
+	struct abis_om_fom_hdr *foh = sig_data->foh;
 	void *obj;
 	struct gsm_gprs_nse *nse;
 	struct gsm_gprs_cell *cell;
 	struct gsm_gprs_nsvc *nsvc;
 
-	foh = (struct abis_om_fom_hdr *) (oh->data + 1 + idstrlen);
 	obj = gsm_objclass2obj(bts, foh->obj_class, &foh->obj_inst);
 
 	switch (foh->obj_class) {
@@ -444,6 +440,17 @@ static void nm_rx_ipacc_set_attr_ack(struct msgb *oml_msg)
 		break;
 	default:
 		LOGPFOH(DNM, LOGL_ERROR, foh, "IPACC Set Attr Ack received on incorrect object class %d!\n", foh->obj_class);
+	}
+}
+
+static void nm_rx_ipacc_ack(struct ipacc_ack_signal_data *sig_data)
+{
+	switch (sig_data->foh->msg_type) {
+	case NM_MT_IPACC_SET_ATTR_ACK:
+		nm_rx_ipacc_set_attr_ack(sig_data);
+		break;
+	default:
+		break;
 	}
 }
 
@@ -477,8 +484,8 @@ static int bts_ipa_nm_sig_cb(unsigned int subsys, unsigned int signal,
 	case S_NM_SET_CHAN_ATTR_ACK:
 		nm_rx_set_chan_attr_ack(signal_data);
 		return 0;
-	case S_NM_IPACC_SET_ATTR_ACK:
-		nm_rx_ipacc_set_attr_ack(signal_data);
+	case S_NM_IPACC_ACK:
+		nm_rx_ipacc_ack(signal_data);
 		return 0;
 	default:
 		break;

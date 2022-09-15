@@ -65,7 +65,6 @@ enum signal_nm {
 	S_NM_NACK,		/* GSM 12.21 various NM_MT_*_NACK happened */
 	S_NM_IPACC_NACK,	/* GSM 12.21 nanoBTS extensions NM_MT_IPACC_*_*_NACK happened */
 	S_NM_IPACC_ACK,		/* GSM 12.21 nanoBTS extensions NM_MT_IPACC_*_*_ACK happened */
-	S_NM_IPACC_SET_ATTR_ACK,/* GSM 12.21 nanoBTS extensions NM_MT_IPACC_SET_ATTR_ACK happened */
 	S_NM_IPACC_RESTART_ACK, /* nanoBTS has send a restart ack */
 	S_NM_IPACC_RESTART_NACK,/* nanoBTS has send a restart ack */
 	S_NM_TEST_REP,		/* GSM 12.21 Test Report */
@@ -121,8 +120,10 @@ enum signal_rf {
 };
 
 struct ipacc_ack_signal_data {
-	struct gsm_bts_trx *trx;
-	uint8_t msg_type;
+	/* The BTS which sent the ACK/NACK to us: */
+	struct gsm_bts *bts;
+	/* messge header containing msg_type, obj_class, obj_inst: */
+	struct abis_om_fom_hdr *foh;
 };
 
 struct abis_om2k_mo;

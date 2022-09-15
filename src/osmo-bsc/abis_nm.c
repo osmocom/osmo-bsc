@@ -2865,6 +2865,7 @@ static int abis_nm_rx_ipacc(struct msgb *msg)
 	struct tlv_parsed tp;
 	struct ipacc_ack_signal_data signal;
 	struct e1inp_sign_link *sign_link = msg->dst;
+	struct gsm_bts *bts = sign_link->trx->bts;
 	struct gsm_bts_trx *trx;
 
 	foh = (struct abis_om_fom_hdr *) (oh->data + 1 + idstrlen);
@@ -2874,14 +2875,14 @@ static int abis_nm_rx_ipacc(struct msgb *msg)
 		return -EINVAL;
 	}
 
-	if (abis_nm_tlv_parse(&tp, sign_link->trx->bts, foh->data, oh->length - sizeof(*foh)) < 0) {
+	if (abis_nm_tlv_parse(&tp, bts, foh->data, oh->length - sizeof(*foh)) < 0) {
 		LOGPFOH(DNM, LOGL_ERROR, foh, "%s(): tlv_parse failed\n", __func__);
 		return -EINVAL;
 	}
 
 	/* The message might be received over the main OML link, so we cannot
 	 * just use sign_link->trx. Resolve it by number from the FOM header. */
-	trx = gsm_bts_trx_num(sign_link->trx->bts, foh->obj_inst.trx_nr);
+	trx = gsm_bts_trx_num(bts, foh->obj_inst.trx_nr);
 
 	DEBUGPFOH(DNM, foh, "Rx IPACCESS(0x%02x): %s\n", foh->msg_type,
 		  osmo_hexdump(foh->data, oh->length - sizeof(*foh)));
@@ -2961,21 +2962,15 @@ static int abis_nm_rx_ipacc(struct msgb *msg)
 	case NM_MT_IPACC_RSL_CONNECT_NACK:
 	case NM_MT_IPACC_SET_NVATTR_NACK:
 	case NM_MT_IPACC_GET_NVATTR_NACK:
-		if (!trx)
-			goto obj_inst_error;
-		signal.trx = trx;
-		signal.msg_type = foh->msg_type;
+		signal.bts = bts;
+		signal.foh = foh;
 		osmo_signal_dispatch(SS_NM, S_NM_IPACC_NACK, &signal);
 		break;
 	case NM_MT_IPACC_SET_NVATTR_ACK:
-		if (!trx)
-			goto obj_inst_error;
-		signal.trx = trx;
-		signal.msg_type = foh->msg_type;
-		osmo_signal_dispatch(SS_NM, S_NM_IPACC_ACK, &signal);
-		break;
 	case NM_MT_IPACC_SET_ATTR_ACK:
-		osmo_signal_dispatch(SS_NM, S_NM_IPACC_SET_ATTR_ACK, msg);
+		signal.bts = bts;
+		signal.foh = foh;
+		osmo_signal_dispatch(SS_NM, S_NM_IPACC_ACK, &signal);
 		break;
 	default:
 		break;
@@ -3041,8 +3036,17 @@ static void rsl_connect_timeout(void *data)
 	LOG_TRX(trx, DRSL, LOGL_NOTICE, "RSL connection request timed out\n");
 
 	/* Fake an RSL CONNECT NACK message from the BTS. */
-	signal.trx = trx;
-	signal.msg_type = NM_MT_IPACC_RSL_CONNECT_NACK;
+	struct abis_om_fom_hdr foh = {
+		.msg_type = NM_MT_IPACC_RSL_CONNECT_NACK,
+		.obj_class = NM_OC_BASEB_TRANSC,
+		.obj_inst = {
+			.bts_nr = trx->bts->bts_nr,
+			.trx_nr = trx->nr,
+			.ts_nr = 0xff,
+		},
+	};
+	signal.foh = &foh;
+	signal.bts = trx->bts;
 	osmo_signal_dispatch(SS_NM, S_NM_IPACC_NACK, &signal);
 }
 

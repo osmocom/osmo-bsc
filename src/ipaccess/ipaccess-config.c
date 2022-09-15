@@ -191,6 +191,9 @@ static void check_restart_or_exit(struct gsm_bts_trx *trx)
 
 static int ipacc_msg_ack(uint8_t mt, struct gsm_bts_trx *trx)
 {
+	if (mt != NM_MT_IPACC_SET_NVATTR_ACK && mt != NM_MT_IPACC_SET_ATTR_ACK)
+		return 0;
+
 	if (sw_load_state == 1) {
 		fprintf(stderr, "The new software is activated.\n");
 		check_restart_or_exit(trx);
@@ -352,14 +355,23 @@ static int nm_sig_cb(unsigned int subsys, unsigned int signal,
 	struct ipacc_ack_signal_data *ipacc_data;
 	struct nm_statechg_signal_data *nsd;
 	struct msgb *oml_msg;
+	struct gsm_bts_trx *trx;
 
 	switch (signal) {
 	case S_NM_IPACC_NACK:
 		ipacc_data = signal_data;
-		return ipacc_msg_nack(ipacc_data->msg_type);
+		return ipacc_msg_nack(ipacc_data->foh->msg_type);
 	case S_NM_IPACC_ACK:
 		ipacc_data = signal_data;
-		return ipacc_msg_ack(ipacc_data->msg_type, ipacc_data->trx);
+		switch (ipacc_data->foh->obj_class) {
+		case NM_OC_BASEB_TRANSC:
+		case NM_OC_RADIO_CARRIER:
+			trx = gsm_bts_trx_num(ipacc_data->bts,
+					      ipacc_data->foh->obj_inst.trx_nr);
+			return ipacc_msg_ack(ipacc_data->foh->msg_type, trx);
+		default:
+			return 0;
+		}
 	case S_NM_IPACC_RESTART_ACK:
 		if (!quiet)
 			printf("The BTS has acked the restart. Exiting.\n");
