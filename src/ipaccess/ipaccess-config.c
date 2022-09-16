@@ -148,6 +148,7 @@ static int ia_config_connect(struct gsm_bts *bts, struct sockaddr_in *sin)
 	/* create E1 timeslots for signalling and TRAU frames */
 	e1inp_ts_config_sign(sign_ts, line);
 	e1inp_ts_config_sign(rsl_ts, line);
+	rsl_ts->driver.ipaccess.fd.fd = -1;
 
 	/* create signalling links for TRX0 */
 	oml_link = e1inp_sign_link_create(sign_ts, E1INP_SIGN_OML,
