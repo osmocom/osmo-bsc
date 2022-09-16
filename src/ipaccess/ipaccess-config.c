@@ -403,6 +403,32 @@ static int nm_sig_cb(unsigned int subsys, unsigned int signal,
 	return 0;
 }
 
+/* Callback function to be called every time we receive a signal from INPUT */
+static int inp_sig_cb(unsigned int subsys, unsigned int signal,
+		      void *handler_data, void *signal_data)
+{
+	struct input_signal_data *isd = signal_data;
+
+	if (subsys != SS_L_INPUT)
+		return -EINVAL;
+
+	fprintf(stderr, "%s(): Input signal '%s' received\n", __func__,
+		get_value_string(e1inp_signal_names, signal));
+
+	switch (signal) {
+	case S_L_INP_TEI_UP:
+		break;
+	case S_L_INP_TEI_DN:
+		fprintf(stderr, "Lost E1 %s link\n", e1inp_signtype_name(isd->link_type));
+		exit(1);
+		break;
+	default:
+		break;
+	}
+
+	return 0;
+}
+
 /* callback function passed to the ABIS OML code */
 static int percent;
 static int percent_old;
@@ -1168,6 +1194,7 @@ int main(int argc, char **argv)
 	bts->oml_tei = stream_id;
 
 	osmo_signal_register_handler(SS_NM, nm_sig_cb, NULL);
+	osmo_signal_register_handler(SS_L_INPUT, inp_sig_cb, NULL);
 	osmo_signal_register_handler(SS_IPAC_NWL, nwl_sig_cb, NULL);
 
 	ipac_nwl_init();
