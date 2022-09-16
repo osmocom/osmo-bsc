@@ -616,6 +616,7 @@ void ipaccess_drop_oml(struct gsm_bts *bts, const char *reason)
 	gsm_bts_stats_reset(bts);
 
 	/* Also drop the associated OSMO link */
+	OSMO_ASSERT(bts->osmo_link);
 	e1inp_sign_link_destroy(bts->osmo_link);
 	bts->osmo_link = NULL;
 

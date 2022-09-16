@@ -129,7 +129,7 @@ static int ia_config_connect(struct gsm_bts *bts, struct sockaddr_in *sin)
 {
 	struct e1inp_line *line;
 	struct e1inp_ts *sign_ts, *rsl_ts;
-	struct e1inp_sign_link *oml_link, *rsl_link;
+	struct e1inp_sign_link *oml_link, *osmo_link, *rsl_link;
 
 	line = talloc_zero(tall_bsc_ctx, struct e1inp_line);
 	if (!line)
@@ -152,11 +152,14 @@ static int ia_config_connect(struct gsm_bts *bts, struct sockaddr_in *sin)
 	/* create signalling links for TRX0 */
 	oml_link = e1inp_sign_link_create(sign_ts, E1INP_SIGN_OML,
 					  bts->c0, IPAC_PROTO_OML, 0);
+	osmo_link =  e1inp_sign_link_create(sign_ts, E1INP_SIGN_OSMO,
+					    bts->c0, IPAC_PROTO_OSMO, 0);
 	rsl_link = e1inp_sign_link_create(rsl_ts, E1INP_SIGN_RSL,
 					  bts->c0, IPAC_PROTO_RSL, 0);
 
 	/* create back-links from bts/trx */
 	bts->oml_link = oml_link;
+	bts->osmo_link = osmo_link;
 	bts->c0->rsl_link_primary = rsl_link;
 
 	/* default port at BTS for incoming connections is 3006 */
