@@ -140,7 +140,7 @@ static int ia_config_connect(struct gsm_bts *bts, struct sockaddr_in *sin)
 		fprintf(stderr, "cannot `ipa' driver, giving up.\n");
 		return -EINVAL;
 	}
-	line->ops = &ipaccess_e1inp_line_ops;
+	e1inp_line_bind_ops(line, &ipaccess_e1inp_line_ops);
 
 	sign_ts = e1inp_line_ipa_oml_ts(line);
 	rsl_ts = e1inp_line_ipa_rsl_ts(line, 0);
