@@ -1,6 +1,6 @@
 /* Stubs required for linking */
 
-/* (C) 2018 by sysmocom s.f.m.c. GmbH <info@sysmocom.de>
+/* (C) 2018-2022 by sysmocom s.f.m.c. GmbH <info@sysmocom.de>
  *
  * All Rights Reserved
  *
@@ -19,17 +19,7 @@
  *
  */
 
-#include <stdbool.h>
 struct gsm_bts;
-struct gsm_bts_trx_ts;
-struct msgb;
-struct bsc_msc_data;
-
-bool on_gsm_ts_init(struct gsm_bts_trx_ts *ts)
-{
-	/* No TS init required here. */
-	return true;
-}
 
 int gsm_bts_check_cfg(struct gsm_bts *bts)
 {
