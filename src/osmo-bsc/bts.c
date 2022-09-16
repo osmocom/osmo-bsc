@@ -461,7 +461,7 @@ struct gsm_bts *gsm_bts_alloc(struct gsm_network *net, struct gsm_bts_sm *bts_sm
 }
 
 /* Validate BTS configuration (ARFCN settings and physical channel configuration) */
-int gsm_bts_check_cfg(struct gsm_bts *bts)
+__attribute__((weak)) int gsm_bts_check_cfg(struct gsm_bts *bts)
 {
 	struct gsm_bts_trx *trx;
 

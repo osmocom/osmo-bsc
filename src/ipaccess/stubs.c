@@ -30,3 +30,9 @@ bool on_gsm_ts_init(struct gsm_bts_trx_ts *ts)
 	/* No TS init required here. */
 	return true;
 }
+
+int gsm_bts_check_cfg(struct gsm_bts *bts)
+{
+	/* No checks required here */
+	return 0;
+}
