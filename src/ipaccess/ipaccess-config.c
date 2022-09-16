@@ -141,6 +141,7 @@ static int ia_config_connect(struct gsm_bts *bts, struct sockaddr_in *sin)
 		return -EINVAL;
 	}
 	e1inp_line_bind_ops(line, &ipaccess_e1inp_line_ops);
+	e1_set_pcap_fd2(line, -1); /* Disable writing to pcap */
 
 	sign_ts = e1inp_line_ipa_oml_ts(line);
 	rsl_ts = e1inp_line_ipa_rsl_ts(line, 0);
