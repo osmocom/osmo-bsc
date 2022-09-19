@@ -13,6 +13,7 @@
 
 struct gsm_lchan;
 struct mgcp_conn_peer;
+enum mgcp_codecs;
 
 enum lchan_rtp_fsm_state {
 	LCHAN_RTP_ST_WAIT_MGW_ENDPOINT_AVAILABLE,
@@ -48,3 +49,4 @@ bool lchan_rtp_established(struct gsm_lchan *lchan);
 void lchan_forget_mgw_endpoint(struct gsm_lchan *lchan);
 
 void mgcp_pick_codec(struct mgcp_conn_peer *verb_info, const struct gsm_lchan *lchan, bool bss_side);
+bool mgcp_codec_is_picked(const struct mgcp_conn_peer *verb_info, enum mgcp_codecs codec);

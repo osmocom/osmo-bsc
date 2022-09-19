@@ -166,8 +166,7 @@ static void lchan_rtp_fsm_wait_mgw_endpoint_available_onenter(struct osmo_fsm_in
 
 	crcx_info = (struct mgcp_conn_peer){
 		.ptime = 20,
-		.x_osmo_osmux_use = bts->use_osmux != OSMUX_USAGE_OFF,
-		.x_osmo_osmux_cid = -1, /* -1 is wildcard */
+		.x_osmo_osmux_cid = -1, /* -1 is wildcard, .x_osmo_osmux_use set below */
 	};
 	if (lchan->conn) {
 		crcx_info.call_id = lchan->conn->sccp.conn_id;
@@ -175,9 +174,25 @@ static void lchan_rtp_fsm_wait_mgw_endpoint_available_onenter(struct osmo_fsm_in
 			crcx_info.x_osmo_ign = lchan->conn->sccp.msc->x_osmo_ign;
 	}
 	mgcp_pick_codec(&crcx_info, lchan, true);
-	/* TODO: lchan_rtp_fail() here if crcx_info->codecs[] contains non-AMR and bts->use_osmux=ONLY.
-	  If bts->use_osmux=ON, only set .x_osmo_osmux_use if there's an AMR in crcx_info->codecs[].
-	  IF osmux=no, always set x_osmo_osmux_use=false*/
+
+	/* Set up Osmux use in MGW according to configured policy */
+	bool amr_picked = mgcp_codec_is_picked(&crcx_info, CODEC_AMR_8000_1);
+	switch (bts->use_osmux) {
+	case OSMUX_USAGE_OFF:
+		crcx_info.x_osmo_osmux_use = false;
+		break;
+	case OSMUX_USAGE_ON:
+		crcx_info.x_osmo_osmux_use = amr_picked;
+		break;
+	case OSMUX_USAGE_ONLY:
+		if (!amr_picked) {
+			lchan_rtp_fail("Only AMR codec can be used when configured with policy 'osmux only'."
+				       " Check your configuration.");
+			return;
+		}
+		crcx_info.x_osmo_osmux_use = true;
+		break;
+	}
 
 	osmo_mgcpc_ep_ci_request(lchan->mgw_endpoint_ci_bts, MGCP_VERB_CRCX, &crcx_info,
 				fi, LCHAN_RTP_EV_MGW_ENDPOINT_AVAILABLE, LCHAN_RTP_EV_MGW_ENDPOINT_ERROR,
@@ -907,4 +922,9 @@ void mgcp_pick_codec(struct mgcp_conn_peer *verb_info, const struct gsm_lchan *l
 	else if (!bss_side && verb_info->codecs[0] == CODEC_AMR_8000_1) {
 		verb_info->param.amr_octet_aligned = lchan->conn->sccp.msc->amr_octet_aligned;
 	}
+}
+
+bool mgcp_codec_is_picked(const struct mgcp_conn_peer *verb_info, enum mgcp_codecs codec)
+{
+	return verb_info->codecs[0] == codec;
 }
