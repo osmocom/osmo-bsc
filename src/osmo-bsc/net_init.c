@@ -72,6 +72,7 @@ static struct osmo_tdef gsm_network_T_defs[] = {
 			" after this amount of idle time, forget internally cumulated time remainders. Zero to always"
 			" keep remainders. See also X16, X17." },
 	{ .T=-25, .default_val=5, .desc="Timeout for initial user data after an MSC initiated an SCCP connection to the BSS" },
+	{ .T=-27, .default_val = 30, .desc = "Time after which to release an lchan when not receiving L1 Info in MEAS RES" },
 	{ .T=-3111, .default_val=4, .desc="Wait time after lchan was released in error (should be T3111 + 2s)" },
 	{ .T=-3210, .default_val=20, .desc="After L3 Complete, wait for MSC to confirm" },
 	{}

@@ -1450,6 +1450,11 @@ static int rsl_rx_meas_res(struct msgb *msg)
 
 	lchan_ms_pwr_ctrl(msg->lchan, mr);
 
+	if ((mr->flags & MEAS_REP_F_MS_L1)) {
+		/* Notify lchan_fsm that L1 is still alive */
+		osmo_fsm_inst_dispatch(mr->lchan->fi, LCHAN_EV_RX_MEAS_RES_L1_INFO, mr);
+	}
+
 	send_lchan_signal(S_LCHAN_MEAS_REP, msg->lchan, mr);
 
 	return 0;

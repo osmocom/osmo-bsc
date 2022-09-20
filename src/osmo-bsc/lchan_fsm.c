@@ -285,6 +285,7 @@ struct osmo_tdef_state_timeout lchan_fsm_timeouts[32] = {
 	[LCHAN_ST_WAIT_TS_READY]	= { .T=-5 },
 	[LCHAN_ST_WAIT_ACTIV_ACK]	= { .T=-6 },
 	[LCHAN_ST_WAIT_RLL_RTP_ESTABLISH]	= { .T=3101 },
+	[LCHAN_ST_ESTABLISHED]	= { .T = -27 },
 	[LCHAN_ST_WAIT_RLL_RTP_RELEASED]	= { .T=3109 },
 	[LCHAN_ST_WAIT_BEFORE_RF_RELEASE]	= { .T=3111 },
 	[LCHAN_ST_WAIT_RF_RELEASE_ACK]	= { .T=3111 },
@@ -1666,6 +1667,7 @@ static const struct osmo_fsm_state lchan_fsm_states[] = {
 			| S(LCHAN_EV_REQUEST_MODE_MODIFY)
 			,
 		.out_state_mask = 0
+			| S(LCHAN_ST_ESTABLISHED)
 			| S(LCHAN_ST_UNUSED)
 			| S(LCHAN_ST_WAIT_RLL_RTP_RELEASED)
 			| S(LCHAN_ST_WAIT_BEFORE_RF_RELEASE)
@@ -1764,6 +1766,7 @@ static const struct value_string lchan_fsm_event_names[] = {
 	OSMO_VALUE_STRING(LCHAN_EV_RSL_CHAN_MODE_MODIFY_ACK),
 	OSMO_VALUE_STRING(LCHAN_EV_RSL_CHAN_MODE_MODIFY_NACK),
 	OSMO_VALUE_STRING(LCHAN_EV_REQUEST_MODE_MODIFY),
+	OSMO_VALUE_STRING(LCHAN_EV_RX_MEAS_RES_L1_INFO),
 	{}
 };
 
@@ -1787,6 +1790,13 @@ static void lchan_fsm_allstate_action(struct osmo_fsm_inst *fi, uint32_t event, 
 		 * fact that this message was received inside
 		 * abis_rsl.c.  There can be any number of reasons why the
 		 * radio link layer failed */
+		return;
+
+	case LCHAN_EV_RX_MEAS_RES_L1_INFO:
+		if (fi->state != LCHAN_ST_ESTABLISHED)
+			return;
+		/* Re-enter ESTABLISHED state to refresh "L1 alive" timeout */
+		lchan_fsm_state_chg(LCHAN_ST_ESTABLISHED);
 		return;
 
 	default:
@@ -1937,6 +1947,7 @@ static struct osmo_fsm lchan_fsm = {
 	.allstate_event_mask = 0
 		| S(LCHAN_EV_TS_ERROR)
 		| S(LCHAN_EV_RLL_ERR_IND)
+		| S(LCHAN_EV_RX_MEAS_RES_L1_INFO)
 		,
 	.timer_cb = lchan_fsm_timer_cb,
 	.cleanup = lchan_fsm_cleanup,
