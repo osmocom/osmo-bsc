@@ -303,6 +303,7 @@ struct gsm_lchan {
 		struct {
 			bool use;
 			uint8_t local_cid;
+			bool remote_cid_present;
 			uint8_t remote_cid;
 		} osmux;
 	} abis_ip;

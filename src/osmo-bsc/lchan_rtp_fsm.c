@@ -450,6 +450,11 @@ static void connect_mgw_endpoint_to_lchan(struct osmo_fsm_inst *fi,
 	struct in_addr addr;
 	const char *addr_str;
 
+	if (lchan->abis_ip.osmux.use && !lchan->abis_ip.osmux.remote_cid_present) {
+		lchan_rtp_fail("BTS didn't provide any remote Osmux CID for the call");
+		return;
+	}
+
 	mdcx_info = (struct mgcp_conn_peer){
 		.port = to_lchan->abis_ip.bound_port,
 		.ptime = 20,

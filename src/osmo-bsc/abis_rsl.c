@@ -2740,6 +2740,7 @@ static void ipac_parse_rtp(struct gsm_lchan *lchan, struct tlv_parsed *tv, const
 		lchan->abis_ip.connect_port = port;
 	}
 	if (TLVP_PRESENT(tv, RSL_IE_OSMO_OSMUX_CID)) {
+		lchan->abis_ip.osmux.remote_cid_present = true;
 		lchan->abis_ip.osmux.remote_cid = tlvp_val8(tv, RSL_IE_OSMO_OSMUX_CID, 0);
 	}
 
