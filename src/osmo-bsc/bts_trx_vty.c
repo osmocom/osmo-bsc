@@ -606,8 +606,9 @@ void lchan_dump_full_vty(struct vty *vty, struct gsm_lchan *lchan)
 	if (lchan->conn && lchan->conn->bsub) {
 		vty_out(vty, "  Subscriber:%s", VTY_NEWLINE);
 		bsc_subscr_dump_vty(vty, lchan->conn->bsub);
-	} else
+	} else {
 		vty_out(vty, "  No Subscriber%s", VTY_NEWLINE);
+	}
 	if (is_ipaccess_bts(lchan->ts->trx->bts)) {
 		struct in_addr ia;
 		if (lchan->abis_ip.bound_ip) {
