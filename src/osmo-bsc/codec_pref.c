@@ -503,3 +503,24 @@ int check_codec_pref(struct llist_head *mscs)
 
 	return rc;
 }
+
+/* The AMR modes represented by S1 (3GPP TS 28.062 Table 7.11.3.1.3-2) are mandatory in BSSAP.
+ * Check each msc's cfg whether all rates required for S1 are allowed. */
+int check_amr_modes(struct llist_head *mscs)
+{
+	struct bsc_msc_data *msc;
+	int rc = 0;
+	/* Get the modes defined by FR S1: */
+	const uint8_t s1_modes = gsm0808_amr_modes_from_cfg[1][1];
+
+	llist_for_each_entry(msc, mscs, entry) {
+		const uint8_t msc_modes = gsm48_multi_rate_conf_get_amr_modes(&msc->amr_conf);
+		if ((msc_modes & s1_modes) != s1_modes) {
+			LOGP(DMSC, LOGL_ERROR,
+			     "msc %d: WARNING: 'amr-config' forbids one or more of the S1 rates, which are mandatory"
+			     " on BSSAP (4.75, 5.90, 7.40, 12.2)\n", msc->nr);
+			rc = -1;
+		}
+	}
+	return rc;
+}

@@ -992,6 +992,9 @@ int main(int argc, char **argv)
 	if (bsc_mgw_setup() != 0)
 		exit(1);
 
+	/* Do not fail on AMR modes warnings, just warn. */
+	check_amr_modes(&bsc_gsmnet->mscs);
+
 	llist_for_each_entry(msc, &bsc_gsmnet->mscs, entry) {
 		if (osmo_bsc_msc_init(msc) != 0) {
 			LOGP(DMSC, LOGL_ERROR, "Failed to start up. Exiting.\n");

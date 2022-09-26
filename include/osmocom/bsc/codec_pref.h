@@ -32,3 +32,4 @@ int calc_amr_rate_intersection(struct gsm48_multi_rate_conf *c,
 			       const struct gsm48_multi_rate_conf *a);
 
 int check_codec_pref(struct llist_head *mscs);
+int check_amr_modes(struct llist_head *mscs);
