@@ -53,13 +53,24 @@ BTS that accepts the default parameters at startup without triggering the A-bis/
 link re-establishment and thus interrupting the service.  The following command
 triggers resending of both MS/BS power control parameters:
 
+.Example: Resending default power control parameters via the VTY
 ----
 # Resending from the 'enable' node:
-OsmoBSC# bts 0 resend-power-control-defaults
+OsmoBSC# bts 0 <1> resend-power-control-defaults
 
 # Resending from any configuration node (note prefix 'do'):
-OsmoBSC(config-ms-power-ctrl)# do bts 0 resend-power-control-defaults
+OsmoBSC(config-ms-power-ctrl)# do bts 0 <1> resend-power-control-defaults
 ----
+<1> BTS number for which to resend default power control parameters.
+
+.Example: Resending default power control parameters via the CTRL
+----
+$ osmo_ctrl.py \
+	--host 127.0.0.1 <1> -p 4249 \
+	--set "bts.0.send-power-control-defaults" 1 <2>
+----
+<1> Remote address of the host running osmo-bsc (localhost in this example).
+<2> An arbitrary dummy value (ignored).  Required because SET command is used.
 
 NOTE: The above statement mostly applies to parameters for dynamic power control
 mode (see below).  Switching between power control modes, as well as changing
