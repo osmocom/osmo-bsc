@@ -290,6 +290,33 @@ static int set_bts_si(struct ctrl_cmd *cmd, void *data)
 }
 CTRL_CMD_DEFINE_WO_NOVRF(bts_si, "send-new-system-informations");
 
+static int set_bts_power_ctrl_defs(struct ctrl_cmd *cmd, void *data)
+{
+	const struct gsm_bts *bts = cmd->node;
+	const struct gsm_bts_trx *trx;
+
+	if (bts->ms_power_ctrl.mode != GSM_PWR_CTRL_MODE_DYN_BTS) {
+		cmd->reply = "BTS is not using dyn-bts mode";
+		return CTRL_CMD_ERROR;
+	}
+
+	if (bts->model->power_ctrl_send_def_params == NULL) {
+		cmd->reply = "Not implemented for this BTS model";
+		return CTRL_CMD_ERROR;
+	}
+
+	llist_for_each_entry(trx, &bts->trx_list, list) {
+		if (bts->model->power_ctrl_send_def_params(trx) != 0) {
+			cmd->reply = "power_ctrl_send_def_params() failed";
+			return CTRL_CMD_ERROR;
+		}
+	}
+
+	cmd->reply = "Default power control parameters have been sent";
+	return CTRL_CMD_REPLY;
+}
+CTRL_CMD_DEFINE_WO_NOVRF(bts_power_ctrl_defs, "send-power-control-defaults");
+
 static int get_bts_chan_load(struct ctrl_cmd *cmd, void *data)
 {
 	int i;
@@ -799,6 +826,7 @@ int bsc_base_ctrl_cmds_install(void)
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_ci);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_apply_config);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_si);
+	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_power_ctrl_defs);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_chan_load);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_oml_conn);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_oml_up);
