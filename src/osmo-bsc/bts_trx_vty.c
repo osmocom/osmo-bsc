@@ -402,7 +402,7 @@ DEFUN_USRATTR(cfg_ts_arfcn_add,
 
 	if (bitvec_get_bit_pos(&ts->hopping.arfcns, arfcn) == ONE) {
 		vty_out(vty, "%% ARFCN %" PRIu16 " is already set%s", arfcn, VTY_NEWLINE);
-		return CMD_WARNING;
+		return CMD_SUCCESS;
 	}
 
 	bitvec_set_bit_pos(&ts->hopping.arfcns, arfcn, 1);
