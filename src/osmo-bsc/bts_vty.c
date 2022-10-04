@@ -433,10 +433,11 @@ DEFUN_ATTR(cfg_bts_nokia_site_no_loc_rel_cnf,
 
 DEFUN_ATTR(cfg_bts_nokia_site_bts_reset_timer_cnf,
 	   cfg_bts_nokia_site_bts_reset_timer_cnf_cmd,
-	   "nokia_site bts-reset-timer  <15-100>",
+	   "nokia_site bts-reset-timer <15-100>",
 	   NOKIA_STR
-	   "The amount of time (in sec.) between BTS_RESET is sent,\n"
-	   "and the BTS is being bootstrapped.\n",
+	   "The amount of time between BTS_RESET is sent "
+	   "and the BTS is being bootstrapped\n"
+	   "Timer value (in seconds, default 15)\n",
 	   CMD_ATTR_IMMEDIATE)
 {
 	struct gsm_bts *bts = vty->index;
