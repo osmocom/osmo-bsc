@@ -175,7 +175,7 @@ static int set_net_apply_config(struct ctrl_cmd *cmd, void *data)
 			continue;
 
 		/*
-		 * The ip.access nanoBTS seems to be unrelaible on BSSGP
+		 * The ip.access nanoBTS seems to be unreliable on BSSGP
 		 * so let's us just reboot it. For the sysmoBTS we can just
 		 * restart the process as all state is gone.
 		 */
