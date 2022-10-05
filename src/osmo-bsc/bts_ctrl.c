@@ -1,6 +1,6 @@
 /*
  * (C) 2013-2015 by Holger Hans Peter Freyther
- * (C) 2013-2015 by sysmocom s.f.m.c. GmbH
+ * (C) 2013-2022 by sysmocom s.f.m.c. GmbH
  *
  * All Rights Reserved
  *
@@ -18,6 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
+
 #include <errno.h>
 #include <time.h>
 
@@ -26,233 +27,222 @@
 #include <osmocom/vty/command.h>
 #include <osmocom/vty/misc.h>
 
-#include <osmocom/gsm/gsm48.h>
-#include <osmocom/bsc/ipaccess.h>
-#include <osmocom/bsc/gsm_data.h>
-#include <osmocom/bsc/abis_nm.h>
-#include <osmocom/bsc/debug.h>
-#include <osmocom/bsc/chan_alloc.h>
+#include <osmocom/bsc/ctrl.h>
 #include <osmocom/bsc/osmo_bsc_rf.h>
-#include <osmocom/bsc/bsc_msc_data.h>
 #include <osmocom/bsc/bts.h>
+#include <osmocom/bsc/ipaccess.h>
+#include <osmocom/bsc/chan_alloc.h>
+#include <osmocom/bsc/abis_nm.h>
 #include <osmocom/bsc/neighbor_ident.h>
 
-static int verify_net_apply_config_file(struct ctrl_cmd *cmd, const char *value, void *_data)
+static int location_equal(struct bts_location *a, struct bts_location *b)
 {
-	FILE *cfile;
-
-	if (!cmd->value || cmd->value[0] == '\0')
-		return -1;
-
-	cfile = fopen(cmd->value, "r");
-	if (!cfile)
-		return -1;
-
-	fclose(cfile);
-
-	return 0;
+	return ((a->tstamp == b->tstamp) && (a->valid == b->valid) && (a->lat == b->lat) &&
+		(a->lon == b->lon) && (a->height == b->height));
 }
-static int set_net_apply_config_file(struct ctrl_cmd *cmd, void *_data)
-{
-	int rc;
-	FILE *cfile;
-	unsigned cmd_ret = CTRL_CMD_ERROR;
 
-	LOGP(DCTRL, LOGL_NOTICE, "Applying VTY snippet from %s...\n", cmd->value);
-	cfile = fopen(cmd->value, "r");
-	if (!cfile) {
-		LOGP(DCTRL, LOGL_NOTICE, "Applying VTY snippet from %s: fopen() failed: %d\n",
-		     cmd->value, errno);
-		cmd->reply = "NoFile";
-		return cmd_ret;
+static void cleanup_locations(struct llist_head *locations)
+{
+	struct bts_location *myloc, *tmp;
+	int invalpos = 0, i = 0;
+
+	LOGP(DCTRL, LOGL_DEBUG, "Checking position list.\n");
+	llist_for_each_entry_safe(myloc, tmp, locations, list) {
+		i++;
+		if (i > 3) {
+			LOGP(DCTRL, LOGL_DEBUG, "Deleting old position.\n");
+			llist_del(&myloc->list);
+			talloc_free(myloc);
+		} else if (myloc->valid == BTS_LOC_FIX_INVALID) {
+			/* Only capture the newest of subsequent invalid positions */
+			invalpos++;
+			if (invalpos > 1) {
+				LOGP(DCTRL, LOGL_DEBUG, "Deleting subsequent invalid position.\n");
+				invalpos--;
+				i--;
+				llist_del(&myloc->list);
+				talloc_free(myloc);
+			}
+		} else {
+			invalpos = 0;
+		}
+	}
+	LOGP(DCTRL, LOGL_DEBUG, "Found %d positions.\n", i);
+}
+
+static int get_bts_loc(struct ctrl_cmd *cmd, void *data);
+
+void ctrl_generate_bts_location_state_trap(struct gsm_bts *bts, struct bsc_msc_data *msc)
+{
+	struct ctrl_cmd *cmd;
+	const char *oper, *admin, *policy;
+
+	cmd = ctrl_cmd_create(msc, CTRL_TYPE_TRAP);
+	if (!cmd) {
+		LOGP(DCTRL, LOGL_ERROR, "Failed to create TRAP command.\n");
+		return;
 	}
 
-	rc = vty_read_config_filep(cfile, NULL);
-	LOGP(DCTRL, LOGL_NOTICE, "Applying VTY snippet from %s returned %d\n", cmd->value, rc);
-	if (rc) {
-		cmd->reply = talloc_asprintf(cmd, "ParseError=%d", rc);
-		if (!cmd->reply)
-			cmd->reply = "OOM";
-		goto close_ret;
+	cmd->id = "0";
+	cmd->variable = talloc_asprintf(cmd, "bts.%d.location-state", bts->nr);
+
+	/* Prepare the location reply */
+	cmd->node = bts;
+	get_bts_loc(cmd, NULL);
+
+	oper = osmo_bsc_rf_get_opstate_name(osmo_bsc_rf_get_opstate_by_bts(bts));
+	admin = osmo_bsc_rf_get_adminstate_name(osmo_bsc_rf_get_adminstate_by_bts(bts));
+	policy = osmo_bsc_rf_get_policy_name(osmo_bsc_rf_get_policy_by_bts(bts));
+
+	cmd->reply = talloc_asprintf_append(cmd->reply,
+				",%s,%s,%s,%s,%s",
+				oper, admin, policy,
+				osmo_mcc_name(bts->network->plmn.mcc),
+				osmo_mnc_name(bts->network->plmn.mnc,
+					      bts->network->plmn.mnc_3_digits));
+
+	osmo_bsc_send_trap(cmd, msc);
+	talloc_free(cmd);
+}
+
+void bsc_gen_location_state_trap(struct gsm_bts *bts)
+{
+	struct bsc_msc_data *msc;
+
+	llist_for_each_entry(msc, &bts->network->mscs, entry)
+		ctrl_generate_bts_location_state_trap(bts, msc);
+}
+
+CTRL_CMD_DEFINE(bts_loc, "location");
+static int get_bts_loc(struct ctrl_cmd *cmd, void *data)
+{
+	struct bts_location *curloc;
+	struct gsm_bts *bts = (struct gsm_bts *) cmd->node;
+	if (!bts) {
+		cmd->reply = "bts not found.";
+		return CTRL_CMD_ERROR;
 	}
 
-	cmd->reply = "OK";
-	cmd_ret = CTRL_CMD_REPLY;
-close_ret:
-	fclose(cfile);
-	return cmd_ret;
-}
-CTRL_CMD_DEFINE_WO(net_apply_config_file, "apply-config-file");
+	if (llist_empty(&bts->loc_list)) {
+		cmd->reply = talloc_asprintf(cmd, "0,invalid,0,0,0");
+		return CTRL_CMD_REPLY;
+	}
 
-static int verify_net_write_config_file(struct ctrl_cmd *cmd, const char *value, void *_data)
-{
-	return 0;
-}
-static int set_net_write_config_file(struct ctrl_cmd *cmd, void *_data)
-{
-	const char *cfile_name;
-	unsigned cmd_ret = CTRL_CMD_ERROR;
+	curloc = llist_entry(bts->loc_list.next, struct bts_location, list);
 
-	if (strcmp(cmd->value, "overwrite"))
-		host_config_set(cmd->value);
-
-	cfile_name = host_config_file();
-
-	LOGP(DCTRL, LOGL_NOTICE, "Writing VTY config to file %s...\n", cfile_name);
-	if (osmo_vty_write_config_file(cfile_name) < 0)
-		goto ret;
-
-	cmd->reply = "OK";
-	cmd_ret = CTRL_CMD_REPLY;
-ret:
-	return cmd_ret;
-}
-CTRL_CMD_DEFINE_WO(net_write_config_file, "write-config-file");
-
-CTRL_CMD_DEFINE(net_mcc, "mcc");
-static int get_net_mcc(struct ctrl_cmd *cmd, void *_data)
-{
-	struct gsm_network *net = cmd->node;
-	cmd->reply = talloc_asprintf(cmd, "%s", osmo_mcc_name(net->plmn.mcc));
+	cmd->reply = talloc_asprintf(cmd, "%lu,%s,%f,%f,%f", curloc->tstamp,
+			get_value_string(bts_loc_fix_names, curloc->valid), curloc->lat, curloc->lon, curloc->height);
 	if (!cmd->reply) {
 		cmd->reply = "OOM";
 		return CTRL_CMD_ERROR;
 	}
+
 	return CTRL_CMD_REPLY;
 }
-static int set_net_mcc(struct ctrl_cmd *cmd, void *_data)
-{
-	struct gsm_network *net = cmd->node;
-	uint16_t mcc;
-	if (osmo_mcc_from_str(cmd->value, &mcc))
-		return -1;
-	net->plmn.mcc = mcc;
-	return get_net_mcc(cmd, _data);
-}
-static int verify_net_mcc(struct ctrl_cmd *cmd, const char *value, void *_data)
-{
-	if (osmo_mcc_from_str(value, NULL))
-		return -1;
-	return 0;
-}
 
-CTRL_CMD_DEFINE(net_mnc, "mnc");
-static int get_net_mnc(struct ctrl_cmd *cmd, void *_data)
+static int set_bts_loc(struct ctrl_cmd *cmd, void *data)
 {
-	struct gsm_network *net = cmd->node;
-	cmd->reply = talloc_asprintf(cmd, "%s", osmo_mnc_name(net->plmn.mnc, net->plmn.mnc_3_digits));
-	if (!cmd->reply) {
-		cmd->reply = "OOM";
+	char *saveptr, *lat, *lon, *height, *tstamp, *valid, *tmp;
+	struct bts_location *curloc, *lastloc;
+	int ret;
+	struct gsm_bts *bts = (struct gsm_bts *) cmd->node;
+	if (!bts) {
+		cmd->reply = "bts not found.";
 		return CTRL_CMD_ERROR;
 	}
-	return CTRL_CMD_REPLY;
-}
-static int set_net_mnc(struct ctrl_cmd *cmd, void *_data)
-{
-	struct gsm_network *net = cmd->node;
-	struct osmo_plmn_id plmn = net->plmn;
-	if (osmo_mnc_from_str(cmd->value, &plmn.mnc, &plmn.mnc_3_digits)) {
-		cmd->reply = "Error while decoding MNC";
-		return CTRL_CMD_ERROR;
-	}
-	net->plmn = plmn;
-	return get_net_mnc(cmd, _data);
-}
-static int verify_net_mnc(struct ctrl_cmd *cmd, const char *value, void *_data)
-{
-	if (osmo_mnc_from_str(value, NULL, NULL))
-		return -1;
-	return 0;
-}
-
-static int set_net_apply_config(struct ctrl_cmd *cmd, void *data)
-{
-	struct gsm_network *net = cmd->node;
-	struct gsm_bts *bts;
-
-	llist_for_each_entry(bts, &net->bts_list, list) {
-		if (!is_ipaccess_bts(bts))
-			continue;
-
-		/*
-		 * The ip.access nanoBTS seems to be unreliable on BSSGP
-		 * so let's us just reboot it. For the sysmoBTS we can just
-		 * restart the process as all state is gone.
-		 */
-		if (!is_osmobts(bts) && strcmp(cmd->value, "restart") == 0) {
-			struct gsm_bts_trx *trx;
-			llist_for_each_entry_reverse(trx, &bts->trx_list, list)
-				abis_nm_ipaccess_restart(trx);
-		} else
-			ipaccess_drop_oml(bts, "ctrl net.apply-configuration");
-	}
-
-	cmd->reply = "Tried to drop the BTS";
-	return CTRL_CMD_REPLY;
-}
-
-CTRL_CMD_DEFINE_WO_NOVRF(net_apply_config, "apply-configuration");
-
-static int verify_net_mcc_mnc_apply(struct ctrl_cmd *cmd, const char *value, void *d)
-{
-	char *tmp, *saveptr, *mcc, *mnc;
-	int rc = 0;
-
-	tmp = talloc_strdup(cmd, value);
-	if (!tmp)
-		return 1;
-
-	mcc = strtok_r(tmp, ",", &saveptr);
-	mnc = strtok_r(NULL, ",", &saveptr);
-
-	if (osmo_mcc_from_str(mcc, NULL) || osmo_mnc_from_str(mnc, NULL, NULL))
-		rc = -1;
-
-	talloc_free(tmp);
-	return rc;
-}
-
-static int set_net_mcc_mnc_apply(struct ctrl_cmd *cmd, void *data)
-{
-	struct gsm_network *net = cmd->node;
-	char *tmp, *saveptr, *mcc_str, *mnc_str;
-	struct osmo_plmn_id plmn;
 
 	tmp = talloc_strdup(cmd, cmd->value);
 	if (!tmp)
 		goto oom;
 
-	mcc_str = strtok_r(tmp, ",", &saveptr);
-	mnc_str = strtok_r(NULL, ",", &saveptr);
+	tstamp = strtok_r(tmp, ",", &saveptr);
+	valid = strtok_r(NULL, ",", &saveptr);
+	lat = strtok_r(NULL, ",", &saveptr);
+	lon = strtok_r(NULL, ",", &saveptr);
+	height = strtok_r(NULL, "\0", &saveptr);
 
-	if (osmo_mcc_from_str(mcc_str, &plmn.mcc)) {
-		cmd->reply = "Error while decoding MCC";
+	/* Check if one of the strtok results was NULL. This will probably never occur since we will only see verified
+	 * input in this code path */
+	if ((tstamp == NULL) || (valid == NULL) || (lat == NULL) || (lon == NULL) || (height == NULL)) {
 		talloc_free(tmp);
+		cmd->reply = "parse error";
 		return CTRL_CMD_ERROR;
 	}
 
-	if (osmo_mnc_from_str(mnc_str, &plmn.mnc, &plmn.mnc_3_digits)) {
-		cmd->reply = "Error while decoding MNC";
+	curloc = talloc_zero(tall_bsc_ctx, struct bts_location);
+	if (!curloc) {
 		talloc_free(tmp);
-		return CTRL_CMD_ERROR;
+		goto oom;
 	}
+	INIT_LLIST_HEAD(&curloc->list);
 
+	curloc->tstamp = atol(tstamp);
+	curloc->valid = get_string_value(bts_loc_fix_names, valid);
+	curloc->lat = atof(lat);
+	curloc->lon = atof(lon);
+	curloc->height = atof(height);
 	talloc_free(tmp);
 
-	if (!osmo_plmn_cmp(&net->plmn, &plmn)) {
-		cmd->reply = "Nothing changed";
-		return CTRL_CMD_REPLY;
-	}
+	lastloc = llist_entry(bts->loc_list.next, struct bts_location, list);
 
-	net->plmn = plmn;
+	/* Add location to the end of the list */
+	llist_add(&curloc->list, &bts->loc_list);
 
-	return set_net_apply_config(cmd, data);
+	ret = get_bts_loc(cmd, data);
+
+	if (!location_equal(curloc, lastloc))
+		bsc_gen_location_state_trap(bts);
+
+	cleanup_locations(&bts->loc_list);
+
+	return ret;
 
 oom:
 	cmd->reply = "OOM";
 	return CTRL_CMD_ERROR;
 }
-CTRL_CMD_DEFINE_WO(net_mcc_mnc_apply, "mcc-mnc-apply");
+
+static int verify_bts_loc(struct ctrl_cmd *cmd, const char *value, void *data)
+{
+	char *saveptr, *latstr, *lonstr, *heightstr, *tstampstr, *validstr, *tmp;
+	time_t tstamp;
+	int valid;
+	double lat, lon, height __attribute__((unused));
+
+	tmp = talloc_strdup(cmd, value);
+	if (!tmp)
+		return 1;
+
+	tstampstr = strtok_r(tmp, ",", &saveptr);
+	validstr = strtok_r(NULL, ",", &saveptr);
+	latstr = strtok_r(NULL, ",", &saveptr);
+	lonstr = strtok_r(NULL, ",", &saveptr);
+	heightstr = strtok_r(NULL, "\0", &saveptr);
+
+	if ((tstampstr == NULL) || (validstr == NULL) || (latstr == NULL) ||
+			(lonstr == NULL) || (heightstr == NULL))
+		goto err;
+
+	tstamp = atol(tstampstr);
+	valid = get_string_value(bts_loc_fix_names, validstr);
+	lat = atof(latstr);
+	lon = atof(lonstr);
+	height = atof(heightstr);
+	talloc_free(tmp);
+	tmp = NULL;
+
+	if (((tstamp == 0) && (valid != BTS_LOC_FIX_INVALID)) || (lat < -90) || (lat > 90) ||
+			(lon < -180) || (lon > 180) || (valid < 0)) {
+		goto err;
+	}
+
+	return 0;
+
+err:
+	talloc_free(tmp);
+	cmd->reply = talloc_strdup(cmd, "The format is <unixtime>,(invalid|fix2d|fix3d),<lat>,<lon>,<height>");
+	return 1;
+}
 
 /* BTS related commands below */
 CTRL_CMD_DEFINE_RANGE(bts_lac, "location-area-code", struct gsm_bts, location_area_code, 0, 65535);
@@ -471,182 +461,6 @@ static int get_bts_rf_states(struct ctrl_cmd *cmd, void *data)
 }
 CTRL_CMD_DEFINE_RO(bts_rf_states, "rf_states");
 
-/* Return a list of the states of each TRX for all BTS:
- * <bts_nr>,<trx_nr>,<opstate>,<adminstate>,<rf_policy>,<rsl_status>;<bts_nr>,<trx_nr>,...;...;
- * For details on the string, see bsc_rf_states_c();
- */
-static int get_net_rf_states(struct ctrl_cmd *cmd, void *data)
-{
-	cmd->reply = bsc_rf_states_c(cmd);
-	if (!cmd->reply) {
-		cmd->reply = "OOM.";
-		return CTRL_CMD_ERROR;
-	}
-	return CTRL_CMD_REPLY;
-}
-CTRL_CMD_DEFINE_RO(net_rf_states, "rf_states");
-
-static int get_net_rf_lock(struct ctrl_cmd *cmd, void *data)
-{
-	struct gsm_network *net = cmd->node;
-	struct gsm_bts *bts;
-	const char *policy_name;
-
-	policy_name = osmo_bsc_rf_get_policy_name(net->rf_ctrl->policy);
-
-	llist_for_each_entry(bts, &net->bts_list, list) {
-		struct gsm_bts_trx *trx;
-
-		/* Exclude the BTS from the global lock */
-		if (bts->excl_from_rf_lock)
-			continue;
-
-		llist_for_each_entry(trx, &bts->trx_list, list) {
-			if (trx->mo.nm_state.availability == NM_AVSTATE_OK &&
-			    trx->mo.nm_state.operational != NM_OPSTATE_DISABLED) {
-				cmd->reply = talloc_asprintf(cmd,
-						"state=on,policy=%s,bts=%u,trx=%u",
-						policy_name, bts->nr, trx->nr);
-				return CTRL_CMD_REPLY;
-			}
-		}
-	}
-
-	cmd->reply = talloc_asprintf(cmd, "state=off,policy=%s",
-			policy_name);
-	return CTRL_CMD_REPLY;
-}
-
-#define TIME_FORMAT_RFC2822 "%a, %d %b %Y %T %z"
-
-static int set_net_rf_lock(struct ctrl_cmd *cmd, void *data)
-{
-	int locked = atoi(cmd->value);
-	struct gsm_network *net = cmd->node;
-	time_t now = time(NULL);
-	char now_buf[64];
-	struct osmo_bsc_rf *rf;
-
-	if (!net) {
-		cmd->reply = "net not found.";
-		return CTRL_CMD_ERROR;
-	}
-
-	rf = net->rf_ctrl;
-
-	if (!rf) {
-		cmd->reply = "RF Ctrl is not enabled in the BSC Configuration";
-		return CTRL_CMD_ERROR;
-	}
-
-	talloc_free(rf->last_rf_lock_ctrl_command);
-	strftime(now_buf, sizeof(now_buf), TIME_FORMAT_RFC2822, gmtime(&now));
-	rf->last_rf_lock_ctrl_command =
-		talloc_asprintf(rf, "rf_locked %u (%s)", locked, now_buf);
-
-	osmo_bsc_rf_schedule_lock(rf, locked == 1 ? '0' : '1');
-
-	cmd->reply = talloc_asprintf(cmd, "%u", locked);
-	if (!cmd->reply) {
-		cmd->reply = "OOM.";
-		return CTRL_CMD_ERROR;
-	}
-
-	return CTRL_CMD_REPLY;
-}
-
-static int verify_net_rf_lock(struct ctrl_cmd *cmd, const char *value, void *data)
-{
-	int locked = atoi(cmd->value);
-
-	if ((locked != 0) && (locked != 1))
-		return 1;
-
-	return 0;
-}
-CTRL_CMD_DEFINE(net_rf_lock, "rf_locked");
-
-static int get_trx_rf_locked(struct ctrl_cmd *cmd, void *data)
-{
-	struct gsm_bts_trx *trx = cmd->node;
-	/* Return rf_locked = 1 only if it is explicitly locked. If it is in shutdown or null state, do not "trick" the
-	 * caller into thinking that sending "rf_locked 0" is necessary to bring the TRX up. */
-	cmd->reply = (trx->mo.nm_state.administrative == NM_STATE_LOCKED) ? "1" : "0";
-	return CTRL_CMD_REPLY;
-}
-
-static int set_trx_rf_locked(struct ctrl_cmd *cmd, void *data)
-{
-	struct gsm_bts_trx *trx = cmd->node;
-	int locked;
-	if (osmo_str_to_int(&locked, cmd->value, 10, 0, 1)) {
-		cmd->reply = "Invalid value";
-		return CTRL_CMD_ERROR;
-	}
-
-	gsm_trx_lock_rf(trx, locked, "ctrl");
-
-	/* Let's not assume the nm FSM has already switched its state, just return the intended rf_locked value. */
-	cmd->reply = locked ? "1" : "0";
-	return CTRL_CMD_REPLY;
-}
-
-static int verify_trx_rf_locked(struct ctrl_cmd *cmd, const char *value, void *data)
-{
-	return osmo_str_to_int(NULL, value, 10, 0, 1);
-}
-CTRL_CMD_DEFINE(trx_rf_locked, "rf_locked");
-
-static int get_net_bts_num(struct ctrl_cmd *cmd, void *data)
-{
-	struct gsm_network *net = cmd->node;
-
-	cmd->reply = talloc_asprintf(cmd, "%u", net->num_bts);
-	return CTRL_CMD_REPLY;
-}
-CTRL_CMD_DEFINE_RO(net_bts_num, "number-of-bts");
-
-/* TRX related commands below here */
-CTRL_HELPER_GET_INT(trx_max_power, struct gsm_bts_trx, max_power_red);
-static int verify_trx_max_power(struct ctrl_cmd *cmd, const char *value, void *_data)
-{
-	int tmp = atoi(value);
-
-	if (tmp < 0 || tmp > 22) {
-		cmd->reply = "Value must be between 0 and 22";
-		return -1;
-	}
-
-	if (tmp & 1) {
-		cmd->reply = "Value must be even";
-		return -1;
-	}
-
-	return 0;
-}
-CTRL_CMD_DEFINE_RANGE(trx_arfcn, "arfcn", struct gsm_bts_trx, arfcn, 0, 1023);
-
-static int set_trx_max_power(struct ctrl_cmd *cmd, void *_data)
-{
-	struct gsm_bts_trx *trx = cmd->node;
-	int old_power;
-
-	/* remember the old value, set the new one */
-	old_power = trx->max_power_red;
-	trx->max_power_red = atoi(cmd->value);
-
-	/* Maybe update the value */
-	if (old_power != trx->max_power_red) {
-		LOGP(DCTRL, LOGL_NOTICE,
-			"%s updating max_pwr_red(%d)\n",
-			gsm_trx_name(trx), trx->max_power_red);
-		abis_nm_update_max_power_red(trx);
-	}
-
-	return get_trx_max_power(cmd, _data);
-}
-CTRL_CMD_DEFINE(trx_max_power, "max-power-reduction");
-
 static int verify_bts_c0_power_red(struct ctrl_cmd *cmd, const char *value, void *_data)
 {
 	const int red = atoi(value);
@@ -809,19 +623,11 @@ static int set_bts_neighbor_list_mode(struct ctrl_cmd *cmd, void *data)
 
 CTRL_CMD_DEFINE_WO(bts_neighbor_list_mode, "neighbor-list mode");
 
-int bsc_base_ctrl_cmds_install(void)
+int bsc_bts_ctrl_cmds_install(void)
 {
 	int rc = 0;
-	rc |= ctrl_cmd_install(CTRL_NODE_ROOT, &cmd_net_apply_config_file);
-	rc |= ctrl_cmd_install(CTRL_NODE_ROOT, &cmd_net_write_config_file);
-	rc |= ctrl_cmd_install(CTRL_NODE_ROOT, &cmd_net_mnc);
-	rc |= ctrl_cmd_install(CTRL_NODE_ROOT, &cmd_net_mcc);
-	rc |= ctrl_cmd_install(CTRL_NODE_ROOT, &cmd_net_apply_config);
-	rc |= ctrl_cmd_install(CTRL_NODE_ROOT, &cmd_net_mcc_mnc_apply);
-	rc |= ctrl_cmd_install(CTRL_NODE_ROOT, &cmd_net_rf_lock);
-	rc |= ctrl_cmd_install(CTRL_NODE_ROOT, &cmd_net_bts_num);
-	rc |= ctrl_cmd_install(CTRL_NODE_ROOT, &cmd_net_rf_states);
 
+	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_loc);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_lac);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_ci);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_apply_config);
@@ -840,9 +646,7 @@ int bsc_base_ctrl_cmds_install(void)
 
 	rc |= neighbor_ident_ctrl_init();
 
-	rc |= ctrl_cmd_install(CTRL_NODE_TRX, &cmd_trx_max_power);
-	rc |= ctrl_cmd_install(CTRL_NODE_TRX, &cmd_trx_arfcn);
-	rc |= ctrl_cmd_install(CTRL_NODE_TRX, &cmd_trx_rf_locked);
+	rc = bsc_bts_trx_ctrl_cmds_install();
 
 	return rc;
 }

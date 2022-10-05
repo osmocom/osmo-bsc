@@ -1360,9 +1360,6 @@ void set_ts_e1link(struct gsm_bts_trx_ts *ts, uint8_t e1_nr,
 /* generic E1 line operations for all ISDN-based BTS. */
 extern struct e1inp_line_ops bts_isdn_e1inp_line_ops;
 
-/* control interface handling */
-int bsc_base_ctrl_cmds_install(void);
-
 bool ts_is_usable(const struct gsm_bts_trx_ts *ts);
 
 int gsm_lchan_type_by_pchan(enum gsm_phys_chan_config pchan);
