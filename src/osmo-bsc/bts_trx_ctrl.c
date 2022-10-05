@@ -34,6 +34,97 @@
 #include <osmocom/bsc/chan_alloc.h>
 #include <osmocom/bsc/abis_nm.h>
 #include <osmocom/bsc/neighbor_ident.h>
+#include <osmocom/bsc/system_information.h>
+
+/*********************
+ * TS_NODE
+ *********************/
+
+static int verify_ts_hopping_arfcn_add(struct ctrl_cmd *cmd, const char *value, void *_data)
+{
+	int64_t arfcn;
+	enum gsm_band unused;
+	if (osmo_str_to_int64(&arfcn, value, 10, 0, 1024) < 0)
+		return 1;
+	if (gsm_arfcn2band_rc(arfcn, &unused) < 0) {
+		return 1;
+	}
+	return 0;
+}
+static int set_ts_hopping_arfcn_add(struct ctrl_cmd *cmd, void *data)
+{
+	struct gsm_bts_trx_ts *ts = cmd->node;
+	int arfcn = atoi(cmd->value);
+
+	bitvec_set_bit_pos(&ts->hopping.arfcns, arfcn, ONE);
+
+	/* Update Cell Allocation (list of all the frequencies allocated to a cell) */
+	if (generate_cell_chan_alloc(ts->trx->bts) != 0) {
+		bitvec_set_bit_pos(&ts->hopping.arfcns, arfcn, ZERO); /* roll-back */
+		cmd->reply = "Failed to re-generate Cell Allocation";
+		return CTRL_CMD_ERROR;
+	}
+
+	cmd->reply = "OK";
+	return CTRL_CMD_REPLY;
+}
+/* Parameter format: "<arfcn>" */
+CTRL_CMD_DEFINE_WO(ts_hopping_arfcn_add, "hopping-arfcn-add");
+
+static int verify_ts_hopping_arfcn_del(struct ctrl_cmd *cmd, const char *value, void *_data)
+{
+	int64_t arfcn;
+	enum gsm_band unused;
+	if (strcmp(value, "all") == 0)
+		return 0;
+	if (osmo_str_to_int64(&arfcn, value, 10, 0, 1024) < 0)
+		return 1;
+	if (gsm_arfcn2band_rc(arfcn, &unused) < 0) {
+		return 1;
+	}
+	return 0;
+}
+static int set_ts_hopping_arfcn_del(struct ctrl_cmd *cmd, void *data)
+{
+	struct gsm_bts_trx_ts *ts = cmd->node;
+	bool all = (strcmp(cmd->value, "all") == 0);
+	int arfcn;
+
+	if (all) {
+		bitvec_zero(&ts->hopping.arfcns);
+	} else {
+		arfcn = atoi(cmd->value);
+		bitvec_set_bit_pos(&ts->hopping.arfcns, arfcn, ZERO);
+	}
+
+	/* Update Cell Allocation (list of all the frequencies allocated to a cell) */
+	if (generate_cell_chan_alloc(ts->trx->bts) != 0) {
+		if (!all)
+			bitvec_set_bit_pos(&ts->hopping.arfcns, arfcn, ONE); /* roll-back */
+		cmd->reply = "Failed to re-generate Cell Allocation";
+		return CTRL_CMD_ERROR;
+	}
+
+	cmd->reply = "OK";
+	return CTRL_CMD_REPLY;
+}
+/* Parameter format: "(<arfcn>|all)" */
+CTRL_CMD_DEFINE_WO(ts_hopping_arfcn_del, "hopping-arfcn-del");
+
+
+static int bsc_bts_trx_ts_ctrl_cmds_install(void)
+{
+	int rc = 0;
+
+	rc |= ctrl_cmd_install(CTRL_NODE_TS, &cmd_ts_hopping_arfcn_add);
+	rc |= ctrl_cmd_install(CTRL_NODE_TS, &cmd_ts_hopping_arfcn_del);
+
+	return rc;
+}
+
+/*********************
+ * TRX_NODE
+ *********************/
 
 static int get_trx_rf_locked(struct ctrl_cmd *cmd, void *data)
 {
@@ -114,6 +205,8 @@ int bsc_bts_trx_ctrl_cmds_install(void)
 	rc |= ctrl_cmd_install(CTRL_NODE_TRX, &cmd_trx_max_power);
 	rc |= ctrl_cmd_install(CTRL_NODE_TRX, &cmd_trx_arfcn);
 	rc |= ctrl_cmd_install(CTRL_NODE_TRX, &cmd_trx_rf_locked);
+
+	rc |= bsc_bts_trx_ts_ctrl_cmds_install();
 
 	return rc;
 }
