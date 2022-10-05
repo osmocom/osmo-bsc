@@ -33,7 +33,7 @@ libbsc_la_SOURCES = \
 	abis_rsl.c \
 	acc.c \
 	assignment_fsm.c \
-	bsc_ctrl_commands.c \
+	bsc_ctrl.c \
 	bsc_ctrl_lookup.c \
 	bsc_init.c \
 	bsc_rf_ctrl.c \
@@ -45,6 +45,7 @@ libbsc_la_SOURCES = \
 	bsc_vty.c \
 	bts.c \
 	bts_trx.c \
+	bts_trx_ctrl.c \
 	bts_ericsson_rbs2000.c \
 	bts_init.c \
 	bts_ipaccess_nanobts.c \
@@ -54,6 +55,7 @@ libbsc_la_SOURCES = \
 	bts_sm.c \
 	bts_osmobts.c \
 	bts_unknown.c \
+	bts_ctrl.c \
 	bts_vty.c \
 	bts_trx_vty.c \
 	chan_alloc.c \
@@ -93,7 +95,6 @@ libbsc_la_SOURCES = \
 	nm_rcarrier_fsm.c \
 	gsm_08_08.c \
 	osmo_bsc_bssap.c \
-	osmo_bsc_ctrl.c \
 	osmo_bsc_filter.c \
 	osmo_bsc_grace.c \
 	osmo_bsc_lcls.c \
