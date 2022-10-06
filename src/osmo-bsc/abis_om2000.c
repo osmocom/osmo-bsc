@@ -2254,10 +2254,6 @@ static void om2k_trx_s_wait_ts(struct osmo_fsm_inst *fi, uint32_t event, void *d
 	struct om2k_trx_fsm_priv *otfp = fi->priv;
 	struct gsm_bts_trx_ts *ts;
 
-	/* notify TS is ready */
-	ts = &otfp->trx->ts[otfp->cur_ts_nr];
-	osmo_fsm_inst_dispatch(ts->fi, TS_EV_OML_READY, NULL);
-
 	/* next ? */
 	if (++otfp->cur_ts_nr < 8) {
 		/* iterate to the next timeslot */
@@ -2285,6 +2281,7 @@ static void om2k_trx_s_done_onenter(struct osmo_fsm_inst *fi, uint32_t prev_stat
 	struct nm_statechg_signal_data nsd;
 	struct nm_statechg_signal_data nsd_bb_transc;
 	struct gsm_bts_trx *trx = otfp->trx;
+	unsigned int i;
 
 	memset(&nsd, 0, sizeof(nsd));
 
@@ -2316,6 +2313,10 @@ static void om2k_trx_s_done_onenter(struct osmo_fsm_inst *fi, uint32_t prev_stat
 
 	if (fi->proc.parent)
 		osmo_fsm_inst_dispatch(fi->proc.parent, otfp->done_event, NULL);
+
+	/* Notify the timeslot FSM that all TRX initialization steps are done. */
+	for (i = 0; i < ARRAY_SIZE(trx->ts); i++)
+		osmo_fsm_inst_dispatch(trx->ts[i].fi, TS_EV_OML_READY, NULL);
 }
 
 static void om2k_trx_allstate(struct osmo_fsm_inst *fi, uint32_t event, void *data)
