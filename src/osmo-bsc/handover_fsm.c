@@ -328,7 +328,16 @@ void handover_start(struct handover_out_req *req)
 		return;
 	}
 	handover_reset(conn);
-
+	/* When Starting HandOver, internally release LCLS on both legs.
+	 * FIXME: What if both legs are not local?  */
+	if (conn->lcls.fi->state == ST_LOCALLY_SWITCHED) {
+		conn->lcls.control = GSM0808_LCLS_CSC_RELEASE_LCLS;
+		osmo_fsm_inst_dispatch(conn->lcls.fi, LCLS_EV_APPLY_CFG_CSC, NULL);
+		if (conn->lcls.other) {
+			conn->lcls.other->lcls.control = GSM0808_LCLS_CSC_RELEASE_LCLS;
+			osmo_fsm_inst_dispatch(conn->lcls.other->lcls.fi, LCLS_EV_APPLY_CFG_CSC, NULL);
+		}
+	}
 	/* When handover_start() is invoked by the gscon, it expects a HANDOVER_END event. The best way to ensure this
 	 * is to always create a handover_fsm instance, even if the target cell is not resolved yet. Any failure should
 	 * then call handover_end(), which ensures that the conn snaps back to a valid state. */

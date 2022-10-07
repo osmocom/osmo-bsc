@@ -1523,7 +1523,9 @@ static int abis_rsl_rx_dchan(struct msgb *msg)
 		return -EINVAL;
 	}
 
-	LOG_LCHAN(msg->lchan, LOGL_DEBUG, "Rx %s\n", rsl_or_ipac_msg_name(rslh->c.msg_type));
+	/* I want to see LCHAN at DEBUG, but MEAS_RES makes too much noise. */
+	if (rslh->c.msg_type != RSL_MT_MEAS_RES)
+		LOG_LCHAN(msg->lchan, LOGL_DEBUG, "Rx %s\n", rsl_or_ipac_msg_name(rslh->c.msg_type));
 
 	if (!msg->lchan->fi) {
 		LOG_LCHAN(msg->lchan, LOGL_ERROR, "Rx RSL DCHAN: RSL message for unconfigured lchan\n");

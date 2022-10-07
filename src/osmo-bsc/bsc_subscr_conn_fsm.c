@@ -589,6 +589,16 @@ static void gscon_fsm_handover(struct osmo_fsm_inst *fi, uint32_t event, void *d
 	case GSCON_EV_HANDOVER_END:
 		osmo_fsm_inst_state_chg(fi, ST_ACTIVE, 0, 0);
 		gscon_dtap_queue_flush(conn, 1);
+		if (conn->lcls.fi->state != ST_LOCALLY_SWITCHED) {
+			struct osmo_lcls new_cfg = {
+				.config = GSM0808_LCLS_CFG_BOTH_WAY,
+				.control = GSM0808_LCLS_CSC_CONNECT,
+			};
+			osmo_fsm_inst_dispatch(conn->lcls.fi, LCLS_EV_UPDATE_CFG_CSC, &new_cfg);
+			if (conn->lcls.other) {
+				osmo_fsm_inst_dispatch(conn->lcls.other->lcls.fi, LCLS_EV_UPDATE_CFG_CSC, &new_cfg);
+			}
+		}
 		return;
 
 	case GSCON_EV_MO_DTAP:
