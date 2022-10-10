@@ -18,6 +18,7 @@
 #include "osmocom/bsc/bts_sm.h"
 #include "osmocom/bsc/abis_om2000.h"
 #include "osmocom/bsc/paging.h"
+#include "osmocom/bsc/bts_setup_ramp.h"
 
 enum bts_counter_id {
 	BTS_CTR_CHREQ_TOTAL,
@@ -666,6 +667,8 @@ struct gsm_bts {
 
 	struct chan_counts chan_counts;
 	struct all_allocated all_allocated;
+
+	struct bts_setup_ramp bts_setup_ramp;
 };
 
 #define GSM_BTS_SI2Q(bts, i)   (struct gsm48_system_information_type_2quater *)((bts)->si_buf[SYSINFO_TYPE_2quater][i])

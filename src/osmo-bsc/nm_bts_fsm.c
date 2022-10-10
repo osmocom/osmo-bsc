@@ -63,6 +63,7 @@ static void st_op_disabled_notinstalled(struct osmo_fsm_inst *fi, uint32_t event
 
 	switch (event) {
 	case NM_EV_SW_ACT_REP:
+	case NM_EV_SETUP_RAMP_READY:
 		break;
 	case NM_EV_STATE_CHG_REP:
 		nsd = (struct nm_statechg_signal_data *)data;
@@ -91,6 +92,9 @@ static void st_op_disabled_notinstalled(struct osmo_fsm_inst *fi, uint32_t event
 static void configure_loop(struct gsm_bts *bts, const struct gsm_nm_state *state, bool allow_opstart)
 {
 	struct msgb *msgb;
+
+	if (bts_setup_ramp_wait(bts))
+		return;
 
 	/* Request generic BTS-level attributes */
 	if (!bts->mo.get_attr_sent && !bts->mo.get_attr_rep_received) {
@@ -198,6 +202,9 @@ static void st_op_disabled_dependency(struct osmo_fsm_inst *fi, uint32_t event, 
 		default:
 			return;
 		}
+	case NM_EV_SETUP_RAMP_READY:
+		configure_loop(bts, &bts->mo.nm_state, false);
+		break;
 	default:
 		OSMO_ASSERT(0);
 	}
@@ -256,6 +263,9 @@ static void st_op_disabled_offline(struct osmo_fsm_inst *fi, uint32_t event, voi
 		default:
 			return;
 		}
+	case NM_EV_SETUP_RAMP_READY:
+		configure_loop(bts, &bts->mo.nm_state, true);
+		break;
 	default:
 		OSMO_ASSERT(0);
 	}
@@ -329,7 +339,8 @@ static struct osmo_fsm_state nm_bts_fsm_states[] = {
 	[NM_BTS_ST_OP_DISABLED_NOTINSTALLED] = {
 		.in_event_mask =
 			X(NM_EV_SW_ACT_REP) |
-			X(NM_EV_STATE_CHG_REP),
+			X(NM_EV_STATE_CHG_REP) |
+			X(NM_EV_SETUP_RAMP_READY),
 		.out_state_mask =
 			X(NM_BTS_ST_OP_DISABLED_DEPENDENCY) |
 			X(NM_BTS_ST_OP_DISABLED_OFFLINE) |
@@ -342,7 +353,8 @@ static struct osmo_fsm_state nm_bts_fsm_states[] = {
 		.in_event_mask =
 			X(NM_EV_STATE_CHG_REP) |
 			X(NM_EV_GET_ATTR_REP) |
-			X(NM_EV_SET_ATTR_ACK),
+			X(NM_EV_SET_ATTR_ACK) |
+			X(NM_EV_SETUP_RAMP_READY),
 		.out_state_mask =
 			X(NM_BTS_ST_OP_DISABLED_NOTINSTALLED) |
 			X(NM_BTS_ST_OP_DISABLED_OFFLINE) |
@@ -355,7 +367,8 @@ static struct osmo_fsm_state nm_bts_fsm_states[] = {
 		.in_event_mask =
 			X(NM_EV_STATE_CHG_REP) |
 			X(NM_EV_GET_ATTR_REP) |
-			X(NM_EV_SET_ATTR_ACK),
+			X(NM_EV_SET_ATTR_ACK) |
+			X(NM_EV_SETUP_RAMP_READY),
 		.out_state_mask =
 			X(NM_BTS_ST_OP_DISABLED_NOTINSTALLED) |
 			X(NM_BTS_ST_OP_DISABLED_DEPENDENCY) |

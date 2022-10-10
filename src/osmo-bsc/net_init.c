@@ -25,6 +25,7 @@
 #include <osmocom/bsc/handover_cfg.h>
 #include <osmocom/bsc/chan_alloc.h>
 #include <osmocom/bsc/neighbor_ident.h>
+#include <osmocom/bsc/bts_setup_ramp.h>
 
 static struct osmo_tdef gsm_network_T_defs[] = {
 	{ .T=4, .default_val=5, .desc="Timeout to receive BSSMAP RESET ACKNOWLEDGE from the MSC" },
@@ -123,6 +124,8 @@ struct gsm_network *gsm_network_init(void *ctx)
 
 	net->null_nri_ranges = osmo_nri_ranges_alloc(net);
 	net->nri_bitlen = OSMO_NRI_BITLEN_DEFAULT;
+
+	bts_setup_ramp_init_network(net);
 
 	return net;
 }

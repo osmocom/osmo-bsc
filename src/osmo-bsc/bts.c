@@ -145,6 +145,7 @@ static const struct gprs_rlc_cfg rlc_cfg_default = {
 static int gsm_bts_talloc_destructor(struct gsm_bts *bts)
 {
 	paging_destructor(bts);
+	bts_setup_ramp_remove(bts);
 
 	osmo_timer_del(&bts->cbch_timer);
 
@@ -436,6 +437,7 @@ struct gsm_bts *gsm_bts_alloc(struct gsm_network *net, struct gsm_bts_sm *bts_sm
 	bts_cbch_init(bts);
 	bts_etws_init(bts);
 
+	bts_setup_ramp_init_bts(bts);
 	acc_mgr_init(&bts->acc_mgr, bts);
 	acc_ramp_init(&bts->acc_ramp, bts);
 

@@ -401,6 +401,8 @@ static void bootstrap_bts(struct gsm_bts *bts)
 		bts->si_common.chan_desc.ccch_conf = (n << 1);
 	}
 
+	bts_setup_ramp_init_bts(bts);
+
 	/* ACC ramping is initialized from vty/config */
 
 	/* Initialize the BTS state */

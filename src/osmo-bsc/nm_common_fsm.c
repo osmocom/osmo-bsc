@@ -20,6 +20,8 @@
  *
  */
 
+#include <osmocom/core/linuxlist.h>
+#include <osmocom/bsc/bts.h>
 #include <osmocom/bsc/nm_common_fsm.h>
 #include <osmocom/bsc/signal.h>
 
@@ -50,4 +52,39 @@ void nm_obj_fsm_becomes_enabled_disabled(struct gsm_bts *bts, void *obj,
 	nsd.running = running;
 
 	osmo_signal_dispatch(SS_NM, S_NM_RUNNING_CHG, &nsd);
+}
+
+/* nm_configuring_fsm_inst_dispatch(struct gsm_abis_mo *mo, uint32_t event, void *data) */
+#define nm_configuring_fsm_inst_dispatch(mo, event, data) do { \
+		if ((mo)->nm_state.operational != NM_OPSTATE_ENABLED) \
+			_osmo_fsm_inst_dispatch((mo)->fi, event, data, __FILE__, __LINE__); \
+	} while (0)
+
+/*!
+ * Dispatch an event to all configuring/non-enabled BTS NM fsms
+ *
+ * \param[in] bts a pointer to the BTS instance
+ * \param[in] event the FSM event. See \fn osmo_fsm_inst_dispatch
+ * \param[in] data the private data of the event.
+ */
+void nm_fsm_dispatch_all_configuring(struct gsm_bts *bts, uint32_t event, void *data)
+{
+	struct gsm_bts_trx *trx;
+
+	nm_configuring_fsm_inst_dispatch(&bts->site_mgr->mo, event, data);
+	nm_configuring_fsm_inst_dispatch(&bts->mo, event, data);
+	llist_for_each_entry(trx, &bts->trx_list, list) {
+		nm_configuring_fsm_inst_dispatch(&trx->mo, event, data);
+		nm_configuring_fsm_inst_dispatch(&trx->bb_transc.mo, event, data);
+		for (unsigned long i = 0; i < ARRAY_SIZE(trx->ts); i++) {
+			struct gsm_bts_trx_ts *ts = &trx->ts[i];
+			nm_configuring_fsm_inst_dispatch(&ts->mo, event, data);
+		}
+	}
+
+	/* GPRS MOs */
+	nm_configuring_fsm_inst_dispatch(&bts->site_mgr->gprs.nse.mo, event, data);
+	for (unsigned long i = 0; i < ARRAY_SIZE(bts->site_mgr->gprs.nsvc); i++)
+		nm_configuring_fsm_inst_dispatch(&bts->site_mgr->gprs.nsvc[i].mo, event, data);
+	nm_configuring_fsm_inst_dispatch(&bts->gprs.cell.mo, event, data);
 }

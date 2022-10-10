@@ -13,6 +13,7 @@ noinst_HEADERS = \
 	bss.h \
 	bts.h \
 	bts_sm.h \
+	bts_setup_ramp.h \
 	bts_trx.h \
 	bts_ipaccess_nanobts_omlattr.h \
 	chan_alloc.h \

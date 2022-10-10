@@ -44,6 +44,7 @@
 #include <osmocom/bsc/abis_nm.h>
 #include <osmocom/bsc/abis_om2000.h>
 #include <osmocom/bsc/chan_alloc.h>
+#include <osmocom/bsc/bts_setup_ramp.h>
 #include <osmocom/bsc/system_information.h>
 #include <osmocom/bsc/debug.h>
 #include <osmocom/bsc/paging.h>
@@ -2623,6 +2624,17 @@ static int config_write_bsc(struct vty *vty)
 		vty_out(vty, " bsc-auto-rf-off %d%s",
 			bsc_gsmnet->auto_off_timeout, VTY_NEWLINE);
 
+	if (bsc_gsmnet->bts_setup_ramp.enabled)
+		vty_out(vty, " bts-setup-ramping%s", VTY_NEWLINE);
+
+	if (bsc_gsmnet->bts_setup_ramp.step_size > 0)
+		vty_out(vty, " bts-setup-ramping-step-size %d%s",
+			bsc_gsmnet->bts_setup_ramp.step_size, VTY_NEWLINE);
+
+	if (bsc_gsmnet->bts_setup_ramp.step_interval > 0)
+		vty_out(vty, " bts-setup-ramping-step-interval %d%s",
+			bsc_gsmnet->bts_setup_ramp.step_interval, VTY_NEWLINE);
+
 	return CMD_SUCCESS;
 }
 
@@ -3043,6 +3055,88 @@ DEFUN_ATTR(cfg_net_no_rf_off_time,
 	   CMD_ATTR_IMMEDIATE)
 {
 	bsc_gsmnet->auto_off_timeout = -1;
+	return CMD_SUCCESS;
+}
+
+DEFUN_ATTR(cfg_bsc_bts_setup_ramping,
+	   cfg_bsc_bts_setup_ramping_cmd,
+	   "bts-setup-ramping",
+	   "Enable BTS setup ramping to limit the amount of BTS to configure within  a time window.\n",
+	   CMD_ATTR_IMMEDIATE)
+{
+	struct gsm_network *net = gsmnet_from_vty(vty);
+	bts_setup_ramp_enable(net);
+	return CMD_SUCCESS;
+}
+
+DEFUN_ATTR(cfg_bsc_no_bts_setup_ramping,
+	   cfg_bsc_no_bts_setup_ramping_cmd,
+	   "no bts-setup-ramping",
+	   NO_STR
+	   "Disable BTS ramping and configure all waiting BTS.\n",
+	   CMD_ATTR_IMMEDIATE)
+{
+	struct gsm_network *net = gsmnet_from_vty(vty);
+	bts_setup_ramp_disable(net);
+	return CMD_SUCCESS;
+}
+
+DEFUN_ATTR(cfg_bsc_bts_ramping_step_interval,
+	   cfg_bsc_bts_setup_ramping_step_interval_cmd,
+	   "bts-setup-ramping-step-interval <0-65535>",
+	   "Configure the BTS setup ramping step interval. The time between ramping steps.\n"
+	   "Set a step interval (in seconds)\n",
+	   CMD_ATTR_IMMEDIATE)
+{
+	struct gsm_network *net = gsmnet_from_vty(vty);
+	int interval_size = atoi(argv[0]);
+	bts_setup_ramp_set_step_interval(net, interval_size);
+	return CMD_SUCCESS;
+}
+
+DEFUN_ATTR(cfg_bsc_bts_ramping_step_size,
+	   cfg_bsc_bts_setup_ramping_step_size_cmd,
+	   "bts-setup-ramping-step-size <0-65535>",
+	   "Configure the BTS setup ramping step size. The amount of BTS to allow to configure within a ramping interval\n"
+	   "Amount of BTS to setup while a step size\n",
+	   CMD_ATTR_IMMEDIATE)
+{
+	struct gsm_network *net = gsmnet_from_vty(vty);
+	int seconds = atoi(argv[0]);
+	bts_setup_ramp_set_step_size(net, seconds);
+	return CMD_SUCCESS;
+}
+
+DEFUN(bts_unblock_setup_ramping,
+      bts_unblock_setup_ramping_cmd,
+      "bts <0-255> unblock-setup-ramping",
+      "BTS Specific Commands\n" BTS_NR_STR
+      "Unblock and allow to configure a BTS if kept back by BTS ramping\n")
+{
+	struct gsm_network *gsmnet;
+	struct gsm_bts *bts;
+	unsigned int bts_nr;
+
+	gsmnet = gsmnet_from_vty(vty);
+
+	bts_nr = atoi(argv[0]);
+	if (bts_nr >= gsmnet->num_bts) {
+		vty_out(vty, "%% BTS number must be between 0 and %d. It was %d.%s",
+			gsmnet->num_bts, bts_nr, VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	bts = gsm_bts_num(gsmnet, bts_nr);
+	if (!bts) {
+		vty_out(vty, "%% BTS Nr. %d could not be found.%s", bts_nr, VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	if (bts_setup_ramp_unblock_bts(bts)) {
+		vty_out(vty, "%% The BTS is not blocked by BTS ramping.%s", VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
 	return CMD_SUCCESS;
 }
 
@@ -3471,6 +3565,7 @@ int bsc_vty_init(struct gsm_network *network)
 
 	install_element(ENABLE_NODE, &drop_bts_cmd);
 	install_element(ENABLE_NODE, &restart_bts_cmd);
+	install_element(ENABLE_NODE, &bts_unblock_setup_ramping_cmd);
 	install_element(ENABLE_NODE, &bts_resend_sysinfo_cmd);
 	install_element(ENABLE_NODE, &bts_resend_power_ctrl_params_cmd);
 	install_element(ENABLE_NODE, &bts_c0_power_red_cmd);
@@ -3511,6 +3606,10 @@ int bsc_vty_init(struct gsm_network *network)
 	install_element(BSC_NODE, &cfg_net_no_rf_off_time_cmd);
 	install_element(BSC_NODE, &cfg_net_bsc_missing_msc_ussd_cmd);
 	install_element(BSC_NODE, &cfg_net_bsc_no_missing_msc_text_cmd);
+	install_element(BSC_NODE, &cfg_bsc_bts_setup_ramping_cmd);
+	install_element(BSC_NODE, &cfg_bsc_no_bts_setup_ramping_cmd);
+	install_element(BSC_NODE, &cfg_bsc_bts_setup_ramping_step_size_cmd);
+	install_element(BSC_NODE, &cfg_bsc_bts_setup_ramping_step_interval_cmd);
 
 	install_node(&msc_node, config_write_msc);
 	install_element(MSC_NODE, &cfg_net_bsc_ncc_cmd);

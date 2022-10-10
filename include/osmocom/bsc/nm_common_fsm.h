@@ -38,6 +38,7 @@ enum nm_fsm_events {
 	NM_EV_OPSTART_ACK,
 	NM_EV_OPSTART_NACK,
 	NM_EV_OML_DOWN,
+	NM_EV_SETUP_RAMP_READY, /* BTS setup ramp allow to continue to configure */
 	NM_EV_FORCE_LOCK, /* Only supported by RadioCarrier so far */
 	NM_EV_FEATURE_NEGOTIATED, /* Sent by BTS to NSVC MO */
 	NM_EV_RSL_CONNECT_ACK, /* Sent by BTS to BBTRANSC MO */
@@ -120,3 +121,5 @@ extern struct osmo_fsm nm_gprs_nsvc_fsm;
 void nm_obj_fsm_becomes_enabled_disabled(struct gsm_bts *bts, void *obj,
 					 enum abis_nm_obj_class obj_class,
 					 bool running);
+
+void nm_fsm_dispatch_all_configuring(struct gsm_bts *bts, uint32_t event, void *data);

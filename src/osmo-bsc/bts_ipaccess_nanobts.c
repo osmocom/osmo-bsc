@@ -619,6 +619,8 @@ void ipaccess_drop_oml(struct gsm_bts *bts, const char *reason)
 	e1inp_sign_link_destroy(bts->osmo_link);
 	bts->osmo_link = NULL;
 
+	bts_setup_ramp_remove(bts);
+
 	/* we have issues reconnecting RSL, drop everything. */
 	llist_for_each_entry(trx, &bts->trx_list, list) {
 		ipaccess_drop_rsl(trx, "OML link drop");

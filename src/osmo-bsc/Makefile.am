@@ -56,6 +56,7 @@ libbsc_la_SOURCES = \
 	bts_osmobts.c \
 	bts_unknown.c \
 	bts_ctrl.c \
+	bts_setup_ramp.c \
 	bts_vty.c \
 	bts_trx_vty.c \
 	chan_alloc.c \

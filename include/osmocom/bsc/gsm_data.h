@@ -31,6 +31,7 @@
 #include <osmocom/gsm/protocol/gsm_12_21.h>
 #include <osmocom/gsm/protocol/gsm_03_41.h>
 #include <osmocom/abis/e1_input.h>
+#include <osmocom/bsc/bts_setup_ramp.h>
 #include <osmocom/bsc/meas_rep.h>
 #include <osmocom/bsc/acc.h>
 #include <osmocom/bsc/osmux.h>
@@ -955,6 +956,8 @@ struct gsm_network {
 
 	/* Don't refuse to start with mutually exclusive codec settings */
 	bool allow_unusable_timeslots;
+
+	struct bts_setup_ramp_net bts_setup_ramp;
 
 	uint8_t nri_bitlen;
 	struct osmo_nri_ranges *null_nri_ranges;

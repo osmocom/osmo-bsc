@@ -63,8 +63,8 @@ static void st_op_disabled_notinstalled(struct osmo_fsm_inst *fi, uint32_t event
 
 	switch (event) {
 	case NM_EV_FEATURE_NEGOTIATED:
-		break;
 	case NM_EV_SW_ACT_REP:
+	case NM_EV_SETUP_RAMP_READY:
 		break;
 	case NM_EV_STATE_CHG_REP:
 		nsd = (struct nm_statechg_signal_data *)data;
@@ -95,6 +95,9 @@ static void configure_loop(struct gsm_gprs_nsvc *nsvc, const struct gsm_nm_state
 	struct msgb *msgb;
 
 	if (nsvc->bts->gprs.mode == BTS_GPRS_NONE)
+		return;
+
+	if (bts_setup_ramp_wait(nsvc->bts))
 		return;
 
 	/* We need to know BTS features in order to know if we can set IPv6 addresses */
@@ -185,6 +188,9 @@ static void st_op_disabled_dependency(struct osmo_fsm_inst *fi, uint32_t event, 
 		default:
 			return;
 		}
+	case NM_EV_SETUP_RAMP_READY:
+		configure_loop(nsvc, &nsvc->mo.nm_state, false);
+		break;
 	default:
 		OSMO_ASSERT(0);
 	}
@@ -243,6 +249,9 @@ static void st_op_disabled_offline(struct osmo_fsm_inst *fi, uint32_t event, voi
 		default:
 			return;
 		}
+	case NM_EV_SETUP_RAMP_READY:
+		configure_loop(nsvc, &nsvc->mo.nm_state, true);
+		break;
 	default:
 		OSMO_ASSERT(0);
 	}
@@ -315,7 +324,8 @@ static struct osmo_fsm_state nm_gprs_nsvc_fsm_states[] = {
 		.in_event_mask =
 			X(NM_EV_SW_ACT_REP) |
 			X(NM_EV_FEATURE_NEGOTIATED) |
-			X(NM_EV_STATE_CHG_REP),
+			X(NM_EV_STATE_CHG_REP) |
+			X(NM_EV_SETUP_RAMP_READY),
 		.out_state_mask =
 			X(NM_GPRS_NSVC_ST_OP_DISABLED_DEPENDENCY) |
 			X(NM_GPRS_NSVC_ST_OP_DISABLED_OFFLINE) |
@@ -328,7 +338,8 @@ static struct osmo_fsm_state nm_gprs_nsvc_fsm_states[] = {
 		.in_event_mask =
 			X(NM_EV_STATE_CHG_REP) |
 			X(NM_EV_FEATURE_NEGOTIATED) |
-			X(NM_EV_SET_ATTR_ACK),
+			X(NM_EV_SET_ATTR_ACK) |
+			X(NM_EV_SETUP_RAMP_READY),
 		.out_state_mask =
 			X(NM_GPRS_NSVC_ST_OP_DISABLED_NOTINSTALLED) |
 			X(NM_GPRS_NSVC_ST_OP_DISABLED_OFFLINE) |
@@ -341,7 +352,8 @@ static struct osmo_fsm_state nm_gprs_nsvc_fsm_states[] = {
 		.in_event_mask =
 			X(NM_EV_STATE_CHG_REP) |
 			X(NM_EV_FEATURE_NEGOTIATED) |
-			X(NM_EV_SET_ATTR_ACK),
+			X(NM_EV_SET_ATTR_ACK) |
+			X(NM_EV_SETUP_RAMP_READY),
 		.out_state_mask =
 			X(NM_GPRS_NSVC_ST_OP_DISABLED_NOTINSTALLED) |
 			X(NM_GPRS_NSVC_ST_OP_DISABLED_DEPENDENCY) |

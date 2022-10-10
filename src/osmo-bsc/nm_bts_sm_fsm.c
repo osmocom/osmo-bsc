@@ -61,6 +61,7 @@ static void st_op_disabled_notinstalled(struct osmo_fsm_inst *fi, uint32_t event
 
 	switch (event) {
 	case NM_EV_SW_ACT_REP:
+	case NM_EV_SETUP_RAMP_READY:
 		break;
 	case NM_EV_STATE_CHG_REP:
 		nsd = (struct nm_statechg_signal_data *)data;
@@ -99,12 +100,28 @@ static void st_op_disabled_notinstalled(struct osmo_fsm_inst *fi, uint32_t event
 	}
 }
 
+static void configure_loop(struct gsm_bts_sm *site_mgr, const struct gsm_nm_state *_state, bool allow_opstart)
+{
+	struct gsm_bts *bts = gsm_bts_sm_get_bts(site_mgr);
+
+	if (bts_setup_ramp_wait(bts))
+		return;
+
+	if (allow_opstart && !site_mgr->mo.opstart_sent) {
+		site_mgr->mo.opstart_sent = true;
+		abis_nm_opstart(bts, NM_OC_SITE_MANAGER, 0xff, 0xff, 0xff);
+	}
+}
+
+
 static void st_op_disabled_dependency(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
 	struct nm_statechg_signal_data *nsd;
 	const struct gsm_nm_state *new_state;
 
 	switch (event) {
+	case NM_EV_SETUP_RAMP_READY:
+		break;
 	case NM_EV_STATE_CHG_REP:
 		nsd = (struct nm_statechg_signal_data *)data;
 		new_state = &nsd->new_state;
@@ -132,17 +149,15 @@ static void st_op_disabled_dependency(struct osmo_fsm_inst *fi, uint32_t event, 
 static void st_op_disabled_offline_on_enter(struct osmo_fsm_inst *fi, uint32_t prev_state)
 {
 	struct gsm_bts_sm *site_mgr = (struct gsm_bts_sm *)fi->priv;
-	struct gsm_bts *bts = gsm_bts_sm_get_bts(site_mgr);
-	if (!site_mgr->mo.opstart_sent) {
-		site_mgr->mo.opstart_sent = true;
-		abis_nm_opstart(bts, NM_OC_SITE_MANAGER, 0xff, 0xff, 0xff);
-	}
+
+	configure_loop(site_mgr, &site_mgr->mo.nm_state, true);
 }
 
 static void st_op_disabled_offline(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
 	struct nm_statechg_signal_data *nsd;
 	const struct gsm_nm_state *new_state;
+	struct gsm_bts_sm *site_mgr = (struct gsm_bts_sm *)fi->priv;
 
 	switch (event) {
 	case NM_EV_STATE_CHG_REP:
@@ -166,10 +181,14 @@ static void st_op_disabled_offline(struct osmo_fsm_inst *fi, uint32_t event, voi
 		default:
 			return;
 		}
+	case NM_EV_SETUP_RAMP_READY:
+		configure_loop(site_mgr, &site_mgr->mo.nm_state, true);
+		break;
 	default:
 		OSMO_ASSERT(0);
 	}
 }
+
 static void st_op_enabled(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
 	struct nm_statechg_signal_data *nsd;
@@ -224,7 +243,8 @@ static struct osmo_fsm_state nm_bts_sm_fsm_states[] = {
 	[NM_BTS_SM_ST_OP_DISABLED_NOTINSTALLED] = {
 		.in_event_mask =
 			X(NM_EV_SW_ACT_REP) |
-			X(NM_EV_STATE_CHG_REP),
+			X(NM_EV_STATE_CHG_REP) |
+			X(NM_EV_SETUP_RAMP_READY),
 		.out_state_mask =
 			X(NM_BTS_SM_ST_OP_DISABLED_DEPENDENCY) |
 			X(NM_BTS_SM_ST_OP_DISABLED_OFFLINE) |
@@ -235,7 +255,8 @@ static struct osmo_fsm_state nm_bts_sm_fsm_states[] = {
 	},
 	[NM_BTS_SM_ST_OP_DISABLED_DEPENDENCY] = {
 		.in_event_mask =
-			X(NM_EV_STATE_CHG_REP),
+			X(NM_EV_STATE_CHG_REP) |
+			X(NM_EV_SETUP_RAMP_READY),
 		.out_state_mask =
 			X(NM_BTS_SM_ST_OP_DISABLED_NOTINSTALLED) |
 			X(NM_BTS_SM_ST_OP_DISABLED_OFFLINE) |
@@ -245,7 +266,8 @@ static struct osmo_fsm_state nm_bts_sm_fsm_states[] = {
 	},
 	[NM_BTS_SM_ST_OP_DISABLED_OFFLINE] = {
 		.in_event_mask =
-			X(NM_EV_STATE_CHG_REP),
+			X(NM_EV_STATE_CHG_REP) |
+			X(NM_EV_SETUP_RAMP_READY),
 		.out_state_mask =
 			X(NM_BTS_SM_ST_OP_DISABLED_NOTINSTALLED) |
 			X(NM_BTS_SM_ST_OP_DISABLED_DEPENDENCY) |
