@@ -2147,8 +2147,8 @@ void abis_rsl_chan_rqd_queue_poll(struct gsm_bts *bts)
 
 	/* Handle PDCH related rach requests (in case of BSC-co-located-PCU) */
 	if (rqd->reason == GSM_CHREQ_REASON_PDCH) {
-		rsl_rx_pchan_rqd(rqd);
-		return;
+		if (rsl_rx_pchan_rqd(rqd) == 0)
+			goto leave;
 	}
 
 	/* Ensure that emergency calls will get priority over regular calls, however releasing
@@ -2234,6 +2234,8 @@ void abis_rsl_chan_rqd_queue_poll(struct gsm_bts *bts)
 	};
 
 	lchan_activate(lchan, &info);
+
+leave:
 	llist_del(&rqd->entry);
 	talloc_free(rqd);
 	return;
