@@ -1914,8 +1914,10 @@ static int rsl_rx_chan_rqd(struct msgb *msg)
 
 	/* Determine channel request cause code */
 	rqd->reason = get_reason_by_chreq(rqd->ref.ra, bts->network->neci);
-	LOG_BTS(bts, DRSL, LOGL_INFO, "CHAN RQD: reason: %s (ra=0x%02x, neci=0x%02x, chreq_reason=0x%02x)\n",
-		get_value_string(gsm_chreq_descs, rqd->reason), rqd->ref.ra, bts->network->neci, rqd->reason);
+	LOG_BTS(bts, DRSL, LOGL_INFO, "CHAN RQD: reason: %s (ra=0x%02x, t1=%d, t3=%d, t2=%d, neci=0x%02x, chreq_reason=0x%02x)\n",
+		get_value_string(gsm_chreq_descs, rqd->reason), rqd->ref.ra,
+		rqd->ref.t1, rqd->ref.t3_high << 3 | rqd->ref.t3_low, rqd->ref.t2,
+		bts->network->neci, rqd->reason);
 
 	rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_CHREQ_TOTAL));
 	switch (rqd->reason) {
