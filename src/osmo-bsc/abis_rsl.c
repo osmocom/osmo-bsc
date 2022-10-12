@@ -1821,6 +1821,8 @@ static int rsl_rx_pchan_rqd(struct chan_rqd *rqd)
 		t2 = rqd->ref.t2;
 		t3 = rqd->ref.t3_low | (rqd->ref.t3_high << 3);
 		fn = (51 * ((t3-t2) % 26) + t3 + 51 * 26 * t1);
+
+		LOG_BTS(rqd->bts, DRSL, LOGL_INFO, "CHAN RQD: fn(t1=%u,t3=%u,t2=%u) = %u\n", t1, t3, t2, fn);
 	}
 
 	return pcu_tx_rach_ind(rqd->bts, rqd_ta, rqd->ref.ra, fn, is_11bit,
