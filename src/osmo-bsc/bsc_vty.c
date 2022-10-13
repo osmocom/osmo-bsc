@@ -3455,7 +3455,7 @@ int bsc_vty_init(struct gsm_network *network)
 	install_element(GSMNET_NODE, &cfg_net_nri_null_del_cmd);
 
 	bts_vty_init();
-        mgcp_client_pool_vty_init(GSMNET_NODE, MGW_NODE, " ", vty_global_gsm_network->mgw.mgw_pool);
+	mgcp_client_pool_vty_init(GSMNET_NODE, MGW_NODE, " ", vty_global_gsm_network->mgw.mgw_pool);
 
 	install_element(ENABLE_NODE, &drop_bts_cmd);
 	install_element(ENABLE_NODE, &restart_bts_cmd);
