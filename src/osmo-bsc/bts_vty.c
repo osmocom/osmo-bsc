@@ -4548,7 +4548,7 @@ static void config_write_bts_single(struct vty *vty, struct gsm_bts *bts)
 	config_write_bts_amr(vty, bts, &bts->mr_half, 0);
 
 	if (bts->use_osmux != OSMUX_USAGE_OFF) {
-		vty_out(vty, " osmux %s%s", bts->use_osmux == OSMUX_USAGE_ON ? "on" : "only",
+		vty_out(vty, "  osmux %s%s", bts->use_osmux == OSMUX_USAGE_ON ? "on" : "only",
 			VTY_NEWLINE);
 	}
 
