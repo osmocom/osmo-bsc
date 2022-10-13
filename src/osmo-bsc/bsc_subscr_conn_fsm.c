@@ -621,6 +621,62 @@ static bool same_mgw_info(const struct mgcp_conn_peer *a, const struct mgcp_conn
 	return true;
 }
 
+static struct mgcp_client *select_mgw(struct gsm_subscriber_connection *conn, struct gsm_lchan *for_lchan)
+{
+	struct mgcp_client_pool_member *mgcp_pmemb;
+	struct mgcp_client *mgcp_client;
+	struct gsm_bts *bts = for_lchan->ts->trx->bts;
+
+	/* If BTS is not pinned to a given MGW, let regular allocation which
+	 * spreads load over available MGWs: */
+	if (bts->mgw_pool_target == -1)
+		goto pick_any;
+
+	/* BTS is pinned to an MGW, retrieve pointer to it: */
+	mgcp_pmemb = mgcp_client_pool_find_member_by_nr(conn->network->mgw.mgw_pool, bts->mgw_pool_target);
+	if (!mgcp_pmemb) {
+		if (!bts->mgw_pool_target_strict) {
+			LOGPFSML(conn->fi, LOGL_NOTICE,
+				 "mgw pool-target %u not found! selecting another one.\n", bts->mgw_pool_target);
+			goto pick_any;
+		} else {
+			LOGPFSML(conn->fi, LOGL_ERROR, "mgw pool-target %u not found!\n", bts->mgw_pool_target);
+			return NULL;
+		}
+	}
+	if (mgcp_client_pool_member_is_blocked(mgcp_pmemb)) {
+		if (!bts->mgw_pool_target_strict) {
+			LOGPFSML(conn->fi, LOGL_NOTICE,
+				 "mgw pool-target %u is administratively blocked! selecting another one.\n",
+				 bts->mgw_pool_target);
+			goto pick_any;
+		} else {
+			LOGPFSML(conn->fi, LOGL_ERROR, "mgw pool-target %u is administratively blocked!\n",
+				 bts->mgw_pool_target);
+			return NULL;
+		}
+	}
+
+	mgcp_client = mgcp_client_pool_member_get(mgcp_pmemb);
+	if (!mgcp_client) {
+		if (!bts->mgw_pool_target_strict) {
+			LOGPFSML(conn->fi, LOGL_NOTICE,
+				 "mgw pool-target %u is not connected! selecting another one.\n",
+				 bts->mgw_pool_target);
+			goto pick_any;
+		} else {
+			LOGPFSML(conn->fi, LOGL_ERROR, "mgw pool-target %u is not connected!\n",
+				 bts->mgw_pool_target);
+			return NULL;
+		}
+	}
+	return mgcp_client;
+
+pick_any:
+	mgcp_client = mgcp_client_pool_get(conn->network->mgw.mgw_pool);
+	return mgcp_client;
+}
+
 /* Make sure a conn->user_plane.mgw_endpoint is allocated with the proper mgw endpoint name.  For
  * SCCPlite, pass in msc_assigned_cic the CIC received upon BSSMAP Assignment Command or BSSMAP Handover
  * Request form the MSC (which is only stored in conn->user_plane after success). Ignored for AoIP. */
@@ -640,7 +696,7 @@ struct osmo_mgcpc_ep *gscon_ensure_mgw_endpoint(struct gsm_subscriber_connection
 
 	if (gscon_is_sccplite(conn) || gscon_is_aoip(conn)) {
 		/* Get MGCP client from pool */
-		mgcp_client = mgcp_client_pool_get(conn->network->mgw.mgw_pool);
+		mgcp_client = select_mgw(conn, for_lchan);
 		if (!mgcp_client) {
 			LOGPFSML(conn->fi, LOGL_ERROR,
 				 "cannot ensure MGW endpoint -- no MGW configured, check configuration!\n");

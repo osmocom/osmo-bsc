@@ -250,3 +250,52 @@ OsmoBSC# configure terminal
 OsmoBSC(config)# network
 OsmoBSC(config-net)# no mgw 2
 ----
+
+==== Pinning a BTS to a specific MGW
+
+It is sometimes desirable to assign a specific MGW to a given BTS, so that all
+calls where the BTS is involved use the assigned MGW with a higher precedence if
+possible.
+
+This is specially important if the BTS is configured to serve calls using Osmux
+instead of RTP. Osmux features trunking optimizations, which allow transmission
+of audio payload from different concurrent calls inside the same underlaying UDP
+packet, hence reducing the total required throughput and saving costs on the
+required link.
+
+In order for Osmux trunking optimization to work, the source and destination IP
+address of uderlaying UDP packet must be of course the same for all the calls
+involved. That essentially boils down to having all the concurrent calls of the
+BTS be connected to the same MGW so that they can be trunked over the same UDP
+connection.
+
+The pinning to a specific MGW can be configured per BTS, and hence it is
+configured under the `bts` VTY node:
+
+----
+OsmoBSC> enable
+OsmoBSC# configure terminal
+OsmoBSC(config)# network
+OsmoBSC(config-net)# bts 1
+OsmoBSC(config-bts)# mgw pool-target 1 <1>
+OsmoBSC(config-bts)# exit
+OsmoBSC(config-net)# bts 2
+OsmoBSC(config-mgw)# mgw pool-target 7 strict <2>
+OsmoBSC(config-net)# bts 3
+OsmoBSC(config-mgw)# no mgw pool-target <3>
+----
+
+<1> Pin BTS1 to prefer MGW1 (node `mgw 1`). If MGW1 is not configured,
+administrateivly blocked or not connected at the time a new call is to be
+established, then another MGW from the pool is selected following the usual
+procedures. This allows applying pinning in the usual scenario while still
+keeping call service ongoing against another MGW if the preferred MGW is not
+available at a given time.
+
+<2> Pin BTS2 to prefer MGW3 (node `mgw 7`). If MGW7 is not configured,
+administrateivly blocked or not connected at the time a new call is to be
+established, then the MGW assignment will fail and ultimately the call will be
+terminated during establishment.
+
+<3> Apply no pinning at all (default). The MGW with the lowest load is the one
+being selected for each new call.

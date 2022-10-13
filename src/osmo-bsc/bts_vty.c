@@ -3000,6 +3000,36 @@ err:
 	return CMD_WARNING;
 }
 
+DEFUN_USRATTR(cfg_bts_mgw_pool_target,
+	      cfg_bts_mgw_pool_target_cmd,
+	      X(BSC_VTY_ATTR_NEW_LCHAN),
+	      "mgw pool-target <0-255> [strict]",
+	      "MGW configuration for this specific BTS\n"
+	      "Pin BTS to use a single MGW in the pool\n"
+	      "Reference Number of the MGW (in the config) to pin to\n"
+	      "Strictly prohibit use of other MGWs if the pinned one is not available\n")
+{
+	struct gsm_bts *bts = vty->index;
+	int mgw_nr = atoi(argv[0]);
+	bool strict = argc > 1;
+	bts->mgw_pool_target = mgw_nr;
+	bts->mgw_pool_target_strict = strict;
+	return CMD_SUCCESS;
+}
+
+DEFUN_USRATTR(cfg_bts_no_mgw_pool_target,
+	      cfg_bts_no_mgw_pool_target_cmd,
+	      X(BSC_VTY_ATTR_NEW_LCHAN),
+	      "no mgw pool-target",
+	      NO_STR "MGW configuration for this specific BTS\n"
+	      "Avoid pinning the BTS to any specific MGW (default)\n")
+{
+	struct gsm_bts *bts = vty->index;
+	bts->mgw_pool_target = -1;
+	bts->mgw_pool_target_strict = false;
+	return CMD_SUCCESS;
+}
+
 #define TNUM_STR "T-number, optionally preceded by 't' or 'T'\n"
 DEFUN_ATTR(cfg_bts_t3113_dynamic, cfg_bts_t3113_dynamic_cmd,
 	   "timer-dynamic TNNNN",
@@ -4552,6 +4582,13 @@ static void config_write_bts_single(struct vty *vty, struct gsm_bts *bts)
 			VTY_NEWLINE);
 	}
 
+	if (bts->mgw_pool_target > -1) {
+		vty_out(vty, "  mgw pool-target %u%s%s",
+			bts->mgw_pool_target,
+			bts->mgw_pool_target_strict ? " strict" : "",
+			VTY_NEWLINE);
+	}
+
 	config_write_bts_gprs(vty, bts);
 
 	if (bts->excl_from_rf_lock)
@@ -4814,6 +4851,8 @@ int bts_vty_init(void)
 	install_element(BTS_NODE, &cfg_bts_amr_hr_hyst3_cmd);
 	install_element(BTS_NODE, &cfg_bts_amr_hr_start_mode_cmd);
 	install_element(BTS_NODE, &cfg_bts_osmux_cmd);
+	install_element(BTS_NODE, &cfg_bts_mgw_pool_target_cmd);
+	install_element(BTS_NODE, &cfg_bts_no_mgw_pool_target_cmd);
 	install_element(BTS_NODE, &cfg_bts_pcu_sock_cmd);
 	install_element(BTS_NODE, &cfg_bts_acc_rotate_cmd);
 	install_element(BTS_NODE, &cfg_bts_acc_rotate_quantum_cmd);

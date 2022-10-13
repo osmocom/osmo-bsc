@@ -580,6 +580,10 @@ struct gsm_bts {
 	/* exclude the BTS from the global RF Lock handling */
 	int excl_from_rf_lock;
 
+	/* MGW specificities for this BTS: */
+	int mgw_pool_target; /* Pin to specific MGW. -1 = wildcard */
+	bool mgw_pool_target_strict; /* Only allow pinned MGW */
+
 	/* supported codecs beside FR */
 	struct bts_codec_conf codec;
 

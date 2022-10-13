@@ -9,3 +9,4 @@
 #library	what		description / commit summary line
 libosmogsm      >1.7.0          BTS_FEAT_OSMUX, RSL_IE_OSMO_OSMUX_CID
 libosmocore     >1.7.0          vty hexadecimal range support (location_area_code)
+libosmomgcp-client >1.10.0      mgcp_client_pool_member_...()

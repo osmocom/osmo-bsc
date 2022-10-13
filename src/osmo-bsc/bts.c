@@ -331,6 +331,9 @@ struct gsm_bts *gsm_bts_alloc(struct gsm_network *net, struct gsm_bts_sm *bts_sm
 	INIT_LLIST_HEAD(&bts->oml_fail_rep);
 	INIT_LLIST_HEAD(&bts->chan_rqd_queue);
 
+	/* Don't pin the BTS to any MGW by default: */
+	bts->mgw_pool_target = -1;
+
 	/* Enable all codecs by default. These get reset to a more fine grained selection IF a
 	 * 'codec-support' config appears in the config file (see bsc_vty.c). */
 	bts->codec = (struct bts_codec_conf){
