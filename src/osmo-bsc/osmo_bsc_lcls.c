@@ -522,6 +522,8 @@ static void lcls_no_longer_ls_fn(struct osmo_fsm_inst *fi, uint32_t event, void 
 		if (lcls_enable_possible(conn)) {
 			osmo_fsm_inst_state_chg(fi, ST_LOCALLY_SWITCHED, 0, 0);
 			osmo_fsm_inst_dispatch(conn->lcls.other->lcls.fi, LCLS_EV_OTHER_ENABLED, conn);
+		} else {
+			osmo_fsm_inst_state_chg(fi, ST_NOT_YET_LS, 0, 0);
 		}
 		break;
 	case LCLS_EV_OTHER_ENABLED:
@@ -545,6 +547,9 @@ static void lcls_no_longer_ls_fn(struct osmo_fsm_inst *fi, uint32_t event, void 
 		osmo_fsm_inst_state_chg(fi, ST_NOT_POSSIBLE_LS, 0, 0);
 		/* Send LCLS-NOTIFY to inform MSC */
 		lcls_send_notify(conn);
+		break;
+	case LCLS_EV_APPLY_CFG_CSC:
+		/* FIXME: for now, just do not ASSERT */
 		break;
 	default:
 		OSMO_ASSERT(0);
