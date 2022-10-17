@@ -829,7 +829,7 @@ static int bsc_mgw_setup(void)
 	struct mgcp_client *mgcp_client_single;
 	unsigned int pool_members_initalized;
 
-	/* Initalize MGW pool. This initalizes and connects all MGCP clients that are currently configured in
+	/* Initialize MGW pool. This initalizes and connects all MGCP clients that are currently configured in
 	 * the pool. Adding additional MGCP clients to the pool is possible but the user has to configure and
 	 * (re)connect them manually from the VTY. */
 	pool_members_initalized = mgcp_client_pool_connect(bsc_gsmnet->mgw.mgw_pool);
