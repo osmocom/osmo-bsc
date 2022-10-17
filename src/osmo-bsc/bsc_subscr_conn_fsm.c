@@ -700,7 +700,6 @@ struct osmo_mgcpc_ep *gscon_ensure_mgw_endpoint(struct gsm_subscriber_connection
 		if (!mgcp_client) {
 			LOGPFSML(conn->fi, LOGL_ERROR,
 				 "cannot ensure MGW endpoint -- no MGW configured, check configuration!\n");
-			conn->user_plane.mgw_endpoint = NULL;
 			return NULL;
 		}
 	}
