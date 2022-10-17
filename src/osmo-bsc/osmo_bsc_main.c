@@ -843,7 +843,7 @@ static int bsc_mgw_setup(void)
 	/* Initialize and connect a single MGCP client. This MGCP client will appear as the one and only pool
 	 * member if there is no MGW pool configured. */
 	LOGP(DNM, LOGL_NOTICE, "No MGW pool configured, using MGW configuration in VTY node 'msc'\n");
-        mgcp_client_single = mgcp_client_init(bsc_gsmnet, bsc_gsmnet->mgw.conf);
+	mgcp_client_single = mgcp_client_init(bsc_gsmnet, bsc_gsmnet->mgw.conf);
 	if (!mgcp_client_single) {
 		LOGP(DNM, LOGL_ERROR, "MGW (single) client initalization failed\n");
 		return -EINVAL;
