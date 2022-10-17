@@ -3536,7 +3536,11 @@ int bsc_vty_init(struct gsm_network *network)
 	install_element(MSC_NODE, &cfg_msc_show_nri_cmd);
 	install_element(MSC_NODE, &cfg_msc_allow_attach_cmd);
 	install_element(MSC_NODE, &cfg_msc_no_allow_attach_cmd);
-
+	install_element(MSC_NODE, &cfg_msc_mgw_x_osmo_ign_cmd);
+	install_element(MSC_NODE, &cfg_msc_no_mgw_x_osmo_ign_cmd);
+	install_element(MSC_NODE, &cfg_msc_osmux_cmd);
+	/* Deprecated: Old MGCP config without pooling support in MSC node: */
+	mgcp_client_vty_init(network, MSC_NODE, network->mgw.conf);
 	/* Deprecated: ping time config, kept to support legacy config files. */
 	install_element(MSC_NODE, &cfg_net_msc_no_ping_time_cmd);
 	install_element(MSC_NODE, &cfg_net_msc_ping_time_cmd);
@@ -3554,11 +3558,6 @@ int bsc_vty_init(struct gsm_network *network)
 	install_element(ENABLE_NODE, &msc_bssmap_reset_cmd);
 
 	install_element(CFG_LOG_NODE, &logging_fltr_imsi_cmd);
-
-	mgcp_client_vty_init(network, MSC_NODE, network->mgw.conf);
-	install_element(MSC_NODE, &cfg_msc_mgw_x_osmo_ign_cmd);
-	install_element(MSC_NODE, &cfg_msc_no_mgw_x_osmo_ign_cmd);
-	install_element(MSC_NODE, &cfg_msc_osmux_cmd);
 
 	return 0;
 }
