@@ -168,7 +168,6 @@ static int nm_statechg_event(int evt, struct nm_statechg_signal_data *nsd)
 		break;
 	case NM_OC_CHANNEL:
 		ts = obj;
-		trx = ts->trx;
 		osmo_fsm_inst_dispatch(ts->mo.fi, NM_EV_STATE_CHG_REP, nsd);
 		break;
 	case NM_OC_RADIO_CARRIER:
