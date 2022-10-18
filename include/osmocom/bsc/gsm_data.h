@@ -872,10 +872,10 @@ struct gsm_network {
 	struct llist_head bts_list;
 	struct llist_head bts_rejected;
 
-        /* BTS-based counters when we can't find the actual BTS
-         * e.g. when conn->lchan is NULL */
-        struct rate_ctr_group *bts_unknown_ctrs;
-        struct osmo_stat_item_group *bts_unknown_statg;
+	/* BTS-based counters when we can't find the actual BTS
+	 * e.g. when conn->lchan is NULL */
+	struct rate_ctr_group *bts_unknown_ctrs;
+	struct osmo_stat_item_group *bts_unknown_statg;
 
 	/* see gsm_network_T_defs */
 	struct osmo_tdef *T_defs;
