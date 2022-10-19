@@ -38,14 +38,10 @@ expect-ts-use trx 4 0 states * - - - - - - -
 meas-rep lchan 0 0 1 0 rxlev 20 rxqual 0 ta 0 neighbors 35 0 0 0
 
 # If the BSC parsed the list correctly, it will request a handover to BTS 4.
-# expect-ho from lchan 0 0 1 0 to lchan 4 0 1 0
+expect-ho from lchan 0 0 1 0 to lchan 4 0 1 0
 
-# FIXME: parses IDX=0 as ARFCN=0 instead of ARFCN=800, no handover is done
-expect-no-chan
-
-# FIXME: should be on TRX 4 after handover
-expect-ts-use trx 0 0 states * TCH/F - - - - - -
+expect-ts-use trx 0 0 states * - - - - - - -
 expect-ts-use trx 1 0 states * - - - - - - -
 expect-ts-use trx 2 0 states * - - - - - - -
 expect-ts-use trx 3 0 states * - - - - - - -
-expect-ts-use trx 4 0 states * - - - - - - -
+expect-ts-use trx 4 0 states * TCH/F - - - - - -

@@ -7,6 +7,7 @@
 
 struct gsm_bts;
 
+int band_compatible(const struct gsm_bts *bts, int arfcn);
 int generate_cell_chan_alloc(struct gsm_bts *bts);
 int generate_cell_chan_list(uint8_t *chan_list, struct gsm_bts *bts);
 int gsm_generate_si(struct gsm_bts *bts, enum osmo_sysinfo_type type);

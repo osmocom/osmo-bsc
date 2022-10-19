@@ -52,7 +52,7 @@ struct gsm0808_cell_id_list2;
  * array. DCS1800 and PCS1900 can not be used at the same time so conserve
  * memory and do the below.
  */
-static int band_compatible(const struct gsm_bts *bts, int arfcn)
+int band_compatible(const struct gsm_bts *bts, int arfcn)
 {
 	enum gsm_band band;
 

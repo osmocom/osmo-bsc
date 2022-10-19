@@ -766,6 +766,56 @@ int gsm48_rx_rr_modif_ack(struct msgb *msg)
 	return 0;
 }
 
+/* Get the ARFCN from the BCCH channel list by the index "BCCH-FREQ-NCELL i"
+ * (idx) as described in 3GPP TS 144.018 § 10.5.2.20. The BCCH channel list is
+ * split into two sub lists, each ascendingly ordered by ARFCN > 0:
+ *   1) SI* and SI*bis entries
+ *   2) SI*ter entries (if available)
+ * ARFCN 0 is at the end of each sub list.
+ * Both sub lists are stored in one bitvec (nbv), iterate twice through it. */
+static int neigh_list_get_arfcn(struct gsm_bts *bts, const struct bitvec *nbv, unsigned int idx)
+{
+	unsigned int arfcn, i = 0;
+
+	/* First sub list, ARFCN > 0 */
+	for (arfcn = 1; arfcn < nbv->data_len * 8; arfcn++) {
+		if (bitvec_get_bit_pos(nbv, arfcn) == ZERO)
+			continue;
+		/* Skip SI*ter */
+		if (!band_compatible(bts, arfcn))
+			continue;
+		if (i == idx)
+			return arfcn;
+		i++;
+	}
+
+	/* First sub list, ARFCN == 0 (last position) */
+	if (bitvec_get_bit_pos(nbv, 0) == ONE && band_compatible(bts, 0)) {
+		if (i == idx)
+			return 0;
+		i++;
+	}
+
+	/* Second sub list, ARFCN > 0 */
+	for (arfcn = 1; arfcn < nbv->data_len * 8; arfcn++) {
+		if (bitvec_get_bit_pos(nbv, arfcn) == ZERO)
+			continue;
+		/* Require SI*ter */
+		if (band_compatible(bts, arfcn))
+			continue;
+		if (i == idx)
+			return arfcn;
+		i++;
+	}
+
+	/* Second sub list, ARFCN == 0 (last position) */
+	if (bitvec_get_bit_pos(nbv, 0) == ONE && !band_compatible(bts, 0) && i == idx)
+		return 0;
+
+	LOGP(DRR, LOGL_ERROR, "Invalid BCCH channel list index %d in measurement report\n", idx);
+	return 0;
+}
+
 int gsm48_parse_meas_rep(struct gsm_meas_rep *rep, struct msgb *msg)
 {
 	struct gsm48_hdr *gh = msgb_l3(msg);
@@ -800,7 +850,7 @@ int gsm48_parse_meas_rep(struct gsm_meas_rep *rep, struct msgb *msg)
 	mrc = &rep->cell[0];
 	mrc->rxlev = data[3] & 0x3f;
 	mrc->neigh_idx = data[4] >> 3;
-	mrc->arfcn = bitvec_get_nth_set_bit(nbv, mrc->neigh_idx + 1);
+	mrc->arfcn = neigh_list_get_arfcn(bts, nbv, mrc->neigh_idx);
 	mrc->bsic = ((data[4] & 0x07) << 3) | (data[5] >> 5);
 	if (rep->num_cell < 2)
 		return 0;
@@ -808,7 +858,7 @@ int gsm48_parse_meas_rep(struct gsm_meas_rep *rep, struct msgb *msg)
 	mrc = &rep->cell[1];
 	mrc->rxlev = ((data[5] & 0x1f) << 1) | (data[6] >> 7);
 	mrc->neigh_idx = (data[6] >> 2) & 0x1f;
-	mrc->arfcn = bitvec_get_nth_set_bit(nbv, mrc->neigh_idx + 1);
+	mrc->arfcn = neigh_list_get_arfcn(bts, nbv, mrc->neigh_idx);
 	mrc->bsic = ((data[6] & 0x03) << 4) | (data[7] >> 4);
 	if (rep->num_cell < 3)
 		return 0;
@@ -816,7 +866,7 @@ int gsm48_parse_meas_rep(struct gsm_meas_rep *rep, struct msgb *msg)
 	mrc = &rep->cell[2];
 	mrc->rxlev = ((data[7] & 0x0f) << 2) | (data[8] >> 6);
 	mrc->neigh_idx = (data[8] >> 1) & 0x1f;
-	mrc->arfcn = bitvec_get_nth_set_bit(nbv, mrc->neigh_idx + 1);
+	mrc->arfcn = neigh_list_get_arfcn(bts, nbv, mrc->neigh_idx);
 	mrc->bsic = ((data[8] & 0x01) << 5) | (data[9] >> 3);
 	if (rep->num_cell < 4)
 		return 0;
@@ -824,7 +874,7 @@ int gsm48_parse_meas_rep(struct gsm_meas_rep *rep, struct msgb *msg)
 	mrc = &rep->cell[3];
 	mrc->rxlev = ((data[9] & 0x07) << 3) | (data[10] >> 5);
 	mrc->neigh_idx = data[10] & 0x1f;
-	mrc->arfcn = bitvec_get_nth_set_bit(nbv, mrc->neigh_idx + 1);
+	mrc->arfcn = neigh_list_get_arfcn(bts, nbv, mrc->neigh_idx);
 	mrc->bsic = data[11] >> 2;
 	if (rep->num_cell < 5)
 		return 0;
@@ -832,7 +882,7 @@ int gsm48_parse_meas_rep(struct gsm_meas_rep *rep, struct msgb *msg)
 	mrc = &rep->cell[4];
 	mrc->rxlev = ((data[11] & 0x03) << 4) | (data[12] >> 4);
 	mrc->neigh_idx = ((data[12] & 0xf) << 1) | (data[13] >> 7);
-	mrc->arfcn = bitvec_get_nth_set_bit(nbv, mrc->neigh_idx + 1);
+	mrc->arfcn = neigh_list_get_arfcn(bts, nbv, mrc->neigh_idx);
 	mrc->bsic = (data[13] >> 1) & 0x3f;
 	if (rep->num_cell < 6)
 		return 0;
@@ -840,7 +890,7 @@ int gsm48_parse_meas_rep(struct gsm_meas_rep *rep, struct msgb *msg)
 	mrc = &rep->cell[5];
 	mrc->rxlev = ((data[13] & 0x01) << 5) | (data[14] >> 3);
 	mrc->neigh_idx = ((data[14] & 0x07) << 2) | (data[15] >> 6);
-	mrc->arfcn = bitvec_get_nth_set_bit(nbv, mrc->neigh_idx + 1);
+	mrc->arfcn = neigh_list_get_arfcn(bts, nbv, mrc->neigh_idx);
 	mrc->bsic = data[15] & 0x3f;
 
 	return 0;
