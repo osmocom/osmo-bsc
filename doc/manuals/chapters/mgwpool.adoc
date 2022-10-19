@@ -48,18 +48,18 @@ Example configuration with two MGCP-Client instances in a pool:
 ----
  mgw 0
   description media-gw-0 <2>
-  mgw remote-ip 127.0.0.1
-  mgw remote-port 2432
-  mgw local-ip 127.0.0.1
-  mgw local-port 2431
-  mgw endpoint-domain mgw0 <1>
+  remote-ip 127.0.0.1
+  remote-port 2432
+  local-ip 127.0.0.1
+  local-port 2431
+  endpoint-domain mgw0 <1>
  mgw 1
   description media-gw-1 <2>
-  mgw remote-ip 127.0.0.1
-  mgw remote-port 2430
-  mgw local-ip 127.0.0.1
-  mgw local-port 2429
-  mgw endpoint-domain mgw1 <1>
+  remote-ip 127.0.0.1
+  remote-port 2430
+  local-ip 127.0.0.1
+  local-port 2429
+  endpoint-domain mgw1 <1>
 ----
 
 <1> When working with multiple MGW / MGCP-Client instances, the domain name for
