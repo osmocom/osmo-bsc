@@ -1,7 +1,7 @@
 [[mgw_pooling]]
 == MGW Pooling
 
-OsmoBSC is able to use a pool of media gateway (MGW) instances since mid 2021.
+{program-name} is able to use a pool of media gateway (MGW) instances.
 The aim of MGW pooling is to evenly distribute the RTP voice stream load across
 multiple MGW instances. This can help to scale out over multiple VMs or physical
 machines. Until osmo-mgw includes multithreading support, it may also be used to
@@ -10,39 +10,23 @@ scale-out to multiple cores on a single host.
 The load distribution is managed in such a way that when a new call is placed,
 the pool will automatically assign the call to the MGW with the lowest load.
 
-MGW pooling is recommended for larger RAN installations. For small networks and
-lab installations the classic method with one MGW per BSC offers sufficient
+MGW pooling is recommended for larger RAN or CN installations. For small networks
+and lab installations the classic method with one MGW per BSC offers sufficient
 performance.
 
-=== VTY configuration
+=== MGW pool VTY configuration
 
-In OsmoBSC the MGW is controlled via an MGCP-Client. The VTY commands to
-configure the MGCP-Client are part of the 'msc' node due to historical reasons.
-Unfortunately this concept does not allow to configure multiple MGCP-Client
-instances as required by MGW pooling. In order to support MGW pooling a new
-'mgw' node has been added under the 'network' node.
-
-=== Existing configuration files
-
-Existing OsmoBSC configuration files will continue to work, but as soon as an
-MGW pool is configured the 'mgw' settings under the 'msc' node will be ignored.
-
-Example configuration with only one MGCP-Client under the 'msc' node:
-----
-msc 0
- mgw remote-ip 127.0.0.1
- mgw remote-port 2428
-----
-
-=== MGW pool configuration
+In {program-name} the MGW is controlled via an MGCP-Client. The VTY commands to
+configure the MGCP-Client are part of the several 'mgw' nodes, one per
+MGCP-Client to set up.
 
 To setup an MGW pool, the user must first install multiple OsmoMGW instances, so
 that they won’t interfere with each other. This can be done using different
 local host IP addresses or different ports. When OsmoMGW is installed from
 packages, the systemd configuration may also require adjustment.
 
-The VTY settings under the 'mgw' node works the same way as the VTY settings for
-the MGW under the 'msc' node.
+By default, MGCP-Client will use whatever source IP address is resolved by the
+kernel routing subsystem, and will also ask the kernel to pick a free UDP port.
 
 Example configuration with two MGCP-Client instances in a pool:
 ----
@@ -73,15 +57,16 @@ no description is set, the domain name will be used.
 
 === MGW pool management
 
-While it was not possible to change the MGCP-Client configuration under the
-“msc” node at runtime, the pool is fully runtime-manageable. The only limitation
+The MNGW pool is fully runtime-manageable. The only limitation
 is that an MGCP-Client can not be restarted or removed as long as it is serving
 calls (see also: <<mgw_pooling_blocking>>).
 
 ==== MGW pool status
 
 The VTY implements a 'show mgw-pool' command that lists the currently configured
-MGW pool members, their status and call utilization.
+MGW pool members, their status and call utilization. The following snippet shows
+an output example run on OsmoBSC, but it should be also available on other
+applications supporting the MGW pooling VTY featues:
 
 ----
 OsmoBSC> show mgw-pool
@@ -101,14 +86,16 @@ OsmoBSC> show mgw-pool
 To add a new MGCP-Client to the pool, the 'mgw' node is used. Like with the
 'bts' or the 'msc' node a reference number is used that usually starts at 0.
 However it is still possible to assign any number from 0-255. The enumeration
-also may contain gaps.
+also may contain gaps. The following snippet shows an output example run on
+OsmoBSC, but it should be also available on other applications supporting the
+MGW pooling VTY featues:
 
 ----
 OsmoBSC> enable
 OsmoBSC# configure terminal
 OsmoBSC(config)# network
 OsmoBSC(config-net)# mgw 2
-OsmoBSC(config-mgw)# mgw
+OsmoBSC(config-mgw)# ?
   local-ip         local bind to connect to MGW from
   local-port       local port to connect to MGW from
   remote-ip        remote IP address to reach the MGW at
@@ -184,7 +171,7 @@ Mon Aug  2 17:15:00 2021 DLMGCP mgcp_client.c:908 MGCP GW connection: r=127.0.0.
 ----
 
 It is strongly advised to check the activity on the related MGW and to follow
-the log in order to see that the communication between OsmoBSC and the MGW is
+the log in order to see that the communication between {program-name} and the MGW is
 working correctly.
 
 [[mgw_pooling_blocking]]
@@ -250,52 +237,3 @@ OsmoBSC# configure terminal
 OsmoBSC(config)# network
 OsmoBSC(config-net)# no mgw 2
 ----
-
-==== Pinning a BTS to a specific MGW
-
-It is sometimes desirable to assign a specific MGW to a given BTS, so that all
-calls where the BTS is involved use the assigned MGW with a higher precedence if
-possible.
-
-This is specially important if the BTS is configured to serve calls using Osmux
-instead of RTP. Osmux features trunking optimizations, which allow transmission
-of audio payload from different concurrent calls inside the same underlaying UDP
-packet, hence reducing the total required throughput and saving costs on the
-required link.
-
-In order for Osmux trunking optimization to work, the source and destination IP
-address of uderlaying UDP packet must be of course the same for all the calls
-involved. That essentially boils down to having all the concurrent calls of the
-BTS be connected to the same MGW so that they can be trunked over the same UDP
-connection.
-
-The pinning to a specific MGW can be configured per BTS, and hence it is
-configured under the `bts` VTY node:
-
-----
-OsmoBSC> enable
-OsmoBSC# configure terminal
-OsmoBSC(config)# network
-OsmoBSC(config-net)# bts 1
-OsmoBSC(config-bts)# mgw pool-target 1 <1>
-OsmoBSC(config-bts)# exit
-OsmoBSC(config-net)# bts 2
-OsmoBSC(config-mgw)# mgw pool-target 7 strict <2>
-OsmoBSC(config-net)# bts 3
-OsmoBSC(config-mgw)# no mgw pool-target <3>
-----
-
-<1> Pin BTS1 to prefer MGW1 (node `mgw 1`). If MGW1 is not configured,
-administrateivly blocked or not connected at the time a new call is to be
-established, then another MGW from the pool is selected following the usual
-procedures. This allows applying pinning in the usual scenario while still
-keeping call service ongoing against another MGW if the preferred MGW is not
-available at a given time.
-
-<2> Pin BTS2 to prefer MGW3 (node `mgw 7`). If MGW7 is not configured,
-administrateivly blocked or not connected at the time a new call is to be
-established, then the MGW assignment will fail and ultimately the call will be
-terminated during establishment.
-
-<3> Apply no pinning at all (default). The MGW with the lowest load is the one
-being selected for each new call.
