@@ -1127,7 +1127,7 @@ static void gscon_pre_term(struct osmo_fsm_inst *fi, enum osmo_fsm_term_cause ca
 
 	osmo_mgcpc_ep_clear(conn->user_plane.mgw_endpoint);
 	conn->user_plane.mgw_endpoint = NULL;
-	conn->user_plane.mgw_endpoint = NULL;
+	conn->user_plane.mgw_endpoint_ci_msc = NULL;
 
 	if (conn->ho.fi)
 		osmo_fsm_inst_dispatch(conn->ho.fi, HO_EV_CONN_RELEASING, NULL);
