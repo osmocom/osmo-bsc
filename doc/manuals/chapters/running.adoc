@@ -199,7 +199,7 @@ procedures. This allows applying pinning in the usual scenario while still
 keeping call service ongoing against another MGW if the preferred MGW is not
 available at a given time.
 
-<2> Pin BTS2 to prefer MGW3 (node `mgw 7`). If MGW7 is not configured,
+<2> Pin BTS2 to prefer MGW7 (node `mgw 7`). If MGW7 is not configured,
 administrateivly blocked or not connected at the time a new call is to be
 established, then the MGW assignment will fail and ultimately the call will be
 terminated during establishment.
