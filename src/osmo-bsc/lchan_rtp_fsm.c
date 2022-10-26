@@ -919,7 +919,7 @@ void mgcp_pick_codec(struct mgcp_conn_peer *verb_info, const struct gsm_lchan *l
 	if (bss_side && verb_info->codecs[0] == CODEC_AMR_8000_1) {
 		/* FIXME: At the moment all BTSs we support are using the
 		 * octet-aligned payload format. However, in the future
-		 * we may support BTSs that are using bandwith-efficient
+		 * we may support BTSs that are using bandwidth-efficient
 		 * format. In this case we will have to add functionality
 		 * that distinguishes by the BTS model which mode to use. */
 		verb_info->param.amr_octet_aligned = true;

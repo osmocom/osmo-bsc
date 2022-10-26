@@ -2524,7 +2524,7 @@ static void write_msc_amr_options(struct vty *vty, struct bsc_msc_data *msc)
 	if (msc->amr_octet_aligned)
 		vty_out(vty, " amr-payload octet-aligned%s", VTY_NEWLINE);
 	else
-		vty_out(vty, " amr-payload bandwith-efficient%s", VTY_NEWLINE);
+		vty_out(vty, " amr-payload bandwidth-efficient%s", VTY_NEWLINE);
 }
 
 static void msc_write_nri(struct vty *vty, struct bsc_msc_data *msc, bool verbose);
@@ -3212,7 +3212,7 @@ ALIAS_DEPRECATED(cfg_net_msc_dest, cfg_net_msc_no_dest_cmd,
 DEFUN_USRATTR(cfg_net_msc_amr_octet_align,
 	      cfg_net_msc_amr_octet_align_cmd,
 	      X(BSC_VTY_ATTR_NEW_LCHAN),
-	      "amr-payload (octet-aligned|bandwith-efficient",
+	      "amr-payload (octet-aligned|bandwidth-efficient)",
 	      "Set AMR payload framing mode\n"
 	      "payload fields aligned on octet boundaries\n"
 	      "payload fields packed (AoIP)\n")
@@ -3221,11 +3221,22 @@ DEFUN_USRATTR(cfg_net_msc_amr_octet_align,
 
 	if (strcmp(argv[0], "octet-aligned") == 0)
 		data->amr_octet_aligned = true;
-	else if (strcmp(argv[0], "bandwith-efficient") == 0)
+	else if (strcmp(argv[0], "bandwidth-efficient") == 0)
 		data->amr_octet_aligned = false;
+	else {
+		data->amr_octet_aligned = false;
+		vty_out(vty, "%% Command 'amr-payload': Option 'bandwith-efficient' "
+			     "containing typo is deprecated, use 'bandwidth-efficient' instead!%s",
+			     VTY_NEWLINE);
+	}
 
 	return CMD_SUCCESS;
 }
+ALIAS_DEPRECATED(cfg_net_msc_amr_octet_align,
+		 cfg_net_msc_amr_octet_align_deprecated_cmd,
+		 "amr-payload bandwith-efficient",
+		 "Set AMR payload framing mode\n"
+		 "payload fields packed (AoIP)\n");
 
 DEFUN_ATTR(cfg_msc_nri_add, cfg_msc_nri_add_cmd,
 	   "nri add <0-32767> [<0-32767>]",
@@ -3527,6 +3538,7 @@ int bsc_vty_init(struct gsm_network *network)
 	install_element(MSC_NODE, &cfg_net_msc_amr_5_15_cmd);
 	install_element(MSC_NODE, &cfg_net_msc_amr_4_75_cmd);
 	install_element(MSC_NODE, &cfg_net_msc_amr_octet_align_cmd);
+	install_element(MSC_NODE, &cfg_net_msc_amr_octet_align_deprecated_cmd);
 	install_element(MSC_NODE, &cfg_net_msc_lcls_mode_cmd);
 	install_element(MSC_NODE, &cfg_net_msc_lcls_mismtch_cmd);
 	install_element(MSC_NODE, &cfg_msc_cs7_bsc_addr_cmd);
