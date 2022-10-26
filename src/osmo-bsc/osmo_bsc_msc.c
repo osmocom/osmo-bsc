@@ -40,6 +40,7 @@
 #include <osmocom/abis/ipa.h>
 
 #include <osmocom/mgcp_client/mgcp_client.h>
+#include <osmocom/mgcp_client/mgcp_client_pool.h>
 
 #include <sys/socket.h>
 #include <netinet/tcp.h>
@@ -163,27 +164,32 @@ static const struct osmo_stat_item_group_desc msc_statg_desc = {
 int osmo_bsc_msc_init(struct bsc_msc_data *msc)
 {
 	struct gsm_network *net = msc->network;
-	uint16_t mgw_port;
+	struct mgcp_client *mgcp_cli;
 	int rc;
 
 	/* Everything below refers to SCCP-Lite MSC connections only. */
 	if (msc_is_aoip(msc))
 		return 0;
 
-	if (net->mgw.conf->remote_port >= 0)
-		mgw_port = net->mgw.conf->remote_port;
-	else
-		mgw_port = MGCP_CLIENT_REMOTE_PORT_DEFAULT;
-
+	/* Note: MGW is preselected here at startup, which means currently
+	 * osmo-bsc configured for SCCPLite doesn't support MGW pools with more
+	 * than 1 MGW.
+	 */
+	mgcp_cli = mgcp_client_pool_get(net->mgw.mgw_pool);
+	OSMO_ASSERT(mgcp_cli);
 	rc = osmo_sock_init2_ofd(&msc->mgcp_ipa.ofd, AF_UNSPEC, SOCK_DGRAM, IPPROTO_UDP,
 				 msc->mgcp_ipa.local_addr, msc->mgcp_ipa.local_port,
-				 net->mgw.conf->remote_addr, mgw_port,
+				 mgcp_client_remote_addr_str(mgcp_cli),
+				 mgcp_client_remote_port(mgcp_cli),
 				 OSMO_SOCK_F_BIND | OSMO_SOCK_F_CONNECT);
+	mgcp_client_pool_put(mgcp_cli);
 	if (rc < 0) {
 		LOGP(DMSC, LOGL_ERROR, "msc %u: Could not create/connect/bind MGCP proxy socket: %d\n",
 			msc->nr, rc);
 		return rc;
 	}
+	LOGP(DMSC, LOGL_INFO, "msc %u: Socket forwarding IPA-encapsulated MGCP messages towards MGW: %s\n",
+	     msc->nr, osmo_sock_get_name2(msc->mgcp_ipa.ofd.fd));
 
 	return 0;
 }
