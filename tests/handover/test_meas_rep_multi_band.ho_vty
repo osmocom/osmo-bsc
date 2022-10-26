@@ -1,0 +1,51 @@
+# Test ARFCN parsing from measurement report in multi-band BSS (OS#5717)
+
+create-n-bts 5
+
+set-band bts 0 1800
+set-arfcn trx 0 0 600
+
+set-band bts 1 900
+set-arfcn trx 1 0 1000
+
+set-band bts 2 850
+set-arfcn trx 2 0 200
+
+set-band bts 3 900
+set-arfcn trx 3 0 0
+
+set-band bts 4 1800
+set-arfcn trx 4 0 800
+
+# Attach MS to BTS 0, BTS 1-4 are neighbors
+create-ms bts 0 TCH/F AMR
+
+expect-ts-use trx 0 0 states * TCH/F - - - - - -
+expect-ts-use trx 1 0 states * - - - - - - -
+expect-ts-use trx 2 0 states * - - - - - - -
+expect-ts-use trx 3 0 states * - - - - - - -
+expect-ts-use trx 4 0 states * - - - - - - -
+
+# Send a measurement report where TRX with ARFCN=800 has the best rxqual. If
+# the BSC resolved the indexes in the measurement report correctly according to
+# 3GPP TS 04.08 § 10.5.2.20, then the neighbors are the following:
+# Sub list 1 (band == 1800, same band as the TRX where MS is attached):
+#   IDX=0 ARFCN=800  BSIC=63 RXLEV=-75dBm  (BTS 4)
+# Sub list 2 (other bands):
+#   IDX=1 ARFCN=200  BSIC=63 RXLEV=-110dBm (BTS 2)
+#   IDX=2 ARFCN=1000 BSIC=63 RXLEV=-110dBm (BTS 1)
+#   IDX=3 ARFCN=0    BSIC=63 RXLEV=-110dBm (BTS 3; at the end because ARFCN=0)
+meas-rep lchan 0 0 1 0 rxlev 20 rxqual 0 ta 0 neighbors 35 0 0 0
+
+# If the BSC parsed the list correctly, it will request a handover to BTS 4.
+# expect-ho from lchan 0 0 1 0 to lchan 4 0 1 0
+
+# FIXME: parses IDX=0 as ARFCN=0 instead of ARFCN=800, no handover is done
+expect-no-chan
+
+# FIXME: should be on TRX 4 after handover
+expect-ts-use trx 0 0 states * TCH/F - - - - - -
+expect-ts-use trx 1 0 states * - - - - - - -
+expect-ts-use trx 2 0 states * - - - - - - -
+expect-ts-use trx 3 0 states * - - - - - - -
+expect-ts-use trx 4 0 states * - - - - - - -

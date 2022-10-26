@@ -42,6 +42,7 @@ pass test_keep_fr_codec.ho_vty
 pass test_keep_hr_codec.ho_vty
 pass test_max_handovers.ho_vty
 pass test_max_ta.ho_vty
+pass test_meas_rep_multi_band.ho_vty
 pass test_min_rxlev_vs_congestion.ho_vty
 pass test_min_rxlev_vs_hysteresis.ho_vty
 pass test_neighbor_congested.ho_vty

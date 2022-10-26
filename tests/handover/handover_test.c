@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
+#include <inttypes.h>
 
 #include <assert.h>
 
@@ -1433,6 +1434,59 @@ DEFUN(codec_h, codec_h_cmd,
 	return CMD_SUCCESS;
 }
 
+DEFUN(set_arfcn, set_arfcn_cmd,
+	"set-arfcn trx <0-255> <0-255> <0-1023>",
+	"Set the ARFCN for a BTS' TRX\n"
+	"Indicate a BTS and TRX\n" "BTS nr\n" "TRX nr\n"
+	"Absolute Radio Frequency Channel Number\n")
+{
+	enum gsm_band unused;
+	struct gsm_bts *bts = bts_by_num_str(argv[0]);
+	struct gsm_bts_trx *trx = trx_by_num_str(bts, argv[1]);
+	int arfcn = atoi(argv[2]);
+	VTY_ECHO();
+
+	if (gsm_arfcn2band_rc(arfcn, &unused) < 0) {
+		vty_out(vty, "%% Invalid arfcn %" PRIu16 " detected%s", arfcn, VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	trx->arfcn = arfcn;
+
+	if (generate_cell_chan_alloc(trx->bts) != 0) {
+		vty_out(vty, "%% Failed to re-generate Cell Allocation%s", VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	for (int i = 0; i < bsc_gsmnet->num_bts; i++) {
+		if (gsm_generate_si(gsm_bts_num(bsc_gsmnet, i), SYSINFO_TYPE_2) <= 0)
+			fprintf(stderr, "Error generating SI2\n");
+	}
+
+	return CMD_SUCCESS;
+}
+
+DEFUN(set_band, set_band_cmd,
+	"set-band bts <0-255> BAND",
+	"Set the frequency band for a BTS\n"
+	"Indicate a BTS\n" "BTS nr\n"
+	"Frequency band\n")
+{
+	struct gsm_bts *bts = bts_by_num_str(argv[0]);
+	int band = gsm_band_parse(argv[1]);
+	VTY_ECHO();
+
+	if (band < 0) {
+		vty_out(vty, "%% BAND %d is not a valid GSM band%s",
+			band, VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	bts->band = band;
+
+	return CMD_SUCCESS;
+}
+
 DEFUN(set_ts_use, set_ts_use_cmd,
 	"set-ts-use trx <0-255> <0-255> states" TS_USE TS_USE TS_USE TS_USE TS_USE TS_USE TS_USE TS_USE,
 	"Put timeslots of a BTS' TRX into a specific state\n"
@@ -1490,6 +1544,8 @@ static void ho_test_vty_init()
 	install_element(CONFIG_NODE, &expect_ts_use_cmd);
 	install_element(CONFIG_NODE, &codec_f_cmd);
 	install_element(CONFIG_NODE, &codec_h_cmd);
+	install_element(CONFIG_NODE, &set_arfcn_cmd);
+	install_element(CONFIG_NODE, &set_band_cmd);
 	install_element(CONFIG_NODE, &set_ts_use_cmd);
 	install_element(CONFIG_NODE, &wait_cmd);
 }
