@@ -154,7 +154,7 @@ void neighbor_ident_vty_parse_arfcn_bsic(struct cell_ab *ab, const char **argv)
 		LOGP(DLINP, LOGL_NOTICE, fmt "\n", ## args); \
 } while (0) \
 
-/* Delete a neighbor from neighborlist. When the parameter *vty is set to NULL all error messages are redirected to the
+/* Add a neighbor from neighborlist. When the parameter *vty is set to NULL all error messages are redirected to the
  * logtext. */
 int neighbor_ident_add_neighbor(struct vty *vty, struct gsm_bts *bts, struct neighbor *n)
 {
