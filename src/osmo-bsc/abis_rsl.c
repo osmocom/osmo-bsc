@@ -963,7 +963,7 @@ int rsl_imm_assign_cmd(struct gsm_bts *bts, uint8_t len, uint8_t *val)
 	return abis_rsl_sendmsg(msg);
 }
 
-/* Chapter 8.5.6 */
+/* Chapter 8.5.6 Immediate Assignment Command (with Ericcson vendor specific RSL extension) */
 int rsl_ericsson_imm_assign_cmd(struct gsm_bts *bts, uint32_t tlli, uint8_t len, uint8_t *val)
 {
 	struct msgb *msg = rsl_imm_assign_cmd_common(bts, len, val);
