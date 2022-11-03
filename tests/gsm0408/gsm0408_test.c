@@ -405,7 +405,7 @@ static const struct test_gsm48_ra_id_by_bts test_gsm48_ra_id_by_bts_data[] = {
 	},
 };
 
-static void test_gsm48_ra_id_by_bts()
+static void test_gsm48_ra_id_by_bts(void)
 {
 	int i;
 	bool pass = true;
@@ -440,7 +440,7 @@ static void test_gsm48_ra_id_by_bts()
 	OSMO_ASSERT(pass);
 }
 
-static void test_gsm48_multirate_config()
+static void test_gsm48_multirate_config(void)
 {
 	struct gsm48_multi_rate_conf *gsm48_ie;
 	struct amr_multirate_conf mr;

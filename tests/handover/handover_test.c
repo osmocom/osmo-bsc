@@ -112,7 +112,7 @@ void fake_time_passes(time_t secs, suseconds_t usecs)
 	osmo_timers_update();
 }
 
-void fake_time_start()
+void fake_time_start(void)
 {
 	struct timespec *clock_override;
 
@@ -1522,7 +1522,7 @@ DEFUN(wait, wait_cmd,
 	return CMD_SUCCESS;
 }
 
-static void ho_test_vty_init()
+static void ho_test_vty_init(void)
 {
 	install_element(CONFIG_NODE, &create_n_bts_cmd);
 	install_element(CONFIG_NODE, &create_bts_cmd);

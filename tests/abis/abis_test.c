@@ -136,7 +136,7 @@ static const struct test_abis_nm_ipaccess_cgi test_abis_nm_ipaccess_cgi_data[] =
 	},
 };
 
-static void test_abis_nm_ipaccess_cgi()
+static void test_abis_nm_ipaccess_cgi(void)
 {
 	int i;
 	bool pass = true;

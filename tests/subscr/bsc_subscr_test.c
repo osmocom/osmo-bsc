@@ -126,7 +126,7 @@ static const struct log_info log_info = {
 	.num_cat = ARRAY_SIZE(log_categories),
 };
 
-int main()
+int main(int argc, char **argv)
 {
 	void *ctx = talloc_named_const(NULL, 0, "bsc_subscr_test");
 	printf("Testing BSC subscriber core code.\n");
