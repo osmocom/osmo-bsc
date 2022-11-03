@@ -53,7 +53,7 @@ static struct {
 	.format_json = false,
 };
 
-static void print_help()
+static void print_help(void)
 {
 	printf("\n");
 	printf("Usage: abisip-find [-l] [<interface-name>]\n");
@@ -265,7 +265,7 @@ LLIST_HEAD(base_stations);
 
 void *ctx = NULL;
 
-void print_timestamp()
+void print_timestamp(void)
 {
 	time_t now = time(NULL);
 	printf("\n\n----- %s\n", ctime(&now));
@@ -304,7 +304,7 @@ bool base_stations_add(struct base_station *new_bs)
 	return true;
 }
 
-bool base_stations_timeout()
+bool base_stations_timeout(void)
 {
 	struct base_station *bs, *next_bs;
 	time_t now = time(NULL);
@@ -323,7 +323,7 @@ bool base_stations_timeout()
 	return changed;
 }
 
-void base_stations_print()
+void base_stations_print(void)
 {
 	struct base_station *bs;
 	int count = 0;

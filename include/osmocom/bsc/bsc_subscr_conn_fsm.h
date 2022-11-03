@@ -57,7 +57,7 @@ struct osmo_mgcpc_ep_ci;
 struct assignment_request;
 struct gsm_lchan;
 
-void bsc_subscr_conn_fsm_init();
+void bsc_subscr_conn_fsm_init(void);
 
 /* Allocate a subscriber connection and its associated FSM */
 struct gsm_subscriber_connection *bsc_subscr_con_allocate(struct gsm_network *net);

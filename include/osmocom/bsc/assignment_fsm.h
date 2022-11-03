@@ -40,7 +40,7 @@ enum assignment_fsm_event {
 	ASSIGNMENT_EV_CONN_RELEASING,
 };
 
-void assignment_fsm_init();
+void assignment_fsm_init(void);
 
 int reassignment_request_to_lchan(enum assign_for assign_for, struct gsm_lchan *lchan, struct gsm_lchan *to_lchan,
 				  int tsc_set, int tsc);

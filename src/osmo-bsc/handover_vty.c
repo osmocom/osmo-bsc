@@ -170,7 +170,7 @@ HODEC1_CFG_ALL_MEMBERS
 #undef HO_CFG_ONE_MEMBER
 }
 
-void ho_vty_init()
+void ho_vty_init(void)
 {
 	ho_vty_init_cmds(GSMNET_NODE);
 	install_element(GSMNET_NODE, &cfg_net_ho_congestion_check_interval_cmd);

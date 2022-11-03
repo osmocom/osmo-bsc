@@ -91,12 +91,12 @@ static const char *config_file = "osmo-bsc.cfg";
 static const char *rf_ctrl = NULL;
 static int daemonize = 0;
 
-static void print_usage()
+static void print_usage(void)
 {
 	printf("Usage: osmo-bsc\n");
 }
 
-static void print_help()
+static void print_help(void)
 {
 	printf("Some useful options:\n");
 	printf("  -h --help 			This text.\n");

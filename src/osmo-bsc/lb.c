@@ -46,7 +46,7 @@ static struct gsm_subscriber_connection *get_bsc_conn_by_lb_conn_id(int conn_id)
 }
 
 /* Send reset to SMLC */
-int bssmap_le_tx_reset()
+int bssmap_le_tx_reset(void)
 {
 	struct osmo_ss7_instance *ss7;
 	struct msgb *msg;
@@ -74,7 +74,7 @@ int bssmap_le_tx_reset()
 }
 
 /* Send reset-ack to SMLC */
-int bssmap_le_tx_reset_ack()
+int bssmap_le_tx_reset_ack(void)
 {
 	struct osmo_ss7_instance *ss7;
 	struct msgb *msg;
@@ -352,7 +352,7 @@ count_tx:
 #define DEFAULT_ASP_LOCAL_IP "localhost"
 #define DEFAULT_ASP_REMOTE_IP "localhost"
 
-void lb_cancel_all()
+void lb_cancel_all(void)
 {
 	struct gsm_subscriber_connection *conn;
 	llist_for_each_entry(conn, &bsc_gsmnet->subscr_conns, entry)
@@ -384,7 +384,7 @@ void lb_reset_tx_reset_ack(void *data)
 	bssmap_le_tx_reset_ack();
 }
 
-static void lb_start_reset_fsm()
+static void lb_start_reset_fsm(void)
 {
 	struct bssmap_reset_cfg cfg = {
 		.conn_cfm_failure_threshold = 3,
@@ -404,13 +404,13 @@ static void lb_start_reset_fsm()
 	bsc_gsmnet->smlc->bssmap_reset = bssmap_reset_alloc(bsc_gsmnet, "Lb", &cfg);
 }
 
-static void lb_stop_reset_fsm()
+static void lb_stop_reset_fsm(void)
 {
 	bssmap_reset_term_and_free(bsc_gsmnet->smlc->bssmap_reset);
 	bsc_gsmnet->smlc->bssmap_reset = NULL;
 }
 
-static int lb_start()
+static int lb_start(void)
 {
 	uint32_t default_pc;
 	struct osmo_ss7_instance *cs7_inst = NULL;
@@ -484,7 +484,7 @@ static int lb_start()
 	return 0;
 }
 
-static int lb_stop()
+static int lb_stop(void)
 {
 	/* Not set up? */
 	if (!bsc_gsmnet->smlc->sccp_user)
@@ -499,7 +499,7 @@ static int lb_stop()
 	return 0;
 }
 
-int lb_start_or_stop()
+int lb_start_or_stop(void)
 {
 	int rc;
 	if (bsc_gsmnet->smlc->enable) {
@@ -534,7 +534,7 @@ int lb_start_or_stop()
 
 static void smlc_vty_init(void);
 
-int lb_init()
+int lb_init(void)
 {
 	OSMO_ASSERT(!bsc_gsmnet->smlc);
 	bsc_gsmnet->smlc = talloc_zero(bsc_gsmnet, struct smlc_config);

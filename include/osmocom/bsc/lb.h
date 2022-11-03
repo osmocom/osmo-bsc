@@ -57,7 +57,7 @@ struct smlc_config {
 extern const struct rate_ctr_desc smlc_ctr_description[];
 extern const struct rate_ctr_group_desc smlc_ctrg_desc;
 
-int lb_init();
-int lb_start_or_stop();
+int lb_init(void);
+int lb_start_or_stop(void);
 int lb_send(struct gsm_subscriber_connection *conn, const struct bssap_le_pdu *bssap_le);
 void lb_close_conn(struct gsm_subscriber_connection *conn);

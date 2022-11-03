@@ -55,7 +55,7 @@ struct handover_rr_detect_data {
 	const uint8_t *access_delay;
 };
 
-void handover_fsm_init();
+void handover_fsm_init(void);
 
 int handover_request(struct handover_out_req *req);
 void handover_start(struct handover_out_req *req);

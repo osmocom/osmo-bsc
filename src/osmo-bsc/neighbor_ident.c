@@ -293,7 +293,7 @@ bool cell_ab_valid(const struct cell_ab *cell)
 	return true;
 }
 
-int neighbors_check_cfg()
+int neighbors_check_cfg(void)
 {
 	/* A local neighbor can be configured by BTS number, or by a cell ID. A local neighbor can omit the ARFCN+BSIC,
 	 * in which case those are taken from that local BTS config. If a local neighbor has ARFCN+BSIC configured, it

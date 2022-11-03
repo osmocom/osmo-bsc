@@ -56,7 +56,7 @@ enum lchan_fsm_event {
 	LCHAN_EV_REQUEST_MODE_MODIFY,
 };
 
-void lchan_fsm_init();
+void lchan_fsm_init(void);
 
 void lchan_fsm_alloc(struct gsm_lchan *lchan);
 void lchan_release(struct gsm_lchan *lchan, bool do_rr_release,

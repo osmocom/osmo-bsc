@@ -229,7 +229,7 @@ void all_allocated_update_bts(struct gsm_bts *bts)
 	all_allocated_update(&bts->all_allocated, &bts->chan_counts);
 }
 
-void all_allocated_update_bsc()
+void all_allocated_update_bsc(void)
 {
 	struct gsm_network *net = bsc_gsmnet;
 	all_allocated_update(&net->all_allocated, &net->chan_counts);

@@ -628,7 +628,7 @@ DEFUN(show_bts_neighbor, show_bts_neighbor_cmd,
 	return CMD_SUCCESS;
 }
 
-void neighbor_ident_vty_init()
+void neighbor_ident_vty_init(void)
 {
 	install_element(GSMNET_NODE, &cfg_neighbor_bind_cmd);
 

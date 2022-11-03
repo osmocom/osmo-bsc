@@ -248,7 +248,7 @@ void chan_counts_sig_init(void)
 	osmo_signal_register_handler(SS_NM, chan_counts_sig_cb, NULL);
 }
 
-void chan_counts_bsc_verify()
+void chan_counts_bsc_verify(void)
 {
 	struct gsm_bts *bts;
 	struct chan_counts bsc_counts = {0};

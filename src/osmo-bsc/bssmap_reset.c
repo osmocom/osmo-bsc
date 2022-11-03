@@ -251,7 +251,7 @@ void bssmap_reset_resend_reset(struct bssmap_reset *bssmap_reset)
 	osmo_fsm_inst_state_chg_ms(bssmap_reset->fi, BSSMAP_RESET_ST_DISC, 1, 0);
 }
 
-static __attribute__((constructor)) void bssmap_reset_fsm_init()
+static __attribute__((constructor)) void bssmap_reset_fsm_init(void)
 {
 	OSMO_ASSERT(osmo_fsm_register(&bssmap_reset_fsm) == 0);
 }

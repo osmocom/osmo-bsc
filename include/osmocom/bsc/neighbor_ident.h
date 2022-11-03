@@ -73,7 +73,7 @@ void bts_cell_ab(struct cell_ab *arfcn_bsic, const struct gsm_bts *bts);
 int resolve_neighbors(struct gsm_bts **local_neighbor_p, struct gsm0808_cell_id_list2 *remote_neighbors,
 		      struct gsm_bts *from_bts, const struct cell_ab *target_ab, bool log_errors);
 
-void neighbor_ident_vty_init();
+void neighbor_ident_vty_init(void);
 void neighbor_ident_vty_write_bts(struct vty *vty, const char *indent, struct gsm_bts *bts);
 void neighbor_ident_vty_write_network(struct vty *vty, const char *indent);
 
@@ -81,7 +81,7 @@ int neighbor_ident_add_neighbor(struct vty *vty, struct gsm_bts *bts, struct nei
 int neighbor_ident_del_neighbor(struct vty *vty, struct gsm_bts *bts, struct neighbor *n);
 int neighbor_ident_ctrl_init(void);
 
-int neighbors_check_cfg();
+int neighbors_check_cfg(void);
 
 #define CELL_AB_VTY_PARAMS "arfcn <0-1023> bsic (<0-63>|any)"
 #define CELL_AB_VTY_DOC \

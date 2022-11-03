@@ -1202,7 +1202,7 @@ static struct osmo_fsm gscon_fsm = {
 	.event_names = gscon_fsm_event_names,
 };
 
-void bsc_subscr_conn_fsm_init()
+void bsc_subscr_conn_fsm_init(void)
 {
 	OSMO_ASSERT(osmo_fsm_register(&gscon_fsm) == 0);
 	OSMO_ASSERT(osmo_fsm_register(&lcls_fsm) == 0);

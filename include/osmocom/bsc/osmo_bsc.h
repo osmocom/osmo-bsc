@@ -17,7 +17,7 @@ struct gsm_audio_support;
 struct gsm_subscriber_connection;
 struct gsm_bts;
 
-struct bsc_api *osmo_bsc_api();
+struct bsc_api *osmo_bsc_api(void);
 
 int bsc_scan_bts_msg(struct gsm_subscriber_connection *conn, struct msgb *msg);
 int bsc_scan_msc_msg(struct gsm_subscriber_connection *conn, struct msgb *msg);
@@ -25,7 +25,8 @@ int bsc_scan_msc_msg(struct gsm_subscriber_connection *conn, struct msgb *msg);
 int bsc_handle_udt(struct bsc_msc_data *msc, struct msgb *msg, unsigned int length);
 int bsc_handle_dt(struct gsm_subscriber_connection *conn, struct msgb *msg, unsigned int len);
 
-int bsc_ctrl_cmds_install();
+struct gsm_network;
+int bsc_ctrl_cmds_install(struct gsm_network *net);
 
 void bsc_gen_location_state_trap(struct gsm_bts *bts);
 

@@ -6,11 +6,11 @@ struct gsm_bts_trx;
 struct gsm_bts_trx_ts;
 struct gsm_lchan;
 
-void chan_counts_sig_init();
+void chan_counts_sig_init(void);
 void chan_counts_ts_update(struct gsm_bts_trx_ts *ts);
 void chan_counts_ts_clear(struct gsm_bts_trx_ts *ts);
 void chan_counts_trx_update(struct gsm_bts_trx *trx);
-void chan_counts_bsc_verify();
+void chan_counts_bsc_verify(void);
 
 /* First array index to chan_counts.val. */
 enum chan_counts_dim1 {
