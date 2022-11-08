@@ -3432,9 +3432,9 @@ DEFUN_USRATTR(cfg_power_ctrl_ci_thresh,
 	      "Set target C/I thresholds (for dynamic mode), only available in ms-power-control\n"
 	      VTY_DESC_CI_TYPE
 	      "Lower C/I value\n"
-	      "Lower " POWER_CONTROL_MEAS_RXQUAL_DESC
+	      "Lower " POWER_CONTROL_MEAS_CI_DESC
 	      "Upper C/I value\n"
-	      "Upper " POWER_CONTROL_MEAS_RXQUAL_DESC)
+	      "Upper " POWER_CONTROL_MEAS_CI_DESC)
 {
 	struct gsm_power_ctrl_params *params = vty->index;
 	const char *type = argv[0];
