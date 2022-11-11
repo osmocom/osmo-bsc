@@ -614,7 +614,9 @@ static struct vty_app_info vty_info = {
 	.copyright	=
 	"Copyright (C) 2008-2018 Harald Welte, Holger Freyther\r\n"
 	"Contributions by Daniel Willmann, Jan Lübbe, Stefan Schmidt\r\n"
-	"Dieter Spaar, Andreas Eversberg, Sylvain Munaut, Neels Hofmeyr\r\n\r\n"
+	"Dieter Spaar, Andreas Eversberg, Sylvain Munaut, Neels Hofmeyr\r\n"
+	"Copyright (C) 2013-2022 sysmocom - s.f.m.c. GmbH\r\n"
+	"\r\n"
 	"License AGPLv3+: GNU AGPL version 3 or later <http://gnu.org/licenses/agpl-3.0.html>\r\n"
 	"This is free software: you are free to change and redistribute it.\r\n"
 	"There is NO WARRANTY, to the extent permitted by law.\r\n",
