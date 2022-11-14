@@ -373,15 +373,15 @@ static struct osmo_fsm_state nm_rcarrier_fsm_states[] = {
 		.action = st_op_disabled_offline,
 	},
 	[NM_RCARRIER_ST_OP_ENABLED] = {
-	.in_event_mask =
-		X(NM_EV_STATE_CHG_REP),
-	.out_state_mask =
-		X(NM_RCARRIER_ST_OP_DISABLED_NOTINSTALLED) |
-		X(NM_RCARRIER_ST_OP_DISABLED_DEPENDENCY) |
-		X(NM_RCARRIER_ST_OP_DISABLED_OFFLINE),
-	.name = "ENABLED",
-	.onenter = st_op_enabled_on_enter,
-	.action = st_op_enabled,
+		.in_event_mask =
+			X(NM_EV_STATE_CHG_REP),
+		.out_state_mask =
+			X(NM_RCARRIER_ST_OP_DISABLED_NOTINSTALLED) |
+			X(NM_RCARRIER_ST_OP_DISABLED_DEPENDENCY) |
+			X(NM_RCARRIER_ST_OP_DISABLED_OFFLINE),
+		.name = "ENABLED",
+		.onenter = st_op_enabled_on_enter,
+		.action = st_op_enabled,
 	},
 };
 
