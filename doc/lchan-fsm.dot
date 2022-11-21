@@ -32,6 +32,7 @@ labelloc=t; label="lchan FSM"
 	WAIT_TS_READY -> UNUSED [label="error/timeout",style=dashed,constraint=false]
 	{WAIT_ACTIV_ACK,WAIT_RF_RELEASE_ACK} -> BORKEN [label="error/timeout",style=dashed]
 	BORKEN -> WAIT_AFTER_ERROR [label="late RF Release ACK"]
+	BORKEN -> WAIT_RF_RELEASE_ACK [label="late Activation ACK"]
 	WAIT_RLL_RTP_ESTABLISH -> WAIT_RLL_RTP_RELEASED [label=error,style=dashed]
 
 	WAIT_ACTIV_ACK -> rtp [label="LCHAN_RTP_EV_LCHAN_READY",style=dotted]
@@ -44,4 +45,13 @@ labelloc=t; label="lchan FSM"
 	WAIT_RSL_CHAN_MODE_MODIFY_ACK -> ESTABLISHED [label="LCHAN_EV_RSL_CHAN_MODE_MODIFY_ACK\nno change to RTP"]
 	WAIT_RR_CHAN_MODE_MODIFY_ACK -> BORKEN [label="error/timeout",style=dashed]
 	WAIT_RSL_CHAN_MODE_MODIFY_ACK -> BORKEN [label="error/timeout",style=dashed]
+
+	BORKEN -> RECOVER_WAIT_ACTIV_ACK [label="X28"]
+	RECOVER_WAIT_ACTIV_ACK -> BORKEN [label="error/timeout",style=dashed]
+
+	RECOVER_WAIT_ACTIV_ACK -> UNUSED [label="rx ACK"]
+	RECOVER_WAIT_ACTIV_ACK -> RECOVER_WAIT_RF_RELEASE_ACK [label="rx NACK"]
+
+	RECOVER_WAIT_RF_RELEASE_ACK -> UNUSED [label="rx ACK"]
+	RECOVER_WAIT_RF_RELEASE_ACK -> BORKEN [label="error/timeout",style=dashed]
 }

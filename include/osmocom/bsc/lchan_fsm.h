@@ -33,6 +33,8 @@ enum lchan_fsm_state {
 	LCHAN_ST_WAIT_RF_RELEASE_ACK,
 	LCHAN_ST_WAIT_AFTER_ERROR,
 	LCHAN_ST_BORKEN,
+	LCHAN_ST_RECOVER_WAIT_ACTIV_ACK, /*< Attempt to recover from BORKEN: first try to activate the lchan */
+	LCHAN_ST_RECOVER_WAIT_RF_RELEASE_ACK, /*< Attempt to recover from BORKEN: then try to release it */
 };
 
 enum lchan_fsm_event {

@@ -334,6 +334,9 @@ struct osmo_tdef_state_timeout lchan_fsm_timeouts[32] = {
 	[LCHAN_ST_WAIT_AFTER_ERROR]	= { .T = -3111 },
 	[LCHAN_ST_WAIT_RR_CHAN_MODE_MODIFY_ACK]	= { .T = -13 },
 	[LCHAN_ST_WAIT_RSL_CHAN_MODE_MODIFY_ACK]	= { .T = -14 },
+	[LCHAN_ST_BORKEN]		= { .T = -28 },
+	[LCHAN_ST_RECOVER_WAIT_ACTIV_ACK]	= { .T = -6 },
+	[LCHAN_ST_RECOVER_WAIT_RF_RELEASE_ACK]	= { .T = -6 },
 };
 
 /* Transition to a state, using the T timer defined in lchan_fsm_timeouts.
@@ -380,6 +383,8 @@ uint32_t lchan_fsm_on_error[32] = {
 	[LCHAN_ST_BORKEN] 			= LCHAN_ST_BORKEN,
 	[LCHAN_ST_WAIT_RR_CHAN_MODE_MODIFY_ACK]	= LCHAN_ST_WAIT_RF_RELEASE_ACK,
 	[LCHAN_ST_WAIT_RSL_CHAN_MODE_MODIFY_ACK]	= LCHAN_ST_WAIT_RF_RELEASE_ACK,
+	[LCHAN_ST_RECOVER_WAIT_ACTIV_ACK]	= LCHAN_ST_BORKEN,
+	[LCHAN_ST_RECOVER_WAIT_RF_RELEASE_ACK]	= LCHAN_ST_BORKEN,
 };
 
 #define lchan_fail(fmt, args...) lchan_fail_to(lchan_fsm_on_error[fi->state], fmt, ## args)
@@ -1631,6 +1636,71 @@ static void lchan_fsm_borken(struct osmo_fsm_inst *fi, uint32_t event, void *dat
 	}
 }
 
+static void lchan_fsm_recover_wait_activ_ack_onenter(struct osmo_fsm_inst *fi, uint32_t prev_state)
+{
+	int rc;
+	struct gsm_lchan *lchan = lchan_fi_lchan(fi);
+
+	LOG_LCHAN(lchan, LOGL_INFO, "attempting to recover from BORKEN lchan\n");
+
+	lchan->type = GSM_LCHAN_SDCCH;
+	lchan->activate.info.ta_known = true;
+
+	chan_counts_ts_update(lchan->ts);
+
+	rc = rsl_tx_chan_activ(lchan, RSL_ACT_INTRA_NORM_ASS, 0);
+	if (rc)
+		lchan_fail("Tx Chan Activ failed: %s (%d)", strerror(-rc), rc);
+}
+
+static void lchan_fsm_recover_wait_activ_ack(struct osmo_fsm_inst *fi, uint32_t event, void *data)
+{
+	struct gsm_lchan *lchan = lchan_fi_lchan(fi);
+
+	switch (event) {
+
+	case LCHAN_EV_RSL_CHAN_ACTIV_ACK:
+		lchan_fsm_state_chg(LCHAN_ST_RECOVER_WAIT_RF_RELEASE_ACK);
+		break;
+
+	case LCHAN_EV_RSL_CHAN_ACTIV_NACK:
+		/* If an earlier lchan activ got through to the BTS, but the
+		 * ACK did not get back to the BSC, it may still be active on
+		 * the BTS side. Proceed to release it. */
+		LOG_LCHAN(lchan, LOGL_NOTICE, "received NACK for activation of BORKEN lchan, assuming still active\n");
+		lchan_fsm_state_chg(LCHAN_ST_RECOVER_WAIT_RF_RELEASE_ACK);
+		break;
+
+	default:
+		OSMO_ASSERT(false);
+	}
+}
+
+static void lchan_fsm_recover_wait_rf_release_ack_onenter(struct osmo_fsm_inst *fi, uint32_t prev_state)
+{
+	int rc;
+	struct gsm_lchan *lchan = lchan_fi_lchan(fi);
+
+	rc = rsl_tx_rf_chan_release(lchan);
+	if (rc)
+		lchan_fail("Tx RSL RF Channel Release failed: %s (%d)\n", strerror(-rc), rc);
+}
+
+static void lchan_fsm_recover_wait_rf_release_ack(struct osmo_fsm_inst *fi, uint32_t event, void *data)
+{
+	struct gsm_lchan *lchan = lchan_fi_lchan(fi);
+	switch (event) {
+
+	case LCHAN_EV_RSL_RF_CHAN_REL_ACK:
+		LOG_LCHAN(lchan, LOGL_NOTICE, "successfully recovered BORKEN lchan\n");
+		lchan_fsm_state_chg(LCHAN_ST_UNUSED);
+		break;
+
+	default:
+		OSMO_ASSERT(false);
+	}
+}
+
 #define S(x)	(1 << (x))
 
 static const struct osmo_fsm_state lchan_fsm_states[] = {
@@ -1820,6 +1890,32 @@ static const struct osmo_fsm_state lchan_fsm_states[] = {
 			| S(LCHAN_ST_WAIT_RF_RELEASE_ACK)
 			| S(LCHAN_ST_UNUSED)
 			| S(LCHAN_ST_WAIT_AFTER_ERROR)
+			| S(LCHAN_ST_RECOVER_WAIT_ACTIV_ACK)
+			,
+	},
+	[LCHAN_ST_RECOVER_WAIT_ACTIV_ACK] {
+		.name = "RECOVER_WAIT_ACTIV_ACK",
+		.onenter = lchan_fsm_recover_wait_activ_ack_onenter,
+		.action = lchan_fsm_recover_wait_activ_ack,
+		.in_event_mask = 0
+			| S(LCHAN_EV_RSL_CHAN_ACTIV_ACK)
+			| S(LCHAN_EV_RSL_CHAN_ACTIV_NACK)
+			,
+		.out_state_mask = 0
+			| S(LCHAN_ST_BORKEN)
+			| S(LCHAN_ST_RECOVER_WAIT_RF_RELEASE_ACK)
+			,
+	},
+	[LCHAN_ST_RECOVER_WAIT_RF_RELEASE_ACK] {
+		.name = "RECOVER_WAIT_RF_RELEASE_ACK",
+		.onenter = lchan_fsm_recover_wait_rf_release_ack_onenter,
+		.action = lchan_fsm_recover_wait_rf_release_ack,
+		.in_event_mask = 0
+			| S(LCHAN_EV_RSL_RF_CHAN_REL_ACK)
+			,
+		.out_state_mask = 0
+			| S(LCHAN_ST_BORKEN)
+			| S(LCHAN_ST_UNUSED)
 			,
 	},
 };
@@ -1891,6 +1987,10 @@ static int lchan_fsm_timer_cb(struct osmo_fsm_inst *fi)
 
 	case LCHAN_ST_WAIT_AFTER_ERROR:
 		lchan_fsm_state_chg(LCHAN_ST_UNUSED);
+		return 0;
+
+	case LCHAN_ST_BORKEN:
+		lchan_fsm_state_chg(LCHAN_ST_RECOVER_WAIT_ACTIV_ACK);
 		return 0;
 
 	default:
