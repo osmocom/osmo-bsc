@@ -74,6 +74,7 @@ static struct osmo_tdef gsm_network_T_defs[] = {
 			" after this amount of idle time, forget internally cumulated time remainders. Zero to always"
 			" keep remainders. See also X16, X17." },
 	{ .T = -25, .default_val = 5, .desc = "Timeout for initial user data after an MSC initiated an SCCP connection to the BSS" },
+	{ .T = -28, .default_val = 30, .desc = "Interval at which to try to recover a BORKEN lchan" },
 	{ .T = -3105, .default_val = GSM_NY1_DEFAULT, .unit = OSMO_TDEF_CUSTOM,
 		.desc = "Ny1: Maximum number of Physical Information (re)transmissions" },
 	{ .T = -3111, .default_val = 4, .desc = "Wait time after lchan was released in error (should be T3111 + 2s)" },
