@@ -126,9 +126,9 @@ void paging_destructor(struct gsm_bts *bts);
 /* schedule paging request */
 int paging_request_bts(const struct bsc_paging_params *params, struct gsm_bts *bts);
 
-int paging_request_stop(struct bsc_msc_data **msc_p, enum bsc_paging_reason *reasons_p,
+void paging_request_stop(struct bsc_msc_data **msc_p, enum bsc_paging_reason *reasons_p,
 			struct gsm_bts *bts, struct bsc_subscr *bsub);
-int paging_request_cancel(struct bsc_subscr *bsub, enum bsc_paging_reason reasons);
+void paging_request_cancel(struct bsc_subscr *bsub, enum bsc_paging_reason reasons);
 
 /* update paging load */
 void paging_update_buffer_space(struct gsm_bts *bts, uint16_t);

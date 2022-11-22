@@ -522,9 +522,9 @@ int paging_request_bts(const struct bsc_paging_params *params, struct gsm_bts *b
  * \param[out] returns the reason for a pending paging, if any.
  * \param[in] bts BTS which has received a paging response.
  * \param[in] bsub subscriber.
- * \returns number of pending pagings.
+ * \returns whether active request for the subscriber on bts was found
  */
-static int paging_request_stop_bts(struct bsc_msc_data **msc_p, enum bsc_paging_reason *reason_p,
+static bool paging_request_stop_bts(struct bsc_msc_data **msc_p, enum bsc_paging_reason *reason_p,
 				   struct gsm_bts *bts, struct bsc_subscr *bsub)
 {
 	struct gsm_bts_paging_state *bts_entry = &bts->paging;
@@ -541,10 +541,10 @@ static int paging_request_stop_bts(struct bsc_msc_data **msc_p, enum bsc_paging_
 		*reason_p = req->reason;
 		LOG_PAGING_BTS(req, bts, DPAG, LOGL_DEBUG, "Stop paging\n");
 		paging_remove_request(&bts->paging, req);
-		return 1;
+		return true;
 	}
 
-	return 0;
+	return false;
 }
 
 /*! Stop paging on all cells and return the MSC that paged (if any) and all pending paging reasons.
@@ -552,20 +552,17 @@ static int paging_request_stop_bts(struct bsc_msc_data **msc_p, enum bsc_paging_
  * \param[out] returns the ORed bitmask of all reasons of pending pagings.
  * \param[in] bts BTS which has received a paging response
  * \param[in] bsub subscriber
- * \returns number of pending pagings.
  */
-int paging_request_stop(struct bsc_msc_data **msc_p, enum bsc_paging_reason *reasons_p,
+void paging_request_stop(struct bsc_msc_data **msc_p, enum bsc_paging_reason *reasons_p,
 			struct gsm_bts *bts, struct bsc_subscr *bsub)
 {
 	struct gsm_bts *bts_i;
 	struct bsc_msc_data *paged_from_msc;
-	int count;
 	enum bsc_paging_reason reasons;
 	OSMO_ASSERT(bts);
 
-	count = paging_request_stop_bts(&paged_from_msc, &reasons, bts, bsub);
+	paging_request_stop_bts(&paged_from_msc, &reasons, bts, bsub);
 	if (paged_from_msc) {
-		count++;
 		rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_PAGING_RESPONDED));
 		rate_ctr_inc(rate_ctr_group_get_ctr(bts->network->bsc_ctrs, BSC_CTR_PAGING_RESPONDED));
 	}
@@ -577,7 +574,7 @@ int paging_request_stop(struct bsc_msc_data **msc_p, enum bsc_paging_reason *rea
 		if (bts_i == bts)
 			continue; /* Already handled above, avoid repeated lookup */
 
-		count += paging_request_stop_bts(&paged_from_msc2, &reason2, bts_i, bsub);
+		paging_request_stop_bts(&paged_from_msc2, &reason2, bts_i, bsub);
 		if (paged_from_msc2) {
 			reasons |= reason2;
 			if (!paged_from_msc) {
@@ -591,15 +588,12 @@ int paging_request_stop(struct bsc_msc_data **msc_p, enum bsc_paging_reason *rea
 
 	*msc_p = paged_from_msc;
 	*reasons_p = reasons;
-
-	return count;
 }
 
 /* Remove all paging requests, for specific reasons only. */
-int paging_request_cancel(struct bsc_subscr *bsub, enum bsc_paging_reason reasons)
+void paging_request_cancel(struct bsc_subscr *bsub, enum bsc_paging_reason reasons)
 {
 	struct gsm_bts *bts;
-	int count = 0;
 
 	llist_for_each_entry(bts, &bsc_gsmnet->bts_list, list) {
 		struct gsm_paging_request *req, *req2;
@@ -611,10 +605,8 @@ int paging_request_cancel(struct bsc_subscr *bsub, enum bsc_paging_reason reason
 				continue;
 			LOG_PAGING_BTS(req, bts, DPAG, LOGL_DEBUG, "Cancel paging\n");
 			paging_remove_request(&bts->paging, req);
-			count++;
 		}
 	}
-	return count;
 }
 
 /*! Update the BTS paging buffer slots on given BTS */
