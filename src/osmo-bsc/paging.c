@@ -577,20 +577,28 @@ void paging_request_stop(struct bsc_msc_data **msc_p, enum bsc_paging_reason *re
 /* Remove all paging requests, for specific reasons only. */
 void paging_request_cancel(struct bsc_subscr *bsub, enum bsc_paging_reason reasons)
 {
-	struct gsm_bts *bts;
+	struct gsm_paging_request *req, *req2;
 	OSMO_ASSERT(bsub);
 
-	llist_for_each_entry(bts, &bsc_gsmnet->bts_list, list) {
-		struct gsm_paging_request *req, *req2;
+	/* Avoid accessing bsub after reaching 0 active_paging_request_len,
+	 * since it could be freed during put(): */
+	unsigned remaining = bsub->active_paging_requests_len;
 
-		llist_for_each_entry_safe(req, req2, &bts->paging.pending_requests, entry) {
-			if (req->bsub != bsub)
-				continue;
-			if (!(req->reason & reasons))
-				continue;
-			LOG_PAGING_BTS(req, bts, DPAG, LOGL_DEBUG, "Cancel paging\n");
-			paging_remove_request(&bts->paging, req);
+	llist_for_each_entry_safe(req, req2, &bsub->active_paging_requests, bsub_entry) {
+		if (!(req->reason & reasons))
+			continue;
+		LOG_PAGING_BTS(req, req->bts, DPAG, LOGL_DEBUG, "Cancel paging reasons=0x%x\n",
+			       reasons);
+		if (req->reason & ~reasons) {
+			/* Other reasons are active, simply drop the reasons from func arg: */
+			req->reason &= ~reasons;
+			continue;
 		}
+		/* No reason to keep the paging, remove it: */
+		paging_remove_request(&req->bts->paging, req);
+		remaining--;
+		if (remaining == 0)
+			break;
 	}
 }
 
