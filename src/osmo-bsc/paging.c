@@ -136,6 +136,13 @@ static void paging_schedule_if_needed(struct gsm_bts_paging_state *paging_bts)
 		paging_handle_pending_requests(paging_bts);
 }
 
+/* Placeholder to set the value and update the related osmo_stat: */
+static void paging_set_available_slots(struct gsm_bts *bts, uint16_t available_slots)
+{
+	bts->paging.available_slots = available_slots;
+	osmo_stat_item_set(osmo_stat_item_group_get_item(bts->bts_statg, BTS_STAT_PAGING_AVAILABLE_SLOTS), available_slots);
+}
+
 static void paging_give_credit(void *data)
 {
 	struct gsm_bts_paging_state *paging_bts_st = data;
@@ -145,7 +152,7 @@ static void paging_give_credit(void *data)
 	LOG_BTS(bts, DPAG, LOGL_INFO,
 		"Timeout waiting for CCCH Load Indication, assuming BTS is below Load Threshold (available_slots %u -> %u)\n",
 		paging_bts_st->available_slots, estimated_slots);
-	paging_bts_st->available_slots = estimated_slots;
+	paging_set_available_slots(bts, estimated_slots);
 	paging_schedule_if_needed(paging_bts_st);
 	osmo_timer_schedule(&bts->paging.credit_timer, load_ind_timeout, 0);
 }
@@ -271,7 +278,7 @@ static void paging_handle_pending_requests(struct gsm_bts_paging_state *paging_b
 
 		/* handle the paging request now */
 		page_ms(request);
-		paging_bts->available_slots--;
+		paging_set_available_slots(bts, paging_bts->available_slots - 1);
 		request->last_attempt_ts = now;
 		request->attempts++;
 		num_paged++;
@@ -303,7 +310,7 @@ void paging_init(struct gsm_bts *bts)
 {
 	bts->paging.bts = bts;
 	bts->paging.free_chans_need = -1;
-	bts->paging.available_slots = 0;
+	paging_set_available_slots(bts, 0);
 	INIT_LLIST_HEAD(&bts->paging.pending_requests);
 	osmo_timer_setup(&bts->paging.work_timer, paging_worker, &bts->paging);
 	osmo_timer_setup(&bts->paging.credit_timer, paging_give_credit, &bts->paging);
@@ -609,7 +616,7 @@ void paging_update_buffer_space(struct gsm_bts *bts, uint16_t free_slots)
 {
 	LOG_BTS(bts, DPAG, LOGL_DEBUG, "Rx CCCH Load Indication from BTS (available_slots %u -> %u)\n",
 		bts->paging.available_slots, free_slots);
-	bts->paging.available_slots = free_slots;
+	paging_set_available_slots(bts, free_slots);
 	/* Re-arm credit_timer if needed */
 	if (trx_is_usable(bts->c0)) {
 		paging_schedule_if_needed(&bts->paging);
@@ -702,6 +709,7 @@ static int nm_sig_cb(unsigned int subsys, unsigned int signal,
 	struct gsm_bts *bts;
 	struct gsm_bts_trx *trx;
 	unsigned int load_ind_timeout;
+	uint16_t estimated_slots;
 
 	if (signal != S_NM_RUNNING_CHG)
 		return 0;
@@ -729,7 +737,8 @@ static int nm_sig_cb(unsigned int subsys, unsigned int signal,
 			LOG_BTS(bts, DPAG, LOGL_INFO, "C0 becomes available for paging\n");
 			/* Fill in initial credit */
 			load_ind_timeout = bts_no_ccch_load_ind_timeout_sec(bts);
-			bts->paging.available_slots = paging_estimate_available_slots(bts, load_ind_timeout);
+			estimated_slots = paging_estimate_available_slots(bts, load_ind_timeout);
+			paging_set_available_slots(bts, estimated_slots);
 			/* Start scheduling credit_timer */
 			osmo_timer_schedule(&bts->paging.credit_timer,
 					    bts_no_ccch_load_ind_timeout_sec(bts), 0);

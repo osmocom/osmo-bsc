@@ -1044,6 +1044,7 @@ void gsm_bts_stats_reset(struct gsm_bts *bts)
 	osmo_stat_item_set(osmo_stat_item_group_get_item(bts->bts_statg, BTS_STAT_CHAN_OSMO_DYN_TOTAL), 0);
 	osmo_stat_item_set(osmo_stat_item_group_get_item(bts->bts_statg, BTS_STAT_PAGING_T3113), 0);
 	osmo_stat_item_set(osmo_stat_item_group_get_item(bts->bts_statg, BTS_STAT_PAGING_REQ_QUEUE_LENGTH), paging_pending_requests_nr(bts));
+	osmo_stat_item_set(osmo_stat_item_group_get_item(bts->bts_statg, BTS_STAT_PAGING_AVAILABLE_SLOTS), bts->paging.available_slots);
 }
 
 const struct rate_ctr_desc bts_ctr_description[] = {
@@ -1698,6 +1699,10 @@ const struct osmo_stat_item_desc bts_stat_desc[] = {
 	[BTS_STAT_PAGING_REQ_QUEUE_LENGTH] = \
 		{ "paging:request_queue_length",
 		  "Paging Request queue length",
+		  "", 60, 0 },
+	[BTS_STAT_PAGING_AVAILABLE_SLOTS] = \
+		{ "paging:available_slots",
+		  "Available paging slots in this BTS",
 		  "", 60, 0 },
 	[BTS_STAT_PAGING_T3113] = \
 		{ "paging:t3113",
