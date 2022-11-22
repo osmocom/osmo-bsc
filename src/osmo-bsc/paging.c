@@ -578,6 +578,7 @@ void paging_request_stop(struct bsc_msc_data **msc_p, enum bsc_paging_reason *re
 void paging_request_cancel(struct bsc_subscr *bsub, enum bsc_paging_reason reasons)
 {
 	struct gsm_bts *bts;
+	OSMO_ASSERT(bsub);
 
 	llist_for_each_entry(bts, &bsc_gsmnet->bts_list, list) {
 		struct gsm_paging_request *req, *req2;

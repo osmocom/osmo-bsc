@@ -514,7 +514,8 @@ static void lcs_loc_req_failed_onenter(struct osmo_fsm_inst *fi, uint32_t prev_s
 	};
 
 	/* If we're paging this subscriber for LCS, stop paging. */
-	paging_request_cancel(lcs_loc_req->conn->bsub, BSC_PAGING_FOR_LCS);
+	if (lcs_loc_req->conn->bsub)
+		paging_request_cancel(lcs_loc_req->conn->bsub, BSC_PAGING_FOR_LCS);
 
 	/* Send Perform Location Abort to SMLC, only if we got started on the Lb */
 	if (lcs_loc_req->conn->lcs.lb.state == SUBSCR_SCCP_ST_CONNECTED)
