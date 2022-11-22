@@ -1530,16 +1530,6 @@ static void lchan_fsm_borken(struct osmo_fsm_inst *fi, uint32_t event, void *dat
 		lchan->release.rsl_error_cause = RSL_ERR_INTERWORKING;
 		lchan->release.rr_cause = bsc_gsm48_rr_cause_from_rsl_cause(lchan->release.rsl_error_cause);
 		lchan_fsm_state_chg(LCHAN_ST_WAIT_AFTER_ERROR);
-		/* TODO: we used to do this only for sysmobts:
-			int do_free = is_osmobts(ts->trx->bts);
-			LOGP(DRSL, LOGL_NOTICE,
-				"%s CHAN REL ACK for broken channel. %s.\n",
-				gsm_lchan_name(lchan),
-				do_free ? "Releasing it" : "Keeping it broken");
-			if (do_free)
-				do_lchan_free(lchan);
-		 * Clarify the reason. If a BTS sends a RF Chan Rel ACK, we can consider it released,
-		 * independently from the BTS model, right?? */
 		return;
 
 	case LCHAN_EV_RTP_RELEASED:
