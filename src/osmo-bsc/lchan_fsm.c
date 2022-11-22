@@ -282,15 +282,15 @@ static void lchan_on_fully_established(struct gsm_lchan *lchan)
 }
 
 struct osmo_tdef_state_timeout lchan_fsm_timeouts[32] = {
-	[LCHAN_ST_WAIT_TS_READY]	= { .T=-5 },
-	[LCHAN_ST_WAIT_ACTIV_ACK]	= { .T=-6 },
-	[LCHAN_ST_WAIT_RLL_RTP_ESTABLISH]	= { .T=3101 },
-	[LCHAN_ST_WAIT_RLL_RTP_RELEASED]	= { .T=3109 },
-	[LCHAN_ST_WAIT_BEFORE_RF_RELEASE]	= { .T=3111 },
-	[LCHAN_ST_WAIT_RF_RELEASE_ACK]	= { .T=3111 },
-	[LCHAN_ST_WAIT_AFTER_ERROR]	= { .T=-3111 },
-	[LCHAN_ST_WAIT_RR_CHAN_MODE_MODIFY_ACK]	= { .T=-13 },
-	[LCHAN_ST_WAIT_RSL_CHAN_MODE_MODIFY_ACK]	= { .T=-14 },
+	[LCHAN_ST_WAIT_TS_READY]	= { .T = -5 },
+	[LCHAN_ST_WAIT_ACTIV_ACK]	= { .T = -6 },
+	[LCHAN_ST_WAIT_RLL_RTP_ESTABLISH]	= { .T = 3101 },
+	[LCHAN_ST_WAIT_RLL_RTP_RELEASED]	= { .T = 3109 },
+	[LCHAN_ST_WAIT_BEFORE_RF_RELEASE]	= { .T = 3111 },
+	[LCHAN_ST_WAIT_RF_RELEASE_ACK]	= { .T = 3111 },
+	[LCHAN_ST_WAIT_AFTER_ERROR]	= { .T = -3111 },
+	[LCHAN_ST_WAIT_RR_CHAN_MODE_MODIFY_ACK]	= { .T = -13 },
+	[LCHAN_ST_WAIT_RSL_CHAN_MODE_MODIFY_ACK]	= { .T = -14 },
 };
 
 /* Transition to a state, using the T timer defined in lchan_fsm_timeouts.

@@ -51,10 +51,10 @@ struct gsm_subscriber_connection *assignment_fi_conn(struct osmo_fsm_inst *fi)
 }
 
 static const struct osmo_tdef_state_timeout assignment_fsm_timeouts[32] = {
-	[ASSIGNMENT_ST_WAIT_LCHAN_ACTIVE] = { .T=10 },
-	[ASSIGNMENT_ST_WAIT_RR_ASS_COMPLETE] = { .keep_timer=true },
-	[ASSIGNMENT_ST_WAIT_LCHAN_ESTABLISHED] = { .keep_timer=true },
-	[ASSIGNMENT_ST_WAIT_MGW_ENDPOINT_TO_MSC] = { .T=23042 },
+	[ASSIGNMENT_ST_WAIT_LCHAN_ACTIVE] = { .T = 10 },
+	[ASSIGNMENT_ST_WAIT_RR_ASS_COMPLETE] = { .keep_timer = true },
+	[ASSIGNMENT_ST_WAIT_LCHAN_ESTABLISHED] = { .keep_timer = true },
+	[ASSIGNMENT_ST_WAIT_MGW_ENDPOINT_TO_MSC] = { .T = 23042 },
 };
 
 /* Transition to a state, using the T timer defined in assignment_fsm_timeouts.

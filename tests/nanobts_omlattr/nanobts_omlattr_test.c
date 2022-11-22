@@ -125,9 +125,9 @@ static const struct log_info log_info = {
 };
 
 static struct osmo_tdef gsm_network_T_defs[] = {
-	{ .T=3105, .default_val=100, .val=13, .unit=OSMO_TDEF_MS, .desc="Physical Information" },
-	{ .T=3212, .default_val=5, .unit=OSMO_TDEF_CUSTOM,
-		.desc="Periodic Location Update timer, sent to MS (1 = 6 minutes)" },
+	{ .T = 3105, .default_val = 100, .val = 13, .unit = OSMO_TDEF_MS, .desc = "Physical Information" },
+	{ .T = 3212, .default_val = 5, .unit = OSMO_TDEF_CUSTOM,
+		.desc = "Periodic Location Update timer, sent to MS (1 = 6 minutes)" },
 	{}
 };
 
