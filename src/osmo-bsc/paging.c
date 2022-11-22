@@ -415,31 +415,42 @@ static int _paging_request(const struct bsc_paging_params *params, struct gsm_bt
 		return -ENOSPC;
 	}
 
-	/* Iterate list of pending requests to find if we already have one for
-	 * the given subscriber. While on it, find the last
-	 * not-yet-ever-once-transmitted request; the new request will be added
-	 * immediately after it, giving higher prio to initial transmissions
-	 * (no retrans). This avoids new subscribers being paged to be delayed
-	 * if the paging queue is full due to a lot of retranmissions.
+	/* Find if we already have one for the given subscriber on this BTS: */
+	if (bsc_subscr_find_req_by_bts(params->bsub, bts)) {
+		LOG_PAGING_BTS(params, bts, DPAG, LOGL_INFO, "Paging request already pending for this subscriber\n");
+		rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_PAGING_ALREADY));
+		return -EEXIST;
+	}
+
+	/* Find the last not-yet-ever-once-transmitted request; the new request
+	 * will be added immediately after it, giving higher prio to initial
+	 * transmissions (no retrans). This avoids new subscribers being paged to
+	 * be delayed if the paging queue is full due to a lot of retranmissions.
 	 * Retranmissions usually mean MS are not reachable/available, so the
-	 * rationale here is to prioritize new subs which may be available. */
+	 * rationale here is to prioritize new subs which may be available.
+	 */
 	llist_for_each_entry(req, &bts_entry->pending_requests, entry) {
-		if (params->bsub == req->bsub) {
-			LOG_PAGING_BTS(params, bts, DPAG, LOGL_INFO, "Paging request already pending for this subscriber\n");
-			rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_PAGING_ALREADY));
-			return -EEXIST;
-		}
 		if (req->attempts == 0) {
+			/* Keep counting no-retransmits (general and per same pgroup): */
 			last_initial_req = req;
 			reqs_before++;
 			if (req->pgroup == pgroup)
 				reqs_before_same_pgroup++;
-		} else if (last_initial_req == NULL) {
-			/* If no req with attempts=0 was found, we'll append to end of list, so keep counting. */
-			reqs_before++;
-			if (req->pgroup == pgroup)
-				reqs_before_same_pgroup++;
+			continue;
 		}
+		/* Here first retransmit in queue is reached: */
+		if (last_initial_req) {
+			/* There were no-retransmit in the queue, done
+			 * iterating, new req will be inserted here
+			 * (see below the current loop). */
+			break;
+		}
+
+		/* last_initial_req == NULL: No req with attempts=0 was found,
+		 * we'll append to end of list, so keep counting. */
+		reqs_before++;
+		if (req->pgroup == pgroup)
+			reqs_before_same_pgroup++;
 	}
 
 	LOG_PAGING_BTS(params, bts, DPAG, LOGL_DEBUG, "Start paging\n");
