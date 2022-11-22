@@ -324,7 +324,7 @@ struct osmo_tdef_state_timeout lchan_fsm_timeouts[32] = {
 	} while (0)
 
 /* Which state to transition to when lchan_fail() is called in a given state. */
-uint32_t lchan_fsm_on_error[34] = {
+uint32_t lchan_fsm_on_error[32] = {
 	[LCHAN_ST_UNUSED] 			= LCHAN_ST_UNUSED,
 	[LCHAN_ST_WAIT_TS_READY] 		= LCHAN_ST_UNUSED,
 	[LCHAN_ST_WAIT_ACTIV_ACK] 		= LCHAN_ST_BORKEN,
