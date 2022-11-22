@@ -388,7 +388,7 @@ static unsigned int calculate_timer_3113(struct gsm_paging_request *req, unsigne
 		       "Paging request: T3113 expires in %u seconds (estimated %u)\n",
 		       to, estimated_to);
 ret:
-	osmo_stat_item_set(osmo_stat_item_group_get_item(bts->bts_statg, BTS_STAT_T3113), to);
+	osmo_stat_item_set(osmo_stat_item_group_get_item(bts->bts_statg, BTS_STAT_PAGING_T3113), to);
 	return to;
 }
 
