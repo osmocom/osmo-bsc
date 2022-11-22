@@ -573,6 +573,10 @@ int paging_request_stop(struct bsc_msc_data **msc_p, enum bsc_paging_reason *rea
 	llist_for_each_entry(bts_i, &bsc_gsmnet->bts_list, list) {
 		struct bsc_msc_data *paged_from_msc2;
 		enum bsc_paging_reason reason2;
+
+		if (bts_i == bts)
+			continue; /* Already handled above, avoid repeated lookup */
+
 		count += paging_request_stop_bts(&paged_from_msc2, &reason2, bts_i, bsub);
 		if (paged_from_msc2) {
 			reasons |= reason2;
