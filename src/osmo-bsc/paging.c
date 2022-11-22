@@ -86,11 +86,10 @@ static const struct timespec retrans_period = {
 static void paging_remove_request(struct gsm_bts_paging_state *paging_bts,
 				  struct gsm_paging_request *to_be_deleted)
 {
-	to_be_deleted->bsub->active_paging_requests--;
 	osmo_timer_del(&to_be_deleted->T3113);
 	llist_del(&to_be_deleted->entry);
 	paging_bts->pending_requests_len--;
-	bsc_subscr_put(to_be_deleted->bsub, BSUB_USE_PAGING_REQUEST);
+	bsc_subscr_remove_active_paging_request(to_be_deleted->bsub, to_be_deleted);
 	talloc_free(to_be_deleted);
 	if (llist_empty(&paging_bts->pending_requests))
 		osmo_timer_del(&paging_bts->work_timer);
@@ -331,7 +330,7 @@ static void paging_T3113_expired(void *data)
 
 	/* If last BTS paging times out (active_paging_requests will be
 	 * decremented in paging_remove_request below): */
-	if (req->bsub->active_paging_requests == 1)
+	if (req->bsub->active_paging_requests_len == 1)
 		rate_ctr_inc(rate_ctr_group_get_ctr(bsc_gsmnet->bsc_ctrs, BSC_CTR_PAGING_EXPIRED));
 
 	/* destroy it now. Do not access req afterwards */
@@ -444,17 +443,16 @@ static int _paging_request(const struct bsc_paging_params *params, struct gsm_bt
 	}
 
 	LOG_PAGING_BTS(params, bts, DPAG, LOGL_DEBUG, "Start paging\n");
-	params->bsub->active_paging_requests++;
 	req = talloc_zero(tall_paging_ctx, struct gsm_paging_request);
 	OSMO_ASSERT(req);
 	req->reason = params->reason;
 	req->bsub = params->bsub;
-	bsc_subscr_get(req->bsub, BSUB_USE_PAGING_REQUEST);
 	req->bts = bts;
 	req->chan_type = params->chan_needed;
 	req->pgroup = pgroup;
 	req->msc = params->msc;
 	osmo_timer_setup(&req->T3113, paging_T3113_expired, req);
+	bsc_subscr_add_active_paging_request(req->bsub, req);
 
 	bts_entry->pending_requests_len++;
 	/* there's no initial req (attempts==0), add to the start of the list */
@@ -517,36 +515,6 @@ int paging_request_bts(const struct bsc_paging_params *params, struct gsm_bts *b
 	return 1;
 }
 
-/*! Stop paging a given subscriber on a given BTS.
- * \param[out] returns the MSC that paged the subscriber, if any.
- * \param[out] returns the reason for a pending paging, if any.
- * \param[in] bts BTS which has received a paging response.
- * \param[in] bsub subscriber.
- * \returns whether active request for the subscriber on bts was found
- */
-static bool paging_request_stop_bts(struct bsc_msc_data **msc_p, enum bsc_paging_reason *reason_p,
-				   struct gsm_bts *bts, struct bsc_subscr *bsub)
-{
-	struct gsm_bts_paging_state *bts_entry = &bts->paging;
-	struct gsm_paging_request *req, *req2;
-
-	*msc_p = NULL;
-	*reason_p = BSC_PAGING_NONE;
-
-	llist_for_each_entry_safe(req, req2, &bts_entry->pending_requests,
-				  entry) {
-		if (req->bsub != bsub)
-			continue;
-		*msc_p = req->msc;
-		*reason_p = req->reason;
-		LOG_PAGING_BTS(req, bts, DPAG, LOGL_DEBUG, "Stop paging\n");
-		paging_remove_request(&bts->paging, req);
-		return true;
-	}
-
-	return false;
-}
-
 /*! Stop paging on all cells and return the MSC that paged (if any) and all pending paging reasons.
  * \param[out] returns the MSC that paged the subscriber, if there was a pending request.
  * \param[out] returns the ORed bitmask of all reasons of pending pagings.
@@ -556,34 +524,39 @@ static bool paging_request_stop_bts(struct bsc_msc_data **msc_p, enum bsc_paging
 void paging_request_stop(struct bsc_msc_data **msc_p, enum bsc_paging_reason *reasons_p,
 			struct gsm_bts *bts, struct bsc_subscr *bsub)
 {
-	struct gsm_bts *bts_i;
-	struct bsc_msc_data *paged_from_msc;
-	enum bsc_paging_reason reasons;
+	struct bsc_msc_data *paged_from_msc = NULL;
+	enum bsc_paging_reason reasons = BSC_PAGING_NONE;
 	OSMO_ASSERT(bts);
+	struct gsm_paging_request *req = bsc_subscr_find_req_by_bts(bsub, bts);
 
-	paging_request_stop_bts(&paged_from_msc, &reasons, bts, bsub);
-	if (paged_from_msc) {
+	/* Avoid accessing bsub after reaching 0 active_paging_request_len,
+	 * since it could be freed during put(): */
+	unsigned remaining = bsub->active_paging_requests_len;
+
+	if (req) {
+		paged_from_msc = req->msc;
+		reasons = req->reason;
+		LOG_PAGING_BTS(req, bts, DPAG, LOGL_DEBUG, "Stop paging\n");
 		rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_PAGING_RESPONDED));
 		rate_ctr_inc(rate_ctr_group_get_ctr(bts->network->bsc_ctrs, BSC_CTR_PAGING_RESPONDED));
+		paging_remove_request(&bts->paging, req);
+		remaining--;
 	}
 
-	llist_for_each_entry(bts_i, &bsc_gsmnet->bts_list, list) {
-		struct bsc_msc_data *paged_from_msc2;
-		enum bsc_paging_reason reason2;
-
-		if (bts_i == bts)
-			continue; /* Already handled above, avoid repeated lookup */
-
-		paging_request_stop_bts(&paged_from_msc2, &reason2, bts_i, bsub);
-		if (paged_from_msc2) {
-			reasons |= reason2;
-			if (!paged_from_msc) {
-				/* If this happened, it would be a bit weird: it means there was no Paging Request
-				 * pending on the BTS that sent the Paging Reponse, but there *is* a Paging Request
-				 * pending on a different BTS. But why not return an MSC when we found one. */
-				paged_from_msc = paged_from_msc2;
-			}
+	while (remaining > 0) {
+		struct gsm_paging_request *req;
+		req = llist_first_entry(&bsub->active_paging_requests,
+					 struct gsm_paging_request, bsub_entry);
+		LOG_PAGING_BTS(req, bts, DPAG, LOGL_DEBUG, "Stop paging\n");
+		reasons |= req->reason;
+		if (!paged_from_msc) {
+			/* If this happened, it would be a bit weird: it means there was no Paging Request
+			 * pending on the BTS that sent the Paging Response, but there *is* a Paging Request
+			 * pending on a different BTS. But why not return an MSC when we found one. */
+			paged_from_msc = req->msc;
 		}
+		paging_remove_request(&bts->paging, req);
+		remaining--;
 	}
 
 	*msc_p = paged_from_msc;

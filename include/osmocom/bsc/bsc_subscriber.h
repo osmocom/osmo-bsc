@@ -10,6 +10,7 @@
 #include <osmocom/gsm/gsm48.h>
 
 struct log_target;
+struct gsm_bts;
 
 struct bsc_subscr {
 	struct llist_head entry;
@@ -18,7 +19,8 @@ struct bsc_subscr {
 	char imsi[GSM23003_IMSI_MAX_DIGITS+1];
 	uint32_t tmsi;
 
-	uint32_t active_paging_requests;
+	uint32_t active_paging_requests_len;
+	struct llist_head active_paging_requests;
 };
 
 const char *bsc_subscr_name(struct bsc_subscr *bsub);
@@ -51,3 +53,9 @@ void bsc_subscr_set_imsi(struct bsc_subscr *bsub, const char *imsi);
 
 void log_set_filter_bsc_subscr(struct log_target *target,
 			       struct bsc_subscr *bsub);
+
+struct gsm_paging_request;
+void bsc_subscr_add_active_paging_request(struct bsc_subscr *bsub, struct gsm_paging_request *req);
+void bsc_subscr_remove_active_paging_request(struct bsc_subscr *bsub, struct gsm_paging_request *req);
+void bsc_subscr_remove_active_paging_request_all(struct bsc_subscr *bsub);
+struct gsm_paging_request *bsc_subscr_find_req_by_bts(struct bsc_subscr *bsub, const struct gsm_bts *bts);

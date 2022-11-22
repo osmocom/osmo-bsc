@@ -69,9 +69,10 @@ struct bsc_paging_params {
 struct gsm_paging_request {
 	/* list_head for list of all paging requests */
 	struct llist_head entry;
-	/* the subscriber which we're paging. Later gsm_paging_request
-	 * should probably become a part of the bsc_subsrc struct? */
+	/* the subscriber which we're paging. This struct is included using
+	 * bsub_entry field in list bsub->active_paging_requests */
 	struct bsc_subscr *bsub;
+	struct llist_head bsub_entry;
 	/* back-pointer to the BTS on which we are paging */
 	struct gsm_bts *bts;
 	/* what kind of channel type do we ask the MS to establish */

@@ -30,6 +30,7 @@
 #include <osmocom/core/logging.h>
 
 #include <osmocom/bsc/bsc_subscriber.h>
+#include <osmocom/bsc/paging.h>
 #include <osmocom/bsc/debug.h>
 
 static void bsc_subscr_free(struct bsc_subscr *bsub);
@@ -77,6 +78,7 @@ static struct bsc_subscr *bsc_subscr_alloc(struct llist_head *list)
 		.talloc_object = bsub,
 		.use_cb = bsub_use_cb,
 	};
+	INIT_LLIST_HEAD(&bsub->active_paging_requests);
 
 	llist_add_tail(&bsub->entry, list);
 
@@ -222,6 +224,7 @@ const char *bsc_subscr_id(struct bsc_subscr *bsub)
 
 static void bsc_subscr_free(struct bsc_subscr *bsub)
 {
+	OSMO_ASSERT(llist_empty(&bsub->active_paging_requests));
 	llist_del(&bsub->entry);
 	talloc_free(bsub);
 }
@@ -245,4 +248,42 @@ void log_set_filter_bsc_subscr(struct log_target *target,
 		bsc_subscr_get(*fsub, BSUB_USE_LOG_FILTER);
 	} else
 		target->filter_map &= ~(1 << LOG_FLT_BSC_SUBSCR);
+}
+
+void bsc_subscr_add_active_paging_request(struct bsc_subscr *bsub, struct gsm_paging_request *req)
+{
+	bsub->active_paging_requests_len++;
+	bsc_subscr_get(bsub, BSUB_USE_PAGING_REQUEST);
+	llist_add_tail(&req->bsub_entry, &bsub->active_paging_requests);
+}
+
+void bsc_subscr_remove_active_paging_request(struct bsc_subscr *bsub, struct gsm_paging_request *req)
+{
+	llist_del(&req->bsub_entry);
+	bsub->active_paging_requests_len--;
+	bsc_subscr_put(bsub, BSUB_USE_PAGING_REQUEST);
+}
+
+void bsc_subscr_remove_active_paging_request_all(struct bsc_subscr *bsub)
+{
+	/* Avoid accessing bsub after reaching 0 active_paging_request_len,
+	 * since it could be freed during put(): */
+	unsigned remaining = bsub->active_paging_requests_len;
+	while (remaining > 0) {
+		struct gsm_paging_request *req;
+		req = llist_first_entry(&bsub->active_paging_requests,
+					 struct gsm_paging_request, bsub_entry);
+		bsc_subscr_remove_active_paging_request(bsub, req);
+		remaining--;
+	}
+}
+
+struct gsm_paging_request *bsc_subscr_find_req_by_bts(struct bsc_subscr *bsub, const struct gsm_bts *bts)
+{
+	struct gsm_paging_request *req;
+	llist_for_each_entry(req, &bsub->active_paging_requests, bsub_entry) {
+		if (req->bts == bts)
+			return req;
+	}
+	return NULL;
 }
