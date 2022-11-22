@@ -89,6 +89,7 @@ static void paging_remove_request(struct gsm_bts_paging_state *paging_bts,
 	osmo_timer_del(&to_be_deleted->T3113);
 	llist_del(&to_be_deleted->entry);
 	paging_bts->pending_requests_len--;
+	osmo_stat_item_dec(osmo_stat_item_group_get_item(to_be_deleted->bts->bts_statg, BTS_STAT_PAGING_REQ_QUEUE_LENGTH), 1);
 	bsc_subscr_remove_active_paging_request(to_be_deleted->bsub, to_be_deleted);
 	talloc_free(to_be_deleted);
 	if (llist_empty(&paging_bts->pending_requests))
@@ -466,6 +467,7 @@ static int _paging_request(const struct bsc_paging_params *params, struct gsm_bt
 	bsc_subscr_add_active_paging_request(req->bsub, req);
 
 	bts_entry->pending_requests_len++;
+	osmo_stat_item_inc(osmo_stat_item_group_get_item(bts->bts_statg, BTS_STAT_PAGING_REQ_QUEUE_LENGTH), 1);
 	/* there's no initial req (attempts==0), add to the start of the list */
 	if (last_initial_req == NULL)
 		llist_add(&req->entry, &bts_entry->pending_requests);
