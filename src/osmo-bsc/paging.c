@@ -567,7 +567,7 @@ void paging_request_stop(struct bsc_msc_data **msc_p, enum bsc_paging_reason *re
 		struct gsm_paging_request *req;
 		req = llist_first_entry(&bsub->active_paging_requests,
 					 struct gsm_paging_request, bsub_entry);
-		LOG_PAGING_BTS(req, bts, DPAG, LOGL_DEBUG, "Stop paging\n");
+		LOG_PAGING_BTS(req, req->bts, DPAG, LOGL_DEBUG, "Stop paging\n");
 		reasons |= req->reason;
 		if (!paged_from_msc) {
 			/* If this happened, it would be a bit weird: it means there was no Paging Request
@@ -575,7 +575,7 @@ void paging_request_stop(struct bsc_msc_data **msc_p, enum bsc_paging_reason *re
 			 * pending on a different BTS. But why not return an MSC when we found one. */
 			paged_from_msc = req->msc;
 		}
-		paging_remove_request(&bts->paging, req);
+		paging_remove_request(&req->bts->paging, req);
 		remaining--;
 	}
 
