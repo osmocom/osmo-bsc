@@ -626,7 +626,7 @@ void paging_update_buffer_space(struct gsm_bts *bts, uint16_t free_slots)
 }
 
 /*! Count the number of pending paging requests on given BTS */
-unsigned int paging_pending_requests_nr(struct gsm_bts *bts)
+unsigned int paging_pending_requests_nr(const struct gsm_bts *bts)
 {
 	return bts->paging.pending_requests_len;
 }
@@ -658,10 +658,18 @@ void paging_flush_network(struct gsm_network *net, struct bsc_msc_data *msc)
 		paging_flush_bts(bts, msc);
 }
 
-/*! Estimate available_slots credit over a time period, used when below CCCH Load Indication Threshold */
-uint16_t paging_estimate_available_slots(struct gsm_bts *bts, unsigned int time_span_s)
+/* Shim to avoid problems when compiling against libosmocore <= 1.7.0, since
+ * gsm0502_get_n_pag_blocks() was not declared const despite being readonly. Once
+ * osmo-bsc depends on libosmocore > 1.7.0, this shim can be dropped. */
+static inline unsigned int _gsm0502_get_n_pag_blocks(const struct gsm48_control_channel_descr *chan_desc)
 {
-	unsigned int n_pag_blocks = gsm0502_get_n_pag_blocks(&bts->si_common.chan_desc);
+	return gsm0502_get_n_pag_blocks((struct gsm48_control_channel_descr *)chan_desc);
+}
+
+/*! Estimate available_slots credit over a time period, used when below CCCH Load Indication Threshold */
+uint16_t paging_estimate_available_slots(const struct gsm_bts *bts, unsigned int time_span_s)
+{
+	unsigned int n_pag_blocks = _gsm0502_get_n_pag_blocks(&bts->si_common.chan_desc);
 	uint16_t available_slots = n_pag_blocks * time_span_s * 1000000 / GSM51_MFRAME_DURATION_us;
 	LOG_BTS(bts, DPAG, LOGL_DEBUG, "Estimated %u paging available_slots over %u seconds\n",
 		available_slots, time_span_s);
@@ -676,7 +684,7 @@ static unsigned int paging_estimate_delay_us(struct gsm_bts *bts, unsigned int n
 {
 	unsigned int n_pag_blocks, n_mframes, time_us = 0;
 
-	n_pag_blocks = gsm0502_get_n_pag_blocks(&bts->si_common.chan_desc);
+	n_pag_blocks = _gsm0502_get_n_pag_blocks(&bts->si_common.chan_desc);
 
 	/* First of all, we need to extend the timeout in relation to the amount
 	 * of paging requests in the BSC queue. In here we don't care about the

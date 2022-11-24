@@ -135,12 +135,12 @@ void paging_request_cancel(struct bsc_subscr *bsub, enum bsc_paging_reason reaso
 void paging_update_buffer_space(struct gsm_bts *bts, uint16_t);
 
 /* pending paging requests */
-unsigned int paging_pending_requests_nr(struct gsm_bts *bts);
+unsigned int paging_pending_requests_nr(const struct gsm_bts *bts);
 
 void paging_flush_bts(struct gsm_bts *bts, struct bsc_msc_data *msc);
 void paging_flush_network(struct gsm_network *net, struct bsc_msc_data *msc);
 
-uint16_t paging_estimate_available_slots(struct gsm_bts *bts, unsigned int time_span_s);
+uint16_t paging_estimate_available_slots(const struct gsm_bts *bts, unsigned int time_span_s);
 
 int bsc_paging_start(struct bsc_paging_params *params);
 #endif
