@@ -83,17 +83,20 @@ static const struct timespec retrans_period = {
 /*
  * Kill one paging request update the internal list...
  */
-static void paging_remove_request(struct gsm_bts_paging_state *paging_bts,
-				  struct gsm_paging_request *to_be_deleted)
+static void paging_remove_request(struct gsm_paging_request *req)
 {
-	osmo_timer_del(&to_be_deleted->T3113);
-	llist_del(&to_be_deleted->entry);
-	paging_bts->pending_requests_len--;
-	osmo_stat_item_dec(osmo_stat_item_group_get_item(to_be_deleted->bts->bts_statg, BTS_STAT_PAGING_REQ_QUEUE_LENGTH), 1);
-	bsc_subscr_remove_active_paging_request(to_be_deleted->bsub, to_be_deleted);
-	talloc_free(to_be_deleted);
-	if (llist_empty(&paging_bts->pending_requests))
-		osmo_timer_del(&paging_bts->work_timer);
+	struct gsm_bts *bts = req->bts;
+	struct gsm_bts_paging_state *bts_pag_st = &bts->paging;
+
+	osmo_timer_del(&req->T3113);
+	llist_del(&req->entry);
+	bts_pag_st->pending_requests_len--;
+	osmo_stat_item_dec(osmo_stat_item_group_get_item(bts->bts_statg, BTS_STAT_PAGING_REQ_QUEUE_LENGTH), 1);
+	bsc_subscr_remove_active_paging_request(req->bsub, req);
+	talloc_free(req);
+
+	if (llist_empty(&bts_pag_st->pending_requests))
+		osmo_timer_del(&bts_pag_st->work_timer);
 }
 
 static void page_ms(struct gsm_paging_request *request)
@@ -342,7 +345,7 @@ static void paging_T3113_expired(void *data)
 		rate_ctr_inc(rate_ctr_group_get_ctr(bsc_gsmnet->bsc_ctrs, BSC_CTR_PAGING_EXPIRED));
 
 	/* destroy it now. Do not access req afterwards */
-	paging_remove_request(&req->bts->paging, req);
+	paging_remove_request(req);
 
 	log_set_context(LOG_CTX_BSC_SUBSCR, NULL);
 }
@@ -559,7 +562,7 @@ void paging_request_stop(struct bsc_msc_data **msc_p, enum bsc_paging_reason *re
 		LOG_PAGING_BTS(req, bts, DPAG, LOGL_DEBUG, "Stop paging\n");
 		rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_PAGING_RESPONDED));
 		rate_ctr_inc(rate_ctr_group_get_ctr(bts->network->bsc_ctrs, BSC_CTR_PAGING_RESPONDED));
-		paging_remove_request(&bts->paging, req);
+		paging_remove_request(req);
 		remaining--;
 	}
 
@@ -575,7 +578,7 @@ void paging_request_stop(struct bsc_msc_data **msc_p, enum bsc_paging_reason *re
 			 * pending on a different BTS. But why not return an MSC when we found one. */
 			paged_from_msc = req->msc;
 		}
-		paging_remove_request(&req->bts->paging, req);
+		paging_remove_request(req);
 		remaining--;
 	}
 
@@ -604,7 +607,7 @@ void paging_request_cancel(struct bsc_subscr *bsub, enum bsc_paging_reason reaso
 			continue;
 		}
 		/* No reason to keep the paging, remove it: */
-		paging_remove_request(&req->bts->paging, req);
+		paging_remove_request(req);
 		remaining--;
 		if (remaining == 0)
 			break;
@@ -642,7 +645,7 @@ void paging_flush_bts(struct gsm_bts *bts, struct bsc_msc_data *msc)
 			continue;
 		/* now give up the data structure */
 		LOG_PAGING_BTS(req, bts, DPAG, LOGL_DEBUG, "Stop paging (flush)\n");
-		paging_remove_request(&bts->paging, req);
+		paging_remove_request(req);
 		num_cancelled++;
 	}
 
