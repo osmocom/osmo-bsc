@@ -19,6 +19,7 @@ struct bsc_subscr {
 	char imsi[GSM23003_IMSI_MAX_DIGITS+1];
 	uint32_t tmsi;
 
+	/* List head of (struct gsm_paging_request).bsub_entry */
 	uint32_t active_paging_requests_len;
 	struct llist_head active_paging_requests;
 };
