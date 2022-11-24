@@ -278,7 +278,7 @@ void bsc_subscr_remove_active_paging_request_all(struct bsc_subscr *bsub)
 	}
 }
 
-struct gsm_paging_request *bsc_subscr_find_req_by_bts(struct bsc_subscr *bsub, const struct gsm_bts *bts)
+struct gsm_paging_request *bsc_subscr_find_req_by_bts(const struct bsc_subscr *bsub, const struct gsm_bts *bts)
 {
 	struct gsm_paging_request *req;
 	llist_for_each_entry(req, &bsub->active_paging_requests, bsub_entry) {
