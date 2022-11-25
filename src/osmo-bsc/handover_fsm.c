@@ -194,9 +194,9 @@ struct gsm_subscriber_connection *ho_fi_conn(struct osmo_fsm_inst *fi)
 
 static const struct osmo_tdef_state_timeout ho_fsm_timeouts[32] = {
 	[HO_ST_WAIT_LCHAN_ACTIVE] = { /* Guarded by X5 + X6 in lchan_fsm_timeouts */ },
-	[HO_ST_WAIT_MGW_ENDPOINT_TO_MSC] = { .T = 23042 },
-	[HO_ST_WAIT_RR_HO_DETECT] = { .T = 23042 },
-	[HO_ST_WAIT_RR_HO_COMPLETE] = { .T = 23042 },
+	[HO_ST_WAIT_MGW_ENDPOINT_TO_MSC] = { .T = -9 },
+	[HO_ST_WAIT_RR_HO_DETECT] = { .T = 3103 },
+	[HO_ST_WAIT_RR_HO_COMPLETE] = { .keep_timer = true }, /* Keep T3103 */
 	[HO_ST_WAIT_LCHAN_ESTABLISHED] = { /* Guarded by T3101 in lchan_fsm_timeouts */ },
 	[HO_OUT_ST_WAIT_HO_COMMAND] = { .T = 7 },
 	[HO_OUT_ST_WAIT_CLEAR] = { .T = 8 },
