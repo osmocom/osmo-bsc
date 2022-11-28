@@ -53,6 +53,14 @@ enum bsc_paging_reason {
 	BSC_PAGING_FOR_LCS = 0x2,
 };
 
+/* OS#5552, OS#5553: Maximum allowed scheduling transmit delay in paging
+ * requests to be queued, in seconds. If calculated delay for requests to be
+ * queued goes over this threshold, they are discarded instead of inserted to
+ * the queue. This avoids keeping queueing requests which will be scheduled for
+ * transmission too late.
+ */
+#define PAGING_THRESHOLD_X3113_DEFAULT_SEC 60
+
 struct bsc_paging_params {
 	enum bsc_paging_reason reason;
 	struct bsc_msc_data *msc;

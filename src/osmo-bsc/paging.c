@@ -61,8 +61,6 @@ void *tall_paging_ctx = NULL;
 /* How many paging requests to Tx on RSL at max before going back to main loop */
 #define MAX_PAGE_REQ_PER_ITER 10
 
-#define MAX_TX_DELAY_TIME_SEC 60
-
 /* How often to attempt sending new paging requests (initial, not retrans): 250ms */
 static const struct timespec initial_period = {
 	.tv_sec = 0,
@@ -355,7 +353,7 @@ static unsigned int paging_estimate_delay_us(struct gsm_bts *bts, unsigned int n
 					     unsigned int num_reqs_same_pgroup);
 
 static unsigned int calculate_timer_3113(struct gsm_paging_request *req, unsigned int reqs_before,
-					 unsigned int reqs_before_same_pgroup)
+					 unsigned int reqs_before_same_pgroup, unsigned int max_dynamic_value)
 {
 	unsigned int to_us, estimated_to, to;
 	struct gsm_bts *bts = req->bts;
@@ -389,9 +387,9 @@ static unsigned int calculate_timer_3113(struct gsm_paging_request *req, unsigne
 	/* ceiling in seconds + extra time */
 	estimated_to = (to_us + 999999) / 1000000 + d->val;
 
-	/* upper bound: 60s (OS#5553) */
-	if (estimated_to > MAX_TX_DELAY_TIME_SEC)
-		to = MAX_TX_DELAY_TIME_SEC;
+	/* upper bound: see X3113, PAGING_THRESHOLD_X3113_DEFAULT_SEC */
+	if (estimated_to > max_dynamic_value)
+		to = max_dynamic_value;
 	else
 		to = estimated_to;
 
@@ -414,14 +412,16 @@ static int _paging_request(const struct bsc_paging_params *params, struct gsm_bt
 	struct gsm_bts_paging_state *bts_entry = &bts->paging;
 	struct gsm_paging_request *req, *last_initial_req = NULL;
 	unsigned int t3113_timeout_s;
+	unsigned int x3113_s = osmo_tdef_get(bts->network->T_defs, -3113, OSMO_TDEF_S, -1);
 	unsigned int reqs_before = 0, reqs_before_same_pgroup = 0;
 	uint8_t pgroup = gsm0502_calc_paging_group(&bts->si_common.chan_desc,
 						   str_to_imsi(params->bsub->imsi));
 
 	rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_PAGING_ATTEMPTED));
 
-	/* don't try to queue more requests than we can realistically handle within MAX_TX_DELAY_TIME_SEC seconds */
-	if (paging_pending_requests_nr(bts) > paging_estimate_available_slots(bts, MAX_TX_DELAY_TIME_SEC)) {
+	/* Don't try to queue more requests than we can realistically handle within X3113 seconds,
+	 * see PAGING_THRESHOLD_X3113_DEFAULT_SEC. */
+	if (paging_pending_requests_nr(bts) > paging_estimate_available_slots(bts, x3113_s)) {
 		rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_PAGING_OVERLOAD));
 		return -ENOSPC;
 	}
@@ -484,7 +484,7 @@ static int _paging_request(const struct bsc_paging_params *params, struct gsm_bt
 	else/* Add in the middle of the list after last_initial_req */
 		__llist_add(&req->entry, &last_initial_req->entry, last_initial_req->entry.next);
 
-	t3113_timeout_s = calculate_timer_3113(req, reqs_before, reqs_before_same_pgroup);
+	t3113_timeout_s = calculate_timer_3113(req, reqs_before, reqs_before_same_pgroup, x3113_s);
 	osmo_timer_schedule(&req->T3113, t3113_timeout_s, 0);
 
 	/* Trigger scheduler if needed: */

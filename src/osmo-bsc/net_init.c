@@ -26,6 +26,7 @@
 #include <osmocom/bsc/chan_alloc.h>
 #include <osmocom/bsc/neighbor_ident.h>
 #include <osmocom/bsc/bts_setup_ramp.h>
+#include <osmocom/bsc/paging.h>
 
 static struct osmo_tdef gsm_network_T_defs[] = {
 	{ .T = 4, .default_val = 5, .desc = "Timeout to receive BSSMAP RESET ACKNOWLEDGE from the MSC" },
@@ -74,6 +75,11 @@ static struct osmo_tdef gsm_network_T_defs[] = {
 			" keep remainders. See also X16, X17." },
 	{ .T = -25, .default_val = 5, .desc = "Timeout for initial user data after an MSC initiated an SCCP connection to the BSS" },
 	{ .T = -3111, .default_val = 4, .desc = "Wait time after lchan was released in error (should be T3111 + 2s)" },
+	{ .T = -3113, .default_val = PAGING_THRESHOLD_X3113_DEFAULT_SEC,
+		.desc = "Maximum Paging Request Transmit Delay Threshold: " \
+			"If the estimated transmit delay of the messages of the paging queue surpasses this threshold, new incoming "
+			"paging requests are discarded, hence limiting the size of the queue and maximum delay of its scheduled requests. "
+			"X3113 also serves as the upper boundary for dynamic T3113 when estimating the expected maximum delay to get a response" },
 	{ .T = -3210, .default_val = 20, .desc = "After L3 Complete, wait for MSC to confirm" },
 	{}
 };
