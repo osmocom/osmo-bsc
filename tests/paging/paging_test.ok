@@ -7,7 +7,8 @@ BTS allocation OK in test_paging500()
 (msc=-1) Paging: subscr-IMSI-1234000000: (bts=0) Paging request: T3113 expires in 9 seconds (estimated 9)
 (msc=-1) Paging: subscr-IMSI-1234000000: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000000
-(bts=0) Paged 1 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=66)
+(msc=-1) Paging: subscr-IMSI-1234000000: (bts=0) Paging delayed: retransmission happens in 0.500000s
+(bts=0) Paged 1 subscribers (1 initial, 0 retrans) during last iteration
 (bts=0) Estimated 2039 paging available_slots over 60 seconds
 (msc=-1) Paging: subscr-IMSI-1234000001: (bts=0) Start paging
 (msc=-1) Paging: subscr-IMSI-1234000001: (bts=0) Paging request: T3113 expires in 9 seconds (estimated 9)
@@ -1527,7 +1528,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000008
 abis_rsl_sendmsg: Paging CMD IMSI-1234000009
 (msc=-1) Paging: subscr-IMSI-1234000010: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000010
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=56)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=56)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={0.500000}: select()
 (msc=-1) Paging: subscr-IMSI-1234000011: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000011
@@ -1549,7 +1551,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000018
 abis_rsl_sendmsg: Paging CMD IMSI-1234000019
 (msc=-1) Paging: subscr-IMSI-1234000020: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000020
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=46)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=46)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={0.750000}: select()
 (msc=-1) Paging: subscr-IMSI-1234000021: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000021
@@ -1571,7 +1574,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000028
 abis_rsl_sendmsg: Paging CMD IMSI-1234000029
 (msc=-1) Paging: subscr-IMSI-1234000030: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000030
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=36)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=36)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={1.000000}: select()
 (msc=-1) Paging: subscr-IMSI-1234000031: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000031
@@ -1593,7 +1597,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000038
 abis_rsl_sendmsg: Paging CMD IMSI-1234000039
 (msc=-1) Paging: subscr-IMSI-1234000040: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000040
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=26)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=26)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={1.250000}: select()
 (msc=-1) Paging: subscr-IMSI-1234000041: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000041
@@ -1615,7 +1620,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000048
 abis_rsl_sendmsg: Paging CMD IMSI-1234000049
 (msc=-1) Paging: subscr-IMSI-1234000050: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000050
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=16)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=16)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={1.500000}: select()
 (msc=-1) Paging: subscr-IMSI-1234000051: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000051
@@ -1637,7 +1643,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000058
 abis_rsl_sendmsg: Paging CMD IMSI-1234000059
 (msc=-1) Paging: subscr-IMSI-1234000060: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000060
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=6)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=6)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={1.750000}: select()
 (msc=-1) Paging: subscr-IMSI-1234000061: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000061
@@ -1652,6 +1659,7 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000065
 (msc=-1) Paging: subscr-IMSI-1234000066: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000066
 (msc=-1) Paging: subscr-IMSI-1234000067: (bts=0) Paging delayed: waiting for available slots at BTS
+(bts=0) Paged 6 subscribers (6 initial, 0 retrans) during last iteration
 sys={2.000000}: select()
 (bts=0) Estimated 67 paging available_slots over 2 seconds
 (bts=0) Timeout waiting for CCCH Load Indication, assuming BTS is below Load Threshold (available_slots 0 -> 67)
@@ -1675,7 +1683,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000074
 abis_rsl_sendmsg: Paging CMD IMSI-1234000075
 (msc=-1) Paging: subscr-IMSI-1234000076: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000076
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=57)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=57)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={2.250000}: select()
 (msc=-1) Paging: subscr-IMSI-1234000077: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000077
@@ -1697,7 +1706,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000084
 abis_rsl_sendmsg: Paging CMD IMSI-1234000085
 (msc=-1) Paging: subscr-IMSI-1234000086: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000086
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=47)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=47)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={2.500000}: select()
 (msc=-1) Paging: subscr-IMSI-1234000087: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000087
@@ -1719,7 +1729,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000094
 abis_rsl_sendmsg: Paging CMD IMSI-1234000095
 (msc=-1) Paging: subscr-IMSI-1234000096: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000096
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=37)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=37)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={2.750000}: select()
 (msc=-1) Paging: subscr-IMSI-1234000097: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000097
@@ -1741,7 +1752,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000104
 abis_rsl_sendmsg: Paging CMD IMSI-1234000105
 (msc=-1) Paging: subscr-IMSI-1234000106: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000106
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=27)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=27)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={3.000000}: select()
 (msc=-1) Paging: subscr-IMSI-1234000107: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000107
@@ -1763,7 +1775,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000114
 abis_rsl_sendmsg: Paging CMD IMSI-1234000115
 (msc=-1) Paging: subscr-IMSI-1234000116: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000116
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=17)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=17)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={3.250000}: select()
 (msc=-1) Paging: subscr-IMSI-1234000117: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000117
@@ -1785,7 +1798,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000124
 abis_rsl_sendmsg: Paging CMD IMSI-1234000125
 (msc=-1) Paging: subscr-IMSI-1234000126: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000126
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=7)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=7)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={3.500000}: select()
 (msc=-1) Paging: subscr-IMSI-1234000127: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000127
@@ -1802,6 +1816,7 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000132
 (msc=-1) Paging: subscr-IMSI-1234000133: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000133
 (msc=-1) Paging: subscr-IMSI-1234000134: (bts=0) Paging delayed: waiting for available slots at BTS
+(bts=0) Paged 7 subscribers (7 initial, 0 retrans) during last iteration
 sys={4.000000}: select()
 (bts=0) Estimated 67 paging available_slots over 2 seconds
 (bts=0) Timeout waiting for CCCH Load Indication, assuming BTS is below Load Threshold (available_slots 0 -> 67)
@@ -1825,7 +1840,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000141
 abis_rsl_sendmsg: Paging CMD IMSI-1234000142
 (msc=-1) Paging: subscr-IMSI-1234000143: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000143
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=57)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=57)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={4.250000}: select()
 (msc=-1) Paging: subscr-IMSI-1234000144: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000144
@@ -1847,7 +1863,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000151
 abis_rsl_sendmsg: Paging CMD IMSI-1234000152
 (msc=-1) Paging: subscr-IMSI-1234000153: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000153
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=47)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=47)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={4.500000}: select()
 (msc=-1) Paging: subscr-IMSI-1234000154: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000154
@@ -1869,7 +1886,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000161
 abis_rsl_sendmsg: Paging CMD IMSI-1234000162
 (msc=-1) Paging: subscr-IMSI-1234000163: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000163
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=37)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=37)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={4.750000}: select()
 (msc=-1) Paging: subscr-IMSI-1234000164: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000164
@@ -1891,7 +1909,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000171
 abis_rsl_sendmsg: Paging CMD IMSI-1234000172
 (msc=-1) Paging: subscr-IMSI-1234000173: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000173
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=27)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=27)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={5.000000}: select()
 (msc=-1) Paging: subscr-IMSI-1234000174: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000174
@@ -1913,7 +1932,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000181
 abis_rsl_sendmsg: Paging CMD IMSI-1234000182
 (msc=-1) Paging: subscr-IMSI-1234000183: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000183
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=17)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=17)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={5.250000}: select()
 (msc=-1) Paging: subscr-IMSI-1234000184: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000184
@@ -1935,7 +1955,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000191
 abis_rsl_sendmsg: Paging CMD IMSI-1234000192
 (msc=-1) Paging: subscr-IMSI-1234000193: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000193
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=7)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=7)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={5.500000}: select()
 (msc=-1) Paging: subscr-IMSI-1234000194: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000194
@@ -1952,6 +1973,7 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000199
 (msc=-1) Paging: subscr-IMSI-1234000200: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000200
 (msc=-1) Paging: subscr-IMSI-1234000201: (bts=0) Paging delayed: waiting for available slots at BTS
+(bts=0) Paged 7 subscribers (7 initial, 0 retrans) during last iteration
 sys={6.000000}: select()
 (bts=0) Estimated 67 paging available_slots over 2 seconds
 (bts=0) Timeout waiting for CCCH Load Indication, assuming BTS is below Load Threshold (available_slots 0 -> 67)
@@ -1975,7 +1997,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000208
 abis_rsl_sendmsg: Paging CMD IMSI-1234000209
 (msc=-1) Paging: subscr-IMSI-1234000210: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000210
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=57)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=57)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={6.250000}: select()
 (msc=-1) Paging: subscr-IMSI-1234000211: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000211
@@ -1997,7 +2020,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000218
 abis_rsl_sendmsg: Paging CMD IMSI-1234000219
 (msc=-1) Paging: subscr-IMSI-1234000220: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000220
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=47)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=47)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={6.500000}: select()
 (msc=-1) Paging: subscr-IMSI-1234000221: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000221
@@ -2019,7 +2043,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000228
 abis_rsl_sendmsg: Paging CMD IMSI-1234000229
 (msc=-1) Paging: subscr-IMSI-1234000230: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000230
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=37)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=37)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={6.750000}: select()
 (msc=-1) Paging: subscr-IMSI-1234000231: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000231
@@ -2041,7 +2066,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000238
 abis_rsl_sendmsg: Paging CMD IMSI-1234000239
 (msc=-1) Paging: subscr-IMSI-1234000240: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000240
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=27)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=27)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={7.000000}: select()
 (msc=-1) Paging: subscr-IMSI-1234000241: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000241
@@ -2063,7 +2089,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000248
 abis_rsl_sendmsg: Paging CMD IMSI-1234000249
 (msc=-1) Paging: subscr-IMSI-1234000250: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000250
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=17)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=17)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={7.250000}: select()
 (msc=-1) Paging: subscr-IMSI-1234000251: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000251
@@ -2085,7 +2112,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000258
 abis_rsl_sendmsg: Paging CMD IMSI-1234000259
 (msc=-1) Paging: subscr-IMSI-1234000260: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000260
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=7)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=7)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={7.500000}: select()
 (msc=-1) Paging: subscr-IMSI-1234000261: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000261
@@ -2102,6 +2130,7 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000266
 (msc=-1) Paging: subscr-IMSI-1234000267: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000267
 (msc=-1) Paging: subscr-IMSI-1234000268: (bts=0) Paging delayed: waiting for available slots at BTS
+(bts=0) Paged 7 subscribers (7 initial, 0 retrans) during last iteration
 sys={8.000000}: select()
 (bts=0) Estimated 67 paging available_slots over 2 seconds
 (bts=0) Timeout waiting for CCCH Load Indication, assuming BTS is below Load Threshold (available_slots 0 -> 67)
@@ -2125,7 +2154,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000275
 abis_rsl_sendmsg: Paging CMD IMSI-1234000276
 (msc=-1) Paging: subscr-IMSI-1234000277: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000277
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=57)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=57)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={8.250000}: select()
 (msc=-1) Paging: subscr-IMSI-1234000278: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000278
@@ -2147,7 +2177,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000285
 abis_rsl_sendmsg: Paging CMD IMSI-1234000286
 (msc=-1) Paging: subscr-IMSI-1234000287: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000287
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=47)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=47)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={8.500000}: select()
 (msc=-1) Paging: subscr-IMSI-1234000288: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000288
@@ -2169,7 +2200,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000295
 abis_rsl_sendmsg: Paging CMD IMSI-1234000296
 (msc=-1) Paging: subscr-IMSI-1234000297: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000297
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=37)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=37)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={8.750000}: select()
 (msc=-1) Paging: subscr-IMSI-1234000298: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000298
@@ -2191,7 +2223,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000305
 abis_rsl_sendmsg: Paging CMD IMSI-1234000306
 (msc=-1) Paging: subscr-IMSI-1234000307: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000307
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=27)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=27)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={9.000000}: select()
 (msc=-1) Paging: subscr-IMSI-1234000308: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000308
@@ -2213,7 +2246,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000315
 abis_rsl_sendmsg: Paging CMD IMSI-1234000316
 (msc=-1) Paging: subscr-IMSI-1234000317: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000317
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=17)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=17)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 (msc=-1) Paging: subscr-IMSI-1234000015: (bts=0) T3113 expired
 (msc=-1) Paging: subscr-IMSI-1234000014: (bts=0) T3113 expired
 (msc=-1) Paging: subscr-IMSI-1234000013: (bts=0) T3113 expired
@@ -2251,7 +2285,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000325
 abis_rsl_sendmsg: Paging CMD IMSI-1234000326
 (msc=-1) Paging: subscr-IMSI-1234000327: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000327
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=7)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=7)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={9.500000}: select()
 (msc=-1) Paging: subscr-IMSI-1234000328: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000328
@@ -2268,6 +2303,7 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000333
 (msc=-1) Paging: subscr-IMSI-1234000334: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000334
 (msc=-1) Paging: subscr-IMSI-1234000335: (bts=0) Paging delayed: waiting for available slots at BTS
+(bts=0) Paged 7 subscribers (7 initial, 0 retrans) during last iteration
 sys={10.000000}: select()
 (bts=0) Estimated 67 paging available_slots over 2 seconds
 (bts=0) Timeout waiting for CCCH Load Indication, assuming BTS is below Load Threshold (available_slots 0 -> 67)
@@ -2291,7 +2327,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000342
 abis_rsl_sendmsg: Paging CMD IMSI-1234000343
 (msc=-1) Paging: subscr-IMSI-1234000344: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000344
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=57)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=57)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 (msc=-1) Paging: subscr-IMSI-1234000042: (bts=0) T3113 expired
 (msc=-1) Paging: subscr-IMSI-1234000041: (bts=0) T3113 expired
 (msc=-1) Paging: subscr-IMSI-1234000040: (bts=0) T3113 expired
@@ -2340,7 +2377,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000352
 abis_rsl_sendmsg: Paging CMD IMSI-1234000353
 (msc=-1) Paging: subscr-IMSI-1234000354: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000354
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=47)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=47)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={10.500000}: select()
 (msc=-1) Paging: subscr-IMSI-1234000355: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000355
@@ -2362,7 +2400,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000362
 abis_rsl_sendmsg: Paging CMD IMSI-1234000363
 (msc=-1) Paging: subscr-IMSI-1234000364: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000364
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=37)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=37)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={10.750000}: select()
 (msc=-1) Paging: subscr-IMSI-1234000365: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000365
@@ -2384,7 +2423,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000372
 abis_rsl_sendmsg: Paging CMD IMSI-1234000373
 (msc=-1) Paging: subscr-IMSI-1234000374: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000374
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=27)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=27)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={11.000000}: select()
 (msc=-1) Paging: subscr-IMSI-1234000375: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000375
@@ -2406,7 +2446,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000382
 abis_rsl_sendmsg: Paging CMD IMSI-1234000383
 (msc=-1) Paging: subscr-IMSI-1234000384: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000384
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=17)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=17)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 (msc=-1) Paging: subscr-IMSI-1234000076: (bts=0) T3113 expired
 (msc=-1) Paging: subscr-IMSI-1234000075: (bts=0) T3113 expired
 (msc=-1) Paging: subscr-IMSI-1234000074: (bts=0) T3113 expired
@@ -2462,7 +2503,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000392
 abis_rsl_sendmsg: Paging CMD IMSI-1234000393
 (msc=-1) Paging: subscr-IMSI-1234000394: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000394
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=7)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=7)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={11.500000}: select()
 (msc=-1) Paging: subscr-IMSI-1234000395: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000395
@@ -2479,6 +2521,7 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000400
 (msc=-1) Paging: subscr-IMSI-1234000401: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000401
 (msc=-1) Paging: subscr-IMSI-1234000402: (bts=0) Paging delayed: waiting for available slots at BTS
+(bts=0) Paged 7 subscribers (7 initial, 0 retrans) during last iteration
 sys={12.000000}: select()
 (bts=0) Estimated 67 paging available_slots over 2 seconds
 (bts=0) Timeout waiting for CCCH Load Indication, assuming BTS is below Load Threshold (available_slots 0 -> 67)
@@ -2502,7 +2545,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000409
 abis_rsl_sendmsg: Paging CMD IMSI-1234000410
 (msc=-1) Paging: subscr-IMSI-1234000411: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000411
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=57)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=57)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 (msc=-1) Paging: subscr-IMSI-1234000111: (bts=0) T3113 expired
 (msc=-1) Paging: subscr-IMSI-1234000110: (bts=0) T3113 expired
 (msc=-1) Paging: subscr-IMSI-1234000109: (bts=0) T3113 expired
@@ -2559,7 +2603,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000419
 abis_rsl_sendmsg: Paging CMD IMSI-1234000420
 (msc=-1) Paging: subscr-IMSI-1234000421: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000421
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=47)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=47)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={12.500000}: select()
 (msc=-1) Paging: subscr-IMSI-1234000422: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000422
@@ -2581,7 +2626,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000429
 abis_rsl_sendmsg: Paging CMD IMSI-1234000430
 (msc=-1) Paging: subscr-IMSI-1234000431: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000431
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=37)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=37)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={12.750000}: select()
 (msc=-1) Paging: subscr-IMSI-1234000432: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000432
@@ -2603,7 +2649,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000439
 abis_rsl_sendmsg: Paging CMD IMSI-1234000440
 (msc=-1) Paging: subscr-IMSI-1234000441: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000441
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=27)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=27)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={13.000000}: select()
 (msc=-1) Paging: subscr-IMSI-1234000442: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000442
@@ -2625,7 +2672,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000449
 abis_rsl_sendmsg: Paging CMD IMSI-1234000450
 (msc=-1) Paging: subscr-IMSI-1234000451: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000451
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=17)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=17)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 (msc=-1) Paging: subscr-IMSI-1234000146: (bts=0) T3113 expired
 (msc=-1) Paging: subscr-IMSI-1234000145: (bts=0) T3113 expired
 (msc=-1) Paging: subscr-IMSI-1234000144: (bts=0) T3113 expired
@@ -2682,7 +2730,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000459
 abis_rsl_sendmsg: Paging CMD IMSI-1234000460
 (msc=-1) Paging: subscr-IMSI-1234000461: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000461
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=7)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=7)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={13.500000}: select()
 (msc=-1) Paging: subscr-IMSI-1234000462: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000462
@@ -2699,6 +2748,7 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000467
 (msc=-1) Paging: subscr-IMSI-1234000468: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000468
 (msc=-1) Paging: subscr-IMSI-1234000469: (bts=0) Paging delayed: waiting for available slots at BTS
+(bts=0) Paged 7 subscribers (7 initial, 0 retrans) during last iteration
 sys={14.000000}: select()
 (bts=0) Estimated 67 paging available_slots over 2 seconds
 (bts=0) Timeout waiting for CCCH Load Indication, assuming BTS is below Load Threshold (available_slots 0 -> 67)
@@ -2722,7 +2772,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000476
 abis_rsl_sendmsg: Paging CMD IMSI-1234000477
 (msc=-1) Paging: subscr-IMSI-1234000478: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000478
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=57)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=57)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 (msc=-1) Paging: subscr-IMSI-1234000181: (bts=0) T3113 expired
 (msc=-1) Paging: subscr-IMSI-1234000180: (bts=0) T3113 expired
 (msc=-1) Paging: subscr-IMSI-1234000179: (bts=0) T3113 expired
@@ -2779,7 +2830,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000486
 abis_rsl_sendmsg: Paging CMD IMSI-1234000487
 (msc=-1) Paging: subscr-IMSI-1234000488: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000488
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=47)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=47)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={14.500000}: select()
 (msc=-1) Paging: subscr-IMSI-1234000489: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000489
@@ -2801,7 +2853,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000496
 abis_rsl_sendmsg: Paging CMD IMSI-1234000497
 (msc=-1) Paging: subscr-IMSI-1234000498: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000498
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=37)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=37)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={14.750000}: select()
 (msc=-1) Paging: subscr-IMSI-1234000499: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000499
@@ -2823,7 +2876,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000188
 abis_rsl_sendmsg: Paging CMD IMSI-1234000189
 (msc=-1) Paging: subscr-IMSI-1234000190: (bts=0) Going to send paging command for ch. type 0 (attempt 1)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000190
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=27)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=27)
+(bts=0) Paged 10 subscribers (1 initial, 9 retrans) during last iteration
 (msc=-1) Paging: subscr-IMSI-1234000191: (bts=0) Stop paging (flush)
 (msc=-1) Paging: subscr-IMSI-1234000192: (bts=0) Stop paging (flush)
 (msc=-1) Paging: subscr-IMSI-1234000193: (bts=0) Stop paging (flush)
@@ -3153,7 +3207,8 @@ Number of paging groups: 40
 (msc=-1) Paging: subscr-IMSI-123400000000: (bts=0) Paging request: T3113 expires in 9 seconds (estimated 9)
 (msc=-1) Paging: subscr-IMSI-123400000000: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400000000
-(bts=0) Paged 1 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=66)
+(msc=-1) Paging: subscr-IMSI-123400000000: (bts=0) Paging delayed: retransmission happens in 0.500000s
+(bts=0) Paged 1 subscribers (1 initial, 0 retrans) during last iteration
 (bts=0) Estimated 2039 paging available_slots over 60 seconds
 (msc=-1) Paging: subscr-IMSI-123400000040: (bts=0) Start paging
 (msc=-1) Paging: subscr-IMSI-123400000040: (bts=0) Paging request: T3113 expires in 9 seconds (estimated 9)
@@ -4673,7 +4728,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-123400000320
 abis_rsl_sendmsg: Paging CMD IMSI-123400000360
 (msc=-1) Paging: subscr-IMSI-123400000400: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400000400
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=56)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=56)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={0.500000}: select()
 (msc=-1) Paging: subscr-IMSI-123400000440: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400000440
@@ -4695,7 +4751,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-123400000720
 abis_rsl_sendmsg: Paging CMD IMSI-123400000760
 (msc=-1) Paging: subscr-IMSI-123400000800: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400000800
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=46)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=46)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={0.750000}: select()
 (msc=-1) Paging: subscr-IMSI-123400000840: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400000840
@@ -4717,7 +4774,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-123400001120
 abis_rsl_sendmsg: Paging CMD IMSI-123400001160
 (msc=-1) Paging: subscr-IMSI-123400001200: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400001200
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=36)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=36)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={1.000000}: select()
 (msc=-1) Paging: subscr-IMSI-123400001240: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400001240
@@ -4739,7 +4797,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-123400001520
 abis_rsl_sendmsg: Paging CMD IMSI-123400001560
 (msc=-1) Paging: subscr-IMSI-123400001600: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400001600
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=26)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=26)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={1.250000}: select()
 (msc=-1) Paging: subscr-IMSI-123400001640: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400001640
@@ -4761,7 +4820,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-123400001920
 abis_rsl_sendmsg: Paging CMD IMSI-123400001960
 (msc=-1) Paging: subscr-IMSI-123400002000: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400002000
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=16)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=16)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={1.500000}: select()
 (msc=-1) Paging: subscr-IMSI-123400002040: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400002040
@@ -4783,7 +4843,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-123400002320
 abis_rsl_sendmsg: Paging CMD IMSI-123400002360
 (msc=-1) Paging: subscr-IMSI-123400002400: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400002400
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=6)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=6)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={1.750000}: select()
 (msc=-1) Paging: subscr-IMSI-123400002440: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400002440
@@ -4798,6 +4859,7 @@ abis_rsl_sendmsg: Paging CMD IMSI-123400002600
 (msc=-1) Paging: subscr-IMSI-123400002640: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400002640
 (msc=-1) Paging: subscr-IMSI-123400002680: (bts=0) Paging delayed: waiting for available slots at BTS
+(bts=0) Paged 6 subscribers (6 initial, 0 retrans) during last iteration
 sys={2.000000}: select()
 (bts=0) Estimated 67 paging available_slots over 2 seconds
 (bts=0) Timeout waiting for CCCH Load Indication, assuming BTS is below Load Threshold (available_slots 0 -> 67)
@@ -4821,7 +4883,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-123400002960
 abis_rsl_sendmsg: Paging CMD IMSI-123400003000
 (msc=-1) Paging: subscr-IMSI-123400003040: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400003040
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=57)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=57)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={2.250000}: select()
 (msc=-1) Paging: subscr-IMSI-123400003080: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400003080
@@ -4843,7 +4906,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-123400003360
 abis_rsl_sendmsg: Paging CMD IMSI-123400003400
 (msc=-1) Paging: subscr-IMSI-123400003440: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400003440
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=47)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=47)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={2.500000}: select()
 (msc=-1) Paging: subscr-IMSI-123400003480: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400003480
@@ -4865,7 +4929,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-123400003760
 abis_rsl_sendmsg: Paging CMD IMSI-123400003800
 (msc=-1) Paging: subscr-IMSI-123400003840: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400003840
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=37)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=37)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={2.750000}: select()
 (msc=-1) Paging: subscr-IMSI-123400003880: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400003880
@@ -4887,7 +4952,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-123400004160
 abis_rsl_sendmsg: Paging CMD IMSI-123400004200
 (msc=-1) Paging: subscr-IMSI-123400004240: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400004240
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=27)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=27)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={3.000000}: select()
 (msc=-1) Paging: subscr-IMSI-123400004280: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400004280
@@ -4909,7 +4975,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-123400004560
 abis_rsl_sendmsg: Paging CMD IMSI-123400004600
 (msc=-1) Paging: subscr-IMSI-123400004640: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400004640
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=17)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=17)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={3.250000}: select()
 (msc=-1) Paging: subscr-IMSI-123400004680: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400004680
@@ -4931,7 +4998,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-123400004960
 abis_rsl_sendmsg: Paging CMD IMSI-123400005000
 (msc=-1) Paging: subscr-IMSI-123400005040: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400005040
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=7)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=7)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={3.500000}: select()
 (msc=-1) Paging: subscr-IMSI-123400005080: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400005080
@@ -4948,6 +5016,7 @@ abis_rsl_sendmsg: Paging CMD IMSI-123400005280
 (msc=-1) Paging: subscr-IMSI-123400005320: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400005320
 (msc=-1) Paging: subscr-IMSI-123400005360: (bts=0) Paging delayed: waiting for available slots at BTS
+(bts=0) Paged 7 subscribers (7 initial, 0 retrans) during last iteration
 sys={4.000000}: select()
 (bts=0) Estimated 67 paging available_slots over 2 seconds
 (bts=0) Timeout waiting for CCCH Load Indication, assuming BTS is below Load Threshold (available_slots 0 -> 67)
@@ -4971,7 +5040,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-123400005640
 abis_rsl_sendmsg: Paging CMD IMSI-123400005680
 (msc=-1) Paging: subscr-IMSI-123400005720: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400005720
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=57)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=57)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={4.250000}: select()
 (msc=-1) Paging: subscr-IMSI-123400005760: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400005760
@@ -4993,7 +5063,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-123400006040
 abis_rsl_sendmsg: Paging CMD IMSI-123400006080
 (msc=-1) Paging: subscr-IMSI-123400006120: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400006120
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=47)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=47)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={4.500000}: select()
 (msc=-1) Paging: subscr-IMSI-123400006160: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400006160
@@ -5015,7 +5086,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-123400006440
 abis_rsl_sendmsg: Paging CMD IMSI-123400006480
 (msc=-1) Paging: subscr-IMSI-123400006520: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400006520
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=37)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=37)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={4.750000}: select()
 (msc=-1) Paging: subscr-IMSI-123400006560: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400006560
@@ -5037,7 +5109,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-123400006840
 abis_rsl_sendmsg: Paging CMD IMSI-123400006880
 (msc=-1) Paging: subscr-IMSI-123400006920: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400006920
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=27)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=27)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={5.000000}: select()
 (msc=-1) Paging: subscr-IMSI-123400006960: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400006960
@@ -5059,7 +5132,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-123400007240
 abis_rsl_sendmsg: Paging CMD IMSI-123400007280
 (msc=-1) Paging: subscr-IMSI-123400007320: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400007320
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=17)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=17)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={5.250000}: select()
 (msc=-1) Paging: subscr-IMSI-123400007360: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400007360
@@ -5081,7 +5155,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-123400007640
 abis_rsl_sendmsg: Paging CMD IMSI-123400007680
 (msc=-1) Paging: subscr-IMSI-123400007720: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400007720
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=7)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=7)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={5.500000}: select()
 (msc=-1) Paging: subscr-IMSI-123400007760: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400007760
@@ -5098,6 +5173,7 @@ abis_rsl_sendmsg: Paging CMD IMSI-123400007960
 (msc=-1) Paging: subscr-IMSI-123400008000: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400008000
 (msc=-1) Paging: subscr-IMSI-123400008040: (bts=0) Paging delayed: waiting for available slots at BTS
+(bts=0) Paged 7 subscribers (7 initial, 0 retrans) during last iteration
 sys={6.000000}: select()
 (bts=0) Estimated 67 paging available_slots over 2 seconds
 (bts=0) Timeout waiting for CCCH Load Indication, assuming BTS is below Load Threshold (available_slots 0 -> 67)
@@ -5121,7 +5197,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-123400008320
 abis_rsl_sendmsg: Paging CMD IMSI-123400008360
 (msc=-1) Paging: subscr-IMSI-123400008400: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400008400
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=57)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=57)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={6.250000}: select()
 (msc=-1) Paging: subscr-IMSI-123400008440: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400008440
@@ -5143,7 +5220,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-123400008720
 abis_rsl_sendmsg: Paging CMD IMSI-123400008760
 (msc=-1) Paging: subscr-IMSI-123400008800: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400008800
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=47)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=47)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={6.500000}: select()
 (msc=-1) Paging: subscr-IMSI-123400008840: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400008840
@@ -5165,7 +5243,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-123400009120
 abis_rsl_sendmsg: Paging CMD IMSI-123400009160
 (msc=-1) Paging: subscr-IMSI-123400009200: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400009200
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=37)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=37)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={6.750000}: select()
 (msc=-1) Paging: subscr-IMSI-123400009240: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400009240
@@ -5187,7 +5266,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-123400009520
 abis_rsl_sendmsg: Paging CMD IMSI-123400009560
 (msc=-1) Paging: subscr-IMSI-123400009600: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400009600
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=27)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=27)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={7.000000}: select()
 (msc=-1) Paging: subscr-IMSI-123400009640: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400009640
@@ -5209,7 +5289,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-123400009920
 abis_rsl_sendmsg: Paging CMD IMSI-123400009960
 (msc=-1) Paging: subscr-IMSI-123400010000: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400010000
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=17)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=17)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={7.250000}: select()
 (msc=-1) Paging: subscr-IMSI-123400010040: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400010040
@@ -5231,7 +5312,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-123400010320
 abis_rsl_sendmsg: Paging CMD IMSI-123400010360
 (msc=-1) Paging: subscr-IMSI-123400010400: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400010400
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=7)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=7)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={7.500000}: select()
 (msc=-1) Paging: subscr-IMSI-123400010440: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400010440
@@ -5248,6 +5330,7 @@ abis_rsl_sendmsg: Paging CMD IMSI-123400010640
 (msc=-1) Paging: subscr-IMSI-123400010680: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400010680
 (msc=-1) Paging: subscr-IMSI-123400010720: (bts=0) Paging delayed: waiting for available slots at BTS
+(bts=0) Paged 7 subscribers (7 initial, 0 retrans) during last iteration
 sys={8.000000}: select()
 (bts=0) Estimated 67 paging available_slots over 2 seconds
 (bts=0) Timeout waiting for CCCH Load Indication, assuming BTS is below Load Threshold (available_slots 0 -> 67)
@@ -5271,7 +5354,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-123400011000
 abis_rsl_sendmsg: Paging CMD IMSI-123400011040
 (msc=-1) Paging: subscr-IMSI-123400011080: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400011080
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=57)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=57)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={8.250000}: select()
 (msc=-1) Paging: subscr-IMSI-123400011120: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400011120
@@ -5293,7 +5377,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-123400011400
 abis_rsl_sendmsg: Paging CMD IMSI-123400011440
 (msc=-1) Paging: subscr-IMSI-123400011480: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400011480
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=47)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=47)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={8.500000}: select()
 (msc=-1) Paging: subscr-IMSI-123400011520: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400011520
@@ -5315,7 +5400,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-123400011800
 abis_rsl_sendmsg: Paging CMD IMSI-123400011840
 (msc=-1) Paging: subscr-IMSI-123400011880: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400011880
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=37)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=37)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={8.750000}: select()
 (msc=-1) Paging: subscr-IMSI-123400011920: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400011920
@@ -5337,7 +5423,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-123400012200
 abis_rsl_sendmsg: Paging CMD IMSI-123400012240
 (msc=-1) Paging: subscr-IMSI-123400012280: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400012280
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=27)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=27)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={9.000000}: select()
 (msc=-1) Paging: subscr-IMSI-123400012320: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400012320
@@ -5359,7 +5446,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-123400012600
 abis_rsl_sendmsg: Paging CMD IMSI-123400012640
 (msc=-1) Paging: subscr-IMSI-123400012680: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400012680
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=17)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=17)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 (msc=-1) Paging: subscr-IMSI-123400000360: (bts=0) T3113 expired
 (msc=-1) Paging: subscr-IMSI-123400000320: (bts=0) T3113 expired
 (msc=-1) Paging: subscr-IMSI-123400000280: (bts=0) T3113 expired
@@ -5391,7 +5479,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-123400013000
 abis_rsl_sendmsg: Paging CMD IMSI-123400013040
 (msc=-1) Paging: subscr-IMSI-123400013080: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400013080
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=7)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=7)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={9.500000}: select()
 (msc=-1) Paging: subscr-IMSI-123400013120: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400013120
@@ -5408,6 +5497,7 @@ abis_rsl_sendmsg: Paging CMD IMSI-123400013320
 (msc=-1) Paging: subscr-IMSI-123400013360: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400013360
 (msc=-1) Paging: subscr-IMSI-123400013400: (bts=0) Paging delayed: waiting for available slots at BTS
+(bts=0) Paged 7 subscribers (7 initial, 0 retrans) during last iteration
 sys={10.000000}: select()
 (bts=0) Estimated 67 paging available_slots over 2 seconds
 (bts=0) Timeout waiting for CCCH Load Indication, assuming BTS is below Load Threshold (available_slots 0 -> 67)
@@ -5431,7 +5521,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-123400013680
 abis_rsl_sendmsg: Paging CMD IMSI-123400013720
 (msc=-1) Paging: subscr-IMSI-123400013760: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400013760
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=57)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=57)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={10.250000}: select()
 (msc=-1) Paging: subscr-IMSI-123400013800: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400013800
@@ -5453,7 +5544,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-123400014080
 abis_rsl_sendmsg: Paging CMD IMSI-123400014120
 (msc=-1) Paging: subscr-IMSI-123400014160: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400014160
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=47)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=47)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={10.500000}: select()
 (msc=-1) Paging: subscr-IMSI-123400014200: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400014200
@@ -5475,7 +5567,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-123400014480
 abis_rsl_sendmsg: Paging CMD IMSI-123400014520
 (msc=-1) Paging: subscr-IMSI-123400014560: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400014560
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=37)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=37)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={10.750000}: select()
 (msc=-1) Paging: subscr-IMSI-123400014600: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400014600
@@ -5497,7 +5590,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-123400014880
 abis_rsl_sendmsg: Paging CMD IMSI-123400014920
 (msc=-1) Paging: subscr-IMSI-123400014960: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400014960
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=27)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=27)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={11.000000}: select()
 (msc=-1) Paging: subscr-IMSI-123400015000: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400015000
@@ -5519,7 +5613,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-123400015280
 abis_rsl_sendmsg: Paging CMD IMSI-123400015320
 (msc=-1) Paging: subscr-IMSI-123400015360: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400015360
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=17)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=17)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 (msc=-1) Paging: subscr-IMSI-123400000680: (bts=0) T3113 expired
 (msc=-1) Paging: subscr-IMSI-123400000640: (bts=0) T3113 expired
 (msc=-1) Paging: subscr-IMSI-123400000600: (bts=0) T3113 expired
@@ -5549,7 +5644,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-123400015680
 abis_rsl_sendmsg: Paging CMD IMSI-123400015720
 (msc=-1) Paging: subscr-IMSI-123400015760: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400015760
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=7)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=7)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={11.500000}: select()
 (msc=-1) Paging: subscr-IMSI-123400015800: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400015800
@@ -5566,6 +5662,7 @@ abis_rsl_sendmsg: Paging CMD IMSI-123400016000
 (msc=-1) Paging: subscr-IMSI-123400016040: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400016040
 (msc=-1) Paging: subscr-IMSI-123400016080: (bts=0) Paging delayed: waiting for available slots at BTS
+(bts=0) Paged 7 subscribers (7 initial, 0 retrans) during last iteration
 sys={12.000000}: select()
 (bts=0) Estimated 67 paging available_slots over 2 seconds
 (bts=0) Timeout waiting for CCCH Load Indication, assuming BTS is below Load Threshold (available_slots 0 -> 67)
@@ -5589,7 +5686,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-123400016360
 abis_rsl_sendmsg: Paging CMD IMSI-123400016400
 (msc=-1) Paging: subscr-IMSI-123400016440: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400016440
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=57)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=57)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 (msc=-1) Paging: subscr-IMSI-123400001000: (bts=0) T3113 expired
 (msc=-1) Paging: subscr-IMSI-123400000960: (bts=0) T3113 expired
 (msc=-1) Paging: subscr-IMSI-123400000920: (bts=0) T3113 expired
@@ -5619,7 +5717,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-123400016760
 abis_rsl_sendmsg: Paging CMD IMSI-123400016800
 (msc=-1) Paging: subscr-IMSI-123400016840: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400016840
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=47)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=47)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={12.500000}: select()
 (msc=-1) Paging: subscr-IMSI-123400016880: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400016880
@@ -5641,7 +5740,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-123400017160
 abis_rsl_sendmsg: Paging CMD IMSI-123400017200
 (msc=-1) Paging: subscr-IMSI-123400017240: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400017240
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=37)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=37)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={12.750000}: select()
 (msc=-1) Paging: subscr-IMSI-123400017280: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400017280
@@ -5663,7 +5763,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-123400017560
 abis_rsl_sendmsg: Paging CMD IMSI-123400017600
 (msc=-1) Paging: subscr-IMSI-123400017640: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400017640
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=27)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=27)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={13.000000}: select()
 (msc=-1) Paging: subscr-IMSI-123400017680: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400017680
@@ -5685,7 +5786,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-123400017960
 abis_rsl_sendmsg: Paging CMD IMSI-123400018000
 (msc=-1) Paging: subscr-IMSI-123400018040: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400018040
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=17)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=17)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={13.250000}: select()
 (msc=-1) Paging: subscr-IMSI-123400018080: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400018080
@@ -5707,7 +5809,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-123400018360
 abis_rsl_sendmsg: Paging CMD IMSI-123400018400
 (msc=-1) Paging: subscr-IMSI-123400018440: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400018440
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=7)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=7)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={13.500000}: select()
 (msc=-1) Paging: subscr-IMSI-123400018480: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400018480
@@ -5724,6 +5827,7 @@ abis_rsl_sendmsg: Paging CMD IMSI-123400018680
 (msc=-1) Paging: subscr-IMSI-123400018720: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400018720
 (msc=-1) Paging: subscr-IMSI-123400018760: (bts=0) Paging delayed: waiting for available slots at BTS
+(bts=0) Paged 7 subscribers (7 initial, 0 retrans) during last iteration
 sys={14.000000}: select()
 (bts=0) Estimated 67 paging available_slots over 2 seconds
 (bts=0) Timeout waiting for CCCH Load Indication, assuming BTS is below Load Threshold (available_slots 0 -> 67)
@@ -5747,7 +5851,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-123400019040
 abis_rsl_sendmsg: Paging CMD IMSI-123400019080
 (msc=-1) Paging: subscr-IMSI-123400019120: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400019120
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=57)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=57)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 (msc=-1) Paging: subscr-IMSI-123400001320: (bts=0) T3113 expired
 (msc=-1) Paging: subscr-IMSI-123400001280: (bts=0) T3113 expired
 (msc=-1) Paging: subscr-IMSI-123400001240: (bts=0) T3113 expired
@@ -5777,7 +5882,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-123400019440
 abis_rsl_sendmsg: Paging CMD IMSI-123400019480
 (msc=-1) Paging: subscr-IMSI-123400019520: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400019520
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=47)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=47)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={14.500000}: select()
 (msc=-1) Paging: subscr-IMSI-123400019560: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400019560
@@ -5799,7 +5905,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-123400019840
 abis_rsl_sendmsg: Paging CMD IMSI-123400019880
 (msc=-1) Paging: subscr-IMSI-123400019920: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400019920
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=37)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=37)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={14.750000}: select()
 (msc=-1) Paging: subscr-IMSI-123400019960: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-123400019960
@@ -5821,7 +5928,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-123400001600
 abis_rsl_sendmsg: Paging CMD IMSI-123400001640
 (msc=-1) Paging: subscr-IMSI-123400001680: (bts=0) Going to send paging command for ch. type 0 (attempt 1)
 abis_rsl_sendmsg: Paging CMD IMSI-123400001680
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=27)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=27)
+(bts=0) Paged 10 subscribers (1 initial, 9 retrans) during last iteration
 (msc=-1) Paging: subscr-IMSI-123400001720: (bts=0) Stop paging (flush)
 (msc=-1) Paging: subscr-IMSI-123400001760: (bts=0) Stop paging (flush)
 (msc=-1) Paging: subscr-IMSI-123400001800: (bts=0) Stop paging (flush)
@@ -6298,7 +6406,8 @@ BTS allocation OK in test_paging500_combined()
 (msc=-1) Paging: subscr-IMSI-1234000000: (bts=0) Paging request: T3113 expires in 9 seconds (estimated 9)
 (msc=-1) Paging: subscr-IMSI-1234000000: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000000
-(bts=0) Paged 1 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=66)
+(msc=-1) Paging: subscr-IMSI-1234000000: (bts=0) Paging delayed: retransmission happens in 0.500000s
+(bts=0) Paged 1 subscribers (1 initial, 0 retrans) during last iteration
 (bts=0) Estimated 509 paging available_slots over 60 seconds
 (msc=-1) Paging: subscr-IMSI-1234000001: (bts=0) Start paging
 (msc=-1) Paging: subscr-IMSI-1234000001: (bts=0) Paging request: T3113 expires in 9 seconds (estimated 9)
@@ -7818,7 +7927,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000008
 abis_rsl_sendmsg: Paging CMD IMSI-1234000009
 (msc=-1) Paging: subscr-IMSI-1234000010: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000010
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=56)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=56)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={0.500000}: select()
 (msc=-1) Paging: subscr-IMSI-1234000011: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000011
@@ -7840,7 +7950,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000018
 abis_rsl_sendmsg: Paging CMD IMSI-1234000019
 (msc=-1) Paging: subscr-IMSI-1234000020: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000020
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=46)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=46)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={0.750000}: select()
 (msc=-1) Paging: subscr-IMSI-1234000021: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000021
@@ -7862,7 +7973,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000028
 abis_rsl_sendmsg: Paging CMD IMSI-1234000029
 (msc=-1) Paging: subscr-IMSI-1234000030: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000030
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=36)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=36)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={1.000000}: select()
 (msc=-1) Paging: subscr-IMSI-1234000031: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000031
@@ -7884,7 +7996,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000038
 abis_rsl_sendmsg: Paging CMD IMSI-1234000039
 (msc=-1) Paging: subscr-IMSI-1234000040: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000040
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=26)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=26)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={1.250000}: select()
 (msc=-1) Paging: subscr-IMSI-1234000041: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000041
@@ -7906,7 +8019,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000048
 abis_rsl_sendmsg: Paging CMD IMSI-1234000049
 (msc=-1) Paging: subscr-IMSI-1234000050: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000050
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=16)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=16)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={1.500000}: select()
 (msc=-1) Paging: subscr-IMSI-1234000051: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000051
@@ -7928,7 +8042,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000058
 abis_rsl_sendmsg: Paging CMD IMSI-1234000059
 (msc=-1) Paging: subscr-IMSI-1234000060: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000060
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=6)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=6)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={1.750000}: select()
 (msc=-1) Paging: subscr-IMSI-1234000061: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000061
@@ -7943,6 +8058,7 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000065
 (msc=-1) Paging: subscr-IMSI-1234000066: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000066
 (msc=-1) Paging: subscr-IMSI-1234000067: (bts=0) Paging delayed: waiting for available slots at BTS
+(bts=0) Paged 6 subscribers (6 initial, 0 retrans) during last iteration
 sys={2.000000}: select()
 (bts=0) Estimated 16 paging available_slots over 2 seconds
 (bts=0) Timeout waiting for CCCH Load Indication, assuming BTS is below Load Threshold (available_slots 0 -> 16)
@@ -7966,7 +8082,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000074
 abis_rsl_sendmsg: Paging CMD IMSI-1234000075
 (msc=-1) Paging: subscr-IMSI-1234000076: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000076
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=6)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=6)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={2.250000}: select()
 (msc=-1) Paging: subscr-IMSI-1234000077: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000077
@@ -7981,6 +8098,7 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000081
 (msc=-1) Paging: subscr-IMSI-1234000082: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000082
 (msc=-1) Paging: subscr-IMSI-1234000083: (bts=0) Paging delayed: waiting for available slots at BTS
+(bts=0) Paged 6 subscribers (6 initial, 0 retrans) during last iteration
 sys={3.1000000}: select()
 sys={4.000000}: select()
 (bts=0) Estimated 16 paging available_slots over 2 seconds
@@ -8005,7 +8123,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000090
 abis_rsl_sendmsg: Paging CMD IMSI-1234000091
 (msc=-1) Paging: subscr-IMSI-1234000092: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000092
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=6)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=6)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={4.250000}: select()
 (msc=-1) Paging: subscr-IMSI-1234000093: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000093
@@ -8020,6 +8139,7 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000097
 (msc=-1) Paging: subscr-IMSI-1234000098: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000098
 (msc=-1) Paging: subscr-IMSI-1234000099: (bts=0) Paging delayed: waiting for available slots at BTS
+(bts=0) Paged 6 subscribers (6 initial, 0 retrans) during last iteration
 sys={5.1000000}: select()
 sys={6.000000}: select()
 (bts=0) Estimated 16 paging available_slots over 2 seconds
@@ -8044,7 +8164,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000106
 abis_rsl_sendmsg: Paging CMD IMSI-1234000107
 (msc=-1) Paging: subscr-IMSI-1234000108: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000108
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=6)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=6)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={6.250000}: select()
 (msc=-1) Paging: subscr-IMSI-1234000109: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000109
@@ -8059,6 +8180,7 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000113
 (msc=-1) Paging: subscr-IMSI-1234000114: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000114
 (msc=-1) Paging: subscr-IMSI-1234000115: (bts=0) Paging delayed: waiting for available slots at BTS
+(bts=0) Paged 6 subscribers (6 initial, 0 retrans) during last iteration
 sys={7.1000000}: select()
 sys={8.000000}: select()
 (bts=0) Estimated 16 paging available_slots over 2 seconds
@@ -8083,7 +8205,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000122
 abis_rsl_sendmsg: Paging CMD IMSI-1234000123
 (msc=-1) Paging: subscr-IMSI-1234000124: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000124
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=6)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=6)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={8.250000}: select()
 (msc=-1) Paging: subscr-IMSI-1234000125: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000125
@@ -8098,6 +8221,7 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000129
 (msc=-1) Paging: subscr-IMSI-1234000130: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000130
 (msc=-1) Paging: subscr-IMSI-1234000131: (bts=0) Paging delayed: waiting for available slots at BTS
+(bts=0) Paged 6 subscribers (6 initial, 0 retrans) during last iteration
 sys={9.000000}: select()
 (msc=-1) Paging: subscr-IMSI-1234000004: (bts=0) T3113 expired
 (msc=-1) Paging: subscr-IMSI-1234000003: (bts=0) T3113 expired
@@ -8127,7 +8251,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000138
 abis_rsl_sendmsg: Paging CMD IMSI-1234000139
 (msc=-1) Paging: subscr-IMSI-1234000140: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000140
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=6)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=6)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 (msc=-1) Paging: subscr-IMSI-1234000012: (bts=0) T3113 expired
 (msc=-1) Paging: subscr-IMSI-1234000011: (bts=0) T3113 expired
 (msc=-1) Paging: subscr-IMSI-1234000010: (bts=0) T3113 expired
@@ -8150,6 +8275,7 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000145
 (msc=-1) Paging: subscr-IMSI-1234000146: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000146
 (msc=-1) Paging: subscr-IMSI-1234000147: (bts=0) Paging delayed: waiting for available slots at BTS
+(bts=0) Paged 6 subscribers (6 initial, 0 retrans) during last iteration
 sys={11.000000}: select()
 (msc=-1) Paging: subscr-IMSI-1234000021: (bts=0) T3113 expired
 (msc=-1) Paging: subscr-IMSI-1234000020: (bts=0) T3113 expired
@@ -8183,7 +8309,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000154
 abis_rsl_sendmsg: Paging CMD IMSI-1234000155
 (msc=-1) Paging: subscr-IMSI-1234000156: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000156
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=6)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=6)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 (msc=-1) Paging: subscr-IMSI-1234000030: (bts=0) T3113 expired
 (msc=-1) Paging: subscr-IMSI-1234000029: (bts=0) T3113 expired
 (msc=-1) Paging: subscr-IMSI-1234000028: (bts=0) T3113 expired
@@ -8207,6 +8334,7 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000161
 (msc=-1) Paging: subscr-IMSI-1234000162: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000162
 (msc=-1) Paging: subscr-IMSI-1234000163: (bts=0) Paging delayed: waiting for available slots at BTS
+(bts=0) Paged 6 subscribers (6 initial, 0 retrans) during last iteration
 sys={13.1000000}: select()
 sys={14.000000}: select()
 (bts=0) Estimated 16 paging available_slots over 2 seconds
@@ -8231,7 +8359,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000170
 abis_rsl_sendmsg: Paging CMD IMSI-1234000171
 (msc=-1) Paging: subscr-IMSI-1234000172: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000172
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=6)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=6)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 (msc=-1) Paging: subscr-IMSI-1234000036: (bts=0) T3113 expired
 (msc=-1) Paging: subscr-IMSI-1234000035: (bts=0) T3113 expired
 (msc=-1) Paging: subscr-IMSI-1234000034: (bts=0) T3113 expired
@@ -8252,6 +8381,7 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000177
 (msc=-1) Paging: subscr-IMSI-1234000178: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000178
 (msc=-1) Paging: subscr-IMSI-1234000179: (bts=0) Paging delayed: waiting for available slots at BTS
+(bts=0) Paged 6 subscribers (6 initial, 0 retrans) during last iteration
 sys={15.000000}: select()
 (msc=-1) Paging: subscr-IMSI-1234000045: (bts=0) T3113 expired
 (msc=-1) Paging: subscr-IMSI-1234000044: (bts=0) T3113 expired
@@ -8285,7 +8415,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000186
 abis_rsl_sendmsg: Paging CMD IMSI-1234000187
 (msc=-1) Paging: subscr-IMSI-1234000188: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000188
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=6)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=6)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 (msc=-1) Paging: subscr-IMSI-1234000050: (bts=0) T3113 expired
 (msc=-1) Paging: subscr-IMSI-1234000049: (bts=0) T3113 expired
 (msc=-1) Paging: subscr-IMSI-1234000048: (bts=0) T3113 expired
@@ -8305,6 +8436,7 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000193
 (msc=-1) Paging: subscr-IMSI-1234000194: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000194
 (msc=-1) Paging: subscr-IMSI-1234000195: (bts=0) Paging delayed: waiting for available slots at BTS
+(bts=0) Paged 6 subscribers (6 initial, 0 retrans) during last iteration
 sys={17.000000}: select()
 (msc=-1) Paging: subscr-IMSI-1234000051: (bts=0) T3113 expired
 sys={18.000000}: select()
@@ -8330,7 +8462,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000202
 abis_rsl_sendmsg: Paging CMD IMSI-1234000203
 (msc=-1) Paging: subscr-IMSI-1234000204: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000204
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=6)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=6)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 (msc=-1) Paging: subscr-IMSI-1234000061: (bts=0) T3113 expired
 (msc=-1) Paging: subscr-IMSI-1234000060: (bts=0) T3113 expired
 (msc=-1) Paging: subscr-IMSI-1234000059: (bts=0) T3113 expired
@@ -8355,6 +8488,7 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000209
 (msc=-1) Paging: subscr-IMSI-1234000210: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000210
 (msc=-1) Paging: subscr-IMSI-1234000211: (bts=0) Paging delayed: waiting for available slots at BTS
+(bts=0) Paged 6 subscribers (6 initial, 0 retrans) during last iteration
 sys={19.000000}: select()
 (msc=-1) Paging: subscr-IMSI-1234000069: (bts=0) T3113 expired
 (msc=-1) Paging: subscr-IMSI-1234000068: (bts=0) T3113 expired
@@ -8387,7 +8521,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000218
 abis_rsl_sendmsg: Paging CMD IMSI-1234000219
 (msc=-1) Paging: subscr-IMSI-1234000220: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000220
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=6)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=6)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 (msc=-1) Paging: subscr-IMSI-1234000070: (bts=0) T3113 expired
 sys={20.250000}: select()
 (msc=-1) Paging: subscr-IMSI-1234000221: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
@@ -8403,6 +8538,7 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000225
 (msc=-1) Paging: subscr-IMSI-1234000226: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000226
 (msc=-1) Paging: subscr-IMSI-1234000227: (bts=0) Paging delayed: waiting for available slots at BTS
+(bts=0) Paged 6 subscribers (6 initial, 0 retrans) during last iteration
 sys={21.000000}: select()
 (msc=-1) Paging: subscr-IMSI-1234000075: (bts=0) T3113 expired
 (msc=-1) Paging: subscr-IMSI-1234000074: (bts=0) T3113 expired
@@ -8432,7 +8568,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000234
 abis_rsl_sendmsg: Paging CMD IMSI-1234000235
 (msc=-1) Paging: subscr-IMSI-1234000236: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000236
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=6)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=6)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 (msc=-1) Paging: subscr-IMSI-1234000085: (bts=0) T3113 expired
 (msc=-1) Paging: subscr-IMSI-1234000084: (bts=0) T3113 expired
 (msc=-1) Paging: subscr-IMSI-1234000083: (bts=0) T3113 expired
@@ -8457,6 +8594,7 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000241
 (msc=-1) Paging: subscr-IMSI-1234000242: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000242
 (msc=-1) Paging: subscr-IMSI-1234000243: (bts=0) Paging delayed: waiting for available slots at BTS
+(bts=0) Paged 6 subscribers (6 initial, 0 retrans) during last iteration
 sys={23.000000}: select()
 (msc=-1) Paging: subscr-IMSI-1234000090: (bts=0) T3113 expired
 (msc=-1) Paging: subscr-IMSI-1234000089: (bts=0) T3113 expired
@@ -8486,7 +8624,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000250
 abis_rsl_sendmsg: Paging CMD IMSI-1234000251
 (msc=-1) Paging: subscr-IMSI-1234000252: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000252
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=6)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=6)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 (msc=-1) Paging: subscr-IMSI-1234000091: (bts=0) T3113 expired
 sys={24.250000}: select()
 (msc=-1) Paging: subscr-IMSI-1234000253: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
@@ -8502,6 +8641,7 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000257
 (msc=-1) Paging: subscr-IMSI-1234000258: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000258
 (msc=-1) Paging: subscr-IMSI-1234000259: (bts=0) Paging delayed: waiting for available slots at BTS
+(bts=0) Paged 6 subscribers (6 initial, 0 retrans) during last iteration
 sys={25.000000}: select()
 (msc=-1) Paging: subscr-IMSI-1234000099: (bts=0) T3113 expired
 (msc=-1) Paging: subscr-IMSI-1234000098: (bts=0) T3113 expired
@@ -8534,7 +8674,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000266
 abis_rsl_sendmsg: Paging CMD IMSI-1234000267
 (msc=-1) Paging: subscr-IMSI-1234000268: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000268
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=6)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=6)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 (msc=-1) Paging: subscr-IMSI-1234000109: (bts=0) T3113 expired
 (msc=-1) Paging: subscr-IMSI-1234000108: (bts=0) T3113 expired
 (msc=-1) Paging: subscr-IMSI-1234000107: (bts=0) T3113 expired
@@ -8559,6 +8700,7 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000273
 (msc=-1) Paging: subscr-IMSI-1234000274: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000274
 (msc=-1) Paging: subscr-IMSI-1234000275: (bts=0) Paging delayed: waiting for available slots at BTS
+(bts=0) Paged 6 subscribers (6 initial, 0 retrans) during last iteration
 sys={27.000000}: select()
 (msc=-1) Paging: subscr-IMSI-1234000110: (bts=0) T3113 expired
 sys={28.000000}: select()
@@ -8584,7 +8726,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000282
 abis_rsl_sendmsg: Paging CMD IMSI-1234000283
 (msc=-1) Paging: subscr-IMSI-1234000284: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000284
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=6)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=6)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 (msc=-1) Paging: subscr-IMSI-1234000115: (bts=0) T3113 expired
 (msc=-1) Paging: subscr-IMSI-1234000114: (bts=0) T3113 expired
 (msc=-1) Paging: subscr-IMSI-1234000113: (bts=0) T3113 expired
@@ -8604,6 +8747,7 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000289
 (msc=-1) Paging: subscr-IMSI-1234000290: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000290
 (msc=-1) Paging: subscr-IMSI-1234000291: (bts=0) Paging delayed: waiting for available slots at BTS
+(bts=0) Paged 6 subscribers (6 initial, 0 retrans) during last iteration
 sys={29.000000}: select()
 (msc=-1) Paging: subscr-IMSI-1234000124: (bts=0) T3113 expired
 (msc=-1) Paging: subscr-IMSI-1234000123: (bts=0) T3113 expired
@@ -8637,7 +8781,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000298
 abis_rsl_sendmsg: Paging CMD IMSI-1234000299
 (msc=-1) Paging: subscr-IMSI-1234000300: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000300
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=6)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=6)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 (msc=-1) Paging: subscr-IMSI-1234000130: (bts=0) T3113 expired
 (msc=-1) Paging: subscr-IMSI-1234000129: (bts=0) T3113 expired
 (msc=-1) Paging: subscr-IMSI-1234000128: (bts=0) T3113 expired
@@ -8658,6 +8803,7 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000305
 (msc=-1) Paging: subscr-IMSI-1234000306: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000306
 (msc=-1) Paging: subscr-IMSI-1234000307: (bts=0) Paging delayed: waiting for available slots at BTS
+(bts=0) Paged 6 subscribers (6 initial, 0 retrans) during last iteration
 sys={31.000000}: select()
 sys={32.000000}: select()
 (bts=0) Estimated 16 paging available_slots over 2 seconds
@@ -8682,7 +8828,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000314
 abis_rsl_sendmsg: Paging CMD IMSI-1234000315
 (msc=-1) Paging: subscr-IMSI-1234000316: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000316
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=6)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=6)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 (msc=-1) Paging: subscr-IMSI-1234000139: (bts=0) T3113 expired
 (msc=-1) Paging: subscr-IMSI-1234000138: (bts=0) T3113 expired
 (msc=-1) Paging: subscr-IMSI-1234000137: (bts=0) T3113 expired
@@ -8706,6 +8853,7 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000321
 (msc=-1) Paging: subscr-IMSI-1234000322: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000322
 (msc=-1) Paging: subscr-IMSI-1234000323: (bts=0) Paging delayed: waiting for available slots at BTS
+(bts=0) Paged 6 subscribers (6 initial, 0 retrans) during last iteration
 sys={33.000000}: select()
 (msc=-1) Paging: subscr-IMSI-1234000148: (bts=0) T3113 expired
 (msc=-1) Paging: subscr-IMSI-1234000147: (bts=0) T3113 expired
@@ -8739,7 +8887,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000330
 abis_rsl_sendmsg: Paging CMD IMSI-1234000331
 (msc=-1) Paging: subscr-IMSI-1234000332: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000332
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=6)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=6)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 (msc=-1) Paging: subscr-IMSI-1234000150: (bts=0) T3113 expired
 (msc=-1) Paging: subscr-IMSI-1234000149: (bts=0) T3113 expired
 sys={34.250000}: select()
@@ -8756,6 +8905,7 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000337
 (msc=-1) Paging: subscr-IMSI-1234000338: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000338
 (msc=-1) Paging: subscr-IMSI-1234000339: (bts=0) Paging delayed: waiting for available slots at BTS
+(bts=0) Paged 6 subscribers (6 initial, 0 retrans) during last iteration
 sys={35.000000}: select()
 (msc=-1) Paging: subscr-IMSI-1234000154: (bts=0) T3113 expired
 (msc=-1) Paging: subscr-IMSI-1234000153: (bts=0) T3113 expired
@@ -8784,7 +8934,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000346
 abis_rsl_sendmsg: Paging CMD IMSI-1234000347
 (msc=-1) Paging: subscr-IMSI-1234000348: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000348
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=6)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=6)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 (msc=-1) Paging: subscr-IMSI-1234000164: (bts=0) T3113 expired
 (msc=-1) Paging: subscr-IMSI-1234000163: (bts=0) T3113 expired
 (msc=-1) Paging: subscr-IMSI-1234000162: (bts=0) T3113 expired
@@ -8809,6 +8960,7 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000353
 (msc=-1) Paging: subscr-IMSI-1234000354: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000354
 (msc=-1) Paging: subscr-IMSI-1234000355: (bts=0) Paging delayed: waiting for available slots at BTS
+(bts=0) Paged 6 subscribers (6 initial, 0 retrans) during last iteration
 sys={37.000000}: select()
 (msc=-1) Paging: subscr-IMSI-1234000170: (bts=0) T3113 expired
 (msc=-1) Paging: subscr-IMSI-1234000169: (bts=0) T3113 expired
@@ -8839,7 +8991,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000362
 abis_rsl_sendmsg: Paging CMD IMSI-1234000363
 (msc=-1) Paging: subscr-IMSI-1234000364: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000364
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=6)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=6)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={38.250000}: select()
 (msc=-1) Paging: subscr-IMSI-1234000365: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000365
@@ -8854,6 +9007,7 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000369
 (msc=-1) Paging: subscr-IMSI-1234000370: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000370
 (msc=-1) Paging: subscr-IMSI-1234000371: (bts=0) Paging delayed: waiting for available slots at BTS
+(bts=0) Paged 6 subscribers (6 initial, 0 retrans) during last iteration
 sys={39.000000}: select()
 (msc=-1) Paging: subscr-IMSI-1234000178: (bts=0) T3113 expired
 (msc=-1) Paging: subscr-IMSI-1234000177: (bts=0) T3113 expired
@@ -8886,7 +9040,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000378
 abis_rsl_sendmsg: Paging CMD IMSI-1234000379
 (msc=-1) Paging: subscr-IMSI-1234000380: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000380
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=6)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=6)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 (msc=-1) Paging: subscr-IMSI-1234000188: (bts=0) T3113 expired
 (msc=-1) Paging: subscr-IMSI-1234000187: (bts=0) T3113 expired
 (msc=-1) Paging: subscr-IMSI-1234000186: (bts=0) T3113 expired
@@ -8911,6 +9066,7 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000385
 (msc=-1) Paging: subscr-IMSI-1234000386: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000386
 (msc=-1) Paging: subscr-IMSI-1234000387: (bts=0) Paging delayed: waiting for available slots at BTS
+(bts=0) Paged 6 subscribers (6 initial, 0 retrans) during last iteration
 sys={41.000000}: select()
 (msc=-1) Paging: subscr-IMSI-1234000190: (bts=0) T3113 expired
 (msc=-1) Paging: subscr-IMSI-1234000189: (bts=0) T3113 expired
@@ -8937,7 +9093,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000394
 abis_rsl_sendmsg: Paging CMD IMSI-1234000395
 (msc=-1) Paging: subscr-IMSI-1234000396: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000396
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=6)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=6)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 (msc=-1) Paging: subscr-IMSI-1234000194: (bts=0) T3113 expired
 (msc=-1) Paging: subscr-IMSI-1234000193: (bts=0) T3113 expired
 (msc=-1) Paging: subscr-IMSI-1234000192: (bts=0) T3113 expired
@@ -8956,6 +9113,7 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000401
 (msc=-1) Paging: subscr-IMSI-1234000402: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000402
 (msc=-1) Paging: subscr-IMSI-1234000403: (bts=0) Paging delayed: waiting for available slots at BTS
+(bts=0) Paged 6 subscribers (6 initial, 0 retrans) during last iteration
 sys={43.000000}: select()
 (msc=-1) Paging: subscr-IMSI-1234000203: (bts=0) T3113 expired
 (msc=-1) Paging: subscr-IMSI-1234000202: (bts=0) T3113 expired
@@ -8989,7 +9147,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000410
 abis_rsl_sendmsg: Paging CMD IMSI-1234000411
 (msc=-1) Paging: subscr-IMSI-1234000412: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000412
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=6)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=6)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 (msc=-1) Paging: subscr-IMSI-1234000210: (bts=0) T3113 expired
 (msc=-1) Paging: subscr-IMSI-1234000209: (bts=0) T3113 expired
 (msc=-1) Paging: subscr-IMSI-1234000208: (bts=0) T3113 expired
@@ -9011,6 +9170,7 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000417
 (msc=-1) Paging: subscr-IMSI-1234000418: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000418
 (msc=-1) Paging: subscr-IMSI-1234000419: (bts=0) Paging delayed: waiting for available slots at BTS
+(bts=0) Paged 6 subscribers (6 initial, 0 retrans) during last iteration
 sys={45.000000}: select()
 sys={46.000000}: select()
 (bts=0) Estimated 16 paging available_slots over 2 seconds
@@ -9035,7 +9195,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000426
 abis_rsl_sendmsg: Paging CMD IMSI-1234000427
 (msc=-1) Paging: subscr-IMSI-1234000428: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000428
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=6)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=6)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 (msc=-1) Paging: subscr-IMSI-1234000218: (bts=0) T3113 expired
 (msc=-1) Paging: subscr-IMSI-1234000217: (bts=0) T3113 expired
 (msc=-1) Paging: subscr-IMSI-1234000216: (bts=0) T3113 expired
@@ -9058,6 +9219,7 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000433
 (msc=-1) Paging: subscr-IMSI-1234000434: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000434
 (msc=-1) Paging: subscr-IMSI-1234000435: (bts=0) Paging delayed: waiting for available slots at BTS
+(bts=0) Paged 6 subscribers (6 initial, 0 retrans) during last iteration
 sys={47.000000}: select()
 (msc=-1) Paging: subscr-IMSI-1234000227: (bts=0) T3113 expired
 (msc=-1) Paging: subscr-IMSI-1234000226: (bts=0) T3113 expired
@@ -9091,7 +9253,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000442
 abis_rsl_sendmsg: Paging CMD IMSI-1234000443
 (msc=-1) Paging: subscr-IMSI-1234000444: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000444
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=6)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=6)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 (msc=-1) Paging: subscr-IMSI-1234000230: (bts=0) T3113 expired
 (msc=-1) Paging: subscr-IMSI-1234000229: (bts=0) T3113 expired
 (msc=-1) Paging: subscr-IMSI-1234000228: (bts=0) T3113 expired
@@ -9109,6 +9272,7 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000449
 (msc=-1) Paging: subscr-IMSI-1234000450: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000450
 (msc=-1) Paging: subscr-IMSI-1234000451: (bts=0) Paging delayed: waiting for available slots at BTS
+(bts=0) Paged 6 subscribers (6 initial, 0 retrans) during last iteration
 sys={49.000000}: select()
 (msc=-1) Paging: subscr-IMSI-1234000233: (bts=0) T3113 expired
 (msc=-1) Paging: subscr-IMSI-1234000232: (bts=0) T3113 expired
@@ -9136,7 +9300,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000458
 abis_rsl_sendmsg: Paging CMD IMSI-1234000459
 (msc=-1) Paging: subscr-IMSI-1234000460: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000460
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=6)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=6)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 (msc=-1) Paging: subscr-IMSI-1234000243: (bts=0) T3113 expired
 (msc=-1) Paging: subscr-IMSI-1234000242: (bts=0) T3113 expired
 (msc=-1) Paging: subscr-IMSI-1234000241: (bts=0) T3113 expired
@@ -9161,6 +9326,7 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000465
 (msc=-1) Paging: subscr-IMSI-1234000466: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000466
 (msc=-1) Paging: subscr-IMSI-1234000467: (bts=0) Paging delayed: waiting for available slots at BTS
+(bts=0) Paged 6 subscribers (6 initial, 0 retrans) during last iteration
 sys={51.000000}: select()
 (msc=-1) Paging: subscr-IMSI-1234000250: (bts=0) T3113 expired
 (msc=-1) Paging: subscr-IMSI-1234000249: (bts=0) T3113 expired
@@ -9192,7 +9358,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000474
 abis_rsl_sendmsg: Paging CMD IMSI-1234000475
 (msc=-1) Paging: subscr-IMSI-1234000476: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000476
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=6)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=6)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 sys={52.250000}: select()
 (msc=-1) Paging: subscr-IMSI-1234000477: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000477
@@ -9207,6 +9374,7 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000481
 (msc=-1) Paging: subscr-IMSI-1234000482: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000482
 (msc=-1) Paging: subscr-IMSI-1234000483: (bts=0) Paging delayed: waiting for available slots at BTS
+(bts=0) Paged 6 subscribers (6 initial, 0 retrans) during last iteration
 sys={53.000000}: select()
 (msc=-1) Paging: subscr-IMSI-1234000257: (bts=0) T3113 expired
 (msc=-1) Paging: subscr-IMSI-1234000256: (bts=0) T3113 expired
@@ -9238,7 +9406,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000490
 abis_rsl_sendmsg: Paging CMD IMSI-1234000491
 (msc=-1) Paging: subscr-IMSI-1234000492: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000492
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=6)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=6)
+(bts=0) Paged 10 subscribers (10 initial, 0 retrans) during last iteration
 (msc=-1) Paging: subscr-IMSI-1234000267: (bts=0) T3113 expired
 (msc=-1) Paging: subscr-IMSI-1234000266: (bts=0) T3113 expired
 (msc=-1) Paging: subscr-IMSI-1234000265: (bts=0) T3113 expired
@@ -9263,6 +9432,7 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000497
 (msc=-1) Paging: subscr-IMSI-1234000498: (bts=0) Going to send paging command for ch. type 0 (attempt 0)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000498
 (msc=-1) Paging: subscr-IMSI-1234000499: (bts=0) Paging delayed: waiting for available slots at BTS
+(bts=0) Paged 6 subscribers (6 initial, 0 retrans) during last iteration
 sys={55.000000}: select()
 (msc=-1) Paging: subscr-IMSI-1234000270: (bts=0) T3113 expired
 (msc=-1) Paging: subscr-IMSI-1234000269: (bts=0) T3113 expired
@@ -9290,7 +9460,8 @@ abis_rsl_sendmsg: Paging CMD IMSI-1234000277
 abis_rsl_sendmsg: Paging CMD IMSI-1234000278
 (msc=-1) Paging: subscr-IMSI-1234000279: (bts=0) Going to send paging command for ch. type 0 (attempt 1)
 abis_rsl_sendmsg: Paging CMD IMSI-1234000279
-(bts=0) Paged 10 subscribers during last iteration. Scheduling next batch in 0.250000s (available_slots=6)
+(bts=0) Scheduling next batch in 0.250000s (available_slots=6)
+(bts=0) Paged 10 subscribers (1 initial, 9 retrans) during last iteration
 (msc=-1) Paging: subscr-IMSI-1234000273: (bts=0) T3113 expired
 (msc=-1) Paging: subscr-IMSI-1234000272: (bts=0) T3113 expired
 (msc=-1) Paging: subscr-IMSI-1234000271: (bts=0) T3113 expired

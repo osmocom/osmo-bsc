@@ -88,12 +88,15 @@ static void paging_remove_request(struct gsm_paging_request *req)
 
 	osmo_timer_del(&req->T3113);
 	llist_del(&req->entry);
-	bts_pag_st->pending_requests_len--;
+	if (req->attempts == 0)
+		bts_pag_st->initial_req_list_len--;
+	else
+		bts_pag_st->retrans_req_list_len--;
 	osmo_stat_item_dec(osmo_stat_item_group_get_item(bts->bts_statg, BTS_STAT_PAGING_REQ_QUEUE_LENGTH), 1);
 	bsc_subscr_remove_active_paging_request(req->bsub, req);
 	talloc_free(req);
 
-	if (llist_empty(&bts_pag_st->pending_requests))
+	if (llist_empty(&bts_pag_st->initial_req_list) && llist_empty(&bts_pag_st->retrans_req_list))
 		osmo_timer_del(&bts_pag_st->work_timer);
 }
 
@@ -208,6 +211,148 @@ count_tch:
 	return bts->paging.free_chans_need > count;
 }
 
+static void paging_req_timeout_retrans(struct gsm_paging_request *request, const struct timespec *now)
+{
+	struct gsm_bts_paging_state *bts_pag_st = &request->bts->paging;
+	page_ms(request);
+	paging_set_available_slots(request->bts, bts_pag_st->available_slots - 1);
+
+	if (request->attempts == 0) {
+		/* req is removed from initial_req_list and inserted into retrans_req_list, update list lengths: */
+		bts_pag_st->initial_req_list_len--;
+		bts_pag_st->retrans_req_list_len++;
+	}
+	llist_del(&request->entry);
+	llist_add_tail(&request->entry, &bts_pag_st->retrans_req_list);
+
+	request->last_attempt_ts = *now;
+	request->attempts++;
+}
+
+/* Returns number of paged initial requests (up to max_page_req_per_iter).
+ * Returning work_done=false means the work timer has been scheduled internally and the caller should avoid processing
+ * further requests right now.
+ */
+static unsigned int step_page_initial_reqs(struct gsm_bts_paging_state *bts_pag_st, unsigned int max_page_req_per_iter,
+					   const struct timespec *now, bool *work_done)
+{
+	struct gsm_paging_request *request, *request2;
+	unsigned int num_paged = 0;
+
+	llist_for_each_entry_safe(request, request2, &bts_pag_st->initial_req_list, entry) {
+		/* We run out of available slots. Wait until next CCCH Load Ind
+		 * arrives or credit_timer triggers to keep processing requests.
+		 */
+		if (bts_pag_st->available_slots == 0) {
+			LOG_PAGING_BTS(request, request->bts, DPAG, LOGL_INFO,
+				       "Paging delayed: waiting for available slots at BTS\n");
+			*work_done = false;
+			return num_paged;
+		}
+
+		if (num_paged == max_page_req_per_iter) {
+			goto sched_next_iter;
+		}
+
+		/* we need to determine the number of free channels */
+		if (bts_pag_st->free_chans_need != -1 &&
+		    can_send_pag_req(request->bts, request->chan_type) != 0) {
+			LOG_PAGING_BTS(request, request->bts, DPAG, LOGL_INFO,
+				"Paging delayed: not enough free channels (<%d)\n",
+				 bts_pag_st->free_chans_need);
+			goto sched_next_iter;
+		}
+
+		/* handle the paging request now */
+		paging_req_timeout_retrans(request, now);
+		num_paged++;
+	}
+
+	*work_done = true;
+	return num_paged;
+
+sched_next_iter:
+	LOG_BTS(bts_pag_st->bts, DPAG, LOGL_DEBUG, "Scheduling next batch in %lld.%06lds (available_slots=%u)\n",
+		(long long)initial_period.tv_sec, initial_period.tv_nsec / 1000,
+		bts_pag_st->available_slots);
+	osmo_timer_schedule(&bts_pag_st->work_timer, initial_period.tv_sec, initial_period.tv_nsec / 1000);
+	*work_done = false;
+	return num_paged;
+}
+
+static unsigned int step_page_retrans_reqs(struct gsm_bts_paging_state *bts_pag_st, unsigned int max_page_req_per_iter,
+					   const struct timespec *now)
+{
+	struct gsm_paging_request *request, *initial_request;
+	unsigned int num_paged = 0;
+	struct timespec retrans_ts;
+
+	/* do while loop: Try send at most first max_page_req_per_iter paging
+	 * requests. Since transmitted requests are re-appended at the end of
+	 * the list, we check until we find the first req again, in order to
+	 * avoid retransmitting repeated requests until next time paging is
+	 * scheduled. */
+	initial_request = llist_first_entry_or_null(&bts_pag_st->retrans_req_list,
+					    struct gsm_paging_request, entry);
+	if (!initial_request)
+		return num_paged;
+
+	request = initial_request;
+	do {
+		/* We run out of available slots. Wait until next CCCH Load Ind
+		 * arrives or credit_timer triggers to keep processing requests.
+		 */
+		if (bts_pag_st->available_slots == 0) {
+			LOG_PAGING_BTS(request, request->bts, DPAG, LOGL_INFO,
+				       "Paging delayed: waiting for available slots at BTS\n");
+			return num_paged;
+		}
+
+		/* we need to determine the number of free channels */
+		if (bts_pag_st->free_chans_need != -1 &&
+		    can_send_pag_req(request->bts, request->chan_type) != 0) {
+			LOG_PAGING_BTS(request, request->bts, DPAG, LOGL_INFO,
+				"Paging delayed: not enough free channels (<%d)\n",
+				 bts_pag_st->free_chans_need);
+			goto sched_next_iter;
+		}
+
+		/* Check if time to retransmit has elapsed. Otherwise, wait until its time to retransmit. */
+		timespecadd(&request->last_attempt_ts, &retrans_period, &retrans_ts);
+		if (timespeccmp(now, &retrans_ts, <)) {
+			struct timespec tdiff;
+			timespecsub(&retrans_ts, now, &tdiff);
+			LOG_PAGING_BTS(request, request->bts, DPAG, LOGL_DEBUG,
+					"Paging delayed: retransmission happens in %lld.%06lds\n",
+					(long long)tdiff.tv_sec, tdiff.tv_nsec / 1000);
+			osmo_timer_schedule(&bts_pag_st->work_timer, tdiff.tv_sec, tdiff.tv_nsec / 1000);
+			return num_paged;
+		}
+
+		if (num_paged >= max_page_req_per_iter)
+			goto sched_next_iter;
+
+		/* handle the paging request now */
+		paging_req_timeout_retrans(request, now);
+		num_paged++;
+
+		request = llist_first_entry(&bts_pag_st->retrans_req_list,
+					    struct gsm_paging_request, entry);
+	} while (request != initial_request);
+
+	/* Reaching this code paths means all retrans request have been scheduled (and intial_req_list is empty).
+	 * Hence, reeschedule ourselves to now + retrans_period. */
+	osmo_timer_schedule(&bts_pag_st->work_timer, retrans_period.tv_sec, retrans_period.tv_nsec / 1000);
+	return num_paged;
+
+sched_next_iter:
+	LOG_BTS(bts_pag_st->bts, DPAG, LOGL_DEBUG, "Scheduling next batch in %lld.%06lds (available_slots=%u)\n",
+		(long long)initial_period.tv_sec, initial_period.tv_nsec / 1000,
+		bts_pag_st->available_slots);
+	osmo_timer_schedule(&bts_pag_st->work_timer, initial_period.tv_sec, initial_period.tv_nsec / 1000);
+	return num_paged;
+}
+
 /*
  * This is kicked by the periodic PAGING LOAD Indicator
  * coming from abis_rsl.c
@@ -217,86 +362,30 @@ count_tch:
  */
 static void paging_handle_pending_requests(struct gsm_bts_paging_state *paging_bts)
 {
-	struct gsm_paging_request *request, *initial_request;
-	unsigned int num_paged = 0;
-	struct gsm_bts *bts = paging_bts->bts;
-	struct timespec now, retrans_ts;
+	unsigned int num_paged_initial, num_paged_retrans = 0;
+	unsigned int max_page_req_per_iter = MAX_PAGE_REQ_PER_ITER;
+	struct timespec now;
+	bool work_done = false;
 
 	/*
 	 * Determine if the pending_requests list is empty and
 	 * return then.
 	 */
-	if (llist_empty(&paging_bts->pending_requests)) {
-		/* since the list is empty, no need to reschedule the timer */
+	if (llist_empty(&paging_bts->initial_req_list) &&
+	    llist_empty(&paging_bts->retrans_req_list)) {
+		/* since the lists are empty, no need to reschedule the timer */
 		return;
 	}
 
 	osmo_clock_gettime(CLOCK_MONOTONIC, &now);
 	paging_bts->last_sched_ts = now;
 
-	/* do while loop: Try send at most first MAX_PAGE_REQ_PER_ITER paging
-	 * requests (or before if there are no more available slots). Since
-	 * transmitted requests are re-appended at the end of the list, we check
-	 * until we find the first req again, in order to avoid retransmitting
-	 * repeated requests until next time paging is scheduled. */
-	initial_request = llist_first_entry(&paging_bts->pending_requests,
-					    struct gsm_paging_request, entry);
-	request = initial_request;
-	do {
-		/* We run out of available slots. Wait until next CCCH Load Ind
-		 * arrives or credit_timer triggers to keep processing requests.
-		 */
-		if (paging_bts->available_slots == 0) {
-			LOG_PAGING_BTS(request, request->bts, DPAG, LOGL_INFO,
-				       "Paging delayed: waiting for available slots at BTS\n");
-			return;
-		}
+	num_paged_initial = step_page_initial_reqs(paging_bts, max_page_req_per_iter, &now, &work_done);
+	if (work_done) /* All work done for initial requests, work on retransmissions now: */
+		num_paged_retrans = step_page_retrans_reqs(paging_bts, max_page_req_per_iter - num_paged_initial, &now);
 
-		/* we need to determine the number of free channels */
-		if (paging_bts->free_chans_need != -1 &&
-		    can_send_pag_req(request->bts, request->chan_type) != 0) {
-			LOG_PAGING_BTS(request, request->bts, DPAG, LOGL_INFO,
-				"Paging delayed: not enough free channels (<%d)\n",
-				 paging_bts->free_chans_need);
-			goto sched_next_iter;
-		}
-
-		/* If we reach around back of the queue (retransmitions), check
-		 * if time to retransmit has elapsed. Otherwise, wait until its
-		 * time to retransmit. */
-		if (request->attempts > 0) {
-			timespecadd(&request->last_attempt_ts, &retrans_period, &retrans_ts);
-			if (timespeccmp(&now, &retrans_ts, <)) {
-				struct timespec tdiff;
-				timespecsub(&retrans_ts, &now, &tdiff);
-				LOG_PAGING_BTS(request, request->bts, DPAG, LOGL_DEBUG,
-					       "Paging delayed: retransmission happens in %lld.%06lds\n",
-					       (long long)tdiff.tv_sec, tdiff.tv_nsec / 1000);
-				osmo_timer_schedule(&paging_bts->work_timer, tdiff.tv_sec, tdiff.tv_nsec / 1000);
-				return;
-			}
-		}
-
-		/* handle the paging request now */
-		page_ms(request);
-		paging_set_available_slots(bts, paging_bts->available_slots - 1);
-		request->last_attempt_ts = now;
-		request->attempts++;
-		num_paged++;
-
-		llist_del(&request->entry);
-		llist_add_tail(&request->entry, &paging_bts->pending_requests);
-		request = llist_first_entry(&paging_bts->pending_requests,
-					    struct gsm_paging_request, entry);
-	} while (request != initial_request && num_paged < MAX_PAGE_REQ_PER_ITER);
-
-	/* Once done iterating, prepare next scheduling: */
-sched_next_iter:
-	LOG_BTS(bts, DPAG, LOGL_DEBUG, "Paged %u subscribers during last iteration. "
-		"Scheduling next batch in %lld.%06lds (available_slots=%u)\n",
-		num_paged, (long long)initial_period.tv_sec, initial_period.tv_nsec / 1000,
-		paging_bts->available_slots);
-	osmo_timer_schedule(&paging_bts->work_timer, initial_period.tv_sec, initial_period.tv_nsec / 1000);
+	LOG_BTS(paging_bts->bts, DPAG, LOGL_DEBUG, "Paged %u subscribers (%u initial, %u retrans) during last iteration\n",
+		num_paged_initial + num_paged_retrans, num_paged_initial, num_paged_retrans);
 }
 
 static void paging_worker(void *data)
@@ -312,7 +401,8 @@ void paging_init(struct gsm_bts *bts)
 	bts->paging.bts = bts;
 	bts->paging.free_chans_need = -1;
 	paging_set_available_slots(bts, 0);
-	INIT_LLIST_HEAD(&bts->paging.pending_requests);
+	INIT_LLIST_HEAD(&bts->paging.initial_req_list);
+	INIT_LLIST_HEAD(&bts->paging.retrans_req_list);
 	osmo_timer_setup(&bts->paging.work_timer, paging_worker, &bts->paging);
 	osmo_timer_setup(&bts->paging.credit_timer, paging_give_credit, &bts->paging);
 }
@@ -410,7 +500,7 @@ ret:
 static int _paging_request(const struct bsc_paging_params *params, struct gsm_bts *bts)
 {
 	struct gsm_bts_paging_state *bts_entry = &bts->paging;
-	struct gsm_paging_request *req, *last_initial_req = NULL;
+	struct gsm_paging_request *req;
 	unsigned int t3113_timeout_s;
 	unsigned int x3113_s = osmo_tdef_get(bts->network->T_defs, -3113, OSMO_TDEF_S, -1);
 	unsigned int reqs_before = 0, reqs_before_same_pgroup = 0;
@@ -433,26 +523,20 @@ static int _paging_request(const struct bsc_paging_params *params, struct gsm_bt
 		return -EEXIST;
 	}
 
-	/* Find the last not-yet-ever-once-transmitted request; the new request
-	 * will be added immediately after it, giving higher prio to initial
-	 * transmissions (no retrans). This avoids new subscribers being paged to
+	/* The incoming new req will be stored in initial_req_list giving higher prio
+	 * to it over retransmissions. This avoids new subscribers being paged to
 	 * be delayed if the paging queue is full due to a lot of retranmissions.
 	 * Retranmissions usually mean MS are not reachable/available, so the
 	 * rationale here is to prioritize new subs which may be available.
+	 *
+	 * Count initial reqs already stored in initial_req_list, since those
+	 * will be scheduled for transmission before current incoming req and
+	   need to be taken into account when calculating T3113 for it.
 	 */
-	llist_for_each_entry(req, &bts_entry->pending_requests, entry) {
-		if (req->attempts == 0) {
-			/* Keep counting no-retransmits (general and per same pgroup): */
-			last_initial_req = req;
-			reqs_before++;
-			if (req->pgroup == pgroup)
-				reqs_before_same_pgroup++;
-			continue;
-		}
-		/* Here first retransmit in queue is reached: last_initial_req points
-		 * to last initial (non-retrans) req if there was any, NULL otherwise.
-		 */
-		break;
+	llist_for_each_entry(req, &bts_entry->initial_req_list, entry) {
+		reqs_before++;
+		if (req->pgroup == pgroup)
+			reqs_before_same_pgroup++;
 	}
 
 	LOG_PAGING_BTS(params, bts, DPAG, LOGL_DEBUG, "Start paging\n");
@@ -467,13 +551,9 @@ static int _paging_request(const struct bsc_paging_params *params, struct gsm_bt
 	osmo_timer_setup(&req->T3113, paging_T3113_expired, req);
 	bsc_subscr_add_active_paging_request(req->bsub, req);
 
-	bts_entry->pending_requests_len++;
+	bts_entry->initial_req_list_len++;
 	osmo_stat_item_inc(osmo_stat_item_group_get_item(bts->bts_statg, BTS_STAT_PAGING_REQ_QUEUE_LENGTH), 1);
-	/* there's no initial req (attempts==0), add to the start of the list */
-	if (last_initial_req == NULL)
-		llist_add(&req->entry, &bts_entry->pending_requests);
-	else/* Add in the middle of the list after last_initial_req */
-		__llist_add(&req->entry, &last_initial_req->entry, last_initial_req->entry.next);
+	llist_add_tail(&req->entry, &bts_entry->initial_req_list);
 
 	t3113_timeout_s = calculate_timer_3113(req, reqs_before, reqs_before_same_pgroup, x3113_s);
 	osmo_timer_schedule(&req->T3113, t3113_timeout_s, 0);
@@ -481,10 +561,10 @@ static int _paging_request(const struct bsc_paging_params *params, struct gsm_bt
 	/* Trigger scheduler if needed: */
 	if (!osmo_timer_pending(&bts_entry->work_timer)) {
 		paging_handle_pending_requests(bts_entry);
-	} else if (last_initial_req == NULL) {
+	} else if (bts_entry->initial_req_list_len == 1) {
 		/* Worker timer is armed -> there was already one req before
-		 * last_initial_req is NULL -> There were no initial requests in
-		 *       the list, aka the timer is waiting for retransmition,
+		 * bts_entry->initial_req_list_len == 1 -> There were no initial requests
+		 *       in the list, aka the timer is waiting for retransmition,
 		 *       which is a longer period.
 		 * Let's recaculate the time to adapt it to initial_period: */
 		struct timespec now, elapsed, tdiff;
@@ -622,7 +702,7 @@ void paging_update_buffer_space(struct gsm_bts *bts, uint16_t free_slots)
 /*! Count the number of pending paging requests on given BTS */
 unsigned int paging_pending_requests_nr(const struct gsm_bts *bts)
 {
-	return bts->paging.pending_requests_len;
+	return bts->paging.initial_req_list_len + bts->paging.retrans_req_list_len;
 }
 
 /*! Flush all paging requests at a given BTS for a given MSC (or NULL if all MSC should be flushed). */
@@ -630,14 +710,19 @@ void paging_flush_bts(struct gsm_bts *bts, struct bsc_msc_data *msc)
 {
 	struct gsm_paging_request *req, *req2;
 	int num_cancelled = 0;
+	int i;
 
-	llist_for_each_entry_safe(req, req2, &bts->paging.pending_requests, entry) {
-		if (msc && req->msc != msc)
-			continue;
-		/* now give up the data structure */
-		LOG_PAGING_BTS(req, bts, DPAG, LOGL_DEBUG, "Stop paging (flush)\n");
-		paging_remove_request(req);
-		num_cancelled++;
+	struct llist_head *lists[] = { &bts->paging.initial_req_list, &bts->paging.retrans_req_list };
+
+	for (i = 0; i < ARRAY_SIZE(lists); i++) {
+		llist_for_each_entry_safe(req, req2, lists[i], entry) {
+			if (msc && req->msc != msc)
+				continue;
+			/* now give up the data structure */
+			LOG_PAGING_BTS(req, bts, DPAG, LOGL_DEBUG, "Stop paging (flush)\n");
+			paging_remove_request(req);
+			num_cancelled++;
+		}
 	}
 
 	rate_ctr_add(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_PAGING_MSC_FLUSH), num_cancelled);

@@ -142,7 +142,7 @@ static void test_paging500(struct gsm_network *net)
 		clock_inc(0, nearest_ms*1000);
 		clock_debug("select()");
 		osmo_select_main_ctx(0);
-		if (llist_empty(&bts->paging.pending_requests)) {
+		if (llist_empty(&bts->paging.initial_req_list) && llist_empty(&bts->paging.retrans_req_list)) {
 			fprintf(stderr, "ERROR: some request timed out before being sent! %u\n", _sent_pg_cmd_rsl);
 			OSMO_ASSERT(0);
 		}
@@ -174,7 +174,7 @@ static void test_paging500_combined(struct gsm_network *net)
 		clock_inc(0, nearest_ms*1000);
 		clock_debug("select()");
 		osmo_select_main_ctx(0);
-		if (llist_empty(&bts->paging.pending_requests)) {
+		if (llist_empty(&bts->paging.initial_req_list) && llist_empty(&bts->paging.retrans_req_list)) {
 			fprintf(stderr, "ERROR: some request timed out before being sent! %u\n", _sent_pg_cmd_rsl);
 			OSMO_ASSERT(0);
 		}
@@ -208,7 +208,7 @@ static void test_paging500_samepgroup(struct gsm_network *net)
 		clock_inc(0, nearest_ms*1000);
 		clock_debug("select()");
 		osmo_select_main_ctx(0);
-		if (llist_empty(&bts->paging.pending_requests)) {
+		if (llist_empty(&bts->paging.initial_req_list) && llist_empty(&bts->paging.retrans_req_list)) {
 			fprintf(stderr, "ERROR: some request timed out before being sent! %u\n", _sent_pg_cmd_rsl);
 			OSMO_ASSERT(0);
 		}

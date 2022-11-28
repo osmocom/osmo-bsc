@@ -108,10 +108,15 @@ struct gsm_paging_request {
  * to the gsm_bts, a timer and some more state.
  */
 struct gsm_bts_paging_state {
-	/* pending requests */
-	struct llist_head pending_requests;
+	/* pending requests (initial paging request, no retransmits) */
+	struct llist_head initial_req_list;
+	/* Number of requests in initial_req_list */
+	unsigned int initial_req_list_len;
+	/* pending requests (already transmitted at least once) */
+	struct llist_head retrans_req_list;
 	/* Number of requests in pending_requests_len */
-	unsigned int pending_requests_len;
+	unsigned int retrans_req_list_len;
+
 	struct gsm_bts *bts;
 
 	struct osmo_timer_list work_timer;
