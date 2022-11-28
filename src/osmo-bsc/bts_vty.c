@@ -3033,7 +3033,7 @@ DEFUN_USRATTR(cfg_bts_no_mgw_pool_target,
 #define TNUM_STR "T-number, optionally preceded by 't' or 'T'\n"
 DEFUN_ATTR(cfg_bts_t3113_dynamic, cfg_bts_t3113_dynamic_cmd,
 	   "timer-dynamic TNNNN",
-	   "Calculate T3113 dynamically based on channel config and load\n"
+	   "Calculate T3113 dynamically based on channel config and load (default)\n"
 	   TNUM_STR,
 	   CMD_ATTR_IMMEDIATE)
 {
@@ -4516,6 +4516,8 @@ static void config_write_bts_single(struct vty *vty, struct gsm_bts *bts)
 	/* if we have a limit, write it */
 	if (bts->paging.free_chans_need >= 0)
 		vty_out(vty, "  paging free %d%s", bts->paging.free_chans_need, VTY_NEWLINE);
+	if (!bts->T3113_dynamic)
+		vty_out(vty, "  no timer-dynamic T3113%s", VTY_NEWLINE);
 
 	vty_out(vty, "  neighbor-list mode %s%s",
 		get_value_string(bts_neigh_mode_strs, bts->neigh_list_manual_mode), VTY_NEWLINE);
