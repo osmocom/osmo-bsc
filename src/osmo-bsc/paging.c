@@ -449,19 +449,10 @@ static int _paging_request(const struct bsc_paging_params *params, struct gsm_bt
 				reqs_before_same_pgroup++;
 			continue;
 		}
-		/* Here first retransmit in queue is reached: */
-		if (last_initial_req) {
-			/* There were no-retransmit in the queue, done
-			 * iterating, new req will be inserted here
-			 * (see below the current loop). */
-			break;
-		}
-
-		/* last_initial_req == NULL: No req with attempts=0 was found,
-		 * we'll append to end of list, so keep counting. */
-		reqs_before++;
-		if (req->pgroup == pgroup)
-			reqs_before_same_pgroup++;
+		/* Here first retransmit in queue is reached: last_initial_req points
+		 * to last initial (non-retrans) req if there was any, NULL otherwise.
+		 */
+		break;
 	}
 
 	LOG_PAGING_BTS(params, bts, DPAG, LOGL_DEBUG, "Start paging\n");
