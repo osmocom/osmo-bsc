@@ -88,10 +88,12 @@ static void paging_remove_request(struct gsm_paging_request *req)
 
 	osmo_timer_del(&req->T3113);
 	llist_del(&req->entry);
-	if (req->attempts == 0)
+	if (req->attempts == 0) {
 		bts_pag_st->initial_req_list_len--;
-	else
+		bts_pag_st->initial_req_pgroup_counts[req->pgroup]--;
+	} else {
 		bts_pag_st->retrans_req_list_len--;
+	}
 	osmo_stat_item_dec(osmo_stat_item_group_get_item(bts->bts_statg, BTS_STAT_PAGING_REQ_QUEUE_LENGTH), 1);
 	bsc_subscr_remove_active_paging_request(req->bsub, req);
 	talloc_free(req);
@@ -220,6 +222,7 @@ static void paging_req_timeout_retrans(struct gsm_paging_request *request, const
 	if (request->attempts == 0) {
 		/* req is removed from initial_req_list and inserted into retrans_req_list, update list lengths: */
 		bts_pag_st->initial_req_list_len--;
+		bts_pag_st->initial_req_pgroup_counts[request->pgroup]--;
 		bts_pag_st->retrans_req_list_len++;
 	}
 	llist_del(&request->entry);
@@ -503,9 +506,8 @@ static int _paging_request(const struct bsc_paging_params *params, struct gsm_bt
 	struct gsm_paging_request *req;
 	unsigned int t3113_timeout_s;
 	unsigned int x3113_s = osmo_tdef_get(bts->network->T_defs, -3113, OSMO_TDEF_S, -1);
-	unsigned int reqs_before = 0, reqs_before_same_pgroup = 0;
-	uint8_t pgroup = gsm0502_calc_paging_group(&bts->si_common.chan_desc,
-						   str_to_imsi(params->bsub->imsi));
+	uint8_t pgroup;
+	unsigned int reqs_before, reqs_before_same_pgroup;
 
 	rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_PAGING_ATTEMPTED));
 
@@ -530,21 +532,9 @@ static int _paging_request(const struct bsc_paging_params *params, struct gsm_bt
 		paging_remove_request(first_retrans_req);
 	}
 
-	/* The incoming new req will be stored in initial_req_list giving higher prio
-	 * to it over retransmissions. This avoids new subscribers being paged to
-	 * be delayed if the paging queue is full due to a lot of retranmissions.
-	 * Retranmissions usually mean MS are not reachable/available, so the
-	 * rationale here is to prioritize new subs which may be available.
-	 *
-	 * Count initial reqs already stored in initial_req_list, since those
-	 * will be scheduled for transmission before current incoming req and
-	   need to be taken into account when calculating T3113 for it.
-	 */
-	llist_for_each_entry(req, &bts_entry->initial_req_list, entry) {
-		reqs_before++;
-		if (req->pgroup == pgroup)
-			reqs_before_same_pgroup++;
-	}
+	pgroup = gsm0502_calc_paging_group(&bts->si_common.chan_desc, str_to_imsi(params->bsub->imsi));
+	reqs_before = bts_entry->initial_req_list_len;
+	reqs_before_same_pgroup = bts_entry->initial_req_pgroup_counts[pgroup];
 
 	LOG_PAGING_BTS(params, bts, DPAG, LOGL_DEBUG, "Start paging\n");
 	req = talloc_zero(tall_paging_ctx, struct gsm_paging_request);
@@ -559,6 +549,7 @@ static int _paging_request(const struct bsc_paging_params *params, struct gsm_bt
 	bsc_subscr_add_active_paging_request(req->bsub, req);
 
 	bts_entry->initial_req_list_len++;
+	bts_entry->initial_req_pgroup_counts[req->pgroup]++;
 	osmo_stat_item_inc(osmo_stat_item_group_get_item(bts->bts_statg, BTS_STAT_PAGING_REQ_QUEUE_LENGTH), 1);
 	llist_add_tail(&req->entry, &bts_entry->initial_req_list);
 

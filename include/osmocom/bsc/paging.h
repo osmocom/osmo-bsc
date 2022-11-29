@@ -61,6 +61,9 @@ enum bsc_paging_reason {
  */
 #define PAGING_THRESHOLD_X3113_DEFAULT_SEC 60
 
+#define MAX_PAGING_BLOCKS_CCCH 9
+#define MAX_BS_PA_MFRMS 9
+
 struct bsc_paging_params {
 	enum bsc_paging_reason reason;
 	struct bsc_msc_data *msc;
@@ -116,6 +119,9 @@ struct gsm_bts_paging_state {
 	struct llist_head retrans_req_list;
 	/* Number of requests in pending_requests_len */
 	unsigned int retrans_req_list_len;
+
+	/* Number of requests in initial_req_list, indexed by pgroup. */
+	unsigned int initial_req_pgroup_counts[MAX_PAGING_BLOCKS_CCCH * MAX_BS_PA_MFRMS];
 
 	struct gsm_bts *bts;
 
