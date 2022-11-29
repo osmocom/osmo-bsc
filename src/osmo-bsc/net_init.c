@@ -77,8 +77,9 @@ static struct osmo_tdef gsm_network_T_defs[] = {
 	{ .T = -3111, .default_val = 4, .desc = "Wait time after lchan was released in error (should be T3111 + 2s)" },
 	{ .T = -3113, .default_val = PAGING_THRESHOLD_X3113_DEFAULT_SEC,
 		.desc = "Maximum Paging Request Transmit Delay Threshold: " \
-			"If the estimated transmit delay of the messages of the paging queue surpasses this threshold, new incoming "
-			"paging requests are discarded, hence limiting the size of the queue and maximum delay of its scheduled requests. "
+			"If the estimated transmit delay of the messages in the paging queue surpasses this threshold, then new incoming "
+			"paging requests will if possible replace a request in retransmission state from the queue or otherwise be discarded, "
+			"hence limiting the size of the queue and maximum delay of its scheduled requests. "
 			"X3113 also serves as the upper boundary for dynamic T3113 when estimating the expected maximum delay to get a response" },
 	{ .T = -3210, .default_val = 20, .desc = "After L3 Complete, wait for MSC to confirm" },
 	{}

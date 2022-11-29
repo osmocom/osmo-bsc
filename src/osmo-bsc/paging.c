@@ -509,18 +509,25 @@ static int _paging_request(const struct bsc_paging_params *params, struct gsm_bt
 
 	rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_PAGING_ATTEMPTED));
 
-	/* Don't try to queue more requests than we can realistically handle within X3113 seconds,
-	 * see PAGING_THRESHOLD_X3113_DEFAULT_SEC. */
-	if (paging_pending_requests_nr(bts) > paging_estimate_available_slots(bts, x3113_s)) {
-		rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_PAGING_OVERLOAD));
-		return -ENOSPC;
-	}
-
 	/* Find if we already have one for the given subscriber on this BTS: */
 	if (bsc_subscr_find_req_by_bts(params->bsub, bts)) {
 		LOG_PAGING_BTS(params, bts, DPAG, LOGL_INFO, "Paging request already pending for this subscriber\n");
 		rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_PAGING_ALREADY));
 		return -EEXIST;
+	}
+
+	/* Don't try to queue more requests than we can realistically handle within X3113 seconds,
+	 * see PAGING_THRESHOLD_X3113_DEFAULT_SEC. */
+	if (paging_pending_requests_nr(bts) > paging_estimate_available_slots(bts, x3113_s)) {
+		struct gsm_paging_request *first_retrans_req;
+		rate_ctr_inc(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_PAGING_OVERLOAD));
+		/* Need to drop a retrans from the queue if possible, in order to make space for the new initial req. */
+		if (bts_entry->retrans_req_list_len == 0) {
+			/* There are no retrans to be replaced by this initial request, discard it. */
+			return -ENOSPC;
+		}
+		first_retrans_req = llist_first_entry(&bts_entry->retrans_req_list, struct gsm_paging_request, entry);
+		paging_remove_request(first_retrans_req);
 	}
 
 	/* The incoming new req will be stored in initial_req_list giving higher prio
