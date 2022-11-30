@@ -1044,7 +1044,7 @@ DEFUN(handover_any_to_arfcn_bsic, handover_any_to_arfcn_bsic_cmd,
 
 static void paging_dump_vty(struct vty *vty, struct gsm_paging_request *pag)
 {
-	vty_out(vty, "Paging on BTS %u%s", pag->bts->nr, VTY_NEWLINE);
+	vty_out(vty, "Paging on BTS %u (%u request timeouts)%s", pag->bts->nr, pag->attempts, VTY_NEWLINE);
 	bsc_subscr_dump_vty(vty, pag->bsub);
 }
 
