@@ -40,6 +40,17 @@
 
 #define GSM_T3122_DEFAULT 10
 
+#define GSM_T3105_DEFAULT 100UL
+#define GSM_T3124_SDCCH 675UL
+#define GSM_T3124_OTHER_CH 320UL
+#define GSM_T3124_MAX GSM_T3124_SDCCH
+
+/* Some guess for delta (see comment below) */
+#define GSM_NY1_REQ_DELTA 1000UL
+/* Requirements: We want Ny1 to be as low as possible, while respecting T3105 * Ny1 > T3124 + delta
+ * with delta = time between expiration of T3124 and receiving HANDOVER FAILURE by the serving BSC. */
+#define GSM_NY1_DEFAULT ((unsigned long)((GSM_T3124_MAX + GSM_NY1_REQ_DELTA)/GSM_T3105_DEFAULT + 1))
+
 struct mgcp_client_conf;
 struct mgcp_client;
 struct gsm0808_cell_id;

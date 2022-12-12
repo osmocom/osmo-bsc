@@ -25,6 +25,7 @@
 #include <osmocom/bsc/bts.h>
 
 #include <osmocom/core/talloc.h>
+#include <osmocom/core/tdef.h>
 #include <osmocom/core/utils.h>
 #include <osmocom/core/application.h>
 #include <osmocom/core/sockaddr_str.h>
@@ -125,9 +126,11 @@ static const struct log_info log_info = {
 };
 
 static struct osmo_tdef gsm_network_T_defs[] = {
-	{ .T = 3105, .default_val = 100, .val = 13, .unit = OSMO_TDEF_MS, .desc = "Physical Information" },
-	{ .T = 3212, .default_val = 5, .unit = OSMO_TDEF_CUSTOM,
+	{ .T = 3105, .default_val = GSM_T3105_DEFAULT, .val = GSM_T3105_DEFAULT, .min_val = 0, .max_val = UINT8_MAX, .unit = OSMO_TDEF_MS, .desc = "Physical Information" },
+	{ .T = 3212, .default_val = 5, .unit = OSMO_TDEF_CUSTOM, .min_val = 0, .max_val = UINT8_MAX,
 		.desc = "Periodic Location Update timer, sent to MS (1 = 6 minutes)" },
+	{ .T = -3105, .default_val = GSM_NY1_DEFAULT, .val = GSM_NY1_DEFAULT, .min_val = 0, .max_val = UINT8_MAX, .unit = OSMO_TDEF_CUSTOM,
+		.desc = "Ny1: Maximum number of Physical Information (re)transmissions" },
 	{}
 };
 
@@ -163,14 +166,31 @@ int main(int argc, char **argv)
 	bts->location_area_code = 0x0001;
 	bts->gprs.rac = 0;
 	uint8_t attr_bts_expected[] =
-	    { 0x19, 0x73, 0x6d, 0x67, 0x61, 0x5b, 0x55, 0x18, 0x06, 0x0e, 0x00,
-		0x02, 0x01, 0x20, 0x33, 0x1e, 0x24, 0x24, 0xa8, 0x34, 0x21,
-		0xa8, 0x1f, 0x3f, 0x25,
-		0x00, 0x01, 0x0a, 0x0c, 0x0a, 0x0b, 0x01, 0x2a, 0x5a, 0x2b,
-		0x03, 0xe8, 0x0a, 0x01,
-		0x23, 0x0a, 0x08, 0x03, 0x62, 0x09, 0x3f, 0x99, 0x00, 0x07,
-		0x00, 0xf1, 0x10, 0x00,
-		0x01, 0x05, 0x39
+	    { 0x19, 0x73, 0x6d, 0x67, 0x61, 0x5b, 0x55,
+	      /* 0x18 Intave Parameter */
+	      0x18, 0x06,
+	      /* 0x0e: Connection Failure Criterion, rlt == 0x20 */
+	      0x0e, 0x00, 0x02, 0x01, 0x20,
+	      /* 0x33: T200 */
+	      0x33, 0x1e, 0x24, 0x24, 0xa8, 0x34, 0x21, 0xa8,
+	      /* 0x1f: Max Timing Advance */
+	      0x1f, 0x3f,
+	      /* 0x25: Overload Period */
+	      0x25, 0x00, 0x01, 0x0a,
+	      /* 0x0c CCCH Load Threshold */
+	      0x0c, 0x0a,
+	      /* 0x0b CCCH Load Indication Period */
+	      0x0b, 0x01,
+	      /* 0x2a: RACH Busy Threshold */
+	      0x2a, 0x5a,
+	      /* 0x2b: RACH Load Averaging Slots */
+	      0x2b, 0x03, 0xe8,
+	      /* 0x0a: BTS Air Timer */
+	      0x0a, 0x0a,
+	      /* Ny1 */
+	      0x23, 0x11,
+	      0x08, 0x03, 0x62, 0x09, 0x3f, 0x99, 0x00, 0x07,
+	      0x00, 0xf1, 0x10, 0x00, 0x01, 0x05, 0x39
 	};
 
 	/* Parameters needed to test nanobts_gen_set_nse_attr() */

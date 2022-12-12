@@ -91,8 +91,8 @@ struct msgb *nanobts_gen_set_bts_attr(struct gsm_bts *bts)
 	/* BTS Air Timer (3GPP TS 12.21 sec 9.4.10), 10 milliseconds */
 	msgb_tv_put(msgb, NM_ATT_BTS_AIR_TIMER, osmo_tdef_get(bts->network->T_defs, 3105, OSMO_TDEF_MS, -1)/10);
 
-	/* NY1 (3GPP TS 12.21 sec 9.4.37), 10 retransmissions of physical config */
-	msgb_tv_put(msgb, NM_ATT_NY1, 10);
+	/* NY1 (3GPP TS 12.21 sec 9.4.37), number of retransmissions of physical config */
+	msgb_tv_put(msgb, NM_ATT_NY1, osmo_tdef_get(bts->network->T_defs, -3105, OSMO_TDEF_CUSTOM, -1));
 
 	/* BCCH ARFCN (3GPP TS 12.21 sec 9.4.8) */
 	buf[0] = (bts->c0->arfcn >> 8) & 0x0f;

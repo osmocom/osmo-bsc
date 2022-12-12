@@ -36,7 +36,7 @@ static struct osmo_tdef gsm_network_T_defs[] = {
 	{ .T = 101, .default_val = 10, .desc = "inter-BSC/MSC Handover incoming, BSSMAP HO Request to HO Accept" },
 	{ .T = 3101, .default_val = 3, .desc = "RR Immediate Assignment" },
 	{ .T = 3103, .default_val = 5, .desc = "Handover" },
-	{ .T = 3105, .default_val = 100, .unit = OSMO_TDEF_MS, .desc = "Physical Information" },
+	{ .T = 3105, .default_val = GSM_T3105_DEFAULT, .unit = OSMO_TDEF_MS, .desc = "Physical Information" },
 	{ .T = 3107, .default_val = 5, .desc = "(unused)" },
 	{ .T = 3109, .default_val = 5, .desc = "RSL SACCH deactivation" },
 	{ .T = 3111, .default_val = 2, .desc = "Wait time before RSL RF Channel Release" },
@@ -74,6 +74,8 @@ static struct osmo_tdef gsm_network_T_defs[] = {
 			" after this amount of idle time, forget internally cumulated time remainders. Zero to always"
 			" keep remainders. See also X16, X17." },
 	{ .T = -25, .default_val = 5, .desc = "Timeout for initial user data after an MSC initiated an SCCP connection to the BSS" },
+	{ .T = -3105, .default_val = GSM_NY1_DEFAULT, .unit = OSMO_TDEF_CUSTOM,
+		.desc = "Ny1: Maximum number of Physical Information (re)transmissions" },
 	{ .T = -3111, .default_val = 4, .desc = "Wait time after lchan was released in error (should be T3111 + 2s)" },
 	{ .T = -3113, .default_val = PAGING_THRESHOLD_X3113_DEFAULT_SEC,
 		.desc = "Maximum Paging Request Transmit Delay Threshold: " \
