@@ -63,6 +63,7 @@
 #define PCU_IF_ADDR_TYPE_IPV6	0x29	/* IPv6 address */
 
 #define PCU_IF_NUM_NSVC 2
+#define PCU_IF_NUM_TRX 8
 
 enum gsm_pcu_if_text_type {
 	PCU_VERSION,
@@ -146,7 +147,7 @@ struct gsm_pcu_if_info_trx {
 struct gsm_pcu_if_info_ind {
 	uint32_t	version;
 	uint32_t	flags;
-	struct gsm_pcu_if_info_trx trx[8];	/* TRX infos per BTS */
+	struct gsm_pcu_if_info_trx trx[PCU_IF_NUM_TRX];	/* TRX infos per BTS */
 	uint8_t		bsic;
 	/* RAI */
 	uint16_t	mcc, mnc;
