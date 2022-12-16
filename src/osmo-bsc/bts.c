@@ -532,6 +532,9 @@ __attribute__((weak)) int gsm_bts_check_cfg(struct gsm_bts *bts)
 		}
 	}
 
+	if (!gsm_bts_check_ny1(bts))
+		return -EINVAL;
+
 	return 0;
 }
 
@@ -1717,3 +1720,20 @@ const struct osmo_stat_item_group_desc bts_statg_desc = {
 	.num_items = ARRAY_SIZE(bts_stat_desc),
 	.item_desc = bts_stat_desc,
 };
+
+/* Return 'true' if and only if Ny1 satisfies network requirements */
+bool gsm_bts_check_ny1(const struct gsm_bts *bts)
+{
+	unsigned long T3105, ny1, ny1_recommended;
+	T3105 = osmo_tdef_get(bts->network->T_defs, 3105, OSMO_TDEF_MS, -1);
+	ny1 = osmo_tdef_get(bts->network->T_defs, -3105, OSMO_TDEF_CUSTOM, -1);
+	if (!(T3105 * ny1 > GSM_T3124_MAX + GSM_NY1_REQ_DELTA)) {
+		/* See comment for GSM_NY1_DEFAULT */
+		ny1_recommended = (GSM_T3124_MAX + GSM_NY1_REQ_DELTA)/T3105 + 1;
+		LOGP(DNM, LOGL_ERROR, "Value of Ny1 should be higher. "
+				     "Is: %lu, lowest recommendation: %lu\n",
+		     ny1, ny1_recommended);
+		return false;
+	}
+	return true;
+}

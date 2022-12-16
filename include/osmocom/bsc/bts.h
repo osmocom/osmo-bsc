@@ -829,3 +829,5 @@ const char *btsatttr2str(enum bts_attribute v);
 
 enum gsm_bts_type_variant str2btsvariant(const char *arg);
 const char *btsvariant2str(enum gsm_bts_type_variant v);
+
+bool gsm_bts_check_ny1(const struct gsm_bts *bts);
