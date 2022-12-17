@@ -945,9 +945,7 @@ int main(int argc, char **argv)
 
 	/* start control interface after reading config for
 	 * ctrl_vty_get_bind_addr() */
-	bsc_gsmnet->ctrl = bsc_controlif_setup(bsc_gsmnet,
-					       ctrl_vty_get_bind_addr(),
-					       OSMO_CTRL_PORT_NITB_BSC);
+	bsc_gsmnet->ctrl = bsc_controlif_setup(bsc_gsmnet, OSMO_CTRL_PORT_NITB_BSC);
 	if (!bsc_gsmnet->ctrl) {
 		fprintf(stderr, "Failed to init the control interface. Exiting.\n");
 		exit(1);

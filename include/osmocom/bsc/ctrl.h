@@ -6,8 +6,7 @@ struct gsm_network;
 struct gsm_bts;
 struct bsc_msc_data;
 
-struct ctrl_handle *bsc_controlif_setup(struct gsm_network *net,
-					const char *bind_addr, uint16_t port);
+struct ctrl_handle *bsc_controlif_setup(struct gsm_network *net, uint16_t port);
 
 /* Used internally in different ctrl source code files: */
 int bsc_bts_ctrl_cmds_install(void);
