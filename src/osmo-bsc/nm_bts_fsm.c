@@ -143,8 +143,11 @@ static void rx_get_attr_rep(struct gsm_bts *bts, bool allow_opstart)
 	bts->mo.get_attr_sent = false;
 
 	/* Announce bts_features are available to related NSVC MOs */
-	nsvc = gsm_bts_sm_nsvc_num(bts->site_mgr, 0); /* we only support NSVC0 so far */
-	osmo_fsm_inst_dispatch(nsvc->mo.fi, NM_EV_FEATURE_NEGOTIATED, NULL);
+	for (int i = 0; i < ARRAY_SIZE(bts->site_mgr->gprs.nsvc); i++) {
+		nsvc = gsm_bts_sm_nsvc_num(bts->site_mgr, i);
+		if (nsvc)
+			osmo_fsm_inst_dispatch(nsvc->mo.fi, NM_EV_FEATURE_NEGOTIATED, NULL);
+	}
 
 	/* Move FSM forward */
 	configure_loop(bts, &bts->mo.nm_state, allow_opstart);

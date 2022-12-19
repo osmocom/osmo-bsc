@@ -206,21 +206,20 @@ struct msgb *nanobts_gen_set_cell_attr(struct gsm_bts *bts)
 	return msgb;
 }
 
-struct msgb *nanobts_gen_set_nsvc_attr(struct gsm_bts *bts)
+struct msgb *nanobts_gen_set_nsvc_attr(struct gsm_gprs_nsvc *nsvc)
 {
 	struct msgb *msgb;
 	uint8_t buf[256];
-	struct gsm_bts_sm *bts_sm = bts->site_mgr;
 	msgb = msgb_alloc(1024, "nanobts_attr_bts");
 	if (!msgb)
 		return NULL;
 
 	/* 925 */
-	buf[0] = bts_sm->gprs.nsvc[0].nsvci >> 8;
-	buf[1] = bts_sm->gprs.nsvc[0].nsvci & 0xff;
+	buf[0] = nsvc->nsvci >> 8;
+	buf[1] = nsvc->nsvci & 0xff;
 	msgb_tl16v_put(msgb, NM_ATT_IPACC_NSVCI, 2, buf);
 
-	switch (bts_sm->gprs.nsvc->remote.u.sa.sa_family) {
+	switch (nsvc->remote.u.sa.sa_family) {
 	case AF_INET6:
 		/* all fields are encoded in network byte order */
 		/* protocol family */
@@ -228,20 +227,20 @@ struct msgb *nanobts_gen_set_nsvc_attr(struct gsm_bts *bts)
 		/* padding */
 		buf[1] = 0x00;
 		/* local udp port */
-		osmo_store16be(bts_sm->gprs.nsvc[0].local_port, &buf[2]);
+		osmo_store16be(nsvc->local_port, &buf[2]);
 		/* remote udp port */
-		memcpy(&buf[4], &bts_sm->gprs.nsvc[0].remote.u.sin6.sin6_port, sizeof(uint16_t));
+		memcpy(&buf[4], &nsvc->remote.u.sin6.sin6_port, sizeof(uint16_t));
 		/* remote ip address */
-		memcpy(&buf[6], &bts_sm->gprs.nsvc[0].remote.u.sin6.sin6_addr, sizeof(struct in6_addr));
+		memcpy(&buf[6], &nsvc->remote.u.sin6.sin6_addr, sizeof(struct in6_addr));
 		msgb_tl16v_put(msgb, NM_ATT_OSMO_NS_LINK_CFG, 6 + sizeof(struct in6_addr), buf);
 		break;
 	case AF_INET:
 		/* remote udp port */
-		memcpy(&buf[0], &bts_sm->gprs.nsvc[0].remote.u.sin.sin_port, sizeof(uint16_t));
+		memcpy(&buf[0], &nsvc->remote.u.sin.sin_port, sizeof(uint16_t));
 		/* remote ip address */
-		memcpy(&buf[2], &bts_sm->gprs.nsvc[0].remote.u.sin.sin_addr, sizeof(struct in_addr));
+		memcpy(&buf[2], &nsvc->remote.u.sin.sin_addr, sizeof(struct in_addr));
 		/* local udp port */
-		osmo_store16be(bts_sm->gprs.nsvc[0].local_port, &buf[6]);
+		osmo_store16be(nsvc->local_port, &buf[6]);
 		msgb_tl16v_put(msgb, NM_ATT_IPACC_NS_LINK_CFG, 8, buf);
 		break;
 	default:

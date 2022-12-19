@@ -88,7 +88,7 @@ static void test_nanobts_gen_set_nsvc_attr(struct gsm_bts *bts, uint8_t *expecte
 
 	printf("Testing nanobts_gen_set_nsvc_attr()...\n");
 
-	msgb = nanobts_gen_set_nsvc_attr(bts);
+	msgb = nanobts_gen_set_nsvc_attr(&bts->site_mgr->gprs.nsvc[0]);
 	printf("result=  %s\n", osmo_hexdump_nospc(msgb->data, msgb->len));
 	printf("expected=%s\n", osmo_hexdump_nospc(expected, msgb->len));
 	OSMO_ASSERT(msgb_eq_data_print(msgb, expected, msgb->len));

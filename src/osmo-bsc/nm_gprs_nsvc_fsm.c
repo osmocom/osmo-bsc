@@ -90,6 +90,17 @@ static void st_op_disabled_notinstalled(struct osmo_fsm_inst *fi, uint32_t event
 	}
 }
 
+static bool has_valid_nsvc(struct gsm_gprs_nsvc *nsvc)
+{
+	switch (nsvc->remote.u.sa.sa_family) {
+	case AF_INET:
+	case AF_INET6:
+		return (nsvc->local_port > 0 && !osmo_sockaddr_is_any(&nsvc->remote));
+	default:
+		return false;
+	}
+}
+
 static void configure_loop(struct gsm_gprs_nsvc *nsvc, const struct gsm_nm_state *state, bool allow_opstart)
 {
 	struct msgb *msgb;
@@ -110,8 +121,11 @@ static void configure_loop(struct gsm_gprs_nsvc *nsvc, const struct gsm_nm_state
 				 nsvc->bts->nr);
 			return;
 		}
+		if (!has_valid_nsvc(nsvc))
+			return;
+
 		nsvc->mo.set_attr_sent = true;
-		msgb = nanobts_gen_set_nsvc_attr(nsvc->bts);
+		msgb = nanobts_gen_set_nsvc_attr(nsvc);
 		OSMO_ASSERT(msgb);
 		abis_nm_ipaccess_set_attr(nsvc->bts, NM_OC_GPRS_NSVC, nsvc->bts->bts_nr,
 					  nsvc->id, 0xff, msgb->data, msgb->len);

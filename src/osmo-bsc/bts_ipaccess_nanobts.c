@@ -184,9 +184,6 @@ static int nm_statechg_event(int evt, struct nm_statechg_signal_data *nsd)
 		break;
 	case NM_OC_GPRS_NSVC:
 		nsvc = obj;
-		/* We skip NSVC1 since we only use NSVC0 */
-		if (nsvc->id == 1)
-			break;
 		osmo_fsm_inst_dispatch(nsvc->mo.fi, NM_EV_STATE_CHG_REP, nsd);
 		break;
 	default:
