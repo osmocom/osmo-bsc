@@ -488,8 +488,7 @@ static int bsc_network_configure(const char *config_file)
 	}
 
 	/* start telnet after reading config for vty_get_bind_addr() */
-	rc = telnet_init_dynif(tall_bsc_ctx, bsc_gsmnet, vty_get_bind_addr(),
-			       OSMO_VTY_PORT_NITB_BSC);
+	rc = telnet_init_default(tall_bsc_ctx, bsc_gsmnet, OSMO_VTY_PORT_NITB_BSC);
 	if (rc < 0)
 		return rc;
 
