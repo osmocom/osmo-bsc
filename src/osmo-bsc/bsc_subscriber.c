@@ -103,6 +103,24 @@ struct bsc_subscr *bsc_subscr_find_by_imsi(struct llist_head *list,
 	return NULL;
 }
 
+struct bsc_subscr *bsc_subscr_find_by_imei(struct llist_head *list,
+					   const char *imei,
+					   const char *use_token)
+{
+	struct bsc_subscr *bsub;
+
+	if (!imei || !*imei)
+		return NULL;
+
+	llist_for_each_entry(bsub, list, entry) {
+		if (!strcmp(bsub->imei, imei)) {
+			bsc_subscr_get(bsub, use_token);
+			return bsub;
+		}
+	}
+	return NULL;
+}
+
 struct bsc_subscr *bsc_subscr_find_by_tmsi(struct llist_head *list,
 					   uint32_t tmsi,
 					   const char *use_token)
@@ -129,6 +147,8 @@ struct bsc_subscr *bsc_subscr_find_by_mi(struct llist_head *list, const struct o
 	switch (mi->type) {
 	case GSM_MI_TYPE_IMSI:
 		return bsc_subscr_find_by_imsi(list, mi->imsi, use_token);
+	case GSM_MI_TYPE_IMEI:
+		return bsc_subscr_find_by_imei(list, mi->imei, use_token);
 	case GSM_MI_TYPE_TMSI:
 		return bsc_subscr_find_by_tmsi(list, mi->tmsi, use_token);
 	default:
@@ -143,6 +163,13 @@ void bsc_subscr_set_imsi(struct bsc_subscr *bsub, const char *imsi)
 	osmo_strlcpy(bsub->imsi, imsi, sizeof(bsub->imsi));
 }
 
+void bsc_subscr_set_imei(struct bsc_subscr *bsub, const char *imei)
+{
+	if (!bsub)
+		return;
+	osmo_strlcpy(bsub->imei, imei, sizeof(bsub->imei));
+}
+
 struct bsc_subscr *bsc_subscr_find_or_create_by_imsi(struct llist_head *list,
 						     const char *imsi,
 						     const char *use_token)
@@ -155,6 +182,22 @@ struct bsc_subscr *bsc_subscr_find_or_create_by_imsi(struct llist_head *list,
 	if (!bsub)
 		return NULL;
 	bsc_subscr_set_imsi(bsub, imsi);
+	bsc_subscr_get(bsub, use_token);
+	return bsub;
+}
+
+struct bsc_subscr *bsc_subscr_find_or_create_by_imei(struct llist_head *list,
+						     const char *imei,
+						     const char *use_token)
+{
+	struct bsc_subscr *bsub;
+	bsub = bsc_subscr_find_by_imei(list, imei, use_token);
+	if (bsub)
+		return bsub;
+	bsub = bsc_subscr_alloc(list);
+	if (!bsub)
+		return NULL;
+	bsc_subscr_set_imei(bsub, imei);
 	bsc_subscr_get(bsub, use_token);
 	return bsub;
 }
@@ -183,6 +226,8 @@ struct bsc_subscr *bsc_subscr_find_or_create_by_mi(struct llist_head *list, cons
 	switch (mi->type) {
 	case GSM_MI_TYPE_IMSI:
 		return bsc_subscr_find_or_create_by_imsi(list, mi->imsi, use_token);
+	case GSM_MI_TYPE_IMEI:
+		return bsc_subscr_find_or_create_by_imei(list, mi->imei, use_token);
 	case GSM_MI_TYPE_TMSI:
 		return bsc_subscr_find_or_create_by_tmsi(list, mi->tmsi, use_token);
 	default:
@@ -200,6 +245,8 @@ static int bsc_subscr_name_buf(char *buf, size_t buflen, struct bsc_subscr *bsub
 	}
 	if (bsub->imsi[0])
 		OSMO_STRBUF_PRINTF(sb, "-IMSI-%s", bsub->imsi);
+	else if (bsub->imei[0])
+		OSMO_STRBUF_PRINTF(sb, "-IMEI-%s", bsub->imei);
 	if (bsub->tmsi != GSM_RESERVED_TMSI)
 		OSMO_STRBUF_PRINTF(sb, "-TMSI-0x%08x", bsub->tmsi);
 	return sb.chars_needed;

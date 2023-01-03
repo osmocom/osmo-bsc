@@ -17,6 +17,7 @@ struct bsc_subscr {
 	struct osmo_use_count use_count;
 
 	char imsi[GSM23003_IMSI_MAX_DIGITS+1];
+	char imei[GSM23003_IMEI_NUM_DIGITS_NO_CHK+1];
 	uint32_t tmsi;
 
 	/* List head of (struct gsm_paging_request).bsub_entry */
@@ -30,6 +31,9 @@ const char *bsc_subscr_id(struct bsc_subscr *bsub);
 struct bsc_subscr *bsc_subscr_find_or_create_by_imsi(struct llist_head *list,
 						     const char *imsi,
 						     const char *use_token);
+struct bsc_subscr *bsc_subscr_find_or_create_by_imei(struct llist_head *list,
+						     const char *imei,
+						     const char *use_token);
 struct bsc_subscr *bsc_subscr_find_or_create_by_tmsi(struct llist_head *list,
 						     uint32_t tmsi,
 						     const char *use_token);
@@ -39,6 +43,9 @@ struct bsc_subscr *bsc_subscr_find_or_create_by_mi(struct llist_head *list, cons
 struct bsc_subscr *bsc_subscr_find_by_imsi(struct llist_head *list,
 					   const char *imsi,
 					   const char *use_token);
+struct bsc_subscr *bsc_subscr_find_by_imei(struct llist_head *list,
+					   const char *imei,
+					   const char *use_token);
 struct bsc_subscr *bsc_subscr_find_by_tmsi(struct llist_head *list,
 					   uint32_t tmsi,
 					   const char *use_token);
@@ -46,6 +53,7 @@ struct bsc_subscr *bsc_subscr_find_by_mi(struct llist_head *list, const struct o
 					 const char *use_token);
 
 void bsc_subscr_set_imsi(struct bsc_subscr *bsub, const char *imsi);
+void bsc_subscr_set_imei(struct bsc_subscr *bsub, const char *imei);
 
 #define bsc_subscr_get(bsc_subscr, use) \
 	OSMO_ASSERT(osmo_use_count_get_put(&(bsc_subscr)->use_count, use, 1) == 0)
