@@ -389,11 +389,10 @@ int bsc_compl_l3(struct gsm_lchan *lchan, struct msgb *msg, uint16_t chosen_chan
 	if (osmo_mobile_identity_decode_from_l3(&mi, msg, false)) {
 		LOG_COMPL_L3(pdisc, mtype, LOGL_ERROR, "Cannot extract Mobile Identity: %s\n",
 			     msgb_hexdump_c(OTC_SELECT, msg));
-		/* Likely this is an invalid Complete Layer 3 message that deserves to be rejected. However, the current
-		 * state of our ttcn3 tests does send invalid Layer 3 Info in some tests and expects osmo-bsc to not
-		 * care about that. So, changing the behavior to rejecting on missing MI causes test failure and, if at
-		 * all, should happen in a separate patch.
-		 * See e.g.  BSC_Tests.TC_chan_rel_rll_rel_ind: "dt := * f_est_dchan('23'O, 23, '00010203040506'O);"
+		/* Likely this is an invalid Complete Layer 3 message that deserves to be rejected. However, the BSC is
+		 * not expected to look at this layer so it's duty of the MSC to reject it.
+		 * Hence, keep on going with the conn without an assigned bsc_subscr, forwarding the L3 to the MSC and
+		 * letting it take decision on the matter.
 		 */
 	} else {
 		bsub = bsc_subscr_find_or_create_by_mi(bsc_gsmnet->bsc_subscribers, &mi, __func__);
@@ -440,6 +439,8 @@ int bsc_compl_l3(struct gsm_lchan *lchan, struct msgb *msg, uint16_t chosen_chan
 	paged_from_msc = NULL;
 	paging_reasons = BSC_PAGING_NONE;
 	if (pdisc == GSM48_PDISC_RR && mtype == GSM48_MT_RR_PAG_RESP) {
+		/* It only makes sense to attempt to find a pending paging request if the subscriber from the
+		 * Paging Response can be identified (bsub != NULL). */
 		if (conn->bsub)
 			paging_request_stop(&paged_from_msc, &paging_reasons, bts, conn->bsub);
 		if (!paged_from_msc) {
