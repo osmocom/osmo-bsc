@@ -45,7 +45,6 @@
 #include <osmocom/bsc/bts_sm.h>
 
 static int pcu_sock_send(struct gsm_bts *bts, struct msgb *msg);
-uint32_t trx_get_hlayer1(struct gsm_bts_trx *trx);
 int pcu_direct = 1;
 
 static const char *sapi_string[] = {
