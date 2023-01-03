@@ -45,7 +45,6 @@
 #include <osmocom/bsc/bts_sm.h>
 
 static int pcu_sock_send(struct gsm_bts *bts, struct msgb *msg);
-int pcu_direct = 1;
 
 static const char *sapi_string[] = {
 	[PCU_IF_SAPI_RACH] =	"RACH",
@@ -135,9 +134,7 @@ static int pcu_tx_info_ind(struct gsm_bts *bts)
 	info_ind = &pcu_prim->u.info_ind;
 	info_ind->version = PCU_IF_VERSION;
 	info_ind->flags |= PCU_IF_FLAG_ACTIVE;
-
-	if (pcu_direct)
-		info_ind->flags |= PCU_IF_FLAG_SYSMO;
+	info_ind->flags |= PCU_IF_FLAG_SYSMO;
 
 	/* RAI */
 	info_ind->mcc = bts->network->plmn.mcc;
