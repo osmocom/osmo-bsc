@@ -103,6 +103,39 @@ static void info_ind_fill_fhp(struct gsm_pcu_if_info_trx_ts *ts_info,
 	ts_info->ma_bit_len = ts->hopping.ma_len * 8 - ts->hopping.ma.cur_bit;
 }
 
+/* Fill the TRX parameter */
+static void info_ind_fill_trx(struct gsm_pcu_if_info_trx *trx_info, const struct gsm_bts_trx *trx)
+{
+	unsigned int tn;
+	const struct gsm_bts_trx_ts *ts;
+
+	trx_info->hlayer1 = 0x2342;
+	trx_info->pdch_mask = 0;
+	trx_info->arfcn = trx->arfcn;
+
+	for (tn = 0; tn < ARRAY_SIZE(trx->ts); tn++) {
+		ts = &trx->ts[tn];
+		if (ts->mo.nm_state.operational != NM_OPSTATE_ENABLED ||
+		    ts->pchan_is != GSM_PCHAN_PDCH)
+			continue;
+
+		trx_info->pdch_mask |= (1 << tn);
+		trx_info->ts[tn].tsc =
+				(ts->tsc >= 0) ? ts->tsc : trx->bts->bsic & 7;
+
+		if (ts->hopping.enabled)
+			info_ind_fill_fhp(&trx_info->ts[tn], ts);
+
+		LOGP(DPCU, LOGL_INFO, "trx=%d ts=%d: PDCH is available "
+		     "(tsc=%u ", trx->nr, ts->nr, trx_info->ts[tn].tsc);
+		if (ts->hopping.enabled)
+			LOGPC(DPCU, LOGL_INFO, "hopping=yes hsn=%u maio=%u ma_bit_len=%u)\n",
+			      ts->hopping.hsn, ts->hopping.maio, trx->ts[tn].hopping.ma.data_len - trx->ts[tn].hopping.ma.cur_bit);
+		else
+			LOGPC(DPCU, LOGL_INFO, "hopping=no arfcn=%u)\n", trx->arfcn);
+	}
+}
+
 /* Send BTS properties to the PCU */
 static int pcu_tx_info_ind(struct gsm_bts *bts)
 {
@@ -113,8 +146,7 @@ static int pcu_tx_info_ind(struct gsm_bts *bts)
 	struct gsm_bts_sm *bts_sm;
 	struct gsm_gprs_nsvc *nsvc;
 	struct gsm_bts_trx *trx;
-	struct gsm_bts_trx_ts *ts;
-	int i, tn;
+	int i;
 
 	OSMO_ASSERT(bts);
 	OSMO_ASSERT(bts->network);
@@ -232,30 +264,7 @@ static int pcu_tx_info_ind(struct gsm_bts *bts)
 				PCU_IF_VERSION, ARRAY_SIZE(info_ind->trx));
 			break;
 		}
-		info_ind->trx[i].hlayer1 = 0x2342;
-		info_ind->trx[i].pdch_mask = 0;
-		info_ind->trx[i].arfcn = trx->arfcn;
-		for (tn = 0; tn < ARRAY_SIZE(trx->ts); tn++) {
-			ts = &trx->ts[tn];
-			if (ts->mo.nm_state.operational != NM_OPSTATE_ENABLED ||
-			    ts->pchan_is != GSM_PCHAN_PDCH)
-				continue;
-
-			info_ind->trx[i].pdch_mask |= (1 << tn);
-			info_ind->trx[i].ts[tn].tsc =
-					(ts->tsc >= 0) ? ts->tsc : bts->bsic & 7;
-
-			if (ts->hopping.enabled)
-				info_ind_fill_fhp(&info_ind->trx[i].ts[tn], ts);
-
-			LOGP(DPCU, LOGL_INFO, "trx=%d ts=%d: PDCH is available "
-			     "(tsc=%u ", trx->nr, ts->nr, info_ind->trx[i].ts[tn].tsc);
-			if (ts->hopping.enabled)
-				LOGPC(DPCU, LOGL_INFO, "hopping=yes hsn=%u maio=%u ma_bit_len=%u)\n",
-				      ts->hopping.hsn, ts->hopping.maio, trx->ts[tn].hopping.ma.data_len - trx->ts[tn].hopping.ma.cur_bit);
-			else
-				LOGPC(DPCU, LOGL_INFO, "hopping=no arfcn=%u)\n", trx->arfcn);
-		}
+		info_ind_fill_trx(&info_ind->trx[trx->nr], trx);
 	}
 
 	return pcu_sock_send(bts, msg);
