@@ -92,6 +92,20 @@ struct msgb *pcu_msgb_alloc(uint8_t msg_type, uint8_t bts_nr)
 	return msg;
 }
 
+/* Check if the timeslot can be utilized as PDCH now
+ * (PDCH is currently active on BTS) */
+static bool ts_now_usable_as_pdch(const struct gsm_bts_trx_ts *ts)
+{
+	switch (ts->pchan_is) {
+	case GSM_PCHAN_PDCH:
+		/* NOTE: We currently only support Ericsson RBS as a BSC
+		 * co-located BTS. This BTS only supports dynamic channels. */
+		return true;
+	default:
+		return false;
+	}
+}
+
 /* Fill the frequency hopping parameter */
 static void info_ind_fill_fhp(struct gsm_pcu_if_info_trx_ts *ts_info,
 			      const struct gsm_bts_trx_ts *ts)
@@ -124,8 +138,9 @@ static void info_ind_fill_trx(struct gsm_pcu_if_info_trx *trx_info, const struct
 
 	for (tn = 0; tn < ARRAY_SIZE(trx->ts); tn++) {
 		ts = &trx->ts[tn];
-		if (ts->mo.nm_state.operational != NM_OPSTATE_ENABLED ||
-		    ts->pchan_is != GSM_PCHAN_PDCH)
+		if (ts->mo.nm_state.operational != NM_OPSTATE_ENABLED)
+			continue;
+		if (!ts_now_usable_as_pdch(ts))
 			continue;
 
 		trx_info->pdch_mask |= (1 << tn);
