@@ -33,6 +33,7 @@
 #include <osmocom/core/logging.h>
 #include <osmocom/gsm/l1sap.h>
 #include <osmocom/gsm/gsm0502.h>
+#include <osmocom/bsc/abis_nm.h>
 
 #include <osmocom/bsc/gsm_data.h>
 #include <osmocom/bsc/pcu_if.h>
@@ -112,6 +113,14 @@ static void info_ind_fill_trx(struct gsm_pcu_if_info_trx *trx_info, const struct
 	trx_info->hlayer1 = 0x2342;
 	trx_info->pdch_mask = 0;
 	trx_info->arfcn = trx->arfcn;
+
+	if (trx->mo.nm_state.operational != NM_OPSTATE_ENABLED ||
+	    trx->mo.nm_state.administrative != NM_STATE_UNLOCKED) {
+		LOG_TRX(trx, DPCU, LOGL_INFO, "unavailable for PCU (op=%s adm=%s)\n",
+			abis_nm_opstate_name(trx->mo.nm_state.operational),
+			abis_nm_admin_name(trx->mo.nm_state.administrative));
+		return;
+	}
 
 	for (tn = 0; tn < ARRAY_SIZE(trx->ts); tn++) {
 		ts = &trx->ts[tn];
