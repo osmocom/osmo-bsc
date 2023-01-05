@@ -135,11 +135,11 @@ static void info_ind_fill_trx(struct gsm_pcu_if_info_trx *trx_info, const struct
 		if (ts->hopping.enabled)
 			info_ind_fill_fhp(&trx_info->ts[tn], ts);
 
-		LOGP(DPCU, LOGL_INFO, "trx=%d ts=%d: PDCH is available "
-		     "(tsc=%u ", trx->nr, ts->nr, trx_info->ts[tn].tsc);
+		LOG_TRX(trx, DPCU, LOGL_INFO, "PDCH on ts=%u is available (tsc=%u ", ts->nr,
+			trx_info->ts[tn].tsc);
 		if (ts->hopping.enabled)
 			LOGPC(DPCU, LOGL_INFO, "hopping=yes hsn=%u maio=%u ma_bit_len=%u)\n",
-			      ts->hopping.hsn, ts->hopping.maio, trx->ts[tn].hopping.ma.data_len - trx->ts[tn].hopping.ma.cur_bit);
+			      ts->hopping.hsn, ts->hopping.maio, trx_info->ts[tn].ma_bit_len);
 		else
 			LOGPC(DPCU, LOGL_INFO, "hopping=no arfcn=%u)\n", trx->arfcn);
 	}
