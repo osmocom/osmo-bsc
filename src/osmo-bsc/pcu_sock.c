@@ -226,6 +226,12 @@ static int pcu_tx_info_ind(struct gsm_bts *bts)
 		trx = gsm_bts_trx_num(bts, i);
 		if (!trx)
 			continue;
+		if (trx->nr >= ARRAY_SIZE(info_ind->trx)) {
+			LOG_TRX(trx, DPCU, LOGL_NOTICE, "PCU interface (version %u) "
+				"cannot handle more than %zu transceivers => skipped\n",
+				PCU_IF_VERSION, ARRAY_SIZE(info_ind->trx));
+			break;
+		}
 		info_ind->trx[i].hlayer1 = 0x2342;
 		info_ind->trx[i].pdch_mask = 0;
 		info_ind->trx[i].arfcn = trx->arfcn;
