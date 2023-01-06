@@ -1814,11 +1814,13 @@ static int rsl_rx_pchan_rqd(struct chan_rqd *rqd)
 		return -EINVAL;
 	} else {
 		is_11bit = 0;
+		rqd_ta = rqd->ta;
+
+		/* See also 3GPP TS 04.08, section 10.5.2.38 and 3GPP TS 08.58, section 9.3.8 */
 		t1 = rqd->ref.t1;
 		t2 = rqd->ref.t2;
 		t3 = rqd->ref.t3_low | (rqd->ref.t3_high << 3);
 		fn = (51 * ((t3-t2) % 26) + t3 + 51 * 26 * t1);
-		rqd_ta = rqd->ta;
 	}
 
 	return pcu_tx_rach_ind(rqd->bts, rqd_ta, rqd->ref.ra, fn, is_11bit,
