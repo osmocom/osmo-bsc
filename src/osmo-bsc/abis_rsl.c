@@ -1800,10 +1800,10 @@ struct chan_rqd {
 /* Handle packet channel rach requests */
 static int rsl_rx_pchan_rqd(struct chan_rqd *rqd)
 {
-	uint8_t t1, t2, t3;
 	uint32_t fn;
 	uint8_t rqd_ta;
 	uint8_t is_11bit;
+	struct gsm_time gsm_time;
 
 	/* Process rach request and forward contained information to PCU */
 	if (rqd->ref.ra == 0x7F) {
@@ -1816,13 +1816,13 @@ static int rsl_rx_pchan_rqd(struct chan_rqd *rqd)
 		is_11bit = 0;
 		rqd_ta = rqd->ta;
 
-		/* See also 3GPP TS 04.08, section 10.5.2.38 and 3GPP TS 08.58, section 9.3.8 */
-		t1 = rqd->ref.t1;
-		t2 = rqd->ref.t2;
-		t3 = rqd->ref.t3_low | (rqd->ref.t3_high << 3);
-		fn = (51 * ((t3-t2) % 26) + t3 + 51 * 26 * t1);
+		gsm_time.t1 = rqd->ref.t1;
+		gsm_time.t2 = rqd->ref.t2;
+		gsm_time.t3 = rqd->ref.t3_low | (rqd->ref.t3_high << 3);
+		fn = gsm_gsmtime2fn(&gsm_time);
 
-		LOG_BTS(rqd->bts, DRSL, LOGL_INFO, "CHAN RQD: fn(t1=%u,t3=%u,t2=%u) = %u\n", t1, t3, t2, fn);
+		LOG_BTS(rqd->bts, DRSL, LOGL_INFO, "CHAN RQD: fn(t1=%u,t3=%u,t2=%u) = %u\n",
+			gsm_time.t1, gsm_time.t3, gsm_time.t2, fn);
 	}
 
 	return pcu_tx_rach_ind(rqd->bts, rqd_ta, rqd->ref.ra, fn, is_11bit,
