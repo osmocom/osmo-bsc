@@ -1027,6 +1027,9 @@ struct gsm_network {
 	/* Allow or disallow TCH/F on dynamic TCH/F_TCH/H_SDCCH8_PDCH; OS#1778 */
 	bool dyn_ts_allow_tch_f;
 
+	/* Allow or disallow SDCCH8 on dynamic TCH/F_TCH/H_SDCCH8_PDCH; OS#1778 */
+	bool dyn_ts_allow_sdcch8;
+
 	/* all active subscriber connections. */
 	struct llist_head subscr_conns;
 
