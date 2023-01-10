@@ -384,6 +384,9 @@ static int config_write_net(struct vty *vty)
 
 	if (!gsmnet->dyn_ts_allow_tch_f)
 		vty_out(vty, " dyn_ts_allow_tch_f 0%s", VTY_NEWLINE);
+	if (!gsmnet->dyn_ts_allow_sdcch8)
+		vty_out(vty, " dyn_ts_allow_sdcch8 0%s", VTY_NEWLINE);
+
 	if (gsmnet->tz.override != 0) {
 		if (gsmnet->tz.dst)
 			vty_out(vty, " timezone %d %d %d%s",
@@ -2291,6 +2294,18 @@ DEFUN_USRATTR(cfg_net_encryption,
 	return CMD_SUCCESS;
 }
 
+DEFUN(cfg_net_dyn_ts_allow_sdcch8,
+      cfg_net_dyn_ts_allow_sdcch8_cmd,
+      "dyn_ts_allow_sdcch8 (0|1)",
+      "Allow or disallow allocating SDCCH8 on TCH/F_TCH/H_SDCCH8_PDCH timeslots\n"
+      "Disallow SDCCH8 on TCH/F_TCH/H_SDCCH8_PDCH\n"
+      "Allow SDCCH8 on TCH/F_TCH/H_SDCCH8_PDCH (default)\n")
+{
+	struct gsm_network *gsmnet = gsmnet_from_vty(vty);
+	gsmnet->dyn_ts_allow_sdcch8 = atoi(argv[0]) ? true : false;
+	return CMD_SUCCESS;
+}
+
 DEFUN_DEPRECATED(cfg_net_dyn_ts_allow_tch_f,
       cfg_net_dyn_ts_allow_tch_f_cmd,
       "dyn_ts_allow_tch_f (0|1)",
@@ -3634,6 +3649,7 @@ int bsc_vty_init(struct gsm_network *network)
 	install_element(GSMNET_NODE, &cfg_net_per_loc_upd_cmd);
 	install_element(GSMNET_NODE, &cfg_net_no_per_loc_upd_cmd);
 	install_element(GSMNET_NODE, &cfg_net_dyn_ts_allow_tch_f_cmd);
+	install_element(GSMNET_NODE, &cfg_net_dyn_ts_allow_sdcch8_cmd);
 	install_element(GSMNET_NODE, &cfg_net_meas_feed_dest_cmd);
 	install_element(GSMNET_NODE, &cfg_net_meas_feed_scenario_cmd);
 	install_element(GSMNET_NODE, &cfg_net_meas_feed_wqueue_max_len_cmd);
