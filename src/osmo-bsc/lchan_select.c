@@ -386,7 +386,8 @@ struct gsm_lchan *lchan_avail_by_type(struct gsm_bts *bts,
 			lchan = lc_find(&ts_list, second_cbch, log);
 		/* No dedicated SDCCH available -- try fully dynamic
 		 * TCH/F_TCH/H_SDCCH8_PDCH if BTS supports it: */
-		if (lchan == NULL && osmo_bts_has_feature(&bts->features, BTS_FEAT_DYN_TS_SDCCH8))
+		if (lchan == NULL && lchan && bts->network->dyn_ts_allow_sdcch8 &&
+		    osmo_bts_has_feature(&bts->features, BTS_FEAT_DYN_TS_SDCCH8))
 			lchan = lc_dyn_find(&ts_list, GSM_PCHAN_OSMO_DYN,
 						      GSM_PCHAN_SDCCH8_SACCH8C, log);
 		break;
