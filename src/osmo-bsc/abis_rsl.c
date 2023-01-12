@@ -1810,7 +1810,7 @@ static int rsl_rx_pchan_rqd(struct chan_rqd *rqd)
 		is_11bit = 1;
 
 		/* FIXME: Also handle 11 bit rach requests */
-		LOGP(DRSL, LOGL_ERROR, "BTS %d eleven bit access burst not supported yet!\n",rqd->bts->nr);
+		LOGP(DRSL, LOGL_ERROR, "BTS %d eleven bit access burst not supported yet!\n", rqd->bts->nr);
 		return -EINVAL;
 	} else {
 		is_11bit = 0;
