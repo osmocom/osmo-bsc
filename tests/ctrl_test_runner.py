@@ -616,6 +616,25 @@ class TestCtrlBSCNeighborCell(TestCtrlBase):
     def ctrl_app(self):
         return (4249, "./src/osmo-bsc/osmo-bsc", "OsmoBSC", "bsc")
 
+    def testCtrlListBTS(self):
+    # Get BTS local neighbors (configured via 'neighbor cgi-ps ...')
+        r = self.do_get('bts.0.neighbor-bts.list')
+        self.assertEqual(r['mtype'], 'GET_REPLY')
+        self.assertEqual(r['var'], 'bts.0.neighbor-bts.list')
+        self.assertEqual(r['value'], '1')
+
+    # Get BTS locally configured neighbors (when none configured)
+        r = self.do_get('bts.2.neighbor-bts.list')
+        self.assertEqual(r['mtype'], 'GET_REPLY')
+        self.assertEqual(r['var'], 'bts.2.neighbor-bts.list')
+        self.assertEqual(r['value'], None)
+
+    # Get BTS locally configured neighbors
+        r = self.do_get('bts.1.neighbor-bts.list')
+        self.assertEqual(r['mtype'], 'GET_REPLY')
+        self.assertEqual(r['var'], 'bts.1.neighbor-bts.list')
+        self.assertEqual(r['value'], '0,2')
+
     def testCtrlAddDelBTS(self):
         r = self.do_set('bts.0.neighbor-bts.add', '1')
         print('respose: ' + str(r))
