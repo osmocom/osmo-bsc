@@ -21,6 +21,7 @@
  */
 
 #include <errno.h>
+#include <inttypes.h>
 #include <time.h>
 
 #include <osmocom/ctrl/control_cmd.h>
@@ -93,6 +94,44 @@ static int verify_neighbor_bts_add(struct ctrl_cmd *cmd, const char *value, void
 {
 	return verify_neighbor_bts(cmd, value, _data);
 }
+
+static int get_neighbor_bts_list(struct ctrl_cmd *cmd, void *data)
+{
+	/* Max. 256 BTS neighbors (as of now, any bts can be its own neighbor per cfg) comma-separated ->
+	 * max. 255 commas * + trailing '\0':			256
+	 * 10 of those numbers (0...9) are 1-digit numbers:	 +  10 = 266
+	 * 90 of those numbers are 2-digit numbers (10...99):	 +  90 = 356
+	 * 255 - 100 + 1 = 156 are 3-digit numbers (100...255):	 + 156 = 512 bytes
+	 * Double BTS num entries are not possible (check exists and is being tested against in python tests). */
+	char log_buf[512];
+	struct osmo_strbuf reply = { .buf = log_buf,
+				     .len = sizeof(log_buf),
+				     .pos = log_buf
+				   };
+	struct gsm_bts  *neighbor_bts, *bts = (struct gsm_bts *)cmd->node;
+	if (!bts) {
+		cmd->reply = "BTS not found";
+		return CTRL_CMD_ERROR;
+	}
+	struct neighbor *n;
+	llist_for_each_entry(n, &bts->neighbors, entry)
+		if (resolve_local_neighbor(&neighbor_bts, bts, n) == 0)
+			OSMO_STRBUF_PRINTF(reply, "%" PRIu8 ",", neighbor_bts->nr);
+	if (reply.buf == reply.pos)
+		cmd->reply = "";
+	else { /* Get rid of trailing comma */
+		reply.pos[-1] = '\0';
+		if (!(cmd->reply = talloc_strdup(cmd, reply.buf)))
+			goto oom;
+	}
+	return CTRL_CMD_REPLY;
+
+oom:
+	cmd->reply = "OOM";
+	return CTRL_CMD_ERROR;
+}
+
+CTRL_CMD_DEFINE_RO(neighbor_bts_list, "neighbor-bts list");
 
 static int set_neighbor_bts_add(struct ctrl_cmd *cmd, void *data)
 {
@@ -705,6 +744,7 @@ int neighbor_ident_ctrl_init(void)
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_neighbor_lac_ci_del);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_neighbor_cgi_add);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_neighbor_cgi_del);
+	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_neighbor_bts_list);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_neighbor_cgi_ps_add);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_neighbor_cgi_ps_del);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_neighbor_clear);
