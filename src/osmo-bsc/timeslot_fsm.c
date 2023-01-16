@@ -932,7 +932,6 @@ static const struct osmo_fsm_state ts_fsm_states[] = {
 		.out_state_mask = 0
 			| S(TS_ST_IN_USE)
 			| S(TS_ST_UNUSED)
-			| S(TS_ST_BORKEN)
 			| S(TS_ST_NOT_INITIALIZED)
 			| S(TS_ST_BORKEN)
 			,
