@@ -43,6 +43,7 @@
 #include <osmocom/bsc/a_reset.h>
 #include <osmocom/bsc/ctrl.h>
 #include <osmocom/bsc/handover_ctrl.h>
+#include <osmocom/bsc/neighbor_ident.h>
 
 static int verify_net_apply_config_file(struct ctrl_cmd *cmd, const char *value, void *_data)
 {
@@ -78,6 +79,14 @@ static int set_net_apply_config_file(struct ctrl_cmd *cmd, void *_data)
 	LOGP(DCTRL, LOGL_NOTICE, "Applying VTY snippet from %s returned %d\n", cmd->value, rc);
 	if (rc) {
 		cmd->reply = talloc_asprintf(cmd, "ParseError=%d", rc);
+		if (!cmd->reply)
+			cmd->reply = "OOM";
+		goto close_ret;
+	}
+
+	rc = neighbors_check_cfg();
+	if (rc) {
+		cmd->reply = talloc_asprintf(cmd, "Errors in neighbor configuration");
 		if (!cmd->reply)
 			cmd->reply = "OOM";
 		goto close_ret;
