@@ -116,8 +116,8 @@ DEFUN_ATTR(cfg_bts,
 	struct gsm_bts *bts;
 
 	if (bts_nr > gsmnet->num_bts) {
-		vty_out(vty, "%% The next unused BTS number is %u%s",
-			gsmnet->num_bts, VTY_NEWLINE);
+		vty_out(vty, "%% BTS number %d not valid (next BTS number must be %u)%s",
+			bts_nr, gsmnet->num_bts, VTY_NEWLINE);
 		return CMD_WARNING;
 	} else if (bts_nr == gsmnet->num_bts) {
 		/* allocate a new one */
