@@ -451,7 +451,7 @@ int gsm_bts_trx_set_system_infos(struct gsm_bts_trx *trx)
 				si_len[si_type] = 11;
 				break;
 			default:
-				si_len[si_type] = 23;
+				si_len[si_type] = GSM_MACBLOCK_LEN;
 			}
 		}
 	}
