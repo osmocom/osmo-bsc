@@ -450,6 +450,9 @@ int gsm_bts_trx_set_system_infos(struct gsm_bts_trx *trx)
 			case SYSINFO_TYPE_6:
 				si_len[si_type] = 11;
 				break;
+			case SYSINFO_TYPE_10:
+				si_len[si_type] = 21;
+				break;
 			default:
 				si_len[si_type] = GSM_MACBLOCK_LEN;
 			}
