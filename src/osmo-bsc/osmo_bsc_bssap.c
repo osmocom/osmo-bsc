@@ -796,28 +796,29 @@ static int select_sign_chan(struct assignment_request *req, struct gsm0808_chann
 	return nc > 0 ? 0 : -EINVAL;
 }
 
-static int bssmap_handle_ass_req_ct_speech(struct gsm_subscriber_connection *conn, struct tlv_parsed *tp,
-					   struct gsm0808_channel_type *ct, struct assignment_request *req,
-					   uint8_t *cause)
+static int bssmap_handle_ass_req_tp_cic(struct tlv_parsed *tp, bool aoip, uint16_t *cic, uint8_t *cause)
 {
-	uint16_t cic = 0;
-	bool aoip = gscon_is_aoip(conn);
-	bool use_osmux = false;
-	uint8_t osmux_cid = 0;
-	struct sockaddr_storage rtp_addr;
-	int rc;
-
 	if (TLVP_PRESENT(tp, GSM0808_IE_CIRCUIT_IDENTITY_CODE)) {
 		/* CIC is permitted in both AoIP and SCCPlite */
-		cic = osmo_load16be(TLVP_VAL(tp, GSM0808_IE_CIRCUIT_IDENTITY_CODE));
-	} else {
-		if (!aoip) {
-			/* no CIC but SCCPlite: illegal */
-			LOGP(DMSC, LOGL_ERROR, "SCCPlite MSC, but no CIC in ASSIGN REQ?\n");
-			*cause = GSM0808_CAUSE_INFORMATION_ELEMENT_OR_FIELD_MISSING;
-			return -1;
-		}
+		*cic = osmo_load16be(TLVP_VAL(tp, GSM0808_IE_CIRCUIT_IDENTITY_CODE));
+		return 0;
 	}
+
+	if (!aoip) {
+		/* no CIC but SCCPlite: illegal */
+		LOGP(DMSC, LOGL_ERROR, "SCCPlite MSC, but no CIC in ASSIGN REQ?\n");
+		*cause = GSM0808_CAUSE_INFORMATION_ELEMENT_OR_FIELD_MISSING;
+		return -1;
+	}
+
+	return 0;
+}
+
+static int bssmap_handle_ass_req_tp_rtp_addr(struct tlv_parsed *tp, bool aoip, struct sockaddr_storage *rtp_addr,
+					     uint8_t *cause)
+{
+	int rc;
+
 	if (TLVP_PRESENT(tp, GSM0808_IE_AOIP_TRASP_ADDR)) {
 		if (!aoip) {
 			/* SCCPlite and AoIP transport address: illegal */
@@ -826,7 +827,7 @@ static int bssmap_handle_ass_req_ct_speech(struct gsm_subscriber_connection *con
 			return -1;
 		}
 		/* Decode AoIP transport address element */
-		rc = gsm0808_dec_aoip_trasp_addr(&rtp_addr,
+		rc = gsm0808_dec_aoip_trasp_addr(rtp_addr,
 						 TLVP_VAL(tp, GSM0808_IE_AOIP_TRASP_ADDR),
 						 TLVP_LEN(tp, GSM0808_IE_AOIP_TRASP_ADDR));
 		if (rc < 0) {
@@ -834,7 +835,10 @@ static int bssmap_handle_ass_req_ct_speech(struct gsm_subscriber_connection *con
 			*cause = GSM0808_CAUSE_INCORRECT_VALUE;
 			return -1;
 		}
-	} else if (aoip) {
+		return 0;
+	}
+
+	if (aoip) {
 		/* no AoIP transport level address but AoIP transport: illegal */
 		LOGP(DMSC, LOGL_ERROR, "AoIP transport address missing in ASSIGN REQ, "
 		     "audio would not work; rejecting\n");
@@ -842,14 +846,22 @@ static int bssmap_handle_ass_req_ct_speech(struct gsm_subscriber_connection *con
 		return -1;
 	}
 
+	return 0;
+}
+
+static int bssmap_handle_ass_req_tp_osmux(struct gsm_subscriber_connection *conn, struct tlv_parsed *tp,
+					  bool *use_osmux, uint8_t *osmux_cid, uint8_t *cause)
+{
+	int rc;
+
 	if (TLVP_PRESENT(tp, GSM0808_IE_OSMO_OSMUX_CID)) {
 		if (conn->sccp.msc->use_osmux == OSMUX_USAGE_OFF) {
 			LOGP(DMSC, LOGL_ERROR, "MSC using Osmux but we have it disabled.\n");
 			*cause = GSM0808_CAUSE_INCORRECT_VALUE;
 			return -1;
 		}
-		use_osmux = true;
-		rc = gsm0808_dec_osmux_cid(&osmux_cid,
+		*use_osmux = true;
+		rc = gsm0808_dec_osmux_cid(osmux_cid,
 					   TLVP_VAL(tp, GSM0808_IE_OSMO_OSMUX_CID),
 					   TLVP_LEN(tp, GSM0808_IE_OSMO_OSMUX_CID));
 		if (rc < 0) {
@@ -857,14 +869,25 @@ static int bssmap_handle_ass_req_ct_speech(struct gsm_subscriber_connection *con
 			*cause = GSM0808_CAUSE_INCORRECT_VALUE;
 			return -1;
 		}
-	} else {
-		if (conn->sccp.msc->use_osmux == OSMUX_USAGE_ONLY) {
-			LOGP(DMSC, LOGL_ERROR, "MSC not using Osmux but we are forced to use it.\n");
-			*cause = GSM0808_CAUSE_INCORRECT_VALUE;
-			return -1;
-		} else if (conn->sccp.msc->use_osmux == OSMUX_USAGE_ON)
-			LOGP(DMSC, LOGL_NOTICE, "MSC not using Osmux but we have Osmux enabled.\n");
+		return 0;
 	}
+
+	if (conn->sccp.msc->use_osmux == OSMUX_USAGE_ONLY) {
+		LOGP(DMSC, LOGL_ERROR, "MSC not using Osmux but we are forced to use it.\n");
+		*cause = GSM0808_CAUSE_INCORRECT_VALUE;
+		return -1;
+	}
+
+	if (conn->sccp.msc->use_osmux == OSMUX_USAGE_ON)
+		LOGP(DMSC, LOGL_NOTICE, "MSC not using Osmux but we have Osmux enabled.\n");
+
+	return 0;
+}
+
+static int bssmap_handle_ass_req_tp_codec_list(struct gsm_subscriber_connection *conn, struct tlv_parsed *tp, bool aoip,
+					       uint8_t *cause)
+{
+	int rc;
 
 	/* Decode speech codec list. First set len = 0. */
 	conn->codec_list = (struct gsm0808_speech_codec_list){};
@@ -887,6 +910,32 @@ static int bssmap_handle_ass_req_ct_speech(struct gsm_subscriber_connection *con
 		*cause = GSM0808_CAUSE_INFORMATION_ELEMENT_OR_FIELD_MISSING;
 		return -1;
 	}
+
+	return 0;
+}
+
+static int bssmap_handle_ass_req_ct_speech(struct gsm_subscriber_connection *conn, struct tlv_parsed *tp,
+					   struct gsm0808_channel_type *ct, struct assignment_request *req,
+					   uint8_t *cause)
+{
+	uint16_t cic = 0;
+	bool aoip = gscon_is_aoip(conn);
+	bool use_osmux = false;
+	uint8_t osmux_cid = 0;
+	struct sockaddr_storage rtp_addr;
+	int rc;
+
+	if (bssmap_handle_ass_req_tp_cic(tp, aoip, &cic, cause) < 0)
+		return -1;
+
+	if (bssmap_handle_ass_req_tp_rtp_addr(tp, aoip, &rtp_addr, cause) < 0)
+		return -1;
+
+	if (bssmap_handle_ass_req_tp_osmux(conn, tp, &use_osmux, &osmux_cid, cause) < 0)
+		return -1;
+
+	if (bssmap_handle_ass_req_tp_codec_list(conn, tp, aoip, cause) < 0)
+		return -1;
 
 	*req = (struct assignment_request){
 		.assign_for = ASSIGN_FOR_BSSMAP_REQ,
