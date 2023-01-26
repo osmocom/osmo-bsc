@@ -252,7 +252,7 @@ static struct gsm_bts *_create_bts(int num_trx, const char * const *ts_args, int
 
 	fprintf(stderr, "- Creating BTS %d, %d TRX\n", bsc_gsmnet->num_bts, num_trx);
 
-	bts = bsc_bts_alloc_register(bsc_gsmnet, GSM_BTS_TYPE_UNKNOWN, 0x3f);
+	bts = bsc_bts_alloc_register(bsc_gsmnet, GSM_BTS_TYPE_UNKNOWN, HARDCODED_BSIC);
 	if (!bts) {
 		fprintf(stderr, "No resource for bts1\n");
 		return NULL;
