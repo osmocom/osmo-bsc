@@ -17,6 +17,10 @@ enum rate_pref {
 	RATE_PREF_FR,
 };
 
+int match_codec_pref_data(struct channel_mode_and_rate *ch_mode_rate,
+			  const struct gsm0808_channel_type *ct,
+			  const bool full_rate);
+
 int match_codec_pref(struct channel_mode_and_rate *ch_mode_rate,
 		     const struct gsm0808_channel_type *ct,
 		     const struct gsm0808_speech_codec_list *scl,

@@ -19,6 +19,7 @@ noinst_HEADERS = \
 	chan_alloc.h \
 	chan_counts.h \
 	codec_pref.h \
+	data_rate_pref.h \
 	ctrl.h \
 	debug.h \
 	e1_config.h \
