@@ -31,6 +31,7 @@
 #include <osmocom/bsc/gsm_04_08_rr.h>
 #include <osmocom/bsc/bsc_subscr_conn_fsm.h>
 #include <osmocom/bsc/codec_pref.h>
+#include <osmocom/bsc/data_rate_pref.h>
 #include <osmocom/bsc/abis_rsl.h>
 #include <osmocom/bsc/handover_fsm.h>
 #include <osmocom/bsc/bts.h>
@@ -667,6 +668,67 @@ static int bssmap_handle_lcls_connect_ctrl(struct gsm_subscriber_connection *con
 	return 0;
 }
 
+/* Select a preferred and an alternative data rate depending on the available
+ * capabilities. This decision does not include the actual channel load yet,
+ * this is also the reason why the result is a preferred and an alternate
+ * setting. The final decision is made in assignment_fsm.c when the actual
+ * lchan is requested. The preferred lchan will be requested first. If we
+ * find an alternate setting here, this one will be tried secondly if our
+ * primary choice fails. */
+static int select_data_rates(struct assignment_request *req, struct gsm0808_channel_type *ct,
+			     struct gsm_subscriber_connection *conn)
+{
+	int rc, i, nc = 0;
+
+	switch (ct->ch_rate_type) {
+	case GSM0808_DATA_FULL_BM:
+		rc = match_data_rate_pref(&req->ch_mode_rate_list[nc], ct, true);
+		nc += (rc == 0) ? 1 : 0;
+		break;
+	case GSM0808_DATA_HALF_LM:
+		rc = match_data_rate_pref(&req->ch_mode_rate_list[nc], ct, false);
+		nc += (rc == 0) ? 1 : 0;
+		break;
+	case GSM0808_DATA_FULL_PREF_NO_CHANGE:
+	case GSM0808_DATA_FULL_PREF:
+		rc = match_data_rate_pref(&req->ch_mode_rate_list[nc], ct, true);
+		nc += (rc == 0) ? 1 : 0;
+		rc = match_data_rate_pref(&req->ch_mode_rate_list[nc], ct, false);
+		nc += (rc == 0) ? 1 : 0;
+		break;
+	case GSM0808_DATA_HALF_PREF_NO_CHANGE:
+	case GSM0808_DATA_HALF_PREF:
+		rc = match_data_rate_pref(&req->ch_mode_rate_list[nc], ct, false);
+		nc += (rc == 0) ? 1 : 0;
+		rc = match_data_rate_pref(&req->ch_mode_rate_list[nc], ct, true);
+		nc += (rc == 0) ? 1 : 0;
+		break;
+	default:
+		rc = -EINVAL;
+		break;
+	}
+
+	if (!nc) {
+		LOGP(DMSC, LOGL_ERROR, "No supported data rate found for channel_type ="
+		     " { ch_indctr=0x%x, ch_rate_type=0x%x, perm_spch=[%s] }\n",
+		     ct->ch_indctr, ct->ch_rate_type, osmo_hexdump(ct->perm_spch, ct->perm_spch_len));
+		return -EINVAL;
+	}
+
+	for (i = 0; i < nc; i++) {
+		DEBUGP(DMSC, "Found matching data rate (pref=%d): %s %s for channel_type ="
+		       " { ch_indctr=0x%x, ch_rate_type=0x%x, perm_spch=[ %s] }\n",
+		       i,
+		       req->ch_mode_rate_list[i].chan_rate == CH_RATE_FULL ? "full rate" : "half rate",
+		       get_value_string(gsm48_chan_mode_names, req->ch_mode_rate_list[i].chan_mode),
+		       ct->ch_indctr, ct->ch_rate_type, osmo_hexdump(ct->perm_spch, ct->perm_spch_len));
+	}
+
+	req->n_ch_mode_rate = nc;
+
+	return 0;
+}
+
 /* Select a preferred and an alternative codec rate depending on the available
  * capabilities. This decision does not include the actual channel load yet,
  * this is also the reason why the result is a preferred and an alternate
@@ -924,6 +986,38 @@ static int bssmap_handle_ass_req_tp_codec_list(struct gsm_subscriber_connection 
 	return 0;
 }
 
+static int bssmap_handle_ass_req_ct_data(struct gsm_subscriber_connection *conn, struct tlv_parsed *tp,
+					 struct gsm0808_channel_type *ct, struct assignment_request *req,
+					 uint8_t *cause)
+{
+	bool aoip = gscon_is_aoip(conn);
+	int rc;
+
+	*req = (struct assignment_request){
+		.assign_for = ASSIGN_FOR_BSSMAP_REQ,
+		.aoip = aoip,
+	};
+
+	if (bssmap_handle_ass_req_tp_cic(tp, aoip, &req->msc_assigned_cic, cause) < 0)
+		return -1;
+
+	if (bssmap_handle_ass_req_tp_rtp_addr(tp, aoip, req->msc_rtp_addr, sizeof(req->msc_rtp_addr), &req->msc_rtp_port, cause) < 0)
+		return -1;
+
+	/* According to 3GPP TS 48.008 § 3.2.1.1 note 13, the codec list IE
+	 * shall be included for aoip unless channel type is signalling. */
+	if (bssmap_handle_ass_req_tp_codec_list(conn, tp, aoip, cause) < 0)
+		return -1;
+
+	rc = select_data_rates(req, ct, conn);
+	if (rc < 0) {
+		*cause = GSM0808_CAUSE_REQ_CODEC_TYPE_OR_CONFIG_UNAVAIL;
+		return -1;
+	}
+
+	return 0;
+}
+
 static int bssmap_handle_ass_req_ct_speech(struct gsm_subscriber_connection *conn, struct tlv_parsed *tp,
 					   struct gsm0808_channel_type *ct, struct assignment_request *req,
 					   uint8_t *cause)
@@ -1023,12 +1117,12 @@ static int bssmap_handle_assignm_req(struct gsm_subscriber_connection *conn,
 	bssmap_handle_ass_req_lcls(conn, &tp);
 
 	/* Currently we only support a limited subset of all
-	 * possible channel types, such as multi-slot or CSD */
+	 * possible channel types, such as multi-slot */
 	switch (ct.ch_indctr) {
 	case GSM0808_CHAN_DATA:
-		LOGP(DMSC, LOGL_ERROR, "Unsupported channel type, currently only speech is supported!\n");
-		cause = GSM0808_CAUSE_REQ_CODEC_TYPE_OR_CONFIG_NOT_SUPP;
-		goto reject;
+		if (bssmap_handle_ass_req_ct_data(conn, &tp, &ct, &req, &cause) < 0)
+			goto reject;
+		break;
 	case GSM0808_CHAN_SPEECH:
 		if (bssmap_handle_ass_req_ct_speech(conn, &tp, &ct, &req, &cause) < 0)
 			goto reject;

@@ -62,6 +62,7 @@ libbsc_la_SOURCES = \
 	chan_alloc.c \
 	chan_counts.c \
 	codec_pref.c \
+	data_rate_pref.c \
 	e1_config.c \
 	gsm_04_08_rr.c \
 	gsm_data.c \
