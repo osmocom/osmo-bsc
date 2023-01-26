@@ -814,10 +814,12 @@ static int bssmap_handle_ass_req_tp_cic(struct tlv_parsed *tp, bool aoip, uint16
 	return 0;
 }
 
-static int bssmap_handle_ass_req_tp_rtp_addr(struct tlv_parsed *tp, bool aoip, struct sockaddr_storage *rtp_addr,
-					     uint8_t *cause)
+static int bssmap_handle_ass_req_tp_rtp_addr(struct tlv_parsed *tp, bool aoip, char *msc_rtp_addr,
+					     size_t msc_rtp_addr_len, uint16_t *msc_rtp_port, uint8_t *cause)
 {
+	struct sockaddr_storage rtp_addr;
 	int rc;
+	unsigned int rc2;
 
 	if (TLVP_PRESENT(tp, GSM0808_IE_AOIP_TRASP_ADDR)) {
 		if (!aoip) {
@@ -827,12 +829,20 @@ static int bssmap_handle_ass_req_tp_rtp_addr(struct tlv_parsed *tp, bool aoip, s
 			return -1;
 		}
 		/* Decode AoIP transport address element */
-		rc = gsm0808_dec_aoip_trasp_addr(rtp_addr,
+		rc = gsm0808_dec_aoip_trasp_addr(&rtp_addr,
 						 TLVP_VAL(tp, GSM0808_IE_AOIP_TRASP_ADDR),
 						 TLVP_LEN(tp, GSM0808_IE_AOIP_TRASP_ADDR));
 		if (rc < 0) {
 			LOGP(DMSC, LOGL_ERROR, "Unable to decode AoIP transport address.\n");
 			*cause = GSM0808_CAUSE_INCORRECT_VALUE;
+			return -1;
+		}
+
+		rc2 = osmo_sockaddr_to_str_and_uint(msc_rtp_addr, msc_rtp_addr_len, msc_rtp_port,
+						    (const struct sockaddr *)&rtp_addr);
+		if (!rc2 || rc >= msc_rtp_addr_len) {
+			LOGP(DMSC, LOGL_ERROR, "Assignment request: RTP address is too long\n");
+			*cause = GSM0808_CAUSE_REQ_CODEC_TYPE_OR_CONFIG_UNAVAIL;
 			return -1;
 		}
 		return 0;
@@ -918,32 +928,25 @@ static int bssmap_handle_ass_req_ct_speech(struct gsm_subscriber_connection *con
 					   struct gsm0808_channel_type *ct, struct assignment_request *req,
 					   uint8_t *cause)
 {
-	uint16_t cic = 0;
 	bool aoip = gscon_is_aoip(conn);
-	bool use_osmux = false;
-	uint8_t osmux_cid = 0;
-	struct sockaddr_storage rtp_addr;
 	int rc;
-
-	if (bssmap_handle_ass_req_tp_cic(tp, aoip, &cic, cause) < 0)
-		return -1;
-
-	if (bssmap_handle_ass_req_tp_rtp_addr(tp, aoip, &rtp_addr, cause) < 0)
-		return -1;
-
-	if (bssmap_handle_ass_req_tp_osmux(conn, tp, &use_osmux, &osmux_cid, cause) < 0)
-		return -1;
-
-	if (bssmap_handle_ass_req_tp_codec_list(conn, tp, aoip, cause) < 0)
-		return -1;
 
 	*req = (struct assignment_request){
 		.assign_for = ASSIGN_FOR_BSSMAP_REQ,
 		.aoip = aoip,
-		.msc_assigned_cic = cic,
-		.use_osmux = use_osmux,
-		.osmux_cid = osmux_cid,
 	};
+
+	if (bssmap_handle_ass_req_tp_cic(tp, aoip, &req->msc_assigned_cic, cause) < 0)
+		return -1;
+
+	if (bssmap_handle_ass_req_tp_rtp_addr(tp, aoip, req->msc_rtp_addr, sizeof(req->msc_rtp_addr), &req->msc_rtp_port, cause) < 0)
+		return -1;
+
+	if (bssmap_handle_ass_req_tp_osmux(conn, tp, &req->use_osmux, &req->osmux_cid, cause) < 0)
+		return -1;
+
+	if (bssmap_handle_ass_req_tp_codec_list(conn, tp, aoip, cause) < 0)
+		return -1;
 
 	/* Match codec information from the assignment command against the
 	 * local preferences of the BSC and BTS */
@@ -951,18 +954,6 @@ static int bssmap_handle_ass_req_ct_speech(struct gsm_subscriber_connection *con
 	if (rc < 0) {
 		*cause = GSM0808_CAUSE_REQ_CODEC_TYPE_OR_CONFIG_UNAVAIL;
 		return -1;
-	}
-
-	if (aoip) {
-		unsigned int rc = osmo_sockaddr_to_str_and_uint(req->msc_rtp_addr,
-								sizeof(req->msc_rtp_addr),
-								&req->msc_rtp_port,
-								(const struct sockaddr *)&rtp_addr);
-		if (!rc || rc >= sizeof(req->msc_rtp_addr)) {
-			LOGP(DMSC, LOGL_ERROR, "Assignment request: RTP address is too long\n");
-			*cause = GSM0808_CAUSE_REQ_CODEC_TYPE_OR_CONFIG_UNAVAIL;
-			return -1;
-		}
 	}
 
 	return 0;
