@@ -61,8 +61,7 @@ static int full_rate_from_perm_spch(bool * full_rate,
 	return 0;
 }
 
-/* Helper function for match_codec_pref(), looks up a matching chan mode for
- * a given permitted speech value */
+/* Look up a matching chan mode for a given permitted speech value */
 static enum gsm48_chan_mode gsm88_to_chan_mode(enum gsm0808_permitted_speech speech)
 {
 	switch (speech) {
@@ -88,8 +87,7 @@ static enum gsm48_chan_mode gsm88_to_chan_mode(enum gsm0808_permitted_speech spe
 	}
 }
 
-/* Helper function for match_codec_pref(), looks up a matching permitted speech
- * value for a given msc audio codec pref */
+/* Look up a matching permitted speech value for a given msc audio codec pref */
 static enum gsm0808_permitted_speech audio_support_to_gsm88(const struct gsm_audio_support *audio)
 {
 	if (audio->hr) {
@@ -125,10 +123,9 @@ static enum gsm0808_permitted_speech audio_support_to_gsm88(const struct gsm_aud
 	}
 }
 
-/* Helper function for match_codec_pref(), tests if a given audio support
- * matches one of the permitted speech settings of the channel type element.
- * The matched permitted speech value is then also compared against the
- * speech codec list. (optional, only relevant for AoIP) */
+/* Test if a given audio support matches one of the permitted speech settings
+ * of the channel type element. The matched permitted speech value is then also
+ * compared against the speech codec list. (optional, only relevant for AoIP) */
 static bool test_codec_pref(const struct gsm0808_speech_codec **sc_match,
 			    const struct gsm0808_speech_codec_list *scl,
 			    const struct gsm0808_channel_type *ct,
@@ -177,8 +174,8 @@ static bool test_codec_pref(const struct gsm0808_speech_codec **sc_match,
 	return false;
 }
 
-/* Helper function to check if the given permitted speech value is supported
- * by the BTS. (vty option bts->codec-support). */
+/* Check if the given permitted speech value is supported by the BTS
+ * (vty option bts->codec-support). */
 static bool test_codec_support_bts(const struct gsm_bts *bts, uint8_t perm_spch)
 {
 	struct gsm_bts_trx *trx;
@@ -308,8 +305,8 @@ static int match_amr_s15_s0(struct channel_mode_and_rate *ch_mode_rate, const st
 	return 0;
 }
 
-/*! Match the codec preferences from local config with a received codec preferences IEs received from the
- * MSC and the BTS' codec configuration.
+/*! Match the codec preferences from local config with codec preference IEs
+ * received from the MSC and the BTS' codec configuration.
  *  \param[out] ch_mode_rate resulting codec and rate information
  *  \param[in] ct GSM 08.08 channel type received from MSC.
  *  \param[in] scl GSM 08.08 speech codec list received from MSC (optional).
