@@ -163,7 +163,7 @@ static int pcu_tx_info_ind(struct gsm_bts *bts)
 
 	bts_sm = bts->site_mgr;
 
-	LOGP(DPCU, LOGL_INFO, "Sending info for BTS %d\n",bts->nr);
+	LOGP(DPCU, LOGL_INFO, "Sending info for BTS %d\n", bts->nr);
 
 	rlcc = &bts->gprs.cell.rlc_cfg;
 
