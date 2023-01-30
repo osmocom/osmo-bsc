@@ -326,6 +326,23 @@ bool trx_has_valid_pchan_config(const struct gsm_bts_trx *trx)
 			}
 			break;
 
+		case GSM_PCHAN_PDCH:
+			if (is_ericsson_bts(trx->bts)) {
+				/* NOTE: A static PDCH is usually handled by the BTS/PCU internally, the BSC
+				 * will not actively manage this channel. It will just keep the timeslot
+				 * unused so that it is free for the BTS/PCU to use it as PDCH. Not all BTSs
+				 * work well in this scheme. Ericsson RBS BTSs support dynamic channels natively
+				 * and require a channel activation on RSL level before the PDCH can be used.
+				 * One could work around this by activating the PDCH once on startup and
+				 * leave it on indefinetly but we decided not to do so. Users of Ericsson RBS
+				 * BTSs must configure a dynamic PDCH channel. */
+				LOGP(DNM, LOGL_ERROR, "%s is not allowed, because Ericsson RBS does"
+				     "not support static PDCH (use TCH/F_TCH/H_SDCCH8_PDCH)\n",
+				     gsm_pchan_name(ts->pchan_from_config));
+				result = false;
+			}
+			break;
+
 		default:
 			/* CCCH on TS0 is mandatory for C0 */
 			if (trx->bts->c0 == trx && i == 0) {
