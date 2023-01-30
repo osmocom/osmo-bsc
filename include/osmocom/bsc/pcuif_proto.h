@@ -19,6 +19,7 @@
 #define PCU_IF_MSG_DATA_CNF_DT	0x11	/* confirm (with direct tlli) */
 #define PCU_IF_MSG_RACH_IND	0x22	/* receive RACH */
 #define PCU_IF_MSG_INFO_IND	0x32	/* retrieve BTS info */
+#define PCU_IF_MSG_E1_CCU_IND	0x33	/* retrieve E1 CCU comm. parameters */
 #define PCU_IF_MSG_ACT_REQ	0x40	/* activate/deactivate PDCH */
 #define PCU_IF_MSG_TIME_IND	0x52	/* GSM time indication */
 #define PCU_IF_MSG_INTERF_IND	0x53	/* interference report */
@@ -257,6 +258,17 @@ struct gsm_pcu_if_neigh_addr_cnf {
 	} cgi_ps;
 } __attribute__ ((packed));
 
+/* E1 CCU connection parameters */
+struct gsm_pcu_if_e1_ccu_ind {
+	/* GSM/GPRS air interface */
+	uint8_t trx_nr;
+	uint8_t ts_nr;
+	/* E1 line interface */
+	uint8_t e1_nr;
+	uint8_t e1_ts;
+	uint8_t e1_ts_ss;
+} __attribute__ ((packed));
+
 struct gsm_pcu_if {
 	/* context based information */
 	uint8_t		msg_type;	/* message type */
@@ -273,6 +285,7 @@ struct gsm_pcu_if {
 		struct gsm_pcu_if_rach_ind	rach_ind;
 		struct gsm_pcu_if_txt_ind	txt_ind;
 		struct gsm_pcu_if_info_ind	info_ind;
+		struct gsm_pcu_if_e1_ccu_ind	e1_ccu_ind;
 		struct gsm_pcu_if_act_req	act_req;
 		struct gsm_pcu_if_time_ind	time_ind;
 		struct gsm_pcu_if_pag_req	pag_req;
