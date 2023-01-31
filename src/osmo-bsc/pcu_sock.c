@@ -263,14 +263,14 @@ static int pcu_tx_info_ind(struct gsm_bts *bts)
 		case AF_INET:
 			info_ind->address_type[i] = PCU_IF_ADDR_TYPE_IPV4;
 			info_ind->remote_ip[i].v4 = nsvc->remote.u.sin.sin_addr;
-			info_ind->remote_port[i] = nsvc->remote.u.sin.sin_port;
+			info_ind->remote_port[i] = ntohs(nsvc->remote.u.sin.sin_port);
 			break;
 		case AF_INET6:
 			info_ind->address_type[i] = PCU_IF_ADDR_TYPE_IPV6;
 			memcpy(&info_ind->remote_ip[i].v6,
 			       &nsvc->remote.u.sin6.sin6_addr,
 			       sizeof(struct in6_addr));
-			info_ind->remote_port[i] = nsvc->remote.u.sin6.sin6_port;
+			info_ind->remote_port[i] = ntohs(nsvc->remote.u.sin6.sin6_port);
 			break;
 		default:
 			info_ind->address_type[i] = PCU_IF_ADDR_TYPE_UNSPEC;
