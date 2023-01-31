@@ -964,11 +964,15 @@ int rsl_imm_assign_cmd(struct gsm_bts *bts, uint8_t len, uint8_t *val)
 }
 
 /* Chapter 8.5.6 Immediate Assignment Command (with Ericcson vendor specific RSL extension) */
-int rsl_ericsson_imm_assign_cmd(struct gsm_bts *bts, uint32_t tlli, uint8_t len, uint8_t *val)
+int rsl_ericsson_imm_assign_cmd(struct gsm_bts *bts, uint32_t tlli, uint8_t len, uint8_t *val, uint8_t pag_grp)
 {
 	struct msgb *msg = rsl_imm_assign_cmd_common(bts, len, val);
 	if (!msg)
 		return 1;
+
+	/* Append ericsson proprietary paging group IE, this will instruct the BTS to
+	 * send this immediate assignment through PCH instead of AGCH. */
+	msgb_tv_put(msg, RSL_IE_ERIC_PAGING_GROUP, pag_grp);
 
 	/* ericsson can handle a reference at the end of the message which is used in
 	 * the confirm message. The confirm message is only sent if the trailer is present */
