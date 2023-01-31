@@ -495,9 +495,9 @@ struct om2k_mo {
  *
  * These macros convert from n to the other representations:
  */
-#define ALG_A5_NR_TO_RSL(A5_N) ((A5_N) >= 0 ? (A5_N)+1 : 0)
+#define ALG_A5_NR_TO_RSL(A5_N) ((int)(A5_N) >= 0 ? (A5_N)+1 : 0)
 #define ALG_A5_NR_TO_BSSAP(A5_N) ALG_A5_NR_TO_RSL(A5_N)
-#define ALG_A5_NR_TO_PERM_ALG_BITS(A5_N) ((A5_N) >= 0 ? 1<<(A5_N) : 0)
+#define ALG_A5_NR_TO_PERM_ALG_BITS(A5_N) ((int)(A5_N) >= 0 ? 1<<(A5_N) : 0)
 
 /* Up to 16 SI2quater are multiplexed; each fits 3 EARFCNS, so the practical maximum is 3*16.
  * The real maximum that fits in a total of 16 SI2quater rest octets also depends on the bits left by other SI2quater
