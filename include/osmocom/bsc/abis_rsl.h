@@ -55,7 +55,7 @@ int rsl_encryption_cmd(struct msgb *msg);
 int rsl_paging_cmd(struct gsm_bts *bts, uint8_t paging_group,
 		   const struct osmo_mobile_identity *mi,
 		   uint8_t chan_needed, bool is_gprs);
-int rsl_imm_assign_cmd(struct gsm_bts *bts, uint8_t len, uint8_t *val);
+int rsl_imm_assign_cmd(const struct gsm_bts *bts, uint8_t len, const uint8_t *val);
 int rsl_tx_imm_assignment(struct gsm_lchan *lchan);
 int rsl_tx_imm_ass_rej(struct gsm_bts *bts, struct gsm48_req_ref *rqd_ref);
 int gsm48_send_rr_ass_cmd(struct gsm_lchan *dest_lchan, struct gsm_lchan *lchan, uint8_t power_command);
@@ -65,7 +65,8 @@ int rsl_establish_request(struct gsm_lchan *lchan, uint8_t link_id);
 int rsl_relase_request(struct gsm_lchan *lchan, uint8_t link_id);
 
 /* Ericcson vendor specific RSL extensions */
-int rsl_ericsson_imm_assign_cmd(struct gsm_bts *bts, uint32_t tlli, uint8_t len, uint8_t *val, uint8_t pag_grp);
+int rsl_ericsson_imm_assign_cmd(const struct gsm_bts *bts, uint32_t tlli, uint8_t len,
+				const uint8_t *val, uint8_t pag_grp);
 
 /* Siemens vendor-specific RSL extensions */
 int rsl_siemens_mrpci(struct gsm_lchan *lchan, struct rsl_mrpci *mrpci);

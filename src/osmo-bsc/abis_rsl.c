@@ -928,7 +928,7 @@ int rsl_forward_layer3_info(struct gsm_lchan *lchan, const uint8_t *l3_info, uin
 }
 
 /* Chapter 8.5.6 */
-struct msgb *rsl_imm_assign_cmd_common(struct gsm_bts *bts, uint8_t len, uint8_t *val)
+struct msgb *rsl_imm_assign_cmd_common(const struct gsm_bts *bts, uint8_t len, const uint8_t *val)
 {
 	struct msgb *msg = rsl_msgb_alloc();
 	struct abis_rsl_dchan_hdr *dh;
@@ -955,7 +955,7 @@ struct msgb *rsl_imm_assign_cmd_common(struct gsm_bts *bts, uint8_t len, uint8_t
 }
 
 /* Chapter 8.5.6 */
-int rsl_imm_assign_cmd(struct gsm_bts *bts, uint8_t len, uint8_t *val)
+int rsl_imm_assign_cmd(const struct gsm_bts *bts, uint8_t len, const uint8_t *val)
 {
 	struct msgb *msg = rsl_imm_assign_cmd_common(bts, len, val);
 	if (!msg)
@@ -964,7 +964,8 @@ int rsl_imm_assign_cmd(struct gsm_bts *bts, uint8_t len, uint8_t *val)
 }
 
 /* Chapter 8.5.6 Immediate Assignment Command (with Ericcson vendor specific RSL extension) */
-int rsl_ericsson_imm_assign_cmd(struct gsm_bts *bts, uint32_t tlli, uint8_t len, uint8_t *val, uint8_t pag_grp)
+int rsl_ericsson_imm_assign_cmd(const struct gsm_bts *bts, uint32_t tlli, uint8_t len,
+				const uint8_t *val, uint8_t pag_grp)
 {
 	struct msgb *msg = rsl_imm_assign_cmd_common(bts, len, val);
 	if (!msg)
