@@ -1,0 +1,30 @@
+digraph G {
+	rankdir=LR
+	labelloc=t; label="OsmoBSC MSC-pool conn (re)direction"
+
+	subgraph cluster_msc_usable {
+		style=dotted; label="MSC usable\n(successful BSSMAP RESET)"
+
+		allowed [label="MSC\nallow-attach"]
+		notallowed [label="MSC\nno allow-attach\n(MSC should respond\nwith null-NRI)"]
+	}
+
+	subgraph cluster_msc_unusable {
+		style=dotted; label="MSC unusable\n(no link)"
+		allowed_unusable [label="MSC\nallow-attach"]
+		notallowed_unusable [label="MSC\nno allow-attach"]
+	}
+
+	TMSI_unknown_NRI [label="TMSI, NRI unknown"]
+	TMSI_null_NRI [label="TMSI, null-NRI"]
+	TMSI_known_NRI [label="TMSI, NRI known"]
+
+	IMSI -> allowed
+	TMSI_unknown_NRI -> allowed
+	TMSI_null_NRI -> allowed
+	TMSI_known_NRI -> allowed
+	TMSI_known_NRI -> notallowed
+
+	never [style=dotted]
+	never -> {allowed_unusable, notallowed_unusable} [style=dotted]
+}
