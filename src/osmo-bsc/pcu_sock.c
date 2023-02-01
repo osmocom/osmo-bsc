@@ -447,8 +447,8 @@ static int pcu_rx_data_req(struct gsm_bts *bts, uint8_t msg_type,
 		/* DT = direct tlli. A tlli is prefixed */
 
 		if (data_req->len < 5) {
-			LOGP(DPCU, LOGL_ERROR, "Received PCU data request with "
-					"invalid/small length %d\n", data_req->len);
+			LOGP(DPCU, LOGL_ERROR, "Received PCU data request with invalid/small length %d\n",
+			     data_req->len);
 			break;
 		}
 		memcpy(&tlli, data_req->data, 4);
