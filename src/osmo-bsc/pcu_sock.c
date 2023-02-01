@@ -106,6 +106,19 @@ static bool ts_now_usable_as_pdch(const struct gsm_bts_trx_ts *ts)
 	}
 }
 
+/* Check if it is possible to use the TS as PDCH (not now, but maybe later) */
+static bool ts_usable_as_pdch(const struct gsm_bts_trx_ts *ts)
+{
+	switch (ts->pchan_from_config) {
+	case GSM_PCHAN_TCH_F_PDCH:
+	case GSM_PCHAN_OSMO_DYN:
+	case GSM_PCHAN_PDCH:
+		return true;
+	default:
+		return false;
+	}
+}
+
 /* Fill the frequency hopping parameter */
 static void info_ind_fill_fhp(struct gsm_pcu_if_info_trx_ts *ts_info,
 			      const struct gsm_bts_trx_ts *ts)
@@ -291,11 +304,67 @@ static int pcu_tx_info_ind(struct gsm_bts *bts)
 	return pcu_sock_send(bts, msg);
 }
 
+static int pcu_tx_e1_ccu_ind(struct gsm_bts *bts)
+{
+	struct gsm_bts_trx *trx;
+
+	llist_for_each_entry(trx, &bts->trx_list, list) {
+		struct gsm_pcu_if_e1_ccu_ind *e1_ccu_ind;
+		int i;
+
+		if (trx->nr >= PCU_IF_NUM_TRX) {
+			LOG_TRX(trx, DPCU, LOGL_NOTICE, "PCU interface (version %u) "
+				"cannot handle more than %u transceivers => skipped\n",
+				PCU_IF_VERSION, PCU_IF_NUM_TRX);
+			continue;
+		}
+
+		for (i = 0; i < ARRAY_SIZE(trx->ts); i++) {
+			struct gsm_pcu_if *pcu_prim;
+			struct gsm_bts_trx_ts *ts;
+			struct msgb *msg;
+			int rc;
+
+			ts = &trx->ts[i];
+
+			if (ts->mo.nm_state.operational != NM_OPSTATE_ENABLED)
+				continue;
+			if (!ts_usable_as_pdch(ts))
+				continue;
+
+			msg = pcu_msgb_alloc(PCU_IF_MSG_E1_CCU_IND, bts->nr);
+			if (!msg)
+				return -ENOMEM;
+			pcu_prim = (struct gsm_pcu_if *)msg->data;
+			e1_ccu_ind = &pcu_prim->u.e1_ccu_ind;
+			e1_ccu_ind->ts_nr = ts->nr;
+			e1_ccu_ind->trx_nr = trx->nr;
+			e1_ccu_ind->e1_nr = ts->e1_link.e1_nr;
+			e1_ccu_ind->e1_ts = ts->e1_link.e1_ts;
+			e1_ccu_ind->e1_ts_ss = ts->e1_link.e1_ts_ss;
+
+			LOG_TRX(trx, DPCU, LOGL_INFO, "Sending E1 CCU info for TS %d\n", e1_ccu_ind->ts_nr);
+			rc = pcu_sock_send(bts, msg);
+			if (rc < 0)
+				return -EINVAL;
+		}
+	}
+
+	return 0;
+}
+
 /* Allow test to overwrite it */
 __attribute__((weak)) void pcu_info_update(struct gsm_bts *bts)
 {
-	if (pcu_connected(bts))
+	if (pcu_connected(bts)) {
+		/* In cases where the CCU is connected via an E1 line, we transmit the connection parameters for the
+		 * PDCH before we announce the other BTS related parameters. At the moment Ericsson RBS is the only
+		 * E1 BTS we support. */
+		if (is_ericsson_bts(bts))
+			pcu_tx_e1_ccu_ind(bts);
+
 		pcu_tx_info_ind(bts);
+	}
 }
 
 static int pcu_tx_data_ind(struct gsm_bts_trx_ts *ts, uint8_t sapi, uint32_t fn,
