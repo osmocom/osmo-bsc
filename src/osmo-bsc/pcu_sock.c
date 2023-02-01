@@ -298,6 +298,41 @@ __attribute__((weak)) void pcu_info_update(struct gsm_bts *bts)
 		pcu_tx_info_ind(bts);
 }
 
+static int pcu_tx_data_ind(struct gsm_bts_trx_ts *ts, uint8_t sapi, uint32_t fn,
+			   uint16_t arfcn, uint8_t block_nr, uint8_t *data, uint8_t len,
+			   int8_t rssi, uint16_t ber10k, int16_t bto, int16_t lqual)
+{
+	struct msgb *msg;
+	struct gsm_pcu_if *pcu_prim;
+	struct gsm_pcu_if_data *data_ind;
+	struct gsm_bts *bts = ts->trx->bts;
+
+	LOGP(DPCU, LOGL_DEBUG, "Sending data indication: sapi=%s arfcn=%d block=%d data=%s\n",
+	     sapi_string[sapi], arfcn, block_nr, osmo_hexdump(data, len));
+
+	msg = pcu_msgb_alloc(PCU_IF_MSG_DATA_IND, bts->nr);
+	if (!msg)
+		return -ENOMEM;
+	pcu_prim = (struct gsm_pcu_if *) msg->data;
+	data_ind = &pcu_prim->u.data_ind;
+
+	data_ind->sapi = sapi;
+	data_ind->rssi = rssi;
+	data_ind->fn = fn;
+	data_ind->arfcn = arfcn;
+	data_ind->trx_nr = ts->trx->nr;
+	data_ind->ts_nr = ts->nr;
+	data_ind->block_nr = block_nr;
+	data_ind->ber10k = ber10k;
+	data_ind->ta_offs_qbits = bto;
+	data_ind->lqual_cb = lqual;
+	if (len)
+		memcpy(data_ind->data, data, len);
+	data_ind->len = len;
+
+	return pcu_sock_send(bts, msg);
+}
+
 /* Forward rach indication to PCU */
 int pcu_tx_rach_ind(struct gsm_bts *bts, int16_t qta, uint16_t ra, uint32_t fn,
 	uint8_t is_11bit, enum ph_burst_type burst_type)
@@ -507,6 +542,89 @@ static int pcu_rx_data_req(struct gsm_bts *bts, uint8_t msg_type,
 	return rc;
 }
 
+static int pcu_tx_si(const struct gsm_bts *bts, enum osmo_sysinfo_type si_type, bool enable)
+{
+	/* the SI is per-BTS so it doesn't matter which TRX we use */
+	struct gsm_bts_trx *trx = bts->c0;
+
+	uint8_t si_buf[GSM_MACBLOCK_LEN];
+	uint8_t len;
+	int rc;
+
+	if (enable) {
+		memcpy(si_buf, GSM_BTS_SI(bts, si_type), GSM_MACBLOCK_LEN);
+		len = GSM_MACBLOCK_LEN;
+		LOGP(DPCU, LOGL_DEBUG, "Updating SI%s to PCU: %s\n",
+		     get_value_string(osmo_sitype_strs, si_type),
+		     osmo_hexdump_nospc(si_buf, GSM_MACBLOCK_LEN));
+	} else {
+		si_buf[0] = si_type;
+		len = 1;
+
+		/* Note: SI13 is the only system information type that is revked
+		 * by just sending a completely empty message. This is due to
+		 * historical reasons */
+		if (si_type != SYSINFO_TYPE_13)
+			len = 0;
+
+		LOGP(DPCU, LOGL_DEBUG, "Revoking SI%s from PCU\n",
+		     get_value_string(osmo_sitype_strs, si_buf[0]));
+	}
+
+	/* The low-level data like FN, ARFCN etc will be ignored but we have to
+	 * set lqual high enough to bypass the check at lower levels */
+	rc = pcu_tx_data_ind(&trx->ts[0], PCU_IF_SAPI_BCCH, 0, 0, 0, si_buf, len,
+			     0, 0, 0, INT16_MAX);
+	if (rc < 0)
+		LOGP(DPCU, LOGL_NOTICE, "Failed to send SI%s to PCU: rc=%d\n",
+		     get_value_string(osmo_sitype_strs, si_type), rc);
+
+	return rc;
+}
+
+static int pcu_tx_si_all(struct gsm_bts *bts)
+{
+	const enum osmo_sysinfo_type si_types[] = { SYSINFO_TYPE_1, SYSINFO_TYPE_2, SYSINFO_TYPE_3, SYSINFO_TYPE_13 };
+	unsigned int i;
+	int rc = 0;
+
+	for (i = 0; i < ARRAY_SIZE(si_types); i++) {
+		if (GSM_BTS_HAS_SI(bts, si_types[i])) {
+			rc = pcu_tx_si(bts, si_types[i], true);
+			if (rc < 0)
+				return rc;
+		} else {
+			LOGP(DPCU, LOGL_INFO,
+			     "SI%s is not available on PCU connection\n",
+			     get_value_string(osmo_sitype_strs, si_types[i]));
+		}
+	}
+
+	return 0;
+}
+
+static int pcu_rx_txt_ind(struct gsm_bts *bts,
+			  const struct gsm_pcu_if_txt_ind *txt)
+{
+	int rc;
+
+	switch (txt->type) {
+	case PCU_VERSION:
+		LOGP(DPCU, LOGL_INFO, "OsmoPCU version %s connected\n",
+		     txt->text);
+		rc = pcu_tx_si_all(bts);
+		if (rc < 0)
+			return -EINVAL;
+		break;
+	default:
+		LOGP(DPCU, LOGL_ERROR, "Unknown TXT_IND type %u received\n",
+		     txt->type);
+		return -EINVAL;
+	}
+
+	return 0;
+}
+
 #define CHECK_IF_MSG_SIZE(prim_len, prim_msg) \
 	do { \
 		size_t _len = PCUIF_HDR_SIZE + sizeof(prim_msg); \
@@ -530,6 +648,10 @@ static int pcu_rx(struct gsm_network *net, uint8_t msg_type,
 	case PCU_IF_MSG_PAG_REQ:
 		CHECK_IF_MSG_SIZE(prim_len, pcu_prim->u.data_req);
 		rc = pcu_rx_data_req(bts, msg_type, &pcu_prim->u.data_req);
+		break;
+	case PCU_IF_MSG_TXT_IND:
+		CHECK_IF_MSG_SIZE(prim_len, pcu_prim->u.txt_ind);
+		rc = pcu_rx_txt_ind(bts, &pcu_prim->u.txt_ind);
 		break;
 	default:
 		LOGP(DPCU, LOGL_ERROR, "Received unknown PCU msg type %d\n",
