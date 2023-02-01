@@ -205,6 +205,7 @@ static int pcu_tx_info_ind(struct gsm_bts *bts)
 	memcpy(info_ind->cell_timer, bts->gprs.cell.timer, 11);
 
 	/* cell attributes */
+	info_ind->bsic = bts->bsic;
 	info_ind->cell_id = bts->cell_identity;
 	info_ind->repeat_time = rlcc->paging.repeat_time;
 	info_ind->repeat_count = rlcc->paging.repeat_count;
