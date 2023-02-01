@@ -172,10 +172,6 @@ static int pcu_tx_info_ind(struct gsm_bts *bts)
 	struct gsm_bts_trx *trx;
 	int i;
 
-	OSMO_ASSERT(bts);
-	OSMO_ASSERT(bts->network);
-	OSMO_ASSERT(bts->site_mgr);
-
 	bts_sm = bts->site_mgr;
 
 	LOGP(DPCU, LOGL_INFO, "Sending info for BTS %d\n", bts->nr);
