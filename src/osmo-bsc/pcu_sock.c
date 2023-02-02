@@ -55,7 +55,7 @@ static const char *sapi_string[] = {
 	[PCU_IF_SAPI_PDTCH] =	"PDTCH",
 	[PCU_IF_SAPI_PRACH] =	"PRACH",
 	[PCU_IF_SAPI_PTCCH] = 	"PTCCH",
-	[PCU_IF_SAPI_AGCH_DT] = 	"AGCH_DT",
+	[PCU_IF_SAPI_PCH_DT] =	"PCH_DT",
 };
 
 /* Check if BTS has a PCU connection */
@@ -443,7 +443,7 @@ static int pcu_rx_data_req(struct gsm_bts *bts, uint8_t msg_type,
 			rc = -EIO;
 		}
 		break;
-	case PCU_IF_SAPI_AGCH_DT:
+	case PCU_IF_SAPI_PCH_DT:
 		/* DT = direct tlli. A tlli is prefixed */
 
 		if (data_req->len < 5) {
