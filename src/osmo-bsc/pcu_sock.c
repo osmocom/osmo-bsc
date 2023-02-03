@@ -54,7 +54,7 @@ static const char *sapi_string[] = {
 	[PCU_IF_SAPI_BCCH] =	"BCCH",
 	[PCU_IF_SAPI_PDTCH] =	"PDTCH",
 	[PCU_IF_SAPI_PRACH] =	"PRACH",
-	[PCU_IF_SAPI_PTCCH] = 	"PTCCH",
+	[PCU_IF_SAPI_PTCCH] =	"PTCCH",
 	[PCU_IF_SAPI_PCH_DT] =	"PCH_DT",
 };
 
