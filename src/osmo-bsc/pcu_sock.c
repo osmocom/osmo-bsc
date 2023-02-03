@@ -427,7 +427,6 @@ static int pcu_rx_data_req(struct gsm_bts *bts, uint8_t msg_type,
 	struct gsm_pcu_if_data *data_req)
 {
 	struct msgb *msg;
-	char imsi_digit_buf[4];
 	uint32_t tlli = -1;
 	uint8_t pag_grp;
 	int rc = 0;
@@ -439,15 +438,8 @@ static int pcu_rx_data_req(struct gsm_bts *bts, uint8_t msg_type,
 
 	switch (data_req->sapi) {
 	case PCU_IF_SAPI_PCH:
-		/* the first three bytes are the last three digits of
-		 * the IMSI, which we need to compute the paging group */
-		imsi_digit_buf[0] = data_req->data[0];
-		imsi_digit_buf[1] = data_req->data[1];
-		imsi_digit_buf[2] = data_req->data[2];
-		imsi_digit_buf[3] = '\0';
-		LOGP(DPCU, LOGL_DEBUG, "SAPI PCH imsi %s\n", imsi_digit_buf);
-		pag_grp = gsm0502_calc_paging_group(&bts->si_common.chan_desc,
-						str_to_imsi(imsi_digit_buf));
+		/* Extract 3 byte paging group */
+		pag_grp = extract_paging_group(bts, data_req->data);
 		pcu_rx_rr_paging(bts, pag_grp, data_req->data+3);
 		break;
 	case PCU_IF_SAPI_AGCH:
