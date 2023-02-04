@@ -519,6 +519,11 @@ static int bsc_vty_go_parent(struct vty *vty)
 		vty->node = CONFIG_NODE;
 		vty->index = NULL;
 		break;
+	case MGW_NODE:
+		vty->node = GSMNET_NODE;
+		vty->index = bsc_gsmnet;
+		vty->index_sub = NULL;
+		break;
 	case BTS_NODE:
 		vty->node = GSMNET_NODE;
 		{
