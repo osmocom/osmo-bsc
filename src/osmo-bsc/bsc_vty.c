@@ -2289,7 +2289,7 @@ DEFUN_ATTR(cfg_net_timezone,
 	   "Timezone offset (45 minutes)\n",
 	   CMD_ATTR_IMMEDIATE)
 {
-	struct gsm_network *net = vty->index;
+	struct gsm_network *net = gsmnet_from_vty(vty);
 	int tzhr = atoi(argv[0]);
 	int tzmn = atoi(argv[1]);
 
@@ -2313,7 +2313,7 @@ DEFUN_ATTR(cfg_net_timezone_dst,
 	   "DST offset (hours)\n",
 	   CMD_ATTR_IMMEDIATE)
 {
-	struct gsm_network *net = vty->index;
+	struct gsm_network *net = gsmnet_from_vty(vty);
 	int tzhr = atoi(argv[0]);
 	int tzmn = atoi(argv[1]);
 	int tzdst = atoi(argv[2]);
@@ -2333,7 +2333,7 @@ DEFUN_ATTR(cfg_net_no_timezone,
 	   "Disable network timezone override, use system tz\n",
 	   CMD_ATTR_IMMEDIATE)
 {
-	struct gsm_network *net = vty->index;
+	struct gsm_network *net = gsmnet_from_vty(vty);
 
 	net->tz.override = 0;
 
@@ -2349,7 +2349,7 @@ DEFUN_USRATTR(cfg_net_per_loc_upd,
 	      "Periodic Location Updating Interval\n"
 	      "Periodic Location Updating Interval in Minutes\n")
 {
-	struct gsm_network *net = vty->index;
+	struct gsm_network *net = gsmnet_from_vty(vty);
 	struct osmo_tdef *d = osmo_tdef_get_entry(net->T_defs, 3212);
 
 	OSMO_ASSERT(d);
@@ -2367,7 +2367,7 @@ DEFUN_USRATTR(cfg_net_no_per_loc_upd,
 	      "Periodic Location Updating Interval\n"
 	      "Periodic Location Updating Interval\n")
 {
-	struct gsm_network *net = vty->index;
+	struct gsm_network *net = gsmnet_from_vty(vty);
 	struct osmo_tdef *d = osmo_tdef_get_entry(net->T_defs, 3212);
 
 	OSMO_ASSERT(d);
