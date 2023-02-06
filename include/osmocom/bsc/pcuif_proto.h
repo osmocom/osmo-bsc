@@ -187,6 +187,17 @@ struct gsm_pcu_if_info_ind {
 	} remote_ip[PCU_IF_NUM_NSVC];
 } __attribute__ ((packed));
 
+/* E1 CCU connection parameters */
+struct gsm_pcu_if_e1_ccu_ind {
+	/* GSM/GPRS air interface */
+	uint8_t trx_nr;
+	uint8_t ts_nr;
+	/* E1 line interface */
+	uint8_t e1_nr;
+	uint8_t e1_ts;
+	uint8_t e1_ts_ss;
+} __attribute__ ((packed));
+
 struct gsm_pcu_if_act_req {
 	uint8_t		activate;
 	uint8_t		trx_nr;
@@ -256,17 +267,6 @@ struct gsm_pcu_if_neigh_addr_cnf {
 		uint8_t		rac;
 		uint16_t	cell_identity;
 	} cgi_ps;
-} __attribute__ ((packed));
-
-/* E1 CCU connection parameters */
-struct gsm_pcu_if_e1_ccu_ind {
-	/* GSM/GPRS air interface */
-	uint8_t trx_nr;
-	uint8_t ts_nr;
-	/* E1 line interface */
-	uint8_t e1_nr;
-	uint8_t e1_ts;
-	uint8_t e1_ts_ss;
 } __attribute__ ((packed));
 
 struct gsm_pcu_if {
