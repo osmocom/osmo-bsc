@@ -200,6 +200,7 @@ static int pcu_tx_info_ind(struct gsm_bts *bts)
 	info_ind->version = PCU_IF_VERSION;
 	info_ind->flags |= PCU_IF_FLAG_ACTIVE;
 	info_ind->flags |= PCU_IF_FLAG_SYSMO;
+	info_ind->flags |= PCU_IF_FLAG_DT;
 
 	/* RAI */
 	info_ind->mcc = bts->network->plmn.mcc;
