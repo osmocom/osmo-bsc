@@ -1,3 +1,175 @@
+osmo-bsc (1.10.0) unstable; urgency=medium
+
+  [ Vadim Yanitskiy ]
+  * fix uninitialized err pointer passed to osmo_bssap_le_dec()
+  * lchan_select: prepare a list of timeslots once, iterate over it
+  * lchan_select: allow different alloc order for assignment and handover
+  * lchan_select: implement dynamic selection mode for assignment
+  * lchan_select: fix 'chan_alloc_reverse' may be used uninitialized
+  * osmo-bsc/Makefile.am: fix undefined reference to symbol pow()
+  * .gitignore: remove non-existing files
+  * call osmo_timer_del() unconditionally, without osmo_timer_pending()
+  * configure.ac: do not require unused dlopen
+  * power_control: add CTRL command for sending default params
+  * vty: fix description of 'nokia_site bts-reset-timer'
+  * bts_vty: fix wrong description used for C/I threshold values
+  * fix bsc_vty_go_parent(): add missing case for MGW_NODE
+  * bsc_vty: use gsmnet_from_vty() everywhere, not vty->index
+
+  [ Pau Espin Pedrol ]
+  * cbsp: Change log level ERROR->INFO on CBSP tx and link down
+  * smscb: Tx Failure and Restart Ind using CGI as cellID
+  * smscb: Tx Failure and Restart Ind for each Bcast Msg Type
+  * tests/ctrl: Avoid creating logfile
+  * doc: Fix typo in several diagrams
+  * Use libosmocore available API to get value_list
+  * split lchan specific defines and code to its own file
+  * lchan: Move init logic to a specific function
+  * cosmetic: Clean initiating whitespace
+  * Add Osmux support on the Abis-side data plane
+  * oml: Integrate signal S_NM_IPACC_SET_ATTR_ACK inside S_NM_IPACC_ACK
+  * vty: Allow setting LAC as hexadecimal value
+  * doc: Document use of Osmux in IPA Abis against OsmoBTS
+  * oml: Delay Tx of OPSTART(BBTRANSC) after rx of RSL CONNECT ACK
+  * ipaccess-config: Initiate missing IPA osmo_link
+  * ipaccess-config: Initialize RSL ts driver fd to proper value
+  * ipaccess-config: use available API to set e1inp_line_ops
+  * ipaccess-config: Exit program with error if OML link is dropped
+  * mgcp: Set up Osmux only when AMR codec is selected
+  * ipacces-config: override gsm_bts_check_cfg() to void checking unset bts configuration
+  * ipaccess: Remove unused stub
+  * ipaccess-config: Fix writing pcap output to fd=0 (stdin)
+  * Drop Osmux call setup if BTS didn't provide a remote CID
+  * cosmetic: vty: Fix formatting of if-else brackets
+  * vty: Print Osmux CID on lchans using Osmux
+  * cosmetic: Fix typo in comment
+  * Rearrange ctrl interface code
+  * ctrl: Introduce hopping-arfcn-{add,del} commands
+  * vty: 'hopping arfcn add': succeed if adding arfcn already in set
+  * cosmetic: Fix whitespace indentation
+  * vty: Fix indentation in osmux cmd during write-config output
+  * Introduce support for MGW-pinning per BTS
+  * vty: Move all MSC_NODE commands to be together
+  * gscon_ensure_mgw_endpoint(): Set mgw_enpoint ptr to NULL not needed
+  * cosmetic: Fix indentation whitespace
+  * cosmetic: Fix typo in comment
+  * cosmetic: Fix indentation whitespace
+  * vty: Make use of new mgcp_client_pool_config_write() API
+  * Update examples to use mgw pooling VTY commands
+  * Use new mgcp-client VTY commands under mgw node
+  * doc: Generalize mgwpool.adoc and move BSC-specific sections to runnning.adoc
+  * doc: Use mgwpool.adoc from osmo-gsm-manuals.git
+  * doc: running.adoc: Fix typo in MGW pinning section
+  * sccplite: Use mgwpool config to set up socket forwarding IPA-MGCP from MSC to MGW
+  * vty: Fix and deprecate typo in cmd 'amr-payload bandwith-efficient'
+  * paging: Avoid repeated paging req lookup on BTS receiving paging resp
+  * paging: Get rid of unneeded count returned
+  * paging: Store list of gsm_paging_request in bsc_subscr
+  * paging: Use bsub->active_paging_requests to allow early loop termination adding paging_req
+  * lcs: Fix passing NULL bsc_subscr to paging_request_cancel()
+  * paging: Use bsub->active_paging_requests to optimize cancelling based on reason
+  * paging: Rename stat t3113 -> paging:t3113
+  * paging: Introduce BTS stat paging:request_queue_length
+  * paging: Introduce BTS stat paging:available_slots
+  * paging: constify bts param in some functions
+  * subscriber: constify bsub func param
+  * subscriber: Add comment documenting struct type hold in list
+  * paging: Fix regression stopping active requests on unanswered BTS
+  * paging: paging: Drop unneeded extra param in paging_remove_request()
+  * vty: Fix lost 'no timer-dynamic T3113' config when writing current config
+  * paging: Introduce VTY configurable X3113 (Maximum Paging Request Transmit Delay Threshold)
+  * paging: Fix wrong count of reqs_before if queue only contains retransmissions
+  * paging: Split paging queue into 2 queues: initial and retrans
+  * paging: Replace reqs waiting for retransmission with new incoming inital req if queue is full
+  * paging: Optimize retrieving number of request per paging group
+  * vty: Write amount of timeouts elapsed for a paging request
+  * bsc: Fix crash if PagingResponse with invalid MobileIdentity is received
+  * bsc_subscriber: Allow creating subscribers identified by IMEI
+  * bsc_compl_l3(): Update documentation regarding no bsc_subscr in conn
+
+  [ Philipp Maier ]
+  * bsc_subscr_conn_fsm: fix use after free
+  * abis_om2000: fix missing signal
+  * signal.h: make om2k mo const
+  * abis_om2000: move switch-case to function
+  * abis_om2000: constify mo in mo2obj
+  * abis_om2000: update_op_state() does not send signal
+  * abis_om2000: om2k_trx_s_done_onenter() does not send signal
+  * abis_om2000: duplicate nmstate of bb_trxc mo to trx mo
+  * bts_trx_vty: prefix bb_trxc mo with [Virtual] for ericsson BTS
+  * pcu_sock: fix memleak
+  * pcu_sock: check size of primitive
+  * pcu_sock: add some guard space to message buffer
+  * abis_rsl: delete CHAN RQD from queue when rach ind was sent
+  * abis_rsl: be more clear about vendor specif RSL extension
+  * pcuif_proto: cosmetic: add constant PCU_IF_NUM_NSVC and replace magic numbers
+  * pcuif_proto: use define constant to specify nax number of trx
+  * abis_rsl: add spec ref for frame number calculation
+  * abis_rsl: show full request reference in log
+  * abis_rsl: when doing packet access, log t1,t3,t2 and fn
+  * pcu_sock: drop unused function prototype
+  * pcu_sock: drop unused variable pcu_direct
+  * abis_rsl: fix frame number calculation
+  * abis_rsl: fix sourcecode formatting
+  * pcu_sock: guard against too many TRX
+  * pcu_sock: move code that fills in trx info to helper function
+  * pcu_sock: check trx mo state
+  * pcu_sock: fix sourcecode formatting
+  * pcu_sock: clean up logging in info_ind_fill_trx
+  * abis_om2000: send TS_EV_OML_READY when TRX is fully done
+  * pcu_sock: rework check logic for ts
+  * timeslot_fsm: Warn in case Ercisson RBS uses static PDCH
+  * pcuif_proto: add indication to communicate E1 parameters
+  * pcu_sock: fix endianess when populating gsm_pcu_if_info_ind
+  * pcu_sock: Also fill in BSIC in gsm_pcu_if_info_ind
+  * pcu_sock: remove unecessary OSMO_ASSERT()s
+  * pcu_sock: rework log output
+  * timeslot_fsm: remove duplicate TS_ST_BORKEN from out_state_mask
+  * pcuif_proto: move gsm_pcu_if_e1_ccu_ind into right place
+
+  [ Harald Welte ]
+  * bts_nokia_site: Implement channel config for CBCH
+  * Support building with -Werror=strict-prototypes / -Werror=old-style-definition
+  * update very outdated vty copyright statement
+
+  [ Max ]
+  * BSSMAP: add assert to reset resending
+  * Set working directory in systemd service file
+  * ctrl: take both address and port from vty config
+  * SI: use defined constant instead of magic number
+  * SI: set type 10 length properly
+  * HO: use defined constant instead of magic number
+
+  [ Neels Hofmeyr ]
+  * gscon_pre_term: properly clear mgw ep
+  * fix Speech Codec cfg in BSSMAP Assignment Complete
+  * doc: add mscpool-attach.dot
+
+  [ Oliver Smith ]
+  * tests: add test_meas_rep_multi_band.ho_vty
+  * gsm48_parse_meas_rep: fix parsing multi-band list
+  * Cosmetic: fix desc of neighbor_ident_add_neighbor
+  * Cosmetic: lchan_fsm: drop obsolete comment
+  * lchan_fsm: fix lchan_fsm_on_error size
+  * Cosmetic: fix spaces around timers
+
+  [ Alexander Couzens ]
+  * bts_ipaccess_nanobts: remove unused assignment
+  * gsm_data.h: replace white spaces with tabs
+  * Add BTS setup ramping to prevent BSC overloading
+  * nm_rcarrier_fsm: fix indention of ENABLED state
+  * bts: ipa/osmo-bts/sysmobts: MO: add support for the second NSVC
+
+  [ arehbein ]
+  * osmo-bsc: Transition to use of 'telnet_init_default'
+  * vty: Add support for Ny1 configuration
+  * vty: Add check against sensible default value for Ny1
+  * osmo-bsc: Log error regarding BTS number explicitly
+  * osmo-bsc: Fix 'apply-config-file' CTRL command
+  * bsc_ctrl_commands: Add GET for bts neighbor-list (local bts numbers)
+
+ -- Pau Espin Pedrol <pespin@sysmocom.de>  Tue, 07 Feb 2023 17:21:10 +0100
+
 osmo-bsc (1.9.0) unstable; urgency=medium
 
   [ Philipp Maier ]
