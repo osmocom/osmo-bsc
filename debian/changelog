@@ -1,3 +1,10 @@
+osmo-bsc (1.9.1) unstable; urgency=medium
+
+  [ Vadim Yanitskiy ]
+  * fix bsc_vty_go_parent(): add missing case for MGW_NODE
+
+ -- Oliver Smith <osmith@sysmocom.de>  Wed, 08 Feb 2023 11:08:46 +0100
+
 osmo-bsc (1.9.0) unstable; urgency=medium
 
   [ Philipp Maier ]
