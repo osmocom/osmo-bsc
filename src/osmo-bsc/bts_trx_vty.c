@@ -69,7 +69,7 @@ void parse_e1_link(struct gsm_e1_subslot *e1_link, const char *line,
 	e1_link->e1_nr = atoi(line);
 	e1_link->e1_ts = atoi(ts);
 	if (!strcmp(ss, "full"))
-		e1_link->e1_ts_ss = 255;
+		e1_link->e1_ts_ss = E1_SUBSLOT_FULL;
 	else
 		e1_link->e1_ts_ss = atoi(ss);
 }
@@ -773,7 +773,7 @@ void config_write_e1_link(struct vty *vty, struct gsm_e1_subslot *e1_link,
 	if (!e1_link->e1_ts)
 		return;
 
-	if (e1_link->e1_ts_ss == 255)
+	if (e1_link->e1_ts_ss == E1_SUBSLOT_FULL)
 		vty_out(vty, "%se1 line %u timeslot %u sub-slot full%s",
 			prefix, e1_link->e1_nr, e1_link->e1_ts, VTY_NEWLINE);
 	else
