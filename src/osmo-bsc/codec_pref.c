@@ -174,37 +174,43 @@ static bool test_codec_pref(const struct gsm0808_speech_codec **sc_match,
 	return false;
 }
 
+static bool test_codec_support_bts_rate(const struct gsm_bts *bts, const bool full_rate)
+{
+	unsigned int i;
+	struct gsm_bts_trx *trx;
+	enum gsm_phys_chan_config pchan;
+
+	llist_for_each_entry(trx, &bts->trx_list, list) {
+		for (i = 0; i < TRX_NR_TS; i++) {
+			pchan = trx->ts[i].pchan_from_config;
+			if (pchan == GSM_PCHAN_OSMO_DYN)
+				return true;
+			else if (full_rate && pchan == GSM_PCHAN_TCH_F)
+				return true;
+			else if (full_rate && pchan == GSM_PCHAN_TCH_F_PDCH)
+				return true;
+			else if (!full_rate && pchan == GSM_PCHAN_TCH_H)
+				return true;
+		}
+	}
+
+	return false;
+}
+
 /* Check if the given permitted speech value is supported by the BTS
  * (vty option bts->codec-support). */
 static bool test_codec_support_bts(const struct gsm_bts *bts, uint8_t perm_spch)
 {
-	struct gsm_bts_trx *trx;
 	const struct bts_codec_conf *bts_codec = &bts->codec;
-	unsigned int i;
 	bool full_rate;
 	int rc;
-	enum gsm_phys_chan_config pchan;
-	bool rate_match = false;
 
 	/* Check if the BTS provides a physical channel that matches the
 	 * bandwidth of the desired codec. */
 	rc = full_rate_from_perm_spch(&full_rate, perm_spch);
 	if (rc < 0)
 		return false;
-	llist_for_each_entry(trx, &bts->trx_list, list) {
-		for (i = 0; i < TRX_NR_TS; i++) {
-			pchan = trx->ts[i].pchan_from_config;
-			if (pchan == GSM_PCHAN_OSMO_DYN)
-				rate_match = true;
-			else if (full_rate && pchan == GSM_PCHAN_TCH_F)
-				rate_match = true;
-			else if (full_rate && pchan == GSM_PCHAN_TCH_F_PDCH)
-				rate_match = true;
-			else if (!full_rate && pchan == GSM_PCHAN_TCH_H)
-				rate_match = true;
-		}
-	}
-	if (!rate_match)
+	if (!test_codec_support_bts_rate(bts, full_rate))
 		return false;
 
 	/* Check codec support */
