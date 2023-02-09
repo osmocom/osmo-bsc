@@ -376,7 +376,7 @@ int match_codec_pref(struct channel_mode_and_rate *ch_mode_rate,
 		break;
 	}
 
-	/* Exit without result, in case no match can be deteched */
+	/* Exit without result, in case no match can be detected */
 	if (!match) {
 		ch_mode_rate->chan_mode = GSM48_CMODE_SIGN;
 		ch_mode_rate->chan_rate = CH_RATE_SDCCH;

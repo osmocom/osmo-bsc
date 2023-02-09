@@ -389,7 +389,7 @@ static int check_requires_voice(bool *requires_voice, enum gsm48_chan_mode chan_
 	return 0;
 }
 
-/* Check if the incoming assignment requests requires a voice stream or not,
+/* Check if the incoming assignment request requires a voice stream or not,
  * we will look at the preferred and the alternate channel mode and also make
  * sure that both are consistent. */
 static int check_requires_voice_stream(struct gsm_subscriber_connection *conn)
