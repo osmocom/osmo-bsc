@@ -307,15 +307,6 @@ static void lchan_rtp_fsm_wait_ipacc_crcx_ack_onenter(struct osmo_fsm_inst *fi, 
 		return;
 	}
 
-	val = ipacc_speech_mode(lchan->activate.ch_mode_rate.chan_mode, lchan->type);
-	if (val < 0) {
-		lchan_rtp_fail("Cannot determine Abis/IP speech mode for tch_mode=%s type=%s",
-			   get_value_string(gsm48_chan_mode_names, lchan->activate.ch_mode_rate.chan_mode),
-			   gsm_chan_t_name(lchan->type));
-		return;
-	}
-	lchan->abis_ip.speech_mode = val;
-
 	val = ipacc_payload_type(lchan->activate.ch_mode_rate.chan_mode, lchan->type);
 	if (val < 0) {
 		lchan_rtp_fail("Cannot determine Abis/IP payload type for tch_mode=%s type=%s",
@@ -324,6 +315,17 @@ static void lchan_rtp_fsm_wait_ipacc_crcx_ack_onenter(struct osmo_fsm_inst *fi, 
 		return;
 	}
 	lchan->abis_ip.rtp_payload = val;
+
+	if (lchan->abis_ip.rtp_payload != RTP_PT_CSDATA) {
+		val = ipacc_speech_mode(lchan->activate.ch_mode_rate.chan_mode, lchan->type);
+		if (val < 0) {
+			lchan_rtp_fail("Cannot determine Abis/IP speech mode for tch_mode=%s type=%s",
+				   get_value_string(gsm48_chan_mode_names, lchan->activate.ch_mode_rate.chan_mode),
+				   gsm_chan_t_name(lchan->type));
+			return;
+		}
+		lchan->abis_ip.speech_mode = val;
+	}
 
 	/* recv-only */
 	ipacc_speech_mode_set_direction(&lchan->abis_ip.speech_mode, false);
