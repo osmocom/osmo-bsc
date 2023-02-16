@@ -11,3 +11,4 @@
 		osmo-bsc CTRL	CTRL commands like 'bts.N.channel-load' will now respond with new dynamic timeslot names: 'DYNAMIC/OSMOCOM' instead of 'TCH/F_TCH/H_SDCCH8_PDCH' and 'DYNAMIC/IPACCESS' instead of 'TCH/F_PDCH'
 		osmo-bsc CTRL,VTY	osmo_fsm instance IDs now use new dynamic timeslot names 'DYNAMIC_OSMOCOM' and 'DYNAMIC_IPACCESS'
 libosmogsm	>1.8.0		circuit switched data stuff (gsm0808_enc/dec_channel_type etc.)
+libosmo-abis	>1.4.0		osmo_ortp.h: add RTP_PT_CSDATA
