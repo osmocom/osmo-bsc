@@ -2627,6 +2627,11 @@ void ipacc_speech_mode_set_direction(uint8_t *speech_mode, bool send)
 int ipacc_payload_type(enum gsm48_chan_mode tch_mode, enum gsm_chan_t type)
 {
 	switch (gsm48_chan_mode_to_non_vamos(tch_mode)) {
+	case GSM48_CMODE_DATA_14k5:
+	case GSM48_CMODE_DATA_12k0:
+	case GSM48_CMODE_DATA_6k0:
+	case GSM48_CMODE_DATA_3k6:
+		return RTP_PT_CSDATA;
 	case GSM48_CMODE_SPEECH_V1:
 		switch (type) {
 		case GSM_LCHAN_TCH_F:
