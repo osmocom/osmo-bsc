@@ -370,62 +370,53 @@ static __attribute__((constructor)) void assignment_fsm_init(void)
 	OSMO_ASSERT(osmo_fsm_register(&assignment_fsm) == 0);
 }
 
-static int check_requires_voice(bool *requires_voice, enum gsm48_chan_mode chan_mode)
+static int chan_mode_to_ch_indctr(enum gsm48_chan_mode chan_mode)
 {
-	*requires_voice = false;
-
 	switch (gsm48_chan_mode_to_non_vamos(chan_mode)) {
+	case GSM48_CMODE_DATA_14k5:
+	case GSM48_CMODE_DATA_12k0:
+	case GSM48_CMODE_DATA_6k0:
+	case GSM48_CMODE_DATA_3k6:
+		return GSM0808_CHAN_DATA;
 	case GSM48_CMODE_SPEECH_V1:
 	case GSM48_CMODE_SPEECH_EFR:
 	case GSM48_CMODE_SPEECH_AMR:
-		*requires_voice = true;
-		break;
+		return GSM0808_CHAN_SPEECH;
 	case GSM48_CMODE_SIGN:
-		*requires_voice = false;
-		break;
+		return GSM0808_CHAN_SIGN;
 	default:
 		return -EINVAL;
 	}
-
-	return 0;
 }
 
-/* Check if the incoming assignment request requires a voice stream or not,
- * we will look at the preferred and the alternate channel mode and also make
- * sure that both are consistent. */
-static int check_requires_voice_stream(struct gsm_subscriber_connection *conn)
+/* Check if the incoming assignment request has a channel mode that is
+ * inconsistent with ch_indctr, e.g. GSM48_CMODE_DATA_14k5 and
+ * GSM0808_CHAN_SPEECH */
+static int check_chan_mode_rate_against_ch_indctr(struct gsm_subscriber_connection *conn)
 {
-	bool requires_voice_pref = false, requires_voice_alt;
 	struct assignment_request *req = &conn->assignment.req;
 	struct osmo_fsm_inst *fi = conn->fi;
-	int i, rc;
-
-	/* When the assignment request indicates that there is an alternate
-	 * rate available (e.g. "Full or Half rate channel, Half rate
-	 * preferred..."), then both must be either voice or either signalling,
-	 * a mismatch is not permitted */
+	int i;
+	uint8_t ch_indctr;
 
 	for (i = 0; i < req->n_ch_mode_rate; i++) {
-		rc = check_requires_voice(&requires_voice_alt, req->ch_mode_rate_list[i].chan_mode);
-		if (rc < 0) {
+		ch_indctr = chan_mode_to_ch_indctr(req->ch_mode_rate_list[i].chan_mode);
+		if (ch_indctr < 0) {
 			assignment_fail(GSM0808_CAUSE_REQ_CODEC_TYPE_OR_CONFIG_NOT_SUPP,
 					"Channel mode not supported (prev level %d): %s", i,
 					gsm48_chan_mode_name(req->ch_mode_rate_list[i].chan_mode));
 			return -EINVAL;
 		}
 
-		if (i==0)
-			requires_voice_pref = requires_voice_alt;
-		else if (requires_voice_alt != requires_voice_pref) {
+		if (ch_indctr != req->ch_indctr) {
 			assignment_fail(GSM0808_CAUSE_REQ_CODEC_TYPE_OR_CONFIG_NOT_SUPP,
-					"Requested a mix of Signalling and non-Signalling channel modes: %s != %s",
-					gsm48_chan_mode_name(req->ch_mode_rate_list[0].chan_mode),
-					gsm48_chan_mode_name(req->ch_mode_rate_list[i].chan_mode));
+					"Channel mode %s has ch_indctr %d, channel type has ch_indctr %d",
+					gsm48_chan_mode_name(req->ch_mode_rate_list[i].chan_mode),
+					ch_indctr, req->ch_indctr);
 			return -EINVAL;
 		}
 	}
 
-	conn->assignment.requires_voice_stream = requires_voice_pref;
 	return 0;
 }
 
@@ -471,6 +462,8 @@ static int _reassignment_request(enum assign_for assign_for, struct gsm_lchan *l
 			.present = (tsc >= 0),
 			.val = tsc,
 		},
+
+		.ch_indctr = chan_mode_to_ch_indctr(lchan->current_ch_mode_rate.chan_mode),
 	};
 
 	if (to_lchan)
@@ -529,10 +522,9 @@ void assignment_fsm_start(struct gsm_subscriber_connection *conn, struct gsm_bts
 
 	assignment_count(CTR_ASSIGNMENT_ATTEMPTED);
 
-	/* Check if we need a voice stream. If yes, set the appropriate struct
-	 * members in conn */
-	if (check_requires_voice_stream(conn) < 0)
+	if (check_chan_mode_rate_against_ch_indctr(conn) < 0)
 		return;
+	conn->assignment.requires_voice_stream = (req->ch_indctr != GSM0808_CHAN_SIGN);
 
 	if (!req->target_lchan && reuse_existing_lchan(conn)) {
 		/* The already existing lchan is suitable for this mode */
