@@ -1136,6 +1136,8 @@ static int bssmap_handle_assignm_req(struct gsm_subscriber_connection *conn,
 		goto reject;
 	}
 
+	req.ch_indctr = ct.ch_indctr;
+
 	return osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_ASSIGNMENT_START, &req);
 
 reject:

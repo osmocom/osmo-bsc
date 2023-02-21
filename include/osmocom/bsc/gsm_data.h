@@ -163,6 +163,9 @@ struct assignment_request {
 	/* The TSC to use if 'use' is true, otherwise automatically determine the TSC value to use. Valid range is 0 to
 	 * 7, as described in 3GPP TS 45.002. */
 	struct optional_val tsc;
+
+	/* The "speech / data indicator" from 3GPP TS 48.008 § 3.2.2.11 Channel Type (speech/data/signalling). */
+	enum gsm0808_chan_indicator ch_indctr;
 };
 
 /* State of an ongoing Assignment, while the assignment_fsm is still busy. This serves as state separation to keep the
