@@ -977,7 +977,7 @@ static int bssmap_handle_ass_req_tp_codec_list(struct gsm_subscriber_connection 
 	}
 
 	if (aoip && !conn->codec_list.len) {
-		LOGP(DMSC, LOGL_ERROR, "%s: AoIP speech mode Assignment Request:"
+		LOGP(DMSC, LOGL_ERROR, "%s: AoIP Assignment Request:"
 		     " Missing or empty Speech Codec List IE\n", bsc_subscr_name(conn->bsub));
 		*cause = GSM0808_CAUSE_INFORMATION_ELEMENT_OR_FIELD_MISSING;
 		return -1;
