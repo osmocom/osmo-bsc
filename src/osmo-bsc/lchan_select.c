@@ -184,6 +184,10 @@ enum gsm_chan_t chan_mode_to_chan_type(enum gsm48_chan_mode chan_mode, enum chan
 		/* fall through */
 	case GSM48_CMODE_SPEECH_V1:
 	case GSM48_CMODE_SPEECH_AMR:
+	case GSM48_CMODE_DATA_14k5:
+	case GSM48_CMODE_DATA_12k0:
+	case GSM48_CMODE_DATA_6k0:
+	case GSM48_CMODE_DATA_3k6:
 		switch (chan_rate) {
 		case CH_RATE_HALF:
 			return GSM_LCHAN_TCH_H;
