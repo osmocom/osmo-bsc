@@ -862,7 +862,7 @@ static int trigger_vamos_mode_modify(struct vty *vty, struct gsm_lchan *lchan, b
 	struct lchan_modify_info info = {
 		.modify_for = MODIFY_FOR_VTY,
 		.ch_mode_rate = lchan->current_ch_mode_rate,
-		.requires_voice_stream = (lchan->fi_rtp != NULL),
+		.requires_rtp_stream = (lchan->fi_rtp != NULL),
 		.vamos = vamos,
 		.tsc_set = {
 			.present = (tsc_set >= 0),
@@ -1625,7 +1625,7 @@ static int lchan_act_single(struct vty *vty, struct gsm_lchan *lchan, const char
 		}
 
 		info.activ_for = ACTIVATE_FOR_VTY;
-		info.requires_voice_stream = false;
+		info.requires_rtp_stream = false;
 		info.ch_mode_rate.chan_rate = chan_t_to_chan_rate(lchan_t);
 
 		if (activate == 2 || lchan->vamos.is_secondary) {

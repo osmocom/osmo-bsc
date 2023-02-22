@@ -195,7 +195,7 @@ static void send_assignment_complete(struct gsm_subscriber_connection *conn)
 	}
 
 	/* Generate voice related fields */
-	if (conn->assignment.requires_voice_stream) {
+	if (conn->assignment.requires_rtp_stream) {
 		perm_spch = gsm0808_permitted_speech(lchan->type, lchan->current_ch_mode_rate.chan_mode);
 
 		if (gscon_is_aoip(conn)) {
@@ -238,7 +238,7 @@ static void send_assignment_complete(struct gsm_subscriber_connection *conn)
 		return;
 	}
 
-	if (gscon_is_aoip(conn) && conn->assignment.requires_voice_stream &&
+	if (gscon_is_aoip(conn) && conn->assignment.requires_rtp_stream &&
 	    conn->assignment.req.use_osmux)
 		_gsm0808_ass_compl_extend_osmux(resp, osmux_cid);
 
@@ -523,7 +523,7 @@ void assignment_fsm_start(struct gsm_subscriber_connection *conn, struct gsm_bts
 
 	if (check_chan_mode_rate_against_ch_indctr(conn) < 0)
 		return;
-	conn->assignment.requires_voice_stream = (req->ch_indctr != GSM0808_CHAN_SIGN);
+	conn->assignment.requires_rtp_stream = (req->ch_indctr != GSM0808_CHAN_SIGN);
 
 	if (!req->target_lchan && reuse_existing_lchan(conn)) {
 		/* The already existing lchan is suitable for this mode */
@@ -648,7 +648,7 @@ static void assignment_fsm_wait_lchan_active_onenter(struct osmo_fsm_inst *fi, u
 		.for_conn = conn,
 		.ch_mode_rate = conn->assignment.selected_ch_mode_rate,
 		.encr = conn->lchan->encr,
-		.requires_voice_stream = conn->assignment.requires_voice_stream,
+		.requires_rtp_stream = conn->assignment.requires_rtp_stream,
 		.msc_assigned_cic = req->msc_assigned_cic,
 		.re_use_mgw_endpoint_from_lchan = conn->lchan,
 		.ta = conn->lchan->last_ta,
@@ -764,7 +764,7 @@ static void assignment_fsm_wait_lchan_established(struct osmo_fsm_inst *fi, uint
 static void assignment_fsm_post_lchan_established(struct osmo_fsm_inst *fi)
 {
 	struct gsm_subscriber_connection *conn = assignment_fi_conn(fi);
-	if (conn->assignment.requires_voice_stream)
+	if (conn->assignment.requires_rtp_stream)
 		assignment_fsm_state_chg(ASSIGNMENT_ST_WAIT_MGW_ENDPOINT_TO_MSC);
 	else
 		assignment_success(conn);
@@ -774,7 +774,7 @@ static void assignment_fsm_wait_mgw_endpoint_to_msc_onenter(struct osmo_fsm_inst
 {
 	struct gsm_subscriber_connection *conn = assignment_fi_conn(fi);
 
-	OSMO_ASSERT(conn->assignment.requires_voice_stream);
+	OSMO_ASSERT(conn->assignment.requires_rtp_stream);
 
 	LOG_ASSIGNMENT(conn, LOGL_DEBUG,
 		       "Connecting MGW endpoint to the MSC's RTP port: %s:%u\n",
@@ -838,7 +838,7 @@ static void assignment_fsm_wait_lchan_modified_onenter(struct osmo_fsm_inst *fi,
 	struct lchan_modify_info modif_info = {
 		.modify_for = MODIFY_FOR_ASSIGNMENT,
 		.ch_mode_rate = conn->assignment.selected_ch_mode_rate,
-		.requires_voice_stream = conn->assignment.requires_voice_stream,
+		.requires_rtp_stream = conn->assignment.requires_rtp_stream,
 		.msc_assigned_cic = req->msc_assigned_cic,
 		/* keep previous training sequence code. TSC is always present, TSC Set may or may not be an explicit
 		 * value. */

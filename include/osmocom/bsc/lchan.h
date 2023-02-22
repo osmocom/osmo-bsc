@@ -122,7 +122,7 @@ struct lchan_activate_info {
 	struct gsm_subscriber_connection *for_conn;
 	struct channel_mode_and_rate ch_mode_rate;
 	struct gsm_encr encr;
-	bool requires_voice_stream;
+	bool requires_rtp_stream;
 	bool wait_before_switching_rtp; /*< true = requires LCHAN_EV_READY_TO_SWITCH_RTP */
 	uint16_t msc_assigned_cic;
 	/* During intra-BSC handover, we keep the MGW endpoint intact and just re-route to the new lchan. This
@@ -159,7 +159,7 @@ static inline const char *lchan_modify_for_name(enum lchan_modify_for modify_for
 struct lchan_modify_info {
 	enum lchan_modify_for modify_for;
 	struct channel_mode_and_rate ch_mode_rate;
-	bool requires_voice_stream;
+	bool requires_rtp_stream;
 	uint16_t msc_assigned_cic;
 
 	/* The TSC Set to use if 'use' is true, otherwise automatically determine the TSC Set value to use. Valid range

@@ -409,7 +409,7 @@ static void handover_start_intra_bsc(struct gsm_subscriber_connection *conn)
 		.for_conn = conn,
 		.ch_mode_rate = conn->lchan->current_ch_mode_rate,
 		.encr = conn->lchan->encr,
-		.requires_voice_stream = conn->lchan->mgw_endpoint_ci_bts ? true : false,
+		.requires_rtp_stream = conn->lchan->mgw_endpoint_ci_bts ? true : false,
 		.msc_assigned_cic = conn->ho.inter_bsc_in.msc_assigned_cic,
 		.re_use_mgw_endpoint_from_lchan = conn->lchan,
 		.wait_before_switching_rtp = true,
@@ -739,7 +739,7 @@ void handover_start_inter_bsc_in(struct gsm_subscriber_connection *conn,
 		.activ_for = ACTIVATE_FOR_HANDOVER,
 		.for_conn = conn,
 		.ch_mode_rate = ch_mode_rate,
-		.requires_voice_stream = chan_mode_is_tch(ch_mode_rate.chan_mode),
+		.requires_rtp_stream = chan_mode_is_tch(ch_mode_rate.chan_mode),
 		.msc_assigned_cic = req->msc_assigned_cic,
 	};
 
@@ -943,7 +943,7 @@ static void send_handover_performed(struct gsm_subscriber_connection *conn)
 	ho_perf_params.chosen_encr_alg = ALG_A5_NR_TO_BSSAP(lchan->encr.alg_a5_n);
 	ho_perf_params.chosen_encr_alg_present = true;
 
-	if (ho->new_lchan->activate.info.requires_voice_stream) {
+	if (ho->new_lchan->activate.info.requires_rtp_stream) {
 		/* Speech Version (chosen) 3.2.2.51 */
 		ho_perf_params.speech_version_chosen = gsm0808_permitted_speech(lchan->type,
 										lchan->current_ch_mode_rate.chan_mode);
@@ -1129,7 +1129,7 @@ static void ho_fsm_wait_lchan_active(struct osmo_fsm_inst *fi, uint32_t event, v
 		 * So create an MSC side endpoint CI only if a voice lchan is established for an incoming inter-BSC
 		 * handover on AoIP. Otherwise go on to send a Handover Command and wait for the Detect.
 		 */
-		if (ho->new_lchan->activate.info.requires_voice_stream
+		if (ho->new_lchan->activate.info.requires_rtp_stream
 		    && (ho->scope & HO_INTER_BSC_IN)
 		    && gscon_is_aoip(conn))
 			ho_fsm_state_chg(HO_ST_WAIT_MGW_ENDPOINT_TO_MSC);

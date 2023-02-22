@@ -179,7 +179,7 @@ struct assignment_fsm_data {
 	 */
 	struct assignment_request req;
 
-	bool requires_voice_stream;
+	bool requires_rtp_stream;
 	struct channel_mode_and_rate selected_ch_mode_rate;
 
 	struct osmo_fsm_inst *fi;
