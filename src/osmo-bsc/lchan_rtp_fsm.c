@@ -852,6 +852,12 @@ static struct osmo_fsm lchan_rtp_fsm = {
 static enum mgcp_codecs chan_mode_to_mgcp_codec(enum gsm48_chan_mode chan_mode, bool full_rate)
 {
 	switch (gsm48_chan_mode_to_non_vamos(chan_mode)) {
+	case GSM48_CMODE_DATA_14k5:
+	case GSM48_CMODE_DATA_12k0:
+	case GSM48_CMODE_DATA_6k0:
+	case GSM48_CMODE_DATA_3k6:
+		return CODEC_CLEARMODE;
+
 	case GSM48_CMODE_SPEECH_V1:
 		if (full_rate)
 			return CODEC_GSM_8000_1;
