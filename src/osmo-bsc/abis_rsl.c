@@ -460,54 +460,12 @@ static int channel_mode_from_lchan(struct rsl_ie_chan_mode *cm,
 	case GSM48_CMODE_DATA_14k5:
 	case GSM48_CMODE_DATA_12k0:
 	case GSM48_CMODE_DATA_6k0:
-		switch (ch_mode_rate->csd_mode) {
-		case LCHAN_CSD_M_NT:
-			/* non-transparent CSD with RLP */
-			switch (ch_mode_rate->chan_mode) {
-			case GSM48_CMODE_DATA_14k5:
-				cm->chan_rate = RSL_CMOD_SP_NT_14k5;
-				break;
-			case GSM48_CMODE_DATA_12k0:
-				cm->chan_rate = RSL_CMOD_SP_NT_12k0;
-				break;
-			case GSM48_CMODE_DATA_6k0:
-				cm->chan_rate = RSL_CMOD_SP_NT_6k0;
-				break;
-			default:
-				LOGP(DRSL, LOGL_ERROR,
-				     "unsupported lchan->tch_mode %u\n",
-				     ch_mode_rate->chan_mode);
-				return -EINVAL;
-			}
-			break;
-			/* transparent data services below */
-		case LCHAN_CSD_M_T_1200_75:
-			cm->chan_rate = RSL_CMOD_CSD_T_1200_75;
-			break;
-		case LCHAN_CSD_M_T_600:
-			cm->chan_rate = RSL_CMOD_CSD_T_600;
-			break;
-		case LCHAN_CSD_M_T_1200:
-			cm->chan_rate = RSL_CMOD_CSD_T_1200;
-			break;
-		case LCHAN_CSD_M_T_2400:
-			cm->chan_rate = RSL_CMOD_CSD_T_2400;
-			break;
-		case LCHAN_CSD_M_T_9600:
-			cm->chan_rate = RSL_CMOD_CSD_T_9600;
-			break;
-		case LCHAN_CSD_M_T_14400:
-			cm->chan_rate = RSL_CMOD_CSD_T_14400;
-			break;
-		case LCHAN_CSD_M_T_29000:
-			cm->chan_rate = RSL_CMOD_CSD_T_29000;
-			break;
-		case LCHAN_CSD_M_T_32000:
-			cm->chan_rate = RSL_CMOD_CSD_T_32000;
-			break;
-		default:
-			LOGP(DRSL, LOGL_ERROR, "unsupported csd_mode %u\n", ch_mode_rate->csd_mode);
-			return -EINVAL;
+		/* 3GPP TS 48.058 § 9.3.6 Channel Mode octet 6 */
+		if (ch_mode_rate->data_transparent) {
+			cm->chan_rate = ch_mode_rate->data_rate.t;
+		} else {
+			cm->chan_rate = ch_mode_rate->data_rate.nt;
+			cm->chan_rate |= 0x40;
 		}
 		break;
 	default:

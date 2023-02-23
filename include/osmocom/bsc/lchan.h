@@ -8,6 +8,7 @@
 #include <osmocom/gsm/gsm_utils.h>
 #include <osmocom/gsm/protocol/gsm_04_08.h>
 #include <osmocom/gsm/protocol/gsm_08_08.h>
+#include <osmocom/gsm/protocol/gsm_08_58.h>
 #include <osmocom/gsm/gsm23003.h>
 
 #include <osmocom/bsc/meas_rep.h>
@@ -44,24 +45,16 @@ enum channel_rate {
 
 enum channel_rate chan_t_to_chan_rate(enum gsm_chan_t chan_t);
 
-enum lchan_csd_mode {
-	LCHAN_CSD_M_NT,
-	LCHAN_CSD_M_T_1200_75,
-	LCHAN_CSD_M_T_600,
-	LCHAN_CSD_M_T_1200,
-	LCHAN_CSD_M_T_2400,
-	LCHAN_CSD_M_T_9600,
-	LCHAN_CSD_M_T_14400,
-	LCHAN_CSD_M_T_29000,
-	LCHAN_CSD_M_T_32000,
-};
-
 struct channel_mode_and_rate {
 	enum gsm48_chan_mode chan_mode;
 	enum channel_rate chan_rate;
 	uint16_t s15_s0;
 	/* only used for GSM48_CMODE_DATA_* */
-	enum lchan_csd_mode csd_mode;
+	bool data_transparent;
+	union {
+		enum rsl_cmod_csd_t t;
+		enum rsl_cmod_csd_nt nt;
+	} data_rate;
 };
 
 /* Channel Request reason */
