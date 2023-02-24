@@ -686,6 +686,9 @@ static int pcu_rx_txt_ind(struct gsm_bts *bts,
 		if (rc < 0)
 			return -EINVAL;
 		break;
+	case PCU_OML_ALERT:
+		LOG_BTS(bts, DPCU, LOGL_ERROR, "PCU external alarm: %s\n", txt->text);
+		break;
 	default:
 		LOGP(DPCU, LOGL_ERROR, "Unknown TXT_IND type %u received\n",
 		     txt->type);
