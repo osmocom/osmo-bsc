@@ -14,6 +14,9 @@ struct pcu_sock_state {
 	struct llist_head upqueue;	/* queue for sending messages */
 };
 
+/* Check if BTS has a PCU connection */
+bool pcu_connected(struct gsm_bts *bts);
+
 /* PCU relevant information has changed; Inform PCU (if connected) */
 void pcu_info_update(struct gsm_bts *bts);
 

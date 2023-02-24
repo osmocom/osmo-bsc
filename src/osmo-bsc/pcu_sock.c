@@ -44,6 +44,7 @@
 #include <osmocom/bsc/gsm_04_08_rr.h>
 #include <osmocom/bsc/bts.h>
 #include <osmocom/bsc/bts_sm.h>
+#include <osmocom/bsc/timeslot_fsm.h>
 
 static int pcu_sock_send(struct gsm_bts *bts, struct msgb *msg);
 
@@ -58,10 +59,13 @@ static const char *sapi_string[] = {
 	[PCU_IF_SAPI_PCH_DT] =	"PCH_DT",
 };
 
-/* Check if BTS has a PCU connection */
-static bool pcu_connected(struct gsm_bts *bts)
+bool pcu_connected(struct gsm_bts *bts)
 {
 	struct pcu_sock_state *state = bts->pcu_state;
+
+	/* BSC co-located PCU is only supported for Ericsson RBS */
+	if (!is_ericsson_bts(bts))
+		return false;
 
 	if (!state)
 		return false;
@@ -751,8 +755,7 @@ static void pcu_sock_close(struct pcu_sock_state *state)
 	struct osmo_fd *bfd = &state->conn_bfd;
 	struct gsm_bts *bts;
 	struct gsm_bts_trx *trx;
-	struct gsm_bts_trx_ts *ts;
-	int i, j;
+	int j;
 
 	/* FIXME: allow multiple BTS */
 	bts = llist_entry(state->net->bts_list.next, struct gsm_bts, list);
@@ -773,15 +776,14 @@ static void pcu_sock_close(struct pcu_sock_state *state)
 #endif
 
 	/* release PDCH */
-	for (i = 0; i < 8; i++) {
-		trx = gsm_bts_trx_num(bts, i);
-		if (!trx)
-			break;
-		for (j = 0; j < 8; j++) {
-			ts = &trx->ts[j];
+	llist_for_each_entry(trx, &bts->trx_list, list) {
+		for (j = 0; j < ARRAY_SIZE(trx->ts); j++) {
+			struct gsm_bts_trx_ts *ts = &trx->ts[j];
+			/* BSC co-located PCU applies only to Ericsson RBS, which supports only GSM_PCHAN_OSMO_DYN.
+			 * So we need to deact only on this pchan kind. */
 			if (ts->mo.nm_state.operational == NM_OPSTATE_ENABLED
-			    && ts->pchan_is == GSM_PCHAN_PDCH) {
-				printf("l1sap_chan_rel(trx,gsm_lchan2chan_nr(ts->lchan));\n");
+			    && ts->pchan_on_init == GSM_PCHAN_OSMO_DYN) {
+				ts_pdch_deact(ts);
 			}
 		}
 	}
@@ -908,8 +910,14 @@ static int pcu_sock_accept(struct osmo_fd *bfd, unsigned int flags)
 	struct pcu_sock_state *state = (struct pcu_sock_state *)bfd->data;
 	struct osmo_fd *conn_bfd = &state->conn_bfd;
 	struct sockaddr_un un_addr;
+	struct gsm_bts *bts;
+	struct gsm_bts_trx *trx;
+	int j;
 	socklen_t len;
 	int rc;
+
+	/* FIXME: allow multiple BTS */
+	bts = llist_entry(state->net->bts_list.next, struct gsm_bts, list);
 
 	len = sizeof(un_addr);
 	rc = accept(bfd->fd, (struct sockaddr *) &un_addr, &len);
@@ -938,6 +946,18 @@ static int pcu_sock_accept(struct osmo_fd *bfd, unsigned int flags)
 	}
 
 	LOGP(DPCU, LOGL_NOTICE, "PCU socket connected to external PCU\n");
+
+	/* activate PDCH */
+	llist_for_each_entry(trx, &bts->trx_list, list) {
+		for (j = 0; j < ARRAY_SIZE(trx->ts); j++) {
+			struct gsm_bts_trx_ts *ts = &trx->ts[j];
+			/* (See comment in pcu_sock_close above) */
+			if (ts->mo.nm_state.operational == NM_OPSTATE_ENABLED
+			    && ts->pchan_on_init == GSM_PCHAN_OSMO_DYN) {
+				ts_pdch_act(ts);
+			}
+		}
+	}
 
 	return 0;
 }

@@ -341,6 +341,11 @@ static void ts_fsm_unused_pdch_act(struct osmo_fsm_inst *fi)
 		return;
 	}
 
+	if (!pcu_connected(bts)) {
+		LOG_TS(ts, LOGL_DEBUG, "PCU not connected: not activating PDCH.\n");
+		return;
+	}
+
 	osmo_fsm_inst_state_chg(fi, TS_ST_WAIT_PDCH_ACT, CHAN_ACT_DEACT_TIMEOUT,
 				T_CHAN_ACT_DEACT);
 }
@@ -406,6 +411,10 @@ static void ts_fsm_unused(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 
 	case TS_EV_LCHAN_UNUSED:
 		/* ignored. */
+		return;
+
+	case TS_EV_PDCH_ACT:
+		ts_fsm_unused_pdch_act(fi);
 		return;
 
 	default:
@@ -530,6 +539,10 @@ static void ts_fsm_pdch(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 				return;
 			}
 		}
+
+	case TS_EV_PDCH_DEACT:
+		ts_fsm_pdch_deact(fi);
+		return;
 
 	case TS_EV_LCHAN_UNUSED:
 		/* ignored */
@@ -889,6 +902,7 @@ static const struct osmo_fsm_state ts_fsm_states[] = {
 		.in_event_mask = 0
 			| S(TS_EV_LCHAN_REQUESTED)
 			| S(TS_EV_LCHAN_UNUSED)
+			| S(TS_EV_PDCH_ACT)
 			,
 		.out_state_mask = 0
 			| S(TS_ST_WAIT_PDCH_ACT)
@@ -921,6 +935,7 @@ static const struct osmo_fsm_state ts_fsm_states[] = {
 		.in_event_mask = 0
 			| S(TS_EV_LCHAN_REQUESTED)
 			| S(TS_EV_LCHAN_UNUSED)
+			| S(TS_EV_PDCH_DEACT)
 			,
 		.out_state_mask = 0
 			| S(TS_ST_WAIT_PDCH_DEACT)
@@ -992,6 +1007,8 @@ static const struct value_string ts_fsm_event_names[] = {
 	OSMO_VALUE_STRING(TS_EV_PDCH_ACT_NACK),
 	OSMO_VALUE_STRING(TS_EV_PDCH_DEACT_ACK),
 	OSMO_VALUE_STRING(TS_EV_PDCH_DEACT_NACK),
+	OSMO_VALUE_STRING(TS_EV_PDCH_DEACT),
+	OSMO_VALUE_STRING(TS_EV_PDCH_ACT),
 	{}
 };
 
@@ -1104,4 +1121,24 @@ bool ts_usable_as_pchan(struct gsm_bts_trx_ts *ts, enum gsm_phys_chan_config as_
 		return false;
 
 	return true;
+}
+
+void ts_pdch_act(struct gsm_bts_trx_ts *ts)
+{
+	/* We send the activation event only when the timeslot is UNUSED. In all other cases the timeslot FSM
+	 * will automatically handle the activation at some later point. */
+	if (ts->fi->state != TS_ST_UNUSED)
+		return;
+
+	osmo_fsm_inst_dispatch(ts->fi, TS_EV_PDCH_ACT, NULL);
+}
+
+void ts_pdch_deact(struct gsm_bts_trx_ts *ts)
+{
+	/* We send the deactivation event only when the timeslot is active as PDCH. The timeslot FSM will check
+	 * if the PCU is available before activating the PDCH again. */
+	if (ts->fi->state != TS_ST_PDCH)
+		return;
+
+	osmo_fsm_inst_dispatch(ts->fi, TS_EV_PDCH_DEACT, NULL);
 }

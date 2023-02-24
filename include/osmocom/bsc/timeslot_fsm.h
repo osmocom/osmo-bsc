@@ -36,10 +36,18 @@ enum ts_fsm_event {
 	TS_EV_RSL_DOWN,
 	TS_EV_LCHAN_REQUESTED,
 	TS_EV_LCHAN_UNUSED,
+
+	/* RSL responses received from the BTS: */
 	TS_EV_PDCH_ACT_ACK,
 	TS_EV_PDCH_ACT_NACK,
 	TS_EV_PDCH_DEACT_ACK,
 	TS_EV_PDCH_DEACT_NACK,
+
+	/* BSC co-located PCU disconnects from PCU socket, deactivate PDCH */
+	TS_EV_PDCH_DEACT,
+
+	/* BSC co-located PCU (re)connects to PCU socket, activate PDCH */
+	TS_EV_PDCH_ACT,
 };
 
 void ts_fsm_alloc(struct gsm_bts_trx_ts *ts);
@@ -52,3 +60,6 @@ bool ts_is_pchan_switching(struct gsm_bts_trx_ts *ts, enum gsm_phys_chan_config 
 bool ts_usable_as_pchan(struct gsm_bts_trx_ts *ts, enum gsm_phys_chan_config as_pchan, bool allow_pchan_switch);
 
 void ts_set_pchan_is(struct gsm_bts_trx_ts *ts, enum gsm_phys_chan_config pchan_is);
+
+void ts_pdch_act(struct gsm_bts_trx_ts *ts);
+void ts_pdch_deact(struct gsm_bts_trx_ts *ts);

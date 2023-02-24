@@ -1,5 +1,5 @@
 msc {
-	bts [label="MS/BTS"], bsc[label="BSC"], bsc_ts[label="BSC timeslot FSM"], bsc_lchan[label="BSC lchan FSM"];
+	bts [label="MS/BTS"], bsc[label="BSC"], bsc_ts[label="BSC timeslot FSM"], bsc_lchan[label="BSC lchan FSM"], pcu_sock[label="PCU socket"];
 
 	bsc_ts abox bsc_ts [label="NOT_INITIALIZED"];
 
@@ -86,6 +86,24 @@ msc {
 	--- [label="IF at least one lchan->state != LCHAN_ST_UNUSED"];
 	bsc_ts abox bsc_ts [label="IN_USE"];
 	bsc_ts rbox bsc_ts [label="Continue at 'IN_USE' above"];
+	...;
+	...;
+	bts rbox bsc_lchan [label="on PCU disconnect (Ericsson RBS)
+			for all timeslots in state PDCH:" ];
+	bsc_ts abox bsc_ts [label="PDCH"];
+	bsc_ts <- pcu_sock [label="TS_EV_PDCH_DEACT"];
+	bts note bsc_ts [label="PDCH release, see WAIT_PDCH_DEACT above"];
+	...;
+	bsc_ts abox bsc_ts [label="UNUSED"];
+	...;
+	...;
+	bts rbox bsc_lchan [label="on PCU reconnect (Ericsson RBS)
+			for all timeslots in state UNUSED:" ];
+	bsc_ts abox bsc_ts [label="UNUSED"];
+	bsc_ts <- pcu_sock [label="TS_EV_PDCH_ACT"];
+	bts note bsc_ts [label="PDCH activation, see WAIT_PDCH_ACT above"];
+	...;
+	bsc_ts abox bsc_ts [label="PDCH"];
 	...;
 	...;
 
