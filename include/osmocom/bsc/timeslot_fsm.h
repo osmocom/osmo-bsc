@@ -37,9 +37,9 @@ enum ts_fsm_event {
 	TS_EV_LCHAN_REQUESTED,
 	TS_EV_LCHAN_UNUSED,
 	TS_EV_PDCH_ACT_ACK,
-        TS_EV_PDCH_ACT_NACK,
-        TS_EV_PDCH_DEACT_ACK,
-        TS_EV_PDCH_DEACT_NACK,
+	TS_EV_PDCH_ACT_NACK,
+	TS_EV_PDCH_DEACT_ACK,
+	TS_EV_PDCH_DEACT_NACK,
 };
 
 void ts_fsm_alloc(struct gsm_bts_trx_ts *ts);
