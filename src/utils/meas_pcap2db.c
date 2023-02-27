@@ -47,15 +47,7 @@ static struct meas_db_state *db;
 static void handle_mfm(const struct pcap_pkthdr *h,
 		       const struct meas_feed_meas *mfm)
 {
-	const char *scenario;
-
-	if (strlen(mfm->scenario))
-		scenario = mfm->scenario;
-	else
-		scenario = NULL;
-
-	meas_db_insert(db, mfm->imsi, mfm->name, h->ts.tv_sec,
-			scenario, &mfm->mr);
+	meas_db_insert(db, h->ts.tv_sec, mfm);
 }
 
 static void pcap_cb(u_char *user, const struct pcap_pkthdr *h,

@@ -29,10 +29,11 @@
 #include <osmocom/core/utils.h>
 #include <osmocom/gsm/gsm_utils.h>
 #include <osmocom/bsc/meas_rep.h>
+#include <osmocom/bsc/meas_feed.h>
 
 #include "meas_db.h"
 
-#define INS_MR "INSERT INTO meas_rep (time, imsi, name, scenario, nr, bs_power, ms_timing_offset, fpc, ms_l1_pwr, ms_l1_ta) VALUES (?,?,?,?,?,?,?,?,?,?)"
+#define INS_MR "INSERT INTO meas_rep (time, bts_nr, trx_nr, ts_nr, ss_nr, lchan_type, pchan_type, imsi, name, scenario, nr, bs_power, ms_timing_offset, fpc, ms_l1_pwr, ms_l1_ta) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
 #define INS_UD "INSERT INTO meas_rep_unidir (meas_id, rx_lev_full, rx_lev_sub, rx_qual_full, rx_qual_sub, dtx, uplink) VALUES (?,?,?,?,?,?,?)"
 #define UPD_MR "UPDATE meas_rep SET ul_unidir=?, dl_unidir=? WHERE id=?"
 
@@ -79,52 +80,57 @@ err_io:
 }
 
 /* insert a measurement report into the database */
-int meas_db_insert(struct meas_db_state *st, const char *imsi,
-		   const char *name, unsigned long timestamp,
-		   const char *scenario,
-		   const struct gsm_meas_rep *mr)
+int meas_db_insert(struct meas_db_state *st, unsigned long timestamp,
+		   const struct meas_feed_meas *mfm)
 {
 	sqlite3_int64 rowid, ul_rowid, dl_rowid;
 
 	SCK_OK(st->db, sqlite3_bind_int(st->stmt_ins_mr, 1, timestamp));
 
-	if (imsi)
-		SCK_OK(st->db, sqlite3_bind_text(st->stmt_ins_mr, 2,
-						 imsi, -1, SQLITE_STATIC));
+	SCK_OK(st->db, sqlite3_bind_int(st->stmt_ins_mr, 2, mfm->bts_nr));
+	SCK_OK(st->db, sqlite3_bind_int(st->stmt_ins_mr, 3, mfm->trx_nr));
+	SCK_OK(st->db, sqlite3_bind_int(st->stmt_ins_mr, 4, mfm->ts_nr));
+	SCK_OK(st->db, sqlite3_bind_int(st->stmt_ins_mr, 5, mfm->ss_nr));
+	SCK_OK(st->db, sqlite3_bind_int(st->stmt_ins_mr, 6, mfm->lchan_type));
+	SCK_OK(st->db, sqlite3_bind_int(st->stmt_ins_mr, 7, mfm->pchan_type));
+
+	if (mfm->imsi)
+		SCK_OK(st->db, sqlite3_bind_text(st->stmt_ins_mr, 8,
+						 mfm->imsi, -1, SQLITE_STATIC));
 	else
-		SCK_OK(st->db, sqlite3_bind_null(st->stmt_ins_mr, 2));
+		SCK_OK(st->db, sqlite3_bind_null(st->stmt_ins_mr, 8));
 
-	if (name)
-		SCK_OK(st->db, sqlite3_bind_text(st->stmt_ins_mr, 3,
-						 name, -1, SQLITE_STATIC));
+	if (mfm->name)
+		SCK_OK(st->db, sqlite3_bind_text(st->stmt_ins_mr, 9,
+						 mfm->name, -1, SQLITE_STATIC));
 	else
-		SCK_OK(st->db, sqlite3_bind_null(st->stmt_ins_mr, 3));
+		SCK_OK(st->db, sqlite3_bind_null(st->stmt_ins_mr, 9));
 
-	if (scenario)
-		SCK_OK(st->db, sqlite3_bind_text(st->stmt_ins_mr, 4,
-						 scenario, -1, SQLITE_STATIC));
+	if (mfm->scenario)
+		SCK_OK(st->db, sqlite3_bind_text(st->stmt_ins_mr, 10,
+						 mfm->scenario, -1, SQLITE_STATIC));
 	else
-		SCK_OK(st->db, sqlite3_bind_null(st->stmt_ins_mr, 4));
+		SCK_OK(st->db, sqlite3_bind_null(st->stmt_ins_mr, 10));
 
 
-	SCK_OK(st->db, sqlite3_bind_int(st->stmt_ins_mr, 5, mr->nr));
-	SCK_OK(st->db, sqlite3_bind_int(st->stmt_ins_mr, 6, mr->bs_power_db / 2));
+	SCK_OK(st->db, sqlite3_bind_int(st->stmt_ins_mr, 11, mfm->mr.nr));
+	SCK_OK(st->db, sqlite3_bind_int(st->stmt_ins_mr, 12, mfm->mr.bs_power_db / 2));
 
-	if (mr->flags & MEAS_REP_F_MS_TO)
-		SCK_OK(st->db, sqlite3_bind_int(st->stmt_ins_mr, 7, mr->ms_timing_offset));
+	if (mfm->mr.flags & MEAS_REP_F_MS_TO)
+		SCK_OK(st->db, sqlite3_bind_int(st->stmt_ins_mr, 13, mfm->mr.ms_timing_offset));
 	else
-		SCK_OK(st->db, sqlite3_bind_null(st->stmt_ins_mr, 7));
+		SCK_OK(st->db, sqlite3_bind_null(st->stmt_ins_mr, 13));
 
-	if (mr->flags & MEAS_REP_F_FPC)
-		SCK_OK(st->db, sqlite3_bind_int(st->stmt_ins_mr, 8, 1));
+	if (mfm->mr.flags & MEAS_REP_F_FPC)
+		SCK_OK(st->db, sqlite3_bind_int(st->stmt_ins_mr, 14, 1));
 	else
-		SCK_OK(st->db, sqlite3_bind_int(st->stmt_ins_mr, 8, 0));
+		SCK_OK(st->db, sqlite3_bind_int(st->stmt_ins_mr, 14, 0));
 
-	if (mr->flags & MEAS_REP_F_MS_L1) {
-		SCK_OK(st->db, sqlite3_bind_int(st->stmt_ins_mr, 9,
-						mr->ms_l1.pwr));
-		SCK_OK(st->db, sqlite3_bind_int(st->stmt_ins_mr, 10,
-						mr->ms_l1.ta));
+	if (mfm->mr.flags & MEAS_REP_F_MS_L1) {
+		SCK_OK(st->db, sqlite3_bind_int(st->stmt_ins_mr, 15,
+						mfm->mr.ms_l1.pwr));
+		SCK_OK(st->db, sqlite3_bind_int(st->stmt_ins_mr, 16,
+						mfm->mr.ms_l1.ta));
 	}
 
 	SCK_DONE(st->db, sqlite3_step(st->stmt_ins_mr));
@@ -133,14 +139,14 @@ int meas_db_insert(struct meas_db_state *st, const char *imsi,
 	rowid = sqlite3_last_insert_rowid(st->db);
 
 	/* insert uplink measurement */
-	ul_rowid = _insert_ud(st, rowid, mr->flags & MEAS_REP_F_UL_DTX,
-				1, &mr->ul);
+	ul_rowid = _insert_ud(st, rowid, mfm->mr.flags & MEAS_REP_F_UL_DTX,
+				1, &mfm->mr.ul);
 	SCK_OK(st->db, sqlite3_bind_int(st->stmt_upd_mr, 1, ul_rowid));
 
 	/* insert downlink measurement, if present */
-	if (mr->flags & MEAS_REP_F_DL_VALID) {
-		dl_rowid = _insert_ud(st, rowid, mr->flags & MEAS_REP_F_DL_DTX,
-			       	      0, &mr->dl);
+	if (mfm->mr.flags & MEAS_REP_F_DL_VALID) {
+		dl_rowid = _insert_ud(st, rowid, mfm->mr.flags & MEAS_REP_F_DL_DTX,
+					0, &mfm->mr.dl);
 		SCK_OK(st->db, sqlite3_bind_int(st->stmt_upd_mr, 2, dl_rowid));
 	} else
 		SCK_OK(st->db, sqlite3_bind_null(st->stmt_upd_mr, 2));
@@ -181,6 +187,12 @@ static const char *create_stmts[] = {
 	"CREATE TABLE IF NOT EXISTS meas_rep ("
 		"id INTEGER PRIMARY KEY AUTOINCREMENT,"
 		"time TIMESTAMP,"
+		"bts_nr INTEGER,"
+		"trx_nr INTEGER,"
+		"ts_nr INTEGER,"
+		"ss_nr INTEGER,"
+		"lchan_type INTEGER,"
+		"pchan_type INTEGER,"
 		"imsi TEXT,"
 		"name TEXT,"
 		"scenario TEXT,"
@@ -207,6 +219,12 @@ static const char *create_stmts[] = {
 		"SELECT "
 			"meas_rep.id, "
 			"datetime(time,'unixepoch') AS timestamp, "
+			"bts_nr,"
+			"trx_nr,"
+			"ts_nr,"
+			"ss_nr,"
+			"lchan_type,"
+			"pchan_type,"
 			"imsi, "
 			"name, "
 			"scenario, "
@@ -238,6 +256,12 @@ static const char *create_stmts[] = {
 		"SELECT "
 			"id,"
 			"timestamp,"
+			"bts_nr,"
+			"trx_nr,"
+			"ts_nr,"
+			"ss_nr,"
+			"lchan_type,"
+			"pchan_type,"
 			"imsi,"
 			"name,"
 			"scenario,"

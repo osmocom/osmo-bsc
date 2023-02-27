@@ -47,7 +47,6 @@ static int handle_msg(struct msgb *msg)
 {
 	struct meas_feed_hdr *mfh = (struct meas_feed_hdr *) msgb_data(msg);
 	struct meas_feed_meas *mfm = (struct meas_feed_meas *) msgb_data(msg);
-	const char *scenario;
 	time_t now = time(NULL);
 
 	if (mfh->version != MEAS_FEED_VERSION)
@@ -56,13 +55,7 @@ static int handle_msg(struct msgb *msg)
 	if (mfh->msg_type != MEAS_FEED_MEAS)
 		return -EINVAL;
 
-	if (strlen(mfm->scenario))
-		scenario = mfm->scenario;
-	else
-		scenario = NULL;
-
-	meas_db_insert(db, mfm->imsi, mfm->name, now,
-			scenario, &mfm->mr);
+	meas_db_insert(db, now, mfm);
 
 	return 0;
 }

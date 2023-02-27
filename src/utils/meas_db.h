@@ -9,9 +9,7 @@ void meas_db_close(struct meas_db_state *st);
 int meas_db_begin(struct meas_db_state *st);
 int meas_db_commit(struct meas_db_state *st);
 
-int meas_db_insert(struct meas_db_state *st, const char *imsi,
-		   const char *name, unsigned long timestamp,
-		   const char *scenario,
-		   const struct gsm_meas_rep *mr);
+int meas_db_insert(struct meas_db_state *st, unsigned long timestamp,
+		   const struct meas_feed_meas *mfm);
 
 #endif
