@@ -191,7 +191,7 @@ static int pcu_tx_info_ind(struct gsm_bts *bts)
 
 	bts_sm = bts->site_mgr;
 
-	LOGP(DPCU, LOGL_INFO, "Sending info for BTS %d\n", bts->nr);
+	LOG_BTS(bts, DPCU, LOGL_INFO, "Sending info for BTS\n");
 
 	rlcc = &bts->gprs.cell.rlc_cfg;
 
@@ -417,12 +417,11 @@ int pcu_tx_rach_ind(struct gsm_bts *bts, int16_t qta, uint16_t ra, uint32_t fn,
 
 	/* Bail if no PCU is connected */
 	if (!pcu_connected(bts)) {
-		LOGP(DRSL, LOGL_ERROR, "BTS %d CHAN RQD(GPRS) but PCU not "
-			"connected!\n", bts->nr);
+		LOG_BTS(bts, DRSL, LOGL_ERROR, "CHAN RQD(GPRS) but PCU not connected!\n");
 		return -ENODEV;
 	}
 
-	LOGP(DPCU, LOGL_INFO, "Sending RACH indication: qta=%d, ra=%d, "
+	LOG_BTS(bts, DPCU, LOGL_INFO, "Sending RACH indication: qta=%d, ra=%d, "
 		"fn=%d\n", qta, ra, fn);
 
 	msg = pcu_msgb_alloc(PCU_IF_MSG_RACH_IND, bts->nr);
@@ -448,7 +447,7 @@ int pcu_tx_imm_ass_sent(struct gsm_bts *bts, uint32_t tlli)
 	struct gsm_pcu_if *pcu_prim;
 	struct gsm_pcu_if_data_cnf_dt *data_cnf_dt;
 
-	LOGP(DPCU, LOGL_INFO, "Sending PCH confirm with direct TLLI\n");
+	LOG_BTS(bts, DPCU, LOGL_INFO, "Sending PCH confirm with direct TLLI\n");
 
 	msg = pcu_msgb_alloc(PCU_IF_MSG_DATA_CNF_DT, bts->nr);
 	if (!msg)
@@ -478,14 +477,14 @@ static int pcu_rx_rr_paging(struct gsm_bts *bts, uint8_t paging_group,
 		chan_needed = (p1->cneed2 << 2) | p1->cneed1;
 		rc = osmo_mobile_identity_decode(&mi, p1->data+1, p1->data[0], false);
 		if (rc) {
-			LOGP(DPCU, LOGL_ERROR, "PCU Sends paging "
-			     "request type %02x (chan_needed=%02x): Unable to decode Mobile Identity\n",
+			LOG_BTS(bts, DPCU, LOGL_ERROR, "PCU Sends paging "
+				"request type %02x (chan_needed=%02x): Unable to decode Mobile Identity\n",
 			     p1->msg_type, chan_needed);
 			rc = -EINVAL;
 			break;
 		}
-		LOGP(DPCU, LOGL_ERROR, "PCU Sends paging "
-		     "request type %02x (chan_needed=%02x, mi=%s)\n",
+		LOG_BTS(bts, DPCU, LOGL_ERROR, "PCU Sends paging "
+			"request type %02x (chan_needed=%02x, mi=%s)\n",
 		     p1->msg_type, chan_needed, osmo_mobile_identity_to_str_c(OTC_SELECT, &mi));
 		/* NOTE: We will have to add 2 to mi_len and subtract 2 from
 		 * the mi pointer because rsl_paging_cmd() will perform the
@@ -497,12 +496,12 @@ static int pcu_rx_rr_paging(struct gsm_bts *bts, uint8_t paging_group,
 		break;
 	case GSM48_MT_RR_PAG_REQ_2:
 	case GSM48_MT_RR_PAG_REQ_3:
-		LOGP(DPCU, LOGL_ERROR, "PCU Sends unsupported paging "
+		LOG_BTS(bts, DPCU, LOGL_ERROR, "PCU Sends unsupported paging "
 			"request type %02x\n", p1->msg_type);
 		rc = -EINVAL;
 		break;
 	default:
-		LOGP(DPCU, LOGL_ERROR, "PCU Sends unknown paging "
+		LOG_BTS(bts, DPCU, LOGL_ERROR, "PCU Sends unknown paging "
 			"request type %02x\n", p1->msg_type);
 		rc = -EINVAL;
 		break;
@@ -526,8 +525,8 @@ static uint8_t extract_paging_group(struct gsm_bts *bts, uint8_t *data)
 	pag_grp = gsm0502_calc_paging_group(&bts->si_common.chan_desc,
 					    str_to_imsi(imsi_digit_buf));
 
-	LOGP(DPCU, LOGL_DEBUG, "Calculating paging group: imsi_digit_buf=%s ==> pag_grp=0x%02x\n",
-	     imsi_digit_buf, pag_grp);
+	LOG_BTS(bts, DPCU, LOGL_DEBUG, "Calculating paging group: imsi_digit_buf=%s ==> pag_grp=0x%02x\n",
+		imsi_digit_buf, pag_grp);
 
 	return pag_grp;
 }
@@ -539,7 +538,7 @@ static int pcu_rx_data_req(struct gsm_bts *bts, uint8_t msg_type,
 	int rc = 0;
 	struct gsm_pcu_if_pch_dt *pch_dt;
 
-	LOGP(DPCU, LOGL_DEBUG, "Data request received: sapi=%s arfcn=%d "
+	LOG_BTS(bts, DPCU, LOGL_DEBUG, "Data request received: sapi=%s arfcn=%d "
 		"block=%d data=%s\n", sapi_string[data_req->sapi],
 		data_req->arfcn, data_req->block_nr,
 		osmo_hexdump(data_req->data, data_req->len));
@@ -559,16 +558,16 @@ static int pcu_rx_data_req(struct gsm_bts *bts, uint8_t msg_type,
 		 * IMMEDIATE ASSIGNMENT towards the PCU using this TLLI as a reference. */
 
 		if (data_req->len < sizeof(struct gsm_pcu_if_pch_dt)) {
-			LOGP(DPCU, LOGL_ERROR, "Received PCU data request with invalid/small length %d\n",
-			     data_req->len);
+			LOG_BTS(bts, DPCU, LOGL_ERROR, "Received PCU data request with invalid/small length %d\n",
+				data_req->len);
 			break;
 		}
 
 		pch_dt = (struct gsm_pcu_if_pch_dt *)data_req->data;
 		pag_grp = gsm0502_calc_paging_group(&bts->si_common.chan_desc, str_to_imsi(pch_dt->imsi));
 
-		LOGP(DPCU, LOGL_DEBUG, "PCU Sends immediate assignment via PCH (TLLI=0x%08x, IMSI=%s, Paging group=0x%02x)\n",
-		     pch_dt->tlli, pch_dt->imsi, pag_grp);
+		LOG_BTS(bts, DPCU, LOGL_DEBUG, "PCU Sends immediate assignment via PCH (TLLI=0x%08x, IMSI=%s, Paging group=0x%02x)\n",
+			pch_dt->tlli, pch_dt->imsi, pag_grp);
 
 		/* NOTE: Sending an IMMEDIATE ASSIGNMENT via PCH became necessary with GPRS in order to be able to
 		 * assign downlink TBFs directly through the paging channel. However, this method never became part
@@ -578,7 +577,7 @@ static int pcu_rx_data_req(struct gsm_bts *bts, uint8_t msg_type,
 			rc = rsl_ericsson_imm_assign_cmd(bts, pch_dt->tlli, sizeof(pch_dt->data),
 							 pch_dt->data, pag_grp);
 		} else {
-			LOGP(DPCU, LOGL_ERROR, "BTS model does not support sending immediate assignment via PCH!\n");
+			LOG_BTS(bts, DPCU, LOGL_ERROR, "BTS model does not support sending immediate assignment via PCH!\n");
 			rc = -ENOTSUP;
 		}
 
@@ -586,7 +585,7 @@ static int pcu_rx_data_req(struct gsm_bts *bts, uint8_t msg_type,
 			rc = -EIO;
 		break;
 	default:
-		LOGP(DPCU, LOGL_ERROR, "Received PCU data request with "
+		LOG_BTS(bts, DPCU, LOGL_ERROR, "Received PCU data request with "
 			"unsupported sapi %d\n", data_req->sapi);
 		rc = -EINVAL;
 	}
@@ -606,7 +605,7 @@ static int pcu_tx_si(const struct gsm_bts *bts, enum osmo_sysinfo_type si_type, 
 	if (enable) {
 		memcpy(si_buf, GSM_BTS_SI(bts, si_type), GSM_MACBLOCK_LEN);
 		len = GSM_MACBLOCK_LEN;
-		LOGP(DPCU, LOGL_DEBUG, "Updating SI%s to PCU: %s\n",
+		LOG_BTS(bts, DPCU, LOGL_DEBUG, "Updating SI%s to PCU: %s\n",
 		     get_value_string(osmo_sitype_strs, si_type),
 		     osmo_hexdump_nospc(si_buf, GSM_MACBLOCK_LEN));
 	} else {
@@ -619,8 +618,8 @@ static int pcu_tx_si(const struct gsm_bts *bts, enum osmo_sysinfo_type si_type, 
 		if (si_type != SYSINFO_TYPE_13)
 			len = 0;
 
-		LOGP(DPCU, LOGL_DEBUG, "Revoking SI%s from PCU\n",
-		     get_value_string(osmo_sitype_strs, si_buf[0]));
+		LOG_BTS(bts, DPCU, LOGL_DEBUG, "Revoking SI%s from PCU\n",
+			get_value_string(osmo_sitype_strs, si_buf[0]));
 	}
 
 	/* The low-level data like FN, ARFCN etc will be ignored but we have to
@@ -628,8 +627,8 @@ static int pcu_tx_si(const struct gsm_bts *bts, enum osmo_sysinfo_type si_type, 
 	rc = pcu_tx_data_ind(&trx->ts[0], PCU_IF_SAPI_BCCH, 0, 0, 0, si_buf, len,
 			     0, 0, 0, INT16_MAX);
 	if (rc < 0)
-		LOGP(DPCU, LOGL_NOTICE, "Failed to send SI%s to PCU: rc=%d\n",
-		     get_value_string(osmo_sitype_strs, si_type), rc);
+		LOG_BTS(bts, DPCU, LOGL_NOTICE, "Failed to send SI%s to PCU: rc=%d\n",
+			get_value_string(osmo_sitype_strs, si_type), rc);
 
 	return rc;
 }
@@ -646,9 +645,9 @@ static int pcu_tx_si_all(struct gsm_bts *bts)
 			if (rc < 0)
 				return rc;
 		} else {
-			LOGP(DPCU, LOGL_INFO,
-			     "SI%s is not available on PCU connection\n",
-			     get_value_string(osmo_sitype_strs, si_types[i]));
+			LOG_BTS(bts, DPCU, LOGL_INFO,
+				"SI%s is not available on PCU connection\n",
+				get_value_string(osmo_sitype_strs, si_types[i]));
 		}
 	}
 
@@ -662,7 +661,7 @@ static int pcu_rx_txt_ind(struct gsm_bts *bts,
 
 	switch (txt->type) {
 	case PCU_VERSION:
-		LOGP(DPCU, LOGL_INFO, "OsmoPCU version %s connected\n",
+		LOG_BTS(bts, DPCU, LOGL_INFO, "OsmoPCU version %s connected\n",
 		     txt->text);
 		rc = pcu_tx_si_all(bts);
 		if (rc < 0)
@@ -672,7 +671,7 @@ static int pcu_rx_txt_ind(struct gsm_bts *bts,
 		LOG_BTS(bts, DPCU, LOGL_ERROR, "PCU external alarm: %s\n", txt->text);
 		break;
 	default:
-		LOGP(DPCU, LOGL_ERROR, "Unknown TXT_IND type %u received\n",
+		LOG_BTS(bts, DPCU, LOGL_ERROR, "Unknown TXT_IND type %u received\n",
 		     txt->type);
 		return -EINVAL;
 	}
@@ -920,13 +919,12 @@ static int pcu_sock_accept(struct osmo_fd *bfd, unsigned int flags)
 	len = sizeof(un_addr);
 	rc = accept(bfd->fd, (struct sockaddr *) &un_addr, &len);
 	if (rc < 0) {
-		LOGP(DPCU, LOGL_ERROR, "Failed to accept a new connection\n");
+		LOG_BTS(bts, DPCU, LOGL_ERROR, "Failed to accept a new connection\n");
 		return -1;
 	}
 
 	if (conn_bfd->fd >= 0) {
-		LOGP(DPCU, LOGL_NOTICE, "PCU connects but we already have "
-			"another active connection ?!?\n");
+		LOG_BTS(bts, DPCU, LOGL_NOTICE, "PCU connects but we already have another active connection ?!?\n");
 		/* We already have one PCU connected, this is all we support */
 		osmo_fd_read_disable(&state->listen_bfd);
 		close(rc);
@@ -936,14 +934,13 @@ static int pcu_sock_accept(struct osmo_fd *bfd, unsigned int flags)
 	osmo_fd_setup(conn_bfd, rc, OSMO_FD_READ, pcu_sock_cb, state, 0);
 
 	if (osmo_fd_register(conn_bfd) != 0) {
-		LOGP(DPCU, LOGL_ERROR, "Failed to register new connection "
-			"fd\n");
+		LOG_BTS(bts, DPCU, LOGL_ERROR, "Failed to register new connection fd\n");
 		close(conn_bfd->fd);
 		conn_bfd->fd = -1;
 		return -1;
 	}
 
-	LOGP(DPCU, LOGL_NOTICE, "PCU socket connected to external PCU\n");
+	LOG_BTS(bts, DPCU, LOGL_NOTICE, "PCU socket connected to external PCU\n");
 
 	/* activate PDCH */
 	llist_for_each_entry(trx, &bts->trx_list, list) {
@@ -979,7 +976,7 @@ int pcu_sock_init(const char *path, struct gsm_bts *bts)
 
 	rc = osmo_sock_unix_init(SOCK_SEQPACKET, 0, path, OSMO_SOCK_F_BIND);
 	if (rc < 0) {
-		LOGP(DPCU, LOGL_ERROR, "Could not create unix socket: %s\n",
+		LOG_BTS(bts, DPCU, LOGL_ERROR, "Could not create unix socket: %s\n",
 			strerror(errno));
 		talloc_free(state);
 		return -1;
@@ -989,14 +986,14 @@ int pcu_sock_init(const char *path, struct gsm_bts *bts)
 
 	rc = osmo_fd_register(bfd);
 	if (rc < 0) {
-		LOGP(DPCU, LOGL_ERROR, "Could not register listen fd: %d\n",
+		LOG_BTS(bts, DPCU, LOGL_ERROR, "Could not register listen fd: %d\n",
 			rc);
 		close(bfd->fd);
 		talloc_free(state);
 		return rc;
 	}
 
-	LOGP(DPCU, LOGL_INFO, "Started listening on PCU socket: %s\n", path);
+	LOG_BTS(bts, DPCU, LOGL_INFO, "Started listening on PCU socket: %s\n", path);
 
 	bts->pcu_state = state;
 	return 0;
