@@ -460,6 +460,7 @@ static int channel_mode_from_lchan(struct rsl_ie_chan_mode *cm,
 	case GSM48_CMODE_DATA_14k5:
 	case GSM48_CMODE_DATA_12k0:
 	case GSM48_CMODE_DATA_6k0:
+	case GSM48_CMODE_DATA_3k6:
 		/* 3GPP TS 48.058 § 9.3.6 Channel Mode octet 6 */
 		if (ch_mode_rate->data_transparent) {
 			cm->chan_rate = ch_mode_rate->data_rate.t;
