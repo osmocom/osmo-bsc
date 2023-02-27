@@ -930,9 +930,17 @@ int rsl_forward_layer3_info(struct gsm_lchan *lchan, const uint8_t *l3_info, uin
 /* Chapter 8.5.6 */
 struct msgb *rsl_imm_assign_cmd_common(const struct gsm_bts *bts, uint8_t len, const uint8_t *val)
 {
-	struct msgb *msg = rsl_msgb_alloc();
+	struct msgb *msg;
 	struct abis_rsl_dchan_hdr *dh;
 	uint8_t buf[GSM_MACBLOCK_LEN];
+
+	if (len > sizeof(buf)) {
+		LOGP(DRSL, LOGL_ERROR,
+		     "Cannot send IMMEDIATE ASSIGNMENT message with excessive length (%u)\n", len);
+		return NULL;
+	}
+
+	msg = rsl_msgb_alloc();
 
 	dh = (struct abis_rsl_dchan_hdr *) msgb_put(msg, sizeof(*dh));
 	init_dchan_hdr(dh, RSL_MT_IMMEDIATE_ASSIGN_CMD);
