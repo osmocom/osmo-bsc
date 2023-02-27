@@ -535,9 +535,9 @@ static uint8_t extract_paging_group(struct gsm_bts *bts, uint8_t *data)
 static int pcu_rx_data_req(struct gsm_bts *bts, uint8_t msg_type,
 	struct gsm_pcu_if_data *data_req)
 {
-	uint32_t tlli = -1;
 	uint8_t pag_grp;
 	int rc = 0;
+	struct gsm_pcu_if_pch_dt *pch_dt;
 
 	LOGP(DPCU, LOGL_DEBUG, "Data request received: sapi=%s arfcn=%d "
 		"block=%d data=%s\n", sapi_string[data_req->sapi],
@@ -558,27 +558,25 @@ static int pcu_rx_data_req(struct gsm_bts *bts, uint8_t msg_type,
 		/* DT = direct TLLI. A tlli is prefixed so that the BSC/BTS can confirm the sending of the downlink
 		 * IMMEDIATE ASSIGNMENT towards the PCU using this TLLI as a reference. */
 
-		if (data_req->len < 8) {
+		if (data_req->len < sizeof(struct gsm_pcu_if_pch_dt)) {
 			LOGP(DPCU, LOGL_ERROR, "Received PCU data request with invalid/small length %d\n",
 			     data_req->len);
 			break;
 		}
 
-		/* Extract 4 byte TLLI */
-		memcpy(&tlli, data_req->data, 4);
+		pch_dt = (struct gsm_pcu_if_pch_dt *)data_req->data;
+		pag_grp = gsm0502_calc_paging_group(&bts->si_common.chan_desc, str_to_imsi(pch_dt->imsi));
 
-		/* Extract 3 byte paging group */
-		pag_grp = extract_paging_group(bts, data_req->data + 4);
-
-		LOGP(DPCU, LOGL_DEBUG, "PCU Sends immediate assignment via PCH (tlli=0x%08x, pag_grp=0x%02x)\n",
-		     tlli, pag_grp);
+		LOGP(DPCU, LOGL_DEBUG, "PCU Sends immediate assignment via PCH (TLLI=0x%08x, IMSI=%s, Paging group=0x%02x)\n",
+		     pch_dt->tlli, pch_dt->imsi, pag_grp);
 
 		/* NOTE: Sending an IMMEDIATE ASSIGNMENT via PCH became necessary with GPRS in order to be able to
 		 * assign downlink TBFs directly through the paging channel. However, this method never became part
 		 * of the RSL specs. This means that each BTS vendor has to come up with a proprietary method. At
 		 * the moment we only support Ericsson RBS here. */
 		if (bts->type == GSM_BTS_TYPE_RBS2000) {
-			rc = rsl_ericsson_imm_assign_cmd(bts, tlli, data_req->len - 7, data_req->data + 7, pag_grp);
+			rc = rsl_ericsson_imm_assign_cmd(bts, pch_dt->tlli, sizeof(pch_dt->data),
+							 pch_dt->data, pag_grp);
 		} else {
 			LOGP(DPCU, LOGL_ERROR, "BTS model does not support sending immediate assignment via PCH!\n");
 			rc = -ENOTSUP;
