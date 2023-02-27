@@ -410,7 +410,6 @@ static int channel_mode_from_lchan(struct rsl_ie_chan_mode *cm,
 	int rc;
 	memset(cm, 0, sizeof(*cm));
 
-	/* FIXME: what to do with data calls ? */
 	cm->dtx_dtu = 0;
 	if (lchan->ts->trx->bts->dtxu != GSM48_DTX_SHALL_NOT_BE_USED)
 		cm->dtx_dtu |= RSL_CMOD_DTXu;
