@@ -335,7 +335,7 @@ int match_codec_pref(struct channel_mode_and_rate *ch_mode_rate,
 	 * indeed available with the current BTS and MSC configuration */
 	for (i = 0; i < msc->audio_length; i++) {
 		/* Pick a permitted speech value from the global codec configuration list */
-		perm_spch = audio_support_to_gsm88(msc->audio_support[i]);
+		perm_spch = audio_support_to_gsm88(&msc->audio_support[i]);
 
 		/* Determine if the result is a half or full rate codec */
 		rc = full_rate_from_perm_spch(&full_rate, perm_spch);
@@ -406,7 +406,7 @@ void gen_bss_supported_codec_list(struct gsm0808_speech_codec_list *scl,
 	for (i = 0; i < msc->audio_length; i++) {
 
 		/* Pick a permitted speech value from the global codec configuration list */
-		perm_spch = audio_support_to_gsm88(msc->audio_support[i]);
+		perm_spch = audio_support_to_gsm88(&msc->audio_support[i]);
 
 		/* Check this permitted speech value against the BTS specific parameters.
 		 * if the BTS does not support the codec, try the next one */
@@ -421,8 +421,8 @@ void gen_bss_supported_codec_list(struct gsm0808_speech_codec_list *scl,
 		/* AMR (HR/FR version 3) is the only codec that requires a codec
 		 * configuration (S0-S15). Determine the current configuration and update
 		 * the cfg flag. */
-		if (msc->audio_support[i]->ver == 3)
-			scl->codec[scl->len].cfg = gen_bss_supported_amr_s15_s0(msc, bts, msc->audio_support[i]->hr);
+		if (msc->audio_support[i].ver == 3)
+			scl->codec[scl->len].cfg = gen_bss_supported_amr_s15_s0(msc, bts, msc->audio_support[i].hr);
 
 		scl->len++;
 	}

@@ -30,26 +30,7 @@
 
 void *ctx = NULL;
 
-#define MSC_AUDIO_SUPPORT_MAX 5
 #define N_CONFIG_VARIANTS 9
-
-/* Make sure that there is some memory to put our test configuration. */
-static void init_msc_config(struct bsc_msc_data *msc)
-{
-	unsigned int i;
-
-	msc->audio_support = talloc_zero_array(ctx, struct gsm_audio_support *, MSC_AUDIO_SUPPORT_MAX);
-	msc->audio_length = MSC_AUDIO_SUPPORT_MAX;
-	for (i = 0; i < MSC_AUDIO_SUPPORT_MAX; i++) {
-		msc->audio_support[i] = talloc_zero(msc->audio_support, struct gsm_audio_support);
-	}
-}
-
-/* Free memory that we have used for the test configuration. */
-static void free_msc_config(struct bsc_msc_data *msc)
-{
-	talloc_free(msc->audio_support);
-}
 
 /* The speech codec list is sent by the MS and lists the voice codec settings
  * that the MS is able to support. The BSC must select one of this codecs
@@ -215,74 +196,74 @@ static void make_msc_config(struct bsc_msc_data *msc, uint8_t config_no)
 	switch (config_no) {
 	case 0:
 		/* FR1 only */
-		msc->audio_support[0]->ver = 1;
-		msc->audio_support[0]->hr = 0;
+		msc->audio_support[0].ver = 1;
+		msc->audio_support[0].hr = 0;
 		msc->audio_length = 1;
 		break;
 	case 1:
 		/* HR1 only */
-		msc->audio_support[0]->ver = 1;
-		msc->audio_support[0]->hr = 1;
+		msc->audio_support[0].ver = 1;
+		msc->audio_support[0].hr = 1;
 		msc->audio_length = 1;
 		break;
 	case 2:
 		/* FR2 only */
-		msc->audio_support[0]->ver = 2;
-		msc->audio_support[0]->hr = 0;
+		msc->audio_support[0].ver = 2;
+		msc->audio_support[0].hr = 0;
 		msc->audio_length = 1;
 		break;
 	case 3:
 		/* FR3 only */
-		msc->audio_support[0]->ver = 3;
-		msc->audio_support[0]->hr = 0;
+		msc->audio_support[0].ver = 3;
+		msc->audio_support[0].hr = 0;
 		msc->audio_length = 1;
 		break;
 	case 4:
 		/* HR3 only */
-		msc->audio_support[0]->ver = 3;
-		msc->audio_support[0]->hr = 1;
+		msc->audio_support[0].ver = 3;
+		msc->audio_support[0].hr = 1;
 		msc->audio_length = 1;
 		break;
 	case 5:
 		/* FR1 and HR1 */
-		msc->audio_support[0]->ver = 1;
-		msc->audio_support[0]->hr = 0;
-		msc->audio_support[1]->ver = 1;
-		msc->audio_support[1]->hr = 1;
+		msc->audio_support[0].ver = 1;
+		msc->audio_support[0].hr = 0;
+		msc->audio_support[1].ver = 1;
+		msc->audio_support[1].hr = 1;
 		msc->audio_length = 2;
 		break;
 	case 6:
 		/* FR1, FR2 and HR1 */
-		msc->audio_support[0]->ver = 1;
-		msc->audio_support[0]->hr = 0;
-		msc->audio_support[1]->ver = 2;
-		msc->audio_support[1]->hr = 0;
-		msc->audio_support[2]->ver = 1;
-		msc->audio_support[2]->hr = 1;
+		msc->audio_support[0].ver = 1;
+		msc->audio_support[0].hr = 0;
+		msc->audio_support[1].ver = 2;
+		msc->audio_support[1].hr = 0;
+		msc->audio_support[2].ver = 1;
+		msc->audio_support[2].hr = 1;
 		msc->audio_length = 3;
 		break;
 	case 7:
 		/* FR1, FR3 and HR3 */
-		msc->audio_support[0]->ver = 1;
-		msc->audio_support[0]->hr = 0;
-		msc->audio_support[1]->ver = 3;
-		msc->audio_support[1]->hr = 0;
-		msc->audio_support[2]->ver = 3;
-		msc->audio_support[2]->hr = 1;
+		msc->audio_support[0].ver = 1;
+		msc->audio_support[0].hr = 0;
+		msc->audio_support[1].ver = 3;
+		msc->audio_support[1].hr = 0;
+		msc->audio_support[2].ver = 3;
+		msc->audio_support[2].hr = 1;
 		msc->audio_length = 3;
 		break;
 	case 8:
 		/* FR1, FR2, FR3, HR1 and HR3 */
-		msc->audio_support[0]->ver = 1;
-		msc->audio_support[0]->hr = 0;
-		msc->audio_support[1]->ver = 2;
-		msc->audio_support[1]->hr = 0;
-		msc->audio_support[2]->ver = 3;
-		msc->audio_support[2]->hr = 0;
-		msc->audio_support[3]->ver = 1;
-		msc->audio_support[3]->hr = 1;
-		msc->audio_support[4]->ver = 3;
-		msc->audio_support[4]->hr = 1;
+		msc->audio_support[0].ver = 1;
+		msc->audio_support[0].hr = 0;
+		msc->audio_support[1].ver = 2;
+		msc->audio_support[1].hr = 0;
+		msc->audio_support[2].ver = 3;
+		msc->audio_support[2].hr = 0;
+		msc->audio_support[3].ver = 1;
+		msc->audio_support[3].hr = 1;
+		msc->audio_support[4].ver = 3;
+		msc->audio_support[4].hr = 1;
 		msc->audio_length = 5;
 		break;
 	}
@@ -394,10 +375,10 @@ static int test_match_codec_pref(const struct gsm0808_channel_type *ct, const st
 
 	printf(" * BSS: audio support settings (%u items):\n", msc->audio_length);
 	for (i = 0; i < msc->audio_length; i++)
-		if (msc->audio_support[i]->hr)
-			printf("   audio_support[%u]=HR%u\n", i, msc->audio_support[i]->ver);
+		if (msc->audio_support[i].hr)
+			printf("   audio_support[%u]=HR%u\n", i, msc->audio_support[i].ver);
 		else
-			printf("   audio_support[%u]=FR%u\n", i, msc->audio_support[i]->ver);
+			printf("   audio_support[%u]=FR%u\n", i, msc->audio_support[i].ver);
 
 	printf(" * BTS: audio support settings:\n");
 	printf("   (GSM-FR implicitly supported)\n");
@@ -426,8 +407,6 @@ static void test_one_to_one(void)
 
 	printf("============== test_one_to_one ==============\n\n");
 
-	init_msc_config(&msc_local);
-
 	for (i = 0; i < N_CONFIG_VARIANTS; i++) {
 		make_msc_config(&msc_local, i);
 		make_scl_config(&scl_ms, i);
@@ -436,8 +415,6 @@ static void test_one_to_one(void)
 		rc = test_match_codec_pref(&ct_msc, &scl_ms, &msc_local, &bts_local);
 		OSMO_ASSERT(rc == 0);
 	}
-
-	free_msc_config(&msc_local);
 }
 
 /* Network supports all combinations, MS varies */
@@ -452,8 +429,6 @@ static void test_ms(void)
 
 	printf("============== test_ms ==============\n\n");
 
-	init_msc_config(&msc_local);
-
 	make_msc_config(&msc_local, 8);
 	make_ct_config(&ct_msc, 8);
 	make_bts_config(&bts_local, 8);
@@ -462,8 +437,6 @@ static void test_ms(void)
 		rc = test_match_codec_pref(&ct_msc, &scl_ms, &msc_local, &bts_local);
 		OSMO_ASSERT(rc == 0);
 	}
-
-	free_msc_config(&msc_local);
 }
 
 /* BSS and MS support all combinations, MSC varies */
@@ -478,8 +451,6 @@ static void test_ct(void)
 
 	printf("============== test_ct ==============\n\n");
 
-	init_msc_config(&msc_local);
-
 	make_msc_config(&msc_local, 8);
 	make_scl_config(&scl_ms, 8);
 	make_bts_config(&bts_local, 8);
@@ -488,8 +459,6 @@ static void test_ct(void)
 		rc = test_match_codec_pref(&ct_msc, &scl_ms, &msc_local, &bts_local);
 		OSMO_ASSERT(rc == 0);
 	}
-
-	free_msc_config(&msc_local);
 }
 
 /* MSC and MS support all combinations, BSS varies */
@@ -504,8 +473,6 @@ static void test_msc(void)
 
 	printf("============== test_msc ==============\n\n");
 
-	init_msc_config(&msc_local);
-
 	make_ct_config(&ct_msc, 8);
 	make_scl_config(&scl_ms, 8);
 	make_bts_config(&bts_local, 8);
@@ -514,8 +481,6 @@ static void test_msc(void)
 		rc = test_match_codec_pref(&ct_msc, &scl_ms, &msc_local, &bts_local);
 		OSMO_ASSERT(rc == 0);
 	}
-
-	free_msc_config(&msc_local);
 }
 
 /* Some mixed configurations that are supposed to work */
@@ -528,8 +493,6 @@ static void test_selected_working(void)
 	int rc;
 
 	printf("============== test_selected_working ==============\n\n");
-
-	init_msc_config(&msc_local);
 
 	make_scl_config(&scl_ms, 6);
 	make_ct_config(&ct_msc, 5);
@@ -572,8 +535,6 @@ static void test_selected_working(void)
 	make_bts_config(&bts_local, 1);
 	rc = test_match_codec_pref(&ct_msc, &scl_ms, &msc_local, &bts_local);
 	OSMO_ASSERT(rc == 0);
-
-	free_msc_config(&msc_local);
 }
 
 /* Some mixed configurations that can not work */
@@ -586,8 +547,6 @@ static void test_selected_non_working(void)
 	int rc;
 
 	printf("============== test_selected_non_working ==============\n\n");
-
-	init_msc_config(&msc_local);
 
 	make_scl_config(&scl_ms, 1);
 	make_ct_config(&ct_msc, 5);
@@ -630,8 +589,6 @@ static void test_selected_non_working(void)
 	make_bts_config(&bts_local, 7);
 	rc = test_match_codec_pref(&ct_msc, &scl_ms, &msc_local, &bts_local);
 	OSMO_ASSERT(rc == -1);
-
-	free_msc_config(&msc_local);
 }
 
 /* Try execute bss_supp_codec_list(), display input and output parameters */
@@ -644,10 +601,10 @@ static void test_gen_bss_supported_codec_list(const struct bsc_msc_data *msc, st
 
 	printf(" * BSS: audio support settings (%u items):\n", msc->audio_length);
 	for (i = 0; i < msc->audio_length; i++)
-		if (msc->audio_support[i]->hr)
-			printf("   audio_support[%u]=HR%u\n", i, msc->audio_support[i]->ver);
+		if (msc->audio_support[i].hr)
+			printf("   audio_support[%u]=HR%u\n", i, msc->audio_support[i].ver);
 		else
-			printf("   audio_support[%u]=FR%u\n", i, msc->audio_support[i]->ver);
+			printf("   audio_support[%u]=FR%u\n", i, msc->audio_support[i].ver);
 
 	printf(" * BTS: audio support settings:\n");
 	printf("   (GSM-FR implicitly supported)\n");
@@ -660,7 +617,7 @@ static void test_gen_bss_supported_codec_list(const struct bsc_msc_data *msc, st
 	printf(" * result: speech codec list (%u items):\n", scl.len);
 	for (i = 0; i < scl.len; i++) {
 		printf("   codec[%u]->type=%s", i, gsm0808_speech_codec_type_name(scl.codec[i].type));
-		if (msc->audio_support[i]->ver == 3)
+		if (msc->audio_support[i].ver == 3)
 			printf(" S15-S0=%04x", scl.codec[i].cfg);
 		printf("\n");
 	}
@@ -676,8 +633,6 @@ static void test_gen_bss_supported_codec_list_cfgs(void)
 	uint8_t k;
 
 	printf("============== test_gen_bss_supp_codec_list_cfgs ==============\n\n");
-	init_msc_config(&msc_local);
-
 	for (i = 0; i < N_CONFIG_VARIANTS; i++) {
 		for (k = 0; k < N_CONFIG_VARIANTS; k++) {
 			make_msc_config(&msc_local, i);
@@ -686,8 +641,6 @@ static void test_gen_bss_supported_codec_list_cfgs(void)
 			test_gen_bss_supported_codec_list(&msc_local, &bts_local);
 		}
 	}
-
-	free_msc_config(&msc_local);
 }
 
 static const struct log_info_cat log_categories[] = {

@@ -2550,10 +2550,10 @@ static void write_msc(struct vty *vty, struct bsc_msc_data *msc)
 			if (i != 0)
 				vty_out(vty, " ");
 
-			if (msc->audio_support[i]->hr)
-				vty_out(vty, "hr%u", msc->audio_support[i]->ver);
+			if (msc->audio_support[i].hr)
+				vty_out(vty, "hr%u", msc->audio_support[i].ver);
 			else
-				vty_out(vty, "fr%u", msc->audio_support[i]->ver);
+				vty_out(vty, "fr%u", msc->audio_support[i].ver);
 		}
 		vty_out(vty, "%s", VTY_NEWLINE);
 
@@ -2724,27 +2724,21 @@ DEFUN_USRATTR(cfg_net_msc_codec_list,
 			goto error;
 	}
 
-	/* free the old list... if it exists */
-	if (data->audio_support) {
-		talloc_free(data->audio_support);
-		data->audio_support = NULL;
-		data->audio_length = 0;
+	if (argc > ARRAY_SIZE(data->audio_support)) {
+		vty_out(vty, "Too many items in 'msc' / 'codec-list': %d. There can be at most %zu entries.%s",
+			argc, ARRAY_SIZE(data->audio_support), VTY_NEWLINE);
+		return CMD_ERR_EXEED_ARGC_MAX;
 	}
 
-	/* create a new array */
-	data->audio_support =
-		talloc_zero_array(bsc_gsmnet, struct gsm_audio_support *, argc);
 	data->audio_length = argc;
 
 	for (i = 0; i < argc; ++i) {
-		data->audio_support[i] = talloc_zero(data->audio_support,
-				struct gsm_audio_support);
-		data->audio_support[i]->ver = atoi(argv[i] + 2);
+		data->audio_support[i].ver = atoi(argv[i] + 2);
 
 		if (strncmp("hr", argv[i], 2) == 0)
-			data->audio_support[i]->hr = 1;
+			data->audio_support[i].hr = 1;
 		else if (strncmp("fr", argv[i], 2) == 0)
-			data->audio_support[i]->hr = 0;
+			data->audio_support[i].hr = 0;
 	}
 
 	return CMD_SUCCESS;

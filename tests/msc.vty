@@ -114,3 +114,6 @@ msc 0
  codec-list fr1 fr2 fr3 fr4
 ...
 OsmoBSC(config-msc)# # TODO: should fr4 thru fr7 be rejected
+
+OsmoBSC(config-msc)# codec-list fr1 fr1 fr1 fr1 fr1 fr1 fr1 fr1 fr1 fr1 fr1 fr1 fr1 fr1 fr1 fr1 fr1
+Too many items in 'msc' / 'codec-list': 17. There can be at most 16 entries.
