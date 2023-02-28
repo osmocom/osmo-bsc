@@ -46,7 +46,6 @@
 /* flags */
 #define PCU_IF_FLAG_ACTIVE	(1 << 0)/* BTS is active */
 #define PCU_IF_FLAG_SYSMO	(1 << 1)/* access PDCH of sysmoBTS directly */
-#define PCU_IF_FLAG_DT		(1 << 2)/* use TLLI for confirmation directly */
 #define PCU_IF_FLAG_CS1		(1 << 16)
 #define PCU_IF_FLAG_CS2		(1 << 17)
 #define PCU_IF_FLAG_CS3		(1 << 18)
