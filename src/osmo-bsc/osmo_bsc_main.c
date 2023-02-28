@@ -830,7 +830,6 @@ const struct log_info log_info = {
 extern void *tall_paging_ctx;
 extern void *tall_fle_ctx;
 extern void *tall_tqe_ctx;
-extern void *tall_ctr_ctx;
 
 static int bsc_mgw_setup(void)
 {
@@ -881,7 +880,6 @@ int main(int argc, char **argv)
 	tall_paging_ctx = talloc_named_const(tall_bsc_ctx, 0, "paging_request");
 	tall_fle_ctx = talloc_named_const(tall_bsc_ctx, 0, "bs11_file_list_entry");
 	tall_tqe_ctx = talloc_named_const(tall_bsc_ctx, 0, "subch_txq_entry");
-	tall_ctr_ctx = talloc_named_const(tall_bsc_ctx, 0, "counter");
 
 	osmo_init_logging2(tall_bsc_ctx, &log_info);
 	osmo_stats_init(tall_bsc_ctx);
