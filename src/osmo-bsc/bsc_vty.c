@@ -2713,7 +2713,7 @@ DEFUN_USRATTR(cfg_net_bsc_codec_list,
 	int i;
 
 	/* check all given arguments first */
-	for (i = 0; i < argc; ++i) {
+	for (i = 0; i < argc; i++) {
 		/* check for hrX or frX */
 		if (strlen(argv[i]) != 3
 				|| argv[i][1] != 'r'
