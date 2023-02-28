@@ -133,8 +133,13 @@ struct bsc_msc_data {
 	/* audio codecs */
 	struct gsm48_multi_rate_conf amr_conf;
 	bool amr_octet_aligned;
-	struct gsm_audio_support **audio_support;
+
+	/* Practically, there can be only 5 entries in osmo-bsc: FR1 FR2 FR3 HR1 HR3. Historically, osmo-bsc allowed
+	 * *any* number of entries -- we should not break too strictly on old cfg files. Theoretically, there should be
+	 * room for FR1 to FR7 plus HR1 to HR7 less HR2. Let's just give ample room for all these aspects: */
+	struct gsm_audio_support audio_support[16];
 	int audio_length;
+
 	enum bsc_lcls_mode lcls_mode;
 	bool lcls_codec_mismatch_allow;
 

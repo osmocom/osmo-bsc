@@ -207,7 +207,6 @@ struct bsc_msc_data *osmo_msc_data_find(struct gsm_network *net, int nr)
 struct bsc_msc_data *osmo_msc_data_alloc(struct gsm_network *net, int nr)
 {
 	struct bsc_msc_data *msc_data;
-	unsigned int i;
 
 	/* check if there is already one */
 	msc_data = osmo_msc_data_find(net, nr);
@@ -251,24 +250,16 @@ struct bsc_msc_data *osmo_msc_data_alloc(struct gsm_network *net, int nr)
 
 	/* Allow the full set of possible codecs by default */
 	msc_data->audio_length = 5;
-	msc_data->audio_support =
-	    talloc_zero_array(msc_data, struct gsm_audio_support *,
-			      msc_data->audio_length);
-	for (i = 0; i < msc_data->audio_length; i++) {
-		msc_data->audio_support[i] =
-		    talloc_zero(msc_data->audio_support,
-				struct gsm_audio_support);
-	}
-	msc_data->audio_support[0]->ver = 1;
-	msc_data->audio_support[0]->hr = 0;
-	msc_data->audio_support[1]->ver = 1;
-	msc_data->audio_support[1]->hr = 1;
-	msc_data->audio_support[2]->ver = 2;
-	msc_data->audio_support[2]->hr = 0;
-	msc_data->audio_support[3]->ver = 3;
-	msc_data->audio_support[3]->hr = 0;
-	msc_data->audio_support[4]->ver = 3;
-	msc_data->audio_support[4]->hr = 1;
+	msc_data->audio_support[0].ver = 1;
+	msc_data->audio_support[0].hr = 0;
+	msc_data->audio_support[1].ver = 1;
+	msc_data->audio_support[1].hr = 1;
+	msc_data->audio_support[2].ver = 2;
+	msc_data->audio_support[2].hr = 0;
+	msc_data->audio_support[3].ver = 3;
+	msc_data->audio_support[3].hr = 0;
+	msc_data->audio_support[4].ver = 3;
+	msc_data->audio_support[4].hr = 1;
 
 	osmo_fd_setup(&msc_data->mgcp_ipa.ofd, -1, OSMO_FD_READ, &bsc_sccplite_mgcp_proxy_cb, msc_data, 0);
 	msc_data->mgcp_ipa.local_addr = NULL; /* = INADDR(6)_ANY */
