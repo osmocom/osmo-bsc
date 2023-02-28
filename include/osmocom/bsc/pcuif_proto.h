@@ -8,7 +8,7 @@
 
 #define PCU_SOCK_DEFAULT	"/tmp/pcu_bts"
 
-#define PCU_IF_VERSION		0x0a
+#define PCU_IF_VERSION		0x0b
 #define TXT_MAX_LEN	128
 
 /* msg_type */
