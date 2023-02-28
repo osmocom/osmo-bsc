@@ -2640,8 +2640,8 @@ static int config_write_bsc(struct vty *vty)
 	return CMD_SUCCESS;
 }
 
-DEFUN_ATTR(cfg_net_bsc_ncc,
-	   cfg_net_bsc_ncc_cmd,
+DEFUN_ATTR(cfg_net_msc_ncc,
+	   cfg_net_msc_ncc_cmd,
 	   "core-mobile-network-code <1-999>",
 	   "Use this network code for the core network\n" "MNC value\n",
 	   CMD_ATTR_IMMEDIATE)
@@ -2659,8 +2659,8 @@ DEFUN_ATTR(cfg_net_bsc_ncc,
 	return CMD_SUCCESS;
 }
 
-DEFUN_ATTR(cfg_net_bsc_mcc,
-	   cfg_net_bsc_mcc_cmd,
+DEFUN_ATTR(cfg_net_msc_mcc,
+	   cfg_net_msc_mcc_cmd,
 	   "core-mobile-country-code <1-999>",
 	   "Use this country code for the core network\n" "MCC value\n",
 	   CMD_ATTR_IMMEDIATE)
@@ -2675,8 +2675,8 @@ DEFUN_ATTR(cfg_net_bsc_mcc,
 	return CMD_SUCCESS;
 }
 
-DEFUN_DEPRECATED(cfg_net_bsc_lac,
-		 cfg_net_bsc_lac_cmd,
+DEFUN_DEPRECATED(cfg_net_msc_lac,
+		 cfg_net_msc_lac_cmd,
 		 "core-location-area-code <0-65535>",
 		 "Legacy configuration that no longer has any effect\n-\n")
 {
@@ -2684,8 +2684,8 @@ DEFUN_DEPRECATED(cfg_net_bsc_lac,
 	return CMD_SUCCESS;
 }
 
-DEFUN_DEPRECATED(cfg_net_bsc_ci,
-		 cfg_net_bsc_ci_cmd,
+DEFUN_DEPRECATED(cfg_net_msc_ci,
+		 cfg_net_msc_ci_cmd,
 		 "core-cell-identity <0-65535>",
 		 "Legacy configuration that no longer has any effect\n-\n")
 {
@@ -2693,8 +2693,8 @@ DEFUN_DEPRECATED(cfg_net_bsc_ci,
 	return CMD_SUCCESS;
 }
 
-DEFUN_DEPRECATED(cfg_net_bsc_rtp_base,
-      cfg_net_bsc_rtp_base_cmd,
+DEFUN_DEPRECATED(cfg_net_msc_rtp_base,
+      cfg_net_msc_rtp_base_cmd,
       "ip.access rtp-base <1-65000>",
       "deprecated\n" "deprecated, RTP is handled by the MGW\n" "deprecated\n")
 {
@@ -2702,8 +2702,8 @@ DEFUN_DEPRECATED(cfg_net_bsc_rtp_base,
 	return CMD_SUCCESS;
 }
 
-DEFUN_USRATTR(cfg_net_bsc_codec_list,
-	      cfg_net_bsc_codec_list_cmd,
+DEFUN_USRATTR(cfg_net_msc_codec_list,
+	      cfg_net_msc_codec_list_cmd,
 	      BSC_VTY_ATTR_NEW_LCHAN,
 	      "codec-list .LIST",
 	      "Set the allowed audio codecs and their order of preference\n"
@@ -3615,12 +3615,12 @@ int bsc_vty_init(struct gsm_network *network)
 	install_element(BSC_NODE, &cfg_bsc_bts_setup_ramping_step_interval_cmd);
 
 	install_node(&msc_node, config_write_msc);
-	install_element(MSC_NODE, &cfg_net_bsc_ncc_cmd);
-	install_element(MSC_NODE, &cfg_net_bsc_mcc_cmd);
-	install_element(MSC_NODE, &cfg_net_bsc_lac_cmd);
-	install_element(MSC_NODE, &cfg_net_bsc_ci_cmd);
-	install_element(MSC_NODE, &cfg_net_bsc_rtp_base_cmd);
-	install_element(MSC_NODE, &cfg_net_bsc_codec_list_cmd);
+	install_element(MSC_NODE, &cfg_net_msc_ncc_cmd);
+	install_element(MSC_NODE, &cfg_net_msc_mcc_cmd);
+	install_element(MSC_NODE, &cfg_net_msc_lac_cmd);
+	install_element(MSC_NODE, &cfg_net_msc_ci_cmd);
+	install_element(MSC_NODE, &cfg_net_msc_rtp_base_cmd);
+	install_element(MSC_NODE, &cfg_net_msc_codec_list_cmd);
 	install_element(MSC_NODE, &cfg_net_msc_dest_cmd);
 	install_element(MSC_NODE, &cfg_net_msc_no_dest_cmd);
 	install_element(MSC_NODE, &cfg_net_msc_welcome_ussd_cmd);
