@@ -2718,8 +2718,8 @@ DEFUN_USRATTR(cfg_net_bsc_codec_list,
 		if (strlen(argv[i]) != 3
 				|| argv[i][1] != 'r'
 				|| (argv[i][0] != 'h' && argv[i][0] != 'f')
-				|| argv[i][2] < 0x30
-				|| argv[i][2] > 0x39)
+				|| argv[i][2] < '0'
+				|| argv[i][2] > '9')
 			goto error;
 	}
 
