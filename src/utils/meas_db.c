@@ -94,19 +94,19 @@ int meas_db_insert(struct meas_db_state *st, unsigned long timestamp,
 	SCK_OK(st->db, sqlite3_bind_int(st->stmt_ins_mr, 6, mfm->lchan_type));
 	SCK_OK(st->db, sqlite3_bind_int(st->stmt_ins_mr, 7, mfm->pchan_type));
 
-	if (mfm->imsi)
+	if (mfm->imsi[0] != '\0')
 		SCK_OK(st->db, sqlite3_bind_text(st->stmt_ins_mr, 8,
 						 mfm->imsi, -1, SQLITE_STATIC));
 	else
 		SCK_OK(st->db, sqlite3_bind_null(st->stmt_ins_mr, 8));
 
-	if (mfm->name)
+	if (mfm->name[0] != '\0')
 		SCK_OK(st->db, sqlite3_bind_text(st->stmt_ins_mr, 9,
 						 mfm->name, -1, SQLITE_STATIC));
 	else
 		SCK_OK(st->db, sqlite3_bind_null(st->stmt_ins_mr, 9));
 
-	if (mfm->scenario)
+	if (mfm->scenario[0] != '\0')
 		SCK_OK(st->db, sqlite3_bind_text(st->stmt_ins_mr, 10,
 						 mfm->scenario, -1, SQLITE_STATIC));
 	else
