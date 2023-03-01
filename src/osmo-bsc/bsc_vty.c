@@ -2752,7 +2752,7 @@ DEFUN_USRATTR(cfg_net_msc_codec_list,
 error:
 	vty_out(vty, "Codec name must be hrX or frX. Was '%s'%s",
 			argv[i], VTY_NEWLINE);
-	return CMD_ERR_INCOMPLETE;
+	return CMD_WARNING;
 }
 
 #define LEGACY_STR "This command has no effect, it is kept to support legacy config files\n"
