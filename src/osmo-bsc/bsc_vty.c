@@ -2742,6 +2742,13 @@ DEFUN_USRATTR(cfg_net_msc_codec_list,
 		else if (strncmp("fr", argv[i], 2) == 0)
 			tmp[i].hr = 0;
 
+		/* forbid invalid versions */
+		if (tmp[i].ver < 1 || tmp[i].ver > 7
+		    || (tmp[i].hr && tmp[i].ver == 2)) {
+			vty_out(vty, "'%s' is not a valid codec version%s", argv[i], VTY_NEWLINE);
+			return CMD_WARNING;
+		}
+
 		/* prevent duplicate entries */
 		for (j = 0; j < i; j++) {
 			if (gsm_audio_support_cmp(&tmp[j], &tmp[i]) == 0) {
