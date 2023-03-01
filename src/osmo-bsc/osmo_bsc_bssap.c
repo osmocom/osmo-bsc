@@ -674,7 +674,7 @@ static int bssmap_handle_lcls_connect_ctrl(struct gsm_subscriber_connection *con
  * lchan is requested. The preferred lchan will be requested first. If we
  * find an alternate setting here, this one will be tried secondly if our
  * primary choice fails. */
-static int select_codecs(struct assignment_request *req, struct gsm0808_channel_type *ct,
+static int select_codecs(struct assignment_request *req, const struct gsm0808_channel_type *ct,
 			 struct gsm_subscriber_connection *conn)
 {
 	int rc, i, nc = 0;
