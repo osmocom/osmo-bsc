@@ -607,3 +607,14 @@ void bsc_cm_update(struct gsm_subscriber_connection *conn,
 	if (rc != 0)
 		msgb_free(resp);
 }
+
+bool bsc_chan_ind_requires_rtp_stream(enum gsm0808_chan_indicator ch_indctr)
+{
+	switch (ch_indctr) {
+	case GSM0808_CHAN_SPEECH:
+	case GSM0808_CHAN_DATA:
+		return true;
+	default:
+		return false;
+	}
+}

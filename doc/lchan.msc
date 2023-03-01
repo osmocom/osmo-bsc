@@ -15,7 +15,7 @@ msc {
 	ts note ts [label="A dyn TS may be in PDCH mode and will asynchronously switch off PDCH first. A
 		non-dynamic TS is ready immediately."];
 	|||;
-	--- [label="IF requires_voice_stream"];
+	--- [label="IF requires_rtp_stream"];
 	lchan -> rtp [label="lchan_rtp_fsm_start()"];
 	rtp abox rtp [label="allocate\n LCHAN_RTP_ST_\nWAIT_MGW_ENDPOINT_\nAVAILABLE"];
 	--- [label="IF no endpoint-CI yet"];
@@ -29,7 +29,7 @@ msc {
 	rtp note mgwep [label="The CRCX OK has assigned us a new endpoint CI number"];
 	rtp abox rtp [label="LCHAN_RTP_ST_WAIT_LCHAN_READY"];
 	--- [label="END: no endpoint-CI yet"];
-	--- [label="END: requires_voice_stream"];
+	--- [label="END: requires_rtp_stream"];
 	|||;
 	...;
 	ts -> lchan [label="LCHAN_EV_TS_READY"];
@@ -60,7 +60,7 @@ msc {
 	lchan abox lchan [label="LCHAN_ST_WAIT_\nRLL_RTP_ESTABLISH\nT3101"];
 	|||;
 	|||;
-	--- [label="IF requires_voice_stream"];
+	--- [label="IF requires_rtp_stream"];
 	lchan -> rtp [label="LCHAN_RTP_EV_LCHAN_READY"];
 	|||;
 	--- [label="IF ip.access style BTS"];
@@ -99,7 +99,7 @@ msc {
 	...;
 	lchan -> rtp [label="LCHAN_RTP_EV_ESTABLISHED\nvia gscon_change_primary_lchan()"];
 	rtp abox rtp [label="LCHAN_RTP_ST_\nESTABLISHED"];
-	--- [label="END: requires_voice_stream"];
+	--- [label="END: requires_rtp_stream"];
 	|||;
 	|||;
 
@@ -116,7 +116,7 @@ msc {
 	lchan rbox lchan [label="dispatch\nHO_EV_LCHAN_ESTABLISHED\n(see Handover FSM diagrams)"];
 	--- [label="END"];
 	...;
-	--- [label="IF requires_voice_stream"];
+	--- [label="IF requires_rtp_stream"];
 	lchan rbox lchan [label="Assignment or Handover FSM:"];
 	lchan -> mgwep [label="CRCX/MDCX to-MSC"];
 	...;
@@ -125,7 +125,7 @@ msc {
 	lchan -> rtp [label="LCHAN_RTP_EV_ESTABLISHED"];
 	rtp abox rtp [label="LCHAN_RTP_ST_\nESTABLISHED"];
 	rtp box rtp [label="Forget any Rollback info"];
-	--- [label="END: requires_voice_stream"];
+	--- [label="END: requires_rtp_stream"];
 
 	...;
 	...;

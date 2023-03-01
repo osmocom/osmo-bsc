@@ -35,6 +35,7 @@
 #include <osmocom/bsc/abis_rsl.h>
 #include <osmocom/bsc/bsc_rll.h>
 #include <osmocom/bsc/gsm_04_08_rr.h>
+#include <osmocom/bsc/gsm_08_08.h>
 #include <osmocom/bsc/assignment_fsm.h>
 #include <osmocom/bsc/handover_fsm.h>
 #include <osmocom/bsc/bsc_msc_data.h>
@@ -689,6 +690,8 @@ static int lchan_activate_set_ch_mode_rate_and_mr_config(struct gsm_lchan *lchan
 			return -EINVAL;
 		}
 	}
+
+	lchan->activate.ch_indctr = lchan->activate.info.ch_indctr;
 	return 0;
 }
 
@@ -717,6 +720,7 @@ static void lchan_fsm_wait_ts_ready_onenter(struct osmo_fsm_inst *fi, uint32_t p
 	struct gsm_lchan *old_lchan = lchan->activate.info.re_use_mgw_endpoint_from_lchan;
 	struct lchan_activate_info *info = &lchan->activate.info;
 	int ms_power_dbm = bts->ms_max_power;
+	bool requires_rtp_stream;
 
 	if (lchan->release.requested) {
 		lchan_fail("Release requested while activating");
@@ -760,12 +764,13 @@ static void lchan_fsm_wait_ts_ready_onenter(struct osmo_fsm_inst *fi, uint32_t p
 	lchan->activate.tsc = lchan->activate.info.tsc.present ? lchan->activate.info.tsc.val : gsm_ts_tsc(lchan->ts);
 
 	use_mgwep_ci = lchan_use_mgw_endpoint_ci_bts(lchan);
+	requires_rtp_stream = bsc_chan_ind_requires_rtp_stream(lchan->activate.info.ch_indctr);
 
 	LOG_LCHAN(lchan, LOGL_INFO,
-		  "Activation requested: %s voice=%s MGW-ci=%s type=%s tch-mode=%s encr-alg=A5/%u ck=%s\n",
+		  "Activation requested: %s rtp=%s MGW-ci=%s type=%s tch-mode=%s encr-alg=A5/%u ck=%s\n",
 		  lchan_activate_mode_name(lchan->activate.info.activ_for),
-		  lchan->activate.info.requires_voice_stream ? "yes" : "no",
-		  lchan->activate.info.requires_voice_stream ?
+		  requires_rtp_stream ? "yes" : "no",
+		  requires_rtp_stream ?
 			(use_mgwep_ci ? osmo_mgcpc_ep_ci_name(use_mgwep_ci) : "new")
 			: "none",
 		  gsm_chan_t_name(lchan->type),
@@ -779,7 +784,7 @@ static void lchan_fsm_wait_ts_ready_onenter(struct osmo_fsm_inst *fi, uint32_t p
 	osmo_fsm_inst_dispatch(lchan->ts->fi, TS_EV_LCHAN_REQUESTED, lchan);
 
 	/* Prepare an MGW endpoint CI if appropriate. */
-	if (lchan->activate.info.requires_voice_stream)
+	if (requires_rtp_stream)
 		lchan_rtp_fsm_start(lchan);
 
 	if (lchan->activate.info.imm_ass_time == IMM_ASS_TIME_PRE_TS_ACK) {
@@ -938,6 +943,7 @@ static void post_activ_ack_accept_preliminary_settings(struct gsm_lchan *lchan)
 {
 	lchan->current_ch_mode_rate = lchan->activate.ch_mode_rate;
 	lchan->current_mr_conf = lchan->activate.mr_conf_filtered;
+	lchan->current_ch_indctr = lchan->activate.ch_indctr;
 	lchan->vamos.enabled = lchan->activate.info.vamos;
 	lchan->tsc_set = lchan->activate.tsc_set;
 	lchan->tsc = lchan->activate.tsc;
@@ -1019,16 +1025,17 @@ static void lchan_fsm_post_activ_ack(struct osmo_fsm_inst *fi)
 static void lchan_fsm_wait_rll_rtp_establish_onenter(struct osmo_fsm_inst *fi, uint32_t prev_state)
 {
 	struct gsm_lchan *lchan = lchan_fi_lchan(fi);
+	bool requires_rtp_stream = bsc_chan_ind_requires_rtp_stream(lchan->activate.info.ch_indctr);
+
 	if (lchan->fi_rtp)
 		osmo_fsm_inst_dispatch(lchan->fi_rtp, LCHAN_RTP_EV_LCHAN_READY, 0);
 	/* Prepare an MGW endpoint CI if appropriate (late). */
-	else if (lchan->activate.info.requires_voice_stream)
+	else if (requires_rtp_stream)
 		lchan_rtp_fsm_start(lchan);
 
 	/* When activating a channel for VTY, skip waiting for activity from
-	 * lchan_rtp_fsm, but only if no voice stream is required. */
-	if (lchan->activate.info.activ_for == ACTIVATE_FOR_VTY &&
-	    !lchan->activate.info.requires_voice_stream) {
+	 * lchan_rtp_fsm, but only if no rtp stream is required. */
+	if (lchan->activate.info.activ_for == ACTIVATE_FOR_VTY && !requires_rtp_stream) {
 		lchan_fsm_state_chg(LCHAN_ST_ESTABLISHED);
 	}
 }
@@ -1036,14 +1043,15 @@ static void lchan_fsm_wait_rll_rtp_establish_onenter(struct osmo_fsm_inst *fi, u
 static void lchan_fsm_wait_rll_rtp_establish(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
 	struct gsm_lchan *lchan = lchan_fi_lchan(fi);
+	bool requires_rtp_stream = bsc_chan_ind_requires_rtp_stream(lchan->activate.info.ch_indctr);
+
 	switch (event) {
 
 	case LCHAN_EV_RLL_ESTABLISH_IND:
-		if (!lchan->activate.info.requires_voice_stream
-		    || lchan_rtp_established(lchan)) {
+		if (!requires_rtp_stream || lchan_rtp_established(lchan)) {
 			LOG_LCHAN(lchan, LOGL_DEBUG,
 				  "%s\n",
-				  (lchan->activate.info.requires_voice_stream ?
+				  (requires_rtp_stream ?
 				   "RTP already established earlier" : "no voice stream required"));
 			lchan_fsm_state_chg(LCHAN_ST_ESTABLISHED);
 		}
@@ -1118,19 +1126,19 @@ static void lchan_fsm_wait_rsl_chan_mode_modify_ack(struct osmo_fsm_inst *fi, ui
 		/* The Channel Mode Modify was ACKed, now the requested values become the accepted and used values. */
 		lchan->current_ch_mode_rate = lchan->modify.ch_mode_rate;
 		lchan->current_mr_conf = lchan->modify.mr_conf_filtered;
+		lchan->current_ch_indctr = lchan->modify.ch_indctr;
 		lchan->tsc_set = lchan->modify.tsc_set;
 		lchan->tsc = lchan->modify.tsc;
 		lchan->vamos.enabled = lchan->modify.info.vamos;
 
-		if (lchan->modify.info.requires_voice_stream
-		    && !lchan->fi_rtp) {
+		if (bsc_chan_ind_requires_rtp_stream(lchan->modify.info.ch_indctr) && !lchan->fi_rtp) {
 			/* Continue with RTP stream establishing as done in lchan_activate(). Place the requested values in
 			 * lchan->activate.info and continue with voice stream setup. */
 			lchan->activate.info = (struct lchan_activate_info){
 				.activ_for = ACTIVATE_FOR_MODE_MODIFY_RTP,
 				.for_conn = lchan->conn,
 				.ch_mode_rate = lchan->modify.ch_mode_rate,
-				.requires_voice_stream = true,
+				.ch_indctr = lchan->modify.info.ch_indctr,
 				.msc_assigned_cic = lchan->modify.info.msc_assigned_cic,
 			};
 			if (lchan_activate_set_ch_mode_rate_and_mr_config(lchan))
@@ -1239,6 +1247,7 @@ static void lchan_fsm_established(struct osmo_fsm_inst *fi, uint32_t event, void
 	struct gsm_lchan *lchan = lchan_fi_lchan(fi);
 	struct lchan_modify_info *modif_info;
 	struct osmo_mgcpc_ep_ci *use_mgwep_ci;
+	bool requires_rtp_stream = bsc_chan_ind_requires_rtp_stream(lchan->modify.info.ch_indctr);
 
 	switch (event) {
 	case LCHAN_EV_RLL_ESTABLISH_IND:
@@ -1289,6 +1298,8 @@ static void lchan_fsm_established(struct osmo_fsm_inst *fi, uint32_t event, void
 			}
 		}
 
+		lchan->modify.ch_indctr = lchan->modify.info.ch_indctr;
+
 		/* If enabling VAMOS mode and no specific TSC Set was selected, make sure to select a sane TSC Set by
 		 * default: Set 1 for the primary and Set 2 for the shadow lchan. For non-VAMOS lchans, TSC Set 1. */
 		if (lchan->modify.info.tsc_set.present)
@@ -1301,10 +1312,10 @@ static void lchan_fsm_established(struct osmo_fsm_inst *fi, uint32_t event, void
 		lchan->modify.tsc = lchan->modify.info.tsc.present ? lchan->modify.info.tsc.val : gsm_ts_tsc(lchan->ts);
 
 		LOG_LCHAN(lchan, LOGL_INFO,
-			  "Modification requested: %s voice=%s MGW-ci=%s type=%s tch-mode=%s tsc=%d/%u\n",
+			  "Modification requested: %s rtp=%s MGW-ci=%s type=%s tch-mode=%s tsc=%d/%u\n",
 			  lchan_modify_for_name(lchan->modify.info.modify_for),
-			  lchan->modify.info.requires_voice_stream ? "yes" : "no",
-			  lchan->modify.info.requires_voice_stream ?
+			  requires_rtp_stream ? "yes" : "no",
+			  requires_rtp_stream ?
 			  (use_mgwep_ci ? osmo_mgcpc_ep_ci_name(use_mgwep_ci) : "new")
 			  : "none",
 			  gsm_chan_t_name(lchan->type),
@@ -1806,9 +1817,9 @@ static int lchan_fsm_timer_cb(struct osmo_fsm_inst *fi)
 		lchan->release.rsl_error_cause = RSL_ERR_INTERWORKING;
 		lchan->release.rr_cause = bsc_gsm48_rr_cause_from_rsl_cause(lchan->release.rsl_error_cause);
 		if (fi->state  == LCHAN_ST_WAIT_RLL_RTP_ESTABLISH) {
-			lchan_fail("Timeout (rll_ready=%s,voice_require=%s,voice_ready=%s)",
+			lchan_fail("Timeout (rll_ready=%s,rtp_require=%s,voice_ready=%s)",
 				   (lchan->sapis[0] != LCHAN_SAPI_UNUSED) ? "yes" : "no",
-				   lchan->activate.info.requires_voice_stream ? "yes" : "no",
+				   bsc_chan_ind_requires_rtp_stream(lchan->activate.info.ch_indctr) ? "yes" : "no",
 				   lchan_rtp_established(lchan) ? "yes" : "no");
 		} else {
 			 lchan_fail("Timeout");

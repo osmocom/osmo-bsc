@@ -13,3 +13,4 @@ void bsc_dtap(struct gsm_subscriber_connection *conn, uint8_t link_id, struct ms
 void bsc_cm_update(struct gsm_subscriber_connection *conn,
 		   const uint8_t *cm2, uint8_t cm2_len,
 		   const uint8_t *cm3, uint8_t cm3_len);
+bool bsc_chan_ind_requires_rtp_stream(enum gsm0808_chan_indicator ch_indctr);

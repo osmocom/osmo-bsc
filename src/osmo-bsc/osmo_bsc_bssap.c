@@ -29,6 +29,7 @@
 #include <osmocom/bsc/bsc_subscriber.h>
 #include <osmocom/bsc/paging.h>
 #include <osmocom/bsc/gsm_04_08_rr.h>
+#include <osmocom/bsc/gsm_08_08.h>
 #include <osmocom/bsc/bsc_subscr_conn_fsm.h>
 #include <osmocom/bsc/codec_pref.h>
 #include <osmocom/bsc/data_rate_pref.h>
@@ -1618,7 +1619,7 @@ int bsc_tx_bssmap_ho_request_ack(struct gsm_subscriber_connection *conn, struct 
 								  new_lchan->current_ch_mode_rate.chan_mode),
 	};
 
-	if (gscon_is_aoip(conn) && new_lchan->activate.info.requires_voice_stream) {
+	if (gscon_is_aoip(conn) && bsc_chan_ind_requires_rtp_stream(new_lchan->activate.info.ch_indctr)) {
 		struct osmo_sockaddr_str to_msc_rtp;
 		const struct mgcp_conn_peer *rtp_info = osmo_mgcpc_ep_ci_get_rtp_info(conn->user_plane.mgw_endpoint_ci_msc);
 		int rc;
@@ -1693,7 +1694,7 @@ enum handover_result bsc_tx_bssmap_ho_complete(struct gsm_subscriber_connection 
 	};
 
 	/* speech_codec_chosen */
-	if (ho->new_lchan->activate.info.requires_voice_stream && gscon_is_aoip(conn)) {
+	if (bsc_chan_ind_requires_rtp_stream(ho->new_lchan->activate.info.ch_indctr) && gscon_is_aoip(conn)) {
 		int perm_spch = gsm0808_permitted_speech(lchan->type, lchan->current_ch_mode_rate.chan_mode);
 		params.speech_codec_chosen_present = true;
 		rc = gsm0808_speech_codec_from_chan_type(&params.speech_codec_chosen, perm_spch);

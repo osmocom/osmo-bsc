@@ -122,7 +122,7 @@ struct lchan_activate_info {
 	struct gsm_subscriber_connection *for_conn;
 	struct channel_mode_and_rate ch_mode_rate;
 	struct gsm_encr encr;
-	bool requires_voice_stream;
+	enum gsm0808_chan_indicator ch_indctr;
 	bool wait_before_switching_rtp; /*< true = requires LCHAN_EV_READY_TO_SWITCH_RTP */
 	uint16_t msc_assigned_cic;
 	/* During intra-BSC handover, we keep the MGW endpoint intact and just re-route to the new lchan. This
@@ -159,7 +159,7 @@ static inline const char *lchan_modify_for_name(enum lchan_modify_for modify_for
 struct lchan_modify_info {
 	enum lchan_modify_for modify_for;
 	struct channel_mode_and_rate ch_mode_rate;
-	bool requires_voice_stream;
+	enum gsm0808_chan_indicator ch_indctr;
 	uint16_t msc_assigned_cic;
 
 	/* The TSC Set to use if 'use' is true, otherwise automatically determine the TSC Set value to use. Valid range
@@ -216,6 +216,7 @@ struct gsm_lchan {
 
 		struct channel_mode_and_rate ch_mode_rate;
 		struct gsm48_multi_rate_conf mr_conf_filtered;
+		enum gsm0808_chan_indicator ch_indctr;
 		bool activ_ack; /*< true as soon as RSL Chan Activ Ack is received */
 		bool immediate_assignment_sent;
 		/*! This flag ensures that when an lchan activation has succeeded, and we have already
@@ -239,6 +240,7 @@ struct gsm_lchan {
 
 		struct channel_mode_and_rate ch_mode_rate;
 		struct gsm48_multi_rate_conf mr_conf_filtered;
+		enum gsm0808_chan_indicator ch_indctr;
 		/* Actually used TSC Set. */
 		int tsc_set;
 		/* Actually used TSC. */
@@ -324,6 +326,7 @@ struct gsm_lchan {
 	 * channel_mode_and_rate. */
 	struct channel_mode_and_rate current_ch_mode_rate;
 	struct gsm48_multi_rate_conf current_mr_conf;
+	enum gsm0808_chan_indicator current_ch_indctr;
 
 	/* Circuit-Switched TSC Set in use, or -1 if no specific TSC Set was requested. The valid range is 1-4 as
 	 * described in the spec 3GPP TS 45.002. */
