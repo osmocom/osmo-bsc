@@ -1003,6 +1003,10 @@ struct gsm_network {
 
 	struct chan_counts chan_counts;
 	struct all_allocated all_allocated;
+
+	/* PCU socket state */
+	char *pcu_sock_path;
+	struct pcu_sock_state *pcu_state;
 };
 
 struct gsm_audio_support {

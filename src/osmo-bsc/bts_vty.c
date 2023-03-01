@@ -2191,28 +2191,6 @@ DEFUN_USRATTR(cfg_bts_si5_neigh,
 	return CMD_SUCCESS;
 }
 
-DEFUN_ATTR(cfg_bts_pcu_sock,
-	   cfg_bts_pcu_sock_cmd,
-	   "pcu-socket PATH",
-	   "PCU Socket Path for using OsmoPCU co-located with BSC (legacy BTS)\n"
-	   "Path in the file system for the unix-domain PCU socket\n",
-	   CMD_ATTR_IMMEDIATE)
-{
-	struct gsm_bts *bts = vty->index;
-	int rc;
-
-	osmo_talloc_replace_string(bts, &bts->pcu_sock_path, argv[0]);
-	pcu_sock_exit(bts);
-	rc = pcu_sock_init(bts->pcu_sock_path, bts);
-	if (rc < 0) {
-		vty_out(vty, "%% Error creating PCU socket `%s' for BTS %u%s",
-			bts->pcu_sock_path, bts->nr, VTY_NEWLINE);
-		return CMD_WARNING;
-	}
-
-	return CMD_SUCCESS;
-}
-
 DEFUN_ATTR(cfg_bts_acc_rotate,
 	   cfg_bts_acc_rotate_cmd,
 	   "access-control-class-rotate <0-10>",
@@ -3979,8 +3957,6 @@ void bts_dump_vty(struct vty *vty, struct gsm_bts *bts)
 		bts->early_classmark_allowed_3g && !bts->early_classmark_allowed ?
 		" (forbidden by 2G bit)" : "",
 		VTY_NEWLINE);
-	if (bts->pcu_sock_path)
-		vty_out(vty, "  PCU Socket Path: %s%s", bts->pcu_sock_path, VTY_NEWLINE);
 	if (is_ipaccess_bts(bts))
 		vty_out(vty, "  Unit ID: %u/%u/0, OML Stream ID 0x%02x%s",
 			bts->ip_access.site_id, bts->ip_access.bts_id,
@@ -4618,8 +4594,6 @@ static void config_write_bts_single(struct vty *vty, struct gsm_bts *bts)
 			vty_out(vty, "  depends-on-bts %d%s", bts_nr, VTY_NEWLINE);
 		}
 	}
-	if (bts->pcu_sock_path)
-		vty_out(vty, "  pcu-socket %s%s", bts->pcu_sock_path, VTY_NEWLINE);
 
 	ho_vty_write_bts(vty, bts);
 
@@ -4857,7 +4831,6 @@ int bts_vty_init(void)
 	install_element(BTS_NODE, &cfg_bts_osmux_cmd);
 	install_element(BTS_NODE, &cfg_bts_mgw_pool_target_cmd);
 	install_element(BTS_NODE, &cfg_bts_no_mgw_pool_target_cmd);
-	install_element(BTS_NODE, &cfg_bts_pcu_sock_cmd);
 	install_element(BTS_NODE, &cfg_bts_acc_rotate_cmd);
 	install_element(BTS_NODE, &cfg_bts_acc_rotate_quantum_cmd);
 	install_element(BTS_NODE, &cfg_bts_acc_ramping_cmd);

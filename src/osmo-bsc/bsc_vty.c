@@ -67,6 +67,7 @@
 #include <osmocom/bsc/bssmap_reset.h>
 #include <osmocom/bsc/bsc_msc_data.h>
 #include <osmocom/bsc/lchan.h>
+#include <osmocom/bsc/pcu_if.h>
 
 #include <inttypes.h>
 
@@ -218,6 +219,9 @@ static void net_dump_vty(struct vty *vty, struct gsm_network *net)
 		vty_out(vty, "  Last RF Lock Command: %s%s",
 			net->rf_ctrl->last_rf_lock_ctrl_command,
 			VTY_NEWLINE);
+
+	if (net->pcu_sock_path)
+		vty_out(vty, "  PCU Socket Path: %s%s", net->pcu_sock_path, VTY_NEWLINE);
 }
 
 DEFUN(bsc_show_net, bsc_show_net_cmd, "show network",
@@ -405,6 +409,9 @@ static int config_write_net(struct vty *vty)
 			vty_out(vty, " %d", r->last);
 		vty_out(vty, "%s", VTY_NEWLINE);
 	}
+
+	if (gsmnet->pcu_sock_path)
+		vty_out(vty, "  pcu-socket %s%s", gsmnet->pcu_sock_path, VTY_NEWLINE);
 
 	neighbor_ident_vty_write_network(vty, " ");
 	mgcp_client_pool_config_write(vty, " ");
@@ -2460,6 +2467,42 @@ DEFUN(cfg_net_allow_unusable_timeslots, cfg_net_allow_unusable_timeslots_cmd,
 	return CMD_SUCCESS;
 }
 
+DEFUN_ATTR(cfg_net_pcu_sock,
+	   cfg_net_pcu_sock_cmd,
+	   "pcu-socket PATH",
+	   "PCU Socket Path for using OsmoPCU co-located with BSC\n"
+	   "Path in the file system for the unix-domain PCU socket\n",
+	   CMD_ATTR_IMMEDIATE)
+{
+	struct gsm_network *net = gsmnet_from_vty(vty);
+	int rc;
+
+	osmo_talloc_replace_string(net, &net->pcu_sock_path, argv[0]);
+	pcu_sock_exit(net);
+	rc = pcu_sock_init(net);
+	if (rc < 0) {
+		vty_out(vty, "%% Error creating PCU socket `%s'%s",
+			net->pcu_sock_path, VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	return CMD_SUCCESS;
+}
+
+DEFUN_ATTR(cfg_net_no_pcu_sock,
+	   cfg_net_no_pcu_sock_cmd,
+	   "no pcu-socket",
+	   NO_STR "Disable BSC co-located PCU\n",
+	   CMD_ATTR_IMMEDIATE)
+{
+	struct gsm_network *net = gsmnet_from_vty(vty);
+
+	pcu_sock_exit(net);
+	talloc_free(net->pcu_sock_path);
+	net->pcu_sock_path = NULL;
+	return CMD_SUCCESS;
+}
+
 static struct bsc_msc_data *bsc_msc_data(struct vty *vty)
 {
 	return vty->index;
@@ -3534,6 +3577,8 @@ int bsc_vty_init(struct gsm_network *network)
 	install_element(GSMNET_NODE, &cfg_net_meas_feed_scenario_cmd);
 	install_element(GSMNET_NODE, &cfg_net_timer_cmd);
 	install_element(GSMNET_NODE, &cfg_net_allow_unusable_timeslots_cmd);
+	install_element(GSMNET_NODE, &cfg_net_pcu_sock_cmd);
+	install_element(GSMNET_NODE, &cfg_net_no_pcu_sock_cmd);
 
 	/* Timer configuration commands (generic osmo_tdef API) */
 	osmo_tdef_vty_groups_init(GSMNET_NODE, bsc_tdef_group);

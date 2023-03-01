@@ -600,10 +600,6 @@ struct gsm_bts {
 	/* osmux config: */
 	enum osmux_usage use_osmux;
 
-	/* PCU socket state */
-	char *pcu_sock_path;
-	struct pcu_sock_state *pcu_state;
-
 	struct rate_ctr_group *bts_ctrs;
 	struct osmo_stat_item_group *bts_statg;
 

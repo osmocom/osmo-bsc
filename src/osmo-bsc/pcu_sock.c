@@ -46,7 +46,7 @@
 #include <osmocom/bsc/bts_sm.h>
 #include <osmocom/bsc/timeslot_fsm.h>
 
-static int pcu_sock_send(struct gsm_bts *bts, struct msgb *msg);
+static int pcu_sock_send(struct gsm_network *net, struct msgb *msg);
 
 static const char *sapi_string[] = {
 	[PCU_IF_SAPI_RACH] =	"RACH",
@@ -59,13 +59,9 @@ static const char *sapi_string[] = {
 	[PCU_IF_SAPI_PCH_DT] =	"PCH_DT",
 };
 
-bool pcu_connected(struct gsm_bts *bts)
+bool pcu_connected(struct gsm_network *net)
 {
-	struct pcu_sock_state *state = bts->pcu_state;
-
-	/* BSC co-located PCU is only supported for Ericsson RBS */
-	if (!is_ericsson_bts(bts))
-		return false;
+	struct pcu_sock_state *state = net->pcu_state;
 
 	if (!state)
 		return false;
@@ -305,7 +301,7 @@ static int pcu_tx_info_ind(struct gsm_bts *bts)
 		info_ind_fill_trx(&info_ind->trx[trx->nr], trx);
 	}
 
-	return pcu_sock_send(bts, msg);
+	return pcu_sock_send(bts->network, msg);
 }
 
 static int pcu_tx_e1_ccu_ind(struct gsm_bts *bts)
@@ -348,7 +344,7 @@ static int pcu_tx_e1_ccu_ind(struct gsm_bts *bts)
 			e1_ccu_ind->e1_ts_ss = ts->e1_link.e1_ts_ss;
 
 			LOG_TRX(trx, DPCU, LOGL_INFO, "Sending E1 CCU info for TS %d\n", e1_ccu_ind->ts_nr);
-			rc = pcu_sock_send(bts, msg);
+			rc = pcu_sock_send(bts->network, msg);
 			if (rc < 0)
 				return -EINVAL;
 		}
@@ -360,7 +356,7 @@ static int pcu_tx_e1_ccu_ind(struct gsm_bts *bts)
 /* Allow test to overwrite it */
 __attribute__((weak)) void pcu_info_update(struct gsm_bts *bts)
 {
-	if (pcu_connected(bts)) {
+	if (pcu_connected(bts->network)) {
 		if (bsc_co_located_pcu(bts)) {
 			/* In cases where the CCU is connected via an E1 line, we transmit the connection parameters for the
 			 * PDCH before we announce the other BTS related parameters. */
@@ -403,7 +399,7 @@ static int pcu_tx_data_ind(struct gsm_bts_trx_ts *ts, uint8_t sapi, uint32_t fn,
 		memcpy(data_ind->data, data, len);
 	data_ind->len = len;
 
-	return pcu_sock_send(bts, msg);
+	return pcu_sock_send(bts->network, msg);
 }
 
 /* Forward rach indication to PCU */
@@ -415,7 +411,7 @@ int pcu_tx_rach_ind(struct gsm_bts *bts, int16_t qta, uint16_t ra, uint32_t fn,
 	struct gsm_pcu_if_rach_ind *rach_ind;
 
 	/* Bail if no PCU is connected */
-	if (!pcu_connected(bts)) {
+	if (!pcu_connected(bts->network)) {
 		LOG_BTS(bts, DRSL, LOGL_ERROR, "CHAN RQD(GPRS) but PCU not connected!\n");
 		return -ENODEV;
 	}
@@ -436,7 +432,7 @@ int pcu_tx_rach_ind(struct gsm_bts *bts, int16_t qta, uint16_t ra, uint32_t fn,
 	rach_ind->is_11bit = is_11bit;
 	rach_ind->burst_type = burst_type;
 
-	return pcu_sock_send(bts, msg);
+	return pcu_sock_send(bts->network, msg);
 }
 
 /* Confirm the sending of an immediate assignment to the pcu */
@@ -457,7 +453,7 @@ int pcu_tx_imm_ass_sent(struct gsm_bts *bts, uint32_t tlli)
 	data_cnf_dt->sapi = PCU_IF_SAPI_PCH;
 	data_cnf_dt->tlli = tlli;
 
-	return pcu_sock_send(bts, msg);
+	return pcu_sock_send(bts->network, msg);
 }
 
 /* we need to decode the raw RR paging message (see PCU code
@@ -693,8 +689,9 @@ static int pcu_rx(struct gsm_network *net, uint8_t msg_type,
 	int rc = 0;
 	struct gsm_bts *bts;
 
-	/* FIXME: allow multiple BTS */
-	bts = llist_entry(net->bts_list.next, struct gsm_bts, list);
+	bts = gsm_bts_num(net, pcu_prim->bts_nr);
+	if (!bts)
+		return -EINVAL;
 
 	switch (msg_type) {
 	case PCU_IF_MSG_DATA_REQ:
@@ -719,9 +716,9 @@ static int pcu_rx(struct gsm_network *net, uint8_t msg_type,
  * PCU socket interface
  */
 
-static int pcu_sock_send(struct gsm_bts *bts, struct msgb *msg)
+static int pcu_sock_send(struct gsm_network *net, struct msgb *msg)
 {
-	struct pcu_sock_state *state = bts->pcu_state;
+	struct pcu_sock_state *state = net->pcu_state;
 	struct osmo_fd *conn_bfd;
 	struct gsm_pcu_if *pcu_prim = (struct gsm_pcu_if *) msg->data;
 
@@ -746,24 +743,10 @@ static int pcu_sock_send(struct gsm_bts *bts, struct msgb *msg)
 	return 0;
 }
 
-static void pcu_sock_close(struct pcu_sock_state *state)
+static void pdch_deact_bts(struct gsm_bts *bts)
 {
-	struct osmo_fd *bfd = &state->conn_bfd;
-	struct gsm_bts *bts;
 	struct gsm_bts_trx *trx;
 	int j;
-
-	/* FIXME: allow multiple BTS */
-	bts = llist_entry(state->net->bts_list.next, struct gsm_bts, list);
-
-	LOGP(DPCU, LOGL_NOTICE, "PCU socket has LOST connection\n");
-
-	osmo_fd_unregister(bfd);
-	close(bfd->fd);
-	bfd->fd = -1;
-
-	/* re-enable the generation of ACCEPT for new connections */
-	osmo_fd_read_enable(&state->listen_bfd);
 
 #if 0
 	/* remove si13, ... */
@@ -782,6 +765,27 @@ static void pcu_sock_close(struct pcu_sock_state *state)
 				ts_pdch_deact(ts);
 			}
 		}
+	}
+}
+
+static void pcu_sock_close(struct pcu_sock_state *state)
+{
+	struct osmo_fd *bfd = &state->conn_bfd;
+	struct gsm_bts *bts;
+
+	LOGP(DPCU, LOGL_NOTICE, "PCU socket has LOST connection\n");
+
+	osmo_fd_unregister(bfd);
+	close(bfd->fd);
+	bfd->fd = -1;
+
+	/* re-enable the generation of ACCEPT for new connections */
+	osmo_fd_read_enable(&state->listen_bfd);
+
+	/* Disable all PDCHs on all BTSs that are served by the PCU */
+	llist_for_each_entry(bts, &state->net->bts_list, list) {
+		if (bsc_co_located_pcu(bts))
+			pdch_deact_bts(bts);
 	}
 
 	/* flush the queue */
@@ -900,6 +904,24 @@ static int pcu_sock_cb(struct osmo_fd *bfd, unsigned int flags)
 	return rc;
 }
 
+static void pdch_act_bts(struct gsm_bts *bts)
+{
+	struct gsm_bts_trx *trx;
+	int j;
+
+	/* activate PDCH */
+	llist_for_each_entry(trx, &bts->trx_list, list) {
+		for (j = 0; j < ARRAY_SIZE(trx->ts); j++) {
+			struct gsm_bts_trx_ts *ts = &trx->ts[j];
+			/* (See comment in pdch_deact_bts above) */
+			if (ts->mo.nm_state.operational == NM_OPSTATE_ENABLED
+			    && ts->pchan_on_init == GSM_PCHAN_OSMO_DYN) {
+				ts_pdch_act(ts);
+			}
+		}
+	}
+}
+
 /* accept connection coming from PCU */
 static int pcu_sock_accept(struct osmo_fd *bfd, unsigned int flags)
 {
@@ -907,23 +929,18 @@ static int pcu_sock_accept(struct osmo_fd *bfd, unsigned int flags)
 	struct osmo_fd *conn_bfd = &state->conn_bfd;
 	struct sockaddr_un un_addr;
 	struct gsm_bts *bts;
-	struct gsm_bts_trx *trx;
-	int j;
 	socklen_t len;
 	int fd;
-
-	/* FIXME: allow multiple BTS */
-	bts = llist_entry(state->net->bts_list.next, struct gsm_bts, list);
 
 	len = sizeof(un_addr);
 	fd = accept(bfd->fd, (struct sockaddr *)&un_addr, &len);
 	if (fd < 0) {
-		LOG_BTS(bts, DPCU, LOGL_ERROR, "Failed to accept a new connection\n");
+		LOGP(DPCU, LOGL_ERROR, "Failed to accept a new connection\n");
 		return -1;
 	}
 
 	if (conn_bfd->fd >= 0) {
-		LOG_BTS(bts, DPCU, LOGL_NOTICE, "PCU connects but we already have another active connection ?!?\n");
+		LOGP(DPCU, LOGL_NOTICE, "PCU connects but we already have another active connection ?!?\n");
 		/* We already have one PCU connected, this is all we support */
 		osmo_fd_read_disable(&state->listen_bfd);
 		close(fd);
@@ -933,31 +950,25 @@ static int pcu_sock_accept(struct osmo_fd *bfd, unsigned int flags)
 	osmo_fd_setup(conn_bfd, fd, OSMO_FD_READ, pcu_sock_cb, state, 0);
 
 	if (osmo_fd_register(conn_bfd) != 0) {
-		LOG_BTS(bts, DPCU, LOGL_ERROR, "Failed to register new connection fd\n");
+		LOGP(DPCU, LOGL_ERROR, "Failed to register new connection fd\n");
 		close(conn_bfd->fd);
 		conn_bfd->fd = -1;
 		return -1;
 	}
 
-	LOG_BTS(bts, DPCU, LOGL_NOTICE, "PCU socket connected to external PCU\n");
+	LOGP(DPCU, LOGL_NOTICE, "PCU socket connected to external PCU\n");
 
-	/* activate PDCH */
-	llist_for_each_entry(trx, &bts->trx_list, list) {
-		for (j = 0; j < ARRAY_SIZE(trx->ts); j++) {
-			struct gsm_bts_trx_ts *ts = &trx->ts[j];
-			/* (See comment in pcu_sock_close above) */
-			if (ts->mo.nm_state.operational == NM_OPSTATE_ENABLED
-			    && ts->pchan_on_init == GSM_PCHAN_OSMO_DYN) {
-				ts_pdch_act(ts);
-			}
-		}
+	/* Activate all PDCHs on all BTSs that are served by the PCU */
+	llist_for_each_entry(bts, &state->net->bts_list, list) {
+		if (bsc_co_located_pcu(bts))
+			pdch_act_bts(bts);
 	}
 
 	return 0;
 }
 
 /* Open connection to PCU */
-int pcu_sock_init(const char *path, struct gsm_bts *bts)
+int pcu_sock_init(struct gsm_network *net)
 {
 	struct pcu_sock_state *state;
 	struct osmo_fd *bfd;
@@ -968,14 +979,14 @@ int pcu_sock_init(const char *path, struct gsm_bts *bts)
 		return -ENOMEM;
 
 	INIT_LLIST_HEAD(&state->upqueue);
-	state->net = bts->network;
+	state->net = net;
 	state->conn_bfd.fd = -1;
 
 	bfd = &state->listen_bfd;
 
-	rc = osmo_sock_unix_init(SOCK_SEQPACKET, 0, path, OSMO_SOCK_F_BIND);
+	rc = osmo_sock_unix_init(SOCK_SEQPACKET, 0, net->pcu_sock_path, OSMO_SOCK_F_BIND);
 	if (rc < 0) {
-		LOG_BTS(bts, DPCU, LOGL_ERROR, "Could not create unix socket: %s\n",
+		LOGP(DPCU, LOGL_ERROR, "Could not create unix socket: %s\n",
 			strerror(errno));
 		talloc_free(state);
 		return -1;
@@ -985,23 +996,23 @@ int pcu_sock_init(const char *path, struct gsm_bts *bts)
 
 	rc = osmo_fd_register(bfd);
 	if (rc < 0) {
-		LOG_BTS(bts, DPCU, LOGL_ERROR, "Could not register listen fd: %d\n",
+		LOGP(DPCU, LOGL_ERROR, "Could not register listen fd: %d\n",
 			rc);
 		close(bfd->fd);
 		talloc_free(state);
 		return rc;
 	}
 
-	LOG_BTS(bts, DPCU, LOGL_INFO, "Started listening on PCU socket: %s\n", path);
+	LOGP(DPCU, LOGL_INFO, "Started listening on PCU socket: %s\n", net->pcu_sock_path);
 
-	bts->pcu_state = state;
+	net->pcu_state = state;
 	return 0;
 }
 
 /* Close connection to PCU */
-void pcu_sock_exit(struct gsm_bts *bts)
+void pcu_sock_exit(struct gsm_network *net)
 {
-	struct pcu_sock_state *state = bts->pcu_state;
+	struct pcu_sock_state *state = net->pcu_state;
 	struct osmo_fd *bfd, *conn_bfd;
 
 	if (!state)
@@ -1014,5 +1025,5 @@ void pcu_sock_exit(struct gsm_bts *bts)
 	osmo_fd_unregister(bfd);
 	close(bfd->fd);
 	talloc_free(state);
-	bts->pcu_state = NULL;
+	net->pcu_state = NULL;
 }
