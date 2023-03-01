@@ -62,49 +62,49 @@ msc 0
 ...
 
 OsmoBSC(config-msc)# codec-list fr0 fr1
+'fr0' is not a valid codec version
 OsmoBSC(config-msc)# show running-config
 ...
 msc 0
 ...
- codec-list fr0 fr1
+ codec-list hr1 hr3 fr1 fr2 fr3
 ...
-OsmoBSC(config-msc)# # ERROR: fr0 should be rejected
 
 OsmoBSC(config-msc)# codec-list hr0 hr1
+'hr0' is not a valid codec version
 OsmoBSC(config-msc)# show running-config
 ...
 msc 0
 ...
- codec-list hr0 hr1
+ codec-list hr1 hr3 fr1 fr2 fr3
 ...
-OsmoBSC(config-msc)# # ERROR: hr0 should be rejected
 
 OsmoBSC(config-msc)# codec-list fr8 fr9
+'fr8' is not a valid codec version
 OsmoBSC(config-msc)# show running-config
 ...
 msc 0
 ...
- codec-list fr8 fr9
+ codec-list hr1 hr3 fr1 fr2 fr3
 ...
-OsmoBSC(config-msc)# # ERROR: fr8 and fr9 should be rejected
 
 OsmoBSC(config-msc)# codec-list hr8 hr9
+'hr8' is not a valid codec version
 OsmoBSC(config-msc)# show running-config
 ...
 msc 0
 ...
- codec-list hr8 hr9
+ codec-list hr1 hr3 fr1 fr2 fr3
 ...
-OsmoBSC(config-msc)# # ERROR: hr8 and hr9 should be rejected
 
 OsmoBSC(config-msc)# codec-list fr2 hr2
+'hr2' is not a valid codec version
 OsmoBSC(config-msc)# show running-config
 ...
 msc 0
 ...
- codec-list fr2 hr2
+ codec-list hr1 hr3 fr1 fr2 fr3
 ...
-OsmoBSC(config-msc)# # TODO: should hr2 be rejected
 
 OsmoBSC(config-msc)# codec-list fr1 fr2 fr3 fr4
 OsmoBSC(config-msc)# show running-config
