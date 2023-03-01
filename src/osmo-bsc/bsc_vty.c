@@ -2551,9 +2551,9 @@ static void write_msc(struct vty *vty, struct bsc_msc_data *msc)
 				vty_out(vty, " ");
 
 			if (msc->audio_support[i]->hr)
-				vty_out(vty, "hr%.1u", msc->audio_support[i]->ver);
+				vty_out(vty, "hr%u", msc->audio_support[i]->ver);
 			else
-				vty_out(vty, "fr%.1u", msc->audio_support[i]->ver);
+				vty_out(vty, "fr%u", msc->audio_support[i]->ver);
 		}
 		vty_out(vty, "%s", VTY_NEWLINE);
 
