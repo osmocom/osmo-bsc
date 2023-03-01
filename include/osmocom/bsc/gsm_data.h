@@ -984,6 +984,8 @@ struct gsm_audio_support {
                 ver : 7;
 };
 
+int gsm_audio_support_cmp(const struct gsm_audio_support *a, const struct gsm_audio_support *b);
+
 extern void talloc_ctx_init(void *ctx_root);
 
 enum gsm_bts_type parse_btstype(const char *arg);
