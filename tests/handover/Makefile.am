@@ -36,6 +36,11 @@ handover_test_SOURCES = \
 
 handover_test_LDFLAGS = \
 	-Wl,--wrap=abis_rsl_sendmsg \
+	-Wl,--wrap=bsc_cipher_mode_compl \
+	-Wl,--wrap=bsc_cm_update \
+	-Wl,--wrap=bsc_compl_l3 \
+	-Wl,--wrap=bsc_dtap \
+	-Wl,--wrap=bsc_sapi_n_reject \
 	-Wl,--wrap=osmo_mgcpc_ep_ci_request \
 	$(NULL)
 
