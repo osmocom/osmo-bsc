@@ -34,17 +34,7 @@ EXTRA_DIST = \
 	$(TESTSUITE) \
 	vty_test_runner.py \
 	ctrl_test_runner.py \
-	cbc.vty \
-	gprs_bvci_default.vty \
-	handover_cfg.vty \
-	neighbor_ident.vty \
-	nri_cfg.vty \
-	osmo-bsc.vty \
-	timer.vty \
-	power_ctrl.vty \
-	interf_meas.vty \
-	acch_overpower.vty \
-	bts_features.vty \
+	$(srcdir)/*.vty \
 	ctrl/osmo-bsc-neigh-test.cfg \
 	ctrl/osmo-bsc-apply-config-file.cfg \
 	ctrl/osmo-bsc-apply-config-file-invalid.cfg \
