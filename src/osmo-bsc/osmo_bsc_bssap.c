@@ -668,7 +668,7 @@ static int bssmap_handle_lcls_connect_ctrl(struct gsm_subscriber_connection *con
 }
 
 /* Select a preferred and an alternative codec rate depending on the available
- * capabilities. This decision does not include the actual channel load yet,
+ * capabilities. This decision does not include the actual lchan availability yet,
  * this is also the reason why the result is a preferred and an alternate
  * setting. The final decision is made in assignment_fsm.c when the actual
  * lchan is requested. The preferred lchan will be requested first. If we
