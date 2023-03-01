@@ -2711,42 +2711,50 @@ DEFUN_USRATTR(cfg_net_msc_codec_list,
 	      " (fr3: AMR-FR, hr3: AMR-HR, fr2: GSM-EFR, fr1: GSM-FR, hr1: GSM-HR)\n")
 {
 	struct bsc_msc_data *data = bsc_msc_data(vty);
+	struct gsm_audio_support tmp[ARRAY_SIZE(data->audio_support)];
 	int i;
 
-	/* check all given arguments first */
-	for (i = 0; i < argc; i++) {
-		/* check for hrX or frX */
-		if (strlen(argv[i]) != 3
-				|| argv[i][1] != 'r'
-				|| (argv[i][0] != 'h' && argv[i][0] != 'f')
-				|| argv[i][2] < '0'
-				|| argv[i][2] > '9')
-			goto error;
-	}
-
+	/* Nr of arguments must fit in the array */
 	if (argc > ARRAY_SIZE(data->audio_support)) {
 		vty_out(vty, "Too many items in 'msc' / 'codec-list': %d. There can be at most %zu entries.%s",
 			argc, ARRAY_SIZE(data->audio_support), VTY_NEWLINE);
 		return CMD_ERR_EXEED_ARGC_MAX;
 	}
 
-	data->audio_length = argc;
+	/* check all given arguments first */
+	for (i = 0; i < argc; i++) {
+		int j;
 
-	for (i = 0; i < argc; ++i) {
-		data->audio_support[i].ver = atoi(argv[i] + 2);
+		/* check for hrX or frX */
+		if (strlen(argv[i]) != 3
+				|| argv[i][1] != 'r'
+				|| (argv[i][0] != 'h' && argv[i][0] != 'f')
+				|| argv[i][2] < '0'
+				|| argv[i][2] > '9') {
+			vty_out(vty, "Codec name must be hrX or frX. Was '%s'%s", argv[i], VTY_NEWLINE);
+			return CMD_WARNING;
+		}
 
+		/* store in tmp[] first, to not overwrite data->audio_support[] in case of error */
+		tmp[i].ver = atoi(argv[i] + 2);
 		if (strncmp("hr", argv[i], 2) == 0)
-			data->audio_support[i].hr = 1;
+			tmp[i].hr = 1;
 		else if (strncmp("fr", argv[i], 2) == 0)
-			data->audio_support[i].hr = 0;
+			tmp[i].hr = 0;
+
+		/* prevent duplicate entries */
+		for (j = 0; j < i; j++) {
+			if (gsm_audio_support_cmp(&tmp[j], &tmp[i]) == 0) {
+				vty_out(vty, "duplicate entry in 'msc' / 'codec-support': %s%s", argv[i], VTY_NEWLINE);
+				return CMD_WARNING;
+			}
+		}
 	}
 
-	return CMD_SUCCESS;
+	memcpy(data->audio_support, tmp, sizeof(data->audio_support));
+	data->audio_length = argc;
 
-error:
-	vty_out(vty, "Codec name must be hrX or frX. Was '%s'%s",
-			argv[i], VTY_NEWLINE);
-	return CMD_WARNING;
+	return CMD_SUCCESS;
 }
 
 #define LEGACY_STR "This command has no effect, it is kept to support legacy config files\n"

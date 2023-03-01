@@ -1042,3 +1042,18 @@ enum rsl_cmod_spd chan_mode_to_rsl_cmod_spd(enum gsm48_chan_mode chan_mode)
 		return -EINVAL;
 	}
 }
+
+int gsm_audio_support_cmp(const struct gsm_audio_support *a, const struct gsm_audio_support *b)
+{
+	int rc;
+	if (a == b)
+		return 0;
+	if (!a)
+		return -1;
+	if (!b)
+		return 1;
+	rc = OSMO_CMP(a->hr, b->hr);
+	if (rc)
+		return rc;
+	return OSMO_CMP(a->ver, b->ver);
+}
