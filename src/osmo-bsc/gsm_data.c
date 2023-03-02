@@ -197,22 +197,6 @@ const struct value_string gsm_pchant_names[] = {
 	{ 0,			NULL }
 };
 
-const struct value_string gsm_pchan_ids[] = {
-	{ GSM_PCHAN_NONE,	"NONE" },
-	{ GSM_PCHAN_CCCH,	"CCCH" },
-	{ GSM_PCHAN_CCCH_SDCCH4,"CCCH_SDCCH4" },
-	{ GSM_PCHAN_TCH_F,	"TCH_F" },
-	{ GSM_PCHAN_TCH_H,	"TCH_H" },
-	{ GSM_PCHAN_SDCCH8_SACCH8C, "SDCCH8" },
-	{ GSM_PCHAN_PDCH,	"PDCH" },
-	{ GSM_PCHAN_TCH_F_PDCH,	"DYNAMIC_IPACCESS" },
-	{ GSM_PCHAN_UNKNOWN,	"UNKNOWN" },
-	{ GSM_PCHAN_CCCH_SDCCH4_CBCH, "CCCH_SDCCH4_CBCH" },
-	{ GSM_PCHAN_SDCCH8_SACCH8C_CBCH, "SDCCH8_CBCH" },
-	{ GSM_PCHAN_OSMO_DYN, "DYNAMIC_OSMOCOM" },
-	{ 0,			NULL }
-};
-
 /* VTY command descriptions. These have to be in the same order as gsm_pchant_names[], so that the automatic VTY command
  * composition in bts_trx_vty_init() works out. */
 const struct value_string gsm_pchant_descs[] = {

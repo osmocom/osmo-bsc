@@ -49,8 +49,8 @@ struct gsm_bts_trx_ts *ts_fi_ts(struct osmo_fsm_inst *fi)
 
 static void ts_fsm_update_id(struct gsm_bts_trx_ts *ts)
 {
-	osmo_fsm_inst_update_id_f(ts->fi, "%u-%u-%u-%s", ts->trx->bts->nr, ts->trx->nr, ts->nr,
-				  gsm_pchan_id(ts->pchan_on_init));
+	osmo_fsm_inst_update_id_f_sanitize(ts->fi, '_', "%u-%u-%u-%s", ts->trx->bts->nr, ts->trx->nr, ts->nr,
+					   gsm_pchan_name(ts->pchan_on_init));
 }
 
 static __attribute__((constructor)) void ts_fsm_init(void)

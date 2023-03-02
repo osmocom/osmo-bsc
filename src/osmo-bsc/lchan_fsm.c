@@ -452,11 +452,11 @@ void lchan_fsm_update_id(struct gsm_lchan *lchan)
 	lchan_update_name(lchan);
 	if (!lchan->fi)
 		return;
-	osmo_fsm_inst_update_id_f(lchan->fi, "%u-%u-%u-%s-%s%u",
-				  lchan->ts->trx->bts->nr, lchan->ts->trx->nr, lchan->ts->nr,
-				  gsm_pchan_id(lchan->ts->pchan_on_init),
-				  lchan->vamos.is_secondary ? "shadow" : "",
-				  lchan->nr - (lchan->vamos.is_secondary ? lchan->ts->max_primary_lchans : 0));
+	osmo_fsm_inst_update_id_f_sanitize(lchan->fi, '_', "%u-%u-%u-%s-%s%u",
+					   lchan->ts->trx->bts->nr, lchan->ts->trx->nr, lchan->ts->nr,
+					   gsm_pchan_name(lchan->ts->pchan_on_init),
+					   lchan->vamos.is_secondary ? "shadow" : "",
+					   lchan->nr - (lchan->vamos.is_secondary ? lchan->ts->max_primary_lchans : 0));
 	if (lchan->fi_rtp)
 		osmo_fsm_inst_update_id_f(lchan->fi_rtp, lchan->fi->id);
 }
