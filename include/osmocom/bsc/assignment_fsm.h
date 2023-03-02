@@ -48,3 +48,4 @@ int reassignment_request_to_chan_type(enum assign_for assign_for, struct gsm_lch
 void assignment_fsm_start(struct gsm_subscriber_connection *conn, struct gsm_bts *bts,
 			  struct assignment_request *req);
 void assignment_reset(struct gsm_subscriber_connection *conn);
+void assignment_fsm_update_id(struct gsm_subscriber_connection *conn);
