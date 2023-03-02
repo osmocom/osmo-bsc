@@ -1,4 +1,55 @@
 Testing BTS<->MSC message scan.
 Going to test item: 0
 Going to test item: 1
+
+Testing FSM ids that contain pchan names
+pchan=NONE:
+  ts->fi->id = 0-1-0-NONE
+  lchan->fi->id = null
+  assignment.fi->id = null
+pchan=CCCH:
+  ts->fi->id = 0-1-0-CCCH
+  lchan->fi->id = null
+  assignment.fi->id = null
+pchan=CCCH+SDCCH4:
+  ts->fi->id = 0-1-0-CCCH_SDCCH4
+  lchan->fi->id = 0-1-0-CCCH_SDCCH4-0
+  assignment.fi->id = msc4294967295-conn123_subscr-TMSI-0x00000423_0-1-0-CCCH_SDCCH4-0
+pchan=TCH/F:
+  ts->fi->id = 0-1-0-TCH_F
+  lchan->fi->id = 0-1-0-TCH_F-0
+  assignment.fi->id = msc4294967295-conn123_subscr-TMSI-0x00000423_0-1-0-TCH_F-0
+pchan=TCH/H:
+  ts->fi->id = 0-1-0-TCH_H
+  lchan->fi->id = 0-1-0-TCH_H-0
+  assignment.fi->id = msc4294967295-conn123_subscr-TMSI-0x00000423_0-1-0-TCH_H-0
+pchan=SDCCH8:
+  ts->fi->id = 0-1-0-SDCCH8
+  lchan->fi->id = 0-1-0-SDCCH8-0
+  assignment.fi->id = msc4294967295-conn123_subscr-TMSI-0x00000423_0-1-0-SDCCH8-0
+pchan=PDCH:
+  ts->fi->id = 0-1-0-PDCH
+  lchan->fi->id = null
+  assignment.fi->id = null
+pchan=DYNAMIC/IPACCESS:
+  ts->fi->id = 0-1-0-TCH_F_PDCH
+  lchan->fi->id = 0-1-0-TCH_F_PDCH-0
+  assignment.fi->id = msc4294967295-conn123_subscr-TMSI-0x00000423_0-1-0-TCH_F_PDCHasTCH_F-0
+pchan=UNKNOWN:
+  ts->fi->id = 0-1-0-UNKNOWN
+  lchan->fi->id = null
+  assignment.fi->id = null
+pchan=CCCH+SDCCH4+CBCH:
+  ts->fi->id = 0-1-0-CCCH_SDCCH4_CBCH
+  lchan->fi->id = 0-1-0-CCCH_SDCCH4_CBCH-0
+  assignment.fi->id = msc4294967295-conn123_subscr-TMSI-0x00000423_0-1-0-CCCH_SDCCH4_CBCH-0
+pchan=SDCCH8+CBCH:
+  ts->fi->id = 0-1-0-SDCCH8_CBCH
+  lchan->fi->id = 0-1-0-SDCCH8_CBCH-0
+  assignment.fi->id = msc4294967295-conn123_subscr-TMSI-0x00000423_0-1-0-SDCCH8_CBCH-0
+pchan=DYNAMIC/OSMOCOM:
+  ts->fi->id = 0-1-0-OSMO_DYN
+  lchan->fi->id = 0-1-0-OSMO_DYN-0
+  assignment.fi->id = msc4294967295-conn123_subscr-TMSI-0x00000423_0-1-0-OSMO_DYNasNONE-0
+
 Testing execution completed.

@@ -29,6 +29,12 @@
 
 #include <osmocom/bsc/osmo_bsc.h>
 #include <osmocom/bsc/bsc_msc_data.h>
+#include <osmocom/bsc/bss.h>
+#include <osmocom/bsc/bts.h>
+#include <osmocom/bsc/timeslot_fsm.h>
+#include <osmocom/bsc/lchan_fsm.h>
+#include <osmocom/bsc/assignment_fsm.h>
+#include <osmocom/bsc/bsc_subscr_conn_fsm.h>
 
 #include <osmocom/gsm/gad.h>
 #include <osmocom/core/application.h>
@@ -180,6 +186,61 @@ out:
 	bsc_gsmnet = NULL;
 }
 
+static void test_fsm_ids_with_pchan_names(void)
+{
+	struct gsm_network *net;
+	struct gsm_bts *bts;
+	struct gsm_bts_trx *trx;
+	struct gsm_bts_trx_ts *ts;
+	struct gsm_lchan *lchan;
+	enum gsm_phys_chan_config pchan;
+	struct gsm_subscriber_connection *conn;
+
+	rate_ctr_init(ctx);
+	tall_bsc_ctx = ctx;
+	bsc_network_alloc();
+	net = bsc_gsmnet;
+
+	/* Have a BTS so that we have trx, timeslots, lchans that have FSMs to check the id of */
+	bts = bsc_bts_alloc_register(net, GSM_BTS_TYPE_UNKNOWN, HARDCODED_BSIC);
+	trx = gsm_bts_trx_alloc(bts);
+
+	printf("\nTesting FSM ids that contain pchan names\n");
+	ts = &trx->ts[0];
+	lchan = &ts->lchan[0];
+
+	conn = bsc_subscr_con_allocate(net);
+	conn->lchan = lchan;
+	conn->assignment.new_lchan = lchan;
+	conn->sccp.conn_id = 123;
+	conn->bsub = bsc_subscr_find_or_create_by_tmsi(net->bsc_subscribers, 0x423, "test");
+	gscon_update_id(conn);
+
+	/* dirty dirty hack, to just point at some fi so we can update the id */
+	conn->assignment.fi = trx->ts[1].fi;
+
+	for (pchan = 0; pchan < _GSM_PCHAN_MAX; pchan++) {
+		ts->pchan_from_config = pchan;
+		/* trigger ID update in ts and lchan */
+		osmo_fsm_inst_dispatch(ts->fi, TS_EV_OML_READY, NULL);
+
+		if (lchan->fi)
+			assignment_fsm_update_id(conn);
+
+		printf("pchan=%s:\n  ts->fi->id = %s\n  lchan->fi->id = %s\n  assignment.fi->id = %s\n",
+		       gsm_pchan_name(pchan),
+		       ts->fi->id,
+		       lchan->fi ? lchan->fi->id : "null",
+		       lchan->fi ? conn->assignment.fi->id : "null");
+
+		osmo_fsm_inst_dispatch(ts->fi, TS_EV_OML_DOWN, NULL);
+	}
+
+	talloc_free(net);
+	bsc_gsmnet = NULL;
+	printf("\n");
+}
+
 static const struct log_info_cat log_categories[] = {
 	[DNM] = {
 		.name = "DNM",
@@ -216,6 +277,7 @@ int main(int argc, char **argv)
 	osmo_init_logging2(ctx, &log_info);
 
 	test_scan();
+	test_fsm_ids_with_pchan_names();
 
 	printf("Testing execution completed.\n");
 	talloc_free(ctx);

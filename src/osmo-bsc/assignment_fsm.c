@@ -303,7 +303,7 @@ static void assignment_success(struct gsm_subscriber_connection *conn)
 	osmo_fsm_inst_term(conn->assignment.fi, OSMO_FSM_TERM_REGULAR, 0);
 }
 
-static void assignment_fsm_update_id(struct gsm_subscriber_connection *conn)
+void assignment_fsm_update_id(struct gsm_subscriber_connection *conn)
 {
 	/* Assignment can do a new channel activation, in which case new_lchan points at the new lchan.
 	 * Or assignment can Channel Mode Modify the already used lchan, in which case new_lchan == NULL. */
