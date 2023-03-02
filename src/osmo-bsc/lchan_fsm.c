@@ -461,12 +461,9 @@ void lchan_fsm_update_id(struct gsm_lchan *lchan)
 		osmo_fsm_inst_update_id_f(lchan->fi_rtp, lchan->fi->id);
 }
 
-extern void lchan_rtp_fsm_init();
-
-void lchan_fsm_init(void)
+static __attribute__((constructor)) void lchan_fsm_init(void)
 {
 	OSMO_ASSERT(osmo_fsm_register(&lchan_fsm) == 0);
-	lchan_rtp_fsm_init();
 }
 
 static void lchan_reset(struct gsm_lchan *lchan);

@@ -70,7 +70,7 @@ struct osmo_tdef_state_timeout lchan_rtp_fsm_timeouts[32] = {
 	} while (0)
 
 /* Called from lchan_fsm_init(), does not need to be visible in lchan_rtp_fsm.h */
-void lchan_rtp_fsm_init(void)
+static __attribute__((constructor)) void lchan_rtp_fsm_init(void)
 {
 	OSMO_ASSERT(osmo_fsm_register(&lchan_rtp_fsm) == 0);
 }

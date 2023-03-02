@@ -924,10 +924,6 @@ int main(int argc, char **argv)
 	/* seed the PRNG */
 	srand(time(NULL));
 
-	lchan_fsm_init();
-	bsc_subscr_conn_fsm_init();
-	assignment_fsm_init();
-	handover_fsm_init();
 	lb_init();
 	acc_ramp_global_init();
 	paging_global_init();

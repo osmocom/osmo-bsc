@@ -1687,11 +1687,6 @@ int main(int argc, char **argv)
 	bsc_vty_init(bsc_gsmnet);
 	ho_test_vty_init();
 
-	lchan_fsm_init();
-	bsc_subscr_conn_fsm_init();
-	handover_fsm_init();
-	assignment_fsm_init();
-
 	ho_set_algorithm(bsc_gsmnet->ho, 2);
 	ho_set_ho_active(bsc_gsmnet->ho, true);
 	ho_set_hodec2_as_active(bsc_gsmnet->ho, true);

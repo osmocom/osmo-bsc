@@ -364,7 +364,7 @@ static bool lchan_type_compat_with_mode(enum gsm_chan_t type, const struct chann
 	}
 }
 
-void assignment_fsm_init(void)
+static __attribute__((constructor)) void assignment_fsm_init(void)
 {
 	OSMO_ASSERT(osmo_fsm_register(&assignment_fsm) == 0);
 }

@@ -293,7 +293,7 @@ static void handover_reset(struct gsm_subscriber_connection *conn)
 	};
 }
 
-void handover_fsm_init(void)
+static __attribute__((constructor)) void handover_fsm_init(void)
 {
 	OSMO_ASSERT(osmo_fsm_register(&ho_fsm) == 0);
 }
