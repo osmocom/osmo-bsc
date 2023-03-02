@@ -43,3 +43,7 @@ bsc_test_LDADD = \
 	$(LIBRARY_GSM) \
 	-lrt \
 	$(NULL)
+
+.PHONY: update_exp
+update_exp:
+	$(builddir)/bsc_test > $(srcdir)/bsc_test.ok
