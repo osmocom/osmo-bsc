@@ -42,7 +42,7 @@
 
 static struct osmo_fsm assignment_fsm;
 
-struct gsm_subscriber_connection *assignment_fi_conn(struct osmo_fsm_inst *fi)
+static struct gsm_subscriber_connection *assignment_fi_conn(struct osmo_fsm_inst *fi)
 {
 	OSMO_ASSERT(fi);
 	OSMO_ASSERT(fi->fsm == &assignment_fsm);
@@ -987,7 +987,7 @@ static int assignment_fsm_timer_cb(struct osmo_fsm_inst *fi)
 	return 0;
 }
 
-void assignment_fsm_cleanup(struct osmo_fsm_inst *fi, enum osmo_fsm_term_cause cause)
+static void assignment_fsm_cleanup(struct osmo_fsm_inst *fi, enum osmo_fsm_term_cause cause)
 {
 	struct gsm_subscriber_connection *conn = assignment_fi_conn(fi);
 	assignment_reset(conn);
