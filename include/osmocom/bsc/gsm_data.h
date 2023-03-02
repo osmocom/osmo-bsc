@@ -806,10 +806,7 @@ struct gsm_bts *gsm_bts_by_cell_id(const struct gsm_network *net,
 extern const struct value_string gsm_chreq_descs[];
 extern const struct value_string gsm_pchant_names[];
 extern const struct value_string gsm_pchant_descs[];
-extern const struct value_string gsm_pchan_ids[];
 const char *gsm_pchan_name(enum gsm_phys_chan_config c);
-static inline const char *gsm_pchan_id(enum gsm_phys_chan_config c)
-{ return get_value_string(gsm_pchan_ids, c); }
 enum gsm_phys_chan_config gsm_pchan_parse(const char *name);
 const char *gsm_chreq_name(enum gsm_chreq_reason_t c);
 char *gsm_ts_name(const struct gsm_bts_trx_ts *ts);
