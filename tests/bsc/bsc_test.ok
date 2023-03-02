@@ -32,9 +32,9 @@ pchan=PDCH:
   lchan->fi->id = null
   assignment.fi->id = null
 pchan=DYNAMIC/IPACCESS:
-  ts->fi->id = 0-1-0-TCH_F_PDCH
-  lchan->fi->id = 0-1-0-TCH_F_PDCH-0
-  assignment.fi->id = msc4294967295-conn123_subscr-TMSI-0x00000423_0-1-0-TCH_F_PDCHasTCH_F-0
+  ts->fi->id = 0-1-0-DYNAMIC_IPACCESS
+  lchan->fi->id = 0-1-0-DYNAMIC_IPACCESS-0
+  assignment.fi->id = msc4294967295-conn123_subscr-TMSI-0x00000423_0-1-0-DYNAMIC_IPACCESSasTCH_F-0
 pchan=UNKNOWN:
   ts->fi->id = 0-1-0-UNKNOWN
   lchan->fi->id = null
@@ -48,8 +48,8 @@ pchan=SDCCH8+CBCH:
   lchan->fi->id = 0-1-0-SDCCH8_CBCH-0
   assignment.fi->id = msc4294967295-conn123_subscr-TMSI-0x00000423_0-1-0-SDCCH8_CBCH-0
 pchan=DYNAMIC/OSMOCOM:
-  ts->fi->id = 0-1-0-OSMO_DYN
-  lchan->fi->id = 0-1-0-OSMO_DYN-0
-  assignment.fi->id = msc4294967295-conn123_subscr-TMSI-0x00000423_0-1-0-OSMO_DYNasNONE-0
+  ts->fi->id = 0-1-0-DYNAMIC_OSMOCOM
+  lchan->fi->id = 0-1-0-DYNAMIC_OSMOCOM-0
+  assignment.fi->id = msc4294967295-conn123_subscr-TMSI-0x00000423_0-1-0-DYNAMIC_OSMOCOMasNONE-0
 
 Testing execution completed.
