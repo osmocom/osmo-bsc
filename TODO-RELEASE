@@ -9,3 +9,4 @@
 #library	what		description / commit summary line
 		osmo-bsc VTY	Timeslot phys_chan_config will now write back with new dynamic timeslot names: 'DYNAMIC/OSMOCOM' instead of 'TCH/F_TCH/H_SDCCH8_PDCH' and 'DYNAMIC/IPACCESS' instead of 'TCH/F_PDCH'
 		osmo-bsc CTRL	CTRL commands like 'bts.N.channel-load' will now respond with new dynamic timeslot names: 'DYNAMIC/OSMOCOM' instead of 'TCH/F_TCH/H_SDCCH8_PDCH' and 'DYNAMIC/IPACCESS' instead of 'TCH/F_PDCH'
+		osmo-bsc CTRL,VTY	osmo_fsm instance IDs now use new dynamic timeslot names 'DYNAMIC_OSMOCOM' and 'DYNAMIC_IPACCESS'
