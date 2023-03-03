@@ -323,10 +323,31 @@ static void ts_fsm_not_initialized_onenter(struct osmo_fsm_inst *fi, uint32_t pr
 	chan_counts_ts_clear(ts);
 }
 
-static void ts_fsm_unused_onenter(struct osmo_fsm_inst *fi, uint32_t prev_state)
+static void ts_fsm_unused_pdch_act(struct osmo_fsm_inst *fi)
 {
 	struct gsm_bts_trx_ts *ts = ts_fi_ts(fi);
 	struct gsm_bts *bts = ts->trx->bts;
+
+	if (bts->gprs.mode == BTS_GPRS_NONE) {
+		LOG_TS(ts, LOGL_DEBUG, "GPRS mode is 'none': not activating PDCH.\n");
+		return;
+	}
+
+	if (!ts->pdch_act_allowed) {
+		LOG_TS(ts, LOGL_DEBUG, "PDCH is disabled for this timeslot,"
+		       " either due to a PDCH ACT NACK, or from manual VTY command:"
+		       " not activating PDCH. (last error: %s)\n",
+		       ts->last_errmsg ? : "-");
+		return;
+	}
+
+	osmo_fsm_inst_state_chg(fi, TS_ST_WAIT_PDCH_ACT, CHAN_ACT_DEACT_TIMEOUT,
+				T_CHAN_ACT_DEACT);
+}
+
+static void ts_fsm_unused_onenter(struct osmo_fsm_inst *fi, uint32_t prev_state)
+{
+	struct gsm_bts_trx_ts *ts = ts_fi_ts(fi);
 
 	chan_counts_ts_update(ts);
 
@@ -342,19 +363,7 @@ static void ts_fsm_unused_onenter(struct osmo_fsm_inst *fi, uint32_t prev_state)
 	switch (ts->pchan_on_init) {
 	case GSM_PCHAN_OSMO_DYN:
 	case GSM_PCHAN_TCH_F_PDCH:
-		if (bts->gprs.mode == BTS_GPRS_NONE) {
-			LOG_TS(ts, LOGL_DEBUG, "GPRS mode is 'none': not activating PDCH.\n");
-			return;
-		}
-		if (!ts->pdch_act_allowed) {
-			LOG_TS(ts, LOGL_DEBUG, "PDCH is disabled for this timeslot,"
-			       " either due to a PDCH ACT NACK, or from manual VTY command:"
-			       " not activating PDCH. (last error: %s)\n",
-			       ts->last_errmsg ? : "-");
-			return;
-		}
-		osmo_fsm_inst_state_chg(fi, TS_ST_WAIT_PDCH_ACT, CHAN_ACT_DEACT_TIMEOUT,
-					T_CHAN_ACT_DEACT);
+		ts_fsm_unused_pdch_act(fi);
 		break;
 
 	case GSM_PCHAN_CCCH_SDCCH4_CBCH:
