@@ -188,9 +188,11 @@ static bool test_codec_support_bts_rate(const struct gsm_bts *bts, const bool fu
 			case GSM_PCHAN_TCH_F_PDCH:
 				if (full_rate)
 					return true;
+				break;
 			case GSM_PCHAN_TCH_H:
 				if (!full_rate)
 					return true;
+				break;
 			default:
 				continue;
 			}
