@@ -189,6 +189,7 @@ const struct value_string gsm_pchant_names[] = {
 	{ GSM_PCHAN_CCCH_SDCCH4_CBCH, "CCCH+SDCCH4+CBCH" },
 	{ GSM_PCHAN_SDCCH8_SACCH8C_CBCH, "SDCCH8+CBCH" },
 	{ GSM_PCHAN_OSMO_DYN, "TCH/F_TCH/H_SDCCH8_PDCH" },
+	/* When adding items here, you must also add matching items to gsm_pchant_descs[]! */
 	{ 0,			NULL }
 };
 
@@ -208,7 +209,9 @@ const struct value_string gsm_pchan_ids[] = {
 	{ 0,			NULL }
 };
 
-const struct value_string gsm_pchant_descs[13] = {
+/* VTY command descriptions. These have to be in the same order as gsm_pchant_names[], so that the automatic VTY command
+ * composition in bts_trx_vty_init() works out. */
+const struct value_string gsm_pchant_descs[] = {
 	{ GSM_PCHAN_NONE,	"Physical Channel not configured" },
 	{ GSM_PCHAN_CCCH,	"FCCH + SCH + BCCH + CCCH (Comb. IV)" },
 	{ GSM_PCHAN_CCCH_SDCCH4,
@@ -224,6 +227,8 @@ const struct value_string gsm_pchant_descs[13] = {
 	{ GSM_PCHAN_OSMO_DYN, "Dynamic TCH/F or TCH/H or SDCCH/8 or GPRS PDCH" },
 	{ 0,			NULL }
 };
+
+osmo_static_assert(ARRAY_SIZE(gsm_pchant_names) == ARRAY_SIZE(gsm_pchant_descs), _pchan_vty_docs);
 
 const char *gsm_pchan_name(enum gsm_phys_chan_config c)
 {
