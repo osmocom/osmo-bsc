@@ -1272,7 +1272,7 @@ static int bssmap_rcvmsg_dt1(struct gsm_subscriber_connection *conn,
 	}
 
 	msg_type = msg->l4h[0];
-	LOGP(DMSC, LOGL_INFO, "Rx MSC DT1 BSSMAP %s\n", gsm0808_bssmap_name(msg_type));
+	LOGPFSML(conn->fi, LOGL_INFO, "Rx MSC DT1 BSSMAP %s\n", gsm0808_bssmap_name(msg_type));
 
 	length = msgb_l4len(msg);
 	switch (msg_type) {
@@ -1323,7 +1323,8 @@ static int bssmap_rcvmsg_dt1(struct gsm_subscriber_connection *conn,
 			ret = osmo_fsm_inst_dispatch(conn->lcs.loc_req->fi, LCS_LOC_REQ_EV_RX_A_PERFORM_LOCATION_ABORT,
 						     msg);
 		} else {
-			LOGP(DMSC, LOGL_ERROR, "Rx BSSMAP Perform Location Abort without ongoing Location Request\n");
+			LOGPFSML(conn->fi, LOGL_ERROR,
+				 "Rx BSSMAP Perform Location Abort without ongoing Location Request\n");
 			ret = 0;
 		}
 		break;
