@@ -1632,11 +1632,11 @@ const struct osmo_stat_item_desc bts_stat_desc[] = {
 		  "Number of SDCCH8 channels total",
 		  "", 60, 0 },
 	[BTS_STAT_CHAN_TCH_F_PDCH_USED] = \
-		{ "chan_tch_f_pdch:used",
+		{ "chan_dynamic_ipaccess:used",
 		  "Number of DYNAMIC/IPACCESS channels used",
 		  "", 60, 0 },
 	[BTS_STAT_CHAN_TCH_F_PDCH_TOTAL] = \
-		{ "chan_tch_f_pdch:total",
+		{ "chan_dynamic_ipaccess:total",
 		  "Number of DYNAMIC/IPACCESS channels total",
 		  "", 60, 0 },
 	[BTS_STAT_CHAN_CCCH_SDCCH4_CBCH_USED] = \
@@ -1656,11 +1656,11 @@ const struct osmo_stat_item_desc bts_stat_desc[] = {
 		  "Number of SDCCH8+CBCH channels total",
 		  "", 60, 0 },
 	[BTS_STAT_CHAN_OSMO_DYN_USED] = \
-		{ "chan_osmo_dyn:used",
+		{ "chan_dynamic_osmocom:used",
 		  "Number of DYNAMIC/OSMOCOM channels used",
 		  "", 60, 0 },
 	[BTS_STAT_CHAN_OSMO_DYN_TOTAL] = \
-		{ "chan_osmo_dyn:total",
+		{ "chan_dynamic_osmocom:total",
 		  "Number of DYNAMIC/OSMOCOM channels total",
 		  "", 60, 0 },
 	[BTS_STAT_T3122] = \
