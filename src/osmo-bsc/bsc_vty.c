@@ -232,9 +232,12 @@ DEFUN(bsc_show_net, bsc_show_net_cmd, "show network",
 
 	return CMD_SUCCESS;
 }
+
+#define BTS_STR "Display information about a BTS\n"
+#define BTS_NUM_STR "BTS number\n"
+
 DEFUN(show_bts, show_bts_cmd, "show bts [<0-255>]",
-	SHOW_STR "Display information about a BTS\n"
-		"BTS number\n")
+	SHOW_STR BTS_STR BTS_NUM_STR)
 {
 	struct gsm_network *net = gsmnet_from_vty(vty);
 	int bts_nr;
@@ -258,8 +261,7 @@ DEFUN(show_bts, show_bts_cmd, "show bts [<0-255>]",
 }
 
 DEFUN(show_bts_fail_rep, show_bts_fail_rep_cmd, "show bts <0-255> fail-rep [reset]",
-	SHOW_STR "Display information about a BTS\n"
-		"BTS number\n" "OML failure reports\n"
+	SHOW_STR BTS_STR BTS_NUM_STR "OML failure reports\n"
 		"Clear the list of failure reports after showing them\n")
 {
 	struct gsm_network *net = gsmnet_from_vty(vty);
@@ -316,6 +318,44 @@ DEFUN(show_bts_fail_rep, show_bts_fail_rep_cmd, "show bts <0-255> fail-rep [rese
 	}
 
 	return CMD_SUCCESS;
+}
+
+/* TODO: Add other options for group argument bssgp, ns '[(rlc|bssgp|ns)]' when adding additional timer groups.
+ *	 (Assume that with two args, the first is always the group. The second is always the timer) */
+DEFUN(show_bts_rlc_timer, show_bts_rlc_timer_cmd,
+	"show bts <0-255> gprs timer [" BTS_VTY_RLC_STR "] " OSMO_TDEF_VTY_ARG_T_OPTIONAL,
+	SHOW_STR
+	BTS_STR
+	BTS_NUM_STR
+	"GPRS Packet Network\n"
+	BTS_SHOW_TIMER_STR
+	"RLC (Radio Link Control)\n"
+	OSMO_TDEF_VTY_DOC_T)
+{
+	struct gsm_network *net = gsmnet_from_vty(vty);
+	int rc = CMD_WARNING, bts_nr = atoi(argv[0]);
+	enum gsm_gprs_bts_tdef_groups group = -1;
+	const char *tdef_group = argc >= 2 ? argv[1] : NULL;
+	const char *T_arg = argc >= 3 ? argv[2] : NULL;
+	struct osmo_tdef_group *g;
+	struct gsm_bts *bts = gsm_bts_num(net, bts_nr);
+	if (!bts) {
+		vty_out(vty, "%% can't find BTS '%d'%s", bts_nr, VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+	if (bts->gprs.mode == BTS_GPRS_NONE) {
+		vty_out(vty, "%% GPRS is not enabled on BTS %u%s", bts->nr, VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+	osmo_tdef_groups_for_each(g, bts->timer_groups) {
+		++group;
+		if (tdef_group && strcmp(tdef_group, g->name))
+			continue;
+		if (bts_write_group_timers(vty, "", bts_nr, group, T_arg, false) == CMD_WARNING)
+			rc = CMD_SUCCESS;
+	}
+
+	return rc;
 }
 
 DEFUN(show_rejected_bts, show_rejected_bts_cmd, "show rejected-bts",
@@ -3605,6 +3645,7 @@ int bsc_vty_init(struct gsm_network *network)
 
 	install_element_ve(&bsc_show_net_cmd);
 	install_element_ve(&show_bts_cmd);
+	install_element_ve(&show_bts_rlc_timer_cmd);
 	install_element_ve(&show_bts_fail_rep_cmd);
 	install_element_ve(&show_rejected_bts_cmd);
 	install_element_ve(&show_trx_cmd);

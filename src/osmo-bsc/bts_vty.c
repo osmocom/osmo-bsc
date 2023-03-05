@@ -36,6 +36,7 @@
 #include <osmocom/ctrl/control_if.h>
 #include <osmocom/gprs/gprs_ns.h>
 
+#include <osmocom/bsc/bts.h>
 #include <osmocom/bsc/vty.h>
 #include <osmocom/bsc/gsm_data.h>
 #include <osmocom/bsc/chan_alloc.h>
@@ -52,6 +53,7 @@
 #include <osmocom/bsc/bsc_stats.h>
 
 #include <inttypes.h>
+#include <limits.h>
 
 #include "../../bscconfig.h"
 
@@ -1699,6 +1701,8 @@ DEFUN_USRATTR(cfg_bts_gprs_cell_timer,
 {
 	struct gsm_bts *bts = vty->index;
 	int idx = get_string_value(gprs_bssgp_cfg_strs, argv[0]);
+	/* TODO (BSSGP timer patch): If argument is one of BSSGP Timers strings, then translate to
+	 * tdef index. Otherwise get tdef entry */
 	int val = atoi(argv[1]);
 
 	GPRS_CHECK_ENABLED(bts);
@@ -1884,6 +1888,115 @@ DEFUN_USRATTR(cfg_bts_gprs_egprs_pkt_chan_req,
 
 	bts->gprs.egprs_pkt_chan_request = true;
 	return CMD_SUCCESS;
+}
+
+/* Adapted from libosmocore.git:src/vty/tdef_vty.c. cmdstr/helpstr args set by bts_vty_tdef_cmds_init()
+ * The group argument is optional here (if omitted, all timer groups will be searched) */
+DEFUN(show_gprs_timer, show_gprs_timer_cmd, NULL, NULL)
+      /* show gprs timer [(rlc)] [TNNNN] */
+{
+	const char *group_arg = argc >= 1 ? argv[0] : NULL;
+	const char *T_arg = argc >= 2 ? argv[1] : NULL;
+	struct osmo_tdef_group *g;
+	struct gsm_bts *bts = vty->index;
+	GPRS_CHECK_ENABLED(bts);
+	/* The argument should be either "tea" or "software", but the VTY also allows partial arguments
+	 * like "softw" or "t" (which can also be ambiguous). */
+	osmo_tdef_groups_for_each(g, bts->timer_groups) {
+		if (!group_arg || osmo_str_startswith(g->name, group_arg))
+			osmo_tdef_vty_show_cmd(vty, g->tdefs, T_arg, "%s: ", g->name);
+	}
+	return CMD_SUCCESS;
+}
+
+/* Adapted from libosmocore.git:src/vty/tdef_vty.c. cmdstr/helpstr args set by bts_vty_tdef_cmds_init().
+ * The group argument is optional here (if omitted, all timer groups will be searched) */
+DEFUN(cfg_gprs_timer, cfg_gprs_timer_cmd, NULL, NULL)
+      /* gprs timer [rlc] [TNNNN] [(<0-2147483647>|default)] */
+{
+	const char **timer_args;
+	struct osmo_tdef_group *g = NULL;
+	struct gsm_bts *bts = vty->index;
+	const char *group_arg = argv[0];
+
+	if (argc < 3)
+		return show_gprs_timer(self, vty, argc, argv);
+	GPRS_CHECK_ENABLED(bts);
+	timer_args = &argv[1];
+
+	OSMO_ASSERT(bts->timer_groups);
+	osmo_tdef_groups_for_each(g, bts->timer_groups) {
+		if (group_arg && strcmp(g->name, group_arg))
+			continue;
+		return osmo_tdef_vty_set_cmd(vty, g->tdefs, timer_args);
+	}
+
+	return CMD_WARNING;
+}
+
+/* Adapted from libosmocore.git:src/vty/tdef_vty.c */
+static char *add_group_args(void *talloc_ctx, char *dest, struct osmo_tdef_group *bts_g)
+{
+	struct osmo_tdef_group *g;
+	osmo_talloc_asprintf(talloc_ctx, dest, "[(");
+	osmo_tdef_groups_for_each(g, bts_g) {
+		osmo_talloc_asprintf(talloc_ctx, dest, "%s%s",
+				     (g == bts_g) ? "" : "|",
+				     g->name);
+	}
+	osmo_talloc_asprintf(talloc_ctx, dest, ")]");
+	return dest;
+}
+
+/* Adapted from libosmocore.git:src/vty/tdef_vty.c */
+static char *add_group_docs(void *talloc_ctx, char *dest, struct osmo_tdef_group *bts_g)
+{
+	struct osmo_tdef_group *g;
+	osmo_tdef_groups_for_each(g, bts_g)
+		osmo_talloc_asprintf(talloc_ctx, dest, "%s\n", g->desc);
+	return dest;
+}
+
+/* Taken from libosmocore.git:src/vty/tdef_vty.c */
+static char *timer_command_string(const char *prefix, const char *suffix, struct osmo_tdef_group *bts_g)
+{
+	char *dest = NULL;
+	osmo_talloc_asprintf(tall_bsc_ctx, dest, "%s ", prefix);
+	dest = add_group_args(tall_bsc_ctx, dest, bts_g);
+	osmo_talloc_asprintf(tall_bsc_ctx, dest, " %s", suffix);
+	return dest;
+}
+
+/* Taken from libosmocore.git:src/vty/tdef_vty.c */
+static char *timer_doc_string(const char *prefix, const char *suffix, struct osmo_tdef_group *bts_g)
+{
+	char *dest = NULL;
+	osmo_talloc_asprintf(tall_bsc_ctx, dest, "%s ", prefix);
+	dest = add_group_docs(tall_bsc_ctx, dest, bts_g);
+	osmo_talloc_asprintf(tall_bsc_ctx, dest, " %s", suffix);
+	return dest;
+}
+
+/* Use per-BTS timer templates to set command strings */
+static void set_show_cmd_strs(struct osmo_tdef_group *template)
+{
+	show_gprs_timer_cmd.string = timer_command_string("show gprs timer", OSMO_TDEF_VTY_ARG_T_OPTIONAL, template);
+	show_gprs_timer_cmd.doc = timer_doc_string(SHOW_STR GPRS_TEXT BTS_VTY_SHOW_TIMER_STR, OSMO_TDEF_VTY_DOC_T, template);
+}
+
+static void set_cfg_cmd_strs(struct osmo_tdef_group *g)
+{
+	cfg_gprs_timer_cmd.string = timer_command_string("gprs timer", OSMO_TDEF_VTY_ARG_SET_OPTIONAL, g);
+	cfg_gprs_timer_cmd.doc = timer_doc_string(GPRS_TEXT "Configure or show timers for this BTS\n",
+						  OSMO_TDEF_VTY_DOC_SET, g);
+}
+
+static void bts_vty_tdef_cmds_init(unsigned int parent_cfg_node)
+{
+	set_show_cmd_strs(bts_gprs_timer_template_groups);
+	set_cfg_cmd_strs(bts_gprs_timer_template_groups);
+	install_element(parent_cfg_node, &show_gprs_timer_cmd);
+	install_element(parent_cfg_node, &cfg_gprs_timer_cmd);
 }
 
 DEFUN_USRATTR(cfg_bts_no_gprs_egprs_pkt_chan_req,
@@ -4167,6 +4280,40 @@ void bts_dump_vty(struct vty *vty, struct gsm_bts *bts)
 	bts_dump_vty_features(vty, bts);
 }
 
+/* Used by show_bts_rlc_timers() and config_write_bts_gprs(). Note: Does not check validity of argument 'bts_nr' */
+unsigned int bts_write_group_timers(struct vty *vty, const char *indent, int bts_nr,
+				    unsigned gsm_bts_tdef_group, const char *T_arg, bool print_to_file)
+{
+	OSMO_ASSERT(gsm_bts_tdef_group < _NUM_OSMO_BSC_BTS_TDEF_GROUPS);
+	struct osmo_tdef_group *g;
+	struct gsm_network *net = gsmnet_from_vty(vty);
+	struct osmo_tdef *t;
+	struct osmo_tdef *T_arg_parsed = NULL;
+	if (bts_nr >= net->num_bts) {
+		if (!print_to_file)
+			vty_out(vty, "%% can't find BTS '%d'%s", bts_nr, VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+	g = &gsm_bts_num(net, bts_nr)->timer_groups[gsm_bts_tdef_group];
+	if (T_arg && !(T_arg_parsed = osmo_tdef_vty_parse_T_arg(vty, g->tdefs, T_arg)))
+		return CMD_WARNING;
+	osmo_tdef_for_each(t, g->tdefs) {
+		/* Skip all but timer specified by T_arg (if provided), skip defaults when printing to file */
+		if ((T_arg_parsed && T_arg_parsed->T && t->T != T_arg_parsed->T) ||
+		    (print_to_file && t->val == t->default_val))
+			continue;
+		/* output for "gprs rlc" as group name will be "gprs rlc timer [TX]<timer ID>"(without indent),
+		 * so the output will be formatted similar to what is there already */
+		if (print_to_file) {
+			vty_out(vty, "%s%s timer ", indent ? : "", g->name);
+			vty_out(vty, OSMO_T_FMT " %lu%s", OSMO_T_FMT_ARGS(t->T), t->val, VTY_NEWLINE);
+		} else {
+			osmo_tdef_vty_out_one(vty, t, "bts-%d-%s: ", bts_nr, g->name);
+		}
+	}
+	return CMD_SUCCESS;
+}
+
 static void config_write_bts_gprs(struct vty *vty, struct gsm_bts *bts)
 {
 	unsigned int i;
@@ -4219,6 +4366,8 @@ static void config_write_bts_gprs(struct vty *vty, struct gsm_bts *bts)
 		vty_out(vty, "  gprs nsvc %u remote udp port %u%s",
 			i, remote.port, VTY_NEWLINE);
 	}
+	for (i = 0; i < _NUM_OSMO_BSC_BTS_TDEF_GROUPS; i++)
+		bts_write_group_timers(vty, "  ", bts->nr, i, NULL, true);
 
 	/* EGPRS specific parameters */
 	if (bts->gprs.mode == BTS_GPRS_EGPRS) {
@@ -4982,6 +5131,8 @@ int bts_vty_init(void)
 	install_element(BTS_NODE, &cfg_bts_ncc_permitted_all_cmd);
 	install_element(BTS_NODE, &cfg_bts_ncc_permitted_cmd);
 
+	bts_vty_tdef_cmds_init(BTS_NODE);
+
 	neighbor_ident_vty_init();
 	/* See also handover commands added on bts level from handover_vty.c */
 
@@ -5007,7 +5158,6 @@ int bts_vty_init(void)
 	install_element(POWER_CTRL_NODE, &cfg_power_ctrl_ci_avg_params_cmd);
 	install_element(POWER_CTRL_NODE, &cfg_power_ctrl_ci_avg_algo_cmd);
 	install_element(POWER_CTRL_NODE, &cfg_power_ctrl_ci_avg_osmo_ewma_cmd);
-
 
 	return bts_trx_vty_init();
 }

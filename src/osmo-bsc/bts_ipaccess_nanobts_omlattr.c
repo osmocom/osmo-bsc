@@ -229,6 +229,7 @@ struct msgb *nanobts_gen_set_cell_attr(struct gsm_bts *bts)
 {
 	const struct gsm_gprs_cell *cell = &bts->gprs.cell;
 	const struct gprs_rlc_cfg *rlcc = &cell->rlc_cfg;
+	const struct osmo_tdef_group *rlctg = &bts->timer_groups[OSMO_BSC_BTS_TDEF_GROUPS_RLC];
 	struct msgb *msgb;
 	uint8_t buf[2];
 
@@ -249,17 +250,16 @@ struct msgb *nanobts_gen_set_cell_attr(struct gsm_bts *bts)
 	buf[1] = cell->bvci & 0xff;
 	msgb_tl16v_put(msgb, NM_ATT_IPACC_BVCI, 2, buf);
 
-	/* all timers in seconds, unless otherwise stated */
-	const struct abis_nm_ipacc_att_rlc_cfg rlc_cfg = {
-		.t3142 = rlcc->parameter[RLC_T3142],
-		.t3169 = rlcc->parameter[RLC_T3169],
-		.t3191 = rlcc->parameter[RLC_T3191],
-		.t3193_10ms = rlcc->parameter[RLC_T3193],
-		.t3195 = rlcc->parameter[RLC_T3195],
-		.n3101 = rlcc->parameter[RLC_N3101],
-		.n3103 = rlcc->parameter[RLC_N3103],
-		.n3105 = rlcc->parameter[RLC_N3105],
-		.rlc_cv_countdown = rlcc->parameter[CV_COUNTDOWN],
+	const struct abis_nm_ipacc_att_rlc_cfg rlc_cfg = (struct abis_nm_ipacc_att_rlc_cfg){
+		.t3142 =	    osmo_tdef_get(rlctg->tdefs, 3142, OSMO_TDEF_S, -1),
+		.t3169 =	    osmo_tdef_get(rlctg->tdefs, 3169, OSMO_TDEF_S, -1),
+		.t3191 =	    osmo_tdef_get(rlctg->tdefs, 3191, OSMO_TDEF_S, -1),
+		.t3193_10ms =	    osmo_tdef_get(rlctg->tdefs, 3193, OSMO_TDEF_MS, -1)/10,
+		.t3195 =	    osmo_tdef_get(rlctg->tdefs, 3195, OSMO_TDEF_S, -1),
+		.n3101 =	    osmo_tdef_get(rlctg->tdefs, 3101, OSMO_TDEF_CUSTOM, -1),
+		.n3103 =	    osmo_tdef_get(rlctg->tdefs, 3103, OSMO_TDEF_CUSTOM, -1),
+		.n3105 =	    osmo_tdef_get(rlctg->tdefs, 3105, OSMO_TDEF_CUSTOM, -1),
+		.rlc_cv_countdown = osmo_tdef_get(rlctg->tdefs, GSM_BTS_TDEF_ID_COUNTDOWN_VALUE, OSMO_TDEF_CUSTOM, -1)
 	};
 	msgb_tl16v_put(msgb, NM_ATT_IPACC_RLC_CFG, sizeof(rlc_cfg), (const uint8_t *)&rlc_cfg);
 
@@ -293,8 +293,10 @@ struct msgb *nanobts_gen_set_cell_attr(struct gsm_bts *bts)
 	case GSM_BTS_TYPE_OSMOBTS:
 	{
 		const struct abis_nm_ipacc_att_rlc_cfg_2 rlc_cfg_2 = {
-			.t_dl_tbf_ext_10ms = htons(rlcc->parameter[T_DL_TBF_EXT] / 10),
-			.t_ul_tbf_ext_10ms = htons(rlcc->parameter[T_UL_TBF_EXT] / 10),
+			.t_dl_tbf_ext_10ms = htons(osmo_tdef_get(rlctg->tdefs, GSM_BTS_TDEF_ID_DL_TBF_DELAYED,
+								 OSMO_TDEF_MS, -1)/10),
+			.t_ul_tbf_ext_10ms = htons(osmo_tdef_get(rlctg->tdefs, GSM_BTS_TDEF_ID_UL_TBF_EXT,
+								 OSMO_TDEF_MS, -1)/10),
 			.initial_cs = rlcc->initial_cs,
 		};
 		msgb_tl16v_put(msgb, NM_ATT_IPACC_RLC_CFG_2,

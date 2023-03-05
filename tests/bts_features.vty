@@ -56,3 +56,108 @@ OsmoBSC(config-net)# exit
 OsmoBSC(config)# exit
 OsmoBSC# show running-config
 ... !ncc-permitted
+
+
+OsmoBSC# # check per-BTS timers
+OsmoBSC# configure terminal
+OsmoBSC(config)# network
+OsmoBSC(config-net)# bts 0
+OsmoBSC(config-net-bts)# gprs mode none
+OsmoBSC(config-net-bts)# show gprs timer
+% GPRS is not enabled on BTS 0
+
+OsmoBSC(config-net-bts)# gprs mode gprs
+OsmoBSC(config-net-bts)# show gprs timer
+rlc: T3142 = 20 s	Used during packet access on CCCH/while in dedicated mode. Started after the receipt of IMMEDIATE ASSIGNMENT REJECT or DTM REJECT or EC IMMEDIATE ASSIGNMENT REJECT (default: 20 s, range: [0 .. 255])
+rlc: T3169 = 5 s	Release radio resource (TFI, USF) timer (linked to N3103, N3103) (default: 5 s, range: [0 .. 255])
+rlc: T3191 = 5 s	Downlink TBF Release downlink RLC data block retransmission timer (default: 5 s, range: [0 .. 255])
+rlc: T3193 = 1600 ms	Downlink TBF Release timer (default: 1600 ms, range: [0 .. 2550])
+rlc: T3195 = 5 s	Timer for TFI release on N3105 overflow (unresponsive MS) (default: 5 s, range: [0 .. 255])
+rlc: T100 = 15	CV: Countdown value/remaining blocks to transmit (default: 15, range: [0 .. 255])
+rlc: T101 = 2500 ms	Extended uplink TBF (default: 2500 ms, range: [0 .. 5000])
+rlc: T102 = 2500 ms	Extended downlink TBF (default: 2500 ms, range: [0 .. 5000])
+rlc: T3101 = 10	N3101: Maximum USFs without response from the MS (default: 10, range: [9 .. 255])
+rlc: T3103 = 4	N3103: Maximum PACKET UPLINK ACK/NACK messages within a TBF unacknowledged by MS (default: 4, range: [0 .. 255])
+rlc: T3105 = 8	N3105: Maximum allocated data blocks without RLC/MAC control reply from MS (default: 8, range: [0 .. 255])
+
+OsmoBSC(config-net-bts)# show gprs timer rlc T3101
+rlc: T3101 = 10	N3101: Maximum USFs without response from the MS (default: 10, range: [9 .. 255])
+OsmoBSC(config-net-bts)# show gprs timer rlc T3105
+rlc: T3105 = 8	N3105: Maximum allocated data blocks without RLC/MAC control reply from MS (default: 8, range: [0 .. 255])
+
+OsmoBSC(config-net-bts)# gprs timer
+rlc: T3142 = 20 s	Used during packet access on CCCH/while in dedicated mode. Started after the receipt of IMMEDIATE ASSIGNMENT REJECT or DTM REJECT or EC IMMEDIATE ASSIGNMENT REJECT (default: 20 s, range: [0 .. 255])
+rlc: T3169 = 5 s	Release radio resource (TFI, USF) timer (linked to N3103, N3103) (default: 5 s, range: [0 .. 255])
+rlc: T3191 = 5 s	Downlink TBF Release downlink RLC data block retransmission timer (default: 5 s, range: [0 .. 255])
+rlc: T3193 = 1600 ms	Downlink TBF Release timer (default: 1600 ms, range: [0 .. 2550])
+rlc: T3195 = 5 s	Timer for TFI release on N3105 overflow (unresponsive MS) (default: 5 s, range: [0 .. 255])
+rlc: T100 = 15	CV: Countdown value/remaining blocks to transmit (default: 15, range: [0 .. 255])
+rlc: T101 = 2500 ms	Extended uplink TBF (default: 2500 ms, range: [0 .. 5000])
+rlc: T102 = 2500 ms	Extended downlink TBF (default: 2500 ms, range: [0 .. 5000])
+rlc: T3101 = 10	N3101: Maximum USFs without response from the MS (default: 10, range: [9 .. 255])
+rlc: T3103 = 4	N3103: Maximum PACKET UPLINK ACK/NACK messages within a TBF unacknowledged by MS (default: 4, range: [0 .. 255])
+rlc: T3105 = 8	N3105: Maximum allocated data blocks without RLC/MAC control reply from MS (default: 8, range: [0 .. 255])
+
+OsmoBSC(config-net-bts)# #### Show/set timer for this BTS
+OsmoBSC(config-net-bts)# gprs timer rlc T3142
+rlc: T3142 = 20 s	Used during packet access on CCCH/while in dedicated mode. Started after the receipt of IMMEDIATE ASSIGNMENT REJECT or DTM REJECT or EC IMMEDIATE ASSIGNMENT REJECT (default: 20 s, range: [0 .. 255])
+
+OsmoBSC(config-net-bts)# gprs timer rlc T3142 10
+OsmoBSC(config-net-bts)# gprs timer rlc T3142
+rlc: T3142 = 10 s	Used during packet access on CCCH/while in dedicated mode. Started after the receipt of IMMEDIATE ASSIGNMENT REJECT or DTM REJECT or EC IMMEDIATE ASSIGNMENT REJECT (default: 20 s, range: [0 .. 255])
+
+OsmoBSC(config-net-bts)# exit
+
+OsmoBSC(config-net)# #### Set up bts 2 for testing per-BTS timers
+OsmoBSC(config-net)# bts 2
+OsmoBSC(config-net-bts)# gprs mode gprs
+OsmoBSC(config-net-bts)# gprs timer rlc T3142
+rlc: T3142 = 20 s	Used during packet access on CCCH/while in dedicated mode. Started after the receipt of IMMEDIATE ASSIGNMENT REJECT or DTM REJECT or EC IMMEDIATE ASSIGNMENT REJECT (default: 20 s, range: [0 .. 255])
+
+OsmoBSC(config-net-bts)# gprs timer rlc T3142 5
+OsmoBSC(config-net-bts)# gprs timer rlc T3142
+rlc: T3142 = 5 s	Used during packet access on CCCH/while in dedicated mode. Started after the receipt of IMMEDIATE ASSIGNMENT REJECT or DTM REJECT or EC IMMEDIATE ASSIGNMENT REJECT (default: 20 s, range: [0 .. 255])
+
+OsmoBSC(config-net-bts)# exit
+OsmoBSC(config-net)# exit
+OsmoBSC(config)# exit
+OsmoBSC# ## Test global command for showing per-BTS timers
+OsmoBSC# show bts 0 gprs timer
+bts-0-rlc: T3142 = 10 s	Used during packet access on CCCH/while in dedicated mode. Started after the receipt of IMMEDIATE ASSIGNMENT REJECT or DTM REJECT or EC IMMEDIATE ASSIGNMENT REJECT (default: 20 s, range: [0 .. 255])
+bts-0-rlc: T3169 = 5 s	Release radio resource (TFI, USF) timer (linked to N3103, N3103) (default: 5 s, range: [0 .. 255])
+bts-0-rlc: T3191 = 5 s	Downlink TBF Release downlink RLC data block retransmission timer (default: 5 s, range: [0 .. 255])
+bts-0-rlc: T3193 = 1600 ms	Downlink TBF Release timer (default: 1600 ms, range: [0 .. 2550])
+bts-0-rlc: T3195 = 5 s	Timer for TFI release on N3105 overflow (unresponsive MS) (default: 5 s, range: [0 .. 255])
+bts-0-rlc: T100 = 15	CV: Countdown value/remaining blocks to transmit (default: 15, range: [0 .. 255])
+bts-0-rlc: T101 = 2500 ms	Extended uplink TBF (default: 2500 ms, range: [0 .. 5000])
+bts-0-rlc: T102 = 2500 ms	Extended downlink TBF (default: 2500 ms, range: [0 .. 5000])
+bts-0-rlc: T3101 = 10	N3101: Maximum USFs without response from the MS (default: 10, range: [9 .. 255])
+bts-0-rlc: T3103 = 4	N3103: Maximum PACKET UPLINK ACK/NACK messages within a TBF unacknowledged by MS (default: 4, range: [0 .. 255])
+bts-0-rlc: T3105 = 8	N3105: Maximum allocated data blocks without RLC/MAC control reply from MS (default: 8, range: [0 .. 255])
+
+OsmoBSC# show bts 2 gprs timer rlc T3142
+bts-2-rlc: T3142 = 5 s	Used during packet access on CCCH/while in dedicated mode. Started after the receipt of IMMEDIATE ASSIGNMENT REJECT or DTM REJECT or EC IMMEDIATE ASSIGNMENT REJECT (default: 20 s, range: [0 .. 255])
+
+OsmoBSC# ## Test gprs mode check
+OsmoBSC# configure terminal
+OsmoBSC(config)# network
+OsmoBSC(config-net)# bts 2
+OsmoBSC(config-net-bts)# gprs mode none
+OsmoBSC(config-net-bts)# exit
+OsmoBSC(config-net)# exit
+OsmoBSC(config)# exit
+OsmoBSC# disable
+OsmoBSC> show bts 2 gprs timer rlc T3142
+% GPRS is not enabled on BTS 2
+
+OsmoBSC> enable
+OsmoBSC# configure terminal
+OsmoBSC(config)# network
+OsmoBSC(config-net)# bts 2
+OsmoBSC(config-net-bts)# gprs mode gprs
+OsmoBSC(config-net-bts)# exit
+OsmoBSC(config-net)# exit
+OsmoBSC(config)# exit
+OsmoBSC# disable
+OsmoBSC> show bts 2 gprs timer rlc T3142
+bts-2-rlc: T3142 = 5 s	Used during packet access on CCCH/while in dedicated mode. Started after the receipt of IMMEDIATE ASSIGNMENT REJECT or DTM REJECT or EC IMMEDIATE ASSIGNMENT REJECT (default: 20 s, range: [0 .. 255])

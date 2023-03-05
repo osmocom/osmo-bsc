@@ -50,6 +50,8 @@ void bsc_subscr_dump_vty(struct vty *vty, struct bsc_subscr *bsub);
 struct gsm_network *gsmnet_from_vty(struct vty *vty);
 
 int bts_vty_init(void);
+unsigned int bts_write_group_timers(struct vty *vty, const char *indent, int bts_nr,
+				    unsigned gsm_bts_tdef_group, const char *T_arg, bool print_defaults);
 void bts_dump_vty(struct vty *vty, struct gsm_bts *bts);
 void trx_dump_vty(struct vty *vty, struct gsm_bts_trx *trx, bool print_rsl, bool show_connected);
 void ts_dump_vty(struct vty *vty, struct gsm_bts_trx_ts *ts);
@@ -88,6 +90,20 @@ enum bsc_vty_cmd_attr {
 #define BTS_NR_TRX_TS_SS_STR2 \
 	BTS_NR_TRX_TS_STR2 \
 	"Sub-slot for manual command\n" SS_NR_STR
+/* Defines for vty tdef commands adapted to BTS (general) */
+#define BTS_SHOW_TIMER_STR_NONEWLINE "Show List of timers for this group"
+#define BTS_SHOW_TIMER_STR BTS_SHOW_TIMER_STR_NONEWLINE "\n"
+#define BTS_TDEF_VTY_DOC_T(BTS_TIMER_GROUPNAME) \
+	"T- or X-timer-number (for " BTS_TIMER_GROUPNAME " timer configurable on this BTS) -- 3GPP compliant timer number of" \
+		" the format '1234' or 'T1234' or 't1234';" \
+	" Osmocom-specific timer number of the format: 'X1234' or 'x1234'.\n"
+
+/* Defines for per-BTS string commands */
+#define BTS_VTY_RLC_STR "rlc"
+/* Add additional group strings for vty command generation here */
+
+#define BTS_VTY_SHOW_TIMER_STR BTS_SHOW_TIMER_STR_NONEWLINE " & for this BTS\n"
+/*! Defines for per-BTS string commands */
 
 #define TSC_ARGS_OPT "[tsc] [<1-4>] [<0-7>]"
 #define TSC_ARGS_DOC \

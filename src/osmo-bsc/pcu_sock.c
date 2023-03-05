@@ -181,6 +181,7 @@ static int pcu_tx_info_ind(struct gsm_bts *bts)
 	struct gsm_pcu_if *pcu_prim;
 	struct gsm_pcu_if_info_ind *info_ind;
 	struct gprs_rlc_cfg *rlcc;
+	const struct osmo_tdef_group *rlctg = &bts->timer_groups[OSMO_BSC_BTS_TDEF_GROUPS_RLC];
 	struct gsm_bts_sm *bts_sm;
 	struct gsm_gprs_nsvc *nsvc;
 	struct gsm_bts_trx *trx;
@@ -220,15 +221,19 @@ static int pcu_tx_info_ind(struct gsm_bts *bts)
 	info_ind->repeat_time = rlcc->paging.repeat_time;
 	info_ind->repeat_count = rlcc->paging.repeat_count;
 	info_ind->bvci = bts->gprs.cell.bvci;
-	info_ind->t3142 = rlcc->parameter[RLC_T3142];
-	info_ind->t3169 = rlcc->parameter[RLC_T3169];
-	info_ind->t3191 = rlcc->parameter[RLC_T3191];
-	info_ind->t3193_10ms = rlcc->parameter[RLC_T3193];
-	info_ind->t3195 = rlcc->parameter[RLC_T3195];
-	info_ind->n3101 = rlcc->parameter[RLC_N3101];
-	info_ind->n3103 = rlcc->parameter[RLC_N3103];
-	info_ind->n3105 = rlcc->parameter[RLC_N3105];
-	info_ind->cv_countdown = rlcc->parameter[CV_COUNTDOWN];
+	info_ind->t3142 = osmo_tdef_get(rlctg->tdefs, 3142, OSMO_TDEF_S, -1);
+	info_ind->t3169 = osmo_tdef_get(rlctg->tdefs, 3169, OSMO_TDEF_S, -1);
+	info_ind->t3191 = osmo_tdef_get(rlctg->tdefs, 3191, OSMO_TDEF_S, -1);
+	info_ind->t3193_10ms = osmo_tdef_get(rlctg->tdefs, 3193, OSMO_TDEF_MS, -1)/10;
+	info_ind->t3195 = osmo_tdef_get(rlctg->tdefs, 3195, OSMO_TDEF_S, -1);
+	info_ind->n3101 =
+		osmo_tdef_get(rlctg->tdefs, 3101, OSMO_TDEF_CUSTOM, -1);
+	info_ind->n3103 =
+		osmo_tdef_get(rlctg->tdefs, 3103, OSMO_TDEF_CUSTOM, -1);
+	info_ind->n3105 =
+		osmo_tdef_get(rlctg->tdefs, 3105, OSMO_TDEF_CUSTOM, -1);
+	info_ind->cv_countdown =
+		osmo_tdef_get(rlctg->tdefs, GSM_BTS_TDEF_ID_COUNTDOWN_VALUE, OSMO_TDEF_CUSTOM, -1);
 	if (rlcc->cs_mask & (1 << GPRS_CS1))
 		info_ind->flags |= PCU_IF_FLAG_CS1;
 	if (rlcc->cs_mask & (1 << GPRS_CS2))
@@ -258,9 +263,11 @@ static int pcu_tx_info_ind(struct gsm_bts *bts)
 			info_ind->flags |= PCU_IF_FLAG_MCS9;
 	}
 	/* TODO: isn't dl_tbf_ext wrong?: * 10 and no ntohs */
-	info_ind->dl_tbf_ext = rlcc->parameter[T_DL_TBF_EXT];
+	info_ind->dl_tbf_ext =
+		osmo_tdef_get(rlctg->tdefs, GSM_BTS_TDEF_ID_DL_TBF_DELAYED, OSMO_TDEF_MS, -1);
 	/* TODO: isn't ul_tbf_ext wrong?: * 10 and no ntohs */
-	info_ind->ul_tbf_ext = rlcc->parameter[T_UL_TBF_EXT];
+	info_ind->ul_tbf_ext =
+		osmo_tdef_get(rlctg->tdefs, GSM_BTS_TDEF_ID_UL_TBF_EXT, OSMO_TDEF_MS, -1);
 	info_ind->initial_cs = rlcc->initial_cs;
 	info_ind->initial_mcs = rlcc->initial_mcs;
 

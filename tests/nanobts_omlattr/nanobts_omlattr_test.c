@@ -34,6 +34,8 @@
 #include <string.h>
 
 extern struct gsm_bts_model bts_model_nanobts;
+extern void bts_gprs_timer_groups_init(struct gsm_bts *bts);
+extern void bts_grprs_tdef_groups_init(void);
 
 static void test_nanobts_gen_set_bts_attr(struct gsm_bts *bts, uint8_t *expected)
 {
@@ -133,6 +135,28 @@ static struct osmo_tdef gsm_network_T_defs[] = {
 		.desc = "Periodic Location Update timer, sent to MS (1 = 6 minutes)" },
 	{ .T = -3105, .default_val = GSM_NY1_DEFAULT, .val = GSM_NY1_DEFAULT, .min_val = 0, .max_val = UINT8_MAX, .unit = OSMO_TDEF_CUSTOM,
 		.desc = "Ny1: Maximum number of Physical Information (re)transmissions" },
+	{ .T = 3142, .default_val = 20, .desc = "Used during packet access on CCCH/while in dedicated mode. "
+						"Started after the receipt of IMMEDIATE ASSIGNMENT REJECT or DTM "
+						"REJECT or EC IMMEDIATE ASSIGNMENT REJECT" },
+	{ .T = 3169, .default_val = 5, .desc = "Release radio resource (TFI, USF) timer (linked to N3103, N3103)" },
+	{ .T = 3191, .default_val = 5, .desc = "Downlink TBF Release downlink RLC data block retransmission timer" },
+	{ .T = 3193, .default_val = 1600, .desc = "Downlink TBF Release timer", .unit = OSMO_TDEF_MS },
+	{ .T = 3195, .default_val = 5, .desc = "Timer for TFI release on N3105 overflow (unresponsive MS)" },
+	{ .T = GSM_BTS_TDEF_ID_COUNTDOWN_VALUE, .default_val = 15, .desc = "CV: Countdown value/remaining blocks to transmit",
+	  .unit = OSMO_TDEF_CUSTOM, .max_val = UINT8_MAX },
+	{ .T = GSM_BTS_TDEF_ID_UL_TBF_EXT, .default_val = 2500,
+	  .desc = "\"In the extended uplink TBF mode, the uplink TBF may be maintained during temporary inactive periods, "
+		  "where the mobile station has no RLC information to send.\" (3GPP TS 44.060 Version 6.14.0)",
+	  .unit = OSMO_TDEF_MS, .max_val = 500 * 10 },
+	{ .T = GSM_BTS_TDEF_ID_DL_TBF_DELAYED, .default_val = 2500,
+	  .desc = "A delayed release of the downlink TBF is when the release of the downlink TBF is delayed following the transmission of a final data block, "
+		  "rather than instantly releasing the TBF",
+	{ .T = 3101, .default_val = 10, .desc = "N3101: Maximum USFs without response from the MS", .unit = OSMO_TDEF_CUSTOM,
+	  .min_val = GSM_RLCMACN3101_STRICT_LOWER_BOUND + 1 },
+	{ .T = 3103, .default_val = 4, .desc = "N3103: Maximum PACKET UPLINK ACK/NACK messages within a TBF unacknowledged by MS",
+	  .unit = OSMO_TDEF_CUSTOM},
+	{ .T = 3105, .default_val = 8, .desc = "N3105: Maximum allocated data blocks without RLC/MAC control reply from MS",
+	  .unit = OSMO_TDEF_CUSTOM },
 	{}
 };
 
@@ -152,9 +176,11 @@ int main(int argc, char **argv)
 	/* Allocate environmental structs (bts, net, trx) */
 	net = talloc_zero(ctx, struct gsm_network);
 	INIT_LLIST_HEAD(&net->bts_list);
-	net->T_defs = gsm_network_T_defs;
+	osmo_tdefs_reset(net->T_defs = gsm_network_T_defs);
+	bts_grprs_tdef_groups_init();
 	gsm_bts_model_register(&bts_model_nanobts);
 	bts = gsm_bts_alloc_register(net, GSM_BTS_TYPE_NANOBTS, 63);
+	bts_gprs_timer_groups_init(bts);
 	OSMO_ASSERT(bts);
 	bts->network = net;
 	trx = talloc_zero(ctx, struct gsm_bts_trx);
@@ -208,12 +234,13 @@ int main(int argc, char **argv)
 	bts->gprs.rac = 0x00;
 	bts->gprs.cell.bvci = 2;
 	bts->gprs.mode = BTS_GPRS_GPRS;
-	uint8_t attr_cell_expected[] =
-	    { 0x9a, 0x00, 0x01, 0x00, 0x9c, 0x00, 0x02, 0x05, 0x03, 0x9e, 0x00,
-		0x02, 0x00, 0x02, 0xa3, 0x00, 0x09, 0x14, 0x05, 0x05, 0xa0,
-		0x05, 0x0a, 0x04, 0x08,
-		0x0f, 0xa8, 0x00, 0x02, 0x0f, 0x00, 0xa9, 0x00, 0x05, 0x00,
-		0xfa, 0x00, 0xfa, 0x02, 0xac, 0x00, 0x01, 0x06,
+	uint8_t attr_cell_expected[] = {
+		   0x9a,  0x00,  0x01,  0x00,	  0x9c,	 0x00,	0x02,  0x05,  0x03, 0x9e, 0x00,
+		   0x02,  0x00,  0x02,  0xa3,	  0x00,	 0x09,
+		/* T3142, T3169, T3191, T3193/10, T3195, N3101, N3103, N3105, CV  */
+		   0x14,  0x05,  0x05,  0xa0,	  0x05,	 0x0a,	0x04,  0x08,  0x0f,
+		   0xa8,  0x00,  0x02,  0x0f,	  0x00,	 0xa9,	0x00,  0x05,  0x00,
+		   0xfa,  0x00,  0xfa,  0x02,	  0xac,	 0x00,	0x01,  0x06,
 	};
 
 	/* Parameters needed to test nanobts_gen_set_nsvc_attr() */

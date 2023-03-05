@@ -132,19 +132,6 @@ static const uint8_t bts_cell_timer_default[11] = {
 };
 
 static const struct gprs_rlc_cfg rlc_cfg_default = {
-	.parameter = {
-		[RLC_T3142] = 20,
-		[RLC_T3169] = 5,
-		[RLC_T3191] = 5,
-		[RLC_T3193] = 160, /* 10ms */
-		[RLC_T3195] = 5,
-		[RLC_N3101] = 10,
-		[RLC_N3103] = 4,
-		[RLC_N3105] = 8,
-		[CV_COUNTDOWN] = 15,
-		[T_DL_TBF_EXT] = 250 * 10, /* ms */
-		[T_UL_TBF_EXT] = 250 * 10, /* ms */
-	},
 	.paging = {
 		.repeat_time = 5 * 50, /* ms */
 		.repeat_count = 3,

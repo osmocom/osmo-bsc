@@ -750,7 +750,6 @@ enum gprs_cs {
 };
 
 struct gprs_rlc_cfg {
-	uint16_t parameter[_NUM_RLC_PAR];
 	struct {
 		uint16_t repeat_time; /* ms */
 		uint8_t repeat_count;

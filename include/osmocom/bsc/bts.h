@@ -7,6 +7,7 @@
 #include <osmocom/core/linuxlist.h>
 #include <osmocom/core/msgb.h>
 #include <osmocom/core/bitvec.h>
+#include <osmocom/core/tdef.h>
 #include <osmocom/gsm/tlv.h>
 #include <osmocom/gsm/bts_features.h>
 
@@ -319,12 +320,28 @@ struct gsm_bts_model {
 	bool features_get_reported;
 };
 
+#define GSM_BTS_TDEF_ID_COUNTDOWN_VALUE	(-1)
+#define GSM_BTS_TDEF_ID_UL_TBF_EXT	(-2)
+#define GSM_BTS_TDEF_ID_DL_TBF_DELAYED	(-3)
+
+/* 3GPP TS 04.60 V8.27.0 (2005-09) */
+#define GSM_RLCMACN3101_STRICT_LOWER_BOUND 8UL
+
 struct gsm_gprs_cell {
 	struct gsm_abis_mo mo;
 	uint16_t bvci;
 	uint8_t timer[11];
 	struct gprs_rlc_cfg rlc_cfg;
 };
+
+/* Used for indexing tdef group arrays */
+enum gsm_gprs_bts_tdef_groups {
+	OSMO_BSC_BTS_TDEF_GROUPS_RLC = 0,
+	/* TODO: Add additional groups here (BSSGP, NS) */
+	_NUM_OSMO_BSC_BTS_TDEF_GROUPS
+};
+extern const size_t bts_gprs_rlc_timer_templates_bytes;
+extern struct osmo_tdef_group bts_gprs_timer_template_groups[_NUM_OSMO_BSC_BTS_TDEF_GROUPS + 1];
 
 /* One BTS */
 struct gsm_bts {
@@ -493,6 +510,10 @@ struct gsm_bts {
 			uint8_t alpha; /* ALPHA*10, units of 0.1, range <0-10> */
 		} pwr_ctrl; /* TS 44.060 Table 12.9.1 */
 	} gprs;
+
+	/* TODO: Migrate other per-bts timers (stored elsewhere in this struct before this struct member
+	 *	 was introduced) over to this 'struct osmo_tdef' */
+	struct osmo_tdef_group timer_groups[_NUM_OSMO_BSC_BTS_TDEF_GROUPS + 1];
 
 	/* CCCH Load Threshold: threshold (in percent) when BTS shall send CCCH LOAD IND */
 	uint8_t ccch_load_ind_thresh;

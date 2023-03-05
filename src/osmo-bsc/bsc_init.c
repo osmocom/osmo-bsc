@@ -43,9 +43,12 @@
 #include <osmocom/bsc/smscb.h>
 #include <osmocom/gsm/protocol/gsm_48_049.h>
 
+#include <talloc.h>
 #include <time.h>
 #include <limits.h>
 #include <stdbool.h>
+
+extern void bts_gprs_timer_groups_init(struct gsm_bts *bts);
 
 struct gsm_network *bsc_gsmnet;
 
@@ -233,6 +236,7 @@ struct gsm_bts *bsc_bts_alloc_register(struct gsm_network *net, enum gsm_bts_typ
 	OSMO_ASSERT(bts != NULL);
 
 	bts->ho = ho_cfg_init(bts, net->ho);
+	bts_gprs_timer_groups_init(bts);
 
 	return bts;
 }
