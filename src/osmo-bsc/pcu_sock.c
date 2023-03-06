@@ -531,7 +531,6 @@ static uint8_t extract_paging_group(struct gsm_bts *bts, uint8_t *data)
 static int pcu_rx_data_req(struct gsm_bts *bts, uint8_t msg_type,
 	struct gsm_pcu_if_data *data_req)
 {
-	struct msgb *msg;
 	uint32_t tlli = -1;
 	uint8_t pag_grp;
 	int rc = 0;
@@ -548,18 +547,8 @@ static int pcu_rx_data_req(struct gsm_bts *bts, uint8_t msg_type,
 		pcu_rx_rr_paging(bts, pag_grp, data_req->data+3);
 		break;
 	case PCU_IF_SAPI_AGCH:
-		msg = msgb_alloc(data_req->len, "pcu_agch");
-		if (!msg) {
-			rc = -ENOMEM;
-			break;
-		}
-		msg->l3h = msgb_put(msg, data_req->len);
-		memcpy(msg->l3h, data_req->data, data_req->len);
-
-		if (rsl_imm_assign_cmd(bts, msg->len, msg->data)) {
-			msgb_free(msg);
+		if (rsl_imm_assign_cmd(bts, data_req->len, data_req->data))
 			rc = -EIO;
-		}
 		break;
 	case PCU_IF_SAPI_PCH_DT:
 		/* DT = direct TLLI. A tlli is prefixed so that the BSC/BTS can confirm the sending of the downlink
@@ -579,29 +568,20 @@ static int pcu_rx_data_req(struct gsm_bts *bts, uint8_t msg_type,
 
 		LOGP(DPCU, LOGL_DEBUG, "PCU Sends immediate assignment via PCH (tlli=0x%08x, pag_grp=0x%02x)\n",
 		     tlli, pag_grp);
-		msg = msgb_alloc(data_req->len - 7, "pcu_pch");
-		if (!msg) {
-			rc = -ENOMEM;
-			break;
-		}
-		msg->l3h = msgb_put(msg, data_req->len - 7);
-		memcpy(msg->l3h, data_req->data + 7, data_req->len - 7);
 
 		/* NOTE: Sending an IMMEDIATE ASSIGNMENT via PCH became necessary with GPRS in order to be able to
 		 * assign downlink TBFs directly through the paging channel. However, this method never became part
 		 * of the RSL specs. This means that each BTS vendor has to come up with a proprietary method. At
 		 * the moment we only support Ericsson RBS here. */
 		if (bts->type == GSM_BTS_TYPE_RBS2000) {
-			rc = rsl_ericsson_imm_assign_cmd(bts, tlli, msg->len, msg->data, pag_grp);
+			rc = rsl_ericsson_imm_assign_cmd(bts, tlli, data_req->len - 7, data_req->data + 7, pag_grp);
 		} else {
 			LOGP(DPCU, LOGL_ERROR, "BTS model does not support sending immediate assignment via PCH!\n");
 			rc = -ENOTSUP;
 		}
 
-		if (rc) {
-			msgb_free(msg);
+		if (rc)
 			rc = -EIO;
-		}
 		break;
 	default:
 		LOGP(DPCU, LOGL_ERROR, "Received PCU data request with "
