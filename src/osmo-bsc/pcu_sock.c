@@ -917,7 +917,7 @@ static int pcu_sock_accept(struct osmo_fd *bfd, unsigned int flags)
 	bts = llist_entry(state->net->bts_list.next, struct gsm_bts, list);
 
 	len = sizeof(un_addr);
-	fd = accept(bfd->fd, (struct sockaddr *) &un_addr, &len);
+	fd = accept(bfd->fd, (struct sockaddr *)&un_addr, &len);
 	if (fd < 0) {
 		LOG_BTS(bts, DPCU, LOGL_ERROR, "Failed to accept a new connection\n");
 		return -1;
