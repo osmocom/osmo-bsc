@@ -286,6 +286,7 @@ struct gsm_lchan {
 		uint16_t conn_id;
 		uint8_t rtp_payload;
 		uint8_t rtp_payload2;
+		uint8_t rtp_csd_fmt;
 		uint8_t speech_mode;
 
 		/* info we need to postpone the AoIP

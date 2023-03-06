@@ -2582,6 +2582,65 @@ static int abis_rsl_rx_rll(struct msgb *msg)
 	return rc;
 }
 
+/* Return an ip.access RTP CSD FMT value (uint8_t) or negative on error. */
+int ipacc_rtp_csd_fmt_transp(const struct channel_mode_and_rate *ch_mode_rate,
+			     const enum rsl_ipac_rtp_csd_format_d format_d)
+{
+	uint8_t ret = format_d;
+
+	switch (ch_mode_rate->data_rate.t) {
+	case RSL_CMOD_CSD_T_32k0:
+	case RSL_CMOD_CSD_T_29k0:
+		ret |= RSL_IPAC_RTP_CSD_IR_32k << 5;
+		break;
+	case RSL_CMOD_CSD_T_14k4:
+	case RSL_CMOD_CSD_T_9k6:
+		ret |= RSL_IPAC_RTP_CSD_IR_16k << 5;
+		break;
+	case RSL_CMOD_CSD_T_4k8:
+	case RSL_CMOD_CSD_T_2k4:
+	case RSL_CMOD_CSD_T_1k2:
+	case RSL_CMOD_CSD_T_600:
+	case RSL_CMOD_CSD_T_1200_75:
+		ret |= RSL_IPAC_RTP_CSD_IR_8k << 5;
+		break;
+	default:
+		return -EINVAL;
+	}
+
+	return ret;
+}
+
+/* Return an ip.access RTP CSD FMT value (uint8_t) or negative on error. */
+int ipacc_rtp_csd_fmt_non_transp(const struct channel_mode_and_rate *ch_mode_rate,
+				 const enum rsl_ipac_rtp_csd_format_d format_d)
+{
+	uint8_t ret = format_d;
+
+	switch (ch_mode_rate->data_rate.nt) {
+	case RSL_CMOD_CSD_NTA_43k5_14k5:
+	case RSL_CMOD_CSD_NTA_43k5_29k0:
+	case RSL_CMOD_CSD_NTA_14k5_43k5:
+	case RSL_CMOD_CSD_NTA_29k0_43k5:
+	case RSL_CMOD_CSD_NT_43k5:
+		ret |= RSL_IPAC_RTP_CSD_IR_64k << 5;
+	case RSL_CMOD_CSD_NTA_29k0_14k5:
+	case RSL_CMOD_CSD_NTA_14k5_29k0:
+	case RSL_CMOD_CSD_NT_28k8:
+		ret |= RSL_IPAC_RTP_CSD_IR_32k << 5;
+	case RSL_CMOD_CSD_NT_14k5:
+	case RSL_CMOD_CSD_NT_12k0:
+		ret |= RSL_IPAC_RTP_CSD_IR_16k << 5;
+	case RSL_CMOD_CSD_NT_6k0:
+		ret |= RSL_IPAC_RTP_CSD_IR_8k << 5;
+		break;
+	default:
+		return -EINVAL;
+	}
+
+	return ret;
+}
+
 /* Return an ip.access BTS speech mode value (uint8_t) or negative on error. */
 int ipacc_speech_mode(enum gsm48_chan_mode tch_mode, enum gsm_chan_t type)
 {
@@ -2755,9 +2814,11 @@ int rsl_tx_ipacc_crcx(const struct gsm_lchan *lchan)
 	dh->chan_nr = chan_nr;
 
 	if (lchan->current_ch_indctr == GSM0808_CHAN_DATA) {
+		msgb_tv_put(msg, RSL_IE_IPAC_RTP_CSD_FMT, lchan->abis_ip.rtp_csd_fmt);
+
 		LOG_LCHAN(lchan, LOGL_DEBUG,
-			  "Sending IPACC CRCX to BTS: RTP_PAYLOAD=%d (CSD) osmux_use=%d osmux_loc_cid=%d\n",
-			  lchan->abis_ip.rtp_payload,
+			  "Sending IPACC CRCX to BTS: rtp_csd_fmt=0x%02x RTP_PAYLOAD=%d (CSD) osmux_use=%d osmux_loc_cid=%d\n",
+			  lchan->abis_ip.rtp_csd_fmt, lchan->abis_ip.rtp_payload,
 			  lchan->abis_ip.osmux.use, lchan->abis_ip.osmux.local_cid);
 	} else {
 		/* 0x1- == receive-only, 0x-1 == EFR codec */
@@ -2806,8 +2867,12 @@ struct msgb *rsl_make_ipacc_mdcx(const struct gsm_lchan *lchan, uint32_t dest_ip
 	att_ip = (uint32_t *)msgb_put(msg, sizeof(uint32_t));
 	*att_ip = htonl(dest_ip);
 	msgb_tv16_put(msg, RSL_IE_IPAC_REMOTE_PORT, dest_port);
-	if (lchan->current_ch_indctr == GSM0808_CHAN_SPEECH)
+
+	if (lchan->current_ch_indctr == GSM0808_CHAN_DATA)
+		msgb_tv_put(msg, RSL_IE_IPAC_RTP_CSD_FMT, lchan->abis_ip.rtp_csd_fmt);
+	else
 		msgb_tv_put(msg, RSL_IE_IPAC_SPEECH_MODE, lchan->abis_ip.speech_mode);
+
 	msgb_tv_put(msg, RSL_IE_IPAC_RTP_PAYLOAD, lchan->abis_ip.rtp_payload);
 	if (lchan->abis_ip.rtp_payload2)
 		msgb_tv_put(msg, RSL_IE_IPAC_RTP_PAYLOAD2, lchan->abis_ip.rtp_payload2);
@@ -2832,12 +2897,13 @@ int rsl_tx_ipacc_mdcx(const struct gsm_lchan *lchan)
 
 	if (lchan->current_ch_indctr == GSM0808_CHAN_DATA)
 		LOG_LCHAN(lchan, LOGL_DEBUG, "Sending IPACC MDCX to BTS:"
-			  " %s:%u rtp_payload=%u (CSD) rtp_payload2=%u conn_id=%u\n",
+			  " %s:%u rtp_payload=%u (CSD) rtp_payload2=%u conn_id=%u rtp_csd_fmt=0x%02x\n",
 			  ip_to_a(lchan->abis_ip.connect_ip),
 			  lchan->abis_ip.connect_port,
 			  lchan->abis_ip.rtp_payload,
 			  lchan->abis_ip.rtp_payload2,
-			  lchan->abis_ip.conn_id);
+			  lchan->abis_ip.conn_id,
+			  lchan->abis_ip.rtp_csd_fmt);
 	else
 		LOG_LCHAN(lchan, LOGL_DEBUG, "Sending IPACC MDCX to BTS:"
 			  " %s:%u rtp_payload=%u rtp_payload2=%u conn_id=%u speech_mode=0x%02x\n",

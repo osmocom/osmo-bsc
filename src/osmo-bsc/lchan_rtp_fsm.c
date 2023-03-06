@@ -307,7 +307,26 @@ static void lchan_rtp_fsm_wait_ipacc_crcx_ack_onenter(struct osmo_fsm_inst *fi, 
 		return;
 	}
 
-	if (lchan->current_ch_indctr == GSM0808_CHAN_SPEECH) {
+	if (lchan->current_ch_indctr == GSM0808_CHAN_DATA) {
+		enum rsl_ipac_rtp_csd_format_d format_d = RSL_IPAC_RTP_CSD_TRAU_BTS;
+
+		if (lchan->activate.ch_mode_rate.data_transparent) {
+			val = ipacc_rtp_csd_fmt_transp(&lchan->activate.ch_mode_rate, format_d);
+			if (val < 0) {
+				lchan_rtp_fail("Cannot determine Abis/IP RTP CSD format for rsl_cmod_csd_t=%d",
+					       lchan->activate.ch_mode_rate.data_rate.t);
+				return;
+			}
+		} else {
+			val = ipacc_rtp_csd_fmt_non_transp(&lchan->activate.ch_mode_rate, format_d);
+			if (val < 0) {
+				lchan_rtp_fail("Cannot determine Abis/IP RTP CSD format for rsl_cmod_csd_nt=%d",
+					       lchan->activate.ch_mode_rate.data_rate.nt);
+				return;
+			}
+		}
+		lchan->abis_ip.rtp_csd_fmt = val;
+	} else {
 		val = ipacc_speech_mode(lchan->activate.ch_mode_rate.chan_mode, lchan->type);
 		if (val < 0) {
 			lchan_rtp_fail("Cannot determine Abis/IP speech mode for tch_mode=%s type=%s",

@@ -120,6 +120,11 @@ int rsl_tx_dyn_ts_pdch_act_deact(struct gsm_bts_trx_ts *ts, bool activate);
 
 int rsl_forward_layer3_info(struct gsm_lchan *lchan, const uint8_t *l3_info, uint8_t l3_info_len);
 
+int ipacc_rtp_csd_fmt_transp(const struct channel_mode_and_rate *ch_mode_rate,
+			     const enum rsl_ipac_rtp_csd_format_d format_d);
+int ipacc_rtp_csd_fmt_non_transp(const struct channel_mode_and_rate *ch_mode_rate,
+				 const enum rsl_ipac_rtp_csd_format_d format_d);
+
 int ipacc_speech_mode(enum gsm48_chan_mode tch_mode, enum gsm_chan_t type);
 void ipacc_speech_mode_set_direction(uint8_t *speech_mode, bool send);
 int ipacc_payload_type(enum gsm48_chan_mode tch_mode, enum gsm_chan_t type);
