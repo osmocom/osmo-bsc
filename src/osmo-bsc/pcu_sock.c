@@ -911,14 +911,14 @@ static int pcu_sock_accept(struct osmo_fd *bfd, unsigned int flags)
 	struct gsm_bts_trx *trx;
 	int j;
 	socklen_t len;
-	int rc;
+	int fd;
 
 	/* FIXME: allow multiple BTS */
 	bts = llist_entry(state->net->bts_list.next, struct gsm_bts, list);
 
 	len = sizeof(un_addr);
-	rc = accept(bfd->fd, (struct sockaddr *) &un_addr, &len);
-	if (rc < 0) {
+	fd = accept(bfd->fd, (struct sockaddr *) &un_addr, &len);
+	if (fd < 0) {
 		LOG_BTS(bts, DPCU, LOGL_ERROR, "Failed to accept a new connection\n");
 		return -1;
 	}
@@ -927,11 +927,11 @@ static int pcu_sock_accept(struct osmo_fd *bfd, unsigned int flags)
 		LOG_BTS(bts, DPCU, LOGL_NOTICE, "PCU connects but we already have another active connection ?!?\n");
 		/* We already have one PCU connected, this is all we support */
 		osmo_fd_read_disable(&state->listen_bfd);
-		close(rc);
+		close(fd);
 		return 0;
 	}
 
-	osmo_fd_setup(conn_bfd, rc, OSMO_FD_READ, pcu_sock_cb, state, 0);
+	osmo_fd_setup(conn_bfd, fd, OSMO_FD_READ, pcu_sock_cb, state, 0);
 
 	if (osmo_fd_register(conn_bfd) != 0) {
 		LOG_BTS(bts, DPCU, LOGL_ERROR, "Failed to register new connection fd\n");
