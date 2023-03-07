@@ -33,16 +33,16 @@ msc 0
 ...
 
 OsmoBSC(config-msc)# codec-list foo
-Codec name must be hrX or frX. Was 'foo'
+"foo" is not a valid codec version
 
 OsmoBSC(config-msc)# codec-list fr10
-Codec name must be hrX or frX. Was 'fr10'
+"fr10" is not a valid codec version
 
 OsmoBSC(config-msc)# codec-list hr10
-Codec name must be hrX or frX. Was 'hr10'
+"hr10" is not a valid codec version
 
 OsmoBSC(config-msc)# codec-list FR1
-Codec name must be hrX or frX. Was 'FR1'
+"FR1" is not a valid codec version
 
 OsmoBSC(config-msc)# # Ensure the codec-list with wrong args did not change the config
 OsmoBSC(config-msc)# show running-config
@@ -62,7 +62,7 @@ msc 0
 ...
 
 OsmoBSC(config-msc)# codec-list fr0 fr1
-'fr0' is not a valid codec version
+"fr0" is not a valid codec version
 OsmoBSC(config-msc)# show running-config
 ...
 msc 0
@@ -71,7 +71,7 @@ msc 0
 ...
 
 OsmoBSC(config-msc)# codec-list hr0 hr1
-'hr0' is not a valid codec version
+"hr0" is not a valid codec version
 OsmoBSC(config-msc)# show running-config
 ...
 msc 0
@@ -80,7 +80,7 @@ msc 0
 ...
 
 OsmoBSC(config-msc)# codec-list fr8 fr9
-'fr8' is not a valid codec version
+"fr8" is not a valid codec version
 OsmoBSC(config-msc)# show running-config
 ...
 msc 0
@@ -89,7 +89,7 @@ msc 0
 ...
 
 OsmoBSC(config-msc)# codec-list hr8 hr9
-'hr8' is not a valid codec version
+"hr8" is not a valid codec version
 OsmoBSC(config-msc)# show running-config
 ...
 msc 0
@@ -98,7 +98,7 @@ msc 0
 ...
 
 OsmoBSC(config-msc)# codec-list fr2 hr2
-'hr2' is not a valid codec version
+"hr2" is not a valid codec version
 OsmoBSC(config-msc)# show running-config
 ...
 msc 0

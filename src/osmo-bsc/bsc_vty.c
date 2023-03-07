@@ -2712,6 +2712,7 @@ DEFUN_USRATTR(cfg_net_msc_codec_list,
 {
 	struct bsc_msc_data *data = bsc_msc_data(vty);
 	struct gsm_audio_support tmp[ARRAY_SIZE(data->audio_support)];
+	const char *arg = NULL;
 	int i;
 
 	/* Nr of arguments must fit in the array */
@@ -2724,30 +2725,23 @@ DEFUN_USRATTR(cfg_net_msc_codec_list,
 	/* check all given arguments first */
 	for (i = 0; i < argc; i++) {
 		int j;
+		int ver;
+		arg = argv[i];
 
-		/* check for hrX or frX */
-		if (strlen(argv[i]) != 3
-				|| argv[i][1] != 'r'
-				|| (argv[i][0] != 'h' && argv[i][0] != 'f')
-				|| argv[i][2] < '0'
-				|| argv[i][2] > '9') {
-			vty_out(vty, "Codec name must be hrX or frX. Was '%s'%s", argv[i], VTY_NEWLINE);
-			return CMD_WARNING;
-		}
-
-		/* store in tmp[] first, to not overwrite data->audio_support[] in case of error */
-		tmp[i].ver = atoi(argv[i] + 2);
-		if (strncmp("hr", argv[i], 2) == 0)
+		if (strncmp("hr", arg, 2) == 0)
 			tmp[i].hr = 1;
-		else if (strncmp("fr", argv[i], 2) == 0)
+		else if (strncmp("fr", arg, 2) == 0)
 			tmp[i].hr = 0;
+		else
+			goto invalid_arg;
 
-		/* forbid invalid versions */
-		if (tmp[i].ver < 1 || tmp[i].ver > 7
-		    || (tmp[i].hr && tmp[i].ver == 2)) {
-			vty_out(vty, "'%s' is not a valid codec version%s", argv[i], VTY_NEWLINE);
-			return CMD_WARNING;
-		}
+		ver = atoi(arg + 2);
+		if (ver < 1 || ver > 7)
+			goto invalid_arg;
+		tmp[i].ver = ver;
+
+		if (tmp[i].hr == 1 && ver == 2)
+			goto invalid_arg;
 
 		/* prevent duplicate entries */
 		for (j = 0; j < i; j++) {
@@ -2762,6 +2756,10 @@ DEFUN_USRATTR(cfg_net_msc_codec_list,
 	data->audio_length = argc;
 
 	return CMD_SUCCESS;
+
+invalid_arg:
+	vty_out(vty, "%s is not a valid codec version%s", osmo_quote_cstr_c(OTC_SELECT, arg, -1), VTY_NEWLINE);
+	return CMD_WARNING;
 }
 
 #define LEGACY_STR "This command has no effect, it is kept to support legacy config files\n"
