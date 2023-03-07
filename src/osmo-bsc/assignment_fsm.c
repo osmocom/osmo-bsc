@@ -397,22 +397,22 @@ static int check_chan_mode_rate_against_ch_indctr(struct gsm_subscriber_connecti
 	struct assignment_request *req = &conn->assignment.req;
 	struct osmo_fsm_inst *fi = conn->fi;
 	int i;
-	uint8_t ch_indctr;
+	int rc;
 
 	for (i = 0; i < req->n_ch_mode_rate; i++) {
-		ch_indctr = chan_mode_to_ch_indctr(req->ch_mode_rate_list[i].chan_mode);
-		if (ch_indctr < 0) {
+		rc = chan_mode_to_ch_indctr(req->ch_mode_rate_list[i].chan_mode);
+		if (rc < 0) {
 			assignment_fail(GSM0808_CAUSE_REQ_CODEC_TYPE_OR_CONFIG_NOT_SUPP,
 					"Channel mode not supported (prev level %d): %s", i,
 					gsm48_chan_mode_name(req->ch_mode_rate_list[i].chan_mode));
 			return -EINVAL;
 		}
 
-		if (ch_indctr != req->ch_indctr) {
+		if (rc != req->ch_indctr) {
 			assignment_fail(GSM0808_CAUSE_REQ_CODEC_TYPE_OR_CONFIG_NOT_SUPP,
 					"Channel mode %s has ch_indctr %d, channel type has ch_indctr %d",
 					gsm48_chan_mode_name(req->ch_mode_rate_list[i].chan_mode),
-					ch_indctr, req->ch_indctr);
+					rc, req->ch_indctr);
 			return -EINVAL;
 		}
 	}
