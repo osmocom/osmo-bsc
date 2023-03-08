@@ -2752,7 +2752,7 @@ DEFUN_USRATTR(cfg_net_msc_codec_list,
 		/* prevent duplicate entries */
 		for (j = 0; j < i; j++) {
 			if (gsm_audio_support_cmp(&tmp[j], &tmp[i]) == 0) {
-				vty_out(vty, "duplicate entry in 'msc' / 'codec-support': %s%s", argv[i], VTY_NEWLINE);
+				vty_out(vty, "duplicate entry in 'msc' / 'codec-list': %s%s", argv[i], VTY_NEWLINE);
 				return CMD_WARNING;
 			}
 		}
