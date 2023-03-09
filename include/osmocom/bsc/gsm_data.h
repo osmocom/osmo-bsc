@@ -323,7 +323,7 @@ struct gsm_subscriber_connection {
 	/* flag to prevent multiple simultaneous ciphering commands */
 	int ciphering_handled;
 
-	/* SCCP connection associatd with this subscriber_connection */
+	/* SCCP connection associated with this subscriber_connection */
 	struct {
 		/* SCCP connection related */
 		struct bsc_msc_data *msc;
