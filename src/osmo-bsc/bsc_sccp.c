@@ -26,7 +26,7 @@
 #include <osmocom/bsc/lb.h>
 
 /* We need an unused SCCP conn_id across all SCCP users. */
-int bsc_sccp_inst_next_conn_id(struct osmo_sccp_instance *sccp)
+uint32_t bsc_sccp_inst_next_conn_id(struct osmo_sccp_instance *sccp)
 {
 	static uint32_t next_id = 1;
 	int i;
@@ -34,11 +34,13 @@ int bsc_sccp_inst_next_conn_id(struct osmo_sccp_instance *sccp)
 	/* This looks really suboptimal, but in most cases the static next_id should indicate exactly the next unused
 	 * conn_id, and we only iterate all conns once to make super sure that it is not already in use. */
 
-	for (i = 0; i < 0xFFFFFF; i++) {
+	for (i = 0; i < SCCP_CONN_ID_MAX; i++) {
 		struct gsm_subscriber_connection *conn;
 		uint32_t conn_id = next_id;
 		bool conn_id_already_used = false;
-		next_id = (next_id + 1) & 0xffffff;
+
+		/* Optimized modulo operation using bitwise AND: */
+		next_id = (next_id + 1) & SCCP_CONN_ID_MAX;
 
 		llist_for_each_entry(conn, &bsc_gsmnet->subscr_conns, entry) {
 			if (conn->sccp.msc && conn->sccp.msc->a.sccp == sccp) {
@@ -60,5 +62,5 @@ int bsc_sccp_inst_next_conn_id(struct osmo_sccp_instance *sccp)
 		if (!conn_id_already_used)
 			return conn_id;
 	}
-	return -1;
+	return SCCP_CONN_ID_UNSET;
 }

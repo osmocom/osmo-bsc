@@ -1226,8 +1226,7 @@ struct gsm_subscriber_connection *bsc_subscr_con_allocate(struct gsm_network *ne
 	conn->network = net;
 	INIT_LLIST_HEAD(&conn->dtap_queue);
 	INIT_LLIST_HEAD(&conn->hodec2.penalty_timers);
-	conn->sccp.conn_id = -1;
-
+	conn->sccp.conn_id = SCCP_CONN_ID_UNSET;
 	/* Default clear cause (on RR translates to GSM48_RR_CAUSE_ABNORMAL_UNSPEC) */
 	conn->clear_cause = GSM0808_CAUSE_EQUIPMENT_FAILURE;
 

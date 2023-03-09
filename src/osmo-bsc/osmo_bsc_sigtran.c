@@ -46,9 +46,9 @@ static struct llist_head *msc_list;
 #define DEFAULT_ASP_REMOTE_IP "localhost"
 
 /* Helper function to Check if the given connection id is already assigned */
-static struct gsm_subscriber_connection *get_bsc_conn_by_conn_id(int conn_id)
+static struct gsm_subscriber_connection *get_bsc_conn_by_conn_id(uint32_t conn_id)
 {
-	conn_id &= 0xFFFFFF;
+	conn_id &= SCCP_CONN_ID_MAX;
 	struct gsm_subscriber_connection *conn;
 
 	llist_for_each_entry(conn, &bsc_gsmnet->subscr_conns, entry) {
@@ -317,13 +317,13 @@ __attribute__((weak)) int osmo_bsc_sigtran_open_conn(struct gsm_subscriber_conne
 {
 	struct osmo_ss7_instance *ss7;
 	struct bsc_msc_data *msc;
-	int conn_id;
+	uint32_t conn_id;
 	int rc;
 
 	OSMO_ASSERT(conn);
 	OSMO_ASSERT(msg);
 	OSMO_ASSERT(conn->sccp.msc);
-	OSMO_ASSERT(conn->sccp.conn_id == -1);
+	OSMO_ASSERT(conn->sccp.conn_id == SCCP_CONN_ID_UNSET);
 
 	msc = conn->sccp.msc;
 
@@ -333,14 +333,14 @@ __attribute__((weak)) int osmo_bsc_sigtran_open_conn(struct gsm_subscriber_conne
 	}
 
 	conn->sccp.conn_id = conn_id = bsc_sccp_inst_next_conn_id(conn->sccp.msc->a.sccp);
-	if (conn->sccp.conn_id < 0) {
+	if (conn->sccp.conn_id == SCCP_CONN_ID_UNSET) {
 		LOGP(DMSC, LOGL_ERROR, "Unable to allocate SCCP Connection ID\n");
 		return -1;
 	}
-	LOGP(DMSC, LOGL_DEBUG, "Allocated new connection id: %d\n", conn->sccp.conn_id);
+	LOGP(DMSC, LOGL_DEBUG, "Allocated new connection id: %u\n", conn->sccp.conn_id);
 	ss7 = osmo_ss7_instance_find(msc->a.cs7_instance);
 	OSMO_ASSERT(ss7);
-	LOGP(DMSC, LOGL_INFO, "Opening new SCCP connection (id=%i) to MSC %d: %s\n", conn_id,
+	LOGP(DMSC, LOGL_INFO, "Opening new SCCP connection (id=%u) to MSC %d: %s\n", conn_id,
 	     msc->nr, osmo_sccp_addr_name(ss7, &msc->a.msc_addr));
 
 	rc = osmo_sccp_tx_conn_req_msg(msc->a.sccp_user, conn_id, &msc->a.bsc_addr,

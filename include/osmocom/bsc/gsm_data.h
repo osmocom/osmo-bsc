@@ -51,6 +51,9 @@
  * with delta = time between expiration of T3124 and receiving HANDOVER FAILURE by the serving BSC. */
 #define GSM_NY1_DEFAULT ((unsigned long)((GSM_T3124_MAX + GSM_NY1_REQ_DELTA)/GSM_T3105_DEFAULT + 1))
 
+#define SCCP_CONN_ID_UNSET	0xFFFFFFFF
+#define SCCP_CONN_ID_MAX	0x00FFFFFF
+
 struct mgcp_client_conf;
 struct mgcp_client;
 struct gsm0808_cell_id;
@@ -328,8 +331,10 @@ struct gsm_subscriber_connection {
 		/* SCCP connection related */
 		struct bsc_msc_data *msc;
 
-		/* Sigtran connection ID */
-		int conn_id;
+		/* Sigtran connection ID:
+		*  if set: Range (0..SCCP_CONN_ID_MAX) (24 bit)
+		*  if unset: SCCP_CONN_ID_UNSET (-1) if unset */
+		uint32_t conn_id;
 		enum subscr_sccp_state state;
 	} sccp;
 
@@ -379,7 +384,10 @@ struct gsm_subscriber_connection {
 
 		/* Lb interface to the SMLC: BSSMAP-LE/SCCP connection associated with this subscriber */
 		struct {
-			int conn_id;
+			/* Sigtran connection ID:
+			*  if set: Range (0..SCCP_CONN_ID_MAX) (24 bit)
+			*  if unset: SCCP_CONN_ID_UNSET (-1) if unset */
+			uint32_t conn_id;
 			enum subscr_sccp_state state;
 		} lb;
 	} lcs;
@@ -1022,7 +1030,7 @@ enum gsm_phys_chan_config gsm_pchan_by_lchan_type(enum gsm_chan_t type);
 enum gsm48_rr_cause bsc_gsm48_rr_cause_from_gsm0808_cause(enum gsm0808_cause c);
 enum gsm48_rr_cause bsc_gsm48_rr_cause_from_rsl_cause(uint8_t c);
 
-int bsc_sccp_inst_next_conn_id(struct osmo_sccp_instance *sccp);
+uint32_t bsc_sccp_inst_next_conn_id(struct osmo_sccp_instance *sccp);
 
 /* Interference Measurement Parameters */
 struct gsm_interf_meas_params {

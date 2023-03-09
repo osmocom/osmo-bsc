@@ -32,7 +32,7 @@
 #include <osmocom/bsc/lcs_loc_req.h>
 #include <osmocom/bsc/bssmap_reset.h>
 
-static struct gsm_subscriber_connection *get_bsc_conn_by_lb_conn_id(int conn_id)
+static struct gsm_subscriber_connection *get_bsc_conn_by_lb_conn_id(uint32_t conn_id)
 {
 	struct gsm_subscriber_connection *conn;
 
@@ -229,7 +229,7 @@ static int sccp_sap_up(struct osmo_prim_hdr *oph, void *_scu)
 static int lb_open_conn(struct gsm_subscriber_connection *conn, struct msgb *msg)
 {
 	struct osmo_ss7_instance *ss7;
-	int conn_id;
+	uint32_t conn_id;
 	int rc;
 
 	OSMO_ASSERT(conn);
@@ -242,14 +242,14 @@ static int lb_open_conn(struct gsm_subscriber_connection *conn, struct msgb *msg
 	}
 
 	conn_id = bsc_sccp_inst_next_conn_id(bsc_gsmnet->smlc->sccp);
-	if (conn_id < 0) {
+	if (conn_id == SCCP_CONN_ID_UNSET) {
 		LOGPFSMSL(conn->fi, DLCS, LOGL_ERROR, "Unable to allocate SCCP Connection ID for BSSMAP-LE to SMLC\n");
 		return -ENOSPC;
 	}
 	conn->lcs.lb.conn_id = conn_id;
 	ss7 = osmo_ss7_instance_find(bsc_gsmnet->smlc->cs7_instance);
 	OSMO_ASSERT(ss7);
-	LOGPFSMSL(conn->fi, DLCS, LOGL_INFO, "Opening new SCCP connection (id=%i) to SMLC: %s\n", conn_id,
+	LOGPFSMSL(conn->fi, DLCS, LOGL_INFO, "Opening new SCCP connection (id=%u) to SMLC: %s\n", conn_id,
 		  osmo_sccp_addr_name(ss7, &bsc_gsmnet->smlc->smlc_addr));
 
 	rc = osmo_sccp_tx_conn_req_msg(bsc_gsmnet->smlc->sccp_user, conn_id, &bsc_gsmnet->smlc->bsc_addr,
