@@ -46,14 +46,18 @@ static struct llist_head *msc_list;
 #define DEFAULT_ASP_REMOTE_IP "localhost"
 
 /* Helper function to Check if the given connection id is already assigned */
-static struct gsm_subscriber_connection *get_bsc_conn_by_conn_id(uint32_t conn_id)
+static struct gsm_subscriber_connection *get_bsc_conn_by_conn_id(const struct osmo_sccp_user *scu, uint32_t conn_id)
 {
 	conn_id &= SCCP_CONN_ID_MAX;
 	struct gsm_subscriber_connection *conn;
+	const struct osmo_sccp_instance *sccp = osmo_sccp_get_sccp(scu);
 
 	llist_for_each_entry(conn, &bsc_gsmnet->subscr_conns, entry) {
-		if (conn->sccp.conn_id == conn_id)
-			return conn;
+		if (conn->sccp.msc && conn->sccp.msc->a.sccp != sccp)
+			continue;
+		if (conn->sccp.conn_id != conn_id)
+			continue;
+		return conn;
 	}
 
 	return NULL;
@@ -167,7 +171,7 @@ static int handle_n_connect_from_msc(struct osmo_sccp_user *scu, struct osmo_scu
 	struct gsm_subscriber_connection *conn;
 	int rc = 0;
 
-	conn = get_bsc_conn_by_conn_id(scu_prim->u.connect.conn_id);
+	conn = get_bsc_conn_by_conn_id(scu, scu_prim->u.connect.conn_id);
 	if (conn) {
 		LOGP(DMSC, LOGL_NOTICE,
 		     "(calling_addr=%s conn_id=%u) N-CONNECT.ind with already used conn_id, ignoring\n",
@@ -231,7 +235,7 @@ static int sccp_sap_up(struct osmo_prim_hdr *oph, void *_scu)
 		/* Handle outbound connection confirmation */
 		DEBUGP(DMSC, "N-CONNECT.cnf(%u, %s)\n", scu_prim->u.connect.conn_id,
 		       osmo_hexdump(msgb_l2(oph->msg), msgb_l2len(oph->msg)));
-		conn = get_bsc_conn_by_conn_id(scu_prim->u.connect.conn_id);
+		conn = get_bsc_conn_by_conn_id(scu, scu_prim->u.connect.conn_id);
 		if (conn) {
 			osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_A_CONN_CFM, scu_prim);
 			conn->sccp.state = SUBSCR_SCCP_ST_CONNECTED;
@@ -250,7 +254,7 @@ static int sccp_sap_up(struct osmo_prim_hdr *oph, void *_scu)
 		       osmo_hexdump(msgb_l2(oph->msg), msgb_l2len(oph->msg)));
 
 		/* Incoming data is a sign of a vital connection */
-		conn = get_bsc_conn_by_conn_id(scu_prim->u.data.conn_id);
+		conn = get_bsc_conn_by_conn_id(scu, scu_prim->u.data.conn_id);
 		if (conn) {
 			a_reset_conn_success(conn->sccp.msc);
 			handle_data_from_msc(conn, oph->msg);
@@ -262,7 +266,7 @@ static int sccp_sap_up(struct osmo_prim_hdr *oph, void *_scu)
 		       osmo_hexdump(msgb_l2(oph->msg), msgb_l2len(oph->msg)),
 		       scu_prim->u.disconnect.cause);
 		/* indication of disconnect */
-		conn = get_bsc_conn_by_conn_id(scu_prim->u.disconnect.conn_id);
+		conn = get_bsc_conn_by_conn_id(scu, scu_prim->u.disconnect.conn_id);
 		if (conn) {
 			conn->sccp.state = SUBSCR_SCCP_ST_NONE;
 			if (msgb_l2len(oph->msg) > 0)
