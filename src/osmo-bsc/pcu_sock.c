@@ -573,7 +573,7 @@ static int pcu_rx_data_req(struct gsm_bts *bts, uint8_t msg_type,
 		 * assign downlink TBFs directly through the paging channel. However, this method never became part
 		 * of the RSL specs. This means that each BTS vendor has to come up with a proprietary method. At
 		 * the moment we only support Ericsson RBS here. */
-		if (bts->type == GSM_BTS_TYPE_RBS2000) {
+		if (is_ericsson_bts(bts)) {
 			rc = rsl_ericsson_imm_assign_cmd(bts, pch_dt->tlli, sizeof(pch_dt->data),
 							 pch_dt->data, pag_grp);
 		} else {
