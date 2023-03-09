@@ -36,6 +36,9 @@ static struct gsm_subscriber_connection *get_bsc_conn_by_lb_conn_id(uint32_t con
 {
 	struct gsm_subscriber_connection *conn;
 
+	/* Range (0..SCCP_CONN_ID_MAX) expected, see bsc_sccp_inst_next_conn_id() */
+	OSMO_ASSERT(conn_id <= SCCP_CONN_ID_MAX);
+
 	llist_for_each_entry(conn, &bsc_gsmnet->subscr_conns, entry) {
 		if (conn->lcs.lb.state != SUBSCR_SCCP_ST_NONE
 		    && conn->lcs.lb.conn_id == conn_id)

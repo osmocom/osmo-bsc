@@ -48,9 +48,11 @@ static struct llist_head *msc_list;
 /* Helper function to Check if the given connection id is already assigned */
 static struct gsm_subscriber_connection *get_bsc_conn_by_conn_id(const struct osmo_sccp_user *scu, uint32_t conn_id)
 {
-	conn_id &= SCCP_CONN_ID_MAX;
 	struct gsm_subscriber_connection *conn;
 	const struct osmo_sccp_instance *sccp = osmo_sccp_get_sccp(scu);
+
+	/* Range (0..SCCP_CONN_ID_MAX) expected, see bsc_sccp_inst_next_conn_id() */
+	OSMO_ASSERT(conn_id <= SCCP_CONN_ID_MAX);
 
 	llist_for_each_entry(conn, &bsc_gsmnet->subscr_conns, entry) {
 		if (conn->sccp.msc && conn->sccp.msc->a.sccp != sccp)
