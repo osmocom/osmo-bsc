@@ -47,6 +47,33 @@ uint32_t bsc_sccp_inst_next_conn_id(struct osmo_sccp_instance *sccp)
 	/* This looks really suboptimal, but in most cases the static next_id should indicate exactly the next unused
 	 * conn_id, and we only iterate all conns once to make super sure that it is not already in use. */
 
+	/* SCCP towards SMLC: */
+	if (bsc_gsmnet->smlc->sccp == sccp) {
+		for (i = 0; i < SCCP_CONN_ID_MAX; i++) {
+			struct gsm_subscriber_connection *conn;
+			uint32_t conn_id = next_id;
+			bool conn_id_already_used = false;
+
+			/* Optimized modulo operation (% SCCP_CONN_ID_MAX) using bitwise AND plus CMP: */
+			next_id = (next_id + 1) & 0x00FFFFFF;
+			if (OSMO_UNLIKELY(next_id == 0x00FFFFFF))
+				next_id = 0;
+
+			llist_for_each_entry(conn, &bsc_gsmnet->subscr_conns, entry) {
+				if (conn->lcs.lb.state != SUBSCR_SCCP_ST_NONE &&
+				    conn->lcs.lb.conn_id == conn_id) {
+					conn_id_already_used = true;
+					break;
+				}
+			}
+
+			if (!conn_id_already_used)
+				return conn_id;
+		}
+		return 0xFFFFFFFF;
+	}
+
+	/* SCCP towards MSC: */
 	for (i = 0; i < SCCP_CONN_ID_MAX; i++) {
 		struct gsm_subscriber_connection *conn;
 		uint32_t conn_id = next_id;
@@ -58,19 +85,10 @@ uint32_t bsc_sccp_inst_next_conn_id(struct osmo_sccp_instance *sccp)
 			next_id = 0;
 
 		llist_for_each_entry(conn, &bsc_gsmnet->subscr_conns, entry) {
-			if (conn->sccp.msc && conn->sccp.msc->a.sccp == sccp) {
-				if (conn_id == conn->sccp.conn_id) {
-					conn_id_already_used = true;
-					break;
-				}
-			}
-
-			if (bsc_gsmnet->smlc->sccp == sccp
-			    && conn->lcs.lb.state != SUBSCR_SCCP_ST_NONE) {
-				if (conn_id == conn->lcs.lb.conn_id) {
-					conn_id_already_used = true;
-					break;
-				}
+			if (conn->sccp.msc && conn->sccp.msc->a.sccp == sccp &&
+			    conn->sccp.conn_id == conn_id) {
+				conn_id_already_used = true;
+				break;
 			}
 		}
 
