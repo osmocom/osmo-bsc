@@ -641,6 +641,10 @@ void ipaccess_drop_oml(struct gsm_bts *bts, const char *reason)
 
 	bts->ip_access.flags = 0;
 
+	/* Reset the feature vector */
+	memset(bts->_features_data, 0, sizeof(bts->_features_data));
+	bts->features_known = false;
+
 	/*
 	 * Go through the list and see if we are the depndency of a BTS
 	 * and then drop the BTS. This can lead to some recursion but it
