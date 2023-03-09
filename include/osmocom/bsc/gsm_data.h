@@ -52,7 +52,7 @@
 #define GSM_NY1_DEFAULT ((unsigned long)((GSM_T3124_MAX + GSM_NY1_REQ_DELTA)/GSM_T3105_DEFAULT + 1))
 
 #define SCCP_CONN_ID_UNSET	0xFFFFFFFF
-#define SCCP_CONN_ID_MAX	0x00FFFFFF
+#define SCCP_CONN_ID_MAX	0x00FFFFFE
 
 struct mgcp_client_conf;
 struct mgcp_client;
