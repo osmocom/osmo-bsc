@@ -341,7 +341,7 @@ static void ts_fsm_unused_pdch_act(struct osmo_fsm_inst *fi)
 		return;
 	}
 
-	if (is_ericsson_bts(bts) && !pcu_connected(bts)) {
+	if (bsc_co_located_pcu(bts) && !pcu_connected(bts)) {
 		LOG_TS(ts, LOGL_DEBUG, "PCU not connected: not activating PDCH.\n");
 		return;
 	}

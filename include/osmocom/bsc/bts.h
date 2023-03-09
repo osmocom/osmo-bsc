@@ -751,6 +751,18 @@ static inline bool is_e1_bts(const struct gsm_bts *bts)
 	return false;
 }
 
+static inline bool bsc_co_located_pcu(const struct gsm_bts *bts)
+{
+	switch (bts->type) {
+	case GSM_BTS_TYPE_RBS2000:
+		return true;
+	default:
+		break;
+	}
+
+	return false;
+}
+
 static inline const struct osmo_location_area_id *bts_lai(struct gsm_bts *bts)
 {
 	static struct osmo_location_area_id lai;
