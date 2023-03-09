@@ -362,13 +362,13 @@ static int pcu_tx_e1_ccu_ind(struct gsm_bts *bts)
 __attribute__((weak)) void pcu_info_update(struct gsm_bts *bts)
 {
 	if (pcu_connected(bts)) {
-		/* In cases where the CCU is connected via an E1 line, we transmit the connection parameters for the
-		 * PDCH before we announce the other BTS related parameters. At the moment Ericsson RBS is the only
-		 * E1 BTS we support. */
-		if (is_ericsson_bts(bts))
-			pcu_tx_e1_ccu_ind(bts);
-
-		pcu_tx_info_ind(bts);
+		if (bsc_co_located_pcu(bts)) {
+			/* In cases where the CCU is connected via an E1 line, we transmit the connection parameters for the
+			 * PDCH before we announce the other BTS related parameters. */
+			if (is_e1_bts(bts))
+				pcu_tx_e1_ccu_ind(bts);
+			pcu_tx_info_ind(bts);
+		}
 	}
 }
 
