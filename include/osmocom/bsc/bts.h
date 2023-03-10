@@ -678,77 +678,77 @@ struct gsm_bts {
 #define GSM_BTS_SI(bts, i)     (void *)((bts)->si_buf[i][0])
 
 /* this actually refers to the IPA transport, not the BTS model */
-static inline int is_ipaccess_bts(const struct gsm_bts *bts)
+static inline bool is_ipaccess_bts(const struct gsm_bts *bts)
 {
 	switch (bts->type) {
 	case GSM_BTS_TYPE_NANOBTS:
 	case GSM_BTS_TYPE_OSMOBTS:
-		return 1;
+		return true;
 	default:
 		break;
 	}
-	return 0;
+	return false;
 }
 
-static inline int is_osmobts(const struct gsm_bts *bts)
+static inline bool is_osmobts(const struct gsm_bts *bts)
 {
 	switch (bts->type) {
 	case GSM_BTS_TYPE_OSMOBTS:
-		return 1;
+		return true;
 	default:
 		break;
 	}
-	return 0;
+	return false;
 }
 
-static inline int is_siemens_bts(const struct gsm_bts *bts)
+static inline bool is_siemens_bts(const struct gsm_bts *bts)
 {
 	switch (bts->type) {
 	case GSM_BTS_TYPE_BS11:
-		return 1;
+		return true;
 	default:
 		break;
 	}
 
-	return 0;
+	return false;
 }
 
-static inline int is_nokia_bts(const struct gsm_bts *bts)
+static inline bool is_nokia_bts(const struct gsm_bts *bts)
 {
 	switch (bts->type) {
 	case GSM_BTS_TYPE_NOKIA_SITE:
-		return 1;
+		return true;
 	default:
 		break;
 	}
 
-	return 0;
+	return false;
 }
 
-static inline int is_ericsson_bts(const struct gsm_bts *bts)
+static inline bool is_ericsson_bts(const struct gsm_bts *bts)
 {
 	switch (bts->type) {
 	case GSM_BTS_TYPE_RBS2000:
-		return 1;
+		return true;
 	default:
 		break;
 	}
 
-	return 0;
+	return false;
 }
 
-static inline int is_e1_bts(const struct gsm_bts *bts)
+static inline bool is_e1_bts(const struct gsm_bts *bts)
 {
 	switch (bts->type) {
 	case GSM_BTS_TYPE_BS11:
 	case GSM_BTS_TYPE_RBS2000:
 	case GSM_BTS_TYPE_NOKIA_SITE:
-		return 1;
+		return true;
 	default:
 		break;
 	}
 
-	return 0;
+	return false;
 }
 
 static inline const struct osmo_location_area_id *bts_lai(struct gsm_bts *bts)
