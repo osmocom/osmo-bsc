@@ -59,7 +59,7 @@ static struct gsm_subscriber_connection *get_bsc_conn_by_conn_id(int conn_id)
 	return NULL;
 }
 
-struct gsm_subscriber_connection *bsc_conn_by_bsub(struct bsc_subscr *bsub)
+struct gsm_subscriber_connection *bsc_conn_by_bsub(const struct bsc_subscr *bsub)
 {
 	struct gsm_subscriber_connection *conn;
 	if (!bsub)
