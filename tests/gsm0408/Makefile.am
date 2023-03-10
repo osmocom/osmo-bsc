@@ -13,6 +13,8 @@ AM_CFLAGS = \
 	$(LIBOSMOSIGTRAN_CFLAGS) \
 	$(NULL)
 
+AM_LDFLAGS = -no-install
+
 check_PROGRAMS = \
 	gsm0408_test \
 	$(NULL)

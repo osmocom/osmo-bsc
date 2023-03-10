@@ -28,6 +28,7 @@ paging_test_SOURCES = \
 
 paging_test_LDFLAGS = \
 	-Wl,--wrap=abis_rsl_sendmsg \
+	-no-install \
 	$(NULL)
 
 paging_test_LDADD = \

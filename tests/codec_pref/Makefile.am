@@ -12,8 +12,7 @@ AM_CFLAGS = \
 	$(LIBOSMOSIGTRAN_CFLAGS) \
 	$(NULL)
 
-AM_LDFLAGS = \
-	$(NULL)
+AM_LDFLAGS = -no-install
 
 EXTRA_DIST = \
 	codec_pref_test.ok \

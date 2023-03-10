@@ -14,6 +14,8 @@ AM_CFLAGS = \
 	$(COVERAGE_CFLAGS) \
 	$(NULL)
 
+AM_LDFLAGS = -no-install
+
 EXTRA_DIST = \
 	abis_test.ok \
 	$(NULL)

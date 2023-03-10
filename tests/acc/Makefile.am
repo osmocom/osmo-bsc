@@ -14,6 +14,8 @@ AM_CFLAGS = \
 	$(COVERAGE_CFLAGS) \
 	$(NULL)
 
+AM_LDFLAGS = -no-install
+
 EXTRA_DIST = \
 	acc_test.ok \
 	$(NULL)
