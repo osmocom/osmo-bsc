@@ -19,6 +19,8 @@
 #include <osmocom/core/fsm.h>
 #include <osmocom/core/tdef.h>
 #include <osmocom/core/time_cc.h>
+#include <osmocom/core/linuxlist.h>
+#include <osmocom/core/linuxrbtree.h>
 
 #include <osmocom/crypt/auth.h>
 
@@ -330,6 +332,9 @@ struct gsm_subscriber_connection {
 	struct {
 		/* SCCP connection related */
 		struct bsc_msc_data *msc;
+
+		/* entry in (struct bsc_sccp_inst)->connections */
+		struct rb_node node;
 
 		/* Sigtran connection ID:
 		*  if set: Range (0..SCCP_CONN_ID_MAX) (24 bit)
@@ -871,6 +876,19 @@ struct all_allocated {
 	struct osmo_time_cc static_tch;
 };
 
+struct bsc_sccp_inst {
+	struct osmo_sccp_instance *sccp; /* backpointer */
+	/* rbtree root of 'sstruct gsm_subscriber_connection' in this instance, ordered by conn_id */
+	struct rb_root connections;
+	uint32_t next_id; /* next id to allocate */
+};
+
+struct bsc_sccp_inst *bsc_sccp_inst_alloc(void *ctx);
+uint32_t bsc_sccp_inst_next_conn_id(struct bsc_sccp_inst *bsc_sccp);
+int bsc_sccp_inst_register_gscon(struct bsc_sccp_inst *bsc_sccp, struct gsm_subscriber_connection *conn);
+void bsc_sccp_inst_unregister_gscon(struct bsc_sccp_inst *bsc_sccp, struct gsm_subscriber_connection *conn);
+struct gsm_subscriber_connection *bsc_sccp_inst_get_gscon_by_conn_id(const struct bsc_sccp_inst *bsc_sccp, uint32_t conn_id);
+
 struct gsm_network {
 	struct osmo_plmn_id plmn;
 
@@ -1029,8 +1047,6 @@ enum gsm_phys_chan_config gsm_pchan_by_lchan_type(enum gsm_chan_t type);
 
 enum gsm48_rr_cause bsc_gsm48_rr_cause_from_gsm0808_cause(enum gsm0808_cause c);
 enum gsm48_rr_cause bsc_gsm48_rr_cause_from_rsl_cause(uint8_t c);
-
-uint32_t bsc_sccp_inst_next_conn_id(struct osmo_sccp_instance *sccp);
 
 /* Interference Measurement Parameters */
 struct gsm_interf_meas_params {

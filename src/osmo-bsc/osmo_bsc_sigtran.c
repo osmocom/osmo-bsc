@@ -45,26 +45,6 @@ static struct llist_head *msc_list;
 #define DEFAULT_ASP_LOCAL_IP "localhost"
 #define DEFAULT_ASP_REMOTE_IP "localhost"
 
-/* Helper function to Check if the given connection id is already assigned */
-static struct gsm_subscriber_connection *get_bsc_conn_by_conn_id(const struct osmo_sccp_user *scu, uint32_t conn_id)
-{
-	struct gsm_subscriber_connection *conn;
-	const struct osmo_sccp_instance *sccp = osmo_sccp_get_sccp(scu);
-
-	/* Range (0..SCCP_CONN_ID_MAX) expected, see bsc_sccp_inst_next_conn_id() */
-	OSMO_ASSERT(conn_id <= SCCP_CONN_ID_MAX);
-
-	llist_for_each_entry(conn, &bsc_gsmnet->subscr_conns, entry) {
-		if (conn->sccp.msc && conn->sccp.msc->a.sccp != sccp)
-			continue;
-		if (conn->sccp.conn_id != conn_id)
-			continue;
-		return conn;
-	}
-
-	return NULL;
-}
-
 struct gsm_subscriber_connection *bsc_conn_by_bsub(const struct bsc_subscr *bsub)
 {
 	struct gsm_subscriber_connection *conn;
@@ -170,10 +150,12 @@ static int handle_unitdata_from_msc(const struct osmo_sccp_addr *msc_addr, struc
 static int handle_n_connect_from_msc(struct osmo_sccp_user *scu, struct osmo_scu_prim *scu_prim)
 {
 	struct bsc_msc_data *msc = get_msc_by_addr(&scu_prim->u.connect.calling_addr);
+	struct osmo_sccp_instance *sccp = osmo_sccp_get_sccp(scu);
+	struct bsc_sccp_inst *bsc_sccp = osmo_sccp_get_priv(sccp);
 	struct gsm_subscriber_connection *conn;
 	int rc = 0;
 
-	conn = get_bsc_conn_by_conn_id(scu, scu_prim->u.connect.conn_id);
+	conn = bsc_sccp_inst_get_gscon_by_conn_id(bsc_sccp, scu_prim->u.connect.conn_id);
 	if (conn) {
 		LOGP(DMSC, LOGL_NOTICE,
 		     "(calling_addr=%s conn_id=%u) N-CONNECT.ind with already used conn_id, ignoring\n",
@@ -202,6 +184,13 @@ static int handle_n_connect_from_msc(struct osmo_sccp_user *scu, struct osmo_scu
 		return -ENOMEM;
 	conn->sccp.msc = msc;
 	conn->sccp.conn_id = scu_prim->u.connect.conn_id;
+	if (bsc_sccp_inst_register_gscon(bsc_sccp, conn) < 0) {
+		LOGP(DMSC, LOGL_NOTICE, "(calling_addr=%s conn_id=%u) N-CONNECT.ind failed registering conn\n",
+		     osmo_sccp_addr_dump(&scu_prim->u.connect.calling_addr), scu_prim->u.connect.conn_id);
+		osmo_fsm_inst_term(conn->fi, OSMO_FSM_TERM_REQUEST, NULL);
+		rc = -ENOENT;
+		goto refuse;
+	}
 
 	/* Take actions asked for by the enclosed PDU */
 	osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_A_CONN_IND, scu_prim);
@@ -217,6 +206,8 @@ static int sccp_sap_up(struct osmo_prim_hdr *oph, void *_scu)
 {
 	struct osmo_scu_prim *scu_prim = (struct osmo_scu_prim *)oph;
 	struct osmo_sccp_user *scu = _scu;
+	struct osmo_sccp_instance *sccp = osmo_sccp_get_sccp(scu);
+	struct bsc_sccp_inst *bsc_sccp = osmo_sccp_get_priv(sccp);
 	struct gsm_subscriber_connection *conn;
 	int rc = 0;
 
@@ -237,7 +228,7 @@ static int sccp_sap_up(struct osmo_prim_hdr *oph, void *_scu)
 		/* Handle outbound connection confirmation */
 		DEBUGP(DMSC, "N-CONNECT.cnf(%u, %s)\n", scu_prim->u.connect.conn_id,
 		       osmo_hexdump(msgb_l2(oph->msg), msgb_l2len(oph->msg)));
-		conn = get_bsc_conn_by_conn_id(scu, scu_prim->u.connect.conn_id);
+		conn = bsc_sccp_inst_get_gscon_by_conn_id(bsc_sccp, scu_prim->u.connect.conn_id);
 		if (conn) {
 			osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_A_CONN_CFM, scu_prim);
 			conn->sccp.state = SUBSCR_SCCP_ST_CONNECTED;
@@ -256,7 +247,7 @@ static int sccp_sap_up(struct osmo_prim_hdr *oph, void *_scu)
 		       osmo_hexdump(msgb_l2(oph->msg), msgb_l2len(oph->msg)));
 
 		/* Incoming data is a sign of a vital connection */
-		conn = get_bsc_conn_by_conn_id(scu, scu_prim->u.data.conn_id);
+		conn = bsc_sccp_inst_get_gscon_by_conn_id(bsc_sccp, scu_prim->u.data.conn_id);
 		if (conn) {
 			a_reset_conn_success(conn->sccp.msc);
 			handle_data_from_msc(conn, oph->msg);
@@ -268,7 +259,7 @@ static int sccp_sap_up(struct osmo_prim_hdr *oph, void *_scu)
 		       osmo_hexdump(msgb_l2(oph->msg), msgb_l2len(oph->msg)),
 		       scu_prim->u.disconnect.cause);
 		/* indication of disconnect */
-		conn = get_bsc_conn_by_conn_id(scu, scu_prim->u.disconnect.conn_id);
+		conn = bsc_sccp_inst_get_gscon_by_conn_id(bsc_sccp, scu_prim->u.disconnect.conn_id);
 		if (conn) {
 			conn->sccp.state = SUBSCR_SCCP_ST_NONE;
 			if (msgb_l2len(oph->msg) > 0)
@@ -323,6 +314,7 @@ __attribute__((weak)) int osmo_bsc_sigtran_open_conn(struct gsm_subscriber_conne
 {
 	struct osmo_ss7_instance *ss7;
 	struct bsc_msc_data *msc;
+	struct bsc_sccp_inst *bsc_sccp;
 	uint32_t conn_id;
 	int rc;
 
@@ -338,9 +330,14 @@ __attribute__((weak)) int osmo_bsc_sigtran_open_conn(struct gsm_subscriber_conne
 		return -EINVAL;
 	}
 
-	conn->sccp.conn_id = conn_id = bsc_sccp_inst_next_conn_id(conn->sccp.msc->a.sccp);
+	bsc_sccp = osmo_sccp_get_priv(msc->a.sccp);
+	conn->sccp.conn_id = conn_id = bsc_sccp_inst_next_conn_id(bsc_sccp);
 	if (conn->sccp.conn_id == SCCP_CONN_ID_UNSET) {
 		LOGP(DMSC, LOGL_ERROR, "Unable to allocate SCCP Connection ID\n");
+		return -1;
+	}
+	if (bsc_sccp_inst_register_gscon(bsc_sccp, conn) < 0) {
+		LOGP(DMSC, LOGL_ERROR, "Unable to register SCCP connection (id=%u)\n", conn->sccp.conn_id);
 		return -1;
 	}
 	LOGP(DMSC, LOGL_DEBUG, "Allocated new connection id: %u\n", conn->sccp.conn_id);
@@ -520,6 +517,7 @@ int osmo_bsc_sigtran_init(struct llist_head *mscs)
 		int prev_msc_nr;
 
 		struct osmo_sccp_instance *sccp;
+		struct bsc_sccp_inst *bsc_sccp;
 
 		llist_for_each_entry(msc, msc_list, entry) {
 			/* An MSC with invalid cs7 instance id defaults to cs7 instance 0 */
@@ -562,6 +560,10 @@ int osmo_bsc_sigtran_init(struct llist_head *mscs)
 							 0, DEFAULT_ASP_REMOTE_IP);
 		if (!sccp)
 			return -EINVAL;
+
+		bsc_sccp = bsc_sccp_inst_alloc(tall_bsc_ctx);
+		bsc_sccp->sccp = sccp;
+		osmo_sccp_set_priv(sccp, bsc_sccp);
 
 		/* Now that the SCCP client is set up, configure all MSCs on this cs7 instance to use it */
 		llist_for_each_entry(msc, msc_list, entry) {

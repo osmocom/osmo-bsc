@@ -1111,6 +1111,11 @@ static void gscon_cleanup(struct osmo_fsm_inst *fi, enum osmo_fsm_term_cause cau
 		osmo_sccp_tx_disconn(msc->a.sccp_user, conn->sccp.conn_id, &msc->a.bsc_addr, 0);
 		conn->sccp.state = SUBSCR_SCCP_ST_NONE;
 	}
+	if (conn->sccp.conn_id != SCCP_CONN_ID_UNSET && conn->sccp.msc) {
+		struct bsc_sccp_inst *bsc_sccp = osmo_sccp_get_priv(conn->sccp.msc->a.sccp);
+		bsc_sccp_inst_unregister_gscon(bsc_sccp, conn);
+		conn->sccp.conn_id = SCCP_CONN_ID_UNSET;
+	}
 
 	if (conn->bsub) {
 		LOGPFSML(fi, LOGL_DEBUG, "Putting bsc_subscr\n");

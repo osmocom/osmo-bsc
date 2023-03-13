@@ -31,22 +31,7 @@
 #include <osmocom/bsc/osmo_bsc_sigtran.h>
 #include <osmocom/bsc/lcs_loc_req.h>
 #include <osmocom/bsc/bssmap_reset.h>
-
-static struct gsm_subscriber_connection *get_bsc_conn_by_lb_conn_id(uint32_t conn_id)
-{
-	struct gsm_subscriber_connection *conn;
-
-	/* Range (0..SCCP_CONN_ID_MAX) expected, see bsc_sccp_inst_next_conn_id() */
-	OSMO_ASSERT(conn_id <= SCCP_CONN_ID_MAX);
-
-	llist_for_each_entry(conn, &bsc_gsmnet->subscr_conns, entry) {
-		if (conn->lcs.lb.state != SUBSCR_SCCP_ST_NONE
-		    && conn->lcs.lb.conn_id == conn_id)
-			return conn;
-	}
-
-	return NULL;
-}
+#include <osmocom/bsc/gsm_data.h>
 
 /* Send reset to SMLC */
 int bssmap_le_tx_reset(void)
@@ -150,6 +135,8 @@ static int sccp_sap_up(struct osmo_prim_hdr *oph, void *_scu)
 {
 	struct osmo_scu_prim *scu_prim = (struct osmo_scu_prim *)oph;
 	struct osmo_sccp_user *scu = _scu;
+	struct osmo_sccp_instance *sccp = osmo_sccp_get_sccp(scu);
+	struct bsc_sccp_inst *bsc_sccp = osmo_sccp_get_priv(sccp);
 	struct gsm_subscriber_connection *conn;
 	int rc = 0;
 
@@ -172,7 +159,7 @@ static int sccp_sap_up(struct osmo_prim_hdr *oph, void *_scu)
 	case OSMO_PRIM(OSMO_SCU_PRIM_N_CONNECT, PRIM_OP_CONFIRM):
 		/* Handle inbound confirmation of outbound connection */
 		DEBUGP(DLCS, "N-CONNECT.cnf(%u)\n", scu_prim->u.connect.conn_id);
-		conn = get_bsc_conn_by_lb_conn_id(scu_prim->u.connect.conn_id);
+		conn = bsc_sccp_inst_get_gscon_by_conn_id(bsc_sccp, scu_prim->u.connect.conn_id);
 		if (conn) {
 			conn->lcs.lb.state = SUBSCR_SCCP_ST_CONNECTED;
 			if (msgb_l2len(oph->msg) > 0) {
@@ -188,7 +175,7 @@ static int sccp_sap_up(struct osmo_prim_hdr *oph, void *_scu)
 		/* Handle incoming connection oriented data */
 		DEBUGP(DLCS, "N-DATA.ind(%u)\n", scu_prim->u.data.conn_id);
 
-		conn = get_bsc_conn_by_lb_conn_id(scu_prim->u.data.conn_id);
+		conn = bsc_sccp_inst_get_gscon_by_conn_id(bsc_sccp, scu_prim->u.data.conn_id);
 		if (!conn) {
 			LOGP(DLCS, LOGL_ERROR, "N-DATA.ind(%u) for unknown conn_id\n", scu_prim->u.data.conn_id);
 			rc = -EINVAL;
@@ -206,7 +193,7 @@ static int sccp_sap_up(struct osmo_prim_hdr *oph, void *_scu)
 		       osmo_hexdump(msgb_l2(oph->msg), msgb_l2len(oph->msg)),
 		       scu_prim->u.disconnect.cause);
 		/* indication of disconnect */
-		conn = get_bsc_conn_by_lb_conn_id(scu_prim->u.disconnect.conn_id);
+		conn = bsc_sccp_inst_get_gscon_by_conn_id(bsc_sccp, scu_prim->u.disconnect.conn_id);
 		if (!conn) {
 			LOGP(DLCS, LOGL_ERROR, "N-DISCONNECT.ind for unknown conn_id %u\n",
 			     scu_prim->u.disconnect.conn_id);
@@ -234,6 +221,7 @@ static int lb_open_conn(struct gsm_subscriber_connection *conn, struct msgb *msg
 	struct osmo_ss7_instance *ss7;
 	uint32_t conn_id;
 	int rc;
+	struct bsc_sccp_inst *bsc_sccp = osmo_sccp_get_priv(bsc_gsmnet->smlc->sccp);
 
 	OSMO_ASSERT(conn);
 	OSMO_ASSERT(msg);
@@ -244,7 +232,7 @@ static int lb_open_conn(struct gsm_subscriber_connection *conn, struct msgb *msg
 		return -EINVAL;
 	}
 
-	conn_id = bsc_sccp_inst_next_conn_id(bsc_gsmnet->smlc->sccp);
+	conn_id = bsc_sccp_inst_next_conn_id(bsc_sccp);
 	if (conn_id == SCCP_CONN_ID_UNSET) {
 		LOGPFSMSL(conn->fi, DLCS, LOGL_ERROR, "Unable to allocate SCCP Connection ID for BSSMAP-LE to SMLC\n");
 		return -ENOSPC;
@@ -421,6 +409,7 @@ static int lb_start(void)
 	enum osmo_ss7_asp_protocol used_proto = OSMO_SS7_ASP_PROT_M3UA;
 	char inst_name[32];
 	const char *smlc_name = "smlc";
+	struct bsc_sccp_inst *bsc_sccp;
 
 	/* Already set up? */
 	if (bsc_gsmnet->smlc->sccp_user)
@@ -454,6 +443,9 @@ static int lb_start(void)
 	if (!sccp)
 		return -EINVAL;
 	bsc_gsmnet->smlc->sccp = sccp;
+	bsc_sccp = bsc_sccp_inst_alloc(tall_bsc_ctx);
+	bsc_sccp->sccp = sccp;
+	osmo_sccp_set_priv(sccp, bsc_sccp);
 
 	/* If unset, use default local SCCP address */
 	if (!bsc_gsmnet->smlc->bsc_addr.presence)

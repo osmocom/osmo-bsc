@@ -27,11 +27,82 @@
 #include <osmocom/bsc/bsc_msc_data.h>
 #include <osmocom/bsc/lb.h>
 
-/* We need an unused SCCP conn_id across all SCCP users. */
-uint32_t bsc_sccp_inst_next_conn_id(struct osmo_sccp_instance *sccp)
+struct bsc_sccp_inst *bsc_sccp_inst_alloc(void *ctx)
 {
-	static uint32_t next_id = 1;
-	int i;
+	struct bsc_sccp_inst *bsc_sccp;
+
+	bsc_sccp = talloc_zero(ctx, struct bsc_sccp_inst);
+	OSMO_ASSERT(bsc_sccp);
+	bsc_sccp->next_id = 1;
+
+	return bsc_sccp;
+}
+
+int bsc_sccp_inst_register_gscon(struct bsc_sccp_inst *bsc_sccp, struct gsm_subscriber_connection *conn)
+{
+	struct rb_node **n = &(bsc_sccp->connections.rb_node);
+	struct rb_node *parent = NULL;
+	uint32_t conn_id = conn->sccp.conn_id;
+
+	OSMO_ASSERT(conn_id != SCCP_CONN_ID_UNSET);
+
+	while (*n) {
+		struct gsm_subscriber_connection *it;
+
+		it = container_of(*n, struct gsm_subscriber_connection, sccp.node);
+
+		parent = *n;
+		if (conn_id < it->sccp.conn_id) {
+			n = &((*n)->rb_left);
+		} else if (conn_id > it->sccp.conn_id) {
+			n = &((*n)->rb_right);
+		} else {
+			LOGP(DMSC, LOGL_ERROR,
+			     "Trying to reserve already reserved conn_id %u\n", conn_id);
+			return -EEXIST;
+		}
+	}
+
+	rb_link_node(&conn->sccp.node, parent, n);
+	rb_insert_color(&conn->sccp.node, &bsc_sccp->connections);
+	return 0;
+}
+
+void bsc_sccp_inst_unregister_gscon(struct bsc_sccp_inst *bsc_sccp, struct gsm_subscriber_connection *conn)
+{
+	OSMO_ASSERT(conn->sccp.conn_id != SCCP_CONN_ID_UNSET);
+	rb_erase(&conn->sccp.node, &bsc_sccp->connections);
+}
+
+/* Helper function to Check if the given connection id is already assigned */
+struct gsm_subscriber_connection *bsc_sccp_inst_get_gscon_by_conn_id(const struct bsc_sccp_inst *bsc_sccp, uint32_t conn_id)
+{
+	const struct rb_node *node = bsc_sccp->connections.rb_node;
+	struct gsm_subscriber_connection *conn;
+
+	OSMO_ASSERT(conn_id != SCCP_CONN_ID_UNSET);
+	/* Range (0..SCCP_CONN_ID_MAX) expected, see bsc_sccp_inst_next_conn_id() */
+	OSMO_ASSERT(conn_id <= SCCP_CONN_ID_MAX);
+
+	while (node) {
+		conn = container_of(node, struct gsm_subscriber_connection, sccp.node);
+		if (conn_id < conn->sccp.conn_id)
+			node = node->rb_left;
+		else if (conn_id > conn->sccp.conn_id)
+			node = node->rb_right;
+		else
+			return conn;
+	}
+
+	return NULL;
+}
+
+/* We need an unused SCCP conn_id across all SCCP users. */
+uint32_t bsc_sccp_inst_next_conn_id(struct bsc_sccp_inst *bsc_sccp)
+{
+	uint32_t first_id, test_id;
+
+	first_id = test_id = bsc_sccp->next_id;
 
 	/* SUA: RFC3868 sec 3.10.4:
 	*    The source reference number is a 4 octet long integer.
@@ -41,59 +112,26 @@ uint32_t bsc_sccp_inst_next_conn_id(struct osmo_sccp_instance *sccp)
 	*    reference number which is generated and used by the local node to identify the
 	*    connection section after the connection section is set up.
 	*    The coding "all ones" is reserved for future use.
-	* Hence, let's simply use 24 bit ids to fit all link types (excluding 0x00ffffff).
+	*Hence, as we currently use the connection ID also as local reference,
+	*let's simply use 24 bit ids to fit all link types (excluding 0x00ffffff).
 	*/
 
-	/* This looks really suboptimal, but in most cases the static next_id should indicate exactly the next unused
-	 * conn_id, and we only iterate all conns once to make super sure that it is not already in use. */
-
-	/* SCCP towards SMLC: */
-	if (bsc_gsmnet->smlc->sccp == sccp) {
-		for (i = 0; i < SCCP_CONN_ID_MAX; i++) {
-			struct gsm_subscriber_connection *conn;
-			uint32_t conn_id = next_id;
-			bool conn_id_already_used = false;
-
-			/* Optimized modulo operation (% SCCP_CONN_ID_MAX) using bitwise AND plus CMP: */
-			next_id = (next_id + 1) & 0x00FFFFFF;
-			if (OSMO_UNLIKELY(next_id == 0x00FFFFFF))
-				next_id = 0;
-
-			llist_for_each_entry(conn, &bsc_gsmnet->subscr_conns, entry) {
-				if (conn->lcs.lb.state != SUBSCR_SCCP_ST_NONE &&
-				    conn->lcs.lb.conn_id == conn_id) {
-					conn_id_already_used = true;
-					break;
-				}
-			}
-
-			if (!conn_id_already_used)
-				return conn_id;
-		}
-		return 0xFFFFFFFF;
-	}
-
-	/* SCCP towards MSC: */
-	for (i = 0; i < SCCP_CONN_ID_MAX; i++) {
-		struct gsm_subscriber_connection *conn;
-		uint32_t conn_id = next_id;
-		bool conn_id_already_used = false;
-
+	while (bsc_sccp_inst_get_gscon_by_conn_id(bsc_sccp, test_id)) {
 		/* Optimized modulo operation (% SCCP_CONN_ID_MAX) using bitwise AND plus CMP: */
-		next_id = (next_id + 1) & 0x00FFFFFF;
-		if (OSMO_UNLIKELY(next_id == 0x00FFFFFF))
-			next_id = 0;
+		test_id = (test_id + 1) & 0x00FFFFFF;
+		if (OSMO_UNLIKELY(test_id == 0x00FFFFFF))
+			test_id = 0;
 
-		llist_for_each_entry(conn, &bsc_gsmnet->subscr_conns, entry) {
-			if (conn->sccp.msc && conn->sccp.msc->a.sccp == sccp &&
-			    conn->sccp.conn_id == conn_id) {
-				conn_id_already_used = true;
-				break;
-			}
-		}
-
-		if (!conn_id_already_used)
-			return conn_id;
+		/* Did a whole loop, all used, fail */
+		if (OSMO_UNLIKELY(test_id == first_id))
+			return SCCP_CONN_ID_UNSET;
 	}
-	return SCCP_CONN_ID_UNSET;
+
+	bsc_sccp->next_id = test_id;
+	/* Optimized modulo operation (% SCCP_CONN_ID_MAX) using bitwise AND plus CMP: */
+	bsc_sccp->next_id = (bsc_sccp->next_id + 1) & 0x00FFFFFF;
+	if (OSMO_UNLIKELY(bsc_sccp->next_id == 0x00FFFFFF))
+		bsc_sccp->next_id = 0;
+
+	return test_id;
 }
