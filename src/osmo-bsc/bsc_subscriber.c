@@ -65,14 +65,27 @@ static int bsub_use_cb(struct osmo_use_count_entry *e, int32_t old_use_count, co
 	return 0;
 }
 
-static struct bsc_subscr *bsc_subscr_alloc(struct llist_head *list)
+struct bsc_subscr_store *bsc_subscr_store_alloc(void *ctx)
+{
+	struct bsc_subscr_store *bsubst;
+
+	bsubst = talloc_zero(ctx, struct bsc_subscr_store);
+	if (!bsubst)
+		return NULL;
+
+	INIT_LLIST_HEAD(&bsubst->bsub_list);
+	return bsubst;
+}
+
+static struct bsc_subscr *bsc_subscr_alloc(struct bsc_subscr_store *bsubst)
 {
 	struct bsc_subscr *bsub;
 
-	bsub = talloc_zero(list, struct bsc_subscr);
+	bsub = talloc_zero(bsubst, struct bsc_subscr);
 	if (!bsub)
 		return NULL;
 
+	bsub->store = bsubst;
 	bsub->tmsi = GSM_RESERVED_TMSI;
 	bsub->use_count = (struct osmo_use_count){
 		.talloc_object = bsub,
@@ -80,12 +93,12 @@ static struct bsc_subscr *bsc_subscr_alloc(struct llist_head *list)
 	};
 	INIT_LLIST_HEAD(&bsub->active_paging_requests);
 
-	llist_add_tail(&bsub->entry, list);
+	llist_add_tail(&bsub->entry, &bsubst->bsub_list);
 
 	return bsub;
 }
 
-struct bsc_subscr *bsc_subscr_find_by_imsi(struct llist_head *list,
+struct bsc_subscr *bsc_subscr_find_by_imsi(struct bsc_subscr_store *bsubst,
 					   const char *imsi,
 					   const char *use_token)
 {
@@ -94,7 +107,7 @@ struct bsc_subscr *bsc_subscr_find_by_imsi(struct llist_head *list,
 	if (!imsi || !*imsi)
 		return NULL;
 
-	llist_for_each_entry(bsub, list, entry) {
+	llist_for_each_entry(bsub, &bsubst->bsub_list, entry) {
 		if (!strcmp(bsub->imsi, imsi)) {
 			bsc_subscr_get(bsub, use_token);
 			return bsub;
@@ -103,7 +116,7 @@ struct bsc_subscr *bsc_subscr_find_by_imsi(struct llist_head *list,
 	return NULL;
 }
 
-static struct bsc_subscr *bsc_subscr_find_by_imei(struct llist_head *list,
+static struct bsc_subscr *bsc_subscr_find_by_imei(struct bsc_subscr_store *bsubst,
 						  const char *imei,
 						  const char *use_token)
 {
@@ -112,7 +125,7 @@ static struct bsc_subscr *bsc_subscr_find_by_imei(struct llist_head *list,
 	if (!imei || !*imei)
 		return NULL;
 
-	llist_for_each_entry(bsub, list, entry) {
+	llist_for_each_entry(bsub, &bsubst->bsub_list, entry) {
 		if (!strcmp(bsub->imei, imei)) {
 			bsc_subscr_get(bsub, use_token);
 			return bsub;
@@ -121,7 +134,7 @@ static struct bsc_subscr *bsc_subscr_find_by_imei(struct llist_head *list,
 	return NULL;
 }
 
-static struct bsc_subscr *bsc_subscr_find_by_tmsi(struct llist_head *list,
+static struct bsc_subscr *bsc_subscr_find_by_tmsi(struct bsc_subscr_store *bsubst,
 						  uint32_t tmsi,
 						  const char *use_token)
 {
@@ -130,7 +143,7 @@ static struct bsc_subscr *bsc_subscr_find_by_tmsi(struct llist_head *list,
 	if (tmsi == GSM_RESERVED_TMSI)
 		return NULL;
 
-	llist_for_each_entry(bsub, list, entry) {
+	llist_for_each_entry(bsub, &bsubst->bsub_list, entry) {
 		if (bsub->tmsi == tmsi) {
 			bsc_subscr_get(bsub, use_token);
 			return bsub;
@@ -153,15 +166,15 @@ void bsc_subscr_set_imei(struct bsc_subscr *bsub, const char *imei)
 	osmo_strlcpy(bsub->imei, imei, sizeof(bsub->imei));
 }
 
-struct bsc_subscr *bsc_subscr_find_or_create_by_imsi(struct llist_head *list,
+struct bsc_subscr *bsc_subscr_find_or_create_by_imsi(struct bsc_subscr_store *bsubst,
 						     const char *imsi,
 						     const char *use_token)
 {
 	struct bsc_subscr *bsub;
-	bsub = bsc_subscr_find_by_imsi(list, imsi, use_token);
+	bsub = bsc_subscr_find_by_imsi(bsubst, imsi, use_token);
 	if (bsub)
 		return bsub;
-	bsub = bsc_subscr_alloc(list);
+	bsub = bsc_subscr_alloc(bsubst);
 	if (!bsub)
 		return NULL;
 	bsc_subscr_set_imsi(bsub, imsi);
@@ -169,15 +182,15 @@ struct bsc_subscr *bsc_subscr_find_or_create_by_imsi(struct llist_head *list,
 	return bsub;
 }
 
-static struct bsc_subscr *bsc_subscr_find_or_create_by_imei(struct llist_head *list,
+static struct bsc_subscr *bsc_subscr_find_or_create_by_imei(struct bsc_subscr_store *bsubst,
 							    const char *imei,
 							    const char *use_token)
 {
 	struct bsc_subscr *bsub;
-	bsub = bsc_subscr_find_by_imei(list, imei, use_token);
+	bsub = bsc_subscr_find_by_imei(bsubst, imei, use_token);
 	if (bsub)
 		return bsub;
-	bsub = bsc_subscr_alloc(list);
+	bsub = bsc_subscr_alloc(bsubst);
 	if (!bsub)
 		return NULL;
 	bsc_subscr_set_imei(bsub, imei);
@@ -185,15 +198,15 @@ static struct bsc_subscr *bsc_subscr_find_or_create_by_imei(struct llist_head *l
 	return bsub;
 }
 
-struct bsc_subscr *bsc_subscr_find_or_create_by_tmsi(struct llist_head *list,
+struct bsc_subscr *bsc_subscr_find_or_create_by_tmsi(struct bsc_subscr_store *bsubst,
 						     uint32_t tmsi,
 						     const char *use_token)
 {
 	struct bsc_subscr *bsub;
-	bsub = bsc_subscr_find_by_tmsi(list, tmsi, use_token);
+	bsub = bsc_subscr_find_by_tmsi(bsubst, tmsi, use_token);
 	if (bsub)
 		return bsub;
-	bsub = bsc_subscr_alloc(list);
+	bsub = bsc_subscr_alloc(bsubst);
 	if (!bsub)
 		return NULL;
 	bsub->tmsi = tmsi;
@@ -201,18 +214,18 @@ struct bsc_subscr *bsc_subscr_find_or_create_by_tmsi(struct llist_head *list,
 	return bsub;
 }
 
-struct bsc_subscr *bsc_subscr_find_or_create_by_mi(struct llist_head *list, const struct osmo_mobile_identity *mi,
+struct bsc_subscr *bsc_subscr_find_or_create_by_mi(struct bsc_subscr_store *bsubst, const struct osmo_mobile_identity *mi,
 						   const char *use_token)
 {
 	if (!mi)
 		return NULL;
 	switch (mi->type) {
 	case GSM_MI_TYPE_IMSI:
-		return bsc_subscr_find_or_create_by_imsi(list, mi->imsi, use_token);
+		return bsc_subscr_find_or_create_by_imsi(bsubst, mi->imsi, use_token);
 	case GSM_MI_TYPE_IMEI:
-		return bsc_subscr_find_or_create_by_imei(list, mi->imei, use_token);
+		return bsc_subscr_find_or_create_by_imei(bsubst, mi->imei, use_token);
 	case GSM_MI_TYPE_TMSI:
-		return bsc_subscr_find_or_create_by_tmsi(list, mi->tmsi, use_token);
+		return bsc_subscr_find_or_create_by_tmsi(bsubst, mi->tmsi, use_token);
 	default:
 		return NULL;
 	}

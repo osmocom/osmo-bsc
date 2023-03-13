@@ -3285,7 +3285,7 @@ DEFUN(show_subscr_all,
 	vty_out(vty, " IMSI             TMSI      Use%s", VTY_NEWLINE);
 	/*           " 001010123456789  ffffffff  1" */
 
-	llist_for_each_entry(bsc_subscr, bsc_gsmnet->bsc_subscribers, entry)
+	llist_for_each_entry(bsc_subscr, &bsc_gsmnet->bsc_subscribers->bsub_list, entry)
 		dump_one_sub(vty, bsc_subscr);
 
 	return CMD_SUCCESS;

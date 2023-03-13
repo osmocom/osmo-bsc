@@ -29,7 +29,7 @@
 #include <stdlib.h>
 #include <inttypes.h>
 
-struct llist_head *bsc_subscribers;
+struct bsc_subscr_store *bsc_subscribers;
 
 #define VERBOSE_ASSERT(val, expect_op, fmt) \
 	do { \
@@ -61,26 +61,26 @@ static void test_bsc_subscr(void)
 	printf("Test BSC subscriber allocation and deletion\n");
 
 	/* Check for emptiness */
-	VERBOSE_ASSERT(llist_count(bsc_subscribers), == 0, "%d");
+	VERBOSE_ASSERT(llist_count(&bsc_subscribers->bsub_list), == 0, "%d");
 	OSMO_ASSERT(bsc_subscr_find_by_imsi(bsc_subscribers, imsi1, BSUB_USE) == NULL);
 	OSMO_ASSERT(bsc_subscr_find_by_imsi(bsc_subscribers, imsi2, BSUB_USE) == NULL);
 	OSMO_ASSERT(bsc_subscr_find_by_imsi(bsc_subscribers, imsi3, BSUB_USE) == NULL);
 
 	/* Allocate entry 1 */
 	s1 = bsc_subscr_find_or_create_by_imsi(bsc_subscribers, imsi1, BSUB_USE);
-	VERBOSE_ASSERT(llist_count(bsc_subscribers), == 1, "%d");
+	VERBOSE_ASSERT(llist_count(&bsc_subscribers->bsub_list), == 1, "%d");
 	assert_bsc_subscr(s1, imsi1);
-	VERBOSE_ASSERT(llist_count(bsc_subscribers), == 1, "%d");
+	VERBOSE_ASSERT(llist_count(&bsc_subscribers->bsub_list), == 1, "%d");
 	OSMO_ASSERT(bsc_subscr_find_by_imsi(bsc_subscribers, imsi2, BSUB_USE) == NULL);
 
 	/* Allocate entry 2 */
 	s2 = bsc_subscr_find_or_create_by_imsi(bsc_subscribers, imsi2, BSUB_USE);
 	s2->tmsi = 0x73517351;
-	VERBOSE_ASSERT(llist_count(bsc_subscribers), == 2, "%d");
+	VERBOSE_ASSERT(llist_count(&bsc_subscribers->bsub_list), == 2, "%d");
 
 	/* Allocate entry 3 */
 	s3 = bsc_subscr_find_or_create_by_imsi(bsc_subscribers, imsi3, BSUB_USE);
-	VERBOSE_ASSERT(llist_count(bsc_subscribers), == 3, "%d");
+	VERBOSE_ASSERT(llist_count(&bsc_subscribers->bsub_list), == 3, "%d");
 
 	/* Check entries */
 	assert_bsc_subscr(s1, imsi1);
@@ -90,7 +90,7 @@ static void test_bsc_subscr(void)
 	/* Free entry 1 */
 	bsc_subscr_put(s1, BSUB_USE);
 	s1 = NULL;
-	VERBOSE_ASSERT(llist_count(bsc_subscribers), == 2, "%d");
+	VERBOSE_ASSERT(llist_count(&bsc_subscribers->bsub_list), == 2, "%d");
 	OSMO_ASSERT(bsc_subscr_find_by_imsi(bsc_subscribers, imsi1, BSUB_USE) == NULL);
 
 	assert_bsc_subscr(s2, imsi2);
@@ -99,7 +99,7 @@ static void test_bsc_subscr(void)
 	/* Free entry 2 */
 	bsc_subscr_put(s2, BSUB_USE);
 	s2 = NULL;
-	VERBOSE_ASSERT(llist_count(bsc_subscribers), == 1, "%d");
+	VERBOSE_ASSERT(llist_count(&bsc_subscribers->bsub_list), == 1, "%d");
 	OSMO_ASSERT(bsc_subscr_find_by_imsi(bsc_subscribers, imsi1, BSUB_USE) == NULL);
 	OSMO_ASSERT(bsc_subscr_find_by_imsi(bsc_subscribers, imsi2, BSUB_USE) == NULL);
 	assert_bsc_subscr(s3, imsi3);
@@ -107,10 +107,10 @@ static void test_bsc_subscr(void)
 	/* Free entry 3 */
 	bsc_subscr_put(s3, BSUB_USE);
 	s3 = NULL;
-	VERBOSE_ASSERT(llist_count(bsc_subscribers), == 0, "%d");
+	VERBOSE_ASSERT(llist_count(&bsc_subscribers->bsub_list), == 0, "%d");
 	OSMO_ASSERT(bsc_subscr_find_by_imsi(bsc_subscribers, imsi3, BSUB_USE) == NULL);
 
-	OSMO_ASSERT(llist_empty(bsc_subscribers));
+	OSMO_ASSERT(llist_empty(&bsc_subscribers->bsub_list));
 }
 
 static const struct log_info_cat log_categories[] = {
@@ -137,8 +137,7 @@ int main()
 	log_set_print_category_hex(osmo_stderr_target, 0);
 	log_set_print_category(osmo_stderr_target, 1);
 
-	bsc_subscribers = talloc_zero(ctx, struct llist_head);
-	INIT_LLIST_HEAD(bsc_subscribers);
+	bsc_subscribers = bsc_subscr_store_alloc(ctx);
 
 	test_bsc_subscr();
 

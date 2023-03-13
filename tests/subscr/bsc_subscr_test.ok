@@ -1,11 +1,11 @@
 Testing BSC subscriber core code.
 Test BSC subscriber allocation and deletion
-llist_count(bsc_subscribers) == 0
-llist_count(bsc_subscribers) == 1
-llist_count(bsc_subscribers) == 1
-llist_count(bsc_subscribers) == 2
-llist_count(bsc_subscribers) == 3
-llist_count(bsc_subscribers) == 2
-llist_count(bsc_subscribers) == 1
-llist_count(bsc_subscribers) == 0
+llist_count(&bsc_subscribers->bsub_list) == 0
+llist_count(&bsc_subscribers->bsub_list) == 1
+llist_count(&bsc_subscribers->bsub_list) == 1
+llist_count(&bsc_subscribers->bsub_list) == 2
+llist_count(&bsc_subscribers->bsub_list) == 3
+llist_count(&bsc_subscribers->bsub_list) == 2
+llist_count(&bsc_subscribers->bsub_list) == 1
+llist_count(&bsc_subscribers->bsub_list) == 0
 Done

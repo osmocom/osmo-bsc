@@ -12,8 +12,15 @@
 struct log_target;
 struct gsm_bts;
 
+struct bsc_subscr_store {
+	struct llist_head bsub_list; /* list containing "struct bsc_subscr" */
+};
+
+struct bsc_subscr_store *bsc_subscr_store_alloc(void *ctx);
+
 struct bsc_subscr {
-	struct llist_head entry;
+	struct bsc_subscr_store *store; /* backpointer to "struct bsc_subscr_store" */
+	struct llist_head entry; /* entry in (struct bsc_subscr_store)->bsub_list */
 	struct osmo_use_count use_count;
 
 	char imsi[GSM23003_IMSI_MAX_DIGITS+1];
@@ -28,16 +35,17 @@ struct bsc_subscr {
 const char *bsc_subscr_name(struct bsc_subscr *bsub);
 const char *bsc_subscr_id(struct bsc_subscr *bsub);
 
-struct bsc_subscr *bsc_subscr_find_or_create_by_imsi(struct llist_head *list,
+struct bsc_subscr *bsc_subscr_find_or_create_by_imsi(struct bsc_subscr_store *bsubst,
 						     const char *imsi,
 						     const char *use_token);
-struct bsc_subscr *bsc_subscr_find_or_create_by_tmsi(struct llist_head *list,
+struct bsc_subscr *bsc_subscr_find_or_create_by_tmsi(struct bsc_subscr_store *bsubst,
 						     uint32_t tmsi,
 						     const char *use_token);
-struct bsc_subscr *bsc_subscr_find_or_create_by_mi(struct llist_head *list, const struct osmo_mobile_identity *mi,
+struct bsc_subscr *bsc_subscr_find_or_create_by_mi(struct bsc_subscr_store *bsubst,
+						   const struct osmo_mobile_identity *mi,
 						   const char *use_token);
 
-struct bsc_subscr *bsc_subscr_find_by_imsi(struct llist_head *list,
+struct bsc_subscr *bsc_subscr_find_by_imsi(struct bsc_subscr_store *bsubst,
 					   const char *imsi,
 					   const char *use_token);
 

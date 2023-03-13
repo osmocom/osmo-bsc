@@ -119,8 +119,7 @@ struct gsm_network *gsm_network_init(void *ctx)
 
 	INIT_LLIST_HEAD(&net->subscr_conns);
 
-	net->bsc_subscribers = talloc_zero(net, struct llist_head);
-	INIT_LLIST_HEAD(net->bsc_subscribers);
+	net->bsc_subscribers = bsc_subscr_store_alloc(net);
 
 	INIT_LLIST_HEAD(&net->bts_list);
 	net->num_bts = 0;

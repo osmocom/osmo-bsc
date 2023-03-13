@@ -954,13 +954,8 @@ struct gsm_network {
 	 * OsmoMSC, this should be tied to the location area code (LAC). */
 	struct gsm_tz tz;
 
-	/* List of all struct bsc_subscr used in libbsc. This llist_head is
-	 * allocated so that the llist_head pointer itself can serve as a
-	 * talloc context (useful to not have to pass the entire gsm_network
-	 * struct to the bsc_subscr_* API, and for bsc_susbscr unit tests to
-	 * not require gsm_data.h). In an MSC-without-BSC environment, this
-	 * pointer is NULL to indicate absence of a bsc_subscribers list. */
-	struct llist_head *bsc_subscribers;
+	/* Keeps track of struct bsc_subcr. */
+	struct bsc_subscr_store *bsc_subscribers;
 
 	/* Timer for periodic channel load measurements to maintain each BTS's T3122. */
 	struct osmo_timer_list t3122_chan_load_timer;
