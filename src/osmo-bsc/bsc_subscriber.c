@@ -138,18 +138,79 @@ static struct bsc_subscr *bsc_subscr_find_by_tmsi(struct bsc_subscr_store *bsubs
 						  uint32_t tmsi,
 						  const char *use_token)
 {
+	const struct rb_node *node = bsubst->bsub_tree_tmsi.rb_node;
 	struct bsc_subscr *bsub;
 
 	if (tmsi == GSM_RESERVED_TMSI)
 		return NULL;
 
-	llist_for_each_entry(bsub, &bsubst->bsub_list, entry) {
-		if (bsub->tmsi == tmsi) {
+	while (node) {
+		bsub = container_of(node, struct bsc_subscr, node_tmsi);
+		if (tmsi < bsub->tmsi)
+			node = node->rb_left;
+		else if (tmsi > bsub->tmsi)
+			node = node->rb_right;
+		else {
 			bsc_subscr_get(bsub, use_token);
 			return bsub;
 		}
 	}
+
 	return NULL;
+}
+
+static int bsc_subscr_store_insert_bsub_tmsi(struct bsc_subscr *bsub)
+{
+	struct bsc_subscr_store *bsubst = bsub->store;
+	struct rb_node **n = &(bsubst->bsub_tree_tmsi.rb_node);
+	struct rb_node *parent = NULL;
+
+	OSMO_ASSERT(bsub->tmsi != GSM_RESERVED_TMSI);
+
+	while (*n) {
+		struct bsc_subscr *it;
+
+		it = container_of(*n, struct bsc_subscr, node_tmsi);
+
+		parent = *n;
+		if (bsub->tmsi < it->tmsi) {
+			n = &((*n)->rb_left);
+		} else if (bsub->tmsi > it->tmsi) {
+			n = &((*n)->rb_right);
+		} else {
+			LOGP(DMSC, LOGL_ERROR, "Trying to reserve already reserved tmsi %u\n", bsub->tmsi);
+			return -EEXIST;
+		}
+	}
+
+	rb_link_node(&bsub->node_tmsi, parent, n);
+	rb_insert_color(&bsub->node_tmsi, &bsubst->bsub_tree_tmsi);
+	return 0;
+}
+
+int bsc_subscr_set_tmsi(struct bsc_subscr *bsub, uint32_t tmsi)
+{
+	int rc = 0;
+
+	if (!bsub)
+		return -EINVAL;
+
+	if (bsub->tmsi == tmsi)
+		return 0;
+
+	/* bsub was already inserted, remove and re-insert with new tmsi */
+	if (bsub->tmsi != GSM_RESERVED_TMSI)
+		rb_erase(&bsub->node_tmsi, &bsub->store->bsub_tree_tmsi);
+
+	bsub->tmsi = tmsi;
+
+	/* If new tmsi is set, insert bsub into rbtree: */
+	if (bsub->tmsi != GSM_RESERVED_TMSI) {
+		if ((rc = bsc_subscr_store_insert_bsub_tmsi(bsub)) < 0)
+			bsub->tmsi = GSM_RESERVED_TMSI;
+	}
+
+	return rc;
 }
 
 void bsc_subscr_set_imsi(struct bsc_subscr *bsub, const char *imsi)
@@ -209,7 +270,10 @@ struct bsc_subscr *bsc_subscr_find_or_create_by_tmsi(struct bsc_subscr_store *bs
 	bsub = bsc_subscr_alloc(bsubst);
 	if (!bsub)
 		return NULL;
-	bsub->tmsi = tmsi;
+	if (bsc_subscr_set_tmsi(bsub, tmsi) < 0) {
+		bsc_subscr_free(bsub);
+		return NULL;
+	}
 	bsc_subscr_get(bsub, use_token);
 	return bsub;
 }
@@ -268,6 +332,10 @@ const char *bsc_subscr_id(struct bsc_subscr *bsub)
 static void bsc_subscr_free(struct bsc_subscr *bsub)
 {
 	OSMO_ASSERT(llist_empty(&bsub->active_paging_requests));
+
+	if (bsub->tmsi != GSM_RESERVED_TMSI)
+		rb_erase(&bsub->node_tmsi, &bsub->store->bsub_tree_tmsi);
+
 	llist_del(&bsub->entry);
 	talloc_free(bsub);
 }

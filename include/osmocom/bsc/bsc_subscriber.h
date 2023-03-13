@@ -5,6 +5,7 @@
 #include <stdint.h>
 
 #include <osmocom/core/linuxlist.h>
+#include <osmocom/core/linuxrbtree.h>
 #include <osmocom/core/use_count.h>
 #include <osmocom/gsm/protocol/gsm_23_003.h>
 #include <osmocom/gsm/gsm48.h>
@@ -14,6 +15,8 @@ struct gsm_bts;
 
 struct bsc_subscr_store {
 	struct llist_head bsub_list; /* list containing "struct bsc_subscr" */
+	/* rbtree root of 'struct bsc_subscr', ordered by tmsi */
+	struct rb_root bsub_tree_tmsi;
 };
 
 struct bsc_subscr_store *bsc_subscr_store_alloc(void *ctx);
@@ -21,6 +24,8 @@ struct bsc_subscr_store *bsc_subscr_store_alloc(void *ctx);
 struct bsc_subscr {
 	struct bsc_subscr_store *store; /* backpointer to "struct bsc_subscr_store" */
 	struct llist_head entry; /* entry in (struct bsc_subscr_store)->bsub_list */
+	/* entry in (struct bsc_subscr_store)->bsub_tree_tmsi. Inserted if tmsi != GSM_RESERVED_TMSI: */
+	struct rb_node node_tmsi;
 	struct osmo_use_count use_count;
 
 	char imsi[GSM23003_IMSI_MAX_DIGITS+1];
@@ -49,6 +54,7 @@ struct bsc_subscr *bsc_subscr_find_by_imsi(struct bsc_subscr_store *bsubst,
 					   const char *imsi,
 					   const char *use_token);
 
+int bsc_subscr_set_tmsi(struct bsc_subscr *bsub, uint32_t tmsi);
 void bsc_subscr_set_imsi(struct bsc_subscr *bsub, const char *imsi);
 void bsc_subscr_set_imei(struct bsc_subscr *bsub, const char *imei);
 

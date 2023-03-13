@@ -352,8 +352,12 @@ int bsc_paging_start(struct bsc_paging_params *params)
 			return -EINVAL;
 		}
 	}
-	if (params->tmsi != GSM_RESERVED_TMSI)
-		params->bsub->tmsi = params->tmsi;
+	if (params->tmsi != GSM_RESERVED_TMSI) {
+		if (bsc_subscr_set_tmsi(params->bsub, params->tmsi) < 0) {
+			LOG_PAGING(params, DMSC, LOGL_ERROR, "Paging request failed: Could not set TMSI on subscriber\n");
+			return -EINVAL;
+		}
+	}
 	log_set_context(LOG_CTX_BSC_SUBSCR, params->bsub);
 
 	switch (params->cil.id_discr) {
