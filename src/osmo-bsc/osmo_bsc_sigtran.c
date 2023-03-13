@@ -45,19 +45,6 @@ static struct llist_head *msc_list;
 #define DEFAULT_ASP_LOCAL_IP "localhost"
 #define DEFAULT_ASP_REMOTE_IP "localhost"
 
-struct gsm_subscriber_connection *bsc_conn_by_bsub(const struct bsc_subscr *bsub)
-{
-	struct gsm_subscriber_connection *conn;
-	if (!bsub)
-		return NULL;
-
-	llist_for_each_entry(conn, &bsc_gsmnet->subscr_conns, entry) {
-		if (conn->bsub == bsub)
-			return conn;
-	}
-	return NULL;
-}
-
 /* Patch regular BSSMAP RESET to add extra T to announce Osmux support (osmocom extension) */
 static void _gsm0808_extend_announce_osmux(struct msgb *msg)
 {

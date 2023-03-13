@@ -351,6 +351,19 @@ static void parse_powercap(struct gsm_subscriber_connection *conn, struct msgb *
 	conn_update_ms_power_class(conn, rc8);
 }
 
+static struct gsm_subscriber_connection *bsc_conn_by_bsub(const struct bsc_subscr *bsub)
+{
+	struct gsm_subscriber_connection *conn;
+	if (!bsub)
+		return NULL;
+
+	llist_for_each_entry(conn, &bsc_gsmnet->subscr_conns, entry) {
+		if (conn->bsub == bsub)
+			return conn;
+	}
+	return NULL;
+}
+
 /*! MS->MSC: New MM context with L3 payload. */
 int bsc_compl_l3(struct gsm_lchan *lchan, struct msgb *msg, uint16_t chosen_channel)
 {
