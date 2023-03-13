@@ -139,23 +139,6 @@ struct bsc_subscr *bsc_subscr_find_by_tmsi(struct llist_head *list,
 	return NULL;
 }
 
-struct bsc_subscr *bsc_subscr_find_by_mi(struct llist_head *list, const struct osmo_mobile_identity *mi,
-					 const char *use_token)
-{
-	if (!mi)
-		return NULL;
-	switch (mi->type) {
-	case GSM_MI_TYPE_IMSI:
-		return bsc_subscr_find_by_imsi(list, mi->imsi, use_token);
-	case GSM_MI_TYPE_IMEI:
-		return bsc_subscr_find_by_imei(list, mi->imei, use_token);
-	case GSM_MI_TYPE_TMSI:
-		return bsc_subscr_find_by_tmsi(list, mi->tmsi, use_token);
-	default:
-		return NULL;
-	}
-}
-
 void bsc_subscr_set_imsi(struct bsc_subscr *bsub, const char *imsi)
 {
 	if (!bsub)

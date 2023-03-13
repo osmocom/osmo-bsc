@@ -49,8 +49,6 @@ struct bsc_subscr *bsc_subscr_find_by_imei(struct llist_head *list,
 struct bsc_subscr *bsc_subscr_find_by_tmsi(struct llist_head *list,
 					   uint32_t tmsi,
 					   const char *use_token);
-struct bsc_subscr *bsc_subscr_find_by_mi(struct llist_head *list, const struct osmo_mobile_identity *mi,
-					 const char *use_token);
 
 void bsc_subscr_set_imsi(struct bsc_subscr *bsub, const char *imsi);
 void bsc_subscr_set_imei(struct bsc_subscr *bsub, const char *imei);
