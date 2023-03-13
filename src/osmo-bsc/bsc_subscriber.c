@@ -103,9 +103,9 @@ struct bsc_subscr *bsc_subscr_find_by_imsi(struct llist_head *list,
 	return NULL;
 }
 
-struct bsc_subscr *bsc_subscr_find_by_imei(struct llist_head *list,
-					   const char *imei,
-					   const char *use_token)
+static struct bsc_subscr *bsc_subscr_find_by_imei(struct llist_head *list,
+						  const char *imei,
+						  const char *use_token)
 {
 	struct bsc_subscr *bsub;
 
@@ -121,9 +121,9 @@ struct bsc_subscr *bsc_subscr_find_by_imei(struct llist_head *list,
 	return NULL;
 }
 
-struct bsc_subscr *bsc_subscr_find_by_tmsi(struct llist_head *list,
-					   uint32_t tmsi,
-					   const char *use_token)
+static struct bsc_subscr *bsc_subscr_find_by_tmsi(struct llist_head *list,
+						  uint32_t tmsi,
+						  const char *use_token)
 {
 	struct bsc_subscr *bsub;
 
@@ -169,9 +169,9 @@ struct bsc_subscr *bsc_subscr_find_or_create_by_imsi(struct llist_head *list,
 	return bsub;
 }
 
-struct bsc_subscr *bsc_subscr_find_or_create_by_imei(struct llist_head *list,
-						     const char *imei,
-						     const char *use_token)
+static struct bsc_subscr *bsc_subscr_find_or_create_by_imei(struct llist_head *list,
+							    const char *imei,
+							    const char *use_token)
 {
 	struct bsc_subscr *bsub;
 	bsub = bsc_subscr_find_by_imei(list, imei, use_token);
