@@ -759,9 +759,9 @@ static void pcu_sock_close(struct pcu_sock_state *state)
 
 	LOGP(DPCU, LOGL_NOTICE, "PCU socket has LOST connection\n");
 
+	osmo_fd_unregister(bfd);
 	close(bfd->fd);
 	bfd->fd = -1;
-	osmo_fd_unregister(bfd);
 
 	/* re-enable the generation of ACCEPT for new connections */
 	osmo_fd_read_enable(&state->listen_bfd);
