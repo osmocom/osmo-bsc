@@ -2645,8 +2645,8 @@ struct file_list_entry *fl_dequeue(struct llist_head *queue)
 
 static int bs11_read_swl_file(struct abis_nm_bs11_sw *bs11_sw)
 {
+	struct file_list_entry *fle;
 	char linebuf[255];
-	struct llist_head *lh, *lh2;
 	FILE *swl;
 	int rc = 0;
 
@@ -2655,10 +2655,8 @@ static int bs11_read_swl_file(struct abis_nm_bs11_sw *bs11_sw)
 		return -ENODEV;
 
 	/* zero the stale file list, if any */
-	llist_for_each_safe(lh, lh2, &bs11_sw->file_list) {
-		llist_del(lh);
-		talloc_free(lh);
-	}
+	while ((fle = fl_dequeue(&bs11_sw->file_list)))
+		talloc_free(fle);
 
 	while (fgets(linebuf, sizeof(linebuf), swl)) {
 		char file_id[12+1];
