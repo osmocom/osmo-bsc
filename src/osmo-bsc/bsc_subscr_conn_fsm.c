@@ -769,7 +769,7 @@ bool gscon_connect_mgw_to_msc(struct gsm_subscriber_connection *conn,
 
 	mgw_info = (struct mgcp_conn_peer){
 		.port = port,
-		.call_id = conn->sccp.conn_id,
+		.call_id = conn->sccp.conn.conn_id,
 		.ptime = 20,
 		.x_osmo_osmux_use = conn->assignment.req.use_osmux,
 		.x_osmo_osmux_cid = conn->assignment.req.osmux_cid,
@@ -1108,13 +1108,13 @@ static void gscon_cleanup(struct osmo_fsm_inst *fi, enum osmo_fsm_term_cause cau
 		LOGPFSML(fi, LOGL_DEBUG, "Disconnecting SCCP\n");
 		struct bsc_msc_data *msc = conn->sccp.msc;
 		/* FIXME: include a proper cause value / error message? */
-		osmo_sccp_tx_disconn(msc->a.sccp_user, conn->sccp.conn_id, &msc->a.bsc_addr, 0);
+		osmo_sccp_tx_disconn(msc->a.sccp_user, conn->sccp.conn.conn_id, &msc->a.bsc_addr, 0);
 		conn->sccp.state = SUBSCR_SCCP_ST_NONE;
 	}
-	if (conn->sccp.conn_id != SCCP_CONN_ID_UNSET && conn->sccp.msc) {
+	if (conn->sccp.conn.conn_id != SCCP_CONN_ID_UNSET && conn->sccp.msc) {
 		struct bsc_sccp_inst *bsc_sccp = osmo_sccp_get_priv(conn->sccp.msc->a.sccp);
-		bsc_sccp_inst_unregister_gscon(bsc_sccp, conn);
-		conn->sccp.conn_id = SCCP_CONN_ID_UNSET;
+		bsc_sccp_inst_unregister_gscon(bsc_sccp, &conn->sccp.conn);
+		conn->sccp.conn.conn_id = SCCP_CONN_ID_UNSET;
 	}
 
 	if (conn->bsub) {
@@ -1231,7 +1231,8 @@ struct gsm_subscriber_connection *bsc_subscr_con_allocate(struct gsm_network *ne
 	conn->network = net;
 	INIT_LLIST_HEAD(&conn->dtap_queue);
 	INIT_LLIST_HEAD(&conn->hodec2.penalty_timers);
-	conn->sccp.conn_id = SCCP_CONN_ID_UNSET;
+	bscp_sccp_conn_node_init(&conn->sccp.conn, conn);
+	bscp_sccp_conn_node_init(&conn->lcs.lb.conn, conn);
 	/* Default clear cause (on RR translates to GSM48_RR_CAUSE_ABNORMAL_UNSPEC) */
 	conn->clear_cause = GSM0808_CAUSE_EQUIPMENT_FAILURE;
 
@@ -1404,7 +1405,7 @@ void gscon_update_id(struct gsm_subscriber_connection *conn)
 {
 	osmo_fsm_inst_update_id_f(conn->fi, "msc%u-conn%u%s%s",
 				  conn->sccp.msc ? conn->sccp.msc->nr : UINT_MAX,
-				  conn->sccp.conn_id,
+				  conn->sccp.conn.conn_id,
 				  conn->bsub? "_" : "",
 				  conn->bsub? bsc_subscr_id(conn->bsub) : "");
 }

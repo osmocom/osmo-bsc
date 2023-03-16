@@ -170,8 +170,8 @@ static int handle_n_connect_from_msc(struct osmo_sccp_user *scu, struct osmo_scu
 	if (!conn)
 		return -ENOMEM;
 	conn->sccp.msc = msc;
-	conn->sccp.conn_id = scu_prim->u.connect.conn_id;
-	if (bsc_sccp_inst_register_gscon(bsc_sccp, conn) < 0) {
+	conn->sccp.conn.conn_id = scu_prim->u.connect.conn_id;
+	if (bsc_sccp_inst_register_gscon(bsc_sccp, &conn->sccp.conn) < 0) {
 		LOGP(DMSC, LOGL_NOTICE, "(calling_addr=%s conn_id=%u) N-CONNECT.ind failed registering conn\n",
 		     osmo_sccp_addr_dump(&scu_prim->u.connect.calling_addr), scu_prim->u.connect.conn_id);
 		osmo_fsm_inst_term(conn->fi, OSMO_FSM_TERM_REQUEST, NULL);
@@ -308,7 +308,7 @@ __attribute__((weak)) int osmo_bsc_sigtran_open_conn(struct gsm_subscriber_conne
 	OSMO_ASSERT(conn);
 	OSMO_ASSERT(msg);
 	OSMO_ASSERT(conn->sccp.msc);
-	OSMO_ASSERT(conn->sccp.conn_id == SCCP_CONN_ID_UNSET);
+	OSMO_ASSERT(conn->sccp.conn.conn_id == SCCP_CONN_ID_UNSET);
 
 	msc = conn->sccp.msc;
 
@@ -318,16 +318,16 @@ __attribute__((weak)) int osmo_bsc_sigtran_open_conn(struct gsm_subscriber_conne
 	}
 
 	bsc_sccp = osmo_sccp_get_priv(msc->a.sccp);
-	conn->sccp.conn_id = conn_id = bsc_sccp_inst_next_conn_id(bsc_sccp);
-	if (conn->sccp.conn_id == SCCP_CONN_ID_UNSET) {
+	conn->sccp.conn.conn_id = conn_id = bsc_sccp_inst_next_conn_id(bsc_sccp);
+	if (conn->sccp.conn.conn_id == SCCP_CONN_ID_UNSET) {
 		LOGP(DMSC, LOGL_ERROR, "Unable to allocate SCCP Connection ID\n");
 		return -1;
 	}
-	if (bsc_sccp_inst_register_gscon(bsc_sccp, conn) < 0) {
-		LOGP(DMSC, LOGL_ERROR, "Unable to register SCCP connection (id=%u)\n", conn->sccp.conn_id);
+	if (bsc_sccp_inst_register_gscon(bsc_sccp, &conn->sccp.conn) < 0) {
+		LOGP(DMSC, LOGL_ERROR, "Unable to register SCCP connection (id=%u)\n", conn->sccp.conn.conn_id);
 		return -1;
 	}
-	LOGP(DMSC, LOGL_DEBUG, "Allocated new connection id: %u\n", conn->sccp.conn_id);
+	LOGP(DMSC, LOGL_DEBUG, "Allocated new connection id: %u\n", conn->sccp.conn.conn_id);
 	ss7 = osmo_ss7_instance_find(msc->a.cs7_instance);
 	OSMO_ASSERT(ss7);
 	LOGP(DMSC, LOGL_INFO, "Opening new SCCP connection (id=%u) to MSC %d: %s\n", conn_id,
@@ -390,7 +390,7 @@ int osmo_bsc_sigtran_send(struct gsm_subscriber_connection *conn, struct msgb *m
 		return -EINVAL;
 	}
 
-	conn_id = conn->sccp.conn_id;
+	conn_id = conn->sccp.conn.conn_id;
 
 	ss7 = osmo_ss7_instance_find(msc->a.cs7_instance);
 	OSMO_ASSERT(ss7);

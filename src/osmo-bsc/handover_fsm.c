@@ -269,7 +269,7 @@ static void ho_fsm_update_id(struct osmo_fsm_inst *fi, const char *label)
 	if (conn->fi->id)
 		osmo_fsm_inst_update_id_f(fi, "%s_%s", label, conn->fi->id);
 	else
-		osmo_fsm_inst_update_id_f(fi, "%s_conn%u", label, conn->sccp.conn_id);
+		osmo_fsm_inst_update_id_f(fi, "%s_conn%u", label, conn->sccp.conn.conn_id);
 }
 
 static void handover_reset(struct gsm_subscriber_connection *conn)

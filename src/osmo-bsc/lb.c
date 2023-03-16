@@ -199,6 +199,8 @@ static int sccp_sap_up(struct osmo_prim_hdr *oph, void *_scu)
 			     scu_prim->u.disconnect.conn_id);
 			rc = -EINVAL;
 		} else {
+			bsc_sccp_inst_unregister_gscon(bsc_sccp, &conn->lcs.lb.conn);
+			conn->lcs.lb.conn.conn_id = SCCP_CONN_ID_UNSET;
 			conn->lcs.lb.state = SUBSCR_SCCP_ST_NONE;
 			if (msgb_l2len(oph->msg) > 0) {
 				rc = lcs_loc_req_rx_bssmap_le(conn, oph->msg);
@@ -237,7 +239,11 @@ static int lb_open_conn(struct gsm_subscriber_connection *conn, struct msgb *msg
 		LOGPFSMSL(conn->fi, DLCS, LOGL_ERROR, "Unable to allocate SCCP Connection ID for BSSMAP-LE to SMLC\n");
 		return -ENOSPC;
 	}
-	conn->lcs.lb.conn_id = conn_id;
+	conn->lcs.lb.conn.conn_id = conn_id;
+	if (bsc_sccp_inst_register_gscon(bsc_sccp, &conn->lcs.lb.conn) < 0) {
+		LOGP(DMSC, LOGL_ERROR, "Unable to register Lb SCCP connection (id=%u)\n", conn->lcs.lb.conn.conn_id);
+		return -1;
+	}
 	ss7 = osmo_ss7_instance_find(bsc_gsmnet->smlc->cs7_instance);
 	OSMO_ASSERT(ss7);
 	LOGPFSMSL(conn->fi, DLCS, LOGL_INFO, "Opening new SCCP connection (id=%u) to SMLC: %s\n", conn_id,
@@ -245,22 +251,35 @@ static int lb_open_conn(struct gsm_subscriber_connection *conn, struct msgb *msg
 
 	rc = osmo_sccp_tx_conn_req_msg(bsc_gsmnet->smlc->sccp_user, conn_id, &bsc_gsmnet->smlc->bsc_addr,
 				       &bsc_gsmnet->smlc->smlc_addr, msg);
-	if (rc >= 0)
+	if (rc >= 0) {
 		rate_ctr_inc(rate_ctr_group_get_ctr(bsc_gsmnet->smlc->ctrs, SMLC_CTR_BSSMAP_LE_TX_SUCCESS));
-	else
-		rate_ctr_inc(rate_ctr_group_get_ctr(bsc_gsmnet->smlc->ctrs, SMLC_CTR_BSSMAP_LE_TX_ERR_SEND));
-	if (rc >= 0)
 		conn->lcs.lb.state = SUBSCR_SCCP_ST_WAIT_CONN_CONF;
+	} else {
+		rate_ctr_inc(rate_ctr_group_get_ctr(bsc_gsmnet->smlc->ctrs, SMLC_CTR_BSSMAP_LE_TX_ERR_SEND));
+		goto failed_unregister_conn_id;
+	}
 
+	return rc;
+
+failed_unregister_conn_id:
+	bsc_sccp_inst_unregister_gscon(bsc_sccp, &conn->lcs.lb.conn);
+	conn->lcs.lb.conn.conn_id = SCCP_CONN_ID_UNSET;
 	return rc;
 }
 
 void lb_close_conn(struct gsm_subscriber_connection *conn)
 {
+	struct bsc_sccp_inst *bsc_sccp;
 	if (conn->lcs.lb.state == SUBSCR_SCCP_ST_NONE)
 		return;
-	osmo_sccp_tx_disconn(bsc_gsmnet->smlc->sccp_user, conn->lcs.lb.conn_id, &bsc_gsmnet->smlc->bsc_addr, 0);
+	OSMO_ASSERT(conn->lcs.lb.conn.conn_id != SCCP_CONN_ID_UNSET);
+
+	osmo_sccp_tx_disconn(bsc_gsmnet->smlc->sccp_user, conn->lcs.lb.conn.conn_id, &bsc_gsmnet->smlc->bsc_addr, 0);
+
 	conn->lcs.lb.state = SUBSCR_SCCP_ST_NONE;
+	bsc_sccp = osmo_sccp_get_priv(bsc_gsmnet->smlc->sccp);
+	bsc_sccp_inst_unregister_gscon(bsc_sccp, &conn->lcs.lb.conn);
+	conn->lcs.lb.conn.conn_id = SCCP_CONN_ID_UNSET;
 }
 
 /* Send data to SMLC, take ownership of *msg */
@@ -293,7 +312,7 @@ int lb_send(struct gsm_subscriber_connection *conn, const struct bssap_le_pdu *b
 	}
 
 	LOGPFSMSL(conn->fi, DLCS, LOGL_DEBUG, "Tx %s\n", osmo_bssap_le_pdu_to_str_c(OTC_SELECT, bssap_le));
-	rc = osmo_sccp_tx_data_msg(bsc_gsmnet->smlc->sccp_user, conn->lcs.lb.conn_id, msg);
+	rc = osmo_sccp_tx_data_msg(bsc_gsmnet->smlc->sccp_user, conn->lcs.lb.conn.conn_id, msg);
 	if (rc >= 0)
 		rate_ctr_inc(rate_ctr_group_get_ctr(bsc_gsmnet->smlc->ctrs, SMLC_CTR_BSSMAP_LE_TX_SUCCESS));
 	else

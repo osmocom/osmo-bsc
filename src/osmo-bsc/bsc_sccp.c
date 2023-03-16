@@ -27,6 +27,12 @@
 #include <osmocom/bsc/bsc_msc_data.h>
 #include <osmocom/bsc/lb.h>
 
+void bscp_sccp_conn_node_init(struct bscp_sccp_conn_node *sccp_conn, struct gsm_subscriber_connection *gscon)
+{
+	sccp_conn->conn_id = SCCP_CONN_ID_UNSET;
+	sccp_conn->gscon = gscon;
+}
+
 struct bsc_sccp_inst *bsc_sccp_inst_alloc(void *ctx)
 {
 	struct bsc_sccp_inst *bsc_sccp;
@@ -38,23 +44,21 @@ struct bsc_sccp_inst *bsc_sccp_inst_alloc(void *ctx)
 	return bsc_sccp;
 }
 
-int bsc_sccp_inst_register_gscon(struct bsc_sccp_inst *bsc_sccp, struct gsm_subscriber_connection *conn)
+int bsc_sccp_inst_register_gscon(struct bsc_sccp_inst *bsc_sccp, struct bscp_sccp_conn_node *sccp_conn)
 {
 	struct rb_node **n = &(bsc_sccp->connections.rb_node);
 	struct rb_node *parent = NULL;
-	uint32_t conn_id = conn->sccp.conn_id;
+	uint32_t conn_id = sccp_conn->conn_id;
 
 	OSMO_ASSERT(conn_id != SCCP_CONN_ID_UNSET);
 
 	while (*n) {
-		struct gsm_subscriber_connection *it;
-
-		it = container_of(*n, struct gsm_subscriber_connection, sccp.node);
+		struct bscp_sccp_conn_node *it = container_of(*n, struct bscp_sccp_conn_node, node);
 
 		parent = *n;
-		if (conn_id < it->sccp.conn_id) {
+		if (conn_id < it->conn_id) {
 			n = &((*n)->rb_left);
-		} else if (conn_id > it->sccp.conn_id) {
+		} else if (conn_id > it->conn_id) {
 			n = &((*n)->rb_right);
 		} else {
 			LOGP(DMSC, LOGL_ERROR,
@@ -63,35 +67,34 @@ int bsc_sccp_inst_register_gscon(struct bsc_sccp_inst *bsc_sccp, struct gsm_subs
 		}
 	}
 
-	rb_link_node(&conn->sccp.node, parent, n);
-	rb_insert_color(&conn->sccp.node, &bsc_sccp->connections);
+	rb_link_node(&sccp_conn->node, parent, n);
+	rb_insert_color(&sccp_conn->node, &bsc_sccp->connections);
 	return 0;
 }
 
-void bsc_sccp_inst_unregister_gscon(struct bsc_sccp_inst *bsc_sccp, struct gsm_subscriber_connection *conn)
+void bsc_sccp_inst_unregister_gscon(struct bsc_sccp_inst *bsc_sccp, struct bscp_sccp_conn_node *sccp_conn)
 {
-	OSMO_ASSERT(conn->sccp.conn_id != SCCP_CONN_ID_UNSET);
-	rb_erase(&conn->sccp.node, &bsc_sccp->connections);
+	OSMO_ASSERT(sccp_conn->conn_id != SCCP_CONN_ID_UNSET);
+	rb_erase(&sccp_conn->node, &bsc_sccp->connections);
 }
 
 /* Helper function to Check if the given connection id is already assigned */
 struct gsm_subscriber_connection *bsc_sccp_inst_get_gscon_by_conn_id(const struct bsc_sccp_inst *bsc_sccp, uint32_t conn_id)
 {
 	const struct rb_node *node = bsc_sccp->connections.rb_node;
-	struct gsm_subscriber_connection *conn;
 
 	OSMO_ASSERT(conn_id != SCCP_CONN_ID_UNSET);
 	/* Range (0..SCCP_CONN_ID_MAX) expected, see bsc_sccp_inst_next_conn_id() */
 	OSMO_ASSERT(conn_id <= SCCP_CONN_ID_MAX);
 
 	while (node) {
-		conn = container_of(node, struct gsm_subscriber_connection, sccp.node);
-		if (conn_id < conn->sccp.conn_id)
+		struct bscp_sccp_conn_node *sccp_conn = container_of(node, struct bscp_sccp_conn_node, node);
+		if (conn_id < sccp_conn->conn_id)
 			node = node->rb_left;
-		else if (conn_id > conn->sccp.conn_id)
+		else if (conn_id > sccp_conn->conn_id)
 			node = node->rb_right;
 		else
-			return conn;
+			return sccp_conn->gscon;
 	}
 
 	return NULL;

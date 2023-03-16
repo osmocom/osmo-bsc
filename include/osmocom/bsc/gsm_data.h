@@ -281,6 +281,21 @@ struct handover {
 	struct osmo_mgcpc_ep_ci *created_ci_for_msc;
 };
 
+struct gsm_subscriber_connection;
+
+struct bscp_sccp_conn_node {
+	/* entry in (struct bsc_sccp_inst)->connections */
+	struct rb_node node;
+	/* Sigtran connection ID:
+	*  if set: Range (0..SCCP_CONN_ID_MAX) (24 bit)
+	*  if unset: SCCP_CONN_ID_UNSET (-1) if unset */
+	uint32_t conn_id;
+	/* backpointer where this sccp conn belongs to: */
+	struct gsm_subscriber_connection *gscon;
+};
+
+void bscp_sccp_conn_node_init(struct bscp_sccp_conn_node *sccp_conn, struct gsm_subscriber_connection *gscon);
+
 /* active radio connection of a mobile subscriber */
 struct gsm_subscriber_connection {
 	/* global linked list of subscriber_connections */
@@ -332,15 +347,8 @@ struct gsm_subscriber_connection {
 	struct {
 		/* SCCP connection related */
 		struct bsc_msc_data *msc;
-
-		/* entry in (struct bsc_sccp_inst)->connections */
-		struct rb_node node;
-
-		/* Sigtran connection ID:
-		*  if set: Range (0..SCCP_CONN_ID_MAX) (24 bit)
-		*  if unset: SCCP_CONN_ID_UNSET (-1) if unset */
-		uint32_t conn_id;
 		enum subscr_sccp_state state;
+		struct bscp_sccp_conn_node conn;
 	} sccp;
 
 	/* for audio handling */
@@ -389,11 +397,8 @@ struct gsm_subscriber_connection {
 
 		/* Lb interface to the SMLC: BSSMAP-LE/SCCP connection associated with this subscriber */
 		struct {
-			/* Sigtran connection ID:
-			*  if set: Range (0..SCCP_CONN_ID_MAX) (24 bit)
-			*  if unset: SCCP_CONN_ID_UNSET (-1) if unset */
-			uint32_t conn_id;
 			enum subscr_sccp_state state;
+			struct bscp_sccp_conn_node conn;
 		} lb;
 	} lcs;
 
@@ -885,8 +890,8 @@ struct bsc_sccp_inst {
 
 struct bsc_sccp_inst *bsc_sccp_inst_alloc(void *ctx);
 uint32_t bsc_sccp_inst_next_conn_id(struct bsc_sccp_inst *bsc_sccp);
-int bsc_sccp_inst_register_gscon(struct bsc_sccp_inst *bsc_sccp, struct gsm_subscriber_connection *conn);
-void bsc_sccp_inst_unregister_gscon(struct bsc_sccp_inst *bsc_sccp, struct gsm_subscriber_connection *conn);
+int bsc_sccp_inst_register_gscon(struct bsc_sccp_inst *bsc_sccp, struct bscp_sccp_conn_node *sccp_conn);
+void bsc_sccp_inst_unregister_gscon(struct bsc_sccp_inst *bsc_sccp, struct bscp_sccp_conn_node *sccp_conn);
 struct gsm_subscriber_connection *bsc_sccp_inst_get_gscon_by_conn_id(const struct bsc_sccp_inst *bsc_sccp, uint32_t conn_id);
 
 struct gsm_network {

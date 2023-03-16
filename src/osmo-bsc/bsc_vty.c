@@ -727,7 +727,7 @@ DEFUN(show_lchan_summary_all,
 static void dump_one_subscr_conn(struct vty *vty, const struct gsm_subscriber_connection *conn)
 {
 	vty_out(vty, "conn ID=%u, MSC=%u, hodec2_fail=%d, mgw_ep=%s%s",
-		conn->sccp.conn_id, conn->sccp.msc->nr, conn->hodec2.failures,
+		conn->sccp.conn.conn_id, conn->sccp.msc->nr, conn->hodec2.failures,
 		osmo_mgcpc_ep_name(conn->user_plane.mgw_endpoint), VTY_NEWLINE);
 	if (conn->lcls.global_call_ref_len) {
 		vty_out(vty, " LCLS GCR: %s%s",

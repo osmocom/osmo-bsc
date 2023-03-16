@@ -169,7 +169,7 @@ static void lchan_rtp_fsm_wait_mgw_endpoint_available_onenter(struct osmo_fsm_in
 		.x_osmo_osmux_cid = -1, /* -1 is wildcard, .x_osmo_osmux_use set below */
 	};
 	if (lchan->conn) {
-		crcx_info.call_id = lchan->conn->sccp.conn_id;
+		crcx_info.call_id = lchan->conn->sccp.conn.conn_id;
 		if (lchan->conn->sccp.msc)
 			crcx_info.x_osmo_ign = lchan->conn->sccp.msc->x_osmo_ign;
 	}

@@ -212,7 +212,7 @@ static void test_fsm_ids_with_pchan_names(void)
 	conn = bsc_subscr_con_allocate(net);
 	conn->lchan = lchan;
 	conn->assignment.new_lchan = lchan;
-	conn->sccp.conn_id = 123;
+	conn->sccp.conn.conn_id = 123;
 	conn->bsub = bsc_subscr_find_or_create_by_tmsi(net->bsc_subscribers, 0x423, "test");
 	gscon_update_id(conn);
 
