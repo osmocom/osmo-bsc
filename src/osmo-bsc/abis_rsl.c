@@ -2624,13 +2624,16 @@ int ipacc_rtp_csd_fmt_non_transp(const struct channel_mode_and_rate *ch_mode_rat
 	case RSL_CMOD_CSD_NTA_29k0_43k5:
 	case RSL_CMOD_CSD_NT_43k5:
 		ret |= RSL_IPAC_RTP_CSD_IR_64k << 5;
+		break;
 	case RSL_CMOD_CSD_NTA_29k0_14k5:
 	case RSL_CMOD_CSD_NTA_14k5_29k0:
 	case RSL_CMOD_CSD_NT_28k8:
 		ret |= RSL_IPAC_RTP_CSD_IR_32k << 5;
+		break;
 	case RSL_CMOD_CSD_NT_14k5:
 	case RSL_CMOD_CSD_NT_12k0:
 		ret |= RSL_IPAC_RTP_CSD_IR_16k << 5;
+		break;
 	case RSL_CMOD_CSD_NT_6k0:
 		ret |= RSL_IPAC_RTP_CSD_IR_8k << 5;
 		break;
