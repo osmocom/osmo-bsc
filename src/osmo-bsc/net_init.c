@@ -36,7 +36,7 @@ static struct osmo_tdef gsm_network_T_defs[] = {
 	{ .T = 101, .default_val = 10, .desc = "inter-BSC/MSC Handover incoming, BSSMAP HO Request to HO Accept" },
 	{ .T = 3101, .default_val = 3, .desc = "RR Immediate Assignment" },
 	{ .T = 3103, .default_val = 5, .desc = "Handover" },
-	{ .T = 3105, .default_val = GSM_T3105_DEFAULT, .unit = OSMO_TDEF_MS, .desc = "Physical Information" },
+	{ .T = 3105, .default_val = GSM_T3105_DEFAULT, .min_val = 1, .unit = OSMO_TDEF_MS, .desc = "Physical Information" },
 	{ .T = 3107, .default_val = 5, .desc = "(unused)" },
 	{ .T = 3109, .default_val = 5, .desc = "RSL SACCH deactivation" },
 	{ .T = 3111, .default_val = 2, .desc = "Wait time before RSL RF Channel Release" },
