@@ -185,6 +185,11 @@ static void send_assignment_complete(struct gsm_subscriber_connection *conn)
 	struct gsm_lchan *lchan = conn->lchan;
 	struct osmo_fsm_inst *fi = conn->fi;
 
+	if (!lchan) {
+		assignment_fail(GSM0808_CAUSE_EQUIPMENT_FAILURE, "Assignment interrupted: primary lchan lost");
+		return;
+	}
+
 	chosen_channel = gsm0808_chosen_channel(lchan->type, lchan->current_ch_mode_rate.chan_mode);
 	if (!chosen_channel) {
 		assignment_fail(GSM0808_CAUSE_EQUIPMENT_FAILURE,
