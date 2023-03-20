@@ -1011,8 +1011,8 @@ void pcu_sock_exit(struct gsm_bts *bts)
 	if (conn_bfd->fd > 0)
 		pcu_sock_close(state);
 	bfd = &state->listen_bfd;
-	close(bfd->fd);
 	osmo_fd_unregister(bfd);
+	close(bfd->fd);
 	talloc_free(state);
 	bts->pcu_state = NULL;
 }
