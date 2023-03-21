@@ -135,11 +135,13 @@ Station Controller, i.e.
 For more information, see <<net>>, <<bts>> and <<bts-examples>>.
 
 
-==== TRAU mapper / E1 sub-channel muxer
+==== Speech traffic
 
-Unlike classic GSM networks, OsmoBSC does not perform any transcoding.
-Rather, a compatible codec is selected for both legs of a call, and
-codec frames are passed through transparently.  In order to achieve this
-with E1 based BTS, OsmoBSC contains a E1 sub-channel de- and
-re-multiplexer as well as a TRAU mapper that can map uplink to downlink
-frames and vice versa.
+OsmoBSC, by itself, does not perform any transcoding or relaying of user plane
+speech traffic. This task is handled entirely by a BSC co-located media gateway,
+such as OsmoMGW, which will take care of relaying the RTP traffic from the BTS
+into the core network.
+
+In case classic E1 based BTSs are used, OsmoBSC will instruct the MGW to
+convert between TRAU frames on the E1 side and RTP frames on the IP based core
+network side.
