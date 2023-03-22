@@ -565,7 +565,7 @@ struct msgb *gsm48_make_ho_cmd(const struct gsm_lchan *new_lchan,
 		 * TODO: NCI (Normal cell indication), currently 0. */
 		const uint8_t sync_ind = async ? 0x00 : 0x01;
 		/* T (4 bit) + V (4 bit), see 3GPP TS 44.018, 10.5.2.39 */
-		msgb_v_put(msg, GSM48_IE_SYNC_IND | (sync_ind & 0x0f));
+		msgb_v_put(msg, (GSM48_IE_SYNC_IND_HO << 4) | (sync_ind & 0x0f));
 	}
 
 	if (new_lchan->ts->hopping.enabled) {
@@ -595,7 +595,7 @@ struct msgb *gsm48_make_ho_cmd(const struct gsm_lchan *new_lchan,
 		if (new_lchan->encr.alg_a5_n > 0)
 			cms = (new_lchan->encr.alg_a5_n - 1) << 1 | 1;
 		/* T (4 bit) + V (4 bit), see 3GPP TS 44.018, 10.5.2.9 */
-		msgb_v_put(msg, GSM48_IE_CIP_MODE_SET | (cms & 0x0f));
+		msgb_v_put(msg, (GSM48_IE_CIP_MODE_SET_HO << 4) | (cms & 0x0f));
 	}
 
 	/* in case of multi rate we need to attach a config */
