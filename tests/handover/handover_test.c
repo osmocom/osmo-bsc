@@ -1666,7 +1666,7 @@ int main(int argc, char **argv)
 	log_set_print_category(osmo_stderr_target, 1);
 	log_set_print_category_hex(osmo_stderr_target, 0);
 	log_set_print_level(osmo_stderr_target, 1);
-	log_set_print_timestamp(osmo_stderr_target, 0);
+	log_set_print_timestamp2(osmo_stderr_target, LOG_TIMESTAMP_NONE);
 	osmo_fsm_log_addr(false);
 
 	/* the 'wait' command above, intended to test penalty timers, adds seconds to the monotonic clock in "fake

@@ -1179,7 +1179,7 @@ static void handle_options(int argc, char** argv)
 			log_set_use_color(osmo_stderr_target, 0);
 			break;
 		case 'T':
-			log_set_print_timestamp(osmo_stderr_target, 1);
+			log_set_print_timestamp2(osmo_stderr_target, LOG_TIMESTAMP_CTIME);
 			break;
 		case 'e':
 			log_set_log_level(osmo_stderr_target, atoi(optarg));
