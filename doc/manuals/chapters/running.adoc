@@ -219,7 +219,7 @@ smlc
 
 More detailed configuration is described in <<smlc-config>>.
 
-
+[[cfg_bsc_co_located_pcu]]
 ==== Configure BSC co-located PCU
 
 While small IP based BTSs usually come with a built in PCU (BTS co-located
