@@ -645,3 +645,140 @@ network
 <2> This number affects how long the MS waits before (re-)transmitting RACH
 requests.
 <3> How often to retransmit the RACH request.
+
+[[cfg_ericsson_rbs_is]]
+=== Configuring Ericsson RBS Interface Switch (IS)
+
+Ericsson RBS2000/RBS6000 base stations feature a so called "Interface Switch" (IS),
+which is a built-in switchboard that interconnects between internal components
+of the BTS. It also connects to the external E1 connections. This allows to
+adapt the BTS to specific E1 networking requirements that may differ from the
+usual timeslot configuration.
+
+The internals of an Ericsson RBS are quite complex. In the following we will
+only explain how to connect transceiver units (TRU) to an E1 interface pointing
+to the outside world.
+
+==== Understanding the is-connection-list VTY option
+
+The IS operates on 16kbps subslots (ICPs), which means that there are no fixed
+borders between E1 timeslots. Any number of consecutive subslots may be
+connected through. However, depending on the components that are connected it
+may still be a requirement to align on E1 timeslot borders.
+
+The configuration of the IS is done using the is-connection-list command. The
+first two numbers are the ICP numbers that specify the first subslot on both
+sides that shall be interconnected. The third number (contiguity index) specifies
+how many of the following subslots shall be connected.
+
+In the following example we connect 4 blocks with 12 subslot each. The numbers
+on the left are the ICP numbers of the E1 connection pointing to the outside.
+The numbers in the middle are the ICP numbers of the subslots occupied by the
+transceivers (one TRX per block). The third number is the contiguity index that
+spans over 12 subslots or 3 E1 timeslots.
+
+.Example: 4 TRX BTS (4 x 12 subslots)
+----
+network
+ bts 0
+  is-connection-list add 4 512 12
+  is-connection-list add 16 524 12
+  is-connection-list add 28 536 12
+  is-connection-list add 40 548 12
+----
+
+==== E1 port and TRU ICP numbers
+
+On the outside connection, the ICP counting begins at E1 timeslot 0 (port A)
+but since E1 TS 0 is reserved for framing and synchronization of the E1 line
+itself the first usable subslot is subslot 4 (beginning of E1 TS 1). Depending
+on the configuration the BTS may have multiple E1 ports. The counting scheme
+will repeat itself. This means the next usable ICP can be found at an offset
+of 128.
+
+.External connections of a BTS with two E1 ports
+[options="header",cols="50%,25%,25%"]
+|===
+|Function		|Subslot offset (ICP)	|ICP count
+|E1 port A		|4	 		|124
+|E1 port B              |132			|124
+|===
+
+Depending on the transceiver configuration, a RBS2000/RBS6000 base station
+usually features two sets of ICPs for each TRX. The reason for this is that with
+the introduction of EGPRS more bandwidth than a single 16kbps subslot could
+deliver was required. The solution to this was to add an entirely new set of IS
+ICPs where full 64kbps E1 timeslots instead of 16kbps subslots could be
+used to serve a single air interface timeslot. The two sets of ICPs must not be
+mixed. Only one set may be used at a time.
+
+.ICPs to use TRU with 16kbps subslots per TRAU
+[options="header",cols="50%,25%,25%"]
+|===
+|Function		|Subslot offset (ICP)	|ICP count
+|TRU-0, RSL/OML		|512	 		|4
+|TRU-0, TRAU TS0..TS7	|516			|8
+|TRU-1, RSL/OML		|524			|4
+|TRU-1, TRAU TS0..TS7	|528			|8
+|TRU-2, RSL/OML		|536			|4
+|TRU-2, TRAU TS0..TS7	|540			|8
+|TRU-3, RSL/OML		|548			|4
+|TRU-3, TRAU TS0..TS7	|552			|8
+|TRU-4, RSL/OML		|560			|4
+|TRU-4, TRAU TS0..TS7	|564			|8
+|TRU-5, RSL/OML		|572			|4
+|TRU-5, TRAU TS0..TS7	|576			|8
+|TRU-6, RSL/OML		|640			|4
+|TRU-6, TRAU TS0..TS7	|644			|8
+|TRU-7, RSL/OML		|652			|4
+|TRU-7, TRAU TS0..TS7	|656			|8
+|TRU-8, RSL/OML		|664			|4
+|TRU-8, TRAU TS0..TS7	|668			|8
+|TRU-9, RSL/OML		|676			|4
+|TRU-9, TRAU TS0..TS7	|680			|8
+|TRU-10, RSL/OML	|688			|4
+|TRU-10, TRAU TS0..TS7	|692			|8
+|TRU-11, RSL/OML	|700			|4
+|TRU-11, TRAU TS0..TS7	|704			|8
+|===
+
+NOTE: Each air interface timeslot is served by its individual TRAU, so it is
+possible to route each subslot (ICP) dedicated to TRAU individually. The
+connections on the other end may contain gaps and do not have to be
+consecutive.
+
+.ICPs to use TRU with 64kbps subslots per TRAU
+[options="header",cols="50%,25%,25%"]
+|===
+|Function		|Subslot offset	(ICP)	|ICP count
+|TRU-0, RSL/OML		|712	 		|4
+|TRU-0, TRAU TS0..TS7	|716			|32
+|TRU-1, RSL/OML		|748			|4
+|TRU-1, TRAU TS0..TS7	|752			|32
+|TRU-2, RSL/OML		|784			|4
+|TRU-2, TRAU TS0..TS7	|788			|32
+|TRU-3, RSL/OML		|820			|4
+|TRU-3, TRAU TS0..TS7	|824			|32
+|TRU-4, RSL/OML		|856			|4
+|TRU-4, TRAU TS0..TS7	|860			|32
+|TRU-5, RSL/OML		|928			|4
+|TRU-5, TRAU TS0..TS7	|932			|32
+|TRU-6, RSL/OML		|964			|4
+|TRU-6, TRAU TS0..TS7	|968			|32
+|TRU-7, RSL/OML		|1000			|4
+|TRU-7, TRAU TS0..TS7	|1004			|32
+|TRU-8, RSL/OML		|1036			|4
+|TRU-8, TRAU TS0..TS7	|1040			|32
+|TRU-9, RSL/OML		|1072			|4
+|TRU-9, TRAU TS0..TS7	|1076			|32
+|TRU-10, RSL/OML	|1108			|4
+|TRU-10, TRAU TS0..TS7	|1112			|32
+|TRU-11, RSL/OML	|1144			|4
+|TRU-11, TRAU TS0..TS7	|1148			|32
+|===
+
+NOTE: In case voice TRAU frames are transferred, only the first of the four
+16kbps subslots is used. When the timeslot is switched to GPRS/EGPRS, the
+full 64kbps bandwidth will be used. This also means that the set of four
+ICPs per TRAU must be connected consecutively. Also the connection
+to the outside must be aligned to E1 timeslot borders.

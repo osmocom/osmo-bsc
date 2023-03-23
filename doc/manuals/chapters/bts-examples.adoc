@@ -263,7 +263,7 @@ network
 
 <4> OML always requires a TEI (Terminal Equipment Identifier) to set up. This number can be found in the manual of the BTS.
 
-<5> This BTS has an built in “Interface Switch” (IS) that offers flexible way to reconfigure the interconnection between the internal components of the BTS and the external E1 line. This depends on the exact BTS type and configuration.
+<5> This BTS has an built in “Interface Switch” (IS) that offers flexible way to reconfigure the interconnection between the internal components of the BTS and the external E1 line. This depends on the exact BTS type and configuration. See also <<cfg_ericsson_rbs_is>>
 
 <6> Similar to OML we assign TS1 to RSL as well.
 
