@@ -218,3 +218,47 @@ smlc
 ----
 
 More detailed configuration is described in <<smlc-config>>.
+
+
+==== Configure BSC co-located PCU
+
+While small IP based BTSs usually come with a built in PCU (BTS co-located
+PCU), this does not have to be the case with any BTS. Especially larger E1 BTS
+usually make use of a BSC co-located PCU.
+
+In the case of OsmoBSC this means that an instance of OsmoPCU is running next
+to OsmoBSC. Both processes share a unix domain socket to exchange signaling
+traffic and configuration parameters.
+
+.OsmoBSC with co-located OsmoPCU'
+[graphviz]
+----
+digraph G {
+        rankdir=LR;
+        BTS [label="BTS"];
+
+        subgraph cluster_ran {
+                label="RAN";
+                PCU [label="OsmoPCU"];
+                BSC [label="OsmoBSC"];
+                MGW [label="OsmoMGW"];
+	        { rank=same BSC MGW PCU }
+        }
+
+        BTS->PCU [label="GPRS/TRAU", style=dotted];
+        BTS->BSC [label="Abis"];
+        BTS->MGW [label="SPEECH/TRAU", style=dotted];
+        BSC->MGW [label="MGCP"];
+        BSC->PCU [label="PCU_SOCK"];
+}
+----
+
+Apart from the configuration of the PCU socket path the configuration is not
+much different from those where the PCU is integrated inside the BTS. See also
+see also <<config_gprs_pcu_pars>> for a detailed description.
+
+.Configure socket path to co-located PCU
+----
+network
+ pcu-socket /tmp/pcu_bts
+----

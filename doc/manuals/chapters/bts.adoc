@@ -181,6 +181,7 @@ manual-si5::
 means of `si5 neighbor-list (add|del) arfcn <0-1023>` for SACCH (SI5).
 
 
+[[config_gprs_pcu_pars]]
 === Configuring GPRS PCU parameters of a BTS
 
 In the case of BTS models using Abis/IP (IPA), the GPRS PCU is located
