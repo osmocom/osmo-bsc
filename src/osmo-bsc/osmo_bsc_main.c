@@ -483,7 +483,7 @@ static int bsc_network_configure(const char *config_file)
 
 	rc = vty_read_config_file(config_file, NULL);
 	if (rc < 0) {
-		LOGP(DNM, LOGL_FATAL, "Failed to parse the config file: '%s'\n", config_file);
+		LOGP(DNM, LOGL_FATAL, "Failed to parse the config file: '%s' (%s)\n", config_file, strerror(-rc));
 		return rc;
 	}
 
