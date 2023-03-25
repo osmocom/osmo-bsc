@@ -1003,7 +1003,8 @@ int pcu_sock_init(struct gsm_network *net)
 		return rc;
 	}
 
-	LOGP(DPCU, LOGL_INFO, "Started listening on PCU socket: %s\n", net->pcu_sock_path);
+	LOGP(DPCU, LOGL_INFO, "Started listening on PCU socket (PCU IF v%u): %s\n",
+	     PCU_IF_VERSION, net->pcu_sock_path);
 
 	net->pcu_state = state;
 	return 0;
