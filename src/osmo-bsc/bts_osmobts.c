@@ -188,6 +188,7 @@ int bts_model_osmobts_init(void)
 	model_osmobts = bts_model_nanobts;
 	model_osmobts.name = "osmo-bts";
 	model_osmobts.type = GSM_BTS_TYPE_OSMOBTS;
+	model_osmobts.features_get_reported = true;
 
 	/* Unlike nanoBTS, osmo-bts does support SI2bis and SI2ter fine */
 	model_osmobts.force_combined_si = false;

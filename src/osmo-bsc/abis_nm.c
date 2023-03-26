@@ -573,7 +573,7 @@ static int parse_attr_resp_info_attr(struct gsm_bts *bts, const struct gsm_bts_t
 	struct abis_nm_sw_desc sw_descr[MAX_BTS_ATTR];
 
 	/* Parse Attribute Response Info content for 3GPP TS 52.021 §9.4.30 Manufacturer Id */
-	if (TLVP_PRES_LEN(tp, NM_ATT_MANUF_ID, 2)) {
+	if (bts->type == GSM_BTS_TYPE_OSMOBTS && TLVP_PRES_LEN(tp, NM_ATT_MANUF_ID, 2)) {
 		len = TLVP_LEN(tp, NM_ATT_MANUF_ID);
 
 		/* log potential BTS feature vector overflow */
@@ -606,19 +606,6 @@ static int parse_attr_resp_info_attr(struct gsm_bts *bts, const struct gsm_bts_t
 				       " supported\n", osmo_bts_features_name(i));
 		}
 
-		/* Add features from the BTS model: nanobts may support more
-		 * features than it reports, since we extend the enum of
-		 * features for osmo-bts. */
-		if (bts->type == GSM_BTS_TYPE_NANOBTS) {
-			for (i = 0; i < _NUM_BTS_FEAT; i++) {
-				if (osmo_bts_has_feature(&bts->model->features, i) /* intentional check against bts model */
-				    && !osmo_bts_has_feature(&bts->features, i)) {
-					LOGPMO(&bts->mo, DNM, LOGL_NOTICE, "Get Attributes Response: feature '%s' is"
-					       " assumed to be supported\n", osmo_bts_features_name(i));
-					osmo_bts_set_feature(&bts->features, i);
-				}
-			}
-		}
 	}
 
 	/* Parse Attribute Response Info content for 3GPP TS 52.021 §9.4.28 Manufacturer Dependent State */

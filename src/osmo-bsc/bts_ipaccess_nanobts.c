@@ -131,7 +131,7 @@ struct gsm_bts_model bts_model_nanobts = {
 			[NM_ATT_IPACC_REVOC_DATE] =	{ TLV_TYPE_TL16V },
 		},
 	},
-	.features_get_reported = true,
+	.features_get_reported = false,
 };
 
 
@@ -638,9 +638,11 @@ void ipaccess_drop_oml(struct gsm_bts *bts, const char *reason)
 
 	bts->ip_access.flags = 0;
 
-	/* Reset the feature vector */
-	memset(bts->_features_data, 0, sizeof(bts->_features_data));
-	bts->features_known = false;
+	if (bts->model->features_get_reported) {
+		/* Reset the feature vector */
+		memset(bts->_features_data, 0, sizeof(bts->_features_data));
+		bts->features_known = false;
+	}
 
 	/*
 	 * Go through the list and see if we are the depndency of a BTS
