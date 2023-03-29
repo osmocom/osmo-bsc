@@ -95,21 +95,18 @@ OsmoBSC(config-net-bts)# show running-config
 
 
 OsmoBSC(config-net-bts)# ### EARFCN add command: EARFCN already exists
-OsmoBSC(config-net-bts)# ### FIXME: osmo-bsc adds a duplicate EARFCN
 OsmoBSC(config-net-bts)# si2quater neighbor-list add earfcn 300 thresh-hi 7 thresh-lo 5 prio 5 qrxlv 6 meas 2
 OsmoBSC(config-net-bts)# show running-config
 ...
  bts 0
 ... !si2quater neighbor-list
   si2quater neighbor-list add earfcn 0 thresh-hi 7 thresh-lo 5 prio 5 qrxlv 6 meas 8
-  si2quater neighbor-list add earfcn 300 thresh-hi 7 thresh-lo 5 prio 5 qrxlv 6 meas 5
   si2quater neighbor-list add earfcn 300 thresh-hi 7 thresh-lo 5 prio 5 qrxlv 6 meas 2
 ... !si2quater neighbor-list
 
 
 OsmoBSC(config-net-bts)# ### Remove remaining EARFCNs
 OsmoBSC(config-net-bts)# si2quater neighbor-list del earfcn 0
-OsmoBSC(config-net-bts)# si2quater neighbor-list del earfcn 300
 OsmoBSC(config-net-bts)# si2quater neighbor-list del earfcn 300
 OsmoBSC(config-net-bts)# show running-config
 ... !si2quater neighbor-list

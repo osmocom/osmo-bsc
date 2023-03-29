@@ -220,7 +220,16 @@ int bts_earfcn_add(struct gsm_bts *bts, uint16_t earfcn, uint8_t thresh_hi, uint
 		   uint8_t qrx, uint8_t meas_bw)
 {
 	struct osmo_earfcn_si2q *e = &bts->si_common.si2quater_neigh_list;
-	int r = osmo_earfcn_add(e, earfcn, (meas_bw < EARFCN_MEAS_BW_INVALID) ? meas_bw : OSMO_EARFCN_MEAS_INVALID);
+	int r;
+
+	/* EARFCN may already exist, so we delete it to avoid duplicates */
+	if (osmo_earfcn_del(e, earfcn) == 0)
+		LOGP(DRR, LOGL_NOTICE, "EARFCN %u is already in the list, modifying\n", earfcn);
+
+	if (meas_bw < EARFCN_MEAS_BW_INVALID)
+		r = osmo_earfcn_add(e, earfcn, meas_bw);
+	else
+		r = osmo_earfcn_add(e, earfcn, OSMO_EARFCN_MEAS_INVALID);
 
 	if (r < 0)
 		return r;
