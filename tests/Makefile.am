@@ -47,14 +47,14 @@ DISTCLEANFILES = \
 	$(NULL)
 
 if ENABLE_EXT_TESTS
-python-tests: $(BUILT_SOURCES)
+python-tests: $(top_builddir)/src/osmo-bsc/osmo-bsc
 	$(MAKE) vty-test
 	osmotestvty.py -p $(abs_top_srcdir) -w $(abs_top_builddir) -v
 	osmotestconfig.py -p $(abs_top_srcdir) -w $(abs_top_builddir) -v
 	$(srcdir)/vty_test_runner.py -w $(abs_top_builddir) -v
 	$(srcdir)/ctrl_test_runner.py -w $(abs_top_builddir) -v
 else
-python-tests: $(BUILT_SOURCES)
+python-tests:
 	echo "Not running python-based tests (determined at configure-time)"
 endif
 
@@ -64,7 +64,7 @@ VTY_TEST ?= *.vty
 # To update the VTY script from current application behavior,
 # pass -u to vty_script_runner.py by doing:
 #   make vty-test U=-u
-vty-test:
+vty-test: $(top_builddir)/src/osmo-bsc/osmo-bsc
 	osmo_verify_transcript_vty.py -v \
 		-n OsmoBSC -p 4242 \
 		-r "$(top_builddir)/src/osmo-bsc/osmo-bsc -c $(top_srcdir)/doc/examples/osmo-bsc/osmo-bsc-minimal.cfg" \
