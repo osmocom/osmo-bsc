@@ -15,7 +15,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 app_configs = {
+    # TODO: doc/examples/osmo-bsc/{ericsson,nokia,siemens}
     "osmo-bsc": ["doc/examples/osmo-bsc/osmo-bsc.cfg",
+                 "doc/examples/osmo-bsc/osmo-bsc-minimal.cfg",
+                 "doc/examples/osmo-bsc/osmo-bsc-4trx.cfg",
                  "doc/examples/osmo-bsc/osmo-bsc_custom-sccp.cfg"]
 }
 
