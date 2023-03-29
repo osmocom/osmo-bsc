@@ -1,0 +1,128 @@
+OsmoBSC> enable
+OsmoBSC# configure terminal
+OsmoBSC(config)# network
+
+OsmoBSC(config-net)# ## No neighbor EARFCNs by default
+OsmoBSC(config-net)# show running-config
+... !si2quater neighbor-list
+
+
+OsmoBSC(config-net)# bts 0
+OsmoBSC(config-net-bts)# si2quater?
+  si2quater  SI2quater Neighbor List
+OsmoBSC(config-net-bts)# si2quater ?
+  neighbor-list  SI2quater Neighbor List
+OsmoBSC(config-net-bts)# si2quater neighbor-list ?
+  add  Add to manual SI2quater neighbor list
+  del  Delete from SI2quater manual neighbor list
+
+OsmoBSC(config-net-bts)# si2quater neighbor-list add ?
+  earfcn  EARFCN of neighbor
+  uarfcn  UARFCN of neighbor
+OsmoBSC(config-net-bts)# si2quater neighbor-list del ?
+  earfcn  EARFCN of neighbor
+  uarfcn  UARFCN of neighbor
+
+
+OsmoBSC(config-net-bts)# ### Delete command syntax
+OsmoBSC(config-net-bts)# si2quater neighbor-list del earfcn ?
+  <0-65535>  EARFCN
+OsmoBSC(config-net-bts)# si2quater neighbor-list del uarfcn ?
+  <0-16383>  UARFCN
+
+
+OsmoBSC(config-net-bts)# ### EARFCN add command syntax
+OsmoBSC(config-net-bts)# si2quater neighbor-list add earfcn ?
+  <0-65535>  EARFCN of neighbor
+OsmoBSC(config-net-bts)# si2quater neighbor-list add earfcn 0 thresh-hi ?
+  <0-31>  threshold high bits
+OsmoBSC(config-net-bts)# si2quater neighbor-list add earfcn 0 thresh-hi 0 thresh-lo ?
+  <0-32>  threshold low bits (32 means NA)
+OsmoBSC(config-net-bts)# si2quater neighbor-list add earfcn 0 thresh-hi 0 thresh-lo 32 prio ?
+  <0-8>  priority (8 means NA)
+OsmoBSC(config-net-bts)# si2quater neighbor-list add earfcn 0 thresh-hi 0 thresh-lo 32 prio 8 qrxlv ?
+  <0-32>  QRXLEVMIN (32 means NA)
+OsmoBSC(config-net-bts)# si2quater neighbor-list add earfcn 0 thresh-hi 0 thresh-lo 32 prio 8 qrxlv 32 meas ?
+  <0-8>  measurement bandwidth (8 means NA)
+OsmoBSC(config-net-bts)# si2quater neighbor-list add earfcn 0 thresh-hi 0 thresh-lo 32 prio 8 qrxlv 32 meas 8 ?
+  <cr>  
+
+
+OsmoBSC(config-net-bts)# ### UARFCN add command syntax
+OsmoBSC(config-net-bts)# si2quater neighbor-list add uarfcn ?
+  <0-16383>  UARFCN of neighbor
+OsmoBSC(config-net-bts)# si2quater neighbor-list add uarfcn 0 ?
+  <0-511>  scrambling code
+OsmoBSC(config-net-bts)# si2quater neighbor-list add uarfcn 0 0 ?
+  <0-1>  diversity bit
+OsmoBSC(config-net-bts)# si2quater neighbor-list add uarfcn 0 0 0 ?
+  <cr>  
+
+
+OsmoBSC(config-net-bts)# ### EARFCN add/del command tests
+OsmoBSC(config-net-bts)# si2quater neighbor-list add earfcn 0 thresh-hi 0 thresh-lo 32 prio 8 qrxlv 32 meas 8
+OsmoBSC(config-net-bts)# si2quater neighbor-list add earfcn 65535 thresh-hi 0 thresh-lo 32 prio 8 qrxlv 32 meas 8
+OsmoBSC(config-net-bts)# show running-config
+...
+ bts 0
+... !si2quater neighbor-list
+  si2quater neighbor-list add earfcn 0 thresh-hi 0 thresh-lo 32 prio 8 qrxlv 32 meas 8
+  si2quater neighbor-list add earfcn 65535 thresh-hi 0 thresh-lo 32 prio 8 qrxlv 32 meas 8
+... !si2quater neighbor-list
+
+OsmoBSC(config-net-bts)# si2quater neighbor-list del earfcn 33
+% Unable to delete arfcn 33: No such file or directory
+
+OsmoBSC(config-net-bts)# si2quater neighbor-list del earfcn 65535
+OsmoBSC(config-net-bts)# show running-config
+...
+ bts 0
+... !si2quater neighbor-list
+  si2quater neighbor-list add earfcn 0 thresh-hi 0 thresh-lo 32 prio 8 qrxlv 32 meas 8
+... !si2quater neighbor-list
+
+
+OsmoBSC(config-net-bts)# ### Remove remaining EARFCNs
+OsmoBSC(config-net-bts)# si2quater neighbor-list del earfcn 0
+OsmoBSC(config-net-bts)# show running-config
+... !si2quater neighbor-list
+
+
+OsmoBSC(config-net-bts)# ### UARFCN add/del command tests
+OsmoBSC(config-net-bts)# si2quater neighbor-list add uarfcn 1 256 0
+OsmoBSC(config-net-bts)# si2quater neighbor-list add uarfcn 111 211 1
+OsmoBSC(config-net-bts)# si2quater neighbor-list add uarfcn 111 511 1
+OsmoBSC(config-net-bts)# si2quater neighbor-list add uarfcn 16383 0 0
+OsmoBSC(config-net-bts)# show running-config
+...
+ bts 0
+... !si2quater neighbor-list
+  si2quater neighbor-list add uarfcn 1 256 0
+  si2quater neighbor-list add uarfcn 111 511 1
+  si2quater neighbor-list add uarfcn 111 211 1
+  si2quater neighbor-list add uarfcn 16383 0 0
+... !si2quater neighbor-list
+
+OsmoBSC(config-net-bts)# si2quater neighbor-list del uarfcn 1
+% Command incomplete.
+OsmoBSC(config-net-bts)# si2quater neighbor-list del uarfcn 33 256
+% Unable to delete uarfcn: pair not found
+OsmoBSC(config-net-bts)# si2quater neighbor-list del uarfcn 1 255
+% Unable to delete uarfcn: pair not found
+
+OsmoBSC(config-net-bts)# si2quater neighbor-list del uarfcn 1 256
+OsmoBSC(config-net-bts)# si2quater neighbor-list del uarfcn 16383 0
+OsmoBSC(config-net-bts)# show running-config
+...
+ bts 0
+... !si2quater neighbor-list
+  si2quater neighbor-list add uarfcn 111 511 1
+  si2quater neighbor-list add uarfcn 111 211 1
+... !si2quater neighbor-list
+
+
+OsmoBSC(config-net-bts)# ### Remove remaining UARFCNs
+OsmoBSC(config-net-bts)# si2quater neighbor-list del uarfcn 111 511
+OsmoBSC(config-net-bts)# si2quater neighbor-list del uarfcn 111 211
+OsmoBSC(config-net-bts)# show running-config
+... !si2quater neighbor-list
