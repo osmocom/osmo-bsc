@@ -82,8 +82,35 @@ OsmoBSC(config-net-bts)# show running-config
 ... !si2quater neighbor-list
 
 
+OsmoBSC(config-net-bts)# ### EARFCN add command: different params
+OsmoBSC(config-net-bts)# ### FIXME: osmo-bsc does not support different thresh/prio/qrxlv
+OsmoBSC(config-net-bts)# si2quater neighbor-list add earfcn 300 thresh-hi 7 thresh-lo 5 prio 5 qrxlv 6 meas 5
+OsmoBSC(config-net-bts)# show running-config
+...
+ bts 0
+... !si2quater neighbor-list
+  si2quater neighbor-list add earfcn 0 thresh-hi 7 thresh-lo 5 prio 5 qrxlv 6 meas 8
+  si2quater neighbor-list add earfcn 300 thresh-hi 7 thresh-lo 5 prio 5 qrxlv 6 meas 5
+... !si2quater neighbor-list
+
+
+OsmoBSC(config-net-bts)# ### EARFCN add command: EARFCN already exists
+OsmoBSC(config-net-bts)# ### FIXME: osmo-bsc adds a duplicate EARFCN
+OsmoBSC(config-net-bts)# si2quater neighbor-list add earfcn 300 thresh-hi 7 thresh-lo 5 prio 5 qrxlv 6 meas 2
+OsmoBSC(config-net-bts)# show running-config
+...
+ bts 0
+... !si2quater neighbor-list
+  si2quater neighbor-list add earfcn 0 thresh-hi 7 thresh-lo 5 prio 5 qrxlv 6 meas 8
+  si2quater neighbor-list add earfcn 300 thresh-hi 7 thresh-lo 5 prio 5 qrxlv 6 meas 5
+  si2quater neighbor-list add earfcn 300 thresh-hi 7 thresh-lo 5 prio 5 qrxlv 6 meas 2
+... !si2quater neighbor-list
+
+
 OsmoBSC(config-net-bts)# ### Remove remaining EARFCNs
 OsmoBSC(config-net-bts)# si2quater neighbor-list del earfcn 0
+OsmoBSC(config-net-bts)# si2quater neighbor-list del earfcn 300
+OsmoBSC(config-net-bts)# si2quater neighbor-list del earfcn 300
 OsmoBSC(config-net-bts)# show running-config
 ... !si2quater neighbor-list
 
@@ -119,6 +146,18 @@ OsmoBSC(config-net-bts)# show running-config
   si2quater neighbor-list add uarfcn 111 511 1
   si2quater neighbor-list add uarfcn 111 211 1
 ... !si2quater neighbor-list
+
+
+OsmoBSC(config-net-bts)# ### Adding duplicate UARFCN is not allowed
+OsmoBSC(config-net-bts)# si2quater neighbor-list add uarfcn 111 511 1
+% Unable to add UARFCN: (111, 511) is already added
+OsmoBSC(config-net-bts)# si2quater neighbor-list add uarfcn 111 511 0
+% Unable to add UARFCN: (111, 511) is already added
+
+
+OsmoBSC(config-net-bts)# ### FIXME: UARFCN 0 cannot be added
+OsmoBSC(config-net-bts)# si2quater neighbor-list add uarfcn 0 1 1
+% Warning: not enough space in SI2quater for a given UARFCN (0, 1)
 
 
 OsmoBSC(config-net-bts)# ### Remove remaining UARFCNs
