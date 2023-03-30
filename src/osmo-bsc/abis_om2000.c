@@ -68,20 +68,11 @@ struct osmo_fsm_inst *osmo_fsm_inst_alloc_child_id(struct osmo_fsm *fsm,
 {
 	struct osmo_fsm_inst *fi;
 
-	fi = osmo_fsm_inst_alloc(fsm, parent, NULL, parent->log_level,
-				 id ? id : parent->id);
-	if (!fi) {
-		/* indicate immediate termination to caller */
-		osmo_fsm_inst_dispatch(parent, parent_term_event, NULL);
+	fi = osmo_fsm_inst_alloc_child(fsm, parent, parent_term_event);
+	if (!fi)
 		return NULL;
-	}
-
-	LOGPFSM(fi, "is child of %s\n", osmo_fsm_inst_name(parent));
-
-	fi->proc.parent = parent;
-	fi->proc.parent_term_event = parent_term_event;
-	llist_add(&fi->proc.child, &parent->proc.children);
-
+	if (id)
+		osmo_fsm_inst_update_id_f_sanitize(fi, '-', id);
 	return fi;
 }
 
