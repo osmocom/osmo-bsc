@@ -150,9 +150,6 @@ void paging_request_stop(struct bsc_msc_data **msc_p, enum bsc_paging_reason *re
 			struct gsm_bts *bts, struct bsc_subscr *bsub);
 void paging_request_cancel(struct bsc_subscr *bsub, enum bsc_paging_reason reasons);
 
-/* update paging load */
-void paging_update_buffer_space(struct gsm_bts *bts, uint16_t);
-
 /* pending paging requests */
 unsigned int paging_pending_requests_nr(const struct gsm_bts *bts);
 

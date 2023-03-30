@@ -684,7 +684,7 @@ void paging_request_cancel(struct bsc_subscr *bsub, enum bsc_paging_reason reaso
 }
 
 /*! Update the BTS paging buffer slots on given BTS */
-void paging_update_buffer_space(struct gsm_bts *bts, uint16_t free_slots)
+static void paging_update_buffer_space(struct gsm_bts *bts, uint16_t free_slots)
 {
 	LOG_BTS(bts, DPAG, LOGL_DEBUG, "Rx CCCH Load Indication from BTS (available_slots %u -> %u)\n",
 		bts->paging.available_slots, free_slots);
@@ -841,8 +841,24 @@ static int nm_sig_cb(unsigned int subsys, unsigned int signal,
 	return 0;
 }
 
+/* Callback function to be called every time we receive a signal from CCCH */
+static int ccch_sig_cb(unsigned int subsys, unsigned int signal,
+		       void *handler_data, void *signal_data)
+{
+	struct ccch_signal_data *sd;
+
+	if (signal != S_CCCH_PAGING_LOAD)
+		return 0;
+
+	sd = signal_data;
+
+	paging_update_buffer_space(sd->bts, sd->pg_buf_space);
+	return 0;
+}
+
 /* To be called once at startup of the process: */
 void paging_global_init(void)
 {
 	osmo_signal_register_handler(SS_NM, nm_sig_cb, NULL);
+	osmo_signal_register_handler(SS_CCCH, ccch_sig_cb, NULL);
 }

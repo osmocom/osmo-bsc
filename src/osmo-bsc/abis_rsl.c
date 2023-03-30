@@ -2311,10 +2311,9 @@ static int rsl_rx_ccch_load(struct msgb *msg)
 	switch (rslh->data[0]) {
 	case RSL_IE_PAGING_LOAD:
 		sd.pg_buf_space = rslh->data[1] << 8 | rslh->data[2];
-		if (is_ipaccess_bts(sign_link->trx->bts) && sd.pg_buf_space == UINT16_MAX) {
+		if (is_ipaccess_bts(sd.bts) && sd.pg_buf_space == UINT16_MAX) {
 			sd.pg_buf_space = paging_estimate_available_slots(sd.bts, sd.bts->ccch_load_ind_period);
 		}
-		paging_update_buffer_space(sign_link->trx->bts, sd.pg_buf_space);
 		osmo_signal_dispatch(SS_CCCH, S_CCCH_PAGING_LOAD, &sd);
 		break;
 	case RSL_IE_RACH_LOAD:
