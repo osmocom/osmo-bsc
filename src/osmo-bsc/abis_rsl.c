@@ -2296,7 +2296,7 @@ int rsl_tx_imm_assignment(struct gsm_lchan *lchan)
 	return rc;
 }
 
-/* current load on the CCCH */
+/* 5.4 and 8.5.2 Rx CCCH Load Ind */
 static int rsl_rx_ccch_load(struct msgb *msg)
 {
 	struct e1inp_sign_link *sign_link = msg->dst;
