@@ -776,6 +776,29 @@ bool gscon_connect_mgw_to_msc(struct gsm_subscriber_connection *conn,
 	};
 	mgcp_pick_codec(&mgw_info, for_lchan, false);
 
+	/* TODO: add full SDP to the MGCP command
+	struct sdp_msg sdp = {
+		.ptime = 20,
+	};
+	osmo_sockaddr_str_from_str(&sdp.rtp, addr, port);
+
+	// figure out what codecs should be in the SDP
+	{
+		enum mgcp_codecs codec = chan_mode_to_mgcp_codec(lchan->activate.ch_mode_rate.chan_mode,
+								 lchan->type == GSM_LCHAN_TCH_H? false : true);
+		//TODO: codec_mapping so far only exists in osmo-msc.git. It is useful to define e.g. default payload
+		//      type numbers for codecs, and to map between different codec representations. May be useful here
+		//      to reduce code dup?
+		//TODO: maybe implement direct chan_mode_to_sdp_audio_codec instead?
+		struct codec_mapping *m = codec_mapping_by_mgcp_codec(codec);
+		if (m)
+			sdp_audio_codecs_add_copy(dst, &m->sdp);
+	}
+
+	// put the complete SDP string into mgw_info->sdp, to be put onto the wire 1:1
+	sdp_msg_to_sdp_str_buf(mgw_info->sdp, sizeof(mgw_info->sdp), &sdp);
+	*/
+
 	rc = osmo_strlcpy(mgw_info.addr, addr, sizeof(mgw_info.addr));
 	if (rc <= 0 || rc >= sizeof(mgw_info.addr)) {
 		LOGPFSML(conn->fi, LOGL_ERROR, "Failed to compose MGW endpoint address for MGW -> MSC\n");
@@ -797,6 +820,23 @@ bool gscon_connect_mgw_to_msc(struct gsm_subscriber_connection *conn,
 				 osmo_mgcpc_ep_ci_name(ci));
 			return false;
 		}
+
+		/*
+		{
+			struct sdp_msg sdp;
+			sdp_msg_from_sdp_str(&sdp, prev_crcx_info->sdp);
+			// TODO implement sdp_audio_codec_by_subtype_name()
+			const struct sdp_audio_codec *hr = sdp_audio_codec_by_subtype_name(&sdp, "GSM-HR-08");
+			if (hr) {
+				// TODO implement fmtp parsing api:
+				if (fmtp_value_is(hr->fmtp, "gsm-hr-format", "ts101318")) {
+					...
+				} else if (fmtp_value_is(hr->fmtp, "gsm-hr-format", "rfc5993")) {
+					...
+				}
+			}
+		}
+		*/
 
 		if (same_mgw_info(&mgw_info, prev_crcx_info)) {
 			LOGPFSML(conn->fi, LOGL_DEBUG,
