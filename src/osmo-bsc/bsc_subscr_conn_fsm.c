@@ -148,6 +148,8 @@ int gscon_sigtran_send(struct gsm_subscriber_connection *conn, struct msgb *msg)
 void gscon_bssmap_clear(struct gsm_subscriber_connection *conn, enum gsm0808_cause cause)
 {
 	/* already clearing? */
+	if (!conn || !conn->fi)
+		return;
 	switch (conn->fi->state) {
 	case ST_WAIT_CLEAR_CMD:
 	case ST_WAIT_SCCP_RLSD:
