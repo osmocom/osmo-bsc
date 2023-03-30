@@ -1094,6 +1094,38 @@ static void gscon_fsm_allstate(struct osmo_fsm_inst *fi, uint32_t event, void *d
 	}
 }
 
+/* Sanity check / debug shim to catch cleanup failures: iterate all lchans and make sure none are still pointing at this
+ * conn. */
+static void ensure_conn_unused(struct gsm_subscriber_connection *conn)
+{
+	struct gsm_bts *bts;
+	struct gsm_network *network = bsc_gsmnet;
+
+	llist_for_each_entry(bts, &network->bts_list, list) {
+		struct gsm_bts_trx *trx;
+
+		llist_for_each_entry(trx, &bts->trx_list, list) {
+			int i;
+			for (i = 0; i < ARRAY_SIZE(trx->ts); i++) {
+				struct gsm_bts_trx_ts *ts = &trx->ts[i];
+				struct gsm_lchan *lchan;
+
+				ts_for_n_lchans(lchan, ts, ts->max_lchans_possible) {
+					if (lchan->conn == conn) {
+						LOG_LCHAN(lchan, LOGL_ERROR,
+							  "This lchan still points at discarded conn %s\n",
+							  osmo_fsm_inst_name(conn->fi));
+						LOGPFSML(conn->fi, LOGL_ERROR,
+							 "This conn is discarding, but lchan is still pointing at this conn: %s\n",
+							 lchan->name);
+						lchan->conn = NULL;
+					}
+				}
+			}
+		}
+	}
+}
+
 static void gscon_cleanup(struct osmo_fsm_inst *fi, enum osmo_fsm_term_cause cause)
 {
 	struct gsm_subscriber_connection *conn = fi->priv;
@@ -1122,6 +1154,8 @@ static void gscon_cleanup(struct osmo_fsm_inst *fi, enum osmo_fsm_term_cause cau
 		bsc_subscr_put(conn->bsub, BSUB_USE_CONN);
 		conn->bsub = NULL;
 	}
+
+	ensure_conn_unused(conn);
 
 	llist_del(&conn->entry);
 	talloc_free(conn);
