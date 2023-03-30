@@ -36,6 +36,7 @@
 #include <osmocom/bsc/gsm_data.h>
 #include <osmocom/bsc/bts.h>
 #include <osmocom/bsc/paging.h>
+#include <osmocom/bsc/bssmap_reset.h>
 #include <osmocom/mgcp_client/mgcp_common.h>
 
 /* A pointer to a list with all involved MSCs
@@ -92,7 +93,7 @@ void osmo_bsc_sigtran_tx_reset_ack(const struct bsc_msc_data *msc)
 				  &msc->a.msc_addr, msg);
 }
 
-/* Find an MSC by its sigtran point code */
+/* Find an MSC by its remote SCCP address */
 static struct bsc_msc_data *get_msc_by_addr(const struct osmo_sccp_addr *msc_addr)
 {
 	struct osmo_ss7_instance *ss7;
@@ -104,6 +105,19 @@ static struct bsc_msc_data *get_msc_by_addr(const struct osmo_sccp_addr *msc_add
 
 	ss7 = osmo_ss7_instance_find(msc->a.cs7_instance);
 	LOGP(DMSC, LOGL_ERROR, "Unable to find MSC data under address: %s\n", osmo_sccp_addr_name(ss7, msc_addr));
+	return NULL;
+}
+
+/* Find an MSC by its sigtran point code */
+static struct bsc_msc_data *get_msc_by_pc(uint32_t pc)
+{
+	struct bsc_msc_data *msc;
+	llist_for_each_entry(msc, msc_list, entry) {
+		if ((msc->a.msc_addr.presence & OSMO_SCCP_ADDR_T_PC) == 0)
+			continue;
+		if (msc->a.msc_addr.pc == pc)
+			return msc;
+	}
 	return NULL;
 }
 
@@ -188,6 +202,72 @@ refuse:
 	return rc;
 }
 
+static void handle_pcstate_ind(const struct osmo_scu_pcstate_param *pcst)
+{
+	struct bsc_msc_data *msc;
+	bool connected;
+	bool disconnected;
+
+	LOGP(DMSC, LOGL_DEBUG, "N-PCSTATE ind: affected_pc=%u sp_status=%d remote_sccp_status=%d\n",
+	     pcst->affected_pc, pcst->sp_status, pcst->remote_sccp_status);
+
+	/* If we don't care about that point-code, ignore PCSTATE. */
+	msc = get_msc_by_pc(pcst->affected_pc);
+	if (!msc)
+		return;
+
+	/* See if this marks the point code to have become available, or to have been lost. There are two parts, the
+	 * Service Point Status, and the Remote SCCP Status; also this PCSTATE may indicate things not related to
+	 * connecting or disconnecting. Figure it out with separate flags for connect and disconnect: */
+	connected = false;
+	disconnected = false;
+
+	switch (pcst->sp_status) {
+	case OSMO_SCCP_SP_S_ACCESSIBLE:
+		connected = true;
+		break;
+	case OSMO_SCCP_SP_S_INACCESSIBLE:
+		disconnected = true;
+		break;
+	default:
+	case OSMO_SCCP_SP_S_CONGESTED:
+		/* Neither connecting nor disconnecting */
+		break;
+	}
+
+	switch (pcst->remote_sccp_status) {
+	case OSMO_SCCP_REM_SCCP_S_AVAILABLE:
+		if (!disconnected)
+			connected = true;
+		break;
+	case OSMO_SCCP_REM_SCCP_S_UNAVAILABLE_UNKNOWN:
+	case OSMO_SCCP_REM_SCCP_S_UNEQUIPPED:
+	case OSMO_SCCP_REM_SCCP_S_INACCESSIBLE:
+		disconnected = true;
+		connected = false;
+		break;
+	default:
+	case OSMO_SCCP_REM_SCCP_S_CONGESTED:
+		/* Neither connecting nor disconnecting */
+		break;
+	}
+
+	if (disconnected && a_reset_conn_ready(msc)) {
+		LOGP(DMSC, LOGL_NOTICE,
+		     "(msc%d) now unreachable: N-PCSTATE ind: pc=%u sp_status=%d remote_sccp_status=%d\n",
+		     msc->nr, pcst->affected_pc, pcst->sp_status, pcst->remote_sccp_status);
+		/* A previously usable MSC has disconnected. Kick the BSSMAP back to DISC state. */
+		bssmap_reset_set_disconnected(msc->a.bssmap_reset);
+	} else if (connected && !a_reset_conn_ready(msc)) {
+		LOGP(DMSC, LOGL_NOTICE,
+		     "(msc%d) now available: N-PCSTATE ind: pc=%u sp_status=%d remote_sccp_status=%d\n",
+		     msc->nr, pcst->affected_pc, pcst->sp_status, pcst->remote_sccp_status);
+		/* A previously unusable MSC has become reachable. Trigger immediate BSSMAP RESET -- we would resend a
+		 * RESET either way, but we might as well do it now to speed up connecting. */
+		bssmap_reset_resend_reset(msc->a.bssmap_reset);
+	}
+}
+
 /* Callback function, called by the SCCP stack when data arrives */
 static int sccp_sap_up(struct osmo_prim_hdr *oph, void *_scu)
 {
@@ -253,6 +333,10 @@ static int sccp_sap_up(struct osmo_prim_hdr *oph, void *_scu)
 				handle_data_from_msc(conn, oph->msg);
 			osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_A_DISC_IND, scu_prim);
 		}
+		break;
+
+	case OSMO_PRIM(OSMO_SCU_PRIM_N_PCSTATE, PRIM_OP_INDICATION):
+		handle_pcstate_ind(scu_prim);
 		break;
 
 	default:
