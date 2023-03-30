@@ -208,8 +208,9 @@ static void handle_pcstate_ind(const struct osmo_scu_pcstate_param *pcst)
 	bool connected;
 	bool disconnected;
 
-	LOGP(DMSC, LOGL_DEBUG, "N-PCSTATE ind: affected_pc=%u sp_status=%d remote_sccp_status=%d\n",
-	     pcst->affected_pc, pcst->sp_status, pcst->remote_sccp_status);
+	LOGP(DMSC, LOGL_DEBUG, "N-PCSTATE ind: affected_pc=%u sp_status=%s remote_sccp_status=%s\n",
+	     pcst->affected_pc, osmo_sccp_sp_status_name(pcst->sp_status),
+	     osmo_sccp_rem_sccp_status_name(pcst->remote_sccp_status));
 
 	/* If we don't care about that point-code, ignore PCSTATE. */
 	msc = get_msc_by_pc(pcst->affected_pc);
@@ -254,14 +255,18 @@ static void handle_pcstate_ind(const struct osmo_scu_pcstate_param *pcst)
 
 	if (disconnected && a_reset_conn_ready(msc)) {
 		LOGP(DMSC, LOGL_NOTICE,
-		     "(msc%d) now unreachable: N-PCSTATE ind: pc=%u sp_status=%d remote_sccp_status=%d\n",
-		     msc->nr, pcst->affected_pc, pcst->sp_status, pcst->remote_sccp_status);
+		     "(msc%d) now unreachable: N-PCSTATE ind: pc=%u sp_status=%s remote_sccp_status=%s\n",
+		     msc->nr, pcst->affected_pc,
+		     osmo_sccp_sp_status_name(pcst->sp_status),
+		     osmo_sccp_rem_sccp_status_name(pcst->remote_sccp_status));
 		/* A previously usable MSC has disconnected. Kick the BSSMAP back to DISC state. */
 		bssmap_reset_set_disconnected(msc->a.bssmap_reset);
 	} else if (connected && !a_reset_conn_ready(msc)) {
 		LOGP(DMSC, LOGL_NOTICE,
-		     "(msc%d) now available: N-PCSTATE ind: pc=%u sp_status=%d remote_sccp_status=%d\n",
-		     msc->nr, pcst->affected_pc, pcst->sp_status, pcst->remote_sccp_status);
+		     "(msc%d) now available: N-PCSTATE ind: pc=%u sp_status=%s remote_sccp_status=%s\n",
+		     msc->nr, pcst->affected_pc,
+		     osmo_sccp_sp_status_name(pcst->sp_status),
+		     osmo_sccp_rem_sccp_status_name(pcst->remote_sccp_status));
 		/* A previously unusable MSC has become reachable. Trigger immediate BSSMAP RESET -- we would resend a
 		 * RESET either way, but we might as well do it now to speed up connecting. */
 		bssmap_reset_resend_reset(msc->a.bssmap_reset);
