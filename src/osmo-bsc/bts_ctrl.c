@@ -254,7 +254,7 @@ static int set_bts_apply_config(struct ctrl_cmd *cmd, void *data)
 	struct gsm_bts *bts = cmd->node;
 
 	if (!is_ipa_abisip_bts(bts)) {
-		cmd->reply = "BTS is not IP based";
+		cmd->reply = "BTS is not IPA Abis/IP based";
 		return CTRL_CMD_ERROR;
 	}
 

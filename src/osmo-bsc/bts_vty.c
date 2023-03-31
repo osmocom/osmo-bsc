@@ -341,7 +341,7 @@ DEFUN_USRATTR(cfg_bts_unit_id,
 	int bts_id = atoi(argv[1]);
 
 	if (!is_ipa_abisip_bts(bts)) {
-		vty_out(vty, "%% BTS is not of ip.access type%s", VTY_NEWLINE);
+		vty_out(vty, "%% BTS is not of IPA Abis/IP type%s", VTY_NEWLINE);
 		return CMD_WARNING;
 	}
 
@@ -371,7 +371,7 @@ DEFUN_USRATTR(cfg_bts_rsl_ip,
 	struct in_addr ia;
 
 	if (!is_ipa_abisip_bts(bts)) {
-		vty_out(vty, "%% BTS is not of ip.access type%s", VTY_NEWLINE);
+		vty_out(vty, "%% BTS is not of IPA Abis/IP type%s", VTY_NEWLINE);
 		return CMD_WARNING;
 	}
 
@@ -467,7 +467,7 @@ DEFUN_USRATTR(cfg_bts_stream_id,
 	int stream_id = atoi(argv[0]), linenr = atoi(argv[1]);
 
 	if (!is_ipa_abisip_bts(bts)) {
-		vty_out(vty, "%% BTS is not of ip.access type%s", VTY_NEWLINE);
+		vty_out(vty, "%% BTS is not of IPA Abis/IP type%s", VTY_NEWLINE);
 		return CMD_WARNING;
 	}
 
@@ -1919,8 +1919,8 @@ DEFUN_USRATTR(cfg_bts_no_si_unused_send_empty,
 {
 	struct gsm_bts *bts = vty->index;
 
-	if (!is_ipa_abisip_bts(bts) || is_osmobts(bts)) {
-		vty_out(vty, "%% This command is only intended for ipaccess nanoBTS. See OS#3707.%s",
+	if (!is_ipa_abisip_bts(bts)) {
+		vty_out(vty, "%% This command is only intended for IPA Abis/IP BTS. See OS#3707.%s",
 			VTY_NEWLINE);
 		return CMD_WARNING;
 	}

@@ -47,7 +47,7 @@ Description: (null)
   RF Nominal Power: 23 dBm, reduced by 0 dB, resulting BS power: 23 dBm
   NM State: Oper 'Enabled', Admin 2, Avail 'OK'
   Baseband Transceiver NM State: Oper 'Enabled', Admin 2, Avail 'OK'
-  ip.access stream ID: 0x00
+  IPA Abis/IP stream ID: 0x00
 ----
 
 The output can be restricted to the TRXs of one specified BTS number

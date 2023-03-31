@@ -754,7 +754,7 @@ void trx_dump_vty(struct vty *vty, struct gsm_bts_trx *trx, bool print_rsl, bool
 		net_dump_nmstate(vty, &trx->bb_transc.mo.nm_state);
 
 	if (is_ipa_abisip_bts(trx->bts)) {
-		vty_out(vty, "  ip.access stream ID: 0x%02x ", trx->rsl_tei_primary);
+		vty_out(vty, "  IPA Abis/IP stream ID: 0x%02x ", trx->rsl_tei_primary);
 		e1isl_dump_vty_tcp(vty, trx->rsl_link_primary);
 	} else {
 		vty_out(vty, "  E1 Signalling Link:%s", VTY_NEWLINE);

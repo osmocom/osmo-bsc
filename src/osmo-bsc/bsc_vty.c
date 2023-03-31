@@ -1269,7 +1269,7 @@ DEFUN(drop_bts,
 	}
 
 	if (!is_ipa_abisip_bts(bts)) {
-		vty_out(vty, "%% This command only works for ipaccess.%s", VTY_NEWLINE);
+		vty_out(vty, "%% This command only works for IPA Abis/IP.%s", VTY_NEWLINE);
 		return CMD_WARNING;
 	}
 
@@ -1315,8 +1315,8 @@ DEFUN(restart_bts, restart_bts_cmd,
 		return CMD_WARNING;
 	}
 
-	if (!is_ipa_abisip_bts(bts) || is_osmobts(bts)) {
-		vty_out(vty, "%% This command only works for ipaccess nanoBTS.%s",
+	if (!is_ipa_abisip_bts(bts)) {
+		vty_out(vty, "%% This command only works for IPA Abis/IP.%s",
 			VTY_NEWLINE);
 		return CMD_WARNING;
 	}
@@ -1533,7 +1533,7 @@ DEFUN(pdch_act, pdch_act_cmd,
 	}
 
 	if (!is_ipa_abisip_bts(ts->trx->bts)) {
-		vty_out(vty, "%% This command only works for ipaccess BTS%s",
+		vty_out(vty, "%% This command only works for IPA Abis/IP BTS%s",
 			VTY_NEWLINE);
 		return CMD_WARNING;
 	}
@@ -2067,7 +2067,7 @@ DEFUN(lchan_mdcx, lchan_mdcx_cmd,
 	lchan = &ts->lchan[ss_nr];
 
 	if (!is_ipa_abisip_bts(lchan->ts->trx->bts)) {
-		vty_out(vty, "%% BTS is not of ip.access type%s", VTY_NEWLINE);
+		vty_out(vty, "%% BTS is not of IPA Abis/IP type%s", VTY_NEWLINE);
 		return CMD_WARNING;
 	}
 
