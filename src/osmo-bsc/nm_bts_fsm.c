@@ -100,7 +100,7 @@ static void configure_loop(struct gsm_bts *bts, const struct gsm_nm_state *state
 	if (!bts->mo.get_attr_sent && !bts->mo.get_attr_rep_received) {
 		bts->mo.get_attr_sent = true;
 		/* N. B: we rely on attribute order when parsing response in abis_nm_rx_get_attr_resp() */
-		const uint8_t bts_attr[] = { NM_ATT_MANUF_ID, NM_ATT_SW_CONFIG, };
+		const uint8_t bts_attr[] = { NM_ATT_MANUF_ID, NM_ATT_SW_CONFIG, NM_ATT_IPACC_SUPP_FEATURES};
 		/* we should not request more attributes than we're ready to handle */
 		OSMO_ASSERT(sizeof(bts_attr) < MAX_BTS_ATTR);
 		abis_nm_get_attr(bts, NM_OC_BTS, 0, 0xff, 0xff,
