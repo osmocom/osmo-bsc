@@ -717,7 +717,7 @@ struct osmo_mgcpc_ep *gscon_ensure_mgw_endpoint(struct gsm_subscriber_connection
 			 msc_assigned_cic, osmo_mgcpc_ep_name(conn->user_plane.mgw_endpoint));
 
 	} else if (gscon_is_aoip(conn)) {
-		if (is_ipaccess_bts(for_lchan->ts->trx->bts))
+		if (is_ipa_abisip_bts(for_lchan->ts->trx->bts))
 			/* use dynamic RTPBRIDGE endpoint allocation in MGW */
 			epname = mgcp_client_rtpbridge_wildcard(mgcp_client);
 		else {

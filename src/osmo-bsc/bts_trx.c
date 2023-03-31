@@ -264,7 +264,7 @@ void gsm_trx_lock_rf(struct gsm_bts_trx *trx, bool locked, const char *reason)
 bool trx_is_usable(const struct gsm_bts_trx *trx)
 {
 	/* FIXME: How does this behave for BS-11 ? */
-	if (is_ipaccess_bts(trx->bts)) {
+	if (is_ipa_abisip_bts(trx->bts)) {
 		if (!nm_is_running(&trx->mo.nm_state) ||
 		    !nm_is_running(&trx->bb_transc.mo.nm_state))
 			return false;

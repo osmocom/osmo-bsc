@@ -891,7 +891,7 @@ int bts_depend_is_depedency(struct gsm_bts *base, struct gsm_bts *other)
 static bool bts_is_online(const struct gsm_bts *bts)
 {
 	/* TODO: support E1 BTS too */
-	if (!is_ipaccess_bts(bts))
+	if (!is_ipa_abisip_bts(bts))
 		return true;
 
 	if (!bts->oml_link)

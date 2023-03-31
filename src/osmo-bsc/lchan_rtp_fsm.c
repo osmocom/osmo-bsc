@@ -143,7 +143,7 @@ static void lchan_rtp_fsm_wait_mgw_endpoint_available_onenter(struct osmo_fsm_in
 	struct osmo_mgcpc_ep_ci *use_mgwep_ci = lchan_use_mgw_endpoint_ci_bts(lchan);
 	struct mgcp_conn_peer crcx_info;
 
-	if (!is_ipaccess_bts(lchan->ts->trx->bts)) {
+	if (!is_ipa_abisip_bts(lchan->ts->trx->bts)) {
 		LOG_LCHAN_RTP(lchan, LOGL_DEBUG, "Audio link to-BTS via E1, skipping IPACC\n");
 		lchan_rtp_fsm_state_chg(LCHAN_RTP_ST_WAIT_LCHAN_READY);
 		return;
@@ -290,7 +290,7 @@ static void lchan_rtp_fsm_post_lchan_ready(struct osmo_fsm_inst *fi)
 {
 	struct gsm_lchan *lchan = lchan_rtp_fi_lchan(fi);
 
-	if (is_ipaccess_bts(lchan->ts->trx->bts))
+	if (is_ipa_abisip_bts(lchan->ts->trx->bts))
 		lchan_rtp_fsm_state_chg(LCHAN_RTP_ST_WAIT_IPACC_CRCX_ACK);
 	else
 		lchan_rtp_fsm_state_chg(LCHAN_RTP_ST_WAIT_MGW_ENDPOINT_CONFIGURED);
@@ -516,7 +516,7 @@ static void lchan_rtp_fsm_wait_mgw_endpoint_configured_onenter(struct osmo_fsm_i
 		return;
 	}
 
-	if (!is_ipaccess_bts(lchan->ts->trx->bts)) {
+	if (!is_ipa_abisip_bts(lchan->ts->trx->bts)) {
 		LOG_LCHAN_RTP(lchan, LOGL_DEBUG, "Audio link to-BTS via E1, skipping IPACC\n");
 		lchan_rtp_fsm_state_chg(LCHAN_RTP_ST_READY);
 		return;
@@ -543,7 +543,7 @@ static void lchan_rtp_fsm_wait_mgw_endpoint_configured(struct osmo_fsm_inst *fi,
 
 	switch (event) {
 	case LCHAN_RTP_EV_MGW_ENDPOINT_CONFIGURED:
-		if (is_ipaccess_bts(lchan->ts->trx->bts))
+		if (is_ipa_abisip_bts(lchan->ts->trx->bts))
 			lchan_rtp_fsm_state_chg(LCHAN_RTP_ST_WAIT_IPACC_MDCX_ACK);
 		else {
 			lchan_rtp_fsm_state_chg(LCHAN_RTP_ST_READY);
@@ -610,7 +610,7 @@ static void lchan_rtp_fsm_rollback_onenter(struct osmo_fsm_inst *fi, uint32_t pr
 		return;
 	}
 
-	if (is_ipaccess_bts(lchan->ts->trx->bts))
+	if (is_ipa_abisip_bts(lchan->ts->trx->bts))
 		connect_mgw_endpoint_to_lchan(fi, lchan->mgw_endpoint_ci_bts, old_lchan);
 	else
 		osmo_fsm_inst_dispatch(fi, LCHAN_RTP_EV_MGW_ENDPOINT_CONFIGURED, 0);

@@ -204,7 +204,7 @@ DEFUN_USRATTR(cfg_bts_dtxu,
 	struct gsm_bts *bts = vty->index;
 
 	bts->dtxu = (argc > 0) ? GSM48_DTX_SHALL_BE_USED : GSM48_DTX_MAY_BE_USED;
-	if (!is_ipaccess_bts(bts))
+	if (!is_ipa_abisip_bts(bts))
 		vty_out(vty, "%% DTX enabled on non-IP BTS: this configuration "
 			"neither supported nor tested!%s", VTY_NEWLINE);
 	return CMD_SUCCESS;
@@ -234,7 +234,7 @@ DEFUN_USRATTR(cfg_bts_dtxd,
 	struct gsm_bts *bts = vty->index;
 
 	bts->dtxd = true;
-	if (!is_ipaccess_bts(bts))
+	if (!is_ipa_abisip_bts(bts))
 		vty_out(vty, "%% DTX enabled on non-IP BTS: this configuration "
 			"neither supported nor tested!%s", VTY_NEWLINE);
 	return CMD_SUCCESS;
@@ -340,7 +340,7 @@ DEFUN_USRATTR(cfg_bts_unit_id,
 	int site_id = atoi(argv[0]);
 	int bts_id = atoi(argv[1]);
 
-	if (!is_ipaccess_bts(bts)) {
+	if (!is_ipa_abisip_bts(bts)) {
 		vty_out(vty, "%% BTS is not of ip.access type%s", VTY_NEWLINE);
 		return CMD_WARNING;
 	}
@@ -370,7 +370,7 @@ DEFUN_USRATTR(cfg_bts_rsl_ip,
 	struct gsm_bts *bts = vty->index;
 	struct in_addr ia;
 
-	if (!is_ipaccess_bts(bts)) {
+	if (!is_ipa_abisip_bts(bts)) {
 		vty_out(vty, "%% BTS is not of ip.access type%s", VTY_NEWLINE);
 		return CMD_WARNING;
 	}
@@ -466,7 +466,7 @@ DEFUN_USRATTR(cfg_bts_stream_id,
 	struct gsm_bts *bts = vty->index;
 	int stream_id = atoi(argv[0]), linenr = atoi(argv[1]);
 
-	if (!is_ipaccess_bts(bts)) {
+	if (!is_ipa_abisip_bts(bts)) {
 		vty_out(vty, "%% BTS is not of ip.access type%s", VTY_NEWLINE);
 		return CMD_WARNING;
 	}
@@ -1919,7 +1919,7 @@ DEFUN_USRATTR(cfg_bts_no_si_unused_send_empty,
 {
 	struct gsm_bts *bts = vty->index;
 
-	if (!is_ipaccess_bts(bts) || is_osmobts(bts)) {
+	if (!is_ipa_abisip_bts(bts) || is_osmobts(bts)) {
 		vty_out(vty, "%% This command is only intended for ipaccess nanoBTS. See OS#3707.%s",
 			VTY_NEWLINE);
 		return CMD_WARNING;
@@ -2476,14 +2476,14 @@ DEFUN_ATTR(cfg_bts_depends_on, cfg_bts_depends_on_cmd,
 	int dep = atoi(argv[0]);
 
 
-	if (!is_ipaccess_bts(bts)) {
+	if (!is_ipa_abisip_bts(bts)) {
 		vty_out(vty, "%% This feature is only available for IP systems.%s",
 			VTY_NEWLINE);
 		return CMD_WARNING;
 	}
 
 	other_bts = gsm_bts_num(bts->network, dep);
-	if (!other_bts || !is_ipaccess_bts(other_bts)) {
+	if (!other_bts || !is_ipa_abisip_bts(other_bts)) {
 		vty_out(vty, "%% This feature is only available for IP systems.%s",
 			VTY_NEWLINE);
 		return CMD_WARNING;
@@ -3955,7 +3955,7 @@ void bts_dump_vty(struct vty *vty, struct gsm_bts *bts)
 		bts->early_classmark_allowed_3g && !bts->early_classmark_allowed ?
 		" (forbidden by 2G bit)" : "",
 		VTY_NEWLINE);
-	if (is_ipaccess_bts(bts))
+	if (is_ipa_abisip_bts(bts))
 		vty_out(vty, "  Unit ID: %u/%u/0, OML Stream ID 0x%02x%s",
 			bts->ip_access.site_id, bts->ip_access.bts_id,
 			bts->oml_tei, VTY_NEWLINE);
@@ -3982,7 +3982,7 @@ void bts_dump_vty(struct vty *vty, struct gsm_bts *bts)
 	vty_out(vty, "  Paging: %u pending requests, %u free slots%s",
 		paging_pending_requests_nr(bts),
 		bts->paging.available_slots, VTY_NEWLINE);
-	if (is_ipaccess_bts(bts)) {
+	if (is_ipa_abisip_bts(bts)) {
 		vty_out(vty, "  OML Link: ");
 		e1isl_dump_vty_tcp(vty, bts->oml_link);
 		vty_out(vty, "  OML Link state: %s", get_model_oml_status(bts));

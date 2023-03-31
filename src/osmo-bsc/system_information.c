@@ -1084,7 +1084,7 @@ static int generate_si5(enum osmo_sysinfo_type t, struct gsm_bts *bts)
 	memset(output, GSM_MACBLOCK_PADDING, GSM_MACBLOCK_LEN);
 
 	/* ip.access nanoBTS needs l2_plen!! */
-	if (is_ipaccess_bts(bts)) {
+	if (is_ipa_abisip_bts(bts)) {
 		*output++ = GSM48_LEN2PLEN(l2_plen);
 		l2_plen++;
 	}
@@ -1115,7 +1115,7 @@ static int generate_si5bis(enum osmo_sysinfo_type t, struct gsm_bts *bts)
 	memset(output, GSM_MACBLOCK_PADDING, GSM_MACBLOCK_LEN);
 
 	/* ip.access nanoBTS needs l2_plen!! */
-	if (is_ipaccess_bts(bts)) {
+	if (is_ipa_abisip_bts(bts)) {
 		*output++ = GSM48_LEN2PLEN(l2_plen);
 		l2_plen++;
 	}
@@ -1154,7 +1154,7 @@ static int generate_si5ter(enum osmo_sysinfo_type t, struct gsm_bts *bts)
 	memset(output, GSM_MACBLOCK_PADDING, GSM_MACBLOCK_LEN);
 
 	/* ip.access nanoBTS needs l2_plen!! */
-	if (is_ipaccess_bts(bts)) {
+	if (is_ipa_abisip_bts(bts)) {
 		*output++ = GSM48_LEN2PLEN(l2_plen);
 		l2_plen++;
 	}
@@ -1189,7 +1189,7 @@ static int generate_si6(enum osmo_sysinfo_type t, struct gsm_bts *bts)
 	memset(&si6_ro_info, 0, sizeof(si6_ro_info));
 
 	/* ip.access nanoBTS needs l2_plen!! */
-	if (is_ipaccess_bts(bts)) {
+	if (is_ipa_abisip_bts(bts)) {
 		*output++ = GSM48_LEN2PLEN(l2_plen);
 		l2_plen++;
 	}

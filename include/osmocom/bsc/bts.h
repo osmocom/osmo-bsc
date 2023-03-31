@@ -674,7 +674,7 @@ struct gsm_bts {
 #define GSM_BTS_SI(bts, i)     (void *)((bts)->si_buf[i][0])
 
 /* this actually refers to the IPA transport, not the BTS model */
-static inline bool is_ipaccess_bts(const struct gsm_bts *bts)
+static inline bool is_ipa_abisip_bts(const struct gsm_bts *bts)
 {
 	switch (bts->type) {
 	case GSM_BTS_TYPE_NANOBTS:

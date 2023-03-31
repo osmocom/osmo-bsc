@@ -609,7 +609,7 @@ void lchan_dump_full_vty(struct vty *vty, struct gsm_lchan *lchan)
 	} else {
 		vty_out(vty, "  No Subscriber%s", VTY_NEWLINE);
 	}
-	if (is_ipaccess_bts(lchan->ts->trx->bts)) {
+	if (is_ipa_abisip_bts(lchan->ts->trx->bts)) {
 		struct in_addr ia;
 		if (lchan->abis_ip.bound_ip) {
 			ia.s_addr = htonl(lchan->abis_ip.bound_ip);
@@ -694,7 +694,7 @@ void ts_dump_vty(struct vty *vty, struct gsm_bts_trx_ts *ts)
 	vty_out(vty, ", TSC %u%s  NM State: ", gsm_ts_tsc(ts), VTY_NEWLINE);
 	vty_out_dyn_ts_details(vty, ts);
 	net_dump_nmstate(vty, &ts->mo.nm_state);
-	if (!is_ipaccess_bts(ts->trx->bts))
+	if (!is_ipa_abisip_bts(ts->trx->bts))
 		vty_out(vty, "  E1 Line %u, Timeslot %u, Subslot %u%s",
 			ts->e1_link.e1_nr, ts->e1_link.e1_ts,
 			ts->e1_link.e1_ts_ss, VTY_NEWLINE);
@@ -753,7 +753,7 @@ void trx_dump_vty(struct vty *vty, struct gsm_bts_trx *trx, bool print_rsl, bool
 	vty_out(vty, "  %sBaseband Transceiver NM State: ", is_ericsson_bts(trx->bts) ? "[Virtual] " : "");
 		net_dump_nmstate(vty, &trx->bb_transc.mo.nm_state);
 
-	if (is_ipaccess_bts(trx->bts)) {
+	if (is_ipa_abisip_bts(trx->bts)) {
 		vty_out(vty, "  ip.access stream ID: 0x%02x ", trx->rsl_tei_primary);
 		e1isl_dump_vty_tcp(vty, trx->rsl_link_primary);
 	} else {

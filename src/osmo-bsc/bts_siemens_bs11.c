@@ -401,7 +401,7 @@ static void nm_reconfig_ts(struct gsm_bts_trx_ts *ts)
 
 	abis_nm_set_channel_attr(ts, ccomb);
 
-	if (is_ipaccess_bts(ts->trx->bts))
+	if (is_ipa_abisip_bts(ts->trx->bts))
 		return;
 
 	switch (ts->pchan_from_config) {

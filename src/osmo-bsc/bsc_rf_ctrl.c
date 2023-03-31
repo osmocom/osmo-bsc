@@ -303,7 +303,7 @@ static void rf_check_cb(void *_data)
 		struct gsm_bts_trx *trx;
 
 		/* don't bother to check a booting or missing BTS */
-		if (!bts->oml_link || !is_ipaccess_bts(bts))
+		if (!bts->oml_link || !is_ipa_abisip_bts(bts))
 			continue;
 
 		/* Exclude the BTS from the global lock */

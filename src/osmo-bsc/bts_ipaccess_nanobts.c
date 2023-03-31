@@ -150,7 +150,7 @@ static int nm_statechg_event(int evt, struct nm_statechg_signal_data *nsd)
 	struct gsm_gprs_nse *nse;
 	struct gsm_gprs_cell *cell;
 
-	if (!is_ipaccess_bts(nsd->bts))
+	if (!is_ipa_abisip_bts(nsd->bts))
 		return 0;
 
 	switch (obj_class) {
@@ -202,7 +202,7 @@ static int sw_activ_rep(struct msgb *mb)
 	struct gsm_gprs_nsvc *nsvc;
 	struct gsm_bts_trx_ts *ts;
 
-	if (!is_ipaccess_bts(bts))
+	if (!is_ipa_abisip_bts(bts))
 		return 0;
 
 	switch (foh->obj_class) {
@@ -564,7 +564,7 @@ find_bts_by_unitid(struct gsm_network *net, uint16_t site_id, uint16_t bts_id)
 	struct gsm_bts *bts;
 
 	llist_for_each_entry(bts, &net->bts_list, list) {
-		if (!is_ipaccess_bts(bts))
+		if (!is_ipa_abisip_bts(bts))
 			continue;
 
 		if (bts->ip_access.site_id == site_id &&

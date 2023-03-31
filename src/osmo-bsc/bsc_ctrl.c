@@ -187,7 +187,7 @@ static int set_net_apply_config(struct ctrl_cmd *cmd, void *data)
 	struct gsm_bts *bts;
 
 	llist_for_each_entry(bts, &net->bts_list, list) {
-		if (!is_ipaccess_bts(bts))
+		if (!is_ipa_abisip_bts(bts))
 			continue;
 
 		/*

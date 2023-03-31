@@ -231,7 +231,7 @@ static int oml_msg_nack(struct nm_nack_signal_data *nack)
 		return 0;
 	}
 
-	if (is_ipaccess_bts(nack->bts))
+	if (is_ipa_abisip_bts(nack->bts))
 		ipaccess_drop_oml_deferred(nack->bts);
 
 	return 0;
@@ -455,7 +455,7 @@ static int inp_sig_cb(unsigned int subsys, unsigned int signal,
 			rate_ctr_inc(rate_ctr_group_get_ctr(trx->bts->bts_ctrs, BTS_CTR_BTS_OML_FAIL));
 			/* ip.access BTS models have a single global A-bis/OML link for all
 			 * transceivers, so once it's lost we need to notify them all. */
-			if (is_ipaccess_bts(trx->bts))
+			if (is_ipa_abisip_bts(trx->bts))
 				gsm_bts_all_ts_dispatch(trx->bts, TS_EV_OML_DOWN, NULL);
 			else /* Other BTS models (e.g. Ericsson) have per-TRX OML links */
 				gsm_trx_all_ts_dispatch(trx, TS_EV_OML_DOWN, NULL);
