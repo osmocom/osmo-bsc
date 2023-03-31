@@ -217,11 +217,18 @@ static int sw_activ_rep(struct msgb *mb)
 
 	mo->ipaccess.obj_version = 0; /* implicit default */
 	if (TLVP_PRES_LEN(&tp, NM_ATT_IPACC_OBJ_VERSION, 1)) {
+		const uint8_t *versions = TLVP_VAL(&tp, NM_ATT_IPACC_OBJ_VERSION);
+		char buf[256];
+		struct osmo_strbuf sb = { .buf = buf, .len = sizeof(buf) };
+
 		/* nanoBTS may report several Object Versions;  the first one will
 		 * be used by default unless requested explicitly before OPSTARTing. */
-		mo->ipaccess.obj_version = *TLVP_VAL(&tp, NM_ATT_IPACC_OBJ_VERSION);
-		LOGPFOH(DNM, LOGL_INFO, foh, "IPA Object Version is %u (default)\n",
-			mo->ipaccess.obj_version);
+		mo->ipaccess.obj_version = versions[0];
+
+		OSMO_STRBUF_PRINTF(sb, "%u (default)", versions[0]);
+		for (uint16_t i = 1; i < TLVP_LEN(&tp, NM_ATT_IPACC_OBJ_VERSION); i++)
+			OSMO_STRBUF_PRINTF(sb, ", %u", versions[i]);
+		LOGPFOH(DNM, LOGL_INFO, foh, "IPA Object Versions supported: %s\n", buf);
 	}
 
 	osmo_fsm_inst_dispatch(mo->fi, NM_EV_SW_ACT_REP, NULL);
