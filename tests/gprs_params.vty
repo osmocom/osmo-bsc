@@ -46,3 +46,71 @@ OsmoBSC(config-net-bts)# show running-config
   gprs nsvc 1 nsvci 0
   gprs nsvc 1 local udp port 0
 ...
+
+
+OsmoBSC(config-net-bts)# ### NSVC sub-command syntax
+OsmoBSC(config-net-bts)# gprs nsvc?
+  nsvc  Network Service Virtual Connection (NS-VC)
+OsmoBSC(config-net-bts)# gprs nsvc ?
+  <0-1>  NSVC Logical Number
+OsmoBSC(config-net-bts)# gprs nsvc 0 ?
+  nsvci   NS Virtual Connection Identifier
+  local   GPRS NS Local UDP Port
+  remote  GPRS NS Remote UDP Port
+OsmoBSC(config-net-bts)# gprs nsvc 0 nsvci ?
+  <0-65535>  GPRS NS VC Identifier
+OsmoBSC(config-net-bts)# gprs nsvc 0 local ?
+  udp  GPRS NS Local UDP Port
+OsmoBSC(config-net-bts)# gprs nsvc 0 local udp ?
+  port  GPRS NS Local UDP Port
+OsmoBSC(config-net-bts)# gprs nsvc 0 local udp port ?
+  <0-65535>  GPRS NS Local UDP Port Number
+OsmoBSC(config-net-bts)# gprs nsvc 0 remote ?
+  udp  GPRS NS Remote UDP Port
+  ip   GPRS NS Remote IP Address
+OsmoBSC(config-net-bts)# gprs nsvc 0 remote udp ?
+  port  GPRS NS Remote UDP Port
+OsmoBSC(config-net-bts)# gprs nsvc 0 remote udp port ?
+  <0-65535>  GPRS NS Remote UDP Port Number
+OsmoBSC(config-net-bts)# gprs nsvc 0 remote ip ?
+  A.B.C.D   GPRS NS Remote IPv4 Address
+  X:X::X:X  GPRS NS Remote IPv6 Address
+
+OsmoBSC(config-net-bts)# ### NSVC sub-command params
+OsmoBSC(config-net-bts)# gprs nsvc 0 nsvci 4242
+OsmoBSC(config-net-bts)# gprs nsvc 1 nsvci 2424
+OsmoBSC(config-net-bts)# show running-config
+...
+ bts 0
+...
+  gprs nsvc 0 nsvci 4242
+  gprs nsvc 0 local udp port 0
+  gprs nsvc 1 nsvci 2424
+  gprs nsvc 1 local udp port 0
+...
+OsmoBSC(config-net-bts)# gprs nsvc 1 local udp port 23023
+OsmoBSC(config-net-bts)# gprs nsvc 1 remote udp port 23032
+OsmoBSC(config-net-bts)# gprs nsvc 1 remote ip 1.2.3.4
+OsmoBSC(config-net-bts)# show running-config
+...
+ bts 0
+...
+  gprs nsvc 0 nsvci 4242
+  gprs nsvc 0 local udp port 0
+  gprs nsvc 1 nsvci 2424
+  gprs nsvc 1 local udp port 23023
+  gprs nsvc 1 remote ip 1.2.3.4
+  gprs nsvc 1 remote udp port 23032
+...
+
+OsmoBSC(config-net-bts)# ### Disable secondary NSVC
+OsmoBSC(config-net-bts)# gprs nsvc 1 remote udp port 0
+OsmoBSC(config-net-bts)# show running-config
+...
+ bts 0
+...
+  gprs nsvc 0 nsvci 4242
+  gprs nsvc 0 local udp port 0
+  gprs nsvc 1 nsvci 2424
+  gprs nsvc 1 local udp port 23023
+...
