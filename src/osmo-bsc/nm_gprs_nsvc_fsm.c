@@ -90,12 +90,17 @@ static void st_op_disabled_notinstalled(struct osmo_fsm_inst *fi, uint32_t event
 	}
 }
 
-static bool has_valid_nsvc(struct gsm_gprs_nsvc *nsvc)
+static bool has_valid_nsvc(const struct gsm_gprs_nsvc *nsvc)
 {
+	/* remote address must be valid */
+	if (osmo_sockaddr_is_any(&nsvc->remote))
+		return false;
+	/* remote port must be valid */
 	switch (nsvc->remote.u.sa.sa_family) {
 	case AF_INET:
+		return nsvc->remote.u.sin.sin_port != 0;
 	case AF_INET6:
-		return (nsvc->local_port > 0 && !osmo_sockaddr_is_any(&nsvc->remote));
+		return nsvc->remote.u.sin6.sin6_port != 0;
 	default:
 		return false;
 	}
