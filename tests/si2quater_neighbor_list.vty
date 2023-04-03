@@ -148,11 +148,16 @@ OsmoBSC(config-net-bts)# show running-config
 ... !si2quater neighbor-list
 
 
-OsmoBSC(config-net-bts)# ### Adding duplicate UARFCN is not allowed
+OsmoBSC(config-net-bts)# ### UARFCN add command: UARFCN already exists
 OsmoBSC(config-net-bts)# si2quater neighbor-list add uarfcn 111 511 1
-% Unable to add UARFCN: (111, 511) is already added
 OsmoBSC(config-net-bts)# si2quater neighbor-list add uarfcn 111 511 0
-% Unable to add UARFCN: (111, 511) is already added
+OsmoBSC(config-net-bts)# show running-config
+...
+ bts 0
+... !si2quater neighbor-list
+  si2quater neighbor-list add uarfcn 111 511 0
+  si2quater neighbor-list add uarfcn 111 211 1
+... !si2quater neighbor-list
 
 
 OsmoBSC(config-net-bts)# ### FIXME: UARFCN 0 cannot be added
