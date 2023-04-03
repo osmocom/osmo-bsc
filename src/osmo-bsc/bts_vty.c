@@ -2127,10 +2127,6 @@ DEFUN_USRATTR(cfg_bts_si2quater_uarfcn_add,
 		vty_out(vty, "%% Warning: not enough space in SI2quater for a given UARFCN (%u, %u)%s",
 			arfcn, scramble, VTY_NEWLINE);
 		return CMD_WARNING;
-	case -EADDRINUSE:
-		vty_out(vty, "%% Unable to add UARFCN: (%u, %u) is already added%s",
-			arfcn, scramble, VTY_NEWLINE);
-		return CMD_WARNING;
 	}
 
 	return CMD_SUCCESS;

@@ -302,8 +302,13 @@ int bts_uarfcn_add(struct gsm_bts *bts, uint16_t arfcn, uint16_t scramble, bool 
 		*ual = bts->si_common.data.uarfcn_list,
 		*scl = bts->si_common.data.scramble_list;
 
-	if (pos >= 0)
-		return -EADDRINUSE;
+	if (pos >= 0) {
+		LOGP(DRR, LOGL_NOTICE,
+		     "EARFCN (%u, %u) is already in the list, modifying\n",
+		     arfcn, scramble);
+		scl[pos] = scr;
+		return 0;
+	}
 
 	if (len == MAX_EARFCN_LIST)
 		return -ENOMEM;
