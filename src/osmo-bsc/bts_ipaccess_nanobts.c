@@ -254,7 +254,6 @@ static void nm_rx_opstart_ack_chan(struct msgb *oml_msg)
 		return;
 	}
 	osmo_fsm_inst_dispatch(ts->mo.fi, NM_EV_OPSTART_ACK, NULL);
-	osmo_fsm_inst_dispatch(ts->fi, TS_EV_OML_READY, NULL);
 }
 
 static void nm_rx_opstart_ack(struct msgb *oml_msg)

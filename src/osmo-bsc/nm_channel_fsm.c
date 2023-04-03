@@ -35,6 +35,7 @@
 #include <osmocom/bsc/ipaccess.h>
 #include <osmocom/bsc/nm_common_fsm.h>
 #include <osmocom/bsc/debug.h>
+#include <osmocom/bsc/timeslot_fsm.h>
 
 #define X(s) (1 << (s))
 
@@ -239,6 +240,8 @@ static void st_op_enabled_on_enter(struct osmo_fsm_inst *fi, uint32_t prev_state
 	ts->mo.adm_unlock_sent = false;
 	ts->mo.set_attr_ack_received = false;
 	ts->mo.set_attr_sent = false;
+
+	osmo_fsm_inst_dispatch(ts->fi, TS_EV_OML_READY, NULL);
 }
 
 static void st_op_enabled(struct osmo_fsm_inst *fi, uint32_t event, void *data)
