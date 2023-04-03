@@ -302,11 +302,11 @@ int bts_uarfcn_add(struct gsm_bts *bts, uint16_t arfcn, uint16_t scramble, bool 
 		*ual = bts->si_common.data.uarfcn_list,
 		*scl = bts->si_common.data.scramble_list;
 
-	if (len == MAX_EARFCN_LIST)
-		return -ENOMEM;
-
 	if (pos >= 0)
 		return -EADDRINUSE;
+
+	if (len == MAX_EARFCN_LIST)
+		return -ENOMEM;
 
 	/* find the suitable position for arfcn if any */
 	pos = uarfcn_sc_pos(bts, arfcn, SC_BOUND);
