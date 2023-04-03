@@ -298,7 +298,7 @@ int bts_uarfcn_add(struct gsm_bts *bts, uint16_t arfcn, uint16_t scramble, bool 
 	size_t len = bts->si_common.uarfcn_length, i;
 	uint8_t si2q;
 	int pos = uarfcn_sc_pos(bts, arfcn, scramble);
-	uint16_t scr = diversity ? encode_fdd(scramble, true) : encode_fdd(scramble, false),
+	uint16_t scr = encode_fdd(scramble, diversity),
 		*ual = bts->si_common.data.uarfcn_list,
 		*scl = bts->si_common.data.scramble_list;
 
