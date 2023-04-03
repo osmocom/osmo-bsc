@@ -2118,7 +2118,7 @@ DEFUN_USRATTR(cfg_bts_si2quater_uarfcn_add,
 	struct gsm_bts *bts = vty->index;
 	uint16_t arfcn = atoi(argv[0]), scramble = atoi(argv[1]);
 
-	switch(bts_uarfcn_add(bts, arfcn, scramble, atoi(argv[2]))) {
+	switch (bts_uarfcn_add(bts, arfcn, scramble, atoi(argv[2]))) {
 	case -ENOMEM:
 		vty_out(vty, "%% Unable to add UARFCN: max number of UARFCNs (%u) reached%s",
 			MAX_EARFCN_LIST, VTY_NEWLINE);
