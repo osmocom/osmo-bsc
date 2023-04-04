@@ -839,8 +839,12 @@ static int bsc_mgw_setup(void)
 	/* Initialize MGW pool. This initalizes and connects all MGCP clients that are currently configured in
 	 * the pool. Adding additional MGCP clients to the pool is possible but the user has to configure and
 	 * (re)connect them manually from the VTY. */
-	pool_members_initalized = mgcp_client_pool_connect(bsc_gsmnet->mgw.mgw_pool);
-	if (pool_members_initalized) {
+	if (!mgcp_client_pool_empty(bsc_gsmnet->mgw.mgw_pool)) {
+		pool_members_initalized = mgcp_client_pool_connect(bsc_gsmnet->mgw.mgw_pool);
+		if (!pool_members_initalized) {
+			LOGP(DNM, LOGL_ERROR, "MGW pool failed to initialize any pool members\n");
+			return -EINVAL;
+		}
 		LOGP(DNM, LOGL_NOTICE,
 		     "MGW pool with %u pool members configured, (ignoring MGW configuration in VTY node 'msc').\n",
 		     pool_members_initalized);

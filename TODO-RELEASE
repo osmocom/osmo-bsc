@@ -14,3 +14,4 @@ libosmogsm	>1.8.0		circuit switched data stuff (gsm0808_enc/dec_channel_type etc
 libosmo-abis	>1.4.0		osmo_ortp.h: add RTP_PT_CSDATA
 libosmo-sccp >1.7.0		osmo_sccp_{get,set}_priv()
 libosmocore 	>1.8.0	GSM48_IE_CIP_MODE_SET_HO and GSM48_IE_SYNC_IND_HO
+libosmo-mgcp-client > 1.11.0	mgcp_client_pool_empty()
