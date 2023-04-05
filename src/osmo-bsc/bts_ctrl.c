@@ -34,6 +34,7 @@
 #include <osmocom/bsc/chan_alloc.h>
 #include <osmocom/bsc/abis_nm.h>
 #include <osmocom/bsc/neighbor_ident.h>
+#include <osmocom/bsc/system_information.h>
 
 static int location_equal(struct bts_location *a, struct bts_location *b)
 {
@@ -623,6 +624,76 @@ static int set_bts_neighbor_list_mode(struct ctrl_cmd *cmd, void *data)
 
 CTRL_CMD_DEFINE_WO(bts_neighbor_list_mode, "neighbor-list mode");
 
+/* si2quater neighbor management: delete an EARFCN.
+ * Format: bts.<0-255>.si2quater-neighbor-list.del.earfcn EARFCN
+ * EARFCN is in range 0..65535 */
+static int set_bts_si2quater_neighbor_list_del_earfcn(struct ctrl_cmd *cmd, void *data)
+{
+	struct gsm_bts *bts = (struct gsm_bts *)cmd->node;
+	struct osmo_earfcn_si2q *e = &bts->si_common.si2quater_neigh_list;
+	int earfcn;
+
+	if (osmo_str_to_int(&earfcn, cmd->value, 10, 0, 65535) < 0) {
+		cmd->reply = "Failed to parse neighbor EARFCN value";
+		return CTRL_CMD_ERROR;
+	}
+
+	if (osmo_earfcn_del(e, earfcn) < 0) {
+		cmd->reply = "Failed to delete a (not existent?) neighbor EARFCN";
+		return CTRL_CMD_ERROR;
+	}
+
+	cmd->reply = "OK";
+	return CTRL_CMD_REPLY;
+}
+
+CTRL_CMD_DEFINE_WO_NOVRF(bts_si2quater_neighbor_list_del_earfcn,
+			 "si2quater-neighbor-list del earfcn");
+
+/* si2quater neighbor management: delete an UARFCN
+ * Format: bts.<0-255>.si2quater-neighbor-list.del.uarfcn UARFCN,SCRAMBLE
+ * UARFCN is in range 0..16383, SCRAMBLE is in range 0..511 */
+static int set_bts_si2quater_neighbor_list_del_uarfcn(struct ctrl_cmd *cmd, void *data)
+{
+	struct gsm_bts *bts = (struct gsm_bts *)cmd->node;
+	char *uarfcn_str, *scramble_str;
+	char *tmp, *saveptr;
+	int uarfcn, scramble;
+
+	tmp = talloc_strdup(OTC_SELECT, cmd->value);
+	if (!tmp) {
+		cmd->reply = "OOM";
+		return CTRL_CMD_ERROR;
+	}
+
+	uarfcn_str = strtok_r(tmp, ",", &saveptr);
+	scramble_str = strtok_r(NULL, ",", &saveptr);
+
+	if (!uarfcn_str || osmo_str_to_int(&uarfcn, uarfcn_str, 10, 0, 16383) < 0) {
+		cmd->reply = "Failed to parse neighbor UARFCN value";
+		return CTRL_CMD_ERROR;
+	}
+
+	if (!scramble_str || osmo_str_to_int(&scramble, scramble_str, 10, 0, 511) < 0) {
+		cmd->reply = "Failed to parse neighbor scrambling code";
+		return CTRL_CMD_ERROR;
+	}
+
+	if (bts_uarfcn_del(bts, uarfcn, scramble) < 0) {
+		cmd->reply = "Failed to delete a (not existent?) neighbor UARFCN";
+		return CTRL_CMD_ERROR;
+	}
+
+	cmd->reply = "OK";
+	return CTRL_CMD_REPLY;
+}
+
+CTRL_CMD_DEFINE_WO_NOVRF(bts_si2quater_neighbor_list_del_uarfcn,
+			 "si2quater-neighbor-list del uarfcn");
+
+/* TODO: si2quater neighbor management: add EARFCN */
+/* TODO: si2quater neighbor management: add UARFCN */
+
 int bsc_bts_ctrl_cmds_install(void)
 {
 	int rc = 0;
@@ -643,6 +714,8 @@ int bsc_bts_ctrl_cmds_install(void)
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_neighbor_list_add);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_neighbor_list_del);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_neighbor_list_mode);
+	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_si2quater_neighbor_list_del_earfcn);
+	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_si2quater_neighbor_list_del_uarfcn);
 
 	rc |= neighbor_ident_ctrl_init();
 
