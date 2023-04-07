@@ -2078,7 +2078,9 @@ DEFUN_USRATTR(cfg_bts_si2quater_neigh_add,
 
 	vty_out(vty, "%% Warning: not enough space in SI2quater (%u/%u used) for a given EARFCN %u%s",
 		bts->si2q_count, SI2Q_MAX_NUM, arfcn, VTY_NEWLINE);
-	osmo_earfcn_del(e, arfcn);
+
+	if (osmo_earfcn_del(e, arfcn) != 0)
+		vty_out(vty, "%% Failed to roll-back adding EARFCN %u%s", arfcn, VTY_NEWLINE);
 
 	return CMD_WARNING;
 }
