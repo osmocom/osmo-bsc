@@ -883,7 +883,7 @@ struct all_allocated {
 
 struct bsc_sccp_inst {
 	struct osmo_sccp_instance *sccp; /* backpointer */
-	/* rbtree root of 'sstruct gsm_subscriber_connection' in this instance, ordered by conn_id */
+	/* rbtree root of 'struct bscp_sccp_conn_node' in this instance, ordered by conn_id */
 	struct rb_root connections;
 	uint32_t next_id; /* next id to allocate */
 };
