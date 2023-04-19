@@ -2590,18 +2590,18 @@ int ipacc_rtp_csd_fmt_transp(const struct channel_mode_and_rate *ch_mode_rate,
 	switch (ch_mode_rate->data_rate.t) {
 	case RSL_CMOD_CSD_T_32k0:
 	case RSL_CMOD_CSD_T_29k0:
-		ret |= RSL_IPAC_RTP_CSD_IR_32k << 5;
+		ret |= RSL_IPAC_RTP_CSD_IR_32k << 4;
 		break;
 	case RSL_CMOD_CSD_T_14k4:
 	case RSL_CMOD_CSD_T_9k6:
-		ret |= RSL_IPAC_RTP_CSD_IR_16k << 5;
+		ret |= RSL_IPAC_RTP_CSD_IR_16k << 4;
 		break;
 	case RSL_CMOD_CSD_T_4k8:
 	case RSL_CMOD_CSD_T_2k4:
 	case RSL_CMOD_CSD_T_1k2:
 	case RSL_CMOD_CSD_T_600:
 	case RSL_CMOD_CSD_T_1200_75:
-		ret |= RSL_IPAC_RTP_CSD_IR_8k << 5;
+		ret |= RSL_IPAC_RTP_CSD_IR_8k << 4;
 		break;
 	default:
 		return -EINVAL;
@@ -2622,19 +2622,19 @@ int ipacc_rtp_csd_fmt_non_transp(const struct channel_mode_and_rate *ch_mode_rat
 	case RSL_CMOD_CSD_NTA_14k5_43k5:
 	case RSL_CMOD_CSD_NTA_29k0_43k5:
 	case RSL_CMOD_CSD_NT_43k5:
-		ret |= RSL_IPAC_RTP_CSD_IR_64k << 5;
+		ret |= RSL_IPAC_RTP_CSD_IR_64k << 4;
 		break;
 	case RSL_CMOD_CSD_NTA_29k0_14k5:
 	case RSL_CMOD_CSD_NTA_14k5_29k0:
 	case RSL_CMOD_CSD_NT_28k8:
-		ret |= RSL_IPAC_RTP_CSD_IR_32k << 5;
+		ret |= RSL_IPAC_RTP_CSD_IR_32k << 4;
 		break;
 	case RSL_CMOD_CSD_NT_14k5:
 	case RSL_CMOD_CSD_NT_12k0:
-		ret |= RSL_IPAC_RTP_CSD_IR_16k << 5;
+		ret |= RSL_IPAC_RTP_CSD_IR_16k << 4;
 		break;
 	case RSL_CMOD_CSD_NT_6k0:
-		ret |= RSL_IPAC_RTP_CSD_IR_8k << 5;
+		ret |= RSL_IPAC_RTP_CSD_IR_8k << 4;
 		break;
 	default:
 		return -EINVAL;
