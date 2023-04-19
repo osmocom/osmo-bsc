@@ -72,10 +72,23 @@ static int gsm0808_data_rate_transp_to_gsm0408(enum gsm0808_data_rate_transp rat
 	}
 }
 
-static int gsm0808_data_rate_non_transp_to_gsm0408(enum gsm0808_data_rate_non_transp rate)
+static int gsm0808_data_rate_non_transp_to_gsm0408(enum gsm0808_data_rate_non_transp rate, bool full_rate)
 {
-	LOGP(DMSC, LOGL_ERROR, "%s is not implemented\n", __func__); /* FIXME */
-	return -1;
+	switch (rate) {
+	case GSM0808_DATA_RATE_NON_TRANSP_12000_6000:
+		if (full_rate)
+			return GSM48_CMODE_DATA_12k0;
+		return GSM48_CMODE_DATA_6k0;
+	case GSM0808_DATA_RATE_NON_TRANSP_14k5:
+		return GSM48_CMODE_DATA_14k5;
+	case GSM0808_DATA_RATE_NON_TRANSP_12k0:
+		return GSM48_CMODE_DATA_12k0;
+	case GSM0808_DATA_RATE_NON_TRANSP_6k0:
+		return GSM48_CMODE_DATA_6k0;
+	default:
+		LOGP(DMSC, LOGL_ERROR, "Unsupported non-transparent data rate 0x%x\n", rate);
+		return -1;
+	}
 }
 
 static int gsm0808_data_rate_non_transp_to_gsm0858(enum gsm0808_data_rate_non_transp rate, bool full_rate)
@@ -142,7 +155,7 @@ int match_data_rate_pref(struct channel_mode_and_rate *ch_mode_rate,
 			return -1;
 		ch_mode_rate->data_rate.nt = rc;
 
-		rc = gsm0808_data_rate_non_transp_to_gsm0408(ct->data_rate);
+		rc = gsm0808_data_rate_non_transp_to_gsm0408(ct->data_rate, full_rate);
 		if (rc == -1)
 			return -1;
 		ch_mode_rate->chan_mode = rc;
