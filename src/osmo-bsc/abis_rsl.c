@@ -2500,8 +2500,7 @@ static int abis_rsl_rx_rll(struct msgb *msg)
 	switch (rllh->c.msg_type) {
 	case RSL_MT_DATA_IND:
 		LOG_LCHAN(msg->lchan, LOGL_DEBUG, "SAPI=%u DATA INDICATION\n", sapi);
-		if (msgb_l2len(msg) >
-		    sizeof(struct abis_rsl_common_hdr) + sizeof(*rllh) &&
+		if (msgb_l2len(msg) > (sizeof(*rllh) + 3) &&
 		    rllh->data[0] == RSL_IE_L3_INFO) {
 			msg->l3h = &rllh->data[3];
 			return gsm0408_rcvmsg(msg, rllh->link_id);
@@ -2543,8 +2542,7 @@ static int abis_rsl_rx_rll(struct msgb *msg)
 		msg->lchan->sapis[sapi] = LCHAN_SAPI_MS;
 		osmo_fsm_inst_dispatch(msg->lchan->fi, LCHAN_EV_RLL_ESTABLISH_IND, msg);
 
-		if (msgb_l2len(msg) >
-		    sizeof(struct abis_rsl_common_hdr) + sizeof(*rllh) &&
+		if (msgb_l2len(msg) > (sizeof(*rllh) + 3) &&
 		    rllh->data[0] == RSL_IE_L3_INFO) {
 			msg->l3h = &rllh->data[3];
 			return gsm0408_rcvmsg(msg, rllh->link_id);
