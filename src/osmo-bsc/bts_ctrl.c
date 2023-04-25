@@ -431,7 +431,7 @@ static int get_bts_rf_state(struct ctrl_cmd *cmd, void *data)
 
 	cmd->reply = talloc_asprintf(cmd, "%s,%s,%s", oper, admin, policy);
 	if (!cmd->reply) {
-		cmd->reply = "OOM.";
+		cmd->reply = "OOM";
 		return CTRL_CMD_ERROR;
 	}
 
@@ -454,7 +454,7 @@ static int get_bts_rf_states(struct ctrl_cmd *cmd, void *data)
 
 	cmd->reply = bsc_rf_states_of_bts_c(cmd, bts);
 	if (!cmd->reply) {
-		cmd->reply = "OOM.";
+		cmd->reply = "OOM";
 		return CTRL_CMD_ERROR;
 	}
 
@@ -483,7 +483,7 @@ static int get_bts_c0_power_red(struct ctrl_cmd *cmd, void *data)
 
 	cmd->reply = talloc_asprintf(cmd, "%u", bts->c0_max_power_red_db);
 	if (!cmd->reply) {
-		cmd->reply = "OOM.";
+		cmd->reply = "OOM";
 		return CTRL_CMD_ERROR;
 	}
 

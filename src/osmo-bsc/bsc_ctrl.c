@@ -332,7 +332,7 @@ static int set_net_rf_lock(struct ctrl_cmd *cmd, void *data)
 
 	cmd->reply = talloc_asprintf(cmd, "%u", locked);
 	if (!cmd->reply) {
-		cmd->reply = "OOM.";
+		cmd->reply = "OOM";
 		return CTRL_CMD_ERROR;
 	}
 
@@ -367,7 +367,7 @@ static int get_net_rf_states(struct ctrl_cmd *cmd, void *data)
 {
 	cmd->reply = bsc_rf_states_c(cmd);
 	if (!cmd->reply) {
-		cmd->reply = "OOM.";
+		cmd->reply = "OOM";
 		return CTRL_CMD_ERROR;
 	}
 	return CTRL_CMD_REPLY;
