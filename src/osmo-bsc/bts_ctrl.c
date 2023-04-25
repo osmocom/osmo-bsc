@@ -694,6 +694,49 @@ CTRL_CMD_DEFINE_WO_NOVRF(bts_si2quater_neighbor_list_del_uarfcn,
 /* TODO: si2quater neighbor management: add EARFCN */
 /* TODO: si2quater neighbor management: add UARFCN */
 
+static int verify_bts_cell_reselection_offset(struct ctrl_cmd *cmd, const char *value, void *_data)
+{
+	const int cell_reselection_offset = atoi(value);
+
+	if (cell_reselection_offset < 0 || cell_reselection_offset > 126) {
+		cmd->reply = "Value is out of range";
+		return 1;
+	} else if (cell_reselection_offset % 2 != 0) {
+		cmd->reply = "Value must be even";
+		return 1;
+	}
+
+	return 0;
+}
+
+static int get_bts_cell_reselection_offset(struct ctrl_cmd *cmd, void *data)
+{
+	struct gsm_bts *bts = cmd->node;
+
+	if (!bts->si_common.cell_ro_sel_par.present) {
+		cmd->reply = "0";
+		return CTRL_CMD_REPLY;
+	}
+
+	cmd->reply = talloc_asprintf(cmd, "%u", bts->si_common.cell_ro_sel_par.cell_resel_off * 2);
+	if (!cmd->reply) {
+		cmd->reply = "OOM";
+		return CTRL_CMD_ERROR;
+	}
+
+	return CTRL_CMD_REPLY;
+}
+
+static int set_bts_cell_reselection_offset(struct ctrl_cmd *cmd, void *data)
+{
+	struct gsm_bts *bts = cmd->node;
+	bts->si_common.cell_ro_sel_par.present = 1;
+	bts->si_common.cell_ro_sel_par.cell_resel_off = atoi(cmd->value) / 2;
+	return CTRL_CMD_REPLY;
+}
+
+CTRL_CMD_DEFINE(bts_cell_reselection_offset, "cell-reselection-offset");
+
 int bsc_bts_ctrl_cmds_install(void)
 {
 	int rc = 0;
@@ -716,6 +759,7 @@ int bsc_bts_ctrl_cmds_install(void)
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_neighbor_list_mode);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_si2quater_neighbor_list_del_earfcn);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_si2quater_neighbor_list_del_uarfcn);
+	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_cell_reselection_offset);
 
 	rc |= neighbor_ident_ctrl_init();
 
