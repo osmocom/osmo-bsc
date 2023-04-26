@@ -802,6 +802,44 @@ static int set_bts_cell_reselection_penalty_time(struct ctrl_cmd *cmd, void *dat
 
 CTRL_CMD_DEFINE(bts_cell_reselection_penalty_time, "cell-reselection-penalty-time");
 
+static int verify_bts_cell_reselection_hysteresis(struct ctrl_cmd *cmd, const char *value, void *_data)
+{
+	const int cell_reselection_hysteresis = atoi(value);
+
+	if (cell_reselection_hysteresis < 0 || cell_reselection_hysteresis > 14) {
+		cmd->reply = "Value is out of range";
+		return 1;
+	} else if (cell_reselection_hysteresis % 2 != 0) {
+		cmd->reply = "Value must be even";
+		return 1;
+	}
+
+	return 0;
+}
+
+static int get_bts_cell_reselection_hysteresis(struct ctrl_cmd *cmd, void *data)
+{
+	struct gsm_bts *bts = cmd->node;
+
+	cmd->reply = talloc_asprintf(cmd, "%u", bts->si_common.cell_sel_par.cell_resel_hyst * 2);
+	if (!cmd->reply) {
+		cmd->reply = "OOM";
+		return CTRL_CMD_ERROR;
+	}
+
+	return CTRL_CMD_REPLY;
+}
+
+static int set_bts_cell_reselection_hysteresis(struct ctrl_cmd *cmd, void *data)
+{
+	struct gsm_bts *bts = cmd->node;
+	bts->si_common.cell_sel_par.cell_resel_hyst = atoi(cmd->value) / 2;
+	cmd->reply = "OK";
+	return CTRL_CMD_REPLY;
+}
+
+CTRL_CMD_DEFINE(bts_cell_reselection_hysteresis, "cell-reselection-hysteresis");
+
 int bsc_bts_ctrl_cmds_install(void)
 {
 	int rc = 0;
@@ -826,6 +864,7 @@ int bsc_bts_ctrl_cmds_install(void)
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_si2quater_neighbor_list_del_uarfcn);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_cell_reselection_offset);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_cell_reselection_penalty_time);
+	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_cell_reselection_hysteresis);
 
 	rc |= neighbor_ident_ctrl_init();
 
