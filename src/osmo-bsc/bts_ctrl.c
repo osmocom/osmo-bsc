@@ -840,6 +840,48 @@ static int set_bts_cell_reselection_hysteresis(struct ctrl_cmd *cmd, void *data)
 
 CTRL_CMD_DEFINE(bts_cell_reselection_hysteresis, "cell-reselection-hysteresis");
 
+/* Return space concatenated set of pairs <class>,<barred/allowed> */
+static int get_bts_rach_access_control_class(struct ctrl_cmd *cmd, void *data)
+{
+	int i;
+	const struct gsm_bts *bts = cmd->node;
+
+	cmd->reply = talloc_strdup(cmd, "");
+	if (!cmd->reply) {
+		cmd->reply = "OOM";
+		return CTRL_CMD_ERROR;
+	}
+
+	for (i = 0; i < 8; i++) {
+		cmd->reply = talloc_asprintf_append(cmd->reply,
+					i == 0 ? "%u,%s" : " %u,%s",
+					i, bts->si_common.rach_control.t3 & (0x1 << i) ? "barred" : "allowed");
+		if (!cmd->reply) {
+			cmd->reply = "OOM";
+			return CTRL_CMD_ERROR;
+		}
+	}
+
+	for (i = 0; i < 8; i++) {
+		if (i != 2)
+			cmd->reply = talloc_asprintf_append(cmd->reply,
+						" %u,%s",
+						i + 8, bts->si_common.rach_control.t2 & (0x1 << i) ? "barred" : "allowed");
+		else
+			cmd->reply = talloc_asprintf_append(cmd->reply,
+						" emergency,%s",
+						bts->si_common.rach_control.t2 & (0x1 << i) ? "barred" : "allowed");
+		if (!cmd->reply) {
+			cmd->reply = "OOM";
+			return CTRL_CMD_ERROR;
+		}
+	}
+
+	return CTRL_CMD_REPLY;
+}
+
+CTRL_CMD_DEFINE_RO(bts_rach_access_control_class, "rach-access-control-classes");
+
 int bsc_bts_ctrl_cmds_install(void)
 {
 	int rc = 0;
@@ -865,6 +907,7 @@ int bsc_bts_ctrl_cmds_install(void)
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_cell_reselection_offset);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_cell_reselection_penalty_time);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_cell_reselection_hysteresis);
+	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_rach_access_control_class);
 
 	rc |= neighbor_ident_ctrl_init();
 
