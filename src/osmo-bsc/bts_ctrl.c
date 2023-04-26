@@ -882,6 +882,83 @@ static int get_bts_rach_access_control_class(struct ctrl_cmd *cmd, void *data)
 
 CTRL_CMD_DEFINE_RO(bts_rach_access_control_class, "rach-access-control-classes");
 
+static int verify_access_control_class(struct ctrl_cmd *cmd, const char *value)
+{
+	int acc;
+
+	if (strcmp(value, "emergency") == 0)
+		return 0;
+
+	acc = atoi(value);
+
+	if (acc < 0 || acc > 15) {
+		cmd->reply = "Value is out of range";
+		return 1;
+	} else if (acc == 10) {
+		cmd->reply = "Access control class 10 does not exist, consider using \"emergency\" instead";
+		return 1;
+	}
+
+	return 0;
+}
+
+static int set_access_control_class(struct ctrl_cmd *cmd, bool allow)
+{
+	int acc;
+	struct gsm_bts *bts = cmd->node;
+
+	if (strcmp(cmd->value, "emergency") == 0) {
+		if (allow)
+			bts->si_common.rach_control.t2 &= ~0x4;
+		else
+			bts->si_common.rach_control.t2 |= 0x4;
+		cmd->reply = "OK";
+		return CTRL_CMD_REPLY;
+	}
+
+	acc = atoi(cmd->value);
+	if (acc < 8)
+		if (allow)
+			bts->si_common.rach_control.t3 &= ~(0x1 << acc);
+		else
+			bts->si_common.rach_control.t3 |= (0x1 << acc);
+	else
+		if (allow)
+			bts->si_common.rach_control.t2 &= ~(0x1 << (acc - 8));
+		else
+			bts->si_common.rach_control.t2 |= (0x1 << (acc - 8));
+
+	if (acc < 10)
+		acc_mgr_perm_subset_changed(&bts->acc_mgr, &bts->si_common.rach_control);
+
+	cmd->reply = "OK";
+	return CTRL_CMD_REPLY;
+}
+
+static int verify_bts_rach_access_control_class_bar(struct ctrl_cmd *cmd, const char *value, void *_data)
+{
+	return verify_access_control_class(cmd, value);
+}
+
+static int set_bts_rach_access_control_class_bar(struct ctrl_cmd *cmd, void *data)
+{
+	return set_access_control_class(cmd, false);
+}
+
+CTRL_CMD_DEFINE_WO(bts_rach_access_control_class_bar, "rach-access-control-class bar");
+
+static int verify_bts_rach_access_control_class_allow(struct ctrl_cmd *cmd, const char *value, void *_data)
+{
+	return verify_access_control_class(cmd, value);
+}
+
+static int set_bts_rach_access_control_class_allow(struct ctrl_cmd *cmd, void *data)
+{
+	return set_access_control_class(cmd, true);
+}
+
+CTRL_CMD_DEFINE_WO(bts_rach_access_control_class_allow, "rach-access-control-class allow");
+
 int bsc_bts_ctrl_cmds_install(void)
 {
 	int rc = 0;
@@ -908,6 +985,8 @@ int bsc_bts_ctrl_cmds_install(void)
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_cell_reselection_penalty_time);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_cell_reselection_hysteresis);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_rach_access_control_class);
+	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_rach_access_control_class_bar);
+	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_rach_access_control_class_allow);
 
 	rc |= neighbor_ident_ctrl_init();
 
