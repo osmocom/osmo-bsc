@@ -312,16 +312,16 @@ static void generate_ma_for_bts(struct gsm_bts *bts)
 
 static void bootstrap_rsl(struct gsm_bts_trx *trx)
 {
+	struct gsm_bts *bts = trx->bts;
 	unsigned int i;
 	int rc;
 
 	LOG_TRX(trx, DRSL, LOGL_NOTICE, "bootstrapping RSL "
 		"on ARFCN %u using MCC-MNC %s LAC=%u CID=%u BSIC=%u\n",
 		trx->arfcn, osmo_plmn_name(&bsc_gsmnet->plmn),
-		trx->bts->location_area_code,
-		trx->bts->cell_identity, trx->bts->bsic);
+		bts->location_area_code, bts->cell_identity, bts->bsic);
 
-	if (trx->bts->type == GSM_BTS_TYPE_NOKIA_SITE) {
+	if (bts->type == GSM_BTS_TYPE_NOKIA_SITE) {
 		rsl_nokia_si_begin(trx);
 	}
 
@@ -338,14 +338,14 @@ static void bootstrap_rsl(struct gsm_bts_trx *trx)
 		return;
 	}
 
-	if (trx->bts->type == GSM_BTS_TYPE_NOKIA_SITE) {
+	if (bts->type == GSM_BTS_TYPE_NOKIA_SITE) {
 		/* channel unspecific, power reduction in 2 dB steps */
 		rsl_bs_power_control(trx, 0xFF, trx->max_power_red / 2);
 		rsl_nokia_si_end(trx);
 	}
 
-	if (trx->bts->model->power_ctrl_send_def_params != NULL) {
-		rc = trx->bts->model->power_ctrl_send_def_params(trx);
+	if (bts->model->power_ctrl_send_def_params != NULL) {
+		rc = bts->model->power_ctrl_send_def_params(trx);
 		if (rc) {
 			LOG_TRX(trx, DRSL, LOGL_ERROR, "Failed to send default "
 				"MS/BS Power control parameters (rc=%d)\n", rc);
@@ -360,7 +360,7 @@ static void bootstrap_rsl(struct gsm_bts_trx *trx)
 	}
 
 	/* Drop all expired channel requests in the list */
-	abis_rsl_chan_rqd_queue_flush(trx->bts);
+	abis_rsl_chan_rqd_queue_flush(bts);
 }
 
 struct osmo_timer_list update_connection_stats_timer;
