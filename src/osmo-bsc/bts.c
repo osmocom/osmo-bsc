@@ -888,14 +888,14 @@ int bts_depend_is_depedency(struct gsm_bts *base, struct gsm_bts *other)
 	return (base->depends_on[idx] & (1U << bit)) > 0;
 }
 
-static int bts_is_online(struct gsm_bts *bts)
+static bool bts_is_online(const struct gsm_bts *bts)
 {
 	/* TODO: support E1 BTS too */
 	if (!is_ipaccess_bts(bts))
-		return 1;
+		return true;
 
 	if (!bts->oml_link)
-		return 0;
+		return false;
 
 	return bts->mo.nm_state.operational == NM_OPSTATE_ENABLED;
 }
