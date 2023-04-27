@@ -300,7 +300,7 @@ struct gsm_bts_model {
 	/* (Optional) function for sending default MS/BS Power Control paramaters */
 	int (*power_ctrl_send_def_params)(const struct gsm_bts_trx *trx);
 	/* (Optional) function for toggling BCCH carrier power reduction operation */
-	int (*power_ctrl_set_c0_power_red)(const struct gsm_bts *bts, const uint8_t red);
+	int (*power_ctrl_send_c0_power_red)(const struct gsm_bts *bts, const uint8_t red);
 
 	void (*config_write_bts)(struct vty *vty, struct gsm_bts *bts);
 	void (*config_write_trx)(struct vty *vty, struct gsm_bts_trx *trx);
