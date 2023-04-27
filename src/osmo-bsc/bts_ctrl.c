@@ -497,15 +497,19 @@ static int set_bts_c0_power_red(struct ctrl_cmd *cmd, void *data)
 	int rc;
 
 	rc = gsm_bts_set_c0_power_red(bts, red);
-	if (rc == -ENOTSUP) {
+	switch (rc) {
+	case 0: /* success */
+		return get_bts_c0_power_red(cmd, data);
+	case -ENOTCONN:
+		cmd->reply = "BTS is offline";
+		return CTRL_CMD_ERROR;
+	case -ENOTSUP:
 		cmd->reply = "BCCH carrier power reduction is not supported";
 		return CTRL_CMD_ERROR;
-	} else if (rc != 0) {
+	default:
 		cmd->reply = "Failed to enable BCCH carrier power reduction";
 		return CTRL_CMD_ERROR;
 	}
-
-	return get_bts_c0_power_red(cmd, data);
 }
 
 CTRL_CMD_DEFINE(bts_c0_power_red, "c0-power-reduction");

@@ -1426,18 +1426,22 @@ DEFUN(bts_c0_power_red,
 	}
 
 	rc = gsm_bts_set_c0_power_red(bts, red);
-	if (rc == -ENOTSUP) {
+	switch (rc) {
+	case 0: /* success */
+		return CMD_SUCCESS;
+	case -ENOTCONN:
+		vty_out(vty, "%% BTS%u is offline%s", bts_nr, VTY_NEWLINE);
+		return CMD_WARNING;
+	case -ENOTSUP:
 		vty_out(vty, "%% BCCH carrier power reduction operation mode "
 			"is not supported for BTS%u%s", bts_nr, VTY_NEWLINE);
 		return CMD_WARNING;
-	} else if (rc != 0) {
+	default:
 		vty_out(vty, "%% Failed to %sable BCCH carrier power reduction "
 			"operation mode for BTS%u%s", red ? "en" : "dis",
 			bts_nr, VTY_NEWLINE);
 		return CMD_WARNING;
 	}
-
-	return CMD_SUCCESS;
 }
 
 /* this command is now hidden, as it's a low-level debug hack, and people should
