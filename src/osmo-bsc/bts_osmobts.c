@@ -168,10 +168,6 @@ static int power_ctrl_send_c0_power_red(const struct gsm_bts *bts, const uint8_t
 	if (msg == NULL)
 		return -ENOMEM;
 
-	LOGP(DRSL, LOGL_NOTICE, "%sabling BCCH carrier power reduction "
-	     "operation mode for BTS%u (maximum %u dB)\n",
-	     red ? "En" : "Dis", bts->nr, red);
-
 	/* Abuse the standard BS POWER CONTROL message by specifying 'Common Channel'
 	 * in the Protocol Discriminator field and 'BCCH' in the Channel Number IE. */
 	dh = (struct abis_rsl_dchan_hdr *) msgb_put(msg, sizeof(*dh));

@@ -286,6 +286,13 @@ static void st_op_enabled_on_enter(struct osmo_fsm_inst *fi, uint32_t prev_state
 	bts->mo.get_attr_rep_received = false;
 	bts->mo.set_attr_sent = false;
 	bts->mo.set_attr_ack_received = false;
+
+	/* Resume power saving on the BCCH carrier, if was enabled */
+	if (bts->c0_max_power_red_db > 0) {
+		LOG_BTS(bts, DRSL, LOGL_NOTICE, "Resuming BCCH carrier power reduction "
+			"operation mode (maximum %u dB)\n", bts->c0_max_power_red_db);
+		gsm_bts_send_c0_power_red(bts, bts->c0_max_power_red_db);
+	}
 }
 
 static void st_op_enabled(struct osmo_fsm_inst *fi, uint32_t event, void *data)

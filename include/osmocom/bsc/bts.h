@@ -822,6 +822,7 @@ void gsm_bts_all_ts_dispatch(struct gsm_bts *bts, uint32_t ts_ev, void *data);
 
 int gsm_bts_set_system_infos(struct gsm_bts *bts);
 
+int gsm_bts_send_c0_power_red(const struct gsm_bts *bts, const uint8_t red);
 int gsm_bts_set_c0_power_red(struct gsm_bts *bts, const uint8_t red);
 
 void gsm_bts_stats_reset(struct gsm_bts *bts);

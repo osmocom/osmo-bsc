@@ -978,20 +978,29 @@ int gsm_bts_set_system_infos(struct gsm_bts *bts)
 	return 0;
 }
 
+/* Send the given C0 power reduction value to the BTS */
+int gsm_bts_send_c0_power_red(const struct gsm_bts *bts, const uint8_t red)
+{
+	if (!osmo_bts_has_feature(&bts->features, BTS_FEAT_BCCH_POWER_RED))
+		return -ENOTSUP;
+	if (bts->model->power_ctrl_send_c0_power_red == NULL)
+		return -ENOTSUP;
+	return bts->model->power_ctrl_send_c0_power_red(bts, red);
+}
+
+/* Send the given C0 power reduction value to the BTS and update the internal state */
 int gsm_bts_set_c0_power_red(struct gsm_bts *bts, const uint8_t red)
 {
 	struct gsm_bts_trx *c0 = bts->c0;
 	unsigned int tn;
 	int rc;
 
-	if (!osmo_bts_has_feature(&bts->features, BTS_FEAT_BCCH_POWER_RED))
-		return -ENOTSUP;
-	if (bts->model->power_ctrl_send_c0_power_red == NULL)
-		return -ENOTSUP;
-
-	rc = bts->model->power_ctrl_send_c0_power_red(bts, red);
+	rc = gsm_bts_send_c0_power_red(bts, red);
 	if (rc != 0)
 		return rc;
+
+	LOG_BTS(bts, DRSL, LOGL_NOTICE, "%sabling BCCH carrier power reduction "
+		"operation mode (maximum %u dB)\n", red ? "En" : "Dis", red);
 
 	/* Timeslot 0 is always transmitting BCCH/CCCH */
 	c0->ts[0].c0_max_power_red_db = 0;
