@@ -159,8 +159,7 @@ void osmobts_enc_power_params_osmo_ext(struct msgb *msg, const struct gsm_power_
 	*ie_len = msg->tail - (ie_len + 1);
 }
 
-static int power_ctrl_set_c0_power_red(const struct gsm_bts *bts,
-				       const uint8_t red)
+static int power_ctrl_send_c0_power_red(const struct gsm_bts *bts, const uint8_t red)
 {
 	struct abis_rsl_dchan_hdr *dh;
 	struct msgb *msg;
@@ -198,7 +197,7 @@ int bts_model_osmobts_init(void)
 	model_osmobts.force_combined_si = false;
 
 	/* Power control API */
-	model_osmobts.power_ctrl_set_c0_power_red = &power_ctrl_set_c0_power_red;
+	model_osmobts.power_ctrl_send_c0_power_red = &power_ctrl_send_c0_power_red;
 
 	model_osmobts.features.data = &model_osmobts._features_data[0];
 	model_osmobts.features.data_len =

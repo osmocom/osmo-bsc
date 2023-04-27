@@ -983,10 +983,10 @@ int gsm_bts_set_c0_power_red(struct gsm_bts *bts, const uint8_t red)
 
 	if (!osmo_bts_has_feature(&bts->features, BTS_FEAT_BCCH_POWER_RED))
 		return -ENOTSUP;
-	if (bts->model->power_ctrl_set_c0_power_red == NULL)
+	if (bts->model->power_ctrl_send_c0_power_red == NULL)
 		return -ENOTSUP;
 
-	rc = bts->model->power_ctrl_set_c0_power_red(bts, red);
+	rc = bts->model->power_ctrl_send_c0_power_red(bts, red);
 	if (rc != 0)
 		return rc;
 
