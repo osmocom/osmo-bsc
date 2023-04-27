@@ -978,6 +978,8 @@ int gsm_bts_set_system_infos(struct gsm_bts *bts)
 /* Send the given C0 power reduction value to the BTS */
 int gsm_bts_send_c0_power_red(const struct gsm_bts *bts, const uint8_t red)
 {
+	if (!bts_is_online(bts))
+		return -ENOTCONN;
 	if (!osmo_bts_has_feature(&bts->features, BTS_FEAT_BCCH_POWER_RED))
 		return -ENOTSUP;
 	if (bts->model->power_ctrl_send_c0_power_red == NULL)
