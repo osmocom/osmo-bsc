@@ -182,7 +182,7 @@ static struct bsc_msc_data *bsc_find_msc(struct gsm_subscriber_connection *conn,
 	struct bsc_msc_data *msc_target = NULL;
 	struct bsc_msc_data *msc_round_robin_next = NULL;
 	struct bsc_msc_data *msc_round_robin_first = NULL;
-	uint8_t round_robin_next_nr;
+	unsigned int round_robin_next_nr;
 	int16_t nri_v = -1;
 	bool is_null_nri = false;
 
