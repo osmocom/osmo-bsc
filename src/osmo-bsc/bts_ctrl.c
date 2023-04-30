@@ -514,6 +514,40 @@ static int set_bts_c0_power_red(struct ctrl_cmd *cmd, void *data)
 
 CTRL_CMD_DEFINE(bts_c0_power_red, "c0-power-reduction");
 
+static int get_bts_neighbor_list(struct ctrl_cmd *cmd, const struct bitvec *neigh_list)
+{
+	int i;
+	char *pos;
+
+	/* The length of "1 2 3 ... 1023" is 4009, so 4096 is enough */
+	cmd->reply = talloc_size(cmd, 4096);
+	if (!cmd->reply) {
+		cmd->reply = "OOM";
+		return CTRL_CMD_ERROR;
+	}
+
+	cmd->reply[0] = '\0';
+
+	pos = cmd->reply;
+
+	for (i = 0; i < neigh_list->data_len * 8; i++) {
+		if (!bitvec_get_bit_pos(neigh_list, i))
+			continue;
+
+		pos += sprintf(pos, i == 0 ? "%u" : " %u", i);
+	}
+
+	return CTRL_CMD_REPLY;
+}
+
+static int get_bts_neighbor_list_si2(struct ctrl_cmd *cmd, void *data)
+{
+	const struct gsm_bts *bts = cmd->node;
+	return get_bts_neighbor_list(cmd, &bts->si_common.neigh_list);
+}
+
+CTRL_CMD_DEFINE_RO(bts_neighbor_list_si2, "neighbor-list si2");
+
 static int verify_bts_neighbor_list_add_del(struct ctrl_cmd *cmd, const char *value, void *_data)
 {
 	int arfcn;
@@ -976,6 +1010,7 @@ int bsc_bts_ctrl_cmds_install(void)
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_rf_state);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_rf_states);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_c0_power_red);
+	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_neighbor_list_si2);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_neighbor_list_add);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_neighbor_list_del);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_neighbor_list_mode);
