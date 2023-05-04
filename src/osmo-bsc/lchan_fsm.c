@@ -43,6 +43,7 @@
 #include <osmocom/bsc/bts.h>
 #include <osmocom/bsc/bsc_stats.h>
 #include <osmocom/bsc/lchan.h>
+#include <osmocom/bsc/vgcs_fsm.h>
 
 static struct osmo_fsm lchan_fsm;
 
@@ -191,6 +192,23 @@ static void _lchan_on_activation_failure(struct gsm_lchan *lchan, enum lchan_act
 		_osmo_fsm_inst_dispatch(for_conn->ho.fi, HO_EV_LCHAN_ERROR, lchan, file, line);
 		break;
 
+	case ACTIVATE_FOR_VGCS_CHANNEL:
+		LOG_LCHAN(lchan, LOGL_NOTICE, "Signalling VGCS Assignment FSM of error (%s)\n",
+			  lchan->last_error ? : "unknown error");
+		if (!for_conn) {
+			LOG_LCHAN(lchan, LOGL_ERROR,
+				  "lchan activation for VGCS Assignment failed, but activation request has no conn\n");
+			break;
+		}
+		if (!for_conn->vgcs_chan.fi) {
+			LOG_LCHAN(lchan, LOGL_ERROR,
+				  "lchan activation for VGCS Assignment failed, but conn has no ongoing"
+				  " assignment procedure\n");
+			break;
+		}
+		_osmo_fsm_inst_dispatch(for_conn->vgcs_chan.fi, VGCS_EV_LCHAN_ERROR, lchan, file, line);
+		break;
+
 	case ACTIVATE_FOR_VTY:
 		LOG_LCHAN(lchan, LOGL_ERROR, "VTY user invoked lchan activation failed (%s)\n",
 			  lchan->last_error ? : "unknown error");
@@ -276,6 +294,22 @@ static void lchan_on_fully_established(struct gsm_lchan *lchan)
 		/* The lchan->fi_rtp will be notified of LCHAN_RTP_EV_ESTABLISHED in
 		 * gscon_change_primary_lchan() upon handover_end(HO_RESULT_OK). On failure before then,
 		 * we will try to roll back a modified RTP connection. */
+		break;
+
+	case ACTIVATE_FOR_VGCS_CHANNEL:
+		if (!lchan->conn) {
+			LOG_LCHAN(lchan, LOGL_ERROR,
+				  "lchan activation for VGCS assignment succeeded, but lchan has no conn\n");
+			lchan_release(lchan, false, true, RSL_ERR_EQUIPMENT_FAIL, NULL);
+			break;
+		}
+		if (!lchan->conn->vgcs_chan.fi) {
+			LOG_LCHAN(lchan, LOGL_ERROR,
+				  "lchan Activation for VGCS assignment requested, but conn has no VGCS resource FSM.\n");
+			lchan_release(lchan, false, true, RSL_ERR_EQUIPMENT_FAIL, NULL);
+			break;
+		}
+		osmo_fsm_inst_dispatch(lchan->conn->vgcs_chan.fi, VGCS_EV_LCHAN_ACTIVE, lchan);
 		break;
 
 	case ACTIVATE_FOR_MODE_MODIFY_RTP:
@@ -407,6 +441,28 @@ void lchan_activate(struct gsm_lchan *lchan, struct lchan_activate_info *info)
 				  " not reflect this lchan to be activated (instead: %s)\n",
 				  info->for_conn->ho.new_lchan?
 					gsm_lchan_name(info->for_conn->ho.new_lchan)
+					: "NULL");
+			goto abort;
+		}
+		break;
+
+	case ACTIVATE_FOR_VGCS_CHANNEL:
+		if (!info->for_conn
+		    || !info->for_conn->fi) {
+			LOG_LCHAN(lchan, LOGL_ERROR, "Activation requested, but no conn\n");
+			goto abort;
+		}
+		if (!info->for_conn->vgcs_chan.fi)  {
+			LOG_LCHAN(lchan, LOGL_ERROR,
+				  "Activation for VGCS assignment requested, but conn has no VGCS resource FSM.\n");
+			goto abort;
+		}
+		if (info->for_conn->vgcs_chan.new_lchan != lchan) {
+			LOG_LCHAN(lchan, LOGL_ERROR,
+				  "Activation for VGCS assignment requested, but conn's VGCS assignment state does"
+				  " not reflect this lchan to be activated (instead: %s)\n",
+				  info->for_conn->vgcs_chan.new_lchan ?
+					gsm_lchan_name(info->for_conn->vgcs_chan.new_lchan)
 					: "NULL");
 			goto abort;
 		}
@@ -856,6 +912,7 @@ static void lchan_fsm_wait_activ_ack_onenter(struct osmo_fsm_inst *fi, uint32_t 
 		ho_ref = lchan->conn->ho.ho_ref;
 		break;
 	case ACTIVATE_FOR_ASSIGNMENT:
+	case ACTIVATE_FOR_VGCS_CHANNEL:
 	default:
 		act_type = RSL_ACT_INTRA_NORM_ASS;
 		break;
