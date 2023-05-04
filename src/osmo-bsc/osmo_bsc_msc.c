@@ -66,6 +66,42 @@ static const struct rate_ctr_desc msc_ctr_description[] = {
 	[MSC_CTR_BSSMAP_RX_DT1_DTAP_ERROR] =        {"bssmap:rx:dt1:dtap:error", "Number of received BSSMAP DTAP messages with errors"},
 	[MSC_CTR_BSSMAP_RX_DT1_PERFORM_LOCATION_REQUEST] = {"bssmap:rx:dt1:location:request", "Number of received BSSMAP Perform Location Request messages"},
 	[MSC_CTR_BSSMAP_RX_DT1_PERFORM_LOCATION_ABORT] = {"bssmap:tx:dt1:location:abort", "Number of received BSSMAP Perform Location Abort messages"},
+	[MSC_CTR_BSSMAP_RX_DT1_VGCS_VBS_SETUP] = {
+		"bssmap:rx:dt1:vgcs_vbs_setup",
+		"Number of received BSSMAP DT1 VGCS/VBS SETUP messages"
+	},
+	[MSC_CTR_BSSMAP_RX_DT1_VGCS_VBS_ASSIGN_RQST] = {
+		"bssmap:rx:dt1:vgcs_vbs_assignment:req",
+		"Number of received BSSMAP DT1 VGCS/VBS ASSIGNMENT messages"
+	},
+	[MSC_CTR_BSSMAP_RX_DT1_UPLINK_RQST_ACKNOWLEDGE] = {
+		"bssmap:rx:dt1:uplink_rqst:ack",
+		"Number of received BSSMAP DT1 UPLINK REQUEST ACKNOWLEDGE messages"
+	},
+	[MSC_CTR_BSSMAP_RX_DT1_UPLINK_REJECT_CMD] = {
+		"bssmap:rx:dt1:uplink_reject:cmd",
+		"Number of received BSSMAP DT1 UPLINK REJECT COMMAND messages"
+	},
+	[MSC_CTR_BSSMAP_RX_DT1_UPLINK_RELEASE_CMD] = {
+		"bssmap:rx:dt1:uplink_release:cmd",
+		"Number of received BSSMAP DT1 UPLINK RELEASE COMMAND messages"
+	},
+	[MSC_CTR_BSSMAP_RX_DT1_UPLINK_SEIZED_CMD] = {
+		"bssmap:rx:dt1:uplink_seized:cmd",
+		"Number of received BSSMAP DT1 UPLINK SEIZED COMMAND messages"
+	},
+	[MSC_CTR_BSSMAP_RX_DT1_VGCS_ADDL_INFO] = {
+		"bssmap:rx:dt1:vgcs_addl_info",
+		"Number of received BSSMAP DT1 VGCS/VBS ASSITIONAL INFORMATION messages"
+	},
+	[MSC_CTR_BSSMAP_RX_DT1_VGCS_SMS] = {
+		"bssmap:rx:dt1:vgcs_sms",
+		"Number of received BSSMAP DT1 VGCS SMS messages"
+	},
+	[MSC_CTR_BSSMAP_RX_DT1_NOTIFICATION_DATA] = {
+		"bssmap:rx:dt1:notification_data",
+		"Number of received BSSMAP DT1 NOTIFICATION DATA messages"
+	},
 
 	/* Tx message counters (per message type)
 	 *
@@ -110,6 +146,50 @@ static const struct rate_ctr_desc msc_ctr_description[] = {
 		"Number of transmitted BSSMAP Perform Location Response messages containing a location estimate"},
 	[MSC_CTR_BSSMAP_TX_DT1_PERFORM_LOCATION_RESPONSE_FAILURE] = {"bssmap:tx:dt1:location:response_failure",
 		"Number of transmitted BSSMAP Perform Location Response messages containing a failure cause"},
+	[MSC_CTR_BSSMAP_TX_DT1_VGCS_VBS_SETUP_ACK] = {
+		"bssmap:tx:dt1:vgcs_vbs_setup:ack",
+		"Number of transmitted BSSMAP DT1 VGCS/VBS SETUP ACK messages"
+	},
+	[MSC_CTR_BSSMAP_TX_DT1_VGCS_VBS_SETUP_REFUSE] = {
+		"bssmap:tx:dt1:vgcs_vbs_setup:refuse",
+		"Number of transmitted BSSMAP DT1 VGCS/VBS SETUP REFUSE messages"
+	},
+	[MSC_CTR_BSSMAP_TX_DT1_VGCS_VBS_ASSIGN_RESULT] = {
+		"bssmap:tx:dt1:vgcs_vbs_assignment:res",
+		"Number of transmitted BSSMAP DT1 VGCS/VBS ASSIGNMENT RESULT messages"
+	},
+	[MSC_CTR_BSSMAP_TX_DT1_VGCS_VBS_ASSIGN_FAIL] = {
+		"bssmap:tx:dt1:vgcs_vbs_assignment:fail",
+		"Number of transmitted BSSMAP DT1 VGCS/VBS ASSIGNMENT FAILURE messages"
+	},
+	[MSC_CTR_BSSMAP_TX_DT1_VGCS_VBS_QUEUING_INDICATION] = {
+		"bssmap:tx:dt1:vgcs_vbs_queuing:ind",
+		"Number of transmitted BSSMAP DT1 VGCS/VBS QUEUING INDICATION messages"
+	},
+	[MSC_CTR_BSSMAP_TX_DT1_UPLINK_RQST] = {
+		"bssmap:tx:dt1:uplink_rqst",
+		"Number of transmitted BSSMAP DT1 UPLINK REQUEST messages"
+	},
+	[MSC_CTR_BSSMAP_TX_DT1_VGCS_VBS_ASSIGNMENT_STATUS] = {
+		"bssmap:tx:dt1:vgcs_vbs_assignment:status",
+		"Number of transmitted BSSMAP DT1 VGCS/VBS ASSIGNMENT STATUS messages"
+	},
+	[MSC_CTR_BSSMAP_TX_DT1_VGCS_VBS_AREA_CELL_INFO] = {
+		"bssmap:tx:dt1:vgcs_vbs_area_cell:info",
+		"Number of transmitted BSSMAP DT1 VGCS/VBS AREA CELL INFO messages"
+	},
+	[MSC_CTR_BSSMAP_TX_DT1_UPLINK_RQST_CONFIRMATION] = {
+		"bssmap:tx:dt1:uplink_rqst:cnf",
+		"Number of transmitted BSSMAP DT1 UPLINK REQUEST CONFIRMATION  messages"
+	},
+	[MSC_CTR_BSSMAP_TX_DT1_UPLINK_RELEASE_INDICATION] = {
+		"bssmap:tx:dt1:uplink_release:ind",
+		"Number of transmitted BSSMAP DT1 UPLINK RELEASE INDICATION messages"
+	},
+	[MSC_CTR_BSSMAP_TX_DT1_UPLINK_APP_DATA] = {
+		"bssmap:tx:dt1:uplink_app_data",
+		"Number of transmitted BSSMAP DT1 UPLINK APPLICATION DATA  messages"
+	},
 
 	/* Indicators for MSC pool usage */
 	[MSC_CTR_MSCPOOL_SUBSCR_NEW] = {
