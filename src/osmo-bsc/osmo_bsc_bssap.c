@@ -742,11 +742,10 @@ static int select_data_rates(struct assignment_request *req, struct gsm0808_chan
  * find an alternate setting here, this one will be tried secondly if our
  * primary choice fails. */
 static int select_codecs(struct assignment_request *req, const struct gsm0808_channel_type *ct,
-			 struct gsm_subscriber_connection *conn)
+			 struct gsm_subscriber_connection *conn, struct gsm_bts *bts)
 {
 	int rc, i, nc = 0;
 	struct bsc_msc_data *msc;
-	struct gsm_bts *bts = conn_get_bts(conn);
 
 	if (!bts) {
 		LOGP(DMSC, LOGL_ERROR, "No lchan, cannot select codecs\n");
@@ -1023,9 +1022,9 @@ static int bssmap_handle_ass_req_ct_data(struct gsm_subscriber_connection *conn,
 	return 0;
 }
 
-static int bssmap_handle_ass_req_ct_speech(struct gsm_subscriber_connection *conn, struct tlv_parsed *tp,
-					   struct gsm0808_channel_type *ct, struct assignment_request *req,
-					   uint8_t *cause)
+int bssmap_handle_ass_req_ct_speech(struct gsm_subscriber_connection *conn, struct gsm_bts *bts,
+				    struct tlv_parsed *tp, struct gsm0808_channel_type *ct,
+				    struct assignment_request *req, uint8_t *cause)
 {
 	bool aoip = gscon_is_aoip(conn);
 	int rc;
@@ -1049,7 +1048,7 @@ static int bssmap_handle_ass_req_ct_speech(struct gsm_subscriber_connection *con
 
 	/* Match codec information from the assignment command against the
 	 * local preferences of the BSC and BTS */
-	rc = select_codecs(req, ct, conn);
+	rc = select_codecs(req, ct, conn, bts);
 	if (rc < 0) {
 		*cause = GSM0808_CAUSE_REQ_CODEC_TYPE_OR_CONFIG_UNAVAIL;
 		return -1;
@@ -1129,7 +1128,7 @@ static int bssmap_handle_assignm_req(struct gsm_subscriber_connection *conn,
 			goto reject;
 		break;
 	case GSM0808_CHAN_SPEECH:
-		if (bssmap_handle_ass_req_ct_speech(conn, &tp, &ct, &req, &cause) < 0)
+		if (bssmap_handle_ass_req_ct_speech(conn, conn_get_bts(conn), &tp, &ct, &req, &cause) < 0)
 			goto reject;
 		break;
 	case GSM0808_CHAN_SIGN:
