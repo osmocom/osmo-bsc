@@ -55,6 +55,7 @@ int rsl_encryption_cmd(struct msgb *msg);
 int rsl_paging_cmd(struct gsm_bts *bts, uint8_t paging_group,
 		   const struct osmo_mobile_identity *mi,
 		   uint8_t chan_needed, bool is_gprs);
+int rsl_notification_cmd(struct gsm_bts *bts, struct gsm_lchan *lchan, struct gsm0808_group_callref *gc, uint8_t *drx);
 int rsl_imm_assign_cmd(const struct gsm_bts *bts, uint8_t len, const uint8_t *val);
 int rsl_tx_imm_assignment(struct gsm_lchan *lchan);
 int rsl_tx_imm_ass_rej(struct gsm_bts *bts, struct gsm48_req_ref *rqd_ref);

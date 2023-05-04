@@ -870,6 +870,45 @@ int rsl_paging_cmd(struct gsm_bts *bts, uint8_t paging_group,
 	return abis_rsl_sendmsg(msg);
 }
 
+/* Chapter 8.5.10: NOTIFICATION COMMAND */
+int rsl_notification_cmd(struct gsm_bts *bts, struct gsm_lchan *lchan, struct gsm0808_group_callref *gc, uint8_t *drx)
+{
+	struct abis_rsl_cchan_hdr *cch;
+	struct msgb *msg = rsl_msgb_alloc();
+	struct gsm48_chan_desc cd;
+	uint8_t sti = (lchan) ? RSL_CMD_INDICATOR_START : RSL_CMD_INDICATOR_STOP;
+	uint8_t *t;
+	int rc;
+
+	cch = (struct abis_rsl_cchan_hdr *) msgb_put(msg, sizeof(*cch));
+	rsl_init_cchan_hdr(cch, RSL_MT_NOT_CMD);
+	cch->chan_nr = RSL_CHAN_PCH_AGCH;
+
+	msgb_tlv_put(msg, RSL_IE_CMD_INDICATOR, 1, &sti);
+
+	/* Use TLV encoding from TS 08.08. Change different IE type. */
+	t = msg->tail;
+	gsm0808_enc_group_callref(msg, gc);
+	*t = RSL_IE_GROUP_CALL_REF;
+
+	if (lchan) {
+		memset(&cd, 0, sizeof(cd));
+		rc = gsm48_lchan2chan_desc(&cd, lchan, lchan->activate.tsc, true);
+		if (rc) {
+			LOG_LCHAN(lchan, LOGL_ERROR, "Error encoding Channel Number\n");
+			msgb_free(msg);
+			return rc;
+		}
+		msgb_tlv_put(msg, RSL_IE_CHAN_DESC, sizeof(cd), (const uint8_t *)&cd);
+
+		if (drx)
+			msgb_tlv_put(msg, RSL_IE_NCH_DRX_INFO, 1, drx);
+	}
+
+	msg->dst = bts->c0->rsl_link_primary;
+	return abis_rsl_sendmsg(msg);
+}
+
 int rsl_forward_layer3_info(struct gsm_lchan *lchan, const uint8_t *l3_info, uint8_t l3_info_len)
 {
 	struct msgb *msg;
