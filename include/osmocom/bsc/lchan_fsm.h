@@ -78,6 +78,8 @@ static inline bool lchan_state_is(const struct gsm_lchan *lchan, uint32_t state)
 
 bool lchan_may_receive_data(struct gsm_lchan *lchan);
 
+bool lchan_is_asci(struct gsm_lchan *lchan);
+
 void lchan_forget_conn(struct gsm_lchan *lchan);
 
 void lchan_fsm_skip_error(struct gsm_lchan *lchan);

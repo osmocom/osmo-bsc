@@ -69,6 +69,13 @@ bool lchan_may_receive_data(struct gsm_lchan *lchan)
 	}
 }
 
+bool lchan_is_asci(struct gsm_lchan *lchan)
+{
+	if (lchan->activate.info.vgcs || lchan->activate.info.vbs)
+		return true;
+	return false;
+}
+
 static void lchan_on_mode_modify_success(struct gsm_lchan *lchan)
 {
 	lchan->modify.concluded = true;
@@ -1228,8 +1235,13 @@ static void handle_rll_rel_ind_or_conf(struct osmo_fsm_inst *fi, uint32_t event,
 
 	/* Releasing SAPI 0 means the conn becomes invalid; but not if the link_id contains a SACCH flag. */
 	if (lchan->conn && sapi == 0 && !(link_id & 0xc0)) {
-		LOG_LCHAN(lchan, LOGL_DEBUG, "lchan is releasing\n");
-		gscon_lchan_releasing(lchan->conn, lchan);
+		/* A VGCS/VBS channel must stay active, even if all SAPIs are released.
+		 * When a talker releases, the channel is available for the listeners and the next talker. The actual
+		 * channel release is performed by the VGCS/VBS call control. */
+		if (!lchan_is_asci(lchan)) {
+			LOG_LCHAN(lchan, LOGL_DEBUG, "lchan is releasing\n");
+			gscon_lchan_releasing(lchan->conn, lchan);
+		}
 
 		/* if SAPI=0 is gone, it makes no sense if other SAPIs are still around,
 		 * this is not a valid configuration and we should forget about them.
@@ -1257,7 +1269,8 @@ static void lchan_fsm_established(struct osmo_fsm_inst *fi, uint32_t event, void
 	case LCHAN_EV_RLL_REL_IND:
 	case LCHAN_EV_RLL_REL_CONF:
 		handle_rll_rel_ind_or_conf(fi, event, data);
-		if (!lchan_active_sapis(lchan, 0))
+		/* Only release channel, if there is no SAPI and this channel is not a VGCS channel. */
+		if (!lchan_active_sapis(lchan, 0) && !lchan_is_asci(lchan))
 			lchan_fsm_state_chg(LCHAN_ST_WAIT_RLL_RTP_RELEASED);
 		return;
 
