@@ -213,6 +213,12 @@ void gscon_fsm_wait_sccp_rlsd_onenter(struct osmo_fsm_inst *fi, uint32_t prev_st
 	if (conn->lcs.loc_req)
 		osmo_fsm_inst_dispatch(conn->lcs.loc_req->fi, LCS_LOC_REQ_EV_CONN_CLEAR, NULL);
 
+	if (conn->vgcs_call.fi)
+		osmo_fsm_inst_dispatch(conn->vgcs_call.fi, VGCS_EV_CLEANUP, NULL);
+
+	if (conn->vgcs_chan.fi)
+		osmo_fsm_inst_dispatch(conn->vgcs_chan.fi, VGCS_EV_CLEANUP, NULL);
+
 	gscon_release_lchans(conn, true, bsc_gsm48_rr_cause_from_gsm0808_cause(conn->clear_cause));
 	osmo_mgcpc_ep_clear(conn->user_plane.mgw_endpoint);
 
@@ -247,6 +253,8 @@ static void gscon_release_lchan(struct gsm_subscriber_connection *conn, struct g
 		conn->lchan = NULL;
 	if (conn->ho.fi && conn->ho.new_lchan == lchan)
 		conn->ho.new_lchan = NULL;
+	if (conn->vgcs_chan.new_lchan == lchan)
+		conn->vgcs_chan.new_lchan = NULL;
 	if (conn->assignment.new_lchan == lchan)
 		conn->assignment.new_lchan = NULL;
 	lchan_release(lchan, do_rr_release, err, cause_rr,
@@ -953,6 +961,10 @@ void gscon_lchan_releasing(struct gsm_subscriber_connection *conn, struct gsm_lc
 		if (conn->ho.fi)
 			osmo_fsm_inst_dispatch(conn->ho.fi, HO_EV_LCHAN_ERROR, lchan);
 	}
+	if (conn->vgcs_chan.new_lchan == lchan) {
+		if (conn->vgcs_chan.fi)
+			osmo_fsm_inst_dispatch(conn->vgcs_chan.fi, VGCS_EV_LCHAN_ERROR, lchan);
+	}
 	if (conn->lchan == lchan) {
 		lchan_forget_conn(conn->lchan);
 		conn->lchan = NULL;
@@ -989,6 +1001,10 @@ void gscon_forget_lchan(struct gsm_subscriber_connection *conn, struct gsm_lchan
 		conn->ho.new_lchan = NULL;
 		detach_label = "ho.new_lchan";
 	}
+	if (conn->vgcs_chan.new_lchan == lchan) {
+		conn->vgcs_chan.new_lchan = NULL;
+		detach_label = "vgcs.new_lchan";
+	}
 	if (conn->lchan == lchan) {
 		conn->lchan = NULL;
 		detach_label = "primary lchan";
@@ -1007,6 +1023,7 @@ void gscon_forget_lchan(struct gsm_subscriber_connection *conn, struct gsm_lchan
 	if (!conn->lchan
 	    && !conn->ho.new_lchan
 	    && !conn->assignment.new_lchan
+	    && !conn->vgcs_chan.new_lchan
 	    && !conn->lcs.loc_req)
 		gscon_bssmap_clear(conn, GSM0808_CAUSE_EQUIPMENT_FAILURE);
 }
@@ -1028,6 +1045,7 @@ static void gscon_forget_mgw_endpoint(struct gsm_subscriber_connection *conn)
 	conn->ho.created_ci_for_msc = NULL;
 	lchan_forget_mgw_endpoint(conn->lchan);
 	lchan_forget_mgw_endpoint(conn->assignment.new_lchan);
+	lchan_forget_mgw_endpoint(conn->vgcs_chan.new_lchan);
 	lchan_forget_mgw_endpoint(conn->ho.new_lchan);
 }
 
@@ -1117,6 +1135,7 @@ static void gscon_cleanup(struct osmo_fsm_inst *fi, enum osmo_fsm_term_cause cau
 
 	lchan_forget_conn(conn->lchan);
 	lchan_forget_conn(conn->assignment.new_lchan);
+	lchan_forget_conn(conn->vgcs_chan.new_lchan);
 	lchan_forget_conn(conn->ho.new_lchan);
 
 	lb_close_conn(conn);
@@ -1168,6 +1187,12 @@ static void gscon_pre_term(struct osmo_fsm_inst *fi, enum osmo_fsm_term_cause ca
 		osmo_fsm_inst_term(conn->lcls.fi, cause, NULL);
 		conn->lcls.fi = NULL;
 	}
+
+	if (conn->vgcs_call.fi)
+		osmo_fsm_inst_dispatch(conn->vgcs_call.fi, VGCS_EV_CLEANUP, NULL);
+
+	if (conn->vgcs_chan.fi)
+		osmo_fsm_inst_dispatch(conn->vgcs_chan.fi, VGCS_EV_CLEANUP, NULL);
 
 	LOGPFSML(fi, LOGL_DEBUG, "Releasing all lchans (if any) because this conn is terminating\n");
 	gscon_release_lchans(conn, true, bsc_gsm48_rr_cause_from_gsm0808_cause(conn->clear_cause));
