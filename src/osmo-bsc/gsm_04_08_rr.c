@@ -746,6 +746,21 @@ int gsm48_lchan_modify(struct gsm_lchan *lchan, uint8_t mode)
 	return gsm48_sendmsg(msg);
 }
 
+/* TS 44.018 section 9.1.48 */
+int gsm48_send_uplink_release(struct gsm_lchan *lchan, uint8_t cause)
+{
+	struct msgb *msg = gsm48_msgb_alloc_name("GSM 04.08 UL RELEASE");
+	struct gsm48_hdr *gh = (struct gsm48_hdr *) msgb_put(msg, sizeof(*gh));
+
+	msg->lchan = lchan;
+	gh->proto_discr = GSM48_PDISC_RR;
+	gh->msg_type = GSM48_MT_RR_UPLINK_RELEASE;
+
+	msgb_put_u8(msg, cause);
+
+	return gsm48_sendmsg(msg);
+}
+
 int gsm48_rx_rr_modif_ack(struct msgb *msg)
 {
 	struct gsm48_hdr *gh = msgb_l3(msg);
