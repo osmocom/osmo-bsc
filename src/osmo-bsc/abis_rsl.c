@@ -58,6 +58,7 @@
 #include <osmocom/bsc/power_control.h>
 #include <osmocom/bsc/chan_counts.h>
 #include <osmocom/bsc/lchan.h>
+#include <osmocom/bsc/vgcs_fsm.h>
 
 static void send_lchan_signal(int sig_no, struct gsm_lchan *lchan,
 			      struct gsm_meas_rep *resp)
@@ -1301,6 +1302,15 @@ static int rsl_rx_conn_fail(struct msgb *msg)
 		break;
 	default:
 		break;
+	}
+
+	/* Report to VGCS FSM */
+	if (lchan_is_asci(lchan)) {
+		if (lchan->conn && lchan->conn->vgcs_chan.fi) {
+			uint8_t cause = GSM0808_CAUSE_RADIO_INTERFACE_FAILURE;
+			osmo_fsm_inst_dispatch(msg->lchan->conn->vgcs_chan.fi, VGCS_EV_TALKER_FAIL, &cause);
+		}
+		return 0;
 	}
 
 	/* If the lchan is associated with a conn, we shall notify the MSC of the RSL Conn Failure, and
@@ -2552,6 +2562,13 @@ static int rsl_rx_rll_err_ind(struct msgb *msg)
 
 	osmo_fsm_inst_dispatch(msg->lchan->fi, LCHAN_EV_RLL_ERR_IND, &rlm_cause);
 
+	/* Report to VGCS FSM */
+	if (lchan_is_asci(msg->lchan)) {
+		if (msg->lchan->conn && msg->lchan->conn->vgcs_chan.fi) {
+			uint8_t cause = GSM0808_CAUSE_RADIO_INTERFACE_FAILURE;
+			osmo_fsm_inst_dispatch(msg->lchan->conn->vgcs_chan.fi, VGCS_EV_TALKER_FAIL, &cause);
+		}
+	}
 	return 0;
 }
 
@@ -2579,9 +2596,17 @@ static int abis_rsl_rx_rll(struct msgb *msg)
 	switch (rllh->c.msg_type) {
 	case RSL_MT_DATA_IND:
 		LOG_LCHAN(msg->lchan, LOGL_DEBUG, "SAPI=%u DATA INDICATION\n", sapi);
+
 		if (msgb_l2len(msg) > (sizeof(*rllh) + 3) &&
 		    rllh->data[0] == RSL_IE_L3_INFO) {
 			msg->l3h = &rllh->data[3];
+			/* Data message on a VGCS channel is handled by VGCS FSM only. */
+			if (lchan_is_asci(msg->lchan)) {
+				if (msg->lchan->conn && msg->lchan->conn->vgcs_chan.fi)
+					osmo_fsm_inst_dispatch(msg->lchan->conn->vgcs_chan.fi, VGCS_EV_TALKER_DATA,
+							       msg);
+				return 0;
+			}
 			return gsm0408_rcvmsg(msg, rllh->link_id);
 		}
 		break;
@@ -2621,6 +2646,13 @@ static int abis_rsl_rx_rll(struct msgb *msg)
 		msg->lchan->sapis[sapi] = LCHAN_SAPI_MS;
 		osmo_fsm_inst_dispatch(msg->lchan->fi, LCHAN_EV_RLL_ESTABLISH_IND, msg);
 
+		/* Establishment message on a VGCS channel is handled by VGCS FSM only. */
+		if (lchan_is_asci(msg->lchan)) {
+			if (msg->lchan->conn && msg->lchan->conn->vgcs_chan.fi)
+				osmo_fsm_inst_dispatch(msg->lchan->conn->vgcs_chan.fi, VGCS_EV_TALKER_EST, msg);
+			break;
+		}
+
 		if (msgb_l2len(msg) > (sizeof(*rllh) + 3) &&
 		    rllh->data[0] == RSL_IE_L3_INFO) {
 			msg->l3h = &rllh->data[3];
@@ -2636,6 +2668,14 @@ static int abis_rsl_rx_rll(struct msgb *msg)
 	case RSL_MT_REL_IND:
 		/* BTS informs us of having received  DISC from MS */
 		osmo_fsm_inst_dispatch(msg->lchan->fi, LCHAN_EV_RLL_REL_IND, &rllh->link_id);
+
+		/* Report to VGCS FSM */
+		if (lchan_is_asci(msg->lchan)) {
+			if (msg->lchan->conn && msg->lchan->conn->vgcs_chan.fi) {
+				uint8_t cause = GSM0808_CAUSE_CALL_CONTROL;
+				osmo_fsm_inst_dispatch(msg->lchan->conn->vgcs_chan.fi, VGCS_EV_TALKER_REL, &cause);
+			}
+		}
 		break;
 	case RSL_MT_REL_CONF:
 		/* BTS informs us of having received UA from MS,
