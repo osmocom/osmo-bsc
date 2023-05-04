@@ -5,6 +5,7 @@ enum lchan_select_reason {
 	SELECT_FOR_MS_CHAN_REQ,
 	SELECT_FOR_ASSIGNMENT,
 	SELECT_FOR_HANDOVER,
+	SELECT_FOR_VGCS,
 };
 
 extern const struct value_string lchan_select_reason_names[];

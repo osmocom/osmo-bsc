@@ -177,6 +177,7 @@ OsmoBSC(config-net-bts)# channel allocator mode ?
   chan-req    Channel allocation for CHANNEL REQUEST (RACH)
   assignment  Channel allocation for assignment
   handover    Channel allocation for handover
+  vgcs-vbs    Channel allocation for VGCS/VBS
 
 OsmoBSC(config-net-bts)# channel allocator mode set-all ?
   ascending   Allocate Timeslots and Transceivers in ascending order
@@ -190,6 +191,10 @@ OsmoBSC(config-net-bts)# channel allocator mode assignment ?
   ascending   Allocate Timeslots and Transceivers in ascending order
   descending  Allocate Timeslots and Transceivers in descending order
   dynamic     Dynamic lchan selection based on configured parameters
+
+OsmoBSC(config-net-bts)# channel allocator mode vgcs-vbs ?
+  ascending   Allocate Timeslots and Transceivers in ascending order
+  descending  Allocate Timeslots and Transceivers in descending order
 
 OsmoBSC(config-net-bts)# channel allocator dynamic-param ?
   sort-by-trx-power  Whether to sort TRX instances by their respective power levels

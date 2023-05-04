@@ -549,6 +549,7 @@ DEFUN_ATTR(cfg_bts_challoc_mode_all,
 	bts->chan_alloc_chan_req_reverse = reverse;
 	bts->chan_alloc_assignment_reverse = reverse;
 	bts->chan_alloc_handover_reverse = reverse;
+	bts->chan_alloc_vgcs_reverse = reverse;
 	bts->chan_alloc_assignment_dynamic = false;
 
 	return CMD_SUCCESS;
@@ -557,7 +558,7 @@ DEFUN_ATTR(cfg_bts_challoc_mode_all,
 DEFUN_ATTR(cfg_bts_challoc_mode,
 	   cfg_bts_challoc_mode_cmd,
 	   CHAN_ALLOC_CMD
-	   " mode (set-all|chan-req|assignment|handover) "
+	   " mode (set-all|chan-req|assignment|handover|vgcs-vbs) "
 	   CHAN_ALLOC_ASC_DSC,
 	   CHAN_ALLOC_DESC
 	   "Channel allocation mode\n"
@@ -565,6 +566,7 @@ DEFUN_ATTR(cfg_bts_challoc_mode,
 	   "Channel allocation for CHANNEL REQUEST (RACH)\n"
 	   "Channel allocation for assignment\n"
 	   "Channel allocation for handover\n"
+	   "Channel allocation for VGCS/VBS\n"
 	   CHAN_ALLOC_ASC_DSC_DESC,
 	   CMD_ATTR_IMMEDIATE)
 {
@@ -580,6 +582,8 @@ DEFUN_ATTR(cfg_bts_challoc_mode,
 	}
 	if (set_all || !strcmp(argv[0], "handover"))
 		bts->chan_alloc_handover_reverse = reverse;
+	if (set_all || !strcmp(argv[0], "vgcs-vbs"))
+		bts->chan_alloc_vgcs_reverse = reverse;
 
 	return CMD_SUCCESS;
 }
@@ -4423,6 +4427,9 @@ static void config_write_bts_single(struct vty *vty, struct gsm_bts *bts)
 	}
 	vty_out(vty, "  channel allocator mode handover %s%s",
 		bts->chan_alloc_handover_reverse ? "descending" : "ascending",
+		VTY_NEWLINE);
+	vty_out(vty, "  channel allocator mode vgcs-vbs %s%s",
+		bts->chan_alloc_vgcs_reverse ? "descending" : "ascending",
 		VTY_NEWLINE);
 	if (bts->chan_alloc_avoid_interf)
 		vty_out(vty, "  channel allocator avoid-interference 1%s", VTY_NEWLINE);

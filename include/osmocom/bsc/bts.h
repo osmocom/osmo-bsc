@@ -523,6 +523,7 @@ struct gsm_bts {
 	bool chan_alloc_chan_req_reverse;
 	bool chan_alloc_assignment_reverse;
 	bool chan_alloc_handover_reverse;
+	bool chan_alloc_vgcs_reverse;
 
 	/* Whether to use dynamic allocation mode for assignment */
 	bool chan_alloc_assignment_dynamic;

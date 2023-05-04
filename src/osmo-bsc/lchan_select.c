@@ -41,6 +41,7 @@ const struct value_string lchan_select_reason_names[] = {
 	OSMO_VALUE_STRING(SELECT_FOR_MS_CHAN_REQ),
 	OSMO_VALUE_STRING(SELECT_FOR_ASSIGNMENT),
 	OSMO_VALUE_STRING(SELECT_FOR_HANDOVER),
+	OSMO_VALUE_STRING(SELECT_FOR_VGCS),
 	{0, NULL}
 };
 
@@ -348,6 +349,9 @@ struct gsm_lchan *lchan_avail_by_type(struct gsm_bts *bts,
 		break;
 	case SELECT_FOR_HANDOVER:
 		chan_alloc_reverse = bts->chan_alloc_handover_reverse;
+		break;
+	case SELECT_FOR_VGCS:
+		chan_alloc_reverse = bts->chan_alloc_vgcs_reverse;
 		break;
 	}
 
