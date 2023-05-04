@@ -1544,6 +1544,66 @@ static int rsl_rx_hando_det(struct msgb *msg)
 	return 0;
 }
 
+/* Chapter 8.4.21: TALKER DETECTION */
+static int rsl_rx_talker_det(struct msgb *msg)
+{
+	struct abis_rsl_dchan_hdr *dh = msgb_l2(msg);
+	struct tlv_parsed tp;
+	/* We use this struct, because it has same data. */
+	struct handover_rr_detect_data d = {
+		.msg = msg,
+	};
+
+	if (rsl_tlv_parse(&tp, dh->data, msgb_l2len(msg) - sizeof(*dh)) < 0) {
+		LOG_LCHAN(msg->lchan, LOGL_ERROR, "Failed to parse RSL %s\n",
+			  rsl_or_ipac_msg_name(dh->c.msg_type));
+		return -EINVAL;
+	}
+
+	if (TLVP_PRESENT(&tp, RSL_IE_ACCESS_DELAY))
+		d.access_delay = TLVP_VAL(&tp, RSL_IE_ACCESS_DELAY);
+
+	if (!msg->lchan->conn || !msg->lchan->conn->vgcs_chan.fi) {
+		LOGP(DRSL, LOGL_ERROR, "%s TALKER DETECTION but no VGCS channel\n",
+		     gsm_lchan_name(msg->lchan));
+		return 0;
+	}
+
+	osmo_fsm_inst_dispatch(msg->lchan->conn->vgcs_chan.fi, VGCS_EV_TALKER_DET, &d);
+
+	return 0;
+}
+
+/* Chapter 8.4.22: LISTENER DETECTION */
+static int rsl_rx_listener_det(struct msgb *msg)
+{
+	struct abis_rsl_dchan_hdr *dh = msgb_l2(msg);
+	struct tlv_parsed tp;
+	/* We use this struct, because it has same data. */
+	struct handover_rr_detect_data d = {
+		.msg = msg,
+	};
+
+	if (rsl_tlv_parse(&tp, dh->data, msgb_l2len(msg) - sizeof(*dh)) < 0) {
+		LOG_LCHAN(msg->lchan, LOGL_ERROR, "Failed to parse RSL %s\n",
+			  rsl_or_ipac_msg_name(dh->c.msg_type));
+		return -EINVAL;
+	}
+
+	if (TLVP_PRESENT(&tp, RSL_IE_ACCESS_DELAY))
+		d.access_delay = TLVP_VAL(&tp, RSL_IE_ACCESS_DELAY);
+
+	if (!msg->lchan->conn || !msg->lchan->conn->vgcs_chan.fi) {
+		LOGP(DRSL, LOGL_ERROR, "%s LISTENER DETECTION but no VGCS channel\n",
+		     gsm_lchan_name(msg->lchan));
+		return 0;
+	}
+
+	osmo_fsm_inst_dispatch(msg->lchan->conn->vgcs_chan.fi, VGCS_EV_LISTENER_DET, &d);
+
+	return 0;
+}
+
 static int rsl_rx_ipacc_pdch(struct msgb *msg, char *name, uint32_t ts_ev)
 {
 	struct gsm_bts_trx_ts *ts = msg->lchan->ts;
@@ -1611,6 +1671,12 @@ static int abis_rsl_rx_dchan(struct msgb *msg)
 	case RSL_MT_HANDO_DET:
 		rc = rsl_rx_hando_det(msg);
 		break;
+	case RSL_MT_TALKER_DET:
+		rc = rsl_rx_talker_det(msg);
+		break;
+	case RSL_MT_LISTENER_DET:
+		rc = rsl_rx_listener_det(msg);
+		break;
 	case RSL_MT_RF_CHAN_REL_ACK:
 		if (msg_for_osmocom_dyn_ts(msg))
 			osmo_fsm_inst_dispatch(msg->lchan->ts->fi, TS_EV_PDCH_DEACT_ACK, NULL);
@@ -1641,8 +1707,6 @@ static int abis_rsl_rx_dchan(struct msgb *msg)
 		break;
 	case RSL_MT_PHY_CONTEXT_CONF:
 	case RSL_MT_PREPROC_MEAS_RES:
-	case RSL_MT_TALKER_DET:
-	case RSL_MT_LISTENER_DET:
 	case RSL_MT_REMOTE_CODEC_CONF_REP:
 	case RSL_MT_MR_CODEC_MOD_ACK:
 	case RSL_MT_MR_CODEC_MOD_NACK:
