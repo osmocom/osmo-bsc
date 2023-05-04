@@ -405,7 +405,7 @@ int rsl_chan_ms_power_ctrl(struct gsm_lchan *lchan)
 static int channel_mode_from_lchan(struct rsl_ie_chan_mode *cm,
 				   struct gsm_lchan *lchan,
 				   const struct channel_mode_and_rate *ch_mode_rate,
-				   bool vamos)
+				   bool vamos, bool vgcs, bool vbs)
 {
 	int rc;
 	memset(cm, 0, sizeof(*cm));
@@ -429,10 +429,24 @@ static int channel_mode_from_lchan(struct rsl_ie_chan_mode *cm,
 		cm->chan_rt = RSL_CMOD_CRT_SDCCH;
 		break;
 	case GSM_LCHAN_TCH_F:
-		cm->chan_rt = vamos ? RSL_CMOD_CRT_OSMO_TCH_VAMOS_Bm : RSL_CMOD_CRT_TCH_Bm;
+		if (vamos)
+			cm->chan_rt = RSL_CMOD_CRT_OSMO_TCH_VAMOS_Bm;
+		else if (vgcs)
+			cm->chan_rt = RSL_CMOD_CRT_TCH_GROUP_Bm;
+		else if (vbs)
+			cm->chan_rt = RSL_CMOD_CRT_TCH_BCAST_Bm;
+		else
+			cm->chan_rt = RSL_CMOD_CRT_TCH_Bm;
 		break;
 	case GSM_LCHAN_TCH_H:
-		cm->chan_rt = vamos ? RSL_CMOD_CRT_OSMO_TCH_VAMOS_Lm : RSL_CMOD_CRT_TCH_Lm;
+		if (vamos)
+			cm->chan_rt = RSL_CMOD_CRT_OSMO_TCH_VAMOS_Lm;
+		else if (vgcs)
+			cm->chan_rt = RSL_CMOD_CRT_TCH_GROUP_Lm;
+		else if (vbs)
+			cm->chan_rt = RSL_CMOD_CRT_TCH_BCAST_Lm;
+		else
+			cm->chan_rt = RSL_CMOD_CRT_TCH_Lm;
 		break;
 	case GSM_LCHAN_NONE:
 	case GSM_LCHAN_UNKNOWN:
@@ -574,7 +588,8 @@ int rsl_tx_chan_activ(struct gsm_lchan *lchan, uint8_t act_type, uint8_t ho_ref)
 	/* PDCH activation is a job for rsl_tx_dyn_ts_pdch_act_deact(); */
 	OSMO_ASSERT(act_type != RSL_ACT_OSMO_PDCH);
 
-	rc = channel_mode_from_lchan(&cm, lchan, &lchan->activate.ch_mode_rate, lchan->activate.info.vamos);
+	rc = channel_mode_from_lchan(&cm, lchan, &lchan->activate.ch_mode_rate, lchan->activate.info.vamos,
+				     lchan->activate.info.vgcs, lchan->activate.info.vbs);
 	if (rc < 0) {
 		LOGP(DRSL, LOGL_ERROR,
 		     "%s Cannot find channel mode from lchan type\n",
@@ -711,7 +726,7 @@ int rsl_chan_mode_modify_req(struct gsm_lchan *lchan)
 	if (chan_nr < 0)
 		return chan_nr;
 
-	rc = channel_mode_from_lchan(&cm, lchan, &lchan->modify.ch_mode_rate, lchan->modify.info.vamos);
+	rc = channel_mode_from_lchan(&cm, lchan, &lchan->modify.ch_mode_rate, lchan->modify.info.vamos, false, false);
 	if (rc < 0)
 		return rc;
 

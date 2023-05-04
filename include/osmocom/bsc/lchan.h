@@ -101,6 +101,7 @@ enum lchan_activate_for {
 	ACTIVATE_FOR_MS_CHANNEL_REQUEST,
 	ACTIVATE_FOR_ASSIGNMENT,
 	ACTIVATE_FOR_HANDOVER,
+	ACTIVATE_FOR_VGCS_CHANNEL,
 	ACTIVATE_FOR_VTY,
 	ACTIVATE_FOR_MODE_MODIFY_RTP,
 };
@@ -139,6 +140,9 @@ struct lchan_activate_info {
 	struct optional_val tsc;
 
 	bool vamos;
+
+	/* In case of ASCI channel: Flags, if a VGCS channel or VBS channel is activated. */
+	bool vgcs, vbs;
 
 	/* A copy of bts->imm_ass_time at the time where Channel Activation was requested. A change in the VTY
 	 * configuration has immediate effect on the value, so make sure we don't get mixed up when it gets changed
