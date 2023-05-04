@@ -412,6 +412,60 @@ struct gsm_subscriber_connection {
 	} fast_return;
 
 	enum gsm0808_cause clear_cause;
+
+	/* VGCS/VBS "call controling" connection */
+	struct {
+		/* Features supported by MSC/BSC */
+		bool ff_present;
+		struct gsm0808_vgcs_feature_flags ff;
+		/* Group Call Reference IE */
+		struct gsm0808_group_callref gc_ie;
+		enum gsm0808_service_flag sf;
+		uint32_t call_ref;
+		/* Call (BSC) FSM */
+		struct osmo_fsm_inst *fi;
+		/* Current talker */
+		struct gsm_subscriber_connection *talker;
+		/* L3 info of link establihment (Talker established) */
+		struct llist_head l3_queue;
+		/* Flag and cause (Talker released) */
+		bool talker_rel;
+		uint8_t talker_cause;
+		/* Flag that states acknowledgement of the talker by MSC */
+		bool msc_ack;
+		/* List of VGCS/VBS "resource controling" connections */
+		struct llist_head chan_list;
+	} vgcs_call;
+
+	/* VGCS/VBS "resource controling" connection */
+	struct {
+		/* List entry of chan_list of "call controling" connection */
+		struct llist_head list;
+		/* Group Call Reference IE */
+		struct gsm0808_group_callref gc_ie;
+		enum gsm0808_service_flag sf;
+		uint32_t call_ref;
+		/* Channel type IE */
+		struct gsm0808_channel_type ct;
+		/* Channel mode and rate */
+		struct channel_mode_and_rate ch_mode_rate;
+		/* Cell Identifier IE */
+		struct gsm0808_cell_id ci;
+		char ci_str[16];
+		/* Assignment Requirements IE */
+		enum gsm0808_assignment_requirement ar;
+		/* Call Identifier IE */
+		uint32_t call_id;
+		/* Pointer to VGCS/VBS "call controling" gsconn */
+		struct gsm_subscriber_connection *call;
+		/* Cell (BTS) FSM */
+		struct osmo_fsm_inst *fi;
+		/* lchan to be assigned */
+		struct gsm_lchan *new_lchan;
+		/* MGW peer */
+		char msc_rtp_addr[INET6_ADDRSTRLEN];
+		uint16_t msc_rtp_port;
+	} vgcs_chan;
 };
 
 

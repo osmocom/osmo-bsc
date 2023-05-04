@@ -50,6 +50,7 @@
 #include <osmocom/bsc/lcs_loc_req.h>
 #include <osmocom/bsc/bssmap_reset.h>
 #include <osmocom/bsc/assignment_fsm.h>
+#include <osmocom/bsc/vgcs_fsm.h>
 
 #define IP_V4_ADDR_LEN 4
 
@@ -1463,7 +1464,10 @@ static int dtap_rcvmsg(struct gsm_subscriber_connection *conn,
 	/* convert DLCI to RSL link ID, store in msg->cb */
 	OBSC_LINKID_CB(gsm48) = DLCI2RSL_LINK_ID(header->link_id);
 
-	dtap_rc = osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_MT_DTAP, gsm48);
+	if (conn->vgcs_call.fi)
+		dtap_rc = osmo_fsm_inst_dispatch(conn->vgcs_call.fi, VGCS_EV_MSC_DTAP, gsm48);
+	else
+		dtap_rc = osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_MT_DTAP, gsm48);
 	return dtap_rc;
 }
 

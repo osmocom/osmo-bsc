@@ -50,6 +50,7 @@
 #include <osmocom/core/byteswap.h>
 #include <osmocom/bsc/lb.h>
 #include <osmocom/bsc/lcs_loc_req.h>
+#include <osmocom/bsc/vgcs_fsm.h>
 
 #define S(x)	(1 << (x))
 
@@ -303,6 +304,8 @@ static int validate_initial_user_data(struct osmo_fsm_inst *fi, struct msgb *msg
 	switch (bssmap_type) {
 	case BSS_MAP_MSG_HANDOVER_RQST:
 	case BSS_MAP_MSG_PERFORM_LOCATION_RQST:
+	case BSS_MAP_MSG_VGCS_VBS_SETUP:
+	case BSS_MAP_MSG_VGCS_VBS_ASSIGNMENT_RQST:
 		return 0;
 
 	default:
@@ -341,6 +344,20 @@ static void handle_initial_user_data(struct osmo_fsm_inst *fi, struct msgb *msg)
 		/* Location Services: MSC asks for location of an IDLE subscriber */
 		conn_fsm_state_chg(ST_ACTIVE);
 		lcs_loc_req_start(conn, msg);
+		return;
+
+	case BSS_MAP_MSG_VGCS_VBS_SETUP:
+		rate_ctr_inc(&conn->sccp.msc->msc_ctrs->ctr[MSC_CTR_BSSMAP_RX_DT1_VGCS_VBS_SETUP]);
+		/* VGCS: MSC asks vor voice group/bcast call. */
+		conn_fsm_state_chg(ST_ACTIVE);
+		vgcs_vbs_call_start(conn, msg);
+		return;
+
+	case BSS_MAP_MSG_VGCS_VBS_ASSIGNMENT_RQST:
+		rate_ctr_inc(&conn->sccp.msc->msc_ctrs->ctr[MSC_CTR_BSSMAP_RX_DT1_VGCS_VBS_ASSIGN_RQST]);
+		/* VGCS: MSC asks vor resource (channel) for voice group/bcast call. */
+		conn_fsm_state_chg(ST_ACTIVE);
+		vgcs_vbs_chan_start(conn, msg);
 		return;
 
 	default:

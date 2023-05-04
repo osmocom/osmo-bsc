@@ -73,6 +73,7 @@ libbsc_la_SOURCES = \
 	handover_fsm.c \
 	handover_logic.c \
 	handover_vty.c \
+	vgcs_fsm.c \
 	lb.c \
 	lchan.c \
 	lchan_fsm.c \
