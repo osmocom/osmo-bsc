@@ -165,7 +165,7 @@ static void on_assignment_failure(struct gsm_subscriber_connection *conn)
 	}
 }
 
-static void _gsm0808_ass_compl_extend_osmux(struct msgb *msg, uint8_t cid)
+void bssap_extend_osmux(struct msgb *msg, uint8_t cid)
 {
 	OSMO_ASSERT(msg->l3h[1] == msgb_l3len(msg) - 2); /*TL not in len */
 	msgb_tv_put(msg, GSM0808_IE_OSMO_OSMUX_CID, cid);
@@ -246,7 +246,7 @@ static void send_assignment_complete(struct gsm_subscriber_connection *conn)
 
 	if (gscon_is_aoip(conn) && bsc_chan_ind_requires_rtp_stream(conn->assignment.ch_indctr) &&
 	    conn->assignment.req.use_osmux)
-		_gsm0808_ass_compl_extend_osmux(resp, osmux_cid);
+		bssap_extend_osmux(resp, osmux_cid);
 
 	rate_ctr_inc(rate_ctr_group_get_ctr(conn->sccp.msc->msc_ctrs, MSC_CTR_BSSMAP_TX_DT1_ASSIGNMENT_COMPLETE));
 	rc = gscon_sigtran_send(conn, resp);
