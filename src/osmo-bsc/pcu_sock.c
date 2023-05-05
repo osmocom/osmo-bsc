@@ -59,7 +59,7 @@ static const char *sapi_string[] = {
 	[PCU_IF_SAPI_PCH_DT] =	"PCH_DT",
 };
 
-bool pcu_connected(struct gsm_network *net)
+bool pcu_connected(const struct gsm_network *net)
 {
 	struct pcu_sock_state *state = net->pcu_state;
 

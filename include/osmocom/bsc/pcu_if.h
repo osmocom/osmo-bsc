@@ -15,7 +15,7 @@ struct pcu_sock_state {
 };
 
 /* Check if BTS has a PCU connection */
-bool pcu_connected(struct gsm_network *net);
+bool pcu_connected(const struct gsm_network *net);
 
 /* PCU relevant information has changed; Inform PCU (if connected) */
 void pcu_info_update(struct gsm_bts *bts);
