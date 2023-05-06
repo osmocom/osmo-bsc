@@ -548,6 +548,14 @@ static int get_bts_neighbor_list_si2(struct ctrl_cmd *cmd, void *data)
 
 CTRL_CMD_DEFINE_RO(bts_neighbor_list_si2, "neighbor-list si2");
 
+static int get_bts_neighbor_list_si5(struct ctrl_cmd *cmd, void *data)
+{
+	const struct gsm_bts *bts = cmd->node;
+	return get_bts_neighbor_list(cmd, &bts->si_common.si5_neigh_list);
+}
+
+CTRL_CMD_DEFINE_RO(bts_neighbor_list_si5, "neighbor-list si5");
+
 static int verify_bts_neighbor_list_add_del(struct ctrl_cmd *cmd, const char *value, void *_data)
 {
 	int arfcn;
@@ -1011,6 +1019,7 @@ int bsc_bts_ctrl_cmds_install(void)
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_rf_states);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_c0_power_red);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_neighbor_list_si2);
+	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_neighbor_list_si5);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_neighbor_list_add);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_neighbor_list_del);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_neighbor_list_mode);
