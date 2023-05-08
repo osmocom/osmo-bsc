@@ -393,12 +393,25 @@ static void bootstrap_bts(struct gsm_bts *bts)
 			     bts->si_common.chan_desc.bs_ag_blks_res);
 			bts->si_common.chan_desc.bs_ag_blks_res = 2;
 		}
+
+		if (!(bts->nch.num_blocks == 1 && (bts->nch.first_block == 0 || bts->nch.first_block == 1)) &&
+		    !(bts->nch.num_blocks == 2 && bts->nch.first_block == 0)) {
+			LOG_BTS(bts, DNM, LOGL_ERROR, "CCCH is combined with SDCCHs, but NCH position/size is "
+				"incompatible with that. Please fix your config!\n");
+		}
 	} else { /* Non-combined TS0/C0 configuration */
 		/* There can be additional CCCHs on even timeslot numbers */
 		n += (bts->c0->ts[2].pchan_from_config == GSM_PCHAN_CCCH);
 		n += (bts->c0->ts[4].pchan_from_config == GSM_PCHAN_CCCH);
 		n += (bts->c0->ts[6].pchan_from_config == GSM_PCHAN_CCCH);
 		bts->si_common.chan_desc.ccch_conf = (n << 1);
+	}
+
+	if (bts->nch.first_block + bts->nch.num_blocks > bts->si_common.chan_desc.bs_ag_blks_res) {
+		LOG_BTS(bts, DNM, LOGL_ERROR, "Position/Number of NCH blocks (%u..%u) exceeds AGCH (%u)."
+			"Please fix your config!\n", bts->nch.first_block,
+			bts->nch.first_block + bts->nch.num_blocks - 1,
+			bts->si_common.chan_desc.bs_ag_blks_res);
 	}
 
 	bts_setup_ramp_init_bts(bts);

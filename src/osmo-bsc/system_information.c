@@ -771,7 +771,19 @@ static int generate_si1(enum osmo_sysinfo_type t, struct gsm_bts *bts)
 	 * SI1 Rest Octets (10.5.2.32), contains NCH position and band
 	 * indicator but that is not in the 04.08.
 	 */
-	rc = osmo_gsm48_rest_octets_si1_encode(si1->rest_octets, NULL, is_dcs_net(bts));
+	if (bts->nch.num_blocks) {
+		rc = osmo_gsm48_si1ro_nch_pos_encode(bts->nch.num_blocks, bts->nch.first_block);
+		if (rc < 0) {
+			LOGP(DRR, LOGL_ERROR, "Unable to encode NCH position (num_blocks=%u, first_block=%u)\n",
+			     bts->nch.num_blocks, bts->nch.first_block);
+			rc = osmo_gsm48_rest_octets_si1_encode(si1->rest_octets, NULL, is_dcs_net(bts));
+		} else {
+			uint8_t nch_pos = rc;
+			rc = osmo_gsm48_rest_octets_si1_encode(si1->rest_octets, &nch_pos, is_dcs_net(bts));
+		}
+	} else {
+		rc = osmo_gsm48_rest_octets_si1_encode(si1->rest_octets, NULL, is_dcs_net(bts));
+	}
 
 	return sizeof(*si1) + rc;
 }

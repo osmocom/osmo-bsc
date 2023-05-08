@@ -1107,6 +1107,46 @@ DEFUN_USRATTR(cfg_bts_rach_nm_ldavg,
 	return CMD_SUCCESS;
 }
 
+DEFUN_USRATTR(cfg_bts_nch_position,
+	      cfg_bts_nch_position_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_RSL_LINK),
+	      "nch-position num-blocks <1-7> first-block <0-6>",
+	      "NCH (Notification Channel) position within CCCH\n"
+	      "Number of blocks reserved for NCH\n"
+	      "Number of blocks reserved for NCH\n"
+	      "First block reserved for NCH\n"
+	      "First block reserved for NCH\n")
+{
+	struct gsm_bts *bts = vty->index;
+	int num_blocks = atoi(argv[0]);
+	int first_block = atoi(argv[1]);
+
+	if (osmo_gsm48_si1ro_nch_pos_encode(num_blocks, first_block)) {
+		vty_out(vty, "num-blocks %u first-block %u is not permitted by 3GPP TS 44.010 Table 10.5.2.32.1b%s",
+			num_blocks, first_block, VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	bts->nch.num_blocks = num_blocks;
+	bts->nch.first_block = first_block;
+
+	return CMD_SUCCESS;
+}
+
+DEFUN_USRATTR(cfg_bts_no_nch_position,
+	      cfg_bts_no_nch_position_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_RSL_LINK),
+	      "no nch-position",
+	      NO_STR "Disable NCH in this BTS\n")
+{
+	struct gsm_bts *bts = vty->index;
+
+	bts->nch.num_blocks = 0;
+	bts->nch.first_block = 0;
+
+	return CMD_SUCCESS;
+}
+
 DEFUN_USRATTR(cfg_bts_cell_barred,
 	      cfg_bts_cell_barred_cmd,
 	      X(BSC_VTY_ATTR_RESTART_ABIS_RSL_LINK),
@@ -4405,6 +4445,12 @@ static void config_write_bts_single(struct vty *vty, struct gsm_bts *bts)
 		bts->si_common.chan_desc.bs_pa_mfrms + 2, VTY_NEWLINE);
 	vty_out(vty, "  channel-description bs-ag-blks-res %u%s",
 		bts->si_common.chan_desc.bs_ag_blks_res, VTY_NEWLINE);
+	if (bts->nch.num_blocks) {
+		vty_out(vty, "  nch-position num-blocks %u first-block %u%s",
+			bts->nch.num_blocks, bts->nch.first_block, VTY_NEWLINE);
+	} else {
+		vty_out(vty, "  no nch-position%s", VTY_NEWLINE);
+	}
 
 	if (bts->ccch_load_ind_thresh != 10)
 		vty_out(vty, "  ccch load-indication-threshold %u%s",
@@ -4851,6 +4897,8 @@ int bts_vty_init(void)
 	install_element(BTS_NODE, &cfg_bts_interf_meas_level_bounds_cmd);
 	install_element(BTS_NODE, &cfg_bts_srvcc_fast_return_cmd);
 	install_element(BTS_NODE, &cfg_bts_immediate_assignment_cmd);
+	install_element(BTS_NODE, &cfg_bts_nch_position_cmd);
+	install_element(BTS_NODE, &cfg_bts_no_nch_position_cmd);
 
 	neighbor_ident_vty_init();
 	/* See also handover commands added on bts level from handover_vty.c */

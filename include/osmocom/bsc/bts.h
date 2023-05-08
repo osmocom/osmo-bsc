@@ -568,6 +568,11 @@ struct gsm_bts {
 			uint16_t scramble_list[MAX_EARFCN_LIST];
 		} data;
 	} si_common;
+	/* NCH (Notification Channel) related parameters */
+	struct {
+		uint8_t num_blocks;	/* NCH number of CCCH blocks (0 = no NCH) */
+		uint8_t first_block;	/* NCH first block number */
+	} nch;
 	bool early_classmark_allowed;
 	bool early_classmark_allowed_3g;
 	/* for testing only: Have an infinitely long radio link timeout */
