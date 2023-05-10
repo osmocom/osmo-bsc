@@ -34,6 +34,8 @@ int gsm48_send_rr_app_info(struct gsm_lchan *lchan, uint8_t apdu_id, uint8_t apd
 			   const uint8_t *apdu_data, ssize_t apdu_data_len);
 int gsm48_lchan_modify(struct gsm_lchan *lchan, uint8_t mode);
 int gsm48_send_uplink_release(struct gsm_lchan *lchan, uint8_t cause);
+int gsm48_send_uplink_busy(struct gsm_lchan *lchan);
+int gsm48_send_uplink_free(struct gsm_lchan *lchan, uint8_t acc_bit, uint8_t *uic);
 int gsm48_rx_rr_modif_ack(struct msgb *msg);
 int gsm48_parse_meas_rep(struct gsm_meas_rep *rep, struct msgb *msg);
 

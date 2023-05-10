@@ -770,6 +770,51 @@ int gsm48_send_uplink_release(struct gsm_lchan *lchan, uint8_t cause)
 	return gsm48_sendmsg(msg);
 }
 
+/* TS 44.018 section 9.1.46 */
+int gsm48_send_uplink_busy(struct gsm_lchan *lchan)
+{
+	struct msgb *msg = gsm48_msgb_alloc_name("GSM 04.08 UL BUSY");
+	struct gsm48_hdr *gh = (struct gsm48_hdr *) msgb_put(msg, sizeof(*gh));
+
+	msg->lchan = lchan;
+	gh->proto_discr = GSM48_PDISC_RR;
+	gh->msg_type = GSM48_MT_RR_UPLINK_BUSY;
+
+	return gsm48_sendmsg_unit(msg);
+}
+
+/* TS 44.018 section 9.1.47 */
+int gsm48_send_uplink_free(struct gsm_lchan *lchan, uint8_t acc_bit, uint8_t *uic)
+{
+	struct msgb *msg = gsm48_msgb_alloc_name("GSM 04.08 UL FREE");
+	struct gsm48_hdr_sh *sh = (struct gsm48_hdr_sh *) msgb_put(msg, sizeof(*sh) + 22);
+	struct bitvec *bv = bitvec_alloc(22, NULL);
+
+	msg->lchan = lchan;
+	sh->rr_short_pd = GSM48_PDISC_SH_RR;
+	sh->msg_type = GSM48_MT_RR_SH_UL_FREE;
+	sh->l2_header = 0;
+
+	/* < Uplink Access Request bit > */
+	bitvec_set_bit(bv, (acc_bit) ? H : L);
+
+	/* { L | H <Uplink Identity Code bit(6) > } */
+	if (uic) {
+		bitvec_set_bit(bv, H);
+		sh->data[0] = 0x40 | *uic;
+	} else
+		bitvec_set_bit(bv, L);
+
+	/* Emergency mode not supported */
+
+	/* Padding the rest with 0x2B and apply to msg. */
+	bitvec_spare_padding(bv, 175);
+	bitvec_pack(bv, sh->data);
+	bitvec_free(bv);
+
+	return gsm48_sendmsg_unit(msg);
+}
+
 int gsm48_rx_rr_modif_ack(struct msgb *msg)
 {
 	struct gsm48_hdr *gh = msgb_l3(msg);
