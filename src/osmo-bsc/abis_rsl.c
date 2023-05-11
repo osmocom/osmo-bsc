@@ -2398,7 +2398,7 @@ static int rsl_rx_ericsson_imm_assign_sent(struct msgb *msg)
 	else {
 		msgb_pull(msg, 1); /* drop previous data to use msg_pull_u32 */
 		tlli = msgb_pull_u32(msg);
-		pcu_tx_imm_ass_sent(sign_link->trx->bts, tlli);
+		pcu_tx_pch_confirm(sign_link->trx->bts, tlli);
 	}
 	return 0;
 }

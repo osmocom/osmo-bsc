@@ -436,7 +436,7 @@ int pcu_tx_rach_ind(struct gsm_bts *bts, int16_t qta, uint16_t ra, uint32_t fn,
 }
 
 /* Confirm the sending of an immediate assignment to the pcu */
-int pcu_tx_imm_ass_sent(struct gsm_bts *bts, uint32_t tlli)
+int pcu_tx_pch_confirm(struct gsm_bts *bts, uint32_t tlli)
 {
 	struct msgb *msg;
 	struct gsm_pcu_if *pcu_prim;
@@ -459,10 +459,10 @@ int pcu_tx_imm_ass_sent(struct gsm_bts *bts, uint32_t tlli)
 /* we need to decode the raw RR paging message (see PCU code
  * Encoding::write_paging_request) and extract the mobile identity
  * (P-TMSI) from it */
-static int pcu_rx_rr_paging(struct gsm_bts *bts, uint8_t paging_group,
-			    const uint8_t *raw_rr_msg)
+static int pcu_rx_rr_paging_pch(struct gsm_bts *bts, uint8_t paging_group,
+				const struct gsm_pcu_if_pch_dt *pch_dt)
 {
-	struct gsm48_paging1 *p1 = (struct gsm48_paging1 *) raw_rr_msg;
+	struct gsm48_paging1 *p1 = (struct gsm48_paging1 *) pch_dt->data;
 	uint8_t chan_needed;
 	struct osmo_mobile_identity mi;
 	int rc;
@@ -505,25 +505,21 @@ static int pcu_rx_rr_paging(struct gsm_bts *bts, uint8_t paging_group,
 	return rc;
 }
 
-/* Helper function for pcu_rx_data_req() to extract paging group info (3 byte) */
-static uint8_t extract_paging_group(struct gsm_bts *bts, uint8_t *data)
+static int pcu_rx_rr_imm_ass_pch(struct gsm_bts *bts, uint8_t paging_group,
+				 const struct gsm_pcu_if_pch_dt *pch_dt)
 {
-	char imsi_digit_buf[4];
-	uint8_t pag_grp;
+	LOG_BTS(bts, DPCU, LOGL_DEBUG, "PCU Sends immediate assignment via PCH (TLLI=0x%08x, IMSI=%s, Paging group=0x%02x)\n",
+		pch_dt->tlli, pch_dt->imsi, paging_group);
 
-	/* the first three bytes are the last three digits of the IMSI, which we need to compute the paging group */
-	imsi_digit_buf[0] = data[0];
-	imsi_digit_buf[1] = data[1];
-	imsi_digit_buf[2] = data[2];
-	imsi_digit_buf[3] = '\0';
+	/* NOTE: Sending an IMMEDIATE ASSIGNMENT via PCH became necessary with GPRS in order to be able to
+	 * assign downlink TBFs directly through the paging channel. However, this method never became part
+	 * of the RSL specs. This means that each BTS vendor has to come up with a proprietary method. At
+	 * the moment we only support Ericsson RBS here. */
+	if (is_ericsson_bts(bts))
+		return rsl_ericsson_imm_assign_cmd(bts, pch_dt->tlli, sizeof(pch_dt->data), pch_dt->data, paging_group);
 
-	pag_grp = gsm0502_calc_paging_group(&bts->si_common.chan_desc,
-					    str_to_imsi(imsi_digit_buf));
-
-	LOG_BTS(bts, DPCU, LOGL_DEBUG, "Calculating paging group: imsi_digit_buf=%s ==> pag_grp=0x%02x\n",
-		imsi_digit_buf, pag_grp);
-
-	return pag_grp;
+	LOG_BTS(bts, DPCU, LOGL_ERROR, "BTS model does not support sending immediate assignment via PCH!\n");
+	return -ENOTSUP;
 }
 
 static int pcu_rx_data_req(struct gsm_bts *bts, uint8_t msg_type,
@@ -532,6 +528,7 @@ static int pcu_rx_data_req(struct gsm_bts *bts, uint8_t msg_type,
 	uint8_t pag_grp;
 	int rc = 0;
 	struct gsm_pcu_if_pch_dt *pch_dt;
+	struct gsm48_imm_ass *gsm48_imm_ass;
 
 	LOG_BTS(bts, DPCU, LOGL_DEBUG, "Data request received: sapi=%s arfcn=%d "
 		"block=%d data=%s\n", sapi_string[data_req->sapi],
@@ -539,18 +536,13 @@ static int pcu_rx_data_req(struct gsm_bts *bts, uint8_t msg_type,
 		osmo_hexdump(data_req->data, data_req->len));
 
 	switch (data_req->sapi) {
-	case PCU_IF_SAPI_PCH:
-		/* Extract 3 byte paging group */
-		pag_grp = extract_paging_group(bts, data_req->data);
-		pcu_rx_rr_paging(bts, pag_grp, data_req->data+3);
-		break;
 	case PCU_IF_SAPI_AGCH:
 		if (rsl_imm_assign_cmd(bts, data_req->len, data_req->data))
 			rc = -EIO;
 		break;
 	case PCU_IF_SAPI_PCH_DT:
 		/* DT = direct TLLI. A tlli is prefixed so that the BSC/BTS can confirm the sending of the downlink
-		 * IMMEDIATE ASSIGNMENT towards the PCU using this TLLI as a reference. */
+		 * IMMEDIATE ASSIGNMENT or PAGING COMMAND towards the PCU using this TLLI as a reference. */
 
 		if (data_req->len < sizeof(struct gsm_pcu_if_pch_dt)) {
 			LOG_BTS(bts, DPCU, LOGL_ERROR, "Received PCU data request with invalid/small length %d\n",
@@ -561,24 +553,10 @@ static int pcu_rx_data_req(struct gsm_bts *bts, uint8_t msg_type,
 		pch_dt = (struct gsm_pcu_if_pch_dt *)data_req->data;
 		pag_grp = gsm0502_calc_paging_group(&bts->si_common.chan_desc, str_to_imsi(pch_dt->imsi));
 
-		LOG_BTS(bts, DPCU, LOGL_DEBUG, "PCU Sends immediate assignment via PCH (TLLI=0x%08x, IMSI=%s, Paging group=0x%02x)\n",
-			pch_dt->tlli, pch_dt->imsi, pag_grp);
-
-		/* NOTE: Sending an IMMEDIATE ASSIGNMENT via PCH became necessary with GPRS in order to be able to
-		 * assign downlink TBFs directly through the paging channel. However, this method never became part
-		 * of the RSL specs. This means that each BTS vendor has to come up with a proprietary method. At
-		 * the moment we only support Ericsson RBS here. */
-		if (is_ericsson_bts(bts)) {
-			rc = rsl_ericsson_imm_assign_cmd(bts, pch_dt->tlli, sizeof(pch_dt->data),
-							 pch_dt->data, pag_grp);
-		} else {
-			LOG_BTS(bts, DPCU, LOGL_ERROR, "BTS model does not support sending immediate assignment via PCH!\n");
-			rc = -ENOTSUP;
-		}
-
-		if (rc)
-			rc = -EIO;
-		break;
+		gsm48_imm_ass = (struct gsm48_imm_ass *)pch_dt->data;
+		if (gsm48_imm_ass->msg_type == GSM48_MT_RR_IMM_ASS)
+			return pcu_rx_rr_imm_ass_pch(bts, pag_grp, pch_dt);
+		return pcu_rx_rr_paging_pch(bts, pag_grp, pch_dt);
 	default:
 		LOG_BTS(bts, DPCU, LOGL_ERROR, "Received PCU data request with "
 			"unsupported sapi %d\n", data_req->sapi);
