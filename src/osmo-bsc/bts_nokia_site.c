@@ -1731,27 +1731,6 @@ static int abis_nm_rcvmsg_fom(struct msgb *mb)
 			osmo_timer_setup(&bts->nokia.reset_timer, reset_timer_cb, bts);
 			osmo_timer_schedule(&bts->nokia.reset_timer, 0, 0);
 		}
-
-		/* ACK for CONF DATA message ? */
-		if (bts->nokia.configured != 0) {
-			/* start TRX  (RSL link) */
-
-			struct gsm_e1_subslot *e1_link =
-					&sign_link->trx->rsl_e1_link;
-			struct e1inp_line *line;
-
-			bts->nokia.configured = 0;
-
-			/* RSL Link */
-			line = e1inp_line_find(e1_link->e1_nr);
-			if (!line) {
-				LOG_BTS(bts, DLINP, LOGL_ERROR, "RSL link referring to "
-					"non-existing E1 line %u\n", e1_link->e1_nr);
-				return -ENOMEM;
-			}
-			/* start TRX */
-			start_sabm_in_line(line, 1, SAPI_RSL);	/* start only RSL */
-		}
 		break;
 	case NOKIA_MSG_STATE_CHANGED:
 		/* send ACK */
@@ -1760,6 +1739,21 @@ static int abis_nm_rcvmsg_fom(struct msgb *mb)
 	case NOKIA_MSG_CONF_COMPLETE:
 		/* send ACK */
 		abis_nm_ack(bts, ref);
+		if (bts->nokia.configured != 0) {
+			/* start TRX  (RSL link) */
+			struct gsm_e1_subslot *e1_link = &sign_link->trx->rsl_e1_link;
+			struct e1inp_line *line;
+			bts->nokia.configured = 0;
+			/* RSL Link */
+			line = e1inp_line_find(e1_link->e1_nr);
+			if (!line) {
+					LOG_BTS(bts, DLINP, LOGL_ERROR, "RSL link referring to "
+						"non-existing E1 line %u\n", e1_link->e1_nr);
+					return -ENOMEM;
+			}
+			/* start TRX */
+			start_sabm_in_line(line, 1, SAPI_RSL);  /* start only RSL */
+		}
 		/* fake 12.21 OM */
 		nokia_abis_nm_fake_1221_ok(bts);
 		break;
