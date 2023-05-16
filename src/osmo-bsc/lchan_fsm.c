@@ -1040,9 +1040,11 @@ static void lchan_fsm_wait_rll_rtp_establish_onenter(struct osmo_fsm_inst *fi, u
 	else if (requires_rtp_stream)
 		lchan_rtp_fsm_start(lchan);
 
-	/* When activating a channel for VTY, skip waiting for activity from
+	/* When activating a channel for VTY or VGCS/VBS, skip waiting for activity from
 	 * lchan_rtp_fsm, but only if no rtp stream is required. */
-	if (lchan->activate.info.activ_for == ACTIVATE_FOR_VTY && !requires_rtp_stream) {
+	if ((lchan->activate.info.activ_for == ACTIVATE_FOR_VTY ||
+	     lchan->activate.info.activ_for == ACTIVATE_FOR_VGCS_CHANNEL) &&
+	    !requires_rtp_stream) {
 		lchan_fsm_state_chg(LCHAN_ST_ESTABLISHED);
 	}
 }
@@ -1065,7 +1067,9 @@ static void lchan_fsm_wait_rll_rtp_establish(struct osmo_fsm_inst *fi, uint32_t 
 		return;
 
 	case LCHAN_EV_RTP_READY:
-		if (lchan->sapis[0] != LCHAN_SAPI_UNUSED)
+		/* If RLL was established or if it does not need to be establised, because of VGCS/VBS channel. */
+		if (lchan->sapis[0] != LCHAN_SAPI_UNUSED ||
+		    lchan->activate.info.activ_for == ACTIVATE_FOR_VGCS_CHANNEL)
 			lchan_fsm_state_chg(LCHAN_ST_ESTABLISHED);
 		return;
 
