@@ -568,10 +568,8 @@ static int verify_bts_neighbor_list_add_del(struct ctrl_cmd *cmd, const char *va
 	return 0;
 }
 
-static int set_bts_neighbor_list_add_del(struct ctrl_cmd *cmd, void *data, bool add)
+static int set_bts_neighbor_list_add_del(struct ctrl_cmd *cmd, void *data, bool add, struct bitvec *neigh_list)
 {
-	struct gsm_bts *bts = cmd->node;
-	struct bitvec *bv = &bts->si_common.neigh_list;
 	int arfcn_int;
 	uint16_t arfcn;
 	enum gsm_band unused;
@@ -582,20 +580,15 @@ static int set_bts_neighbor_list_add_del(struct ctrl_cmd *cmd, void *data, bool 
 	}
 	arfcn = (uint16_t) arfcn_int;
 
-	if (bts->neigh_list_manual_mode == NL_MODE_AUTOMATIC) {
-		cmd->reply = "Neighbor list not in manual mode";
-		return CTRL_CMD_ERROR;
-	}
-
 	if (gsm_arfcn2band_rc(arfcn, &unused) < 0) {
 		cmd->reply = "Invalid arfcn detected";
 		return CTRL_CMD_ERROR;
 	}
 
 	if (add)
-		bitvec_set_bit_pos(bv, arfcn, 1);
+		bitvec_set_bit_pos(neigh_list, arfcn, 1);
 	else
-		bitvec_set_bit_pos(bv, arfcn, 0);
+		bitvec_set_bit_pos(neigh_list, arfcn, 0);
 
 	cmd->reply = "OK";
 	return CTRL_CMD_REPLY;
@@ -608,7 +601,12 @@ static int verify_bts_neighbor_list_add(struct ctrl_cmd *cmd, const char *value,
 
 static int set_bts_neighbor_list_add(struct ctrl_cmd *cmd, void *data)
 {
-	return set_bts_neighbor_list_add_del(cmd, data, true);
+	struct gsm_bts *bts = cmd->node;
+	if (bts->neigh_list_manual_mode == NL_MODE_AUTOMATIC) {
+		cmd->reply = "Neighbor list not in manual mode";
+		return CTRL_CMD_ERROR;
+	}
+	return set_bts_neighbor_list_add_del(cmd, data, true, &bts->si_common.neigh_list);
 }
 
 CTRL_CMD_DEFINE_WO(bts_neighbor_list_add, "neighbor-list add");
@@ -620,10 +618,49 @@ static int verify_bts_neighbor_list_del(struct ctrl_cmd *cmd, const char *value,
 
 static int set_bts_neighbor_list_del(struct ctrl_cmd *cmd, void *data)
 {
-	return set_bts_neighbor_list_add_del(cmd, data, false);
+	struct gsm_bts *bts = cmd->node;
+	if (bts->neigh_list_manual_mode == NL_MODE_AUTOMATIC) {
+		cmd->reply = "Neighbor list not in manual mode";
+		return CTRL_CMD_ERROR;
+	}
+	return set_bts_neighbor_list_add_del(cmd, data, false, &bts->si_common.neigh_list);
 }
 
 CTRL_CMD_DEFINE_WO(bts_neighbor_list_del, "neighbor-list del");
+
+static int verify_bts_neighbor_list_si5_add(struct ctrl_cmd *cmd, const char *value, void *_data)
+{
+	return verify_bts_neighbor_list_add_del(cmd, value, _data);
+}
+
+static int set_bts_neighbor_list_si5_add(struct ctrl_cmd *cmd, void *data)
+{
+	struct gsm_bts *bts = cmd->node;
+	if (bts->neigh_list_manual_mode != NL_MODE_MANUAL_SI5SEP) {
+		cmd->reply = "Neighbor list not in manual mode with separate SI5";
+		return CTRL_CMD_ERROR;
+	}
+	return set_bts_neighbor_list_add_del(cmd, data, true, &bts->si_common.si5_neigh_list);
+}
+
+CTRL_CMD_DEFINE_WO(bts_neighbor_list_si5_add, "neighbor-list si5-add");
+
+static int verify_bts_neighbor_list_si5_del(struct ctrl_cmd *cmd, const char *value, void *_data)
+{
+	return verify_bts_neighbor_list_add_del(cmd, value, _data);
+}
+
+static int set_bts_neighbor_list_si5_del(struct ctrl_cmd *cmd, void *data)
+{
+	struct gsm_bts *bts = cmd->node;
+	if (bts->neigh_list_manual_mode != NL_MODE_MANUAL_SI5SEP) {
+		cmd->reply = "Neighbor list not in manual mode with separate SI5";
+		return CTRL_CMD_ERROR;
+	}
+	return set_bts_neighbor_list_add_del(cmd, data, false, &bts->si_common.si5_neigh_list);
+}
+
+CTRL_CMD_DEFINE_WO(bts_neighbor_list_si5_del, "neighbor-list si5-del");
 
 static int verify_bts_neighbor_list_mode(struct ctrl_cmd *cmd, const char *value, void *_data)
 {
@@ -1022,6 +1059,8 @@ int bsc_bts_ctrl_cmds_install(void)
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_neighbor_list_si5);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_neighbor_list_add);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_neighbor_list_del);
+	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_neighbor_list_si5_add);
+	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_neighbor_list_si5_del);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_neighbor_list_mode);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_si2quater_neighbor_list_del_earfcn);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_si2quater_neighbor_list_del_uarfcn);
