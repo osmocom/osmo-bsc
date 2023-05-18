@@ -1,4 +1,4 @@
-/* (C) 2022 by sysmocom - s.m.f.c. GmbH <info@sysmocom.de>
+/* (C) 2022 by sysmocom - s.f.m.c. GmbH <info@sysmocom.de>
  * (C) 2008-2018 by Harald Welte <laforge@gnumonks.org>
  *
  * All Rights Reserved

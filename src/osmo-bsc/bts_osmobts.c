@@ -1,7 +1,7 @@
 /* Osmocom OsmoBTS specific code */
 
 /* (C) 2010-2012 by Harald Welte <laforge@gnumonks.org>
- * (C) 2021 by sysmocom - s.m.f.c. GmbH <info@sysmocom.de>
+ * (C) 2021 by sysmocom - s.f.m.c. GmbH <info@sysmocom.de>
  *
  * All Rights Reserved
  *
