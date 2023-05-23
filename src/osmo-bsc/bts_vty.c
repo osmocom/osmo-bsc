@@ -91,6 +91,12 @@ static const struct value_string bts_neigh_mode_strs[] = {
 	{ 0, NULL }
 };
 
+static const struct value_string nokia_hopping_mode_strs[] = {
+	{ 0,	"baseband" },
+	{ 1,	"synthesizer" },
+	{ 0,	NULL }
+};
+
 static struct cmd_node bts_node = {
 	BTS_NODE,
 	"%s(config-net-bts)# ",
@@ -464,6 +470,31 @@ DEFUN_ATTR(cfg_bts_nokia_site_bts_reset_timer_cnf,
 
 	return CMD_SUCCESS;
 }
+
+DEFUN_USRATTR(cfg_bts_nokia_site_hopping_mode,
+		cfg_bts_nokia_site_hopping_mode_cmd,
+		X(BSC_VTY_ATTR_RESTART_ABIS_OML_LINK),
+		"nokia_site hopping-mode (baseband|synthesizer)",
+		NOKIA_STR
+		"Sets the hopping type for Nokia *Site\n"
+		"Baseband (BB) hopping\n"
+		"Synthesizer (RF) hopping\n")
+{
+	struct gsm_bts *bts = vty->index;
+
+	if (!is_nokia_bts(bts)) {
+		vty_out(vty, "%% BTS is not of Nokia *Site type%s", VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	if (!strcmp(argv[0], "baseband"))
+		bts->nokia.hopping_mode = 0;
+	else
+		bts->nokia.hopping_mode = 1;
+
+	return CMD_SUCCESS;
+}
+
 #define OML_STR	"Organization & Maintenance Link\n"
 #define IPA_STR "A-bis/IP Specific Options\n"
 
@@ -4700,6 +4731,8 @@ static void config_write_bts_single(struct vty *vty, struct gsm_bts *bts)
 		vty_out(vty, "  nokia_site no-local-rel-conf %d%s",
 			bts->nokia.no_loc_rel_cnf, VTY_NEWLINE);
 		vty_out(vty, "  nokia_site bts-reset-timer %d%s", bts->nokia.bts_reset_timer_cnf, VTY_NEWLINE);
+		vty_out(vty, "  nokia_site hopping-mode %s%s", get_value_string(nokia_hopping_mode_strs, bts->nokia.hopping_mode), VTY_NEWLINE);
+
 		/* fall through: Nokia requires "oml e1" parameters also */
 	default:
 		config_write_e1_link(vty, &bts->oml_e1_link, "  oml ");
@@ -4926,6 +4959,7 @@ int bts_vty_init(void)
 	install_element(BTS_NODE, &cfg_bts_nokia_site_skip_reset_cmd);
 	install_element(BTS_NODE, &cfg_bts_nokia_site_no_loc_rel_cnf_cmd);
 	install_element(BTS_NODE, &cfg_bts_nokia_site_bts_reset_timer_cnf_cmd);
+	install_element(BTS_NODE, &cfg_bts_nokia_site_hopping_mode_cmd);
 	install_element(BTS_NODE, &cfg_bts_stream_id_cmd);
 	install_element(BTS_NODE, &cfg_bts_deprecated_stream_id_cmd);
 	install_element(BTS_NODE, &cfg_bts_oml_e1_cmd);
