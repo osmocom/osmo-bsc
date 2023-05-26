@@ -1,3 +1,9 @@
+osmo-bsc (1.9.2) unstable; urgency=medium
+
+  * systemd: depend on networking-online.target
+
+ -- Oliver Smith <osmith@sysmocom.de>  Fri, 26 May 2023 14:46:58 +0200
+
 osmo-bsc (1.9.1) unstable; urgency=medium
 
   [ Vadim Yanitskiy ]
