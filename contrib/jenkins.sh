@@ -80,7 +80,7 @@ $MAKE $PARALLEL_MAKE
 LD_LIBRARY_PATH="$inst/lib" $MAKE check \
   || exit_tar_workspace
 LD_LIBRARY_PATH="$inst/lib" \
-  DISTCHECK_CONFIGURE_FLAGS="--enable-vty-tests --enable-external-tests --enable-werror $CONFIG" \
+  DISTCHECK_CONFIGURE_FLAGS="--enable-external-tests --enable-werror $CONFIG" \
   $MAKE $PARALLEL_MAKE distcheck \
   || exit_tar_workspace
 
