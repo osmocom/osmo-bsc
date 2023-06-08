@@ -87,6 +87,7 @@ cs7 instance 0
  point-code 1.23.3
  asp asp-clnt-msc-0 2905 0 m3ua
   remote-ip 127.0.0.1
+  role asp
   sctp-role client
  sccp-address msc
   point-code 0.23.1
