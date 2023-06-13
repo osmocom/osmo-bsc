@@ -1170,6 +1170,12 @@ static void dispatch_dtap(struct gsm_subscriber_connection *conn,
 			 * according to spec */
 			bsc_dtap(conn, link_id, msg);
 			break;
+		case GSM48_MT_RR_UPLINK_RELEASE:
+			/* When the calling phone releases the uplink before it has been assigned to the group
+			 * channel, it will send an UPLINK RELEASE message on the dedicated channel. The MSC
+			 * has to take care of it. (assigning the phone to the group channel) */
+			bsc_dtap(conn, link_id, msg);
+			break;
 		default:
 			/* Drop unknown RR message */
 			LOG_LCHAN(msg->lchan, LOGL_NOTICE, "Unknown RR message: %s\n",
