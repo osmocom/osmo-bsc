@@ -912,9 +912,8 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 
-	bsc_gsmnet->mgw.conf = talloc_zero(bsc_gsmnet, struct mgcp_client_conf);
+	bsc_gsmnet->mgw.conf = mgcp_client_conf_alloc(bsc_gsmnet);
 	bsc_gsmnet->mgw.mgw_pool = mgcp_client_pool_alloc(bsc_gsmnet);
-	mgcp_client_conf_init(bsc_gsmnet->mgw.conf);
 
 	bts_init();
 	libosmo_abis_init(tall_bsc_ctx);
