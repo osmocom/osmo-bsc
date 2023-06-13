@@ -62,6 +62,7 @@ int rsl_tx_imm_ass_rej(struct gsm_bts *bts, struct gsm48_req_ref *rqd_ref);
 int gsm48_send_rr_ass_cmd(struct gsm_lchan *dest_lchan, struct gsm_lchan *lchan, uint8_t power_command);
 
 int rsl_data_request(struct msgb *msg, uint8_t link_id);
+int rsl_unit_data_request(struct msgb *msg, uint8_t link_id);
 int rsl_establish_request(struct gsm_lchan *lchan, uint8_t link_id);
 int rsl_relase_request(struct gsm_lchan *lchan, uint8_t link_id);
 

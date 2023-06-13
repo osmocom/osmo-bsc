@@ -1157,6 +1157,31 @@ int rsl_data_request(struct msgb *msg, uint8_t link_id)
 	return abis_rsl_sendmsg(msg);
 }
 
+/* Send "UNIT DATA REQUEST" message with given L3 Info payload */
+/* Chapter 8.3.11 */
+int rsl_unit_data_request(struct msgb *msg, uint8_t link_id)
+{
+	int chan_nr;
+
+	if (msg->lchan == NULL) {
+		LOGP(DRSL, LOGL_ERROR, "cannot send UNIT DATA REQUEST to unknown lchan\n");
+		msgb_free(msg);
+		return -EINVAL;
+	}
+
+	chan_nr = gsm_lchan2chan_nr(msg->lchan, true);
+	if (chan_nr < 0) {
+		msgb_free(msg);
+		return chan_nr;
+	}
+
+	rsl_rll_push_l3(msg, RSL_MT_UNIT_DATA_REQ, chan_nr, link_id, 1);
+
+	msg->dst = rsl_chan_link(msg->lchan);
+
+	return abis_rsl_sendmsg(msg);
+}
+
 /* Send "ESTABLISH REQUEST" message with given L3 Info payload */
 /* Chapter 8.3.1 */
 int rsl_establish_request(struct gsm_lchan *lchan, uint8_t link_id)

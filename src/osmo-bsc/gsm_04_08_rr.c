@@ -57,6 +57,15 @@ int gsm48_sendmsg(struct msgb *msg)
 	return rsl_data_request(msg, 0);
 }
 
+int gsm48_sendmsg_unit(struct msgb *msg)
+{
+	if (msg->lchan)
+		msg->dst = rsl_chan_link(msg->lchan);
+
+	msg->l3h = msg->data;
+	return rsl_unit_data_request(msg, 0);
+}
+
 /* Section 9.1.8 / Table 9.9 */
 struct chreq {
 	uint8_t val;
