@@ -1621,7 +1621,7 @@ DEFUN_USRATTR(cfg_bts_gprs_ns_timer,
 	"Tbvc-block timeout\n"			\
 	"Tbvc-block retries\n"			\
 	"Tbvc-unblock retries\n"		\
-	"Tbvcc-reset timeout\n"			\
+	"Tbvc-reset timeout\n"			\
 	"Tbvc-reset retries\n"			\
 	"Tbvc-suspend timeout\n"		\
 	"Tbvc-suspend retries\n"		\
