@@ -450,7 +450,7 @@ int pcu_tx_pch_confirm(struct gsm_bts *bts, uint32_t tlli)
 	pcu_prim = (struct gsm_pcu_if *) msg->data;
 	data_cnf_dt = &pcu_prim->u.data_cnf_dt;
 
-	data_cnf_dt->sapi = PCU_IF_SAPI_PCH;
+	data_cnf_dt->sapi = PCU_IF_SAPI_PCH_DT;
 	data_cnf_dt->tlli = tlli;
 
 	return pcu_sock_send(bts->network, msg);
