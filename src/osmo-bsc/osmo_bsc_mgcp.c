@@ -33,13 +33,14 @@
 static struct bsc_msc_data *msc_from_asp(struct osmo_ss7_asp *asp)
 {
 	int msc_nr;
+	const char *asp_name = osmo_ss7_asp_get_name(asp);
 	/* this is rather ugly, as we of course have MTP-level routing between
 	 * the local SCCP user (BSC) and the AS/ASPs.  However, for the most simple
 	 * SCCPlite case, there is a 1:1 mapping between ASP and AS, and using
 	 * the libosmo-sigtran "simple client", the names are "as[p]-clnt-msc-%u",
 	 * as set in osmo_bsc_sigtran_init() */
-	if (sscanf(asp->cfg.name, "asp-clnt-msc-%u", &msc_nr) != 1) {
-		LOGP(DMSC, LOGL_ERROR, "Cannot find to which MSC the ASP %s belongs\n", asp->cfg.name);
+	if (!asp_name || sscanf(asp_name, "asp-clnt-msc-%u", &msc_nr) != 1) {
+		LOGP(DMSC, LOGL_ERROR, "Cannot find to which MSC the ASP '%s' belongs\n", asp_name);
 		return NULL;
 	}
 	return osmo_msc_data_find(bsc_gsmnet, msc_nr);
@@ -51,7 +52,8 @@ int bsc_sccplite_rx_mgcp(struct osmo_ss7_asp *asp, struct msgb *msg)
 	struct bsc_msc_data *msc;
 	int rc;
 
-	LOGP(DMSC, LOGL_NOTICE, "%s: Received IPA-encapsulated MGCP: %s\n", asp->cfg.name, msg->l2h);
+	LOGP(DMSC, LOGL_NOTICE, "%s: Received IPA-encapsulated MGCP: %s\n",
+	     osmo_ss7_asp_get_name(asp), msg->l2h);
 	msc = msc_from_asp(asp);
 	if (msc) {
 		/* we don't have a write queue here as we simply expect the socket buffers

@@ -686,7 +686,7 @@ static int sccplite_asp_ctrl_cmd_send(struct osmo_ss7_asp *asp, struct ctrl_cmd 
 	struct msgb *msg;
 
 	/* don't attempt to send CTRL on a non-SCCPlite ASP */
-	if (asp->cfg.proto != OSMO_SS7_ASP_PROT_IPA)
+	if (osmo_ss7_asp_get_proto(asp) != OSMO_SS7_ASP_PROT_IPA)
 		return 0;
 
 	msg = ctrl_cmd_make(cmd);

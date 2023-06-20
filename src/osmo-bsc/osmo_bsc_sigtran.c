@@ -729,7 +729,7 @@ static int asp_rx_unknown(struct osmo_ss7_asp *asp, int ppid_mux, struct msgb *m
 	struct ipaccess_head *iph;
 	struct ipaccess_head_ext *iph_ext;
 
-	if (asp->cfg.proto != OSMO_SS7_ASP_PROT_IPA) {
+	if (osmo_ss7_asp_get_proto(asp) != OSMO_SS7_ASP_PROT_IPA) {
 		msgb_free(msg);
 		return 0;
 	}
