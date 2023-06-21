@@ -375,6 +375,28 @@ static void update_connection_stats_cb(void *data)
 	osmo_timer_schedule(&update_connection_stats_timer, 1, 0);
 }
 
+static bool nch_position_compatible_with_combined_ccch(const struct gsm_bts *bts)
+{
+	switch (bts->nch.num_blocks) {
+	case 0:
+		/* no NCH enabled, so we are fine */
+		return true;
+	case 1:
+		if (bts->nch.first_block == 0 || bts->nch.first_block == 1)
+			return true;
+		break;
+	case 2:
+		if (bts->nch.first_block == 0)
+			return true;
+		break;
+	default:
+		break;
+	}
+
+	/* anything else is not permitted */
+	return false;
+}
+
 static void bootstrap_bts(struct gsm_bts *bts)
 {
 	unsigned int n = 0;
@@ -394,8 +416,7 @@ static void bootstrap_bts(struct gsm_bts *bts)
 			bts->si_common.chan_desc.bs_ag_blks_res = 2;
 		}
 
-		if (!(bts->nch.num_blocks == 1 && (bts->nch.first_block == 0 || bts->nch.first_block == 1)) &&
-		    !(bts->nch.num_blocks == 2 && bts->nch.first_block == 0)) {
+		if (!nch_position_compatible_with_combined_ccch(bts)) {
 			LOG_BTS(bts, DNM, LOGL_ERROR, "CCCH is combined with SDCCHs, but NCH position/size is "
 				"incompatible with that. Please fix your config!\n");
 		}
