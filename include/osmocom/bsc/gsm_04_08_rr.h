@@ -18,7 +18,7 @@ struct gsm_subscriber_connection;
 void gsm_net_update_ctype(struct gsm_network *network);
 enum gsm_chan_t get_ctype_by_chreq(struct gsm_network *network, uint8_t ra);
 int get_reason_by_chreq(uint8_t ra, int neci);
-int gsm48_send_rr_release(struct gsm_lchan *lchan);
+int gsm48_send_rr_release(struct gsm_lchan *lchan, bool ui);
 int send_siemens_mrpci(struct gsm_lchan *lchan,
 		       uint8_t *classmark2_lv);
 int gsm48_send_rr_classmark_enquiry(struct gsm_lchan *lchan);

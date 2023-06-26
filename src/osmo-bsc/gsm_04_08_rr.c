@@ -308,12 +308,15 @@ static int generate_cell_sel_ind_after_rel(uint8_t *out, unsigned int out_len, c
 	}
 }
 
+#define REPEAT_RR_RELEASE_UI	3
+
 /* 7.1.7 and 9.1.7: RR CHANnel RELease */
-int gsm48_send_rr_release(struct gsm_lchan *lchan)
+int gsm48_send_rr_release(struct gsm_lchan *lchan, bool ui)
 {
-	struct msgb *msg = gsm48_msgb_alloc_name("GSM 04.08 RR REL");
+	struct msgb *msg = gsm48_msgb_alloc_name("GSM 04.08 RR REL"), *msgc;
 	struct gsm48_hdr *gh = (struct gsm48_hdr *) msgb_put(msg, sizeof(*gh));
 	uint8_t *cause;
+	int n;
 
 	msg->lchan = lchan;
 	gh->proto_discr = GSM48_PDISC_RR;
@@ -338,8 +341,17 @@ int gsm48_send_rr_release(struct gsm_lchan *lchan)
 	       gsm_lchan_name(lchan),  lchan->release.rr_cause,
 	       rr_cause_name(lchan->release.rr_cause));
 
-	/* Send actual release request to MS */
-	return gsm48_sendmsg(msg);
+	/* Send actual release request to MS (dedicated channel) */
+	if (!ui)
+		return gsm48_sendmsg(msg);
+
+	/* Send actual release request to MS (VGCS channel) */
+	for (n = 1; n < REPEAT_RR_RELEASE_UI; n++) {
+		msgc = msgb_copy(msg, "CHAN RELEASE copy");
+		msgc->lchan = lchan;
+		gsm48_sendmsg_unit(msgc);
+	}
+	return gsm48_sendmsg_unit(msg);
 }
 
 int send_siemens_mrpci(struct gsm_lchan *lchan,

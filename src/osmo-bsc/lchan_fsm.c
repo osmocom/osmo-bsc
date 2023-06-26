@@ -1421,8 +1421,14 @@ static bool should_sacch_deact(struct gsm_lchan *lchan)
 
 static void lchan_do_release(struct gsm_lchan *lchan)
 {
-	if (lchan->release.do_rr_release && lchan->sapis[0] != LCHAN_SAPI_UNUSED)
-		gsm48_send_rr_release(lchan);
+	if (lchan->release.do_rr_release) {
+		/* To main DCCH in dedicated and group transmit mode */
+		if (lchan->sapis[0] != LCHAN_SAPI_UNUSED)
+			gsm48_send_rr_release(lchan, false);
+		/* As UI to all listeners in group receive mode */
+		if (lchan_is_asci(lchan))
+			gsm48_send_rr_release(lchan, true);
+	}
 
 	if (lchan->fi_rtp)
 		osmo_fsm_inst_dispatch(lchan->fi_rtp, LCHAN_RTP_EV_RELEASE, 0);
