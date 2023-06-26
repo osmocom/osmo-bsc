@@ -1652,6 +1652,10 @@ static int abis_rsl_rx_dchan(struct msgb *msg)
 
 	switch (rslh->c.msg_type) {
 	case RSL_MT_CHAN_ACTIV_ACK:
+		/* Ignore acknowlegement of channel reactivation, if a VGCS/VBS channel was reactivated to assign
+		 * the calling subscriber to it. */
+		if (msg->lchan->conn && msg->lchan->conn->assignment.req.vgcs)
+			break;
 		if (msg_for_osmocom_dyn_ts(msg))
 			osmo_fsm_inst_dispatch(msg->lchan->ts->fi, TS_EV_PDCH_ACT_ACK, NULL);
 		else {

@@ -142,6 +142,7 @@ struct assignment_request {
 	enum assign_for assign_for;
 
 	bool aoip;
+	bool vgcs;
 
 	uint16_t msc_assigned_cic;
 

@@ -261,9 +261,11 @@ static void send_assignment_complete(struct gsm_subscriber_connection *conn)
 static void assignment_success(struct gsm_subscriber_connection *conn)
 {
 	struct gsm_bts *bts;
-	bool lchan_changed = (conn->assignment.new_lchan != NULL);
+	bool lchan_changed = (conn->assignment.new_lchan != NULL && !conn->assignment.req.vgcs);
 
-	/* Take on the new lchan. If there only was a Channel Mode Modify, then there is no new lchan to take on. */
+	/* Take on the new lchan. If there only was a Channel Mode Modify, then there is no new lchan to take on.
+	 * In case of VGCS/VBS channel, the assignment is handled by its state machine. This subscriber connection will
+	 * be released by MSC. */
 	if (lchan_changed) {
 		gscon_change_primary_lchan(conn, conn->assignment.new_lchan);
 
@@ -569,7 +571,10 @@ void assignment_fsm_start(struct gsm_subscriber_connection *conn, struct gsm_bts
 		return;
 	}
 
-	if (req->target_lchan) {
+	if (req->vgcs) {
+		/* When assigning to a VGCS/VBS, the target lchan is already defined. */
+		conn->assignment.new_lchan = req->target_lchan;
+	} else if (req->target_lchan) {
 		bool matching_mode;
 
 		/* The caller already picked a target lchan to assign to. No need to try re-using the current lchan or
@@ -643,7 +648,9 @@ void assignment_fsm_start(struct gsm_subscriber_connection *conn, struct gsm_bts
 		       req->aoip ? "yes" : "no", req->msc_rtp_addr, req->msc_rtp_port,
 		       req->use_osmux ? "yes" : "no");
 
-	assignment_fsm_state_chg(ASSIGNMENT_ST_WAIT_LCHAN_ACTIVE);
+	/* Wait for lchan to become active before send assignment. In case of VGCS/VBS directly send assignment,
+	 * because the channel is already active. */
+	assignment_fsm_state_chg(req->vgcs ? ASSIGNMENT_ST_WAIT_RR_ASS_COMPLETE : ASSIGNMENT_ST_WAIT_LCHAN_ACTIVE);
 }
 
 static void assignment_fsm_wait_lchan_active_onenter(struct osmo_fsm_inst *fi, uint32_t prev_state)

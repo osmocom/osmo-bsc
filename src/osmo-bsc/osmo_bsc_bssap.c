@@ -1089,6 +1089,7 @@ static int bssmap_handle_assignm_req(struct gsm_subscriber_connection *conn,
 	struct msgb *resp;
 	struct tlv_parsed tp;
 	struct gsm0808_channel_type ct;
+	struct gsm0808_group_callref gc;
 	uint8_t cause;
 	int rc;
 	struct assignment_request req = {};
@@ -1118,6 +1119,40 @@ static int bssmap_handle_assignm_req(struct gsm_subscriber_connection *conn,
 		LOGP(DMSC, LOGL_ERROR, "unable to decode channel type.\n");
 		cause = GSM0808_CAUSE_INCORRECT_VALUE;
 		goto reject;
+	}
+
+	/* Check for assignment to VGCS channel. */
+	if (TLVP_PRESENT(&tp, GSM0808_IE_GROUP_CALL_REFERENCE)) {
+		struct gsm_bts *bts = conn_get_bts(conn);
+
+		OSMO_ASSERT(bts);
+		/* Decode Group Call Reference. */
+		rc = gsm0808_dec_group_callref(&gc, TLVP_VAL(&tp, GSM0808_IE_GROUP_CALL_REFERENCE),
+					       TLVP_LEN(&tp, GSM0808_IE_GROUP_CALL_REFERENCE));
+		if (rc < 0) {
+			LOGP(DMSC, LOGL_ERROR, "Unable to decode Group Call Reference.\n");
+			cause = GSM0808_CAUSE_INCORRECT_VALUE;
+			goto reject;
+		}
+		req.target_lchan = vgcs_vbs_find_lchan(bts, &gc);
+		if (!req.target_lchan) {
+			cause = GSM0808_CAUSE_INCORRECT_VALUE;
+			goto reject;
+		}
+		req.assign_for = ASSIGN_FOR_BSSMAP_REQ;
+		req.vgcs = true;
+
+		/* Copy timing advance. */
+		if (conn->lchan) {
+			req.target_lchan->activate.info.ta_known = conn->lchan->activate.info.ta_known;
+			req.target_lchan->activate.info.ta = conn->lchan->activate.info.ta;
+		}
+
+		/* Send reactivation on target lchan to prepare VGCS channel for assignment.
+		 * See patent EP 1 858 275 A1. */
+		rsl_tx_chan_activ(req.target_lchan, RSL_ACT_TYPE_REACT | RSL_ACT_INTRA_NORM_ASS, 0);
+
+		return osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_ASSIGNMENT_START, &req);
 	}
 
 	bssmap_handle_ass_req_lcls(conn, &tp);
