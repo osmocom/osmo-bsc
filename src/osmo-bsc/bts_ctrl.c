@@ -249,6 +249,7 @@ err:
 CTRL_CMD_DEFINE_RANGE(bts_lac, "location-area-code", struct gsm_bts, location_area_code, 0, 65535);
 CTRL_CMD_DEFINE_RANGE(bts_ci, "cell-identity", struct gsm_bts, cell_identity, 0, 65535);
 CTRL_CMD_DEFINE_RANGE(bts_bsic, "bsic", struct gsm_bts, bsic, 0, 63);
+CTRL_CMD_DEFINE_RANGE(bts_rach_max_delay, "rach-max-delay", struct gsm_bts, rach_max_delay, 1, 127);
 
 static int set_bts_apply_config(struct ctrl_cmd *cmd, void *data)
 {
@@ -1047,6 +1048,7 @@ int bsc_bts_ctrl_cmds_install(void)
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_lac);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_ci);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_bsic);
+	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_rach_max_delay);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_apply_config);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_si);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_power_ctrl_defs);
