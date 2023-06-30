@@ -1298,6 +1298,101 @@ static int bssmap_handle_common_id(struct gsm_subscriber_connection *conn,
 	return 0;
 }
 
+/* Handle (VGCS) UPLINK REQUEST ACKNOWLEDGE:
+ *
+ * See 3GPP TS 48.008 §3.2.1.58
+ */
+static int bssmap_handle_uplink_rqst_acknowledge(struct gsm_subscriber_connection *conn,
+						 struct msgb *msg, unsigned int length)
+{
+	struct tlv_parsed tp;
+
+	if (osmo_bssap_tlv_parse(&tp, msg->l4h + 1, length - 1) < 0) {
+		LOGPFSML(conn->fi, LOGL_ERROR, "%s(): tlv_parse() failed\n", __func__);
+		return -1;
+	}
+
+	if (conn->vgcs_call.fi)
+		osmo_fsm_inst_dispatch(conn->vgcs_call.fi, VGCS_EV_MSC_ACK, NULL);
+	return 0;
+}
+
+/* Handle (VGCS) UPLINK REJECT COMMAND message.
+ *
+ * See 3GPP TS 48.008 §3.2.1.61
+ */
+static int bssmap_handle_uplink_reject_cmd(struct gsm_subscriber_connection *conn,
+					   struct msgb *msg, unsigned int length)
+{
+	struct tlv_parsed tp;
+
+	if (osmo_bssap_tlv_parse(&tp, msg->l4h + 1, length - 1) < 0) {
+		LOGPFSML(conn->fi, LOGL_ERROR, "%s(): tlv_parse() failed\n", __func__);
+		return -1;
+	}
+
+	if (conn->vgcs_call.fi)
+		osmo_fsm_inst_dispatch(conn->vgcs_call.fi, VGCS_EV_MSC_REJECT, NULL);
+	return 0;
+}
+
+/* Handle (VGCS) UPLINK RELEASE COMMAND message, MSC indicating an error to us:
+ *
+ * See 3GPP TS 48.008 §3.2.1.62
+ */
+static int bssmap_handle_uplink_release_cmd(struct gsm_subscriber_connection *conn,
+					    struct msgb *msg, unsigned int length)
+{
+	struct tlv_parsed tp;
+
+	if (osmo_bssap_tlv_parse(&tp, msg->l4h + 1, length - 1) < 0) {
+		LOGPFSML(conn->fi, LOGL_ERROR, "%s(): tlv_parse() failed\n", __func__);
+		return -1;
+	}
+
+	if (conn->vgcs_call.fi)
+		osmo_fsm_inst_dispatch(conn->vgcs_call.fi, VGCS_EV_MSC_RELEASE, NULL);
+	return 0;
+}
+
+/* Handle (VGCS) UPLINK SEIZED COMMAND message:
+ *
+ * See 3GPP TS 48.008 §3.2.1.63
+ */
+static int bssmap_handle_uplink_seized_cmd(struct gsm_subscriber_connection *conn,
+					   struct msgb *msg, unsigned int length)
+{
+	struct tlv_parsed tp;
+
+	if (osmo_bssap_tlv_parse(&tp, msg->l4h + 1, length - 1) < 0) {
+		LOGPFSML(conn->fi, LOGL_ERROR, "%s(): tlv_parse() failed\n", __func__);
+		return -1;
+	}
+
+	if (conn->vgcs_call.fi)
+		osmo_fsm_inst_dispatch(conn->vgcs_call.fi, VGCS_EV_MSC_SEIZE, NULL);
+	return 0;
+}
+
+/* Handle VGCS/VBS ADDITIONAL INFO message:
+ *
+ * See 3GPP TS 48.008 §3.2.1.78
+ */
+static int bssmap_handle_vgcs_addl_info(struct gsm_subscriber_connection *conn,
+					struct msgb *msg, unsigned int length)
+{
+	struct tlv_parsed tp;
+
+	if (osmo_bssap_tlv_parse(&tp, msg->l4h + 1, length - 1) < 0) {
+		LOGPFSML(conn->fi, LOGL_ERROR, "%s(): tlv_parse() failed\n", __func__);
+		return -1;
+	}
+
+	LOGPFSML(conn->fi, LOGL_ERROR, "VGCS ADDITIONAL INFO is not supported.\n");
+
+	return 0;
+}
+
 static int bssmap_rcvmsg_udt(struct bsc_msc_data *msc,
 			     struct msgb *msg, unsigned int length)
 {
@@ -1400,6 +1495,26 @@ static int bssmap_rcvmsg_dt1(struct gsm_subscriber_connection *conn,
 			LOGP(DMSC, LOGL_ERROR, "Rx BSSMAP Perform Location Abort without ongoing Location Request\n");
 			ret = 0;
 		}
+		break;
+	case BSS_MAP_MSG_UPLINK_RQST_ACKNOWLEDGE:
+		rate_ctr_inc(&ctrs[MSC_CTR_BSSMAP_RX_DT1_UPLINK_RQST_ACKNOWLEDGE]);
+		ret = bssmap_handle_uplink_rqst_acknowledge(conn, msg, length);
+		break;
+	case BSS_MAP_MSG_UPLINK_REJECT_CMD:
+		rate_ctr_inc(&ctrs[MSC_CTR_BSSMAP_RX_DT1_UPLINK_REJECT_CMD]);
+		ret = bssmap_handle_uplink_reject_cmd(conn, msg, length);
+		break;
+	case BSS_MAP_MSG_UPLINK_RELEASE_CMD:
+		rate_ctr_inc(&ctrs[MSC_CTR_BSSMAP_RX_DT1_UPLINK_RELEASE_CMD]);
+		ret = bssmap_handle_uplink_release_cmd(conn, msg, length);
+		break;
+	case BSS_MAP_MSG_UPLINK_SEIZED_CMD:
+		rate_ctr_inc(&ctrs[MSC_CTR_BSSMAP_RX_DT1_UPLINK_SEIZED_CMD]);
+		ret = bssmap_handle_uplink_seized_cmd(conn, msg, length);
+		break;
+	case BSS_MAP_MSG_VGCS_ADDL_INFO:
+		rate_ctr_inc(&ctrs[MSC_CTR_BSSMAP_RX_DT1_VGCS_ADDL_INFO]);
+		ret = bssmap_handle_vgcs_addl_info(conn, msg, length);
 		break;
 	default:
 		rate_ctr_inc(&ctrs[MSC_CTR_BSSMAP_RX_DT1_UNKNOWN]);
