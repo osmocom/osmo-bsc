@@ -49,6 +49,7 @@
 #include <osmocom/core/sockaddr_str.h>
 #include <osmocom/bsc/lcs_loc_req.h>
 #include <osmocom/bsc/bssmap_reset.h>
+#include <osmocom/bsc/assignment_fsm.h>
 
 #define IP_V4_ADDR_LEN 4
 
@@ -1740,4 +1741,181 @@ void bsc_tx_bssmap_ho_failure(struct gsm_subscriber_connection *conn)
 	if (rc)
 		LOG_HO(conn, LOGL_ERROR, "Cannot send BSSMAP Handover Failure message (rc=%d %s)\n",
 		       rc, strerror(-rc));
+}
+
+/* Send SETUP ACKNOWLEDGE to MSC. */
+void bsc_tx_setup_ack(struct gsm_subscriber_connection *conn, struct gsm0808_vgcs_feature_flags *ff)
+{
+	struct msgb *resp;
+	struct gsm0808_vgcs_vbs_setup_ack sa = {};
+
+	if (ff) {
+		sa.vgcs_feature_flags_present = true;
+		sa.flags = *ff;
+	}
+	resp = gsm0808_create_vgcs_vbs_setup_ack(&sa);
+	OSMO_ASSERT(resp);
+
+	rate_ctr_inc(rate_ctr_group_get_ctr(conn->sccp.msc->msc_ctrs, MSC_CTR_BSSMAP_TX_DT1_VGCS_VBS_SETUP_ACK));
+	osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_TX_SCCP, resp);
+}
+
+/* Send SETUP REFUSE to MSC. */
+void bsc_tx_setup_refuse(struct gsm_subscriber_connection *conn, uint8_t cause)
+{
+	struct msgb *resp;
+	resp = gsm0808_create_vgcs_vbs_setup_refuse(cause);
+
+	OSMO_ASSERT(resp);
+
+	rate_ctr_inc(rate_ctr_group_get_ctr(conn->sccp.msc->msc_ctrs, MSC_CTR_BSSMAP_TX_DT1_VGCS_VBS_SETUP_REFUSE));
+	osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_TX_SCCP, resp);
+}
+
+/* Send ASSIGNMENT FAILURE to MSC. */
+void bsc_tx_vgcs_vbs_assignment_fail(struct gsm_subscriber_connection *conn, uint8_t cause)
+{
+	struct msgb *resp;
+	struct gsm0808_vgcs_vbs_assign_fail af = {
+		.cause = cause,
+	};
+
+	resp = gsm0808_create_vgcs_vbs_assign_fail(&af);
+	OSMO_ASSERT(resp);
+
+	rate_ctr_inc(rate_ctr_group_get_ctr(conn->sccp.msc->msc_ctrs, MSC_CTR_BSSMAP_TX_DT1_VGCS_VBS_ASSIGN_FAIL));
+	osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_TX_SCCP, resp);
+}
+
+/* Send ASSIGNMENT RESULT to MSC. */
+void bsc_tx_vgcs_vbs_assignment_result(struct gsm_subscriber_connection *conn, struct gsm0808_channel_type *ct,
+				       struct gsm0808_cell_id *ci, uint32_t call_id)
+{
+	struct gsm_lchan *lchan = conn->lchan;
+	struct msgb *resp;
+	struct gsm0808_vgcs_vbs_assign_res ar = {
+		.channel_type = *ct,
+		.cell_identifier = *ci,
+	};
+	int perm_spch;
+	uint8_t osmux_cid;
+
+	/* Chosen Channel */
+	ar.chosen_channel = gsm0808_chosen_channel(lchan->type, lchan->current_ch_mode_rate.chan_mode);
+	if (!ar.chosen_channel) {
+		LOGP(DMSC, LOGL_ERROR, "Unable to compose Chosen Channel for mode=%s type=%s",
+		     get_value_string(gsm48_chan_mode_names, lchan->current_ch_mode_rate.chan_mode),
+		     gsm_chan_t_name(lchan->type));
+		bsc_tx_vgcs_vbs_assignment_fail(conn, GSM0808_CAUSE_EQUIPMENT_FAILURE);
+		return;
+	}
+	ar.chosen_channel_present = true;
+
+	/* Generate RTP related fields. */
+	if (gscon_is_aoip(conn)) {
+		/* AoIP Transport Layer Address (BSS) */
+		if (!osmo_mgcpc_ep_ci_get_crcx_info_to_sockaddr(conn->user_plane.mgw_endpoint_ci_msc,
+								&ar.aoip_transport_layer)) {
+			LOGP(DMSC, LOGL_ERROR, "Unable to compose RTP address of MGW -> MSC");
+			bsc_tx_vgcs_vbs_assignment_fail(conn, GSM0808_CAUSE_EQUIPMENT_FAILURE);
+			return;
+		}
+		ar.aoip_transport_layer_present = true;
+
+		/* Call Identifier */
+		ar.call_id = call_id;
+		ar.call_id_present = true;
+
+		/* Osmux */
+		if (conn->assignment.req.use_osmux) {
+			if (!osmo_mgcpc_ep_ci_get_crcx_info_to_osmux_cid(conn->user_plane.mgw_endpoint_ci_msc,
+									 &osmux_cid)) {
+				LOGP(DMSC, LOGL_ERROR, "Unable to compose Osmux CID of MGW -> MSC");
+				bsc_tx_vgcs_vbs_assignment_fail(conn, GSM0808_CAUSE_EQUIPMENT_FAILURE);
+				return;
+			}
+		}
+
+		/* Extrapolate speech codec from speech mode */
+		perm_spch = gsm0808_permitted_speech(lchan->type, lchan->current_ch_mode_rate.chan_mode);
+		gsm0808_speech_codec_from_chan_type(&ar.codec_msc_chosen, perm_spch);
+		ar.codec_msc_chosen.cfg = conn->lchan->current_ch_mode_rate.s15_s0;
+		ar.codec_present = true;
+	}
+
+	resp = gsm0808_create_vgcs_vbs_assign_res(&ar);
+	OSMO_ASSERT(resp);
+	if (conn->assignment.req.use_osmux)
+		bssap_extend_osmux(resp, osmux_cid);
+
+	rate_ctr_inc(rate_ctr_group_get_ctr(conn->sccp.msc->msc_ctrs, MSC_CTR_BSSMAP_TX_DT1_VGCS_VBS_ASSIGN_RESULT));
+	osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_TX_SCCP, resp);
+}
+
+/* Send UPLINK REQUEST to MSC. */
+void bsc_tx_uplink_req(struct gsm_subscriber_connection *conn)
+{
+	struct msgb *resp;
+	struct gsm0808_uplink_request ur = {};
+
+	resp = gsm0808_create_uplink_request(&ur);
+	OSMO_ASSERT(resp);
+
+	rate_ctr_inc(rate_ctr_group_get_ctr(conn->sccp.msc->msc_ctrs, MSC_CTR_BSSMAP_TX_DT1_UPLINK_RQST));
+	osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_TX_SCCP, resp);
+}
+
+/* Send UPLINK REQUEST CONFIRMATION to MSC. */
+void bsc_tx_uplink_req_conf(struct gsm_subscriber_connection *conn, struct gsm0808_cell_id *ci, uint8_t *l3_info,
+			    uint8_t length)
+{
+	struct msgb *resp;
+	struct gsm0808_uplink_request_cnf ur = {
+		.cell_identifier = *ci,
+	};
+
+	OSMO_ASSERT(length <= LAYER_3_INFORMATION_MAXLEN);
+	if (length) {
+		memcpy(ur.l3.l3, l3_info, length);
+		ur.l3.l3_len = length;
+	}
+	resp = gsm0808_create_uplink_request_cnf(&ur);
+	OSMO_ASSERT(resp);
+
+	rate_ctr_inc(rate_ctr_group_get_ctr(conn->sccp.msc->msc_ctrs, MSC_CTR_BSSMAP_TX_DT1_UPLINK_RQST_CONFIRMATION));
+	osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_TX_SCCP, resp);
+}
+
+/* Send UPLINK APPLICATION DATA to MSC. */
+void bsc_tx_uplink_app_data(struct gsm_subscriber_connection *conn, struct gsm0808_cell_id *ci, uint8_t *l3_info,
+			    uint8_t length)
+{
+	struct msgb *resp;
+	struct gsm0808_uplink_app_data ad = {
+		.cell_identifier = *ci,
+	};
+
+	OSMO_ASSERT(length <= LAYER_3_INFORMATION_MAXLEN);
+	memcpy(ad.l3.l3, l3_info, length);
+	ad.l3.l3_len = length;
+	resp = gsm0808_create_uplink_app_data(&ad);
+	OSMO_ASSERT(resp);
+
+	rate_ctr_inc(rate_ctr_group_get_ctr(conn->sccp.msc->msc_ctrs, MSC_CTR_BSSMAP_TX_DT1_UPLINK_APP_DATA));
+	osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_TX_SCCP, resp);
+}
+
+/* Send UPLINK RELEASE INDICATION to MSC. */
+void bsc_tx_uplink_release_ind(struct gsm_subscriber_connection *conn, uint8_t cause)
+{
+	struct msgb *resp;
+	struct gsm0808_uplink_release_ind ri = {
+		.cause = cause,
+	};
+
+	resp = gsm0808_create_uplink_release_ind(&ri);
+	OSMO_ASSERT(resp);
+
+	rate_ctr_inc(rate_ctr_group_get_ctr(conn->sccp.msc->msc_ctrs, MSC_CTR_BSSMAP_TX_DT1_UPLINK_RELEASE_INDICATION));
+	osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_TX_SCCP, resp);
 }
