@@ -1040,6 +1040,35 @@ static int set_bts_rach_access_control_class_allow(struct ctrl_cmd *cmd, void *d
 
 CTRL_CMD_DEFINE_WO(bts_rach_access_control_class_allow, "rach-access-control-class allow");
 
+/* Return space concatenated set of tuples <UARFCN>,<scrambling code>,<diversity bit> */
+static int get_bts_neighbor_list_si2quater_uarfcn(struct ctrl_cmd *cmd, void *data)
+{
+	int i;
+	const struct gsm_bts *bts = cmd->node;
+
+	cmd->reply = talloc_strdup(cmd, "");
+	if (!cmd->reply) {
+		cmd->reply = "OOM";
+		return CTRL_CMD_ERROR;
+	}
+
+	for (i = 0; i < bts->si_common.uarfcn_length; i++) {
+		cmd->reply = talloc_asprintf_append(cmd->reply,
+					i == 0 ? "%u,%u,%u" : " %u,%u,%u",
+					bts->si_common.data.uarfcn_list[i],
+					bts->si_common.data.scramble_list[i] & ~(1 << 9),
+					(bts->si_common.data.scramble_list[i] >> 9) & 1);
+		if (!cmd->reply) {
+			cmd->reply = "OOM";
+			return CTRL_CMD_ERROR;
+		}
+	}
+
+	return CTRL_CMD_REPLY;
+}
+
+CTRL_CMD_DEFINE_RO(bts_neighbor_list_si2quater_uarfcn, "neighbor-list si2quater uarfcns");
+
 int bsc_bts_ctrl_cmds_install(void)
 {
 	int rc = 0;
@@ -1074,6 +1103,7 @@ int bsc_bts_ctrl_cmds_install(void)
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_rach_access_control_class);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_rach_access_control_class_bar);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_rach_access_control_class_allow);
+	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_neighbor_list_si2quater_uarfcn);
 
 	rc |= neighbor_ident_ctrl_init();
 
