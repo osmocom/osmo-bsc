@@ -777,7 +777,86 @@ CTRL_CMD_DEFINE_WO_NOVRF(bts_si2quater_neighbor_list_del_uarfcn,
 			 "si2quater-neighbor-list del uarfcn");
 
 /* TODO: si2quater neighbor management: add EARFCN */
-/* TODO: si2quater neighbor management: add UARFCN */
+
+static int verify_bts_si2quater_neighbor_list_add_uarfcn(struct ctrl_cmd *cmd, const char *value, void *_data)
+{
+	char *uarfcn_str, *scramble_str, *diversity_str, *saveptr, *tmp;
+	int uarfcn, scramble;
+
+	tmp = talloc_strdup(cmd, value);
+	if (!tmp)
+		return 1;
+
+	uarfcn_str = strtok_r(tmp, ",", &saveptr);
+	scramble_str = strtok_r(NULL, ",", &saveptr);
+	diversity_str = strtok_r(NULL, "\0", &saveptr);
+
+	if (!uarfcn_str || osmo_str_to_int(&uarfcn, uarfcn_str, 10, 0, 16383) < 0) {
+		cmd->reply = "Failed to parse neighbor UARFCN value";
+		return 1;
+	}
+
+	if (!scramble_str || osmo_str_to_int(&scramble, scramble_str, 10, 0, 511) < 0) {
+		cmd->reply = "Failed to parse neighbor scrambling code";
+		return 1;
+	}
+
+	if (!diversity_str || ((strcmp(diversity_str, "1") != 0) && (strcmp(diversity_str, "0") != 0))) {
+		cmd->reply = "Failed to parse neighbor diversity bit";
+		return 1;
+	}
+
+	return 0;
+}
+
+/* si2quater neighbor management: add an UARFCN
+ * Format: bts.<0-255>.si2quater-neighbor-list.add.uarfcn <UARFCN>,<scrambling code>,<diversity bit>
+ * UARFCN is in range 0..16383, scrambling code is in range 0..511 */
+static int set_bts_si2quater_neighbor_list_add_uarfcn(struct ctrl_cmd *cmd, void *data)
+{
+	struct gsm_bts *bts = (struct gsm_bts *)cmd->node;
+	char *uarfcn_str, *scramble_str, *diversity_str, *saveptr, *tmp;
+	int uarfcn, scramble;
+	bool diversity;
+
+	tmp = talloc_strdup(cmd, cmd->value);
+	if (!tmp) {
+		cmd->reply = "OOM";
+		return CTRL_CMD_ERROR;
+	}
+
+	uarfcn_str = strtok_r(tmp, ",", &saveptr);
+	scramble_str = strtok_r(NULL, ",", &saveptr);
+	diversity_str = strtok_r(NULL, "\0", &saveptr);
+
+
+	if (!uarfcn_str || osmo_str_to_int(&uarfcn, uarfcn_str, 10, 0, 16383) < 0) {
+		cmd->reply = "Failed to parse neighbor UARFCN value";
+		return CTRL_CMD_ERROR;
+	}
+
+	if (!scramble_str || osmo_str_to_int(&scramble, scramble_str, 10, 0, 511) < 0) {
+		cmd->reply = "Failed to parse neighbor scrambling code";
+		return CTRL_CMD_ERROR;
+	}
+
+	diversity = strcmp(diversity_str, "1") == 0;
+
+	switch (bts_uarfcn_add(bts, uarfcn, scramble, diversity)) {
+	case -ENOMEM:
+		cmd->reply = "max number of UARFCNs reached";
+		return CTRL_CMD_ERROR;
+	case -ENOSPC:
+		cmd->reply = "not enough space in SI2quater";
+		return CTRL_CMD_ERROR;
+	}
+
+	cmd->reply = "OK";
+	return CTRL_CMD_REPLY;
+}
+
+CTRL_CMD_DEFINE_WO(bts_si2quater_neighbor_list_add_uarfcn,
+			 "si2quater-neighbor-list add uarfcn");
 
 static int verify_bts_cell_reselection_offset(struct ctrl_cmd *cmd, const char *value, void *_data)
 {
@@ -1097,6 +1176,7 @@ int bsc_bts_ctrl_cmds_install(void)
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_neighbor_list_mode);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_si2quater_neighbor_list_del_earfcn);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_si2quater_neighbor_list_del_uarfcn);
+	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_si2quater_neighbor_list_add_uarfcn);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_cell_reselection_offset);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_cell_reselection_penalty_time);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_cell_reselection_hysteresis);
