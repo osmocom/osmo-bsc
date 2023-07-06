@@ -1149,7 +1149,7 @@ reject:
 	resp = gsm0808_create_assignment_failure(cause, NULL);
 	OSMO_ASSERT(resp);
 
-	rate_ctr_inc(rate_ctr_group_get_ctr(conn->sccp.msc->msc_ctrs, MSC_CTR_BSSMAP_TX_DT1_ASSIGMENT_FAILURE));
+	rate_ctr_inc(rate_ctr_group_get_ctr(conn->sccp.msc->msc_ctrs, MSC_CTR_BSSMAP_TX_DT1_ASSIGNMENT_FAILURE));
 	osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_TX_SCCP, resp);
 	return -1;
 }

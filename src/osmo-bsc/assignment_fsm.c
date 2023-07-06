@@ -152,7 +152,8 @@ static void on_assignment_failure(struct gsm_subscriber_connection *conn)
 		if (!resp) {
 			LOG_ASSIGNMENT(conn, LOGL_ERROR, "Unable to compose BSSMAP Assignment Failure message\n");
 		} else {
-			rate_ctr_inc(rate_ctr_group_get_ctr(conn->sccp.msc->msc_ctrs, MSC_CTR_BSSMAP_TX_DT1_ASSIGMENT_FAILURE));
+			rate_ctr_inc(rate_ctr_group_get_ctr(conn->sccp.msc->msc_ctrs,
+				     MSC_CTR_BSSMAP_TX_DT1_ASSIGNMENT_FAILURE));
 			gscon_sigtran_send(conn, resp);
 		}
 	}
@@ -247,7 +248,7 @@ static void send_assignment_complete(struct gsm_subscriber_connection *conn)
 	    conn->assignment.req.use_osmux)
 		_gsm0808_ass_compl_extend_osmux(resp, osmux_cid);
 
-	rate_ctr_inc(rate_ctr_group_get_ctr(conn->sccp.msc->msc_ctrs, MSC_CTR_BSSMAP_TX_DT1_ASSIGMENT_COMPLETE));
+	rate_ctr_inc(rate_ctr_group_get_ctr(conn->sccp.msc->msc_ctrs, MSC_CTR_BSSMAP_TX_DT1_ASSIGNMENT_COMPLETE));
 	rc = gscon_sigtran_send(conn, resp);
 	if (rc) {
 		assignment_fail(GSM0808_CAUSE_EQUIPMENT_FAILURE,
