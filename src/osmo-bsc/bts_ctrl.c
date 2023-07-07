@@ -36,6 +36,8 @@
 #include <osmocom/bsc/neighbor_ident.h>
 #include <osmocom/bsc/system_information.h>
 
+#include <osmocom/gsm/sysinfo.h>
+
 static int location_equal(struct bts_location *a, struct bts_location *b)
 {
 	return ((a->tstamp == b->tstamp) && (a->valid == b->valid) && (a->lat == b->lat) &&
@@ -1148,6 +1150,43 @@ static int get_bts_neighbor_list_si2quater_uarfcn(struct ctrl_cmd *cmd, void *da
 
 CTRL_CMD_DEFINE_RO(bts_neighbor_list_si2quater_uarfcn, "neighbor-list si2quater uarfcns");
 
+/* Return space concatenated set of tuples <EARFCN>,<thresh-hi>,<thresh-lo>,<prio>,<qrxlv>,<meas> */
+static int get_bts_neighbor_list_si2quater_earfcn(struct ctrl_cmd *cmd, void *data)
+{
+	int i;
+	bool first_earfcn = true;
+	const struct gsm_bts *bts = cmd->node;
+	const struct osmo_earfcn_si2q *neighbors = &bts->si_common.si2quater_neigh_list;
+
+	cmd->reply = talloc_strdup(cmd, "");
+	if (!cmd->reply) {
+		cmd->reply = "OOM";
+		return CTRL_CMD_ERROR;
+	}
+
+	for (i = 0; i < MAX_EARFCN_LIST; i++) {
+		if (neighbors->arfcn[i] == OSMO_EARFCN_INVALID)
+			continue;
+		cmd->reply = talloc_asprintf_append(cmd->reply,
+					first_earfcn ? "%u,%u,%u,%u,%u,%u" : " %u,%u,%u,%u,%u,%u",
+					neighbors->arfcn[i],
+					neighbors->thresh_hi,
+					neighbors->thresh_lo_valid ? neighbors->thresh_lo : 32,
+					neighbors->prio_valid ? neighbors->prio : 8,
+					neighbors->qrxlm_valid ? neighbors->qrxlm : 32,
+					(neighbors->meas_bw[i] != OSMO_EARFCN_MEAS_INVALID) ? neighbors->meas_bw[i] : 8);
+		if (!cmd->reply) {
+			cmd->reply = "OOM";
+			return CTRL_CMD_ERROR;
+		}
+		first_earfcn = false;
+	}
+
+	return CTRL_CMD_REPLY;
+}
+
+CTRL_CMD_DEFINE_RO(bts_neighbor_list_si2quater_earfcn, "neighbor-list si2quater earfcns");
+
 int bsc_bts_ctrl_cmds_install(void)
 {
 	int rc = 0;
@@ -1184,6 +1223,7 @@ int bsc_bts_ctrl_cmds_install(void)
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_rach_access_control_class_bar);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_rach_access_control_class_allow);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_neighbor_list_si2quater_uarfcn);
+	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_neighbor_list_si2quater_earfcn);
 
 	rc |= neighbor_ident_ctrl_init();
 
