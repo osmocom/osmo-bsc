@@ -1,17 +1,19 @@
 #ifndef _PCU_IF_H
 #define _PCU_IF_H
 
+#include <osmocom/core/write_queue.h>
 #include <osmocom/gsm/l1sap.h>
 
 extern int pcu_direct;
 
 #define PCUIF_HDR_SIZE (sizeof(struct gsm_pcu_if) - sizeof(((struct gsm_pcu_if *)0)->u))
 
+#define BSC_PCU_SOCK_WQUEUE_LEN_DEFAULT 100
+
 struct pcu_sock_state {
 	struct gsm_network *net;	/* backpointer to GSM network */
 	struct osmo_fd listen_bfd;	/* fd for listen socket */
-	struct osmo_fd conn_bfd;	/* fd for connection to lcr */
-	struct llist_head upqueue;	/* queue for sending messages */
+	struct osmo_wqueue upqueue;	/* For sending messages; has fd for conn. to PCU */
 };
 
 /* Check if BTS has a PCU connection */
