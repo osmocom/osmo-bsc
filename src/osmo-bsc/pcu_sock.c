@@ -64,7 +64,7 @@ bool pcu_connected(const struct gsm_network *net)
 
 	if (!state)
 		return false;
-	if (state->conn_bfd.fd <= 0)
+	if (state->upqueue.bfd.fd <= 0)
 		return false;
 	return true;
 }
@@ -705,6 +705,8 @@ static int pcu_rx(struct gsm_network *net, uint8_t msg_type,
 	return rc;
 }
 
+static void pcu_sock_close(struct pcu_sock_state *state);
+
 /*
  * PCU socket interface
  */
@@ -714,6 +716,7 @@ static int pcu_sock_send(struct gsm_network *net, struct msgb *msg)
 	struct pcu_sock_state *state = net->pcu_state;
 	struct osmo_fd *conn_bfd;
 	struct gsm_pcu_if *pcu_prim = (struct gsm_pcu_if *) msg->data;
+	int rc;
 
 	if (!state) {
 		if (pcu_prim->msg_type != PCU_IF_MSG_TIME_IND)
@@ -722,7 +725,7 @@ static int pcu_sock_send(struct gsm_network *net, struct msgb *msg)
 		msgb_free(msg);
 		return -EINVAL;
 	}
-	conn_bfd = &state->conn_bfd;
+	conn_bfd = &state->upqueue.bfd;
 	if (conn_bfd->fd <= 0) {
 		if (pcu_prim->msg_type != PCU_IF_MSG_TIME_IND)
 			LOGP(DPCU, LOGL_NOTICE, "PCU socket not connected, "
@@ -730,8 +733,17 @@ static int pcu_sock_send(struct gsm_network *net, struct msgb *msg)
 		msgb_free(msg);
 		return -EIO;
 	}
-	msgb_enqueue(&state->upqueue, msg);
-	osmo_fd_write_enable(conn_bfd);
+	rc = osmo_wqueue_enqueue(&state->upqueue, msg);
+	if (rc < 0) {
+		if (rc == -ENOSPC)
+			LOGP(DPCU, LOGL_NOTICE,
+			     "PCU not reacting (more than %u messages waiting). Closing connection\n",
+			     state->upqueue.max_length);
+		pcu_sock_close(state);
+		msgb_free(msg);
+		return rc;
+	}
+
 
 	return 0;
 }
@@ -763,7 +775,7 @@ static void pdch_deact_bts(struct gsm_bts *bts)
 
 static void pcu_sock_close(struct pcu_sock_state *state)
 {
-	struct osmo_fd *bfd = &state->conn_bfd;
+	struct osmo_fd *bfd = &state->upqueue.bfd;
 	struct gsm_bts *bts;
 
 	LOGP(DPCU, LOGL_NOTICE, "PCU socket has LOST connection\n");
@@ -782,10 +794,7 @@ static void pcu_sock_close(struct pcu_sock_state *state)
 	}
 
 	/* flush the queue */
-	while (!llist_empty(&state->upqueue)) {
-		struct msgb *msg = msgb_dequeue(&state->upqueue);
-		msgb_free(msg);
-	}
+	osmo_wqueue_clear(&state->upqueue);
 }
 
 static int pcu_sock_read(struct osmo_fd *bfd)
@@ -834,45 +843,22 @@ close:
 	return -1;
 }
 
-static int pcu_sock_write(struct osmo_fd *bfd)
+static int pcu_sock_write(struct osmo_fd *bfd, struct msgb *msg)
 {
 	struct pcu_sock_state *state = bfd->data;
 	int rc;
 
-	while (!llist_empty(&state->upqueue)) {
-		struct msgb *msg, *msg2;
-		struct gsm_pcu_if *pcu_prim;
+	/* bug hunter 8-): maybe someone forgot msgb_put(...) ? */
+	OSMO_ASSERT(msgb_length(msg) > 0);
+	/* try to send it over the socket */
+	rc = write(bfd->fd, msgb_data(msg), msgb_length(msg));
+	if (OSMO_UNLIKELY(rc == 0))
+		goto close;
+	if (OSMO_UNLIKELY(rc < 0)) {
+		if (errno == EAGAIN)
+			return -EAGAIN;
+		return -1;
 
-		/* peek at the beginning of the queue */
-		msg = llist_entry(state->upqueue.next, struct msgb, list);
-		pcu_prim = (struct gsm_pcu_if *)msg->data;
-
-		osmo_fd_write_disable(bfd);
-
-		/* bug hunter 8-): maybe someone forgot msgb_put(...) ? */
-		if (!msgb_length(msg)) {
-			LOGP(DPCU, LOGL_ERROR, "message type (%d) with ZERO "
-				"bytes!\n", pcu_prim->msg_type);
-			goto dontsend;
-		}
-
-		/* try to send it over the socket */
-		rc = write(bfd->fd, msgb_data(msg), msgb_length(msg));
-		if (rc == 0)
-			goto close;
-		if (rc < 0) {
-			if (errno == EAGAIN) {
-				osmo_fd_write_enable(bfd);
-				break;
-			}
-			goto close;
-		}
-
-dontsend:
-		/* _after_ we send it, we can deueue */
-		msg2 = msgb_dequeue(&state->upqueue);
-		assert(msg == msg2);
-		msgb_free(msg);
 	}
 	return 0;
 
@@ -880,21 +866,6 @@ close:
 	pcu_sock_close(state);
 
 	return -1;
-}
-
-static int pcu_sock_cb(struct osmo_fd *bfd, unsigned int flags)
-{
-	int rc = 0;
-
-	if (flags & OSMO_FD_READ)
-		rc = pcu_sock_read(bfd);
-	if (rc < 0)
-		return rc;
-
-	if (flags & OSMO_FD_WRITE)
-		rc = pcu_sock_write(bfd);
-
-	return rc;
 }
 
 static void pdch_act_bts(struct gsm_bts *bts)
@@ -919,7 +890,7 @@ static void pdch_act_bts(struct gsm_bts *bts)
 static int pcu_sock_accept(struct osmo_fd *bfd, unsigned int flags)
 {
 	struct pcu_sock_state *state = (struct pcu_sock_state *)bfd->data;
-	struct osmo_fd *conn_bfd = &state->conn_bfd;
+	struct osmo_fd *conn_bfd = &state->upqueue.bfd;
 	struct sockaddr_un un_addr;
 	struct gsm_bts *bts;
 	socklen_t len;
@@ -940,7 +911,7 @@ static int pcu_sock_accept(struct osmo_fd *bfd, unsigned int flags)
 		return 0;
 	}
 
-	osmo_fd_setup(conn_bfd, fd, OSMO_FD_READ, pcu_sock_cb, state, 0);
+	osmo_fd_setup(conn_bfd, fd, OSMO_FD_READ, osmo_wqueue_bfd_cb, state, 0);
 
 	if (osmo_fd_register(conn_bfd) != 0) {
 		LOGP(DPCU, LOGL_ERROR, "Failed to register new connection fd\n");
@@ -971,9 +942,11 @@ int pcu_sock_init(struct gsm_network *net)
 	if (!state)
 		return -ENOMEM;
 
-	INIT_LLIST_HEAD(&state->upqueue);
+	osmo_wqueue_init(&state->upqueue, BSC_PCU_SOCK_WQUEUE_LEN_DEFAULT);
+	state->upqueue.read_cb = pcu_sock_read;
+	state->upqueue.write_cb = pcu_sock_write;
+	state->upqueue.bfd.fd = -1;
 	state->net = net;
-	state->conn_bfd.fd = -1;
 
 	bfd = &state->listen_bfd;
 
@@ -1012,7 +985,7 @@ void pcu_sock_exit(struct gsm_network *net)
 	if (!state)
 		return;
 
-	conn_bfd = &state->conn_bfd;
+	conn_bfd = &state->upqueue.bfd;
 	if (conn_bfd->fd > 0)
 		pcu_sock_close(state);
 	bfd = &state->listen_bfd;
