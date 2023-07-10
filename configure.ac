@@ -77,8 +77,7 @@ AC_ARG_ENABLE(sanitize,
 		[Compile with address sanitizer enabled],
 	)],
 	[sanitize=$enableval], [sanitize="no"])
-if test x"$sanitize" = x"yes"
-then
+if test x"$sanitize" = x"yes"; then
 	CFLAGS="$CFLAGS -fsanitize=address -fsanitize=undefined"
 	CPPFLAGS="$CPPFLAGS -fsanitize=address -fsanitize=undefined"
 fi
@@ -92,8 +91,7 @@ AC_ARG_ENABLE(werror,
 		]
 	)],
 	[werror=$enableval], [werror="no"])
-if test x"$werror" = x"yes"
-then
+if test x"$werror" = x"yes"; then
 	WERROR_FLAGS="-Werror"
 	WERROR_FLAGS+=" -Wno-error=deprecated -Wno-error=deprecated-declarations"
 	WERROR_FLAGS+=" -Wno-error=cpp" # "#warning"
@@ -129,8 +127,7 @@ fi
 AC_ARG_ENABLE(profile,
 		[AS_HELP_STRING([--enable-profile], [Compile with profiling support enabled], )],
 		[profile=$enableval], [profile="no"])
-if test x"$profile" = x"yes"
-then
+if test x"$profile" = x"yes"; then
 	CFLAGS="$CFLAGS -pg"
 	CPPFLAGS="$CPPFLAGS -pg"
 fi
@@ -163,8 +160,7 @@ AC_ARG_ENABLE(manuals,
 AM_CONDITIONAL([BUILD_MANUALS], [test x"$osmo_ac_build_manuals" = x"yes"])
 AC_ARG_VAR(OSMO_GSM_MANUALS_DIR, [path to common osmo-gsm-manuals files, overriding pkg-config and "../osmo-gsm-manuals"
 	fallback])
-if test x"$osmo_ac_build_manuals" = x"yes"
-then
+if test x"$osmo_ac_build_manuals" = x"yes"; then
 	# Find OSMO_GSM_MANUALS_DIR (env, pkg-conf, fallback)
 	if test -n "$OSMO_GSM_MANUALS_DIR"; then
 		echo "checking for OSMO_GSM_MANUALS_DIR... $OSMO_GSM_MANUALS_DIR (from env)"
