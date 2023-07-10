@@ -36,8 +36,8 @@ if test "x$PKG_CONFIG_INSTALLED" = "xno"; then
 fi
 PKG_PROG_PKG_CONFIG([0.20])
 
-# Enable/disable ipaccess-utils (src/ipacces/)?
-AC_ARG_ENABLE([ipaccess-utils], [AS_HELP_STRING([--enable-ipaccess-utils], [Build ipaccess utils: abisip-find, ipaccess-config, ...])],
+# Enable/disable ipaccess-utils (src/ipacces/)
+AC_ARG_ENABLE([ipaccess-utils], [AS_HELP_STRING([--enable-ipaccess-utils], [Build ipaccess utils: abisip-find, ipaccess-config, ... [default=yes]])],
     [osmo_ac_ipa_utils="$enableval"],[osmo_ac_ipa_utils="yes"])
 AM_CONDITIONAL(BUILD_IPA_UTILS, test "x$osmo_ac_ipa_utils" = "xyes")
 AC_SUBST(osmo_ac_ipa_utils)
