@@ -42,6 +42,24 @@ AC_ARG_ENABLE([ipaccess-utils], [AS_HELP_STRING([--enable-ipaccess-utils], [Buil
 AM_CONDITIONAL(BUILD_IPA_UTILS, test "x$osmo_ac_ipa_utils" = "xyes")
 AC_SUBST(osmo_ac_ipa_utils)
 
+# Enable/disable osmo-meas-udp2db
+AC_ARG_ENABLE([meas-udp2db], [AS_HELP_STRING([--enable-meas-udp2db], [Build osmo-meas-udp2db: listen to meas_feed on UDP and write it to an sqlite3 database [default=no]])],
+    [osmo_ac_meas_udp2db="$enableval"],[osmo_ac_meas_udp2db="no"])
+AM_CONDITIONAL(BUILD_MEAS_UDP2DB, test "x$osmo_ac_meas_udp2db" = "xyes")
+AC_SUBST(osmo_ac_meas_udp2db)
+
+# Enable/disable osmo-meas-pcap2db
+AC_ARG_ENABLE([meas-pcap2db], [AS_HELP_STRING([--enable-meas-pcap2db], [Build osmo-meas-pcap2db: read PCAP file with meas_feed data and write it to an sqlite3 database [default=no]])],
+    [osmo_ac_meas_pcap2db="$enableval"],[osmo_ac_meas_pcap2db="no"])
+AM_CONDITIONAL(BUILD_MEAS_PCAP2DB, test "x$osmo_ac_meas_pcap2db" = "xyes")
+AC_SUBST(osmo_ac_meas_pcap2db)
+
+# Enable/disable meas_vis
+AC_ARG_ENABLE([meas-vis], [AS_HELP_STRING([--enable-meas-vis], [Build meas_vis: curses-visualization of measurements [default=no]])],
+    [osmo_ac_meas_vis="$enableval"],[osmo_ac_meas_vis="no"])
+AM_CONDITIONAL(BUILD_MEAS_VIS, test "x$osmo_ac_meas_vis" = "xyes")
+AC_SUBST(osmo_ac_meas_vis)
+
 dnl checks for libraries
 PKG_CHECK_MODULES(LIBOSMOCORE, libosmocore >= 1.8.0)
 PKG_CHECK_MODULES(LIBOSMOVTY, libosmovty >= 1.8.0)
@@ -55,19 +73,15 @@ PKG_CHECK_MODULES(LIBOSMOMGCPCLIENT, libosmo-mgcp-client >= 1.11.0)
 dnl checks for header files
 AC_HEADER_STDC
 
-found_pcap=yes
-AC_CHECK_HEADERS(pcap/pcap.h,,found_pcap=no)
-AM_CONDITIONAL(HAVE_PCAP, test "$found_pcap" = yes)
-
-found_cdk=yes
-AC_CHECK_HEADERS(cdk/cdk.h,,found_cdk=no)
-AM_CONDITIONAL(HAVE_LIBCDK, test "$found_cdk" = yes)
-
-found_sqlite3=yes
-PKG_CHECK_MODULES(SQLITE3, sqlite3, ,found_sqlite3=no)
-AM_CONDITIONAL(HAVE_SQLITE3, test "$found_sqlite3" = yes)
-AC_SUBST(found_sqlite3)
-
+if test "$osmo_ac_meas_pcap2db" = "yes" || test "$osmo_ac_meas_udp2db" = "yes"; then
+	PKG_CHECK_MODULES(SQLITE3, sqlite3)
+fi
+if test "$osmo_ac_meas_pcap2db" = "yes"; then
+	AC_CHECK_HEADERS(pcap/pcap.h, [], AC_MSG_ERROR(Unable to find libpcap))
+fi
+if test "$osmo_ac_meas_vis" = "yes"; then
+	AC_CHECK_HEADERS(cdk/cdk.h, [], AC_MSG_ERROR(Unable to find libcdk))
+fi
 
 dnl Checks for typedefs, structures and compiler characteristics
 

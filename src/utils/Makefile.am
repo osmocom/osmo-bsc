@@ -28,17 +28,17 @@ bin_PROGRAMS = \
 	isdnsync \
 	meas_json \
 	$(NULL)
-if HAVE_SQLITE3
+if BUILD_MEAS_UDP2DB
 bin_PROGRAMS += \
 	osmo-meas-udp2db \
 	$(NULL)
-if HAVE_PCAP
+endif
+if BUILD_MEAS_PCAP2DB
 bin_PROGRAMS += \
 	osmo-meas-pcap2db \
 	$(NULL)
 endif
-endif
-if HAVE_LIBCDK
+if BUILD_MEAS_VIS
 bin_PROGRAMS += \
 	meas_vis \
 	$(NULL)

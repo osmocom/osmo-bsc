@@ -60,7 +60,13 @@ osmo-build-dep.sh libosmo-sccp
 osmo-build-dep.sh osmo-mgw
 
 # Additional configure options and depends
-CONFIG="--enable-external-tests --enable-werror"
+CONFIG="
+	--enable-external-tests
+	--enable-meas-pcap2db
+	--enable-meas-udp2db
+	--enable-meas-vis
+	--enable-werror
+"
 if [ "$WITH_MANUALS" = "1" ]; then
 	CONFIG="$CONFIG --enable-manuals"
 fi
