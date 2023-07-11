@@ -4242,7 +4242,7 @@ static void config_write_bts_amr(struct vty *vty, struct gsm_bts *bts,
 		vty_out(vty, "auto%s", VTY_NEWLINE);
 }
 
-/* TODO: generalize and move indention handling to libosmocore */
+/* TODO: generalize and move indentation handling to libosmocore */
 #define cfg_out(fmt, args...) \
 	vty_out(vty, "%*s" fmt, indent, "", ##args);
 

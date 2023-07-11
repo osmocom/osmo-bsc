@@ -1,4 +1,4 @@
-/* liesten to meas_feed on UDP and write it to sqlite3 database */
+/* listen to meas_feed on UDP and write it to sqlite3 database */
 
 /* (C) 2012 by Harald Welte <laforge@gnumonks.org>
  *

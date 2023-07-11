@@ -63,7 +63,7 @@ void bts_chan_load(struct pchan_load *cl, const struct gsm_bts *bts)
 			if (!nm_is_running(&ts->mo.nm_state))
 				continue;
 
-			/* A dynamic timeslot currently in PDCH mode are available as TCH or SDCCH8, beause they can be switched
+			/* A dynamic timeslot currently in PDCH mode are available as TCH or SDCCH8, because they can be switched
 			 * to TCH or SDCCH mode at any moment. Count TCH/F_TCH/H_SDCCH8_PDCH as one total timeslot, even though it may
 			 * be switched to TCH/H and would then count as two -- hence opt for pessimistic load. */
 			if ((ts->pchan_on_init == GSM_PCHAN_OSMO_DYN ||

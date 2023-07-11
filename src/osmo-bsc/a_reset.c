@@ -42,7 +42,7 @@ static void a_reset_tx_reset_ack(void *data)
 static void a_reset_link_up(void *data)
 {
 	struct bsc_msc_data *msc = data;
-	LOGP(DMSC, LOGL_NOTICE, "(msc%d) BSSMAP assocation is up\n", msc->nr);
+	LOGP(DMSC, LOGL_NOTICE, "(msc%d) BSSMAP association is up\n", msc->nr);
 	osmo_stat_item_inc(osmo_stat_item_group_get_item(msc->msc_statg, MSC_STAT_MSC_LINKS_ACTIVE), 1);
 	osmo_stat_item_inc(osmo_stat_item_group_get_item(msc->network->bsc_statg, BSC_STAT_NUM_MSC_CONNECTED), 1);
 	osmo_signal_dispatch(SS_MSC, S_MSC_CONNECTED, msc);
@@ -51,7 +51,7 @@ static void a_reset_link_up(void *data)
 static void a_reset_link_lost(void *data)
 {
 	struct bsc_msc_data *msc = data;
-	LOGP(DMSC, LOGL_NOTICE, "(msc%d) BSSMAP assocation is down\n", msc->nr);
+	LOGP(DMSC, LOGL_NOTICE, "(msc%d) BSSMAP association is down\n", msc->nr);
 	osmo_stat_item_dec(osmo_stat_item_group_get_item(msc->msc_statg, MSC_STAT_MSC_LINKS_ACTIVE), 1);
 	osmo_stat_item_dec(osmo_stat_item_group_get_item(msc->network->bsc_statg, BSC_STAT_NUM_MSC_CONNECTED), 1);
 	osmo_signal_dispatch(SS_MSC, S_MSC_LOST, msc);

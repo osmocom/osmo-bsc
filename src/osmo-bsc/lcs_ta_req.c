@@ -89,7 +89,7 @@ int lcs_ta_req_start(struct lcs_loc_req *lcs_loc_req)
 	struct lcs_ta_req *lcs_ta_req;
 	if (lcs_loc_req->ta_req) {
 		LOG_LCS_TA_REQ(lcs_loc_req->ta_req, LOGL_ERROR,
-			       "Cannot start anoter TA Request FSM, this TA Request is still active\n");
+			       "Cannot start another TA Request FSM, this TA Request is still active\n");
 		return -ENOTSUP;
 	}
 	lcs_ta_req = lcs_ta_req_alloc(lcs_loc_req->fi, LCS_LOC_REQ_EV_TA_REQ_END);

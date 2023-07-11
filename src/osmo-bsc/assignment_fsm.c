@@ -222,7 +222,7 @@ static void send_assignment_complete(struct gsm_subscriber_connection *conn)
 			}
 		}
 
-		/* Only AoIP networks include a speech codec (choosen) in the
+		/* Only AoIP networks include a speech codec (chosen) in the
 		 * assignment complete message. */
 		if (gscon_is_aoip(conn)) {
 			/* Extrapolate speech codec from speech mode */

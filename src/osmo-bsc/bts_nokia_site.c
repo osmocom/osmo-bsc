@@ -1338,7 +1338,7 @@ static int find_element(uint8_t * data, int len, uint16_t id, uint8_t * value,
 
 		GET_NEXT_BYTE;
 
-		/* encoding bit, construced means that other elements are contained */
+		/* encoding bit, constructed means that other elements are contained */
 		constructed = ((ub & 0x20) ? 1 : 0);
 
 		if ((ub & 0x1F) == 0x1F) {
@@ -1397,7 +1397,7 @@ static int dump_elements(uint8_t * data, int len)
 
 		GET_NEXT_BYTE;
 
-		/* encoding bit, construced means that other elements are contained */
+		/* encoding bit, constructed means that other elements are contained */
 		constructed = ((ub & 0x20) ? 1 : 0);
 
 		if ((ub & 0x1F) == 0x1F) {

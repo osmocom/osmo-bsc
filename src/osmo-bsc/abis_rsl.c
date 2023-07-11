@@ -1996,12 +1996,12 @@ static bool force_free_lchan_for_emergency(struct chan_rqd *rqd)
 		return false;
 	}
 
-	/* No free TCH/F or TCH/H was found, we now select one of the busy lchans and initate a release on that lchan.
-	 * This will take a short amount of time. We need to come back and check regulary to see if we managed to
+	/* No free TCH/F or TCH/H was found, we now select one of the busy lchans and initiate a release on that lchan.
+	 * This will take a short amount of time. We need to come back and check regularly to see if we managed to
 	 * free up another lchan. */
 	if (!rqd->release_lchan) {
 		struct gsm_lchan *release_lchan;
-		/* Pick any busy TCH/F or TCH/H lchan and inititate a channel
+		/* Pick any busy TCH/F or TCH/H lchan and initiate a channel
 		 * release to make room for the incoming emergency call */
 		rqd->release_lchan = release_lchan = get_any_lchan(rqd->bts);
 		if (!release_lchan) {

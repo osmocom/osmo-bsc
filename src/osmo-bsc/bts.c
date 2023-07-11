@@ -1014,7 +1014,7 @@ int gsm_bts_set_c0_power_red(struct gsm_bts *bts, const uint8_t red)
 		switch (ts->pchan_is) {
 		/* Not allowed on CCCH/BCCH */
 		case GSM_PCHAN_CCCH:
-			/* Preceeding timeslot shall not exceed 2 dB */
+			/* Preceding timeslot shall not exceed 2 dB */
 			if (prev->c0_max_power_red_db > 0)
 				prev->c0_max_power_red_db = 2;
 			/* fall-through */

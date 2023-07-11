@@ -122,7 +122,7 @@ static void configure_loop(struct gsm_bts *bts, const struct gsm_nm_state *state
 				      bts->bts_nr, 0xff, 0xff,
 				      NM_STATE_UNLOCKED);
 		/* Message containing BTS attributes, including the interference band bounds, was ACKed by the BTS.
-		 * Store the sent bounds as the ones being used for logging and comparing intereference levels. */
+		 * Store the sent bounds as the ones being used for logging and comparing interference levels. */
 		bts->interf_meas_params_used = bts->interf_meas_params_cfg;
 	}
 

@@ -494,7 +494,7 @@ DEFUN(cfg_neighbor_bind, cfg_neighbor_bind_cmd,
 {
 	vty_out(vty, "%% Warning: The CTRL interface for Neighbor Address Resolution is now deprecated."
 		"Upgrade osmo-pcu and drop the 'neighbor-resolution bind " VTY_IPV46_CMD " [<0-65535>]' VTY "
-		"option in order to let osmo-pcu use the new resoluton method using the PCUIF over IPA "
+		"option in order to let osmo-pcu use the new resolution method using the PCUIF over IPA "
 		"multiplex, which will work out of the box without required configuration.%s", VTY_NEWLINE);
 	osmo_talloc_replace_string(bsc_gsmnet, &bsc_gsmnet->neigh_ctrl.addr, argv[0]);
 	if (argc > 1)

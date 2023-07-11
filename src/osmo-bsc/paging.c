@@ -73,8 +73,8 @@ static const struct timespec retrans_period = {
 	.tv_nsec = 500 * 1000 * 1000,
 };
 
-/* If no CCCH Lod Ind is received before this time period, the BTS is considered
- * to have stopped sending CCCH Load Indication, probaby due to being under Load
+/* If no CCCH Load Ind is received before this time period, the BTS is considered
+ * to have stopped sending CCCH Load Indication, probably due to being under Load
  * Threshold: */
 #define bts_no_ccch_load_ind_timeout_sec(bts) ((bts)->ccch_load_ind_period * 2)
 
@@ -361,7 +361,7 @@ sched_next_iter:
  * coming from abis_rsl.c
  *
  * We attempt to iterate once over the list of items but
- * only upto available_slots.
+ * only up to available_slots.
  */
 static void paging_handle_pending_requests(struct gsm_bts_paging_state *paging_bts)
 {
@@ -562,7 +562,7 @@ static int _paging_request(const struct bsc_paging_params *params, struct gsm_bt
 	} else if (bts_entry->initial_req_list_len == 1) {
 		/* Worker timer is armed -> there was already one req before
 		 * bts_entry->initial_req_list_len == 1 -> There were no initial requests
-		 *       in the list, aka the timer is waiting for retransmition,
+		 *       in the list, aka the timer is waiting for retransmission,
 		 *       which is a longer period.
 		 * Let's recaculate the time to adapt it to initial_period: */
 		struct timespec now, elapsed, tdiff;
