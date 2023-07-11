@@ -60,9 +60,9 @@ osmo-build-dep.sh libosmo-sccp
 osmo-build-dep.sh osmo-mgw
 
 # Additional configure options and depends
-CONFIG=""
+CONFIG="--enable-external-tests --enable-werror"
 if [ "$WITH_MANUALS" = "1" ]; then
-	CONFIG="--enable-manuals"
+	CONFIG="$CONFIG --enable-manuals"
 fi
 
 set +x
@@ -75,12 +75,12 @@ set -x
 
 cd "$base"
 autoreconf --install --force
-./configure --enable-sanitize --enable-external-tests --enable-werror $CONFIG
+./configure --enable-sanitize $CONFIG
 $MAKE $PARALLEL_MAKE
 LD_LIBRARY_PATH="$inst/lib" $MAKE check \
   || exit_tar_workspace
 LD_LIBRARY_PATH="$inst/lib" \
-  DISTCHECK_CONFIGURE_FLAGS="--enable-external-tests --enable-werror $CONFIG" \
+  DISTCHECK_CONFIGURE_FLAGS="$CONFIG" \
   $MAKE $PARALLEL_MAKE distcheck \
   || exit_tar_workspace
 
