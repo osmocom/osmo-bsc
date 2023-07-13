@@ -72,7 +72,8 @@ bool lchan_may_receive_data(struct gsm_lchan *lchan)
 
 bool lchan_is_asci(struct gsm_lchan *lchan)
 {
-	if (lchan->activate.info.vgcs || lchan->activate.info.vbs)
+	if (lchan->activate.info.type_for == LCHAN_TYPE_FOR_VGCS ||
+	    lchan->activate.info.type_for == LCHAN_TYPE_FOR_VBS)
 		return true;
 	return false;
 }
@@ -389,7 +390,7 @@ void lchan_activate(struct gsm_lchan *lchan, struct lchan_activate_info *info)
 
 	OSMO_ASSERT(lchan && info);
 
-	if ((info->vamos || lchan->vamos.is_secondary)
+	if ((info->type_for == LCHAN_TYPE_FOR_VAMOS || lchan->vamos.is_secondary)
 	    && !osmo_bts_has_feature(&lchan->ts->trx->bts->features, BTS_FEAT_VAMOS)) {
 		lchan->last_error = talloc_strdup(lchan->ts->trx, "VAMOS related channel activation requested,"
 						  " but BTS does not support VAMOS");
@@ -492,7 +493,7 @@ void lchan_mode_modify(struct gsm_lchan *lchan, struct lchan_modify_info *info)
 {
 	OSMO_ASSERT(lchan && info);
 
-	if ((info->vamos || lchan->vamos.is_secondary)
+	if ((info->type_for == LCHAN_TYPE_FOR_VAMOS || lchan->vamos.is_secondary)
 	    && !osmo_bts_has_feature(&lchan->ts->trx->bts->features, BTS_FEAT_VAMOS)) {
 		lchan->last_error = talloc_strdup(lchan->ts->trx, "VAMOS related Channel Mode Modify requested,"
 						  " but BTS does not support VAMOS");
@@ -739,9 +740,9 @@ static int lchan_activate_set_ch_mode_rate_and_mr_config(struct gsm_lchan *lchan
 {
 	struct osmo_fsm_inst *fi = lchan->fi;
 	lchan->activate.ch_mode_rate = lchan->activate.info.ch_mode_rate;
-	lchan->activate.ch_mode_rate.chan_mode = (lchan->activate.info.vamos
+	lchan->activate.ch_mode_rate.chan_mode = (lchan->activate.info.type_for == LCHAN_TYPE_FOR_VAMOS)
 		? gsm48_chan_mode_to_vamos(lchan->activate.info.ch_mode_rate.chan_mode)
-		: gsm48_chan_mode_to_non_vamos(lchan->activate.info.ch_mode_rate.chan_mode));
+		: gsm48_chan_mode_to_non_vamos(lchan->activate.info.ch_mode_rate.chan_mode);
 	if (lchan->activate.ch_mode_rate.chan_mode < 0) {
 		lchan_fail("Invalid chan_mode: %s", gsm48_chan_mode_name(lchan->activate.info.ch_mode_rate.chan_mode));
 		return -EINVAL;
@@ -1008,7 +1009,7 @@ static void post_activ_ack_accept_preliminary_settings(struct gsm_lchan *lchan)
 	lchan->current_ch_mode_rate = lchan->activate.ch_mode_rate;
 	lchan->current_mr_conf = lchan->activate.mr_conf_filtered;
 	lchan->current_ch_indctr = lchan->activate.ch_indctr;
-	lchan->vamos.enabled = lchan->activate.info.vamos;
+	lchan->vamos.enabled = (lchan->activate.info.type_for == LCHAN_TYPE_FOR_VAMOS);
 	lchan->tsc_set = lchan->activate.tsc_set;
 	lchan->tsc = lchan->activate.tsc;
 }
@@ -1197,7 +1198,7 @@ static void lchan_fsm_wait_rsl_chan_mode_modify_ack(struct osmo_fsm_inst *fi, ui
 		lchan->current_ch_indctr = lchan->modify.ch_indctr;
 		lchan->tsc_set = lchan->modify.tsc_set;
 		lchan->tsc = lchan->modify.tsc;
-		lchan->vamos.enabled = lchan->modify.info.vamos;
+		lchan->vamos.enabled = (lchan->modify.info.type_for == LCHAN_TYPE_FOR_VAMOS);
 
 		if (bsc_chan_ind_requires_rtp_stream(lchan->modify.info.ch_indctr) && !lchan->fi_rtp) {
 			/* Continue with RTP stream establishing as done in lchan_activate(). Place the requested values in
@@ -1356,9 +1357,9 @@ static void lchan_fsm_established(struct osmo_fsm_inst *fi, uint32_t event, void
 		use_mgwep_ci = lchan_use_mgw_endpoint_ci_bts(lchan);
 
 		lchan->modify.ch_mode_rate = lchan->modify.info.ch_mode_rate;
-		lchan->modify.ch_mode_rate.chan_mode = (lchan->modify.info.vamos
-						? gsm48_chan_mode_to_vamos(lchan->modify.info.ch_mode_rate.chan_mode)
-						: gsm48_chan_mode_to_non_vamos(lchan->modify.info.ch_mode_rate.chan_mode));
+		lchan->modify.ch_mode_rate.chan_mode = (lchan->modify.info.type_for == LCHAN_TYPE_FOR_VAMOS)
+			? gsm48_chan_mode_to_vamos(lchan->modify.info.ch_mode_rate.chan_mode)
+			: gsm48_chan_mode_to_non_vamos(lchan->modify.info.ch_mode_rate.chan_mode);
 		if (lchan->modify.ch_mode_rate.chan_mode < 0) {
 			lchan_fail("Invalid chan_mode: %s", gsm48_chan_mode_name(lchan->modify.info.ch_mode_rate.chan_mode));
 			return;

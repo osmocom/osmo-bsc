@@ -616,9 +616,9 @@ static void vgcs_chan_fsm_null(struct osmo_fsm_inst *fi, uint32_t event, void *d
 			.ta = 0,
 		};
 		if (conn->vgcs_chan.call->vgcs_call.sf == GSM0808_SF_VGCS)
-			info.vgcs = 1;
+			info.type_for = LCHAN_TYPE_FOR_VGCS;
 		else
-			info.vbs = 1;
+			info.type_for = LCHAN_TYPE_FOR_VBS;
 		/* Activate lchan. If an error occurs, this the function call may trigger VGCS_EV_LCHAN_ERROR event.
 		 * This means that this must be the last action in this handler. */
 		lchan_activate(conn->vgcs_chan.new_lchan, &info);

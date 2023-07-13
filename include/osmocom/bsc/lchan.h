@@ -106,6 +106,13 @@ enum lchan_activate_for {
 	ACTIVATE_FOR_MODE_MODIFY_RTP,
 };
 
+enum lchan_type_for {
+	LCHAN_TYPE_FOR_NORMAL = 0,
+	LCHAN_TYPE_FOR_VAMOS,
+	LCHAN_TYPE_FOR_VGCS,
+	LCHAN_TYPE_FOR_VBS,
+};
+
 extern const struct value_string lchan_activate_mode_names[];
 static inline const char *lchan_activate_mode_name(enum lchan_activate_for activ_for)
 { return get_value_string(lchan_activate_mode_names, activ_for); }
@@ -139,10 +146,7 @@ struct lchan_activate_info {
 	 * 7, as described in 3GPP TS 45.002. */
 	struct optional_val tsc;
 
-	bool vamos;
-
-	/* In case of ASCI channel: Flags, if a VGCS channel or VBS channel is activated. */
-	bool vgcs, vbs;
+	enum lchan_type_for type_for;
 
 	/* A copy of bts->imm_ass_time at the time where Channel Activation was requested. A change in the VTY
 	 * configuration has immediate effect on the value, so make sure we don't get mixed up when it gets changed
@@ -173,7 +177,7 @@ struct lchan_modify_info {
 	 * 7, as described in 3GPP TS 45.002. */
 	struct optional_val tsc;
 
-	bool vamos;
+	enum lchan_type_for type_for;
 };
 
 /* Measurement pre-processing state */

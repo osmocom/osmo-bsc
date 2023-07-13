@@ -870,7 +870,6 @@ static int trigger_vamos_mode_modify(struct vty *vty, struct gsm_lchan *lchan, b
 		.modify_for = MODIFY_FOR_VTY,
 		.ch_mode_rate = lchan->current_ch_mode_rate,
 		.ch_indctr = lchan->current_ch_indctr,
-		.vamos = vamos,
 		.tsc_set = {
 			.present = (tsc_set >= 0),
 			.val = tsc_set,
@@ -880,6 +879,8 @@ static int trigger_vamos_mode_modify(struct vty *vty, struct gsm_lchan *lchan, b
 			.val = tsc,
 		},
 	};
+	if (vamos)
+		info.type_for = LCHAN_TYPE_FOR_VAMOS;
 
 	lchan_mode_modify(lchan, &info);
 	return CMD_SUCCESS;
@@ -1640,7 +1641,7 @@ static int lchan_act_single(struct vty *vty, struct gsm_lchan *lchan, const char
 		info.ch_mode_rate.chan_rate = chan_t_to_chan_rate(lchan_t);
 
 		if (activate == 2 || lchan->vamos.is_secondary) {
-			info.vamos = true;
+			info.type_for = LCHAN_TYPE_FOR_VAMOS;
 			if (lchan->vamos.is_secondary) {
 				info.tsc_set.present = true;
 				info.tsc_set.val = 1;

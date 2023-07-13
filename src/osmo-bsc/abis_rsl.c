@@ -406,7 +406,7 @@ int rsl_chan_ms_power_ctrl(struct gsm_lchan *lchan)
 static int channel_mode_from_lchan(struct rsl_ie_chan_mode *cm,
 				   struct gsm_lchan *lchan,
 				   const struct channel_mode_and_rate *ch_mode_rate,
-				   bool vamos, bool vgcs, bool vbs)
+				   enum lchan_type_for type_for)
 {
 	int rc;
 	memset(cm, 0, sizeof(*cm));
@@ -430,24 +430,34 @@ static int channel_mode_from_lchan(struct rsl_ie_chan_mode *cm,
 		cm->chan_rt = RSL_CMOD_CRT_SDCCH;
 		break;
 	case GSM_LCHAN_TCH_F:
-		if (vamos)
+		switch (type_for) {
+		case LCHAN_TYPE_FOR_VAMOS:
 			cm->chan_rt = RSL_CMOD_CRT_OSMO_TCH_VAMOS_Bm;
-		else if (vgcs)
+			break;
+		case LCHAN_TYPE_FOR_VGCS:
 			cm->chan_rt = RSL_CMOD_CRT_TCH_GROUP_Bm;
-		else if (vbs)
+			break;
+		case LCHAN_TYPE_FOR_VBS:
 			cm->chan_rt = RSL_CMOD_CRT_TCH_BCAST_Bm;
-		else
+			break;
+		default:
 			cm->chan_rt = RSL_CMOD_CRT_TCH_Bm;
+		}
 		break;
 	case GSM_LCHAN_TCH_H:
-		if (vamos)
+		switch (type_for) {
+		case LCHAN_TYPE_FOR_VAMOS:
 			cm->chan_rt = RSL_CMOD_CRT_OSMO_TCH_VAMOS_Lm;
-		else if (vgcs)
+			break;
+		case LCHAN_TYPE_FOR_VGCS:
 			cm->chan_rt = RSL_CMOD_CRT_TCH_GROUP_Lm;
-		else if (vbs)
+			break;
+		case LCHAN_TYPE_FOR_VBS:
 			cm->chan_rt = RSL_CMOD_CRT_TCH_BCAST_Lm;
-		else
+			break;
+		default:
 			cm->chan_rt = RSL_CMOD_CRT_TCH_Lm;
+		}
 		break;
 	case GSM_LCHAN_NONE:
 	case GSM_LCHAN_UNKNOWN:
@@ -589,8 +599,7 @@ int rsl_tx_chan_activ(struct gsm_lchan *lchan, uint8_t act_type, uint8_t ho_ref)
 	/* PDCH activation is a job for rsl_tx_dyn_ts_pdch_act_deact(); */
 	OSMO_ASSERT(act_type != RSL_ACT_OSMO_PDCH);
 
-	rc = channel_mode_from_lchan(&cm, lchan, &lchan->activate.ch_mode_rate, lchan->activate.info.vamos,
-				     lchan->activate.info.vgcs, lchan->activate.info.vbs);
+	rc = channel_mode_from_lchan(&cm, lchan, &lchan->activate.ch_mode_rate, lchan->activate.info.type_for);
 	if (rc < 0) {
 		LOGP(DRSL, LOGL_ERROR,
 		     "%s Cannot find channel mode from lchan type\n",
@@ -692,7 +701,7 @@ int rsl_tx_chan_activ(struct gsm_lchan *lchan, uint8_t act_type, uint8_t ho_ref)
 	put_top_acch_cap_ie(lchan, &cm, msg);
 
 	/* Selecting a specific TSC Set is only applicable to VAMOS mode */
-	if (lchan->activate.info.vamos && lchan->activate.tsc_set >= 1)
+	if (lchan->activate.info.type_for == LCHAN_TYPE_FOR_VAMOS && lchan->activate.tsc_set >= 1)
 		put_osmo_training_sequence_ie(msg, lchan->activate.tsc_set, lchan->activate.tsc);
 
 	msg->dst = rsl_chan_link(lchan);
@@ -727,7 +736,7 @@ int rsl_chan_mode_modify_req(struct gsm_lchan *lchan)
 	if (chan_nr < 0)
 		return chan_nr;
 
-	rc = channel_mode_from_lchan(&cm, lchan, &lchan->modify.ch_mode_rate, lchan->modify.info.vamos, false, false);
+	rc = channel_mode_from_lchan(&cm, lchan, &lchan->modify.ch_mode_rate, lchan->modify.info.type_for);
 	if (rc < 0)
 		return rc;
 
@@ -765,7 +774,8 @@ int rsl_chan_mode_modify_req(struct gsm_lchan *lchan)
 
 	/* Selecting a specific TSC Set is only applicable to VAMOS mode. Send this Osmocom specific IE only to OsmoBTS
 	 * types. */
-	if (lchan->modify.info.vamos && lchan->modify.tsc_set >= 1 && bts->model->type == GSM_BTS_TYPE_OSMOBTS)
+	if (lchan->modify.info.type_for == LCHAN_TYPE_FOR_VAMOS && lchan->modify.tsc_set >= 1 &&
+	    bts->model->type == GSM_BTS_TYPE_OSMOBTS)
 		put_osmo_training_sequence_ie(msg, lchan->modify.tsc_set, lchan->modify.tsc);
 
 	msg->dst = rsl_chan_link(lchan);
