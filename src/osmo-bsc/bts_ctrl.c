@@ -778,7 +778,150 @@ static int set_bts_si2quater_neighbor_list_del_uarfcn(struct ctrl_cmd *cmd, void
 CTRL_CMD_DEFINE_WO_NOVRF(bts_si2quater_neighbor_list_del_uarfcn,
 			 "si2quater-neighbor-list del uarfcn");
 
-/* TODO: si2quater neighbor management: add EARFCN */
+static int verify_bts_si2quater_neighbor_list_add_earfcn(struct ctrl_cmd *cmd, const char *value, void *_data)
+{
+	char *earfcn_str, *thresh_hi_str, *thresh_lo_str, *prio_str, *qrxlv_str, *meas_str, *saveptr, *tmp;
+	int earfcn, thresh_hi, thresh_lo, prio, qrxlv, meas;
+
+	tmp = talloc_strdup(cmd, value);
+	if (!tmp)
+		return 1;
+
+	earfcn_str = strtok_r(tmp, ",", &saveptr);
+	thresh_hi_str = strtok_r(NULL, ",", &saveptr);
+	thresh_lo_str = strtok_r(NULL, ",", &saveptr);
+	prio_str = strtok_r(NULL, ",", &saveptr);
+	qrxlv_str = strtok_r(NULL, ",", &saveptr);
+	meas_str = strtok_r(NULL, "\0", &saveptr);
+
+
+	if (!earfcn_str || osmo_str_to_int(&earfcn, earfcn_str, 10, 0, 65535) < 0) {
+		cmd->reply = "Failed to parse neighbor EARFCN value";
+		return 1;
+	}
+
+	if (!thresh_hi_str || osmo_str_to_int(&thresh_hi, thresh_hi_str, 10, 0, 31) < 0) {
+		cmd->reply = "Failed to parse neighbor threshold high bits value";
+		return 1;
+	}
+
+	if (!thresh_lo_str || osmo_str_to_int(&thresh_lo, thresh_lo_str, 10, 0, 32) < 0) {
+		cmd->reply = "Failed to parse neighbor threshold low bits value";
+		return 1;
+	}
+
+	if (!prio_str || osmo_str_to_int(&prio, prio_str, 10, 0, 8) < 0) {
+		cmd->reply = "Failed to parse neighbor priority value";
+		return 1;
+	}
+
+	if (!qrxlv_str || osmo_str_to_int(&qrxlv, qrxlv_str, 10, 0, 32) < 0) {
+		cmd->reply = "Failed to parse neighbor QRXLEVMIN value";
+		return 1;
+	}
+
+	if (!meas_str || osmo_str_to_int(&meas, meas_str, 10, 0, 8) < 0) {
+		cmd->reply = "Failed to parse neighbor measurement bandwidth";
+		return 1;
+	}
+
+	return 0;
+}
+
+/* si2quater neighbor management: add an EARFCN
+ * Format: bts.<0-255>.si2quater-neighbor-list.add.earfcn <EARFCN>,<thresh-hi>,<thresh-lo>,<priority>,<QRXLEVMIN>,<measurement bandwidth>
+ * EARFCN is in range 0..65535, thresh-hi is in range 0..31, thresh-hi is in range 0..32,
+ * priority is in range 0..8, QRXLEVMIN is in range 0..32, measurement bandwidth is in range 0..8 */
+static int set_bts_si2quater_neighbor_list_add_earfcn(struct ctrl_cmd *cmd, void *data)
+{
+	struct gsm_bts *bts = (struct gsm_bts *)cmd->node;
+	struct osmo_earfcn_si2q *neighbors = &bts->si_common.si2quater_neigh_list;
+	char *earfcn_str, *thresh_hi_str, *thresh_lo_str, *prio_str, *qrxlv_str, *meas_str, *saveptr, *tmp;
+	int earfcn, thresh_hi, thresh_lo, prio, qrxlv, meas, result;
+
+	tmp = talloc_strdup(cmd, cmd->value);
+	if (!tmp) {
+		cmd->reply = "OOM";
+		return CTRL_CMD_ERROR;
+	}
+
+	earfcn_str = strtok_r(tmp, ",", &saveptr);
+	thresh_hi_str = strtok_r(NULL, ",", &saveptr);
+	thresh_lo_str = strtok_r(NULL, ",", &saveptr);
+	prio_str = strtok_r(NULL, ",", &saveptr);
+	qrxlv_str = strtok_r(NULL, ",", &saveptr);
+	meas_str = strtok_r(NULL, "\0", &saveptr);
+
+
+	if (!earfcn_str || osmo_str_to_int(&earfcn, earfcn_str, 10, 0, 65535) < 0) {
+		cmd->reply = "Failed to parse neighbor EARFCN value";
+		return CTRL_CMD_ERROR;
+	}
+
+	if (!thresh_hi_str || osmo_str_to_int(&thresh_hi, thresh_hi_str, 10, 0, 31) < 0) {
+		cmd->reply = "Failed to parse neighbor threshold high bits value";
+		return CTRL_CMD_ERROR;
+	}
+
+	if (!thresh_lo_str || osmo_str_to_int(&thresh_lo, thresh_lo_str, 10, 0, 32) < 0) {
+		cmd->reply = "Failed to parse neighbor threshold low bits value";
+		return CTRL_CMD_ERROR;
+	}
+
+	if (!prio_str || osmo_str_to_int(&prio, prio_str, 10, 0, 8) < 0) {
+		cmd->reply = "Failed to parse neighbor priority value";
+		return CTRL_CMD_ERROR;
+	}
+
+	if (!qrxlv_str || osmo_str_to_int(&qrxlv, qrxlv_str, 10, 0, 32) < 0) {
+		cmd->reply = "Failed to parse neighbor QRXLEVMIN value";
+		return CTRL_CMD_ERROR;
+	}
+
+	if (!meas_str || osmo_str_to_int(&meas, meas_str, 10, 0, 8) < 0) {
+		cmd->reply = "Failed to parse neighbor measurement bandwidth";
+		return CTRL_CMD_ERROR;
+	}
+
+	result = bts_earfcn_add(bts, earfcn, thresh_hi, thresh_lo, prio, qrxlv, meas);
+
+	if ((result == 0) && (si2q_num(bts) <= SI2Q_MAX_NUM)) {
+		cmd->reply = "OK";
+		return CTRL_CMD_REPLY;
+	}
+
+	switch (result) {
+	case 0:
+		cmd->reply = talloc_asprintf(cmd, "Not enough space in SI2quater (%u/%u used)", bts->si2q_count, SI2Q_MAX_NUM);
+		if (!cmd->reply)
+			cmd->reply = "OOM";
+		break;
+	case 1:
+		cmd->reply = "Multiple threshold-high are not supported";
+		break;
+	case EARFCN_THRESH_LOW_INVALID:
+		cmd->reply = "Multiple threshold-low are not supported";
+		break;
+	case EARFCN_QRXLV_INVALID + 1:
+		cmd->reply = "Multiple QRXLEVMIN are not supported";
+		break;
+	case EARFCN_PRIO_INVALID:
+		cmd->reply = "Multiple priorities are not supported";
+		break;
+	default:
+		cmd->reply = talloc_asprintf(cmd, "Unable to add EARFCN: %s", strerror(-result));
+		if (!cmd->reply)
+			cmd->reply = "OOM";
+	}
+
+	if (osmo_earfcn_del(neighbors, earfcn) != 0)
+		cmd->reply = "Failed to roll-back adding EARFCN";
+
+	return CTRL_CMD_ERROR;
+}
+
+CTRL_CMD_DEFINE_WO(bts_si2quater_neighbor_list_add_earfcn,
+			 "si2quater-neighbor-list add earfcn");
 
 static int verify_bts_si2quater_neighbor_list_add_uarfcn(struct ctrl_cmd *cmd, const char *value, void *_data)
 {
@@ -1215,6 +1358,7 @@ int bsc_bts_ctrl_cmds_install(void)
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_neighbor_list_mode);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_si2quater_neighbor_list_del_earfcn);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_si2quater_neighbor_list_del_uarfcn);
+	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_si2quater_neighbor_list_add_earfcn);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_si2quater_neighbor_list_add_uarfcn);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_cell_reselection_offset);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_cell_reselection_penalty_time);
