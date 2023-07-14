@@ -1244,7 +1244,7 @@ static int generate_si13(enum osmo_sysinfo_type t, struct gsm_bts *bts)
 			.nmo		= GPRS_NMO_II,
 			.t3168		= 2000,
 			.t3192		= 1500,
-			.drx_timer_max	= 3,
+			.drx_timer_max	= 4,
 			.bs_cv_max	= 15,
 			.ctrl_ack_type_use_block = bts->gprs.ctrl_ack_type_use_block,
 			.ext_info_present = true,
