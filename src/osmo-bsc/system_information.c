@@ -1244,6 +1244,8 @@ static int generate_si13(enum osmo_sysinfo_type t, struct gsm_bts *bts)
 			.nmo		= GPRS_NMO_II,
 			.t3168		= 2000,
 			.t3192		= 1500,
+			/* 3GPP TS 45.002 6.5.6:
+			 * "On BCCH, the operator should limit DRX_TIMER_MAX [...] to 4 seconds" */
 			.drx_timer_max	= 4,
 			.bs_cv_max	= 15,
 			.ctrl_ack_type_use_block = bts->gprs.ctrl_ack_type_use_block,
