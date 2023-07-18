@@ -950,7 +950,7 @@ int pcu_sock_init(struct gsm_network *net)
 	if (!state)
 		return -ENOMEM;
 
-	osmo_wqueue_init(&state->upqueue, BSC_PCU_SOCK_WQUEUE_LEN_DEFAULT);
+	osmo_wqueue_init(&state->upqueue, net->pcu_sock_wqueue_len_max);
 	state->upqueue.read_cb = pcu_sock_read;
 	state->upqueue.write_cb = pcu_sock_write;
 	state->upqueue.bfd.fd = -1;

@@ -204,6 +204,7 @@ static struct gsm_network *bsc_network_init(void *ctx)
 	net->cbc->client.remote_addr = (struct osmo_sockaddr_str){ .port = CBSP_TCP_PORT, };
 	net->cbc->client.local_addr = (struct osmo_sockaddr_str){};
 
+	net->pcu_sock_wqueue_len_max = BSC_PCU_SOCK_WQUEUE_LEN_DEFAULT;
 	return net;
 
 err_free_all:

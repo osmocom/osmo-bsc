@@ -416,6 +416,9 @@ static int config_write_net(struct vty *vty)
 
 	if (gsmnet->pcu_sock_path)
 		vty_out(vty, "  pcu-socket %s%s", gsmnet->pcu_sock_path, VTY_NEWLINE);
+	if (gsmnet->pcu_sock_wqueue_len_max != BSC_PCU_SOCK_WQUEUE_LEN_DEFAULT)
+		vty_out(vty, "  pcu-socket-wqueue-length %u%s", gsmnet->pcu_sock_wqueue_len_max,
+			VTY_NEWLINE);
 
 	neighbor_ident_vty_write_network(vty, " ");
 	mgcp_client_pool_config_write(vty, " ");
@@ -2484,8 +2487,29 @@ DEFUN(cfg_net_allow_unusable_timeslots, cfg_net_allow_unusable_timeslots_cmd,
 	return CMD_SUCCESS;
 }
 
-DEFUN_ATTR(cfg_net_pcu_sock,
-	   cfg_net_pcu_sock_cmd,
+DEFUN_ATTR(cfg_bts_pcu_sock_wqueue_len, cfg_bts_pcu_sock_wqueue_len_cmd,
+	"pcu-socket-wqueue-length <1-2147483646>",
+	"Configure the PCU socket queue length\n"
+	"Queue length\n",
+	CMD_ATTR_IMMEDIATE)
+{
+	size_t dropped_msgs = 0;
+	struct gsm_network *net = gsmnet_from_vty(vty);
+	size_t old = net->pcu_sock_wqueue_len_max;
+	net->pcu_sock_wqueue_len_max = atoi(argv[0]);
+	if (net->pcu_state)
+		dropped_msgs = osmo_wqueue_set_maxlen(&net->pcu_state->upqueue, net->pcu_sock_wqueue_len_max);
+	if (dropped_msgs) {
+		LOGP(DPCU, LOGL_INFO, "Have dropped %zu messages due to shortened max. message queue size (from: %zu to %u)\n",
+		     dropped_msgs, old, net->pcu_sock_wqueue_len_max);
+		vty_out(vty, "Have dropped %zu messages due to shortened max. message queue size (from: %zu to %u)%s",
+		     dropped_msgs, old, net->pcu_sock_wqueue_len_max, VTY_NEWLINE);
+	}
+	return CMD_SUCCESS;
+}
+
+DEFUN_ATTR(cfg_net_pcu_sock_path,
+	   cfg_net_pcu_sock_path_cmd,
 	   "pcu-socket PATH",
 	   "PCU Socket Path for using OsmoPCU co-located with BSC\n"
 	   "Path in the file system for the unix-domain PCU socket\n",
@@ -3595,7 +3619,8 @@ int bsc_vty_init(struct gsm_network *network)
 	install_element(GSMNET_NODE, &cfg_net_meas_feed_wqueue_max_len_cmd);
 	install_element(GSMNET_NODE, &cfg_net_timer_cmd);
 	install_element(GSMNET_NODE, &cfg_net_allow_unusable_timeslots_cmd);
-	install_element(GSMNET_NODE, &cfg_net_pcu_sock_cmd);
+	install_element(GSMNET_NODE, &cfg_net_pcu_sock_path_cmd);
+	install_element(GSMNET_NODE, &cfg_bts_pcu_sock_wqueue_len_cmd);
 	install_element(GSMNET_NODE, &cfg_net_no_pcu_sock_cmd);
 
 	/* Timer configuration commands (generic osmo_tdef API) */

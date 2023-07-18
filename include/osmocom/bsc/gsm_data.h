@@ -1068,6 +1068,7 @@ struct gsm_network {
 
 	/* PCU socket state */
 	char *pcu_sock_path;
+	unsigned int pcu_sock_wqueue_len_max;
 	struct pcu_sock_state *pcu_state;
 };
 
