@@ -178,14 +178,14 @@ enum gsm_chan_t chan_mode_to_chan_type(enum gsm48_chan_mode chan_mode, enum chan
 			return GSM_LCHAN_NONE;
 		}
 	case GSM48_CMODE_SPEECH_EFR:
-		/* EFR works over FR channels only */
+	case GSM48_CMODE_DATA_14k5:
+	case GSM48_CMODE_DATA_12k0:
+		/* these rates work over full-rate channels only */
 		if (chan_rate != CH_RATE_FULL)
 			return GSM_LCHAN_NONE;
 		/* fall through */
 	case GSM48_CMODE_SPEECH_V1:
 	case GSM48_CMODE_SPEECH_AMR:
-	case GSM48_CMODE_DATA_14k5:
-	case GSM48_CMODE_DATA_12k0:
 	case GSM48_CMODE_DATA_6k0:
 	case GSM48_CMODE_DATA_3k6:
 		switch (chan_rate) {
