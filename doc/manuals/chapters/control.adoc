@@ -20,8 +20,6 @@ TRX-specific commands are additionally prefixed with TRX number e. g.
 |apply-configuration|WO|No|"restart"|Restart all BTSes.
 |mnc|RW|No|"<mnc>"|Set/Get MNC (value between (0, 999)).
 |mcc|RW|No|"<mcc>"|Set/Get MCC (value between (1, 999)).
-|short-name|RW|No|"<name>"|Set/Get network's short name.
-|long-name|RW|No|"<name>"|Set/Get network's long name.
 |mcc-mnc-apply|WO|No|"<mcc>,<mnc>"|Apply new MCC/MNC values if different from currently used one.
 |notification|WO|Yes|Arbitrary value| See <<notif>> for details.
 |inform-msc-v1|WO|Yes|Arbitrary value| See <<infomsc>> for details.
