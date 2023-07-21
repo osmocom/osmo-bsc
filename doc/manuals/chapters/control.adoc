@@ -29,6 +29,8 @@ TRX-specific commands are additionally prefixed with TRX number e. g.
 |write-config-file|WO|No|"overwrite", "<filename>"|Write running configuration to file.
 |bts.N.location-area-code|RW|No|"<lac>"|Set/Get LAC (value between (0, 65535)).
 |bts.N.cell-identity|RW|No|"<id>"|Set/Get Cell Identity (value between (0, 65535)).
+|bts.N.bsic|RW|No|"<bsic>"|Set/Get BSIC (value between (0, 63)).
+|bts.N.rach-max-delay|RW|No|"<delay>"|Set/Get RACH max delay (value between (1, 127)).
 |bts.N.apply-configuration|WO|No|Ignored|Restart BTS via OML.
 |bts.N.send-new-system-informations|WO|No|Ignored|Regenerate and resend System Information messages for given BTS.
 |bts.N.send-power-control-defaults|WO|No|Ignored|Resend default power control parameters for given BTS.
@@ -37,6 +39,12 @@ TRX-specific commands are additionally prefixed with TRX number e. g.
 |bts.N.oml-uptime|RO|No|<uptime>|Return OML link uptime in seconds.
 |bts.N.gprs-mode|RW|No|"<mode>"|See <<gprsm>> for details.
 |bts.N.rf_state|RO|No|"<oper>,<admin>,<pol>"|See <<rfs>> for details.
+|bts.N.cell-reselection-offset|RW|No|"<cro>"|Set/Get cell reselection offset (value between (0, 126), steps of 2).
+|bts.N.cell-reselection-penalty-time|RW|No|"<penalty-time>","reserved"|Set/Get cell reselection penalty time (value between (20, 620), steps of 20).
+|bts.N.cell-reselection-hysteresis|RW|No|"<crh>"|Set/Get cell reselection hysteresis (value between (0, 14), steps of 2).
+|bts.N.rach-access-control-classes|RO|No|"<class>,(barred|allowed)"|Get concatenated pairs of RACH access control classes.
+|bts.N.rach-access-control-class.bar|WO|No|"<class>","emergency"|Set RACH access control class as barred.
+|bts.N.rach-access-control-class.allow|WO|No|"<class>","emergency"|Set RACH access control class as allowed.
 |bts.N.trx.M.arfcn|RW|No|"<arfcn>"|Set/Get ARFCN (value between (0, 1023)).
 |bts.N.trx.M.max-power-reduction|RW|No|"<mpr>"|See <<mpr>> for details.
 |[bts.N.]handover.active|RW|No|"0","1","default"|Enable/disable handover.
@@ -70,6 +78,16 @@ TRX-specific commands are additionally prefixed with TRX number e. g.
 |bts.N.neighbor-list.mode|WO|No|"automatic","manual","manual-si5"|Mode of Neighbor List generation.
 |bts.N.neighbor-list.add|WO|No|<0-1023>|Add to manual neighbor list.
 |bts.N.neighbor-list.del|WO|No|<0-1023>|Delete from manual neighbor list.
+|bts.N.neighbor-list.si5-add|WO|No|<0-1023>|Add to manual SI5 neighbor list.
+|bts.N.neighbor-list.si5-del|WO|No|<0-1023>|Delete from manual SI5 neighbor list.
+|bts.N.neighbor-list.si2|RO|No|"<arfcn>"|Get space concatenated list of SI2 neighbor ARFCNs.
+|bts.N.neighbor-list.si5|RO|No|"<arfcn>"|Get space concatenated list of SI5 neighbor ARFCNs.
+|bts.N.neighbor-list.si2quater.uarfcns|RO|No|"<uarfcn>,<scrambling code>,<diversity bit>"|Get space concatenated list of UARFCN neighbors.
+|bts.N.neighbor-list.si2quater.earfcns|RO|No|"<earfcn>,<thresh-hi>,<thresh-lo>,<prio>,<qrxlv>,<meas>"|Get space concatenated list of EARFCN neighbors.
+|bts.N.si2quater-neighbor-list.add.uarfcn|WO|No|"<uarfcn>,<scrambling code>,<diversity bit>"|Add UARFCN neighbor.
+|bts.N.si2quater-neighbor-list.del.uarfcn|WO|No|"<uarfcn>,<scrambling code>"|Delete UARFCN neighbor.
+|bts.N.si2quater-neighbor-list.add.earfcn|WO|No|"<earfcn>,<thresh-hi>,<thresh-lo>,<prio>,<qrxlv>,<meas>"|Add EARFCN neighbor.
+|bts.N.si2quater-neighbor-list.del.earfcn|WO|No|"<earfcn>"|Delete EARFCN neighbor (value between (0, 65535)).
 |===
 
 [[notif]]
