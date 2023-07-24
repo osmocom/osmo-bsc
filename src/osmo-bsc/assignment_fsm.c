@@ -200,21 +200,26 @@ static void send_assignment_complete(struct gsm_subscriber_connection *conn)
 		return;
 	}
 
+	if (gscon_is_aoip(conn) && bsc_chan_ind_requires_rtp_stream(conn->assignment.ch_indctr)) {
+		if (!osmo_mgcpc_ep_ci_get_crcx_info_to_sockaddr(conn->user_plane.mgw_endpoint_ci_msc,
+								&addr_local)) {
+			assignment_fail(GSM0808_CAUSE_EQUIPMENT_FAILURE,
+					"Unable to compose RTP address of MGW -> MSC");
+			return;
+		}
+		addr_local_p = &addr_local;
+	}
+
 	/* Generate rtp related fields */
-	if (bsc_chan_ind_requires_rtp_stream(conn->assignment.ch_indctr)) {
+	switch (conn->assignment.ch_indctr) {
+	case GSM0808_CHAN_SPEECH:
 		perm_spch = gsm0808_permitted_speech(lchan->type, lchan->current_ch_mode_rate.chan_mode);
 
-		if (gscon_is_aoip(conn)) {
-			if (!osmo_mgcpc_ep_ci_get_crcx_info_to_sockaddr(conn->user_plane.mgw_endpoint_ci_msc,
-									&addr_local)) {
-				assignment_fail(GSM0808_CAUSE_EQUIPMENT_FAILURE,
-						"Unable to compose RTP address of MGW -> MSC");
-				return;
-			}
-			addr_local_p = &addr_local;
-		}
+		/* below is AoIP specific logic */
+		if (!gscon_is_aoip(conn))
+			break;
 
-		if (gscon_is_aoip(conn) && conn->assignment.req.use_osmux) {
+		if (conn->assignment.req.use_osmux) {
 			if (!osmo_mgcpc_ep_ci_get_crcx_info_to_osmux_cid(conn->user_plane.mgw_endpoint_ci_msc,
 									 &osmux_cid)) {
 				assignment_fail(GSM0808_CAUSE_EQUIPMENT_FAILURE,
@@ -223,14 +228,28 @@ static void send_assignment_complete(struct gsm_subscriber_connection *conn)
 			}
 		}
 
-		/* Only AoIP networks include a speech codec (chosen) in the
-		 * assignment complete message. */
-		if (gscon_is_aoip(conn)) {
-			/* Extrapolate speech codec from speech mode */
-			gsm0808_speech_codec_from_chan_type(&sc, perm_spch);
-			sc.cfg = conn->lchan->current_ch_mode_rate.s15_s0;
-			sc_ptr = &sc;
-		}
+		/* Extrapolate speech codec from speech mode */
+		gsm0808_speech_codec_from_chan_type(&sc, perm_spch);
+		sc.cfg = conn->lchan->current_ch_mode_rate.s15_s0;
+		sc_ptr = &sc;
+		break;
+	case GSM0808_CHAN_DATA:
+		/* below is AoIP specific logic */
+		if (!gscon_is_aoip(conn))
+			break;
+
+		/* The coding of Speech Codec Element for the CSData Codec Type
+		 * is defined in 3GPP TS 48.008 section 3.2.2.103 */
+		sc = (struct gsm0808_speech_codec) {
+			.pi = true, /* PI indicates CSDoIP support */
+			.pt = false, /* PT indicates CSDoTDM support */
+			.type = GSM0808_SCT_CSD,
+			.cfg = 0, /* R2/R3 not set (redundancy not supported) */
+		};
+		sc_ptr = &sc;
+		break;
+	default:
+		break;
 	}
 
 	resp = gsm0808_create_ass_compl2(lchan->abis_ip.ass_compl.rr_cause,
