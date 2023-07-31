@@ -539,8 +539,10 @@ int vgcs_vbs_call_start(struct gsm_subscriber_connection *conn, struct msgb *msg
 
 	/* Create VGCS FSM. */
 	conn->vgcs_call.fi = osmo_fsm_inst_alloc(&vgcs_call_fsm, conn->network, conn, LOGL_DEBUG, NULL);
-	if (!conn->vgcs_call.fi)
+	if (!conn->vgcs_call.fi) {
+		cause = GSM0808_CAUSE_INCORRECT_VALUE;
 		goto reject;
+	}
 
 	/* Init list of cells that are used by the call. */
 	INIT_LLIST_HEAD(&conn->vgcs_call.chan_list);
@@ -1080,7 +1082,7 @@ int vgcs_vbs_chan_start(struct gsm_subscriber_connection *conn, struct msgb *msg
 	};
 	uint8_t cause;
 	struct gsm_bts *bts;
-	struct gsm_lchan *lchan;
+	struct gsm_lchan *lchan = NULL;
 	int rc;
 	int i;
 
