@@ -436,13 +436,13 @@ int pcu_tx_rach_ind(struct gsm_bts *bts, int16_t qta, uint16_t ra, uint32_t fn,
 }
 
 /* Confirm the sending of an immediate assignment to the pcu */
-int pcu_tx_pch_confirm(struct gsm_bts *bts, uint32_t tlli)
+int pcu_tx_pch_confirm(struct gsm_bts *bts, uint32_t msg_id)
 {
 	struct msgb *msg;
 	struct gsm_pcu_if *pcu_prim;
 	struct gsm_pcu_if_data_cnf_dt *data_cnf_dt;
 
-	LOG_BTS(bts, DPCU, LOGL_INFO, "Sending PCH confirm with direct TLLI\n");
+	LOG_BTS(bts, DPCU, LOGL_INFO, "Sending PCH confirm with message id\n");
 
 	msg = pcu_msgb_alloc(PCU_IF_MSG_DATA_CNF_DT, bts->nr);
 	if (!msg)
@@ -451,7 +451,7 @@ int pcu_tx_pch_confirm(struct gsm_bts *bts, uint32_t tlli)
 	data_cnf_dt = &pcu_prim->u.data_cnf_dt;
 
 	data_cnf_dt->sapi = PCU_IF_SAPI_PCH_DT;
-	data_cnf_dt->tlli = tlli;
+	data_cnf_dt->msg_id = msg_id;
 
 	return pcu_sock_send(bts->network, msg);
 }
@@ -508,15 +508,15 @@ static int pcu_rx_rr_paging_pch(struct gsm_bts *bts, uint8_t paging_group,
 static int pcu_rx_rr_imm_ass_pch(struct gsm_bts *bts, uint8_t paging_group,
 				 const struct gsm_pcu_if_pch_dt *pch_dt)
 {
-	LOG_BTS(bts, DPCU, LOGL_DEBUG, "PCU Sends immediate assignment via PCH (TLLI=0x%08x, IMSI=%s, Paging group=0x%02x)\n",
-		pch_dt->tlli, pch_dt->imsi, paging_group);
+	LOG_BTS(bts, DPCU, LOGL_DEBUG, "PCU Sends immediate assignment via PCH (msg_id=0x%08x, IMSI=%s, Paging group=0x%02x)\n",
+		pch_dt->msg_id, pch_dt->imsi, paging_group);
 
 	/* NOTE: Sending an IMMEDIATE ASSIGNMENT via PCH became necessary with GPRS in order to be able to
 	 * assign downlink TBFs directly through the paging channel. However, this method never became part
 	 * of the RSL specs. This means that each BTS vendor has to come up with a proprietary method. At
 	 * the moment we only support Ericsson RBS here. */
 	if (is_ericsson_bts(bts))
-		return rsl_ericsson_imm_assign_cmd(bts, pch_dt->tlli, sizeof(pch_dt->data), pch_dt->data, paging_group);
+		return rsl_ericsson_imm_assign_cmd(bts, pch_dt->msg_id, sizeof(pch_dt->data), pch_dt->data, paging_group);
 
 	LOG_BTS(bts, DPCU, LOGL_ERROR, "BTS model does not support sending immediate assignment via PCH!\n");
 	return -ENOTSUP;
@@ -541,9 +541,6 @@ static int pcu_rx_data_req(struct gsm_bts *bts, uint8_t msg_type,
 			rc = -EIO;
 		break;
 	case PCU_IF_SAPI_PCH_DT:
-		/* DT = direct TLLI. A tlli is prefixed so that the BSC/BTS can confirm the sending of the downlink
-		 * IMMEDIATE ASSIGNMENT or PAGING COMMAND towards the PCU using this TLLI as a reference. */
-
 		if (data_req->len < sizeof(struct gsm_pcu_if_pch_dt)) {
 			LOG_BTS(bts, DPCU, LOGL_ERROR, "Received PCU data request with invalid/small length %d\n",
 				data_req->len);

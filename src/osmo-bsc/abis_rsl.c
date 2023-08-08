@@ -995,7 +995,7 @@ int rsl_imm_assign_cmd(const struct gsm_bts *bts, uint8_t len, const uint8_t *va
 }
 
 /* Chapter 8.5.6 Immediate Assignment Command (with Ericcson vendor specific RSL extension) */
-int rsl_ericsson_imm_assign_cmd(const struct gsm_bts *bts, uint32_t tlli, uint8_t len,
+int rsl_ericsson_imm_assign_cmd(const struct gsm_bts *bts, uint32_t msg_id, uint8_t len,
 				const uint8_t *val, uint8_t pag_grp)
 {
 	struct msgb *msg = rsl_imm_assign_cmd_common(bts, len, val);
@@ -1009,7 +1009,7 @@ int rsl_ericsson_imm_assign_cmd(const struct gsm_bts *bts, uint32_t tlli, uint8_
 	/* ericsson can handle a reference at the end of the message which is used in
 	 * the confirm message. The confirm message is only sent if the trailer is present */
 	msgb_put_u8(msg, RSL_IE_ERIC_MOBILE_ID);
-	msgb_put_u32(msg, tlli);
+	msgb_put_u32(msg, msg_id);
 
 	return abis_rsl_sendmsg(msg);
 }
@@ -2552,7 +2552,7 @@ static int rsl_rx_ericsson_imm_assign_sent(struct msgb *msg)
 {
 	struct e1inp_sign_link *sign_link = msg->dst;
 	struct abis_rsl_dchan_hdr *dh = msgb_l2(msg);
-	uint32_t tlli;
+	uint32_t msg_id;
 
 	LOGP(DRSL, LOGL_INFO, "IMM.ass sent\n");
 	msgb_pull(msg, sizeof(*dh));
@@ -2564,8 +2564,8 @@ static int rsl_rx_ericsson_imm_assign_sent(struct msgb *msg)
 		LOGP(DRSL, LOGL_ERROR, "unsupported IMM.ass message format! (please fix)\n");
 	else {
 		msgb_pull(msg, 1); /* drop previous data to use msg_pull_u32 */
-		tlli = msgb_pull_u32(msg);
-		pcu_tx_pch_confirm(sign_link->trx->bts, tlli);
+		msg_id = msgb_pull_u32(msg);
+		pcu_tx_pch_confirm(sign_link->trx->bts, msg_id);
 	}
 	return 0;
 }
