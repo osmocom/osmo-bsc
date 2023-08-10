@@ -56,7 +56,7 @@ static const char *sapi_string[] = {
 	[PCU_IF_SAPI_PDTCH] =	"PDTCH",
 	[PCU_IF_SAPI_PRACH] =	"PRACH",
 	[PCU_IF_SAPI_PTCCH] =	"PTCCH",
-	[PCU_IF_SAPI_PCH_DT] =	"PCH_DT",
+	[PCU_IF_SAPI_PCH_2] =	"PCH_2",
 };
 
 bool pcu_connected(const struct gsm_network *net)
@@ -440,18 +440,18 @@ int pcu_tx_pch_confirm(struct gsm_bts *bts, uint32_t msg_id)
 {
 	struct msgb *msg;
 	struct gsm_pcu_if *pcu_prim;
-	struct gsm_pcu_if_data_cnf_dt *data_cnf_dt;
+	struct gsm_pcu_if_data_cnf *data_cnf;
 
 	LOG_BTS(bts, DPCU, LOGL_INFO, "Sending PCH confirm with message id\n");
 
-	msg = pcu_msgb_alloc(PCU_IF_MSG_DATA_CNF_DT, bts->nr);
+	msg = pcu_msgb_alloc(PCU_IF_MSG_DATA_CNF_2, bts->nr);
 	if (!msg)
 		return -ENOMEM;
 	pcu_prim = (struct gsm_pcu_if *) msg->data;
-	data_cnf_dt = &pcu_prim->u.data_cnf_dt;
+	data_cnf = &pcu_prim->u.data_cnf2;
 
-	data_cnf_dt->sapi = PCU_IF_SAPI_PCH_DT;
-	data_cnf_dt->msg_id = msg_id;
+	data_cnf->sapi = PCU_IF_SAPI_PCH_2;
+	data_cnf->msg_id = msg_id;
 
 	return pcu_sock_send(bts->network, msg);
 }
@@ -460,9 +460,9 @@ int pcu_tx_pch_confirm(struct gsm_bts *bts, uint32_t msg_id)
  * Encoding::write_paging_request) and extract the mobile identity
  * (P-TMSI) from it */
 static int pcu_rx_rr_paging_pch(struct gsm_bts *bts, uint8_t paging_group,
-				const struct gsm_pcu_if_pch_dt *pch_dt)
+				const struct gsm_pcu_if_pch *pch)
 {
-	struct gsm48_paging1 *p1 = (struct gsm48_paging1 *) pch_dt->data;
+	struct gsm48_paging1 *p1 = (struct gsm48_paging1 *) pch->data;
 	uint8_t chan_needed;
 	struct osmo_mobile_identity mi;
 	int rc;
@@ -506,17 +506,17 @@ static int pcu_rx_rr_paging_pch(struct gsm_bts *bts, uint8_t paging_group,
 }
 
 static int pcu_rx_rr_imm_ass_pch(struct gsm_bts *bts, uint8_t paging_group,
-				 const struct gsm_pcu_if_pch_dt *pch_dt)
+				 const struct gsm_pcu_if_pch *pch)
 {
 	LOG_BTS(bts, DPCU, LOGL_DEBUG, "PCU Sends immediate assignment via PCH (msg_id=0x%08x, IMSI=%s, Paging group=0x%02x)\n",
-		pch_dt->msg_id, pch_dt->imsi, paging_group);
+		pch->msg_id, pch->imsi, paging_group);
 
 	/* NOTE: Sending an IMMEDIATE ASSIGNMENT via PCH became necessary with GPRS in order to be able to
 	 * assign downlink TBFs directly through the paging channel. However, this method never became part
 	 * of the RSL specs. This means that each BTS vendor has to come up with a proprietary method. At
 	 * the moment we only support Ericsson RBS here. */
 	if (is_ericsson_bts(bts))
-		return rsl_ericsson_imm_assign_cmd(bts, pch_dt->msg_id, sizeof(pch_dt->data), pch_dt->data, paging_group);
+		return rsl_ericsson_imm_assign_cmd(bts, pch->msg_id, sizeof(pch->data), pch->data, paging_group);
 
 	LOG_BTS(bts, DPCU, LOGL_ERROR, "BTS model does not support sending immediate assignment via PCH!\n");
 	return -ENOTSUP;
@@ -527,7 +527,7 @@ static int pcu_rx_data_req(struct gsm_bts *bts, uint8_t msg_type,
 {
 	uint8_t pag_grp;
 	int rc = 0;
-	struct gsm_pcu_if_pch_dt *pch_dt;
+	struct gsm_pcu_if_pch *pch;
 	struct gsm48_imm_ass *gsm48_imm_ass;
 
 	LOG_BTS(bts, DPCU, LOGL_DEBUG, "Data request received: sapi=%s arfcn=%d "
@@ -540,20 +540,20 @@ static int pcu_rx_data_req(struct gsm_bts *bts, uint8_t msg_type,
 		if (rsl_imm_assign_cmd(bts, data_req->len, data_req->data))
 			rc = -EIO;
 		break;
-	case PCU_IF_SAPI_PCH_DT:
-		if (data_req->len < sizeof(struct gsm_pcu_if_pch_dt)) {
+	case PCU_IF_SAPI_PCH_2:
+		if (data_req->len < sizeof(struct gsm_pcu_if_pch)) {
 			LOG_BTS(bts, DPCU, LOGL_ERROR, "Received PCU data request with invalid/small length %d\n",
 				data_req->len);
 			break;
 		}
 
-		pch_dt = (struct gsm_pcu_if_pch_dt *)data_req->data;
-		pag_grp = gsm0502_calc_paging_group(&bts->si_common.chan_desc, str_to_imsi(pch_dt->imsi));
+		pch = (struct gsm_pcu_if_pch *)data_req->data;
+		pag_grp = gsm0502_calc_paging_group(&bts->si_common.chan_desc, str_to_imsi(pch->imsi));
 
-		gsm48_imm_ass = (struct gsm48_imm_ass *)pch_dt->data;
+		gsm48_imm_ass = (struct gsm48_imm_ass *)pch->data;
 		if (gsm48_imm_ass->msg_type == GSM48_MT_RR_IMM_ASS)
-			return pcu_rx_rr_imm_ass_pch(bts, pag_grp, pch_dt);
-		return pcu_rx_rr_paging_pch(bts, pag_grp, pch_dt);
+			return pcu_rx_rr_imm_ass_pch(bts, pag_grp, pch);
+		return pcu_rx_rr_paging_pch(bts, pag_grp, pch);
 	default:
 		LOG_BTS(bts, DPCU, LOGL_ERROR, "Received PCU data request with "
 			"unsupported sapi %d\n", data_req->sapi);
