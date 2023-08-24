@@ -996,7 +996,7 @@ int rsl_imm_assign_cmd(const struct gsm_bts *bts, uint8_t len, const uint8_t *va
 
 /* Chapter 8.5.6 Immediate Assignment Command (with Ericcson vendor specific RSL extension) */
 int rsl_ericsson_imm_assign_cmd(const struct gsm_bts *bts, uint32_t msg_id, uint8_t len,
-				const uint8_t *val, uint8_t pag_grp)
+				const uint8_t *val, uint8_t pag_grp, bool confirm)
 {
 	struct msgb *msg = rsl_imm_assign_cmd_common(bts, len, val);
 	if (!msg)
@@ -1008,8 +1008,10 @@ int rsl_ericsson_imm_assign_cmd(const struct gsm_bts *bts, uint32_t msg_id, uint
 
 	/* ericsson can handle a reference at the end of the message which is used in
 	 * the confirm message. The confirm message is only sent if the trailer is present */
-	msgb_put_u8(msg, RSL_IE_ERIC_MOBILE_ID);
-	msgb_put_u32(msg, msg_id);
+	if (confirm) {
+		msgb_put_u8(msg, RSL_IE_ERIC_MOBILE_ID);
+		msgb_put_u32(msg, msg_id);
+	}
 
 	return abis_rsl_sendmsg(msg);
 }

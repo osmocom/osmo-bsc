@@ -506,7 +506,7 @@ static int pcu_rx_rr_paging_pch(struct gsm_bts *bts, uint8_t paging_group,
 }
 
 static int pcu_rx_rr_imm_ass_pch(struct gsm_bts *bts, uint8_t paging_group,
-				 const struct gsm_pcu_if_pch *pch)
+				 const struct gsm_pcu_if_pch *pch, bool confirm)
 {
 	LOG_BTS(bts, DPCU, LOGL_DEBUG, "PCU Sends immediate assignment via PCH (msg_id=0x%08x, IMSI=%s, Paging group=0x%02x)\n",
 		pch->msg_id, pch->imsi, paging_group);
@@ -516,7 +516,8 @@ static int pcu_rx_rr_imm_ass_pch(struct gsm_bts *bts, uint8_t paging_group,
 	 * of the RSL specs. This means that each BTS vendor has to come up with a proprietary method. At
 	 * the moment we only support Ericsson RBS here. */
 	if (is_ericsson_bts(bts))
-		return rsl_ericsson_imm_assign_cmd(bts, pch->msg_id, sizeof(pch->data), pch->data, paging_group);
+		return rsl_ericsson_imm_assign_cmd(bts, pch->msg_id, sizeof(pch->data), pch->data, paging_group,
+						   confirm);
 
 	LOG_BTS(bts, DPCU, LOGL_ERROR, "BTS model does not support sending immediate assignment via PCH!\n");
 	return -ENOTSUP;
@@ -549,11 +550,16 @@ static int pcu_rx_data_req(struct gsm_bts *bts, uint8_t msg_type,
 
 		pch = (struct gsm_pcu_if_pch *)data_req->data;
 		pag_grp = gsm0502_calc_paging_group(&bts->si_common.chan_desc, str_to_imsi(pch->imsi));
-
 		gsm48_imm_ass = (struct gsm48_imm_ass *)pch->data;
+
 		if (gsm48_imm_ass->msg_type == GSM48_MT_RR_IMM_ASS)
-			return pcu_rx_rr_imm_ass_pch(bts, pag_grp, pch);
-		return pcu_rx_rr_paging_pch(bts, pag_grp, pch);
+			return pcu_rx_rr_imm_ass_pch(bts, pag_grp, pch, pch->confirm);
+
+		if (pcu_rx_rr_paging_pch(bts, pag_grp, pch))
+			return -EIO;
+		if (pch->confirm)
+			return pcu_tx_pch_confirm(bts, pch->msg_id);
+		break;
 	default:
 		LOG_BTS(bts, DPCU, LOGL_ERROR, "Received PCU data request with "
 			"unsupported sapi %d\n", data_req->sapi);
