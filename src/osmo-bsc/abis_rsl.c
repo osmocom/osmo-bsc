@@ -44,6 +44,7 @@
 #include <osmocom/gsm/rsl.h>
 #include <osmocom/core/talloc.h>
 #include <osmocom/bsc/pcu_if.h>
+#include <osmocom/bsc/pcuif_proto.h>
 #include <osmocom/bsc/gsm_08_08.h>
 #include <osmocom/netif/rtp.h>
 #include <osmocom/core/tdef.h>
@@ -2567,7 +2568,7 @@ static int rsl_rx_ericsson_imm_assign_sent(struct msgb *msg)
 	else {
 		msgb_pull(msg, 1); /* drop previous data to use msg_pull_u32 */
 		msg_id = msgb_pull_u32(msg);
-		pcu_tx_pch_confirm(sign_link->trx->bts, msg_id);
+		pcu_tx_data_cnf(sign_link->trx->bts, msg_id, PCU_IF_SAPI_PCH_2);
 	}
 	return 0;
 }

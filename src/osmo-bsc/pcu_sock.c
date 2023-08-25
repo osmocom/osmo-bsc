@@ -57,6 +57,7 @@ static const char *sapi_string[] = {
 	[PCU_IF_SAPI_PRACH] =	"PRACH",
 	[PCU_IF_SAPI_PTCCH] =	"PTCCH",
 	[PCU_IF_SAPI_PCH_2] =	"PCH_2",
+	[PCU_IF_SAPI_AGCH_2] =	"AGCH_2",
 };
 
 bool pcu_connected(const struct gsm_network *net)
@@ -435,14 +436,14 @@ int pcu_tx_rach_ind(struct gsm_bts *bts, int16_t qta, uint16_t ra, uint32_t fn,
 	return pcu_sock_send(bts->network, msg);
 }
 
-/* Confirm the sending of an immediate assignment to the pcu */
-int pcu_tx_pch_confirm(struct gsm_bts *bts, uint32_t msg_id)
+int pcu_tx_data_cnf(struct gsm_bts *bts, uint32_t msg_id, uint8_t sapi)
 {
 	struct msgb *msg;
 	struct gsm_pcu_if *pcu_prim;
 	struct gsm_pcu_if_data_cnf *data_cnf;
 
-	LOG_BTS(bts, DPCU, LOGL_INFO, "Sending PCH confirm with message id\n");
+	LOGP(DPCU, LOGL_DEBUG, "Sending DATA.cnf: sapi=%s msg_id=%08x\n",
+	     sapi_string[sapi], msg_id);
 
 	msg = pcu_msgb_alloc(PCU_IF_MSG_DATA_CNF_2, bts->nr);
 	if (!msg)
@@ -450,7 +451,7 @@ int pcu_tx_pch_confirm(struct gsm_bts *bts, uint32_t msg_id)
 	pcu_prim = (struct gsm_pcu_if *) msg->data;
 	data_cnf = &pcu_prim->u.data_cnf2;
 
-	data_cnf->sapi = PCU_IF_SAPI_PCH_2;
+	data_cnf->sapi = sapi;
 	data_cnf->msg_id = msg_id;
 
 	return pcu_sock_send(bts->network, msg);
@@ -528,8 +529,9 @@ static int pcu_rx_data_req(struct gsm_bts *bts, uint8_t msg_type,
 {
 	uint8_t pag_grp;
 	int rc = 0;
-	struct gsm_pcu_if_pch *pch;
-	struct gsm48_imm_ass *gsm48_imm_ass;
+	const struct gsm_pcu_if_pch *pch;
+	const struct gsm_pcu_if_agch *agch;
+	const struct gsm48_imm_ass *gsm48_imm_ass;
 
 	LOG_BTS(bts, DPCU, LOGL_DEBUG, "Data request received: sapi=%s arfcn=%d "
 		"block=%d data=%s\n", sapi_string[data_req->sapi],
@@ -537,9 +539,21 @@ static int pcu_rx_data_req(struct gsm_bts *bts, uint8_t msg_type,
 		osmo_hexdump(data_req->data, data_req->len));
 
 	switch (data_req->sapi) {
-	case PCU_IF_SAPI_AGCH:
-		if (rsl_imm_assign_cmd(bts, data_req->len, data_req->data))
-			rc = -EIO;
+	case PCU_IF_SAPI_AGCH_2:
+		if (data_req->len < sizeof(struct gsm_pcu_if_agch)) {
+			LOG_BTS(bts, DPCU, LOGL_ERROR, "Received PCU data request with invalid/small length %d\n",
+				data_req->len);
+			break;
+		}
+
+		agch = (struct gsm_pcu_if_agch *)data_req->data;
+		if (rsl_imm_assign_cmd(bts, GSM_MACBLOCK_LEN, agch->data))
+			return -EIO;
+
+		/* Send the confirmation immediately. This is as accurate as we can get since from this point on the
+		 * BTS hardware is responsible to schedule the sending of the IMMEDIATE ASSIGNMENT */
+		if (agch->confirm)
+			return pcu_tx_data_cnf(bts, agch->msg_id, PCU_IF_SAPI_AGCH_2);
 		break;
 	case PCU_IF_SAPI_PCH_2:
 		if (data_req->len < sizeof(struct gsm_pcu_if_pch)) {
@@ -558,7 +572,7 @@ static int pcu_rx_data_req(struct gsm_bts *bts, uint8_t msg_type,
 		if (pcu_rx_rr_paging_pch(bts, pag_grp, pch))
 			return -EIO;
 		if (pch->confirm)
-			return pcu_tx_pch_confirm(bts, pch->msg_id);
+			return pcu_tx_data_cnf(bts, pch->msg_id, PCU_IF_SAPI_PCH_2);
 		break;
 	default:
 		LOG_BTS(bts, DPCU, LOGL_ERROR, "Received PCU data request with "
