@@ -24,6 +24,7 @@
 
 struct meas_feed_state {
 	struct osmo_wqueue wqueue;
+	unsigned int wqueue_max_len;
 	char scenario[31+1];
 	char *dst_host;
 	uint16_t dst_port;
@@ -31,6 +32,7 @@ struct meas_feed_state {
 
 static struct meas_feed_state g_mfs = {
 	.wqueue.bfd.fd = -1,
+	.wqueue_max_len = MEAS_FEED_WQUEUE_MAX_LEN_DEFAULT,
 };
 
 static int process_meas_rep(struct gsm_meas_rep *mr)
@@ -152,7 +154,7 @@ int meas_feed_cfg_set(const char *dst_host, uint16_t dst_port)
 		meas_feed_close();
 	}
 
-	osmo_wqueue_init(&g_mfs.wqueue, 10);
+	osmo_wqueue_init(&g_mfs.wqueue, g_mfs.wqueue_max_len);
 	g_mfs.wqueue.write_cb = feed_write_cb;
 	g_mfs.wqueue.read_cb = feed_read_cb;
 
@@ -177,6 +179,18 @@ void meas_feed_cfg_get(char **host, uint16_t *port)
 {
 	*port = g_mfs.dst_port;
 	*host = g_mfs.dst_host;
+}
+
+void meas_feed_wqueue_max_length_set(unsigned int max_length)
+{
+	g_mfs.wqueue_max_len = max_length;
+	if (g_mfs.wqueue.bfd.fd)
+		g_mfs.wqueue.max_length = max_length;
+}
+
+unsigned int meas_feed_wqueue_max_length_get(void)
+{
+	return g_mfs.wqueue_max_len;
 }
 
 void meas_feed_scenario_set(const char *name)

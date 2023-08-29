@@ -385,6 +385,7 @@ static int config_write_net(struct vty *vty)
 		uint16_t meas_port;
 		char *meas_host;
 		const char *meas_scenario;
+		unsigned int max_len = meas_feed_wqueue_max_length_get();
 
 		meas_feed_cfg_get(&meas_host, &meas_port);
 		meas_scenario = meas_feed_scenario_get();
@@ -395,6 +396,9 @@ static int config_write_net(struct vty *vty)
 		if (strlen(meas_scenario) > 0)
 			vty_out(vty, " meas-feed scenario %s%s",
 				meas_scenario, VTY_NEWLINE);
+		if (max_len != MEAS_FEED_WQUEUE_MAX_LEN_DEFAULT)
+			vty_out(vty, " meas-feed write-queue-max-length %u%s",
+				max_len, VTY_NEWLINE);
 	}
 
 	if (gsmnet->allow_unusable_timeslots)
@@ -2416,6 +2420,16 @@ DEFUN_ATTR(cfg_net_meas_feed_scenario, cfg_net_meas_feed_scenario_cmd,
 	return CMD_SUCCESS;
 }
 
+DEFUN_ATTR(cfg_net_meas_feed_wqueue_max_len, cfg_net_meas_feed_wqueue_max_len_cmd,
+	   "meas-feed write-queue-max-length <1-65535>",
+	   MEAS_FEED_STR "Set the maximum length of the message write queue towards the UDP socket\n"
+	   "Maximum number of messages to be queued waiting for transmission\n",
+	   CMD_ATTR_IMMEDIATE)
+{
+	meas_feed_wqueue_max_length_set(atoi(argv[0]));
+	return CMD_SUCCESS;
+}
+
 static void legacy_timers(struct vty *vty, const char **T_arg)
 {
 	if (!strcmp((*T_arg), "T993111") || !strcmp((*T_arg), "t993111")) {
@@ -3580,6 +3594,7 @@ int bsc_vty_init(struct gsm_network *network)
 	install_element(GSMNET_NODE, &cfg_net_dyn_ts_allow_tch_f_cmd);
 	install_element(GSMNET_NODE, &cfg_net_meas_feed_dest_cmd);
 	install_element(GSMNET_NODE, &cfg_net_meas_feed_scenario_cmd);
+	install_element(GSMNET_NODE, &cfg_net_meas_feed_wqueue_max_len_cmd);
 	install_element(GSMNET_NODE, &cfg_net_timer_cmd);
 	install_element(GSMNET_NODE, &cfg_net_allow_unusable_timeslots_cmd);
 	install_element(GSMNET_NODE, &cfg_net_pcu_sock_cmd);

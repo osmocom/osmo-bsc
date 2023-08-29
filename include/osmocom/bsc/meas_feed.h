@@ -35,9 +35,12 @@ enum meas_feed_msgtype {
 };
 
 #define MEAS_FEED_VERSION	1
+#define MEAS_FEED_WQUEUE_MAX_LEN_DEFAULT 100
 
 int meas_feed_cfg_set(const char *dst_host, uint16_t dst_port);
 void meas_feed_scenario_set(const char *name);
+void meas_feed_wqueue_max_length_set(unsigned int max_length);
 
 void meas_feed_cfg_get(char **host, uint16_t *port);
 const char *meas_feed_scenario_get(void);
+unsigned int meas_feed_wqueue_max_length_get(void);
