@@ -29,13 +29,17 @@ struct meas_feed_state {
 	uint16_t dst_port;
 };
 
-static struct meas_feed_state g_mfs = {};
+static struct meas_feed_state g_mfs = {
+	.wqueue.bfd.fd = -1,
+};
 
 static int process_meas_rep(struct gsm_meas_rep *mr)
 {
 	struct msgb *msg;
 	struct meas_feed_meas *mfm;
 	struct bsc_subscr *bsub;
+
+	OSMO_ASSERT(g_mfs.wqueue.bfd.fd != -1);
 
 	/* ignore measurements as long as we don't know who it is */
 	if (!mr->lchan) {
@@ -49,7 +53,7 @@ static int process_meas_rep(struct gsm_meas_rep *mr)
 
 	bsub = mr->lchan->conn->bsub;
 
-	msg = msgb_alloc(sizeof(struct meas_feed_meas), "Meas. Feed");
+	msg = msgb_alloc(sizeof(struct meas_feed_meas), "meas_feed_msg");
 	if (!msg)
 		return 0;
 
@@ -125,48 +129,47 @@ static int feed_read_cb(struct osmo_fd *ofd)
 	return rc;
 }
 
+static void meas_feed_close(void)
+{
+	if (g_mfs.wqueue.bfd.fd == -1)
+		return;
+	osmo_signal_unregister_handler(SS_LCHAN, meas_feed_sig_cb, NULL);
+	osmo_wqueue_clear(&g_mfs.wqueue);
+	osmo_fd_unregister(&g_mfs.wqueue.bfd);
+	close(g_mfs.wqueue.bfd.fd);
+	g_mfs.wqueue.bfd.fd = -1;
+}
+
 int meas_feed_cfg_set(const char *dst_host, uint16_t dst_port)
 {
 	int rc;
-	int already_initialized = 0;
 
-	if (g_mfs.wqueue.bfd.fd)
-		already_initialized = 1;
-
-
-	if (already_initialized &&
-	    !strcmp(dst_host, g_mfs.dst_host) &&
-	    dst_port == g_mfs.dst_port)
-		return 0;
-
-	if (!already_initialized) {
-		osmo_wqueue_init(&g_mfs.wqueue, 10);
-		g_mfs.wqueue.write_cb = feed_write_cb;
-		g_mfs.wqueue.read_cb = feed_read_cb;
-		osmo_signal_register_handler(SS_LCHAN, meas_feed_sig_cb, NULL);
-		LOGP(DMEAS, LOGL_DEBUG, "meas_feed: registered signal callback\n");
+	/* Already initialized */
+	if (g_mfs.wqueue.bfd.fd > 0) {
+		/* No change needed, do nothing */
+		if (!strcmp(dst_host, g_mfs.dst_host) && dst_port == g_mfs.dst_port)
+			return 0;
+		meas_feed_close();
 	}
 
-	if (already_initialized) {
-		osmo_wqueue_clear(&g_mfs.wqueue);
-		osmo_fd_unregister(&g_mfs.wqueue.bfd);
-		close(g_mfs.wqueue.bfd.fd);
-		/* don't set to zero, as that would mean 'not yet initialized' */
-		g_mfs.wqueue.bfd.fd = -1;
-	}
+	osmo_wqueue_init(&g_mfs.wqueue, 10);
+	g_mfs.wqueue.write_cb = feed_write_cb;
+	g_mfs.wqueue.read_cb = feed_read_cb;
+
 	rc = osmo_sock_init_ofd(&g_mfs.wqueue.bfd, AF_UNSPEC, SOCK_DGRAM,
 				IPPROTO_UDP, dst_host, dst_port,
 				OSMO_SOCK_F_CONNECT);
-	if (rc < 0)
+	if (rc < 0) {
+		g_mfs.wqueue.bfd.fd = -1;
 		return rc;
+	}
 
 	osmo_fd_read_disable(&g_mfs.wqueue.bfd);
-
-	if (g_mfs.dst_host)
-		talloc_free(g_mfs.dst_host);
-	g_mfs.dst_host = talloc_strdup(NULL, dst_host);
+	osmo_talloc_replace_string(NULL, &g_mfs.dst_host, dst_host);
 	g_mfs.dst_port = dst_port;
-
+	osmo_signal_register_handler(SS_LCHAN, meas_feed_sig_cb, NULL);
+	LOGP(DMEAS, LOGL_DEBUG, "meas_feed: started %s\n",
+	     osmo_sock_get_name2(g_mfs.wqueue.bfd.fd));
 	return 0;
 }
 
