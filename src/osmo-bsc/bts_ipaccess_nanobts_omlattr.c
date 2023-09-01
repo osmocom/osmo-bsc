@@ -113,6 +113,7 @@ struct msgb *nanobts_gen_set_nse_attr(struct gsm_bts_sm *bts_sm)
 {
 	struct msgb *msgb;
 	uint8_t buf[256];
+	struct abis_nm_ipacc_att_bssgp_cfg bssgp_cfg;
 	struct gsm_bts *bts = gsm_bts_sm_get_bts(bts_sm);
 	msgb = msgb_alloc(1024, "nanobts_attr_bts");
 	if (!msgb)
@@ -128,9 +129,21 @@ struct msgb *nanobts_gen_set_nse_attr(struct gsm_bts_sm *bts_sm)
 	memcpy(buf, bts_sm->gprs.nse.timer, ARRAY_SIZE(bts_sm->gprs.nse.timer));
 	msgb_tl16v_put(msgb, NM_ATT_IPACC_NS_CFG, 7, buf);
 
-	OSMO_ASSERT(ARRAY_SIZE(bts->gprs.cell.timer) < sizeof(buf));
-	memcpy(buf, bts->gprs.cell.timer, ARRAY_SIZE(bts->gprs.cell.timer));
-	msgb_tl16v_put(msgb, NM_ATT_IPACC_BSSGP_CFG, 11, buf);
+	osmo_static_assert(ARRAY_SIZE(bts->gprs.cell.timer) == 11, cell_timer_array_wrong_size);
+	bssgp_cfg = (struct abis_nm_ipacc_att_bssgp_cfg){
+		.t1_s =			bts->gprs.cell.timer[0],
+		.t1_blocking_retries =	bts->gprs.cell.timer[1],
+		.t1_unblocking_retries = bts->gprs.cell.timer[2],
+		.t2_s =			bts->gprs.cell.timer[3],
+		.t2_retries =		bts->gprs.cell.timer[4],
+		.t3_100ms =		bts->gprs.cell.timer[5],
+		.t3_retries =		bts->gprs.cell.timer[6],
+		.t4_100ms =		bts->gprs.cell.timer[7],
+		.t4_retries =		bts->gprs.cell.timer[8],
+		.t5_s =			bts->gprs.cell.timer[9],
+		.t5_retries =		bts->gprs.cell.timer[10],
+	};
+	msgb_tl16v_put(msgb, NM_ATT_IPACC_BSSGP_CFG, sizeof(bssgp_cfg), (const uint8_t *)&bssgp_cfg);
 
 	return msgb;
 }
