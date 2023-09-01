@@ -128,19 +128,6 @@ struct msgb *nanobts_gen_set_nse_attr(struct gsm_bts_sm *bts_sm)
 	memcpy(buf, bts_sm->gprs.nse.timer, ARRAY_SIZE(bts_sm->gprs.nse.timer));
 	msgb_tl16v_put(msgb, NM_ATT_IPACC_NS_CFG, 7, buf);
 
-	/* all timers in seconds */
-	buf[0] = 3;	/* blockimg timer (T1) */
-	buf[1] = 3;	/* blocking retries */
-	buf[2] = 3;	/* unblocking retries */
-	buf[3] = 3;	/* reset timer (T2) */
-	buf[4] = 3;	/* reset retries */
-	buf[5] = 10;	/* suspend timer (T3) in 100ms */
-	buf[6] = 3;	/* suspend retries */
-	buf[7] = 10;	/* resume timer (T4) in 100ms */
-	buf[8] = 3;	/* resume retries */
-	buf[9] = 10;	/* capability update timer (T5) */
-	buf[10] = 3;	/* capability update retries */
-
 	OSMO_ASSERT(ARRAY_SIZE(bts->gprs.cell.timer) < sizeof(buf));
 	memcpy(buf, bts->gprs.cell.timer, ARRAY_SIZE(bts->gprs.cell.timer));
 	msgb_tl16v_put(msgb, NM_ATT_IPACC_BSSGP_CFG, 11, buf);

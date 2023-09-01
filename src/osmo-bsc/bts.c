@@ -117,8 +117,20 @@ int gsm_bts_model_register(struct gsm_bts_model *model)
 	return 0;
 }
 
-static const uint8_t bts_cell_timer_default[] =
-				{ 3, 3, 3, 3, 3, 10, 3, 10, 3, 10, 3 };
+static const uint8_t bts_cell_timer_default[11] = {
+	3,	/* blocking timer (T1) */
+	3,	/* blocking retries */
+	3,	/* unblocking retries */
+	3,	/* reset timer (T2) */
+	3,	/* reset retries */
+	10,	/* suspend timer (T3) in 100ms */
+	3,	/* suspend retries */
+	10,	/* resume timer (T4) in 100ms */
+	3,	/* resume retries */
+	10,	/* capability update timer (T5) */
+	 3,	/* capability update retries */
+};
+
 static const struct gprs_rlc_cfg rlc_cfg_default = {
 	.parameter = {
 		[RLC_T3142] = 20,
