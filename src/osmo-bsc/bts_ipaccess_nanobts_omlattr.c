@@ -159,7 +159,9 @@ struct msgb *nanobts_gen_set_nse_attr(struct gsm_bts_sm *bts_sm)
 struct msgb *nanobts_gen_set_cell_attr(struct gsm_bts *bts)
 {
 	struct msgb *msgb;
-	uint8_t buf[256];
+	struct abis_nm_ipacc_att_rlc_cfg rlc_cfg;
+	struct abis_nm_ipacc_att_rlc_cfg_2 rlc_cfg_2;
+	uint8_t buf[2];
 	msgb = msgb_alloc(1024, "nanobts_attr_bts");
 	if (!msgb)
 		return NULL;
@@ -178,16 +180,18 @@ struct msgb *nanobts_gen_set_cell_attr(struct gsm_bts *bts)
 	msgb_tl16v_put(msgb, NM_ATT_IPACC_BVCI, 2, buf);
 
 	/* all timers in seconds, unless otherwise stated */
-	buf[0] = 20;	/* T3142 */
-	buf[1] = 5;	/* T3169 */
-	buf[2] = 5;	/* T3191 */
-	buf[3] = 160;	/* T3193 (units of 10ms) */
-	buf[4] = 5;	/* T3195 */
-	buf[5] = 10;	/* N3101 */
-	buf[6] = 4;	/* N3103 */
-	buf[7] = 8;	/* N3105 */
-	buf[8] = 15;	/* RLC CV countdown */
-	msgb_tl16v_put(msgb, NM_ATT_IPACC_RLC_CFG, 9, buf);
+	rlc_cfg = (struct abis_nm_ipacc_att_rlc_cfg){
+		.t3142 =		20,	/* T3142 */
+		.t3169 =		5,	/* T3169 */
+		.t3191 =		5,	/* T3191 */
+		.t3193_10ms =		160,	/* T3193 (units of 10ms) */
+		.t3195 =		5,	/* T3195 */
+		.n3101 =		10,	/* N3101 */
+		.n3103 =		4,	/* N3103 */
+		.n3105 =		8,	/* N3105 */
+		.rlc_cv_countdown =	15,	/* RLC CV countdown */
+	};
+	msgb_tl16v_put(msgb, NM_ATT_IPACC_RLC_CFG, sizeof(rlc_cfg), (const uint8_t *)&rlc_cfg);
 
 	if (bts->gprs.mode == BTS_GPRS_EGPRS) {
 		buf[0] = 0x8f;
@@ -198,18 +202,21 @@ struct msgb *nanobts_gen_set_cell_attr(struct gsm_bts *bts)
 	}
 	msgb_tl16v_put(msgb, NM_ATT_IPACC_CODING_SCHEMES, 2, buf);
 
-	buf[0] = 0;	/* T downlink TBF extension (0..500, high byte) */
-	buf[1] = 250;	/* T downlink TBF extension (0..500, low byte) */
-	buf[2] = 0;	/* T uplink TBF extension (0..500, high byte) */
-	buf[3] = 250;	/* T uplink TBF extension (0..500, low byte) */
-	buf[4] = 2;	/* CS2 */
-	msgb_tl16v_put(msgb, NM_ATT_IPACC_RLC_CFG_2, 5, buf);
+	rlc_cfg_2 = (struct abis_nm_ipacc_att_rlc_cfg_2){
+		.t_dl_tbf_ext_10ms = htons(250), /* 0..500 */
+		.t_ul_tbf_ext_10ms = htons(250), /* 0..500 */
+		.initial_cs = 2, /* CS2 */
+	};
+	msgb_tl16v_put(msgb, NM_ATT_IPACC_RLC_CFG_2, sizeof(rlc_cfg_2), (const uint8_t *)&rlc_cfg_2);
 
 #if 0
 	/* EDGE model only, breaks older models.
 	 * Should inquire the BTS capabilities */
-	buf[0] = 2;		/* MCS2 */
-	msgb_tl16v_put(msgb, NM_ATT_IPACC_RLC_CFG_3, 1, buf);
+	struct abis_nm_ipacc_att_rlc_cfg_3 rlc_cfg_3;
+	rlc_cfg_3 = (struct abis_nm_ipacc_att_rlc_cfg_3){
+		.initial_mcs = 2, /* MCS2 */
+	};
+	msgb_tl16v_put(msgb, NM_ATT_IPACC_RLC_CFG_3, sizeof(rlc_cfg_3), (const uint8_t *)&rlc_cfg_3);
 #endif
 
 	return msgb;
