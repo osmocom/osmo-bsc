@@ -423,57 +423,35 @@ static void nm_reconfig_trx(struct gsm_bts_trx *trx)
 
 	patch_nm_tables(trx->bts);
 
-	switch (trx->bts->type) {
-	case GSM_BTS_TYPE_BS11:
-		/* FIXME: discover this by fetching an attribute */
+	/* FIXME: discover this by fetching an attribute */
 #if 0
-		trx->nominal_power = 15; /* 15dBm == 30mW PA configuration */
+	trx->nominal_power = 15; /* 15dBm == 30mW PA configuration */
 #else
-		trx->nominal_power = 24; /* 24dBm == 250mW PA configuration */
+	trx->nominal_power = 24; /* 24dBm == 250mW PA configuration */
 #endif
-		abis_nm_conn_terr_sign(trx, e1l->e1_nr, e1l->e1_ts,
-					e1l->e1_ts_ss);
-		abis_nm_establish_tei(trx->bts, trx->nr, e1l->e1_nr,
-				      e1l->e1_ts, e1l->e1_ts_ss, trx->rsl_tei_primary);
+	abis_nm_conn_terr_sign(trx, e1l->e1_nr, e1l->e1_ts,
+				e1l->e1_ts_ss);
+	abis_nm_establish_tei(trx->bts, trx->nr, e1l->e1_nr,
+			      e1l->e1_ts, e1l->e1_ts_ss, trx->rsl_tei_primary);
 
-		/* Set Radio Attributes */
-		if (trx == trx->bts->c0)
-			abis_nm_set_radio_attr(trx, bs11_attr_radio,
-					       sizeof(bs11_attr_radio));
-		else {
-			uint8_t trx1_attr_radio[sizeof(bs11_attr_radio)];
-			uint8_t arfcn_low = trx->arfcn & 0xff;
-			uint8_t arfcn_high = (trx->arfcn >> 8) & 0x0f;
-			memcpy(trx1_attr_radio, bs11_attr_radio,
-				sizeof(trx1_attr_radio));
+	/* Set Radio Attributes */
+	if (trx == trx->bts->c0)
+		abis_nm_set_radio_attr(trx, bs11_attr_radio,
+				       sizeof(bs11_attr_radio));
+	else {
+		uint8_t trx1_attr_radio[sizeof(bs11_attr_radio)];
+		uint8_t arfcn_low = trx->arfcn & 0xff;
+		uint8_t arfcn_high = (trx->arfcn >> 8) & 0x0f;
+		memcpy(trx1_attr_radio, bs11_attr_radio,
+			sizeof(trx1_attr_radio));
 
-			/* patch ARFCN into TRX Attributes */
-			trx1_attr_radio[2] &= 0xf0;
-			trx1_attr_radio[2] |= arfcn_high;
-			trx1_attr_radio[3] = arfcn_low;
+		/* patch ARFCN into TRX Attributes */
+		trx1_attr_radio[2] &= 0xf0;
+		trx1_attr_radio[2] |= arfcn_high;
+		trx1_attr_radio[3] = arfcn_low;
 
-			abis_nm_set_radio_attr(trx, trx1_attr_radio,
-					       sizeof(trx1_attr_radio));
-		}
-		break;
-	case GSM_BTS_TYPE_NANOBTS:
-		switch (trx->bts->band) {
-		case GSM_BAND_850:
-		case GSM_BAND_900:
-			trx->nominal_power = 20;
-			break;
-		case GSM_BAND_1800:
-		case GSM_BAND_1900:
-			trx->nominal_power = 23;
-			break;
-		default:
-			LOGP(DNM, LOGL_ERROR, "Unsupported nanoBTS GSM band %s\n",
-				gsm_band_name(trx->bts->band));
-			break;
-		}
-		break;
-	default:
-		break;
+		abis_nm_set_radio_attr(trx, trx1_attr_radio,
+				       sizeof(trx1_attr_radio));
 	}
 
 	for (i = 0; i < TRX_NR_TS; i++)
@@ -484,17 +462,11 @@ static void nm_reconfig_bts(struct gsm_bts *bts)
 {
 	struct gsm_bts_trx *trx;
 
-	switch (bts->type) {
-	case GSM_BTS_TYPE_BS11:
-		patch_nm_tables(bts);
-		abis_nm_raw_msg(bts, sizeof(msg_1), msg_1); /* set BTS SiteMgr attr*/
-		abis_nm_set_bts_attr(bts, bs11_attr_bts, sizeof(bs11_attr_bts));
-		abis_nm_raw_msg(bts, sizeof(msg_3), msg_3); /* set BTS handover attr */
-		abis_nm_raw_msg(bts, sizeof(msg_4), msg_4); /* set BTS power control attr */
-		break;
-	default:
-		break;
-	}
+	patch_nm_tables(bts);
+	abis_nm_raw_msg(bts, sizeof(msg_1), msg_1); /* set BTS SiteMgr attr*/
+	abis_nm_set_bts_attr(bts, bs11_attr_bts, sizeof(bs11_attr_bts));
+	abis_nm_raw_msg(bts, sizeof(msg_3), msg_3); /* set BTS handover attr */
+	abis_nm_raw_msg(bts, sizeof(msg_4), msg_4); /* set BTS power control attr */
 
 	llist_for_each_entry(trx, &bts->trx_list, list)
 		nm_reconfig_trx(trx);
