@@ -560,6 +560,46 @@ static inline const uint8_t *parse_attr_resp_info_unreported(const struct abis_o
 	return ari + num_unreported + 1; /* we have to account for 1st byte with number of unreported attributes */
 }
 
+
+/* Parse Attribute Response Info content for 3GPP TS 52.021 §9.4.30 Manufacturer Id */
+static void parse_osmo_bts_features(struct gsm_bts *bts,
+				    const uint8_t *data, uint16_t data_len)
+{
+	/* log potential BTS feature vector overflow */
+	if (data_len > sizeof(bts->_features_data)) {
+		LOGPMO(&bts->mo, DNM, LOGL_NOTICE,
+		       "Get Attributes Response: feature vector is truncated "
+		       "(from %u to %zu bytes)\n", data_len, sizeof(bts->_features_data));
+		data_len = sizeof(bts->_features_data);
+	}
+
+	/* check that max. expected BTS attribute is above given feature vector length */
+	if (data_len > OSMO_BYTES_FOR_BITS(_NUM_BTS_FEAT)) {
+		LOGPMO(&bts->mo, DNM, LOGL_NOTICE,
+		       "Get Attributes Response: reported unexpectedly long (%u bytes) "
+		       "feature vector - most likely it was compiled against newer BSC headers. "
+		       "Consider upgrading your BSC to later version.\n", data_len);
+	}
+
+	memcpy(bts->_features_data, data, data_len);
+	bts->features_known = true;
+
+	/* Log each BTS feature in the reported vector */
+	for (unsigned int i = 0; i < data_len * 8; i++) {
+		if (!osmo_bts_has_feature(&bts->features, i))
+			continue;
+
+		if (i >= _NUM_BTS_FEAT) {
+			LOGPMO(&bts->mo, DNM, LOGL_NOTICE,
+			       "Get Attributes Response: unknown feature 0x%02x is supported\n", i);
+		} else {
+			LOGPMO(&bts->mo, DNM, LOGL_NOTICE,
+			       "Get Attributes Response: feature '%s' is supported\n",
+			       osmo_bts_features_name(i));
+		}
+	}
+}
+
 /* Handle 3GPP TS 52.021 §8.11.3 Get Attribute Response (with nanoBTS specific attribute formatting) */
 static int parse_attr_resp_info_attr(struct gsm_bts *bts, const struct gsm_bts_trx *trx, struct abis_om_fom_hdr *foh, struct tlv_parsed *tp)
 {
@@ -572,40 +612,15 @@ static int parse_attr_resp_info_attr(struct gsm_bts *bts, const struct gsm_bts_t
 	char unit_id[40];
 	struct abis_nm_sw_desc sw_descr[MAX_BTS_ATTR];
 
-	/* Parse Attribute Response Info content for 3GPP TS 52.021 §9.4.30 Manufacturer Id */
-	if (bts->type == GSM_BTS_TYPE_OSMOBTS && TLVP_PRES_LEN(tp, NM_ATT_MANUF_ID, 2)) {
-		len = TLVP_LEN(tp, NM_ATT_MANUF_ID);
-
-		/* log potential BTS feature vector overflow */
-		if (len > sizeof(bts->_features_data)) {
-			LOGPMO(&bts->mo, DNM, LOGL_NOTICE, "Get Attributes Response: feature vector is truncated "
-			       "(from %u to %zu bytes)\n", len, sizeof(bts->_features_data));
-			len = sizeof(bts->_features_data);
+	switch (bts->type) {
+	case GSM_BTS_TYPE_OSMOBTS:
+		if (TLVP_PRES_LEN(tp, NM_ATT_MANUF_ID, 2)) {
+			parse_osmo_bts_features(bts, TLVP_VAL(tp, NM_ATT_MANUF_ID),
+						     TLVP_LEN(tp, NM_ATT_MANUF_ID));
 		}
-
-		/* check that max. expected BTS attribute is above given feature vector length */
-		if (len > OSMO_BYTES_FOR_BITS(_NUM_BTS_FEAT)) {
-			LOGPMO(&bts->mo, DNM, LOGL_NOTICE, "Get Attributes Response: reported unexpectedly long (%u bytes) "
-			       "feature vector - most likely it was compiled against newer BSC headers. "
-			       "Consider upgrading your BSC to later version.\n", len);
-		}
-
-		memcpy(bts->_features_data, TLVP_VAL(tp, NM_ATT_MANUF_ID), len);
-		bts->features_known = true;
-
-		/* Log each BTS feature in the reported vector */
-		for (i = 0; i < len * 8; i++) {
-			if (!osmo_bts_has_feature(&bts->features, i))
-				continue;
-
-			if (i >= _NUM_BTS_FEAT)
-				LOGPMO(&bts->mo, DNM, LOGL_NOTICE, "Get Attributes Response: unknown feature 0x%02x is"
-				       " supported\n", i);
-			else
-				LOGPMO(&bts->mo, DNM, LOGL_NOTICE, "Get Attributes Response: feature '%s' is"
-				       " supported\n", osmo_bts_features_name(i));
-		}
-
+		break;
+	default:
+		break;
 	}
 
 	/* Parse Attribute Response Info content for 3GPP TS 52.021 §9.4.28 Manufacturer Dependent State */
