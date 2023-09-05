@@ -52,6 +52,7 @@
 #include <osmocom/bsc/nm_common_fsm.h>
 #include <osmocom/gsm/bts_features.h>
 #include <osmocom/bsc/ipaccess.h>
+#include <osmocom/bsc/bts_ipaccess_nanobts_omlattr.h>
 
 #define OM_ALLOC_SIZE		1024
 #define OM_HEADROOM_SIZE	128
@@ -560,7 +561,6 @@ static inline const uint8_t *parse_attr_resp_info_unreported(const struct abis_o
 	return ari + num_unreported + 1; /* we have to account for 1st byte with number of unreported attributes */
 }
 
-
 /* Parse Attribute Response Info content for 3GPP TS 52.021 §9.4.30 Manufacturer Id */
 static void parse_osmo_bts_features(struct gsm_bts *bts,
 				    const uint8_t *data, uint16_t data_len)
@@ -617,6 +617,12 @@ static int parse_attr_resp_info_attr(struct gsm_bts *bts, const struct gsm_bts_t
 		if (TLVP_PRES_LEN(tp, NM_ATT_MANUF_ID, 2)) {
 			parse_osmo_bts_features(bts, TLVP_VAL(tp, NM_ATT_MANUF_ID),
 						     TLVP_LEN(tp, NM_ATT_MANUF_ID));
+		}
+		/* fall-through */
+	case GSM_BTS_TYPE_NANOBTS:
+		if (TLVP_PRESENT(tp, NM_ATT_IPACC_SUPP_FEATURES)) {
+			ipacc_parse_supp_features(bts, foh, TLVP_VAL(tp, NM_ATT_IPACC_SUPP_FEATURES),
+							    TLVP_LEN(tp, NM_ATT_IPACC_SUPP_FEATURES));
 		}
 		break;
 	default:

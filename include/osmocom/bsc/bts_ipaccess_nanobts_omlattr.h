@@ -23,11 +23,18 @@
 
 #include <stdint.h>
 #include <osmocom/core/msgb.h>
+#include <osmocom/gsm/tlv.h>
 
 struct gsm_bts_sm;
 struct gsm_bts;
 struct gsm_bts_trx;
 struct gsm_gprs_nsvc;
+
+extern const struct tlv_definition ipacc_eie_tlv_def;
+
+int ipacc_parse_supp_features(const struct gsm_bts *bts,
+			      const struct abis_om_fom_hdr *foh,
+			      const uint8_t *data, uint16_t data_len);
 
 struct msgb *nanobts_gen_set_bts_attr(struct gsm_bts *bts);
 struct msgb *nanobts_gen_set_nse_attr(struct gsm_bts_sm *bts_sm);

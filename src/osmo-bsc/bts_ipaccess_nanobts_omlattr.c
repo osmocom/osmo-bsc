@@ -26,6 +26,73 @@
 #include <osmocom/bsc/bts.h>
 #include <osmocom/gsm/bts_features.h>
 
+const struct tlv_definition ipacc_eie_tlv_def = {
+	.def = {
+		/* TODO: add more values from enum ipac_eie */
+		[NM_IPAC_EIE_FREQ_BANDS]	= { TLV_TYPE_TL16V },
+		[NM_IPAC_EIE_MAX_TA]		= { TLV_TYPE_TL16V },
+		[NM_IPAC_EIE_CIPH_ALGOS]	= { TLV_TYPE_TL16V },
+		[NM_IPAC_EIE_CHAN_TYPES]	= { TLV_TYPE_TL16V },
+		[NM_IPAC_EIE_CHAN_MODES]	= { TLV_TYPE_TL16V },
+		[NM_IPAC_EIE_GPRS_CODING]	= { TLV_TYPE_TL16V },
+		[NM_IPAC_EIE_RTP_FEATURES]	= { TLV_TYPE_TL16V },
+		[NM_IPAC_EIE_RSL_FEATURES]	= { TLV_TYPE_TL16V },
+	}
+};
+
+static inline uint32_t ipacc_parse_supp_flags(const struct abis_om_fom_hdr *foh,
+					      const struct value_string *flags,
+					      const struct tlv_p_entry *e,
+					      const char *text)
+{
+	uint32_t u32 = 0;
+
+	for (unsigned int i = 0; i < OSMO_MAX(e->len, 4); i++)
+		u32 |= e->val[i] << (i * 8);
+	for (const struct value_string *vs = flags; vs->value && vs->str; vs++) {
+		if (u32 & vs->value)
+			LOGPFOH(DNM, LOGL_DEBUG, foh, "%s '%s' is supported\n", text, vs->str);
+	}
+
+	return u32;
+}
+
+/* Parse ip.access Supported Features IE */
+int ipacc_parse_supp_features(const struct gsm_bts *bts,
+			      const struct abis_om_fom_hdr *foh,
+			      const uint8_t *data, uint16_t data_len)
+{
+	const struct tlv_p_entry *e;
+	struct tlv_parsed tp;
+
+	if (tlv_parse(&tp, &ipacc_eie_tlv_def, data, data_len, 0, 0) < 0) {
+		LOGPFOH(DNM, LOGL_ERROR, foh, "%s(): tlv_parse failed\n", __func__);
+		return -EINVAL;
+	}
+
+	/* TODO: store the flags in the respective MO state */
+	if ((e = TLVP_GET(&tp, NM_IPAC_EIE_FREQ_BANDS)) != NULL)
+		ipacc_parse_supp_flags(foh, abis_nm_ipacc_freq_band_desc, e, "Freq. band");
+	if ((e = TLVP_GET(&tp, NM_IPAC_EIE_CIPH_ALGOS)) != NULL)
+		ipacc_parse_supp_flags(foh, abis_nm_ipacc_ciph_algo_desc, e, "Ciphering algorithm");
+	if ((e = TLVP_GET(&tp, NM_IPAC_EIE_CHAN_TYPES)) != NULL)
+		ipacc_parse_supp_flags(foh, abis_nm_ipacc_chant_desc, e, "Channel type");
+	if ((e = TLVP_GET(&tp, NM_IPAC_EIE_CHAN_MODES)) != NULL)
+		ipacc_parse_supp_flags(foh, abis_nm_ipacc_chanm_desc, e, "Channel mode");
+	if ((e = TLVP_GET(&tp, NM_IPAC_EIE_GPRS_CODING)) != NULL)
+		ipacc_parse_supp_flags(foh, abis_nm_ipacc_gprs_coding_desc, e, "GPRS Coding Scheme");
+	if ((e = TLVP_GET(&tp, NM_IPAC_EIE_RTP_FEATURES)) != NULL)
+		ipacc_parse_supp_flags(foh, abis_nm_ipacc_rtp_feat_desc, e, "RTP Feature");
+	if ((e = TLVP_GET(&tp, NM_IPAC_EIE_RSL_FEATURES)) != NULL)
+		ipacc_parse_supp_flags(foh, abis_nm_ipacc_rsl_feat_desc, e, "RSL Feature");
+	if (TLVP_PRES_LEN(&tp, NM_IPAC_EIE_MAX_TA, 1)) {
+		uint8_t u8 = *TLVP_VAL(&tp, NM_IPAC_EIE_MAX_TA);
+		LOGPFOH(DNM, LOGL_DEBUG, foh, "Max Timing Advance %u\n", u8);
+	}
+
+	return 0;
+}
+
 /* 3GPP TS 52.021 section 8.6.1 Set BTS Attributes */
 struct msgb *nanobts_gen_set_bts_attr(struct gsm_bts *bts)
 {
