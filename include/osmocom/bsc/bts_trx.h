@@ -43,7 +43,6 @@ struct gsm_bts_trx {
 	struct e1inp_sign_link *oml_link;
 
 	struct gsm_abis_mo mo;
-	struct tlv_parsed nm_attr;
 	struct gsm_bts_bb_trx bb_transc;
 
 	uint16_t arfcn;

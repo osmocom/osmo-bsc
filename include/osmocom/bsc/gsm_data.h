@@ -526,7 +526,6 @@ struct gsm_abis_mo {
 	struct abis_om_obj_inst obj_inst;
 	const char *name;
 	struct gsm_nm_state nm_state;
-	struct tlv_parsed *nm_attr;
 	struct gsm_bts *bts;
 	struct osmo_fsm_inst *fi;
 	bool opstart_sent;
@@ -668,7 +667,6 @@ struct gsm_bts_trx_ts {
 	bool is_rsl_ready;
 
 	struct gsm_abis_mo mo;
-	struct tlv_parsed nm_attr;
 	uint8_t nm_chan_comb;
 	int tsc;		/* -1 == use BTS TSC */
 
