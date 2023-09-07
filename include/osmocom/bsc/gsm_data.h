@@ -537,6 +537,12 @@ struct gsm_abis_mo {
 	bool rsl_connect_sent;
 	bool rsl_connect_ack_received;
 	bool force_rf_lock;
+	/* vendor specific fields below */
+	union {
+		struct {
+			uint8_t obj_version;
+		} ipaccess;
+	};
 };
 
 /* Ericsson OM2000 Managed Object */

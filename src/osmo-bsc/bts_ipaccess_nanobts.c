@@ -199,6 +199,7 @@ static int sw_activ_rep(struct msgb *mb)
 	struct e1inp_sign_link *sign_link = mb->dst;
 	struct gsm_bts *bts = sign_link->trx->bts;
 	struct gsm_abis_mo *mo;
+	struct tlv_parsed tp;
 
 	if (!is_ipa_abisip_bts(bts))
 		return 0;
@@ -207,6 +208,20 @@ static int sw_activ_rep(struct msgb *mb)
 	if (mo == NULL) {
 		LOGPFOH(DNM, LOGL_ERROR, foh, "Rx SW activated report for non-existent MO\n");
 		return -ENOENT;
+	}
+
+	if (abis_nm_tlv_parse(&tp, bts, &foh->data[0], msgb_l3len(mb) - sizeof(*foh)) < 0) {
+		LOGPFOH(DNM, LOGL_ERROR, foh, "%s(): tlv_parse failed\n", __func__);
+		return -EINVAL;
+	}
+
+	mo->ipaccess.obj_version = 0; /* implicit default */
+	if (TLVP_PRES_LEN(&tp, NM_ATT_IPACC_OBJ_VERSION, 1)) {
+		/* nanoBTS may report several Object Versions;  the first one will
+		 * be used by default unless requested explicitly before OPSTARTing. */
+		mo->ipaccess.obj_version = *TLVP_VAL(&tp, NM_ATT_IPACC_OBJ_VERSION);
+		LOGPFOH(DNM, LOGL_INFO, foh, "IPA Object Version is %u (default)\n",
+			mo->ipaccess.obj_version);
 	}
 
 	osmo_fsm_inst_dispatch(mo->fi, NM_EV_SW_ACT_REP, NULL);
