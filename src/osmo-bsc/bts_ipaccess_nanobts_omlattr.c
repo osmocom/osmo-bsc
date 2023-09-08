@@ -1,6 +1,6 @@
 /* ip.access nanoBTS specific code, OML attribute table generator */
 
-/* (C) 2016 by sysmocom s.f.m.c. GmbH <info@sysmocom.de>
+/* (C) 2016-2023 by sysmocom s.f.m.c. GmbH <info@sysmocom.de>
  * All Rights Reserved
  *
  * Author: Philipp Maier
@@ -228,6 +228,7 @@ struct msgb *nanobts_gen_set_nse_attr(struct gsm_bts_sm *bts_sm)
 struct msgb *nanobts_gen_set_cell_attr(struct gsm_bts *bts)
 {
 	const struct gsm_gprs_cell *cell = &bts->gprs.cell;
+	const struct gprs_rlc_cfg *rlcc = &cell->rlc_cfg;
 	struct msgb *msgb;
 	uint8_t buf[2];
 
@@ -239,26 +240,26 @@ struct msgb *nanobts_gen_set_cell_attr(struct gsm_bts *bts)
 	buf[0] = bts->gprs.rac;
 	msgb_tl16v_put(msgb, NM_ATT_IPACC_RAC, 1, buf);
 
-	buf[0] = 5;	/* repeat time (50ms) */
-	buf[1] = 3;	/* repeat count */
+	buf[0] = rlcc->paging.repeat_time / 50;	/* units of 50ms */
+	buf[1] = rlcc->paging.repeat_count;
 	msgb_tl16v_put(msgb, NM_ATT_IPACC_GPRS_PAGING_CFG, 2, buf);
 
 	/* BVCI 925 */
-	buf[0] = bts->gprs.cell.bvci >> 8;
-	buf[1] = bts->gprs.cell.bvci & 0xff;
+	buf[0] = cell->bvci >> 8;
+	buf[1] = cell->bvci & 0xff;
 	msgb_tl16v_put(msgb, NM_ATT_IPACC_BVCI, 2, buf);
 
 	/* all timers in seconds, unless otherwise stated */
 	const struct abis_nm_ipacc_att_rlc_cfg rlc_cfg = {
-		.t3142 =		20,	/* T3142 */
-		.t3169 =		5,	/* T3169 */
-		.t3191 =		5,	/* T3191 */
-		.t3193_10ms =		160,	/* T3193 (units of 10ms) */
-		.t3195 =		5,	/* T3195 */
-		.n3101 =		10,	/* N3101 */
-		.n3103 =		4,	/* N3103 */
-		.n3105 =		8,	/* N3105 */
-		.rlc_cv_countdown =	15,	/* RLC CV countdown */
+		.t3142 = rlcc->parameter[RLC_T3142],
+		.t3169 = rlcc->parameter[RLC_T3169],
+		.t3191 = rlcc->parameter[RLC_T3191],
+		.t3193_10ms = rlcc->parameter[RLC_T3193],
+		.t3195 = rlcc->parameter[RLC_T3195],
+		.n3101 = rlcc->parameter[RLC_N3101],
+		.n3103 = rlcc->parameter[RLC_N3103],
+		.n3105 = rlcc->parameter[RLC_N3105],
+		.rlc_cv_countdown = rlcc->parameter[CV_COUNTDOWN],
 	};
 	msgb_tl16v_put(msgb, NM_ATT_IPACC_RLC_CFG, sizeof(rlc_cfg), (const uint8_t *)&rlc_cfg);
 
@@ -268,12 +269,15 @@ struct msgb *nanobts_gen_set_cell_attr(struct gsm_bts *bts)
 			break;
 		/* fall-through */
 	case GSM_BTS_TYPE_OSMOBTS:
+		/* CS1..CS4 flags encoded in the first octet */
+		buf[0] = rlcc->cs_mask & 0x0f;
+		/* MCS1..MSC8 flags encoded in the second octet */
+		buf[1] = 0x00;
 		if (bts->gprs.mode == BTS_GPRS_EGPRS) {
-			buf[0] = 0x8f;
-			buf[1] = 0xff;
-		} else {
-			buf[0] = 0x0f;
-			buf[1] = 0x00;
+			/* MSC9 is special and also goes to the first octet */
+			if (rlcc->cs_mask & (1 << GPRS_MCS9))
+				buf[0] |= (1 << 7);
+			buf[1] = (rlcc->cs_mask >> 4) & 0xff;
 		}
 		msgb_tl16v_put(msgb, NM_ATT_IPACC_CODING_SCHEMES, 2, buf);
 		break;
@@ -289,9 +293,9 @@ struct msgb *nanobts_gen_set_cell_attr(struct gsm_bts *bts)
 	case GSM_BTS_TYPE_OSMOBTS:
 	{
 		const struct abis_nm_ipacc_att_rlc_cfg_2 rlc_cfg_2 = {
-			.t_dl_tbf_ext_10ms = htons(250), /* 0..500 */
-			.t_ul_tbf_ext_10ms = htons(250), /* 0..500 */
-			.initial_cs = 2, /* CS2 */
+			.t_dl_tbf_ext_10ms = htons(rlcc->parameter[T_DL_TBF_EXT] / 10),
+			.t_ul_tbf_ext_10ms = htons(rlcc->parameter[T_UL_TBF_EXT] / 10),
+			.initial_cs = rlcc->initial_cs,
 		};
 		msgb_tl16v_put(msgb, NM_ATT_IPACC_RLC_CFG_2,
 			       sizeof(rlc_cfg_2), (const uint8_t *)&rlc_cfg_2);
@@ -309,7 +313,7 @@ struct msgb *nanobts_gen_set_cell_attr(struct gsm_bts *bts)
 	case GSM_BTS_TYPE_OSMOBTS:
 	{
 		const struct abis_nm_ipacc_att_rlc_cfg_3 rlc_cfg_3 = {
-			.initial_mcs = 2, /* MCS2 */
+			.initial_mcs = rlcc->initial_mcs,
 		};
 		msgb_tl16v_put(msgb, NM_ATT_IPACC_RLC_CFG_3,
 			       sizeof(rlc_cfg_3), (const uint8_t *)&rlc_cfg_3);
