@@ -98,7 +98,7 @@ static void configure_loop(struct gsm_bts *bts, const struct gsm_nm_state *state
 
 	/* Request generic BTS-level attributes */
 	if (!bts->mo.get_attr_sent && !bts->mo.get_attr_rep_received) {
-		uint8_t attr_buf[MAX_BTS_ATTR];
+		uint8_t attr_buf[3]; /* enlarge if needed */
 		uint8_t *ptr = &attr_buf[0];
 
 		*(ptr++) = NM_ATT_MANUF_ID;

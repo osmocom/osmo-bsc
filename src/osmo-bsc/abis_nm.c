@@ -58,6 +58,9 @@
 #define OM_HEADROOM_SIZE	128
 #define IPACC_SEGMENT_SIZE	245
 
+/* max number of SW Description IEs we can parse */
+#define SW_DESCR_MAX		5
+
 #define LOGPMO(mo, ss, lvl, fmt, args ...) \
 	LOGP(ss, lvl, "OC=%s(%02x) INST=(%02x,%02x,%02x): " fmt, \
 	     get_value_string(abis_nm_obj_class_names, (mo)->obj_class), \
@@ -610,7 +613,6 @@ static int parse_attr_resp_info_attr(struct gsm_bts *bts, const struct gsm_bts_t
 	uint16_t port;
 	struct in_addr ia = {0};
 	char unit_id[40];
-	struct abis_nm_sw_desc sw_descr[MAX_BTS_ATTR];
 
 	switch (bts->type) {
 	case GSM_BTS_TYPE_OSMOBTS:
@@ -638,6 +640,7 @@ static int parse_attr_resp_info_attr(struct gsm_bts *bts, const struct gsm_bts_t
 
 	/* Parse Attribute Response Info content for 3GPP TS 52.021 §9.4.61 SW Configuration */
 	if (TLVP_PRESENT(tp, NM_ATT_SW_CONFIG)) {
+		struct abis_nm_sw_desc sw_descr[SW_DESCR_MAX];
 		data = TLVP_VAL(tp, NM_ATT_SW_CONFIG);
 		len = TLVP_LEN(tp, NM_ATT_SW_CONFIG);
 		/* after parsing manufacturer-specific attributes there's list of replies in form of sw-conf structure: */
@@ -749,7 +752,7 @@ static int abis_nm_rx_sw_act_req(struct msgb *mb)
 	struct tlv_parsed tp;
 	const uint8_t *sw_config;
 	int ret, sw_config_len, len;
-	struct abis_nm_sw_desc sw_descr[MAX_BTS_ATTR];
+	struct abis_nm_sw_desc sw_descr[SW_DESCR_MAX];
 
 	DEBUGPFOH(DNM, foh, "Software Activate Request, ACKing and Activating\n");
 

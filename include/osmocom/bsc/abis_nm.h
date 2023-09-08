@@ -29,9 +29,6 @@
 #include <osmocom/bsc/gsm_data.h>
 #include <osmocom/bsc/signal.h>
 
-/* max number of attributes represented as 3GPP TS 52.021 §9.4.62 SW Description array */
-#define MAX_BTS_ATTR 5
-
 /* The BCCH info from an ip.access test, in host byte order
  * and already parsed... */
 struct ipac_bcch_info {
