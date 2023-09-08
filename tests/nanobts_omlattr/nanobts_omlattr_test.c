@@ -73,6 +73,8 @@ static void test_nanobts_gen_set_cell_attr(struct gsm_bts *bts, uint8_t *expecte
 
 	printf("Testing nanobts_gen_set_cell_attr()...\n");
 
+	bts->gprs.cell.mo.ipaccess.obj_version = 30;
+
 	msgb = nanobts_gen_set_cell_attr(bts);
 	printf("result=  %s\n", osmo_hexdump_nospc(msgb->data, msgb->len));
 	printf("expected=%s\n", osmo_hexdump_nospc(expected, msgb->len));
@@ -211,7 +213,7 @@ int main(int argc, char **argv)
 		0x02, 0x00, 0x02, 0xa3, 0x00, 0x09, 0x14, 0x05, 0x05, 0xa0,
 		0x05, 0x0a, 0x04, 0x08,
 		0x0f, 0xa8, 0x00, 0x02, 0x0f, 0x00, 0xa9, 0x00, 0x05, 0x00,
-		0xfa, 0x00, 0xfa, 0x02
+		0xfa, 0x00, 0xfa, 0x02, 0xac, 0x00, 0x01, 0x02,
 	};
 
 	/* Parameters needed to test nanobts_gen_set_nsvc_attr() */
