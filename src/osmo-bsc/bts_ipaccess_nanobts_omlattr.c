@@ -227,9 +227,8 @@ struct msgb *nanobts_gen_set_nse_attr(struct gsm_bts_sm *bts_sm)
 
 struct msgb *nanobts_gen_set_cell_attr(struct gsm_bts *bts)
 {
+	const struct gsm_gprs_cell *cell = &bts->gprs.cell;
 	struct msgb *msgb;
-	struct abis_nm_ipacc_att_rlc_cfg rlc_cfg;
-	struct abis_nm_ipacc_att_rlc_cfg_2 rlc_cfg_2;
 	uint8_t buf[2];
 
 	msgb = msgb_alloc(1024, __func__);
@@ -250,7 +249,7 @@ struct msgb *nanobts_gen_set_cell_attr(struct gsm_bts *bts)
 	msgb_tl16v_put(msgb, NM_ATT_IPACC_BVCI, 2, buf);
 
 	/* all timers in seconds, unless otherwise stated */
-	rlc_cfg = (struct abis_nm_ipacc_att_rlc_cfg){
+	const struct abis_nm_ipacc_att_rlc_cfg rlc_cfg = {
 		.t3142 =		20,	/* T3142 */
 		.t3169 =		5,	/* T3169 */
 		.t3191 =		5,	/* T3191 */
@@ -263,31 +262,62 @@ struct msgb *nanobts_gen_set_cell_attr(struct gsm_bts *bts)
 	};
 	msgb_tl16v_put(msgb, NM_ATT_IPACC_RLC_CFG, sizeof(rlc_cfg), (const uint8_t *)&rlc_cfg);
 
-	if (bts->gprs.mode == BTS_GPRS_EGPRS) {
-		buf[0] = 0x8f;
-		buf[1] = 0xff;
-	} else {
-		buf[0] = 0x0f;
-		buf[1] = 0x00;
+	switch (bts->type) {
+	case GSM_BTS_TYPE_NANOBTS:
+		if (cell->mo.ipaccess.obj_version < 4)
+			break;
+		/* fall-through */
+	case GSM_BTS_TYPE_OSMOBTS:
+		if (bts->gprs.mode == BTS_GPRS_EGPRS) {
+			buf[0] = 0x8f;
+			buf[1] = 0xff;
+		} else {
+			buf[0] = 0x0f;
+			buf[1] = 0x00;
+		}
+		msgb_tl16v_put(msgb, NM_ATT_IPACC_CODING_SCHEMES, 2, buf);
+		break;
+	default:
+		break;
 	}
-	msgb_tl16v_put(msgb, NM_ATT_IPACC_CODING_SCHEMES, 2, buf);
 
-	rlc_cfg_2 = (struct abis_nm_ipacc_att_rlc_cfg_2){
-		.t_dl_tbf_ext_10ms = htons(250), /* 0..500 */
-		.t_ul_tbf_ext_10ms = htons(250), /* 0..500 */
-		.initial_cs = 2, /* CS2 */
-	};
-	msgb_tl16v_put(msgb, NM_ATT_IPACC_RLC_CFG_2, sizeof(rlc_cfg_2), (const uint8_t *)&rlc_cfg_2);
+	switch (bts->type) {
+	case GSM_BTS_TYPE_NANOBTS:
+		if (cell->mo.ipaccess.obj_version < 20)
+			break;
+		/* fall-through */
+	case GSM_BTS_TYPE_OSMOBTS:
+	{
+		const struct abis_nm_ipacc_att_rlc_cfg_2 rlc_cfg_2 = {
+			.t_dl_tbf_ext_10ms = htons(250), /* 0..500 */
+			.t_ul_tbf_ext_10ms = htons(250), /* 0..500 */
+			.initial_cs = 2, /* CS2 */
+		};
+		msgb_tl16v_put(msgb, NM_ATT_IPACC_RLC_CFG_2,
+			       sizeof(rlc_cfg_2), (const uint8_t *)&rlc_cfg_2);
+		break;
+	}
+	default:
+		break;
+	}
 
-#if 0
-	/* EDGE model only, breaks older models.
-	 * Should inquire the BTS capabilities */
-	struct abis_nm_ipacc_att_rlc_cfg_3 rlc_cfg_3;
-	rlc_cfg_3 = (struct abis_nm_ipacc_att_rlc_cfg_3){
-		.initial_mcs = 2, /* MCS2 */
-	};
-	msgb_tl16v_put(msgb, NM_ATT_IPACC_RLC_CFG_3, sizeof(rlc_cfg_3), (const uint8_t *)&rlc_cfg_3);
-#endif
+	switch (bts->type) {
+	case GSM_BTS_TYPE_NANOBTS:
+		if (cell->mo.ipaccess.obj_version < 30)
+			break;
+		/* fall-through */
+	case GSM_BTS_TYPE_OSMOBTS:
+	{
+		const struct abis_nm_ipacc_att_rlc_cfg_3 rlc_cfg_3 = {
+			.initial_mcs = 2, /* MCS2 */
+		};
+		msgb_tl16v_put(msgb, NM_ATT_IPACC_RLC_CFG_3,
+			       sizeof(rlc_cfg_3), (const uint8_t *)&rlc_cfg_3);
+		break;
+	}
+	default:
+		break;
+	}
 
 	return msgb;
 }
