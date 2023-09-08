@@ -99,7 +99,8 @@ struct msgb *nanobts_gen_set_bts_attr(struct gsm_bts *bts)
 	struct msgb *msgb;
 	uint8_t buf[256];
 	int rlt;
-	msgb = msgb_alloc(1024, "nanobts_attr_bts");
+
+	msgb = msgb_alloc(1024, __func__);
 	if (!msgb)
 		return NULL;
 
@@ -183,7 +184,8 @@ struct msgb *nanobts_gen_set_nse_attr(struct gsm_bts_sm *bts_sm)
 	struct abis_nm_ipacc_att_ns_cfg ns_cfg;
 	struct abis_nm_ipacc_att_bssgp_cfg bssgp_cfg;
 	struct gsm_bts *bts = gsm_bts_sm_get_bts(bts_sm);
-	msgb = msgb_alloc(1024, "nanobts_attr_bts");
+
+	msgb = msgb_alloc(1024, __func__);
 	if (!msgb)
 		return NULL;
 
@@ -229,7 +231,8 @@ struct msgb *nanobts_gen_set_cell_attr(struct gsm_bts *bts)
 	struct abis_nm_ipacc_att_rlc_cfg rlc_cfg;
 	struct abis_nm_ipacc_att_rlc_cfg_2 rlc_cfg_2;
 	uint8_t buf[2];
-	msgb = msgb_alloc(1024, "nanobts_attr_bts");
+
+	msgb = msgb_alloc(1024, __func__);
 	if (!msgb)
 		return NULL;
 
@@ -293,7 +296,8 @@ struct msgb *nanobts_gen_set_nsvc_attr(struct gsm_gprs_nsvc *nsvc)
 {
 	struct msgb *msgb;
 	uint8_t buf[256];
-	msgb = msgb_alloc(1024, "nanobts_attr_bts");
+
+	msgb = msgb_alloc(1024, __func__);
 	if (!msgb)
 		return NULL;
 
@@ -338,7 +342,8 @@ struct msgb *nanobts_gen_set_radio_attr(struct gsm_bts *bts,
 {
 	struct msgb *msgb;
 	uint8_t buf[256];
-	msgb = msgb_alloc(1024, "nanobts_attr_bts");
+
+	msgb = msgb_alloc(1024, __func__);
 	if (!msgb)
 		return NULL;
 
