@@ -59,6 +59,8 @@ static void st_op_disabled_notinstalled_on_enter(struct osmo_fsm_inst *fi, uint3
 	struct gsm_bts_trx *trx = (struct gsm_bts_trx *)fi->priv;
 
 	trx->mo.sw_act_rep_received = false;
+	trx->mo.get_attr_sent = false;
+	trx->mo.get_attr_rep_received = false;
 	trx->mo.set_attr_sent = false;
 	trx->mo.set_attr_ack_received = false;
 	trx->mo.adm_unlock_sent = false;
@@ -112,6 +114,23 @@ static void configure_loop(struct gsm_bts_trx *trx, const struct gsm_nm_state *s
 	if (is_nanobts(trx->bts) && !trx->mo.sw_act_rep_received)
 		return;
 
+	if (!trx->mo.get_attr_sent && !trx->mo.get_attr_rep_received) {
+		uint8_t attr_buf[2]; /* enlarge if needed */
+		uint8_t *ptr = &attr_buf[0];
+
+		*(ptr++) = NM_ATT_SW_CONFIG;
+		if (is_ipa_abisip_bts(trx->bts))
+			*(ptr++) = NM_ATT_IPACC_SUPP_FEATURES;
+
+		OSMO_ASSERT((ptr - attr_buf) <= sizeof(attr_buf));
+		abis_nm_get_attr(trx->bts, NM_OC_RADIO_CARRIER,
+				 trx->bts->bts_nr, trx->nr, 0xff,
+				 &attr_buf[0], (ptr - attr_buf));
+		trx->mo.get_attr_sent = true;
+	}
+
+	/* OS#6172: old osmo-bts versions do NACK Get Attributes for Radio Carrier,
+	 * so we do not check if trx->mo.get_attr_rep_received is set here. */
 	if (!trx->mo.set_attr_sent && !trx->mo.set_attr_ack_received) {
 		trx->mo.set_attr_sent = true;
 		msgb = nanobts_gen_set_radio_attr(trx->bts, trx);
@@ -163,6 +182,11 @@ static void st_op_disabled_dependency(struct osmo_fsm_inst *fi, uint32_t event, 
 		trx->mo.sw_act_rep_received = true;
 		configure_loop(trx, &trx->mo.nm_state, false);
 		break;
+	case NM_EV_GET_ATTR_REP:
+		trx->mo.get_attr_rep_received = true;
+		trx->mo.get_attr_sent = false;
+		configure_loop(trx, &trx->mo.nm_state, false);
+		return;
 	case NM_EV_SET_ATTR_ACK:
 		trx->mo.set_attr_ack_received = true;
 		trx->mo.set_attr_sent = false;
@@ -217,6 +241,11 @@ static void st_op_disabled_offline(struct osmo_fsm_inst *fi, uint32_t event, voi
 		trx->mo.sw_act_rep_received = true;
 		configure_loop(trx, &trx->mo.nm_state, true);
 		break;
+	case NM_EV_GET_ATTR_REP:
+		trx->mo.get_attr_rep_received = true;
+		trx->mo.get_attr_sent = false;
+		configure_loop(trx, &trx->mo.nm_state, true);
+		return;
 	case NM_EV_SET_ATTR_ACK:
 		trx->mo.set_attr_ack_received = true;
 		trx->mo.set_attr_sent = false;
@@ -366,6 +395,7 @@ static struct osmo_fsm_state nm_rcarrier_fsm_states[] = {
 		.in_event_mask =
 			X(NM_EV_SW_ACT_REP) |
 			X(NM_EV_STATE_CHG_REP) |
+			X(NM_EV_GET_ATTR_REP) |
 			X(NM_EV_SET_ATTR_ACK) |
 			X(NM_EV_SETUP_RAMP_READY),
 		.out_state_mask =
@@ -380,6 +410,7 @@ static struct osmo_fsm_state nm_rcarrier_fsm_states[] = {
 		.in_event_mask =
 			X(NM_EV_SW_ACT_REP) |
 			X(NM_EV_STATE_CHG_REP) |
+			X(NM_EV_GET_ATTR_REP) |
 			X(NM_EV_SET_ATTR_ACK) |
 			X(NM_EV_SETUP_RAMP_READY),
 		.out_state_mask =
