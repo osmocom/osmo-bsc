@@ -49,6 +49,8 @@ static void st_op_disabled_notinstalled_on_enter(struct osmo_fsm_inst *fi, uint3
 	struct gsm_gprs_cell *cell = (struct gsm_gprs_cell *)fi->priv;
 
 	cell->mo.sw_act_rep_received = false;
+	cell->mo.get_attr_sent = false;
+	cell->mo.get_attr_rep_received = false;
 	cell->mo.set_attr_sent = false;
 	cell->mo.set_attr_ack_received = false;
 	cell->mo.adm_unlock_sent = false;
@@ -107,6 +109,23 @@ static void configure_loop(struct gsm_gprs_cell *cell, const struct gsm_nm_state
 	if (is_nanobts(bts) && !cell->mo.sw_act_rep_received)
 		return;
 
+	if (!cell->mo.get_attr_sent && !cell->mo.get_attr_rep_received) {
+		uint8_t attr_buf[2]; /* enlarge if needed */
+		uint8_t *ptr = &attr_buf[0];
+
+		*(ptr++) = NM_ATT_SW_CONFIG;
+		if (is_ipa_abisip_bts(bts))
+			*(ptr++) = NM_ATT_IPACC_SUPP_FEATURES;
+
+		OSMO_ASSERT((ptr - attr_buf) <= sizeof(attr_buf));
+		abis_nm_get_attr(bts, NM_OC_GPRS_CELL,
+				 bts->bts_nr, 0x00, 0xff,
+				 &attr_buf[0], (ptr - attr_buf));
+		cell->mo.get_attr_sent = true;
+	}
+
+	/* OS#6172: old osmo-bts versions do NACK Get Attributes for GPRS Cell,
+	 * so we do not check if cell->mo.get_attr_rep_received is set here. */
 	if (!cell->mo.set_attr_sent && !cell->mo.set_attr_ack_received) {
 		cell->mo.set_attr_sent = true;
 		msgb = nanobts_gen_set_cell_attr(bts);
@@ -158,6 +177,11 @@ static void st_op_disabled_dependency(struct osmo_fsm_inst *fi, uint32_t event, 
 		cell->mo.sw_act_rep_received = true;
 		configure_loop(cell, &cell->mo.nm_state, false);
 		break;
+	case NM_EV_GET_ATTR_REP:
+		cell->mo.get_attr_rep_received = true;
+		cell->mo.get_attr_sent = false;
+		configure_loop(cell, &cell->mo.nm_state, false);
+		return;
 	case NM_EV_SET_ATTR_ACK:
 		cell->mo.set_attr_ack_received = true;
 		cell->mo.set_attr_sent = false;
@@ -213,6 +237,11 @@ static void st_op_disabled_offline(struct osmo_fsm_inst *fi, uint32_t event, voi
 		cell->mo.sw_act_rep_received = true;
 		configure_loop(cell, &cell->mo.nm_state, true);
 		break;
+	case NM_EV_GET_ATTR_REP:
+		cell->mo.get_attr_rep_received = true;
+		cell->mo.get_attr_sent = false;
+		configure_loop(cell, &cell->mo.nm_state, true);
+		return;
 	case NM_EV_SET_ATTR_ACK:
 		cell->mo.set_attr_ack_received = true;
 		cell->mo.set_attr_sent = false;
@@ -344,6 +373,7 @@ static struct osmo_fsm_state nm_gprs_cell_fsm_states[] = {
 		.in_event_mask =
 			X(NM_EV_SW_ACT_REP) |
 			X(NM_EV_STATE_CHG_REP) |
+			X(NM_EV_GET_ATTR_REP) |
 			X(NM_EV_SET_ATTR_ACK) |
 			X(NM_EV_SETUP_RAMP_READY),
 		.out_state_mask =
@@ -358,6 +388,7 @@ static struct osmo_fsm_state nm_gprs_cell_fsm_states[] = {
 		.in_event_mask =
 			X(NM_EV_SW_ACT_REP) |
 			X(NM_EV_STATE_CHG_REP) |
+			X(NM_EV_GET_ATTR_REP) |
 			X(NM_EV_SET_ATTR_ACK) |
 			X(NM_EV_SETUP_RAMP_READY),
 		.out_state_mask =
