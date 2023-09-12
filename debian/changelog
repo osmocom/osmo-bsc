@@ -1,3 +1,268 @@
+osmo-bsc (1.11.0) unstable; urgency=medium
+
+  [ Max ]
+  * doc: correct reference and add deprecation notice
+  * pcu_connected(): constify parameter
+
+  [ Philipp Maier ]
+  * pcuif_proto: rename PCU_IF_SAPI_AGCH_DT to PCU_IF_SAPI_PCH_DT
+  * pcu_sock: cosmetic: remove space before tab
+  * abis_rsl: add support for sending IMMEDIATE ASSIGNMENT through PCH
+  * pcu_sock: use extract_paging_group() for PCU_IF_SAPI_PCH
+  * abis_rsl: constify parameters of rsl_X_imm_assign_cmd
+  * pcu_sock: transfer sysinfo to PCU
+  * pcu_sock: transfer E1 connection information to PCU
+  * pcu_sock: set direct TLLI flag in info indication
+  * bts_trx_vty: use define constant E1_SUBSLOT_FULL instead magic number
+  * bsc_subscriber_conn_fsm: use subslot 0 in case of E1 full subslot
+  * timeslot_fsm: fix sourcecode indenting
+  * pcu_sock: print OML alerts from PCU
+  * abis_rsl: guard against over long IMMEDIATE ASSIGNMENT Messages
+  * pcu_sock: get rid of leaking message buffer
+  * pcu_sock: activate/deactivate PDCH on pcu reconnect
+  * pcu_sock: use struct to transfer IMMEDIATE ASSIGNMENT for PCH
+  * pcu_sock: improve logging
+  * pcu_sock: rename rc to fd
+  * pcu_sock: cosmetic: remove whitespace after type cast
+  * timeslot_fsm: fix PDCH activation
+  * bts: is_xyz_bts check functions should return bool
+  * bts: add function to check if a BTS has a BSC co located PCU
+  * pcu_sock: use is_ericsson_bts() to check for ericsson BTS
+  * pcu_sock: check BTS type properly in pcu_info_update()
+  * pcu_sock: drop usage of PCUIF flag PCU_IF_FLAG_DT
+  * pcu_sock.c: Call osmo_fd_unregister() before closing and changing listen_bfd->fd
+  * pcu_sock: handle multiple BTSs with one BSC co-located PCU (in theory)
+  * pcuif_proto: increment version number
+  * doc: add sample configuration for GPRS with ericsson RBS
+  * doc: overview: replace section TRAU mapper / E1 sub-channel muxer
+  * bts: bts: Explain Ericsson's interface switch (IS)
+  * doc: running: Describe how to configure a co-located PCU
+  * examples: update erissson GPRS config files
+  * doc: bts-examples: discuss Ericsson RBS EGPRS configuration
+  * pcu_sock: fix PCUIF interface (PCH)
+  * pcu_sock: use correct SAPI in message PCUIF PCU_IF_MSG_DATA_CNF_DT
+  * pcuif_proto: rename tlli to msg_id
+  * pcuif_proto: remove unnecessary members from gsm_pcu_if_data_cnf_dt
+  * pcuif_proto: get rid of _DT, _dt (Direct TLLI)
+  * pcuif_proto: check confirm flag in struct gsm_pcu_if_pch
+  * pcu_sock: use PCU_IF_SAPI_AGCH_2 instead PCU_IF_SAPI_AGCH
+
+  [ Oliver Smith ]
+  * ho: remove timeout for HO_ST_WAIT_LCHAN_ACTIVE
+  * ho: remove timeout for HO_ST_WAIT_LCHAN_ESTABLISHED
+  * fsms: use configurable timers instead of T23042
+  * osmo_bsc_main: don't allocate talloc_ctr_ctx
+  * Cosmetic: fix various typos
+  * Cosmetic: codec_pref: tweak comments
+  * bssmap_handle_assignm_req: split up
+  * bssmap_handle_ass_req_ct_speech: split up
+  * bssmap_handle_ass_req_ct_speech: refactor
+  * codec_pref: split test_codec_support_bts_rate
+  * test_codec_support_bts_rate: add missing breaks
+  * lchan.h: remove enum lchan_csd_mode
+  * channel_mode_from_lchan: add GSM48_CMODE_DATA_3k6
+  * bssmap_handle_ass_req_ct_data: implement
+  * abis_rsl: ipacc_payload_type: handle CSD
+  * bssmap_handle_ass_req_tp_codec_list: tweak log msg
+  * assignment_fsm: chan mode check: support CSD
+  * tests/handover: wrap functions from gsm_08_08.c
+  * requires_voice_stream -> ch_indctr
+  * lchan_select: chan_mode_to_chan_type: support CSD
+  * rsl_tx_ipacc_crcx/mdcx: omit speech mode for CSD
+  * chan_mode_to_mgcp_codec: support CSD
+  * Cosmetic: channel_mode_from_lchan: remove fixme
+  * check_chan_mode_rate_against…: fix never true cond
+  * abis_rsl: CSD: add RTP_CSD_FMT IE to CRCX/MDCX
+  * bsc_mgw_setup: use mgcp_client_pool_empty()
+  * abis_rsl: fix encoding RSL_IE_IPAC_RTP_CSD_FORMAT
+  * CSD: support non-transparent data rates
+  * debian: set compat level to 10
+  * contrib/jenkins: create workspace.tar.xz on error
+  * systemd: depend on networking-online.target
+  * Fix various typos
+  * Cosmetic: configure: move if … then to same line
+  * configure: ipa utils: add default=yes to arg help
+  * Cosmetic: debian/rules: remove boilerplate
+  * contrib/jenkins.sh: deduplicate configure flags
+  * configure: add --enable-meas-udp2db/pcap2db/vis
+
+  [ Harald Welte ]
+  * Work around coverity false positives in macros
+  * abis_nm: Only osmo-bts re-purposes the MANUF_ID for BTS feature flags
+  * cosmetic: Rename is_ipaccess_bts() to is_ipa_abisip_bts()
+  * cosmetic: Clarify language ip.access nanoBTS vs. all IPA Abis/IP
+  * test case fixup: Add missing (void) empty argument list specification
+  * Support (optional) indication of NCH position in SI1 rest octets
+  * nanobts: Request "supported features" attribute from BTS and BB_TRANSC
+  * prevent bogus NCH related error message if no NCH is configured
+
+  [ Michael Iedema ]
+  * utils: store more fields from meas-feed in db
+
+  [ Vadim Yanitskiy ]
+  * utils: fix incorrect string checks in meas_db_insert()
+  * ipaccess_drop_oml(): invalidate the feature vector
+  * Makefile.am: remove unneeded AM_LDFLAGS with LIBS
+  * tests: use -no-install libtool flag to avoid ./lt-* scripts
+  * fix bs11_read_swl_file(): properly clean up stale file list
+  * fix ipacc_rtp_csd_fmt_non_transp(): add missing breaks
+  * tests: $(BUILT_SOURCES) is not defined, depend on osmo-bsc
+  * osmoappdesc.py: add more config files for testing
+  * tests: add VTY transcript tests for 'si2quater neighbor-list'
+  * tests: demonstrate the problems of 'si2quater neighbor-list'
+  * doc/{examples,manuals}: remove dummy 'gprs nsvc 1'
+  * tests: rename and extend gprs_{bvci_default->params}.vty
+  * tests: add more tests for GPRS NSVC parameters
+  * gprs: fix has_valid_nsvc(): permit local udp port 0
+  * cosmetic: bts_uarfcn_add(): pass diversity directly to encode_fdd()
+  * cosmetic: bts_vty: switch is not a function, add a space
+  * si2quater: bts_uarfcn_add(): check if already added first
+  * si2quater: bts_uarfcn_add(): modify existsing UARFCNs
+  * si2quater: bts_earfcn_add(): do not add duplicate EARFCNs
+  * si2quater: add CTRL commands for deleting neighbor [EU]ARFCNs
+  * si2quater: check return value of osmo_earfcn_del()
+  * bts_is_online(): make the BTS pointer const, return bool
+  * struct gsm_bts_model: rename power_ctrl_{set->send}_c0_power_red
+  * bootstrap_rsl(): cosmetic: cache trx->bts and use it directly
+  * bts: st_op_enabled_on_enter(): resume C0 power reduction
+  * gsm_bts_send_c0_power_red(): check if BTS is online first
+  * copyright: fix typo: sysmocom s/s.m.f.c./s.f.m.c./ GmbH
+  * fixup: contrib/jenkins: create workspace.tar.xz on error
+  * tests/{ctrl,vty}_test_runner.py: raise an exception if proc's rc != 0
+  * contrib/jenkins.sh: remove unrecognized --enable-vty-tests
+  * lchan_select: fix lchan selection for GSM48_CMODE_DATA_{14k5,12k0}
+  * fix send_assignment_complete(): proper SCE encoding for CSD
+
+  [ Neels Hofmeyr ]
+  * examples: osmo-bsc-minimal.cfg: drop codec-list
+  * pick up all *.vty in EXTRA_DIST
+  * add msc.vty to test 'msc' / 'codec-list' cfg
+  * cosmetic: use char literals in cfg_net_bsc_codec_list()
+  * cosmetic: use i++ instead of ++i in for loop
+  * vty: improve doc for 'codec-list'
+  * bsc_vty.c: s/bsc/msc for commands under msc node
+  * bsc_vty.c write_msc(): fix weird printf format
+  * vty: msc / codec-list: tweak error msg
+  * cosmetic: clarify test_codec_support_bts()
+  * select_codecs(): doc tweak
+  * select_codecs(): constify ct arg
+  * add timeslot.vty
+  * implicitly register osmo_fsm definitions
+  * assignment_fsm.c: make two functions static
+  * bsc_test: add 'update_exp'
+  * simplify storage of bsc_msc_data->audio_support
+  * vty: msc / codec-list: forbid duplicate entries
+  * vty: msc / codec-list: forbid invalid codec versions
+  * ensure correct phys_chan_config doc string count on VTY
+  * VTY,CTRL: add pchan dynamic/{osmocom,ipaccess}
+  * stat: change pchan naming to dynamic/{osmocom,ipaccess}
+  * bsc_test.c: test FSM IDs that contain pchan names
+  * tweak gsm_pchan_ids[]: DYNAMIC/{OSMOCOM,IPACCESS}
+  * drop gsm_pchan_ids, use sanitized FSM ids instead
+  * doc: add codec_resolution.msc
+  * cosmetic: timeslot_fsm.c: move some code to separate function
+  * vty: codec-list: fix error message
+  * fix coverity (false) warning in codec-list vty
+  * segfault: verify lchan presence on Assignment Complete
+  * add location_services_fsm_bsc.dot
+  * SCCP N-PCSTATE: trigger MSC status on PC availability
+  * log: N-PCSTATE: use new value_strings
+  * fix comment typo
+  * fix length check in abis_rsl_rx_rll()
+  * fix mscpool for large msc NRs
+
+  [ Pau Espin Pedrol ]
+  * cosmetic: gsm_data.h: Fix typo in comment
+  * constify bsc_conn_by_bsub() ptr param
+  * Clarify type and values of sccp.conn_id
+  * bscc_sccp: Avoid allocating conn_id 0x00FFFFFF
+  * get_bsc_conn_by_conn_id(): Properly match sccp_instance
+  * bscc_sccp: Small optimiztion in bsc_sccp_inst_next_conn_id()
+  * Assert conn_id being looked up is inside expected range
+  * pcu_sock.c: Call osmo_fd_unregister() before closing and changing bfd->fd
+  * Optimize subscr_conns lookup
+  * Move bsc_conn_by_bsub() and make it static
+  * bsc_subscriber: Drop unused function bsc_subscr_find_by_mi()
+  * bsc_subscriber: Mark functions used only internally as static
+  * bsc_subscriber: Introduce bsc_subscriber_store object
+  * bsc_subscriber: Optimize lookup of bsub by TMSI
+  * Fix Lb/A SCCP conn lookup after recent regression in optimization patch
+  * Use new GSM0408 defines for half-octet tags
+  * abis_rsl: Document spec ref of CCCH Load Ind
+  * Move paging queue specific handling to signal callback outside RSL code
+  * bts-rbs2k: Simplify osmo_fsm_inst_alloc_child_id()
+  * ipaccess nm: Delay marking TS as usable until OML reports Enabled state
+  * ipaccess nm: Handle TS_EV_OML_DOWN through NM FSM
+  * UserManual: Include sigtran*.adoc from osmo-gsm-manuals.git
+  * Write explicit role & sctp-role fields in ASP configurations
+  * Use new mgcp_client_conf_alloc() API to alloc mgcp_client_conf
+  * Use new libosmo-sccp APIs osmo_ss7_asp_get_{name,proto}()
+  * SI13: Set DRX_TIMER_MAX value actually transmitted
+  * cosmetic: Document DRX_TIMER_MAX upper limit on BCCH smaller than possible range
+  * meas_feed: Refactor fd/wqueue lifecycle
+  * meas_feed: Increase wqueue max_len to 100 and make it vty-configurable
+  * oml: ipacc: Remove BSSGP value assignment being overwritten afterwards
+  * oml: ipacc: Use new packed struct abis_nm_ipacc_att_bssgp_cfg from libosmcore
+  * oml: ipacc: Use new packed struct abis_nm_ipacc_att_ns_cfg from libosmcore
+  * oml: ipacc: Use new packed struct abis_nm_ipacc_att_rlc_cfg from libosmcore
+
+  [ arehbein ]
+  * gsm_bts_check_ny1: Prevent possible division by zero
+  * main: Give specific error message
+  * PCU interface: Log version when starting listener
+
+  [ Matan Perelman ]
+  * ctrl: Add cell reselection offset control
+  * ctrl: Remove dots from OOM
+  * ctrl: Add penalty time control
+  * ctrl: Add cell reselection hysteresis control
+  * ctrl: Add getting access control class
+  * ctrl: Add setting access control class
+  * ctrl: Add getting neighbor list
+  * ctrl: Add getting SI5 neighbor list
+  * ctrl: Add setting SI5 neighbor list
+  * ctrl: Add bsic
+  * ctrl: Add rach max delay
+  * ctrl: Add getting si2quater uarfcn neighbor list
+  * ctrl: Support adding si2quater uarfcn neighbor
+  * ctrl: Add getting si2quater earfcn neighbor list
+  * ctrl: Support adding si2quater earfcn neighbor
+  * control.adoc: Remove short-name and long-name
+  * control.adoc: Update with recent changes
+
+  [ Daniel Willmann ]
+  * cosmetic: Fix type in VTY description
+
+  [ Andreas Eversberg ]
+  * ASCI: Add new rate counters to support VGCS/VBS messages
+  * Fix typo in rate counters ASSIGMENT->ASSIGNMENT
+  * Cleanup code style of rate counters in osmo_bsc_msc.c
+  * ASCI: Add support for NOTIFICATION COMMAND (RSL) message
+  * ASCI: Add support for Group/Broadcast channel activation
+  * ASCI: Add selection reason for VGCS/VBS channels
+  * ASCI: Add TX support for UPLINK RELEASE message
+  * ASCI: Make function to add OSMUX IE public
+  * ASCI: Prepare bssmap_handle_ass_req_ct_speech() for VGCS/VBS
+  * ASCI: Add new debug category "ASCI" for VGCS/VBS state machines
+  * ASCI: Do not release channel, if SAPI 0 is released
+  * ASCI: Do not wait for RLL establishment
+  * ASCI: Add support for sending RSL UNIT-DATA towards BTS
+  * ASCI: Add TX support for UPLINK FREE/BUSY messages
+  * ASCI: Forward UPLINK RELEASE on dedicated channel to MSC
+  * ASCI: Add encoding of VGCS/VBS A-interface messages
+  * ASCI: Add processing and FSMs for VGCS/VBS
+  * ASCI: Add decoding of VGCS/VBS A-interface messages
+  * ASCI: Forward RLL to VGCS FSM
+  * ASCI: Forward lchan activation states to VGCS FSM
+  * ASCI: Indicate release of subscriber connection to VGCS FSM
+  * ASCI: Add support for reception of TALKER/LISTENER DETECTION
+  * ASCI: Send release on VGCS/VBS channel via unit data
+  * ASCI: Add assignment to a VGCS/VBS channel
+  * Select channel type by enum instead of three boolean
+  * ASCI: Fix uninitialized values in vgcs_fsm.c, found by gcc 13.1.1.20230714
+
+ -- Pau Espin Pedrol <pespin@sysmocom.de>  Tue, 12 Sep 2023 16:40:03 +0200
+
 osmo-bsc (1.10.0) unstable; urgency=medium
 
   [ Vadim Yanitskiy ]
