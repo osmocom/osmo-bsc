@@ -890,6 +890,8 @@ void gsm_abis_mo_reset(struct gsm_abis_mo *mo);
 void gsm_mo_init(struct gsm_abis_mo *mo, struct gsm_bts *bts,
 		 uint8_t obj_class, uint8_t p1, uint8_t p2, uint8_t p3);
 
+struct gsm_abis_mo *gsm_objclass2mo(struct gsm_bts *bts, uint8_t obj_class,
+				    const struct abis_om_obj_inst *obj_inst);
 struct gsm_nm_state *
 gsm_objclass2nmstate(struct gsm_bts *bts, uint8_t obj_class,
 		 const struct abis_om_obj_inst *obj_inst);

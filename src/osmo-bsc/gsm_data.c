@@ -327,85 +327,56 @@ char *gsm_ts_and_pchan_name(const struct gsm_bts_trx_ts *ts)
 }
 
 /* obtain the MO structure for a given object instance */
-static inline struct gsm_abis_mo *
-gsm_objclass2mo(struct gsm_bts *bts, uint8_t obj_class,
-	    const struct abis_om_obj_inst *obj_inst)
+struct gsm_abis_mo *gsm_objclass2mo(struct gsm_bts *bts, uint8_t obj_class,
+				    const struct abis_om_obj_inst *obj_inst)
 {
 	struct gsm_bts_trx *trx;
-	struct gsm_abis_mo *mo = NULL;
 
 	switch (obj_class) {
 	case NM_OC_BTS:
-		mo = &bts->mo;
-		break;
+		return &bts->mo;
 	case NM_OC_RADIO_CARRIER:
-		if (obj_inst->trx_nr >= bts->num_trx) {
-			return NULL;
-		}
 		trx = gsm_bts_trx_num(bts, obj_inst->trx_nr);
-		mo = &trx->mo;
-		break;
+		return trx != NULL ? &trx->mo : NULL;
 	case NM_OC_BASEB_TRANSC:
-		if (obj_inst->trx_nr >= bts->num_trx) {
-			return NULL;
-		}
 		trx = gsm_bts_trx_num(bts, obj_inst->trx_nr);
-		mo = &trx->bb_transc.mo;
-		break;
+		return trx != NULL ? &trx->bb_transc.mo : NULL;
 	case NM_OC_CHANNEL:
-		if (obj_inst->trx_nr >= bts->num_trx) {
-			return NULL;
-		}
-		trx = gsm_bts_trx_num(bts, obj_inst->trx_nr);
 		if (obj_inst->ts_nr >= TRX_NR_TS)
 			return NULL;
-		mo = &trx->ts[obj_inst->ts_nr].mo;
-		break;
+		trx = gsm_bts_trx_num(bts, obj_inst->trx_nr);
+		return trx != NULL ? &trx->ts[obj_inst->ts_nr].mo : NULL;
 	case NM_OC_SITE_MANAGER:
-		mo = &bts->site_mgr->mo;
-		break;
+		return &bts->site_mgr->mo;
 	case NM_OC_BS11:
 		switch (obj_inst->bts_nr) {
 		case BS11_OBJ_CCLK:
-			mo = &bts->bs11.cclk.mo;
-			break;
+			return &bts->bs11.cclk.mo;
 		case BS11_OBJ_BBSIG:
-			if (obj_inst->ts_nr > bts->num_trx)
-				return NULL;
 			trx = gsm_bts_trx_num(bts, obj_inst->trx_nr);
-			mo = &trx->bs11.bbsig.mo;
-			break;
+			return trx != NULL ? &trx->bs11.bbsig.mo : NULL;
 		case BS11_OBJ_PA:
-			if (obj_inst->ts_nr > bts->num_trx)
-				return NULL;
 			trx = gsm_bts_trx_num(bts, obj_inst->trx_nr);
-			mo = &trx->bs11.pa.mo;
-			break;
-		default:
-			return NULL;
+			return trx != NULL ? &trx->bs11.pa.mo : NULL;
 		}
 		break;
 	case NM_OC_BS11_RACK:
-		mo = &bts->bs11.rack.mo;
-		break;
+		return &bts->bs11.rack.mo;
 	case NM_OC_BS11_ENVABTSE:
 		if (obj_inst->trx_nr >= ARRAY_SIZE(bts->bs11.envabtse))
 			return NULL;
-		mo = &bts->bs11.envabtse[obj_inst->trx_nr].mo;
-		break;
+		return &bts->bs11.envabtse[obj_inst->trx_nr].mo;
 	case NM_OC_GPRS_NSE:
-		mo = &bts->site_mgr->gprs.nse.mo;
-		break;
+		return &bts->site_mgr->gprs.nse.mo;
 	case NM_OC_GPRS_CELL:
-		mo = &bts->gprs.cell.mo;
-		break;
+		return &bts->gprs.cell.mo;
 	case NM_OC_GPRS_NSVC:
 		if (obj_inst->trx_nr >= ARRAY_SIZE(bts->site_mgr->gprs.nsvc))
 			return NULL;
-		mo = &bts->site_mgr->gprs.nsvc[obj_inst->trx_nr].mo;
-		break;
+		return &bts->site_mgr->gprs.nsvc[obj_inst->trx_nr].mo;
 	}
-	return mo;
+
+	return NULL;
 }
 
 /* obtain the gsm_nm_state data structure for a given object instance */
