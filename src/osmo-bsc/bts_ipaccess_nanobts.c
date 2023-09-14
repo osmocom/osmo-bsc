@@ -195,156 +195,50 @@ static int nm_statechg_event(int evt, struct nm_statechg_signal_data *nsd)
 /* Callback function to be called every time we receive a 12.21 SW activated report */
 static int sw_activ_rep(struct msgb *mb)
 {
-	struct abis_om_fom_hdr *foh = msgb_l3(mb);
+	const struct abis_om_fom_hdr *foh = msgb_l3(mb);
 	struct e1inp_sign_link *sign_link = mb->dst;
 	struct gsm_bts *bts = sign_link->trx->bts;
-	struct gsm_bts_trx *trx;
-	struct gsm_gprs_nsvc *nsvc;
-	struct gsm_bts_trx_ts *ts;
+	struct gsm_abis_mo *mo;
 
 	if (!is_ipa_abisip_bts(bts))
 		return 0;
 
-	switch (foh->obj_class) {
-	case NM_OC_SITE_MANAGER:
-		osmo_fsm_inst_dispatch(bts->site_mgr->mo.fi, NM_EV_SW_ACT_REP, NULL);
-		break;
-	case NM_OC_BTS:
-		osmo_fsm_inst_dispatch(bts->mo.fi, NM_EV_SW_ACT_REP, NULL);
-		break;
-	case NM_OC_BASEB_TRANSC:
-		if (!(trx = gsm_bts_trx_num(bts, foh->obj_inst.trx_nr)))
-			return -EINVAL;
-		osmo_fsm_inst_dispatch(trx->bb_transc.mo.fi, NM_EV_SW_ACT_REP, NULL);
-		break;
-	case NM_OC_RADIO_CARRIER:
-		if (!(trx = gsm_bts_trx_num(bts, foh->obj_inst.trx_nr)))
-			return -EINVAL;
-		osmo_fsm_inst_dispatch(trx->mo.fi, NM_EV_SW_ACT_REP, NULL);
-		break;
-	case NM_OC_CHANNEL:
-		if (!(ts = abis_nm_get_ts(mb)))
-			return -EINVAL;
-		osmo_fsm_inst_dispatch(ts->mo.fi, NM_EV_SW_ACT_REP, NULL);
-		break;
-	case NM_OC_GPRS_NSE:
-		osmo_fsm_inst_dispatch(bts->site_mgr->gprs.nse.mo.fi, NM_EV_SW_ACT_REP, NULL);
-		break;
-	case NM_OC_GPRS_CELL:
-		osmo_fsm_inst_dispatch(bts->gprs.cell.mo.fi, NM_EV_SW_ACT_REP, NULL);
-		break;
-	case NM_OC_GPRS_NSVC:
-		if (!(nsvc = gsm_bts_sm_nsvc_num(bts->site_mgr, foh->obj_inst.trx_nr)))
-			return -EINVAL;
-		osmo_fsm_inst_dispatch(nsvc->mo.fi, NM_EV_SW_ACT_REP, NULL);
-		break;
+	mo = gsm_objclass2mo(bts, foh->obj_class, &foh->obj_inst);
+	if (mo == NULL) {
+		LOGPFOH(DNM, LOGL_ERROR, foh, "Rx SW activated report for non-existent MO\n");
+		return -ENOENT;
 	}
-	return 0;
-}
 
-static void nm_rx_opstart_ack_chan(struct msgb *oml_msg)
-{
-	struct gsm_bts_trx_ts *ts;
-	ts = abis_nm_get_ts(oml_msg);
-	if (!ts)
-		/* error already logged in abis_nm_get_ts() */
-		return;
-	if (!ts->fi) {
-		LOG_TS(ts, LOGL_ERROR, "Channel OPSTART ACK for uninitialized TS\n");
-		return;
-	}
-	osmo_fsm_inst_dispatch(ts->mo.fi, NM_EV_OPSTART_ACK, NULL);
+	osmo_fsm_inst_dispatch(mo->fi, NM_EV_SW_ACT_REP, NULL);
+	return 0;
 }
 
 static void nm_rx_opstart_ack(struct msgb *oml_msg)
 {
-	struct abis_om_fom_hdr *foh = msgb_l3(oml_msg);
+	const struct abis_om_fom_hdr *foh = msgb_l3(oml_msg);
 	struct e1inp_sign_link *sign_link = oml_msg->dst;
 	struct gsm_bts *bts = sign_link->trx->bts;
-	struct gsm_bts_trx *trx;
-	struct gsm_gprs_nsvc *nsvc;
+	struct gsm_abis_mo *mo;
 
-	switch (foh->obj_class) {
-	case NM_OC_SITE_MANAGER:
-		osmo_fsm_inst_dispatch(bts->site_mgr->mo.fi, NM_EV_OPSTART_ACK, NULL);
-		break;
-	case NM_OC_BTS:
-		osmo_fsm_inst_dispatch(bts->mo.fi, NM_EV_OPSTART_ACK, NULL);
-		break;
-	case NM_OC_RADIO_CARRIER:
-		if (!(trx = gsm_bts_trx_num(bts, foh->obj_inst.trx_nr)))
-			return;
-		osmo_fsm_inst_dispatch(trx->mo.fi, NM_EV_OPSTART_ACK, NULL);
-		break;
-	case NM_OC_BASEB_TRANSC:
-		if (!(trx = gsm_bts_trx_num(bts, foh->obj_inst.trx_nr)))
-			return;
-		osmo_fsm_inst_dispatch(trx->bb_transc.mo.fi, NM_EV_OPSTART_ACK, NULL);
-		break;
-	case NM_OC_CHANNEL:
-		nm_rx_opstart_ack_chan(oml_msg);
-		break;
-	case NM_OC_GPRS_NSE:
-		osmo_fsm_inst_dispatch(bts->site_mgr->gprs.nse.mo.fi, NM_EV_OPSTART_ACK, NULL);
-		break;
-	case NM_OC_GPRS_CELL:
-		osmo_fsm_inst_dispatch(bts->gprs.cell.mo.fi, NM_EV_OPSTART_ACK, NULL);
-		break;
-	case NM_OC_GPRS_NSVC:
-		if (!(nsvc = gsm_bts_sm_nsvc_num(bts->site_mgr, foh->obj_inst.trx_nr)))
-			return;
-		osmo_fsm_inst_dispatch(nsvc->mo.fi, NM_EV_OPSTART_ACK, NULL);
-		break;
-	default:
-		break;
-	}
+	mo = gsm_objclass2mo(bts, foh->obj_class, &foh->obj_inst);
+	if (mo == NULL)
+		LOGPFOH(DNM, LOGL_ERROR, foh, "Rx OPSTART ACK for non-existent MO\n");
+	else
+		osmo_fsm_inst_dispatch(mo->fi, NM_EV_OPSTART_ACK, NULL);
 }
 
 static void nm_rx_opstart_nack(struct msgb *oml_msg)
 {
-	struct abis_om_fom_hdr *foh = msgb_l3(oml_msg);
+	const struct abis_om_fom_hdr *foh = msgb_l3(oml_msg);
 	struct e1inp_sign_link *sign_link = oml_msg->dst;
 	struct gsm_bts *bts = sign_link->trx->bts;
-	struct gsm_bts_trx *trx;
-	struct gsm_bts_trx_ts *ts;
-	struct gsm_gprs_nsvc *nsvc;
+	struct gsm_abis_mo *mo;
 
-	switch (foh->obj_class) {
-	case NM_OC_SITE_MANAGER:
-		osmo_fsm_inst_dispatch(bts->site_mgr->mo.fi, NM_EV_OPSTART_NACK, NULL);
-		break;
-	case NM_OC_BTS:
-		osmo_fsm_inst_dispatch(bts->mo.fi, NM_EV_OPSTART_ACK, NULL);
-		break;
-	case NM_OC_RADIO_CARRIER:
-		if (!(trx = gsm_bts_trx_num(bts, foh->obj_inst.trx_nr)))
-			return;
-		osmo_fsm_inst_dispatch(trx->mo.fi, NM_EV_OPSTART_NACK, NULL);
-		break;
-	case NM_OC_BASEB_TRANSC:
-		if (!(trx = gsm_bts_trx_num(bts, foh->obj_inst.trx_nr)))
-			return;
-		osmo_fsm_inst_dispatch(trx->bb_transc.mo.fi, NM_EV_OPSTART_NACK, NULL);
-		break;
-	case NM_OC_CHANNEL:
-		if (!(ts = abis_nm_get_ts(oml_msg)))
-			return;
-		osmo_fsm_inst_dispatch(ts->mo.fi, NM_EV_OPSTART_NACK, NULL);
-		break;
-	case NM_OC_GPRS_NSE:
-		osmo_fsm_inst_dispatch(bts->site_mgr->gprs.nse.mo.fi, NM_EV_OPSTART_NACK, NULL);
-		break;
-	case NM_OC_GPRS_CELL:
-		osmo_fsm_inst_dispatch(bts->gprs.cell.mo.fi, NM_EV_OPSTART_NACK, NULL);
-		break;
-	case NM_OC_GPRS_NSVC:
-		if (!(nsvc = gsm_bts_sm_nsvc_num(bts->site_mgr, foh->obj_inst.trx_nr)))
-			return;
-		osmo_fsm_inst_dispatch(nsvc->mo.fi, NM_EV_OPSTART_NACK, NULL);
-		break;
-	default:
-		break;
-	}
+	mo = gsm_objclass2mo(bts, foh->obj_class, &foh->obj_inst);
+	if (mo == NULL)
+		LOGPFOH(DNM, LOGL_ERROR, foh, "Rx OPSTART NACK for non-existent MO\n");
+	else
+		osmo_fsm_inst_dispatch(mo->fi, NM_EV_OPSTART_NACK, NULL);
 }
 
 static void nm_rx_get_attr_rep(struct msgb *oml_msg)
@@ -352,20 +246,13 @@ static void nm_rx_get_attr_rep(struct msgb *oml_msg)
 	struct abis_om_fom_hdr *foh = msgb_l3(oml_msg);
 	struct e1inp_sign_link *sign_link = oml_msg->dst;
 	struct gsm_bts *bts = sign_link->trx->bts;
-	struct gsm_bts_trx *trx;
+	struct gsm_abis_mo *mo;
 
-	switch (foh->obj_class) {
-	case NM_OC_BTS:
-		osmo_fsm_inst_dispatch(bts->mo.fi, NM_EV_GET_ATTR_REP, NULL);
-		break;
-	case NM_OC_BASEB_TRANSC:
-		if (!(trx = gsm_bts_trx_num(bts, foh->obj_inst.trx_nr)))
-			return;
-		osmo_fsm_inst_dispatch(trx->bb_transc.mo.fi, NM_EV_GET_ATTR_REP, NULL);
-		break;
-	default:
-		LOGPFOH(DNM, LOGL_ERROR, foh, "Get Attributes Response received on incorrect object class %d!\n", foh->obj_class);
-	}
+	mo = gsm_objclass2mo(bts, foh->obj_class, &foh->obj_inst);
+	if (mo == NULL)
+		LOGPFOH(DNM, LOGL_ERROR, foh, "Rx Get Attribute Report for non-existent MO\n");
+	else
+		osmo_fsm_inst_dispatch(mo->fi, NM_EV_GET_ATTR_REP, NULL);
 }
 
 static void nm_rx_set_bts_attr_ack(struct msgb *oml_msg)
