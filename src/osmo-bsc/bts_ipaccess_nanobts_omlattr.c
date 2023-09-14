@@ -51,7 +51,7 @@ static inline uint32_t ipacc_parse_supp_flags(const struct abis_om_fom_hdr *foh,
 		u32 |= e->val[i] << (i * 8);
 	for (const struct value_string *vs = flags; vs->value && vs->str; vs++) {
 		if (u32 & vs->value)
-			LOGPFOH(DNM, LOGL_DEBUG, foh, "%s '%s' is supported\n", text, vs->str);
+			LOGPFOH(DNM, LOGL_INFO, foh, "%s '%s' is supported\n", text, vs->str);
 	}
 
 	return u32;
