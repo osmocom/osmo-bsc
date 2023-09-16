@@ -235,6 +235,9 @@ static void nm_rx_opstart_ack(struct msgb *oml_msg)
 	struct gsm_bts *bts = sign_link->trx->bts;
 	struct gsm_abis_mo *mo;
 
+	if (!is_ipa_abisip_bts(bts))
+		return;
+
 	mo = gsm_objclass2mo(bts, foh->obj_class, &foh->obj_inst);
 	if (mo == NULL)
 		LOGPFOH(DNM, LOGL_ERROR, foh, "Rx OPSTART ACK for non-existent MO\n");
@@ -248,6 +251,9 @@ static void nm_rx_opstart_nack(struct msgb *oml_msg)
 	struct e1inp_sign_link *sign_link = oml_msg->dst;
 	struct gsm_bts *bts = sign_link->trx->bts;
 	struct gsm_abis_mo *mo;
+
+	if (!is_ipa_abisip_bts(bts))
+		return;
 
 	mo = gsm_objclass2mo(bts, foh->obj_class, &foh->obj_inst);
 	if (mo == NULL)
@@ -263,6 +269,9 @@ static void nm_rx_get_attr_rep(struct msgb *oml_msg)
 	struct gsm_bts *bts = sign_link->trx->bts;
 	struct gsm_abis_mo *mo;
 
+	if (!is_ipa_abisip_bts(bts))
+		return;
+
 	mo = gsm_objclass2mo(bts, foh->obj_class, &foh->obj_inst);
 	if (mo == NULL)
 		LOGPFOH(DNM, LOGL_ERROR, foh, "Rx Get Attribute Report for non-existent MO\n");
@@ -275,6 +284,9 @@ static void nm_rx_set_bts_attr_ack(struct msgb *oml_msg)
 	struct abis_om_fom_hdr *foh = msgb_l3(oml_msg);
 	struct e1inp_sign_link *sign_link = oml_msg->dst;
 	struct gsm_bts *bts = sign_link->trx->bts;
+
+	if (!is_ipa_abisip_bts(bts))
+		return;
 
 	if (foh->obj_class != NM_OC_BTS) {
 		LOG_BTS(bts, DNM, LOGL_ERROR, "Set BTS Attr Ack received on non BTS object!\n");
@@ -289,8 +301,12 @@ static void nm_rx_set_radio_attr_ack(struct msgb *oml_msg)
 	struct abis_om_fom_hdr *foh = msgb_l3(oml_msg);
 	struct e1inp_sign_link *sign_link = oml_msg->dst;
 	struct gsm_bts *bts = sign_link->trx->bts;
-	struct gsm_bts_trx *trx = gsm_bts_trx_num(bts, foh->obj_inst.trx_nr);
+	struct gsm_bts_trx *trx;
 
+	if (!is_ipa_abisip_bts(bts))
+		return;
+
+	trx = gsm_bts_trx_num(bts, foh->obj_inst.trx_nr);
 	if (!trx || foh->obj_class != NM_OC_RADIO_CARRIER) {
 		LOGPFOH(DNM, LOGL_ERROR, foh, "Set Radio Carrier Attr Ack received on non Radio Carrier object!\n");
 		return;
@@ -301,8 +317,14 @@ static void nm_rx_set_radio_attr_ack(struct msgb *oml_msg)
 static void nm_rx_set_chan_attr_ack(struct msgb *oml_msg)
 {
 	struct abis_om_fom_hdr *foh = msgb_l3(oml_msg);
-	struct gsm_bts_trx_ts *ts = abis_nm_get_ts(oml_msg);
+	struct e1inp_sign_link *sign_link = oml_msg->dst;
+	struct gsm_bts *bts = sign_link->trx->bts;
+	struct gsm_bts_trx_ts *ts;
 
+	if (!is_ipa_abisip_bts(bts))
+		return;
+
+	ts = abis_nm_get_ts(oml_msg);
 	if (!ts || foh->obj_class != NM_OC_CHANNEL) {
 		LOGPFOH(DNM, LOGL_ERROR, foh, "Set Channel Attr Ack received on non Radio Channel object!\n");
 		return;
