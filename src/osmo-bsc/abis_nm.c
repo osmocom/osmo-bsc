@@ -1693,7 +1693,7 @@ int abis_nm_software_load(struct gsm_bts *bts, int trx_nr, const char *fname,
 		break;
 	case GSM_BTS_TYPE_NANOBTS:
 		sw->obj_class = NM_OC_BASEB_TRANSC;
-		sw->obj_instance[0] = sw->bts->nr;
+		sw->obj_instance[0] = sw->bts->bts_nr;
 		sw->obj_instance[1] = sw->trx_nr;
 		sw->obj_instance[2] = 0xff;
 		break;
@@ -3102,7 +3102,7 @@ int abis_nm_ipaccess_restart(struct gsm_bts_trx *trx)
 
 	oh = (struct abis_om_hdr *) msgb_put(msg, ABIS_OM_FOM_HDR_SIZE);
 	fill_om_fom_hdr(oh, 0, NM_MT_IPACC_RESTART, NM_OC_BASEB_TRANSC,
-			trx->bts->nr, trx->nr, 0xff);
+			trx->bts->bts_nr, trx->nr, 0xff);
 
 	return abis_nm_sendmsg_direct(trx->bts, msg);
 }
