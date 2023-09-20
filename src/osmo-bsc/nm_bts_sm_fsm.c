@@ -120,6 +120,7 @@ static void st_op_disabled_dependency(struct osmo_fsm_inst *fi, uint32_t event, 
 	const struct gsm_nm_state *new_state;
 
 	switch (event) {
+	case NM_EV_SW_ACT_REP:
 	case NM_EV_SETUP_RAMP_READY:
 		break;
 	case NM_EV_STATE_CHG_REP:
@@ -160,6 +161,9 @@ static void st_op_disabled_offline(struct osmo_fsm_inst *fi, uint32_t event, voi
 	struct gsm_bts_sm *site_mgr = (struct gsm_bts_sm *)fi->priv;
 
 	switch (event) {
+	case NM_EV_SW_ACT_REP:
+		configure_loop(site_mgr, &site_mgr->mo.nm_state, true);
+		break;
 	case NM_EV_STATE_CHG_REP:
 		nsd = (struct nm_statechg_signal_data *)data;
 		new_state = &nsd->new_state;
@@ -255,6 +259,7 @@ static struct osmo_fsm_state nm_bts_sm_fsm_states[] = {
 	},
 	[NM_BTS_SM_ST_OP_DISABLED_DEPENDENCY] = {
 		.in_event_mask =
+			X(NM_EV_SW_ACT_REP) |
 			X(NM_EV_STATE_CHG_REP) |
 			X(NM_EV_SETUP_RAMP_READY),
 		.out_state_mask =
@@ -266,6 +271,7 @@ static struct osmo_fsm_state nm_bts_sm_fsm_states[] = {
 	},
 	[NM_BTS_SM_ST_OP_DISABLED_OFFLINE] = {
 		.in_event_mask =
+			X(NM_EV_SW_ACT_REP) |
 			X(NM_EV_STATE_CHG_REP) |
 			X(NM_EV_SETUP_RAMP_READY),
 		.out_state_mask =

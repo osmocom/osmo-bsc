@@ -136,6 +136,9 @@ static void st_op_disabled_dependency(struct osmo_fsm_inst *fi, uint32_t event, 
 	const struct gsm_nm_state *new_state;
 
 	switch (event) {
+	case NM_EV_SW_ACT_REP:
+		configure_loop(ts, &ts->mo.nm_state, false);
+		break;
 	case NM_EV_SET_ATTR_ACK:
 		ts->mo.set_attr_ack_received = true;
 		ts->mo.set_attr_sent = false;
@@ -186,6 +189,9 @@ static void st_op_disabled_offline(struct osmo_fsm_inst *fi, uint32_t event, voi
 	const struct gsm_nm_state *new_state;
 
 	switch (event) {
+	case NM_EV_SW_ACT_REP:
+		configure_loop(ts, &ts->mo.nm_state, true);
+		break;
 	case NM_EV_SET_ATTR_ACK:
 		ts->mo.set_attr_ack_received = true;
 		ts->mo.set_attr_sent = false;
@@ -312,6 +318,7 @@ static struct osmo_fsm_state nm_chan_fsm_states[] = {
 	},
 	[NM_CHAN_ST_OP_DISABLED_DEPENDENCY] = {
 		.in_event_mask =
+			X(NM_EV_SW_ACT_REP) |
 			X(NM_EV_STATE_CHG_REP) |
 			X(NM_EV_SET_ATTR_ACK) |
 			X(NM_EV_SETUP_RAMP_READY),
@@ -325,6 +332,7 @@ static struct osmo_fsm_state nm_chan_fsm_states[] = {
 	},
 	[NM_CHAN_ST_OP_DISABLED_OFFLINE] = {
 		.in_event_mask =
+			X(NM_EV_SW_ACT_REP) |
 			X(NM_EV_STATE_CHG_REP) |
 			X(NM_EV_SET_ATTR_ACK) |
 			X(NM_EV_SETUP_RAMP_READY),
