@@ -157,6 +157,20 @@ static struct osmo_tdef gsm_network_T_defs[] = {
 	  .unit = OSMO_TDEF_CUSTOM},
 	{ .T = 3105, .default_val = 8, .desc = "N3105: Maximum allocated data blocks without RLC/MAC control reply from MS",
 	  .unit = OSMO_TDEF_CUSTOM },
+	{ .T = GSM_BTS_TDEF_ID_TNS_BLOCK, .default_val = 3, .max_val = UINT8_MAX,
+	  .desc = "Tns-block: Guards the blocking and unblocking procedures" },
+	{ .T = GSM_BTS_TDEF_ID_TNS_BLOCK_RETRIES, .default_val = 3, .max_val = UINT8_MAX,
+	  .desc = "NS-BLOCK-RETRIES: Blocking procedure retries", .unit = OSMO_TDEF_CUSTOM },
+	{ .T = GSM_BTS_TDEF_ID_TNS_RESET, .default_val = 3, .max_val = UINT8_MAX,
+	  .desc = "Tns-reset: Guards the reset procedure" },
+	{ .T = GSM_BTS_TDEF_ID_TNS_RESET_RETRIES, .default_val = 3, .max_val = UINT8_MAX,
+	  .desc = "Reset procedure retries", .unit = OSMO_TDEF_CUSTOM },
+	{ .T = GSM_BTS_TDEF_ID_TNS_TEST, .default_val = 30, .max_val = UINT8_MAX,
+	  .desc = "Tns-test: Periodicity of the NS-VC test procedure" },
+	{ .T = GSM_BTS_TDEF_ID_TNS_ALIVE, .default_val = 3, .max_val = UINT8_MAX,
+	  .desc = "Tns-alive: Guards the NS-VC test procedure" },
+	{ .T = GSM_BTS_TDEF_ID_TNS_ALIVE_RETRIES, .default_val = 10, .max_val = UINT8_MAX,
+	  .desc = "NS-ALIVE-RETRIES: Retries for the the NS-VC test procedure", .unit = OSMO_TDEF_CUSTOM },
 	{}
 };
 
@@ -223,9 +237,16 @@ int main(int argc, char **argv)
 
 	/* Parameters needed to test nanobts_gen_set_nse_attr() */
 	bts->site_mgr->gprs.nse.nsei = 101;
-	uint8_t attr_nse_expected[] =
-	    { 0x9d, 0x00, 0x02, 0x00, 0x65, 0xa0, 0x00, 0x07, 0x03, 0x03, 0x03,
-		0x03, 0x1e, 0x03, 0x0a, 0xa1, 0x00, 0x0b, 0x03, 0x03, 0x03,
+	uint8_t attr_nse_expected[] = {
+		/*			      NM_ATT_IPACC_NS_CFG */
+		0x9d, 0x00, 0x02, 0x00, 0x65, 0xa0,
+		/* LEN1, LEN2 */
+		   0x00, 0x07,
+		/* TNS BLK, TNS BLK RE, TNS_RST, TNS_RST_RE, TNS_TEST */
+		   0x03,    0x03,	0x03,	 0x03,	     0x1e,
+		/* TNS ALIVE, TNS ALIVE_RE */
+		   0x03,      0x0a,
+		0xa1, 0x00, 0x0b, 0x03, 0x03, 0x03,
 		0x03, 0x03, 0x0a, 0x03,
 		0x0a, 0x03, 0x0a, 0x03
 	};

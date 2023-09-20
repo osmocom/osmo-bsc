@@ -32,7 +32,6 @@ struct gsm_bts;
 struct gsm_gprs_nse {
 	struct gsm_abis_mo mo;
 	uint16_t nsei;
-	uint8_t timer[7];
 };
 
 struct gsm_gprs_nsvc {

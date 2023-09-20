@@ -100,6 +100,9 @@ enum bsc_vty_cmd_attr {
 
 /* Defines for per-BTS string commands */
 #define BTS_VTY_RLC_STR "rlc"
+#define BTS_VTY_RLC_DESC_STR "RLC (Radio Link Control)"
+#define BTS_VTY_NS_STR "ns"
+#define BTS_VTY_NS_DESC_STR "ns"
 /* Add additional group strings for vty command generation here */
 
 #define BTS_VTY_SHOW_TIMER_STR BTS_SHOW_TIMER_STR_NONEWLINE " & for this BTS\n"

@@ -184,6 +184,7 @@ struct msgb *nanobts_gen_set_nse_attr(struct gsm_bts_sm *bts_sm)
 	struct abis_nm_ipacc_att_ns_cfg ns_cfg;
 	struct abis_nm_ipacc_att_bssgp_cfg bssgp_cfg;
 	struct gsm_bts *bts = gsm_bts_sm_get_bts(bts_sm);
+	const struct osmo_tdef_group *nstg = &bts->timer_groups[OSMO_BSC_BTS_TDEF_GROUPS_NS];
 
 	msgb = msgb_alloc(1024, __func__);
 	if (!msgb)
@@ -194,15 +195,14 @@ struct msgb *nanobts_gen_set_nse_attr(struct gsm_bts_sm *bts_sm)
 	buf[1] = bts_sm->gprs.nse.nsei & 0xff;
 	msgb_tl16v_put(msgb, NM_ATT_IPACC_NSEI, 2, buf);
 
-	osmo_static_assert(ARRAY_SIZE(bts_sm->gprs.nse.timer) == 7, nse_timer_array_wrong_size);
 	ns_cfg = (struct abis_nm_ipacc_att_ns_cfg){
-		.un_blocking_timer =	bts_sm->gprs.nse.timer[0],
-		.un_blocking_retries =	bts_sm->gprs.nse.timer[1],
-		.reset_timer =		bts_sm->gprs.nse.timer[2],
-		.reset_retries =	bts_sm->gprs.nse.timer[3],
-		.test_timer =		bts_sm->gprs.nse.timer[4],
-		.alive_timer =		bts_sm->gprs.nse.timer[5],
-		.alive_retries =	bts_sm->gprs.nse.timer[6],
+		.un_blocking_timer =	osmo_tdef_get(nstg->tdefs, GSM_BTS_TDEF_ID_TNS_BLOCK, OSMO_TDEF_S, -1),
+		.un_blocking_retries =	osmo_tdef_get(nstg->tdefs, GSM_BTS_TDEF_ID_TNS_BLOCK_RETRIES, OSMO_TDEF_CUSTOM, -1),
+		.reset_timer =		osmo_tdef_get(nstg->tdefs, GSM_BTS_TDEF_ID_TNS_RESET, OSMO_TDEF_S, -1),
+		.reset_retries =	osmo_tdef_get(nstg->tdefs, GSM_BTS_TDEF_ID_TNS_RESET_RETRIES, OSMO_TDEF_CUSTOM, -1),
+		.test_timer =		osmo_tdef_get(nstg->tdefs, GSM_BTS_TDEF_ID_TNS_TEST, OSMO_TDEF_S, -1),
+		.alive_timer =		osmo_tdef_get(nstg->tdefs, GSM_BTS_TDEF_ID_TNS_ALIVE, OSMO_TDEF_S, -1),
+		.alive_retries =	osmo_tdef_get(nstg->tdefs, GSM_BTS_TDEF_ID_TNS_ALIVE_RETRIES, OSMO_TDEF_CUSTOM, -1),
 	};
 	msgb_tl16v_put(msgb, NM_ATT_IPACC_NS_CFG, sizeof(ns_cfg), (const uint8_t *)&ns_cfg);
 

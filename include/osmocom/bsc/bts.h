@@ -320,9 +320,18 @@ struct gsm_bts_model {
 	bool features_get_reported;
 };
 
+/* RLC */
 #define GSM_BTS_TDEF_ID_COUNTDOWN_VALUE	(-1)
 #define GSM_BTS_TDEF_ID_UL_TBF_EXT	(-2)
 #define GSM_BTS_TDEF_ID_DL_TBF_DELAYED	(-3)
+/* NS */
+#define GSM_BTS_TDEF_ID_TNS_BLOCK		(-21)
+#define GSM_BTS_TDEF_ID_TNS_BLOCK_RETRIES	(-22)
+#define GSM_BTS_TDEF_ID_TNS_RESET		(-23)
+#define GSM_BTS_TDEF_ID_TNS_RESET_RETRIES	(-24)
+#define GSM_BTS_TDEF_ID_TNS_TEST		(-25)
+#define GSM_BTS_TDEF_ID_TNS_ALIVE		(-26)
+#define GSM_BTS_TDEF_ID_TNS_ALIVE_RETRIES	(-27)
 
 /* 3GPP TS 04.60 V8.27.0 (2005-09) */
 #define GSM_RLCMACN3101_STRICT_LOWER_BOUND 8UL
@@ -337,10 +346,10 @@ struct gsm_gprs_cell {
 /* Used for indexing tdef group arrays */
 enum gsm_gprs_bts_tdef_groups {
 	OSMO_BSC_BTS_TDEF_GROUPS_RLC = 0,
-	/* TODO: Add additional groups here (BSSGP, NS) */
+	OSMO_BSC_BTS_TDEF_GROUPS_NS,
+	/* TODO: Add additional group here (BSSGP) */
 	_NUM_OSMO_BSC_BTS_TDEF_GROUPS
 };
-extern const size_t bts_gprs_rlc_timer_templates_bytes;
 extern struct osmo_tdef_group bts_gprs_timer_template_groups[_NUM_OSMO_BSC_BTS_TDEF_GROUPS + 1];
 
 /* One BTS */

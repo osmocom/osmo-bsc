@@ -34,13 +34,6 @@ OsmoBSC(config-net-bts)# show running-config
   gprs cell timer capability-update-timer 10
   gprs cell timer capability-update-retries 3
   gprs nsei 0
-  gprs ns timer tns-block 3
-  gprs ns timer tns-block-retries 3
-  gprs ns timer tns-reset 3
-  gprs ns timer tns-reset-retries 3
-  gprs ns timer tns-test 30
-  gprs ns timer tns-alive 3
-  gprs ns timer tns-alive-retries 10
   gprs nsvc 0 nsvci 0
   gprs nsvc 0 local udp port 0
   gprs nsvc 1 nsvci 0

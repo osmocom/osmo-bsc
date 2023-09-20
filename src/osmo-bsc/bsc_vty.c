@@ -320,16 +320,16 @@ DEFUN(show_bts_fail_rep, show_bts_fail_rep_cmd, "show bts <0-255> fail-rep [rese
 	return CMD_SUCCESS;
 }
 
-/* TODO: Add other options for group argument bssgp, ns '[(rlc|bssgp|ns)]' when adding additional timer groups.
- *	 (Assume that with two args, the first is always the group. The second is always the timer) */
+/* TODO: Add other option for group argument bssgp -> '[(rlc|bssgp|ns)]' when adding additional timer groups. */
 DEFUN(show_bts_rlc_timer, show_bts_rlc_timer_cmd,
-	"show bts <0-255> gprs timer [" BTS_VTY_RLC_STR "] " OSMO_TDEF_VTY_ARG_T_OPTIONAL,
+	"show bts <0-255> gprs timer [(" BTS_VTY_RLC_STR "|" BTS_VTY_NS_STR ")] " OSMO_TDEF_VTY_ARG_T_OPTIONAL,
 	SHOW_STR
 	BTS_STR
 	BTS_NUM_STR
 	"GPRS Packet Network\n"
 	BTS_SHOW_TIMER_STR
-	"RLC (Radio Link Control)\n"
+	BTS_VTY_RLC_DESC_STR "\n"
+	BTS_VTY_NS_DESC_STR "\n"
 	OSMO_TDEF_VTY_DOC_T)
 {
 	struct gsm_network *net = gsmnet_from_vty(vty);

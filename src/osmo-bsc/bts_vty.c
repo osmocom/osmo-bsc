@@ -59,6 +59,8 @@
 
 #define X(x) (1 << x)
 
+extern struct osmo_tdef gsm_network_T_defs[];
+
 /* FIXME: this should go to some common file */
 static const struct value_string gprs_ns_timer_strs[] = {
 	{ 0, "tns-block" },
@@ -1655,8 +1657,24 @@ DEFUN_ATTR(cfg_bts_pag_free, cfg_bts_pag_free_cmd,
 	return CMD_SUCCESS;
 }
 
-DEFUN_USRATTR(cfg_bts_gprs_ns_timer,
+#define TDEF_DATA_ID_IDX 0
+#define TDEF_DATA_UNIT_IDX 1
+/* Indices here correspond to those in gprs_ns_timer_str. Each row contains information for setting the respective tdef */
+static const int gprs_ns_timer_tdef_data[][2] = {
+	[0] = { GSM_BTS_TDEF_ID_TNS_BLOCK, OSMO_TDEF_S },
+	[1] = { GSM_BTS_TDEF_ID_TNS_BLOCK_RETRIES, OSMO_TDEF_CUSTOM },
+	[2] = { GSM_BTS_TDEF_ID_TNS_RESET, OSMO_TDEF_S },
+	[3] = { GSM_BTS_TDEF_ID_TNS_RESET_RETRIES, OSMO_TDEF_CUSTOM },
+	[4] = { GSM_BTS_TDEF_ID_TNS_TEST, OSMO_TDEF_S},
+	[5] = { GSM_BTS_TDEF_ID_TNS_ALIVE, OSMO_TDEF_S},
+	[6] = { GSM_BTS_TDEF_ID_TNS_ALIVE_RETRIES, OSMO_TDEF_CUSTOM },
+};
+
+static struct cmd_element cfg_gprs_timer_cmd;
+
+DEFUN_ATTR_USRATTR(cfg_bts_gprs_ns_timer,
 	      cfg_bts_gprs_ns_timer_cmd,
+	      CMD_ATTR_DEPRECATED,
 	      X(BSC_VTY_ATTR_RESTART_ABIS_OML_LINK),
 	      "gprs ns timer " NS_TIMERS " <0-255>",
 	      GPRS_TEXT "Network Service\n"
@@ -1664,16 +1682,20 @@ DEFUN_USRATTR(cfg_bts_gprs_ns_timer,
 	      NS_TIMERS_HELP "Timer Value\n")
 {
 	struct gsm_bts *bts = vty->index;
-	int idx = get_string_value(gprs_ns_timer_strs, argv[0]);
-	int val = atoi(argv[1]);
+	int idx = get_string_value(gprs_ns_timer_strs, argv[0]), val = atoi(argv[1]);
+	const int *tdef_params;
+	const struct osmo_tdef_group *bts_ns = &bts->timer_groups[OSMO_BSC_BTS_TDEF_GROUPS_NS];
+
+	vty_out(vty, "This command is deprecated; use '%s' instead%s", cfg_gprs_timer_cmd.string, VTY_NEWLINE);
 
 	GPRS_CHECK_ENABLED(bts);
 
-	if (idx < 0 || idx >= ARRAY_SIZE(bts->site_mgr->gprs.nse.timer))
+	if (idx < 0 || idx >= ARRAY_SIZE(gprs_ns_timer_tdef_data))
 		return CMD_WARNING;
 
-	bts->site_mgr->gprs.nse.timer[idx] = val;
-
+	tdef_params = gprs_ns_timer_tdef_data[idx];
+	if (osmo_tdef_set(bts_ns->tdefs, tdef_params[TDEF_DATA_ID_IDX], val, tdef_params[TDEF_DATA_UNIT_IDX]) < 0)
+		return CMD_WARNING;
 	return CMD_SUCCESS;
 }
 
@@ -1893,7 +1915,7 @@ DEFUN_USRATTR(cfg_bts_gprs_egprs_pkt_chan_req,
 /* Adapted from libosmocore.git:src/vty/tdef_vty.c. cmdstr/helpstr args set by bts_vty_tdef_cmds_init()
  * The group argument is optional here (if omitted, all timer groups will be searched) */
 DEFUN(show_gprs_timer, show_gprs_timer_cmd, NULL, NULL)
-      /* show gprs timer [(rlc)] [TNNNN] */
+      /* show gprs timer [(rlc|ns)] [TNNNN] */
 {
 	const char *group_arg = argc >= 1 ? argv[0] : NULL;
 	const char *T_arg = argc >= 2 ? argv[1] : NULL;
@@ -1912,7 +1934,7 @@ DEFUN(show_gprs_timer, show_gprs_timer_cmd, NULL, NULL)
 /* Adapted from libosmocore.git:src/vty/tdef_vty.c. cmdstr/helpstr args set by bts_vty_tdef_cmds_init().
  * The group argument is optional here (if omitted, all timer groups will be searched) */
 DEFUN(cfg_gprs_timer, cfg_gprs_timer_cmd, NULL, NULL)
-      /* gprs timer [rlc] [TNNNN] [(<0-2147483647>|default)] */
+      /* gprs timer [(rlc|ns)] [TNNNN] [(<0-2147483647>|default)] */
 {
 	const char **timer_args;
 	struct osmo_tdef_group *g = NULL;
@@ -4342,10 +4364,6 @@ static void config_write_bts_gprs(struct vty *vty, struct gsm_bts *bts)
 			bts->gprs.cell.timer[i], VTY_NEWLINE);
 	vty_out(vty, "  gprs nsei %u%s", bts_sm->gprs.nse.nsei,
 		VTY_NEWLINE);
-	for (i = 0; i < ARRAY_SIZE(bts_sm->gprs.nse.timer); i++)
-		vty_out(vty, "  gprs ns timer %s %u%s",
-			get_value_string(gprs_ns_timer_strs, i),
-			bts_sm->gprs.nse.timer[i], VTY_NEWLINE);
 	for (i = 0; i < ARRAY_SIZE(bts_sm->gprs.nsvc); i++) {
 		const struct gsm_gprs_nsvc *nsvc = &bts_sm->gprs.nsvc[i];
 		struct osmo_sockaddr_str remote;

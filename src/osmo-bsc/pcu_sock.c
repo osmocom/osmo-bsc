@@ -181,7 +181,7 @@ static int pcu_tx_info_ind(struct gsm_bts *bts)
 	struct gsm_pcu_if *pcu_prim;
 	struct gsm_pcu_if_info_ind *info_ind;
 	struct gprs_rlc_cfg *rlcc;
-	const struct osmo_tdef_group *rlctg = &bts->timer_groups[OSMO_BSC_BTS_TDEF_GROUPS_RLC];
+	const struct osmo_tdef_group *g;
 	struct gsm_bts_sm *bts_sm;
 	struct gsm_gprs_nsvc *nsvc;
 	struct gsm_bts_trx *trx;
@@ -211,29 +211,35 @@ static int pcu_tx_info_ind(struct gsm_bts *bts)
 	info_ind->rac = bts->gprs.rac;
 
 	/* NSE */
+	g = &bts->timer_groups[OSMO_BSC_BTS_TDEF_GROUPS_NS];
 	info_ind->nsei = bts_sm->gprs.nse.nsei;
-	memcpy(info_ind->nse_timer, bts_sm->gprs.nse.timer, 7);
+	info_ind->nse_timer[0] = osmo_tdef_get(g->tdefs, GSM_BTS_TDEF_ID_TNS_BLOCK, OSMO_TDEF_S, -1);
+	info_ind->nse_timer[1] = osmo_tdef_get(g->tdefs, GSM_BTS_TDEF_ID_TNS_BLOCK_RETRIES, OSMO_TDEF_CUSTOM, -1);
+	info_ind->nse_timer[2] = osmo_tdef_get(g->tdefs, GSM_BTS_TDEF_ID_TNS_RESET, OSMO_TDEF_S, -1);
+	info_ind->nse_timer[3] = osmo_tdef_get(g->tdefs, GSM_BTS_TDEF_ID_TNS_RESET_RETRIES, OSMO_TDEF_CUSTOM, -1);
+	info_ind->nse_timer[4] = osmo_tdef_get(g->tdefs, GSM_BTS_TDEF_ID_TNS_TEST, OSMO_TDEF_S, -1);
+	/* Communicating TNS Alive/having it con->tdefs,igurable for backwards compatibility */
+	info_ind->nse_timer[5] = osmo_tdef_get(g->tdefs, GSM_BTS_TDEF_ID_TNS_ALIVE, OSMO_TDEF_S, -1);
+	info_ind->nse_timer[6] = osmo_tdef_get(g->tdefs, GSM_BTS_TDEF_ID_TNS_ALIVE_RETRIES, OSMO_TDEF_CUSTOM, -1);
 	memcpy(info_ind->cell_timer, bts->gprs.cell.timer, 11);
 
 	/* cell attributes */
+	g = &bts->timer_groups[OSMO_BSC_BTS_TDEF_GROUPS_RLC];
 	info_ind->bsic = bts->bsic;
 	info_ind->cell_id = bts->cell_identity;
 	info_ind->repeat_time = rlcc->paging.repeat_time;
 	info_ind->repeat_count = rlcc->paging.repeat_count;
 	info_ind->bvci = bts->gprs.cell.bvci;
-	info_ind->t3142 = osmo_tdef_get(rlctg->tdefs, 3142, OSMO_TDEF_S, -1);
-	info_ind->t3169 = osmo_tdef_get(rlctg->tdefs, 3169, OSMO_TDEF_S, -1);
-	info_ind->t3191 = osmo_tdef_get(rlctg->tdefs, 3191, OSMO_TDEF_S, -1);
-	info_ind->t3193_10ms = osmo_tdef_get(rlctg->tdefs, 3193, OSMO_TDEF_MS, -1)/10;
-	info_ind->t3195 = osmo_tdef_get(rlctg->tdefs, 3195, OSMO_TDEF_S, -1);
-	info_ind->n3101 =
-		osmo_tdef_get(rlctg->tdefs, 3101, OSMO_TDEF_CUSTOM, -1);
-	info_ind->n3103 =
-		osmo_tdef_get(rlctg->tdefs, 3103, OSMO_TDEF_CUSTOM, -1);
-	info_ind->n3105 =
-		osmo_tdef_get(rlctg->tdefs, 3105, OSMO_TDEF_CUSTOM, -1);
-	info_ind->cv_countdown =
-		osmo_tdef_get(rlctg->tdefs, GSM_BTS_TDEF_ID_COUNTDOWN_VALUE, OSMO_TDEF_CUSTOM, -1);
+	info_ind->t3142 = osmo_tdef_get(g->tdefs, 3142, OSMO_TDEF_S, -1);
+	info_ind->t3169 = osmo_tdef_get(g->tdefs, 3169, OSMO_TDEF_S, -1);
+	info_ind->t3191 = osmo_tdef_get(g->tdefs, 3191, OSMO_TDEF_S, -1);
+	info_ind->t3193_10ms = osmo_tdef_get(g->tdefs, 3193, OSMO_TDEF_MS, -1)/10;
+	info_ind->t3195 = osmo_tdef_get(g->tdefs, 3195, OSMO_TDEF_S, -1);
+	info_ind->n3101 = osmo_tdef_get(g->tdefs, 3101, OSMO_TDEF_CUSTOM, -1);
+	info_ind->n3103 = osmo_tdef_get(g->tdefs, 3103, OSMO_TDEF_CUSTOM, -1);
+	info_ind->n3105 = osmo_tdef_get(g->tdefs, 3105, OSMO_TDEF_CUSTOM, -1);
+	info_ind->cv_countdown = osmo_tdef_get(g->tdefs, GSM_BTS_TDEF_ID_COUNTDOWN_VALUE,
+					       OSMO_TDEF_CUSTOM, -1);
 	if (rlcc->cs_mask & (1 << GPRS_CS1))
 		info_ind->flags |= PCU_IF_FLAG_CS1;
 	if (rlcc->cs_mask & (1 << GPRS_CS2))
@@ -264,10 +270,10 @@ static int pcu_tx_info_ind(struct gsm_bts *bts)
 	}
 	/* TODO: isn't dl_tbf_ext wrong?: * 10 and no ntohs */
 	info_ind->dl_tbf_ext =
-		osmo_tdef_get(rlctg->tdefs, GSM_BTS_TDEF_ID_DL_TBF_DELAYED, OSMO_TDEF_MS, -1);
+		osmo_tdef_get(g->tdefs, GSM_BTS_TDEF_ID_DL_TBF_DELAYED, OSMO_TDEF_MS, -1);
 	/* TODO: isn't ul_tbf_ext wrong?: * 10 and no ntohs */
 	info_ind->ul_tbf_ext =
-		osmo_tdef_get(rlctg->tdefs, GSM_BTS_TDEF_ID_UL_TBF_EXT, OSMO_TDEF_MS, -1);
+		osmo_tdef_get(g->tdefs, GSM_BTS_TDEF_ID_UL_TBF_EXT, OSMO_TDEF_MS, -1);
 	info_ind->initial_cs = rlcc->initial_cs;
 	info_ind->initial_mcs = rlcc->initial_mcs;
 

@@ -73,10 +73,31 @@ static struct osmo_tdef bts_gprs_rlc_timer_templates[] = {
 	{}
 };
 
+static struct osmo_tdef bts_gprs_ns_timer_templates[] = {
+	{ .T = GSM_BTS_TDEF_ID_TNS_BLOCK, .default_val = 3, .min_val = 0, .max_val = UINT8_MAX,
+	  .desc = "Tns-block: Guards the blocking and unblocking procedures" },
+	{ .T = GSM_BTS_TDEF_ID_TNS_BLOCK_RETRIES, .default_val = 3, .min_val = 0, .max_val = UINT8_MAX,
+	  .desc = "NS-BLOCK-RETRIES: Blocking procedure retries", .unit = OSMO_TDEF_CUSTOM },
+	{ .T = GSM_BTS_TDEF_ID_TNS_RESET, .default_val = 3, .min_val = 0, .max_val = UINT8_MAX,
+	  .desc = "Tns-reset: Guards the reset procedure" },
+	{ .T = GSM_BTS_TDEF_ID_TNS_RESET_RETRIES, .default_val = 3, .min_val = 0, .max_val = UINT8_MAX,
+	  .desc = "Reset procedure retries", .unit = OSMO_TDEF_CUSTOM },
+	{ .T = GSM_BTS_TDEF_ID_TNS_TEST, .default_val = 30, .min_val = 0, .max_val = UINT8_MAX,
+	  .desc = "Tns-test: Periodicity of the NS-VC test procedure" },
+	{ .T = GSM_BTS_TDEF_ID_TNS_ALIVE, .default_val = 3, .min_val = 0, .max_val = UINT8_MAX,
+	  .desc = "Tns-alive: Guards the NS-VC test procedure" },
+	{ .T = GSM_BTS_TDEF_ID_TNS_ALIVE_RETRIES, .default_val = 10, .min_val = 0, .max_val = UINT8_MAX,
+	  .desc = "NS-ALIVE-RETRIES: Retries for the the NS-VC test procedure", .unit = OSMO_TDEF_CUSTOM },
+	{}
+};
+
+
 /* This is only used by bts_vty.c to init the default values for the templates */
 struct osmo_tdef_group bts_gprs_timer_template_groups[_NUM_OSMO_BSC_BTS_TDEF_GROUPS + 1] = {
 	[OSMO_BSC_BTS_TDEF_GROUPS_RLC] = {
-		.name = BTS_VTY_RLC_STR, .tdefs = bts_gprs_rlc_timer_templates, .desc = "RLC (Radio Link Control)" },
+		.name = BTS_VTY_RLC_STR, .tdefs = bts_gprs_rlc_timer_templates, .desc = BTS_VTY_RLC_DESC_STR },
+	[OSMO_BSC_BTS_TDEF_GROUPS_NS] = {
+		.name = BTS_VTY_NS_STR, .tdefs = bts_gprs_ns_timer_templates, .desc = BTS_VTY_NS_DESC_STR },
 	/* Additional per-BTS timer groups here, set as above using 'enum gprs_bts_tdef_groups' */
 	{}
 };
@@ -90,6 +111,9 @@ void bts_gprs_timer_groups_init(struct gsm_bts *bts)
 	/* Init per-BTS RLC timers */
 	bts->timer_groups[OSMO_BSC_BTS_TDEF_GROUPS_RLC].tdefs = talloc_memdup(bts, bts_gprs_rlc_timer_templates, sizeof(bts_gprs_rlc_timer_templates));
 	OSMO_ASSERT(bts->timer_groups[OSMO_BSC_BTS_TDEF_GROUPS_RLC].tdefs);
+	/* Init per-BTS NS timers */
+	bts->timer_groups[OSMO_BSC_BTS_TDEF_GROUPS_NS].tdefs = talloc_memdup(bts, bts_gprs_ns_timer_templates, sizeof(bts_gprs_ns_timer_templates));
+	OSMO_ASSERT(bts->timer_groups[OSMO_BSC_BTS_TDEF_GROUPS_NS].tdefs);
 }
 
 /* Init default values for all per-BTS timer templates */
