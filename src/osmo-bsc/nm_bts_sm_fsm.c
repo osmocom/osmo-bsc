@@ -49,6 +49,7 @@ static void st_op_disabled_notinstalled_on_enter(struct osmo_fsm_inst *fi, uint3
 	struct gsm_bts *bts = gsm_bts_sm_get_bts(site_mgr);
 
 	site_mgr->peer_has_no_avstate_offline = (bts->type == GSM_BTS_TYPE_NANOBTS);
+	site_mgr->mo.sw_act_rep_received = false;
 	site_mgr->mo.opstart_sent = false;
 }
 
@@ -61,6 +62,8 @@ static void st_op_disabled_notinstalled(struct osmo_fsm_inst *fi, uint32_t event
 
 	switch (event) {
 	case NM_EV_SW_ACT_REP:
+		site_mgr->mo.sw_act_rep_received = true;
+		break;
 	case NM_EV_SETUP_RAMP_READY:
 		break;
 	case NM_EV_STATE_CHG_REP:
@@ -107,6 +110,10 @@ static void configure_loop(struct gsm_bts_sm *site_mgr, const struct gsm_nm_stat
 	if (bts_setup_ramp_wait(bts))
 		return;
 
+	/* nanoBTS only: delay until SW Activated Report is received */
+	if (is_nanobts(bts) && !site_mgr->mo.sw_act_rep_received)
+		return;
+
 	if (allow_opstart && !site_mgr->mo.opstart_sent) {
 		site_mgr->mo.opstart_sent = true;
 		abis_nm_opstart(bts, NM_OC_SITE_MANAGER, 0xff, 0xff, 0xff);
@@ -116,11 +123,14 @@ static void configure_loop(struct gsm_bts_sm *site_mgr, const struct gsm_nm_stat
 
 static void st_op_disabled_dependency(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
+	struct gsm_bts_sm *site_mgr = (struct gsm_bts_sm *)fi->priv;
 	struct nm_statechg_signal_data *nsd;
 	const struct gsm_nm_state *new_state;
 
 	switch (event) {
 	case NM_EV_SW_ACT_REP:
+		site_mgr->mo.sw_act_rep_received = true;
+		break;
 	case NM_EV_SETUP_RAMP_READY:
 		break;
 	case NM_EV_STATE_CHG_REP:
@@ -162,6 +172,7 @@ static void st_op_disabled_offline(struct osmo_fsm_inst *fi, uint32_t event, voi
 
 	switch (event) {
 	case NM_EV_SW_ACT_REP:
+		site_mgr->mo.sw_act_rep_received = true;
 		configure_loop(site_mgr, &site_mgr->mo.nm_state, true);
 		break;
 	case NM_EV_STATE_CHG_REP:

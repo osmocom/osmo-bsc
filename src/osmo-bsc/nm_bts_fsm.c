@@ -48,6 +48,7 @@ static void st_op_disabled_notinstalled_on_enter(struct osmo_fsm_inst *fi, uint3
 {
 	struct gsm_bts *bts = (struct gsm_bts *)fi->priv;
 
+	bts->mo.sw_act_rep_received = false;
 	bts->mo.get_attr_sent = false;
 	bts->mo.get_attr_rep_received = false;
 	bts->mo.set_attr_sent = false;
@@ -58,11 +59,14 @@ static void st_op_disabled_notinstalled_on_enter(struct osmo_fsm_inst *fi, uint3
 
 static void st_op_disabled_notinstalled(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
+	struct gsm_bts *bts = (struct gsm_bts *)fi->priv;
 	struct nm_statechg_signal_data *nsd;
 	const struct gsm_nm_state *new_state;
 
 	switch (event) {
 	case NM_EV_SW_ACT_REP:
+		bts->mo.sw_act_rep_received = true;
+		break;
 	case NM_EV_SETUP_RAMP_READY:
 		break;
 	case NM_EV_STATE_CHG_REP:
@@ -94,6 +98,10 @@ static void configure_loop(struct gsm_bts *bts, const struct gsm_nm_state *state
 	struct msgb *msgb;
 
 	if (bts_setup_ramp_wait(bts))
+		return;
+
+	/* nanoBTS only: delay until SW Activated Report is received */
+	if (is_nanobts(bts) && !bts->mo.sw_act_rep_received)
 		return;
 
 	/* Request generic BTS-level attributes */
@@ -180,6 +188,7 @@ static void st_op_disabled_dependency(struct osmo_fsm_inst *fi, uint32_t event, 
 
 	switch (event) {
 	case NM_EV_SW_ACT_REP:
+		bts->mo.sw_act_rep_received = true;
 		configure_loop(bts, &bts->mo.nm_state, false);
 		break;
 	case NM_EV_GET_ATTR_REP:
@@ -236,6 +245,7 @@ static void st_op_disabled_offline(struct osmo_fsm_inst *fi, uint32_t event, voi
 
 	switch (event) {
 	case NM_EV_SW_ACT_REP:
+		bts->mo.sw_act_rep_received = true;
 		configure_loop(bts, &bts->mo.nm_state, true);
 		break;
 	case NM_EV_GET_ATTR_REP:

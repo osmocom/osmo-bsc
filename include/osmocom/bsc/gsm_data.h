@@ -528,6 +528,7 @@ struct gsm_abis_mo {
 	struct gsm_nm_state nm_state;
 	struct gsm_bts *bts;
 	struct osmo_fsm_inst *fi;
+	bool sw_act_rep_received;
 	bool opstart_sent;
 	bool adm_unlock_sent;
 	bool get_attr_sent;
