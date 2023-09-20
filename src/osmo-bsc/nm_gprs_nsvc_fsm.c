@@ -49,6 +49,7 @@ static void st_op_disabled_notinstalled_on_enter(struct osmo_fsm_inst *fi, uint3
 {
 	struct gsm_gprs_nsvc *nsvc = (struct gsm_gprs_nsvc *)fi->priv;
 
+	nsvc->mo.sw_act_rep_received = false;
 	nsvc->mo.set_attr_sent = false;
 	nsvc->mo.set_attr_sent = false;
 	nsvc->mo.set_attr_ack_received = false;
@@ -58,12 +59,15 @@ static void st_op_disabled_notinstalled_on_enter(struct osmo_fsm_inst *fi, uint3
 
 static void st_op_disabled_notinstalled(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
+	struct gsm_gprs_nsvc *nsvc = (struct gsm_gprs_nsvc *)fi->priv;
 	struct nm_statechg_signal_data *nsd;
 	const struct gsm_nm_state *new_state;
 
 	switch (event) {
-	case NM_EV_FEATURE_NEGOTIATED:
 	case NM_EV_SW_ACT_REP:
+		nsvc->mo.sw_act_rep_received = true;
+		break;
+	case NM_EV_FEATURE_NEGOTIATED:
 	case NM_EV_SETUP_RAMP_READY:
 		break;
 	case NM_EV_STATE_CHG_REP:
@@ -114,6 +118,11 @@ static void configure_loop(struct gsm_gprs_nsvc *nsvc, const struct gsm_nm_state
 		return;
 
 	if (bts_setup_ramp_wait(nsvc->bts))
+		return;
+
+	/* nanoBTS only: delay until SW Activated Report is received, which
+	 * tells us the IPA Object version (may be used to set attr conditionally). */
+	if (is_nanobts(nsvc->bts) && !nsvc->mo.sw_act_rep_received)
 		return;
 
 	/* We need to know BTS features in order to know if we can set IPv6 addresses */
@@ -177,6 +186,8 @@ static void st_op_disabled_dependency(struct osmo_fsm_inst *fi, uint32_t event, 
 
 	switch (event) {
 	case NM_EV_SW_ACT_REP:
+		nsvc->mo.sw_act_rep_received = true;
+		/* fall-through */
 	case NM_EV_FEATURE_NEGOTIATED:
 		configure_loop(nsvc, &nsvc->mo.nm_state, false);
 		return;
@@ -231,6 +242,8 @@ static void st_op_disabled_offline(struct osmo_fsm_inst *fi, uint32_t event, voi
 
 	switch (event) {
 	case NM_EV_SW_ACT_REP:
+		nsvc->mo.sw_act_rep_received = true;
+		/* fall-through */
 	case NM_EV_FEATURE_NEGOTIATED:
 		configure_loop(nsvc, &nsvc->mo.nm_state, true);
 		return;

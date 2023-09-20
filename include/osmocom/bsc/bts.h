@@ -692,6 +692,17 @@ static inline bool is_ipa_abisip_bts(const struct gsm_bts *bts)
 	return false;
 }
 
+static inline bool is_nanobts(const struct gsm_bts *bts)
+{
+	switch (bts->type) {
+	case GSM_BTS_TYPE_NANOBTS:
+		return true;
+	default:
+		break;
+	}
+	return false;
+}
+
 static inline bool is_osmobts(const struct gsm_bts *bts)
 {
 	switch (bts->type) {

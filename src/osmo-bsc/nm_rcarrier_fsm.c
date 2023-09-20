@@ -58,6 +58,7 @@ static void st_op_disabled_notinstalled_on_enter(struct osmo_fsm_inst *fi, uint3
 {
 	struct gsm_bts_trx *trx = (struct gsm_bts_trx *)fi->priv;
 
+	trx->mo.sw_act_rep_received = false;
 	trx->mo.set_attr_sent = false;
 	trx->mo.set_attr_ack_received = false;
 	trx->mo.adm_unlock_sent = false;
@@ -66,11 +67,14 @@ static void st_op_disabled_notinstalled_on_enter(struct osmo_fsm_inst *fi, uint3
 
 static void st_op_disabled_notinstalled(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 {
+	struct gsm_bts_trx *trx = (struct gsm_bts_trx *)fi->priv;
 	struct nm_statechg_signal_data *nsd;
 	const struct gsm_nm_state *new_state;
 
 	switch (event) {
 	case NM_EV_SW_ACT_REP:
+		trx->mo.sw_act_rep_received = true;
+		break;
 	case NM_EV_SETUP_RAMP_READY:
 		break;
 	case NM_EV_STATE_CHG_REP:
@@ -102,6 +106,11 @@ static void configure_loop(struct gsm_bts_trx *trx, const struct gsm_nm_state *s
 	struct msgb *msgb;
 
 	if (bts_setup_ramp_wait(trx->bts))
+		return;
+
+	/* nanoBTS only: delay until SW Activated Report is received, which
+	 * tells us the IPA Object version (may be used to set attr conditionally). */
+	if (is_nanobts(trx->bts) && !trx->mo.sw_act_rep_received)
 		return;
 
 	if (!trx->mo.set_attr_sent && !trx->mo.set_attr_ack_received) {
@@ -152,6 +161,7 @@ static void st_op_disabled_dependency(struct osmo_fsm_inst *fi, uint32_t event, 
 
 	switch (event) {
 	case NM_EV_SW_ACT_REP:
+		trx->mo.sw_act_rep_received = true;
 		configure_loop(trx, &trx->mo.nm_state, false);
 		break;
 	case NM_EV_SET_ATTR_ACK:
@@ -205,6 +215,7 @@ static void st_op_disabled_offline(struct osmo_fsm_inst *fi, uint32_t event, voi
 
 	switch (event) {
 	case NM_EV_SW_ACT_REP:
+		trx->mo.sw_act_rep_received = true;
 		configure_loop(trx, &trx->mo.nm_state, true);
 		break;
 	case NM_EV_SET_ATTR_ACK:
