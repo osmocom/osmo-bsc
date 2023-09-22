@@ -376,26 +376,15 @@ static const struct osmo_stat_item_group_desc msc_statg_desc = {
 
 int osmo_bsc_msc_init(struct bsc_msc_data *msc)
 {
-	struct gsm_network *net = msc->network;
-	struct mgcp_client *mgcp_cli;
 	int rc;
 
 	/* Everything below refers to SCCP-Lite MSC connections only. */
 	if (msc_is_aoip(msc))
 		return 0;
 
-	/* Note: MGW is preselected here at startup, which means currently
-	 * osmo-bsc configured for SCCPLite doesn't support MGW pools with more
-	 * than 1 MGW.
-	 */
-	mgcp_cli = mgcp_client_pool_get(net->mgw.mgw_pool);
-	OSMO_ASSERT(mgcp_cli);
 	rc = osmo_sock_init2_ofd(&msc->mgcp_ipa.ofd, AF_UNSPEC, SOCK_DGRAM, IPPROTO_UDP,
 				 msc->mgcp_ipa.local_addr, msc->mgcp_ipa.local_port,
-				 mgcp_client_remote_addr_str(mgcp_cli),
-				 mgcp_client_remote_port(mgcp_cli),
-				 OSMO_SOCK_F_BIND | OSMO_SOCK_F_CONNECT);
-	mgcp_client_pool_put(mgcp_cli);
+				 NULL, 0, OSMO_SOCK_F_BIND);
 	if (rc < 0) {
 		LOGP(DMSC, LOGL_ERROR, "msc %u: Could not create/connect/bind MGCP proxy socket: %d\n",
 			msc->nr, rc);
