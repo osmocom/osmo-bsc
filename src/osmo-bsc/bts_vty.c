@@ -2087,7 +2087,6 @@ DEFUN_USRATTR(cfg_bts_si2quater_neigh_add,
 	      "measurement bandwidth\n" "measurement bandwidth (8 means NA)\n")
 {
 	struct gsm_bts *bts = vty->index;
-	struct osmo_earfcn_si2q *e = &bts->si_common.si2quater_neigh_list;
 	uint16_t arfcn = atoi(argv[0]);
 	uint8_t thresh_hi = atoi(argv[1]), thresh_lo = atoi(argv[2]),
 		prio = atoi(argv[3]), qrx = atoi(argv[4]), meas = atoi(argv[5]);
@@ -2123,7 +2122,7 @@ DEFUN_USRATTR(cfg_bts_si2quater_neigh_add,
 	vty_out(vty, "%% Warning: not enough space in SI2quater (%u/%u used) for a given EARFCN %u%s",
 		bts->si2q_count, SI2Q_MAX_NUM, arfcn, VTY_NEWLINE);
 
-	if (osmo_earfcn_del(e, arfcn) != 0)
+	if (bts_earfcn_del(bts, arfcn) != 0)
 		vty_out(vty, "%% Failed to roll-back adding EARFCN %u%s", arfcn, VTY_NEWLINE);
 
 	return CMD_WARNING;
@@ -2140,9 +2139,8 @@ DEFUN_USRATTR(cfg_bts_si2quater_neigh_del,
 	      "EARFCN\n")
 {
 	struct gsm_bts *bts = vty->index;
-	struct osmo_earfcn_si2q *e = &bts->si_common.si2quater_neigh_list;
 	uint16_t arfcn = atoi(argv[0]);
-	int r = osmo_earfcn_del(e, arfcn);
+	int r = bts_earfcn_del(bts, arfcn);
 	if (r < 0) {
 		vty_out(vty, "%% Unable to delete arfcn %u: %s%s", arfcn,
 			strerror(-r), VTY_NEWLINE);

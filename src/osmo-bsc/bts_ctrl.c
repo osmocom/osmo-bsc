@@ -717,7 +717,6 @@ CTRL_CMD_DEFINE_WO(bts_neighbor_list_mode, "neighbor-list mode");
 static int set_bts_si2quater_neighbor_list_del_earfcn(struct ctrl_cmd *cmd, void *data)
 {
 	struct gsm_bts *bts = (struct gsm_bts *)cmd->node;
-	struct osmo_earfcn_si2q *e = &bts->si_common.si2quater_neigh_list;
 	int earfcn;
 
 	if (osmo_str_to_int(&earfcn, cmd->value, 10, 0, 65535) < 0) {
@@ -725,7 +724,7 @@ static int set_bts_si2quater_neighbor_list_del_earfcn(struct ctrl_cmd *cmd, void
 		return CTRL_CMD_ERROR;
 	}
 
-	if (osmo_earfcn_del(e, earfcn) < 0) {
+	if (bts_earfcn_del(bts, earfcn) < 0) {
 		cmd->reply = "Failed to delete a (not existent?) neighbor EARFCN";
 		return CTRL_CMD_ERROR;
 	}
@@ -835,7 +834,6 @@ static int verify_bts_si2quater_neighbor_list_add_earfcn(struct ctrl_cmd *cmd, c
 static int set_bts_si2quater_neighbor_list_add_earfcn(struct ctrl_cmd *cmd, void *data)
 {
 	struct gsm_bts *bts = (struct gsm_bts *)cmd->node;
-	struct osmo_earfcn_si2q *neighbors = &bts->si_common.si2quater_neigh_list;
 	char *earfcn_str, *thresh_hi_str, *thresh_lo_str, *prio_str, *qrxlv_str, *meas_str, *saveptr, *tmp;
 	int earfcn, thresh_hi, thresh_lo, prio, qrxlv, meas, result;
 
@@ -914,7 +912,7 @@ static int set_bts_si2quater_neighbor_list_add_earfcn(struct ctrl_cmd *cmd, void
 			cmd->reply = "OOM";
 	}
 
-	if (osmo_earfcn_del(neighbors, earfcn) != 0)
+	if (bts_earfcn_del(bts, earfcn) != 0)
 		cmd->reply = "Failed to roll-back adding EARFCN";
 
 	return CTRL_CMD_ERROR;

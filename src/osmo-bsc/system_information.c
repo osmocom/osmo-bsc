@@ -216,6 +216,26 @@ static inline uint16_t encode_fdd(uint16_t scramble, bool diversity)
 	return scramble;
 }
 
+int bts_earfcn_del(struct gsm_bts *bts, uint16_t earfcn)
+{
+	struct osmo_earfcn_si2q *e = &bts->si_common.si2quater_neigh_list;
+	int r;
+
+	r = osmo_earfcn_del(e, earfcn);
+
+	if (r < 0)
+		return r;
+
+	/* If the last earfcn was removed, invlidate common neighbours limitations */
+	if (si2q_earfcn_count(e) == 0) {
+		e->thresh_lo_valid = false;
+		e->qrxlm_valid = false;
+		e->prio_valid = false;
+	}
+
+	return r;
+}
+
 int bts_earfcn_add(struct gsm_bts *bts, uint16_t earfcn, uint8_t thresh_hi, uint8_t thresh_lo, uint8_t prio,
 		   uint8_t qrx, uint8_t meas_bw)
 {
@@ -223,7 +243,7 @@ int bts_earfcn_add(struct gsm_bts *bts, uint16_t earfcn, uint8_t thresh_hi, uint
 	int r;
 
 	/* EARFCN may already exist, so we delete it to avoid duplicates */
-	if (osmo_earfcn_del(e, earfcn) == 0)
+	if (bts_earfcn_del(bts, earfcn) == 0)
 		LOGP(DRR, LOGL_NOTICE, "EARFCN %u is already in the list, modifying\n", earfcn);
 
 	if (meas_bw < EARFCN_MEAS_BW_INVALID)
