@@ -39,6 +39,7 @@
 #include <osmocom/bsc/handover_fsm.h>
 #include <osmocom/bsc/smscb.h>
 #include <osmocom/bsc/lb.h>
+#include <osmocom/bsc/meas_feed.h>
 
 #include <osmocom/ctrl/control_cmd.h>
 #include <osmocom/ctrl/control_if.h>
@@ -971,6 +972,7 @@ int main(int argc, char **argv)
 	acc_ramp_global_init();
 	paging_global_init();
 	smscb_global_init();
+	meas_feed_txqueue_max_length_set(MEAS_FEED_TXQUEUE_MAX_LEN_DEFAULT);
 
 	/* Read the config */
 	rc = bsc_network_configure(config_file);
