@@ -385,7 +385,7 @@ static int config_write_net(struct vty *vty)
 		uint16_t meas_port;
 		char *meas_host;
 		const char *meas_scenario;
-		unsigned int max_len = meas_feed_wqueue_max_length_get();
+		unsigned int max_len = meas_feed_txqueue_max_length_get();
 
 		meas_feed_cfg_get(&meas_host, &meas_port);
 		meas_scenario = meas_feed_scenario_get();
@@ -396,7 +396,7 @@ static int config_write_net(struct vty *vty)
 		if (strlen(meas_scenario) > 0)
 			vty_out(vty, " meas-feed scenario %s%s",
 				meas_scenario, VTY_NEWLINE);
-		if (max_len != MEAS_FEED_WQUEUE_MAX_LEN_DEFAULT)
+		if (max_len != MEAS_FEED_TXQUEUE_MAX_LEN_DEFAULT)
 			vty_out(vty, " meas-feed write-queue-max-length %u%s",
 				max_len, VTY_NEWLINE);
 	}
@@ -2424,7 +2424,7 @@ DEFUN_ATTR(cfg_net_meas_feed_wqueue_max_len, cfg_net_meas_feed_wqueue_max_len_cm
 	   "Maximum number of messages to be queued waiting for transmission\n",
 	   CMD_ATTR_IMMEDIATE)
 {
-	meas_feed_wqueue_max_length_set(atoi(argv[0]));
+	meas_feed_txqueue_max_length_set(atoi(argv[0]));
 	return CMD_SUCCESS;
 }
 

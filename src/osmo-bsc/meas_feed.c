@@ -6,7 +6,7 @@
 
 #include <osmocom/core/msgb.h>
 #include <osmocom/core/socket.h>
-#include <osmocom/core/write_queue.h>
+#include <osmocom/core/osmo_io.h>
 #include <osmocom/core/talloc.h>
 #include <osmocom/core/utils.h>
 
@@ -23,17 +23,14 @@
 #include <osmocom/bsc/lchan.h>
 
 struct meas_feed_state {
-	struct osmo_wqueue wqueue;
-	unsigned int wqueue_max_len;
+	struct osmo_io_fd *io_fd;
 	char scenario[31+1];
 	char *dst_host;
 	uint16_t dst_port;
+	size_t txqueue_max;
 };
 
-static struct meas_feed_state g_mfs = {
-	.wqueue.bfd.fd = -1,
-	.wqueue_max_len = MEAS_FEED_WQUEUE_MAX_LEN_DEFAULT,
-};
+static struct meas_feed_state g_mfs = { .txqueue_max = MEAS_FEED_TXQUEUE_MAX_LEN_DEFAULT };
 
 static int process_meas_rep(struct gsm_meas_rep *mr)
 {
@@ -41,7 +38,7 @@ static int process_meas_rep(struct gsm_meas_rep *mr)
 	struct meas_feed_meas *mfm;
 	struct bsc_subscr *bsub;
 
-	OSMO_ASSERT(g_mfs.wqueue.bfd.fd != -1);
+	OSMO_ASSERT(g_mfs.io_fd != NULL);
 
 	/* ignore measurements as long as we don't know who it is */
 	if (!mr->lchan) {
@@ -90,7 +87,7 @@ static int process_meas_rep(struct gsm_meas_rep *mr)
 	mfm->ss_nr = mr->lchan->nr;
 
 	/* and send it to the socket */
-	if (osmo_wqueue_enqueue(&g_mfs.wqueue, msg) != 0) {
+	if (osmo_iofd_write_msgb(g_mfs.io_fd, msg)) {
 		LOGP(DMEAS, LOGL_ERROR, "meas_feed %s: sending measurement report failed\n",
 		     gsm_lchan_name(mr->lchan));
 		msgb_free(msg);
@@ -115,63 +112,54 @@ static int meas_feed_sig_cb(unsigned int subsys, unsigned int signal,
 	return 0;
 }
 
-static int feed_write_cb(struct osmo_fd *ofd, struct msgb *msg)
-{
-	return write(ofd->fd, msgb_data(msg), msgb_length(msg));
-}
-
-static int feed_read_cb(struct osmo_fd *ofd)
-{
-	int rc;
-	char buf[256];
-
-	rc = read(ofd->fd, buf, sizeof(buf));
-	osmo_fd_read_disable(ofd);
-
-	return rc;
-}
-
 static void meas_feed_close(void)
 {
-	if (g_mfs.wqueue.bfd.fd == -1)
+	if (g_mfs.io_fd == NULL)
 		return;
 	osmo_signal_unregister_handler(SS_LCHAN, meas_feed_sig_cb, NULL);
-	osmo_wqueue_clear(&g_mfs.wqueue);
-	osmo_fd_unregister(&g_mfs.wqueue.bfd);
-	close(g_mfs.wqueue.bfd.fd);
-	g_mfs.wqueue.bfd.fd = -1;
+	osmo_iofd_close(g_mfs.io_fd);
+	osmo_iofd_free(g_mfs.io_fd);
+	g_mfs.io_fd = NULL;
+}
+
+static void meas_feed_noop_cb(struct osmo_io_fd *iofd, int res, struct msgb *msg)
+{
 }
 
 int meas_feed_cfg_set(const char *dst_host, uint16_t dst_port)
 {
 	int rc;
-
+	/* osmo_io code throws an error if 'write_cb' is NULL, so we set a no-op */
+	struct osmo_io_ops meas_feed_oio = {
+		.read_cb = NULL,
+		.write_cb = meas_feed_noop_cb,
+		.segmentation_cb = NULL
+	};
 	/* Already initialized */
-	if (g_mfs.wqueue.bfd.fd > 0) {
+	if (g_mfs.io_fd != NULL) {
 		/* No change needed, do nothing */
 		if (!strcmp(dst_host, g_mfs.dst_host) && dst_port == g_mfs.dst_port)
 			return 0;
 		meas_feed_close();
 	}
 
-	osmo_wqueue_init(&g_mfs.wqueue, g_mfs.wqueue_max_len);
-	g_mfs.wqueue.write_cb = feed_write_cb;
-	g_mfs.wqueue.read_cb = feed_read_cb;
-
-	rc = osmo_sock_init_ofd(&g_mfs.wqueue.bfd, AF_UNSPEC, SOCK_DGRAM,
-				IPPROTO_UDP, dst_host, dst_port,
-				OSMO_SOCK_F_CONNECT);
+	rc = osmo_sock_init(AF_UNSPEC, SOCK_DGRAM, IPPROTO_UDP, dst_host, dst_port, OSMO_SOCK_F_CONNECT);
 	if (rc < 0) {
-		g_mfs.wqueue.bfd.fd = -1;
+		osmo_signal_unregister_handler(SS_LCHAN, meas_feed_sig_cb, NULL);
 		return rc;
 	}
+	g_mfs.io_fd = osmo_iofd_setup(NULL, rc, "meas_iofd", OSMO_IO_FD_MODE_READ_WRITE, &meas_feed_oio, NULL);
+	if (!g_mfs.io_fd)
+		return -1;
+	osmo_iofd_set_txqueue_max_length(g_mfs.io_fd, g_mfs.txqueue_max);
+	if ((rc = osmo_iofd_register(g_mfs.io_fd, rc)))
+		return rc;
 
-	osmo_fd_read_disable(&g_mfs.wqueue.bfd);
 	osmo_talloc_replace_string(NULL, &g_mfs.dst_host, dst_host);
 	g_mfs.dst_port = dst_port;
 	osmo_signal_register_handler(SS_LCHAN, meas_feed_sig_cb, NULL);
 	LOGP(DMEAS, LOGL_DEBUG, "meas_feed: started %s\n",
-	     osmo_sock_get_name2(g_mfs.wqueue.bfd.fd));
+	     osmo_sock_get_name2(osmo_iofd_get_fd(g_mfs.io_fd)));
 	return 0;
 }
 
@@ -181,16 +169,16 @@ void meas_feed_cfg_get(char **host, uint16_t *port)
 	*host = g_mfs.dst_host;
 }
 
-void meas_feed_wqueue_max_length_set(unsigned int max_length)
+void meas_feed_txqueue_max_length_set(unsigned int max_length)
 {
-	g_mfs.wqueue_max_len = max_length;
-	if (g_mfs.wqueue.bfd.fd)
-		g_mfs.wqueue.max_length = max_length;
+	g_mfs.txqueue_max = max_length;
+	if (g_mfs.io_fd)
+		osmo_iofd_set_txqueue_max_length(g_mfs.io_fd, max_length);
 }
 
-unsigned int meas_feed_wqueue_max_length_get(void)
+unsigned int meas_feed_txqueue_max_length_get(void)
 {
-	return g_mfs.wqueue_max_len;
+	return g_mfs.txqueue_max;
 }
 
 void meas_feed_scenario_set(const char *name)
