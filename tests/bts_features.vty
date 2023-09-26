@@ -25,3 +25,34 @@ OsmoBSC(config-net-bts-trx-ts)# hopping enabled 1
 OsmoBSC(config-net-bts-trx-ts)# exit
 OsmoBSC(config-net-bts-trx)# exit
 OsmoBSC(config-net-bts)# exit
+
+OsmoBSC(config-net)# exit
+OsmoBSC(config)# exit
+
+OsmoBSC# ### test ncc-permitted
+OsmoBSC# show running-config
+... !ncc-permitted
+OsmoBSC# configure terminal
+OsmoBSC(config)# network
+OsmoBSC(config-net)# bts 0
+OsmoBSC(config-net-bts)# ncc-permitted 3 2
+% NCCs must be listed in order
+OsmoBSC(config-net-bts)# ncc-permitted 2 2
+% NCCs must be unique
+OsmoBSC(config-net-bts)# ncc-permitted 2 3 4 5 6 7 8
+OsmoBSC(config-net-bts)# exit
+OsmoBSC(config-net)# exit
+OsmoBSC(config)# exit
+OsmoBSC# show running-config
+...
+  ncc-permitted 2 3 4 5 6 7 8
+...
+OsmoBSC# configure terminal
+OsmoBSC(config)# network
+OsmoBSC(config-net)# bts 0
+OsmoBSC(config-net-bts)# ncc-permitted all
+OsmoBSC(config-net-bts)# exit
+OsmoBSC(config-net)# exit
+OsmoBSC(config)# exit
+OsmoBSC# show running-config
+... !ncc-permitted
