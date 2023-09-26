@@ -1405,6 +1405,54 @@ DEFUN_USRATTR(cfg_bts_penalty_time_rsvd,
 	return CMD_SUCCESS;
 }
 
+#define NCC_STR "Network Colour Code\n"
+
+DEFUN_USRATTR(cfg_bts_ncc_permitted,
+	      cfg_bts_ncc_permitted_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_RSL_LINK),
+	      "ncc-permitted <1-8> [<1-8>] [<1-8>] [<1-8>] [<1-8>] [<1-8>] [<1-8>]\n",
+	      "Set permitted " NCC_STR "s\n"
+	      NCC_STR NCC_STR NCC_STR NCC_STR NCC_STR NCC_STR NCC_STR)
+{
+	struct gsm_bts *bts = vty->index;
+	int i;
+	int ncc;
+	int ncc_prev = -1;
+
+	/* Check if NCCs are in order (like get_amr_from_arg) */
+	for (i = 0; i < argc; i++) {
+		ncc = atoi(argv[i]);
+		if (ncc_prev > ncc) {
+			vty_out(vty, "%% NCCs must be listed in order%s", VTY_NEWLINE);
+			return CMD_WARNING;
+		}
+
+		if (ncc_prev == ncc) {
+			vty_out(vty, "%% NCCs must be unique%s", VTY_NEWLINE);
+			return CMD_WARNING;
+		}
+		ncc_prev = ncc;
+	}
+
+	bts->si_common.ncc_permitted = 0x00;
+	for (i = 0; i < argc; i++)
+		bts->si_common.ncc_permitted |= 1 << (atoi(argv[i]) - 1);
+
+	return CMD_SUCCESS;
+}
+
+DEFUN_USRATTR(cfg_bts_no_ncc_permitted,
+	      cfg_bts_no_ncc_permitted_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_RSL_LINK),
+	      "no ncc-permitted",
+	      NO_STR "Permit all " NCC_STR "s (default)\n")
+{
+	struct gsm_bts *bts = vty->index;
+
+	bts->si_common.ncc_permitted = 0xff;
+	return CMD_SUCCESS;
+}
+
 DEFUN_USRATTR(cfg_bts_radio_link_timeout,
 	      cfg_bts_radio_link_timeout_cmd,
 	      X(BSC_VTY_ATTR_RESTART_ABIS_OML_LINK),
@@ -4343,6 +4391,24 @@ static void config_write_power_ctrl(struct vty *vty, unsigned int indent,
 
 #undef cfg_out
 
+static void config_write_bts_ncc_permitted(struct vty *vty, struct gsm_bts *bts)
+{
+	int i;
+	uint8_t ncc_permitted = bts->si_common.ncc_permitted;
+
+	if (ncc_permitted == 0xff)
+		return;
+
+	vty_out(vty, "  ncc-permitted");
+
+	for (i = 0; i < 8; i++) {
+		if ((ncc_permitted & (1 << i)))
+			vty_out(vty, " %d", i + 1);
+	}
+
+	vty_out(vty, "%s", VTY_NEWLINE);
+}
+
 static void config_write_bts_single(struct vty *vty, struct gsm_bts *bts)
 {
 	int i;
@@ -4722,6 +4788,8 @@ static void config_write_bts_single(struct vty *vty, struct gsm_bts *bts)
 	config_write_power_ctrl(vty, 2, bts, &bts->bs_power_ctrl);
 	config_write_power_ctrl(vty, 2, bts, &bts->ms_power_ctrl);
 
+	config_write_bts_ncc_permitted(vty, bts);
+
 	config_write_bts_model(vty, bts);
 }
 
@@ -4904,6 +4972,8 @@ int bts_vty_init(void)
 	install_element(BTS_NODE, &cfg_bts_immediate_assignment_cmd);
 	install_element(BTS_NODE, &cfg_bts_nch_position_cmd);
 	install_element(BTS_NODE, &cfg_bts_no_nch_position_cmd);
+	install_element(BTS_NODE, &cfg_bts_ncc_permitted_cmd);
+	install_element(BTS_NODE, &cfg_bts_no_ncc_permitted_cmd);
 
 	neighbor_ident_vty_init();
 	/* See also handover commands added on bts level from handover_vty.c */
