@@ -2,6 +2,7 @@
 
 #include <stdint.h>
 #include <osmocom/core/msgb.h>
+#include <osmocom/core/bitvec.h>
 
 enum handover_scope;
 
@@ -37,6 +38,7 @@ int gsm48_send_uplink_release(struct gsm_lchan *lchan, uint8_t cause);
 int gsm48_send_uplink_busy(struct gsm_lchan *lchan);
 int gsm48_send_uplink_free(struct gsm_lchan *lchan, uint8_t acc_bit, uint8_t *uic);
 int gsm48_rx_rr_modif_ack(struct msgb *msg);
+int neigh_list_get_arfcn(struct gsm_bts *bts, const struct bitvec *nbv, unsigned int idx);
 int gsm48_parse_meas_rep(struct gsm_meas_rep *rep, struct msgb *msg);
 
 struct msgb *gsm48_create_mm_serv_rej(enum gsm48_reject_value value);
