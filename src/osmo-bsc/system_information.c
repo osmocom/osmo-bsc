@@ -1246,6 +1246,269 @@ static int generate_si6(enum osmo_sysinfo_type t, struct gsm_bts *bts)
 	return l2_plen + rc;
 }
 
+static int si10_rest_octets_encode(struct gsm_bts *s_bts, struct bitvec *bv, struct gsm_bts *n_bts, uint8_t index)
+{
+	/* The BA-IND must be equal to the BA-IND in SI5*. */
+	/* <BA ind : bit(1)> */
+	bitvec_set_bit(bv, 1);
+
+	/* Do we have neighbor cells ? */
+	/* { L <spare padding> | H <neighbour information> } */
+	if (!n_bts)
+		return 0;
+	bitvec_set_bit(bv, H);
+
+	/* <first frequency: bit(5)> */
+	bitvec_set_uint(bv, index, 5);
+
+	/* <bsic : bit(6)> */
+	bitvec_set_uint(bv, n_bts->bsic, 6);
+
+	/* We do not provide empty cell information. */
+	/* { H <cell parameters> | L } */
+	bitvec_set_bit(bv, H);
+
+	/* If cell is barred, we do not need further cell info. */
+	/* <cell barred> | L <further cell info> */
+	if (n_bts->si_common.rach_control.cell_bar) {
+		/* H */
+		bitvec_set_bit(bv, H);
+		/* We are done with the first cell info. */
+		return 0;
+	}
+	bitvec_set_bit(bv, L);
+
+	/* If LA is different for serving cell, we need to add CRH. */
+	/* { H <cell reselect hysteresis : bit(3)> | L } */
+	if (s_bts->location_area_code != n_bts->location_area_code) {
+		bitvec_set_bit(bv, H);
+		bitvec_set_uint(bv, n_bts->si_common.cell_sel_par.cell_resel_hyst, 3);
+	} else
+		bitvec_set_bit(bv, L);
+
+	/* <ms txpwr max cch : bit(5)> */
+	bitvec_set_uint(bv, n_bts->si_common.cell_sel_par.ms_txpwr_max_ccch, 5);
+
+	/* <rxlev access min : bit(6)> */
+	bitvec_set_uint(bv, n_bts->si_common.cell_sel_par.rxlev_acc_min, 6);
+
+	/* <cell reselect offset : bit(6)> */
+	if (n_bts->si_common.cell_ro_sel_par.present)
+		bitvec_set_uint(bv, n_bts->si_common.cell_ro_sel_par.cell_resel_off, 6);
+	else
+		bitvec_set_uint(bv, 0, 6);
+
+	/* <temporary offset : bit(3)> */
+	if (n_bts->si_common.cell_ro_sel_par.present)
+		bitvec_set_uint(bv, n_bts->si_common.cell_ro_sel_par.temp_offs, 3);
+	else
+		bitvec_set_uint(bv, 0, 3);
+
+	/* <penalty time : bit(5)> */
+	if (n_bts->si_common.cell_ro_sel_par.present)
+		bitvec_set_uint(bv, n_bts->si_common.cell_ro_sel_par.penalty_time, 5);
+	else
+		bitvec_set_uint(bv, 0, 5);
+
+	/* We are done with the first cell info. */
+	return 0;
+}
+
+static int si10_rest_octets_encode_other(struct gsm_bts *s_bts, struct bitvec *bv, struct gsm_bts *l_bts,
+					 struct gsm_bts *n_bts, uint8_t last_index, uint8_t index)
+{
+	int rc;
+
+	/* If the bv buffer would overflow, then the bits are not written. Each bitvec_set_* call will return
+	 * an error code. This error is returned with this function. */
+
+	/* { H <info field> } */
+	bitvec_set_bit(bv, H);
+
+	/* How many frequency indices do we skip? */
+	/* <next frequency>** L <differential cell info> */
+	while ((last_index = (last_index + 1) & 0x1f) != index) {
+		/* H */
+		bitvec_set_bit(bv, H);
+	}
+	bitvec_set_bit(bv, L);
+
+	/* If NCC is equal, just send BCC, otherwise send complete BSIC. */
+	/* { H <BCC : bit(3)> | L <bsic : bit(6)> } */
+	if ((l_bts->bsic & 0x38) == (n_bts->bsic & 0x38))
+		bitvec_set_uint(bv, n_bts->bsic & 0x07, 3);
+	else
+		bitvec_set_uint(bv, n_bts->bsic, 6);
+
+	/* We do not provide empty cell information. */
+	/* { H <cell parameters> | L } */
+	bitvec_set_bit(bv, H);
+
+	/* If cell is barred, we do not need further cell info. */
+	/* <cell barred> | L <further cell info> */
+	if (n_bts->si_common.rach_control.cell_bar) {
+		/* H */
+		rc = bitvec_set_bit(bv, H);
+		/* We are done with the other cell info. */
+		return rc;
+	}
+	bitvec_set_bit(bv, L);
+
+	/* If LA is different for serving cell, we need to add CRH. */
+	/* { H <cell reselect hysteresis : bit(3)> | L } */
+	if (s_bts->location_area_code != n_bts->location_area_code) {
+		bitvec_set_bit(bv, H);
+		bitvec_set_uint(bv, n_bts->si_common.cell_sel_par.cell_resel_hyst, 3);
+	} else
+		bitvec_set_bit(bv, L);
+
+	/* { H <ms txpwr max cch : bit(5)> | L } */
+	if (l_bts->si_common.cell_sel_par.ms_txpwr_max_ccch != n_bts->si_common.cell_sel_par.ms_txpwr_max_ccch) {
+		bitvec_set_bit(bv, H);
+		bitvec_set_uint(bv, n_bts->si_common.cell_sel_par.ms_txpwr_max_ccch, 5);
+	} else
+		bitvec_set_bit(bv, L);
+
+	/* { H <rxlev access min : bit(6)> | L } */
+	if (l_bts->si_common.cell_sel_par.rxlev_acc_min != n_bts->si_common.cell_sel_par.rxlev_acc_min) {
+		bitvec_set_bit(bv, H);
+		bitvec_set_uint(bv, n_bts->si_common.cell_sel_par.rxlev_acc_min, 6);
+	} else
+		bitvec_set_bit(bv, L);
+
+	/* { H <cell reselect offset : bit(6)> | L } */
+	if (l_bts->si_common.cell_ro_sel_par.present != n_bts->si_common.cell_ro_sel_par.present ||
+	    (n_bts->si_common.cell_ro_sel_par.present &&
+	     l_bts->si_common.cell_ro_sel_par.cell_resel_off != n_bts->si_common.cell_ro_sel_par.cell_resel_off)) {
+		bitvec_set_bit(bv, H);
+		if (n_bts->si_common.cell_ro_sel_par.present)
+			bitvec_set_uint(bv, n_bts->si_common.cell_ro_sel_par.cell_resel_off, 6);
+		else
+			bitvec_set_uint(bv, 0, 6);
+	} else
+		bitvec_set_bit(bv, L);
+
+	/* { H <temporary offset : bit(3)> | L } */
+	if (l_bts->si_common.cell_ro_sel_par.present != n_bts->si_common.cell_ro_sel_par.present ||
+	    (n_bts->si_common.cell_ro_sel_par.present &&
+	     l_bts->si_common.cell_ro_sel_par.temp_offs != n_bts->si_common.cell_ro_sel_par.temp_offs)) {
+		bitvec_set_bit(bv, H);
+		if (n_bts->si_common.cell_ro_sel_par.present)
+			bitvec_set_uint(bv, n_bts->si_common.cell_ro_sel_par.temp_offs, 3);
+		else
+			bitvec_set_uint(bv, 0, 3);
+	} else
+		bitvec_set_bit(bv, L);
+
+	/* { H <penalty time : bit(5)> | L } */
+	if (l_bts->si_common.cell_ro_sel_par.present != n_bts->si_common.cell_ro_sel_par.present ||
+	    (n_bts->si_common.cell_ro_sel_par.present &&
+	     l_bts->si_common.cell_ro_sel_par.penalty_time != n_bts->si_common.cell_ro_sel_par.penalty_time)) {
+		bitvec_set_bit(bv, H);
+		if (n_bts->si_common.cell_ro_sel_par.present)
+			rc = bitvec_set_uint(bv, n_bts->si_common.cell_ro_sel_par.penalty_time, 5);
+		else
+			rc = bitvec_set_uint(bv, 0, 5);
+	} else
+		rc = bitvec_set_bit(bv, L);
+
+	/* We are done with the other cell info. */
+	return rc;
+}
+
+/* Generate SI 10 and return the number of bits used in the rest octet. */
+int gsm_generate_si10(struct gsm48_system_information_type_10 *si10, size_t len,
+		      const struct gsm_subscriber_connection *conn)
+{
+	struct bitvec *nbv;
+	struct gsm_bts *s_bts = conn->lchan->ts->trx->bts;
+	int i;
+	bool any_neighbor = false;
+	int rc;
+
+	struct bitvec bv = {
+		.data_len = len - sizeof(*si10),
+		.data = si10->rest_octets,
+	};
+
+	si10->rr_short_pd = 0; /* 3GPP TS 24.007 §11.3.2.1 */
+	si10->msg_type = GSM48_MT_RR_SH_SI10;
+	si10->l2_header = 0; /* 3GPP TS 44.006 §6.4a */
+
+	/* If we have gernerated SI5 with separate SI5 list, the used frequency indexes refer to it. */
+	if (s_bts->neigh_list_manual_mode == NL_MODE_MANUAL_SI5SEP)
+		nbv = &s_bts->si_common.si5_neigh_list;
+	else
+		nbv = &s_bts->si_common.neigh_list;
+
+	/* Get up to 32 possible neighbor frequencies that SI10 can refer to. */
+	for (i = 0; i < 32; i++) {
+		struct gsm_bts *c_bts, *n_bts, *l_bts;
+		struct gsm_subscriber_connection *c;
+		unsigned int save_cur_bit;
+		int16_t arfcn;
+		int last_i;
+		arfcn = neigh_list_get_arfcn(s_bts, nbv, i);
+		/* End of list */
+		if (arfcn < 0)
+			break;
+		/* Is this neighbour used for this group call? */
+		n_bts = NULL;
+		llist_for_each_entry(c, &conn->vgcs_chan.call->vgcs_call.chan_list, vgcs_chan.list) {
+			if (c == conn)
+				continue;
+			if (!c->lchan)
+				continue;
+			c_bts = c->lchan->ts->trx->bts;
+			if (c_bts->c0->arfcn != arfcn)
+				continue;
+			n_bts = c_bts;
+			break;
+		}
+		if (n_bts) {
+			if (!any_neighbor) {
+				/* First neighbor, so generate rest octets with first cell info. */
+				LOGP(DRR, LOGL_INFO, "SI 10 with cell ID %d.\n", n_bts->cell_identity);
+				rc = si10_rest_octets_encode(s_bts, &bv, n_bts, i);
+				if (rc < 0)
+					return rc;
+				any_neighbor = true;
+			} else {
+				/* Save current position, so we can restore to last position in case of failure. */
+				save_cur_bit = bv.cur_bit;
+				/* Nth neighbor, so add rest octets with differential cell info. */
+				LOGP(DRR, LOGL_INFO, "Append cell ID %d to SI 10.\n", n_bts->cell_identity);
+				rc = si10_rest_octets_encode_other(s_bts, &bv, l_bts, n_bts, last_i, i);
+				if (rc < 0) {
+					LOGP(DRR, LOGL_INFO, "Skip cell ID %d, SI 10 would overflow.\n",
+					     n_bts->cell_identity);
+					/* Resore last position. */
+					bv.cur_bit = save_cur_bit;
+					break;
+				}
+			}
+			last_i = i;
+			l_bts = n_bts;
+		}
+	}
+
+	/* If no neighbor exists, generate rest octets without any neighbor info. */
+	if (!any_neighbor) {
+		LOGP(DRR, LOGL_INFO, "SI 10 without any neighbor cell.\n");
+		rc = si10_rest_octets_encode(s_bts, &bv, NULL, 0);
+		if (rc < 0)
+			return rc;
+	}
+
+	/* Do spare padding. We cannot do it earlier, because encoding might corrupt it if differential cell info
+	 * does not fit into the message. */
+	while ((bv.cur_bit & 7))
+		bitvec_set_bit(&bv, L);
+	memset(bv.data + bv.cur_bit / 8, GSM_MACBLOCK_PADDING, bv.data_len - bv.cur_bit / 8);
+
+	return len;
+}
+
 static int generate_si13(enum osmo_sysinfo_type t, struct gsm_bts *bts)
 {
 	struct gsm48_system_information_type_13 *si13 =
