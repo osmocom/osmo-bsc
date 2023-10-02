@@ -5,12 +5,17 @@
 
 #include <osmocom/gsm/gsm48_arfcn_range_encode.h>
 
+/* Complete length of SYSTEM INFORMATION 10 (SACCH) */
+#define SI10_LENGTH	21
+
 struct gsm_bts;
 
 int band_compatible(const struct gsm_bts *bts, int arfcn);
 int generate_cell_chan_alloc(struct gsm_bts *bts);
 int generate_cell_chan_list(uint8_t *chan_list, struct gsm_bts *bts);
 int gsm_generate_si(struct gsm_bts *bts, enum osmo_sysinfo_type type);
+int gsm_generate_si10(struct gsm48_system_information_type_10 *si10, size_t len,
+		      const struct gsm_subscriber_connection *conn);
 size_t si2q_earfcn_count(const struct osmo_earfcn_si2q *e);
 unsigned range1024_p(unsigned n);
 unsigned range512_q(unsigned m);

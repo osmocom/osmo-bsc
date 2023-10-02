@@ -53,6 +53,7 @@
 #include <osmocom/bsc/gsm_04_08_rr.h>
 #include <osmocom/bsc/bts_trx.h>
 #include <osmocom/bsc/bts.h>
+#include <osmocom/bsc/system_information.h>
 
 #define S(x)	(1 << (x))
 
@@ -128,6 +129,38 @@ static struct gsm_subscriber_connection *find_calling_subscr_conn(struct gsm_sub
 /*
  * VGCS call FSM
  */
+
+/* Add/update SI10. It must be called whenever a channel is activated or failed. */
+static void si10_update(struct gsm_subscriber_connection *conn)
+{
+	struct gsm_subscriber_connection *c;
+	uint8_t si10[SI10_LENGTH];
+	int rc;
+
+	/* Skip SI10 update, if not all channels have been activated or failed. */
+	llist_for_each_entry(c, &conn->vgcs_call.chan_list, vgcs_chan.list) {
+		if (c->vgcs_chan.fi->state == VGCS_CHAN_ST_WAIT_EST) {
+			LOG_CALL(conn, LOGL_DEBUG, "There is a channel, not yet active. No SI10 update now.\n");
+			return;
+		}
+	}
+
+	LOG_CALL(conn, LOGL_DEBUG, "New channel(s) added, updating SI10 for all channels.\n");
+
+	/* Go through all channels. */
+	llist_for_each_entry(c, &conn->vgcs_call.chan_list, vgcs_chan.list) {
+		/* Skip all channels that failed to activate or have not been aktivated yet.
+		 * There shouldn't be any channel in that state now. */
+		if (!c->lchan)
+			continue;
+		/* Encode SI 10 for this channel. Skip, if it fails. */
+		rc = gsm_generate_si10((struct gsm48_system_information_type_10 *)si10, sizeof(si10), c);
+		if (rc < 0)
+			continue;
+		/* Add SI 10 to SACCH of this channel c. */
+		rsl_sacch_info_modify(c->lchan, RSL_SYSTEM_INFO_10, si10, sizeof(si10));
+	}
+}
 
 static void vgcs_call_detach_and_destroy(struct osmo_fsm_inst *fi, enum osmo_fsm_term_cause cause)
 {
@@ -667,6 +700,9 @@ static void vgcs_chan_fsm_wait_est(struct osmo_fsm_inst *fi, uint32_t event, voi
 		LOG_CHAN(conn, LOGL_DEBUG, "lchan failed.\n");
 		/* BTS reports failure on channel request. */
 		osmo_fsm_inst_state_chg(fi, VGCS_CHAN_ST_NULL, 0, 0);
+		/* Add/update SI10. */
+		if (conn->vgcs_chan.call)
+			si10_update(conn->vgcs_chan.call);
 		/* Report failure to MSC. */
 		bsc_tx_vgcs_vbs_assignment_fail(conn, GSM0808_CAUSE_EQUIPMENT_FAILURE);
 		break;
@@ -691,9 +727,12 @@ no_aoip:
 			osmo_fsm_inst_state_chg(fi, VGCS_CHAN_ST_ACTIVE_FREE, 0, 0);
 		else
 			osmo_fsm_inst_state_chg(fi, VGCS_CHAN_ST_ACTIVE_BLOCKED, 0, 0);
-		/* Add call to notification channel. */
-		if (conn->vgcs_chan.call)
+		if (conn->vgcs_chan.call) {
+			/* Add call to notification channel. */
 			rsl_notification_cmd(conn->lchan->ts->trx->bts, conn->lchan, &conn->vgcs_chan.gc_ie, NULL);
+			/* Add/update SI10. */
+			si10_update(conn->vgcs_chan.call);
+		}
 		/* Report result to MSC. */
 		bsc_tx_vgcs_vbs_assignment_result(conn, &conn->vgcs_chan.ct, &conn->vgcs_chan.ci,
 						  conn->vgcs_chan.call_id);
@@ -702,6 +741,9 @@ no_aoip:
 		LOG_CHAN(conn, LOGL_DEBUG, "MGW endpoint failed.\n");
 		/* MGW reports failure. */
 		osmo_fsm_inst_state_chg(fi, VGCS_CHAN_ST_NULL, 0, 0);
+		/* Add/update SI10. */
+		if (conn->vgcs_chan.call)
+			si10_update(conn->vgcs_chan.call);
 		/* Report failure to MSC. */
 		bsc_tx_vgcs_vbs_assignment_fail(conn, GSM0808_CAUSE_EQUIPMENT_FAILURE);
 		break;
