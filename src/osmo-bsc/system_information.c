@@ -545,8 +545,8 @@ static int bitvec2freq_list(uint8_t *chan_list, const struct bitvec *bv,
 	/* Check presence of E-GSM ARFCN 0 */
 	if (pgsm && bitvec_get_bit_pos(bv, 0) == ONE)
 		pgsm = false;
-	/* Check presence of E-GSM ARFCNs 975..1023 */
-	for (i = 975; pgsm && i <= 1023; i++) {
+	/* Check presence of R-GSM / E-GSM ARFCNs 955..1023 */
+	for (i = 955; pgsm && i <= 1023; i++) {
 		if (bitvec_get_bit_pos(bv, i) == ONE)
 			pgsm = false;
 	}
