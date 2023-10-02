@@ -902,7 +902,7 @@ int gsm48_parse_meas_rep(struct gsm_meas_rep *rep, struct msgb *msg)
 	struct gsm48_hdr *gh = msgb_l3(msg);
 	uint8_t *data = gh->data;
 	struct gsm_bts *bts = msg->lchan->ts->trx->bts;
-	struct bitvec *nbv = &bts->si_common.neigh_list;
+	struct bitvec *nbv;
 	struct gsm_meas_rep_cell *mrc;
 
 	if (gh->msg_type != GSM48_MT_RR_MEAS_REP)
@@ -926,6 +926,13 @@ int gsm48_parse_meas_rep(struct gsm_meas_rep *rep, struct msgb *msg)
 		rep->num_cell = 0;
 		return 0;
 	}
+
+	/* If the phone reports BA-IND 1 this is a report for the SI5* set.
+	 * If we have generated SI5* with manual SI5 neighbor list, the measurements refer to it. */
+	if ((rep->flags & MEAS_REP_F_BA1) && bts->neigh_list_manual_mode == NL_MODE_MANUAL_SI5SEP)
+		nbv = &bts->si_common.si5_neigh_list;
+	else
+		nbv = &bts->si_common.neigh_list;
 
 	/* an encoding nightmare in perfection */
 	mrc = &rep->cell[0];
