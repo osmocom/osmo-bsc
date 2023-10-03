@@ -764,14 +764,12 @@ DEFUN(show_subscr_conn,
 	struct gsm_subscriber_connection *conn;
 	struct gsm_network *net = gsmnet_from_vty(vty);
 	bool no_conns = true;
-	unsigned int count = 0;
 
 	vty_out(vty, "Active subscriber connections: %s", VTY_NEWLINE);
 
 	llist_for_each_entry(conn, &net->subscr_conns, entry) {
 		dump_one_subscr_conn(vty, conn);
 		no_conns = false;
-		count++;
 	}
 
 	if (no_conns)
