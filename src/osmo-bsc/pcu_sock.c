@@ -300,6 +300,14 @@ static int pcu_tx_info_ind(struct gsm_bts *bts)
 		info_ind_fill_trx(&info_ind->trx[trx->nr], trx);
 	}
 
+	switch (bts->type) {
+	case GSM_BTS_TYPE_RBS2000:
+		info_ind->bts_model = PCU_IF_BTS_MODEL_RBS;
+		break;
+	default:
+		info_ind->bts_model = PCU_IF_BTS_MODEL_UNSPEC;
+	}
+
 	return pcu_sock_send(bts->network, msg);
 }
 
