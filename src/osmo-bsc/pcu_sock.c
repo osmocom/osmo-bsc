@@ -50,8 +50,6 @@ static int pcu_sock_send(struct gsm_network *net, struct msgb *msg);
 
 static const char *sapi_string[] = {
 	[PCU_IF_SAPI_RACH] =	"RACH",
-	[PCU_IF_SAPI_AGCH] =	"AGCH",
-	[PCU_IF_SAPI_PCH] =	"PCH",
 	[PCU_IF_SAPI_BCCH] =	"BCCH",
 	[PCU_IF_SAPI_PDTCH] =	"PDTCH",
 	[PCU_IF_SAPI_PRACH] =	"PRACH",
