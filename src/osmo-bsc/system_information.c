@@ -1421,7 +1421,7 @@ int gsm_generate_si10(struct gsm48_system_information_type_10 *si10, size_t len,
 		      const struct gsm_subscriber_connection *conn)
 {
 	struct bitvec *nbv;
-	struct gsm_bts *s_bts = conn->lchan->ts->trx->bts;
+	struct gsm_bts *s_bts = conn->lchan->ts->trx->bts, *l_bts = NULL;
 	int i;
 	bool any_neighbor = false;
 	int rc;
@@ -1443,7 +1443,7 @@ int gsm_generate_si10(struct gsm48_system_information_type_10 *si10, size_t len,
 
 	/* Get up to 32 possible neighbor frequencies that SI10 can refer to. */
 	for (i = 0; i < 32; i++) {
-		struct gsm_bts *c_bts, *n_bts, *l_bts;
+		struct gsm_bts *c_bts, *n_bts;
 		struct gsm_subscriber_connection *c;
 		unsigned int save_cur_bit;
 		int16_t arfcn;
@@ -1478,6 +1478,7 @@ int gsm_generate_si10(struct gsm48_system_information_type_10 *si10, size_t len,
 				save_cur_bit = bv.cur_bit;
 				/* Nth neighbor, so add rest octets with differential cell info. */
 				LOGP(DRR, LOGL_INFO, "Append cell ID %d to SI 10.\n", n_bts->cell_identity);
+				OSMO_ASSERT(l_bts);
 				rc = si10_rest_octets_encode_other(s_bts, &bv, l_bts, n_bts, last_i, i);
 				if (rc < 0) {
 					LOGP(DRR, LOGL_INFO, "Skip cell ID %d, SI 10 would overflow.\n",
