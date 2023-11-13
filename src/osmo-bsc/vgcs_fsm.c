@@ -795,6 +795,8 @@ static void vgcs_chan_fsm_active_blocked(struct osmo_fsm_inst *fi, uint32_t even
 		/* Report talker detection to call state machine. */
 		if (conn->vgcs_chan.call)
 			osmo_fsm_inst_dispatch(conn->vgcs_chan.call->vgcs_call.fi, VGCS_EV_CALLING_ASSIGNED, conn);
+		/* Repeat notification for the MS that has been assigned. */
+		rsl_notification_cmd(conn->lchan->ts->trx->bts, conn->lchan, &conn->vgcs_chan.gc_ie, NULL);
 		break;
 	case VGCS_EV_CLEANUP:
 		LOG_CHAN(conn, LOGL_DEBUG, "SCCP connection clearing.\n");
