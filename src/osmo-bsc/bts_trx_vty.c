@@ -349,6 +349,13 @@ DEFUN_USRATTR(cfg_ts_hopping,
 		return CMD_WARNING;
 	}
 
+	if (enabled && bts->imm_ass_time != IMM_ASS_TIME_POST_CHAN_ACK) {
+		vty_out(vty,
+			"%% ERROR: 'hopping enabled 1' works only with 'immediate-assignment post-chan-ack'%s",
+			VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
 	ts->hopping.enabled = enabled;
 
 	return CMD_SUCCESS;

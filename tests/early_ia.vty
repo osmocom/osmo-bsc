@@ -1,0 +1,24 @@
+OsmoBSC> enable
+OsmoBSC# configure terminal
+OsmoBSC(config)# network
+OsmoBSC(config-net)# bts 0
+
+OsmoBSC(config-net-bts)# ### Check that first setting early-IA and then enabling frequency hopping throws an error
+OsmoBSC(config-net-bts)# immediate-assignment pre-chan-ack
+OsmoBSC(config-net-bts)# trx 0
+OsmoBSC(config-net-bts-trx)# timeslot 2
+OsmoBSC(config-net-bts-trx-ts)# hopping enabled 1
+% ERROR: 'hopping enabled 1' works only with 'immediate-assignment post-chan-ack'
+OsmoBSC(config-net-bts-trx-ts)# hopping enabled 0
+OsmoBSC(config-net-bts-trx-ts)# exit
+OsmoBSC(config-net-bts-trx)# exit
+OsmoBSC(config-net-bts)# immediate-assignment post-chan-ack
+
+OsmoBSC(config-net-bts)# ### Check that first enabling frequency hopping and then setting early-IA throws an error
+OsmoBSC(config-net-bts)# trx 0
+OsmoBSC(config-net-bts-trx)# timeslot 2
+OsmoBSC(config-net-bts-trx-ts)# hopping enabled 1
+OsmoBSC(config-net-bts-trx-ts)# exit
+OsmoBSC(config-net-bts-trx)# exit
+OsmoBSC(config-net-bts)# immediate-assignment pre-chan-ack
+% ERROR: 'hopping enabled 1' works only with 'immediate-assignment post-chan-ack', see timeslot 0-0-2-NONE

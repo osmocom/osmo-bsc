@@ -3242,13 +3242,35 @@ DEFUN_ATTR(cfg_bts_immediate_assignment, cfg_bts_immediate_assignment_cmd,
 	   CMD_ATTR_IMMEDIATE)
 {
 	struct gsm_bts *bts = vty->index;
+	enum imm_ass_time imm_ass_time;
 
 	if (!strcmp(argv[0], "pre-ts-ack"))
-		bts->imm_ass_time = IMM_ASS_TIME_PRE_TS_ACK;
+		imm_ass_time = IMM_ASS_TIME_PRE_TS_ACK;
 	else if (!strcmp(argv[0], "pre-chan-ack"))
-		bts->imm_ass_time = IMM_ASS_TIME_PRE_CHAN_ACK;
+		imm_ass_time = IMM_ASS_TIME_PRE_CHAN_ACK;
 	else
-		bts->imm_ass_time = IMM_ASS_TIME_POST_CHAN_ACK;
+		imm_ass_time = IMM_ASS_TIME_POST_CHAN_ACK;
+
+	if (imm_ass_time != IMM_ASS_TIME_POST_CHAN_ACK) {
+		struct gsm_bts_trx *trx;
+
+		/* Early-IA does not work with frequency hopping, because the IMM ASS does not convey an ARFCN when
+		 * frequency hopping is in use. Make sure the user knows that. */
+		llist_for_each_entry(trx, &bts->trx_list, list) {
+			int ts_nr;
+			for (ts_nr = 0; ts_nr < TRX_NR_TS; ts_nr++) {
+				struct gsm_bts_trx_ts *ts = &trx->ts[ts_nr];
+				if (ts->hopping.enabled) {
+					vty_out(vty, "%% ERROR: 'hopping enabled 1' works only with"
+						" 'immediate-assignment post-chan-ack', see timeslot %s%s",
+						ts->fi->id, VTY_NEWLINE);
+					return CMD_WARNING;
+				}
+			}
+		}
+	}
+
+	bts->imm_ass_time = imm_ass_time;
 	return CMD_SUCCESS;
 }
 
