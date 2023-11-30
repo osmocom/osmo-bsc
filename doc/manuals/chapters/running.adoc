@@ -69,6 +69,24 @@ To run multiple OsmoBSC instances on the same A-interface (SCCP/M3UA), each BSC
 has to configure a distinct point-code. See <<cs7_config>>.
 
 
+=== Configure limits
+
+When connecting hundreds of TRX to OsmoBSC, it may be necessary to adjust the
+operating system's limit on open file descriptors for the osmo-bsc process. A
+typical default limit imposed by operating systems is 1024; this would be
+exceeded by, for example, about 205 BTS with 4 TRX each. (Each BTS with 4 TRX
+requires 5 file descriptors for Abis; 205 * 5 already exceeds 1024, sockets for
+other interfaces not considered yet.)
+
+It should be ok to set an OS limit on open file descriptors as high as 65536
+for osmo-bsc, which practically rules out failure from running out of file
+descriptors anywhere (<50,000 TRX).
+
+When using systemd, the file descriptor limit may be adjusted in the service
+file by the `LimitNOFILE` setting ("Number of Open FILE descriptors"). OsmoBSC
+ships a systemd service file with a high LimitNOFILE setting.
+
+
 === Configure primary links
 
 ==== Connect to an MSC's _A_ interface
