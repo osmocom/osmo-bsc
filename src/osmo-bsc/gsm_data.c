@@ -460,22 +460,20 @@ int gsm_pchan2chan_nr(enum gsm_phys_chan_config pchan,
 		if (vamos_is_secondary)
 			cbits = ABIS_RSL_CHAN_NR_CBITS_OSMO_VAMOS_Bm_ACCHs;
 		else
-			cbits = 0x01;
+			cbits = ABIS_RSL_CHAN_NR_CBITS_Bm_ACCHs;
 		break;
 	case GSM_PCHAN_PDCH:
 		if (lchan_nr != 0)
 			return -EINVAL;
-		cbits = RSL_CHAN_OSMO_PDCH >> 3;
+		cbits = ABIS_RSL_CHAN_NR_CBITS_OSMO_PDCH;
 		break;
 	case GSM_PCHAN_TCH_H:
 		if (lchan_nr >= 2)
 			return -EINVAL;
 		if (vamos_is_secondary)
 			cbits = ABIS_RSL_CHAN_NR_CBITS_OSMO_VAMOS_Lm_ACCHs(lchan_nr);
-		else {
-			cbits = 0x02;
-			cbits += lchan_nr;
-		}
+		else
+			cbits = ABIS_RSL_CHAN_NR_CBITS_Lm_ACCHs(lchan_nr);
 		break;
 	case GSM_PCHAN_CCCH_SDCCH4:
 	case GSM_PCHAN_CCCH_SDCCH4_CBCH:
@@ -488,21 +486,19 @@ int gsm_pchan2chan_nr(enum gsm_phys_chan_config pchan,
 			lchan_nr = 0;
 		else if (lchan_nr > 4)
 			return -EINVAL;
-		cbits = 0x04;
-		cbits += lchan_nr;
+		cbits = ABIS_RSL_CHAN_NR_CBITS_SDCCH4_ACCH(lchan_nr);
 		break;
 	case GSM_PCHAN_SDCCH8_SACCH8C:
 	case GSM_PCHAN_SDCCH8_SACCH8C_CBCH:
 		if (lchan_nr >= 8)
 			return -EINVAL;
-		cbits = 0x08;
-		cbits += lchan_nr;
+		cbits = ABIS_RSL_CHAN_NR_CBITS_SDCCH8_ACCH(lchan_nr);
 		break;
 	default:
 	case GSM_PCHAN_CCCH:
 		if (lchan_nr != 0)
 			return -EINVAL;
-		cbits = 0x10;
+		cbits = ABIS_RSL_CHAN_NR_CBITS_BCCH;
 		break;
 	}
 
