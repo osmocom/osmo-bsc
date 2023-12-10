@@ -23,6 +23,7 @@
 #include <osmocom/core/fsm.h>
 #include <osmocom/netif/rtp.h>
 #include <osmocom/mgcp_client/mgcp_client_endpoint_fsm.h>
+#include <osmocom/mgcp_client/fmtp.h>
 
 #include <osmocom/bsc/gsm_data.h>
 #include <osmocom/bsc/lchan_fsm.h>
@@ -906,9 +907,8 @@ static int chan_mode_to_mgcp_bss_pt(enum mgcp_codecs codec)
 		return RTP_PT_AMR;
 
 	default:
-		/* Not an error, we just leave it to libosmo-mgcp-client to
-		 * decide over the PT. */
-		return -1;
+		/* For other codecs, we use the same number as defined in enum mgcp_codecs. */
+		return codec;
 	}
 }
 
@@ -916,47 +916,48 @@ void mgcp_pick_codec(struct mgcp_conn_peer *verb_info, const struct gsm_lchan *l
 {
 	enum mgcp_codecs codec = chan_mode_to_mgcp_codec(lchan->activate.ch_mode_rate.chan_mode,
 							 lchan->type == GSM_LCHAN_TCH_H? false : true);
-	int custom_pt;
-
 	if (codec < 0) {
 		LOG_LCHAN(lchan, LOGL_ERROR,
 			  "Unable to determine MGCP codec type for %s in chan-mode %s\n",
 			  gsm_chan_t_name(lchan->type), gsm48_chan_mode_name(lchan->activate.ch_mode_rate.chan_mode));
-		verb_info->codecs_len = 0;
+		verb_info->ptmap_len = 0;
 		return;
 	}
 
-	verb_info->codecs[0] = codec;
-	verb_info->codecs_len = 1;
+	verb_info->ptmap[0] = (struct ptmap){
+		.codec = codec,
+	};
+	verb_info->ptmap_len = 1;
 
-	/* Setup custom payload types (only for BSS side and when required) */
-	custom_pt = chan_mode_to_mgcp_bss_pt(codec);
-	if (bss_side && custom_pt > 0) {
-		verb_info->ptmap[0].codec = codec;
-		verb_info->ptmap[0].pt = custom_pt;
-		verb_info->ptmap_len = 1;
-	}
+	if (bss_side) {
+		/* 2G RAN requires specific payload type numbers for some codecs <citation needed> */
+		verb_info->ptmap[0].pt = chan_mode_to_mgcp_bss_pt(codec);
 
-	/* AMR requires additional parameters to be set up (framing mode) */
-	if (verb_info->codecs[0] == CODEC_AMR_8000_1) {
-		verb_info->param_present = true;
-		verb_info->param.amr_octet_aligned_present = true;
-	}
+		/* All currently tested BTS models do AMR in octet-aligned packing. */
+		if (codec == CODEC_AMR_8000_1)
+			OSMO_STRLCPY_ARRAY(verb_info->ptmap[0].fmtp, OSMO_SDP_VAL_AMR_OCTET_ALIGN_1);
+	} else {
+		/* enum mgcp_codecs actually reflects the payload type numbers we use on AoIP */
+		verb_info->ptmap[0].pt = codec;
 
-	if (bss_side && verb_info->codecs[0] == CODEC_AMR_8000_1) {
-		/* FIXME: At the moment all BTSs we support are using the
-		 * octet-aligned payload format. However, in the future
-		 * we may support BTSs that are using bandwidth-efficient
-		 * format. In this case we will have to add functionality
-		 * that distinguishes by the BTS model which mode to use. */
-		verb_info->param.amr_octet_aligned = true;
-	}
-	else if (!bss_side && verb_info->codecs[0] == CODEC_AMR_8000_1) {
-		verb_info->param.amr_octet_aligned = lchan->conn->sccp.msc->amr_octet_aligned;
+		if (codec == CODEC_AMR_8000_1) {
+			/* Towards CN, on AoIP, AMR is specified to be octet-align=0 (3GPP TS 26.102 10.2 AMR). However,
+			 * since all of our BTS models use octet-align=1, we allow by VTY cfg to use octet-align=1 on
+			 * AoIP ('msc' / 'amr-payload', stored in msc->amr_octet_aligned).
+			 *
+			 * If octet-align == 0, we should omit the octet-align fmtp: octet-align=0 is specified to be
+			 * the default in RFC 4867 8.1 'AMR Media Type Registration'.
+			 * However, currently, osmo-mgw ignores implicit octet-align. Until that is resolved, always set
+			 * explicit octet-align.
+			 */
+			OSMO_STRLCPY_ARRAY(verb_info->ptmap[0].fmtp,
+					   lchan->conn->sccp.msc->amr_octet_aligned ?
+						   OSMO_SDP_VAL_AMR_OCTET_ALIGN_1 : OSMO_SDP_VAL_AMR_OCTET_ALIGN_0);
+		}
 	}
 }
 
 bool mgcp_codec_is_picked(const struct mgcp_conn_peer *verb_info, enum mgcp_codecs codec)
 {
-	return verb_info->codecs[0] == codec;
+	return verb_info->ptmap_len >= 1 && verb_info->ptmap[0].codec == codec;
 }
