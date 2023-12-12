@@ -1,3 +1,12 @@
+osmo-bsc (1.11.1) unstable; urgency=medium
+
+  [ Philipp Maier ]
+  * pcuif_proto: rename PCU_IF_FLAG_SYSMO to PCU_IF_FLAG_DIRECT_PHY
+  * pcuif_proto: clean up last remains of old PCUIF v10
+  * pcuif_proto: signal BTS model via PCUIF
+
+ -- Oliver Smith <osmith@sysmocom.de>  Tue, 12 Dec 2023 16:53:00 +0100
+
 osmo-bsc (1.11.0) unstable; urgency=medium
 
   [ Max ]
