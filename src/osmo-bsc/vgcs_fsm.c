@@ -317,8 +317,10 @@ static void vgcs_call_fsm_busy(struct osmo_fsm_inst *fi, uint32_t event, void *d
 		break;
 	case VGCS_EV_MSC_DTAP:
 		LOG_CALL(conn, LOGL_DEBUG, "MSC sends DTAP message to talker.\n");
-		if (!conn->vgcs_call.talker)
+		if (!conn->vgcs_call.talker) {
 			msgb_free(data);
+			break;
+		}
 		rc = osmo_fsm_inst_dispatch(conn->vgcs_call.talker->vgcs_chan.fi, VGCS_EV_MSC_DTAP, data);
 		if (rc < 0)
 			msgb_free(data);
