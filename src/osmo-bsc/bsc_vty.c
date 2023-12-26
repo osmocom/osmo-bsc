@@ -415,9 +415,9 @@ static int config_write_net(struct vty *vty)
 	}
 
 	if (gsmnet->pcu_sock_path)
-		vty_out(vty, "  pcu-socket %s%s", gsmnet->pcu_sock_path, VTY_NEWLINE);
+		vty_out(vty, " pcu-socket %s%s", gsmnet->pcu_sock_path, VTY_NEWLINE);
 	if (gsmnet->pcu_sock_wqueue_len_max != BSC_PCU_SOCK_WQUEUE_LEN_DEFAULT)
-		vty_out(vty, "  pcu-socket-wqueue-length %u%s", gsmnet->pcu_sock_wqueue_len_max,
+		vty_out(vty, " pcu-socket-wqueue-length %u%s", gsmnet->pcu_sock_wqueue_len_max,
 			VTY_NEWLINE);
 
 	neighbor_ident_vty_write_network(vty, " ");
