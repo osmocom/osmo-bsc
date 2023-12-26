@@ -418,7 +418,7 @@ static int config_write_net(struct vty *vty)
 	}
 
 	if (gsmnet->pcu_sock_path)
-		vty_out(vty, "  pcu-socket %s%s", gsmnet->pcu_sock_path, VTY_NEWLINE);
+		vty_out(vty, " pcu-socket %s%s", gsmnet->pcu_sock_path, VTY_NEWLINE);
 
 	neighbor_ident_vty_write_network(vty, " ");
 	mgcp_client_pool_config_write(vty, " ");
