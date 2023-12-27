@@ -1143,6 +1143,41 @@ static int set_bts_cell_reselection_hysteresis(struct ctrl_cmd *cmd, void *data)
 
 CTRL_CMD_DEFINE(bts_cell_reselection_hysteresis, "cell-reselection-hysteresis");
 
+static int verify_bts_rxlev_access_min(struct ctrl_cmd *cmd, const char *value, void *_data)
+{
+	int rxlev_access_min = atoi(cmd->value);
+
+	if (rxlev_access_min < 0 || rxlev_access_min > 63) {
+		cmd->reply = "Value is out of range";
+		return 1;
+	}
+
+	return 0;
+}
+
+static int get_bts_rxlev_access_min(struct ctrl_cmd *cmd, void *data)
+{
+	struct gsm_bts *bts = cmd->node;
+
+	cmd->reply = talloc_asprintf(cmd, "%u", bts->si_common.cell_sel_par.rxlev_acc_min);
+	if (!cmd->reply) {
+		cmd->reply = "OOM";
+		return CTRL_CMD_ERROR;
+	}
+
+	return CTRL_CMD_REPLY;
+}
+
+static int set_bts_rxlev_access_min(struct ctrl_cmd *cmd, void *data)
+{
+	struct gsm_bts *bts = cmd->node;
+	bts->si_common.cell_sel_par.rxlev_acc_min = atoi(cmd->value);
+	cmd->reply = "OK";
+	return CTRL_CMD_REPLY;
+}
+
+CTRL_CMD_DEFINE(bts_rxlev_access_min, "rach-rxlev-access-min");
+
 /* Return space concatenated set of pairs <class>,<barred/allowed> */
 static int get_bts_rach_access_control_class(struct ctrl_cmd *cmd, void *data)
 {
@@ -1394,6 +1429,7 @@ int bsc_bts_ctrl_cmds_install(void)
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_cell_reselection_offset);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_cell_reselection_penalty_time);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_cell_reselection_hysteresis);
+	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_rxlev_access_min);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_rach_access_control_class);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_rach_access_control_class_bar);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_rach_access_control_class_allow);
