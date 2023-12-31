@@ -772,6 +772,19 @@ DEFUN_ATTR(cfg_bts_rach_max_delay,
 	return CMD_SUCCESS;
 }
 
+DEFUN_ATTR(cfg_bts_rach_expiry_timeout,
+	   cfg_bts_rach_expiry_timeout_cmd,
+	   "rach expiry-timeout <4-64>",
+	   RACH_STR
+	   "Set the timeout for channel requests expiry\n"
+	   "Maximum timeout before dropping channel requests\n",
+	   CMD_ATTR_IMMEDIATE)
+{
+	struct gsm_bts *bts = vty->index;
+	bts->rach_expiry_timeout = atoi(argv[0]);
+	return CMD_SUCCESS;
+}
+
 #define REP_ACCH_STR "FACCH/SACCH repetition\n"
 
 DEFUN_USRATTR(cfg_bts_rep_dl_facch,
@@ -4516,6 +4529,7 @@ static void config_write_bts_single(struct vty *vty, struct gsm_bts *bts)
 		rach_max_trans_raw2val(bts->si_common.rach_control.max_trans),
 		VTY_NEWLINE);
 	vty_out(vty, "  rach max-delay %u%s", bts->rach_max_delay, VTY_NEWLINE);
+	vty_out(vty, "  rach expiry-timeout %u%s", bts->rach_expiry_timeout, VTY_NEWLINE);
 
 	vty_out(vty, "  channel-description attach %u%s",
 		bts->si_common.chan_desc.att, VTY_NEWLINE);
@@ -4862,6 +4876,7 @@ int bts_vty_init(void)
 	install_element(BTS_NODE, &cfg_bts_rach_tx_integer_cmd);
 	install_element(BTS_NODE, &cfg_bts_rach_max_trans_cmd);
 	install_element(BTS_NODE, &cfg_bts_rach_max_delay_cmd);
+	install_element(BTS_NODE, &cfg_bts_rach_expiry_timeout_cmd);
 	install_element(BTS_NODE, &cfg_bts_chan_desc_att_cmd);
 	install_element(BTS_NODE, &cfg_bts_chan_dscr_att_cmd);
 	install_element(BTS_NODE, &cfg_bts_chan_desc_bs_pa_mfrms_cmd);

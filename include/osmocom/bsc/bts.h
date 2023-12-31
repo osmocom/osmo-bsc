@@ -663,6 +663,9 @@ struct gsm_bts {
 	/* We will ignore CHAN RQD with access delay greater than rach_max_delay */
 	uint8_t rach_max_delay;
 
+	/* We will ignore CHAN RQD sitting in the queue for period greater than rach_expiry_timeout */
+	uint8_t rach_expiry_timeout;
+
 	/* Is Fast return to LTE allowed during Chan Release in this BTS? */
 	bool srvcc_fast_return_allowed;
 

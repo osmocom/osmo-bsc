@@ -470,6 +470,7 @@ struct gsm_bts *gsm_bts_alloc(struct gsm_network *net, struct gsm_bts_sm *bts_sm
 	bts->interf_meas_params_cfg = interf_meas_params_def;
 
 	bts->rach_max_delay = 63;
+	bts->rach_expiry_timeout = 32;
 
 	/* SRVCC is enabled by default */
 	bts->srvcc_fast_return_allowed = true;

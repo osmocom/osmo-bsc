@@ -1975,7 +1975,6 @@ static int rsl_rx_pchan_rqd(struct chan_rqd *rqd)
  * requests from the queue to prevent the queue from growing indefinetly. */
 static void reduce_rach_dos(struct gsm_bts *bts)
 {
-	int rlt = gsm_bts_get_radio_link_timeout(bts);
 	time_t timestamp_current = time(NULL);
 	struct chan_rqd *rqd;
 	struct chan_rqd *rqd_tmp;
@@ -1983,9 +1982,9 @@ static void reduce_rach_dos(struct gsm_bts *bts)
 
 	/* Drop all expired channel requests in the list */
 	llist_for_each_entry_safe(rqd, rqd_tmp, &bts->chan_rqd_queue, entry) {
-		/* If the channel request is older than the radio link timeout we drop it. This also means that the
+		/* If the channel request is older than the rach expiry timeout we drop it. This also means that the
 		 * queue is under its overflow limit again. */
-		if (timestamp_current - rqd->timestamp > rlt) {
+		if (timestamp_current - rqd->timestamp > bts->rach_expiry_timeout) {
 			LOG_BTS(bts, DRSL, LOGL_INFO, "CHAN RQD: tossing expired channel request"
 				"(ra=0x%02x, neci=0x%02x, chreq_reason=0x%02x)\n",
 				rqd->ref.ra, bts->network->neci, rqd->reason);
