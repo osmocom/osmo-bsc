@@ -1481,8 +1481,15 @@ DEFUN_USRATTR(cfg_bts_radio_link_timeout,
 	      "Radio link timeout value (lost SACCH block)\n")
 {
 	struct gsm_bts *bts = vty->index;
+	unsigned int radio_link_timeout = atoi(argv[0]);
 
-	gsm_bts_set_radio_link_timeout(bts, atoi(argv[0]));
+	/* According to Table 10.5.2.3.1 in TS 144.018 */
+	if (radio_link_timeout % 4 != 0) {
+		vty_out(vty, "%% Radio link timeout must be a multiple of 4%s", VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	gsm_bts_set_radio_link_timeout(bts, radio_link_timeout);
 
 	return CMD_SUCCESS;
 }
