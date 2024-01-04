@@ -1144,6 +1144,56 @@ static int set_bts_cell_reselection_hysteresis(struct ctrl_cmd *cmd, void *data)
 
 CTRL_CMD_DEFINE(bts_cell_reselection_hysteresis, "cell-reselection-hysteresis");
 
+
+static int verify_bts_radio_link_timeout(struct ctrl_cmd *cmd, const char *value, void *_data)
+{
+	int radio_link_timeout;
+	struct gsm_bts *bts = cmd->node;
+
+	if (strcmp(value, "infinite") == 0) {
+		if (bts->type != GSM_BTS_TYPE_OSMOBTS) {
+			cmd->reply = "Infinite radio link timeout not supported by BTS";
+			return 1;
+		}
+		return 0;
+	}
+
+	radio_link_timeout = atoi(cmd->value);
+
+	if (radio_link_timeout < 0 || radio_link_timeout > 64) {
+		cmd->reply = "Value is out of range";
+		return 1;
+	} else if (radio_link_timeout % 4 != 0) {
+		cmd->reply = "Value must be a multiple of 4";
+		return 1;
+	}
+
+	return 0;
+}
+
+static int get_bts_radio_link_timeout(struct ctrl_cmd *cmd, void *data)
+{
+	struct gsm_bts *bts = cmd->node;
+
+	cmd->reply = talloc_asprintf(cmd, "%u", gsm_bts_get_radio_link_timeout(bts));
+	if (!cmd->reply) {
+		cmd->reply = "OOM";
+		return CTRL_CMD_ERROR;
+	}
+
+	return CTRL_CMD_REPLY;
+}
+
+static int set_bts_radio_link_timeout(struct ctrl_cmd *cmd, void *data)
+{
+	struct gsm_bts *bts = cmd->node;
+	gsm_bts_set_radio_link_timeout(bts, atoi(cmd->value));
+	cmd->reply = "OK";
+	return CTRL_CMD_REPLY;
+}
+
+CTRL_CMD_DEFINE(bts_radio_link_timeout, "radio-link-timeout");
+
 static int verify_bts_rxlev_access_min(struct ctrl_cmd *cmd, const char *value, void *_data)
 {
 	int rxlev_access_min = atoi(cmd->value);
@@ -1431,6 +1481,7 @@ int bsc_bts_ctrl_cmds_install(void)
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_cell_reselection_offset);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_cell_reselection_penalty_time);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_cell_reselection_hysteresis);
+	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_radio_link_timeout);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_rxlev_access_min);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_rach_access_control_class);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_rach_access_control_class_bar);
