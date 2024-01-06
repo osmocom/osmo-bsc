@@ -1040,6 +1040,7 @@ static int set_bts_cell_reselection_offset(struct ctrl_cmd *cmd, void *data)
 	struct gsm_bts *bts = cmd->node;
 	bts->si_common.cell_ro_sel_par.present = 1;
 	bts->si_common.cell_ro_sel_par.cell_resel_off = atoi(cmd->value) / 2;
+	cmd->reply = "OK";
 	return CTRL_CMD_REPLY;
 }
 
