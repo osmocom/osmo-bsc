@@ -3992,7 +3992,6 @@ static void bts_dump_vty_features(struct vty *vty, struct gsm_bts *bts)
 void bts_dump_vty(struct vty *vty, struct gsm_bts *bts)
 {
 	struct pchan_load pl;
-	unsigned long long sec;
 	struct gsm_bts_trx *trx;
 	int ts_hopping_total;
 	int ts_non_hopping_total;
@@ -4124,14 +4123,7 @@ void bts_dump_vty(struct vty *vty, struct gsm_bts *bts)
 	if (is_ipa_abisip_bts(bts)) {
 		vty_out(vty, "  OML Link: ");
 		e1isl_dump_vty_tcp(vty, bts->oml_link);
-		vty_out(vty, "  OML Link state: %s", get_model_oml_status(bts));
-		if (bts_setup_ramp_active(bts->network))
-			vty_out(vty, "  BTS Ramping: %s", bts_setup_ramp_get_state_str(bts));
-		sec = bts_updowntime(bts);
-		if (sec)
-			vty_out(vty, " %llu days %llu hours %llu min. %llu sec.",
-				OSMO_SEC2DAY(sec), OSMO_SEC2HRS(sec), OSMO_SEC2MIN(sec), sec % 60);
-		vty_out(vty, "%s", VTY_NEWLINE);
+		bts_dump_vty_oml_link_state(vty, bts);
 	} else {
 		vty_out(vty, "  E1 Signalling Link:%s", VTY_NEWLINE);
 		e1isl_dump_vty(vty, bts->oml_link);
@@ -4207,6 +4199,20 @@ void bts_dump_vty(struct vty *vty, struct gsm_bts *bts)
 	vty_out_stat_item_group(vty, "  ", bts->bts_statg);
 
 	bts_dump_vty_features(vty, bts);
+}
+
+void bts_dump_vty_oml_link_state(struct vty *vty, struct gsm_bts *bts)
+{
+	unsigned long long sec;
+
+	vty_out(vty, "  OML Link state: %s", get_model_oml_status(bts));
+	if (bts_setup_ramp_active(bts->network))
+		vty_out(vty, "  BTS Ramping: %s", bts_setup_ramp_get_state_str(bts));
+	sec = bts_updowntime(bts);
+	if (sec)
+		vty_out(vty, " %llu days %llu hours %llu min. %llu sec.",
+			OSMO_SEC2DAY(sec), OSMO_SEC2HRS(sec), OSMO_SEC2MIN(sec), sec % 60);
+	vty_out(vty, "%s", VTY_NEWLINE);
 }
 
 static void config_write_bts_gprs(struct vty *vty, struct gsm_bts *bts)

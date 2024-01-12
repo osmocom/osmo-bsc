@@ -257,6 +257,22 @@ DEFUN(show_bts, show_bts_cmd, "show bts [<0-255>]",
 	return CMD_SUCCESS;
 }
 
+DEFUN(show_bts_brief, show_bts_brief_cmd, "show bts brief",
+	SHOW_STR "Display information about a BTS\n"
+		"Display availability status of all BTS\n")
+{
+	struct gsm_network *net = gsmnet_from_vty(vty);
+	struct gsm_bts *bts;
+
+	/* Print OML state of BTSs. */
+	llist_for_each_entry(bts, &net->bts_list, list) {
+		vty_out(vty, "BTS %d:", bts->nr);
+		bts_dump_vty_oml_link_state(vty, bts);
+	}
+
+	return CMD_SUCCESS;
+}
+
 DEFUN(show_bts_fail_rep, show_bts_fail_rep_cmd, "show bts <0-255> fail-rep [reset]",
 	SHOW_STR "Display information about a BTS\n"
 		"BTS number\n" "OML failure reports\n"
@@ -3634,6 +3650,7 @@ int bsc_vty_init(struct gsm_network *network)
 
 	install_element_ve(&bsc_show_net_cmd);
 	install_element_ve(&show_bts_cmd);
+	install_element_ve(&show_bts_brief_cmd);
 	install_element_ve(&show_bts_fail_rep_cmd);
 	install_element_ve(&show_rejected_bts_cmd);
 	install_element_ve(&show_trx_cmd);

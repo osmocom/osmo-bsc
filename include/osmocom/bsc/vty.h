@@ -51,6 +51,7 @@ struct gsm_network *gsmnet_from_vty(struct vty *vty);
 
 int bts_vty_init(void);
 void bts_dump_vty(struct vty *vty, struct gsm_bts *bts);
+void bts_dump_vty_oml_link_state(struct vty *vty, struct gsm_bts *bts);
 void trx_dump_vty(struct vty *vty, struct gsm_bts_trx *trx, bool print_rsl, bool show_connected);
 void ts_dump_vty(struct vty *vty, struct gsm_bts_trx_ts *ts);
 void lchan_dump_full_vty(struct vty *vty, struct gsm_lchan *lchan);
