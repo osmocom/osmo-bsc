@@ -766,7 +766,8 @@ struct gsm_bts_trx *gsm_bts_trx_num(const struct gsm_bts *bts, int num)
 
 void bts_store_uptime(struct gsm_bts *bts)
 {
-	osmo_stat_item_set(osmo_stat_item_group_get_item(bts->bts_statg, BTS_STAT_UPTIME_SECONDS), bts_uptime(bts));
+	osmo_stat_item_set(osmo_stat_item_group_get_item(bts->bts_statg, BTS_STAT_UPTIME_SECONDS),
+			   bts->oml_link ? bts_updowntime(bts) : 0);
 }
 
 void bts_store_lchan_durations(struct gsm_bts *bts)
@@ -824,20 +825,20 @@ void bts_store_lchan_durations(struct gsm_bts *bts)
 	rate_ctr_add(rate_ctr_group_get_ctr(bts->bts_ctrs, BTS_CTR_CHAN_SDCCH_ACTIVE_MILLISECONDS_TOTAL), elapsed_sdcch_ms);
 }
 
-unsigned long long bts_uptime(const struct gsm_bts *bts)
+unsigned long long bts_updowntime(const struct gsm_bts *bts)
 {
 	struct timespec tp;
 
-	if (!bts->uptime || !bts->oml_link)
+	if (!bts->updowntime)
 		return 0;
 
 	if (osmo_clock_gettime(CLOCK_MONOTONIC, &tp) != 0) {
-		LOGP(DNM, LOGL_ERROR, "BTS %u uptime computation failure: %s\n", bts->nr, strerror(errno));
+		LOGP(DNM, LOGL_ERROR, "BTS %u uptime/downtime computation failure: %s\n", bts->nr, strerror(errno));
 		return 0;
 	}
 
 	/* monotonic clock helps to ensure that the conversion is valid */
-	return difftime(tp.tv_sec, bts->uptime);
+	return difftime(tp.tv_sec, bts->updowntime);
 }
 
 char *get_model_oml_status(const struct gsm_bts *bts)

@@ -372,7 +372,7 @@ static int get_bts_oml_up(struct ctrl_cmd *cmd, void *data)
 {
 	const struct gsm_bts *bts = cmd->node;
 
-	cmd->reply = talloc_asprintf(cmd, "%llu", bts_uptime(bts));
+	cmd->reply = talloc_asprintf(cmd, "%llu", bts->oml_link ? bts_updowntime(bts) : 0);
 	if (!cmd->reply) {
 		cmd->reply = "OOM";
 		return CTRL_CMD_ERROR;

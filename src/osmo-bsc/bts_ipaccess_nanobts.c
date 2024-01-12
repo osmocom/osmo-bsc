@@ -527,6 +527,8 @@ void ipaccess_drop_oml(struct gsm_bts *bts, const char *reason)
 	struct gsm_bts_trx_ts *ts ;
 	uint8_t tn;
 	uint8_t i;
+	struct timespec tp;
+	int rc;
 
 	/* First of all, remove deferred drop if enabled */
 	osmo_timer_del(&bts->oml_drop_link_timer);
@@ -537,7 +539,8 @@ void ipaccess_drop_oml(struct gsm_bts *bts, const char *reason)
 	LOG_BTS(bts, DLINP, LOGL_NOTICE, "Dropping OML link: %s\n", reason);
 	e1inp_sign_link_destroy(bts->oml_link);
 	bts->oml_link = NULL;
-	bts->uptime = 0;
+	rc = osmo_clock_gettime(CLOCK_MONOTONIC, &tp);
+	bts->updowntime = (rc < 0) ? 0 : tp.tv_sec; /* we don't need sub-second precision for downtime */
 	osmo_stat_item_dec(osmo_stat_item_group_get_item(bts->bts_statg, BTS_STAT_OML_CONNECTED), 1);
 	gsm_bts_stats_reset(bts);
 
@@ -710,7 +713,7 @@ ipaccess_sign_link_up(void *unit_data, struct e1inp_line *line,
 						E1INP_SIGN_OML, bts->c0,
 						bts->oml_tei, 0);
 		rc = osmo_clock_gettime(CLOCK_MONOTONIC, &tp);
-		bts->uptime = (rc < 0) ? 0 : tp.tv_sec; /* we don't need sub-second precision for uptime */
+		bts->updowntime = (rc < 0) ? 0 : tp.tv_sec; /* we don't need sub-second precision for uptime */
 		if (!(sign_link->trx->bts->ip_access.flags & OML_UP)) {
 			e1inp_event(sign_link->ts, S_L_INP_TEI_UP,
 					sign_link->tei, sign_link->sapi);

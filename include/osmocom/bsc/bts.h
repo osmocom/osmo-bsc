@@ -375,8 +375,8 @@ struct gsm_bts {
 	struct e1inp_sign_link *oml_link;
 	/* Timer to use for deferred drop of OML link, see \ref ipaccess_drop_oml_deferred */
 	struct osmo_timer_list oml_drop_link_timer;
-	/* when OML link was established */
-	time_t uptime;
+	/* when OML link was established or lost */
+	time_t updowntime;
 
 	/* Abis network management O&M handle */
 	struct abis_nm_h *nmh;
@@ -815,7 +815,7 @@ int bts_gprs_mode_is_compat(struct gsm_bts *bts, enum bts_gprs_mode mode);
 #define BTS_STORE_UPTIME_INTERVAL 10 /* in seconds */
 void bts_store_uptime(struct gsm_bts *bts);
 
-unsigned long long bts_uptime(const struct gsm_bts *bts);
+unsigned long long bts_updowntime(const struct gsm_bts *bts);
 
 #define BTS_STORE_LCHAN_DURATIONS_INTERVAL 1 /* in seconds */
 void bts_store_lchan_durations(struct gsm_bts *bts);

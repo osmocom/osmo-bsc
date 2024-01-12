@@ -4127,7 +4127,7 @@ void bts_dump_vty(struct vty *vty, struct gsm_bts *bts)
 		vty_out(vty, "  OML Link state: %s", get_model_oml_status(bts));
 		if (bts_setup_ramp_active(bts->network))
 			vty_out(vty, "  BTS Ramping: %s", bts_setup_ramp_get_state_str(bts));
-		sec = bts_uptime(bts);
+		sec = bts_updowntime(bts);
 		if (sec)
 			vty_out(vty, " %llu days %llu hours %llu min. %llu sec.",
 				OSMO_SEC2DAY(sec), OSMO_SEC2HRS(sec), OSMO_SEC2MIN(sec), sec % 60);
