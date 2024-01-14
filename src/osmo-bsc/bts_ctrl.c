@@ -1382,6 +1382,39 @@ static int set_bts_rach_cell_barred(struct ctrl_cmd *cmd, void *data)
 
 CTRL_CMD_DEFINE(bts_rach_cell_barred, "rach-cell-barred");
 
+static int verify_bts_rach_max_trans(struct ctrl_cmd *cmd, const char *value, void *_data)
+{
+	int max_trans = atoi(cmd->value);
+
+	if ((max_trans != 1) && (max_trans != 2) && (max_trans != 4) && (max_trans != 7))
+		return 1;
+
+	return 0;
+}
+
+static int get_bts_rach_max_trans(struct ctrl_cmd *cmd, void *data)
+{
+	struct gsm_bts *bts = cmd->node;
+
+	cmd->reply = talloc_asprintf(cmd, "%u", rach_max_trans_raw2val(bts->si_common.rach_control.max_trans));
+	if (!cmd->reply) {
+		cmd->reply = "OOM";
+		return CTRL_CMD_ERROR;
+	}
+
+	return CTRL_CMD_REPLY;
+}
+
+static int set_bts_rach_max_trans(struct ctrl_cmd *cmd, void *data)
+{
+	struct gsm_bts *bts = cmd->node;
+	bts->si_common.rach_control.max_trans = rach_max_trans_val2raw(atoi(cmd->value));
+	cmd->reply = "OK";
+	return CTRL_CMD_REPLY;
+}
+
+CTRL_CMD_DEFINE(bts_rach_max_trans, "rach-max-transmission");
+
 /* Return space concatenated set of tuples <UARFCN>,<scrambling code>,<diversity bit> */
 static int get_bts_neighbor_list_si2quater_uarfcn(struct ctrl_cmd *cmd, void *data)
 {
@@ -1488,6 +1521,7 @@ int bsc_bts_ctrl_cmds_install(void)
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_rach_access_control_class_bar);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_rach_access_control_class_allow);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_rach_cell_barred);
+	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_rach_max_trans);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_neighbor_list_si2quater_uarfcn);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_neighbor_list_si2quater_earfcn);
 
