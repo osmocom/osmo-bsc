@@ -253,6 +253,7 @@ CTRL_CMD_DEFINE_RANGE(bts_ci, "cell-identity", struct gsm_bts, cell_identity, 0,
 CTRL_CMD_DEFINE_RANGE(bts_bsic, "bsic", struct gsm_bts, bsic, 0, 63);
 CTRL_CMD_DEFINE_RANGE(bts_rach_max_delay, "rach-max-delay", struct gsm_bts, rach_max_delay, 1, 127);
 CTRL_CMD_DEFINE_RANGE(bts_rach_expiry_timeout, "rach-expiry-timeout", struct gsm_bts, rach_expiry_timeout, 4, 64);
+CTRL_CMD_DEFINE_RANGE(bts_ms_max_power, "ms-max-power", struct gsm_bts, ms_max_power, 0, 40);
 
 static int set_bts_apply_config(struct ctrl_cmd *cmd, void *data)
 {
@@ -1515,6 +1516,7 @@ int bsc_bts_ctrl_cmds_install(void)
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_cell_reselection_offset);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_cell_reselection_penalty_time);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_cell_reselection_hysteresis);
+	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_ms_max_power);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_radio_link_timeout);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_rxlev_access_min);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_rach_access_control_class);
