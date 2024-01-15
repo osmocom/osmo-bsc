@@ -1564,6 +1564,22 @@ DEFUN_USRATTR(cfg_bts_gprs_nsei,
 #define NSVC_TEXT "Network Service Virtual Connection (NS-VC)\n" \
 		"NSVC Logical Number\n"
 
+DEFUN_USRATTR(cfg_no_bts_gprs_nsvc,
+	      cfg_no_bts_gprs_nsvc_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_OML_LINK),
+	      "no gprs nsvc <0-1>",
+	      NO_STR GPRS_TEXT NSVC_TEXT)
+{
+	struct gsm_bts *bts = vty->index;
+	int idx = atoi(argv[0]);
+
+	GPRS_CHECK_ENABLED(bts);
+
+	bts->site_mgr->gprs.nsvc[idx].enabled = false;
+
+	return CMD_SUCCESS;
+}
+
 DEFUN_USRATTR(cfg_bts_gprs_nsvci,
 	      cfg_bts_gprs_nsvci_cmd,
 	      X(BSC_VTY_ATTR_RESTART_ABIS_OML_LINK),
@@ -1578,6 +1594,7 @@ DEFUN_USRATTR(cfg_bts_gprs_nsvci,
 	GPRS_CHECK_ENABLED(bts);
 
 	bts->site_mgr->gprs.nsvc[idx].nsvci = atoi(argv[1]);
+	bts->site_mgr->gprs.nsvc[idx].enabled = true;
 
 	return CMD_SUCCESS;
 }
@@ -1598,6 +1615,7 @@ DEFUN_USRATTR(cfg_bts_gprs_nsvc_lport,
 	GPRS_CHECK_ENABLED(bts);
 
 	bts->site_mgr->gprs.nsvc[idx].local_port = atoi(argv[1]);
+	bts->site_mgr->gprs.nsvc[idx].enabled = true;
 
 	return CMD_SUCCESS;
 }
@@ -1619,6 +1637,7 @@ DEFUN_USRATTR(cfg_bts_gprs_nsvc_rport,
 
 	/* sockaddr_in and sockaddr_in6 have the port at the same position */
 	bts->site_mgr->gprs.nsvc[idx].remote.u.sin.sin_port = htons(atoi(argv[1]));
+	bts->site_mgr->gprs.nsvc[idx].enabled = true;
 
 	return CMD_SUCCESS;
 }
@@ -1651,9 +1670,11 @@ DEFUN_USRATTR(cfg_bts_gprs_nsvc_rip,
 	switch (remote.af) {
 	case AF_INET:
 		osmo_sockaddr_str_to_in_addr(&remote, &bts->site_mgr->gprs.nsvc[idx].remote.u.sin.sin_addr);
+		bts->site_mgr->gprs.nsvc[idx].enabled = true;
 		break;
 	case AF_INET6:
 		osmo_sockaddr_str_to_in6_addr(&remote, &bts->site_mgr->gprs.nsvc[idx].remote.u.sin6.sin6_addr);
+		bts->site_mgr->gprs.nsvc[idx].enabled = true;
 		break;
 	}
 
@@ -4251,6 +4272,11 @@ static void config_write_bts_gprs(struct vty *vty, struct gsm_bts *bts)
 		const struct gsm_gprs_nsvc *nsvc = &bts_sm->gprs.nsvc[i];
 		struct osmo_sockaddr_str remote;
 
+		if (!nsvc->enabled) {
+			vty_out(vty, "  no gprs nsvc %u%s", i, VTY_NEWLINE);
+			continue;
+		}
+
 		vty_out(vty, "  gprs nsvc %u nsvci %u%s", i,
 			nsvc->nsvci, VTY_NEWLINE);
 
@@ -4951,6 +4977,7 @@ int bts_vty_init(void)
 	install_element(BTS_NODE, &cfg_bts_gprs_bvci_cmd);
 	install_element(BTS_NODE, &cfg_bts_gprs_cell_timer_cmd);
 	install_element(BTS_NODE, &cfg_bts_gprs_nsei_cmd);
+	install_element(BTS_NODE, &cfg_no_bts_gprs_nsvc_cmd);
 	install_element(BTS_NODE, &cfg_bts_gprs_nsvci_cmd);
 	install_element(BTS_NODE, &cfg_bts_gprs_nsvc_lport_cmd);
 	install_element(BTS_NODE, &cfg_bts_gprs_nsvc_rport_cmd);

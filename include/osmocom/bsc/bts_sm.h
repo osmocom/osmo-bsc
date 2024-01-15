@@ -40,6 +40,7 @@ struct gsm_gprs_nsvc {
 	/* data read via VTY config file, to configure the BTS
 	 * via OML from BSC */
 	int id;
+	bool enabled;
 	uint16_t nsvci;
 	uint16_t local_port;	/* on the BTS */
 	struct osmo_sockaddr remote;

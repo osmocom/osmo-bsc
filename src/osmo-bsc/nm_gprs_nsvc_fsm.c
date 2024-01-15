@@ -96,6 +96,10 @@ static void st_op_disabled_notinstalled(struct osmo_fsm_inst *fi, uint32_t event
 
 static bool has_valid_nsvc(const struct gsm_gprs_nsvc *nsvc)
 {
+	/* If not configured (enabled) at all. */
+	if (!nsvc->enabled)
+		return false;
+
 	/* remote address must be valid */
 	if (osmo_sockaddr_is_any(&nsvc->remote))
 		return false;

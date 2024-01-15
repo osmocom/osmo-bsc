@@ -41,10 +41,8 @@ OsmoBSC(config-net-bts)# show running-config
   gprs ns timer tns-test 30
   gprs ns timer tns-alive 3
   gprs ns timer tns-alive-retries 10
-  gprs nsvc 0 nsvci 0
-  gprs nsvc 0 local udp port 0
-  gprs nsvc 1 nsvci 0
-  gprs nsvc 1 local udp port 0
+  no gprs nsvc 0
+  no gprs nsvc 1
 ...
 
 
@@ -104,13 +102,12 @@ OsmoBSC(config-net-bts)# show running-config
 ...
 
 OsmoBSC(config-net-bts)# ### Disable secondary NSVC
-OsmoBSC(config-net-bts)# gprs nsvc 1 remote udp port 0
+OsmoBSC(config-net-bts)# no gprs nsvc 1
 OsmoBSC(config-net-bts)# show running-config
 ...
  bts 0
 ...
   gprs nsvc 0 nsvci 4242
   gprs nsvc 0 local udp port 0
-  gprs nsvc 1 nsvci 2424
-  gprs nsvc 1 local udp port 23023
+  no gprs nsvc 1
 ...
