@@ -3259,6 +3259,10 @@ DEFUN(show_mscs,
 		vty_out(vty, "       ASP protocol: %s%s",
 			osmo_ss7_asp_protocol_name(msc->a.asp_proto),
 			VTY_NEWLINE);
+		vty_out(vty, "       BSSMAP state: %s%s",
+			msc->a.bssmap_reset ? osmo_fsm_inst_state_name(msc->a.bssmap_reset->fi) : "",
+			VTY_NEWLINE);
+
 	}
 
 	return CMD_SUCCESS;

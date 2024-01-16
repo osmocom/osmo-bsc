@@ -198,7 +198,7 @@ static int bssmap_reset_fsm_timer_cb(struct osmo_fsm_inst *fi)
 
 static struct osmo_fsm_state bssmap_reset_fsm_states[] = {
 	[BSSMAP_RESET_ST_DISC] = {
-		     .name = "DISC",
+		     .name = "DISCONNECTED",
 		     .in_event_mask = 0
 			     | S(BSSMAP_RESET_EV_RX_RESET)
 			     | S(BSSMAP_RESET_EV_RX_RESET_ACK)
@@ -213,7 +213,7 @@ static struct osmo_fsm_state bssmap_reset_fsm_states[] = {
 		     .action = bssmap_reset_disc_action,
 		     },
 	[BSSMAP_RESET_ST_CONN] = {
-		     .name = "CONN",
+		     .name = "CONNECTED",
 		     .in_event_mask = 0
 			     | S(BSSMAP_RESET_EV_RX_RESET)
 			     | S(BSSMAP_RESET_EV_RX_RESET_ACK)
