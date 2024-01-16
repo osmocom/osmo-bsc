@@ -3250,12 +3250,14 @@ DEFUN(show_mscs,
 {
 	struct bsc_msc_data *msc;
 	llist_for_each_entry(msc, &bsc_gsmnet->mscs, entry) {
-		vty_out(vty, "%d %s %s ",
+		vty_out(vty, "MSC %d: %s <-> ",
 			msc->a.cs7_instance,
-			osmo_ss7_asp_protocol_name(msc->a.asp_proto),
 			osmo_sccp_inst_addr_name(msc->a.sccp, &msc->a.bsc_addr));
 		vty_out(vty, "%s%s",
 			osmo_sccp_inst_addr_name(msc->a.sccp, &msc->a.msc_addr),
+			VTY_NEWLINE);
+		vty_out(vty, "       ASP protocol: %s%s",
+			osmo_ss7_asp_protocol_name(msc->a.asp_proto),
 			VTY_NEWLINE);
 	}
 
