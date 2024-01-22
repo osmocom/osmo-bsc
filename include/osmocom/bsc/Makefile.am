@@ -46,7 +46,6 @@ noinst_HEADERS = \
 	neighbor_ident.h \
 	network_listen.h \
 	nm_common_fsm.h \
-	openbscdefines.h \
 	osmo_bsc.h \
 	osmo_bsc_grace.h \
 	osmo_bsc_rf.h \
