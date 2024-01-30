@@ -24,9 +24,6 @@
 
 #include <osmocom/ctrl/control_cmd.h>
 
-#include <osmocom/vty/command.h>
-#include <osmocom/vty/misc.h>
-
 #include <osmocom/bsc/ctrl.h>
 #include <osmocom/bsc/osmo_bsc_rf.h>
 #include <osmocom/bsc/bts.h>
