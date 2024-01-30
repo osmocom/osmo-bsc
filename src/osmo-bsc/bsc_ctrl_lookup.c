@@ -43,6 +43,7 @@ static int bsc_ctrl_node_lookup(void *data, vector vline, int *node_type,
 	struct gsm_bts *bts = NULL;
 	struct gsm_bts_trx *trx = NULL;
 	struct gsm_bts_trx_ts *ts = NULL;
+	struct gsm_lchan *lchan = NULL;
 	struct bsc_msc_data *msc = NULL;
 	char *token = vector_slot(vline, *i);
 	long num;
@@ -89,6 +90,20 @@ static int bsc_ctrl_node_lookup(void *data, vector vline, int *node_type,
 			goto err_missing;
 		*node_data = ts;
 		*node_type = CTRL_NODE_TS;
+	} else if (!strcmp(token, "lchan")) {
+		if (*node_type != CTRL_NODE_TS || !*node_data)
+			goto err_missing;
+		ts = *node_data;
+		(*i)++;
+		if (!ctrl_parse_get_num(vline, *i, &num))
+			goto err_index;
+
+		if ((num >= 0) && (num < TS_MAX_LCHAN))
+			lchan = &ts->lchan[num];
+		if (!lchan)
+			goto err_missing;
+		*node_data = lchan;
+		*node_type = CTRL_NODE_LCHAN;
 	} else if (!strcmp(token, "msc")) {
 		if (*node_type != CTRL_NODE_ROOT || !net)
 			goto err_missing;

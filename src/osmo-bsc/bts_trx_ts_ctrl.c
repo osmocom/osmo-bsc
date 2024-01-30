@@ -102,5 +102,7 @@ int bsc_bts_trx_ts_ctrl_cmds_install(void)
 	rc |= ctrl_cmd_install(CTRL_NODE_TS, &cmd_ts_hopping_arfcn_add);
 	rc |= ctrl_cmd_install(CTRL_NODE_TS, &cmd_ts_hopping_arfcn_del);
 
+	rc |= bsc_bts_trx_ts_lchan_ctrl_cmds_install();
+
 	return rc;
 }

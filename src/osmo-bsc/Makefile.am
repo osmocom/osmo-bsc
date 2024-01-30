@@ -47,6 +47,7 @@ libbsc_la_SOURCES = \
 	bts_trx.c \
 	bts_trx_ctrl.c \
 	bts_trx_ts_ctrl.c \
+	bts_trx_ts_lchan_ctrl.c \
 	bts_ericsson_rbs2000.c \
 	bts_init.c \
 	bts_ipaccess_nanobts.c \
