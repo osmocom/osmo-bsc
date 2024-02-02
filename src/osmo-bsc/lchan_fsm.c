@@ -1893,7 +1893,7 @@ static const struct osmo_fsm_state lchan_fsm_states[] = {
 			| S(LCHAN_ST_RECOVER_WAIT_ACTIV_ACK)
 			,
 	},
-	[LCHAN_ST_RECOVER_WAIT_ACTIV_ACK] {
+	[LCHAN_ST_RECOVER_WAIT_ACTIV_ACK] = {
 		.name = "RECOVER_WAIT_ACTIV_ACK",
 		.onenter = lchan_fsm_recover_wait_activ_ack_onenter,
 		.action = lchan_fsm_recover_wait_activ_ack,
@@ -1906,7 +1906,7 @@ static const struct osmo_fsm_state lchan_fsm_states[] = {
 			| S(LCHAN_ST_RECOVER_WAIT_RF_RELEASE_ACK)
 			,
 	},
-	[LCHAN_ST_RECOVER_WAIT_RF_RELEASE_ACK] {
+	[LCHAN_ST_RECOVER_WAIT_RF_RELEASE_ACK] = {
 		.name = "RECOVER_WAIT_RF_RELEASE_ACK",
 		.onenter = lchan_fsm_recover_wait_rf_release_ack_onenter,
 		.action = lchan_fsm_recover_wait_rf_release_ack,
