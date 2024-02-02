@@ -86,7 +86,8 @@ int abis_nm_set_bts_attr(struct gsm_bts *bts, uint8_t *attr, int attr_len);
 int abis_nm_set_radio_attr(struct gsm_bts_trx *trx, uint8_t *attr, int attr_len);
 int abis_nm_set_channel_attr(struct gsm_bts_trx_ts *ts, uint8_t chan_comb);
 int abis_nm_sw_act_req_ack(struct gsm_bts *bts, uint8_t obj_class, uint8_t i1,
-			uint8_t i2, uint8_t i3, int nack, uint8_t *attr, int att_len);
+			   uint8_t i2, uint8_t i3, int nack,
+			   const uint8_t *attr, int attr_len);
 int abis_nm_raw_msg(struct gsm_bts *bts, int len, uint8_t *msg);
 int abis_nm_event_reports(struct gsm_bts *bts, int on);
 int abis_nm_reset_resource(struct gsm_bts *bts);

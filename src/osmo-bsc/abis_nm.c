@@ -2164,12 +2164,13 @@ int abis_nm_set_channel_attr(struct gsm_bts_trx_ts *ts, uint8_t chan_comb)
 }
 
 int abis_nm_sw_act_req_ack(struct gsm_bts *bts, uint8_t obj_class, uint8_t i1,
-			uint8_t i2, uint8_t i3, int nack, uint8_t *attr, int att_len)
+			   uint8_t i2, uint8_t i3, int nack,
+			   const uint8_t *attr, int attr_len)
 {
 	struct abis_om_hdr *oh;
 	struct msgb *msg = nm_msgb_alloc();
 	uint8_t msgtype = NM_MT_SW_ACT_REQ_ACK;
-	uint8_t len = att_len;
+	uint8_t len = attr_len;
 
 	if (nack) {
 		len += 2;
@@ -2177,12 +2178,10 @@ int abis_nm_sw_act_req_ack(struct gsm_bts *bts, uint8_t obj_class, uint8_t i1,
 	}
 
 	oh = (struct abis_om_hdr *) msgb_put(msg, ABIS_OM_FOM_HDR_SIZE);
-	fill_om_fom_hdr(oh, att_len, msgtype, obj_class, i1, i2, i3);
+	fill_om_fom_hdr(oh, attr_len, msgtype, obj_class, i1, i2, i3);
 
-	if (attr) {
-		uint8_t *ptr = msgb_put(msg, att_len);
-		memcpy(ptr, attr, att_len);
-	}
+	if (attr != NULL && attr_len > 0)
+		memcpy(msgb_put(msg, attr_len), attr, attr_len);
 	if (nack)
 		msgb_tv_put(msg, NM_ATT_NACK_CAUSES, NM_NACK_OBJCLASS_NOTSUPP);
 
