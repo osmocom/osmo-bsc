@@ -838,7 +838,7 @@ static int bsc_base_ctrl_cmds_install(struct gsm_network *net)
 	rc |= ctrl_cmd_install(CTRL_NODE_ROOT, &cmd_net_notification);
 	rc |= ctrl_cmd_install(CTRL_NODE_ROOT, &cmd_net_inform_msc);
 
-	rc = ctrl_cmd_install(CTRL_NODE_MSC, &cmd_msc_connection_status);
+	rc |= ctrl_cmd_install(CTRL_NODE_MSC, &cmd_msc_connection_status);
 
 	rc |= osmo_signal_register_handler(SS_L_INPUT, &bts_connection_status_trap_cb, net);
 	rc |= osmo_signal_register_handler(SS_MSC, &msc_connection_status_trap_cb, net);
