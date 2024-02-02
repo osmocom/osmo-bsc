@@ -2183,7 +2183,7 @@ int abis_nm_sw_act_req_ack(struct gsm_bts *bts, uint8_t obj_class, uint8_t i1,
 	}
 
 	oh = (struct abis_om_hdr *) msgb_put(msg, ABIS_OM_FOM_HDR_SIZE);
-	fill_om_fom_hdr(oh, attr_len, msgtype, obj_class, i1, i2, i3);
+	fill_om_fom_hdr(oh, len, msgtype, obj_class, i1, i2, i3);
 
 	if (attr != NULL && attr_len > 0)
 		memcpy(msgb_put(msg, attr_len), attr, attr_len);
