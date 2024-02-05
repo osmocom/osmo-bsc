@@ -756,11 +756,16 @@ static int abis_nm_rx_sw_act_req(struct msgb *mb)
 
 	DEBUGPFOH(DNM, foh, "Software Activate Request, ACKing and Activating\n");
 
+	if (oh->length < sizeof(*foh)) {
+		LOGPFOH(DNM, LOGL_ERROR, foh, "Software Activate Request with length too small: %u\n", oh->length);
+		return -EINVAL;
+	}
+
 	ret = abis_nm_sw_act_req_ack(sign_link->trx->bts, foh->obj_class,
 				      foh->obj_inst.bts_nr,
 				      foh->obj_inst.trx_nr,
 				      foh->obj_inst.ts_nr, 0,
-				      foh->data, oh->length-sizeof(*foh));
+				      foh->data, oh->length - sizeof(*foh));
 	if (ret != 0) {
 		LOGPFOH(DNM, LOGL_ERROR, foh, "Sending SW ActReq ACK failed: %d\n", ret);
 		return ret;
@@ -2165,7 +2170,7 @@ int abis_nm_set_channel_attr(struct gsm_bts_trx_ts *ts, uint8_t chan_comb)
 
 int abis_nm_sw_act_req_ack(struct gsm_bts *bts, uint8_t obj_class, uint8_t i1,
 			   uint8_t i2, uint8_t i3, int nack,
-			   const uint8_t *attr, int attr_len)
+			   const uint8_t *attr, unsigned int attr_len)
 {
 	struct abis_om_hdr *oh;
 	struct msgb *msg = nm_msgb_alloc();
