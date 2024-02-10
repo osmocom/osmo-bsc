@@ -136,12 +136,17 @@ static bool test_codec_pref(const struct gsm0808_speech_codec **sc_match,
 	struct gsm0808_speech_codec sc;
 	int rc;
 
+	LOGP(DLGLOBAL, LOGL_NOTICE, "%s(perm_spch=0x%x)\n", __func__, perm_spch);
+
 	*sc_match = NULL;
 
 	/* Try to find the given permitted speech value in the
 	 * codec list of the channel type element */
 	for (i = 0; i < ct->perm_spch_len; i++) {
+		LOGP(DLGLOBAL, LOGL_NOTICE, "  channel_type->perm_spch[%d] = 0x%x\n", i, ct->perm_spch[i]);
+
 		if (ct->perm_spch[i] == perm_spch) {
+			LOGP(DLGLOBAL, LOGL_NOTICE, "    MATCH\n");
 			match = true;
 			break;
 		}
@@ -149,24 +154,35 @@ static bool test_codec_pref(const struct gsm0808_speech_codec **sc_match,
 
 	/* If we do not have a speech codec list to test against,
 	 * we just exit early (will be always the case in non-AoIP networks) */
-	if (!scl || !scl->len)
+	if (!scl || !scl->len) {
+		LOGP(DLGLOBAL, LOGL_NOTICE, "!scl\n");
 		return match;
+	}
 
 	/* If we failed to match until here, there is no
 	 * point in testing further */
-	if (match == false)
+	if (match == false) {
+		LOGP(DLGLOBAL, LOGL_NOTICE, "!match\n");
 		return false;
+	}
 
 	/* Extrapolate speech codec data */
 	rc = gsm0808_speech_codec_from_chan_type(&sc, perm_spch);
-	if (rc < 0)
+	if (rc < 0) {
+		LOGP(DLGLOBAL, LOGL_NOTICE, "gsm0808_speech_codec_from_chan_type(0x%x) rc = %d\n", perm_spch, rc);
 		return false;
+	}
 
 	/* Try to find extrapolated speech codec data in
 	 * the speech codec list */
+	LOGP(DLGLOBAL, LOGL_NOTICE, "looking for %s in scl:\n",
+	     gsm0808_speech_codec_type_name(sc.type));
 	for (i = 0; i < scl->len; i++) {
+		LOGP(DLGLOBAL, LOGL_NOTICE, "  scl->codec[%d] = %s cfg=0x%x\n", i,
+		     gsm0808_speech_codec_type_name(scl->codec[i].type), scl->codec[i].cfg);
 		if (sc.type == scl->codec[i].type) {
 			*sc_match = &scl->codec[i];
+			LOGP(DLGLOBAL, LOGL_NOTICE, "    MATCH\n");
 			return true;
 		}
 	}
@@ -209,14 +225,17 @@ static bool test_codec_support_bts(const struct gsm_bts *bts, uint8_t perm_spch)
 	const struct bts_codec_conf *bts_codec = &bts->codec;
 	bool full_rate;
 	int rc;
+	LOGP(DLGLOBAL, LOGL_NOTICE, "   test_codec_support_bts(0x%x)\n", perm_spch);
 
 	/* Check if the BTS provides a physical channel that matches the
 	 * bandwidth of the desired codec. */
 	rc = full_rate_from_perm_spch(&full_rate, perm_spch);
 	if (rc < 0)
 		return false;
-	if (!test_codec_support_bts_rate(bts, full_rate))
+	if (!test_codec_support_bts_rate(bts, full_rate)) {
+		LOGP(DLGLOBAL, LOGL_ERROR, "   test_codec_support_bts_rate(full_rate=%d) failed\n", full_rate);
 		return false;
+	}
 
 	/* Check codec support */
 	switch (perm_spch) {
@@ -225,13 +244,17 @@ static bool test_codec_support_bts(const struct gsm_bts *bts, uint8_t perm_spch)
 		 * selectively disable GSM-RF per BTS via VTY. */
 		return true;
 	case GSM0808_PERM_FR2:
+		LOGP(DLGLOBAL, LOGL_NOTICE, "bts_codec->efr == %u\n", bts_codec->efr);
 		return (bool)bts_codec->efr;
 	case GSM0808_PERM_FR3:
 	case GSM0808_PERM_HR3:
+		LOGP(DLGLOBAL, LOGL_NOTICE, "bts_codec->amr == %u\n", bts_codec->amr);
 		return (bool)bts_codec->amr;
 	case GSM0808_PERM_HR1:
+		LOGP(DLGLOBAL, LOGL_NOTICE, "bts_codec->hr == %u\n", bts_codec->hr);
 		return (bool)bts_codec->hr;
 	default:
+		LOGP(DLGLOBAL, LOGL_NOTICE, "   unsupported Permitted Speech 0x%x\n", perm_spch);
 		return false;
 	}
 
