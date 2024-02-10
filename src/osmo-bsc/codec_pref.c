@@ -290,17 +290,15 @@ static uint16_t gen_bss_supported_amr_s15_s0(const struct bsc_msc_data *msc, con
 	/* Lookup the BTS specific AMR rate configuration. This config is set
 	 * via the VTY for each BTS individually. In cases where no configuration
 	 * is set we will assume a safe default */
-	if (hr) {
+	if (hr)
 		amr_cfg_bts = (struct gsm48_multi_rate_conf *)&bts->mr_half.gsm48_ie;
-		amr_s15_s0_bts = gsm0808_sc_cfg_from_gsm48_mr_cfg(amr_cfg_bts, false);
-	} else {
+	else
 		amr_cfg_bts = (struct gsm48_multi_rate_conf *)&bts->mr_full.gsm48_ie;
-		amr_s15_s0_bts = gsm0808_sc_cfg_from_gsm48_mr_cfg(amr_cfg_bts, true);
-	}
+	amr_s15_s0_bts = sc_cfg_from_gsm48_mr_cfg(amr_cfg_bts, !hr);
 
 	/* Lookup the AMR rate configuration that is set for the MSC */
 	amr_cfg_msc = &msc->amr_conf;
-	amr_s15_s0_msc = gsm0808_sc_cfg_from_gsm48_mr_cfg(amr_cfg_msc, true);
+	amr_s15_s0_msc = sc_cfg_from_gsm48_mr_cfg(amr_cfg_msc, !hr);
 
 	/* Calculate the intersection of the two configurations and update S0-S15
 	 * in the codec list. */
