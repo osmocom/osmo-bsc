@@ -336,16 +336,8 @@ static int match_amr_s15_s0(struct channel_mode_and_rate *ch_mode_rate, const st
 	else
 		ch_mode_rate->s15_s0 = amr_s15_s0_supported;
 
-	/* Prefer "Config-NB-Code = 1" (S1) over all other AMR rates settings.
-	 * When S1 is set, the active set will automatically include 12.2k, 7.4k,
-	 * 5.9k, 4.75k, in case of HR 12,2k is left out. */
-	if (ch_mode_rate->s15_s0 & GSM0808_SC_CFG_AMR_4_75_5_90_7_40_12_20) {
-		ch_mode_rate->s15_s0 &= 0xff00;
-		ch_mode_rate->s15_s0 |= GSM0808_SC_CFG_AMR_4_75_5_90_7_40_12_20;
-	}
-
 	/* Make sure at least one rate is set. */
-	if ((ch_mode_rate->s15_s0 & 0x00ff) == 0x0000)
+	if (!ch_mode_rate->s15_s0)
 		return -EINVAL;
 
 	return 0;
