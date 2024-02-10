@@ -402,9 +402,8 @@ int match_codec_pref(struct channel_mode_and_rate *ch_mode_rate,
 
 		/* Match the permitted speech value against the codec lists that were
 		 * advertised by the MS and the MSC */
-		if (!test_codec_pref(&sc_match, scl, ct, perm_spch)) {
+		if (!test_codec_pref(&sc_match, scl, ct, perm_spch))
 			continue;
-		}
 
 		/* Special handling for AMR */
 		if (perm_spch == GSM0808_PERM_HR3 || perm_spch == GSM0808_PERM_FR3) {
