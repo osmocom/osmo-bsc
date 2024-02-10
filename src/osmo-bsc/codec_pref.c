@@ -285,6 +285,7 @@ static uint16_t gen_bss_supported_amr_s15_s0(const struct bsc_msc_data *msc, con
 	const struct gsm48_multi_rate_conf *amr_cfg_msc;
 	uint16_t amr_s15_s0_bts;
 	uint16_t amr_s15_s0_msc;
+	LOGP(DLGLOBAL, LOGL_NOTICE, "%s(hr=%d)\n", __func__, hr);
 
 	/* Lookup the BTS specific AMR rate configuration. This config is set
 	 * via the VTY for each BTS individually. In cases where no configuration
