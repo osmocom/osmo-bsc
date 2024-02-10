@@ -257,8 +257,6 @@ static bool test_codec_support_bts(const struct gsm_bts *bts, uint8_t perm_spch)
 		LOGP(DLGLOBAL, LOGL_NOTICE, "   unsupported Permitted Speech 0x%x\n", perm_spch);
 		return false;
 	}
-
-	return false;
 }
 
 /* Generate the bss supported amr configuration bits (S0-S15) */
