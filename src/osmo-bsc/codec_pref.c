@@ -404,6 +404,7 @@ int match_codec_pref(struct channel_mode_and_rate *ch_mode_rate,
 		 * advertised by the MS and the MSC */
 		if (!test_codec_pref(&sc_match, scl, ct, perm_spch))
 			continue;
+		LOGP(DLGLOBAL, LOGL_NOTICE, "   test_codec_pref() ok\n");
 
 		/* Special handling for AMR */
 		if (perm_spch == GSM0808_PERM_HR3 || perm_spch == GSM0808_PERM_FR3) {
@@ -415,6 +416,7 @@ int match_codec_pref(struct channel_mode_and_rate *ch_mode_rate,
 		} else
 			ch_mode_rate->s15_s0 = 0;
 
+		LOGP(DLGLOBAL, LOGL_NOTICE, "   match_amr_s15_s0() ok\n");
 		match = true;
 		break;
 	}

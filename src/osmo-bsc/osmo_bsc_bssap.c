@@ -790,6 +790,7 @@ static int select_codecs(struct assignment_request *req, const struct gsm0808_ch
 		nc += (rc == 0) ? 1 : 0;
 		break;
 	default:
+		LOGP(DMSC, LOGL_ERROR, "Unknown GSM 48.008 Channel Type: 0x%x\n", ct->ch_rate_type);
 		rc = -EINVAL;
 		break;
 	}
