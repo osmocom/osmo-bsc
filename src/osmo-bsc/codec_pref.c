@@ -259,6 +259,25 @@ static bool test_codec_support_bts(const struct gsm_bts *bts, uint8_t perm_spch)
 	}
 }
 
+static uint8_t multi_rate_conf_to_amr_modes(const struct gsm48_multi_rate_conf *cfg)
+{
+	return ((uint8_t *)cfg)[1];
+}
+
+/* Set all Sn bits that have *all* their rates allowed in the gsm48_multi_rate_conf. */
+static uint16_t sc_cfg_from_gsm48_mr_cfg(const struct gsm48_multi_rate_conf *cfg, bool fr)
+{
+	uint16_t s15_s0 = 0;
+	int s_bit;
+	uint8_t cfg_modes = multi_rate_conf_to_amr_modes(cfg);
+	for (s_bit = 0; s_bit < 16; s_bit++) {
+		uint8_t sn_modes = gsm0808_amr_modes_from_cfg[fr ? 1 : 0][s_bit];
+		if ((cfg_modes & sn_modes) == sn_modes)
+			s15_s0 |= (1 << s_bit);
+	}
+	return s15_s0;
+}
+
 /* Generate the bss supported amr configuration bits (S0-S15) */
 static uint16_t gen_bss_supported_amr_s15_s0(const struct bsc_msc_data *msc, const struct gsm_bts *bts, bool hr)
 {
