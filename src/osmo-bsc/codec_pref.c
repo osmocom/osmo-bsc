@@ -335,10 +335,13 @@ static int match_amr_s15_s0(struct channel_mode_and_rate *ch_mode_rate, const st
 		ch_mode_rate->s15_s0 = sc_match->cfg & amr_s15_s0_supported;
 	else
 		ch_mode_rate->s15_s0 = amr_s15_s0_supported;
+	LOGP(DLGLOBAL, LOGL_NOTICE, "ch_mode_rate->s15_s0 = %x\n", ch_mode_rate->s15_s0);
 
 	/* Make sure at least one rate is set. */
-	if (!ch_mode_rate->s15_s0)
+	if (!ch_mode_rate->s15_s0) {
+		LOGP(DLGLOBAL, LOGL_ERROR, "%s(): no rates\n", __func__);
 		return -EINVAL;
+	}
 
 	return 0;
 }
@@ -365,6 +368,8 @@ int match_codec_pref(struct channel_mode_and_rate *ch_mode_rate,
 	const struct gsm0808_speech_codec *sc_match = NULL;
 	int rc;
 
+	LOGP(DLGLOBAL, LOGL_NOTICE, "%s()\n", __func__);
+
 	/* Note: Normally the MSC should never try to advertise a codec that
 	 * we did not advertise as supported before. In order to ensure that
 	 * no unsupported codec is accepted, we make sure that the codec is
@@ -372,6 +377,7 @@ int match_codec_pref(struct channel_mode_and_rate *ch_mode_rate,
 	for (i = 0; i < msc->audio_length; i++) {
 		/* Pick a permitted speech value from the global codec configuration list */
 		perm_spch = audio_support_to_gsm88(&msc->audio_support[i]);
+		LOGP(DLGLOBAL, LOGL_NOTICE, " [%d] perm_spch=0x%x\n", i, perm_spch);
 
 		/* Determine if the result is a half or full rate codec */
 		rc = full_rate_from_perm_spch(&full_rate, perm_spch);
@@ -381,15 +387,18 @@ int match_codec_pref(struct channel_mode_and_rate *ch_mode_rate,
 
 		/* If we have a preference for FR or HR in our request, we
 		 * discard the potential match */
+		LOGP(DLGLOBAL, LOGL_NOTICE, "   rate_pref=%d chan_rate=%d\n", rate_pref, ch_mode_rate->chan_rate);
 		if (rate_pref == RATE_PREF_HR && ch_mode_rate->chan_rate == CH_RATE_FULL)
 			continue;
 		if (rate_pref == RATE_PREF_FR && ch_mode_rate->chan_rate == CH_RATE_HALF)
 			continue;
+		LOGP(DLGLOBAL, LOGL_NOTICE, "   rate_pref=%d chan_rate=%d ok\n", rate_pref, ch_mode_rate->chan_rate);
 
 		/* Check this permitted speech value against the BTS specific parameters.
 		 * if the BTS does not support the codec, try the next one */
 		if (!test_codec_support_bts(bts, perm_spch))
 			continue;
+		LOGP(DLGLOBAL, LOGL_NOTICE, "   test_codec_support_bts() ok\n");
 
 		/* Match the permitted speech value against the codec lists that were
 		 * advertised by the MS and the MSC */
