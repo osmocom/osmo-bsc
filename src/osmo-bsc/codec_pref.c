@@ -295,13 +295,16 @@ static uint16_t gen_bss_supported_amr_s15_s0(const struct bsc_msc_data *msc, con
 	else
 		amr_cfg_bts = (struct gsm48_multi_rate_conf *)&bts->mr_full.gsm48_ie;
 	amr_s15_s0_bts = sc_cfg_from_gsm48_mr_cfg(amr_cfg_bts, !hr);
+	LOGP(DLGLOBAL, LOGL_NOTICE, "  amr_s15_s0_bts = %x\n", amr_s15_s0_bts);
 
 	/* Lookup the AMR rate configuration that is set for the MSC */
 	amr_cfg_msc = &msc->amr_conf;
 	amr_s15_s0_msc = sc_cfg_from_gsm48_mr_cfg(amr_cfg_msc, !hr);
+	LOGP(DLGLOBAL, LOGL_NOTICE, "  amr_s15_s0_msc = %x\n", amr_s15_s0_msc);
 
 	/* Calculate the intersection of the two configurations and update S0-S15
 	 * in the codec list. */
+	LOGP(DLGLOBAL, LOGL_NOTICE, " return %x\n", amr_s15_s0_bts & amr_s15_s0_msc);
 	return amr_s15_s0_bts & amr_s15_s0_msc;
 }
 
@@ -309,6 +312,7 @@ static uint16_t gen_bss_supported_amr_s15_s0(const struct bsc_msc_data *msc, con
 static int match_amr_s15_s0(struct channel_mode_and_rate *ch_mode_rate, const struct bsc_msc_data *msc, const struct gsm_bts *bts, const struct gsm0808_speech_codec *sc_match, uint8_t perm_spch)
 {
 	uint16_t amr_s15_s0_supported;
+	LOGP(DLGLOBAL, LOGL_NOTICE, "match_amr_s15_s0()\n");
 
 	/* Normally the MSC should never try to advertise an AMR codec
 	 * configuration that we did not previously advertised as supported.
@@ -319,6 +323,7 @@ static int match_amr_s15_s0(struct channel_mode_and_rate *ch_mode_rate, const st
 	 * that the intersection contains at least one rate setting. */
 
 	amr_s15_s0_supported = gen_bss_supported_amr_s15_s0(msc, bts, (perm_spch == GSM0808_PERM_HR3));
+	LOGP(DLGLOBAL, LOGL_NOTICE, "amr_s15_s0_supported = %x\n", amr_s15_s0_supported);
 
 	/* NOTE: The sc_match pointer points to a speech codec from the speech
 	 * codec list that has been communicated with the ASSIGNMENT COMMAND.
