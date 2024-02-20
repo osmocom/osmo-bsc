@@ -22,6 +22,7 @@
 #include <osmocom/bsc/bts.h>
 #include <osmocom/bsc/system_information.h>
 #include <osmocom/bsc/abis_rsl.h>
+#include <osmocom/bsc/lchan_fsm.h>
 
 static int verify_lchan_ms_power(struct ctrl_cmd *cmd, const char *value, void *_data)
 {
@@ -67,11 +68,87 @@ static int set_lchan_ms_power(struct ctrl_cmd *cmd, void *data)
 
 CTRL_CMD_DEFINE(lchan_ms_power, "ms-power");
 
+/* Return full information about a logical channel.
+ * format: bts.<0-255>.trx.<0-255>.ts.<0-8>.lchan.<0-8>.show.full
+ * result format: <bts>,<trx>,<ts>,<lchan>,<type>,<connection>,<state>,<last error>,<bs power>,<ms power>,<interference dbm>,
+ *	<interference band>,<channel mode>,<imsi>,<tmsi>,<ipa bound ip>,<ipa bound port>,<ipa bound conn id>,<ipa conn ip>,
+ *	<ipa conn port>,<ipa conn sppech mode>
+ */
+static int get_lchan_show_full(struct ctrl_cmd *cmd, void *data)
+{
+	struct gsm_lchan *lchan = cmd->node;
+	struct in_addr ia;
+	char *interference = ",", *tmsi = "", *ipa_bound = ",,", *ipa_conn = ",,";
+
+	if (lchan->interf_dbm != INTERF_DBM_UNKNOWN) {
+		interference = talloc_asprintf(cmd, "%d,%u", lchan->interf_dbm, lchan->interf_band);
+		if (!interference) {
+			cmd->reply = "OOM";
+			return CTRL_CMD_ERROR;
+		}
+	}
+
+	if (lchan->conn && lchan->conn->bsub && lchan->conn->bsub->tmsi != GSM_RESERVED_TMSI) {
+		tmsi = talloc_asprintf(cmd, "0x%08x", lchan->conn->bsub->tmsi);
+		if (!tmsi) {
+			cmd->reply = "OOM";
+			return CTRL_CMD_ERROR;
+		}
+	}
+
+	if (is_ipa_abisip_bts(lchan->ts->trx->bts) && lchan->abis_ip.bound_ip) {
+		ia.s_addr = htonl(lchan->abis_ip.bound_ip);
+		ipa_bound = talloc_asprintf(cmd, "%s,%u,%u", inet_ntoa(ia), lchan->abis_ip.bound_port,
+								lchan->abis_ip.conn_id);
+		if (!ipa_bound) {
+			cmd->reply = "OOM";
+			return CTRL_CMD_ERROR;
+		}
+	}
+
+	if (is_ipa_abisip_bts(lchan->ts->trx->bts) && lchan->abis_ip.connect_ip) {
+		ia.s_addr = htonl(lchan->abis_ip.connect_ip);
+		ipa_conn = talloc_asprintf(cmd, "%s,%u,0x%02x", inet_ntoa(ia), lchan->abis_ip.connect_port,
+								lchan->abis_ip.speech_mode);
+		if (!ipa_conn) {
+			cmd->reply = "OOM";
+			return CTRL_CMD_ERROR;
+		}
+	}
+
+	cmd->reply = talloc_asprintf(cmd, "%u,%u,%u,%u,%s,%u,%s,%s,%u,%u,%s,%s,%s,%s,%s,%s",
+		lchan->ts->trx->bts->nr,
+		lchan->ts->trx->nr,
+		lchan->ts->nr,
+		lchan->nr,
+		gsm_chan_t_name(lchan->type),
+		lchan->conn ? 1 : 0, lchan_state_name(lchan),
+		lchan->fi && lchan->fi->state == LCHAN_ST_BORKEN ? lchan->last_error : "",
+		lchan->ts->trx->nominal_power - lchan->ts->trx->max_power_red - lchan->bs_power_db,
+		ms_pwr_dbm(lchan->ts->trx->bts->band, lchan->ms_power),
+		interference,
+		gsm48_chan_mode_name(lchan->current_ch_mode_rate.chan_mode),
+		lchan->conn && lchan->conn->bsub && strlen(lchan->conn->bsub->imsi) ? lchan->conn->bsub->imsi : "",
+		tmsi,
+		ipa_bound,
+		ipa_conn
+	);
+	if (!cmd->reply) {
+		cmd->reply = "OOM";
+		return CTRL_CMD_ERROR;
+	}
+
+	return CTRL_CMD_REPLY;
+}
+CTRL_CMD_DEFINE_RO(lchan_show_full, "show full");
+
+
 int bsc_bts_trx_ts_lchan_ctrl_cmds_install(void)
 {
 	int rc = 0;
 
 	rc |= ctrl_cmd_install(CTRL_NODE_LCHAN, &cmd_lchan_ms_power);
+	rc |= ctrl_cmd_install(CTRL_NODE_LCHAN, &cmd_lchan_show_full);
 
 	return rc;
 }
