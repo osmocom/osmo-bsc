@@ -1479,6 +1479,53 @@ static int get_bts_neighbor_list_si2quater_earfcn(struct ctrl_cmd *cmd, void *da
 
 CTRL_CMD_DEFINE_RO(bts_neighbor_list_si2quater_earfcn, "neighbor-list si2quater earfcns");
 
+char *bts_lchan_dump_full_ctrl(const void *t, struct gsm_bts *bts)
+{
+	int trx_nr;
+	bool first_trx = true;
+	char *trx_dump, *dump;
+	struct gsm_bts_trx *trx;
+
+	dump = talloc_strdup(t, "");
+	if (!dump)
+		return NULL;
+
+	for (trx_nr = 0; trx_nr < bts->num_trx; trx_nr++) {
+		trx = gsm_bts_trx_num(bts, trx_nr);
+		trx_dump = trx_lchan_dump_full_ctrl(t, trx);
+		if (!trx_dump)
+			return NULL;
+		if (!strlen(trx_dump))
+			continue;
+		dump = talloc_asprintf_append(dump, first_trx ? "%s" : "\n%s", trx_dump);
+		if (!dump)
+			return NULL;
+		first_trx = false;
+	}
+
+	return dump;
+}
+
+/* Return full information about all logical channels in a BTS.
+ * format: bts.<0-255>.show-lchan.full
+ * result format: New line delimited list of <bts>,<trx>,<ts>,<lchan>,<type>,<connection>,<state>,<last error>,<bs power>,
+ *  <ms power>,<interference dbm>, <interference band>,<channel mode>,<imsi>,<tmsi>,<ipa bound ip>,<ipa bound port>,
+ *  <ipa bound conn id>,<ipa conn ip>,<ipa conn port>,<ipa conn speech mode>
+ */
+static int get_bts_show_lchan_full(struct ctrl_cmd *cmd, void *data)
+{
+	struct gsm_bts *bts = cmd->node;
+
+	cmd->reply = bts_lchan_dump_full_ctrl(cmd, bts);
+	if (!cmd->reply) {
+		cmd->reply = "OOM";
+		return CTRL_CMD_ERROR;
+	}
+
+	return CTRL_CMD_REPLY;
+}
+CTRL_CMD_DEFINE_RO(bts_show_lchan_full, "show-lchan full");
+
 int bsc_bts_ctrl_cmds_install(void)
 {
 	int rc = 0;
@@ -1523,6 +1570,7 @@ int bsc_bts_ctrl_cmds_install(void)
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_rach_max_trans);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_neighbor_list_si2quater_uarfcn);
 	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_neighbor_list_si2quater_earfcn);
+	rc |= ctrl_cmd_install(CTRL_NODE_BTS, &cmd_bts_show_lchan_full);
 
 	rc |= neighbor_ident_ctrl_init();
 

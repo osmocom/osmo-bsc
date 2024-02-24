@@ -94,6 +94,48 @@ static int set_ts_hopping_arfcn_del(struct ctrl_cmd *cmd, void *data)
 /* Parameter format: "(<arfcn>|all)" */
 CTRL_CMD_DEFINE_WO(ts_hopping_arfcn_del, "hopping-arfcn-del");
 
+char *ts_lchan_dump_full_ctrl(const void *t, struct gsm_bts_trx_ts *ts)
+{
+	bool first_lchan = true;
+	char *lchan_dump, *dump;
+	struct gsm_lchan *lchan;
+
+	dump = talloc_strdup(t, "");
+	if (!dump)
+		return NULL;
+
+	ts_for_n_lchans(lchan, ts, ts->max_lchans_possible) {
+		lchan_dump = lchan_dump_full_ctrl(t, lchan);
+		if (!lchan_dump)
+			return NULL;
+		dump = talloc_asprintf_append(dump, first_lchan ? "%s" : "\n%s", lchan_dump);
+		if (!dump)
+			return NULL;
+		first_lchan = false;
+	}
+
+	return dump;
+}
+
+/* Return full information about all logical channels in a timeslot.
+ * format: bts.<0-255>.trx.<0-255>.ts.<0-8>.show-lchan.full
+ * result format: New line delimited list of <bts>,<trx>,<ts>,<lchan>,<type>,<connection>,<state>,<last error>,<bs power>,
+ *  <ms power>,<interference dbm>, <interference band>,<channel mode>,<imsi>,<tmsi>,<ipa bound ip>,<ipa bound port>,
+ *  <ipa bound conn id>,<ipa conn ip>,<ipa conn port>,<ipa conn speech mode>
+ */
+static int get_ts_show_lchan_full(struct ctrl_cmd *cmd, void *data)
+{
+	struct gsm_bts_trx_ts *ts = cmd->node;
+
+	cmd->reply = ts_lchan_dump_full_ctrl(cmd, ts);
+	if (!cmd->reply) {
+		cmd->reply = "OOM";
+		return CTRL_CMD_ERROR;
+	}
+
+	return CTRL_CMD_REPLY;
+}
+CTRL_CMD_DEFINE_RO(ts_show_lchan_full, "show-lchan full");
 
 int bsc_bts_trx_ts_ctrl_cmds_install(void)
 {
@@ -101,6 +143,7 @@ int bsc_bts_trx_ts_ctrl_cmds_install(void)
 
 	rc |= ctrl_cmd_install(CTRL_NODE_TS, &cmd_ts_hopping_arfcn_add);
 	rc |= ctrl_cmd_install(CTRL_NODE_TS, &cmd_ts_hopping_arfcn_del);
+	rc |= ctrl_cmd_install(CTRL_NODE_TS, &cmd_ts_show_lchan_full);
 
 	rc |= bsc_bts_trx_ts_lchan_ctrl_cmds_install();
 

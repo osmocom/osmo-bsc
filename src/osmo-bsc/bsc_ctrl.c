@@ -820,6 +820,45 @@ static int set_net_inform_msc(struct ctrl_cmd *cmd, void *data)
 	return CTRL_CMD_HANDLED;
 }
 
+/* Return full information about all logical channels.
+ * format: show-lchan.full
+ * result format: New line delimited list of <bts>,<trx>,<ts>,<lchan>,<type>,<connection>,<state>,<last error>,<bs power>,
+ *  <ms power>,<interference dbm>, <interference band>,<channel mode>,<imsi>,<tmsi>,<ipa bound ip>,<ipa bound port>,
+ *  <ipa bound conn id>,<ipa conn ip>,<ipa conn port>,<ipa conn speech mode>
+ */
+static int get_net_show_lchan_full(struct ctrl_cmd *cmd, void *data)
+{
+	struct gsm_network *net = cmd->node;
+	int bts_nr;
+	bool first_bts = true;
+	char *bts_dump;
+
+	cmd->reply = talloc_strdup(cmd, "");
+	if (!cmd->reply) {
+		cmd->reply = "OOM";
+		return CTRL_CMD_ERROR;
+	}
+
+	for (bts_nr = 0; bts_nr < net->num_bts; bts_nr++) {
+		bts_dump = bts_lchan_dump_full_ctrl(cmd, gsm_bts_num(net, bts_nr));
+		if (!bts_dump) {
+			cmd->reply = "OOM";
+			return CTRL_CMD_ERROR;
+		}
+		if (!strlen(bts_dump))
+			continue;
+		cmd->reply = talloc_asprintf_append(cmd->reply, first_bts ? "%s" : "\n%s", bts_dump);
+		if (!cmd->reply) {
+			cmd->reply = "OOM";
+			return CTRL_CMD_ERROR;
+		}
+		first_bts = false;
+	}
+
+	return CTRL_CMD_REPLY;
+}
+CTRL_CMD_DEFINE_RO(net_show_lchan_full, "show-lchan full");
+
 static int bsc_base_ctrl_cmds_install(struct gsm_network *net)
 {
 	int rc = 0;
@@ -837,6 +876,7 @@ static int bsc_base_ctrl_cmds_install(struct gsm_network *net)
 	rc |= ctrl_cmd_install(CTRL_NODE_ROOT, &cmd_msc0_connection_status);
 	rc |= ctrl_cmd_install(CTRL_NODE_ROOT, &cmd_net_notification);
 	rc |= ctrl_cmd_install(CTRL_NODE_ROOT, &cmd_net_inform_msc);
+	rc |= ctrl_cmd_install(CTRL_NODE_ROOT, &cmd_net_show_lchan_full);
 
 	rc |= ctrl_cmd_install(CTRL_NODE_MSC, &cmd_msc_connection_status);
 

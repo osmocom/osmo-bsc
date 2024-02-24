@@ -68,55 +68,41 @@ static int set_lchan_ms_power(struct ctrl_cmd *cmd, void *data)
 
 CTRL_CMD_DEFINE(lchan_ms_power, "ms-power");
 
-/* Return full information about a logical channel.
- * format: bts.<0-255>.trx.<0-255>.ts.<0-8>.lchan.<0-8>.show.full
- * result format: <bts>,<trx>,<ts>,<lchan>,<type>,<connection>,<state>,<last error>,<bs power>,<ms power>,<interference dbm>,
- *	<interference band>,<channel mode>,<imsi>,<tmsi>,<ipa bound ip>,<ipa bound port>,<ipa bound conn id>,<ipa conn ip>,
- *	<ipa conn port>,<ipa conn sppech mode>
- */
-static int get_lchan_show_full(struct ctrl_cmd *cmd, void *data)
+
+char *lchan_dump_full_ctrl(const void *t, struct gsm_lchan *lchan)
 {
-	struct gsm_lchan *lchan = cmd->node;
 	struct in_addr ia;
 	char *interference = ",", *tmsi = "", *ipa_bound = ",,", *ipa_conn = ",,";
 
 	if (lchan->interf_dbm != INTERF_DBM_UNKNOWN) {
-		interference = talloc_asprintf(cmd, "%d,%u", lchan->interf_dbm, lchan->interf_band);
-		if (!interference) {
-			cmd->reply = "OOM";
-			return CTRL_CMD_ERROR;
-		}
+		interference = talloc_asprintf(t, "%d,%u", lchan->interf_dbm, lchan->interf_band);
+		if (!interference)
+			return NULL;
 	}
 
 	if (lchan->conn && lchan->conn->bsub && lchan->conn->bsub->tmsi != GSM_RESERVED_TMSI) {
-		tmsi = talloc_asprintf(cmd, "0x%08x", lchan->conn->bsub->tmsi);
-		if (!tmsi) {
-			cmd->reply = "OOM";
-			return CTRL_CMD_ERROR;
-		}
+		tmsi = talloc_asprintf(t, "0x%08x", lchan->conn->bsub->tmsi);
+		if (!tmsi)
+			return NULL;
 	}
 
 	if (is_ipa_abisip_bts(lchan->ts->trx->bts) && lchan->abis_ip.bound_ip) {
 		ia.s_addr = htonl(lchan->abis_ip.bound_ip);
-		ipa_bound = talloc_asprintf(cmd, "%s,%u,%u", inet_ntoa(ia), lchan->abis_ip.bound_port,
+		ipa_bound = talloc_asprintf(t, "%s,%u,%u", inet_ntoa(ia), lchan->abis_ip.bound_port,
 								lchan->abis_ip.conn_id);
-		if (!ipa_bound) {
-			cmd->reply = "OOM";
-			return CTRL_CMD_ERROR;
-		}
+		if (!ipa_bound)
+			return NULL;
 	}
 
 	if (is_ipa_abisip_bts(lchan->ts->trx->bts) && lchan->abis_ip.connect_ip) {
 		ia.s_addr = htonl(lchan->abis_ip.connect_ip);
-		ipa_conn = talloc_asprintf(cmd, "%s,%u,0x%02x", inet_ntoa(ia), lchan->abis_ip.connect_port,
+		ipa_conn = talloc_asprintf(t, "%s,%u,0x%02x", inet_ntoa(ia), lchan->abis_ip.connect_port,
 								lchan->abis_ip.speech_mode);
-		if (!ipa_conn) {
-			cmd->reply = "OOM";
-			return CTRL_CMD_ERROR;
-		}
+		if (!ipa_conn)
+			return NULL;
 	}
 
-	cmd->reply = talloc_asprintf(cmd, "%u,%u,%u,%u,%s,%u,%s,%s,%u,%u,%s,%s,%s,%s,%s,%s",
+	return talloc_asprintf(t, "%u,%u,%u,%u,%s,%u,%s,%s,%u,%u,%s,%s,%s,%s,%s,%s",
 		lchan->ts->trx->bts->nr,
 		lchan->ts->trx->nr,
 		lchan->ts->nr,
@@ -133,6 +119,18 @@ static int get_lchan_show_full(struct ctrl_cmd *cmd, void *data)
 		ipa_bound,
 		ipa_conn
 	);
+}
+
+/* Return full information about a logical channel.
+ * format: bts.<0-255>.trx.<0-255>.ts.<0-8>.lchan.<0-8>.show.full
+ * result format: <bts>,<trx>,<ts>,<lchan>,<type>,<connection>,<state>,<last error>,<bs power>,<ms power>,<interference dbm>,
+ *	<interference band>,<channel mode>,<imsi>,<tmsi>,<ipa bound ip>,<ipa bound port>,<ipa bound conn id>,<ipa conn ip>,
+ *	<ipa conn port>,<ipa conn speech mode>
+ */
+static int get_lchan_show_full(struct ctrl_cmd *cmd, void *data)
+{
+	struct gsm_lchan *lchan = cmd->node;
+	cmd->reply = lchan_dump_full_ctrl(cmd, lchan);
 	if (!cmd->reply) {
 		cmd->reply = "OOM";
 		return CTRL_CMD_ERROR;

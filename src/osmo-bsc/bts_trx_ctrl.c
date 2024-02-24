@@ -97,6 +97,51 @@ static int set_trx_max_power(struct ctrl_cmd *cmd, void *_data)
 }
 CTRL_CMD_DEFINE(trx_max_power, "max-power-reduction");
 
+char *trx_lchan_dump_full_ctrl(const void *t, struct gsm_bts_trx *trx)
+{
+	int ts_nr;
+	bool first_ts = true;
+	char *ts_dump, *dump;
+
+	dump = talloc_strdup(t, "");
+	if (!dump)
+		return NULL;
+
+	for (ts_nr = 0; ts_nr < TRX_NR_TS; ts_nr++) {
+		ts_dump = ts_lchan_dump_full_ctrl(t, &trx->ts[ts_nr]);
+		if (!ts_dump)
+			return NULL;
+		if (!strlen(ts_dump))
+			continue;
+		dump = talloc_asprintf_append(dump, first_ts ? "%s" : "\n%s", ts_dump);
+		if (!dump)
+			return NULL;
+		first_ts = false;
+	}
+
+	return dump;
+}
+
+/* Return full information about all logical channels in a TRX.
+ * format: bts.<0-255>.trx.<0-255>.show-lchan.full
+ * result format: New line delimited list of <bts>,<trx>,<ts>,<lchan>,<type>,<connection>,<state>,<last error>,<bs power>,
+ *  <ms power>,<interference dbm>, <interference band>,<channel mode>,<imsi>,<tmsi>,<ipa bound ip>,<ipa bound port>,
+ *  <ipa bound conn id>,<ipa conn ip>,<ipa conn port>,<ipa conn speech mode>
+ */
+static int get_trx_show_lchan_full(struct ctrl_cmd *cmd, void *data)
+{
+	struct gsm_bts_trx *trx = cmd->node;
+
+	cmd->reply = trx_lchan_dump_full_ctrl(cmd, trx);
+	if (!cmd->reply) {
+		cmd->reply = "OOM";
+		return CTRL_CMD_ERROR;
+	}
+
+	return CTRL_CMD_REPLY;
+}
+CTRL_CMD_DEFINE_RO(trx_show_lchan_full, "show-lchan full");
+
 int bsc_bts_trx_ctrl_cmds_install(void)
 {
 	int rc = 0;
@@ -104,6 +149,7 @@ int bsc_bts_trx_ctrl_cmds_install(void)
 	rc |= ctrl_cmd_install(CTRL_NODE_TRX, &cmd_trx_max_power);
 	rc |= ctrl_cmd_install(CTRL_NODE_TRX, &cmd_trx_arfcn);
 	rc |= ctrl_cmd_install(CTRL_NODE_TRX, &cmd_trx_rf_locked);
+	rc |= ctrl_cmd_install(CTRL_NODE_TRX, &cmd_trx_show_lchan_full);
 
 	rc |= bsc_bts_trx_ts_ctrl_cmds_install();
 
