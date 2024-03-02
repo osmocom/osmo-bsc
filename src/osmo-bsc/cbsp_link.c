@@ -54,7 +54,6 @@ const struct osmo_sockaddr_str bsc_cbc_default_server_local_addr = {
 static int cbsp_srv_closed_cb(struct osmo_stream_srv *conn)
 {
 	struct bsc_cbc_link *cbc = osmo_stream_srv_get_data(conn);
-	//struct osmo_fd *ofd = osmo_stream_srv_get_ofd(conn);
 
 	LOGP(DCBS, LOGL_NOTICE, "CBSP Server lost connection from %s\n", cbc->server.sock_name);
 	talloc_free(cbc->server.sock_name);
@@ -63,29 +62,11 @@ static int cbsp_srv_closed_cb(struct osmo_stream_srv *conn)
 	return 0;
 }
 
-static int cbsp_srv_cb(struct osmo_stream_srv *conn)
+static int cbsp_srv_read_cb(struct osmo_stream_srv *conn, struct msgb *msg)
 {
 	struct bsc_cbc_link *cbc = osmo_stream_srv_get_data(conn);
-	struct osmo_fd *ofd = osmo_stream_srv_get_ofd(conn);
 	struct osmo_cbsp_decoded *decoded;
-	struct msgb *msg;
-	int rc;
 
-	/* READ */
-	rc = osmo_cbsp_recv_buffered(cbc, ofd->fd, &msg, &cbc->server.msg);
-	if (rc <= 0) {
-		if (rc == -EAGAIN || rc == -EINTR) {
-			/* more data needs to be read */
-			return 0;
-		} else if (rc == -EPIPE || rc == -ECONNRESET) {
-			/* lost connection */
-		} else if (rc == 0) {
-			/* connection closed */
-		}
-		osmo_stream_srv_destroy(conn);
-		cbc->server.srv = NULL;
-		return -EBADF;
-	}
 	OSMO_ASSERT(msg);
 	decoded = osmo_cbsp_decode(conn, msg);
 	if (decoded) {
@@ -117,12 +98,15 @@ static int cbsp_srv_link_accept_cb(struct osmo_stream_srv_link *link, int fd)
 		return -1;
 	}
 
-	srv = osmo_stream_srv_create(cbc, link, fd, cbsp_srv_cb, cbsp_srv_closed_cb, cbc);
+	srv = osmo_stream_srv_create2(cbc, link, fd, cbc);
 	if (!srv) {
 		LOGP(DCBS, LOGL_ERROR, "Unable to create stream server for %s\n",
 			osmo_sock_get_name2(fd));
 		return -1;
 	}
+	osmo_stream_srv_set_read_cb(srv, cbsp_srv_read_cb);
+	osmo_stream_srv_set_closed_cb(srv, cbsp_srv_closed_cb);
+	osmo_stream_srv_set_segmentation_cb(srv, osmo_cbsp_segmentation_cb);
 
 	cbc->server.srv = srv;
 	if (cbc->server.sock_name)
@@ -141,11 +125,10 @@ static int cbsp_srv_link_accept_cb(struct osmo_stream_srv_link *link, int fd)
 static int cbsp_client_connect_cb(struct osmo_stream_cli *cli)
 {
 	struct bsc_cbc_link *cbc = osmo_stream_cli_get_data(cli);
-	struct osmo_fd *ofd = osmo_stream_cli_get_ofd(cli);
 
 	if (cbc->client.sock_name)
 		talloc_free(cbc->client.sock_name);
-	cbc->client.sock_name = osmo_sock_get_name(cbc, ofd->fd);
+	cbc->client.sock_name = osmo_sock_get_name(cbc, osmo_stream_cli_get_fd(cli));
 
 	LOGP(DCBS, LOGL_NOTICE, "CBSP Client connected to CBC: %s\n", cbc->client.sock_name);
 
@@ -165,28 +148,11 @@ static int cbsp_client_disconnect_cb(struct osmo_stream_cli *cli)
 	return 0;
 }
 
-static int cbsp_client_read_cb(struct osmo_stream_cli *cli)
+static int cbsp_client_read_cb(struct osmo_stream_cli *cli, struct msgb *msg)
 {
 	struct bsc_cbc_link *cbc = osmo_stream_cli_get_data(cli);
-	struct osmo_fd *ofd = osmo_stream_cli_get_ofd(cli);
 	struct osmo_cbsp_decoded *decoded;
-	struct msgb *msg = NULL;
-	int rc;
 
-	/* READ */
-	rc = osmo_cbsp_recv_buffered(cbc, ofd->fd, &msg, &cbc->client.msg);
-	if (rc <= 0) {
-		if (rc == -EAGAIN || rc == -EINTR) {
-			/* more data needs to be read */
-			return 0;
-		} else if (rc == -EPIPE || rc == -ECONNRESET) {
-			/* lost connection */
-		} else if (rc == 0) {
-			/* connection closed */
-		}
-		osmo_stream_cli_reconnect(cli);
-		return -EBADF;
-	}
 	OSMO_ASSERT(msg);
 	decoded = osmo_cbsp_decode(cli, msg);
 	if (decoded) {
@@ -244,7 +210,8 @@ int bsc_cbc_link_restart(void)
 			osmo_stream_cli_set_data(cbc->client.cli, cbc);
 			osmo_stream_cli_set_connect_cb(cbc->client.cli, cbsp_client_connect_cb);
 			osmo_stream_cli_set_disconnect_cb(cbc->client.cli, cbsp_client_disconnect_cb);
-			osmo_stream_cli_set_read_cb(cbc->client.cli, cbsp_client_read_cb);
+			osmo_stream_cli_set_read_cb2(cbc->client.cli, cbsp_client_read_cb);
+			osmo_stream_cli_set_segmentation_cb(cbc->client.cli, osmo_cbsp_segmentation_cb);
 		}
 		/* CBC side */
 		osmo_stream_cli_set_addr(cbc->client.cli, cbc->client.remote_addr.ip);
