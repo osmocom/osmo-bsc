@@ -281,12 +281,13 @@ __attribute__((weak)) int rsl_bcch_info(const struct gsm_bts_trx *trx, enum osmo
 	init_dchan_hdr(dh, RSL_MT_BCCH_INFO);
 	dh->chan_nr = RSL_CHAN_BCCH;
 
-	if (trx->bts->type == GSM_BTS_TYPE_RBS2000
-	    && type == RSL_SYSTEM_INFO_13) {
-		/* Ericsson proprietary encoding of SI13 */
-		msgb_tv_put(msg, RSL_IE_SYSINFO_TYPE, RSL_ERIC_SYSTEM_INFO_13);
+	if (trx->bts->type == GSM_BTS_TYPE_RBS2000) {
+		/* Ericsson proprietary encoding of SI13 / SI2quater */
+		msgb_tv_put(msg, RSL_IE_SYSINFO_TYPE,
+			    (type == RSL_SYSTEM_INFO_13) ? RSL_ERIC_SYSTEM_INFO_13 : type);
 		if (data)
 			msgb_tlv_put(msg, RSL_IE_FULL_BCCH_INFO, len, data);
+		/* In fact it does not complain about this for all BCCH SI: */
 		msgb_tv_put(msg, RSL_IE_ERIC_BCCH_MAPPING, 0x00);
 	} else {
 		/* Normal encoding */
