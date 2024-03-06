@@ -51,6 +51,10 @@ static void bootstrap_om_trx(struct gsm_bts_trx *trx)
 
 static int shutdown_om(struct gsm_bts *bts)
 {
+	int trx_nr;
+
+	for (trx_nr = 0; trx_nr < bts->num_trx; trx_nr++)
+		om2k_enable_disable_tx(bts, trx_nr, 0);
 	gsm_bts_all_ts_dispatch(bts, TS_EV_OML_DOWN, NULL);
 	gsm_bts_stats_reset(bts);
 

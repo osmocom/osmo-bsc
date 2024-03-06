@@ -161,4 +161,6 @@ void abis_om2k_config_write_trx(struct vty *vty, struct gsm_bts_trx *trx);
 
 const char *abis_om2k_mo_name(const struct abis_om2k_mo *mo);
 
+void om2k_enable_disable_tx(struct gsm_bts *bts, uint8_t instance, int enabled);
+
 #endif /* OPENBCS_ABIS_OM2K_H */

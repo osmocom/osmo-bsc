@@ -3165,6 +3165,22 @@ no_mo:
 	return rc;
 }
 
+void om2k_enable_disable_tx(struct gsm_bts *bts, uint8_t instance, int enabled)
+{
+	struct abis_om2k_mo mo;
+
+	OSMO_ASSERT(bts->type == GSM_BTS_TYPE_RBS2000);
+
+	mo.class = OM2K_MO_CLS_TX;
+	mo.bts = bts->nr;
+	mo.assoc_so = 255;
+	mo.inst = instance;
+	if (enabled == 0)
+		abis_om2k_tx_disable_req(bts, &mo);
+	if (enabled != 0)
+		abis_om2k_tx_enable_req(bts, &mo);
+}
+
 static void om2k_mo_init(struct om2k_mo *mo, uint8_t class, uint8_t bts_nr, uint8_t assoc_so, uint8_t inst)
 {
 	mo->addr.class = class;
