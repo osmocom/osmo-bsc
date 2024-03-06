@@ -152,6 +152,33 @@ DEFUN(om2k_classnum_inst, om2k_classnum_inst_cmd,
 	return CMD_SUCCESS;
 }
 
+DEFUN(om2k_en_disable_tx, om2k_en_disable_tx_cmd,
+	"bts <0-255> trx <0-255> tx-mo (disable|enable)",
+	"BTS related commands\n" "BTS Number\n"
+	"TRX for manual command\n"
+	"TRX Number\n"
+	"Transmitter MO State (TX)\n"
+	"Set TX Enabled\n"
+	"Set TX Disabled\n")
+{
+	struct gsm_bts *bts;
+	int bts_nr = atoi(argv[0]);
+
+	bts = gsm_bts_num(gsmnet_from_vty(vty), bts_nr);
+	if (!bts) {
+		vty_out(vty, "%% No such BTS (%d)%s", bts_nr, VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	if (bts->type != GSM_BTS_TYPE_RBS2000) {
+		vty_out(vty, "%% BTS %d not an Ericsson RBS%s",
+			bts_nr, VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+	om2k_enable_disable_tx(bts, atoi(argv[1]), strcmp(argv[2], "disable"));
+	return CMD_SUCCESS;
+}
+
 DEFUN(om2k_reset, om2k_reset_cmd,
 	"reset-command",
 	"Reset the MO\n")
@@ -800,6 +827,7 @@ int abis_om2k_vty_init(void)
 	install_element_ve(&show_om2k_mo_cmd);
 	install_element(ENABLE_NODE, &om2k_class_inst_cmd);
 	install_element(ENABLE_NODE, &om2k_classnum_inst_cmd);
+	install_element(ENABLE_NODE, &om2k_en_disable_tx_cmd);
 	install_node(&om2k_node, dummy_config_write);
 
 	install_element(OM2K_NODE, &om2k_reset_cmd);
