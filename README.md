@@ -50,6 +50,14 @@ Maunal](https://downloads.osmocom.org/docs/latest/osmobsc-cbsp.pdf)
 describing the level of CBSP conformance.
 
 
+Forum
+-----
+
+We welcome any osmo-bsc related discussions in the
+[Cellular Network Infrastructure -> 2G/3G RAN (GERAN)](https://discourse.osmocom.org/c/cni/geran)
+section of the osmocom discourse (web based Forum).
+
+
 Mailing List
 ------------
 
@@ -61,6 +69,15 @@ options and the list archive.
 Please observe the [Osmocom Mailing List
 Rules](https://osmocom.org/projects/cellular-infrastructure/wiki/Mailing_List_Rules)
 when posting.
+
+
+Issue Tracker
+-------------
+
+We use the [issue tracker of the osmo-bsc project on osmocom.org](https://osmocom.org/projects/osmobsc/issues) for
+tracking the state of bug reports and feature requests.  Feel free to submit any issues you may find, or help
+us out by resolving existing issues.
+
 
 Contributing
 ------------
