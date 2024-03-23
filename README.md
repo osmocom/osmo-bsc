@@ -2,24 +2,25 @@ osmo-bsc - Osmocom BSC Implementation
 =====================================
 
 This repository contains a C-language implementation of a GSM Base Station
-Controller (BSC).  IT is part of the
+Controller (BSC).  It is part of the
 [Osmocom](https://osmocom.org/) Open Source Mobile Communications
 project.
 
 OsmoBSC exposes
- * A over IP towards an MSC (e.g. OsmoMSC): 3GPP AoIP or SCCPlite
- * Abis interfaces towards various kinds of BTS (osmo-bts, sysmobts, nanoBTS, Siemens, Nokia, Ericsson)
- * The Osmocom typical telnet VTY and CTRL interfaces.
- * The Osmocom typical statsd exporter.
- * Cell Broadcast Service Protocol (CBSP) towards a CBC (Cell Broadcast Centre, such as osmo-cbc).
- * Lb interface towards a SMLC (Serving Mobile Location Centre, such as osmo-smlc).
+
+ * *A over IP* towards an MSC (e.g. [osmo-msc](https://osmocom.org/projects/osmomsc/wiki)): 3GPP AoIP or SCCPlite
+ * *Abis* interfaces towards various kinds of BTS (e.g. [osmo-bts](https://osmocom.org/projects/osmobts/wiki/Wiki), sysmobts, nanoBTS, Siemens, Nokia, Ericsson)
+ * The Osmocom typical telnet *VTY* and *CTRL* interfaces.
+ * The Osmocom typical *statsd* exporter.
+ * Cell Broadcast Service Protocol (*CBSP*) towards a CBC (Cell Broadcast Centre, such as [osmo-cbc](https://osmocom.org/projects/osmo-cbc/wiki)).
+ * Lb interface towards a *SMLC* (Serving Mobile Location Centre, such as [osmo-smlc](https://osmocom.org/projects/osmo-smlc/wiki/OsmoSMLC)).
 
 
 Homepage
 --------
 
-You can find the OsmoBSC issue tracker and wiki online at
-<https://osmocom.org/projects/osmobsc> and <https://osmocom.org/projects/osmobsc/wiki>.
+You can find the OsmoBSC homepage with issue tracker and wiki online at
+<https://osmocom.org/projects/osmobsc/wiki>.
 
 
 GIT Repository
@@ -90,6 +91,3 @@ worked as a standalone osmo-bsc binary as well as a combination of libbsc and
 libmsc, i.e. the old OsmoNITB. Since the standalone OsmoMSC with a true A
 interface (and IuCS for 3G support) is available, OsmoBSC exists only as a
 separate standalone entity.
-
-OsmoBSC-NAT is a specialized solution to navigating RTP streams through a NAT.
-(Todo: describe in more detail)
