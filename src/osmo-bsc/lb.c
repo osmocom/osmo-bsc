@@ -209,8 +209,9 @@ static int sccp_sap_up(struct osmo_prim_hdr *oph, void *_scu)
 		break;
 
 	default:
-		LOGP(DLCS, LOGL_ERROR, "Unhandled SIGTRAN operation %s on primitive %u\n",
-		     get_value_string(osmo_prim_op_names, oph->operation), oph->primitive);
+		LOGP(DLCS, LOGL_ERROR, "Unhandled SIGTRAN primitive %s.%s\n",
+		     osmo_scu_prim_type_name(oph->primitive),
+		     get_value_string(osmo_prim_op_names, oph->operation));
 		break;
 	}
 
