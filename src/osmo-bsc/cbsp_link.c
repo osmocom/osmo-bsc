@@ -62,10 +62,27 @@ static int cbsp_srv_closed_cb(struct osmo_stream_srv *conn)
 	return 0;
 }
 
-static int cbsp_srv_read_cb(struct osmo_stream_srv *conn, struct msgb *msg)
+static int cbsp_srv_read_cb(struct osmo_stream_srv *conn, int res, struct msgb *msg)
 {
 	struct bsc_cbc_link *cbc = osmo_stream_srv_get_data(conn);
 	struct osmo_cbsp_decoded *decoded;
+
+	if (res <= 0) {
+		if (res == -EAGAIN || res == -EINTR) {
+			msgb_free(msg);
+			return 0;
+		}
+		/*
+		if (rc == -EPIPE || rc == -ECONNRESET) {
+			// lost connection
+		} else if (rc == 0) {
+			// connection closed
+		} */
+		msgb_free(msg);
+		osmo_stream_srv_destroy(conn);
+		cbc->server.srv = NULL;
+		return -EBADF;
+	}
 
 	OSMO_ASSERT(msg);
 	decoded = osmo_cbsp_decode(conn, msg);
@@ -148,10 +165,26 @@ static int cbsp_client_disconnect_cb(struct osmo_stream_cli *cli)
 	return 0;
 }
 
-static int cbsp_client_read_cb(struct osmo_stream_cli *cli, struct msgb *msg)
+static int cbsp_client_read_cb(struct osmo_stream_cli *cli, int res, struct msgb *msg)
 {
 	struct bsc_cbc_link *cbc = osmo_stream_cli_get_data(cli);
 	struct osmo_cbsp_decoded *decoded;
+
+	if (res <= 0) {
+		if (res == -EAGAIN || res == -EINTR) {
+			msgb_free(msg);
+			return 0;
+		}
+		/*
+		if (rc == -EPIPE || rc == -ECONNRESET) {
+			// lost connection
+		} else if (rc == 0) {
+			// connection closed
+		} */
+		msgb_free(msg);
+		osmo_stream_cli_reconnect(cli);
+		return -EBADF;
+	}
 
 	OSMO_ASSERT(msg);
 	decoded = osmo_cbsp_decode(cli, msg);
