@@ -271,8 +271,8 @@ static uint16_t sc_cfg_from_gsm48_mr_cfg(const struct gsm48_multi_rate_conf *cfg
 	int s_bit;
 	uint8_t cfg_modes = multi_rate_conf_to_amr_modes(cfg);
 	for (s_bit = 0; s_bit < 16; s_bit++) {
-		uint8_t sn_modes = gsm0808_amr_modes_from_cfg[fr ? 1 : 0][s_bit];
-		if ((cfg_modes & sn_modes) == sn_modes)
+		uint8_t s_bit_modes = gsm0808_amr_modes_from_cfg[fr ? 1 : 0][s_bit];
+		if (s_bit_modes && (cfg_modes & s_bit_modes) == s_bit_modes)
 			s15_s0 |= (1 << s_bit);
 	}
 	return s15_s0;
