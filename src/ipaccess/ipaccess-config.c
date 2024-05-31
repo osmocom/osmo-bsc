@@ -58,6 +58,8 @@
 #include <osmocom/bsc/bss.h>
 #include <osmocom/bsc/bts.h>
 
+static int arfcn = -1;
+static bool calibrate = false;
 static int net_listen_testnr;
 static int restart;
 static bool get_attr;
@@ -188,6 +190,33 @@ static uint16_t build_physconf_arfcn_by_rxlev(uint8_t *physconf_buf, const struc
 	*((uint16_t *) (physconf_buf+2)) = htons(arfcnlist_size);
 	DEBUGP(DNM, "physconf_buf (%s)\n", osmo_hexdump(physconf_buf, arfcnlist_size+4));
 	return arfcnlist_size+4;
+}
+
+#define NM_IPAC_FREQ_SYNC_CALIBRATE (1 << 0)
+#define NM_IPAC_FREQ_SYNC_REPORT_SINGLE (1 << 1)
+/* bit 7-3 quality threashold */
+#define NM_IPAC_FREQ_SYNC_QUALITY_THREASHOLD_SHIFT 2
+
+static int nwl_freq_test(struct gsm_bts_trx *trx)
+{
+	struct msgb *physconfig = msgb_alloc(128, "physconfig");
+	uint8_t sync_opts = 0;
+	uint16_t arfcn_16;
+
+	/* Test confidence */
+	msgb_put_u8(physconfig, 0x2);
+
+	if (calibrate)
+		sync_opts |= NM_IPAC_FREQ_SYNC_CALIBRATE;
+	msgb_tl16v_put(physconfig, NM_IPAC_EIE_FREQ_SYNC_OPTS, 1, &sync_opts);
+
+	if (arfcn >= 0) {
+		arfcn_16 = osmo_htons((uint16_t) arfcn);
+		msgb_tl16v_put(physconfig, NM_IPAC_EIE_ARFCN_WHITE, sizeof(uint16_t), (uint8_t *) &arfcn_16);
+	}
+
+	return ipac_nwl_test_start(trx, NM_IPACC_TESTNO_FREQ_SYNC,
+			    msgb_data(physconfig), msgb_length(physconfig));
 }
 
 static int nwl_sig_cb(unsigned int subsys, unsigned int signal,
@@ -684,6 +713,17 @@ out_err:
 	msgb_free(nmsg_set);
 }
 
+static int ipac_nwl_test_prepare(struct gsm_bts_trx *trx)
+{
+	switch (net_listen_testnr) {
+	case NM_IPACC_TESTNO_FREQ_SYNC:
+		return nwl_freq_test(trx);
+	default:
+		return ipac_nwl_test_start(trx, net_listen_testnr,
+				    phys_conf_min, sizeof(phys_conf_min));
+	}
+}
+
 static int nm_state_event(int evt, uint8_t obj_class, void *obj,
 			  const struct gsm_nm_state *old_state, const struct gsm_nm_state *new_state,
 			  struct abis_om_obj_inst *obj_inst)
@@ -700,8 +740,7 @@ static int nm_state_event(int evt, uint8_t obj_class, void *obj,
 		struct gsm_bts_trx *trx = obj;
 
 		if (net_listen_testnr)
-			ipac_nwl_test_start(trx, net_listen_testnr,
-					    phys_conf_min, sizeof(phys_conf_min));
+			ipac_nwl_test_prepare(trx);
 		else if (software) {
 			int rc;
 			if (!quiet)
@@ -941,6 +980,8 @@ static void print_help(void)
 	printf("  -U --nvattr-unset FLAG\tSet one additional NVRAM attribute\n");
 	printf("  -l --listen TESTNR\t\tPerform specified test number\n");
 	printf("  -L --Listen TEST_NAME\t\tPerform specified test\n");
+	printf("  -a --arfcn UNIT_ID\t\tLimit the test to a specific arfcn (only for freq-sync)\n");
+	printf("  -C --calibrate\t\tDo a frequency calibration test and save calibration.\n");
 	printf("  -s --stream-id ID\t\tSet the IPA Stream Identifier for OML\n");
 	printf("  -d --software FIRMWARE\tDownload firmware into BTS\n");
 	printf("\n");
@@ -1016,6 +1057,8 @@ int main(int argc, char **argv)
 			{ "nvram-flags", 1, 0, 'n' },
 			{ "nvattr-set", 1, 0, 'S' },
 			{ "nvattr-unset", 1, 0, 'U' },
+			{ "arfcn", 1, 0, 'a' },
+			{ "calibrate", 0, 0, 'C' },
 			{ "help", 0, 0, 'h' },
 			{ "HELP", 0, 0, 'H' },
 			{ "listen", 1, 0, 'l' },
@@ -1030,7 +1073,7 @@ int main(int argc, char **argv)
 			{ 0, 0, 0, 0 },
 		};
 
-		c = getopt_long(argc, argv, "Gu:o:i:g:rn:S:U:l:L:hs:d:f:wcpqH", long_options,
+		c = getopt_long(argc, argv, "Ga:Cu:o:i:g:rn:S:U:l:L:hs:d:f:wcpqH", long_options,
 				&option_index);
 
 		if (c == -1)
@@ -1039,6 +1082,13 @@ int main(int argc, char **argv)
 		switch (c) {
 		case 'G':
 			get_attr = true;
+			break;
+		case 'a':
+			arfcn = atoi(optarg);
+			break;
+		case 'C':
+			calibrate = true;
+			net_listen_testnr = NM_IPACC_TESTNO_FREQ_SYNC;
 			break;
 		case 'u':
 			if (!check_unitid_fmt(optarg))
