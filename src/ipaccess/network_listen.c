@@ -98,6 +98,7 @@ int ipac_nwl_test_start(struct gsm_bts_trx *trx, uint8_t testnr,
 		memcpy(payload, phys_conf, phys_conf_len);
 	}
 
+	msg->l3h = msg->data;
 	abis_nm_perform_test(trx->bts, NM_OC_RADIO_CARRIER, 0, trx->nr, 0xff,
 			     testnr, 1, msg);
 	trx->ipaccess.test_nr = testnr;
