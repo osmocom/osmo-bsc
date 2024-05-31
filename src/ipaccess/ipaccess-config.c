@@ -212,7 +212,7 @@ static int ipacc_msg_ack(uint8_t mt, struct gsm_bts_trx *trx)
 
 static const uint8_t phys_conf_min[] = { 0x02 };
 
-static uint16_t build_physconf(uint8_t *physconf_buf, const struct rxlev_stats *st)
+static uint16_t build_physconf_arfcn_by_rxlev(uint8_t *physconf_buf, const struct rxlev_stats *st)
 {
 	uint16_t *whitelist = (uint16_t *) (physconf_buf + 4);
 	int num_arfcn;
@@ -244,7 +244,7 @@ static int nwl_sig_cb(unsigned int subsys, unsigned int signal,
 			/* Dump RxLev results */
 			//rxlev_stat_dump(&trx->ipaccess.rxlev_stat);
 			/* Create whitelist from results */
-			physconf_len = build_physconf(physconf_buf,
+			physconf_len = build_physconf_arfcn_by_rxlev(physconf_buf,
 						      &trx->ipaccess.rxlev_stat);
 			/* Start next test about BCCH channel usage */
 			ipac_nwl_test_start(trx, NM_IPACC_TESTNO_BCCH_CHAN_USAGE,
@@ -254,7 +254,7 @@ static int nwl_sig_cb(unsigned int subsys, unsigned int signal,
 			/* Dump BCCH RxLev results */
 			//rxlev_stat_dump(&trx->ipaccess.rxlev_stat);
 			/* Create whitelist from results */
-			physconf_len = build_physconf(physconf_buf,
+			physconf_len = build_physconf_arfcn_by_rxlev(physconf_buf,
 						      &trx->ipaccess.rxlev_stat);
 			/* Start next test about BCCH info */
 			ipac_nwl_test_start(trx, NM_IPACC_TESTNO_BCCH_INFO,
