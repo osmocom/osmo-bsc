@@ -624,6 +624,10 @@ static void bootstrap_om(struct gsm_bts_trx *trx)
 		msgb_put_u8(nmsg_get, NM_ATT_IPACC_PRIM_OML_CFG);
 		msgb_put_u8(nmsg_get, NM_ATT_IPACC_UNIT_ID);
 		msgb_put_u8(nmsg_get, NM_ATT_IPACC_NV_FLAGS);
+		msgb_put_u8(nmsg_get, NM_ATT_IPACC_FREQ_CTRL);
+		msgb_put_u8(nmsg_get, NM_ATT_IPACC_LOCATION);
+		msgb_put_u8(nmsg_get, NM_ATT_IPACC_UNIT_NAME);
+		msgb_put_u8(nmsg_get, NM_ATT_IPACC_CUR_SW_CFG);
 	}
 	if (unit_id) {
 		len = strlen(unit_id);
