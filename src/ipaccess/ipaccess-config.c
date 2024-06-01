@@ -207,7 +207,7 @@ static int nwl_freq_test(struct gsm_bts_trx *trx)
 	msgb_put_u8(physconfig, 0x2);
 
 	if (calibrate)
-		sync_opts |= NM_IPAC_FREQ_SYNC_CALIBRATE;
+		sync_opts |= NM_IPAC_FREQ_SYNC_CALIBRATE | NM_IPAC_FREQ_SYNC_REPORT_SINGLE;
 	msgb_tl16v_put(physconfig, NM_IPAC_EIE_FREQ_SYNC_OPTS, 1, &sync_opts);
 
 	if (arfcn >= 0) {
@@ -625,6 +625,7 @@ static void bootstrap_om(struct gsm_bts_trx *trx)
 		msgb_put_u8(nmsg_get, NM_ATT_IPACC_UNIT_ID);
 		msgb_put_u8(nmsg_get, NM_ATT_IPACC_NV_FLAGS);
 		msgb_put_u8(nmsg_get, NM_ATT_IPACC_FREQ_CTRL);
+		msgb_put_u8(nmsg_get, NM_ATT_IPACC_TIMING_BUS);
 		msgb_put_u8(nmsg_get, NM_ATT_IPACC_LOCATION);
 		msgb_put_u8(nmsg_get, NM_ATT_IPACC_UNIT_NAME);
 		msgb_put_u8(nmsg_get, NM_ATT_IPACC_CUR_SW_CFG);

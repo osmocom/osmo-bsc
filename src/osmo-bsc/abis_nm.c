@@ -2293,6 +2293,7 @@ int abis_nm_perform_test(struct gsm_bts *bts, uint8_t obj_class,
 
 	msgb_tv_push(msg, NM_ATT_AUTON_REPORT, auton_report);
 	msgb_tv_push(msg, NM_ATT_TEST_NO, test_nr);
+	msg->l3h = msg->data;
 	oh = (struct abis_om_hdr *) msgb_push(msg, ABIS_OM_FOM_HDR_SIZE);
 	fill_om_fom_hdr(oh, msgb_l3len(msg), NM_MT_PERF_TEST,
 			obj_class, bts_nr, trx_nr, ts_nr);
