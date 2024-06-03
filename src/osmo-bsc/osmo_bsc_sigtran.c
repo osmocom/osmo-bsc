@@ -363,9 +363,16 @@ static int sccp_sap_up(struct osmo_prim_hdr *oph, void *_scu)
 		handle_pcstate_ind(osmo_sccp_get_ss7(sccp), &scu_prim->u.pcstate);
 		break;
 
+	case OSMO_PRIM(OSMO_SCU_PRIM_N_STATE, PRIM_OP_INDICATION):
+		LOGP(DMSC, LOGL_DEBUG, "SCCP-User-SAP: Ignoring %s.%s\n",
+		     osmo_scu_prim_type_name(oph->primitive),
+		     get_value_string(osmo_prim_op_names, oph->operation));
+		break;
+
 	default:
-		LOGP(DMSC, LOGL_ERROR, "Unhandled SIGTRAN operation %s on primitive %s\n",
-		     get_value_string(osmo_prim_op_names, oph->operation), osmo_scu_prim_type_name(oph->primitive));
+		LOGP(DMSC, LOGL_ERROR, "SCCP-User-SAP: Unhandled %s.%s\n",
+		     osmo_scu_prim_type_name(oph->primitive),
+		     get_value_string(osmo_prim_op_names, oph->operation));
 		break;
 	}
 
