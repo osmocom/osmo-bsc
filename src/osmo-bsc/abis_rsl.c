@@ -3033,6 +3033,11 @@ int rsl_tx_ipacc_crcx(const struct gsm_lchan *lchan)
 	if (lchan->abis_ip.osmux.use)
 		msgb_tlv_put(msg, RSL_IE_OSMO_OSMUX_CID, 1, &lchan->abis_ip.osmux.local_cid);
 
+	/* Are we serving a GSM subscriber for whom the CN requested
+	 * the use of RTP extensions? */
+	if (lchan->conn && lchan->conn->user_plane.rtp_extensions)
+		msgb_tlv_put(msg, RSL_IE_OSMO_RTP_EXTENSIONS, 1,
+			     &lchan->conn->user_plane.rtp_extensions);
 
 	msg->dst = rsl_chan_link(lchan);
 
@@ -3077,6 +3082,9 @@ struct msgb *rsl_make_ipacc_mdcx(const struct gsm_lchan *lchan, uint32_t dest_ip
 		msgb_tv_put(msg, RSL_IE_IPAC_RTP_PAYLOAD2, lchan->abis_ip.rtp_payload2);
 	if (lchan->abis_ip.osmux.use)
 		msgb_tlv_put(msg, RSL_IE_OSMO_OSMUX_CID, 1, &lchan->abis_ip.osmux.local_cid);
+	if (lchan->conn && lchan->conn->user_plane.rtp_extensions)
+		msgb_tlv_put(msg, RSL_IE_OSMO_RTP_EXTENSIONS, 1,
+			     &lchan->conn->user_plane.rtp_extensions);
 
 	msg->dst = rsl_chan_link(lchan);
 

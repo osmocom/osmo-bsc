@@ -992,6 +992,26 @@ static int bssmap_handle_ass_req_tp_codec_list(struct gsm_subscriber_connection 
 	return 0;
 }
 
+static int bssmap_handle_ass_req_tp_rtp_ext(struct tlv_parsed *tp,
+					    struct assignment_request *req,
+					    uint8_t *cause)
+{
+	/* If the special TW-TS-003 BSSMAP IE is not included,
+	 * we are in standard 3GPP-compliant operation mode -
+	 * no more work is needed here. */
+	if (!TLVP_PRESENT(tp, GSM0808_IE_THEMWI_RTP_EXTENSIONS))
+		return 0;
+
+	/* the format is TLV with one required byte of value */
+	if (TLVP_LEN(tp, GSM0808_IE_THEMWI_RTP_EXTENSIONS) < 1) {
+		*cause = GSM0808_CAUSE_INFORMATION_ELEMENT_OR_FIELD_MISSING;
+		return -1;
+	}
+
+	req->rtp_extensions = *TLVP_VAL(tp, GSM0808_IE_THEMWI_RTP_EXTENSIONS);
+	return 0;
+}
+
 static int bssmap_handle_ass_req_ct_data(struct gsm_subscriber_connection *conn, struct tlv_parsed *tp,
 					 struct gsm0808_channel_type *ct, struct assignment_request *req,
 					 uint8_t *cause)
@@ -1055,6 +1075,10 @@ int bssmap_handle_ass_req_ct_speech(struct gsm_subscriber_connection *conn, stru
 		*cause = GSM0808_CAUSE_REQ_CODEC_TYPE_OR_CONFIG_UNAVAIL;
 		return -1;
 	}
+
+	/* optional RTP extensions per TW-TS-003 */
+	if (bssmap_handle_ass_req_tp_rtp_ext(tp, req, cause) < 0)
+		return -1;
 
 	return 0;
 }

@@ -22,6 +22,8 @@
 
 #include <osmocom/core/tdef.h>
 #include <osmocom/gsm/gsm0808.h>
+#include <osmocom/gsm/rtp_extensions.h>
+#include <osmocom/gsm/bts_features.h>
 
 #include <osmocom/mgcp_client/mgcp_client_endpoint_fsm.h>
 
@@ -172,6 +174,13 @@ void bssap_extend_osmux(struct msgb *msg, uint8_t cid)
 	msg->l3h[1] = msgb_l3len(msg) - 2;
 }
 
+static void bssap_extend_twts003(struct msgb *msg, uint8_t accepted_ext)
+{
+	OSMO_ASSERT(msg->l3h[1] == msgb_l3len(msg) - 2); /*TL not in len */
+	msgb_tlv_put(msg, GSM0808_IE_THEMWI_RTP_EXTENSIONS, 1, &accepted_ext);
+	msg->l3h[1] = msgb_l3len(msg) - 2;
+}
+
 static void send_assignment_complete(struct gsm_subscriber_connection *conn)
 {
 	int rc;
@@ -266,6 +275,9 @@ static void send_assignment_complete(struct gsm_subscriber_connection *conn)
 	if (gscon_is_aoip(conn) && bsc_chan_ind_requires_rtp_stream(conn->assignment.ch_indctr) &&
 	    conn->assignment.req.use_osmux)
 		bssap_extend_osmux(resp, osmux_cid);
+
+	if (conn->user_plane.rtp_extensions)
+		bssap_extend_twts003(resp, conn->user_plane.rtp_extensions);
 
 	rate_ctr_inc(rate_ctr_group_get_ctr(conn->sccp.msc->msc_ctrs, MSC_CTR_BSSMAP_TX_DT1_ASSIGNMENT_COMPLETE));
 	rc = gscon_sigtran_send(conn, resp);
@@ -478,6 +490,7 @@ static int _reassignment_request(enum assign_for assign_for, struct gsm_lchan *l
 		.aoip = gscon_is_aoip(conn),
 		.msc_assigned_cic = conn->user_plane.msc_assigned_cic,
 		.msc_rtp_port = conn->user_plane.msc_assigned_rtp_port,
+		.rtp_extensions = conn->user_plane.rtp_extensions,
 		.n_ch_mode_rate = 1,
 		.ch_mode_rate_list = { lchan->current_ch_mode_rate },
 		.target_lchan = to_lchan,
@@ -522,6 +535,31 @@ int reassignment_request_to_chan_type(enum assign_for assign_for, struct gsm_lch
 	return _reassignment_request(assign_for, lchan, NULL, new_lchan_type, -1, -1);
 }
 
+/*
+ * The CN may have requested RTP extensions (payload format modifications
+ * contrary to the stipulations of TS 48.103) via BSSMAP IE of TW-TS-003.
+ * This function checks whether or not we can fulfill that request
+ * based on BTS capabilities, and sets the bitmask of accepted extensions
+ * that will be passed on to the BTS via Abis RSL.
+ */
+static void handle_rtp_extensions(struct gsm_subscriber_connection *conn,
+				  struct gsm_bts *bts)
+{
+	const struct assignment_request *req = &conn->assignment.req;
+	uint8_t requested_ext = req->rtp_extensions;
+	uint8_t accepted_ext = 0;
+
+	if ((requested_ext & OSMO_RTP_EXT_TWTS001) &&
+	    osmo_bts_has_feature(&bts->features, BTS_FEAT_TWTS001))
+		accepted_ext |= OSMO_RTP_EXT_TWTS001;
+
+	if ((requested_ext & OSMO_RTP_EXT_TWTS002) &&
+	    osmo_bts_has_feature(&bts->features, BTS_FEAT_TWTS002))
+		accepted_ext |= OSMO_RTP_EXT_TWTS002;
+
+	conn->user_plane.rtp_extensions = accepted_ext;
+}
+
 void assignment_fsm_start(struct gsm_subscriber_connection *conn, struct gsm_bts *bts,
 			  struct assignment_request *req)
 {
@@ -552,6 +590,8 @@ void assignment_fsm_start(struct gsm_subscriber_connection *conn, struct gsm_bts
 	if (check_chan_mode_rate_against_ch_indctr(conn) < 0)
 		return;
 	conn->assignment.ch_indctr = req->ch_indctr;
+
+	handle_rtp_extensions(conn, bts);
 
 	if (!req->target_lchan && reuse_existing_lchan(conn)) {
 		/* The already existing lchan is suitable for this mode */

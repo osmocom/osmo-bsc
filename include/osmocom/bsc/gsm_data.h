@@ -150,6 +150,7 @@ struct assignment_request {
 	uint16_t msc_rtp_port;
 	bool use_osmux;
 	uint8_t osmux_cid;
+	uint8_t rtp_extensions;
 
 	/* Rate/codec setting in preference order (need at least 1 !) */
 	int n_ch_mode_rate;
@@ -359,6 +360,7 @@ struct gsm_subscriber_connection {
 		/* RTP address where the MSC expects us to send the RTP stream coming from the BTS. */
 		char msc_assigned_rtp_addr[INET6_ADDRSTRLEN];
 		uint16_t msc_assigned_rtp_port;
+		uint8_t rtp_extensions;
 
 		/* The endpoint at the MGW used to join both BTS and MSC side connections, e.g.
 		 * "rtpbridge/23@mgw". */
