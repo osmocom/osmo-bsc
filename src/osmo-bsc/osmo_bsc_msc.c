@@ -447,7 +447,14 @@ struct bsc_msc_data *osmo_msc_data_alloc(struct gsm_network *net, int nr)
 	msc_data->a.asp_proto = OSMO_SS7_ASP_PROT_M3UA;
 
 	/* Defaults for the audio setup */
+	msc_data->amr_conf.m12_2 = 1;
+	msc_data->amr_conf.m10_2 = 1;
+	msc_data->amr_conf.m7_95 = 1;
+	msc_data->amr_conf.m7_40 = 1;
+	msc_data->amr_conf.m6_70 = 1;
 	msc_data->amr_conf.m5_90 = 1;
+	msc_data->amr_conf.m5_15 = 1;
+	msc_data->amr_conf.m4_75 = 1;
 	msc_data->amr_octet_aligned = true;
 
 	/* Allow the full set of possible codecs by default */
