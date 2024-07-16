@@ -443,7 +443,7 @@ struct bsc_msc_data *osmo_msc_data_alloc(struct gsm_network *net, int nr)
 	};
 
 	msc_data->nr = nr;
-	msc_data->allow_emerg = 1;
+	msc_data->allow_emerg = 0;
 	msc_data->a.asp_proto = OSMO_SS7_ASP_PROT_M3UA;
 
 	/* Defaults for the audio setup */
