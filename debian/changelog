@@ -1,3 +1,125 @@
+osmo-bsc (1.12.0) unstable; urgency=medium
+
+  [ Vadim Yanitskiy ]
+  * struct gsm_bts_trx[_ts], gsm_abis_mo: drop unused nm_attr
+  * bts_siemens_bs11: remove ip.access nanoBTS specific code
+  * abis_nm: separate parsing of osmo-bts features into a function
+  * abis_nm: parse feature flags in NM_ATT_IPACC_SUPP_FEATURES
+  * nm_{bb_transc,bts}_fsm: rework sending of Get Attributes
+  * abis_nm: get rid of MAX_BTS_ATTR
+  * gsm_data: refactor/simplify and expose gsm_objclass2mo()
+  * bts_ipaccess_nanobts: clean up, use gsm_objclass2mo()
+  * oml: ipacc: parse Object Version from SW Activated Report
+  * oml: ipacc: log supported features using LOGL_INFO
+  * oml: ipacc: fix copy-pasted talloc chunk names
+  * abis_nm: fix bts->nr vs bts->bts_nr
+  * oml: ipacc: add missing is_ipa_abisip_bts() checks
+  * abis_nm: handle NM_EV_SW_ACT_REP in ST_OP_DISABLED_{DEPENDENCY,OFFLINE}
+  * abis_nm: delay configure_loop() until NM_MT_SW_ACTIVATED_REP
+  * oml: ipacc: send GPRS Cell attributes based on IPA Object Version
+  * oml: ipacc: fix sending hard-coded GPRS Cell attributes
+  * abis_nm: send Get Attributes to Rado Carrier MO(s)
+  * abis_nm: send Get Attributes to GPRS Cell MO(s)
+  * gsm_data: fix wrong variable set in gsm_pchan2chan_nr()
+  * gsm_data: use ABIS_RSL_CHAN_NR_CBITS_* in gsm_pchan2chan_nr()
+  * vgcs_fsm: fix NULL pointer dereference in vgcs_call_fsm_busy()
+  * Remove unused OpenBSC leftover 'openbscdefines.h'
+  * build: include README.md into the release tarball
+  * bsc_ctrl: do not overwrite rc in bsc_base_ctrl_cmds_install()
+  * lchan_fsm: fix -Wgnu-designator warnings printed by clang
+  * abis_nm: misc/cosmetic changes to abis_nm_sw_act_req_ack()
+  * abis_nm: fix -Wunused-but-set-variable (bug)
+  * README.md: cosmetic: fix a typo
+
+  [ Harald Welte ]
+  * oml: ipacc: print all supported versions of MOs
+  * fix spelling s/omso/osmo/ in bts_variant_names
+  * Fix license header in various source code files.
+  * bsc_ctrl_lookup.c: Use AGPLv3, not GPLv2
+  * CBSP: Port over to use osmo_io via libosmo-netif
+  * Add funding link to github mirror
+  * README.md: Overhaul (more links, fix markdown formatting)
+  * README.md Add Forum + Issue Tracker sections
+
+  [ Matan Perelman ]
+  * si2quater: Invalidate thresh_lo, prio and qrxlm when needed
+  * ctrl: Add cell barred
+  * ctrl: Add rxlev access min control
+  * abis_rsl: Add rach expiry timeout
+  * ctrl: Add rach expiry timeout
+  * ctrl: Add radio link timeout
+  * vty: Ensure radio-link-timeout is a multiple of 4
+  * ctrl: Fix missing reply in set_bts_cell_reselection_offset
+  * ctrl: Add rach max transmission
+  * ctrl: Add ms max power
+  * ctrl: Remove unused vty includes
+  * ctrl: Split bts_trx_ts_ctrl from bts_trx_ctrl
+  * ctrl: Add ms power
+  * ctrl: Add lchan show
+  * ctrl: Add lchan show to all ctrl levels
+
+  [ Pau Espin Pedrol ]
+  * sccplite: Support multiple MGW in MGW pool
+  * Drop unused local var
+  * abis_nm_sw_act_req_ack: attr_len should be unsigned
+  * lb: Log name of unhandled sigtran primitive
+  * cbsp_link.c: Update somo_stream read_cb2 functions to accommodate for new API param
+
+  [ Oliver Smith ]
+  * vty: make NCC Permitted (SI2) configurable
+  * recover BORKEN lchans for missing ACK scenarios
+  * vty: show mscs: tweak output
+  * vty: show mscs: add BSSMAP state
+  * .deb/.rpm: various fixes related to non-root
+  * contrib: remove rpm spec file
+  * debian/postinst: add checks, be verbose
+
+  [ arehbein ]
+  * meas_feed: Use osmo_io instead of write queue
+  * osmo-bsc: Have PCU socket connection use osmo_wqueue
+  * bsc: Make socket queue max. length configurable
+
+  [ Philipp Maier ]
+  * pcuif_proto: rename PCU_IF_FLAG_SYSMO to PCU_IF_FLAG_DIRECT_PHY
+  * pcuif_proto: clean up last remains of old PCUIF v10
+  * pcuif_proto: signal BTS model via PCUIF
+
+  [ Andreas Eversberg ]
+  * Do not generate 'bit map 0' neighbor lists with R-GSM ARFCN
+  * Select correct neighbor list for measurement report decoding
+  * ASCI: Make neigh_list_get_arfcn() available to other users
+  * ASCI: Add System Information 10 support
+  * SI10: Fix uninitialized l_bts pointer
+  * SI10: Fix uninitialized last_i index
+  * ASCI: Repeat notification after assigning MS to VGCS/VBS channel
+  * Use uniform log format for default config files
+  * Only check for intersecting AMR codec support on matching TS rate
+  * Also track downtime when OML link is lost
+  * VTY: Add command `show bts brief`
+  * Add vty commands "no gprs nsvc ..."
+
+  [ Neels Hofmeyr ]
+  * use X6 timer for REL ACK, not T3111
+  * systemd,manual: set LimitNOFILE=65536
+  * vty: disallow combination of early-IA and frequency hopping
+  * err log: output sigtran prim name instead of number
+  * silence error message for N-STATE prim
+
+  [ Keith Whyte ]
+  * VTY: fix config indentation for pcu-socket params
+
+  [ Max ]
+  * .deb/.rpm: add osmocom user during package install
+
+  [ Alexander Couzens ]
+  * ipaccess-config: fix crash when doing test procedures
+  * ipaccess-config: rename build_physconf to build_physconf_arfcn_by_rxlev
+
+  [ Mychaela N. Falconia ]
+  * add support for RTP extensions via TW-TS-003
+
+ -- Oliver Smith <osmith@sysmocom.de>  Wed, 24 Jul 2024 17:00:06 +0200
+
 osmo-bsc (1.11.0) unstable; urgency=medium
 
   [ Max ]
