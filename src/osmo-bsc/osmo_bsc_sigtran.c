@@ -38,6 +38,7 @@
 #include <osmocom/bsc/paging.h>
 #include <osmocom/bsc/bssmap_reset.h>
 #include <osmocom/mgcp_client/mgcp_common.h>
+#include <osmocom/netif/ipa.h>
 
 /* A pointer to a list with all involved MSCs
  * (a copy of the pointer location submitted with osmo_bsc_sigtran_init() */
@@ -733,9 +734,6 @@ int osmo_bsc_sigtran_init(struct llist_head *mscs)
  * libosmo-sigtran doesn't know about, such as piggy-backed CTRL and/or MGCP */
 static int asp_rx_unknown(struct osmo_ss7_asp *asp, int ppid_mux, struct msgb *msg)
 {
-	struct ipaccess_head *iph;
-	struct ipaccess_head_ext *iph_ext;
-
 	if (osmo_ss7_asp_get_proto(asp) != OSMO_SS7_ASP_PROT_IPA) {
 		msgb_free(msg);
 		return 0;
@@ -743,15 +741,7 @@ static int asp_rx_unknown(struct osmo_ss7_asp *asp, int ppid_mux, struct msgb *m
 
 	switch (ppid_mux) {
 	case IPAC_PROTO_OSMO:
-		if (msg->len < sizeof(*iph) + sizeof(*iph_ext)) {
-			LOGP(DMSC, LOGL_ERROR, "The message is too short.\n");
-			msgb_free(msg);
-			return -EINVAL;
-		}
-		iph = (struct ipaccess_head *) msg->data;
-		iph_ext = (struct ipaccess_head_ext *) iph->data;
-		msg->l2h = iph_ext->data;
-		switch (iph_ext->proto) {
+		switch (osmo_ipa_msgb_cb_proto_ext(msg)) {
 		case IPAC_PROTO_EXT_CTRL:
 			return bsc_sccplite_rx_ctrl(asp, msg);
 		case IPAC_PROTO_EXT_MGCP:
