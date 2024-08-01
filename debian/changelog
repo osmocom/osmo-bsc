@@ -1,3 +1,14 @@
+osmo-bsc (1.12.1) unstable; urgency=medium
+
+  [ Vadim Yanitskiy ]
+  * osmo_msc_data_alloc(), doc/examples: deny emergency calls by default
+  * osmo_msc_data_alloc(), doc/examples: allow all AMR modes by default
+
+  [ Daniel Willmann ]
+  * osmo_bsc_sigtran: Don't try to decode ipaccess_head a second time
+
+ -- Oliver Smith <osmith@sysmocom.de>  Thu, 01 Aug 2024 11:01:08 +0200
+
 osmo-bsc (1.12.0) unstable; urgency=medium
 
   [ Vadim Yanitskiy ]
