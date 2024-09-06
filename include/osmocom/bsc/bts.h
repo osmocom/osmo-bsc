@@ -326,6 +326,12 @@ struct gsm_gprs_cell {
 	struct gprs_rlc_cfg rlc_cfg;
 };
 
+/* See (struct gsm_bts *)->depends_on */
+struct bts_depends_on_entry {
+	struct llist_head list;
+	uint8_t bts_nr; /* See (struct gsm_bts *)->nr */
+};
+
 /* One BTS */
 struct gsm_bts {
 	/* list header in net->bts_list */
@@ -596,8 +602,8 @@ struct gsm_bts {
 	/* supported codecs beside FR */
 	struct bts_codec_conf codec;
 
-	/* BTS dependencies bit field */
-	uint32_t depends_on[256/(8*4)];
+	/* BTS dependencies bit field, list of "struct bts_depends_on_entry" */
+	struct llist_head depends_on;
 
 	/* full and half rate multirate config */
 	struct amr_multirate_conf mr_full;
@@ -830,10 +836,10 @@ static inline bool gsm_bts_features_negotiated(struct gsm_bts *bts)
 }
 
 /* dependency handling */
-void bts_depend_mark(struct gsm_bts *bts, int dep);
+int bts_depend_mark(struct gsm_bts *bts, int dep);
 void bts_depend_clear(struct gsm_bts *bts, int dep);
-int bts_depend_check(struct gsm_bts *bts);
-int bts_depend_is_depedency(struct gsm_bts *base, struct gsm_bts *other);
+bool bts_depend_check(struct gsm_bts *bts);
+bool bts_depend_is_depedency(struct gsm_bts *base, struct gsm_bts *other);
 
 int gsm_bts_get_radio_link_timeout(const struct gsm_bts *bts);
 void gsm_bts_set_radio_link_timeout(struct gsm_bts *bts, int value);

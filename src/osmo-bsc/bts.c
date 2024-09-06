@@ -343,6 +343,7 @@ struct gsm_bts *gsm_bts_alloc(struct gsm_network *net, struct gsm_bts_sm *bts_sm
 	INIT_LLIST_HEAD(&bts->neighbors);
 	INIT_LLIST_HEAD(&bts->oml_fail_rep);
 	INIT_LLIST_HEAD(&bts->chan_rqd_queue);
+	INIT_LLIST_HEAD(&bts->depends_on);
 
 	/* Don't pin the BTS to any MGW by default: */
 	bts->mgw_pool_target = -1;
@@ -869,37 +870,43 @@ void gsm_bts_mo_reset(struct gsm_bts *bts)
 	}
 }
 
-/* Assume there are only 256 possible bts */
-osmo_static_assert(sizeof(((struct gsm_bts *) 0)->nr) == 1, _bts_nr_is_256);
-static void depends_calc_index_bit(int bts_nr, int *idx, int *bit)
+int bts_depend_mark(struct gsm_bts *bts, int dep)
 {
-	*idx = bts_nr / (8 * 4);
-	*bit = bts_nr % (8 * 4);
+	struct bts_depends_on_entry *entry;
+	entry = talloc_zero(bts, struct bts_depends_on_entry);
+	if (!entry) {
+		LOG_BTS(bts, DNM, LOGL_ERROR, "Alloc of struct bts_depends_on_entry failed");
+		return -1;
+	}
+	entry->bts_nr = dep;
+	llist_add_tail(&entry->list, &bts->depends_on);
+	return 0;
 }
 
-void bts_depend_mark(struct gsm_bts *bts, int dep)
+static struct bts_depends_on_entry *bts_depend_find_entry(const struct gsm_bts *bts, int dep)
 {
-	int idx, bit;
-	depends_calc_index_bit(dep, &idx, &bit);
-
-	bts->depends_on[idx] |= 1U << bit;
+	struct bts_depends_on_entry *entry;
+	llist_for_each_entry(entry, &bts->trx_list, list) {
+		if (entry->bts_nr == dep)
+			return entry;
+	}
+	return NULL;
 }
 
 void bts_depend_clear(struct gsm_bts *bts, int dep)
 {
-	int idx, bit;
-	depends_calc_index_bit(dep, &idx, &bit);
-
-	bts->depends_on[idx] &= ~(1U << bit);
+	struct bts_depends_on_entry *entry;
+	entry = bts_depend_find_entry(bts, dep);
+	if (!entry)
+		return;
+	llist_del(&entry->list);
+	talloc_free(entry);
 }
 
-int bts_depend_is_depedency(struct gsm_bts *base, struct gsm_bts *other)
+bool bts_depend_is_depedency(struct gsm_bts *base, struct gsm_bts *other)
 {
-	int idx, bit;
-	depends_calc_index_bit(other->nr, &idx, &bit);
-
-	/* Check if there is a depends bit */
-	return (base->depends_on[idx] & (1U << bit)) > 0;
+	struct bts_depends_on_entry *entry = bts_depend_find_entry(base, other->nr);
+	return !!entry;
 }
 
 static bool bts_is_online(const struct gsm_bts *bts)
@@ -914,7 +921,7 @@ static bool bts_is_online(const struct gsm_bts *bts)
 	return bts->mo.nm_state.operational == NM_OPSTATE_ENABLED;
 }
 
-int bts_depend_check(struct gsm_bts *bts)
+bool bts_depend_check(struct gsm_bts *bts)
 {
 	struct gsm_bts *other_bts;
 
@@ -923,9 +930,9 @@ int bts_depend_check(struct gsm_bts *bts)
 			continue;
 		if (bts_is_online(other_bts))
 			continue;
-		return 0;
+		return false;
 	}
-	return 1;
+	return true;
 }
 
 /* get the radio link timeout (based on SACCH decode errors, according

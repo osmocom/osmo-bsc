@@ -2633,7 +2633,8 @@ DEFUN_ATTR(cfg_bts_depends_on, cfg_bts_depends_on_cmd,
 		return CMD_WARNING;
 	}
 
-	bts_depend_mark(bts, dep);
+	if (bts_depend_mark(bts, dep) < 0)
+		return CMD_WARNING;
 	return CMD_SUCCESS;
 }
 
@@ -4490,6 +4491,14 @@ static void config_write_bts_ncc_permitted(struct vty *vty, const char *prefix, 
 	vty_out(vty, "%s", VTY_NEWLINE);
 }
 
+static void config_write_bts_depends_on(struct vty *vty, const char *prefix, const struct gsm_bts *bts)
+{
+	struct bts_depends_on_entry *entry;
+	llist_for_each_entry(entry, &bts->depends_on, list) {
+		vty_out(vty, "%sdepends-on-bts %u%s", prefix, entry->bts_nr, VTY_NEWLINE);
+	}
+}
+
 static void config_write_bts_single(struct vty *vty, struct gsm_bts *bts)
 {
 	int i;
@@ -4775,23 +4784,7 @@ static void config_write_bts_single(struct vty *vty, struct gsm_bts *bts)
 		vty_out(vty, "  %sforce-combined-si%s",
 			bts->force_combined_si ? "" : "no ", VTY_NEWLINE);
 
-	for (i = 0; i < ARRAY_SIZE(bts->depends_on); ++i) {
-		int j;
-
-		if (bts->depends_on[i] == 0)
-			continue;
-
-		for (j = 0; j < sizeof(bts->depends_on[i]) * 8; ++j) {
-			int bts_nr;
-
-			if ((bts->depends_on[i] & (1<<j)) == 0)
-				continue;
-
-			bts_nr = (i * sizeof(bts->depends_on[i]) * 8) + j;
-			vty_out(vty, "  depends-on-bts %d%s", bts_nr, VTY_NEWLINE);
-		}
-	}
-
+	config_write_bts_depends_on(vty, "  ", bts);
 	ho_vty_write_bts(vty, bts);
 
 	if (bts->top_acch_cap.overpower_db > 0) {
