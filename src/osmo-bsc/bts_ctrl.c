@@ -711,7 +711,7 @@ static int set_bts_neighbor_list_mode(struct ctrl_cmd *cmd, void *data)
 CTRL_CMD_DEFINE_WO(bts_neighbor_list_mode, "neighbor-list mode");
 
 /* si2quater neighbor management: delete an EARFCN.
- * Format: bts.<0-255>.si2quater-neighbor-list.del.earfcn EARFCN
+ * Format: bts.<0-65535>.si2quater-neighbor-list.del.earfcn EARFCN
  * EARFCN is in range 0..65535 */
 static int set_bts_si2quater_neighbor_list_del_earfcn(struct ctrl_cmd *cmd, void *data)
 {
@@ -736,7 +736,7 @@ CTRL_CMD_DEFINE_WO_NOVRF(bts_si2quater_neighbor_list_del_earfcn,
 			 "si2quater-neighbor-list del earfcn");
 
 /* si2quater neighbor management: delete an UARFCN
- * Format: bts.<0-255>.si2quater-neighbor-list.del.uarfcn UARFCN,SCRAMBLE
+ * Format: bts.<0-65535>.si2quater-neighbor-list.del.uarfcn UARFCN,SCRAMBLE
  * UARFCN is in range 0..16383, SCRAMBLE is in range 0..511 */
 static int set_bts_si2quater_neighbor_list_del_uarfcn(struct ctrl_cmd *cmd, void *data)
 {
@@ -827,7 +827,7 @@ static int verify_bts_si2quater_neighbor_list_add_earfcn(struct ctrl_cmd *cmd, c
 }
 
 /* si2quater neighbor management: add an EARFCN
- * Format: bts.<0-255>.si2quater-neighbor-list.add.earfcn <EARFCN>,<thresh-hi>,<thresh-lo>,<priority>,<QRXLEVMIN>,<measurement bandwidth>
+ * Format: bts.<0-65535>.si2quater-neighbor-list.add.earfcn <EARFCN>,<thresh-hi>,<thresh-lo>,<priority>,<QRXLEVMIN>,<measurement bandwidth>
  * EARFCN is in range 0..65535, thresh-hi is in range 0..31, thresh-hi is in range 0..32,
  * priority is in range 0..8, QRXLEVMIN is in range 0..32, measurement bandwidth is in range 0..8 */
 static int set_bts_si2quater_neighbor_list_add_earfcn(struct ctrl_cmd *cmd, void *data)
@@ -952,7 +952,7 @@ static int verify_bts_si2quater_neighbor_list_add_uarfcn(struct ctrl_cmd *cmd, c
 }
 
 /* si2quater neighbor management: add an UARFCN
- * Format: bts.<0-255>.si2quater-neighbor-list.add.uarfcn <UARFCN>,<scrambling code>,<diversity bit>
+ * Format: bts.<0-65535>.si2quater-neighbor-list.add.uarfcn <UARFCN>,<scrambling code>,<diversity bit>
  * UARFCN is in range 0..16383, scrambling code is in range 0..511 */
 static int set_bts_si2quater_neighbor_list_add_uarfcn(struct ctrl_cmd *cmd, void *data)
 {
@@ -1507,7 +1507,7 @@ char *bts_lchan_dump_full_ctrl(const void *t, struct gsm_bts *bts)
 }
 
 /* Return full information about all logical channels in a BTS.
- * format: bts.<0-255>.show-lchan.full
+ * format: bts.<0-65535>.show-lchan.full
  * result format: New line delimited list of <bts>,<trx>,<ts>,<lchan>,<type>,<connection>,<state>,<last error>,<bs power>,
  *  <ms power>,<interference dbm>, <interference band>,<channel mode>,<imsi>,<tmsi>,<ipa bound ip>,<ipa bound port>,
  *  <ipa bound conn id>,<ipa conn ip>,<ipa conn port>,<ipa conn speech mode>

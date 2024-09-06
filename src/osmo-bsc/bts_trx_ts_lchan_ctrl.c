@@ -37,7 +37,7 @@ static int verify_lchan_ms_power(struct ctrl_cmd *cmd, const char *value, void *
 }
 
 /* power control management: Get lchan's ms power in dBm
- * format: bts.<0-255>.trx.<0-255>.ts.<0-8>.lchan.<0-8>.ms-power */
+ * format: bts.<0-65535>.trx.<0-255>.ts.<0-8>.lchan.<0-8>.ms-power */
 static int get_lchan_ms_power(struct ctrl_cmd *cmd, void *data)
 {
 	struct gsm_lchan *lchan = cmd->node;
@@ -54,7 +54,7 @@ static int get_lchan_ms_power(struct ctrl_cmd *cmd, void *data)
 /* power control management: Set lchan's ms power in dBm.
  * For static ms power control it will change the ms tx power.
  * For dynamic ms power control it will limit the maximum power level.
- * format: bts.<0-255>.trx.<0-255>.ts.<0-8>.lchan.<0-8>.ms-power <ms power>
+ * format: bts.<0-65535>.trx.<0-255>.ts.<0-8>.lchan.<0-8>.ms-power <ms power>
  * ms power is in range 0..40 */
 static int set_lchan_ms_power(struct ctrl_cmd *cmd, void *data)
 {
@@ -122,7 +122,7 @@ char *lchan_dump_full_ctrl(const void *t, struct gsm_lchan *lchan)
 }
 
 /* Return full information about a logical channel.
- * format: bts.<0-255>.trx.<0-255>.ts.<0-8>.lchan.<0-8>.show.full
+ * format: bts.<0-65535>.trx.<0-255>.ts.<0-8>.lchan.<0-8>.show.full
  * result format: <bts>,<trx>,<ts>,<lchan>,<type>,<connection>,<state>,<last error>,<bs power>,<ms power>,<interference dbm>,
  *	<interference band>,<channel mode>,<imsi>,<tmsi>,<ipa bound ip>,<ipa bound port>,<ipa bound conn id>,<ipa conn ip>,
  *	<ipa conn port>,<ipa conn speech mode>

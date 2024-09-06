@@ -2,7 +2,7 @@ OsmoBSC> enable
 
 OsmoBSC# list
 ...
-  bts <0-255> trx <0-255> timeslot <0-7> sub-slot <0-7> modify (vamos|non-vamos) [tsc] [<1-4>] [<0-7>]
+  bts <0-65535> trx <0-255> timeslot <0-7> sub-slot <0-7> modify (vamos|non-vamos) [tsc] [<1-4>] [<0-7>]
 ...
 
 OsmoBSC# bts 0 trx 0 timeslot 0 sub-slot 0 ?
@@ -35,15 +35,15 @@ OsmoBSC# bts 0 trx 0 timeslot 0 sub-slot 0 modify vamos tsc 1 0 ?
 
 OsmoBSC# list
 ...
-  bts <0-255> trx <0-255> timeslot <0-7> (sub-slot|vamos-sub-slot) <0-7> (activate|activate-vamos) (hr|fr|efr|amr|sig) [<0-7>]
-  bts <0-255> trx <0-255> timeslot <0-7> (sub-slot|vamos-sub-slot) <0-7> deactivate
+  bts <0-65535> trx <0-255> timeslot <0-7> (sub-slot|vamos-sub-slot) <0-7> (activate|activate-vamos) (hr|fr|efr|amr|sig) [<0-7>]
+  bts <0-65535> trx <0-255> timeslot <0-7> (sub-slot|vamos-sub-slot) <0-7> deactivate
 ...
 
 OsmoBSC# bts?
   bts  BTS Specific Commands
 
 OsmoBSC# bts ?
-  <0-255>  BTS Number
+  <0-65535>  BTS Number
 
 OsmoBSC# bts 0 ?
   unblock-setup-ramping          Unblock and allow to configure a BTS if kept back by BTS ramping
@@ -100,7 +100,7 @@ OsmoBSC# bts 0 trx 0 timeslot 0 sub-slot 0 activate fr 0 ?
 
 OsmoBSC# list
 ...
-  bts <0-255> trx <0-255> timeslot <0-7> (sub-slot|vamos-sub-slot) <0-7> reassign-to trx <0-255> timeslot <0-7> (sub-slot|vamos-sub-slot) <0-7> [tsc] [<1-4>] [<0-7>]
+  bts <0-65535> trx <0-255> timeslot <0-7> (sub-slot|vamos-sub-slot) <0-7> reassign-to trx <0-255> timeslot <0-7> (sub-slot|vamos-sub-slot) <0-7> [tsc] [<1-4>] [<0-7>]
 ...
 
 OsmoBSC# bts 0 trx 0 timeslot 0 sub-slot 0 reassign-to ?

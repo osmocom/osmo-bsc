@@ -123,7 +123,7 @@ char *trx_lchan_dump_full_ctrl(const void *t, struct gsm_bts_trx *trx)
 }
 
 /* Return full information about all logical channels in a TRX.
- * format: bts.<0-255>.trx.<0-255>.show-lchan.full
+ * format: bts.<0-65535>.trx.<0-255>.show-lchan.full
  * result format: New line delimited list of <bts>,<trx>,<ts>,<lchan>,<type>,<connection>,<state>,<last error>,<bs power>,
  *  <ms power>,<interference dbm>, <interference band>,<channel mode>,<imsi>,<tmsi>,<ipa bound ip>,<ipa bound port>,
  *  <ipa bound conn id>,<ipa conn ip>,<ipa conn port>,<ipa conn speech mode>

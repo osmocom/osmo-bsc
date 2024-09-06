@@ -97,10 +97,10 @@ struct smlc_config;
 #define DLCI2RSL_LINK_ID(dlci) \
 	((dlci & 0xc0) == 0xc0 ? 0x40 : 0x00) | (dlci & 0x07)
 
-typedef uint8_t gsm_bts_nr_t; /* See (struct gsm_bts *)->nr */
+typedef uint16_t gsm_bts_nr_t; /* See (struct gsm_bts *)->nr */
 /* BTS_NR_MAX = ((2 << ((sizeof(gsm_bts_nr_t) * 8) - 1)) - 1)
  * This is needed as a constant so that the value can be stringified properly: */
-#define BTS_NR_MAX 255
+#define BTS_NR_MAX 65535
 #define BTS_NR_MAX_STR OSMO_STRINGIFY_VAL(BTS_NR_MAX)
 #define BTS_NR_VTY_ARG_VAL "<0-" BTS_NR_MAX_STR ">"
 

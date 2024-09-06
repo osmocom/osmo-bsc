@@ -2,13 +2,13 @@ OsmoBSC> ### Neighbor-BSS Cell Identifier List config
 
 OsmoBSC> list
 ...
-  show bts <0-255> neighbor arfcn <0-1023> bsic (<0-63>|any)
+  show bts <0-65535> neighbor arfcn <0-1023> bsic (<0-63>|any)
 ...
 
 OsmoBSC> enable
 OsmoBSC# list
 ...
-  show bts <0-255> neighbor arfcn <0-1023> bsic (<0-63>|any)
+  show bts <0-65535> neighbor arfcn <0-1023> bsic (<0-63>|any)
 ...
 
 OsmoBSC# configure terminal
@@ -84,7 +84,7 @@ OsmoBSC(config-net)# show running-config
 OsmoBSC(config-net)# bts 0
 OsmoBSC(config-net-bts)# list
 ...
-  neighbor bts <0-255>
+  neighbor bts <0-65535>
   neighbor lac <0-65535>
   neighbor lac-ci <0-65535> <0-65535>
   neighbor cgi <0-999> <0-999> <0-65535> <0-65535>
@@ -93,7 +93,7 @@ OsmoBSC(config-net-bts)# list
   neighbor lac-ci <0-65535> <0-65535> arfcn <0-1023> bsic (<0-63>|any)
   neighbor cgi <0-999> <0-999> <0-65535> <0-65535> arfcn <0-1023> bsic (<0-63>|any)
   neighbor cgi-ps <0-999> <0-999> <0-65535> <0-255> <0-65535> arfcn <0-1023> bsic (<0-63>|any)
-  no neighbor bts <0-255>
+  no neighbor bts <0-65535>
   no neighbor lac <0-65535>
   no neighbor lac-ci <0-65535> <0-65535>
   no neighbor cgi <0-999> <0-999> <0-65535> <0-65535>
@@ -113,7 +113,7 @@ OsmoBSC(config-net-bts)# neighbor ?
   cgi-ps  Add Neighbor cell by cgi (Packet Switched, with RAC)
 
 OsmoBSC(config-net-bts)# neighbor bts ?
-  <0-255>  BTS number
+  <0-65535>  BTS number
 OsmoBSC(config-net-bts)# neighbor bts 0 ?
   <cr>  
 
@@ -185,7 +185,7 @@ OsmoBSC(config-net-bts)# no neighbor ?
   arfcn   ARFCN of neighbor cell
 
 OsmoBSC(config-net-bts)# no neighbor bts ?
-  <0-255>  BTS number
+  <0-65535>  BTS number
 OsmoBSC(config-net-bts)# no neighbor bts 0 ?
   <cr>  
 

@@ -178,7 +178,7 @@ class TestVTYBSC(TestVTYGenericBSC):
         self.vty.enable()
         self.assertTrue(self.vty.verify("configure terminal",['']))
         self.assertTrue(self.vty.verify("network",['']))
-        num_of_bts = 255
+        num_of_bts = 1000
         for i in range(num_of_bts):
             self.assertTrue(self.vty.verify("bts " + str(i),['']))
             self.assertEqual(self.vty.node(), 'config-net-bts')
@@ -190,9 +190,6 @@ class TestVTYBSC(TestVTYGenericBSC):
             self.assertEqual(self.vty.node(), 'config-net-bts')
             self.assertTrue(self.vty.verify("exit",['']))
             self.assertEqual(self.vty.node(), 'config-net')
-
-        self.assertTrue(self.vty.verify("bts " + str(num_of_bts+1),['% Unknown command.']))
-        self.assertEqual(self.vty.node(), 'config-net')
 
 
 def add_bsc_test(suite, workdir):

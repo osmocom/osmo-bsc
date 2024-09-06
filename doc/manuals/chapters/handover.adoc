@@ -244,7 +244,7 @@ automatically, in that local-BSS and remote-BSS neighbors can have identical
 configuration formatting. If the cell identification (LAC+CI) matches a local
 cell but a mismatching ARFCN+BSIC follows on the same config line, OsmoBSC will
 report errors. For human readability and maintainability, it may instead be
-desirable to use the `neighbor bts <0-255>` format, or omit the redundant
+desirable to use the `neighbor bts <0-65535>` format, or omit the redundant
 `arfcn` and `bsic`.
 
 .Example: configuring neighbors within the local BSS in osmo-bsc.cfg, redundantly identified by LAC+CI as well as ARFCN+BSIC
@@ -325,8 +325,8 @@ When modifying a cell's neighbor configuration in a telnet VTY session while a c
 the neighbor configuration will merely be cached in the BSC's local config. To take actual effect, it is
 necessary to
 
-- either, re-connect the cell to the BSC (e.g. via `drop bts connection <0-255> oml`)
-- or, re-send the System Information using `bts <0-255> resend-system-information`.
+- either, re-connect the cell to the BSC (e.g. via `drop bts connection <0-65535> oml`)
+- or, re-send the System Information using `bts <0-65535> resend-system-information`.
 
 === Configuring Handover Decisions
 

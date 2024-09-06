@@ -189,6 +189,15 @@ static void bts_model_rbs2k_e1line_bind_ops(struct e1inp_line *line)
 
 static int bts_model_rbs2k_bts_init(struct gsm_bts *bts)
 {
+	if (bts->nr > 0xff) {
+		/* Currently unsupported, since bts->nr is used directly filling
+		 * in uint8_t abis_om2000 OML fields. See abis_om2k_bts_init().
+		 */
+		LOGP(DNM, LOGL_ERROR, "bts %u type %s > 255 is unsupported! "
+		     "Please configure your bts type %s first in the bts list\n",
+		     bts->nr, bts->model->name, bts->model->name);
+		return -ENOTSUP;
+	}
 	abis_om2k_bts_init(bts);
 	return 0;
 }
