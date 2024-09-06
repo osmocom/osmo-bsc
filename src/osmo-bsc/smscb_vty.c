@@ -391,7 +391,7 @@ static void vty_dump_smscb_chan_state(struct vty *vty, const struct bts_smscb_ch
 }
 
 DEFUN(bts_show_cbs, bts_show_cbs_cmd,
-	"show bts <0-255> smscb [(basic|extended)]",
+	"show bts " BTS_NR_VTY_ARG_VAL " smscb [(basic|extended)]",
 	SHOW_STR "Display information about a BTS\n" "BTS number\n"
 	"SMS Cell Broadcast State\n"
 	"Show only information related to CBCH BASIC\n"

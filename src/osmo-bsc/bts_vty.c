@@ -106,7 +106,7 @@ static struct cmd_node power_ctrl_node = {
 /* per-BTS configuration */
 DEFUN_ATTR(cfg_bts,
 	   cfg_bts_cmd,
-	   "bts <0-255>",
+	   "bts " BTS_NR_VTY_ARG_VAL,
 	   "Select a BTS to configure\n"
 	   BTS_NR_STR,
 	   CMD_ATTR_IMMEDIATE)
@@ -2605,7 +2605,7 @@ DEFUN_USRATTR(cfg_bts_codec4,
 }
 
 DEFUN_ATTR(cfg_bts_depends_on, cfg_bts_depends_on_cmd,
-	   "depends-on-bts <0-255>",
+	   "depends-on-bts " BTS_NR_VTY_ARG_VAL,
 	   "This BTS can only be started if another one is up\n"
 	   BTS_NR_STR, CMD_ATTR_IMMEDIATE)
 {
@@ -2639,7 +2639,7 @@ DEFUN_ATTR(cfg_bts_depends_on, cfg_bts_depends_on_cmd,
 }
 
 DEFUN_ATTR(cfg_bts_no_depends_on, cfg_bts_no_depends_on_cmd,
-	   "no depends-on-bts <0-255>",
+	   "no depends-on-bts " BTS_NR_VTY_ARG_VAL,
 	   NO_STR "This BTS can only be started if another one is up\n"
 	   BTS_NR_STR, CMD_ATTR_IMMEDIATE)
 {

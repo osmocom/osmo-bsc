@@ -79,7 +79,7 @@ struct oml_node_state {
 #define OM2K_VTY_HELP "Configure OM2K specific parameters\n"
 
 DEFUN(om2k_class_inst, om2k_class_inst_cmd,
-	"bts <0-255> om2000 class " OM2K_OBJCLASS_VTY
+	"bts " BTS_NR_VTY_ARG_VAL " om2000 class " OM2K_OBJCLASS_VTY
 					" <0-255> <0-255> <0-255>",
 	"BTS related commands\n" "BTS Number\n"
 	"Manipulate the OM2000 managed objects\n"
@@ -120,7 +120,7 @@ DEFUN(om2k_class_inst, om2k_class_inst_cmd,
 }
 
 DEFUN(om2k_classnum_inst, om2k_classnum_inst_cmd,
-	"bts <0-255> om2000 class <0-255> <0-255> <0-255> <0-255>",
+	"bts " BTS_NR_VTY_ARG_VAL " om2000 class <0-255> <0-255> <0-255> <0-255>",
 	"BTS related commands\n" "BTS Number\n"
 	"Manipulate the OML managed objects\n"
 	"Object Class\n" "Object Class\n"
@@ -748,7 +748,7 @@ static void vty_dump_om2k_mo(struct vty *vty, const struct om2k_mo *mo, const ch
 }
 
 DEFUN(show_om2k_mo, show_om2k_mo_cmd,
-	"show bts <0-255> om2k-mo",
+	"show bts " BTS_NR_VTY_ARG_VAL " om2k-mo",
 	SHOW_STR "Display information about a BTS\n"
 	"BTS number\n" "OM2000 Managed Object information\n")
 {

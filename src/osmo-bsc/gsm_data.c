@@ -49,6 +49,8 @@
 
 void *tall_bsc_ctx = NULL;
 
+osmo_static_assert(BTS_NR_MAX == ((2 << ((sizeof(gsm_bts_nr_t) * 8) - 1)) - 1), _gsm_bts_nr_t_size);
+
 void set_ts_e1link(struct gsm_bts_trx_ts *ts, uint8_t e1_nr,
 		   uint8_t e1_ts, uint8_t e1_ts_ss)
 {
@@ -250,7 +252,7 @@ const char *gsm_chreq_name(enum gsm_chreq_reason_t c)
 	return get_value_string(chreq_names, c);
 }
 
-struct gsm_bts *gsm_bts_num(const struct gsm_network *net, int num)
+struct gsm_bts *gsm_bts_num(const struct gsm_network *net, gsm_bts_nr_t num)
 {
 	struct gsm_bts *bts;
 

@@ -847,7 +847,7 @@ struct gsm_bts_trx *trx_by_num_str(struct gsm_bts *bts, const char *num_str)
 	return trx;
 }
 
-#define LCHAN_ARGS "lchan <0-255> <0-255> <0-7> <0-7>"
+#define LCHAN_ARGS "lchan " BTS_NR_VTY_ARG_VAL " <0-255> <0-7> <0-7>"
 #define LCHAN_ARGS_DOC "identify an lchan\nBTS nr\nTRX nr\nTimeslot nr\nSubslot nr\n"
 
 static struct gsm_lchan *parse_lchan_args(const char **argv)
@@ -858,7 +858,7 @@ static struct gsm_lchan *parse_lchan_args(const char **argv)
 	return &ts->lchan[atoi(argv[3])];
 }
 
-#define LCHAN_WILDCARD_ARGS "lchan (<0-255>|*) (<0-255>|*) (<0-7>|*) (<0-7>|*)"
+#define LCHAN_WILDCARD_ARGS "lchan (" BTS_NR_VTY_ARG_VAL "|*) (<0-255>|*) (<0-7>|*) (<0-7>|*)"
 #define LCHAN_WILDCARD_ARGS_DOC "identify an lchan\nBTS nr\nall BTS\nTRX nr\nall BTS\nTimeslot nr\nall TS\nSubslot nr\nall subslots\n"
 
 static void parse_lchan_wildcard_args(const char **argv, void (*cb)(struct gsm_lchan*, void*), void *cb_data)
@@ -1104,7 +1104,7 @@ DEFUN(meas_rep_repeat_bspower, meas_rep_repeat_bspower_cmd,
 }
 
 DEFUN(res_ind, res_ind_cmd,
-      "res-ind trx <0-255> <0-255> levels .LEVELS",
+      "res-ind trx " BTS_NR_VTY_ARG_VAL " <0-255> levels .LEVELS",
       "Send Resource Indication for a specific TRX, indicating interference levels per lchan\n"
       "Indicate a BTS and TRX\n" "BTS nr\n" "TRX nr\n"
       "Indicate interference levels: each level is an index to bts->interf_meas_params.bounds_dbm[],"
@@ -1398,7 +1398,7 @@ DEFUN(ho_failed, ho_failed_cmd,
 }
 
 DEFUN(expect_ts_use, expect_ts_use_cmd,
-	"expect-ts-use trx <0-255> <0-255> states" TS_USE TS_USE TS_USE TS_USE TS_USE TS_USE TS_USE TS_USE,
+	"expect-ts-use trx " BTS_NR_VTY_ARG_VAL " <0-255> states" TS_USE TS_USE TS_USE TS_USE TS_USE TS_USE TS_USE TS_USE,
 	"Expect timeslots of a BTS' TRX to be in a specific state\n"
 	"Indicate a BTS and TRX\n" "BTS nr\n" "TRX nr\n"
 	"List of 8 expected TS states\n"
@@ -1435,7 +1435,7 @@ DEFUN(codec_h, codec_h_cmd,
 }
 
 DEFUN(set_arfcn, set_arfcn_cmd,
-	"set-arfcn trx <0-255> <0-255> <0-1023>",
+	"set-arfcn trx " BTS_NR_VTY_ARG_VAL " <0-255> <0-1023>",
 	"Set the ARFCN for a BTS' TRX\n"
 	"Indicate a BTS and TRX\n" "BTS nr\n" "TRX nr\n"
 	"Absolute Radio Frequency Channel Number\n")
@@ -1467,7 +1467,7 @@ DEFUN(set_arfcn, set_arfcn_cmd,
 }
 
 DEFUN(set_band, set_band_cmd,
-	"set-band bts <0-255> BAND",
+	"set-band bts " BTS_NR_VTY_ARG_VAL " BAND",
 	"Set the frequency band for a BTS\n"
 	"Indicate a BTS\n" "BTS nr\n"
 	"Frequency band\n")
@@ -1488,7 +1488,7 @@ DEFUN(set_band, set_band_cmd,
 }
 
 DEFUN(set_ts_use, set_ts_use_cmd,
-	"set-ts-use trx <0-255> <0-255> states" TS_USE TS_USE TS_USE TS_USE TS_USE TS_USE TS_USE TS_USE,
+	"set-ts-use trx " BTS_NR_VTY_ARG_VAL " <0-255> states" TS_USE TS_USE TS_USE TS_USE TS_USE TS_USE TS_USE TS_USE,
 	"Put timeslots of a BTS' TRX into a specific state\n"
 	"Indicate a BTS and TRX\n" "BTS nr\n" "TRX nr\n"
 	"List of 8 TS states to apply\n"

@@ -870,7 +870,7 @@ void gsm_bts_mo_reset(struct gsm_bts *bts)
 	}
 }
 
-int bts_depend_mark(struct gsm_bts *bts, int dep)
+int bts_depend_mark(struct gsm_bts *bts, gsm_bts_nr_t dep)
 {
 	struct bts_depends_on_entry *entry;
 	entry = talloc_zero(bts, struct bts_depends_on_entry);
@@ -883,7 +883,7 @@ int bts_depend_mark(struct gsm_bts *bts, int dep)
 	return 0;
 }
 
-static struct bts_depends_on_entry *bts_depend_find_entry(const struct gsm_bts *bts, int dep)
+static struct bts_depends_on_entry *bts_depend_find_entry(const struct gsm_bts *bts, gsm_bts_nr_t dep)
 {
 	struct bts_depends_on_entry *entry;
 	llist_for_each_entry(entry, &bts->trx_list, list) {
@@ -893,7 +893,7 @@ static struct bts_depends_on_entry *bts_depend_find_entry(const struct gsm_bts *
 	return NULL;
 }
 
-void bts_depend_clear(struct gsm_bts *bts, int dep)
+void bts_depend_clear(struct gsm_bts *bts, gsm_bts_nr_t dep)
 {
 	struct bts_depends_on_entry *entry;
 	entry = bts_depend_find_entry(bts, dep);

@@ -232,7 +232,7 @@ DEFUN(bsc_show_net, bsc_show_net_cmd, "show network",
 
 	return CMD_SUCCESS;
 }
-DEFUN(show_bts, show_bts_cmd, "show bts [<0-255>]",
+DEFUN(show_bts, show_bts_cmd, "show bts [" BTS_NR_VTY_ARG_VAL "]",
 	SHOW_STR "Display information about a BTS\n"
 		"BTS number\n")
 {
@@ -273,7 +273,7 @@ DEFUN(show_bts_brief, show_bts_brief_cmd, "show bts brief",
 	return CMD_SUCCESS;
 }
 
-DEFUN(show_bts_fail_rep, show_bts_fail_rep_cmd, "show bts <0-255> fail-rep [reset]",
+DEFUN(show_bts_fail_rep, show_bts_fail_rep_cmd, "show bts " BTS_NR_VTY_ARG_VAL " fail-rep [reset]",
 	SHOW_STR "Display information about a BTS\n"
 		"BTS number\n" "OML failure reports\n"
 		"Clear the list of failure reports after showing them\n")
@@ -457,7 +457,7 @@ static inline void print_all_trx(struct vty *vty, const struct gsm_bts *bts)
 
 DEFUN(show_trx,
       show_trx_cmd,
-      "show trx [<0-255>] [<0-255>]",
+      "show trx [" BTS_NR_VTY_ARG_VAL "] [<0-255>]",
 	SHOW_STR "Display information about a TRX\n"
 	BTS_TRX_STR)
 {
@@ -500,7 +500,7 @@ DEFUN(show_trx,
 
 DEFUN(show_ts,
       show_ts_cmd,
-      "show timeslot [<0-255>] [<0-255>] [<0-7>]",
+      "show timeslot [" BTS_NR_VTY_ARG_VAL "] [<0-255>] [<0-7>]",
 	SHOW_STR "Display information about a TS\n"
 	BTS_TRX_TS_STR)
 {
@@ -727,7 +727,7 @@ static int lchan_summary(struct vty *vty, int argc, const char **argv,
 
 DEFUN(show_lchan,
       show_lchan_cmd,
-      "show lchan [<0-255>] [<0-255>] [<0-7>] [<0-7>]",
+      "show lchan [" BTS_NR_VTY_ARG_VAL "] [<0-255>] [<0-7>] [<0-7>]",
 	SHOW_STR "Display information about a logical channel\n"
 	BTS_TRX_TS_LCHAN_STR)
 {
@@ -736,7 +736,7 @@ DEFUN(show_lchan,
 
 DEFUN(show_lchan_summary,
       show_lchan_summary_cmd,
-      "show lchan summary [<0-255>] [<0-255>] [<0-7>] [<0-7>]",
+      "show lchan summary [" BTS_NR_VTY_ARG_VAL "] [<0-255>] [<0-7>] [<0-7>]",
 	SHOW_STR "Display information about a logical channel\n"
         "Short summary (used lchans)\n"
 	BTS_TRX_TS_LCHAN_STR)
@@ -746,7 +746,7 @@ DEFUN(show_lchan_summary,
 
 DEFUN(show_lchan_summary_all,
       show_lchan_summary_all_cmd,
-      "show lchan summary-all [<0-255>] [<0-255>] [<0-7>] [<0-7>]",
+      "show lchan summary-all [" BTS_NR_VTY_ARG_VAL "] [<0-255>] [<0-7>] [<0-7>]",
 	SHOW_STR "Display information about a logical channel\n"
         "Short summary (all lchans)\n"
 	BTS_TRX_TS_LCHAN_STR)
@@ -912,7 +912,7 @@ static int trigger_vamos_mode_modify(struct vty *vty, struct gsm_lchan *lchan, b
 
 DEFUN(handover_subscr_conn,
       handover_subscr_conn_cmd,
-      "bts <0-255> trx <0-255> timeslot <0-7> sub-slot <0-7> handover <0-255>",
+      "bts " BTS_NR_VTY_ARG_VAL " trx <0-255> timeslot <0-7> sub-slot <0-7> handover " BTS_NR_VTY_ARG_VAL,
       BTS_NR_TRX_TS_SS_STR2
       MANUAL_HANDOVER_STR
       "New " BTS_NR_STR)
@@ -922,7 +922,7 @@ DEFUN(handover_subscr_conn,
 
 DEFUN(assignment_subscr_conn,
       assignment_subscr_conn_cmd,
-      "bts <0-255> trx <0-255> timeslot <0-7> sub-slot <0-7> assignment",
+      "bts " BTS_NR_VTY_ARG_VAL " trx <0-255> timeslot <0-7> sub-slot <0-7> assignment",
       BTS_NR_TRX_TS_SS_STR2
       MANUAL_ASSIGNMENT_STR)
 {
@@ -1089,7 +1089,7 @@ static void bts_paging_dump_vty(struct vty *vty, struct gsm_bts *bts)
 
 DEFUN(show_paging,
       show_paging_cmd,
-      "show paging [<0-255>]",
+      "show paging [" BTS_NR_VTY_ARG_VAL "]",
 	SHOW_STR "Display information about paging requests of a BTS\n"
 	BTS_NR_STR)
 {
@@ -1120,7 +1120,7 @@ DEFUN(show_paging,
 
 DEFUN(show_paging_group,
       show_paging_group_cmd,
-      "show paging-group <0-255> IMSI",
+      "show paging-group " BTS_NR_VTY_ARG_VAL " IMSI",
       SHOW_STR "Display the paging group\n"
       BTS_NR_STR "IMSI\n")
 {
@@ -1313,7 +1313,7 @@ DEFUN(drop_bts,
 }
 
 DEFUN(restart_bts, restart_bts_cmd,
-      "restart-bts <0-65535>",
+      "restart-bts " BTS_NR_VTY_ARG_VAL,
       "Restart ip.access nanoBTS through OML\n"
       BTS_NR_STR)
 {
@@ -1352,7 +1352,7 @@ DEFUN(restart_bts, restart_bts_cmd,
 
 DEFUN(bts_resend_sysinfo,
       bts_resend_sysinfo_cmd,
-      "bts <0-255> resend-system-information",
+      "bts " BTS_NR_VTY_ARG_VAL " resend-system-information",
       "BTS Specific Commands\n" BTS_NR_STR
       "Re-generate + re-send BCCH SYSTEM INFORMATION\n")
 {
@@ -1386,7 +1386,7 @@ DEFUN(bts_resend_sysinfo,
 
 DEFUN(bts_resend_power_ctrl_params,
       bts_resend_power_ctrl_params_cmd,
-      "bts <0-255> resend-power-control-defaults",
+      "bts " BTS_NR_VTY_ARG_VAL " resend-power-control-defaults",
       "BTS Specific Commands\n" BTS_NR_STR
       "Re-generate + re-send default MS/BS Power control parameters\n")
 {
@@ -1425,7 +1425,7 @@ DEFUN(bts_resend_power_ctrl_params,
 
 DEFUN(bts_c0_power_red,
       bts_c0_power_red_cmd,
-      "bts <0-255> c0-power-reduction <0-6>",
+      "bts " BTS_NR_VTY_ARG_VAL " c0-power-reduction <0-6>",
       "BTS Specific Commands\n" BTS_NR_STR
       "BCCH carrier power reduction operation\n"
       "Power reduction value (in dB, even numbers only)\n")
@@ -1469,7 +1469,7 @@ DEFUN(bts_c0_power_red,
 /* this command is now hidden, as it's a low-level debug hack, and people should
  * instead use osmo-cbc these days */
 DEFUN_HIDDEN(smscb_cmd, smscb_cmd_cmd,
-	"bts <0-255> smscb-command (normal|schedule|default) <1-4> HEXSTRING",
+	"bts " BTS_NR_VTY_ARG_VAL " smscb-command (normal|schedule|default) <1-4> HEXSTRING",
 	"BTS related commands\n" BTS_NR_STR
 	"SMS Cell Broadcast\n"
 	"Normal (one-shot) SMSCB Message; sent once over Abis+Um\n"
@@ -1539,7 +1539,7 @@ DEFUN_HIDDEN(smscb_cmd, smscb_cmd_cmd,
 }
 
 DEFUN(pdch_act, pdch_act_cmd,
-	"bts <0-255> trx <0-255> timeslot <0-7> pdch (activate|deactivate)",
+	"bts " BTS_NR_VTY_ARG_VAL " trx <0-255> timeslot <0-7> pdch (activate|deactivate)",
 	BTS_NR_TRX_TS_STR2
 	"Packet Data Channel\n"
 	"Activate Dynamic PDCH/TCH (-> PDCH mode)\n"
@@ -1796,7 +1796,7 @@ static int lchan_act_deact(struct vty *vty, const char **argv, int argc)
  * manually in a given mode/codec.  This is useful for receiver
  * performance testing (FER/RBER/...) */
 DEFUN(lchan_act, lchan_act_cmd,
-	"bts <0-255> trx <0-255> timeslot <0-7> (sub-slot|vamos-sub-slot) <0-7> (activate|activate-vamos) (hr|fr|efr|amr|sig) [<0-7>]",
+	"bts " BTS_NR_VTY_ARG_VAL " trx <0-255> timeslot <0-7> (sub-slot|vamos-sub-slot) <0-7> (activate|activate-vamos) (hr|fr|efr|amr|sig) [<0-7>]",
 	BTS_NR_TRX_TS_STR2
 	"Primary sub-slot\n" "VAMOS secondary shadow subslot, range <0-1>, only valid for TCH type timeslots\n"
 	SS_NR_STR
@@ -1808,7 +1808,7 @@ DEFUN(lchan_act, lchan_act_cmd,
 }
 
 DEFUN(lchan_deact, lchan_deact_cmd,
-	"bts <0-255> trx <0-255> timeslot <0-7> (sub-slot|vamos-sub-slot) <0-7> deactivate",
+	"bts " BTS_NR_VTY_ARG_VAL " trx <0-255> timeslot <0-7> (sub-slot|vamos-sub-slot) <0-7> deactivate",
 	BTS_NR_TRX_TS_STR2
 	"Primary sub-slot\n" "VAMOS secondary shadow subslot, range <0-1>, only valid for TCH type timeslots\n"
 	SS_NR_STR
@@ -1855,7 +1855,7 @@ DEFUN_HIDDEN(lchan_act_bts, lchan_act_all_cmd,
 /* Similar to lchan_act, but activates all lchans on the specified BTS at once,
  * this is intended to perform lab tests / measurements. */
 DEFUN_HIDDEN(lchan_act_all_bts, lchan_act_all_bts_cmd,
-	     "bts <0-255> (activate-all-lchan|deactivate-all-lchan)",
+	     "bts " BTS_NR_VTY_ARG_VAL " (activate-all-lchan|deactivate-all-lchan)",
 	     "BTS Specific Commands\n" BTS_NR_STR
 	     ACTIVATE_ALL_LCHANS_STR
 	     DEACTIVATE_ALL_LCHANS_STR)
@@ -1895,7 +1895,7 @@ DEFUN_HIDDEN(lchan_act_all_bts, lchan_act_all_bts_cmd,
 /* Similar to lchan_act, but activates all lchans on the specified BTS at once,
  * this is intended to perform lab tests / measurements. */
 DEFUN_HIDDEN(lchan_act_all_trx, lchan_act_all_trx_cmd,
-	     "bts <0-255> trx <0-255> (activate-all-lchan|deactivate-all-lchan)",
+	     "bts " BTS_NR_VTY_ARG_VAL " trx <0-255> (activate-all-lchan|deactivate-all-lchan)",
 	     "BTS for manual command\n" BTS_NR_STR
 	     "TRX for manual command\n" TRX_NR_STR
 	     ACTIVATE_ALL_LCHANS_STR
@@ -1937,7 +1937,7 @@ DEFUN_HIDDEN(lchan_act_all_trx, lchan_act_all_trx_cmd,
 }
 
 DEFUN(lchan_set_mspower, lchan_set_mspower_cmd,
-      "bts <0-255> trx <0-255> timeslot <0-7> sub-slot <0-7> ms-power <0-40> [verify]\n",
+      "bts " BTS_NR_VTY_ARG_VAL " trx <0-255> timeslot <0-7> sub-slot <0-7> ms-power <0-40> [verify]\n",
       BTS_NR_TRX_TS_SS_STR2
       "Manually force MS Uplink Power Level in dBm on the lchan (for testing)\n"
       "Set transmit power of the MS in dBm\n"
@@ -1988,7 +1988,7 @@ DEFUN(lchan_set_mspower, lchan_set_mspower_cmd,
 }
 
 DEFUN(vamos_modify_lchan, vamos_modify_lchan_cmd,
-      "bts <0-255> trx <0-255> timeslot <0-7> sub-slot <0-7> modify (vamos|non-vamos) " TSC_ARGS_OPT,
+      "bts " BTS_NR_VTY_ARG_VAL " trx <0-255> timeslot <0-7> sub-slot <0-7> modify (vamos|non-vamos) " TSC_ARGS_OPT,
       BTS_NR_TRX_TS_SS_STR2
       "Manually send Channel Mode Modify (for debugging)\n"
       "Enable VAMOS channel mode\n" "Disable VAMOS channel mode\n"
@@ -2026,7 +2026,7 @@ DEFUN(vamos_modify_lchan, vamos_modify_lchan_cmd,
 /* Debug command to send lchans from state LCHAN_ST_UNUSED to state
  * LCHAN_ST_BORKEN and vice versa. */
 DEFUN_HIDDEN(lchan_set_borken, lchan_set_borken_cmd,
-	     "bts <0-255> trx <0-255> timeslot <0-7> sub-slot <0-7> (borken|unused)",
+	     "bts " BTS_NR_VTY_ARG_VAL " trx <0-255> timeslot <0-7> sub-slot <0-7> (borken|unused)",
 	     BTS_NR_TRX_TS_SS_STR2
 	     "send lchan to state LCHAN_ST_BORKEN (for debugging)\n"
 	     "send lchan to state LCHAN_ST_UNUSED (for debugging)\n")
@@ -2071,7 +2071,7 @@ DEFUN_HIDDEN(lchan_set_borken, lchan_set_borken_cmd,
 }
 
 DEFUN(lchan_mdcx, lchan_mdcx_cmd,
-	"bts <0-255> trx <0-255> timeslot <0-7> sub-slot <0-7> mdcx A.B.C.D <0-65535>",
+	"bts " BTS_NR_VTY_ARG_VAL " trx <0-255> timeslot <0-7> sub-slot <0-7> mdcx A.B.C.D <0-65535>",
 	BTS_NR_TRX_TS_SS_STR2
 	"Modify RTP Connection\n" "MGW IP Address\n" "MGW UDP Port\n")
 {
@@ -2109,7 +2109,7 @@ DEFUN(lchan_mdcx, lchan_mdcx_cmd,
 }
 
 DEFUN(lchan_reassign, lchan_reassign_cmd,
-	"bts <0-255> trx <0-255> timeslot <0-7> (sub-slot|vamos-sub-slot) <0-7> "
+	"bts " BTS_NR_VTY_ARG_VAL " trx <0-255> timeslot <0-7> (sub-slot|vamos-sub-slot) <0-7> "
 	"reassign-to trx <0-255> timeslot <0-7> (sub-slot|vamos-sub-slot) <0-7> "
 	TSC_ARGS_OPT,
 	BTS_NR_TRX_TS_STR2
@@ -3219,7 +3219,7 @@ DEFUN_ATTR(cfg_bsc_bts_ramping_step_size,
 
 DEFUN(bts_unblock_setup_ramping,
       bts_unblock_setup_ramping_cmd,
-      "bts <0-255> unblock-setup-ramping",
+      "bts " BTS_NR_VTY_ARG_VAL " unblock-setup-ramping",
       "BTS Specific Commands\n" BTS_NR_STR
       "Unblock and allow to configure a BTS if kept back by BTS ramping\n")
 {
@@ -3325,7 +3325,7 @@ DEFUN(show_pos,
 
 DEFUN(gen_position_trap,
       gen_position_trap_cmd,
-      "generate-location-state-trap <0-255>",
+      "generate-location-state-trap " BTS_NR_VTY_ARG_VAL,
       "Generate location state report\n"
       "BTS to report\n")
 {

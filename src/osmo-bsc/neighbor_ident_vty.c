@@ -57,7 +57,7 @@
 #define CGI_PS_ARGC 5
 #define CGI_PS_DOC "Neighbor cell by cgi (Packet Switched, with RAC)\n" "MCC\n" "MNC\n" "LAC\n" "RAC\n" "CI\n"
 
-#define LOCAL_BTS_PARAMS "bts <0-255>"
+#define LOCAL_BTS_PARAMS "bts " BTS_NR_VTY_ARG_VAL
 #define LOCAL_BTS_DOC "Neighbor cell by local BTS number\n" "BTS number\n"
 
 static int neighbor_ident_vty_parse_lac(struct vty *vty, struct gsm0808_cell_id *cell_id, const char **argv)
@@ -579,7 +579,7 @@ void neighbor_ident_vty_write_bts(struct vty *vty, const char *indent, struct gs
 }
 
 DEFUN(show_bts_neighbor, show_bts_neighbor_cmd,
-      "show bts <0-255> neighbor " CELL_AB_VTY_PARAMS,
+      "show bts " BTS_NR_VTY_ARG_VAL " neighbor " CELL_AB_VTY_PARAMS,
       SHOW_STR "Display information about a BTS\n" "BTS number\n"
       "Query which cell would be the target for this neighbor ARFCN+BSIC\n"
       CELL_AB_VTY_DOC)

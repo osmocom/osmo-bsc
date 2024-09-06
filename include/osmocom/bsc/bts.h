@@ -329,7 +329,7 @@ struct gsm_gprs_cell {
 /* See (struct gsm_bts *)->depends_on */
 struct bts_depends_on_entry {
 	struct llist_head list;
-	uint8_t bts_nr; /* See (struct gsm_bts *)->nr */
+	gsm_bts_nr_t bts_nr; /* See (struct gsm_bts *)->nr */
 };
 
 /* One BTS */
@@ -341,7 +341,7 @@ struct gsm_bts {
 	struct llist_head loc_list;
 
 	/* number of this BTS in network */
-	uint8_t nr;
+	gsm_bts_nr_t nr;
 	/* human readable name / description */
 	char *description;
 	/* Cell Identity */
@@ -836,8 +836,8 @@ static inline bool gsm_bts_features_negotiated(struct gsm_bts *bts)
 }
 
 /* dependency handling */
-int bts_depend_mark(struct gsm_bts *bts, int dep);
-void bts_depend_clear(struct gsm_bts *bts, int dep);
+int bts_depend_mark(struct gsm_bts *bts, gsm_bts_nr_t dep);
+void bts_depend_clear(struct gsm_bts *bts, gsm_bts_nr_t dep);
 bool bts_depend_check(struct gsm_bts *bts);
 bool bts_depend_is_depedency(struct gsm_bts *base, struct gsm_bts *other);
 

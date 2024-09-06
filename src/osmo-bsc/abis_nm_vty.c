@@ -76,7 +76,7 @@ struct oml_node_state {
 
 
 DEFUN(oml_class_inst, oml_class_inst_cmd,
-	"bts <0-255> oml class " NM_OBJCLASS_VTY
+	"bts " BTS_NR_VTY_ARG_VAL " oml class " NM_OBJCLASS_VTY
 					" instance <0-255> <0-255> <0-255>",
 	"BTS related commands\n" "BTS Number\n"
 	"Manipulate the OML managed objects\n"
@@ -111,7 +111,7 @@ DEFUN(oml_class_inst, oml_class_inst_cmd,
 }
 
 DEFUN(oml_classnum_inst, oml_classnum_inst_cmd,
-	"bts <0-255> oml class <0-255> instance <0-255> <0-255> <0-255>",
+	"bts " BTS_NR_VTY_ARG_VAL " oml class <0-255> instance <0-255> <0-255> <0-255>",
 	"BTS related commands\n" "BTS Number\n"
 	"Manipulate the OML managed objects\n"
 	"Object Class\n" "Object Class\n"

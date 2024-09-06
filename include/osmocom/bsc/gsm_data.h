@@ -21,6 +21,7 @@
 #include <osmocom/core/time_cc.h>
 #include <osmocom/core/linuxlist.h>
 #include <osmocom/core/linuxrbtree.h>
+#include <osmocom/core/utils.h>
 
 #include <osmocom/crypt/auth.h>
 
@@ -95,6 +96,13 @@ struct smlc_config;
  *   other values are reserved. */
 #define DLCI2RSL_LINK_ID(dlci) \
 	((dlci & 0xc0) == 0xc0 ? 0x40 : 0x00) | (dlci & 0x07)
+
+typedef uint8_t gsm_bts_nr_t; /* See (struct gsm_bts *)->nr */
+/* BTS_NR_MAX = ((2 << ((sizeof(gsm_bts_nr_t) * 8) - 1)) - 1)
+ * This is needed as a constant so that the value can be stringified properly: */
+#define BTS_NR_MAX 255
+#define BTS_NR_MAX_STR OSMO_STRINGIFY_VAL(BTS_NR_MAX)
+#define BTS_NR_VTY_ARG_VAL "<0-" BTS_NR_MAX_STR ">"
 
 /* 3-bit long values */
 #define EARFCN_PRIO_INVALID 8
@@ -881,7 +889,7 @@ extern struct osmo_tdef_group bsc_tdef_group[];
 
 struct gsm_network *gsm_network_init(void *ctx);
 
-struct gsm_bts *gsm_bts_num(const struct gsm_network *net, int num);
+struct gsm_bts *gsm_bts_num(const struct gsm_network *net, gsm_bts_nr_t num);
 struct gsm_bts *gsm_bts_by_cell_id(const struct gsm_network *net,
 				   const struct gsm0808_cell_id *cell_id,
 				   int match_idx);
@@ -975,7 +983,7 @@ struct gsm_network {
 	struct rate_ctr_group *bsc_ctrs;
 	struct osmo_stat_item_group *bsc_statg;
 
-	unsigned int num_bts;
+	gsm_bts_nr_t num_bts;
 	struct llist_head bts_list;
 	struct llist_head bts_rejected;
 
