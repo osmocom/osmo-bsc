@@ -32,50 +32,11 @@
 #include <osmocom/bsc/timeslot_fsm.h>
 #include <osmocom/bsc/bts.h>
 
-static int bts_model_bs11_start(struct gsm_network *net);
 
 static void bts_model_bs11_e1line_bind_ops(struct e1inp_line *line)
 {
 	e1inp_line_bind_ops(line, &bts_isdn_e1inp_line_ops);
 }
-
-static struct gsm_bts_model model_bs11 = {
-	.type = GSM_BTS_TYPE_BS11,
-	.name = "bs11",
-	.start = bts_model_bs11_start,
-	.oml_rcvmsg = &abis_nm_rcvmsg,
-	.e1line_bind_ops = bts_model_bs11_e1line_bind_ops,
-	.nm_att_tlvdef = {
-		.def = {
-			[NM_ATT_AVAIL_STATUS] =		{ TLV_TYPE_TLV },
-			/* BS11 specifics */
-			[NM_ATT_BS11_ESN_FW_CODE_NO] =	{ TLV_TYPE_TLV },
-			[NM_ATT_BS11_ESN_HW_CODE_NO] =	{ TLV_TYPE_TLV },
-			[NM_ATT_BS11_ESN_PCB_SERIAL] =	{ TLV_TYPE_TLV },
-			[NM_ATT_BS11_BOOT_SW_VERS] =	{ TLV_TYPE_TLV },
-			[0xd5] =			{ TLV_TYPE_TLV },
-			[0xa8] =			{ TLV_TYPE_TLV },
-			[NM_ATT_BS11_PASSWORD] =	{ TLV_TYPE_TLV },
-			[NM_ATT_BS11_TXPWR] =		{ TLV_TYPE_TLV },
-			[NM_ATT_BS11_RSSI_OFFS] =	{ TLV_TYPE_TLV },
-			[NM_ATT_BS11_LINE_CFG] = 	{ TLV_TYPE_TV },
-			[NM_ATT_BS11_L1_PROT_TYPE] =	{ TLV_TYPE_TV },
-			[NM_ATT_BS11_BIT_ERR_THESH] =	{ TLV_TYPE_FIXED, 2 },
-			[NM_ATT_BS11_DIVERSITY] =	{ TLV_TYPE_TLV },
-			[NM_ATT_BS11_LMT_LOGON_SESSION]={ TLV_TYPE_TLV },
-			[NM_ATT_BS11_LMT_LOGIN_TIME] =	{ TLV_TYPE_TLV },
-			[NM_ATT_BS11_LMT_USER_ACC_LEV] ={ TLV_TYPE_TLV },
-			[NM_ATT_BS11_LMT_USER_NAME] =	{ TLV_TYPE_TLV },
-			[NM_ATT_BS11_BTS_STATE]	=	{ TLV_TYPE_TLV },
-			[NM_ATT_BS11_E1_STATE]	=	{ TLV_TYPE_TLV },
-			[NM_ATT_BS11_PLL_MODE]	=	{ TLV_TYPE_TLV },
-			[NM_ATT_BS11_PLL]	=	{ TLV_TYPE_TLV },
-			[NM_ATT_BS11_CCLK_ACCURACY] =	{ TLV_TYPE_TV },
-			[NM_ATT_BS11_CCLK_TYPE] =	{ TLV_TYPE_TV },
-			[0x95] =			{ TLV_TYPE_FIXED, 2 },
-		},
-	},
-};
 
 /* The following definitions are for OM and NM packets that we cannot yet
  * generate by code but we just pass on */
@@ -581,6 +542,44 @@ static int bts_model_bs11_start(struct gsm_network *net)
 
 	return 0;
 }
+
+static struct gsm_bts_model model_bs11 = {
+	.type = GSM_BTS_TYPE_BS11,
+	.name = "bs11",
+	.start = bts_model_bs11_start,
+	.oml_rcvmsg = &abis_nm_rcvmsg,
+	.e1line_bind_ops = bts_model_bs11_e1line_bind_ops,
+	.nm_att_tlvdef = {
+		.def = {
+			[NM_ATT_AVAIL_STATUS] =			{ TLV_TYPE_TLV },
+			/* BS11 specifics */
+			[NM_ATT_BS11_ESN_FW_CODE_NO] =		{ TLV_TYPE_TLV },
+			[NM_ATT_BS11_ESN_HW_CODE_NO] =		{ TLV_TYPE_TLV },
+			[NM_ATT_BS11_ESN_PCB_SERIAL] =		{ TLV_TYPE_TLV },
+			[NM_ATT_BS11_BOOT_SW_VERS] =		{ TLV_TYPE_TLV },
+			[0xd5] =				{ TLV_TYPE_TLV },
+			[0xa8] =				{ TLV_TYPE_TLV },
+			[NM_ATT_BS11_PASSWORD] =		{ TLV_TYPE_TLV },
+			[NM_ATT_BS11_TXPWR] =			{ TLV_TYPE_TLV },
+			[NM_ATT_BS11_RSSI_OFFS] =		{ TLV_TYPE_TLV },
+			[NM_ATT_BS11_LINE_CFG] =		{ TLV_TYPE_TV },
+			[NM_ATT_BS11_L1_PROT_TYPE] =		{ TLV_TYPE_TV },
+			[NM_ATT_BS11_BIT_ERR_THESH] =		{ TLV_TYPE_FIXED, 2 },
+			[NM_ATT_BS11_DIVERSITY] =		{ TLV_TYPE_TLV },
+			[NM_ATT_BS11_LMT_LOGON_SESSION] =	{ TLV_TYPE_TLV },
+			[NM_ATT_BS11_LMT_LOGIN_TIME] =		{ TLV_TYPE_TLV },
+			[NM_ATT_BS11_LMT_USER_ACC_LEV] =	{ TLV_TYPE_TLV },
+			[NM_ATT_BS11_LMT_USER_NAME] =		{ TLV_TYPE_TLV },
+			[NM_ATT_BS11_BTS_STATE]	=		{ TLV_TYPE_TLV },
+			[NM_ATT_BS11_E1_STATE]	=		{ TLV_TYPE_TLV },
+			[NM_ATT_BS11_PLL_MODE]	=		{ TLV_TYPE_TLV },
+			[NM_ATT_BS11_PLL]	=		{ TLV_TYPE_TLV },
+			[NM_ATT_BS11_CCLK_ACCURACY] =		{ TLV_TYPE_TV },
+			[NM_ATT_BS11_CCLK_TYPE] =		{ TLV_TYPE_TV },
+			[0x95] =				{ TLV_TYPE_FIXED, 2 },
+		},
+	},
+};
 
 int bts_model_bs11_init(void)
 {
