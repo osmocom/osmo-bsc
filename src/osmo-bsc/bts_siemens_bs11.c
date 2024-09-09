@@ -95,7 +95,7 @@ SET ATTRIBUTES
   emergencyTimer2: 0 minutes
 */
 
-unsigned char msg_1[] =
+static unsigned char msg_1[] =
 {
 	NM_MT_BS11_SET_ATTR, NM_OC_SITE_MANAGER, 0xFF, 0xFF, 0xFF,
 		NM_ATT_BS11_ABIS_EXT_TIME, 0x07,
@@ -230,7 +230,7 @@ SET ATTRIBUTES
   timerHORequest: 3  ,unit 2 SACCH multiframes
 */
 
-unsigned char msg_3[] =
+static unsigned char msg_3[] =
 {
 	NM_MT_BS11_SET_ATTR, NM_OC_BS11_HANDOVER, 0x00, 0xFF, 0xFF,
 		0xD0, 0x00,		/* enableDelayPowerBudgetHO */
@@ -301,7 +301,7 @@ SET ATTRIBUTES
   enableBSPowerControl: 00h =  disabled
 */
 
-unsigned char msg_4[] =
+static unsigned char msg_4[] =
 {
 	NM_MT_BS11_SET_ATTR, NM_OC_BS11_PWR_CTRL, 0x00, 0xFF, 0xFF,
 		NM_ATT_BS11_ENA_MS_PWR_CTRL, 0x00,
