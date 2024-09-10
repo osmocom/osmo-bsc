@@ -367,6 +367,10 @@ __attribute__((weak)) void pcu_info_update(struct gsm_bts *bts)
 		return;
 	if (!bsc_co_located_pcu(bts))
 		return;
+	if (bts->nr > 0xff) { /* OS#6565 */
+		LOG_BTS(bts, DPCU, LOGL_ERROR, "bts id > 255 cannot be configured over PCUIF! GPRS won't work for this BTS!");
+		return;
+	}
 
 	/* In cases where the CCU is connected via an E1 line, we transmit the connection parameters for the
 		* PDCH before we announce the other BTS related parameters. */
@@ -426,6 +430,11 @@ int pcu_tx_rach_ind(struct gsm_bts *bts, int16_t qta, uint16_t ra, uint32_t fn,
 
 	if (!bsc_co_located_pcu(bts)) {
 		LOG_BTS(bts, DPCU, LOGL_ERROR, "CHAN RQD(GPRS) on BTS whose PCU is not BSC-colocated!\n");
+		return -EINVAL;
+	}
+
+	if (bts->nr > 0xff) { /* OS#6565 */
+		LOG_BTS(bts, DPCU, LOGL_ERROR, "CHAN RQD(GPRS) on bts id > 255 cannot be sent over PCUIF! GPRS won't work for this BTS!");
 		return -EINVAL;
 	}
 
@@ -886,6 +895,11 @@ static void pdch_act_bts(struct gsm_bts *bts)
 {
 	struct gsm_bts_trx *trx;
 	int j;
+
+	if (bts->nr > 0xff) { /* OS#6565 */
+		LOG_BTS(bts, DPCU, LOGL_ERROR, "bts id > 255 cannot be configured over PCUIF! GPRS won't work for this BTS!");
+		return;
+	}
 
 	/* activate PDCH */
 	llist_for_each_entry(trx, &bts->trx_list, list) {
