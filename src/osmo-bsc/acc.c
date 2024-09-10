@@ -296,6 +296,11 @@ void acc_mgr_init(struct acc_mgr *acc_mgr, struct gsm_bts *bts)
 	acc_mgr_gen_subset(acc_mgr, false);
 }
 
+void acc_mgr_deinit(struct acc_mgr *acc_mgr)
+{
+	osmo_timer_del(&acc_mgr->rotate_timer);
+}
+
 uint8_t acc_mgr_get_len_allowed_adm(struct acc_mgr *acc_mgr)
 {
 	return acc_mgr->len_allowed_adm;
@@ -472,6 +477,17 @@ void acc_ramp_init(struct acc_ramp *acc_ramp, struct gsm_bts *bts)
 	acc_ramp->chan_load_lower_threshold = ACC_RAMP_CHAN_LOAD_THRESHOLD_LOW;
 	acc_ramp->chan_load_upper_threshold = ACC_RAMP_CHAN_LOAD_THRESHOLD_UP;
 	osmo_timer_setup(&acc_ramp->step_timer, do_acc_ramping_step, acc_ramp);
+}
+
+/*!
+ * Deinitialize an acc_ramp data structure.
+ * Called when the user is going to free the structure.
+ *
+ * \param[in] acc_ramp Pointer to acc_ramp structure to be deinitialized.
+ */
+void acc_ramp_deinit(struct acc_ramp *acc_ramp)
+{
+	osmo_timer_del(&acc_ramp->step_timer);
 }
 
 /*!

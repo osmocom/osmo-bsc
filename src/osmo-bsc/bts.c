@@ -163,6 +163,9 @@ static int gsm_bts_talloc_destructor(struct gsm_bts *bts)
 	paging_destructor(bts);
 	bts_setup_ramp_remove(bts);
 
+	acc_ramp_deinit(&bts->acc_ramp);
+	acc_mgr_deinit(&bts->acc_mgr);
+
 	osmo_timer_del(&bts->cbch_timer);
 
 	bts->site_mgr->bts[0] = NULL;

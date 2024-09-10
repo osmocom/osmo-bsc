@@ -53,6 +53,7 @@ struct acc_mgr {
 };
 
 void acc_mgr_init(struct acc_mgr *acc_mgr, struct gsm_bts *bts);
+void acc_mgr_deinit(struct acc_mgr *acc_mgr);
 uint8_t acc_mgr_get_len_allowed_adm(struct acc_mgr *acc_mgr);
 uint8_t acc_mgr_get_len_allowed_ramp(struct acc_mgr *acc_mgr);
 void acc_mgr_set_len_allowed_adm(struct acc_mgr *acc_mgr, uint8_t len_allowed_adm);
@@ -164,6 +165,7 @@ static inline unsigned int acc_ramp_is_running(struct acc_ramp *acc_ramp)
 void acc_ramp_global_init(void);
 
 void acc_ramp_init(struct acc_ramp *acc_ramp, struct gsm_bts *bts);
+void acc_ramp_deinit(struct acc_ramp *acc_ramp);
 int acc_ramp_set_step_size(struct acc_ramp *acc_ramp, unsigned int step_size);
 int acc_ramp_set_step_interval(struct acc_ramp *acc_ramp, unsigned int step_interval);
 int acc_ramp_set_chan_load_thresholds(struct acc_ramp *acc_ramp, unsigned int low_threshold, unsigned int up_threshold);
