@@ -343,6 +343,8 @@ struct gsm_bts {
 
 	/*! Entry in hash table network->bts_by_nr. */
 	struct hlist_node node_by_nr;
+	/*! Entry in hash table network->bts_by_lac. */
+	struct hlist_node node_by_lac;
 
 	/* number of this BTS in network */
 	gsm_bts_nr_t nr;

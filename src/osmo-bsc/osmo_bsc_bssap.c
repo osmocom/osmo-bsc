@@ -150,7 +150,7 @@ static void page_cgi(const struct bsc_paging_params *params)
 		if (!osmo_plmn_cmp(&id->lai.plmn, &bsc_gsmnet->plmn)) {
 			int paged = 0;
 			struct gsm_bts *bts;
-			llist_for_each_entry(bts, &bsc_gsmnet->bts_list, list) {
+			hash_for_each_possible(bsc_gsmnet->bts_by_lac, bts, node_by_lac, id->lai.lac) {
 				if (bts->location_area_code != id->lai.lac)
 					continue;
 				if (bts->cell_identity != id->cell_identity)
@@ -179,7 +179,7 @@ static void page_lac_and_ci(const struct bsc_paging_params *params)
 		const struct osmo_lac_and_ci_id *id = &params->cil.id_list[i].lac_and_ci;
 		int paged = 0;
 		struct gsm_bts *bts;
-		llist_for_each_entry(bts, &bsc_gsmnet->bts_list, list) {
+		hash_for_each_possible(bsc_gsmnet->bts_by_lac, bts, node_by_lac, id->lac) {
 			if (bts->location_area_code != id->lac)
 				continue;
 			if (bts->cell_identity != id->ci)
@@ -222,7 +222,7 @@ static void page_lai_and_lac(const struct bsc_paging_params *params)
 		if (!osmo_plmn_cmp(&id->plmn, &bsc_gsmnet->plmn)) {
 			int paged = 0;
 			struct gsm_bts *bts;
-			llist_for_each_entry(bts, &bsc_gsmnet->bts_list, list) {
+			hash_for_each_possible(bsc_gsmnet->bts_by_lac, bts, node_by_lac, id->lac) {
 				if (bts->location_area_code != id->lac)
 					continue;
 				page_subscriber(params, bts, id->lac);
@@ -248,7 +248,7 @@ static void page_lac(const struct bsc_paging_params *params)
 		uint16_t lac = params->cil.id_list[i].lac;
 		int paged = 0;
 		struct gsm_bts *bts;
-		llist_for_each_entry(bts, &bsc_gsmnet->bts_list, list) {
+		hash_for_each_possible(bsc_gsmnet->bts_by_lac, bts, node_by_lac, lac) {
 			if (bts->location_area_code != lac)
 				continue;
 			page_subscriber(params, bts, lac);

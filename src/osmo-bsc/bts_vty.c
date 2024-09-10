@@ -278,8 +278,8 @@ DEFUN_USRATTR(cfg_bts_lac,
 	      X(BSC_VTY_ATTR_RESTART_ABIS_RSL_LINK),
 	      "location_area_code (<0-65535>|<0x0000-0xffff>)",
 	      "Set the Location Area Code (LAC) of this BTS\n"
-	      "LAC in decimal format\n"
-	      "LAC in hexadecimal format\n")
+	      "LAC in decimal format (default 0, reserved by GSM 04.08)\n"
+	      "LAC in hexadecimal format (default 0x0000, reserved by GSM 04.08)\n")
 {
 	struct gsm_bts *bts = vty->index;
 	int lac;
@@ -293,6 +293,8 @@ DEFUN_USRATTR(cfg_bts_lac,
 	}
 
 	bts->location_area_code = lac;
+	hash_del(&bts->node_by_lac);
+	hash_add(bts->network->bts_by_lac, &bts->node_by_lac, bts->location_area_code);
 
 	return CMD_SUCCESS;
 }
