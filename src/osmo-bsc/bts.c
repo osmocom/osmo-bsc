@@ -156,6 +156,8 @@ static const struct gprs_rlc_cfg rlc_cfg_default = {
 
 static int gsm_bts_talloc_destructor(struct gsm_bts *bts)
 {
+	/* Entries in bts->loc_list are freed by talloc recursively, no need to free them here. */
+
 	paging_destructor(bts);
 	bts_setup_ramp_remove(bts);
 

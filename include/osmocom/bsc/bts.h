@@ -337,7 +337,7 @@ struct gsm_bts {
 	/* list header in net->bts_list */
 	struct llist_head list;
 
-	/* Geographical location of the BTS */
+	/* Geographical location of the BTS, head list of "struct bts_location" */
 	struct llist_head loc_list;
 
 	/* number of this BTS in network */

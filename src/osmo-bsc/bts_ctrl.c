@@ -169,7 +169,7 @@ static int set_bts_loc(struct ctrl_cmd *cmd, void *data)
 		return CTRL_CMD_ERROR;
 	}
 
-	curloc = talloc_zero(tall_bsc_ctx, struct bts_location);
+	curloc = talloc_zero(bts, struct bts_location);
 	if (!curloc) {
 		talloc_free(tmp);
 		goto oom;
