@@ -59,30 +59,6 @@ void set_ts_e1link(struct gsm_bts_trx_ts *ts, uint8_t e1_nr,
 	ts->e1_link.e1_ts_ss = e1_ts_ss;
 }
 
-/* Search for a BTS in the given Location Area; optionally start searching
- * with start_bts (for continuing to search after the first result) */
-struct gsm_bts *gsm_bts_by_lac(struct gsm_network *net, unsigned int lac,
-				struct gsm_bts *start_bts)
-{
-	struct gsm_bts *bts;
-	int skip = 0;
-
-	if (start_bts)
-		skip = 1;
-
-	llist_for_each_entry(bts, &net->bts_list, list) {
-		if (skip) {
-			if (start_bts == bts)
-				skip = 0;
-			continue;
-		}
-
-		if (lac == GSM_LAC_RESERVED_ALL_BTS || bts->location_area_code == lac)
-			return bts;
-	}
-	return NULL;
-}
-
 static const struct value_string bts_gprs_mode_names[] = {
 	{ BTS_GPRS_NONE,	"none" },
 	{ BTS_GPRS_GPRS,	"gprs" },

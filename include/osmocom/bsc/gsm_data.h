@@ -1093,8 +1093,6 @@ extern void talloc_ctx_init(void *ctx_root);
 
 enum gsm_bts_type parse_btstype(const char *arg);
 const char *btstype2str(enum gsm_bts_type type);
-struct gsm_bts *gsm_bts_by_lac(struct gsm_network *net, unsigned int lac,
-				struct gsm_bts *start_bts);
 
 extern void *tall_bsc_ctx;
 
