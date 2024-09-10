@@ -96,13 +96,9 @@ struct gsm_bts *gsm_bts_alloc_register(struct gsm_network *net, enum gsm_bts_typ
 		return NULL;
 	bts = bts_sm->bts[0];
 
-	net->num_bts++;
-
 	bts->type = type;
 	gsm_set_bts_model(bts, model);
 	bts->bsic = bsic;
-
-	llist_add_tail(&bts->list, &net->bts_list);
 
 	return bts;
 }

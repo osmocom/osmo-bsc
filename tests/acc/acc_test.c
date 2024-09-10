@@ -60,7 +60,6 @@ static inline void _bts_del(struct gsm_bts *bts, const char *msg)
 {
 	osmo_timer_del(&bts->acc_mgr.rotate_timer);
 	osmo_timer_del(&bts->acc_ramp.step_timer);
-	/* no need to llist_del(&bts->list), we never registered the bts there. */
 	talloc_free(bts->site_mgr);
 	fprintf(stderr, "BTS deallocated OK in %s()\n", msg);
 }

@@ -158,6 +158,8 @@ static int gsm_bts_talloc_destructor(struct gsm_bts *bts)
 {
 	/* Entries in bts->loc_list are freed by talloc recursively, no need to free them here. */
 
+	llist_del(&bts->list);
+
 	paging_destructor(bts);
 	bts_setup_ramp_remove(bts);
 
@@ -192,6 +194,9 @@ struct gsm_bts *gsm_bts_alloc(struct gsm_network *net, struct gsm_bts_sm *bts_sm
 		return NULL;
 
 	talloc_set_destructor(bts, gsm_bts_talloc_destructor);
+
+	llist_add_tail(&bts->list, &net->bts_list);
+	net->num_bts++;
 
 	bts->nr = bts_num;
 	bts->num_trx = 0;
