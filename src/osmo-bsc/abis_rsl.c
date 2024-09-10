@@ -1946,25 +1946,26 @@ static int rsl_rx_pchan_rqd(struct chan_rqd *rqd)
 	uint8_t is_11bit;
 	struct gsm_time gsm_time;
 
-	/* Process rach request and forward contained information to PCU */
-	if (rqd->ref.ra == 0x7F) {
+	/* Process rach request and forward contained information to PCU: */
+
+	if (rqd->ref.ra == 0x7F) { /* 11bit RACH */
 		is_11bit = 1;
 
 		/* FIXME: Also handle 11 bit rach requests */
-		LOGP(DRSL, LOGL_ERROR, "BTS %d eleven bit access burst not supported yet!\n", rqd->bts->nr);
+		LOG_BTS(rqd->bts, DRSL, LOGL_ERROR, "CHAN RQD 11bit access burst not supported yet!\n");
 		return -EINVAL;
-	} else {
-		is_11bit = 0;
-		rqd_ta = rqd->ta;
-
-		gsm_time.t1 = rqd->ref.t1;
-		gsm_time.t2 = rqd->ref.t2;
-		gsm_time.t3 = rqd->ref.t3_low | (rqd->ref.t3_high << 3);
-		fn = gsm_gsmtime2fn(&gsm_time);
-
-		LOG_BTS(rqd->bts, DRSL, LOGL_INFO, "CHAN RQD: fn(t1=%u,t3=%u,t2=%u) = %u\n",
-			gsm_time.t1, gsm_time.t3, gsm_time.t2, fn);
 	}
+
+	is_11bit = 0;
+	rqd_ta = rqd->ta;
+
+	gsm_time.t1 = rqd->ref.t1;
+	gsm_time.t2 = rqd->ref.t2;
+	gsm_time.t3 = rqd->ref.t3_low | (rqd->ref.t3_high << 3);
+	fn = gsm_gsmtime2fn(&gsm_time);
+
+	LOG_BTS(rqd->bts, DRSL, LOGL_INFO, "CHAN RQD: fn(t1=%u,t3=%u,t2=%u) = %u\n",
+		gsm_time.t1, gsm_time.t3, gsm_time.t2, fn);
 
 	return pcu_tx_rach_ind(rqd->bts, rqd_ta, rqd->ref.ra, fn, is_11bit,
 			       GSM_L1_BURST_TYPE_ACCESS_0);
