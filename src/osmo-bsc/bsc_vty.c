@@ -833,7 +833,6 @@ static int ho_or_as(struct vty *vty, const char *argv[], int argc)
 {
 	struct gsm_network *net = gsmnet_from_vty(vty);
 	struct gsm_subscriber_connection *conn;
-	struct gsm_bts *bts;
 	struct gsm_bts *new_bts = NULL;
 	unsigned int bts_nr = atoi(argv[0]);
 	unsigned int trx_nr = atoi(argv[1]);
@@ -845,12 +844,7 @@ static int ho_or_as(struct vty *vty, const char *argv[], int argc)
 		unsigned int bts_nr_new = atoi(argv[4]);
 
 		/* Lookup the BTS where we want to handover to */
-		llist_for_each_entry(bts, &net->bts_list, list) {
-			if (bts->nr == bts_nr_new) {
-				new_bts = bts;
-				break;
-			}
-		}
+		new_bts = gsm_bts_num(net, bts_nr_new);
 
 		if (!new_bts) {
 			vty_out(vty, "%% Unable to trigger handover, specified bts #%u does not exist %s",
