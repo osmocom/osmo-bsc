@@ -3289,12 +3289,12 @@ DEFUN(show_pos,
 	char timestr[50];
 
 	llist_for_each_entry(bts, &bsc_gsmnet->bts_list, list) {
-		if (llist_empty(&bts->loc_list)) {
+		curloc = llist_first_entry_or_null(&bts->loc_list, struct bts_location, list);
+		if (!curloc) {
 			vty_out(vty, "BTS Nr: %d position invalid%s", bts->nr,
 				VTY_NEWLINE);
 			continue;
 		}
-		curloc = llist_entry(bts->loc_list.next, struct bts_location, list);
 		if (gmtime_r(&curloc->tstamp, &time) == NULL) {
 			vty_out(vty, "Time conversion failed for BTS %d%s", bts->nr,
 				VTY_NEWLINE);

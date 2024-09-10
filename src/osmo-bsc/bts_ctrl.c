@@ -128,7 +128,7 @@ static int get_bts_loc(struct ctrl_cmd *cmd, void *data)
 		return CTRL_CMD_REPLY;
 	}
 
-	curloc = llist_entry(bts->loc_list.next, struct bts_location, list);
+	curloc = llist_first_entry(&bts->loc_list, struct bts_location, list);
 
 	cmd->reply = talloc_asprintf(cmd, "%lu,%s,%f,%f,%f", curloc->tstamp,
 			get_value_string(bts_loc_fix_names, curloc->valid), curloc->lat, curloc->lon, curloc->height);
@@ -183,14 +183,14 @@ static int set_bts_loc(struct ctrl_cmd *cmd, void *data)
 	curloc->height = atof(height);
 	talloc_free(tmp);
 
-	lastloc = llist_entry(bts->loc_list.next, struct bts_location, list);
+	lastloc = llist_first_entry_or_null(&bts->loc_list, struct bts_location, list);
 
-	/* Add location to the end of the list */
+	/* Add location to the start of the list */
 	llist_add(&curloc->list, &bts->loc_list);
 
 	ret = get_bts_loc(cmd, data);
 
-	if (!location_equal(curloc, lastloc))
+	if (!lastloc || !location_equal(curloc, lastloc))
 		bsc_gen_location_state_trap(bts);
 
 	cleanup_locations(&bts->loc_list);
