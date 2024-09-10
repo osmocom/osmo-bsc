@@ -419,8 +419,13 @@ int pcu_tx_rach_ind(struct gsm_bts *bts, int16_t qta, uint16_t ra, uint32_t fn,
 
 	/* Bail if no PCU is connected */
 	if (!pcu_connected(bts->network)) {
-		LOG_BTS(bts, DRSL, LOGL_ERROR, "CHAN RQD(GPRS) but PCU not connected!\n");
+		LOG_BTS(bts, DPCU, LOGL_ERROR, "CHAN RQD(GPRS) but PCU not connected!\n");
 		return -ENODEV;
+	}
+
+	if (!bsc_co_located_pcu(bts)) {
+		LOG_BTS(bts, DPCU, LOGL_ERROR, "CHAN RQD(GPRS) on BTS whose PCU is not BSC-colocated!\n");
+		return -EINVAL;
 	}
 
 	LOG_BTS(bts, DPCU, LOGL_INFO, "Sending RACH indication: qta=%d, ra=%d, "
