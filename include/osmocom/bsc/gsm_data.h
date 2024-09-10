@@ -20,6 +20,7 @@
 #include <osmocom/core/tdef.h>
 #include <osmocom/core/time_cc.h>
 #include <osmocom/core/linuxlist.h>
+#include <osmocom/core/hashtable.h>
 #include <osmocom/core/linuxrbtree.h>
 #include <osmocom/core/utils.h>
 
@@ -986,6 +987,7 @@ struct gsm_network {
 	gsm_bts_nr_t num_bts;
 	struct llist_head bts_list;
 	struct llist_head bts_rejected;
+	DECLARE_HASHTABLE(bts_by_nr, 10);
 
 	/* BTS-based counters when we can't find the actual BTS
 	 * e.g. when conn->lchan is NULL */

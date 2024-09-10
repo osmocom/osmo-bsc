@@ -5,6 +5,7 @@
 #include <stdbool.h>
 
 #include <osmocom/core/linuxlist.h>
+#include <osmocom/core/hashtable.h>
 #include <osmocom/core/msgb.h>
 #include <osmocom/core/bitvec.h>
 #include <osmocom/gsm/tlv.h>
@@ -339,6 +340,9 @@ struct gsm_bts {
 
 	/* Geographical location of the BTS, head list of "struct bts_location" */
 	struct llist_head loc_list;
+
+	/*! Entry in hash table network->bts_by_nr. */
+	struct hlist_node node_by_nr;
 
 	/* number of this BTS in network */
 	gsm_bts_nr_t nr;

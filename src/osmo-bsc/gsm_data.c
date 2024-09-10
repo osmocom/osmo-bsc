@@ -231,11 +231,10 @@ struct gsm_bts *gsm_bts_num(const struct gsm_network *net, gsm_bts_nr_t num)
 	if (num >= net->num_bts)
 		return NULL;
 
-	llist_for_each_entry(bts, &net->bts_list, list) {
+	hash_for_each_possible(net->bts_by_nr, bts, node_by_nr, num) {
 		if (bts->nr == num)
 			return bts;
 	}
-
 	return NULL;
 }
 
