@@ -363,15 +363,16 @@ static int pcu_tx_e1_ccu_ind(struct gsm_bts *bts)
 /* Allow test to overwrite it */
 __attribute__((weak)) void pcu_info_update(struct gsm_bts *bts)
 {
-	if (pcu_connected(bts->network)) {
-		if (bsc_co_located_pcu(bts)) {
-			/* In cases where the CCU is connected via an E1 line, we transmit the connection parameters for the
-			 * PDCH before we announce the other BTS related parameters. */
-			if (is_e1_bts(bts))
-				pcu_tx_e1_ccu_ind(bts);
-			pcu_tx_info_ind(bts);
-		}
-	}
+	if (!pcu_connected(bts->network))
+		return;
+	if (!bsc_co_located_pcu(bts))
+		return;
+
+	/* In cases where the CCU is connected via an E1 line, we transmit the connection parameters for the
+		* PDCH before we announce the other BTS related parameters. */
+	if (is_e1_bts(bts))
+		pcu_tx_e1_ccu_ind(bts);
+	pcu_tx_info_ind(bts);
 }
 
 static int pcu_tx_data_ind(struct gsm_bts_trx_ts *ts, uint8_t sapi, uint32_t fn,
