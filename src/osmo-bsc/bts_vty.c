@@ -271,6 +271,11 @@ DEFUN_USRATTR(cfg_bts_ci,
 	bts->cell_identity = ci;
 	hash_del(&bts->node_by_ci);
 	hash_add(bts->network->bts_by_ci, &bts->node_by_ci, bts->cell_identity);
+	if (bts->location_area_code != GSM_LAC_RESERVED_DETACHED) {
+		hash_del(&bts->node_by_lac_ci);
+		hash_add(bts->network->bts_by_lac_ci, &bts->node_by_lac_ci,
+			 LAC_CI_HASHTABLE_KEY(bts->location_area_code, bts->cell_identity));
+	}
 
 	return CMD_SUCCESS;
 }
@@ -296,7 +301,10 @@ DEFUN_USRATTR(cfg_bts_lac,
 
 	bts->location_area_code = lac;
 	hash_del(&bts->node_by_lac);
+	hash_del(&bts->node_by_lac_ci);
 	hash_add(bts->network->bts_by_lac, &bts->node_by_lac, bts->location_area_code);
+	hash_add(bts->network->bts_by_lac_ci, &bts->node_by_lac_ci,
+		 LAC_CI_HASHTABLE_KEY(bts->location_area_code, bts->cell_identity));
 
 	return CMD_SUCCESS;
 }

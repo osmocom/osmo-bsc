@@ -161,6 +161,7 @@ static int gsm_bts_talloc_destructor(struct gsm_bts *bts)
 	llist_del(&bts->list);
 	hash_del(&bts->node_by_nr);
 	hash_del(&bts->node_by_lac);
+	hash_del(&bts->node_by_lac_ci);
 	hash_del(&bts->node_by_ci);
 
 	paging_destructor(bts);
@@ -209,6 +210,7 @@ struct gsm_bts *gsm_bts_alloc(struct gsm_network *net, struct gsm_bts_sm *bts_sm
 
 	/* Default bts->location_area_code == GSM_LAC_RESERVED_DETACHED, don't add to hashtable: */
 	INIT_HLIST_NODE(&bts->node_by_lac);
+	INIT_HLIST_NODE(&bts->node_by_lac_ci);
 	/* Default CI = 0: */
 	hash_add(net->bts_by_ci, &bts->node_by_ci, bts->cell_identity);
 
