@@ -258,7 +258,7 @@ DEFUN_USRATTR(cfg_bts_ci,
 	      cfg_bts_ci_cmd,
 	      X(BSC_VTY_ATTR_RESTART_ABIS_RSL_LINK),
 	      "cell_identity <0-65535>",
-	      "Set the Cell identity of this BTS\n" "Cell Identity\n")
+	      "Set the Cell identity of this BTS\n" "Cell Identity (default 0)\n")
 {
 	struct gsm_bts *bts = vty->index;
 	int ci = atoi(argv[0]);
@@ -269,6 +269,8 @@ DEFUN_USRATTR(cfg_bts_ci,
 		return CMD_WARNING;
 	}
 	bts->cell_identity = ci;
+	hash_del(&bts->node_by_ci);
+	hash_add(bts->network->bts_by_ci, &bts->node_by_ci, bts->cell_identity);
 
 	return CMD_SUCCESS;
 }

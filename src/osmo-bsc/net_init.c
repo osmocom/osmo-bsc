@@ -126,6 +126,7 @@ struct gsm_network *gsm_network_init(void *ctx)
 	net->num_bts = 0;
 	hash_init(net->bts_by_nr);
 	hash_init(net->bts_by_lac);
+	hash_init(net->bts_by_ci);
 
 	net->T_defs = gsm_network_T_defs;
 	osmo_tdefs_reset(net->T_defs);

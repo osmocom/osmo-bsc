@@ -201,7 +201,7 @@ static void page_ci(const struct bsc_paging_params *params)
 		uint16_t ci = params->cil.id_list[i].ci;
 		int paged = 0;
 		struct gsm_bts *bts;
-		llist_for_each_entry(bts, &bsc_gsmnet->bts_list, list) {
+		hash_for_each_possible(bsc_gsmnet->bts_by_ci, bts, node_by_ci, ci) {
 			if (bts->cell_identity != ci)
 				continue;
 			page_subscriber(params, bts, GSM_LAC_RESERVED_ALL_BTS);

@@ -989,6 +989,7 @@ struct gsm_network {
 	struct llist_head bts_rejected;
 	DECLARE_HASHTABLE(bts_by_nr, 10);
 	DECLARE_HASHTABLE(bts_by_lac, 10);
+	DECLARE_HASHTABLE(bts_by_ci, 10);
 
 	/* BTS-based counters when we can't find the actual BTS
 	 * e.g. when conn->lchan is NULL */
