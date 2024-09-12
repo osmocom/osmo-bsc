@@ -150,7 +150,8 @@ static void page_cgi(const struct bsc_paging_params *params)
 		if (!osmo_plmn_cmp(&id->lai.plmn, &bsc_gsmnet->plmn)) {
 			int paged = 0;
 			struct gsm_bts *bts;
-			hash_for_each_possible(bsc_gsmnet->bts_by_lac, bts, node_by_lac, id->lai.lac) {
+			hash_for_each_possible(bsc_gsmnet->bts_by_lac_ci, bts, node_by_lac_ci,
+					       LAC_CI_HASHTABLE_KEY(id->lai.lac, id->cell_identity)) {
 				if (bts->location_area_code != id->lai.lac)
 					continue;
 				if (bts->cell_identity != id->cell_identity)
@@ -179,7 +180,8 @@ static void page_lac_and_ci(const struct bsc_paging_params *params)
 		const struct osmo_lac_and_ci_id *id = &params->cil.id_list[i].lac_and_ci;
 		int paged = 0;
 		struct gsm_bts *bts;
-		hash_for_each_possible(bsc_gsmnet->bts_by_lac, bts, node_by_lac, id->lac) {
+		hash_for_each_possible(bsc_gsmnet->bts_by_lac_ci, bts, node_by_lac_ci,
+				       LAC_CI_HASHTABLE_KEY(id->lac, id->ci)) {
 			if (bts->location_area_code != id->lac)
 				continue;
 			if (bts->cell_identity != id->ci)

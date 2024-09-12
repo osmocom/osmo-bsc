@@ -377,7 +377,8 @@ int neighbor_address_resolution(const struct gsm_network *net, const struct cell
 	struct gsm_bts *local_neighbor = NULL;
 	struct gsm0808_cell_id_list2 remote_neighbors = { 0 };
 
-	hash_for_each_possible(net->bts_by_lac, bts_tmp, node_by_lac, lac) {
+	hash_for_each_possible(net->bts_by_lac_ci, bts_tmp, node_by_lac_ci,
+			       LAC_CI_HASHTABLE_KEY(lac, cell_id)) {
 		if (bts_tmp->location_area_code != lac)
 			continue;
 		if (bts_tmp->cell_identity != cell_id)
