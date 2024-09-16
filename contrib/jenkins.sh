@@ -56,7 +56,7 @@ export PATH="$inst/bin:$PATH"
 
 osmo-build-dep.sh libosmo-abis
 osmo-build-dep.sh libosmo-netif
-osmo-build-dep.sh libosmo-sccp
+osmo-build-dep.sh libosmo-sigtran
 osmo-build-dep.sh osmo-mgw
 
 # Additional configure options and depends
