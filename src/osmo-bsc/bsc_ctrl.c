@@ -632,11 +632,15 @@ static int msc_signal_handler(unsigned int subsys, unsigned int signal,
 static struct osmo_ss7_as *msc_get_ss7_as(struct bsc_msc_data *msc)
 {
 	struct osmo_ss7_route *rt;
+	struct osmo_ss7_as *as;
 	struct osmo_ss7_instance *ss7 = osmo_sccp_get_ss7(msc->a.sccp);
 	rt = osmo_ss7_route_lookup(ss7, msc->a.msc_addr.pc);
 	if (!rt)
 		return NULL;
-	return rt->dest.as;
+	as = osmo_ss7_route_get_dest_as(rt);
+	if (!as)
+		return NULL;
+	return as;
 }
 
 static int _ss7_as_send(struct osmo_ss7_as *as, struct msgb *msg)
