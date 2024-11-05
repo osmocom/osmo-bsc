@@ -559,7 +559,7 @@ int osmo_bsc_sigtran_init(struct llist_head *mscs)
 {
 	struct bsc_msc_data *msc;
 	uint32_t default_pc;
-	struct osmo_ss7_instance *inst;
+	struct llist_head *ll_it;
 	int create_instance_0_for_msc_nr = -1;
 
 	osmo_ss7_register_rx_unknown_cb(&asp_rx_unknown);
@@ -615,7 +615,8 @@ int osmo_bsc_sigtran_init(struct llist_head *mscs)
 	 * Iterate cs7 instance indexes and see for each one whether an MSC is configured for it.
 	 * The 'msc' / 'msc-addr' command selects the cs7 instance used for an MSC.
 	 */
-	llist_for_each_entry(inst, &osmo_ss7_instances, list) {
+	llist_for_each(ll_it, &osmo_ss7_instances) {
+		struct osmo_ss7_instance *inst = osmo_ss7_instances_llist_entry(ll_it);
 		char inst_name[32];
 		enum osmo_ss7_asp_protocol used_proto = OSMO_SS7_ASP_PROT_NONE;
 		int prev_msc_nr;
