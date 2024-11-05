@@ -2974,16 +2974,18 @@ DEFUN(cfg_msc_cs7_bsc_addr,
 	struct bsc_msc_data *msc = bsc_msc_data(vty);
 	const char *bsc_addr_name = argv[0];
 	struct osmo_ss7_instance *ss7;
+	uint32_t ss7_id;
 
 	ss7 = osmo_sccp_addr_by_name(&msc->a.bsc_addr, bsc_addr_name);
 	if (!ss7) {
 		vty_out(vty, "Error: No such SCCP addressbook entry: '%s'%s", bsc_addr_name, VTY_NEWLINE);
 		return CMD_ERR_INCOMPLETE;
 	}
+	ss7_id = osmo_ss7_instance_get_id(ss7);
 
 	/* Prevent mixing addresses from different CS7/SS7 instances */
 	if (msc->a.cs7_instance_valid) {
-		if (msc->a.cs7_instance != ss7->cfg.id) {
+		if (msc->a.cs7_instance != ss7_id) {
 			vty_out(vty,
 				"Error: SCCP addressbook entry from mismatching CS7 instance: '%s'%s",
 				bsc_addr_name, VTY_NEWLINE);
@@ -2991,7 +2993,7 @@ DEFUN(cfg_msc_cs7_bsc_addr,
 		}
 	}
 
-	msc->a.cs7_instance = ss7->cfg.id;
+	msc->a.cs7_instance = ss7_id;
 	msc->a.cs7_instance_valid = true;
 	enforce_standard_ssn(vty, &msc->a.bsc_addr);
 	msc->a.bsc_addr_name = talloc_strdup(msc, bsc_addr_name);
@@ -3006,16 +3008,18 @@ DEFUN(cfg_msc_cs7_msc_addr,
 	struct bsc_msc_data *msc = bsc_msc_data(vty);
 	const char *msc_addr_name = argv[0];
 	struct osmo_ss7_instance *ss7;
+	uint32_t ss7_id;
 
 	ss7 = osmo_sccp_addr_by_name(&msc->a.msc_addr, msc_addr_name);
 	if (!ss7) {
 		vty_out(vty, "Error: No such SCCP addressbook entry: '%s'%s", msc_addr_name, VTY_NEWLINE);
 		return CMD_ERR_INCOMPLETE;
 	}
+	ss7_id = osmo_ss7_instance_get_id(ss7);
 
 	/* Prevent mixing addresses from different CS7/SS7 instances */
 	if (msc->a.cs7_instance_valid) {
-		if (msc->a.cs7_instance != ss7->cfg.id) {
+		if (msc->a.cs7_instance != ss7_id) {
 			vty_out(vty,
 				"Error: SCCP addressbook entry from mismatching CS7 instance: '%s'%s",
 				msc_addr_name, VTY_NEWLINE);
@@ -3023,7 +3027,7 @@ DEFUN(cfg_msc_cs7_msc_addr,
 		}
 	}
 
-	msc->a.cs7_instance = ss7->cfg.id;
+	msc->a.cs7_instance = ss7_id;
 	msc->a.cs7_instance_valid = true;
 	enforce_standard_ssn(vty, &msc->a.msc_addr);
 	msc->a.msc_addr_name = talloc_strdup(msc, msc_addr_name);
