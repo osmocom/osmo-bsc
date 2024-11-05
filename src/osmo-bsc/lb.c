@@ -618,18 +618,20 @@ static void enforce_ssn(struct vty *vty, struct osmo_sccp_addr *addr, enum osmo_
 bool smlc_set_cs7_instance(struct vty *vty, const char *from_vty_cmd, const char *from_addr,
 			   struct osmo_ss7_instance *ss7)
 {
+	uint32_t ss7_id = osmo_ss7_instance_get_id(ss7);
+
 	if (bsc_gsmnet->smlc->cs7_instance_valid) {
-		if (bsc_gsmnet->smlc->cs7_instance != ss7->cfg.id) {
+		if (bsc_gsmnet->smlc->cs7_instance != ss7_id) {
 			LOGP(DLCS, LOGL_ERROR,
 			     "%s: expecting address from cs7 instance %u, but '%s' is from %u\n",
-			     from_vty_cmd, bsc_gsmnet->smlc->cs7_instance, from_addr, ss7->cfg.id);
+			     from_vty_cmd, bsc_gsmnet->smlc->cs7_instance, from_addr, ss7_id);
 			vty_out(vty, "Error:"
 				" %s: expecting address from cs7 instance %u, but '%s' is from %u%s",
-				from_vty_cmd, bsc_gsmnet->smlc->cs7_instance, from_addr, ss7->cfg.id, VTY_NEWLINE);
+				from_vty_cmd, bsc_gsmnet->smlc->cs7_instance, from_addr, ss7_id, VTY_NEWLINE);
 			return false;
 		}
 	} else {
-		bsc_gsmnet->smlc->cs7_instance = ss7->cfg.id;
+		bsc_gsmnet->smlc->cs7_instance = ss7_id;
 		bsc_gsmnet->smlc->cs7_instance_valid = true;
 		LOGP(DLCS, LOGL_NOTICE, "Lb interface is using cs7 instance %u\n", bsc_gsmnet->smlc->cs7_instance);
 	}

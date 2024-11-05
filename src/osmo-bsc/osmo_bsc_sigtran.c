@@ -113,8 +113,9 @@ static struct bsc_msc_data *get_msc_by_addr(const struct osmo_sccp_addr *msc_add
 static struct bsc_msc_data *get_msc_by_pc(struct osmo_ss7_instance *cs7, uint32_t pc)
 {
 	struct bsc_msc_data *msc;
+	uint32_t cs7_id = osmo_ss7_instance_get_id(cs7);
 	llist_for_each_entry(msc, msc_list, entry) {
-		if (msc->a.cs7_instance != cs7->cfg.id)
+		if (msc->a.cs7_instance != cs7_id)
 			continue;
 		if ((msc->a.msc_addr.presence & OSMO_SCCP_ADDR_T_PC) == 0)
 			continue;
@@ -618,14 +619,15 @@ int osmo_bsc_sigtran_init(struct llist_head *mscs)
 		char inst_name[32];
 		enum osmo_ss7_asp_protocol used_proto = OSMO_SS7_ASP_PROT_NONE;
 		int prev_msc_nr;
+		uint32_t inst_id = osmo_ss7_instance_get_id(inst);
 
 		struct osmo_sccp_instance *sccp;
 		struct bsc_sccp_inst *bsc_sccp;
 
 		llist_for_each_entry(msc, msc_list, entry) {
 			/* An MSC with invalid cs7 instance id defaults to cs7 instance 0 */
-			if ((inst->cfg.id != msc->a.cs7_instance)
-			    && !(inst->cfg.id == 0 && !msc->a.cs7_instance_valid))
+			if ((inst_id != msc->a.cs7_instance)
+			    && !(inst_id == 0 && !msc->a.cs7_instance_valid))
 				continue;
 
 			/* This msc runs on this cs7 inst. Check the asp_proto. */
@@ -636,7 +638,7 @@ int osmo_bsc_sigtran_init(struct llist_head *mscs)
 				     prev_msc_nr, msc->nr,
 				     osmo_ss7_asp_protocol_name(used_proto),
 				     osmo_ss7_asp_protocol_name(msc->a.asp_proto),
-				     inst->cfg.id);
+				     inst_id);
 				return -EINVAL;
 			}
 
@@ -647,17 +649,17 @@ int osmo_bsc_sigtran_init(struct llist_head *mscs)
 
 		if (used_proto == OSMO_SS7_ASP_PROT_NONE) {
 			/* This instance has no MSC associated with it */
-			LOGP(DMSC, LOGL_ERROR, "cs7 instance %u has no MSCs configured to run on it\n", inst->cfg.id);
+			LOGP(DMSC, LOGL_ERROR, "cs7 instance %u has no MSCs configured to run on it\n", inst_id);
 			continue;
 		}
 
-		snprintf(inst_name, sizeof(inst_name), "A-%u-%s", inst->cfg.id, osmo_ss7_asp_protocol_name(used_proto));
+		snprintf(inst_name, sizeof(inst_name), "A-%u-%s", inst_id, osmo_ss7_asp_protocol_name(used_proto));
 		LOGP(DMSC, LOGL_NOTICE, "Initializing SCCP connection for A/%s on cs7 instance %u\n",
-		     osmo_ss7_asp_protocol_name(used_proto), inst->cfg.id);
+		     osmo_ss7_asp_protocol_name(used_proto), inst_id);
 
 		/* SS7 Protocol stack */
 		default_pc = osmo_ss7_pointcode_parse(NULL, BSC_DEFAULT_PC);
-		sccp = osmo_sccp_simple_client_on_ss7_id(tall_bsc_ctx, inst->cfg.id, inst_name,
+		sccp = osmo_sccp_simple_client_on_ss7_id(tall_bsc_ctx, inst_id, inst_name,
 							 default_pc, used_proto,
 							 0, DEFAULT_ASP_LOCAL_IP,
 							 0, DEFAULT_ASP_REMOTE_IP);
@@ -673,8 +675,8 @@ int osmo_bsc_sigtran_init(struct llist_head *mscs)
 			char msc_name[32];
 
 			/* Skip MSCs that don't run on this cs7 instance */
-			if ((inst->cfg.id != msc->a.cs7_instance)
-			    && !(inst->cfg.id == 0 && !msc->a.cs7_instance_valid))
+			if ((inst_id != msc->a.cs7_instance)
+			    && !(inst_id == 0 && !msc->a.cs7_instance_valid))
 				continue;
 
 			snprintf(msc_name, sizeof(msc_name), "msc-%d", msc->nr);
