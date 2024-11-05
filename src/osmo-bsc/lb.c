@@ -450,13 +450,13 @@ static int lb_start(void)
 					   OSMO_SCCP_SSN_SMLC_BSSAP_LE);
 
 	/* Set up SCCP user and one ASP+AS */
-	snprintf(inst_name, sizeof(inst_name), "Lb-%u-%s", cs7_inst->cfg.id, osmo_ss7_asp_protocol_name(used_proto));
+	snprintf(inst_name, sizeof(inst_name), "Lb-%u-%s", bsc_gsmnet->smlc->cs7_instance, osmo_ss7_asp_protocol_name(used_proto));
 	LOGP(DLCS, LOGL_NOTICE, "Initializing SCCP connection for Lb/%s on cs7 instance %u\n",
-	     osmo_ss7_asp_protocol_name(used_proto), cs7_inst->cfg.id);
+	     osmo_ss7_asp_protocol_name(used_proto), bsc_gsmnet->smlc->cs7_instance);
 
 	/* SS7 Protocol stack */
 	default_pc = osmo_ss7_pointcode_parse(NULL, BSC_DEFAULT_PC);
-	sccp = osmo_sccp_simple_client_on_ss7_id(tall_bsc_ctx, cs7_inst->cfg.id, inst_name,
+	sccp = osmo_sccp_simple_client_on_ss7_id(tall_bsc_ctx, bsc_gsmnet->smlc->cs7_instance, inst_name,
 						 default_pc, used_proto,
 						 0, DEFAULT_ASP_LOCAL_IP,
 						 0, DEFAULT_ASP_REMOTE_IP);
