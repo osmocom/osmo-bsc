@@ -643,26 +643,10 @@ static struct osmo_ss7_as *msc_get_ss7_as(struct bsc_msc_data *msc)
 	return as;
 }
 
-static int _ss7_as_send(struct osmo_ss7_as *as, struct msgb *msg)
-{
-	struct osmo_ss7_asp *asp;
-	unsigned int i;
-
-	/* FIXME: unify with xua_as_transmit_msg() and perform proper ASP lookup */
-	for (i = 0; i < ARRAY_SIZE(as->cfg.asps); i++) {
-		asp = as->cfg.asps[i];
-		if (!asp)
-			continue;
-		/* FIXME: deal with multiple ASPs per AS */
-		return osmo_ss7_asp_send(asp, msg);
-	}
-	msgb_free(msg);
-	return -1;
-}
-
 int bsc_sccplite_msc_send(struct bsc_msc_data *msc, struct msgb *msg)
 {
 	struct osmo_ss7_as *as;
+	struct osmo_ss7_asp *asp;
 
 	as = msc_get_ss7_as(msc);
 	if (!as) {
@@ -676,7 +660,13 @@ int bsc_sccplite_msc_send(struct bsc_msc_data *msc, struct msgb *msg)
 		return 0;
 	}
 
-	return _ss7_as_send(as, msg);
+	asp = osmo_ss7_as_select_asp(as);
+	if (!asp) {
+		LOGP(DCTRL, LOGL_NOTICE, "No ASP found for AS, dropping message\n");
+		msgb_free(msg);
+		return -1;
+	}
+	return osmo_ss7_asp_send(asp, msg);
 }
 
 /* Encode a CTRL command and send it to the given ASP
