@@ -671,8 +671,10 @@ int bsc_sccplite_msc_send(struct bsc_msc_data *msc, struct msgb *msg)
 	}
 
 	/* don't attempt to send CTRL on a non-SCCPlite AS */
-	if (as->cfg.proto != OSMO_SS7_ASP_PROT_IPA)
+	if (as->cfg.proto != OSMO_SS7_ASP_PROT_IPA) {
+		msgb_free(msg);
 		return 0;
+	}
 
 	return _ss7_as_send(as, msg);
 }
