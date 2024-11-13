@@ -224,6 +224,18 @@ AM_CONDITIONAL([HAVE_SYSTEMD], [test "x$with_systemdsystemunitdir" != "xno"])
 AC_MSG_RESULT([CFLAGS="$CFLAGS"])
 AC_MSG_RESULT([CPPFLAGS="$CPPFLAGS"])
 
+# OS#6617: check if libosmo-sigtran has private structs
+# We need to use grep here, can't set the includedir with AC_CHECK_DECL.
+m="OS#6617: checking whether libosmo-sigtran has private structs..."
+h="$($PKG_CONFIG --variable=includedir libosmo-sigtran)/osmocom/sigtran/osmo_ss7.h"
+f=osmo_ss7_as_select_asp
+if grep -q "$f" "$h"; then
+	echo "$m yes ($f in $h)"
+	AC_DEFINE(SIGTRAN_PRIVATE_STRUCTS, [1], ["OS#6617"])
+else
+	echo "$m no ($f not in $h)"
+fi
+
 dnl Generate the output
 AM_CONFIG_HEADER(bscconfig.h)
 

@@ -37,6 +37,7 @@
 #include <osmocom/bsc/bts.h>
 #include <osmocom/bsc/paging.h>
 #include <osmocom/bsc/bssmap_reset.h>
+#include <osmocom/bsc/sigtran_compat.h>
 #include <osmocom/mgcp_client/mgcp_common.h>
 #include <osmocom/netif/ipa.h>
 

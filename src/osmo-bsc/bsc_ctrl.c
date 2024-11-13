@@ -44,6 +44,7 @@
 #include <osmocom/bsc/ctrl.h>
 #include <osmocom/bsc/handover_ctrl.h>
 #include <osmocom/bsc/neighbor_ident.h>
+#include <osmocom/bsc/sigtran_compat.h>
 
 static int verify_net_apply_config_file(struct ctrl_cmd *cmd, const char *value, void *_data)
 {

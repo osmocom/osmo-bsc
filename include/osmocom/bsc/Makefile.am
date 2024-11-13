@@ -67,4 +67,5 @@ noinst_HEADERS = \
 	smscb.h \
 	power_control.h \
 	vgcs_fsm.h \
+	sigtran_compat.h \
 	$(NULL)

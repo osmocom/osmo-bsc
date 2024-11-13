@@ -68,6 +68,7 @@
 #include <osmocom/bsc/bsc_msc_data.h>
 #include <osmocom/bsc/lchan.h>
 #include <osmocom/bsc/pcu_if.h>
+#include <osmocom/bsc/sigtran_compat.h>
 
 #include <inttypes.h>
 

@@ -32,6 +32,7 @@
 #include <osmocom/bsc/lcs_loc_req.h>
 #include <osmocom/bsc/bssmap_reset.h>
 #include <osmocom/bsc/gsm_data.h>
+#include <osmocom/bsc/sigtran_compat.h>
 
 /* Send reset to SMLC */
 int bssmap_le_tx_reset(void)
