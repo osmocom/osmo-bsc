@@ -1,3 +1,19 @@
+osmo-bsc (1.12.2) unstable; urgency=medium
+
+  [ Oliver Smith ]
+  * Add osmo_ss7 APIs
+
+  [ Pau Espin Pedrol ]
+  * bsc_ctrl: Use new libosmo-sigtran API osmo_ss7_route_get_dest_as()
+  * lb: Avoid using osmo_ss7_instance private field
+  * Use new libosmo-sigtran API osmo_ss7_instance_get_id()
+  * Use new libosmo-sigtran API osmo_ss7_instances_llist_entry()
+  * bsc_sccplite_msc_send(): Fix msgb leak
+  * Use new libosmo-sigtran API osmo_ss7_as_get_asp_protocol()
+  * Use new libosmo-sigtran API osmo_ss7_as_select_asp()
+
+ -- Oliver Smith <osmith@sysmocom.de>  Wed, 13 Nov 2024 14:42:07 +0100
+
 osmo-bsc (1.12.1) unstable; urgency=medium
 
   [ Vadim Yanitskiy ]
