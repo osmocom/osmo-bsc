@@ -665,24 +665,33 @@ static int pcu_tx_si_all(struct gsm_bts *bts)
 	return 0;
 }
 
-static int pcu_rx_txt_ind(struct gsm_bts *bts,
+static int pcu_rx_txt_ind(struct gsm_network *net, struct gsm_bts *bts,
 			  const struct gsm_pcu_if_txt_ind *txt)
 {
-	int rc;
+	int rc = 0;
 
 	switch (txt->type) {
 	case PCU_VERSION:
-		LOG_BTS(bts, DPCU, LOGL_INFO, "OsmoPCU version %s connected\n",
+		LOGP(DPCU, LOGL_INFO, "OsmoPCU version %s connected\n",
 		     txt->text);
-		rc = pcu_tx_si_all(bts);
+
+		/* we use the reception of the PCU_VERSION as a trigger to make the PCU available for
+		 * all BTSs handled by this process (currently this is exactly one BTS, see FIXME notes) */
+		llist_for_each_entry(bts, &net->bts_list, list) {
+			if (bsc_co_located_pcu(bts)) {
+				if (pcu_tx_si_all(bts) < 0)
+					rc = -EINVAL;
+			}
+		}
 		if (rc < 0)
 			return -EINVAL;
 		break;
 	case PCU_OML_ALERT:
+		OSMO_ASSERT(bts);
 		LOG_BTS(bts, DPCU, LOGL_ERROR, "PCU external alarm: %s\n", txt->text);
 		break;
 	default:
-		LOG_BTS(bts, DPCU, LOGL_ERROR, "Unknown TXT_IND type %u received\n",
+		LOGP(DPCU, LOGL_ERROR, "Unknown TXT_IND type %u received\n",
 		     txt->type);
 		return -EINVAL;
 	}
@@ -699,25 +708,39 @@ static int pcu_rx_txt_ind(struct gsm_bts *bts,
 			return -EINVAL; \
 		} \
 	} while (0)
+
+#define ENSURE_BTS_OBJECT(bts) \
+	do { \
+		if ((bts = gsm_bts_num(net, pcu_prim->bts_nr)) == NULL) { \
+			LOGP(DPCU, LOGL_ERROR, "Received PCU Prim for non-existent BTS %u\n", pcu_prim->bts_nr); \
+			return -EINVAL; \
+		} \
+	} while (0)
+
 static int pcu_rx(struct gsm_network *net, uint8_t msg_type,
 	struct gsm_pcu_if *pcu_prim, size_t prim_len)
 {
 	int rc = 0;
 	struct gsm_bts *bts;
 
-	bts = gsm_bts_num(net, pcu_prim->bts_nr);
-	if (!bts)
-		return -EINVAL;
-
 	switch (msg_type) {
 	case PCU_IF_MSG_DATA_REQ:
 	case PCU_IF_MSG_PAG_REQ:
 		CHECK_IF_MSG_SIZE(prim_len, pcu_prim->u.data_req);
+		ENSURE_BTS_OBJECT(bts);
 		rc = pcu_rx_data_req(bts, msg_type, &pcu_prim->u.data_req);
 		break;
 	case PCU_IF_MSG_TXT_IND:
 		CHECK_IF_MSG_SIZE(prim_len, pcu_prim->u.txt_ind);
-		rc = pcu_rx_txt_ind(bts, &pcu_prim->u.txt_ind);
+		if (pcu_prim->u.txt_ind.type == PCU_VERSION) {
+			/* A TXT indication that carries the PCU_VERSION is always addressed to the
+			 * receiving process as a whole, which means we will not resolve a specific
+			 * BTS object in this case. */
+			rc = pcu_rx_txt_ind(net, NULL, &pcu_prim->u.txt_ind);
+		} else {
+			ENSURE_BTS_OBJECT(bts);
+			rc = pcu_rx_txt_ind(NULL, bts, &pcu_prim->u.txt_ind);
+		}
 		break;
 	default:
 		LOGP(DPCU, LOGL_ERROR, "Received unknown PCU msg type %d\n",
