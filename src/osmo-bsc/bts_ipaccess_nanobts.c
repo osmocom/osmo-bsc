@@ -508,12 +508,17 @@ find_bts_by_unitid(struct gsm_network *net, uint16_t site_id, uint16_t bts_id)
 /* These are exported because they are used by the VTY interface. */
 void ipaccess_drop_rsl(struct gsm_bts_trx *trx, const char *reason)
 {
+	struct e1inp_sign_link *link;
+
 	if (!trx->rsl_link_primary)
 		return;
 
 	LOG_TRX(trx, DLINP, LOGL_NOTICE, "Dropping RSL link: %s\n", reason);
-	e1inp_sign_link_destroy(trx->rsl_link_primary);
+	/* Mark bts->rsl_link_primary ptr null before calling sign_link_destroy,
+	 * to avoid a callback triggering this same code path. */
+	link = trx->rsl_link_primary;
 	trx->rsl_link_primary = NULL;
+	e1inp_sign_link_destroy(link);
 	osmo_stat_item_dec(osmo_stat_item_group_get_item(trx->bts->bts_statg, BTS_STAT_RSL_CONNECTED), 1);
 
 	if (trx->bts->c0 == trx)
@@ -529,6 +534,7 @@ void ipaccess_drop_oml(struct gsm_bts *bts, const char *reason)
 	uint8_t i;
 	struct timespec tp;
 	int rc;
+	struct e1inp_sign_link *link;
 
 	/* First of all, remove deferred drop if enabled */
 	osmo_timer_del(&bts->oml_drop_link_timer);
@@ -537,8 +543,11 @@ void ipaccess_drop_oml(struct gsm_bts *bts, const char *reason)
 		return;
 
 	LOG_BTS(bts, DLINP, LOGL_NOTICE, "Dropping OML link: %s\n", reason);
-	e1inp_sign_link_destroy(bts->oml_link);
+	/* Mark bts->oml_link ptr null before calling sign_link_destroy,
+	 * to avoid a callback triggering this same code path. */
+	link = bts->oml_link;
 	bts->oml_link = NULL;
+	e1inp_sign_link_destroy(link);
 	rc = osmo_clock_gettime(CLOCK_MONOTONIC, &tp);
 	bts->updowntime = (rc < 0) ? 0 : tp.tv_sec; /* we don't need sub-second precision for downtime */
 	osmo_stat_item_dec(osmo_stat_item_group_get_item(bts->bts_statg, BTS_STAT_OML_CONNECTED), 1);
@@ -546,8 +555,9 @@ void ipaccess_drop_oml(struct gsm_bts *bts, const char *reason)
 
 	/* Also drop the associated OSMO link */
 	OSMO_ASSERT(bts->osmo_link);
-	e1inp_sign_link_destroy(bts->osmo_link);
+	link = bts->osmo_link;
 	bts->osmo_link = NULL;
+	e1inp_sign_link_destroy(link);
 
 	bts_setup_ramp_remove(bts);
 
