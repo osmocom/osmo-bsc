@@ -1021,7 +1021,7 @@ static struct ipa_proxy_conn *connect_bsc(struct sockaddr_in *sa, int priv_nr, v
 	}
 
 	bfd = &ipc->fd;
-	osmo_fd_setup(bfd, ret, OSMO_FD_READ | OSMO_FD_WRITE, ipaccess_fd_cb, ipc, priv_nr);
+	osmo_fd_setup(bfd, ret, OSMO_FD_READ | OSMO_FD_WRITE, proxy_ipaccess_fd_cb, ipc, priv_nr);
 
 	ret = setsockopt(bfd->fd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
 	if (ret < 0) {
