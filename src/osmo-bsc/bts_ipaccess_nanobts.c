@@ -25,25 +25,23 @@
 
 #include <osmocom/gsm/tlv.h>
 
-#include <osmocom/bsc/gsm_data.h>
-#include <osmocom/bsc/signal.h>
-#include <osmocom/bsc/abis_nm.h>
-#include <osmocom/abis/e1_input.h>
-#include <osmocom/gsm/tlv.h>
 #include <osmocom/core/msgb.h>
 #include <osmocom/core/socket.h>
 #include <osmocom/core/stat_item.h>
 #include <osmocom/core/talloc.h>
 #include <osmocom/core/utils.h>
+#include <osmocom/core/logging.h>
+#include <osmocom/gsm/tlv.h>
+#include <osmocom/gsm/protocol/ipaccess.h>
+#include <osmocom/gsm/ipa.h>
+#include <osmocom/abis/e1_input.h>
+#include <osmocom/abis/subchan_demux.h>
 #include <osmocom/bsc/gsm_data.h>
+#include <osmocom/bsc/signal.h>
 #include <osmocom/bsc/abis_nm.h>
 #include <osmocom/bsc/abis_rsl.h>
 #include <osmocom/bsc/abis_osmo.h>
 #include <osmocom/bsc/debug.h>
-#include <osmocom/abis/subchan_demux.h>
-#include <osmocom/gsm/ipa.h>
-#include <osmocom/abis/ipaccess.h>
-#include <osmocom/core/logging.h>
 #include <osmocom/bsc/ipaccess.h>
 #include <osmocom/bsc/bts_ipaccess_nanobts_omlattr.h>
 #include <osmocom/bsc/paging.h>
