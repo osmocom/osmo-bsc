@@ -37,18 +37,18 @@
 #define _GNU_SOURCE
 #include <getopt.h>
 
-#include <osmocom/bsc/gsm_data.h>
 #include <osmocom/core/application.h>
 #include <osmocom/core/select.h>
-#include <osmocom/gsm/tlv.h>
 #include <osmocom/core/msgb.h>
-#include <osmocom/gsm/ipa.h>
-#include <osmocom/abis/ipa.h>
-#include <osmocom/abis/ipaccess.h>
-#include <osmocom/bsc/debug.h>
-#include <osmocom/bsc/ipaccess.h>
 #include <osmocom/core/socket.h>
 #include <osmocom/core/talloc.h>
+#include <osmocom/gsm/tlv.h>
+#include <osmocom/gsm/protocol/ipaccess.h>
+#include <osmocom/gsm/ipa.h>
+#include <osmocom/abis/ipa.h>
+#include <osmocom/bsc/gsm_data.h>
+#include <osmocom/bsc/debug.h>
+#include <osmocom/bsc/ipaccess.h>
 
 /* one instance of an ip.access protocol proxy */
 struct ipa_proxy {

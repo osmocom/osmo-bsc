@@ -40,21 +40,21 @@
 #include <osmocom/core/application.h>
 #include <osmocom/core/select.h>
 #include <osmocom/core/timer.h>
-#include <osmocom/bsc/ipaccess.h>
+#include <osmocom/core/talloc.h>
+#include <osmocom/gsm/protocol/gsm_12_21.h>
+#include <osmocom/gsm/protocol/ipaccess.h>
+#include <osmocom/abis/abis.h>
 #include <osmocom/abis/e1_input.h>
+#include <osmocom/bsc/ipaccess.h>
 #include <osmocom/bsc/abis_nm.h>
 #include <osmocom/bsc/signal.h>
 #include <osmocom/bsc/debug.h>
 #include <osmocom/bsc/network_listen.h>
-#include <osmocom/abis/ipaccess.h>
 #include <osmocom/bsc/gsm_data.h>
 #include <osmocom/bsc/abis_nm.h>
 #include <osmocom/bsc/signal.h>
 #include <osmocom/bsc/debug.h>
 #include <osmocom/bsc/network_listen.h>
-#include <osmocom/core/talloc.h>
-#include <osmocom/abis/abis.h>
-#include <osmocom/gsm/protocol/gsm_12_21.h>
 #include <osmocom/bsc/bss.h>
 #include <osmocom/bsc/bts.h>
 

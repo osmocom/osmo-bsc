@@ -24,21 +24,19 @@
 
 #include <osmocom/gsm/tlv.h>
 
+#include <osmocom/core/msgb.h>
+#include <osmocom/core/talloc.h>
+#include <osmocom/core/logging.h>
+#include <osmocom/gsm/tlv.h>
+#include <osmocom/gsm/protocol/ipaccess.h>
+#include <osmocom/abis/e1_input.h>
+#include <osmocom/abis/subchan_demux.h>
 #include <osmocom/bsc/gsm_data.h>
 #include <osmocom/bsc/signal.h>
 #include <osmocom/bsc/abis_nm.h>
 #include <osmocom/bsc/bts.h>
-#include <osmocom/abis/e1_input.h>
-#include <osmocom/gsm/tlv.h>
-#include <osmocom/core/msgb.h>
-#include <osmocom/core/talloc.h>
-#include <osmocom/bsc/gsm_data.h>
-#include <osmocom/bsc/abis_nm.h>
 #include <osmocom/bsc/abis_rsl.h>
 #include <osmocom/bsc/debug.h>
-#include <osmocom/abis/subchan_demux.h>
-#include <osmocom/abis/ipaccess.h>
-#include <osmocom/core/logging.h>
 
 extern struct gsm_bts_model bts_model_nanobts;
 

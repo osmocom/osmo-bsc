@@ -23,11 +23,11 @@
 #include <time.h>
 #include <netinet/in.h>
 
-#include <osmocom/bsc/gsm_data.h>
-#include <osmocom/abis/e1_input.h>
-#include <osmocom/bsc/misdn.h>
-#include <osmocom/abis/ipaccess.h>
 #include <osmocom/core/talloc.h>
+#include <osmocom/gsm/protocol/ipaccess.h>
+#include <osmocom/abis/e1_input.h>
+#include <osmocom/bsc/gsm_data.h>
+#include <osmocom/bsc/misdn.h>
 #include <osmocom/bsc/debug.h>
 #include <osmocom/bsc/abis_rsl.h>
 #include <osmocom/bsc/bts.h>
