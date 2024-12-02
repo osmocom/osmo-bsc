@@ -79,53 +79,15 @@ static void *tall_ctx_config = NULL;
 static struct abis_nm_sw_desc *sw_load1 = NULL;
 static struct abis_nm_sw_desc *sw_load2 = NULL;
 
-extern int ipaccess_fd_cb(struct osmo_fd *bfd, unsigned int what);
 extern struct e1inp_line_ops ipaccess_e1inp_line_ops;
 
-/* Actively connect to a BTS.  Currently used by ipaccess-config.c */
-static int ipaccess_connect(struct e1inp_line *line, struct sockaddr_in *sa)
-{
-	struct e1inp_ts *e1i_ts = &line->ts[0];
-	struct osmo_fd *bfd = &e1i_ts->driver.ipaccess.fd;
-	int ret, on = 1;
+/* Functions from ipaccess-config-e1-driver.c: */
+extern void e1inp_ipaccess_config_init(void *ctx);
+extern void e1inp_ipaccess_config_set_connect_addr(const char *connect_addr);
 
-	bfd->fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-	bfd->cb = ipaccess_fd_cb;
-	bfd->when = OSMO_FD_READ | OSMO_FD_WRITE;
-	bfd->data = line;
-	bfd->priv_nr = E1INP_SIGN_OML;
-
-	if (bfd->fd < 0) {
-		LOGP(DLINP, LOGL_ERROR, "could not create TCP socket.\n");
-		return -EIO;
-	}
-
-	ret = setsockopt(bfd->fd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
-	if (ret < 0) {
-		LOGP(DLINP, LOGL_ERROR, "could not set socket option\n");
-		close(bfd->fd);
-		return -EIO;
-	}
-
-	ret = connect(bfd->fd, (struct sockaddr *) sa, sizeof(*sa));
-	if (ret < 0) {
-		LOGP(DLINP, LOGL_ERROR, "could not connect socket\n");
-		close(bfd->fd);
-		return ret;
-	}
-
-	ret = osmo_fd_register(bfd);
-	if (ret < 0) {
-		LOGP(DLINP, LOGL_ERROR, "unable to register socket fd\n");
-		close(bfd->fd);
-		return ret;
-	}
-	return ret;
-	//return e1inp_line_register(line);
-}
 
 /* configure pseudo E1 line in ip.access style and connect to BTS */
-static int ia_config_connect(struct gsm_bts *bts, struct sockaddr_in *sin)
+static int ia_config_connect(struct gsm_bts *bts, const char *bts_ip)
 {
 	struct e1inp_line *line;
 	struct e1inp_ts *sign_ts, *rsl_ts;
@@ -135,13 +97,17 @@ static int ia_config_connect(struct gsm_bts *bts, struct sockaddr_in *sin)
 	if (!line)
 		return -ENOMEM;
 
-	line->driver = e1inp_driver_find("ipa");
-	if (!line->driver) {
-		fprintf(stderr, "cannot `ipa' driver, giving up.\n");
+	e1inp_ipaccess_config_init(tall_bsc_ctx);
+	e1inp_ipaccess_config_set_connect_addr(bts_ip);
+
+	line = e1inp_line_create(0, "ipaccess-config");
+	if (!line) {
+		fprintf(stderr, "cannot create line with `ipaccess-config' driver, giving up.\n");
 		return -EINVAL;
 	}
 	e1inp_line_bind_ops(line, &ipaccess_e1inp_line_ops);
 	e1_set_pcap_fd2(line, -1); /* Disable writing to pcap */
+	e1inp_line_update(line);
 
 	sign_ts = e1inp_line_ipa_oml_ts(line);
 	rsl_ts = e1inp_line_ipa_rsl_ts(line, 0);
@@ -164,11 +130,7 @@ static int ia_config_connect(struct gsm_bts *bts, struct sockaddr_in *sin)
 	bts->osmo_link = osmo_link;
 	bts->c0->rsl_link_primary = rsl_link;
 
-	/* default port at BTS for incoming connections is 3006 */
-	if (sin->sin_port == 0)
-		sin->sin_port = htons(3006);
-
-	return ipaccess_connect(line, sin);
+	return 0;
 }
 
 /*
@@ -1030,7 +992,6 @@ static const struct log_info log_info = {
 int main(int argc, char **argv)
 {
 	struct gsm_bts *bts;
-	struct sockaddr_in sin;
 	char *bts_ip;
 	int rc, option_index = 0, stream_id = 0xff;
 
@@ -1203,17 +1164,12 @@ int main(int argc, char **argv)
 	if (!quiet)
 		printf("Trying to connect to ip.access BTS %s...\n", bts_ip);
 
-	memset(&sin, 0, sizeof(sin));
-	sin.sin_family = AF_INET;
-	inet_aton(bts_ip, &sin.sin_addr);
-	rc = ia_config_connect(bts, &sin);
+	rc = ia_config_connect(bts, bts_ip);
 	if (rc < 0) {
 		perror("Error connecting to the BTS");
 		exit(1);
 	}
 
-	bts->oml_link->ts->sign.delay = 10;
-	bts->c0->rsl_link_primary->ts->sign.delay = 10;
 	while (1) {
 		rc = osmo_select_main(0);
 		if (rc < 0)

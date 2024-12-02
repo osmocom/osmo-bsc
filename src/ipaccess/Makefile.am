@@ -41,6 +41,7 @@ abisip_find_SOURCES = \
 
 ipaccess_config_SOURCES = \
 	ipaccess-config.c \
+	ipaccess-config-e1-driver.c \
 	ipaccess-firmware.c \
 	network_listen.c \
 	stubs.c \
