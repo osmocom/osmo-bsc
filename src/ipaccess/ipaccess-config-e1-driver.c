@@ -207,71 +207,6 @@ static int ts_want_write(struct e1inp_ts *e1i_ts)
 	return rc;
 }
 
-int ipaccess_bts_handle_ccm(struct ipa_client_conn *link,
-			    struct ipaccess_unit *dev, struct msgb *msg)
-{
-	struct ipaccess_head *hh = (struct ipaccess_head *) msg->data;
-
-	/* special handling for IPA CCM. */
-	if (hh->proto != IPAC_PROTO_IPACCESS)
-		return 0;
-
-	int ret = 0;
-	uint8_t *data = msgb_l2(msg);
-	int len = msgb_l2len(msg);
-	OSMO_ASSERT(len > 0);
-	uint8_t msg_type = *data;
-	/* line might not exist if != bsc||bts */
-
-	/* ping, pong and acknowledgment cases. */
-	ret = ipa_ccm_rcvmsg_bts_base(msg, link->ofd);
-	if (ret < 0)
-		goto err;
-
-	/* this is a request for identification from the BSC. */
-	if (msg_type == IPAC_MSGT_ID_GET) {
-		struct msgb *rmsg;
-		/* The ipaccess_unit dev holds generic identity for the whole
-		 * line, hence no trx_id. Patch ipaccess_unit during call to
-		 * ipa_ccm_make_id_resp_from_req() to identify this TRX: */
-		int store_trx_nr = dev->trx_id;
-		if (link->ofd->priv_nr >= E1INP_SIGN_RSL)
-			dev->trx_id = link->ofd->priv_nr - E1INP_SIGN_RSL;
-		else
-			dev->trx_id = 0;
-		LOGP(DLINP, LOGL_NOTICE, "received ID_GET for unit ID %u/%u/%u\n",
-		     dev->site_id, dev->bts_id, dev->trx_id);
-		rmsg = ipa_ccm_make_id_resp_from_req(dev, data + 1, len - 1);
-		dev->trx_id = store_trx_nr;
-		if (!rmsg) {
-			LOGP(DLINP, LOGL_ERROR, "Failed parsing ID_GET message.\n");
-			goto err;
-		}
-
-		ret = ipa_send(link->ofd->fd, rmsg->data, rmsg->len);
-		if (ret != rmsg->len) {
-			LOGP(DLINP, LOGL_ERROR, "cannot send ID_RESP message. Reason: %s\n",
-				strerror(errno));
-			msgb_free(rmsg);
-			goto err;
-		}
-		msgb_free(rmsg);
-
-		/* send ID_ACK. */
-		ret = ipa_ccm_send_id_ack(link->ofd->fd);
-		if (ret <= 0) {
-			LOGP(DLINP, LOGL_ERROR, "cannot send ID_ACK message. Reason: %s\n",
-				strerror(errno));
-			goto err;
-		}
-	}
-	return 1;
-
-err:
-	ipa_client_conn_close(link);
-	return -1;
-}
-
 static struct msgb *ipa_bts_id_ack(void)
 {
 	struct msgb *nmsg2;
@@ -294,9 +229,6 @@ static void update_fd_settings(struct e1inp_line *line, int fd)
 		LOGPIL(line, DLINP, LOGL_ERROR, "Failed to set TCP_NODELAY: %s\n", strerror(errno));
 }
 
-/* Same as ipaccess_bts_handle_ccm(), but using an osmo_stream_cli as backend
- * instead of ipa_client_conn.
- * The old ipaccess_bts_handle_ccm() needs to be kept as it's a public API. */
 static int _ipaccess_bts_handle_ccm(struct osmo_stream_cli *cli,
 				    struct ipaccess_unit *dev, struct msgb *msg)
 {
