@@ -1,3 +1,17 @@
+osmo-bsc (1.12.3) unstable; urgency=medium
+
+  [ Oliver Smith ]
+  * contrib/jenkins: libosmo-sccp -> libosmo-sigtran
+
+  [ Pau Espin Pedrol ]
+  * jenkins.sh: libosmo-netif no longer depends on libosmo-abis
+  * ipaccess-proxy: Fix wrong cb function passed
+  * Drop use of libosmo-abis osmocom/abis/ipaccess.h
+  * ipaccess-config: Use own e1_input ipaccess driver
+  * ipaccess-config: Remove unused function ipaccess_bts_handle_ccm()
+
+ -- Oliver Smith <osmith@sysmocom.de>  Fri, 06 Dec 2024 13:22:04 +0100
+
 osmo-bsc (1.12.2) unstable; urgency=medium
 
   [ Oliver Smith ]
