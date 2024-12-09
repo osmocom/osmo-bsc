@@ -1,3 +1,9 @@
+osmo-bsc (1.12.4) unstable; urgency=medium
+
+  * ipaccess_line_update: drop set_priority and set_ip_dscp
+
+ -- Oliver Smith <osmith@sysmocom.de>  Mon, 09 Dec 2024 11:46:07 +0100
+
 osmo-bsc (1.12.3) unstable; urgency=medium
 
   [ Oliver Smith ]
