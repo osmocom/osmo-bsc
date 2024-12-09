@@ -423,8 +423,6 @@ static int ipaccess_line_update(struct e1inp_line *line)
 	osmo_stream_cli_set_port(cli, IPACCESS_BTS_LISTEN_OML_PORT);
 	osmo_stream_cli_set_proto(cli, IPPROTO_TCP);
 	osmo_stream_cli_set_nodelay(cli, true);
-	osmo_stream_cli_set_priority(cli, g_e1inp_ipaccess_config_pars.oml.dscp);
-	osmo_stream_cli_set_ip_dscp(cli, g_e1inp_ipaccess_config_pars.oml.priority);
 
 	/* Reconnect is handled by upper layers: */
 	osmo_stream_cli_set_reconnect_timeout(cli, -1);
