@@ -37,8 +37,6 @@
 #include <osmocom/gsm/gsm0808.h>
 #include <osmocom/gsm/gsm23236.h>
 
-#include <osmocom/abis/ipa.h>
-
 #include <osmocom/mgcp_client/mgcp_client.h>
 #include <osmocom/mgcp_client/mgcp_client_pool.h>
 

@@ -52,7 +52,6 @@
 #include <osmocom/netif/stream.h>
 #include <osmocom/netif/ipa.h>
 #include <osmocom/abis/e1_input.h>
-#include <osmocom/abis/ipa.h>
 
 /* default port at BTS for incoming connections */
 #define IPACCESS_BTS_LISTEN_OML_PORT 3006

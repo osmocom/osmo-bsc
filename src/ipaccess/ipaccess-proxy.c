@@ -45,7 +45,6 @@
 #include <osmocom/gsm/tlv.h>
 #include <osmocom/gsm/protocol/ipaccess.h>
 #include <osmocom/gsm/ipa.h>
-#include <osmocom/abis/ipa.h>
 #include <osmocom/bsc/gsm_data.h>
 #include <osmocom/bsc/debug.h>
 #include <osmocom/bsc/ipaccess.h>
