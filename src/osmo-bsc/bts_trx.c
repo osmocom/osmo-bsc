@@ -75,13 +75,13 @@ struct gsm_bts_trx *gsm_bts_trx_alloc(struct gsm_bts *bts)
 					 LOGL_INFO, NULL);
 	osmo_fsm_inst_update_id_f(trx->mo.fi, "bts%d-trx%d", bts->nr, trx->nr);
 	gsm_mo_init(&trx->mo, bts, NM_OC_RADIO_CARRIER,
-		    bts->nr, trx->nr, 0xff);
+		    bts->bts_nr, trx->nr, 0xff);
 
 	trx->bb_transc.mo.fi = osmo_fsm_inst_alloc(&nm_bb_transc_fsm, trx, &trx->bb_transc,
 						   LOGL_INFO, NULL);
 	osmo_fsm_inst_update_id_f(trx->bb_transc.mo.fi, "bts%d-trx%d", bts->nr, trx->nr);
 	gsm_mo_init(&trx->bb_transc.mo, bts, NM_OC_BASEB_TRANSC,
-		    bts->nr, trx->nr, 0xff);
+		    bts->bts_nr, trx->nr, 0xff);
 
 	for (k = 0; k < TRX_NR_TS; k++) {
 		struct gsm_bts_trx_ts *ts = &trx->ts[k];
@@ -100,7 +100,7 @@ struct gsm_bts_trx *gsm_bts_trx_alloc(struct gsm_bts *bts)
 		osmo_fsm_inst_update_id_f(ts->mo.fi, "bts%d-trx%d-ts%d",
 					  bts->nr, trx->nr, ts->nr);
 		gsm_mo_init(&ts->mo, bts, NM_OC_CHANNEL,
-			    bts->nr, trx->nr, ts->nr);
+			    bts->bts_nr, trx->nr, ts->nr);
 
 		ts->hopping.arfcns.data_len = sizeof(ts->hopping.arfcns_data);
 		ts->hopping.arfcns.data = ts->hopping.arfcns_data;

@@ -225,7 +225,7 @@ struct gsm_bts *gsm_bts_alloc(struct gsm_network *net, struct gsm_bts_sm *bts_sm
 	bts->mo.fi = osmo_fsm_inst_alloc(&nm_bts_fsm, bts, bts,
 					      LOGL_INFO, NULL);
 	osmo_fsm_inst_update_id_f(bts->mo.fi, "bts%d", bts->nr);
-	gsm_mo_init(&bts->mo, bts, NM_OC_BTS, bts->nr, 0xff, 0xff);
+	gsm_mo_init(&bts->mo, bts, NM_OC_BTS, bts->bts_nr, 0xff, 0xff);
 
 	/* 3GPP TS 08.18, chapter 5.4.1: 0 is reserved for signalling */
 	bts->gprs.cell.bvci = 2;
@@ -237,7 +237,7 @@ struct gsm_bts *gsm_bts_alloc(struct gsm_network *net, struct gsm_bts_sm *bts_sm
 						   &bts->gprs.cell, LOGL_INFO, NULL);
 	osmo_fsm_inst_update_id_f(bts->gprs.cell.mo.fi, "gprs-cell%d", bts->nr);
 	gsm_mo_init(&bts->gprs.cell.mo, bts, NM_OC_GPRS_CELL,
-			bts->nr, 0xff, 0xff);
+		    bts->bts_nr, 0xff, 0xff);
 
 	/* init statistics */
 	bts->bts_ctrs = rate_ctr_group_alloc(bts, &bts_ctrg_desc, bts->nr);

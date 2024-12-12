@@ -75,7 +75,7 @@ struct gsm_bts_sm *gsm_bts_sm_alloc(struct gsm_network *net, gsm_bts_nr_t bts_nu
 	bts_sm->gprs.nse.mo.fi = osmo_fsm_inst_alloc(&nm_gprs_nse_fsm, bts_sm, &bts_sm->gprs.nse,
 					      LOGL_INFO, NULL);
 	osmo_fsm_inst_update_id_f(bts_sm->gprs.nse.mo.fi, "nse%d", bts_num);
-	gsm_mo_init(&bts_sm->gprs.nse.mo, bts, NM_OC_GPRS_NSE, bts->nr, 0xff, 0xff);
+	gsm_mo_init(&bts_sm->gprs.nse.mo, bts, NM_OC_GPRS_NSE, bts->bts_nr, 0xff, 0xff);
 	memcpy(&bts_sm->gprs.nse.timer, bts_nse_timer_default,
 	       sizeof(bts_sm->gprs.nse.timer));
 
@@ -89,12 +89,12 @@ struct gsm_bts_sm *gsm_bts_sm_alloc(struct gsm_network *net, gsm_bts_nr_t bts_nu
 		osmo_fsm_inst_update_id_f(bts_sm->gprs.nsvc[i].mo.fi,
 					  "nsvc%d", i);
 		gsm_mo_init(&bts_sm->gprs.nsvc[i].mo, bts, NM_OC_GPRS_NSVC,
-			    bts->nr, i, 0xff);
+			    bts->bts_nr, i, 0xff);
 	}
 	memcpy(&bts_sm->gprs.nse.timer, bts_nse_timer_default,
 		sizeof(bts_sm->gprs.nse.timer));
 	gsm_mo_init(&bts_sm->gprs.nse.mo, bts, NM_OC_GPRS_NSE,
-			bts->nr, 0xff, 0xff);
+		    bts->bts_nr, 0xff, 0xff);
 
 	return bts_sm;
 }
