@@ -193,7 +193,7 @@ static int gsm_bts_talloc_destructor(struct gsm_bts *bts)
  * This part is shared among the thin programs in osmo-bsc/src/utils/.
  * osmo-bsc requires further initialization that pulls in more dependencies (see
  * bsc_bts_alloc_register()). */
-struct gsm_bts *gsm_bts_alloc(struct gsm_network *net, struct gsm_bts_sm *bts_sm, uint8_t bts_num)
+struct gsm_bts *gsm_bts_alloc(struct gsm_network *net, struct gsm_bts_sm *bts_sm, gsm_bts_nr_t bts_num)
 {
 	struct gsm_bts *bts = talloc_zero(bts_sm, struct gsm_bts);
 

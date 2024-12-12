@@ -68,7 +68,7 @@ static inline struct gsm_bts *gsm_bts_sm_get_bts(struct gsm_bts_sm *site_mgr) {
 	return site_mgr->bts[0];
 }
 
-struct gsm_bts_sm *gsm_bts_sm_alloc(struct gsm_network *net, uint8_t bts_num);
+struct gsm_bts_sm *gsm_bts_sm_alloc(struct gsm_network *net, gsm_bts_nr_t bts_num);
 
 void gsm_bts_sm_mo_reset(struct gsm_bts_sm *bts_sm);
 

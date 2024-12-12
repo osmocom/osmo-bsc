@@ -49,7 +49,7 @@ static int gsm_bts_sm_talloc_destructor(struct gsm_bts_sm *bts_sm)
 	return 0;
 }
 
-struct gsm_bts_sm *gsm_bts_sm_alloc(struct gsm_network *net, uint8_t bts_num)
+struct gsm_bts_sm *gsm_bts_sm_alloc(struct gsm_network *net, gsm_bts_nr_t bts_num)
 {
 	struct gsm_bts_sm *bts_sm = talloc_zero(net, struct gsm_bts_sm);
 	struct gsm_bts *bts;
