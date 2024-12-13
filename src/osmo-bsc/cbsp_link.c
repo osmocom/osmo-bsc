@@ -121,6 +121,7 @@ static int cbsp_srv_link_accept_cb(struct osmo_stream_srv_link *link, int fd)
 			osmo_sock_get_name2(fd));
 		return -1;
 	}
+	osmo_stream_srv_set_name(srv, "cbsp");
 	osmo_stream_srv_set_read_cb(srv, cbsp_srv_read_cb);
 	osmo_stream_srv_set_closed_cb(srv, cbsp_srv_closed_cb);
 	osmo_stream_srv_set_segmentation_cb(srv, osmo_cbsp_segmentation_cb);
@@ -240,6 +241,8 @@ int bsc_cbc_link_restart(void)
 		     OSMO_SOCKADDR_STR_FMT_ARGS(&cbc->client.remote_addr));
 		if (!cbc->client.cli) {
 			cbc->client.cli = osmo_stream_cli_create(cbc);
+			OSMO_ASSERT(cbc->client.cli);
+			osmo_stream_cli_set_name(cbc->client.cli, "cbsp");
 			osmo_stream_cli_set_data(cbc->client.cli, cbc);
 			osmo_stream_cli_set_connect_cb(cbc->client.cli, cbsp_client_connect_cb);
 			osmo_stream_cli_set_disconnect_cb(cbc->client.cli, cbsp_client_disconnect_cb);
@@ -273,6 +276,8 @@ int bsc_cbc_link_restart(void)
 		if (!cbc->server.link) {
 			LOGP(DCBS, LOGL_NOTICE, "Creating CBSP Server\n");
 			cbc->server.link = osmo_stream_srv_link_create(cbc);
+			OSMO_ASSERT(cbc->server.link);
+			osmo_stream_srv_link_set_name(cbc->server.link, "cbsp");
 			osmo_stream_srv_link_set_data(cbc->server.link, cbc);
 			osmo_stream_srv_link_set_accept_cb(cbc->server.link, cbsp_srv_link_accept_cb);
 
