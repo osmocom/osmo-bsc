@@ -217,6 +217,7 @@ static int nm_sig_cb(unsigned int subsys, unsigned int signal,
 /* TODO: put in a separate file ? */
 
 static const struct value_string nokia_msgt_name[] = {
+	{ 0x7F, "NOKIA_BTS_RSSI_VSWR_COUNTERS_REQ" },
 	{ 0x80, "NOKIA_BTS_CONF_DATA" },
 	{ 0x81, "NOKIA_BTS_ACK" },
 	{ 0x82, "NOKIA_BTS_OMU_STARTED" },
@@ -275,6 +276,20 @@ static const struct value_string nokia_msgt_name[] = {
 	{ 0xB7, "NOKIA_BTS_LCS_ANSWER" },
 	{ 0xB8, "NOKIA_BTS_LMU_FN_OFFSET_COMMAND" },
 	{ 0xB9, "NOKIA_BTS_LMU_FN_OFFSET_ANSWER" },
+	{ 0xBA, "NOKIA_BTS_LAPD_CTR_REP" },
+	{ 0xBB, "NOKIA_BTS_TRX_CONFIGURATION_UPDATE" },
+	{ 0xBC, "NOKIA_BTS_DYNAMIC_LOAD_INFO" },
+	{ 0xBD, "NOKIA_BTS_CONF_DATA_BS2" },
+	{ 0xBE, "NOKIA_BTS_REGISTRY_REQ" },
+	{ 0xBF, "NOKIA_BTS_SFS_UPLOAD_REQ" },
+	{ 0xC0, "NOKIA_BTS_DELAY_MEAS_REQ" },
+	{ 0xC1, "NOKIA_BTS_DELAY_MEAS_ACK" },
+	{ 0xC2, "NOKIA_BTS_PABIS_MEAS_REQ" },
+	{ 0xC3, "NOKIA_BTS_PABIS_MEAS_ACK" },
+	{ 0xC4, "NOKIA_BSC_RESET_INFO" },
+	{ 0xC5, "NOKIA_BSC_RESET_COMPL" },
+	{ 0xC6, "NOKIA_BSC_RESET_COMPL_ANSWER" },
+	{ 0xC7, "NOKIA_BTS_RSSI_VSWR_COUNTERS" },
 	{ 0, NULL }
 };
 
