@@ -598,6 +598,21 @@ static const char *get_severity_string(uint8_t severity)
 	return get_value_string(nokia_severity, severity);
 }
 
+static const struct value_string nokia_reset_type[] = {
+	{ 0,	"OMU reset" },			/* BTS is still able to carry traffic */
+	{ 1,	"Site reset" },
+	{ 2,	"Reserved" },
+	{ 3,	"Autoconfiguration site reset" },
+	{ 4,	"MetroSite VTGA reset" },
+	{ 5,	"Total reset" },		/* Complete reset of Packet Abis BTS and Conversion Function reset */
+	{ 0,	NULL }
+};
+
+static const char *get_reset_type_string(uint8_t reset_type)
+{
+	return get_value_string(nokia_reset_type, reset_type);
+}
+
 /* TODO: put in a separate file ? */
 
 /* some message IDs */
@@ -621,6 +636,7 @@ static const char *get_severity_string(uint8_t severity)
 #define NOKIA_EI_ADD_INFO       0x51
 #define NOKIA_EI_SEVERITY       0x4B
 #define NOKIA_EI_ALARM_DETAIL   0x94
+#define NOKIA_EI_RESET_TYPE     0x18
 
 #define OM_ALLOC_SIZE       1024
 #define OM_HEADROOM_SIZE    128
@@ -1670,6 +1686,7 @@ static int abis_nm_rcvmsg_fom(struct msgb *mb)
 	uint8_t info[256];
 	uint8_t ack = 0xFF;
 	uint8_t severity = 0xFF;
+	uint8_t reset_type = 0xFF;
 	int str_len;
 	int len_data;
 
@@ -1693,11 +1710,19 @@ static int abis_nm_rcvmsg_fom(struct msgb *mb)
 	case NOKIA_MSG_OMU_STARTED:
 		if (find_element(noh->data, len_data,
 				 NOKIA_EI_BTS_TYPE, &bts->nokia.bts_type,
-				 sizeof(uint8_t)) == sizeof(uint8_t))
+				 sizeof(uint8_t)) == sizeof(uint8_t)) {
 			LOG_BTS(bts, DNM, LOGL_INFO, "Rx BTS type = %d (%s)\n", bts->nokia.bts_type,
 				get_bts_type_string(bts->nokia.bts_type));
-		else
+		} else {
 			LOG_BTS(bts, DNM, LOGL_ERROR, "BTS type not found in NOKIA_MSG_OMU_STARTED\n");
+		}
+		if (find_element(noh->data, len_data, NOKIA_EI_RESET_TYPE, &reset_type,
+				sizeof(reset_type))) {
+			LOG_BTS(bts, DNM, LOGL_INFO, "Rx BTS reset type = '%s'\n",
+				get_reset_type_string(reset_type));
+		} else {
+			LOG_BTS(bts, DNM, LOGL_ERROR, "BTS reset type not found in NOKIA_MSG_OMU_STARTED\n");
+		}
 		/* send START_DOWNLOAD_REQ */
 		abis_nm_download_req(bts, ref);
 		break;
