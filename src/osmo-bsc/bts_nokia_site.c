@@ -613,6 +613,42 @@ static const char *get_reset_type_string(uint8_t reset_type)
 	return get_value_string(nokia_reset_type, reset_type);
 }
 
+static const struct value_string nokia_object_identity[] = {
+	{ 0x01,		"BCF" },		/* Base Control Function */
+	{ 0x02,		"OMU" },		/* Operation and Maintenance Unit */
+	{ 0x04,		"TRX" },		/* Transceiver (FU + CU) */
+	{ 0x05,		"BTS" },		/* Base Transceiver Station (1..248) */
+	{ 0x07,		"FU" },			/* Frame Unit */
+	{ 0x08,		"CU" },			/* Carrier Unit */
+	{ 0x10,		"TRE" },		/* Transmission Equipment (0..15) */
+	{ 0x11,		"TRU" },		/* Transmission Unit */
+	{ 0x13,		"RTSL" },		/* Radio Timeslot of a FU (0..7) */
+	{ 0x14,		"DMR" },		/* Digital Microwave Radio Link */
+	{ 0x15,		"CF" },			/* Conversion Function */
+	{ 0x64,		"RTC" },		/* Remote Tune Combiner */
+	{ 0,	NULL }
+};
+
+static const char *get_object_identity_string(uint16_t object_identity)
+{
+	return get_value_string(nokia_object_identity, object_identity);
+}
+
+static const struct value_string nokia_object_state[] = {
+	{ 0x0,		"Enabled" },
+	{ 0x1,		"Disabled" },
+	{ 0x2,		"Locked" },
+	{ 0x3,		"Unlocked" },
+	{ 0x4,		"Shutdown" },		/* reserved for BTS MMI use */
+	{ 0x5,		"Powersave" },		/* reserved for BTS MMI use */
+	{ 0,	NULL }
+};
+
+static const char *get_object_state_string(uint8_t object_state)
+{
+	return get_value_string(nokia_object_state, object_state);
+}
+
 /* TODO: put in a separate file ? */
 
 /* some message IDs */
@@ -637,6 +673,9 @@ static const char *get_reset_type_string(uint8_t reset_type)
 #define NOKIA_EI_SEVERITY       0x4B
 #define NOKIA_EI_ALARM_DETAIL   0x94
 #define NOKIA_EI_RESET_TYPE     0x18
+#define NOKIA_EI_OBJ_ID         0x40
+#define NOKIA_EI_OBJ_STATE      0x44
+#define NOKIA_EI_OBJ_ID_STATE   0x65
 
 #define OM_ALLOC_SIZE       1024
 #define OM_HEADROOM_SIZE    128
@@ -1674,6 +1713,7 @@ static void reset_timer_cb(void *_bts)
   has not been tested yet.
 */
 
+#define FIND_ELEM(data, data_len, ei, var, len) (find_element(data, data_len, ei, var, len) == len)
 static int abis_nm_rcvmsg_fom(struct msgb *mb)
 {
 	struct e1inp_sign_link *sign_link = (struct e1inp_sign_link *)mb->dst;
@@ -1687,8 +1727,14 @@ static int abis_nm_rcvmsg_fom(struct msgb *mb)
 	uint8_t ack = 0xFF;
 	uint8_t severity = 0xFF;
 	uint8_t reset_type = 0xFF;
-	int str_len;
+	uint8_t object_identity[4] = {0};
+	uint8_t object_state = 0xFF;
+	uint8_t object_id_state[11] = {0};
+	int severity_len = 0;
+	int ei_add_info_len = 0;
+	int ei_alarm_detail_len = 0;
 	int len_data;
+
 
 	if (bts->nokia.wait_reset) {
 		LOG_BTS(bts, DNM, LOGL_INFO, "Ignoring message while waiting for reset: %s\n", msgb_hexdump(mb));
@@ -1708,16 +1754,14 @@ static int abis_nm_rcvmsg_fom(struct msgb *mb)
 
 	switch (mt) {
 	case NOKIA_MSG_OMU_STARTED:
-		if (find_element(noh->data, len_data,
-				 NOKIA_EI_BTS_TYPE, &bts->nokia.bts_type,
-				 sizeof(uint8_t)) == sizeof(uint8_t)) {
-			LOG_BTS(bts, DNM, LOGL_INFO, "Rx BTS type = %d (%s)\n", bts->nokia.bts_type,
+		if (FIND_ELEM(noh->data, len_data, NOKIA_EI_BTS_TYPE, &bts->nokia.bts_type, sizeof(bts->nokia.bts_type))) {
+			LOG_BTS(bts, DNM, LOGL_INFO, "Rx BTS type = %d (%s)\n",
+				bts->nokia.bts_type,
 				get_bts_type_string(bts->nokia.bts_type));
 		} else {
 			LOG_BTS(bts, DNM, LOGL_ERROR, "BTS type not found in NOKIA_MSG_OMU_STARTED\n");
 		}
-		if (find_element(noh->data, len_data, NOKIA_EI_RESET_TYPE, &reset_type,
-				sizeof(reset_type))) {
+		if (FIND_ELEM(noh->data, len_data, NOKIA_EI_RESET_TYPE, &reset_type, sizeof(reset_type))) {
 			LOG_BTS(bts, DNM, LOGL_INFO, "Rx BTS reset type = '%s'\n",
 				get_reset_type_string(reset_type));
 		} else {
@@ -1737,9 +1781,7 @@ static int abis_nm_rcvmsg_fom(struct msgb *mb)
 		bts->nokia.configured = 1;
 		break;
 	case NOKIA_MSG_ACK:
-		if (find_element
-		    (noh->data, len_data, NOKIA_EI_ACK, &ack,
-		     sizeof(uint8_t)) == sizeof(uint8_t)) {
+		if (FIND_ELEM(noh->data, len_data, NOKIA_EI_ACK, &ack, sizeof(ack))) {
 			LOG_BTS(bts, DNM, LOGL_INFO, "Rx ACK = %u\n", ack);
 			if (ack != 1) {
 				LOG_BTS(bts, DNM, LOGL_ERROR, "Rx No ACK (%u): don't know how to proceed\n", ack);
@@ -1778,6 +1820,14 @@ static int abis_nm_rcvmsg_fom(struct msgb *mb)
 	case NOKIA_MSG_STATE_CHANGED:
 		/* send ACK */
 		abis_nm_ack(bts, ref);
+		if (!FIND_ELEM(noh->data, len_data, NOKIA_EI_OBJ_ID_STATE, object_id_state, sizeof(object_id_state))) {
+			LOG_BTS(bts, DNM, LOGL_NOTICE, "Missing NOKIA_EI_OBJ_ID_STATE\n");
+			return -EINVAL;
+		}
+		LOG_BTS(bts, DNM, LOGL_NOTICE, "State changed: %s=%d, %s\n",
+			get_object_identity_string(object_id_state[4]),
+			object_id_state[5],
+			get_object_state_string(object_id_state[10]));
 		break;
 	case NOKIA_MSG_CONF_COMPLETE:
 		/* send ACK */
@@ -1790,9 +1840,9 @@ static int abis_nm_rcvmsg_fom(struct msgb *mb)
 			/* RSL Link */
 			line = e1inp_line_find(e1_link->e1_nr);
 			if (!line) {
-					LOG_BTS(bts, DLINP, LOGL_ERROR, "RSL link referring to "
-						"non-existing E1 line %u\n", e1_link->e1_nr);
-					return -ENOMEM;
+				LOG_BTS(bts, DLINP, LOGL_ERROR, "RSL link referring to "
+					"non-existing E1 line %u\n", e1_link->e1_nr);
+				return -ENOMEM;
 			}
 			/* start TRX */
 			start_sabm_in_line(line, 1, SAPI_RSL);  /* start only RSL */
@@ -1800,39 +1850,77 @@ static int abis_nm_rcvmsg_fom(struct msgb *mb)
 		/* fake 12.21 OM */
 		nokia_abis_nm_fake_1221_ok(bts);
 		break;
-	case NOKIA_MSG_BLOCK_CTRL_REQ:	/* seems to be send when something goes wrong !? */
-		/* send ACK (do we have to send an ACK ?) */
+	case NOKIA_MSG_BLOCK_CTRL_REQ:	/* BTS uses this scenario to block an object in BSC */
+		/* TODO: implement block function */
+		/* send ACK */
 		abis_nm_ack(bts, ref);
 		break;
 	case NOKIA_MSG_ALARM:
-		find_element(noh->data, len_data, NOKIA_EI_SEVERITY, &severity,
-			     sizeof(severity));
-		/* TODO: there might be alarms with both elements set */
-		str_len =
-		    find_element(noh->data, len_data, NOKIA_EI_ADD_INFO, info,
-				 sizeof(info));
-		if (str_len > 0) {
-			info[str_len] = 0;
-			LOG_BTS(bts, DNM, LOGL_NOTICE, "Rx ALARM Severity %s (%d) : %s\n",
-				get_severity_string(severity), severity, info);
-		} else {	/* nothing found, try details */
-			str_len =
-			    find_element(noh->data, len_data, NOKIA_EI_ALARM_DETAIL, info, sizeof(info));
-			if (str_len > 0) {
-				uint16_t code;
-				info[str_len] = 0;
-				code = (info[0] << 8) + info[1];
-				LOG_BTS(bts, DNM, LOGL_NOTICE, "Rx ALARM Severity %s (%d), code 0x%X : %s\n",
-					get_severity_string(severity), severity, code, info + 2);
+		if (!FIND_ELEM(noh->data, len_data, NOKIA_EI_OBJ_ID, object_identity, sizeof(object_identity)) ||
+		    !FIND_ELEM(noh->data, len_data, NOKIA_EI_OBJ_STATE, &object_state, sizeof(object_state))) {
+			if (!FIND_ELEM(noh->data, len_data, NOKIA_EI_OBJ_ID_STATE, object_id_state, sizeof(object_id_state))) {
+				LOG_BTS(bts, DNM, LOGL_NOTICE, "Missing NOKIA_EI_OBJ_ID & NOKIA_EI_OBJ_STATE or NOKIA_EI_OBJ_ID_STATE\n");
+				return -EINVAL;
 			}
+			object_identity[1] = object_id_state[4];
+			object_identity[2] = object_id_state[5];
+			object_state = object_id_state[10];
+		}
+		severity_len = find_element(noh->data, len_data, NOKIA_EI_SEVERITY, &severity, sizeof(severity));
+		/* Either Additional info or Alarm detail may be included at a time */
+		ei_add_info_len = find_element(noh->data, len_data, NOKIA_EI_ADD_INFO, info, sizeof(info));
+		if (ei_add_info_len > 0) {
+			info[ei_add_info_len] = 0;
+			if (severity_len > 0) {
+				LOG_BTS(bts, DNM, LOGL_NOTICE, "Rx ALARM (%s=%d(%s)) Severity %s (%d) : %s\n",
+					get_object_identity_string(object_identity[1]),
+					object_identity[2],
+					get_object_state_string(object_state),
+					get_severity_string(severity),
+					severity,
+					info);
+			} else {
+				LOG_BTS(bts, DNM, LOGL_NOTICE, "Rx ALARM (%s=%d(%s)) : %s\n",
+					get_object_identity_string(object_identity[1]),
+					object_identity[2],
+					get_object_state_string(object_state),
+					info);
+			}
+		}
+		/* nothing found, try details */
+		ei_alarm_detail_len = find_element(noh->data, len_data, NOKIA_EI_ALARM_DETAIL, info, sizeof(info));
+		if (ei_alarm_detail_len > 0) {
+			uint16_t code;
+			info[ei_alarm_detail_len] = 0;
+			code = (info[0] << 8) + info[1];
+			if (severity_len > 0) {
+				LOG_BTS(bts, DNM, LOGL_NOTICE, "Rx ALARM (%s=%d(%s)) Severity %s (%d), code 0x%X : %s\n",
+					get_object_identity_string(object_identity[1]),
+					object_identity[2],
+					get_object_state_string(object_state),
+					get_severity_string(severity),
+					severity,
+					code,
+					info + 2);
+			} else {
+				LOG_BTS(bts, DNM, LOGL_NOTICE, "Rx ALARM (%s=%d(%s)) : %s\n",
+					get_object_identity_string(object_identity[1]),
+					object_identity[2],
+					get_object_state_string(object_state),
+					info + 2);
+			}
+		}
+		if (ei_add_info_len == 0 && ei_alarm_detail_len == 0) {
+			LOG_BTS(bts, DNM, LOGL_NOTICE, "Rx ALARM (%s=%d(%s))\n",
+				get_object_identity_string(object_identity[1]),
+				object_identity[2],
+				get_object_state_string(object_state));
 		}
 		/* send ACK */
 		abis_nm_ack(bts, ref);
 		break;
 	}
-
 	nokia_abis_nm_queue_send_next(bts);
-
 	return ret;
 }
 
