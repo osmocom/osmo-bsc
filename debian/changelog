@@ -1,3 +1,66 @@
+osmo-bsc (1.13.0) unstable; urgency=medium
+
+  [ Pau Espin Pedrol ]
+  * bs11: Mark global private variables as static
+  * bs11: Move model struct further down in the file
+  * Convert bts->depends_on from bitmask to llist
+  * Introduce typedef for bts->nr gsm_bts_nr_t
+  * tests/vty: Validate allocating all possible BTS
+  * Initial support for >256 BTS
+  * rsl_rx_pchan_rqd(): Clean up code path
+  * pcu_tx_rach_ind(): Avoid forwarding chan_rqd to PCU if not expected
+  * pcu_info_update(): Simplify code path with early return
+  * Log unsupported PCUIF for bts > 255
+  * Remove unused function gsm_bts_by_lac()
+  * bsc_vty: Use gsm_bts_num() in ho_or_as()
+  * Clarify code around bts->loc_list
+  * bts: Make sure bts_location entries in bts->loc_list are freed
+  * bts: Remove from net->bts_list during talloc destructor
+  * bts: Remove acc timers during talloc destructor
+  * gsm_bts_num(): use hashtable to lookup bts
+  * tests/ctrl/osmo-bsc-neigh-test.cfg: Fix duplicate <LAC,CI> between bts1 and bts2
+  * Introduce hashtable to lookup bts by LAC
+  * Introduce hashtable to lookup bts by CI
+  * Introduce hashtable to lookup bts by <LAC,CI>
+  * bsc_ctrl: Use new libosmo-sigtran API osmo_ss7_route_get_dest_as()
+  * lb: Avoid using osmo_ss7_instance private field
+  * Use new libosmo-sigtran API osmo_ss7_instance_get_id()
+  * Use new libosmo-sigtran API osmo_ss7_instances_llist_entry()
+  * bsc_sccplite_msc_send(): Fix msgb leak
+  * Use new libosmo-sigtran API osmo_ss7_as_get_asp_protocol()
+  * Use new libosmo-sigtran API osmo_ss7_as_select_asp()
+  * jenkins.sh: libosmo-netif no longer depends on libosmo-abis
+  * abis: Fix reusing bts->*_link while it is being destroyed
+  * ipaccess-proxy: Fix wrong cb function passed
+  * Drop use of libosmo-abis osmocom/abis/ipaccess.h
+  * ipaccess-config: Use own e1_input ipaccess driver
+  * ipaccess-config: Remove unused function ipaccess_bts_handle_ccm()
+  * Drop unneeded use of abis/ipa.h header
+  * jenkins.sh: No need to build libosmo-sigtran with doxygen
+  * Fix BTS nr >255 wrapping up during bts allocation
+  * Use correct bts_nr field during MO init
+  * cbsp_link: set name on stream
+
+  [ Oliver Smith ]
+  * contrib/jenkins: libosmo-sccp -> libosmo-sigtran
+
+  [ Philipp Maier ]
+  * pcu_sock: do not receive a TXT ind. with PCU_VERSION for a specific BTS
+
+  [ Csaba Sipos ]
+  * nokia_site: add some missing message IDs
+  * nokia_site: add missing element names
+  * nokia_site: change RSL bootstrap logic
+  * nokia_site: introduce hopping control for Nokia *Site
+
+  [ Neels Hofmeyr ]
+  * drop unused function decl abis_nm_rx()
+
+  [ csaba.sipos ]
+  * nokia_site: add reset_type attribute
+
+ -- Oliver Smith <osmith@sysmocom.de>  Wed, 12 Feb 2025 13:02:16 +0100
+
 osmo-bsc (1.12.1) unstable; urgency=medium
 
   [ Vadim Yanitskiy ]

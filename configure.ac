@@ -61,14 +61,14 @@ AM_CONDITIONAL(BUILD_MEAS_VIS, test "x$osmo_ac_meas_vis" = "xyes")
 AC_SUBST(osmo_ac_meas_vis)
 
 dnl checks for libraries
-PKG_CHECK_MODULES(LIBOSMOCORE, libosmocore >= 1.10.0)
-PKG_CHECK_MODULES(LIBOSMOVTY, libosmovty >= 1.10.0)
-PKG_CHECK_MODULES(LIBOSMOCTRL, libosmoctrl >= 1.10.0)
-PKG_CHECK_MODULES(LIBOSMOGSM, libosmogsm >= 1.10.0)
-PKG_CHECK_MODULES(LIBOSMOABIS, libosmoabis >= 1.6.0)
-PKG_CHECK_MODULES(LIBOSMONETIF, libosmo-netif >= 1.5.0)
-PKG_CHECK_MODULES(LIBOSMOSIGTRAN, libosmo-sigtran >= 1.9.0)
-PKG_CHECK_MODULES(LIBOSMOMGCPCLIENT, libosmo-mgcp-client >= 1.13.0)
+PKG_CHECK_MODULES(LIBOSMOCORE, libosmocore >= 1.11.0)
+PKG_CHECK_MODULES(LIBOSMOVTY, libosmovty >= 1.11.0)
+PKG_CHECK_MODULES(LIBOSMOCTRL, libosmoctrl >= 1.11.0)
+PKG_CHECK_MODULES(LIBOSMOGSM, libosmogsm >= 1.11.0)
+PKG_CHECK_MODULES(LIBOSMOABIS, libosmoabis >= 2.0.0)
+PKG_CHECK_MODULES(LIBOSMONETIF, libosmo-netif >= 1.6.0)
+PKG_CHECK_MODULES(LIBOSMOSIGTRAN, libosmo-sigtran >= 2.1.0)
+PKG_CHECK_MODULES(LIBOSMOMGCPCLIENT, libosmo-mgcp-client >= 1.14.0)
 
 dnl checks for header files
 AC_HEADER_STDC
