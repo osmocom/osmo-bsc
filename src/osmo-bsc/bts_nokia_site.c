@@ -664,6 +664,7 @@ static const char *get_object_state_string(uint8_t object_state)
 #define NOKIA_MSG_BLOCK_CTRL_REQ        168
 #define NOKIA_MSG_STATE_CHANGED         172
 #define NOKIA_MSG_ALARM                 174
+#define NOKIA_MSG_CHA_ADM_STATE         175
 
 /* some element IDs */
 
@@ -779,7 +780,7 @@ static uint8_t fu_config_template[] = {
 	/* ID = 0x44 (Object current state) */
 	/* length = 1 */
 	/* [93] */
-	0x03,
+	0x02,
 
 	0x7F, 0x7C, 0x0A,
 	/* ID = 0x7C (FU BSIC) ## constructed ## */
@@ -1340,6 +1341,55 @@ static int abis_nm_reset(struct gsm_bts *bts, uint16_t ref)
 	return abis_nm_send(bts, NOKIA_MSG_RESET_REQ, ref, data, len_data);
 }
 
+static uint8_t trx_unlock[] = {
+	0x7F, 0x65, 0x0B,
+	/* ID = 0x65 (Obj. identity and obj. state) ## constructed ## */
+	/* length = 11 */
+	/* [83] */
+
+	0x5F, 0x40, 0x04,
+	/* ID = 0x40 (Object identity) */
+	/* length = 4 */
+	/* [86] */
+	0x00, 0x04, 0x01, 0xFF,
+
+	0x5F, 0x44, 0x01,
+	/* ID = 0x44 (Object current state) */
+	/* length = 1 */
+	/* [93] */
+	0x03,
+};
+
+static int abis_nm_cha_adm_trx_unlock(struct gsm_bts *bts, uint8_t trx_id, uint16_t ref)
+{
+	/* BTS_CHA_ADM_STATE */
+	/* object_identity = TRX; object_state = locked/unlocked */
+	uint8_t *data = trx_unlock;
+	data[8] = trx_id;
+	int len_data = sizeof(trx_unlock);
+	LOG_BTS(bts, DNM, LOGL_INFO, "TRX=%d Admin state change: UNLOCKED\n", trx_id);
+	dump_elements(data, len_data);
+	return abis_nm_send(bts, NOKIA_MSG_CHA_ADM_STATE, ref, data, len_data);
+}
+
+static uint8_t trx_reset[] = {
+	0x5F, 0x40, 0x04,
+	/* ID = 0x40 (Object identity) */
+	/* length = 4 */
+	/* [3] */
+	0x00, 0x04, 0x01, 0xFF,
+};
+
+static int abis_nm_trx_reset(struct gsm_bts *bts, uint8_t trx_id, uint16_t ref)
+{
+	uint8_t *data = trx_reset;
+	data[5] = trx_id;
+	int len_data = sizeof(trx_reset);
+	LOG_BTS(bts, DNM, LOGL_INFO, "TRX=%d Reset!\n", trx_id);
+	dump_elements(data, len_data);
+	return abis_nm_send(bts, NOKIA_MSG_RESET_REQ, ref, data, len_data);
+}
+
 /* TODO: put in a separate file ? */
 
 static int abis_nm_send_multi_segments(struct gsm_bts *bts, uint8_t msg_type,
@@ -1833,6 +1883,28 @@ static int abis_nm_rcvmsg_fom(struct msgb *mb)
 		/* send ACK */
 		abis_nm_ack(bts, ref);
 		if (bts->nokia.configured != 0) {
+			struct gsm_bts_trx *trx;
+			uint8_t bcch_trx_nr;
+			/* we first need to unlock and reset the TRX that runs BCCH */
+			llist_for_each_entry(trx, &bts->trx_list, list) {
+				if (trx->ts[0].pchan_from_config == GSM_PCHAN_CCCH ||
+				    trx->ts[0].pchan_from_config == GSM_PCHAN_CCCH_SDCCH4 ||
+				    trx->ts[0].pchan_from_config == GSM_PCHAN_CCCH_SDCCH4_CBCH) {
+					/* saving the number of TRX that has BCCH on it */
+					bcch_trx_nr = trx->nr;
+					/* unlock TRX */
+					abis_nm_cha_adm_trx_unlock(bts, trx->nr+1, ref);
+					/* reset TRX */
+					abis_nm_trx_reset(bts, trx->nr+1, ref);
+				}
+			}
+			/* now unlocking all other TRXs */
+			llist_for_each_entry(trx, &bts->trx_list, list) {
+				if (trx->nr != bcch_trx_nr) {
+					/* unlock TRX */
+					abis_nm_cha_adm_trx_unlock(bts, trx->nr+1, ref);
+				}
+			}
 			/* start TRX  (RSL link) */
 			struct gsm_e1_subslot *e1_link = &sign_link->trx->rsl_e1_link;
 			struct e1inp_line *line;
