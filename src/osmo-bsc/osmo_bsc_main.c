@@ -631,25 +631,6 @@ static int bsc_vty_go_parent(struct vty *vty)
 	return vty->node;
 }
 
-static int bsc_vty_is_config_node(struct vty *vty, int node)
-{
-	/* Check if libosmo-sccp declares the node in
-	 * question as config node */
-	if (osmo_ss7_is_config_node(vty, node))
-		return 1;
-
-	switch (node) {
-	/* add items that are not config */
-	case OML_NODE:
-	case OM2K_NODE:
-	case CONFIG_NODE:
-		return 0;
-
-	default:
-		return 1;
-	}
-}
-
 static struct vty_app_info vty_info = {
 	.name 		= "OsmoBSC",
 	.copyright	=
@@ -663,7 +644,6 @@ static struct vty_app_info vty_info = {
 	"There is NO WARRANTY, to the extent permitted by law.\r\n",
 	.version	= PACKAGE_VERSION,
 	.go_parent_cb	= bsc_vty_go_parent,
-	.is_config_node	= bsc_vty_is_config_node,
 	.usr_attr_desc	= {
 		[BSC_VTY_ATTR_RESTART_ABIS_OML_LINK] = \
 			"This command applies on A-bis OML link (re)establishment",
