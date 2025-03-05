@@ -1884,7 +1884,7 @@ static int abis_nm_rcvmsg_fom(struct msgb *mb)
 		abis_nm_ack(bts, ref);
 		if (bts->nokia.configured != 0) {
 			struct gsm_bts_trx *trx;
-			uint8_t bcch_trx_nr;
+			int bcch_trx_nr = -1;
 			/* we first need to unlock and reset the TRX that runs BCCH */
 			llist_for_each_entry(trx, &bts->trx_list, list) {
 				if (trx->ts[0].pchan_from_config == GSM_PCHAN_CCCH ||
