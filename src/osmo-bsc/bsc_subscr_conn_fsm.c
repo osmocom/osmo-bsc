@@ -746,15 +746,20 @@ struct osmo_mgcpc_ep *gscon_ensure_mgw_endpoint(struct gsm_subscriber_connection
 			/* use dynamic RTPBRIDGE endpoint allocation in MGW */
 			epname = mgcp_client_rtpbridge_wildcard(mgcp_client);
 		else {
-			uint8_t i460_bit_offs;
+			uint8_t i460_bit_offs, i460_rate = 16;
 			if (for_lchan->ts->e1_link.e1_ts_ss == E1_SUBSLOT_FULL)
 				i460_bit_offs = 0;
 			else
 				i460_bit_offs = for_lchan->ts->e1_link.e1_ts_ss * 2;
 
+			if (for_lchan->type == GSM_LCHAN_TCH_H) {
+				i460_rate = 8;
+				i460_bit_offs += for_lchan->nr;
+			}
+
 			epname = mgcp_client_e1_epname(conn, mgcp_client, for_lchan->ts->e1_link.e1_nr,
-						       for_lchan->ts->e1_link.e1_ts, 16,
-						       i460_bit_offs);
+						       for_lchan->ts->e1_link.e1_ts,
+						       i460_rate, i460_bit_offs);
 		}
 
 		conn->user_plane.mgw_endpoint =
