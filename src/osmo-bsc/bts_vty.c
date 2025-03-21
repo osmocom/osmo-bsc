@@ -1315,6 +1315,7 @@ DEFUN_USRATTR(cfg_bts_rach_ac_class,
 	return CMD_SUCCESS;
 }
 
+/* MS_TXPWR_MAX_CCH, 3GPP TS 45.008 and 3GPP TS 44.018 */
 DEFUN_USRATTR(cfg_bts_ms_max_power,
 	      cfg_bts_ms_max_power_cmd,
 	      X(BSC_VTY_ATTR_NEW_LCHAN),
@@ -1333,6 +1334,7 @@ DEFUN_USRATTR(cfg_bts_ms_max_power,
 
 #define CELL_STR "Cell Parameters\n"
 
+/* CELL_RESELECT_HYSTERESIS, 3GPP TS 45.008 and 3GPP TS 44.018 */
 DEFUN_USRATTR(cfg_bts_cell_resel_hyst,
 	      cfg_bts_cell_resel_hyst_cmd,
 	      X(BSC_VTY_ATTR_RESTART_ABIS_RSL_LINK),
@@ -1348,6 +1350,7 @@ DEFUN_USRATTR(cfg_bts_cell_resel_hyst,
 	return CMD_SUCCESS;
 }
 
+/* RXLEV_ACCESS_MIN, 3GPP TS 45.008 and 3GPP TS 44.018 */
 DEFUN_USRATTR(cfg_bts_rxlev_acc_min,
 	      cfg_bts_rxlev_acc_min_cmd,
 	      X(BSC_VTY_ATTR_RESTART_ABIS_RSL_LINK),
@@ -1364,11 +1367,12 @@ DEFUN_USRATTR(cfg_bts_rxlev_acc_min,
 	return CMD_SUCCESS;
 }
 
+/* CELL_BAR_QUALIFY, 3GPP TS 45.008 and 3GPP TS 44.018 */
 DEFUN_USRATTR(cfg_bts_cell_bar_qualify,
 	      cfg_bts_cell_bar_qualify_cmd,
 	      X(BSC_VTY_ATTR_RESTART_ABIS_RSL_LINK),
 	      "cell bar qualify (0|1)",
-	      CELL_STR "Cell Bar Qualify\n" "Cell Bar Qualify\n"
+	      CELL_STR "Cell Bar Qualify (CELL_BAR_QUALIFY)\n" "Cell Bar Qualify (CELL_BAR_QUALIFY)\n"
 	      "Set CBQ to 0\n" "Set CBQ to 1\n")
 {
 	struct gsm_bts *bts = vty->index;
@@ -1379,6 +1383,7 @@ DEFUN_USRATTR(cfg_bts_cell_bar_qualify,
 	return CMD_SUCCESS;
 }
 
+/* CELL_RESELECT_OFFSET, 3GPP TS 45.008 and 3GPP TS 44.018 */
 DEFUN_USRATTR(cfg_bts_cell_resel_ofs,
 	      cfg_bts_cell_resel_ofs_cmd,
 	      X(BSC_VTY_ATTR_RESTART_ABIS_RSL_LINK),
@@ -1395,6 +1400,7 @@ DEFUN_USRATTR(cfg_bts_cell_resel_ofs,
 	return CMD_SUCCESS;
 }
 
+/* TEMPORARY_OFFSET, 3GPP TS 45.008 and 3GPP TS 44.018 */
 DEFUN_USRATTR(cfg_bts_temp_ofs,
 	      cfg_bts_temp_ofs_cmd,
 	      X(BSC_VTY_ATTR_RESTART_ABIS_RSL_LINK),
@@ -1411,6 +1417,7 @@ DEFUN_USRATTR(cfg_bts_temp_ofs,
 	return CMD_SUCCESS;
 }
 
+/* TEMPORARY_OFFSET, 3GPP TS 45.008 and 3GPP TS 44.018 */
 DEFUN_USRATTR(cfg_bts_temp_ofs_inf,
 	      cfg_bts_temp_ofs_inf_cmd,
 	      X(BSC_VTY_ATTR_RESTART_ABIS_RSL_LINK),
@@ -1427,6 +1434,7 @@ DEFUN_USRATTR(cfg_bts_temp_ofs_inf,
 	return CMD_SUCCESS;
 }
 
+/* PENALTY_TIME, 3GPP TS 45.008 and 3GPP TS 44.018 */
 DEFUN_USRATTR(cfg_bts_penalty_time,
 	      cfg_bts_penalty_time_cmd,
 	      X(BSC_VTY_ATTR_RESTART_ABIS_RSL_LINK),
@@ -1443,6 +1451,7 @@ DEFUN_USRATTR(cfg_bts_penalty_time,
 	return CMD_SUCCESS;
 }
 
+/* PENALTY_TIME, 3GPP TS 45.008 and 3GPP TS 44.018 */
 DEFUN_USRATTR(cfg_bts_penalty_time_rsvd,
 	      cfg_bts_penalty_time_rsvd_cmd,
 	      X(BSC_VTY_ATTR_RESTART_ABIS_RSL_LINK),

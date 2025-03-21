@@ -1041,7 +1041,7 @@ static int generate_si3(enum osmo_sysinfo_type t, struct gsm_bts *bts)
 	si_info.early_cm_restrict_3g = !bts->early_classmark_allowed_3g;
 
 	/* SI3 Rest Octets (10.5.2.34), containing
-		CBQ, CELL_RESELECT_OFFSET, TEMPORARY_OFFSET, PENALTY_TIME
+		CELL_BAR_QUALIFY/CBQ, CELL_RESELECT_OFFSET, TEMPORARY_OFFSET, PENALTY_TIME
 		Power Offset, 2ter Indicator, Early Classmark Sending,
 		Scheduling if and WHERE, GPRS Indicator, SI13 position */
 	rc = osmo_gsm48_rest_octets_si3_encode(si3->rest_octets, &si_info);
