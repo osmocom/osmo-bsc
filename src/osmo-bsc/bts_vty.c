@@ -1211,10 +1211,10 @@ DEFUN_USRATTR(cfg_bts_cell_barred,
 	      cfg_bts_cell_barred_cmd,
 	      X(BSC_VTY_ATTR_RESTART_ABIS_RSL_LINK),
 	      "cell barred (0|1)",
-	      "Should this cell be barred from access?\n"
-	      "Should this cell be barred from access?\n"
-	      "Cell should NOT be barred\n"
-	      "Cell should be barred\n")
+	      "Should this cell be barred from access? (CELL_BAR_ACCESS)\n"
+	      "Should this cell be barred from access? (CELL_BAR_ACCESS)\n"
+	      "The cell is not barred, see 3GPP TS 23.022\n"
+	      "The cell is barred, see 3GPP TS 23.022\n")
 
 {
 	struct gsm_bts *bts = vty->index;
