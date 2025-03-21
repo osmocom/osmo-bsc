@@ -1467,7 +1467,7 @@ DEFUN_USRATTR(cfg_bts_penalty_time_rsvd,
 DEFUN_USRATTR(cfg_bts_ncc_permitted_all,
 	      cfg_bts_ncc_permitted_all_cmd,
 	      X(BSC_VTY_ATTR_RESTART_ABIS_RSL_LINK),
-	      "ncc-permitted all\n",
+	      "ncc-permitted all",
 	      NCC_PERMITTED_STR
 	      "Permit all NCCs (default)\n")
 {
@@ -1480,7 +1480,7 @@ DEFUN_USRATTR(cfg_bts_ncc_permitted_all,
 DEFUN_USRATTR(cfg_bts_ncc_permitted,
 	      cfg_bts_ncc_permitted_cmd,
 	      X(BSC_VTY_ATTR_RESTART_ABIS_RSL_LINK),
-	      "ncc-permitted <1-8> [<1-8>] [<1-8>] [<1-8>] [<1-8>] [<1-8>] [<1-8>]\n",
+	      "ncc-permitted <1-8> [<1-8>] [<1-8>] [<1-8>] [<1-8>] [<1-8>] [<1-8>]",
 	      NCC_PERMITTED_STR
 	      NCC_STR NCC_STR NCC_STR NCC_STR NCC_STR NCC_STR NCC_STR)
 {
