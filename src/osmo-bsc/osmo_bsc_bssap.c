@@ -982,14 +982,14 @@ static int bssmap_handle_ass_req_tp_codec_list(struct gsm_subscriber_connection 
 						   TLVP_VAL(tp, GSM0808_IE_SPEECH_CODEC_LIST),
 						   TLVP_LEN(tp, GSM0808_IE_SPEECH_CODEC_LIST));
 		if (rc < 0) {
-			LOGP(DMSC, LOGL_ERROR, "Unable to decode speech codec list\n");
+			LOGPFSML(conn->fi, LOGL_ERROR, "Unable to decode speech codec list\n");
 			*cause = GSM0808_CAUSE_INCORRECT_VALUE;
 			return -1;
 		}
 	}
 
 	if (aoip && !conn->codec_list.len) {
-		LOGP(DMSC, LOGL_ERROR, "%s: AoIP Assignment Request:"
+		LOGPFSML(conn->fi, LOGL_ERROR, "%s: AoIP Assignment Request:"
 		     " Missing or empty Speech Codec List IE\n", bsc_subscr_name(conn->bsub));
 		*cause = GSM0808_CAUSE_INFORMATION_ELEMENT_OR_FIELD_MISSING;
 		return -1;
