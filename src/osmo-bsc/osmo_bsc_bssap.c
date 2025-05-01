@@ -1144,7 +1144,7 @@ static int bssmap_handle_assignm_req(struct gsm_subscriber_connection *conn,
 
 	/* Check for channel type element, if its missing, immediately reject */
 	if (!TLVP_PRESENT(&tp, GSM0808_IE_CHANNEL_TYPE)) {
-		LOGP(DMSC, LOGL_ERROR, "Mandatory channel type not present.\n");
+		LOGPFSML(conn->fi, LOGL_ERROR, "Mandatory channel type not present.\n");
 		cause = GSM0808_CAUSE_INFORMATION_ELEMENT_OR_FIELD_MISSING;
 		goto reject;
 	}
@@ -1153,7 +1153,7 @@ static int bssmap_handle_assignm_req(struct gsm_subscriber_connection *conn,
 	rc = gsm0808_dec_channel_type(&ct,  TLVP_VAL(&tp, GSM0808_IE_CHANNEL_TYPE),
 				      TLVP_LEN(&tp, GSM0808_IE_CHANNEL_TYPE));
 	if (rc < 0) {
-		LOGP(DMSC, LOGL_ERROR, "unable to decode channel type.\n");
+		LOGPFSML(conn->fi, LOGL_ERROR, "unable to decode channel type.\n");
 		cause = GSM0808_CAUSE_INCORRECT_VALUE;
 		goto reject;
 	}
@@ -1167,7 +1167,7 @@ static int bssmap_handle_assignm_req(struct gsm_subscriber_connection *conn,
 		rc = gsm0808_dec_group_callref(&gc, TLVP_VAL(&tp, GSM0808_IE_GROUP_CALL_REFERENCE),
 					       TLVP_LEN(&tp, GSM0808_IE_GROUP_CALL_REFERENCE));
 		if (rc < 0) {
-			LOGP(DMSC, LOGL_ERROR, "Unable to decode Group Call Reference.\n");
+			LOGPFSML(conn->fi, LOGL_ERROR, "Unable to decode Group Call Reference.\n");
 			cause = GSM0808_CAUSE_INCORRECT_VALUE;
 			goto reject;
 		}
