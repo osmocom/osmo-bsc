@@ -104,9 +104,12 @@ enum vgcs_chan_fsm_state {
 int vgcs_vbs_chan_start(struct gsm_subscriber_connection *conn, struct msgb *msg);
 int vgcs_vbs_call_start(struct gsm_subscriber_connection *conn, struct msgb *msg);
 
-int bssmap_handle_ass_req_ct_speech(struct gsm_subscriber_connection *conn, struct gsm_bts *bts,
-				    struct tlv_parsed *tp, struct gsm0808_channel_type *ct,
-				    struct assignment_request *req, uint8_t *cause);
+int bssmap_handle_ass_req_ct_speech(struct gsm_subscriber_connection *conn,
+				    struct gsm_bts *bts,
+				    const struct tlv_parsed *tp,
+				    const struct gsm0808_channel_type *ct,
+				    struct assignment_request *req,
+				    uint8_t *cause);
 void bsc_tx_setup_ack(struct gsm_subscriber_connection *conn, struct gsm0808_vgcs_feature_flags *ff);
 void bsc_tx_setup_refuse(struct gsm_subscriber_connection *conn, uint8_t cause);
 void bsc_tx_vgcs_vbs_assignment_result(struct gsm_subscriber_connection *conn, struct gsm0808_channel_type *ct,

@@ -684,7 +684,8 @@ static int bssmap_handle_lcls_connect_ctrl(struct gsm_subscriber_connection *con
  * lchan is requested. The preferred lchan will be requested first. If we
  * find an alternate setting here, this one will be tried secondly if our
  * primary choice fails. */
-static int select_data_rates(struct assignment_request *req, struct gsm0808_channel_type *ct,
+static int select_data_rates(struct assignment_request *req,
+			     const struct gsm0808_channel_type *ct,
 			     struct gsm_subscriber_connection *conn)
 {
 	int rc, i, nc = 0;
@@ -815,7 +816,8 @@ static int select_codecs(struct assignment_request *req, const struct gsm0808_ch
 	return 0;
 }
 
-static int select_sign_chan(struct assignment_request *req, struct gsm0808_channel_type *ct)
+static int select_sign_chan(struct assignment_request *req,
+			    const struct gsm0808_channel_type *ct)
 {
 	int i, nc = 0;
 
@@ -864,7 +866,8 @@ static int select_sign_chan(struct assignment_request *req, struct gsm0808_chann
 	return nc > 0 ? 0 : -EINVAL;
 }
 
-static int bssmap_handle_ass_req_tp_cic(struct tlv_parsed *tp, bool aoip, uint16_t *cic, uint8_t *cause)
+static int bssmap_handle_ass_req_tp_cic(const struct tlv_parsed *tp,
+					bool aoip, uint16_t *cic, uint8_t *cause)
 {
 	if (TLVP_PRESENT(tp, GSM0808_IE_CIRCUIT_IDENTITY_CODE)) {
 		/* CIC is permitted in both AoIP and SCCPlite */
@@ -882,7 +885,7 @@ static int bssmap_handle_ass_req_tp_cic(struct tlv_parsed *tp, bool aoip, uint16
 	return 0;
 }
 
-static int bssmap_handle_ass_req_tp_rtp_addr(struct tlv_parsed *tp, bool aoip, char *msc_rtp_addr,
+static int bssmap_handle_ass_req_tp_rtp_addr(const struct tlv_parsed *tp, bool aoip, char *msc_rtp_addr,
 					     size_t msc_rtp_addr_len, uint16_t *msc_rtp_port, uint8_t *cause)
 {
 	struct sockaddr_storage rtp_addr;
@@ -927,7 +930,8 @@ static int bssmap_handle_ass_req_tp_rtp_addr(struct tlv_parsed *tp, bool aoip, c
 	return 0;
 }
 
-static int bssmap_handle_ass_req_tp_osmux(struct gsm_subscriber_connection *conn, struct tlv_parsed *tp,
+static int bssmap_handle_ass_req_tp_osmux(struct gsm_subscriber_connection *conn,
+					  const struct tlv_parsed *tp,
 					  bool *use_osmux, uint8_t *osmux_cid, uint8_t *cause)
 {
 	int rc;
@@ -963,8 +967,9 @@ static int bssmap_handle_ass_req_tp_osmux(struct gsm_subscriber_connection *conn
 	return 0;
 }
 
-static int bssmap_handle_ass_req_tp_codec_list(struct gsm_subscriber_connection *conn, struct tlv_parsed *tp, bool aoip,
-					       uint8_t *cause)
+static int bssmap_handle_ass_req_tp_codec_list(struct gsm_subscriber_connection *conn,
+					       const struct tlv_parsed *tp,
+					       bool aoip, uint8_t *cause)
 {
 	int rc;
 
@@ -993,7 +998,7 @@ static int bssmap_handle_ass_req_tp_codec_list(struct gsm_subscriber_connection 
 	return 0;
 }
 
-static int bssmap_handle_ass_req_tp_rtp_ext(struct tlv_parsed *tp,
+static int bssmap_handle_ass_req_tp_rtp_ext(const struct tlv_parsed *tp,
 					    struct assignment_request *req,
 					    uint8_t *cause)
 {
@@ -1013,8 +1018,10 @@ static int bssmap_handle_ass_req_tp_rtp_ext(struct tlv_parsed *tp,
 	return 0;
 }
 
-static int bssmap_handle_ass_req_ct_data(struct gsm_subscriber_connection *conn, struct tlv_parsed *tp,
-					 struct gsm0808_channel_type *ct, struct assignment_request *req,
+static int bssmap_handle_ass_req_ct_data(struct gsm_subscriber_connection *conn,
+					 const struct tlv_parsed *tp,
+					 const struct gsm0808_channel_type *ct,
+					 struct assignment_request *req,
 					 uint8_t *cause)
 {
 	bool aoip = gscon_is_aoip(conn);
@@ -1045,9 +1052,12 @@ static int bssmap_handle_ass_req_ct_data(struct gsm_subscriber_connection *conn,
 	return 0;
 }
 
-int bssmap_handle_ass_req_ct_speech(struct gsm_subscriber_connection *conn, struct gsm_bts *bts,
-				    struct tlv_parsed *tp, struct gsm0808_channel_type *ct,
-				    struct assignment_request *req, uint8_t *cause)
+int bssmap_handle_ass_req_ct_speech(struct gsm_subscriber_connection *conn,
+				    struct gsm_bts *bts,
+				    const struct tlv_parsed *tp,
+				    const struct gsm0808_channel_type *ct,
+				    struct assignment_request *req,
+				    uint8_t *cause)
 {
 	bool aoip = gscon_is_aoip(conn);
 	int rc;
@@ -1084,8 +1094,10 @@ int bssmap_handle_ass_req_ct_speech(struct gsm_subscriber_connection *conn, stru
 	return 0;
 }
 
-static int bssmap_handle_ass_req_ct_sign(struct gsm_subscriber_connection *conn, struct gsm0808_channel_type *ct,
-					 struct assignment_request *req, uint8_t *cause)
+static int bssmap_handle_ass_req_ct_sign(struct gsm_subscriber_connection *conn,
+					 const struct gsm0808_channel_type *ct,
+					 struct assignment_request *req,
+					 uint8_t *cause)
 {
 	int rc;
 
