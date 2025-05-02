@@ -533,6 +533,11 @@ struct gsm_nm_state {
 	uint8_t availability;
 };
 
+struct ipacc_supp_feat {
+	bool present;
+	uint32_t val;
+};
+
 struct gsm_abis_mo {
 	uint8_t obj_class;
 	uint8_t procedure_pending;
@@ -555,6 +560,18 @@ struct gsm_abis_mo {
 	union {
 		struct {
 			uint8_t obj_version;
+			/* relevant for NM_OC_BTS */
+			struct ipacc_supp_feat max_ta;
+			/* relevant for NM_OC_RADIO_CARRIER */
+			struct ipacc_supp_feat freq_bands;
+			/* relevant for NM_OC_BASEB_TRANSC */
+			struct ipacc_supp_feat ciph_algos;
+			struct ipacc_supp_feat chan_types;
+			struct ipacc_supp_feat chan_modes;
+			struct ipacc_supp_feat rtp_features;
+			struct ipacc_supp_feat rsl_features;
+			/* relevant for NM_OC_GPRS_CELL */
+			struct ipacc_supp_feat gprs_coding;
 		} ipaccess;
 	};
 };

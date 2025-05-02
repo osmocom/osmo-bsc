@@ -40,29 +40,42 @@ const struct tlv_definition ipacc_eie_tlv_def = {
 	}
 };
 
-static inline uint32_t ipacc_parse_supp_flags(const struct abis_om_fom_hdr *foh,
-					      const struct value_string *flags,
-					      const struct tlv_p_entry *e,
-					      const char *text)
+static void ipacc_parse_supp_flags(const struct abis_om_fom_hdr *foh,
+				   const struct tlv_parsed *tp,
+				   const enum ipac_eie tag,
+				   struct ipacc_supp_feat *feat,
+				   const struct value_string *flags,
+				   const char *text)
 {
-	uint32_t u32 = 0;
+	const struct tlv_p_entry *e;
 
-	for (unsigned int i = 0; i < OSMO_MIN(e->len, sizeof(u32)); i++)
-		u32 |= e->val[i] << (i * 8);
-	for (const struct value_string *vs = flags; vs->value && vs->str; vs++) {
-		if (u32 & vs->value)
-			LOGPFOH(DNM, LOGL_INFO, foh, "%s '%s' is supported\n", text, vs->str);
+	feat->present = false;
+	feat->val = 0;
+
+	if ((e = TLVP_GET(tp, tag)) == NULL)
+		return;
+
+	for (unsigned int i = 0; i < OSMO_MIN(e->len, sizeof(feat->val)); i++)
+		feat->val |= e->val[i] << (i * 8);
+	feat->present = true;
+
+	if (flags == NULL) {
+		LOGPFOH(DNM, LOGL_INFO, foh, "%s: %u\n", text, feat->val);
+		return;
 	}
 
-	return u32;
+	for (const struct value_string *vs = flags; vs->value && vs->str; vs++) {
+		if (feat->val & vs->value)
+			LOGPFOH(DNM, LOGL_INFO, foh, "%s '%s' is supported\n", text, vs->str);
+	}
 }
 
 /* Parse ip.access Supported Features IE */
-int ipacc_parse_supp_features(const struct gsm_bts *bts,
+int ipacc_parse_supp_features(struct gsm_bts *bts,
 			      const struct abis_om_fom_hdr *foh,
 			      const uint8_t *data, uint16_t data_len)
 {
-	const struct tlv_p_entry *e;
+	struct gsm_abis_mo *mo;
 	struct tlv_parsed tp;
 
 	if (tlv_parse(&tp, &ipacc_eie_tlv_def, data, data_len, 0, 0) < 0) {
@@ -70,24 +83,67 @@ int ipacc_parse_supp_features(const struct gsm_bts *bts,
 		return -EINVAL;
 	}
 
-	/* TODO: store the flags in the respective MO state */
-	if ((e = TLVP_GET(&tp, NM_IPAC_EIE_FREQ_BANDS)) != NULL)
-		ipacc_parse_supp_flags(foh, abis_nm_ipacc_freq_band_desc, e, "Freq. band");
-	if ((e = TLVP_GET(&tp, NM_IPAC_EIE_CIPH_ALGOS)) != NULL)
-		ipacc_parse_supp_flags(foh, abis_nm_ipacc_ciph_algo_desc, e, "Ciphering algorithm");
-	if ((e = TLVP_GET(&tp, NM_IPAC_EIE_CHAN_TYPES)) != NULL)
-		ipacc_parse_supp_flags(foh, abis_nm_ipacc_chant_desc, e, "Channel type");
-	if ((e = TLVP_GET(&tp, NM_IPAC_EIE_CHAN_MODES)) != NULL)
-		ipacc_parse_supp_flags(foh, abis_nm_ipacc_chanm_desc, e, "Channel mode");
-	if ((e = TLVP_GET(&tp, NM_IPAC_EIE_GPRS_CODING)) != NULL)
-		ipacc_parse_supp_flags(foh, abis_nm_ipacc_gprs_coding_desc, e, "GPRS Coding Scheme");
-	if ((e = TLVP_GET(&tp, NM_IPAC_EIE_RTP_FEATURES)) != NULL)
-		ipacc_parse_supp_flags(foh, abis_nm_ipacc_rtp_feat_desc, e, "RTP Feature");
-	if ((e = TLVP_GET(&tp, NM_IPAC_EIE_RSL_FEATURES)) != NULL)
-		ipacc_parse_supp_flags(foh, abis_nm_ipacc_rsl_feat_desc, e, "RSL Feature");
-	if (TLVP_PRES_LEN(&tp, NM_IPAC_EIE_MAX_TA, 1)) {
-		uint8_t u8 = *TLVP_VAL(&tp, NM_IPAC_EIE_MAX_TA);
-		LOGPFOH(DNM, LOGL_DEBUG, foh, "Max Timing Advance %u\n", u8);
+	/* store the flags to the respective MO state */
+	mo = gsm_objclass2mo(bts, foh->obj_class, &foh->obj_inst);
+	if (mo == NULL) {
+		LOGPFOH(DNM, LOGL_ERROR, foh,
+			"%s(): gsm_objclass2mo() failed\n", __func__);
+		return -ENODEV;
+	}
+
+	switch (mo->obj_class) {
+	case NM_OC_BTS:
+		ipacc_parse_supp_flags(foh, &tp,
+				       NM_IPAC_EIE_MAX_TA,
+				       &mo->ipaccess.max_ta,
+				       NULL, "Max Timing Advance");
+		break;
+	case NM_OC_RADIO_CARRIER:
+		ipacc_parse_supp_flags(foh, &tp,
+				       NM_IPAC_EIE_FREQ_BANDS,
+				       &mo->ipaccess.freq_bands,
+				       abis_nm_ipacc_freq_band_desc,
+				       "Freq. band");
+		break;
+	case NM_OC_BASEB_TRANSC:
+		ipacc_parse_supp_flags(foh, &tp,
+				       NM_IPAC_EIE_CIPH_ALGOS,
+				       &mo->ipaccess.ciph_algos,
+				       abis_nm_ipacc_ciph_algo_desc,
+				       "Ciphering algorithm");
+		ipacc_parse_supp_flags(foh, &tp,
+				       NM_IPAC_EIE_CHAN_TYPES,
+				       &mo->ipaccess.chan_types,
+				       abis_nm_ipacc_chant_desc,
+				       "Channel type");
+		ipacc_parse_supp_flags(foh, &tp,
+				       NM_IPAC_EIE_CHAN_MODES,
+				       &mo->ipaccess.chan_modes,
+				       abis_nm_ipacc_chanm_desc,
+				       "Channel mode");
+		ipacc_parse_supp_flags(foh, &tp,
+				       NM_IPAC_EIE_RTP_FEATURES,
+				       &mo->ipaccess.rtp_features,
+				       abis_nm_ipacc_rtp_feat_desc,
+				       "RTP Feature");
+		ipacc_parse_supp_flags(foh, &tp,
+				       NM_IPAC_EIE_RSL_FEATURES,
+				       &mo->ipaccess.rsl_features,
+				       abis_nm_ipacc_rsl_feat_desc,
+				       "RSL Feature");
+		break;
+	case NM_OC_GPRS_CELL:
+		ipacc_parse_supp_flags(foh, &tp,
+				       NM_IPAC_EIE_GPRS_CODING,
+				       &mo->ipaccess.gprs_coding,
+				       abis_nm_ipacc_gprs_coding_desc,
+				       "GPRS Coding Scheme");
+		break;
+	default:
+		LOGPFOH(DNM, LOGL_NOTICE, foh,
+			"Unhandled NM_ATT_IPACC_SUPP_FEATURES IE: %s\n",
+			osmo_hexdump(data, data_len));
+		return -ENOTSUP;
 	}
 
 	return 0;
