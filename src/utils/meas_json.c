@@ -31,6 +31,8 @@
 
 #include <netinet/in.h>
 
+#include <getopt.h>
+
 #include <osmocom/core/socket.h>
 #include <osmocom/core/msgb.h>
 #include <osmocom/core/select.h>
@@ -40,6 +42,9 @@
 
 #include <osmocom/bsc/gsm_data.h>
 #include <osmocom/bsc/meas_feed.h>
+
+/* binding IP */
+static char *bind_ip;
 
 static void print_meas_rep_uni_json(struct gsm_meas_rep_unidir *mru)
 {
@@ -172,6 +177,68 @@ static int udp_fd_cb(struct osmo_fd *ofd, unsigned int what)
 	return 0;
 }
 
+static void print_help(void)
+{
+	printf(" -h --help. This help text.\n");
+	printf(" -b --bind-ip. The IP to bind to.\n");
+}
+
+static void print_usage(void)
+{
+	printf("Usage: meas_json [options]\n");
+}
+
+static void handle_options(int argc, char **argv)
+{
+	int options_mask = 0;
+
+	/* disable explicit missing arguments error output from getopt_long */
+	opterr = 0;
+
+	while (1) {
+		int option_index = 0, c;
+		static struct option long_options[] = {
+			{"help", 0, 0, 'h'},
+			{"bind-ip", 0, 0, 'b'},
+			{0, 0, 0, 0}
+		};
+
+		c = getopt_long(argc, argv, "hb:",
+				long_options, &option_index);
+		if (c == -1)
+			break;
+
+		switch (c) {
+		case 'h':
+			print_usage();
+			print_help();
+			exit(0);
+		case 'b':
+			bind_ip = optarg;
+			break;
+		case '?':
+			if (optopt) {
+				printf("ERROR: missing mandatory argument "
+				       "for `%s' option\n", argv[optind-1]);
+			} else {
+				printf("ERROR: unknown option `%s'\n",
+					argv[optind-1]);
+			}
+			print_usage();
+			print_help();
+			exit(EXIT_FAILURE);
+			break;
+		default:
+			/* ignore */
+			break;
+		}
+	}
+	if (argc > optind) {
+		fprintf(stderr, "Unsupported positional arguments on command line\n");
+		exit(2);
+	}
+}
+
 /* default categories */
 static struct log_info_cat default_categories[] = {
 };
@@ -187,11 +254,13 @@ int main(int argc, char **argv)
 	void *tall_ctx = talloc_named_const(NULL, 0, "meas_json");
 	osmo_init_logging2(tall_ctx, &meas_json_log_info);
 
+	handle_options(argc, argv);
+
 	int rc;
 	struct osmo_fd udp_ofd;
 
 	udp_ofd.cb = udp_fd_cb;
-	rc =  osmo_sock_init_ofd(&udp_ofd, AF_INET, SOCK_DGRAM, IPPROTO_UDP, NULL, 8888, OSMO_SOCK_F_BIND);
+	rc =  osmo_sock_init_ofd(&udp_ofd, AF_INET, SOCK_DGRAM, IPPROTO_UDP, bind_ip, 8888, OSMO_SOCK_F_BIND);
 	if (rc < 0)
 		exit(1);
 
