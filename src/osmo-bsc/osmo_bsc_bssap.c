@@ -1,4 +1,4 @@
-/* GSM 08.08 BSSMAP handling						*/
+/* 3GPP TS 48.008(GSM 08.08) BSSMAP handling */
 /* (C) 2009-2012 by Holger Hans Peter Freyther <zecke@selfish.org>
  * (C) 2009-2012 by On-Waves
  * (C) 2017 by Harald Welte <laforge@gnumonks.org>
