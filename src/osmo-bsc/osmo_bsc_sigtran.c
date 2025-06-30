@@ -552,6 +552,9 @@ void osmo_bsc_sigtran_reset(struct bsc_msc_data *msc)
 /* Default point-code to be used as remote address (MSC) */
 #define MSC_DEFAULT_PC "0.23.1"
 
+/* Default point-code to be used as remote address (MSC) */
+#define MSC_DEFAULT_ADDR_NAME "addr-dyn-msc-default"
+
 static int asp_rx_unknown(struct osmo_ss7_asp *asp, int ppid_mux, struct msgb *msg);
 
 /* Initialize osmo sigtran backhaul */
@@ -560,55 +563,79 @@ int osmo_bsc_sigtran_init(struct llist_head *mscs)
 	struct bsc_msc_data *msc;
 	uint32_t default_pc;
 	struct llist_head *ll_it;
-	int create_instance_0_for_msc_nr = -1;
+	int rc;
 
 	osmo_ss7_register_rx_unknown_cb(&asp_rx_unknown);
 
 	OSMO_ASSERT(mscs);
 	msc_list = mscs;
 
-	/* Guard against multiple MSCs with identical config */
+	/* Apply default address on each MSC and validate which ss7 instance it runs on. */
 	llist_for_each_entry(msc, msc_list, entry) {
-		struct bsc_msc_data *msc2;
+		struct osmo_ss7_instance *s7i;
 
 		/* An MSC with invalid cs7 instance defaults to cs7 instance 0 */
-		uint32_t msc_inst = (msc->a.cs7_instance_valid ? msc->a.cs7_instance : 0);
+		if (!msc->a.cs7_instance_valid) {
+			s7i = osmo_ss7_instance_find(0);
+			if (!s7i) {
+				LOGP(DMSC, LOGL_NOTICE, "To auto-configure msc %d, creating cs7 instance 0 implicitly\n",
+				     msc->nr);
+				s7i = osmo_ss7_instance_find_or_create(tall_bsc_ctx, 0);
+				OSMO_ASSERT(s7i);
+			}
+			msc->a.cs7_instance = osmo_ss7_instance_get_id(s7i);
+			msc->a.cs7_instance_valid = true;
+		} else {
+			s7i = osmo_ss7_instance_find(msc->a.cs7_instance);
+		}
 
-		if (!msc->a.cs7_instance_valid)
-			create_instance_0_for_msc_nr = msc->nr;
-
-		/* If unset, use default SCCP address for the MSC */
-		if (!msc->a.msc_addr.presence)
-			osmo_sccp_make_addr_pc_ssn(&msc->a.msc_addr,
-						   osmo_ss7_pointcode_parse(NULL, MSC_DEFAULT_PC),
-						   OSMO_SCCP_SSN_BSSAP);
-
-		/* (more optimally, we'd only iterate the remaining other mscs after this msc, but this happens only
-		 * during startup, so nevermind that complexity and rather check each pair twice. That also ensures to
-		 * compare all MSCs that have no explicit msc_addr set, see osmo_sccp_make_addr_pc_ssn() above.) */
-		llist_for_each_entry(msc2, msc_list, entry) {
-			uint32_t msc2_inst;
-
-			if (msc2 == msc)
-				continue;
-
-			msc2_inst = (msc2->a.cs7_instance_valid ? msc2->a.cs7_instance : 0);
-			if (msc_inst != msc2_inst)
-				continue;
-
-			if (osmo_sccp_addr_cmp(&msc->a.msc_addr, &msc2->a.msc_addr, OSMO_SCCP_ADDR_T_PC) == 0) {
-				LOGP(DMSC, LOGL_ERROR, "'msc %d' and 'msc %d' cannot use the same remote PC"
-				     " %s on the same cs7 instance %u\n",
-				     msc->nr, msc2->nr, osmo_sccp_addr_dump(&msc->a.msc_addr), msc_inst);
-				return -EINVAL;
+		/* User didn't configure an 'msc-addr' in VTY for this msc, add
+		 * default SCCP address for the MSC to the address book */
+		if (!msc->a.msc_addr_name) {
+			msc->a.msc_addr_name = talloc_strdup(msc, MSC_DEFAULT_ADDR_NAME);
+			LOGP(DMSC, LOGL_NOTICE, "To auto-configure msc %d, adding address '%s' to cs7 instance 0 address-book implicitly\n",
+			     msc->nr, msc->a.msc_addr_name);
+		}
+		if (!msc->a.msc_addr.presence) {
+			struct osmo_ss7_instance *ss7;
+			ss7 = osmo_sccp_addr_by_name(&msc->a.msc_addr, msc->a.msc_addr_name);
+			if (!ss7) {
+				osmo_sccp_make_addr_pc_ssn(&msc->a.msc_addr,
+							   osmo_ss7_pointcode_parse(s7i, MSC_DEFAULT_PC),
+							   OSMO_SCCP_SSN_BSSAP);
+				rc = osmo_sccp_addr_create(s7i, msc->a.msc_addr_name, &msc->a.msc_addr);
+				if (rc < 0)
+					return -EINVAL;
+			} else {
+				OSMO_ASSERT(s7i == ss7);
+				osmo_sccp_make_addr_pc_ssn(&msc->a.msc_addr,
+							   osmo_ss7_pointcode_parse(s7i, MSC_DEFAULT_PC),
+							   OSMO_SCCP_SSN_BSSAP);
+				rc = osmo_sccp_addr_update(s7i, msc->a.msc_addr_name, &msc->a.msc_addr);
+				if (rc < 0)
+					return -EINVAL;
 			}
 		}
 	}
 
-	if (create_instance_0_for_msc_nr >= 0 && !osmo_ss7_instance_find(0)) {
-		LOGP(DMSC, LOGL_NOTICE, "To auto-configure msc %d, creating cs7 instance 0 implicitly\n",
-		     create_instance_0_for_msc_nr);
-		OSMO_ASSERT(osmo_ss7_instance_find_or_create(tall_bsc_ctx, 0));
+	/* Guard against multiple MSCs with identical config */
+	/* (more optimally, we'd only iterate the remaining other mscs after this msc, but this happens only
+	 * during startup, so nevermind that complexity and rather check each pair twice. That also ensures to
+	 * compare all MSCs that have no explicit msc_addr set, see osmo_sccp_make_addr_pc_ssn() above.) */
+	llist_for_each_entry(msc, msc_list, entry) {
+		struct bsc_msc_data *msc2;
+		llist_for_each_entry(msc2, msc_list, entry) {
+			if (msc2 == msc)
+				continue;
+			if (msc->a.cs7_instance != msc2->a.cs7_instance)
+				continue;
+			if (osmo_sccp_addr_cmp(&msc->a.msc_addr, &msc2->a.msc_addr, OSMO_SCCP_ADDR_T_PC) == 0) {
+				LOGP(DMSC, LOGL_ERROR, "'msc %d' and 'msc %d' cannot use the same remote PC"
+					" %s on the same cs7 instance %u\n",
+					msc->nr, msc2->nr, osmo_sccp_addr_dump(&msc->a.msc_addr), msc->a.cs7_instance);
+				return -EINVAL;
+			}
+		}
 	}
 
 	/* Set up exactly one SCCP user and one ASP+AS per cs7 instance.
@@ -627,8 +654,7 @@ int osmo_bsc_sigtran_init(struct llist_head *mscs)
 
 		llist_for_each_entry(msc, msc_list, entry) {
 			/* An MSC with invalid cs7 instance id defaults to cs7 instance 0 */
-			if ((inst_id != msc->a.cs7_instance)
-			    && !(inst_id == 0 && !msc->a.cs7_instance_valid))
+			if (inst_id != msc->a.cs7_instance)
 				continue;
 
 			/* This msc runs on this cs7 inst. Check the asp_proto. */
@@ -676,8 +702,7 @@ int osmo_bsc_sigtran_init(struct llist_head *mscs)
 			char msc_name[32];
 
 			/* Skip MSCs that don't run on this cs7 instance */
-			if ((inst_id != msc->a.cs7_instance)
-			    && !(inst_id == 0 && !msc->a.cs7_instance_valid))
+			if (inst_id != msc->a.cs7_instance)
 				continue;
 
 			snprintf(msc_name, sizeof(msc_name), "msc-%d", msc->nr);

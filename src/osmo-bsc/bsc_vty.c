@@ -2946,7 +2946,8 @@ AMR_COMMAND(4_75)
 
 /* Make sure only standard SSN numbers are used. If no ssn number is
  * configured, silently apply the default SSN */
-static void enforce_standard_ssn(struct vty *vty, struct osmo_sccp_addr *addr)
+static void enforce_standard_ssn(struct vty *vty, struct osmo_ss7_instance *ss7,
+				 const char *addr_name, struct osmo_sccp_addr *addr)
 {
 	if (addr->presence & OSMO_SCCP_ADDR_T_SSN) {
 		if (addr->ssn != OSMO_SCCP_SSN_BSSAP)
@@ -2957,6 +2958,7 @@ static void enforce_standard_ssn(struct vty *vty, struct osmo_sccp_addr *addr)
 
 	addr->presence |= OSMO_SCCP_ADDR_T_SSN;
 	addr->ssn = OSMO_SCCP_SSN_BSSAP;
+	osmo_sccp_addr_update(ss7, addr_name, addr);
 }
 
 DEFUN(cfg_msc_cs7_bsc_addr,
@@ -2988,8 +2990,8 @@ DEFUN(cfg_msc_cs7_bsc_addr,
 
 	msc->a.cs7_instance = ss7_id;
 	msc->a.cs7_instance_valid = true;
-	enforce_standard_ssn(vty, &msc->a.bsc_addr);
 	msc->a.bsc_addr_name = talloc_strdup(msc, bsc_addr_name);
+	enforce_standard_ssn(vty, ss7, bsc_addr_name, &msc->a.bsc_addr);
 	return CMD_SUCCESS;
 }
 
@@ -3022,8 +3024,8 @@ DEFUN(cfg_msc_cs7_msc_addr,
 
 	msc->a.cs7_instance = ss7_id;
 	msc->a.cs7_instance_valid = true;
-	enforce_standard_ssn(vty, &msc->a.msc_addr);
 	msc->a.msc_addr_name = talloc_strdup(msc, msc_addr_name);
+	enforce_standard_ssn(vty, ss7, msc_addr_name, &msc->a.msc_addr);
 	return CMD_SUCCESS;
 }
 
