@@ -97,15 +97,13 @@ void osmo_bsc_sigtran_tx_reset_ack(const struct bsc_msc_data *msc)
 /* Find an MSC by its remote SCCP address */
 static struct bsc_msc_data *get_msc_by_addr(const struct osmo_sccp_addr *msc_addr)
 {
-	struct osmo_ss7_instance *ss7;
 	struct bsc_msc_data *msc;
 	llist_for_each_entry(msc, msc_list, entry) {
 		if (memcmp(msc_addr, &msc->a.msc_addr, sizeof(*msc_addr)) == 0)
 			return msc;
 	}
-
-	ss7 = osmo_ss7_instance_find(msc->a.cs7_instance);
-	LOGP(DMSC, LOGL_ERROR, "Unable to find MSC data under address: %s\n", osmo_sccp_addr_name(ss7, msc_addr));
+	LOGP(DMSC, LOGL_ERROR, "Unable to find MSC data under address: %s\n",
+	     osmo_sccp_addr_dump(msc_addr));
 	return NULL;
 }
 
