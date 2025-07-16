@@ -275,8 +275,8 @@ static struct bsc_msc_data *bsc_find_msc(struct gsm_subscriber_connection *conn,
 		return NULL;
 	}
 
-	LOGP(DMSC, LOGL_DEBUG, "New subscriber %s: MSC round-robin selects msc %d\n",
-	     osmo_mobile_identity_to_str_c(OTC_SELECT, mi), msc_target->nr);
+	LOG_MSC(msc_target, LOGL_DEBUG, "round-robin selects this MSC for new subscriber %s\n",
+		osmo_mobile_identity_to_str_c(OTC_SELECT, mi));
 
 	if (is_null_nri)
 		rate_ctr_inc(rate_ctr_group_get_ctr(msc_target->msc_ctrs, MSC_CTR_MSCPOOL_SUBSCR_REATTACH));

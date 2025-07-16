@@ -69,21 +69,21 @@ static void update_msc_osmux_support(struct bsc_msc_data *msc,
 
 	rc = osmo_bssap_tlv_parse(&tp, msg->l4h + 1, length - 1);
 	if (rc < 0)
-		LOGP(DMSC, LOGL_NOTICE, "Failed parsing TLV looking for Osmux support\n");
+		LOG_MSC(msc, LOGL_NOTICE, "Failed parsing TLV looking for Osmux support\n");
 
 	msc->remote_supports_osmux = !!TLVP_PRESENT(&tp, GSM0808_IE_OSMO_OSMUX_SUPPORT);
 
 	if (old_value != msc->remote_supports_osmux)
-		LOGP(DMSC, LOGL_INFO, "MSC detected AoIP Osmux support changed: %d->%d\n",
-		     old_value,  msc->remote_supports_osmux);
+		LOG_MSC(msc, LOGL_INFO, "MSC detected AoIP Osmux support changed: %d->%d\n",
+			old_value,  msc->remote_supports_osmux);
 }
 
 static int bssmap_handle_reset_ack(struct bsc_msc_data *msc,
 				   struct msgb *msg, unsigned int length)
 {
-	LOGP(DMSC, LOGL_NOTICE, "RESET ACK from MSC: %s\n",
-	     osmo_sccp_addr_name(osmo_ss7_instance_find(msc->a.cs7_instance),
-				 &msc->a.msc_addr));
+	LOG_MSC(msc, LOGL_NOTICE, "RESET ACK from MSC: %s\n",
+		osmo_sccp_addr_name(osmo_ss7_instance_find(msc->a.cs7_instance),
+				    &msc->a.msc_addr));
 
 	/* Inform the FSM that controls the RESET/RESET-ACK procedure
 	 * that we have successfully received the reset-ack message */
@@ -98,14 +98,14 @@ static int bssmap_handle_reset_ack(struct bsc_msc_data *msc,
 static int bssmap_handle_reset(struct bsc_msc_data *msc,
 			       struct msgb *msg, unsigned int length)
 {
-	LOGP(DMSC, LOGL_NOTICE, "RESET from MSC: %s\n",
-	     osmo_sccp_addr_name(osmo_ss7_instance_find(msc->a.cs7_instance),
-				 &msc->a.msc_addr));
+	LOG_MSC(msc, LOGL_NOTICE, "RESET from MSC: %s\n",
+		osmo_sccp_addr_name(osmo_ss7_instance_find(msc->a.cs7_instance),
+				    &msc->a.msc_addr));
 
 	update_msc_osmux_support(msc, msg, length);
 
 	if (!msc->a.bssmap_reset) {
-		LOGP(DMSC, LOGL_ERROR, "(msc%d) missing RESET FSM\n", msc->nr);
+		LOG_MSC(msc, LOGL_ERROR, "(msc%d) missing RESET FSM\n", msc->nr);
 		/* Make sure to shut down all open connections, if any */
 		osmo_bsc_sigtran_reset(msc);
 		return -1;
@@ -277,22 +277,22 @@ static int bssmap_handle_paging(struct bsc_msc_data *msc,
 	};
 
 	if (osmo_bssap_tlv_parse(&tp, msg->l4h + 1, payload_length - 1) < 0) {
-		LOGP(DMSC, LOGL_ERROR, "%s(): tlv_parse() failed\n", __func__);
+		LOG_MSC(msc, LOGL_ERROR, "%s(): tlv_parse() failed\n", __func__);
 		return -1;
 	}
 	remain = payload_length - 1;
 
 	if (!TLVP_PRESENT(&tp, GSM0808_IE_IMSI)) {
-		LOGP(DMSC, LOGL_ERROR, "Mandatory IMSI not present.\n");
+		LOG_MSC(msc, LOGL_ERROR, "Mandatory IMSI not present.\n");
 		return -1;
 	} else if ((TLVP_VAL(&tp, GSM0808_IE_IMSI)[0] & GSM_MI_TYPE_MASK) != GSM_MI_TYPE_IMSI) {
-		LOGP(DMSC, LOGL_ERROR, "Wrong content in the IMSI\n");
+		LOG_MSC(msc, LOGL_ERROR, "Wrong content in the IMSI\n");
 		return -1;
 	}
 	remain -= TLVP_LEN(&tp, GSM0808_IE_IMSI);
 
 	if (!TLVP_PRESENT(&tp, GSM0808_IE_CELL_IDENTIFIER_LIST)) {
-		LOGP(DMSC, LOGL_ERROR, "Mandatory CELL IDENTIFIER LIST not present.\n");
+		LOG_MSC(msc, LOGL_ERROR, "Mandatory CELL IDENTIFIER LIST not present.\n");
 		return -1;
 	}
 
@@ -303,7 +303,7 @@ static int bssmap_handle_paging(struct bsc_msc_data *msc,
 	}
 
 	if (remain <= 0) {
-		LOGP(DMSC, LOGL_ERROR, "Payload too short.\n");
+		LOG_MSC(msc, LOGL_ERROR, "Payload too short.\n");
 		return -1;
 	}
 
@@ -312,7 +312,7 @@ static int bssmap_handle_paging(struct bsc_msc_data *msc,
 	 */
 	if (osmo_mobile_identity_decode(&paging.imsi, TLVP_VAL(&tp, GSM0808_IE_IMSI), TLVP_LEN(&tp, GSM0808_IE_IMSI), false)
 	    || paging.imsi.type != GSM_MI_TYPE_IMSI) {
-		LOGP(DMSC, LOGL_ERROR, "Paging: could not parse IMSI\n");
+		LOG_MSC(msc, LOGL_ERROR, "Paging: could not parse IMSI\n");
 		return -1;
 	}
 
@@ -749,14 +749,12 @@ static int select_codecs(struct assignment_request *req, const struct gsm0808_ch
 			 struct gsm_subscriber_connection *conn, struct gsm_bts *bts)
 {
 	int rc, i, nc = 0;
-	struct bsc_msc_data *msc;
+	struct bsc_msc_data *msc = conn->sccp.msc;
 
 	if (!bts) {
-		LOGP(DMSC, LOGL_ERROR, "No lchan, cannot select codecs\n");
+		LOG_MSC(msc, LOGL_ERROR, "No lchan, cannot select codecs\n");
 		return -EINVAL;
 	}
-
-	msc = conn->sccp.msc;
 
 	switch (ct->ch_rate_type) {
 	case GSM0808_SPEECH_FULL_BM:
@@ -795,21 +793,21 @@ static int select_codecs(struct assignment_request *req, const struct gsm0808_ch
 	}
 
 	if (!nc) {
-		LOGP(DMSC, LOGL_ERROR, "No supported audio type found for channel_type ="
-		     " { ch_indctr=0x%x, ch_rate_type=0x%x, perm_spch=[%s] }\n",
-		     ct->ch_indctr, ct->ch_rate_type, osmo_hexdump(ct->perm_spch, ct->perm_spch_len));
+		LOG_MSC(msc, LOGL_ERROR, "No supported audio type found for channel_type ="
+			" { ch_indctr=0x%x, ch_rate_type=0x%x, perm_spch=[%s] }\n",
+			ct->ch_indctr, ct->ch_rate_type, osmo_hexdump(ct->perm_spch, ct->perm_spch_len));
 		/* TODO: actually output codec names, e.g. implement
 		 * gsm0808_permitted_speech_names[] and iterate perm_spch. */
 		return -EINVAL;
 	}
 
 	for (i = 0; i < nc; i++ ) {
-		DEBUGP(DMSC, "Found matching audio type (pref=%d): %s %s for channel_type ="
-		       " { ch_indctr=0x%x, ch_rate_type=0x%x, perm_spch=[ %s] }\n",
-		       i,
-		       req->ch_mode_rate_list[i].chan_rate == CH_RATE_FULL ? "full rate" : "half rate",
-		       get_value_string(gsm48_chan_mode_names, req->ch_mode_rate_list[i].chan_mode),
-		       ct->ch_indctr, ct->ch_rate_type, osmo_hexdump(ct->perm_spch, ct->perm_spch_len));
+		LOG_MSC(msc, LOGL_DEBUG, "Found matching audio type (pref=%d): %s %s for channel_type ="
+			" { ch_indctr=0x%x, ch_rate_type=0x%x, perm_spch=[ %s] }\n",
+			i,
+			req->ch_mode_rate_list[i].chan_rate == CH_RATE_FULL ? "full rate" : "half rate",
+			get_value_string(gsm48_chan_mode_names, req->ch_mode_rate_list[i].chan_mode),
+			ct->ch_indctr, ct->ch_rate_type, osmo_hexdump(ct->perm_spch, ct->perm_spch_len));
 	}
 
 	req->n_ch_mode_rate = nc;
@@ -933,10 +931,11 @@ static int bssmap_handle_ass_req_tp_osmux(struct gsm_subscriber_connection *conn
 					  bool *use_osmux, uint8_t *osmux_cid, uint8_t *cause)
 {
 	int rc;
+	struct bsc_msc_data *msc = conn->sccp.msc;
 
 	if (TLVP_PRESENT(tp, GSM0808_IE_OSMO_OSMUX_CID)) {
-		if (conn->sccp.msc->use_osmux == OSMUX_USAGE_OFF) {
-			LOGP(DMSC, LOGL_ERROR, "MSC using Osmux but we have it disabled.\n");
+		if (msc->use_osmux == OSMUX_USAGE_OFF) {
+			LOG_MSC(msc, LOGL_ERROR, "MSC using Osmux but we have it disabled.\n");
 			*cause = GSM0808_CAUSE_INCORRECT_VALUE;
 			return -1;
 		}
@@ -945,21 +944,21 @@ static int bssmap_handle_ass_req_tp_osmux(struct gsm_subscriber_connection *conn
 					   TLVP_VAL(tp, GSM0808_IE_OSMO_OSMUX_CID),
 					   TLVP_LEN(tp, GSM0808_IE_OSMO_OSMUX_CID));
 		if (rc < 0) {
-			LOGP(DMSC, LOGL_ERROR, "Unable to decode Osmux CID.\n");
+			LOG_MSC(msc, LOGL_ERROR, "Unable to decode Osmux CID.\n");
 			*cause = GSM0808_CAUSE_INCORRECT_VALUE;
 			return -1;
 		}
 		return 0;
 	}
 
-	if (conn->sccp.msc->use_osmux == OSMUX_USAGE_ONLY) {
-		LOGP(DMSC, LOGL_ERROR, "MSC not using Osmux but we are forced to use it.\n");
+	if (msc->use_osmux == OSMUX_USAGE_ONLY) {
+		LOG_MSC(msc, LOGL_ERROR, "MSC not using Osmux but we are forced to use it.\n");
 		*cause = GSM0808_CAUSE_INCORRECT_VALUE;
 		return -1;
 	}
 
-	if (conn->sccp.msc->use_osmux == OSMUX_USAGE_ON)
-		LOGP(DMSC, LOGL_NOTICE, "MSC not using Osmux but we have Osmux enabled.\n");
+	if (msc->use_osmux == OSMUX_USAGE_ON)
+		LOG_MSC(msc, LOGL_NOTICE, "MSC not using Osmux but we have Osmux enabled.\n");
 
 	return 0;
 }
@@ -1461,11 +1460,11 @@ static int bssmap_rcvmsg_udt(struct bsc_msc_data *msc,
 	struct rate_ctr *ctrs = msc->msc_ctrs->ctr;
 
 	if (length < 1) {
-		LOGP(DMSC, LOGL_ERROR, "Not enough room: %d\n", length);
+		LOG_MSC(msc, LOGL_ERROR, "Not enough room: %d\n", length);
 		return -1;
 	}
 
-	LOGP(DMSC, LOGL_INFO, "Rx MSC UDT BSSMAP %s\n",
+	LOG_MSC(msc, LOGL_INFO, "Rx MSC UDT BSSMAP %s\n",
 		gsm0808_bssmap_name(msg->l4h[0]));
 
 	switch (msg->l4h[0]) {
@@ -1483,7 +1482,7 @@ static int bssmap_rcvmsg_udt(struct bsc_msc_data *msc,
 		break;
 	default:
 		rate_ctr_inc(&ctrs[MSC_CTR_BSSMAP_RX_UDT_UNKNOWN]);
-		LOGP(DMSC, LOGL_NOTICE, "Received unimplemented BSSMAP UDT %s\n",
+		LOG_MSC(msc, LOGL_NOTICE, "Received unimplemented BSSMAP UDT %s\n",
 			gsm0808_bssmap_name(msg->l4h[0]));
 		break;
 	}
@@ -1495,14 +1494,15 @@ static int bssmap_rcvmsg_dt1(struct gsm_subscriber_connection *conn,
 			     struct msgb *msg, unsigned int length)
 {
 	int ret = 0;
-	struct rate_ctr *ctrs = conn->sccp.msc->msc_ctrs->ctr;
+	struct bsc_msc_data *msc = conn->sccp.msc;
+	struct rate_ctr *ctrs = msc->msc_ctrs->ctr;
 
 	if (length < 1) {
-		LOGP(DMSC, LOGL_ERROR, "Not enough room: %d\n", length);
+		LOG_MSC(msc, LOGL_ERROR, "Not enough room: %d\n", length);
 		return -1;
 	}
 
-	LOGP(DMSC, LOGL_INFO, "Rx MSC DT1 BSSMAP %s\n",
+	LOG_MSC(msc, LOGL_INFO, "Rx MSC DT1 BSSMAP %s\n",
 		gsm0808_bssmap_name(msg->l4h[0]));
 
 	switch (msg->l4h[0]) {
@@ -1553,7 +1553,7 @@ static int bssmap_rcvmsg_dt1(struct gsm_subscriber_connection *conn,
 			ret = osmo_fsm_inst_dispatch(conn->lcs.loc_req->fi, LCS_LOC_REQ_EV_RX_A_PERFORM_LOCATION_ABORT,
 						     msg);
 		} else {
-			LOGP(DMSC, LOGL_ERROR, "Rx BSSMAP Perform Location Abort without ongoing Location Request\n");
+			LOG_MSC(msc, LOGL_ERROR, "Rx BSSMAP Perform Location Abort without ongoing Location Request\n");
 			ret = 0;
 		}
 		break;
@@ -1579,7 +1579,7 @@ static int bssmap_rcvmsg_dt1(struct gsm_subscriber_connection *conn,
 		break;
 	default:
 		rate_ctr_inc(&ctrs[MSC_CTR_BSSMAP_RX_DT1_UNKNOWN]);
-		LOGP(DMSC, LOGL_NOTICE, "Unimplemented msg type: %s\n",
+		LOG_MSC(msc, LOGL_NOTICE, "Unimplemented msg type: %s\n",
 			gsm0808_bssmap_name(msg->l4h[0]));
 		break;
 	}
@@ -1594,6 +1594,7 @@ static int dtap_rcvmsg(struct gsm_subscriber_connection *conn,
 	struct msgb *gsm48;
 	uint8_t *data;
 	int dtap_rc;
+	struct bsc_msc_data *msc;
 	struct rate_ctr *ctrs;
 
 	LOGP(DMSC, LOGL_DEBUG, "Rx MSC DTAP: %s\n",
@@ -1604,29 +1605,30 @@ static int dtap_rcvmsg(struct gsm_subscriber_connection *conn,
 		return -1;
 	}
 
-	ctrs = conn->sccp.msc->msc_ctrs->ctr;
+	msc = conn->sccp.msc;
+	ctrs = msc->msc_ctrs->ctr;
 	header = (struct dtap_header *) msg->l3h;
 	if (sizeof(*header) >= length) {
 		rate_ctr_inc(&ctrs[MSC_CTR_BSSMAP_RX_DT1_DTAP_ERROR]);
-		LOGP(DMSC, LOGL_ERROR, "The DTAP header does not fit. Wanted: %zu got: %u, hex: %s\n",
-		     sizeof(*header), length, osmo_hexdump(msg->l3h, length));
+		LOG_MSC(msc, LOGL_ERROR, "The DTAP header does not fit. Wanted: %zu got: %u, hex: %s\n",
+			sizeof(*header), length, osmo_hexdump(msg->l3h, length));
 		return -1;
 	}
 
 	if (header->length > length - sizeof(*header)) {
 		rate_ctr_inc(&ctrs[MSC_CTR_BSSMAP_RX_DT1_DTAP_ERROR]);
-		LOGP(DMSC, LOGL_ERROR, "The DTAP l4 information does not fit. Wanted: %u got: %zu, hex: %s\n",
-		     header->length, length - sizeof(*header), osmo_hexdump(msg->l3h, length));
+		LOG_MSC(msc, LOGL_ERROR, "The DTAP l4 information does not fit. Wanted: %u got: %zu, hex: %s\n",
+			header->length, length - sizeof(*header), osmo_hexdump(msg->l3h, length));
 		return -1;
 	}
 
 	rate_ctr_inc(&ctrs[MSC_CTR_BSSMAP_RX_DT1_DTAP]);
-	LOGP(DMSC, LOGL_INFO, "Rx MSC DTAP, SAPI: %s CHAN: %u\n", gsm0406_dlci_sapi_name(header->dlci_sapi), header->dlci_cc);
+	LOG_MSC(msc, LOGL_INFO, "Rx MSC DTAP, SAPI: %s CHAN: %u\n", gsm0406_dlci_sapi_name(header->dlci_sapi), header->dlci_cc);
 
 	/* forward the data */
 	gsm48 = gsm48_msgb_alloc_name("GSM 04.08 DTAP RCV");
 	if (!gsm48) {
-		LOGP(DMSC, LOGL_ERROR, "Allocation of the message failed.\n");
+		LOG_MSC(msc, LOGL_ERROR, "Allocation of the message failed.\n");
 		return -1;
 	}
 
@@ -1652,11 +1654,11 @@ int bsc_handle_udt(struct bsc_msc_data *msc,
 {
 	struct bssmap_header *bs;
 
-	LOGP(DMSC, LOGL_DEBUG, "Rx MSC UDT: %s\n",
+	LOG_MSC(msc, LOGL_DEBUG, "Rx MSC UDT: %s\n",
 		osmo_hexdump(msgb->l3h, length));
 
 	if (length < sizeof(*bs)) {
-		LOGP(DMSC, LOGL_ERROR, "The header is too short.\n");
+		LOG_MSC(msc, LOGL_ERROR, "The header is too short.\n");
 		return -1;
 	}
 
@@ -1670,7 +1672,7 @@ int bsc_handle_udt(struct bsc_msc_data *msc,
 		bssmap_rcvmsg_udt(msc, msgb, length - sizeof(*bs));
 		break;
 	default:
-		LOGP(DMSC, LOGL_NOTICE, "Unimplemented msg type: %s\n",
+		LOG_MSC(msc, LOGL_NOTICE, "Unimplemented msg type: %s\n",
 			gsm0808_bssmap_name(bs->type));
 	}
 

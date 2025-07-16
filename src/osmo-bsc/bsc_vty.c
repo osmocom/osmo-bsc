@@ -1189,8 +1189,8 @@ DEFUN_DEPRECATED(cfg_net_dtx,
 #define NRI_ARGS_TO_STR_FMT "%s%s%s"
 #define NRI_ARGS_TO_STR_ARGS(ARGC, ARGV) ARGV[0], (ARGC>1)? ".." : "", (ARGC>1)? ARGV[1] : ""
 #define NRI_WARN(MSC, FORMAT, args...) do { \
-		vty_out(vty, "%% Warning: msc %d: " FORMAT "%s", MSC->nr, ##args, VTY_NEWLINE); \
-		LOGP(DMSC, LOGL_ERROR, "msc %d: " FORMAT "\n", MSC->nr, ##args); \
+		vty_out(vty, "%% Warning: msc %d: " FORMAT "%s", (MSC)->nr, ##args, VTY_NEWLINE); \
+		LOG_MSC(MSC, LOGL_ERROR, FORMAT "\n", ##args); \
 	} while (0)
 
 DEFUN_ATTR(cfg_net_nri_bitlen,
@@ -3613,7 +3613,7 @@ DEFUN(msc_bssmap_reset, msc_bssmap_reset_cmd,
 		return CMD_WARNING;
 	}
 
-	LOGP(DMSC, LOGL_NOTICE, "(msc%d) VTY requests BSSMAP RESET\n", msc_nr);
+	LOG_MSC(msc, LOGL_NOTICE, "VTY requests BSSMAP RESET\n");
 	bssmap_reset_resend_reset(msc->a.bssmap_reset);
 	return CMD_SUCCESS;
 }

@@ -63,7 +63,7 @@ void osmo_bsc_sigtran_tx_reset(const struct bsc_msc_data *msc)
 
 	ss7 = osmo_ss7_instance_find(msc->a.cs7_instance);
 	OSMO_ASSERT(ss7);
-	LOGP(DRESET, LOGL_INFO, "Sending RESET to MSC: %s\n", osmo_sccp_addr_name(ss7, &msc->a.msc_addr));
+	LOG_MSC_CAT(msc, DRESET, LOGL_INFO, "Sending RESET to MSC: %s\n", osmo_sccp_addr_name(ss7, &msc->a.msc_addr));
 	msg = gsm0808_create_reset();
 
 	if (msc_is_aoip(msc) && msc->use_osmux != OSMUX_USAGE_OFF)
@@ -83,7 +83,7 @@ void osmo_bsc_sigtran_tx_reset_ack(const struct bsc_msc_data *msc)
 
 	ss7 = osmo_ss7_instance_find(msc->a.cs7_instance);
 	OSMO_ASSERT(ss7);
-	LOGP(DRESET, LOGL_NOTICE, "Sending RESET ACK to MSC: %s\n", osmo_sccp_addr_name(ss7, &msc->a.msc_addr));
+	LOG_MSC_CAT(msc, DRESET, LOGL_NOTICE, "Sending RESET ACK to MSC: %s\n", osmo_sccp_addr_name(ss7, &msc->a.msc_addr));
 	msg = gsm0808_create_reset_ack();
 
 	if (msc_is_aoip(msc) && msc->use_osmux != OSMUX_USAGE_OFF)
@@ -178,9 +178,9 @@ static int handle_n_connect_from_msc(struct osmo_sccp_user *scu, struct osmo_scu
 		goto refuse;
 	}
 
-	LOGP(DMSC, LOGL_DEBUG, "(calling_addr=%s conn_id=%u) N-CONNECT.ind from MSC %d\n",
-	     osmo_sccp_addr_dump(&scu_prim->u.connect.calling_addr),
-	     scu_prim->u.connect.conn_id, msc->nr);
+	LOG_MSC(msc, LOGL_DEBUG, "(calling_addr=%s conn_id=%u) N-CONNECT.ind\n",
+		osmo_sccp_addr_dump(&scu_prim->u.connect.calling_addr),
+		scu_prim->u.connect.conn_id);
 
 	conn = bsc_subscr_con_allocate(bsc_gsmnet);
 	if (!conn)
@@ -188,8 +188,8 @@ static int handle_n_connect_from_msc(struct osmo_sccp_user *scu, struct osmo_scu
 	conn->sccp.msc = msc;
 	conn->sccp.conn.conn_id = scu_prim->u.connect.conn_id;
 	if (bsc_sccp_inst_register_gscon(bsc_sccp, &conn->sccp.conn) < 0) {
-		LOGP(DMSC, LOGL_NOTICE, "(calling_addr=%s conn_id=%u) N-CONNECT.ind failed registering conn\n",
-		     osmo_sccp_addr_dump(&scu_prim->u.connect.calling_addr), scu_prim->u.connect.conn_id);
+		LOG_MSC(msc, LOGL_NOTICE, "(calling_addr=%s conn_id=%u) N-CONNECT.ind failed registering conn\n",
+			osmo_sccp_addr_dump(&scu_prim->u.connect.calling_addr), scu_prim->u.connect.conn_id);
 		osmo_fsm_inst_term(conn->fi, OSMO_FSM_TERM_REQUEST, NULL);
 		rc = -ENOENT;
 		goto refuse;
@@ -274,19 +274,19 @@ static void handle_pcstate_ind(struct osmo_ss7_instance *cs7, const struct osmo_
 	}
 
 	if (disconnected && a_reset_conn_ready(msc)) {
-		LOGP(DMSC, LOGL_NOTICE,
-		     "(msc%d) now unreachable: N-PCSTATE ind: pc=%u=%s sp_status=%s remote_sccp_status=%s\n",
-		     msc->nr, pcst->affected_pc, osmo_ss7_pointcode_print(cs7, pcst->affected_pc),
-		     osmo_sccp_sp_status_name(pcst->sp_status),
-		     osmo_sccp_rem_sccp_status_name(pcst->remote_sccp_status));
+		LOG_MSC(msc, LOGL_NOTICE,
+			"now unreachable: N-PCSTATE ind: pc=%u=%s sp_status=%s remote_sccp_status=%s\n",
+			pcst->affected_pc, osmo_ss7_pointcode_print(cs7, pcst->affected_pc),
+			osmo_sccp_sp_status_name(pcst->sp_status),
+			osmo_sccp_rem_sccp_status_name(pcst->remote_sccp_status));
 		/* A previously usable MSC has disconnected. Kick the BSSMAP back to DISC state. */
 		bssmap_reset_set_disconnected(msc->a.bssmap_reset);
 	} else if (connected && !a_reset_conn_ready(msc)) {
-		LOGP(DMSC, LOGL_NOTICE,
-		     "(msc%d) now available: N-PCSTATE ind: pc=%u=%s sp_status=%s remote_sccp_status=%s\n",
-		     msc->nr, pcst->affected_pc, osmo_ss7_pointcode_print(cs7, pcst->affected_pc),
-		     osmo_sccp_sp_status_name(pcst->sp_status),
-		     osmo_sccp_rem_sccp_status_name(pcst->remote_sccp_status));
+		LOG_MSC(msc, LOGL_NOTICE,
+			"now available: N-PCSTATE ind: pc=%u=%s sp_status=%s remote_sccp_status=%s\n",
+			pcst->affected_pc, osmo_ss7_pointcode_print(cs7, pcst->affected_pc),
+			osmo_sccp_sp_status_name(pcst->sp_status),
+			osmo_sccp_rem_sccp_status_name(pcst->remote_sccp_status));
 		/* A previously unusable MSC has become reachable. Trigger immediate BSSMAP RESET -- we would resend a
 		 * RESET either way, but we might as well do it now to speed up connecting. */
 		bssmap_reset_resend_reset(msc->a.bssmap_reset);
@@ -393,16 +393,16 @@ enum bsc_con osmo_bsc_sigtran_new_conn(struct gsm_subscriber_connection *conn, s
 
 	ss7 = osmo_ss7_instance_find(msc->a.cs7_instance);
 	OSMO_ASSERT(ss7);
-	LOGP(DMSC, LOGL_INFO, "Initializing resources for new SCCP connection to MSC %d: %s...\n",
-	     msc->nr, osmo_sccp_addr_name(ss7, &msc->a.msc_addr));
+	LOG_MSC(msc, LOGL_INFO, "Initializing resources for new SCCP connection: %s...\n",
+		osmo_sccp_addr_name(ss7, &msc->a.msc_addr));
 
 	if (a_reset_conn_ready(msc) == false) {
-		LOGP(DMSC, LOGL_ERROR, "MSC %d is not connected. Dropping.\n", msc->nr);
+		LOG_MSC(msc, LOGL_ERROR, "MSC is not connected. Dropping.\n");
 		return BSC_CON_REJECT_NO_LINK;
 	}
 
 	if (bts && !bsc_grace_allow_new_connection(bts->network, bts)) {
-		LOGP(DMSC, LOGL_NOTICE, "BSC in grace period. No new connections.\n");
+		LOG_MSC(msc, LOGL_NOTICE, "BSC in grace period. No new connections.\n");
 		return BSC_CON_REJECT_RF_GRACE;
 	}
 
@@ -429,25 +429,25 @@ __attribute__((weak)) int osmo_bsc_sigtran_open_conn(struct gsm_subscriber_conne
 	msc = conn->sccp.msc;
 
 	if (a_reset_conn_ready(msc) == false) {
-		LOGP(DMSC, LOGL_ERROR, "MSC is not connected. Dropping.\n");
+		LOG_MSC(msc, LOGL_ERROR, "MSC is not connected. Dropping.\n");
 		return -EINVAL;
 	}
 
 	bsc_sccp = osmo_sccp_get_priv(msc->a.sccp);
 	conn->sccp.conn.conn_id = conn_id = bsc_sccp_inst_next_conn_id(bsc_sccp);
 	if (conn->sccp.conn.conn_id == SCCP_CONN_ID_UNSET) {
-		LOGP(DMSC, LOGL_ERROR, "Unable to allocate SCCP Connection ID\n");
+		LOG_MSC(msc, LOGL_ERROR, "Unable to allocate SCCP Connection ID\n");
 		return -1;
 	}
 	if (bsc_sccp_inst_register_gscon(bsc_sccp, &conn->sccp.conn) < 0) {
-		LOGP(DMSC, LOGL_ERROR, "Unable to register SCCP connection (id=%u)\n", conn->sccp.conn.conn_id);
+		LOG_MSC(msc, LOGL_ERROR, "Unable to register SCCP connection (id=%u)\n", conn->sccp.conn.conn_id);
 		return -1;
 	}
-	LOGP(DMSC, LOGL_DEBUG, "Allocated new connection id: %u\n", conn->sccp.conn.conn_id);
+	LOG_MSC(msc, LOGL_DEBUG, "Allocated new connection id: %u\n", conn->sccp.conn.conn_id);
 	ss7 = osmo_ss7_instance_find(msc->a.cs7_instance);
 	OSMO_ASSERT(ss7);
-	LOGP(DMSC, LOGL_INFO, "Opening new SCCP connection (id=%u) to MSC %d: %s\n", conn_id,
-	     msc->nr, osmo_sccp_addr_name(ss7, &msc->a.msc_addr));
+	LOG_MSC(msc, LOGL_INFO, "Opening new SCCP connection (id=%u): %s\n",
+		conn_id, osmo_sccp_addr_name(ss7, &msc->a.msc_addr));
 
 	rc = osmo_sccp_tx_conn_req_msg(msc->a.sccp_user, conn_id, &msc->a.bsc_addr,
 				       &msc->a.msc_addr, msg);
@@ -482,26 +482,26 @@ int osmo_bsc_sigtran_send(struct gsm_subscriber_connection *conn, struct msgb *m
 		switch (msg->data[0]) {
 		case BSSAP_MSG_BSS_MANAGEMENT:
 			rate_ctr_inc(rate_ctr_group_get_ctr(msc->msc_ctrs, MSC_CTR_BSSMAP_TX_BSS_MANAGEMENT));
-			LOGP(DMSC, LOGL_INFO, "Tx MSC: BSSMAP: %s\n",
+			LOG_MSC(msc, LOGL_INFO, "Tx MSC: BSSMAP: %s\n",
 			     gsm0808_bssmap_name(msg->data[2]));
 			break;
 		case BSSAP_MSG_DTAP:
 			rate_ctr_inc(rate_ctr_group_get_ctr(msc->msc_ctrs, MSC_CTR_BSSMAP_TX_DTAP));
-			LOGP(DMSC, LOGL_INFO, "Tx MSC: DTAP\n");
+			LOG_MSC(msc, LOGL_INFO, "Tx MSC: DTAP\n");
 			break;
 		default:
 			rate_ctr_inc(rate_ctr_group_get_ctr(msc->msc_ctrs, MSC_CTR_BSSMAP_TX_UNKNOWN));
-			LOGP(DMSC, LOGL_ERROR, "Tx MSC: unknown message type: 0x%x\n",
+			LOG_MSC(msc, LOGL_ERROR, "Tx MSC: unknown message type: 0x%x\n",
 			     msg->data[0]);
 		}
 	} else {
 		rate_ctr_inc(rate_ctr_group_get_ctr(msc->msc_ctrs, MSC_CTR_BSSMAP_TX_SHORT));
-		LOGP(DMSC, LOGL_ERROR, "Tx MSC: message too short: %u\n", msg->len);
+		LOG_MSC(msc, LOGL_ERROR, "Tx MSC: message too short: %u\n", msg->len);
 	}
 
 	if (a_reset_conn_ready(msc) == false) {
 		rate_ctr_inc(rate_ctr_group_get_ctr(msc->msc_ctrs, MSC_CTR_BSSMAP_TX_ERR_CONN_NOT_READY));
-		LOGP(DMSC, LOGL_ERROR, "MSC is not connected. Dropping.\n");
+		LOG_MSC(msc, LOGL_ERROR, "MSC is not connected. Dropping.\n");
 		msgb_free(msg);
 		return -EINVAL;
 	}
@@ -510,8 +510,8 @@ int osmo_bsc_sigtran_send(struct gsm_subscriber_connection *conn, struct msgb *m
 
 	ss7 = osmo_ss7_instance_find(msc->a.cs7_instance);
 	OSMO_ASSERT(ss7);
-	LOGP(DMSC, LOGL_DEBUG, "Sending connection (id=%i) oriented data to MSC: %s (%s)\n",
-	     conn_id, osmo_sccp_addr_name(ss7, &msc->a.msc_addr), osmo_hexdump(msg->data, msg->len));
+	LOG_MSC(msc, LOGL_DEBUG, "Sending connection (id=%d) oriented data to MSC: %s (%s)\n",
+		conn_id, osmo_sccp_addr_name(ss7, &msc->a.msc_addr), osmo_hexdump(msg->data, msg->len));
 
 	rc = osmo_sccp_tx_data_msg(msc->a.sccp_user, conn_id, msg);
 	if (rc >= 0)
@@ -577,8 +577,7 @@ int osmo_bsc_sigtran_init(struct llist_head *mscs)
 		if (!msc->a.cs7_instance_valid) {
 			s7i = osmo_ss7_instance_find(0);
 			if (!s7i) {
-				LOGP(DMSC, LOGL_NOTICE, "To auto-configure msc %d, creating cs7 instance 0 implicitly\n",
-				     msc->nr);
+				LOG_MSC(msc, LOGL_NOTICE, "To auto-configure msc, creating cs7 instance 0 implicitly\n");
 				s7i = osmo_ss7_instance_find_or_create(tall_bsc_ctx, 0);
 				OSMO_ASSERT(s7i);
 			}
@@ -592,8 +591,8 @@ int osmo_bsc_sigtran_init(struct llist_head *mscs)
 		 * default SCCP address for the MSC to the address book */
 		if (!msc->a.msc_addr_name) {
 			msc->a.msc_addr_name = talloc_strdup(msc, MSC_DEFAULT_ADDR_NAME);
-			LOGP(DMSC, LOGL_NOTICE, "To auto-configure msc %d, adding address '%s' to cs7 instance 0 address-book implicitly\n",
-			     msc->nr, msc->a.msc_addr_name);
+			LOG_MSC(msc, LOGL_NOTICE, "To auto-configure msc, adding address '%s' to cs7 instance 0 address-book implicitly\n",
+				msc->a.msc_addr_name);
 		}
 		if (!msc->a.msc_addr.presence) {
 			struct osmo_ss7_instance *ss7;
@@ -722,27 +721,25 @@ int osmo_bsc_sigtran_init(struct llist_head *mscs)
 								 OSMO_SCCP_SSN_BSSAP);
 
 			if (!osmo_sccp_check_addr(&msc->a.bsc_addr, OSMO_SCCP_ADDR_T_SSN | OSMO_SCCP_ADDR_T_PC)) {
-				LOGP(DMSC, LOGL_ERROR,
-				     "%s %s: invalid local (BSC) SCCP address: %s\n",
-				     inst_name, msc_name, osmo_sccp_inst_addr_name(sccp, &msc->a.bsc_addr));
+				LOG_MSC(msc, LOGL_ERROR, "%s: invalid local (BSC) SCCP address: %s\n",
+					inst_name, osmo_sccp_inst_addr_name(sccp, &msc->a.bsc_addr));
 				return -EINVAL;
 			}
 
 			if (!osmo_sccp_check_addr(&msc->a.msc_addr, OSMO_SCCP_ADDR_T_SSN | OSMO_SCCP_ADDR_T_PC)) {
-				LOGP(DMSC, LOGL_ERROR,
-				     "%s %s: invalid remote (MSC) SCCP address: %s\n",
-				     inst_name, msc_name, osmo_sccp_inst_addr_name(sccp, &msc->a.msc_addr));
+				LOG_MSC(msc, LOGL_ERROR, "%s: invalid remote (MSC) SCCP address: %s\n",
+					inst_name, osmo_sccp_inst_addr_name(sccp, &msc->a.msc_addr));
 				return -EINVAL;
 			}
 
-			LOGP(DMSC, LOGL_NOTICE, "%s %s: local (BSC) SCCP address: %s\n",
-			     inst_name, msc_name, osmo_sccp_inst_addr_name(sccp, &msc->a.bsc_addr));
-			LOGP(DMSC, LOGL_NOTICE, "%s %s: remote (MSC) SCCP address: %s\n",
-			     inst_name, msc_name, osmo_sccp_inst_addr_name(sccp, &msc->a.msc_addr));
+			LOG_MSC(msc, LOGL_NOTICE, "%s: local (BSC) SCCP address: %s\n",
+				inst_name, osmo_sccp_inst_addr_name(sccp, &msc->a.bsc_addr));
+			LOG_MSC(msc, LOGL_NOTICE, "%s: remote (MSC) SCCP address: %s\n",
+				inst_name, osmo_sccp_inst_addr_name(sccp, &msc->a.msc_addr));
 
 			/* Bind SCCP user. Bind only one user per sccp_instance and bsc_addr. */
 			msc->a.sccp_user = osmo_sccp_user_find(sccp, msc->a.bsc_addr.ssn, msc->a.bsc_addr.pc);
-			LOGP(DMSC, LOGL_NOTICE, "%s %s: %s\n", inst_name, msc_name,
+			LOG_MSC(msc, LOGL_NOTICE, "%s: %s\n", inst_name,
 			     msc->a.sccp_user ? "user already bound for this SCCP instance" : "binding SCCP user");
 			if (!msc->a.sccp_user)
 				msc->a.sccp_user = osmo_sccp_user_bind(sccp, msc_name, sccp_sap_up, msc->a.bsc_addr.ssn);

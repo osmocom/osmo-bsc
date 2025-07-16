@@ -384,12 +384,11 @@ int osmo_bsc_msc_init(struct bsc_msc_data *msc)
 				 msc->mgcp_ipa.local_addr, msc->mgcp_ipa.local_port,
 				 NULL, 0, OSMO_SOCK_F_BIND);
 	if (rc < 0) {
-		LOGP(DMSC, LOGL_ERROR, "msc %u: Could not create/connect/bind MGCP proxy socket: %d\n",
-			msc->nr, rc);
+		LOG_MSC(msc, LOGL_ERROR, "Could not create/connect/bind MGCP proxy socket: %d\n", rc);
 		return rc;
 	}
-	LOGP(DMSC, LOGL_INFO, "msc %u: Socket forwarding IPA-encapsulated MGCP messages towards MGW: %s\n",
-	     msc->nr, osmo_sock_get_name2(msc->mgcp_ipa.ofd.fd));
+	LOG_MSC(msc, LOGL_INFO, "Socket forwarding IPA-encapsulated MGCP messages towards MGW: %s\n",
+		osmo_sock_get_name2(msc->mgcp_ipa.ofd.fd));
 
 	return 0;
 }

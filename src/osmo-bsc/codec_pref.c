@@ -475,9 +475,9 @@ int check_codec_pref(struct llist_head *mscs)
 		llist_for_each_entry(bts, &msc->network->bts_list, list) {
 			gen_bss_supported_codec_list(&scl, msc, bts);
 			if (scl.len <= 0) {
-				LOGP(DMSC, LOGL_FATAL,
-				     "codec-support/trx config of BTS %u does not intersect with codec-list of MSC %u\n",
-				     bts->nr, msc->nr);
+				LOG_MSC(msc, LOGL_FATAL,
+					"codec-support/trx config of BTS %u does not intersect with codec-list of this MSC\n",
+					bts->nr);
 				rc = -1;
 			}
 
@@ -486,9 +486,9 @@ int check_codec_pref(struct llist_head *mscs)
 				bts_gsm48_ie = (struct gsm48_multi_rate_conf *)&bts->mr_full.gsm48_ie;
 				rc_rate = calc_amr_rate_intersection(NULL, &msc->amr_conf, bts_gsm48_ie);
 				if (rc_rate < 0) {
-					LOGP(DMSC, LOGL_FATAL,
-					     "network amr tch-f mode config of BTS %u does not intersect with amr-config of MSC %u\n",
-					     bts->nr, msc->nr);
+					LOG_MSC(msc, LOGL_FATAL,
+						"network amr tch-f mode config of BTS %u does not intersect with amr-config of this MSC\n",
+						bts->nr);
 					rc = -1;
 				}
 			}
@@ -498,9 +498,9 @@ int check_codec_pref(struct llist_head *mscs)
 				bts_gsm48_ie = (struct gsm48_multi_rate_conf *)&bts->mr_half.gsm48_ie;
 				rc_rate = calc_amr_rate_intersection(NULL, &msc->amr_conf, bts_gsm48_ie);
 				if (rc_rate < 0) {
-					LOGP(DMSC, LOGL_FATAL,
-					     "network amr tch-h mode config of BTS %u does not intersect with amr-config of MSC %u\n",
-					     bts->nr, msc->nr);
+					LOG_MSC(msc, LOGL_FATAL,
+						"network amr tch-h mode config of BTS %u does not intersect with amr-config of this MSC\n",
+						bts->nr);
 					rc = -1;
 				}
 			}

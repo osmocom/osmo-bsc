@@ -42,7 +42,7 @@ static void a_reset_tx_reset_ack(void *data)
 static void a_reset_link_up(void *data)
 {
 	struct bsc_msc_data *msc = data;
-	LOGP(DMSC, LOGL_NOTICE, "(msc%d) BSSMAP association is up\n", msc->nr);
+	LOG_MSC(msc, LOGL_NOTICE, "BSSMAP association is up\n");
 	osmo_stat_item_inc(osmo_stat_item_group_get_item(msc->msc_statg, MSC_STAT_MSC_LINKS_ACTIVE), 1);
 	osmo_stat_item_inc(osmo_stat_item_group_get_item(msc->network->bsc_statg, BSC_STAT_NUM_MSC_CONNECTED), 1);
 	osmo_signal_dispatch(SS_MSC, S_MSC_CONNECTED, msc);
@@ -51,7 +51,7 @@ static void a_reset_link_up(void *data)
 static void a_reset_link_lost(void *data)
 {
 	struct bsc_msc_data *msc = data;
-	LOGP(DMSC, LOGL_NOTICE, "(msc%d) BSSMAP association is down\n", msc->nr);
+	LOG_MSC(msc, LOGL_NOTICE, "BSSMAP association is down\n");
 	osmo_stat_item_dec(osmo_stat_item_group_get_item(msc->msc_statg, MSC_STAT_MSC_LINKS_ACTIVE), 1);
 	osmo_stat_item_dec(osmo_stat_item_group_get_item(msc->network->bsc_statg, BSC_STAT_NUM_MSC_CONNECTED), 1);
 	osmo_signal_dispatch(SS_MSC, S_MSC_LOST, msc);
@@ -74,7 +74,7 @@ void a_reset_alloc(struct bsc_msc_data *msc, const char *name)
 
 	/* There must not be any double allocation! */
 	if (msc->a.bssmap_reset) {
-		LOGP(DMSC, LOGL_ERROR, "(msc%d) will not allocate a second reset FSM for this MSC\n", msc->nr);
+		LOG_MSC(msc, LOGL_ERROR, "will not allocate a second reset FSM for this MSC\n");
 		return;
 	}
 

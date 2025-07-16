@@ -272,4 +272,10 @@ static inline bool msc_is_sccplite(const struct bsc_msc_data *msc)
 	}
 }
 
+#define LOG_MSC_CAT(msc, subsys, level, fmt, args...) \
+	LOGP(subsys, level, "(msc=%d) " fmt, (msc)->nr, ## args)
+#define LOG_MSC(msc, level, fmt, args...) \
+	LOG_MSC_CAT(msc, DMSC, level, fmt, ## args)
+
+
 #endif
