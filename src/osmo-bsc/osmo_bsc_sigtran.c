@@ -100,7 +100,7 @@ static struct bsc_msc_data *get_msc_by_addr(const struct osmo_sccp_addr *msc_add
 {
 	struct bsc_msc_data *msc;
 	llist_for_each_entry(msc, msc_list, entry) {
-		if (memcmp(msc_addr, &msc->a.msc_addr, sizeof(*msc_addr)) == 0)
+		if (osmo_sccp_addr_ri_cmp(msc_addr, &msc->a.msc_addr) == 0)
 			return msc;
 	}
 	LOGP(DMSC, LOGL_ERROR, "Unable to find MSC data under address: %s\n",
