@@ -365,14 +365,15 @@ void assignment_fsm_update_id(struct gsm_subscriber_connection *conn)
 							    new_lchan->ts->max_primary_lchans : 0));
 }
 
-static bool lchan_type_compat_with_mode(enum gsm_chan_t type, const struct channel_mode_and_rate *ch_mode_rate)
+static bool lchan_type_compat_with_mode(const struct gsm_lchan *lchan,
+					const struct channel_mode_and_rate *ch_mode_rate)
 {
 	enum gsm48_chan_mode chan_mode = ch_mode_rate->chan_mode;
 	enum channel_rate chan_rate = ch_mode_rate->chan_rate;
 
 	switch (gsm48_chan_mode_to_non_vamos(chan_mode)) {
 	case GSM48_CMODE_SIGN:
-		switch (type) {
+		switch (lchan->type) {
 		case GSM_LCHAN_TCH_F: return chan_rate == CH_RATE_FULL;
 		case GSM_LCHAN_TCH_H: return chan_rate == CH_RATE_HALF;
 		case GSM_LCHAN_SDCCH: return chan_rate == CH_RATE_SDCCH;
@@ -385,7 +386,7 @@ static bool lchan_type_compat_with_mode(enum gsm_chan_t type, const struct chann
 	case GSM48_CMODE_DATA_6k0:
 		/* these services can all run on TCH/H, but we may have
 		 * an explicit override by the 'chan_rate' argument */
-		switch (type) {
+		switch (lchan->type) {
 		case GSM_LCHAN_TCH_F:
 			return chan_rate == CH_RATE_FULL;
 		case GSM_LCHAN_TCH_H:
@@ -398,7 +399,7 @@ static bool lchan_type_compat_with_mode(enum gsm_chan_t type, const struct chann
 	case GSM48_CMODE_DATA_14k5:
 	case GSM48_CMODE_SPEECH_EFR:
 		/* these services all explicitly require a TCH/F */
-		return type == GSM_LCHAN_TCH_F;
+		return lchan->type == GSM_LCHAN_TCH_F;
 
 	default:
 		return false;
@@ -473,7 +474,7 @@ static bool reuse_existing_lchan(struct gsm_subscriber_connection *conn)
 	/* Check if the currently existing lchan is compatible with the
 	 * preferred rate/codec. */
 	for (i = 0; i < req->n_ch_mode_rate; i++) {
-		if (!lchan_type_compat_with_mode(conn->lchan->type, &req->ch_mode_rate_list[i]))
+		if (!lchan_type_compat_with_mode(conn->lchan, &req->ch_mode_rate_list[i]))
 			continue;
 		conn->assignment.selected_ch_mode_rate = req->ch_mode_rate_list[i];
 		return true;
@@ -664,7 +665,7 @@ void assignment_fsm_start(struct gsm_subscriber_connection *conn, struct gsm_bts
 		conn->assignment.new_lchan = req->target_lchan;
 		matching_mode = false;
 		for (i = 0; i < req->n_ch_mode_rate; i++) {
-			if (!lchan_type_compat_with_mode(conn->assignment.new_lchan->type, &req->ch_mode_rate_list[i]))
+			if (!lchan_type_compat_with_mode(conn->assignment.new_lchan, &req->ch_mode_rate_list[i]))
 				continue;
 			conn->assignment.selected_ch_mode_rate = req->ch_mode_rate_list[i];
 			matching_mode = true;
