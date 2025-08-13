@@ -130,7 +130,7 @@ static int get_bts_loc(struct ctrl_cmd *cmd, void *data)
 
 	curloc = llist_first_entry(&bts->loc_list, struct bts_location, list);
 
-	cmd->reply = talloc_asprintf(cmd, "%lu,%s,%f,%f,%f", curloc->tstamp,
+	cmd->reply = talloc_asprintf(cmd, "%lu,%s,%f,%f,%f", (unsigned int long) curloc->tstamp,
 			get_value_string(bts_loc_fix_names, curloc->valid), curloc->lat, curloc->lon, curloc->height);
 	if (!cmd->reply) {
 		cmd->reply = "OOM";
