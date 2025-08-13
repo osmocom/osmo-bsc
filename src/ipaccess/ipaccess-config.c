@@ -879,7 +879,7 @@ static void analyze_firmware(const char *filename)
 			printf("\taddr1: 0x%x\n", ntohl(sub_entry->header_entry.addr1));
 			printf("\taddr2: 0x%x\n", ntohl(sub_entry->header_entry.addr2));
 			printf("\tstart: 0x%x\n", ntohl(sub_entry->header_entry.start));
-			printf("\tabs. offset: 0x%lx\n", sub_entry->absolute_offset);
+			printf("\tabs. offset: 0x%lx\n", (unsigned int long) sub_entry->absolute_offset);
 			printf("\n\n");
 
 			dump_entry(sub_entry, part++, fd);
