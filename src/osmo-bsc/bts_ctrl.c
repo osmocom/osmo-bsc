@@ -244,8 +244,48 @@ err:
 	return 1;
 }
 
+static int get_bts_lac(struct ctrl_cmd *cmd, void *data) {
+	struct gsm_bts *bts = cmd->node;
+	cmd->reply = talloc_asprintf(cmd, "%d", bts->location_area_code);
+	if (!cmd->reply) {
+		cmd->reply = "OOM";
+		return CTRL_CMD_ERROR;
+	}
+	return CTRL_CMD_REPLY;
+
+}
+
+static int set_bts_lac(struct ctrl_cmd *cmd, void *data) {
+	struct gsm_bts *bts = cmd->node;
+	int lac;
+	if (osmo_str_to_int(&lac, cmd->value, 0, 0, 0xffff) < 0)
+		return CTRL_CMD_ERROR;
+
+	bts->location_area_code = lac;
+	hash_del(&bts->node_by_lac);
+	hash_del(&bts->node_by_lac_ci);
+	hash_add(bts->network->bts_by_lac, &bts->node_by_lac, bts->location_area_code);
+	hash_add(bts->network->bts_by_lac_ci, &bts->node_by_lac_ci,
+		 LAC_CI_HASHTABLE_KEY(bts->location_area_code, bts->cell_identity));
+
+	return get_bts_lac(cmd, data);
+}
+
+static int verify_bts_lac(struct ctrl_cmd *cmd, const char *value, void *data) {
+	int lac;
+	if (osmo_str_to_int(&lac, cmd->value, 0, 0, 0xffff) < 0) {
+		cmd->reply = "Input not within the range";
+		return -1;
+	}
+	if (lac == GSM_LAC_RESERVED_DETACHED || lac == GSM_LAC_RESERVED_ALL_BTS) {
+		cmd->reply = talloc_asprintf(cmd, "LAC %d is reserved by GSM 04.08", lac);
+		return -1;
+	}
+	return 0;
+}
+
 /* BTS related commands below */
-CTRL_CMD_DEFINE_RANGE(bts_lac, "location-area-code", struct gsm_bts, location_area_code, 0, 65535);
+CTRL_CMD_DEFINE(bts_lac, "location-area-code");
 CTRL_CMD_DEFINE_RANGE(bts_ci, "cell-identity", struct gsm_bts, cell_identity, 0, 65535);
 CTRL_CMD_DEFINE_RANGE(bts_bsic, "bsic", struct gsm_bts, bsic, 0, 63);
 CTRL_CMD_DEFINE_RANGE(bts_rach_max_delay, "rach-max-delay", struct gsm_bts, rach_max_delay, 1, 127);
