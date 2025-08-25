@@ -758,6 +758,30 @@ int gsm_set_bts_type(struct gsm_bts *bts, enum gsm_bts_type type)
 	return 0;
 }
 
+void gsm_bts_set_lac(struct gsm_bts *bts, uint16_t lac)
+{
+	bts->location_area_code = lac;
+
+	hash_del(&bts->node_by_lac);
+	hash_del(&bts->node_by_lac_ci);
+	hash_add(bts->network->bts_by_lac, &bts->node_by_lac, bts->location_area_code);
+	hash_add(bts->network->bts_by_lac_ci, &bts->node_by_lac_ci,
+		 LAC_CI_HASHTABLE_KEY(bts->location_area_code, bts->cell_identity));
+}
+
+void gsm_bts_set_ci(struct gsm_bts *bts, uint16_t ci)
+{
+	bts->cell_identity = ci;
+
+	hash_del(&bts->node_by_ci);
+	hash_add(bts->network->bts_by_ci, &bts->node_by_ci, bts->cell_identity);
+	if (bts->location_area_code != GSM_LAC_RESERVED_DETACHED) {
+		hash_del(&bts->node_by_lac_ci);
+		hash_add(bts->network->bts_by_lac_ci, &bts->node_by_lac_ci,
+			 LAC_CI_HASHTABLE_KEY(bts->location_area_code, bts->cell_identity));
+	}
+}
+
 int bts_gprs_mode_is_compat(struct gsm_bts *bts, enum bts_gprs_mode mode)
 {
 	if (mode != BTS_GPRS_NONE &&
