@@ -825,6 +825,9 @@ struct gsm_lchan *gsm_bts_get_cbch(struct gsm_bts *bts);
 int gsm_set_bts_model(struct gsm_bts *bts, struct gsm_bts_model *model);
 int gsm_set_bts_type(struct gsm_bts *bts, enum gsm_bts_type type);
 
+void gsm_bts_set_lac(struct gsm_bts *bts, uint16_t lac);
+void gsm_bts_set_ci(struct gsm_bts *bts, uint16_t ci);
+
 struct gsm_bts_trx *gsm_bts_trx_num(const struct gsm_bts *bts, int num);
 
 int bts_gprs_mode_is_compat(struct gsm_bts *bts, enum bts_gprs_mode mode);
