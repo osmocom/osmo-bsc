@@ -1,3 +1,9 @@
+osmo-bsc (1.13.1) unstable; urgency=medium
+
+  * Fix building for debian 13 armv7l
+
+ -- Oliver Smith <osmith@sysmocom.de>  Tue, 26 Aug 2025 16:39:28 +0200
+
 osmo-bsc (1.13.0) unstable; urgency=medium
 
   [ Pau Espin Pedrol ]
