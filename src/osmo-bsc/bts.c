@@ -932,7 +932,7 @@ int bts_depend_mark(struct gsm_bts *bts, gsm_bts_nr_t dep)
 static struct bts_depends_on_entry *bts_depend_find_entry(const struct gsm_bts *bts, gsm_bts_nr_t dep)
 {
 	struct bts_depends_on_entry *entry;
-	llist_for_each_entry(entry, &bts->trx_list, list) {
+	llist_for_each_entry(entry, &bts->depends_on, list) {
 		if (entry->bts_nr == dep)
 			return entry;
 	}
