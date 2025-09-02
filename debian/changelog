@@ -1,3 +1,13 @@
+osmo-bsc (1.13.2) unstable; urgency=medium
+
+  [ Keith Whyte ]
+  * Fix missing LAC/CI hashtable update upon CTRL SET
+
+  [ Pau Espin Pedrol ]
+  * Fix wrong list entry derreference during bts_depend_find_entry()
+
+ -- Pau Espin Pedrol <pespin@sysmocom.de>  Tue, 02 Sep 2025 15:54:44 +0200
+
 osmo-bsc (1.13.1) unstable; urgency=medium
 
   * Fix building for debian 13 armv7l
