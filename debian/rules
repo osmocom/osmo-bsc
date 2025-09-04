@@ -3,7 +3,6 @@
 	dh $@ --with autoreconf
 
 CONFIGURE_FLAGS += \
-	--enable-manuals \
 	--enable-meas-vis \
 	--with-systemdsystemunitdir=/lib/systemd/system \
 	$(NULL)
