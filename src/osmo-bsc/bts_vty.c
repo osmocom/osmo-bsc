@@ -3118,6 +3118,50 @@ DEFUN_USRATTR(cfg_bts_amr_hr_hyst3,
 	return check_amr_config(vty);
 }
 
+DEFUN_USRATTR(cfg_bts_amr_send_mrctl,
+	      cfg_bts_amr_send_mrctl_cmd,
+	      X(BSC_VTY_ATTR_NEW_LCHAN),
+	      "amr send-ie mr-ctl",
+	      AMR_TEXT "Send extra RSL IE\n" "MultiRate Control\n")
+{
+	struct gsm_bts *bts = vty->index;
+	bts->amr_send_mrctl = true;
+	return CMD_SUCCESS;
+}
+
+DEFUN_USRATTR(cfg_bts_no_amr_send_mrctl,
+	      cfg_bts_no_amr_send_mrctl_cmd,
+	      X(BSC_VTY_ATTR_NEW_LCHAN),
+	      "no amr send-ie mr-ctl",
+	      NO_STR AMR_TEXT "Send extra RSL IE\n" "MultiRate Control\n")
+{
+	struct gsm_bts *bts = vty->index;
+	bts->amr_send_mrctl = false;
+	return CMD_SUCCESS;
+}
+
+DEFUN_USRATTR(cfg_bts_amr_send_sct,
+	      cfg_bts_amr_send_sct_cmd,
+	      X(BSC_VTY_ATTR_NEW_LCHAN),
+	      "amr send-ie sct",
+	      AMR_TEXT "Send extra RSL IE\n" "Supported Codec Types\n")
+{
+	struct gsm_bts *bts = vty->index;
+	bts->amr_send_sct = true;
+	return CMD_SUCCESS;
+}
+
+DEFUN_USRATTR(cfg_bts_no_amr_send_sct,
+	      cfg_bts_no_amr_send_sct_cmd,
+	      X(BSC_VTY_ATTR_NEW_LCHAN),
+	      "no amr send-ie sct",
+	      NO_STR AMR_TEXT "Send extra RSL IE\n" "Supported Codec Types\n")
+{
+	struct gsm_bts *bts = vty->index;
+	bts->amr_send_sct = false;
+	return CMD_SUCCESS;
+}
+
 #define OSMUX_STR "RTP multiplexing\n"
 DEFUN_USRATTR(cfg_bts_osmux,
 	      cfg_bts_osmux_cmd,
@@ -4803,6 +4847,10 @@ static void config_write_bts_single(struct vty *vty, struct gsm_bts *bts)
 
 	config_write_bts_amr(vty, bts, &bts->mr_full, 1);
 	config_write_bts_amr(vty, bts, &bts->mr_half, 0);
+	if (bts->amr_send_mrctl)
+		vty_out(vty, "  amr send-ie mr-ctl%s", VTY_NEWLINE);
+	if (bts->amr_send_sct)
+		vty_out(vty, "  amr send-ie sct%s", VTY_NEWLINE);
 
 	if (bts->use_osmux != OSMUX_USAGE_OFF) {
 		vty_out(vty, "  osmux %s%s", bts->use_osmux == OSMUX_USAGE_ON ? "on" : "only",
@@ -5064,6 +5112,10 @@ int bts_vty_init(void)
 	install_element(BTS_NODE, &cfg_bts_amr_hr_hyst2_cmd);
 	install_element(BTS_NODE, &cfg_bts_amr_hr_hyst3_cmd);
 	install_element(BTS_NODE, &cfg_bts_amr_hr_start_mode_cmd);
+	install_element(BTS_NODE, &cfg_bts_amr_send_mrctl_cmd);
+	install_element(BTS_NODE, &cfg_bts_no_amr_send_mrctl_cmd);
+	install_element(BTS_NODE, &cfg_bts_amr_send_sct_cmd);
+	install_element(BTS_NODE, &cfg_bts_no_amr_send_sct_cmd);
 	install_element(BTS_NODE, &cfg_bts_osmux_cmd);
 	install_element(BTS_NODE, &cfg_bts_mgw_pool_target_cmd);
 	install_element(BTS_NODE, &cfg_bts_no_mgw_pool_target_cmd);

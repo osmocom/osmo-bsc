@@ -509,6 +509,22 @@ static int put_mr_config_for_bts(struct msgb *msg, const struct gsm48_multi_rate
 	return gsm48_multirate_config(msg, mr_conf_filtered, mr_modes->bts_mode, mr_modes->num_modes);
 }
 
+static void add_mr_ctrl_ie(struct msgb *msg)
+{
+	msgb_put_u8(msg, RSL_IE_MR_CONTROL);	/* TV format */
+	msgb_put_u8(msg, 0x02);			/* fixed value for now */
+}
+
+static void add_amr_sct_ie(struct msgb *msg, bool is_full)
+{
+	msgb_put_u8(msg, RSL_IE_SUP_CODEC_TYPES);	/* TLV format */
+	msgb_put_u8(msg, 4);		/* length of IE */
+	msgb_put_u8(msg, 0x00);		/* Sys-ID for GSM */
+	msgb_put_u8(msg, is_full ? 0x08 : 0x10);	/* used AMR codec */
+	msgb_put_u8(msg, 0x00);		/* TFO_VER and MACS */
+	msgb_put_u8(msg, is_full ? 0xFF : 0x1F);	/* SCS */
+}
+
 /* indicate FACCH/SACCH Repetition to be performed by BTS,
  * see also: 3GPP TS 44.006, section 10 and 11 */
 static void put_rep_acch_cap_ie(const struct gsm_lchan *lchan,
@@ -696,6 +712,10 @@ int rsl_tx_chan_activ(struct gsm_lchan *lchan, uint8_t act_type, uint8_t ho_ref)
 			msgb_free(msg);
 			return rc;
 		}
+		if (bts->amr_send_mrctl)
+			add_mr_ctrl_ie(msg);
+		if (bts->amr_send_sct)
+			add_amr_sct_ie(msg, lchan->type == GSM_LCHAN_TCH_F);
 	}
 
 	put_rep_acch_cap_ie(lchan, msg);
@@ -768,6 +788,10 @@ int rsl_chan_mode_modify_req(struct gsm_lchan *lchan)
 			msgb_free(msg);
 			return rc;
 		}
+		if (bts->amr_send_mrctl)
+			add_mr_ctrl_ie(msg);
+		if (bts->amr_send_sct)
+			add_amr_sct_ie(msg, lchan->type == GSM_LCHAN_TCH_F);
 	}
 
 	put_rep_acch_cap_ie(lchan, msg);

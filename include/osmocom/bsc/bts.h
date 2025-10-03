@@ -619,6 +619,8 @@ struct gsm_bts {
 	/* full and half rate multirate config */
 	struct amr_multirate_conf mr_full;
 	struct amr_multirate_conf mr_half;
+	bool amr_send_mrctl;
+	bool amr_send_sct;
 
 	/* osmux config: */
 	enum osmux_usage use_osmux;
