@@ -240,6 +240,9 @@ static struct osmo_fsm bssmap_reset_fsm = {
 
 bool bssmap_reset_is_conn_ready(const struct bssmap_reset *bssmap_reset)
 {
+	/* bssmap_reset is NULL if SMLC is not enabled in the config */
+	if (bssmap_reset == NULL)
+		return false;
 	return bssmap_reset->fi->state == BSSMAP_RESET_ST_CONN;
 }
 
