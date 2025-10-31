@@ -1,3 +1,9 @@
+osmo-bsc (1.13.3) unstable; urgency=medium
+
+  * Don't crash on loc req with disabled SMLC
+
+ -- Oliver Smith <osmith@sysmocom.de>  Fri, 31 Oct 2025 13:42:24 +0100
+
 osmo-bsc (1.13.2) unstable; urgency=medium
 
   [ Keith Whyte ]
