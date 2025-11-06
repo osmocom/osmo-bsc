@@ -525,9 +525,9 @@ __attribute__((weak)) int gsm_bts_check_cfg(struct gsm_bts *bts)
 		}
 		break;
 	case GSM_BAND_900:
-		if ((bts->c0->arfcn > 124 && bts->c0->arfcn < 955) ||
+		if ((bts->c0->arfcn > 124 && bts->c0->arfcn < 940) ||
 		    bts->c0->arfcn > 1023) {
-			LOGP(DNM, LOGL_ERROR, "(bts=%u) GSM900 channel (%u) must be between 0-124, 955-1023.\n",
+			LOGP(DNM, LOGL_ERROR, "(bts=%u) GSM900 channel (%u) must be between 0-124, 940-1023.\n",
 			     bts->nr, bts->c0->arfcn);
 			return -EINVAL;
 		}

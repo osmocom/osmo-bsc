@@ -535,6 +535,7 @@ static int bitvec2freq_list(uint8_t *chan_list, const struct bitvec *bv,
 			    const struct gsm_bts *bts, bool bis, bool ter)
 {
 	int i, rc, min = -1, max = -1, arfcns = 0;
+	const int min_arfcn = 940;
 	bool pgsm = false;
 	memset(chan_list, 0, 16);
 
@@ -545,8 +546,8 @@ static int bitvec2freq_list(uint8_t *chan_list, const struct bitvec *bv,
 	/* Check presence of E-GSM ARFCN 0 */
 	if (pgsm && bitvec_get_bit_pos(bv, 0) == ONE)
 		pgsm = false;
-	/* Check presence of R-GSM / E-GSM ARFCNs 955..1023 */
-	for (i = 955; pgsm && i <= 1023; i++) {
+	/* Check presence of (E)R-GSM / E-GSM ARFCNs 940..1023 */
+	for (i = min_arfcn; pgsm && i <= 1023; i++) {
 		if (bitvec_get_bit_pos(bv, i) == ONE)
 			pgsm = false;
 	}
@@ -577,22 +578,22 @@ static int bitvec2freq_list(uint8_t *chan_list, const struct bitvec *bv,
 		/* count the arfcns we want to carry */
 		arfcns += 1;
 
-		/* 955..1023 < 0..885 */
+		/* 940..1023 < 0..885 */
 		if (min < 0)
 			min = i;
-		if (i >= 955 && min < 955)
+		if (i >= min_arfcn && min < min_arfcn)
 			min = i;
-		if (i >= 955 && min >= 955 && i < min)
+		if (i >= min_arfcn && min >= min_arfcn && i < min)
 			min = i;
-		if (i < 955 && min < 955 && i < min)
+		if (i < min_arfcn && min < min_arfcn && i < min)
 			min = i;
 		if (max < 0)
 			max = i;
-		if (i < 955 && max >= 955)
+		if (i < min_arfcn && max >= min_arfcn)
 			max = i;
-		if (i >= 955 && max >= 955 && i > max)
+		if (i >= min_arfcn && max >= min_arfcn && i > max)
 			max = i;
-		if (i < 955 && max < 955 && i > max)
+		if (i < min_arfcn && max < min_arfcn && i > max)
 			max = i;
 	}
 
