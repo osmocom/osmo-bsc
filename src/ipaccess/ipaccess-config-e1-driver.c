@@ -179,8 +179,8 @@ static int ipaccess_bts_send_msg(struct e1inp_ts *e1i_ts,
 		return -EINVAL;
 	}
 
-	msg->l2h = msg->data;
-	ipa_prepend_header(msg, sign_link->tei);
+	/* msg->l2h is set here: */
+	osmo_ipa_msg_push_header(msg, sign_link->tei);
 
 	LOGPITS(e1i_ts, DLMI, LOGL_DEBUG, "TX: %s\n", osmo_hexdump(msg->l2h, msgb_l2len(msg)));
 	osmo_stream_cli_send(cli, msg);
@@ -213,7 +213,7 @@ static struct msgb *ipa_bts_id_ack(void)
 	if (!nmsg2)
 		return NULL;
 	msgb_v_put(nmsg2, IPAC_MSGT_ID_ACK);
-	ipa_prepend_header(nmsg2, IPAC_PROTO_IPACCESS);
+	osmo_ipa_msg_push_header(nmsg2, IPAC_PROTO_IPACCESS);
 	return nmsg2;
 }
 

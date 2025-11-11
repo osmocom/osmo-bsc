@@ -195,6 +195,6 @@ int bsc_sccplite_mgcp_proxy_cb(struct osmo_fd *ofd, unsigned int what)
 	msg->l2h[rc] = '\0';
 	LOGP(DMSC, LOGL_NOTICE, "Received MGCP on UDP proxy socket: %s\n", msg->l2h);
 
-	ipa_prepend_header(msg, IPAC_PROTO_MGCP_OLD);
+	osmo_ipa_msg_push_header(msg, IPAC_PROTO_MGCP_OLD);
 	return bsc_sccplite_msc_send(msc, msg);
 }

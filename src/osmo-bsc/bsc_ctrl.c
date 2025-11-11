@@ -689,9 +689,7 @@ static int sccplite_asp_ctrl_cmd_send(struct osmo_ss7_asp *asp, struct ctrl_cmd 
 	if (!msg)
 		return -1;
 
-	ipa_prepend_header_ext(msg, IPAC_PROTO_EXT_CTRL);
-	ipa_prepend_header(msg, IPAC_PROTO_OSMO);
-
+	osmo_ipa_msg_push_headers(msg, IPAC_PROTO_OSMO, IPAC_PROTO_EXT_CTRL);
 	return osmo_ss7_asp_send(asp, msg);
 }
 
@@ -705,9 +703,7 @@ static int sccplite_msc_ctrl_cmd_send(struct bsc_msc_data *msc, struct ctrl_cmd 
 	if (!msg)
 		return -1;
 
-	ipa_prepend_header_ext(msg, IPAC_PROTO_EXT_CTRL);
-	ipa_prepend_header(msg, IPAC_PROTO_OSMO);
-
+	osmo_ipa_msg_push_headers(msg, IPAC_PROTO_OSMO, IPAC_PROTO_EXT_CTRL);
 	return bsc_sccplite_msc_send(msc, msg);
 }
 
