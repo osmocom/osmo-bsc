@@ -792,13 +792,12 @@ int osmo_bsc_sigtran_init(struct llist_head *mscs)
 }
 
 /* this function receives all messages received on an ASP for a PPID / StreamID that
- * libosmo-sigtran doesn't know about, such as piggy-backed CTRL and/or MGCP */
+ * libosmo-sigtran doesn't know about, such as piggy-backed CTRL and/or MGCP.
+ * msg is owned by the caller, ie. ownership is not transferred to this callback. */
 static int asp_rx_unknown(struct osmo_ss7_asp *asp, int ppid_mux, struct msgb *msg)
 {
-	if (osmo_ss7_asp_get_proto(asp) != OSMO_SS7_ASP_PROT_IPA) {
-		msgb_free(msg);
+	if (osmo_ss7_asp_get_proto(asp) != OSMO_SS7_ASP_PROT_IPA)
 		return 0;
-	}
 
 	switch (ppid_mux) {
 	case IPAC_PROTO_OSMO:
@@ -814,6 +813,5 @@ static int asp_rx_unknown(struct osmo_ss7_asp *asp, int ppid_mux, struct msgb *m
 	default:
 		break;
 	}
-	msgb_free(msg);
 	return 0; /* OSMO_SS7_UNKNOWN? */
 }

@@ -712,7 +712,7 @@ static int sccplite_msc_ctrl_cmd_send(struct bsc_msc_data *msc, struct ctrl_cmd 
 }
 
 /* receive + process a CTRL command from the piggy-back on the IPA/SCCPlite link.
- * Transfers msg ownership. */
+ * msg is owned by the caller. */
 int bsc_sccplite_rx_ctrl(struct osmo_ss7_asp *asp, struct msgb *msg)
 {
 	struct ctrl_cmd *cmd;
@@ -725,7 +725,6 @@ int bsc_sccplite_rx_ctrl(struct osmo_ss7_asp *asp, struct msgb *msg)
 	/* prase raw (ASCII) CTRL command into ctrl_cmd */
 	cmd = ctrl_cmd_parse3(asp, msg, &parse_failed);
 	OSMO_ASSERT(cmd);
-	msgb_free(msg);
 	if (cmd->type == CTRL_TYPE_ERROR && parse_failed)
 		goto send_reply;
 

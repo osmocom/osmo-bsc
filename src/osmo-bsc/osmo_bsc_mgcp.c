@@ -91,7 +91,7 @@ static int parse_local_endpoint_name(char *buf, size_t buf_len, const char *data
 	return 0;
 }
 
-/* We received an IPA-encapsulated MGCP message from a MSC. Transfers msg ownership. */
+/* We received an IPA-encapsulated MGCP message from a MSC. msg owned by caller. */
 int bsc_sccplite_rx_mgcp(struct osmo_ss7_asp *asp, struct msgb *msg)
 {
 	struct bsc_msc_data *msc;
@@ -107,16 +107,14 @@ int bsc_sccplite_rx_mgcp(struct osmo_ss7_asp *asp, struct msgb *msg)
 	     osmo_ss7_asp_get_name(asp), msg->l2h);
 
 	msc = msc_from_asp(asp);
-	if (!msc) {
-		rc = 0;
-		goto free_msg_ret;
-	}
+	if (!msc)
+		return 0;
 
 	rc = parse_local_endpoint_name(rcv_ep_local_name, sizeof(rcv_ep_local_name), (const char *)msg->l2h);
 	if (rc < 0) {
 		LOGP(DMSC, LOGL_ERROR, "(%s:) Received IPA-encapsulated MGCP: Failed to parse CIC\n",
 		     osmo_ss7_asp_get_name(asp));
-		goto free_msg_ret;
+		return rc;
 	}
 
 	/* Lookup which conn attached to the MSC holds an MGW endpoint with the
@@ -145,8 +143,7 @@ int bsc_sccplite_rx_mgcp(struct osmo_ss7_asp *asp, struct msgb *msg)
 	if (!mgcp_cli) {
 		LOGP(DMSC, LOGL_ERROR, "(%s:) Received IPA-encapsulated MGCP: Failed to find associated MGW\n",
 		     osmo_ss7_asp_get_name(asp));
-		rc = 0;
-		goto free_msg_ret;
+		return 0;
 	}
 
 	rc = osmo_sockaddr_str_from_str(&osa_str, mgcp_client_remote_addr_str(mgcp_cli),
@@ -154,7 +151,7 @@ int bsc_sccplite_rx_mgcp(struct osmo_ss7_asp *asp, struct msgb *msg)
 	if (rc < 0) {
 		LOGP(DMSC, LOGL_ERROR, "(%s:) Received IPA-encapsulated MGCP: Failed to parse MGCP address %s:%u\n",
 		     osmo_ss7_asp_get_name(asp), mgcp_client_remote_addr_str(mgcp_cli), mgcp_client_remote_port(mgcp_cli));
-		goto free_msg_ret;
+		return rc;
 	}
 
 	LOGP(DMSC, LOGL_NOTICE, "%s: Forwarding IPA-encapsulated MGCP to MGW at " OSMO_SOCKADDR_STR_FMT "\n",
@@ -164,7 +161,7 @@ int bsc_sccplite_rx_mgcp(struct osmo_ss7_asp *asp, struct msgb *msg)
 	if (rc < 0) {
 		LOGP(DMSC, LOGL_ERROR, "(%s:) Received IPA-encapsulated MGCP: Failed to parse MGCP address " OSMO_SOCKADDR_STR_FMT "\n",
 		     osmo_ss7_asp_get_name(asp), OSMO_SOCKADDR_STR_FMT_ARGS_NOT_NULL(&osa_str));
-		goto free_msg_ret;
+		return rc;
 	}
 	dest_len = osmo_sockaddr_size(&osa);
 
@@ -172,8 +169,6 @@ int bsc_sccplite_rx_mgcp(struct osmo_ss7_asp *asp, struct msgb *msg)
 	 * to be large enough to deal with whatever small/infrequent MGCP messages */
 	rc = sendto(msc->mgcp_ipa.ofd.fd, msgb_l2(msg), msgb_l2len(msg), 0, &osa.u.sa, dest_len);
 
-free_msg_ret:
-	msgb_free(msg);
 	return rc;
 }
 
