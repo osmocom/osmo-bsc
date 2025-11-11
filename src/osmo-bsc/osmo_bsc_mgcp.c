@@ -39,23 +39,6 @@
 
 #include <arpa/inet.h>
 
-/* Determine MSC based on the ASP over which the message was received */
-static struct bsc_msc_data *msc_from_asp(struct osmo_ss7_asp *asp)
-{
-	int msc_nr;
-	const char *asp_name = osmo_ss7_asp_get_name(asp);
-	/* this is rather ugly, as we of course have MTP-level routing between
-	 * the local SCCP user (BSC) and the AS/ASPs.  However, for the most simple
-	 * SCCPlite case, there is a 1:1 mapping between ASP and AS, and using
-	 * the libosmo-sigtran "simple client", the names are "as[p]-clnt-msc-%u",
-	 * as set in osmo_bsc_sigtran_init() */
-	if (!asp_name || sscanf(asp_name, "asp-clnt-msc-%u", &msc_nr) != 1) {
-		LOGP(DMSC, LOGL_ERROR, "Cannot find to which MSC the ASP '%s' belongs\n", asp_name);
-		return NULL;
-	}
-	return osmo_msc_data_find(bsc_gsmnet, msc_nr);
-}
-
 /* negative on error, zero upon success */
 static int parse_local_endpoint_name(char *buf, size_t buf_len, const char *data)
 {
@@ -92,9 +75,8 @@ static int parse_local_endpoint_name(char *buf, size_t buf_len, const char *data
 }
 
 /* We received an IPA-encapsulated MGCP message from a MSC. msg owned by caller. */
-int bsc_sccplite_rx_mgcp(struct osmo_ss7_asp *asp, struct msgb *msg)
+int bsc_sccplite_rx_mgcp(struct bsc_msc_data *msc, struct msgb *msg)
 {
-	struct bsc_msc_data *msc;
 	struct gsm_subscriber_connection *conn;
 	char rcv_ep_local_name[1024];
 	struct osmo_sockaddr_str osa_str = {};
@@ -103,17 +85,11 @@ int bsc_sccplite_rx_mgcp(struct osmo_ss7_asp *asp, struct msgb *msg)
 	struct mgcp_client *mgcp_cli = NULL;
 	int rc;
 
-	LOGP(DMSC, LOGL_INFO, "%s: Received IPA-encapsulated MGCP: %s\n",
-	     osmo_ss7_asp_get_name(asp), msg->l2h);
-
-	msc = msc_from_asp(asp);
-	if (!msc)
-		return 0;
+	LOG_MSC(msc, LOGL_INFO, "Received IPA-encapsulated MGCP: %s\n", msg->l2h);
 
 	rc = parse_local_endpoint_name(rcv_ep_local_name, sizeof(rcv_ep_local_name), (const char *)msg->l2h);
 	if (rc < 0) {
-		LOGP(DMSC, LOGL_ERROR, "(%s:) Received IPA-encapsulated MGCP: Failed to parse CIC\n",
-		     osmo_ss7_asp_get_name(asp));
+		LOG_MSC(msc, LOGL_ERROR, "Received IPA-encapsulated MGCP: Failed to parse CIC\n");
 		return rc;
 	}
 
@@ -141,26 +117,25 @@ int bsc_sccplite_rx_mgcp(struct osmo_ss7_asp *asp, struct msgb *msg)
 	}
 
 	if (!mgcp_cli) {
-		LOGP(DMSC, LOGL_ERROR, "(%s:) Received IPA-encapsulated MGCP: Failed to find associated MGW\n",
-		     osmo_ss7_asp_get_name(asp));
+		LOG_MSC(msc, LOGL_ERROR, "Received IPA-encapsulated MGCP: Failed to find associated MGW\n");
 		return 0;
 	}
 
 	rc = osmo_sockaddr_str_from_str(&osa_str, mgcp_client_remote_addr_str(mgcp_cli),
 					mgcp_client_remote_port(mgcp_cli));
 	if (rc < 0) {
-		LOGP(DMSC, LOGL_ERROR, "(%s:) Received IPA-encapsulated MGCP: Failed to parse MGCP address %s:%u\n",
-		     osmo_ss7_asp_get_name(asp), mgcp_client_remote_addr_str(mgcp_cli), mgcp_client_remote_port(mgcp_cli));
+		LOG_MSC(msc, LOGL_ERROR, "Received IPA-encapsulated MGCP: Failed to parse MGCP address %s:%u\n",
+			mgcp_client_remote_addr_str(mgcp_cli), mgcp_client_remote_port(mgcp_cli));
 		return rc;
 	}
 
-	LOGP(DMSC, LOGL_NOTICE, "%s: Forwarding IPA-encapsulated MGCP to MGW at " OSMO_SOCKADDR_STR_FMT "\n",
-	     osmo_ss7_asp_get_name(asp), OSMO_SOCKADDR_STR_FMT_ARGS_NOT_NULL(&osa_str));
+	LOG_MSC(msc, LOGL_NOTICE, "Forwarding IPA-encapsulated MGCP to MGW at " OSMO_SOCKADDR_STR_FMT "\n",
+		OSMO_SOCKADDR_STR_FMT_ARGS_NOT_NULL(&osa_str));
 
 	rc = osmo_sockaddr_str_to_sockaddr(&osa_str, &osa.u.sas);
 	if (rc < 0) {
-		LOGP(DMSC, LOGL_ERROR, "(%s:) Received IPA-encapsulated MGCP: Failed to parse MGCP address " OSMO_SOCKADDR_STR_FMT "\n",
-		     osmo_ss7_asp_get_name(asp), OSMO_SOCKADDR_STR_FMT_ARGS_NOT_NULL(&osa_str));
+		LOG_MSC(msc, LOGL_ERROR, "Received IPA-encapsulated MGCP: Failed to parse MGCP address " OSMO_SOCKADDR_STR_FMT "\n",
+			OSMO_SOCKADDR_STR_FMT_ARGS_NOT_NULL(&osa_str));
 		return rc;
 	}
 	dest_len = osmo_sockaddr_size(&osa);
@@ -182,7 +157,7 @@ int bsc_sccplite_mgcp_proxy_cb(struct osmo_fd *ofd, unsigned int what)
 	if (!(what & OSMO_FD_READ))
 		return 0;
 
-	msg = msgb_alloc_headroom(1024, 16, "MGCP->IPA");
+	msg = msgb_alloc_headroom(1400, 64, "MGCP->IPA");
 	OSMO_ASSERT(msg);
 	rc = recv(ofd->fd, msg->data, msgb_tailroom(msg), 0);
 	if (rc <= 0) {

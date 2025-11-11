@@ -22,6 +22,8 @@
 #include <osmocom/core/fsm.h>
 #include <osmocom/sigtran/osmo_ss7.h>
 #include <osmocom/sigtran/sccp_sap.h>
+#include <osmocom/sigtran/protocol/mtp.h>
+#include <osmocom/sigtran/mtp_sap.h>
 #include <osmocom/sccp/sccp_types.h>
 #include <osmocom/core/linuxlist.h>
 #include <osmocom/gsm/gsm0808.h>
@@ -418,6 +420,106 @@ static int sccp_sap_up(struct osmo_prim_hdr *oph, void *_scu)
 	return rc;
 }
 
+/* Determine MSC based on OPC/DPC of received message. */
+static struct bsc_msc_data *msc_from_mtp_label(const struct osmo_mtp_transfer_param *param)
+{
+	struct bsc_msc_data *msc;
+	llist_for_each_entry(msc, &bsc_gsmnet->mscs, entry) {
+		if (msc->a.bsc_addr.pc != param->dpc)
+			continue;
+		if (msc->a.msc_addr.pc != param->opc)
+			continue;
+		return msc;
+	}
+
+	return NULL;
+}
+
+/* Callback function, called by the MTP stack for MGCP/CTRL over IPA from MSC (SCCPlite).
+ * msgb ownership is transferred to this callback and hence must be freed. */
+static int mtp_sap_up(struct osmo_prim_hdr *oph, void *data)
+{
+	struct osmo_mtp_prim *mtp_prim = (struct osmo_mtp_prim *)oph;
+	struct osmo_ss7_instance *s7i = data;
+	struct msgb *msg = oph->msg;
+	struct bsc_msc_data *msc;
+	struct ipa_head *ih;
+	struct ipa_head_ext *ihext;
+	int rc = 0;
+
+	switch (OSMO_PRIM_HDR(&mtp_prim->oph)) {
+	case OSMO_PRIM(OSMO_MTP_PRIM_TRANSFER, PRIM_OP_INDICATION):
+		LOGP(DMSC, LOGL_DEBUG, "MTP-User-SAP: %s: %s\n",
+		     osmo_mtp_prim_name(oph), msgb_hexdump(msg));
+
+		OSMO_ASSERT((mtp_prim->u.transfer.sio & 0xF) == MTP_SI_NI11_OSMO_IPA);
+
+		msc = msc_from_mtp_label(&mtp_prim->u.transfer);
+		if (!msc) {
+			char str_opc[32];
+			char str_dpc[32];
+			LOGP(DMSC, LOGL_NOTICE, "MTP-User-SAP: %s: Unknown MSC OPC=%u=%s DPC=%u=%s\n",
+			     osmo_mtp_prim_name(oph),
+			     mtp_prim->u.transfer.opc,
+			     osmo_ss7_pointcode_print_buf(str_opc, sizeof(str_opc), s7i, mtp_prim->u.transfer.opc),
+			     mtp_prim->u.transfer.dpc,
+			     osmo_ss7_pointcode_print_buf(str_dpc, sizeof(str_dpc), s7i, mtp_prim->u.transfer.dpc));
+			rc = -ENOENT;
+			goto ret_free;
+		}
+		msgb_pull_to_l2(msg);
+
+		ih = (struct ipa_head *)msgb_data(msg);
+		osmo_ipa_msgb_cb_proto(msg) = ih->proto;
+		msg->l2h = msgb_pull(msg, sizeof(struct ipa_head));
+
+		switch (osmo_ipa_msgb_cb_proto(msg)) {
+		case IPAC_PROTO_OSMO:
+			ihext = (struct ipa_head_ext *)msgb_data(msg);
+			osmo_ipa_msgb_cb_proto_ext(msg) = ihext->proto;
+			msg->l2h = msgb_pull(msg, sizeof(struct ipa_head_ext));
+
+			switch (osmo_ipa_msgb_cb_proto_ext(msg)) {
+			case IPAC_PROTO_EXT_CTRL:
+				rc = bsc_sccplite_rx_ctrl(msc, msg);
+				break;
+			case IPAC_PROTO_EXT_MGCP:
+				rc = bsc_sccplite_rx_mgcp(msc, msg);
+				break;
+			}
+			break;
+		case IPAC_PROTO_MGCP_OLD:
+			rc = bsc_sccplite_rx_mgcp(msc, msg);
+			break;
+		default:
+			LOG_MSC(msc, LOGL_NOTICE, "MTP-User-SAP: %s: Unexpected IPA proto %u\n",
+				osmo_mtp_prim_name(oph), ih->proto);
+			break;
+		}
+		break;
+	case OSMO_PRIM(OSMO_MTP_PRIM_PAUSE, PRIM_OP_INDICATION):
+		LOGP(DMSC, LOGL_NOTICE, "MTP-User-SAP: Unhandled %s\n",
+		     osmo_mtp_prim_name(oph));
+		break;
+	case OSMO_PRIM(OSMO_MTP_PRIM_RESUME, PRIM_OP_INDICATION):
+		LOGP(DMSC, LOGL_NOTICE, "MTP-User-SAP: Unhandled %s\n",
+		     osmo_mtp_prim_name(oph));
+		break;
+	case OSMO_PRIM(OSMO_MTP_PRIM_STATUS, PRIM_OP_INDICATION):
+		LOGP(DMSC, LOGL_NOTICE, "MTP-User-SAP: Unhandled %s\n",
+		     osmo_mtp_prim_name(oph));
+		break;
+	default:
+		LOGP(DMSC, LOGL_ERROR, "MTP-User-SAP: Unhandled %s\n",
+		     osmo_mtp_prim_name(oph));
+		break;
+	}
+
+ret_free:
+	msgb_free(oph->msg);
+	return rc;
+}
+
 /* Allocate resources to make a new connection oriented sigtran connection
  * (not the connection ittself!) */
 enum bsc_con osmo_bsc_sigtran_new_conn(struct gsm_subscriber_connection *conn, struct bsc_msc_data *msc)
@@ -591,8 +693,6 @@ void osmo_bsc_sigtran_reset(struct bsc_msc_data *msc)
 /* Default point-code to be used as remote address (MSC) */
 #define MSC_DEFAULT_ADDR_NAME "addr-dyn-msc-default"
 
-static int asp_rx_unknown(struct osmo_ss7_asp *asp, int ppid_mux, struct msgb *msg);
-
 /* Initialize osmo sigtran backhaul */
 int osmo_bsc_sigtran_init(struct llist_head *mscs)
 {
@@ -600,8 +700,6 @@ int osmo_bsc_sigtran_init(struct llist_head *mscs)
 	uint32_t default_pc;
 	struct llist_head *ll_it;
 	int rc;
-
-	osmo_ss7_register_rx_unknown_cb(&asp_rx_unknown);
 
 	OSMO_ASSERT(mscs);
 	msc_list = mscs;
@@ -783,35 +881,25 @@ int osmo_bsc_sigtran_init(struct llist_head *mscs)
 			if (!msc->a.sccp_user)
 				return -EINVAL;
 
+			if (msc_is_sccplite(msc)) {
+				/* Bind MTP user to Tx/RxMGCP/CTRL over the SCCPlite IPA multiplex.
+				 * Bind only one user per osmo_ss7_instance. */
+				struct osmo_ss7_instance *s7i = osmo_sccp_get_ss7(msc->a.sccp);
+				msc->a.mtp_user = osmo_ss7_user_find_by_si(s7i, MTP_SI_NI11_OSMO_IPA);
+				if (!msc->a.mtp_user) {
+					msc->a.mtp_user = osmo_ss7_user_create(s7i, "MGCP/CTRL-IPA");
+					osmo_ss7_user_set_prim_cb(msc->a.mtp_user, mtp_sap_up);
+					osmo_ss7_user_set_priv(msc->a.mtp_user, s7i);
+					osmo_ss7_user_register(msc->a.mtp_user, MTP_SI_NI11_OSMO_IPA);
+				}
+				if (!msc->a.mtp_user)
+					return -EINVAL;
+			}
+
 			/* Start MSC-Reset procedure */
 			a_reset_alloc(msc, msc_name);
 		}
 	}
 
 	return 0;
-}
-
-/* this function receives all messages received on an ASP for a PPID / StreamID that
- * libosmo-sigtran doesn't know about, such as piggy-backed CTRL and/or MGCP.
- * msg is owned by the caller, ie. ownership is not transferred to this callback. */
-static int asp_rx_unknown(struct osmo_ss7_asp *asp, int ppid_mux, struct msgb *msg)
-{
-	if (osmo_ss7_asp_get_proto(asp) != OSMO_SS7_ASP_PROT_IPA)
-		return 0;
-
-	switch (ppid_mux) {
-	case IPAC_PROTO_OSMO:
-		switch (osmo_ipa_msgb_cb_proto_ext(msg)) {
-		case IPAC_PROTO_EXT_CTRL:
-			return bsc_sccplite_rx_ctrl(asp, msg);
-		case IPAC_PROTO_EXT_MGCP:
-			return bsc_sccplite_rx_mgcp(asp, msg);
-		}
-		break;
-	case IPAC_PROTO_MGCP_OLD:
-		return bsc_sccplite_rx_mgcp(asp, msg);
-	default:
-		break;
-	}
-	return 0; /* OSMO_SS7_UNKNOWN? */
 }
