@@ -32,6 +32,10 @@
 #include <osmocom/vty/misc.h>
 
 #include <osmocom/gsm/gsm48.h>
+
+#include <osmocom/sigtran/protocol/mtp.h>
+#include <osmocom/sigtran/mtp_sap.h>
+
 #include <osmocom/bsc/ipaccess.h>
 #include <osmocom/bsc/gsm_data.h>
 #include <osmocom/bsc/abis_nm.h>
@@ -628,69 +632,40 @@ static int msc_signal_handler(unsigned int subsys, unsigned int signal,
 	return 0;
 }
 
-/* Obtain SS7 application server currently handling given MSC (DPC) */
-static struct osmo_ss7_as *msc_get_ss7_as(struct bsc_msc_data *msc)
-{
-	struct osmo_ss7_route *rt;
-	struct osmo_ss7_as *as;
-	struct osmo_ss7_instance *ss7 = osmo_sccp_get_ss7(msc->a.sccp);
-	rt = osmo_ss7_route_lookup(ss7, msc->a.msc_addr.pc);
-	if (!rt)
-		return NULL;
-	as = osmo_ss7_route_get_dest_as(rt);
-	if (!as)
-		return NULL;
-	return as;
-}
-
 int bsc_sccplite_msc_send(struct bsc_msc_data *msc, struct msgb *msg)
 {
-	struct osmo_ss7_as *as;
-	struct osmo_ss7_asp *asp;
+	struct osmo_ss7_instance *ss7 = osmo_sccp_get_ss7(msc->a.sccp);
+	struct osmo_mtp_prim *omp;
+	struct osmo_mtp_transfer_param *param;
 
-	as = msc_get_ss7_as(msc);
-	if (!as) {
-		msgb_free(msg);
-		return -1;
-	}
+	/* Wrap into MTP-TRANSFER.req primitive */
+	omp = osmo_mtp_prim_xfer_req_prepend(NULL, msg);
+	OSMO_ASSERT(omp);
+	param = &omp->u.transfer;
+	param->opc = osmo_ss7_instance_get_primary_pc(ss7);
+	param->dpc = msc->a.msc_addr.pc;
+	param->sls = 0;
+	param->sio = MTP_SIO(MTP_SI_NI11_OSMO_IPA, osmo_ss7_instance_get_network_indicator(ss7));
 
-	/* don't attempt to send CTRL on a non-SCCPlite AS */
-	if (osmo_ss7_as_get_asp_protocol(as) != OSMO_SS7_ASP_PROT_IPA) {
-		msgb_free(msg);
-		return 0;
-	}
-
-	asp = osmo_ss7_as_select_asp(as);
-	if (!asp) {
-		LOGP(DCTRL, LOGL_NOTICE, "No ASP found for AS, dropping message\n");
-		msgb_free(msg);
-		return -1;
-	}
-	return osmo_ss7_asp_send(asp, msg);
+	/* 3) send via MTP Transfer SAP (osmo_ss7_instance) */
+	return osmo_ss7_user_mtp_sap_prim_down(msc->a.mtp_user, omp);
 }
 
 /* Encode a CTRL command and send it to the given ASP
- * \param[in] asp ASP through which we shall send the encoded message
+ * \param[in] msc MSC through which we shall send the encoded message
  * \param[in] cmd decoded CTRL command to be encoded and sent. Ownership is *NOT*
  *		  transferred, to permit caller to send the same CMD to several ASPs.
  *		  Caller must hence free 'cmd' itself.
  * \returns 0 on success; negative on error */
-static int sccplite_asp_ctrl_cmd_send(struct osmo_ss7_asp *asp, struct ctrl_cmd *cmd)
+static int bsc_sccplite_msc_ctrl_cmd_send(struct bsc_msc_data *msc, struct ctrl_cmd *cmd)
 {
 	/* this is basically like libosmoctrl:ctrl_cmd_send(), not for a dedicated
 	 * CTRL connection but for the CTRL piggy-back on the IPA/SCCPlite link */
-	struct msgb *msg;
-
-	/* don't attempt to send CTRL on a non-SCCPlite ASP */
-	if (osmo_ss7_asp_get_proto(asp) != OSMO_SS7_ASP_PROT_IPA)
-		return 0;
-
-	msg = ctrl_cmd_make(cmd);
+	struct msgb *msg = ctrl_cmd_make(cmd);
 	if (!msg)
 		return -1;
-
 	osmo_ipa_msg_push_headers(msg, IPAC_PROTO_OSMO, IPAC_PROTO_EXT_CTRL);
-	return osmo_ss7_asp_send(asp, msg);
+	return bsc_sccplite_msc_send(msc, msg);
 }
 
 /* Ownership of 'cmd' is *NOT* transferred, to permit caller to send the same CMD to several ASPs.
@@ -709,7 +684,7 @@ static int sccplite_msc_ctrl_cmd_send(struct bsc_msc_data *msc, struct ctrl_cmd 
 
 /* receive + process a CTRL command from the piggy-back on the IPA/SCCPlite link.
  * msg is owned by the caller. */
-int bsc_sccplite_rx_ctrl(struct osmo_ss7_asp *asp, struct msgb *msg)
+int bsc_sccplite_rx_ctrl(struct bsc_msc_data *msc, struct msgb *msg)
 {
 	struct ctrl_cmd *cmd;
 	bool parse_failed;
@@ -719,7 +694,7 @@ int bsc_sccplite_rx_ctrl(struct osmo_ss7_asp *asp, struct msgb *msg)
 	OSMO_ASSERT(msg->l2h);
 
 	/* prase raw (ASCII) CTRL command into ctrl_cmd */
-	cmd = ctrl_cmd_parse3(asp, msg, &parse_failed);
+	cmd = ctrl_cmd_parse3(msc, msg, &parse_failed);
 	OSMO_ASSERT(cmd);
 	if (cmd->type == CTRL_TYPE_ERROR && parse_failed)
 		goto send_reply;
@@ -728,7 +703,7 @@ int bsc_sccplite_rx_ctrl(struct osmo_ss7_asp *asp, struct msgb *msg)
 	ctrl_cmd_handle(bsc_gsmnet->ctrl, cmd, bsc_gsmnet);
 
 send_reply:
-	rc = sccplite_asp_ctrl_cmd_send(asp, cmd);
+	rc = bsc_sccplite_msc_ctrl_cmd_send(msc, cmd);
 	talloc_free(cmd);
 	return rc;
 }

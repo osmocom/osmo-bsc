@@ -175,6 +175,7 @@ struct bsc_msc_data {
 		bool cs7_instance_valid;
 		struct osmo_sccp_instance *sccp;
 		struct osmo_sccp_user *sccp_user;
+		struct osmo_ss7_user *mtp_user;
 
 		/* IPA or M3UA or SUA? */
 		enum osmo_ss7_asp_protocol asp_proto;
