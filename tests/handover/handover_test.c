@@ -437,7 +437,7 @@ void create_conn(struct gsm_lchan *lchan)
 	osmo_fsm_inst_dispatch(conn->fi, GSCON_EV_A_CONN_CFM, NULL);
 }
 
-struct gsm_lchan *lchan_act(struct gsm_lchan *lchan, int full_rate, const char *codec)
+struct gsm_lchan *lchan_act_without_conn(struct gsm_lchan *lchan, int full_rate, const char *codec)
 {
 	/* serious hack into osmo_fsm */
 	lchan->fi->state = LCHAN_ST_ESTABLISHED;
@@ -455,7 +455,6 @@ struct gsm_lchan *lchan_act(struct gsm_lchan *lchan, int full_rate, const char *
 
 	LOG_LCHAN(lchan, LOGL_DEBUG, "activated by handover_test.c\n");
 
-	create_conn(lchan);
 	if (!strcasecmp(codec, "FR") && full_rate)
 		lchan->current_ch_mode_rate.chan_mode = GSM48_CMODE_SPEECH_V1;
 	else if (!strcasecmp(codec, "HR") && !full_rate)
@@ -470,6 +469,15 @@ struct gsm_lchan *lchan_act(struct gsm_lchan *lchan, int full_rate, const char *
 		exit(EXIT_FAILURE);
 	}
 
+	chan_counts_ts_update(lchan->ts);
+
+	return lchan;
+}
+
+struct gsm_lchan *lchan_act(struct gsm_lchan *lchan, int full_rate, const char *codec)
+{
+	lchan_act_without_conn(lchan, full_rate, codec);
+	create_conn(lchan);
 	lchan->conn->codec_list = (struct gsm0808_speech_codec_list){
 		.codec = {
 			{ .fi=true, .type=GSM0808_SCT_FR1, },
@@ -480,9 +488,6 @@ struct gsm_lchan *lchan_act(struct gsm_lchan *lchan, int full_rate, const char *
 		},
 		.len = 5,
 	};
-
-	chan_counts_ts_update(lchan->ts);
-
 	return lchan;
 }
 
@@ -498,6 +503,20 @@ struct gsm_lchan *create_lchan(struct gsm_bts *bts, int full_rate, const char *c
 	}
 
 	return lchan_act(lchan, full_rate, codec);
+}
+
+struct gsm_lchan *create_lchan_without_conn(struct gsm_bts *bts, int full_rate, const char *codec)
+{
+	struct gsm_lchan *lchan;
+
+	lchan = lchan_select_by_type(bts, (full_rate) ? GSM_LCHAN_TCH_F : GSM_LCHAN_TCH_H,
+				     SELECT_FOR_HANDOVER, NULL);
+	if (!lchan) {
+		fprintf(stderr, "No resource for lchan\n");
+		exit(EXIT_FAILURE);
+	}
+
+	return lchan_act_without_conn(lchan, full_rate, codec);
 }
 
 static void lchan_release_ack(struct gsm_lchan *lchan)
@@ -972,6 +991,30 @@ DEFUN(create_ms, create_ms_cmd,
 		return CMD_WARNING;
 	}
 	fprintf(stderr, " * New MS is at %s\n", gsm_lchan_name(lchan));
+	return CMD_SUCCESS;
+}
+
+DEFUN(create_empty_lchan, create_empty_lchan_cmd,
+      "create-empty-lchan bts <0-999> (TCH/F|TCH/H) (AMR|HR|EFR)",
+      "Create channel using the next free matching lchan on a given BTS, simulate not yet connected MS\n"
+      "BTS index to create on\n"
+      "lchan type to select\n"
+      "codec\n")
+{
+	const char *bts_nr_str = argv[0];
+	const char *tch_type = argv[1];
+	const char *codec = argv[2];
+	struct gsm_lchan *lchan;
+	VTY_ECHO();
+	fprintf(stderr, "- Creating mobile at BTS %s on "
+		"%s with %s codec\n", bts_nr_str, tch_type, codec);
+	lchan = create_lchan_without_conn(bts_by_num_str(bts_nr_str),
+			     !strcmp(tch_type, "TCH/F"), codec);
+	if (!lchan) {
+		fprintf(stderr, "Failed to create lchan!\n");
+		return CMD_WARNING;
+	}
+	fprintf(stderr, " * New channel is at %s\n", gsm_lchan_name(lchan));
 	return CMD_SUCCESS;
 }
 
@@ -1527,6 +1570,7 @@ static void ho_test_vty_init(void)
 	install_element(CONFIG_NODE, &create_n_bts_cmd);
 	install_element(CONFIG_NODE, &create_bts_cmd);
 	install_element(CONFIG_NODE, &create_ms_cmd);
+	install_element(CONFIG_NODE, &create_empty_lchan_cmd);
 	install_element(CONFIG_NODE, &meas_rep_cmd);
 	install_element(CONFIG_NODE, &meas_rep_repeat_cmd);
 	install_element(CONFIG_NODE, &meas_rep_repeat_bspower_cmd);

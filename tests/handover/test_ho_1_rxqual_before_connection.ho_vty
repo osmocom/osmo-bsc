@@ -1,0 +1,14 @@
+# Do not try to handover (algorithm 1) if connection is not yet created.
+
+create-n-bts 1
+
+network
+ bts 0
+  handover algorithm 1
+  neighbor-list mode manual-si5
+  neighbor-list add arfcn 100
+  si5 neighbor-list add arfcn 100
+
+create-empty-lchan bts 0 TCH/F AMR
+meas-rep repeat 3 lchan 0 0 1 0 rxlev 0 rxqual 6 ta 0 neighbors 30
+expect-ts-use trx 0 0 states * TCH/F - - - - - -
