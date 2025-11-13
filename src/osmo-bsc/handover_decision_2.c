@@ -31,7 +31,6 @@
 #include <osmocom/bsc/gsm_data.h>
 #include <osmocom/bsc/assignment_fsm.h>
 #include <osmocom/bsc/handover_fsm.h>
-#include <osmocom/bsc/handover_decision.h>
 #include <osmocom/bsc/handover_decision_2.h>
 #include <osmocom/bsc/handover_cfg.h>
 #include <osmocom/bsc/bsc_subscriber.h>
