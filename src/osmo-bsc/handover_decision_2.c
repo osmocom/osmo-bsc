@@ -44,51 +44,6 @@
 #include <osmocom/bsc/lchan_select.h>
 #include <osmocom/bsc/chan_counts.h>
 
-#define LOGPHOBTS(bts, level, fmt, args...) \
-	LOGP(DHODEC, level, "(BTS %u) " fmt, bts->nr, ## args)
-
-#define LOGPHOLCHAN(lchan, level, fmt, args...) \
-	LOGP(DHODEC, level, "(lchan %u.%u%u%u %s %s) (subscr %s) " fmt, \
-	     lchan->ts->trx->bts->nr, \
-	     lchan->ts->trx->nr, \
-	     lchan->ts->nr, \
-	     lchan->nr, \
-	     gsm_chan_t_name(lchan->type), \
-	     gsm48_chan_mode_name(lchan->current_ch_mode_rate.chan_mode), \
-	     bsc_subscr_name(lchan->conn? lchan->conn->bsub : NULL), \
-	     ## args)
-
-#define LOGPHOLCHANTOBTS(lchan, new_bts, level, fmt, args...) \
-	LOGP(DHODEC, level, "(lchan %u.%u%u%u %s %s)->(BTS %u) (subscr %s) " fmt, \
-	     lchan->ts->trx->bts->nr, \
-	     lchan->ts->trx->nr, \
-	     lchan->ts->nr, \
-	     lchan->nr, \
-	     gsm_chan_t_name(lchan->type), \
-	     gsm48_chan_mode_name(lchan->current_ch_mode_rate.chan_mode), \
-	     new_bts->nr, \
-	     bsc_subscr_name(lchan->conn? lchan->conn->bsub : NULL), \
-	     ## args)
-
-#define LOGPHOLCHANTOREMOTE(lchan, remote_cil, level, fmt, args...) \
-	LOGP(DHODEC, level, "(lchan %u.%u%u%u %s %s)->(remote-BSS %s) (subscr %s) " fmt, \
-	     lchan->ts->trx->bts->nr, \
-	     lchan->ts->trx->nr, \
-	     lchan->ts->nr, \
-	     lchan->nr, \
-	     gsm_chan_t_name(lchan->type), \
-	     gsm48_chan_mode_name(lchan->current_ch_mode_rate.chan_mode), \
-	     gsm0808_cell_id_list_name(remote_cil), \
-	     bsc_subscr_name(lchan->conn? lchan->conn->bsub : NULL), \
-	     ## args)
-
-#define LOGPHOCAND(candidate, level, fmt, args...) do {\
-	if ((candidate)->target.bts) \
-		LOGPHOLCHANTOBTS((candidate)->current.lchan, (candidate)->target.bts, level, fmt, ## args); \
-	else if ((candidate)->target.cell_ids.id_list_len) \
-		LOGPHOLCHANTOREMOTE((candidate)->current.lchan, &(candidate)->target.cell_ids, level, fmt, ## args); \
-	} while (0)
-
 
 #define REQUIREMENT_A_TCHF	0x01
 #define REQUIREMENT_B_TCHF	0x02
