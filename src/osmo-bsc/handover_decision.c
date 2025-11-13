@@ -234,6 +234,20 @@ static void on_measurement_report(struct gsm_meas_rep *mr)
 	if (mr->num_cell > 0 && mr->num_cell < 7)
 		process_meas_neigh(mr);
 
+	/* check for ongoing handover/assignment */
+	if (!mr->lchan->conn) {
+		LOGPHOLCHAN(mr->lchan, LOGL_ERROR, "Skipping, No subscriber connection???\n");
+		return;
+	}
+	if (mr->lchan->conn->assignment.new_lchan) {
+		LOGPHOLCHAN(mr->lchan, LOGL_INFO, "Skipping, Initial Assignment is still ongoing\n");
+		return;
+	}
+	if (mr->lchan->conn->ho.fi) {
+		LOGPHOLCHAN(mr->lchan, LOGL_INFO, "Skipping, Handover still ongoing\n");
+		return;
+	}
+
 	av_rxlev = get_meas_rep_avg(mr->lchan, TDMA_MEAS_FIELD_RXLEV, TDMA_MEAS_DIR_DL, TDMA_MEAS_SET_AUTO,
 				    ho_get_hodec1_rxlev_avg_win(bts->ho));
 
