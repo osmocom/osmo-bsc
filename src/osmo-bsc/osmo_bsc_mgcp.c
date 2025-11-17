@@ -74,8 +74,7 @@ static int parse_local_endpoint_name(char *buf, size_t buf_len, const char *data
 	return 0;
 }
 
-/* We received an IPA-encapsulated MGCP message from a MSC. msg owned by caller. */
-int bsc_sccplite_rx_mgcp(struct bsc_msc_data *msc, struct msgb *msg)
+static int _bsc_sccplite_rx_mgcp(struct bsc_msc_data *msc, struct msgb *msg)
 {
 	struct gsm_subscriber_connection *conn;
 	char rcv_ep_local_name[1024];
@@ -85,9 +84,10 @@ int bsc_sccplite_rx_mgcp(struct bsc_msc_data *msc, struct msgb *msg)
 	struct mgcp_client *mgcp_cli = NULL;
 	int rc;
 
-	LOG_MSC(msc, LOGL_INFO, "Received IPA-encapsulated MGCP: %s\n", msg->l2h);
+	LOG_MSC(msc, LOGL_INFO, "Received IPA-encapsulated MGCP: %s\n", (const char *)msgb_l2(msg));
 
-	rc = parse_local_endpoint_name(rcv_ep_local_name, sizeof(rcv_ep_local_name), (const char *)msg->l2h);
+	rc = parse_local_endpoint_name(rcv_ep_local_name, sizeof(rcv_ep_local_name),
+				       (const char *)msgb_l2(msg));
 	if (rc < 0) {
 		LOG_MSC(msc, LOGL_ERROR, "Received IPA-encapsulated MGCP: Failed to parse CIC\n");
 		return rc;
@@ -144,6 +144,36 @@ int bsc_sccplite_rx_mgcp(struct bsc_msc_data *msc, struct msgb *msg)
 	 * to be large enough to deal with whatever small/infrequent MGCP messages */
 	rc = sendto(msc->mgcp_ipa.ofd.fd, msgb_l2(msg), msgb_l2len(msg), 0, &osa.u.sa, dest_len);
 
+	return rc;
+}
+
+/* We received an IPA-encapsulated MGCP message from MSC. msg owned by caller. */
+int bsc_sccplite_rx_mgcp(struct bsc_msc_data *msc, struct msgb *msg)
+{
+	int rc;
+	struct msgb *msg_resized;
+
+	if (msgb_l2len(msg) == 0) {
+		LOG_MSC(msc, LOGL_NOTICE, "Received empty IPA-encapsulated MGCP\n");
+		return -ENODATA;
+	}
+
+	/* Make sure we have a NULL-terminated string to be on the safe side: */
+	if (*((const char *)msgb_l2(msg) + msgb_l2len(msg) - 1) == '\0')
+		return _bsc_sccplite_rx_mgcp(msc, msg);
+
+	/* If there's extra space available in msgb from lower layers, simply nullify next char: */
+	if (msgb_tailroom(msg) > 0) {
+		*msg->tail = '\0';
+		return _bsc_sccplite_rx_mgcp(msc, msg);
+	}
+
+	/* Otherwise, craft a resized message: */
+	msg_resized = msgb_copy_resize(msg, msgb_length(msg)+1, "mgcp-resized");
+	OSMO_ASSERT(msgb_tailroom(msg) == 1);
+	*msg->tail = '\0';
+	rc = _bsc_sccplite_rx_mgcp(msc, msg_resized);
+	msgb_free(msg_resized);
 	return rc;
 }
 
