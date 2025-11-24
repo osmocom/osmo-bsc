@@ -888,12 +888,12 @@ int osmo_bsc_sigtran_init(struct llist_head *mscs)
 				msc->a.mtp_user = osmo_ss7_user_find_by_si(s7i, MTP_SI_NI11_OSMO_IPA);
 				if (!msc->a.mtp_user) {
 					msc->a.mtp_user = osmo_ss7_user_create(s7i, "MGCP/CTRL-IPA");
+					if (!msc->a.mtp_user)
+						return -EINVAL;
 					osmo_ss7_user_set_prim_cb(msc->a.mtp_user, mtp_sap_up);
 					osmo_ss7_user_set_priv(msc->a.mtp_user, s7i);
 					osmo_ss7_user_register(msc->a.mtp_user, MTP_SI_NI11_OSMO_IPA);
 				}
-				if (!msc->a.mtp_user)
-					return -EINVAL;
 			}
 
 			/* Start MSC-Reset procedure */
