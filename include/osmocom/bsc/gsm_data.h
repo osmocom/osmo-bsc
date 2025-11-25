@@ -472,6 +472,8 @@ struct gsm_subscriber_connection {
 		struct gsm_subscriber_connection *call;
 		/* Cell (BTS) FSM */
 		struct osmo_fsm_inst *fi;
+		/* BTS to notify about ongoing call */
+		struct gsm_bts *notify_bts;
 		/* lchan to be assigned */
 		struct gsm_lchan *new_lchan;
 		/* MGW peer */

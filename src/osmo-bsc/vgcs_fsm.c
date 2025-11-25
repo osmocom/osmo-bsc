@@ -602,10 +602,7 @@ static void vgcs_chan_detach_and_destroy(struct osmo_fsm_inst *fi, enum osmo_fsm
 
 	if (conn->vgcs_chan.fi->state != VGCS_CHAN_ST_WAIT_EST) {
 		/* Remove call from notification channel. */
-		if (conn->lchan)
-			rsl_notification_cmd(conn->lchan->ts->trx->bts, NULL, &conn->vgcs_chan.gc_ie, NULL);
-		else
-			LOG_CHAN(conn, LOGL_ERROR, "Unable to remove notification, lchan is already gone.\n");
+		rsl_notification_cmd(conn->vgcs_chan.notify_bts, NULL, &conn->vgcs_chan.gc_ie, NULL);
 	}
 
 	/* Detach from call, if not already. */
@@ -731,7 +728,7 @@ no_aoip:
 			osmo_fsm_inst_state_chg(fi, VGCS_CHAN_ST_ACTIVE_BLOCKED, 0, 0);
 		if (conn->vgcs_chan.call) {
 			/* Add call to notification channel. */
-			rsl_notification_cmd(conn->lchan->ts->trx->bts, conn->lchan, &conn->vgcs_chan.gc_ie, NULL);
+			rsl_notification_cmd(conn->vgcs_chan.notify_bts, conn->lchan, &conn->vgcs_chan.gc_ie, NULL);
 			/* Add/update SI10. */
 			si10_update(conn->vgcs_chan.call);
 		}
@@ -798,7 +795,7 @@ static void vgcs_chan_fsm_active_blocked(struct osmo_fsm_inst *fi, uint32_t even
 		if (conn->vgcs_chan.call)
 			osmo_fsm_inst_dispatch(conn->vgcs_chan.call->vgcs_call.fi, VGCS_EV_CALLING_ASSIGNED, conn);
 		/* Repeat notification for the MS that has been assigned. */
-		rsl_notification_cmd(conn->lchan->ts->trx->bts, conn->lchan, &conn->vgcs_chan.gc_ie, NULL);
+		rsl_notification_cmd(conn->vgcs_chan.notify_bts, conn->lchan, &conn->vgcs_chan.gc_ie, NULL);
 		break;
 	case VGCS_EV_CLEANUP:
 		LOG_CHAN(conn, LOGL_DEBUG, "SCCP connection clearing.\n");
@@ -1247,6 +1244,9 @@ int vgcs_vbs_chan_start(struct gsm_subscriber_connection *conn, struct msgb *msg
 		goto reject;
 	}
 	conn->vgcs_chan.new_lchan = lchan;
+
+	/* Set BTS that receives notification. */
+	conn->vgcs_chan.notify_bts = bts;
 
 	/* Create VGCS FSM. */
 	conn->vgcs_chan.fi = osmo_fsm_inst_alloc(&vgcs_chan_fsm, conn->network, conn, LOGL_DEBUG, NULL);
