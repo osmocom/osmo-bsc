@@ -1,3 +1,57 @@
+osmo-bsc (1.14.0) unstable; urgency=medium
+
+  [ csaba.sipos ]
+  * nokia_site: Add object_identity, object_state and object_identity_state attributes
+  * nokia_site: add function to unlock and reset TRXes
+
+  [ Pau Espin Pedrol ]
+  * Drop use of deprecated vty is_config_node() cb
+  * nokia: Fix uninitialized access
+  * vty: Improve cmd 'cell barred' description
+  * cosmetic: Improve documentation with spec references about several parameters
+  * cosmetic: Update 3GPP spec reference
+  * meas_feed: Increase default txqueue len to 1024
+  * bsc: Make sure MSC PC is added to sccp-addressbook
+  * sigtran: Log N-PCSTATE.ind PC with configured format
+  * sigtran: Avoid potential uninitialized ptr dereference
+  * Introduce LOG_MSC log macro
+  * sccp: Handle N-NOTICE.ind (Routing Failure of SCCP CL messages)
+  * sigtran: Compare sccp_addr using osmo_sccp_addr_ri_cmp()
+  * Fix wrong list entry derreference during bts_depend_find_entry()
+  * sccplite: Avoid msgb_free() during ss7 rx_unknown_cb()
+  * Replace ipa_prepend_header() with osmo_ipa_msg_push_header(s)()
+  * sccplite: Handle MGCP/CTRL over SCCPLite multiplex using MTP-TRANSFER.req/ind
+  * sccplite: rx mgcp: Make sure payload string is null-terminated
+  * sigtran: Fix potential null ptr derreference
+
+  [ Mychaela N. Falconia ]
+  * E1 BTS: direct MGW to 8k subslots for TCH/H
+  * TW-TS-* support: pass RTP extensions to MGW
+
+  [ Vadim Yanitskiy ]
+  * bts_vty: drop NL in 'ncc-permitted' commands
+
+  [ Michael Iedema ]
+  * meas_json: add command line option to specify binding ip
+
+  [ Oliver Smith ]
+  * Fix building for debian 13 armv7l
+  * Don't crash on loc req with disabled SMLC
+
+  [ Keith Whyte ]
+  * Fix missing LAC/CI hashtable update upon CTRL SET
+
+  [ Matan Perelman ]
+  * handover: Move log macros to handover_fsm.h
+  * handover_decision_2: Drop unused include
+  * handover_decision: Check for connection prerequisites
+
+  [ Andreas Eversberg ]
+  * Add ER-GSM band support
+  * ASCI: Fix removal of call notification when lchan fails
+
+ -- Pau Espin Pedrol <pespin@sysmocom.de>  Wed, 03 Dec 2025 19:32:45 +0100
+
 osmo-bsc (1.13.0) unstable; urgency=medium
 
   [ Pau Espin Pedrol ]

@@ -7,9 +7,3 @@
 # If any interfaces have been added since the last public release: c:r:a + 1.
 # If any interfaces have been removed or changed since the last public release: c:r:0.
 #library	what			description / commit summary line
-libosmo-mgcp-client	bump_dep	Depend on I0d58e6d84418f50670c8ab7cf8490af3bc2f5c26
-libosmo-sigtran >2.1.0    osmo_sccp_addr_{create,update}()
-libosmo-sigtran minor_release>2.1.0    Avoid leaking msgb during asp_rx_unknown()
-libosmo-sigtran minor_release>2.1.0    osmo_ss7_instance_get_network_indicator(),
-                                       osmo_mtp_prim_xfer_req_prepend(),
-                                       MTP_SI_NI11_OSMO_IPA
