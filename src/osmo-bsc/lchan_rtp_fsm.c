@@ -947,7 +947,7 @@ void mgcp_pick_codec(struct mgcp_conn_peer *verb_info, const struct gsm_lchan *l
 {
 	enum mgcp_codecs codec = chan_mode_to_mgcp_codec(lchan->activate.ch_mode_rate.chan_mode,
 							 lchan->type == GSM_LCHAN_TCH_H? false : true);
-	int pt;
+	int pt, amr_oa;
 
 	if (codec < 0) {
 		LOG_LCHAN(lchan, LOGL_ERROR,
@@ -980,51 +980,32 @@ void mgcp_pick_codec(struct mgcp_conn_peer *verb_info, const struct gsm_lchan *l
 	verb_info->ptmap[0].pt = pt;
 	verb_info->ptmap_len = 1;
 
-	/* AMR requires additional parameters to be set up (framing mode) */
-	if (codec == CODEC_AMR_8000_1) {
-		verb_info->param_present = true;
-		verb_info->param.amr_octet_aligned_present = true;
-	}
-
-	if (bss_side && codec == CODEC_AMR_8000_1) {
-		/* FIXME: At the moment all BTSs we support are using the
-		 * octet-aligned payload format. However, in the future
-		 * we may support BTSs that are using bandwidth-efficient
-		 * format. In this case we will have to add functionality
-		 * that distinguishes by the BTS model which mode to use. */
-		verb_info->param.amr_octet_aligned = true;
-	}
-	else if (!bss_side && codec == CODEC_AMR_8000_1) {
-		verb_info->param.amr_octet_aligned = lchan->conn->sccp.msc->amr_octet_aligned;
-	}
-
-	/* If the CN has requested RTP payload format extensions (change from
-	 * RFC 3551 to TW-TS-001 for FR/EFR, or from RFC 5993 to TW-TS-002
-	 * for HRv1) via BSSMAP IE of TW-TS-003, we need to pass this request
-	 * to the MGW.  With E1 BTS our MGW is the origin of the RTP stream
-	 * and thus the party responsible for payload format choices; with
-	 * IP BTS our MGW is merely a forwarder and thus can get by without
-	 * this detailed knowledge, but it doesn't hurt to inform the MGW
-	 * in all cases.
-	 *
-	 * Note that the following code does not perform conditional checks
-	 * of whether the selected codec is FR/EFR for TW-TS-001 or HRv1
-	 * for TW-TS-002, but instead checks only the extension mode bits.
-	 * This simplification is allowed by libosmo-mgcp-client API:
-	 * struct mgcp_codec_param has dedicated fields for fr_efr_twts001
-	 * and hr_twts002 parameters, and the code in libosmo-mgcp-client
-	 * then emits the corresponding a=fmtp lines only when the SDP
-	 * includes those codecs to which these attributes apply.
+	/* Some codecs require fmtp parameters, either always (AMR)
+	 * or conditionally (FR & EFR with TW-TS-001, HR with TW-TS-002).
+	 * Use the new fmtp string API to insert them into our outgoing
+	 * CRCX/MDCX.
 	 */
-	if (lchan->conn->user_plane.rtp_extensions & OSMO_RTP_EXT_TWTS001) {
-		verb_info->param_present = true;
-		verb_info->param.fr_efr_twts001_present = true;
-		verb_info->param.fr_efr_twts001 = true;
-	}
-	if (lchan->conn->user_plane.rtp_extensions & OSMO_RTP_EXT_TWTS002) {
-		verb_info->param_present = true;
-		verb_info->param.hr_twts002_present = true;
-		verb_info->param.hr_twts002 = true;
+	switch (codec) {
+	case CODEC_AMR_8000_1:
+		if (bss_side)
+			amr_oa = 1;
+		else
+			amr_oa = lchan->conn->sccp.msc->amr_octet_aligned;
+		snprintf(verb_info->ptmap[0].fmtp,
+			 sizeof(verb_info->ptmap[0].fmtp),
+			 "octet-align=%d", amr_oa);
+		break;
+	case CODEC_GSM_8000_1:
+	case CODEC_GSMEFR_8000_1:
+		if (lchan->conn->user_plane.rtp_extensions & OSMO_RTP_EXT_TWTS001)
+			OSMO_STRLCPY_ARRAY(verb_info->ptmap[0].fmtp, "tw-ts-001=1");
+		break;
+	case CODEC_GSMHR_8000_1:
+		if (lchan->conn->user_plane.rtp_extensions & OSMO_RTP_EXT_TWTS002)
+			OSMO_STRLCPY_ARRAY(verb_info->ptmap[0].fmtp, "tw-ts-002=1");
+		break;
+	default:
+		break;
 	}
 }
 
