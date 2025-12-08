@@ -545,7 +545,10 @@ int reassignment_request_to_chan_type(enum assign_for assign_for, struct gsm_lch
  * Note that specific BTS features are needed only for IP-based BTS;
  * for E1 BTS no special support is needed from the BTS itself in order
  * to enable these RTP extensions, as they are implemented entirely
- * in the BSC-controlled MGW in this case.
+ * in the BSC-controlled MGW in this case.  Furthermore, in the case of
+ * E1 BTS with either AMR or CSD, the MGW can be assumed to be tw-e1abis-mgw
+ * or a potential future Osmo-branded copy or derivative thereof,
+ * since classic osmo-mgw supports neither AMR nor CSD with E1 Abis.
  */
 static void handle_rtp_extensions(struct gsm_subscriber_connection *conn,
 				  struct gsm_bts *bts)
@@ -561,6 +564,9 @@ static void handle_rtp_extensions(struct gsm_subscriber_connection *conn,
 	if ((requested_ext & OSMO_RTP_EXT_TWTS002) &&
 	    (osmo_bts_has_feature(&bts->features, BTS_FEAT_TWTS002) || is_e1_bts(bts)))
 		accepted_ext |= OSMO_RTP_EXT_TWTS002;
+
+	if ((requested_ext & OSMO_RTP_EXT_TWTS006) && is_e1_bts(bts))
+		accepted_ext |= OSMO_RTP_EXT_TWTS006;
 
 	conn->user_plane.rtp_extensions = accepted_ext;
 }

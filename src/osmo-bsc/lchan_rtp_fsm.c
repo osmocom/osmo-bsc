@@ -987,6 +987,18 @@ void mgcp_pick_codec(struct mgcp_conn_peer *verb_info, const struct gsm_lchan *l
 	 */
 	switch (codec) {
 	case CODEC_AMR_8000_1:
+		/* Right now AMR with TW-TS-006 is supported only on E1 BTS,
+		 * in which case there is no BSS side, only AoIP side.
+		 * However, if TW-TS-006 support gets added to IP-native
+		 * OsmoBTS in the future, it will strictly require no-alteration
+		 * pass-through from the BSC-associated MGW.  Therefore,
+		 * indicate this format on both sides when it is enabled. */
+		if (lchan->conn->user_plane.rtp_extensions & OSMO_RTP_EXT_TWTS006) {
+			OSMO_STRLCPY_ARRAY(verb_info->ptmap[0].fmtp,
+					   "octet-align=1;tw-ts-006=1");
+			break;
+		}
+		/* standard 3GPP/Osmocom/etc operation with RFC 4867 format */
 		if (bss_side)
 			amr_oa = 1;
 		else
