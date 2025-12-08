@@ -21,6 +21,7 @@
  */
 
 #include <osmocom/core/fsm.h>
+#include <osmocom/gsm/protocol/gsm_48_103.h>
 #include <osmocom/gsm/rtp_extensions.h>
 #include <osmocom/netif/rtp.h>
 #include <osmocom/mgcp_client/mgcp_client_endpoint_fsm.h>
@@ -894,9 +895,36 @@ static enum mgcp_codecs chan_mode_to_mgcp_codec(enum gsm48_chan_mode chan_mode, 
 	}
 }
 
+static int chan_mode_to_mgcp_aoip_pt(enum mgcp_codecs codec)
+{
+	switch (codec) {
+	case CODEC_GSM_8000_1:
+		return OSMO_AOIP_RTP_PT_FR1;
+
+	case CODEC_GSMEFR_8000_1:
+		return OSMO_AOIP_RTP_PT_EFR;
+
+	case CODEC_GSMHR_8000_1:
+		return OSMO_AOIP_RTP_PT_HR1;
+
+	case CODEC_AMR_8000_1:
+		return OSMO_AOIP_RTP_PT_AMR;
+
+	case CODEC_CLEARMODE:
+		return OSMO_AOIP_RTP_PT_CSD;
+
+	default:
+		/* Error: unknown codec */
+		return -1;
+	}
+}
+
 static int chan_mode_to_mgcp_bss_pt(enum mgcp_codecs codec)
 {
 	switch (codec) {
+	case CODEC_GSM_8000_1:
+		return RTP_PT_GSM_FULL;
+
 	case CODEC_GSMHR_8000_1:
 		return RTP_PT_GSM_HALF;
 
@@ -906,9 +934,11 @@ static int chan_mode_to_mgcp_bss_pt(enum mgcp_codecs codec)
 	case CODEC_AMR_8000_1:
 		return RTP_PT_AMR;
 
+	case CODEC_CLEARMODE:
+		return RTP_PT_CSDATA;
+
 	default:
-		/* Not an error, we just leave it to libosmo-mgcp-client to
-		 * decide over the PT. */
+		/* Error: unknown codec */
 		return -1;
 	}
 }
@@ -917,34 +947,46 @@ void mgcp_pick_codec(struct mgcp_conn_peer *verb_info, const struct gsm_lchan *l
 {
 	enum mgcp_codecs codec = chan_mode_to_mgcp_codec(lchan->activate.ch_mode_rate.chan_mode,
 							 lchan->type == GSM_LCHAN_TCH_H? false : true);
-	int custom_pt;
+	int pt;
 
 	if (codec < 0) {
 		LOG_LCHAN(lchan, LOGL_ERROR,
 			  "Unable to determine MGCP codec type for %s in chan-mode %s\n",
 			  gsm_chan_t_name(lchan->type), gsm48_chan_mode_name(lchan->activate.ch_mode_rate.chan_mode));
-		verb_info->codecs_len = 0;
+		verb_info->ptmap_len = 0;
 		return;
 	}
 
-	verb_info->codecs[0] = codec;
-	verb_info->codecs_len = 1;
-
-	/* Setup custom payload types (only for BSS side and when required) */
-	custom_pt = chan_mode_to_mgcp_bss_pt(codec);
-	if (bss_side && custom_pt > 0) {
-		verb_info->ptmap[0].codec = codec;
-		verb_info->ptmap[0].pt = custom_pt;
-		verb_info->ptmap_len = 1;
+	/* The new libosmo-mgcp-client API requires us to provide explicit
+	 * payload type number for every codec - no more internal defaulting.
+	 * Legacy payload types used on IPA/Osmocom Abis-IP are defined in
+	 * <osmocom/netif/rtp.h> as RTP_PT_*, new TS 48.103 (AoIP user plane)
+	 * payload types are defined in <osmocom/gsm/protocol/gsm_48_103.h>
+	 * as OSMO_AOIP_RTP_PT_*.
+	 */
+	if (bss_side)
+		pt = chan_mode_to_mgcp_bss_pt(codec);
+	else
+		pt = chan_mode_to_mgcp_aoip_pt(codec);
+	if (pt < 0) {
+		LOG_LCHAN(lchan, LOGL_ERROR,
+			  "Unable to determine RTP payload type for %s in chan-mode %s\n",
+			  gsm_chan_t_name(lchan->type), gsm48_chan_mode_name(lchan->activate.ch_mode_rate.chan_mode));
+		verb_info->ptmap_len = 0;
+		return;
 	}
 
+	verb_info->ptmap[0].codec = codec;
+	verb_info->ptmap[0].pt = pt;
+	verb_info->ptmap_len = 1;
+
 	/* AMR requires additional parameters to be set up (framing mode) */
-	if (verb_info->codecs[0] == CODEC_AMR_8000_1) {
+	if (codec == CODEC_AMR_8000_1) {
 		verb_info->param_present = true;
 		verb_info->param.amr_octet_aligned_present = true;
 	}
 
-	if (bss_side && verb_info->codecs[0] == CODEC_AMR_8000_1) {
+	if (bss_side && codec == CODEC_AMR_8000_1) {
 		/* FIXME: At the moment all BTSs we support are using the
 		 * octet-aligned payload format. However, in the future
 		 * we may support BTSs that are using bandwidth-efficient
@@ -952,7 +994,7 @@ void mgcp_pick_codec(struct mgcp_conn_peer *verb_info, const struct gsm_lchan *l
 		 * that distinguishes by the BTS model which mode to use. */
 		verb_info->param.amr_octet_aligned = true;
 	}
-	else if (!bss_side && verb_info->codecs[0] == CODEC_AMR_8000_1) {
+	else if (!bss_side && codec == CODEC_AMR_8000_1) {
 		verb_info->param.amr_octet_aligned = lchan->conn->sccp.msc->amr_octet_aligned;
 	}
 
@@ -988,5 +1030,5 @@ void mgcp_pick_codec(struct mgcp_conn_peer *verb_info, const struct gsm_lchan *l
 
 bool mgcp_codec_is_picked(const struct mgcp_conn_peer *verb_info, enum mgcp_codecs codec)
 {
-	return verb_info->codecs[0] == codec;
+	return verb_info->ptmap[0].codec == codec;
 }
