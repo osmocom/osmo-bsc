@@ -947,6 +947,7 @@ void mgcp_pick_codec(struct mgcp_conn_peer *verb_info, const struct gsm_lchan *l
 {
 	enum mgcp_codecs codec = chan_mode_to_mgcp_codec(lchan->activate.ch_mode_rate.chan_mode,
 							 lchan->type == GSM_LCHAN_TCH_H? false : true);
+	uint8_t rtp_ext = lchan->conn->user_plane.rtp_extensions;
 	int pt, amr_oa;
 
 	if (codec < 0) {
@@ -993,7 +994,7 @@ void mgcp_pick_codec(struct mgcp_conn_peer *verb_info, const struct gsm_lchan *l
 		 * OsmoBTS in the future, it will strictly require no-alteration
 		 * pass-through from the BSC-associated MGW.  Therefore,
 		 * indicate this format on both sides when it is enabled. */
-		if (lchan->conn->user_plane.rtp_extensions & OSMO_RTP_EXT_TWTS006) {
+		if (rtp_ext & OSMO_RTP_EXT_TWTS006) {
 			OSMO_STRLCPY_ARRAY(verb_info->ptmap[0].fmtp,
 					   "octet-align=1;tw-ts-006=1");
 			break;
@@ -1009,12 +1010,24 @@ void mgcp_pick_codec(struct mgcp_conn_peer *verb_info, const struct gsm_lchan *l
 		break;
 	case CODEC_GSM_8000_1:
 	case CODEC_GSMEFR_8000_1:
-		if (lchan->conn->user_plane.rtp_extensions & OSMO_RTP_EXT_TWTS001)
+		if (rtp_ext & OSMO_RTP_EXT_TWTS001)
 			OSMO_STRLCPY_ARRAY(verb_info->ptmap[0].fmtp, "tw-ts-001=1");
 		break;
 	case CODEC_GSMHR_8000_1:
-		if (lchan->conn->user_plane.rtp_extensions & OSMO_RTP_EXT_TWTS002)
+		if (rtp_ext & OSMO_RTP_EXT_TWTS002)
 			OSMO_STRLCPY_ARRAY(verb_info->ptmap[0].fmtp, "tw-ts-002=1");
+		break;
+	case CODEC_CLEARMODE:
+		/* There are no fmtp parameters for CSData - however, if
+		 * TW-TS-007 compressed CSD format was requested by the CN,
+		 * then we need to tell our MGW to use this format.  But only
+		 * on AoIP side - the representation of CSD toward IP-based BTS
+		 * remains CLEARMODE until and unless we decide to implement
+		 * TW-TS-007 compressed CSD format in OsmoBTS. */
+		if ((rtp_ext & OSMO_RTP_EXT_TWTS007) && !bss_side) {
+			verb_info->ptmap[0].codec = CODEC_COMPR_CSD;
+			verb_info->ptmap[0].pt = OSMO_AOIP_RTP_PT_TWTS007;
+		}
 		break;
 	default:
 		break;

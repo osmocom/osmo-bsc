@@ -568,6 +568,9 @@ static void handle_rtp_extensions(struct gsm_subscriber_connection *conn,
 	if ((requested_ext & OSMO_RTP_EXT_TWTS006) && is_e1_bts(bts))
 		accepted_ext |= OSMO_RTP_EXT_TWTS006;
 
+	if ((requested_ext & OSMO_RTP_EXT_TWTS007) && is_e1_bts(bts))
+		accepted_ext |= OSMO_RTP_EXT_TWTS007;
+
 	conn->user_plane.rtp_extensions = accepted_ext;
 }
 

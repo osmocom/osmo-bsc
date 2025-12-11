@@ -8,3 +8,4 @@
 # If any interfaces have been removed or changed since the last public release: c:r:0.
 #library	what			description / commit summary line
 libosmo-mgcp-client	>1.15.0		new API of fmtp in struct ptmap
+libosmogsm		>1.12.0		OSMO_AOIP_RTP_PT_TWTS007 in gsm_48_103.h
