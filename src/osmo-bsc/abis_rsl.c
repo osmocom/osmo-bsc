@@ -509,6 +509,17 @@ static int put_mr_config_for_bts(struct msgb *msg, const struct gsm48_multi_rate
 	return gsm48_multirate_config(msg, mr_conf_filtered, mr_modes->bts_mode, mr_modes->num_modes);
 }
 
+static void add_mr_ctrl_ie(struct gsm_bts *bts, struct msgb *msg)
+{
+	msgb_tv_put(msg, RSL_IE_MR_CONTROL, bts->mrctl_val);
+}
+
+static void add_tfo_xpar_ie(struct gsm_bts *bts, struct msgb *msg)
+{
+	msgb_tlv_put(msg, RSL_IE_TFO_XPAR_CONT, bts->tfo_xpar_len,
+			bts->tfo_xpar_data);
+}
+
 /* indicate FACCH/SACCH Repetition to be performed by BTS,
  * see also: 3GPP TS 44.006, section 10 and 11 */
 static void put_rep_acch_cap_ie(const struct gsm_lchan *lchan,
@@ -696,6 +707,10 @@ int rsl_tx_chan_activ(struct gsm_lchan *lchan, uint8_t act_type, uint8_t ho_ref)
 			msgb_free(msg);
 			return rc;
 		}
+		if (bts->amr_send_mrctl)
+			add_mr_ctrl_ie(bts, msg);
+		if (bts->amr_send_tfo_xpar)
+			add_tfo_xpar_ie(bts, msg);
 	}
 
 	put_rep_acch_cap_ie(lchan, msg);
@@ -768,6 +783,10 @@ int rsl_chan_mode_modify_req(struct gsm_lchan *lchan)
 			msgb_free(msg);
 			return rc;
 		}
+		if (bts->amr_send_mrctl)
+			add_mr_ctrl_ie(bts, msg);
+		if (bts->amr_send_tfo_xpar)
+			add_tfo_xpar_ie(bts, msg);
 	}
 
 	put_rep_acch_cap_ie(lchan, msg);
