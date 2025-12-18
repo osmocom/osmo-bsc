@@ -210,9 +210,6 @@ DEFUN_USRATTR(cfg_bts_dtxu,
 	struct gsm_bts *bts = vty->index;
 
 	bts->dtxu = (argc > 0) ? GSM48_DTX_SHALL_BE_USED : GSM48_DTX_MAY_BE_USED;
-	if (!is_ipa_abisip_bts(bts))
-		vty_out(vty, "%% DTX enabled on non-IP BTS: this configuration "
-			"neither supported nor tested!%s", VTY_NEWLINE);
 	return CMD_SUCCESS;
 }
 
@@ -240,9 +237,6 @@ DEFUN_USRATTR(cfg_bts_dtxd,
 	struct gsm_bts *bts = vty->index;
 
 	bts->dtxd = true;
-	if (!is_ipa_abisip_bts(bts))
-		vty_out(vty, "%% DTX enabled on non-IP BTS: this configuration "
-			"neither supported nor tested!%s", VTY_NEWLINE);
 	return CMD_SUCCESS;
 }
 
