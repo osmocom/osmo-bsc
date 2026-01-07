@@ -77,13 +77,14 @@ struct ipaccess_line {
 
 static int e1inp_int_snd_event(struct e1inp_ts *ts, struct e1inp_sign_link *link, int evt)
 {
-	struct input_signal_data isd;
-	isd.line = ts->line;
-	isd.ts_nr = ts->num;
-	isd.link_type = link->type;
-	isd.trx = link->trx;
-	isd.tei = link->tei;
-	isd.sapi = link->sapi;
+	struct input_signal_data isd = {
+		.line = ts->line,
+		.ts_nr = ts->num,
+		.link_type = link->type,
+		.trx = link->trx,
+		.tei = link->tei,
+		.sapi = link->sapi,
+	};
 
 	/* report further upwards */
 	osmo_signal_dispatch(SS_L_INPUT, evt, &isd);
