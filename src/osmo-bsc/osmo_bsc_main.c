@@ -831,12 +831,12 @@ static const struct log_info_cat osmo_bsc_categories[] = {
 
 static int filter_fn(const struct log_context *ctx, struct log_target *tar)
 {
-	const struct bsc_subscr *bsub_ctx = ctx->ctx[LOG_CTX_BSC_SUBSCR];
-	const struct bsc_subscr *bsub_filter = tar->filter_data[LOG_FLT_BSC_SUBSCR];
+	const struct bsc_subscr *bsub_ctx = log_get_context(ctx, LOG_CTX_BSC_SUBSCR);
+	const struct bsc_subscr *bsub_filter = log_get_filter_data(tar, LOG_FLT_BSC_SUBSCR);
 
-	if ((tar->filter_map & (1 << LOG_FLT_BSC_SUBSCR)) != 0
-	    && bsub_ctx && bsub_filter
-	    && strncmp(bsub_ctx->imsi, bsub_filter->imsi, sizeof(bsub_ctx->imsi)) == 0)
+	if (log_get_filter(tar, LOG_FLT_BSC_SUBSCR) &&
+	    bsub_ctx && bsub_filter &&
+	    strncmp(bsub_ctx->imsi, bsub_filter->imsi, sizeof(bsub_ctx->imsi)) == 0)
 		return 1;
 
 	return 0;

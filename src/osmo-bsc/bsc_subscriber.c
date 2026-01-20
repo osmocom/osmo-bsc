@@ -345,20 +345,22 @@ static void bsc_subscr_free(struct bsc_subscr *bsub)
 void log_set_filter_bsc_subscr(struct log_target *target,
 			       struct bsc_subscr *bsc_subscr)
 {
-	struct bsc_subscr **fsub = (void*)&target->filter_data[LOG_FLT_BSC_SUBSCR];
+	struct bsc_subscr *fsub = log_get_filter_data(target, LOG_FLT_BSC_SUBSCR);
 
 	/* free the old data */
-	if (*fsub) {
-		bsc_subscr_put(*fsub, BSUB_USE_LOG_FILTER);
-		*fsub = NULL;
+	if (fsub) {
+		log_set_filter_data(target, LOG_FLT_BSC_SUBSCR, NULL);
+		bsc_subscr_put(fsub, BSUB_USE_LOG_FILTER);
 	}
 
 	if (bsc_subscr) {
-		target->filter_map |= (1 << LOG_FLT_BSC_SUBSCR);
-		*fsub = bsc_subscr;
-		bsc_subscr_get(*fsub, BSUB_USE_LOG_FILTER);
-	} else
-		target->filter_map &= ~(1 << LOG_FLT_BSC_SUBSCR);
+		bsc_subscr_get(bsc_subscr, BSUB_USE_LOG_FILTER);
+		log_set_filter_data(target, LOG_FLT_BSC_SUBSCR, bsc_subscr);
+		log_set_filter(target, LOG_FLT_BSC_SUBSCR, true);
+	} else {
+		log_set_filter_data(target, LOG_FLT_BSC_SUBSCR, NULL);
+		log_set_filter(target, LOG_FLT_BSC_SUBSCR, false);
+	}
 }
 
 void bsc_subscr_add_active_paging_request(struct bsc_subscr *bsub, struct gsm_paging_request *req)
