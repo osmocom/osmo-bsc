@@ -21,6 +21,8 @@
  *
  */
 
+#include <osmocom/sccp/sccp_types.h>
+
 #include <osmocom/bsc/lb.h>
 
 #include <osmocom/gsm/bssmap_le.h>
@@ -131,6 +133,48 @@ static int handle_unitdata_from_smlc(const struct osmo_sccp_addr *smlc_addr, str
 	}
 }
 
+/* Find an SMLC by its remote SCCP address */
+static struct smlc_config *get_smlc_by_addr(const struct osmo_sccp_addr *smlc_addr)
+{
+	struct smlc_config *smlc = bsc_gsmnet->smlc;
+	if (osmo_sccp_addr_ri_cmp(smlc_addr, &smlc->smlc_addr) == 0)
+		return smlc;
+	LOGP(DMSC, LOGL_ERROR, "Unable to find SMLC data under address: %s\n",
+	     osmo_sccp_addr_dump(smlc_addr));
+	return NULL;
+}
+
+static int handle_notice_ind(const struct osmo_scu_notice_param *ni)
+{
+	int rc = 0;
+	struct smlc_config *smlc = get_smlc_by_addr(&ni->calling_addr);
+	if (!smlc) {
+		LOGP(DLCS, LOGL_DEBUG, "(calling_addr=%s) N-NOTICE.ind cause=%u='%s' importance=%u didn't match SMLC, ignoring\n",
+		     osmo_sccp_addr_dump(&ni->calling_addr),
+		     ni->cause, osmo_sccp_return_cause_name(ni->cause),
+		     ni->importance);
+		return -EINVAL;
+	}
+
+	LOGP(DLCS, LOGL_NOTICE, "(calling_addr=%s) N-NOTICE.ind cause=%u='%s' importance=%u\n",
+	     osmo_sccp_addr_dump(&ni->calling_addr),
+	     ni->cause, osmo_sccp_return_cause_name(ni->cause),
+	     ni->importance);
+
+	switch (ni->cause) {
+	case SCCP_RETURN_CAUSE_SUBSYSTEM_CONGESTION:
+	case SCCP_RETURN_CAUSE_NETWORK_CONGESTION:
+		/* Transient failures (hopefully), keep going. */
+		return rc;
+	default:
+		break;
+	}
+
+	/* Messages are not arriving to SMLC. Kick the BSSMAP back to DISC state. */
+	bssmap_reset_set_disconnected(smlc->bssmap_reset);
+	return rc;
+}
+
 static int sccp_sap_up(struct osmo_prim_hdr *oph, void *_scu)
 {
 	struct osmo_scu_prim *scu_prim = (struct osmo_scu_prim *)oph;
@@ -145,6 +189,11 @@ static int sccp_sap_up(struct osmo_prim_hdr *oph, void *_scu)
 		/* Handle inbound UnitData */
 		DEBUGP(DLCS, "N-UNITDATA.ind(%s)\n", osmo_hexdump(msgb_l2(oph->msg), msgb_l2len(oph->msg)));
 		rc = handle_unitdata_from_smlc(&scu_prim->u.unitdata.calling_addr, oph->msg, scu);
+		break;
+
+	case OSMO_PRIM(OSMO_SCU_PRIM_N_NOTICE, PRIM_OP_INDICATION):
+		DEBUGP(DMSC, "N-NOTICE.ind(%s)\n", osmo_hexdump(msgb_l2(oph->msg), msgb_l2len(oph->msg)));
+		rc = handle_notice_ind(&scu_prim->u.notice);
 		break;
 
 	case OSMO_PRIM(OSMO_SCU_PRIM_N_CONNECT, PRIM_OP_INDICATION):
