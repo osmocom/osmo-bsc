@@ -144,6 +144,17 @@ static struct smlc_config *get_smlc_by_addr(const struct osmo_sccp_addr *smlc_ad
 	return NULL;
 }
 
+/* Find an SMLC by its remote sigtran point code on a given cs7 instance. */
+static struct smlc_config *get_smlc_by_pc(uint32_t pc)
+{
+	struct smlc_config *smlc = bsc_gsmnet->smlc;
+	if ((smlc->smlc_addr.presence & OSMO_SCCP_ADDR_T_PC) == 0)
+		return NULL;
+	if (smlc->smlc_addr.pc != pc)
+		return NULL;
+	return smlc;
+}
+
 static int handle_notice_ind(const struct osmo_scu_notice_param *ni)
 {
 	int rc = 0;
@@ -173,6 +184,95 @@ static int handle_notice_ind(const struct osmo_scu_notice_param *ni)
 	/* Messages are not arriving to SMLC. Kick the BSSMAP back to DISC state. */
 	bssmap_reset_set_disconnected(smlc->bssmap_reset);
 	return rc;
+}
+
+static void handle_pcstate_ind(struct osmo_ss7_instance *cs7, const struct osmo_scu_pcstate_param *pcst)
+{
+	struct smlc_config *smlc;
+	bool connected;
+	bool disconnected;
+
+	LOGP(DLCS, LOGL_DEBUG, "N-PCSTATE ind: affected_pc=%u=%s sp_status=%s remote_sccp_status=%s\n",
+	     pcst->affected_pc, osmo_ss7_pointcode_print(cs7, pcst->affected_pc),
+	     osmo_sccp_sp_status_name(pcst->sp_status),
+	     osmo_sccp_rem_sccp_status_name(pcst->remote_sccp_status));
+
+	/* If we don't care about that point-code, ignore PCSTATE. */
+	smlc = get_smlc_by_pc(pcst->affected_pc);
+	if (!smlc)
+		return;
+
+	/* See if this marks the point code to have become available, or to have been lost.
+	 *
+	 * I want to detect two events:
+	 * - connection event (both indicators say PC is reachable).
+	 * - disconnection event (at least one indicator says the PC is not reachable).
+	 *
+	 * There are two separate incoming indicators with various possible values -- the incoming events can be:
+	 *
+	 * - neither connection nor disconnection indicated -- just indicating congestion
+	 *   connected == false, disconnected == false --> do nothing.
+	 * - both incoming values indicate that we are connected
+	 *   --> trigger connected
+	 * - both indicate we are disconnected
+	 *   --> trigger disconnected
+	 * - one value indicates 'connected', the other indicates 'disconnected'
+	 *   --> trigger disconnected
+	 *
+	 * Congestion could imply that we're connected, but it does not indicate that a PC's reachability changed, so no need to
+	 * trigger on that.
+	 */
+	connected = false;
+	disconnected = false;
+
+	switch (pcst->sp_status) {
+	case OSMO_SCCP_SP_S_ACCESSIBLE:
+		connected = true;
+		break;
+	case OSMO_SCCP_SP_S_INACCESSIBLE:
+		disconnected = true;
+		break;
+	default:
+	case OSMO_SCCP_SP_S_CONGESTED:
+		/* Neither connecting nor disconnecting */
+		break;
+	}
+
+	switch (pcst->remote_sccp_status) {
+	case OSMO_SCCP_REM_SCCP_S_AVAILABLE:
+		if (!disconnected)
+			connected = true;
+		break;
+	case OSMO_SCCP_REM_SCCP_S_UNAVAILABLE_UNKNOWN:
+	case OSMO_SCCP_REM_SCCP_S_UNEQUIPPED:
+	case OSMO_SCCP_REM_SCCP_S_INACCESSIBLE:
+		disconnected = true;
+		connected = false;
+		break;
+	default:
+	case OSMO_SCCP_REM_SCCP_S_CONGESTED:
+		/* Neither connecting nor disconnecting */
+		break;
+	}
+
+	if (disconnected && bssmap_reset_is_conn_ready(smlc->bssmap_reset)) {
+		LOGP(DLCS, LOGL_NOTICE,
+		     "now unreachable: N-PCSTATE ind: pc=%u=%s sp_status=%s remote_sccp_status=%s\n",
+		     pcst->affected_pc, osmo_ss7_pointcode_print(cs7, pcst->affected_pc),
+		     osmo_sccp_sp_status_name(pcst->sp_status),
+		     osmo_sccp_rem_sccp_status_name(pcst->remote_sccp_status));
+		/* A previously usable MSC has disconnected. Kick the BSSMAP back to DISC state. */
+		bssmap_reset_set_disconnected(smlc->bssmap_reset);
+	} else if (connected && !bssmap_reset_is_conn_ready(smlc->bssmap_reset)) {
+		LOGP(DLCS, LOGL_NOTICE,
+		     "now available: N-PCSTATE ind: pc=%u=%s sp_status=%s remote_sccp_status=%s\n",
+		     pcst->affected_pc, osmo_ss7_pointcode_print(cs7, pcst->affected_pc),
+		     osmo_sccp_sp_status_name(pcst->sp_status),
+		     osmo_sccp_rem_sccp_status_name(pcst->remote_sccp_status));
+		/* A previously unusable MSC has become reachable. Trigger immediate BSSMAP RESET -- we would resend a
+		 * RESET either way, but we might as well do it now to speed up connecting. */
+		bssmap_reset_resend_reset(smlc->bssmap_reset);
+	}
 }
 
 static int sccp_sap_up(struct osmo_prim_hdr *oph, void *_scu)
@@ -255,6 +355,10 @@ static int sccp_sap_up(struct osmo_prim_hdr *oph, void *_scu)
 				rc = lcs_loc_req_rx_bssmap_le(conn, oph->msg);
 			}
 		}
+		break;
+
+	case OSMO_PRIM(OSMO_SCU_PRIM_N_PCSTATE, PRIM_OP_INDICATION):
+		handle_pcstate_ind(osmo_sccp_get_ss7(sccp), &scu_prim->u.pcstate);
 		break;
 
 	default:
