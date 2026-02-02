@@ -127,6 +127,7 @@ void assignment_reset(struct gsm_subscriber_connection *conn)
 		struct gsm_lchan *lchan = conn->assignment.new_lchan;
 		conn->assignment.new_lchan = NULL;
 		lchan_release(lchan, false, true, RSL_ERR_EQUIPMENT_FAIL, NULL);
+		lchan_forget_conn(lchan);
 	}
 
 	if (conn->assignment.created_ci_for_msc) {
