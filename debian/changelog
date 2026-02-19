@@ -1,3 +1,10 @@
+osmo-bsc (1.14.1) unstable; urgency=medium
+
+  * ipaccess-config-e1-driver: Make sure struct input_signal_data is zero initialized
+  * assignment_fsm: Fix use-after-free of lchan->conn
+
+ -- Pau Espin Pedrol <pespin@sysmocom.de>  Thu, 19 Feb 2026 13:02:41 +0100
+
 osmo-bsc (1.14.0) unstable; urgency=medium
 
   [ csaba.sipos ]
