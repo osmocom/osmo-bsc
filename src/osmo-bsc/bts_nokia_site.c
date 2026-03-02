@@ -576,6 +576,18 @@ static const struct value_string nokia_bts_types[] = {
 	{ 0x16,		"UltraSite GSM/US-TDMA 850" },
 	{ 0x18,		"MetroSite GSM/US-TDMA 850" },
 	{ 0x19,		"UltraSite GSM 800/1900" },
+	{ 0x1a,		"Flexi EDGE GSM 900" },
+	{ 0x1b,		"Flexi EDGE GSM 1800" },
+	{ 0x1c,		"Flexi EDGE GSM 1900" },
+	{ 0x1d,		"Flexi EDGE GSM 850" },
+	{ 0x1e,		"Flexi EDGE GSM 900 & 1800" },
+	{ 0x1f,		"Flexi EDGE GSM 800 & 1900" }, /* Nokia 800 is actual 850 MHz */
+	{ 0x20,		"Flexi MultiRadio (no shared radio modules)" },
+	{ 0x21,		"Flexi MultiRadio (some or all radios shared, SW=GSM)" },
+	{ 0x25,		"Flexi MultiRadio (some or all radios shared, SW is other than GSM)" },
+	{ 0x28,		"Flexi MultiRadio 10 (no shared radio modules)" },
+	{ 0x29,		"Flexi MultiRadio 10 (some or all radios shared, SW=GSM)" },
+	{ 0x2a,		"Flexi MultiRadio 10 (some or all radios shared, SW is other than GSM)" },
 	{ 0, 		NULL }
 };
 
