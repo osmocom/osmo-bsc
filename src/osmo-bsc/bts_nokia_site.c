@@ -117,10 +117,13 @@ static void start_sabm_in_line(struct e1inp_line *line, int start, int sapi)
 #endif
 
 			if (start) {
+				/* Raise N200 for RSL to fix slow TRX reset */
+				if (link->sapi == SAPI_RSL)
+					ts->lapd->profile.n200 = 20;
 				ts->lapd->profile.t200_sec = 1;
 				ts->lapd->profile.t200_usec = 0;
 				lapd_sap_start(ts->lapd, link->tei,
-					       link->sapi);
+						link->sapi);
 			} else
 				lapd_sap_stop(ts->lapd, link->tei,
 					      link->sapi);
