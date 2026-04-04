@@ -897,8 +897,8 @@ FUNC_RESULT_COUNTER(BTS, SRVCC)
 
 static void send_handover_performed(struct gsm_subscriber_connection *conn)
 {
-	struct gsm_lchan *lchan = conn->lchan;
 	struct handover *ho = &conn->ho;
+	struct gsm_lchan *lchan = ho->new_lchan;
 	struct osmo_cell_global_id *cell;
 	struct gsm0808_handover_performed ho_perf_params = {};
 	struct msgb *msg;
@@ -909,7 +909,7 @@ static void send_handover_performed(struct gsm_subscriber_connection *conn)
 	ho_perf_params.cause = GSM0808_CAUSE_HANDOVER_SUCCESSFUL;
 
 	/* Cell Identifier 3.2.2.17 */
-	cell = cgi_for_msc(conn->sccp.msc, conn_get_bts(conn));
+	cell = cgi_for_msc(conn->sccp.msc, lchan->ts->trx->bts);
 	if (!cell) {
 		LOG_HO(conn, LOGL_ERROR, "Failed to generate Cell Identifier IE, can't send HANDOVER PERFORMED!\n");
 		return;
@@ -941,7 +941,7 @@ static void send_handover_performed(struct gsm_subscriber_connection *conn)
 		if (gscon_is_aoip(conn)) {
 			/* Extrapolate speech codec from speech mode */
 			gsm0808_speech_codec_from_chan_type(&sc, ho_perf_params.speech_version_chosen);
-			sc.cfg = conn->lchan->current_ch_mode_rate.s15_s0;
+			sc.cfg = lchan->current_ch_mode_rate.s15_s0;
 			memcpy(&ho_perf_params.speech_codec_chosen, &sc, sizeof(sc));
 			ho_perf_params.speech_codec_chosen_present = true;
 		}
