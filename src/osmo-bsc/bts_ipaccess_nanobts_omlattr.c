@@ -47,7 +47,7 @@ static inline uint32_t ipacc_parse_supp_flags(const struct abis_om_fom_hdr *foh,
 {
 	uint32_t u32 = 0;
 
-	for (unsigned int i = 0; i < OSMO_MAX(e->len, 4); i++)
+	for (unsigned int i = 0; i < OSMO_MIN(e->len, sizeof(u32)); i++)
 		u32 |= e->val[i] << (i * 8);
 	for (const struct value_string *vs = flags; vs->value && vs->str; vs++) {
 		if (u32 & vs->value)
