@@ -365,6 +365,86 @@ void assignment_fsm_update_id(struct gsm_subscriber_connection *conn)
 							    new_lchan->ts->max_primary_lchans : 0));
 }
 
+/* Check whether the ipaccess BTS supports the requested channel mode.
+ * Returns false if the BTS has reported its supported channel modes and the
+ * requested mode is absent from that list.  Returns true if the Supported
+ * Features IE was never received (older osmo-bts versions do not send it). */
+static bool ipacc_chan_mode_supported(const struct gsm_lchan *lchan,
+				      const struct channel_mode_and_rate *ch_mode_rate)
+{
+	const struct ipacc_supp_feat *feat =
+		&lchan->ts->trx->bb_transc.mo.ipaccess.chan_modes;
+	uint32_t flag = 0;
+
+	/* Supported Features IE was not received */
+	if (!feat->present)
+		return true;
+
+	switch (gsm48_chan_mode_to_non_vamos(ch_mode_rate->chan_mode)) {
+	case GSM48_CMODE_SPEECH_V1:
+		flag = (lchan->type == GSM_LCHAN_TCH_H)
+			? NM_IPAC_F_CHANM_SPEECH_HS : NM_IPAC_F_CHANM_SPEECH_FS;
+		break;
+	case GSM48_CMODE_SPEECH_EFR:
+		flag = NM_IPAC_F_CHANM_SPEECH_EFS;
+		break;
+	case GSM48_CMODE_SPEECH_AMR:
+		flag = (lchan->type == GSM_LCHAN_TCH_H)
+			? NM_IPAC_F_CHANM_SPEECH_AHS : NM_IPAC_F_CHANM_SPEECH_AFS;
+		break;
+	case GSM48_CMODE_DATA_3k6:
+	case GSM48_CMODE_DATA_6k0:
+	case GSM48_CMODE_DATA_12k0:
+	case GSM48_CMODE_DATA_14k5:
+		if (ch_mode_rate->data_transparent) {
+			switch (ch_mode_rate->data_rate.t) {
+			case RSL_CMOD_CSD_T_1200_75:
+				flag = NM_IPAC_F_CHANM_CSD_T_1200_75;
+				break;
+			case RSL_CMOD_CSD_T_600:
+				flag = NM_IPAC_F_CHANM_CSD_T_600;
+				break;
+			case RSL_CMOD_CSD_T_1k2:
+				flag = NM_IPAC_F_CHANM_CSD_T_1k2;
+				break;
+			case RSL_CMOD_CSD_T_2k4:
+				flag = NM_IPAC_F_CHANM_CSD_T_2k4;
+				break;
+			case RSL_CMOD_CSD_T_4k8:
+				flag = NM_IPAC_F_CHANM_CSD_T_4k8;
+				break;
+			case RSL_CMOD_CSD_T_9k6:
+				flag = NM_IPAC_F_CHANM_CSD_T_9k6;
+				break;
+			case RSL_CMOD_CSD_T_14k4:
+				flag = NM_IPAC_F_CHANM_CSD_T_14k4;
+				break;
+			default:
+				return true; /* unhandled T rate */
+			}
+		} else {
+			switch (ch_mode_rate->data_rate.nt) {
+			case RSL_CMOD_CSD_NT_6k0:
+				flag = NM_IPAC_F_CHANM_CSD_NT_4k8;
+				break;
+			case RSL_CMOD_CSD_NT_12k0:
+				flag = NM_IPAC_F_CHANM_CSD_NT_9k6;
+				break;
+			case RSL_CMOD_CSD_NT_14k5:
+				flag = NM_IPAC_F_CHANM_CSD_NT_14k4;
+				break;
+			default:
+				return true; /* unhandled NT rate */
+			}
+		}
+		break;
+	default:
+		return true; /* unknown channel mode */
+	}
+
+	return (feat->val & flag) != 0;
+}
+
 static bool lchan_type_compat_with_mode(const struct gsm_lchan *lchan,
 					const struct channel_mode_and_rate *ch_mode_rate)
 {
@@ -373,6 +453,8 @@ static bool lchan_type_compat_with_mode(const struct gsm_lchan *lchan,
 
 	switch (gsm48_chan_mode_to_non_vamos(chan_mode)) {
 	case GSM48_CMODE_SIGN:
+		/* Signalling does not require a specific channel mode on the BTS,
+		 * so skip the ipaccess feature check (below) and return directly. */
 		switch (lchan->type) {
 		case GSM_LCHAN_TCH_F: return chan_rate == CH_RATE_FULL;
 		case GSM_LCHAN_TCH_H: return chan_rate == CH_RATE_HALF;
@@ -388,21 +470,38 @@ static bool lchan_type_compat_with_mode(const struct gsm_lchan *lchan,
 		 * an explicit override by the 'chan_rate' argument */
 		switch (lchan->type) {
 		case GSM_LCHAN_TCH_F:
-			return chan_rate == CH_RATE_FULL;
+			if (chan_rate != CH_RATE_FULL)
+				return false;
+			break;
 		case GSM_LCHAN_TCH_H:
-			return chan_rate == CH_RATE_HALF;
+			if (chan_rate != CH_RATE_HALF)
+				return false;
+			break;
 		default:
 			return false;
 		}
+		break;
 
 	case GSM48_CMODE_DATA_12k0:
 	case GSM48_CMODE_DATA_14k5:
 	case GSM48_CMODE_SPEECH_EFR:
 		/* these services all explicitly require a TCH/F */
-		return lchan->type == GSM_LCHAN_TCH_F;
+		if (lchan->type != GSM_LCHAN_TCH_F)
+			return false;
+		break;
 
 	default:
 		return false;
+	}
+
+	switch (lchan->ts->trx->bts->type) {
+	case GSM_BTS_TYPE_NANOBTS:
+	case GSM_BTS_TYPE_OSMOBTS:
+		/* osmo-bts and nanoBTS report supported channel modes during
+		 * the OML bring-up - additionally check them */
+		return ipacc_chan_mode_supported(lchan, ch_mode_rate);
+	default:
+		return true;
 	}
 }
 
