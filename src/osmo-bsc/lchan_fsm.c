@@ -736,6 +736,11 @@ static void lchan_fsm_unused(struct osmo_fsm_inst *fi, uint32_t event, void *dat
 		lchan_fsm_state_chg(LCHAN_ST_WAIT_TS_READY);
 		break;
 
+	case LCHAN_EV_RTP_RELEASED:
+	case LCHAN_EV_RTP_ERROR:
+		/* Ignore late lchan_rtp_fsm events arriving after the lchan is back to UNUSED. */
+		break;
+
 	default:
 		OSMO_ASSERT(false);
 	}
@@ -1710,6 +1715,8 @@ static const struct osmo_fsm_state lchan_fsm_states[] = {
 		.action = lchan_fsm_unused,
 		.in_event_mask = 0
 			| S(LCHAN_EV_ACTIVATE)
+			| S(LCHAN_EV_RTP_RELEASED) /* ignore late lchan_rtp_fsm release events */
+			| S(LCHAN_EV_RTP_ERROR) /* ignore late lchan_rtp_fsm error events */
 			,
 		.out_state_mask = 0
 			| S(LCHAN_ST_WAIT_TS_READY)
@@ -1869,6 +1876,7 @@ static const struct osmo_fsm_state lchan_fsm_states[] = {
 		.onenter = lchan_fsm_wait_after_error_onenter,
 		.in_event_mask = 0
 			| S(LCHAN_EV_RTP_RELEASED) /* ignore late lchan_rtp_fsm release events */
+			| S(LCHAN_EV_RTP_ERROR) /* ignore late lchan_rtp_fsm error events */
 			,
 		.out_state_mask = 0
 			| S(LCHAN_ST_UNUSED)
