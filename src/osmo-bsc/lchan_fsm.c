@@ -977,12 +977,22 @@ static void lchan_fsm_wait_activ_ack(struct osmo_fsm_inst *fi, uint32_t event, v
 			lchan->release.rsl_error_cause = *(uint8_t*)data;
 			lchan->release.rr_cause = bsc_gsm48_rr_cause_from_rsl_cause(lchan->release.rsl_error_cause);
 			lchan->release.in_error = true;
-			if (lchan->release.rsl_error_cause != RSL_ERR_RCH_ALR_ACTV_ALLOC)
-				next_state = LCHAN_ST_BORKEN;
-			else
+			switch (lchan->release.rsl_error_cause) {
+			case RSL_ERR_RCH_ALR_ACTV_ALLOC:
 				/* Taking this over from legacy code: send an RF Chan Release even though
 				 * the Activ was NACKed. Is this really correct? */
 				next_state = LCHAN_ST_WAIT_RF_RELEASE_ACK;
+				break;
+			case RSL_ERR_SERV_OPT_UNAVAIL:
+			case RSL_ERR_SERV_OPT_UNIMPL:
+				/* BTS does not support the requested service or mode; the lchan
+				 * itself is not broken, so don't mark it as such. */
+				next_state = LCHAN_ST_WAIT_AFTER_ERROR;
+				break;
+			default:
+				next_state = LCHAN_ST_BORKEN;
+				break;
+			}
 
 			lchan_fail_to(next_state, "Chan Activ NACK: %s (0x%x)",
 				      rsl_err_name(lchan->release.rsl_error_cause), lchan->release.rsl_error_cause);
@@ -1759,6 +1769,7 @@ static const struct osmo_fsm_state lchan_fsm_states[] = {
 		.out_state_mask = 0
 			| S(LCHAN_ST_UNUSED)
 			| S(LCHAN_ST_WAIT_RLL_RTP_ESTABLISH)
+			| S(LCHAN_ST_WAIT_AFTER_ERROR)
 			| S(LCHAN_ST_BORKEN)
 			| S(LCHAN_ST_WAIT_RF_RELEASE_ACK)
 			,
