@@ -905,6 +905,11 @@ static void send_handover_performed(struct gsm_subscriber_connection *conn)
 	struct gsm0808_speech_codec sc;
 	int rc;
 
+	if (lchan == NULL) {
+		LOG_HO(conn, LOGL_ERROR, "Target lchan is NULL, can't send HANDOVER PERFORMED!\n");
+		return;
+	}
+
 	/* Cause 3.2.2.5 */
 	ho_perf_params.cause = GSM0808_CAUSE_HANDOVER_SUCCESSFUL;
 
