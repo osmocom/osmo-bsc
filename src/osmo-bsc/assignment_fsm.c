@@ -442,7 +442,13 @@ static bool ipacc_chan_mode_supported(const struct gsm_lchan *lchan,
 		return true; /* unknown channel mode */
 	}
 
-	return (feat->val & flag) != 0;
+	if (feat->val & flag)
+		return true;
+
+	LOG_ASSIGNMENT(lchan->conn, LOGL_NOTICE,
+		       "BTS does not support channel mode '%s'\n",
+		       get_value_string(abis_nm_ipacc_chanm_desc, flag));
+	return false;
 }
 
 static bool lchan_type_compat_with_mode(const struct gsm_lchan *lchan,
