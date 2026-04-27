@@ -677,6 +677,8 @@ static const char *get_object_state_string(uint8_t object_state)
 #define NOKIA_MSG_STATE_CHANGED         172
 #define NOKIA_MSG_ALARM                 174
 #define NOKIA_MSG_CHA_ADM_STATE         175
+#define NOKIA_MSG_COMMISS_TEST_COMPL    178
+#define NOKIA_MSG_COMMISS_TEST_REQ      179
 
 /* some element IDs */
 
@@ -1993,6 +1995,14 @@ static int abis_nm_rcvmsg_fom(struct e1inp_sign_link *sign_link,
 		}
 		/* send ACK */
 		abis_nm_ack(bts, ref);
+		break;
+	case NOKIA_MSG_COMMISS_TEST_REQ:
+		/* The BTS is asking us to do a commissioning test.
+		 * We don't do any actual tests currently, but we need
+		 * to tell the BTS that we did what it asked, so it
+		 * can proceed further in its init sequence.
+		 */
+		abis_nm_send(bts, NOKIA_MSG_COMMISS_TEST_COMPL, ref, NULL, 0);
 		break;
 	}
 	nokia_abis_nm_queue_send_next(bts);
