@@ -431,7 +431,7 @@ DEFUN_ATTR(cfg_bts_nokia_site_no_loc_rel_cnf,
 
 DEFUN_ATTR(cfg_bts_nokia_site_bts_reset_timer_cnf,
 	   cfg_bts_nokia_site_bts_reset_timer_cnf_cmd,
-	   "nokia_site bts-reset-timer <15-100>",
+	   "nokia_site bts-reset-timer <15-300>",
 	   NOKIA_STR
 	   "The amount of time between BTS_RESET is sent "
 	   "and the BTS is being bootstrapped\n"
