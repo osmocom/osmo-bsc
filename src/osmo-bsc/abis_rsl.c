@@ -577,6 +577,31 @@ static void put_osmo_training_sequence_ie(struct msgb *msg, uint8_t tsc_set, uin
 	msgb_put_u8(msg, tsc);
 }
 
+static void add_phase1_chan_ident(struct msgb *msg, const struct gsm48_chan_desc *cd)
+{
+	uint8_t *len;
+
+	/*
+	 * This Channel Identification IE is a Phase1 backward compatibility
+	 * measure.  It contains the GSM48 Channel Description and the
+	 * Mobile Allocation.  TS 48.058 section 9.3.5 asks for MA
+	 * to have a length of zero.  We are using msgb_l3len() to calculate
+	 * the length of both messages.
+	 */
+	msgb_v_put(msg, RSL_IE_CHAN_IDENT);
+	len = msgb_put(msg, 1);
+	msgb_tv_fixed_put(msg, GSM48_IE_CHANDESC_2, sizeof(*cd), (const uint8_t *) cd);
+
+	/* See 3GPP TS 48.058 (version 15.0.0), section 9.3.5 "Channel Identification".
+	 * The 3GPP TS 24.008 "Mobile Allocation" shall for compatibility reasons
+	 * be included but empty, i.e. the length shall be zero. */
+	msgb_tlv_put(msg, GSM48_IE_MA_AFTER, 0, NULL);
+
+	/* update the calculated size */
+	msg->l3h = len + 1;
+	*len = msgb_l3len(msg);
+}
+
 /* Chapter 8.4.1 */
 int rsl_tx_chan_activ(struct gsm_lchan *lchan, uint8_t act_type, uint8_t ho_ref)
 {
@@ -585,7 +610,6 @@ int rsl_tx_chan_activ(struct gsm_lchan *lchan, uint8_t act_type, uint8_t ho_ref)
 	struct abis_rsl_dchan_hdr *dh;
 	struct msgb *msg;
 	int rc;
-	uint8_t *len;
 
 	struct rsl_ie_chan_mode cm;
 	struct gsm48_chan_desc cd;
@@ -625,25 +649,28 @@ int rsl_tx_chan_activ(struct gsm_lchan *lchan, uint8_t act_type, uint8_t ho_ref)
 	msgb_tlv_put(msg, RSL_IE_CHAN_MODE, sizeof(cm),
 		     (uint8_t *) &cm);
 
-	/*
-	 * The Channel Identification is needed for Phase1 phones
-	 * and it contains the GSM48 Channel Description and the
-	 * Mobile Allocation. The GSM 08.58 asks for the Mobile
-	 * Allocation to have a length of zero. We are using the
-	 * msgb_l3len to calculate the length of both messages.
+	/* The description of CHAN ACTIV command message in TS 48.058
+	 * section 8.4.1 lists Channel Identification as an optional IE,
+	 * with a note that reads "Included if compatibility with phase1
+	 * is required."  This note may have been misinterpreted as
+	 * referring to compatibility with Phase 1 phones - but since
+	 * this network-internal Abis detail is invisible to phones,
+	 * the real intent of GSM spec authors here must have been
+	 * compatibility with Phase 1 BTS.
+	 *
+	 * Previous versions of OsmoBSC would always include this IE,
+	 * and it appears that all previously supported BTS models
+	 * would simply ignore it.  However, newer Nokia BTS models
+	 * (observed on Flexi Multiradio at least) dislike this IE
+	 * and return CHAN ACTIV NACK with an optional IE error cause
+	 * if it is included.
+	 *
+	 * To avoid changing OsmoBSC behavior for other users,
+	 * let us conditionalize removal of this legacy IE on
+	 * Nokia BTS for now.
 	 */
-	msgb_v_put(msg, RSL_IE_CHAN_IDENT);
-	len = msgb_put(msg, 1);
-	msgb_tv_fixed_put(msg, GSM48_IE_CHANDESC_2, sizeof(cd), (const uint8_t *) &cd);
-
-	/* See 3GPP TS 48.058 (version 15.0.0), section 9.3.5 "Channel Identification".
-	 * The 3GPP TS 24.008 "Mobile Allocation" shall for compatibility reasons
-	 * be included but empty, i.e. the length shall be zero. */
-	msgb_tlv_put(msg, GSM48_IE_MA_AFTER, 0, NULL);
-
-	/* update the calculated size */
-	msg->l3h = len + 1;
-	*len = msgb_l3len(msg);
+	if (!is_nokia_bts(bts))
+		add_phase1_chan_ident(msg, &cd);
 
 	if (lchan->encr.alg_a5_n > 0) {
 		uint8_t encr_info[MAX_A5_KEY_LEN+2];
