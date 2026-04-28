@@ -387,7 +387,7 @@ DEFUN_DEPRECATED(cfg_bts_rsl_ip,
       "Set the IPA RSL IP Address of the BSC\n"
       "Destination IP address for RSL connection\n");
 
-#define NOKIA_STR "Nokia *Site related commands\n"
+#define NOKIA_STR "Nokia BTS related commands\n"
 
 DEFUN_USRATTR(cfg_bts_nokia_site_skip_reset,
 	      cfg_bts_nokia_site_skip_reset_cmd,
@@ -400,7 +400,7 @@ DEFUN_USRATTR(cfg_bts_nokia_site_skip_reset,
 	struct gsm_bts *bts = vty->index;
 
 	if (bts->type != GSM_BTS_TYPE_NOKIA_SITE) {
-		vty_out(vty, "%% BTS is not of Nokia *Site type%s", VTY_NEWLINE);
+		vty_out(vty, "%% BTS is not of Nokia type%s", VTY_NEWLINE);
 		return CMD_WARNING;
 	}
 
@@ -420,8 +420,7 @@ DEFUN_ATTR(cfg_bts_nokia_site_no_loc_rel_cnf,
 	struct gsm_bts *bts = vty->index;
 
 	if (!is_nokia_bts(bts)) {
-		vty_out(vty, "%% BTS is not of Nokia *Site type%s",
-			VTY_NEWLINE);
+		vty_out(vty, "%% BTS is not of Nokia type%s", VTY_NEWLINE);
 		return CMD_WARNING;
 	}
 
@@ -442,8 +441,7 @@ DEFUN_ATTR(cfg_bts_nokia_site_bts_reset_timer_cnf,
 	struct gsm_bts *bts = vty->index;
 
 	if (!is_nokia_bts(bts)) {
-		vty_out(vty, "%% BTS is not of Nokia *Site type%s",
-			VTY_NEWLINE);
+		vty_out(vty, "%% BTS is not of Nokia type%s", VTY_NEWLINE);
 		return CMD_WARNING;
 	}
 
@@ -464,7 +462,7 @@ DEFUN_USRATTR(cfg_bts_nokia_site_hopping_mode,
 	struct gsm_bts *bts = vty->index;
 
 	if (!is_nokia_bts(bts)) {
-		vty_out(vty, "%% BTS is not of Nokia *Site type%s", VTY_NEWLINE);
+		vty_out(vty, "%% BTS is not of Nokia type%s", VTY_NEWLINE);
 		return CMD_WARNING;
 	}
 
