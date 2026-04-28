@@ -1210,6 +1210,8 @@ static int make_bts_config(struct gsm_bts *bts, uint8_t bts_type, int n_trx, uin
 			break;
 		}
 	}
+	/* enable or disable Rx diversity */
+	fu_config[len + 7] = bts->nokia.rx_diversity;
 	len += sizeof(bts_config_2);
 
 	/* set extended cell radius for each TRX */

@@ -474,6 +474,26 @@ DEFUN_USRATTR(cfg_bts_nokia_site_hopping_mode,
 	return CMD_SUCCESS;
 }
 
+DEFUN_USRATTR(cfg_bts_nokia_site_rx_div,
+	      cfg_bts_nokia_site_rx_div_cmd,
+	      X(BSC_VTY_ATTR_RESTART_ABIS_OML_LINK),
+	      "nokia_site rx-diversity (0|1)",
+	      NOKIA_STR
+	      "Rx diversity feature\n"
+	      "Disable Rx diversity\n" "Enable Rx diversity\n")
+{
+	struct gsm_bts *bts = vty->index;
+
+	if (!is_nokia_bts(bts)) {
+		vty_out(vty, "%% BTS is not of Nokia type%s", VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	bts->nokia.rx_diversity = atoi(argv[0]);
+
+	return CMD_SUCCESS;
+}
+
 #define OML_STR	"Organization & Maintenance Link\n"
 #define IPA_STR "A-bis/IP Specific Options\n"
 
@@ -4720,6 +4740,7 @@ static void config_write_bts_single(struct vty *vty, struct gsm_bts *bts)
 			bts->nokia.no_loc_rel_cnf, VTY_NEWLINE);
 		vty_out(vty, "  nokia_site bts-reset-timer %d%s", bts->nokia.bts_reset_timer_cnf, VTY_NEWLINE);
 		vty_out(vty, "  nokia_site hopping-mode %s%s", get_value_string(nokia_hopping_mode_strs, bts->nokia.hopping_mode), VTY_NEWLINE);
+		vty_out(vty, "  nokia_site rx-diversity %d%s", bts->nokia.rx_diversity, VTY_NEWLINE);
 
 		/* fall through: Nokia requires "oml e1" parameters also */
 	default:
@@ -4948,6 +4969,7 @@ int bts_vty_init(void)
 	install_element(BTS_NODE, &cfg_bts_nokia_site_no_loc_rel_cnf_cmd);
 	install_element(BTS_NODE, &cfg_bts_nokia_site_bts_reset_timer_cnf_cmd);
 	install_element(BTS_NODE, &cfg_bts_nokia_site_hopping_mode_cmd);
+	install_element(BTS_NODE, &cfg_bts_nokia_site_rx_div_cmd);
 	install_element(BTS_NODE, &cfg_bts_stream_id_cmd);
 	install_element(BTS_NODE, &cfg_bts_deprecated_stream_id_cmd);
 	install_element(BTS_NODE, &cfg_bts_oml_e1_cmd);
