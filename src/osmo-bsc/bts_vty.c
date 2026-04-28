@@ -399,7 +399,7 @@ DEFUN_USRATTR(cfg_bts_nokia_site_skip_reset,
 {
 	struct gsm_bts *bts = vty->index;
 
-	if (bts->type != GSM_BTS_TYPE_NOKIA_SITE) {
+	if (!is_nokia_bts(bts)) {
 		vty_out(vty, "%% BTS is not of Nokia type%s", VTY_NEWLINE);
 		return CMD_WARNING;
 	}
