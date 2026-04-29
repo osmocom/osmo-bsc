@@ -333,6 +333,23 @@ struct bts_depends_on_entry {
 	gsm_bts_nr_t bts_nr; /* See (struct gsm_bts *)->nr */
 };
 
+/* Both the standard GSM 12.21 flavor of OML and Nokia's proprietary flavor
+ * use segmentation, meaning that messages longer than 256 bytes (maximum
+ * that can fit into one LAPD frame with standard N201=260, with GSM 12.21
+ * FOM header taking up 4 bytes) have to be split and transferred one segment
+ * at a time.  While this mechanism appears to be not needed for any currently
+ * supported BTS that uses standard GSM 12.21 NM, we have to implement it
+ * for Nokia BTS in both Rx and Tx directions: we have to send at least one
+ * long OML message for all supported Nokia models, whereas Rx of long messages
+ * becomes a requirement with newer Flexi Multiradio BTS.
+ *
+ * In order to implement Rx of segmented OML messages, we need a reassembly
+ * buffer, and in order to size this buffer, we need an upper limit on the
+ * number of segments.  The following definition tunes this limit.
+ */
+#define NOKIA_OML_MAX_SEGMENT_LEN	256
+#define NOKIA_OML_MAX_RX_SEGMENTS	5
+
 /* One BTS */
 struct gsm_bts {
 	/* list header in net->bts_list */
@@ -491,6 +508,13 @@ struct gsm_bts {
 				wait_reset:2,		/* we are waiting for reset to complete */
 				hopping_mode:1;	/* hopping type selection for Nokia */
 			struct osmo_timer_list reset_timer;
+			/* segmented OML Rx buffer */
+			struct {
+				uint8_t buffer[NOKIA_OML_MAX_SEGMENT_LEN * NOKIA_OML_MAX_RX_SEGMENTS];
+				bool active;
+				uint8_t seg_count;
+				uint16_t byte_count;
+			} oml_seg_rx;
 		} nokia;
 	};
 

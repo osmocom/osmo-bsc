@@ -1,4 +1,5 @@
-/* Nokia XXXsite family specific code */
+/* Nokia BTS vendor-specific code, currently supporting Site family
+ * and Flexi Multiradio. */
 
 /* (C) 2011 by Dieter Spaar <spaar@mirider.augusta.de>
  *
@@ -1410,9 +1411,9 @@ static int abis_nm_send_multi_segments(struct gsm_bts *bts, uint8_t msg_type,
 		struct msgb *msg = nm_msgb_alloc();
 
 		if (seq == 0)
-			max_send = 256 - sizeof(struct abis_om_nokia_hdr);
+			max_send = NOKIA_OML_MAX_SEGMENT_LEN - sizeof(struct abis_om_nokia_hdr);
 		else
-			max_send = 256;
+			max_send = NOKIA_OML_MAX_SEGMENT_LEN;
 
 		if (len_remain > max_send) {
 			len_to_send = max_send;
@@ -1761,17 +1762,18 @@ static void reset_timer_cb(void *_bts)
  * - receive ACK, start RSL link(s)
  * ACK some other messages received from the BTS.
  *
- * Probably its also possible to configure the BTS without a reset, this
- * has not been tested yet.
+ * It is also possible to configure the BTS without a reset, but in this case
+ * the BTS does not accept any changes in configuration - therefore, the mode
+ * of skipping BSC-driven BTS reset is only for use during osmo-bsc development,
+ * when the developer-operator resets the BTS manually before each test run.
  */
 
 #define FIND_ELEM(data, data_len, ei, var, len) (find_element(data, data_len, ei, var, len) == len)
-static int abis_nm_rcvmsg_fom(struct msgb *mb)
+static int abis_nm_rcvmsg_fom(struct e1inp_sign_link *sign_link,
+			      uint8_t *l3_msg, unsigned l3_msg_len)
 {
-	struct e1inp_sign_link *sign_link = (struct e1inp_sign_link *)mb->dst;
 	struct gsm_bts *bts = sign_link->trx->bts;
-	struct abis_om_hdr *oh = msgb_l2(mb);
-	struct abis_om_nokia_hdr *noh = msgb_l3(mb);
+	struct abis_om_nokia_hdr *noh = (struct abis_om_nokia_hdr *) l3_msg;
 	uint8_t mt = noh->msg_type;
 	int ret = 0;
 	uint16_t ref = ntohs(noh->reference);
@@ -1787,18 +1789,13 @@ static int abis_nm_rcvmsg_fom(struct msgb *mb)
 	int ei_alarm_detail_len = 0;
 	int len_data;
 
-
-	if (bts->nokia.wait_reset) {
-		LOG_BTS(bts, DNM, LOGL_INFO, "Ignoring message while waiting for reset: %s\n", msgb_hexdump(mb));
-		return ret;
-	}
-
-	if (oh->length < sizeof(struct abis_om_nokia_hdr)) {
-		LOG_BTS(bts, DNM, LOGL_ERROR, "Message too short: %s\n", msgb_hexdump(mb));
+	if (l3_msg_len < sizeof(struct abis_om_nokia_hdr)) {
+		LOG_BTS(bts, DNM, LOGL_ERROR, "Message too short: %s\n",
+			osmo_hexdump(l3_msg, l3_msg_len));
 		return -EINVAL;
 	}
 
-	len_data = oh->length - sizeof(struct abis_om_nokia_hdr);
+	len_data = l3_msg_len - sizeof(struct abis_om_nokia_hdr);
 	LOG_BTS(bts, DNM, LOGL_INFO, "Rx (0x%02X) %s\n", mt, get_msg_type_name_string(mt));
 #if 0				/* debugging */
 	dump_elements(noh->data, len_data);
@@ -1839,8 +1836,11 @@ static int abis_nm_rcvmsg_fom(struct msgb *mb)
 				LOG_BTS(bts, DNM, LOGL_ERROR, "Rx No ACK (%u): don't know how to proceed\n", ack);
 				/* TODO: properly handle failures (NACK) */
 			}
-		} else
-			LOG_BTS(bts, DNM, LOGL_ERROR, "Rx MSG_ACK but no EI_ACK found: %s\n", msgb_hexdump(mb));
+		} else {
+			LOG_BTS(bts, DNM, LOGL_ERROR,
+				"Rx MSG_ACK but no EI_ACK found: %s\n",
+				osmo_hexdump(l3_msg, l3_msg_len));
+		}
 
 		/* TODO: the assumption for the following is that no NACK was received */
 
@@ -1997,7 +1997,87 @@ static int abis_nm_rcvmsg_fom(struct msgb *mb)
 	return ret;
 }
 
-/* TODO: put in a separate file ? */
+static int abis_nm_rcvmsg_fom_seg(struct msgb *msg)
+{
+	struct e1inp_sign_link *sign_link = (struct e1inp_sign_link *)msg->dst;
+	struct gsm_bts *bts = sign_link->trx->bts;
+	struct abis_om_hdr *oh = msgb_l2(msg);
+	unsigned seg_len = oh->length;
+	uint8_t expect_seq;
+
+	/* 0 length segments aren't possible, valid range for segment length
+	 * is [1,256] bytes, with code of 0 meaning 256. */
+	if (seg_len == 0)
+		seg_len = NOKIA_OML_MAX_SEGMENT_LEN;
+	if (msgb_l3len(msg) < seg_len) {
+		LOG_BTS(bts, DNM, LOGL_ERROR,
+			"Message too short per FOM header: %s\n",
+			msgb_hexdump(msg));
+		return -EINVAL;
+	}
+
+	switch (oh->placement) {
+	case ABIS_OM_PLACEMENT_ONLY:
+	case ABIS_OM_PLACEMENT_FIRST:
+		/* clear any previous reassembly */
+		bts->nokia.oml_seg_rx.active = false;
+		expect_seq = 0;
+		break;
+	case ABIS_OM_PLACEMENT_MIDDLE:
+	case ABIS_OM_PLACEMENT_LAST:
+		if (!bts->nokia.oml_seg_rx.active) {
+			LOG_BTS(bts, DNM, LOGL_ERROR,
+				"Rx ABIS OML fragment without prior part(s)\n");
+			return -EINVAL;
+		}
+		expect_seq = bts->nokia.oml_seg_rx.seg_count;
+		break;
+	default:
+		LOG_BTS(bts, DNM, LOGL_ERROR,
+			"Rx ABIS OML placement 0x%x is invalid\n",
+			oh->placement);
+		bts->nokia.oml_seg_rx.active = false;
+		return -EINVAL;
+	}
+	if (oh->sequence != expect_seq) {
+		LOG_BTS(bts, DNM, LOGL_ERROR,
+			"Rx ABIS OML sequence 0x%x != expected 0x%x\n",
+			oh->sequence, expect_seq);
+		bts->nokia.oml_seg_rx.active = false;
+		return -EINVAL;
+	}
+
+	switch (oh->placement) {
+	case ABIS_OM_PLACEMENT_ONLY:
+		return abis_nm_rcvmsg_fom(sign_link, msgb_l3(msg), seg_len);
+	case ABIS_OM_PLACEMENT_FIRST:
+		bts->nokia.oml_seg_rx.active = true;
+		bts->nokia.oml_seg_rx.seg_count = 0;
+		bts->nokia.oml_seg_rx.byte_count = 0;
+		break;
+	case ABIS_OM_PLACEMENT_MIDDLE:
+	case ABIS_OM_PLACEMENT_LAST:
+		if (bts->nokia.oml_seg_rx.seg_count >= NOKIA_OML_MAX_RX_SEGMENTS) {
+			LOG_BTS(bts, DNM, LOGL_ERROR,
+				"segmented OML message exceeds current limit of %d segments\n",
+				NOKIA_OML_MAX_RX_SEGMENTS);
+			bts->nokia.oml_seg_rx.active = false;
+			return -EMSGSIZE;
+		}
+		break;
+	default:
+		OSMO_ASSERT(0);
+	}
+	memcpy(bts->nokia.oml_seg_rx.buffer + bts->nokia.oml_seg_rx.byte_count,
+		msgb_l3(msg), seg_len);
+	bts->nokia.oml_seg_rx.byte_count += seg_len;
+	bts->nokia.oml_seg_rx.seg_count++;
+	if (oh->placement != ABIS_OM_PLACEMENT_LAST)
+		return 0;
+	bts->nokia.oml_seg_rx.active = false;
+	return abis_nm_rcvmsg_fom(sign_link, bts->nokia.oml_seg_rx.buffer,
+				  bts->nokia.oml_seg_rx.byte_count);
+}
 
 int abis_nokia_rcvmsg(struct msgb *msg)
 {
@@ -2006,14 +2086,18 @@ int abis_nokia_rcvmsg(struct msgb *msg)
 	struct abis_om_hdr *oh = msgb_l2(msg);
 	int rc = 0;
 
-	/* Various consistency checks */
-	if (oh->placement != ABIS_OM_PLACEMENT_ONLY) {
-		LOG_BTS(bts, DNM, LOGL_ERROR, "Rx ABIS OML placement 0x%x not supported\n", oh->placement);
-		if (oh->placement != ABIS_OM_PLACEMENT_FIRST)
-			return -EINVAL;
+	if (bts->nokia.wait_reset) {
+		LOG_BTS(bts, DNM, LOGL_INFO, "Ignoring message while waiting for reset: %s\n", msgb_hexdump(msg));
+		msgb_free(msg);
+		return 0;
 	}
-	if (oh->sequence != 0) {
-		LOG_BTS(bts, DNM, LOGL_ERROR, "Rx ABIS OML sequence 0x%x != 0x00\n", oh->sequence);
+
+	/* Various consistency checks */
+	if (msgb_l2len(msg) < sizeof(*oh)) {
+		LOG_BTS(bts, DNM, LOGL_ERROR,
+			"Message too short for FOM header: %s\n",
+			msgb_hexdump(msg));
+		msgb_free(msg);
 		return -EINVAL;
 	}
 	msg->l3h = (unsigned char *)oh + sizeof(*oh);
@@ -2021,7 +2105,7 @@ int abis_nokia_rcvmsg(struct msgb *msg)
 	switch (oh->mdisc) {
 	case ABIS_OM_MDISC_FOM:
 		LOG_BTS(bts, DNM, LOGL_INFO, "Rx ABIS_OM_MDISC_FOM\n");
-		rc = abis_nm_rcvmsg_fom(msg);
+		rc = abis_nm_rcvmsg_fom_seg(msg);
 		break;
 	case ABIS_OM_MDISC_MANUF:
 		LOG_BTS(bts, DNM, LOGL_INFO, "Rx ABIS_OM_MDISC_MANUF: ignoring\n");
@@ -2032,7 +2116,7 @@ int abis_nokia_rcvmsg(struct msgb *msg)
 		break;
 	default:
 		LOG_BTS(bts, DNM, LOGL_ERROR, "Rx unknown ABIS OML message discriminator 0x%x\n", oh->mdisc);
-		return -EINVAL;
+		rc = -EINVAL;
 	}
 
 	msgb_free(msg);
