@@ -19,12 +19,11 @@
  *
  */
 
-/*
-  TODO: Attention: There are some static variables used for states during
-  configuration. Those variables have to be moved to a BTS specific context,
-  otherwise there will most certainly be problems if more than one Nokia BTS
-  is used.
-*/
+/* TODO: Attention: There are some static variables used for states during
+ * configuration. Those variables have to be moved to a BTS specific context,
+ * otherwise there will most certainly be problems if more than one Nokia BTS
+ * is used.
+ */
 
 #include <time.h>
 
@@ -88,14 +87,11 @@ static int shutdown_om(struct gsm_bts *bts)
 #define SAPI_OML    62
 #define SAPI_RSL    0
 
-/*
-
-  Tell LAPD to start start the SAP (send SABM requests) for all signalling
-  timeslots in this line
-
-  Attention: this has to be adapted for mISDN
-*/
-
+/* Tell LAPD to start start the SAP (send SABM requests) for all signalling
+ * timeslots in this line
+ *
+ * Attention: this has to be adapted for mISDN
+ */
 static void start_sabm_in_line(struct e1inp_line *line, int start, int sapi)
 {
 	struct e1inp_sign_link *link;
@@ -866,10 +862,7 @@ static uint8_t fu_config_template[] = {
 
 /* TODO: put in a separate file ? */
 
-/*
-  build the configuration for each TRX
-*/
-
+/* build the configuration for each TRX */
 static int make_fu_config(struct gsm_bts_trx *trx, uint8_t id,
 			  uint8_t * fu_config, int *hopping)
 {
@@ -915,11 +908,10 @@ static int make_fu_config(struct gsm_bts_trx *trx, uint8_t id,
 
 	/* set BSIC */
 
-	/*
-	   Attention: all TRX except the first one seem to get the TSC
-	   from the CHANNEL ACTIVATION command (in CHANNEL IDENTIFICATION,
-	   GSM 04.08 CHANNEL DESCRIPTION).
-	   There was a bug in rsl_chan_activate_lchan() setting this parameter.
+	/* Attention: all TRX except the first one seem to get the TSC
+	 * from the CHANNEL ACTIVATION command (in CHANNEL IDENTIFICATION,
+	 * GSM 04.08 CHANNEL DESCRIPTION).
+	 * There was a bug in rsl_chan_activate_lchan() setting this parameter.
 	 */
 
 	uint8_t bsic = trx->bts->bsic;
@@ -939,19 +931,18 @@ static int make_fu_config(struct gsm_bts_trx *trx, uint8_t id,
 		struct gsm_bts_trx_ts *ts = &trx->ts[i];
 		uint8_t chan_config;
 
-		/*
-		   0 = FCCH + SCH + BCCH + CCCH
-		   1 = FCCH + SCH + BCCH + CCCH + SDCCH/4 + SACCH/4
-		   2 = BCCH + CCCH (This combination is not used in any BTS)
-		   3 = FCCH + SCH + BCCH + CCCH + SDCCH/4 with SDCCH2 used as CBCH
-		   4 = SDCCH/8 + SACCH/8
-		   5 = SDCCH/8 with SDCCH2 used as CBCH
-		   6 = TCH/F + FACCH/F + SACCH/F
-		   7 = E-RACH (Talk family)
-		   9 = Dual rate (capability for TCH/F and TCH/H)
-		   10 = reserved for BTS internal use
-		   11 = PBCCH + PCCCH + PDTCH + PACCH + PTCCH (can be used in GPRS release 2).
-		   0xFF = spare TS
+		/* 0 = FCCH + SCH + BCCH + CCCH
+		 * 1 = FCCH + SCH + BCCH + CCCH + SDCCH/4 + SACCH/4
+		 * 2 = BCCH + CCCH (This combination is not used in any BTS)
+		 * 3 = FCCH + SCH + BCCH + CCCH + SDCCH/4 with SDCCH2 used as CBCH
+		 * 4 = SDCCH/8 + SACCH/8
+		 * 5 = SDCCH/8 with SDCCH2 used as CBCH
+		 * 6 = TCH/F + FACCH/F + SACCH/F
+		 * 7 = E-RACH (Talk family)
+		 * 9 = Dual rate (capability for TCH/F and TCH/H)
+		 * 10 = reserved for BTS internal use
+		 * 11 = PBCCH + PCCCH + PDTCH + PACCH + PTCCH (can be used in GPRS release 2).
+		 * 0xFF = spare TS
 		 */
 
 		switch (ts->pchan_from_config) {
@@ -1168,10 +1159,7 @@ void set_real_time(uint8_t * real_time)
 
 /* TODO: put in a separate file ? */
 
-/*
-  build the configuration data
-*/
-
+/* build the configuration data */
 static int make_bts_config(struct gsm_bts *bts, uint8_t bts_type, int n_trx, uint8_t * fu_config,
 			   int need_hopping, int hopping_type)
 {
@@ -1764,19 +1752,18 @@ static void reset_timer_cb(void *_bts)
 
 /* TODO: put in a separate file ? */
 
-/*
-  This is how the configuration is done:
-  - start OML link
-  - reset BTS
-  - receive ACK, wait some time and restart OML link
-  - receive OMU STARTED message, send START DOWNLOAD REQ
-  - receive CNF REQ message, send CONF DATA
-  - receive ACK, start RSL link(s)
-  ACK some other messages received from the BTS.
-
-  Probably its also possible to configure the BTS without a reset, this
-  has not been tested yet.
-*/
+/* This is how the configuration is done:
+ * - start OML link
+ * - reset BTS
+ * - receive ACK, wait some time and restart OML link
+ * - receive OMU STARTED message, send START DOWNLOAD REQ
+ * - receive CNF REQ message, send CONF DATA
+ * - receive ACK, start RSL link(s)
+ * ACK some other messages received from the BTS.
+ *
+ * Probably its also possible to configure the BTS without a reset, this
+ * has not been tested yet.
+ */
 
 #define FIND_ELEM(data, data_len, ei, var, len) (find_element(data, data_len, ei, var, len) == len)
 static int abis_nm_rcvmsg_fom(struct msgb *mb)
@@ -1861,14 +1848,13 @@ static int abis_nm_rcvmsg_fom(struct msgb *mb)
 		if (!bts->nokia.did_reset) {
 			bts->nokia.did_reset = 1;
 
-			/*
-			   TODO: For the InSite processing the received data is
-			   blocked in the driver during reset.
-			   Otherwise the LAPD module might assert because the InSite
-			   sends garbage on the E1 line during reset.
-			   This is done by looking at "wait_reset" in the driver
-			   (function handle_ts1_read()) and ignoring the received data.
-			   It seems to be necessary for the MetroSite too.
+			/* TODO: For the InSite processing the received data is
+			 * blocked in the driver during reset.
+			 * Otherwise the LAPD module might assert because the InSite
+			 * sends garbage on the E1 line during reset.
+			 * This is done by looking at "wait_reset" in the driver
+			 * (function handle_ts1_read()) and ignoring the received data.
+			 * It seems to be necessary for the MetroSite too.
 			 */
 
 			/* we cannot delete / stop the OML LAPD SAP right here, as we are in
