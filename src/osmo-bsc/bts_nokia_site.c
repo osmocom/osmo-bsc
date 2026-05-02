@@ -1146,6 +1146,12 @@ static uint8_t bts_config_fmr[] = {
 	/* length = 1 */
 	/* [4] */
 	0x00,
+
+	0x5F, 0x81, 0x78, 0x03,
+	/* ID = 0xF8 (BS Tx power) */
+	/* length = 3 */
+	/* [9] */
+	0x01, 0x00, 0x00,
 };
 
 void set_real_time(uint8_t * real_time)
