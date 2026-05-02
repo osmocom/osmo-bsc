@@ -1139,6 +1139,15 @@ static uint8_t bts_config_insite[] = {
 	0x00,
 };
 
+/* extra config IEs for Flexi Multiradio */
+static uint8_t bts_config_fmr[] = {
+	0x5F, 0x87, 0x69, 0x01,
+	/* ID = 0x3E9 (MCPA power pooling) */
+	/* length = 1 */
+	/* [4] */
+	0x00,
+};
+
 void set_real_time(uint8_t * real_time)
 {
 	time_t t;
@@ -1162,12 +1171,39 @@ void set_real_time(uint8_t * real_time)
 
 /* TODO: put in a separate file ? */
 
+static bool bts_is_insite(uint8_t bts_type)
+{
+	switch (bts_type) {
+	case 0x0E:	/* InSite 900 MHz */
+	case 0x0F:	/* InSite 1800 MHz */
+	case 0x10:	/* InSite 1900 MHz */
+		return true;
+	default:
+		return false;
+	}
+}
+
+static bool bts_is_flexi_mr(uint8_t bts_type)
+{
+	switch (bts_type) {
+	case 0x20:	/* Flexi MultiRadio (no shared radio modules) */
+	case 0x21:	/* Flexi MultiRadio (some or all radios shared, SW=GSM) */
+	case 0x25:	/* Flexi MultiRadio (some or all radios shared, SW is other than GSM) */
+	case 0x28:	/* Flexi MultiRadio 10 (no shared radio modules) */
+	case 0x29:	/* Flexi MultiRadio 10 (some or all radios shared, SW=GSM) */
+	case 0x2A:	/* Flexi MultiRadio 10 (some or all radios shared, SW is other than GSM) */
+		return true;
+	default:
+		return false;
+	}
+}
+
 /* build the configuration data */
 static int make_bts_config(struct gsm_bts *bts, uint8_t bts_type, int n_trx, uint8_t * fu_config,
 			   int need_hopping, int hopping_type)
 {
-	/* is it an InSite BTS ? */
-	if (bts_type == 0x0E || bts_type == 0x0F || bts_type == 0x10) {	/* TODO */
+	/* InSite BTS gets its own special config */
+	if (bts_is_insite(bts_type)) {
 		if (n_trx != 1) {
 			LOG_BTS(bts, DNM, LOGL_ERROR, "InSite has only one TRX\n");
 			return 0;
@@ -1226,6 +1262,12 @@ static int make_bts_config(struct gsm_bts *bts, uint8_t bts_type, int n_trx, uin
 	memcpy(fu_config + len, bts_config_4, sizeof(bts_config_4));
 	set_real_time(&fu_config[len + 3]);
 	len += sizeof(bts_config_4);
+
+	/* some extra IEs for Flexi Multiradio */
+	if (bts_is_flexi_mr(bts_type)) {
+		memcpy(fu_config + len, bts_config_fmr, sizeof(bts_config_fmr));
+		len += sizeof(bts_config_fmr);
+	}
 
 	return len;
 }
