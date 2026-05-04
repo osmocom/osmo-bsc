@@ -1162,12 +1162,24 @@ void set_real_time(uint8_t * real_time)
 
 /* TODO: put in a separate file ? */
 
+static bool bts_is_insite(uint8_t bts_type)
+{
+	switch (bts_type) {
+	case 0x0E:	/* InSite 900 MHz */
+	case 0x0F:	/* InSite 1800 MHz */
+	case 0x10:	/* InSite 1900 MHz */
+		return true;
+	default:
+		return false;
+	}
+}
+
 /* build the configuration data */
 static int make_bts_config(struct gsm_bts *bts, uint8_t bts_type, int n_trx, uint8_t * fu_config,
 			   int need_hopping, int hopping_type)
 {
-	/* is it an InSite BTS ? */
-	if (bts_type == 0x0E || bts_type == 0x0F || bts_type == 0x10) {	/* TODO */
+	/* InSite BTS gets its own special config */
+	if (bts_is_insite(bts_type)) {
 		if (n_trx != 1) {
 			LOG_BTS(bts, DNM, LOGL_ERROR, "InSite has only one TRX\n");
 			return 0;
