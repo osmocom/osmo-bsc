@@ -1784,6 +1784,48 @@ static void reset_timer_cb(void *_bts)
  * when the developer-operator resets the BTS manually before each test run.
  */
 
+static int handle_conf_complete(struct e1inp_sign_link *sign_link, uint16_t ref)
+{
+	struct gsm_bts *bts = sign_link->trx->bts;
+	struct gsm_bts_trx *trx;
+	int bcch_trx_nr = -1;
+
+	/* we first need to unlock and reset the TRX that runs BCCH */
+	llist_for_each_entry(trx, &bts->trx_list, list) {
+		if (trx->ts[0].pchan_from_config == GSM_PCHAN_CCCH ||
+		    trx->ts[0].pchan_from_config == GSM_PCHAN_CCCH_SDCCH4 ||
+		    trx->ts[0].pchan_from_config == GSM_PCHAN_CCCH_SDCCH4_CBCH) {
+			/* saving the number of TRX that has BCCH on it */
+			bcch_trx_nr = trx->nr;
+			/* unlock TRX */
+			abis_nm_cha_adm_trx_unlock(bts, trx->nr+1, ref);
+			/* reset TRX */
+			abis_nm_trx_reset(bts, trx->nr+1, ref);
+		}
+	}
+	/* now unlocking all other TRXs */
+	llist_for_each_entry(trx, &bts->trx_list, list) {
+		if (trx->nr != bcch_trx_nr) {
+			/* unlock TRX */
+			abis_nm_cha_adm_trx_unlock(bts, trx->nr+1, ref);
+		}
+	}
+	/* start TRX  (RSL link) */
+	struct gsm_e1_subslot *e1_link = &sign_link->trx->rsl_e1_link;
+	struct e1inp_line *line;
+	bts->nokia.configured = 0;
+	/* RSL Link */
+	line = e1inp_line_find(e1_link->e1_nr);
+	if (!line) {
+		LOG_BTS(bts, DLINP, LOGL_ERROR, "RSL link referring to "
+			"non-existing E1 line %u\n", e1_link->e1_nr);
+		return -ENOMEM;
+	}
+	/* start TRX */
+	start_sabm_in_line(line, 1, SAPI_RSL);  /* start only RSL */
+	return 0;
+}
+
 #define FIND_ELEM(data, data_len, ei, var, len) (find_element(data, data_len, ei, var, len) == len)
 static int abis_nm_rcvmsg_fom(struct e1inp_sign_link *sign_link,
 			      uint8_t *l3_msg, unsigned l3_msg_len)
@@ -1900,41 +1942,9 @@ static int abis_nm_rcvmsg_fom(struct e1inp_sign_link *sign_link,
 		/* send ACK */
 		abis_nm_ack(bts, ref);
 		if (bts->nokia.configured != 0) {
-			struct gsm_bts_trx *trx;
-			int bcch_trx_nr = -1;
-			/* we first need to unlock and reset the TRX that runs BCCH */
-			llist_for_each_entry(trx, &bts->trx_list, list) {
-				if (trx->ts[0].pchan_from_config == GSM_PCHAN_CCCH ||
-				    trx->ts[0].pchan_from_config == GSM_PCHAN_CCCH_SDCCH4 ||
-				    trx->ts[0].pchan_from_config == GSM_PCHAN_CCCH_SDCCH4_CBCH) {
-					/* saving the number of TRX that has BCCH on it */
-					bcch_trx_nr = trx->nr;
-					/* unlock TRX */
-					abis_nm_cha_adm_trx_unlock(bts, trx->nr+1, ref);
-					/* reset TRX */
-					abis_nm_trx_reset(bts, trx->nr+1, ref);
-				}
-			}
-			/* now unlocking all other TRXs */
-			llist_for_each_entry(trx, &bts->trx_list, list) {
-				if (trx->nr != bcch_trx_nr) {
-					/* unlock TRX */
-					abis_nm_cha_adm_trx_unlock(bts, trx->nr+1, ref);
-				}
-			}
-			/* start TRX  (RSL link) */
-			struct gsm_e1_subslot *e1_link = &sign_link->trx->rsl_e1_link;
-			struct e1inp_line *line;
-			bts->nokia.configured = 0;
-			/* RSL Link */
-			line = e1inp_line_find(e1_link->e1_nr);
-			if (!line) {
-				LOG_BTS(bts, DLINP, LOGL_ERROR, "RSL link referring to "
-					"non-existing E1 line %u\n", e1_link->e1_nr);
-				return -ENOMEM;
-			}
-			/* start TRX */
-			start_sabm_in_line(line, 1, SAPI_RSL);  /* start only RSL */
+			ret = handle_conf_complete(sign_link, ref);
+			if (ret < 0)
+				return ret;
 		}
 		/* fake 12.21 OM */
 		nokia_abis_nm_fake_1221_ok(bts);
