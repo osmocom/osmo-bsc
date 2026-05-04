@@ -1174,6 +1174,21 @@ static bool bts_is_insite(uint8_t bts_type)
 	}
 }
 
+static bool bts_is_flexi_mr(uint8_t bts_type)
+{
+	switch (bts_type) {
+	case 0x20:	/* Flexi MultiRadio (no shared radio modules) */
+	case 0x21:	/* Flexi MultiRadio (some or all radios shared, SW=GSM) */
+	case 0x25:	/* Flexi MultiRadio (some or all radios shared, SW is other than GSM) */
+	case 0x28:	/* Flexi MultiRadio 10 (no shared radio modules) */
+	case 0x29:	/* Flexi MultiRadio 10 (some or all radios shared, SW=GSM) */
+	case 0x2A:	/* Flexi MultiRadio 10 (some or all radios shared, SW is other than GSM) */
+		return true;
+	default:
+		return false;
+	}
+}
+
 /* build the configuration data */
 static int make_bts_config(struct gsm_bts *bts, uint8_t bts_type, int n_trx, uint8_t * fu_config,
 			   int need_hopping, int hopping_type)
@@ -1787,6 +1802,7 @@ static void reset_timer_cb(void *_bts)
 static int handle_conf_complete(struct e1inp_sign_link *sign_link, uint16_t ref)
 {
 	struct gsm_bts *bts = sign_link->trx->bts;
+	bool is_flexi_mr = bts_is_flexi_mr(bts->nokia.bts_type);
 	struct gsm_bts_trx *trx;
 	int bcch_trx_nr = -1;
 
@@ -1808,6 +1824,13 @@ static int handle_conf_complete(struct e1inp_sign_link *sign_link, uint16_t ref)
 		if (trx->nr != bcch_trx_nr) {
 			/* unlock TRX */
 			abis_nm_cha_adm_trx_unlock(bts, trx->nr+1, ref);
+			/* On Flexi Multiradio we have to reset non-BCCH TRX
+			 * too, otherwise they never come up.  But on
+			 * MetroSite and UltraSite, non-BCCH TRX work
+			 * correctly only when we *don't* reset them here!
+			 */
+			if (is_flexi_mr)
+				abis_nm_trx_reset(bts, trx->nr+1, ref);
 		}
 	}
 	/* start TRX  (RSL link) */
