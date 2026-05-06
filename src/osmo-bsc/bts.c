@@ -742,14 +742,12 @@ int gsm_set_bts_type(struct gsm_bts *bts, enum gsm_bts_type type)
 		INIT_LLIST_HEAD(&bts->rbs2000.is.conn_groups);
 		INIT_LLIST_HEAD(&bts->rbs2000.con.conn_groups);
 		break;
-	case GSM_BTS_TYPE_BS11:
-	case GSM_BTS_TYPE_UNKNOWN:
 	case GSM_BTS_TYPE_NOKIA_SITE:
 		/* Set default BTS reset timer */
 		bts->nokia.bts_reset_timer_cnf = 15;
 		/* Enable Rx diversity by default, for backward compat */
 		bts->nokia.rx_diversity = 1;
-	case _NUM_GSM_BTS_TYPE:
+	default:
 		break;
 	}
 
