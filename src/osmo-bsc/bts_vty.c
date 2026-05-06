@@ -403,10 +403,10 @@ DEFUN_DEPRECATED(cfg_bts_rsl_ip,
 
 #define NOKIA_STR "Nokia BTS related commands\n"
 
-DEFUN_USRATTR(cfg_bts_nokia_site_skip_reset,
-	      cfg_bts_nokia_site_skip_reset_cmd,
+DEFUN_USRATTR(cfg_bts_nokia_skip_reset,
+	      cfg_bts_nokia_skip_reset_cmd,
 	      X(BSC_VTY_ATTR_RESTART_ABIS_OML_LINK),
-	      "nokia_site skip-reset (0|1)",
+	      "nokia skip-reset (0|1)",
 	      NOKIA_STR
 	      "Skip the reset step during bootstrap process of this BTS\n"
 	      "Do NOT skip the reset\n" "Skip the reset\n")
@@ -422,10 +422,16 @@ DEFUN_USRATTR(cfg_bts_nokia_site_skip_reset,
 
 	return CMD_SUCCESS;
 }
+ALIAS_DEPRECATED(cfg_bts_nokia_skip_reset,
+		 cfg_bts_nokia_site_skip_reset_cmd,
+		 "nokia_site skip-reset (0|1)",
+		 NOKIA_STR
+		 "Skip the reset step during bootstrap process of this BTS\n"
+		 "Do NOT skip the reset\n" "Skip the reset\n");
 
-DEFUN_ATTR(cfg_bts_nokia_site_no_loc_rel_cnf,
-	   cfg_bts_nokia_site_no_loc_rel_cnf_cmd,
-	   "nokia_site no-local-rel-conf (0|1)",
+DEFUN_ATTR(cfg_bts_nokia_no_loc_rel_cnf,
+	   cfg_bts_nokia_no_loc_rel_cnf_cmd,
+	   "nokia no-local-rel-conf (0|1)",
 	   NOKIA_STR
 	   "Do not wait for RELease CONFirm message when releasing channel locally\n"
 	   "Wait for RELease CONFirm\n" "Do not wait for RELease CONFirm\n",
@@ -442,10 +448,16 @@ DEFUN_ATTR(cfg_bts_nokia_site_no_loc_rel_cnf,
 
 	return CMD_SUCCESS;
 }
+ALIAS_DEPRECATED(cfg_bts_nokia_no_loc_rel_cnf,
+		 cfg_bts_nokia_site_no_loc_rel_cnf_cmd,
+		 "nokia_site no-local-rel-conf (0|1)",
+		 NOKIA_STR
+		 "Do not wait for RELease CONFirm message when releasing channel locally\n"
+		 "Wait for RELease CONFirm\n" "Do not wait for RELease CONFirm\n");
 
-DEFUN_ATTR(cfg_bts_nokia_site_bts_reset_timer_cnf,
-	   cfg_bts_nokia_site_bts_reset_timer_cnf_cmd,
-	   "nokia_site bts-reset-timer <15-300>",
+DEFUN_ATTR(cfg_bts_nokia_bts_reset_timer_cnf,
+	   cfg_bts_nokia_bts_reset_timer_cnf_cmd,
+	   "nokia bts-reset-timer <15-300>",
 	   NOKIA_STR
 	   "The amount of time between BTS_RESET is sent "
 	   "and the BTS is being bootstrapped\n"
@@ -463,11 +475,18 @@ DEFUN_ATTR(cfg_bts_nokia_site_bts_reset_timer_cnf,
 
 	return CMD_SUCCESS;
 }
+ALIAS_DEPRECATED(cfg_bts_nokia_bts_reset_timer_cnf,
+		 cfg_bts_nokia_site_bts_reset_timer_cnf_cmd,
+		 "nokia_site bts-reset-timer <15-300>",
+		 NOKIA_STR
+		 "The amount of time between BTS_RESET is sent "
+		 "and the BTS is being bootstrapped\n"
+		 "Timer value (in seconds, default 15)\n");
 
-DEFUN_USRATTR(cfg_bts_nokia_site_hopping_mode,
-		cfg_bts_nokia_site_hopping_mode_cmd,
+DEFUN_USRATTR(cfg_bts_nokia_hopping_mode,
+		cfg_bts_nokia_hopping_mode_cmd,
 		X(BSC_VTY_ATTR_RESTART_ABIS_OML_LINK),
-		"nokia_site hopping-mode (baseband|synthesizer)",
+		"nokia hopping-mode (baseband|synthesizer)",
 		NOKIA_STR
 		"Sets the hopping type for Nokia *Site\n"
 		"Baseband (BB) hopping\n"
@@ -487,11 +506,18 @@ DEFUN_USRATTR(cfg_bts_nokia_site_hopping_mode,
 
 	return CMD_SUCCESS;
 }
+ALIAS_DEPRECATED(cfg_bts_nokia_hopping_mode,
+		 cfg_bts_nokia_site_hopping_mode_cmd,
+		 "nokia_site hopping-mode (baseband|synthesizer)",
+		 NOKIA_STR
+		 "Sets the hopping type for Nokia *Site\n"
+		 "Baseband (BB) hopping\n"
+		 "Synthesizer (RF) hopping\n");
 
-DEFUN_USRATTR(cfg_bts_nokia_site_rx_div,
-	      cfg_bts_nokia_site_rx_div_cmd,
+DEFUN_USRATTR(cfg_bts_nokia_rx_div,
+	      cfg_bts_nokia_rx_div_cmd,
 	      X(BSC_VTY_ATTR_RESTART_ABIS_OML_LINK),
-	      "nokia_site rx-diversity (0|1)",
+	      "nokia rx-diversity (0|1)",
 	      NOKIA_STR
 	      "Rx diversity feature\n"
 	      "Disable Rx diversity\n" "Enable Rx diversity\n")
@@ -507,6 +533,12 @@ DEFUN_USRATTR(cfg_bts_nokia_site_rx_div,
 
 	return CMD_SUCCESS;
 }
+ALIAS_DEPRECATED(cfg_bts_nokia_rx_div,
+		 cfg_bts_nokia_site_rx_div_cmd,
+		 "nokia_site rx-diversity (0|1)",
+		 NOKIA_STR
+		 "Rx diversity feature\n"
+		 "Disable Rx diversity\n" "Enable Rx diversity\n");
 
 #define OML_STR	"Organization & Maintenance Link\n"
 #define IPA_STR "A-bis/IP Specific Options\n"
@@ -4749,12 +4781,12 @@ static void config_write_bts_single(struct vty *vty, struct gsm_bts *bts)
 			bts->oml_tei, bts->oml_e1_link.e1_nr, VTY_NEWLINE);
 		break;
 	case GSM_BTS_TYPE_NOKIA_E1:
-		vty_out(vty, "  nokia_site skip-reset %d%s", bts->nokia.skip_reset, VTY_NEWLINE);
-		vty_out(vty, "  nokia_site no-local-rel-conf %d%s",
+		vty_out(vty, "  nokia skip-reset %d%s", bts->nokia.skip_reset, VTY_NEWLINE);
+		vty_out(vty, "  nokia no-local-rel-conf %d%s",
 			bts->nokia.no_loc_rel_cnf, VTY_NEWLINE);
-		vty_out(vty, "  nokia_site bts-reset-timer %d%s", bts->nokia.bts_reset_timer_cnf, VTY_NEWLINE);
-		vty_out(vty, "  nokia_site hopping-mode %s%s", get_value_string(nokia_hopping_mode_strs, bts->nokia.hopping_mode), VTY_NEWLINE);
-		vty_out(vty, "  nokia_site rx-diversity %d%s", bts->nokia.rx_diversity, VTY_NEWLINE);
+		vty_out(vty, "  nokia bts-reset-timer %d%s", bts->nokia.bts_reset_timer_cnf, VTY_NEWLINE);
+		vty_out(vty, "  nokia hopping-mode %s%s", get_value_string(nokia_hopping_mode_strs, bts->nokia.hopping_mode), VTY_NEWLINE);
+		vty_out(vty, "  nokia rx-diversity %d%s", bts->nokia.rx_diversity, VTY_NEWLINE);
 
 		/* fall through: Nokia requires "oml e1" parameters also */
 	default:
@@ -4980,6 +5012,11 @@ int bts_vty_init(void)
 	install_element(BTS_NODE, &cfg_bts_deprecated_unit_id_cmd);
 	install_element(BTS_NODE, &cfg_bts_rsl_ip_cmd);
 	install_element(BTS_NODE, &cfg_bts_deprecated_rsl_ip_cmd);
+	install_element(BTS_NODE, &cfg_bts_nokia_skip_reset_cmd);
+	install_element(BTS_NODE, &cfg_bts_nokia_no_loc_rel_cnf_cmd);
+	install_element(BTS_NODE, &cfg_bts_nokia_bts_reset_timer_cnf_cmd);
+	install_element(BTS_NODE, &cfg_bts_nokia_hopping_mode_cmd);
+	install_element(BTS_NODE, &cfg_bts_nokia_rx_div_cmd);
 	install_element(BTS_NODE, &cfg_bts_nokia_site_skip_reset_cmd);
 	install_element(BTS_NODE, &cfg_bts_nokia_site_no_loc_rel_cnf_cmd);
 	install_element(BTS_NODE, &cfg_bts_nokia_site_bts_reset_timer_cnf_cmd);
