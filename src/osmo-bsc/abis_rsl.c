@@ -1528,7 +1528,7 @@ static int rsl_rx_meas_res(struct msgb *msg)
 		mr->ms_l1.ta = val[1];
 		/* BS11, Nokia and RBS report TA shifted by 2 bits */
 		if (msg->lchan->ts->trx->bts->type == GSM_BTS_TYPE_BS11
-		 || msg->lchan->ts->trx->bts->type == GSM_BTS_TYPE_NOKIA_SITE
+		 || msg->lchan->ts->trx->bts->type == GSM_BTS_TYPE_NOKIA_E1
 		 || msg->lchan->ts->trx->bts->type == GSM_BTS_TYPE_RBS2000)
 			mr->ms_l1.ta >>= 2;
 		/* store TA for handover decision, and for intra-cell re-assignment */

@@ -140,7 +140,7 @@ static int gbl_sig_cb(unsigned int subsys, unsigned int signal,
 	switch (signal) {
 	case S_GLOBAL_BTS_CLOSE_OM:
 		bts = signal_data;
-		if (bts->type == GSM_BTS_TYPE_NOKIA_SITE)
+		if (is_nokia_bts(bts))
 			shutdown_om(signal_data);
 		break;
 	}
@@ -166,7 +166,7 @@ static int inp_sig_cb(unsigned int subsys, unsigned int signal,
 	case S_L_INP_TEI_UP:
 		switch (isd->link_type) {
 		case E1INP_SIGN_OML:
-			if (isd->trx->bts->type != GSM_BTS_TYPE_NOKIA_SITE)
+			if (!is_nokia_bts(isd->trx->bts))
 				break;
 
 			if (isd->tei == isd->trx->bts->oml_tei)
@@ -193,7 +193,7 @@ static int inp_sig_cb(unsigned int subsys, unsigned int signal,
 static void nm_statechg_evt(unsigned int signal,
 			    struct nm_statechg_signal_data *nsd)
 {
-	if (nsd->bts->type != GSM_BTS_TYPE_NOKIA_SITE)
+	if (!is_nokia_bts(nsd->bts))
 		return;
 }
 
@@ -2180,24 +2180,24 @@ int abis_nokia_rcvmsg(struct msgb *msg)
 	return rc;
 }
 
-static int bts_model_nokia_site_start(struct gsm_network *net);
+static int bts_model_nokia_e1_start(struct gsm_network *net);
 
-static void bts_model_nokia_site_e1line_bind_ops(struct e1inp_line *line)
+static void bts_model_nokia_e1line_bind_ops(struct e1inp_line *line)
 {
 	e1inp_line_bind_ops(line, &bts_isdn_e1inp_line_ops);
 }
 
-static struct gsm_bts_model model_nokia_site = {
-	.type = GSM_BTS_TYPE_NOKIA_SITE,
-	.name = "nokia_site",
-	.start = bts_model_nokia_site_start,
+static struct gsm_bts_model model_nokia_e1 = {
+	.type = GSM_BTS_TYPE_NOKIA_E1,
+	.name = "nokia-e1",
+	.start = bts_model_nokia_e1_start,
 	.oml_rcvmsg = &abis_nokia_rcvmsg,
-	.e1line_bind_ops = &bts_model_nokia_site_e1line_bind_ops,
+	.e1line_bind_ops = &bts_model_nokia_e1line_bind_ops,
 };
 
 static struct gsm_network *my_net;
 
-static int bts_model_nokia_site_start(struct gsm_network *net)
+static int bts_model_nokia_e1_start(struct gsm_network *net)
 {
 	osmo_signal_register_handler(SS_L_INPUT, inp_sig_cb, NULL);
 	osmo_signal_register_handler(SS_L_GLOBAL, gbl_sig_cb, NULL);
@@ -2208,14 +2208,14 @@ static int bts_model_nokia_site_start(struct gsm_network *net)
 	return 0;
 }
 
-int bts_model_nokia_site_init(void)
+int bts_model_nokia_init(void)
 {
-	model_nokia_site.features.data = &model_nokia_site._features_data[0];
-	model_nokia_site.features.data_len = sizeof(model_nokia_site._features_data);
+	model_nokia_e1.features.data = &model_nokia_e1._features_data[0];
+	model_nokia_e1.features.data_len = sizeof(model_nokia_e1._features_data);
 
-	osmo_bts_set_feature(&model_nokia_site.features, BTS_FEAT_HOPPING);
-	osmo_bts_set_feature(&model_nokia_site.features, BTS_FEAT_HSCSD);
-	osmo_bts_set_feature(&model_nokia_site.features, BTS_FEAT_MULTI_TSC);
+	osmo_bts_set_feature(&model_nokia_e1.features, BTS_FEAT_HOPPING);
+	osmo_bts_set_feature(&model_nokia_e1.features, BTS_FEAT_HSCSD);
+	osmo_bts_set_feature(&model_nokia_e1.features, BTS_FEAT_MULTI_TSC);
 
-	return gsm_bts_model_register(&model_nokia_site);
+	return gsm_bts_model_register(&model_nokia_e1);
 }

@@ -322,7 +322,7 @@ static void bootstrap_rsl(struct gsm_bts_trx *trx)
 		trx->arfcn, osmo_plmn_name(&bsc_gsmnet->plmn),
 		bts->location_area_code, bts->cell_identity, bts->bsic);
 
-	if (bts->type == GSM_BTS_TYPE_NOKIA_SITE) {
+	if (is_nokia_bts(bts)) {
 		rsl_nokia_si_begin(trx);
 	}
 
@@ -339,7 +339,7 @@ static void bootstrap_rsl(struct gsm_bts_trx *trx)
 		return;
 	}
 
-	if (bts->type == GSM_BTS_TYPE_NOKIA_SITE) {
+	if (is_nokia_bts(bts)) {
 		/* channel unspecific, power reduction in 2 dB steps */
 		rsl_bs_power_control(trx, 0xFF, trx->max_power_red / 2);
 		rsl_nokia_si_end(trx);

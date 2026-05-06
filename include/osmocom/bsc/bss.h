@@ -15,6 +15,6 @@ extern int bts_model_unknown_init(void);
 extern int bts_model_bs11_init(void);
 extern int bts_model_rbs2k_init(void);
 extern int bts_model_nanobts_init(void);
-extern int bts_model_nokia_site_init(void);
+extern int bts_model_nokia_init(void);
 extern int bts_model_osmobts_init(void);
 #endif
