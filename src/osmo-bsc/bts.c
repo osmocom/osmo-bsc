@@ -68,7 +68,7 @@ const struct value_string bts_type_names[_NUM_GSM_BTS_TYPE + 1] = {
 	{ GSM_BTS_TYPE_BS11,		"bs11" },
 	{ GSM_BTS_TYPE_NANOBTS,		"nanobts" },
 	{ GSM_BTS_TYPE_RBS2000,		"rbs2000" },
-	{ GSM_BTS_TYPE_NOKIA_SITE,	"nokia_site" },
+	{ GSM_BTS_TYPE_NOKIA_E1,	"nokia-e1" },
 	{ GSM_BTS_TYPE_OSMOBTS,		"osmo-bts" },
 	{ 0, NULL }
 };
@@ -78,7 +78,7 @@ const struct value_string bts_type_descs[_NUM_GSM_BTS_TYPE+1] = {
 	{ GSM_BTS_TYPE_BS11,		"Siemens BTS (BS-11 or compatible)" },
 	{ GSM_BTS_TYPE_NANOBTS,		"ip.access nanoBTS or compatible" },
 	{ GSM_BTS_TYPE_RBS2000,		"Ericsson RBS2000 Series" },
-	{ GSM_BTS_TYPE_NOKIA_SITE,	"Nokia {Metro,Ultra,In}Site" },
+	{ GSM_BTS_TYPE_NOKIA_E1,	"Nokia BTS with E1 Abis" },
 	{ GSM_BTS_TYPE_OSMOBTS,		"Osmocom Base Transceiver Station" },
 	{ 0,				NULL }
 };
@@ -742,7 +742,7 @@ int gsm_set_bts_type(struct gsm_bts *bts, enum gsm_bts_type type)
 		INIT_LLIST_HEAD(&bts->rbs2000.is.conn_groups);
 		INIT_LLIST_HEAD(&bts->rbs2000.con.conn_groups);
 		break;
-	case GSM_BTS_TYPE_NOKIA_SITE:
+	case GSM_BTS_TYPE_NOKIA_E1:
 		/* Set default BTS reset timer */
 		bts->nokia.bts_reset_timer_cnf = 15;
 		/* Enable Rx diversity by default, for backward compat */

@@ -178,6 +178,20 @@ DEFUN_DEPRECATED(cfg_bts_type_sysmobts,
 	return cfg_bts_type(self, vty, 1, args);
 }
 
+DEFUN_DEPRECATED(cfg_bts_type_nokia_site,
+		 cfg_bts_type_nokia_site_cmd,
+		 "type nokia_site",
+		 "Set the BTS type\n"
+		 "Deprecated alias for 'nokia-e1'\n")
+{
+	const char *args[] = { "nokia-e1" };
+
+	vty_out(vty, "%% BTS type 'nokia_site' is deprecated, "
+		"use 'type nokia-e1' instead.%s", VTY_NEWLINE);
+
+	return cfg_bts_type(self, vty, 1, args);
+}
+
 DEFUN_USRATTR(cfg_bts_band,
 	      cfg_bts_band_cmd,
 	      X(BSC_VTY_ATTR_RESTART_ABIS_OML_LINK),
@@ -4170,7 +4184,7 @@ void bts_dump_vty(struct vty *vty, struct gsm_bts *bts)
 		vty_out(vty, "  Unit ID: %u/%u/0, OML Stream ID 0x%02x%s",
 			bts->ip_access.site_id, bts->ip_access.bts_id,
 			bts->oml_tei, VTY_NEWLINE);
-	else if (bts->type == GSM_BTS_TYPE_NOKIA_SITE)
+	else if (is_nokia_bts(bts))
 		vty_out(vty, "  Skip Reset: %d%s",
 			bts->nokia.skip_reset, VTY_NEWLINE);
 	vty_out(vty, "  NM State: ");
@@ -4734,7 +4748,7 @@ static void config_write_bts_single(struct vty *vty, struct gsm_bts *bts)
 		vty_out(vty, "  oml ipa stream-id %u line %u%s",
 			bts->oml_tei, bts->oml_e1_link.e1_nr, VTY_NEWLINE);
 		break;
-	case GSM_BTS_TYPE_NOKIA_SITE:
+	case GSM_BTS_TYPE_NOKIA_E1:
 		vty_out(vty, "  nokia_site skip-reset %d%s", bts->nokia.skip_reset, VTY_NEWLINE);
 		vty_out(vty, "  nokia_site no-local-rel-conf %d%s",
 			bts->nokia.no_loc_rel_cnf, VTY_NEWLINE);
@@ -4950,6 +4964,7 @@ int bts_vty_init(void)
 	install_node(&bts_node, config_write_bts);
 	install_element(BTS_NODE, &cfg_bts_type_cmd);
 	install_element(BTS_NODE, &cfg_bts_type_sysmobts_cmd);
+	install_element(BTS_NODE, &cfg_bts_type_nokia_site_cmd);
 	install_element(BTS_NODE, &cfg_description_cmd);
 	install_element(BTS_NODE, &cfg_no_description_cmd);
 	install_element(BTS_NODE, &cfg_bts_band_cmd);

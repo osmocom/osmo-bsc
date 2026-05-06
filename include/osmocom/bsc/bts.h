@@ -242,7 +242,7 @@ enum gsm_bts_type {
 	GSM_BTS_TYPE_BS11,
 	GSM_BTS_TYPE_NANOBTS,
 	GSM_BTS_TYPE_RBS2000,
-	GSM_BTS_TYPE_NOKIA_SITE,
+	GSM_BTS_TYPE_NOKIA_E1,
 	GSM_BTS_TYPE_OSMOBTS,
 	_NUM_GSM_BTS_TYPE
 };
@@ -774,7 +774,7 @@ static inline bool is_siemens_bts(const struct gsm_bts *bts)
 static inline bool is_nokia_bts(const struct gsm_bts *bts)
 {
 	switch (bts->type) {
-	case GSM_BTS_TYPE_NOKIA_SITE:
+	case GSM_BTS_TYPE_NOKIA_E1:
 		return true;
 	default:
 		break;
@@ -800,7 +800,7 @@ static inline bool is_e1_bts(const struct gsm_bts *bts)
 	switch (bts->type) {
 	case GSM_BTS_TYPE_BS11:
 	case GSM_BTS_TYPE_RBS2000:
-	case GSM_BTS_TYPE_NOKIA_SITE:
+	case GSM_BTS_TYPE_NOKIA_E1:
 		return true;
 	default:
 		break;
