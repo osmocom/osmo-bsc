@@ -78,7 +78,7 @@ const struct value_string bts_type_descs[_NUM_GSM_BTS_TYPE+1] = {
 	{ GSM_BTS_TYPE_BS11,		"Siemens BTS (BS-11 or compatible)" },
 	{ GSM_BTS_TYPE_NANOBTS,		"ip.access nanoBTS or compatible" },
 	{ GSM_BTS_TYPE_RBS2000,		"Ericsson RBS2000 Series" },
-	{ GSM_BTS_TYPE_NOKIA_SITE,	"Nokia {Metro,Ultra,In}Site" },
+	{ GSM_BTS_TYPE_NOKIA_SITE,	"Nokia Site and Flexi families" },
 	{ GSM_BTS_TYPE_OSMOBTS,		"Osmocom Base Transceiver Station" },
 	{ 0,				NULL }
 };
