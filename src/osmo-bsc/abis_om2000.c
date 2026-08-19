@@ -2773,7 +2773,7 @@ static int om2k_rx_negot_req(struct msgb *msg)
 	struct gsm_bts *bts = sign_link->trx->bts;
 	struct abis_om2k_hdr *o2h = msgb_l2(msg);
 	struct iwd_type iwd_types[16];
-	uint8_t num_iwd_types = o2h->data[2];
+	uint8_t num_iwd_types;
 	uint8_t *cur = o2h->data+3;
 	unsigned int i;
 	int v;
@@ -2782,18 +2782,43 @@ static int om2k_rx_negot_req(struct msgb *msg)
 	uint8_t *out_cur = out_buf+1;
 	uint8_t out_num_types = 0;
 
+	if (msgb_l2len(msg) < sizeof(*o2h) + 3) {
+		LOGP(DNM, LOGL_ERROR, "Message too short\n");
+		return -EINVAL;
+	}
+	num_iwd_types = o2h->data[2];
+
 	memset(iwd_types, 0, sizeof(iwd_types));
 
 	/* Parse the RBS-supported IWD versions into iwd_types array */
 	for (i = 0; i < num_iwd_types; i++) {
-		uint8_t num_versions = *cur++;
-		uint8_t iwd_type = *cur++;
+		uint8_t num_versions, iwd_type;
+
+		if (cur + 2 > (uint8_t *)msgb_l2(msg) + msgb_l2len(msg)) {
+			LOGP(DNM, LOGL_ERROR, "Message too short\n");
+			return -EINVAL;
+		}
+		num_versions = *cur++;
+		iwd_type = *cur++;
+
+		if (num_versions > ARRAY_SIZE(iwd_types[0].v)) {
+			LOGP(DNM, LOGL_ERROR, "Num versions %u out of range\n", num_versions);
+			return -EINVAL;
+		}
+		if (iwd_type >= ARRAY_SIZE(iwd_types)) {
+			LOGP(DNM, LOGL_ERROR, "IWD Type %u out of range\n", iwd_type);
+			return -EINVAL;
+		}
 
 		iwd_types[iwd_type].num_vers = num_versions;
 
 		for (v = 0; v < num_versions; v++) {
 			struct iwd_version *iwd_v = &iwd_types[iwd_type].v[v];
 
+			if (cur + 6 > (uint8_t *)msgb_l2(msg) + msgb_l2len(msg)) {
+				LOGP(DNM, LOGL_ERROR, "Message too short\n");
+				return -EINVAL;
+			}
 			memcpy(iwd_v->gen_char, cur, 3);
 			cur += 3;
 			memcpy(iwd_v->rev_char, cur, 3);
