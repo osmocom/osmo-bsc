@@ -24,7 +24,6 @@
 #include <osmocom/sigtran/sccp_sap.h>
 #include <osmocom/sigtran/protocol/mtp.h>
 #include <osmocom/sigtran/mtp_sap.h>
-#include <osmocom/sccp/sccp_types.h>
 #include <osmocom/core/linuxlist.h>
 #include <osmocom/gsm/gsm0808.h>
 #include <osmocom/gsm/protocol/ipaccess.h>
@@ -160,19 +159,19 @@ static int handle_notice_ind(struct osmo_ss7_instance *cs7, const struct osmo_sc
 	if (!msc) {
 		LOGP(DMSC, LOGL_DEBUG, "(calling_addr=%s) N-NOTICE.ind cause=%u='%s' importance=%u didn't match any MSC, ignoring\n",
 		     osmo_sccp_addr_dump(&ni->calling_addr),
-		     ni->cause, osmo_sccp_return_cause_name(ni->cause),
+		     ni->cause, osmo_sccp_return_reason_name(ni->cause),
 		     ni->importance);
 		return rc;
 	}
 
 	LOG_MSC(msc, LOGL_NOTICE, "(calling_addr=%s) N-NOTICE.ind cause=%u='%s' importance=%u\n",
 		osmo_sccp_addr_dump(&ni->calling_addr),
-		ni->cause, osmo_sccp_return_cause_name(ni->cause),
+		ni->cause, osmo_sccp_return_reason_name(ni->cause),
 		ni->importance);
 
 	switch (ni->cause) {
-	case SCCP_RETURN_CAUSE_SUBSYSTEM_CONGESTION:
-	case SCCP_RETURN_CAUSE_NETWORK_CONGESTION:
+	case OSMO_SCCP_RETURN_REASON_SUBSYSTEM_CONGESTION:
+	case OSMO_SCCP_RETURN_REASON_NETWORK_CONGESTION:
 		/* Transient failures (hopefully), keep going. */
 		return rc;
 	default:

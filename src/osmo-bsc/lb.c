@@ -21,8 +21,6 @@
  *
  */
 
-#include <osmocom/sccp/sccp_types.h>
-
 #include <osmocom/bsc/lb.h>
 
 #include <osmocom/gsm/bssmap_le.h>
@@ -162,19 +160,19 @@ static int handle_notice_ind(const struct osmo_scu_notice_param *ni)
 	if (!smlc) {
 		LOGP(DLCS, LOGL_DEBUG, "(calling_addr=%s) N-NOTICE.ind cause=%u='%s' importance=%u didn't match SMLC, ignoring\n",
 		     osmo_sccp_addr_dump(&ni->calling_addr),
-		     ni->cause, osmo_sccp_return_cause_name(ni->cause),
+		     ni->cause, osmo_sccp_return_reason_name(ni->cause),
 		     ni->importance);
 		return -EINVAL;
 	}
 
 	LOGP(DLCS, LOGL_NOTICE, "(calling_addr=%s) N-NOTICE.ind cause=%u='%s' importance=%u\n",
 	     osmo_sccp_addr_dump(&ni->calling_addr),
-	     ni->cause, osmo_sccp_return_cause_name(ni->cause),
+	     ni->cause, osmo_sccp_return_reason_name(ni->cause),
 	     ni->importance);
 
 	switch (ni->cause) {
-	case SCCP_RETURN_CAUSE_SUBSYSTEM_CONGESTION:
-	case SCCP_RETURN_CAUSE_NETWORK_CONGESTION:
+	case OSMO_SCCP_RETURN_REASON_SUBSYSTEM_CONGESTION:
+	case OSMO_SCCP_RETURN_REASON_NETWORK_CONGESTION:
 		/* Transient failures (hopefully), keep going. */
 		return rc;
 	default:
