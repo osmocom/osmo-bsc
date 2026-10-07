@@ -234,7 +234,10 @@ static int handle_n_connect_from_msc(struct osmo_sccp_user *scu, struct osmo_scu
 
 	return 0;
 refuse:
-	osmo_sccp_tx_disconn(scu, scu_prim->u.connect.conn_id, &scu_prim->u.connect.called_addr, 0);
+	osmo_sccp_tx_disconn(scu,
+			     scu_prim->u.connect.conn_id,
+			     &scu_prim->u.connect.called_addr,
+			     OSMO_SCCP_REL_REASON_NSU_CREF_END_USER_ORIGIN);
 	return rc;
 }
 

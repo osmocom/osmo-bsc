@@ -302,7 +302,10 @@ static int sccp_sap_up(struct osmo_prim_hdr *oph, void *_scu)
 		 * direction: N-CONNECT from SMLC -> BSC, which should never happen. */
 		LOGP(DLCS, LOGL_ERROR, "N-CONNECT.ind(X->%u): inbound connect from SMLC is not expected to happen\n",
 		     scu_prim->u.connect.conn_id);
-		rc = osmo_sccp_tx_disconn(scu, scu_prim->u.connect.conn_id, &scu_prim->u.connect.called_addr, 0);
+		rc = osmo_sccp_tx_disconn(scu,
+					  scu_prim->u.connect.conn_id,
+					  &scu_prim->u.connect.called_addr,
+					  OSMO_SCCP_REL_REASON_NSU_CREF_END_USER_ORIGIN);
 		break;
 
 	case OSMO_PRIM(OSMO_SCU_PRIM_N_CONNECT, PRIM_OP_CONFIRM):
@@ -428,7 +431,10 @@ void lb_close_conn(struct gsm_subscriber_connection *conn)
 		return;
 	OSMO_ASSERT(conn->lcs.lb.conn.conn_id != SCCP_CONN_ID_UNSET);
 
-	osmo_sccp_tx_disconn(bsc_gsmnet->smlc->sccp_user, conn->lcs.lb.conn.conn_id, &bsc_gsmnet->smlc->bsc_addr, 0);
+	osmo_sccp_tx_disconn(bsc_gsmnet->smlc->sccp_user,
+			     conn->lcs.lb.conn.conn_id,
+			     &bsc_gsmnet->smlc->bsc_addr,
+			     OSMO_SCCP_REL_REASON_NSU_DISC_NORMAL);
 
 	conn->lcs.lb.state = SUBSCR_SCCP_ST_NONE;
 	bsc_sccp = osmo_sccp_get_priv(bsc_gsmnet->smlc->sccp);

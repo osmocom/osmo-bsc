@@ -445,7 +445,11 @@ static void gscon_fsm_init(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 				 osmo_sccp_addr_dump(&scu_prim->u.connect.calling_addr));
 			/* We cannot find a way to the sccp_user without the MSC, so we cannot
 			 * use osmo_sccp_tx_disconn() :( */
-			//osmo_sccp_tx_disconn(conn->sccp.msc->a.sccp_user, scu_prim->u.connect.conn_id, &scu_prim->u.connect.called_addr, 0);
+			/* osmo_sccp_tx_disconn(conn->sccp.msc->a.sccp_user,
+			 *			scu_prim->u.connect.conn_id,
+			 *			&scu_prim->u.connect.called_addr,
+			 *			OSMO_SCCP_REL_REASON_NSU_DISC_NORMAL);
+			 */
 			osmo_fsm_inst_term(fi, OSMO_FSM_TERM_REGULAR, NULL);
 			return;
 		}
@@ -1148,8 +1152,10 @@ static void gscon_cleanup(struct osmo_fsm_inst *fi, enum osmo_fsm_term_cause cau
 	if (conn->sccp.state != SUBSCR_SCCP_ST_NONE) {
 		LOGPFSML(fi, LOGL_DEBUG, "Disconnecting SCCP\n");
 		struct bsc_msc_data *msc = conn->sccp.msc;
-		/* FIXME: include a proper cause value / error message? */
-		osmo_sccp_tx_disconn(msc->a.sccp_user, conn->sccp.conn.conn_id, &msc->a.bsc_addr, 0);
+		osmo_sccp_tx_disconn(msc->a.sccp_user,
+				     conn->sccp.conn.conn_id,
+				     &msc->a.bsc_addr,
+				     OSMO_SCCP_REL_REASON_NSU_DISC_NORMAL);
 		conn->sccp.state = SUBSCR_SCCP_ST_NONE;
 	}
 	if (conn->sccp.conn.conn_id != SCCP_CONN_ID_UNSET && conn->sccp.msc) {
